@@ -24,6 +24,7 @@ type arg_bindings = (arg_binder * constr) list
 val clenv_constrain_with_bindings :
   arg_bindings -> walking_constraints clausenv -> walking_constraints clausenv
 
+(*i**
 val add_prod_rel : 'a evar_map -> constr * context -> constr * context
 
 val add_prods_rel : 'a evar_map -> constr * context -> constr * context
@@ -33,6 +34,7 @@ val add_prod_sign :
 
 val add_prods_sign : 
   'a evar_map -> constr * typed_type signature -> constr * typed_type signature
+**i*)
 
 val res_pf_THEN         : (walking_constraints -> tactic) -> 
                            walking_constraints clausenv -> 

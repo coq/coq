@@ -320,6 +320,12 @@ let intmap_to_list m = Intmap.fold (fun n v l -> (n,v)::l) m []
 
 let intmap_inv m b = Intmap.fold (fun n v l -> if v = b then n::l else l) m []
 
+let interval n m = 
+  let rec interval_n (l,m) =
+    if n > m then l else interval_n (m::l,pred m)
+  in 
+  interval_n ([],m)
+
 let in_some x = Some x
 
 let out_some = function

@@ -1,4 +1,7 @@
 
+ o Declare
+     - declare_eliminations
+
  o Discharge
      - conserver les constantes dans leur section de définition
        et redéfinir des constantes déchargées à la sortie
@@ -32,6 +35,6 @@
      à compléter
 
  o Toplevel
-     - parsing de la ligne de commande : utiliser Arg
+     - parsing de la ligne de commande : utiliser Arg ?
 
 

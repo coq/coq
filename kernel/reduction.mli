@@ -177,7 +177,7 @@ val is_conv_leq : unsafe_env -> 'a evar_map -> constr -> constr -> bool
 
 (*s Special-Purpose Reduction Functions *)
 
-val whd_meta : 'a reduction_function
+val whd_meta : (int * constr) list -> constr -> constr
 val plain_instance : (int * constr) list -> constr -> constr
 val instance : (int * constr) list -> 'a reduction_function
 

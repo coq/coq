@@ -51,7 +51,7 @@ val tB : 'a ppcmd_token
 val cLOSE : 'a ppcmd_token
 val tCLOSE : 'a ppcmd_token
 
-(*s Pretty-printing functions WITHOUT FLUSH. *)
+(*s Pretty-printing functions \emph{without flush}. *)
 
 val pP_with : Format.formatter -> std_ppcmds -> unit
 val pPNL_with : Format.formatter -> std_ppcmds -> unit
@@ -59,7 +59,7 @@ val warning_with : Format.formatter -> string -> unit
 val wARN_with : Format.formatter -> std_ppcmds -> unit
 val pp_flush_with : Format.formatter -> unit -> unit
 
-(*s Pretty-printing functions WITH FLUSH. *)
+(*s Pretty-printing functions \emph{with flush}. *)
 
 val mSG_with : Format.formatter -> std_ppcmds -> unit
 val mSGNL_with : Format.formatter -> std_ppcmds -> unit
@@ -68,7 +68,7 @@ val mSGNL_with : Format.formatter -> std_ppcmds -> unit
 (*s The following functions are instances of the previous ones on
   [std_ft] and [err_ft]. *)
 
-(*s Pretty-printing functions WITHOUT FLUSH on [stdout] and [stderr]. *)
+(*s Pretty-printing functions \emph{without flush} on [stdout] and [stderr]. *)
 
 val pP : std_ppcmds -> unit
 val pPNL : std_ppcmds -> unit
@@ -80,7 +80,7 @@ val wARN : std_ppcmds -> unit
 val pp_flush : unit -> unit
 val flush_all: unit -> unit
 
-(*s Pretty-printing functions WITH FLUSH on [stdout] and [stderr]. *)
+(*s Pretty-printing functions \emph{with flush} on [stdout] and [stderr]. *)
 
 val mSG : std_ppcmds -> unit
 val mSGNL : std_ppcmds -> unit

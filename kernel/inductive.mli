@@ -56,6 +56,7 @@ val mis_kelim : mind_specif -> sorts list
 val mis_recargs : mind_specif -> (recarg list) array array
 val mis_recarg : mind_specif -> (recarg list) array
 val mis_typename : mind_specif -> identifier
+val mis_is_recursive : mind_specif -> bool
 
 val mind_nth_type_packet : 
   mutual_inductive_body -> int -> mutual_inductive_packet

@@ -882,8 +882,11 @@ let clenv_type_of ce c =
          | (n,Cltyp typ)    -> (n,typ.rebus))
       (intmap_to_list ce.env)
   in
+  failwith "TODO: clenv_type_of"
+  (***
   (Trad.ise_resolve true (w_Underlying ce.hook) metamap
      (gLOB(w_hyps ce.hook)) c)._TYPE
+  ***)
 
 let clenv_instance_type_of ce c =
   clenv_instance ce (mk_freelisted (clenv_type_of ce c))
@@ -959,7 +962,8 @@ let clenv_typed_fo_resolver clenv gls =
 
 let args_typ gls = 
   let rec decrec l c = match pf_whd_betadeltaiota gls c with
-    | DOP2(Prod,a,DLAM(n,b)) -> decrec ((Environ.named_hd a n,a)::l) b
+    | DOP2(Prod,a,DLAM(n,b)) -> 
+	decrec ((Environ.named_hd Environ.empty_env a n,a)::l) b
     | x -> l
   in 
   decrec []
@@ -984,9 +988,7 @@ let abstract_list_all gls typ c l =
     if pf_conv_x gls (pf_type_of gls p) typ then p else 
       error "abstract_list_all"
   with UserError _ ->
-    let pt = pTERMINENV (gLOB (pf_hyps gls), typ) in
-    errorlabstrm "abstract_list_all"
-      [< 'sTR "cannot find a generalisation of the goal with type : "; pt >]
+    raise (RefinerError (CannotGeneralize (pf_hyps gls,typ)))
 
 let secondOrderAbstraction allow_K gl p oplist clause =
   let (clause',cllist) = 

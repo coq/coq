@@ -21,6 +21,8 @@ type refiner_error =
   | OccurMeta of constr
   | CannotApply of constr * constr
   | CannotUnify of constr * constr
+  | CannotGeneralize of typed_type signature * constr
+  | NotWellTyped of constr
   | BadTacticArgs of string * tactic_arg list
 
 exception RefinerError of refiner_error

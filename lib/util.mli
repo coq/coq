@@ -5,7 +5,10 @@
 open Pp
 (*i*)
 
-(* Errors. [Anomaly] is used for system errors and [UserError] for the
+(* This module contains numerous utility functions on strings, lists,
+   arrays, etc. *)
+
+(*s Errors. [Anomaly] is used for system errors and [UserError] for the
    user's ones. *)
 
 exception Anomaly of string * std_ppcmds
@@ -91,6 +94,8 @@ module Intmap : Map.S with type key = int
 val intmap_in_dom : int -> 'a Intmap.t -> bool
 val intmap_to_list : 'a Intmap.t -> (int * 'a) list
 val intmap_inv : 'a Intmap.t -> 'a -> int list
+
+val interval : int -> int -> int list
 
 val in_some : 'a -> 'a option
 val out_some : 'a option -> 'a

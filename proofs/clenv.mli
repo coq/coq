@@ -26,17 +26,16 @@ type 'a clausenv = {
   env : clbinding Intmap.t;
   hook : 'a }
 
-(* templval is the template which we are trying to fill out.
- * templtyp is its type.
- * namenv is a mapping from metavar numbers to names, for
- *        use in instanciating metavars by name.
- * env is the mapping from metavar numbers to their types
- *     and values.
- * hook is the pointer to the current walking context, for
- *      integrating existential vars and metavars.
- *)
+(* [templval] is the template which we are trying to fill out.
+ * [templtyp] is its type.
+ * [namenv] is a mapping from metavar numbers to names, for
+ *          use in instanciating metavars by name.
+ * [env] is the mapping from metavar numbers to their types
+ *       and values.
+ * [hook] is the pointer to the current walking context, for
+ *        integrating existential vars and metavars. *)
 
-type wc = walking_constraints (* Pour une meilleure lisibilité *)
+type wc = walking_constraints (* for a better reading of the following *)
 
 val unify : constr -> tactic
 val unify_0 : 
@@ -54,13 +53,13 @@ val mk_clenv_type_of : wc -> constr -> wc clausenv
 val connect_clenv : wc -> 'a clausenv -> wc clausenv
 val clenv_change_head : constr * constr -> 'a clausenv -> 'a clausenv
 val clenv_assign : int -> constr -> 'a clausenv -> 'a clausenv
-val clenv_instance_term : 'a clausenv -> constr -> constr
+val clenv_instance_term : wc clausenv -> constr -> constr
 val clenv_pose : name * int * constr -> 'a clausenv -> 'a clausenv
 val clenv_template : 'a clausenv -> constr freelisted
 val clenv_template_type : 'a clausenv -> constr freelisted
-val clenv_instance_type : 'a clausenv -> int -> constr
-val clenv_instance_template : 'a clausenv -> constr
-val clenv_instance_template_type : 'a clausenv -> constr
+val clenv_instance_type : wc clausenv -> int -> constr
+val clenv_instance_template : wc clausenv -> constr
+val clenv_instance_template_type : wc clausenv -> constr
 val clenv_unify : constr -> constr -> wc clausenv -> wc clausenv
 val clenv_fchain : int -> 'a clausenv -> wc clausenv -> wc clausenv
 val clenv_refine : (wc -> tactic) -> wc clausenv -> tactic
@@ -68,9 +67,9 @@ val res_pf      : (wc -> tactic) -> wc clausenv -> tactic
 val res_pf_cast : (wc -> tactic) -> wc clausenv -> tactic
 val elim_res_pf : (wc -> tactic) -> wc clausenv -> tactic
 val clenv_independent : 
-  'a clausenv -> constr freelisted * constr freelisted -> int list
+  wc clausenv -> constr freelisted * constr freelisted -> int list
 val clenv_missing : 
-  'a clausenv -> constr freelisted * constr freelisted -> int list
+  wc clausenv -> constr freelisted * constr freelisted -> int list
 val clenv_constrain_missing_args : constr list -> wc clausenv -> wc clausenv
 val clenv_constrain_dep_args : constr list -> wc clausenv -> wc clausenv
 val clenv_lookup_name : 'a clausenv -> identifier -> int

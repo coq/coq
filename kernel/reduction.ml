@@ -42,7 +42,7 @@ let stack_reduction_of_reduction red_fun env sigma x stack =
   whd_stack env sigma t []
 
 let strong whdfun env sigma = 
-  let rec strongrec = function
+  let rec strongrec t = match whdfun env sigma t with
     | DOP0 _ as t -> t
     (* Cas ad hoc *)
     | DOP1(oper,c) -> DOP1(oper,strongrec c)
@@ -914,8 +914,8 @@ and eqappr cv_pb infos appr1 appr2 =
 
 
 let fconv cv_pb env sigma t1 t2 =
-  let t1 = strong (fun _ -> strip_outer_cast) env sigma t1
-  and t2 = strong (fun _ -> strip_outer_cast) env sigma t2 in
+  let t1 = strong (fun _ _ -> strip_outer_cast) env sigma t1
+  and t2 = strong (fun _ _ -> strip_outer_cast) env sigma t2 in
   if eq_constr t1 t2 then 
     Constraint.empty
   else
@@ -948,8 +948,8 @@ let is_conv_leq env sigma = test_conversion conv_leq env sigma
 (*             Special-Purpose Reduction                            *)
 (********************************************************************)
 
-let whd_meta env sigma = function
-  | DOP0(Meta p) as u -> (try List.assoc p (metamap sigma) with Not_found -> u)
+let whd_meta metamap = function
+  | DOP0(Meta p) as u -> (try List.assoc p metamap with Not_found -> u)
   | x -> x
 	
 (* Try to replace all metas. Does not replace metas in the metas' values
@@ -1300,7 +1300,7 @@ let rec whd_ise1 env sigma = function
   | DOP0(Sort(Type _)) -> DOP0(Sort(Type dummy_univ))
   | c -> c
 
-let nf_ise1 env sigma = strong (whd_ise1 env sigma) env sigma
+let nf_ise1 env sigma = strong whd_ise1 env sigma
 
 (* Same as whd_ise1, but replaces the remaining ISEVAR by Metavariables
  * Similarly we have is_fmachine1_metas and is_resolve1_metas *)

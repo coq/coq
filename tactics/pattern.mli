@@ -46,9 +46,9 @@ val make_module_marker : string list -> module_mark
 val put_pat            : module_mark -> string -> marked_term
 val get_pat            : marked_term -> constr
 val pattern_stock      : constr Stock.stock
-(***
+(*i**
 val raw_sopattern_of_compattern : typed_type signature -> CoqAst.t -> constr
-***)
+**i*)
 
 (*s Second part : Given a term with second-order variables in it,
    represented by Meta's, and possibly applied using \verb!XTRA[$SOAPP]! to
@@ -70,7 +70,7 @@ val raw_sopattern_of_compattern : typed_type signature -> CoqAst.t -> constr
    contained in the arguments of the application, and in that case, we
    construct a [DLAM] with the names on the stack. *)
 
-val somatch      : Intset.t option -> constr -> constr -> constr Intmap.t
+val somatch      : int list option -> constr -> constr -> (int * constr) list
 val somatches    : constr -> marked_term -> bool
 val dest_somatch : constr -> marked_term -> constr list
 val soinstance   : marked_term -> constr list -> constr 

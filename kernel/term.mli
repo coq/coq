@@ -172,10 +172,7 @@ val mkMutCaseA : case_info -> constr -> constr -> constr array -> constr
       [typarray = [|t1,...tn|]]
       [funnames = [f1,.....fn]]
       [bodies   = [b1,.....bn]]
-   then 
-
-   [ mkFix recindxs i typarray funnames bodies]
-   
+   then [ mkFix recindxs i typarray funnames bodies]
    constructs the $i$th function of the block  
 
     [Fixpoint f1 [ctx1] = b1
@@ -183,7 +180,7 @@ val mkMutCaseA : case_info -> constr -> constr -> constr array -> constr
      ...
      with     fn [ctxn] = bn.]
 
-   where the lenght of the $j$th context is $ij$.
+   \noindent where the lenght of the $j$th context is $ij$.
 *)
 val mkFix : int array -> int -> typed_type array -> name list 
   -> constr array -> constr
@@ -194,11 +191,8 @@ val mkFixDlam : int array -> int -> typed_type array
 
 (* If [typarray = [|t1,...tn|]]
       [funnames = [f1,.....fn]]
-      [bodies   = [b1,.....bn]]
-   then
-
-      [mkCoFix i typsarray funnames bodies]
-
+      [bodies   = [b1,.....bn]] \par\noindent
+   then [mkCoFix i typsarray funnames bodies]
    constructs the ith function of the block  
    
     [CoFixpoint f1 = b1

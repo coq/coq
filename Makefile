@@ -47,16 +47,16 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
 LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
 	library/global.cmo library/states.cmo library/library.cmo \
 	library/nametab.cmo library/impargs.cmo library/redinfo.cmo \
-        library/declare.cmo
+        library/indrec.cmo library/declare.cmo
 
 PROOFS=proofs/typing_ev.cmo proofs/tacred.cmo \
        proofs/proof_trees.cmo proofs/logic.cmo \
        proofs/refiner.cmo proofs/evar_refiner.cmo \
-       proofs/macros.cmo proofs/tacinterp.cmo # proofs/clenv.cmo
+       proofs/macros.cmo proofs/tacinterp.cmo proofs/clenv.cmo
 
 TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
-        tactics/nbtermdn.cmo tactics/stock.cmo tactics/tacticals.cmo \
-        tactics/pattern.cmo 
+        tactics/nbtermdn.cmo tactics/stock.cmo tactics/pattern.cmo \
+	tactics/wcclausenv.cmo tactics/tacticals.cmo \
 
 PRETYPING=pretyping/astterm.cmo
 

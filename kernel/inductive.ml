@@ -50,6 +50,19 @@ let mis_recargs mis =
 let mis_recarg mis = mis.mis_mip.mind_listrec
 let mis_typename mis = mis.mis_mip.mind_typename
 
+let is_recursive listind = 
+  let rec one_is_rec rvec = 
+    List.exists (function
+		   | Mrec(i)        -> List.mem i listind 
+                   | Imbr(_,_,lvec) -> one_is_rec lvec
+                   | Norec          -> false
+                   | Param(_)       -> false) rvec
+  in 
+  array_exists one_is_rec
+
+let mis_is_recursive mis =
+  is_recursive (interval 0 ((mis_ntypes mis)-1)) (mis_recarg mis)
+
 let mind_nth_type_packet mib n = mib.mind_packets.(n)
 
 (*s Declaration. *)

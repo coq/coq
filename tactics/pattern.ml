@@ -2,15 +2,14 @@
 (* $Id$ *)
 
 open Pp
-open Initial
+open Util
 open Names
 open Generic
 open Term
 open Reduction
-open Termenv
 open Evd
+open Environ
 open Proof_trees
-open Trad
 open Stock
 open Clenv
 
@@ -25,14 +24,17 @@ type module_mark = Stock.module_mark
 type marked_term = constr Stock.stocked
 
 let rec whd_replmeta = function
-  | DOP0(XTRA("ISEVAR",[])) -> DOP0(Meta (newMETA()))
+  | DOP0(XTRA("ISEVAR")) -> DOP0(Meta (new_meta()))
   | DOP2(Cast,c,_) -> whd_replmeta c
   | c -> c
 
 let raw_sopattern_of_compattern sign com =
+  failwith "raw_sopattern_of_compattern: TODO"
+  (***
   let c = Astterm.raw_constr_of_compattern empty_evd (gLOB sign) com in
   strong whd_replmeta c
-    
+  ***)
+
 let parse_pattern s =
   let com =
     try 
@@ -40,7 +42,7 @@ let parse_pattern s =
     with Stdpp.Exc_located (_ , (Stream.Failure | Stream.Error _)) ->
       error "Malformed pattern" 
   in
-  raw_sopattern_of_compattern (initial_sign()) com
+  raw_sopattern_of_compattern (Global.context()) com
     
 let (pattern_stock : constr Stock.stock) =
   Stock.make_stock {name="PATTERN";proc=parse_pattern}
@@ -72,15 +74,15 @@ let get_pat = Stock.retrieve pattern_stock
  *)
 
 let dest_soapp_operator = function
-  | DOPN(XTRA("$SOAPP",[]),v) ->
+  | DOPN(XTRA("$SOAPP"),v) ->
       (match Array.to_list v with
 	 | (DOP0(Meta n))::l ->
              let l' = 
 	       List.map (function (Rel i) -> i | _ -> error "somatch") l in
-             Some (n, Listset.uniquize l')
+             Some (n, list_uniquize l')
 	 | _ -> error "somatch")
-  | (DOP2(XTRA("$SOAPP",[]),DOP0(Meta n),Rel p)) ->
-      Some (n,Listset.uniquize [p])
+  | (DOP2(XTRA("$SOAPP"),DOP0(Meta n),Rel p)) ->
+      Some (n,list_uniquize [p])
   | _ -> None
 
 let constrain ((n:int),(m:constr)) sigma =
@@ -93,7 +95,7 @@ let build_dlam toabstract stk (m:constr) =
   let rec buildrec m p_0 p_1 = match p_0,p_1 with 
     | (_, []) -> m
     | (n, (na::tl)) -> 
-	if Listset.mem n toabstract then
+	if List.mem n toabstract then
           buildrec (DLAM(na,m)) (n+1) tl
         else 
 	  buildrec (pop m) (n+1) tl
@@ -102,8 +104,8 @@ let build_dlam toabstract stk (m:constr) =
 
 let memb_metavars m n =
   match (m,n) with
-    | (None, _)       -> true
-    | ((Some mvs), n) -> Listset.mem n mvs
+    | (None, _)     -> true
+    | (Some mvs, n) -> List.mem n mvs
 	  
 let somatch metavars = 
   let rec sorec stk sigma p t =
@@ -111,9 +113,9 @@ let somatch metavars =
     and cT = whd_castapp t in
     match dest_soapp_operator cP with
       | Some (n,ok_args) ->
-          if (not((memb_metavars metavars n))) then error "somatch";
-	  let frels = free_rels cT in
-	  if Listset.subset frels ok_args then 
+          if not (memb_metavars metavars n) then error "somatch";
+	  let frels = Intset.elements (free_rels cT) in
+	  if list_subset frels ok_args then 
 	    constrain (n,build_dlam ok_args stk cT) sigma
 	  else 
 	    error "somatch"
@@ -121,14 +123,15 @@ let somatch metavars =
       | None ->
 	  match (cP,cT) with
        	    | (DOP0(Meta n),m) ->
-		if (not((memb_metavars metavars n))) then
+		if not (memb_metavars metavars n) then
 		  match m with
 		    | DOP0(Meta m_0) -> 
 			if n=m_0 then sigma else error "somatch"
 		    | _ -> error "somatch"
 		else
 		  let depth = List.length stk in
-        	  if Listset.for_all (fun i -> i > depth) (free_rels m) then
+		  let frels = Intset.elements (free_rels m) in
+        	  if List.for_all (fun i -> i > depth) frels then
 		    constrain (n,lift (-depth) m) sigma
         	  else 
 		    error "somatch"
@@ -153,7 +156,7 @@ let somatch metavars =
 	       
   	    | (DOPN(op1,cl1), DOPN(op2,cl2)) ->
 		if op1 = op2 & Array.length cl1 = Array.length cl2 then
-		  it_vect2 (sorec stk) sigma cl1 cl2
+		  array_fold_left2 (sorec stk) sigma cl1 cl2
 		else 
 		  error "somatch"
 
@@ -168,7 +171,7 @@ let somatch metavars =
 		  
   	    | (DLAMV(_,cl1), DLAMV(na,cl2)) ->
 		if Array.length cl1 = Array.length cl2 then
-		  it_vect2 (sorec (na::stk)) sigma cl1 cl2
+		  array_fold_left2 (sorec (na::stk)) sigma cl1 cl2
 		else 
 		  error "somatch"
 		    
@@ -178,19 +181,20 @@ let somatch metavars =
 
 let somatches n pat =
   let m = get_pat pat in 
-  try somatch None m n; true with UserError _ -> false
+  try let _ = somatch None m n in true with UserError _ -> false
 
 let dest_somatch n pat =
-  let m    = get_pat pat in
-  let mvs  = collect_metas m in
-  let mvb  = somatch (Some (Listset.uniquize mvs)) m n in
+  let m = get_pat pat in
+  let mvs = collect_metas m in
+  let mvb = somatch (Some (list_uniquize mvs)) m n in
   List.map (fun b -> List.assoc b mvb) mvs
 
 let soinstance pat arglist =
-  let m =   get_pat pat in
+  let m = get_pat pat in
   let mvs = collect_metas m in
   let mvb = List.combine mvs arglist in 
-  Sosub.soexecute (Reduction.strong (Reduction.whd_meta mvb) m)
+  Sosub.soexecute (Reduction.strong (fun _ _ -> Reduction.whd_meta mvb) 
+		     empty_env Evd.empty m)
 
 (* I implemented the following functions which test whether a term t
    is an inductive but non-recursive type, a general conjuction, a
@@ -200,9 +204,7 @@ let soinstance pat arglist =
    since they do not depend on the name of the type. Hence, they 
    also work on ad-hoc disjunctions introduced by the user.
   
-  -- Eduardo (6/8/97).
-
- *)
+  -- Eduardo (6/8/97). *)
 
 let mmk = make_module_marker ["Prelude"]
 
@@ -216,9 +218,9 @@ let match_with_non_recursive_type t =
   match kind_of_term t with 
     | IsAppL _ -> 
         let (hdapp,args) = decomp_app t in
-        (match (kind_of_term hdapp) with
+        (match kind_of_term hdapp with
            | IsMutInd _ -> 
-               if not (mind_is_recursive hdapp) then 
+               if not (Global.mind_is_recursive hdapp) then 
 		 Some (hdapp,args) 
 	       else 
 		 None 
@@ -234,10 +236,10 @@ let match_with_conjunction t =
   let (hdapp,args) = decomp_app t in 
   match kind_of_term hdapp with
     | IsMutInd _ -> 
-        let nconstr = mis_nconstr (mind_specif_of_mind hdapp) in  
+        let nconstr = Global.mind_nconstr hdapp in  
 	if (nconstr = 1) && 
-          (not (mind_is_recursive hdapp)) &&
-          (nb_prod (mind_arity hdapp))=(mind_nparams hdapp)
+          (not (Global.mind_is_recursive hdapp)) &&
+          (nb_prod (Global.mind_arity hdapp)) = (Global.mind_nparams hdapp)
         then 
 	  Some (hdapp,args)
         else 
@@ -254,10 +256,11 @@ let match_with_disjunction t =
   match kind_of_term hdapp with
     | IsMutInd _  -> 
         let constr_types = 
-	  mis_lc_without_abstractions (mind_specif_of_mind hdapp) in
-        let only_one_arg c = ((nb_prod c) - (mind_nparams hdapp)) = 1 in 
-	if (Vectops.for_all_vect only_one_arg constr_types) &&
-          (not (mind_is_recursive hdapp))
+	  Global.mind_lc_without_abstractions hdapp in
+        let only_one_arg c = 
+	  ((nb_prod c) - (Global.mind_nparams hdapp)) = 1 in 
+	if (array_for_all only_one_arg constr_types) &&
+          (not (Global.mind_is_recursive hdapp))
         then 
 	  Some (hdapp,args)
         else 
@@ -270,7 +273,7 @@ let match_with_empty_type t =
   let (hdapp,args) = decomp_app t in
   match (kind_of_term hdapp) with
     | IsMutInd _ -> 
-        let nconstr = mis_nconstr (mind_specif_of_mind hdapp) in  
+        let nconstr = Global.mind_nconstr hdapp in  
 	if nconstr = 0 then Some hdapp else None
     | _ ->  None
 	  
@@ -281,10 +284,10 @@ let match_with_unit_type t =
   match (kind_of_term hdapp) with
     | IsMutInd _  -> 
         let constr_types = 
-	  mis_lc_without_abstractions (mind_specif_of_mind hdapp) in 
-        let nconstr = mis_nconstr (mind_specif_of_mind hdapp) in
-        let zero_args c = ((nb_prod c) - (mind_nparams hdapp)) = 0 in  
-	if nconstr = 1 && (Vectops.for_all_vect zero_args constr_types) then 
+	  Global.mind_lc_without_abstractions hdapp in 
+        let nconstr = Global.mind_nconstr hdapp in
+        let zero_args c = ((nb_prod c) - (Global.mind_nparams hdapp)) = 0 in  
+	if nconstr = 1 && (array_for_all zero_args constr_types) then 
 	  Some hdapp
         else 
 	  None
@@ -302,10 +305,10 @@ let match_with_equation  t =
   match (kind_of_term hdapp) with
     | IsMutInd _  -> 
         let constr_types = 
-	  mis_lc_without_abstractions (mind_specif_of_mind hdapp) in 
+	  Global.mind_lc_without_abstractions hdapp in 
         let refl_rel_term1 = put_pat mmk "(A:?)(x:A)(? A x x)" in
         let refl_rel_term2 = put_pat mmk "(x:?)(? x x)" in
-        let nconstr = mis_nconstr (mind_specif_of_mind hdapp) in
+        let nconstr = Global.mind_nconstr hdapp in
 	if nconstr = 1 &&
            (somatches constr_types.(0) refl_rel_term1 ||
             somatches constr_types.(0) refl_rel_term2) 
