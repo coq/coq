@@ -87,6 +87,8 @@ let coqeq = lazy(global_constant ["Logic_Type"] "eqT")
 
 let coqconj = lazy(global_constant ["Logic"] "conj")
 let coqand = lazy(global_constant ["Logic"] "and")
+let coqproj1 = lazy(global_constant ["Logic"] "proj1")
+let coqproj2 = lazy(global_constant ["Logic"] "proj2")
 
 (************************* Table of declared setoids **********************)
 
@@ -587,8 +589,8 @@ let res_tac c a hyp =
     | None -> Auto.full_trivial
     | Some h -> 
 	tclORELSE (tclTHEN (tclTRY (apply h)) (tclFAIL 0)) 
-	  (tclORELSE (tclTHEN (tclTRY (tclTHEN (apply (mkApp ((Lazy.force coq_seq_sym), [|sa.set_a; sa.set_aeq; sa.set_th|]))) (apply h))) (tclFAIL 0))
-	     Auto.full_trivial) in
+	(tclORELSE (tclTHEN (tclTRY (tclTHEN (apply (mkApp ((Lazy.force coq_seq_sym), [|sa.set_a; sa.set_aeq; sa.set_th|]))) (apply h))) (tclFAIL 0))
+	   Auto.full_trivial) in
     tclORELSE (tclTHEN (tclTRY (apply (mkApp ((Lazy.force coq_seq_refl), [|sa.set_a; sa.set_aeq; sa.set_th;c|])))) (tclFAIL 0))
       (tclORELSE assumption
 	 (tclORELSE (tclTHEN (tclTRY (apply (mkApp ((Lazy.force coq_seq_sym), [|sa.set_a; sa.set_aeq; sa.set_th|])))) assumption)
@@ -648,7 +650,26 @@ and zapply is_r gl gl_m c1 c2 hyp glll = (match ((kind_of_term gl), gl_m) with
 	else tclTHENS (apply (mkApp ((Lazy.force coq_fleche_ext2), args)))
 	  ((create_tac_list 0 [|hhm; ccm|] [|hh; cc|] c1 c2 hyp [mkProp; mkProp] [true;true])@[tclIDTAC])
 *)
-  | (_, Toreplace) -> (res_tac gl (pf_type_of glll gl) hyp) (* tclORELSE Auto.full_trivial tclIDTAC *)
+  | (_, Toreplace) -> 
+      if is_r 
+      then (match hyp with
+	      | None -> errorlabstrm "Setoid_replace"
+		  (str "You should use the tactic Replace here")
+	      | Some h ->
+		  let hypt = pf_type_of glll h in
+		  let (heq, hargs) = decompose_app hypt in
+		  let rec get_last_two = function
+		    | [c1;c2] -> (c1, c2)
+		    | x::y::z -> get_last_two (y::z)
+		    | _ -> assert false in
+		  let (hc1,hc2) = get_last_two hargs in
+		    if c1 = hc1
+		    then 				     
+		      apply (mkApp (Lazy.force coqproj2,[|(mkArrow hc1 hc2);(mkArrow hc2 hc1);h|]))
+		    else 
+		      apply (mkApp (Lazy.force coqproj1,[|(mkArrow hc1 hc2);(mkArrow hc2 hc1);h|]))
+	   )
+      else (res_tac gl (pf_type_of glll gl) hyp) (* tclORELSE Auto.full_trivial tclIDTAC *)
   | (_, Tokeep) -> (match hyp with 
 		      | None -> errorlabstrm "Setoid_replace"
 			  (str "No replacable occurence of " ++ prterm c1 ++ str " found")
