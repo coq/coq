@@ -328,8 +328,15 @@ let explain_unsolvable_implicit env = function
   | BinderType Anonymous ->
       str "Cannot infer a type for this anonymous binder"
   | ImplicitArg (c,n) ->
-      str "Cannot infer the " ++ pr_ord n ++
-      str " implicit argument of " ++ Nametab.pr_global_env Idset.empty c
+      if !Options.v7 then
+	str "Cannot infer the " ++ pr_ord n ++
+	str " implicit argument of " ++ Nametab.pr_global_env Idset.empty c
+      else
+	let imps = Impargs.implicits_of_global c in
+	let id = Impargs.name_of_implicit (List.nth imps (n-1)) in
+	str "Unable to infer an instance for the implicit parameter " ++
+	pr_id id ++ spc () ++ str "of" ++
+	spc () ++ Nametab.pr_global_env Idset.empty c
   | InternalHole ->
       str "Cannot infer a term for an internal placeholder"
   | TomatchTypeParameter (tyi,n) ->
