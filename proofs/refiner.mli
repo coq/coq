@@ -67,7 +67,7 @@ val tclTHENL         : tactic -> tactic -> tactic
 val tclTHENS         : tactic -> tactic list -> tactic
 
 (* Same as [tclTHENS] but completes with [tac3] if the number resulting 
-   subgoals is strictly less than [n] *)
+   subgoals is strictly more than [n] *)
 val tclTHENST        : tactic -> tactic list -> tactic -> tactic
 
 (* Same as [tclTHENS] but  completes with [tac3 i] *)
