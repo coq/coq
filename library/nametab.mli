@@ -45,11 +45,13 @@ val error_global_not_found     : qualid -> 'a
 val error_global_constant_not_found_loc : loc -> qualid -> 'a
 
 (*s Register visibility of absolute paths by qualified names *)
-val push : section_path -> global_reference -> unit
+val push : visibility:int -> section_path -> global_reference -> unit
 val push_syntactic_definition : section_path -> unit
 
 (*s Register visibility of absolute paths by short names *)
+(*
 val push_short_name : section_path -> global_reference -> unit
+*)
 val push_short_name_syntactic_definition : section_path -> unit
 val push_short_name_object : section_path -> unit
 

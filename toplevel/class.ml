@@ -36,7 +36,7 @@ let stre_gt = function
   | (NotDeclare,_) -> false
   | (_,NeverDischarge) -> true
   | (_,NotDeclare) -> true
-  | (DischargeAt sp1,DischargeAt sp2) ->
+  | (DischargeAt (sp1,_),DischargeAt (sp2,_)) ->
       is_dirpath_prefix_of sp1 sp2
 	(* was sp_gt but don't understand why - HH *)
 

@@ -532,7 +532,7 @@ open Classops
 let string_of_strength = function
   | NotDeclare -> "(temp)"
   | NeverDischarge -> "(global)"
-  | DischargeAt sp -> "(disch@"^(string_of_dirpath sp)
+  | DischargeAt (sp,_) -> "(disch@"^(string_of_dirpath sp)
 
 let print_coercion_value v = prterm (get_coercion_value v)
 

@@ -26,7 +26,7 @@ open Library
 
 type strength = 
   | NotDeclare
-  | DischargeAt of dir_path
+  | DischargeAt of dir_path * int
   | NeverDischarge
 
 type section_variable_entry =
@@ -67,7 +67,7 @@ val declare_eliminations : mutual_inductive_path -> unit
 
 val out_inductive : Libobject.obj -> mutual_inductive_entry 
 
-val make_strength : dir_path -> strength
+(*val make_strength : dir_path -> strength*)
 val make_strength_0 : unit -> strength
 val make_strength_1 : unit -> strength
 val make_strength_2 : unit -> strength

@@ -90,11 +90,9 @@ let dirpath_of_extended_ref = function
    "Root.Rep.Lib.name", but not "name" are pushed; which means, visibility is
    always 1 *)
 
-let visibility = 1
-
 (* We add a binding of [[modid1;...;modidn;id]] to [o] in the name tab *)
 (* We proceed in the reverse way, looking first to [id] *)
-let push_tree extract_dirpath tab dir o =
+let push_tree extract_dirpath tab visibility dir o =
   let rec push level (current,dirmap) = function
     | modid :: path as dir ->
 	let mc = 
@@ -114,11 +112,11 @@ let push_tree extract_dirpath tab dir o =
     | [] -> (Some o,dirmap) in
   push 0 tab (List.rev dir)
 
-let push_idtree extract_dirpath tab dir id o =
+let push_idtree extract_dirpath tab n dir id o =
   let modtab =
     try Idmap.find id !tab
     with Not_found -> (None, ModIdmap.empty) in
-  tab := Idmap.add id (push_tree extract_dirpath modtab dir o) !tab
+  tab := Idmap.add id (push_tree extract_dirpath modtab n dir o) !tab
 
 let push_long_names_ccipath = push_idtree dirpath_of_extended_ref the_ccitab
 let push_short_name_ccipath = push_idtree dirpath_of_extended_ref the_ccitab
@@ -128,7 +126,7 @@ let push_modidtree tab dir id o =
   let modtab =
     try ModIdmap.find id !tab
     with Not_found -> (None, ModIdmap.empty) in
-  tab := ModIdmap.add id (push_tree (fun x -> x) modtab dir o) !tab
+  tab := ModIdmap.add id (push_tree (fun x -> x) modtab 0 dir o) !tab
 
 let push_long_names_secpath = push_modidtree the_sectab
 let push_long_names_libpath = push_modidtree the_libtab
@@ -139,32 +137,35 @@ let push_long_names_libpath = push_modidtree the_libtab
    possibly limited visibility, i.e. Theorem, Lemma, Definition, Axiom,
    Parameter but also Remark and Fact) *)
 
-let push_cci sp ref =
+let push_cci n sp ref =
   let dir, s = repr_qualid (qualid_of_sp sp) in
   (* We push partially qualified name (with at least one prefix) *)
-  push_long_names_ccipath dir s (TrueGlobal ref)
+  push_long_names_ccipath n dir s (TrueGlobal ref)
 
 let push = push_cci
 
+(*
 let push_short_name sp ref =
   (* We push a volatile unqualified name *)
-  push_short_name_ccipath [] (basename sp) (TrueGlobal ref)
+  push_short_name_ccipath 0 [] (basename sp) (TrueGlobal ref)
+*)
 
 (* This is for Syntactic Definitions *)
 
 let push_syntactic_definition sp =
   let dir, s = repr_qualid (qualid_of_sp sp) in
-  push_long_names_ccipath dir s (SyntacticDef sp)
+  push_long_names_ccipath 0 dir s (SyntacticDef sp)
 
 let push_short_name_syntactic_definition sp =
   let _, s = repr_qualid (qualid_of_sp sp) in
-  push_short_name_ccipath [] s (SyntacticDef sp)
+  push_short_name_ccipath Pervasives.max_int [] s (SyntacticDef sp)
 
 (* This is for dischargeable non-cci objects (removed at the end of the
    section -- i.e. Hints, Grammar ...) *) (* --> Unused *)
 
 let push_short_name_object sp =
-  push_short_name_objpath [] (basename sp) sp
+  let _, s = repr_qualid (qualid_of_sp sp) in
+  push_short_name_objpath 0 [] s sp
 
 (* This is to remember absolute Section/Module names and to avoid redundancy *)
 

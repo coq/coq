@@ -55,6 +55,7 @@ val sections_are_opened : unit -> bool
 
 val make_path : identifier -> path_kind -> section_path
 val cwd : unit -> dir_path
+val sections_depth : unit -> int
 val is_section_p : dir_path -> bool
 
 (* This is to declare the interactive toplevel default module name as a root*)

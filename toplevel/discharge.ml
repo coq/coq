@@ -218,7 +218,7 @@ let process_object oldenv dir sec_sp
 	  let cb = Environ.lookup_constant sp oldenv in
 	  let imp = is_implicit_constant sp in
 	  let newsp = match stre with
-	    | DischargeAt d when not (is_dirpath_prefix_of d dir) -> sp
+	    | DischargeAt (d,_) when not (is_dirpath_prefix_of d dir) -> sp
 	    | _ -> recalc_sp dir sp in
 	  let mods = 
 	    let modl = build_abstract_list cb.const_hyps ids_to_discard in
@@ -241,7 +241,7 @@ let process_object oldenv dir sec_sp
 
     | "CLASS" -> 
 	let ((cl,clinfo) as x) = outClass lobj in
-	if clinfo.cl_strength = (DischargeAt sec_sp) then 
+	if (match clinfo.cl_strength with DischargeAt (sp,_) -> sp = sec_sp | _ -> false) then 
 	  (ops,ids_to_discard,work_alist)
 	else
 	  let (y1,y2) = process_class sec_sp ids_to_discard x in
@@ -249,7 +249,7 @@ let process_object oldenv dir sec_sp
 	  
     | "COERCION" -> 
 	let (((_,coeinfo),_,_)as x) = outCoercion lobj in
-        if coercion_strength coeinfo = (DischargeAt sec_sp) then 
+	if (match coercion_strength coeinfo with DischargeAt (sp,_) -> sp = sec_sp | _ -> false) then 
 	  (ops,ids_to_discard,work_alist)
         else
 	  let y = process_coercion sec_sp ids_to_discard x in

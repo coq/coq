@@ -75,7 +75,7 @@ let definition_body_red red_option ident (local,n) com comtypeopt =
   let ce' = red_constant_entry ce red_option in
   match n with
     | NeverDischarge -> declare_global_definition ident ce' n local
-    | DischargeAt disch_sp ->
+    | DischargeAt (disch_sp,_) ->
         if Lib.is_section_p disch_sp then begin
 	  let c = constr_of_constr_entry ce' in
           let sp = declare_variable ident (SectionLocalDef c,n,false) in
@@ -115,7 +115,7 @@ let declare_global_assumption ident c =
 let hypothesis_def_var is_refining ident n c =
   match n with
     | NeverDischarge -> declare_global_assumption ident c
-    | DischargeAt disch_sp ->
+    | DischargeAt (disch_sp,_) ->
         if Lib.is_section_p disch_sp then begin
 	  let t = interp_type Evd.empty (Global.env()) c in
           let sp = declare_variable ident (SectionLocalAssum t,n,false) in
@@ -437,7 +437,7 @@ let apply_tac_not_declare id pft = function
 let save opacity id ({const_entry_body = pft; const_entry_type = tpo} as const)
   strength =
   begin match strength with
-    | DischargeAt disch_sp when Lib.is_section_p disch_sp && not opacity ->
+    | DischargeAt (disch_sp,_) when Lib.is_section_p disch_sp && not opacity ->
 	let c = constr_of_constr_entry const in
 	let _ = declare_variable id (SectionLocalDef c,strength,opacity) in ()
     | NeverDischarge | DischargeAt _ ->

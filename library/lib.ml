@@ -64,6 +64,8 @@ let pop_path_prefix () =
 
 let make_path id k = Names.make_path !path_prefix id k
 
+let sections_depth () = List.length !path_prefix - List.length (module_sp ())
+
 let cwd () = !path_prefix
 
 let find_entry_p p = 

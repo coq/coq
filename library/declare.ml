@@ -25,27 +25,43 @@ open Indrec
 open Nametab
 open Library
 
+(* For [DischargeAt (dir,n)], [dir] is the minimum prefix that a
+   construction keeps in its name (if persistent), or the section name
+   beyond which it is discharged (if volatile); the integer [n]
+   (useful only for persistent constructions), is the length of the section
+   part in [dir] *)
+
 type strength = 
   | NotDeclare
-  | DischargeAt of dir_path
+  | DischargeAt of dir_path * int
   | NeverDischarge
 
-let make_strength = function
-  | [] -> NeverDischarge
-  | l  -> DischargeAt l
+let depth_of_strength = function
+  | DischargeAt (sp',n) -> n
+  | NeverDischarge -> 0
+  | NotDeclare -> assert false
 
-let make_strength_0 () = make_strength (Lib.cwd())
+let restrict_path n sp =
+  let dir, s, k = repr_path sp in
+  let dir' = list_lastn n dir in
+  Names.make_path dir' s k
+
+let make_strength_0 () = 
+  let depth = Lib.sections_depth () in
+  let cwd = Lib.cwd() in
+  if depth > 0 then DischargeAt (cwd, depth) else NeverDischarge
 
 let make_strength_1 () =
+  let depth = Lib.sections_depth () in
   let cwd = Lib.cwd() in
-  let path = try list_firstn (List.length cwd - 1) cwd with Failure _ -> [] in
-  make_strength path
+  if depth > 1 then DischargeAt (list_firstn (List.length cwd -1) cwd, depth-1)
+  else NeverDischarge
 
 let make_strength_2 () =
+  let depth = Lib.sections_depth () in
   let cwd = Lib.cwd() in
-  let path = try list_firstn (List.length cwd - 2) cwd with Failure _ -> [] in
-  make_strength path
-
+  if depth > 2 then DischargeAt (list_firstn (List.length cwd -2) cwd, depth-2)
+  else NeverDischarge
 
 (* Section variables. *)
 
@@ -76,9 +92,6 @@ let _ = Summary.declare_summary "VARIABLE"
 	    Summary.survive_section = false }
 
 let cache_variable (sp,(id,(d,str,sticky))) =
-(*
-  if Nametab.exists_cci sp then
-*)
   (* Constr raisonne sur les noms courts *)
   if List.mem_assoc id (current_section_context ()) then
     errorlabstrm "cache_variable"
@@ -87,7 +100,7 @@ let cache_variable (sp,(id,(d,str,sticky))) =
     | SectionLocalAssum ty -> Global.push_named_assum (id,ty)
     | SectionLocalDef c -> Global.push_named_def (id,c)
   in
-  Nametab.push_short_name sp (VarRef sp);
+  Nametab.push 0 (restrict_path 0 sp) (VarRef sp);
   vartab := let (m,l) = !vartab in (Spmap.add sp (id,(vd,str,sticky)) m, sp::l)
 
 let (in_variable, out_variable) =
@@ -111,17 +124,16 @@ let cache_parameter (sp,c) =
     errorlabstrm "cache_parameter"
       [< pr_id (basename sp); 'sTR " already exists" >];
   Global.add_parameter sp c (current_section_context ());
-  Nametab.push sp (ConstRef sp);
-  Nametab.push_short_name sp (ConstRef sp)
+  Nametab.push 0 sp (ConstRef sp)
 
 let load_parameter (sp,_) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_parameter"
       [< pr_id (basename sp); 'sTR " already exists" >];
-  Nametab.push sp (ConstRef sp)
+  Nametab.push 1 sp (ConstRef sp)
 
 let open_parameter (sp,_) =
-  Nametab.push_short_name sp (ConstRef sp)
+  Nametab.push 0 (restrict_path 0 sp) (ConstRef sp)
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_parameter_entry = mkProp
@@ -169,25 +181,31 @@ let cache_constant (sp,(cdt,stre,op)) =
     | ConstantEntry ce -> Global.add_constant sp ce sc
     | ConstantRecipe r -> Global.add_discharged_constant sp r sc
   end;
-  Nametab.push sp (ConstRef sp);
   (match stre with
-    (* Remark & Fact outside their scope aren't visible without qualif *)
-    | DischargeAt sp' when not (is_dirpath_prefix_of sp' (Lib.cwd ())) -> ()
-    (* Theorem, Lemma & Definition are accessible from the base name *)
-    | NeverDischarge| DischargeAt _ -> Nametab.push_short_name sp (ConstRef sp)
+    | DischargeAt (sp',n) when not (is_dirpath_prefix_of sp' (Lib.cwd ())) ->
+        (* Only qualifications including the sections segment from the current
+           section to the discharge section is available for Remark & Fact *)
+        Nametab.push (n-Lib.sections_depth()) sp (ConstRef sp)
+    | (NeverDischarge| DischargeAt _) -> 
+        (* All qualifications of Theorem, Lemma & Definition are visible *)
+        Nametab.push 0 sp (ConstRef sp)
     | NotDeclare -> assert false);
   if op then Global.set_opaque sp;
   csttab := Spmap.add sp stre !csttab
 
+(* At load-time, the segment starting from the module name to the discharge *)
+(* section (if Remark or Fact) is needed to access a construction *)
 let load_constant (sp,(ce,stre,op)) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_constant"
       [< pr_id (basename sp); 'sTR " already exists" >] ;
   csttab := Spmap.add sp stre !csttab;
-  Nametab.push sp (ConstRef sp)
+  Nametab.push (depth_of_strength stre + 1) sp (ConstRef sp)
 
-let open_constant (sp,_) =
-  Nametab.push_short_name sp (ConstRef sp)
+(* Opening means making the name without its module qualification available *)
+let open_constant (sp,(_,stre,_)) =
+  let n = depth_of_strength stre in
+  Nametab.push n (restrict_path n sp) (ConstRef sp)
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = ConstantEntry { 
@@ -252,17 +270,17 @@ let cache_inductive (sp,mie) =
   List.iter check_exists_inductive names;
   Global.add_mind sp mie (current_section_context ());
   List.iter 
-    (fun (sp, ref) -> Nametab.push sp ref; Nametab.push_short_name sp ref)
+    (fun (sp, ref) -> Nametab.push 0 sp ref)
     names
 
 let load_inductive (sp,mie) =
   let names = inductive_names sp mie in
   List.iter check_exists_inductive names;
-  List.iter (fun (sp, ref) -> Nametab.push sp ref) names
+  List.iter (fun (sp, ref) -> Nametab.push 1 sp ref) names
 
 let open_inductive (sp,mie) =
   let names = inductive_names sp mie in
-  List.iter (fun (sp, ref) -> Nametab.push_short_name sp ref) names
+  List.iter (fun (sp, ref) -> Nametab.push 0 (restrict_path 0 sp) ref) names
 
 let dummy_one_inductive_entry mie = {
   mind_entry_nparams = 0;
