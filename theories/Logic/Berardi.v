@@ -10,7 +10,7 @@
 
 (** This file formalizes Berardi's paradox which says that in
    the calculus of constructions, excluded middle (EM) and axiom of
-   choice (AC) implie proof irrelevenace (PI).
+   choice (AC) imply proof irrelevance (PI).
    Here, the axiom of choice is not necessary because of the use
    of inductive types.
 <<

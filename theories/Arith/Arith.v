@@ -15,7 +15,6 @@ Require Export Gt.
 Require Export Minus.
 Require Export Mult.
 Require Export Between.
-Require Export Minus.
 Require Export Peano_dec.
 Require Export Compare_dec.
 Require Export Factorial.
