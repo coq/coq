@@ -99,11 +99,9 @@ KERNEL=\
 
 LIBRARY=\
   library/nameops.cmo library/libnames.cmo library/libobject.cmo \
-  library/summary.cmo \
-  library/nametab.cmo library/global.cmo library/lib.cmo \
+  library/summary.cmo library/nametab.cmo library/global.cmo library/lib.cmo \
   library/declaremods.cmo library/library.cmo library/states.cmo \
-  library/impargs.cmo library/decl_kinds.cmo \
-  library/dischargedhypsmap.cmo library/declare.cmo library/goptions.cmo 
+  library/decl_kinds.cmo library/dischargedhypsmap.cmo library/goptions.cmo 
 
 PRETYPING=\
   pretyping/termops.cmo pretyping/evd.cmo pretyping/instantiate.cmo \
@@ -120,8 +118,9 @@ PRETYPING=\
 INTERP=\
   interp/topconstr.cmo interp/ppextend.cmo interp/symbols.cmo \
   interp/genarg.cmo interp/syntax_def.cmo interp/reserve.cmo \
-  interp/constrintern.cmo \
-  interp/modintern.cmo interp/constrextern.cmo interp/coqlib.cmo
+  library/impargs.cmo interp/constrintern.cmo \
+  interp/modintern.cmo interp/constrextern.cmo interp/coqlib.cmo \
+  library/declare.cmo
 
 PARSING=\
   parsing/lexer.cmo parsing/coqast.cmo parsing/ast.cmo \
