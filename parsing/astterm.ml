@@ -180,24 +180,31 @@ type pattern_qualid_kind =
 let maybe_constructor env = function
   | Node(loc,"QUALID",l) ->
       let qid = interp_qualid l in
-      (try 
-	match kind_of_term (global_qualified_reference qid) with 
-	  | Construct c -> 
-	      if !dump then add_glob loc (ConstructRef c); 
-	      ConstrPat (loc,c)
-	  | _ -> 
-	      (match maybe_variable l with
-		 | Some s -> 
-		     warning ("Defined reference "^(string_of_qualid qid)
-			      ^" is here considered as a matching variable");
-		     VarPat (loc,s)
-		 | _ -> error ("This reference does not denote a constructor: "
-			       ^(string_of_qualid qid)))
-      with Not_found -> 
-	match maybe_variable l with
-	  | Some s -> VarPat (loc,s)
-	  | _ -> error ("Unknown qualified constructor: "
-			^(string_of_qualid qid)))
+      (try match extended_locate qid with
+       | SyntacticDef sp ->
+	   (match Syntax_def.search_syntactic_definition sp with
+	    | RRef (_,(ConstructRef c as x)) ->
+		if !dump then add_glob loc x; 
+ 		ConstrPat (loc,c)
+	    | _ -> 
+		user_err_loc (loc,"maybe_constructor",
+           str "This syntactic definition should be aliased to a constructor"))
+       | TrueGlobal (ConstructRef c as r) -> 
+	   if !dump then add_glob loc r; 
+	   ConstrPat (loc,c)
+       | _ -> 
+	   (match maybe_variable l with
+	    | Some s -> 
+		warning ("Defined reference "^(string_of_qualid qid)
+			 ^" is here considered as a matching variable");
+		VarPat (loc,s)
+	    | _ -> error ("This reference does not denote a constructor: "
+			  ^(string_of_qualid qid)))
+       with Not_found -> 
+	 match maybe_variable l with
+	   | Some s -> VarPat (loc,s)
+	   | _ -> error ("Unknown qualified constructor: "
+			 ^(string_of_qualid qid)))
 
   (* This may happen in quotations *)
   | Node(loc,"MUTCONSTRUCT",[sp;Num(_,ti);Num(_,n)]) ->
