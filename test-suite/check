@@ -3,6 +3,12 @@
 # Automatic test of Coq
 
 if [ "$1" = -byte ]; then
+  command7="../bin/coqtop.byte -translate -q -batch -load-vernac-source"
+else
+  command7="../bin/coqtop -translate -q -batch -load-vernac-source"
+fi
+
+if [ "$1" = -byte ]; then
   command="../bin/coqtop.byte -q -batch -load-vernac-source"
 else
   command="../bin/coqtop -q -batch -load-vernac-source"
@@ -18,12 +24,18 @@ test_succes() {
     for f in $1/*.v; do 
 	nbtests=`expr $nbtests + 1`
 	printf "    "$f"..."
-	$command $f > /dev/null 2>&1
-	if [ $? = 0 ]; then 
-	    echo "Ok"
-	    nbtestsok=`expr $nbtestsok + 1`
+	$command7 $f > /dev/null 2>&1
+	if [ $? = 0 ]; then
+            mv "$f"8 tmp8.v
+            $command tmp8.v > /dev/null 2>&1
+            if [ $? = 0 ]; then
+                echo "Ok"
+                nbtestsok=`expr $nbtestsok + 1`
+            else
+                echo "V8 Error! (should be accepted)"
+            fi
         else 
-	    echo "Error! (should be accepted)"
+	    echo "V7 Error! (should be accepted)"
         fi 
     done
 }
@@ -34,7 +46,7 @@ test_echec() {
     for f in $1/*.v; do 
 	nbtests=`expr $nbtests + 1`
 	printf "    "$f"..."
-	$command $f > /dev/null 2>&1
+	$command7 $f > /dev/null 2>&1
 	if [ $? != 0 ]; then 
 	    echo "Ok"
 	    nbtestsok=`expr $nbtestsok + 1`
@@ -50,7 +62,7 @@ test_output() {
 	nbtests=`expr $nbtests + 1`
 	printf "    "$f"..."
         tmpoutput=`mktemp /tmp/coqcheck.XXXXXX`
-	$command $f | tail +3 > $tmpoutput 2>&1
+	$command7 $f | tail +3 > $tmpoutput 2>&1
         foutput=`dirname $f`/`basename $f .v`.out
         diff $tmpoutput $foutput > /dev/null
 	if [ $? = 0 ]; then 
