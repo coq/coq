@@ -335,7 +335,7 @@ oldworld: world7
 
 world: world7
 
-world8: coqbinaries coqlib8-source coqlib8 tools coqide
+world8: coqbinaries translation coqlib8 tools coqide
 
 world7: coqbinaries coqlib7 tools coqide
 
@@ -879,7 +879,7 @@ FULLEMACSLIB=$(COQINSTALLPREFIX)$(EMACSLIB)
 
 install: install7
 
-install8: install-$(BEST) install-binaries install-library install-manpages
+install8: install-$(BEST) install-binaries install-library8 install-manpages
 
 install7: install-$(BEST) install-binaries install-library7 install-manpages
 
@@ -915,7 +915,9 @@ LIBFILESLIGHT=$(INITVO) $(THEORIESLIGHTVO)
 NEWLIBFILES=$(NEWINITVO) $(NEWTHEORIESVO) $(NEWCONTRIBVO)
 NEWLIBFILESLIGHT=$(NEWINITVO) $(NEWTHEORIESLIGHTVO)
 
-install-library:
+install-library: install-library7
+
+install-library8:
 	$(MKDIR) $(FULLCOQLIB)
 	for f in $(LIBFILES) $(NEWLIBFILES); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
@@ -929,7 +931,7 @@ install-library:
 	cp $(IDEFILES) $(FULLIDELIB)
 
 install-library7:
-	$(MAKE) NEWLIBFILES= install-library
+	$(MAKE) NEWLIBFILES= install-library8
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
@@ -1294,8 +1296,6 @@ devel:
 ############################################################################
 
 # 1. Translate the old syntax files and build new syntax theories hierarchy
-coqlib8-source: translation movenew
-
 translation:: $(BESTCOQTOP)
 	@$(MAKE) SYNTAX="-translate -no-strict" coqlib7
 	@$(MAKE) movenew
@@ -1310,7 +1310,8 @@ movenew::
 	done
 
 # 2. Compile theories
-coqlib8:: newinit newtheories newcontrib
+coqlib8::
+	$(MAKE) newinit newtheories newcontrib
 
 NEWINITVO=$(INITVO:%.vo=new%.vo)
 NEWTHEORIESVO=$(THEORIESVO:%.vo=new%.vo)
