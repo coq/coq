@@ -24,6 +24,7 @@ Require Omega.
 Require ZArithRing.
 Require Zcomplements.
 V7only [Import Z_scope.].
+Open Local Scope Z_scope.
 
 (**
 

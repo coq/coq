@@ -15,7 +15,7 @@ Require zarith_aux.
 Require auxiliary.
 Require Zsyntax.
 V7only [Import Z_scope.].
-
+Open Local Scope Z_scope.
 
 Lemma Dcompare_inf : (r:relation) {r=EGAL} + {r=INFERIEUR} + {r=SUPERIEUR}.
 Proof.

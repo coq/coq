@@ -13,6 +13,7 @@ Require zarith_aux.
 Require auxiliary.
 Require Zsyntax.
 V7only [Import Z_scope.].
+Open Local Scope Z_scope.
 
 (** Our purpose is to write an induction shema for {0,1,2,...}
   similar to the [nat] schema (Theorem [Natlike_rec]). For that the

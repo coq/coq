@@ -12,6 +12,7 @@ Require ZArith_base.
 Require Omega.
 Require Zcomplements.
 V7only [Import Z_scope.].
+Open Local Scope Z_scope.
 
 Section section1.
 

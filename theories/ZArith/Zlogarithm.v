@@ -24,6 +24,7 @@ Require Omega.
 Require Zcomplements.
 Require Zpower.
 V7only [Import Z_scope.].
+Open Local Scope Z_scope.
 
 Section Log_pos. (* Log of positive integers *)
 

@@ -12,6 +12,7 @@ Require ZArith_base.
 Require Export Wf_nat.
 Require Omega.
 V7only [Import Z_scope.].
+Open Local Scope Z_scope.
 
 (** Well-founded relations on Z. *)
 

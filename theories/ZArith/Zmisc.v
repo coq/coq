@@ -14,6 +14,7 @@ Require auxiliary.
 Require Zsyntax.
 Require Bool.
 V7only [Import Z_scope.].
+Open Local Scope Z_scope.
 
 (** Overview of the sections of this file:
     - logic: Logic complements.
