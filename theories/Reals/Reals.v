@@ -15,10 +15,12 @@ Require Export Rbase.
 Require Export R_Ifp.
 Require Export Rbasic_fun.
 Require Export R_sqr.
+Require Export R_sqrt.
 Require Export Rsigma.
 Require Export Rlimit.
 Require Export Rfunctions.
 Require Export Rtrigo.
+Require Export Rtrigo_calc.
 Require Export Rgeom.
 Require Export Rderiv.
 Require Export Rseries.
