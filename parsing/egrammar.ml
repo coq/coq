@@ -285,6 +285,8 @@ let make_rule univ assoc etyp rule =
         (* Ugly *)
         let f loc env = match rule.gr_action, env with
           | CRef (Ident(_,p)), [p',a] when p=p' -> a
+          | CDelimiters (_,s,CRef (Ident(_,p))), [p',a] when p=p' ->
+	      CPatDelimiters (loc,s,a)
           | _ -> error "Unable to handle this grammar extension of pattern" in
 	make_cases_pattern_act f ntl
     | ETIdent | ETBigint | ETReference -> error "Cannot extend"
