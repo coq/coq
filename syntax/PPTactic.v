@@ -370,6 +370,7 @@ Syntax tactic
   | intropatconj [<<(CONJPATTERN ($LIST $cp))>>] ->
                  [ "(" [<hov 0> (LISTCOMA ($LIST $cp))] ")" ]
   | intropatid [<<(IDENTIFIER ($VAR $id))>>] -> [ $id ]
+  | intropatwild [<<(WILDCAR)>>] -> [ "_" ]
 
 
   | patterncons [<<(NEPATTERNLIST $H ($LIST $T))>>]
