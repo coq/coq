@@ -18,6 +18,10 @@ Tactics
 
 - Added "dependent rewrite term" and "dependent rewrite term in hyp" (doc TODO)
 
+Modules
+
+- Added "Locate Module qualid" to get the full path of a module.
+
 Notations
 
 - "format" option aware of recursive notations

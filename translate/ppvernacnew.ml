@@ -1042,6 +1042,7 @@ let rec pr_vernac = function
 	| LocateTerm qid ->  pr_reference qid
 	| LocateFile f -> str"File" ++ spc() ++ qsnew f
 	| LocateLibrary qid -> str"Library" ++ spc () ++ pr_module qid
+	| LocateModule qid -> str"Module" ++ spc () ++ pr_module qid
 	| LocateNotation s -> qsnew s
       in str"Locate" ++ spc() ++ pr_locate loc
   | VernacComments l ->

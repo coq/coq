@@ -220,6 +220,19 @@ let print_located_library r =
   try msg_found_library (Library.locate_qualified_library qid)
   with e -> msg_notfound_library loc qid e
 
+let print_located_module r = 
+  let (loc,qid) = qualid_of_reference r in
+  let msg =
+    try 
+      let dir = Nametab.full_name_module qid in
+      str "Module " ++ pr_dirpath dir
+    with Not_found ->
+      (if fst (repr_qualid qid) = empty_dirpath then
+	str "No module of basename "
+      else 
+	str "No module of suffix ") ++ pr_qualid qid
+  in msgnl msg  
+
 (**********)
 (* Syntax *)
 
@@ -963,6 +976,7 @@ let vernac_search s r =
 let vernac_locate = function
   | LocateTerm qid -> msgnl (print_located_qualid qid)
   | LocateLibrary qid -> print_located_library qid
+  | LocateModule qid -> print_located_module qid
   | LocateFile f -> locate_file f
   | LocateNotation ntn ->
       ppnl (Symbols.locate_notation (Constrextern.without_symbols pr_rawterm)

@@ -205,7 +205,8 @@ GEXTEND Gram
   locatable:
     [ [ qid = global -> LocateTerm qid
       | IDENT "File"; f = lstring -> LocateFile f
-      | IDENT "Library"; qid = global -> LocateLibrary  qid
+      | IDENT "Library"; qid = global -> LocateLibrary qid
+      | IDENT "Module"; qid = global -> LocateModule qid
       | s = lstring -> LocateNotation s ] ]
   ;
   option_value:

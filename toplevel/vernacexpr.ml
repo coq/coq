@@ -76,6 +76,7 @@ type searchable =
 type locatable =
   | LocateTerm of reference
   | LocateLibrary of reference
+  | LocateModule of reference
   | LocateFile of string
   | LocateNotation of notation
 
