@@ -26,3 +26,4 @@ Definition d := [X:Type]X->X.
 Extraction d.
 Extraction (d Set).
 Extraction [x:(d Set)]O.
+Extraction (d nat).
