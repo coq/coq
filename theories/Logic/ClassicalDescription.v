@@ -44,9 +44,9 @@ Qed.
 
 (** The followig proof comes from [1] *)
 
-Theorem classic_set : (P:Prop)({P}+{~P} -> False) -> False.
+Theorem classic_set : (((P:Prop){P}+{~P}) -> False) -> False.
 Proof.
-Intros P HnotEM.
+Intro HnotEM.
 Pose R:=[A,b]A/\true=b \/ ~A/\false=b.
 Assert H:(EX f:Prop->bool|(A:Prop)(R A (f A))).
 Apply description.
@@ -64,6 +64,7 @@ NewDestruct (classic A) as [Ha|Hnota].
       Assumption.
 NewDestruct H as [f Hf].
 Apply HnotEM.
+Intro P.
 Assert HfP := (Hf P).
 (* Elimination from Hf to Set is not allowed but from f to Set yes ! *)
 NewDestruct (f P).
