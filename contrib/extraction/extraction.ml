@@ -313,7 +313,7 @@ and extract_inductive kn =
 	  try (find_structure (kn,0)).s_PROJ 
 	  with Not_found -> raise (I Standard);
 	in 
-	let s = List.map (type_neq mlt_env Tdummy) l in
+	let s = List.map (type_neq mlt_env Tdummy) typ in
 	let check (_,o) = match o with 
 	  | None -> raise (I Standard)
 	  | Some kn -> ConstRef kn 
