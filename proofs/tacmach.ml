@@ -254,6 +254,10 @@ let thin ids gl =
   refiner (Prim { name = Thin; hypspecs = ids;
                   terms = []; newids = []; params = []}) gl
 
+let thin_body ids gl = 
+  refiner (Prim { name = ThinBody; hypspecs = ids;
+                  terms = []; newids = []; params = []}) gl
+
 let move_hyp with_dep id1 id2 gl = 
   refiner (Prim { name = Move with_dep;
                   hypspecs = [id1;id2]; terms = [];

@@ -48,6 +48,7 @@ type prim_rule_name =
   | Convert_defbody
   | Convert_deftype
   | Thin
+  | ThinBody
   | Move of bool
 
 type prim_rule = {

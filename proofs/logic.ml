@@ -246,6 +246,19 @@ let apply_to_hyp sign id f =
   in
   if (not !check) || !found then sign' else error "No such assumption"
 
+let apply_to_hyp2 env id f =
+  let found = ref false in
+  let env' =
+    fold_named_context_both_sides
+      (fun env (idc,c,ct as d) tail ->
+	 if idc = id then begin
+	   found := true; f env d tail
+	 end else 
+	   push_named_decl d env)
+      (named_context env) (reset_context env)
+  in
+  if (not !check) || !found then env' else error "No such assumption"
+
 let global_vars_set_of_var = function
   | (_,None,t) -> global_vars_set (body_of_type t)
   | (_,Some c,t) ->
@@ -317,6 +330,36 @@ let remove_hyp env id =
     (fun env _ tail ->
        if !check then check_forward_dependencies id tail;
        env)
+
+let recheck_typability (what,id) env sigma t =
+  try let _ = type_of env sigma t in ()
+  with _ ->
+    let s = match what with
+      | None -> "the conclusion"
+      | Some id -> "hypothesis "^(string_of_id id) in
+    error
+      ("The correctness of "^s^" relies on the body of "^(string_of_id id))
+  
+let remove_hyp_body env sigma id =
+  apply_to_hyp2 env id
+    (fun env (_,c,t) tail ->
+       match c with
+         | None -> error ((string_of_id id)^" is not a local definition")
+         | Some c ->
+             let env' = push_named_decl (id,None,t) env in
+             if !check then 
+               ignore
+                 (Sign.fold_named_context 
+                    (fun (id',c,t as d) env'' ->
+                       (match c with
+                          | None -> 
+                              recheck_typability (Some id',id) env'' sigma t
+                          | Some b ->
+                              let b' = mkCast (b,t) in
+                              recheck_typability (Some id',id) env'' sigma b');
+                       push_named_decl d env'')
+                    tail env');
+             env')
 
 (* Primitive tactics are handled here *)
 
@@ -491,6 +534,16 @@ let prim_refiner r sigma goal =
           remove_hyp sign id 
 	in
 	let sign' = List.fold_left clear_aux sign ids in
+     	let sg = mk_goal info sign' cl in
+     	[sg]
+
+    | { name = ThinBody; hypspecs = ids } ->
+	let clear_aux env id =
+          let env' = remove_hyp_body env sigma id in
+          if !check then recheck_typability (None,id) env' sigma cl;
+          env'
+	in
+	let sign' = named_context (List.fold_left clear_aux env ids) in
      	let sg = mk_goal info sign' cl in
      	[sg]
 

@@ -103,6 +103,7 @@ let refine          = Tacmach.refine
 let convert_concl   = Tacmach.convert_concl
 let convert_hyp     = Tacmach.convert_hyp
 let thin            = Tacmach.thin 
+let thin_body       = Tacmach.thin_body 
 let move_hyp        = Tacmach.move_hyp 
 
 let mutual_fix   = Tacmach.mutual_fix
@@ -769,17 +770,19 @@ let letin_tac with_eq name c occs gl =
   let t = pf_type_of gl c in
   let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
   let args = instance_from_named_context depdecls in
-  let newcl =
+  let newcl = mkNamedLetIn id c t tmpcl in
+(*
     if with_eq then
-      mkNamedLetIn id c t tmpcl
     else (* To fix : add c to args, or use LetIn and clear the body *)
-      mkNamedProd id t tmpcl
+      mkNamed id t tmpcl
   in
+*)
   let lastlhyp = if marks=[] then None else snd (List.hd marks) in
   tclTHENLIST
     [ apply_type newcl args;
       thin (List.map (fun (id,_,_) -> id) depdecls);
       intro_gen (IntroMustBe id) lastlhyp false;
+      if with_eq then tclIDTAC else thin_body [id];
       intros_move marks ] gl
 
 let check_hypotheses_occurrences_list env occl =
@@ -801,6 +804,13 @@ let dyn_lettac args gl = match args with
       check_hypotheses_occurrences_list (pf_env gl) l;
       letin_tac true (Name id) c (o,l) gl
   | l -> bad_tactic_args "letin" l
+
+let dyn_forward args gl = match args with
+  | [Command com; Identifier id] ->
+      letin_tac false (Name id) (pf_interp_constr gl com) (None,[]) gl
+  | [Constr c; Identifier id]    ->
+      letin_tac false (Name id) c (None,[]) gl
+  | l -> bad_tactic_args "forward" l
 
 (********************************************************************)
 (*               Exact tactics                                      *)
@@ -864,7 +874,14 @@ let dyn_clear = function
   | [Clause ids] ->
       let out = function InHyp id -> id | _ -> assert false in
       clear (List.map out ids)
-  | _ -> assert false
+  | l -> bad_tactic_args "clear" l
+
+let clear_body = thin_body
+let dyn_clear_body = function
+  | [Clause ids] ->
+      let out = function InHyp id -> id | _ -> assert false in
+      clear_body (List.map out ids)
+  | l -> bad_tactic_args "clear_body" l
 
 (* Clears a list of identifiers clauses form the context *)
 (*

@@ -167,6 +167,7 @@ val convert_hyp     : identifier -> types -> tactic
 val convert_deftype : identifier -> types -> tactic
 val convert_defbody : identifier -> constr -> tactic
 val thin            : identifier list -> tactic
+val thin_body       : identifier list -> tactic
 val move_hyp        : bool -> identifier -> identifier -> tactic
 val mutual_fix      : identifier list -> int list -> constr list -> tactic
 val mutual_cofix    : identifier list -> constr list -> tactic

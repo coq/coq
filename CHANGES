@@ -1,3 +1,13 @@
+Changes from ??? to V7.1
+========================
+
+Tactics
+
+- New tactic "ClearBody H" to clear the body of definitions in local context
+- New tactic "Assert H := c" for forward reasoning
+
+
+----------------------------------------------------------------------------
 Changes from V6.3.1 and V7.0 to V7.1
 ====================================
 

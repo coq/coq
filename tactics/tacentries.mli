@@ -31,6 +31,7 @@ val v_left          : tactic_arg list -> tactic
 val v_right         : tactic_arg list -> tactic
 val v_split         : tactic_arg list -> tactic
 val v_clear         : tactic_arg list -> tactic
+val v_clear_body    : tactic_arg list -> tactic
 val v_move          : tactic_arg list -> tactic
 val v_move_dep      : tactic_arg list -> tactic
 val v_apply         : tactic_arg list -> tactic

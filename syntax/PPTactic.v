@@ -207,6 +207,8 @@ Syntax tactic
 
   | clear [<<(Clear (CLAUSE ($LIST $l)))>>] ->
           [ [<hov 3> "Clear " (LISTSPC ($LIST $l))] ]
+  | clear_body [<<(ClearBody (CLAUSE ($LIST $l)))>>] ->
+          [ [<hov 3> "ClearBody " (LISTSPC ($LIST $l))] ]
 
   | move [<<(MoveDep $id1 $id2)>>] ->
           [ "Move " $id1 " after " $id2 ]
@@ -255,6 +257,10 @@ Syntax tactic
   | absurd [<<(Absurd $C)>>] -> ["Absurd " $C]
 
   | cut [<<(Cut $C)>>] -> ["Cut " $C]
+  | truecutid [<<(TrueCut $C $id)>>] -> ["Assert " $id " : " $C]
+  | truecut [<<(TrueCut $C)>>] -> ["Assert " $C]
+  | forward [<<(Forward $C $id)>>] -> ["Assert " $id " := " $C]
+
   | lettac_cons [<<(LetTac $id $c (LETPATTERNS $p ($LIST $pl)))>>] -> 
 	["LetTac" [1 1] $id ":=" $c [1 1] "in" [1 1] (LETPATTERNS $p ($LIST $pl))]
   | lettac_nil [<<(LetTac $id $c (LETPATTERNS))>>] -> 

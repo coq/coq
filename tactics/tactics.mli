@@ -151,6 +151,9 @@ val clear         : identifier list -> tactic
 val clear_one     : identifier -> tactic
 val dyn_clear     : tactic_arg list -> tactic
 
+val clear_body    : identifier list -> tactic
+val dyn_clear_body : tactic_arg list -> tactic
+
 val clear_clauses : identifier list -> tactic
 val clear_clause  : identifier -> tactic
 
@@ -264,6 +267,7 @@ val cut_in_parallel             : constr list -> tactic
 val dyn_cut                     : tactic_arg list -> tactic
 val dyn_true_cut                : tactic_arg list -> tactic
 val dyn_lettac                  : tactic_arg list -> tactic
+val dyn_forward                 : tactic_arg list -> tactic
 
 val generalize                  : constr list -> tactic
 val dyn_generalize              : tactic_arg list -> tactic 

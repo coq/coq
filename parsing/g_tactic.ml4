@@ -318,6 +318,11 @@ GEXTEND Gram
             | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var c
             | _ -> assert false in
 	  <:ast< (TrueCut $t $id) >>
+      | IDENT "Assert"; c = constrarg; ":="; t = constrarg ->
+          let id = match c with 
+            | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var c
+            | _ -> assert false in
+	  <:ast< (Forward $t $id) >>
       | IDENT "Specialize"; n = pure_numarg; lcb = constrarg_binding_list ->
           <:ast< (Specialize $n ($LIST $lcb))>>
       | IDENT "Specialize"; lcb = constrarg_binding_list ->
@@ -331,6 +336,8 @@ GEXTEND Gram
       | IDENT "LApply"; c = constrarg -> <:ast< (CutAndApply $c) >>
       | IDENT "Clear"; l = ne_idmetahyp_list -> 
                 <:ast< (Clear (CLAUSE ($LIST $l))) >>
+      | IDENT "ClearBody"; l = ne_idmetahyp_list -> 
+                <:ast< (ClearBody (CLAUSE ($LIST $l))) >>
       | IDENT "Move"; id1 = identarg; IDENT "after"; id2 = identarg -> 
                 <:ast< (MoveDep $id1 $id2) >>
 (*To do: put Abstract in Refiner*)
