@@ -8,6 +8,9 @@ Language
   let-in style)
 - Coercions allowed in Cases patterns
 - Better error messages for ill-typed Cases expressions
+- New declaration "Canonical Structure id = t : I" to help resolution of
+  equations of the form (proj ?)=a; if proj(e)=a then a is canonically 
+  equipped with the remaining fields in e, i.e. ? is instantantiated by e
 
 Tactics
 
