@@ -50,7 +50,7 @@ val interp_rawconstr_gen : bool -> evar_map -> env -> implicits_env ->
 val interp_constr        : evar_map -> env -> constr_expr -> constr
 val interp_casted_constr : evar_map -> env -> constr_expr -> types -> constr
 val interp_type          : evar_map -> env -> constr_expr -> types
-val interp_binder          : evar_map -> env -> name -> constr_expr -> types
+val interp_binder        : evar_map -> env -> name -> constr_expr -> types
 val interp_openconstr    : evar_map -> env -> constr_expr -> evar_map * constr
 val interp_casted_openconstr    :
   evar_map -> env -> constr_expr -> constr -> evar_map * constr

@@ -532,9 +532,7 @@ let internalise sigma env allow_soapp lvar c =
 	let args = intern_impargs c env impargs args_scopes args in
 	check_projection isproj (List.length args) c;
 	(match c with 
-	  | RApp (loc', f', args') ->
-	      (* May happen with the ``...`` and `...` grammars *)
-	      RApp (join_loc loc' loc, f',args'@args)
+	  | RApp (loc', f', args') -> RApp (join_loc loc' loc, f',args'@args)
 	  | _ -> RApp (loc, c, args))
     | CCases (loc, (po,rtnpo), tms, eqns) ->
         let rtnids = List.fold_right (fun (_,(na,x)) ids ->
