@@ -493,15 +493,25 @@ let reset_mod (loc,id) =
   recache_context after
 
 
-let point_obj =
-  let (f,_) = declare_object {(default_object "DOT") with
-				classify_function = (fun _ -> Dispose)} in
-    f()
+let (inLabel,outLabel) =
+  declare_object {(default_object "DOT") with
+				classify_function = (fun _ -> Dispose)}
 
-let mark_end_of_command () =
-  match !lib_stk with
-      (_,Leaf o)::_ when object_tag o = "DOT" -> ()
-    | _ -> add_anonymous_leaf point_obj
+let mark_end_of_command, current_command_label =
+  let n = ref 0 in
+  (fun () ->
+    match !lib_stk with
+        (_,Leaf o)::_ when object_tag o = "DOT" -> ()
+      | _ -> incr n; add_anonymous_leaf (inLabel !n)),
+  (fun () -> !n)
+
+let rec reset_label_stk n stk =
+  match stk with
+      (sp,Leaf o)::tail when object_tag o = "DOT" && n = outLabel o -> sp
+    | _::tail -> reset_label_stk n tail
+    | [] -> error "Unknown state number"
+
+let reset_label n = reset_to (reset_label_stk n !lib_stk)
 
 let rec back_stk n stk =
   match stk with

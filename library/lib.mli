@@ -66,7 +66,8 @@ val add_leaves : identifier -> obj list -> object_name
 
 val add_frozen_state : unit -> unit
 val mark_end_of_command : unit -> unit
-
+val current_command_label : unit -> int
+val reset_label : int -> unit
 
 (*s The function [contents_after] returns the current library segment, 
   starting from a given section path. If not given, the entire segment
