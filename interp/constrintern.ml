@@ -123,6 +123,22 @@ let error_bad_inductive_type loc =
 
 (**********************************************************************)
 (* Dump of globalization (to be used by coqdoc)                       *)
+let token_number = ref 0
+let last_pos = ref 0
+
+type coqdoc_state = Lexer.location_table * int * int
+
+let coqdoc_freeze () =
+  let lt = Lexer.location_table() in
+  let state = (lt,!token_number,!last_pos) in
+  token_number := 0;
+  last_pos := 0;
+  state
+
+let coqdoc_unfreeze (lt,tn,lp) =
+  Lexer.restore_location_table lt;
+  token_number := tn;
+  last_pos := lp
 
 let add_glob loc ref = 
 (*i
@@ -148,8 +164,6 @@ let ntn_loc = loc_of_notation constr_loc
 let patntn_loc = loc_of_notation cases_pattern_loc
 
 let dump_notation_location =
-  let token_number = ref 0 in
-  let last_pos = ref 0 in
   fun pos ntn ((path,df),sc) ->
     let rec next growing =
       let (bp,_ as loc) = Lexer.location_function !token_number in

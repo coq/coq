@@ -278,10 +278,13 @@ let split_product na' = function
       rename na na' t (CProdN(loc,(nal,t)::bl,c))
   | _ -> anomaly "ill-formed fixpoint body"
 
-let merge_binders (na1,ty1) (na2,ty2) codom =
+let merge_binders (na1,ty1) cofun (na2,ty2) codom =
   let na =
     match snd na1, snd na2 with
-        Anonymous, Name id -> na2
+        Anonymous, Name id ->
+          if occur_var_constr_expr id cofun then
+            failwith "avoid capture"
+          else na2
       | Name id, Anonymous ->
           if occur_var_constr_expr id codom then
             failwith "avoid capture"
@@ -298,29 +301,30 @@ let merge_binders (na1,ty1) (na2,ty2) codom =
           ty2 in
   (LocalRawAssum ([na],ty), codom)
             
-let rec strip_domain bvar c =
+let rec strip_domain bvar cofun c =
   match c with
     | CArrow(loc,a,b) ->
-        merge_binders bvar ((dummy_loc,Anonymous),a) b
+        merge_binders bvar cofun ((dummy_loc,Anonymous),a) b
     | CProdN(loc,[([na],ty)],c') ->
-        merge_binders bvar (na,ty) c'
+        merge_binders bvar cofun (na,ty) c'
     | CProdN(loc,([na],ty)::bl,c') ->
-        merge_binders bvar (na,ty) (CProdN(loc,bl,c'))
+        merge_binders bvar cofun (na,ty) (CProdN(loc,bl,c'))
     | CProdN(loc,(na::nal,ty)::bl,c') ->
-        merge_binders bvar (na,ty) (CProdN(loc,(nal,ty)::bl,c'))
+        merge_binders bvar cofun (na,ty) (CProdN(loc,(nal,ty)::bl,c'))
     | _ -> failwith "not a product"
 
 (* Note: binder sharing is lost *)
-let rec strip_domains (nal,ty) c =
+let rec strip_domains (nal,ty) cofun c =
   match nal with
       [] -> assert false
     | [na] ->
-        let bnd, c' = strip_domain (na,ty) c in
+        let bnd, c' = strip_domain (na,ty) cofun c in
         ([bnd],None,c')
     | na::nal ->
-        let bnd, c1 = strip_domain (na,ty) c in
+        let f = CLambdaN(dummy_loc,[(nal,ty)],cofun) in
+        let bnd, c1 = strip_domain (na,ty) f c in
         (try
-          let bl, rest, c2 = strip_domains (nal,ty) c1 in
+          let bl, rest, c2 = strip_domains (nal,ty) cofun c1 in
           (bnd::bl, rest, c2)
         with Failure _ -> ([bnd],Some (nal,ty), c1))
 
@@ -340,11 +344,12 @@ let rec extract_def_binders c ty =
   match c with
     | CLambdaN(loc,bvar::lams,b) ->
         (try
-          let bvar', rest, ty' = strip_domains bvar ty in
+          let f = CLambdaN(loc,lams,b) in
+          let bvar', rest, ty' = strip_domains bvar f ty in
           let c' =
             match rest, lams with
                 None,[] -> b
-              | None, _ -> CLambdaN(loc,lams,b)
+              | None, _ -> f
               | Some bvar,_ -> CLambdaN(loc,bvar::lams,b) in
           let (bl,c2,ty2) = extract_def_binders c' ty' in
           (factorize_binders (bvar'@bl), c2, ty2)

@@ -116,6 +116,11 @@ val interp_aconstr : implicits_env -> identifier list -> constr_expr ->
 (* Globalization leak for Grammar *)
 val for_grammar : ('a -> 'b) -> 'a -> 'b
 
+(* Coqdoc utility functions *)
+type coqdoc_state
+val coqdoc_freeze : unit -> coqdoc_state
+val coqdoc_unfreeze : coqdoc_state -> unit
+
 (* For v8 translation *)
 val set_temporary_implicits_in :
   (identifier * Impargs.implicits_list) list -> unit

@@ -770,6 +770,10 @@ let rec pr_vernac = function
         | LocalRawDef (_,_) -> [] in
       let pr_onerec = function
         | (id,n,bl,type_,def),ntn ->
+            let (bl',def,type_) =
+              if Options.do_translate() then extract_def_binders def type_
+              else ([],def,type_) in
+            let bl = bl @ bl' in
             let ids = List.flatten (List.map name_of_binder bl) in
             let name =
               try snd (List.nth ids n)
@@ -792,6 +796,10 @@ let rec pr_vernac = function
 
   | VernacCoFixpoint corecs ->
       let pr_onecorec (id,bl,c,def) =
+        let (bl',def,c) =
+              if Options.do_translate() then extract_def_binders def c
+              else ([],def,c) in
+        let bl = bl @ bl' in
         pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
         spc() ++ pr_type c ++
         str" :=" ++ brk(1,1) ++ pr_lconstr def in

@@ -163,10 +163,13 @@ let pr_new_syntax loc ocom =
 let rec vernac_com interpfun (loc,com) =
   let rec interp = function
     | VernacLoad (verbosely, fname) ->
+        (* translator state *)
         let ch = !chan_translate in
         let cs = Lexer.com_state() in
-        let lt = Lexer.location_table() in
         let cl = !Pp.comments in
+        (* end translator state *)
+        (* coqdoc state *)
+        let cds = Constrintern.coqdoc_freeze() in
         if !Options.translate_file then begin
           let _,f = find_file_in_path (Library.get_load_path ())
             (make_suffix fname ".v") in
@@ -178,14 +181,14 @@ let rec vernac_com interpfun (loc,com) =
           if !Options.translate_file then close_out !chan_translate;
           chan_translate := ch;
           Lexer.restore_com_state cs;
-          Lexer.restore_location_table lt;
-          Pp.comments := cl
+          Pp.comments := cl;
+          Constrintern.coqdoc_unfreeze cds;
         with e ->
           if !Options.translate_file then close_out !chan_translate;
           chan_translate := ch;
           Lexer.restore_com_state cs;
-          Lexer.restore_location_table lt;
           Pp.comments := cl;
+          Constrintern.coqdoc_unfreeze cds;
           raise e end;
 
     | VernacList l -> List.iter (fun (_,v) -> interp v) l
