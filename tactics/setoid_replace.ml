@@ -39,7 +39,7 @@ type morphism =
 let constr_of c = Astterm.interp_constr Evd.empty (Global.env()) c
 
 let constant dir s =
-  let dir = make_dirpath (List.map id_of_string ("Coq"::"Setoid"::dir)) in
+  let dir = make_dirpath (List.map id_of_string ("Coq"::"Init"::dir)) in
   let id = id_of_string s in
     try 
       Declare.global_reference_in_absolute_module dir id
@@ -62,13 +62,13 @@ let current_constant id =
 
 (* Setoid_theory *)
 
-let coq_Setoid_Theory = lazy(constant ["Setoid_replace"] "Setoid_Theory")
+let coq_Setoid_Theory = lazy(constant ["Setoid"] "Setoid_Theory")
 
-let coq_seq_refl = lazy(constant ["Setoid_replace"] "Seq_refl")
-let coq_seq_sym = lazy(constant ["Setoid_replace"] "Seq_sym")
-let coq_seq_trans = lazy(constant ["Setoid_replace"] "Seq_trans")
+let coq_seq_refl = lazy(constant ["Setoid"] "Seq_refl")
+let coq_seq_sym = lazy(constant ["Setoid"] "Seq_sym")
+let coq_seq_trans = lazy(constant ["Setoid"] "Seq_trans")
 
-let coq_fleche = lazy(constant ["Setoid_replace"] "fleche")
+let coq_fleche = lazy(constant ["Setoid"] "fleche")
 
 (* Coq constants *)
 

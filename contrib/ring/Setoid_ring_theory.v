@@ -9,7 +9,7 @@
 (* $Id$ *)
 
 Require Export Bool.
-Require Export Setoid_replace.
+Require Export Setoid.
 
 Implicit Arguments On.
 

@@ -8,8 +8,6 @@
 
 (* $Id$: *)
 
-Declare ML Module "setoid_replace".
-
 Grammar tactic simple_tactic : ast :=
   setoid_replace [ "Setoid_replace" constrarg($c1) "with" constrarg($c2) ] -> [(Setoid_replace $c1 $c2)]
 .
@@ -31,45 +29,3 @@ Grammar vernac vernac : ast :=
     -> [(AddSetoid $a $aeq $t)]
 | new_morphism [ "Add" "Morphism" constrarg($m) ":" identarg($s) "." ] -> [(NamedNewMorphism $s $m)]
 .
-
-Section Setoid.
-
-Variable A : Type.
-Variable Aeq : A -> A -> Prop.
-
-Record Setoid_Theory : Prop :=
-{ Seq_refl : (x:A) (Aeq x x);
-  Seq_sym : (x,y:A) (Aeq x y) -> (Aeq y x);
-  Seq_trans : (x,y,z:A) (Aeq x y) -> (Aeq y z) -> (Aeq x z)
-}.
-
-End Setoid.
-
-Definition Prop_S : (Setoid_Theory Prop ([x,y:Prop] x<->y)).
-Split; Tauto.
-Save.
-
-Add Setoid Prop iff Prop_S.
-
-Hint prop_set : setoid := Resolve (Seq_refl Prop iff Prop_S).
-Hint prop_set : setoid := Resolve (Seq_sym Prop iff Prop_S).
-Hint prop_set : setoid := Resolve (Seq_trans Prop iff Prop_S).
-
-Add Morphism or : or_ext.
-Tauto.
-Save.
-
-Add Morphism and : and_ext.
-Tauto.
-Save.
-
-Add Morphism not : not_ext.
-Tauto.
-Save.
-
-Definition fleche [A,B:Prop] := A -> B.
-
-Add Morphism fleche : fleche_ext.
-Tauto.
-Save.
-

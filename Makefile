@@ -331,7 +331,7 @@ INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/Logic.vo             theories/Init/Specif.vo        \
        theories/Init/LogicSyntax.vo       theories/Init/SpecifSyntax.vo  \
        theories/Init/Logic_Type.vo        theories/Init/Wf.vo            \
-       theories/Init/Logic_TypeSyntax.vo
+       theories/Init/Logic_TypeSyntax.vo  theories/Init/Setoid.vo
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
 	$(COQC) -boot -$(BEST) -R theories Coq -is states/barestate.coq $<
@@ -343,7 +343,7 @@ EXTRACTIONVO=contrib/extraction/Extraction.vo
 TACTICSVO=tactics/Equality.vo \
 	  tactics/Tauto.vo tactics/Inv.vo \
           tactics/EAuto.vo tactics/AutoRewrite.vo tactics/Refine.vo \
-	  tactics/EqDecide.vo $(EXTRACTIONVO)
+	  tactics/EqDecide.vo tactics/Setoid_replace.vo $(EXTRACTIONVO)
 
 tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
 	$(COQC) -boot -$(BEST) $(COQINCLUDES) -is states/barestate.coq $<
@@ -438,8 +438,6 @@ REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Rseries.vo      theories/Reals/Rtrigo_fun.vo \
 	theories/Reals/Reals.vo 
 
-SETOIDVO = theories/Setoid/Setoid_replace.vo
-
 THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
              $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) \
 	     $(REALSVO) $(SETOIDVO)
@@ -458,7 +456,6 @@ intmap: $(INTMAPVO)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
 reals: $(REALSVO)
-setoid: $(SETOIDVO)
 
 clean::
 	rm -f theories/*/*.vo
