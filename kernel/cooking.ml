@@ -20,46 +20,44 @@ type 'a modification =
   | DO_ABSTRACT of 'a * modification_action list
   | DO_REPLACE
 
-type work_alist = (global_reference * global_reference modification) list
+type work_list =
+    (section_path * section_path modification) list
+    * (inductive_path * inductive_path modification) list
+    * (constructor_path * constructor_path modification) list
 
 type recipe = {
   d_from : section_path;
   d_abstract : identifier list;
-  d_modlist : (global_reference * global_reference modification) list }
+  d_modlist : work_list }
 
-let interp_modif absfun oper (oper',modif) cl = 
+let interp_modif absfun mkfun (sp,modif) cl = 
   let rec interprec = function
-    | ([], cl) -> 
-	(match oper' with
-	   | ConstRef sp -> mkConst (sp,Array.of_list cl)
-	   | ConstructRef sp -> mkMutConstruct (sp,Array.of_list cl)
-	   | IndRef sp -> mkMutInd (sp,Array.of_list cl))
+    | ([], cl) -> mkfun (sp, Array.of_list cl)
     | (ERASE::tlm, c::cl) -> interprec (tlm,cl)
     | (ABSTRACT::tlm, c::cl) -> absfun (interprec (tlm,cl)) c
     | _ -> assert false
   in 
-  interprec (modif,cl)
+  interprec (modif, Array.to_list cl)
 
-let modify_opers replfun absfun oper_alist =
-  let failure () =
-    anomalylabstrm "generic__modify_opers"
-      [< 'sTR"An oper which was never supposed to appear has just appeared" ;
-         'sPC ; 'sTR"Either this is in system code, and you need to" ; 'sPC;
-         'sTR"report this error," ; 'sPC ;
-         'sTR"Or you are using a user-written tactic which calls" ; 'sPC ;
-         'sTR"generic__modify_opers, in which case the user-written code" ;
-         'sPC ; 'sTR"is broken - this function is an internal system" ;
-         'sPC ; 'sTR"for internal system use only" >]
-  in
+let failure () =
+  anomalylabstrm "generic__modify_opers"
+    [< 'sTR"An oper which was never supposed to appear has just appeared" ;
+       'sPC ; 'sTR"Either this is in system code, and you need to" ; 'sPC;
+       'sTR"report this error," ; 'sPC ;
+       'sTR"Or you are using a user-written tactic which calls" ; 'sPC ;
+       'sTR"generic__modify_opers, in which case the user-written code" ;
+       'sPC ; 'sTR"is broken - this function is an internal system" ;
+       'sPC ; 'sTR"for internal system use only" >]
+
+let modify_opers replfun absfun (constl,indl,cstrl) =
   let rec substrec c =
     let op, cl = splay_constr c in
     let cl' = Array.map substrec cl in
     match op with
-      (* Hack pour le sp dans l'annotation du Cases *)
       | OpMutCase (n,(spi,a,b,c,d) as oper) ->
 	  (try
-	     match List.assoc (IndRef spi) oper_alist with
-	       | DO_ABSTRACT (IndRef spi',_) ->
+	     match List.assoc spi indl with
+	       | DO_ABSTRACT (spi',_) ->
 		   gather_constr (OpMutCase (n,(spi',a,b,c,d)),cl')
 	       | _ -> raise Not_found
 	   with
@@ -67,48 +65,45 @@ let modify_opers replfun absfun oper_alist =
 
       | OpMutInd spi ->
 	  (try
-	     (match List.assoc (IndRef spi) oper_alist with
+	     (match List.assoc spi indl with
 		| NOT_OCCUR -> failure ()
 		| DO_ABSTRACT (oper',modif) ->
 		    assert (List.length modif <= Array.length cl);
-		    interp_modif absfun (IndRef spi) (oper',modif)
-		      (Array.to_list cl')
+		    interp_modif absfun mkMutInd (oper',modif) cl'
 		| DO_REPLACE -> assert false)
 	   with 
 	     | Not_found -> mkMutInd (spi,cl'))
 
       | OpMutConstruct spi ->
 	  (try
-	     (match List.assoc (ConstructRef spi) oper_alist with
+	     (match List.assoc spi cstrl with
 		| NOT_OCCUR -> failure ()
 		| DO_ABSTRACT (oper',modif) ->
 		    assert (List.length modif <= Array.length cl);
-		    interp_modif absfun (ConstructRef spi) (oper',modif)
-		      (Array.to_list cl')
+		    interp_modif absfun mkMutConstruct (oper',modif) cl'
 		| DO_REPLACE -> assert false)
 	   with 
 	     | Not_found -> mkMutConstruct (spi,cl'))
 
       | OpConst sp ->
 	  (try
-	     (match List.assoc (ConstRef sp) oper_alist with
+	     (match List.assoc sp constl with
 		| NOT_OCCUR -> failure ()
 		| DO_ABSTRACT (oper',modif) ->
 		    assert (List.length modif <= Array.length cl);
-		    interp_modif absfun (ConstRef sp) (oper',modif)
-		      (Array.to_list cl')
+		    interp_modif absfun mkConst (oper',modif) cl'
 		| DO_REPLACE -> substrec (replfun (sp,cl')))
 	   with 
 	     | Not_found -> mkConst (sp,cl'))
   
     | _ -> gather_constr (op, cl')
   in 
-  if oper_alist = [] then fun x -> x else substrec
+  if (constl,indl,cstrl) = ([],[],[]) then fun x -> x else substrec
 
 let expmod_constr oldenv modlist c =
   let sigma = Evd.empty in
   let simpfun = 
-    if modlist = [] then fun x -> x else nf_betaiota oldenv sigma in
+    if modlist = ([],[],[]) then fun x -> x else nf_betaiota oldenv sigma in
   let expfun cst = 
     try 
       constant_value oldenv cst

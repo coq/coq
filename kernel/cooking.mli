@@ -15,18 +15,21 @@ type 'a modification =
   | DO_ABSTRACT of 'a * modification_action list
   | DO_REPLACE
 
-type work_alist = (global_reference * global_reference modification) list
+type work_list =
+    (section_path * section_path modification) list
+    * (inductive_path * inductive_path modification) list
+    * (constructor_path * constructor_path modification) list
 
 type recipe = {
   d_from : section_path;
   d_abstract : identifier list;
-  d_modlist : work_alist }
+  d_modlist : work_list }
 
 val cook_constant : env -> recipe -> constr option * constr
 
 (*s Utility functions used in module [Discharge]. *)
 
-val expmod_constr : env -> work_alist -> constr -> constr
-val expmod_type : env -> work_alist -> types -> types
+val expmod_constr : env -> work_list -> constr -> constr
+val expmod_type : env -> work_list -> types -> types
 
 
