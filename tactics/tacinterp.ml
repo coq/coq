@@ -764,7 +764,8 @@ and intern_tactic_seq ist = function
       ist.ltacvars, TacMatchContext(lr, intern_match_rule ist lmr)
   | TacMatch (c,lmr) ->
       ist.ltacvars, TacMatch (intern_tactic ist c,intern_match_rule ist lmr)
-  | TacId _ | TacFail _ as x -> ist.ltacvars, x
+  | TacId _ as x -> ist.ltacvars, x
+  | TacFail (n,x) -> ist.ltacvars, TacFail (intern_int_or_var ist n,x)
   | TacProgress tac -> ist.ltacvars, TacProgress (intern_tactic ist tac)
   | TacAbstract (tac,s) -> ist.ltacvars, TacAbstract (intern_tactic ist tac,s)
   | TacThen (t1,t2) ->
@@ -776,7 +777,8 @@ and intern_tactic_seq ist = function
       (* Que faire en cas de (tac complexe avec Match et Thens; tac2) ?? *)
       lfun',
       TacThens (t, List.map (intern_tactic { ist with ltacvars = lfun' }) tl)
-  | TacDo (n,tac) -> ist.ltacvars, TacDo (n,intern_tactic ist tac)
+  | TacDo (n,tac) -> 
+      ist.ltacvars, TacDo (intern_int_or_var ist n,intern_tactic ist tac)
   | TacTry tac -> ist.ltacvars, TacTry (intern_tactic ist tac)
   | TacInfo tac -> ist.ltacvars, TacInfo (intern_tactic ist tac)
   | TacRepeat tac -> ist.ltacvars, TacRepeat (intern_tactic ist tac)
@@ -847,7 +849,10 @@ and intern_genarg ist x =
       in_gen globwit_intro_pattern
         (intern_intro_pattern lf ist (out_gen rawwit_intro_pattern x))
   | IdentArgType ->
-      in_gen globwit_ident (snd (intern_hyp ist (dummy_loc,out_gen rawwit_ident x)))
+      let lf = ref ([],[]) in
+      in_gen globwit_ident(intern_ident lf ist (out_gen rawwit_ident x))
+  | HypArgType ->
+      in_gen globwit_var (intern_hyp ist (out_gen rawwit_var x))
   | RefArgType ->
       in_gen globwit_ref (intern_global_reference ist (out_gen rawwit_ref x))
   | SortArgType ->
@@ -1324,13 +1329,13 @@ and eval_tactic ist = function
   | TacMatchContext _ -> assert false
   | TacMatch (c,lmr) -> assert false
   | TacId s -> tclIDTAC_MESSAGE s
-  | TacFail (n,s) -> tclFAIL n s
+  | TacFail (n,s) -> tclFAIL (interp_int_or_var ist n) s
   | TacProgress tac -> tclPROGRESS (interp_tactic ist tac)
   | TacAbstract (tac,s) -> Tactics.tclABSTRACT s (interp_tactic ist tac)
   | TacThen (t1,t2) -> tclTHEN (interp_tactic ist t1) (interp_tactic ist t2)
   | TacThens (t,tl) ->
       tclTHENS (interp_tactic ist t) (List.map (interp_tactic ist) tl)
-  | TacDo (n,tac) -> tclDO n (interp_tactic ist tac)
+  | TacDo (n,tac) -> tclDO (interp_int_or_var ist n) (interp_tactic ist tac)
   | TacTry tac -> tclTRY (interp_tactic ist tac)
   | TacInfo tac -> tclINFO (interp_tactic ist tac)
   | TacRepeat tac -> tclREPEAT (interp_tactic ist tac)
@@ -1572,6 +1577,8 @@ and interp_genarg ist goal x =
         (interp_intro_pattern ist (out_gen globwit_intro_pattern x))
   | IdentArgType ->
       in_gen wit_ident (interp_ident ist (out_gen globwit_ident x))
+  | HypArgType ->
+      in_gen wit_var (mkVar (interp_hyp ist goal (out_gen globwit_var x)))
   | RefArgType ->
       in_gen wit_ref (pf_interp_reference ist goal (out_gen globwit_ref x))
   | SortArgType ->
@@ -1778,13 +1785,13 @@ and interp_atomic ist gl = function
     | IntOrVarArgType -> 
 	VInteger (interp_int_or_var ist (out_gen globwit_int_or_var x))
     | PreIdentArgType ->
-        VIntroPattern
-	  (IntroIdentifier (id_of_string (out_gen globwit_pre_ident x)))
+	failwith "pre-identifiers cannot be bound"
     | IntroPatternArgType ->
 	VIntroPattern (out_gen globwit_intro_pattern x)
     | IdentArgType -> 
-	VConstr 
-	  (mkVar (interp_hyp ist gl (dummy_loc,out_gen globwit_ident x)))
+        VIntroPattern (IntroIdentifier (out_gen globwit_ident x))
+    | HypArgType ->
+	VConstr (mkVar (interp_var ist gl (out_gen globwit_var x)))
     | RefArgType -> 
         VConstr (constr_of_reference 
           (pf_interp_reference ist gl (out_gen globwit_ref x)))
@@ -2069,6 +2076,7 @@ and subst_genarg subst (x:glob_generic_argument) =
   | IntroPatternArgType ->
       in_gen globwit_intro_pattern (out_gen globwit_intro_pattern x)
   | IdentArgType -> in_gen globwit_ident (out_gen globwit_ident x)
+  | HypArgType -> in_gen globwit_var (out_gen globwit_var x)
   | RefArgType ->
       in_gen globwit_ref (subst_global_reference subst 
 	(out_gen globwit_ref x))

@@ -806,7 +806,8 @@ and xlate_tactic =
    | TacFirst(t1::l)-> CT_first(xlate_tactic t1, List.map xlate_tactic l)
    | TacSolve([]) -> assert false
    | TacSolve(t1::l)-> CT_tacsolve(xlate_tactic t1, List.map xlate_tactic l)
-   | TacDo(n, t) -> CT_do(CT_int n, xlate_tactic t)
+   | TacDo(ArgArg n, t) -> CT_do(CT_int n, xlate_tactic t)
+   | TacDo(ArgVar _, t) -> xlate_error "Parametric tacticals 'do'"
    | TacTry t -> CT_try (xlate_tactic t)
    | TacRepeat t -> CT_repeat(xlate_tactic t)
    | TacAbstract(t,id_opt) -> 
@@ -873,8 +874,9 @@ and xlate_tactic =
 		   (xlate_local_rec_tac f1, List.map xlate_local_rec_tac l) in
        CT_rec_tactic_in(tl, xlate_tactic t)
    | TacAtom (_, t) -> xlate_tac t 
-   | TacFail (n,"") -> CT_fail(CT_int n, ctf_STRING_OPT_NONE)
-   | TacFail (n,s) -> CT_fail(CT_int n, ctf_STRING_OPT_SOME (CT_string s))
+   | TacFail (ArgArg n,"") -> CT_fail(CT_int n, ctf_STRING_OPT_NONE)
+   | TacFail (ArgArg n,s) -> CT_fail(CT_int n, ctf_STRING_OPT_SOME (CT_string s))
+   | TacFail (ArgVar _, _) -> xlate_error "Parametric tacticals 'fail'"
    | TacId "" -> CT_idtac ctf_STRING_OPT_NONE
    | TacId s -> CT_idtac(ctf_STRING_OPT_SOME (CT_string s))
    | TacInfo t -> CT_info(xlate_tactic t)
@@ -1232,6 +1234,8 @@ and coerce_genarg_to_TARG x =
 	CT_coerce_FORMULA_OR_INT_to_TARG
 	  (CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
 	     (CT_coerce_ID_to_ID_OR_INT id))
+  | HypArgType ->
+      xlate_error "TODO (similar to IdentArgType)"
   | RefArgType ->
       let id = tac_qualid_to_ct_ID (out_gen rawwit_ref x) in
 	CT_coerce_FORMULA_OR_INT_to_TARG
@@ -1324,6 +1328,8 @@ let coerce_genarg_to_VARG x =
       CT_coerce_ID_OPT_OR_ALL_to_VARG
 	      (CT_coerce_ID_OPT_to_ID_OPT_OR_ALL
 	        (CT_coerce_ID_to_ID_OPT id))
+  | HypArgType ->
+      xlate_error "TODO (similar to IdentArgType)"
   | RefArgType ->
       let id = tac_qualid_to_ct_ID (out_gen rawwit_ref x) in
       CT_coerce_ID_OPT_OR_ALL_to_VARG
