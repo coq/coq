@@ -236,7 +236,8 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
 	    (Array.map (expmod_type oldenv modlist) (mind_user_lc mip))))
       mib.mind_packets
   in
-  let (inds',modl) = abstract_inductive ids_to_discard mib.mind_hyps inds in
+  let hyps' = map_var_context (expmod_constr oldenv modlist) mib.mind_hyps in
+  let (inds',modl) = abstract_inductive ids_to_discard hyps' inds in
   let lmodif_one_mind i = 
     let nbc = Array.length (mind_nth_type_packet mib i).mind_consnames in 
     (IndRef (osecsp,i), DO_ABSTRACT (IndRef(nsecsp,i),modl))::
