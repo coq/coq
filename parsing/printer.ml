@@ -39,14 +39,14 @@ let tactic_initial_prec = Some ((tactic_syntax_universe,(9,0,0)),Ppextend.L)
 
 let prterm_env_at_top env = gentermpr_core true env
 let prterm_env env = gentermpr_core false env
-let prterm = prterm_env (Global.env())
-
 let prtype_env env typ = prterm_env env typ
-let prtype = prtype_env (Global.env())
-
 let prjudge_env env j =
   (prterm_env env j.uj_val, prterm_env env j.uj_type)
-let prjudge = prjudge_env (Global.env())
+
+(* NB do not remove the eta-redexes! Global.env() has side-effects... *)
+let prterm t = prterm_env (Global.env()) t
+let prtype t = prtype_env (Global.env()) t
+let prjudge j = prjudge_env (Global.env()) j
 
 let fprterm_env a =
   warning "Fw printing not implemented, use CCI printing 1"; prterm_env a
