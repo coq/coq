@@ -26,15 +26,7 @@ open Tacexpr
 let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c
 
 (* Construction of constants *)
-let constant dir s =
-  let dir = make_dirpath
-    (List.map id_of_string (List.rev ("Coq"::"field"::dir))) in
-  let id = id_of_string s in
-  try 
-    Declare.global_reference_in_absolute_module dir id
-  with Not_found ->
-    anomaly ("Field: cannot find "^
-	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))
+let constant dir s = Coqlib.gen_constant "Field" ("field"::dir) s
 
 (* To deal with the optional arguments *)
 let constr_of_opt a opt =

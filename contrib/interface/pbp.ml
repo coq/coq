@@ -222,29 +222,21 @@ let (imply_elim2: pbp_rule) = function
            make_clears clear_names]))
   | _ -> None;;
 
-let reference dir s =
-  let dir = make_dirpath
-              (List.map id_of_string (List.rev ("Coq"::"Init"::[dir]))) in
-  let id = id_of_string s in
-  try 
-    Nametab.absolute_reference (Libnames.make_path dir id)
-  with Not_found ->
-    anomaly ("Coqlib: cannot find "^
-	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))
+let reference dir s = Coqlib.gen_reference "Pbp" ("Init"::dir) s
 
-let constant dir s =  constr_of_reference (reference dir s);;
+let constant dir s =  Coqlib.gen_constant "Pbp" ("Init"::dir) s
 
 let andconstr: unit -> constr = Coqlib.build_coq_and;;
-let prodconstr () = constant "Datatypes" "prod";;
+let prodconstr () = constant ["Datatypes"] "prod";;
 let exconstr = Coqlib.build_coq_ex;;
-let exTconstr () = constant "Logic_Type" "exT";;
-let sigconstr () = constant "Specif" "sig";;
+let exTconstr () = constant ["Logic_Type"] "exT";;
+let sigconstr () = constant ["Specif"] "sig";;
 let sigTconstr () = (Coqlib.build_sigma_type()).Coqlib.typ;;
 let orconstr = Coqlib.build_coq_or;;
 let sumboolconstr = Coqlib.build_coq_sumbool;;
-let sumconstr() = constant "Datatypes" "sum";;
+let sumconstr() = constant ["Datatypes"] "sum";;
 let notconstr = Coqlib.build_coq_not;;
-let notTconstr () = constant "Logic_Type" "notT";;
+let notTconstr () = constant ["Logic_Type"] "notT";;
 
 let is_matching_local a b = is_matching (pattern_of_constr a) b;;
 

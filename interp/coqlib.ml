@@ -17,6 +17,22 @@ open Pattern
 open Nametab
 
 let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
+
+let gen_reference locstr dir s =
+  let dir = make_dir ("Coq"::dir) in
+  let id = id_of_string s in
+  try 
+    Nametab.absolute_reference (Libnames.make_path dir id)
+  with Not_found ->
+    anomaly (locstr^": cannot find "^(string_of_qualid (make_qualid dir id)))
+
+let gen_constant locstr dir s = 
+  constr_of_reference (gen_reference locstr dir s)
+
+let init_reference dir s=gen_reference "Coqlib" ("Init"::dir) s
+
+let init_constant dir s=gen_constant "Coqlib" ("Init"::dir) s  
+
 let coq_id = id_of_string "Coq"
 let init_id = id_of_string "Init"
 let arith_id = id_of_string "Arith"
@@ -45,16 +61,6 @@ let eqT_path = make_path logic_module (id_of_string "eq")
 let glob_eq = IndRef (eq_path,0)
 let glob_eqT = IndRef (eqT_path,0)
 
-let reference dir s =
-  let dir = make_dir ("Coq"::"Init"::[dir]) in
-  let id = id_of_string s in
-  try 
-    Nametab.absolute_reference (Libnames.make_path dir id)
-  with Not_found ->
-    anomaly ("Coqlib: cannot find "^(string_of_qualid (make_qualid dir id)))
-
-let constant dir s = constr_of_reference (reference dir s)
-
 type coq_sigma_data = {
   proj1 : constr;
   proj2 : constr;
@@ -65,18 +71,18 @@ type coq_sigma_data = {
 type 'a delayed = unit -> 'a
 
 let build_sigma_set () =
-  { proj1 = constant "Specif" "projS1";
-    proj2 = constant "Specif" "projS2";
-    elim = constant "Specif" "sigS_rec";
-    intro = constant "Specif" "existS";
-    typ = constant "Specif" "sigS" }
+  { proj1 = init_constant ["Specif"] "projS1";
+    proj2 = init_constant ["Specif"] "projS2";
+    elim = init_constant ["Specif"] "sigS_rec";
+    intro = init_constant ["Specif"] "existS";
+    typ = init_constant ["Specif"] "sigS" }
 
 let build_sigma_type () =
-  { proj1 = constant "Specif" "projT1";
-    proj2 = constant "Specif" "projT2";
-    elim = constant "Specif" "sigT_rec";
-    intro = constant "Specif" "existT";
-    typ = constant "Specif" "sigT" }
+  { proj1 = init_constant ["Specif"] "projT1";
+    proj2 = init_constant ["Specif"] "projT2";
+    elim = init_constant ["Specif"] "sigT_rec";
+    intro = init_constant ["Specif"] "existT";
+    typ = init_constant ["Specif"] "sigT" }
 
 (* Equalities *)
 type coq_leibniz_eq_data = {
@@ -87,16 +93,16 @@ type coq_leibniz_eq_data = {
   congr: constr delayed;
   sym  : constr delayed }
 
-let constant dir id = lazy (constant dir id)
+let lazy_init_constant dir id = lazy (init_constant dir id)
 
 (* Equality on Set *)
-let coq_eq_eq = constant "Logic" "eq"
-let coq_eq_ind = constant "Logic" "eq_ind"
-let coq_eq_rec = constant "Logic" "eq_rec"
-let coq_eq_rect = constant "Logic" "eq_rect"
-let coq_eq_congr = constant "Logic" "f_equal"
-let coq_eq_sym  = constant "Logic" "sym_eq"
-let coq_f_equal2 = constant "Logic" "f_equal2"
+let coq_eq_eq = lazy_init_constant ["Logic"] "eq"
+let coq_eq_ind = lazy_init_constant ["Logic"] "eq_ind"
+let coq_eq_rec = lazy_init_constant ["Logic"] "eq_rec"
+let coq_eq_rect = lazy_init_constant ["Logic"] "eq_rect"
+let coq_eq_congr = lazy_init_constant ["Logic"] "f_equal"
+let coq_eq_sym  = lazy_init_constant ["Logic"] "sym_eq"
+let coq_f_equal2 = lazy_init_constant ["Logic"] "f_equal2"
 
 let build_coq_eq_data = {
   eq = (fun () -> Lazy.force coq_eq_eq);
@@ -110,15 +116,16 @@ let build_coq_eq = build_coq_eq_data.eq
 let build_coq_f_equal2 () = Lazy.force coq_f_equal2
 
 (* Specif *)
-let coq_sumbool  = constant "Specif" "sumbool"
+let coq_sumbool  = lazy_init_constant ["Specif"] "sumbool"
 
 let build_coq_sumbool () = Lazy.force coq_sumbool
 
 (* Equality on Type *)
-let coq_eqT_eq = constant "Logic" "eq"
-let coq_eqT_ind = constant "Logic" "eq_ind"
-let coq_eqT_congr =constant "Logic" "f_equal"
-let coq_eqT_sym  = constant "Logic" "sym_eq"
+
+let coq_eqT_eq = lazy_init_constant ["Logic"] "eq"
+let coq_eqT_ind = lazy_init_constant ["Logic"] "eq_ind"
+let coq_eqT_congr =lazy_init_constant ["Logic"] "f_equal"
+let coq_eqT_sym  = lazy_init_constant ["Logic"] "sym_eq"
 
 let build_coq_eqT_data = {
   eq = (fun () -> Lazy.force coq_eqT_eq);
@@ -132,12 +139,12 @@ let build_coq_eqT = build_coq_eqT_data.eq
 let build_coq_sym_eqT = build_coq_eqT_data.sym
 
 (* Equality on Type as a Type *)
-let coq_idT_eq = constant "Logic_Type" "identityT"
-let coq_idT_ind = constant "Logic_Type" "identityT_ind"
-let coq_idT_rec = constant "Logic_Type" "identityT_rec"
-let coq_idT_rect = constant "Logic_Type" "identityT_rect"
-let coq_idT_congr = constant "Logic_Type" "congr_idT"
-let coq_idT_sym = constant "Logic_Type" "sym_idT"
+let coq_idT_eq = lazy_init_constant ["Logic_Type"] "identityT"
+let coq_idT_ind = lazy_init_constant ["Logic_Type"] "identityT_ind"
+let coq_idT_rec = lazy_init_constant ["Logic_Type"] "identityT_rec"
+let coq_idT_rect = lazy_init_constant ["Logic_Type"] "identityT_rect"
+let coq_idT_congr = lazy_init_constant ["Logic_Type"] "congr_idT"
+let coq_idT_sym = lazy_init_constant ["Logic_Type"] "sym_idT"
 
 let build_coq_idT_data = {
   eq = (fun () -> Lazy.force coq_idT_eq);
@@ -148,24 +155,24 @@ let build_coq_idT_data = {
   sym  = (fun () -> Lazy.force coq_idT_sym) }
 
 (* Empty Type *)
-let coq_EmptyT = constant "Logic_Type" "EmptyT"
+let coq_EmptyT = lazy_init_constant ["Logic_Type"] "EmptyT"
 
 (* Unit Type and its unique inhabitant *)
-let coq_UnitT  = constant "Logic_Type" "UnitT"
-let coq_IT     = constant "Logic_Type" "IT"
+let coq_UnitT  = lazy_init_constant ["Logic_Type"] "UnitT"
+let coq_IT     = lazy_init_constant ["Logic_Type"] "IT"
 
 (* The False proposition *)
-let coq_False  = constant "Logic" "False"
+let coq_False  = lazy_init_constant ["Logic"] "False"
 
 (* The True proposition and its unique proof *)
-let coq_True   = constant "Logic" "True"
-let coq_I      = constant "Logic" "I"
+let coq_True   = lazy_init_constant ["Logic"] "True"
+let coq_I      = lazy_init_constant ["Logic"] "I"
 
 (* Connectives *)
-let coq_not = constant "Logic" "not"
-let coq_and = constant "Logic" "and"
-let coq_or = constant "Logic" "or"
-let coq_ex = constant "Logic" "ex"
+let coq_not = lazy_init_constant ["Logic"] "not"
+let coq_and = lazy_init_constant ["Logic"] "and"
+let coq_or = lazy_init_constant ["Logic"] "or"
+let coq_ex = lazy_init_constant ["Logic"] "ex"
 
 (* Runtime part *)
 let build_coq_EmptyT () = Lazy.force coq_EmptyT
@@ -216,15 +223,15 @@ let coq_eqdec_pattern =
 *)
 
 (* The following is less readable but does not depend on parsing *)
-let coq_eq_ref      = lazy (reference "Logic" "eq")
-let coq_eqT_ref     = lazy (reference "Logic" "eq")
-let coq_idT_ref     = lazy (reference "Logic_Type" "identityT")
-let coq_existS_ref  = lazy (reference "Specif" "existS")
-let coq_existT_ref  = lazy (reference "Specif" "existT")
-let coq_not_ref     = lazy (reference "Logic" "not")
-let coq_False_ref   = lazy (reference "Logic" "False")
-let coq_sumbool_ref = lazy (reference "Specif" "sumbool")
-let coq_sig_ref = lazy (reference "Specif" "sig")
+let coq_eq_ref      = lazy (init_reference ["Logic"] "eq")
+let coq_eqT_ref     = lazy (init_reference ["Logic"] "eq")
+let coq_idT_ref     = lazy (init_reference ["Logic_Type"] "identityT")
+let coq_existS_ref  = lazy (init_reference ["Specif"] "existS")
+let coq_existT_ref  = lazy (init_reference ["Specif"] "existT")
+let coq_not_ref     = lazy (init_reference ["Logic"] "not")
+let coq_False_ref   = lazy (init_reference ["Logic"] "False")
+let coq_sumbool_ref = lazy (init_reference ["Specif"] "sumbool")
+let coq_sig_ref = lazy (init_reference ["Specif"] "sig")
 
 (* Pattern "(sig ?1 ?2)" *)
 let coq_sig_pattern = 

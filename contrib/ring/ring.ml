@@ -38,14 +38,7 @@ open Quote
 let mt_evd = Evd.empty
 let constr_of c = Constrintern.interp_constr mt_evd (Global.env()) c
 
-let constant dir s =
-  let dir = make_dirpath (List.map id_of_string (List.rev ("Coq"::dir))) in
-  let id = id_of_string s in
-  try 
-    Declare.global_reference_in_absolute_module dir id
-  with Not_found ->
-    anomaly ("Ring: cannot find "^
-	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))
+let constant = Coqlib.gen_constant "Ring"
 
 (* Ring theory *)
 let coq_Ring_Theory = lazy (constant ["ring";"Ring_theory"] "Ring_Theory")

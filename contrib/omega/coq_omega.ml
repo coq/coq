@@ -193,14 +193,7 @@ let recognize_number t =
  To use the constant Zplus, one must type "Lazy.force coq_Zplus"
  This is the right way to access to Coq constants in tactics ML code *)
 
-let constant dir s =
-  let dir = make_dirpath (List.map id_of_string (List.rev ("Coq"::dir))) in
-  let id = id_of_string s in
-  try 
-    Declare.global_reference_in_absolute_module dir id
-  with Not_found ->
-    anomaly ("Coq_omega: cannot find "^
-	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))
+let constant = Coqlib.gen_constant "Omega"
 
 let arith_constant dir = constant ("Arith"::dir)
 let zarith_constant dir = constant ("ZArith"::dir)

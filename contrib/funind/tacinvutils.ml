@@ -66,22 +66,12 @@ let prNamedLConstr s lc =
     prNamedLConstr_aux lc
   end
 
-
-(* tire de const\_omega.ml *)
-let constant dir s =
-  try
-    Declare.global_absolute_reference
-      (Libnames.make_path
-        (Names.make_dirpath (List.map Names.id_of_string (List.rev dir)))
-        (Names.id_of_string s))
-  with e -> print_endline (String.concat "." dir); print_endline s; 
-            raise e
-(* fin const\_omega.ml *)
+let constant =Coqlib.gen_constant "Funind"
 
 let mkEq typ c1 c2 = 
   mkApp (build_coq_eq_data.eq(),[| typ; c1; c2|])
 let mkRefl typ c1 = 
-  mkApp ((constant ["Coq"; "Init"; "Logic"] "refl_equal"),
+  mkApp ((constant ["Init"; "Logic"] "refl_equal"),
          [| typ; c1|])
 
 let rec popn i c = if i<=0 then c else pop (popn (i-1) c)
@@ -183,7 +173,7 @@ let nth_dep_constructor indtype n =
   build_dependent_constructor cstr_sum,  cstr_sum.cs_nargs
 
 
-let coq_refl_equal = lazy(constant ["Coq"; "Init"; "Logic"] "refl_equal")
+let coq_refl_equal = lazy(constant ["Init"; "Logic"] "refl_equal")
 
 let rec buildrefl_from_eqs eqs = 
   match eqs with 

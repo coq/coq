@@ -32,13 +32,13 @@ exception Not_an_eq
 
 let fail()=raise Not_an_eq
     
-let constr_of_string s () =
-  constr_of_reference (Nametab.locate (qualid_of_string s))
 
-let eq2eqT_theo = constr_of_string "Coq.Logic.Eqdep_dec.eq2eqT"
-let eqT2eq_theo = constr_of_string "Coq.Logic.Eqdep_dec.eqT2eq"
-let congr_theo = constr_of_string "Coq.cc.CC.Congr_nodep"
-let congr_dep_theo = constr_of_string "Coq.cc.CC.Congr_dep"
+let constant dir s = lazy (Coqlib.gen_constant "CC" dir s)
+
+let eq2eqT_theo = constant ["Logic";"Eqdep_dec"] "eq2eqT"
+let eqT2eq_theo = constant ["Logic";"Eqdep_dec"] "eqT2eq"
+let congr_theo = constant ["cc";"CC"] "Congr_nodep"
+let congr_dep_theo = constant ["cc";"CC"] "Congr_dep"
 
 let fresh_id1=id_of_string "eq1" and fresh_id2=id_of_string "eq2"
     
@@ -104,7 +104,7 @@ let st_wrap theo tac=
 (* generate an adhoc tactic following the proof tree  *)
 
 let rec proof_tac uf axioms=function
-    Ax id->(fun gl->(st_wrap (eq2eqT_theo ()) (exact_check (mkVar id)) gl))
+    Ax id->(fun gl->(st_wrap (Lazy.force eq2eqT_theo) (exact_check (mkVar id)) gl))
   | Refl t->reflexivity
   | Trans (p1,p2)->let t=(make_term (snd (type_proof uf axioms p1))) in
       (tclTHENS (transitivity t) 
@@ -118,14 +118,14 @@ let rec proof_tac uf axioms=function
 	and ts2=(make_term s2) and tt2=(make_term t2) in
       let typ1=pf_type_of gl ts1 and typ2=pf_type_of gl ts2 in
       let (typb,_,_)=(eq_type_of_term gl.it.evar_concl) in
-      let act=mkApp ((congr_theo ()),[|typ2;typb;ts1;tt1;ts2;tt2|]) in
+      let act=mkApp ((Lazy.force congr_theo),[|typ2;typb;ts1;tt1;ts2;tt2|]) in
       tclORELSE 
 	(tclTHENS 
 	   (apply act)	 
 	   [(proof_tac uf axioms p1);(proof_tac uf axioms p2)])		
 	   (tclTHEN
 	      (let p=mkLambda(destProd typ1) in
-	      let acdt=mkApp((congr_dep_theo ()),[|typ2;p;ts1;tt1;ts2|]) in 
+	      let acdt=mkApp((Lazy.force congr_dep_theo),[|typ2;p;ts1;tt1;ts2|]) in 
 	      apply acdt) (proof_tac uf axioms p1))
 	gl)
 
@@ -139,7 +139,7 @@ let cc_tactic gl_sg=
   match (cc_proof prb) with
     None->errorlabstrm  "CC" [< str "CC couldn't solve goal" >] 
   | Some (p,uf,axioms)->let tac=proof_tac uf axioms p in
-    (tclORELSE (st_wrap (eqT2eq_theo ()) tac)
+    (tclORELSE (st_wrap (Lazy.force eqT2eq_theo) tac)
        (fun _->errorlabstrm  "CC" 
 	  [< str "CC doesn't know how to handle dependent equality." >]) gl_sg)
 

@@ -119,15 +119,7 @@ open Tacexpr
   We do that lazily, because this code can be linked before
   the constants are loaded in the environment *)
 
-let constant dir s =
-  let dir = make_dirpath
-              (List.map id_of_string (List.rev ("Coq"::"ring"::dir))) in
-  let id = id_of_string s in
-  try 
-    Declare.global_reference_in_absolute_module dir id
-  with Not_found ->
-    anomaly ("Quote: cannot find "^
-	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))
+let constant dir s = Coqlib.gen_constant "Quote" ("ring"::dir) s
 
 let coq_Empty_vm = lazy (constant ["Quote"] "Empty_vm")
 let coq_Node_vm = lazy (constant ["Quote"] "Node_vm")

@@ -19,6 +19,12 @@ open Pattern
 (*s This module collects the global references, constructions and
     patterns of the standard library used in ocaml files *)
 
+(*s Some utilities, the first argument is used for error messages.
+    Must be used lazyly. s*)
+
+val gen_reference : string->string list -> string -> global_reference
+val gen_constant : string->string list -> string -> constr
+
 (*s Global references *)
 
 (* Modules *)
