@@ -16,3 +16,7 @@ TACTIC EXTEND Simplify
   [ "simplify" ] -> [ simplify ]
 END
 
+(* should be part of basic tactics syntax *)
+TACTIC EXTEND admit
+  [ "admit"    ] -> [ Tactics.admit_as_an_axiom ]
+END

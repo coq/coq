@@ -1910,3 +1910,32 @@ let tclABSTRACT name_op tac gls =
     | None   -> add_suffix (get_current_proof_name ()) "_subproof" 
   in  
   abstract_subproof s tac gls
+
+
+let admit_as_an_axiom gls =
+  let env = Global.env() in
+  let current_sign = Global.named_context()
+  and global_sign = pf_hyps gls in
+  let sign,secsign = 
+    List.fold_right
+      (fun (id,_,_ as d) (s1,s2) -> 
+	 if mem_named_context id current_sign &
+           interpretable_as_section_decl (Sign.lookup_named id current_sign) d
+         then (s1,add_named_decl d s2)
+	 else (add_named_decl d s1,s2)) 
+      global_sign (empty_named_context,empty_named_context) in
+  let name = add_suffix (get_current_proof_name ()) "_admitted" in
+  let na = next_global_ident_away false name (pf_ids_of_hyps gls) in
+  let concl = it_mkNamedProd_or_LetIn (pf_concl gls) sign in
+  if occur_existential concl then
+    if !Options.v7 then error "admit cannot handle existentials"
+    else error "\"admit\" cannot handle existentials";
+  let axiom =
+    let cd = Entries.ParameterEntry concl in
+    let con = Declare.declare_internal_constant na (cd,IsAssumption Logical) in
+    constr_of_global (ConstRef con)
+  in
+  exact_no_check 
+    (applist (axiom, 
+              List.rev (Array.to_list (instance_from_named_context sign))))
+    gls

@@ -14,8 +14,14 @@ let rec print_term fmt = function
       fprintf fmt "%s" id
   | Cst n -> 
       fprintf fmt "%d" n
-  | Plus _ | Moins _ | Div _ | Mult _ ->
-      assert false (*TODO*) (* (+ a b) *)
+  | Plus (a, b) ->
+      fprintf fmt "@[(+@ %a@ %a)@]" print_term a print_term b
+  | Moins (a, b) ->
+      fprintf fmt "@[(-@ %a@ %a)@]" print_term a print_term b
+  | Mult (a, b) ->
+      fprintf fmt "@[(*@ %a@ %a)@]" (**) print_term a print_term b
+  | Div (a, b) ->
+      fprintf fmt "@[(/@ %a@ %a)@]" print_term a print_term b
   | App (id, []) ->
       fprintf fmt "%s" id 
   | App (id, tl) ->
@@ -38,11 +44,15 @@ let rec print_predicate fmt p =
   | Fatom (Eq (a, b)) ->
       fprintf fmt "@[(EQ %a@ %a)@]" print_term a print_term b
   | Fatom (Le (a, b)) ->
-      fprintf fmt "@[(<= %a %a)@]" print_term a print_term b
+      fprintf fmt "@[(<= %a@ %a)@]" print_term a print_term b
+  | Fatom (Lt (a, b))->
+      fprintf fmt "@[(< %a@ %a)@]" print_term a print_term b
+  | Fatom (Ge (a, b)) ->
+      fprintf fmt "@[(>= %a@ %a)@]" print_term a print_term b
+  | Fatom (Gt (a, b)) ->
+      fprintf fmt "@[(> %a@ %a)@]" print_term a print_term b
   | Fatom (Pred (id, tl)) -> 
       fprintf fmt "@[(EQ (%s@ %a) |@@true|)@]" id print_terms tl
-  | Fatom _ ->
-      assert false (*TODO*)
   | Imp (a, b) ->
       fprintf fmt "@[(IMPLIES@ %a@ %a)@]" pp a pp b
   | And (a, b) ->
