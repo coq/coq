@@ -60,17 +60,12 @@ let print_no_symbol = ref false
 
 let print_meta_as_hole = ref false
 
-let with_option o f x =
-  let old = !o in o:=true;
-  try let r = f x in o := old; r
-  with e -> o := old; raise e
-
-let with_arguments f = with_option print_arguments f
-let with_implicits f = with_option print_implicits f
-let with_coercions f = with_option print_coercions f
-let with_universes f = with_option print_universes f
-let without_symbols f = with_option print_no_symbol f
-let with_meta_as_hole f = with_option print_meta_as_hole f
+let with_arguments f = Options.with_option print_arguments f
+let with_implicits f = Options.with_option print_implicits f
+let with_coercions f = Options.with_option print_coercions f
+let with_universes f = Options.with_option print_universes f
+let without_symbols f = Options.with_option print_no_symbol f
+let with_meta_as_hole f = Options.with_option print_meta_as_hole f
 
 (**********************************************************************)
 (* Various externalisation functions *)

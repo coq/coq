@@ -38,6 +38,9 @@ val silently : ('a -> 'b) -> 'a -> 'b
 val if_silent : ('a -> unit) -> 'a -> unit
 val if_verbose : ('a -> unit) -> 'a -> unit
 
+(* Temporary activate an option ('c must be an atomic type) *)
+val with_option : bool ref -> ('a -> 'b) -> 'a -> 'b
+
 (* If [None], no limit *)
 val set_print_hyps_limit : int option -> unit
 val print_hyps_limit : unit -> int option
