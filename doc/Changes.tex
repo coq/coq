@@ -39,11 +39,13 @@ provided by Yves Bertot (see section \ref{Search})
 (see section~\ref{NewTactics})
 \item The tactic {\tt Field} which solves equalities using commutative field
 theory (see section~\ref{NewTactics})
+\item The tactic {\tt Fourier} to solve inequalities, developed by
+  Loïc Pottier has been integrated
 \item A command to export theories to XML to
 be used with Helm's publishing and rendering tools (see section
 \ref{XML})
 \item A new implementation of extraction (see section \ref{Extraction})
-\item As usual, several bugs fixed and a lot of new ones introduced
+%\item As usual, several bugs fixed and a lot of new ones introduced
 \end{itemize}
 
 Incompatibilities are described in section
@@ -54,8 +56,8 @@ Developers of tactics in ML are invited to read section
 
 The main changes between \Coq{} V7beta and \Coq{} V7 are~:
 \begin{itemize}
-\item \texttt{Correctness} is now supported in \Coq V7.
-\item A new mechanism for extraction has been introduced.
+\item \texttt{Correctness} is now supported.
+\item A new mechanism for extraction of ML programs has been introduced.
 \item Some functionalities of \Coq{} V6 has been restored~:
   \begin{itemize}
   \item Syntax for user-defined tactics calls does not require extra
@@ -304,8 +306,13 @@ The names of directories in \texttt{theories} has been changed. The
 directory \texttt{theories/Zarith} has been renamed
 \texttt{theories/ZArith} between \Coq{} V7.0beta and V7.0.
 
-Some definitions, lemmas and theorems have been added or reorganised, see the Library
-documentation for more information.
+A new directory \texttt{theories/IntMap} has been added which
+contains an efficient representation of finite sets 
+as maps indexed by binary integers. This development has been
+developed by J. Goubault and was previously an external contribution.
+
+Some definitions, lemmas and theorems have been added or reorganised,
+see the Library documentation for more information.
 
 \section{Tactics}
 \label{Tactics}
