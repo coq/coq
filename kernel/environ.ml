@@ -116,6 +116,12 @@ let push_rels_to_vars env =
     env.env_context.env_rel_context ([],ids_of_var_context sign0,sign0)
   in subst, (var_context_app (fun _ -> sign) env)
 
+let push_rec_types (typarray,names,_) env =
+  let vect_lift_type = Array.mapi (fun i t -> outcast_type (lift i t)) in
+  let nlara = 
+    List.combine (List.rev names) (Array.to_list (vect_lift_type typarray)) in
+  List.fold_left (fun env nvar -> push_rel_decl nvar env) env nlara
+
 let reset_rel_context env =
   { env with
       env_context = { env_var_context = env.env_context.env_var_context;
