@@ -25,7 +25,8 @@ open Quote;;
 let mt_evd = Evd.empty
 let constr_of com = Astterm.interp_constr mt_evd (Global.env()) com
 
-let constant dir s = Declare.global_qualified_reference (make_qualid dir s)
+let constant dir s =
+  Declare.global_absolute_reference (make_path dir (id_of_string s) CCI)
 
 (* Ring_theory *)
 

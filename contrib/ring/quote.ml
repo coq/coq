@@ -112,7 +112,8 @@ open Proof_type
   We do that lazily, because this code can be linked before
   the constants are loaded in the environment *)
 
-let constant dir s = Declare.global_qualified_reference (make_qualid dir s)
+let constant dir s =
+  Declare.global_absolute_reference (make_path dir (id_of_string s) CCI)
 
 let coq_Empty_vm = lazy (constant ["Quote"] "Empty_vm")
 let coq_Node_vm = lazy (constant ["Quote"] "Node_vm")

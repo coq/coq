@@ -211,7 +211,8 @@ let recognize_number t =
  To use the constant Zplus, one must type "Lazy.force coq_Zplus"
  This is the right way to access to Coq constants in tactics ML code *)
 
-let constant dir s = Declare.global_qualified_reference (make_qualid dir s)
+let constant dir s =
+  Declare.global_absolute_reference (make_path dir (id_of_string s) CCI)
 
 (* fast_integer *)
 let coq_xH = lazy (constant ["fast_integer"] "xH")
