@@ -416,7 +416,7 @@ let inductive_of_fix env recarg body =
    subterm_specif env c ind 
 
    subterm_specif should test if [c] (building objects of inductive
-   type [ind], not necassarily the same as that of the recursive
+   type [ind], not necessarily the same as that of the recursive
    argument) is a subterm of the recursive argument of the fixpoint we
    are checking and fails with Not_found if not. In case it is, it
    should send its recursive specification (i.e. on which arguments we
