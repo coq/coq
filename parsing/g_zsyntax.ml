@@ -171,10 +171,10 @@ let pos_of_bignat dloc x =
   pos_of x
 
 let interp_positive dloc = function
-  | POS n -> pos_of_bignat dloc n
-  | NEG n ->
+  | POS n when is_nonzero n -> pos_of_bignat dloc n
+  | _ ->
       user_err_loc (dloc, "interp_positive",
-        str "No negative number in type \"positive\"!")
+        str "Only strictly positive numbers in type \"positive\"!")
 
 let rec pat_pos_of_bignat dloc x name =
   match div2_with_rest x with
