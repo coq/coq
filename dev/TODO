@@ -1,6 +1,14 @@
 
- o Termes
-     - introduire un constructeur pour les variables existentielles
+ o Discharge
+     - conserver les constantes dans leur section de définition
+       et redéfinir des constantes déchargées à la sortie
+
+ o Variables existentielles
+     - traiter le constructeur Evar dans les fonctions de réductions
+       (parallèlement à Const)
+     - ajouter dans Environ des fonctions d'introduction et de recherche
+       des ve
+     - unifier Meta et Evar
 
  o Lib
      - écrire une fonction d'export qui supprimme les FrozenState,
