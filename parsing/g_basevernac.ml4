@@ -88,6 +88,8 @@ GEXTEND Gram
 	  VernacSearch (SearchPattern c, l)
       | IDENT "SearchRewrite"; c = constr_pattern; l = in_or_out_modules ->
 	  VernacSearch (SearchRewrite c, l)
+      | IDENT "SearchAbout"; qid = global; l = in_or_out_modules -> 
+	  VernacSearch (SearchAbout qid, l)
 
       (* TODO: rapprocher Eval et Check *)
       | IDENT "Eval"; r = Tactic.red_expr; "in";

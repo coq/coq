@@ -33,11 +33,11 @@ open Nametab
 
 let print_constructors indsp fn env mip =
   let lc = mip.mind_user_lc in
-  for i=1 to Array.length lc do
-      fn (ConstructRef (indsp,i)) env
-	(Retyping.get_type_of env Evd.empty
-	   (Pretyping.understand Evd.empty env
-	      (RRef(dummy_loc, ConstructRef(indsp,i)))))
+  for i = 1 to Array.length lc do
+    fn (ConstructRef (indsp,i)) env
+      (Retyping.get_type_of env Evd.empty
+	 (Pretyping.understand Evd.empty env
+	    (RRef(dummy_loc, ConstructRef(indsp,i)))))
   done
 
 let rec head_const c = match kind_of_term c with
@@ -59,11 +59,11 @@ let crible (fn : global_reference -> env -> constr -> unit) ref =
              if (head_const typ) = const then fn (VarRef idc) env typ
 	   with Not_found -> (* we are in a section *) ())
       | "CONSTANT" ->
-	  let kn=locate_constant (qualid_of_sp sp) in
+	  let kn = locate_constant (qualid_of_sp sp) in
 	  let {const_type=typ} = Global.lookup_constant kn in
 	  if (head_const typ) = const then fn (ConstRef kn) env typ
       | "INDUCTIVE" -> 
-	  let kn=locate_mind (qualid_of_sp sp) in
+	  let kn = locate_mind (qualid_of_sp sp) in
           let mib = Global.lookup_mind kn in 
 (*	  let arities =
 	    array_map_to_list 
@@ -189,5 +189,46 @@ let search_rewrite pat inout =
 
 let search_pattern pat inout =
   text_pattern_search (filter_by_module_from_list inout) pat
+
+
+(* General search, not restricted to head constant *)
+
+let gen_crible (fn : global_reference -> env -> constr -> unit) =
+  let env = Global.env () in
+  let imported = Library.opened_libraries() in
+  let crible_rec (sp,_) lobj = match object_tag lobj with
+    | "VARIABLE" ->
+	(try 
+	   let (idc,_,typ) = get_variable (basename sp) in 
+           fn (VarRef idc) env typ
+	 with Not_found -> (* we are in a section *) ())
+    | "CONSTANT" ->
+	let kn = locate_constant (qualid_of_sp sp) in
+	let {const_type=typ} = Global.lookup_constant kn in
+	fn (ConstRef kn) env typ
+    | "INDUCTIVE" -> 
+	let kn = locate_mind (qualid_of_sp sp) in
+        let mib = Global.lookup_mind kn in 
+        Array.iteri 
+	  (fun i -> print_constructors (kn,i) fn env) mib.mind_packets
+    | _ -> ()
+  in 
+  try 
+    Declaremods.iter_all_segments false crible_rec
+  with Not_found -> 
+    ()
+
+let gen_filtered_search filter_function display_function =
+  gen_crible 
+    (fun s a c -> if filter_function s a c then display_function s a c) 
+
+let search_about ref inout =
+  let c = constr_of_reference ref in
+  let filter_modules = filter_by_module_from_list inout in
+  let filter ref' env typ =
+    filter_modules ref' env typ &&
+    Termops.occur_term c typ
+  in
+  gen_filtered_search filter plain_display
 
 

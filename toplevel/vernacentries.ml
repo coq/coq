@@ -842,6 +842,8 @@ let vernac_search s r =
       Search.search_rewrite pat r
   | SearchHead locqid ->
       Search.search_by_head (Nametab.global locqid) r
+  | SearchAbout locqid ->
+      Search.search_about (Nametab.global locqid) r
 
 let vernac_locate = function
   | LocateTerm qid -> print_located_qualid qid
