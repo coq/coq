@@ -104,7 +104,7 @@ Anomaly: type_of: variable h1 unbound. Please report.
 --> Pb de "Remark" local à un thm pas pris en compte dans
 l'environnement de la preuve de ce théorème
 
-Rocq/TreeAutomata: Problème "Intro y.
+Rocq/TreeAutomata: Un Rewrite ou Unfold en a trop ou pas assez fait (union.v)
 
 Rocq/RATIONAL
 --> Des fichiers ML à porter
