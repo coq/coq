@@ -23,6 +23,8 @@ open Term
 open Pattern
 (*i*)
 
+let pr_id id = Nameops.pr_id (Constrextern.v7_to_v8_id id)
+
 let sep_p = fun _ -> str"."
 let sep_v = fun _ -> str"," ++ spc()
 let sep_pp = fun _ -> str":"
@@ -124,7 +126,7 @@ let pr_opt_type_spc pr = function
 
 let pr_name = function
   | Anonymous -> str"_"
-  | Name id -> pr_id (Constrextern.v7_to_v8_id id)
+  | Name id -> pr_id id
 
 let pr_lident (b,_ as loc,id) =
   if loc <> dummy_loc then

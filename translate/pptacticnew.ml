@@ -144,9 +144,8 @@ let id_of_ltac_v7_id id =
 
 let pr_ltac_or_var pr = function
   | ArgArg x -> pr x
-  | ArgVar (loc,id) -> pr_with_comments loc ( pr_id (id_of_ltac_v7_id id))
-
-let pr_id id = pr_id (Constrextern.v7_to_v8_id id)
+  | ArgVar (loc,id) ->
+      pr_with_comments loc (Nameops.pr_id (id_of_ltac_v7_id id))
 
 let pr_arg pr x = spc () ++ pr x
 

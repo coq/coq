@@ -30,9 +30,6 @@ open Tacinterp
 
 let pr_spc_type = pr_sep_com spc pr_type
 
-(* Copie de Nameops *)
-let pr_id id = pr_id (Constrextern.v7_to_v8_id id)
-
 let pr_lident (b,_ as loc,id) =
   if loc <> dummy_loc then
     pr_located pr_id ((b,b+String.length(string_of_id id)),id)
@@ -42,7 +39,7 @@ let pr_lname = function
     (loc,Name id) -> pr_lident (loc,id)
   | lna -> pr_located pr_name lna
 
-let pr_ltac_id id = pr_id (id_of_ltac_v7_id id)
+let pr_ltac_id id = Nameops.pr_id (id_of_ltac_v7_id id)
 
 let pr_module r =
   let update_ref s = match r with

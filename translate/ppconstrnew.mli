@@ -50,6 +50,7 @@ val pr_sep_com :
   (constr_expr -> std_ppcmds) ->
   constr_expr -> std_ppcmds
 val pr_opt : ('a -> std_ppcmds) -> 'a option -> std_ppcmds
+val pr_id : identifier -> std_ppcmds
 val pr_name : name -> std_ppcmds
 val pr_qualid : qualid -> std_ppcmds
 val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
