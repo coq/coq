@@ -388,6 +388,7 @@ Rewrite Rabsolu_Rinv; Auto.
 Rewrite <- Rinv_pow; Auto.
 Rewrite Pow_Rabsolu; Auto.
 Rewrite H'0; Rewrite Rabsolu_right; Auto with real.
+Apply Rle_ge; Auto with real.
 Apply Rlt_pow; Auto with arith.
 Rewrite Rabsolu_Rinv; Auto.
 Apply Rlt_monotony_contra with z := (Rabsolu r).
