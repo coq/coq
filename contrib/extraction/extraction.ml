@@ -252,6 +252,10 @@ let axiom_message sp =
     [< 'sTR "You must specify an extraction for axiom"; 'sPC; 
        pr_sp sp; 'sPC; 'sTR "first" >]
 
+let section_message () = 
+  errorlabstrm "section_message"
+    [< 'sTR "You can't extract within a section. Close it and try again" >]
+
 (*s Tables to keep the extraction of inductive types and constructors. *)
 
 type inductive_extraction_result = 
@@ -386,6 +390,7 @@ and extract_type_rec_info env c vl args =
 	     new flexible type variable. *) 
     | IsCast (c, _) ->
 	extract_type_rec_info env c vl args
+    | IsVar _ -> section_message ()
     | _ -> 
 	assert false
 
@@ -531,8 +536,10 @@ and extract_term_info_with_type env ctx c t =
 	 extract_fix env ctx i recd  
      | IsCast (c, _) ->
 	 extract_term_info_with_type env ctx c t
-     | IsMutInd _ | IsProd _ | IsSort _ | IsVar _ | IsMeta _ | IsEvar _ ->
+     | IsMutInd _ | IsProd _ | IsSort _ | IsMeta _ | IsEvar _ ->
 	 assert false 
+     | IsVar _ -> section_message ()
+	 
 
 (* Abstraction of an inductive constructor: 
    \begin{itemize}
