@@ -312,18 +312,18 @@ let add_theory want_ring want_abstract want_setoid a aequiv asetth amorph aplus 
     (str "A (Semi-)(Setoid-)Ring Structure is already declared for " ++
        prterm a);
   let env = Global.env () in
-    if (want_ring & want_setoid &
+    if (want_ring & want_setoid & (
 	not (implement_theory env t coq_Setoid_Ring_Theory
 	  [| a; (unbox aequiv); aplus; amult; aone; azero; (unbox aopp); aeq|])
-        &
+        ||
 	not (implement_theory env (unbox asetth) coq_Setoid_Theory
-	  [| a; (unbox aequiv) |])) then 
+	  [| a; (unbox aequiv) |]))) then 
       errorlabstrm "addring" (str "Not a valid Setoid-Ring theory");
-    if (not want_ring & want_setoid &
+    if (not want_ring & want_setoid & (
         not (implement_theory env t coq_Semi_Setoid_Ring_Theory 
-	  [| a; (unbox aequiv); aplus; amult; aone; azero; aeq|]) &
+	  [| a; (unbox aequiv); aplus; amult; aone; azero; aeq|]) ||
 	not (implement_theory env (unbox asetth) coq_Setoid_Theory
-	  [| a; (unbox aequiv) |])) then 
+	  [| a; (unbox aequiv) |]))) then 
       errorlabstrm "addring" (str "Not a valid Semi-Setoid-Ring theory");
     if (want_ring & not want_setoid &
 	not (implement_theory env t coq_Ring_Theory
