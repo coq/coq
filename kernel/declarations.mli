@@ -32,7 +32,7 @@ val cook_constant : constant_value -> constr
 
 (*s Constant declaration. *)
 
-type constant_entry= {
+type constant_entry = {
   const_entry_body : lazy_constant_value;
   const_entry_type : constr option }
 

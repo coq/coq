@@ -190,11 +190,13 @@ let expmod_constant_value opaque oldenv modlist = function
   | None -> None
   | Some { contents = Cooked c } -> 
       if opaque then 
-	Some (ref (Recipe (fun () -> expmod_constr oldenv modlist c)))
+	(* None *)
+        Some (ref (Recipe (fun () -> expmod_constr oldenv modlist c)))
       else
 	Some (ref (Cooked (expmod_constr oldenv modlist c)))
   | Some { contents = Recipe f } -> 
       Some (ref (Recipe (fun () -> expmod_constr oldenv modlist (f ()))))
+
 
 (* Discharge of inductive types. *)
 
@@ -324,7 +326,7 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
     | "STRUCTURE" ->
 	let ((sp,i),info) = outStruc lobj in
 	let newsp = recalc_sp sp in
-	let mib = Environ.lookup_mind newsp oldenv in
+	let mib = Environ.lookup_mind sp oldenv in
 	let strobj =
 	  { s_CONST = info.s_CONST;
 	    s_PARAM = mib.mind_nparams;

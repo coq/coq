@@ -14,7 +14,7 @@
 (****************************************************************************)
 
 Grammar tactic simple_tactic :=
-  eapply [ "EApply" com_binding_list($cl) ]
+  eapply [ "EApply" constrarg_binding_list($cl) ]
       -> [(EApplyWithBindings ($LIST $cl))]
 | eexact [ "EExact" constrarg($c) ] -> [(EExact $c)]
 | prolog [ "Prolog" "[" constrarg_list($l) "]" numarg($n) ]

@@ -122,6 +122,11 @@ let start_module s =
 
 let is_opened_section = function (_,OpenedSection _) -> true | _ -> false
 
+let rec clean_segment = function
+  | [] -> []
+  | (_,FrozenState _) :: l -> clean_segment l
+  | node :: l -> node :: (clean_segment l)
+
 let close_section s =
   let sp = 
     try match find_entry_p is_opened_section with
@@ -133,9 +138,10 @@ let close_section s =
   in
   let (after,_,before) = split_lib sp in
   lib_stk := before;
-  add_entry (make_path (id_of_string s) OBJ) (ClosedSection (s,after));
+  let after' = clean_segment after in
+  add_entry (make_path (id_of_string s) OBJ) (ClosedSection (s,after'));
   pop_path_prefix ();
-  (sp,after)
+  (sp,after')
 
 (* The following function exports the whole library segment, that will be 
    saved as a module. Objects are presented in chronological order, and
@@ -143,16 +149,15 @@ let close_section s =
 
 let export_module () =
   if !module_name = None then error "no module declared";
-  let rec export acc = function
+  let rec clean acc = function
     | (_,Module _) :: _ -> acc
-    | (_,Leaf _) as node :: stk -> export (node::acc) stk
-    | (_,ClosedSection _) as node :: stk -> export (node::acc) stk
+    | (_,Leaf _) as node :: stk -> clean (node::acc) stk
+    | (_,ClosedSection _) as node :: stk -> clean (node::acc) stk
     | (_,OpenedSection _) :: _ -> error "there are still opened sections"
-    | (_,FrozenState _) :: stk -> export acc stk
+    | (_,FrozenState _) :: stk -> clean acc stk
     | _ -> assert false
   in
-  export [] !lib_stk
-
+  clean [] !lib_stk
 
 (* Backtracking. *)
 

@@ -228,8 +228,6 @@ Save.
 
 Hints Resolve Th_plus_permute Th_mult_permute.
 
-Lemma Th_mult_zero_left :(n:A)[| 0*n == 0 |].
-
 Lemma aux1 : (a:A) [| a + a == a |] -> [| a == 0 |].
 Intros.
 Generalize (opp_def a).
@@ -242,6 +240,7 @@ Rewrite plus_zero_left.
 Trivial.
 Save.
 
+Lemma Th_mult_zero_left :(n:A)[| 0*n == 0 |].
 Intros.
 Apply aux1.
 Rewrite <- distr_left.
@@ -253,7 +252,6 @@ Hints Resolve Th_mult_zero_left.
 Lemma Th_mult_zero_left2 : (n:A)[| 0 == 0*n |].
 Symmetry; EAuto. Save.
 
-Lemma Th_opp_mult_left : (x,y:A)[| -(x*y) == (-x)*y |].
 Lemma aux2 : (x,y,z:A) [|x+y==0|] -> [|x+z==0|] -> y==z.
 Intros.
 Rewrite <- (plus_zero_left y).
@@ -266,6 +264,7 @@ Rewrite plus_zero_left.
 Reflexivity.
 Save.
 
+Lemma Th_opp_mult_left : (x,y:A)[| -(x*y) == (-x)*y |].
 Intros.
 Apply (aux2 1![|x*y|]);
 [ Apply opp_def
@@ -314,7 +313,7 @@ Lemma Th_plus_opp_opp : (x,y:A)[| (-x) + (-y) == -(x+y) |].
 Intros.
 Apply (aux2 1![| x + y |]);
 [ Elim plus_assoc;
-  Rewrite -> (Th_plus_permute y [|-x|]); Rewrite -> plus_assoc;
+  Rewrite -> (Th_plus_permute y [| -x |]); Rewrite -> plus_assoc;
   Rewrite -> opp_def;  Rewrite plus_zero_left; Auto
 | Auto ].
 Save.
@@ -322,8 +321,8 @@ Save.
 Lemma Th_plus_permute_opp: (n,m,p:A)[| (-m) + (n + p) == n + ((-m)+p) |].
 EAuto. Save.
 
-Lemma Th_opp_opp : (n:A)[|-(-n) == n |].
-Intro; Apply (aux2 1![|-n|]); 
+Lemma Th_opp_opp : (n:A)[| -(-n) == n |].
+Intro; Apply (aux2 1![| -n |]); 
   [ Auto | Elim plus_sym; Auto ].
 Save.
 Hints Resolve Th_opp_opp.
@@ -345,7 +344,7 @@ Auto. Save.
 Lemma Th_plus_reg_left : (n,m,p:A)[| n + m == n + p |] -> m==p.
 Intros; Generalize (congr_eqT ? ? [z][| (-n)+z |] ? ? H).
 Repeat Rewrite plus_assoc.
-Rewrite (plus_sym [|-n|] n).
+Rewrite (plus_sym [| -n |] n).
 Rewrite opp_def.
 Repeat Rewrite Th_plus_zero_left; EAuto.
 Save.

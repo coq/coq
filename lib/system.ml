@@ -99,7 +99,7 @@ let open_trapping_failure open_fun name suffix =
 let try_remove f =
   try Sys.remove f
   with _ -> mSGNL [< 'sTR"Warning: " ; 'sTR"Could not remove file " ;
-                     'sTR f ; 'sTR" which is corrupted !!" >]
+                     'sTR f ; 'sTR" which is corrupted!" >]
 
 let marshal_out ch v = Marshal.to_channel ch v [Marshal.Closures]
 let marshal_in ch = Marshal.from_channel ch
