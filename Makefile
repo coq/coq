@@ -84,7 +84,7 @@ DEPFLAGS=$(LOCALINCLUDES)
 
 OCAMLC_P4O=$(OCAMLC) -pp $(CAMLP4O) $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
-CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo pa_ifdef.cmo q_MLast.cmo
+CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo q_MLast.cmo
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
@@ -1359,11 +1359,11 @@ toplevel/mltop.cmx: toplevel/mltop.optml
 
 toplevel/mltop.byteml: toplevel/mltop.ml4
 	$(SHOW)'CAMLP4O   $<'	
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -DByte -impl $< > $@ || rm -f $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo pr_o.cmo -DByte -impl $< > $@ || rm -f $@
 
 toplevel/mltop.optml: toplevel/mltop.ml4
 	$(SHOW)'CAMLP4O   $<'	
-	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo -impl $< > $@ || rm -f $@
+	$(HIDE)$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo pr_o.cmo -impl $< > $@ || rm -f $@
 
 ML4FILES += toplevel/mltop.ml4
 
@@ -1400,11 +1400,11 @@ ML4FILES += lib/pp.ml4 lib/compat.ml4
 
 lib/compat.cmo: lib/compat.ml4
 	$(SHOW)'OCAMLC4  $<' 
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) -D$(CAMLVERSION) -impl" -c -impl $<
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo -D$(CAMLVERSION) -impl" -c -impl $<
 
 lib/compat.cmx: lib/compat.ml4
 	$(SHOW)'OCAMLOPT  $<' 
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) -D$(CAMLVERSION) -impl" -c -impl $<
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo -D$(CAMLVERSION) -impl" -c -impl $<
 
 # files compiled with camlp4 because of streams syntax
 
