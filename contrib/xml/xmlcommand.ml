@@ -604,7 +604,8 @@ let _ =
   Declare.set_xml_declare_variable
    (function (sp,kn) ->
      let id = Libnames.basename sp in
-     print false (Libnames.VarRef id) (kind_of_variable id) xml_library_root)
+     print false (Libnames.VarRef id) (kind_of_variable id) xml_library_root ;
+     proof_to_export := None)
 ;;
 
 let _ =
