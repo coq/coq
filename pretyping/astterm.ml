@@ -1,34 +1,22 @@
-(****************************************************************************)
-(*                 The Calculus of Inductive Constructions                  *)
-(*                                                                          *)
-(*                                Projet Coq                                *)
-(*                                                                          *)
-(*                     INRIA        LRI-CNRS        ENS-CNRS                *)
-(*              Rocquencourt         Orsay          Lyon                    *)
-(*                                                                          *)
-(*                                 Coq V6.3                                 *)
-(*                               July 1st 1999                              *)
-(*                                                                          *)
-(****************************************************************************)
-(*                                astterm.ml                                *)
-(****************************************************************************)
 
-open Std;;
-open Pp;;
-open Names;;
-open CoqAst;;
-open Ast;;
-open Vectops;;
-open Generic;;
-open Term;;
-open Environ;;
-open Termenv;;
-open Impuniv;;
-open Himsg;;
-open Multcase_astterm;; 
-open Evd;;
-open More_util;;
-open Rawterm;;
+(* $Id$ *)
+
+open Std
+open Pp
+open Names
+open CoqAst
+open Ast
+open Vectops
+open Generic
+open Term
+open Environ
+open Termenv
+open Impuniv
+open Himsg
+open Multcase_astterm 
+open Evd
+open More_util
+open Rawterm
 
 (**  Multcases ... **)
 
@@ -36,8 +24,8 @@ let prpattern k p = Printer.gencompr CCI (Termast.ast_of_pat p)
 
 (* when an head ident is not a constructor in pattern *)
 let mssg_hd_is_not_constructor s =
-    [< 'sTR ("The symbol "^s^" should be a constructor") >]
-;;
+  [< 'sTR ("The symbol "^s^" should be a constructor") >]
+
 
 (* checking linearity of a list of ids in patterns *)
 let non_linearl_mssg id =
@@ -45,7 +33,7 @@ let non_linearl_mssg id =
     'sTR " is bound several times in pattern" >] 
 
 let rec has_duplicate = function 
-    [] -> None
+  | [] -> None
   | x::l -> if List.mem x l then (Some x) else has_duplicate l
 
 let check_linearity loc ids =
@@ -54,20 +42,20 @@ let check_linearity loc ids =
     | None -> ()
 
 let mal_formed_mssg () =
-  [<'sTR "malformed macro of multiple case" >];;
+  [<'sTR "malformed macro of multiple case" >]
 
 (* determines if some pattern variable starts with uppercase *)
 let warning_uppercase loc uplid = (* Comment afficher loc ?? *)
   let vars =
     prlist_with_sep pr_spc (fun v -> [< 'sTR (string_of_id v) >]) uplid in
   let (s1,s2) = if List.length uplid = 1 then (" ","s ") else ("s "," ") in
-    wARN [<'sTR ("Warning: the variable"^s1); vars;
+  wARN [<'sTR ("Warning: the variable"^s1); vars;
 	 'sTR (" start"^s2^" with upper case in pattern"); 'cUT >]
 
 let is_uppercase_var v =
- match (string_of_id v).[0] with
-    'A'..'Z' -> true
- | _  -> false
+  match (string_of_id v).[0] with
+    | 'A'..'Z' -> true
+    | _  -> false
 
 let check_uppercase loc ids =
   let uplid = filter is_uppercase_var ids in
@@ -105,7 +93,7 @@ let is_known_constructor k env id =
     with (Not_found | UserError _) -> 
       (try  is_constructor (Environ.search_synconst k id) 
        with Not_found -> false)
-;;
+
 
 let rec abs_eqn k env avoid = function
     (v::ids, Slam(_,ona,t)) ->
@@ -118,7 +106,7 @@ let rec abs_eqn k env avoid = function
 	(id'::nids, DLAM(na,nt))
   | ([],t) -> ([],t)
   | _ -> assert false
-;;
+
 
 let rec absolutize_eqn absrec k env = function
     DOP1(XTRA("LAMEQN",ids),lam_eqn) ->
@@ -128,7 +116,7 @@ let rec absolutize_eqn absrec k env = function
       let _ = if uplid <> [] then warning_uppercase uplid in
       DOP1(XTRA("LAMEQN",nids), absrec neqn)
   | _ -> anomalylabstrm "absolutize_eqn" (mal_formed_mssg())
-;;
+
 *)
 (****************************************************************)
 (* Arguments normally implicit in the "Implicit Arguments mode" *)
@@ -159,7 +147,7 @@ let explicitize_appl l args =
  | ([],_) -> (List.rev acc)@args
  | (_,[]) -> (List.rev acc)
 in aux 1 l args []
-;;
+
 
 let absolutize k sigma env constr = 
  let rec absrec env constr = match constr with
@@ -197,7 +185,7 @@ let absolutize k sigma env constr =
   | DLAMV(na,cl)  -> DLAMV(na,Array.map (absrec (add_rel (na,()) env)) cl)
 
  in absrec env constr
-;;
+
 
 (* Fonctions exportées *)
 let absolutize_cci sigma env constr = absolutize CCI sigma env constr
@@ -211,7 +199,7 @@ let dbize_sp = function
          anomaly_loc(loc,"Astterm.dbize_sp",
                      [< 'sTR"malformed section-path" >]))
   | ast -> anomaly_loc(Ast.loc ast,"Astterm.dbize_sp",
-                     [< 'sTR"not a section-path" >]);;
+                     [< 'sTR"not a section-path" >])
 (*
 let dbize_op loc opn pl cl =
     match (opn,pl,cl) with
@@ -256,7 +244,7 @@ let dbize_op loc opn pl cl =
       | (op,_,_) -> anomaly_loc
             (loc,"Astterm.dbize_op",
              [< 'sTR "Unrecognizable constr operator: "; 'sTR op >])
-;;
+
 
 let split_params =
  let rec sprec acc = function
@@ -266,7 +254,7 @@ let split_params =
    | (Path _ as p)::l -> sprec (p::acc) l
    | l -> (List.rev acc,l)
  in sprec []
-;;
+
 *)
 
 let is_underscore id = (id = "_")
@@ -508,7 +496,7 @@ let dbize k sigma =
   in aux 1 l args
 
   in dbrec
-;;
+
 
 (*
 let dbize_kind ... =
@@ -529,7 +517,7 @@ let dbize_kind ... =
          [< 'sTR"During the relocation of global references," >], e,
          [< 'sTR"Perhaps the input is malformed" >])
   in c
-;;
+
 *)
 
 let dbize_cci sigma env com = dbize CCI sigma env com
@@ -541,17 +529,17 @@ let dbize_fw  sigma env com = dbize FW sigma env com
 let raw_constr_of_com sigma env com =
   let c = dbize_cci sigma (unitize_env env) com in
     try Sosub.soexecute c
-    with Failure _|UserError _ -> error_sosub_execute CCI com;;
+    with Failure _|UserError _ -> error_sosub_execute CCI com
 
 let raw_fconstr_of_com sigma env com =
   let c = dbize_fw sigma (unitize_env env) com in
     try Sosub.soexecute c
-    with Failure _|UserError _ -> error_sosub_execute FW com;;
+    with Failure _|UserError _ -> error_sosub_execute FW com
 
 let raw_constr_of_compattern sigma env com =
   let c = dbize_cci sigma (unitize_env env) com in
     try Sosub.try_soexecute c
-    with Failure _|UserError _ -> error_sosub_execute CCI com;;
+    with Failure _|UserError _ -> error_sosub_execute CCI com
  *)
 
 let raw_constr_of_com sigma env com = dbize_cci sigma (unitize_env env) com
@@ -592,13 +580,13 @@ let ast_adjust_consts sigma = (* locations are kept *)
    | Node(loc,opn,tl) -> Node(loc,opn,List.map (dbrec env) tl)
    | x -> x
  in dbrec
-;;
+
 
 
 let globalize_command ast =
   let (sigma,sign) = Termenv.initial_sigma_sign() in
     ast_adjust_consts sigma (gLOB sign) ast
-;;
+
 
 
 (* Avoid globalizing in non command ast for tactics *)
@@ -614,18 +602,20 @@ let rec glob_ast sigma env = function
         Slam(loc,Some na, glob_ast sigma env' t)
   | Node(loc,opn,tl) -> Node(loc,opn,List.map (glob_ast sigma env) tl)
   | x -> x
-;;
+
 
 let globalize_ast ast =
   let (sigma,sign) = Termenv.initial_sigma_sign() in
     glob_ast sigma (gLOB sign) ast
-;;
+
 
 (* Installation of the AST quotations. "command" is used by default. *)
-open Pcoq;;
-define_quotation true "command" (map_entry globalize_command Command.command);;
-define_quotation false "tactic" (map_entry globalize_ast Tactic.tactic);;
-define_quotation false "vernac" (map_entry globalize_ast Vernac.vernac);;
 
+open Pcoq
 
-(* $Id$ *)
+let _ = 
+  define_quotation true "command" 
+    (map_entry globalize_command Command.command);
+  define_quotation false "tactic" (map_entry globalize_ast Tactic.tactic);
+  define_quotation false "vernac" (map_entry globalize_ast Vernac.vernac)
+
