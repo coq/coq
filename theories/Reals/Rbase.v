@@ -1549,7 +1549,20 @@ Rewrite Rmult_1r; Replace ``2*x`` with ``x+x``.
 Rewrite (Rplus_sym y); Intro H5; Apply Rle_anti_compatibility with x; Assumption.
 Ring. 
 Replace ``2`` with (INR (S (S O))); [Apply not_O_INR; Discriminate | Ring].
-Field; Replace ``2`` with (INR (S (S O))); [Apply not_O_INR; Discriminate | Ring].
+Pattern 2 y; Replace y with ``y/2+y/2``.
+Unfold Rminus Rdiv.
+Repeat Rewrite Rmult_Rplus_distrl.
+Ring.
+Cut (z:R) ``2*z == z + z``.
+Intro.
+Rewrite <- (H4 ``y/2``).
+Unfold Rdiv.
+Rewrite <- Rmult_assoc; Apply Rinv_r_simpl_m.
+Replace ``2`` with (INR (2)).
+Apply not_O_INR.
+Discriminate.
+Unfold INR; Reflexivity.
+Intro; Ring.
 Cut ~(O=(2)); [Intro H0; Generalize (lt_INR_0 (2) (neq_O_lt (2) H0)); Unfold INR; Intro; Assumption | Discriminate].
 Save.
 
