@@ -1,3 +1,4 @@
+ide/config_parser.cmi: lib/util.cmi 
 ide/coq.cmi: kernel/environ.cmi pretyping/evd.cmi kernel/names.cmi \
     kernel/term.cmi lib/util.cmi toplevel/vernacexpr.cmo 
 interp/constrextern.cmi: kernel/environ.cmi library/impargs.cmi \
@@ -475,6 +476,10 @@ doc/parse.cmo: parsing/ast.cmi
 doc/parse.cmx: parsing/ast.cmx 
 ide/command_windows.cmo: ide/coq.cmi ide/coq_commands.cmo ide/ideutils.cmo 
 ide/command_windows.cmx: ide/coq.cmx ide/coq_commands.cmx ide/ideutils.cmx 
+ide/config_lexer.cmo: ide/config_parser.cmi lib/util.cmi 
+ide/config_lexer.cmx: ide/config_parser.cmx lib/util.cmx 
+ide/config_parser.cmo: lib/util.cmi ide/config_parser.cmi 
+ide/config_parser.cmx: lib/util.cmx ide/config_parser.cmi 
 ide/coq.cmo: toplevel/cerrors.cmi config/coq_config.cmi toplevel/coqtop.cmi \
     kernel/environ.cmi pretyping/evarutil.cmi pretyping/evd.cmi \
     tactics/hipattern.cmi ide/ideutils.cmo library/lib.cmi kernel/names.cmi \
@@ -505,8 +510,10 @@ ide/ideutils.cmo: config/coq_config.cmi lib/options.cmi lib/pp_control.cmi \
     ide/preferences.cmo 
 ide/ideutils.cmx: config/coq_config.cmx lib/options.cmx lib/pp_control.cmx \
     ide/preferences.cmx 
-ide/preferences.cmo: ide/utils/configwin.cmi ide/utils/editable_cells.cmo 
-ide/preferences.cmx: ide/utils/configwin.cmx ide/utils/editable_cells.cmx 
+ide/preferences.cmo: ide/config_lexer.cmo ide/utils/configwin.cmi \
+    ide/utils/editable_cells.cmo lib/util.cmi 
+ide/preferences.cmx: ide/config_lexer.cmx ide/utils/configwin.cmx \
+    ide/utils/editable_cells.cmx lib/util.cmx 
 ide/undo.cmo: ide/ideutils.cmo ide/undo.cmi 
 ide/undo.cmx: ide/ideutils.cmx ide/undo.cmi 
 interp/constrextern.cmo: pretyping/classops.cmi library/declare.cmi \

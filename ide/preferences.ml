@@ -1,5 +1,6 @@
 open Configwin
 open Printf
+open Util
 
 let pref_file = 
   try (Filename.concat (Sys.getenv "HOME") ".coqidepref")
@@ -50,7 +51,7 @@ type pref =
 
       mutable auto_save : bool;
       mutable auto_save_delay : int;
-      mutable auto_save_name : string*string;
+      mutable auto_save_name : string * string;
 
       mutable automatic_tactics : (string * string) list;
       mutable cmd_print : string;
@@ -68,61 +69,34 @@ type pref =
 
 let save_pref p =
   try 
-    let fd = open_out pref_file in
-    output_value fd p;
-(*
-    let output_string f c = fprintf fd "%s = \"%s\"\n" f c in
-    let output_bool f c = fprintf fd "%s = \"%b\"\n" f c in
-    let output_int f c = fprintf fd "%s = \"%d\"\n" f c in
-    let output_list f to_string l = 
-      fprintf fd "%s = [%a]\n" f 
-	(fun c -> 
-	   List.iter
-	   (fun x -> fprintf c "%a;" to_string x)) l in
-    let output_modi fd m = fprintf fd "%s" (mod_to_str m) in
-    let output_tactics fd (m1,m2) = fprintf fd "%s,%s" m1 m2 in
-    output_string "cmd_coqc" p.cmd_coqc;
-    output_string "cmd_make" p.cmd_make;
-    output_string "cmd_coqmakefile" p.cmd_coqmakefile;
-    output_string "cmd_coqdoc" p.cmd_coqdoc;
-    output_string "cmd_print" p.cmd_print;
-    
-    output_bool "global_auto_revert" p.global_auto_revert;
-    output_int "global_auto_revert_delay" p.global_auto_revert_delay;
-
-    output_bool "auto_save" p.auto_save;
-    output_int "auto_save_delay" p.auto_save_delay;
-    output_string "auto_save_prefix" (fst p.auto_save_name);
-    output_string "auto_save_suffix" (snd p.auto_save_name);
-
-    output_string "cmd_browse_prefix" (fst p.cmd_browse);
-    output_string "cmd_browse_suffix" (snd p.cmd_browse);
-
-    output_string "doc_url" p.doc_url;
-    output_string "library_url" p.library_url;
-    output_list 
-      "modifier_for_navigation" 
-      output_modi 
-      p.modifier_for_navigation;
-    output_list 
-      "modifier_for_templates" 
-      output_modi 
-      p.modifier_for_templates;
-    output_list 
-      "modifier_for_tactics" 
-      output_modi 
-      p.modifier_for_navigation;
-   output_list 
-      "modifiers_valid" 
-      output_modi 
-      p.modifiers_valid;
-   output_list 
-     "automatic_tactics" 
-     output_tactics
-     p.automatic_tactics;
-*)
-    close_out fd
-
+    let add = Stringmap.add in
+    let (++) x f = f x in
+    Stringmap.empty ++
+    add "cmd_coqc" [p.cmd_coqc] ++
+    add "cmd_make" [p.cmd_make] ++
+    add "cmd_coqmakefile" [p.cmd_coqmakefile] ++
+    add "cmd_coqdoc" [p.cmd_coqdoc] ++
+    add "global_auto_revert" [string_of_bool p.global_auto_revert] ++
+    add "global_auto_revert_delay" 
+      [string_of_int p.global_auto_revert_delay] ++
+    add "auto_save" [string_of_bool p.auto_save] ++
+    add "auto_save_delay" [string_of_int p.auto_save_delay] ++
+    add "auto_save_name" [fst p.auto_save_name; snd p.auto_save_name] ++
+    add "automatic_tactics" 
+      (List.fold_left (fun l (v1,v2) -> v1::v2::l) [] p.automatic_tactics) ++
+    add "cmd_print" [p.cmd_print] ++
+    add "modifier_for_navigation" 
+      (List.map mod_to_str p.modifier_for_navigation) ++
+    add "modifier_for_templates" 
+      (List.map mod_to_str p.modifier_for_templates) ++
+    add "modifier_for_tactics" 
+      (List.map mod_to_str p.modifier_for_tactics) ++
+    add "modifiers_valid" 
+      (List.map mod_to_str p.modifiers_valid) ++
+    add "cmd_browse" [fst p.cmd_browse; snd p.cmd_browse] ++
+    add "doc_url" [p.doc_url] ++
+    add "library_url" [p.library_url] ++
+    Config_lexer.print_file pref_file
   with _ -> prerr_endline "Could not save preferences."
   
 let (current:pref ref) = 
@@ -163,58 +137,44 @@ let (current:pref ref) =
 
 let load_pref p = 
   try 
-(*    let l = Config_lexer.get_config pref_file in
-    List.iter 
-      (function k,v -> try match k with
-	 | "cmd_coqc" -> p.cmd_coqc <- v
-	 | "cmd_make" -> p.cmd_make <-  v
-	 | "cmd_coqmakefile" -> p.cmd_coqmakefile <- v
-	 | "cmd_coqdoc" -> p.cmd_coqdoc <-  v
-	 | "cmd_print" -> p.cmd_print <-  v
-	 | "global_auto_revert" -> p.global_auto_revert <- bool_of_string v
-	 | "global_auto_revert_delay" -> 
-	     p.global_auto_revert_delay <- int_of_string v
-	 | "auto_save" -> p.auto_save <- bool_of_string v
-	 | "auto_save_delay" -> p.auto_save_delay <- int_of_string v
-	 | "auto_save_prefix" -> 
-	     let x,y = p.auto_save_name in
-	     p.auto_save_name <- (v,y)
-	 | "auto_save_suffix" -> 
-	     let x,y = p.auto_save_name in
-	     p.auto_save_name <- (x,v)
-	       
-	 | "cmd_browse_prefix" -> 
-	     let x,y = p.cmd_browse in
-	     p.cmd_browse <- (v,y)
-	 | "cmd_browse_suffix" ->
-	     let x,y = p.cmd_browse in
-	     p.cmd_browse <- (x,v)
-	 | "doc_url" -> p.doc_url <- v
-	 | "library_url" -> p.library_url <- v
-	 | "modifier_for_navigation" ->
-	     p.modifier_for_navigation <- 
-	     List.rev_map str_to_mod (Config_lexer.split v)
-	 | "modifier_for_templates" ->
-	     p.modifier_for_templates <- 
-	     List.rev_map str_to_mod (Config_lexer.split v)
-	 | "modifier_for_tactics" ->
-	     p.modifier_for_tactics <- 
-	     List.rev_map str_to_mod (Config_lexer.split v)
-	 | "modifiers_valid" ->
-	     p.modifiers_valid <- 
-	     List.rev_map str_to_mod (Config_lexer.split v)
-	 | "automatic_tactics" ->
-	     p.automatic_tactics <- 
-	     List.map (fun x -> Pervasives.prerr_endline x;(x,"")) (Config_lexer.split v)
-	 | _ -> prerr_endline ("Warning: unknown option "^k)
-       with _ -> ())
-      l
-*)
-    let cin = open_in pref_file in
-    let (new_pref:pref) = input_value cin in
-    close_in cin;
-    current := new_pref
-  with _ -> prerr_endline "Could not load preferences."
+    let m = Config_lexer.load_file pref_file in
+    let np = { !p with cmd_coqc = !p.cmd_coqc } in
+    let set k f = try let v = Stringmap.find k m in f v with _ -> () in
+    let set_hd k f = set k (fun v -> f (List.hd v)) in
+    let set_bool k f = set_hd k (fun v -> f (bool_of_string v)) in
+    let set_int k f = set_hd k (fun v -> f (int_of_string v)) in
+    let set_pair k f = set k (function [v1;v2] -> f v1 v2 | _ -> raise Exit) in
+    set_hd "cmd_coqc" (fun v -> np.cmd_coqc <- v);
+    set_hd "cmd_make" (fun v -> np.cmd_make <- v);
+    set_hd "cmd_coqmakefile" (fun v -> np.cmd_coqmakefile <- v);
+    set_hd "cmd_coqdoc" (fun v -> np.cmd_coqdoc <- v);
+    set_bool "global_auto_revert" (fun v -> np.global_auto_revert <- v);
+    set_int "global_auto_revert_delay" 
+      (fun v -> np.global_auto_revert_delay <- v);
+    set_bool "auto_save" (fun v -> np.auto_save <- v);
+    set_int "auto_save_delay" (fun v -> np.auto_save_delay <- v);
+    set_pair "auto_save_name" (fun v1 v2 -> np.auto_save_name <- (v1,v2));
+    set "automatic_tactics"
+      (fun v -> 
+	 let rec from_list = function
+	   | [] | [_] -> []
+	   | x :: y :: l -> (x,y) :: from_list l 
+	 in
+	 np.automatic_tactics <- from_list v);
+    set_hd "cmd_print" (fun v -> np.cmd_print <- v);
+    set "modifier_for_navigation" 
+      (fun v -> np.modifier_for_navigation <- List.map str_to_mod v);
+    set "modifier_for_templates" 
+      (fun v -> np.modifier_for_templates <- List.map str_to_mod v);
+    set "modifier_for_tactics" 
+      (fun v -> np.modifier_for_tactics <- List.map str_to_mod v);
+    set "modifiers_valid" 
+      (fun v -> np.modifiers_valid <- List.map str_to_mod v);
+    set_pair "cmd_browse" (fun v1 v2 -> np.cmd_browse <- (v1,v2));
+    set_hd "doc_url" (fun v -> np.doc_url <- v);
+    set_hd "library_url" (fun v -> np.library_url <- v);
+    current := np
+  with e -> prerr_endline (Printexc.to_string e); prerr_endline "Could not load preferences."
 
 let configure () = 
   let cmd_coqc = 

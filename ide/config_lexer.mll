@@ -1,60 +1,58 @@
 {
 
   open Lexing
+  open Format
+  open Config_parser
+  open Util
+
+  let string_buffer = Buffer.create 1024
+
 }
 
-let space = 
-  [' ' '\010' '\013' '\009' '\012']
+let space = [' ' '\010' '\013' '\009' '\012']
 let char = ['A'-'Z' 'a'-'z' '_' '0'-'9']
-
 let ident = char+
 
-let value = ('"'|'[')( [^ '='] | ('\\''"') )*('"'|']')
-let list_value = [^';']+ ';'
+rule token = parse
+  | space+        { token lexbuf }
+  | '#' [^ '\n']* { token lexbuf }
+  | ident { IDENT (lexeme lexbuf) }
+  | '='   { EQUAL }
+  | '"'   { Buffer.reset string_buffer; 
+	    Buffer.add_char string_buffer '"';
+	    string lexbuf;
+	    let s = Buffer.contents string_buffer in
+	    STRING (Scanf.sscanf s "%S" (fun s -> s)) }
+  | _     { let c = lexeme_start lexbuf in
+	    eprintf ".coqiderc: invalid character (%d)\n@." c; 
+	    token lexbuf }
+  | eof   { EOF }
 
-rule next_config = parse
-  | ident 
-      { let id = lexeme lexbuf in 
-        let v = value lexbuf in
-        (id,v)
-      }
-  | _    { next_config lexbuf}
-  | eof  { raise End_of_file }
-
-and value = parse
-  | value { let s = lexeme lexbuf in
-	    String.sub s 1 (String.length s - 2)}
-  | _    { value lexbuf }
-  | eof  { raise End_of_file }
-
-and split_list = parse
-  | list_value {
-      let h = lexeme lexbuf in
-      h::(split_list lexbuf)
-    }
-  | _ { split_list lexbuf}
-  | eof {[]}
+and string = parse
+  | '"'  { Buffer.add_char string_buffer '"' }
+  | '\\' '"' | _ 
+         { Buffer.add_string string_buffer (lexeme lexbuf); string lexbuf }
+  | eof  { eprintf ".coqiderc: unterminated string\n@." }
 
 {
-  let get_config f = 
-    let ci = open_in f in
-    let lb = from_channel ci in 
-    let result = ref [] in
-    begin try 
-      while true do 
-	let r = next_config lb in
-	result := r::!result
-      done
-    with End_of_file -> close_in ci; 
-    end;
-    !result
 
-  let split s = 
-    let cs = ref "" in
-    let l = ref [] in
-    String.iter 
-      (fun c -> if c = ';' then begin l:= !cs::!l; cs:="" end 
-       else cs := !cs^(Char.escaped c))
-      s;
-    if !cs ="" then !l else !cs::!l
+  let load_file f =
+    let c = open_in f in
+    let lb = from_channel c in
+    let m = Config_parser.prefs token lb in
+    close_in c;
+    m
+
+  let print_file f m =
+    let c = open_out f in
+    let fmt = formatter_of_out_channel c in
+    let rec print_list fmt = function
+      | [] -> ()
+      | s :: sl -> fprintf fmt "%S@ %a" s print_list sl
+    in
+    Stringmap.iter 
+      (fun k s -> fprintf fmt "@[<hov 2>%s = %a@]@\n" k print_list s) m;
+    fprintf fmt "@.";
+    close_out c
+
 }

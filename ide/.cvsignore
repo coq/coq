@@ -8,3 +8,5 @@ Makefile
 test
 config_lexer.ml
 *.crashcoqide
+config_parser.mli
+config_parser.ml

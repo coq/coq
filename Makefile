@@ -386,8 +386,8 @@ COQIDECMO=ide/utils/okey.cmo ide/utils/uoptions.cmo \
 	  ide/utils/configwin_keys.cmo ide/utils/configwin_types.cmo \
 	  ide/utils/configwin_messages.cmo ide/utils/configwin_ihm.cmo \
 	  ide/utils/configwin.cmo \
-	  ide/utils/editable_cells.cmo ide/config_lexer.cmo \
-	  ide/preferences.cmo \
+	  ide/utils/editable_cells.cmo ide/config_parser.cmo \
+	  ide/config_lexer.cmo ide/preferences.cmo \
 	  ide/ideutils.cmo ide/undo.cmo \
 	  ide/find_phrase.cmo \
           ide/highlight.cmo ide/coq.cmo ide/coq_commands.cmo \
@@ -396,6 +396,7 @@ COQIDECMO=ide/utils/okey.cmo ide/utils/uoptions.cmo \
 COQIDECMX=$(COQIDECMO:.cmo=.cmx)
 COQIDEFLAGS=-thread -I +lablgtk2
 beforedepend:: ide/config_lexer.ml ide/find_phrase.ml ide/highlight.ml
+beforedepend:: ide/config_parser.mli ide/config_parser.ml
 
 FULLIDELIB=$(FULLCOQLIB)/ide
 IDEFILES=ide/coq.png ide/.coqiderc
@@ -429,6 +430,8 @@ ide/utils/%.cmi: ide/%.mli
 ide/utils/%.cmx: ide/%.ml
 	$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
 clean::
+	rm -f ide/extract_index.ml ide/find_phrase.ml ide/highlight.ml
+	rm -f ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
 	rm -f $(COQIDEBYTE) $(COQIDEOPT)
 
 # coqc
@@ -1101,7 +1104,7 @@ parsing/lexer.cmo: parsing/lexer.ml4
 # Default rules
 ###########################################################################
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .ml4 .v .vo .el .elc
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .mly .ml4 .v .vo .el .elc
 
 .ml.cmo:
 	$(OCAMLC) $(BYTEFLAGS) -c $<
@@ -1114,6 +1117,12 @@ parsing/lexer.cmo: parsing/lexer.ml4
 
 .mll.ml:
 	ocamllex $<
+
+.mly.ml:
+	ocamlyacc $<
+
+.mly.mli:
+	ocamlyacc $<
 
 .ml4.cmx:
 	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
