@@ -671,7 +671,10 @@ GEXTEND Gram
 
   syntax:
    [ [ IDENT "Open"; local = locality; IDENT "Scope"; sc = IDENT -> 
-         VernacOpenScope (local,sc)
+         VernacOpenCloseScope (local,true,sc)
+
+     | IDENT "Close"; local = locality; IDENT "Scope"; sc = IDENT -> 
+         VernacOpenCloseScope (local,false,sc)
 
      | IDENT "Delimit"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
 	 VernacDelimiters (sc,key)
@@ -682,12 +685,11 @@ GEXTEND Gram
      | IDENT "Arguments"; IDENT "Scope"; qid = global;
          "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
 
-     | IDENT "Infix"; local = locality; (*a = entry_prec; n = OPT natural; *)
+     | IDENT "Infix"; local = locality;
 	 op = STRING; ":="; p = global; 
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
-         let (a,n,b) = Metasyntax.interp_infix_modifiers None None modl in
-         VernacInfix (local,a,n,op,p,b,Some(a,n,op),sc)
+         VernacInfix (local,(op,modl),p,Some(op,modl),sc)
      | IDENT "Notation"; local = locality; s = IDENT; ":="; c = constr;
 	   l = [ "("; IDENT "only"; IDENT "parsing"; ")" -> [SetOnlyParsing]
 	       | -> [] ] ->
@@ -749,7 +751,8 @@ GEXTEND Gram
       | IDENT "right"; IDENT "associativity" -> SetAssoc Gramext.RightA
       | IDENT "no"; IDENT "associativity" -> SetAssoc Gramext.NonA
       | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ)
-      | IDENT "only"; IDENT "parsing" -> SetOnlyParsing ] ]
+      | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
+      | IDENT "format"; s = STRING -> SetFormat s ] ]
   ;
   syntax_extension_type:
     [ [ IDENT "ident" -> ETIdent | IDENT "global" -> ETReference

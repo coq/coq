@@ -267,7 +267,10 @@ GEXTEND Gram
 	   VernacSyntaxExtension (local,None,Some(s,modl))
 
      | IDENT "Open"; local = locality; IDENT "Scope"; 
-	 sc = IDENT -> VernacOpenScope (local,sc)
+	 sc = IDENT -> VernacOpenCloseScope (local,true, sc)
+
+     | IDENT "Close"; local = locality; IDENT "Scope"; 
+	 sc = IDENT -> VernacOpenCloseScope (local,false,sc)
 
      | IDENT "Delimits"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
 	 VernacDelimiters (sc,key)
@@ -288,27 +291,22 @@ GEXTEND Gram
                a8=entry_prec;
                n8=OPT natural;
 	       op8=OPT STRING;
-               mv8=OPT["("; l = LIST1 syntax_modifier SEP ","; ")" -> l] ->
+               mv8=["("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> []]
+		->
 		 (match (a8,n8,mv8,op8) with
-		   | None,None,None,None -> None
-		   | _,_,Some mv8,_ ->
-		   let (a8,n8,_) = Metasyntax.interp_infix_modifiers a8 n8 mv8
-		   in Some(a8,n8,op8)
-		   | _,_,None,_ -> Some (a8,n8,op8))
+		   | None,None,[],None -> None
+		   | _,_,mv8,_ ->
+		       Some(op8,Metasyntax.merge_modifiers a8 n8 mv8))
               | -> (* Means: rules are based on V7 rules *)
-		  Some (None,None,None) ] ->
-		let v8 = Util.option_app (function
-		  | None, None, op8 ->
-		      let op8 = match op8 with None -> op | Some op -> op in
-		      let nv8 = Util.option_app adapt_level n in
-		      let mv8 = List.map map_modl modl in
-		      let (a8,n8,_) = Metasyntax.interp_infix_modifiers a nv8
-			mv8 in (a8,n8,op8)
-		  | a8,n8,op8 ->
-		      let op8 = match op8 with None -> op | Some op -> op in
-		      (a8,n8,op8)) mv8 in
-           let (ai,ni,b) = Metasyntax.interp_infix_modifiers a n modl in
-           VernacInfix (local,ai,ni,op,p,b,v8,sc)
+		  Some (None,[]) ] ->
+		let mv = Metasyntax.merge_modifiers a n modl in
+		let v8 = Util.option_app (function (op8,mv8) ->
+		  let op8 = match op8 with None -> op | Some op -> op in
+		  let mv8 = if mv8=[] then List.map map_modl mv else mv8 in
+		  let mv8 = if List.for_all (function SetLevel _ -> false | _ -> true) mv8 then SetLevel 10 :: mv8 else mv8 in
+		  let mv8 = if List.for_all (function SetAssoc _ -> false | _ -> true) mv8 then SetAssoc Gramext.LeftA :: mv8 else mv8 in
+		  (op8,mv8)) mv8 in
+		VernacInfix (local,(op,mv),p,v8,sc)
      | IDENT "Distfix"; local = locality; a = entry_prec; n = natural; 
 	   s = STRING; p = global; sc = OPT [ ":"; sc = IDENT -> sc ] ->
              let (a,s,c) = Metasyntax.translate_distfix a s p in
@@ -331,12 +329,6 @@ GEXTEND Gram
 		(s8,mv8)
              | -> (* Means: rules are based on V7 rules *)
 		 None, Some [] ] ->
-(*
-               let s8 = match s8 with Some s -> s | _ -> s in
-               let mv8 = match mv8 with
-                   Some mv8 -> mv8
-                 | _ -> List.map map_modl modl in
-*)
 	       let smv8 = match s8,mv8 with
 		 | None, None -> None   (* = only interpretation *)
 		 | Some s8, None -> Some (s8,[]) (* = only interp, new s *)
@@ -352,9 +344,8 @@ GEXTEND Gram
      | IDENT "V8Infix"; local = locality; op8 = STRING; p = global;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc] ->
-           let (a8,n8,b) =
-             Metasyntax.interp_infix_modifiers None None modl in
-           VernacInfix (local,None,None,"",p,b,Some(a8,n8,op8),sc)
+           let mv8 = Metasyntax.merge_modifiers None None modl in
+           VernacInfix (local,("",[]),p,Some (op8,mv8),sc)
 
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
@@ -376,7 +367,8 @@ GEXTEND Gram
       | IDENT "right"; IDENT "associativity" -> SetAssoc Gramext.RightA
       | IDENT "no"; IDENT "associativity" -> SetAssoc Gramext.NonA
       | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ)
-      | IDENT "only"; IDENT "parsing" -> SetOnlyParsing ] ]
+      | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
+      | IDENT "format"; s = STRING -> SetFormat s ] ]
   ;
   syntax_extension_type:
     [ [ IDENT "ident" -> ETIdent | IDENT "global" -> ETReference

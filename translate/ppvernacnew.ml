@@ -409,6 +409,7 @@ let pr_syntax_modifier = function
   | SetAssoc Gramext.NonA -> str"no associativity"
   | SetEntryType (x,typ) -> str x ++ spc() ++ pr_set_entry_type typ
   | SetOnlyParsing -> str"only parsing"
+  | SetFormat s -> str"format " ++ qsnew s
 
 let pr_syntax_modifiers = function
   | [] -> mt()
@@ -540,8 +541,9 @@ let rec pr_vernac = function
       hov 1 (str"Syntax " ++ str u ++ spc() ++
       prlist_with_sep sep_v2 pr_syntax_entry el) ++ 
       str " *)"
-  | VernacOpenScope (local,sc) ->
-      str "Open " ++ pr_locality local ++ str "Scope" ++ spc() ++ str sc
+  | VernacOpenCloseScope (local,opening,sc) ->
+      str (if opening then "Open " else "Close ") ++ pr_locality local ++
+      str "Scope" ++ spc() ++ str sc
   | VernacDelimiters (sc,key) ->
       str"Delimit Scope" ++ spc () ++ str sc ++
       spc() ++ str "with " ++ str key
@@ -552,12 +554,8 @@ let rec pr_vernac = function
       |	None -> str"_"
       |	Some sc -> str sc in 
     str"Arguments Scope" ++ spc() ++ pr_reference q ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
-  | VernacInfix (local,a,p,s,q,_,ov8,sn) -> (* A Verifier *)
-      let mv8,s = match ov8 with
-        | Some (a,p,s) ->
-	    (match p with None -> [] | Some p -> [SetLevel p])@
-	    (match a with None -> [] | Some a -> [SetAssoc a]),s
-        | None -> [],s in
+  | VernacInfix (local,(s,_),q,ov8,sn) -> (* A Verifier *)
+      let s,mv8 = match ov8 with Some smv8 -> smv8 | None -> (s,[]) in
       hov 0 (hov 0 (str"Infix " ++ pr_locality local
       ++ qsnew s ++ str " :=" ++ spc() ++ pr_reference q) ++
       pr_syntax_modifiers mv8 ++

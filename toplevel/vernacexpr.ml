@@ -160,14 +160,12 @@ type vernac_expr =
   | VernacDistfix of locality_flag *
       grammar_associativity * precedence * string * reference *
       scope_name option
-  | VernacOpenScope of (locality_flag * scope_name)
+  | VernacOpenCloseScope of (locality_flag * bool * scope_name)
   | VernacDelimiters of scope_name * string
   | VernacBindScope of scope_name * class_rawexpr list
   | VernacArgumentsScope of reference * scope_name option list
-  | VernacInfix of locality_flag *
-      grammar_associativity * precedence option * string * reference * bool *
-      (grammar_associativity * precedence option* string) option *
-      scope_name option
+  | VernacInfix of locality_flag * (string * syntax_modifier list) *
+      reference * (string * syntax_modifier list) option * scope_name option
   | VernacNotation of
       locality_flag * constr_expr * (string * syntax_modifier list) option *
       (string * syntax_modifier list) option * scope_name option

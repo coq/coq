@@ -261,7 +261,7 @@ let vernac_delimiters = Metasyntax.add_delimiters
 let vernac_bind_scope sc cll = 
   List.iter (fun cl -> Metasyntax.add_class_scope sc (cl_of_qualid cl)) cll
 
-let vernac_open_scope = Symbols.open_scope
+let vernac_open_close_scope = Symbols.open_close_scope
 
 let vernac_arguments_scope qid scl =
   Symbols.declare_arguments_scope (global qid) scl
@@ -1103,10 +1103,9 @@ let interp c = match c with
   | VernacSyntaxExtension (lcl,sl,l8) -> vernac_syntax_extension lcl sl l8
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
   | VernacBindScope (sc,rl) -> vernac_bind_scope sc rl
-  | VernacOpenScope sc -> vernac_open_scope sc
+  | VernacOpenCloseScope sc -> vernac_open_close_scope sc
   | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope qid scl
-  | VernacInfix (local,assoc,n,inf,qid,b,mv8,sc) ->
-      vernac_infix local assoc n inf qid b mv8 sc
+  | VernacInfix (local,mv,qid,mv8,sc) -> vernac_infix local mv qid mv8 sc
   | VernacDistfix (local,assoc,n,inf,qid,sc) -> 
       vernac_distfix local assoc n inf qid sc
   | VernacNotation (local,c,infpl,mv8,sc) ->
