@@ -9,6 +9,7 @@ open Term
 open Sign
 open Constant
 open Inductive
+open Type_errors
 open Typing
 open G_minicoq
 
@@ -44,7 +45,8 @@ let check c =
   let c = globalize [] c in
   let (j,u) = safe_machine !env c in
   let ty = j_type j in
-  mSGNL (hOV 0 [< 'sTR"  :"; 'sPC; hOV 0 (pr_term ty); 'fNL >])
+  let pty = pr_term CCI (context !env) ty in
+  mSGNL (hOV 0 [< 'sTR"  :"; 'sPC; hOV 0 pty; 'fNL >])
 
 let definition id ty c =
   let c = globalize [] c in
@@ -107,19 +109,26 @@ let parse_file f =
   with 
     | End_of_file | Stdpp.Exc_located (_, End_of_file) -> close_in c; exit 0
     | exn -> close_in c; raise exn
-      
+
+module Explain = Himsg.Make(struct let pr_term = pr_term end)
+
+let rec explain_exn = function
+  | TypeError (k,ctx,te) -> 
+      mSGNL (hOV 0 [< 'sTR "type error:"; 'sPC; 
+		      Explain.explain_type_error k ctx te; 'fNL >])
+  | Stdpp.Exc_located (_,exn) -> 
+      explain_exn exn
+  | exn -> 
+      mSGNL (hOV 0 [< 'sTR"error: "; 'sTR (Printexc.to_string exn); 'fNL >])
+
 let top () =
   let cs = Stream.of_channel stdin in
   while true do
     try
       let c = Grammar.Entry.parse command cs in execute c
     with 
-      | End_of_file | Stdpp.Exc_located (_, End_of_file) -> 
-	  exit 0
-      | Stdpp.Exc_located (_,exn) ->
-	  mSGNL [< 'sTR"error: "; 'sTR (Printexc.to_string exn); 'fNL >]
-      | exn -> 
-	  mSGNL [< 'sTR"error: "; 'sTR (Printexc.to_string exn); 'fNL >]
+      | End_of_file | Stdpp.Exc_located (_, End_of_file) -> exit 0
+      | exn -> explain_exn exn
   done
 
 let main () =

@@ -7,6 +7,7 @@ open Names
 open Univ
 open Generic
 open Term
+open Sign
 
 let lexer = {
   Token.func = Lexer.func;
@@ -170,4 +171,4 @@ let rec pp bv = function
   | Rel n -> print_rel bv n
   | _ -> [< 'sTR"<???>" >]
 
-let pr_term = pp []
+let pr_term _ ctx = pp (List.map fst (get_rels ctx))

@@ -9,7 +9,7 @@ open Sign
 open Environ
 (*i*)
 
-(* Type errors. *)
+(* Type errors. \label{typeerrors} *)
 
 type type_error =
   | UnboundRel of int

@@ -187,15 +187,15 @@ toplevel/himsg.cmx: kernel/environ.cmx kernel/generic.cmx kernel/names.cmx \
     lib/pp.cmx kernel/reduction.cmx kernel/sign.cmx kernel/term.cmx \
     kernel/type_errors.cmx lib/util.cmx toplevel/himsg.cmi 
 toplevel/minicoq.cmo: kernel/constant.cmi parsing/g_minicoq.cmi \
-    kernel/generic.cmi /usr/local/lib/camlp4/grammar.cmi kernel/inductive.cmi \
-    kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
-    /usr/local/lib/camlp4/stdpp.cmi kernel/term.cmi kernel/typing.cmi \
-    lib/util.cmi 
+    kernel/generic.cmi /usr/local/lib/camlp4/grammar.cmi toplevel/himsg.cmi \
+    kernel/inductive.cmi kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
+    /usr/local/lib/camlp4/stdpp.cmi kernel/term.cmi kernel/type_errors.cmi \
+    kernel/typing.cmi lib/util.cmi 
 toplevel/minicoq.cmx: kernel/constant.cmx parsing/g_minicoq.cmi \
-    kernel/generic.cmx /usr/local/lib/camlp4/grammar.cmi kernel/inductive.cmx \
-    kernel/names.cmx lib/pp.cmx kernel/sign.cmx \
-    /usr/local/lib/camlp4/stdpp.cmi kernel/term.cmx kernel/typing.cmx \
-    lib/util.cmx 
+    kernel/generic.cmx /usr/local/lib/camlp4/grammar.cmi toplevel/himsg.cmx \
+    kernel/inductive.cmx kernel/names.cmx lib/pp.cmx kernel/sign.cmx \
+    /usr/local/lib/camlp4/stdpp.cmi kernel/term.cmx kernel/type_errors.cmx \
+    kernel/typing.cmx lib/util.cmx 
 parsing/g_basevernac.cmo: parsing/ast.cmi parsing/coqast.cmi \
     /usr/local/lib/camlp4/gramext.cmi parsing/pcoq.cmi 
 parsing/g_basevernac.cmx: parsing/ast.cmx parsing/coqast.cmx \

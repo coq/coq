@@ -10,7 +10,8 @@ noargument:
 	@echo "   make cleanall"
 	@echo or make archclean
 
-INCLUDES=-I config -I lib -I kernel -I library -I parsing -I $(CAMLP4LIB)
+INCLUDES=-I config -I lib -I kernel -I library -I parsing -I toplevel \
+	 -I $(CAMLP4LIB)
 
 BYTEFLAGS=$(INCLUDES) $(CAMLDEBUG)
 OPTFLAGS=$(INCLUDES) $(CAMLTIMEPROF)
@@ -71,7 +72,8 @@ coqtop.byte: $(CMO)
 # minicoq
 
 MINICOQCMO=$(CONFIG) $(LIB) $(KERNEL) \
-	   parsing/lexer.cmo parsing/g_minicoq.cmo toplevel/minicoq.cmo
+	   parsing/lexer.cmo parsing/g_minicoq.cmo \
+	   toplevel/himsg.cmo toplevel/minicoq.cmo
 
 minicoq: $(MINICOQCMO)
 	$(OCAMLC) $(INCLUDES) -o minicoq -custom $(CMA) $(MINICOQCMO) \
@@ -89,7 +91,9 @@ doc: doc/coq.tex
 LPLIB = lib/doc.tex $(LIB:.cmo=.mli)
 LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
 LPLIBRARY = library/doc.tex $(LIBRARY:.cmo=.mli)
-LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL) $(LPLIBRARY)
+LPTOPLEVEL = toplevel/doc.tex $(TOPLEVEL:.cmo=.mli)
+LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL) $(LPLIBRARY) \
+	  $(LPTOPLEVEL)
 
 doc/coq.tex: $(LPFILES)
 	ocamlweb -o doc/coq.tex $(LPFILES)

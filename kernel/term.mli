@@ -45,7 +45,7 @@ val mk_Prop : sorts
 
 (*s The type [constr] of the terms of CCI
   is obtained by instanciating the generic terms (type [term], 
-  see \ref{generic_terms}) on the above operators, themselves instanciated
+  see \citesec{generic_terms}) on the above operators, themselves instanciated
   on the above sorts. *)
 
 type constr = sorts oper term
