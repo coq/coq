@@ -165,7 +165,7 @@ let variables l =
   in
   section "Variables definitions.";
   print "CAMLP4LIB=`camlp4 -where`\n";
-  print "MAKE=make \"COQBIN=$(COQBIN)\" \"OPT=$(OPT)\"\n";
+(*  print "MAKE=make \"COQBIN=$(COQBIN)\" \"OPT=$(OPT)\"\n"; *)
   print "COQSRC=-I $(COQTOP)/kernel -I $(COQTOP)/lib \\
   -I $(COQTOP)/library -I $(COQTOP)/parsing -I $(COQTOP)/pretyping \\
   -I $(COQTOP)/proofs -I $(COQTOP)/syntax -I $(COQTOP)/tactics \\
