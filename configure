@@ -214,8 +214,6 @@ case $ARCH in
   *) OSDEPLIBS="-cclib -lunix"
 esac
 
-# OS dependent camlp4 options for native compilation
-
 # executable extension
 
 case $ARCH in
@@ -251,9 +249,9 @@ CAMLBIN=`dirname "$CAMLC"`
 CAMLVERSION=`"$CAMLC" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
 
 case $CAMLVERSION in
-  1.*|2.*|3.00)
+  1.*|2.*|3.01|3.02|3.03|3.03alpha|3.04|3.05beta|3.05)
 	echo "Your version of Objective-Caml is $CAMLVERSION."
-	echo "You need Objective-Caml 3.01 or later !"
+	echo "You need Objective-Caml 3.06 or later !"
 	echo "Configuration script failed!"
 	exit 1;;
   ?*)	echo "You have Objective-Caml $CAMLVERSION. Good!";;
@@ -281,58 +279,17 @@ fi
 
 CAMLLIB=`"$CAMLC" -v | sed -n -e 's|.*directory:* *\(.*\)$|\1|p' `
 
+# Camlp4 (greatly simplified since merged with ocaml)
+
+# CAMLP4LIB=+camlp4
+CAMLP4LIB=${CAMLLIB}/camlp4
+CAMLP4BIN=${CAMLBIN}
+
 # Tell on windows if ocaml understands cygwin or windows path formats
 
 "$CAMLC" -o config/giveostype config/giveostype.ml
 CAMLOSTYPE=`config/giveostype`
 rm config/giveostype
-
-# Camlp4
-
-CAMLP4=`which $camlp4o`
-case "$CAMLP4" in
-	"") echo "camlp4 is not present in your path!"
-	echo "Give me manually the path to the camlp4 executable [/usr/local/bin by default]: "
-	read CAMLP4
-	
-	case "$CAMLP4" in
-		"") CAMLP4=/usr/local/bin/camlp4o;;
-		*/camlp4) CAMLP4=${CAMLP4}o;;
-		*/camlp4o) true;;
-		*/) CAMLP4="${CAMLP4}"camlp4o;;
-		*) CAMLP4="${CAMLP4}"/camlp4o;;
-	esac
-	camlp4o="$CAMLP4";;
-esac
-
-if test ! -f "$CAMLP4" ; then
-	echo "I can not find the executable '$CAMLP4'! (Have you installed it?)"
-	echo "Configuration script failed!"
-	exit 1
-fi
-
-CAMLP4BIN=`dirname "$CAMLP4"`
-CAMLP4VERSION=`"$CAMLP4" -v 2>&1 | sed -n -e 's|.*version *\(.*\)$|\1|p'`
-case $CAMLP4VERSION in
-  0.*|1.*|2.00|3.00*)
-        echo "Your version of Camlp4 is $CAMLP4VERSION."
-	echo "You need Camlp4 3.01 or later !"
-	echo "Configuration script failed!"
-	exit 1;;
-  ?*)	echo "You have Camlp4 $CAMLP4VERSION. Good!";;
-  *) echo "I found Camlp4 but cannot find its version number!"
-     echo "Is it installed properly ?"
-     echo "Configuration script failed!"
-     exit 1;;
-esac
-case $CAMLP4VERSION,$CAMLOSTYPE in
-  3.04,*)
-    CAMLP4LIB=+camlp4;;
-  *,Win32)
-    CAMLP4LIB=`"$CAMLP4" -where |sed -e 's|\\\|/|g'`;;
-  *,*)
-    CAMLP4LIB=`"$CAMLP4" -where`;;
-esac
 
 case $ARCH in
     win32)
@@ -348,18 +305,16 @@ esac
 # Summary of the configuration
 
 echo ""
-echo "  Coq top directory              : $COQTOP"
-echo "  Architecture                   : $ARCH"
+echo "  Coq top directory                 : $COQTOP"
+echo "  Architecture                      : $ARCH"
 if test ! -z "$OS" ; then
   echo "  Operating system               : $OS"
 fi
-echo "  OS dependent libraries         : $OSDEPLIBS"
-echo "  Objective-Caml version         : $CAMLVERSION"
-echo "  Objective-Caml binaries in     : $CAMLBIN"
-echo "  Objective-Caml library in      : $CAMLLIB"
-echo "  Camlp4 version                 : $CAMLP4VERSION"
-echo "  Camlp4 binaries in             : $CAMLP4BIN"
-echo "  Camlp4 library in              : $CAMLP4LIB"
+echo "  OS dependent libraries            : $OSDEPLIBS"
+echo "  Objective-Caml/Camlp4 version     : $CAMLVERSION"
+echo "  Objective-Caml/Camlp4 binaries in : $CAMLBIN"
+echo "  Objective-Caml library in         : $CAMLLIB"
+echo "  Camlp4 library in                 : $CAMLP4LIB"
 echo ""
 
 echo "  Paths for true installation:"
@@ -379,16 +334,6 @@ case $ARCH in
 	LIBDIR=`echo $LIBDIR |sed -e 's|\\\|/|g'`
 	MANDIR=`echo $MANDIR |sed -e 's|\\\|/|g'`;;
 esac
-
-#case $CAMLOSTYPE in
-#    Win32)
-#	CAMLP4BIN=`echo $CAMLP4BIN |sed -e 's|\\\|/|g'`
-#	CAMLP4LIB=`echo "$CAMLP4LIB" | sed -e 's|\\\|\\\\\\\\|g'`
-#	CAMLP4BIN=`echo $CAMLC |sed -e 's|\\\|/|g'`
-#	CAMLP4BIN=`echo $CAMLLIB |sed -e 's|\\\|/|g'`
-#        ;;
-#esac
-
 
 sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|COQTOPDIRECTORY|$COQTOP|" \
