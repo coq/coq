@@ -181,6 +181,14 @@ Intros.
 Absurd `(NEG p)>0`; [ Generalize (NEG_lt_ZERO p); Omega | Omega ].
 Qed.
 
+Theorem Z_div_mod_eq : (a,b:Z)`b > 0` -> `a = b * (Zdiv a b) + (Zmod a b)`.
+Proof.
+Unfold Zdiv Zmod.
+Intros a b Hb.
+Generalize (Z_div_mod a b Hb).
+Pattern (Zdiv_eucl a b).
+Case (Zdiv_eucl); Tauto.
+Save.
 
 (** Existence theorems *)
 
