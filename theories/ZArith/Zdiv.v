@@ -72,6 +72,9 @@ Fixpoint Zdiv_eucl_POS [a:positive] : Z -> Z*Z := [b:Z]
   if b < 0 and a > 0 : let (q,r) = div_eucl a (-b) in 
                        if r = 0 then (-q,0) else (-(q+1),b+r)
 
+  In other word, when b is non-zero, q is chosen to be the greatest integer 
+  smaller or equal to a/b. And sgn(r)=sgn(b) and |r| < |b|.
+
 *)
 
 Definition Zdiv_eucl [a,b:Z] : Z*Z :=
@@ -369,6 +372,11 @@ Pattern 1 `a+b*c`; Rewrite H0.
 Ring.
 Save.
 
+Lemma Z_div_mult : (a,b:Z)`b > 0`->`(a*b)/b = a`.
+Intros; Replace `a*b` with `0+a*b`; Auto.
+Rewrite Z_div_plus; Auto.
+Save.
+
 Lemma Z_mult_div_ge : (a,b:Z)`b>0`->`b*(a/b) <= a`.
 Proof.
 Intros a b bPos.
@@ -401,3 +409,23 @@ Compute.
 Trivial.
 Ring.
 Save.
+
+Lemma Z_div_exact_1 : (a,b:Z)`b>0` -> `a = b*(a/b)` -> `a%b = 0`.
+Intros a b Hb; Generalize (Z_div_mod a b Hb); Unfold Zmod Zdiv.
+Case (Zdiv_eucl a b); Intros q r; Omega.
+Save.
+
+Lemma Z_div_exact_2 : (a,b:Z)`b>0` -> `a%b = 0` -> `a = b*(a/b)`.
+Intros a b Hb; Generalize (Z_div_mod a b Hb); Unfold Zmod Zdiv.
+Case (Zdiv_eucl a b); Intros q r; Omega.
+Save.
+
+Lemma Z_mod_zero_opp : (a,b:Z)`b>0` -> `a%b = 0` -> `(-a)%b = 0`.
+Intros a b Hb.
+Intros.
+Rewrite Z_div_exact_2 with a b; Auto.
+Replace `-(b*(a/b))` with `0+(-(a/b))*b`.
+Rewrite Z_mod_plus; Auto.
+Ring.
+Save.
+
