@@ -370,9 +370,9 @@ let pr_thm_token = function
   | Remark -> str"Remark"
 
 let pr_require_token = function
-  | Some true -> str "Export"
-  | Some false -> str "Import"
-  | None -> str "Closed"
+  | Some true -> str " Export"
+  | Some false -> str " Import"
+  | None -> mt()
 
 let pr_syntax_modifier = function
   | SetItemLevel (l,NextLevel) ->
@@ -718,7 +718,7 @@ let rec pr_vernac = function
           str key ++ spc() ++
           pr_id id ++ pr_and_type_binders_arg indpar ++ spc() ++ str":" ++ 
 	  spc() ++ pr_type s ++ 
-	  str" :=") ++ pr_constructor_list lc ++ fnl () ++ 
+	  str" :=") ++ pr_constructor_list lc ++ 
 	pr_decl_notation pr_constr ntn in
 
       (* Copie simplifiée de command.ml pour déclarer les notations locales *)
@@ -833,7 +833,7 @@ let rec pr_vernac = function
   | VernacBeginSection id -> hov 2 (str"Section" ++ spc () ++ pr_id id)
   | VernacEndSegment id -> hov 2 (str"End" ++ spc() ++ pr_id id)
   | VernacRequire (exp,spe,l) -> hov 2
-      (str "Require " ++ pr_require_token exp ++ spc() ++
+      (str "Require" ++ pr_require_token exp ++ spc() ++
       (match spe with
       |	None -> mt()
       |	Some flag ->

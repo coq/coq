@@ -710,7 +710,7 @@ let declareFunScheme f fname mutflist =
 
 VERNAC COMMAND EXTEND FunctionalScheme
  [ "Functional" "Scheme" ident(na) ":=" "Induction" "for" 
-    constr(c) "with" constr_list(l) ]
+    constr(c) "with" ne_constr_list(l) ]
   -> [ declareFunScheme c na l ]
 | [ "Functional" "Scheme" ident(na) ":=" "Induction" "for" constr(c) ]
   -> [ declareFunScheme c na [] ]

@@ -18,7 +18,7 @@ Uninterpreted Notation "x \/ y" (at level 7, right associativity)
   V8only (at level 85, right associativity).
 
 Uninterpreted Notation "x <-> y" (at level 8, right associativity)
-  V8only (at level 90, right associativity).
+  V8only (at level 95, no associativity).
 
 Uninterpreted Notation "~ x" (at level 5, right associativity)
   V8only (at level 75, right associativity).

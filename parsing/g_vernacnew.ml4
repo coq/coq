@@ -28,7 +28,7 @@ open Vernac_
 open Module
 
 
-let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:"; "..."; "where" ]
+let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:"; "..."; "where"; "at" ]
 let _ = 
   if not !Options.v7 then
     List.iter (fun s -> Lexer.add_token ("",s)) vernac_kw
@@ -337,8 +337,7 @@ GEXTEND Gram
   export_token:
     [ [ IDENT "Import" -> Some false
       | IDENT "Export" -> Some true
-      | IDENT "Closed" -> None
-      |  -> Some false ] ]
+      |  -> None ] ]
   ;
   specif_token:
     [ [ IDENT "Implementation" -> Some false
@@ -723,10 +722,10 @@ GEXTEND Gram
       | IDENT "next"; IDENT "level" -> NextLevel ] ]
   ;
   syntax_modifier:
-    [ [ x = IDENT; IDENT "at"; lev = level -> SetItemLevel ([x],lev)
-      | x = IDENT; ","; l = LIST1 IDENT SEP ","; IDENT "at"; 
+    [ [ x = IDENT; "at"; lev = level -> SetItemLevel ([x],lev)
+      | x = IDENT; ","; l = LIST1 IDENT SEP ","; "at"; 
         lev = level -> SetItemLevel (x::l,lev)
-      | IDENT "at"; IDENT "level"; n = natural -> SetLevel n
+      | "at"; IDENT "level"; n = natural -> SetLevel n
       | IDENT "left"; IDENT "associativity" -> SetAssoc Gramext.LeftA
       | IDENT "right"; IDENT "associativity" -> SetAssoc Gramext.RightA
       | IDENT "no"; IDENT "associativity" -> SetAssoc Gramext.NonA

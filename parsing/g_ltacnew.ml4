@@ -94,9 +94,9 @@ GEXTEND Gram
           body = tactic_expr -> TacLetRecIn (rcl,body)
       | "let"; llc = LIST1 let_clause SEP "with"; "in";
           u = tactic_expr -> TacLetIn (make_letin_clause loc llc,u)
-      | "match"; IDENT "context"; "with"; mrl = match_context_list; "end" ->
+      | "match"; IDENT "goal"; "with"; mrl = match_context_list; "end" ->
           TacMatchContext (false,mrl)
-      | "match"; IDENT "reverse"; IDENT "context"; "with";
+      | "match"; IDENT "reverse"; IDENT "goal"; "with";
         mrl = match_context_list; "end" ->
           TacMatchContext (true,mrl)
       |	"match"; c = tactic_expr; "with"; mrl = match_list; "end" ->
@@ -114,15 +114,9 @@ GEXTEND Gram
       | IDENT "fail"; n = [ n = natural -> n | -> fail_default_value ];
 	  s = [ s = STRING -> s | -> ""] -> TacFail (n,s)
       | st = simple_tactic -> TacAtom (loc,st)
-      | IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->
-	  TacArg(ConstrMayEval (ConstrEval (rtc,c)))
-      | IDENT "context"; id = identref; "["; c = Constr.lconstr; "]" ->
-	  TacArg(ConstrMayEval (ConstrContext (id,c)))
-      | IDENT "check"; c = Constr.constr ->
-	  TacArg(ConstrMayEval (ConstrTypeOf c))
-      | IDENT "fresh"; s = OPT STRING ->
-	  TacArg (TacFreshId s)
-      | "'"; c = Constr.constr -> TacArg(ConstrMayEval(ConstrTerm c))
+      | a = may_eval_arg -> TacArg(a)
+      | IDENT"constr"; ":"; c = Constr.constr ->
+          TacArg(ConstrMayEval(ConstrTerm c))
       | r = reference; la = LIST1 tactic_arg ->
           TacArg(TacCall (loc,r,la))
       | r = reference -> TacArg (Reference r) ]
@@ -132,9 +126,20 @@ GEXTEND Gram
   ;
   (* Tactic arguments *)
   tactic_arg:
-    [ [ "'"; a = tactic_expr LEVEL "0" -> arg_of_expr a
+    [ [ IDENT "ltac"; ":"; a = tactic_expr LEVEL "0" -> arg_of_expr a
+      | a = may_eval_arg -> a
       | a = tactic_atom -> a
       | c = Constr.constr -> ConstrMayEval (ConstrTerm c) ] ]
+  ;
+  may_eval_arg:
+    [ [ IDENT "eval"; rtc = red_expr; "in"; c = Constr.constr ->
+	  ConstrMayEval (ConstrEval (rtc,c))
+      | IDENT "context"; id = identref; "["; c = Constr.lconstr; "]" ->
+	  ConstrMayEval (ConstrContext (id,c))
+      | IDENT "type"; "of"; c = Constr.constr ->
+	  ConstrMayEval (ConstrTypeOf c)
+      | IDENT "fresh"; s = OPT STRING ->
+	  TacFreshId s ] ]
   ;
   tactic_atom:
     [ [ id = METAIDENT -> MetaIdArg (loc,id)
@@ -149,13 +154,7 @@ GEXTEND Gram
     [ [ id = identref; ":="; te = tactic_expr ->
           LETCLAUSE (id, None, arg_of_expr te)
       | id = identref; args = LIST1 input_fun; ":="; te = tactic_expr ->
-          LETCLAUSE (id, None, arg_of_expr (TacFun(args,te)))
-      | (_,id) = identref; ":"; c = Constr.lconstr; ":="; IDENT "proof" ->
-          LETTOPCLAUSE (id, c)
-      | id = identref; ":"; c = tactic_expr; ":="; te = tactic_expr ->
-          LETCLAUSE (id, Some c, arg_of_expr te)
-      |	(_,id) = identref; ":"; c = Constr.constr ->
-	  LETTOPCLAUSE (id, c) ] ]
+          LETCLAUSE (id, None, arg_of_expr (TacFun(args,te))) ] ]
   ;
   rec_clause:
     [ [ name = identref; it = LIST1 input_fun; ":="; body = tactic_expr ->
@@ -173,6 +172,8 @@ GEXTEND Gram
   match_context_rule:
     [ [ largs = LIST0 match_hyps SEP ","; "|-"; mp = match_pattern;
         "=>"; te = tactic_expr -> Pat (largs, mp, te)
+      | "["; largs = LIST0 match_hyps SEP ","; "|-"; mp = match_pattern;
+        "]"; "=>"; te = tactic_expr -> Pat (largs, mp, te)
       | "_"; "=>"; te = tactic_expr -> All te ] ]
   ;
   match_context_list:

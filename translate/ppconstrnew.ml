@@ -418,7 +418,7 @@ let rec pr inherited a =
 	str"fun" ++ spc() ++ pr_delimited_binders (pr ltop) bl ++
         str " =>" ++ spc() ++ pr ltop a),
       llambda
-  | CLetIn (_,(_,Name x),(CFix(_,(_,x'),_)|CCoFix(_,(_,x'),_) as fx), b)
+  | CLetIn (_,(_,Name x),(CFix(_,(_,x'),[_])|CCoFix(_,(_,x'),[_]) as fx), b)
       when x=x' ->
       hv 0 (
         hov 2 (str "let " ++ pr ltop fx ++ str " in") ++
@@ -600,8 +600,15 @@ let pr_lrawconstr_env env c =
 
 let pr_cases_pattern = pr_patt ltop
 
-let pr_occurrences prc (nl,c) =
-   prc c ++ prlist (fun n -> spc () ++ int n) nl
+let pr_pattern_occ prc = function
+    ([],c) -> prc c
+  | (nl,c) -> hov 1 (prc c ++ spc() ++ str"at " ++
+                     hov 0 (prlist_with_sep spc int nl))
+
+let pr_unfold_occ pr_ref = function
+    ([],qid) -> pr_ref qid
+  | (nl,qid) -> hov 1 (pr_ref qid ++ spc() ++ str"at " ++
+                       hov 0 (prlist_with_sep spc int nl))
 
 let pr_qualid qid = str (string_of_qualid qid)
 
@@ -627,7 +634,7 @@ let pr_metaid id = str"?" ++ pr_id id
 let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
   | Red false -> str "red"
   | Hnf -> str "hnf"
-  | Simpl o -> str "simpl" ++ pr_opt (pr_occurrences pr_constr) o  
+  | Simpl o -> str "simpl" ++ pr_opt (pr_pattern_occ pr_constr) o  
   | Cbv f ->
       if f = {rBeta=true;rIota=true;rZeta=true;rDelta=true;rConst=[]} then
 	str "compute"
@@ -636,13 +643,12 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
   | Lazy f -> 
       hov 1 (str "lazy" ++ pr_red_flag pr_ref f)
   | Unfold l ->
-      hov 1 (str "unfold " ++
-        prlist_with_sep pr_coma (fun (nl,qid) ->
-	  pr_ref qid ++ prlist (pr_arg int) nl) l)
+      hov 1 (str "unfold" ++ spc() ++
+             prlist_with_sep pr_coma (pr_unfold_occ pr_ref) l)
   | Fold l -> hov 1 (str "fold" ++ prlist (pr_arg pr_constr) l)
   | Pattern l ->
       hov 1 (str "pattern" ++
-        pr_arg (prlist_with_sep pr_coma (pr_occurrences pr_constr)) l)
+        pr_arg (prlist_with_sep pr_coma (pr_pattern_occ pr_constr)) l)
         
   | Red true -> error "Shouldn't be accessible from user"
   | ExtraRedExpr (s,c) ->
@@ -656,10 +662,10 @@ let rec pr_may_eval prc prlc pr2 = function
 	 str " in" ++ spc() ++ prc c)
   | ConstrContext ((_,id),c) ->
       hov 0
-	(str "inst " ++ pr_id id ++ spc () ++
+	(str "context " ++ pr_id id ++ spc () ++
 	 str "[" ++ prlc c ++ str "]")
-  | ConstrTypeOf c -> hov 1 (str "check" ++ spc() ++ prc c)
-  | ConstrTerm c -> prlc c
+  | ConstrTypeOf c -> hov 1 (str "type of" ++ spc() ++ prc c)
+  | ConstrTerm c -> prc c
 
 let pr_rawconstr_env_no_translate env c =
   pr lsimple (Constrextern.extern_rawconstr (Termops.vars_of_env env) c)

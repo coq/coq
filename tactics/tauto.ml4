@@ -54,7 +54,7 @@ let is_disj ist =
 
 let not_dep_intros ist =
   <:tactic<
-  repeat match context with
+  repeat match goal with
   | |- (?X1 -> ?X2) => intro
   | |- (Coq.Init.Logic.iff _ _) => unfold Coq.Init.Logic.iff
   | |- (Coq.Init.Logic.not _)   => unfold Coq.Init.Logic.not
@@ -68,7 +68,7 @@ let axioms ist =
   let t_is_unit = tacticIn is_unit
   and t_is_empty = tacticIn is_empty in
     <:tactic<
-    match reverse context with
+    match reverse goal with
       | |- ?X1 => $t_is_unit; constructor 1
       | _:?X1 |- _ => $t_is_empty; elimtype X1; assumption
       | _:?X1 |- ?X1 => assumption
@@ -83,7 +83,7 @@ let simplif ist =
   <:tactic<
     $t_not_dep_intros;
     repeat
-       (match reverse context with
+       (match reverse goal with
         | id: (?X1 _ _) |- _ =>
             $t_is_conj; elim id; do 2 intro; clear id
         | id: (?X1 _ _) |- _ => $t_is_disj; elim id; intro; clear id
@@ -127,7 +127,7 @@ let rec tauto_intuit t_reduce solver ist =
   let t_solver = Tacexpr.TacArg (valueIn (VTactic (dummy_loc,solver))) in
   <:tactic<
    ($t_simplif;$t_axioms
-   || match reverse context with
+   || match reverse goal with
       | id:(?X1-> ?X2)-> ?X3|- _ =>
 	  cut X3;
 	    [ intro; clear id; $t_tauto_intuit 
@@ -140,7 +140,7 @@ let rec tauto_intuit t_reduce solver ist =
       end
     ||
     (* NB: [|- _ -> _] matches any product *)
-    match context with | |- _ -> _ => intro; $t_tauto_intuit
+    match goal with | |- _ -> _ => intro; $t_tauto_intuit
     |  |- _  => $t_reduce;$t_solver
     end
     ||
@@ -149,7 +149,7 @@ let rec tauto_intuit t_reduce solver ist =
     
 let reduction_not_iff=interp
  <:tactic<repeat 
-  match context with 
+  match goal with 
   | |- _     => progress unfold Coq.Init.Logic.not, Coq.Init.Logic.iff 
   | H:_ |- _ => progress unfold Coq.Init.Logic.not, Coq.Init.Logic.iff in H
   end >>
@@ -173,7 +173,7 @@ let default_intuition_tac = interp <:tactic< auto with * >>
 
 let q_elim tac=
   <:tactic<
-  match context with 
+  match goal with 
     x : ?X1, H : ?X1 -> _ |- _ => generalize (H x); clear H; $tac
   end >>
 

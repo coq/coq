@@ -472,12 +472,8 @@ let apply_without_reduce c gl =
   let clause = mk_clenv_type_of wc c in 
   res_pf kONT clause gl
 
-(* Dead code
-let refinew_scheme kONT clause gl = res_pf kONT clause gl
-*)
-
 (* A useful resolution tactic which, if c:A->B, transforms |- C into
-   |- B -> C and |- A (which is realized by Cut B;[Idtac|Apply c]
+   |- B -> C and |- A
 
    -------------------
    Gamma |- c : A -> B      Gamma |- ?2 : A
@@ -485,7 +481,13 @@ let refinew_scheme kONT clause gl = res_pf kONT clause gl
            Gamma |- B                        Gamma |- ?1 : B -> C
            -----------------------------------------------------
                              Gamma |- ? : C
- *)
+
+ Ltac lapply c :=
+  let ty := check c in
+  match eval hnf in ty with
+    ?A -> ?B => cut B; [ idtac | apply c ]
+  end.
+*)
 
 let cut_and_apply c gl =
   let goal_constr = pf_concl gl in 

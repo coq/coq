@@ -542,14 +542,26 @@ let make_anon_notation symbols =
 let make_symbolic n symbols etyps =
   ((n,List.map (assoc_of_type n) etyps), make_anon_notation symbols)
 
+let is_not_small_constr = function
+    ETConstr _ -> true
+  | ETOther("constr","binder_constr") -> true
+  | _ -> false
+
 let rec define_keywords = function
-    NonTerm(_,Some(_,(ETConstr _|ETOther("constr","binder_constr")))) as n1 ::
-    Term("IDENT",k) :: l when not !Options.v7 ->
+    NonTerm(_,Some(_,e)) as n1 :: Term("IDENT",k) :: l
+     when not !Options.v7 && is_not_small_constr e ->
       prerr_endline ("Defining '"^k^"' as keyword");
       Lexer.add_token("",k);
       n1 :: Term("",k) :: define_keywords l
   | n :: l -> n :: define_keywords l
   | [] -> []
+
+let define_keywords = function
+    Term("IDENT",k)::l when not !Options.v7 ->
+      prerr_endline ("Defining '"^k^"' as keyword");
+      Lexer.add_token("",k);
+      Term("",k) :: define_keywords l
+  | l -> define_keywords l
 
 let make_production etyps symbols =
   let prod =

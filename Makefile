@@ -1149,7 +1149,7 @@ GRAMMARNEEDEDCMO=\
   proofs/tacexpr.cmo parsing/ast.cmo \
   parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
   toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_coqast.cmo \
-  parsing/egrammar.cmo 
+  parsing/egrammar.cmo
 
 CAMLP4EXTENSIONSCMO=\
   parsing/argextend.cmo parsing/tacextend.cmo parsing/vernacextend.cmo 

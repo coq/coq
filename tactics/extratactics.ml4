@@ -113,10 +113,16 @@ END
 (* AutoRewrite *)
 
 open Autorewrite
-TACTIC EXTEND Autorewrite
+TACTIC EXTEND AutorewriteV7
   [ "AutoRewrite" "[" ne_preident_list(l) "]" ] ->
     [ autorewrite Refiner.tclIDTAC l ]
 | [ "AutoRewrite" "[" ne_preident_list(l) "]" "using" tactic(t) ] ->
+    [ autorewrite (snd t) l ]
+END
+TACTIC EXTEND AutorewriteV8
+  [ "AutoRewrite" "with" ne_preident_list(l) ] ->
+    [ autorewrite Refiner.tclIDTAC l ]
+| [ "AutoRewrite" "with" ne_preident_list(l) "using" tactic(t) ] ->
     [ autorewrite (snd t) l ]
 END
 
@@ -126,7 +132,7 @@ let add_rewrite_hint name ort t lcsr =
   add_rew_rules name (List.map f lcsr)
 
 (* V7 *)
-VERNAC COMMAND EXTEND HintRewrite_v7
+VERNAC COMMAND EXTEND HintRewriteV7
   [ "Hint" "Rewrite" orient(o) "[" ne_constr_list(l) "]" "in" preident(b) ] ->
   [ add_rewrite_hint b o Tacexpr.TacId l ]
 | [ "Hint" "Rewrite" orient(o) "[" ne_constr_list(l) "]" "in" preident(b)
@@ -135,7 +141,7 @@ VERNAC COMMAND EXTEND HintRewrite_v7
 END
 
 (* V8 *)
-VERNAC COMMAND EXTEND HintRewrite
+VERNAC COMMAND EXTEND HintRewriteV8
   [ "Hint" "Rewrite" orient(o) ne_constr_list(l) ":" preident(b) ] ->
   [ add_rewrite_hint b o Tacexpr.TacId l ]
 | [ "Hint" "Rewrite" orient(o) ne_constr_list(l) "using" tactic(t)

@@ -127,7 +127,7 @@ let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
 
 if not !Options.v7 then
 GEXTEND Gram
-  GLOBAL: simple_tactic constrarg constr_with_bindings quantified_hypothesis
+  GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis
     red_expr int_or_var castedopenconstr;
 
   int_or_var:
@@ -163,14 +163,6 @@ GEXTEND Gram
       |	id = METAIDENT -> MetaId (loc,id)
       ] ]
   ;
-  constrarg:
-    [ [ IDENT "inst"; id = identref; "["; c = Constr.lconstr; "]" ->
-        ConstrContext (id, c)
-      | IDENT "eval"; rtc = Tactic.red_expr; "in"; c = Constr.constr ->
-        ConstrEval (rtc,c) 
-      | IDENT "check"; c = Constr.constr -> ConstrTypeOf c
-      | c = Constr.constr -> ConstrTerm c ] ]
-  ;
   castedopenconstr:
     [ [ c = constr -> c ] ]
   ;
@@ -186,11 +178,16 @@ GEXTEND Gram
   conversion:
     [ [ c = constr -> (None, c)
       | c1 = constr; "with"; c2 = constr -> (Some ([],c1), c2)
-      | c1 = constr; IDENT "at"; nl = LIST1 integer; "with"; c2 = constr ->
+      | c1 = constr; "at"; nl = LIST1 integer; "with"; c2 = constr ->
 	  (Some (nl,c1), c2) ] ]
   ;
   pattern_occ:
-    [ [ c = constr; nl = LIST0 integer -> (nl,c) ] ]
+    [ [ c = constr; "at"; nl = LIST0 integer -> (nl,c)
+      | c = constr -> ([],c) ] ]
+  ;
+  unfold_occ:
+    [ [ c = global; "at"; nl = LIST0 integer -> (nl,c)
+      | c = global -> ([],c) ] ]
   ;
   pattern_occ_hyp_tail_list:
     [ [ pl = pattern_occ_hyp_list -> pl | -> (None,[]) ] ]
@@ -231,9 +228,6 @@ GEXTEND Gram
   with_binding_list:
     [ [ "with"; bl = binding_list -> bl | -> NoBindings ] ]
   ;
-  unfold_occ:
-    [ [ c = global; nl = LIST0 integer -> (nl,c) ] ]
-  ;
   red_flag:
     [ [ IDENT "beta" -> FBeta
       | IDENT "delta" -> FDeltaBut []
@@ -252,7 +246,7 @@ GEXTEND Gram
       | IDENT "compute" -> Cbv (make_red_flag [FBeta;FIota;FDeltaBut [];FZeta])
       | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl
-      | IDENT "pattern"; pl = LIST1 pattern_occ SEP "," -> Pattern pl ] ]
+      | IDENT "pattern"; pl = LIST1 pattern_occ SEP","-> Pattern pl ] ]
   ;
   (* This is [red_tactic] including possible extensions *)
   red_expr:
@@ -394,8 +388,8 @@ GEXTEND Gram
       | IDENT "left"; bl = with_binding_list -> TacLeft bl
       | IDENT "right"; bl = with_binding_list -> TacRight bl
       | IDENT "split"; bl = with_binding_list -> TacSplit (false,bl)
-      | IDENT "exists"; bl = binding_list -> TacSplit (true,bl)
-      | IDENT "exists" -> TacSplit (true,NoBindings)
+      | "exists"; bl = binding_list -> TacSplit (true,bl)
+      | "exists" -> TacSplit (true,NoBindings)
       | IDENT "constructor"; n = num_or_meta; l = with_binding_list ->
 	  TacConstructor (n,l)
       | IDENT "constructor"; t = OPT tactic -> TacAnyConstructor t

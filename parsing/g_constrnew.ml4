@@ -79,6 +79,9 @@ let mk_fix(loc,kw,id,dcls) =
     let fb = List.map mk_cofixb dcls in
     CCoFix(loc,id,fb)
 
+let mk_single_fix (loc,kw,dcl) =
+  let (_,id,_,_,_,_) = dcl in mk_fix(loc,kw,id,[dcl])
+
 let binder_constr =
   create_constr_entry (get_univ "constr") "binder_constr"
 
@@ -197,12 +200,13 @@ GEXTEND Gram
             | LocalRawDef ((loc,_),_)::_ -> loc
             | _ -> dummy_loc in
           CLetIn(loc,id,mkCLambdaN loc1 bl (mk_cast(c1,ty)),c2)
-      | "let"; fx = fix_constr; "in"; c = operconstr LEVEL "200" ->
-          let (li,id) = match fx with
+      | "let"; fx = single_fix; "in"; c = operconstr LEVEL "200" ->
+          let fixp = mk_single_fix fx in
+          let (li,id) = match fixp with
               CFix(_,id,_) -> id
             | CCoFix(_,id,_) -> id
             | _ -> assert false in
-          CLetIn(loc,(li,Name id),fx,c)
+          CLetIn(loc,(li,Name id),fixp,c)
       | "let"; lb = ["("; l=LIST0 name SEP ","; ")" -> l | "()" -> []];
 	  po = return_type;
 	  ":="; c1 = operconstr LEVEL "200"; "in";
@@ -227,13 +231,15 @@ GEXTEND Gram
       | "?"; id=ident -> CPatVar(loc,(false,id)) ] ]
   ;
   fix_constr:
-    [ [ kw=fix_kw; dcl=fix_decl ->
-          let (_,n,_,_,_,_) = dcl in mk_fix(loc,kw,n,[dcl])
-      | kw=fix_kw; dcl1=fix_decl; "with"; dcls=LIST1 fix_decl SEP "with";
+    [ [ fx1=single_fix -> mk_single_fix fx1
+      | (_,kw,dcl1)=single_fix; "with"; dcls=LIST1 fix_decl SEP "with";
         "for"; id=identref ->
           mk_fix(loc,kw,id,dcl1::dcls)
     ] ]
-    ;
+  ;
+  single_fix:
+    [ [ kw=fix_kw; dcl=fix_decl -> (loc,kw,dcl) ] ]
+  ;
   fix_kw:
     [ [ "fix" -> true
       | "cofix" -> false ] ]

@@ -316,8 +316,8 @@ $$
 \KWD{IF}~\notv~\KWD{then}~\notv~\KWD{else}~\notv
                      & 200R \\
 \infx{:}             & 100R \\
-\infx{\rightarrow}\quad \infx{\leftrightarrow}
-                     & 90R \\
+\infx{\leftrightarrow} & 95N \\
+\infx{\rightarrow}   & 90R \\
 \infx{\vee}          & 85R \\
 \infx{\wedge}        & 80R \\
 \tilde{}\notv        & 75R \\
@@ -404,6 +404,8 @@ $$
 \nlsep \TERM{cut}~\tacconstr
 \nlsep \TERM{assert}~\tacconstr
 \nlsep \TERM{assert}~
+  \TERM{(}~\NT{ident}~\KWD{:}~\taclconstr~\TERM{)}
+\nlsep \TERM{assert}~
   \TERM{(}~\NT{ident}~\KWD{:=}~\taclconstr~\TERM{)}
 \nlsep \TERM{pose}~\tacconstr
 \nlsep \TERM{pose}~
@@ -461,13 +463,13 @@ $$
 \nlsep \TERM{symmetry}~\OPTGR{\KWD{in}~\NT{ident}}
 \nlsep \TERM{transitivity}~\tacconstr
 %%
-\nlsep \NT{inversion-kwd}~\NT{quantified-hyp}~\NT{with-names}~\NT{clause}
+\nlsep \NT{inversion-kwd}~\NT{quantified-hyp}~\NT{with-names}~\OPT{\NT{clause}}
 \nlsep \TERM{dependent}~\NT{inversion-kwd}~\NT{quantified-hyp}
   ~\NT{with-names}~\OPTGR{\KWD{with}~\tacconstr}
-\nlsep \TERM{inversion}~\NT{quantified-hyp}~\TERM{using}~\tacconstr~\NT{clause}
+\nlsep \TERM{inversion}~\NT{quantified-hyp}~\TERM{using}~\tacconstr~\OPT{\NT{clause}}
 %%
-\nlsep \NT{red-expr}~\NT{clause}
-\nlsep \TERM{change}~\NT{conversion}~\NT{clause}
+\nlsep \NT{red-expr}~\OPT{\NT{clause}}
+\nlsep \TERM{change}~\NT{conversion}~\OPT{\NT{clause}}
 \SEPDEF
 \DEFNT{red-expr}
        \TERM{red} ~\mid~ \TERM{hnf} ~\mid~ \TERM{compute}
@@ -543,18 +545,29 @@ Conflicts exists between integers and constrs.
        \TERM{delta}~\OPT{\TERM{-}}~\TERM{[}~\PLUS{\NT{reference}}~\TERM{]}
 \SEPDEF
 \DEFNT{clause}
-       \OPTGR{\KWD{in}~\PLUS{\NT{hyp-ident}}}
+       \KWD{in}~\TERM{*}
+\nlsep \KWD{in}~\OPT{\TERM{hyp-ident-list}} \KWD{\vdash} \OPT{\TERM{*}}
+\SEPDEF
+\DEFNT{hyp-ident-list}
+       \NT{hyp-ident}
+\nlsep \NT{hyp-ident}~\KWD{,}~\NT{hyp-ident-list}
 \SEPDEF
 \DEFNT{hyp-ident}
        \NT{ident}
 \nlsep \KWD{(}~\TERM{type}~\TERM{of}~\NT{ident}~\KWD{)}
+\nlsep \KWD{(}~\TERM{value}~\TERM{of}~\NT{ident}~\KWD{)}
 \SEPDEF
 \DEFNT{clause-pattern}
-       \KWD{in}~\NT{pattern-hyp-list}
+       \KWD{in}~\TERM{*}
+\nlsep \KWD{in}~\OPT{\TERM{hyp-ident-occ-list}} \KWD{\vdash} \OPT{\TERM{*}}
 \SEPDEF
-\DEFNT{pattern-hyp-list}
-       \STAR{\NT{int}}~\TERM{goal}
-\nlsep \STAR{\NT{int}}~\NT{ident}~\OPT{\NT{pattern-hyp-list}}
+\DEFNT{hyp-ident-occ-list}
+       \NT{hyp-ident-occ}
+\nlsep \NT{hyp-ident-occ}~\KWD{,}~\NT{hyp-ident-occ-list}
+\SEPDEF
+\DEFNT{hyp-ident-occ}
+       \NT{hyp-ident}
+\nlsep \NT{hyp-ident}~\KWD{at}~\PLUS{\NT{int}}
 \SEPDEF
 \DEFNT{hint-bases}
        \KWD{with}~\TERM{*}
@@ -592,8 +605,8 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
        ~\NT{tactic}  &1 &\RNAME{Fun-tac}
 \nlsep \KWD{let} ~\NT{let-clauses} ~\KWD{in} ~\NT{tactic}
 \nlsep \KWD{let} ~\TERM{rec} ~\NT{rec-clauses} ~\KWD{in} ~\NT{tactic}
-\nlsep \KWD{match}~\OPT{\TERM{reverse}}~\TERM{context}~\KWD{with}
-       ~\OPT{\TERMbar}~\OPT{\NT{match-ctxt-rules}} ~\KWD{end}
+\nlsep \KWD{match}~\OPT{\TERM{reverse}}~\TERM{goal}~\KWD{with}
+       ~\OPT{\TERMbar}~\OPT{\NT{match-goal-rules}} ~\KWD{end}
 \nlsep \KWD{match} ~\NT{tactic} ~\KWD{with}
        ~\OPT{\TERMbar}~\OPT{\NT{match-rules}} ~\KWD{end}
 \nlsep \TERM{abstract}~\NT{tactic}~\OPTGR{\TERM{using}~\NT{ident}}
@@ -601,11 +614,8 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \TERM{solve}~\TERM{[} ~\NT{tactic-seq} ~\TERM{]}
 \nlsep \TERM{idtac}
 \nlsep \TERM{fail} ~\OPT{\NT{int}} ~\OPT{\NT{string}}
-\nlsep \TERM{fresh} ~\OPT{\NT{string}}
-\nlsep \TERM{context} ~\NT{ident} ~\TERM{[} ~\taclconstr ~\TERM{]}
-\nlsep \TERM{eval} ~\NT{red-expr} ~\KWD{in} ~\tacconstr
-\nlsep \TERM{type} ~\tacconstr
-\nlsep \TERM{'} ~\tacconstr
+\nlsep \TERM{constr}~\KWD{:}~\tacconstr
+\nlsep \NT{term-ltac}
 \nlsep \NT{reference}~\STAR{\NT{tactic-arg}}  &&\RNAME{call-tactic}
 \nlsep \NT{simple-tactic}
 %%
@@ -613,9 +623,16 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \KWD{(} ~\NT{tactic} ~\KWD{)}
 \SEPDEF
 \DEFNT{tactic-arg}
-       \TERM{\bf '} ~\NTL{tactic}{0}
+       \TERM{ltac}~\KWD{:}~\NTL{tactic}{0}
+\nlsep \NT{term-ltac}
 \nlsep \NT{tactic-atom}
 \nlsep \tacconstr
+\SEPDEF
+\DEFNT{term-ltac}
+       \TERM{fresh} ~\OPT{\NT{string}}
+\nlsep \TERM{context} ~\NT{ident} ~\TERM{[} ~\taclconstr ~\TERM{]}
+\nlsep \TERM{eval} ~\NT{red-expr} ~\KWD{in} ~\tacconstr
+\nlsep \TERM{type} ~\tacconstr
 \SEPDEF
 \DEFNT{tactic-atom}
        \NT{reference}
@@ -634,24 +651,23 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \SEPDEF
 \DEFNT{let-clause}
        \NT{ident} ~\STAR{\NT{name}} ~\KWD{:=} ~\NT{tactic}
-\nlsep \NT{ident} ~\KWD{:} ~\tacconstr
-\nlsep \NT{ident} ~\KWD{:} ~\taclconstr ~\KWD{:=}~\TERM{proof}
-\nlsep \NT{ident} ~\KWD{:} ~\taclconstr ~\KWD{:=} ~\NT{tactic}
 \SEPDEF
 \DEFNT{rec-clauses}
        \NT{rec-clause} ~\KWD{with} ~\NT{rec-clauses}
 \nlsep \NT{rec-clause}
 \SEPDEF
 \DEFNT{rec-clause}
-       \NT{ident} ~\PLUS{\NT{name}} ~\KWD{$\Rightarrow$} ~\NT{tactic}
+       \NT{ident} ~\PLUS{\NT{name}} ~\KWD{:=} ~\NT{tactic}
 \SEPDEF
-\DEFNT{match-ctxt-rules}
-       \NT{match-ctxt-rule}
-\nlsep \NT{match-ctxt-rule} ~\TERMbar ~\NT{match-ctxt-rules}
+\DEFNT{match-goal-rules}
+       \NT{match-goal-rule}
+\nlsep \NT{match-goal-rule} ~\TERMbar ~\NT{match-goal-rules}
 \SEPDEF
-\DEFNT{match-ctxt-rule}
+\DEFNT{match-goal-rule}
        \NT{match-hyps-list} ~\TERM{$\vdash$} ~\NT{match-pattern}
        ~\KWD{$\Rightarrow$} ~\NT{tactic}
+\nlsep \KWD{[}~\NT{match-hyps-list} ~\TERM{$\vdash$} ~\NT{match-pattern}
+       ~\KWD{]}~\KWD{$\Rightarrow$} ~\NT{tactic}
 \nlsep \KWD{_} ~\KWD{$\Rightarrow$} ~\NT{tactic}
 \SEPDEF
 \DEFNT{match-hyps-list}
@@ -698,8 +714,7 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
          ~\OPTGR{\KWD{in}~\NT{ident}}
 \nlsep \TERM{absurd} ~\tacconstr
 \nlsep \TERM{contradiction}
-\nlsep \TERM{autorewrite}~\TERM{[}~\PLUS{\NT{ident}}~\TERM{]}
-         ~\OPTGR{\KWD{using}~\NT{tactic}}
+\nlsep \TERM{autorewrite}~\NT{hint-bases}~\OPTGR{\KWD{using}~\NT{tactic}}
 \nlsep \TERM{refine}~\tacconstr
 \nlsep \TERM{setoid_replace} ~\tacconstr ~\KWD{with} ~\tacconstr
 \nlsep \TERM{setoid_rewrite} ~\NT{orient} ~\tacconstr

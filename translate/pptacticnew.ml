@@ -265,7 +265,7 @@ let pr_match_rule m pr pr_pat = function
   | All t -> str "_" ++ spc () ++ str "=>" ++ brk (1,4) ++ pr t
 
 let pr_funvar = function
-  | None -> spc () ++ str "()"
+  | None -> spc () ++ str "_"
   | Some id -> spc () ++ pr_id id
 
 let pr_let_clause k pr = function
@@ -305,15 +305,15 @@ let pr_hintbases = function
 let pr_autoarg_adding = function
   | [] -> mt ()
   | l ->
-      spc () ++ str "Adding [" ++
+      spc () ++ str "adding [" ++
         hv 0 (prlist_with_sep spc pr_reference l) ++ str "]"
 
 let pr_autoarg_destructing = function
-  | true -> spc () ++ str "Destructing"
+  | true -> spc () ++ str "destructing"
   | false -> mt ()
 
 let pr_autoarg_usingTDB = function
-  | true -> spc () ++ str "Using TDB"
+  | true -> spc () ++ str "using tdb"
   | false -> mt ()
 
 let rec pr_tacarg_using_rule pr_gen = function
@@ -555,17 +555,16 @@ and pr_atom1 env = function
   | TacReduce (r,h) ->
       hov 1 (pr_red_expr (pr_constr env,pr_lconstr env,pr_cst env) r ++
              pr_clause pr_ident h)
-  | TacChange (occ,c,h) -> (* A Verifier *)
+  | TacChange (occ,c,h) ->
       hov 1 (str "change" ++ brk (1,1) ++
       (match occ with
           None -> mt()
+        | Some([],c1) ->
+            hov 1 (pr_constr env c1 ++ spc() ++ str "with ")
         | Some(ocl,c1) ->
             hov 1 (pr_constr env c1 ++ spc() ++
-	    if ocl <> [] then
-	      str "at " ++ prlist (fun i -> int i ++ spc()) ocl
-	    else
-	      mt ()) ++
-	    spc() ++ str "with ") ++
+	           str "at " ++ prlist_with_sep spc int ocl) ++ spc() ++
+	           str "with ") ++
       pr_constr env c ++ pr_clause pr_ident h)
 
   (* Equivalence relations *)
@@ -632,7 +631,7 @@ let rec pr_tac env inherited tac =
       lmatch
   | TacMatchContext (lr,lrul) ->
       hov 0 (
-	str (if lr then "match reverse context with" else "match context with")
+	str (if lr then "match reverse goal with" else "match goal with")
 	++ prlist
 	  (fun r -> fnl () ++ str "| " ++
             pr_match_rule false (pr_tac env ltop) pr_pat r)
@@ -683,9 +682,11 @@ let rec pr_tac env inherited tac =
   | TacAtom (loc,t) ->
       pr_with_comments loc (hov 1 (pr_atom1 env t)), ltatom
   | TacArg(Tacexp e) -> pr_tac0 env e, latom
-  | TacArg(ConstrMayEval (ConstrTerm c)) -> str "'" ++ pr_constr env c, latom
+  | TacArg(ConstrMayEval (ConstrTerm c)) ->
+      str "constr:" ++ pr_constr env c, latom
   | TacArg(ConstrMayEval c) ->
       pr_may_eval (pr_constr env) (pr_lconstr env) (pr_cst env) c, leval
+  | TacArg(TacFreshId sopt) -> str "fresh" ++ pr_opt qsnew sopt, latom
   | TacArg(Integer n) -> int n, latom
   | TacArg(TacCall(loc,f,l)) ->
       pr_with_comments loc
@@ -704,10 +705,11 @@ and pr_tacarg env = function
   | Identifier id -> pr_id id
   | TacVoid -> str "()"
   | Reference r -> pr_ref r
-  | ConstrMayEval (ConstrTerm c) -> pr_constr env c
+  | ConstrMayEval c ->
+      pr_may_eval (pr_constr env) (pr_lconstr env) (pr_cst env) c
   | TacFreshId sopt -> str "fresh" ++ pr_opt qsnew sopt
-  | (ConstrMayEval _|TacCall _|Tacexp _|Integer _) as a ->
-      str "'" ++ pr_tac env (latom,E) (TacArg a)
+  | (TacCall _|Tacexp _|Integer _) as a ->
+      str "ltac:" ++ pr_tac env (latom,E) (TacArg a)
 
 in ((fun env -> pr_tac env ltop),
     (fun env -> pr_tac env (latom,E)),
