@@ -16,11 +16,11 @@ Require Rtrigo.
 Definition dist_euc [x0,y0,x1,y1:R] : R := ``(sqrt ((Rsqr (x0-x1))+(Rsqr (y0-y1))))``.
 
 Lemma distance_refl : (x0,y0:R) ``(dist_euc x0 y0 x0 y0)==0``.
-Intros x0 y0; Unfold dist_euc; Apply Rsqr_inj; [Apply foo; Apply ge0_plus_ge0_is_ge0; [Apply pos_Rsqr | Apply pos_Rsqr] | Right; Reflexivity | Rewrite Rsqr_O; Rewrite Rsqr_sqrt; [Unfold Rsqr; Ring | Apply ge0_plus_ge0_is_ge0; [Apply pos_Rsqr | Apply pos_Rsqr]]].
+Intros x0 y0; Unfold dist_euc; Apply Rsqr_inj; [Apply sqrt_positivity; Apply ge0_plus_ge0_is_ge0; [Apply pos_Rsqr | Apply pos_Rsqr] | Right; Reflexivity | Rewrite Rsqr_O; Rewrite Rsqr_sqrt; [Unfold Rsqr; Ring | Apply ge0_plus_ge0_is_ge0; [Apply pos_Rsqr | Apply pos_Rsqr]]].
 Qed.
 
 Lemma distance_symm : (x0,y0,x1,y1:R) ``(dist_euc x0 y0 x1 y1) == (dist_euc x1 y1 x0 y0)``. 
-Intros x0 y0 x1 y1; Unfold dist_euc; Apply Rsqr_inj; [ Apply foo; Apply ge0_plus_ge0_is_ge0 | Apply foo; Apply ge0_plus_ge0_is_ge0 | Repeat Rewrite Rsqr_sqrt; [Unfold Rsqr; Ring | Apply ge0_plus_ge0_is_ge0 |Apply ge0_plus_ge0_is_ge0]]; Apply pos_Rsqr.
+Intros x0 y0 x1 y1; Unfold dist_euc; Apply Rsqr_inj; [ Apply sqrt_positivity; Apply ge0_plus_ge0_is_ge0 | Apply sqrt_positivity; Apply ge0_plus_ge0_is_ge0 | Repeat Rewrite Rsqr_sqrt; [Unfold Rsqr; Ring | Apply ge0_plus_ge0_is_ge0 |Apply ge0_plus_ge0_is_ge0]]; Apply pos_Rsqr.
 Qed.
 
 Lemma law_cosines : (x0,y0,x1,y1,x2,y2,ac:R) let a = (dist_euc x1 y1 x0 y0) in let b=(dist_euc x2 y2 x0 y0) in let c=(dist_euc x2 y2 x1 y1) in ( ``a*c*(cos ac) == ((x0-x1)*(x2-x1) + (y0-y1)*(y2-y1))`` -> ``(Rsqr b)==(Rsqr c)+(Rsqr a)-2*(a*c*(cos ac))`` ).
@@ -28,7 +28,7 @@ Unfold dist_euc; Intros; Repeat Rewrite -> Rsqr_sqrt; [ Rewrite H; Unfold Rsqr; 
 Qed.
 
 Lemma triangle : (x0,y0,x1,y1,x2,y2:R) ``(dist_euc x0 y0 x1 y1)<=(dist_euc x0 y0 x2 y2)+(dist_euc x2 y2 x1 y1)``.
-Intros; Unfold dist_euc; Apply Rsqr_incr_0; [Rewrite Rsqr_plus; Repeat Rewrite Rsqr_sqrt; [Replace ``(Rsqr (x0-x1))`` with ``(Rsqr (x0-x2))+(Rsqr (x2-x1))+2*(x0-x2)*(x2-x1)``; [Replace ``(Rsqr (y0-y1))`` with ``(Rsqr (y0-y2))+(Rsqr (y2-y1))+2*(y0-y2)*(y2-y1)``; [Apply Rle_anti_compatibility with ``-(Rsqr (x0-x2))-(Rsqr (x2-x1))-(Rsqr (y0-y2))-(Rsqr (y2-y1))``; Replace `` -(Rsqr (x0-x2))-(Rsqr (x2-x1))-(Rsqr (y0-y2))-(Rsqr (y2-y1))+((Rsqr (x0-x2))+(Rsqr (x2-x1))+2*(x0-x2)*(x2-x1)+((Rsqr (y0-y2))+(Rsqr (y2-y1))+2*(y0-y2)*(y2-y1)))`` with ``2*((x0-x2)*(x2-x1)+(y0-y2)*(y2-y1))``; [Replace ``-(Rsqr (x0-x2))-(Rsqr (x2-x1))-(Rsqr (y0-y2))-(Rsqr (y2-y1))+((Rsqr (x0-x2))+(Rsqr (y0-y2))+((Rsqr (x2-x1))+(Rsqr (y2-y1)))+2*(sqrt ((Rsqr (x0-x2))+(Rsqr (y0-y2))))*(sqrt ((Rsqr (x2-x1))+(Rsqr (y2-y1)))))`` with ``2*((sqrt ((Rsqr (x0-x2))+(Rsqr (y0-y2))))*(sqrt ((Rsqr (x2-x1))+(Rsqr (y2-y1)))))``; [Apply Rle_monotony; [Left; Cut ~(O=(2)); [Intros; Generalize (lt_INR_0 (2) (neq_O_lt (2) H)); Intro H0; Assumption | Discriminate] | Apply sqrt_cauchy] | Ring] | Ring] | SqRing] | SqRing] | Apply ge0_plus_ge0_is_ge0; Apply pos_Rsqr | Apply ge0_plus_ge0_is_ge0; Apply pos_Rsqr | Apply ge0_plus_ge0_is_ge0; Apply pos_Rsqr] | Apply foo; Apply ge0_plus_ge0_is_ge0; Apply pos_Rsqr | Apply ge0_plus_ge0_is_ge0; Apply foo; Apply ge0_plus_ge0_is_ge0; Apply pos_Rsqr].
+Intros; Unfold dist_euc; Apply Rsqr_incr_0; [Rewrite Rsqr_plus; Repeat Rewrite Rsqr_sqrt; [Replace ``(Rsqr (x0-x1))`` with ``(Rsqr (x0-x2))+(Rsqr (x2-x1))+2*(x0-x2)*(x2-x1)``; [Replace ``(Rsqr (y0-y1))`` with ``(Rsqr (y0-y2))+(Rsqr (y2-y1))+2*(y0-y2)*(y2-y1)``; [Apply Rle_anti_compatibility with ``-(Rsqr (x0-x2))-(Rsqr (x2-x1))-(Rsqr (y0-y2))-(Rsqr (y2-y1))``; Replace `` -(Rsqr (x0-x2))-(Rsqr (x2-x1))-(Rsqr (y0-y2))-(Rsqr (y2-y1))+((Rsqr (x0-x2))+(Rsqr (x2-x1))+2*(x0-x2)*(x2-x1)+((Rsqr (y0-y2))+(Rsqr (y2-y1))+2*(y0-y2)*(y2-y1)))`` with ``2*((x0-x2)*(x2-x1)+(y0-y2)*(y2-y1))``; [Replace ``-(Rsqr (x0-x2))-(Rsqr (x2-x1))-(Rsqr (y0-y2))-(Rsqr (y2-y1))+((Rsqr (x0-x2))+(Rsqr (y0-y2))+((Rsqr (x2-x1))+(Rsqr (y2-y1)))+2*(sqrt ((Rsqr (x0-x2))+(Rsqr (y0-y2))))*(sqrt ((Rsqr (x2-x1))+(Rsqr (y2-y1)))))`` with ``2*((sqrt ((Rsqr (x0-x2))+(Rsqr (y0-y2))))*(sqrt ((Rsqr (x2-x1))+(Rsqr (y2-y1)))))``; [Apply Rle_monotony; [Left; Cut ~(O=(2)); [Intros; Generalize (lt_INR_0 (2) (neq_O_lt (2) H)); Intro H0; Assumption | Discriminate] | Apply sqrt_cauchy] | Ring] | Ring] | SqRing] | SqRing] | Apply ge0_plus_ge0_is_ge0; Apply pos_Rsqr | Apply ge0_plus_ge0_is_ge0; Apply pos_Rsqr | Apply ge0_plus_ge0_is_ge0; Apply pos_Rsqr] | Apply sqrt_positivity; Apply ge0_plus_ge0_is_ge0; Apply pos_Rsqr | Apply ge0_plus_ge0_is_ge0; Apply sqrt_positivity; Apply ge0_plus_ge0_is_ge0; Apply pos_Rsqr].
 Qed.
 
 (******************************************************************)
@@ -66,7 +66,7 @@ Intros; Unfold xr yr; Replace ``x1*(cos theta)+y1*(sin theta)-(x2*(cos theta)+y2
 Qed.
 
 Lemma isometric_rotation : (x1,y1,x2,y2,theta:R) ``(dist_euc x1 y1 x2 y2) == (dist_euc (xr x1 y1 theta) (yr x1 y1 theta) (xr x2 y2 theta) (yr x2 y2 theta))``.
-Unfold dist_euc; Intros; Apply Rsqr_inj; [Apply foo; Apply ge0_plus_ge0_is_ge0 | Apply foo; Apply ge0_plus_ge0_is_ge0 | Repeat Rewrite Rsqr_sqrt; [ Apply isometric_rotation_0 | Apply ge0_plus_ge0_is_ge0 | Apply ge0_plus_ge0_is_ge0]]; Apply pos_Rsqr.
+Unfold dist_euc; Intros; Apply Rsqr_inj; [Apply sqrt_positivity; Apply ge0_plus_ge0_is_ge0 | Apply sqrt_positivity; Apply ge0_plus_ge0_is_ge0 | Repeat Rewrite Rsqr_sqrt; [ Apply isometric_rotation_0 | Apply ge0_plus_ge0_is_ge0 | Apply ge0_plus_ge0_is_ge0]]; Apply pos_Rsqr.
 Qed.
 
 (******************************************************************)

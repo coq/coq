@@ -509,7 +509,7 @@ Apply prod_neq_R0; [DiscrR | Generalize (Rlt_le ``0`` ``3`` Rgt_3_0); Intro H1; 
 Qed.
 
 Lemma Rlt_sqrt2_0 : ``0<(sqrt 2)``.
-Generalize (foo ``2`` (Rlt_le ``0`` ``2`` Rgt_2_0)); Intro H1; Elim H1; Intro H2; [Assumption | Absurd ``0 == (sqrt 2)``; [Apply not_sym; Apply sqrt2_neq_0 | Assumption]].
+Generalize (sqrt_positivity ``2`` (Rlt_le ``0`` ``2`` Rgt_2_0)); Intro H1; Elim H1; Intro H2; [Assumption | Absurd ``0 == (sqrt 2)``; [Apply not_sym; Apply sqrt2_neq_0 | Assumption]].
 Qed.
 
 Lemma Rlt_sqrt3_0 : ``0<(sqrt 3)``.
