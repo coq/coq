@@ -10,7 +10,7 @@
 #install_printer  (* pattern *) pppattern;;
 #install_printer  (* rawconstr *) pprawterm;;
 
-#install_printer  (* constr *) ppterm0;;
+#install_printer  (* constr *) ppterm;;
 #install_printer  (* universe *)  print_uni;;
 #install_printer  (* universes *)  pp_universes;;
 #install_printer  (* type_judgement*) pptype;;

@@ -38,12 +38,8 @@ let (inPPSyntax,outPPSyntax) =
  * Note that object are checked before they are added in the environment.
  * Syntax objects in compiled modules are not re-checked. *)
 
-let ppobj_of_ast whatfor sel =
-  (whatfor, List.flatten (List.map (Extend.level_of_ast whatfor) sel))
-
 let add_syntax_obj whatfor sel =
-  let ppobj = ppobj_of_ast whatfor sel in
-  Lib.add_anonymous_leaf (inPPSyntax ppobj)
+  Lib.add_anonymous_leaf (inPPSyntax (interp_syntax_entry whatfor sel))
 
 
 (************************
@@ -78,7 +74,7 @@ let (inGrammar, outGrammar) =
        specification_function = (fun x -> x)})
 
 let add_grammar_obj univ al =
-   Lib.add_anonymous_leaf (inGrammar (Extend.gram_of_ast univ al))
+   Lib.add_anonymous_leaf (inGrammar (Extend.interp_grammar_command univ al))
 
 (* printing grammar entries *)
 let print_grammar univ entry =
@@ -115,10 +111,11 @@ let (inInfix, outInfix) =
     ("INFIX",
      { load_function = (fun _ -> ());
        open_function = (fun _ -> ());
-       cache_function = (fun (_,(gr,se)) ->
-                           Egrammar.extend_grammar gr;
-                           Esyntax.add_ppobject ("constr",se));
-       specification_function = (fun x -> x)})
+       cache_function =
+	 (fun (_,(gr,se)) ->
+            Egrammar.extend_grammar gr;
+            Esyntax.add_ppobject {sc_univ="constr";sc_entries=se});
+     specification_function = (fun x -> x)})
 
 let prec_assoc = function
   | Some(Gramext.RightA) -> (":L",":E")
@@ -126,11 +123,11 @@ let prec_assoc = function
   | Some(Gramext.NonA) -> (":L",":L")
   | None -> (":E",":L")  (* LEFTA by default *)
 
-let command_tab =
-  [| "command0"; "command1"; "command2"; "command3"; "lassoc_command4";
-     "command5"; "command6"; "command7"; "command8"; "command9"; "command10" |]
+let constr_tab =
+  [| "constr0"; "constr1"; "constr2"; "constr3"; "lassoc_constr4";
+     "constr5"; "constr6"; "constr7"; "constr8"; "constr9"; "constr10" |]
   
-let command n p = if p = ":E" then command_tab.(n) else command_tab.(n-1)
+let constr_rule n p = if p = ":E" then constr_tab.(n) else constr_tab.(n-1)
 
 let nonterm_meta nt var = NonTerm(NtShort nt, ETast, Some var)
 
@@ -172,17 +169,17 @@ let gram_infix assoc n infl pref =
                      Pcons(Pmeta("$a",Tany),
                            Pcons(Pmeta("$b",Tany),Pnil)))))
   in
-  { gc_univ = "command";
+  { gc_univ = "constr";
     gc_entries =
-      [ { ge_name = command n ":E";
+      [ { ge_name = constr_rule n ":E";
           ge_type = ETast;
           gl_assoc = None;
           gl_rules =
             [ { gr_name = pref^"_infix";
                 gr_production =
-                  (nonterm_meta (command n lp) "$a")
+                  (nonterm_meta (constr_rule n lp) "$a")
                   ::(List.map (fun s -> Term("", s)) infl)
-                  @[nonterm_meta (command n rp) "$b"];
+                  @[nonterm_meta (constr_rule n rp) "$b"];
                 gr_action = action} ]
         }
       ]
@@ -226,13 +223,13 @@ let collect_metas sl =
 let distfix assoc n sl f =
   let (lp,rp) = prec_assoc assoc in
   let symbols =
-    make_symbols (command n lp) command_tab.(8) (command n rp) 0 sl in
+    make_symbols (constr_rule n lp) constr_tab.(8) (constr_rule n rp) 0 sl in
   let action =
     Aast(Pnode("APPLIST",Pcons(Pquote(nvar f), collect_metas symbols)))
   in
-  { gc_univ = "command";
+  { gc_univ = "constr";
     gc_entries =
-      [ { ge_name = command n ":E";
+      [ { ge_name = constr_rule n ":E";
           ge_type = ETast;
           gl_assoc = None;
           gl_rules =

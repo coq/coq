@@ -33,7 +33,7 @@ Topdirs.dir_directory Coq_config.camlp4lib;;
 
 (* parsing of terms *)
 
-let parse_com   = Pcoq.parse_string Pcoq.Command.command;;
+let parse_com   = Pcoq.parse_string Pcoq.Constr.constr;;
 let parse_tac = Pcoq.parse_string Pcoq.Tactic.tactic;;
 
 (* For compatibility reasons *)
