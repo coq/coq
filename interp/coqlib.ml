@@ -186,13 +186,13 @@ let build_coq_eqT () = Lazy.force coq_eqT_eq
 let build_coq_sym_eqT () = Lazy.force coq_eqT_sym
 
 (* Equality on Type as a Type *)
-let coq_idT_eq = lazy_init_constant ["Logic_Type"] "identityT"
-let coq_idT_refl = lazy_init_constant ["Logic_Type"] "refl_identityT"
-let coq_idT_ind = lazy_init_constant ["Logic_Type"] "identityT_ind"
-let coq_idT_rec = lazy_init_constant ["Logic_Type"] "identityT_rec"
-let coq_idT_rect = lazy_init_constant ["Logic_Type"] "identityT_rect"
-let coq_idT_congr = lazy_init_constant ["Logic_Type"] "congr_idT"
-let coq_idT_sym = lazy_init_constant ["Logic_Type"] "sym_idT"
+let coq_idT_eq = lazy_init_constant ["Datatypes"] "identity"
+let coq_idT_refl = lazy_init_constant ["Datatypes"] "refl_identity"
+let coq_idT_ind = lazy_init_constant ["Logic_Type"] "identity_ind"
+let coq_idT_rec = lazy_init_constant ["Logic_Type"] "identity_rec"
+let coq_idT_rect = lazy_init_constant ["Logic_Type"] "identity_rect"
+let coq_idT_congr = lazy_init_constant ["Logic_Type"] "congr_id"
+let coq_idT_sym = lazy_init_constant ["Logic_Type"] "sym_id"
 
 let build_coq_idT_data () = {
   eq = Lazy.force coq_idT_eq;
@@ -273,8 +273,8 @@ let coq_eqdec_pattern =
 
 (* The following is less readable but does not depend on parsing *)
 let coq_eq_ref      = lazy (init_reference ["Logic"] "eq")
-let coq_eqT_ref     = lazy (init_reference ["Logic"] "eq")
-let coq_idT_ref     = lazy (init_reference ["Logic_Type"] "identityT")
+let coq_eqT_ref     = coq_eq_ref
+let coq_idT_ref     = lazy (init_reference ["Datatypes"] "identity")
 let coq_existS_ref  = lazy (init_reference ["Specif"] "existS")
 let coq_existT_ref  = lazy (init_reference ["Specif"] "existT")
 let coq_not_ref     = lazy (init_reference ["Logic"] "not")
