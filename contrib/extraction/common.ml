@@ -243,10 +243,12 @@ module StdParams = struct
 	try (* has [mp] something in common with one of those in [mpl] ? *)
 	  let pref = common_prefix_from_list mp mpl in 
 	  let l = labels_after_prefix pref mp in 
-	  if clash pref l s mpl 
+(*i TODO:  traiter proprement.
+          if clash pref l s mpl 
 	  then error_unqualified_name (string_of_ren (print_labels l) s) 
 	    (string_of_modlist (mp2l (List.hd mpl)))
-	  else (string_of_ren (print_labels l) s)
+	  else i*) 
+	  string_of_ren (print_labels l) s
 	with Not_found -> (* [mp] is othogonal with every element of [mp]. *)
 	  let base, l = labels_of_mp mp in 
 	  let short = string_of_ren (print_labels l) s in
