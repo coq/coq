@@ -551,11 +551,9 @@ let rec pr_vernac = function
 	hov 0 (str key ++ spc() ++ pr_id id ++ spc() ++
 	  pr_sbinders indpar ++ str":" ++ spc() ++
           pr_lconstr s ++ str" :=") ++ pr_constructor_list lc in
-      hov 1
-        (pr_oneind (if f then "Inductive" else "CoInductive") (List.hd l)) ++ 
-      hov 1
- 	(prlist (fun ind -> fnl() ++ pr_oneind "with" ind)
-	  (List.tl l))
+      hov 1 (pr_oneind (if f then "Inductive" else "CoInductive") (List.hd l))
+      ++ 
+      (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
 
   | VernacFixpoint recs ->
 
