@@ -1,0 +1,93 @@
+Inductive [] False : Prop :=.
+
+Definition not := [A:Prop] (A -> False).
+
+Inductive [A:Set;x:A] eq : (A -> Prop) := refl_equal : (eq A x x).
+
+Inductive [] bool : Set := true : bool | false : bool.
+
+
+Inductive [A:Prop;B:Prop] sumbool : Set :=
+  left  : (A->(sumbool A B)) 
+| right : (B->(sumbool A B)).
+
+Definition if:=[T:Set][A:Prop][B:Prop][s:(sumbool A B)][th:T][el:T]
+        <T>Case s : [2]Ind sumbool 0 of [a:A]th [b:B]el end.
+
+Module Type ELEM := 
+sig 
+  Definition T : Set  
+  Definition eq_dec : (a:Const T)(a':Const T)
+                        (sumbool (eq Const T a a') (not (eq Const T a a')))
+end.
+                                        
+Module Type SET :=
+  funsig(Elt : ELEM)
+  sig
+    Definition T : Set
+    Definition empty : Const T
+    Definition add : Const Elt.T -> Const T -> Const T 
+    Definition find : Const Elt.T -> Const T -> bool
+
+    (* Axioms *)
+
+    Definition find_empty_false : 
+        (e:Const Elt.T) (eq bool (Const find e Const empty) false)
+
+(*    Definition find_add_true : 
+        (s:Const T) (e:Const Elt.T) 
+                (eq bool (Const find e (Const add e s)) true)
+
+    Definition find_add_false :
+        (s:Const T) (e:Const Elt.T) (e':Const Elt.T)
+                ((not (eq Const Elt.T e e')) 
+                -> (eq bool (Const find e (Const add e' s))
+                            (Const find e s)))
+*)
+  end.
+
+Module FuncDict(E : ELEM) :=
+  struct
+    Definition T := Const E.T -> bool
+    Definition empty := [e':Const E.T] false
+    Definition find := [e':Const E.T] [s:Const T] (s e')
+    Definition add := [e:Const E.T][s:Const T][e':Const E.T]
+        (if bool (eq Const E.T e e') (not (eq Const E.T e e'))
+                (Const E.eq_dec e e') 
+                true
+                (Const find e' s))
+
+    Definition find_empty_false := [e:Const E.T] (refl_equal bool false)
+  end.
+
+Module F : SET := FuncDict.
+
+
+Inductive [A:Set] list : Set := nil : (list A) 
+                             | cons : A -> (list A) -> (list A).
+
+Module ListDict(E : ELEM) := 
+  struct
+    Definition T := (list Const E.T)
+    Definition elt := Const E.T
+   
+    Definition empty := (nil Const elt)
+    Definition add := [e:Const elt] [s:Const T] (cons Const elt e s)
+    Definition find := [e:Const elt]Fix find/0 : (Const T -> bool) :=
+        [s:Const T]<bool>Case s : [1]Ind list 0 of 
+                false
+                [e':(Const elt)][s':(Const T)]  
+                        (if bool (eq Const elt e e') (not (eq Const elt e e'))
+                                (Const E.eq_dec e e') 
+                                true
+                                (find s')) 
+        end
+
+    Definition find_empty_false := [e:Const elt] (refl_equal bool false)
+  end.
+
+
+Module L : SET := ListDict.
+
+
+

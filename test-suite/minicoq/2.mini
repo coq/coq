@@ -1,0 +1,35 @@
+Inductive [] nat : Set := O : nat | S : nat -> nat.
+
+Module Type SIG := sig Definition A:Set Definition x:Const A end.
+
+Module List(X:SIG).
+  Inductive [] list : Set := nil : list 
+			 | cons : (Const X.A) -> list -> list.
+
+  Definition head := [l:list]<Const X.A>Case l : [0] Ind list 0 of
+	(Const X.x) [n:Const X.A][_:list]n end.
+
+  Check head.
+
+End List.
+
+Module Nat := struct Definition A:=nat Definition x:=O end.
+
+Module ListNat := List Nat.
+
+Abbrev list := Ind ListNat.list 0.
+Abbrev nil := Construct ListNat.list 0 1.
+Abbrev cons := Construct ListNat.list 0 2.
+
+Definition Lzero := (cons O nil).
+
+Check (Const ListNat.head Lzero).
+
+Check (S (Const ListNat.head Lzero)).
+
+(*Reduce (Const ListNat.head Lzero).
+
+Definition prev := [n:nat]<nat>Case n:[0]Ind nat 0 of O [m:nat]m end.
+
+Reduce (Const prev Construct nat 0 1).
+*)

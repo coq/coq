@@ -83,7 +83,7 @@ let rec string_of_modpath = function
 let rec pr_modpath = function
   | MPcomp sl -> pr_dirpath sl
   | MPbid uid -> pr_uid uid
-  | MPsid uid -> pr_uid uid
+  | MPsid uid -> [< 'sTR "["; pr_uid uid; 'sTR "]" >]
   | MPdot (mp,l) -> [< pr_modpath mp; 'sTR "."; pr_label l >]
 
 let rec subst_modpath_msid sids mps mp = (* 's like subst *)

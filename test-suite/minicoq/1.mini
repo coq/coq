@@ -1,0 +1,25 @@
+Module LePremier1 := struct 
+			Definition id:=[x:Type]x
+			Definition NewSet:=(Const id Set)
+		     end.
+
+
+Check Const LePremier1.NewSet.
+
+Reduce Const LePremier1.NewSet.
+
+
+Module LePremier2.
+  Definition id:=[x:Type]x.
+  Definition NewSet:=(Const id Set).
+End LePremier2.
+
+Check Const LePremier2.NewSet.
+
+Reduce Const LePremier2.NewSet.
+
+
+Abbrev newset := Const LePremier2.NewSet.
+
+Check newset.
+Reduce newset.

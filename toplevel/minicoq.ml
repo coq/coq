@@ -246,7 +246,7 @@ let begin_module l args mty_o =
       
 
 let end_module l = 
-  let newenv,mp,_ = end_module l !env in
+  let newenv,mp = end_module l !env in
     env := newenv;
     modpath := current_modpath (!env);
     let newscope = 
