@@ -218,7 +218,7 @@ INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/Logic_TypeSyntax.vo
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
-	$(COQC) -q -I theories/Init -is states/barestate.coq $<
+	$(COQC) -bindir bin -q -I theories/Init -is states/barestate.coq $<
 
 init: $(INITVO)
 
@@ -226,7 +226,7 @@ TACTICSVO=tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo \
           tactics/EAuto.vo tactics/Refine.vo
 
 tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
-	$(COQC) -q -I tactics -is states/barestate.coq $<
+	$(COQC) -bindir bin -q -I tactics -is states/barestate.coq $<
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO) $(BESTCOQTOP)
 	$(BESTCOQTOP) -q -batch -silent -is states/barestate.coq -I tactics -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
@@ -560,7 +560,7 @@ clean::
 	$(CAMLP4O) pr_o.cmo `$(CAMLP4DEPS) $<` -impl $< > $@ || rm -f $@
 
 .v.vo:
-	$(COQC) -q -$(BEST) $(COQINCLUDES) $<
+	$(COQC) -q -$(BEST) -bindir bin $(COQINCLUDES) $<
 
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile
