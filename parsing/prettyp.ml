@@ -107,9 +107,11 @@ let build_inductive sp tyi =
   let (mib,mip) = Global.lookup_inductive (sp,tyi) in
   let params = mip.mind_params_ctxt in
   let args = extended_rel_list 0 params in
-  let indf = make_ind_family ((sp,tyi),args) in
-  let arity = mip.mind_user_arity in
-  let cstrtypes = arities_of_constructors (Global.env()) (sp,tyi) in
+  let env = Global.env() in
+  let arity = hnf_prod_applist env mip.mind_user_arity args in
+  let cstrtypes = arities_of_constructors env (sp,tyi) in
+  let cstrtypes =
+    Array.map (fun c -> hnf_prod_applist env c args) cstrtypes in
   let cstrnames = mip.mind_consnames in
   (IndRef (sp,tyi), params, arity, cstrnames, cstrtypes)
 
