@@ -71,8 +71,9 @@ they are recognized by the following lexical class:
 \end{center}
 Identifiers can contain at most 80 characters, and all characters are
 meaningful. In particular, identifiers are case-sensitive.
-
-Access identifiers, written {\accessident}, are identifiers prefixed by \verb!.! (dot).
+Access identifiers, written {\accessident}, are identifiers prefixed
+by \verb!.! (dot). They are used in the syntax of qualified
+identifiers.
 
 \paragraph{Natural numbers and integers}
 Numerals are sequences of digits. Integers are numerals optionally preceded by a minus sign.
@@ -337,7 +338,7 @@ variables} (parameters or axioms), {\em inductive
 types} or {\em constructors of inductive types}.
 {\em Simple identifiers} (or shortly {\em identifiers}) are a
 syntactic subset of qualified identifiers.  Identifiers may also
-denote {\em variables}, what qualified identifiers do not.
+denote local {\em variables}, what qualified identifiers do not.
 
 \subsection{Sorts}\index{Sorts}
 \index{Type@{\Type}}
@@ -1234,7 +1235,7 @@ within the proof editing mode. In this case, the command is
 understood as if it would have been given before the statements still to be
 proved. 
 \item {\tt Proof} is recommended but can currently be omitted. On the
-opposite, {\tt Qed} is mandatory to validate a proof.
+opposite, {\tt Qed} (or {\tt Defined}, see below) is mandatory to validate a proof.
 \item Proofs ended by {\tt Qed} are declared opaque (see \ref{Opaque})
 and cannot be unfolded by conversion tactics (see \ref{Conversion-tactics}).
 To be able to unfold a proof, you should end the proof by {\tt Defined}

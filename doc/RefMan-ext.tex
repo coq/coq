@@ -43,7 +43,7 @@ construction allows to define ``signatures''.
   {\ident$_n$} \texttt{:} {\term$_n$} \verb+}+.
 \smallskip
  
-the identifier {\ident} is the name of the defined record and {\sort}
+\noindent the identifier {\ident} is the name of the defined record and {\sort}
 is its type. The identifier {\ident$_0$} is the name of its
 constructor. If {\ident$_0$} is omitted, the default name {\tt
 Build\_{\ident}} is used. The identifiers {\ident$_1$}, ..,
@@ -295,7 +295,7 @@ expressions.
 \subsubsection{Printing of wildcard pattern}
 \comindex{Set Printing Wildcard}
 \comindex{Unset Printing Wildcard}
-\comindex{Print Printing Wildcard}
+\comindex{Test Printing Wildcard}
 
 Some variables in a pattern may not occur in the right-hand side of
 the pattern-matching clause.  There are options to control the
@@ -311,7 +311,7 @@ The variables, even useless, are printed using their usual name. But some
 non dependent variables have no name. These ones are still printed
 using a ``{\tt \_}''.
 
-\subsubsection{\tt Print Printing Wildcard.}
+\subsubsection{\tt Test Printing Wildcard.}
 This tells if the wildcard
 printing mode is on or off. The default is to print wildcard for
 useless variables.
@@ -319,7 +319,7 @@ useless variables.
 \subsubsection{Printing of the elimination predicate}
 \comindex{Set Printing Synth}
 \comindex{Unset Printing Synth}
-\comindex{Print Printing Synth}
+\comindex{Test Printing Synth}
 
 In most of the cases, the type of the result of a matched term is
 mechanically synthesizable. Especially, if the result type does not
@@ -333,7 +333,7 @@ when it is easily synthesizable.
 This forces the result type to be always printed (and then between
 angle brackets).
 
-\subsubsection{\tt Print Printing Synth.}
+\subsubsection{\tt Test Printing Synth.}
 This tells if the non-printing
 of synthesizable types is on or off. The default is to not print 
 synthesizable types.
@@ -342,7 +342,7 @@ synthesizable types.
 \comindex{Add Printing Let {\ident}}
 \comindex{Remove Printing Let {\ident}}
 \comindex{Test Printing Let {\ident}}
-\comindex{Print Printing Let}
+\comindex{Print Table Printing Let}
 
 If an inductive type has just one constructor,
 pattern-matching can be written using {\tt let} ... {\tt =}
@@ -360,7 +360,7 @@ This removes {\ident} from this list.
 This tells if {\ident} belongs
 to the list.
 
-\subsubsection{\tt Print Printing Let.}
+\subsubsection{\tt Print Table Printing Let.}
 This prints the list of inductive types
 for which pattern-matching is written using a {\tt
 let} expression.
@@ -374,7 +374,7 @@ it is sensible to the command {\tt Reset}.
 \comindex{Add Printing If {\ident}}
 \comindex{Remove Printing If {\ident}}
 \comindex{Test Printing If {\ident}}
-\comindex{Print Printing If}
+\comindex{Print Table Printing If}
 
 If an inductive type is isomorphic to the boolean type,
 pattern-matching can be written using {\tt if} ... {\tt then}
@@ -392,7 +392,7 @@ This removes {\ident} from this list.
 This tells if {\ident} belongs
 to the list.
 
-\subsubsection{\tt Print Printing If.}
+\subsubsection{\tt Print Table Printing If.}
 This prints the list of inductive types
 for which pattern-matching is written using an {\tt
 if} expression.
@@ -479,7 +479,7 @@ This command is used to open a section named {\ident}.
 
 \subsection{\tt End {\ident}}\comindex{End}
 This command closes the section named {\ident}. When a section is
-closed, all local declarations are discharged. This means that all
+closed, all local declarations (variables and locals) are discharged. This means that all
 global objects defined in the section are {\it closed} (in the sense
 of $\lambda$-calculus) with as many abstractions as there were local
 declarations in the section explicitly occurring in the term.  A local
@@ -518,10 +518,10 @@ section is closed.
 %module with an identifier already used in the module (see \ref{compiled}).
 \end{Remarks}
 
-\section{Libraries and long names}
-\label{LongNames}
-\index{Qualified identifiers}
-\index{Absolute names}
+\section{Logical paths of libraries and compilation units}
+\label{Libraries}
+\index{Libraries}
+\index{Logical paths}
 \paragraph{Libraries}
 
 The theories developed in {\Coq} are stored in {\em libraries}.  A
@@ -558,14 +558,14 @@ using the {\tt -R} option to {\tt coqtop} or the
 command (see \ref{AddRecLoadPath})
 
 \begin{quote}
-{\tt Add Rec LoadPath {\it physical\_dir} as {\dirpath}}.
+{\tt Add Rec LoadPath {\it physical\_path} as {\dirpath}}.
 \end{quote}
 
-\paragraph{Modules}
+\paragraph{Compilation units (or modules)}
 At some point, (sub-)libraries contain {\it modules} which coincide
 with files at the physical level. 
 As for sublibraries, the dot notation is used to denote a specific
-module of a library. Typically, {\tt Coq.Init.Logic} is the logical name
+module of a library. Typically, {\tt Coq.Init.Logic} is the logical path
 associated to the file {\tt Logic.v} of {\Coq} standard library.
 
 If the physical directory where a file {\tt file.v} lies is mapped to
@@ -573,11 +573,14 @@ the empty logical directory path (which is the default when using the
 simple form of {\tt Add LoadPath} or {\tt -I} option to coqtop), then
 the name of the module it defines is simply {\tt file}.
 
-\paragraph{Constructions names}
+\section{Logical paths of libraries and compilation units}
+\label{LongNames}
+\index{Qualified identifiers}
+\index{Absolute names}
 
-Finally, modules contain constructions (axioms, parameters,
+Modules contain constructions (axioms, parameters,
 definitions, lemmas, theorems, remarks or facts). The (full) name of a
-construction starts with the name of the module in which it is defined
+construction starts with the logical name of the module in which it is defined
 followed by the (short) name of the construction.
 Typically, {\tt Coq.Init.Logic.eq} denotes Leibniz' equality
 defined in the module {\tt Logic} in the sublibrary {\tt Init} of the
@@ -589,7 +592,7 @@ The full name of a library, module, section, definition, theorem,
 ... is called {\it absolute name}. 
 The final identifier (in the example
 above, it is {\tt eq}) is called {\it short name} (or sometimes {\it
-base name}.  {\Coq} maintains a {\it names table} mapping short names
+base name}).  {\Coq} maintains a {\it names table} mapping short names
 to absolute names. This greatly simplifies the notations.  {\Coq}
 cannot accept two constructions (definition, theorem, ...) with the
 same absolute name.
@@ -606,11 +609,11 @@ a fact {\tt F} is defined in subsection {\tt S2} of section {\tt S1}
 in module {\tt M}, then its absolute name is {\tt M.S1.F}.
 
 \paragraph{Visibility and qualified names}
-An absolute path is called {\it visible} when its base name suffices
+An absolute name is called {\it visible} when its base name suffices
 to denote it. This means the base name is mapped to the absolute name
 in {\Coq} name table.
 
-All the base names of sublibraries, modules, sections, definitions and
+All the base names of definitions and
 theorems are automatically put in the {\Coq} name table. But
 sometimes, the short name of a construction defined in a module may
 hide the short name of another construction defined in another module.
@@ -636,6 +639,8 @@ Definition nat := bool.
 Check O.
 Check Datatypes.nat.
 \end{coq_example}
+
+\Rem There is also a names table for sublibraries, modules and sections.
 
 \paragraph{Requiring a file}
 
@@ -904,7 +909,7 @@ Print the list of valid path coercions in the current context.
 
 This command forces all the coercions to be printed.
 To skip the printing of coercions, use
- {\tt Unset Printing Coercions.}.
+ {\tt Unset Printing Coercions}.
 By default, coercions are not printed.
 
 \subsubsection{\tt Set Printing Coercion {\qualid}.}
@@ -913,7 +918,7 @@ By default, coercions are not printed.
 
 This command forces coercion denoted by {\qualid} to be printed.
 To skip the printing of coercion {\qualid}, use
- {\tt Unset Printing Coercion {\qualid}.}.
+ {\tt Unset Printing Coercion {\qualid}}.
 By default, a coercion is never printed.
 
 
