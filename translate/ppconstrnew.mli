@@ -19,6 +19,7 @@ open Coqast
 open Topconstr
 open Names
 open Util
+open Genarg
 
 val extract_lam_binders :
   constr_expr -> (name located list * constr_expr) list * constr_expr
@@ -51,6 +52,9 @@ val pr_lconstr_env : env -> constr_expr -> std_ppcmds
 val pr_cases_pattern : cases_pattern_expr -> std_ppcmds
 val pr_binders : (name located  list * constr_expr) list -> std_ppcmds
 val pr_may_eval :
-  ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> 'a may_eval -> std_ppcmds
-val pr_metanum : ('a -> std_ppcmds) -> 'a or_metanum -> std_ppcmds
+  ('a -> std_ppcmds) -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) -> ('a,'b) may_eval
+    -> std_ppcmds
 val pr_metaid : identifier -> std_ppcmds
+
+val pr_rawconstr_env : env -> rawconstr -> std_ppcmds
+val pr_lrawconstr_env : env -> rawconstr -> std_ppcmds

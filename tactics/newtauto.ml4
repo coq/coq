@@ -226,12 +226,12 @@ let lfo_wrap n gl=
 
 TACTIC EXTEND NewIntuition
       [ "NewIntuition" ] -> [ newtauto true default_stac ]
-      |[ "NewIntuition" tactic(t)] -> [ newtauto true (interp t) ]
+      |[ "NewIntuition" tactic(t)] -> [ newtauto true (snd t) ]
 END
 
 TACTIC EXTEND Intuition1
       [ "Intuition1" ] -> [ newtauto false default_stac ]
-      |[ "Intuition1" tactic(t)] -> [ newtauto false (interp t) ]
+      |[ "Intuition1" tactic(t)] -> [ newtauto false (snd t) ]
 END
 
 TACTIC EXTEND NewTauto

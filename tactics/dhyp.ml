@@ -128,6 +128,7 @@ open Tacticals
 open Libobject
 open Library
 open Pattern
+open Matching
 open Ast
 open Pcoq
 open Tacexpr
@@ -149,7 +150,7 @@ type located_destructor_pattern =
 type destructor_data = {
   d_pat : located_destructor_pattern;
   d_pri : int;
-  d_code : identifier option * raw_tactic_expr (* should be of phylum tactic *)
+  d_code : identifier option * glob_tactic_expr (* should be of phylum tactic *)
 }
 
 type t = (identifier,destructor_data) Nbtermdn.t
@@ -204,9 +205,16 @@ let ((inDD : destructor_data_object->obj),
   declare_object {(default_object "DESTRUCT-HYP-CONCL-DATA") with
                     cache_function = cache_dd;
 		    open_function = (fun i o -> if i=1 then cache_dd o);
+                    (* TODO: substitution *)
                     export_function = export_dd }
+
+let forward_intern_tac = 
+  ref (fun _ -> failwith "intern_tac is not installed for DHyp")
+
+let set_extern_intern_tac f = forward_intern_tac := f
     
 let add_destructor_hint na loc pat pri code =
+  let code = !forward_intern_tac code in
   let code =
     begin match loc, code with
       | HypLocation _, TacFun ([id],body) -> (id,body)
@@ -240,10 +248,10 @@ let match_dpat dp cls gls =
         (matches concld.d_sort (pf_type_of gls (pf_concl gls)))
     | _ -> error "ApplyDestructor"
 
-let forward_tac_interp = 
-  ref (fun _ -> failwith "tac_interp is not installed for DHyp")
+let forward_interp_tactic = 
+  ref (fun _ -> failwith "interp_tactic is not installed for DHyp")
 
-let set_extern_interp f = forward_tac_interp := f
+let set_extern_interp f = forward_interp_tactic := f
 
 let applyDestructor cls discard dd gls =
   let mvb =
@@ -251,7 +259,7 @@ let applyDestructor cls discard dd gls =
     with PatternMatchingFailure -> error "No match" in
   let tac = match cls, dd.d_code with
     | Some id, (Some x, tac) -> 
-	let arg = Reference (Ident (dummy_loc,id)) in
+	let arg = ConstrMayEval(ConstrTerm (RRef(dummy_loc,VarRef id),None)) in
         TacLetIn ([(dummy_loc, x), None, arg], tac)
     | None, (None, tac) -> tac
     | _, (Some _,_) -> error "Destructor expects an hypothesis"
@@ -263,7 +271,7 @@ let applyDestructor cls discard dd gls =
       | (None,ConclLocation _) -> tclIDTAC
       | _ -> error "ApplyDestructor" 
   in
-  tclTHEN (!forward_tac_interp tac) discard_0 gls
+  tclTHEN (!forward_interp_tactic tac) discard_0 gls
 
 
 (* [DHyp id gls]

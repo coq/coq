@@ -27,14 +27,14 @@ type debug_info =
 
 (* Prints the state and waits *)
 val debug_prompt :
-  goal sigma -> debug_info -> Tacexpr.raw_tactic_expr -> debug_info
+  goal sigma -> debug_info -> Tacexpr.glob_tactic_expr -> debug_info
 
 (* Prints a constr *)
 val db_constr : debug_info -> env -> constr -> unit
 
 (* Prints the pattern rule *)
 val db_pattern_rule :
-  debug_info -> int -> (pattern_expr,raw_tactic_expr) match_rule -> unit
+  debug_info -> int -> (constr_pattern,glob_tactic_expr) match_rule -> unit
 
 (* Prints a matched hypothesis *)
 val db_matched_hyp :

@@ -60,7 +60,7 @@ let h_specialize n d = abstract_tactic (TacSpecialize (n,d)) (new_hyp n d)
 let h_lapply c = abstract_tactic (TacLApply c) (cut_and_apply c)
 
 (* Context management *)
-let inj x = AN x
+let inj x = Genarg.AN x
 let h_clear l = abstract_tactic (TacClear (List.map inj l)) (clear l)
 let h_clear_body l =
   abstract_tactic (TacClearBody (List.map inj l)) (clear_body l)

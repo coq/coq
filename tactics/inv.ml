@@ -33,6 +33,7 @@ open Elim
 open Equality
 open Typing
 open Pattern
+open Matching
 open Rawterm
 
 let collect_meta_variables c = 

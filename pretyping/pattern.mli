@@ -67,38 +67,11 @@ val head_of_constr_reference : Term.constr -> constr_label
 
 val pattern_of_constr : constr -> constr_pattern
 
+(* [pattern_of_rawconstr l c] translates a term [c] with metavariables into
+   a pattern; variables bound in [l] are replaced by the pattern to which they
+    are bound *)
 
-exception PatternMatchingFailure
+val pattern_of_rawconstr : Rawterm.rawconstr -> int list * constr_pattern
 
-(* [matches pat c] matches [c] against [pat] and returns the resulting
-   assignment of metavariables; it raises [PatternMatchingFailure] if
-   not matchable; bindings are given in increasing order based on the
-   numbers given in the pattern *)
-val matches      :
-  constr_pattern -> constr -> (int * constr) list
-
-(* [is_matching pat c] just tells if [c] matches against [pat] *)
-
-val is_matching      :
-  constr_pattern -> constr -> bool
-
-(* [matches_conv env sigma] matches up to conversion in environment
-   [(env,sigma)] when constants in pattern are concerned; it raises
-   [PatternMatchingFailure] if not matchable; bindings are given in
-   increasing order based on the numbers given in the pattern *)
-
-val matches_conv :
-  env -> Evd.evar_map -> constr_pattern -> constr -> (int * constr) list
-
-(* To skip to the next occurrence *)
-exception NextOccurrence of int
-
-(* Tries to match a subterm of [c] with [pat] *)
-val sub_match :
-  int -> constr_pattern -> constr -> ((int * constr) list * constr)
-
-(* [is_matching_conv env sigma pat c] tells if [c] matches against [pat]
-   up to conversion for constants in patterns *)
-
-val is_matching_conv :
-  env -> Evd.evar_map -> constr_pattern -> constr -> bool
+val instantiate_pattern :
+  (identifier * constr_pattern) list -> constr_pattern -> constr_pattern

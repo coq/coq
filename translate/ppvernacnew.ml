@@ -26,11 +26,22 @@ open Libnames
 open Ppextend
 open Topconstr
 
+open Tacinterp
+
+(* Warning: [pr_raw_tactic] globalises and fails if globalisation fails *)
+let pr_raw_tactic_env l env t = 
+  Pptacticnew.pr_raw_tactic env t
+
+let pr_gen env t =
+  Pptactic.pr_raw_generic (Ppconstrnew.pr_constr_env env)
+    (Pptacticnew.pr_raw_tactic env) t
+
 let pr_raw_tactic tac =
-  Pptacticnew.pr_raw_tactic (Global.env()) tac
+  pr_raw_tactic_env [] (Global.env()) tac
+
 let pr_raw_tactic_goal n tac =
   let (_,env) = Pfedit.get_goal_context n in
-  Pptacticnew.pr_raw_tactic env tac
+  pr_raw_tactic_env [] env tac
 let pr_lconstr_goal n c =
   let (_,env) = Pfedit.get_goal_context n in
   Ppconstrnew.pr_lconstr_env env c
@@ -451,7 +462,7 @@ let rec pr_vernac = function
         | None -> mt()
         | Some r ->
             str"Eval" ++ spc() ++
-            pr_red_expr (pr_constr, pr_lconstr, pr_metanum pr_reference) r ++
+            pr_red_expr (pr_constr, pr_lconstr, Pptactic.pr_or_metanum pr_reference) r ++
             str" in" ++ spc() in
       let pr_def_body = function
         | DefineBody (bl,red,c,d) ->
@@ -635,7 +646,9 @@ let rec pr_vernac = function
                  b
             | _ -> mt(), body in
         pr_located pr_id id ++ ppb ++ str" :=" ++ brk(1,1) ++
-        pr_raw_tactic body in
+        pr_raw_tactic_env
+          (List.map (fun ((_,id),_) -> (id,Lib.make_path id)) l) 
+          (Global.env()) body in
       hov 1
         ((if rc then str "Recursive " else mt()) ++
          str "Tactic Definition " ++
@@ -676,7 +689,7 @@ let rec pr_vernac = function
       let pr_mayeval r c = match r with 
       | Some r0 ->
           hov 2 (str"Eval" ++ spc() ++
-          pr_red_expr (pr_constr,pr_lconstr,pr_metanum pr_reference) r0 ++
+          pr_red_expr (pr_constr,pr_lconstr,Pptactic.pr_or_metanum pr_reference) r0 ++
           spc() ++ str"in" ++ spc () ++ pr_lconstr c)
       | None -> hov 2 (str"Check" ++ spc() ++ pr_lconstr c) 
       in pr_mayeval r c
@@ -734,7 +747,7 @@ let rec pr_vernac = function
 
 and pr_extend s cl =
   let pr_arg a =
-    try Pptacticnew.pr_gen (Global.env()) a
+    try pr_gen (Global.env()) a
     with Failure _ -> str ("<error in "^s^">") in
   try
     let rls = List.assoc s (Egrammar.get_extend_vernac_grammars()) in
@@ -744,7 +757,7 @@ and pr_extend s cl =
         (fun (strm,args) pi ->
           match pi with
               Egrammar.TacNonTerm _ -> 
-                (strm ++ Pptacticnew.pr_gen (Global.env()) (List.hd args),
+                (strm ++ pr_gen (Global.env()) (List.hd args),
                 List.tl args)
             | Egrammar.TacTerm s -> (strm ++ spc() ++ str s, args))
         (str hd,cl) rl in

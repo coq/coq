@@ -20,6 +20,7 @@ open Declare
 open Coqast
 open Environ
 open Pattern
+open Matching
 open Printer
 open Libnames
 open Nametab
@@ -131,9 +132,9 @@ let mk_rewrite_pattern2 eq pattern =
 let pattern_filter pat _ a c =
   try 
     try
-      Pattern.is_matching pat (head c) 
+      is_matching pat (head c) 
     with _ -> 
-      Pattern.is_matching
+      is_matching
 	pat (head (Typing.type_of (Global.env()) Evd.empty c))
     with UserError _ -> 
       false

@@ -29,6 +29,7 @@ open Logic
 open Evar_refiner
 open Wcclausenv
 open Pattern
+open Matching
 open Hipattern
 open Tacexpr
 open Tacticals

@@ -40,7 +40,7 @@ let help () =
 let goal_com g tac_ast =
   begin
     db_pr_goal g;
-    msg (str "Going to execute:" ++ fnl () ++ (pr_raw_tactic tac_ast) ++
+    msg (str "Going to execute:" ++ fnl () ++ (pr_glob_tactic tac_ast) ++
          fnl ())
   end
 
@@ -114,7 +114,8 @@ let db_pattern_rule debug num r =
   if debug = DebugOn then
   begin
     msgnl (str "Pattern rule " ++ int num ++ str ":");
-    msgnl (str "|" ++ spc () ++ pr_match_rule false pr_raw_tactic r)
+    msgnl (str "|" ++ spc () ++ 
+      pr_match_rule false Printer.pr_pattern pr_glob_tactic r)
   end
 
 (* Prints the hypothesis pattern identifier if it exists *)
@@ -150,7 +151,9 @@ let db_hyp_pattern_failure debug env hyp =
   if debug = DebugOn then
     msgnl (str ("The pattern hypothesis"^(hyp_bound (fst hyp))^
                 " cannot match: ") ++
-           pr_match_pattern (pp_match_pattern env (snd hyp)))
+           pr_match_pattern
+             (Printer.pr_pattern_env env (names_of_rel_context env))
+             (snd hyp))
 
 (* Prints a matching failure message for a rule *)
 let db_matching_failure debug =

@@ -18,6 +18,8 @@ open Util
 open Tacexpr
 open Rawterm
 open Genarg
+open Nametab
+open Pattern
 (*i*)
 
 (* This module defines the structure of proof tree and the tactic type. So, it
@@ -95,31 +97,32 @@ and validation = (proof_tree list -> proof_tree)
 
 and tactic_expr =
   (constr,
+   constr_pattern,
    evaluable_global_reference,
    inductive or_metanum,
-   identifier)
+   ltac_constant,
+   identifier,
+   glob_tactic_expr)
      Tacexpr.gen_tactic_expr
 
 and atomic_tactic_expr =
   (constr,
+   constr_pattern,
    evaluable_global_reference,
    inductive or_metanum,
-   identifier)
+   ltac_constant,
+   identifier,
+   glob_tactic_expr)
      Tacexpr.gen_atomic_tactic_expr
 
 and tactic_arg =
   (constr,
+   constr_pattern,
    evaluable_global_reference,
    inductive or_metanum,
-   identifier)
+   ltac_constant,
+   identifier,
+   glob_tactic_expr)
      Tacexpr.gen_tactic_arg
 
 type hyp_location = identifier Tacexpr.raw_hyp_location
-
-type open_generic_argument =
-    (constr,raw_tactic_expr) generic_argument
-type closed_generic_argument =
-    (constr,raw_tactic_expr) generic_argument
-
-type 'a closed_abstract_argument_type =
-    ('a,constr,raw_tactic_expr) abstract_argument_type

@@ -27,6 +27,7 @@ open Hiddentac
 open Equality
 open Auto
 open Pattern
+open Matching
 open Hipattern
 open Proof_trees
 open Proof_type
@@ -125,7 +126,7 @@ let solveArg a1 a2 tac  g =
 let solveLeftBranch rectype g =
   match
     try matches (Coqlib.build_coq_eqdec_partial_pattern ()) (pf_concl g)
-    with Pattern.PatternMatchingFailure -> error "Unexpected conclusion!"
+    with PatternMatchingFailure -> error "Unexpected conclusion!"
   with 
     | _ :: lhs :: rhs :: _ -> 
         let (mib,mip) = Global.lookup_inductive rectype in
@@ -147,7 +148,7 @@ let hd_app c = match kind_of_term c with
 let decideGralEquality g =
   match
     try matches (build_coq_eqdec_pattern ()) (pf_concl g)
-    with Pattern.PatternMatchingFailure ->
+    with PatternMatchingFailure ->
       error "The goal does not have the expected form"
   with 
     | (_,typ) :: _ ->

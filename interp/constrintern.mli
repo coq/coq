@@ -43,7 +43,7 @@ type ltac_env =
 (* Interprets global names, including syntactic defs and section variables *)
 val interp_rawconstr     : evar_map -> env -> constr_expr -> rawconstr
 val interp_rawconstr_gen : bool -> evar_map -> env -> implicits_env -> 
-    bool -> ltac_sign -> constr_expr -> rawconstr
+    int list option -> ltac_sign -> constr_expr -> rawconstr
 
 (*s Composing the translation with typing *)
 val interp_constr        : evar_map -> env -> constr_expr -> constr

@@ -671,7 +671,7 @@ let add_notation_in_scope df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
     if onlyparse then None
     else
       let r = interp_rawconstr_gen
-          false Evd.empty (Global.env()) [] false (vars,[]) c in
+          false Evd.empty (Global.env()) [] (Some []) (vars,[]) c in
       Some (make_old_pp_rule ppn ppsymbols pptyps r notation scope vars) in
   (* Declare the interpretation *)
   let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in

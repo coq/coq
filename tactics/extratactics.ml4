@@ -18,9 +18,6 @@ open Extraargs
 (* Equality *)
 open Equality
 
-(* V8 TACTIC EXTEND rewrite
-  [ "rewrite" orient(b) constr_with_bindings(c) ] -> [general_rewrite_bindings b c]
-END*)
 TACTIC EXTEND Rewrite
   [ "Rewrite" orient(b) constr_with_bindings(c) ] -> [general_rewrite_bindings b c]
 END
@@ -86,13 +83,13 @@ let h_injHyp id = h_injection (Some id)
 
 TACTIC EXTEND ConditionalRewrite
   [ "Conditional" tactic(tac) "Rewrite" orient(b) constr_with_bindings(c) ]
-    -> [ conditional_rewrite b (Tacinterp.interp tac) c ]
+    -> [ conditional_rewrite b (snd tac) c ]
 END
 
 TACTIC EXTEND ConditionalRewriteIn
   [ "Conditional" tactic(tac) "Rewrite" orient(b) constr_with_bindings(c)
     "in" ident(h) ]
-    -> [ conditional_rewrite_in b h (Tacinterp.interp tac) c ]
+    -> [ conditional_rewrite_in b h (snd tac) c ]
 END
 
 TACTIC EXTEND DependentRewrite
@@ -134,13 +131,6 @@ TACTIC EXTEND Inversion
     -> [ dinv (Some false) c id ]
 END
 
-(* V8 TACTIC EXTEND inversionclear
-| [ "inversion_clear" quantified_hypothesis(id) ] -> [ inv (Some true) id ]
-| [ "inversion_clear" quantified_hypothesis(id) "in" ne_ident_list(l) ]
-      -> [ invIn_gen (Some true) id l]
-| [ "dependent" "inversion_clear" quantified_hypothesis(id) with_constr(c) ]
-    -> [ dinv (Some true) c id ]
-END*)
 TACTIC EXTEND InversionClear
 | [ "Inversion_clear" quantified_hypothesis(id) ] -> [ inv (Some true) id ]
 | [ "Inversion_clear" quantified_hypothesis(id) "in" ne_ident_list(l) ]
@@ -164,7 +154,7 @@ TACTIC EXTEND Autorewrite
   [ "AutoRewrite" "[" ne_preident_list(l) "]" ] ->
     [ autorewrite Refiner.tclIDTAC l ]
 | [ "AutoRewrite" "[" ne_preident_list(l) "]" "using" tactic(t) ] ->
-    [ autorewrite (Tacinterp.interp t) l ]
+    [ autorewrite (snd t) l ]
 END
 
 let add_rewrite_hint name ort t lcsr =

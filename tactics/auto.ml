@@ -20,6 +20,7 @@ open Evd
 open Reduction
 open Typing
 open Pattern
+open Matching
 open Tacmach
 open Proof_type
 open Pfedit
@@ -48,7 +49,7 @@ type auto_tactic =
   | Give_exact of constr                  
   | Res_pf_THEN_trivial_fail of constr * unit clausenv (* Hint Immediate *)
   | Unfold_nth of global_reference       (* Hint Unfold *)
-  | Extern of raw_tactic_expr                (* Hint Extern *) 
+  | Extern     of glob_tactic_expr       (* Hint Extern *) 
 
 type pri_auto_tactic = { 
   hname : identifier;    (* name of the hint *)
@@ -311,6 +312,11 @@ let cache_autohint (_,(name,hintlist)) = add_hint name hintlist
       list_smartmap recalc_hint hintlist
 *)
 
+let forward_subst_tactic = 
+  ref (fun _ -> failwith "subst_tactic is not installed for Auto")
+
+let set_extern_subst_tactic f = forward_subst_tactic := f
+
 let subst_autohint (_,subst,(name,hintlist as obj)) = 
   let trans_clenv clenv = Clenv.subst_clenv (fun _ a -> a) subst clenv in
   let trans_data data code = 	      
@@ -343,8 +349,10 @@ let subst_autohint (_,subst,(name,hintlist as obj)) =
 	  let ref' = subst_global subst ref in
 	    if ref==ref' then data else
 	      trans_data data (Unfold_nth ref')
-      | Extern _ ->
-	  anomaly "Extern hints cannot be substituted!!!"
+      | Extern tac ->
+	  let tac' = !forward_subst_tactic subst tac in
+	    if tac==tac' then data else
+	      trans_data data (Extern tac')
     in
       if lab' == lab && data' == data then hint else
 	(lab',data')
@@ -356,7 +364,6 @@ let subst_autohint (_,subst,(name,hintlist as obj)) =
 let classify_autohint (_,((name,hintlist) as obj)) =
   match hintlist with
       [] -> Dispose   
-    | (_,{code=Extern _})::_ -> Keep obj (* TODO! should be changed *)
     | _ -> Substitute obj
 
 let export_autohint x = Some x
@@ -415,7 +422,6 @@ let add_extern name pri (patmetas,pat) tacast dbname =
 let add_externs name pri pat tacast dbnames = 
   List.iter (add_extern name pri pat tacast) dbnames
 
-
 let add_trivials env sigma l dbnames =
   List.iter
     (fun dbname ->
@@ -423,6 +429,10 @@ let add_trivials env sigma l dbnames =
 	 inAutoHint(dbname, List.map (make_trivial env sigma) l)))
     dbnames
 
+let forward_intern_tac = 
+  ref (fun _ -> failwith "intern_tac is not installed for Auto")
+
+let set_extern_intern_tac f = forward_intern_tac := f
 
 let add_hints dbnames h =
   let dbnames = if dbnames = [] then ["core"] else dbnames in match h with
@@ -461,6 +471,7 @@ let add_hints dbnames h =
       add_resolves env sigma lcons dbnames
   | HintsExtern (hintname, pri, patcom, tacexp) ->
       let pat =	Constrintern.interp_constrpattern Evd.empty (Global.env()) patcom in
+      let tacexp = !forward_intern_tac (fst pat) tacexp in
       add_externs hintname pri pat tacexp dbnames
 
 (**************************************************************************)
@@ -474,7 +485,7 @@ let fmt_autotactic = function
   | Res_pf_THEN_trivial_fail (c,clenv) -> 
       (str"Apply " ++ prterm c ++ str" ; Trivial")
   | Unfold_nth c -> (str"Unfold " ++  pr_global c)
-  | Extern coqast -> (str "Extern " ++ Pptactic.pr_raw_tactic coqast)
+  | Extern tac -> (str "Extern " ++ Pptactic.pr_glob_tactic tac)
 
 let fmt_hint v =
   (fmt_autotactic v.code ++ str"(" ++ int v.pri ++ str")" ++ spc ())
@@ -605,16 +616,16 @@ si après Intros la conclusion matche le pattern.
 
 (* conclPattern doit échouer avec error car il est rattraper par tclFIRST *)
 
-let forward_tac_interp = 
-  ref (fun _ -> failwith "tac_interp is not installed for Auto")
+let forward_interp_tactic = 
+  ref (fun _ -> failwith "interp_tactic is not installed for Auto")
 
-let set_extern_interp f = forward_tac_interp := f
+let set_extern_interp f = forward_interp_tactic := f
 
 let conclPattern concl pat tac gl =
   let constr_bindings =
-    try Pattern.matches pat concl
+    try matches pat concl
     with PatternMatchingFailure -> error "conclPattern" in
-  !forward_tac_interp constr_bindings tac gl
+  !forward_interp_tactic constr_bindings tac gl
 
 (**************************************************************************)
 (*                           The Trivial tactic                           *)

@@ -312,10 +312,6 @@ open Genarg
 
 let pr_occurrences prc (nl,c) = prlist (fun n -> int n ++ spc ()) nl ++ prc c
 
-let pr_metanum pr = function
-  | AN x -> pr x
-  | MetaNum (_,n) -> str "?" ++ int n
-
 let pr_red_expr (pr_constr,pr_ref) = function
   | Red false -> str "Red"
   | Hnf -> str "Hnf"
@@ -337,10 +333,10 @@ let pr_red_expr (pr_constr,pr_ref) = function
   | ExtraRedExpr (s,c) ->
       hov 1 (str s ++ pr_arg pr_constr c)
 
-let rec pr_may_eval pr = function
+let rec pr_may_eval pr pr2 = function
   | ConstrEval (r,c) ->
       hov 0
-        (str "Eval" ++ brk (1,1) ++ pr_red_expr (pr,pr_metanum pr_reference) r ++
+        (str "Eval" ++ brk (1,1) ++ pr_red_expr (pr,pr2) r ++
 	 spc () ++ str "in" ++ brk (1,1) ++ pr c)
   | ConstrContext ((_,id),c) ->
       hov 0
@@ -348,3 +344,5 @@ let rec pr_may_eval pr = function
 	 str "[" ++ pr c ++ str "]")
   | ConstrTypeOf c -> hov 0 (str "Check " ++ brk (1,1) ++ pr c)
   | ConstrTerm c -> pr c
+
+let pr_rawconstr c = pr_constr (Constrextern.extern_rawconstr Idset.empty c)

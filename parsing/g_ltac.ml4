@@ -31,7 +31,7 @@ open Q
 type let_clause_kind =
   | LETTOPCLAUSE of Names.identifier * constr_expr
   | LETCLAUSE of
-      (Names.identifier Util.located * constr_expr may_eval option * raw_tactic_arg)
+      (Names.identifier Util.located * (constr_expr, Libnames.reference Genarg.or_metanum) may_eval option * raw_tactic_arg)
 
 ifdef Quotify then
 module Prelude = struct
@@ -62,7 +62,7 @@ open Prelude
 
 let arg_of_expr = function
     TacArg a -> a
-  | e -> Tacexp e
+  | e -> Tacexp (e:raw_tactic_expr)
     
 (* Tactics grammar rules *)
 
@@ -230,7 +230,7 @@ GEXTEND Gram
       | n = integer -> Integer n
       | id = METAIDENT -> MetaIdArg (loc,id)
       |	"?" -> ConstrMayEval (ConstrTerm (CHole loc))
-      | "?"; n = natural -> MetaNumArg (loc,n)
+      | "?"; n = natural -> ConstrMayEval (ConstrTerm (CMeta (loc,n)))
       |	"'"; c = Constr.constr -> ConstrMayEval (ConstrTerm c) ] ]
   ;
 

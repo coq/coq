@@ -348,7 +348,11 @@ let full_name_modtype qid = SpTab.user_name qid !the_modtypetab
 
 let locate_obj qid = SpTab.user_name qid !the_objtab
 
+type ltac_constant = section_path
 let locate_tactic = locate_obj 
+
+let shortest_qualid_of_tactic sp =
+  SpTab.shortest_qualid Idset.empty sp !the_objtab
 
 let locate_dir qid = DirTab.locate qid !the_dirtab
 

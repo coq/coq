@@ -856,7 +856,7 @@ open Pp
 
 let pr_tactic = function
   | Tacexpr.TacArg (Tacexpr.Tacexp t) ->
-      Pptactic.pr_raw_tactic t (*top tactic from tacinterp*)
+      Pptactic.pr_glob_tactic t (*top tactic from tacinterp*)
   | t -> Pptactic.pr_tactic t
 
 let pr_rule = function

@@ -15,5 +15,7 @@ open Proof_type
 open Topconstr
 
 val pr_raw_tactic : Environ.env -> raw_tactic_expr -> std_ppcmds
-val pr_gen : Environ.env ->
-  (constr_expr, raw_tactic_expr) generic_argument -> std_ppcmds
+ 
+val pr_glob_tactic : Environ.env -> glob_tactic_expr -> std_ppcmds
+
+val pr_tactic : Environ.env -> Proof_type.tactic_expr -> std_ppcmds

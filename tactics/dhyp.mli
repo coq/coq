@@ -11,11 +11,13 @@
 (*i*)
 open Names
 open Tacmach
+open Tacexpr
 (*i*)
 
 (* Programmable destruction of hypotheses and conclusions. *)
 
-val set_extern_interp : (Tacexpr.raw_tactic_expr -> tactic) -> unit
+val set_extern_interp : (glob_tactic_expr -> tactic) -> unit
+val set_extern_intern_tac : (raw_tactic_expr -> glob_tactic_expr) -> unit
 
 (*
 val dHyp : identifier -> tactic
@@ -27,4 +29,4 @@ val h_auto_tdb : int option -> tactic
 
 val add_destructor_hint :
   identifier -> (bool,unit) Tacexpr.location ->
-    Topconstr.constr_expr -> int -> Tacexpr.raw_tactic_expr -> unit
+    Topconstr.constr_expr -> int -> raw_tactic_expr -> unit

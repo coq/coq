@@ -39,6 +39,9 @@ type argument_type =
   | ExtraArgType of string
 
 type 'a or_var = ArgArg of 'a | ArgVar of identifier located
+type 'a or_metanum = AN of 'a | MetaNum of int located
+type 'a and_short_name = 'a * identifier option
+type rawconstr_and_expr = rawconstr * constr_expr option
 
 (* Dynamics but tagged by a type expression *)
 
@@ -53,57 +56,72 @@ let create_arg s =
     anomaly ("Genarg.create: already declared generic argument " ^ s);
   dyntab := s :: !dyntab;
   let t = ExtraArgType s in
-  (t,t)
+  (t,t,t)
 
 let exists_argtype s = List.mem s !dyntab
 
 type open_constr = Evd.evar_map * Term.constr
-(*type open_rawconstr = Coqast.t*)
-type open_rawconstr = constr_expr
+type open_constr_expr = constr_expr
+type open_rawconstr = rawconstr_and_expr
 
 let rawwit_bool = BoolArgType
+let globwit_bool = BoolArgType
 let wit_bool = BoolArgType
 
 let rawwit_int = IntArgType
+let globwit_int = IntArgType
 let wit_int = IntArgType
 
 let rawwit_int_or_var = IntOrVarArgType
+let globwit_int_or_var = IntOrVarArgType
 let wit_int_or_var = IntOrVarArgType
 
 let rawwit_string = StringArgType
+let globwit_string = StringArgType
 let wit_string = StringArgType
 
 let rawwit_ident = IdentArgType
+let globwit_ident = IdentArgType
 let wit_ident = IdentArgType
 
 let rawwit_pre_ident = PreIdentArgType
+let globwit_pre_ident = PreIdentArgType
 let wit_pre_ident = PreIdentArgType
 
 let rawwit_ref = RefArgType
+let globwit_ref = RefArgType
 let wit_ref = RefArgType
 
 let rawwit_quant_hyp = QuantHypArgType
+let globwit_quant_hyp = QuantHypArgType
 let wit_quant_hyp = QuantHypArgType
 
 let rawwit_sort = SortArgType
+let globwit_sort = SortArgType
 let wit_sort = SortArgType
 
 let rawwit_constr = ConstrArgType
+let globwit_constr = ConstrArgType
 let wit_constr = ConstrArgType
 
 let rawwit_constr_may_eval = ConstrMayEvalArgType
+let globwit_constr_may_eval = ConstrMayEvalArgType
 let wit_constr_may_eval = ConstrMayEvalArgType
 
 let rawwit_tactic = TacticArgType
+let globwit_tactic = TacticArgType
 let wit_tactic = TacticArgType
 
 let rawwit_casted_open_constr = CastedOpenConstrArgType
+let globwit_casted_open_constr = CastedOpenConstrArgType
 let wit_casted_open_constr = CastedOpenConstrArgType
 
 let rawwit_constr_with_bindings = ConstrWithBindingsArgType
+let globwit_constr_with_bindings = ConstrWithBindingsArgType
 let wit_constr_with_bindings = ConstrWithBindingsArgType
 
 let rawwit_red_expr = RedExprArgType
+let globwit_red_expr = RedExprArgType
 let wit_red_expr = RedExprArgType
 
 let wit_list0 t = List0ArgType t
@@ -166,17 +184,6 @@ let app_pair f1 f2 = function
       let o2 = out_gen t2 (f2 (in_gen t2 o2)) in
       (u, Obj.repr (o1,o2))
   | _ -> failwith "Genarg: not a pair"
-
-let or_var_app f = function
-  | ArgArg x -> ArgArg (f x)
-  | ArgVar _ as x -> x
-
-let smash_var_app t f g = function
-  | ArgArg x -> f x
-  | ArgVar (_,id) ->
-      let (u, _ as x) = g id in
-      if t <> u then failwith "Genarg: a variable bound to a wrong type";
-      x
 
 let unquote x = x
 

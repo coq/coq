@@ -456,6 +456,11 @@ let pr_lconstr_env env c = pr ltop (transf env c)
 let pr_constr c = pr_constr_env (Global.env()) c
 let pr_lconstr c = pr_lconstr_env (Global.env()) c
 
+let pr_rawconstr_env env c =
+  pr_constr (Constrextern.extern_rawconstr (Termops.vars_of_env env) c)
+let pr_lrawconstr_env env c =
+  pr_lconstr (Constrextern.extern_rawconstr (Termops.vars_of_env env) c)
+
 let anonymize_binder na c =
   if Options.do_translate() then
     Constrextern.extern_rawconstr (Termops.vars_of_env (Global.env()))
@@ -495,10 +500,6 @@ let pr_red_flag pr r =
 
 open Genarg
 
-let pr_metanum pr = function
-  | AN x -> pr x
-  | MetaNum (_,n) -> str "?" ++ int n
-
 let pr_metaid id = str"?" ++ pr_id id
 
 let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
@@ -524,11 +525,11 @@ let pr_red_expr (pr_constr,pr_lconstr,pr_ref) = function
   | ExtraRedExpr (s,c) ->
       hov 1 (str s ++ pr_arg pr_constr c)
 
-let rec pr_may_eval prc prlc  = function
+let rec pr_may_eval prc prlc pr2 = function
   | ConstrEval (r,c) ->
       hov 0
         (str "eval" ++ brk (1,1) ++
-         pr_red_expr (prc,prlc,pr_metanum pr_reference) r ++
+         pr_red_expr (prc,prlc,pr2) r ++
 	 str " in" ++ spc() ++ prlc c)
   | ConstrContext ((_,id),c) ->
       hov 0

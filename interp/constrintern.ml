@@ -90,6 +90,10 @@ let explain_internalisation_error = function
   | BadPatternsNumber (n1,n2) -> explain_bad_patterns_number n1 n2
   | BadExplicitationNumber (n,po) -> explain_bad_explicitation_number n po
 
+let error_unbound_metanum loc n =
+  user_err_loc
+    (loc,"glob_qualid_or_metanum", str "?" ++ int n ++ str " is unbound")
+
 (**********************************************************************)
 (* Dump of globalization (to be used by coqdoc)                       *)
 
@@ -453,8 +457,13 @@ let internalise isarity sigma env allow_soapp lvar c =
 		  Array.of_list (List.map (intern false env) cl))
     | CHole loc -> 
 	RHole (loc, QuestionMark)
-    | CMeta (loc, n) when n >=0 or allow_soapp ->
+    | CMeta (loc, n) when allow_soapp = None or !interning_grammar ->
 	RMeta (loc, n)
+    | CMeta (loc, n) when n >=0 ->
+        if List.mem n (out_some allow_soapp) then 
+	  RMeta (loc, n)
+        else 
+          error_unbound_metanum loc n
     | CMeta (loc, _) ->
 	raise (InternalisationError (loc,NegativeMetavariable))
     | CSort (loc, s) ->
@@ -559,20 +568,20 @@ let interp_rawconstr_gen isarity sigma env impls allow_soapp ltacvar c =
     allow_soapp (ltacvar,Environ.named_context env, []) c
 
 let interp_rawconstr sigma env c =
-  interp_rawconstr_gen false sigma env [] false ([],[]) c
+  interp_rawconstr_gen false sigma env [] (Some []) ([],[]) c
 
 let interp_rawtype sigma env c =
-  interp_rawconstr_gen true sigma env [] false ([],[]) c
+  interp_rawconstr_gen true sigma env [] (Some []) ([],[]) c
 
 let interp_rawtype_with_implicits sigma env impls c =
-  interp_rawconstr_gen true sigma env impls false ([],[]) c
+  interp_rawconstr_gen true sigma env impls (Some []) ([],[]) c
 
 (*
 (* The same as interp_rawconstr but with a list of variables which must not be
    globalized *)
 
 let interp_rawconstr_wo_glob sigma env lvar c =
-  interp_rawconstr_gen sigma env [] false lvar c
+  interp_rawconstr_gen sigma env [] (Some []) lvar c
 *)
 
 (*********************************************************************)
@@ -621,7 +630,7 @@ type ltac_env =
 (* of instantiations (variables and metas)    *)
 (* Note: typ is retyped *)
 let interp_constr_gen sigma env (ltacvar,unbndltacvar) lmeta c exptyp =
-  let c = interp_rawconstr_gen false sigma env [] false 
+  let c = interp_rawconstr_gen false sigma env [] (Some (List.map fst lmeta))
     (List.map fst ltacvar,unbndltacvar) c
   and rtype lst = retype_list sigma env lst in
   understand_gen sigma env (rtype ltacvar) (rtype lmeta) exptyp c;;
@@ -629,7 +638,7 @@ let interp_constr_gen sigma env (ltacvar,unbndltacvar) lmeta c exptyp =
 (*Interprets a casted constr according to two lists of instantiations
   (variables and metas)*)
 let interp_openconstr_gen sigma env (ltacvar,unbndltacvar) lmeta c exptyp =
-  let c = interp_rawconstr_gen false sigma env [] false
+  let c = interp_rawconstr_gen false sigma env [] (Some (List.map fst lmeta))
     (List.map fst ltacvar,unbndltacvar) c
   and rtype lst = retype_list sigma env lst in
   understand_gen_tcc sigma env (rtype ltacvar) (rtype lmeta) exptyp c;;
@@ -637,86 +646,10 @@ let interp_openconstr_gen sigma env (ltacvar,unbndltacvar) lmeta c exptyp =
 let interp_casted_constr sigma env c typ = 
   understand_gen sigma env [] [] (Some typ) (interp_rawconstr sigma env c)
 
-(* To process patterns, we need a translation without typing at all. *)
-
-let rec pat_of_raw metas vars lvar = function
-  | RVar (_,id) ->
-      (try PRel (list_index (Name id) vars)
-       with Not_found ->
-       try List.assoc id lvar
-       with Not_found -> PVar id)
-  | RMeta (_,n) ->
-      metas := n::!metas; PMeta (Some n)
-  | RRef (_,r) ->
-      PRef r
-  (* Hack pour ne pas réécrire une interprétation complète des patterns*)
-  | RApp (_, RMeta (_,n), cl) when n<0 ->
-      PSoApp (- n, List.map (pat_of_raw metas vars lvar) cl)
-  | RApp (_,c,cl) -> 
-      PApp (pat_of_raw metas vars lvar c,
-	    Array.of_list (List.map (pat_of_raw metas vars lvar) cl))
-  | RLambda (_,na,c1,c2) ->
-      PLambda (na, pat_of_raw metas vars lvar c1,
-	       pat_of_raw metas (na::vars) lvar c2)
-  | RProd (_,na,c1,c2) ->
-      PProd (na, pat_of_raw metas vars lvar c1,
-	       pat_of_raw metas (na::vars) lvar c2)
-  | RLetIn (_,na,c1,c2) ->
-      PLetIn (na, pat_of_raw metas vars lvar c1,
-	       pat_of_raw metas (na::vars) lvar c2)
-  | RSort (_,s) ->
-      PSort s
-  | RHole _ ->
-      PMeta None
-  | RCast (_,c,t) ->
-      if_verbose warning "Cast not taken into account in constr pattern";
-      pat_of_raw metas vars lvar c
-  | ROrderedCase (_,st,po,c,br) ->
-      PCase (st,option_app (pat_of_raw metas vars lvar) po,
-             pat_of_raw metas vars lvar c,
-             Array.map (pat_of_raw metas vars lvar) br)
-  | RCases (loc,po,[c],br) ->
-      PCase (Term.RegularStyle,option_app (pat_of_raw metas vars lvar) po,
-             pat_of_raw metas vars lvar c,
-             Array.init (List.length br)
-               (pat_of_raw_branch loc metas vars lvar br))
-  | r ->
-      let loc = loc_of_rawconstr r in
-      user_err_loc (loc,"pattern_of_rawconstr", str "Not supported pattern")
-
-and pat_of_raw_branch loc metas vars lvar brs i =
-  let bri = List.filter
-    (function
-        (_,_,[PatCstr(_,c,lv,_)],_) -> snd c = i+1
-      | (loc,_,_,_) ->
-          user_err_loc (loc,"pattern_of_rawconstr",
-                        str "Not supported pattern")) brs in
-  match bri with
-      [(_,_,[PatCstr(_,_,lv,_)],br)] ->
-        let lna =
-          List.map
-            (function PatVar(_,na) -> na
-              | PatCstr(loc,_,_,_) ->
-                  user_err_loc (loc,"pattern_of_rawconstr",
-                                str "Not supported pattern")) lv in
-        let vars' = List.rev lna @ vars in 
-        List.fold_right (fun na b -> PLambda(na,PMeta None,b)) lna
-          (pat_of_raw metas vars' lvar br)
-    | _ -> user_err_loc (loc,"pattern_of_rawconstr",
-                         str "No unique branch for " ++ int (i+1) ++
-                         str"-th constructor")
-
-
-let pattern_of_rawconstr lvar c =
-  let metas = ref [] in
-  let p = pat_of_raw metas [] lvar c in
-  (!metas,p)
-
 let interp_constrpattern_gen sigma env (ltacvar,unbndltacvar) c =
-  let c = interp_rawconstr_gen false sigma env [] true
+  let c = interp_rawconstr_gen false sigma env [] None
     (List.map fst ltacvar,unbndltacvar) c in
-  let nlvar = List.map (fun (id,c) -> (id,pattern_of_constr c)) ltacvar in
-  pattern_of_rawconstr nlvar c
+  pattern_of_rawconstr c
 
 let interp_constrpattern sigma env c =
   interp_constrpattern_gen sigma env ([],[]) c
@@ -726,7 +659,7 @@ let interp_aconstr vars a =
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let vl = List.map (fun id -> (id,ref None)) vars in
   let c = for_grammar (internalise false Evd.empty (extract_ids env, [], [])
-    false (([],[]),Environ.named_context env,vl)) a in
+    (Some []) (([],[]),Environ.named_context env,vl)) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a = aconstr_of_rawconstr vars c in
   (* Returns [a] and the ordered list of variables with their scopes *)

@@ -11,6 +11,7 @@
 open Genarg
 open Q_util
 open Q_coqast
+open Argextend
 
 let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
 let loc = (0,0)
@@ -35,35 +36,19 @@ let rec make_when loc = function
       <:expr< Genarg.genarg_tag $lid:p$ = $t$ && $l$ >>
   | _::l -> make_when loc l
 
-let rec make_wit loc = function
-  | BoolArgType -> <:expr< Genarg.wit_bool >>
-  | IntArgType -> <:expr< Genarg.wit_int >>
-  | IntOrVarArgType -> <:expr< Genarg.wit_int_or_var >>
-  | StringArgType -> <:expr< Genarg.wit_string >>
-  | PreIdentArgType -> <:expr< Genarg.wit_pre_ident >>
-  | IdentArgType -> <:expr< Genarg.wit_ident >>
-  | RefArgType -> <:expr< Genarg.wit_ref >>
-  | QuantHypArgType -> <:expr< Genarg.wit_quant_hyp >>
-  | SortArgType -> <:expr< Genarg.wit_sort >>
-  | ConstrArgType -> <:expr< Genarg.wit_constr >>
-  | ConstrMayEvalArgType -> <:expr< Genarg.wit_constr_may_eval >>
-  | TacticArgType -> <:expr< Genarg.wit_tactic >>
-  | RedExprArgType -> <:expr< Genarg.wit_red_expr >>
-  | CastedOpenConstrArgType -> <:expr< Genarg.wit_casted_open_constr >>
-  | ConstrWithBindingsArgType -> <:expr< Genarg.wit_constr_with_bindings >>
-  | List0ArgType t -> <:expr< Genarg.wit_list0 $make_wit loc t$ >>
-  | List1ArgType t -> <:expr< Genarg.wit_list1 $make_wit loc t$ >>
-  | OptArgType t -> <:expr< Genarg.wit_opt $make_wit loc t$ >>
-  | PairArgType (t1,t2) -> 
-      <:expr< Genarg.wit_pair $make_wit loc t1$ $make_wit loc t2$ >>
-  | ExtraArgType s -> <:expr< $lid:"wit_"^s$ >>
-
 let rec make_let e = function
   | [] -> e
   | TacNonTerm(loc,t,_,Some p)::l ->
       let loc = join_loc loc (MLast.loc_of_expr e) in
       let e = make_let e l in
-      <:expr< let $lid:p$ = Genarg.out_gen $make_wit loc t$ $lid:p$ in $e$ >>
+      let v = <:expr< Genarg.out_gen $make_wit loc t$ $lid:p$ >> in
+      let v = 
+        (* Special case for tactics which must be stored in algebraic
+           form to avoid marshalling closures and to be reprinted *)
+        if t = TacticArgType then
+          <:expr< ($v$, Tacinterp.eval_tactic $v$) >>
+        else v in
+      <:expr< let $lid:p$ = $v$ in $e$ >>
   | _::l -> make_let e l
 
 let add_clause s (_,pt,e) l =
@@ -94,6 +79,16 @@ let rec make_args = function
   | TacNonTerm(loc,t,_,Some p)::l ->
       <:expr< [ Genarg.in_gen $make_wit loc t$ $lid:p$ :: $make_args l$ ] >>
   | _::l -> make_args l
+
+let rec make_eval_tactic e = function
+  | [] -> e
+  | TacNonTerm(loc,TacticArgType,_,Some p)::l ->
+      let loc = join_loc loc (MLast.loc_of_expr e) in
+      let e = make_eval_tactic e l in
+        (* Special case for tactics which must be stored in algebraic
+           form to avoid marshalling closures and to be reprinted *)
+      <:expr< let $lid:p$ = ($lid:p$,Tacinterp.eval_tactic $lid:p$) in $e$ >>
+  | _::l -> make_eval_tactic e l
 
 let rec make_fun e = function
   | [] -> e
@@ -142,7 +137,7 @@ let declare_tactic_v7 loc s cl =
     let e = 
       make_fun
         <:expr<
-          Refiner.abstract_extended_tactic $mlexpr_of_string s$ $make_args p$ $e$
+          Refiner.abstract_extended_tactic $mlexpr_of_string s$ $make_args p$ $make_eval_tactic e p$
         >>
       p in
     <:str_item< value $lid:stac$ = $e$ >>
@@ -153,7 +148,7 @@ let declare_tactic_v7 loc s cl =
       open Pcoq;
       Egrammar.extend_tactic_grammar $se$ $gl$;
       let pp = fun [ $list:pl$ ] in
-      Pptactic.declare_extra_tactic_pprule False $se$ pp pp;
+      Pptactic.declare_extra_tactic_pprule False $se$ pp;
     end
   >>
 
@@ -170,25 +165,26 @@ let declare_tactic loc s cl =
     let e = 
       make_fun
         <:expr<
-          Refiner.abstract_extended_tactic $mlexpr_of_string s'$ $make_args p$ $e$
+          Refiner.abstract_extended_tactic $mlexpr_of_string s'$ $make_args p$ $make_eval_tactic e p$
         >>
       p in
     <:str_item< value $lid:stac$ = $e$ >>
   in
+  let hidden = if List.length cl = 1 then List.map hide_tac cl' else [] in
   let se = mlexpr_of_string s in
   <:str_item<
     declare
       open Pcoq;
-      declare $list:List.map hide_tac cl'$ end;
+      declare $list:hidden$ end;
       try
        Refiner.add_tactic $se'$ (fun [ $list:make_clauses s' cl'$ ])
       with e -> Pp.pp (Cerrors.explain_exn e);
       Egrammar.extend_tactic_grammar $se'$ $gl'$;
       let pp' = fun [ $list:pl'$ ] in
-      Pptactic.declare_extra_tactic_pprule True $se'$ pp' pp';
+      Pptactic.declare_extra_tactic_pprule True $se'$ pp';
       Egrammar.extend_tactic_grammar $se'$ $gl$;
       let pp = fun [ $list:pl$ ] in
-      Pptactic.declare_extra_tactic_pprule False $se'$ pp pp;
+      Pptactic.declare_extra_tactic_pprule False $se'$ pp;
     end
   >>
 
@@ -206,7 +202,8 @@ let rec interp_entry_name loc s =
   else if l > 4 & String.sub s (l-4) 4 = "_opt" then
     let t, g = interp_entry_name loc (String.sub s 0 (l-4)) in
     OptArgType t, <:expr< Gramext.Sopt $g$ >>
-  else 
+  else
+    
     let t, se =
       match Pcoq.entry_type (Pcoq.get_univ "prim") s with
 	| Some _ as x -> x, <:expr< Prim. $lid:s$ >>

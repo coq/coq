@@ -28,7 +28,7 @@ type auto_tactic =
   | Give_exact of constr                  
   | Res_pf_THEN_trivial_fail of constr * unit clausenv (* Hint Immediate *)
   | Unfold_nth of global_reference          (* Hint Unfold *)
-  | Extern     of Tacexpr.raw_tactic_expr   (* Hint Extern *)
+  | Extern     of Tacexpr.glob_tactic_expr   (* Hint Extern *)
 
 open Rawterm
 
@@ -114,11 +114,18 @@ val make_resolve_hyp :
 (* [make_extern name pri pattern tactic_expr] *)
 
 val make_extern :
-  identifier -> int -> constr_pattern -> Tacexpr.raw_tactic_expr
+  identifier -> int -> constr_pattern -> Tacexpr.glob_tactic_expr
       -> constr_label * pri_auto_tactic
 
 val set_extern_interp :
-  ((int * constr) list -> Tacexpr.raw_tactic_expr -> tactic) -> unit
+  ((int * constr) list -> Tacexpr.glob_tactic_expr -> tactic) -> unit
+
+val set_extern_intern_tac :
+  (int list -> Tacexpr.raw_tactic_expr -> Tacexpr.glob_tactic_expr) -> unit
+
+val set_extern_subst_tactic :
+  (Names.substitution -> Tacexpr.glob_tactic_expr -> Tacexpr.glob_tactic_expr)
+  -> unit
 
 (* Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints *)
@@ -137,7 +144,7 @@ val unify_resolve : (constr * unit clausenv) -> tactic
    [Pattern.somatches], then replace [?1] [?2] metavars in tacast by the
    right values to build a tactic *)
 
-val conclPattern : constr -> constr_pattern -> Tacexpr.raw_tactic_expr -> tactic
+val conclPattern : constr -> constr_pattern -> Tacexpr.glob_tactic_expr -> tactic
 
 (* The Auto tactic *)
 

@@ -12,6 +12,7 @@ open Genarg
 open Q_util
 open Q_coqast
 open Ast
+open Argextend
 
 let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
 let loc = (0,0)
@@ -34,29 +35,6 @@ let rec make_when loc = function
       let t = mlexpr_of_argtype loc' t in
       <:expr< Genarg.genarg_tag $lid:p$ = $t$ && $l$ >>
   | _::l -> make_when loc l
-
-let rec make_rawwit loc = function
-  | BoolArgType -> <:expr< Genarg.rawwit_bool >>
-  | IntArgType -> <:expr< Genarg.rawwit_int >>
-  | IntOrVarArgType -> <:expr< Genarg.rawwit_int_or_var >>
-  | StringArgType -> <:expr< Genarg.rawwit_string >>
-  | PreIdentArgType -> <:expr< Genarg.rawwit_pre_ident >>
-  | IdentArgType -> <:expr< Genarg.rawwit_ident >>
-  | RefArgType -> <:expr< Genarg.rawwit_ref >>
-  | SortArgType -> <:expr< Genarg.rawwit_sort >>
-  | ConstrArgType -> <:expr< Genarg.rawwit_constr >>
-  | ConstrMayEvalArgType -> <:expr< Genarg.rawwit_constr_may_eval >>
-  | QuantHypArgType -> <:expr< Genarg.rawwit_quant_hyp >>
-  | TacticArgType -> <:expr< Genarg.rawwit_tactic >>
-  | RedExprArgType -> <:expr< Genarg.rawwit_red_expr >>
-  | CastedOpenConstrArgType -> <:expr< Genarg.rawwit_casted_open_constr >>
-  | ConstrWithBindingsArgType -> <:expr< Genarg.rawwit_constr_with_bindings >>
-  | List0ArgType t -> <:expr< Genarg.wit_list0 $make_rawwit loc t$ >>
-  | List1ArgType t -> <:expr< Genarg.wit_list1 $make_rawwit loc t$ >>
-  | OptArgType t -> <:expr< Genarg.wit_opt $make_rawwit loc t$ >>
-  | PairArgType (t1,t2) -> 
-      <:expr< Genarg.wit_pair $make_rawwit loc t1$ $make_rawwit loc t2$ >>
-  | ExtraArgType s -> <:expr< $lid:"rawwit_"^s$ >>
 
 let rec make_let e = function
   | [] -> e

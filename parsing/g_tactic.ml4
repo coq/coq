@@ -14,6 +14,7 @@ open Pcoq
 open Util
 open Tacexpr
 open Rawterm
+open Genarg
 
 (* open grammar entries, possibly in quotified form *)
 ifdef Quotify then open Qast
@@ -83,8 +84,8 @@ GEXTEND Gram
   ;
   (* Either an hypothesis or a ltac ref (variable or pattern metavariable) *)
   id_or_ltac_ref:
-    [ [ id = base_ident -> AN id
-      | "?"; n = natural -> MetaNum (loc,n) ] ]
+    [ [ id = base_ident -> Genarg.AN id
+      | "?"; n = natural -> Genarg.MetaNum (loc,n) ] ]
   ;
   (* Either a global ref or a ltac ref (variable or pattern metavariable) *)
   global_or_ltac_ref:

@@ -25,7 +25,7 @@ open Topconstr
 type value =
   | VTactic of Util.loc * tactic  (* For mixed ML/Ltac tactics (e.g. Tauto) *)
   | VRTactic of (goal list sigma * validation)
-  | VFun of (identifier * value) list * identifier option list *raw_tactic_expr
+  | VFun of (identifier * value) list * identifier option list * glob_tactic_expr
   | VVoid
   | VInteger of int
   | VIdentifier of identifier
@@ -67,33 +67,46 @@ val add_tacdef :
   bool -> (identifier Util.located * raw_tactic_expr) list -> unit
 
 (* Adds an interpretation function for extra generic arguments *)
-val add_genarg_interp :
-  string ->
-    (interp_sign -> goal sigma -> raw_generic_argument -> closed_generic_argument) -> unit
+type glob_sign = {
+  ltacvars : identifier list * identifier list;
+  ltacrecvars : (identifier * Nametab.ltac_constant) list;
+  metavars : int list;
+  gsigma : Evd.evar_map;
+  genv : Environ.env }
 
-val genarg_interp :
-  interp_sign -> goal sigma -> raw_generic_argument -> closed_generic_argument
+val add_interp_genarg :
+  string ->
+    (glob_sign -> raw_generic_argument -> glob_generic_argument) *
+    (interp_sign -> goal sigma -> glob_generic_argument -> 
+      closed_generic_argument) *
+    (Names.substitution -> glob_generic_argument -> glob_generic_argument)
+    -> unit
+
+val interp_genarg :
+  interp_sign -> goal sigma -> glob_generic_argument -> closed_generic_argument
+
+val intern_genarg :
+  glob_sign -> raw_generic_argument -> glob_generic_argument
+
+val subst_genarg :
+  Names.substitution -> glob_generic_argument -> glob_generic_argument
 
 (* Interprets any expression *)
-val val_interp : interp_sign -> goal sigma -> raw_tactic_expr -> value
-
-(*
-(* Interprets tactic arguments *)
-val interp_tacarg : interp_sign -> raw_tactic_expr -> value
-*)
+val val_interp : interp_sign -> goal sigma -> glob_tactic_expr -> value
 
 (* Interprets redexp arguments *)
 val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr
   -> Tacred.red_expr
 
 (* Interprets tactic expressions *)
-val tac_interp : (identifier * value) list -> (int * constr) list ->
+val interp_tac_gen : (identifier * value) list -> (int * constr) list ->
                  debug_info -> raw_tactic_expr -> tactic
 
-(* Interprets constr expressions *)
-val constr_interp : interp_sign -> Evd.evar_map -> Environ.env -> constr_expr -> constr
-
 (* Initial call for interpretation *)
+val glob_tactic : raw_tactic_expr -> glob_tactic_expr
+
+val eval_tactic : glob_tactic_expr -> tactic
+
 val interp : raw_tactic_expr -> tactic
 
 (* Hides interpretation for pretty-print *)

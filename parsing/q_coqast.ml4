@@ -145,9 +145,9 @@ let mlexpr_of_intro_pattern = function
 let mlexpr_of_ident_option = mlexpr_of_option (mlexpr_of_ident)
 
 let mlexpr_of_or_metanum f = function
-  | Rawterm.AN a -> <:expr< Rawterm.AN $f a$ >>
-  | Rawterm.MetaNum (_,n) ->
-      <:expr< Rawterm.MetaNum $dloc$ $mlexpr_of_int n$ >>
+  | Genarg.AN a -> <:expr< Genarg.AN $f a$ >>
+  | Genarg.MetaNum (_,n) ->
+      <:expr< Genarg.MetaNum $dloc$ $mlexpr_of_int n$ >>
 
 let mlexpr_of_or_metaid f = function
   | Tacexpr.AI a -> <:expr< Tacexpr.AI $f a$ >>
@@ -449,7 +449,7 @@ let rec mlexpr_of_atomic_tactic = function
 *)
   | _ -> failwith "Quotation of atomic tactic expressions: TODO"
 
-and mlexpr_of_tactic = function
+and mlexpr_of_tactic : (Tacexpr.raw_tactic_expr -> MLast.expr) = function
   | Tacexpr.TacAtom (loc,t) ->
       <:expr< Tacexpr.TacAtom $dloc$ $mlexpr_of_atomic_tactic t$ >>
   | Tacexpr.TacThen (t1,t2) -> 
@@ -510,8 +510,6 @@ and mlexpr_of_tactic = function
 
 and mlexpr_of_tactic_arg = function
   | Tacexpr.MetaIdArg (loc,id) -> anti loc id
-  | Tacexpr.MetaNumArg (loc,n) ->
-      <:expr< Tacexpr.MetaNumArg $dloc$ $mlexpr_of_int n$ >>
   | Tacexpr.TacCall (loc,t,tl) ->
       <:expr< Tacexpr.TacCall $dloc$ $mlexpr_of_reference t$ $mlexpr_of_list mlexpr_of_tactic_arg tl$>>
   | Tacexpr.Tacexp t ->

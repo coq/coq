@@ -21,6 +21,7 @@ open Environ
 open Proof_trees
 open Clenv
 open Pattern
+open Matching
 open Coqlib
 open Declarations
 

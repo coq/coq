@@ -14,42 +14,70 @@ open Tacexpr
 open Pretyping
 open Proof_type
 open Topconstr
+open Rawterm
 
-(* if the boolean is false then the extension applies only to old syntax *)
+val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
+val pr_or_metanum : ('a -> std_ppcmds) -> 'a or_metanum -> std_ppcmds
+val pr_or_metaid : ('a -> std_ppcmds) -> 'a or_metaid -> std_ppcmds
+val pr_and_short_name : ('a -> std_ppcmds) -> 'a and_short_name -> std_ppcmds
+val pr_located : ('a -> std_ppcmds) -> 'a Util.located -> std_ppcmds
+
+type 'a raw_extra_genarg_printer =
+    (constr_expr -> std_ppcmds) -> (raw_tactic_expr -> std_ppcmds) ->
+      'a -> std_ppcmds
+
+type 'a glob_extra_genarg_printer =
+    (rawconstr_and_expr -> std_ppcmds) -> (glob_tactic_expr -> std_ppcmds) ->
+      'a -> std_ppcmds
+
+type 'a extra_genarg_printer =
+    (Term.constr -> std_ppcmds) -> (glob_tactic_expr -> std_ppcmds) ->
+      'a -> std_ppcmds
+
+  (* if the boolean is false then the extension applies only to old syntax *)
 val declare_extra_genarg_pprule : 
   bool ->
-  ('a raw_abstract_argument_type * ('a -> std_ppcmds)) ->
-  ('b closed_abstract_argument_type * ('b -> std_ppcmds)) -> unit 
+  ('c raw_abstract_argument_type * 'c raw_extra_genarg_printer) ->
+  ('a glob_abstract_argument_type * 'a glob_extra_genarg_printer) ->
+  ('b closed_abstract_argument_type * 'b extra_genarg_printer) -> unit
 
-(* idem *)
+type ('a,'b) gen_gram_prod_builder =
+  ('a,'b) generic_argument list ->
+    string * Egrammar.grammar_tactic_production list
+
+  (* if the boolean is false then the extension applies only to old syntax *)
 val declare_extra_tactic_pprule : 
-  bool -> string ->
-    (raw_generic_argument list ->
-      string * Egrammar.grammar_tactic_production list)
-    -> (closed_generic_argument list ->
-      string * Egrammar.grammar_tactic_production list)
-      -> unit 
+  bool -> string -> ('a,'b) gen_gram_prod_builder -> unit
 
-val pr_match_pattern : pattern_expr match_pattern -> std_ppcmds
+val pr_match_pattern : ('a -> std_ppcmds) -> 'a match_pattern -> std_ppcmds
 
-val pr_match_rule : bool -> (raw_tactic_expr -> std_ppcmds) ->
-  (pattern_expr,raw_tactic_expr) match_rule -> std_ppcmds
+val pr_match_rule : bool -> ('a -> std_ppcmds) -> ('b -> std_ppcmds) ->
+  ('a,'b) match_rule -> std_ppcmds
 
-val pr_raw_tactic : raw_tactic_expr -> std_ppcmds
+val pr_glob_tactic : glob_tactic_expr -> std_ppcmds
 
 val pr_tactic : Proof_type.tactic_expr -> std_ppcmds
 
-val pr_rawgen:
+val pr_glob_generic:
+  (rawconstr_and_expr -> std_ppcmds) -> (glob_tactic_expr -> std_ppcmds) ->
+    glob_generic_argument -> std_ppcmds
+
+val pr_raw_generic : 
   (constr_expr -> std_ppcmds) ->
   (raw_tactic_expr -> std_ppcmds) ->
     (constr_expr, raw_tactic_expr) generic_argument ->
       std_ppcmds
+
 val pr_raw_extend:
   (constr_expr -> std_ppcmds) ->
   (raw_tactic_expr -> std_ppcmds) -> string ->
-    (constr_expr, raw_tactic_expr) generic_argument list ->
-      std_ppcmds
+    raw_generic_argument list -> std_ppcmds
+
+val pr_glob_extend:
+  (rawconstr_and_expr -> std_ppcmds) ->
+  (glob_tactic_expr -> std_ppcmds) -> string ->
+    glob_generic_argument list -> std_ppcmds
+
 val pr_extend :
-  (raw_tactic_expr -> std_ppcmds) -> string ->
-    (Term.constr, raw_tactic_expr) generic_argument list ->
-      std_ppcmds
+  (Term.constr -> std_ppcmds) ->
+  (glob_tactic_expr -> std_ppcmds) -> string -> closed_generic_argument list -> std_ppcmds

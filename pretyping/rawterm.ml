@@ -159,7 +159,6 @@ let map_rawconstr_with_binders_loc loc g f e = function
   | RDynamic (_,x) -> RDynamic (loc,x)
 *)
 
-(*
 let rec subst_pat subst pat = 
   match pat with
   | PatVar _ -> pat
@@ -168,8 +167,7 @@ let rec subst_pat subst pat =
       and cpl' = list_smartmap (subst_pat subst) cpl in
 	if kn' == kn && cpl' == cpl then pat else
 	  PatCstr (loc,((kn',i),j),cpl',n)
-*)	
-(*
+
 let rec subst_raw subst raw = 
   match raw with
   | RRef (loc,ref) -> 
@@ -244,7 +242,6 @@ let rec subst_raw subst raw =
 	  RCast (loc,r1',r2')
 
   | RDynamic _ -> raw
-*)
 
 let loc_of_rawconstr = function
   | RRef (loc,_) -> loc
@@ -284,10 +281,8 @@ type ('a,'b) red_expr_gen =
   | Pattern of 'a occurrences list
   | ExtraRedExpr of string * 'a
 
-type 'a or_metanum = AN of 'a | MetaNum of int located
-
-type 'a may_eval =
+type ('a,'b) may_eval =
   | ConstrTerm of 'a
-  | ConstrEval of ('a, reference or_metanum) red_expr_gen * 'a
+  | ConstrEval of ('a, 'b) red_expr_gen * 'a
   | ConstrContext of (loc * identifier) * 'a
   | ConstrTypeOf of 'a

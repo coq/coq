@@ -14,6 +14,7 @@ open Pcoq
 open Util
 open Tacexpr
 open Rawterm
+open Genarg
 
 let tactic_kw =
   [ "->"; "<-" ]

@@ -101,7 +101,9 @@ val locate_section : qualid -> dir_path
 val locate_modtype : qualid -> kernel_name
 val locate_syntactic_definition : qualid -> kernel_name
 
-val locate_tactic : qualid -> section_path
+type ltac_constant = section_path
+val locate_tactic : qualid -> ltac_constant
+val shortest_qualid_of_tactic : ltac_constant -> qualid
 val locate_dir : qualid -> global_dir_reference
 val locate_module : qualid -> module_path
 

@@ -98,9 +98,7 @@ val map_rawconstr_with_binders_loc : loc ->
 
 val loc_of_rawconstr : rawconstr -> loc
 
-(*
 val subst_raw : Names.substitution -> rawconstr -> rawconstr
-*)
 
 type 'a raw_red_flag = {
   rBeta : bool;
@@ -123,10 +121,8 @@ type ('a,'b) red_expr_gen =
   | Pattern of 'a occurrences list
   | ExtraRedExpr of string * 'a
 
-type 'a or_metanum = AN of 'a | MetaNum of int located
-
-type 'a may_eval =
+type ('a,'b) may_eval =
   | ConstrTerm of 'a
-  | ConstrEval of ('a, reference or_metanum) red_expr_gen * 'a
+  | ConstrEval of ('a, 'b) red_expr_gen * 'a
   | ConstrContext of (loc * identifier) * 'a
   | ConstrTypeOf of 'a

@@ -50,10 +50,12 @@ type refiner_error =
 
 exception RefinerError of refiner_error
 
+open Pretype_errors
+
 let catchable_exception = function
   | Util.UserError _ | TypeError _ | RefinerError _
   | Stdpp.Exc_located(_,(Util.UserError _ | TypeError _ | RefinerError _ |
-    Nametab.GlobalizationError _)) -> true
+    Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _))) -> true
   | _ -> false
 
 let error_cannot_unify (m,n) =

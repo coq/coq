@@ -24,10 +24,10 @@ open Util
    
 let is_empty ist =
   if (is_empty_type (List.assoc 1 ist.lmatch)) then
-    <:tactic<ElimType ?1;Assumption>>
- else
-   <:tactic<Fail>>
-   
+    <:tactic<Idtac>>
+  else
+    <:tactic<Fail>>
+
 let is_unit ist =
   if (is_unit_type (List.assoc 1 ist.lmatch)) then
     <:tactic<Idtac>>
@@ -65,7 +65,7 @@ let axioms ist =
     <:tactic<
     Match Reverse Context With
       |[|- ?1] -> $t_is_unit;Constructor 1
-      |[_:?1 |- ?] -> $t_is_empty
+      |[_:?1 |- ?] -> $t_is_empty;ElimType ?1;Assumption
       |[_:?1 |- ?1] -> Assumption>>
 
 
@@ -108,11 +108,12 @@ let simplif ist =
         | [|- (?1 ? ?)] -> $t_is_conj;Split);
        $t_not_dep_intros)>>
 
-let rec tauto_intuit t_reduce t_solver ist =
+let rec tauto_intuit t_reduce solver ist =
   let t_axioms = tacticIn axioms
   and t_simplif = tacticIn simplif
   and t_is_disj = tacticIn is_disj
-  and t_tauto_intuit = tacticIn (tauto_intuit t_reduce t_solver) in
+  and t_tauto_intuit = tacticIn (tauto_intuit t_reduce solver) in
+  let t_solver = Tacexpr.TacArg (valueIn (VTactic (dummy_loc,solver))) in
   <:tactic<
    ($t_simplif;$t_axioms
     Orelse
@@ -153,12 +154,12 @@ let intuition_gen tac =
 let simplif_gen = interp (tacticIn simplif)
 
 let tauto g =
-  try intuition_gen <:tactic<Fail>> g
+  try intuition_gen (interp <:tactic<Fail>>) g
   with
     Refiner.FailError _ | UserError _ ->
       errorlabstrm "tauto" [< str "Tauto failed" >]
 
-let default_intuition_tac = <:tactic< Auto with * >>
+let default_intuition_tac = interp <:tactic< Auto with * >>
 
 let q_elim tac=
   <:tactic<
@@ -170,7 +171,7 @@ let rec lfo n gl=
   if n=0 then (tclFAIL 0 "LinearIntuition failed" gl) else
     let p=if n<0 then n else (n-1) in
     let lfo_rec=q_elim (Tacexpr.TacArg (valueIn (VTactic(dummy_loc,lfo p)))) in
-      intuition_gen lfo_rec gl
+      intuition_gen (interp lfo_rec) gl
 
 let lfo_wrap n gl= 
   try lfo n gl
@@ -188,7 +189,7 @@ END
 
 TACTIC EXTEND Intuition
 | [ "Intuition" ] -> [ intuition_gen default_intuition_tac ]
-| [ "Intuition" tactic(t) ] -> [ intuition_gen t ]
+| [ "Intuition" tactic(t) ] -> [ intuition_gen (snd t) ]
 END
 
 TACTIC EXTEND LinearIntuition

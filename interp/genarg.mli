@@ -16,10 +16,17 @@ open Rawterm
 open Topconstr
 
 type 'a or_var = ArgArg of 'a | ArgVar of identifier located
+type 'a or_metanum = AN of 'a | MetaNum of int located
+type 'a and_short_name = 'a * identifier option
+
+(* In globalize tactics, we need to keep the initial constr_expr to recompute*)
+(* in the environment by the effective calls to Intro, Inversion, etc *)
+(* The constr_expr field is None in TacDef though *)
+type rawconstr_and_expr = rawconstr * constr_expr option
 
 type open_constr = Evd.evar_map * Term.constr
-type open_rawconstr = constr_expr
-
+type open_constr_expr = constr_expr
+type open_rawconstr = rawconstr_and_expr
 
 (* The route of a generic argument, from parsing to evaluation
 
@@ -47,12 +54,12 @@ IntOrVarArgType                int or_var               int
 StringArgType                  string (parsed w/ "")    string
 IdentArgType                   identifier               identifier         
 PreIdentArgType                string (parsed w/o "")   string
-RefArgType                     reference           global_reference
-ConstrArgType                  constr_expr               constr
-ConstrMayEvalArgType               constr_expr may_eval      constr
+RefArgType                     reference                global_reference
+ConstrArgType                  constr_expr              constr
+ConstrMayEvalArgType           constr_expr may_eval     constr
 QuantHypArgType                quantified_hypothesis    quantified_hypothesis
 TacticArgType                  raw_tactic_expr          tactic
-CastedOpenConstrArgType        constr_expr               open_constr
+CastedOpenConstrArgType        constr_expr              open_constr
 ConstrWithBindingsArgType      constr_expr with_bindings constr with_bindings
 List0ArgType of argument_type
 List1ArgType of argument_type
@@ -63,49 +70,64 @@ ExtraArgType of string         '_a                      '_b
 type ('a,'co,'ta) abstract_argument_type
 
 val rawwit_bool : (bool,'co,'ta) abstract_argument_type
+val globwit_bool : (bool,'co,'ta) abstract_argument_type
 val wit_bool : (bool,'co,'ta) abstract_argument_type
 
 val rawwit_int : (int,'co,'ta) abstract_argument_type
+val globwit_int : (int,'co,'ta) abstract_argument_type
 val wit_int : (int,'co,'ta) abstract_argument_type
 
 val rawwit_int_or_var : (int or_var,'co,'ta) abstract_argument_type
+val globwit_int_or_var : (int or_var,'co,'ta) abstract_argument_type
 val wit_int_or_var : (int or_var,'co,'ta) abstract_argument_type
 
 val rawwit_string : (string,'co,'ta) abstract_argument_type
+val globwit_string : (string,'co,'ta) abstract_argument_type
 val wit_string : (string,'co,'ta) abstract_argument_type
 
 val rawwit_ident : (identifier,'co,'ta) abstract_argument_type
+val globwit_ident : (identifier,'co,'ta) abstract_argument_type
 val wit_ident : (identifier,'co,'ta) abstract_argument_type
 
 val rawwit_pre_ident : (string,'co,'ta) abstract_argument_type
+val globwit_pre_ident : (string,'co,'ta) abstract_argument_type
 val wit_pre_ident : (string,'co,'ta) abstract_argument_type
 
 val rawwit_ref : (reference,constr_expr,'ta) abstract_argument_type
+val globwit_ref : (global_reference located or_var,rawconstr_and_expr,'ta) abstract_argument_type
 val wit_ref : (global_reference,constr,'ta) abstract_argument_type
 
 val rawwit_quant_hyp : (quantified_hypothesis,'co,'ta) abstract_argument_type
+val globwit_quant_hyp : (quantified_hypothesis,'co,'ta) abstract_argument_type
 val wit_quant_hyp : (quantified_hypothesis,'co,'ta) abstract_argument_type
 
 val rawwit_sort : (rawsort,constr_expr,'ta) abstract_argument_type
+val globwit_sort : (rawsort,rawconstr_and_expr,'ta) abstract_argument_type
 val wit_sort : (sorts,constr,'ta) abstract_argument_type
 
 val rawwit_constr : (constr_expr,constr_expr,'ta) abstract_argument_type
+val globwit_constr : (rawconstr_and_expr,rawconstr_and_expr,'ta) abstract_argument_type
 val wit_constr : (constr,constr,'ta) abstract_argument_type
 
-val rawwit_constr_may_eval : (constr_expr may_eval,constr_expr,'ta) abstract_argument_type
+val rawwit_constr_may_eval : ((constr_expr,reference or_metanum) may_eval,constr_expr,'ta) abstract_argument_type
+val globwit_constr_may_eval : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var or_metanum) may_eval,rawconstr_and_expr,'ta) abstract_argument_type
 val wit_constr_may_eval : (constr,constr,'ta) abstract_argument_type
 
-val rawwit_casted_open_constr : (open_rawconstr,constr_expr,'ta) abstract_argument_type
+val rawwit_casted_open_constr : (open_constr_expr,constr_expr,'ta) abstract_argument_type
+val globwit_casted_open_constr : (open_rawconstr,rawconstr_and_expr,'ta) abstract_argument_type
 val wit_casted_open_constr : (open_constr,constr,'ta) abstract_argument_type
 
 val rawwit_constr_with_bindings : (constr_expr with_bindings,constr_expr,'ta) abstract_argument_type
+val globwit_constr_with_bindings : (rawconstr_and_expr with_bindings,rawconstr_and_expr,'ta) abstract_argument_type
 val wit_constr_with_bindings : (constr with_bindings,constr,'ta) abstract_argument_type
 
 val rawwit_red_expr : ((constr_expr,reference or_metanum) red_expr_gen,constr_expr,'ta) abstract_argument_type
+val globwit_red_expr : ((rawconstr_and_expr,evaluable_global_reference and_short_name or_var or_metanum) red_expr_gen,rawconstr_and_expr,'ta) abstract_argument_type
 val wit_red_expr : ((constr,evaluable_global_reference) red_expr_gen,constr,'ta) abstract_argument_type
 
 (* TODO: transformer tactic en extra arg *)
 val rawwit_tactic : ('ta,constr_expr,'ta) abstract_argument_type
+val globwit_tactic : ('ta,rawconstr_and_expr,'ta) abstract_argument_type
 val wit_tactic : ('ta,constr,'ta) abstract_argument_type
 
 val wit_list0 :
@@ -159,8 +181,9 @@ val app_pair :
    polymorphism, on aimerait que 'b et 'c restent polymorphes à l'appel
    de create *)
 val create_arg : string ->
-      ('rawa,'rawco,'rawta) abstract_argument_type
-      * ('a,'co,'ta) abstract_argument_type
+      ('a,'co,'ta) abstract_argument_type
+      * ('globa,'globco,'globta) abstract_argument_type
+      * ('rawa,'rawco,'rawta) abstract_argument_type
 
 val exists_argtype : string -> bool
 

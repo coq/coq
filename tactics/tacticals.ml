@@ -24,6 +24,7 @@ open Refiner
 open Tacmach
 open Clenv
 open Pattern
+open Matching
 open Evar_refiner
 open Wcclausenv
 

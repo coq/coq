@@ -37,4 +37,5 @@ val pr_sort : rawsort -> std_ppcmds
 val pr_pattern : Tacexpr.pattern_expr -> std_ppcmds
 val pr_constr : constr_expr -> std_ppcmds
 val pr_cases_pattern : cases_pattern_expr -> std_ppcmds
-val pr_may_eval : ('a -> std_ppcmds) -> 'a may_eval -> std_ppcmds
+val pr_may_eval : ('a -> std_ppcmds) -> ('b -> std_ppcmds) -> ('a,'b) may_eval -> std_ppcmds
+val pr_rawconstr : rawconstr -> std_ppcmds
