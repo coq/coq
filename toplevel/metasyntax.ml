@@ -40,6 +40,27 @@ let constr_to_ast a =
 (* "constr" is used by default in quotations found in the ast parser *) 
 let constr_parser_with_glob = Pcoq.map_entry constr_to_ast Constr.constr
 
+let globalize_ref vars ref =
+  match Constrintern.interp_reference vars ref with
+  | RRef (loc,a) -> Constrextern.extern_reference loc a
+  | RVar (loc,x) -> Ident (loc,x)
+  | _ -> anomaly "globalize_ref: not a reference"
+
+let rec globalize_constr_expr vars = function
+  | CRef ref -> CRef (globalize_ref vars ref)
+  | CAppExpl (_,ref,l) ->
+      let f = 
+	map_constr_expr_with_binders globalize_constr_expr
+	  (fun x e -> e) vars
+      in
+      CAppExpl (dummy_loc,globalize_ref vars ref, List.map f l)
+  | c ->
+      map_constr_expr_with_binders globalize_constr_expr (fun id e -> id::e)
+        vars c
+
+let _ = set_constr_globalizer
+  (fun vars e -> for_grammar (globalize_constr_expr vars) e)
+
 let _ = define_ast_quotation true "constr" constr_parser_with_glob
 
 let add_name r = function
@@ -81,11 +102,10 @@ allowed in abbreviatable expressions"
   let typs = List.map find_type vars in
   (a, typs)
 
-let _ = set_ast_to_rawconstr
+(*
+let _ = set_grammar_globalizer
   (fun vl a ->
-    let r =
-      for_grammar (interp_rawconstr_gen Evd.empty (Global.env()) [] false vl) a
-    in
+    let r = for_grammar (globalize_constr_expr [] vl) a in
     let a, typs = make_aconstr vl r in
 (*
     List.iter2
@@ -95,6 +115,7 @@ let _ = set_ast_to_rawconstr
 	  error "cannot use a constr parser to parse an ident") etyps typs;
 *)
     a)
+*)
 
 (** For old ast printer *)
 
@@ -233,13 +254,8 @@ type symbol =
 let prec_assoc = function
   | Some(Gramext.RightA) -> (L,E)
   | Some(Gramext.LeftA) -> (E,L)
-(*
   | Some(Gramext.NonA) -> (L,L)
   | None -> (L,L)   (* NONA by default *)
-*)
-  (* Camlp4 levels do not treat NonA *)
-  | Some(Gramext.NonA) -> (E,L)
-  | None -> (E,L)   (* NONA by default *)
 
 let level_rule (n,p) = if p = E then n else max (n-1) 0
 
@@ -269,9 +285,15 @@ let make_hunks_ast symbols etyps from =
 	  let (_,lp) = precedence_of_entry_type (List.assoc m etyps) in
 	  let u = PH (meta_pattern (string_of_id m), None, lp) in
 	  let l' = u :: (add_break l ws) in
+(*
 	  ((if from = 10 (* lconstr *) then AddBrk 1 else NextMaybeLetter), l')
+*)
+	  (AddBrk 1, l')
       | Terminal s ->
+(*
 	  let l' = add_break l ws in
+*)
+	  let l' = l in
 	  if from = 10 (* lconstr *) then (AddBrk 1, RO s :: l')
 	  else
 	    let n = if is_letter (s.[0]) then 1 else 0 in
@@ -513,7 +535,7 @@ let recompute_assoc typs =
     | Some Gramext.LeftA, Some Gramext.RightA -> assert false
     | Some Gramext.LeftA, _ -> Some Gramext.LeftA
     | _, Some Gramext.RightA -> Some Gramext.RightA
-    | _ -> Some Gramext.NonA
+    | _ -> None
 
 let add_syntax_extension df modifiers =
   let (assoc,n,etyps,onlyparse) = interp_notation_modifiers modifiers in
