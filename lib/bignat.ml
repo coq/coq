@@ -111,3 +111,6 @@ let pr_bigint = function
   | POS n -> str (to_string n)
   | NEG n -> str "-" ++ str (to_string n)
 
+let bigint_to_string = function
+  | POS n -> to_string n
+  | NEG n -> "-" ^ (to_string n);;

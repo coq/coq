@@ -280,7 +280,9 @@ let xlate_qualid a =
   let l = Names.repr_dirpath d in
   List.fold_left (fun s i1 -> (string_of_id i1) ^ "." ^ s) (string_of_id i) l;;
    
-
+(* // The next two functions should be modified to make direct reference
+  to a notation operator *)
+let notation_to_formula s l = CT_notation(CT_string s, CT_formula_list l);;
 
 let xlate_reference = function
     Ident(_,i) -> CT_ident (string_of_id i)
@@ -319,6 +321,8 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CApp(_, f, l) ->
        CT_appc(xlate_formula f, xlate_formula_expl_ne_list l)
    | CSort(_, s) -> CT_coerce_SORT_TYPE_to_FORMULA(xlate_sort s)
+   | CNotation(_, s, l) -> notation_to_formula s (List.map xlate_formula l)
+   | CNumeral(_, i) -> CT_int_encapsulator(Bignat.bigint_to_string i)
    | _ -> assert false
 and xlate_formula_expl = function
     (a, None) -> xlate_formula a
@@ -1405,7 +1409,7 @@ let xlate_vernac =
    | VernacFixpoint [] -> xlate_error "mutual recursive"
    | VernacFixpoint (lm :: lmi) ->
       let strip_mutrec (fid, n, arf, ardef) =
-        let (bl,arf,ardef) = Ppconstr.split_fix n arf ardef in
+        let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
         let arf = xlate_formula arf in
         let ardef = xlate_formula ardef in
 	match cvt_fixpoint_binders bl with

@@ -2,8 +2,6 @@ open Util;;
 
 open System;;
 
-open Ctast;;
-
 open Pp;;
 
 open Libnames;;
@@ -108,6 +106,7 @@ let execute_when_necessary ast =
 let execute_when_necessary v =
  (match v with
   | VernacGrammar _ -> Vernacentries.interp v
+  | VernacOpenScope sc -> Vernacentries.interp v
   | VernacRequire (_,_,l) ->
       (try 
 	Vernacentries.interp v
@@ -280,7 +279,7 @@ let parse_string_action reqid phylum char_stream string_list =
       | "FORMULA" ->
        P_f
         (xlate_formula
-        (Ctast.ast_to_ct (Gram.Entry.parse Pcoq.Constr.constr_eoi (Gram.parsable char_stream))))
+	   (Gram.Entry.parse Pcoq.Constr.constr_eoi (Gram.parsable char_stream)))
       | "ID" -> P_id (xlate_ident
                        (Gram.Entry.parse Pcoq.Prim.ident
                               (Gram.parsable char_stream)))

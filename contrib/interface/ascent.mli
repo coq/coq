@@ -223,10 +223,10 @@ and ct_FORMULA =
   | CT_elimc of ct_CASE * ct_FORMULA * ct_FORMULA * ct_FORMULA_LIST
   | CT_existvarc
   | CT_fixc of ct_ID * ct_FIX_BINDER_LIST
-  | CT_incomplete_binary of ct_FORMULA * ct_BINARY
-  | CT_int_encapsulator of ct_INT
+  | CT_int_encapsulator of string
   | CT_lambdac of ct_BINDER_NE_LIST * ct_FORMULA
   | CT_letin of ct_ID_OPT * ct_FORMULA * ct_FORMULA
+  | CT_notation of ct_STRING * ct_FORMULA_LIST
   | CT_prodc of ct_BINDER_NE_LIST * ct_FORMULA
 and ct_FORMULA_LIST =
     CT_formula_list of ct_FORMULA list

@@ -33,4 +33,5 @@ val less_than : bignat -> bignat -> bool
 
 type bigint = POS of bignat | NEG of bignat
 
+val bigint_to_string : bigint -> string
 val pr_bigint : bigint -> std_ppcmds

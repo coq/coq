@@ -577,14 +577,9 @@ and fFORMULA = function
    fID x1;
    fFIX_BINDER_LIST x2;
    fNODE "fixc" 2
-| CT_incomplete_binary(x1, x2) ->
-   fFORMULA x1;
-   fBINARY x2;
-   fNODE "incomplete_binary" 2
-| CT_int_encapsulator(x1) ->
-   fINT x1;
-   fNODE "int_encapsulator" 1
-| CT_lambdac(x1, x2) ->
+| CT_int_encapsulator x -> fATOM "int_encapsulator";
+   (f_atom_string x);
+   print_string "\n"| CT_lambdac(x1, x2) ->
    fBINDER_NE_LIST x1;
    fFORMULA x2;
    fNODE "lambdac" 2
@@ -593,6 +588,10 @@ and fFORMULA = function
    fFORMULA x2;
    fFORMULA x3;
    fNODE "letin" 3
+| CT_notation(x1, x2) ->
+   fSTRING x1;
+   fFORMULA_LIST x2;
+   fNODE "notation" 2
 | CT_prodc(x1, x2) ->
    fBINDER_NE_LIST x1;
    fFORMULA x2;
