@@ -137,9 +137,40 @@ let (inToken, outToken) =
 
 let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 
-(* Grammar rules *)
-let cache_grammar (_,a) = Egrammar.extend_grammar a
-let subst_grammar (_,subst,a) = Egrammar.subst_all_grammar_command subst a
+(* Grammars (especially Tactic Notation) *)
+
+let make_terminal_status = function
+  | VTerm s -> Some s
+  | VNonTerm _ -> None
+
+let qualified_nterm current_univ = function
+  | NtQual (univ, en) -> (univ, en)
+  | NtShort en -> (current_univ, en)
+
+let rec make_tags = function
+  | VTerm s :: l -> make_tags l
+  | VNonTerm (loc, nt, po) :: l ->
+      let (u,nt) = qualified_nterm "tactic" nt in
+      let (etyp, _) = Egrammar.interp_entry_name u nt in
+      etyp :: make_tags l
+  | [] -> []
+
+let declare_pprule = function
+  (* Pretty-printing rules only for Grammar (Tactic Notation) *)
+  | Egrammar.TacticGrammar gl ->
+      let f (s,(s',l),tac) =
+        let pp = (make_tags l, (s',List.map make_terminal_status l)) in
+        Pptactic.declare_extra_tactic_pprule true s pp;
+        Pptactic.declare_extra_tactic_pprule false s pp in
+      List.iter f gl
+  | _ -> ()
+
+let cache_grammar (_,a) =
+  Egrammar.extend_grammar a;
+  declare_pprule a
+
+let subst_grammar (_,subst,a) =
+  Egrammar.subst_all_grammar_command subst a
 
 let (inGrammar, outGrammar) =
   declare_object {(default_object "GRAMMAR") with
