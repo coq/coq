@@ -219,17 +219,19 @@ let lift_constructor n cs = {
   cs_concl_realargs = Array.map (liftn n (cs.cs_nargs+1)) cs.cs_concl_realargs
 }
 
-let get_constructors (IndFamily (mispec,params)) =
-  let _,types = mis_type_mconstructs mispec in
-  let make_ck j =
-    let (args,ccl) = decompose_prod (prod_applist types.(j) params) in
-    let (_,vargs) = array_chop (mis_nparams mispec + 1) (destAppL (ensure_appl ccl)) in
-    { cs_cstr = ith_constructor_of_inductive (mis_inductive mispec) (j+1);
-      cs_params = params;
-      cs_nargs = List.length args;
-      cs_args = args;
-      cs_concl_realargs = vargs } in
-  Array.init (mis_nconstr mispec) make_ck
+let get_constructor (IndFamily (mispec,params)) j =
+  assert (j <= mis_nconstr mispec);
+  let typi = body_of_type (mis_type_mconstruct j mispec) in
+  let (args,ccl) = decompose_prod (prod_applist typi params) in
+  let (_,vargs) = array_chop (mis_nparams mispec + 1) (destAppL (ensure_appl ccl)) in
+  { cs_cstr = ith_constructor_of_inductive (mis_inductive mispec) j;
+    cs_params = params;
+    cs_nargs = List.length args;
+    cs_args = args;
+    cs_concl_realargs = vargs }
+
+let get_constructors (IndFamily (mispec,params) as indf) =
+  Array.init (mis_nconstr mispec) (fun j -> get_constructor indf (j+1))
 
 let get_arity env sigma (IndFamily (mispec,params)) =
   let arity = mis_arity mispec in
