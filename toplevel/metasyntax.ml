@@ -751,13 +751,6 @@ let recompute_assoc typs =
     | _, Some Gramext.RightA -> Some Gramext.RightA
     | _ -> None
 
-let rec expand_squash = function
-  | Term ("","{") :: NonTerm (ETConstr _, n) :: Term ("","}") :: l ->
-      NonTerm (ETConstr (NextLevel,InternalProd),n)
-      :: expand_squash l
-  | a :: l -> a :: expand_squash l
-  | [] -> []
-
 let make_grammar_rule n typs symbols ntn perm =
   let assoc = recompute_assoc typs in
   let prod = make_production typs symbols in
@@ -820,7 +813,7 @@ let pr_level ntn (from,args) =
   str "at level " ++ int from ++ spc () ++ str "with arguments" ++ spc() ++
   prlist_with_sep pr_coma (pr_arg_level from) args
 
-let cache_syntax_extension (_,(_,(prec,prec8),ntn,gr,se)) =
+let cache_syntax_extension (_,(_,((prec,prec8),ntn,gr,se))) =
   try 
     let oldprec, oldprec8 = Symbols.level_of_notation ntn in
     if prec8 <> oldprec8 & (Options.do_translate () or not !Options.v7) then
@@ -842,13 +835,14 @@ let cache_syntax_extension (_,(_,(prec,prec8),ntn,gr,se)) =
 	  warning ("Notation "^ntn^
 	  " was already assigned a different level or sublevels");
       if oldprec = None or out_some oldprec <> out_some prec then
-        Egrammar.extend_grammar (Egrammar.Notation (out_some gr))
+        Egrammar.extend_grammar (Egrammar.Notation (out_some prec,out_some gr))
     end
   with Not_found ->
     (* Reserve the notation level *)
     Symbols.declare_notation_level ntn (prec,prec8);
     (* Declare the parsing rule *)
-    option_iter (fun gr -> Egrammar.extend_grammar (Egrammar.Notation gr)) gr;
+    option_iter (fun gr -> 
+      Egrammar.extend_grammar (Egrammar.Notation (out_some prec,gr))) gr;
     (* Declare the printing rule *)
     Symbols.declare_notation_printing_rule ntn (se,fst prec8)
 
@@ -856,15 +850,15 @@ let subst_notation_grammar subst x = x
 
 let subst_printing_rule subst x = x
 
-let subst_syntax_extension (_,subst,(local,prec,ntn,gr,se)) =
-  (local,prec,ntn,
+let subst_syntax_extension (_,subst,(local,(prec,ntn,gr,se))) =
+  (local,(prec,ntn,
    option_app (subst_notation_grammar subst) gr,
-   subst_printing_rule subst se)
+   subst_printing_rule subst se))
 
-let classify_syntax_definition (_,(local,_,_,_,_ as o)) =
+let classify_syntax_definition (_,(local,_ as o)) =
   if local then Dispose else Substitute o
 
-let export_syntax_definition (local,_,_,_,_ as o) =
+let export_syntax_definition (local,_ as o) =
   if local then None else Some o
 
 let (inSyntaxExtension, outSyntaxExtension) =
@@ -1057,7 +1051,7 @@ let add_syntax_extension local mv mv8 =
     let ntn' = match data with Some ((_,_,_,_,ntn),_,_,_) -> ntn | _ -> ntn in
     let pp_rule = make_pp_rule ppdata in
     Lib.add_anonymous_leaf
-      (inSyntaxExtension (local,(prec,ppprec),ntn',gram_rule,pp_rule))
+      (inSyntaxExtension (local,((prec,ppprec),ntn',gram_rule,pp_rule)))
 	
 (**********************************************************************)
 (* Distfix, Infix, Symbols *)
@@ -1186,7 +1180,7 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
   let gram_rule = make_grammar_rule n typs symbols ntn permut in
   Lib.add_anonymous_leaf
     (inSyntaxExtension
-      (local,(Some prec,ppprec),ntn,Some gram_rule,pp_rule));
+      (local,((Some prec,ppprec),ntn,Some gram_rule,pp_rule)));
 
   (* Declare interpretation *)
   let (acvars,ac) = interp_aconstr [] ppvars c in
@@ -1203,16 +1197,21 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
 
 let level_rule (n,p) = if p = E then n else max (n-1) 0
 
-let check_notation_existence notation =
-  try
-    let a,_ = Symbols.level_of_notation (contract_notation notation) in
-    if a = None then raise Not_found
-  with Not_found ->
-    error "Parsing rule for this notation has to be previously declared"
+let recover_syntax ntn = 
+  try 
+    match Symbols.level_of_notation ntn with
+      | (Some prec,_ as pprec) -> 
+	  let rule,_ = Symbols.find_notation_printing_rule ntn in
+	  let gr = Egrammar.recover_notation_grammar ntn prec in
+	  Some (pprec,ntn,Some gr,rule)
+      | None,_ -> None
+  with Not_found -> None
 
-let exists_notation_syntax ntn =
-  try fst (Symbols.level_of_notation (contract_notation ntn)) <> None
-  with Not_found -> false
+let recover_notation_syntax rawntn =
+  let ntn = contract_notation rawntn in
+  match recover_syntax ntn with
+    | None -> None
+    | Some gr -> Some (gr,if ntn=rawntn then None else recover_syntax "{ _ }")
 
 let set_data_for_v7_pp recs a vars =
   if not !Options.v7 then None else
@@ -1232,32 +1231,40 @@ let build_old_pp_rule notation scope symbs (r,vars) =
   make_old_pp_rule (fst prec) symbs typs r notation scope vars
 
 let add_notation_interpretation_core local symbs for_old df a scope onlyparse 
-  onlypp =
+  onlypp gram_data =
   let notation = make_notation_key symbs in
   let old_pp_rule = 
     if !Options.v7 then 
       option_app (build_old_pp_rule notation scope symbs) for_old
     else None in
+  option_iter
+    (fun (x,y) ->
+      Lib.add_anonymous_leaf (inSyntaxExtension (local,x));
+      option_iter
+	(fun z -> Lib.add_anonymous_leaf (inSyntaxExtension (local,z))) y)
+    gram_data;
   Lib.add_anonymous_leaf
     (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,onlypp,
      (Lib.library_dp(),df)))
 
 let add_notation_interpretation df names c sc =
   let (recs,vars,symbs) = analyse_notation_tokens (split_notation_string df) in
-  check_notation_existence (make_notation_key symbs);
+  let gram_data = recover_notation_syntax (make_notation_key symbs) in
+  if gram_data = None then
+    error "Parsing rule for this notation has to be previously declared";
   let (acvars,ac) = interp_aconstr names vars c in
   let a = (remove_vars recs acvars,ac) (* For recursive parts *) in
   let a_for_old = interp_rawconstr_with_implicits Evd.empty (Global.env()) vars names c in
   let for_oldpp = set_data_for_v7_pp recs a_for_old vars in
   let onlyparse = is_not_printable ac in
   add_notation_interpretation_core false symbs for_oldpp df a sc onlyparse 
-    false
+    false gram_data
 
 let add_notation_in_scope_v8only local df c mv8 scope toks =
   let (_,recs,vars,intnot,notation),prec,ppdata,df' = compute_syntax_data false (df,mv8) in
   let pp_rule = make_pp_rule ppdata in
   Lib.add_anonymous_leaf
-    (inSyntaxExtension(local,(None,prec),notation,None,pp_rule));
+    (inSyntaxExtension(local,((None,prec),notation,None,pp_rule)));
   (* Declare the interpretation *)
   let (acvars,ac) = interp_aconstr [] vars c in
   let a = (remove_vars recs acvars,ac) (* For recursive parts *) in
@@ -1285,7 +1292,7 @@ let add_notation_v8only local c (df,modifiers) sc =
                   or is_not_printable ac in
                 let a = (remove_vars recs acvars,ac) in
 		add_notation_interpretation_core local symbs None df a sc 
-		  onlyparse true
+		  onlyparse true None
 	  | Some n ->
 	    (* Declare both syntax and interpretation *)
 	      let mods =
@@ -1316,7 +1323,9 @@ let add_notation local c dfmod mv8 sc =
 	      else
 	        (* Declare only interpretation *)
 		let (recs,vars,symbs) = analyse_notation_tokens toks in
-                if exists_notation_syntax (make_notation_key symbs) then
+                let gram_data =
+		  recover_notation_syntax (make_notation_key symbs) in
+		if gram_data <> None then
                   let (acvars,ac) = interp_aconstr [] vars c in
                   let a = (remove_vars recs acvars,ac) in
 		  let onlyparse = modifiers = [SetOnlyParsing] 
@@ -1324,7 +1333,7 @@ let add_notation local c dfmod mv8 sc =
 		  let a_for_old = interp_global_rawconstr_with_vars vars c in
                   let for_old = set_data_for_v7_pp recs a_for_old vars in
 		  add_notation_interpretation_core local symbs for_old df a
-		    sc onlyparse false
+		    sc onlyparse false gram_data
                 else
                   add_notation_in_scope local df c modifiers mv8 sc toks
 	  | Some n ->
@@ -1391,7 +1400,7 @@ let add_infix local (inf,modl) pr mv8 sc =
       let a' = (remove_vars recs acvars,ac) in
       let a_for_old = interp_global_rawconstr_with_vars vars a in
       add_notation_interpretation_core local symbs None df a' sc 
-	onlyparse true
+	onlyparse true None
     else
       if n8 = None then error "Needs a level" else
       let mv8 = match a8 with None -> SetAssoc Gramext.NonA :: mv8 |_ -> mv8 in
@@ -1416,13 +1425,14 @@ let add_infix local (inf,modl) pr mv8 sc =
     (* de ne déclarer que l'interprétation *)
     (* Declare only interpretation *)
     let (recs,vars,symbs) = analyse_notation_tokens toks in
-    if exists_notation_syntax (make_notation_key symbs) then
+    let gram_data = recover_notation_syntax (make_notation_key symbs) in
+    if gram_data <> None then 
       let (acvars,ac) = interp_aconstr [] vars a in
       let a' = (remove_vars recs acvars,ac) in
       let a_for_old = interp_global_rawconstr_with_vars vars a in
       let for_old = set_data_for_v7_pp recs a_for_old vars in
       add_notation_interpretation_core local symbs for_old df a' sc 
-        onlyparse false
+        onlyparse false gram_data
     else
       let mv,mv8 = make_infix_data n assoc modl mv8 in
       add_notation_in_scope local df a mv mv8 sc toks
