@@ -85,5 +85,121 @@ Require Export Setoid.
        determinato momento?
 *)
 
-Axiom S1 : Set.
-Axiom eqS1 : S1 -> S1 -> Prop.
+Axiom S1: Set.
+Axiom eqS1: S1 -> S1 -> Prop.
+Axiom SetoidS1 : Setoid_Theory S1 eqS1.
+Add Setoid S1 eqS1 SetoidS1.
+
+Axiom eqS1': S1 -> S1 -> Prop.
+Axiom SetoidS1' : Setoid_Theory S1 eqS1'.
+Axiom SetoidS1'_bis : Setoid_Theory S1 eqS1'.
+Add Setoid S1 eqS1' SetoidS1'.
+Add Setoid S1 eqS1' SetoidS1'_bis.
+
+Axiom S2: Set.
+Axiom eqS2: S2 -> S2 -> Prop.
+Axiom SetoidS2 : Setoid_Theory S2 eqS2.
+Add Setoid S2 eqS2 SetoidS2.
+
+Axiom f : S1 -> nat -> S2.
+Add Morphism f : f_compat. Admitted.
+Add Morphism f : f_compat2. Admitted.
+
+Theorem test1: forall x y, (eqS1 x y) -> (eqS2 (f x 0) (f y 0)).
+ intros.
+ rewrite H.
+ apply (Seq_refl _ _ SetoidS2).
+Qed.
+
+Axiom g : S1 -> S2 -> nat.
+Add Morphism g : g_compat. Admitted.
+
+Axiom P : nat -> Prop.
+Theorem test2:
+ forall x x' y y', (eqS1 x x') -> (eqS2 y y') -> (P (g x' y')) -> (P (g x y)).
+ intros.
+ rewrite H.
+ rewrite H0.
+ assumption.
+Qed.
+
+Theorem test3:
+ forall x x' y y',
+  (eqS1 x x') -> (eqS2 y y') -> (P (S (g x' y'))) -> (P (S (g x y))).
+ intros.
+ rewrite H.
+ rewrite H0.
+ assumption.
+Show.
+Qed.
+
+Theorem test4:
+ forall x x' y y', (eqS1 x x') -> (eqS2 y y') -> (S (g x y)) = (S (g x' y')).
+ intros.
+ rewrite H.
+ rewrite H0.
+ reflexivity.
+Qed.
+
+Theorem test5:
+ forall x x' y y', (eqS1 x x') -> (eqS2 y y') -> (S (g x y)) = (S (g x' y')).
+ intros.
+ setoid_replace (g x y) with (g x' y').
+ reflexivity.
+ rewrite <- H0.
+ rewrite H.
+ reflexivity.
+Qed.
+
+Axiom f_test6 : S2 -> Prop.
+Add Morphism f_test6 : f_test6_compat. Admitted.
+
+Axiom g_test6 : bool -> S2.
+Add Morphism g_test6 : g_test6_compat. Admitted.
+
+Axiom h_test6 : S1 -> bool.
+Add Morphism h_test6 : h_test6_compat. Admitted.
+
+Theorem test6:
+ forall E1 E2, (eqS1 E1 E2) -> (f_test6 (g_test6 (h_test6 E2))) ->
+  (f_test6 (g_test6 (h_test6 E1))).
+ intros.
+ rewrite  H.
+ assumption.
+Qed.
+  
+Theorem test7:
+ forall E1 E2 y y', (eqS1 E1 E2) -> (eqS2 y y') ->
+  (f_test6 (g_test6 (h_test6 E2))) ->
+   (f_test6 (g_test6 (h_test6 E1))) /\ (S (g E1 y')) = (S (g E2 y')).
+  intros.
+  rewrite H.
+  split; [assumption | reflexivity].
+Qed.
+
+Axiom S1_test8: Set.
+Axiom eqS1_test8: S1_test8 -> S1_test8 -> Prop.
+Axiom SetoidS1_test8 : Setoid_Theory S1_test8 eqS1_test8.
+Add Setoid S1_test8 eqS1_test8 SetoidS1_test8.
+
+Axiom f_test8 : S2 -> S1_test8.
+Add Morphism f_test8 : f_compat_test8. Admitted.
+
+Axiom eqS1_test8': S1_test8 -> S1_test8 -> Prop.
+Axiom SetoidS1_test8' : Setoid_Theory S1_test8 eqS1_test8'.
+Add Setoid S1_test8 eqS1_test8' SetoidS1_test8'.
+    
+(*CSC: for test8 to be significant I want to choose the setoid
+  (S1_test8, eqS1_test8'). However this does not happen and
+  there is still no syntax for it ;-( *)
+Axiom g_test8 : S1_test8 -> S2.
+Add Morphism g_test8 : g_compat_test8. Admitted.
+
+Theorem test8:
+ forall x x': S2, (eqS2 x x') ->
+  (eqS2 (g_test8 (f_test8 x)) (g_test8 (f_test8 x'))).
+  intros.
+  rewrite H.
+Abort.
+
+(*Print Setoids.*)
