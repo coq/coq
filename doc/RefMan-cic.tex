@@ -375,7 +375,7 @@ $$\WTEGRED{[x:=u]t}{\triangleright_{\zeta}}{\subst{t}{x}{u}}$$
 \label{convertibility}
 \index{beta-reduction@$\beta$-reduction}\index{iota-reduction@$\iota$-reduction}\index{delta-reduction@$\delta$-reduction}\index{zeta-reduction@$\zeta$-reduction}
 
-Let us write $\WTEGRED{t}{\triangleright}{u}$ for the relation $t$ reduces to $u$ in the environment $E$ and context $\Gamma$ with one of the previous reduction $\beta$, $\iota$, $\delta$ or $\zeta$.
+Let us write $\WTEGRED{t}{\triangleright}{u}$ for the contextual closure of the relation $t$ reduces to $u$ in the environment $E$ and context $\Gamma$ with one of the previous reduction $\beta$, $\iota$, $\delta$ or $\zeta$.
 
 We say that two terms $t_1$ and $t_2$ are {\em convertible} (or {\em
   equivalent)} in the environment $E$ and context $\Gamma$ iff there exists a term $u$ such that $\WTEGRED{t_1}{\triangleright \ldots \triangleright}{u}$

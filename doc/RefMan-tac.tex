@@ -605,14 +605,18 @@ $\iota$ (reduction of {\tt Cases}, {\tt Fix} and {\tt
 CoFix} expressions) and $\zeta$ (removal of local definitions), every flag is one of {\tt Beta}, {\tt Delta},
 {\tt Iota}, {\tt Zeta}, {\tt [\qualid$_1$\ldots\qualid$_k$]} and 
 {\tt -[\qualid$_1$\ldots\qualid$_k$]}.
-The last two flags give the list of
-constants to unfold, or the list of constants not to unfold. These two
+The last two flags give the list of constants to unfold, or the list
+of constants not to unfold. These two
 flags can occur only after the {\tt Delta} flag. 
+For these tactics, the {\tt Delta} flag does not apply to
+variables bound by a let-in construction of which the unfolding is
+controlled by the {\tt Zeta} flag only.
 In addition, there is a flag {\tt Evar} to perform instantiation of exitential variables (``?'') when an instantiation actually exists.
 The goal may be
 normalized with two strategies: {\em lazy} ({\tt Lazy} tactic), or
 {\em call-by-value} ({\tt Cbv} tactic).
 
+Notice that, for these tactics, the {\tt Delta} flag without rest should be understood as unfolding all
 The lazy strategy is a call-by-need strategy, with sharing of
 reductions: the arguments of a function call are partially evaluated
 only when necessary, but if an argument is used several times, it is
