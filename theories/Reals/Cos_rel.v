@@ -8,34 +8,10 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rseries.
-Require Alembert.
-Require Binome.
+Require RealsB.
+Require Rfunctions.
+Require SeqSeries.
 Require Rtrigo_def.
-Require Rtrigo_alt.
-Require Export Cauchy_prod.
-
-Lemma minus_sum : (An,Bn:nat->R;N:nat) (sum_f_R0 [i:nat]``(An i)-(Bn i)`` N)==``(sum_f_R0 An N)-(sum_f_R0 Bn N)``. 
-Intros; Induction N. 
-Simpl; Ring. 
-Do 3 Rewrite tech5; Rewrite HrecN; Ring. 
-Qed. 
-
-Lemma sum_decomposition : (An:nat->R;N:nat) (Rplus (sum_f_R0 [l:nat](An (mult (2) l)) (S N)) (sum_f_R0 [l:nat](An (S (mult (2) l))) N))==(sum_f_R0 An (mult (2) (S N))).
-Intros.
-Induction N.
-Simpl; Ring.
-Rewrite tech5.
-Rewrite (tech5 [l:nat](An (S (mult (2) l))) N).
-Replace (mult (2) (S (S N))) with (S (S (mult (2) (S N)))).
-Rewrite (tech5 An (S (mult (2) (S N)))).
-Rewrite (tech5 An (mult (2) (S N))).
-Rewrite <- HrecN.
-Ring.
-Apply INR_eq; Do 2 Rewrite S_INR; Do 2 Rewrite mult_INR;Repeat Rewrite S_INR.
-Ring.
-Qed.
 
 Definition A1 [x:R] : nat->R := [N:nat](sum_f_R0 [k:nat]``(pow (-1) k)/(INR (fact (mult (S (S O)) k)))*(pow x (mult (S (S O)) k))`` N). 
  

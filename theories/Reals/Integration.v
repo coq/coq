@@ -5,12 +5,9 @@
 (*    //   *      This file is distributed under the terms of the      *)
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
-
+ 
 (*i $Id$ i*)
 
-Require Export RealsB.
-Require Export Rfunctions.
-Require Export SeqSeries.
-Require Export Rtrigo.
-Require Export Ranalysis.
-Require Export Integration.
+Require Export NewtonInt.
+Require Export RiemannInt_SF.
+Require Export RiemannInt.

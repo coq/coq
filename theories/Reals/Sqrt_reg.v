@@ -8,12 +8,8 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rbasic_fun.
-Require Rderiv.
-Require R_sqr.
-Require DiscrR.
-Require Rtrigo.
+Require RealsB.
+Require Rfunctions.
 Require Ranalysis1.
 Require R_sqrt.
 

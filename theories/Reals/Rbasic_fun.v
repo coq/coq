@@ -13,8 +13,8 @@
 (*                                                       *)
 (*********************************************************)
 
-Require Export R_Ifp.
-Require Export Rbase.
+Require RealsB.
+Require R_Ifp.
 Require Fourier.
 
 (*******************************)
@@ -63,6 +63,11 @@ Qed.
 (*********)
 Lemma Rmin_r : (x,y:R) ``(Rmin x y)<=y``.
 Intros; Unfold Rmin; Case (total_order_Rle x y); Intro H1; [Assumption | Auto with real].
+Qed.
+
+(*********)
+Lemma Rmin_sym : (a,b:R) (Rmin a b)==(Rmin b a).
+Intros; Unfold Rmin; Case (total_order_Rle a b); Case (total_order_Rle b a); Intros; Try Reflexivity Orelse (Apply Rle_antisym; Assumption Orelse Auto with real).
 Qed.
 
 (*********)
@@ -398,6 +403,20 @@ Intros;
  Exact (Rabsolu_triang b (Rplus a (Ropp b))).
  Rewrite (proj1 ? ? (Rplus_ne a));Trivial.
 Qed.
+
+(* ||a|-|b||<=|a-b| *)
+Lemma Rabsolu_triang_inv2 : (a,b:R) ``(Rabsolu ((Rabsolu a)-(Rabsolu b)))<=(Rabsolu (a-b))``. 
+Cut (a,b:R) ``(Rabsolu b)<=(Rabsolu a)``->``(Rabsolu ((Rabsolu a)-(Rabsolu b))) <= (Rabsolu (a-b))``. 
+Intros; Case (total_order_T (Rabsolu a) (Rabsolu b)); Intro. 
+Elim s; Intro. 
+Rewrite <- (Rabsolu_Ropp ``(Rabsolu a)-(Rabsolu b)``); Rewrite <- (Rabsolu_Ropp ``a-b``); Do 2 Rewrite Ropp_distr2. 
+Apply H; Left; Assumption. 
+Rewrite b0; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Apply Rabsolu_pos. 
+Apply H; Left; Assumption. 
+Intros; Replace ``(Rabsolu ((Rabsolu a)-(Rabsolu b)))`` with ``(Rabsolu a)-(Rabsolu b)``. 
+Apply Rabsolu_triang_inv. 
+Rewrite (Rabsolu_right ``(Rabsolu a)-(Rabsolu b)``); [Reflexivity | Apply Rle_sym1; Apply Rle_anti_compatibility with (Rabsolu b); Rewrite Rplus_Or; Replace ``(Rabsolu b)+((Rabsolu a)-(Rabsolu b))`` with (Rabsolu a); [Assumption | Ring]]. 
+Qed. 
 
 (*********)
 Lemma Rabsolu_def1:(x,a:R)(Rlt x a)->(Rlt (Ropp a) x)->(Rlt (Rabsolu x) a).

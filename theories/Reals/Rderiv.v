@@ -12,9 +12,12 @@
 (**     Definition of the derivative,continuity          *)
 (*                                                       *)
 (*********************************************************)
-Require Export Rfunctions.
-Require DiscrR.
+
+Require RealsB.
+Require Rfunctions.
+Require Rlimit.
 Require Fourier.
+Require Classical_Prop.
 Require Classical_Pred_Type.
 Require Omega.
 

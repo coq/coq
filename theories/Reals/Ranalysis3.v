@@ -8,13 +8,8 @@
 
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rbasic_fun.
-Require R_sqr.
-Require Rlimit.
-Require Rderiv.
-Require DiscrR.
-Require Rtrigo.
+Require RealsB.
+Require Rfunctions.
 Require Ranalysis1.
 Require Ranalysis2.
 
@@ -29,7 +24,7 @@ Unfold div_fct.
 Assert H3 := (derivable_continuous_pt ? ? X).
 Unfold continuity_pt in H3; Unfold continue_in in H3; Unfold limit1_in in H3; Unfold limit_in in H3; Unfold dist in H3.
 Simpl in H3; Unfold R_dist in H3.
-Elim (H3 ``(Rabsolu (f2 x))/2``); [Idtac | Unfold Rdiv; Change ``0 < (Rabsolu (f2 x))*/2``; Apply Rmult_lt_pos; [Apply Rabsolu_pos_lt; Assumption | Apply Rlt_Rinv; Apply Rgt_2_0]].
+Elim (H3 ``(Rabsolu (f2 x))/2``); [Idtac | Unfold Rdiv; Change ``0 < (Rabsolu (f2 x))*/2``; Apply Rmult_lt_pos; [Apply Rabsolu_pos_lt; Assumption | Apply Rlt_Rinv; Sup0]].
 Clear H3; Intros alp_f2 H3.
 Cut (x0:R) ``(Rabsolu (x0-x)) < alp_f2`` ->``(Rabsolu ((f2 x0)-(f2 x))) < (Rabsolu (f2 x))/2``.
 Intro H4.
@@ -539,7 +534,7 @@ Repeat Rewrite Rmult_assoc.
 Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r.
 Apply Rlt_monotony_contra with ``/2``.
-Apply Rlt_Rinv; Apply Rgt_2_0.
+Apply Rlt_Rinv; Sup0.
 Repeat Rewrite (Rmult_sym ``/2``).
 Repeat Rewrite Rmult_assoc.
 Rewrite <- Rinv_r_sym.
@@ -565,7 +560,7 @@ Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or.
 Unfold Rminus in H7; Assumption.
 Intros.
 Case (Req_EM x x0); Intro.
-Rewrite <- H5; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Unfold Rdiv; Apply Rmult_lt_pos; [Apply Rabsolu_pos_lt; Assumption | Apply Rlt_Rinv; Apply Rgt_2_0].
+Rewrite <- H5; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Unfold Rdiv; Apply Rmult_lt_pos; [Apply Rabsolu_pos_lt; Assumption | Apply Rlt_Rinv; Sup0].
 Elim H3; Intros.
 Apply H7.
 Split.

@@ -8,23 +8,12 @@
  
 (*i $Id$ i*)
 
-Require Rsqrt_def.
-Require Rbase.
-Require DiscrR.
-Require Rbasic_fun.
-Require Rlimit.
-Require Rseries.
-Require Alembert.
-Require Rcomplet.
-Require Cv_prop.
-Require Rtrigo_alt.
-Require Rderiv.
-Require Ranalysis1.
-Require Ranalysis4.
-Require Exp_prop.
-Require Rtopology.
-Require NewtonInt.
-Require Export RiemannInt_SF.
+Require Rfunctions.
+Require SeqSeries.
+Require Ranalysis.
+Require RealsB.
+Require RiemannInt_SF.
+Require Classical_Prop.
 Require Classical_Pred_Type.
 Require Max.
 
@@ -459,7 +448,7 @@ Elim (H0 n); Intros; Rewrite <- (Ropp_Ropp (RiemannInt_SF (mkStepFun (StepFun_P6
 Elim (H n); Intros; Apply Rle_lt_trans with (Rabsolu (RiemannInt_SF (psi2 n))); [Apply Rle_Rabsolu | Apply Rlt_trans with (pos (RinvN n)); [Assumption | Apply H4; Unfold ge; Apply le_trans with (max N0 N1); [Apply le_max_l | Assumption]]].
 Unfold R_dist in H1; Apply H1; Unfold ge; Apply le_trans with (max N0 N1); [Apply le_max_r | Assumption].
 Apply r_Rmult_mult with ``3``; [Unfold Rdiv; Rewrite Rmult_Rplus_distr; Do 2 Rewrite (Rmult_sym ``3``); Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Ring | DiscrR] | DiscrR].
-Split with [n:nat](projT1 ? ? (phi_sequence_prop RinvN pr2 n)); Intro; Rewrite Rmin_sym; Rewrite Rmax_sym; Apply (projT2 ? ? (phi_sequence_prop RinvN pr2 n)).
+Split with [n:nat](projT1 ? ? (phi_sequence_prop RinvN pr2 n)); Intro; Rewrite Rmin_sym; Rewrite RmaxSym; Apply (projT2 ? ? (phi_sequence_prop RinvN pr2 n)).
 Split with [n:nat](projT1 ? ? (phi_sequence_prop RinvN pr1 n)); Intro; Apply (projT2 ? ? (phi_sequence_prop RinvN pr1 n)).
 Qed.
 

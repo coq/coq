@@ -8,13 +8,8 @@
 
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rbasic_fun.
-Require R_sqr.
-Require Rlimit.
-Require Rderiv.
-Require DiscrR.
-Require Rtrigo.
+Require RealsB.
+Require Rfunctions.
 Require Ranalysis1.
 Require Omega.
 
@@ -57,7 +52,7 @@ Apply Rabsolu_pos.
 Rewrite Rabsolu_Rinv; [Left; Exact H7 | Assumption].
 Apply Rlt_le_trans with ``2/(Rabsolu (f2 x))*(Rabsolu ((eps*(f2 x))/8))``.
 Apply Rlt_monotony.
-Unfold Rdiv; Apply Rmult_lt_pos; [Apply Rgt_2_0 | Apply Rlt_Rinv; Apply Rabsolu_pos_lt; Assumption].
+Unfold Rdiv; Apply Rmult_lt_pos; [Sup0 | Apply Rlt_Rinv; Apply Rabsolu_pos_lt; Assumption].
 Exact H8.
 Right; Unfold Rdiv.
 Repeat Rewrite Rabsolu_mult.
@@ -100,7 +95,7 @@ Apply Rabsolu_pos_lt; Apply Rinv_neq_R0; Assumption.
 Repeat Rewrite Rabsolu_Rinv; Try Assumption.
 Rewrite <- (Rmult_sym ``2``).
 Unfold Rdiv in H8; Exact H8.
-Symmetry; Apply Rabsolu_right; Left; Apply Rgt_2_0.
+Symmetry; Apply Rabsolu_right; Left; Sup0.
 Right.
 Unfold Rsqr Rdiv.
 Repeat Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
@@ -114,7 +109,7 @@ Rewrite Rinv_Rmult; DiscrR.
 Replace ``2*((Rabsolu l1)*(/(Rabsolu (f2 x))*/(Rabsolu (f2 x))))*(eps*((Rabsolu (f2 x))*(Rabsolu (f2 x)))*(/4*/2*/(Rabsolu l1)))`` with ``eps*/4*((Rabsolu l1)*/(Rabsolu l1))*((Rabsolu (f2 x))*/(Rabsolu (f2 x)))*((Rabsolu (f2 x))*/(Rabsolu (f2 x)))*(2*/2)``; [Idtac | Ring].
 Repeat Rewrite <- Rinv_r_sym; Try (Apply Rabsolu_no_R0; Assumption) Orelse DiscrR.
 Ring.
-Symmetry; Apply Rabsolu_right; Left; Apply Rgt_2_0.
+Symmetry; Apply Rabsolu_right; Left; Sup0.
 Symmetry; Apply Rabsolu_right; Left; Apply Rgt_8_0.
 Symmetry; Apply Rabsolu_right; Left; Assumption.
 Qed.
@@ -146,7 +141,7 @@ Apply Rabsolu_pos_lt; Apply Rinv_neq_R0; Assumption.
 Repeat Rewrite Rabsolu_Rinv; Assumption Orelse Idtac.
 Rewrite <- (Rmult_sym ``2``).
 Unfold Rdiv in H9; Exact H9.
-Symmetry; Apply Rabsolu_right; Left; Apply Rgt_2_0.
+Symmetry; Apply Rabsolu_right; Left; Sup0.
 Right.
 Unfold Rsqr Rdiv.
 Repeat Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
@@ -160,7 +155,7 @@ Rewrite Rinv_Rmult; DiscrR.
 Replace ``2*((Rabsolu (f1 x))*(/(Rabsolu (f2 x))*/(Rabsolu (f2 x))))*((Rabsolu (f2 x))*(Rabsolu (f2 x))*eps*(/4*/2*/(Rabsolu (f1 x))))`` with ``eps*/4*((Rabsolu (f2 x))*/(Rabsolu (f2 x)))*((Rabsolu (f2 x))*/(Rabsolu (f2 x)))*((Rabsolu (f1 x))*/(Rabsolu (f1 x)))*(2*/2)``; [Idtac | Ring].
 Repeat Rewrite <- Rinv_r_sym; Try DiscrR Orelse (Apply Rabsolu_no_R0; Assumption).
 Ring.
-Symmetry; Apply Rabsolu_right; Left; Apply Rgt_2_0.
+Symmetry; Apply Rabsolu_right; Left; Sup0.
 Symmetry; Apply Rabsolu_right; Left; Apply Rgt_8_0.
 Symmetry; Apply Rabsolu_right; Left; Assumption.
 Qed.
@@ -196,7 +191,7 @@ Apply Rabsolu_pos_lt; Apply Rinv_neq_R0; Unfold Rsqr; Apply prod_neq_R0;  Assump
 Repeat Rewrite Rabsolu_Rinv; [Idtac | Assumption | Assumption].
 Rewrite <- (Rmult_sym ``2``).
 Unfold Rdiv in H10; Exact H10.
-Symmetry; Apply Rabsolu_right; Left; Apply Rgt_2_0.
+Symmetry; Apply Rabsolu_right; Left; Sup0.
 Right; Unfold Rsqr Rdiv.
 Repeat Rewrite Rinv_Rmult; Try Assumption Orelse DiscrR.
 Repeat Rewrite Rabsolu_mult.
@@ -209,7 +204,7 @@ Rewrite Rinv_Rmult; DiscrR.
 Replace ``2*(Rabsolu l2)*((Rabsolu (f1 x))*(/(Rabsolu (f2 x))*/(Rabsolu (f2 x))*/(Rabsolu (f2 x))))*((Rabsolu (f2 x))*(Rabsolu (f2 x))*(Rabsolu (f2 x))*eps*(/4*/2*/(Rabsolu (f1 x))*/(Rabsolu l2)))`` with ``eps*/4*((Rabsolu l2)*/(Rabsolu l2))*((Rabsolu (f1 x))*/(Rabsolu (f1 x)))*((Rabsolu (f2 x))*/(Rabsolu (f2 x)))*((Rabsolu (f2 x))*/(Rabsolu (f2 x)))*((Rabsolu (f2 x))*/(Rabsolu (f2 x)))*(2*/2)``; [Idtac | Ring].
 Repeat Rewrite <- Rinv_r_sym; Try DiscrR Orelse (Apply Rabsolu_no_R0; Assumption).
 Ring.
-Symmetry; Apply Rabsolu_right; Left; Apply Rgt_2_0.
+Symmetry; Apply Rabsolu_right; Left; Sup0.
 Symmetry; Apply Rabsolu_right; Left; Apply Rgt_8_0.
 Symmetry; Apply Rabsolu_right; Left; Assumption.
 Apply prod_neq_R0; Assumption Orelse DiscrR.
@@ -280,12 +275,16 @@ Rewrite H8 in H7; Unfold Rminus in H7; Rewrite Rplus_Ol in H7; Rewrite Rabsolu_R
 Cut ``0<(Rabsolu (f x0))``.
 Intro; Assert H10 := (Rlt_monotony_contra ? ? ? H9 H7).
 Cut ``(Rabsolu (/2))==/2``.
-Intro; Rewrite H11 in H10; Assert H12 := (Rlt_monotony ``2`` ? ? Rgt_2_0 H10); Rewrite Rmult_1r in H12; Rewrite <- Rinv_r_sym in H12; [Idtac | DiscrR].
+Assert Hyp:``0<2``.
+Sup0.
+Intro; Rewrite H11 in H10; Assert H12 := (Rlt_monotony ``2`` ? ? Hyp H10); Rewrite Rmult_1r in H12; Rewrite <- Rinv_r_sym in H12; [Idtac | DiscrR].
 Cut (Rlt (IZR `1`) (IZR `2`)).
 Unfold IZR; Unfold INR convert; Simpl; Intro; Elim (Rlt_antirefl ``1`` (Rlt_trans ? ? ? H13 H12)).
 Apply IZR_lt; Omega.
 Unfold Rabsolu; Case (case_Rabsolu ``/2``); Intro.
-Assert H11 := (Rlt_monotony ``2`` ? ? Rgt_2_0 r); Rewrite Rmult_Or in H11; Rewrite <- Rinv_r_sym in H11; [Idtac | DiscrR].
+Assert Hyp:``0<2``.
+Sup0.
+Assert H11 := (Rlt_monotony ``2`` ? ? Hyp r); Rewrite Rmult_Or in H11; Rewrite <- Rinv_r_sym in H11; [Idtac | DiscrR].
 Elim (Rlt_antirefl ``0`` (Rlt_trans ? ? ? Rlt_R0_R1 H11)).
 Reflexivity.
 Apply (Rabsolu_pos_lt ? H0).

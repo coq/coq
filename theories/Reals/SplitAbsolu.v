@@ -8,7 +8,7 @@
 
 (*i      $Id$       i*)
 
-Require Export Rbasic_fun.
+Require Rbasic_fun.
 
 Tactic Definition SplitAbs :=
   Match Context With

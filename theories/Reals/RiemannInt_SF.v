@@ -8,273 +8,12 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
-Require DiscrR.
-Require Rbasic_fun.
-Require Rlimit.
-Require Alembert.
-Require Ranalysis1.
-Require Rtopology.
-Require NewtonInt.
+Require RealsB.
+Require Rfunctions.
+Require Ranalysis.
+Require Classical_Prop.
 
 Implicit Arguments On.
-
-Definition ordered_Rlist [l:Rlist] : Prop := (i:nat) (lt i (pred (longueur l))) -> (Rle (pos_Rl l i) (pos_Rl l (S i))).
-
-Fixpoint insert [l:Rlist] : R->Rlist :=
-[x:R] Cases l of
-| nil => (cons x nil)
-| (cons a l') =>
- Cases (total_order_Rle a x) of
- | (leftT _) => (cons a (insert l' x))
- | (rightT _) => (cons x l)
- end
-end.
-
-Fixpoint cons_Rlist [l:Rlist] : Rlist->Rlist :=
-[k:Rlist] Cases l of
-| nil => k
-| (cons a l') => (cons a (cons_Rlist l' k)) end.
-
-Fixpoint cons_ORlist [k:Rlist] : Rlist->Rlist :=
-[l:Rlist] Cases k of
-| nil => l
-| (cons a k') => (cons_ORlist k' (insert l a))
-end.
-
-Fixpoint app_Rlist [l:Rlist] : (R->R)->Rlist :=
-[f:R->R] Cases l of
-| nil => nil
-| (cons a l') => (cons (f a) (app_Rlist l' f))
-end.
-
-Fixpoint mid_Rlist [l:Rlist] : R->Rlist :=
-[x:R] Cases l of
-| nil => nil
-| (cons a l') => (cons ``(x+a)/2`` (mid_Rlist l' a))
-end.
-
-Definition Rtail [l:Rlist] : Rlist :=
-Cases l of
-| nil => nil
-| (cons a l') => l'
-end.
-
-Definition FF [l:Rlist;f:R->R] : Rlist := 
-Cases l of
-| nil => nil
-| (cons a l') => (app_Rlist (mid_Rlist l' a) f)
-end.
-
-Lemma Rmin_sym : (a,b:R) (Rmin a b)==(Rmin b a).
-Intros; Unfold Rmin; Case (total_order_Rle a b); Case (total_order_Rle b a); Intros; Try Reflexivity Orelse (Apply Rle_antisym; Assumption Orelse Auto with real).
-Qed.
-
-Lemma Rmax_sym : (a,b:R) (Rmax a b)==(Rmax b a).
-Intros; Unfold Rmax; Case (total_order_Rle a b); Case (total_order_Rle b a); Intros; Try Reflexivity Orelse (Apply Rle_antisym; Assumption Orelse Auto with real).
-Qed.
-
-Lemma RList_P0 : (l:Rlist;a:R) ``(pos_Rl (insert l a) O) == a`` \/ ``(pos_Rl (insert l a) O) == (pos_Rl l O)``.
-Intros; Induction l; [Left; Reflexivity | Simpl; Case (total_order_Rle r a); Intro; [Right; Reflexivity | Left; Reflexivity]].
-Qed.
-
-Lemma RList_P1 : (l:Rlist;a:R) (ordered_Rlist l) -> (ordered_Rlist (insert l a)).
-Intros; Induction l.
-Simpl; Unfold ordered_Rlist; Intros; Simpl in H0; Elim (lt_n_O ? H0).
-Simpl; Case (total_order_Rle r a); Intro.
-Assert H1 : (ordered_Rlist l).
-Unfold ordered_Rlist; Unfold ordered_Rlist in H; Intros; Assert H1 : (lt (S i) (pred (longueur (cons r l)))); [Simpl; Replace (longueur l) with (S (pred (longueur l))); [Apply lt_n_S; Assumption | Symmetry; Apply S_pred with O; Apply neq_O_lt; Red; Intro; Rewrite <- H1 in H0; Simpl in H0; Elim (lt_n_O ? H0)] | Apply (H ? H1)].
-Assert H2 := (Hrecl H1); Unfold ordered_Rlist; Intros; Induction i.
-Simpl; Assert H3 := (RList_P0 l a); Elim H3; Intro.
-Rewrite H4; Assumption.
-Induction l; [Simpl; Assumption | Rewrite H4; Apply (H O); Simpl; Apply lt_O_Sn].
-Simpl; Apply H2; Simpl in H0; Apply lt_S_n; Replace (S (pred (longueur (insert l a)))) with (longueur (insert l a)); [Assumption | Apply S_pred with O; Apply neq_O_lt; Red; Intro; Rewrite <- H3 in H0; Elim (lt_n_O ? H0)].
-Unfold ordered_Rlist; Intros; Induction i; [Simpl; Auto with real | Change ``(pos_Rl (cons r l) i)<=(pos_Rl (cons r l) (S i))``; Apply H; Simpl in H0; Simpl; Apply (lt_S_n ? ? H0)].
-Qed.
-
-Lemma RList_P2 : (l1,l2:Rlist) (ordered_Rlist l2) ->(ordered_Rlist (cons_ORlist l1 l2)).
-Induction l1; [Intros; Simpl; Apply H | Intros; Simpl; Apply H; Apply RList_P1; Assumption].
-Qed.
-
-Lemma RList_P3 : (l:Rlist;x:R) (In x l) <-> (EX i:nat | x==(pos_Rl l i)/\(lt i (longueur l))).
-Intros; Split; Intro; Induction l.
-Elim H.
-Elim H; Intro; [Exists O; Split; [Apply H0 | Simpl; Apply lt_O_Sn] | Elim (Hrecl H0); Intros; Elim H1; Clear H1; Intros; Exists (S x0); Split; [Apply H1 | Simpl; Apply lt_n_S; Assumption]].
-Elim H; Intros; Elim H0; Intros; Elim (lt_n_O ? H2).
-Simpl; Elim H; Intros; Elim H0; Clear H0; Intros; Induction x0; [Left; Apply H0 | Right; Apply Hrecl; Exists x0; Split; [Apply H0 | Simpl in H1; Apply lt_S_n; Assumption]].
-Qed.
-
-Lemma RList_P4 : (l1:Rlist;a:R) (ordered_Rlist (cons a l1)) -> (ordered_Rlist l1).
-Intros; Unfold ordered_Rlist; Intros; Apply (H (S i)); Simpl; Replace (longueur l1) with (S (pred (longueur l1))); [Apply lt_n_S; Assumption | Symmetry; Apply S_pred with O; Apply neq_O_lt; Red; Intro; Rewrite <- H1 in H0; Elim (lt_n_O ? H0)].
-Qed.
-
-Lemma RList_P5 : (l:Rlist;x:R) (ordered_Rlist l) -> (In x l) -> ``(pos_Rl l O)<=x``.
-Intros; Induction l; [Elim H0 | Simpl; Elim H0; Intro; [Rewrite H1; Right; Reflexivity | Apply Rle_trans with (pos_Rl l O); [Apply (H O); Simpl; Induction l; [Elim H1 | Simpl; Apply lt_O_Sn] | Apply Hrecl; [EApply RList_P4; Apply H | Assumption]]]].
-Qed.
-
-Lemma RList_P6 : (l:Rlist) (ordered_Rlist l)<->((i,j:nat)(le i j)->(lt j (longueur l))->``(pos_Rl l i)<=(pos_Rl l j)``).
-Induction l; Split; Intro.
-Intros; Right; Reflexivity.
-Unfold ordered_Rlist; Intros; Simpl in H0; Elim (lt_n_O ? H0).
-Intros; Induction i; [Induction j; [Right; Reflexivity | Simpl; Apply Rle_trans with (pos_Rl r0 O); [Apply (H0 O); Simpl; Simpl in H2; Apply neq_O_lt; Red; Intro; Rewrite <- H3 in H2; Assert H4 := (lt_S_n ? ? H2); Elim (lt_n_O ? H4) | Elim H; Intros; Apply H3; [Apply RList_P4 with r; Assumption | Apply le_O_n | Simpl in H2; Apply lt_S_n; Assumption]]] | Induction j; [Elim (le_Sn_O ? H1) | Simpl; Elim H; Intros; Apply H3; [Apply RList_P4 with r; Assumption | Apply le_S_n; Assumption | Simpl in H2; Apply lt_S_n; Assumption]]].
-Unfold ordered_Rlist; Intros; Apply H0; [Apply le_n_Sn | Simpl; Simpl in H1; Apply lt_n_S; Assumption].
-Qed.
-
-Lemma RList_P7 : (l:Rlist;x:R) (ordered_Rlist l) -> (In x l) -> ``x<=(pos_Rl l (pred (longueur l)))``.
-Intros; Assert H1 := (RList_P6 l); Elim H1; Intros H2 _; Assert H3 := (H2 H); Clear H1 H2; Assert H1 := (RList_P3 l x); Elim H1; Clear H1; Intros; Assert H4 := (H1 H0); Elim H4; Clear H4; Intros; Elim H4; Clear H4; Intros; Rewrite H4; Assert H6 : (longueur l)=(S (pred (longueur l))).
-Apply S_pred with O; Apply neq_O_lt; Red; Intro; Rewrite <- H6 in H5; Elim (lt_n_O ? H5).
-Apply H3; [Rewrite H6 in H5; Apply lt_n_Sm_le; Assumption | Apply lt_pred_n_n; Apply neq_O_lt; Red; Intro; Rewrite <- H7 in H5; Elim (lt_n_O ? H5)].
-Qed.
-
-Lemma RList_P8 : (l:Rlist;a,x:R) (In x (insert l a)) <-> x==a\/(In x l).
-Induction l.
-Intros; Split; Intro; Simpl in H; Apply H.
-Intros; Split; Intro; [Simpl in H0; Generalize H0; Case (total_order_Rle r a); Intros; [Simpl in H1; Elim H1; Intro; [Right; Left; Assumption |Elim (H a x); Intros; Elim (H3 H2); Intro; [Left; Assumption | Right; Right; Assumption]] | Simpl in H1; Decompose [or] H1; [Left; Assumption | Right; Left; Assumption | Right; Right; Assumption]]  |  Simpl; Case (total_order_Rle r a); Intro; [Simpl in H0; Decompose [or] H0; [Right; Elim (H a x); Intros; Apply H3; Left | Left | Right; Elim (H a x); Intros; Apply H3; Right] | Simpl in H0; Decompose [or] H0; [Left | Right; Left | Right; Right]]; Assumption].
-Qed.
-
-Lemma RList_P9 : (l1,l2:Rlist;x:R) (In x (cons_ORlist l1 l2)) <-> (In x l1)\/(In x l2).
-Induction l1.
-Intros; Split; Intro; [Simpl in H; Right; Assumption | Simpl; Elim H; Intro; [Elim H0 | Assumption]].
-Intros; Split.
-Simpl; Intros; Elim (H (insert l2 r) x); Intros; Assert H3 := (H1 H0); Elim H3; Intro; [Left; Right; Assumption | Elim (RList_P8 l2 r x); Intros H5 _; Assert H6 := (H5 H4); Elim H6; Intro; [Left; Left; Assumption | Right; Assumption]].
-Intro; Simpl; Elim (H (insert l2 r) x); Intros _ H1; Apply H1; Elim H0; Intro; [Elim H2; Intro; [Right; Elim (RList_P8 l2 r x); Intros _ H4; Apply H4; Left; Assumption | Left; Assumption] | Right; Elim (RList_P8 l2 r x); Intros _ H3; Apply H3; Right; Assumption].
-Qed.
-
-Lemma RList_P10 : (l:Rlist;a:R) (longueur (insert l a))==(S (longueur l)).
-Intros; Induction l; [Reflexivity | Simpl; Case (total_order_Rle r a); Intro; [Simpl; Rewrite Hrecl; Reflexivity | Reflexivity]].
-Qed.
-
-Lemma RList_P11 : (l1,l2:Rlist) (longueur (cons_ORlist l1 l2))=(plus (longueur l1) (longueur l2)).
-Induction l1; [Intro; Reflexivity | Intros; Simpl; Rewrite (H (insert l2 r)); Rewrite RList_P10; Apply INR_eq; Rewrite S_INR; Do 2 Rewrite plus_INR; Rewrite S_INR; Ring].
-Qed.
-
-Lemma RList_P12 : (l:Rlist;i:nat;f:R->R) (lt i (longueur l)) -> (pos_Rl (app_Rlist l f) i)==(f (pos_Rl l i)).
-Induction l; [Intros; Elim (lt_n_O ? H) | Intros; Induction i; [Reflexivity | Simpl; Apply H; Apply lt_S_n; Apply H0]].
-Qed.
-
-Lemma RList_P13 : (l:Rlist;i:nat;a:R) (lt i (pred (longueur l))) -> ``(pos_Rl (mid_Rlist l a) (S i)) == ((pos_Rl l i)+(pos_Rl l (S i)))/2``.
-Induction l.
-Intros; Simpl in H; Elim (lt_n_O ? H).
-Induction r0.
-Intros; Simpl in H0; Elim (lt_n_O ? H0).
-Intros; Simpl in H1; Induction i.
-Reflexivity.
-Change ``(pos_Rl (mid_Rlist (cons r1 r2) r) (S i)) == ((pos_Rl (cons r1 r2) i)+(pos_Rl (cons r1 r2) (S i)))/2``; Apply H0; Simpl; Apply lt_S_n; Assumption.
-Qed.
-
-Lemma RList_P14 : (l:Rlist;a:R) (longueur (mid_Rlist l a))=(longueur l).
-Induction l; Intros; [Reflexivity | Simpl; Rewrite (H r); Reflexivity].
-Qed.
-
-Lemma RList_P15 : (l1,l2:Rlist) (ordered_Rlist l1) -> (ordered_Rlist l2) -> (pos_Rl l1 O)==(pos_Rl l2 O) -> (pos_Rl (cons_ORlist l1 l2) O)==(pos_Rl l1 O).
-Intros; Apply Rle_antisym.
-Induction l1; [Simpl; Simpl in H1; Right; Symmetry; Assumption | Elim (RList_P9 (cons r l1) l2 (pos_Rl (cons r l1) (0))); Intros; Assert H4 : (In (pos_Rl (cons r l1) (0)) (cons r l1))\/(In (pos_Rl (cons r l1) (0)) l2); [Left; Left; Reflexivity | Assert H5 := (H3 H4); Apply RList_P5; [Apply RList_P2; Assumption | Assumption]]].
-Induction l1; [Simpl; Simpl in H1; Right; Assumption | Assert H2 : (In (pos_Rl (cons_ORlist (cons r l1) l2) (0)) (cons_ORlist (cons r l1) l2)); [Elim (RList_P3 (cons_ORlist (cons r l1) l2) (pos_Rl (cons_ORlist (cons r l1) l2) (0))); Intros; Apply H3; Exists O; Split; [Reflexivity | Rewrite RList_P11; Simpl; Apply lt_O_Sn] | Elim (RList_P9 (cons r l1) l2 (pos_Rl (cons_ORlist (cons r l1) l2) (0))); Intros; Assert H5 := (H3 H2); Elim H5; Intro; [Apply RList_P5; Assumption | Rewrite H1; Apply RList_P5; Assumption]]].
-Qed.
-
-Lemma RList_P16 : (l1,l2:Rlist) (ordered_Rlist l1) -> (ordered_Rlist l2) -> (pos_Rl l1 (pred (longueur l1)))==(pos_Rl l2 (pred (longueur l2))) -> (pos_Rl (cons_ORlist l1 l2) (pred (longueur (cons_ORlist l1 l2))))==(pos_Rl l1 (pred (longueur l1))).
-Intros; Apply Rle_antisym.
-Induction l1.
-Simpl; Simpl in H1; Right; Symmetry; Assumption. 
-Assert H2 : (In (pos_Rl (cons_ORlist (cons r l1) l2) (pred (longueur (cons_ORlist (cons r l1) l2)))) (cons_ORlist (cons r l1) l2)); [Elim (RList_P3 (cons_ORlist (cons r l1) l2) (pos_Rl (cons_ORlist (cons r l1) l2) (pred (longueur (cons_ORlist (cons r l1) l2))))); Intros; Apply H3; Exists (pred (longueur (cons_ORlist (cons r l1) l2))); Split; [Reflexivity | Rewrite RList_P11; Simpl; Apply lt_n_Sn] | Elim (RList_P9 (cons r l1) l2 (pos_Rl (cons_ORlist (cons r l1) l2) (pred (longueur (cons_ORlist (cons r l1) l2))))); Intros; Assert H5 := (H3 H2); Elim H5; Intro; [Apply RList_P7; Assumption | Rewrite H1; Apply RList_P7; Assumption]].
-Induction l1.
-Simpl; Simpl in H1; Right; Assumption.
-Elim (RList_P9 (cons r l1) l2 (pos_Rl (cons r l1) (pred (longueur (cons r l1))))); Intros; Assert H4 : (In (pos_Rl (cons r l1) (pred (longueur (cons r l1)))) (cons r l1))\/(In (pos_Rl (cons r l1) (pred (longueur (cons r l1)))) l2); [Left; Change (In (pos_Rl (cons r l1) (longueur l1)) (cons r l1)); Elim (RList_P3 (cons r l1) (pos_Rl (cons r l1) (longueur l1))); Intros; Apply H5; Exists (longueur l1); Split; [Reflexivity | Simpl; Apply lt_n_Sn] | Assert H5 := (H3 H4); Apply RList_P7; [Apply RList_P2; Assumption | Elim (RList_P9 (cons r l1) l2 (pos_Rl (cons r l1) (pred (longueur (cons r l1))))); Intros; Apply H7; Left; Elim (RList_P3 (cons r l1) (pos_Rl (cons r l1) (pred (longueur (cons r l1))))); Intros; Apply H9; Exists (pred (longueur (cons r l1))); Split; [Reflexivity | Simpl; Apply lt_n_Sn]]].
-Qed.
-
-Lemma RList_P17 : (l1:Rlist;x:R;i:nat) (ordered_Rlist l1) -> (In x l1) -> ``(pos_Rl l1 i)<x`` -> (lt i (pred (longueur l1))) -> ``(pos_Rl l1 (S i))<=x``.
-Induction l1.
-Intros; Elim H0.
-Intros; Induction i.
-Simpl; Elim H1; Intro; [Simpl in H2; Rewrite H4 in H2; Elim (Rlt_antirefl ? H2) | Apply RList_P5; [Apply RList_P4 with r; Assumption | Assumption]].
-Simpl; Simpl in H2; Elim H1; Intro.
-Rewrite H4 in H2; Assert H5 : ``r<=(pos_Rl r0 i)``; [Apply Rle_trans with (pos_Rl r0 O); [Apply (H0 O); Simpl; Simpl in H3; Apply neq_O_lt; Red; Intro; Rewrite <- H5 in H3; Elim (lt_n_O ? H3) | Elim (RList_P6 r0); Intros; Apply H5; [Apply RList_P4 with r; Assumption | Apply le_O_n | Simpl in H3; Apply lt_S_n; Apply lt_trans with (longueur r0); [Apply H3 | Apply lt_n_Sn]]] | Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H5 H2))].
-Apply H; Try Assumption; [Apply RList_P4 with r; Assumption | Simpl in H3; Apply lt_S_n; Replace (S (pred (longueur r0))) with (longueur r0); [Apply H3 | Apply S_pred with O; Apply neq_O_lt; Red; Intro; Rewrite <- H5 in H3; Elim (lt_n_O ? H3)]].
-Qed.
-
-Lemma RList_P18 : (l:Rlist;f:R->R) (longueur (app_Rlist l f))=(longueur l).
-Induction l; Intros; [Reflexivity | Simpl; Rewrite H; Reflexivity].
-Qed.
-
-Lemma RList_P19 : (l:Rlist) ~l==nil -> (EXT r:R | (EXT r0:Rlist | l==(cons r r0))).
-Intros; Induction l; [Elim H; Reflexivity | Exists r; Exists l; Reflexivity].
-Qed.
-
-Lemma RList_P20 : (l:Rlist) (le (2) (longueur l)) -> (EXT r:R | (EXT r1:R | (EXT l':Rlist | l==(cons r (cons r1 l'))))). 
-Intros; Induction l; [Simpl in H; Elim (le_Sn_O ? H) | Induction l; [Simpl in H; Elim (le_Sn_O ? (le_S_n ? ? H)) | Exists r; Exists r0; Exists l; Reflexivity]].
-Qed.
-
-Lemma RList_P21 : (l,l':Rlist) l==l' -> (Rtail l)==(Rtail l').
-Intros; Rewrite H; Reflexivity.
-Qed.
-
-Lemma RList_P22 : (l1,l2:Rlist) ~l1==nil -> (pos_Rl (cons_Rlist l1 l2) O)==(pos_Rl l1 O).
-Induction l1; [Intros; Elim H; Reflexivity | Intros; Reflexivity].
-Qed.
-
-Lemma RList_P23 : (l1,l2:Rlist) (longueur (cons_Rlist l1 l2))==(plus (longueur l1) (longueur l2)).
-Induction l1; [Intro; Reflexivity | Intros; Simpl; Rewrite H; Reflexivity].
-Qed.
-
-Lemma RList_P24 : (l1,l2:Rlist) ~l2==nil -> (pos_Rl (cons_Rlist l1 l2) (pred (longueur (cons_Rlist l1 l2)))) == (pos_Rl l2 (pred (longueur l2))).
-Induction l1.
-Intros; Reflexivity.
-Intros; Rewrite <- (H l2 H0); Induction l2.
-Elim H0; Reflexivity.
-Do 2 Rewrite RList_P23; Replace (plus (longueur (cons r r0)) (longueur (cons r1 l2))) with (S (S (plus (longueur r0) (longueur l2)))); [Replace (plus (longueur r0) (longueur (cons r1 l2))) with (S (plus (longueur r0) (longueur l2))); [Reflexivity | Simpl; Apply INR_eq; Rewrite S_INR; Do 2 Rewrite plus_INR; Rewrite S_INR; Ring] | Simpl; Apply INR_eq; Do 3 Rewrite S_INR; Do 2 Rewrite plus_INR; Rewrite S_INR; Ring].
-Qed.
-
-Lemma RList_P25 : (l1,l2:Rlist) (ordered_Rlist l1) -> (ordered_Rlist l2) -> ``(pos_Rl l1 (pred (longueur l1)))<=(pos_Rl l2 O)`` -> (ordered_Rlist (cons_Rlist l1 l2)).
-Induction l1.
-Intros; Simpl; Assumption.
-Induction r0.
-Intros; Simpl; Simpl in H2; Unfold ordered_Rlist; Intros; Simpl in H3.
-Induction i.
-Simpl; Assumption.
-Change ``(pos_Rl l2 i)<=(pos_Rl l2 (S i))``; Apply (H1 i); Apply lt_S_n; Replace (S (pred (longueur l2))) with (longueur l2); [Assumption | Apply S_pred with O; Apply neq_O_lt; Red; Intro; Rewrite <- H4 in H3; Elim (lt_n_O ? H3)].
-Intros; Clear H; Assert H : (ordered_Rlist (cons_Rlist (cons r1 r2) l2)).
-Apply H0; Try Assumption.
-Apply RList_P4 with r; Assumption.
-Unfold ordered_Rlist; Intros; Simpl in H4; Induction i.
-Simpl; Apply (H1 O); Simpl; Apply lt_O_Sn.
-Change ``(pos_Rl (cons_Rlist (cons r1 r2) l2) i)<=(pos_Rl (cons_Rlist (cons r1 r2) l2) (S i))``; Apply (H i); Simpl; Apply lt_S_n; Assumption.
-Qed.
-
-Lemma RList_P26 : (l1,l2:Rlist;i:nat) (lt i (longueur l1)) -> (pos_Rl (cons_Rlist l1 l2) i)==(pos_Rl l1 i).
-Induction l1.
-Intros; Elim (lt_n_O ? H).
-Intros; Induction i.
-Apply RList_P22; Discriminate.
-Apply (H l2 i); Simpl in H0; Apply lt_S_n; Assumption.
-Qed.
-
-Lemma RList_P27 : (l1,l2,l3:Rlist) (cons_Rlist l1 (cons_Rlist l2 l3))==(cons_Rlist (cons_Rlist l1 l2) l3).
-Induction l1; Intros; [Reflexivity | Simpl; Rewrite (H l2 l3); Reflexivity].
-Qed.
-
-Lemma RList_P28 : (l:Rlist) (cons_Rlist l nil)==l.
-Induction l; [Reflexivity | Intros; Simpl; Rewrite H; Reflexivity].
-Qed.
-
-Lemma RList_P29 : (l2,l1:Rlist;i:nat) (le (longueur l1) i) -> (lt i (longueur (cons_Rlist l1 l2))) -> (pos_Rl (cons_Rlist l1 l2) i)==(pos_Rl l2 (minus i (longueur l1))).
-Induction l2.
-Intros; Rewrite RList_P28 in H0; Elim (lt_n_n ? (le_lt_trans ? ? ? H H0)).
-Intros; Replace (cons_Rlist l1 (cons r r0)) with (cons_Rlist (cons_Rlist l1 (cons r nil)) r0).
-Inversion H0.
-Rewrite <- minus_n_n; Simpl; Rewrite RList_P26.
-Clear l2 r0 H i H0 H1 H2; Induction l1.
-Reflexivity.
-Simpl; Assumption.
-Rewrite RList_P23; Rewrite plus_sym; Simpl; Apply lt_n_Sn.
-Replace (minus (S m) (longueur l1)) with (S (minus (S m) (S (longueur l1)))).
-Rewrite H3; Simpl; Replace (S (longueur l1)) with (longueur (cons_Rlist l1 (cons r nil))).
-Apply (H (cons_Rlist l1 (cons r nil)) i).
-Rewrite RList_P23; Rewrite plus_sym; Simpl; Rewrite <- H3; Apply le_n_S; Assumption.
-Repeat Rewrite RList_P23; Simpl; Rewrite RList_P23 in H1; Rewrite plus_sym in H1; Simpl in H1; Rewrite (plus_sym (longueur l1)); Simpl; Rewrite plus_sym; Apply H1.
-Rewrite RList_P23; Rewrite plus_sym; Reflexivity.
-Change (S (minus m (longueur l1)))=(minus (S m) (longueur l1)); Apply minus_Sn_m; Assumption.
-Replace (cons r r0) with (cons_Rlist (cons r nil) r0); [Symmetry; Apply RList_P27 | Reflexivity].
-Qed.
 
 (**************************************************)
 (* Each bounded subset of N has a maximal element *)
@@ -455,10 +194,10 @@ Intros; Case (Req_EM a b); Intro.
 Exists (cons a nil); Exists nil; Unfold adapted_couple_opt; Unfold adapted_couple; Unfold ordered_Rlist; Repeat Split; Try (Intros; Simpl in H3; Elim (lt_n_O ? H3)).
 Simpl; Rewrite <- H2; Unfold Rmin; Case (total_order_Rle a a); Intro; Reflexivity.
 Simpl; Rewrite <- H2; Unfold Rmax; Case (total_order_Rle a a); Intro; Reflexivity.
-Elim (RList_P20 (StepFun_P9 H1 H2)); Intros t1 [t2 [t3 H3]]; Induction lf.
+Elim (RList_P20 ? (StepFun_P9 H1 H2)); Intros t1 [t2 [t3 H3]]; Induction lf.
 Unfold adapted_couple in H1; Decompose [and] H1; Rewrite H3 in H7; Simpl in H7; Discriminate.
 Clear Hreclf; Assert H4 : (adapted_couple f t2 b r0 lf).
-Rewrite H3 in H1; Assert H4 := (RList_P21 H3); Simpl in H4; Rewrite H4; EApply StepFun_P7; [Apply H0 | Apply H1].
+Rewrite H3 in H1; Assert H4 := (RList_P21 ? ? H3); Simpl in H4; Rewrite H4; EApply StepFun_P7; [Apply H0 | Apply H1].
 Cut ``t2<=b``.
 Intro; Assert H6 := (H ? ? ? H5 H4); Case (Req_EM t1 t2); Intro Hyp_eq.
 Replace a with t2.
@@ -478,7 +217,7 @@ Intros; Simpl in H8; Elim (lt_n_O ? H8).
 Intros; Simpl in H8; Inversion H8; [Simpl; Assumption | Elim (le_Sn_O ? H10)].
 Assert Hyp_min : (Rmin t2 b)==t2.
 Unfold Rmin; Case (total_order_Rle t2 b); Intro; [Reflexivity | Elim n; Assumption].
-Unfold adapted_couple in H6; Elim H6; Clear H6; Intros; Elim (RList_P20 (StepFun_P9 H6 H7)); Intros s1 [s2 [s3 H9]]; Induction lf'.
+Unfold adapted_couple in H6; Elim H6; Clear H6; Intros; Elim (RList_P20 ? (StepFun_P9 H6 H7)); Intros s1 [s2 [s3 H9]]; Induction lf'.
 Unfold adapted_couple in H6; Decompose [and] H6; Rewrite H9 in H13; Simpl in H13; Discriminate.
 Clear Hreclf'; Case (Req_EM r1 r2); Intro.
 Case (Req_EM (f t2) r1); Intro.
@@ -640,7 +379,7 @@ Assert Hyp_min : (Rmin a b)==a.
 Unfold Rmin; Case (total_order_Rle a b); Intro; [Reflexivity | Elim n; Assumption].
 Assert Hyp_max : (Rmax a b)==b.
 Unfold Rmax; Case (total_order_Rle a b); Intro; [Reflexivity | Elim n; Assumption].
-Elim (RList_P20 (StepFun_P9 H H4)); Intros s1 [s2 [s3 H5]]; Rewrite H5 in H; Rewrite H5; Induction lf1.
+Elim (RList_P20 ? (StepFun_P9 H H4)); Intros s1 [s2 [s3 H5]]; Rewrite H5 in H; Rewrite H5; Induction lf1.
 Unfold adapted_couple in H2; Decompose [and] H2; Clear H H2 H4 H5 H3 H6 H8 H7 H11; Simpl in H9; Discriminate.
 Clear Hreclf1; Induction lf2.
 Unfold adapted_couple in H; Decompose [and] H; Clear H H2 H4 H5 H3 H6 H8 H7 H11; Simpl in H9; Discriminate.
@@ -836,7 +575,7 @@ Intros; Elim H11; Clear H11; Intros; Assert H12 := H11; Assert Hyp_cons : (EXT r
 Apply RList_P19; Red; Intro; Rewrite H13 in H8; Elim (lt_n_O ? H8).
 Elim Hyp_cons; Clear Hyp_cons; Intros r [r0 Hyp_cons]; Rewrite Hyp_cons; Unfold FF; Rewrite RList_P12.
 Change (f x)==(f (pos_Rl (mid_Rlist (cons r r0) r) (S i))); Rewrite <- Hyp_cons; Rewrite RList_P13.
-Assert H13 := (RList_P2 H H8); Elim H13; Intro.
+Assert H13 := (RList_P2 ? ? H ? H8); Elim H13; Intro.
 Unfold constant_D_eq open_interval in H11 H12; Rewrite (H11 x H10); Assert H15 : ``(pos_Rl (cons_ORlist lf lg) i)<((pos_Rl (cons_ORlist lf lg) i)+(pos_Rl (cons_ORlist lf lg) (S i)))/2<(pos_Rl (cons_ORlist lf lg) (S i))``.
 Split.
 Apply Rlt_monotony_contra with ``2``; [Sup0 | Unfold Rdiv; Rewrite <- (Rmult_sym ``/2``); Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym; [Rewrite Rmult_1l; Rewrite double; Apply Rlt_compatibility; Assumption | DiscrR]].
@@ -847,7 +586,7 @@ Apply H8.
 Rewrite RList_P14; Rewrite Hyp_cons in H8; Simpl in H8; Apply H8.
 Assert H11 : ``a<b``.
 Apply Rle_lt_trans with (pos_Rl (cons_ORlist lf lg) i).
-Rewrite <- H6; Rewrite <- (RList_P15 1!lf 2!lg).
+Rewrite <- H6; Rewrite <- (RList_P15 lf lg).
 Elim (RList_P6 (cons_ORlist lf lg)); Intros; Apply H11.
 Apply RList_P2; Assumption.
 Apply le_O_n.
@@ -857,7 +596,7 @@ Assumption.
 Rewrite H1; Assumption.
 Apply Rlt_le_trans with (pos_Rl (cons_ORlist lf lg) (S i)).
 Elim H10; Intros; Apply Rlt_trans with x; Assumption.
-Rewrite <- H5; Rewrite <- (RList_P16 1!lf 2!lg); Try Assumption.
+Rewrite <- H5; Rewrite <- (RList_P16 lf lg); Try Assumption.
 Elim (RList_P6 (cons_ORlist lf lg)); Intros; Apply H11.
 Apply RList_P2; Assumption.
 Apply lt_n_Sm_le; Apply lt_n_S; Assumption.
@@ -957,7 +696,7 @@ Intros; Elim H11; Clear H11; Intros;  Assert H12 := H11; Assert Hyp_cons : (EXT 
 Apply RList_P19; Red; Intro; Rewrite H13 in H8; Elim (lt_n_O ? H8).
 Elim Hyp_cons; Clear Hyp_cons; Intros r [r0 Hyp_cons]; Rewrite Hyp_cons; Unfold FF; Rewrite RList_P12.
 Change (g x)==(g (pos_Rl (mid_Rlist (cons r r0) r) (S i))); Rewrite <- Hyp_cons; Rewrite RList_P13.
-Assert H13 := (RList_P2 H H8); Elim H13; Intro.
+Assert H13 := (RList_P2 ? ? H ? H8); Elim H13; Intro.
 Unfold constant_D_eq open_interval in H11 H12; Rewrite (H11 x H10); Assert H15 : ``(pos_Rl (cons_ORlist lf lg) i)<((pos_Rl (cons_ORlist lf lg) i)+(pos_Rl (cons_ORlist lf lg) (S i)))/2<(pos_Rl (cons_ORlist lf lg) (S i))``.
 Split.
 Apply Rlt_monotony_contra with ``2``; [Sup0 | Unfold Rdiv; Rewrite <- (Rmult_sym ``/2``); Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym; [Rewrite Rmult_1l; Rewrite double; Apply Rlt_compatibility; Assumption | DiscrR]].
@@ -968,7 +707,7 @@ Apply H8.
 Rewrite RList_P14; Rewrite Hyp_cons in H8; Simpl in H8; Apply H8.
 Assert H11 : ``a<b``.
 Apply Rle_lt_trans with (pos_Rl (cons_ORlist lf lg) i).
-Rewrite <- H6; Rewrite <- (RList_P15 1!lf 2!lg); Try Assumption.
+Rewrite <- H6; Rewrite <- (RList_P15 lf lg); Try Assumption.
 Elim (RList_P6 (cons_ORlist lf lg)); Intros; Apply H11.
 Apply RList_P2; Assumption.
 Apply le_O_n.
@@ -976,7 +715,7 @@ Apply lt_trans with (pred (longueur (cons_ORlist lf lg))); [Assumption | Apply l
 Rewrite H1; Assumption.
 Apply Rlt_le_trans with (pos_Rl (cons_ORlist lf lg) (S i)).
 Elim H10; Intros; Apply Rlt_trans with x; Assumption.
-Rewrite <- H5; Rewrite <- (RList_P16 1!lf 2!lg); Try Assumption.
+Rewrite <- H5; Rewrite <- (RList_P16 lf lg); Try Assumption.
 Elim (RList_P6 (cons_ORlist lf lg)); Intros; Apply H11.
 Apply RList_P2; Assumption.
 Apply lt_n_Sm_le; Apply lt_n_S; Assumption.
@@ -1033,7 +772,7 @@ Unfold is_subdivision; Intros; Elim X; Elim X0; Intros; Clear X X0; Unfold adapt
 Apply StepFun_P20; Apply neq_O_lt; Red; Intro; Rewrite <- H8 in H7; Discriminate.
 Intros; Unfold constant_D_eq open_interval; Unfold constant_D_eq open_interval in H9 H4; Intros; Rewrite (H9 ? H8 ? H10); Rewrite (H4 ? H8 ? H10); Assert H11 : ~l1==nil.
 Red; Intro; Rewrite H11 in H8; Elim (lt_n_O ? H8).
-Assert H12 := (RList_P19 H11); Elim H12; Clear H12; Intros r [r0 H12]; Rewrite H12; Unfold FF; Change ``(pos_Rl x0 i)+l*(pos_Rl x i)`` == (pos_Rl (app_Rlist (mid_Rlist (cons r r0) r) [x2:R]``(f x2)+l*(g x2)``) (S i)); Rewrite RList_P12.
+Assert H12 := (RList_P19 ? H11); Elim H12; Clear H12; Intros r [r0 H12]; Rewrite H12; Unfold FF; Change ``(pos_Rl x0 i)+l*(pos_Rl x i)`` == (pos_Rl (app_Rlist (mid_Rlist (cons r r0) r) [x2:R]``(f x2)+l*(g x2)``) (S i)); Rewrite RList_P12.
 Rewrite RList_P13.
 Rewrite <- H12; Rewrite (H9 ? H8); Try Rewrite (H4 ? H8); Reflexivity Orelse (Elim H10; Clear H10; Intros; Split; [Apply Rlt_monotony_contra with ``2``; [Sup0 | Unfold Rdiv; Rewrite <- (Rmult_sym ``/2``); Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym; [Rewrite Rmult_1l; Rewrite double; Apply Rlt_compatibility; Apply Rlt_trans with x1; Assumption | DiscrR]] | Apply Rlt_monotony_contra with ``2``; [Sup0 | Unfold Rdiv; Rewrite <- (Rmult_sym ``/2``); Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym; [Rewrite Rmult_1l; Rewrite double; Rewrite (Rplus_sym (pos_Rl l1 i)); Apply Rlt_compatibility; Apply Rlt_trans with x1; Assumption | DiscrR]]]).
 Rewrite <- H12; Assumption.
@@ -1268,7 +1007,7 @@ Assert H15 : (pos_Rl (cons_Rlist l1 l2) (S i))==(pos_Rl l1 (S i)).
 Apply RList_P26; Apply lt_S_n; Apply le_lt_n_Sm; Assumption.
 Rewrite H14 in H2; Rewrite H15 in H2; Assert H16 : (le (2) (longueur l1)).
 Apply le_trans with (S (S i)); [Repeat Apply le_n_S; Apply le_O_n | Assumption].
-Elim (RList_P20 H16); Intros r1 [r2 [r3 H17]]; Rewrite H17; Change (f x)==(pos_Rl (app_Rlist (mid_Rlist (cons_Rlist (cons r2 r3) l2) r1) f) i); Rewrite RList_P12.
+Elim (RList_P20 ? H16); Intros r1 [r2 [r3 H17]]; Rewrite H17; Change (f x)==(pos_Rl (app_Rlist (mid_Rlist (cons_Rlist (cons r2 r3) l2) r1) f) i); Rewrite RList_P12.
 Induction i.
 Simpl; Assert H18 := (H8 O); Unfold constant_D_eq open_interval in H18; Assert H19 : (lt O (pred (longueur l1))).
 Rewrite H17; Simpl; Apply lt_O_Sn.
@@ -1331,7 +1070,7 @@ Simpl in H5; Simpl in H4; Assert H0 : ``(Rmin a b)<(Rmax a b)``.
 Unfold Rmin Rmax; Case (total_order_Rle a b); Intro; [Assumption | Elim n; Left; Assumption].
 Rewrite <- H5 in H0; Rewrite <- H4 in H0; Elim (Rlt_antirefl ? H0).
 Clear Hrecl1; Simpl; Repeat Apply le_n_S; Apply le_O_n.
-Elim (RList_P20 H18); Intros r1 [r2 [r3 H19]]; Rewrite H19; Change (f x)==(pos_Rl (app_Rlist (mid_Rlist (cons_Rlist (cons r2 r3) l2) r1) f) i); Rewrite RList_P12.
+Elim (RList_P20 ? H18); Intros r1 [r2 [r3 H19]]; Rewrite H19; Change (f x)==(pos_Rl (app_Rlist (mid_Rlist (cons_Rlist (cons r2 r3) l2) r1) f) i); Rewrite RList_P12.
 Induction i.
 Assert H20 := (le_S_n ? ? H15); Assert H21 := (le_trans ? ? ? H18 H20); Elim (le_Sn_O ? H21).
 Clear Hreci; Rewrite RList_P13.

@@ -14,20 +14,11 @@
 (* Propriétés                                               *)
 (************************************************************)
 
-Require Rbase.
-Require DiscrR.
-Require Rbasic_fun.
+Require RealsB.
 Require Rfunctions.
-Require Rseries.
-Require Binome.
-Require AltSeries.
-Require Rcomplet.
-Require Rprod.
-Require Rtrigo_def.
-Require Rtrigo_alt.
-Require Cos_plus.
+Require SeqSeries.
+Require Rtrigo.
 Require Ranalysis1.
-Require PSeries_reg.
 Require Exp_prop.
 Require Rsqrt_def.
 Require R_sqrt.

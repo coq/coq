@@ -8,10 +8,10 @@
 
 (*i $Id$ i*)
 
-Require Rbase.
+Require RealsB.
+Require Rfunctions.
 Require Rseries.
-Require Alembert.
-Require Binome.
+Require PartSum.
 
 Set Implicit Arguments.
 
@@ -20,13 +20,6 @@ Section Sigma.
 Variable f : nat->R.
 
 Definition sigma [low,high:nat] : R := (sum_f_R0 [k:nat](f (plus low k)) (minus high low)).
-
-Lemma lt_minus_O_lt : (m,n:nat) (lt m n) -> (lt O (minus n m)).
-Intros n m; Pattern n m; Apply nat_double_ind; [
-  Intros; Rewrite <- minus_n_O; Assumption
-| Intros; Elim (lt_n_O ? H)
-| Intros; Simpl; Apply H; Apply lt_S_n; Assumption].
-Qed.
 
 Theorem sigma_split : (low,high,k:nat) (le low k)->(lt k high)->``(sigma low high)==(sigma low k)+(sigma (S k) high)``.
 Intros; Induction k.

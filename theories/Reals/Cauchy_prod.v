@@ -8,10 +8,10 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
+Require RealsB.
+Require Rfunctions.
 Require Rseries.
-Require Alembert.
-Require Binome.
+Require PartSum.
 
 (**********)
 Lemma sum_N_predN : (An:nat->R;N:nat) (lt O N) -> (sum_f_R0 An N)==``(sum_f_R0 An (pred N)) + (An N)``.

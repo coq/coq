@@ -30,3 +30,6 @@ Inductive sigT [A:Set;P:A->Prop]:Type:=
 (**********)
 Inductive sigTT [A:Type;P:A->Prop]:Type:=
    existTT: (x:A)(P x)->(sigTT A P).
+
+(**********)
+Definition SigT := Specif.sigT.

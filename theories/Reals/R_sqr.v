@@ -8,10 +8,8 @@
 
 (*i $Id$ i*)
 
-Require Rbase.
-Require DiscrR.
+Require RealsB.
 Require Rbasic_fun.
-
 
 (****************************************************)
 (* Rsqr : some results                              *)
@@ -233,7 +231,3 @@ Left; Apply Rminus_eq; Assumption.
 Right; Apply Rminus_eq; Unfold Rminus; Rewrite Ropp_Ropp; Assumption.
 Ring.
 Qed.
-
-
-
-

@@ -8,8 +8,9 @@
 
 (*i $Id$ i*)
 
-Require Rbase.
-Require R_sqr.
+Require RealsB.
+Require Rfunctions.
+Require SeqSeries.
 Require Rtrigo.
 Require R_sqrt.
 

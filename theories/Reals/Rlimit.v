@@ -13,26 +13,10 @@
 (*                                                       *)
 (*********************************************************)
 
-Require Export Rbasic_fun.
-Require Export R_sqr.
-Require Export Classical_Prop.
-Require DiscrR.
+Require RealsB.
+Require Rfunctions.
+Require Classical_Prop.
 Require Fourier.
-Require SplitAbsolu.
-
-(** Modif **)
-Lemma double : (x:R) ``2*x==x+x``.
-Intro; Ring.
-Qed.
-
-Lemma aze : ``2<>0``.
-DiscrR.
-Qed.
-
-Lemma double_var : (x:R) ``x == x/2 + x/2``.
-Intro; Rewrite <- double; Unfold Rdiv; Rewrite <- Rmult_assoc; Symmetry; Apply Rinv_r_simpl_m.
-Apply aze.
-Qed.
 
 (*******************************)
 (*      Calculus               *)
@@ -65,8 +49,8 @@ Unfold Rdiv.
 Repeat Rewrite Rmult_assoc.
 Rewrite <- Rinv_Rmult.
 Reflexivity.
-Apply aze.
-Apply aze.
+DiscrR.
+DiscrR.
 Ring.
 Qed.
 
@@ -187,64 +171,6 @@ Definition limit_in:=
    (EXT alp:R | (Rgt alp R0)/\(x:(Base X))(D x)/\
                 (Rlt (dist X x x0) alp)->
                 (Rlt (dist X' (f x) l) eps)). 
-
-(*******************************)
-(*        Distance  in R       *)
-(*******************************)
-
-(*********)
-Definition R_dist:R->R->R:=[x,y:R](Rabsolu (Rminus x y)).
-
-(*********)
-Lemma R_dist_pos:(x,y:R)(Rge (R_dist x y) R0).
-Intros;Unfold R_dist;Unfold Rabsolu;Case (case_Rabsolu (Rminus x y));Intro l.
-Unfold Rge;Left;Apply (Rlt_RoppO (Rminus x y) l).
-Trivial.
-Qed.
-
-(*********)
-Lemma R_dist_sym:(x,y:R)(R_dist x y)==(R_dist y x).
-Unfold R_dist;Intros;SplitAbsolu;Ring.
-Generalize (Rlt_RoppO (Rminus y x) r); Intro;
- Rewrite (Ropp_distr2 y x) in H;
- Generalize (Rlt_antisym (Rminus x y) R0 r0); Intro;Unfold Rgt in H;
- ElimType False; Auto.
-Generalize (minus_Rge y x r); Intro;
- Generalize (minus_Rge x y r0); Intro;
- Generalize (Rge_ge_eq x y H0 H); Intro;Rewrite H1;Ring.
-Qed.
-
-(*********)
-Lemma R_dist_refl:(x,y:R)((R_dist x y)==R0<->x==y).
-Unfold R_dist;Intros;SplitAbsolu;Split;Intros.
-Rewrite (Ropp_distr2 x y) in H;Apply sym_eqT;
- Apply (Rminus_eq y x H).
-Rewrite (Ropp_distr2 x y);Generalize (sym_eqT R x y H);Intro;
- Apply (eq_Rminus y x H0).
-Apply (Rminus_eq x y H).
-Apply (eq_Rminus x y H). 
-Qed.
-
-Lemma R_dist_eq:(x:R)(R_dist x x)==R0.
-Unfold R_dist;Intros;SplitAbsolu;Intros;Ring.
-Qed.
-
-(***********)
-Lemma R_dist_tri:(x,y,z:R)(Rle (R_dist x y) 
-                   (Rplus (R_dist x z) (R_dist z y))).
-Intros;Unfold R_dist; Replace ``x-y`` with ``(x-z)+(z-y)``;
-  [Apply (Rabsolu_triang ``x-z`` ``z-y``)|Ring].
-Qed.
-
-(*********)
-Lemma R_dist_plus: (a,b,c,d:R)(Rle (R_dist (Rplus a c) (Rplus b d))
-                   (Rplus (R_dist a b) (R_dist c d))).
-Intros;Unfold R_dist;
- Replace (Rminus (Rplus a c) (Rplus b d))
-  with (Rplus (Rminus a b) (Rminus c d)).
-Exact (Rabsolu_triang (Rminus a b) (Rminus c d)).
-Ring.
-Qed.
 
 (*******************************)
 (*    R is a metric space      *)
@@ -541,7 +467,7 @@ Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r.
 Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r; Reflexivity.
-Apply aze.
+DiscrR.
 Exact H0.
 Exact H0.
 Exact H0.
@@ -566,7 +492,7 @@ Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r.
 Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r; Reflexivity.
-Apply aze.
+DiscrR.
 Apply Rabsolu_no_R0.
 Assumption.
 Unfold Rdiv.

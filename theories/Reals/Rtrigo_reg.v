@@ -8,16 +8,12 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
-Require DiscrR.
+Require RealsB.
 Require Rfunctions.
-Require Rseries.
-Require Alembert.
-Require Binome.
+Require SeqSeries.
 Require Rtrigo.
 Require Ranalysis1.
-Require Export PSeries_reg.
-
+Require PSeries_reg.
 
 Lemma CVN_R_cos : (fn:nat->R->R) (fn == [N:nat][x:R]``(pow (-1) N)/(INR (fact (mult (S (S O)) N)))*(pow x (mult (S (S O)) N))``) -> (CVN_R fn).
 Unfold CVN_R; Intros.
@@ -345,14 +341,14 @@ Apply Rlt_trans with ``del/2``.
 Unfold Rdiv; Rewrite Rabsolu_mult.
 Rewrite (Rabsolu_right ``/2``).
 Do 2 Rewrite <- (Rmult_sym ``/2``); Apply Rlt_monotony.
-Apply Rlt_Rinv; Apply Rgt_2_0.
+Apply Rlt_Rinv; Sup0.
 Apply Rlt_le_trans with (pos delta).
 Apply H8.
 Unfold delta; Simpl; Apply Rmin_l.
-Apply Rle_sym1; Left; Apply Rlt_Rinv; Apply Rgt_2_0.
+Apply Rle_sym1; Left; Apply Rlt_Rinv; Sup0.
 Rewrite <- (Rplus_Or ``del/2``); Pattern 1 del; Rewrite (double_var del); Apply Rlt_compatibility; Unfold Rdiv; Apply Rmult_lt_pos.
 Apply (cond_pos del).
-Apply Rlt_Rinv; Apply Rgt_2_0.
+Apply Rlt_Rinv; Sup0.
 Elim H5; Intros; Assert H11 := (H10 ``h/2``).
 Rewrite sin_0 in H11; Do 2 Rewrite minus_R0 in H11.
 Apply H11.
@@ -367,15 +363,15 @@ Unfold Rdiv; Rewrite Rabsolu_mult.
 Rewrite (Rabsolu_right ``/2``).
 Do 2 Rewrite <- (Rmult_sym ``/2``).
 Apply Rlt_monotony.
-Apply Rlt_Rinv; Apply Rgt_2_0.
+Apply Rlt_Rinv; Sup0.
 Apply Rlt_le_trans with (pos delta).
 Apply H8.
 Unfold delta; Simpl; Apply Rmin_r.
-Apply Rle_sym1; Left; Apply Rlt_Rinv; Apply Rgt_2_0.
+Apply Rle_sym1; Left; Apply Rlt_Rinv; Sup0.
 Rewrite <- (Rplus_Or ``del_c/2``); Pattern 2 del_c; Rewrite (double_var del_c); Apply Rlt_compatibility.
 Unfold Rdiv; Apply Rmult_lt_pos.
 Apply H9.
-Apply Rlt_Rinv; Apply Rgt_2_0.
+Apply Rlt_Rinv; Sup0.
 Rewrite Rminus_distr; Rewrite Rmult_1r; Unfold Rminus; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Or; Rewrite (Rmult_sym ``2``); Unfold Rdiv Rsqr.
 Repeat Rewrite Rmult_assoc.
 Repeat Apply Rmult_mult_r.
@@ -394,7 +390,7 @@ Unfold Rmin; Case (total_order_Rle del del_c); Intro.
 Apply (cond_pos del).
 Elim H5; Intros; Assumption.
 Apply continuity_sin.
-Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rgt_2_0].
+Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup0].
 Qed.
 
 (**********)
@@ -403,7 +399,7 @@ Intro; Assert H0 := derivable_pt_lim_sin_0.
 Assert H := derivable_pt_lim_cos_0.
 Unfold derivable_pt_lim in H0 H.
 Unfold derivable_pt_lim; Intros.
-Cut ``0<eps/2``; [Intro | Unfold Rdiv; Apply Rmult_lt_pos; [Apply H1 | Apply Rlt_Rinv; Apply Rgt_2_0]].
+Cut ``0<eps/2``; [Intro | Unfold Rdiv; Apply Rmult_lt_pos; [Apply H1 | Apply Rlt_Rinv; Sup0]].
 Elim (H0 ? H2); Intros alp1 H3.
 Elim (H ? H2); Intros alp2 H4.
 Pose alp := (Rmin alp1 alp2).

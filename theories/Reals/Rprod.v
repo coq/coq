@@ -9,10 +9,11 @@
 (*i $Id$ i*)
 
 Require Compare.
-Require Rbase.
+Require RealsB.
+Require Rfunctions.
 Require Rseries.
+Require PartSum.
 Require Binome.
-Require Rtrigo_def.
 
 (* TT Ak; 1<=k<=N *)
 Fixpoint prod_f_SO [An:nat->R;N:nat] : R := Cases N of
@@ -65,8 +66,19 @@ Qed.
 Lemma fact_prodSO : (n:nat) (INR (fact n))==(prod_f_SO [k:nat](INR k) n).
 Intro; Induction n.
 Reflexivity.
-Rewrite fact_simpl; Rewrite mult_INR; Rewrite Rmult_sym; Rewrite Hrecn; Reflexivity.
+Change (INR (mult (S n) (fact n)))==(prod_f_SO ([k:nat](INR k)) (S n)).
+Rewrite mult_INR; Rewrite Rmult_sym; Rewrite Hrecn; Reflexivity.
 Qed.
+
+Lemma le_n_2n : (n:nat) (le n (mult (2) n)).
+Induction n.
+Replace (mult (2) (O)) with O; [Apply le_n | Ring].
+Intros; Replace (mult (2) (S n0)) with (S (S (mult (2) n0))).
+Apply le_n_S; Apply le_S; Assumption.
+Replace (S (S (mult (2) n0))) with (plus (mult (2) n0) (2)); [Idtac | Ring].
+Replace (S n0) with (plus n0 (1)); [Idtac | Ring].
+Ring.
+Qed. 
 
 (* We prove that (N!)²<=(2N-k)!*k! forall k in [|O;2N|] *)
 Lemma RfactN_fact2N_factk : (N,k:nat) (le k (mult (2) N)) -> ``(Rsqr (INR (fact N)))<=(INR (fact (minus (mult (S (S O)) N) k)))*(INR (fact k))``.

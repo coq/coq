@@ -8,13 +8,10 @@
 
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rbasic_fun.
-Require R_sqr.
-Require Rlimit.
-Require Rderiv.
-Require DiscrR.
-Require Rtrigo.
+Require RealsB.
+Require Rfunctions.
+Require Export Rlimit.
+Require Export Rderiv.
 
 (****************************************************)
 (**           Basic operations on functions         *)
@@ -43,6 +40,9 @@ Definition constant [f:R->R] : Prop := (x,y:R) ``(f x)==(f y)``.
   
 (**********) 
 Definition no_cond : R->Prop := [x:R] True.
+
+(**********)
+Definition constant_D_eq [f:R->R;D:R->Prop;c:R] : Prop := (x:R) (D x) -> (f x)==c.
 
 (***************************************************)
 (**      Definition of continuity as a limit       *)
@@ -180,6 +180,7 @@ Definition derivable [f:R->R] := (x:R)(derivable_pt f x).
 Definition derive_pt [f:R->R;x:R;pr:(derivable_pt f x)] := (projT1 ? ? pr).
 Definition derive [f:R->R;pr:(derivable f)] := [x:R](derive_pt f x (pr x)).
 
+Definition antiderivative [f,g:R->R;a,b:R] : Prop := ((x:R)``a<=x<=b``->(EXT pr : (derivable_pt g x) | (f x)==(derive_pt g x pr)))/\``a<=b``.
 (************************************)
 (** Class of differential functions *)
 (************************************)
@@ -204,10 +205,10 @@ Unfold R_dist; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Unfold Rdiv; Rew
 Replace ``(Rabsolu (/2))`` with ``/2``.
 Replace (Rabsolu alp) with alp.
 Apply Rlt_monotony_contra with ``2``.
-Apply Rgt_2_0.
+Sup0.
 Rewrite (Rmult_sym ``2``); Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Idtac | DiscrR]; Rewrite Rmult_1r; Rewrite double; Pattern 1 alp; Replace alp with ``alp+0``; [Idtac | Ring]; Apply Rlt_compatibility; Assumption.
 Symmetry; Apply Rabsolu_right; Left; Assumption.
-Symmetry; Apply Rabsolu_right; Left; Change ``0</2``; Apply Rlt_Rinv; Apply Rgt_2_0. 
+Symmetry; Apply Rabsolu_right; Left; Change ``0</2``; Apply Rlt_Rinv; Sup0. 
 Qed.
 
 Lemma unicite_step2 : (f:R->R;x,l:R) (derivable_pt_lim f x l) -> (limit1_in [h:R]``((f (x+h))-(f x))/h`` [h:R]``h<>0`` l R0).
@@ -768,7 +769,7 @@ Intros; Case (total_order R0 (derive_pt f c pr)); Intro.
 Assert H3 := (derivable_derive f c pr).
 Elim H3; Intros l H4; Rewrite H4 in H2.
 Assert H5 := (derive_pt_eq_1 f c l pr H4).
-Cut ``0<l/2``; [Intro | Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply Rgt_2_0]].
+Cut ``0<l/2``; [Intro | Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Sup0]].
 Elim (H5 ``l/2`` H6); Intros delta H7.
 Cut ``0<(b-c)/2``.
 Intro; Cut ``(Rmin delta/2 ((b-c)/2))<>0``.
@@ -818,7 +819,7 @@ Assert H15 := (Rle_compatibility ``c`` ``(Rmin (delta/2) ((b-c)/2))`` ``(b-c)/2`
 Apply Rle_lt_trans with ``c+(b-c)/2``.
 Assumption.
 Apply Rlt_monotony_contra with ``2``.
-Apply Rgt_2_0.
+Sup0.
 Replace ``2*(c+(b-c)/2)`` with ``c+b``.
 Replace ``2*b`` with ``b+b``.
 Apply Rlt_compatibility_r; Assumption.
@@ -828,36 +829,36 @@ Repeat Rewrite (Rmult_sym ``2``).
 Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r.
 Ring.
-Apply aze.
+DiscrR.
 Apply Rlt_trans with c.
 Assumption.
 Pattern 1 c; Rewrite <- (Rplus_Or c); Apply Rlt_compatibility; Assumption.
 Cut ``0<delta/2``.
 Intro; Apply (Rmin_stable_in_posreal (mkposreal ``delta/2`` H12) (mkposreal ``(b-c)/2`` H8)).
-Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply Rlt_Rinv; Apply Rgt_2_0].
+Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply Rlt_Rinv; Sup0].
 Unfold Rabsolu; Case (case_Rabsolu (Rmin ``delta/2`` ``(b-c)/2``)).
 Intro.
 Cut ``0<delta/2``.
 Intro.
 Generalize (Rmin_stable_in_posreal (mkposreal ``delta/2`` H10) (mkposreal ``(b-c)/2`` H8)); Simpl; Intro; Elim (Rlt_antirefl ``0`` (Rlt_trans ``0`` ``(Rmin (delta/2) ((b-c)/2))`` ``0`` H11 r)).
-Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply Rlt_Rinv; Apply Rgt_2_0].
+Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply Rlt_Rinv; Sup0].
 Intro; Apply Rle_lt_trans with ``delta/2``.
 Apply Rmin_l.
 Unfold Rdiv; Apply Rlt_monotony_contra with ``2``.
-Apply Rgt_2_0.
+Sup0.
 Rewrite <- (Rmult_sym ``/2``); Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym.
 Rewrite Rmult_1l.
 Replace ``2*delta`` with ``delta+delta``. 
 Pattern 2 delta; Rewrite <- (Rplus_Or delta); Apply Rlt_compatibility.
 Rewrite Rplus_Or; Apply (cond_pos delta).
 Symmetry; Apply double.
-Apply aze.
+DiscrR.
 Cut ``0<delta/2``.
 Intro; Generalize (Rmin_stable_in_posreal (mkposreal ``delta/2`` H9) (mkposreal ``(b-c)/2`` H8)); Simpl; Intro; Red; Intro; Rewrite H11 in H10; Elim (Rlt_antirefl ``0`` H10).
-Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply Rlt_Rinv; Apply Rgt_2_0].
+Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply Rlt_Rinv; Sup0].
 Unfold Rdiv; Apply Rmult_lt_pos.
 Generalize (Rlt_compatibility_r ``-c`` c b H0); Rewrite Rplus_Ropp_r; Intro; Assumption.
-Apply Rlt_Rinv; Apply Rgt_2_0.
+Apply Rlt_Rinv; Sup0.
 Elim H2; Intro.
 Symmetry; Assumption.
 Generalize (derivable_derive f c pr); Intro; Elim H4; Intros l H5.
@@ -898,7 +899,7 @@ Unfold Rdiv in H11; Assumption.
 Generalize (Rlt_compatibility c ``(Rmax ( -(delta/2)) ((a-c)/2))`` ``0`` H10); Rewrite Rplus_Or; Intro; Apply Rlt_trans with ``c``; Assumption.
 Generalize (RmaxLess2 ``(-(delta/2))`` ``((a-c)/2)``); Intro; Generalize (Rle_compatibility c ``(a-c)/2`` ``(Rmax ( -(delta/2)) ((a-c)/2))`` H14); Intro; Apply Rlt_le_trans with ``c+(a-c)/2``.
 Apply Rlt_monotony_contra with ``2``.
-Apply Rgt_2_0.
+Sup0.
 Replace ``2*(c+(a-c)/2)`` with ``a+c``.
 Rewrite double.
 Apply Rlt_compatibility; Assumption.
@@ -911,11 +912,11 @@ Unfold Rabsolu; Case (case_Rabsolu (Rmax ``-(delta/2)`` ``(a-c)/2``)).
 Intro; Generalize (RmaxLess1 ``-(delta/2)`` ``(a-c)/2``); Intro; Generalize (Rle_Ropp ``-(delta/2)`` ``(Rmax ( -(delta/2)) ((a-c)/2))`` H12); Rewrite Ropp_Ropp; Intro; Generalize (Rle_sym2 ``-(Rmax ( -(delta/2)) ((a-c)/2))`` ``delta/2`` H13); Intro; Apply Rle_lt_trans with ``delta/2``.
 Assumption.
 Apply Rlt_monotony_contra with ``2``. 
-Apply Rgt_2_0.
+Sup0.
 Unfold Rdiv; Rewrite <- (Rmult_sym ``/2``); Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym.
 Rewrite Rmult_1l; Rewrite double.
 Pattern 2 delta; Rewrite <- (Rplus_Or delta); Apply Rlt_compatibility; Rewrite Rplus_Or; Apply (cond_pos delta).
-Apply aze. 
+DiscrR. 
 Cut ``-(delta/2) < 0``.
 Cut ``(a-c)/2<0``.
 Intros; Generalize (Rmax_stable_in_negreal (mknegreal ``-(delta/2)`` H13) (mknegreal ``(a-c)/2`` H12)); Simpl; Intro; Generalize (Rle_sym2 ``0`` ``(Rmax ( -(delta/2)) ((a-c)/2))`` r); Intro; Elim (Rlt_antirefl ``0`` (Rle_lt_trans ``0`` ``(Rmax ( -(delta/2)) ((a-c)/2))`` ``0`` H15 H14)).
@@ -925,23 +926,23 @@ Unfold Rdiv.
 Rewrite <- Ropp_mul1. 
 Rewrite (Ropp_distr2 a c).
 Reflexivity.
-Rewrite <- Ropp_O; Apply Rlt_Ropp; Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply (Rlt_Rinv ``2`` Rgt_2_0)].
+Rewrite <- Ropp_O; Apply Rlt_Ropp; Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Assert Hyp : ``0<2``; [Sup0 | Apply (Rlt_Rinv ``2`` Hyp)]].
 Red; Intro; Rewrite H11 in H10; Elim (Rlt_antirefl ``0`` H10).
 Cut ``(a-c)/2<0``.
 Intro; Cut ``-(delta/2)<0``.
 Intro; Apply (Rmax_stable_in_negreal (mknegreal ``-(delta/2)`` H11) (mknegreal ``(a-c)/2`` H10)).
-Rewrite <- Ropp_O; Apply Rlt_Ropp; Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply (Rlt_Rinv ``2`` Rgt_2_0)].
+Rewrite <- Ropp_O; Apply Rlt_Ropp; Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Assert Hyp : ``0<2``; [Sup0 | Apply (Rlt_Rinv ``2`` Hyp)]].
 Rewrite <- Ropp_O; Rewrite <- (Ropp_Ropp ``(a-c)/2``); Apply Rlt_Ropp; Replace ``-((a-c)/2)`` with ``(c-a)/2``.
 Assumption.
 Unfold Rdiv.
 Rewrite <- Ropp_mul1. 
 Rewrite (Ropp_distr2 a c).
 Reflexivity.
-Unfold Rdiv; Apply Rmult_lt_pos; [Generalize (Rlt_compatibility_r ``-a`` a c H); Rewrite Rplus_Ropp_r; Intro; Assumption | Apply (Rlt_Rinv ``2`` Rgt_2_0)].
+Unfold Rdiv; Apply Rmult_lt_pos; [Generalize (Rlt_compatibility_r ``-a`` a c H); Rewrite Rplus_Ropp_r; Intro; Assumption | Assert Hyp : ``0<2``; [Sup0 | Apply (Rlt_Rinv ``2`` Hyp)]].
 Replace ``-(l/2)`` with ``(-l)/2``.
 Unfold Rdiv; Apply Rmult_lt_pos.
 Rewrite <- Ropp_O; Apply Rlt_Ropp; Assumption.
-Apply (Rlt_Rinv ``2`` Rgt_2_0).
+Assert Hyp : ``0<2``; [Sup0 | Apply (Rlt_Rinv ``2`` Hyp)].
 Unfold Rdiv; Apply Ropp_mul1.
 Qed.
 
@@ -1003,10 +1004,10 @@ Unfold Rdiv; Apply prod_neq_R0.
 Generalize (cond_pos delta); Intro; Red; Intro H9; Rewrite H9 in H7; Elim (Rlt_antirefl ``0`` H7).
 Apply Rinv_neq_R0; DiscrR.
 Split.
-Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply Rlt_Rinv; Apply Rgt_2_0].
+Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply Rlt_Rinv; Sup0].
 Replace ``(Rabsolu delta/2)`` with ``delta/2``.
 Unfold Rdiv; Apply Rlt_monotony_contra with ``2``.
-Apply Rgt_2_0.
+Sup0.
 Rewrite (Rmult_sym ``2``).
 Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Idtac | DiscrR].
 Rewrite Rmult_1r.
@@ -1014,9 +1015,9 @@ Rewrite double.
 Pattern 1 (pos delta); Rewrite <- Rplus_Or.
 Apply Rlt_compatibility; Apply (cond_pos delta).
 Symmetry; Apply Rabsolu_right.
-Left; Change ``0<delta/2``; Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply Rlt_Rinv; Apply Rgt_2_0].
+Left; Change ``0<delta/2``; Unfold Rdiv; Apply Rmult_lt_pos; [Apply (cond_pos delta) | Apply Rlt_Rinv; Sup0].
 Unfold Rdiv; Rewrite <- Ropp_mul1; Apply Rmult_lt_pos.
 Apply Rlt_anti_compatibility with l.
 Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rplus_Or; Assumption.
-Apply Rlt_Rinv; Apply Rgt_2_0.
+Apply Rlt_Rinv; Sup0.
 Qed.

@@ -8,10 +8,9 @@
  
 (*i $Id$ i*)
 
-Require DiscrR.
-Require Rbase.
-Require Rtrigo_fun.
-Require Alembert.
+Require RealsB.
+Require Rfunctions.
+Require PartSum.
 
 Definition C [n,p:nat] : R := ``(INR (fact n))/((INR (fact p))*(INR (fact (minus n p))))``.
 
@@ -40,20 +39,6 @@ Intro; Reflexivity.
 Apply minus_Sn_m; Assumption.
 Qed.
 
-Lemma minus_neq_O : (n,i:nat) (lt i n) -> ~(minus n i)=O.
-Intros; Red; Intro.
-Cut (n,m:nat) (le m n) -> (minus n m)=O -> n=m.
-Intro; Assert H2 := (H1 ? ? (lt_le_weak ? ? H) H0); Rewrite H2 in H; Elim (lt_n_n ? H).
-Pose R := [n,m:nat](le m n)->(minus n m)=(0)->n=m.
-Cut ((n,m:nat)(R n m)) -> ((n0,m:nat)(le m n0)->(minus n0 m)=(0)->n0=m).
-Intro; Apply H1.
-Apply nat_double_ind.
-Unfold R; Intros; Inversion H2; Reflexivity.
-Unfold R; Intros; Simpl in H3; Assumption.
-Unfold R; Intros; Simpl in H4; Assert H5 := (le_S_n ? ? H3); Assert H6 := (H2 H5 H4); Rewrite H6; Reflexivity.
-Unfold R; Intros; Apply H1; Assumption.
-Qed.
-
 Lemma pascal_step3 : (n,i:nat) (lt i n) -> (C n (S i)) == ``(INR (minus n i))/(INR (S i))*(C n i)``.
 Intros; Unfold C.
 Cut (n:nat) (fact (S n))=(mult (S n) (fact n)).
@@ -77,19 +62,6 @@ Rewrite minus_Sn_m.
 Simpl; Reflexivity.
 Apply lt_le_S; Assumption.
 Intro; Reflexivity.
-Qed.
-
-Lemma le_minusni_n : (n,i:nat) (le i n)->(le (minus n i) n).
-Pose R := [m,n:nat] (le n m) -> (le (minus m n) m).
-Cut ((m,n:nat)(R m n)) -> ((n,i:nat)(le i n)->(le (minus n i) n)).
-Intro; Apply H.
-Apply nat_double_ind.
-Unfold R; Intros; Simpl; Apply le_n.
-Unfold R; Intros; Simpl; Apply le_n.
-Unfold R; Intros; Simpl; Apply le_trans with n.
-Apply H0; Apply le_S_n; Assumption.
-Apply le_n_Sn.
-Unfold R; Intros; Apply H; Assumption.
 Qed.
 
 (**********)
@@ -132,50 +104,6 @@ Ring.
 Rewrite <- S_INR.
 Apply not_O_INR; Discriminate.
 Apply lt_le_weak; Assumption.
-Qed.
-
-Lemma scal_sum : (An:nat->R;N:nat;x:R) (Rmult x (sum_f_R0 An N))==(sum_f_R0 [i:nat]``(An i)*x`` N).
-Intros; Induction N.
-Simpl; Ring.
-Do 2 Rewrite tech5.
-Rewrite Rmult_Rplus_distr; Rewrite <- HrecN; Ring.
-Qed.
-
-Lemma decomp_sum : (An:nat->R;N:nat) (lt O N) -> (sum_f_R0 An N)==(Rplus (An O) (sum_f_R0 [i:nat](An (S i)) (pred N))).
-Intros; Induction N.
-Elim (lt_n_n ? H).
-Cut (lt O N)\/N=O.
-Intro; Elim H0; Intro.
-Cut (S (pred N))=(pred (S N)).
-Intro; Rewrite <- H2.
-Do 2 Rewrite tech5.
-Replace (S (S (pred N))) with (S N).
-Rewrite (HrecN H1); Ring.
-Rewrite H2; Simpl; Reflexivity.
-Assert H2 := (O_or_S N).
-Elim H2; Intros.
-Elim a; Intros.
-Rewrite <- p.
-Simpl; Reflexivity.
-Rewrite <- b in H1; Elim (lt_n_n ? H1).
-Rewrite H1; Simpl; Reflexivity.
-Inversion H.
-Right; Reflexivity.
-Left; Apply lt_le_trans with (1); [Apply lt_O_Sn | Assumption].
-Qed.
-
-Lemma plus_sum : (An,Bn:nat->R;N:nat) (sum_f_R0 [i:nat]``(An i)+(Bn i)`` N)==``(sum_f_R0 An N)+(sum_f_R0 Bn N)``.
-Intros; Induction N.
-Simpl; Ring.
-Do 3 Rewrite tech5; Rewrite HrecN; Ring.
-Qed.
-
-Lemma sum_eq : (An,Bn:nat->R;N:nat) ((i:nat)(le i N)->(An i)==(Bn i)) -> (sum_f_R0 An N)==(sum_f_R0 Bn N).
-Intros; Induction N.
-Simpl; Apply H; Apply le_n.
-Do 2 Rewrite tech5; Rewrite HrecN.
-Rewrite (H (S N)); [Reflexivity | Apply le_n].
-Intros; Apply H; Apply le_trans with N; [Assumption | Apply le_n_Sn].
 Qed.
 
 (*********************)

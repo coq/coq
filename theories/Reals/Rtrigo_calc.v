@@ -8,11 +8,9 @@
 
 (*i $Id$ i*)
 
-Require Rbase.
-Require DiscrR.
-Require Rseries.
-Require R_sqr.
-Require Rlimit.
+Require RealsB.
+Require Rfunctions.
+Require SeqSeries.
 Require Rtrigo.
 Require R_sqrt.
 
@@ -42,7 +40,7 @@ Pattern 2 3 PI; Rewrite H.
 Unfold Rdiv; Cut ``2*2==4``.
 Intro; Rewrite Rmult_Rplus_distrl.
 Repeat Rewrite Rmult_assoc.
-Rewrite <- Rinv_Rmult; [Rewrite H0; Ring | Apply aze | Apply aze].
+Rewrite <- Rinv_Rmult; [Rewrite H0; Ring | DiscrR | DiscrR].
 Ring.
 Qed.
 
@@ -66,10 +64,10 @@ Replace ``3*2`` with ``6``.
 Rewrite Ropp_distr1.
 Ring.
 Ring.
-Apply aze.
 DiscrR.
 DiscrR.
-Apply aze.
+DiscrR.
+DiscrR.
 Unfold Rdiv.
 Rewrite (Rmult_sym ``3``).
 Rewrite Rmult_assoc.
@@ -97,7 +95,7 @@ Replace ``3*2`` with ``6``.
 Rewrite Ropp_distr1.
 Ring.
 Ring.
-Apply aze.
+DiscrR.
 DiscrR.
 DiscrR.
 DiscrR.
@@ -134,7 +132,7 @@ Rewrite (Rmult_sym ``2``).
 Rewrite Rmult_assoc.
 Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r; Reflexivity.
-Apply aze.
+DiscrR.
 Replace ``6`` with ``2*3``.
 Unfold Rdiv.
 Rewrite Rinv_Rmult.
@@ -144,8 +142,8 @@ Repeat Rewrite Rmult_assoc.
 Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r.
 Reflexivity.
-Apply aze.
-Apply aze.
+DiscrR.
+DiscrR.
 DiscrR.
 Ring.
 Ring.
@@ -153,7 +151,7 @@ Apply prod_neq_R0; [DiscrR | Cut ``0<(cos (PI/6))``; [Intro H1; Auto with real |
 Qed.
 
 Lemma sqrt2_neq_0 : ~``(sqrt 2)==0``.
-Generalize (Rlt_le ``0`` ``2`` Rgt_2_0); Intro H1; Red; Intro H2; Generalize (sqrt_eq_0 ``2`` H1 H2); Intro H; Absurd ``2==0``; [ DiscrR | Assumption].
+Assert Hyp:``0<2``; [Sup0 | Generalize (Rlt_le ``0`` ``2`` Hyp); Intro H1; Red; Intro H2; Generalize (sqrt_eq_0 ``2`` H1 H2); Intro H; Absurd ``2==0``; [ DiscrR | Assumption]].
 Qed.
 
 Lemma R1_sqrt2_neq_0 : ~``1/(sqrt 2)==0``.
@@ -161,15 +159,15 @@ Generalize (Rinv_neq_R0 ``(sqrt 2)`` sqrt2_neq_0); Intro H; Generalize (prod_neq
 Qed.
 
 Lemma sqrt3_2_neq_0 : ~``2*(sqrt 3)==0``.
-Apply prod_neq_R0; [DiscrR | Generalize (Rlt_le ``0`` ``3`` Rgt_3_0); Intro H1; Red; Intro H2; Generalize (sqrt_eq_0 ``3`` H1 H2); Intro H; Absurd ``3==0``; [ DiscrR | Assumption]].
+Apply prod_neq_R0; [DiscrR | Assert Hyp:``0<3``; [Sup0 | Generalize (Rlt_le ``0`` ``3`` Hyp); Intro H1; Red; Intro H2; Generalize (sqrt_eq_0 ``3`` H1 H2); Intro H; Absurd ``3==0``; [ DiscrR | Assumption]]].
 Qed.
 
 Lemma Rlt_sqrt2_0 : ``0<(sqrt 2)``.
-Generalize (sqrt_positivity ``2`` (Rlt_le ``0`` ``2`` Rgt_2_0)); Intro H1; Elim H1; Intro H2; [Assumption | Absurd ``0 == (sqrt 2)``; [Apply not_sym; Apply sqrt2_neq_0 | Assumption]].
+Assert Hyp:``0<2``; [Sup0 | Generalize (sqrt_positivity ``2`` (Rlt_le ``0`` ``2`` Hyp)); Intro H1; Elim H1; Intro H2; [Assumption | Absurd ``0 == (sqrt 2)``; [Apply not_sym; Apply sqrt2_neq_0 | Assumption]]].
 Qed.
 
 Lemma Rlt_sqrt3_0 : ``0<(sqrt 3)``.
-Cut ~(O=(1)); [Intro H0; Generalize (Rlt_le ``0`` ``2`` Rgt_2_0); Intro H1; Generalize (Rlt_le ``0`` ``3`` Rgt_3_0); Intro H2; Generalize (lt_INR_0 (1) (neq_O_lt (1) H0)); Unfold INR; Intro H3; Generalize (Rlt_compatibility ``2`` ``0`` ``1`` H3); Rewrite Rplus_sym; Rewrite Rplus_Ol; Replace ``2+1`` with ``3``; [Intro H4; Generalize (sqrt_lt_1 ``2`` ``3`` H1 H2 H4); Clear H3; Intro H3; Apply (Rlt_trans ``0`` ``(sqrt 2)`` ``(sqrt 3)`` Rlt_sqrt2_0 H3) | Ring] | Discriminate].
+Cut ~(O=(1)); [Intro H0; Assert Hyp:``0<2``; [Sup0 | Generalize (Rlt_le ``0`` ``2`` Hyp); Intro H1; Assert Hyp2:``0<3``; [Sup0 | Generalize (Rlt_le ``0`` ``3`` Hyp2); Intro H2; Generalize (lt_INR_0 (1) (neq_O_lt (1) H0)); Unfold INR; Intro H3; Generalize (Rlt_compatibility ``2`` ``0`` ``1`` H3); Rewrite Rplus_sym; Rewrite Rplus_Ol; Replace ``2+1`` with ``3``; [Intro H4; Generalize (sqrt_lt_1 ``2`` ``3`` H1 H2 H4); Clear H3; Intro H3; Apply (Rlt_trans ``0`` ``(sqrt 2)`` ``(sqrt 3)`` Rlt_sqrt2_0 H3) | Ring]]] | Discriminate].
 Qed.
 
 Lemma PI4_RGT_0 : ``0<PI/4``.
@@ -210,7 +208,7 @@ Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1l.
 Reflexivity.
 DiscrR.
-Left; Apply Rgt_2_0.
+Left; Sup0.
 Apply sqrt2_neq_0.
 Qed.
 
@@ -243,8 +241,8 @@ Rewrite <- Rinv_Rmult.
 Replace ``2*2`` with ``4``.
 Ring.
 Ring.
-Apply aze.
-Apply aze.
+DiscrR.
+DiscrR.
 Qed.
 
 Lemma sin3PI4 : ``(sin (3*(PI/4)))==1/(sqrt 2)``.
@@ -260,8 +258,8 @@ Rewrite <- Rinv_Rmult.
 Replace ``2*2`` with ``4``.
 Ring.
 Ring.
-Apply aze.
-Apply aze.
+DiscrR.
+DiscrR.
 Qed.
 
 Lemma cos_PI6 : ``(cos (PI/6))==(sqrt 3)/2``.
@@ -271,7 +269,7 @@ Left; Apply (Rlt_trans ``-(PI/2)`` R0 ``PI/6`` _PI2_RLT_0 PI6_RGT_0).
 Left; Apply PI6_RLT_PI2.
 Left; Apply (Rmult_lt_pos ``(sqrt 3)`` ``(Rinv 2)``).
 Apply Rlt_sqrt3_0.
-Apply Rlt_Rinv; Apply Rgt_2_0.
+Apply Rlt_Rinv; Sup0.
 Rewrite Rsqr_div.
 Rewrite cos2; Unfold Rsqr; Rewrite sin_PI6; Rewrite sqrt_def.
 Unfold Rdiv.
@@ -293,10 +291,10 @@ DiscrR.
 DiscrR.
 DiscrR.
 Ring.
-Apply aze.
-Apply aze.
-Left; Apply Rgt_3_0.
-Apply aze.
+DiscrR.
+DiscrR.
+Left; Sup0.
+DiscrR.
 Qed.
 
 Lemma tan_PI6 : ``(tan (PI/6))==1/(sqrt 3)``.
@@ -309,13 +307,13 @@ Rewrite (Rmult_sym ``/2``).
 Rewrite Rmult_assoc.
 Rewrite <- Rinv_r_sym.
 Apply Rmult_1r.
-Apply aze.
-Apply aze.
+DiscrR.
+DiscrR.
 Red; Intro.
 Assert H1 := Rlt_sqrt3_0.
 Rewrite H in H1; Elim (Rlt_antirefl ``0`` H1).
 Apply Rinv_neq_R0.
-Apply aze.
+DiscrR.
 Qed.
 
 Lemma sin_PI3 : ``(sin (PI/3))==(sqrt 3)/2``.
@@ -334,8 +332,8 @@ Rewrite Rinv_Rinv.
 Rewrite Rmult_assoc.
 Rewrite <- Rinv_l_sym.
 Apply Rmult_1r.
-Apply aze.
-Apply aze.
+DiscrR.
+DiscrR.
 Qed.
 
 Lemma sin_2PI3 : ``(sin (2*(PI/3)))==(sqrt 3)/2``.
@@ -352,8 +350,8 @@ Rewrite <- Rinv_Rmult.
 Replace ``2*2`` with ``4``.
 Reflexivity.
 Ring.
-Apply aze.
-Apply aze.
+DiscrR.
+DiscrR.
 Qed.
 
 Lemma cos_2PI3 : ``(cos (2*(PI/3)))==-1/2``.
@@ -390,12 +388,12 @@ Replace ``3`` with ``(INR (S (S (S O))))`` .
 Apply pos_INR.
 Rewrite INR_eq_INR2.
 Reflexivity.
-Apply aze.
-Apply aze.
-Apply aze.
-Apply aze.
-Apply aze.
-Apply prod_neq_R0; Apply aze.
+DiscrR.
+DiscrR.
+DiscrR.
+DiscrR.
+DiscrR.
+Apply prod_neq_R0; DiscrR.
 Qed.
 
 Lemma tan_2PI3 : ``(tan (2*(PI/3)))==-(sqrt 3)``.
@@ -412,10 +410,10 @@ Rewrite <- Ropp_Rinv.
 Rewrite Ropp_mul3.
 Rewrite Rinv_R1; Rewrite Rmult_1r; Reflexivity.
 DiscrR.
-Apply aze.
-Apply aze.
 DiscrR.
-Apply Rinv_neq_R0; Apply aze.
+DiscrR.
+DiscrR.
+Apply Rinv_neq_R0; DiscrR.
 Qed.
 
 Lemma cos_5PI4 : ``(cos (5*(PI/4)))==-1/(sqrt 2)``.
@@ -432,8 +430,8 @@ Rewrite <- Rinv_Rmult.
 Replace ``2*2`` with ``4``.
 Ring.
 Ring.
-Apply aze.
-Apply aze.
+DiscrR.
+DiscrR.
 Qed.
 
 Lemma sin_5PI4 : ``(sin (5*(PI/4)))==-1/(sqrt 2)``.
@@ -449,8 +447,8 @@ Rewrite <- Rinv_Rmult.
 Replace ``2*2`` with ``4``.
 Ring.
 Ring.
-Apply aze.
-Apply aze.
+DiscrR.
+DiscrR.
 Qed.
 
 Lemma sin_cos5PI4 : ``(cos (5*(PI/4)))==(sin (5*(PI/4)))``.
@@ -458,11 +456,11 @@ Rewrite cos_5PI4; Rewrite sin_5PI4; Reflexivity.
 Qed.
 
 Lemma Rgt_3PI2_0 : ``0<3*(PI/2)``.
-Apply Rmult_lt_pos; [Apply Rgt_3_0 | Unfold Rdiv; Apply Rmult_lt_pos; [Apply PI_RGT_0 | Apply Rlt_Rinv; Apply Rgt_2_0]].
+Apply Rmult_lt_pos; [Sup0 | Unfold Rdiv; Apply Rmult_lt_pos; [Apply PI_RGT_0 | Apply Rlt_Rinv; Sup0]].
 Qed.
 
 Lemma Rgt_2PI_0 : ``0<2*PI``.
-Apply Rmult_lt_pos; [Apply Rgt_2_0 | Apply PI_RGT_0].
+Apply Rmult_lt_pos; [Sup0 | Apply PI_RGT_0].
 Qed.
 
 Lemma Rlt_PI_3PI2 : ``PI<3*(PI/2)``.

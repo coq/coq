@@ -8,11 +8,9 @@
 
 (*i $Id$ i*)
 
-Require Rbase.
-Require DiscrR.
-Require Rbasic_fun.
-Require R_sqr.
-Require Export Rsqrt_def.
+Require RealsB.
+Require Rfunctions.
+Require Rsqrt_def.
 
 (* Voici un prolongement continu de Rsqrt sur R *)
 Definition sqrt : R->R := [x:R](Cases (case_Rabsolu x) of

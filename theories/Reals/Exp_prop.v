@@ -8,15 +8,10 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
-Require DiscrR.
-Require Rtrigo_fun.
-Require Rseries.
-Require Rtrigo_def.
-Require Rtrigo_alt.
-Require Cauchy_prod.
-Require Binome.
-Require Cos_plus.
+Require RealsB.
+Require Rfunctions.
+Require SeqSeries.
+Require Rtrigo.
 Require Ranalysis1.
 Require PSeries_reg.
 Require Div2.
@@ -395,7 +390,7 @@ Rewrite <- mult_INR; Apply H1.
 Reflexivity.
 Left; Apply lt_INR_0; Apply H.
 Left; Apply Rmult_lt_pos.
-Apply Rgt_2_0.
+Sup0.
 Apply lt_INR_0; Apply div2_not_R0.
 Apply lt_n_S; Apply H.
 Cut (lt (1) (S N)).
@@ -499,7 +494,7 @@ Apply INR_eq; Do 2 Rewrite S_INR; Do 2 Rewrite mult_INR; Repeat Rewrite S_INR; R
 Symmetry ; Apply S_pred with O; Apply H7.
 Apply INR_lt.
 Apply Rlt_monotony_contra with (INR (2)).
-Apply Rgt_2_0.
+Simpl; Sup0.
 Rewrite Rmult_Or; Rewrite <- mult_INR.
 Apply lt_INR_0.
 Rewrite <- H6.
@@ -529,7 +524,7 @@ Apply H2; Unfold ge.
 Cut (le (mult (2) (S N0)) n).
 Intro; Apply le_S_n.
 Apply INR_le; Apply Rle_monotony_contra with (INR (2)).
-Apply Rgt_2_0.
+Simpl; Sup0.
 Do 2 Rewrite <- mult_INR; Apply le_INR.
 Apply le_trans with n.
 Apply H4.
@@ -552,7 +547,7 @@ Apply INR_eq; Do 2 Rewrite S_INR; Do 2 Rewrite mult_INR; Repeat Rewrite S_INR; R
 Symmetry; Apply S_pred with O; Apply H8.
 Apply INR_lt.
 Apply Rlt_monotony_contra with (INR (2)).
-Apply Rgt_2_0.
+Simpl; Sup0.
 Rewrite Rmult_Or; Rewrite <- mult_INR.
 Apply lt_INR_0.
 Rewrite <- H7.

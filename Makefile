@@ -556,7 +556,7 @@ WELLFOUNDEDVO=theories/Wellfounded/Disjoint_Union.vo \
 	      theories/Wellfounded/Well_Ordering.vo \
 	      theories/Wellfounded/Lexicographic_Product.vo 
 
-REALSBASEVO=theories/Reals/TypeSyntax.vo \
+REALSBASEVO=theories/Reals/TypeSyntax.votheories/Reals/ \
 	theories/Reals/Rdefinitions.vo theories/Reals/Rsyntax.vo \
 	theories/Reals/Raxioms.vo      theories/Reals/Rbase.vo \
 	theories/Reals/DiscrR.vo       theories/Reals/RealsB.vo \
@@ -566,26 +566,28 @@ REALS_basic=
 REALS_all=theories/Reals/R_Ifp.vo \
 	theories/Reals/Rbasic_fun.vo   theories/Reals/R_sqr.vo \
 	theories/Reals/SplitAbsolu.vo  theories/Reals/SplitRmult.vo \
-	theories/Reals/Rfunctions.vo   theories/Reals/Rlimit.vo \
-	theories/Reals/Rderiv.vo       theories/Reals/Rseries.vo \
-	theories/Reals/Rtrigo_fun.vo   theories/Reals/Alembert.vo \
-	theories/Reals/Binome.vo       theories/Reals/Rsigma.vo \
-	theories/Reals/Rcomplet.vo     theories/Reals/Alembert_compl.vo \
-	theories/Reals/AltSeries.vo    theories/Reals/Rtrigo_def.vo \
-	theories/Reals/Rtrigo_alt.vo   theories/Reals/Rprod.vo \
-	theories/Reals/Cauchy_prod.vo  theories/Reals/Cv_prop.vo \
+	theories/Reals/ArithProp.vo    theories/Reals/Rfunctions.vo \
+	theories/Reals/Rseries.vo      theories/Reals/SeqProp.vo \
+	theories/Reals/Rcomplet.vo     theories/Reals/PartSum.vo \
+	theories/Reals/AltSeries.vo    theories/Reals/Binome.vo \
+	theories/Reals/Rsigma.vo       theories/Reals/Rprod.vo \
+	theories/Reals/Cauchy_prod.vo  theories/Reals/Alembert.vo \
+	theories/Reals/SeqSeries.vo    theories/Reals/Rtrigo_fun.vo \
+	theories/Reals/Rtrigo_def.vo   theories/Reals/Rtrigo_alt.vo \
 	theories/Reals/Cos_rel.vo      theories/Reals/Cos_plus.vo \
-	theories/Reals/Rtrigo.vo       theories/Reals/Ranalysis1.vo \
-	theories/Reals/Rtopology.vo    theories/Reals/TAF.vo \
-	theories/Reals/PSeries_reg.vo  theories/Reals/Exp_prop.vo \
-	theories/Reals/Rtrigo_reg.vo   theories/Reals/Rsqrt_def.vo \
-	theories/Reals/R_sqrt.vo       theories/Reals/Rtrigo_calc.vo \
-	theories/Reals/Ranalysis2.vo   theories/Reals/Ranalysis3.vo \
+	theories/Reals/Rtrigo.vo       theories/Reals/Rlimit.vo \
+	theories/Reals/Rderiv.vo       theories/Reals/RList.vo \
+	theories/Reals/Ranalysis1.vo   theories/Reals/Ranalysis2.vo \
+	theories/Reals/Ranalysis3.vo   theories/Reals/Rtopology.vo \
+	theories/Reals/TAF.vo          theories/Reals/PSeries_reg.vo \
+	theories/Reals/Exp_prop.vo     theories/Reals/Rtrigo_reg.vo \
+	theories/Reals/Rsqrt_def.vo    theories/Reals/R_sqrt.vo \
+	theories/Reals/Rtrigo_calc.vo  theories/Reals/Rgeom.vo \
 	theories/Reals/Sqrt_reg.vo     theories/Reals/Ranalysis4.vo \
-	theories/Reals/Ranalysis.vo    theories/Reals/Rgeom.vo \
+	theories/Reals/Rpower.vo       theories/Reals/Ranalysis.vo \
 	theories/Reals/NewtonInt.vo    theories/Reals/RiemannInt_SF.vo \
-	theories/Reals/RiemannInt.vo   theories/Reals/Rpower.vo \
-	theories/Reals/Reals.vo 
+	theories/Reals/RiemannInt.vo   theories/Reals/Integration.vo \
+	theories/Reals/Reals.vo
 
 REALSVO=$(REALSBASEVO) $(REALS_$(REALS))
 

@@ -8,7 +8,8 @@
 
 (*i $Id$ i*)
 
-Require Export Rderiv.
+Require RealsB.
+Require Rfunctions.
 Require Classical.
 Require Compare.
 
@@ -272,8 +273,3 @@ Apply Rabsolu_pos_lt.
 Apply Rinv_neq_R0.
 Assumption.
 Qed.
-
-
-
-
-

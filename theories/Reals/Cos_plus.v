@@ -8,28 +8,12 @@
  
 (*i $Id$ i*)
 
-Require Max.
-Require Rbase.
-Require DiscrR.
-Require Rseries.
-Require Binome.
+Require RealsB.
+Require Rfunctions.
+Require SeqSeries.
 Require Rtrigo_def.
-Require Rtrigo_alt.
-Require Export Rprod.
-Require Export Cv_prop.
-Require Export Cos_rel.
-
-Lemma pow_mult : (x:R;n1,n2:nat) (pow x (mult n1 n2))==(pow (pow x n1) n2).
-Intros; Induction n2.
-Simpl; Replace (mult n1 O) with O; [Reflexivity | Ring].
-Replace (mult n1 (S n2)) with (plus (mult n1 n2) n1).
-Replace (S n2) with (plus n2 (1)); [Idtac | Ring].
-Do 2 Rewrite pow_add.
-Rewrite Hrecn2.
-Simpl.
-Ring.
-Apply INR_eq; Rewrite plus_INR; Do 2 Rewrite mult_INR; Rewrite S_INR; Ring.
-Qed.
+Require Cos_rel.
+Require Max.
 
 Definition Majxy [x,y:R] : nat->R := [n:nat](Rdiv (pow (Rmax R1 (Rmax (Rabsolu x) (Rabsolu y))) (mult (4) (S n))) (INR (fact n))).
 
@@ -74,103 +58,6 @@ Apply Rlt_le_trans with R1.
 Apply Rlt_R0_R1.
 Unfold C.
 Apply RmaxLess1.
-Qed.
-
-Lemma sum_Rle : (An,Bn:nat->R;N:nat) ((n:nat)(le n N)->``(An n)<=(Bn n)``) -> ``(sum_f_R0 An N)<=(sum_f_R0 Bn N)``.
-Intros.
-Induction N.
-Simpl; Apply H.
-Apply le_n.
-Do 2 Rewrite tech5.
-Apply Rle_trans with ``(sum_f_R0 An N)+(Bn (S N))``.
-Apply Rle_compatibility.
-Apply H.
-Apply le_n.
-Do 2 Rewrite <- (Rplus_sym ``(Bn (S N))``).
-Apply Rle_compatibility.
-Apply HrecN.
-Intros; Apply H.
-Apply le_trans with N; [Assumption | Apply le_n_Sn].
-Qed.
-
-Lemma sum_Rabsolu : (An:nat->R;N:nat) (Rle (Rabsolu (sum_f_R0 An N)) (sum_f_R0 [l:nat](Rabsolu (An l)) N)).
-Intros.
-Induction N.
-Simpl.
-Right; Reflexivity.
-Do 2 Rewrite tech5.
-Apply Rle_trans with ``(Rabsolu (sum_f_R0 An N))+(Rabsolu (An (S N)))``.
-Apply Rabsolu_triang.
-Do 2 Rewrite <- (Rplus_sym (Rabsolu (An (S N)))).
-Apply Rle_compatibility.
-Apply HrecN.
-Qed.
-
-Lemma fact_growing : (m,n:nat) (le m n) -> (le (fact m) (fact n)).
-Intros.
-Cut (Un_growing [n:nat](INR (fact n))).
-Intro.
-Apply INR_le.
-Apply Rle_sym2.
-Apply (growing_prop [l:nat](INR (fact l))).
-Exact H0.
-Unfold ge; Exact H.
-Unfold Un_growing.
-Intros.
-Simpl.
-Rewrite plus_INR.
-Pattern 1 (INR (fact n0)); Rewrite <- Rplus_Or.
-Apply Rle_compatibility.
-Apply pos_INR.
-Qed.
-
-Lemma pow_incr : (x,y:R;n:nat) ``0<=x<=y`` -> ``(pow x n)<=(pow y n)``.
-Intros.
-Induction n.
-Right; Reflexivity.
-Simpl.
-Elim H; Intros.
-Apply Rle_trans with ``y*(pow x n)``.
-Do 2 Rewrite <- (Rmult_sym (pow x n)).
-Apply Rle_monotony.
-Apply pow_le; Assumption.
-Assumption.
-Apply Rle_monotony.
-Apply Rle_trans with x; Assumption.
-Apply Hrecn.
-Qed.
-
-Lemma pow_R1_Rle : (x:R;k:nat) ``1<=x`` -> ``1<=(pow x k)``.
-Intros.
-Induction k.
-Right; Reflexivity.
-Simpl.
-Apply Rle_trans with ``x*1``.
-Rewrite Rmult_1r; Assumption.
-Apply Rle_monotony.
-Left; Apply Rlt_le_trans with R1; [Apply Rlt_R0_R1 | Assumption].
-Exact Hreck.
-Qed.
-
-Lemma Rle_pow : (x:R;m,n:nat) ``1<=x`` -> (le m n) -> ``(pow x m)<=(pow x n)``.
-Intros.
-Replace n with (plus (minus n m) m).
-Rewrite pow_add.
-Rewrite Rmult_sym.
-Pattern 1 (pow x m); Rewrite <- Rmult_1r.
-Apply Rle_monotony.
-Apply pow_le; Left; Apply Rlt_le_trans with R1; [Apply Rlt_R0_R1 | Assumption].
-Apply pow_R1_Rle; Assumption.
-Rewrite plus_sym.
-Symmetry; Apply le_plus_minus; Assumption.
-Qed.
-
-Lemma sum_cte : (x:R;N:nat) (sum_f_R0 [_:nat]x N) == ``x*(INR (S N))``.
-Intros.
-Induction N.
-Simpl; Ring.
-Rewrite tech5.
-Rewrite HrecN; Repeat Rewrite S_INR; Ring.
 Qed.
 
 Lemma reste1_maj : (x,y:R;N:nat) (lt O N) -> ``(Rabsolu (Reste1 x y N))<=(Majxy x y (pred N))``.

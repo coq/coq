@@ -461,6 +461,10 @@ Lemma Ropp_mul2:(r1,r2:R)``(-r1)*(-r2)==r1*r2``.
 Qed.
 Hints Resolve Ropp_mul2 : real.
 
+Lemma Ropp_mul3 : (r1,r2:R) ``r1*(-r2) == -(r1*r2)``.
+Intros; Rewrite <- Ropp_mul1; Ring.
+Qed.
+
 (** Substraction *)
 
 Lemma minus_R0:(r:R)``r-0==r``.
@@ -523,6 +527,10 @@ Lemma Rminus_not_eq_right:(r1,r2:R)``r2-r1<>0`` -> ``r1<>r2``.
 Red; Intros;Elim H;Rewrite H0; Ring.
 Qed.
 Hints Resolve Rminus_not_eq_right : real. 
+
+Lemma not_sym : (r1,r2:R) ``r1<>r2`` -> ``r2<>r1``.
+Intros; Red; Intro H0; Rewrite H0 in H; Elim H; Reflexivity.
+Qed. 
 
 (**********)
 Lemma Rminus_distr:  (x,y,z:R) ``x*(y-z)==(x*y) - (x*z)``.
@@ -1492,6 +1500,15 @@ Qed.
 (*********)
 Lemma Rmult_le_pos : (x,y:R) ``0<=x`` -> ``0<=y`` -> ``0<=x*y``.
 Intros; Rewrite <- (Rmult_Ol x); Rewrite <- (Rmult_sym x); Apply (Rle_monotony x R0 y H H0).
+Qed.
+
+Lemma double : (x:R) ``2*x==x+x``.
+Intro; Ring.
+Qed.
+
+Lemma double_var : (x:R) ``x == x/2 + x/2``.
+Intro; Rewrite <- double; Unfold Rdiv; Rewrite <- Rmult_assoc; Symmetry; Apply Rinv_r_simpl_m.
+Replace ``2`` with (INR (2)); [Apply not_O_INR; Discriminate | Reflexivity].
 Qed.
 
 (**********************************************************)

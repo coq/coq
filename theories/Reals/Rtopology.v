@@ -8,12 +8,10 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
-Require Rbasic_fun.
-Require DiscrR.
-Require Rderiv.
-Require Alembert.
+Require RealsB.
+Require Rfunctions.
 Require Ranalysis1.
+Require RList.
 Require Classical_Prop.
 Require Classical_Pred_Type.
 
@@ -258,42 +256,8 @@ Record famille : Type := mkfamille {
 Definition famille_ouvert [f:famille] : Prop := (x:R) (ouvert (f x)).
 
 (* Liste de réels *)
-Inductive Rlist : Type :=
-| nil : Rlist
-| cons : R -> Rlist -> Rlist.
-
-Fixpoint In [x:R;l:Rlist] : Prop :=
-Cases l of
-| nil => False
-| (cons a l') => ``x==a``\/(In x l') end.
 
 Definition domaine_fini [D:R->Prop] : Prop := (EXT l:Rlist | (x:R)(D x)<->(In x l)).
-
-Fixpoint longueur [l:Rlist] : nat :=
-Cases l of
-| nil => O
-| (cons a l') => (S (longueur l')) end.
-
-(* Cette fonction renvoie le maximum des éléments d'une liste non vide *)
-Fixpoint MaxRlist [l:Rlist] : R :=
- Cases l of
- | nil => R0 (* valeur de retour si la liste de départ est vide *)
- | (cons a l1) => 
-   Cases l1 of
-   | nil => a
-   | (cons a' l2) => (Rmax a (MaxRlist l1)) 
-   end
-end.
-
-Fixpoint MinRlist [l:Rlist] : R :=
-Cases l of
- | nil => R1 (* valeur de retour si la liste de départ est vide *)
- | (cons a l1) => 
-   Cases l1 of
-   | nil => a
-   | (cons a' l2) => (Rmin a (MinRlist l1)) 
-   end
-end.
 
 Definition famille_finie [f:famille] : Prop := (domaine_fini (ind f)).
 
@@ -328,25 +292,6 @@ Unfold ouvert; Unfold voisinage; Intros; Elim H3; Intros; Elim H1; Assumption.
 Qed.
 
 Definition bornee [D:R->Prop] : Prop := (EXT m:R | (EXT M:R | (x:R)(D x)->``m<=x<=M``)).
-
-Lemma MaxRlist_P1 : (l:Rlist;x:R) (In x l)->``x<=(MaxRlist l)``.
-Intros; Induction l.
-Simpl in H; Elim H.
-Induction l.
-Simpl in H; Elim H; Intro.
-Simpl; Right; Assumption.
-Elim H0.
-Replace (MaxRlist (cons r (cons r0 l))) with (Rmax r (MaxRlist (cons r0 l))).
-Simpl in H; Decompose [or] H.
-Rewrite H0; Apply RmaxLess1.
-Unfold Rmax; Case (total_order_Rle r (MaxRlist (cons r0 l))); Intro.
-Apply Hrecl; Simpl; Tauto.
-Apply Rle_trans with (MaxRlist (cons r0 l)); [Apply Hrecl; Simpl; Tauto | Left; Auto with real].
-Unfold Rmax; Case (total_order_Rle r (MaxRlist (cons r0 l))); Intro.
-Apply Hrecl; Simpl; Tauto.
-Apply Rle_trans with (MaxRlist (cons r0 l)); [Apply Hrecl; Simpl; Tauto | Left; Auto with real].
-Reflexivity.
-Qed.
 
 Lemma ouvert_P6 : (D1,D2:R->Prop) (ouvert D1) -> D1 =_D D2 -> (ouvert D2).
 Unfold ouvert; Unfold voisinage; Intros.
@@ -391,63 +336,6 @@ Apply ouvert_P4.
 Unfold eq_Dom; Split.
 Unfold inclus; Intros; Elim H3.
 Unfold inclus f0; Simpl; Unfold g; Intros; Elim H2; Intro; [Rewrite <- H4 in H3; Assert H5 := (Rabsolu_pos x0); Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H5 H3)) | Assert H6 := (Rabsolu_pos x0); Assert H7 := (Rlt_trans ? ? ? H3 H4); Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H6 H7))].
-Qed.
-
-Fixpoint AbsList [l:Rlist] : R->Rlist :=
-[x:R] Cases l of
-| nil => nil
-| (cons a l') => (cons ``(Rabsolu (a-x))/2`` (AbsList l' x))
-end.
-
-Lemma MinRlist_P1 : (l:Rlist;x:R) (In x l)->``(MinRlist l)<=x``.
-Intros; Induction l.
-Simpl in H; Elim H.
-Induction l.
-Simpl in H; Elim H; Intro.
-Simpl; Right; Symmetry; Assumption.
-Elim H0.
-Replace (MinRlist (cons r (cons r0 l))) with (Rmin r (MinRlist (cons r0 l))).
-Simpl in H; Decompose [or] H.
-Rewrite H0; Apply Rmin_l.
-Unfold Rmin; Case (total_order_Rle r (MinRlist (cons r0 l))); Intro.
-Apply Rle_trans with (MinRlist (cons r0 l)).
-Assumption.
-Apply Hrecl; Simpl; Tauto.
-Apply Hrecl; Simpl; Tauto.
-Apply Rle_trans with (MinRlist (cons r0 l)).
-Apply Rmin_r.
-Apply Hrecl; Simpl; Tauto.
-Reflexivity.
-Qed.
-
-Lemma AbsList_P1 : (l:Rlist;x,y:R) (In y l) -> (In ``(Rabsolu (y-x))/2`` (AbsList l x)).
-Intros; Induction l.
-Elim H.
-Simpl; Simpl in H; Elim H; Intro.
-Left; Rewrite H0; Reflexivity.
-Right; Apply Hrecl; Assumption.
-Qed.
-
-Lemma MinRlist_P2 : (l:Rlist) ((y:R)(In y l)->``0<y``)->``0<(MinRlist l)``.
-Intros; Induction l.
-Apply Rlt_R0_R1.
-Induction l.
-Simpl; Apply H; Simpl; Tauto.
-Replace (MinRlist (cons r (cons r0 l))) with (Rmin r (MinRlist (cons r0 l))).
-Unfold Rmin; Case (total_order_Rle r (MinRlist (cons r0 l))); Intro.
-Apply H; Simpl; Tauto.
-Apply Hrecl; Intros; Apply H; Simpl; Simpl in H0; Tauto.
-Reflexivity.
-Qed.
-
-Lemma AbsList_P2 : (l:Rlist;x,y:R) (In y (AbsList l x)) -> (EXT z : R | (In z l)/\``y==(Rabsolu (z-x))/2``).
-Intros; Induction l.
-Elim H.
-Elim H; Intro.
-Exists r; Split.
-Simpl; Tauto.
-Assumption.
-Assert H1 := (Hrecl H0); Elim H1; Intros; Elim H2; Clear H2; Intros; Exists x0; Simpl; Simpl in H2; Tauto.
 Qed.
 
 (* Les parties compactes de R sont fermées *)
@@ -1091,16 +979,6 @@ Apply Hyp.
 Unfold recouvrement_fini in H4; Elim H4; Clear H4; Intros; Unfold famille_finie in H5; Unfold domaine_fini in H5; Unfold famille_finie; Unfold domaine_fini; Elim H5; Clear H5; Intros l H5; Exists l; Intro; Elim (H5 x); Intros; Split; Intro; [Apply H6; Simpl; Simpl in H8; Apply H8 | Apply (H7 H8)].
 Qed.
 
-Lemma MaxRlist_P2 : (l:Rlist) (EXT y:R | (In y l)) -> (In (MaxRlist l) l).
-Intros; Induction l.
-Simpl in H; Elim H; Trivial.
-Induction l.
-Simpl; Left; Reflexivity.
-Change (In (Rmax r (MaxRlist (cons r0 l))) (cons r (cons r0 l))); Unfold Rmax; Case (total_order_Rle r (MaxRlist (cons r0 l))); Intro.
-Right; Apply Hrecl; Exists r0; Left; Reflexivity.
-Left; Reflexivity.
-Qed.
-
 Theorem Bolzano_Weierstrass : (un:nat->R;X:R->Prop) (compact X) -> ((n:nat)(X (un n))) -> (EXT l:R | (ValAdh un l)).
 Intros; Cut (EXT l:R | (ValAdh_un un l)).
 Intro; Elim H1; Intros; Exists x; Elim (ValAdh_un_prop un x); Intros; Apply (H4 H2).
@@ -1149,53 +1027,9 @@ Qed.
 
 Definition uniform_continuity [f:R->R;X:R->Prop] : Prop := (eps:posreal)(EXT delta:posreal | (x,y:R) (X x)->(X y)->``(Rabsolu (x-y))<delta`` ->``(Rabsolu ((f x)-(f y)))<eps``).
 
-Fixpoint pos_Rl [l:Rlist] : nat->R :=
-[i:nat] Cases l of
-| nil => R0
-| (cons a l') =>
- Cases i of
- | O => a
- | (S i') => (pos_Rl l' i')
- end
-end.
-
 (* La borne supérieure, si elle existe, est unique *)
 Lemma is_lub_u : (E:R->Prop;x,y:R) (is_lub E x) -> (is_lub E y) -> x==y.
 Unfold is_lub; Intros; Elim H; Elim H0; Intros; Apply Rle_antisym; [Apply (H4 ? H1) | Apply (H2 ? H3)].
-Qed.
-
-Lemma pos_Rl_P1 : (l:Rlist;a:R) (lt O (longueur l)) -> (pos_Rl (cons a l) (longueur l))==(pos_Rl l (pred (longueur l))).
-Intros; Induction l; [Elim (lt_n_O ? H) | Simpl; Case (longueur l); [Reflexivity | Intro; Reflexivity]].
-Qed.
-
-Lemma pos_Rl_P2 : (l:Rlist;x:R) (In x l)<->(EX i:nat | (lt i (longueur l))/\x==(pos_Rl l i)).
-Intros; Induction l.
-Split; Intro; [Elim H | Elim H; Intros; Elim H0; Intros; Elim (lt_n_O ? H1)].
-Split; Intro.
-Elim H; Intro.
-Exists O; Split; [Simpl; Apply lt_O_Sn | Simpl; Apply H0].
-Elim Hrecl; Intros; Assert H3 := (H1 H0); Elim H3; Intros; Elim H4; Intros; Exists (S x0); Split; [Simpl; Apply lt_n_S; Assumption | Simpl; Assumption].
-Elim H; Intros; Elim H0; Intros; Elim (zerop x0); Intro.
-Rewrite a in H2; Simpl in H2; Left; Assumption.
-Right; Elim Hrecl; Intros; Apply H4; Assert H5 : (S (pred x0))=x0.
-Symmetry; Apply S_pred with O; Assumption.
-Exists (pred x0); Split; [Simpl in H1; Apply lt_S_n; Rewrite H5; Assumption | Rewrite <- H5 in H2; Simpl in H2; Assumption].
-Qed.
-
-Lemma Rlist_P1 : (l:Rlist;P:R->R->Prop) ((x:R)(In x l)->(EXT y:R | (P x y))) -> (EXT l':Rlist | (longueur l)=(longueur l')/\(i:nat) (lt i (longueur l))->(P (pos_Rl l i) (pos_Rl l' i))).
-Intros; Induction l.
-Exists nil; Intros; Split; [Reflexivity | Intros; Simpl in H0; Elim (lt_n_O ? H0)].
-Assert H0 : (In r (cons r l)).
-Simpl; Left; Reflexivity.
-Assert H1 := (H ? H0); Assert H2 : (x:R)(In x l)->(EXT y:R | (P x y)).
-Intros; Apply H; Simpl; Right; Assumption.
-Assert H3 := (Hrecl H2); Elim H1; Intros; Elim H3; Intros; Exists (cons x x0); Intros; Elim H5; Clear H5; Intros; Split.
-Simpl; Rewrite H5; Reflexivity.
-Intros; Elim (zerop i); Intro.
-Rewrite a; Simpl; Assumption.
-Assert H8 : i=(S (pred i)).
-Apply S_pred with O; Assumption.
-Rewrite H8; Simpl; Apply H6; Simpl in H7; Apply lt_S_n; Rewrite <- H8; Assumption.
 Qed.
 
 Lemma domaine_P1 : (X:R->Prop) ~(EXT y:R | (X y))\/(EXT y:R | (X y)/\((x:R)(X x)->x==y))\/(EXT x:R | (EXT y:R | (X x)/\(X y)/\``x<>y``)).

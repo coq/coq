@@ -8,14 +8,11 @@
  
 (*i $Id$ i*)
 
-Require Max.
-Require Raxioms.
-Require DiscrR.
-Require Rbase.
-Require Rseries.
+Require RealsB.
+Require Rfunctions.
+Require SeqSeries.
 Require Rtrigo_fun.
-Require Export Alembert.
-Require Export AltSeries.
+Require Max.
 
 (*****************************)
 (* Definition of exponential *)
@@ -39,33 +36,6 @@ Definition exp : R -> R := [x:R](projT1 ? ? (exist_exp x)).
 Lemma pow_i : (i:nat) (lt O i) -> (pow R0 i)==R0.
 Intros; Apply pow_ne_zero.
 Red; Intro; Rewrite H0 in H; Elim (lt_n_n ? H).
-Qed.
-
-(* Unicité de la limite d'une série convergente *)
-Lemma unicite_sum : (An:nat->R;l1,l2:R) (infinit_sum An l1) -> (infinit_sum An l2) -> l1 == l2.
-Unfold infinit_sum; Intros.
-Case (Req_EM l1 l2); Intro.
-Assumption.
-Cut ``0<(Rabsolu ((l1-l2)/2))``; [Intro | Apply Rabsolu_pos_lt].
-Elim (H ``(Rabsolu ((l1-l2)/2))`` H2); Intros.
-Elim (H0 ``(Rabsolu ((l1-l2)/2))`` H2); Intros.
-Pose N := (max x0 x); Cut (ge N x0).
-Cut (ge N x).
-Intros; Assert H7 := (H3 N H5); Assert H8 := (H4 N H6).
-Cut ``(Rabsolu (l1-l2)) <= (R_dist (sum_f_R0 An N) l1) + (R_dist (sum_f_R0 An N) l2)``.
-Intro; Assert H10 := (Rplus_lt ? ? ? ? H7 H8); Assert H11 := (Rle_lt_trans ? ? ? H9 H10); Unfold Rdiv in H11; Rewrite Rabsolu_mult in H11.
-Cut ``(Rabsolu (/2))==/2``.
-Intro; Rewrite H12 in H11; Assert H13 := double_var; Unfold Rdiv in H13; Rewrite <- H13 in H11.
-Elim (Rlt_antirefl ? H11).
-Apply Rabsolu_right; Left; Change ``0</2``; Apply Rlt_Rinv; Cut ~(O=(2)); [Intro H20; Generalize (lt_INR_0 (2) (neq_O_lt (2) H20)); Unfold INR; Intro; Assumption | Discriminate].
-Unfold R_dist; Rewrite <- (Rabsolu_Ropp ``(sum_f_R0 An N)-l1``); Rewrite Ropp_distr3.
-Replace ``l1-l2`` with ``((l1-(sum_f_R0 An N)))+((sum_f_R0 An N)-l2)``; [Idtac | Ring].
-Apply Rabsolu_triang.
-Unfold ge; Unfold N; Apply le_max_r.
-Unfold ge; Unfold N; Apply le_max_l.
-Unfold Rdiv; Apply prod_neq_R0.
-Apply Rminus_eq_contra; Assumption.
-Apply Rinv_neq_R0; DiscrR.
 Qed.
 
 (*i Calcul de $e^0$ *)
@@ -114,11 +84,6 @@ Qed.
 (* TG de la série entière définissant COS *)
 Definition cos_n [n:nat] : R := ``(pow (-1) n)/(INR (fact (mult (S (S O)) n)))``.
 
-
-Lemma fact_simpl : (n:nat) (fact (S n))=(mult (S n) (fact n)).
-Intro; Reflexivity.
-Qed.
-
 Lemma simpl_cos_n : (n:nat) (Rdiv (cos_n (S n)) (cos_n n))==(Ropp (Rinv (INR (mult (mult (2) (S n)) (plus (mult (2) n) (1)))))). 
 Intro; Unfold cos_n; Replace (S n) with (plus n (1)); [Idtac | Ring].
 Rewrite pow_add; Unfold Rdiv; Rewrite Rinv_Rmult.
@@ -143,16 +108,6 @@ Apply pow_nonzero; DiscrR.
 Apply INR_fact_neq_0.
 Apply pow_nonzero; DiscrR.
 Apply Rinv_neq_R0; Apply INR_fact_neq_0.
-Qed.
-
-Lemma le_n_2n : (n:nat) (le n (mult (2) n)).
-Induction n.
-Replace (mult (2) (O)) with O; [Apply le_n | Ring].
-Intros; Replace (mult (2) (S n0)) with (S (S (mult (2) n0))).
-Apply le_n_S; Apply le_S; Assumption.
-Replace (S (S (mult (2) n0))) with (plus (mult (2) n0) (2)); [Idtac | Ring].
-Replace (S n0) with (plus n0 (1)); [Idtac | Ring].
-Ring.
 Qed.
 
 Lemma archimed_cor1 : (eps:R) ``0<eps`` -> (EX N : nat | ``/(INR N) < eps``/\(lt O N)).

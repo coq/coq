@@ -8,70 +8,20 @@
 
 (*i $Id$ i*)
 
+Require RealsB.
+Require Rfunctions.
+Require SeqSeries.
+Require Export Rtrigo_fun.
+Require Export Rtrigo_def.
+Require Export Rtrigo_alt.
+Require Export Cos_rel.
+Require Export Cos_plus.
 Require ZArith_base.
 Require Zcomplements.
 Require Classical_Prop.
-Require DiscrR.
-Require Rbase.
-Require R_sqr.
-Require Rfunctions.
-Require Rsigma.
-Require Rlimit.
-Require Binome.
-Require Export Rtrigo_def.
-Require Export Rtrigo_alt.
-Require Export Cos_plus.
 
 (** sin_PI2 is the only remaining axiom **)
 Axiom sin_PI2 : ``(sin (PI/2))==1``.
-
-(* Here, we have the euclidian division *)
-(* This lemma is used in the proof of sin_eq_0 : (sin x)=0<->x=kPI *)
-Lemma euclidian_division : (x,y:R) ``y<>0`` -> (EXT k:Z | (EXT r : R | ``x==(IZR k)*y+r``/\``0<=r<(Rabsolu y)``)).
-Intros.
-Pose k0 := Cases (case_Rabsolu y) of
-     (leftT _) => (Zminus `1` (up ``x/-y``))
-   | (rightT _) => (Zminus (up ``x/y``) `1`) end.
-Exists k0.
-Exists ``x-(IZR k0)*y``.
-Split.
-Ring.
-Unfold k0; Case (case_Rabsolu y); Intro.
-Assert H0 := (archimed ``x/-y``); Rewrite <- Z_R_minus; Simpl; Unfold Rminus.
-Replace ``-((1+ -(IZR (up (x/( -y)))))*y)`` with ``((IZR (up (x/-y)))-1)*y``; [Idtac | Ring].
-Split.
-Apply Rle_monotony_contra with ``/-y``.
-Apply Rlt_Rinv; Apply Rgt_RO_Ropp; Exact r.
-Rewrite Rmult_Or; Rewrite (Rmult_sym ``/-y``); Rewrite Rmult_Rplus_distrl; Rewrite <- Ropp_Rinv; [Idtac | Assumption].
-Rewrite Rmult_assoc; Repeat Rewrite Ropp_mul3; Rewrite <- Rinv_r_sym; [Rewrite Rmult_1r | Assumption].
-Apply Rle_anti_compatibility with ``(IZR (up (x/( -y))))-x/( -y)``.
-Rewrite Rplus_Or; Unfold Rdiv; Pattern 4 ``/-y``; Rewrite <- Ropp_Rinv; [Idtac | Assumption].
-Replace ``(IZR (up (x*/ -y)))-x* -/y+( -(x*/y)+ -((IZR (up (x*/ -y)))-1))`` with R1; [Idtac | Ring].
-Elim H0; Intros _ H1; Unfold Rdiv in H1; Exact H1.
-Rewrite (Rabsolu_left ? r); Apply Rlt_monotony_contra with ``/-y``.
-Apply Rlt_Rinv; Apply Rgt_RO_Ropp; Exact r.
-Rewrite <- Rinv_l_sym.
-Rewrite (Rmult_sym ``/-y``); Rewrite Rmult_Rplus_distrl; Rewrite <- Ropp_Rinv; [Idtac | Assumption].
-Rewrite Rmult_assoc; Repeat Rewrite Ropp_mul3; Rewrite <- Rinv_r_sym; [Rewrite Rmult_1r | Assumption]; Apply Rlt_anti_compatibility with ``((IZR (up (x/( -y))))-1)``.
-Replace ``(IZR (up (x/( -y))))-1+1`` with ``(IZR (up (x/( -y))))``; [Idtac | Ring].
-Replace ``(IZR (up (x/( -y))))-1+( -(x*/y)+ -((IZR (up (x/( -y))))-1))`` with ``-(x*/y)``; [Idtac | Ring].
-Rewrite <- Ropp_mul3; Rewrite (Ropp_Rinv ? H); Elim H0; Unfold Rdiv; Intros H1 _; Exact H1.
-Apply Ropp_neq; Assumption.
-Assert H0 := (archimed ``x/y``); Rewrite <- Z_R_minus; Simpl; Cut ``0<y``.
-Intro; Unfold Rminus; Replace ``-(((IZR (up (x/y)))+ -1)*y)`` with ``(1-(IZR (up (x/y))))*y``; [Idtac | Ring].
-Split.
-Apply Rle_monotony_contra with ``/y``.
-Apply Rlt_Rinv; Assumption.
-Rewrite Rmult_Or; Rewrite (Rmult_sym ``/y``); Rewrite Rmult_Rplus_distrl; Rewrite Rmult_assoc; Rewrite <- Rinv_r_sym; [Rewrite Rmult_1r | Assumption]; Apply Rle_anti_compatibility with ``(IZR (up (x/y)))-x/y``; Rewrite Rplus_Or; Unfold Rdiv; Replace ``(IZR (up (x*/y)))-x*/y+(x*/y+(1-(IZR (up (x*/y)))))`` with R1; [Idtac | Ring]; Elim H0; Intros _ H2; Unfold Rdiv in H2; Exact H2.
-Rewrite (Rabsolu_right ? r); Apply Rlt_monotony_contra with ``/y``.
-Apply Rlt_Rinv; Assumption.
-Rewrite <- (Rinv_l_sym ? H); Rewrite (Rmult_sym ``/y``); Rewrite Rmult_Rplus_distrl; Rewrite Rmult_assoc; Rewrite <- Rinv_r_sym; [Rewrite Rmult_1r | Assumption]; Apply Rlt_anti_compatibility with ``((IZR (up (x/y)))-1)``; Replace ``(IZR (up (x/y)))-1+1`` with ``(IZR (up (x/y)))``; [Idtac | Ring]; Replace ``(IZR (up (x/y)))-1+(x*/y+(1-(IZR (up (x/y)))))`` with ``x*/y``; [Idtac | Ring]; Elim H0; Unfold Rdiv; Intros H2 _; Exact H2.
-Case (total_order_T R0 y); Intro.
-Elim s; Intro.
-Assumption.
-Elim H; Symmetry; Exact b.
-Assert H1 := (Rle_sym2 ? ? r); Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H1 r0)).
-Qed.
 
 (**********)
 Lemma PI_neq0 : ~``PI==0``.
@@ -341,9 +291,9 @@ Do 2 Rewrite Rmult_1r; Apply Rle_lt_trans with ``(INR (fact (plus (mult (S (S O)
 Apply Rle_monotony.
 Replace R0 with (INR O); [Idtac | Reflexivity]; Apply le_INR; Apply le_O_n.
 Simpl; Rewrite Rmult_1r; Replace ``4`` with ``(Rsqr 2)``; [Idtac | SqRing]; Replace ``a*a`` with (Rsqr a); [Idtac | Reflexivity]; Apply Rsqr_incr_1.
-Apply Rle_trans with ``PI/2``; [Assumption | Unfold Rdiv; Apply Rle_monotony_contra with ``2``; [ Apply Rgt_2_0 | Rewrite <- Rmult_assoc;  Rewrite Rinv_r_simpl_m; [Replace ``2*2`` with ``4``; [Apply PI_4 | Ring] | DiscrR]]].
+Apply Rle_trans with ``PI/2``; [Assumption | Unfold Rdiv; Apply Rle_monotony_contra with ``2``; [ Sup0 | Rewrite <- Rmult_assoc;  Rewrite Rinv_r_simpl_m; [Replace ``2*2`` with ``4``; [Apply PI_4 | Ring] | DiscrR]]].
 Left; Assumption.
-Left; Apply Rgt_2_0.
+Left; Sup0.
 Rewrite H1; Replace (plus (plus (mult (S (S O)) n) (S O)) (S (S O))) with (S (S (plus (mult (S (S O)) n) (S O)))).
 Do 2 Rewrite fact_simpl; Do 2 Rewrite mult_INR; Rewrite <- Rmult_assoc; Rewrite <- (Rmult_sym (INR (fact (plus (mult (S (S O)) n) (S O))))).
 Apply Rlt_monotony.
@@ -357,7 +307,7 @@ Apply ge0_plus_gt0_is_gt0.
 Cut ``0<=x``.
 Intro; Apply ge0_plus_ge0_is_ge0; Repeat Apply Rmult_le_pos; Try (Left; Sup0) Orelse Assumption.
 Unfold x; Replace R0 with (INR O); [Rewrite <- INR_eq_INR2; Apply le_INR; Apply le_O_n | Reflexivity].
-Apply Rgt_2_0.
+Sup0.
 Apply INR_eq; Do 2 Rewrite S_INR; Do 3 Rewrite plus_INR; Rewrite mult_INR; Repeat Rewrite S_INR; Ring.
 Apply INR_fact_neq_0.
 Apply INR_fact_neq_0.
@@ -383,7 +333,7 @@ Apply PI_RGT_0.
 Apply Rinv_lt.
 Apply Rmult_lt_pos; Sup0.
 Pattern 1 ``2``; Rewrite <- Rplus_Or.
-Replace ``4`` with ``2+2``; [Apply Rlt_compatibility; Apply Rgt_2_0 | Ring].
+Replace ``4`` with ``2+2``; [Apply Rlt_compatibility; Sup0 | Ring].
 Qed.
 
 Lemma PI2_Rlt_PI : ``PI/2<PI``.
@@ -391,7 +341,7 @@ Unfold Rdiv; Pattern 2 PI; Rewrite <- Rmult_1r.
 Apply Rlt_monotony.
 Apply PI_RGT_0.
 Pattern 3 R1; Rewrite <- Rinv_R1; Apply Rinv_lt.
-Rewrite Rmult_1l; Apply Rgt_2_0.
+Rewrite Rmult_1l; Sup0.
 Pattern 1 R1; Rewrite <- Rplus_Or; Apply Rlt_compatibility; Apply Rlt_R0_R1.
 Qed.
 
@@ -531,33 +481,40 @@ Qed.
 Lemma sin_increasing_0 : (x,y:R) ``-(PI/2)<=x``->``x<=PI/2``->``-(PI/2)<=y``->``y<=PI/2``->``(sin x)<(sin y)``->``x<y``.
 Intros; Cut ``(sin ((x-y)/2))<0``.
 Intro H4; Case (total_order ``(x-y)/2`` ``0``); Intro H5.
-Generalize (Rlt_monotony ``2`` ``(x-y)/2`` ``0`` Rgt_2_0 H5).
+Assert Hyp : ``0<2``.
+Sup0.
+Generalize (Rlt_monotony ``2`` ``(x-y)/2`` ``0`` Hyp H5).
 Unfold Rdiv.
 Rewrite <- Rmult_assoc.
 Rewrite Rinv_r_simpl_m.
 Rewrite Rmult_Or.
 Clear H5; Intro H5; Apply Rminus_lt; Assumption.
-Apply aze.
+DiscrR.
 Elim H5; Intro H6.
 Rewrite H6 in H4; Rewrite sin_0 in H4; Elim (Rlt_antirefl ``0`` H4).
 Change ``0<(x-y)/2`` in H6; Generalize (Rle_Ropp ``-(PI/2)`` y H1).
 Rewrite Ropp_Ropp.
 Intro H7; Generalize (Rle_sym2 ``-y`` ``PI/2`` H7); Clear H7; Intro H7; Generalize (Rplus_le x ``PI/2`` ``-y`` ``PI/2`` H0 H7).
 Rewrite <- double_var.
-Intro H8; Generalize (Rle_monotony ``(Rinv 2)`` ``x-y`` PI (Rlt_le ``0`` ``/2`` (Rlt_Rinv ``2`` Rgt_2_0)) H8).
+Intro H8.
+Assert Hyp : ``0<2``.
+Sup0.
+Generalize (Rle_monotony ``(Rinv 2)`` ``x-y`` PI (Rlt_le ``0`` ``/2`` (Rlt_Rinv ``2`` Hyp)) H8).
 Repeat Rewrite (Rmult_sym ``/2``). 
 Intro H9; Generalize (sin_gt_0 ``(x-y)/2`` H6 (Rle_lt_trans ``(x-y)/2`` ``PI/2`` PI H9 PI2_Rlt_PI)); Intro H10; Elim (Rlt_antirefl ``(sin ((x-y)/2))`` (Rlt_trans ``(sin ((x-y)/2))`` ``0`` ``(sin ((x-y)/2))`` H4 H10)).
 Generalize (Rlt_minus (sin x) (sin y) H3); Clear H3; Intro H3; Rewrite form4 in H3; Generalize (Rplus_le x ``PI/2`` y ``PI/2`` H0 H2).
 Rewrite <- double_var.
-Intro H4; Generalize (Rle_monotony ``(Rinv 2)`` ``x+y`` PI (Rlt_le ``0`` ``/2`` (Rlt_Rinv ``2`` Rgt_2_0)) H4).
+Assert Hyp : ``0<2``.
+Sup0.
+Intro H4; Generalize (Rle_monotony ``(Rinv 2)`` ``x+y`` PI (Rlt_le ``0`` ``/2`` (Rlt_Rinv ``2`` Hyp)) H4).
 Repeat Rewrite (Rmult_sym ``/2``). 
 Clear H4; Intro H4; Generalize (Rplus_le ``-(PI/2)`` x ``-(PI/2)`` y H H1); Replace ``-(PI/2)+(-(PI/2))`` with ``-PI``.
-Intro H5; Generalize (Rle_monotony ``(Rinv 2)`` ``-PI`` ``x+y`` (Rlt_le ``0`` ``/2`` (Rlt_Rinv ``2`` Rgt_2_0)) H5).
+Intro H5; Generalize (Rle_monotony ``(Rinv 2)`` ``-PI`` ``x+y`` (Rlt_le ``0`` ``/2`` (Rlt_Rinv ``2`` Hyp)) H5).
 Replace ``/2*(x+y)`` with ``(x+y)/2``.
 Replace ``/2*(-PI)`` with ``-(PI/2)``.
 Clear H5; Intro H5; Elim H4; Intro H40.
 Elim H5; Intro H50.
-Generalize (cos_gt_0 ``(x+y)/2`` H50 H40); Intro H6; Generalize (Rlt_monotony ``2`` ``0`` ``(cos ((x+y)/2))`` Rgt_2_0 H6).
+Generalize (cos_gt_0 ``(x+y)/2`` H50 H40); Intro H6; Generalize (Rlt_monotony ``2`` ``0`` ``(cos ((x+y)/2))`` Hyp H6).
 Rewrite Rmult_Or. 
 Clear H6; Intro H6; Case (case_Rabsolu ``(sin ((x-y)/2))``); Intro H7.
 Assumption.
@@ -576,20 +533,22 @@ Qed.
 
 Lemma sin_increasing_1 : (x,y:R) ``-(PI/2)<=x``->``x<=PI/2``->``-(PI/2)<=y``->``y<=PI/2``->``x<y``->``(sin x)<(sin y)``.
 Intros; Generalize (Rlt_compatibility ``x`` ``x`` ``y`` H3); Intro H4; Generalize (Rplus_le ``-(PI/2)`` x ``-(PI/2)`` x H H); Replace ``-(PI/2)+ (-(PI/2))`` with ``-PI``.
-Intro H5; Generalize (Rle_lt_trans ``-PI`` ``x+x`` ``x+y`` H5 H4); Intro H6; Generalize (Rlt_monotony ``(Rinv 2)`` ``-PI`` ``x+y`` (Rlt_Rinv ``2`` Rgt_2_0) H6); Replace ``/2*(-PI)`` with ``-(PI/2)``.
+Assert Hyp : ``0<2``.
+Sup0.
+Intro H5; Generalize (Rle_lt_trans ``-PI`` ``x+x`` ``x+y`` H5 H4); Intro H6; Generalize (Rlt_monotony ``(Rinv 2)`` ``-PI`` ``x+y`` (Rlt_Rinv ``2`` Hyp) H6); Replace ``/2*(-PI)`` with ``-(PI/2)``.
 Replace ``/2*(x+y)`` with ``(x+y)/2``.
 Clear H4 H5 H6; Intro H4; Generalize (Rlt_compatibility ``y`` ``x`` ``y`` H3); Intro H5; Rewrite Rplus_sym in H5; Generalize (Rplus_le y ``PI/2`` y ``PI/2`` H2 H2).
 Rewrite <- double_var.
-Intro H6; Generalize (Rlt_le_trans ``x+y`` ``y+y`` PI H5 H6); Intro H7; Generalize (Rlt_monotony ``(Rinv 2)``  ``x+y`` PI (Rlt_Rinv ``2`` Rgt_2_0) H7); Replace ``/2*PI`` with ``PI/2``.
+Intro H6; Generalize (Rlt_le_trans ``x+y`` ``y+y`` PI H5 H6); Intro H7; Generalize (Rlt_monotony ``(Rinv 2)``  ``x+y`` PI (Rlt_Rinv ``2`` Hyp) H7); Replace ``/2*PI`` with ``PI/2``.
 Replace ``/2*(x+y)`` with ``(x+y)/2``.
 Clear H5 H6 H7; Intro H5; Generalize (Rle_Ropp ``-(PI/2)`` y H1); Rewrite Ropp_Ropp; Clear H1; Intro H1; Generalize (Rle_sym2 ``-y`` ``PI/2`` H1); Clear H1; Intro H1; Generalize (Rle_Ropp y ``PI/2`` H2); Clear H2; Intro H2; Generalize (Rle_sym2 ``-(PI/2)`` ``-y`` H2); Clear H2; Intro H2; Generalize (Rlt_compatibility ``-y`` x y H3); Replace ``-y+x`` with ``x-y``.
 Rewrite Rplus_Ropp_l.
-Intro H6; Generalize (Rlt_monotony ``(Rinv 2)``  ``x-y`` ``0`` (Rlt_Rinv ``2`` Rgt_2_0) H6); Rewrite Rmult_Or; Replace ``/2*(x-y)`` with ``(x-y)/2``.
+Intro H6; Generalize (Rlt_monotony ``(Rinv 2)``  ``x-y`` ``0`` (Rlt_Rinv ``2`` Hyp) H6); Rewrite Rmult_Or; Replace ``/2*(x-y)`` with ``(x-y)/2``.
 Clear H6; Intro H6; Generalize (Rplus_le  ``-(PI/2)`` x ``-(PI/2)`` ``-y`` H H2); Replace ``-(PI/2)+ (-(PI/2))`` with ``-PI``.
 Replace `` x+ -y`` with ``x-y``.
-Intro H7; Generalize (Rle_monotony ``(Rinv 2)`` ``-PI`` ``x-y`` (Rlt_le ``0`` ``/2`` (Rlt_Rinv ``2`` Rgt_2_0)) H7); Replace ``/2*(-PI)`` with ``-(PI/2)``.
+Intro H7; Generalize (Rle_monotony ``(Rinv 2)`` ``-PI`` ``x-y`` (Rlt_le ``0`` ``/2`` (Rlt_Rinv ``2`` Hyp)) H7); Replace ``/2*(-PI)`` with ``-(PI/2)``.
 Replace ``/2*(x-y)`` with ``(x-y)/2``.
-Clear H7; Intro H7; Clear H H0 H1 H2; Apply Rminus_lt; Rewrite form4; Generalize (cos_gt_0 ``(x+y)/2`` H4 H5); Intro H8; Generalize (Rmult_lt_pos ``2`` ``(cos ((x+y)/2))`` Rgt_2_0 H8); Clear H8; Intro H8; Cut ``-PI< -(PI/2)``.
+Clear H7; Intro H7; Clear H H0 H1 H2; Apply Rminus_lt; Rewrite form4; Generalize (cos_gt_0 ``(x+y)/2`` H4 H5); Intro H8; Generalize (Rmult_lt_pos ``2`` ``(cos ((x+y)/2))`` Hyp H8); Clear H8; Intro H8; Cut ``-PI< -(PI/2)``.
 Intro H9; Generalize (sin_lt_0_var ``(x-y)/2`` (Rlt_le_trans ``-PI`` ``-(PI/2)`` ``(x-y)/2`` H9 H7) H6); Intro H10; Generalize (Rlt_anti_monotony ``(sin ((x-y)/2))`` ``0`` ``2*(cos ((x+y)/2))`` H10 H8); Intro H11; Rewrite Rmult_Or in H11; Rewrite Rmult_sym; Assumption.
 Apply Rlt_Ropp; Apply PI2_Rlt_PI.
 Unfold Rdiv; Apply Rmult_sym.
@@ -760,7 +719,6 @@ Assumption.
 Assumption.
 Qed.
 
-
 Lemma tan_increasing_0 : (x,y:R) ``-(PI/4)<=x``->``x<=PI/4`` ->``-(PI/4)<=y``->``y<=PI/4``->``(tan x)<(tan y)``->``x<y``.
 Intros; Generalize PI4_RLT_PI2; Intro H4; Generalize (Rlt_Ropp ``PI/4`` ``PI/2`` H4); Intro H5; Change ``-(PI/2)< -(PI/4)`` in H5; Generalize (cos_gt_0 x (Rlt_le_trans ``-(PI/2)`` ``-(PI/4)`` x H5 H) (Rle_lt_trans x ``PI/4`` ``PI/2`` H0 H4)); Intro HP1; Generalize (cos_gt_0 y (Rlt_le_trans ``-(PI/2)`` ``-(PI/4)`` y H5 H1) (Rle_lt_trans y ``PI/4`` ``PI/2`` H2 H4)); Intro HP2; Generalize (not_sym ``0`` (cos x) (Rlt_not_eq ``0`` (cos x) (cos_gt_0 x (Rlt_le_trans ``-(PI/2)`` ``-(PI/4)`` x H5 H) (Rle_lt_trans x ``PI/4`` ``PI/2`` H0 H4)))); Intro H6; Generalize (not_sym ``0`` (cos y) (Rlt_not_eq ``0`` (cos y) (cos_gt_0 y (Rlt_le_trans ``-(PI/2)`` ``-(PI/4)`` y H5 H1) (Rle_lt_trans y ``PI/4`` ``PI/2`` H2 H4)))); Intro H7; Generalize (tan_diff x y H6 H7); Intro H8; Generalize (Rlt_minus (tan x) (tan y) H3); Clear H3; Intro H3; Rewrite H8 in H3; Cut ``(sin (x-y))<0``.
 Intro H9; Generalize (Rle_Ropp ``-(PI/4)`` y H1); Rewrite Ropp_Ropp; Intro H10; Generalize (Rle_sym2 ``-y`` ``PI/4`` H10); Clear H10; Intro H10; Generalize (Rle_Ropp y ``PI/4`` H2); Intro H11; Generalize (Rle_sym2 ``-(PI/4)`` ``-y`` H11); Clear H11; Intro H11; Generalize (Rplus_le ``-(PI/4)`` x ``-(PI/4)`` ``-y`` H H11); Generalize (Rplus_le x ``PI/4`` ``-y`` ``PI/4`` H0 H10); Replace ``x+ -y`` with ``x-y``.
@@ -780,8 +738,8 @@ Rewrite Ropp_distr1.
 Replace ``2*2`` with ``4``.
 Reflexivity.
 Ring.
-Apply aze.
-Apply aze.
+DiscrR.
+DiscrR.
 Pattern 1 PI; Rewrite double_var.
 Unfold Rdiv.
 Rewrite Rmult_Rplus_distrl.
@@ -790,8 +748,8 @@ Rewrite <- Rinv_Rmult.
 Replace ``2*2`` with ``4``.
 Reflexivity.
 Ring.
-Apply aze.
-Apply aze.
+DiscrR.
+DiscrR.
 Reflexivity.
 Case (case_Rabsolu ``(sin (x-y))``); Intro H9.
 Assumption.
@@ -817,8 +775,8 @@ Replace ``2*2`` with ``4``.
 Rewrite Ropp_distr1.
 Reflexivity.
 Ring.
-Apply aze.
-Apply aze.
+DiscrR.
+DiscrR.
 Reflexivity.
 Apply Rinv_Rmult; Assumption.
 Qed.
@@ -1076,7 +1034,7 @@ Rewrite (double PI); Pattern 3 4 PI; Rewrite (double_var PI); Ring.
 Apply ge0_plus_ge0_is_ge0.
 Left; Unfold Rdiv; Apply Rmult_lt_pos.
 Apply PI_RGT_0.
-Apply Rlt_Rinv; Apply Rgt_2_0. 
+Apply Rlt_Rinv; Sup0. 
 Assumption.
 Elim H2; Intro.
 Right; Assumption.
@@ -1097,7 +1055,9 @@ Intro; Cut `` -1 < (IZR (Zplus (NEG (xO xH)) k0)) < 1``.
 Intro; Generalize (one_IZR_lt1 (Zplus (NEG (xO xH)) k0) H12); Intro.
 Cut k0=`2`.
 Intro; Rewrite H14 in H8.
-Generalize (Rle_monotony ``2`` ``(IZR (POS (xO xH)))`` ``3*/2`` (Rlt_le ``0`` ``2`` Rgt_2_0) H8); Simpl.
+Assert Hyp : ``0<2``.
+Sup0.
+Generalize (Rle_monotony ``2`` ``(IZR (POS (xO xH)))`` ``3*/2`` (Rlt_le ``0`` ``2`` Hyp) H8); Simpl.
 Replace ``2*2`` with ``4``.
 Replace ``2*(3*/2)`` with ``3``.
 Intro; Cut ``3<4``.
@@ -1107,7 +1067,7 @@ Replace ``3+1`` with ``4``.
 Intro; Assumption.
 Ring.
 Symmetry; Rewrite <- Rmult_assoc; Apply Rinv_r_simpl_m.
-Apply aze.
+DiscrR.
 Ring.
 Rewrite <- (Zplus_inverse_l `2`) in H13; Generalize (Zsimpl_plus_l `-2` k0 `2` H13); Intro; Assumption.
 Split.
@@ -1117,15 +1077,15 @@ Assumption.
 Simpl; Replace ``-2+3*/2`` with ``-(1*/2)``.
 Apply Rlt_trans with ``0``.
 Rewrite <- Ropp_O; Apply Rlt_Ropp.
-Apply Rmult_lt_pos; [Apply Rlt_R0_R1 | Apply Rlt_Rinv; Apply Rgt_2_0].
+Apply Rmult_lt_pos; [Apply Rlt_R0_R1 | Apply Rlt_Rinv; Sup0].
 Apply Rlt_R0_R1.
 Rewrite Rmult_1l; Apply r_Rmult_mult with ``2``.
 Rewrite Ropp_mul3; Rewrite <- Rinv_r_sym.
 Rewrite Rmult_Rplus_distr; Rewrite <- Rmult_assoc; Rewrite Rinv_r_simpl_m.
 Ring.
-Apply aze.
-Apply aze.
-Apply aze.
+DiscrR.
+DiscrR.
+DiscrR.
 Simpl; Ring.
 Simpl; Ring.
 Apply PI_neq0.

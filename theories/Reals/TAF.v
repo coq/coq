@@ -8,9 +8,8 @@
  
 (*i $Id$ i*)
 
-Require Rbase.
-Require DiscrR.
-Require Rlimit.
+Require RealsB.
+Require Rfunctions.
 Require Ranalysis1.
 Require Rtopology.
 
@@ -463,4 +462,57 @@ Replace ``(derive_pt f c (pr1 c))+((derive_pt g c (pr2 c))-(derive_pt f c (pr1 c
 Apply H0; Assumption.
 Apply pr_nu.
 Apply derivable_minus; Assumption.
+Qed.
+
+(* If f has a null derivative in ]a,b[ and is continue in [a,b], *)
+(* then f is constant on [a,b] *)
+Lemma null_derivative_loc : (f:R->R;a,b:R;pr:(x:R)``a<x<b``->(derivable_pt f x)) ((x:R)``a<=x<=b``->(continuity_pt f x)) -> ((x:R;P:``a<x<b``)(derive_pt f x (pr x P))==R0) -> (constant_D_eq f [x:R]``a<=x<=b`` (f a)).
+Intros; Unfold constant_D_eq; Intros; Case (total_order_T a b); Intro.
+Elim s; Intro.
+Assert H2 : (y:R)``a<y<x``->(derivable_pt id y).
+Intros; Apply derivable_pt_id.
+Assert H3 : (y:R)``a<=y<=x``->(continuity_pt id y).
+Intros; Apply derivable_continuous; Apply derivable_id.
+Assert H4 : (y:R)``a<y<x``->(derivable_pt f y).
+Intros; Apply pr; Elim H4; Intros; Split.
+Assumption.
+Elim H1; Intros; Apply Rlt_le_trans with x; Assumption.
+Assert H5 : (y:R)``a<=y<=x``->(continuity_pt f y).
+Intros; Apply H; Elim H5; Intros; Split.
+Assumption.
+Elim H1; Intros; Apply Rle_trans with x; Assumption.
+Elim H1; Clear H1; Intros; Elim H1; Clear H1; Intro.
+Assert H7 := (TAF_gen f id a x H4 H2 H1 H5 H3).
+Elim H7; Intros; Elim H8; Intros; Assert H10 : ``a<x0<b``.
+Elim x1; Intros; Split.
+Assumption.
+Apply Rlt_le_trans with x; Assumption.
+Assert H11 : ``(derive_pt f x0 (H4 x0 x1))==0``.
+Replace (derive_pt f x0 (H4 x0 x1)) with (derive_pt f x0 (pr x0 H10)); [Apply H0 | Apply pr_nu].
+Assert H12 : ``(derive_pt id x0 (H2 x0 x1))==1``.
+Apply derive_pt_eq_0; Apply derivable_pt_lim_id.
+Rewrite H11 in H9; Rewrite H12 in H9; Rewrite Rmult_Or in H9; Rewrite Rmult_1r in H9; Apply Rminus_eq; Symmetry; Assumption.
+Rewrite H1; Reflexivity.
+Assert H2 : x==a.
+Rewrite <- b0 in H1; Elim H1; Intros; Apply Rle_antisym; Assumption.
+Rewrite H2; Reflexivity.
+Elim H1; Intros; Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? (Rle_trans ? ? ? H2 H3) r)).
+Qed.
+
+(* La primitive est unique a une constante pres *)
+Lemma antiderivative_Ucte : (f,g1,g2:R->R;a,b:R) (antiderivative f g1 a b) -> (antiderivative f g2 a b) -> (EXT c:R | (x:R)``a<=x<=b``->``(g1 x)==(g2 x)+c``).
+Unfold antiderivative; Intros; Elim H; Clear H; Intros; Elim H0; Clear H0; Intros H0 _; Exists ``(g1 a)-(g2 a)``; Intros; Assert H3 : (x:R)``a<=x<=b``->(derivable_pt g1 x).
+Intros; Unfold derivable_pt; Apply Specif.existT with (f x0); Elim (H x0 H3); Intros; EApply derive_pt_eq_1; Symmetry; Apply H4.
+Assert H4 : (x:R)``a<=x<=b``->(derivable_pt g2 x).
+Intros; Unfold derivable_pt; Apply Specif.existT with (f x0); Elim (H0 x0 H4); Intros; EApply derive_pt_eq_1; Symmetry; Apply H5.
+Assert H5 : (x:R)``a<x<b``->(derivable_pt (minus_fct g1 g2) x).
+Intros; Elim H5; Intros; Apply derivable_pt_minus; [Apply H3; Split; Left; Assumption | Apply H4; Split; Left; Assumption].
+Assert H6 : (x:R)``a<=x<=b``->(continuity_pt (minus_fct g1 g2) x).
+Intros; Apply derivable_continuous_pt; Apply derivable_pt_minus; [Apply H3 | Apply H4]; Assumption.
+Assert H7 : (x:R;P:``a<x<b``)(derive_pt (minus_fct g1 g2) x (H5 x P))==``0``.
+Intros; Elim P; Intros; Apply derive_pt_eq_0; Replace R0 with ``(f x0)-(f x0)``; [Idtac | Ring].
+Assert H9 : ``a<=x0<=b``.
+Split; Left; Assumption.
+Apply derivable_pt_lim_minus; [Elim (H ? H9) | Elim (H0 ? H9)]; Intros; EApply derive_pt_eq_1; Symmetry; Apply H10.
+Assert H8 := (null_derivative_loc (minus_fct g1 g2) a b H5 H6 H7); Unfold constant_D_eq in H8; Assert H9 := (H8 ? H2); Unfold minus_fct in H9; Rewrite <- H9; Ring.
 Qed.

@@ -8,51 +8,16 @@
  
 (*i $Id$ i*)
 
-Require Even.
-Require Div2.
-Require Max.
-Require DiscrR.
+Require RealsB.
+Require Rfunctions.
 Require Rseries.
-Require Alembert.
-Require Rcomplet.
-Require Binome.
-
-(* Tout entier s'ecrit sous la forme 2p ou 2p+1 *)
-Lemma even_odd_cor : (n:nat) (EX p : nat | n=(mult (2) p)\/n=(S (mult (2) p))).
-Intro.
-Assert H := (even_or_odd n).
-Exists (div2 n).
-Assert H0 := (even_odd_double n).
-Elim H0; Intros.
-Elim H1; Intros H3 _.
-Elim H2; Intros H4 _.
-Replace (mult (2) (div2 n)) with (Div2.double (div2 n)).
-Elim H; Intro.
-Left.
-Apply H3; Assumption.
-Right.
-Apply H4; Assumption.
-Unfold Div2.double; Ring.
-Qed.
+Require SeqProp.
+Require PartSum.
+Require Max.
 
 (**********)
 Definition tg_alt [Un:nat->R] : nat->R := [i:nat]``(pow (-1) i)*(Un i)``.
 Definition positivity_sui [Un:nat->R] : Prop := (n:nat)``0<=(Un n)``.
-
-(**********)
-Lemma pow_1_even : (n:nat) ``(pow (-1) (mult (S (S O)) n))==1``.
-Intro; Induction n.
-Reflexivity.
-Replace (mult (2) (S n)) with (plus (2) (mult (2) n)).
-Rewrite pow_add; Rewrite Hrecn; Simpl; Ring.
-Replace (S n) with (plus n (1)); [Ring | Ring].
-Qed.
-
-(**********)
-Lemma pow_1_odd : (n:nat) ``(pow (-1) (S (mult (S (S O)) n)))==-1``.
-Intro; Replace (S (mult (2) n)) with (plus (mult (2) n) (1)); [Idtac | Ring].
-Rewrite pow_add; Rewrite pow_1_even; Simpl; Ring.
-Qed.
 
 (* Croissance des sommes partielles impaires *)
 Lemma CV_ALT_step1 : (Un:nat->R) (Un_decreasing Un) -> (Un_growing [N:nat](sum_f_R0 (tg_alt Un) (S (mult (2) N)))).
@@ -147,25 +112,6 @@ Unfold tg_alt; Simpl; Ring.
 Apply lt_O_Sn.
 Qed.
 
-(**********)
-Lemma pow_1_abs : (n:nat) ``(Rabsolu (pow (-1) n))==1``.
-Intro; Induction n.
-Simpl; Apply Rabsolu_R1.
-Replace (S n) with (plus n (1)); [Rewrite pow_add | Ring].
-Rewrite Rabsolu_mult.
-Rewrite Hrecn; Rewrite Rmult_1l; Simpl; Rewrite Rmult_1r; Rewrite Rabsolu_Ropp; Apply Rabsolu_R1.
-Qed.
-
-(* 2m <= 2n => m<=n *)
-Lemma le_double : (m,n:nat) (le (mult (2) m) (mult (2) n)) -> (le m n).
-Intros; Apply INR_le.
-Assert H1 := (le_INR ? ? H).
-Do 2 Rewrite mult_INR in H1.
-Apply Rle_monotony_contra with ``(INR (S (S O)))``.
-Replace (INR (S (S O))) with ``2``; [Apply Rgt_2_0 | Reflexivity].
-Assumption.
-Qed.
-
 (* Ceci donne quasiment le résultat sur la convergence des séries alternées *)
 Lemma CV_ALT : (Un:nat->R) (Un_decreasing Un) -> (positivity_sui Un) -> (Un_cv Un R0) -> (sigTT R [l:R](Un_cv [N:nat](sum_f_R0 (tg_alt Un) N) l)).
 Intros.
@@ -197,9 +143,9 @@ Rewrite tech5; Ring.
 Rewrite H12; Apply Rlt_trans with ``eps/2``.
 Apply H7; Assumption.
 Unfold Rdiv; Apply Rlt_monotony_contra with ``2``.
-Apply Rgt_2_0.
+Sup0.
 Rewrite (Rmult_sym ``2``); Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Rewrite Rmult_1r | DiscrR].
-Rewrite Rlimit.double.
+Rewrite Rbase.double.
 Pattern 1 eps; Rewrite <- (Rplus_Or eps); Apply Rlt_compatibility; Assumption.
 Elim H10; Intro; Apply le_double.
 Rewrite <- H11; Apply le_trans with N.
@@ -212,52 +158,6 @@ Unfold N; Apply lt_le_trans with (S (mult (2) N1)).
 Apply lt_n_Sn.
 Apply le_max_l.
 Assumption.
-Qed.
-
-(**********)
-Lemma growing_ineq : (Un:nat->R;l:R) (Un_growing Un) -> (Un_cv Un l) -> ((n:nat)``(Un n)<=l``). 
-Intros; Case (total_order_T (Un n) l); Intro.
-Elim s; Intro.
-Left; Assumption.
-Right; Assumption.
-Cut ``0<(Un n)-l``.
-Intro; Unfold Un_cv in H0; Unfold R_dist in H0.
-Elim (H0 ``(Un n)-l`` H1); Intros N1 H2.
-Pose N := (max n N1).
-Cut ``(Un n)-l<=(Un N)-l``.
-Intro; Cut ``(Un N)-l<(Un n)-l``.
-Intro; Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H3 H4)).
-Apply Rle_lt_trans with ``(Rabsolu ((Un N)-l))``.
-Apply Rle_Rabsolu.
-Apply H2.
-Unfold ge N; Apply le_max_r.
-Unfold Rminus; Do 2 Rewrite <- (Rplus_sym ``-l``); Apply Rle_compatibility.
-Apply tech9.
-Assumption.
-Unfold N; Apply le_max_l.
-Apply Rlt_anti_compatibility with l.
-Rewrite Rplus_Or.
-Replace ``l+((Un n)-l)`` with (Un n); [Assumption | Ring].
-Qed.
-
-(* Un->l => (-Un) -> (-l) *)
-Lemma CV_opp : (An:nat->R;l:R) (Un_cv An l) -> (Un_cv (opp_sui An) ``-l``).
-Intros An l.
-Unfold Un_cv; Unfold R_dist; Intros.
-Elim (H eps H0); Intros.
-Exists x; Intros.
-Unfold opp_sui; Replace ``-(An n)- (-l)`` with ``-((An n)-l)``; [Rewrite Rabsolu_Ropp | Ring].
-Apply H1; Assumption.
-Qed.
-
-(**********)
-Lemma decreasing_ineq : (Un:nat->R;l:R) (Un_decreasing Un) -> (Un_cv Un l) -> ((n:nat)``l<=(Un n)``).
-Intros.
-Assert H1 := (decreasing_growing ? H).
-Assert H2 := (CV_opp ? ? H0).
-Assert H3 := (growing_ineq ? ? H1 H2).
-Apply Ropp_Rle.
-Unfold opp_sui in H3; Apply H3.
 Qed.
 
 (************************************************)
@@ -338,7 +238,7 @@ Qed.
 
 Lemma PI_tg_cv : (Un_cv PI_tg R0).
 Unfold Un_cv; Unfold R_dist; Intros.
-Cut ``0<2*eps``; [Intro | Apply Rmult_lt_pos; [Apply Rgt_2_0 | Assumption]].
+Cut ``0<2*eps``; [Intro | Apply Rmult_lt_pos; [Sup0 | Assumption]].
 Assert H1 := (archimed ``/(2*eps)``).
 Cut (Zle `0` ``(up (/(2*eps)))``).
 Intro; Assert H3 := (IZN ``(up (/(2*eps)))`` H2).
@@ -369,10 +269,10 @@ Symmetry; Apply S_pred with O.
 Assumption.
 Apply Rle_lt_trans with ``/(INR (mult (S (S O)) N))``.
 Apply Rle_monotony_contra with ``(INR (mult (S (S O)) N))``.
-Rewrite mult_INR; Apply Rmult_lt_pos; [Apply Rgt_2_0 | Apply lt_INR_0; Assumption].
+Rewrite mult_INR; Apply Rmult_lt_pos; [Simpl; Sup0 | Apply lt_INR_0; Assumption].
 Rewrite <- Rinv_r_sym.
 Apply Rle_monotony_contra with ``(INR (mult (S (S O)) n))``.
-Rewrite mult_INR; Apply Rmult_lt_pos; [Apply Rgt_2_0 | Apply lt_INR_0; Assumption].
+Rewrite mult_INR; Apply Rmult_lt_pos; [Simpl; Sup0 | Apply lt_INR_0; Assumption].
 Rewrite (Rmult_sym (INR (mult (S (S O)) n))); Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym.
 Do 2 Rewrite Rmult_1r; Apply le_INR.
 Apply mult_le; Assumption.
@@ -388,7 +288,7 @@ Rewrite mult_INR.
 Rewrite Rinv_Rmult.
 Replace (INR (S (S O))) with ``2``; [Idtac | Reflexivity].
 Apply Rlt_monotony_contra with ``2``.
-Apply Rgt_2_0.
+Sup0.
 Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym; [Idtac | DiscrR].
 Rewrite Rmult_1l; Apply Rlt_monotony_contra with (INR N).
 Apply lt_INR_0; Assumption.
@@ -457,7 +357,7 @@ Unfold Rdiv in H; Apply Rlt_le_trans with ``(sum_f_R0 (tg_alt PI_tg) (S (mult (S
 Simpl; Unfold tg_alt; Simpl; Rewrite Rmult_1l; Rewrite Rmult_1r; Apply Rlt_anti_compatibility with ``(PI_tg (S O))``.
 Rewrite Rplus_Or; Replace ``(PI_tg (S O))+((PI_tg O)+ -1*(PI_tg (S O)))`` with ``(PI_tg O)``; [Unfold PI_tg | Ring].
 Simpl; Apply Rinv_lt.
-Rewrite Rmult_1l; Replace ``2+1`` with ``3``; [Apply Rgt_3_0 | Ring].
-Rewrite Rplus_sym; Pattern 1 R1; Rewrite <- Rplus_Or; Apply Rlt_compatibility; Apply Rgt_2_0.
+Rewrite Rmult_1l; Replace ``2+1`` with ``3``; [Sup0 | Ring].
+Rewrite Rplus_sym; Pattern 1 R1; Rewrite <- Rplus_Or; Apply Rlt_compatibility; Sup0.
 Assumption.
 Qed.

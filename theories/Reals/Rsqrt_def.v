@@ -9,16 +9,10 @@
 (*i $Id$ i*)
 
 Require Sumbool.
-Require Rbase.
-Require DiscrR.
-Require Rseries.
-Require Alembert.
-Require Rcomplet.
-Require AltSeries.
-Require Rtrigo_alt.
-Require Cv_prop.
+Require RealsB.
+Require Rfunctions.
+Require SeqSeries.
 Require Ranalysis1.
-
 
 Fixpoint Dichotomie_lb [x,y:R;P:R->bool;N:nat] : R :=
 Cases N of 
@@ -42,7 +36,7 @@ Simpl; Assumption.
 Simpl.
 Case (P ``((Dichotomie_lb x y P n)+(Dichotomie_ub x y P n))/2``).
 Unfold Rdiv; Apply Rle_monotony_contra with ``2``.
-Apply Rgt_2_0.
+Sup0.
 Pattern 1 ``2``; Rewrite Rmult_sym.
 Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Idtac | DiscrR].
 Rewrite Rmult_1r.
@@ -50,7 +44,7 @@ Rewrite double.
 Apply Rle_compatibility.
 Assumption.
 Unfold Rdiv; Apply Rle_monotony_contra with ``2``.
-Apply Rgt_2_0.
+Sup0.
 Pattern 3 ``2``; Rewrite Rmult_sym.
 Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Idtac | DiscrR].
 Rewrite Rmult_1r.
@@ -68,7 +62,7 @@ Simpl.
 Case (P ``((Dichotomie_lb x y P n)+(Dichotomie_ub x y P n))/2``).
 Right; Reflexivity.
 Unfold Rdiv; Apply Rle_monotony_contra with ``2``.
-Apply Rgt_2_0.
+Sup0.
 Pattern 1 ``2``; Rewrite Rmult_sym.
 Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Idtac | DiscrR].
 Rewrite Rmult_1r.
@@ -84,7 +78,7 @@ Intro.
 Simpl.
 Case (P ``((Dichotomie_lb x y P n)+(Dichotomie_ub x y P n))/2``).
 Unfold Rdiv; Apply Rle_monotony_contra with ``2``.
-Apply Rgt_2_0.
+Sup0.
 Pattern 3 ``2``; Rewrite Rmult_sym.
 Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Idtac | DiscrR].
 Rewrite Rmult_1r.
@@ -105,7 +99,7 @@ Simpl.
 Case (P ``((Dichotomie_lb x y P n)+(Dichotomie_ub x y P n))/2``).
 Assumption.
 Unfold Rdiv; Apply Rle_monotony_contra with ``2``.
-Apply Rgt_2_0.
+Sup0.
 Pattern 3 ``2``; Rewrite Rmult_sym.
 Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Rewrite Rmult_1r | DiscrR].
 Rewrite double; Apply Rplus_le.
@@ -138,7 +132,7 @@ Simpl; Assumption.
 Simpl.
 Case (P ``((Dichotomie_lb x y P n)+(Dichotomie_ub x y P n))/2``).
 Unfold Rdiv; Apply Rle_monotony_contra with ``2``.
-Apply Rgt_2_0.
+Sup0.
 Pattern 1 ``2``; Rewrite Rmult_sym.
 Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Rewrite Rmult_1r | DiscrR].
 Rewrite double; Apply Rplus_le.
@@ -225,7 +219,7 @@ Intro.
 Replace (S n) with (plus n (1)); [Unfold pow_2_n; Rewrite pow_add | Ring].
 Pattern 1 (pow ``2`` n); Rewrite <- Rmult_1r.
 Apply Rle_monotony.
-Left; Apply pow_lt; Apply Rgt_2_0.
+Left; Apply pow_lt; Sup0.
 Simpl.
 Rewrite Rmult_1r.
 Pattern 1 R1; Rewrite <- Rplus_Or; Apply Rle_compatibility; Left; Apply Rlt_R0_R1.
@@ -263,11 +257,11 @@ Assert H0 := (archimed M); Elim H0; Intros.
 Left; Apply Rlt_trans with M; Assumption.
 Exists O; Intros.
 Rewrite <- b.
-Unfold pow_2_n; Apply pow_lt; Apply Rgt_2_0.
+Unfold pow_2_n; Apply pow_lt; Sup0.
 Exists O; Intros.
 Apply Rlt_trans with R0.
 Assumption.
-Unfold pow_2_n; Apply pow_lt; Apply Rgt_2_0.
+Unfold pow_2_n; Apply pow_lt; Sup0.
 Induction N.
 Simpl.
 Left; Apply Rlt_R0_R1.
@@ -285,7 +279,7 @@ Pattern 1 (pow ``2`` n); Rewrite <- Rplus_Or.
 Rewrite <- (Rmult_sym ``2``).
 Rewrite double.
 Apply Rle_compatibility.
-Left; Apply pow_lt; Apply Rgt_2_0.
+Left; Apply pow_lt; Sup0.
 Qed.
 
 Lemma cv_dicho : (x,y,l1,l2:R;P:R->bool) ``x<=y`` -> (Un_cv (dicho_lb x y P) l1) -> (Un_cv (dicho_up x y P) l2) -> l1==l2.

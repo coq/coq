@@ -8,7 +8,9 @@
 
 (*i $Id$ i*)
 
-Require Export Rseries.
+Require RealsB.
+Require Rfunctions.
+Require SeqSeries.
 
 (*****************************************************************)
 (*           To define transcendental functions                  *)

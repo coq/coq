@@ -16,9 +16,16 @@
 (*                                                      *)
 (********************************************************)
 
-Require Export Rlimit.
+Require RealsB.
+Require Export R_Ifp.
+Require Export Rbasic_fun.
+Require Export R_sqr.
+Require Export SplitAbsolu.
+Require Export SplitRmult.
+Require Export ArithProp.
 Require Omega.
-Require Import Zpower.
+Require Zpower.
+
 
 (*******************************)
 (**     Factorial              *)
@@ -47,6 +54,11 @@ Qed.
 Lemma INR_fact_neq_0:(n:nat)~(INR (fact n))==R0.
 Intro;Red;Intro;Apply (not_O_INR (fact n) (fact_neq_0 n));Assumption.
 Qed.    
+
+(*********)
+Lemma fact_simpl : (n:nat) (fact (S n))=(mult (S n) (fact n)).
+Intro; Reflexivity.
+Qed. 
 
 (*********)
 Lemma simpl_fact:(n:nat)(Rmult (Rinv (INR (fact (S n)))) 
@@ -391,6 +403,137 @@ Red;Intro;Absurd ``(pow r (S n0)) == 1``;Auto.
 Simpl; Rewrite H; Rewrite Rmult_Ol; Auto with real.
 Qed.
 
+Lemma pow_Rsqr : (x:R;n:nat) (pow x (mult (2) n))==(pow (Rsqr x) n).
+Intros; Induction n.
+Reflexivity.
+Replace (mult (2) (S n)) with (S (S (mult (2) n))).
+Replace (pow x (S (S (mult (2) n)))) with ``x*x*(pow x (mult (S (S O)) n))``.
+Rewrite Hrecn; Reflexivity.
+Simpl; Ring.
+Apply INR_eq; Do 2 Rewrite S_INR; Do 2 Rewrite mult_INR; Repeat Rewrite S_INR; Ring.
+Qed.
+
+Lemma pow_le : (a:R;n:nat) ``0<=a`` -> ``0<=(pow a n)``.
+Intros; Induction n.
+Simpl; Left; Apply Rlt_R0_R1.
+Simpl; Apply Rmult_le_pos; Assumption.
+Qed.
+
+(**********)
+Lemma pow_1_even : (n:nat) ``(pow (-1) (mult (S (S O)) n))==1``.
+Intro; Induction n.
+Reflexivity.
+Replace (mult (2) (S n)) with (plus (2) (mult (2) n)).
+Rewrite pow_add; Rewrite Hrecn; Simpl; Ring.
+Replace (S n) with (plus n (1)); [Ring | Ring].
+Qed.
+
+(**********)
+Lemma pow_1_odd : (n:nat) ``(pow (-1) (S (mult (S (S O)) n)))==-1``.
+Intro; Replace (S (mult (2) n)) with (plus (mult (2) n) (1)); [Idtac | Ring].
+Rewrite pow_add; Rewrite pow_1_even; Simpl; Ring.
+Qed.
+
+(**********)
+Lemma pow_1_abs : (n:nat) ``(Rabsolu (pow (-1) n))==1``.
+Intro; Induction n.
+Simpl; Apply Rabsolu_R1.
+Replace (S n) with (plus n (1)); [Rewrite pow_add | Ring].
+Rewrite Rabsolu_mult.
+Rewrite Hrecn; Rewrite Rmult_1l; Simpl; Rewrite Rmult_1r; Rewrite Rabsolu_Ropp; Apply Rabsolu_R1.
+Qed.
+
+Lemma pow_mult : (x:R;n1,n2:nat) (pow x (mult n1 n2))==(pow (pow x n1) n2).
+Intros; Induction n2.
+Simpl; Replace (mult n1 O) with O; [Reflexivity | Ring].
+Replace (mult n1 (S n2)) with (plus (mult n1 n2) n1).
+Replace (S n2) with (plus n2 (1)); [Idtac | Ring].
+Do 2 Rewrite pow_add.
+Rewrite Hrecn2.
+Simpl.
+Ring.
+Apply INR_eq; Rewrite plus_INR; Do 2 Rewrite mult_INR; Rewrite S_INR; Ring.
+Qed.
+
+Lemma pow_incr : (x,y:R;n:nat) ``0<=x<=y`` -> ``(pow x n)<=(pow y n)``.
+Intros.
+Induction n.
+Right; Reflexivity.
+Simpl.
+Elim H; Intros.
+Apply Rle_trans with ``y*(pow x n)``.
+Do 2 Rewrite <- (Rmult_sym (pow x n)).
+Apply Rle_monotony.
+Apply pow_le; Assumption.
+Assumption.
+Apply Rle_monotony.
+Apply Rle_trans with x; Assumption.
+Apply Hrecn.
+Qed.
+
+Lemma pow_R1_Rle : (x:R;k:nat) ``1<=x`` -> ``1<=(pow x k)``.
+Intros.
+Induction k.
+Right; Reflexivity.
+Simpl.
+Apply Rle_trans with ``x*1``.
+Rewrite Rmult_1r; Assumption.
+Apply Rle_monotony.
+Left; Apply Rlt_le_trans with R1; [Apply Rlt_R0_R1 | Assumption].
+Exact Hreck.
+Qed.
+
+Lemma Rle_pow : (x:R;m,n:nat) ``1<=x`` -> (le m n) -> ``(pow x m)<=(pow x n)``.
+Intros.
+Replace n with (plus (minus n m) m).
+Rewrite pow_add.
+Rewrite Rmult_sym.
+Pattern 1 (pow x m); Rewrite <- Rmult_1r.
+Apply Rle_monotony.
+Apply pow_le; Left; Apply Rlt_le_trans with R1; [Apply Rlt_R0_R1 | Assumption].
+Apply pow_R1_Rle; Assumption.
+Rewrite plus_sym.
+Symmetry; Apply le_plus_minus; Assumption.
+Qed.
+
+Lemma pow1 : (n:nat) (pow R1 n)==R1.
+Intro; Induction n.
+Reflexivity.
+Simpl; Rewrite Hrecn; Rewrite Rmult_1r; Reflexivity.
+Qed.
+
+Lemma pow_Rabs : (x:R;n:nat) ``(pow x n)<=(pow (Rabsolu x) n)``.
+Intros; Induction n.
+Right; Reflexivity.
+Simpl; Case (case_Rabsolu x); Intro.
+Apply Rle_trans with (Rabsolu ``x*(pow x n)``).
+Apply Rle_Rabsolu.
+Rewrite Rabsolu_mult.
+Apply Rle_monotony.
+Apply Rabsolu_pos.
+Right; Symmetry; Apply Pow_Rabsolu.
+Pattern 1 (Rabsolu x); Rewrite (Rabsolu_right x r); Apply Rle_monotony.
+Apply Rle_sym2; Exact r.
+Apply Hrecn.
+Qed.
+
+Lemma pow_maj_Rabs : (x,y:R;n:nat) ``(Rabsolu y)<=x`` -> ``(pow y n)<=(pow x n)``.
+Intros; Cut ``0<=x``.
+Intro; Apply Rle_trans with (pow (Rabsolu y) n).
+Apply pow_Rabs.
+Induction n.
+Right; Reflexivity.
+Simpl; Apply Rle_trans with ``x*(pow (Rabsolu y) n)``.
+Do 2 Rewrite <- (Rmult_sym (pow (Rabsolu y) n)).
+Apply Rle_monotony.
+Apply pow_le; Apply Rabsolu_pos.
+Assumption.
+Apply Rle_monotony.
+Apply H0.
+Apply Hrecn.
+Apply Rle_trans with (Rabsolu y); [Apply Rabsolu_pos | Exact H].
+Qed.
+
 (*******************************)
 (**         PowerRZ            *)
 (*******************************)
@@ -580,6 +723,63 @@ Rewrite Rplus_sym;Rewrite (Rplus_sym
   Apply Rle_compatibility;Assumption.
 Qed.
 
+(*******************************)
+(*        Distance  in R       *)
+(*******************************)
+
+(*********)
+Definition R_dist:R->R->R:=[x,y:R](Rabsolu (Rminus x y)).
+
+(*********)
+Lemma R_dist_pos:(x,y:R)(Rge (R_dist x y) R0).
+Intros;Unfold R_dist;Unfold Rabsolu;Case (case_Rabsolu (Rminus x y));Intro l.
+Unfold Rge;Left;Apply (Rlt_RoppO (Rminus x y) l).
+Trivial.
+Qed.
+
+(*********)
+Lemma R_dist_sym:(x,y:R)(R_dist x y)==(R_dist y x).
+Unfold R_dist;Intros;SplitAbsolu;Ring.
+Generalize (Rlt_RoppO (Rminus y x) r); Intro;
+ Rewrite (Ropp_distr2 y x) in H;
+ Generalize (Rlt_antisym (Rminus x y) R0 r0); Intro;Unfold Rgt in H;
+ ElimType False; Auto.
+Generalize (minus_Rge y x r); Intro;
+ Generalize (minus_Rge x y r0); Intro;
+ Generalize (Rge_ge_eq x y H0 H); Intro;Rewrite H1;Ring.
+Qed.
+
+(*********)
+Lemma R_dist_refl:(x,y:R)((R_dist x y)==R0<->x==y).
+Unfold R_dist;Intros;SplitAbsolu;Split;Intros.
+Rewrite (Ropp_distr2 x y) in H;Apply sym_eqT;
+ Apply (Rminus_eq y x H).
+Rewrite (Ropp_distr2 x y);Generalize (sym_eqT R x y H);Intro;
+ Apply (eq_Rminus y x H0).
+Apply (Rminus_eq x y H).
+Apply (eq_Rminus x y H). 
+Qed.
+
+Lemma R_dist_eq:(x:R)(R_dist x x)==R0.
+Unfold R_dist;Intros;SplitAbsolu;Intros;Ring.
+Qed.
+
+(***********)
+Lemma R_dist_tri:(x,y,z:R)(Rle (R_dist x y) 
+                   (Rplus (R_dist x z) (R_dist z y))).
+Intros;Unfold R_dist; Replace ``x-y`` with ``(x-z)+(z-y)``;
+  [Apply (Rabsolu_triang ``x-z`` ``z-y``)|Ring].
+Qed.
+
+(*********)
+Lemma R_dist_plus: (a,b,c,d:R)(Rle (R_dist (Rplus a c) (Rplus b d))
+                   (Rplus (R_dist a b) (R_dist c d))).
+Intros;Unfold R_dist;
+ Replace (Rminus (Rplus a c) (Rplus b d))
+  with (Rplus (Rminus a b) (Rminus c d)).
+Exact (Rabsolu_triang (Rminus a b) (Rminus c d)).
+Ring.
+Qed.
 
 (*******************************)
 (**       Infinit Sum          *)
@@ -588,5 +788,3 @@ Qed.
 Definition infinit_sum:(nat->R)->R->Prop:=[s:nat->R;l:R]
   (eps:R)(Rgt eps R0)->
   (Ex[N:nat](n:nat)(ge n N)->(Rlt (R_dist (sum_f_R0 s n) l) eps)).
-
-
