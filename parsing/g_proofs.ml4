@@ -116,9 +116,11 @@ GEXTEND Gram
   ;
   hints:
     [ [ IDENT "Resolve"; l = LIST1 global; dbnames = opt_hintbases ->
-         (dbnames, HintsResolve (List.map (fun qid -> (None, CRef qid)) l))
+         (dbnames, 
+	  HintsResolve (List.map (fun qid -> (None, CAppExpl(loc,qid,[]))) l))
       | IDENT "Immediate"; l = LIST1 global; dbnames = opt_hintbases ->
-        (dbnames, HintsImmediate (List.map (fun qid -> (None, CRef qid)) l))
+        (dbnames, 
+	 HintsImmediate (List.map (fun qid-> (None, CAppExpl (loc,qid,[]))) l))
       | IDENT "Unfold"; l = LIST1 global; dbnames = opt_hintbases ->
         (dbnames, HintsUnfold (List.map (fun qid -> (None,qid)) l)) ] ]
     ;

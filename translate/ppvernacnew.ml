@@ -112,10 +112,10 @@ let pr_printoption a b = match a with
 
 let pr_set_option a b = 
   let pr_opt_value = function 
-    | IntValue n -> int n
-    | StringValue s -> str s
+    | IntValue n -> spc() ++ int n
+    | StringValue s -> spc() ++ str s
     | BoolValue b -> mt()
-  in pr_printoption a None ++ spc() ++ pr_opt_value b
+  in pr_printoption a None ++ pr_opt_value b
 
 let pr_topcmd _ = str"(* <Warning> : No printer for toplevel commands *)"
 
@@ -135,7 +135,7 @@ let pr_hints db h pr_c =
       |	Some name,_ -> (true , pr_id name) in
   let opth = pr_opt_hintbases db  in
   let pr_aux = function
-    | CRef qid -> pr_reference qid
+    | CAppExpl (_,qid,[]) -> pr_reference qid
     | _ -> mt () in
   match h with
     | HintsResolve l ->
