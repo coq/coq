@@ -70,7 +70,7 @@ let require () =
   List.iter
     (fun s -> 
       let qid = Nametab.make_short_qualid (id_of_string (Filename.basename s)) in
-      Library.require_module None qid  (Some s) false)
+      Library.require_module_from_file None qid s false)
     (List.rev !require_list)
 
 let compile_list = ref ([] : (bool * string) list)

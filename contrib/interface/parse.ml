@@ -58,14 +58,21 @@ let ctf_FileErrorMessage reqid pps =
 (*In the code for CoqV6.2, the require_module call is encapsulated in
   a function "without_mes_ambig".  Here I have supposed that this
   function has no effect on parsing *)
-let try_require_module import specif name fname =
+let try_require_module import specif names =
  try Library.require_module 
    (if specif = "UNSPECIFIED" then None
     else Some (specif = "SPECIFICATION"))
-   (Nametab.make_short_qualid (Names.id_of_string name))
-   fname (import = "IMPORT")
+   (List.map (fun name -> Nametab.make_short_qualid (Names.id_of_string name))
+      names)
+   (import = "IMPORT")
  with
-   | e -> msgnl (str "Reinterning of " ++ str name ++ str " failed");;
+   | e -> msgnl (str "Reinterning of " ++ prlist str names ++ str " failed");;
+
+let try_require_module_from_file import specif name fname =
+ try Library.require_module_from_file (if specif = "UNSPECIFIED" then None
+  else Some (specif = "SPECIFICATION")) (Nametab.make_short_qualid (Names.id_of_string name)) fname (import = "IMPORT")
+ with
+ | e -> msgnl (str "Reinterning of " ++ str name ++ str " failed");;
 
 let execute_when_necessary ast =
  (match ast with
@@ -74,13 +81,16 @@ let execute_when_necessary ast =
   | Node (_, "TOKEN", ((Str (_, s)) :: [])) -> Metasyntax.add_token_obj s
   | Node (_, "Require",
             ((Str (_, import)) ::
-              ((Str (_, specif)) :: ((Nvar (_, mname)) :: [])))) ->
-   try_require_module import specif mname None
+              ((Str (_, specif)) :: l))) ->
+   let mnames = List.map (function
+     | (Nvar (_, m)) -> m
+     | _ -> error "parse_string_action : bad require expression") l in
+   try_require_module import specif mnames
   | Node (_, "RequireFrom",
             ((Str (_, import)) ::
               ((Str (_, specif)) ::
                 ((Nvar (_, mname)) :: ((Str (_, file_name)) :: []))))) ->
-   try_require_module import specif mname (Some file_name)
+   try_require_module_from_file import specif mname file_name
   | _ -> ()); ast;;
 
 let parse_to_dot =
@@ -371,8 +381,7 @@ let load_syntax_action reqid module_name =
       (let qid = Nametab.make_short_qualid (Names.id_of_string module_name) in
       read_module qid;
       msg (str "opening... ");
-      let fullname = Nametab.locate_loaded_library qid in 
-      import_module fullname; 
+      import_module false qid; 
       msgnl (str "done" ++ fnl ());
       ())
  with

@@ -348,23 +348,33 @@ let _ =
 
 let _ =
   add "ReadModule"
-    (function 
-       | [VARG_QUALID qid] ->
-	   fun () -> without_mes_ambig Library.read_module qid
-       | _ -> bad_vernac_args "ReadModule")
+    (function l ->
+       let l =
+         List.map
+           (function
+              | VARG_QUALID qid -> qid
+              | _ -> bad_vernac_args "ReadModule") l in
+       fun () -> List.iter Library.read_module l)
 
 let _ =
   add "ImportModule"
-    (function 
-       | [VARG_QUALID qid] ->
-	   fun () ->
-	     let fullname =
-               try Nametab.locate_loaded_library qid
-               with Not_found -> 
-                 error ((Nametab.string_of_qualid qid)^" not loaded")
-             in
-	     without_mes_ambig Library.import_module fullname
-       | _ -> bad_vernac_args "ImportModule")
+    (function l ->
+       let l =
+         List.map
+           (function
+              | VARG_QUALID qid -> qid
+              | _ -> bad_vernac_args "ImportModule") l in 
+       fun () -> List.iter (Library.import_module false) l)
+
+let _ =
+  add "ExportModule"
+    (function l ->
+       let l =
+         List.map
+           (function
+              | VARG_QUALID qid -> qid
+              | _ -> bad_vernac_args "ExportModule") l in
+       fun () -> List.iter (Library.import_module true) l)
 
 let _ =
   add "PrintModules"
@@ -1260,16 +1270,19 @@ let _ =
 let _ =
   add "Require"
     (function 
-       | [VARG_STRING import; VARG_STRING specif; VARG_QUALID qid] ->
-	   fun () -> 
-	     without_mes_ambig 
-	       (Library.require_module 
-      		  (if specif="UNSPECIFIED" then 
-		     None 
-		   else 
-		     Some (specif="SPECIFICATION"))
-		  qid None)
-      	       (import="EXPORT") 
+       | VARG_STRING import :: VARG_STRING specif :: l ->
+           let l =
+             List.map
+               (function
+                  | VARG_QUALID qid -> qid
+                  | _ -> bad_vernac_args "Require") l in
+           let spec =
+             if specif="UNSPECIFIED" then 
+	       None 
+	     else 
+	       Some (specif="SPECIFICATION") in
+           let export = (import="EXPORT") in
+	   fun () -> Library.require_module spec l export
        | _ -> bad_vernac_args "Require")
 
 let _ =
@@ -1278,14 +1291,13 @@ let _ =
        | [VARG_STRING import; VARG_STRING specif;
       	  VARG_QUALID qid; VARG_STRING filename] ->
 	   (fun () -> 
-	      without_mes_ambig 
-		(Library.require_module 
-      		   (if specif="UNSPECIFIED" then 
-		      None 
-		    else 
-		      Some (specif="SPECIFICATION"))
-		   qid (Some filename))
-		(import="EXPORT"))
+	      Library.require_module_from_file
+      		(if specif="UNSPECIFIED" then 
+		   None 
+		 else 
+		   Some (specif="SPECIFICATION"))
+		qid filename
+	        (import="EXPORT"))
        | _ -> bad_vernac_args "RequireFrom")
 
 let _ =

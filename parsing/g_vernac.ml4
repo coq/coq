@@ -429,10 +429,11 @@ GEXTEND Gram
             <:ast< (CompileFile ($STR $verbosely) ($STR $only_spec)
                       ($STR $mname) ($STR $fname))>>
 *)
-      | IDENT "Read"; IDENT "Module"; qid = qualidarg ->
-          <:ast< (ReadModule $qid) >>
+      | IDENT "Read"; IDENT "Module"; qidl = LIST1 qualidarg ->
+          <:ast< (ReadModule ($LIST $qidl)) >>
       | IDENT "Require"; import = import_tok; specif = specif_tok;
-        qid = qualidarg -> <:ast< (Require $import $specif $qid) >>
+        qidl = LIST1 qualidarg ->
+          <:ast< (Require $import $specif ($LIST $qidl)) >>
       | IDENT "Require"; import = import_tok; specif = specif_tok;
         qid = qualidarg; filename = stringarg ->
           <:ast< (RequireFrom $import $specif $qid $filename) >>
@@ -442,8 +443,10 @@ GEXTEND Gram
 	  <:ast< (WriteModule $id $s) >>
       | IDENT "Declare"; IDENT "ML"; IDENT "Module";
         l = ne_stringarg_list -> <:ast< (DeclareMLModule ($LIST $l)) >>
-      | IDENT "Import"; qid = qualidarg -> <:ast< (ImportModule $qid) >>
-
+      | IDENT "Import"; qidl = ne_qualidarg_list ->
+          <:ast< (ImportModule ($LIST $qidl)) >>
+      | IDENT "Export"; qidl = ne_qualidarg_list ->
+          <:ast< (ExportModule ($LIST $qidl)) >>
   ] 
 ]
   ;
