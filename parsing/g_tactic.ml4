@@ -319,6 +319,11 @@ GEXTEND Gram
           <:ast< (DecomposeThese $c ($LIST $l)) >>
       | IDENT "Cut"; c = constrarg -> <:ast< (Cut $c) >>
       | IDENT "Assert"; c = constrarg -> <:ast< (TrueCut $c) >>
+      | IDENT "Assert"; c = constrarg; ":"; t = constrarg ->
+          let id = match c with 
+            | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var c
+            | _ -> assert false in
+	  <:ast< (TrueCut $t $id) >>
       | IDENT "Specialize"; n = pure_numarg; lcb = constrarg_binding_list ->
           <:ast< (Specialize $n ($LIST $lcb))>>
       | IDENT "Specialize"; lcb = constrarg_binding_list ->

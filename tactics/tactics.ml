@@ -604,10 +604,8 @@ let true_cut_anon c gl =
 let dyn_true_cut = function
   | [Command com] -> tactic_com_sort true_cut_anon com
   | [Constr  c]   -> true_cut_anon c
-(* Pas trouvé de syntaxe pour cela
   | [Command com; Identifier id] -> tactic_com_sort (true_cut id) com
   | [Constr  c; Identifier id]   -> true_cut id c
-*)
   | l             -> bad_tactic_args "true_cut" l
 
 let cut c gl =
