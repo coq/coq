@@ -136,11 +136,16 @@ let overwriting_interp_add (ast_typ,interp_fun) =
 let look_for_interp = Hashtbl.find interp_tab
 
 (* Globalizes the identifier *)
-let glob_nvar id =
+let glob_const_nvar loc id =
+  let sp = make_path [] id CCI in
   try
-    Nametab.sp_of_id CCI id
+    match Nametab.locate sp with
+      | ConstRef sp -> sp
+      | _ -> error ((string_of_path sp) ^ " does not denote a constant")
   with
-    | Not_found -> error ("unbound variable " ^ (string_of_id id))
+    | Not_found ->
+	Pretype_errors.error_global_not_found_loc loc sp
+
 
 (* Summary and Object declaration *)
 let mactab = ref Gmap.empty
@@ -823,8 +828,9 @@ and cvt_pattern (evc,env,lfun,lmatch,goalopt,debug) = function
   | arg -> invalid_arg_loc (Ast.loc arg,"cvt_pattern")
 
 and cvt_unfold (evc,env,lfun,lmatch,goalopt,debug) = function
-  | Node(_,"UNFOLD", com::nums) ->
-    (List.map num_of_ast nums,glob_nvar (id_of_Identifier (unvarg (val_interp
+  | Node(loc,"UNFOLD", com::nums) ->
+    (List.map num_of_ast nums,
+     glob_const_nvar loc (id_of_Identifier (unvarg (val_interp
        (evc,env,lfun,lmatch,goalopt,debug) com))))
   | arg -> invalid_arg_loc (Ast.loc arg,"cvt_unfold")
 
@@ -844,12 +850,14 @@ and flag_of_ast (evc,env,lfun,lmatch,goalopt,debug) lf =
 	(match lf with
 	   | Node(loc,"Unf",l)::lf ->
                let idl=
-		 List.map (fun v -> glob_nvar (id_of_Identifier (unvarg
+		 List.map
+		   (fun v -> glob_const_nvar loc (id_of_Identifier (unvarg
 		   (val_interp (evc,env,lfun,lmatch,goalopt,debug) v)))) l
 	       in add_flag (red_add red (CONST idl)) lf
 	   | Node(loc,"UnfBut",l)::lf ->
                let idl=
-		 List.map (fun v -> glob_nvar (id_of_Identifier (unvarg
+		 List.map
+		   (fun v -> glob_const_nvar loc (id_of_Identifier (unvarg
                    (val_interp (evc,env,lfun,lmatch,goalopt,debug) v)))) l
                in add_flag (red_add red (CONSTBUT idl)) lf
 	   | _ -> add_flag (red_add red DELTA) lf)
