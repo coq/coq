@@ -673,14 +673,14 @@ GEXTEND Gram
 	 op = ne_string; ":="; p = global; 
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
-         VernacInfix (local,(op,modl),p,Some(op,modl),sc)
+         VernacInfix (local,(op,modl),p,None,sc)
      | IDENT "Notation"; local = locality; id = ident; ":="; c = constr;
 	 b = [ "("; IDENT "only"; IDENT "parsing"; ")" -> true | -> false ] ->
            VernacSyntacticDefinition (id,c,local,b)
      | IDENT "Notation"; local = locality; s = ne_string; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
-           VernacNotation (local,c,Some(s,modl),Some(s,modl),sc)
+           VernacNotation (local,c,Some(s,modl),None,sc)
 
      | IDENT "Tactic"; IDENT "Notation"; s = ne_string; 
 	 pil = LIST0 production_item; ":="; t = Tactic.tactic -> 
