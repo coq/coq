@@ -121,7 +121,6 @@ let match_with_unit_type t =
 
 let is_unit_type t = op2bool (match_with_unit_type t)
 
-
 (* Checks if a given term is an application of an
    inductive binary relation R, so that R has only one constructor
    establishing its reflexivity.  *)
@@ -154,9 +153,33 @@ let match_with_nottype t =
 
 let is_nottype t = op2bool (match_with_nottype t)
 		     
-let is_imp_term c = match kind_of_term c with
-  | Prod (_,_,b) -> not (dependent (mkRel 1) b)
-  | _              -> false
+let is_imp_term c = 
+  match kind_of_term c with
+    | Prod (_,_,b) -> not (dependent (mkRel 1) b)
+    | _              -> false
 
+let rec has_nodep_prod_after n c =
+  match kind_of_term c with
+    | Prod (_,_,b) -> 
+	( n>0 || not (dependent (mkRel 1) b)) 
+	&& (has_nodep_prod_after (n-1) b)
+    | _            -> true
+	  
+let has_nodep_prod = has_nodep_prod_after 0
+	
+let match_with_nodep_ind t =
+  let (hdapp,args) = decompose_app t in
+  match (kind_of_term hdapp) with
+    | Ind ind  -> 
+        let (mib,mip) = Global.lookup_inductive ind in
+        let constr_types = mip.mind_nf_lc in 
+	let nodep_constr = has_nodep_prod_after mip.mind_nparams in	
+	if array_for_all nodep_constr constr_types then 
+	  Some (hdapp,args)
+        else 
+	  None
+    | _ -> None
+	  
+let is_nodep_ind t=op2bool (match_with_nodep_ind t)
 
 

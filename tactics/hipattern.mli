@@ -73,3 +73,16 @@ val is_equation            : testing_function
 
 val match_with_nottype     : (constr * constr) matching_function
 val is_nottype             : testing_function 
+
+
+(* I added these functions to test whether a type contains dependent
+  products or not, and if an inductive has constructors with dependent types
+ (excluding parameters). this is useful to check whether a conjunction is a
+ real conjunction and not a dependent tuple. (Pierre Corbineau, 13/5/2002) *)
+
+val has_nodep_prod_after   : int -> testing_function
+val has_nodep_prod         : testing_function
+
+val match_with_nodep_ind   : (constr * constr list) matching_function	  
+val is_nodep_ind           : testing_function 
+

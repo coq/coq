@@ -34,7 +34,8 @@ let is_unit ist =
     <:tactic<Fail>>
 
 let is_conj ist =
-  if (is_conjunction (List.assoc 1 ist.lmatch)) then
+  let ind=(List.assoc 1 ist.lmatch) in
+  if (is_conjunction ind) && (is_nodep_ind ind) then
      <:tactic<Idtac>>
   else
     <:tactic<Fail>>
