@@ -207,7 +207,11 @@ let rec norm_head info env t stack =
       (* allow substitution but leave let's in place *)
       let zeta = red_set (info_flags info) fZETA in
       let env' =
-	if zeta or red_set (info_flags info) fDELTA then 
+	if zeta 
+          (* New rule: for Cbv, Delta does not apply to locally bound variables
+          or red_set (info_flags info) fDELTA
+          *)
+        then 
 	  subs_cons (cbv_stack_term info TOP env b,env)
 	else
 	  subs_lift env in
