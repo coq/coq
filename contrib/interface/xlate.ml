@@ -536,9 +536,7 @@ let xlate_context_pattern = function
 
 
 let xlate_match_context_hyps = function
-  | NoHypId b -> CT_premise_pattern(ctv_ID_OPT_NONE, xlate_context_pattern b)
-  | Hyp ((_,id),b) -> CT_premise_pattern(ctf_ID_OPT_SOME (xlate_ident id),
-                                    xlate_context_pattern b)
+  | Hyp (na,b) -> CT_premise_pattern(xlate_id_opt na, xlate_context_pattern b)
 
 
 let xlate_largs_to_id_unit largs =
@@ -1554,7 +1552,8 @@ let xlate_vernac =
 	  (CT_co_ind co_or_ind, CT_ind_spec_list (List.map strip_mutind lmi))
    | VernacFixpoint [] -> xlate_error "mutual recursive"
    | VernacFixpoint (lm :: lmi) ->
-      let strip_mutrec (fid, n, arf, ardef) =
+      let strip_mutrec ((fid, n, arf, ardef), ntn) =
+	(* TODO: handle ntn in mutual recursive *)
         let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
         let arf = xlate_formula arf in
         let ardef = xlate_formula ardef in
