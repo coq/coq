@@ -397,7 +397,9 @@ let check_positivity env ntypes hyps nparams i indlc =
     let auxlcvect = abstract_mind_lc env auxntyp auxnpar auxlc in
     (* Extends the environment with a variable corresponding to
        the inductive def *)
-    let env' = push_rel (Anonymous,None,type_of_inductive env mi) env in
+    let env' =
+      push_rel (Anonymous,None,
+                hnf_prod_applist env (type_of_inductive env mi) lpar) env in
     let newidx = n + auxntyp in
     let _ = 
       (* fails if the inductive type occurs non positively *)
