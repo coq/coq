@@ -55,6 +55,8 @@ Uninterpreted Notation "- x" (at level 0) V8only (at level 40).
 Uninterpreted Notation "/ x" (at level 0)
   V8only (at level 30, left associativity).
 
+Uninterpreted V8Notation "x ^ y" (at level 20, left associativity).
+
 (** Notations for pairs *)
 
 Uninterpreted Notation "( x , y )" (at level 0)
