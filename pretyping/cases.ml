@@ -790,6 +790,11 @@ let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
   if Array.length cstrs = 0 then (* "TODO4-3" *)
     error "Inference of annotation for empty inductive types not implemented"
   else
+    (* Empiric normalization: p may depend in a irrelevant way on args of the*)
+    (* cstr as in [c:{_:Alpha & Beta}] Cases c of (existS a b)=>(a,b) end *)
+    let typs =
+      Array.map (local_strong (whd_betaevar empty_env (evars_of isevars))) typs
+    in
     let eqns = array_map2 prepare_unif_pb typs cstrs in
     (* First strategy: no dependencies at all *)
     let (cclargs,_,typn) = eqns.(mis_nconstr mis -1) in
