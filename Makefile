@@ -338,7 +338,7 @@ clean::
 LOGICVO=theories/Logic/Classical.vo          theories/Logic/Classical_Type.vo \
       theories/Logic/Classical_Pred_Set.vo   theories/Logic/Eqdep.vo          \
       theories/Logic/Classical_Pred_Type.vo  theories/Logic/Classical_Prop.vo \
-      theories/Logic/Eqdep_dec.vo
+      theories/Logic/Eqdep_dec.vo            theories/Logic/Decidable.vo
 
 ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
 	theories/Arith/Between.vo       theories/Arith/Le.vo          \
@@ -375,6 +375,16 @@ SETSVO=theories/Sets/Classical_sets.vo     theories/Sets/Permut.vo \
  theories/Sets/Multiset.vo          theories/Sets/Relations_3_facts.vo \
  theories/Sets/Partial_Order.vo     theories/Sets/Uniset.vo
 
+INTMAPVO=theories/IntMap/Adalloc.vo    theories/IntMap/Mapcanon.vo \
+theories/IntMap/Addec.vo      theories/IntMap/Mapcard.vo \
+theories/IntMap/Addr.vo       theories/IntMap/Mapc.vo \
+theories/IntMap/Adist.vo      theories/IntMap/Mapfold.vo \
+theories/IntMap/Allmaps.vo    theories/IntMap/Mapiter.vo \
+theories/IntMap/Fset.vo       theories/IntMap/Maplists.vo \
+theories/IntMap/Lsort.vo      theories/IntMap/Mapsubset.vo \
+theories/IntMap/Mapaxioms.vo  theories/IntMap/Map.vo \
+
+
 RELATIONSVO=theories/Relations/Newman.vo \
             theories/Relations/Operators_Properties.vo \
             theories/Relations/Relation_Definitions.vo \
@@ -400,7 +410,7 @@ REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Rderiv.vo       theories/Reals/Reals.vo 
 
 THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
-             $(SETSVO) $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)
+             $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)
 
 $(THEORIESVO): states/initial.coq
 
@@ -412,6 +422,7 @@ bool: $(BOOLVO)
 zarith: $(ZARITHVO)
 lists: $(LISTSVO)
 sets: $(SETSVO)
+intmap: $(INTMAPVO)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
 reals: $(REALSVO)
