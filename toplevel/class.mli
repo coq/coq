@@ -1,10 +1,14 @@
 
 (* $Id$ *)
 
+(*i*)
 open Names
 open Term
 open Classops
 open Declare
+(*i*)
+
+(* Classes and coercions. *)
 
 val try_add_new_coercion : identifier -> strength -> unit
 val try_add_new_coercion_subclass : identifier -> strength -> unit

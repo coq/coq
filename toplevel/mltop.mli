@@ -1,7 +1,8 @@
 
 (* $Id$ *)
 
-(* If there is a toplevel under Coq *)
+(* If there is a toplevel under Coq, it is described by the following 
+   record. *)
 type toplevel = {
   load_obj : string -> unit;
   use_file : string -> unit;

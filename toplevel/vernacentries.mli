@@ -7,6 +7,9 @@ open Term
 open Vernacinterp
 (*i*)
 
+(* Vernacular entries. This module registers almost all the vernacular entries,
+   by side-effects using [Vernacinterp.vinterp_add]. *)
+
 val join_binders : ('a list * 'b) list -> ('a * 'b) list
 val add : string -> (vernac_arg list -> unit -> unit) -> unit
 val show_script : unit -> unit

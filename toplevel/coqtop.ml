@@ -1,8 +1,6 @@
 
 (* $Id$ *)
 
-(* The Coq main module. *)
-
 open Pp
 open Util
 open System
@@ -15,7 +13,6 @@ let print_header () =
   Printf.printf "Welcome to Coq %s (%s)\n" Coq_config.version Coq_config.date;
   flush stdout
 
-let batch_mode = ref false
 let set_batch_mode () = batch_mode := true
 
 let remove_top_ml () = Mltop.remove ()

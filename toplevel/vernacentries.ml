@@ -783,8 +783,7 @@ let _ =
                        hypothesis_def_var (refining()) (string_of_id s) 
 			 stre c;
                        if coe then
-			 Class.try_add_new_coercion s stre;
-		       message ((string_of_id s) ^ " is assumed"))
+			 Class.try_add_new_coercion s stre)
                     sl)
 	       slcl
        | _ -> bad_vernac_args "VARIABLE")
@@ -800,8 +799,7 @@ let _ =
 	       (fun (sl,c) ->
 		  List.iter 
 		    (fun s -> 
-		       parameter_def_var (string_of_id s) c;
-		       message ((string_of_id s) ^ " is assumed"))
+		       parameter_def_var (string_of_id s) c)
 		    sl)
                slcl
        | _ -> bad_vernac_args "PARAMETER")

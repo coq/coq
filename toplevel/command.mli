@@ -7,6 +7,9 @@ open Term
 open Declare
 (*i*)
 
+(* Declaration functions. The following functions take ASTs, transform them
+   into [constr] and then call the corresponding functions of [Declare]. *)
+
 val definition_body : identifier -> strength -> Coqast.t -> unit
 
 val definition_body_red : identifier -> strength -> Coqast.t 

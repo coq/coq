@@ -5,6 +5,8 @@
 open Pp
 (*i*)
 
+(* A protected toplevel (used in Pcoq). *)
+
 val break_happened : bool ref
 val global_request_id : int ref
 val output_results_nl : std_ppcmds -> unit
