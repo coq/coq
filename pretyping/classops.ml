@@ -14,8 +14,8 @@ open Rawterm
 (* usage qque peu general: utilise aussi dans record *)
 
 type cte_typ = 
-  | NAM_Var of identifier
-  | NAM_Constant of section_path
+  | NAM_Section_Variable of variable_path
+  | NAM_Constant of constant_path
   | NAM_Inductive of inductive_path
   | NAM_Constructor of constructor_path
 
@@ -23,18 +23,17 @@ let cte_of_constr c = match kind_of_term c with
   | IsConst (sp,_) -> NAM_Constant sp
   | IsMutInd (ind_sp,_) -> NAM_Inductive ind_sp
   | IsMutConstruct (cstr_cp,_) -> NAM_Constructor cstr_cp
-  | IsVar id -> NAM_Var id
+  | IsVar id -> NAM_Section_Variable (find_section_variable id)
   |  _ -> raise Not_found
 
 type cl_typ = 
   | CL_SORT 
   | CL_FUN
-  | CL_Var of identifier
-  | CL_SP of section_path 
+  | CL_SECVAR of variable_path
+  | CL_CONST of constant_path
   | CL_IND of inductive_path
 
 type cl_info_typ = {
-  cL_STR : string;
   cL_STRE : strength;
   cL_PARAM : int }
 
@@ -98,10 +97,8 @@ let add_new_path x =
 
 let init () =
   cLASSES:= []; 
-  add_new_class1 (CL_FUN,{cL_STR="FUNCLASS";
-			  cL_PARAM=0;cL_STRE=NeverDischarge});
-  add_new_class1 (CL_SORT,{cL_STR="SORTCLASS";
-			   cL_PARAM=0;cL_STRE=NeverDischarge});
+  add_new_class1 (CL_FUN,  { cL_PARAM=0; cL_STRE=NeverDischarge });
+  add_new_class1 (CL_SORT, { cL_PARAM=0; cL_STRE=NeverDischarge });
   cOERCIONS:= [];
   iNHERITANCE_GRAPH:= []
 
@@ -140,7 +137,7 @@ let coe_of_reference = function
   | ConstRef sp -> NAM_Constant sp
   | IndRef sp -> NAM_Inductive sp
   | ConstructRef sp -> NAM_Constructor sp
-  | VarRef sp  -> NAM_Var (basename sp)
+  | VarRef sp  -> NAM_Section_Variable sp
   | EvarRef _ -> raise Not_found
 
 let coercion_params r =
@@ -175,8 +172,8 @@ let (inClass,outClass) =
                     cache_function = cache_class;
                     export_function = (function x -> Some x) })
 
-let add_new_class (cl,s,stre,p) = 
-  Lib.add_anonymous_leaf (inClass ((cl,{cL_STR=s;cL_STRE=stre;cL_PARAM=p})))
+let add_new_class (cl,stre,p) = 
+  Lib.add_anonymous_leaf (inClass ((cl,{cL_STRE=stre;cL_PARAM=p})))
    
 let _ = 
   Summary.declare_summary "inh_graph"
@@ -191,8 +188,8 @@ let _ =
 
 let constructor_at_head t = 
   let rec aux t' = match kind_of_term t' with
-    | IsVar id -> CL_Var id,0
-    | IsConst (sp,_) -> CL_SP sp,0
+    | IsVar id -> CL_SECVAR (find_section_variable id),0
+    | IsConst (sp,_) -> CL_CONST sp,0
     | IsMutInd (ind_sp,_) -> CL_IND ind_sp,0
     | IsProd (_,_,c) -> CL_FUN,0
     | IsLetIn (_,_,_,c) -> aux c
@@ -221,32 +218,32 @@ let class_of env sigma t =
 
 let class_args_of c = snd (decomp_app c)
 
-(* verfications pour l'ajout d'une classe *)
-
-let fully_applied id p p1 =
-  if p <> p1 then  errorlabstrm "fully_applied" 
-    [< 'sTR"Wrong number of parameters for ";'sTR(string_of_id id) >]
-
-let rec arity_sort a = match kind_of_term a with
-  | IsSort (Prop _ | Type _) -> 0
-  | IsProd (_,_,c) -> (arity_sort c) +1
-  | IsLetIn (_,_,_,c) -> arity_sort c    (* Utile ?? *)
-  | IsCast (c,_) -> arity_sort c
-  | _ -> raise Not_found
-
 let stre_of_cl = function 
-  | CL_SP sp ->
-      if is_constant sp then constant_or_parameter_strength sp
-      else NeverDischarge
-  | CL_Var id -> 
-      variable_strength (make_qualid [] (string_of_id id))
+  | CL_CONST sp -> constant_or_parameter_strength sp
+  | CL_SECVAR sp -> variable_strength sp
   | _ -> NeverDischarge
+
+let string_of_class = function
+  | CL_FUN -> "FUNCLASS"
+  | CL_SORT -> "SORTCLASS" 
+  | CL_CONST sp -> string_of_qualid (Global.qualid_of_global (ConstRef sp))
+  | CL_IND sp -> string_of_qualid (Global.qualid_of_global (IndRef sp))
+  | CL_SECVAR sp -> string_of_qualid (Global.qualid_of_global (VarRef sp))
 
 (* coe_value : int -> Term.constr * bool *)
 
 let coe_value i = 
-  let (_,{cOE_VALUE=v;cOE_ISID=b}) = coercion_info_from_index i in
-  v,b
+  let (coe,{cOE_VALUE=_;cOE_ISID=b}) = coercion_info_from_index i in
+  let env = Global.env () in
+  let v = match coe with 
+    | NAM_Section_Variable sp -> constr_of_reference Evd.empty env (VarRef sp)
+    | NAM_Constant sp -> constr_of_reference Evd.empty env (ConstRef sp)
+    | NAM_Constructor ((sp,i),j) ->
+	constr_of_reference Evd.empty env (ConstructRef ((sp,i),j))
+    | NAM_Inductive (sp,i) ->
+	constr_of_reference Evd.empty env (IndRef (sp,i)) in
+  let j = Retyping.get_judgment_of env Evd.empty v in
+  (j,b)
 
 (* pretty-print functions are now in Pretty *)
 (* rajouter une coercion dans le graphe *)

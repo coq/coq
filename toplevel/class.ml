@@ -35,33 +35,58 @@ let id_of_varid c = match kind_of_term c with
   | IsVar id -> id
   | _ -> anomaly "class__id_of_varid"
 
-let stre_of_VAR c =
-  variable_strength (make_qualid [] (string_of_id (destVar c)))
-
 (* lf liste des variable dont depend la coercion f
    lc liste des variable dont depend la classe source *)
 
 let rec stre_unif_cond = function
   | ([],[]) -> NeverDischarge
-  | (v::l,[]) -> stre_of_VAR v
-  | ([],v::l) -> stre_of_VAR v
+  | (v::l,[]) -> variable_strength v
+  | ([],v::l) -> variable_strength v
   | (v1::l1,v2::l2) ->
       if v1=v2 then 
 	stre_unif_cond (l1,l2)
       else
-	let stre1 = (stre_of_VAR v1)
-	and stre2 = (stre_of_VAR v2) in 
+	let stre1 = (variable_strength v1)
+	and stre2 = (variable_strength v2) in 
 	stre_max (stre1,stre2)
 
 let stre_of_coe = function
   | NAM_Constant sp -> constant_or_parameter_strength sp
-  | NAM_Var id -> variable_strength (make_qualid [] (string_of_id id))
+  | NAM_Section_Variable sp -> variable_strength sp
   | NAM_Inductive _ | NAM_Constructor _ -> NeverDischarge 
+
+(* verfications pour l'ajout d'une classe *)
+
+let rec arity_sort a = match kind_of_term a with
+  | IsSort (Prop _ | Type _) -> 0
+  | IsProd (_,_,c) -> (arity_sort c) +1
+  | IsLetIn (_,_,_,c) -> arity_sort c    (* Utile ?? *)
+  | IsCast (c,_) -> arity_sort c
+  | _ -> raise Not_found
+
+let check_fully_applied cl p p1 =
+  if p <> p1 then  errorlabstrm "fully_applied" 
+    [< 'sTR"Wrong number of parameters for ";'sTR(string_of_class cl) >]
 	
 (* try_add_class : Names.identifier ->
   Term.constr -> (cl_typ * int) option -> bool -> int * Libobject.strength *)
 
-let try_add_class id v clpopt streopt check_exist = 
+let try_add_class v (cl,p) streopt check_exist = 
+  if check_exist & class_exists cl then
+    errorlabstrm "try_add_new_class" 
+      [< 'sTR (string_of_class cl) ; 'sTR " is already a class" >];
+  let stre' = stre_of_cl cl in 
+  let stre = match streopt with
+    | Some stre -> stre_max (stre,stre')
+    | None -> stre'
+  in
+  add_new_class (cl,stre,p);
+  stre
+
+(* try_add_new_class : Names.identifier -> unit *)
+
+let try_add_new_class id stre =
+  let v = global_reference CCI id in
   let env = Global.env () in
   let t = Retyping.get_type_of env Evd.empty v in
   let p1 =
@@ -72,27 +97,8 @@ let try_add_class id v clpopt streopt check_exist =
         [< 'sTR "Type of "; 'sTR (string_of_id id);
            'sTR " does not end with a sort" >] 
   in
-  let cl,p =
-    match clpopt with
-      | None -> let (cl,_)=constructor_at_head v in (cl,p1)
-      | Some (cl,p2) -> (fully_applied id p2 p1;cl,p1) 
-  in
-  if check_exist & class_exists cl then
-    errorlabstrm "try_add_new_class" 
-      [< 'sTR (string_of_id id) ; 'sTR " is already a class" >];
-  let stre' = stre_of_cl cl in 
-  let stre = match streopt with
-    | Some stre -> stre_max (stre,stre')
-    | None -> stre'
-  in
-  add_new_class (cl,(string_of_id id),stre,p);
-  stre
-
-(* try_add_new_class : Names.identifier -> unit *)
-
-let try_add_new_class id stre =
-  let v = global_reference CCI id in
-  let _ = try_add_class id v None (Some stre) true in () 
+  let cl = fst (constructor_at_head v) in
+  let _ = try_add_class v (cl,p1) (Some stre) true in () 
 
 (* check_class : Names.identifier ->
   Term.constr -> cl_typ -> int -> int * Libobject.strength *)
@@ -100,14 +106,21 @@ let try_add_new_class id stre =
 let check_class id v cl p =
   try 
     let _,clinfo = class_info cl in
-    if p = clinfo.cL_PARAM then 
-      clinfo.cL_STRE
-    else 
-      errorlabstrm "fully_applied" 
-	[< 'sTR"Wrong number of parameters for ";'sTR(string_of_id id) >]
+    check_fully_applied cl p clinfo.cL_PARAM;
+    clinfo.cL_STRE
   with Not_found -> 
-    try_add_class id v (Some (cl,p)) None false
-
+    let env = Global.env () in
+    let t = Retyping.get_type_of env Evd.empty v in
+    let p1 =
+      try 
+	arity_sort t 
+      with Not_found -> 
+	errorlabstrm "try_add_class" 
+          [< 'sTR "Type of "; 'sTR (string_of_id id);
+             'sTR " does not end with a sort" >] 
+    in
+    check_fully_applied cl p p1;
+    try_add_class v (cl,p1) None false
 
 (* decomposition de constr vers coe_typ *)
 
@@ -117,15 +130,19 @@ let coe_of_reference t =
     | IsConst (sp,l) -> (Array.to_list l),NAM_Constant sp
     | IsMutInd (ind_sp,l) -> (Array.to_list l),NAM_Inductive ind_sp
     | IsMutConstruct (cstr_sp,l) -> (Array.to_list l),NAM_Constructor cstr_sp
-    | IsVar id  -> [],NAM_Var id
+    | IsVar id  ->
+	let sp =
+	  try find_section_variable id 
+	  with Not_found -> anomaly "Not a reference"
+	in [],NAM_Section_Variable sp
     |  _ -> anomaly "Not a reference"
 
 let constructor_at_head1 t = 
   let rec aux t' =
     match kind_of_term t' with
-      | IsConst (sp,l) -> t',[],(Array.to_list l),CL_SP sp,0
+      | IsConst (sp,l) -> t',[],(Array.to_list l),CL_CONST sp,0
       | IsMutInd (ind_sp,l) -> t',[],(Array.to_list l),CL_IND ind_sp,0
-      | IsVar id -> t',[],[],CL_Var id,0
+      | IsVar id -> t',[],[],CL_SECVAR (find_section_variable id),0
       | IsCast (c,_) -> aux c
       | IsApp(f,args) -> 
 	  let t',_,l,c,_ = aux f in t',Array.to_list args,l,c,Array.length args
@@ -150,20 +167,11 @@ let uniform_cond nargs lt =
 let id_of_cl  = function
   | CL_FUN -> (id_of_string "FUNCLASS")
   | CL_SORT -> (id_of_string "SORTCLASS") 
-  | CL_SP sp -> (basename sp)
+  | CL_CONST sp -> (basename sp)
   | CL_IND (sp,i) ->
       (mind_nth_type_packet (Global.lookup_mind sp) i).mind_typename
-  | CL_Var id -> id 
+  | CL_SECVAR sp -> (basename sp)
 	
-let string_of_cl  = function
-  | CL_FUN -> "FUNCLASS"
-  | CL_SORT -> "SORTCLASS" 
-  | CL_SP sp -> string_of_id (basename sp)
-  | CL_IND (sp,i) ->
-      string_of_id
-	(mind_nth_type_packet (Global.lookup_mind sp) i).mind_typename
-  | CL_Var id -> string_of_id id 
-
 (* 
 lp est la liste (inverse'e) des arguments de la coercion
 ids est le nom de la classe source
@@ -258,7 +266,7 @@ let build_id_coercion idf_opt ids =
       | Some(idf) -> idf
       | None ->
 	  id_of_string ("Id_"^(string_of_id ids)^"_"^
-                        (string_of_cl (fst (constructor_at_head t)))) 
+                        (string_of_class (fst (constructor_at_head t)))) 
   in
   let constr_entry = 
     { const_entry_body = val_f; const_entry_type = None } in
@@ -367,42 +375,61 @@ let try_add_new_coercion_record id stre source =
 
 (* fonctions pour le discharge: plutot sale *)
 
+let count_extra_abstractions hyps ids_to_discard =
+  let _,n =
+    List.fold_left
+      (fun (hyps,n as sofar) id -> 
+	 match hyps with
+	   | (hyp,None,_)::rest when id = hyp ->(rest, n+1)
+	   | _ -> sofar)
+      (hyps,0) ids_to_discard
+  in n
+
 let defined_in_sec sp sec_sp = dirpath sp = sec_sp
 
-let process_class sec_sp ((cl,{cL_STR=s;cL_STRE=stre;cL_PARAM=p}) as x ) =
-  let env = Global.env () in
+let process_class sec_sp ids_to_discard x =
+  let (cl,{cL_STRE=stre; cL_PARAM=p}) = x in
+(*  let env = Global.env () in*)
   match cl with 
-    | CL_Var id -> x
-    | CL_SP sp -> 
+    | CL_SECVAR _ -> x
+    | CL_CONST sp -> 
         if defined_in_sec sp sec_sp then
 	  let ((_,spid,spk)) = repr_path sp in
-          let newsp = Lib.make_path spid CCI in 
+          let newsp = Lib.make_path spid CCI in
+	  let hyps = (Global.lookup_constant sp).const_hyps in
+	  let n = count_extra_abstractions hyps ids_to_discard in
+(*
           let v = global_reference CCI spid in
           let t = Retyping.get_type_of env Evd.empty v in
           let p = arity_sort t in
-          (CL_SP newsp,{cL_STR=s;cL_STRE=stre;cL_PARAM=p})
+*)
+          (CL_CONST newsp,{cL_STRE=stre;cL_PARAM=p+n})
         else 
 	  x
     | CL_IND (sp,i) ->
         if defined_in_sec sp sec_sp then
 	  let ((_,spid,spk)) = repr_path sp in
           let newsp = Lib.make_path spid CCI in 
+	  let hyps = (Global.lookup_mind sp).mind_hyps in
+	  let n = count_extra_abstractions hyps ids_to_discard in
+(*
           let v = global_reference CCI spid in
           let t = Retyping.get_type_of env Evd.empty v in
           let p = arity_sort t in
-          (CL_IND (newsp,i),{cL_STR=s;cL_STRE=stre;cL_PARAM=p})
+*)
+          (CL_IND (newsp,i),{cL_STRE=stre;cL_PARAM=p+n})
         else 
 	  x
     | _ -> anomaly "process_class" 
 
 let process_cl sec_sp cl =
   match cl with
-    | CL_Var id -> CL_Var id 
-    | CL_SP sp ->
+    | CL_SECVAR id -> cl
+    | CL_CONST sp ->
 	if defined_in_sec sp sec_sp then
 	  let ((_,spid,spk)) = repr_path sp in
           let newsp = Lib.make_path spid CCI in 
-          CL_SP newsp
+          CL_CONST newsp
         else 
 	  cl
     | CL_IND (sp,i) ->
@@ -418,9 +445,8 @@ let process_cl sec_sp cl =
 let process_coercion sec_sp (((coe,coeinfo),s,t) as x) =
   let s1= process_cl sec_sp s in
   let t1 = process_cl sec_sp t in
-  let p = (snd (class_info s1)).cL_PARAM in
   match coe with 
-    | NAM_Var id -> ((coe,coeinfo),s1,t1)
+    | NAM_Section_Variable _ -> ((coe,coeinfo),s1,t1)
     | NAM_Constant sp -> 
 	if defined_in_sec sp sec_sp then
 	  let ((_,spid,spk)) = repr_path sp in

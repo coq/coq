@@ -15,18 +15,17 @@ open Rawterm
 type cl_typ = 
   | CL_SORT 
   | CL_FUN 
-  | CL_Var of identifier 
-  | CL_SP of section_path
+  | CL_SECVAR of variable_path
+  | CL_CONST of constant_path
   | CL_IND of inductive_path
 
 type cl_info_typ = {
-  cL_STR : string;
   cL_STRE : strength;
   cL_PARAM : int }
 
 type cte_typ = 
-  | NAM_Var of identifier 
-  | NAM_Constant of section_path
+  | NAM_Section_Variable of variable_path
+  | NAM_Constant of constant_path
   | NAM_Inductive of inductive_path
   | NAM_Constructor of constructor_path
 
@@ -70,13 +69,14 @@ val lookup_path_between : (int * int) -> inheritance_path
 val lookup_path_to_fun_from : int -> inheritance_path
 val lookup_path_to_sort_from : int -> inheritance_path
 val coe_value : int -> (unsafe_judgment * bool)
-val arity_sort : constr -> int
-val fully_applied : identifier -> int -> int -> unit
 val stre_of_cl : cl_typ -> strength
-val add_new_class : (cl_typ * string * strength * int) -> unit
+val add_new_class : cl_typ * strength * int -> unit
 val add_new_coercion_in_graph : 
   (coe_typ * coe_info_typ) * cl_typ * cl_typ -> unit
 val add_coercion_in_graph : int * int * int -> unit
 
 val install_path_printer : 
   ((int * int) * inheritance_path -> std_ppcmds) -> unit
+
+(* This is for printing purpose *)
+val string_of_class : cl_typ -> string
