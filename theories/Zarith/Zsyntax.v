@@ -14,50 +14,50 @@ with number :=
 
 with negnumber := 
 
-with formula :=
+with formula : constr :=
   form_expr [ expr($p) ] -> [$p]
-| form_eq [ expr($p) "=" expr($c) ] -> [<<(eq Z $p $c)>>]
-| form_le [ expr($p) "<=" expr($c) ] -> [<<(Zle $p $c)>>]
-| form_lt [ expr($p) "<" expr($c) ] -> [<<(Zlt $p $c)>>]
-| form_ge [ expr($p) ">=" expr($c) ] -> [<<(Zge $p $c)>>]
-| form_gt [ expr($p) ">" expr($c) ] -> [<<(Zgt $p $c)>>]
+| form_eq [ expr($p) "=" expr($c) ] -> [ (eq Z $p $c) ]
+| form_le [ expr($p) "<=" expr($c) ] -> [ (Zle $p $c) ]
+| form_lt [ expr($p) "<" expr($c) ] -> [ (Zlt $p $c) ]
+| form_ge [ expr($p) ">=" expr($c) ] -> [ (Zge $p $c) ]
+| form_gt [ expr($p) ">" expr($c) ] -> [ (Zgt $p $c) ]
 | form_eq_eq [ expr($p) "=" expr($c) "=" expr($c1) ]
-              -> [<<(eq Z $p $c)/\(eq Z $c $c1)>>]
+              -> [ (eq Z $p $c)/\(eq Z $c $c1) ]
 | form_le_le [ expr($p) "<=" expr($c) "<=" expr($c1) ]
-              -> [<<(Zle $p $c)/\(Zle $c $c1)>>]
+              -> [ (Zle $p $c)/\(Zle $c $c1) ]
 | form_le_lt [ expr($p) "<=" expr($c) "<" expr($c1) ]
-              -> [<<(Zle $p $c)/\(Zlt $c $c1)>>]
+              -> [ (Zle $p $c)/\(Zlt $c $c1) ]
 | form_lt_le [ expr($p) "<" expr($c) "<=" expr($c1) ]
-              -> [<<(Zlt $p $c)/\(Zle $c $c1)>>]
+              -> [ (Zlt $p $c)/\(Zle $c $c1) ]
 | form_lt_lt [ expr($p) "<" expr($c) "<" expr($c1) ]
-              -> [<<(Zlt $p $c)/\(Zlt $c $c1)>>]
-| form_neq  [ expr($p) "<>" expr($c) ] -> [<< ~(eq Z $p $c)>>]
-| form_comp [ expr($p) "?=" expr($c) ] -> [<<(Zcompare $p $c)>>]
+              -> [ (Zlt $p $c)/\(Zlt $c $c1) ]
+| form_neq  [ expr($p) "<>" expr($c) ] -> [  ~(eq Z $p $c) ]
+| form_comp [ expr($p) "?=" expr($c) ] -> [ (Zcompare $p $c) ]
 
-with expr :=
-  expr_plus [ expr($p) "+" expr($c) ] -> [<<(Zplus $p $c)>>]
-| expr_minus [ expr($p) "-" expr($c) ] -> [<<(Zminus $p $c)>>]
+with expr : constr :=
+  expr_plus [ expr($p) "+" expr($c) ] -> [ (Zplus $p $c) ]
+| expr_minus [ expr($p) "-" expr($c) ] -> [ (Zminus $p $c) ]
 | expr2 [ expr2($e) ] -> [$e]
 
-with expr2 :=
-  expr_mult [ expr2($p) "*" expr2($c) ] -> [<<(Zmult $p $c)>>]
+with expr2 : constr :=
+  expr_mult [ expr2($p) "*" expr2($c) ] -> [ (Zmult $p $c) ]
 | expr1 [ expr1($e) ] -> [$e]
 
-with expr1 :=
-  expr_abs [ "|" expr($c) "|" ] -> [<<(Zabs $c)>>]
+with expr1 : constr :=
+  expr_abs [ "|" expr($c) "|" ] -> [ (Zabs $c) ]
 | expr0 [ expr0($e) ] -> [$e]
 
-with expr0 :=
-  expr_id [ ident($c) ] -> [$c]
+with expr0 : constr :=
+  expr_id [ constr:global($c) ] -> [ $c ]
 | expr_com [ "[" constr:constr($c) "]" ] -> [$c]
 | expr_appl [ "(" application($a) ")" ] -> [$a]
 | expr_num [ number($s) ] -> [$s ]
 | expr_negnum [ "-" negnumber($n) ] -> [ $n ]
-| expr_inv [ "-" expr0($c) ] -> [<<(Zopp $c)>>] 
+| expr_inv [ "-" expr0($c) ] -> [ (Zopp $c) ] 
 
-with application :=
-  apply [ application($p) expr($c1) ] -> [<<($p $c1)>>]
-| pair [ expr($p) "," expr($c) ] -> [<<($p, $c)>>]
+with application : constr :=
+  apply [ application($p) expr($c1) ] -> [ ($p $c1) ]
+| pair [ expr($p) "," expr($c) ] -> [ ($p, $c) ]
 | appl0 [ expr($a) ] -> [$a]
 .
 
