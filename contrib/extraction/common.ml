@@ -380,14 +380,16 @@ let print_structure_to_file f prm struc =
      struct_type_search Tunknown struc)
   in
   (* print the implementation *)
-  let cout = match f with None -> stdout | Some (f,_) -> open_out f in
-  let ft = Pp_control.with_output_to cout in
+  let cout = option_app (fun (f,_) -> open_out f) f in 
+  let ft = match cout with 
+    | None -> !Pp_control.std_ft
+    | Some cout -> Pp_control.with_output_to cout in 
   begin try 
     msg_with ft (preamble prm used_modules print_dummys);
     msg_with ft (pp_struct struc);
-    if f <> None then close_out cout;
+    option_iter close_out cout; 
   with e -> 
-    if f <> None then close_out cout; raise e 
+    option_iter close_out cout; raise e
   end;
   (* print the signature *)
   match f with 
