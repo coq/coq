@@ -154,6 +154,12 @@ and fCOMMAND = function
    fID x2;
    fSTRING_OPT x3;
    fNODE "compile_module" 3
+| CT_declare_module(x1, x2, x3, x4) ->
+   fID x1;
+   fMODULE_BINDER_LIST x2;
+   fMODULE_TYPE_CHECK x3;
+   fMODULE_EXPR x4;
+   fNODE "declare_module" 4
 | CT_define_notation(x1, x2, x3, x4) ->
    fSTRING x1;
    fFORMULA x2;
@@ -201,6 +207,13 @@ and fCOMMAND = function
 | CT_export_id(x1) ->
    fID_NE_LIST x1;
    fNODE "export_id" 1
+| CT_extract_to_file(x1, x2) ->
+   fSTRING x1;
+   fID_NE_LIST x2;
+   fNODE "extract_to_file" 2
+| CT_extraction(x1) ->
+   fID_OPT x1;
+   fNODE "extraction" 1
 | CT_fix_decl(x1) ->
    fFIX_REC_LIST x1;
    fNODE "fix_decl" 1
@@ -323,9 +336,17 @@ and fCOMMAND = function
    fNODE "ml_declare_modules" 1
 | CT_ml_print_modules -> fNODE "ml_print_modules" 0
 | CT_ml_print_path -> fNODE "ml_print_path" 0
-| CT_module(x1) ->
+| CT_module(x1, x2, x3, x4) ->
    fID x1;
-   fNODE "module" 1
+   fMODULE_BINDER_LIST x2;
+   fMODULE_TYPE_CHECK x3;
+   fMODULE_EXPR x4;
+   fNODE "module" 4
+| CT_module_type_decl(x1, x2, x3) ->
+   fID x1;
+   fMODULE_BINDER_LIST x2;
+   fMODULE_TYPE_OPT x3;
+   fNODE "module_type_decl" 3
 | CT_omega_flag(x1, x2) ->
    fOMEGA_MODE x1;
    fOMEGA_FEATURE x2;
@@ -410,9 +431,6 @@ and fCOMMAND = function
 | CT_rec_ml_add_path(x1) ->
    fSTRING x1;
    fNODE "rec_ml_add_path" 1
-| CT_rec_tactic_definition(x1) ->
-   fREC_TACTIC_FUN_LIST x1;
-   fNODE "rec_tactic_definition" 1
 | CT_recaddpath(x1, x2) ->
    fSTRING x1;
    fID_OPT x2;
@@ -527,11 +545,9 @@ and fCOMMAND = function
    fFORMULA x2;
    fINT_OPT x3;
    fNODE "syntax_macro" 3
-| CT_tactic_definition(x1, x2, x3) ->
-   fID x1;
-   fID_UNIT_LIST x2;
-   fTACTIC_COM x3;
-   fNODE "tactic_definition" 3
+| CT_tactic_definition(x1) ->
+   fTAC_DEF_NE_LIST x1;
+   fNODE "tactic_definition" 1
 | CT_test_natural_feature(x1, x2) ->
    fNATURAL_FEATURE x1;
    fID x2;
@@ -899,18 +915,6 @@ and fID_OR_STRING_NE_LIST = function
    fID_OR_STRING x;
    (List.iter fID_OR_STRING l);
    fNODE "id_or_string_ne_list" (1 + (List.length l))
-and fID_UNIT = function
-| CT_coerce_ID_to_ID_UNIT x -> fID x
-| CT_unit -> fNODE "unit" 0
-and fID_UNIT_LIST = function
-| CT_id_unit_list l ->
-   (List.iter fID_UNIT l);
-   fNODE "id_unit_list" (List.length l)
-and fID_UNIT_NE_LIST = function
-| CT_id_unit_ne_list(x,l) ->
-   fID_UNIT x;
-   (List.iter fID_UNIT l);
-   fNODE "id_unit_ne_list" (1 + (List.length l))
 and fIMPEXP = function
 | CT_coerce_NONE_to_IMPEXP x -> fNONE x
 | CT_export -> fNODE "export" 0
@@ -1074,6 +1078,41 @@ and fMODIFIER_LIST = function
 | CT_modifier_list l ->
    (List.iter fMODIFIER l);
    fNODE "modifier_list" (List.length l)
+and fMODULE_BINDER = function
+| CT_module_binder(x1, x2) ->
+   fID_NE_LIST x1;
+   fMODULE_TYPE x2;
+   fNODE "module_binder" 2
+and fMODULE_BINDER_LIST = function
+| CT_module_binder_list l ->
+   (List.iter fMODULE_BINDER l);
+   fNODE "module_binder_list" (List.length l)
+and fMODULE_EXPR = function
+| CT_coerce_ID_OPT_to_MODULE_EXPR x -> fID_OPT x
+| CT_module_app(x1, x2) ->
+   fMODULE_EXPR x1;
+   fMODULE_EXPR x2;
+   fNODE "module_app" 2
+and fMODULE_TYPE = function
+| CT_coerce_ID_to_MODULE_TYPE x -> fID x
+| CT_module_type_with_def(x1, x2, x3) ->
+   fMODULE_TYPE x1;
+   fID x2;
+   fFORMULA x3;
+   fNODE "module_type_with_def" 3
+| CT_module_type_with_mod(x1, x2, x3) ->
+   fMODULE_TYPE x1;
+   fID x2;
+   fID x3;
+   fNODE "module_type_with_mod" 3
+and fMODULE_TYPE_CHECK = function
+| CT_coerce_MODULE_TYPE_OPT_to_MODULE_TYPE_CHECK x -> fMODULE_TYPE_OPT x
+| CT_only_check(x1) ->
+   fMODULE_TYPE x1;
+   fNODE "only_check" 1
+and fMODULE_TYPE_OPT = function
+| CT_coerce_ID_OPT_to_MODULE_TYPE_OPT x -> fID_OPT x
+| CT_coerce_MODULE_TYPE_to_MODULE_TYPE_OPT x -> fMODULE_TYPE x
 and fNATURAL_FEATURE = function
 | CT_contractible -> fNODE "contractible" 0
 | CT_implicit -> fNODE "implicit" 0
@@ -1161,7 +1200,7 @@ and fRECCONSTR_LIST = function
 and fREC_TACTIC_FUN = function
 | CT_rec_tactic_fun(x1, x2, x3) ->
    fID x1;
-   fID_UNIT_NE_LIST x2;
+   fID_OPT_NE_LIST x2;
    fTACTIC_COM x3;
    fNODE "rec_tactic_fun" 3
 and fREC_TACTIC_FUN_LIST = function
@@ -1611,6 +1650,9 @@ and fTACTIC_COM = function
 | CT_split(x1) ->
    fSPEC_LIST x1;
    fNODE "split" 1
+| CT_subst(x1) ->
+   fID_LIST x1;
+   fNODE "subst" 1
 | CT_superauto(x1, x2, x3, x4) ->
    fINT_OPT x1;
    fID_LIST x2;
@@ -1629,7 +1671,7 @@ and fTACTIC_COM = function
    (List.iter fTACTIC_COM l);
    fNODE "tacsolve" (1 + (List.length l))
 | CT_tactic_fun(x1, x2) ->
-   fID_UNIT_NE_LIST x1;
+   fID_OPT_NE_LIST x1;
    fTACTIC_COM x2;
    fNODE "tactic_fun" 2
 | CT_then(x,l) ->
@@ -1665,6 +1707,16 @@ and fTACTIC_COM = function
 and fTACTIC_OPT = function
 | CT_coerce_NONE_to_TACTIC_OPT x -> fNONE x
 | CT_coerce_TACTIC_COM_to_TACTIC_OPT x -> fTACTIC_COM x
+and fTAC_DEF = function
+| CT_tac_def(x1, x2) ->
+   fID x1;
+   fTACTIC_COM x2;
+   fNODE "tac_def" 2
+and fTAC_DEF_NE_LIST = function
+| CT_tac_def_ne_list(x,l) ->
+   fTAC_DEF x;
+   (List.iter fTAC_DEF l);
+   fNODE "tac_def_ne_list" (1 + (List.length l))
 and fTARG = function
 | CT_coerce_BINDING_to_TARG x -> fBINDING x
 | CT_coerce_COFIXTAC_to_TARG x -> fCOFIXTAC x

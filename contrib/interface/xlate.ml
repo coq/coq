@@ -174,10 +174,6 @@ let coerce_VARG_to_ID =
      x
     | _ -> xlate_error "coerce_VARG_to_ID";;
 
-let xlate_id_unit = function
-    None -> CT_unit
-  | Some x -> CT_coerce_ID_to_ID_UNIT (xlate_ident x);;
-
 let xlate_ident_opt =
   function
     | None -> ctv_ID_OPT_NONE
@@ -639,8 +635,12 @@ let xlate_context_pattern = function
 let xlate_match_context_hyps = function
   | Hyp (na,b) -> CT_premise_pattern(xlate_id_opt na, xlate_context_pattern b);;
 
-let xlate_largs_to_id_unit largs =
-  match List.map xlate_id_unit largs with
+let xlate_arg_to_id_opt = function
+    Some id -> CT_coerce_ID_to_ID_OPT(CT_ident (string_of_id id))
+  | None -> ctv_ID_OPT_NONE;;
+
+let xlate_largs_to_id_opt largs =
+  match List.map xlate_arg_to_id_opt largs with
       fst::rest -> fst, rest
     | _ -> assert false;;
 
@@ -765,31 +765,20 @@ and xlate_red_tactic =
       | [] -> error "Expecting at least one pattern in a Pattern command")
   | ExtraRedExpr _ -> xlate_error "TODO LATER: ExtraRedExpr (probably dead code)"
 
-and xlate_rec_tac = function
-  | ((_,x),TacFun (argl,tac)) ->
-      let fst, rest = xlate_largs_to_id_unit ((Some x)::argl) in
-	CT_rec_tactic_fun(xlate_ident x,
-			  CT_id_unit_ne_list(fst, rest),
-			  xlate_tactic tac)
-  | ((_,x),tac) ->
-      CT_rec_tactic_fun(xlate_ident x,
-			CT_id_unit_ne_list (xlate_id_unit (Some x), []),
-			xlate_tactic tac)
-
 and xlate_local_rec_tac = function 
  (* TODO LATER: local recursive tactics and global ones should be handled in
     the same manner *)
   | ((_,x),(argl,tac)) ->
-      let fst, rest = xlate_largs_to_id_unit ((Some x)::argl) in
+      let fst, rest = xlate_largs_to_id_opt argl in
 	CT_rec_tactic_fun(xlate_ident x,
-			  CT_id_unit_ne_list(fst, rest),
+			  CT_id_opt_ne_list(fst, rest),
 			  xlate_tactic tac)
 
 and xlate_tactic =
  function
    | TacFun (largs, t) ->
-       let fst, rest =  xlate_largs_to_id_unit largs in
-       CT_tactic_fun (CT_id_unit_ne_list(fst, rest), xlate_tactic t)
+       let fst, rest =  xlate_largs_to_id_opt largs in
+       CT_tactic_fun (CT_id_opt_ne_list(fst, rest), xlate_tactic t)
    | TacThen (t1,t2) -> 
        (match xlate_tactic t1 with
             CT_then(a,l) -> CT_then(a,l@[xlate_tactic t2])
@@ -999,6 +988,11 @@ and xlate_tac =
       let id = xlate_ident (out_gen rawwit_ident id) in
       if b then CT_cutrewrite_lr (c, ctf_ID_OPT_SOME id)
       else CT_cutrewrite_lr (c, ctf_ID_OPT_SOME id)
+    | TacExtend(_, "subst", [l]) ->
+	CT_subst
+	  (CT_id_list
+	     (List.map (fun x -> CT_ident (string_of_id x))
+		(out_gen (wit_list1 rawwit_ident) l)))
     | TacReflexivity -> CT_reflexivity
     | TacSymmetry cls -> CT_symmetry(xlate_clause cls)
     | TacTransitivity c -> CT_transitivity (xlate_formula c)
@@ -1515,22 +1509,18 @@ let rec xlate_module_expr = function
 
 let rec xlate_vernac =
  function
-   | VernacDeclareTacticDefinition (false,[(_,id),TacFun (largs,tac)]) ->
-       let fst, rest = xlate_largs_to_id_unit largs in
-       CT_tactic_definition(xlate_ident id,
-			    CT_id_unit_list (fst::rest),
-			    xlate_tactic tac)
-   | VernacDeclareTacticDefinition 
-       (true,((id,TacFun (largs,tac))::_ as the_list)) ->
-       let x_rec_tacs =
-	 List.map xlate_rec_tac the_list in
-       let fst, others = match x_rec_tacs with
-	   fst::others -> fst, others
-	 | _ -> assert false in
-       CT_rec_tactic_definition(CT_rec_tactic_fun_list(fst, others))
-    | VernacDeclareTacticDefinition (false,[(_,id),tac]) ->
-       CT_tactic_definition(xlate_ident id, CT_id_unit_list[], xlate_tactic tac)
-    | VernacDeclareTacticDefinition (loc,_) -> xlate_error "Shouldn't occur"
+   | VernacDeclareTacticDefinition (true, tacs) ->
+       (match List.map 
+	 (function
+	      ((_, id), body) ->
+		CT_tac_def(CT_ident (string_of_id id), xlate_tactic body))
+	 tacs with
+	     [] -> assert false
+	   | fst::tacs1 ->
+	       CT_tactic_definition
+		 (CT_tac_def_ne_list(fst, tacs1)))
+   | VernacDeclareTacticDefinition(false, _) -> 
+       xlate_error "obsolete tactic definition not handled"
     | VernacLoad (verbose,s) ->
       CT_load (
        (match verbose with

@@ -57,6 +57,7 @@ and ct_COMMAND =
   | CT_coercion of ct_LOCAL_OPT * ct_IDENTITY_OPT * ct_ID * ct_ID * ct_ID
   | CT_cofix_decl of ct_COFIX_REC_LIST
   | CT_compile_module of ct_VERBOSE_OPT * ct_ID * ct_STRING_OPT
+  | CT_declare_module of ct_ID * ct_MODULE_BINDER_LIST * ct_MODULE_TYPE_CHECK * ct_MODULE_EXPR
   | CT_define_notation of ct_STRING * ct_FORMULA * ct_MODIFIER_LIST * ct_ID_OPT
   | CT_definition of ct_DEFN * ct_ID * ct_BINDER_LIST * ct_DEF_BODY * ct_FORMULA_OPT
   | CT_delim_scope of ct_ID * ct_ID
@@ -67,6 +68,8 @@ and ct_COMMAND =
   | CT_explain_proof of ct_INT_LIST
   | CT_explain_prooftree of ct_INT_LIST
   | CT_export_id of ct_ID_NE_LIST
+  | CT_extract_to_file of ct_STRING * ct_ID_NE_LIST
+  | CT_extraction of ct_ID_OPT
   | CT_fix_decl of ct_FIX_REC_LIST
   | CT_focus of ct_INT_OPT
   | CT_go of ct_INT_OR_LOCN
@@ -98,7 +101,8 @@ and ct_COMMAND =
   | CT_ml_declare_modules of ct_STRING_NE_LIST
   | CT_ml_print_modules
   | CT_ml_print_path
-  | CT_module of ct_ID
+  | CT_module of ct_ID * ct_MODULE_BINDER_LIST * ct_MODULE_TYPE_CHECK * ct_MODULE_EXPR
+  | CT_module_type_decl of ct_ID * ct_MODULE_BINDER_LIST * ct_MODULE_TYPE_OPT
   | CT_omega_flag of ct_OMEGA_MODE * ct_OMEGA_FEATURE
   | CT_opaque of ct_ID_NE_LIST
   | CT_open_scope of ct_ID
@@ -135,7 +139,6 @@ and ct_COMMAND =
   | CT_quit
   | CT_read_module of ct_ID
   | CT_rec_ml_add_path of ct_STRING
-  | CT_rec_tactic_definition of ct_REC_TACTIC_FUN_LIST
   | CT_recaddpath of ct_STRING * ct_ID_OPT
   | CT_record of ct_COERCION_OPT * ct_ID * ct_BINDER_LIST * ct_FORMULA * ct_ID_OPT * ct_RECCONSTR_LIST
   | CT_remove_natural_feature of ct_NATURAL_FEATURE * ct_ID
@@ -174,7 +177,7 @@ and ct_COMMAND =
   | CT_solve of ct_INT * ct_TACTIC_COM
   | CT_suspend
   | CT_syntax_macro of ct_ID * ct_FORMULA * ct_INT_OPT
-  | CT_tactic_definition of ct_ID * ct_ID_UNIT_LIST * ct_TACTIC_COM
+  | CT_tactic_definition of ct_TAC_DEF_NE_LIST
   | CT_test_natural_feature of ct_NATURAL_FEATURE * ct_ID
   | CT_theorem_struct of ct_THEOREM_GOAL * ct_PROOF_SCRIPT
   | CT_time of ct_COMMAND
@@ -351,13 +354,6 @@ and ct_ID_OR_STRING =
   | CT_coerce_STRING_to_ID_OR_STRING of ct_STRING
 and ct_ID_OR_STRING_NE_LIST =
     CT_id_or_string_ne_list of ct_ID_OR_STRING * ct_ID_OR_STRING list
-and ct_ID_UNIT =
-    CT_coerce_ID_to_ID_UNIT of ct_ID
-  | CT_unit
-and ct_ID_UNIT_LIST =
-    CT_id_unit_list of ct_ID_UNIT list
-and ct_ID_UNIT_NE_LIST =
-    CT_id_unit_ne_list of ct_ID_UNIT * ct_ID_UNIT list
 and ct_IMPEXP =
     CT_coerce_NONE_to_IMPEXP of ct_NONE
   | CT_export
@@ -442,6 +438,23 @@ and ct_MODIFIER =
   | CT_set_level of ct_INT
 and ct_MODIFIER_LIST =
     CT_modifier_list of ct_MODIFIER list
+and ct_MODULE_BINDER =
+    CT_module_binder of ct_ID_NE_LIST * ct_MODULE_TYPE
+and ct_MODULE_BINDER_LIST =
+    CT_module_binder_list of ct_MODULE_BINDER list
+and ct_MODULE_EXPR =
+    CT_coerce_ID_OPT_to_MODULE_EXPR of ct_ID_OPT
+  | CT_module_app of ct_MODULE_EXPR * ct_MODULE_EXPR
+and ct_MODULE_TYPE =
+    CT_coerce_ID_to_MODULE_TYPE of ct_ID
+  | CT_module_type_with_def of ct_MODULE_TYPE * ct_ID * ct_FORMULA
+  | CT_module_type_with_mod of ct_MODULE_TYPE * ct_ID * ct_ID
+and ct_MODULE_TYPE_CHECK =
+    CT_coerce_MODULE_TYPE_OPT_to_MODULE_TYPE_CHECK of ct_MODULE_TYPE_OPT
+  | CT_only_check of ct_MODULE_TYPE
+and ct_MODULE_TYPE_OPT =
+    CT_coerce_ID_OPT_to_MODULE_TYPE_OPT of ct_ID_OPT
+  | CT_coerce_MODULE_TYPE_to_MODULE_TYPE_OPT of ct_MODULE_TYPE
 and ct_NATURAL_FEATURE =
     CT_contractible
   | CT_implicit
@@ -489,7 +502,7 @@ and ct_RECCONSTR =
 and ct_RECCONSTR_LIST =
     CT_recconstr_list of ct_RECCONSTR list
 and ct_REC_TACTIC_FUN =
-    CT_rec_tactic_fun of ct_ID * ct_ID_UNIT_NE_LIST * ct_TACTIC_COM
+    CT_rec_tactic_fun of ct_ID * ct_ID_OPT_NE_LIST * ct_TACTIC_COM
 and ct_REC_TACTIC_FUN_LIST =
     CT_rec_tactic_fun_list of ct_REC_TACTIC_FUN * ct_REC_TACTIC_FUN list
 and ct_RED_COM =
@@ -648,11 +661,12 @@ and ct_TACTIC_COM =
   | CT_simplify_eq of ct_ID_OPT
   | CT_specialize of ct_INT_OPT * ct_FORMULA * ct_SPEC_LIST
   | CT_split of ct_SPEC_LIST
+  | CT_subst of ct_ID_LIST
   | CT_superauto of ct_INT_OPT * ct_ID_LIST * ct_DESTRUCTING * ct_USINGTDB
   | CT_symmetry of ct_CLAUSE
   | CT_tac_double of ct_ID_OR_INT * ct_ID_OR_INT
   | CT_tacsolve of ct_TACTIC_COM * ct_TACTIC_COM list
-  | CT_tactic_fun of ct_ID_UNIT_NE_LIST * ct_TACTIC_COM
+  | CT_tactic_fun of ct_ID_OPT_NE_LIST * ct_TACTIC_COM
   | CT_then of ct_TACTIC_COM * ct_TACTIC_COM list
   | CT_transitivity of ct_FORMULA
   | CT_trivial
@@ -665,6 +679,10 @@ and ct_TACTIC_COM =
 and ct_TACTIC_OPT =
     CT_coerce_NONE_to_TACTIC_OPT of ct_NONE
   | CT_coerce_TACTIC_COM_to_TACTIC_OPT of ct_TACTIC_COM
+and ct_TAC_DEF =
+    CT_tac_def of ct_ID * ct_TACTIC_COM
+and ct_TAC_DEF_NE_LIST =
+    CT_tac_def_ne_list of ct_TAC_DEF * ct_TAC_DEF list
 and ct_TARG =
     CT_coerce_BINDING_to_TARG of ct_BINDING
   | CT_coerce_COFIXTAC_to_TARG of ct_COFIXTAC
