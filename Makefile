@@ -85,6 +85,7 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
         parsing/extend.cmo parsing/termast.cmo \
         parsing/esyntax.cmo parsing/printer.cmo parsing/pretty.cmo \
 	parsing/astterm.cmo parsing/egrammar.cmo
+ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo
 
 PROOFS=proofs/proof_trees.cmo proofs/logic.cmo \
        proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
@@ -107,7 +108,7 @@ CMXA=$(CMA:.cma=.cmxa)
 
 CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PRETYPING) $(PARSING) \
     $(PROOFS) $(TACTICS) $(TOPLEVEL)
-CMX=$(CMO:.cmo=.cmx)
+CMX=$(CMO:.cmo=.cmx) $(ARITHSYNTAX:.cmo=.cmx)
 
 ###########################################################################
 # Main targets
@@ -254,6 +255,15 @@ parsing/extend.cmx: parsing/extend.ml4 parsing/grammar.cma
 	$(OCAMLOPT) $(OPTFLAGS) -c -pp "$(CAMLP4GRAMMAR) -impl" -impl $<
 
 beforedepend:: $(GRAMMARCMO)
+
+# toplevel/mltop.ml4 (ifdef Opt)
+
+CAMLP4IFDEF=camlp4o pa_ifdef.cmo
+
+toplevel/mltop.cmo: toplevel/mltop.ml4
+	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4IFDEF) -DByte -impl" -impl $<
+toplevel/mltop.cmx: toplevel/mltop.ml4
+	$(OCAMLOPT) $(OPTFLAGS) -c -pp "$(CAMLP4IFDEF) -impl" -impl $<
 
 ###########################################################################
 # Default rules

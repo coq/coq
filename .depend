@@ -432,6 +432,18 @@ parsing/esyntax.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/extend.cmi \
     lib/gmap.cmi lib/gmapl.cmi lib/pp.cmi lib/util.cmi parsing/esyntax.cmi 
 parsing/esyntax.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/extend.cmi \
     lib/gmap.cmx lib/gmapl.cmx lib/pp.cmx lib/util.cmx parsing/esyntax.cmi 
+parsing/g_natsyntax.cmo: parsing/ast.cmi parsing/astterm.cmi \
+    parsing/coqast.cmi parsing/esyntax.cmi kernel/names.cmi parsing/pcoq.cmi \
+    lib/pp.cmi lib/util.cmi parsing/g_natsyntax.cmi 
+parsing/g_natsyntax.cmx: parsing/ast.cmx parsing/astterm.cmx \
+    parsing/coqast.cmx parsing/esyntax.cmx kernel/names.cmx parsing/pcoq.cmi \
+    lib/pp.cmx lib/util.cmx parsing/g_natsyntax.cmi 
+parsing/g_zsyntax.cmo: parsing/ast.cmi parsing/astterm.cmi parsing/coqast.cmi \
+    parsing/esyntax.cmi kernel/names.cmi parsing/pcoq.cmi lib/pp.cmi \
+    lib/util.cmi 
+parsing/g_zsyntax.cmx: parsing/ast.cmx parsing/astterm.cmx parsing/coqast.cmx \
+    parsing/esyntax.cmx kernel/names.cmx parsing/pcoq.cmi lib/pp.cmx \
+    lib/util.cmx 
 parsing/lexer.cmo: lib/util.cmi parsing/lexer.cmi 
 parsing/lexer.cmx: lib/util.cmx parsing/lexer.cmi 
 parsing/pretty.cmo: pretyping/classops.cmi kernel/constant.cmi \

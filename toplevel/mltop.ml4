@@ -84,7 +84,8 @@ let dir_ml_load s =
 	  errorlabstrm "Mltop.load_object"
             [< 'sTR"File not found on loadpath : "; 'sTR s >]
     | WithoutTop ->
-	if is_in_path !coq_mlpath_copy s then
+      ifdef Byte then
+	(if is_in_path !coq_mlpath_copy s then
           let gname = where_in_path !coq_mlpath_copy s in
           try
             Dynlink.loadfile gname;
@@ -97,7 +98,9 @@ let dir_ml_load s =
 		errorlabstrm "Mltop.load_object"
                   [< 'sTR (Dynlink.error_message a) >]
 	else errorlabstrm "Mltop.load_object"
-          [< 'sTR"File not found on loadpath : "; 'sTR s >]
+          [< 'sTR"File not found on loadpath : "; 'sTR s >])
+      else
+	()
     | Native ->
 	errorlabstrm "Mltop.no_load_object"
           [< 'sTR"Loading of ML object file forbidden in a native Coq" >]

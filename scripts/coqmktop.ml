@@ -17,8 +17,7 @@ let ocamlobjs = ["unix.cma"]
 let dynobjs = ["dynlink.cma"]
 let camlp4objs = ["gramlib.cma"]
 let configobjs = ["coq_config.cmo"]
-let launchobjs = ["usage.cmo"]
-let libobjs = ocamlobjs @ camlp4objs @ configobjs @ launchobjs
+let libobjs = ocamlobjs @ camlp4objs @ configobjs
 
 let spaces = Str.regexp "[ \t\n]+"
 let split_cmo l = Str.split spaces l
