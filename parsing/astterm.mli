@@ -72,6 +72,7 @@ val interp_constrpattern :
     bound idents in grammar or pretty-printing rules) *)
 val globalize_constr : Coqast.t -> Coqast.t
 val globalize_ast    : Coqast.t -> Coqast.t
+val globalize_qualid : Nametab.qualid -> Coqast.t
 
 (* This transforms args of a qualid keyword into a qualified ident *)
 (* it does no relocation *)

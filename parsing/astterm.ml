@@ -254,33 +254,6 @@ let ast_to_var (env,impls) (vars1,vars2) loc id =
       with _ -> []
   in RVar (loc, id), [], imps
 
-(********************************************************************)
-(* This is generic code to deal with globalization                  *)
-
-type 'a globalization_action = {
-  parse_var : identifier -> 'a;
-  parse_ref : extended_global_reference -> 'a;
-  fail : qualid -> 'a * int list;
-}
-
-let implicits_of_extended_reference = function
-  | TrueGlobal ref -> implicits_of_global ref
-  | SyntacticDef _ -> []
-
-let translate_qualid act qid =
-  (* Is it a bound variable? *)
-  try
-    match repr_qualid qid with
-      | [],id -> act.parse_var id, []
-      | _ -> raise Not_found
-  with Not_found ->
-  (* Is it a global reference or a syntactic definition? *)
-  try
-    let ref = Nametab.extended_locate qid in
-    act.parse_ref ref, implicits_of_extended_reference ref
-  with Not_found ->
-    act.fail qid
-
 (**********************************************************************)
 
 let rawconstr_of_var env vars loc id =
@@ -578,15 +551,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 (* Globalization of AST quotations (mainly used to get statically         *)
 (* bound idents in grammar or pretty-printing rules)                      *)
 (**************************************************************************)
-(*
-(* A brancher ultérieurement sur Termast.ast_of_ref *)
-let ast_of_ref loc = function
-  | ConstRef sp -> Node (loc, "CONST", [path_section loc sp])
-  | ConstructRef ((sp, i), j) ->
-        Node (loc, "MUTCONSTRUCT", [path_section loc sp; num i; num j])
-  | IndRef (sp, i) -> Node (loc, "MUTIND", [path_section loc sp; num i])
-  | VarRef sp -> failwith "ast_of_ref: TODO"
-*)
+
 let ast_of_ref_loc loc ref = set_loc loc (Termast.ast_of_ref ref)
 
 let ast_of_syndef loc sp = Node (loc, "SYNCONST", [path_section loc sp])
@@ -603,8 +568,35 @@ let ast_of_var env ast id =
 
 let ast_hole = Node (dummy_loc, "ISEVAR", [])
 
-let warning_globalize ast qid =
-  warning ("Could not globalize " ^ (string_of_qualid qid)); ast, []
+let implicits_of_extended_reference = function
+  | TrueGlobal ref -> implicits_of_global ref
+  | SyntacticDef _ -> []
+
+let warning_globalize qid =
+  warning ("Could not globalize " ^ (string_of_qualid qid))
+
+let globalize_qualid qid =
+  try
+    let ref = Nametab.extended_locate qid in
+    ast_of_extended_ref_loc dummy_loc ref
+  with Not_found ->
+    Options.if_verbose warning_globalize qid;
+    Termast.ast_of_qualid qid
+
+let adjust_qualid env loc ast qid =
+  (* Is it a bound variable? *)
+  try
+    match repr_qualid qid with
+      | [],id -> ast_of_var env ast id
+      | _ -> raise Not_found
+  with Not_found ->
+  (* Is it a global reference or a syntactic definition? *)
+  try
+    let ref = Nametab.extended_locate qid in
+    ast_of_extended_ref_loc loc ref
+  with Not_found ->
+    Options.if_verbose warning_globalize qid;
+    ast
 
 let ast_adjust_consts sigma =
   let rec dbrec env = function
@@ -623,13 +615,6 @@ let ast_adjust_consts sigma =
         Slam (loc, Some na, dbrec env' t)
     | Node (loc, opn, tl) -> Node (loc, opn, List.map (dbrec env) tl)
     | x -> x
-
-  and adjust_qualid env loc ast sp =
-    let act = {
-      parse_var = ast_of_var env ast;
-      parse_ref = ast_of_extended_ref_loc loc;
-      fail = warning_globalize ast } in
-    fst (translate_qualid act sp)
 
   in
   dbrec
