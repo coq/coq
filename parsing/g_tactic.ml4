@@ -54,6 +54,9 @@ GEXTEND Gram
     [ [ id = Constr.ident -> id
       | "?"; n = Prim.number -> <:ast< (COMMAND (META $n)) >> ] ]
   ;
+  idmetahyp:
+    [ [ id = idmeta_arg -> <:ast< (INHYP $id) >> ] ]
+  ;
   qualidarg:
     [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST l)) >>
       | "?"; n = Prim.number -> <:ast< (QUALIDMETA $n) >> ] ]
@@ -94,8 +97,8 @@ GEXTEND Gram
   ne_identarg_list:
     [ [ l = LIST1 identarg -> l ] ]
   ;
-  ne_idmeta_arg_list:
-    [ [ l = LIST1 idmeta_arg -> l ] ]
+  ne_idmetahyp_list:
+    [ [ l = LIST1 idmetahyp -> l ] ]
   ;
   ne_qualidarg_list:
     [ [ l = LIST1 qualidarg -> l ] ]
@@ -211,8 +214,15 @@ GEXTEND Gram
       | IDENT "Pattern"; pl = ne_pattern_list ->
           <:ast< (Pattern ($LIST $pl)) >> ] ]
   ;
+  hypident:
+    [ [ id = identarg -> <:ast< (INHYP $id) >>
+      | "("; "Type"; "of"; id = identarg; ")" -> <:ast< (INHYPTYPE $id) >> ] ]
+  ;
+  ne_hyp_list:
+    [ [ l = LIST1 hypident -> l ] ]
+  ;
   clausearg:
-    [ [ "in"; idl = ne_identarg_list -> <:ast< (CLAUSE ($LIST idl)) >>
+    [ [ "in"; idl = ne_hyp_list -> <:ast< (CLAUSE ($LIST idl)) >>
       | -> <:ast< (CLAUSE) >> ] ]
   ;
   fixdecl:
@@ -225,9 +235,6 @@ GEXTEND Gram
           <:ast< (COFIXEXP $id $c) >> :: fd
       | -> [] ] ]
   ;
- END
-
-GEXTEND Gram
   simple_tactic:
     [ [ IDENT "Fix"; n = pure_numarg -> <:ast< (Fix $n) >>
       | IDENT "Fix"; id = identarg; n = pure_numarg -> <:ast< (Fix $id $n) >>
@@ -300,8 +307,8 @@ GEXTEND Gram
              <:ast< (DecomposeAnd $c) >>
       | IDENT "Decompose"; IDENT "Sum"; c = constrarg -> 
              <:ast< (DecomposeOr $c) >>
-      | IDENT "Decompose"; "["; l = ne_identarg_list; "]"; c = constrarg ->
-          <:ast< (DecomposeThese (CLAUSE ($LIST $l)) $c) >>
+      | IDENT "Decompose"; "["; l = ne_qualidarg_list; "]"; c = constrarg ->
+          <:ast< (DecomposeThese $c ($LIST $l)) >>
       | IDENT "Cut"; c = constrarg -> <:ast< (Cut $c) >>
       | IDENT "Specialize"; n = pure_numarg; lcb = constrarg_binding_list ->
           <:ast< (Specialize $n ($LIST $lcb))>>
@@ -314,7 +321,7 @@ GEXTEND Gram
       | IDENT "LetTac"; s = identarg; ":="; c = constrarg; p = clause_pattern->
 	  <:ast< (LetTac $s $c $p) >>
       | IDENT "LApply"; c = constrarg -> <:ast< (CutAndApply $c) >>
-      | IDENT "Clear"; l = ne_idmeta_arg_list -> 
+      | IDENT "Clear"; l = ne_idmetahyp_list -> 
                 <:ast< (Clear (CLAUSE ($LIST $l))) >>
       | IDENT "Move"; id1 = identarg; IDENT "after"; id2 = identarg -> 
                 <:ast< (MoveDep $id1 $id2) >>

@@ -97,15 +97,16 @@ let head_in gls indl t =
     in List.mem ity indl
   with Induc -> false
        
-let inductive_of_ident gls id =
-  match kind_of_term (pf_global gls id) with
+let inductive_of_qualid gls qid =
+  let c = Declare.construct_qualified_reference (pf_env gls) qid in
+  match kind_of_term c with
     | IsMutInd ity -> ity
     | _ ->
 	errorlabstrm "Decompose"
-	  [< pr_id id; 'sTR " is not an inductive type" >]
+	  [< Nametab.pr_qualid qid; 'sTR " is not an inductive type" >]
 
 let decompose_these c l gls =
-  let indl = List.map (inductive_of_ident gls) l in 
+  let indl = List.map (inductive_of_qualid gls) l in 
   general_decompose (fun (_,t) -> head_in gls indl t) c gls
 
 let decompose_nonrec c gls =
@@ -123,17 +124,22 @@ let decompose_or c gls =
     (fun (_,t) -> is_disjunction t)
     c gls
 
-let dyn_decompose args gl = 
+let dyn_decompose args gl =
+  let out_qualid = function
+    | Qualid qid -> qid
+    | l -> bad_tactic_args "DecomposeThese" [l] gl in
   match args with 
-    | [Clause ids; Command c] -> 
-        decompose_these (pf_interp_constr gl c) ids gl
-    | [Clause ids; Constr c]  -> 
-        decompose_these c ids  gl
+    | Command c :: ids -> 
+        decompose_these (pf_interp_constr gl c) (List.map out_qualid ids) gl
+    | Constr c :: ids  -> 
+	decompose_these c (List.map out_qualid ids) gl
     | l -> bad_tactic_args "DecomposeThese" l gl
 	  
 let h_decompose =
   let v_decompose = hide_tactic "DecomposeThese" dyn_decompose in 
-  fun ids c -> v_decompose [Clause ids; Constr c] 
+  fun ids c ->
+    v_decompose 
+      (Constr c :: List.map (fun x -> Qualid (Nametab.qualid_of_sp x)) ids)
 
 let vernac_decompose_and = 
   hide_constr_tactic "DecomposeAnd" decompose_and

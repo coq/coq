@@ -58,11 +58,13 @@ let pf_nth_hyp_id gls n = let (id,c,t) = List.nth (pf_hyps gls) (n-1) in id
 
 let pf_last_hyp gl = List.hd (pf_hyps gl)
 
-let pf_get_hyp_typ gls id = 
+let pf_get_hyp gls id = 
   try 
-    body_of_type (snd (lookup_id id (pf_hyps gls)))
+    lookup_id id (pf_hyps gls)
   with Not_found -> 
     error ("No such hypothesis : " ^ (string_of_id id))
+
+let pf_get_hyp_typ gls id = snd (pf_get_hyp gls id)
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
 
@@ -229,9 +231,17 @@ let convert_concl c pf =
   refiner (Prim { name = Convert_concl; terms = [c];
                   hypspecs = []; newids = []; params = [] }) pf
 
-let convert_hyp id c pf = 
+let convert_hyp id t pf =
   refiner (Prim { name = Convert_hyp; hypspecs = [id];
-                  terms = [c]; newids = []; params = []}) pf
+                  terms = [t]; newids = []; params = []}) pf
+
+let convert_defbody id t pf =
+  refiner (Prim { name = Convert_defbody; hypspecs = [id];
+                  terms = [t]; newids = []; params = []}) pf
+
+let convert_deftype id t pf =
+  refiner (Prim { name = Convert_deftype; hypspecs = [id];
+                  terms = [t]; newids = []; params = []}) pf
 
 let thin ids gl = 
   refiner (Prim { name = Thin; hypspecs = ids;

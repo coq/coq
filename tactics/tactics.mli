@@ -102,39 +102,39 @@ val dyn_exact_check  : tactic_arg list -> tactic
 
 type 'a tactic_reduction = env -> enamed_declarations -> constr -> constr
 
-val reduct_in_hyp     : 'a tactic_reduction -> identifier -> tactic
-val reduct_option     : 'a tactic_reduction -> identifier option -> tactic
+val reduct_in_hyp     : 'a tactic_reduction -> hyp_location -> tactic
+val reduct_option     : 'a tactic_reduction -> hyp_location option -> tactic
 val reduct_in_concl   : 'a tactic_reduction -> tactic
 val change_in_concl   : constr -> tactic
 
-val change_in_hyp     : constr -> identifier -> tactic
-val change_option     : constr -> identifier option -> tactic
+val change_in_hyp     : constr -> hyp_location -> tactic
+val change_option     : constr -> hyp_location option -> tactic
 val red_in_concl      : tactic
-val red_in_hyp        : identifier        -> tactic
-val red_option        : identifier option -> tactic
+val red_in_hyp        : hyp_location        -> tactic
+val red_option        : hyp_location option -> tactic
 val hnf_in_concl      : tactic
-val hnf_in_hyp        : identifier        -> tactic
-val hnf_option        : identifier option -> tactic
+val hnf_in_hyp        : hyp_location        -> tactic
+val hnf_option        : hyp_location option -> tactic
 val simpl_in_concl    : tactic
-val simpl_in_hyp      : identifier        -> tactic
-val simpl_option      : identifier option -> tactic
+val simpl_in_hyp      : hyp_location        -> tactic
+val simpl_option      : hyp_location option -> tactic
 val normalise_in_concl: tactic
-val normalise_in_hyp  : identifier        -> tactic
-val normalise_option  : identifier option -> tactic
+val normalise_in_hyp  : hyp_location        -> tactic
+val normalise_option  : hyp_location option -> tactic
 val unfold_in_concl   : (int list * Closure.evaluable_global_reference) list
   -> tactic
 val unfold_in_hyp     : 
-  (int list * Closure.evaluable_global_reference) list -> identifier -> tactic
+  (int list * Closure.evaluable_global_reference) list -> hyp_location -> tactic
 val unfold_option     : 
-  (int list * Closure.evaluable_global_reference) list -> identifier option
+  (int list * Closure.evaluable_global_reference) list -> hyp_location option
     -> tactic
-val reduce            : red_expr -> identifier list -> tactic
+val reduce            : red_expr -> hyp_location list -> tactic
 val dyn_reduce        : tactic_arg list -> tactic
 val dyn_change        : tactic_arg list -> tactic
 
 val unfold_constr     : global_reference -> tactic
 val pattern_option    : 
-  (int list * constr * constr) list -> identifier option -> tactic
+  (int list * constr * constr) list -> hyp_location option -> tactic
 
 (*s Modification of the local context. *)
 

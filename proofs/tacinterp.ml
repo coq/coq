@@ -529,6 +529,10 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
        | Invalid_argument "destVar" ->
          user_err_loc (loc, "Tacinterp.val_interp",[<'sTR
           "Metavariable "; 'iNT n; 'sTR " must be an identifier" >]))*)
+    | Node(loc,"QUALIDARG",p) -> VArg (Qualid (interp_qualid p))
+    | Node(loc,"QUALIDMETA",[Num(_,n)]) ->
+	VArg
+	  (Qualid (Nametab.qualid_of_sp (path_of_const (List.assoc n lmatch))))
     | Str(_,s) -> VArg (Quoted_string s)
     | Num(_,n) -> VArg (Integer n)
     | Node(_,"COMMAND",[c]) ->
@@ -544,8 +548,8 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
       VArg (Redexp (redexp_of_ast (evc,env,lfun,lmatch,goalopt,debug)
         (redname,args)))
     | Node(_,"CLAUSE",cl) ->
-      VArg (Clause (List.map (fun ast -> make_ids ast (unvarg (val_interp
-        (evc,env,lfun,lmatch,goalopt,debug) ast))) cl))
+      VArg (Clause (List.map (clause_interp 
+        (evc,env,lfun,lmatch,goalopt,debug)) cl))
     | Node(_,"TACTIC",[ast]) ->
       VArg (Tac ((tac_interp lfun lmatch debug ast),ast))
 (*Remains to treat*)
@@ -1170,7 +1174,14 @@ and cvt_letpattern (evc,env,lfun,lmatch,goalopt,debug) (o,l) = function
       error "\"Goal\" occurs twice"
     else
       (Some (List.map num_of_ast nums), l)
-  | arg -> invalid_arg_loc (Ast.loc arg,"cvt_hyppattern")
+  | arg -> invalid_arg_loc (Ast.loc arg,"cvt_letpattern")
+
+(* Interprets an hypothesis name *)
+and clause_interp info = function
+  | Node(_,("INHYP"|"INHYPTYPE" as where),[ast]) ->
+      let id = make_ids ast (unvarg (val_interp info ast)) in
+      if where = "INHYP" then InHyp id else InHypType id
+  | arg -> invalid_arg_loc (Ast.loc arg,"clause_interp")
 
 (* Interprets tactic arguments *)
 let interp_tacarg sign ast = unvarg (val_interp sign ast)

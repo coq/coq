@@ -1,3 +1,13 @@
+Modifications depuis la V7.0
+
+- Fonctions de réduction dans les définitions locales s'appliquent par
+  défaut au corps de la définition. Extension de la notion de Clause
+  pour forcer l'action sur le type des défs seulement sous la forme
+  "Change c in Type of H."
+- Prise en compte des qualid dans Decompose
+- Correction bug inférence type Cases en présence de K-rédex
+- Correction bugs Cases en cas de prédicat dépendant
+
 Différences V7.0beta / V7.0
 - Portage de Correctness
 - Réécriture de Extraction

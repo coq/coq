@@ -152,11 +152,20 @@ type 'a tactic_reduction = env -> enamed_declarations -> constr -> constr
 let reduct_in_concl redfun gl = 
   convert_concl (pf_reduce redfun gl (pf_concl gl)) gl
     
-let reduct_in_hyp redfun id gl  = 
-  let ty = pf_get_hyp_typ gl id in
+let reduct_in_hyp redfun idref gl =
+  let inhyp,id = match idref with
+    | InHyp id -> true, id
+    | InHypType id -> false, id in
+  let c, ty = pf_get_hyp gl id in
   let redfun' = under_casts (pf_reduce redfun gl) in
-  convert_hyp id (redfun' ty) gl
-    
+  match c with
+    | None -> convert_hyp id (redfun' ty) gl
+    | Some b ->
+	if inhyp then (* Default for defs: reduce in body *)
+	  convert_defbody id (redfun' b) gl
+	else
+	  convert_deftype id (redfun' ty) gl
+
 let reduct_option redfun = function
   | Some id -> reduct_in_hyp   redfun id 
   | None    -> reduct_in_concl redfun 
@@ -783,7 +792,9 @@ let dyn_assumption = function
 let clear ids gl    = thin ids gl
 let clear_one id gl = clear [id] gl
 let dyn_clear = function
-  | [Clause ids] -> clear ids
+  | [Clause ids] ->
+      let out = function InHyp id -> id | _ -> assert false in
+      clear (List.map out ids)
   | _ -> assert false
 
 (* Clears a list of identifiers clauses form the context *)

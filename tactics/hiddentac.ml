@@ -13,7 +13,7 @@ open Proof_type
 open Tacmach
 open Tacentries
 
-let h_clear ids         = v_clear  [(Clause ids)]
+let h_clear ids         = v_clear  [(Clause (List.map (fun x -> InHyp x) ids))]
 let h_move dep id1 id2  = 
  (if dep then v_move else v_move_dep) [Identifier id1;Identifier id2]
 let h_contradiction     = v_contradiction []

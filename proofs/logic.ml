@@ -266,13 +266,37 @@ let check_forward_dependencies id tail =
 		^ (string_of_id id')))
     tail
 
-let convert_hyp sign sigma id ty =
+let convert_hyp sign sigma id b =
   apply_to_hyp sign id
     (fun sign (idc,c,ct) _ ->
        let env = Global.env_of_context sign in
-       if !check && not (is_conv env sigma ty (body_of_type ct)) then
-	 error "convert-hyp rule passed non-converting term";
-       add_named_decl (idc,c,ty) sign)
+       match c with
+	 | None -> (* Change the type *)
+	     if !check && not (is_conv env sigma b ct) then
+	       error "convert-hyp rule passed non-converting term";
+	     add_named_decl (idc,c,b) sign
+	 | Some c -> (* Change the body *)
+	     if !check && not (is_conv env sigma b c) then
+	       error "convert-hyp rule passed non-converting term";
+	     add_named_decl (idc,Some b,ct) sign)
+
+let convert_def inbody sign sigma id c =
+  apply_to_hyp sign id
+    (fun sign (idc,b,t) _ ->
+       let env = Global.env_of_context sign in
+       match b with
+	 | None -> error "convert-deftype rule passed to an hyp without body" 
+	 | Some b ->
+	     let b,t = 
+	       if inbody then
+		 (if !check && not (is_conv env sigma c b) then 
+		    error "convert-deftype rule passed non-converting type";
+		  (c,t))
+	       else
+		 (if !check && not (is_conv env sigma c t) then
+		    error "convert-deftype rule passed non-converting type";
+		  (b,c)) in
+	     add_named_decl (idc,Some b,t) sign)
 
 let replace_hyp sign id d =
   apply_to_hyp sign id
@@ -445,8 +469,14 @@ let prim_refiner r sigma goal =
 	else 
 	  error "convert-concl rule passed non-converting term"
 
-    | { name = Convert_hyp; hypspecs = [id]; terms = [ty'] } ->
-	[mk_goal info (convert_hyp sign sigma id ty') cl]
+    | { name = Convert_hyp; hypspecs = [id]; terms = [ty] } ->
+	[mk_goal info (convert_hyp sign sigma id ty) cl]
+
+    | { name = Convert_defbody; hypspecs = [id]; terms = [c] } ->
+	[mk_goal info (convert_def true sign sigma id c) cl]
+
+    | { name = Convert_deftype; hypspecs = [id]; terms = [ty] } ->
+	[mk_goal info (convert_def false sign sigma id ty) cl]
 
     | { name = Thin; hypspecs = ids } ->
 	let clear_aux sign id =
@@ -537,7 +567,13 @@ let prim_extractor subfun vl pft =
     | {ref=Some(Prim{name=Convert_concl;terms=[c]},[pf])} ->
 	subfun vl pf
 	
-    | {ref=Some(Prim{name=Convert_hyp;hypspecs=[id];terms=[c]},[pf])} ->
+    | {ref=Some(Prim{name=Convert_hyp;hypspecs=[id];terms=[_]},[pf])} ->
+	subfun vl pf
+
+    | {ref=Some(Prim{name=Convert_defbody;hypspecs=[id];terms=[_]},[pf])} ->
+	subfun vl pf
+
+    | {ref=Some(Prim{name=Convert_deftype;hypspecs=[id];terms=[_]},[pf])} ->
 	subfun vl pf
 	
     | {ref=Some(Prim{name=Thin;hypspecs=ids},[pf])} ->
@@ -599,6 +635,13 @@ let pr_prim_rule = function
       
   | {name=Convert_hyp;hypspecs=[id];terms=[c]} ->
       [< 'sTR"Change " ; prterm c ; 'sPC ; 'sTR"in " ; pr_id id >]
+      
+  | {name=Convert_defbody;hypspecs=[id];terms=[c]} ->
+      [< 'sTR"Change " ; prterm c ; 'sPC ; 'sTR"in " ; pr_id id >]
+
+  | {name=Convert_deftype;hypspecs=[id];terms=[c]} ->
+      [< 'sTR"Change " ; prterm c ; 'sPC ;
+	 'sTR"in (Type of " ; pr_id id; 'sTR ")" >]
       
   | {name=Thin;hypspecs=ids} ->
       [< 'sTR"Clear " ; prlist_with_sep pr_spc pr_id ids >]

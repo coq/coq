@@ -56,7 +56,8 @@ val hnf_type_of           : goal sigma -> constr -> constr
 val pf_interp_constr      : goal sigma -> Coqast.t -> constr
 val pf_interp_type        : goal sigma -> Coqast.t -> constr
 
-val pf_get_hyp_typ        : goal sigma -> identifier -> constr 
+val pf_get_hyp            : goal sigma -> identifier -> constr option * types
+val pf_get_hyp_typ        : goal sigma -> identifier -> types
 
 val pf_reduction_of_redexp : goal sigma -> red_expr -> constr -> constr
 
@@ -162,7 +163,9 @@ val introduction    : identifier -> tactic
 val intro_replacing : identifier -> tactic
 val refine          : constr -> tactic
 val convert_concl   : constr -> tactic
-val convert_hyp     : identifier -> constr -> tactic
+val convert_hyp     : identifier -> types -> tactic
+val convert_deftype : identifier -> types -> tactic
+val convert_defbody : identifier -> constr -> tactic
 val thin            : identifier list -> tactic
 val move_hyp        : bool -> identifier -> identifier -> tactic
 val mutual_fix      : identifier list -> int list -> constr list -> tactic
@@ -228,7 +231,7 @@ val hide_openconstr_tactic  : Pretyping.open_constr hide_combinator
 val hide_constrl_tactic : (constr list) hide_combinator
 val hide_numarg_tactic  : int hide_combinator
 val hide_ident_tactic   : identifier hide_combinator
-val hide_identl_tactic  : (identifier list) hide_combinator
+val hide_identl_tactic  : hyp_location list hide_combinator
 val hide_string_tactic  : string hide_combinator
 val hide_bindl_tactic   : ((bindOcc * constr) list) hide_combinator
 val hide_cbindl_tactic  : (constr * (bindOcc * constr) list) hide_combinator

@@ -407,7 +407,11 @@ let ast_of_cvt_arg = function
   | Constr_context _ ->
     anomalylabstrm "ast_of_cvt_arg" [<'sTR
       "Constr_context argument could not be used">]
-  | Clause idl      -> ope ("CLAUSE", List.map (compose nvar string_of_id) idl)
+  | Clause idl      -> 
+      let transl = function
+	| InHyp id -> ope ("INHYP", [nvar (string_of_id id)])
+	| InHypType id -> ope ("INHYPTYPE", [nvar (string_of_id id)]) in
+      ope ("CLAUSE", List.map transl idl)
   | Bindings bl     -> ope ("BINDINGS", 
 			    List.map (ast_of_cvt_bind (fun x -> x)) bl)
   | Cbindings bl    -> 

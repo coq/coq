@@ -28,6 +28,10 @@ type pf_status =
   | Complete_proof
   | Incomplete_proof
 
+type hyp_location = (* To distinguish body and type of local defs *)
+  | InHyp of identifier
+  | InHypType of identifier
+
 type prim_rule_name = 
   | Intro
   | Intro_after
@@ -37,6 +41,8 @@ type prim_rule_name =
   | Refine 
   | Convert_concl
   | Convert_hyp
+  | Convert_defbody
+  | Convert_deftype
   | Thin
   | Move of bool
 
@@ -97,7 +103,7 @@ and tactic_arg =
   | Identifier     of identifier
   | Qualid         of Nametab.qualid
   | Integer        of int
-  | Clause         of identifier list
+  | Clause         of hyp_location list
   | Bindings       of Coqast.t substitution
   | Cbindings      of constr   substitution 
   | Quoted_string  of string
