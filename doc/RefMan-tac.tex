@@ -521,8 +521,8 @@ in the list of subgoals remaining to prove.
 %  \term\ will be kept.
 %\end{Variants}
 
-\subsection{\tt Generalize \term}
-\tacindex{Generalize}\label{Generalize}
+\subsection{\tt generalize \term}
+\tacindex{generalize}\label{generalize}
 
 This tactic applies to any goal. It generalizes the conclusion w.r.t.
 one subterm of it. For example:
@@ -541,46 +541,46 @@ Abort.
 \end{coq_eval}
 
 If the goal is $G$ and $t$ is a subterm of type $T$ in the goal, then
-{\tt Generalize} \textit{t} replaces the goal by {\tt (x:$T$)$G'$}
+{\tt generalize} \textit{t} replaces the goal by {\tt (x:$T$)$G'$}
 where $G'$ is obtained from $G$ by replacing all occurrences of $t$ by
 {\tt x}. The name of the variable (here {\tt n}) is chosen accordingly
 to $T$.
 
 \begin{Variants}
-\item {\tt Generalize \term$_1$ \dots\ \term$_n$} 
+\item {\tt generalize \term$_1$ \dots\ \term$_n$} 
   
-  Is equivalent to {\tt Generalize \term$_n$; \dots\ ; Generalize
+  Is equivalent to {\tt generalize \term$_n$; \dots\ ; generalize
     \term$_1$}. Note that the sequence of \term$_i$'s are processed
   from $n$ to $1$.
   
-\item {\tt Generalize Dependent \term} \tacindex{Generalize Dependent}
+\item {\tt generalize dependent \term} \tacindex{generalize dependent}
   
   This generalizes {\term} but also {\em all} hypotheses which depend
   on {\term}.
 
 \end{Variants}
 
-\subsection{\tt Change \term}
-\tacindex{Change}\label{Change}
+\subsection{\tt change \term}
+\tacindex{change}\label{change}
 
 This tactic applies to any goal. It implements the rule
 ``Conv''\index{Typing rules!Conv} given in section \ref{Conv}.  {\tt
-  Change U} replaces the current goal \T\ with a \U\ providing that
+  change U} replaces the current goal \T\ with a \U\ providing that
 \U\ is well-formed and that \T\ and \U\ are convertible.
 
 \begin{ErrMsgs}
 \item \errindex{Not convertible}
 \end{ErrMsgs}
 
-\tacindex{Change \dots\ in}
+\tacindex{change \dots\ in}
 \begin{Variants}
-\item {\tt Change \term$_1$ with \term$_2$} 
+\item {\tt change \term$_1$ with \term$_2$} 
   
   This replaces the occurrences of \term$_1$ by \term$_2$ in the
   current goal.  The terms \term$_1$ and \term$_2$ must be
   convertible.
 
-\item {\tt Change \num$_1$ \dots\ \num$_i$ \term$_1$ with \term$_2$} 
+\item {\tt change \term$_1$ at \num$_1$ \dots\ \num$_i$ with \term$_2$} 
   
   This replaces the occurrences numbered \num$_1$ \dots\ \num$_i$ of
   \term$_1$ by \term$_2$ in the current goal.
@@ -588,14 +588,14 @@ This tactic applies to any goal. It implements the rule
 
   \ErrMsg {\tt Too few occurrences}
 
-\item {\tt Change {\term} in {\ident}}
+\item {\tt change {\term} in {\ident}}
 
-\item {\tt Change \term$_1$ with \term$_2$ in {\ident}}
+\item {\tt change \term$_1$ with \term$_2$ in {\ident}}
   
-\item {\tt Change \num$_1$ \dots\ \num$_i$ \term$_1$ with \term$_2$ in
+\item {\tt change \term$_1$ at  \num$_1$ \dots\ \num$_i$ with \term$_2$ in
     {\ident}}
   
-  This applies the {\tt Change} tactic not to the goal but to the
+  This applies the {\tt change} tactic not to the goal but to the
   hypothesis {\ident}.
 
 \end{Variants}
@@ -627,8 +627,8 @@ the conclusion of the type are given.
 
 \section{Negation and contradiction}
 
-\subsection{\tt Absurd \term}
-\tacindex{Absurd}\label{Absurd}
+\subsection{\tt absurd \term}
+\tacindex{absurd}\label{absurd}
 
 This tactic applies to any goal. The argument {\term} is any
 proposition {\tt P} of type {\tt Prop}. This tactic applies {\tt
@@ -639,7 +639,7 @@ most cases, \texttt{P} or $\sim$\texttt{P} is one of the hypotheses of
 the local context.
 
 \subsection{\tt contradiction}
-\label{Contradiction}
+\label{contradiction}
 \tacindex{contradiction}
 
 This tactic applies to any goal. The {\tt contradiction} tactic
@@ -659,15 +659,15 @@ cases.  This tactic is a macro for the tactics sequence {\tt intros;
 \label{Conversion-tactics}
 
 This set of tactics implements different specialized usages of the
-tactic \texttt{Change}.
+tactic \texttt{change}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %voir reduction__conv_x : histoires d'univers.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{{\tt Cbv} \flag$_1$ \dots\ \flag$_n$, {\tt Lazy} \flag$_1$
-\dots\ \flag$_n$ {\rm and} {\tt Compute}}
-\tacindex{Cbv}\tacindex{Lazy}
+\subsection{{\tt cbv} \flag$_1$ \dots\ \flag$_n$, {\tt Lazy} \flag$_1$
+\dots\ \flag$_n$ {\rm and} {\tt compute}}
+\tacindex{cbv}\tacindex{lazy}
 
 These parameterized reduction tactics apply to any goal and perform
 the normalization of the goal according to the specified flags. Since
@@ -675,20 +675,20 @@ the reduction considered in \Coq\ include $\beta$ (reduction of
 functional application), $\delta$ (unfolding of transparent constants,
 see \ref{Transparent}), $\iota$ (reduction of {\tt Cases}, {\tt Fix}
 and {\tt CoFix} expressions) and $\zeta$ (removal of local
-definitions), every flag is one of {\tt Beta}, {\tt Delta}, {\tt
-  Iota}, {\tt Zeta}, {\tt [\qualid$_1$\ldots\qualid$_k$]} and {\tt
+definitions), every flag is one of {\tt beta}, {\tt delta}, {\tt
+  iota}, {\tt zeta}, {\tt [\qualid$_1$\ldots\qualid$_k$]} and {\tt
   -[\qualid$_1$\ldots\qualid$_k$]}.  The last two flags give the list
 of constants to unfold, or the list of constants not to unfold. These
-two flags can occur only after the {\tt Delta} flag.  For these
-tactics, the {\tt Delta} flag does not apply to variables bound by a
+two flags can occur only after the {\tt delta} flag.  For these
+tactics, the {\tt delta} flag does not apply to variables bound by a
 let-in construction of which the unfolding is controlled by the {\tt
-  Zeta} flag only.  In addition, there is a flag {\tt Evar} to perform
+  zeta} flag only.  In addition, there is a flag {\tt Evar} to perform
 instantiation of exitential variables (``?'') when an instantiation
 actually exists.  The goal may be normalized with two strategies: {\em
-  lazy} ({\tt Lazy} tactic), or {\em call-by-value} ({\tt Cbv}
+  lazy} ({\tt lazy} tactic), or {\em call-by-value} ({\tt cbv}
 tactic).
 
-Notice that, for these tactics, the {\tt Delta} flag without rest
+Notice that, for these tactics, the {\tt delta} flag without rest
 should be understood as unfolding all The lazy strategy is a
 call-by-need strategy, with sharing of reductions: the arguments of a
 function call are partially evaluated only when necessary, but if an
@@ -707,20 +707,20 @@ strategy, the latter should be preferred for evaluating purely
 computational expressions (i.e. with few dead code).
 
 \begin{Variants}
-\item {\tt Compute} \tacindex{Compute} 
+\item {\tt compute} \tacindex{Compute} 
   
-  This tactic is an alias for {\tt Cbv Beta Delta Evar Iota Zeta}.
+  This tactic is an alias for {\tt cbv beta delta evar iota zeta}.
 \end{Variants}
 
 \begin{ErrMsgs}
 \item \errindex{Delta must be specified before}
   
-  A list of constants appeared before the {\tt Delta} flag.
+  A list of constants appeared before the {\tt delta} flag.
 \end{ErrMsgs}
 
 
-\subsection{{\tt Red}}
-\tacindex{Red}
+\subsection{{\tt red}}
+\tacindex{red}
 
 This tactic applies to a goal which have form {\tt
   (x:T1)\dots(xk:Tk)(c t1 \dots\ tn)} where {\tt c} is a constant.  If
@@ -732,16 +732,16 @@ $\beta\iota$-reduction rules.
 \item \errindex{Not reducible}
 \end{ErrMsgs}
 
-\subsection{{\tt Hnf}}
-\tacindex{Hnf}
+\subsection{{\tt hnf}}
+\tacindex{hnf}
 
 This tactic applies to any goal. It replaces the current goal with its
 head normal form according to the $\beta\delta\iota$-reduction rules.
-{\tt Hnf} does not produce a real head normal form but either a
+{\tt hnf} does not produce a real head normal form but either a
 product or an applicative term in head normal form or a variable.
 
 \Example
-The term \verb+(n:nat)(plus (S n) (S n))+ is not reduced by {\tt Hnf}.
+The term \verb+(n:nat)(plus (S n) (S n))+ is not reduced by {\tt hnf}.
 
 \Rem The $\delta$ rule will only be applied to transparent constants
 (i.e. which have not been frozen with an {\tt Opaque} command; see
@@ -783,13 +783,13 @@ applicative subterms whose head occurrence is {\ident}.
 
 \end{Variants}
 
-\subsection{\tt Unfold \qualid}
-\tacindex{Unfold}\label{Unfold}
+\subsection{\tt unfold \qualid}
+\tacindex{unfold}\label{unfold}
 
 This tactic applies to any goal. The argument {\qualid} must denote a
 defined transparent constant or local definition (see section
 \ref{Simpl-definitions} and \ref{Transparent}).  The tactic {\tt
-  Unfold} applies the $\delta$ rule to each occurrence of the constant
+  unfold} applies the $\delta$ rule to each occurrence of the constant
 to which {\qualid} refers in the current goal and then replaces it
 with its $\beta\iota$-normal form.
 
@@ -800,14 +800,14 @@ is printed.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Unfold {\qualid}$_1$ \dots\ \qualid$_n$}
-  \tacindex{Unfold \dots\ in}
+\item {\tt unfold {\qualid}$_1$ \dots\ \qualid$_n$}
+  \tacindex{unfold \dots\ in}
   
   Replaces {\em simultaneously} {\qualid}$_1$, \dots, {\qualid}$_n$
   with their definitions and replaces the current goal with its
   $\beta\iota$ normal form.
 
-\item {\tt Unfold \num$_1^1$ \dots\ \num$_i^1$ {\qualid}$_1$ \dots\  \num$_1^n$
+\item {\tt unfold \num$_1^1$ \dots\ \num$_i^1$ {\qualid}$_1$ \dots\  \num$_1^n$
     \dots\ \num$_j^n$ \qualid$_n$}
   
   The lists \num$_1^1$, \dots, \num$_i^1$ and \num$_1^n$, \dots,
@@ -820,24 +820,24 @@ is printed.
 
 \end{Variants}
 
-\subsection{{\tt Fold} \term}
-\tacindex{Fold}
+\subsection{{\tt fold} \term}
+\tacindex{fold}
 
-This tactic applies to any goal. \term\ is reduced using the {\tt Red}
+This tactic applies to any goal. \term\ is reduced using the {\tt red}
 tactic. Every occurrence of the resulting term in the goal is then
 substituted for \term.
 
 \begin{Variants}
-\item {\tt Fold} \term$_1$ \dots\ \term$_n$ 
+\item {\tt fold} \term$_1$ \dots\ \term$_n$ 
   
-  Equivalent to {\tt Fold} \term$_1${\tt;}\ldots{\tt; Fold} \term$_n$.
+  Equivalent to {\tt fold} \term$_1${\tt;}\ldots{\tt; fold} \term$_n$.
 \end{Variants}
 
-\subsection{{\tt Pattern {\term}}}
-\tacindex{Pattern}\label{Pattern}
+\subsection{{\tt pattern {\term}}}
+\tacindex{pattern}\label{pattern}
 
 This command applies to any goal. The argument {\term} must be a free
-subterm of the current goal.  The command {\tt Pattern} performs
+subterm of the current goal.  The command {\tt pattern} performs
 $\beta$-expansion (the inverse of $\bt$-reduction) of the current goal
 (say \T) by
 \begin{enumerate}
@@ -846,24 +846,24 @@ $\beta$-expansion (the inverse of $\bt$-reduction) of the current goal
 \item applying the abstracted goal to {\term}
 \end{enumerate}
 For instance, if the current goal {\T} is {\tt (P t)} when {\tt t} does not occur in
-{\tt P} then {\tt Pattern t} transforms it into {\tt ([x:A](P x) t)}. This
+{\tt P} then {\tt pattern t} transforms it into {\tt ([x:A](P x) t)}. This
 command has to be used, for instance, when an {\tt apply} command
 fails on matching.
 
 \begin{Variants}
-\item {\tt Pattern {\num$_1$} \dots\ {\num$_n$} {\term}}
+\item {\tt pattern {\num$_1$} \dots\ {\num$_n$} {\term}}
   
   Only the occurrences {\num$_1$} \dots\ {\num$_n$} of {\term} will be
   considered for $\beta$-expansion. Occurrences are located from left
   to right.
 
-\item {\tt Pattern {\num$_1^1$} \dots\ {\num$_{n_1}^1$} {\term$_1$} \dots
+\item {\tt pattern {\num$_1^1$} \dots\ {\num$_{n_1}^1$} {\term$_1$} \dots
     {\num$_1^m$} \dots\ {\num$_{n_m}^m$} {\term$_m$}}
   
   Will process occurrences \num$_1^1$, \dots, \num$_i^1$ of \term$_1$,
   \dots, \num$_1^m$, \dots, \num$_j^m$ of \term$_m$ starting from
   \term$_m$.  Starting from a goal {\tt (P t$_1$\dots\ t$_m$)} with
-  the {\tt t$_i$} which do not occur in $P$, the tactic {\tt Pattern
+  the {\tt t$_i$} which do not occur in $P$, the tactic {\tt pattern
     t$_1$\dots\ t$_m$} generates the equivalent goal {\tt
     ([x$_1$:A$_1$]\dots\ [x$_m$:A$_m$](P x$_1$\dots\ x$_m$)
     t$_1$\dots\ t$_m$)}.\\
@@ -882,7 +882,7 @@ any of the conversion tactics listed in this section.
 
 If \ident$_i$ is a local definition, then \ident$_i$ can be replaced
 by (Type of \ident$_i$) to adress not the body but the type of the
-local definition. Example: {\tt Unfold not in (Type of H1) (Type of H3).}
+local definition. Example: {\tt unfold not in (Type of H1) (Type of H3).}
 
 \begin{ErrMsgs}
 \item \errindex{No such hypothesis} : {\ident}.
@@ -894,9 +894,9 @@ Introduction tactics address goals which are inductive constants.
 They are used when one guesses that the goal can be obtained with one
 of its constructors' type.
 
-\subsection{\tt Constructor \num}
-\label{Constructor}
-\tacindex{Constructor}
+\subsection{\tt constructor \num}
+\label{constructor}
+\tacindex{constructor}
 
 This tactic applies to a goal such that the head of its conclusion is
 an inductive constant (say {\tt I}).  The argument {\num} must be less
@@ -906,49 +906,49 @@ equivalent to {\tt intros; apply ci}.
 
 \begin{ErrMsgs}
 \item \errindex{Not an inductive product}
-\item \errindex{Not enough Constructors}
+\item \errindex{Not enough constructors}
 \end{ErrMsgs}
 
 \begin{Variants}
-\item \texttt{Constructor} 
+\item \texttt{constructor} 
   
-  This tries \texttt{Constructor 1} then \texttt{Constructor 2},
-  \dots\ , then \texttt{Constructor} \textit{n} where \textit{n} if
+  This tries \texttt{constructor 1} then \texttt{constructor 2},
+  \dots\ , then \texttt{constructor} \textit{n} where \textit{n} if
   the number of constructors of the head of the goal.
 
-\item {\tt Constructor \num~with} {\bindinglist}
-  \tacindex{Constructor \dots\  with}
+\item {\tt constructor \num~with} {\bindinglist}
+  \tacindex{constructor \dots\  with}
   
   Let {\tt ci} be the {\tt i}-th constructor of {\tt I}, then {\tt
-    Constructor i with \bindinglist} is equivalent to {\tt intros;
+    constructor i with \bindinglist} is equivalent to {\tt intros;
     apply ci with \bindinglist}.
 
   \Warning the terms in the \bindinglist\ are checked
-  in the context where {\tt Constructor} is executed and not in the
+  in the context where {\tt constructor} is executed and not in the
   context where {\tt Apply} is executed (the introductions are not
   taken into account).
 
-\item {\tt Split}\tacindex{Split}
+\item {\tt split}\tacindex{split}
 
   Applies if {\tt I} has only one constructor, typically in the case
-  of conjunction $A\land B$. It is equivalent to {\tt Constructor 1}.
+  of conjunction $A\land B$. It is equivalent to {\tt constructor 1}.
 
-\item {\tt Exists {\bindinglist}}\tacindex{Exists} 
+\item {\tt exists {\bindinglist}}\tacindex{exists} 
 
   Applies if {\tt I} has only one constructor, for instance in the
   case of existential quantification $\exists x\cdot P(x)$. 
-  It is equivalent to {\tt intros; Constructor 1 with \bindinglist}.
+  It is equivalent to {\tt intros; constructor 1 with \bindinglist}.
 
-\item {\tt Left}\tacindex{Left},  {\tt Right}\tacindex{Right}
+\item {\tt left}\tacindex{left},  {\tt right}\tacindex{right}
 
   Apply if {\tt I} has two constructors, for instance in the case of
   disjunction $A\lor B$. They are respectively equivalent to {\tt
-    Constructor 1} and {\tt Constructor 2}.
+    constructor 1} and {\tt constructor 2}.
   
-\item {\tt Left \bindinglist}, {\tt Right \bindinglist}, {\tt Split
+\item {\tt left \bindinglist}, {\tt right \bindinglist}, {\tt split
     \bindinglist}
   
-  Are equivalent to the corresponding {\tt Constructor $i$ with
+  Are equivalent to the corresponding {\tt constructor $i$ with
     \bindinglist}.
 
 \end{Variants}
@@ -1540,7 +1540,7 @@ introduced hypothesis.
 \item {\tt Discriminate}\tacindex{Discriminate} \\
   It applies to a goal of the form {\tt
     \verb=~={\term$_1$}={\term$_2$}} and it is equivalent to: 
-  {\tt Unfold not; intro {\ident}} ; {\tt Discriminate
+  {\tt unfold not; intro {\ident}} ; {\tt Discriminate
     {\ident}}.
 
   \begin{ErrMsgs}
@@ -1623,7 +1623,7 @@ introduced hypothesis.
 \item{\tt Injection}\tacindex{Injection} \\
   If the current goal is of the form {\tt \verb=~={\term$_1$}={\term$_2$}}, 
   the tactic computes the head normal form
-  of the goal and then behaves as the sequence: {\tt Unfold not; intro
+  of the goal and then behaves as the sequence: {\tt unfold not; intro
     {\ident}; Injection {\ident}}. \\
   
   \ErrMsg \errindex{goal does not satisfy the expected preconditions}
@@ -1651,7 +1651,7 @@ latter is first introduced in the local context using
 introduced hypothesis.
 \item{\tt Simplify\_eq}
 If the current goal has form $\verb=~=t_1=t_2$, then this tactic does 
-\texttt{Hnf; intro {\ident}; Simplify\_eq {\ident}}.
+\texttt{hnf; intro {\ident}; Simplify\_eq {\ident}}.
 \end{Variants}
 
 \subsection{\tt Dependent Rewrite -> {\ident}}
@@ -1792,7 +1792,7 @@ the instance with the tactic {\tt Inversion}.
 \index[default]2-level approach
 
 This kind of inversion has nothing to do with the tactic
-\texttt{Inversion} above. This tactic does \texttt{Change (\ident\
+\texttt{Inversion} above. This tactic does \texttt{change (\ident\
   t)}, where \texttt{t} is a term build in order to ensure the
 convertibility. In other words, it does inversion of the function
 \ident. This function must be a fixpoint on a simple recursive
@@ -2100,8 +2100,8 @@ the proof process, its absence may lead to non-termination of the tactic.
 % \begin{Variants}
 % \item {\tt Linear with \ident$_1$ \dots\ \ident$_n$}\\
 %   \tacindex{Linear with} 
-%   Is equivalent to apply first {\tt Generalize \ident$_1$ \dots
-%     \ident$_n$} (see section \ref{Generalize}) then the \texttt{Linear}
+%   Is equivalent to apply first {\tt generalize \ident$_1$ \dots
+%     \ident$_n$} (see section \ref{generalize}) then the \texttt{Linear}
 %   tactic.  So one can use axioms, lemmas or hypotheses of the local
 %   context with \texttt{Linear} in this way.
 % \end{Variants}
@@ -2470,14 +2470,14 @@ a hint to a database is:
     \item {\ident} \errindex{not declared}
   \end{ErrMsgs}
 
-\item \texttt{Unfold} {\qualid}\index[command]{Hint!Unfold}\\
-  This adds the tactic {\tt Unfold {\qualid}} to the hint list
+\item \texttt{unfold} {\qualid}\index[command]{Hint!unfold}\\
+  This adds the tactic {\tt unfold {\qualid}} to the hint list
   that will only be used when the head constant of the goal is \ident.
   Its cost is 4.
 
 \item \texttt{Extern \num\ \pattern\ }\textsl{tactic}\index[command]{Hints!Extern}\\
   This hint type is to extend Auto with tactics other than
-  \texttt{Apply} and \texttt{Unfold}. For that, we must specify a
+  \texttt{Apply} and \texttt{unfold}. For that, we must specify a
   cost, a pattern and a tactic to execute. Here is an example:
 
 \begin{quotation}
