@@ -49,6 +49,8 @@ contrib/xml
 
 parsing/search.ml
 	developed by Yves Bertot (INRIA-Lemme, 2000)
+theories/ZArith
+	started by Pierre Crégut (France Telecom R&D, 1996)
 
 Many discussions within the Démons team and the LogiCal project
 influenced significantly the design of Coq especially with
