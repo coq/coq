@@ -522,11 +522,11 @@ let rec strip_context n iscast t =
     | RCast (_,c,_) -> strip_context n false c
     | _ -> anomaly "ppconstrnew: strip_context"
 
-let transf env n iscast c =
+let transf istype env n iscast c =
   if Options.do_translate() then
     let r = 
       Constrintern.for_grammar
-        (Constrintern.interp_rawconstr_gen false Evd.empty env [] false 
+        (Constrintern.interp_rawconstr_gen istype Evd.empty env [] false 
 	  ([],[]))
 	c in
     begin try
@@ -534,16 +534,20 @@ let transf env n iscast c =
       let _ = Pretyping.understand_gen_tcc Evd.empty env [] None r in 
       (*msgerrnl (str "Typage OK");*) ()
     with e -> (*msgerrnl (str "Warning: can't type")*) () end;
-    Constrextern.extern_rawconstr (Termops.vars_of_env env)
+    (if istype then Constrextern.extern_rawtype
+    else Constrextern.extern_rawconstr)
+      (Termops.vars_of_env env)
       (strip_context n iscast r)
   else c
 
-let pr_constr_env env c = pr lsimple (transf env 0 false c)
-let pr_lconstr_env env c = pr ltop (transf env 0 false c)
+let pr_constr_env env c = pr lsimple (transf false env 0 false c)
+let pr_lconstr_env env c = pr ltop (transf false env 0 false c)
 let pr_constr c = pr_constr_env (Global.env()) c
 let pr_lconstr c = pr_lconstr_env (Global.env()) c
 
-let pr_lconstr_env_n env n b c = pr ltop (transf env n b c)
+let pr_lconstr_env_n env n b c = pr ltop (transf false env n b c)
+let pr_type_env_n env n c = pr ltop (transf true env n false c)
+let pr_type c = pr ltop (transf true (Global.env()) 0 false c)
 
 let pr_binders = pr_undelimited_binders pr_lconstr
 
