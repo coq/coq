@@ -967,8 +967,8 @@ let rec knr info m stk =
         | None -> (set_norm m; (m,stk)))
   | FConstruct((sp,c),args) when can_red info stk fIOTA ->
       (match strip_update_shift_app m stk with
-          (depth, args, Zcase((cn,_),_,br)::s) ->
-            let npar = stack_args_size args - cn.(c-1) in
+          (depth, args, Zcase(((*cn*) npar,_),_,br)::s) ->
+(*            let npar = stack_args_size args - cn.(c-1) in*)
             assert (npar>=0);
             let rargs = drop_parameters depth npar args in
             kni info br.(c-1) (rargs@s)

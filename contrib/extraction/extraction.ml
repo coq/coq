@@ -534,8 +534,8 @@ and extract_term_info_with_type env ctx c t =
       	 extract_app env ctx f a 
      | IsMutConstruct (cp,_) ->
 	 abstract_constructor cp
-     | IsMutCase ((ni,(ip,_,_,_,_)),_,c,br) ->
-	 extract_case env ctx ni ip c br
+     | IsMutCase ((_,(ip,_,_,_,_)),_,c,br) ->
+	 extract_case env ctx ip c br
      | IsFix ((_,i),recd) -> 
 	 extract_fix env ctx i recd
      | IsCoFix (i,recd) -> 
@@ -584,7 +584,9 @@ and abstract_constructor cp  =
 
 (* Extraction of a case *)
 
-and extract_case env ctx ni ip c br = 
+and extract_case env ctx ip c br = 
+  let mis = Global.lookup_mind_specif (ip,[||]) in
+  let ni = Array.map List.length (mis_recarg mis) in
   (* [ni]: number of arguments without parameters in each branch *)
   (* [br]: bodies of each branch (in functional form) *)
   let extract_branch j b = 	  

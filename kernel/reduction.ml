@@ -202,8 +202,8 @@ let contract_cofix (bodynum,(types,names,bodies as typedbodies)) =
 let reduce_mind_case mia =
   match kind_of_term mia.mconstr with
     | IsMutConstruct (ind_sp,i as cstr_sp, args) ->
-	let ncargs = (fst mia.mci).(i-1) in
-	let real_cargs = list_lastn ncargs mia.mcargs in
+(*	let ncargs = (fst mia.mci).(i-1) in*)
+	let real_cargs = snd (list_chop (fst mia.mci) mia.mcargs) in
         applist (mia.mlf.(i-1),real_cargs)
     | IsCoFix cofix ->
 	let cofix_def = contract_cofix cofix in

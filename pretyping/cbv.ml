@@ -317,8 +317,11 @@ and cbv_stack_term info stack env t =
        (use red_under because we know there is a Case) *)
     | (CONSTR(n,sp,_,_), APP(args,CASE(_,br,(arity,_),env,stk)))
             when red_under (info_flags info) fIOTA ->
+(*
 	let ncargs = arity.(n-1) in
 	let real_args = list_lastn ncargs args in
+*)
+	let real_args = snd (list_chop arity args) in
         cbv_stack_term info (stack_app real_args stk) env br.(n-1)
          
     (* constructor of arity 0 in a Case -> IOTA ( "   " )*)

@@ -112,16 +112,15 @@ let encode_inductive id =
   let constr_lengths = Array.map List.length (mis_recarg mis) in
   (indsp,constr_lengths)
 
+let constr_nargs indsp =
+  let mis = Global.lookup_mind_specif (indsp,[||] (* ?? *)) in
+  Array.map List.length (mis_recarg mis)
+
 let sp_of_spi (refsp,tyi) =
   let mip = Declarations.mind_nth_type_packet (Global.lookup_mind refsp) tyi in
   let (pa,_,k) = repr_path refsp in 
   make_path pa mip.Declarations.mind_typename k
 
-(*
-  let (_,mip) = mind_specif_of_mind_light spi in
-  let (pa,_,k) = repr_path sp in 
-  make_path pa (mip.mind_typename) k
-*)
 (* Parameterization of the translation from constr to ast      *)
 
 (* Tables for Cases printing under a "if" form, a "let" form,  *)
@@ -129,20 +128,11 @@ let sp_of_spi (refsp,tyi) =
 let isomorphic_to_bool lc =
   Array.length lc = 2 & lc.(0) = 0 & lc.(1) = 0
 
-(*
-let isomorphic_to_bool lc =
-  let lcparams = Array.map get_params lc in
-  Array.length lcparams = 2 & lcparams.(0) = [] & lcparams.(1) = []
-*)
+let isomorphic_to_tuple lc = (Array.length lc = 1)
 
-let isomorphic_to_tuple lc = (Array.length lc = 1)
-(*
-let isomorphic_to_tuple lc = (Array.length lc = 1)
-*)
 module PrintingCasesMake =
   functor (Test : sig 
      val test : int array -> bool
-(*     val test : constr array -> bool*)
      val error_message : string
      val member_message : identifier -> bool -> string
      val field : string
@@ -195,8 +185,10 @@ module PrintingCasesLet =
 module PrintingIf  = Goptions.MakeIdentTable(PrintingCasesIf)
 module PrintingLet = Goptions.MakeIdentTable(PrintingCasesLet)
 
-let force_let (lc,(indsp,_,_,_,_)) = PrintingLet.active (indsp,lc)
-let force_if (lc,(indsp,_,_,_,_)) = PrintingIf.active (indsp,lc)
+let force_let (_,(indsp,_,_,_,_)) = 
+  let lc = constr_nargs indsp in PrintingLet.active (indsp,lc)
+let force_if (_,(indsp,_,_,_,_)) =
+  let lc = constr_nargs indsp in PrintingIf.active (indsp,lc)
 
 (* Options for printing or not wildcard and synthetisable types *)
 
@@ -311,7 +303,8 @@ let rec detype avoid env t =
     | IsMutCase (annot,p,c,bl) ->
 	let synth_type = synthetize_type () in
 	let tomatch = detype avoid env c in
-	let (consnargsl,(indsp,considl,k,style,tags)) = annot in
+	let (_,(indsp,considl,k,style,tags)) = annot in
+	let consnargsl = constr_nargs indsp in
 	let pred = 
 	  if synth_type & computable p k & considl <> [||] then
 	    None

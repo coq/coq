@@ -26,7 +26,7 @@ type case_style = PrintLet | PrintIf | PrintCases
 type case_printing =
     inductive_path * identifier array * int
     * case_style option * pattern_source array
-type case_info = int array * case_printing
+type case_info = int * case_printing
 
 (* Sorts. *)
 

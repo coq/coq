@@ -36,7 +36,7 @@ type case_printing =
     inductive_path * identifier array * int
     * case_style option * pattern_source array
 (* the integer is the number of real args, needed for reduction *)
-type case_info = int array * case_printing
+type case_info = int * case_printing
 
 (* Concrete type for making pattern-matching. *)
 module Polymorph :

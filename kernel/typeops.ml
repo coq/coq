@@ -369,13 +369,16 @@ let check_branches_message env sigma cj (explft,lft) =
   done;
   !univ)
 
-let judge_of_case env sigma ci pj cj lfj =
+let nparams_of (IndType (IndFamily (mis,_),_)) = mis_nparams mis 
+
+let judge_of_case env sigma (np,_ as ci) pj cj lfj =
   let lft = Array.map (fun j -> body_of_type j.uj_type) lfj in
   let indspec =
     try find_rectype env sigma (body_of_type cj.uj_type)
     with Induc -> error_case_not_inductive CCI env cj in
-  let (bty,rslty,univ) =
-    type_case_branches env sigma indspec pj cj.uj_val in
+  if np <> nparams_of indspec then 
+    anomaly "judge_of_case: wrong parameters number";
+  let (bty,rslty,univ) = type_case_branches env sigma indspec pj cj.uj_val in
   let kind = mysort_of_arity env sigma (body_of_type pj.uj_type) in
   let univ' = check_branches_message env sigma cj (bty,lft) in
   ({ uj_val  = mkMutCase (ci, (nf_betaiota pj.uj_val), cj.uj_val, Array.map j_val lfj);

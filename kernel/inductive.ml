@@ -187,11 +187,11 @@ let mis_is_recursive mis =
 
 (* Annotation for cases *)
 let make_case_info mis style pats_source =
-  let constr_lengths = Array.map List.length (mis_recarg mis) in
+(*  let constr_lengths = Array.map List.length (mis_recarg mis) in*)
   let indsp = (mis.mis_sp,mis.mis_tyi) in
   let print_info =
     (indsp,mis_consnames mis,mis.mis_mip.mind_nrealargs,style,pats_source) in
-  (constr_lengths,print_info)
+  ((*constr_lengths*) mis_nparams mis,print_info)
 
 let make_default_case_info mis =
   make_case_info mis None (Array.init (mis_nconstr mis) (fun _ -> RegularPat))

@@ -37,6 +37,11 @@ type recipe = {
   d_abstract : identifier list;
   d_modlist : work_list }
 
+let rec modif_length = function
+  | ABSTRACT :: l -> 1 + modif_length l
+  | ERASE :: l -> modif_length l
+  | [] -> 0
+
 let interp_modif absfun mkfun (sp,modif) cl = 
   let rec interprec = function
     | ([], cl) -> mkfun (sp, Array.of_list cl)
@@ -64,8 +69,9 @@ let modify_opers replfun absfun (constl,indl,cstrl) =
       | OpMutCase (n,(spi,a,b,c,d) as oper) ->
 	  (try
 	     match List.assoc spi indl with
-	       | DO_ABSTRACT (spi',_) ->
-		   gather_constr (OpMutCase (n,(spi',a,b,c,d)),cl')
+	       | DO_ABSTRACT (spi',modif) ->
+		   let n' = modif_length modif + n in
+		   gather_constr (OpMutCase (n',(spi',a,b,c,d)),cl')
 	       | _ -> raise Not_found
 	   with
 	     | Not_found -> gather_constr (op,cl'))
