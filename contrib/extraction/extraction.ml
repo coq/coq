@@ -88,7 +88,6 @@ type term_extraction_result =
 type extraction_result =
   | Emltype of ml_type * signature * identifier list
   | Emlterm of ml_ast
-  | Eprop
 
 (*s Utility functions. *)
 
@@ -338,10 +337,9 @@ let rec extract_type env c =
 		let cty = constant_type env Evd.empty (sp,a) in 
 		if is_arity env Evd.empty cty then
 		  (match extract_constant sp with
-		     | Emltype (_, sc, flc) -> 
+		     | Emltype (mlt, sc, flc) ->
+			 assert (mlt<>Miniml.Tprop);
 			 extract_type_app env fl (ConstRef sp,sc,flc) args
-		     | Eprop -> 
-			 Tprop
 		     | Emlterm _ -> 
 			 assert false 
 			 (* [cty] is of type an arity. *))
@@ -435,107 +433,111 @@ and extract_term_with_type env ctx c t =
   (* The only non-informative case: [s] is [Prop] *)
   if is_Prop (whd_betadeltaiota env Evd.empty s) then
     Rprop
-  else match kind_of_term c with
-    | IsLambda (n, t, d) ->
-	let v = v_of_arity env t in 
-	let env' = push_rel (n,None,t) env in
-	let ctx' = (snd v = NotArity) :: ctx in
-	let d' = extract_term env' ctx' d in
-	(* If [d] was of type an arity, [c] too would be so *)
-	(match v with
-	   | _,Arity -> d'
-	   | l,NotArity -> match d' with
-	       | Rmlterm a -> 
-		   let id = if l = Logic then prop_name else id_of_name n in
-		   Rmlterm (MLlam (id, a))
-	       | Rprop -> assert false (* Cf. rem. above *))
-    | IsRel n ->
-	(* TODO : magic or not *) 
-	Rmlterm (MLrel (renum_db ctx n))
-    | IsApp (f,a) ->
-  	let tyf = Typing.type_of env Evd.empty f in
-        let s = signature_of_application env f tyf a in  
-      	extract_app env ctx (f,tyf,s) (Array.to_list a) 
-    | IsConst (sp,_) ->
-	Rmlterm (MLglob (ConstRef sp))
-    | IsMutConstruct (cp,_) ->
-	let (s,n) = signature_of_constructor cp in
-	let ns = List.length s + 1 in
-	let rec abstract rels i = function
-	  | [] -> 
-	      MLcons (ConstructRef cp, List.length rels, List.rev rels)
-	  | ((Info,NotArity),id) :: l -> 
-	      MLlam (id, abstract (MLrel (ns - i) :: rels) (succ i) l)
-	  | (_,id) :: l ->
-	      MLlam (id, abstract rels (succ i) l)
-	in
-	Rmlterm (abstract_n n (abstract [] 1 s))
-    | IsMutCase ((ni,(ip,cnames,_,_,_)),p,c,br) ->
-	let extract_branch_aux j b = 	  
-	  let (binders,e) = decompose_lam_eta ni.(j) env b in
-	  let binders = List.rev binders in
-	  let (env',ctx') = push_many_rels_ctx false env ctx binders in
-	  (* Some patological cases need an [extract_constr] here 
-	     rather than an [extract_term]. See exemples in 
-	     [test_extraction.v] *)
-	  let e' = match extract_constr env' ctx' e with
-	    | Eprop -> MLprop
-	    | Emltype _ -> MLarity
-	    | Emlterm a -> a
-	  in (binders,e')
-	in
-	let extract_branch j b =
-	  let cp = (ip,succ j) in
-	  let (s,_) = signature_of_constructor cp in
-	  assert (List.length s = ni.(j));
-	  (* number of arguments, without parameters *)
-	  let (binders, e') = extract_branch_aux j b in
-	  let ids = 
-	    List.fold_right 
-	      (fun ((v,_),(n,_)) acc ->
-		 if v = default then (id_of_name n :: acc) else acc)
-	      (List.combine s binders) []
-	  in
-	  (ConstructRef cp, ids, e')
-	in
-	(* [c] has an  inductive type, not an arity type *)
-	(match extract_term env ctx c with
-	   | Rmlterm a -> Rmlterm (MLcase (a, Array.mapi extract_branch br))
-	   | Rprop -> (* Singleton elimination *)
-	       assert (Array.length br = 1);
-	       let (_,e) = extract_branch_aux 0 br.(0) in 	  
-	       Rmlterm e)
-    | IsFix ((_,i),(ti,fi,ci)) ->
-	let n = Array.length ti in
-	let (env', ctx') = fix_environment env ctx fi ti in
-	let extract_fix_body c t =
-	  match extract_constr_with_type env' ctx' c (lift n t) with
-	    | Eprop -> MLprop 
-	    | Emltype _ -> MLarity
-	    | Emlterm a -> a
-	in
-	let ei = Array.to_list (array_map2 extract_fix_body ci ti) in
-	Rmlterm (MLfix (i, List.map id_of_name fi, ei))
-    | IsLetIn (n, c1, t1, c2) ->
-	let id = id_of_name n in
-	let env' = push_rel (n,Some c1,t1) env in
-	let tag = v_of_arity env t1 in
-	(match tag with
-	   | (Info, NotArity) -> 
-	       let c1' = extract_term_with_type env ctx c1 t1 in
-	       let c2' = extract_term env' (true :: ctx) c2 in
-	       (* If [c2] was of type an arity, [c] too would be so *)
-	       (match (c1',c2') with
-		  | (Rmlterm a1,Rmlterm a2) -> Rmlterm (MLletin (id,a1,a2))
-		  | _ -> assert false (* Cf. rem. above *))
-	   | _ ->
-	       extract_term env' (false :: ctx) c2)
-    | IsCast (c, _) ->
-	extract_term_with_type env ctx c t
-    | IsMutInd _ | IsProd _ | IsSort _ | IsVar _ 
-    | IsMeta _ | IsEvar _ | IsCoFix _ ->
-	assert false 
+  else 
+    Rmlterm (extract_term_info_with_type env ctx c t)
 
+(* Variants with a stronger precondition: [c] is informative. 
+   We directly return a [mlast], not a [term_extraction_result] *)
+
+and extract_term_info env ctx c = 
+  let t = Typing.type_of env Evd.empty c in
+  extract_term_info_with_type env ctx c t
+
+and extract_term_info_with_type env ctx c t = 
+    match kind_of_term c with
+      | IsLambda (n, t, d) ->
+	  let v = v_of_arity env t in 
+	  let env' = push_rel (n,None,t) env in
+	  let ctx' = (snd v = NotArity) :: ctx in
+	  let d' = extract_term_info env' ctx' d in
+	  (* If [d] was of type an arity, [c] too would be so *)
+	  (match v with
+	     | _,Arity -> d'
+	     | l,NotArity -> 
+		 let id = if l = Logic then prop_name else id_of_name n in
+		 MLlam (id, d'))
+      | IsRel n ->
+	  (* TODO : magic or not *) 
+	  MLrel (renum_db ctx n)
+      | IsApp (f,a) ->
+  	  let tyf = Typing.type_of env Evd.empty f in
+          let s = signature_of_application env f tyf a in  
+      	  extract_app env ctx (f,tyf,s) (Array.to_list a) 
+      | IsConst (sp,_) ->
+	  MLglob (ConstRef sp)
+      | IsMutConstruct (cp,_) ->
+	  let (s,n) = signature_of_constructor cp in
+	  let ns = List.length s + 1 in
+	  let rec abstract rels i = function
+	    | [] -> 
+		MLcons (ConstructRef cp, List.length rels, List.rev rels)
+	    | ((Info,NotArity),id) :: l -> 
+		MLlam (id, abstract (MLrel (ns - i) :: rels) (succ i) l)
+	    | (_,id) :: l ->
+		MLlam (id, abstract rels (succ i) l)
+	  in
+	  abstract_n n (abstract [] 1 s)
+      | IsMutCase ((ni,(ip,cnames,_,_,_)),p,c,br) ->
+	  let extract_branch_aux j b = 	  
+	    let (binders,e) = decompose_lam_eta ni.(j) env b in
+	    let binders = List.rev binders in
+	    let (env',ctx') = push_many_rels_ctx false env ctx binders in
+	    (* Some patological cases need an [extract_constr] here 
+	       rather than an [extract_term]. See exemples in 
+	       [test_extraction.v] *)
+	    let e' = match extract_constr env' ctx' e with
+	      | Emltype _ -> MLarity
+	      | Emlterm a -> a
+	    in (binders,e')
+	  in
+	  let extract_branch j b =
+	    let cp = (ip,succ j) in
+	    let (s,_) = signature_of_constructor cp in
+	    assert (List.length s = ni.(j));
+	    (* number of arguments, without parameters *)
+	    let (binders, e') = extract_branch_aux j b in
+	    let ids = 
+	      List.fold_right 
+		(fun ((v,_),(n,_)) acc ->
+		   if v = default then (id_of_name n :: acc) else acc)
+		(List.combine s binders) []
+	    in
+	    (ConstructRef cp, ids, e')
+	  in
+	  (* [c] has an inductive type, not an arity type *)
+	  (match extract_term env ctx c with
+	     | Rmlterm a -> MLcase (a, Array.mapi extract_branch br)
+	     | Rprop -> (* Singleton elimination *)
+		 assert (Array.length br = 1);
+		 snd (extract_branch_aux 0 br.(0)))
+      | IsFix ((_,i),(ti,fi,ci)) ->
+	  let n = Array.length ti in
+	  let (env', ctx') = fix_environment env ctx fi ti in
+	  let extract_fix_body c t =
+	    match extract_constr_with_type env' ctx' c (lift n t) with
+	      | Emltype _ -> MLarity
+	      | Emlterm a -> a
+	  in
+	  let ei = Array.to_list (array_map2 extract_fix_body ci ti) in
+	  MLfix (i, List.map id_of_name fi, ei)
+      | IsLetIn (n, c1, t1, c2) ->
+	  let id = id_of_name n in
+	  let env' = push_rel (n,Some c1,t1) env in
+	  let tag = v_of_arity env t1 in
+	  (match tag with
+	     | (Info, NotArity) -> 
+		 let c1' = extract_term_info_with_type env ctx c1 t1 in
+		 let c2' = extract_term_info env' (true :: ctx) c2 in
+		 (* If [c2] was of type an arity, [c] too would be so *)
+		 MLletin (id,c1',c2')
+	     | _ ->
+		 extract_term_info env' (false :: ctx) c2)
+      | IsCast (c, _) ->
+	  extract_term_info_with_type env ctx c t
+      | IsMutInd _ | IsProd _ | IsSort _ | IsVar _ 
+      | IsMeta _ | IsEvar _ | IsCoFix _ ->
+	  assert false 
+	    
 and extract_app env ctx (f,tyf,sf) args =
   let nargs = List.length args in
   assert (List.length sf >= nargs);
@@ -549,15 +551,14 @@ and extract_app env ctx (f,tyf,sf) args =
 	     (* We can't trust the tag [Vdefault], we use [extract_constr] *)
 	     match extract_constr env ctx a with 
 	       | Emltype _ -> MLarity :: args
-	       | Eprop -> MLprop :: args
 	       | Emlterm mla -> mla :: args)
       (List.combine (list_firstn nargs sf) args)
       []
   in
   (* [f : arity] implies [(f args):arity], that can't be *)
-  match extract_term_with_type env ctx f tyf with
-    | Rmlterm f' -> Rmlterm (MLapp (f', mlargs))
-    | Rprop -> assert false
+  let f' = extract_term_info_with_type env ctx f tyf in 
+  MLapp (f', mlargs)
+
 
 and signature_of_application env f t a = 
   let nargs = Array.length a in	 	
@@ -587,16 +588,14 @@ and signature_of_application env f t a =
 and extract_constr_with_type env ctx c t =
     match v_of_arity env t with
       | (Logic, Arity) -> Emltype (Miniml.Tarity, [], [])
-      | (Logic, NotArity) -> Eprop  	
+      | (Logic, NotArity) -> Emlterm MLprop
       | (Info, Arity) -> 
 	  (match extract_type env c with
-	     | Tprop -> Eprop
+	     | Tprop -> Emltype (Miniml.Tprop, [], [])
 	     | Tarity -> Emltype (Miniml.Tarity, [], [])
 	     | Tmltype (t, sign, fl) -> Emltype (t, sign, fl))
       | (Info, NotArity) -> 
-	  (match extract_term_with_type env ctx c t with 
-	     | Rmlterm a -> Emlterm a
-	     | Rprop -> Eprop)
+	  Emlterm (extract_term_info_with_type env ctx c t)
  	    
 and extract_constr env ctx c = 
   extract_constr_with_type env ctx c (Typing.type_of env Evd.empty c)
@@ -715,8 +714,7 @@ let extract_declaration r = match r with
   | ConstRef sp -> 
       (match extract_constant sp with
 	 | Emltype (mlt, s, fl) -> Dabbrev (r, params_of_sign s @ fl, mlt)
-	 | Emlterm t -> Dglob (r, t)
-	 | Eprop -> Dglob (r, MLprop))
+	 | Emlterm t -> Dglob (r, t))
   | IndRef (sp,_) -> extract_inductive_declaration sp
   | ConstructRef ((sp,_),_) -> extract_inductive_declaration sp
   | VarRef _ -> assert false

@@ -30,7 +30,6 @@ type extraction_context = bool list
 type extraction_result =
   | Emltype of ml_type * signature * identifier list
   | Emlterm of ml_ast
-  | Eprop
 
 (*s Extraction functions. *)
 

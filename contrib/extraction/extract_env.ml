@@ -128,8 +128,7 @@ let _ =
 		| _ ->
 		    match extract_constr (Global.env()) [] c with
 		      | Emltype (t,_,_) -> mSGNL (Pp.pp_type t)
-		      | Emlterm a -> mSGNL (Pp.pp_ast a)
-		      | Eprop -> message "prop")
+		      | Emlterm a -> mSGNL (Pp.pp_ast a))
        | _ -> assert false)
 
 (*s Recursive extraction in the Coq toplevel. The vernacular command is
