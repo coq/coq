@@ -1343,6 +1343,8 @@ let cook_sign hyp0 indvars env =
       before:=false; 
       None (* fake value *)
     end else if List.mem hyp indvars then begin
+      (* warning: hyp can still occur after induction *)
+      (* e.g. if the goal (t hyp hyp0) with other occs of hyp in t *)
       indhyps := hyp::!indhyps; 
       rhyp
     end else
@@ -1580,9 +1582,10 @@ let induction_from_context isrec elim_info hyp0 (names,b_rnames) gl =
     [ if deps = [] then tclIDTAC else apply_type tmpcl args;
       thin dephyps;
       (if isrec then tclTHENFIRSTn else tclTHENLASTn)
-       	(tclTHEN
-	   (induction_tac hyp0 typ0 (elimc,elimt))
-	   (thin (hyp0::indhyps)))
+       	(tclTHENLIST
+	  [ induction_tac hyp0 typ0 (elimc,elimt);
+	    thin [hyp0];
+            tclTRY (thin indhyps) ])
        	(array_map2
 	   (induct_discharge statlists lhyp0 (List.rev dephyps)) indsign names)
     ]
