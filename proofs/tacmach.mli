@@ -41,8 +41,8 @@ val pf_check_type         : goal sigma -> constr -> constr -> constr
 val pf_execute            : goal sigma -> constr -> unsafe_judgment
 val hnf_type_of           : goal sigma -> constr -> constr
 
-val pf_constr_of_com      : goal sigma -> Coqast.t -> constr
-val pf_constr_of_com_sort : goal sigma -> Coqast.t -> constr
+val pf_interp_constr      : goal sigma -> Coqast.t -> constr
+val pf_interp_type : goal sigma -> Coqast.t -> constr
 
 val pf_get_hyp             : goal sigma -> identifier -> constr
 

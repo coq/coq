@@ -69,13 +69,13 @@ let hnf_type_of gls =
 let pf_check_type gls c1 c2 =
   let casted = mkCast c1 c2 in pf_type_of gls casted
 
-let pf_constr_of_com gls c =
+let pf_interp_constr gls c =
   let evc = project gls in 
-  Astterm.constr_of_com evc (sig_it gls).evar_env c
+  Astterm.interp_constr evc (sig_it gls).evar_env c
 
-let pf_constr_of_com_sort gls c =
+let pf_interp_type gls c =
   let evc = project gls in 
-  Astterm.constr_of_com_sort evc (sig_it gls).evar_env c
+  Astterm.interp_type evc (sig_it gls).evar_env c
 
 let pf_global gls id = Declare.construct_reference (sig_it gls).evar_env CCI id
 let pf_parse_const gls = compose (pf_global gls) id_of_string
@@ -282,26 +282,26 @@ let overwriting_tactic = Refiner.overwriting_add_tactic
 
 type ('a,'b) parse_combinator = ('a -> tactic) -> ('b -> tactic)
 
-let tactic_com tac t x = tac (pf_constr_of_com x t) x
+let tactic_com tac t x = tac (pf_interp_constr x t) x
       
-let tactic_com_sort tac t x = tac (pf_constr_of_com_sort x t) x
+let tactic_com_sort tac t x = tac (pf_interp_type x t) x
       
 let tactic_com_list tac tl x =
-  let translate = pf_constr_of_com x in 
+  let translate = pf_interp_constr x in 
   tac (List.map translate tl) x
     
 let tactic_bind_list tac tl x =
-  let translate = pf_constr_of_com x in 
+  let translate = pf_interp_constr x in 
   tac (List.map (fun (b,c)->(b,translate c)) tl) x
 
 let tactic_com_bind_list tac (c,tl) x =
-  let translate = pf_constr_of_com x in 
+  let translate = pf_interp_constr x in 
   tac (translate c,List.map (fun (b,c')->(b,translate c')) tl) x
 
 let tactic_com_bind_list_list tac args gl =
   let translate (c,tl) = 
-    (pf_constr_of_com gl c,
-     List.map (fun (b,c')->(b,pf_constr_of_com gl c')) tl) in 
+    (pf_interp_constr gl c,
+     List.map (fun (b,c')->(b,pf_interp_constr gl c')) tl) in 
   tac (List.map translate args) gl
 
 
@@ -319,31 +319,31 @@ let overwrite_hidden_tactic s tac  =
   (fun args -> vernac_tactic(s,args))
 
 let tactic_com = 
-  fun tac t x -> tac (pf_constr_of_com x t) x
+  fun tac t x -> tac (pf_interp_constr x t) x
       
 let tactic_com_sort = 
-  fun tac t x -> tac (pf_constr_of_com_sort x t) x
+  fun tac t x -> tac (pf_interp_type x t) x
       
 let tactic_com_list =    
   fun tac tl x -> 
-    let translate = pf_constr_of_com x in 
+    let translate = pf_interp_constr x in 
     tac (List.map translate tl) x
 
 let tactic_bind_list =
   fun tac tl x -> 
-    let translate = pf_constr_of_com x in 
+    let translate = pf_interp_constr x in 
     tac (List.map (fun (b,c)->(b,translate c)) tl) x
 
 let tactic_com_bind_list =
   fun tac (c,tl) x -> 
-    let translate = pf_constr_of_com x in 
+    let translate = pf_interp_constr x in 
     tac (translate c,List.map (fun (b,c')->(b,translate c')) tl) x
 
 let tactic_com_bind_list_list =
   fun tac args gl -> 
     let translate (c,tl) = 
-      (pf_constr_of_com gl c,
-       List.map (fun (b,c')->(b,pf_constr_of_com gl c')) tl)
+      (pf_interp_constr gl c,
+       List.map (fun (b,c')->(b,pf_interp_constr gl c')) tl)
     in 
     tac (List.map translate args) gl
 
@@ -374,7 +374,7 @@ let overwrite_hidden_constr_comarg_tactic s tac =
   let tacfun = function 
     | [Constr c] -> tac c
     | [Command com] -> 
-        (fun gls -> tac (pf_constr_of_com gls com) gls)
+        (fun gls -> tac (pf_interp_constr gls com) gls)
     | _ -> 
 	anomaly 
 	  "overwrite_hidden_constr_comarg_tactic : neither CONSTR nor COMMAND"
@@ -475,7 +475,7 @@ open Printer
 let pr_com sigma goal com =
   prterm (rename_bound_var 
             (ids_of_sign (var_context goal.evar_env)) 
-            (Astterm.constr_of_com sigma goal.evar_env com))
+            (Astterm.interp_constr sigma goal.evar_env com))
 
 let pr_one_binding sigma goal = function
   | (Dep id,com)  -> [< print_id id ; 'sTR":=" ; pr_com sigma goal com >]

@@ -331,7 +331,7 @@ let _ =
     "HintResolve"
     (function 
        | [VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_CONSTR c] ->
-	   let c1 = Astterm.constr_of_com Evd.empty (Global.env()) c in
+	   let c1 = Astterm.interp_constr Evd.empty (Global.env()) c in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
 		      	 | _ -> bad_vernac_args "HintResolve") l in
@@ -343,7 +343,7 @@ let _ =
     "HintImmediate"
     (function 
        | [VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_CONSTR c] ->
-	   let c1 = Astterm.constr_of_com Evd.empty (Global.env()) c in
+	   let c1 = Astterm.interp_constr Evd.empty (Global.env()) c in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
 			 | _ -> bad_vernac_args "HintImmediate") l in

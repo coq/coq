@@ -80,6 +80,18 @@ Changements dans les fonctions :
           whd_betadeltat      -> whd_betaevar
           whd_betadeltatiota  -> whd_betaiotaevar
 
+        Astterm
+          constr_of_com_casted -> interp_casted_constr
+          constr_of_com_sort   -> interp_type
+          constr_of_com        -> interp_constr
+          rawconstr_of_com     -> interp_rawconstr
+          type_of_com          -> typed_type_of_com
+
+        Tacmach
+          pf_constr_of_com_sort -> pf_interp_type
+          pf_constr_of_com      -> pf_interp_constr
+
+
 Changements dans les inductifs
 ------------------------------
 Nouveaux types "constructor" et "inductive" dans Term

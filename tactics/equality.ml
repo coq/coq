@@ -119,7 +119,7 @@ let replace c2 c1 gl =
 let dyn_replace args gl = 
   match args with 
     | [(Command c1);(Command c2)] -> 
-       	replace (pf_constr_of_com gl c1) (pf_constr_of_com gl c2) gl
+       	replace (pf_interp_constr gl c1) (pf_interp_constr gl c2) gl
     | [(Constr c1);(Constr c2)] -> 
        	replace c1 c2 gl
     | _ -> assert false
@@ -1441,7 +1441,7 @@ let rewrite_in lR com id gls =
      let _ = lookup_var id (pf_env gls) in () 
    with Not_found -> 
      errorlabstrm "rewrite_in" [< 'sTR"No such hypothesis : " ;print_id id >]);
-  let c = pf_constr_of_com gls com in
+  let c = pf_interp_constr gls com in
   let eqn = pf_type_of gls c in
   try
     let _ = find_eq_data_decompose eqn in
@@ -1470,7 +1470,7 @@ let substConcl_LR_tac =
     hide_tactic "SubstConcl_LR"
       (function 
 	 | [Command eqn] -> 
-	     (fun gls ->  substConcl_LR (pf_constr_of_com gls eqn)  gls)
+	     (fun gls ->  substConcl_LR (pf_interp_constr gls eqn)  gls)
 	 | _ -> assert false)
   in 
   fun eqn  -> gentac [Command eqn] 
@@ -1524,7 +1524,7 @@ let substConcl_RL_tac =
     hide_tactic "SubstConcl_RL"
       (function 
 	 | [Command eqn] -> 
-	     (fun gls ->  substConcl_RL (pf_constr_of_com gls eqn)  gls)
+	     (fun gls ->  substConcl_RL (pf_interp_constr gls eqn)  gls)
 	 | _ -> assert false)
   in 
   fun eqn  -> gentac [Command eqn] 
@@ -1619,7 +1619,7 @@ let _ =
      | [] -> lrl
      | (VARG_VARGLIST [VARG_CONSTR rule; VARG_STRING ort])::a 
 	 when ort="LR" or ort="RL" ->
-           lrules_arg (lrl@[(Astterm.constr_of_com Evd.empty
+           lrules_arg (lrl@[(Astterm.interp_constr Evd.empty
 			      (Global.env()) rule,ort="LR")]) a
      | _ -> bad_vernac_args "HintRewrite"
    and lbases_arg lbs = function
@@ -1710,7 +1710,7 @@ let explicit_hint_base gl = function
 	| lbs -> lbs
       end 
   | Explicit lbs -> 
-      List.map (fun (ast,b) -> (pf_constr_of_com gl ast, b)) lbs 
+      List.map (fun (ast,b) -> (pf_interp_constr gl ast, b)) lbs 
 
 (*AutoRewrite cannot be expressed with a combination of tacticals (due to the
   options). So, we make it in a primitive way*)

@@ -99,7 +99,7 @@ let decompose_or c gls =
 let dyn_decompose args gl = 
   match args with 
     | [Clause ids; Command c] -> 
-        decompose_these (pf_constr_of_com gl c) ids gl
+        decompose_these (pf_interp_constr gl c) ids gl
     | [Clause ids; Constr c]  -> 
         decompose_these c ids  gl
     | l -> bad_tactic_args "DecomposeThese" l gl

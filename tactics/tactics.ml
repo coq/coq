@@ -110,7 +110,7 @@ let dyn_mutual_fix argsl gl =
 	  | _  -> bad_tactic_args "mutual_fix" argsl
 	in
 	let (lid,ln,lar) = decomp [] [] [] lfix in
-	mutual_fix (id::lid) (n::ln) (List.map (pf_constr_of_com gl) lar) gl
+	mutual_fix (id::lid) (n::ln) (List.map (pf_interp_constr gl) lar) gl
     | l -> bad_tactic_args "mutual_fix" l 
 
 let mutual_cofix = Tacmach.mutual_cofix
@@ -133,7 +133,7 @@ let dyn_mutual_cofix argsl gl =
 	  |  _ -> bad_tactic_args "mutual_cofix" argsl
 	in
 	let (lid,lar) = decomp [] [] lcofix in
-        mutual_cofix (id::lid) (List.map (pf_constr_of_com gl) lar) gl
+        mutual_cofix (id::lid) (List.map (pf_interp_constr gl) lar) gl
    | l -> bad_tactic_args "mutual_cofix" l 
 
 
@@ -213,7 +213,7 @@ let pattern_option l = reduct_option (pattern_occs l)
 let dyn_change = function
   | [Command (com); Clause cl] ->
       (fun goal -> 
-         let c = Astterm.constr_of_com_sort (project goal) (pf_env goal) com in
+         let c = Astterm.interp_type (project goal) (pf_env goal) com in
          in_combinator (change_in_concl c) (change_in_hyp c) cl goal)
   | l -> bad_tactic_args "change" l
 
@@ -693,7 +693,7 @@ let letin_tac with_eq name c occ_ccl occhypl gl =
 
 let dyn_lettac args gl = match args with
   | [Identifier id; Command com; Letpatterns (o,l)] -> 
-      letin_tac true (Name id) (pf_constr_of_com gl com) o l gl
+      letin_tac true (Name id) (pf_interp_constr gl com) o l gl
   | [Identifier id; Constr c; Letpatterns (o,l)]    ->
       letin_tac true (Name id) c o l gl
   | l -> bad_tactic_args "letin" l
@@ -723,7 +723,7 @@ let dyn_exact cc gl = match cc with
   | [Command com] ->
       let evc = (project gl) in
       let concl = (pf_concl gl) in
-      let c = Astterm.constr_of_com_casted evc (pf_env gl) com concl in
+      let c = Astterm.interp_casted_constr evc (pf_env gl) com concl in
       refine c gl 
   | l -> bad_tactic_args "exact" l 
 
@@ -803,12 +803,12 @@ let dyn_new_hyp argsl gl =
     | [Integer n; Command com; Bindings binds]  ->
 	tactic_bind_list 
           (new_hyp (Some n) 
-             (pf_constr_of_com gl com)) 
+             (pf_interp_constr gl com)) 
           binds gl
     | [Command com; Bindings binds] ->  
 	tactic_bind_list 
           (new_hyp None 
-             (pf_constr_of_com gl com))
+             (pf_interp_constr gl com))
           binds gl
     | [Integer n; Constr c; Cbindings binds] ->  
         new_hyp (Some n) c binds gl
@@ -1502,7 +1502,7 @@ let instantiate_pf_com n com pfts =
     with Failure _ -> 
       error "not so many uninstantiated existential variables"
   in 
-  let c = Astterm.constr_of_com sigma evd.evar_env com in     
+  let c = Astterm.interp_constr sigma evd.evar_env com in     
   let wc' = w_Define sp c wc in
   let newgc = ts_mk (w_Underlying wc') in
   change_constraints_pftreestate newgc pfts
@@ -1522,7 +1522,7 @@ let contradiction_on_hyp id gl =
 
 (* Absurd *)
 let absurd c gls =
-  let falseterm = pf_constr_of_com_sort gls (Ast.nvar "False") in
+  let falseterm = pf_interp_type gls (Ast.nvar "False") in
   (tclTHENS
      (tclTHEN (elim_type falseterm) (cut c)) 
      ([(tclTHENS
@@ -1541,7 +1541,7 @@ let dyn_absurd = function
   | l             -> bad_tactic_args "absurd" l
 
 let contradiction gls = 
-  let falseterm = pf_constr_of_com_sort gls (Ast.nvar "False") in 
+  let falseterm = pf_interp_type gls (Ast.nvar "False") in 
   tclTHENLIST [ intros; elim_type falseterm; assumption ] gls
 
 let dyn_contradiction = function
