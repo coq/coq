@@ -13,8 +13,8 @@ Main novelties
 
 References are to Coq V7.1 reference manual
 
-- New primitive let-in construct (see section 1.2.8)
-- Long names (see section 2.6)
+- New primitive let-in construct (see sections 1.2.8 and )
+- Long names (see sections 2.6 and 2.7)
 - New high-level tactic language (see chapter 10)
 - Improved search facilities (see section 5.2)
 - New extraction algorithm managing the Type level (see chapter 17)

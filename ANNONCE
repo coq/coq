@@ -27,9 +27,8 @@ on version 7.0.
     Marché's minimal edition distance algorithm, Buchberger's algorithm,
     RSA cryptographic algorithm, Stalmarck tautology checker algorithm,
     the Fundamental Theorem of Algebra and ZFC set theory).
-  - new tactics NewDestruct, NewInduction and Assert intended to
-    improve the behaviour of previous Elim and Induction, Case and
-    Destruct, and Cut tactics
+  - new induction tactics NewDestruct and NewInduction
+  - new tactic Assert for forward reasoning
   - known-bugs fixed
   - excessive memory use mainly fixed
 
