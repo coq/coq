@@ -197,11 +197,14 @@ let rec pat_pos_of_bignat dloc x name =
     | (q,true) ->
         PatCstr (dloc,path_of_xH,[],name)
 
+let error_non_positive dloc = 
+  user_err_loc (dloc, "interp_positive",
+    str "No non-positive numbers in type \"positive\"!")
+
 let pat_interp_positive dloc = function
-  | POS n -> pat_pos_of_bignat dloc n
-  | NEG n ->
-      user_err_loc (dloc, "interp_positive",
-        str "No negative number in type \"positive\"!")
+  | NEG n -> error_non_positive dloc
+  | POS n ->
+     if is_nonzero n then pat_pos_of_bignat dloc n else error_non_positive dloc
 
 (**********************************************************************)
 (* Printing positive via scopes                                       *)
