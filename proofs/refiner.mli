@@ -205,4 +205,4 @@ val pr_tactic   : tactic_expr -> std_ppcmds
 val print_script :
   bool -> evar_map -> named_context -> proof_tree -> std_ppcmds
 val print_treescript :
-  evar_map -> named_context -> proof_tree -> std_ppcmds
+  bool -> evar_map -> named_context -> proof_tree -> std_ppcmds

@@ -899,7 +899,7 @@ let pr_tactic = function
 	Pptacticnew.pr_tactic (Global.env()) t
 
 let pr_rule = function
-  | Prim r -> pr_prim_rule r
+  | Prim r -> hov 0 (pr_prim_rule r)
   | Tactic (texp,_) -> hov 0 (pr_tactic texp)
   | Change_evars ->
       (* This is internal tactic and cannot be replayed at user-level.
@@ -910,7 +910,7 @@ let pr_rule = function
 (* Does not print change of evars *)
 let pr_rule_dot = function 
   | Change_evars -> mt ()
-  | r -> pr_rule r ++ str"." ++ fnl ()
+  | r -> pr_rule r ++ str"."
 
 exception Different
 
@@ -941,36 +941,41 @@ let rec print_proof sigma osign pf =
 )
 	  
 let pr_change gl = 
-  (str"Change " ++ prterm_env (Global.env()) gl.evar_concl ++ str"." ++ fnl ())
-		     
+  (str"Change " ++ prterm_env (Global.env()) gl.evar_concl ++ str".")
+
 let rec print_script nochange sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in
   match pf.ref with
     | None ->
-        if nochange then 
+        (if nochange then 
 	  (str"<Your Tactic Text here>") 
 	else 
-	  pr_change pf.goal
+	  pr_change pf.goal)
+	++ fnl ()
     | Some(r,spfl) ->
-        ((if nochange then (mt ()) else (pr_change pf.goal)) ++
-           pr_rule_dot r ++
+        ((if nochange then (mt ()) else (pr_change pf.goal ++ fnl ())) ++
+           pr_rule_dot r ++ fnl () ++
            prlist_with_sep pr_fnl
              (print_script nochange sigma sign) spfl)
 
-let rec print_treescript sigma osign pf =
-  let {evar_hyps=sign; evar_concl=cl} = pf.goal in
-  match pf.ref with
-    | None -> (mt ())
+let print_treescript nochange sigma _osign pf =
+  let rec aux pf =
+    let {evar_hyps=sign; evar_concl=cl} = pf.goal in
+    match pf.ref with
+    | None ->
+        if nochange then 
+	  (str"<Your Tactic Text here>") 
+	else 
+	  (pr_change pf.goal)
     | Some(r,spfl) ->
-        (pr_rule_dot r ++
-           let prsub =
-             prlist_with_sep pr_fnl (print_treescript sigma sign) spfl
-           in
-           if List.length spfl > 1 then 
-	     (str"  " ++ hov 0 prsub)
-           else 
-	     prsub 
-)
+        (if nochange then mt () else (pr_change pf.goal ++ fnl ())) ++
+	pr_rule_dot r ++
+	match spfl with
+	| [] -> mt ()
+	| [spf] -> fnl () ++ aux spf
+	| _ -> fnl () ++ str " " ++
+	    hov 0 (prlist_with_sep fnl (fun spf -> hov 2 (aux spf)) spfl)
+  in hov 0 (aux pf)
 
 let rec print_info_script sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in
