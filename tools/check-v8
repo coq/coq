@@ -8,7 +8,7 @@ mv /tmp/v8.$$ v8
 cd v8
 rm description
 make clean
-make COQFLAGS='-translate -q $(OPT) $(COQLIBS) $(COQ_XML)' || \
+make COQFLAGS='-translate -q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)' || \
  { echo ---- Failed to translate; exit 1; }
 echo ------------------ Upgrading v8 files -------------------------
 v8files=`find . -name \*.v8`

@@ -1,7 +1,7 @@
 echo
 echo ------------------ Producing v8 files -------------------------
 make clean
-make COQFLAGS='-translate -q $(OPT) $(COQLIBS) $(COQ_XML)' || \
+make COQFLAGS='-translate -q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)' || \
   { echo ---- Failed to translate; exit 1; }
 $COQBIN/../tools/upgrade-v8 || { echo ---- Failed to upgrade files; exit 1; }
 echo
