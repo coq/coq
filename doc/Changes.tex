@@ -85,8 +85,8 @@ two = `1 + 1` in `two + two`}.
 \label{Names}
 
 \paragraph{Identifiers} An identifier is any string beginning by a
-letter and followed by letters, digits or simple quotes. The bug with
-identifier ended by a number greater than $2^{31}$ behave now correctly.
+letter and followed by letters, digits or simple quotes. The bug
+with identifiers ended by a number greater than $2^{30}$ is fixed!
 
 \paragraph{Libraries}
 
@@ -200,11 +200,20 @@ Remark: A constant, say \verb:``4``:, is equivalent to
 
 \paragraph{{\tt Infix}} was inactive on pretty-printer. Now it works.
 
+\paragraph{Consecutive tokens} should now be separated (e.g. by a
+space). Typically, the string \verb:A->~<nat>O=O: is no longer
+recognized. It should be written \verb:A-> ~ <nat>O=O:... or simply
+\verb:A->~ <nat>O=O: because of a special treatment for \verb:->:!.
+Similarly, an expression such as \verb!(EX x:X |<X>x=y)! should be
+written \verb!(EX x:X | <X>x=y)!.
+
 \paragraph{Consecutive symbols} are now considered as an unique token.
-Exceptions has been coded in the lexer to separate tokens we do not want to
+Exceptions have been coded in the lexer to separate tokens we do not want to
 separate (for example \verb:A->~B:), but this is not exhaustive and some spaces
 may have to be inserted in some cases which have not been treated
 (incompatibility).
+Also, tokens mixing specials characters and letters or digits
+are currently forbidden (e.g. token \verb:=_S: cannot be used).
 
 %should now be separated (e.g. by a
 %space). Typically, the string \verb:A->~<nat>O=O: is no longer
@@ -248,6 +257,11 @@ See examples in appendix.
 The syntax {\tt [ {\it phrase$_1$} ... {\it phrase$_n$} ].} is now
 available to group several commands into a single one (useful for
 {\tt Time} or for grammar extensions abbreviating sequence of commands).
+
+\subsection{Miscellaneous}
+
+\paragraph{Pattern aliases} of dependent type in \verb=Cases=
+expressions are currently not supported.
 
 \section{Tactics}
 \label{Tactics}
@@ -432,7 +446,7 @@ Add Rec LoadPath & AddRecPath \\
 Remove LoadPath & DelPath \\
 Set Silent & Begin Silent \\
 Unset Silent & End Silent \\
-Print Section Path & Print Path\\
+Print Coercion Paths & Print Path\\
 \end{tabular}
 \end{tt}
 
@@ -504,6 +518,9 @@ documentation tool (see the ``doc'' directory in {\Coq} source).
   different (see section \ref{GrammarSyntax}).
 
   \item {\tt Extraction} is currently not available in {\Coq} V7.
+
+  \item Pattern aliases of dependent type in \verb=Cases=
+  expressions are currently not supported.
 
   \end{itemize}
 
