@@ -1,4 +1,4 @@
-Require SplitAbsolu.
+Require Rfunctions.
 Require Fourier.
  
 Lemma l1:
