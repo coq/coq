@@ -494,7 +494,6 @@ End Reverse_Induction.
 End Lists.
 
 Implicits nil [1].
-V7only [Implicits nil [].].
 
 Hints Resolve nil_cons app_nil_end ass_app app_ass : datatypes v62.
 Hints Resolve app_comm_cons  app_cons_not_nil : datatypes v62.
@@ -517,7 +516,7 @@ Variables A,B:Set.
 Variable  f:A->B.
 Fixpoint map [l:(list A)] : (list B) :=
   Cases l of 
-     nil       => (nil B)
+     nil       => nil
   | (cons a t) => (cons (f a) (map t))
   end.
 End Map.
@@ -535,13 +534,13 @@ Qed.
 
 Fixpoint flat_map [A,B:Set; f:A->(list B); l:(list A)] : (list B) :=
   Cases l of
-    nil => (nil B)
+    nil => nil
   | (cons x t) => (app (f x) (flat_map f t))
   end.
 
 Fixpoint list_prod [A:Set; B:Set; l:(list A)] : (list B)->(list A*B) :=
   [l']Cases l of
-    nil => (nil A*B)
+    nil => nil
   | (cons x t) => (app (map [y:B](x,y) l')
       	       	       	     (list_prod t l'))
   end.
@@ -574,7 +573,7 @@ Qed.
 
 Fixpoint list_power [A,B:Set; l:(list A)] : (list B)->(list (list A*B)) :=
   [l']Cases l of
-    nil => (cons (nil A*B) (nil ?))
+    nil => (cons nil nil)
   | (cons x t) => (flat_map [f:(list A*B)](map [y:B](cons (x,y) f) l') 
       	       	       	    (list_power t l'))
   end.
@@ -631,6 +630,8 @@ Reflexivity.
 Qed.
 
 End Functions_on_lists.
+
+V7only [Implicits nil [].].
 
 (** Exporting list notations *)
 

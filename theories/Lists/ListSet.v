@@ -19,6 +19,7 @@
 Require PolyList.
 
 Set Implicit Arguments.
+V7only [Implicits nil [1].].
 
 Section first_definitions.
 
@@ -27,11 +28,11 @@ Section first_definitions.
 
   Definition set := (list A).
 
-  Definition empty_set := (nil ?) : set.
+  Definition empty_set := (!nil ?) : set.
 
   Fixpoint set_add [a:A; x:set] : set :=
     Cases x of
-    | nil => (cons a (nil A))
+    | nil => (cons a nil)
     | (cons a1 x1) => Cases (Aeq_dec a a1) of 
                     | (left _) => (cons a1 x1) 
                     | (right _) => (cons a1 (set_add a x1))
@@ -60,7 +61,7 @@ Section first_definitions.
 
   Fixpoint set_inter [x:set] : set -> set :=
     Cases x of
-    | nil => [y](nil A)
+    | nil => [y]nil
     | (cons a1 x1) => [y]if (set_mem a1 y) 
                       then (cons a1 (set_inter x1 y))
 		      else (set_inter x1 y)
@@ -75,7 +76,7 @@ Section first_definitions.
   (** returns the set of all els of [x] that does not belong to [y] *)
   Fixpoint set_diff [x:set] : set -> set :=
     [y]Cases x of
-    | nil => (nil A)
+    | nil => nil
     | (cons a1 x1) => if (set_mem a1 y) 
                       then (set_diff x1 y)
 		      else (set_add a1 (set_diff x1 y))
@@ -384,4 +385,5 @@ Section other_definitions.
  
 End other_definitions.
 
+V7only [Implicits nil [].].
 Unset Implicit Arguments.
