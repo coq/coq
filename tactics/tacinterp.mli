@@ -94,6 +94,9 @@ val intern_constr :
 val intern_hyp :
   glob_sign -> identifier Util.located -> identifier Util.located
 
+val subst_genarg :
+  substitution -> glob_generic_argument -> glob_generic_argument
+
 val subst_rawconstr :
   substitution -> rawconstr_and_expr -> rawconstr_and_expr
 
