@@ -121,8 +121,6 @@ let substitute_alias = ref false
 
 open Pp
 
-let error_bad_pattern_loc a = failwith "TODO1"
-
 let mssg_may_need_inversion () =
   [< 'sTR "This pattern-matching is not exhaustive.">]
 
@@ -259,6 +257,12 @@ let alias_of_pat = function
   | PatVar (_,name) -> name
   | PatCstr(_,_,_,name) -> name
 
+let unalias_pat = function
+  | PatVar (c,name) as p ->
+      if name = Anonymous then p else PatVar (c,Anonymous)
+  | PatCstr(a,b,c,name) as p ->
+      if name = Anonymous then p else PatCstr (a,b,c,Anonymous)
+
 let remove_current_pattern eqn =
   match eqn.patterns with
     | _::pats -> { eqn with patterns = pats }
@@ -316,7 +320,8 @@ let check_all_variables typ mat =
   List.iter
     (fun eqn -> match current_pattern eqn with
        | PatVar (_,id) -> ()
-       | PatCstr (loc,_,_,_) -> error_bad_pattern_loc loc CCI typ)
+       | PatCstr (loc,(cstr_sp,ids),_,_) ->
+	   error_bad_pattern_loc loc CCI (cstr_sp,ctxt_of_ids ids) typ)
     mat
 
 let check_number_of_regular_eqns eqns =
@@ -430,6 +435,19 @@ let replace_name_in_rhs name c rhs =
     | Anonymous -> rhs
     | Name id -> replace_id_in_rhs id c rhs
 
+(* We should here add subst as a let-in sequence in front of rhs; need
+   first to compute the right "current" in named binders style in the
+   call to expand_defaults *)
+let prepare_rhs rhs =
+  if rhs.private_ids <> [] then
+    anomaly "Some private pattern variable has not been substituted";
+(*
+  if List.length rhs.user_ids <> List.length rhs.subst then 
+     anomaly "Some user pattern variable has not been substituted";
+  let subst = List.map (fun id -> (id,List.assoc id rhs.subst)) rhs.user_ids in
+*)
+  rhs.it
+
 (* if [current] has type [I(p1...pn u1...um)] and we consider the case
    of constructor [ci] of type [I(p1...pn u'1...u'm)], then the
    default variable [name] is expected to have which type?
@@ -440,10 +458,10 @@ let rec pop_next_tomatchs acc = function
       pop_next_tomatchs (((na,t),deps)::acc) l
   | ((ToPush(_,(DepOnPrevious,_)) | Pushed _)::_ | []) as l -> (acc,l)
 
-let expand_defaults pats current (name,eqn) =
+let expand_defaults pats (* current *) (name,eqn) =
   { eqn with
       patterns = pats @ eqn.patterns;
-      rhs = replace_name_in_rhs name current eqn.rhs;
+      rhs = (* replace_name_in_rhs name current *) eqn.rhs;
       tag = lower_pattern_status eqn.tag }
 
 (************************************************************************)
@@ -523,8 +541,8 @@ let prepare_unif_pb typ cs =
   (* We may need to invert ci if its parameters occur in p *)
   let p' =
     if noccur_between_without_evar 1 n p then lift (-n) p
-    else 
-      failwith "TODO4-1" in
+    else (* TODO4-1 *)
+      error "Inference of annotation not yet implemented in this case" in
   let ci = applist
 	     (mkMutConstruct cs.cs_cstr, cs.cs_params@(rel_list (-n) n)) in
 
@@ -571,8 +589,8 @@ let abstract_conclusion typ cs =
 
 let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
   (* Il faudra substituer les isevars a un certain moment *)
-  if Array.length cstrs = 0 then
-    failwith "TODO4-3"
+  if Array.length cstrs = 0 then (* "TODO4-3" *)
+    error "Inference of annotation for empty inductive types not implemented"
   else
     let eqns = array_map2 prepare_unif_pb typs cstrs in
     (* First strategy: no dependencies at all *)
@@ -589,7 +607,10 @@ let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
       let brs = array_map2 abstract_conclusion typs cstrs in
       let predbody = mkMutCase (caseinfo, predpred, mkRel 1, brs) in
       let pred = lam_it (lift (List.length sign) typn) sign in
-      failwith "TODO4-2"; (true,pred)
+      (* "TODO4-2" *)
+      error "General inference of annotation not yet implemented;\
+             you need to give the predicate";
+      (true,pred)
 
 (* Propagation of user-provided predicate through compilation steps *)
 
@@ -696,14 +717,14 @@ let group_equations mind cstrs mat =
   let brs = Array.create (Array.length cstrs) [] in
   let dflt = ref [] in
   let _ =
-    List.fold_left (* To be sure it's from bottom to top *)
-      (fun () eqn ->
+    List.fold_right (* To be sure it's from bottom to top *)
+      (fun eqn () ->
 	 let rest = remove_current_pattern eqn in
 	 match current_pattern eqn with
 	   | PatVar (_,name) -> dflt := (name,rest) :: !dflt
 	   | PatCstr(loc,((ind_sp,i),ids as cstr),largs,alias) ->
 	       check_constructor loc (cstr,largs) mind cstrs;
-	       brs.(i-1) <- (largs,rest) :: brs.(i-1)) () mat in
+	       brs.(i-1) <- (largs,rest) :: brs.(i-1)) mat () in
   (brs,!dflt)
 
 (************************************************************************)
@@ -718,20 +739,11 @@ let build_leaf pb =
 	  check_number_of_regular_eqns eqns;
 	  eqn.rhs
       | [eqn] -> eqn.rhs in
-(*
-      if List.length rhs.user_ids <> List.length rhs.subst then 
-	anomaly "Some user pattern variable has not been substituted";
-*)
-  if rhs.private_ids <> [] then
-    anomaly "Some private pattern variable has not been substituted";
   let tycon = match pb.pred with
     | None -> empty_tycon
     | Some (PrCcl typ) -> mk_tycon typ
     | Some _ -> anomaly "not all parameters of pred have been consumed" in
-  let j = pb.typing_function tycon rhs.rhs_env rhs.it in
-  let subst = (*List.map (fun id -> (id,make_substituend (List.assoc id rhs.subst))) rhs.user_ids *)[] in
-  {uj_val = replace_vars subst j.uj_val;
-   uj_type = typed_app (replace_vars subst) j.uj_type }
+  pb.typing_function tycon rhs.rhs_env (prepare_rhs rhs)
 
 (* Building the sub-problem when all patterns are variables *)
 let shift_problem pb =
@@ -741,15 +753,15 @@ let shift_problem pb =
      mat = List.map pop_pattern pb.mat }
 
 (* Building the sub-pattern-matching problem for a given branch *)
-let build_branch pb defaults current eqns const_info =
+let build_branch pb defaults eqns const_info =
   let cs_args = decls_of_rel_context const_info.cs_args in
   let names = get_names pb.env cs_args eqns in
   let newpats =
-  if !substitute_alias then
-    List.map (fun na -> PatVar (dummy_loc,na)) names
-  else
-    List.map (fun _ -> PatVar (dummy_loc,Anonymous)) names in
-  let submatdef = List.map (expand_defaults newpats current) defaults in
+    if !substitute_alias then
+      List.map (fun na -> PatVar (dummy_loc,na)) names
+    else
+      List.map (fun _ -> PatVar (dummy_loc,Anonymous)) names in
+  let submatdef = List.map (expand_defaults newpats) defaults in
   let submat = List.map (fun (tms,eqn) -> prepend_pattern tms eqn) eqns in
   if submat = [] & submatdef = [] then error "Non exhaustive";
   let typs = List.map2 (fun (_,t) na -> (na,t)) cs_args (List.rev names) in
@@ -812,8 +824,7 @@ and match_current pb (n,tm) =
 	then compile (shift_problem pb)
 	else
           let constraints = Array.map (solve_constraints indt) cstrs in
-	  let pbs =
-	    array_map2 (build_branch pb defaults current) eqns cstrs in
+	  let pbs = array_map2 (build_branch pb defaults) eqns cstrs in
 	  let tags = Array.map (pattern_status defaults) eqns in
 	  let brs = Array.map compile pbs in
 	  let brvals = Array.map (fun j -> j.uj_val) brs in
@@ -843,7 +854,7 @@ and compile_further pb firstnext rest =
 		mat = List.map (push_rels_eqn sign) pb.mat } in
   let j = compile pb' in
   { uj_val = lam_it j.uj_val sign;
-    uj_type =  (* Pas d'univers ici: imprédicatif si Prop/Set, dummy si Type *)
+    uj_type = (* Pas d'univers ici: imprédicatif si Prop/Set, dummy si Type *)
       typed_app (fun t -> prod_it t sign) j.uj_type }
 
 
@@ -853,11 +864,22 @@ substituer après par les initiaux *)
 (**************************************************************************)
 (* Preparation of the pattern-matching problem                            *)
 
+let prepare_initial_alias lpat tomatchl rhs =
+  List.fold_right2
+    (fun pat tm (stripped_pats, rhs) ->
+       match alias_of_pat pat with
+	 | Anonymous -> (pat::stripped_pats, rhs)
+	 | Name _ as na ->
+	     (unalias_pat pat::stripped_pats,
+	      RBinder (dummy_loc, BLetIn, na, tm, rhs)))
+    lpat tomatchl ([], rhs)
+
 (* builds the matrix of equations testing that each eqn has n patterns
  * and linearizing the _ patterns.
  * Syntactic correctness has already been done in astterm *)
-let matx_of_eqns env eqns =
-  let build_eqn (ids,lpatt,rhs) =
+let matx_of_eqns env tomatchl eqns =
+  let build_eqn (ids,lpat,rhs) =
+    let initial_lpat,initial_rhs = prepare_initial_alias lpat tomatchl rhs in
     let rhs =
       { rhs_env = env;
 	other_ids = ids@(ids_of_var_context (var_context env));
@@ -865,9 +887,9 @@ let matx_of_eqns env eqns =
 	user_ids = ids;
 	subst = [];
 	rhs_lift = 0;
-	it = rhs }
-    in { dependencies = [];
-	 patterns = lpatt;
+	it = initial_rhs } in
+    { dependencies = [];
+	 patterns = initial_lpat;
 	 tag = RegularPat;
 	 rhs = rhs }
   in List.map build_eqn eqns
@@ -1050,13 +1072,14 @@ let prepare_predicate typing_fun isevars env tomatchs = function
       let etapred,cdep = case_dependent env !isevars loc predj tomatchs in
       Some (build_initial_predicate cdep etapred tomatchs)
 
+
 (**************************************************************************)
 (* Main entry of the matching compilation                                 *)
 
 let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
 
   (* We build the matrix of patterns and right-hand-side *)
-  let matx = matx_of_eqns env eqns in
+  let matx = matx_of_eqns env tomatchl eqns in
 
   (* We build the vector of terms to match consistently with the *)
   (* constructors found in patterns *)
@@ -1070,16 +1093,13 @@ let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
   (* names of aliases will be recovered from patterns (hence Anonymous here) *)
   let initial_pushed =
     List.map (fun tm -> Pushed (insert_lifted (tm,NotDepInRhs))) tomatchs in
-  let initial_sign =
-    List.map (fun (_,t) -> (Anonymous, type_of_tomatch_type t)) tomatchs in
-  let matx_with_initial_aliases = (*List.map (push_rels_eqn initial_sign) *)matx in
-
+ 
   let pb =
     { env      = env;
       isevars  = isevars;
       pred     = pred;
       tomatch  = initial_pushed;
-      mat      = matx_with_initial_aliases;
+      mat      = matx;
       typing_function = typing_fun } in
   
   let j = compile pb in
