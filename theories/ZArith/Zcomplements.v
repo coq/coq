@@ -51,7 +51,7 @@ Intros.
 Generalize (Zeq_Zminus H0).
 Intro.
 Apply Zminus_Zeq.
-Rewrite <- (Zmult_Zminus_distr_r x y z) in H1. 
+Rewrite <- Zmult_Zminus_distr_r in H1.
 Elim (Zmult_zero H1).
 Omega.
 Trivial.

@@ -713,7 +713,7 @@ Theorem OMEGA20:
   (x,y,z:Z)(Zne x  ZERO) -> (y=ZERO) -> (Zne (Zplus x (Zmult y z)) ZERO).
 
 Unfold Zne not; Intros x y z H1 H2 H3; Apply H1; Rewrite H2 in H3;
-Simpl in H3; Rewrite (Zero_right x) in H3; Trivial with arith.
+Simpl in H3; Rewrite Zero_right in H3; Trivial with arith.
 Save.
 
 Definition fast_Zplus_sym := 

@@ -54,15 +54,15 @@ Theorem log_inf_correct : (x:positive) ` 0 <= (log_inf x)` /\
 Induction x; Intros; Simpl;
 [ Elim H; Intros Hp HR; Clear H; Split;
   [ Auto with zarith
-  | Rewrite (two_p_S (Zs (log_inf p)) (Zle_le_S `0` (log_inf p) Hp));
-    Rewrite (two_p_S (log_inf p) Hp);
-    Rewrite (two_p_S (log_inf p) Hp) in HR;
+  | Conditional (Apply Zle_le_S; Trivial) Rewrite two_p_S with x:=(Zs (log_inf p));
+    Conditional Trivial Rewrite two_p_S;
+    Conditional Trivial Rewrite two_p_S in HR;
     Rewrite (POS_xI p); Omega ]
 | Elim H; Intros Hp HR; Clear H; Split;
   [ Auto with zarith
-  | Rewrite (two_p_S (Zs (log_inf p)) (Zle_le_S `0` (log_inf p) Hp));
-    Rewrite (two_p_S (log_inf p) Hp);
-    Rewrite (two_p_S (log_inf p) Hp) in HR;
+  | Conditional (Apply Zle_le_S; Trivial) Rewrite two_p_S with x:=(Zs (log_inf p));
+    Conditional Trivial Rewrite two_p_S;
+    Conditional Trivial Rewrite two_p_S in HR;
     Rewrite (POS_xO p); Omega ]
 | Unfold two_power_pos; Unfold shift_pos; Simpl; Omega 
 ].

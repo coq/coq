@@ -58,7 +58,7 @@ Section AdAlloc.
 
   Lemma nat_le_complete_conv : (m,n:nat) (nat_le n m)=false -> (lt m n).
   Proof.
-    Intros. Elim (le_or_lt n m). Intro. Rewrite (nat_le_correct ? ? H0) in H. Discriminate H.
+    Intros. Elim (le_or_lt n m). Intro. Conditional Trivial Rewrite nat_le_correct in H. Discriminate H.
     Trivial.
   Qed.
 
@@ -70,8 +70,8 @@ Section AdAlloc.
   Lemma ad_of_nat_of_ad : (a:ad) (ad_of_nat (nat_of_ad a))=a.
   Proof.
     Induction a. Reflexivity.
-    Intro. Simpl. Elim (ZL4 p). Intros p' H. Rewrite H. Simpl. Rewrite <- (bij1 p') in H.
-    Rewrite (convert_intro ? ? H). Reflexivity.
+    Intro. Simpl. Elim (ZL4 p). Intros p' H. Rewrite H. Simpl. Rewrite <- bij1 in H.
+    Rewrite convert_intro with 1:=H. Reflexivity.
   Qed.
 
   Lemma nat_of_ad_of_nat : (n:nat) (nat_of_ad (ad_of_nat n))=n.
