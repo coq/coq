@@ -12,10 +12,14 @@ Debugging from Coq toplevel using Caml trace mechanism
   6. Test your Coq command and observe the result of tracing your functions
   7. Freely switch from Coq to Ocaml toplevels with 'Drop.' and 'go();;'
 
+  Hints: To remove high-level pretty-printing features (coercions,
+  notations, ...), use "Set Printing All". It will affect the #trace
+  printers too.
+
 Debugging from Caml debugger
 ============================
 
-   Needs ocaml 3.06 (broken with ocaml 3.07 and 3.08)
+   Preferably use ocaml 3.06 (pretty-printing is broken with ocaml 3.07/3.08)
    Needs tuareg mode in Emacs
    Coq must be configured with -debug and -local (./configure -debug -local)
 
