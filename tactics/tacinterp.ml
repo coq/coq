@@ -43,12 +43,10 @@ open Hiddentac
 open Genarg
 open Decl_kinds
 
-(*
-let err_msg_tactic_not_found macro_loc macro =
-  user_err_loc
-    (macro_loc,"macro_expand",
-     (str "Tactic macro " ++ str macro ++ spc () ++ str "not found"))
-*)
+let strip_meta id = (* For Grammar v7 compatibility *)
+  let s = string_of_id id in
+  if s.[0]='$' then id_of_string (String.sub s 1 (String.length s - 1))
+  else id
 
 let error_syntactic_metavariables_not_allowed loc =
   user_err_loc 
@@ -385,11 +383,11 @@ let intern_tactic_reference ist r =
     error_global_not_found_loc loc qid
 
 let intern_constr_reference strict ist = function
-  | Ident (loc,id) as x when find_hyp id ist ->
-      RVar (loc,id), if strict then None else Some (CRef x)
+  | Ident (_,id) when find_hyp id ist or (not strict & find_ctxvar id ist) ->
+      RVar (loc,id), None
   | r ->
-      let loc,qid = qualid_of_reference r in
-      RRef (loc,Nametab.locate qid), (*Long names can't be Intro's names*) None
+      let _,qid = qualid_of_reference r in
+      RRef (loc,Nametab.locate qid), if strict then None else Some (CRef r)
 
 let intern_reference strict ist r =
   try Reference (intern_tac_ref ist r)
@@ -647,7 +645,11 @@ let rec intern_atomic lf ist x =
       let _ = lookup_tactic opn in
       TacExtend (loc,opn,List.map (intern_genarg ist) l)
   | TacAlias (s,l,body) ->
-      TacAlias (s,List.map (fun (id,a) -> (id,intern_genarg ist a)) l,intern_tactic ist body)
+      let (l1,l2) = ist.ltacvars in
+      let ist' = { ist with ltacvars = ((List.map fst l)@l1,l2) } in
+      TacAlias
+	(s,List.map (fun (id,a) -> (strip_meta id,intern_genarg ist a)) l,
+	intern_tactic ist' body)
 
 and intern_tactic ist tac = (snd (intern_tactic_seq ist tac) : glob_tactic_expr)
 
@@ -711,13 +713,17 @@ and intern_tacarg strict ist = function
   | Identifier id -> anomaly "Not used only in raw_tactic_expr"
   | Integer n -> Integer n
   | ConstrMayEval c -> ConstrMayEval (intern_constr_may_eval ist c)
-  | MetaIdArg (_loc,_) -> error_syntactic_metavariables_not_allowed loc
+  | MetaIdArg (loc,s) ->
+      (* $id can occur in Grammar tactic... *)
+      let id = id_of_string s in
+      if find_ltacvar id ist then Reference (ArgVar (dummy_loc,strip_meta id))
+      else error_syntactic_metavariables_not_allowed loc
   | TacCall (_loc,f,l) ->
       TacCall (_loc,
         intern_tactic_reference ist f,
         List.map (intern_tacarg !strict_check ist) l)
   | Tacexp t -> Tacexp (intern_tactic ist t)
-  | TacDynamic(_,t) as x ->
+  | TacDynamic(loc,t) as x ->
       (match tag t with
 	| "tactic" | "value" | "constr" -> x
 	| s -> anomaly_loc (loc, "",
@@ -1273,11 +1279,7 @@ and interp_tacarg ist gl = function
   | Integer n -> VInteger n
   | Identifier id -> VIdentifier id
   | ConstrMayEval c -> VConstr (interp_constr_may_eval ist gl c)
-  | MetaIdArg (loc,id) ->
-      (try (* $id can occur in Grammar tactic... *)
-        (unrec (List.assoc (id_of_string id) ist.lfun))
-      with
-        | Not_found -> error_syntactic_metavariables_not_allowed loc)
+  | MetaIdArg (loc,id) -> assert false
   | TacCall (loc,f,l) ->
       let fv = interp_ltac_reference true ist gl f
       and largs = List.map (interp_tacarg ist gl) l in
@@ -1964,7 +1966,7 @@ and subst_tacarg subst = function
   | Identifier id -> Identifier id
   | Integer n -> Integer n
   | ConstrMayEval c -> ConstrMayEval (subst_raw_may_eval subst c)
-  | MetaIdArg (_loc,_) -> error_syntactic_metavariables_not_allowed loc
+  | MetaIdArg (_loc,_) -> assert false
   | TacCall (_loc,f,l) ->
       TacCall (_loc,
         subst_or_var (subst_reference subst) f,
