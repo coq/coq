@@ -83,7 +83,7 @@ let simplif () =
             Try Left;Assumption]|Intros;Apply id;Try Right;Assumption]
         | [id0: ?1-> ?2; id1: ?1|- ?] -> Generalize (id0 id1);Intro;Clear id0
         | [id: ?1 -> ?2|- ?] ->
-          $t_is_unit;Cut ?2;[Intro;Clear id|Intros;Apply (id I);Assumption]
+          $t_is_unit;Cut ?2;[Intro;Clear id|Intros;Apply id;Constructor;Fail]
         | [|- (?1 ? ?)] -> $t_is_conj;Split);$t_not_dep_intros)>>
 
 let rec tauto_main () =
