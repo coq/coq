@@ -18,22 +18,9 @@ open Indtypes
 
 type judgment = unsafe_judgment
 
-(* Fonctions temporaires pour relier la forme castée de la forme jugement *)
-
-let tjudge_of_cast env = function
-  | DOP2 (Cast, b, t) ->
-      (match whd_betadeltaiota env t with
-	 | DOP0 (Sort s) -> {body=b; typ=s}
-	 | DOP2 (Cast, b',t') -> anomaly "Supercast (tjudge_of_cast) [Mach]"
-	 | _ -> anomaly "Not a type (tjudge_of_cast) [Mach]")
-  | _ -> anomaly "Not casted (tjudge_of_cast)"
-	
-let tjudge_of_judge env j =
-  { body = j.uj_val;
-    typ = match whd_betadeltaiota env j.uj_type with
-      (* Nécessaire pour ZFC *)
-      | DOP0 (Sort s) -> s
-      | _ -> anomaly "Not a type (tjudge_ofjudge)" }
+let j_val j = j.uj_val
+let j_type j = j.uj_type
+let j_kind j = j.uj_kind
 
 let vect_lift = Array.mapi lift
 let vect_lift_type = Array.mapi (fun i t -> typed_app (lift i) t)
@@ -293,20 +280,28 @@ let push_rels vars env =
 let add_constant sp ce env =
   let (jb,u) = safe_machine env ce.const_entry_body in
   let env' = set_universes u env in
-  let (jt,u') = safe_machine env ce.const_entry_type in
-  let env'' = set_universes u' env' in
-  match conv env'' jb.uj_type jt.uj_val with
-    | Convertible u'' -> 
-	let cb = { 
-	  const_kind = kind_of_path sp;
-	  const_body = Some (ref (Cooked ce.const_entry_body));
-	  const_type = typed_type_of_judgment env'' jt;
-	  const_hyps = get_globals (context env);
-	  const_opaque = false } 
-	in
-	add_constant sp cb (set_universes u'' env'')
-    | NotConvertible -> 
-	error_actual_type CCI env jb.uj_val jb.uj_type jt.uj_val
+  let (env'',ty) = 
+    match ce.const_entry_type with
+      | None -> 
+	  env', typed_type_of_judgment env' jb
+      | Some ty -> 
+	  let (jt,u') = safe_machine env ty in
+	  let env'' = set_universes u' env' in
+	  match conv env'' jb.uj_type jt.uj_val with
+	    | Convertible u'' -> 
+		let env'' = set_universes u'' env' in
+		env'', typed_type_of_judgment env'' jt
+	    | NotConvertible -> 
+		error_actual_type CCI env jb.uj_val jb.uj_type jt.uj_val
+  in
+  let cb = { 
+    const_kind = kind_of_path sp;
+    const_body = Some (ref (Cooked ce.const_entry_body));
+    const_type = ty;
+    const_hyps = get_globals (context env);
+    const_opaque = false } 
+  in
+  add_constant sp cb env''
 
 let type_from_judgment env j =
   match whd_betadeltaiota env j.uj_kind with

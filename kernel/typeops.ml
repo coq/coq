@@ -32,6 +32,7 @@ let typed_type_of_judgment env j =
     | DOP0(Sort s) -> { body = j.uj_val; typ = s }
     | _ -> error_not_type CCI env j.uj_val
 
+(* same function, but with a different error message *)
 let assumption_of_judgement env j =
   match whd_betadeltaiota env j.uj_type with
     | DOP0(Sort s) -> { body = j.uj_val; typ = s }

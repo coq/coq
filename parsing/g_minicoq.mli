@@ -1,4 +1,5 @@
 
+open Pp
 open Names
 open Term
 
@@ -15,3 +16,4 @@ type command =
 
 val command : command Grammar.Entry.e
 
+val pr_term : constr -> std_ppcmds

@@ -45,6 +45,10 @@ val lookup_meta : int -> 'a environment -> constr
 
 type judgment
 
+val j_val : judgment -> constr
+val j_type : judgment -> constr
+val j_kind : judgment -> constr
+
 val safe_machine : 'a environment -> constr -> judgment * universes
 val safe_machine_type : 'a environment -> constr -> typed_type
 

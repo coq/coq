@@ -259,6 +259,12 @@ type ('a,'b) union = Inl of 'a | Inr of 'b
 
 module Intset = Set.Make(struct type t = int let compare = compare end)
 
+let option_app f = function
+  | None -> None
+  | Some x -> Some (f x)
+
+(* Time stamps. *)
+
 type time_stamp = float
 
 let get_time_stamp () = Unix.time()

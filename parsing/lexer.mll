@@ -63,7 +63,7 @@ let firstchar =
 let identchar = 
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let symbolchar =
-  ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+  ['!' '$' '%' '&' '*' '+' '-' '<' '>' '/' ':' '=' '?' '@' '^' '|' '~']
 let decimal_literal = ['0'-'9']+
 let hex_literal = '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
 let oct_literal = '0' ['o' 'O'] ['0'-'7']+
@@ -77,13 +77,13 @@ rule token = parse
 	if is_keyword s then ("",s) else ("IDENT",s) }
   | decimal_literal | hex_literal | oct_literal | bin_literal
       { ("INT", Lexing.lexeme lexbuf) }
-  | ":=" { ("COLONEQUAL","") }
-  | ":"  { ("COLON","") }
-  | "."  { ("DOT","") }
+  | "(" | ")" | "[" | "]" | "{" | "}" | "<" | ">" | "." | "_" 
+      { ("", Lexing.lexeme lexbuf) }
   | symbolchar+
-      { ("SPECIAL", Lexing.lexeme lexbuf) }
+      { ("", Lexing.lexeme lexbuf) }
   | '`' [^'`']* '`'
-      { ("QUOTED", Lexing.lexeme lexbuf) }
+      { let s = Lexing.lexeme lexbuf in
+	("QUOTED", String.sub s 1 (String.length s - 2)) }
   | "\""
       { Buffer.reset string_buffer;
         let string_start = Lexing.lexeme_start lexbuf in
@@ -99,7 +99,7 @@ rule token = parse
       { ("EOI","") }
 
 and comment = parse
-    "(*"
+  | "(*"
       { comment_depth := succ !comment_depth; comment lexbuf }
   | "*)"
       { comment_depth := pred !comment_depth;
@@ -124,7 +124,7 @@ and comment = parse
       { comment lexbuf }
 
 and string = parse
-    '"'
+  | '"'
       { () }
   | '\\' ("\010" | "\013" | "\013\010") [' ' '\009'] *
       { string lexbuf }

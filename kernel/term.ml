@@ -150,8 +150,10 @@ let mkMutInd sp i l = (DOPN (MutInd (sp,i), l))
 let mkMutConstruct sp i j l =  (DOPN ((MutConstruct ((sp,i),j),l))) 
 
 (* Constructs the term <p>Case c of c1 | c2 .. | cn end *)
-let mkMutCase ci p c ac = DOPN (MutCase ci,Array.append [|p;c|] (Array.of_list ac))
-let mkMutCaseA ci p c ac = DOPN (MutCase ci,Array.append [|p;c|] ac)
+let mkMutCase ci p c ac = 
+  DOPN (MutCase ci, Array.append [|p;c|] (Array.of_list ac))
+let mkMutCaseA ci p c ac = 
+  DOPN (MutCase ci, Array.append [|p;c|] ac)
 
 (* If recindxs = [|i1,...in|] 
       typarray = [|t1,...tn|]

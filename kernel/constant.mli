@@ -17,7 +17,7 @@ type recipe =
 
 type constant_entry = {
   const_entry_body : constr;
-  const_entry_type : constr }
+  const_entry_type : constr option }
 
 type constant_body = {
   const_kind : path_kind;

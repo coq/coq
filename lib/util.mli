@@ -72,6 +72,10 @@ type ('a,'b) union = Inl of 'a | Inr of 'b
 
 module Intset : Set.S with type elt = int
 
+val option_app : ('a -> 'b) -> 'a option -> 'b option
+
+(*s Time stamps. *)
+
 type time_stamp
 
 val get_time_stamp : unit -> time_stamp
