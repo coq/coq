@@ -928,10 +928,8 @@ tactics/wcclausenv.cmx: proofs/clenv.cmx kernel/environ.cmx kernel/evd.cmx \
     library/global.cmx proofs/logic.cmx kernel/names.cmx lib/pp.cmx \
     proofs/proof_trees.cmx kernel/reduction.cmx kernel/sign.cmx \
     proofs/tacmach.cmx kernel/term.cmx lib/util.cmx tactics/wcclausenv.cmi 
-tools/coqdep.cmo: config/coq_config.cmi tools/coqdep_lexer.cmo 
-tools/coqdep.cmx: config/coq_config.cmx tools/coqdep_lexer.cmx 
-tools/coqdep_lexer.cmo: config/coq_config.cmi 
-tools/coqdep_lexer.cmx: config/coq_config.cmx 
+tools/coqdep.cmo: config/coq_config.cmi 
+tools/coqdep.cmx: config/coq_config.cmx 
 toplevel/command.cmo: parsing/ast.cmi parsing/astterm.cmi parsing/coqast.cmi \
     kernel/declarations.cmi library/declare.cmi kernel/environ.cmi \
     kernel/evd.cmi library/global.cmi library/indrec.cmi kernel/inductive.cmi \
@@ -1136,23 +1134,25 @@ contrib/ring/ring.cmx: parsing/astterm.cmx kernel/closure.cmx \
     library/summary.cmx proofs/tacmach.cmx pretyping/tacred.cmx \
     tactics/tactics.cmx kernel/term.cmx pretyping/typing.cmx lib/util.cmx \
     toplevel/vernacinterp.cmx 
-contrib/xml/cooking.cmo: kernel/names.cmi kernel/term.cmi \
+contrib/xml/cooking.cmo: kernel/declarations.cmi library/global.cmi \
+    kernel/names.cmi kernel/term.cmi lib/util.cmi contrib/xml/xml.cmi \
     contrib/xml/cooking.cmi 
-contrib/xml/cooking.cmx: kernel/names.cmx kernel/term.cmx \
+contrib/xml/cooking.cmx: kernel/declarations.cmx library/global.cmx \
+    kernel/names.cmx kernel/term.cmx lib/util.cmx contrib/xml/xml.cmx \
     contrib/xml/cooking.cmi 
-contrib/xml/ntrefiner.cmo: contrib/xml/ntrefiner.cmi 
-contrib/xml/ntrefiner.cmx: contrib/xml/ntrefiner.cmi 
 contrib/xml/xml.cmo: contrib/xml/xml.cmi 
 contrib/xml/xml.cmx: contrib/xml/xml.cmi 
 contrib/xml/xmlcommand.cmo: contrib/xml/cooking.cmi kernel/declarations.cmi \
-    library/declare.cmi library/global.cmi library/lib.cmi \
+    library/declare.cmi kernel/evd.cmi library/global.cmi library/lib.cmi \
     library/libobject.cmi library/library.cmi kernel/names.cmi \
-    library/nametab.cmi kernel/term.cmi lib/util.cmi contrib/xml/xml.cmi \
+    library/nametab.cmi proofs/pfedit.cmi proofs/proof_trees.cmi \
+    proofs/tacmach.cmi kernel/term.cmi lib/util.cmi contrib/xml/xml.cmi \
     contrib/xml/xmlcommand.cmi 
 contrib/xml/xmlcommand.cmx: contrib/xml/cooking.cmx kernel/declarations.cmx \
-    library/declare.cmx library/global.cmx library/lib.cmx \
+    library/declare.cmx kernel/evd.cmx library/global.cmx library/lib.cmx \
     library/libobject.cmx library/library.cmx kernel/names.cmx \
-    library/nametab.cmx kernel/term.cmx lib/util.cmx contrib/xml/xml.cmx \
+    library/nametab.cmx proofs/pfedit.cmx proofs/proof_trees.cmx \
+    proofs/tacmach.cmx kernel/term.cmx lib/util.cmx contrib/xml/xml.cmx \
     contrib/xml/xmlcommand.cmi 
 contrib/xml/xmlentries.cmo: lib/util.cmi toplevel/vernacinterp.cmi \
     contrib/xml/xmlcommand.cmi 

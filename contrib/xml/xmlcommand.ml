@@ -543,16 +543,17 @@ let print id fn =
 (*  where dest is either None (for stdout) or (Some filename) *)
 (* pretty prints via Xml.pp the proof in progress on dest     *)
 let show fn =
-(*
  let pftst = Pfedit.get_pftreestate () in
- let id = Pfedit.get_proof () in
+ let id = Pfedit.get_current_proof_name () in
  let pf = Tacmach.proof_of_pftreestate pftst in
- let typ = (Proof_trees.goal_of_proof pf).Evd.concl in
+ let typ = (Proof_trees.goal_of_proof pf).Evd.evar_concl in
+(*V7
  (*CSC: ntrefiner copied verbatim from natural, used, but _not_ understood *)
  let val0, mv = Ntrefiner.nt_extract_open_proof (Vartab.initial_sign ()) pf in
- let mv_t = List.map (function i, (t, _) -> i,t) mv in
-  Xml.pp (print_current_proof val0 typ id mv_t) fn
-*) ()
+*)
+ let val0,mv = Tacmach.extract_open_pftreestate pftst in
+ (*let mv_t = List.map (function i, (t, _) -> i,t) mv in*)
+  Xml.pp (print_current_proof val0 typ (Names.string_of_id id) mv) fn
 ;;
 
 (* FUNCTIONS TO PRINT AN ENTIRE SECTION OF COQ *)

@@ -121,7 +121,7 @@ HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
         contrib/ring/quote.cmo contrib/ring/ring.cmo \
         contrib/xml/xml.cmo contrib/xml/cooking.cmo contrib/xml/xmlcommand.cmo \
-        contrib/xml/xmlentries.cmo contrib/xml/ntrefiner.cmo
+        contrib/xml/xmlentries.cmo
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)

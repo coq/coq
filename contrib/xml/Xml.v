@@ -8,7 +8,7 @@
 (*                                 17/11/1999                                 *)
 (******************************************************************************)
 
-Declare ML Module "ntrefiner" "xml" "cooking" "xmlcommand" "xmlentries".
+Declare ML Module "xml" "cooking" "xmlcommand" "xmlentries".
 
 Grammar vernac vernac : Ast :=
   xml_print [ "Print" "XML" identarg($id) "." ] ->
