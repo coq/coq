@@ -985,6 +985,11 @@ Case H0; Auto.
 Qed.
 
 (**********)
+Lemma Rnot_lt_le:(r1,r2:R)~(``r1<r2``)->``r2<=r1``.
+Intros; Apply Rge_le; Apply Rlt_not_ge; Assumption.
+Qed.
+
+(**********)
 Lemma Rgt_not_le:(r1,r2:R)~(``r1>r2``)->``r1<=r2``.
 Intros r1 r2 H; Apply Rge_le.
 Exact (Rlt_not_ge r2 r1 H).

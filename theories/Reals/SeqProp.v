@@ -24,41 +24,31 @@ Definition has_lb [Un:nat->R] : Prop := (bound (EUn (opp_seq Un))).
 (**********)
 Lemma growing_cv : (Un:nat->R) (Un_growing Un) -> (has_ub Un) -> (sigTT R [l:R](Un_cv Un l)).
 Unfold Un_growing Un_cv;Intros; 
- Generalize (complet (EUn Un) H0 (EUn_noempty Un));Intro H1.
- Elim H1;Clear H1;Intros;Split with x;Intros.
- Unfold is_lub in p;Unfold bound in H0;Unfold is_upper_bound in H0 p.
- Elim H0;Clear H0;Intros;Elim p;Clear p;Intros;
- Generalize (H3 x0 H0);Intro;Cut (n:nat)(Rle (Un n) x);Intro.
+ NewDestruct (complet (EUn Un) H0 (EUn_noempty Un)) as [x [H2 H3]].
+ Exists x;Intros eps H1.
+ Unfold is_upper_bound in H2 H3.
+Assert H5:(n:nat)(Rle (Un n) x).
+  Intro n; Apply (H2 (Un n) (Un_in_EUn Un n)).
 Cut (Ex [N:nat] (Rlt (Rminus x eps) (Un N))).
-Intro;Elim H6;Clear H6;Intros;Split with x1.
-Intros;Unfold R_dist;Apply (Rabsolu_def1 (Rminus (Un n) x) eps).
+Intro H6;NewDestruct H6 as [N H6];Exists N.
+Intros n H7;Unfold R_dist;Apply (Rabsolu_def1 (Rminus (Un n) x) eps).
 Unfold Rgt in H1.
  Apply (Rle_lt_trans (Rminus (Un n) x) R0 eps
                      (Rle_minus (Un n) x (H5 n)) H1).
-Fold Un_growing in H;Generalize (growing_prop Un n x1 H H7);Intro.
- Generalize (Rlt_le_trans (Rminus x eps) (Un x1) (Un n) H6
-                          (Rle_sym2 (Un x1) (Un n) H8));Intro;
+Fold Un_growing in H;Generalize (growing_prop Un n N H H7);Intro H8.
+ Generalize (Rlt_le_trans (Rminus x eps) (Un N) (Un n) H6
+                          (Rle_sym2 (Un N) (Un n) H8));Intro H9;
  Generalize (Rlt_compatibility (Ropp x) (Rminus x eps) (Un n) H9);
  Unfold Rminus;Rewrite <-(Rplus_assoc (Ropp x) x (Ropp eps));
  Rewrite (Rplus_sym (Ropp x) (Un n));Fold (Rminus (Un n) x);
  Rewrite Rplus_Ropp_l;Rewrite (let (H1,H2)=(Rplus_ne (Ropp eps)) in H2);
  Trivial.
-Cut ~((N:nat)(Rge (Rminus x eps) (Un N))).
-Intro;Apply (not_all_not_ex nat ([N:nat](Rlt (Rminus x eps) (Un N)))).
- Red;Intro;Red in H6;Elim H6;Clear H6;Intro;
- Apply (Rlt_not_ge (Rminus x eps) (Un N) (H7 N)).
-Red;Intro;Cut (N:nat)(Rle (Un N) (Rminus x eps)).
-Intro;Generalize (Un_bound_imp Un (Rminus x eps) H7);Intro;
- Unfold is_upper_bound in H8;Generalize (H3 (Rminus x eps) H8);Intro;
- Generalize (Rle_minus x (Rminus x eps) H9);Unfold Rminus;
- Rewrite Ropp_distr1;Rewrite <- Rplus_assoc;Rewrite Rplus_Ropp_r.
- Rewrite (let (H1,H2)=(Rplus_ne (Ropp (Ropp eps))) in H2);
- Rewrite Ropp_Ropp;Intro;Unfold Rgt in H1;
- Generalize (Rle_not eps R0 H1);Intro;Auto.
-Intro;Elim (H6 N);Intro;Unfold Rle.
-Left;Unfold Rgt in H7;Assumption.
-Right;Auto.
-Apply (H2 (Un n) (Un_in_EUn Un n)).
+Cut ~((N:nat)(Rle (Un N) (Rminus x eps))).
+Intro H6;Apply (not_all_not_ex nat ([N:nat](Rlt (Rminus x eps) (Un N)))).
+ Intro H7; Apply H6; Intro N; Apply Rnot_lt_le; Apply H7.
+Intro H7;Generalize (Un_bound_imp Un (Rminus x eps) H7);Intro H8;
+ Unfold is_upper_bound in H8;Generalize (H3 (Rminus x eps) H8);
+ Apply Rlt_le_not; Apply tech_Rgt_minus; Exact H1.
 Qed.
 
 Lemma decreasing_growing : (Un:nat->R) (Un_decreasing Un) -> (Un_growing (opp_seq Un)).
