@@ -48,7 +48,7 @@ let gramobjs = ["g_zsyntax.cmo"; "g_natsyntax.cmo"]
 let notopobjs = gramobjs
 
 (* 5. High-level tactics objects *)
-let hightactics = split_cmo Tolink.hightactics
+let hightactics = (split_cmo Tolink.hightactics) @ (split_cmo Tolink.contrib)
 
 (* environment *)
 let src_coqtop = ref Coq_config.coqtop
