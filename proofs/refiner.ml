@@ -28,8 +28,7 @@ let hypotheses gl = gl.evar_hyps
 let conclusion gl = gl.evar_concl
 
 let sig_it x = x.it
-let sig_sig x = x.sigma
-
+let project x = x.sigma
 
 let pf_status pf = pf.open_subgoals
 
@@ -38,6 +37,11 @@ let is_complete pf = (0 = (pf_status pf))
 let on_open_proofs f pf = if is_complete pf then pf else f pf
 
 let and_status = List.fold_left (+) 0
+
+(* Getting env *)
+
+let pf_env gls = Global.env_of_context (sig_it gls).evar_hyps
+let pf_hyps gls = (sig_it gls).evar_hyps
 
 (* Normalizing evars in a goal. Called by tactic Local_constraints
    (i.e. when the sigma of the proof tree changes). Detect if the
@@ -898,7 +902,7 @@ let tclINFO (tac : tactic) gls =
     let pf = v (List.map leaf (sig_it sgl)) in
     let sign = (sig_it gls).evar_hyps in
     msgnl (hov 0 (str" == " ++
-                  !pp_info (sig_sig gls) sign pf))
+                  !pp_info (project gls) sign pf))
   with e when catchable_exception e -> 
     msgnl (hov 0 (str "Info failed to apply validation"))
   end;

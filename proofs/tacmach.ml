@@ -39,10 +39,10 @@ let unpackage = Refiner.unpackage
 let repackage = Refiner.repackage
 let apply_sig_tac = Refiner.apply_sig_tac
 
-let sig_it     = Refiner.sig_it
-let project    = Refiner.sig_sig
-let pf_env gls = Global.env_of_context (sig_it gls).evar_hyps
-let pf_hyps gls = (sig_it gls).evar_hyps
+let sig_it   = Refiner.sig_it
+let project  = Refiner.project
+let pf_env   = Refiner.pf_env
+let pf_hyps  = Refiner.pf_hyps
 
 let pf_concl gls = (sig_it gls).evar_concl
 let pf_hyps_types gls  =
