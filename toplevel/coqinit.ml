@@ -78,11 +78,14 @@ let init_load_path () =
       ["states"; "dev"];
     add_coq_rec_include (Filename.concat Coq_config.coqtop "theories");
     add_coq_include (Filename.concat Coq_config.coqtop "tactics");
-    add_coq_rec_include (Filename.concat Coq_config.coqtop "contrib");
+    add_coq_rec_include (Filename.concat Coq_config.coqtop "contrib")
   end else begin
     (* default load path; variable COQLIB overrides the default library *)
     let coqlib = getenv_else "COQLIB" Coq_config.coqlib in
-    add_coq_rec_include coqlib
+    add_coq_include (Filename.concat coqlib "states");
+    add_coq_rec_include (Filename.concat coqlib "theories");
+    add_coq_include (Filename.concat coqlib "tactics");
+    add_coq_rec_include (Filename.concat coqlib "contrib")
   end;
   let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
   add_ml_include camlp4;
