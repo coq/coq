@@ -67,5 +67,3 @@ V8Notation "x <= y <= z" := (Rle x y)/\(Rle y z) : R_scope.
 V8Notation "x <= y < z" := (Rle x y)/\(Rlt y z) : R_scope.
 V8Notation "x < y < z" := (Rlt x y)/\(Rlt y z) : R_scope.
 V8Notation "x < y <= z" := (Rlt x y)/\(Rle y z) : R_scope.
-
-Hints Unfold Rgt : real.

@@ -1407,6 +1407,7 @@ Lemma eq_IZR_R0:(z:Z)``(IZR z)==0``->`z=0`.
 NewDestruct z; Simpl; Intros; Auto with zarith.
 Case (Rlt_not_eq ``0`` (INR (convert p))); Auto with real.
 Case (Rlt_not_eq ``-(INR (convert p))`` ``0`` ); Auto with real.
+Apply Rgt_RoppO. Unfold Rgt; Apply INR_pos.
 Qed.
 
 (**********)
