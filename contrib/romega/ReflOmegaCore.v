@@ -701,7 +701,7 @@ Definition Tplus_assoc_l [t: term] :=
 
 Theorem  Tplus_assoc_l_stable : (term_stable  Tplus_assoc_l).
 
-(ProveStable Tplus_assoc_l Zplus_assoc_l).
+(ProveStable Tplus_assoc_l Zplus_assoc).
 Save.
 
 Definition Tplus_assoc_r [t: term] :=
