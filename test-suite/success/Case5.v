@@ -1,5 +1,4 @@
 
-Reset ff.
 Parameter ff: (n,m:nat)~n=m -> ~(S n)=(S m).
 Parameter discr_r : (n:nat) ~(O=(S n)).
 Parameter discr_l : (n:nat) ~((S n)=O).

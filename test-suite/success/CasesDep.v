@@ -221,15 +221,15 @@ end.
 
 
 
-Fixpoint equalT [t1:TERM]:TERM->Prop :=
+Definition equalT [t1:TERM]:TERM->Prop :=
 [t2:TERM] 
  Cases t1 t2 of 
    (var  v1)        (var v2)    => True
  | (oper op1 l1)  (oper op2 l2) => False
  |  _                   _       => False 
- end
+ end.
 
-with EqListT [n1:posint;l1:(LTERM n1)]: (n2:posint)(LTERM n2)->Prop :=
+Definition EqListT [n1:posint;l1:(LTERM n1)]: (n2:posint)(LTERM n2)->Prop :=
 [n2:posint][l2:(LTERM n2)]
  Cases l1 l2 of
     nil                 nil             => True 
@@ -239,7 +239,6 @@ end.
 
 
 Reset equalT.
-Reset EqListT.
 (* ------------------------------------------------------------------*)
 (*          Initial exemple (without patterns)                       *)
 (*-------------------------------------------------------------------*)
