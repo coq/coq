@@ -114,7 +114,7 @@ Section Logic_lemmas.
     Variable x,y,z : A.
 
     Theorem sym_eq : (eq ? x y) -> (eq ? y x).
-    Proof.
+      Proof.
      Induction 1; Trivial.
     Qed.
 

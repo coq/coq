@@ -261,7 +261,7 @@ let rec process_object (ccitab, objtab, modtab as tabs) = function
 	| "CONSTANT" | "PARAMETER" ->
             (Idmap.add (basename sp) (ConstRef sp) ccitab,objtab,modtab)
 	| "INDUCTIVE" ->
-	    let mie,_ = out_inductive obj in
+	    let mie = out_inductive obj in
 	    (push_inductive_names ccitab sp mie, objtab, modtab)
         (* Variables are never visible *)
 	| "VARIABLE" -> tabs
@@ -289,10 +289,13 @@ let close_section _ s =
     let newdir = dirpath sec_sp in
     let olddir = wd_of_sp sec_sp in
     let (ops,ids,_) = 
-      List.fold_left (process_item oldenv newdir olddir) ([],[],([],[],[])) decls in 
+      List.fold_left 
+	(process_item oldenv newdir olddir) ([],[],([],[],[])) decls 
+    in 
     Global.pop_named_decls ids;
     List.iter process_operation (List.rev ops);
-    module_contents decls in
+    module_contents decls 
+  in
   close_section false process_segment s
 
 let save_module_to s f =

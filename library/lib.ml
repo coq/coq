@@ -201,7 +201,6 @@ type frozen = string option * library_segment
 
 let freeze () = (!module_name, !lib_stk)
 
-(* module_name is not set ? *)
 let unfreeze (mn,stk) =
   module_name := mn;
   lib_stk := stk;

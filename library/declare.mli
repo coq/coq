@@ -44,7 +44,7 @@ val declare_mind : mutual_inductive_entry -> section_path
 
 val declare_eliminations : section_path -> int -> unit
 
-val out_inductive : Libobject.obj -> mutual_inductive_entry * bool
+val out_inductive : Libobject.obj -> mutual_inductive_entry 
 
 val make_strength : string list -> strength
 val make_strength_0 : unit -> strength

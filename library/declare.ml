@@ -54,49 +54,39 @@ let _ = Summary.declare_summary "VARIABLE"
 	    Summary.unfreeze_function = (fun ft -> vartab := ft);
 	    Summary.init_function = (fun () -> vartab := Spmap.empty) }
 
-let cache_variable (sp,((id,(d,_,_) as vd),imps)) =
+let cache_variable (sp,(id,(d,_,_) as vd)) =
   begin match d with (* Fails if not well-typed *)
     | SectionLocalAssum ty -> Global.push_named_assum (id,ty)
     | SectionLocalDef c -> Global.push_named_def (id,c)
   end;
   Nametab.push id (VarRef sp);
-  if imps then declare_var_implicits sp;
   vartab := Spmap.add sp vd !vartab
-
-let load_variable _ = ()
-
-let open_variable _ = ()
-
-let export_variable x = None
 
 let (in_variable, out_variable) =
   let od = {
     cache_function = cache_variable;
-    load_function = load_variable;
-    open_function = open_variable;
-    export_function = export_variable } in
+    load_function = (fun _ -> ());
+    open_function = (fun _ -> ());
+    export_function = (fun x -> None) }
+  in
   declare_object ("VARIABLE", od)
 
-let out_variable sp = fst (out_variable sp)
-
 let declare_variable id obj =
-  let _ = add_leaf id CCI (in_variable ((id,obj),is_implicit_args())) in
-  ()
+  let sp = add_leaf id CCI (in_variable (id,obj)) in
+  if is_implicit_args() then declare_var_implicits sp
 
 (* Parameters. *)
 
-let cache_parameter (sp,(c,imps)) =
+let cache_parameter (sp,c) =
   Global.add_parameter sp c;
-  Nametab.push (basename sp) (ConstRef sp);
-  if imps then declare_constant_implicits sp
+  Nametab.push (basename sp) (ConstRef sp)
 
-let load_parameter (sp,(_,imps)) =
-  if imps then declare_constant_implicits sp
+let load_parameter _ = ()
 
 let open_parameter (sp,_) =
   Nametab.push (basename sp) (ConstRef sp)
 
-let export_parameter obj = Some obj
+let export_parameter x = Some x
 
 let (in_parameter, out_parameter) =
   let od = {
@@ -108,7 +98,8 @@ let (in_parameter, out_parameter) =
   declare_object ("PARAMETER", od)
 
 let declare_parameter id c =
-  let _ = add_leaf id CCI (in_parameter (c,is_implicit_args())) in ()
+  let sp = add_leaf id CCI (in_parameter c) in 
+  if is_implicit_args() then declare_constant_implicits sp
 
 (* Constants. *)
 
@@ -125,23 +116,21 @@ let _ = Summary.declare_summary "CONSTANT"
 	    Summary.unfreeze_function = (fun ft -> csttab := ft);
 	    Summary.init_function = (fun () -> csttab := Spmap.empty) }
 
-let cache_constant (sp,((cdt,stre),imps)) =
+let cache_constant (sp,(cdt,stre)) =
   begin match cdt with 
     | ConstantEntry ce -> Global.add_constant sp ce
     | ConstantRecipe r -> Global.add_discharged_constant sp r
   end;
   Nametab.push (basename sp) (ConstRef sp);
-  if imps then declare_constant_implicits sp;
   csttab := Spmap.add sp stre !csttab
 
-let load_constant (sp,((ce,stre),imps)) =
-  if imps then declare_constant_implicits sp;
+let load_constant (sp,(ce,stre)) =
   csttab := Spmap.add sp stre !csttab
 
 let open_constant (sp,_) =
   Nametab.push (basename sp) (ConstRef sp)
 
-let export_constant obj = Some obj
+let export_constant x = Some x
 
 let (in_constant, out_constant) =
   let od = {
@@ -153,8 +142,8 @@ let (in_constant, out_constant) =
   declare_object ("CONSTANT", od)
 
 let declare_constant id cd =
-  let _ = add_leaf id CCI (in_constant (cd,is_implicit_args())) in ()
-
+  let sp = add_leaf id CCI (in_constant cd) in
+  if is_implicit_args() then declare_constant_implicits sp
  
 (* Inductives. *)
 
@@ -173,18 +162,16 @@ let push_inductive_names sp mie =
       0 mie.mind_entry_inds
   in ()
 
-let cache_inductive (sp,(mie,imps)) =
+let cache_inductive (sp,mie) =
   Global.add_mind sp mie;
-  push_inductive_names sp mie;
-  if imps then declare_inductive_implicits sp
-
-let load_inductive (sp,(_,imps)) =
-  if imps then declare_inductive_implicits sp
-
-let open_inductive (sp,(mie,_)) =
   push_inductive_names sp mie
 
-let export_inductive obj = Some obj
+let load_inductive _ = ()
+
+let open_inductive (sp,mie) =
+  push_inductive_names sp mie
+
+let export_inductive x = Some x
 
 let (in_inductive, out_inductive) =
   let od = {
@@ -200,11 +187,11 @@ let declare_mind mie =
     | (id,_,_,_)::_ -> id
     | [] -> anomaly "cannot declare an empty list of inductives"
   in
-  let sp = add_leaf id CCI (in_inductive (mie,is_implicit_args())) in
+  let sp = add_leaf id CCI (in_inductive mie) in
+  if is_implicit_args() then declare_inductive_implicits sp;
   sp
 
-
-(* Test and access functions. *)
+(*s Test and access functions. *)
 
 let is_constant sp = 
   try let _ = Global.lookup_constant sp in true with Not_found -> false
