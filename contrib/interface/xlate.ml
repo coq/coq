@@ -583,6 +583,10 @@ let xlate_quantified_hypothesis_opt = function
   | Some (AnonHyp n) -> xlate_int_to_id_or_int_opt n
   | Some (NamedHyp id) -> xlate_id_to_id_or_int_opt id;;
 
+let xlate_id_or_int = function
+    ArgArg n -> CT_coerce_INT_to_ID_OR_INT(CT_int n)
+  | ArgVar(_, s) -> CT_coerce_ID_to_ID_OR_INT(xlate_ident s);;
+
 let xlate_explicit_binding (loc,h,c) = 
   CT_binding (xlate_quantified_hypothesis h, xlate_formula c)
 
@@ -679,24 +683,6 @@ let xlate_one_unfold_block = function
     ([],qid) -> CT_coerce_ID_to_UNFOLD(tac_qualid_to_ct_ID qid)
   | (n::nums, qid) ->
       CT_unfold_occ(tac_qualid_to_ct_ID qid, nums_to_int_ne_list n nums);;
-
-let xlate_lettac_clauses = function
-    (opt_l, l') ->
-      let res = 
-	(List.map 
-	   (function
-		(id, []) -> 
-		  CT_coerce_ID_to_UNFOLD(xlate_ident_or_metaid id)
-	      | (id, n::nums) ->
-	      CT_unfold_occ(xlate_ident_or_metaid id, nums_to_int_ne_list n nums)) l') in
-	match opt_l with
-	    Some (n::nums) ->
-	      CT_unfold_list
-	      	((CT_unfold_occ
-		    (CT_ident "Goal", nums_to_int_ne_list n nums))::res)
-	  | Some [] ->
-	      CT_unfold_list((CT_coerce_ID_to_UNFOLD(CT_ident "Goal"))::res)
-	  | None -> CT_unfold_list res;;
 
 let xlate_intro_patt_opt = function
     None -> CT_coerce_ID_OPT_to_INTRO_PATT_OPT ctv_ID_OPT_NONE
@@ -808,8 +794,7 @@ and xlate_tactic =
    | TacFirst(t1::l)-> CT_first(xlate_tactic t1, List.map xlate_tactic l)
    | TacSolve([]) -> assert false
    | TacSolve(t1::l)-> CT_tacsolve(xlate_tactic t1, List.map xlate_tactic l)
-   | TacDo(ArgArg n, t) -> CT_do(CT_int n, xlate_tactic t)
-   | TacDo(ArgVar _, t) -> xlate_error "Parametric tacticals 'do'"
+   | TacDo(count, t) -> CT_do(xlate_id_or_int count, xlate_tactic t)
    | TacTry t -> CT_try (xlate_tactic t)
    | TacRepeat t -> CT_repeat(xlate_tactic t)
    | TacAbstract(t,id_opt) -> 
@@ -876,9 +861,9 @@ and xlate_tactic =
 		   (xlate_local_rec_tac f1, List.map xlate_local_rec_tac l) in
        CT_rec_tactic_in(tl, xlate_tactic t)
    | TacAtom (_, t) -> xlate_tac t 
-   | TacFail (ArgArg n,"") -> CT_fail(CT_int n, ctf_STRING_OPT_NONE)
-   | TacFail (ArgArg n,s) -> CT_fail(CT_int n, ctf_STRING_OPT_SOME (CT_string s))
-   | TacFail (ArgVar _, _) -> xlate_error "Parametric tacticals 'fail'"
+   | TacFail (count, "") -> CT_fail(xlate_id_or_int count, ctf_STRING_OPT_NONE)
+   | TacFail (count, s) -> CT_fail(xlate_id_or_int count,
+				   ctf_STRING_OPT_SOME (CT_string s))
    | TacId "" -> CT_idtac ctf_STRING_OPT_NONE
    | TacId s -> CT_idtac(ctf_STRING_OPT_SOME (CT_string s))
    | TacInfo t -> CT_info(xlate_tactic t)

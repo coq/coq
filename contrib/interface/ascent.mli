@@ -81,6 +81,7 @@ and ct_COMMAND =
   | CT_hints of ct_ID * ct_ID_NE_LIST * ct_ID_LIST
   | CT_hints_immediate of ct_FORMULA_NE_LIST * ct_ID_LIST
   | CT_hints_resolve of ct_FORMULA_NE_LIST * ct_ID_LIST
+  | CT_hyp_search_pattern of ct_FORMULA * ct_IN_OR_OUT_MODULES
   | CT_implicits of ct_ID * ct_ID_LIST_OPT
   | CT_import_id of ct_ID_NE_LIST
   | CT_ind_scheme of ct_SCHEME_SPEC_LIST
@@ -628,7 +629,7 @@ and ct_TACTIC_COM =
   | CT_destruct of ct_ID_OR_INT
   | CT_dhyp of ct_ID
   | CT_discriminate_eq of ct_ID_OR_INT_OPT
-  | CT_do of ct_INT * ct_TACTIC_COM
+  | CT_do of ct_ID_OR_INT * ct_TACTIC_COM
   | CT_eapply of ct_FORMULA * ct_SPEC_LIST
   | CT_eauto of ct_ID_OR_INT_OPT * ct_ID_OR_INT_OPT
   | CT_eauto_with of ct_ID_OR_INT_OPT * ct_ID_OR_INT_OPT * ct_ID_NE_LIST_OR_STAR
@@ -636,7 +637,7 @@ and ct_TACTIC_COM =
   | CT_elim_type of ct_FORMULA
   | CT_exact of ct_FORMULA
   | CT_exists of ct_SPEC_LIST
-  | CT_fail of ct_INT * ct_STRING_OPT
+  | CT_fail of ct_ID_OR_INT * ct_STRING_OPT
   | CT_first of ct_TACTIC_COM * ct_TACTIC_COM list
   | CT_firstorder of ct_TACTIC_OPT
   | CT_firstorder_using of ct_TACTIC_OPT * ct_ID_NE_LIST
@@ -748,8 +749,6 @@ and ct_TYPED_FORMULA =
 and ct_UNFOLD =
     CT_coerce_ID_to_UNFOLD of ct_ID
   | CT_unfold_occ of ct_ID * ct_INT_NE_LIST
-and ct_UNFOLD_LIST =
-    CT_unfold_list of ct_UNFOLD list
 and ct_UNFOLD_NE_LIST =
     CT_unfold_ne_list of ct_UNFOLD * ct_UNFOLD list
 and ct_USING =

@@ -270,6 +270,10 @@ and fCOMMAND = function
    fFORMULA_NE_LIST x1;
    fID_LIST x2;
    fNODE "hints_resolve" 2
+| CT_hyp_search_pattern(x1, x2) ->
+   fFORMULA x1;
+   fIN_OR_OUT_MODULES x2;
+   fNODE "hyp_search_pattern" 2
 | CT_implicits(x1, x2) ->
    fID x1;
    fID_LIST_OPT x2;
@@ -1513,7 +1517,7 @@ and fTACTIC_COM = function
    fID_OR_INT_OPT x1;
    fNODE "discriminate_eq" 1
 | CT_do(x1, x2) ->
-   fINT x1;
+   fID_OR_INT x1;
    fTACTIC_COM x2;
    fNODE "do" 2
 | CT_eapply(x1, x2) ->
@@ -1544,7 +1548,7 @@ and fTACTIC_COM = function
    fSPEC_LIST x1;
    fNODE "exists" 1
 | CT_fail(x1, x2) ->
-   fINT x1;
+   fID_OR_INT x1;
    fSTRING_OPT x2;
    fNODE "fail" 2
 | CT_first(x,l) ->
@@ -1867,10 +1871,6 @@ and fUNFOLD = function
    fID x1;
    fINT_NE_LIST x2;
    fNODE "unfold_occ" 2
-and fUNFOLD_LIST = function
-| CT_unfold_list l ->
-   (List.iter fUNFOLD l);
-   fNODE "unfold_list" (List.length l)
 and fUNFOLD_NE_LIST = function
 | CT_unfold_ne_list(x,l) ->
    fUNFOLD x;
