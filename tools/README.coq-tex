@@ -1,0 +1,13 @@
+DESCRIPTION.
+
+The coq-tex filter extracts Coq phrases embedded in LaTeX files,
+evaluates them, and insert the outcome of the evaluation after each
+phrase.
+
+The filter is written in Perl, so you'll need Perl version 4 installed
+on your machine.
+
+USAGE. See the manual page (coq-tex.1).
+
+AUTHOR. Jean-Christophe Filliatre (jcfillia@lip.ens-lyon.fr)
+  from caml-tex of Xavier Leroy.
