@@ -193,7 +193,6 @@ and ('constr,'cst,'ind,'id) gen_tactic_expr =
   | TacMatch of constr_expr may_eval * (pattern_expr,('constr,'cst,'ind,'id) gen_tactic_expr) match_rule list
   | TacMatchContext of direction_flag * (pattern_expr,('constr,'cst,'ind,'id) gen_tactic_expr) match_rule list
   | TacFun of ('constr,'cst,'ind,'id) gen_tactic_fun_ast
-  | TacFunRec of (identifier located * ('constr,'cst,'ind,'id) gen_tactic_fun_ast)
   | TacArg of ('constr,'cst,'ind,'id) gen_tactic_arg
 
 and ('constr,'cst,'ind,'id) gen_tactic_fun_ast =

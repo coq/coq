@@ -628,7 +628,7 @@ let vernac_back n = Lib.back n
 (************)
 (* Commands *)
 
-let vernac_declare_tactic_definition _ l = Tacinterp.add_tacdef l
+let vernac_declare_tactic_definition = Tacinterp.add_tacdef
 
 let vernac_hints = Auto.add_hints
 
@@ -968,7 +968,7 @@ let vernac_check_guard () =
   msgnl message
 
 let vernac_debug b =
-  set_debug (if b then Tactic_debug.DebugOn else Tactic_debug.DebugOff)
+  set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
 
 
 (**************************)

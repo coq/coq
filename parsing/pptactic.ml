@@ -162,8 +162,8 @@ let pr_let_clause k pr = function
 let pr_let_clauses pr = function
   | hd::tl ->
       hv 0
-        (pr_let_clause "Let " pr hd ++ spc () ++
-         prlist_with_sep spc (pr_let_clause "And " pr) tl)
+        (pr_let_clause "Let " pr hd ++
+         prlist (fun t -> spc () ++ pr_let_clause "And " pr t) tl)
   | [] -> anomaly "LetIn must declare at least one binding"
 
 let pr_rec_clause pr ((_,id),(l,t)) =
@@ -557,8 +557,6 @@ and pr6 = function
   | TacFun (lvar,body) ->
       hov 0 (str "Fun" ++
         prlist pr_funvar lvar ++ spc () ++ str "->" ++ spc () ++ prtac body)
-  | TacFunRec t ->
-      hov 0 (str "Rec " ++ pr_rec_clause prtac t)
 
   | TacArg c -> pr_tacarg c
 

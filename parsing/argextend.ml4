@@ -94,10 +94,10 @@ let declare_tactic_argument loc s typ pr f rawtyppr cl =
       value ($lid:"wit_"^s$, $lid:"rawwit_"^s$) = Genarg.create_arg $se$;
       value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$;
       Tacinterp.add_genarg_interp $se$
-        (fun ist x ->
+        (fun ist gl x ->
           (in_gen $wit$
              (out_gen $make_wit loc typ$
-          	($interp$ ist
+          	($interp$ ist gl
          	  (in_gen $make_rawwit loc rawtyp$
 	             (out_gen $rawwit$ x))))));
       Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.Entry.e 'a) None 

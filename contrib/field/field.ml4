@@ -100,10 +100,10 @@ open Genarg
 let wit_minus_div_arg, rawwit_minus_div_arg = Genarg.create_arg "minus_div_arg"
 let minus_div_arg = create_generic_entry "minus_div_arg" rawwit_minus_div_arg
 let _ = Tacinterp.add_genarg_interp "minus_div_arg"
-  (fun ist x ->
+  (fun ist gl x ->
     (in_gen wit_minus_div_arg
       (out_gen (wit_pair (wit_opt wit_constr) (wit_opt wit_constr))
-	(Tacinterp.genarg_interp ist
+	(Tacinterp.genarg_interp ist gl
 	  (in_gen (wit_pair (wit_opt rawwit_constr) (wit_opt rawwit_constr))
 	    (out_gen rawwit_minus_div_arg x))))))
 
@@ -134,11 +134,8 @@ END
 (* Guesses the type and calls Field_Gen with the right theory *)
 let field g =
   Library.check_required_library ["Coq";"field";"Field"];
-  let evc = project g
-  and env = pf_env g in
-  let ist = { evc=evc; env=env; lfun=[]; lmatch=[];
-              goalopt=Some g; debug=get_debug () } in
-  let typ = constr_of_VConstr (val_interp ist
+  let ist = { lfun=[]; lmatch=[]; debug=get_debug () } in
+  let typ = constr_of_VConstr (pf_env g) (val_interp ist g
     <:tactic<
       Match Context With
       | [|- (eq ?1 ? ?)] -> ?1

@@ -41,13 +41,13 @@ let constr_to_ast a =
 let constr_parser_with_glob = Pcoq.map_entry constr_to_ast Constr.constr
 
 let globalize_ref vars ref =
-  match Constrintern.interp_reference vars ref with
+  match Constrintern.interp_reference (vars,[]) ref with
   | RRef (loc,a) -> Constrextern.extern_reference loc a
   | RVar (loc,x) -> Ident (loc,x)
   | _ -> anomaly "globalize_ref: not a reference"
 
 let globalize_ref_term vars ref =
-  match Constrintern.interp_reference vars ref with
+  match Constrintern.interp_reference (vars,[]) ref with
   | RRef (loc,a) -> CRef (Constrextern.extern_reference loc a)
   | RVar (loc,x) -> CRef (Ident (loc,x))
   | c -> Constrextern.extern_rawconstr c 
@@ -641,7 +641,7 @@ let add_notation_in_scope df c (assoc,n,etyps,onlyparse) sc toks =
     if onlyparse then None
     else 
       let r = 
-	interp_rawconstr_gen false Evd.empty (Global.env()) [] false vars c in
+	interp_rawconstr_gen false Evd.empty (Global.env()) [] false (vars,[]) c in
       Some (make_old_pp_rule n symbols typs r notation scope vars) in
   (* Declare the interpretation *)
   let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in

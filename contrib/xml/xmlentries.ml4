@@ -35,10 +35,10 @@ open Pcoq;;
 let wit_filename, rawwit_filename = Genarg.create_arg "filename"
 let filename = Pcoq.create_generic_entry "filename" rawwit_filename
 let _ = Tacinterp.add_genarg_interp "filename"
-  (fun ist x ->
+  (fun ist gl x ->
     (in_gen wit_filename
       (out_gen (wit_opt wit_string)
-	(Tacinterp.genarg_interp ist
+	(Tacinterp.genarg_interp ist gl
 	  (in_gen (wit_opt rawwit_string)
 	    (out_gen rawwit_filename x))))))
 
@@ -59,10 +59,10 @@ let _ =
 let wit_diskname, rawwit_diskname = Genarg.create_arg "diskname"
 let diskname = create_generic_entry "diskname" rawwit_diskname
 let _ = Tacinterp.add_genarg_interp "diskname"
-  (fun ist x ->
+  (fun ist gl x ->
     (in_gen wit_diskname
       (out_gen (wit_opt wit_string)
-	(Tacinterp.genarg_interp ist
+	(Tacinterp.genarg_interp ist gl
 	  (in_gen (wit_opt rawwit_string)
 	    (out_gen rawwit_diskname x))))))
 

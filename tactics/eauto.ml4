@@ -349,10 +349,10 @@ open Genarg
 let wit_hintbases, rawwit_hintbases = Genarg.create_arg "hintbases"
 let hintbases = create_generic_entry "hintbases" rawwit_hintbases
 let _ = Tacinterp.add_genarg_interp "hintbases"
-  (fun ist x ->
+  (fun ist gl x ->
     (in_gen wit_hintbases
       (out_gen (wit_opt (wit_list0 wit_string))
-	(Tacinterp.genarg_interp ist
+	(Tacinterp.genarg_interp ist gl
 	  (in_gen (wit_opt (wit_list0 rawwit_string))
 	    (out_gen rawwit_hintbases x))))))
 

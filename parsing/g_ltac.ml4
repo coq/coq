@@ -14,6 +14,7 @@ open Ast
 open Topconstr
 open Rawterm
 open Tacexpr
+open Vernacexpr
 open Ast
 
 ifdef Quotify then
@@ -139,12 +140,10 @@ GEXTEND Gram
     [ [ IDENT "Fun"; it = LIST1 input_fun ; "->"; body = tactic_expr ->
           TacFun (it,body)
       | IDENT "Rec"; rc = rec_clause ->
-	  TacFunRec rc
-      |	IDENT "Rec"; rc = rec_clause; IDENT "In"; body = tactic_expr ->
-          TacLetRecIn ([rc],body)
-      | IDENT "Rec"; rc = rec_clause; "And";
-          rcl = LIST1 rec_clause SEP "And"; IDENT "In";
-          body = tactic_expr -> TacLetRecIn (rc::rcl,body)
+	  warning "'Rec f ...' is obsolete; use 'Rec f ... In f' instead";
+	  TacLetRecIn ([rc],TacArg (Reference (Libnames.Ident (fst rc))))
+      | IDENT "Rec"; rcl = LIST1 rec_clause SEP "And"; IDENT "In";
+          body = tactic_expr -> TacLetRecIn (rcl,body)
       | IDENT "Let"; llc = LIST1 let_clause SEP "And"; IDENT "In";
           u = tactic_expr -> TacLetIn (make_letin_clause loc llc,u)
 (* Let cas LetCut est subsumé par "Assert id := c" tandis que le cas
@@ -183,12 +182,12 @@ GEXTEND Gram
 (*End of To do*)
       | IDENT "First" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
 	  TacFirst l
-      |	IDENT "Solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
+      | IDENT "Solve" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
 	  TacSolve l
-      |	IDENT "Idtac" -> TacId
-      |	IDENT "Fail" -> TacFail fail_default_value
-      |	IDENT "Fail"; n = natural -> TacFail n
-      |	st = simple_tactic -> TacAtom (loc,st)
+      | IDENT "Idtac" -> TacId
+      | IDENT "Fail" -> TacFail fail_default_value
+      | IDENT "Fail"; n = natural -> TacFail n
+      | st = simple_tactic -> TacAtom (loc,st)
       | "("; a = tactic_expr; ")" -> a
       | a = tactic_arg -> TacArg a
     ] ]
@@ -206,7 +205,7 @@ GEXTEND Gram
 	  ConstrMayEval (ConstrContext (id,c))
       | IDENT "Check"; c = Constr.constr ->
 	  ConstrMayEval (ConstrTypeOf c)
-      | qid = lqualid -> Reference qid
+      | r = reference -> Reference r
       | ta = tactic_arg0 -> ta ] ]
   ;
   tactic_arg1:
@@ -216,22 +215,19 @@ GEXTEND Gram
 	  ConstrMayEval (ConstrContext (id,c))
       | IDENT "Check"; c = Constr.constr ->
 	  ConstrMayEval (ConstrTypeOf c)
-      | qid = lqualid; la = LIST1 tactic_arg0 -> TacCall (loc,qid,la)
-      | qid = lqualid -> Reference qid
+      | r = reference; la = LIST1 tactic_arg0 -> TacCall (loc,r,la)
+      | r = reference -> Reference r
       | ta = tactic_arg0 -> ta ] ]
   ;
   tactic_arg0:
     [ [ "("; a = tactic_expr; ")" -> Tacexp a
       | "()" -> TacVoid
-      | qid = lqualid -> Reference qid
+      | r = reference -> Reference r
       | n = integer -> Integer n
       | id = METAIDENT -> MetaIdArg (loc,id)
       |	"?" -> ConstrMayEval (ConstrTerm (CHole loc))
       | "?"; n = natural -> MetaNumArg (loc,n)
       |	"'"; c = Constr.constr -> ConstrMayEval (ConstrTerm c) ] ]
-  ;
-  lqualid:
-    [ [ ref = reference -> ref ] ]
   ;
 
   (* Definitions for tactics *)
@@ -239,9 +235,9 @@ GEXTEND Gram
     [ [ IDENT "Meta"
       | IDENT "Tactic" ] ]
   ;
-  vrec_clause:
+  tacdef_body:
     [ [ name = identref; it=LIST1 input_fun; ":="; body = tactic_expr ->
-	  (name, TacFunRec (name, (it, body)))
+	  (name, TacFun (it, body))
       | name = identref; ":="; body = tactic_expr ->
 	  (name, body) ] ]
   ;
@@ -249,14 +245,10 @@ GEXTEND Gram
     [ [ tac = tactic_expr -> tac ] ]
   ;
   Vernac_.command: 
-    [ [ deftok; "Definition"; name = identref; ":="; body = tactic ->
-        Vernacexpr.VernacDeclareTacticDefinition (loc, [name, body])
-      | deftok; "Definition"; name = identref; largs=LIST1 input_fun;
-        ":="; body=tactic_expr ->
-        Vernacexpr.VernacDeclareTacticDefinition
-	  (loc, [name, TacFun (largs,body)])
-      | IDENT "Recursive"; deftok; "Definition";
-	vcl=LIST1 vrec_clause SEP "And" -> 
-	  Vernacexpr.VernacDeclareTacticDefinition (loc, vcl) ] ]
+    [ [ deftok; "Definition"; b = tacdef_body ->
+          VernacDeclareTacticDefinition (false, [b])
+      | IDENT "Recursive"; deftok; "Definition"; 
+        l = LIST1 tacdef_body SEP "And" ->
+          VernacDeclareTacticDefinition (true, l) ] ]
   ;
   END

@@ -223,7 +223,7 @@ type vernac_expr =
 
   (* Commands *)
   | VernacDeclareTacticDefinition of
-      loc * (identifier located * raw_tactic_expr) list
+      rec_flag * (identifier located * raw_tactic_expr) list
   | VernacHints of string list * hints
   | VernacHintDestruct of
       identifier * (bool,unit) location * constr_expr * int * raw_tactic_expr
