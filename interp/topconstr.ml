@@ -136,15 +136,26 @@ let rec subst_aconstr subst raw =
 	if r1' == r1 && r2' == r2 then raw else
 	  ACast (r1',r2')
 
-let rec aux = function
-  | RVar (_,id) -> AVar id
+let add_name r = function
+  | Anonymous -> ()
+  | Name id -> r := id :: !r
+
+let aconstr_of_rawconstr vars a =
+  let found = ref [] in
+  let bound_binders = ref [] in
+  let rec aux = function
+  | RVar (_,id) -> 
+      if not (List.mem id !bound_binders) then found := id::!found;
+      AVar id
   | RApp (_,g,args) -> AApp (aux g, List.map aux args)
-  | RLambda (_,na,ty,c) -> ALambda (na,aux ty,aux c)
-  | RProd (_,na,ty,c) -> AProd (na,aux ty,aux c)
-  | RLetIn (_,na,b,c) -> ALetIn (na,aux b,aux c)
+  | RLambda (_,na,ty,c) -> add_name bound_binders na; ALambda (na,aux ty,aux c)
+  | RProd (_,na,ty,c) -> add_name bound_binders na; AProd (na,aux ty,aux c)
+  | RLetIn (_,na,b,c) -> add_name bound_binders na; ALetIn (na,aux b,aux c)
   | RCases (_,tyopt,tml,eqnl) ->
-      let eqnl = List.map (fun (_,idl,pat,rhs) -> (idl,pat,aux rhs)) eqnl in
-      ACases (option_app aux tyopt,List.map aux tml, eqnl)
+      let f (_,idl,pat,rhs) =
+        bound_binders := idl@(!bound_binders);
+        (idl,pat,aux rhs) in
+      ACases (option_app aux tyopt,List.map aux tml, List.map f eqnl)
   | ROrderedCase (_,b,tyopt,tm,bv) ->
       AOrderedCase (b,option_app aux tyopt,aux tm, Array.map aux bv)
   | RCast (_,c,t) -> ACast (aux c,aux t)
@@ -153,10 +164,15 @@ let rec aux = function
   | RRef (_,r) -> ARef r
   | RMeta (_,n) -> AMeta n
   | RDynamic _ | RRec _ | REvar _ ->
-      error "Fixpoints, cofixpoints and existential variables are not \
+      error "Fixpoints, cofixpoints, existential variables and pattern-matching  not \
 allowed in abbreviatable expressions"
-
-let aconstr_of_rawconstr = aux
+  in
+  let a = aux a in
+  let check_type x =
+    if not (List.mem x !found or List.mem x !bound_binders) then
+      error ((string_of_id x)^" is unbound in the right-hand-side") in
+  List.iter check_type vars;
+  a
 
 (* Pattern-matching rawconstr and aconstr *)
 

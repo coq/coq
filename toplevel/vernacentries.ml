@@ -847,7 +847,8 @@ let vernac_locate = function
   | LocateTerm qid -> print_located_qualid qid
   | LocateLibrary qid -> print_located_library qid
   | LocateFile f -> locate_file f
-
+  | LocateNotation ntn ->
+      ppnl (Symbols.locate_notation (Constrextern.without_symbols pr_rawterm) ntn)
 
 (********************)
 (* Proof management *)

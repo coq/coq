@@ -36,7 +36,7 @@ type implicits_env = (identifier * Impargs.implicits_list) list
 
 (* Interprets global names, including syntactic defs and section variables *)
 val interp_rawconstr     : evar_map -> env -> constr_expr -> rawconstr
-val interp_rawconstr_gen : evar_map -> env -> implicits_env -> 
+val interp_rawconstr_gen : bool -> evar_map -> env -> implicits_env -> 
     bool -> identifier list -> constr_expr -> rawconstr
 
 (*s Composing the translation with typing *)
@@ -83,7 +83,7 @@ val interp_constrpattern :
 val interp_reference : identifier list -> reference -> rawconstr
 
 (* Interprets into a abbreviatable constr *)
-val interp_aconstr : constr_expr -> aconstr
+val interp_aconstr : identifier list -> constr_expr -> interpretation
 
 (* Globalization leak for Grammar *)
 val for_grammar : ('a -> 'b) -> 'a -> 'b

@@ -69,60 +69,6 @@ let _ = set_constr_globalizer
 
 let _ = define_ast_quotation true "constr" constr_parser_with_glob
 
-let add_name r = function
-  | Anonymous -> ()
-  | Name id -> r := id :: !r
-
-let make_aconstr vars a =
-  let bound_vars = ref [] in
-  let bound_binders = ref [] in
-  let rec aux = function
-  | RVar (_,id) ->
-      if List.mem id vars then bound_vars := id::!bound_vars;
-      AVar id
-  | RApp (_,g,args) -> AApp (aux g, List.map aux args)
-  | RLambda (_,na,ty,c) -> add_name bound_binders na; ALambda (na,aux ty,aux c)
-  | RProd (_,na,ty,c) -> add_name bound_binders na; AProd (na,aux ty,aux c)
-  | RLetIn (_,na,b,c) -> add_name bound_binders na; ALetIn (na,aux b,aux c)
-  | RCases (_,tyopt,tml,eqnl) ->
-      let f (_,idl,pat,rhs) =
-        bound_binders := idl@(!bound_binders);
-        (idl,pat,aux rhs) in
-      ACases (option_app aux tyopt,List.map aux tml, List.map f eqnl)
-  | ROrderedCase (_,b,tyopt,tm,bv) ->
-      AOrderedCase (b,option_app aux tyopt,aux tm, Array.map aux bv)
-  | RCast (_,c,t) -> ACast (aux c,aux t)
-  | RSort (_,s) -> ASort s
-  | RHole (_,w) -> AHole w
-  | RRef (_,r) -> ARef r
-  | RMeta (_,n) -> AMeta n
-  | RDynamic _ | RRec _ | REvar _ ->
-      error "Fixpoints, cofixpoints, existential variables and pattern-matching  not \
-allowed in abbreviatable expressions"
-  in
-  let a = aux a in
-  let find_type x =
-    if List.mem x !bound_binders then (x,ETIdent) else
-    if List.mem x !bound_vars then (x,ETConstr (10,())) else
-      error ((string_of_id x)^" is unbound in the right-hand-side") in
-  let typs = List.map find_type vars in
-  (a, typs)
-
-(*
-let _ = set_grammar_globalizer
-  (fun vl a ->
-    let r = for_grammar (globalize_constr_expr [] vl) a in
-    let a, typs = make_aconstr vl r in
-(*
-    List.iter2
-      (fun (x,typ) (x',typ') ->
-	assert (x=x');
-	if typ = ETConstr & typ' = ETIdent then
-	  error "cannot use a constr parser to parse an ident") etyps typs;
-*)
-    a)
-*)
-
 (** For old ast printer *)
 
 (* Pretty-printer state summary *)
@@ -269,7 +215,7 @@ let meta_pattern m = Pmeta(m,Tany)
 
 open Symbols
 
-type white_status = Juxtapose | Separate of int
+type white_status = Juxtapose | Separate of int | NextIsTerminal
 
 let add_break l = function
   | Separate n -> UNP_BRK (n,1) :: l
@@ -317,7 +263,19 @@ let make_hunks_ast symbols etyps from =
 
 let add_break l = function
   | Separate n -> UnpCut (PpBrk(n,1)) :: l
+  | NextIsTerminal -> UnpCut (PpBrk(1,1)) :: l
   | _ -> l
+
+let is_bracket s =
+  let l = String.length s in l <> 0 &
+  (s.[0] = '{' or s.[0] = '[' or s.[0] = '(' or
+   s.[l-1] = '}' or s.[l-1] = ']' or s.[l-1] = ')')
+
+let is_operator s =
+  let l = String.length s in l <> 0 &
+  (s.[0] = '+' or s.[0] = '*' or s.[0] = '=' or
+   s.[0] = '-' or s.[0] = '/' or s.[0] = '<' or s.[0] = '>' or
+   s.[0] = '@')
 
 let make_hunks etyps symbols =
   let vars,typs = List.split etyps in
@@ -329,20 +287,26 @@ let make_hunks etyps symbols =
 	  let _,prec = precedence_of_entry_type (List.nth typs (i-1)) in
 	  let u = UnpMetaVar (i ,prec) in
 	  let l' = u :: (add_break l ws) in
-	  (Separate 1, l')
+	  (NextIsTerminal, l')
       | Terminal s ->
-	    let n,(s,l) =
+	    let nextsep,(s,l) =
 	      if
 		is_letter (s.[0]) or 
 		is_letter (s.[String.length s -1]) or
 		is_digit (s.[String.length s -1])
 	      then
 		(* We want spaces around both sides *)
-		1, if ws = Separate 0 then s^" ",l else s,add_break l ws
+		Separate 1,
+		if ws = Separate 0 then s^" ",l else s,add_break l ws
 	      else
-		(* We want a break before symbols, hence [Separate 0] *)
-		0, (s,l) in
-	    (Separate n, UnpTerminal s :: l)
+		(* We want a break before symbols but brackets*)
+		if is_bracket s then
+		  Juxtapose,
+		  (s,if ws = Separate 0 then add_break l ws else l)
+		 else
+		  Separate 0, (s,l)
+	    in
+	    (nextsep, UnpTerminal s :: l)
       | Break n ->
 	    (Juxtapose, UnpCut (PpBrk (n,1)) :: l))
     symbols (Juxtapose,[])
@@ -447,7 +411,7 @@ let make_syntax_rule n name symbols typs ast ntn sc =
       [UNP_SYMBOLIC(sc,ntn,UNP_BOX (PpHOVB 1,make_hunks_ast symbols typs n))]}]
 
 let make_pp_rule symbols typs =
-  [UnpBox (PpHOVB 1, make_hunks symbols typs)]
+  [UnpBox (PpHOVB 0, make_hunks symbols typs)]
 
 
 (**************************************************************************)
@@ -623,7 +587,7 @@ let make_old_pp_rule n symbols typs r ntn scope vars =
   let rule_name = ntn^"_"^scope^"_notation" in
   make_syntax_rule n rule_name symbols typs ast ntn scope
 
-let add_notation_in_scope df a (assoc,n,etyps,onlyparse) sc toks =
+let add_notation_in_scope df c (assoc,n,etyps,onlyparse) sc toks =
   let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
   let (typs,symbols) =
     find_symbols
@@ -631,12 +595,7 @@ let add_notation_in_scope df a (assoc,n,etyps,onlyparse) sc toks =
       [] toks in
   let vars = List.map fst typs in
   (* To globalize... *)
-  let r = interp_rawconstr_gen Evd.empty (Global.env()) [] false vars a in
-  let a,_ = make_aconstr vars r in
-(*
-  let a,etyps' = make_aconstr vars r in
-  let etyps = merge_entry_types etyps' etyps in
-*)
+  let a = interp_aconstr vars c in
   let typs = List.map (set_entry_type etyps) typs in
   let assoc = recompute_assoc typs in
   (* Declare the parsing and printing rules if not already done *)
@@ -646,11 +605,14 @@ let add_notation_in_scope df a (assoc,n,etyps,onlyparse) sc toks =
   Lib.add_anonymous_leaf (inSyntaxExtension(prec,notation,gram_rule,pp_rule));
   let old_pp_rule =
     if onlyparse then None
-    else Some (make_old_pp_rule n symbols typs r notation scope vars) in
+    else 
+      let r = 
+	interp_rawconstr_gen false Evd.empty (Global.env()) [] false vars c in
+      Some (make_old_pp_rule n symbols typs r notation scope vars) in
   (* Declare the interpretation *)
   let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
   Lib.add_anonymous_leaf
-    (inNotation(old_pp_rule,prec,notation,scope,(vars,a),onlyparse,df))
+    (inNotation(old_pp_rule,prec,notation,scope,a,onlyparse,df))
 
 let add_notation df a modifiers sc =
   let toks = split df in
@@ -658,7 +620,8 @@ let add_notation df a modifiers sc =
     | [String x] when quote(strip x) = x & modifiers = [] ->
         (* Means a Syntactic Definition *)
         let ident = id_of_string (strip x) in
-        Syntax_def.declare_syntactic_definition ident (interp_aconstr a)
+	let c = snd (interp_aconstr [] a) in
+        Syntax_def.declare_syntactic_definition ident c
     | _ ->
        add_notation_in_scope df a (interp_notation_modifiers modifiers) sc toks
 

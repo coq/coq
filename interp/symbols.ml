@@ -58,8 +58,9 @@ let empty_scope = {
 let default_scope = "core_scope"
 let type_scope = "type_scope"
 
-let _ = Stringmap.add default_scope empty_scope !scope_map
-let _ = Stringmap.add type_scope empty_scope !scope_map
+let init_scope_map () =
+  scope_map := Stringmap.add default_scope empty_scope !scope_map;
+  scope_map := Stringmap.add type_scope empty_scope !scope_map
 
 (**********************************************************************)
 (* The global stack of scopes                                         *)
@@ -225,7 +226,7 @@ let rec find_interpretation f = function
 
 let rec interp_notation ntn scopes =
   let f scope = fst (Stringmap.find ntn scope.notations) in
-  try find_interpretation f scopes
+  try find_interpretation f (scopes @ !scope_stack)
   with Not_found -> anomaly ("Unknown interpretation for notation "^ntn)
 
 let uninterp_notations c =
@@ -236,24 +237,22 @@ let availability_of_notation (ntn_scope,ntn) scopes =
     Stringmap.mem ntn (Stringmap.find scope !scope_map).notations in
   find_without_delimiters f ntn_scope scopes
 
-let rec interp_numeral loc n = function
+let rec interp_numeral_gen loc f n = function
   | scope :: scopes ->
-      (try fst (lookup_numeral_interpreter loc scope) loc n
-       with Not_found -> interp_numeral loc n scopes)
+      (try f (lookup_numeral_interpreter loc scope)
+       with Not_found -> interp_numeral_gen loc f n scopes)
   | [] ->
       user_err_loc (loc,"interp_numeral",
       str "No interpretation for numeral " ++ pr_bigint n)
 
-let rec interp_numeral_as_pattern loc n name = function
-  | scope :: scopes ->
-      (try 
-	match snd (lookup_numeral_interpreter loc scope) with
-	  | None -> raise Not_found
-	  | Some g -> g loc n name
-	with Not_found -> interp_numeral_as_pattern loc n name scopes)
-  | [] ->
-      user_err_loc (loc,"interp_numeral_as_pattern",
-      str "No interpretation for numeral " ++ pr_bigint n)
+let interp_numeral loc n scopes =
+  interp_numeral_gen loc (fun x -> fst x loc n) n (scopes@ !scope_stack)
+
+let interp_numeral_as_pattern loc n name scopes =
+  let f x = match snd x with
+    | None -> raise Not_found
+    | Some g -> g loc n name in
+  interp_numeral_gen loc f n (scopes@ !scope_stack)
 
 let uninterp_numeral c =
   try 
@@ -365,6 +364,34 @@ let pr_scopes prraw =
    (fun scope sc strm -> pr_named_scope prraw scope sc ++ fnl () ++ strm)
    !scope_map (mt ())
 
+let rec find_default ntn = function
+  | scope::_ when Stringmap.mem ntn (find_scope scope).notations -> scope
+  | _::scopes -> find_default ntn scopes
+  | [] -> raise Not_found
+
+let locate_notation prraw ntn =
+  let ntn = if String.contains ntn ' ' then ntn else "_ "^ntn^" _" in
+  let l = 
+    Stringmap.fold 
+      (fun scope_name sc l ->
+	try
+	  let ((_,r),(_,df)) = Stringmap.find ntn sc.notations in
+	  (scope_name,r,df)::l
+	with Not_found -> l) !scope_map []
+  in
+  if l = [] then
+    str "Unknown notation"
+  else
+    let scope = find_default ntn !scope_stack in
+    prlist 
+      (fun (sc,r,df) ->
+	hov 0 (
+	  pr_notation_info prraw df r ++ brk (1,2) ++
+	  str ": " ++ str sc ++ 
+	  (if sc = scope then str " (default interpretation)" else mt ()) ++
+	  fnl ()))
+      l
+
 (**********************************************************************)
 (* Mapping notations to concrete syntax *)
 
@@ -397,8 +424,8 @@ let unfreeze (scm,scs,asc,dlm,fkm,pprules) =
   printing_rules := pprules
 
 let init () =
+  init_scope_map ();
 (*
-  scope_map := Stringmap.empty;
   scope_stack := Stringmap.empty
   arguments_scope := Refmap.empty
 *)

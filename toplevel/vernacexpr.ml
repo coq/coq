@@ -67,6 +67,7 @@ type locatable =
   | LocateTerm of reference
   | LocateLibrary of reference
   | LocateFile of string
+  | LocateNotation of notation
 
 type goable =
   | GoTo of int

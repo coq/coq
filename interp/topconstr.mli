@@ -43,7 +43,7 @@ val map_aconstr_with_binders_loc : loc ->
 
 val subst_aconstr : Names.substitution -> aconstr -> aconstr
 
-val aconstr_of_rawconstr : rawconstr -> aconstr
+val aconstr_of_rawconstr : identifier list -> rawconstr -> aconstr
 
 (* [match_aconstr metas] match a rawconstr against an aconstr with
    metavariables in [metas]; it raises [No_match] if the matching fails *)
