@@ -32,7 +32,7 @@ let rec expand_atom s i =
   then expand_atom s (i+1)
   else i
 
-let rec expand_macros b s i =
+let rec expand_macros s i =
   let l = String.length s in
   if i=l then s else
     match s.[i] with
@@ -40,9 +40,7 @@ let rec expand_macros b s i =
 	  let n = expand_atom s (i+1) in
 	  let v = safe_getenv (String.sub s (i+1) (n-i-1)) in
 	  let s = (String.sub s 0 i)^v^(String.sub s n (l-n)) in
-	  expand_macros false s (i + String.length v)
-      | '/' ->
-	  expand_macros true s (i+1)
+	  expand_macros s (i + String.length v)
       | '~' ->
 	  let n = expand_atom s (i+1) in
 	  let v =
@@ -50,10 +48,10 @@ let rec expand_macros b s i =
 	    else (getpwnam (String.sub s (i+1) (n-i-1))).pw_dir
 	  in
 	  let s = v^(String.sub s n (l-n)) in
-	  expand_macros false s (String.length v)
-      | c -> expand_macros false s (i+1)
+	  expand_macros s (String.length v)
+      | c -> expand_macros s (i+1)
 
-let glob s = expand_macros true s 0
+let glob s = expand_macros s 0
 
 (* Files and load path. *)
 
