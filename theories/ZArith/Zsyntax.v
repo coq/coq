@@ -22,7 +22,7 @@ with negnumber :=
 with formula : constr :=
   form_expr [ expr($p) ] -> [$p]
 (*| form_eq [ expr($p) "=" expr($c) ] -> [ (eq Z $p $c) ]*)
-| form_eq [ expr($p) "=" expr($c) ] -> [ (eq ? $p $c) ]
+| form_eq [ expr($p) "=" expr($c) ] -> [ (Coq.Init.Logic.eq ? $p $c) ]
 | form_le [ expr($p) "<=" expr($c) ] -> [ (Zle $p $c) ]
 | form_lt [ expr($p) "<" expr($c) ] -> [ (Zlt $p $c) ]
 | form_ge [ expr($p) ">=" expr($c) ] -> [ (Zge $p $c) ]
@@ -30,7 +30,7 @@ with formula : constr :=
 (*| form_eq_eq [ expr($p) "=" expr($c) "=" expr($c1) ]
               -> [ (eq Z $p $c)/\(eq Z $c $c1) ]*)
 | form_eq_eq [ expr($p) "=" expr($c) "=" expr($c1) ]
-              -> [ (eq ? $p $c)/\(eq ? $c $c1) ]
+              -> [ (Coq.Init.Logic.eq ? $p $c)/\(Coq.Init.Logic.eq ? $c $c1) ]
 | form_le_le [ expr($p) "<=" expr($c) "<=" expr($c1) ]
               -> [ (Zle $p $c)/\(Zle $c $c1) ]
 | form_le_lt [ expr($p) "<=" expr($c) "<" expr($c1) ]
@@ -39,8 +39,8 @@ with formula : constr :=
               -> [ (Zlt $p $c)/\(Zle $c $c1) ]
 | form_lt_lt [ expr($p) "<" expr($c) "<" expr($c1) ]
               -> [ (Zlt $p $c)/\(Zlt $c $c1) ]
-(*| form_neq  [ expr($p) "<>" expr($c) ] -> [  ~(eq Z $p $c) ]*)
-| form_neq  [ expr($p) "<>" expr($c) ] -> [  ~(eq ? $p $c) ]
+(*| form_neq  [ expr($p) "<>" expr($c) ] -> [  ~(Coq.Init.Logic.eq Z $p $c) ]*)
+| form_neq  [ expr($p) "<>" expr($c) ] -> [  ~(Coq.Init.Logic.eq ? $p $c) ]
 | form_comp [ expr($p) "?=" expr($c) ] -> [ (Zcompare $p $c) ]
 
 with expr : constr :=
