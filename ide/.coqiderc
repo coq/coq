@@ -1,6 +1,6 @@
 binding "text" {
   bind "<ctrl>k" { "set-anchor" ()
-		   "move-cursor" (paragraphs,1,0)
+		   "move-cursor" (display-lines,1,0)
 		   "cut-clipboard" ()	
 		}
   bind "<ctrl>x" { }
