@@ -330,7 +330,7 @@ let check_number_of_regular_eqns eqns =
 (* Functions to deal with matrix factorization *)
 let occur_rawconstr id =
   let rec occur = function
-    | RRef (loc,RVar id) -> true
+    | RVar (loc,id') -> id = id'
     | RApp (loc,f,args) -> (occur f) or (List.exists occur args)
     | RBinder (loc,bk,na,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
     | RCases (loc,prinfo,tyopt,tml,pl) ->

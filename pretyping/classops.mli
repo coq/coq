@@ -52,8 +52,10 @@ val class_info_from_index : int -> cl_typ * cl_info_typ
 val coercion_exists : coe_typ -> bool
 val coercion_info : coe_typ -> (int * coe_info_typ)
 val coercion_info_from_index : int -> coe_typ * coe_info_typ
-val coercion_params : 
-  'a array reference -> int (* raise [Not_found] if not a coercion *)
+
+(* [coercion_params] raises [Not_found] if not a coercion *)
+val coercion_params : global_reference -> int
+
 val constructor_at_head : constr -> cl_typ * int
 
 (* raises [Not_found] if not convertible to a class *)

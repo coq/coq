@@ -32,7 +32,8 @@ type 'ctxt reference =
 
 (*i Pas beau ce constr dans rawconstr, mais mal compris ce ctxt des ref i*)
 type rawconstr = 
-  | RRef of loc * rawconstr array reference
+  | RRef of loc * global_reference
+  | RVar of loc * identifier
   | RMeta of loc * int
   | RApp of loc * rawconstr * rawconstr list
   | RBinder of loc * binder_kind * name * rawconstr * rawconstr
@@ -62,6 +63,7 @@ let dummy_loc = (0,0)
 
 let loc_of_rawconstr = function
   | RRef (loc,_) -> loc
+  | RVar (loc,_) -> loc
   | RMeta (loc,_) -> loc
   | RApp (loc,_,_) -> loc
   | RBinder (loc,_,_,_,_) -> loc
@@ -74,5 +76,7 @@ let loc_of_rawconstr = function
   | RCast (loc,_,_) -> loc
 
 let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
+
+
 
 

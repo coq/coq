@@ -137,11 +137,11 @@ let coercion_exists coe =
   with Not_found -> false
 
 let coe_of_reference = function
-  | RConst (sp,l) -> NAM_Constant sp
-  | RInd (ind_sp,l) -> NAM_Inductive ind_sp
-  | RConstruct (cstr_sp,l) -> NAM_Constructor cstr_sp
-  | RVar id  -> NAM_Var id
-  | _ -> raise Not_found
+  | ConstRef sp -> NAM_Constant sp
+  | IndRef sp -> NAM_Inductive sp
+  | ConstructRef sp -> NAM_Constructor sp
+  | VarRef sp  -> NAM_Var (basename sp)
+  | EvarRef _ -> raise Not_found
 
 let coercion_params r =
   let _,coe_info = coercion_info (coe_of_reference r) in

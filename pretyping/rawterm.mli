@@ -30,7 +30,8 @@ type 'ctxt reference =
   | REVar of int * 'ctxt
 
 type rawconstr = 
-  | RRef of loc * rawconstr array reference
+  | RRef of loc * global_reference
+  | RVar of loc * identifier
   | RMeta of loc * int
   | RApp of loc * rawconstr * rawconstr list
   | RBinder of loc * binder_kind * name * rawconstr * rawconstr

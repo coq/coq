@@ -107,13 +107,14 @@ let ast_of_inductive_ref pr  ((sp,tyi) as ind_sp,ids) =
   if !print_arguments then ope("INSTANCE",a::(array_map_to_list pr ids))
   else a
 
-let ast_of_ref pr = function
-  | RConst (sp,ctxt) -> ast_of_constant_ref pr (sp,ctxt)
-  | RInd (ind,ctxt) -> ast_of_inductive_ref pr (ind,ctxt)
-  | RConstruct (cstr,ctxt) -> ast_of_constructor_ref pr (cstr,ctxt)
-  | RVar id -> ast_of_ident id
-  | REVar (ev,ctxt) -> ast_of_existential_ref pr (ev,ctxt)
-
+let ast_of_ref pr r =
+  (* TODO gérer le ctxt *)
+  let ctxt = [||] in match r with
+  | ConstRef sp -> ast_of_constant_ref pr (sp,ctxt)
+  | IndRef sp -> ast_of_inductive_ref pr (sp,ctxt)
+  | ConstructRef sp -> ast_of_constructor_ref pr (sp,ctxt)
+  | VarRef sp -> ast_of_ident (basename sp)
+  | EvarRef ev -> ast_of_existential_ref pr (ev,ctxt)
 
 
 (**********************************************************************)
@@ -156,12 +157,14 @@ let explicitize =
     | [] -> List.rev lastimplargs
   in exprec 1 []
 
+(*
 let implicit_of_ref = function
-  | RConstruct (cstrid,_) -> constructor_implicits_list cstrid
-  | RInd (indid,_) -> inductive_implicits_list indid
-  | RConst (sp,_) -> constant_implicits_list sp
-  | RVar id -> (try (implicits_of_var id) with _ -> []) (* et FW? *)
+  | ConstructRef sp -> constructor_implicits_list sp
+  | IndRef sp -> inductive_implicits_list sp
+  | ConstRef sp -> constant_implicits_list sp
+  | VarRef sp -> (try implicits_of_var sp with _ -> [])
   | _ -> []
+*)
 
 let rec skip_coercion dest_ref (f,args as app) =
   if !print_coercions then app
@@ -201,6 +204,7 @@ let ast_of_app impl f args =
 
 let rec ast_of_raw = function
   | RRef (_,ref) -> ast_of_ref ast_of_raw ref
+  | RVar (_,id) -> ast_of_ident id
   | RMeta (_,n) -> ope("META",[num n])
   | RApp (_,f,args) ->
       let (f,args) =
@@ -208,7 +212,7 @@ let rec ast_of_raw = function
       let astf = ast_of_raw f in
       let astargs = List.map ast_of_raw args in
       (match f with 
-	 | RRef (_,ref) -> ast_of_app (implicit_of_ref ref) astf astargs
+	 | RRef (_,ref) -> ast_of_app (implicits_of_global ref) astf astargs
 	 | _           -> ast_of_app [] astf astargs)
   | RBinder (_,BProd,Anonymous,t,c) ->
       (* Anonymous product are never factorized *)
@@ -329,6 +333,8 @@ let ast_of_constructor env = ast_of_constructor_ref (ast_of_constr false env)
 let rec ast_of_pattern env = function
   | PRef ref -> ast_of_ref (fun c -> ast_of_raw (Detyping.detype [] env c)) ref
 
+  | PVar id -> ast_of_ident id
+
   | PRel n ->
       (try match lookup_name_of_rel n env with
 	 | Name id   -> ast_of_ident id
@@ -345,7 +351,7 @@ let rec ast_of_pattern env = function
       let astf = ast_of_pattern env f in
       let astargs = List.map (ast_of_pattern env) args in
       (match f with 
-	 | PRef ref -> ast_of_app (implicit_of_ref ref) astf astargs
+	 | PRef ref -> ast_of_app (implicits_of_global ref) astf astargs
 	 | _        -> ast_of_app [] astf astargs)
 
   | PSoApp (n,args) ->
