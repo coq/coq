@@ -52,26 +52,22 @@ let hm2 s =
   let n = String.length s in
   if n > 1 && s.[0] = '.' && s.[1] = '/' then String.sub s 2 (n-2) else s
 
+let getenv_else s dft = try Sys.getenv s with Not_found -> dft
+
 (* Initializes the LoadPath according to COQLIB and Coq_config *)
 let init_load_path () =
   (* default load path; only if COQLIB is defined *)
-  begin
-    try
-      let coqlib = Sys.getenv "COQLIB" in
-      if coqlib <> "" then
-      	List.iter
-	  (fun s -> add_include (Filename.concat coqlib s))
-      	  ("states" :: 
-	   (List.map (fun s -> Filename.concat "theories" (hm2 s))
-              Coq_config.theories_dirs))
-    with Not_found -> ()
-  end ;
-  begin
-    try
-      let camlp4 = Sys.getenv "CAMLP4LIB" in add_include camlp4
-    with Not_found -> ()
-  end ;
-  add_include "." ;
+  let coqlib = getenv_else "COQLIB" Coq_config.coqlib in
+  if coqlib <> "" then
+    List.iter
+      (fun s -> add_include (Filename.concat coqlib s))
+      ("states" :: 
+       (List.map 
+	  (fun s -> Filename.concat "theories" (hm2 s))
+          Coq_config.theories_dirs));
+  let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
+  add_include camlp4;
+  add_include ".";
   (* additional loadpath, given with -I -include -R options *)
   List.iter add_include (List.rev !includes);
   includes := []
