@@ -132,11 +132,68 @@ can cause changes in tactic scripts behavior.
 \SeeAlso sections \ref{Conversion-tactics}, \ref{Automatizing},
 \ref{Theorem}
 
-\subsection{\tt Search {\ident}.}\comindex{Search}
+\subsection{\tt Search {\qualid}.}\comindex{Search}
 This command displays the name and type of all theorems of the current
-context whose statement's conclusion has the form {\tt ({\ident} t1 ..
+context whose statement's conclusion has the form {\tt ({\qualid} t1 ..
   tn)}.  This command is useful to remind the user of the name of
 library lemmas.
+
+\subsection{\tt SearchPattern {\term}.}\comindex{SearchPattern}
+
+This command displays the name and type of all theorems of the current
+context whose statement's conclusion matches the expression {\term}
+where holes in the latter are denoted by ``{\texttt ?}''.
+
+\begin{coq_example}
+Require Arith.
+SearchPattern (plus ? ?)=?.
+\end{coq_example}
+
+Patterns need not be linear: you can express that the same
+expression must occur in two places by using indexed `{\texttt ?}''.
+
+\begin{coq_example}
+Require Arith.
+SearchPattern (plus ?1 ?)=?1.
+\end{coq_example}
+
+\subsection{\tt SearchRewrite {\term}.}\comindex{SearchRewrite}
+
+This command displays the name and type of all theorems of the current
+context whose statement's conclusion is an equality of which one side matches
+the expression {\term =}. Holes in {\term} are denoted by ``{\texttt ?}''.
+
+\begin{coq_example}
+Require Arith.
+SearchRewrite (plus ? ?).
+\end{coq_example}
+
+\begin{Variants}
+\item
+ {\tt Search {\qualid} inside
+{\module$_1$}...{\module$_n$}.}\comindex{Search ... inside ...}\\
+{\tt SearchPattern {\term} inside
+{\module$_1$}...{\module$_n$}.}\comindex{SearchPattern ... inside
+...}\\
+{\tt SearchRewrite {\term} inside
+{\module$_1$}...{\module$_n$}.}\comindex{SearchRewrite ... inside ...}\\
+This restricts the search to constructions defined in modules {\module$_1$}...{\module$_n$}.
+
+\item {\tt Search {\qualid} outside {\module$_1$}...{\module$_n$}.}\comindex{Search ... outside ...}\\
+  This restricts the search to constructions not defined in modules {\module$_1$}...{\module$_n$}.
+
+
+  This restricts the search to constructions defined in modules {\module$_1$}...{\module$_n$}.
+
+\item {\tt SearchPattern {\term} outside {\module$_1$}...{\module$_n$}.}\comindex{SearchPattern ... outside ...}\\
+  This restricts the search to constructions not defined in modules
+{\module$_1$}...{\module$_n$}.
+
+\item {\tt SearchRewrite {\term} outside {\module$_1$}...{\module$_n$}.}\comindex{SearchRewrite ... outside ...}\\
+  This restricts the search to constructions not defined in modules
+{\module$_1$}...{\module$_n$}.
+
+\end{Variants}
 
 \subsection{\tt SearchIsos {\term}.}\comindex{SearchIsos}
 \label{searchisos}
@@ -147,6 +204,7 @@ context whose type is isomorphic to {\term} modulo the contextual part of the
 following axiomatization (the mutual inductive types with one constructor,
 without implicit arguments, and for which projections exist, are regarded as a
 sequence of $\sa{}$):
+
 
 \begin{tabbing}
 \ \ \ \ \=11.\ \=\kill
