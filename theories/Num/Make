@@ -1,7 +1,9 @@
 Params.v
+EqParams.v
 NeqDef.v
 NSyntax.v
 Axioms.v
+EqAxioms.v
 AddProps.v
 LtProps.v
 OppProps.v
@@ -15,6 +17,5 @@ GeProps.v
 DiscrAxioms.v
 DiscrProps.v
 OppAxioms.v
-NatParams.v
-NatSyntax.v
-NatAxioms.v
+Leibniz
+Nat

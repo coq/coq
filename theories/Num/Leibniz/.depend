@@ -1,0 +1,9 @@
+Params.vo: Params.v
+Params.vi: Params.v
+NSyntax.vo: NSyntax.v Params.vo
+NSyntax.vi: NSyntax.v Params.vo
+EqAxioms.vo: EqAxioms.v NSyntax.vo
+EqAxioms.vi: EqAxioms.v NSyntax.vo
+Params.html: Params.v
+NSyntax.html: NSyntax.v Params.html
+EqAxioms.html: EqAxioms.v NSyntax.html

@@ -7,6 +7,7 @@
 (***********************************************************************)
 
 Require Export Axioms.
+Require Export EqAxioms.
 
 (*s This file contains basic properties of addition with respect to equality *)
 
