@@ -1,0 +1,74 @@
+TUTORIAL				N. Oury
+
+GUIDE PASSAGE V7-V8			BB
+
+MANUEL DE REFERENCE
+\include{RefMan-int}% Introduction	HH
+\include{RefMan-pre}% Credits		HH
+
+\tableofcontents			
+
+\part{The language}
+\defaultheaders
+\include{RefMan-gal.v}% Gallina					BB
+\include{RefMan-ext.v}% Gallina extensions			HH
+\include{RefMan-lib.v}% The coq library				BB
+\include{RefMan-cic.v}% The Calculus of Constructions		CP
+
+\include{RefMan-modr}% The module system			Jacek
+
+
+\part{The proof engine}
+\include{RefMan-oth.v}% Vernacular commands			JCF
+\include{RefMan-pro}% Proof handling				Clement
+\include{RefMan-tac.v}% Tactics and tacticals			JCF
+%% ajouter JProver/Ground/CC					Pierre C
+\include{RefMan-tacex.v}% Detailed Examples of tactics		JCF
+
+\part{User extensions}
+\include{RefMan-syn.v}% The Syntax and the Grammar commands	HH
+%%SUPPRIME \include{RefMan-tus.v}% Writing tactics
+%%REMPLACE PAR
+\include{RefMan-ltac.v}% Writing tactics			BB
+
+\part{Practical tools}
+\include{RefMan-com}% The coq commands (coqc coqtop)		HH
+%%ajouter nouvelles options -v7 -translate au document de passage
+\include{RefMan-uti}% utilities (gallina, do_Makefile, etc)	JCF
+%%ajouter coqide				       Benjamin M
+
+\include{AddRefMan-pre}%					CP
+
+\include{Cases.v}%						CP
+\include{Coercion.v}%						HH
+%%SUPPRIME \include{Natural.v}%
+\include{Omega.v}%						JCF
+%%Nouvelle version ROmega					Pierre Cregut
+%%SUPPRIME \include{Program.v}%
+%% A SUPPRIMER
+%% \include{Correctness.v}% = preuve de pgms imperatifs		
+\include{Extraction.v}%						Pierre L
+\include{Polynom.v}%  = Ring					JCF
+\include{Setoid.v}% Tactique pour les setoides			Clement
+\addtocontents{sh}{ENDADDENDUM=\thepage}
+
+\nocite{*}
+\bibliographystyle{plain}
+\bibliography{biblio}
+\addtocontents{sh}{psselect -q -p-$ENDREFMAN,$BEGINBIBLIO- Reference-Manual.ps Reference-Manual-base.ps}
+\addtocontents{sh}{psselect -q -p$BEGINADDENDUM-$ENDADDENDUM Reference-Manual.ps Reference-Manual-addendum.ps}
+\addtocontents{sh}{dviselect -i Reference-Manual.dvi -o Reference-Manual-base.dvi 1-$ENDREFMAN $BEGINBIBLIO-}
+\addtocontents{sh}{dviselect -i Reference-Manual.dvi -o Reference-Manual-addendum.dvi $BEGINADDENDUM-$ENDADDENDUM}
+
+\printindex
+
+\printindex[tactic]
+
+\printindex[command]
+
+\printindex[error]
+
+\end{document}
+
+
+% $Id$ 
