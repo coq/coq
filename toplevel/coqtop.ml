@@ -119,20 +119,17 @@ let set_opt () = re_exec_version := "opt"
    the toplevel has already been set in [Mltop] by the main file created
    by coqmktop (see scripts/coqmktop.ml). *)
 
-let re_exec () =
+let re_exec is_ide =
   let s = !re_exec_version in
   let is_native = (Mltop.get()) = Mltop.Native in
-(*  let mustbe_v8 = not !Options.v7 in*)
   let prog = Sys.argv.(0) in
   let coq = Filename.basename prog in
-(*  let is_v8 = coq = "coqtopnew.byte" or coq = "coqtopnew.opt" in*)
   if (is_native && s = "byte") || ((not is_native) && s = "opt")
-(*    || (is_v8 <> mustbe_v8)*)
   then begin
     let s = if s = "" then if is_native then "opt" else "byte" else s in
     let newprog = 
       let dir = Filename.dirname prog in
-      let coqtop = (* if mustbe_v8 then "coqtopnew." else *) "coqtop." in
+      let coqtop = if is_ide then "coqide." else "coqtop." in
       let com = coqtop ^ s ^ Coq_config.exec_extension in
       if dir <> "." then Filename.concat dir com else com 
     in
@@ -285,7 +282,7 @@ let init is_ide =
     Lib.init();
     try
       parse_args is_ide;
-      re_exec ();
+      re_exec is_ide;
       if_verbose print_header ();
       init_load_path ();
       inputstate ();

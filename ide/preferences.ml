@@ -123,8 +123,14 @@ let (current:pref ref) =
     modifiers_valid = [`SHIFT; `CONTROL; `MOD1; `MOD4];
 
     
-    cmd_browse = "netscape -remote \"OpenURL(", ")\"";
-    cmd_editor = "emacs ", "";
+    cmd_browse = 
+	 if Sys.os_type = "Win32"
+	 then "C:\\PROGRA~1\\INTERN~1\\IEXPLORE ", ""
+	 else "netscape -remote \"OpenURL(", ")\"";
+    cmd_editor = 
+	 if Sys.os_type = "Win32"
+	 then "NOTEPAD ", ""
+	 else "emacs ", "";
     
     text_font = Pango.Font.from_string "sans 12";
 

@@ -107,7 +107,7 @@ let is_in_proof_mode () =
 let user_error_loc l s =
   raise (Stdpp.Exc_located (l, Util.UserError ("CoqIde", s)))
 
-let interp s = 
+let interp verbosely s = 
   prerr_endline "Starting interp...";
   prerr_endline s;
   let pa = Pcoq.Gram.parsable (Stream.of_string s) in
@@ -149,7 +149,7 @@ let interp s =
 		  | VernacFixpoint _
 		  | VernacCoFixpoint _
 		  | VernacEndProof _
-		    -> Options.make_silent false
+		    -> Options.make_silent (not verbosely)
 		  | _ -> ()
 	      end;
 	      Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s));
@@ -158,7 +158,7 @@ let interp s =
 	      last
 
 let interp_and_replace s = 
-  let result = interp s in
+  let result = interp false s in
   let msg = read_stdout () in
   result,msg
 

@@ -169,13 +169,13 @@ object('self)
     method insert_message : string -> unit
     method insert_this_phrase_on_success :
       bool -> bool -> bool -> string -> string -> bool
-    method process_next_phrase : bool -> bool -> bool
+    method process_next_phrase : bool -> bool -> bool -> bool
     method process_until_iter_or_error : GText.iter -> unit
     method process_until_end_or_error : unit
     method recenter_insert : unit
     method reset_initial : unit
     method send_to_coq :
-      bool -> string ->
+      bool -> bool -> string ->
       bool -> bool -> bool -> (Util.loc * Vernacexpr.vernac_expr) option
     method set_message : string -> unit
     method show_goals : unit
@@ -232,54 +232,61 @@ let coq_computing = Mutex.create ()
 let coq_may_stop = Mutex.create ()
 
 let break () = 
+  prerr_endline "User break received:";
   if not (Mutex.try_lock coq_computing) then 
     begin
-      prerr_endline "Break received";
+      prerr_endline " trying to stop computation:";
       if Mutex.try_lock coq_may_stop then begin
 	Util.interrupt := true;
+	prerr_endline " interrupt flag set. Computation should stop soon...";
 	Mutex.unlock coq_may_stop
-      end else prerr_endline "Break discarded (coq may not stop now)";
+      end else prerr_endline " interruption refused (may not stop now)";
     end
   else begin
     Mutex.unlock coq_computing;
-    prerr_endline "Break received and discarded (not computing)"
+    prerr_endline " ignored (not computing)"
   end
 
 let full_do_if_not_computing text f x = 
-    ignore (Thread.create 
-	      (async (fun () ->
-			if Mutex.try_lock coq_computing then begin
-			  prerr_endline ("Launching thread " ^ text);
-			  let w = Blaster_window.blaster_window () in
-			  if not (Mutex.try_lock w#lock) then begin 
-			    break ();
-			    let lck = Mutex.create () in
-			    Mutex.lock lck;
-			    prerr_endline "Waiting on blaster...";
-			    Condition.wait w#blaster_killed lck;
-			    prerr_endline "Waiting on blaster ok";
-			    Mutex.unlock lck
-			  end else Mutex.unlock w#lock;
-			  let idle = 
-			      Glib.Timeout.add ~ms:300
-				~callback:(fun () -> !pulse ();true) in
-			    begin
-			      prerr_endline "Getting lock";
-			      try
-				f x;
-				Glib.Timeout.remove idle;
-			    prerr_endline "Releasing lock";
-			    Mutex.unlock coq_computing;
-			      with e -> 
-				Glib.Timeout.remove idle;
-				prerr_endline "Releasing lock (on error)";
-				Mutex.unlock coq_computing;
-				raise e
-			    end
-			end else 
-			  prerr_endline 
-			    "Discarded order (computations are ongoing)"))
-	      ())
+  ignore 
+    (Thread.create 
+       (async 
+	  (fun () ->
+	     if Mutex.try_lock coq_computing 
+	     then 
+	       begin
+		 prerr_endline ("Launching thread " ^ text);
+		 let w = Blaster_window.blaster_window () in
+		 if not (Mutex.try_lock w#lock) then begin 
+		   break ();
+		   let lck = Mutex.create () in
+		   Mutex.lock lck;
+		   prerr_endline "Waiting on blaster...";
+		   Condition.wait w#blaster_killed lck;
+		   prerr_endline "Waiting on blaster ok";
+		   Mutex.unlock lck
+		 end else Mutex.unlock w#lock;
+		 let idle = 
+		   Glib.Timeout.add ~ms:300
+		     ~callback:(fun () -> !pulse ();true) in
+		 begin
+		   prerr_endline "Getting lock";
+		   try
+		     f x;
+		     Glib.Timeout.remove idle;
+		     prerr_endline "Releasing lock";
+		     Mutex.unlock coq_computing;
+		   with e -> 
+		     Glib.Timeout.remove idle;
+		     prerr_endline "Releasing lock (on error)";
+		     Mutex.unlock coq_computing;
+		     raise e
+	       end
+	     end 
+	     else 
+	       prerr_endline 
+		 "Discarded order (computations are ongoing)"))
+       ())
 
 let do_if_not_computing text f x = 
   ignore (full_do_if_not_computing text f x)
@@ -929,19 +936,22 @@ object(self)
 	  with e -> prerr_endline (Printexc.to_string e)
       end
       
-  method send_to_coq replace phrase show_output show_error localize =
+  method send_to_coq verbosely replace phrase show_output show_error localize =
     try 
       full_goal_done <- false;
       prerr_endline "Send_to_coq starting now";
       if replace then begin
-	let r,info = Coq.interp_and_replace ("Info " ^ phrase) in
+	let r,info = 
+(*	  full_do_if_not_computing "coq eval and replace" *)
+	    Coq.interp_and_replace ("Info " ^ phrase) 
+	in
 	let msg = read_stdout () in 
 	self#insert_message (if show_output then msg else "");
 
 	Some r
 	
       end else begin
-	let r = Some (Coq.interp phrase) in
+	let r = Some (Coq.interp verbosely phrase) in
 	let msg = read_stdout () in 
 	self#insert_message (if show_output then msg else "");
 	r
@@ -1044,7 +1054,7 @@ object(self)
     else false
 
 	  
-  method process_next_phrase display_goals do_highlight = 
+  method process_next_phrase verbosely display_goals do_highlight = 
     begin
       try 
 	self#clear_message;
@@ -1070,7 +1080,7 @@ object(self)
 	    prerr_endline "process_next_phrase : getting phrase";
 	    let phrase = start#get_slice ~stop in
 	    let r = 
-	      match self#send_to_coq false phrase true true true with
+	      match self#send_to_coq verbosely false phrase true true true with
 	      | Some ast ->
 		  begin
 		    b#move_mark ~where:stop (`NAME "start_of_input");
@@ -1102,7 +1112,7 @@ object(self)
     
   method insert_this_phrase_on_success 
     show_output show_msg localize coqphrase insertphrase = 
-    match self#send_to_coq false coqphrase show_output show_msg localize with
+    match self#send_to_coq false false coqphrase show_output show_msg localize with
     | Some ast ->
 	begin
 	  let stop = self#get_start_of_input in
@@ -1160,7 +1170,7 @@ object(self)
     process_pending ();
     (try 
        while ((stop#compare self#get_start_of_input>=0) 
-	      && (self#process_next_phrase false false))
+	      && (self#process_next_phrase false false false))
        do Util.check_for_interrupt () done
      with Sys.Break -> 
        prerr_endline "Interrupted during process_until_iter_or_error");
@@ -1467,8 +1477,8 @@ Please restart and report NOW.";
 		   if not (is_in_coq_path f) then 
 		     begin
 		       let dir = Filename.dirname f in
-		       ignore (Coq.interp
-			       (Printf.sprintf "Add LoadPath \"%s\". "  dir))
+		       ignore (Coq.interp false
+				 (Printf.sprintf "Add LoadPath \"%s\". "  dir))
 		     end)
     in ()
 
@@ -1487,7 +1497,7 @@ Please restart and report NOW.";
 	   end
 	 with Found -> 
 	   begin
-	     ignore (self#process_next_phrase true true)
+	     ignore (self#process_next_phrase false true true)
 	   end;
 	 end;
 	 last_index <- not last_index;)
@@ -2391,8 +2401,11 @@ let main files =
     do_if_not_computing "do_or_activate" (do_or_activate (fun av -> f av ; !pop_info();!push_info (Coq.current_status())))
   in
 
-  let add_to_menu_toolbar text ~tooltip ~key ~callback icon = 
-    ignore (navigation_factory#add_item text ~key ~callback);
+  let add_to_menu_toolbar text ~tooltip ?key ~callback icon = 
+    begin
+      match key with None -> () 
+	| Some key -> ignore (navigation_factory#add_item text ~key ~callback)
+    end;
     ignore (toolbar#insert_button
 	      ~tooltip
 	      ~text:tooltip
@@ -2401,10 +2414,16 @@ let main files =
 	      ())
   in
   add_to_menu_toolbar 
+    "_Save" 
+    ~tooltip:"Save current buffer" 
+    (* ~key:GdkKeysyms._Down *)
+    ~callback:save_f
+    `SAVE;
+  add_to_menu_toolbar 
     "_Forward" 
     ~tooltip:"Forward one command" 
     ~key:GdkKeysyms._Down 
-    ~callback:(do_or_activate (fun a -> a#process_next_phrase true true))
+    ~callback:(do_or_activate (fun a -> a#process_next_phrase true true true))
     `GO_DOWN;
   add_to_menu_toolbar "_Backward"
     ~tooltip:"Backward one command" 
