@@ -113,8 +113,8 @@ Hints Resolve mult_n_O : core v62.
 
 Lemma mult_n_Sm : (n,m:nat) (plus (mult n m) n)=(mult n (S m)).
 Proof.
-  Intros n m; NewInduction n; Simpl; Auto.
-  Rewrite <- IHn; Rewrite -> plus_n_Sm.
+  Intros; Elim n; Simpl; Auto.
+  Intros p H; Case H; Elim plus_n_Sm; Apply (f_equal nat nat S).
   Pattern 1 3 m; Elim m; Simpl; Auto.
 Qed.
 Hints Resolve mult_n_Sm : core v62.
