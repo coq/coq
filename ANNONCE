@@ -4,13 +4,17 @@ on version 7.0.
 
   The main features of Coq versions 7.0 and 7.1 over version 6.3.1 are
 
-  - a primitive let-in construct
+  - new primitive let-in construct
   - qualified names
-  - a new high-level tactic language
+  - new high-level tactic language
   - improved search facilities
-  - a new extraction algorithm managing the Type level
+  - new rewriting tactic for types equipped with specific equalities
+  - new tactic Field to decide equalities on commutative fields
+  - new tactic Fourier to solve linear inequalities on reals numbers
+  - new tactics for induction/case analysis in "natural" style
+  - new extraction algorithm managing the Type level
   - export of theories to XML for publishing and rendering purposes
-  - a deep restructuration of the code (safer, simpler and more efficient)
+  - deep restructuration of the code (safer, simpler and more efficient)
 
 
   Compared to version 7.0, the new version provides with

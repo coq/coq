@@ -11,13 +11,20 @@ Notes:
 Main novelties
 ==============
 
-- new primitive let-in construct
-- long names
-- new high-level tactic language
-- improved search facilities
-- new extraction algorithm managing the Type level
-- export of theories to XML for publishing and rendering purposes
-- deep restructuration of the code (safer, simpler and more efficient)
+References are to Coq V7.1 reference manual
+
+- New primitive let-in construct (see section 1.2.8)
+- Long names (see section 2.6)
+- New high-level tactic language (see chapter 10)
+- Improved search facilities (see section 5.2)
+- New extraction algorithm managing the Type level (see chapter 17)
+- New rewriting tactic for arbitrary equalities (see chapter 19)
+- New tactic Field to decide equalities on commutative fields (see 7.11)
+- New tactic Fourier to solve linear inequalities on reals numbers (see 7.11)
+- New tactics for induction/case analysis in "natural" style (see 7.7)
+- Deep restructuration of the code (safer, simpler and more efficient)
+- Export of theories to XML for publishing and rendering purposes
+  (see http://www.cs.unibo.it/helm)
 
 
 Details of changes
