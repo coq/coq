@@ -316,8 +316,8 @@ Christine Paulin
 The version V7 is a new implementation started in September 1999 by
 Jean-Christophe Filliâtre. This is a major revision with respect to
 the internal architecture of the system.  The \Coq{} version 7.0 was
-distributed in march 2001, version 7.1 in september 2001 and version
-7.2 in january 2002.
+distributed in March 2001, version 7.1 in September 2001, version
+7.2 in January 2002 and version 7.3 in May 2002.
 
 Jean-Christophe Filliâtre designed the architecture of the new system, he
 introduced a new representation for environments and wrote a new kernel
@@ -344,12 +344,14 @@ trigonometric functions, square, square roots, finite sums, Chasles
 property and basic plane geometry.
 
 Jean-Christophe Filliâtre and Pierre Letouzey redesigned a new
-extraction procedure from Coq terms to Caml programs. This new
+extraction procedure from Coq terms to Caml or Haskell programs. This new
 extraction procedure, unlike the one implemented in previous version
 of \Coq{} is able to handle all terms in the Calculus of Inductive
 Constructions, even involving universes and strong elimination. P.
 Letouzey adapted user contributions to extract ML programs when it was
 sensible.
+Jean-Christophe Filliâtre wrote \verb=coqdoc=, a documentation
+tool for Coq libraries usable from version 7.2.
 
 Bruno Barras improved the reduction algorithms efficiency and
 the confidence level in the correctness of Coq critical type-checking
@@ -360,6 +362,9 @@ Yves Bertot designed  the \texttt{SearchPattern} and
 (\url{http://www-sop.inria.fr/lemme/pcoq/}).
 
 Micaela Mayero and David Delahaye introduced a decision tactic for commutative fields.
+
+Christine Paulin changed the elimination rules for empty and singleton
+propositional inductive types.
 
 Loïc Pottier developed a tactic solving linear inequalities on real numbers.
 
@@ -384,7 +389,7 @@ Intensive users suggested improvements of the system :
 Y. Bertot, L. Pottier, L. Théry , P. Zimmerman from INRIA 
 C. Alvarado, P. Crégut, J.-F. Monin from France Telecom R \& D.
 \begin{flushright}
-Orsay, Jan. 2002\\
+Orsay, May. 2002\\
 Hugo Herbelin \& Christine Paulin
 \end{flushright}
 \newpage
