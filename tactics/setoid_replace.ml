@@ -872,7 +872,7 @@ let subrelation rel1 rel2 =
        open one new goal G should be preferred to the tactic that opens two
        copies of the new goal G. Moreover, a smaller proof term should be
        preferred to a bigger one when the size of the two multisets is equal. *)
-let marked_constr_equiv to_marked_constr c1 c2 =
+let marked_constr_equiv_or_more_complex to_marked_constr c1 c2 =
  let rec collect_new_goals =
   function
     MApp (_,_,a,_) -> List.concat (List.map collect_new_goals (Array.to_list a))
@@ -883,30 +883,19 @@ let marked_constr_equiv to_marked_constr c1 c2 =
  in
   let glc1 = collect_new_goals (to_marked_constr c1) in
   let glc2 = collect_new_goals (to_marked_constr c2) in
-   let rec equal_sets =
-    function
-       [],[] -> true
-     | [],_
-     | _,[] -> false
-     | he::tl,l ->
-        equal_sets
-         ((List.filter (fun e -> not (eq_constr e he)) tl),
-          (List.filter (fun e -> not (eq_constr e he)) l))
-   in
-    equal_sets (glc1,glc2)
+   List.for_all (fun c -> List.exists (fun c' -> eq_constr c c') glc1) glc2
 ;;
 
-(* given a list of constr_with_marks, it returns the list without duplicates
-   up to marked_constr_equiv *)
+(* given a list of constr_with_marks, it returns the list where
+   constr_with_marks than open more goals than simpler ones in the list
+   are got rid of *)
 let elim_duplicates to_marked_constr =
  let rec aux =
   function
      [] -> []
    | he:: tl ->
-      if List.exists (marked_constr_equiv to_marked_constr he) tl then
-       (*CSC: here we choose to get rid of he. But this may not be the
-              best choice. See the comment about marked_constr_equiv.*)
-       aux tl
+      if List.exists(marked_constr_equiv_or_more_complex to_marked_constr he) tl
+      then aux tl
       else he::aux tl
  in
   aux
@@ -932,14 +921,7 @@ let mark_occur gl t in_c input_relation input_direction =
    if input_direction = output_direction
    && subrelation (Relation input_relation) output_relation then
     [ToReplace]
-   else
-    []
-(*CSC: nice error message, incompatible with backtracking
-    errorlabstrm "Setoid_rewrite"
-     (str "The term " ++ prterm in_c ++ str " that must be rewritten occurs " ++
-      str " in a covariant position. You can replace only occurrences that " ++
-      str " are in a contravariant position.")
-*)
+   else []
   else
     match kind_of_term in_c with
       | App (c,al) -> 
@@ -1226,21 +1208,6 @@ let apply_coq_setoid_rewrite hole_relation prop_relation c1 c2 (direction,h)
  let hole_relation =
   cic_relation_class_of_relation_class (Relation hole_relation) in
  let hyp,hole_direction = h,cic_direction_of_direction direction in
-(*CSC: this old code seems interesting and allows to rewrite in one direction
-   both arguments in covariant and contravariant position. However, this
-   would mean extending a bit also the Coq part of the tactic and I do not
-   know if it is worth the effort.
-   match hole_symmetry with
-      Some sym ->
-       mkApp (sym, [| c2 ; c1 ; h |])
-    | None ->
-       errorlabstrm "Setoid_rewrite"
-        (str "Rewriting from right to left not permitted since the " ++
-         str "relation " ++ prterm hole_equality ++ str " is not known " ++
-         str "to be symmetric. Either declare it as a symmetric " ++
-         str "relation or use setoid_replace or (setoid_)rewrite from " ++
-         str "left to right only.") in
-*)
  let cic_prop_relation = cic_relation_class_of_relation_class prop_relation in
  let precise_prop_relation =
   cic_precise_relation_class_of_relation_class prop_relation
@@ -1256,10 +1223,14 @@ let relation_rewrite c1 c2 (input_direction,cl) gl =
  let (hyp,c1,c2) =
    let (env',c1) =
     try
+     (* ~mod_delta:false to allow to mark occurences that must not be
+        rewritten simply by replacing them with let-defined definitions
+        in the context *)
      w_unify_to_subterm ~mod_delta:false (pf_env gl) (c1,but) cl.env
     with
      Pretype_errors.PretypeError _ ->
-      (*CSC: not very nice; to make Ring work *)
+      (* ~mod_delta:true to make Ring work (since it really
+          exploits conversion) *)
       w_unify_to_subterm ~mod_delta:true (pf_env gl) (c1,but) cl.env
    in
    let cl' = {cl with env = env' } in
