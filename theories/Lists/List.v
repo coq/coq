@@ -253,7 +253,7 @@ Proof.
   destruct (H a0 a); simpl in |- *; auto.
   destruct IHl; simpl in |- *; auto. 
   right; unfold not in |- *; intros [Hc1| Hc2]; auto.
-Qed.
+Defined.
 
 Lemma in_app_or : forall (l m:list) (a:A), In a (l ++ m) -> In a l \/ In a m.
 Proof. 
