@@ -36,14 +36,19 @@ val prim_extractor :
 (*s Refiner errors. *)
 
 type refiner_error =
+
+  (*i Errors raised by the refiner i*)
   | BadType of constr * constr * constr
   | OccurMeta of constr
   | CannotApply of constr * constr
+  | NotWellTyped of constr
+
+  (*i Errors raised by the tactics i*)
   | CannotUnify of constr * constr
   | CannotGeneralize of constr
-  | NotWellTyped of constr
   | BadTacticArgs of string * tactic_arg list
   | IntroNeedsProduct
+  | DoesNotOccurIn of constr * identifier
 
 exception RefinerError of refiner_error
 

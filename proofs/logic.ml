@@ -21,14 +21,19 @@ open Retyping
 open Evarutil
 
 type refiner_error =
+
+  (* Errors raised by the refiner *)
   | BadType of constr * constr * constr
   | OccurMeta of constr
   | CannotApply of constr * constr
+  | NotWellTyped of constr
+
+  (* Errors raised by the tactics *)
   | CannotUnify of constr * constr
   | CannotGeneralize of constr
-  | NotWellTyped of constr
   | BadTacticArgs of string * tactic_arg list
   | IntroNeedsProduct
+  | DoesNotOccurIn of constr * identifier
 
 exception RefinerError of refiner_error
 

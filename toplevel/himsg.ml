@@ -414,6 +414,10 @@ let explain_refiner_bad_tactic_args s l =
 let explain_intro_needs_product () =
   [< 'sTR "Introduction tactics needs products" >]
 
+let explain_does_not_occur_in c hyp =
+  [< 'sTR "The term"; 'sPC; prterm c; 'sPC; 'sTR "does not occur in";
+     'sPC; pr_id hyp >]
+
 let explain_refiner_error = function
   | BadType (arg,ty,conclty) -> explain_refiner_bad_type arg ty conclty
   | OccurMeta t -> explain_refiner_occur_meta t
@@ -423,6 +427,7 @@ let explain_refiner_error = function
   | NotWellTyped c -> explain_refiner_not_well_typed c
   | BadTacticArgs (s,l) -> explain_refiner_bad_tactic_args s l
   | IntroNeedsProduct -> explain_intro_needs_product ()
+  | DoesNotOccurIn (c,hyp) -> explain_does_not_occur_in c hyp
 
 let error_non_strictly_positive k env c v  =
   let pc = prterm_env env c in
