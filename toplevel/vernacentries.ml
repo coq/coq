@@ -867,6 +867,8 @@ let vernac_print = function
       pp (Symbols.pr_scopes (Constrextern.without_symbols pr_rawterm))
   | PrintScope s ->
       pp (Symbols.pr_scope (Constrextern.without_symbols pr_rawterm) s)
+  | PrintVisibility s ->
+      pp (Symbols.pr_visibility (Constrextern.without_symbols pr_rawterm) s)
   | PrintAbout qid -> msgnl (print_about qid)
 
 let global_module r =

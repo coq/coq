@@ -752,13 +752,6 @@ let interp_infix_modifiers modl =
     error "explicit entry level or type unexpected in infix notation";
   (assoc,level,b,fmt)
 
-(* Notation defaults to NONA *)
-let interp_notation_modifiers modl =
-  let (assoc,n,t,b,format) = interp_modifiers modl in
-  let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
-  let n = match n with None -> 1 | Some n -> n in
-  (assoc,n,t,b,format)
-
 (* 2nd list of types has priority *)
 let rec merge_entry_types etyps' = function
   | [] -> etyps'
@@ -768,8 +761,6 @@ let rec merge_entry_types etyps' = function
 let set_entry_type etyps (x,typ) =
   let typ = try 
     match List.assoc x etyps, typ with
-      | _, (_,BorderProd (true,_)) ->
-	  error "The level of the leftmost non-terminal cannot be changed"
       | ETConstr (n,()), (_,BorderProd (left,_)) ->
           ETConstr (n,BorderProd (left,None))
       | ETConstr (n,()), (_,InternalProd) -> ETConstr (n,InternalProd)
@@ -777,11 +768,63 @@ let set_entry_type etyps (x,typ) =
     with Not_found -> ETConstr typ
   in (x,typ)
 
+let check_rule_reversibility l = 
+  if List.for_all (function NonTerminal _ -> true | _ -> false) l then
+    error "A notation must include at least one symbol"
+
+let find_precedence_v7 lev etyps symbols =
+  (match symbols with
+    | NonTerminal x :: _ ->
+	(try match List.assoc x etyps with
+	  | ETConstr _ ->
+	      error "The level of the leftmost non-terminal cannot be changed"
+	  | _ -> ()
+	with Not_found -> ())
+    | _ -> ());
+  if lev = None then 1 else out_some lev
+
+let find_precedence lev etyps symbols =
+  match symbols with
+  | NonTerminal x :: _ ->
+      (try match List.assoc x etyps with
+	| ETConstr _ ->
+	    error "The level of the leftmost non-terminal cannot be changed"
+	| ETIdent | ETBigint | ETReference -> 
+	    if lev = None then 
+	      Options.if_verbose msgnl (str "Setting notation at level 0")
+	    else
+	    if lev <> Some 0 then
+	      error "A notation starting with an atomic expression must be at level 0";
+	    0
+	| ETPattern | ETOther _ -> (* Give a default ? *)
+	    if lev = None then
+	      error "Need an explicit level"
+	    else out_some lev
+      with Not_found -> 
+	if lev = None then
+	  error "A left-recursive notation must have an explicit level"
+	else out_some lev)
+  | Terminal _ ::l when
+      (match list_last symbols with Terminal _ -> true |_ -> false)
+      -> 
+      if lev = None then
+	(Options.if_verbose msgnl (str "Setting notation at level 0"); 0)
+      else out_some lev
+  | _ ->
+      if lev = None then error "Cannot determine the level";
+      out_some lev
+
 let compute_syntax_data forv7 (df,modifiers) =
-  let (assoc,n,etyps,onlyparse,fmt) = interp_notation_modifiers modifiers in
+  let (assoc,n,etyps,onlyparse,fmt) = interp_modifiers modifiers in
+  (* Notation defaults to NONA *)
+  let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
   let toks = split df in
   let innerlevel = NumLevel (if forv7 then 10 else 200) in
   let (vars,symbols) = analyse_tokens toks in
+  check_rule_reversibility symbols;
+  let n =
+    if !Options.v7 then find_precedence_v7 n etyps symbols
+    else find_precedence n etyps symbols in
   let typs =
     find_symbols
       (NumLevel n,BorderProd(true,assoc))
@@ -924,6 +967,13 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
 
 let level_rule (n,p) = if p = E then n else max (n-1) 0
 
+let check_notation_existence notation =
+  try
+    let a,_ = Symbols.level_of_notation notation in
+    if a = None then raise Not_found
+  with Not_found ->
+    error "Parsing rule for this notation has to be previously declared"
+
 let build_old_pp_rule notation scope symbs (r,vars) =
   let prec = 
     try
@@ -940,12 +990,15 @@ let add_notation_interpretation_core local symbs for_old df a scope onlyparse
   onlypp =
   let notation = make_anon_notation symbs in
   let old_pp_rule = 
-    option_app (build_old_pp_rule notation scope symbs) for_old in
+    if !Options.v7 then 
+      option_app (build_old_pp_rule notation scope symbs) for_old
+    else None in
   Lib.add_anonymous_leaf
     (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,onlypp,df))
 
 let add_notation_interpretation df names c sc =
   let (vars,symbs) = analyse_tokens (split df) in
+  check_notation_existence (make_anon_notation symbs);
   let a = interp_aconstr names vars c in
   let a_for_old = interp_rawconstr_with_implicits (Global.env()) vars names c 
   in
@@ -1017,6 +1070,7 @@ let add_notation local c dfmod mv8 sc =
 	      else
 	        (* Declare only interpretation *)
 		let (vars,symbs) = analyse_tokens toks in
+		check_notation_existence (make_anon_notation symbs);
 		let onlyparse = modifiers = [SetOnlyParsing] in
 		let a = interp_aconstr [] vars c in
 		let a_for_old = interp_global_rawconstr_with_vars vars c in
@@ -1098,6 +1152,7 @@ let add_infix local (inf,modl) pr mv8 sc =
     (* de ne déclarer que l'interprétation *)
     (* Declare only interpretation *)
     let (vars,symbs) = analyse_tokens toks in
+    check_notation_existence (make_anon_notation symbs);
     let a' = interp_aconstr [] vars a in
     let a_for_old = interp_global_rawconstr_with_vars vars a in
     let for_old = Some (a_for_old,vars) in

@@ -53,6 +53,7 @@ type printable =
   | PrintHintDb
   | PrintScopes
   | PrintScope of string
+  | PrintVisibility of string option
   | PrintAbout of reference
 
 type search_about_item =

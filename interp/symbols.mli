@@ -32,9 +32,6 @@ type delimiters = string
 type scope
 type scopes (* = scope_name list*)
 
-(*
-val default_scope : scope_name
-*)
 val type_scope : scope_name
 val declare_scope : scope_name -> unit
 
@@ -135,6 +132,8 @@ val split : notation -> symbol_token list
 val pr_scope : (rawconstr -> std_ppcmds) -> scope_name -> std_ppcmds
 val pr_scopes : (rawconstr -> std_ppcmds) -> std_ppcmds
 val locate_notation : (rawconstr -> std_ppcmds) -> notation -> std_ppcmds
+
+val pr_visibility: (rawconstr -> std_ppcmds) -> scope_name option -> std_ppcmds
 
 (**********************************************************************)
 (*s Printing rules for notations *)

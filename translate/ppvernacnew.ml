@@ -1014,6 +1014,7 @@ let rec pr_vernac = function
 	| PrintInspect n -> str"Inspect" ++ spc() ++ int n
 	| PrintScopes -> str"Print Scopes"
 	| PrintScope s -> str"Print Scope" ++ spc() ++ str s 
+	| PrintVisibility s -> str"Print Visibility" ++ pr_opt str s 
 	| PrintAbout qid -> str"About" ++ spc()  ++ pr_reference qid
       in pr_printable p
   | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_pattern

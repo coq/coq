@@ -58,8 +58,8 @@ let empty_scope = {
   delimiters = None
 }
 
-let default_scope = "core_scope"
-let type_scope = "type_scope"
+let default_scope = "" (* empty name, not available from outside *)
+let type_scope = "type_scope" (* special scope used for interpreting types *)
 
 let init_scope_map () =
   scope_map := Stringmap.add default_scope empty_scope !scope_map;
@@ -86,7 +86,7 @@ let check_scope sc = let _ = find_scope sc in ()
 type scope_elem = Scope of scope_name | SingleNotation of string
 type scopes = scope_elem list
 
-let scope_stack = ref [Scope default_scope; Scope type_scope]
+let scope_stack = ref []
 
 let current_scopes () = !scope_stack
 
@@ -468,8 +468,13 @@ let pr_notation_info prraw ntn c =
   str "\"" ++ str ntn ++ str "\" := " ++ prraw (rawconstr_of_aconstr () c)
 
 let pr_named_scope prraw scope sc =
-  str "Scope " ++ str scope ++ fnl ()
-  ++ pr_delimiters_info sc.delimiters ++ fnl ()
+ (if scope = default_scope then
+   match Stringmap.fold (fun _ _ x -> x+1) sc.notations 0 with
+     | 0 -> str "No lonely notation"
+     | n -> str "Lonely notation" ++ (if n=1 then mt() else str"s")
+  else 
+    str "Scope " ++ str scope ++ fnl () ++ pr_delimiters_info sc.delimiters)
+  ++ fnl ()
   ++ pr_scope_classes scope
   ++ Stringmap.fold
        (fun ntn ((_,r),df,_) strm ->
@@ -538,6 +543,55 @@ let locate_notation prraw ntn =
 	    (if Some sc = scope then str "(default interpretation)" else mt ())
 	    ++ fnl ()))
 	l) ntns)
+
+let collect_notation_in_scope scope sc known =
+  assert (scope <> default_scope);
+  Stringmap.fold
+    (fun ntn ((_,r),df,_) (l,known as acc) ->
+      if List.mem ntn known then acc else ((df,r)::l,ntn::known))
+    sc.notations ([],known)
+
+let collect_notations stack =
+  fst (List.fold_left
+    (fun (all,knownntn as acc) -> function
+      | Scope scope ->
+	  if List.mem_assoc scope all then acc
+	  else
+	    let (l,knownntn) =
+	      collect_notation_in_scope scope (find_scope scope) knownntn in
+	    ((scope,l)::all,knownntn)
+      | SingleNotation ntn ->
+	  if List.mem ntn knownntn then (all,knownntn)
+	  else
+	    let ((_,r),df,_) =
+	      Stringmap.find ntn (find_scope default_scope).notations in
+	    let all' = match all with
+	      | (s,lonelyntn)::rest when s = default_scope ->
+		  (s,(df,r)::lonelyntn)::rest
+	      | _ -> 
+		  (default_scope,[df,r])::all in
+	    (all',ntn::knownntn))
+    ([],[]) stack)
+
+let pr_visible_in_scope prraw (scope,ntns) =
+  let strm =
+    List.fold_right
+      (fun (df,r) strm -> pr_notation_info prraw df r ++ fnl () ++ strm)
+      ntns (mt ()) in
+  (if scope = default_scope then
+     str "Lonely notation" ++ (if List.length ntns <> 1 then str "s" else mt())
+   else 
+     str "Visible in scope " ++ str scope)
+  ++ fnl () ++ strm
+
+let pr_scope_stack prraw stack = 
+  List.fold_left
+    (fun strm scntns -> strm ++ pr_visible_in_scope prraw scntns ++ fnl ())
+    (mt ()) (collect_notations stack)
+
+let pr_visibility prraw = function
+  | Some scope -> pr_scope_stack prraw (push_scope scope !scope_stack)
+  | None -> pr_scope_stack prraw !scope_stack
 
 (**********************************************************************)
 (* Mapping notations to concrete syntax *)
