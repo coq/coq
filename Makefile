@@ -76,7 +76,7 @@ LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
 PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
 	  pretyping/tacred.cmo pretyping/pretype_errors.cmo \
           pretyping/retyping.cmo pretyping/typing.cmo \
-	  pretyping/classops.cmo pretyping/recordops.cmo \
+	  pretyping/classops.cmo pretyping/class.cmo pretyping/recordops.cmo \
 	  pretyping/evarutil.cmo pretyping/evarconv.cmo \
           pretyping/coercion.cmo pretyping/cases.cmo pretyping/pretyping.cmo \
 	  pretyping/syntax_def.cmo
@@ -101,7 +101,7 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/tacentries.cmo tactics/hiddentac.cmo tactics/elim.cmo
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
-         toplevel/metasyntax.cmo toplevel/command.cmo toplevel/class.cmo \
+         toplevel/metasyntax.cmo toplevel/command.cmo toplevel/record.cmo \
          toplevel/discharge.cmo \
          toplevel/vernacentries.cmo toplevel/vernac.cmo toplevel/mltop.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo \

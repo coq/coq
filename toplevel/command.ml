@@ -134,15 +134,16 @@ let build_mutual lparams lnamearconstrs finite =
   and nparams = List.length lparams
   and sigma = Evd.empty 
   and env0 = Global.env() in
-  let fs = States.freeze() in
+(*  let fs = States.freeze() in*)
   try
     let mispecvec =
-      let (ind_sign,arityl) =
+      let (ind_env,arityl) =
       	List.fold_left 
 	  (fun (env,arl) (recname,arityc,_) -> 
              let arity = type_of_com env (mkProdCit lparams arityc) in
 	     let env' = Environ.push_var (recname,arity) env in
-	     declare_variable recname (arity.body,NeverDischarge,false);
+(*	A quoi cela sert ?
+	declare_variable recname (arity.body,NeverDischarge,false);*)
 	     (env', (arity::arl)))
 	  (env0,[]) lnamearconstrs 
       in
@@ -150,27 +151,27 @@ let build_mutual lparams lnamearconstrs finite =
         (fun ar (name,_,lname_constr) -> 
            let consconstrl =
              List.map 
-               (fun (_,constr) -> constr_of_com sigma ind_sign
+               (fun (_,constr) -> constr_of_com sigma ind_env
                     (mkProdCit lparams constr))
                lname_constr 
 	   in
            (name, ar.body, List.map fst lname_constr,
             put_DLAMSV_subst (List.rev lrecnames) (Array.of_list consconstrl)))
         (List.rev arityl) lnamearconstrs
-    in 
+    in
     let mie = { 
       mind_entry_nparams = nparams;
       mind_entry_finite = finite;
       mind_entry_inds = mispecvec }
     in
-    States.unfreeze fs;
+(*    States.unfreeze fs;*)
     let sp = declare_mind mie in
     if is_verbose() then pPNL(minductive_message lrecnames);
     for i = 0 to List.length mispecvec - 1 do
       declare_eliminations sp i
     done
   with e ->
-    States.unfreeze fs; raise e
+(*    States.unfreeze fs; *)raise e
 
 
 (* try to find non recursive definitions *)

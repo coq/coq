@@ -32,7 +32,7 @@ type struc_typ = {
   s_PARAM : int;
   s_PROJ : section_path option list }
 
-let sTRUCS = (ref [] : (section_path * struc_typ) list ref)
+let sTRUCS = (ref [] : (inductive_path * struc_typ) list ref)
 
 let add_new_struc1 x = sTRUCS:=x::(!sTRUCS)
 
@@ -45,8 +45,6 @@ let (inStruc,outStruc) =
 
 let add_new_struc (s,c,n,l) = 
   Lib.add_anonymous_leaf (inStruc (s,{s_CONST=c;s_PARAM=n;s_PROJ=l}))
-
-let struc_info s = List.assoc s !sTRUCS
 
 
 (*** table des definitions "object" : pour chaque object c,

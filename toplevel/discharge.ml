@@ -201,7 +201,7 @@ type discharge_operation =
   | Constant of identifier * constant_entry * strength
   | Inductive of mutual_inductive_entry
   | Class of cl_typ * cl_info_typ
-  | Struc of section_path * struc_typ
+  | Struc of inductive_path * struc_typ
   | Coercion of ((coe_typ * coe_info_typ) * cl_typ * cl_typ) 
               * identifier * int 
 
@@ -261,14 +261,14 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
           ((Coercion (y,idf,ps))::ops, ids_to_discard, work_alist)
                     
     | "STRUCTURE" ->
-	let (sp,info) = outStruc lobj in
+	let ((sp,i),info) = outStruc lobj in
 	let newsp = recalc_sp sp in
 	let mib = Environ.lookup_mind newsp oldenv in
 	let strobj =
 	  { s_CONST = info.s_CONST;
 	    s_PARAM = mib.mind_nparams;
 	    s_PROJ = List.map (option_app recalc_sp) info.s_PROJ } in
-	((Struc (newsp,strobj))::ops, ids_to_discard, work_alist)
+	((Struc ((newsp,i),strobj))::ops, ids_to_discard, work_alist)
 
     (***TODO
     | "OBJDEF1" -> 

@@ -174,24 +174,7 @@ l'indice de la classe source dans la liste lp
 la liste des variables dont depend la classe source
 *)
 
-type choice = Ident of identifier | Section_path of section_path
-
 let get_source lp source =
-  let aux test =
-    let rec aux1 n = function
-      | [] -> raise Not_found
-      | t1::lt ->
-	  try 
-	    let v1,lv1,l,cl1,p1 = constructor_at_head1 t1 in
-            if test cl1 then 
-	      cl1,p1,v1,lv1,n,l
-            else 
-	      aux1 (n+1) lt
-          with _ -> 
-	    aux1 (n + 1) lt
-    in 
-    aux1 1 lp
-  in 
   match source with
     | None ->
 	let (v1,lv1,l,cl1,p1) as x =
@@ -202,14 +185,16 @@ let get_source lp source =
                 with _ -> raise Not_found
         in 
 	(id_of_cl cl1),(cl1,p1,v1,lv1,1,l)
-    | Some (Ident id) -> 
-	id, aux (function cl -> id_of_cl cl = id)
-    | Some (Section_path sp) ->
-	basename sp,
-	aux (function
-	       | CL_SP sp1 -> sp=sp1
-	       | CL_IND (sp1,i) -> sp=sp1
-               | _ -> false)
+    | Some id -> 
+	let rec aux n = function
+	  | [] -> raise Not_found
+	  | t1::lt ->
+	      try 
+		let v1,lv1,l,cl1,p1 = constructor_at_head1 t1 in
+		if id_of_cl cl1 = id then cl1,p1,v1,lv1,n,l
+		else aux (n+1) lt
+              with _ -> aux (n + 1) lt
+	in id, aux 1 lp
 
 let get_target t ind =
   if (ind > 1) then 
@@ -377,17 +362,17 @@ let try_add_new_coercion id stre =
 
 let try_add_new_coercion_subclass id stre =
   let idf = build_id_coercion None id in
-  try_add_new_coercion_core idf stre (Some (Ident id)) None true
+  try_add_new_coercion_core idf stre (Some id) None true
 
 let try_add_new_coercion_with_target id stre source target isid =
   if isid then
     let idf = build_id_coercion (Some id) source in
-    try_add_new_coercion_core idf stre (Some (Ident source)) (Some target) true
+    try_add_new_coercion_core idf stre (Some source) (Some target) true
   else 
-    try_add_new_coercion_core id stre (Some (Ident source)) (Some target) false
+    try_add_new_coercion_core id stre (Some source) (Some target) false
 
-let try_add_new_coercion_record id stre source_sp =
-  try_add_new_coercion_core id stre (Some (Section_path source_sp)) None false
+let try_add_new_coercion_record id stre source =
+  try_add_new_coercion_core id stre (Some source) None false
 
 (* fonctions pour le discharge: plutot sale *)
 

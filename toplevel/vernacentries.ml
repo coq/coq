@@ -962,7 +962,6 @@ let _ =
 	   fun () -> build_mutual la lnamearconstructs (isfinite f)
        | _ -> bad_vernac_args "MUTUALINDUCTIVE")
 
-(***
 let _ =
   add "RECORD"
     (function
@@ -973,23 +972,21 @@ let _ =
           VARG_VARGLIST namec; 
           VARG_VARGLIST cfs] -> 
            let ps = join_binders binders in
-           let cfs = List.map
-                       (function 
-			  | (VARG_VARGLIST 
-                               [VARG_STRING str;VARG_IDENTIFIER id;
-                                VARG_CONSTR c]) ->
-			      (str = "COERCION",(id,c))
-			  | _ -> bad_vernac_args "RECORD")
-                       cfs 
-	   in
+           let cfs =
+	     List.map
+               (function 
+		  | (VARG_VARGLIST 
+                       [VARG_STRING str; VARG_IDENTIFIER id; VARG_CONSTR c]) ->
+		      (str = "COERCION",(id,c))
+		  | _ -> bad_vernac_args "RECORD")
+               cfs in
            let const = match namec with 
              | [] -> (id_of_string ("Build_"^(string_of_id struc)))
              | [VARG_IDENTIFIER id] -> id 
-             | _ -> bad_vernac_args "RECORD"
-           in 
-	   fun () -> definition_structure (coe,struc,ps,cfs,const,s)
+             | _ -> bad_vernac_args "RECORD" in
+           let iscoe = (coe = "COERCION") in
+	   fun () -> Record.definition_structure (iscoe,struc,ps,cfs,const,s)
        | _ -> bad_vernac_args "RECORD")
-***)
 
 let _ =
   add "MUTUALRECURSIVE"

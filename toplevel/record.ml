@@ -4,16 +4,13 @@
 open Pp
 open Util
 open Names
+open Generic
 open Term
+open Declare
 open Coqast
 open Ast
-(*
-open Generic
+open Astterm
 open Command
-open Machops
-open Classops
-open Recordops
-*)
 
 (********** definition d'un record (structure) **************)
 
@@ -69,94 +66,92 @@ let print_id_list l =
   [< 'sTR "[" ; prlist (fun id -> [< 'sTR (string_of_id id) >]) l; 'sTR "]" >]
 
 let typecheck_params_and_field ps fs =
-  let sign0 = initial_sign() in
-  let sign1,newps =
+  let env0 = Global.env () in
+  let env1,newps =
     List.fold_left
-      (fun (sign,newps) (id,t) -> 
-         let tj = type_of_com sign t in
-         (add_sign (id,tj) sign,(id,tj.body)::newps))
-      (sign0,[]) ps 
+      (fun (env,newps) (id,t) -> 
+         let tj = type_of_com env t in
+         (Environ.push_var (id,tj) env,(id,tj.body)::newps))
+      (env0,[]) ps
   in
-  let sign2,newfs =
+  let env2,newfs =
     List.fold_left
-      (fun (sign,newfs) (id,t) -> 
-         let tj = type_of_com sign t in
-         (add_sign (id,tj) sign,(id,tj.body)::newfs)) (sign1,[]) fs
+      (fun (env,newfs) (id,t) -> 
+         let tj = type_of_com env t in
+         (Environ.push_var (id,tj) env,(id,tj.body)::newfs)) (env1,[]) fs
   in
   List.rev(newps),List.rev(newfs)
 
 let mk_LambdaCit = List.fold_right (fun (x,a) b -> mkNamedLambda x a b)
 
-let definition_structure (coe_constr,struc,ps,cfs,const,s) =
-  let (sign,fsign) = initial_assumptions() in
-  let fs = List.map snd cfs in     
-  let coers = List.map fst cfs in  
-  let idps = List.map fst ps in      
-  let typs = List.map snd ps in
-  let idfs = List.map fst fs in
-  let tyfs = List.map snd fs in
-  if not (free_in_asts struc tyfs) then 
+let warning_or_error coe st = 
+  if coe then errorlabstrm "structure" st;
+  pPNL [< 'sTR"Warning: "; st >] 
+
+(* Fields have names [idfs] and types [tyfs]; [coers] is a boolean list 
+   telling if the corresponding field must me a coercion *)
+
+let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
+  let coers,fs = List.split cfs in     
+  let idps,typs = List.split ps in      
+  let idfs,tyfs = List.split fs in
+  if not (free_in_asts idstruc tyfs) then 
     message "Error: A record cannot be recursive";
   let newps,newfs = typecheck_params_and_field ps fs in
   let app_constructor = 
-    ope("APPLIST",
-        (ope("XTRA",[str "!";(nvar (string_of_id struc))]))::
-        List.map (fun id -> nvar(string_of_id id)) idps) 
-  in
+    ope("APPLISTEXPL",
+        (nvar (string_of_id idstruc))::
+        List.map (fun id -> nvar(string_of_id id)) idps) in
   let type_constructor = make_constructor fs app_constructor in 
-  let _ = build_mutual ps [(struc,s,[(const,type_constructor)])] true in
-  let x = next_ident_away (id_of_string "x") 
-            (List.fold_left (fun l ty -> union (all_vars ty) l) 
-               (union idps (fst sign)) tyfs) in
-  let r = Machops.global (gLOB sign) struc in
-  let (rsp,_,_) = destMutInd r in
-  let rid = basename rsp in
-  let lp = length idps in
+  let _ = build_mutual ps [(idstruc,s,[(idbuild,type_constructor)])] true in
+  let r = global_reference CCI idstruc in
+  let rsp = op_of_mind r in
+  let x = Environ.named_hd (Global.env()) r Anonymous in
+  let lp = List.length idps in
   let rp1 = applist (r,(rel_list 0 lp)) in
   let rp2 = applist (r,(rel_list 1 lp)) in
-  let warning_or_error coe st = 
-    if coe then errorlabstrm "structure" st;
-    pPNL [< 'sTR"Warning: "; st >] 
-  in
-  let (sp_projs,_,_,_,_) =
-    List.fold_left 
-      (fun (sp_projs,ids_ok,ids_not_ok,sigma,coes) (fi,ti) -> 
+
+  (* We build projections *)
+  let (sp_projs,_,_) =
+    List.fold_left2
+      (fun (sp_projs,ids_not_ok,subst) coe (fi,ti) -> 
 	 let fv_ti = global_vars ti in
-	 let bad_projs = (intersect ids_not_ok fv_ti) in
+	 let bad_projs = (list_intersect ids_not_ok fv_ti) in
 	 if bad_projs <> [] then begin 
-	   (warning_or_error (hd coes)
+	   (warning_or_error coe
               [< 'sTR(string_of_id fi); 
 		 'sTR" cannot be defined. The projections ";
                  print_id_list bad_projs; 'sTR " were not defined" >]);
-           (None::sp_projs,ids_ok,fi::ids_not_ok,sigma,(tl coes))
+           (None::sp_projs,fi::ids_not_ok,subst)
          end else 
-	   let p = mkNamedLambda x rp2 (replace_vars sigma ti) in
+	   let p = mkLambda x rp2 (replace_vars subst ti) in
 	   let branch = mk_LambdaCit newfs (VAR fi) in
 	   let proj = mk_LambdaCit newps 
-			(mkNamedLambda x rp1 
+			(mkLambda x rp1 
 			   (mkMutCaseA (ci_of_mind r) p (Rel 1) [|branch|])) in
 	   let ok = 
-	     try 
-	       (Declare.machine_constant (sign,fsign)
-		  ((fi,false,NeverDischarge),proj); true)
+	     try
+	       let cie =
+		 { Constant.const_entry_body = Constant.Cooked proj;
+		   Constant.const_entry_type = None } in
+	       (declare_constant fi (cie,NeverDischarge); true)
              with UserError(s,pps) ->
-               ((warning_or_error (hd coes) 
+               ((warning_or_error coe 
                    [<'sTR (string_of_id fi); 
                      'sTR" cannot be defined. "; pps >]);false) in
 	   if not ok then 
-	     (None::sp_projs,ids_ok,fi::ids_not_ok,sigma,(tl coes))
+	     (None::sp_projs,fi::ids_not_ok,subst)
 	   else begin
-             if List.hd coes then
-               Class.try_add_new_coercion_record fi NeverDischarge rsp;
-             let constr_fi = Machops.global (gLOB sign) fi in
-             let constr_fip =
-               applist (constr_fi,(List.map (fun id -> VAR id) idps)@[VAR x])
-             in (Some(path_of_const constr_fi)::sp_projs,fi::ids_ok,ids_not_ok,
-		 (fi,{sinfo=Closed;sit=constr_fip})::sigma,(tl coes))
+             if coe then
+	       Class.try_add_new_coercion_record fi NeverDischarge idstruc;
+             let constr_fi = global_reference CCI fi in
+             let constr_fip = (* Rel 1 refers to "x" *)
+               applist (constr_fi,(List.map (fun id -> VAR id) idps)@[Rel 1])
+             in (Some(path_of_const constr_fi)::sp_projs,
+		 ids_not_ok,
+		 (fi,{sinfo=Closed;sit=constr_fip})::subst)
 	   end)
-      ([],[],[],[],coers) newfs
+      ([],[],[]) coers newfs
   in 
-  if coe_constr="COERCION" then 
-    Class.try_add_new_coercion const NeverDischarge;
-  add_new_struc (rsp,const,lp,rev sp_projs)
-    
+  if is_coe then Class.try_add_new_coercion idbuild NeverDischarge;
+  Recordops.add_new_struc (rsp,idbuild,lp,List.rev sp_projs)

@@ -12,7 +12,7 @@ open Declare
 
 val try_add_new_coercion : identifier -> strength -> unit
 val try_add_new_coercion_subclass : identifier -> strength -> unit
-val try_add_new_coercion_record: identifier -> strength -> section_path -> unit
+val try_add_new_coercion_record : identifier -> strength -> identifier -> unit
 val try_add_new_coercion_with_target : identifier -> strength ->
   identifier -> identifier -> bool -> unit
 
