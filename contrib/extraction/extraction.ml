@@ -160,7 +160,7 @@ let v_of_t env t = match get_arity env t with
 type binders = (identifier * constr) list
 
 (* Convention: right binders give [Rel 1] at the head, like those answered by 
-   decompose_prod. Left binders are the converse. *)
+   [decompose_prod]. Left binders are the converse. *)
 
 let rec lbinders_fold f acc env = function 
   | [] -> acc
