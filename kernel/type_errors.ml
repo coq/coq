@@ -21,13 +21,13 @@ type type_error =
   | NumberBranches of constr * constr * int
   | IllFormedBranch of constr * int * constr * constr
   | Generalization of (name * typed_type) * constr
-  | ActualType of unsafe_judgment * unsafe_judgment
+  | ActualType of constr * constr * constr
   | CantAply of string * unsafe_judgment * unsafe_judgment list
   | IllFormedRecBody of std_ppcmds * name list * int * constr array
   | IllTypedRecBody of int * name list * unsafe_judgment array 
       * typed_type array
 
-exception TypeError of path_kind * environment * type_error
+exception TypeError of path_kind * context * type_error
 
 let error_unbound_rel k env n =
   raise (TypeError (k, context env, UnboundRel n))
@@ -59,8 +59,8 @@ let error_ill_formed_branch k env c i actty expty =
 let error_generalization k env nvar c =
   raise (TypeError (k, context env, Generalization (nvar,c)))
 
-let error_actual_type k env cj tj =
-  raise (TypeError (k, context env, ActualType (cj,tj)))
+let error_actual_type k env c actty expty =
+  raise (TypeError (k, context env, ActualType (c,actty,expty)))
 
 let error_cant_apply k env s rator randl =
   raise (TypeError (k, context env, CantAply (s,rator,randl)))

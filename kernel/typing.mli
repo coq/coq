@@ -6,43 +6,61 @@ open Pp
 open Names
 open Term
 open Univ
+open Evd
+open Sign
+open Constant
+open Inductive
 open Environ
-open Machops
+open Typeops
 (*i*)
 
-(*s Machines without information. *)
+(*s Safe environments. *)
 
-val safe_machine : 'a unsafe_env -> constr -> unsafe_judgment * universes
-val safe_machine_type : 'a unsafe_env -> constr -> typed_type
+type 'a environment
 
-val fix_machine : 'a unsafe_env -> constr -> unsafe_judgment * universes
-val fix_machine_type : 'a unsafe_env -> constr -> typed_type
+val evar_map : 'a environment -> 'a evar_map
+val universes : 'a environment -> universes
+val metamap : 'a environment -> (int * constr) list
+val context : 'a environment -> context
 
-val unsafe_machine : 'a unsafe_env -> constr -> unsafe_judgment * universes
-val unsafe_machine_type : 'a unsafe_env -> constr -> typed_type
+val push_var : identifier * typed_type -> 'a environment -> 'a environment
+val push_rel : name * typed_type -> 'a environment -> 'a environment
+val add_constant : 
+  section_path -> constant_entry -> 'a environment -> 'a environment
+val add_parameter :
+  section_path -> constr -> 'a environment -> 'a environment
+val add_mind : 
+  section_path -> mutual_inductive_entry -> 'a environment -> 'a environment
 
-val type_of : 'a unsafe_env -> constr -> constr
+val lookup_var : identifier -> 'a environment -> name * typed_type
+val lookup_rel : int -> 'a environment -> name * typed_type
+val lookup_constant : section_path -> 'a environment -> constant_body
+val lookup_mind : section_path -> 'a environment -> mutual_inductive_body
+val lookup_mind_specif : constr -> 'a environment -> mind_specif
+val lookup_meta : int -> 'a environment -> constr
 
-val type_of_type : 'a unsafe_env -> constr -> constr
+(*s Typing without information. *)
 
-val unsafe_type_of : 'a unsafe_env -> constr -> constr
+type judgment
+
+val safe_machine : 'a environment -> constr -> judgment * universes
+val safe_machine_type : 'a environment -> constr -> typed_type
+
+val fix_machine : 'a environment -> constr -> judgment * universes
+val fix_machine_type : 'a environment -> constr -> typed_type
+
+val unsafe_machine : 'a environment -> constr -> judgment * universes
+val unsafe_machine_type : 'a environment -> constr -> typed_type
+
+val type_of : 'a environment -> constr -> constr
+
+val type_of_type : 'a environment -> constr -> constr
+
+val unsafe_type_of : 'a environment -> constr -> constr
 
 
-(*s Machine with information. *)
+(*s Typing with information (extraction). *)
 
-type information = Logic | Inf of unsafe_judgment
+type information = Logic | Inf of judgment
 
-(*i
-val infexemeta : 
-  'a unsafe_env -> constr -> unsafe_judgment * information * universes
 
-val infexecute_type : 
-  'a unsafe_env -> constr -> typed_type * information * universes
-
-val infexecute : 
-  'a unsafe_env -> constr -> unsafe_judgment * information * universes
-
-val inf_env_of_env : 'a unsafe_env -> 'a unsafe_env
-
-val core_infmachine : 'a unsafe_env -> constr -> information
-i*)

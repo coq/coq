@@ -31,7 +31,9 @@ type mutual_inductive_body = {
   mind_singl : constr option;
   mind_nparams : int }
 
-type mutual_inductive_entry = section_path * mutual_inductive_body
+type mutual_inductive_entry = {
+  mind_entry_params : (identifier * constr) list;
+  mind_entry_inds : (identifier * constr * (identifier * constr) list) list }
 
 let mind_type_finite mib i = mib.mind_packets.(i).mind_finite
 

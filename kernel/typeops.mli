@@ -16,6 +16,7 @@ val make_judge : constr -> typed_type -> unsafe_judgment
 val j_val_only : unsafe_judgment -> constr
 
 val typed_type_of_judgment : 'a unsafe_env -> unsafe_judgment -> typed_type
+val assumption_of_judgement : 'a unsafe_env -> unsafe_judgment -> typed_type
 
 val relative : 'a unsafe_env -> int -> unsafe_judgment
 
@@ -31,8 +32,6 @@ val type_of_case : 'a unsafe_env -> unsafe_judgment -> unsafe_judgment
 val type_of_prop_or_set : contents -> unsafe_judgment
 
 val type_of_type : universe -> universes -> unsafe_judgment * universes
-
-val assumption_of_judgement : 'a unsafe_env -> unsafe_judgment -> typed_type
 
 val abs_rel : 
   'a unsafe_env -> name -> typed_type -> unsafe_judgment 

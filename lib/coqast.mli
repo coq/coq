@@ -1,5 +1,5 @@
 
-(* $Id$^*)
+(* $Id$ *)
 
 type loc = int * int
 

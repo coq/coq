@@ -20,7 +20,7 @@ type globals = {
   env_abstractions : abstraction_body Spmap.t }
 
 type 'a unsafe_env = {
-  env_context : environment;
+  env_context : context;
   env_globals : globals;
   env_sigma : 'a evar_map;
   env_metamap : (int * constr) list;
@@ -42,12 +42,12 @@ let push_rel idrel env =
 let set_universes g env =
   if env.env_universes == g then env else { env with env_universes = g }
 
-let add_constant (sp,cb) env =
+let add_constant sp cb env =
   let new_constants = Spmap.add sp cb env.env_globals.env_constants in
   let new_globals = { env.env_globals with env_constants = new_constants } in
   { env with env_globals = new_globals }
 
-let add_mind (sp,mib) env =
+let add_mind sp mib env =
   let new_inds = Spmap.add sp mib env.env_globals.env_inductives in
   let new_globals = { env.env_globals with env_inductives = new_inds } in
   { env with env_globals = new_globals }

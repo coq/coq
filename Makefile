@@ -30,7 +30,7 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/inductive.cmo kernel/sosub.cmo kernel/abstraction.cmo \
        kernel/environ.cmo kernel/instantiate.cmo \
        kernel/closure.cmo kernel/reduction.cmo \
-       kernel/type_errors.cmo kernel/machops.cmo kernel/mach.cmo
+       kernel/type_errors.cmo kernel/typeops.cmo kernel/typing.cmo
 
 OBJS=$(CONFIG) $(LIB) $(KERNEL)
 

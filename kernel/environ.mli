@@ -14,13 +14,15 @@ type 'a unsafe_env
 val evar_map : 'a unsafe_env -> 'a evar_map
 val universes : 'a unsafe_env -> universes
 val metamap : 'a unsafe_env -> (int * constr) list
-val context : 'a unsafe_env -> environment
+val context : 'a unsafe_env -> context
 
 val push_var : identifier * typed_type -> 'a unsafe_env -> 'a unsafe_env
 val push_rel : name * typed_type -> 'a unsafe_env -> 'a unsafe_env
 val set_universes : universes -> 'a unsafe_env -> 'a unsafe_env
-val add_constant : constant_entry -> 'a unsafe_env -> 'a unsafe_env
-val add_mind : mutual_inductive_entry -> 'a unsafe_env -> 'a unsafe_env
+val add_constant : 
+  section_path -> constant_body -> 'a unsafe_env -> 'a unsafe_env
+val add_mind : 
+  section_path -> mutual_inductive_body -> 'a unsafe_env -> 'a unsafe_env
 
 val new_meta : unit -> int
 

@@ -13,10 +13,10 @@ type evar_body =
   | EVAR_DEFINED of constr
 
 type 'a evar_info = {
-  evar_concl : typed_type;        (* the type of the evar ...          *)
-  evar_hyps  : context;           (* ... under a certain signature     *)
-  evar_body  : evar_body;         (* its definition                    *) 
-  evar_info  : 'a option }        (* any other necessary information   *)
+  evar_concl : typed_type;           (* the type of the evar ...          *)
+  evar_hyps  : typed_type signature; (* ... under a certain signature     *)
+  evar_body  : evar_body;            (* its definition                    *) 
+  evar_info  : 'a option }           (* any other necessary information   *)
 
 type 'a evar_map = 'a evar_info Spmap.t
 

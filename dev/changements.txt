@@ -16,6 +16,10 @@ Changements dans les types de données :
   dans Generic: free_rels : constr -> int Listset.t
                   devient : constr -> Intset.t
 
+  type_judgement ->  typed_type
+  environment    ->  context
+  context        ->  typed_type signature
+
 Changements dans les fonctions :
 --------------------------------
 

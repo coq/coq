@@ -21,13 +21,13 @@ type type_error =
   | NumberBranches of constr * constr * int
   | IllFormedBranch of constr * int * constr * constr
   | Generalization of (name * typed_type) * constr
-  | ActualType of unsafe_judgment * unsafe_judgment
+  | ActualType of constr * constr * constr
   | CantAply of string * unsafe_judgment * unsafe_judgment list
   | IllFormedRecBody of std_ppcmds * name list * int * constr array
   | IllTypedRecBody of int * name list * unsafe_judgment array 
       * typed_type array
 
-exception TypeError of path_kind * environment * type_error
+exception TypeError of path_kind * context * type_error
 
 val error_unbound_rel : path_kind -> 'a unsafe_env -> int -> 'b
 
@@ -56,7 +56,7 @@ val error_generalization :
   path_kind -> 'a unsafe_env -> name * typed_type -> constr -> 'b
 
 val error_actual_type :
-  path_kind -> 'a unsafe_env -> unsafe_judgment -> unsafe_judgment -> 'b
+  path_kind -> 'a unsafe_env -> constr -> constr -> constr -> 'b
 
 val error_cant_apply : 
   path_kind -> 'a unsafe_env -> string -> unsafe_judgment 

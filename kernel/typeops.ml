@@ -404,7 +404,7 @@ let cast_rel env cj tj =
       uj_type = tj.uj_val;
       uj_kind = whd_betadeltaiota env tj.uj_type }
   else 
-    error_actual_type CCI env cj tj
+    error_actual_type CCI env cj.uj_val cj.uj_type tj.uj_val
 
 (* Type of an application. *)
 
