@@ -278,16 +278,14 @@ let real_clean env isevars ev args rhs =
  	 else (try List.assoc (mkRel (i-k)) subst with Not_found -> t)
       | Evar (ev,args) ->
 	  let args' = Array.map (subs k) args in
-	  if need_restriction isevars args' then
-	    if Evd.is_defined isevars.evars ev then 
-	      subs k (existential_value isevars.evars (ev,args'))
-	    else begin
-	      let (sigma,rc) = do_restrict_hyps isevars.evars ev args' in
+	  if need_restriction !evd args' then
+            begin
+	      let (sigma,rc) = do_restrict_hyps !evd.evars ev args' in
               evd :=
 	      {!evd with
                evars = sigma;
                history = 
-                (fst (destEvar rc),evar_source ev isevars):: !evd.history};
+                (fst (destEvar rc),evar_source ev !evd):: !evd.history};
 	      rc
 	    end
 	  else
@@ -297,7 +295,7 @@ let real_clean env isevars ev args rhs =
   in
   let body = subs 0 rhs in
   if not (closed0 body)
-  then error_not_clean env isevars.evars ev body (evar_source ev isevars);
+  then error_not_clean env !evd.evars ev body (evar_source ev !evd);
   (!evd,body)
 
 let make_evar_instance_with_rel env =
@@ -505,8 +503,7 @@ let solve_refl conv_algo env isevars ev argsv1 argsv2 =
 let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
   let t2 = nf_evar isevars.evars t2 in
   let (isevars,lsp) = match kind_of_term t2 with
-    | Evar (n2,args2 as ev2)
-        when not (Evd.is_defined isevars.evars n2) ->
+    | Evar (n2,args2 as ev2) ->
 	if n1 = n2 then
 	  solve_refl conv_algo env isevars n1 args1 args2
 	else
