@@ -73,7 +73,7 @@ Open Local Scope positive_scope.
 
 Fixpoint positive_to_nat [x:positive]:nat -> nat :=
   [pow2:nat]
-    <nat> Cases x of
+   Cases x of
      (xI x') => (plus pow2 (positive_to_nat x' (plus pow2 pow2)))
    | (xO x') => (positive_to_nat x' (plus pow2 pow2))
    | xH      => pow2
@@ -202,6 +202,8 @@ Fixpoint compare [x,y:positive]: relation -> relation :=
   | xH       xH     => r
   end.
 
+V8Infix "?=" compare (at level 70, no associativity) : positive_scope.
+
 (**********************************************************************)
 (** Properties of comparison on binary positive numbers *)
 
@@ -209,30 +211,32 @@ Theorem compare_convert1 :
  (x,y:positive) 
   ~(compare x y SUPERIEUR) = EGAL /\ ~(compare x y INFERIEUR) = EGAL.
 Proof.
-Induction x;Induction y;Split;Simpl;Auto;
-  Discriminate Orelse (Elim (H p0); Auto).
+Intro x; NewInduction x as [p IHp|p IHp|]; Intro y; NewDestruct y as [q|q|];
+  Split;Simpl;Auto;
+  Discriminate Orelse (Elim (IHp q); Auto).
 Qed.
 
 Theorem compare_convert_EGAL : (x,y:positive) (compare x y EGAL) = EGAL -> x=y.
 Proof.
-Induction x;Induction y;Simpl;Auto; [
-  Intros z H1 H2; Rewrite (H z); Trivial
-| Intros z H1 H2; Absurd (compare p z SUPERIEUR)=EGAL ;
-   [ Elim (compare_convert1 p z);Auto | Assumption ]
-| Intros H1;Discriminate H1
-| Intros z H1 H2; Absurd (compare p z INFERIEUR) = EGAL; 
-    [ Elim (compare_convert1 p z);Auto | Assumption ]
-| Intros z H1 H2 ;Rewrite (H z);Auto 
-| Intros H1;Discriminate H1
-| Intros p H H1;Discriminate H1
-| Intros p H H1;Discriminate H1 ].
+Intro x; NewInduction x as [p IHp|p IHp|]; 
+  Intro y; NewDestruct y as [q|q|];Simpl;Auto; Intro H; [
+  Rewrite (IHp q); Trivial
+| Absurd (compare p q SUPERIEUR)=EGAL ;
+   [ Elim (compare_convert1 p q);Auto | Assumption ]
+| Discriminate H
+| Absurd (compare p q INFERIEUR) = EGAL; 
+    [ Elim (compare_convert1 p q);Auto | Assumption ]
+| Rewrite (IHp q);Auto 
+| Discriminate H
+| Discriminate H
+| Discriminate H ].
 Qed.
 
 Lemma ZLSI:
  (x,y:positive) (compare x y SUPERIEUR) = INFERIEUR -> 
                 (compare x y EGAL) = INFERIEUR.
 Proof.
-Induction x;Induction y;Simpl;Auto; 
+Intro x; Induction x;Intro y; Induction y;Simpl;Auto; 
   Discriminate Orelse Intros H;Discriminate H.
 Qed.
 
@@ -240,7 +244,7 @@ Lemma ZLIS:
  (x,y:positive) (compare x y INFERIEUR) = SUPERIEUR -> 
                 (compare x y EGAL) = SUPERIEUR.
 Proof.
-Induction x;Induction y;Simpl;Auto; 
+Intro x; Induction x;Intro y; Induction y;Simpl;Auto; 
   Discriminate Orelse Intros H;Discriminate H.
 Qed.
 
@@ -248,8 +252,9 @@ Lemma ZLII:
  (x,y:positive) (compare x y INFERIEUR) = INFERIEUR ->
                 (compare x y EGAL) = INFERIEUR \/ x = y.
 Proof.
-(Induction x;Induction y;Simpl;Auto;Try Discriminate);
- Intros z H1 H2; Elim (H z H2);Auto; Intros E;Rewrite E;
+(Intro x; NewInduction x as [p IHp|p IHp|];
+ Intro y; NewDestruct y as [q|q|];Simpl;Auto;Try Discriminate);
+ Intro H2; Elim (IHp q H2);Auto; Intros E;Rewrite E;
  Auto.
 Qed.
 
@@ -257,8 +262,9 @@ Lemma ZLSS:
  (x,y:positive) (compare x y SUPERIEUR) = SUPERIEUR ->
                 (compare x y EGAL) = SUPERIEUR \/ x = y.
 Proof.
-(Induction x;Induction y;Simpl;Auto;Try Discriminate);
- Intros z H1 H2; Elim (H z H2);Auto; Intros E;Rewrite E;
+(Intro x; NewInduction x as [p IHp|p IHp|];
+ Intro y; NewDestruct y as [q|q|];Simpl;Auto;Try Discriminate);
+ Intro H2; Elim (IHp q H2);Auto; Intros E;Rewrite E;
  Auto.
 Qed.
 
@@ -272,7 +278,7 @@ Tactic Definition ElimPcompare c1 c2:=
      Let x = FreshId "H" In Intro x; Case x; Clear x ].
 
 Theorem convert_compare_EGAL: (x:positive)(compare x x EGAL)=EGAL.
-Induction x; Auto.
+Intro x; Induction x; Auto.
 Qed.
 
 (**********************************************************************)
@@ -293,41 +299,51 @@ Proof.
 Reflexivity.
 Qed.
 
+Lemma add_un_discr : (x:positive)x<>(add_un x).
+Proof.
+Intro x; NewDestruct x; Discriminate.
+Qed.
+
 (** Successor and double *)
 
 Lemma is_double_moins_un : (x:positive) (add_un (double_moins_un x)) = (xO x).
 Proof.
-NewInduction x as [x IHx|x|]; Simpl; Try Rewrite IHx; Reflexivity.
+Intro x; NewInduction x as [x IHx|x|]; Simpl; Try Rewrite IHx; Reflexivity.
 Qed.
 
 Lemma double_moins_un_add_un_xI : 
  (x:positive)(double_moins_un (add_un x))=(xI x).
 Proof.
-NewInduction x as [x IHx|x|]; Simpl; Try Rewrite IHx; Reflexivity.
+Intro x;NewInduction x as [x IHx|x|]; Simpl; Try Rewrite IHx; Reflexivity.
 Qed.
 
 Lemma ZL1: (y:positive)(xO (add_un y)) = (add_un (add_un (xO y))).
 Proof.
-Induction y; Simpl; Auto.
+Intro y; Induction y; Simpl; Auto.
+Qed.
+
+Lemma double_moins_un_xO_discr : (x:positive)(double_moins_un x)<>(xO x).
+Proof.
+Intro x; NewDestruct x; Discriminate.
 Qed.
 
 (** Successor and predecessor *)
 
 Lemma add_un_not_un : (x:positive) (add_un x) <> xH.
 Proof.
-NewDestruct x as [x|x|]; Discriminate.
+Intro x; NewDestruct x as [x|x|]; Discriminate.
 Qed.
 
 Lemma sub_add_one : (x:positive) (sub_un (add_un x)) = x.
 Proof.
-(Induction x; [Idtac | Idtac | Simpl;Auto]);
-(Intros p; Elim p; [Idtac | Idtac | Simpl;Auto]);
-Simpl; Intros q H1 H2; Case H2; Simpl; Trivial.
+(Intro x; NewDestruct x as [p|p|]; [Idtac | Idtac | Simpl;Auto]);
+(NewInduction p as [p IHp||]; [Idtac | Reflexivity | Reflexivity ]);
+Simpl; Simpl in IHp; Try Rewrite <- IHp; Reflexivity.
 Qed.
 
 Lemma add_sub_one : (x:positive) (x=xH) \/ (add_un (sub_un x)) = x.
 Proof.
-Induction x; [
+Intro x; Induction x; [
   Simpl; Auto
 | Simpl; Intros;Right;Apply is_double_moins_un
 | Auto ].
@@ -337,7 +353,7 @@ Qed.
 
 Lemma add_un_inj : (x,y:positive) (add_un x)=(add_un y) -> x=y.
 Proof.
-NewInduction x; NewDestruct y as [y|y|]; Simpl; 
+Intro x;NewInduction x; Intro y; NewDestruct y as [y|y|]; Simpl; 
   Intro H; Discriminate H Orelse Try (Injection H; Clear H; Intro H).
 Rewrite (IHx y H); Reflexivity.
 Absurd (add_un x)=xH; [ Apply add_un_not_un | Assumption ].
@@ -353,41 +369,40 @@ Qed.
 
 Lemma ZL12: (q:positive) (add_un q) = (add q xH).
 Proof.
-NewDestruct q; Reflexivity.
+Intro q; NewDestruct q; Reflexivity.
 Qed.
 
 Lemma ZL12bis: (q:positive) (add_un q) = (add xH q).
 Proof.
-NewDestruct q; Reflexivity.
+Intro q; NewDestruct q; Reflexivity.
 Qed.
 
 (** Specification of [Pplus_carry] *)
 
 Theorem ZL13: (x,y:positive)(add_carry x y) = (add_un (add x y)).
 Proof.
-(Induction x;Induction y;Simpl;Auto); Intros q H1;Rewrite H;
- Auto.
+(Intro x; NewInduction x as [p IHp|p IHp|];Intro y; NewDestruct y;Simpl;Auto);
+  Rewrite IHp; Auto.
 Qed.
 
 (** Commutativity *)
 
 Theorem add_sym : (x,y:positive) (add x y) = (add y x).
 Proof.
-Induction x;Induction y;Simpl;Auto; Intros q H1; [
-  Clear  H1; Do 2 Rewrite ZL13; Rewrite H;Auto
-| Rewrite H;Auto | Rewrite H;Auto | Rewrite H;Auto ].
+Intro x; NewInduction x as [p IHp|p IHp|];Intro y; NewDestruct y;Simpl;Auto;
+  Try Do 2 Rewrite ZL13; Rewrite IHp;Auto.
 Qed. 
 
 (** Permutation of [Pplus] and [Psucc] *)
 
 Theorem ZL14: (x,y:positive)(add x (add_un y)) = (add_un (add x y)).
 Proof.
-Induction x;Induction y;Simpl;Auto; [
-  Intros q H1; Rewrite ZL13; Rewrite  H; Auto
-| Intros q H1; Rewrite ZL13; Auto
-| Elim p;Simpl;Auto
-| Intros q H1;Rewrite H;Auto
-| Elim p;Simpl;Auto ].
+Intro x; NewInduction x as [p IHp|p IHp|];Intro y; NewDestruct y;Simpl;Auto; [
+  Rewrite ZL13; Rewrite IHp; Auto
+| Rewrite ZL13; Auto
+| NewDestruct p;Simpl;Auto
+| Rewrite IHp;Auto
+| NewDestruct p;Simpl;Auto ].
 Qed.
 
 Theorem ZL14bis: (x,y:positive)(add (add_un x) y) = (add_un (add x y)).
@@ -406,7 +421,7 @@ Qed.
 
 Lemma add_no_neutral : (x,y:positive) ~(add y x)=x.
 Proof.
-NewInduction x; NewDestruct y as [y|y|]; Simpl; Intro H;
+Intro x;NewInduction x; Intro y; NewDestruct y as [y|y|]; Simpl; Intro H;
   Discriminate H Orelse Injection H; Clear H; Intro H; Apply (IHx y H).
 Qed.
 
@@ -429,7 +444,7 @@ Lemma simpl_add_r : (x,y,z:positive) (add x z)=(add y z) -> x=y.
 Proof.
 Intros x y z; Generalize x y; Clear x y.
 NewInduction z as [z|z|].
-  NewDestruct x as [x|x|]; NewDestruct y as [y|y|]; Simpl; Intro H; 
+  NewDestruct x as [x|x|]; Intro y; NewDestruct y as [y|y|]; Simpl; Intro H; 
   Discriminate H Orelse Try (Injection H; Clear H; Intro H).
     Rewrite IHz with 1:=(add_carry_add ? ? ? ? H); Reflexivity.
     Absurd (add_carry x z)=(add_un z);
@@ -438,7 +453,7 @@ NewInduction z as [z|z|].
     Symmetry in H; Absurd (add_carry y z)=(add_un z);
       [ Apply add_carry_not_add_un | Assumption ].
     Reflexivity.
-  NewDestruct x as [x|x|]; NewDestruct y as [y|y|]; Simpl; Intro H; 
+  NewDestruct x as [x|x|]; Intro y; NewDestruct y as [y|y|]; Simpl; Intro H; 
   Discriminate H Orelse Try (Injection H; Clear H; Intro H).
     Rewrite IHz with 1:=H; Reflexivity.
     Absurd (add x z)=z; [ Apply add_no_neutral | Assumption ].
@@ -448,16 +463,16 @@ NewInduction z as [z|z|].
   Intros H x y; Apply add_un_inj; Do 2 Rewrite ZL12; Assumption.
 Qed.
 
-Lemma simpl_add_carry_r :
- (x,y,z:positive) (add_carry x z)=(add_carry y z) -> x=y.
-Proof.
-Intros x y z H; Apply simpl_add_r with z:=z; Apply add_carry_add; Assumption.
-Qed.
-
 Lemma simpl_add_l : (x,y,z:positive) (add x y)=(add x z) -> y=z.
 Proof.
 Intros x y z H;Apply simpl_add_r with z:=x; 
   Rewrite add_sym with x:=z; Rewrite add_sym with x:=y; Assumption.
+Qed.
+
+Lemma simpl_add_carry_r :
+ (x,y,z:positive) (add_carry x z)=(add_carry y z) -> x=y.
+Proof.
+Intros x y z H; Apply simpl_add_r with z:=z; Apply add_carry_add; Assumption.
 Qed.
 
 Lemma simpl_add_carry_l :
@@ -473,14 +488,16 @@ Qed.
 Theorem add_assoc: (x,y,z:positive)(add x (add y z)) = (add (add x y) z).
 Proof.
 Intros x y; Generalize x; Clear x.
-NewInduction y as [y|y|].
-  NewDestruct x as [x|x|]; NewDestruct z as [z|z|]; Simpl; Repeat Rewrite ZL13;
+NewInduction y as [y|y|]; Intro x.
+  NewDestruct x as [x|x|]; 
+    Intro z; NewDestruct z as [z|z|]; Simpl; Repeat Rewrite ZL13;
     Repeat Rewrite ZL14; Repeat Rewrite ZL14bis; Reflexivity Orelse
     Repeat Apply f_equal with A:=positive; Apply IHy.
-  NewDestruct x as [x|x|]; NewDestruct z as [z|z|]; Simpl; Repeat Rewrite ZL13;
+  NewDestruct x as [x|x|]; 
+    Intro z; NewDestruct z as [z|z|]; Simpl; Repeat Rewrite ZL13;
     Repeat Rewrite ZL14; Repeat Rewrite ZL14bis; Reflexivity Orelse
     Repeat Apply f_equal with A:=positive; Apply IHy.
-  Intros x z; Rewrite add_sym with x:=xH; Do 2 Rewrite <- ZL12; Rewrite ZL14bis; Rewrite ZL14; Reflexivity.
+  Intro z; Rewrite add_sym with x:=xH; Do 2 Rewrite <- ZL12; Rewrite ZL14bis; Rewrite ZL14; Reflexivity.
 Qed.
 
 (** Commutation of addition with the double of a positive number *)
@@ -506,42 +523,42 @@ Qed.
 
 Lemma add_x_x : (x:positive) (add x x) = (xO x).
 Proof.
-NewInduction x; Simpl; Try Rewrite ZL13; Try Rewrite IHx; Reflexivity.
+Intro x;NewInduction x; Simpl; Try Rewrite ZL13; Try Rewrite IHx; Reflexivity.
 Qed.
 
 (**********************************************************************)
 (** Peano induction on binary positive positive numbers *)
 
-Fixpoint add_iter [x:positive] : positive -> positive := 
+Fixpoint plus_iter [x:positive] : positive -> positive := 
   [y]Cases x of 
   | xH => (add_un y)
-  | (xO x) => (add_iter x (add_iter x y))
-  | (xI x) => (add_iter x (add_iter x (add_un y)))
+  | (xO x) => (plus_iter x (plus_iter x y))
+  | (xI x) => (plus_iter x (plus_iter x (add_un y)))
   end.
 
-Lemma add_iter_add : (x,y:positive)(add_iter x y)=(add x y).
+Lemma plus_iter_add : (x,y:positive)(plus_iter x y)=(add x y).
 Proof.
-NewInduction x as [p IHp|p IHp|]; NewDestruct y; Simpl;
+Intro x;NewInduction x as [p IHp|p IHp|]; Intro y; NewDestruct y; Simpl;
   Reflexivity Orelse Do 2 Rewrite IHp; Rewrite add_assoc; Rewrite add_x_x;
   Try Reflexivity.
 Rewrite ZL13; Rewrite <- ZL14; Reflexivity.
 Rewrite ZL12; Reflexivity.
 Qed.
 
-Lemma add_iter_xO : (x:positive)(add_iter x x)=(xO x).
+Lemma plus_iter_xO : (x:positive)(plus_iter x x)=(xO x).
 Proof.
-Intro; Rewrite <- add_x_x; Apply add_iter_add.
+Intro; Rewrite <- add_x_x; Apply plus_iter_add.
 Qed.
 
-Lemma add_iter_xI : (x:positive)(add_un (add_iter x x))=(xI x).
+Lemma plus_iter_xI : (x:positive)(add_un (plus_iter x x))=(xI x).
 Proof.
 Intro; Rewrite xI_add_un_xO; Rewrite <- add_x_x; 
-  Apply (f_equal positive); Apply add_iter_add.
+  Apply (f_equal positive); Apply plus_iter_add.
 Qed.
 
 Lemma iterate_add : (P:(positive->Type))
   ((n:positive)(P n) ->(P (add_un n)))->(p,n:positive)(P n) ->
-  (P (add_iter p n)).
+  (P (plus_iter p n)).
 Proof.
 Intros P H; NewInduction p; Simpl; Intros.
 Apply IHp; Apply IHp; Apply H; Assumption.
@@ -554,9 +571,9 @@ Defined.
 Theorem Pind : (P:(positive->Prop))
   (P xH) ->((n:positive)(P n) ->(P (add_un n))) ->(n:positive)(P n).
 Proof.
-Intros P H1 Hsucc; NewInduction n.
-Rewrite <- add_iter_xI; Apply Hsucc; Apply iterate_add; Assumption.
-Rewrite <- add_iter_xO; Apply iterate_add; Assumption.
+Intros P H1 Hsucc n; NewInduction n.
+Rewrite <- plus_iter_xI; Apply Hsucc; Apply iterate_add; Assumption.
+Rewrite <- plus_iter_xO; Apply iterate_add; Assumption.
 Assumption.
 Qed.
 
@@ -567,7 +584,7 @@ Definition Prec : (A:Set)A->(positive->A->A)->positive->A :=
   Cases p of
   | xH => a
   | (xO p) => (iterate_add [_]A f p p (Prec p))
-  | (xI p) => (f (add_iter p p) (iterate_add [_]A f p p (Prec p)))
+  | (xI p) => (f (plus_iter p p) (iterate_add [_]A f p p (Prec p)))
   end}.
 
 (** Test *)
@@ -603,17 +620,17 @@ Qed.
 
 Theorem sub_pos_x_x : (x:positive) (sub_pos x x) = IsNul.
 Proof.
-Induction x; [
-  Simpl; Intros p H;Rewrite H;Simpl; Trivial
-| Intros p H;Simpl;Rewrite H;Auto
+Intro x; NewInduction x as [p IHp|p IHp|]; [
+  Simpl; Rewrite IHp;Simpl; Trivial
+| Simpl; Rewrite IHp;Auto
 | Auto ].
 Qed.
 
 Theorem ZL10: (x,y:positive)
  (sub_pos x y) = (IsPos xH) -> (sub_neg x y) = IsNul.
 Proof.
-NewInduction x as [p|p|]; NewDestruct y as [q|q|]; Simpl; Intro H;
-Try Discriminate H; [
+Intro x; NewInduction x as [p|p|]; Intro y; NewDestruct y as [q|q|]; Simpl; 
+  Intro H; Try Discriminate H; [
   Absurd (Zero_suivi_de_mask (sub_pos p q))=(IsPos xH);
    [ Apply ZSH | Assumption ]
 | Assert Heq : (sub_pos p q)=IsNul;
@@ -632,7 +649,7 @@ Theorem sub_pos_SUPERIEUR:
     (EX h:positive | (sub_pos x y) = (IsPos h) /\ (add y h) = x /\
                      (h = xH \/ (sub_neg x y) = (IsPos (sub_un h)))).
 Proof.
-NewInduction x as [p|p|];NewDestruct y as [q|q|]; Simpl; Intro H;
+Intro x;NewInduction x as [p|p|];Intro y; NewDestruct y as [q|q|]; Simpl; Intro H;
   Try Discriminate H.
   NewDestruct (IHp q H) as [z [H4 [H6 H7]]]; Exists (xO z); Split.
     Rewrite H4; Reflexivity.
@@ -727,8 +744,15 @@ Lemma convert_add_un :
   (x:positive)(m:nat)
     (positive_to_nat (add_un x) m) = (plus m (positive_to_nat x m)).
 Proof.
-Induction x; Simpl; Auto; Intros x' H0 m; Rewrite H0;
+Intro x; NewInduction x as [p IHp|p IHp|]; Simpl; Auto; Intro m; Rewrite IHp;
 Rewrite plus_assoc_l; Trivial.
+Qed.
+
+Lemma cvt_add_un :
+  (p:positive) (convert (add_un p)) = (S (convert p)).
+Proof.
+  Intro; Change (S (convert p)) with (plus (S O) (convert p));
+  Unfold convert; Apply convert_add_un.
 Qed.
 
 Theorem convert_add_carry :
@@ -736,11 +760,12 @@ Theorem convert_add_carry :
     (positive_to_nat (add_carry x y) m) =
     (plus m (positive_to_nat (add x y) m)).
 Proof.
-Induction x; Induction y; Simpl; Auto with arith; [
-  Intros y' H1 m; Rewrite H; Rewrite plus_assoc_l; Trivial with arith
-| Intros y' H1 m; Rewrite H; Rewrite plus_assoc_l; Trivial with arith
-| Intros m; Rewrite convert_add_un; Rewrite plus_assoc_l; Trivial with arith
-| Intros y' H m; Rewrite convert_add_un; Apply plus_assoc_r ].
+Intro x; NewInduction x as [p IHp|p IHp|];
+  Intro y; NewDestruct y; Simpl; Auto with arith; Intro m; [
+  Rewrite IHp; Rewrite plus_assoc_l; Trivial with arith
+| Rewrite IHp; Rewrite plus_assoc_l; Trivial with arith
+| Rewrite convert_add_un; Rewrite plus_assoc_l; Trivial with arith
+| Rewrite convert_add_un; Apply plus_assoc_r ].
 Qed.
 
 Theorem cvt_carry :
@@ -754,16 +779,17 @@ Theorem add_verif :
     (positive_to_nat (add x y) m) = 
     (plus (positive_to_nat x m) (positive_to_nat y m)).
 Proof.
-Induction x;Induction y;Simpl;Auto with arith; [
-  Intros y' H1 m;Rewrite convert_add_carry; Rewrite H; 
+Intro x; NewInduction x as [p IHp|p IHp|];
+  Intro y; NewDestruct y;Simpl;Auto with arith; [
+  Intros m;Rewrite convert_add_carry; Rewrite IHp; 
   Rewrite plus_assoc_r; Rewrite plus_assoc_r; 
   Rewrite (plus_permute m (positive_to_nat p (plus m m))); Trivial with arith
-| Intros y' H1 m; Rewrite H; Apply plus_assoc_l
+| Intros m; Rewrite IHp; Apply plus_assoc_l
 | Intros m; Rewrite convert_add_un; 
   Rewrite (plus_sym (plus m (positive_to_nat p (plus m m))));
   Apply plus_assoc_r
-| Intros y' H1 m; Rewrite H; Apply plus_permute
-| Intros y' H1 m; Rewrite convert_add_un; Apply plus_assoc_r ].
+| Intros m; Rewrite IHp; Apply plus_permute
+| Intros m; Rewrite convert_add_un; Apply plus_assoc_r ].
 Qed.
 
 Theorem convert_add:
@@ -779,12 +805,12 @@ Lemma ZL2:
     (positive_to_nat y (plus m m)) =
               (plus (positive_to_nat y m) (positive_to_nat y m)).
 Proof.
-Induction y; [
-  Intros p H m; Simpl; Rewrite H; Rewrite plus_assoc_r; 
+Intro y; NewInduction y as [p H|p H|]; Intro m; [
+  Simpl; Rewrite H; Rewrite plus_assoc_r; 
   Rewrite (plus_permute m (positive_to_nat p (plus m m)));
   Rewrite plus_assoc_r; Auto with arith
-| Intros p H m; Simpl; Rewrite H; Auto with arith
-| Intro;Simpl; Trivial with arith ].
+| Simpl; Rewrite H; Auto with arith
+| Simpl; Trivial with arith ].
 Qed.
 
 Lemma ZL6:
@@ -794,15 +820,6 @@ Intro p;Change (2) with (plus (S O) (S O)); Rewrite ZL2; Trivial.
 Qed.
  
 (** [IPN] is a morphism for multiplication *)
-
-Lemma positive_to_nat_mult : (p:positive) (n,m:nat)
-    (positive_to_nat p (mult m n))=(mult m (positive_to_nat p n)).
-Proof.
-  Induction p. Intros. Simpl. Rewrite mult_plus_distr_r. Rewrite <- (mult_plus_distr_r m n n).
-  Rewrite (H (plus n n) m). Reflexivity.
-  Intros. Simpl. Rewrite <- (mult_plus_distr_r m n n). Apply H.
-  Trivial.
-Qed.
 
 Theorem times_convert :
   (x,y:positive) (convert (times x y)) = (mult (convert x) (convert y)).
@@ -827,8 +844,8 @@ V7only [
 
 Theorem compare_positive_to_nat_O : 
 	(p:positive)(m:nat)(le m (positive_to_nat p m)).
-Induction p; Simpl; Auto with arith.
-Intros; Apply le_trans with (plus m m);  Auto with arith.
+NewInduction p; Simpl; Auto with arith.
+Intro m; Apply le_trans with (plus m m);  Auto with arith.
 Qed.
 
 Theorem compare_convert_O : (p:positive)(lt O (convert p)).
@@ -836,7 +853,16 @@ Intro; Unfold convert; Apply lt_le_trans with (S O); Auto with arith.
 Apply compare_positive_to_nat_O.
 Qed.
 
-(** Mapping of 2 and 4 through IPN_shift *)
+(** Pmult_nat permutes with multiplication *)
+
+Lemma positive_to_nat_mult : (p:positive) (n,m:nat)
+    (positive_to_nat p (mult m n))=(mult m (positive_to_nat p n)).
+Proof.
+  Induction p. Intros. Simpl. Rewrite mult_plus_distr_r. Rewrite <- (mult_plus_distr_r m n n).
+  Rewrite (H (plus n n) m). Reflexivity.
+  Intros. Simpl. Rewrite <- (mult_plus_distr_r m n n). Apply H.
+  Trivial.
+Qed.
 
 Lemma positive_to_nat_2 : (p:positive)
     (positive_to_nat p (2))=(mult (2) (positive_to_nat p (1))).
@@ -883,47 +909,47 @@ Qed.
 
 Theorem bij1 : (m:nat) (convert (anti_convert m)) = (S m).
 Proof.
-Induction m; [
-  Unfold convert; Simpl; Trivial
-| Unfold convert; Intros n H; Simpl; Rewrite convert_add_un; Rewrite H; Auto ].
+Intro m; NewInduction m as [|n H]; [
+  Reflexivity
+| Simpl; Rewrite cvt_add_un; Rewrite H; Auto ].
 Qed.
 
 (** Miscellaneous lemmas on [INP] *)
 
 Lemma ZL3: (x:nat) (add_un (anti_convert (plus x x))) =  (xO (anti_convert x)).
 Proof.
-Induction x; [
+Intro x; NewInduction x as [|n H]; [
   Simpl; Auto with arith
-| Intros y H; Simpl; Rewrite  plus_sym; Simpl; Rewrite  H; Rewrite  ZL1;Auto with arith].
+| Simpl; Rewrite  plus_sym; Simpl; Rewrite  H; Rewrite  ZL1;Auto with arith].
 Qed.
 
 Lemma ZL4: (y:positive) (EX h:nat |(convert y)=(S h)).
 Proof.
-Induction y; [
-  Intros p H;Elim H; Intros x H1; Exists (plus (S x) (S x));
+Intro y; NewInduction y as [p H|p H|]; [
+  NewDestruct H as [x H1]; Exists (plus (S x) (S x));
   Unfold convert ;Simpl; Change (2) with (plus (1) (1)); Rewrite ZL2; Unfold convert in H1;
   Rewrite H1; Auto with arith
-| Intros p H1;Elim H1;Intros x H2; Exists (plus x (S x)); Unfold convert;
+| NewDestruct H as [x H2]; Exists (plus x (S x)); Unfold convert;
   Simpl; Change (2) with (plus (1) (1)); Rewrite ZL2;Unfold convert in H2; Rewrite H2; Auto with arith
 | Exists O ;Auto with arith ].
 Qed.
 
 Lemma ZL5: (x:nat) (anti_convert (plus (S x) (S x))) =  (xI (anti_convert x)).
 Proof.
-Induction x;Simpl; [
+Intro x; NewInduction x as [|n H];Simpl; [
   Auto with arith
-| Intros y H; Rewrite <- plus_n_Sm; Simpl; Rewrite H; Auto with arith].
+| Rewrite <- plus_n_Sm; Simpl; Simpl in H; Rewrite H; Auto with arith].
 Qed.
 
 (** Composition of [IPN] and [INP] is shifted identity on [positive] *)
 
 Theorem bij2 : (x:positive) (anti_convert (convert x)) = (add_un x).
 Proof.
-Induction x; [
-  Intros p H; Simpl; Rewrite <- H; Change (2) with (plus (1) (1));
+Intro x; NewInduction x as [p H|p H|]; [
+  Simpl; Rewrite <- H; Change (2) with (plus (1) (1));
   Rewrite ZL2; Elim (ZL4 p); 
   Unfold convert; Intros n H1;Rewrite H1; Rewrite ZL3; Auto with arith
-| Intros p H; Unfold convert ;Simpl; Change (2) with (plus (1) (1));
+| Unfold convert ;Simpl; Change (2) with (plus (1) (1));
   Rewrite ZL2;
   Rewrite <- (sub_add_one
                (anti_convert
@@ -969,24 +995,25 @@ Theorem compare_convert_INFERIEUR :
   (x,y:positive) (compare x y EGAL) = INFERIEUR -> 
     (lt (convert x) (convert y)).
 Proof.
-Induction x;Induction y; [
-  Intros z H1 H2; Unfold convert ;Simpl; Apply lt_n_S; 
+Intro x; NewInduction x as [p H|p H|];Intro y; NewDestruct y as [q|q|];
+  Intro H2; [
+  Unfold convert ;Simpl; Apply lt_n_S; 
   Do 2 Rewrite ZL6; Apply ZL7; Apply H; Simpl in H2; Assumption
-| Intros q H1 H2; Unfold convert ;Simpl; Do 2 Rewrite ZL6; 
+| Unfold convert ;Simpl; Do 2 Rewrite ZL6; 
   Apply ZL8; Apply H;Simpl in H2; Apply ZLSI;Assumption
-| Simpl; Intros H1;Discriminate H1
-| Simpl; Intros q H1 H2; Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
+| Simpl; Discriminate H2
+| Simpl; Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
   Elim (ZLII p q H2); [
     Intros H3;Apply lt_S;Apply ZL7; Apply H;Apply H3
   | Intros E;Rewrite E;Apply lt_n_Sn]
-| Simpl;Intros q H1 H2; Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
+| Simpl; Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
   Apply ZL7;Apply H;Assumption
-| Simpl; Intros H1;Discriminate H1
-| Intros q H1 H2; Unfold convert ;Simpl; Apply lt_n_S; Rewrite ZL6;
+| Simpl; Discriminate H2
+| Unfold convert ;Simpl; Apply lt_n_S; Rewrite ZL6;
   Elim (ZL4 q);Intros h H3; Rewrite H3;Simpl; Apply lt_O_Sn
-| Intros q H1 H2; Unfold convert ;Simpl; Rewrite ZL6; Elim (ZL4 q);Intros h H3;
+| Unfold convert ;Simpl; Rewrite ZL6; Elim (ZL4 q);Intros h H3;
   Rewrite H3; Simpl; Rewrite <- plus_n_Sm; Apply lt_n_S; Apply lt_O_Sn
-| Simpl; Intros H;Discriminate H ].
+| Simpl; Discriminate H2 ].
 Qed.
 
 (** [IPN] is a morphism from [positive] to [nat] for [gt] (expressed
@@ -998,25 +1025,26 @@ Qed.
 Theorem compare_convert_SUPERIEUR : 
   (x,y:positive) (compare x y EGAL)=SUPERIEUR -> (gt (convert x) (convert y)).
 Proof.
-Unfold gt; Induction x;Induction y; [
-  Simpl;Intros q H1 H2; Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
+Unfold gt; Intro x; NewInduction x as [p H|p H|];
+  Intro y; NewDestruct y as [q|q|]; Intro H2; [
+  Simpl; Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
   Apply lt_n_S; Apply ZL7; Apply H;Assumption
-| Simpl;Intros q H1 H2; Unfold convert ;Simpl; Do 2 Rewrite ZL6;
+| Simpl; Unfold convert ;Simpl; Do 2 Rewrite ZL6;
   Elim (ZLSS p q H2); [
     Intros H3;Apply lt_S;Apply ZL7;Apply H;Assumption
   | Intros E;Rewrite E;Apply lt_n_Sn]
-| Intros H1;Unfold convert ;Simpl; Rewrite ZL6;Elim (ZL4 p);
+| Unfold convert ;Simpl; Rewrite ZL6;Elim (ZL4 p);
   Intros h H3;Rewrite H3;Simpl; Apply lt_n_S; Apply lt_O_Sn
-| Simpl;Intros q H1 H2;Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
+| Simpl;Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
   Apply ZL8; Apply H; Apply ZLIS; Assumption
-| Simpl;Intros q H1 H2; Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
+| Simpl; Unfold convert ;Simpl;Do 2 Rewrite ZL6; 
   Apply ZL7;Apply H;Assumption
-| Intros H1;Unfold convert ;Simpl; Rewrite ZL6; Elim (ZL4 p);
+| Unfold convert ;Simpl; Rewrite ZL6; Elim (ZL4 p);
   Intros h H3;Rewrite H3;Simpl; Rewrite <- plus_n_Sm;Apply lt_n_S;
   Apply lt_O_Sn
-| Simpl; Intros q H1 H2;Discriminate H2
-| Simpl; Intros q H1 H2;Discriminate H2
-| Simpl;Intros H;Discriminate H ].
+| Simpl; Discriminate H2
+| Simpl; Discriminate H2
+| Simpl; Discriminate H2 ].
 Qed.
 
 (** [IPN] is a morphism from [positive] to [nat] for [lt] (expressed
@@ -1154,7 +1182,8 @@ Lemma compare_true_sub_left :
   (compare q z EGAL)=SUPERIEUR->
   (compare (true_sub q z) (true_sub p z) EGAL)=INFERIEUR.
 Proof.
-Intros; Apply convert_compare_INFERIEUR; Rewrite true_sub_convert; [
+Intros p q z; Intros; 
+  Apply convert_compare_INFERIEUR; Rewrite true_sub_convert; [
   Rewrite true_sub_convert; [
     Unfold gt; Apply simpl_lt_plus_l with p:=(convert z);
     Rewrite le_plus_minus_r; [
@@ -1173,7 +1202,7 @@ Qed.
 
 Lemma times_x_1 : (x:positive) (times x xH) = x.
 Proof.
-NewInduction x; Simpl.
+Intro x;NewInduction x; Simpl.
   Rewrite IHx; Reflexivity.
   Rewrite IHx; Reflexivity.
   Reflexivity.
@@ -1183,7 +1212,7 @@ Qed.
 
 Lemma times_x_double : (x,y:positive) (times x (xO y)) = (xO (times x y)).
 Proof.
-Intros; NewInduction x; Simpl.
+Intros x y; NewInduction x; Simpl.
   Rewrite IHx; Reflexivity.
   Rewrite IHx; Reflexivity.
   Reflexivity.
@@ -1192,7 +1221,7 @@ Qed.
 Lemma times_x_double_plus_one :
  (x,y:positive) (times x (xI y)) = (add x (xO (times x y))).
 Proof.
-Intros; NewInduction x; Simpl.
+Intros x y; NewInduction x; Simpl.
   Rewrite IHx; Do 2 Rewrite add_assoc; Rewrite add_sym with x:=y; Reflexivity.
   Rewrite IHx; Reflexivity.
   Reflexivity.
@@ -1202,7 +1231,7 @@ Qed.
 
 Theorem times_sym : (x,y:positive) (times x y) = (times y x).
 Proof.
-NewInduction y; Simpl.
+Intros x y; NewInduction y; Simpl.
   Rewrite <- IHy; Apply times_x_double_plus_one.
   Rewrite <- IHy; Apply times_x_double.
   Apply times_x_1.
@@ -1213,7 +1242,7 @@ Qed.
 Theorem times_add_distr:
   (x,y,z:positive) (times x (add y z)) = (add (times x y) (times x z)).
 Proof.
-Intros; NewInduction x; Simpl.
+Intros x y z; NewInduction x; Simpl.
   Rewrite IHx; Rewrite <- add_assoc with y := (xO (times x y));
     Rewrite -> add_assoc with x := (xO (times x y));
     Rewrite -> add_sym with x := (xO (times x y));
@@ -1234,7 +1263,7 @@ Qed.
 Theorem times_assoc :
   ((x,y,z:positive) (times x (times y z))= (times (times x y) z)).
 Proof.
-NewInduction x as [x|x|]; Simpl; Intros y z.
+Intro x;NewInduction x as [x|x|]; Simpl; Intros y z.
   Rewrite IHx; Rewrite times_add_distr_l; Reflexivity.
   Rewrite IHx; Reflexivity.
   Reflexivity.
@@ -1262,7 +1291,7 @@ Qed.
 Theorem times_discr_xO_xI : 
   (x,y,z:positive)(times (xI x) z)<>(times (xO y) z).
 Proof.
-NewInduction z as [|z IHz|]; Try Discriminate.
+Intros x y z; NewInduction z as [|z IHz|]; Try Discriminate.
 Intro H; Apply IHz; Clear IHz.
 Do 2 Rewrite times_x_double in H.
 Injection H; Clear H; Intro H; Exact H.
@@ -1270,7 +1299,7 @@ Qed.
 
 Theorem times_discr_xO : (x,y:positive)(times (xO x) y)<>y.
 Proof.
-NewInduction y; Try Discriminate.
+Intros x y; NewInduction y; Try Discriminate.
 Rewrite times_x_double; Injection; Assumption.
 Qed.
 
@@ -1278,14 +1307,14 @@ Qed.
 
 Theorem simpl_times_r : (x,y,z:positive) (times x z)=(times y z) -> x=y.
 Proof.
-NewInduction x as [p IHp|p IHp|]; NewDestruct y as [q|q|]; Intros z H;
+Intro x;NewInduction x as [p IHp|p IHp|]; Intro y; NewDestruct y as [q|q|]; Intros z H;
     Reflexivity Orelse Apply (f_equal positive) Orelse Apply False_ind.
-  Simpl in H; Apply IHp with z := (xO z); Simpl; Do 2 Rewrite times_x_double;
+  Simpl in H; Apply IHp with (xO z); Simpl; Do 2 Rewrite times_x_double;
     Apply simpl_add_l with 1 := H.
   Apply times_discr_xO_xI with 1 := H.
   Simpl in H; Rewrite add_sym in H; Apply add_no_neutral with 1 := H.
   Symmetry in H; Apply times_discr_xO_xI with 1 := H.
-  Apply IHp with z := (xO z); Simpl; Do 2 Rewrite times_x_double; Assumption.
+  Apply IHp with (xO z); Simpl; Do 2 Rewrite times_x_double; Assumption.
   Apply times_discr_xO with 1:=H.
   Simpl in H; Symmetry in H; Rewrite add_sym in H; 
     Apply add_no_neutral with 1 := H.
