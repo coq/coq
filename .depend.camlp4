@@ -4,8 +4,6 @@ tactics/tauto.cmo: parsing/ast.cmi parsing/coqast.cmi tactics/hipattern.cmi \
 tactics/tauto.cmx: parsing/ast.cmx parsing/coqast.cmx tactics/hipattern.cmx \
     kernel/names.cmx lib/pp.cmx proofs/proof_type.cmx proofs/tacinterp.cmx \
     proofs/tacmach.cmx tactics/tacticals.cmx 
-scripts/coqc.cmo: config/coq_config.cmi toplevel/usage.cmi 
-scripts/coqc.cmx: config/coq_config.cmx toplevel/usage.cmx 
 parsing/q_coqast.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
 parsing/q_coqast.cmx: parsing/coqast.cmx parsing/pcoq.cmx 
 parsing/g_prim.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
@@ -46,3 +44,15 @@ toplevel/mltop.cmo: library/lib.cmi library/libobject.cmi library/library.cmi \
 toplevel/mltop.cmx: library/lib.cmx library/libobject.cmx library/library.cmx \
     lib/pp.cmx library/summary.cmx lib/system.cmx lib/util.cmx \
     toplevel/vernacinterp.cmx toplevel/mltop.cmi 
+tactics/tauto.ml: parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_constr.cmo
+parsing/q_coqast.ml: 
+parsing/g_prim.ml: 
+parsing/pcoq.ml: 
+parsing/g_basevernac.ml: parsing/grammar.cma
+parsing/g_minicoq.ml: parsing/grammar.cma
+parsing/g_vernac.ml: parsing/grammar.cma
+parsing/g_cases.ml: parsing/grammar.cma
+parsing/g_constr.ml: parsing/grammar.cma
+parsing/g_tactic.ml: parsing/grammar.cma
+parsing/extend.ml: parsing/grammar.cma
+toplevel/mltop.ml: 

@@ -68,7 +68,7 @@ let compile command args file =
     command :: "-batch" :: "-silent" :: args 
     @ ["-load-vernac-source"; tmpfile] in
   let devnull = 
-    ifdef Unix then
+    if Sys.os_type = "Unix" then
       Unix.openfile "/dev/null" [] 0o777 
     else 
       Unix.stdin

@@ -1,5 +1,5 @@
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 open Coqast
 open Pcoq

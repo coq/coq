@@ -1,5 +1,7 @@
 
-(* $Id$ *)
+(*i camlp4deps: "parsing/grammar.cma" i*)
+
+(*i $Id$ i*)
 
 open Util
 open Gramext
