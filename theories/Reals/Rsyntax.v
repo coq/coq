@@ -25,6 +25,7 @@ with rformula : constr :=
   form_expr [ rexpr($p) ] -> [ $p ]
 (* | form_eq [ rexpr($p) "==" rexpr($c) ] -> [ (eqT R $p $c) ] *)
 | form_eq [ rexpr($p) "==" rexpr($c) ] -> [ (eqT ? $p $c) ]
+| form_eq2 [ rexpr($p) "=" rexpr($c) ] -> [ (eqT ? $p $c) ]
 | form_le [ rexpr($p) "<=" rexpr($c) ] -> [ (Rle $p $c) ]
 | form_lt [ rexpr($p) "<" rexpr($c) ] -> [ (Rlt $p $c) ]
 | form_ge [ rexpr($p) ">=" rexpr($c) ] -> [ (Rge $p $c) ]
@@ -99,7 +100,7 @@ Syntax constr
   | Rgt [ (Rgt $n1 $n2) ] -> 
       [[<hov 0> "``" (REXPR $n1) [1 0] "> "(REXPR $n2) "``" ]]
   | Req [ (eqT R $n1 $n2) ] -> 
-      [[<hov 0> "``" (REXPR $n1) [1 0] "== "(REXPR $n2)"``"]]
+      [[<hov 0> "``" (REXPR $n1) [1 0] "= "(REXPR $n2)"``"]]
   | Rneq [ ~(eqT R $n1 $n2) ] ->
       [[<hov 0> "``" (REXPR $n1) [1 0] "<> "(REXPR $n2) "``"]]
   | Rle_Rle [ (Rle $n1 $n2)/\(Rle $n2 $n3) ] ->
