@@ -896,26 +896,6 @@ let known_dependent = function
 (* account; especially, no lift would be necessary (but                      *)
 (* [specialize_predicate_match] assumes realargs are given, then ...)        *)
 (*****************************************************************************)
-(*
-let weaken_predicate q pred =
-  let rec weakrec n k pred =
-    if n=0 then lift_predicate k pred else match pred with
-      | (PrLetIn _ | PrCcl _ | PrNotInd _) ->
-	  anomaly "weaken_predicate: only product can be weakened"
-      | PrProd ((dep,_,IsInd (_,IndType(indf,realargs))),pred) ->
-	  (* To make it more uniform, we apply realargs but they dont occur! *)
-	  let copt, p = if dep then Some (mkRel (q+k)), 1 else None, 0 in
-	  let realargs = List.map (lift k) realargs in
-	  (* We replace 1 product by |realargs| arguments + possibly copt *)
-	  (* Then we need to add this to the global lift *)
-	  let lift = k+(List.length realargs)+p in
-	  PrLetIn ((realargs, copt), weakrec (n-1) lift pred)
-      | PrProd ((dep,_,NotInd t),pred) ->
-	  (* Does copt occur in pred ? Does it need to be remembered ? *)
-	  let copt, p = if dep then Some (mkRel (q+k)), 1 else None, 0 in
-	  PrNotInd (copt, weakrec (n-1) (k+p) pred)
-  in weakrec q 0 pred
-*)
 let weaken_predicate q pred =
   let rec weakrec n k pred =
     if n=0 then pred else match pred with
