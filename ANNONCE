@@ -1,6 +1,6 @@
 
-  The Coq development team is pleased to announce Coq version 8.0, a new
-major evolution of the Coq system.
+  The Coq development team is very pleased to announce the beta
+release of Coq version 8.0, a new major evolution of the Coq system.
 
   First, the logical system of Coq version 8.0 has been simplified by
 removing the impredicativity of the sort Set. This allows to benefit
@@ -10,43 +10,54 @@ remains available as an option for experimented users still wishing to
 require this feature.
 
   Secondly, Coq version 8.0 comes with a completely new syntax of
-terms, and a revised more uniform syntax for tactics and
-commands. Besides a better uniformity and a simplification of the syntax,
-the purpose is to allow the use of high-level comforts, such as
-implicit types in quantification and notations for standard
-arithmetical notions (e.g. +,*,<,<=) without conflicts with the rest
-of the syntax. A new notion of "interpretation scopes" allows also to
-reuse the same notations in different contexts of formalisation
-(e.g. +, * are valid on nat, Z, R, types, etc). The new syntax, with
-explanatory examples, is described in document ??? from the
-distribution.
+terms, and a slightly revised syntax for tactics and commands. Besides
+a better uniformity and a simplification of the syntax, the purpose is
+to allow the use of high-level comforts, such as implicit types in
+quantification and notations for standard arithmetical notions
+(e.g. +, *, <, <=) without conflicts with the rest of the syntax. A new
+notion of "interpretation scopes" allows also to reuse the same
+notations in different contexts of formalisation (e.g. +, * are valid
+on nat, Z, R, types, etc). The new syntax, with explanatory examples,
+is described in document ??? from the distribution.
 
   Thirdly, the standard library has been revised and simplified. There
 is now only one equality "=" and one existential quantification valid
-on all types. The type "R" is now in Set and the library on Z has been
-re-organised. The basic notions from the initial state now have
+on all types. The type "R" is now in Set and the library on "Z" has
+been re-organised. The basic notions from the initial state now have
 implicit arguments.
 
-  Coq version 8.0 comes with a robust comment-preserving automatic
-translator from old to new syntax. Follow the instructions in document
-??? from the distribution to update your developments from old to new
-syntax.
+  Coq version 8.0 comes with a smart and robust comment-preserving
+automatic translator from old to new syntax. Follow the instructions
+in document ??? from the distribution to update your developments from
+old to new syntax.
 
-  Coq version 8.0 brings also improved tactics (especially refined
-conversion and induction tactics).
+  Coq version 8.0 brings also a new automation tactic for first-order
+statements and various improvements of existing tactics.
 
-  Last but not the least, Coq version 8.0 comes with a new integrated
-gtk-based user interface in the style of ProofGeneral.
+  Last but not the least, Coq version 8.0 comes with CoqIde, a new
+integrated gtk-based user interface in the style of ProofGeneral.
+
+
+  For the first time, a comprehensive textbook on the art of Coq is
+going to be published. We are extremely thankful to the authors, Yves
+Bertot and Pierre Casteran, for this essential contribution to the
+development of Coq. This 470-pages book is based on Coq V8.0 and it
+comes with about 200 exercices and their solution in Coq. Details are
+on http://www.labri.fr/~casteran/CoqArt.
+
+
+  The sources of Coq V8.0 beta, including its integrated development
+environment, are available from http://coq.inria.fr/ and
+ftp://ftp.inria.fr/INRIA/LogiCal/coq/V8.0beta/.
 
   Please refer to the accompanying document CHANGES or the location
-ftp://ftp.inria.fr/INRIA/LogiCal/coq/V8.0/doc/Changes.html for a full
-list of changes including sources of incompatibilities.
+ftp://ftp.inria.fr/INRIA/LogiCal/coq/V8.0beta/doc/Changes.html for a
+full list of changes including sources of incompatibilities.
 
-  Coq V8.0 is available in several formats from http://coq.inria.fr/
-and ftp://ftp.inria.fr/INRIA/coq/V8.0/
+  The (at the time partial) documentation of Coq V8.0 is available in
+postscript, pdf and html format.
 
-  The documentation is available in postscript, pdf and html format.
-
+# Si on a le temps...
   Notice that you can browse the new standard library at
 http://coq.inria.fr/library-eng.html (these pages have been generated
 by coqdoc).
