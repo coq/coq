@@ -24,6 +24,11 @@ Standard library
 - In [Arith], more lemmas in Min.v, new file Max.v, tail-recursive
   plus and mult added to Plus.v and Mult.v respectively
 - New directory [Sorting] with a proof of heapsort (dragged from 6.3.1 lib)
+- In [Reals], more lemmas in Rbase.v, new lemmas on square, square root and
+  trigonometric functions (R_sqr.v - Rtrigo.v); a complementary approach
+  and new theorems about continuity and derivability in Ranalysis.v;  some
+  properties in plane geometry such as translation, rotation or similarity
+  in Rgeom.v; finite sums and Chasles property in Rsigma.v
 
 Efficiency
 
