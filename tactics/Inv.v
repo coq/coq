@@ -13,7 +13,7 @@ Require Export Equality.
 Declare ML Module "Inv" "Leminv".
 
 Syntax tactic level 0:
-  inversion    [<<(Inv $ic $id)>>] -> [ (INVCOM $ic) [1 1] $id]
+| inversion    [<<(Inv $ic $id)>>] -> [ (INVCOM $ic) [1 1] $id]
 | inversion_in [<<(InvIn $ic $id ($LIST $l))>>]
     -> [ (INVCOM $ic) [1 1] $id (CLAUSE ($LIST $l))]
 
@@ -28,9 +28,9 @@ Syntax tactic level 0:
 | inv_using_in [<<(UseInversionLemmaIn $id $c ($LIST $l))>>]
     -> ["Inversion " $id [1 1] "using " $c (CLAUSE ($LIST $l))]
 
-| simple_inv       [<<(INVCOM HalfInversion)>>] -> [ "Simple Inversion" ]
-| inversion_com    [<<(INVCOM Inversion)>>] -> [ "Inversion" ]
-| inversion_clear  [<<(INVCOM InversionClear)>>] -> [ "Inversion_clear" ].
+| simple_inv       [<<(INVCOM "HalfInversion")>>] -> [ "Simple Inversion" ]
+| inversion_com    [<<(INVCOM "Inversion")>>] -> [ "Inversion" ]
+| inversion_clear  [<<(INVCOM "InversionClear")>>] -> [ "Inversion_clear" ].
 
 
 Grammar tactic simple_tactic: ast :=
