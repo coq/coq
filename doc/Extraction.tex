@@ -260,8 +260,11 @@ For example, Here are two kinds of problem that can occur:
 $$\mbox{\tt
 Definition dp := [A,B:Set][x:A][y:B][f:(C:Set)C->C](f A x,f B y).
 }$$
-In Ocaml, for instance, the direct extracted term would be 
-\verb!let dp x y f = Pair((f () x),(f () y))!  and would have type
+In Ocaml, for instance, the direct extracted term would be:
+$$\mbox{\tt
+let dp x y f = Pair((f () x),(f () y))
+}$$
+and would have type
 $$\mbox{\tt
 dp : 'a -> 'a -> (unit -> 'a -> 'b) -> ('b,'b) prod
 }$$
@@ -294,7 +297,7 @@ found in \cite{Let02}.
 
 We have to say, though, that in most ``realistic'' programs, these
 problems do not occur. For example all the programs of Coq library are
-accepted by Caml type-checker without {\tt Obj.magic} any (see examples below).
+accepted by Caml type-checker without any {\tt Obj.magic} (see examples below).
 
 
 
@@ -389,67 +392,108 @@ Check treesort.
 Let's now extract this function: 
 
 \begin{coq_example}
+Extraction Inline Sorting.sort_rec is_heap_rec.
 Extraction NoInline list_to_heap.
 Extraction "heapsort" treesort.
 \end{coq_example}
 
-One more time, the {\tt Extraction NoInline} directive is cosmetic.
-Without it, everything goes right, but {\tt list\_to\_heap} is inlined
-inside {\tt treesort}, producing a less readable term.
+One more time, the {\tt Extraction Inline} and {\tt NoInline}
+directives are cosmetic. Without it, everything goes right, 
+but the output is less readable.
 Here is the produced file {\tt heapsort.ml}: 
 
 \begin{verbatim}
-type sumbool =
-  | Left
-  | Right
-
 type nat =
   | O
   | S of nat
 
-type 'a tree =
-  | Tree_Leaf
-  | Tree_Node of 'a * 'a tree * 'a tree
+type 'a sig2 =
+  'a
+  (* singleton inductive, whose constructor was exist2 *)
+  
+type sumbool =
+  | Left
+  | Right
 
 type 'a list =
   | Nil
   | Cons of 'a * 'a list
 
-let rec merge leA_dec eqA_dec x x0 =
-  match x with
-    | Nil -> x0
+type 'a multiset =
+  'a -> nat
+  (* singleton inductive, whose constructor was Bag *)
+  
+type 'a merge_lem =
+  'a list
+  (* singleton inductive, whose constructor was merge_exist *)
+  
+(** val merge : ('a1 -> 'a1 -> sumbool) -> ('a1 -> 'a1 -> sumbool) ->
+                'a1 list -> 'a1 list -> 'a1 merge_lem **)
+
+let rec merge leA_dec eqA_dec l1 l2 =
+  match l1 with
+    | Nil -> l2
     | Cons (a, l) ->
         let rec f = function
           | Nil -> Cons (a, l)
-          | Cons (a0, l1) ->
+          | Cons (a0, l3) ->
               (match leA_dec a a0 with
                  | Left -> Cons (a,
-                     (merge leA_dec eqA_dec l (Cons (a0, l1))))
-                 | Right -> Cons (a0, (f l1)))
-        in f x0
+                     (merge leA_dec eqA_dec l (Cons (a0, l3))))
+                 | Right -> Cons (a0, (f l3)))
+        in f l2
 
-let rec heap_to_list leA_dec eqA_dec = function
-  | Tree_Leaf -> Nil
-  | Tree_Node (a, t, t0) -> Cons (a,
-      (merge leA_dec eqA_dec (heap_to_list leA_dec eqA_dec t)
-        (heap_to_list leA_dec eqA_dec t0)))
+type 'a tree =
+  | Tree_Leaf
+  | Tree_Node of 'a * 'a tree * 'a tree
 
-let rec insert leA_dec eqA_dec x x0 =
-  match x with
-    | Tree_Leaf -> Tree_Node (x0, Tree_Leaf, Tree_Leaf)
-    | Tree_Node (a, t, t0) ->
-        let h3 = fun x1 -> insert leA_dec eqA_dec t x1 in
-        (match leA_dec a x0 with
-           | Left -> Tree_Node (a, t0, (h3 x0))
-           | Right -> Tree_Node (x0, t0, (h3 a)))
+type 'a insert_spec =
+  'a tree
+  (* singleton inductive, whose constructor was insert_exist *)
+  
+(** val insert : ('a1 -> 'a1 -> sumbool) -> ('a1 -> 'a1 -> sumbool) ->
+                 'a1 tree -> 'a1 -> 'a1 insert_spec **)
+
+let rec insert leA_dec eqA_dec t a =
+  match t with
+    | Tree_Leaf -> Tree_Node (a, Tree_Leaf, Tree_Leaf)
+    | Tree_Node (a0, t0, t1) ->
+        let h3 = fun x -> insert leA_dec eqA_dec t0 x in
+        (match leA_dec a0 a with
+           | Left -> Tree_Node (a0, t1, (h3 a))
+           | Right -> Tree_Node (a, t1, (h3 a0)))
+
+type 'a build_heap =
+  'a tree
+  (* singleton inductive, whose constructor was heap_exist *)
+  
+(** val list_to_heap : ('a1 -> 'a1 -> sumbool) -> ('a1 -> 'a1 ->
+                       sumbool) -> 'a1 list -> 'a1 build_heap **)
 
 let rec list_to_heap leA_dec eqA_dec = function
   | Nil -> Tree_Leaf
-  | Cons (a, l) ->
-      insert leA_dec eqA_dec (list_to_heap leA_dec eqA_dec l) a
+  | Cons (a, l0) ->
+      insert leA_dec eqA_dec (list_to_heap leA_dec eqA_dec l0) a
+
+type 'a flat_spec =
+  'a list
+  (* singleton inductive, whose constructor was flat_exist *)
+  
+(** val heap_to_list : ('a1 -> 'a1 -> sumbool) -> ('a1 -> 'a1 ->
+                       sumbool) -> 'a1 tree -> 'a1 flat_spec **)
+
+let rec heap_to_list leA_dec eqA_dec = function
+  | Tree_Leaf -> Nil
+  | Tree_Node (a, t0, t1) -> Cons (a,
+      (merge leA_dec eqA_dec (heap_to_list leA_dec eqA_dec t0)
+        (heap_to_list leA_dec eqA_dec t1)))
+
+(** val treesort : ('a1 -> 'a1 -> sumbool) -> ('a1 -> 'a1 -> sumbool)
+                   -> 'a1 list -> 'a1 list sig2 **)
 
 let treesort leA_dec eqA_dec l =
   heap_to_list leA_dec eqA_dec (list_to_heap leA_dec eqA_dec l)
+
 \end{verbatim}
 
 Let's test it: 
