@@ -483,15 +483,27 @@ let bring_hyps clsl gl =
 (* Resolution with missing arguments *)
 
 let apply_with_bindings  (c,lbind) gl = 
-  let (wc,kONT) = startWalk gl in
-  let t = w_hnf_constr wc (w_type_of wc c) in 
-  let clause = make_clenv_binding_apply wc (c,t) lbind in
   let apply = 
     match kind_of_term c with 
       | IsLambda _ -> res_pf_cast 
       | _ -> res_pf 
   in 
-  apply kONT clause gl
+  let (wc,kONT) = startWalk gl in
+  let rec try_apply thm_ty =
+    try
+      let clause = make_clenv_binding_apply wc (c,thm_ty) lbind in
+      apply kONT clause gl
+    with (Logic.RefinerError _|UserError _) as exn ->
+      let ored =
+        try Some (Tacred.red_product (w_env wc) (w_Underlying wc) thm_ty)
+        with Tacred.Redelimination -> None
+      in
+      (match ored with
+          Some rty ->
+            try_apply rty
+        | None -> raise exn) in
+  try_apply (w_type_of wc c)
+
 
 let apply c = apply_with_bindings (c,[])
 let apply_com = tactic_com (fun c -> apply_with_bindings (c,[]))
