@@ -354,17 +354,6 @@ and extract_mib kn =
       let ip = (kn,i) in 
       let s,vl = type_sign_vl env mip.mind_nf_arity in 
       add_inductive ip (s,vl); 
-      (* Record tables: *)
-      if not (is_singleton_inductive ip) then 
-	try 
-	  let l = (find_structure ip).s_PROJ in 
-	  assert (List.length s = List.length l); 
-	  let check (_,o) = match o with 
-	    | None -> raise Not_found 
-	    | Some kn -> ConstRef kn 
-	  in 
-	  add_record ip (List.map check (List.filter fst (List.combine s l)))
-	with Not_found  -> () 
   done;
   (* Second pass: we extract constructors *)
   for i = 0 to mib.mind_ntypes - 1 do
@@ -384,7 +373,25 @@ and extract_mib kn =
 	let l = extract_type_cons params_env db dbmap t (params_nb+1) in 
 	add_constructor (ip,j+1) (l,params_nb)
       done
-  done
+  done;
+  (* Record tables: *)
+  if mib.mind_ntypes = 1 then 
+    let ip = (kn,0) in 
+    let mip = snd (Global.lookup_inductive ip) in
+    if (mip.mind_sort <> (Prop Null))
+      && (Array.length mip.mind_consnames = 1)
+      && not (is_singleton_inductive ip) 
+    then try
+      let typs = fst (lookup_constructor (ip,1)) in 
+      let s = List.map (type_neq mlt_env Tdummy) typs in
+      let projs = (find_structure ip).s_PROJ in 
+      assert (List.length s = List.length projs); 
+      let check (_,o) = match o with 
+	| None -> raise Not_found 
+	| Some kn -> ConstRef kn 
+      in 
+      add_record ip (List.map check (List.filter fst (List.combine s projs)))
+    with Not_found  -> () 
 
 (*s [extract_type_cons] extracts the type of an inductive 
   constructor toward the corresponding list of ML types. *)
