@@ -22,6 +22,8 @@ Require Export Rtrigo.
 Require Export Rgeom.
 Require Export Rderiv.
 Require Export Rseries.
+Require Export Rcomplet.
+Require Export Alembert_compl.
 Require Export Rtrigo_fun.
 Require Export Ranalysis.
 Require Export DiscrR.
