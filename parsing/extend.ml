@@ -186,13 +186,13 @@ let clever_explicitize_prod_entry pos univ from en =
     | ETConstr (from,()) ->
 	(match t with
 	  | ETConstr (n,BorderProd (left,None)) when (n=from & left) ->
-	      ETConstr (n,BorderProd (true,Some Gramext.LeftA))
+	      ETConstr (n,BorderProd (left,Some Gramext.LeftA))
 	  | ETConstr (n,BorderProd (left,None)) when (n=from-1 & not left) ->
-	      ETConstr (n+1,BorderProd (true,Some Gramext.LeftA))
+	      ETConstr (n+1,BorderProd (left,Some Gramext.LeftA))
 	  | ETConstr (n,BorderProd (left,None)) when (n=from-1 & left) ->
-	      ETConstr (n+1,BorderProd (true,Some Gramext.RightA))
+	      ETConstr (n+1,BorderProd (left,Some Gramext.RightA))
 	  | ETConstr (n,BorderProd (left,None)) when (n=from & not left) ->
-	      ETConstr (n,BorderProd (true,Some Gramext.RightA))
+	      ETConstr (n,BorderProd (left,Some Gramext.RightA))
 	  | t -> t)
     | _ -> t
 
@@ -224,13 +224,13 @@ let rec prod_item_list univ penv pil current_pos =
   match pil with
     | [] -> [], penv
     | pi :: pitl ->
-	let pos = if pitl=[] then (BorderProd (true,None)) else current_pos in
+	let pos = if pitl=[] then (BorderProd (false,None)) else current_pos in
 	let (env, pic) = prod_item (univ,pos) penv pi in
 	let (pictl, act_env) = prod_item_list univ env pitl InternalProd in
         (pic :: pictl, act_env)
 
 let gram_rule univ (name,pil,act) =
-  let (pilc, act_env) = prod_item_list univ [] pil (BorderProd (false,None)) in
+  let (pilc, act_env) = prod_item_list univ [] pil (BorderProd (true,None)) in
   let a = to_act_check_vars act_env act in
   { gr_name = name; gr_production = pilc; gr_action = a }
 

@@ -499,8 +499,8 @@ let default_action_parser =
 
 (* Camlp4 levels do not treat NonA *)
 let camlp4_assoc = function
-  | Some Gramext.NonA | None -> Gramext.LeftA
-  | Some a -> a
+  | Some Gramext.NonA | Some Gramext.RightA -> Gramext.RightA 
+  | None | Some Gramext.LeftA -> Gramext.LeftA
 
 (* Official Coq convention *)
 let coq_assoc = function

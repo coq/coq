@@ -37,32 +37,61 @@ let (grammar_state : all_grammar_command list ref) = ref []
 
 
 (**************************************************************************)
-let constr_level = function
-  | 8 -> "top"
-  | n -> string_of_int n
+let canonise_assoc = function
+  | None -> Gramext.LeftA (* camlp4 rule *)
+  | Some Gramext.NonA -> Gramext.RightA
+  | Some a -> a
+
+let assoc_level = function
+  | Gramext.LeftA -> "L"
+  | _ -> ""
+
+let constr_level assoc = function
+  | 8 -> assert (assoc <> Some Gramext.LeftA); "top"
+  | n -> (string_of_int n)^(assoc_level (canonise_assoc assoc))
 
 let numeric_levels =
   ref [8,Some Gramext.RightA; 1,Some Gramext.RightA; 0,Some Gramext.RightA]
 
+(* At a same level, LeftA takes precedence over RightA and NoneA *)
+(* In case, several associativity exists for a level, we make two levels, *)
+(* first LeftA, then RightA and NoneA together *)
 exception Found of Gramext.g_assoc option
 
+let eq_assoc a b = match (canonise_assoc a, canonise_assoc b) with
+  | Gramext.LeftA, Gramext.LeftA -> true
+  | Gramext.LeftA, _ -> false
+  | _, Gramext.LeftA -> false
+  | _ -> true
+ 
 let find_position assoc = function
-  | None -> None, assoc
+  | None -> None, Some (canonise_assoc assoc)
   | Some n ->
-      let after = ref 8 in
+      if n = 8 & assoc = Some Gramext.LeftA then 
+	error "Left associativity not allowed at level 8";
+      let after = ref (8,Some Gramext.RightA) in
       let rec add_level q = function
-        | (p,_ as pa)::l when p > n -> pa :: add_level p l
-        | (p,a)::l when p = n ->
-	    if a = assoc or assoc = None then raise (Found a);
-	    after := q; (n,assoc)::l
-        | l ->
+        | (p,_ as pa)::l when p > n -> pa :: add_level pa l
+        | (p,a as pa)::l as l' when p = n ->
+	    if eq_assoc a assoc then raise (Found a);
+	    (* Maybe this was (p,Left) and p occurs a second time *)
+	    if canonise_assoc a = Gramext.LeftA then
+	      match l with
+		| (p,a)::_ as l' when p = n -> raise (Found a)
+		| _ -> after := pa; (n,assoc)::l'
+	    else
+	      (* This was not (p,LeftA) hence assoc is LeftA *)
+	      (after := q; (n,assoc)::l')
+	| l ->
 	    after := q; (n,assoc)::l
       in
       try
-        numeric_levels := add_level 8 !numeric_levels;
-        Some (Gramext.After (constr_level !after)), assoc
+        numeric_levels := add_level (8,Some Gramext.RightA) !numeric_levels;
+        Some (Gramext.After (constr_level (snd !after) (fst !after))),
+	Some (canonise_assoc assoc)
       with
-          Found _ -> Some (Gramext.Level (constr_level n)), assoc
+          Found a -> Some (Gramext.Level (constr_level a n)),
+	  Some (canonise_assoc a)
 
 (* Interpretation of the right hand side of grammar rules *)
 
@@ -146,7 +175,8 @@ let rec build_prod_item univ assoc = function
   | ProdPrimitive typ ->
       match get_constr_production_entry assoc typ with
 	| (eobj,None) -> Gramext.Snterm (Gram.Entry.obj eobj)
-	| (eobj,Some lev) -> Gramext.Snterml (Gram.Entry.obj eobj,constr_level lev)
+	| (eobj,Some lev) -> 
+	    Gramext.Snterml (Gram.Entry.obj eobj,constr_level assoc lev)
 
 let symbol_of_prod_item univ assoc = function
   | Term tok -> (Gramext.Stoken tok, None)
@@ -185,7 +215,7 @@ let define_entry univ {ge_name=n; gl_assoc=ass; gl_rules=rls} =
   let typ = explicitize_entry (fst univ) n in
   let e,lev = get_constr_entry typ in
   let pos,ass = find_position ass lev in
-  let name = option_app constr_level lev in
+  let name = option_app (constr_level ass) lev in
   (e,typ,pos,name,ass,rls)
 
 (* Add a bunch of grammar rules. Does not check if it is well formed *)
@@ -225,7 +255,7 @@ let extend_constr_notation (n,assoc,ntn,rule) =
   let mkact loc env = CNotation (loc,ntn,env) in
   let (e,level) = get_constr_entry (ETConstr (n,())) in
   let pos,assoc = find_position assoc level in
-  extend_constr e pos (option_app constr_level level,assoc) 
+  extend_constr e pos (option_app (constr_level assoc) level,assoc) 
     (make_act mkact) rule
 
 let extend_constr_delimiters (sc,rule,pat_rule) =
