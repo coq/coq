@@ -30,6 +30,9 @@ GEXTEND Gram
   constrarg:
     [ [ c = Constr.constr -> <:ast< (COMMAND $c) >> ] ]
   ;
+  castedopenconstrarg:
+    [ [ c = Constr.constr -> <:ast< (CASTEDOPENCOMMAND $c) >> ] ]
+  ;
   lconstrarg:
     [ [ c = Constr.lconstr -> <:ast< (COMMAND $c) >> ] ]
   ;
@@ -369,7 +372,7 @@ GEXTEND Gram
           <:ast< (Generalize ($LIST $lc)) >>
       | IDENT "Generalize"; IDENT "Dependent"; c = constrarg ->
           <:ast< (GeneralizeDep $c) >>
-      | IDENT "Let"; s = identarg; ":="; c = constrarg; "in";
+      | IDENT "LetTac"; s = identarg; ":="; c = constrarg; "in";
 	  l = ne_pattern_hyp_list -> 
 	    <:ast< (LetTac $s $c (LETPATTERNS ($LIST $l))) >>
       | IDENT "LApply"; c = constrarg -> <:ast< (CutAndApply $c) >>
