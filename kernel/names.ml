@@ -65,6 +65,12 @@ let id_ord id1 id2 =
 
 let id_without_number id = id.index = (-1)
 
+let first_char id =
+  if id.atom = "" then
+    failwith "lowercase_first_char"
+  else
+    String.make 1 id.atom.[0]
+
 module IdOrdered = 
   struct
     type t = identifier

@@ -76,7 +76,21 @@ let list_chop n l =
     | (_, []) -> failwith "chop_list"
   in 
   chop_aux [] (n,l)
- 
+
+let list_tabulate f len = 
+  let rec tabrec n =
+    if n = len then [] else (f n)::(tabrec (n+1))
+  in 
+  tabrec 0
+
+let list_assign l n e = 
+  let rec assrec stk = function
+    | ((h::t), 0) -> List.rev_append stk (e::t)
+    | ((h::t), n) -> assrec (h::stk) (t, n-1)
+    | ([], _) -> failwith "list_assign"
+  in 
+  assrec [] (l,n)
+
 (* Arrays *)
 
 let array_exists f v = 

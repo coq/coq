@@ -6,6 +6,8 @@ kernel/evd.cmi: kernel/names.cmi kernel/sign.cmi kernel/term.cmi
 kernel/generic.cmi: kernel/names.cmi lib/util.cmi 
 kernel/names.cmi: lib/pp.cmi 
 kernel/printer.cmi: lib/pp.cmi kernel/term.cmi 
+kernel/reduction.cmi: kernel/closure.cmi kernel/environ.cmi kernel/evd.cmi \
+    kernel/generic.cmi kernel/names.cmi kernel/term.cmi kernel/univ.cmi 
 kernel/sign.cmi: kernel/generic.cmi kernel/names.cmi kernel/term.cmi 
 kernel/term.cmi: lib/coqast.cmi kernel/generic.cmi kernel/names.cmi \
     kernel/univ.cmi 
@@ -33,6 +35,12 @@ kernel/generic.cmx: kernel/names.cmx lib/pp.cmx lib/util.cmx \
     kernel/generic.cmi 
 kernel/names.cmo: lib/hashcons.cmi lib/pp.cmi lib/util.cmi kernel/names.cmi 
 kernel/names.cmx: lib/hashcons.cmx lib/pp.cmx lib/util.cmx kernel/names.cmi 
+kernel/reduction.cmo: kernel/closure.cmi kernel/environ.cmi kernel/evd.cmi \
+    kernel/generic.cmi kernel/names.cmi lib/pp.cmi kernel/printer.cmi \
+    kernel/term.cmi kernel/reduction.cmi 
+kernel/reduction.cmx: kernel/closure.cmx kernel/environ.cmx kernel/evd.cmx \
+    kernel/generic.cmx kernel/names.cmx lib/pp.cmx kernel/printer.cmi \
+    kernel/term.cmx kernel/reduction.cmi 
 kernel/sign.cmo: kernel/generic.cmi kernel/names.cmi kernel/term.cmi \
     lib/util.cmi kernel/sign.cmi 
 kernel/sign.cmx: kernel/generic.cmx kernel/names.cmx kernel/term.cmx \

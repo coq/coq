@@ -33,4 +33,8 @@ Changements dans les fonctions :
 	  app_tl_vect	   ->  array_app_tl
 	  cons_vect	   ->  array_cons
 
-	Std.comp           ->  Util.compose
+	Std 
+	  comp           ->  Util.compose
+	  rev_append	 ->  List.rev_append
+
+	

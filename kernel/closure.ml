@@ -849,11 +849,13 @@ let search_frozen_cst info op vars =
 (* cache of constants: the body is computed only when needed. *)
 type 'a clos_infos = (fconstr, 'a) infos
 
-let create_clos_infos flgs sigma =
+let create_clos_infos flgs env =
   { i_flags = flgs;
     i_repr = (fun old_info c -> inject c);
-    i_env = sigma;
+    i_env = env;
     i_tab = Hashtbl.create 17 }
+
+let clos_infos_env infos = infos.i_env
 
 (* Head normal form. *)
 let fhnf info v =

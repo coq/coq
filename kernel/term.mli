@@ -465,7 +465,6 @@ val pb_is_univ_adjust : conv_pb -> bool
 val pb_is_equal : conv_pb -> bool
 val pb_equal : conv_pb -> conv_pb
 val sort_hdchar : sorts -> string
-(* val sort_cmp : conv_pb -> sorts -> sorts -> bool *)
 
 
 (***************************)

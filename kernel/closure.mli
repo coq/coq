@@ -97,8 +97,7 @@ val cbv_norm_value : 'a cbv_infos -> cbv_value -> constr
 
 
 
-(* Lazy reduction
- *)
+(* Lazy reduction *)
 type 'a freeze
 type 'a frterm =
   | FRel of int
@@ -161,6 +160,7 @@ type case_status =
 (* Constant cache *)
 type 'a clos_infos
 val create_clos_infos : flags -> 'a unsafe_env -> 'a clos_infos
+val clos_infos_env : 'a clos_infos -> 'a unsafe_env
 
 (* Reduction function *)
 val norm_val : 'a clos_infos -> fconstr -> constr

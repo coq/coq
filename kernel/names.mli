@@ -17,6 +17,7 @@ val atompart_of_id : identifier -> string
 val index_of_id : identifier -> int
 val id_ord : identifier -> identifier -> int
 val id_without_number : identifier -> bool
+val first_char : identifier -> string
 
 module Idset : Set.S with type elt = identifier
 
