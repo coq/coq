@@ -276,8 +276,10 @@ let main () =
       if !top then failwith "no custom toplevel in native code !";
       "ocamlopt -linkall"
     end else
-      (* bytecode *)
-      if !top then "ocamlmktop -custom -linkall" else "ocamlc -custom -linkall"
+      (* bytecode (we shunt ocamlmktop script which fails on win32) *)
+      let ocamlmktoplib = " toplevellib.cma" in
+      let ocamlccustom = "ocamlc -custom -linkall" in
+      (if !top then ocamlccustom^ocamlmktoplib else ocamlccustom)
   in
   (* files to link *)
   let (modules, tolink) = files_to_link userfiles in
@@ -292,6 +294,8 @@ let main () =
   let main_file = create_tmp_main_file modules in
   try
     let args = options @ (includes ()) @ tolink @ dynlink @ [ main_file ] in
+    (* add topstart.cmo explicitly because we shunted ocamlmktop wrapper *)
+    let args = if !top then args @ [ "topstart.cmo" ] else args in
     (* Now, with the .cma, we MUST use the -linkall option *)
     let command = String.concat " " ((prog^" -linkall")::args) in
     if !echo then begin print_endline command; flush Pervasives.stdout end;
