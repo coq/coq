@@ -1911,28 +1911,28 @@ Performs, in the same way, all the rewritings of the bases {\tt $ident_1$ $...$
 $ident_n$} applying {\tt \tac} to the main subgoal after each rewriting step.
 \end{Variant}
 
-\subsection{\tt HintRewrite [ \term$_1$ \dots \term$_n$ ] in \ident}
-\comindex{HintRewrite}
+\subsection{\tt Hint Rewrite [ \term$_1$ \dots \term$_n$ ] in \ident}
+\comindex{Hint Rewrite}
 
 This vernacular command adds the terms {\tt \term$_1$ \dots \term$_n$} (their
 types must be equalities) in the rewriting base {\tt \ident} with the default
 orientation (left to right).
 
 This command is synchronous with the section mechanism (see \ref{Section}):
-when closing a section, all aliases created by \texttt{HintRewrite} in that
-section are lost. Conversely, when loading a module, all \texttt{HintRewrite}
+when closing a section, all aliases created by \texttt{Hint Rewrite} in that
+section are lost. Conversely, when loading a module, all \texttt{Hint Rewrite}
 declarations at the global level of that module are loaded.
 
 \begin{Variants}
-\item {\tt HintRewrite -> [ \term$_1$ \dots \term$_n$ ] in \ident}\\
+\item {\tt Hint Rewrite -> [ \term$_1$ \dots \term$_n$ ] in \ident}\\
 This is strictly equivalent to the command above (we only precise the
 orientation which is the default one).
 
-\item {\tt HintRewrite <- [ \term$_1$ \dots \term$_n$ ] in \ident}\\
+\item {\tt Hint Rewrite <- [ \term$_1$ \dots \term$_n$ ] in \ident}\\
 Adds the rewriting rules {\tt \term$_1$ \dots \term$_n$} with a right-to-left
 orientation in the base {\tt \ident}.
 
-\item {\tt HintRewrite [ \term$_1$ \dots \term$_n$ ] in {\ident} using \tac}\\
+\item {\tt Hint Rewrite [ \term$_1$ \dots \term$_n$ ] in {\ident} using \tac}\\
 When the rewriting rules {\tt \term$_1$ \dots \term$_n$} in {\tt \ident} will
 be used, the tactic {\tt \tac} will be applied to the generated subgoals, the
 main subgoal excluded.
