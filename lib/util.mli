@@ -58,6 +58,7 @@ val list_map2_i :
 val list_index : 'a -> 'a list -> int
 val list_iter_i :  (int -> 'a -> unit) -> 'a list -> unit
 val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
+val list_fold_left_right : ('a -> 'b -> 'b list -> 'a) -> 'b list -> 'a -> 'a
 val list_for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
 val list_except : 'a -> 'a list -> 'a list
 val list_for_all2eq : ('a -> 'b -> bool) -> 'a list -> 'b list -> bool

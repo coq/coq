@@ -141,6 +141,24 @@ let list_fold_left_i f =
   in 
   it_list_f 
 
+(* [list_fold_right_and_left f [a1;...;an] hd =
+   f (f (... (f (f hd
+                   an
+                   [an-1;...;a1])
+              an-1
+              [an-2;...;a1])
+         ...)
+        a2
+        [a1])
+     a1
+     []] *)
+
+let rec list_fold_right_and_left f l hd =
+  let rec aux tl = function
+    | [] -> hd
+    | a::l -> let hd = aux (a::tl) l in f hd a tl
+   in aux [] l
+
 let list_iter_i f l = list_fold_left_i (fun i _ x -> f i x) 0 () l
 
 let list_for_all_i p = 
