@@ -17,6 +17,10 @@ Require Export ZArith_base.
 Require Export TypeSyntax.
 
 Parameter R:Type.
+
+Delimits Scope R_scope with R.
+Bind Scope R_scope with R.
+
 Parameter R0:R.
 Parameter R1:R.
 Parameter Rplus:R->R->R.
