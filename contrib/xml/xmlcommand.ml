@@ -45,12 +45,12 @@ let ext_of_tag =
   | Variable  -> "var"
 ;;
 
-(* Internally, for Coq V7, params of inductive types are associated
-   not to the whole block of mutual inductive (as it was in V6) but to
-   each member of the block; but externally, params remain shared by
-   all members in the concrete syntax; the following function checks
-   that the parameters of each inductive of a same block are all the
-   same, then returns this number; it fails otherwise *)
+(* Internally, for Coq V7, params of inductive types are associated     *)
+(* not to the whole block of mutual inductive (as it was in V6) but to  *)
+(* each member of the block; but externally, all params are required    *)
+(* to be the same; the following function checks that the parameters    *)
+(* of each inductive of a same block are all the same, then returns     *)
+(* this number; it fails otherwise                                      *)
 let extract_nparams pack =
  let module D = Declarations in
  let module U = Util in
@@ -58,11 +58,11 @@ let extract_nparams pack =
 
   let {D.mind_nparams=nparams0} = pack.(0) in
   let arity0 = D.mind_user_arity pack.(0) in
-  let params0 = S.decompose_prod_n_assum nparams0 arity0 in
+  let params0, _ = S.decompose_prod_n_assum nparams0 arity0 in
   for i = 1 to Array.length pack - 1 do
     let {D.mind_nparams=nparamsi} = pack.(i) in
     let arityi = D.mind_user_arity pack.(i) in
-    let paramsi = S.decompose_prod_n_assum nparamsi arityi in
+    let paramsi, _ = S.decompose_prod_n_assum nparamsi arityi in
     if params0 <> paramsi then U.error "Cannot convert a block of inductive definitions with parameters specific to each inductive to a block of mutual inductive definitions with parameters global to the whole block"
   done;
   nparams0
