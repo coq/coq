@@ -256,9 +256,9 @@ let pr_binder pr_c ty na =
         (surround_binder (pr_located pr_name na ++ str":" ++ cut() ++ pr_c ty))
 
 let pr_valdecls pr_c = function
-  | LocalRawAssum (na,c) ->
+  | LocalRawAssum (nal,c) ->
       let sep = if !Options.p1 then spc else pr_tight_coma in
-      prlist_with_sep sep (pr_binder pr_c c) na
+      prlist_with_sep sep (pr_binder pr_c c) nal
   | LocalRawDef (na,c) ->
       hov 1
         (surround_binder (pr_located pr_name na ++ str":=" ++ cut() ++ pr_c c))
@@ -708,7 +708,8 @@ let rec pr_vernac = function
 
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
-      (if i = 1 then mt() else int i ++ str ": ") ++ str "By " ++
+      (if i = 1 then mt() else int i ++ str ": ") ++
+      (if !Options.p1 then mt () else str "By ") ++
       (if deftac then mt() else str "!! ") ++
       pr_raw_tactic_goal i tac
   | VernacSolveExistential (i,c) ->

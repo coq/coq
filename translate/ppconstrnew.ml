@@ -349,6 +349,16 @@ let rec strip_domains (nal,ty) c =
           (bnd::bl, rest, c2)
         with Failure _ -> ([bnd],Some (nal,ty), c1))
 
+(* Re-share binders *)
+let rec factorize_binders = function
+  | ([] | [_] as l) -> l
+  | (nal,ty)::((nal',ty')::l as l') ->
+      try
+	let _ = check_same_type ty ty' in
+	factorize_binders ((nal@nal',ty)::l)
+      with _ ->
+	(nal,ty) :: factorize_binders l'
+
 let rec extract_def_binders c ty =
   match c with
     | CLambdaN(loc,bvar::lams,b) ->
@@ -360,7 +370,7 @@ let rec extract_def_binders c ty =
               | None, _ -> CLambdaN(loc,lams,b)
               | Some bvar,_ -> CLambdaN(loc,bvar::lams,b) in
           let (bl,c2,ty2) = extract_def_binders c' ty' in
-          (bvar'@bl, c2, ty2)
+          (factorize_binders (bvar'@bl), c2, ty2)
         with Failure _ ->
           ([],c,ty))
     | _ -> ([],c,ty)
@@ -402,6 +412,11 @@ let pr_annotation pr po =
   match po with
       None -> mt()
     | Some p -> spc() ++ str "=> " ++ hov 0 (pr ltop p)
+
+let pr_annotation2 pr po =
+  match po with
+      None -> mt()
+    | Some p -> spc() ++ str "of type " ++ hov 0 (pr ltop p)
 
 let rec pr inherited a =
   let (strm,prec) = match a with
@@ -447,9 +462,12 @@ let rec pr inherited a =
   | CCases (_,po,c,eqns) ->
       v 0
         (hov 4 (str "match " ++ prlist_with_sep sep_v (pr ltop) c ++
-                str " with") ++
+	(if !Options.p1 then pr_annotation pr po else mt ()) ++
+	str " with") ++
         prlist (pr_eqn pr) eqns ++
-        spc() ++ pr_annotation pr po ++ str "end"),
+	(if !Options.p1 then mt () else pr_annotation2 pr po)
+	++ spc() ++ 
+	str "end"),
       latom
   | COrderedCase (_,_,po,c,[b1;b2]) ->
       (* On force les parenthèses autour d'un "if" sous-terme (même si le
