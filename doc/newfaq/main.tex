@@ -63,7 +63,8 @@
 \def\discriminate{{\tt discriminate }}
 \def\contradiction{{\tt contradiction }}
 \def\intuition{{\tt intuition }}
-
+\def\try{{\tt try }}
+\def\repeat{{\tt repeat }}
 
 
 \begin{document}
@@ -179,7 +180,7 @@ The first official release of \Coq (v. 4.1.0) was distributed in 1989.
 \item[Foc] The Foc project aims at building an environment to develop certified computer algebra libraries. 
 \end{description}
 
-\Question[industrial]{What are industrial application for \Coq ?}
+\Question[industrial]{What are the industrial applications for \Coq ?}
 
 Coq is used by Trusted Logic to prove properties of the JavaCard system.
 
@@ -194,9 +195,9 @@ friendly tutorials~\cite{Coq:Tutorial} and documentation of the standard library
 All these documents are viewable either in browsable HTML, or as
 downloadable postscripts.
 
-\Question[coqfaq]{Where can I find this faq on the web ?}
+\Question[coqfaq]{Where can I find this FAQ on the web ?}
 
-This faq is available online at \url{http://coq.inria.fr/faq.html}.
+This FAQ is available online at \url{http://coq.inria.fr/faq.html}.
 
 \Question[faqimprov]{How can I submit suggestions / improvements / additions for this FAQ?}
 
@@ -208,8 +209,7 @@ The main \Coq mailing list is \url{coq-club@pauillac.inria.fr}, which
 broadcasts questions and suggestions about the implementation, the
 logical formalism or proof developments. See
 \url{http://pauillac.inria.fr/mailman/listinfo/coq-club} for
-subsription. Bugs reports should be sent at
-\url{coq-bugs@pauillac.inria.fr}.
+subsription. For bugs reports see question \ref{coqbug}.
 
 \Question[coqmailinglistarchive]{Where can I find an archive of the list?}
 The archives of the \Coq mailing list are available at
@@ -218,7 +218,7 @@ The archives of the \Coq mailing list are available at
 
 \Question[newversion]{How can I be kept informed of new releases of \Coq ?}
 
-New versions of \Coq are annonced on the coq-club mailing list. If you only want to receive information about new releases, you can subscribe to \Coq on \url{www.freashmeat.net}.
+New versions of \Coq are annonced on the coq-club mailing list. If you only want to receive information about new releases, you can subscribe to \Coq on \url{http://freshmeat.net/projects/coq/}.
 
 
 \Question[coqbook]{Is there any book about \Coq ?}
@@ -235,7 +235,8 @@ development of zero-default software.''
 \Question[coqexamples]{Where can I find some \Coq examples ?} 
 
 There are examples in the manual~\cite{Coq:manual} and in the
-Coq'Art~\cite{Coq:coqart}. You can also find large developments using
+Coq'Art~\cite{Coq:coqart} exercises \url{http://www.labri.fr/Perso/~casteran/CoqArt/index.html}.
+You can also find large developments using
 \Coq in the \Coq user contributions :
 \url{http://coq.inria.fr/distrib-eng.html}.
 
@@ -254,7 +255,7 @@ It is distributed under the GNU Lesser General License (LGPL).
 
 \Question[coqsources]{Where can I find the sources of \Coq ?}
 The sources of \Coq can be found online in the tar.gz'ed packages
-(\url{http://coq.inria.fr/distrib-eng.html}). Most recent sources can
+(\url{http://coq.inria.fr/distrib-eng.html}). Development sources can
 be accessed via anonymous CVS: \url{http://coqcvs.inria.fr/cvsserver-eng.html}
 
 \Question[platform]{On which platform \Coq is available ?}
@@ -269,6 +270,7 @@ Windows. The sources can be easily adapted to all platforms supporting Objective
 %%%%%%%
 \subsection{My goal is ...,  how can I prove it ?}
 
+\subsubsection{Basic things}
 
 \Question[conjonction]{My goal is a conjunction, how can I prove it ?}
 
@@ -299,7 +301,7 @@ Qed.
 
 You can prove the left part or the right part of the disjunction using
 \left or \right tactics. If you want to do a classical
-reasoning step, use {\tt } to prove the right part with the assumption
+reasoning step, use the{\tt classic} axiom to prove the right part with the assumption
 that the left part of the disjunction is false.
 
 \begin{coq_example}
@@ -320,8 +322,6 @@ provide names for these variables: \Coq will do it anyway, but such
 automatic naming decreases readability and robustness.
 
 
-
-
 \Question[exist]{My goal is an existential, how can I prove it ?}
 
 Use some theorem or assumption or exhibit the witness using the \exists tactic.
@@ -333,90 +333,6 @@ auto.
 Qed.
 \end{coq_example}
 
-
-\Question[taut]{My goal is a propositional tautology, how can I prove it ?}
-
-Just use the \tauto tactic.
-\begin{coq_example}
-Goal forall A B:Prop, A-> (A\/B) /\ A.
-intros.
-tauto.
-Qed.
-\end{coq_example}
-
-\Question[firstorder]{My goal is a first order formula, how can I prove it ?}
-
-Just use the \firstorder tactic.
-
-\Question[cong]{My goal is solvable by a sequence of rewrites, how can I prove it ?}
-
-Just use the \congruence tactic.
-\begin{coq_example}
-Goal forall a b c d e, a=d -> b=e -> c+b=d -> c+e=a.
-intros.
-congruence.
-Qed.
-\end{coq_example}
-
-
-\Question[congnot]{My goal is an inequality solvable by a sequence of rewrites, how can I prove it ?}
-
-Just use the \congruence tactic.
-%\begin{coq_example}
-%Goal forall a b c d, a<>d -> b=a -> d=c+b -> b<>c+b.
-%intros.
-%congruence.
-%Qed.
-%\end{coq_example}
-
-
-\Question[ring]{My goal is an equality on some ring (e.g. natural numbers), how can I prove it ?}
-
-Just use the \ring tactic.
-
-\begin{coq_example}
-Require Import ZArith.
-Require Ring.
-Open Local Scope Z_scope.
-Goal forall a b : Z, (a+b)*(a+b) = a*a + 2*a*b + b*b. 
-intros.
-ring.
-Qed.
-\end{coq_example}
-
-\Question[field]{My goal is an equality on some field (e.g. reals), how can I prove it ?}
-
-Just use the \field tactic.
-
-\begin{coq_example}
-Require Import Reals.
-Require Ring.
-Open Local Scope R_scope.
-Goal forall a b : R, b*a<>0 -> (a/b) * (b/a) = 1. 
-intros.
-field.
-assumption.
-Qed.
-\end{coq_example}
-
-
-\Question[omega]{My goal is an inequality on R, how can I prove it ?}
-
-
-%\begin{coq_example}
-%Require Import ZArith.
-%Require Omega.
-%Open Local Scope Z_scope.
-%Goal forall a : Z, a*a>0. 
-%intros.
-%omega.
-%Qed.
-%\end{coq_example}
-
-
-\Question[gb]{My goal is an equation solvable using equational hypothesis on some ring (e.g. natural numbers), how can I prove it ?}
-
-You need the \gb tactic.
 
 \Question[apply]{My goal is solvable by  some lemma, how can I prove it ?}
 
@@ -435,6 +351,8 @@ Goal 3+0 = 3.
 apply mylemma.
 Qed.
 \end{coq_example}
+
+
 
 \Question[falseimpliesall]{My goal contains False as an hypotheses, how can I prove it ?}
 
@@ -559,11 +477,6 @@ Qed.
 \end{coq_example}
 
 
-\Question[savedqed]{What is the difference between saved qed and defined ?}
-
-\Question[opaquetrans]{What is the difference between opaque and transparent ?}
-
-
 \Question[assumption]{My goal is one of the hypothesis, how can I prove it ?}
 
 Use the \assumption tactic.
@@ -589,6 +502,116 @@ Qed.
 \Question[assumption2bis]{What can be the difference between applying one hypotheses or another in the context of the last question ?}
 
 From a proof point of view it is equivalent but if you want to extract a program from your proof, the two hyphoteses can lead to different programs.
+
+
+\subsubsection{Automation}
+
+\Question[taut]{My goal is a propositional tautology, how can I prove it ?}
+
+Just use the \tauto tactic.
+\begin{coq_example}
+Goal forall A B:Prop, A-> (A\/B) /\ A.
+intros.
+tauto.
+Qed.
+\end{coq_example}
+
+\Question[firstorder]{My goal is a first order formula, how can I prove it ?}
+
+Just use the \firstorder tactic.
+
+\Question[cong]{My goal is solvable by a sequence of rewrites, how can I prove it ?}
+
+Just use the \congruence tactic.
+\begin{coq_example}
+Goal forall a b c d e, a=d -> b=e -> c+b=d -> c+e=a.
+intros.
+congruence.
+Qed.
+\end{coq_example}
+
+
+\Question[congnot]{My goal is an inequality solvable by a sequence of rewrites, how can I prove it ?}
+
+Just use the \congruence tactic.
+%\begin{coq_example}
+%Goal forall a b c d, a<>d -> b=a -> d=c+b -> b<>c+b.
+%intros.
+%congruence.
+%Qed.
+%\end{coq_example}
+
+
+\Question[ring]{My goal is an equality on some ring (e.g. natural numbers), how can I prove it ?}
+
+Just use the \ring tactic.
+
+\begin{coq_example}
+Require Import ZArith.
+Require Ring.
+Open Local Scope Z_scope.
+Goal forall a b : Z, (a+b)*(a+b) = a*a + 2*a*b + b*b. 
+intros.
+ring.
+Qed.
+\end{coq_example}
+
+\Question[field]{My goal is an equality on some field (e.g. reals), how can I prove it ?}
+
+Just use the \field tactic.
+
+\begin{coq_example}
+Require Import Reals.
+Require Ring.
+Open Local Scope R_scope.
+Goal forall a b : R, b*a<>0 -> (a/b) * (b/a) = 1. 
+intros.
+field.
+assumption.
+Qed.
+\end{coq_example}
+
+
+\Question[omega]{My goal is an inequality on R, how can I prove it ?}
+
+
+%\begin{coq_example}
+%Require Import ZArith.
+%Require Omega.
+%Open Local Scope Z_scope.
+%Goal forall a : Z, a*a>0. 
+%intros.
+%omega.
+%Qed.
+%\end{coq_example}
+
+
+\Question[gb]{My goal is an equation solvable using equational hypothesis on some ring (e.g. natural numbers), how can I prove it ?}
+
+You need the \gb tactic.
+
+
+
+\Question[assert]{I want to state a fact that I will use later as an hypothesis, how can I do it ?}
+
+If you want to use forward reasoning (first proving the fact and then
+using it) You just need to use the \assert tactic. If you want to use
+backward reasoning (proving your goal using an assumption and then
+proving the assumption) use the \cut tactic.
+
+\Question[assertback]{I want to state a fact that I will use later as an hypothesis and prove it later, how can I do it ?}
+
+You can use \elim followed by \intro or you can use the following \Ltac command :
+\begin{verbatim}
+Ltac assert_later t := cut t;[intro|idtac]. 
+\end{verbatim}
+
+
+
+\Question[savedqed]{What is the difference between saved qed and defined ?}
+
+\Question[opaquetrans]{What is the difference between opaque and transparent ?}
+
 
 
 \Question[trivial]{My goal is ???, how can I prove it ?}
@@ -623,28 +646,26 @@ You can use the \case or \destruct tactics.
 
 When you use the \intro tactic you don't have to give a name to your
 hypothesis. If you do so the names will be generated by \Coq but your
-scripts won't be modular. If you add some hypothesis to your theorem
+scripts won't be robust. If you add some hypothesis to your theorem
 (or change their order), you will have to change your proof to adapt
 to the new names.
 
-\Question[namedintrosbis]{How can I automatize that ?}
+\Question[namedintrosbis]{How can I automatize the naming ?}
 
-You can use the {\tt Show Intro.} command to generate the names and use your editor to generate a fully named \intro tactic. 
+You can use the {\tt Show Intro.} or  {\tt Show Intros.} commands to generate the names and use your editor to generate a fully named \intro tactic. 
+This can be automatized within {\tt xemacs}.
 
-\Question[assert]{I want to state a fact that I will use later as an hypothesis, how can I do it ?}
-
-If you want to use forward reasoning (first proving the fact and then
-using it) You just need to use the \assert tactic. If you want to use
-backward reasoning (proving your goal using an assumption and then
-proving the assumption) use the \cut tactic.
-
-\Question[assertback]{I want to state a fact that I will use later as an hypothesis and prove it later, how can I do it ?}
-
-You can use \elim followed by \intro or you can use the following \Ltac command :
-\begin{verbatim}
-Ltac assert_later t := cut t;[intro|idtac]. 
-\end{verbatim}
-
+\begin{coq_example}
+Goal forall A B C : Prop, A -> B -> C -> A/\B/\C.
+Show Intros.
+(*
+A B C H H0
+H1
+*)
+intros A B C H H0 H1.
+repeat split;assumption.
+Qed.
+\end{coq_example}
 
 \Question[proofwith]{I want to automatize the use of some tactic how can I do it ?}
 
@@ -660,19 +681,18 @@ split...
 Qed.
 \end{coq_example}
 
-
 \Question[solve]{I want to execute the proofwith tactic only if it solves the goal, how can I do it ?}
 
-You need to use the \solve tactic.
+You need to use the \try and \solve tactics.
+
 For instance :
 \begin{coq_example}
 Require Import ZArith.
 Require Ring.
 Open Local Scope Z_scope.
-Goal forall a b c : Z, c=0 -> c=0.
-Proof with solve [ring].
-intros.
-auto.
+Goal forall a b c : Z, a+b=b+a.
+Proof with try solve [ring].
+intros...
 Qed.
 \end{coq_example}
 
@@ -695,10 +715,20 @@ You can use the {\tt rename ... into} command.
 
 You can use the \generalize tactic.
 
+\begin{coq_example}
+Goal forall A B : Prop, A->B-> A/\B.
+intros.
+generalize H.
+intro.
+auto.
+Qed.
+\end{coq_example}
 
 \Question[applyerror]{What can I do if I get {\tt generated subgoal term' has metavariables in it } ?}
 
-You should use the \eapply tactic.
+You should use the \eapply tactic, this will generate some goals containing metavariables. 
+
+\Question[metavar]{How can I instanciate some metavariable ?}
 
 
 \Question[ifsyntax]{What is the syntax for if ?}
@@ -711,7 +741,7 @@ You should use the \eapply tactic.
 \Question[abstract]{What can I do when {\tt Qed.} is slow ?}
 
 Sometime you can use the \abstractt tactic, which makes as if you had
-stated one intermediated lemmas, this speeds up the typing process.
+stated some local lemma, this speeds up the typing process.
 
 \Question[admitted]{How can use a proof which is not finished ?}
 
@@ -721,10 +751,20 @@ You can use the {\tt Admitted} command to state your current proof as an axiom.
 
 You can use the {\tt Admitted} command to state your current proof as an axiom.
 
-\Question[twodiffconstr]{How to prove that two constructor are different ?}
+\Question[twodiffconstr]{How can I prove that two constructors are different ?}
 
 You can use the \discriminate tactic.
 
+
+%\begin{coq_example}
+%Inductive toto : Set := 
+%	C1 : toto
+%      | C2 : toto.
+
+%Goal C1 <> C2.
+%discriminate.
+%Qed.
+%\end{coq_example}
 
 
 \Question[coqccoqtop]{What is the difference between coqc et coqtop ?}
@@ -800,8 +840,8 @@ For example :
 Ltac introIdGen := let id:=fresh in intro id.
 \end{coq_example}
 
-\Question[typeof]{How can I acces the type of a term ?}
 
+\Question[typeof]{How can I acces the type of a term ?}
 
 \Question[statdyn]{How can I define static and dynamic code ?}
 
