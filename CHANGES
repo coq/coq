@@ -76,10 +76,21 @@ explicitement la grammaire avec "ast" ou "List" (renommé d'ailleurs
 que les 3 primitives), on peut typer avec "constr", "tactic", ou
 "vernac" pour utiliser le parseur correspondant.
 
-- AddPath -> Add Path;
-  Print LoadPath -> Print Path;
-  DelPath -> Remove Path;
+- Syntax changes
+
+  AddPath -> Add LoadPath;
+  Print LoadPath -> Print LoadPath;
+  DelPath -> Remove LoadPath;
+  AddRecPath -> Add Rec LoadPath
   Print Path -> Print Coercion Paths.
+
+- Implicit Arguments On -> Set Implicit Arguments
+  Implicit Arguments Off -> Unset Implicit Arguments
+  New: Test Implicit Arguments
+
+- New commands to relate physical paths to a logical paths:
+  Add LoadPath physical_dir as logical_dir
+  Add Rec LoadPath physical_dir as logical_dir
 
 - Bug affichage Infix corrigé
 
@@ -140,7 +151,7 @@ Outils
 - do_Makefile s'appelle maintenant coq_makefile
 
 - Utilisation de l'option -R de coqtop et coqc pour associer un
-g  répertoire physique à un répertoire logique (cf Métathéorie) 
+  répertoire physique à un répertoire logique (cf Métathéorie) 
 
 Utilisation générale
 

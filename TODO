@@ -17,8 +17,8 @@ Noyau:
 
 Vernac:
 
-- Imprimer les paths avec "."
-- Pb noms cachés (utilisation de noms absolus ?)
+- Imprimer les paths avec "." FAIT
+- Pb noms cachés (utilisation de noms absolus ?) 
 
 Grammaires:
 

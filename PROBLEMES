@@ -1,7 +1,7 @@
 AddPath "/toto".
 Anomaly: Uncaught exception Unix.Unix_error(20, "stat", "/toto").
 Please report.
-
+--> CORRIGE
 
 Declaration de Local a l'interieur d'un but ...
 Certains Clear deviennent impossible car la variable apparait dans 
