@@ -44,11 +44,11 @@ Variable
 Variable opp_morph : forall a a0:A, a == a0 -> - a == - a0.
 
 Add Morphism Aplus : Aplus_ext.
-exact plus_morph.
+intros; apply plus_morph; assumption.
 Qed.
 
 Add Morphism Amult : Amult_ext.
-exact mult_morph.
+intros; apply mult_morph; assumption.
 Qed.
 
 Add Morphism Aopp : Aopp_ext.
