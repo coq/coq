@@ -130,7 +130,7 @@ GEXTEND Gram
 	  <:ast<(HintUnfold $hintname (VERNACARGLIST ($LIST $dbnames)) $c)>>
 	  
       | IDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
-	IDENT "Constructors"; c = identarg;  "." ->
+	IDENT "Constructors"; c = qualidarg;  "." ->
 	  <:ast<(HintConstructors $hintname (VERNACARGLIST ($LIST $dbnames)) $c)>>
 	  
       | IDENT "Hint"; hintname = identarg; dbnames = opt_identarg_list; ":=";
@@ -138,15 +138,15 @@ GEXTEND Gram
 	  <:ast<(HintExtern $hintname (VERNACARGLIST ($LIST $dbnames)) 
 		   $n $c (TACTIC $tac))>>
 	  
-      | IDENT "Hints"; IDENT "Resolve"; l = ne_identarg_list; 
+      | IDENT "Hints"; IDENT "Resolve"; l = ne_qualidarg_list; 
 	dbnames = opt_identarg_list; "." ->
           <:ast< (HintsResolve (VERNACARGLIST ($LIST $dbnames)) ($LIST $l)) >>
 	  
-      | IDENT "Hints"; IDENT "Immediate"; l = ne_identarg_list; 
+      | IDENT "Hints"; IDENT "Immediate"; l = ne_qualidarg_list; 
 	dbnames = opt_identarg_list; "." ->
           <:ast< (HintsImmediate (VERNACARGLIST ($LIST $dbnames)) ($LIST $l)) >>
 	  
-      | IDENT "Hints"; IDENT "Unfold"; l = ne_identarg_list;
+      | IDENT "Hints"; IDENT "Unfold"; l = ne_qualidarg_list;
 	dbnames = opt_identarg_list; "." ->
           <:ast< (HintsUnfold (VERNACARGLIST ($LIST $dbnames)) ($LIST $l)) >>
 	  

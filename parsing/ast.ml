@@ -170,9 +170,7 @@ let rec coerce_to_var v = function
   | Node(_,"QUALID",[Nvar(_,id)]) -> id
   | ast -> user_err_loc
         (loc ast,"Ast.coerce_to_var",
-         [< 'sTR"the variable "; 'sTR v;
-            'sTR" was bound to"; 'bRK(1,1); print_ast ast; 'sPC;
-            'sTR"instead of a (list of) variable(s)." >])
+         [< 'sTR"This expression should be a simple identifier" >])
 
 let env_assoc_value loc v env =
   try 

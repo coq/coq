@@ -309,6 +309,12 @@ GEXTEND Gram
 GEXTEND Gram
   GLOBAL: gallina_ext;
 
+  def_body:
+    [ [
+	c1 = Constr.constr; ":"; c2 = Constr.constr ->
+          <:ast< (CONSTR (CAST $c1 $c2)) >>
+      | c = Constr.constr -> <:ast< (CONSTR $c) >>
+  ] ];
   gallina_ext:
     [ [ 
 (* Sections *)
@@ -324,31 +330,36 @@ GEXTEND Gram
 	  <:ast< (OPAQUE ($LIST $l)) >>
 
 (* Coercions *)
-      | IDENT "Coercion"; s = identarg; ":="; c = Constr.constr; "." ->
-          <:ast< (DEFINITION "COERCION" $s (CONSTR $c)) >>
-      | IDENT "Coercion"; s = identarg; ":="; c1 = Constr.constr; ":";
+      (* BUG: "Coercion S.T := A." n'est pas reconnu comme une phrase, pq?? *)
+      | IDENT "Coercion"; qid = qualidarg; ":="; c = def_body; "." ->
+          let s = Ast.coerce_to_var "qid" qid in
+          <:ast< (DEFINITION "COERCION" ($VAR $s) $c) >>
+(*
+      | IDENT "Coercion"; qid = qualidarg; ":="; c1 = Constr.constr; ":";
          c2 = Constr.constr; "." ->
-          <:ast< (DEFINITION "COERCION" $s (CONSTR (CAST $c1 $c2))) >>
+          let s = Ast.coerce_to_var "qid" qid in
+          <:ast< (DEFINITION "COERCION" ($VAR $s) (CONSTR (CAST $c1 $c2))) >>
+*)
       | IDENT "Coercion"; IDENT "Local"; s = identarg; ":="; 
 	 c = constrarg; "." ->
           <:ast< (DEFINITION "LCOERCION" $s $c) >>
       | IDENT "Coercion"; IDENT "Local"; s = identarg; ":="; 
 	 c1 = Constr.constr; ":"; c2 = Constr.constr; "." ->
           <:ast< (DEFINITION "LCOERCION" $s (CONSTR (CAST $c1 $c2))) >>
-      | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = identarg;
-         ":"; c = identarg; ">->"; d = identarg; "." ->
+      | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = qualidarg;
+         ":"; c = qualidarg; ">->"; d = qualidarg; "." ->
           <:ast< (COERCION "LOCAL" "IDENTITY" $f $c $d) >>
-      | IDENT "Identity"; IDENT "Coercion"; f = identarg; ":";
-         c = identarg; ">->"; d = identarg; "." ->
+      | IDENT "Identity"; IDENT "Coercion"; f = qualidarg; ":";
+         c = qualidarg; ">->"; d = qualidarg; "." ->
           <:ast< (COERCION "" "IDENTITY" $f $c $d) >>
-      | IDENT "Coercion"; IDENT "Local"; f = identarg; ":"; c = identarg;
-        ">->"; d = identarg; "." ->
+      | IDENT "Coercion"; IDENT "Local"; f = qualidarg; ":"; c = qualidarg;
+        ">->"; d = qualidarg; "." ->
           <:ast< (COERCION "LOCAL" "" $f $c $d) >>
-      | IDENT "Coercion"; f = identarg; ":"; c = identarg; ">->";
-         d = identarg; "." -> <:ast< (COERCION "" "" $f $c $d) >>
-      | IDENT "Class"; IDENT "Local"; c = identarg; "." ->
+      | IDENT "Coercion"; f = qualidarg; ":"; c = qualidarg; ">->";
+         d = qualidarg; "." -> <:ast< (COERCION "" "" $f $c $d) >>
+      | IDENT "Class"; IDENT "Local"; c = qualidarg; "." ->
           <:ast< (CLASS "LOCAL" $c) >>
-      | IDENT "Class"; c = identarg; "." -> <:ast< (CLASS "" $c) >>
+      | IDENT "Class"; c = qualidarg; "." -> <:ast< (CLASS "" $c) >>
 
 (* Implicit *)
       | IDENT "Syntactic"; "Definition"; id = identarg; ":="; com = constrarg;
