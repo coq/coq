@@ -19,8 +19,6 @@ open Nametab
 
 (* Untyped intermediate terms, after ASTs and before constr. *)
 
-type loc = int * int
-
 (* locs here refers to the ident's location, not whole pat *)
 (* the last argument of PatCstr is a possible alias ident for the pattern *)
 type cases_pattern =
