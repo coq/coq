@@ -268,11 +268,12 @@ let open_modules export modl =
   let to_open_list = 
     List.fold_left
       (fun l m ->
-         List.fold_left (fun l m -> 
-                           let m = find_module m in
-                           remember_last_of_each l m)
-           (remember_last_of_each l m)
-           m.module_imports) [] modl in
+         let subimport =
+           List.fold_left
+             (fun l m -> remember_last_of_each l (find_module m))
+             [] m.module_imports
+         in remember_last_of_each subimport m)
+      [] modl in
   List.iter (open_module export) to_open_list
 
 (*s [load_module s] loads the module [s] from the disk, and [find_module s]
