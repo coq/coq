@@ -346,6 +346,8 @@ coqbinaries:: ${COQBINARIES}
 
 world: coqbinaries states theories contrib tools
 
+coqlight: coqbinaries states theories-light tools
+
 $(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
 	$(COQMKTOP) -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
@@ -595,9 +597,13 @@ THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
              $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) \
 	     $(REALSVO) $(SETOIDSVO) $(SORTINGVO)
 
+THEORIESLIGHTVO = $(LOGICVO) $(ARITHVO)
+
 $(THEORIESVO): states/initial.coq
+$(THEORIESLIGHTVO): states/initial.coq
 
 theories: $(THEORIESVO)
+theories-light: $(THEORIESLIGHTVO)
 
 logic: $(LOGICVO)
 arith: $(ARITHVO)
@@ -788,6 +794,8 @@ FULLEMACSLIB=$(COQINSTALLPREFIX)$(EMACSLIB)
 
 install: install-$(BEST) install-binaries install-library install-manpages
 
+install-coqlight: install-$(BEST) install-binaries install-library-light
+
 install-byte:
 	$(MKDIR) $(FULLBINDIR)
 	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(FULLBINDIR)
@@ -803,10 +811,22 @@ install-binaries:
 	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(COQINTERFACE) $(COQVO2XML) $(FULLBINDIR)
 
 LIBFILES=$(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO)
+LIBFILESLIGHT=$(INITVO) $(THEORIESLIGHTVO)
 
 install-library:
 	$(MKDIR) $(FULLCOQLIB)
 	for f in $(LIBFILES); do \
+	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
+	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
+        done
+	$(MKDIR) $(FULLCOQLIB)/states
+	cp states/*.coq $(FULLCOQLIB)/states
+	$(MKDIR) $(FULLEMACSLIB)
+	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
+
+install-library-light:
+	$(MKDIR) $(FULLCOQLIB)
+	for f in $(LIBFILESLIGHT); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
 	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
