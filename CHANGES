@@ -9,8 +9,6 @@ Parsing
 - "command" in grammars and quotations is now "constr" as in
   pretty-printing rules
 
-
-
 Syntaxe des constructions
 
 - Consecutive as in patterns are forbidden
@@ -25,6 +23,13 @@ Syntaxe des constructions
 - Les cas des Cases ne se lisent plus de manière séquentielle, sauf en
   cas de clauses par défaut redondantes auquel cas la première est prise
   avec un avertissement.
+
+Syntaxe des theories
+
+- Ajout d'une syntaxe pour les reels: ``Rexpr``.
+  Point noir du aux constantes: 
+     (Rplus (Rplus (Rplus R1 R1) (Rplus R1 R1)) R1) est toujours (2+2+1) 
+               au lieu de 2+2+1 
 
 Vernac
 

@@ -1,6 +1,7 @@
 
 (* $Id$ *)
 
+Require Export Rdefinitions.
 Require Export TypeSyntax.
 Require Export Raxioms.
 Require Export Rbase.

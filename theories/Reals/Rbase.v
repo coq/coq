@@ -45,7 +45,7 @@ Save.
 Hints Resolve Req_EM : real v62.
 
 (**********)
-Lemma total_order:(r1,r2:R)((Rlt r1 r2)\/(r1==r2)\/(Rgt r1 r2)).
+Lemma total_order:(r1,r2:R)``r1<r2``\/(r1==r2)\/``r1>r2``.
 Intros;Elim (total_order_T r1 r2);Intro;Auto.
 Elim y;Intro;Auto.
 Save.
@@ -606,6 +606,15 @@ Intros; Generalize (Rlt_compatibility r3 r1 r2 H);
 Save.
 
 (*********)
+Lemma Rplus_lt_le_lt:(r1,r2,r3,r4:R)(Rlt r1 r2)->(Rle r3 r4)->
+ (Rlt (Rplus r1 r3) (Rplus r2 r4)).
+Intros;Unfold Rle in H0; Elim H0.
+Exact (Rplus_lt r1 r2 r3 r4 H).
+Intro;Rewrite H1;Rewrite (Rplus_sym r1 r4);Rewrite (Rplus_sym r2 r4);
+ Exact (Rlt_compatibility r4 r1 r2 H).
+Save.
+
+(*********)
 Lemma Rmult_lt:(r1,r2,r3,r4:R)(Rgt r3 R0)->(Rgt r2 R0)->
   (Rlt r1 r2)->(Rlt r3 r4)->(Rlt (Rmult r1 r3) (Rmult r2 r4)).
 Intros;Unfold Rgt in H H0;Generalize (Rlt_monotony r3 r1 r2 H H1);Intro;
@@ -948,6 +957,19 @@ Save.
 Lemma Rmult_gt:(r1,r2:R)(Rgt r1 R0)->(Rgt r2 R0)->(Rgt (Rmult r1 r2) R0).
 Unfold Rgt;Intros;Generalize (Rlt_monotony r1 R0 r2 H H0);Intro;
  Rewrite (Rmult_Or r1) in H1;Assumption.
+Save.
+
+(*********)
+Lemma Rmult_lt_0:(r1,r2,r3,r4:R)(Rge r3 R0)->(Rgt r2 R0)->
+  (Rlt r1 r2)->(Rlt r3 r4)->(Rlt (Rmult r1 r3) (Rmult r2 r4)).
+Intros;Elim H.
+Intro;Exact (Rmult_lt r1 r2 r3 r4 H3 H0 H1 H2).
+Intro;Rewrite H3;Rewrite (Rmult_Or r1);
+ Cut (Rgt r4 R0).
+Intro;Exact (Rmult_gt r2 r4 H0 H4).
+Cut (Rle R0 r3).
+Intro;Exact (Rle_lt_trans R0 r3 r4 H4 H2).
+Exact (Rle_sym2 R0 r3 H).
 Save.
 
 (*********)

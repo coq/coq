@@ -134,6 +134,53 @@ Clear H0;Generalize (H r H1); Intro;Generalize (Rlt_antirefl r);
  Intro;ElimType False; Auto.
 Save.
 
+(*********)
+Definition mul_factor := [l,l':R](Rinv (Rplus R1 (Rplus (Rabsolu l) 
+                                                        (Rabsolu l')))).
+
+(*********)
+Lemma mul_factor_wd : (l,l':R)
+  ~(Rplus R1 (Rplus (Rabsolu l) (Rabsolu l')))==R0.
+Intros;Rewrite (Rplus_sym R1 (Rplus (Rabsolu l) (Rabsolu l')));
+ Apply tech_Rplus.
+Cut (Rle (Rabsolu (Rplus l l')) (Rplus (Rabsolu l) (Rabsolu l'))).
+Cut (Rle R0 (Rabsolu (Rplus l l'))).
+Exact (Rle_trans ? ? ?).
+Exact (Rabsolu_pos (Rplus l l')).
+Exact (Rabsolu_triang ? ?).
+Exact Rlt_R0_R1.
+Save.
+
+(*********)
+Lemma mul_factor_gt:(eps:R)(l,l':R)(Rgt eps R0)->
+      (Rgt (Rmult eps (mul_factor l l')) R0).
+Intros;Unfold Rgt;Rewrite <- (Rmult_Or eps);Apply Rlt_monotony.
+Assumption.
+Unfold mul_factor;Apply Rlt_Rinv;
+ Cut (Rle R1 (Rplus R1 (Rplus (Rabsolu l) (Rabsolu l')))).
+Cut (Rlt R0 R1).
+Exact (Rlt_le_trans ? ? ?).
+Exact Rlt_R0_R1.
+Replace (Rle R1 (Rplus R1 (Rplus (Rabsolu l) (Rabsolu l'))))
+ with (Rle (Rplus R1 R0) (Rplus R1 (Rplus (Rabsolu l) (Rabsolu l')))).
+Apply Rle_compatibility.
+Cut (Rle (Rabsolu (Rplus l l')) (Rplus (Rabsolu l) (Rabsolu l'))).
+Cut (Rle R0 (Rabsolu (Rplus l l'))).
+Exact (Rle_trans ? ? ?).
+Exact (Rabsolu_pos ?).
+Exact (Rabsolu_triang ? ?).
+Rewrite (proj1 ? ? (Rplus_ne R1));Trivial.
+Save.
+
+(*********)
+Lemma mul_factor_gt_f:(eps:R)(l,l':R)(Rgt eps R0)->
+      (Rgt (Rmin R1 (Rmult eps (mul_factor l l'))) R0).
+Intros;Apply Rmin_Rgt_r;Split.
+Exact Rlt_R0_R1.
+Exact (mul_factor_gt eps l l' H).
+Save.
+
+
 (*******************************)
 (*      Metric space           *)
 (*******************************)
@@ -329,6 +376,16 @@ Unfold 2 3 Rminus;
  Apply (eq_Rle (Rminus x y) (Rminus x y) (refl_eqT R (Rminus x y))).
 Save.
 
+(*********)
+Lemma R_dist_plus: (a,b,c,d:R)(Rle (R_dist (Rplus a c) (Rplus b d))
+                   (Rplus (R_dist a b) (R_dist c d))).
+Intros;Unfold R_dist;
+ Replace (Rminus (Rplus a c) (Rplus b d))
+  with (Rplus (Rminus a b) (Rminus c d)).
+Exact (Rabsolu_triang (Rminus a b) (Rminus c d)).
+Ring.
+Save.
+
 (*******************************)
 (*    R is a metric space      *)
 (*******************************)
@@ -378,36 +435,27 @@ Save.
 Lemma limit_plus:(f,g:R->R)(D:R->Prop)(l,l':R)(x0:R)
    (limit1_in f D l x0)->(limit1_in g D l' x0)->
    (limit1_in [x:R](Rplus (f x) (g x)) D (Rplus l l') x0).
-Unfold limit1_in;Unfold limit_in;Simpl;Intros;
+Intros;Unfold limit1_in; Unfold limit_in; Simpl; Intros;
  Elim (H (Rmult eps (Rinv (Rplus R1 R1))) (eps2_Rgt_R0 eps H1));
- Elim (H0 (Rmult eps (Rinv (Rplus R1 R1))) (eps2_Rgt_R0 eps H1));
- Clear H H0;Intros;Elim H;Elim H0;Clear H H0;Intros;
- Split with (Rmin x1 x);Split.
-Elim (Rmin_Rgt x1 x R0);Intros a b;
- Apply (b (conj (Rgt x1 R0) (Rgt x R0) H H2));Clear a b.
-Intros;Elim H4;Clear H4;Intros;Elim (Rmin_Rgt x1 x (R_dist x2 x0));
- Intros a b;Clear b;Unfold Rgt in a;Elim (a H5);Clear H5 a;Intros;
- Generalize (H0 x2 (conj (D x2) (Rlt (R_dist x2 x0) x1) H4 H5)); 
- Generalize (H3 x2 (conj (D x2) (Rlt (R_dist x2 x0) x) H4 H6));
- Clear H0 H3 H5 H6;Intros;
- Generalize (Rplus_lt (R_dist (f x2) l) 
-                     (Rmult eps (Rinv (Rplus R1 R1))) 
-                     (R_dist (g x2) l')
-                     (Rmult eps (Rinv (Rplus R1 R1))) H3 H0);
- Clear H0 H3 H4;Intro;Rewrite (eps2 eps) in H0;Unfold R_dist;
- Unfold Rminus;Rewrite (Rplus_sym l l');Rewrite (Ropp_distr1 l' l);
- Rewrite <-(Rplus_assoc (Rplus (f x2) (g x2)) (Ropp l') (Ropp l));
- Rewrite (Rplus_assoc (f x2) (g x2) (Ropp l'));
- Rewrite (Rplus_sym (Rplus (f x2) (Rplus (g x2) (Ropp l'))) 
-   (Ropp l));
- Rewrite <-(Rplus_assoc (Ropp l) (f x2) (Rplus (g x2) (Ropp l')));
- Rewrite (Rplus_sym (Ropp l) (f x2));
- Fold (Rminus (f x2) l);Fold (Rminus (g x2) l');Unfold R_dist in H0;
- Apply (Rle_lt_trans 
-  (Rabsolu (Rplus (Rminus (f x2) l) (Rminus (g x2) l')))
-  (Rplus (Rabsolu (Rminus (f x2) l)) (Rabsolu (Rminus (g x2) l')))
-  eps 
-  (Rabsolu_triang (Rminus (f x2) l) (Rminus (g x2) l')) H0).
+  Elim (H0 (Rmult eps (Rinv (Rplus R1 R1))) (eps2_Rgt_R0 eps H1));
+ Simpl;Clear H H0; Intros; Elim H; Elim H0; Clear H H0; Intros;
+  Split with (Rmin x1 x); Split.
+Exact (Rmin_Rgt_r x1 x R0 (conj ? ? H H2)).
+Intros;Elim H4; Clear H4; Intros;
+ Cut (Rlt (Rplus (R_dist (f x2) l) (R_dist (g x2) l')) eps).
+ Cut (Rle (R_dist (Rplus (f x2) (g x2)) (Rplus l l'))
+      (Rplus (R_dist (f x2) l) (R_dist (g x2) l'))).
+Exact (Rle_lt_trans ? ? ?).
+Exact (R_dist_plus ? ? ? ?).
+Elim (Rmin_Rgt_l x1 x (R_dist x2 x0) H5); Clear H5; Intros.
+Generalize (H3 x2 (conj (D x2) (Rlt (R_dist x2 x0) x) H4 H6));
+ Generalize (H0 x2 (conj (D x2) (Rlt (R_dist x2 x0) x1) H4 H5));
+ Intros;
+ Replace eps
+ with (Rplus (Rmult eps (Rinv (Rplus R1 R1)))
+        (Rmult eps (Rinv (Rplus R1 R1)))).
+Exact (Rplus_lt ? ? ? ? H7 H8).
+Exact (eps2 eps).
 Save.
 
 (*********)
@@ -441,494 +489,71 @@ Save.
 Lemma limit_mul:(f,g:R->R)(D:R->Prop)(l,l':R)(x0:R)
    (limit1_in f D l x0)->(limit1_in g D l' x0)->
    (limit1_in [x:R](Rmult (f x) (g x)) D (Rmult l l') x0).
-Unfold limit1_in;Unfold limit_in;Simpl;Intros;
- Elim (Req_EM l R0);Elim (Req_EM l' R0);Intros.
-(**)
-Rewrite H2;Rewrite H3;Rewrite H2 in H0;Rewrite H3 in H;
- Rewrite (Rmult_Or R0);Unfold R_dist;Unfold R_dist in H H0;
- Elim (H eps H1);Clear H;Unfold 1 Rgt in H0;Elim (H0 R1 Rlt_R0_R1);
- Clear H0;Intros;Elim H;Elim H0;Clear H H0;Intros;
- Split with (Rmin x1 x);Split.
-Elim (Rmin_Rgt x1 x R0);Intros a b;
- Apply (b (conj (Rgt x1 R0) (Rgt x R0) H H4));Clear a b.
-Intros;Elim H6;Clear H6;Intros;Elim (Rmin_Rgt x1 x (R_dist x2 x0));
- Intros a b;Clear b;Unfold Rgt in a;Elim (a H7);Clear H7 a;Intros;
- Unfold R_dist in H7 H8;
- Generalize (H0 x2 (conj (D x2) 
-          (Rlt (Rabsolu (Rminus x2 x0)) x1) H6 H7));
- Generalize (H5 x2 (conj (D x2) 
-          (Rlt (Rabsolu (Rminus x2 x0)) x) H6 H8));Intros;
- Clear H0 H5 H7 H8;Rewrite (minus_R0 (g x2)) in H9;
- Rewrite (minus_R0 (f x2)) in H10;
- Rewrite (minus_R0 (Rmult (f x2) (g x2)));
- Generalize Rlt_R0_R1;Intro;Fold (Rgt R1 R0) in H0;
- Rewrite (Rabsolu_mult (f x2) (g x2));
- Rewrite <-(let (H1,H2)=(Rmult_ne eps) in H1);
- Generalize (Rabsolu_pos (g x2));Unfold Rle;Intro;Elim H5;Clear H5;
- Intro.
-Apply (Rmult_lt (Rabsolu (f x2)) eps (Rabsolu (g x2)) R1 H5 H1 H10 H9).
-Rewrite <-H5;Rewrite (Rmult_Or (Rabsolu (f x2))); 
- Rewrite (let (H1,H2)=(Rmult_ne eps) in H1);Unfold Rgt in H1;Assumption.
-(**)
-Rewrite H3;Rewrite H3 in H;Rewrite (Rmult_Ol l');
- Elim (H0 (Rmult eps (Rinv (Rplus R1 R1))) (eps2_Rgt_R0 eps H1));Intros;
- Elim H4;Clear H4;Intros;
- Generalize Rlt_R0_R1;Fold (Rgt R1 R0);Intro;Elim (H R1 H6);Intros;
- Elim H7;Clear H7;Intros;
- Cut (Rgt (Rmult eps (Rinv (Rmult (Rplus R1 R1) (Rabsolu l')))) R0).
-Intro;Elim (H (Rmult eps (Rinv (Rmult (Rplus R1 R1) (Rabsolu l')))) H9);
- Intros;Elim H10;Clear H10;Intros;Split with (Rmin (Rmin x x1) x2);
- Split.
-Elim (Rmin_Rgt (Rmin x x1) x2 R0);Intros;Elim (Rmin_Rgt x x1 R0);Intros;
- Generalize (H15 (conj (Rgt x R0) (Rgt x1 R0) H4 H7));Clear H14 H15;
- Intro;Clear H12;
- Apply (H13 (conj (Rgt (Rmin x x1) R0) (Rgt x2 R0) H14 H10)).
-Intros;Elim H12;Clear H12;Intros;
- Elim (Rmin_Rgt (Rmin x x1) x2 (R_dist x3 x0));Intros;Clear H15;
- Unfold 1 Rgt in H14;Elim (H14 H13);Clear H14;Intros;Unfold Rgt in H15;
- Clear H13;Elim (Rmin_Rgt x x1 (R_dist x3 x0));Intros;
- Elim (H13 H14);Clear H14 H13 H16;Intros;Unfold Rgt in H13 H14;
- Generalize (H5 x3 (conj (D x3) (Rlt (R_dist x3 x0) x) H12 H13));
- Generalize (H8 x3 (conj (D x3) (Rlt (R_dist x3 x0) x1) H12 H14));
- Generalize (H11 x3 (conj (D x3) (Rlt (R_dist x3 x0) x2) H12 H15));
- Clear H5 H8 H11 H15 H13 H14 H12;Intros;Unfold R_dist in H5 H8 H11;
- Unfold R_dist;Rewrite (minus_R0 (Rmult (f x3) (g x3)));
- Rewrite (minus_R0 (f x3)) in H5;Rewrite (minus_R0 (f x3)) in H8;
- Rewrite <-(let (H1,H2)=(Rplus_ne (Rmult (f x3) (g x3))) in H1);
- Rewrite <-(Rplus_Ropp_l (Rmult (f x3) l'));Rewrite (Rmult_sym (f x3) l');
- Rewrite <-(Ropp_mul1 l' (f x3));
- Rewrite (Rmult_sym (Ropp l') (f x3));
- Rewrite <-(Rplus_assoc (Rmult (f x3) (g x3)) 
-                     (Rmult (f x3) (Ropp l')) (Rmult l' (f x3)));
- Rewrite <-(Rmult_Rplus_distr (f x3) (g x3) (Ropp l'));Fold (Rminus (g x3) l');
- Generalize (Rabsolu_triang (Rmult (f x3) (Rminus (g x3) l'))
-                            (Rmult l' (f x3)));Intro;
- Apply (Rle_lt_trans 
-   (Rabsolu (Rplus (Rmult (f x3) (Rminus (g x3) l')) (Rmult l' (f x3))))
-   (Rplus (Rabsolu (Rmult (f x3) (Rminus (g x3) l')))
-         (Rabsolu (Rmult l' (f x3)))) eps H12);Clear H12;
- Rewrite (Rabsolu_mult (f x3) (Rminus (g x3) l'));
- Rewrite (Rabsolu_mult l' (f x3));
- Elim (Req_EM (f x3) R0);Intros.
-Rewrite H12;Rewrite Rabsolu_R0;
- Rewrite (Rmult_Ol (Rabsolu (Rminus (g x3) l')));
- Rewrite (Rmult_Or (Rabsolu l'));
- Rewrite (let (H1,H2)=(Rplus_ne R0) in H1); 
- Unfold Rgt in H1;Assumption.
-Generalize (Rabsolu_pos_lt (f x3) H12);Intro;
- Fold (Rgt (Rabsolu (f x3)) R0) in H13;
- Generalize (Rmult_lt (Rabsolu (Rminus (g x3) l')) 
-                      (Rmult eps (Rinv (Rplus R1 R1)))
-                      (Rabsolu (f x3)) R1 H13 (eps2_Rgt_R0 eps H1) 
-         H11 H8);Intro;
- Generalize (Rlt_monotony (Rabsolu l') (Rabsolu (f x3))
-   (Rmult eps (Rinv (Rmult (Rplus R1 R1) (Rabsolu l'))))  
-      (Rabsolu_pos_lt l' H2) H5);Clear H5 H8 H11 H12 H13;Intro;
- Rewrite (Rmult_sym (Rabsolu (Rminus (g x3) l')) (Rabsolu (f x3))) 
-  in H14;Generalize (Rplus_lt 
-     (Rmult (Rabsolu (f x3)) (Rabsolu (Rminus (g x3) l')))
-     (Rmult (Rmult eps (Rinv (Rplus R1 R1))) R1)
-     (Rmult (Rabsolu l') (Rabsolu (f x3)))
-     (Rmult (Rabsolu l')
-        (Rmult eps (Rinv (Rmult (Rplus R1 R1) (Rabsolu l'))))) H14 H5);
- Clear H5 H14;Intro;
- Cut eps==(Rplus (Rmult (Rmult eps (Rinv (Rplus R1 R1))) R1)
-             (Rmult (Rabsolu l')
-               (Rmult eps (Rinv (Rmult (Rplus R1 R1) (Rabsolu l')))))).
-Intro;Rewrite <-H8 in H5;Assumption.
-Rewrite (let (H1,H2)=
-  (Rmult_ne (Rmult eps (Rinv (Rplus R1 R1)))) in H1);
- Cut ~(Rabsolu l')==R0. 
-Intro;Rewrite (Rinv_Rmult (Rplus R1 R1) (Rabsolu l'));Auto.
-Rewrite (Rmult_sym (Rabsolu l') 
-  (Rmult eps (Rmult (Rinv (Rplus R1 R1)) (Rinv (Rabsolu l')))));
- Rewrite (Rmult_assoc eps 
-    (Rmult (Rinv (Rplus R1 R1)) (Rinv (Rabsolu l')))
-    (Rabsolu l'));
- Rewrite (Rmult_assoc (Rinv (Rplus R1 R1)) (Rinv (Rabsolu l'))
-   (Rabsolu l'));
- Rewrite (Rinv_l (Rabsolu l') H8);
- Rewrite (let (H1,H2)=
-  (Rmult_ne (Rinv (Rplus R1 R1))) in H1);
- Apply sym_eqT;Apply eps2.
-Apply (imp_not_Req (Rplus R1 R1) R0);Right;Unfold Rgt;Generalize Rlt_R0_R1;Intro;
- Generalize (Rlt_compatibility R1 R0 R1 H11);Intro;
- Rewrite (let (H1,H2)=(Rplus_ne R1) in H1) in H12;
- Apply (Rlt_trans R0 R1 (Rplus R1 R1) H11 H12).
-Generalize (Rabsolu_pos_lt l' H2);Intro;
- Apply (imp_not_Req (Rabsolu l') R0);Auto.
-Unfold Rgt;Unfold Rgt in H1;
- Rewrite <-(Rmult_Or (Rinv (Rmult (Rplus R1 R1) (Rabsolu l'))));
- Rewrite (Rmult_sym eps (Rinv (Rmult (Rplus R1 R1) (Rabsolu l'))));
- Apply (Rlt_monotony (Rinv (Rmult (Rplus R1 R1) (Rabsolu l'))) R0 eps);
- Auto.
-Apply (Rlt_Rinv (Rmult (Rplus R1 R1) (Rabsolu l')));
- Generalize (Rabsolu_pos_lt l' H2);
- Clear H H0 H3 H4 H5 H7 H8 f g D l x0 x x1;Intro;
- Rewrite <-(Rmult_Or (Rplus R1 R1)); 
- Apply (Rlt_monotony (Rplus R1 R1) R0 (Rabsolu l'));Auto.
-Unfold Rgt in H6;Generalize (Rlt_compatibility R1 R0 R1 H6);Intro;
- Rewrite (let (H1,H2)=(Rplus_ne R1) in H1) in H0;
- Apply (Rlt_trans R0 R1 (Rplus R1 R1) H6 H0).
-(**)
-Rewrite H2;Rewrite H2 in H0;Rewrite (Rmult_Or l);
- Elim (H (Rmult eps (Rinv (Rplus R1 R1))) (eps2_Rgt_R0 eps H1));Intros;
- Elim H4;Clear H4;Intros;
- Generalize Rlt_R0_R1;Fold (Rgt R1 R0);Intro;Elim (H0 R1 H6);Intros;
- Elim H7;Clear H7;Intros;
- Cut (Rgt (Rmult eps (Rinv (Rmult (Rplus R1 R1) (Rabsolu l)))) R0).
-Intro;Elim (H0 (Rmult eps (Rinv (Rmult (Rplus R1 R1) (Rabsolu l)))) H9);
- Intros;Elim H10;Clear H10;Intros;Split with (Rmin (Rmin x x1) x2);
- Split.
-Elim (Rmin_Rgt (Rmin x x1) x2 R0);Intros;Elim (Rmin_Rgt x x1 R0);Intros;
- Generalize (H15 (conj (Rgt x R0) (Rgt x1 R0) H4 H7));Clear H14 H15;
- Intro;Clear H12;
- Apply (H13 (conj (Rgt (Rmin x x1) R0) (Rgt x2 R0) H14 H10)).
-Intros;Elim H12;Clear H12;Intros;
- Elim (Rmin_Rgt (Rmin x x1) x2 (R_dist x3 x0));Intros;Clear H15;
- Unfold 1 Rgt in H14;Elim (H14 H13);Clear H14;Intros;Unfold Rgt in H15;
- Clear H13;Elim (Rmin_Rgt x x1 (R_dist x3 x0));Intros;
- Elim (H13 H14);Clear H14 H13 H16;Intros;Unfold Rgt in H13 H14;
- Generalize (H5 x3 (conj (D x3) (Rlt (R_dist x3 x0) x) H12 H13));
- Generalize (H8 x3 (conj (D x3) (Rlt (R_dist x3 x0) x1) H12 H14));
- Generalize (H11 x3 (conj (D x3) (Rlt (R_dist x3 x0) x2) H12 H15));
- Clear H5 H8 H11 H15 H13 H14 H12;Intros;Unfold R_dist in H5 H8 H11;
- Unfold R_dist;Rewrite (minus_R0 (Rmult (f x3) (g x3)));
- Rewrite (minus_R0 (g x3)) in H8;Rewrite (minus_R0 (g x3)) in H5;
- Rewrite <-(let (H1,H2)=(Rplus_ne (Rmult (f x3) (g x3))) in H1);
- Rewrite <-(Rplus_Ropp_l (Rmult (g x3) l));Rewrite (Rmult_sym (g x3) l);
- Rewrite <-(Ropp_mul1 l (g x3));
- Rewrite (Rmult_sym (Ropp l) (g x3));
- Rewrite <-(Rplus_assoc (Rmult (f x3) (g x3)) 
-                     (Rmult (g x3) (Ropp l)) (Rmult l (g x3)));
- Rewrite (Rmult_sym (f x3) (g x3));
- Rewrite <-(Rmult_Rplus_distr (g x3) (f x3) (Ropp l));Fold (Rminus (f x3) l);
- Generalize (Rabsolu_triang (Rmult (g x3) (Rminus (f x3) l))
-                            (Rmult l (g x3)));Intro;
- Apply (Rle_lt_trans 
-   (Rabsolu (Rplus (Rmult (g x3) (Rminus (f x3) l)) (Rmult l (g x3))))
-   (Rplus (Rabsolu (Rmult (g x3) (Rminus (f x3) l)))
-         (Rabsolu (Rmult l (g x3)))) eps H12);Clear H12;
- Rewrite (Rabsolu_mult (g x3) (Rminus (f x3) l));
- Rewrite (Rabsolu_mult l (g x3));
- Elim (Req_EM (g x3) R0);Intros.
-Rewrite H12;Rewrite Rabsolu_R0;
- Rewrite (Rmult_Ol (Rabsolu (Rminus (f x3) l)));
- Rewrite (Rmult_Or (Rabsolu l));
- Rewrite (let (H1,H2)=(Rplus_ne R0) in H1); 
- Unfold Rgt in H1;Assumption.
-Generalize (Rabsolu_pos_lt (g x3) H12);Intro;
- Fold (Rgt (Rabsolu (g x3)) R0) in H13;
- Generalize (Rmult_lt (Rabsolu (Rminus (f x3) l)) 
-                      (Rmult eps (Rinv (Rplus R1 R1)))
-                      (Rabsolu (g x3)) R1 H13 (eps2_Rgt_R0 eps H1) 
-         H11 H8);Intro;
- Generalize (Rlt_monotony (Rabsolu l) (Rabsolu (g x3))
-   (Rmult eps (Rinv (Rmult (Rplus R1 R1) (Rabsolu l))))  
-      (Rabsolu_pos_lt l H3) H5);Clear H5 H8 H11 H12 H13;Intro;
- Rewrite (Rmult_sym (Rabsolu (Rminus (f x3) l)) (Rabsolu (g x3))) 
-  in H14;Generalize (Rplus_lt 
-     (Rmult (Rabsolu (g x3)) (Rabsolu (Rminus (f x3) l)))
-     (Rmult (Rmult eps (Rinv (Rplus R1 R1))) R1)
-     (Rmult (Rabsolu l) (Rabsolu (g x3)))
-     (Rmult (Rabsolu l)
-        (Rmult eps (Rinv (Rmult (Rplus R1 R1) (Rabsolu l))))) H14 H5);
- Clear H5 H14;Intro;
- Cut eps==(Rplus (Rmult (Rmult eps (Rinv (Rplus R1 R1))) R1)
-             (Rmult (Rabsolu l)
-               (Rmult eps (Rinv (Rmult (Rplus R1 R1) (Rabsolu l)))))).
-Intro;Rewrite <-H8 in H5;Assumption.
-Rewrite (let (H1,H2)=
-  (Rmult_ne (Rmult eps (Rinv (Rplus R1 R1)))) in H1);
- Cut ~(Rabsolu l)==R0. 
-Intro;Rewrite (Rinv_Rmult (Rplus R1 R1) (Rabsolu l));Auto.
-Rewrite (Rmult_sym (Rabsolu l) 
-  (Rmult eps (Rmult (Rinv (Rplus R1 R1)) (Rinv (Rabsolu l)))));
- Rewrite (Rmult_assoc eps 
-    (Rmult (Rinv (Rplus R1 R1)) (Rinv (Rabsolu l)))
-    (Rabsolu l));
- Rewrite (Rmult_assoc (Rinv (Rplus R1 R1)) (Rinv (Rabsolu l))
-   (Rabsolu l));
- Rewrite (Rinv_l (Rabsolu l) H8);
- Rewrite (let (H1,H2)=
-  (Rmult_ne (Rinv (Rplus R1 R1))) in H1);
- Apply sym_eqT;Apply eps2.
-Apply (imp_not_Req (Rplus R1 R1) R0);Right;Unfold Rgt;Generalize Rlt_R0_R1;Intro;
- Generalize (Rlt_compatibility R1 R0 R1 H11);Intro;
- Rewrite (let (H1,H2)=(Rplus_ne R1) in H1) in H12;
- Apply (Rlt_trans R0 R1 (Rplus R1 R1) H11 H12).
-Generalize (Rabsolu_pos_lt l H3);Intro;
- Apply (imp_not_Req (Rabsolu l) R0);Auto.
-Unfold Rgt;Unfold Rgt in H1;
- Rewrite <-(Rmult_Or (Rinv (Rmult (Rplus R1 R1) (Rabsolu l))));
- Rewrite (Rmult_sym eps (Rinv (Rmult (Rplus R1 R1) (Rabsolu l))));
- Apply (Rlt_monotony (Rinv (Rmult (Rplus R1 R1) (Rabsolu l))) R0 eps);
- Auto.
-Apply (Rlt_Rinv (Rmult (Rplus R1 R1) (Rabsolu l)));
- Generalize (Rabsolu_pos_lt l H3);
- Clear H H0 H2 H4 H5 H7 H8 f g D l' x0 x x1;Intro;
- Rewrite <-(Rmult_Or (Rplus R1 R1)); 
- Apply (Rlt_monotony (Rplus R1 R1) R0 (Rabsolu l));Auto.
-Unfold Rgt in H6;Generalize (Rlt_compatibility R1 R0 R1 H6);Intro;
- Rewrite (let (H1,H2)=(Rplus_ne R1) in H1) in H0;
- Apply (Rlt_trans R0 R1 (Rplus R1 R1) H6 H0).
-(**)
-Cut ~(Rplus (Rplus R1 R1) (Rplus R1 R1))==R0.
-Cut ~(Rabsolu l)==R0.
-Cut ~(Rabsolu l')==R0.
-Intros tl' tl add4;
- Elim (H (Rmult eps (Rinv (Rplus R1 R1))) (eps2_Rgt_R0 eps H1));
- Intros;Elim H4;Clear H4;Intros;
- Generalize Rlt_R0_R1;Fold (Rgt R1 R0);Intro;Elim (H0 R1 H6);Intros;
- Elim H7;Clear H7;Intros;
- Cut (Rgt (Rmult eps 
- (Rinv (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l)))) R0).
-Cut (Rgt (Rmult eps 
- (Rinv (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l')))) R0).
-Intros;Elim (H0 (Rmult eps 
-   (Rinv (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l)))) H10);
- Intros;Elim H11;Clear H11;Intros;
- Elim (H (Rmult eps 
-   (Rinv (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l')))) H9);
- Intros;Elim H13;Clear H13;Intros;
- Split with (Rmin (Rmin x x1) (Rmin x2 x3));Split.
-Elim (Rmin_Rgt (Rmin x x1) (Rmin x2 x3) R0);Intros;
- Elim (Rmin_Rgt x x1 R0);Elim (Rmin_Rgt x2 x3 R0);Intros;
- Apply (H16 (conj (Rgt (Rmin x x1) R0) (Rgt (Rmin x2 x3) R0) 
-  (H20 (conj (Rgt x R0) (Rgt x1 R0) H4 H7)) 
-  (H18 (conj (Rgt x2 R0) (Rgt x3 R0) H11 H13)))).
-Intros;Elim H15;Clear H15;Intros;
- Elim (Rmin_Rgt (Rmin x x1) (Rmin x2 x3) (R_dist x4 x0));Intros;
- Clear H18;Unfold 1 Rgt in H17;Elim (H17 H16);Clear H17 H16;Intros;
- Elim (Rmin_Rgt x x1 (R_dist x4 x0));
- Elim (Rmin_Rgt x2 x3 (R_dist x4 x0));Intros;
- Unfold 1 Rgt in H17;Unfold 1 Rgt in H20;Elim (H18 H17);Elim (H20 H16);
- Clear H16 H17 H18 H19 H20 H21;Intros;Unfold Rgt in H16 H17 H18 H19;
- Generalize (H5 x4 (conj (D x4) (Rlt (R_dist x4 x0) x) H15 H16));
- Generalize (H8 x4 (conj (D x4) (Rlt (R_dist x4 x0) x1) H15 H17));
- Generalize (H12 x4 (conj (D x4) (Rlt (R_dist x4 x0) x2) H15 H18));
- Generalize (H14 x4 (conj (D x4) (Rlt (R_dist x4 x0) x3) H15 H19));
- Clear H H0 H5 H8 H12 H14 H16 H17 H18 H19;Intros;
- Unfold R_dist in H H0 H5 H8;Unfold R_dist; 
- Rewrite <-(let (H1,H2)=(Rplus_ne (Rmult (f x4) (g x4))) in H1);
- Rewrite <-(Rplus_Ropp_l (Rmult (g x4) l));Rewrite (Rmult_sym (g x4) l);
- Rewrite <-(Ropp_mul1 l (g x4));
- Rewrite (Rmult_sym (Ropp l) (g x4));
- Rewrite <-(Rplus_assoc (Rmult (f x4) (g x4)) 
-                     (Rmult (g x4) (Ropp l)) (Rmult l (g x4)));
- Rewrite (Rmult_sym (f x4) (g x4));
- Rewrite <-(Rmult_Rplus_distr (g x4) (f x4) (Ropp l));Fold (Rminus (f x4) l);
- Unfold 1 Rminus;Rewrite (Rmult_sym l l');Rewrite <-(Ropp_mul1 l' l);
- Rewrite (Rmult_sym (Ropp l') l);
- Rewrite (Rplus_assoc (Rmult (g x4) (Rminus (f x4) l)) 
-                     (Rmult l (g x4)) (Rmult l (Ropp l')));
- Rewrite <-(Rmult_Rplus_distr l (g x4) (Ropp l'));
- Fold (Rminus (g x4) l');
- Generalize (Rabsolu_triang (Rmult (g x4) (Rminus (f x4) l))
-                            (Rmult l (Rminus (g x4) l')));Intro;
- Apply (Rle_lt_trans 
-   (Rabsolu (Rplus (Rmult (g x4) (Rminus (f x4) l)) 
-                  (Rmult l (Rminus (g x4) l'))))
-   (Rplus (Rabsolu (Rmult (g x4) (Rminus (f x4) l)))
-         (Rabsolu (Rmult l (Rminus (g x4) l')))) eps H12);Clear H12;
- Generalize (Rlt_monotony (Rabsolu l) (Rabsolu (Rminus (g x4) l')) 
-                      (Rmult eps
-           (Rinv (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l))))
-                      (Rabsolu_pos_lt l H3) H0);Intro;
- Generalize (Rlt_monotony (Rabsolu l') (Rabsolu (Rminus (f x4) l)) 
-                      (Rmult eps
-           (Rinv (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l'))))
-                      (Rabsolu_pos_lt l' H2) H);Intro;
- Elim (Req_EM (f x4) l);Intros.
-Rewrite H16;Rewrite (eq_Rminus l l (refl_eqT R l));
- Rewrite (Rmult_Or (g x4));Rewrite Rabsolu_R0;
- Rewrite (let (H1,H2)=(Rplus_ne (Rabsolu (Rmult l (Rminus (g x4) l')))) 
-   in H2);Rewrite (Rabsolu_mult l (Rminus (g x4) l'));
- Apply (Rlt_trans (Rmult (Rabsolu l) (Rabsolu (Rminus (g x4) l')))
-     (Rmult (Rabsolu l)
-            (Rmult eps
-              (Rinv
-                (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l)))))
-     eps H12); 
- Rewrite (Rmult_sym eps 
-   (Rinv (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l))));
- Rewrite <-(Rmult_assoc (Rabsolu l) 
-  (Rinv (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l))) eps);
- Rewrite (Rinv_Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l) add4 
-    tl);
- Rewrite (Rmult_sym (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1)))
-                     (Rinv (Rabsolu l))); 
- Rewrite <-(Rmult_assoc (Rabsolu l) (Rinv (Rabsolu l)) 
-                      (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))));
- Rewrite (Rinv_r (Rabsolu l) tl);
- Rewrite (let (H1,H2)=(Rmult_ne (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))))
-  in H2);Rewrite (Rmult_sym (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1)))
-           eps);Apply (Rlt_eps4_eps eps H1).
-Generalize Rlt_R0_R1;Fold (Rgt R1 R0);Intro;
- Cut (Rgt (Rabsolu (Rminus (f x4) l)) R0).
-Intro;
- Generalize (Rmult_lt (Rabsolu (Rminus (g x4) l')) R1 
-                     (Rabsolu (Rminus (f x4) l)) 
-                     (Rmult eps (Rinv (Rplus R1 R1)))
-                      H18 H17 H5 H8);Intro;
- Rewrite (let (H1,H2)=(Rmult_ne (Rmult eps (Rinv (Rplus R1 R1)))) in H2)
-  in H19;Generalize (Rplus_lt (Rmult (Rabsolu (Rminus (g x4) l'))
-            (Rabsolu (Rminus (f x4) l)))
-                             (Rmult eps (Rinv (Rplus R1 R1)))
-                      (Rmult (Rabsolu l') (Rabsolu (Rminus (f x4) l)))
-                      (Rmult (Rabsolu l')
-            (Rmult eps (Rinv
-                (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l')))))
-              H19 H14);Intro;
- Generalize (Rplus_lt (Rmult (Rabsolu l) (Rabsolu (Rminus (g x4) l')))
-                     (Rmult (Rabsolu l)
-            (Rmult eps
-              (Rinv
-                (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l)))))
-             (Rplus
-            (Rmult (Rabsolu (Rminus (g x4) l'))
-              (Rabsolu (Rminus (f x4) l)))
-            (Rmult (Rabsolu l') (Rabsolu (Rminus (f x4) l))))
-            (Rplus (Rmult eps (Rinv (Rplus R1 R1)))
-            (Rmult (Rabsolu l')
-              (Rmult eps
-                (Rinv
-              (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l'))))))
-              H12 H20);
- Clear H5 H8 H12 H14 H19 H20 H H0 H9 H10;Replace (Rplus
-            (Rmult (Rabsolu l)
-              (Rmult eps
-                (Rinv
-                  (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l)))))
-            (Rplus (Rmult eps (Rinv (Rplus R1 R1)))
-              (Rmult (Rabsolu l')
-                (Rmult eps
-                  (Rinv
-                    (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1))
-                      (Rabsolu l'))))))) with eps.
-Intro;Rewrite (Rplus_sym (Rabsolu (Rmult (g x4) (Rminus (f x4) l)))
-           (Rabsolu (Rmult l (Rminus (g x4) l'))));
- Pattern 2 (g x4);
- Rewrite <-(let (H1,H2)=(Rplus_ne (g x4)) in H1);
- Rewrite <-(Rplus_Ropp_r l');Rewrite <-(Rplus_assoc (g x4) l' (Ropp l')); 
- Rewrite (Rmult_sym (Rplus (Rplus (g x4) l') (Ropp l')) 
-                      (Rminus (f x4) l));
- Rewrite (Rabsolu_mult (Rminus (f x4) l)
-                      (Rplus (Rplus (g x4) l') (Ropp l')));
- Rewrite (Rmult_sym (Rabsolu (Rminus (g x4) l'))
-                      (Rabsolu (Rminus (f x4) l))) in H;
- Rewrite (Rmult_sym (Rabsolu l') 
-                      (Rabsolu (Rminus (f x4) l))) in H;
- Rewrite <-(Rmult_Rplus_distr (Rabsolu (Rminus (f x4) l))
-                  (Rabsolu (Rminus (g x4) l'))
-                  (Rabsolu l')) in H;
- Rewrite <-(Rabsolu_mult l (Rminus (g x4) l')) in H;
- Rewrite (Rplus_assoc (g x4) l' (Ropp l'));
- Rewrite (Rplus_sym l' (Ropp l'));
- Rewrite <-(Rplus_assoc (g x4) (Ropp l') l');
- Fold (Rminus (g x4) l');
- Generalize (Rabsolu_triang (Rminus (g x4) l') l');Intro;
- Unfold Rle in H0;Elim H0;Clear H0;Intro.
-Unfold Rgt in H18.
- Generalize (Rlt_monotony (Rabsolu (Rminus (f x4) l)) 
-        (Rabsolu (Rplus (Rminus (g x4) l') l'))
-        (Rplus (Rabsolu (Rminus (g x4) l')) (Rabsolu l')) 
-        H18 H0);Intro;
- Generalize (Rlt_compatibility (Rabsolu (Rmult l (Rminus (g x4) l')))
-        (Rmult (Rabsolu (Rminus (f x4) l))
-           (Rabsolu (Rplus (Rminus (g x4) l') l')))
-        (Rmult (Rabsolu (Rminus (f x4) l))
-           (Rplus (Rabsolu (Rminus (g x4) l')) (Rabsolu l')))
-        H5);Clear H0 H5;Intro;
- Apply (Rlt_trans (Rplus (Rabsolu (Rmult l (Rminus (g x4) l')))
-           (Rmult (Rabsolu (Rminus (f x4) l))
-             (Rabsolu (Rplus (Rminus (g x4) l') l'))))
-                   (Rplus (Rabsolu (Rmult l (Rminus (g x4) l')))
-           (Rmult (Rabsolu (Rminus (f x4) l))
-             (Rplus (Rabsolu (Rminus (g x4) l')) (Rabsolu l'))))
-                   eps H0 H).
-Rewrite H0;Assumption. 
-Rewrite (Rinv_Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1))
-                            (Rabsolu l) add4 tl);
- Rewrite (Rinv_Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1))
-                            (Rabsolu l') add4 tl');
- Rewrite (Rmult_sym eps (Rmult (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1)))
-              (Rinv (Rabsolu l))));
- Rewrite (Rmult_sym eps (Rmult (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1)))
-              (Rinv (Rabsolu l'))));
- Rewrite (Rmult_sym (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))) 
-                      (Rinv (Rabsolu l)));
- Rewrite (Rmult_sym (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))) 
-                      (Rinv (Rabsolu l')));
- Rewrite (Rmult_assoc (Rinv (Rabsolu l)) 
-        (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))) eps);
- Rewrite (Rmult_assoc (Rinv (Rabsolu l')) 
-        (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))) eps);
- Rewrite <-(Rmult_assoc (Rabsolu l) (Rinv (Rabsolu l))
-        (Rmult (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))) eps));
- Rewrite <-(Rmult_assoc (Rabsolu l') (Rinv (Rabsolu l'))
-        (Rmult (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))) eps));
- Rewrite (Rinv_r (Rabsolu l) tl);Rewrite (Rinv_r (Rabsolu l') tl');
- Rewrite (let (H1,H2)=(Rmult_ne 
-      (Rmult (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))) eps)) in H2);
- Rewrite (Rmult_sym (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))) eps);
- Rewrite (Rplus_sym (Rmult eps (Rinv (Rplus R1 R1)))
-                  (Rmult eps (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1)))));
- Rewrite <- (Rplus_assoc 
-     (Rmult eps (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))))
-     (Rmult eps (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))))
-     (Rmult eps (Rinv (Rplus R1 R1))));
- Rewrite eps4;Rewrite eps2;Trivial.
-Unfold Rgt;Apply (Rabsolu_pos_lt (Rminus (f x4) l));Red;Intro;Elim H16;
- Apply (Rminus_eq (f x4) l H18).
-Apply (Rmult_gt eps 
-  (Rinv (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l'))) H1);
- Rewrite (Rinv_Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l') 
-           add4 tl'); 
- Apply (Rmult_gt (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))) 
-  (Rinv (Rabsolu l'))).
-Unfold Rgt;Apply (Rlt_Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))).
-Generalize Rlt_R0_R1;Intro;
- Generalize (Rlt_compatibility R1 R0 R1 H9);Intro;
- Rewrite (let (H1,H2)=(Rplus_ne R1) in H1) in H10;
- Generalize (Rlt_trans R0 R1 (Rplus R1 R1) H9 H10);Intro;
- Clear H9 H10;
- Generalize (Rlt_compatibility (Rplus R1 R1) R0 (Rplus R1 R1) H11);Intro;
- Rewrite (let (H1,H2)=(Rplus_ne (Rplus R1 R1)) in H1) in H9;
- Apply (Rlt_trans R0 (Rplus R1 R1) (Rplus (Rplus R1 R1) (Rplus R1 R1))
-    H11 H9).
-Unfold Rgt;Apply (Rlt_Rinv (Rabsolu l') (Rabsolu_pos_lt l' H2)).
-Apply (Rmult_gt eps 
-  (Rinv (Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l))) H1);
- Rewrite (Rinv_Rmult (Rplus (Rplus R1 R1) (Rplus R1 R1)) (Rabsolu l) 
-           add4 tl); 
- Apply (Rmult_gt (Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))) 
-  (Rinv (Rabsolu l))).
-Unfold Rgt;Apply (Rlt_Rinv (Rplus (Rplus R1 R1) (Rplus R1 R1))).
-Generalize Rlt_R0_R1;Intro;
- Generalize (Rlt_compatibility R1 R0 R1 H9);Intro;
- Rewrite (let (H1,H2)=(Rplus_ne R1) in H1) in H10;
- Generalize (Rlt_trans R0 R1 (Rplus R1 R1) H9 H10);Intro;
- Clear H9 H10;
- Generalize (Rlt_compatibility (Rplus R1 R1) R0 (Rplus R1 R1) H11);Intro;
- Rewrite (let (H1,H2)=(Rplus_ne (Rplus R1 R1)) in H1) in H9;
- Apply (Rlt_trans R0 (Rplus R1 R1) (Rplus (Rplus R1 R1) (Rplus R1 R1))
-    H11 H9).
-Unfold Rgt;Apply (Rlt_Rinv (Rabsolu l) (Rabsolu_pos_lt l H3)).
-Generalize (Rabsolu_pos_lt l' H2);Intro;
- Apply (imp_not_Req (Rabsolu l') R0);Auto.
-Generalize (Rabsolu_pos_lt l H3);Intro;
- Apply (imp_not_Req (Rabsolu l) R0);Auto.
-Apply (imp_not_Req (Rplus (Rplus R1 R1) (Rplus R1 R1)) R0);Right;Unfold Rgt;
- Generalize Rlt_R0_R1;Intro;
- Generalize (Rlt_compatibility R1 R0 R1 H4);Intro;
- Rewrite (let (H1,H2)=(Rplus_ne R1) in H1) in H5;
- Generalize (Rlt_trans R0 R1 (Rplus R1 R1) H4 H5);Intro;
- Clear H4 H5;
- Generalize (Rlt_compatibility (Rplus R1 R1) R0 (Rplus R1 R1) H6);Intro;
- Rewrite (let (H1,H2)=(Rplus_ne (Rplus R1 R1)) in H1) in H4;
- Apply (Rlt_trans R0 (Rplus R1 R1) (Rplus (Rplus R1 R1) (Rplus R1 R1))
-    H6 H4).
+Intros;Unfold limit1_in; Unfold limit_in; Simpl; Intros; 
+ Elim (H (Rmin R1 (Rmult eps (mul_factor l l'))) 
+                   (mul_factor_gt_f eps l l' H1));
+ Elim (H0 (Rmult eps (mul_factor l l')) (mul_factor_gt eps l l' H1));
+ Clear H H0; Simpl; Intros; Elim H; Elim H0; Clear H H0; Intros;
+ Split with (Rmin x1 x); Split.
+Exact (Rmin_Rgt_r x1 x R0 (conj ? ? H H2)).
+Intros; Elim H4; Clear H4; Intros;Unfold R_dist;
+ Replace (Rminus (Rmult (f x2) (g x2)) (Rmult l l')) with 
+     (Rplus (Rmult (f x2) (Rminus (g x2) l')) (Rmult l' (Rminus (f x2) l))).
+Cut (Rlt (Rplus (Rabsolu (Rmult (f x2) (Rminus (g x2) l'))) (Rabsolu (Rmult l' 
+ (Rminus (f x2) l)))) eps). 
+Cut (Rle (Rabsolu (Rplus (Rmult (f x2) (Rminus (g x2) l')) (Rmult l' (Rminus 
+  (f x2) l)))) (Rplus (Rabsolu (Rmult (f x2) (Rminus (g x2) l'))) (Rabsolu 
+        (Rmult l' (Rminus (f x2) l))))).
+Exact (Rle_lt_trans ? ? ?).
+Exact (Rabsolu_triang ? ?).
+Rewrite (Rabsolu_mult (f x2) (Rminus (g x2) l'));
+ Rewrite (Rabsolu_mult l' (Rminus (f x2) l));
+ Cut (Rle (Rplus (Rmult (Rplus R1 (Rabsolu l)) (Rmult eps (mul_factor l l'))) 
+   (Rmult (Rabsolu l') (Rmult eps (mul_factor l l')))) eps).
+Cut (Rlt (Rplus (Rmult (Rabsolu (f x2)) (Rabsolu (Rminus (g x2) l'))) (Rmult 
+  (Rabsolu l') (Rabsolu (Rminus (f x2) l)))) (Rplus (Rmult (Rplus R1 (Rabsolu 
+     l)) (Rmult eps (mul_factor l l'))) (Rmult (Rabsolu l') (Rmult eps 
+      (mul_factor l l'))))).
+Exact (Rlt_le_trans ? ? ?).
+Elim (Rmin_Rgt_l x1 x (R_dist x2 x0) H5); Clear H5; Intros;
+ Generalize (H0 x2 (conj (D x2) (Rlt (R_dist x2 x0) x1) H4 H5));Intro;
+ Generalize (Rmin_Rgt_l ? ? ? H7);Intro;Elim H8;Intros;Clear H0 H8;
+ Apply Rplus_lt_le_lt.
+Apply Rmult_lt_0.
+Apply Rle_sym1.
+Exact (Rabsolu_pos (Rminus (g x2) l')).
+Rewrite (Rplus_sym R1 (Rabsolu l));Unfold Rgt;Apply Rlt_r_plus_R1;
+ Exact (Rabsolu_pos l).
+Unfold R_dist in H9;
+ Apply (Rlt_anti_compatibility (Ropp (Rabsolu l)) (Rabsolu (f x2)) 
+     (Rplus R1 (Rabsolu l))).
+Rewrite <- (Rplus_assoc (Ropp (Rabsolu l)) R1 (Rabsolu l));
+ Rewrite (Rplus_sym (Ropp (Rabsolu l)) R1);
+ Rewrite (Rplus_assoc R1 (Ropp (Rabsolu l)) (Rabsolu l));
+ Rewrite (Rplus_Ropp_l (Rabsolu l));
+ Rewrite (proj1 ? ? (Rplus_ne R1));
+ Rewrite (Rplus_sym (Ropp (Rabsolu l)) (Rabsolu (f x2)));
+ Generalize H9;
+Cut (Rle (Rminus (Rabsolu (f x2)) (Rabsolu l)) (Rabsolu (Rminus (f x2) l))).
+Exact (Rle_lt_trans ? ? ?).
+Exact (Rabsolu_triang_inv ? ?).
+Generalize (H3 x2 (conj (D x2) (Rlt (R_dist x2 x0) x) H4 H6));Trivial.
+Apply Rle_monotony.
+Exact (Rabsolu_pos l').
+Unfold Rle;Left;Assumption.
+Rewrite (Rmult_sym (Rplus R1 (Rabsolu l)) (Rmult eps (mul_factor l l')));
+ Rewrite (Rmult_sym (Rabsolu l') (Rmult eps (mul_factor l l')));
+ Rewrite <- (Rmult_Rplus_distr
+           (Rmult eps (mul_factor l l'))
+           (Rplus R1 (Rabsolu l))
+           (Rabsolu l'));
+ Rewrite (Rmult_assoc eps (mul_factor l l') (Rplus (Rplus R1 (Rabsolu l)) 
+      (Rabsolu l')));
+ Rewrite (Rplus_assoc R1 (Rabsolu l) (Rabsolu l'));Unfold mul_factor;
+ Rewrite (Rinv_l (Rplus R1 (Rplus (Rabsolu l) (Rabsolu l'))) 
+  (mul_factor_wd l l'));
+ Rewrite (proj1 ? ? (Rmult_ne eps));Apply eq_Rle;Trivial.
+Ring.
 Save.
 
 (*********)

@@ -92,9 +92,9 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_constr.cmo parsing/g_cases.cmo \
         parsing/extend.cmo parsing/esyntax.cmo \
 	parsing/printer.cmo parsing/pretty.cmo parsing/egrammar.cmo \
-        parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo
+        parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
 
-# ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo
+ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
 
 PROOFS=proofs/proof_type.cmo proofs/proof_trees.cmo proofs/logic.cmo \
        proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
@@ -295,11 +295,12 @@ WELLFOUNDEDVO=theories/Wellfounded/Disjoint_Union.vo \
 	      theories/Wellfounded/Well_Ordering.vo \
 	      theories/Wellfounded/Lexicographic_Product.vo 
 
-REALSVO=theories/Reals/R_Ifp.vo       theories/Reals/Reals.vo \
-	theories/Reals/Raxioms.vo     theories/Reals/Rfunctions.vo \
-	theories/Reals/Rbase.vo       theories/Reals/Rlimit.vo \
-	theories/Reals/Rbasic_fun.vo  theories/Reals/TypeSyntax.vo \
-	theories/Reals/Rderiv.vo
+REALSVO=theories/Reals/TypeSyntax.vo \
+	theories/Reals/Rdefinitions.vo theories/Reals/Rsyntax.vo \
+	theories/Reals/Raxioms.vo      theories/Reals/Rbase.vo \
+	theories/Reals/R_Ifp.vo        theories/Reals/Rbasic_fun.vo \
+	theories/Reals/Rfunctions.vo   theories/Reals/Rlimit.vo \
+	theories/Reals/Rderiv.vo       theories/Reals/Reals.vo 
 
 THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
              $(SETSVO) $(RELATIONSVO) $(WELLFOUNDEDVO) $(REALSVO)
@@ -584,7 +585,7 @@ clean::
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile
 	echo "(byte-compile-file \"$<\")" >> $*.compile
-	$(EMACS) -batch -l $*.compile
+	- $(EMACS) -batch -l $*.compile
 	rm -f $*.compile        
 
 ###########################################################################

@@ -439,14 +439,6 @@ parsing/extend.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/lexer.cmi \
     parsing/pcoq.cmi lib/pp.cmi lib/util.cmi parsing/extend.cmi 
 parsing/extend.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/lexer.cmx \
     parsing/pcoq.cmx lib/pp.cmx lib/util.cmx parsing/extend.cmi 
-parsing/g_basevernac.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi \
-    toplevel/vernac.cmi 
-parsing/g_basevernac.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmx \
-    toplevel/vernac.cmx 
-parsing/g_cases.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
-parsing/g_cases.cmx: parsing/coqast.cmx parsing/pcoq.cmx 
-parsing/g_constr.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi 
-parsing/g_constr.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmx 
 parsing/g_natsyntax.cmo: parsing/ast.cmi parsing/astterm.cmi \
     parsing/coqast.cmi parsing/esyntax.cmi kernel/names.cmi parsing/pcoq.cmi \
     lib/pp.cmi lib/util.cmi parsing/g_natsyntax.cmi 
@@ -455,18 +447,12 @@ parsing/g_natsyntax.cmx: parsing/ast.cmx parsing/astterm.cmx \
     lib/pp.cmx lib/util.cmx parsing/g_natsyntax.cmi 
 parsing/g_prim.cmo: parsing/coqast.cmi parsing/pcoq.cmi toplevel/vernac.cmi 
 parsing/g_prim.cmx: parsing/coqast.cmx parsing/pcoq.cmx toplevel/vernac.cmx 
-parsing/g_proofs.cmo: parsing/coqast.cmi parsing/pcoq.cmi lib/pp.cmi \
-    lib/util.cmi toplevel/vernac.cmi 
-parsing/g_proofs.cmx: parsing/coqast.cmx parsing/pcoq.cmx lib/pp.cmx \
-    lib/util.cmx toplevel/vernac.cmx 
-parsing/g_tactic.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi \
-    lib/pp.cmi lib/util.cmi 
-parsing/g_tactic.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmx \
-    lib/pp.cmx lib/util.cmx 
-parsing/g_vernac.cmo: parsing/coqast.cmi parsing/pcoq.cmi lib/pp.cmi \
-    lib/util.cmi toplevel/vernac.cmi 
-parsing/g_vernac.cmx: parsing/coqast.cmx parsing/pcoq.cmx lib/pp.cmx \
-    lib/util.cmx toplevel/vernac.cmx 
+parsing/g_rsyntax.cmo: parsing/ast.cmi parsing/astterm.cmi parsing/coqast.cmi \
+    parsing/esyntax.cmi kernel/names.cmi parsing/pcoq.cmi lib/pp.cmi \
+    lib/util.cmi 
+parsing/g_rsyntax.cmx: parsing/ast.cmx parsing/astterm.cmx parsing/coqast.cmx \
+    parsing/esyntax.cmx kernel/names.cmx parsing/pcoq.cmx lib/pp.cmx \
+    lib/util.cmx 
 parsing/g_zsyntax.cmo: parsing/ast.cmi parsing/astterm.cmi parsing/coqast.cmi \
     parsing/esyntax.cmi kernel/names.cmi parsing/pcoq.cmi lib/pp.cmi \
     lib/util.cmi parsing/g_zsyntax.cmi 
@@ -943,12 +929,6 @@ tactics/tactics.cmx: parsing/astterm.cmx proofs/clenv.cmx \
     kernel/reduction.cmx kernel/sign.cmx lib/stamps.cmx proofs/tacinterp.cmx \
     proofs/tacmach.cmx pretyping/tacred.cmx tactics/tacticals.cmx \
     kernel/term.cmx lib/util.cmx tactics/tactics.cmi 
-tactics/tauto.cmo: parsing/ast.cmi parsing/coqast.cmi tactics/hipattern.cmi \
-    kernel/names.cmi lib/pp.cmi proofs/proof_type.cmi proofs/tacinterp.cmi \
-    proofs/tacmach.cmi tactics/tacticals.cmi 
-tactics/tauto.cmx: parsing/ast.cmx parsing/coqast.cmx tactics/hipattern.cmx \
-    kernel/names.cmx lib/pp.cmx proofs/proof_type.cmx proofs/tacinterp.cmx \
-    proofs/tacmach.cmx tactics/tacticals.cmx 
 tactics/termdn.cmo: tactics/dn.cmi kernel/names.cmi parsing/pattern.cmi \
     pretyping/rawterm.cmi kernel/term.cmi lib/util.cmi tactics/termdn.cmi 
 tactics/termdn.cmx: tactics/dn.cmx kernel/names.cmx parsing/pattern.cmx \
