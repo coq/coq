@@ -4,7 +4,7 @@
 open Util
 open Stamps
 open Names
-(*i open Generic i*)
+(* open Generic *)
 open Sign
 open Term
 open Instantiate

@@ -3,7 +3,7 @@
 
 open Util
 open Names
-(*i open Generic i*)
+(* open Generic *)
 open Term
 
 type abstraction_body = { 

@@ -5,7 +5,7 @@
 open Util
 open Pp
 open Names
-(*i open Generic i*)
+(* open Generic *)
 (*i*)
 
 (*s The sorts of CCI. *)
@@ -76,7 +76,7 @@ and typed_type
 
 type flat_arity = (name * constr) list * sorts
 
-(*s Functions about typed_type *)
+(*s Functions about [typed_type] *)
 
 val make_typed : constr -> sorts -> typed_type
 val make_typed_lazy : constr -> (constr -> sorts) -> typed_type
@@ -358,12 +358,6 @@ val args_of_const : constr -> constr array
 val destEvar : constr -> int * constr array
 val num_of_evar : constr -> int
 
-(*
-(* Destructs an abstract term *)
-val destAbst : constr -> section_path * constr array
-val path_of_abst : constr -> section_path
-val args_of_abst : constr -> constr array
-*)
 (* Destructs a (co)inductive type *)
 val destMutInd : constr -> inductive
 val op_of_mind : constr -> inductive_path

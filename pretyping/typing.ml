@@ -3,7 +3,7 @@
 
 open Util
 open Names
-(*i open Generic i*)
+(* open Generic *)
 open Term
 open Environ
 open Reduction

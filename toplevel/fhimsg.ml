@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-(*i open Generic i*)
+(* open Generic *)
 open Term
 open Sign
 open Environ

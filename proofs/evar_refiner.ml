@@ -5,7 +5,7 @@ open Pp
 open Util
 open Stamps
 open Names
-(*i open Generic i*)
+(* open Generic *)
 open Term
 open Environ
 open Evd

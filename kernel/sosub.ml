@@ -3,7 +3,7 @@
 
 open Util
 open Names
-(*i open Generic i*)
+(* open Generic *)
 open Term
 (*
 (* Given a term with variables in it, and second-order substitution,

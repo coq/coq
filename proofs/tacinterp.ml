@@ -3,7 +3,7 @@
 
 open Astterm
 open Closure
-(*i open Generic i*)
+(* open Generic *)
 open Libobject
 open Pattern
 open Pp

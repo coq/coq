@@ -42,7 +42,7 @@
 open Pp
 open Util
 open Names
-(*i open Generic i*)
+(* open Generic *)
 open Term
 open Tacmach
 open Sign

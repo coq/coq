@@ -5,7 +5,7 @@ open Util
 open Term
 open Inductive
 open Names
-(*i open Generic i*)
+(* open Generic *)
 open Reduction
 open Environ
 open Typeops

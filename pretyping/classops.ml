@@ -9,7 +9,7 @@ open Environ
 open Libobject
 open Declare
 open Term
-(*i open Generic i*)
+(* open Generic *)
 open Rawterm
 
 (* usage qque peu general: utilise aussi dans record *)

@@ -2,7 +2,7 @@
 (* $Id$ *)
 
 open Names
-(*i open Generic i*)
+(* open Generic *)
 open Term
 open Reduction
 open Declarations

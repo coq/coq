@@ -4,7 +4,7 @@
 (*i*)
 open Names
 open Term
-(*i open Generic i*)
+(* open Generic *)
 open Classops
 open Libobject
 open Library

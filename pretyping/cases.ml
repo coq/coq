@@ -1,7 +1,7 @@
 
 open Util
 open Names
-(*i open Generic i*)
+(* open Generic *)
 open Term
 open Declarations
 open Inductive

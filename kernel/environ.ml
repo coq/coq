@@ -6,7 +6,7 @@ open Util
 open Names
 open Sign
 open Univ
-(*i open Generic i*)
+(* open Generic *)
 open Term
 open Declarations
 open Abstraction
@@ -310,21 +310,7 @@ let make_all_name_different env =
        push_rel (Name id,c,t) newenv)
     env
 
-(* Abstractions. *)
-(*
-let evaluable_abst env = function
-  | DOPN (Abst _,_) -> true
-  | _ -> invalid_arg "evaluable_abst"
-
-let translucent_abst env = function
-  | DOPN (Abst _,_) -> false
-  | _ -> invalid_arg "translucent_abst"
-
-let abst_value env = function
-  | DOPN(Abst sp, args) ->
-      contract_abstraction (lookup_abst sp env) args
-  | _ -> invalid_arg "abst_value"
-*)
+(* Constants *)
 let defined_constant env = function
   | DOPN (Const sp, _) -> is_defined (lookup_constant sp env)
   | _ -> invalid_arg "defined_constant"
