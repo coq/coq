@@ -481,6 +481,7 @@ let cache_syntax_extension (_,(_,prec,ntn,gr,se)) =
 	error ("Notation "^ntn^" is already assigned a different level")
     else
     (* The notation is already declared; no need to redeclare it *)
+      if Options.do_translate () then raise Not_found; (* In case the notation was only given to the printer - V8Notation *)
       ()
   with Not_found ->
     (* Reserve the notation level *)
