@@ -61,7 +61,7 @@ CoInductive EqSt  : Stream->Stream->Prop :=
 
 (* A coinduction principle *)
 
-Tactic Definition CoInduction proof := 
+Meta Definition CoInduction proof := 
   Cofix proof; Intros; Constructor;
     [Clear proof | Try (Apply proof;Clear proof)].
 

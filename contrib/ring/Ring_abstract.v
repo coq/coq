@@ -443,7 +443,7 @@ Save.
 
 Hint rew_isacs_aux : core := Extern 10 (eqT A ? ?) Rewrite isacs_aux_ok.
 
-Tactic Definition Solve1 := 
+Meta Definition Solve1 := 
   Simpl; Elim (varlist_lt v v0); Simpl; Rewrite isacs_aux_ok;
     [Rewrite H; Simpl; Auto
     |Simpl in H0; Rewrite H0; Auto ].
@@ -499,7 +499,7 @@ Lemma signed_sum_merge_ok : (x,y:signed_sum)
 
 Save.
 
-Tactic Definition Solve2 :=
+Meta Definition Solve2 :=
  	Elim (varlist_lt l v); Simpl; Rewrite isacs_aux_ok;
   	[ Auto
   	| Rewrite H; Auto ].

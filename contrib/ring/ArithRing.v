@@ -38,4 +38,4 @@ Goal (n:nat)(S n)=(plus (S O) n).
 Intro; Reflexivity.
 Save S_to_plus_one.
 
-Tactic Definition NatRing := '(Repeat Rewrite S_to_plus_one); Ring.
+Meta Definition NatRing := (Repeat Rewrite S_to_plus_one); Ring.
