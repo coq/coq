@@ -363,7 +363,11 @@ let _ =
     (function 
        | [VARG_QUALID qid] ->
 	   fun () ->
-	     let fullname = Nametab.locate_loaded_library qid in 
+	     let fullname =
+               try Nametab.locate_loaded_library qid
+               with Not_found -> 
+                 error ((Nametab.string_of_qualid qid)^" not loaded")
+             in
 	     without_mes_ambig Library.import_module fullname
        | _ -> bad_vernac_args "ImportModule")
 
