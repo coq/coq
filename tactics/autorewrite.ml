@@ -26,10 +26,10 @@ type rew_rule = constr * bool * tactic
 
 (* Summary and Object declaration *)
 let rewtab =
-  ref ((Hashtbl.create 53) : (string,rew_rule) Hashtbl.t)
+  ref (Stringmap.empty : rew_rule list Stringmap.t)
 
 let _ = 
-  let init () = rewtab := (Hashtbl.create 53) in
+  let init () = rewtab := Stringmap.empty in
   let freeze () = !rewtab in
   let unfreeze fs = rewtab := fs in
   Summary.declare_summary "autorewrite"
@@ -43,11 +43,13 @@ type raw_rew_rule = constr * bool * raw_tactic_expr
 
 (* Applies all the rules of one base *)
 let one_base tac_main bas =
-  let lrul = Hashtbl.find_all !rewtab bas in
-  if lrul = [] then
-    errorlabstrm "AutoRewrite"
-      (str ("Rewriting base "^(bas)^" does not exist"))
-  else
+  let lrul = 
+    try 
+      Stringmap.find bas !rewtab
+    with Not_found -> 
+      errorlabstrm "AutoRewrite" 
+        (str ("Rewriting base "^(bas)^" does not exist"))
+  in
     tclREPEAT_MAIN (tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
       tclTHEN tac
         (tclREPEAT_MAIN 
@@ -62,13 +64,21 @@ let autorewrite tac_main lbas =
 
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (_,(rbase,lrl)) =
-  List.iter
-    (fun (c,b,t) -> Hashtbl.add !rewtab rbase (c,b,Tacinterp.interp t)) lrl
+  let l = List.rev_map (fun (c,b,t) -> (c,b,Tacinterp.interp t)) lrl in
+  let l = 
+    try 
+      List.rev_append l (Stringmap.find rbase !rewtab) 
+    with
+      | Not_found -> l
+  in
+    rewtab:=Stringmap.add rbase l !rewtab
+
 let export_hintrewrite x = Some x
 
 let subst_hintrewrite (_,subst,(rbase,list as node)) = 
   let subst_first (cst,b,t as pair) = 
     let cst' = Term.subst_mps subst cst in
+      todo "substitute tactics in autorewrite hints!";
       if cst == cst' then pair else
 	(cst',b,t)
   in
