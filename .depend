@@ -1744,18 +1744,24 @@ tactics/extratactics.cmo: tactics/autorewrite.cmi toplevel/cerrors.cmi \
     interp/constrintern.cmi tactics/contradiction.cmi parsing/egrammar.cmi \
     tactics/equality.cmi pretyping/evd.cmi tactics/extraargs.cmi \
     interp/genarg.cmi library/global.cmi tactics/inv.cmi tactics/leminv.cmi \
-    lib/options.cmi parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi \
-    pretyping/rawterm.cmi tactics/refine.cmi proofs/refiner.cmi \
-    tactics/setoid_replace.cmi proofs/tacexpr.cmo tactics/tacinterp.cmi \
-    kernel/term.cmi toplevel/vernacinterp.cmi tactics/extratactics.cmi 
+    library/lib.cmi library/libnames.cmi library/libobject.cmi \
+    library/nametab.cmi lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
+    parsing/pptactic.cmi pretyping/rawterm.cmi tactics/refine.cmi \
+    proofs/refiner.cmi tactics/setoid_replace.cmi library/summary.cmi \
+    proofs/tacexpr.cmo tactics/tacinterp.cmi tactics/tacticals.cmi \
+    tactics/tactics.cmi kernel/term.cmi toplevel/vernacinterp.cmi \
+    tactics/extratactics.cmi 
 tactics/extratactics.cmx: tactics/autorewrite.cmx toplevel/cerrors.cmx \
     interp/constrintern.cmx tactics/contradiction.cmx parsing/egrammar.cmx \
     tactics/equality.cmx pretyping/evd.cmx tactics/extraargs.cmx \
     interp/genarg.cmx library/global.cmx tactics/inv.cmx tactics/leminv.cmx \
-    lib/options.cmx parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx \
-    pretyping/rawterm.cmx tactics/refine.cmx proofs/refiner.cmx \
-    tactics/setoid_replace.cmx proofs/tacexpr.cmx tactics/tacinterp.cmx \
-    kernel/term.cmx toplevel/vernacinterp.cmx tactics/extratactics.cmi 
+    library/lib.cmx library/libnames.cmx library/libobject.cmx \
+    library/nametab.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
+    parsing/pptactic.cmx pretyping/rawterm.cmx tactics/refine.cmx \
+    proofs/refiner.cmx tactics/setoid_replace.cmx library/summary.cmx \
+    proofs/tacexpr.cmx tactics/tacinterp.cmx tactics/tacticals.cmx \
+    tactics/tactics.cmx kernel/term.cmx toplevel/vernacinterp.cmx \
+    tactics/extratactics.cmi 
 tactics/hiddentac.cmo: proofs/evar_refiner.cmi interp/genarg.cmi \
     proofs/proof_type.cmi pretyping/rawterm.cmi proofs/refiner.cmi \
     proofs/tacexpr.cmo proofs/tacmach.cmi tactics/tactics.cmi kernel/term.cmi \
