@@ -494,6 +494,7 @@ let gecdyn s =
   Hashtbl.add (snd uconstr) s (inDynamicAstType e); e
 
 let dynconstr = gecdyn "dynconstr"
+let dyncasespattern = gecdyn "dyncasespattern"
 let dyntactic = gecdyn "dyntactic"
 let dynvernac = gecdyn "dynvernac"
 let dynastlist = gecdyn "dynastlist"
@@ -504,6 +505,7 @@ let set_globalizer f = globalizer := f
 
 GEXTEND Gram
   dynconstr: [ [ a = Constr.constr -> !globalizer (PureAstNode a) ] ];
+  dyncasespattern: [ [ a = Constr.pattern -> !globalizer (PureAstNode a) ] ];
 (*
   dyntactic: [ [ a = Tactic.tactic -> !globalizer (TacticAstNode a) ] ];
   dynvernac: [ [ a = Vernac_.vernac -> !globalizer(VernacAstNode a) ] ];
@@ -520,6 +522,7 @@ type parser_type =
   | AstListParser
   | AstParser
   | ConstrParser
+  | CasesPatternParser
   | TacticParser
   | VernacParser
 
@@ -539,6 +542,7 @@ let entry_type_of_parser =  function
 
 let parser_type_from_name =  function
   | "constr" -> ConstrParser
+  | "cases_pattern" -> CasesPatternParser
   | "tactic" -> TacticParser
   | "vernac" -> VernacParser
   | s -> AstParser
@@ -547,6 +551,7 @@ let set_default_action_parser = function
   | AstListParser -> default_action_parser_ref := dynastlist
   | AstParser -> default_action_parser_ref := dynast
   | ConstrParser  -> default_action_parser_ref := dynconstr
+  | CasesPatternParser  -> default_action_parser_ref := dyncasespattern
   | TacticParser -> default_action_parser_ref := dyntactic
   | VernacParser -> default_action_parser_ref := dynvernac
 

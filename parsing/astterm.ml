@@ -192,7 +192,7 @@ let may_allow_variable loc allow_var l =
         str "This reference does not denote a constructor: " ++
         str (string_of_qualid (interp_qualid l)))
 
-let maybe_constructor allow_var env = function
+let maybe_constructor allow_var = function
   | Node(loc,"QUALID",l) ->
       let qid = interp_qualid l in
       (try match extended_locate qid with
@@ -352,16 +352,16 @@ let message_redundant_alias (s1,s2) =
   warning ("Alias variable "^(string_of_id s1)
 	   ^" is merged with "^(string_of_id s2))
 
-let rec ast_to_pattern (_,_,scopes as env) aliases = function
+let rec ast_to_pattern scopes aliases = function
   | Node(_,"PATTAS",[Nvar (loc,s); p]) ->
       let aliases' = merge_aliases aliases (name_of_nvar s) in
-      ast_to_pattern env aliases' p
+      ast_to_pattern scopes aliases' p
 
   | Node(_,"PATTCONSTRUCT", head::((_::_) as pl)) ->
-      (match maybe_constructor false env head with
+      (match maybe_constructor false head with
 	 | ConstrPat (loc,c) ->
 	     let (idsl,pl') =
-	       List.split (List.map (ast_to_pattern env ([],[])) pl) in
+	       List.split (List.map (ast_to_pattern scopes ([],[])) pl) in
 	     (aliases::(List.flatten idsl),
 	      PatCstr (loc,c,pl',alias_of aliases))
 	 | VarPat (loc,s) ->
@@ -379,8 +379,11 @@ let rec ast_to_pattern (_,_,scopes as env) aliases = function
       Symbols.interp_numeral_as_pattern loc (Bignat.NEG (Bignat.of_string n))
 	(alias_of aliases) scopes)
 
+  | Node(_,"PATTDELIMITERS", [Str(_,sc);e]) ->
+      ast_to_pattern (sc::scopes) aliases e
+
   | ast ->
-      (match maybe_constructor true env ast with
+      (match maybe_constructor true ast with
 	 | ConstrPat (loc,c) -> ([aliases], PatCstr (loc,c,[],alias_of aliases))
 	 | VarPat (loc,s) ->
 	     let aliases = merge_aliases aliases (name_of_nvar s) in
@@ -577,7 +580,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
   and ast_to_eqn n (ids,impls,scopes as env) = function
     | Node(loc,"EQN",rhs::lhs) ->
 	let (idsl_substl_list,pl) =
-	  List.split (List.map (ast_to_pattern env ([],[])) lhs) in
+	  List.split (List.map (ast_to_pattern scopes ([],[])) lhs) in
 	let idsl, substl = List.split (List.flatten idsl_substl_list) in
 	let eqn_ids = List.flatten idsl in
 	let subst = List.flatten substl in 

@@ -93,7 +93,7 @@ Grammar constr constr0 :=
 | natural_nat110 [ "(" "110" ")" ] -> [ 'N: 110 ' ]
 .
 
-Grammar constr pattern :=
+Grammar constr pattern : cases_pattern :=
   natural_pat0 [ "(" "0" ")" ] -> [ 'N: 0 ' ]
 | natural_pat1 [ "(" "1" ")" ] -> [ 'N: 1 ' ]
 | natural_pat2 [ "(" "2" ")" ] -> [ 'N: 2 ' ]

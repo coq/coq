@@ -76,6 +76,7 @@ type parser_type =
   | AstListParser
   | AstParser
   | ConstrParser
+  | CasesPatternParser
   | TacticParser
   | VernacParser
 

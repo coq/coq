@@ -207,7 +207,8 @@ let prec_assoc = function
 
 let constr_tab =
   [| "constr0"; "constr1"; "constr2"; "constr3"; "lassoc_constr4";
-     "constr5"; "constr6"; "constr7"; "constr8"; "constr9"; "constr10" |]
+     "constr5"; "constr6"; "constr7"; "constr8"; "constr9"; "constr10";
+     "pattern" |]
   
 let constr_rule (n,p) =
   if p = E then constr_tab.(n) else constr_tab.(max (n-1) 0)
@@ -420,13 +421,14 @@ let add_infix assoc n inf qid sc =
   add_notation assoc n ("x "^(quote inf)^" y") ast sc
 
 (* Delimiters *)
-let load_delimiters _ (_,(gram_rule,scope,dlm)) =
+let load_delimiters _ (_,(_,_,scope,dlm)) =
   Symbols.declare_scope scope
 
-let open_delimiters i (_,(gram_rule,scope,dlm)) =
+let open_delimiters i (_,(gram_rule,pat_gram_rule,scope,dlm)) =
   if i=1 then begin
-    Egrammar.extend_grammar gram_rule;   (* For parsing *)
-    Symbols.declare_delimiters scope dlm (* For printing *)
+    Egrammar.extend_grammar gram_rule;      (* For parsing terms *)
+    Egrammar.extend_grammar pat_gram_rule;  (* For parsing patterns *)
+    Symbols.declare_delimiters scope dlm    (* For printing *)
   end
 
 let cache_delimiters o =
@@ -440,12 +442,18 @@ let (inDelim,outDelim) =
       load_function = load_delimiters;
       export_function = (fun x -> Some x) }
 
+let make_delimiter_rule (l,r as dlms) scope inlevel outlevel dlmname fname =
+  let symbols = [Terminal l; NonTerminal ((inlevel,E),"$e"); Terminal r] in
+  let prod = make_production symbols in
+  let args = Pcons(Pquote (string scope), Pcons (Pmeta ("$e",Tany), Pnil)) in
+  let action = Act (PureAstPat (Pnode(dlmname,args))) in
+  make_constr_grammar_rule outlevel fname prod action
+
 let add_delimiters scope (l,r as dlms) =
   if l = "" or r = "" then error "Delimiters cannot be empty";
   let fname = scope^"_delimiters" in
-  let symbols = [Terminal l; NonTerminal ((8,E),"$e"); Terminal r] in
-  let prod = make_production symbols in
-  let args = Pcons(Pquote (string scope), Pcons (Pmeta ("$e",Tany), Pnil)) in
-  let action = Act (PureAstPat (Pnode("DELIMITERS",args))) in
-  let gram_rule = make_constr_grammar_rule 0 fname prod action in
-  Lib.add_anonymous_leaf (inDelim(gram_rule,scope,dlms))
+  let gram_rule = make_delimiter_rule dlms scope 8 0 "DELIMITERS" fname in
+  let pfname = scope^"_patdelimiters" in
+  let pat_gram_rule = (* 11 is for "pattern" *)
+    make_delimiter_rule dlms scope 11 11 "PATTDELIMITERS" pfname in
+  Lib.add_anonymous_leaf (inDelim(gram_rule,pat_gram_rule,scope,dlms))
