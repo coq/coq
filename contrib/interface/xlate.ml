@@ -218,6 +218,7 @@ let xlate_class = function
 
 let id_to_pattern_var ctid =
  match ctid with
+ | CT_metaid _ -> xlate_error "metaid not expected in pattern_var"
  | CT_ident "_" -> 
      CT_coerce_ID_OPT_to_MATCH_PATTERN (CT_coerce_NONE_to_ID_OPT CT_none)
  | CT_ident id_string ->
@@ -380,7 +381,10 @@ and xlate_formula_ne_list = function
     [] -> assert false
   | a::l -> CT_formula_ne_list(xlate_formula a, List.map xlate_formula l);;
 
-
+let (xlate_ident_or_metaid:
+      Names.identifier Util.located Tacexpr.or_metaid -> ct_ID) = function
+    AI (_, x) -> xlate_ident x
+  | MetaId(_, x) -> CT_metaid x;;
 
 let xlate_hyp_location =
  function
@@ -534,6 +538,39 @@ let xlate_largs_to_id_unit largs =
       fst::rest -> fst, rest
     | _ -> assert false;;
 
+let xlate_int_or_constr = function
+    ElimOnConstr a -> CT_coerce_FORMULA_to_FORMULA_OR_INT(xlate_formula a)
+  | ElimOnIdent(_,i) ->
+      CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
+      	(CT_coerce_ID_to_ID_OR_INT(xlate_ident i))
+  | ElimOnAnonHyp i -> 
+      CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
+	(CT_coerce_INT_to_ID_OR_INT(CT_int i));;
+
+let xlate_using = function
+    None -> CT_coerce_NONE_to_USING(CT_none)
+  | Some (c2,sl2) -> CT_using (xlate_formula c2, xlate_bindings sl2);;
+
+let xlate_one_unfold_block = function
+    (nums,qid) -> 
+      CT_unfold_occ (CT_int_list (List.map (fun x -> CT_int x) nums),
+		     qualid_or_meta_to_ct_ID qid);;
+
+let xlate_lettac_clauses = function
+    (opt_l, l') ->
+      let res = 
+	(List.map 
+	   (fun (id, l) -> 
+	      CT_unfold_occ(CT_int_list (List.map (fun x -> CT_int x) l),
+			    xlate_ident_or_metaid id)) l') in
+	match opt_l with
+	    Some l ->
+	      CT_unfold_list
+	      	((CT_unfold_occ
+		    (CT_int_list (List.map (fun x -> CT_int x) l),
+		     CT_ident "Goal"))::res)
+	  | None -> CT_unfold_list res;;
+
 let rec (xlate_tacarg:raw_tactic_arg -> ct_TACTIC_ARG) =
   function
     | TacVoid ->
@@ -541,15 +578,18 @@ let rec (xlate_tacarg:raw_tactic_arg -> ct_TACTIC_ARG) =
     | Tacexp t -> 
 	CT_coerce_TACTIC_COM_to_TACTIC_ARG(xlate_tactic t)
     | Integer n ->
-	CT_coerce_ID_OR_INT_to_TACTIC_ARG
-	  (CT_coerce_INT_to_ID_OR_INT (CT_int n))
+	CT_coerce_FORMULA_OR_INT_to_TACTIC_ARG
+	  (CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
+	     (CT_coerce_INT_to_ID_OR_INT (CT_int n)))
     | Reference r ->
-	CT_coerce_ID_OR_INT_to_TACTIC_ARG
-	  (CT_coerce_ID_to_ID_OR_INT (reference_to_ct_ID r))
+	CT_coerce_FORMULA_OR_INT_to_TACTIC_ARG
+	  (CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
+	     (CT_coerce_ID_to_ID_OR_INT (reference_to_ct_ID r)))
     | TacDynamic _ ->
 	failwith "Dynamics not treated in xlate_ast"
     | ConstrMayEval (ConstrTerm c) ->
-	CT_coerce_FORMULA_to_TACTIC_ARG (xlate_formula c)
+	CT_coerce_FORMULA_OR_INT_to_TACTIC_ARG
+	  (CT_coerce_FORMULA_to_FORMULA_OR_INT (xlate_formula c))
     | ConstrMayEval(ConstrEval(r,c)) ->
 	CT_coerce_EVAL_CMD_to_TACTIC_ARG
 	  (CT_eval(CT_coerce_NONE_to_INT_OPT CT_none, xlate_red_tactic r,
@@ -559,8 +599,9 @@ let rec (xlate_tacarg:raw_tactic_arg -> ct_TACTIC_ARG) =
     | MetaIdArg _ ->
 	xlate_error "MetaIdArg should only be used in quotations"
     | MetaNumArg (_,n) ->
-	CT_coerce_FORMULA_to_TACTIC_ARG 
-	 (CT_coerce_ID_to_FORMULA(CT_metac (CT_int n)))
+	CT_coerce_FORMULA_OR_INT_to_TACTIC_ARG 
+	  (CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
+	     (CT_coerce_ID_to_ID_OR_INT(CT_metac (CT_int n))))
     | t ->
 	CT_coerce_TACTIC_COM_to_TACTIC_ARG(xlate_call_or_tacarg t)
 
@@ -592,9 +633,7 @@ and xlate_red_tactic =
      let conv_flags, red_ids = get_flag flag_list in
      CT_cbv (CT_conversion_flag_list conv_flags, red_ids)
   | Unfold unf_list ->
-     let ct_unf_list = List.map (fun (nums,qid) -> 
-       CT_unfold_occ (CT_int_list (List.map (fun x -> CT_int x) nums),
-         qualid_or_meta_to_ct_ID qid)) unf_list in
+     let ct_unf_list = List.map xlate_one_unfold_block unf_list in
      (match ct_unf_list with
       | first :: others -> CT_unfold (CT_unfold_ne_list (first, others))
       | [] -> error "there should be at least one thing to unfold")
@@ -711,7 +750,7 @@ and xlate_tactic =
          (match cl_l with
             | [] -> assert false 
             | fst::others ->
-                CT_lettac (CT_let_clauses(fst, others), mk_let_value t))
+                CT_let_ltac (CT_let_clauses(fst, others), mk_let_value t))
    | TacLetCut _ -> xlate_error "Unclear future of syntax Let x := t"
    | TacLetRecIn([], _) -> xlate_error "recursive definition with no definition"
    | TacLetRecIn(f1::l, t) -> 
@@ -907,12 +946,8 @@ and xlate_tac =
 	CT_generalize_dependent (xlate_formula c)
     | TacElimType c -> CT_elim_type (xlate_formula c)
     | TacCaseType c -> CT_case_type (xlate_formula c)
-    | TacElim ((c1,sl), None) ->
-     CT_elim (xlate_formula c1, xlate_bindings sl,
-              CT_coerce_NONE_to_USING CT_none)
-    | TacElim ((c1,sl), Some (c2,sl2)) ->
-     CT_elim (xlate_formula c1, xlate_bindings sl,
-              CT_using (xlate_formula c2, xlate_bindings sl2))
+    | TacElim ((c1,sl), u) ->
+     CT_elim (xlate_formula c1, xlate_bindings sl, xlate_using u)
     | TacCase (c1,sl) ->
      CT_casetac (xlate_formula c1, xlate_bindings sl)
     | TacOldInduction h -> CT_induction (xlate_quantified_hypothesis h)
@@ -964,20 +999,41 @@ and xlate_tac =
        CT_id_list (List.map xlate_ident idlist))
     | TacExtend (_,"Omega", []) -> CT_omega
     | TacRename ((_,id1), (_,id2)) -> CT_rename(xlate_ident id1, xlate_ident id2)
-    | TacClearBody _ -> xlate_error "TODO: Clear Body H"
-    | TacDAuto (_, _) -> xlate_error "TODO: DAuto"
-    | TacNewDestruct _ -> xlate_error "TODO: NewDestruct"
-    | TacNewInduction _ -> xlate_error "TODO: NewInduction"
-    | TacInstantiate (_, _) -> xlate_error "TODO: Instantiate"
-    | TacLetTac (_, _, _) -> xlate_error "TODO: LetTac"
-    | TacForward (true, Name id, c) -> 
-               CT_pose(CT_ident (string_of_id id), xlate_formula c)
-    | TacForward (false, Name id, c) -> 
-               CT_assert(CT_ident (string_of_id id), xlate_formula c)
-    | TacForward (_, _, _) -> xlate_error "TODO: Assert/Pose id:=c"
+    | TacClearBody([]) -> assert false
+    | TacClearBody(a::l) -> 
+	CT_clear_body
+	  (CT_id_ne_list
+	     (ident_or_meta_to_ct_ID a, List.map ident_or_meta_to_ct_ID l))
+    | TacDAuto (a, b) -> CT_dauto(xlate_int_opt a, xlate_int_opt b)
+    | TacNewDestruct(a,b,c) ->
+	CT_new_destruct
+	  (xlate_int_or_constr a, xlate_using b, 
+	   CT_id_list_list
+	     (List.map (fun l -> CT_id_list(List.map xlate_ident l)) c))
+    | TacNewInduction(a,b,c) ->
+	CT_new_induction
+	  (xlate_int_or_constr a, xlate_using b, 
+	   CT_id_list_list
+	     (List.map (fun l -> CT_id_list(List.map xlate_ident l)) c))
+    | TacInstantiate (a, b) -> 
+	CT_instantiate(CT_int a, xlate_formula b)
+    | TacLetTac (id, c, cl) ->
+        CT_lettac(xlate_ident id, xlate_formula c, 
+		  (* TODO LATER: This should be shared with Unfold,
+		     but the structures are different *)
+		  xlate_lettac_clauses cl)
+    | TacForward (true, name, c) -> 
+(* TODO LATER : avoid adding a location that will be ignored *)
+               CT_pose(xlate_id_opt ((0,0), name), xlate_formula c)
+    | TacForward (false, name, c) -> 
+               CT_assert(xlate_id_opt ((0,0),name), xlate_formula c)
     | TacTrueCut (idopt, c) -> 
                              CT_truecut(xlate_ident_opt idopt, xlate_formula c)
-    | TacAnyConstructor tacopt -> xlate_error "TODO: Constructor tac"
+    | TacAnyConstructor(Some tac) -> 
+	CT_any_constructor
+	(CT_coerce_TACTIC_COM_to_TACTIC_OPT(xlate_tactic tac))
+    | TacAnyConstructor(None) -> 
+	CT_any_constructor(CT_coerce_NONE_to_TACTIC_OPT CT_none)
     | TacExtend(_, "Ring", [arg]) -> 
 	CT_ring
 	  (CT_formula_list
@@ -985,7 +1041,7 @@ and xlate_tac =
 		(out_gen (wit_list0 rawwit_constr) arg)))
     | TacExtend (_,id, l) ->
      CT_user_tac (CT_ident id, CT_targ_list (List.map coerce_genarg_to_TARG l))
-    | TacAlias (_, _, _) -> xlate_error "TODO: aliases"
+    | TacAlias (_, _, _) -> xlate_error "TODO LATER: aliases"
 
 and coerce_genarg_to_TARG x =
  match Genarg.genarg_tag x with
@@ -993,12 +1049,15 @@ and coerce_genarg_to_TARG x =
   | BoolArgType -> xlate_error "TODO: generic boolean argument"
   | IntArgType ->
       let n = out_gen rawwit_int x in
-      CT_coerce_ID_OR_INT_to_TARG (CT_coerce_INT_to_ID_OR_INT (CT_int n))
+	CT_coerce_FORMULA_OR_INT_to_TARG
+	  (CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
+	     (CT_coerce_INT_to_ID_OR_INT (CT_int n)))
   | IntOrVarArgType ->
       let x = match out_gen rawwit_int_or_var x with
 	| ArgArg n -> CT_coerce_INT_to_ID_OR_INT (CT_int n)
 	| ArgVar (_,id) -> CT_coerce_ID_to_ID_OR_INT (xlate_ident id) in
-      CT_coerce_ID_OR_INT_to_TARG x
+	CT_coerce_FORMULA_OR_INT_to_TARG
+	  (CT_coerce_ID_OR_INT_to_FORMULA_OR_INT x)
   | StringArgType ->
      let s = CT_string (out_gen rawwit_string x) in
        CT_coerce_SCOMMENT_CONTENT_to_TARG
@@ -1006,13 +1065,19 @@ and coerce_genarg_to_TARG x =
 	    (CT_coerce_STRING_to_ID_OR_STRING s))
   | PreIdentArgType ->
       let id = CT_ident (out_gen rawwit_pre_ident x) in
-      CT_coerce_ID_OR_INT_to_TARG (CT_coerce_ID_to_ID_OR_INT id)
+	CT_coerce_FORMULA_OR_INT_to_TARG
+	  (CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
+	     (CT_coerce_ID_to_ID_OR_INT id))
   | IdentArgType ->
       let id = xlate_ident (out_gen rawwit_ident x) in
-      CT_coerce_ID_OR_INT_to_TARG (CT_coerce_ID_to_ID_OR_INT id)
+	CT_coerce_FORMULA_OR_INT_to_TARG
+	  (CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
+	     (CT_coerce_ID_to_ID_OR_INT id))
   | RefArgType ->
       let id = tac_qualid_to_ct_ID (out_gen rawwit_ref x) in
-      CT_coerce_ID_OR_INT_to_TARG (CT_coerce_ID_to_ID_OR_INT id)
+	CT_coerce_FORMULA_OR_INT_to_TARG
+	  (CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
+	     (CT_coerce_ID_to_ID_OR_INT id))
   (* Specific types *)
   | SortArgType ->
       CT_coerce_SCOMMENT_CONTENT_to_TARG

@@ -648,6 +648,9 @@ and fFORMULA_NE_LIST = function
 and fFORMULA_OPT = function
 | CT_coerce_FORMULA_to_FORMULA_OPT x -> fFORMULA x
 | CT_coerce_ID_OPT_to_FORMULA_OPT x -> fID_OPT x
+and fFORMULA_OR_INT = function
+| CT_coerce_FORMULA_to_FORMULA_OR_INT x -> fFORMULA x
+| CT_coerce_ID_OR_INT_to_FORMULA_OR_INT x -> fID_OR_INT x
 and fGRAMMAR = function
 | CT_grammar_none -> fNODE "grammar_none" 0
 and fHINT_EXPRESSION = function
@@ -674,13 +677,19 @@ and fID = function
    print_string "\n"| CT_metac(x1) ->
    fINT x1;
    fNODE "metac" 1
-and fIDENTITY_OPT = function
+| CT_metaid x -> fATOM "metaid";
+   (f_atom_string x);
+   print_string "\n"and fIDENTITY_OPT = function
 | CT_coerce_NONE_to_IDENTITY_OPT x -> fNONE x
 | CT_identity -> fNODE "identity" 0
 and fID_LIST = function
 | CT_id_list l ->
    (List.iter fID l);
    fNODE "id_list" (List.length l)
+and fID_LIST_LIST = function
+| CT_id_list_list l ->
+   (List.iter fID_LIST l);
+   fNODE "id_list_list" (List.length l)
 and fID_NE_LIST = function
 | CT_id_ne_list(x,l) ->
    fID x;
@@ -997,8 +1006,7 @@ and fSTRING_OPT = function
 | CT_coerce_STRING_to_STRING_OPT x -> fSTRING x
 and fTACTIC_ARG = function
 | CT_coerce_EVAL_CMD_to_TACTIC_ARG x -> fEVAL_CMD x
-| CT_coerce_FORMULA_to_TACTIC_ARG x -> fFORMULA x
-| CT_coerce_ID_OR_INT_to_TACTIC_ARG x -> fID_OR_INT x
+| CT_coerce_FORMULA_OR_INT_to_TACTIC_ARG x -> fFORMULA_OR_INT x
 | CT_coerce_TACTIC_COM_to_TACTIC_ARG x -> fTACTIC_COM x
 | CT_coerce_TERM_CHANGE_to_TACTIC_ARG x -> fTERM_CHANGE x
 | CT_void -> fNODE "void" 0
@@ -1015,12 +1023,15 @@ and fTACTIC_COM = function
 | CT_absurd(x1) ->
    fFORMULA x1;
    fNODE "absurd" 1
+| CT_any_constructor(x1) ->
+   fTACTIC_OPT x1;
+   fNODE "any_constructor" 1
 | CT_apply(x1, x2) ->
    fFORMULA x1;
    fSPEC_LIST x2;
    fNODE "apply" 2
 | CT_assert(x1, x2) ->
-   fID x1;
+   fID_OPT x1;
    fFORMULA x2;
    fNODE "assert" 2
 | CT_assumption -> fNODE "assumption" 0
@@ -1060,6 +1071,9 @@ and fTACTIC_COM = function
 | CT_clear(x1) ->
    fID_NE_LIST x1;
    fNODE "clear" 1
+| CT_clear_body(x1) ->
+   fID_NE_LIST x1;
+   fNODE "clear_body" 1
 | CT_cofixtactic(x1, x2) ->
    fID_OPT x1;
    fCOFIX_TAC_LIST x2;
@@ -1092,6 +1106,10 @@ and fTACTIC_COM = function
    fFORMULA x1;
    fID_OPT x2;
    fNODE "cutrewrite_rl" 2
+| CT_dauto(x1, x2) ->
+   fINT_OPT x1;
+   fINT_OPT x2;
+   fNODE "dauto" 2
 | CT_dconcl -> fNODE "dconcl" 0
 | CT_decompose_list(x1, x2) ->
    fID_NE_LIST x1;
@@ -1182,6 +1200,10 @@ and fTACTIC_COM = function
 | CT_injection_eq(x1) ->
    fID_OR_INT_OPT x1;
    fNODE "injection_eq" 1
+| CT_instantiate(x1, x2) ->
+   fINT x1;
+   fFORMULA x2;
+   fNODE "instantiate" 2
 | CT_intro(x1) ->
    fID_OPT x1;
    fNODE "intro" 1
@@ -1203,10 +1225,15 @@ and fTACTIC_COM = function
 | CT_left(x1) ->
    fSPEC_LIST x1;
    fNODE "left" 1
-| CT_lettac(x1, x2) ->
+| CT_let_ltac(x1, x2) ->
    fLET_CLAUSES x1;
    fLET_VALUE x2;
-   fNODE "lettac" 2
+   fNODE "let_ltac" 2
+| CT_lettac(x1, x2, x3) ->
+   fID x1;
+   fFORMULA x2;
+   fUNFOLD_LIST x3;
+   fNODE "lettac" 3
 | CT_match_context(x,l) ->
    fCONTEXT_RULE x;
    (List.iter fCONTEXT_RULE l);
@@ -1223,6 +1250,16 @@ and fTACTIC_COM = function
    fID x1;
    fID x2;
    fNODE "move_after" 2
+| CT_new_destruct(x1, x2, x3) ->
+   fFORMULA_OR_INT x1;
+   fUSING x2;
+   fID_LIST_LIST x3;
+   fNODE "new_destruct" 3
+| CT_new_induction(x1, x2, x3) ->
+   fFORMULA_OR_INT x1;
+   fUSING x2;
+   fID_LIST_LIST x3;
+   fNODE "new_induction" 3
 | CT_omega -> fNODE "omega" 0
 | CT_orelse(x1, x2) ->
    fTACTIC_COM x1;
@@ -1233,7 +1270,7 @@ and fTACTIC_COM = function
    (List.iter fTACTIC_COM l);
    fNODE "parallel" (1 + (List.length l))
 | CT_pose(x1, x2) ->
-   fID x1;
+   fID_OPT x1;
    fFORMULA x2;
    fNODE "pose" 2
 | CT_progress(x1) ->
@@ -1350,7 +1387,7 @@ and fTARG = function
 | CT_coerce_BINDING_to_TARG x -> fBINDING x
 | CT_coerce_COFIXTAC_to_TARG x -> fCOFIXTAC x
 | CT_coerce_FIXTAC_to_TARG x -> fFIXTAC x
-| CT_coerce_ID_OR_INT_to_TARG x -> fID_OR_INT x
+| CT_coerce_FORMULA_OR_INT_to_TARG x -> fFORMULA_OR_INT x
 | CT_coerce_PATTERN_to_TARG x -> fPATTERN x
 | CT_coerce_SCOMMENT_CONTENT_to_TARG x -> fSCOMMENT_CONTENT x
 | CT_coerce_SIGNED_INT_LIST_to_TARG x -> fSIGNED_INT_LIST x
@@ -1415,6 +1452,10 @@ and fUNFOLD = function
    fINT_LIST x1;
    fID x2;
    fNODE "unfold_occ" 2
+and fUNFOLD_LIST = function
+| CT_unfold_list l ->
+   (List.iter fUNFOLD l);
+   fNODE "unfold_list" (List.length l)
 and fUNFOLD_NE_LIST = function
 | CT_unfold_ne_list(x,l) ->
    fUNFOLD x;
@@ -1440,6 +1481,7 @@ and fVAR = function
 | CT_coerce_BINDER_NE_LIST_to_VARG x -> fBINDER_NE_LIST x
 | CT_coerce_FORMULA_LIST_to_VARG x -> fFORMULA_LIST x
 | CT_coerce_FORMULA_OPT_to_VARG x -> fFORMULA_OPT x
+| CT_coerce_FORMULA_OR_INT_to_VARG x -> fFORMULA_OR_INT x
 | CT_coerce_ID_OPT_OR_ALL_to_VARG x -> fID_OPT_OR_ALL x
 | CT_coerce_ID_OR_INT_OPT_to_VARG x -> fID_OR_INT_OPT x
 | CT_coerce_INT_LIST_to_VARG x -> fINT_LIST x

@@ -433,8 +433,9 @@ let inspect n =
          (P_pl (CT_premises_list (List.rev !ctv_SEARCH_LIST))));;
 
 let ct_int_to_TARG n = 
-  CT_coerce_ID_OR_INT_to_TARG
-    (CT_coerce_INT_to_ID_OR_INT (CT_int n));;
+	CT_coerce_FORMULA_OR_INT_to_TARG
+	  (CT_coerce_ID_OR_INT_to_FORMULA_OR_INT
+	     (CT_coerce_INT_to_ID_OR_INT (CT_int n)));;
 
 let pair_list_to_ct l =
     CT_user_tac(CT_ident "pair_int_list",
