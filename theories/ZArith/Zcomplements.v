@@ -18,6 +18,8 @@ Open Local Scope Z_scope.
 (**********************************************************************)
 (* Properties of comparison on Z *)
 
+Set Implicit Arguments.
+
 Theorem Zcompare_Zmult_right : (x,y,z:Z)` z>0` -> `x ?= y`=`x*z ?= y*z`.
 
 Intros; Apply Zcompare_egal_dec;
@@ -139,9 +141,9 @@ Elim (H `|m|`);Intros;Auto with zarith.
 Elim (Zabs_dec m);Intro eq;Rewrite eq;Trivial.
 Qed.
 
-(** To do case analysis over the sign of [z] *) 
-
 Unset Implicit Arguments.
+
+(** To do case analysis over the sign of [z] *) 
 
 Lemma Zcase_sign : (x:Z)(P:Prop)
  (`x=0` -> P) ->
