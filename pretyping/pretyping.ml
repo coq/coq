@@ -400,12 +400,13 @@ let rec pretype tycon env isevars lvar lmeta = function
                (* may be Type while Prop or Set would be expected *)
 	       match tycon with
 		 | Some pred ->
-                     Retyping.get_judgment_of env (evars_of isevars) pred
+                     false,
+		     Retyping.get_judgment_of env (evars_of isevars) pred
 	         | None ->
                      let sigma = evars_of isevars in
                      error_cant_find_case_type_loc loc env sigma cj.uj_val
 	     in
-             let pj =
+             let ok, pj =
 	       try
 		 let pred = 
 		   Cases.pred_case_ml 
@@ -420,12 +421,20 @@ let rec pretype tycon env isevars lvar lmeta = function
                    let _ = 
 		     option_app (the_conv_x_leq env isevars pred) tycon 
 		   in
-		   pj
+		   true, pj
 	       with Cases.NotInferable _ ->
 		 use_constraint ()
 	     in 
 	     let pj = j_nf_evar (evars_of isevars) pj in
 	     let pj = make_dep_of_undep env indt pj in
+	     let (bty,rsty) =
+	       Indrec.type_rec_branches
+		 false env (evars_of isevars) indt pj cj.uj_val 
+	     in
+	     let fj = 
+	       if ok then fj 
+	       else pretype (mk_tycon bty.(0)) env isevars lvar lmeta f 
+	     in
 	     let fv = fj.uj_val in
 	     let ft = fj.uj_type in
 	     let v =
@@ -433,12 +442,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 	       let ci = make_default_case_info env mis in
 	       mkCase (ci, (nf_betaiota pj.uj_val), cj.uj_val,[|fv|] ) 
 	     in
-	     let (_,rsty) =
-	       Indrec.type_rec_branches
-		 false env (evars_of isevars) indt pj cj.uj_val 
-	     in
-	     { uj_val = v;
-	       uj_type = rsty })
+	     { uj_val = v; uj_type = rsty })
 
   | ROldCase (loc,isrec,po,c,lf) ->
       let cj = pretype empty_tycon env isevars lvar lmeta c in
