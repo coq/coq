@@ -194,8 +194,8 @@ Save.
 
 Fixpoint interp_ExprA [lvar:(list (Sprod AT nat));e:ExprA] : AT :=
   Cases e of
-  | EAzero            => AzeroT
-  | EAone            => AoneT
+  | EAzero         => AzeroT
+  | EAone          => AoneT
   | (EAplus e1 e2) => (AplusT (interp_ExprA lvar e1) (interp_ExprA lvar e2))
   | (EAmult e1 e2) => (AmultT (interp_ExprA lvar e1) (interp_ExprA lvar e2))
   | (EAopp e)      => ((Aopp T) (interp_ExprA lvar e))

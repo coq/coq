@@ -147,8 +147,9 @@ Tactic Definition ApplyAssoc FT lvar trm :=
   Cut (interp_ExprA FT lvar (assoc trm))==(interp_ExprA FT lvar trm);
   [Intro;
    (Match Context With
-    | [id:(interp_ExprA ? ? (assoc ?))== ? |- ?] ->
-      Try (Rewrite <- id);Clear id;Cbv Beta Delta -[interp_ExprA] Iota)
+    | [id:(interp_ExprA ?1 ?2 (assoc ?3))== ?4 |- ?] ->
+      Let t=Eval Compute in (assoc ?3) In
+      Change (interp_ExprA ?1 ?2 t)== ?4 in id;Try (Rewrite <- id);Clear id)
   |Apply assoc_correct].
 
 (**** Distribution *****)
@@ -157,8 +158,9 @@ Tactic Definition ApplyDistrib FT lvar trm :=
   Cut (interp_ExprA FT lvar (distrib trm))==(interp_ExprA FT lvar trm);
   [Intro;
    (Match Context With
-    | [id:(interp_ExprA ? ? (distrib ?))== ? |- ?] ->
-      Try (Rewrite <- id);Clear id;Cbv Beta Delta -[interp_ExprA] Iota)
+    | [id:(interp_ExprA ?1 ?2 (distrib ?3))== ?4 |- ?] ->
+      Let t=Eval Compute in (distrib ?3) In
+      Change (interp_ExprA ?1 ?2 t)== ?4 in id;Try (Rewrite <- id);Clear id)
   |Apply distrib_correct].
 
 (**** Multiplication by the inverse product ****)
@@ -174,8 +176,8 @@ Tactic Definition Multiply mul :=
     Cut ~(interp_ExprA ?1 ?2 mul)==AzeroT;
     [Intro;
      Let id = GrepMult In
-     Apply (mult_eq ?1 ?3 ?4 mul ?2 id);
-     Cbv Beta Delta -[interp_ExprA] Iota
+     Apply (mult_eq ?1 ?3 ?4 mul ?2 id)(*;
+     Cbv Beta Delta -[interp_ExprA] Iota*)
     |Cbv Beta Delta -[not] Iota;
      Let AmultT = Eval Compute in (Amult ?1)
      And AoneT = Eval Compute in (Aone ?1) In
@@ -186,8 +188,9 @@ Tactic Definition ApplyMultiply FT lvar trm :=
   Cut (interp_ExprA FT lvar (multiply trm))==(interp_ExprA FT lvar trm);
   [Intro;
    (Match Context With
-    | [id:(interp_ExprA ? ? (multiply ?))== ? |- ?] ->
-      Try (Rewrite <- id);Clear id;Cbv Beta Delta -[interp_ExprA] Iota)
+    | [id:(interp_ExprA ?1 ?2 (multiply ?3))== ?4 |- ?] ->
+      Let t=Eval Compute in (multiply ?3) In
+      Change (interp_ExprA ?1 ?2 t)== ?4 in id;Try (Rewrite <- id);Clear id)
   |Apply multiply_correct].
 
 (**** Permutations and simplification ****)
@@ -197,8 +200,9 @@ Tactic Definition ApplyInverse mul FT lvar trm :=
       (interp_ExprA FT lvar trm);
   [Intro;
    (Match Context With
-   | [id:(interp_ExprA ? ? (inverse_simplif ? ?))== ? |- ?] ->
-     Try (Rewrite <- id);Clear id;Cbv Beta Delta -[interp_ExprA] Iota)
+   | [id:(interp_ExprA ?1 ?2 (inverse_simplif ?3 ?4))== ?5 |- ?] ->
+     Let t=Eval Compute in (inverse_simplif ?3 ?4) In
+      Change (interp_ExprA ?1 ?2 t)== ?5 in id;Try (Rewrite <- id);Clear id)
   |Apply inverse_correct;Assumption].
 
 (**** Inverse test ****)
