@@ -31,9 +31,7 @@ End Folding.
 
 
 Require Prelude.
-Require Logic_TypeSyntax.
 Require Logic_Type.
-
 
 Section Orderings.
    Variable U: Type.
@@ -124,8 +122,6 @@ Definition ap2 := [A,B,C:Setoid][f:|(A=>(B=>C))|][a:|A|] (ap (ap f a)).
 
 Inductive posint : Type
         := Z : posint | Suc : posint -> posint.
-
-Require Logic_Type.
 
 Axiom f_equal : (A,B:Type)(f:A->B)(x,y:A) x==y -> (f x)==(f y).
 Axiom eq_Suc : (n,m:posint) n==m -> (Suc n)==(Suc m).
