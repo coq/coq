@@ -19,17 +19,17 @@ open Vernac
 
 let break_happened = ref false
 
+(* Before outputing any data, output_results makes sure that no interrupt 
+   is going to disturb the process. *)
 let output_results_nl stream =
-  let _ = 
-    Sys.signal Sys.sigint
-      (Sys.Signal_handle (fun _ -> break_happened := true;()))
+    let _ = Sys.signal Sys.sigint
+       (Sys.Signal_handle(fun i -> break_happened := true;()))
   in
   mSGNL stream
 
 let rearm_break () =
-  let _ = 
-    Sys.signal Sys.sigint (Sys.Signal_handle(fun _ -> raise Sys.Break)) in
-  ()
+  let _ = Sys.signal Sys.sigint (Sys.Signal_handle(fun _ -> raise Sys.Break)) in 
+    ()
 
 let check_break () =
   if !break_happened then begin
@@ -41,12 +41,23 @@ let check_break () =
 
 let global_request_id = ref 013
 
-let acknowledge_command request_id =
-  [< 'fNL; 'sTR "message"; 'fNL; 'sTR "acknowledge"; 'fNL; 
-     'iNT request_id; 'fNL; 'sTR "***"; 'fNL >]
+let acknowledge_command_ref =
+   ref(fun request_id command_count opt_exn
+      -> [<'fNL; 'sTR "acknowledge command number ";
+           'iNT request_id; 'fNL; 
+         'sTR "successfully executed "; 'iNT command_count; 'fNL;
+           'sTR "error message"; 'fNL;
+         (match opt_exn with
+           Some e -> Errors.explain_exn e
+         | None -> [< >]); 'fNL;
+         'sTR "E-n-d---M-e-s-s-a-g-e"; 'fNL>])
 
-(* The markers are chosen to be likely to be different from any
-  existing text. *)
+let set_acknowledge_command f =
+  acknowledge_command_ref := f
+
+let acknowledge_command request_id = !acknowledge_command_ref request_id
+
+(* The markers are chosen to be likely to be different from any existing text. *)
 
 let start_marker = ref "protected_loop_start_command"
 let end_marker = ref "protected_loop_end_command"
@@ -61,46 +72,82 @@ let set_start_marker s =
 let set_end_marker s =
   end_marker := s
 
-let rec parse_one_command input_channel =
+exception E_with_rank of int * exn
+
+let rec parse_one_command_group input_channel =
+  let count = ref 0 in
   let this_line = input_line input_channel in
-  if ((String.length this_line) >= !start_length) then begin
+  if (String.length this_line) >= !start_length then begin
     String.blit this_line 0 !start_marker_buffer 0 !start_length;
     if !start_marker_buffer = !start_marker then
-      let snd_line = input_line input_channel in
-      begin 
-	try
-          global_request_id := int_of_string snd_line
-	with
-          | e -> failwith ("could not parse the request identifier |"^
-                           snd_line ^ "|") 
-      end;
-      let stream_tail =
-        Stream.from
-          (line_oriented_channel_to_option !end_marker input_channel) in
-      begin
-	try
-	  check_break();
+      let req_id_line = input_line input_channel in
+      	begin 
+	  try
+            global_request_id := int_of_string req_id_line
+	  with
+            | e -> failwith ("could not parse the request identifier |"^
+                             req_id_line ^ "|") ;
+	      	let count_line = input_line input_channel in
+	      	  begin
+		    try
+		      count := int_of_string count_line
+		    with
+		      | e -> failwith("could not parse the count|" ^ count_line
+				      ^ "|");
+			  let stream_tail =
+			    Stream.from
+			      (line_oriented_channel_to_option
+				 !end_marker input_channel) in
+			    begin
+			      check_break();
+			      rearm_break();
+			      let rec execute_n_commands rank =
+				if rank = !count then
+				  None
+				else
+				  let first_cmd_status =
+                      		    try 
+				      raw_do_vernac
+					(Pcoq.Gram.parsable stream_tail);
+				      None
+				    with e -> Some(rank,e) in
+				    match first_cmd_status with
+					None ->
+					  execute_n_commands (rank + 1)
+				      | v -> v in
+			      let r = execute_n_commands 0 in
+				(match r with
+				     None ->
+				       output_results_nl 
+					 (acknowledge_command
+					    !global_request_id !count None)
+				   | Some(rank, e) ->
+				       (match e with 
+                    			    DuringCommandInterp(a,e1) ->
+					      output_results_nl
+						(acknowledge_command
+						   !global_request_id rank (Some e1))
+		      | e -> raise e));
           rearm_break();
-          raw_do_vernac (Pcoq.Gram.parsable stream_tail);
-          output_results_nl(acknowledge_command !global_request_id);
-          rearm_break();
-        with
-          | e -> begin flush_until_end_of_stream stream_tail; raise e end
-      end;
-      flush_until_end_of_stream stream_tail
+	  flush_until_end_of_stream stream_tail
+			    end
+		  end
+	end
     else
-      parse_one_command input_channel
+      parse_one_command_group input_channel
   end else
-    parse_one_command input_channel
+    parse_one_command_group input_channel
 
 let protected_loop input_chan =
   let rec explain_and_restart e =
-    output_results_nl(Errors.explain_exn e);
-    rearm_break();
-    looprec input_chan;
+    begin
+      output_results_nl(Errors.explain_exn e);
+      rearm_break();
+      looprec input_chan;
+    end
   and looprec input_chan =
     try 
-      while true do parse_one_command input_chan done
+      while true do parse_one_command_group input_chan done
     with
       | Vernacinterp.Drop -> raise Vernacinterp.Drop
       | Vernacinterp.Quit -> exit 0
@@ -109,7 +156,8 @@ let protected_loop input_chan =
       | DuringCommandInterp(loc, Vernacinterp.Drop) -> raise Vernacinterp.Drop
       | DuringCommandInterp(loc, e) ->
 	  explain_and_restart e
-      | e -> explain_and_restart e 
-  in
-  mSGNL [<'sTR "Starting Centaur Specialized loop" >];
-  looprec input_chan
+      | e -> explain_and_restart e in
+    begin
+      mSGNL [<'sTR "Starting Centaur Specialized loop" >];
+      looprec input_chan
+    end
