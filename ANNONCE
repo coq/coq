@@ -1,13 +1,16 @@
-  The Coq development team is announcing the release version 7.2 of
-Coq. This release fixes several bugs of version 7.1 and offers the following 
-novelties or improvements
+  The Coq development team is pleased to announce the release of Coq
+version 7.2. This release fixes version 7.1 known bugs and offers
+the following novelties or improvements
 
-  - Coercions allowed in Cases patterns
-  - Extended standard library
+  - Extension of standard library (sorting; trigonometric, square and square
+    root functions; basic plane geometry; finite sums; more on continuity
+    and derivability; more on min and max; tail-recursive plus and mult)
   - Extended tactic "Assert H := P" for forward reasoning
-  - New tactic "ClearBody H" to clear the body of definitions in local context
+  - Optimised extraction
+  - Coercions allowed in Cases patterns
   - New declaration "Canonical Structure id = t : I" to help resolution of
-    implicits in developments using Record/Structure (contributed by A. Saïbi)
+    implicit arguments in developments using Record/Structure
+  - New tactic "ClearBody H" to clear local definition bodies
 
   Coq V7.2 is available in several formats from http://coq.inria.fr
 and ftp://ftp.inria.fr/INRIA/coq/V7.2. We currently provide the
