@@ -1476,18 +1476,35 @@ let rec remove_coercions_in_application inctx = function
       else RApp (loc,f,List.map (remove_coercions_in_application true) args)
   | c -> c
 
+let rec rename_rawconstr_var id0 id1 = function
+    RRef(loc,VarRef id) when id=id0 -> RRef(loc,VarRef id1)
+  | c -> map_rawconstr (rename_rawconstr_var id0 id1) c
+
 let rec share_fix_binders n rbl ty def =
   match ty,def with
       RProd(_,na0,t0,b), RLambda(_,na1,t1,m) ->
-        let (do_fact,na) =
-          match na0, na1 with
-              Name id0, Name id1 -> (id0=id1, na0)
-            | Name id, _ -> (not (occur_rawconstr id m), na0)
-            | _, Name id -> (not (occur_rawconstr id b), na1)
-            | _ -> (true, na0) in
-        if do_fact && same_rawconstr t0 t1 then
+        if not(same_rawconstr t0 t1) then List.rev rbl, ty, def
+        else
+          let (na,b,m) =
+            match na0, na1 with
+                Name id0, Name id1 ->
+                  if id0=id1 then (na0,b,m)
+                  else if not (occur_rawconstr id1 b) then
+                    (na1,rename_rawconstr_var id0 id1 b,m)
+                  else if not (occur_rawconstr id0 m) then
+                    (na1,b,rename_rawconstr_var id1 id0 m)
+                  else (* vraiment pas de chance! *)
+                    failwith "share_fix_binders: capture"
+              | Name id, Anonymous ->
+                  if not (occur_rawconstr id m) then (na0,b,m)
+                  else
+                    failwith "share_fix_binders: capture"
+              | Anonymous, Name id -> 
+                  if not (occur_rawconstr id b) then (na1,b,m)
+                  else
+                    failwith "share_fix_binders: capture"
+              | _ -> (na1,b,m) in
           share_fix_binders (n-1) ((na,None,t0)::rbl) b m
-        else List.rev rbl, ty, def
     | _ -> List.rev rbl, ty, def
 
 (**********************************************************************)
