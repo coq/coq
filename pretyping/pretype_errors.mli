@@ -26,6 +26,7 @@ type pretype_error =
   (* Unification *)
   | OccurCheck of int * constr
   | NotClean of int * constr
+  | UnsolvableImplicit of hole_kind
   (* Pretyping *)
   | VarNotFound of identifier
   | UnexpectedType of constr * constr
@@ -76,6 +77,8 @@ val error_ill_typed_rec_body_loc :
 val error_occur_check : env ->  Evd.evar_map -> int -> constr -> 'b
 
 val error_not_clean : env ->  Evd.evar_map -> int -> constr -> 'b
+
+val error_unsolvable_implicit : loc -> env -> Evd.evar_map -> hole_kind -> 'b
 
 (*s Ml Case errors *)
 

@@ -26,6 +26,7 @@ open Cases
 open Logic
 open Printer
 open Ast
+open Rawterm
 
 let guill s = "\""^s^"\""
 
@@ -278,6 +279,24 @@ let explain_not_clean ctx ev t =
   str" with a term using variable " ++ var ++ spc () ++
   str"which is not in its scope."
 
+let explain_unsolvable_implicit env = function
+  | QuestionMark -> str "Cannot infer a term for this placeholder"
+  | CasesType ->
+      str "Cannot infer the type of this pattern-matching problem"
+  | AbstractionType (Name id) ->
+      str "Cannot infer a type for " ++ Nameops.pr_id id
+  | AbstractionType Anonymous ->
+      str "Cannot infer a type of this anonymous abstraction"
+  | ImplicitArg (c,n) ->
+      str "Cannot infer the " ++ pr_ord n ++
+      str " implicit argument of " ++ Nametab.pr_global_env None c
+  | InternalHole ->
+      str "Cannot infer a term for an internal placeholder"
+  | TomatchTypeParameter (tyi,n) ->
+      str "Cannot infer the " ++ pr_ord n ++
+      str " argument of the inductive type (" ++ pr_inductive env tyi ++
+      str ") of this term"
+
 let explain_var_not_found ctx id = 
   str "The variable" ++ spc () ++ str (string_of_id id) ++
   spc ()  ++ str "was not found" ++ 
@@ -339,6 +358,8 @@ let explain_pretype_error ctx = function
       explain_occur_check ctx n c
   | NotClean (n,c) ->
       explain_not_clean ctx n c
+  | UnsolvableImplicit k ->
+      explain_unsolvable_implicit ctx k
   | VarNotFound id ->
       explain_var_not_found ctx id
   | UnexpectedType (actual,expected) ->

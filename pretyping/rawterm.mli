@@ -49,6 +49,7 @@ type hole_kind =
   | QuestionMark
   | CasesType
   | InternalHole
+  | TomatchTypeParameter of inductive * int
 
 type 'ctxt reference =
   | RConst of constant * 'ctxt

@@ -24,6 +24,7 @@ type pretype_error =
   (* Unification *)
   | OccurCheck of int * constr
   | NotClean of int * constr
+  | UnsolvableImplicit of hole_kind
   (* Pretyping *)
   | VarNotFound of identifier
   | UnexpectedType of constr * constr
@@ -134,6 +135,9 @@ let error_occur_check env sigma ev c =
 let error_not_clean env sigma ev c =
   let c = nf_evar sigma c in
   raise (PretypeError (env_ise sigma env, NotClean (ev,c)))
+
+let error_unsolvable_implicit loc env sigma e =
+  raise (PretypeError (env_ise sigma env, UnsolvableImplicit e))
 
 (*s Ml Case errors *)
 

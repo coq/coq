@@ -50,6 +50,7 @@ type hole_kind =
   | QuestionMark
   | CasesType
   | InternalHole
+  | TomatchTypeParameter of inductive * int
 
 type 'ctxt reference =
   | RConst of constant * 'ctxt
@@ -163,9 +164,8 @@ let rec subst_raw subst raw =
       let ref' = subst_global subst ref in 
 	if ref' == ref then raw else
 	  RHole (loc,ImplicitArg (ref',i))
-  | RHole (loc, 
-	   (AbstractionType _ | QuestionMark | CasesType | InternalHole)) ->
-      raw
+  | RHole (loc, (AbstractionType _ | QuestionMark | CasesType |
+      InternalHole | TomatchTypeParameter _)) -> raw
 
   | RCast (loc,r1,r2) -> 
       let r1' = subst_raw subst r1 and r2' = subst_raw subst r2 in

@@ -393,15 +393,18 @@ let rec find_row_ind = function
 
 exception NotCoercible
 
-let inh_coerce_to_ind isevars env ty tyi =
+let inh_coerce_to_ind isevars env tmloc ty tyi =
   let (mib,mip) = Inductive.lookup_mind_specif env tyi in
   let (ntys,_) = splay_prod env (evars_of isevars) mip.mind_nf_arity in
-   let (_,evarl) =
+  let hole_source = match tmloc with 
+    | Some loc -> fun i -> (loc, TomatchTypeParameter (tyi,i))
+    | None -> fun _ -> (dummy_loc, InternalHole) in
+   let (_,evarl,_) =
     List.fold_right
-      (fun (na,ty) (env,evl) ->
+      (fun (na,ty) (env,evl,n) ->
 	 (push_rel (na,None,ty) env,
-	    (new_isevar isevars env (dummy_loc, InternalHole) ty)::evl))
-      ntys (env,[]) in
+	    (new_isevar isevars env (hole_source n) ty)::evl,n+1))
+      ntys (env,[],1) in
   let expected_typ = applist (mkInd tyi,evarl) in
      (* devrait être indifférent d'exiger leq ou pas puisque pour 
         un inductif cela doit être égal *)
@@ -414,11 +417,11 @@ let inh_coerce_to_ind isevars env ty tyi =
  * use the function above.
  *)
 
-let unify_tomatch_with_patterns isevars env typ = function
+let unify_tomatch_with_patterns isevars env tmloc typ = function
   | Some (cloc,(cstr,_ as c)) ->
       (let tyi = inductive_of_constructor c in
        try 
-	 let indtyp = inh_coerce_to_ind isevars env typ tyi in
+	 let indtyp = inh_coerce_to_ind isevars env tmloc typ tyi in
 	 IsInd (typ,find_rectype env (evars_of isevars) typ)
        with NotCoercible ->
 	 (* 2 cases : Not the right inductive or not an inductive at all *)
@@ -435,7 +438,8 @@ let unify_tomatch_with_patterns isevars env typ = function
 let coerce_row typing_fun isevars env cstropt tomatch =
   let j = typing_fun empty_tycon env tomatch in
   let typ = body_of_type j.uj_type in
-  let t = unify_tomatch_with_patterns isevars env typ cstropt in
+  let loc = loc_of_rawconstr tomatch in
+  let t = unify_tomatch_with_patterns isevars env (Some loc) typ cstropt in
   (j.uj_val,t)
 
 let coerce_to_indtype typing_fun isevars env matx tomatchl =
@@ -452,7 +456,7 @@ let coerce_to_indtype typing_fun isevars env matx tomatchl =
 let to_mutind env isevars tm c t =
   match c with
     | Some body -> NotInd (c,t)
-    | None -> unify_tomatch_with_patterns isevars env t (find_row_ind tm)
+    | None -> unify_tomatch_with_patterns isevars env None t (find_row_ind tm)
 
 let type_of_tomatch = function
   | IsInd (t,_) -> t
