@@ -31,13 +31,16 @@ open Closure
 (* The flag [type_var] gives us information about an identifier
    coming from a Lambda or a Product:
    \begin{itemize}
-   \item [Varity] denotes identifiers of type an arity of sort [Set]
-     or [Type], that is $(x_1:X_1)\ldots(x_n:X_n)s$ with [s = Set] or [Type] 
-   \item [Vprop] denotes identifiers of type an arity of sort [Prop], 
-     or of type of type [Prop] 
-   \item [Vdefault] represents the other cases. It may be inexact after 
-   instanciation. For example [(X:Type)X] is [Vdefault] and may give [Set]
-   after instanciation, which is rather [Varity]
+   \item [Arity] denotes identifiers of type an arity of some sort [Set],
+     [Prop] or [Type], that is $(x_1:X_1)\ldots(x_n:X_n)s$ with [s = Set],
+     [Prop] or [Type] 
+   \item [NotArity] denotes the other cases. It may be inexact after 
+   instanciation. For example [(X:Type)X] is [NotArity] and may give [Set]
+   after instanciation, which is rather [Arity]
+   \item [Logic] denotes identifiers of type an arity of sort [Prop], 
+     or of type of type [Prop]
+   \item [Info] is the opposite. The same example [(X:Type)X] shows 
+     that an [Info] term might in fact be [Logic] later on. 
    \end{itemize} *)
 
 type info = Logic | Info
@@ -54,7 +57,7 @@ let default = (Info, NotArity)
 type signature = (type_var * identifier) list
 
 (* When dealing with CIC contexts, we maintain corresponding contexts 
-   made of [type_var] *)
+   telling whether a variable will be kept or will disappear *)
 
 type extraction_context = bool list
 
@@ -91,8 +94,6 @@ type extraction_result =
 (*s Utility functions. *)
 
 let whd_betaiotalet = clos_norm_flags (UNIFORM, red_add betaiota_red ZETA)
-
-(* Translation between [Type_extraction_result] and [type_var]. *)
 
 type lamprod = Lam | Prod
 
@@ -135,7 +136,7 @@ let rec get_lam_arity env c =
     | IsSort s -> Some s
     | _ -> None
 
-(* Detection of non-informative parts. *)
+(*s Detection of non-informative parts. *)
 
 let is_non_info_sort env s = is_Prop (whd_betadeltaiota env Evd.empty s)
 
@@ -184,7 +185,7 @@ let rec signature_of_arity env c = match kind_of_term c with
 
 (* [list_of_ml_arrows] applied to the ML type [a->b->]\dots[z->t]
    returns the list [[a;b;...;z]]. It is used when making the ML types
-   of inductive definitions. *)
+   of inductive definitions. We also suppress [Prop] parts. *)
 
 let rec list_of_ml_arrows = function
   | Tarr (Miniml.Tprop, b) -> list_of_ml_arrows b
@@ -192,8 +193,7 @@ let rec list_of_ml_arrows = function
   | t -> []
 
 (* [renum_db] gives the new de Bruijn indices for variables in an ML
-   term.  This translation is made according to a context: only
-   variables corresponding to a real ML type are keeped *)
+   term.  This translation is made according to an [extraction_context]. *)
 	
 let renum_db ctx n = 
   let rec renum = function
@@ -219,14 +219,6 @@ let rec push_many_rels_ctx keep_prop env ctx = function
 
 let fix_environment env ctx fl tl =
   push_many_rels_ctx true env ctx (List.combine fl (Array.to_list tl))
-
-(* Test for the application of a constructor *)
-
-let rec is_constructor_app c = match kind_of_term c with
-  | IsApp (c,_) -> is_constructor_app c
-  | IsCast (c,_) -> is_constructor_app c
-  | IsMutConstruct _ -> true
-  | _ -> false
 
 (* Decomposition of a type beginning with at least n products when reduced *)
 
@@ -256,6 +248,8 @@ let decompose_lam_eta n env c =
 
 let rec abstract_n n a = 
   if n = 0 then a else MLlam (anonymous, ml_lift 1 (abstract_n (n-1) a))
+
+
 
 (*s Tables to keep the extraction of inductive types and constructors. *)
 
@@ -295,10 +289,9 @@ let constant_table =
    Relation with [v_of_arity]: it is less precise, since we do not 
    delta-reduce in [extract_type] in general.
    \begin{itemize}
-   \item If [v_of_arity env t = Vdefault], 
+   \item If [v_of_arity env t = NotArity,_], 
    then [extract_type env t] is a [Tmltype].
-   \item If [extract_type env t = Tprop], then [v_of_arity env t = Vprop]
-   \item If [extract_type env t = Tarity], then [v_of_arity env t = Varity]
+   \item If [extract_type env t = Tarity], then [v_of_arity env t = Arity,_]
    \end{itemize} *)
 
 let rec extract_type env c =
@@ -442,7 +435,7 @@ and extract_term_with_type env ctx c t =
 	let v = v_of_arity env t in 
 	let env' = push_rel (n,None,t) env in
 	let ctx' = (snd v = NotArity) :: ctx in
-	let d' = extract_term env' ctx' d in 
+	let d' = extract_term env' ctx' d in
 	(* If [d] was of type an arity, [c] too would be so *)
 	(match v with
 	   | _,Arity -> d'
@@ -453,28 +446,9 @@ and extract_term_with_type env ctx c t =
 	(* TODO : magic or not *) 
 	Rmlterm (MLrel (renum_db ctx n))
     | IsApp (f,a) ->
-	let nargs = Array.length a in
-	let tyf = Typing.type_of env Evd.empty f in
-	let tyf = 
-	  if nb_prod tyf >= nargs then 
-	    tyf 
-	  else 
-	    whd_betadeltaiota env Evd.empty tyf 
-	in
-	let nbp = nb_prod tyf in
-	if nbp >= nargs then 
-	  (match extract_type env tyf with
-	     | Tmltype (_,s,_) -> 
-		 extract_app env ctx (f,tyf,s) (Array.to_list a) 
-	     | Tarity -> assert false (* Cf. precondition *)
-	     | Tprop -> assert false)
-	else begin
-	  Format.printf "%d/%d " nbp nargs; Format.print_flush ();
-	  let c' = 
-	    mkApp (mkApp (f, Array.sub a 0 nbp), Array.sub a nbp (nargs-nbp))
-	  in
-	  extract_term_with_type env ctx c' t
-	end
+  	let tyf = Typing.type_of env Evd.empty f in
+        let s = signature_of_application env f tyf a in  
+      	extract_app env ctx (f,tyf,s) (Array.to_list a) 
     | IsConst (sp,_) ->
 	Rmlterm (MLglob (ConstRef sp))
     | IsMutConstruct (cp,_) ->
@@ -553,7 +527,7 @@ and extract_term_with_type env ctx c t =
     | IsMutInd _ | IsProd _ | IsSort _ | IsVar _ 
     | IsMeta _ | IsEvar _ | IsCoFix _ ->
 	assert false 
-	  
+
 and extract_app env ctx (f,tyf,sf) args =
   let nargs = List.length args in
   assert (List.length sf >= nargs);
@@ -576,20 +550,43 @@ and extract_app env ctx (f,tyf,sf) args =
   match extract_term_with_type env ctx f tyf with
     | Rmlterm f' -> Rmlterm (MLapp (f', mlargs))
     | Rprop -> assert false
+
+and signature_of_application env f t a = 
+  let nargs = Array.length a in	 	
+  let t = 
+    if nb_prod t >= nargs then 
+      t 
+    else 
+      whd_betadeltaiota env Evd.empty t 
+  in
+  let nbp = nb_prod t in
+  let s = match extract_type env t with
+    | Tmltype (_,s,_) -> s	
+    | Tarity -> assert false (* Cf. precondition *)
+    | Tprop -> assert false
+  in 
+  if nbp >= nargs then 
+    s
+  else 
+    let f' = mkApp (f, Array.sub a 0 nbp) in 
+    let a' = Array.sub a nbp (nargs-nbp) in 
+    let t' = Typing.type_of env Evd.empty t in
+    s @ signature_of_application env f' t' a'
+
 	  
 
 (*s Extraction of a constr. *)
 
 and extract_constr_with_type env ctx c t =
-    match get_arity env t with
-      | Some (Prop Null) -> 
-	  Eprop
-      | Some _ -> 
+    match v_of_arity env t with
+      | (Logic, Arity) -> Emltype (Miniml.Tarity, [], [])
+      | (Logic, NotArity) -> Eprop  	
+      | (Info, Arity) -> 
 	  (match extract_type env c with
 	     | Tprop -> Eprop
-	     | Tarity -> Emltype (Miniml.Tarity, [], []) (* any other arity *)
+	     | Tarity -> Emltype (Miniml.Tarity, [], [])
 	     | Tmltype (t, sign, fl) -> Emltype (t, sign, fl))
-      | None -> 
+      | (Info, NotArity) -> 
 	  (match extract_term env ctx c with 
 	     | Rmlterm a -> Emlterm a
 	     | Rprop -> Eprop)
@@ -678,8 +675,6 @@ and extract_mib sp =
     done
   end
     
-(*s Extraction of a global reference i.e. a constant or an inductive. *)
-    
 and extract_inductive_declaration sp =
   extract_mib sp;
   let mib = Global.lookup_mind sp in
@@ -705,7 +700,7 @@ and extract_inductive_declaration sp =
   in
   Dtype l
 
-(*s ML declaration from a reference. *)
+(*s Extraction of a global reference i.e. a constant or an inductive. *)
 
 let extract_declaration r = match r with
   | ConstRef sp -> 
