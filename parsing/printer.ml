@@ -154,14 +154,21 @@ and default_tacpr = function
 let pr_var_decl env (id,c,typ) =
   let pbody = match c with
     | None ->  [<  >]
-    | Some c ->  [< 'sTR" := "; prterm_env env c >] in
-  let ptyp = [< 'sTR" : "; prtype_env env typ >] in
+    | Some c ->
+	(* Force evaluation *) 
+	let pb = prterm_env env c in
+	[< 'sTR" := "; pb >] in
+  let pt = prtype_env env typ in
+  let ptyp = [< 'sTR" : "; pt >] in
   [< pr_id id ; hOV 0 [< pbody; ptyp >] >]
 
 let pr_rel_decl env (na,c,typ) =
   let pbody = match c with
     | None ->  [<  >]
-    | Some c ->  [< 'sTR" :="; 'sPC; prterm_env env c >] in
+    | Some c ->
+	(* Force evaluation *) 
+	let pb = prterm_env env c in
+	[< 'sTR" :="; 'sPC; pb >] in
   let ptyp = prtype_env env typ in
   match na with
     | Anonymous -> [< 'sTR"<>" ; 'sPC; pbody; 'sTR" :"; 'sPC; ptyp >]
