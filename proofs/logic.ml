@@ -703,6 +703,8 @@ let prim_extractor subfun vl pft =
 
 open Printer
 
+let prterm x = prterm_env (Global.env()) x
+
 let pr_prim_rule = function
   | {name=Intro;newids=[id]} -> 
       str"Intro " ++ pr_id id

@@ -829,7 +829,8 @@ let rec print_proof sigma osign pf =
 	   hov 0 (prlist_with_sep pr_fnl (print_proof sigma hyps) spfl)
 )
 	  
-let pr_change gl = (str"Change " ++ prterm gl.evar_concl ++ str"." ++ fnl ())
+let pr_change gl = 
+  (str"Change " ++ prterm_env (Global.env()) gl.evar_concl ++ str"." ++ fnl ())
 		     
 let rec print_script nochange sigma osign pf =
   let {evar_hyps=sign; evar_concl=cl} = pf.goal in
