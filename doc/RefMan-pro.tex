@@ -280,10 +280,16 @@ This command restores the proof editing process to the original goal.
 \end{ErrMsgs}
 
 \subsection{\tt Focus.}\comindex{Focus}
-Will focus the attention on the first subgoal to prove, the remaining
-subgoals will no more be printed after the application of a tactic.
-This is useful when there are many current subgoals which clutter your
-screen.
+This focuses the attention on the first subgoal to prove and the printing
+of the other subgoals is suspended until the focused subgoal is
+solved or unfocused. This is useful when there are many current
+subgoals which clutter your screen.
+
+\begin{Variant}
+\item {\tt Focus {\num}.}\\ 
+This focuses the attention on the $\num^{\scriptsize th}$ subgoal to prove.
+
+\end{Variant}
 
 \subsection{\tt Unfocus.}\comindex{Unfocus}
 Turns off the focus mode.
