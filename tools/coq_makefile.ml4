@@ -134,10 +134,10 @@ let implicit () =
     print ".v.vo:\n\t$(COQC) $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print ".v.vi:\n\t$(COQC) -i $(COQDEBUG) $(COQFLAGS) $*\n\n";
     print ".v.g:\n\t$(GALLINA) $<\n\n";
-    print ".v.tex:\n\t$(COQWEB) $< -o $@\n\n";
-    print ".v.html:\n\t$(COQWEB) -html $< -o $@\n\n";
-    print ".g.g.tex:\n\t$(COQWEB) $< -o $@\n\n";
-    print ".g.g.html:\n\t$(COQWEB) -html $< -o $@\n\n"
+    print ".v.tex:\n\t$(COQDOC) -latex $< -o $@\n\n";
+    print ".v.html:\n\t$(COQDOC) -html $< -o $@\n\n";
+    print ".v.g.tex:\n\t$(COQDOC) -latex -g $< -o $@\n\n";
+    print ".v.g.html:\n\t$(COQDOC) -html -g $< -o $@\n\n"
   and ml_suffixes =
     if !some_mlfile then 
       [ ".mli"; ".ml"; ".cmo"; ".cmi"; ".cmx" ]
@@ -181,7 +181,7 @@ let variables l =
   print "COQFLAGS=-q $(OPT) $(COQLIBS)\n";
   print "COQC=$(COQBIN)coqc\n";
   print "GALLINA=gallina\n";
-  print "COQWEB=coqweb\n";
+  print "COQDOC=coqdoc\n";
   print "CAMLC=ocamlc -c\n";
   print "CAMLOPTC=ocamlopt -c\n";
   print "CAMLLINK=ocamlc\n";
@@ -293,9 +293,9 @@ let all_target l =
     print "html: $(HTMLFILES)\n\n";
     print "gallinahtml: $(GHTMLFILES)\n\n";
     print "all.ps: $(VFILES)\n";
-    print "\t$(COQWEB) -ps -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
-    print "all-gal.ps: $(GFILES)\n";
-    print "\t$(COQWEB) -ps -o $@ `$(COQDEP) -sort -suffix .g $(VFILES)`\n\n";
+    print "\t$(COQDOC) -ps -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
+    print "all-gal.ps: $(VFILES)\n";
+    print "\t$(COQDOC) -ps -g -o $@ `$(COQDEP) -sort -suffix .v $(VFILES)`\n\n";
     print "xml:: .xml_time_stamp\n";
     print ".xml_time_stamp: "; print_list "\\\n  " (vofiles l);
     print "\n\t$(COQVO2XML) $(COQFLAGS) $(?:%.o=%)\n";
