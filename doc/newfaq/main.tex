@@ -46,56 +46,116 @@ pointers to other references when possible.
 This FAQ is the sum of the questions that came to mind as we developed
 proofs in \Coq. Since we are singularly short-minded, we wrote the
 answers we found on bits of papers to have them at hand whenever the
-situation occurs again. This, is the result of that: a collection of
-tips one can refer to when proofs become intricate. Yes, this means we
-won't take the blame for the shortcomings of the following. But if you
-want to contribute and send in your own tricks, feel free to write to
-us...
+situation occurs again. This, is pretty much the result of that: a
+collection of tips one can refer to when proofs become intricate. Yes,
+this means we won't take the blame for the shortcomings of this
+FAQ. But if you want to contribute and send in your own question and
+answers, feel free to write to us\ldots
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Presentation}
 
-\Question[whatiscoq]{What is Coq?} 
+\Question[whatiscoq]{What is \Coq ?} 
+The Coq tool is a proof assistant which:
+\begin{itemize}
+\item allows to handle calculus assertions,
+\item to check mechanically proofs of these assertions,
+\item helps to find formal proofs,
+\item extracts a certified program from the constructive proof of its formal specification, 
+\end{itemize}
+Coq is written in the Objective Caml language and uses the Camlp4 Pre-processor-pretty-printer for Objective Caml.
 
-\Question[theoremprovers]{What are the other theorem provers?} 
+\Question[name]{Did you really need to name it like that ?}
+Some french computer scientists have a tradition of naming their
+software as animal species: Caml, Elan, Foc or Krakatoa are examples
+of this tacit convention. In french, ``coq'' means rooster, and it
+sounds like the initials of the Calculus of Constructions CoC on which
+it is based.
+
+\Question[theoremprovers]{What are the other theorem provers ?} 
+Many other theorem provers are available for use nowadays. Isabelle /
+HOL, Lego, Nuprl, PVS are examples of provers that are fairly similar
+to \Coq by the way they interact with the user. More distant relatives of
+\Coq are ACL2, ALF, Alfa, Mizar, $\Omega$mega\ldots
 
 \Question[intuitionnisticlogic]{What is intuitionnistic logic ?}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Documentation}
 
-\Question[coqdocumentation]{Where can I find documentation about Coq ?} 
+\Question[coqdocumentation]{Where can I find documentation about \Coq ?} 
+All the documentation about \Coq, from the reference manual to
+friendly tutorials and documentation of the standard library, is
+available online at 
+\mbox{\tt http://pauillac.inria.fr/coq/doc-eng.html}.
+All these documents are viewable either in browsable html, or as
+downloadable postscripts.
 
 \Question[coqfaq]{Where can I find this faq on the web ?} 
+Errr\ldots
 
-\Question[coqmailinglist]{Is there any mailing list about Coq ?} 
+\Question[coqmailinglist]{Is there any mailing list about \Coq ?} 
+The main \Coq mailing list is {\tt coq-club@pauillac.inria.fr}, which
+broadcasts questions and suggestions about the implementation, the
+logical formalism or proof developments. See
+\mbox{\tt http://pauillac.inria.fr/mailman/listinfo/coq-club} for
+subsription. Bugs reports should be sent at the {\tt
+coq-bugs@pauillac.inria.fr} mailing-list.
 
-\Question[coqbook]{Is there any book about Coq ?}
+\Question[coqbook]{Is there any book about \Coq ?}
+The first book on \Coq, Yves Bertot and Pierre Castéran's Coq'Art will
+be published by Springer-Verlag in 2004:
+\begin{quote}
+``This book provides a pragmatic introduction to the development of
+proofs and certified programs using Coq. With its large collection of
+examples and exercises it is an invaluable tool for researchers,
+students, and engineers interested in formal methods and the
+development of zero-default software.''
+\end{quote}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Installation}
 
-\Question[coqlicence]{What is the licence of Coq ?}
+\Question[coqlicence]{What is the licence of \Coq ?}
+It is distributed under the GNU Public Licence (GPL).
 
-\Question[coqsources]{Where can I find the sources of Coq ?}
+\Question[coqsources]{Where can I find the sources of \Coq ?}
+The sources of \Coq can be found online in the tar.gz'ed packages
+({\tt http://coq.inria.fr/distrib-eng.html}). Most recent sources can
+be accessed via anonymous CVS: {\tt
+http://coqcvs.inria.fr/cvsserver-eng.html}
 
-\Question[platform]{On which platform Coq is available ?}
+\Question[platform]{On which platform \Coq is available ?}
+Compiled binaries are available for Linux, MacOs X, Solaris, and
+Windows.
 
-\Question[nbusers]{How many Coq users are there ?}
+\Question[nbusers]{How many \Coq users are there ?}
 
-\Question[howold]{How old is Coq ?}
+\Question[howold]{How old is \Coq ?}
+The first official release of \Coq (v. 4.1.0) was distributed in 1989.
 
+\Question[relatedtools]{What are the \Coq-related tools ?}
 
-\Question[coqexamples]{Where can I find some Coq examples?} 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\Question[relatedtools]{What are the Coq related tools?}
+\section{Talkin' with the Rooster}
 
-\Question[goal]{What is a goal?}
+\Question[coqexamples]{Where can I find some \Coq examples ?} 
 
-\Question[ltac]{What is Ltac?}
+\Question[goal]{What is a goal ?}
 
-\Question[metavariable]{What is a meta variable?}
+\Question[ltac]{What is Ltac ?}
+
+\Question[metavariable]{What is a meta variable ?}
+
+\Question[type]{What is Type(i) ?}
+
+\Question[dependanttype]{What is a dependent type ?}
+
+\Question[reflexivity]{What is reflexivity ?}
 
 \Question[conjonction]{My goal is a conjonction, how can I prove it ?}
 
@@ -105,13 +165,9 @@ us...
 
 \Question[exist]{My goal is an existential, how can I prove it ?}
 
-\Question[type]{What is Type(i) ?}
-
-\Question[dependanttype]{What is a dependent type ?}
-
 \Question[subgoalsorder]{How can I change the order of the subgoals ?}
 
-\Question[hyphotesisorder]]{How can I change the order of the hyphothesis ?}
+\Question[hyphotesisorder]{How can I change the order of the hypothesis ?}
 
 \Question[ifsyntax]{What is the syntax for if ?}
 
@@ -119,8 +175,6 @@ us...
 
 \Question[patternmatchingsyntax]{What is the syntax for pattern matching ?}
 
-
-\Question[reflexivity]{What is reflexivity ?}
 
 
 
