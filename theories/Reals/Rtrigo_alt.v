@@ -55,7 +55,7 @@ Replace (sum_f_R0 [i:nat](sin_term a (S i)) (mult (S (S O)) n)) with ``-(sum_f_R
 Replace (sum_f_R0 [i:nat](sin_term a (S i)) (S (mult (S (S O)) n))) with ``-(sum_f_R0 (tg_alt Un) (S (mult (S (S O)) n)))``.
 Cut ``(sum_f_R0 (tg_alt Un) (S (mult (S (S O)) n)))<=a-(sin a)<=(sum_f_R0 (tg_alt Un) (mult (S (S O)) n))``->`` -(sum_f_R0 (tg_alt Un) (mult (S (S O)) n)) <= (sin a)-a <=  -(sum_f_R0 (tg_alt Un) (S (mult (S (S O)) n)))``.
 Intro; Apply H2.
-Apply sommes_partielles_ineq.
+Apply alternated_series_ineq.
 Unfold Un_decreasing Un; Intro; Cut (plus (mult (S (S O)) (S (S n0))) (S O))=(S (S (plus (mult (S (S O)) (S n0)) (S O)))).
 Intro; Rewrite H3.
 Replace ``(pow a (S (S (plus (mult (S (S O)) (S n0)) (S O)))))`` with ``(pow a (plus (mult (S (S O)) (S n0)) (S O)))*(a*a)``.
@@ -185,7 +185,7 @@ Replace (sum_f_R0 [i:nat](cos_term a0 (S i)) (mult (S (S O)) n0)) with ``-(sum_f
 Replace (sum_f_R0 [i:nat](cos_term a0 (S i)) (S (mult (S (S O)) n0))) with ``-(sum_f_R0 (tg_alt Un) (S (mult (S (S O)) n0)))``.
 Cut ``(sum_f_R0 (tg_alt Un) (S (mult (S (S O)) n0)))<=1-(cos a0)<=(sum_f_R0 (tg_alt Un) (mult (S (S O)) n0))``->`` -(sum_f_R0 (tg_alt Un) (mult (S (S O)) n0)) <= (cos a0)-1 <=  -(sum_f_R0 (tg_alt Un) (S (mult (S (S O)) n0)))``.
 Intro; Apply H3.
-Apply sommes_partielles_ineq.
+Apply alternated_series_ineq.
 Unfold Un_decreasing; Intro; Unfold Un.
 Cut (mult (S (S O)) (S (S n1)))=(S (S (mult (S (S O)) (S n1)))).
 Intro; Rewrite H4; Replace ``(pow a0 (S (S (mult (S (S O)) (S n1)))))`` with ``(pow a0 (mult (S (S O)) (S n1)))*(a0*a0)``.

@@ -39,7 +39,7 @@ Apply Rle_monotony_contra with ``/3``.
 Apply Rlt_Rinv; Sup0.
 Rewrite Rmult_1r; Rewrite <- (Rmult_sym ``3``); Rewrite <- Rmult_assoc; Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1l; Replace ``/(exp 1)`` with ``(exp (-1))``.
-Unfold exp; Case (exist_exp ``-1``); Intros; Simpl; Unfold exp_in in e; Assert H := (sommes_partielles_ineq [i:nat]``/(INR (fact i))`` x (S O)).
+Unfold exp; Case (exist_exp ``-1``); Intros; Simpl; Unfold exp_in in e; Assert H := (alternated_series_ineq [i:nat]``/(INR (fact i))`` x (S O)).
 Cut ``(sum_f_R0 (tg_alt [([i:nat]``/(INR (fact i))``)]) (S (mult (S (S O)) (S O)))) <= x <= (sum_f_R0 (tg_alt [([i:nat]``/(INR (fact i))``)]) (mult (S (S O)) (S O)))``.
 Intro; Elim H0; Clear H0; Intros H0 _; Simpl in H0; Unfold tg_alt in H0; Simpl in H0.
 Replace ``/3`` with ``1*/1+ -1*1*/1+ -1*( -1*1)*/2+ -1*( -1*( -1*1))*/(2+1+1+1+1)``.

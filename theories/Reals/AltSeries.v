@@ -17,10 +17,9 @@ Require Max.
 
 (**********)
 Definition tg_alt [Un:nat->R] : nat->R := [i:nat]``(pow (-1) i)*(Un i)``.
-Definition positivity_sui [Un:nat->R] : Prop := (n:nat)``0<=(Un n)``.
+Definition positivity_seq [Un:nat->R] : Prop := (n:nat)``0<=(Un n)``.
 
-(* Croissance des sommes partielles impaires *)
-Lemma CV_ALT_step1 : (Un:nat->R) (Un_decreasing Un) -> (Un_growing [N:nat](sum_f_R0 (tg_alt Un) (S (mult (2) N)))).
+Lemma CV_ALT_step0 : (Un:nat->R) (Un_decreasing Un) -> (Un_growing [N:nat](sum_f_R0 (tg_alt Un) (S (mult (2) N)))).
 Intros; Unfold Un_growing; Intro.
 Cut (mult (S (S O)) (S n)) = (S (S (mult (2) n))).
 Intro; Rewrite H0.
@@ -35,8 +34,7 @@ Cut (n:nat) (S n)=(plus n (1)); [Intro | Intro; Ring].
 Rewrite (H0 n); Rewrite (H0 (S (mult (2) n))); Rewrite (H0 (mult (2) n)); Ring.
 Qed.
 
-(* Décroissance des sommes partielles paires *)
-Lemma CV_ALT_step1_bis : (Un:nat->R) (Un_decreasing Un) -> (Un_decreasing [N:nat](sum_f_R0 (tg_alt Un) (mult (2) N))).
+Lemma CV_ALT_step1 : (Un:nat->R) (Un_decreasing Un) -> (Un_decreasing [N:nat](sum_f_R0 (tg_alt Un) (mult (2) N))).
 Intros; Unfold Un_decreasing; Intro.
 Cut (mult (S (S O)) (S n)) = (S (S (mult (2) n))).
 Intro; Rewrite H0; Do 2 Rewrite tech5; Repeat Rewrite Rplus_assoc.
@@ -51,7 +49,7 @@ Rewrite (H0 n); Rewrite (H0 (S (mult (2) n))); Rewrite (H0 (mult (2) n)); Ring.
 Qed.
 
 (**********)
-Lemma CV_ALT_step2 : (Un:nat->R;N:nat) (Un_decreasing Un) -> (positivity_sui Un) -> (Rle (sum_f_R0 [i:nat](tg_alt Un (S i)) (S (mult (2) N))) R0). 
+Lemma CV_ALT_step2 : (Un:nat->R;N:nat) (Un_decreasing Un) -> (positivity_seq Un) -> (Rle (sum_f_R0 [i:nat](tg_alt Un (S i)) (S (mult (2) N))) R0). 
 Intros; Induction N.
 Simpl; Unfold tg_alt; Simpl; Rewrite Rmult_1r.
 Replace ``-1* -1*(Un (S (S O)))`` with (Un (S (S O))); [Idtac | Ring].
@@ -75,7 +73,7 @@ Apply INR_eq; Repeat Rewrite S_INR; Do 2 Rewrite mult_INR; Repeat Rewrite S_INR;
 Qed.
 
 (* A more general inequality *)
-Lemma CV_ALT_step3 : (Un:nat->R;N:nat) (Un_decreasing Un) -> (positivity_sui Un) -> (Rle (sum_f_R0 [i:nat](tg_alt Un (S i)) N) R0). 
+Lemma CV_ALT_step3 : (Un:nat->R;N:nat) (Un_decreasing Un) -> (positivity_seq Un) -> (Rle (sum_f_R0 [i:nat](tg_alt Un (S i)) N) R0). 
 Intros; Induction N.
 Simpl; Unfold tg_alt; Simpl; Rewrite Rmult_1r.
 Apply Rle_anti_compatibility with (Un (S O)).
@@ -99,7 +97,7 @@ Apply CV_ALT_step2; Assumption.
 Qed.
 
 (**********)
-Lemma CV_ALT_step4 : (Un:nat->R) (Un_decreasing Un) -> (positivity_sui Un) -> (majoree [N:nat](sum_f_R0 (tg_alt Un) (S (mult (2) N)))).
+Lemma CV_ALT_step4 : (Un:nat->R) (Un_decreasing Un) -> (positivity_seq Un) -> (majoree [N:nat](sum_f_R0 (tg_alt Un) (S (mult (2) N)))).
 Intros; Unfold majoree; Unfold bound.
 Exists ``(Un O)``.
 Unfold is_upper_bound; Intros; Elim H1; Intros.
@@ -112,10 +110,10 @@ Unfold tg_alt; Simpl; Ring.
 Apply lt_O_Sn.
 Qed.
 
-(* Ceci donne quasiment le résultat sur la convergence des séries alternées *)
-Lemma CV_ALT : (Un:nat->R) (Un_decreasing Un) -> (positivity_sui Un) -> (Un_cv Un R0) -> (sigTT R [l:R](Un_cv [N:nat](sum_f_R0 (tg_alt Un) N) l)).
+(* This lemma gives an interesting result about alternated series *)
+Lemma CV_ALT : (Un:nat->R) (Un_decreasing Un) -> (positivity_seq Un) -> (Un_cv Un R0) -> (sigTT R [l:R](Un_cv [N:nat](sum_f_R0 (tg_alt Un) N) l)).
 Intros.
-Assert H2 := (CV_ALT_step1 ? H).
+Assert H2 := (CV_ALT_step0 ? H).
 Assert H3 := (CV_ALT_step4 ? H H0).
 Assert X := (growing_cv ? H2 H3).
 Elim X; Intros.
@@ -161,28 +159,27 @@ Assumption.
 Qed.
 
 (************************************************)
-(* Théorème de convergence des séries alternées *)
+(*        Convergence of alternated series      *)
 (*                                              *)
-(* Applications: PI, cos, sin...                *)
+(*         Applications: PI, cos, sin           *)
 (************************************************)
-Theorem Series_Alternees : (Un:nat->R) (Un_decreasing Un) -> (Un_cv Un R0) -> (sigTT R [l:R](Un_cv [N:nat](sum_f_R0 (tg_alt Un) N) l)).
+Theorem alternated_series : (Un:nat->R) (Un_decreasing Un) -> (Un_cv Un R0) -> (sigTT R [l:R](Un_cv [N:nat](sum_f_R0 (tg_alt Un) N) l)).
 Intros; Apply CV_ALT.
 Assumption.
-Unfold positivity_sui; Apply decreasing_ineq; Assumption.
+Unfold positivity_seq; Apply decreasing_ineq; Assumption.
 Assumption.
 Qed.
 
-(* Encadrement de la limite par les sommes partielles *)
-Theorem sommes_partielles_ineq : (Un:nat->R;l:R;N:nat) (Un_decreasing Un) -> (Un_cv Un R0) -> (Un_cv [N:nat](sum_f_R0 (tg_alt Un) N) l) -> ``(sum_f_R0 (tg_alt Un) (S (mult (S (S O)) N)))<=l<=(sum_f_R0 (tg_alt Un) (mult (S (S O)) N))``.
+Theorem alternated_series_ineq : (Un:nat->R;l:R;N:nat) (Un_decreasing Un) -> (Un_cv Un R0) -> (Un_cv [N:nat](sum_f_R0 (tg_alt Un) N) l) -> ``(sum_f_R0 (tg_alt Un) (S (mult (S (S O)) N)))<=l<=(sum_f_R0 (tg_alt Un) (mult (S (S O)) N))``.
 Intros.
 Cut (Un_cv [N:nat](sum_f_R0 (tg_alt Un) (mult (2) N)) l).
 Cut (Un_cv [N:nat](sum_f_R0 (tg_alt Un) (S (mult (2) N))) l).
 Intros; Split.
 Apply (growing_ineq [N:nat](sum_f_R0 (tg_alt Un) (S (mult (2) N)))).
-Apply CV_ALT_step1; Assumption.
+Apply CV_ALT_step0; Assumption.
 Assumption.
 Apply (decreasing_ineq [N:nat](sum_f_R0 (tg_alt Un) (mult (2) N))).
-Apply CV_ALT_step1_bis; Assumption.
+Apply CV_ALT_step1; Assumption.
 Assumption.
 Unfold Un_cv; Unfold R_dist; Unfold Un_cv in H1; Unfold R_dist in H1; Intros. 
 Elim (H1 eps H2); Intros.
@@ -209,7 +206,7 @@ Assumption.
 Qed.
 
 (************************************)
-(* Application : construction de PI *)
+(* Application : construction of PI *)
 (************************************)
 
 Definition PI_tg := [n:nat]``/(INR (plus (mult (S (S O)) n) (S O)))``.
@@ -328,7 +325,7 @@ Elim H1; Intros; Assumption.
 Qed.
 
 Lemma exist_PI : (sigTT R [l:R](Un_cv [N:nat](sum_f_R0 (tg_alt PI_tg) N) l)).
-Apply Series_Alternees.
+Apply alternated_series.
 Apply PI_tg_decreasing.
 Apply PI_tg_cv.
 Qed.
@@ -338,7 +335,7 @@ Definition PI : R := (Rmult ``4`` (Cases exist_PI of (existTT a b) => a end)).
 
 (* We can get an approximation of PI with the following inequality *)
 Lemma PI_ineq : (N:nat) ``(sum_f_R0 (tg_alt PI_tg) (S (mult (S (S O)) N)))<=PI/4<=(sum_f_R0 (tg_alt PI_tg) (mult (S (S O)) N))``.
-Intro; Apply sommes_partielles_ineq.
+Intro; Apply alternated_series_ineq.
 Apply PI_tg_decreasing.
 Apply PI_tg_cv.
 Unfold PI; Case exist_PI; Intro.
