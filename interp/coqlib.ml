@@ -37,12 +37,15 @@ let list_try_find f =
   in 
   try_find_f
 
+let has_suffix_in_dirs dirs ref =
+  let dir = dirpath (sp_of_global ref) in
+  List.exists (fun d -> is_dirpath_prefix_of d dir) dirs
+
 let gen_constant_in_modules locstr dirs s =
   let dirs = List.map make_dir dirs in
   let id = Constrextern.id_of_v7_string s in
   let all = Nametab.locate_all (make_short_qualid id) in
-  let these =
-    List.filter (fun r -> List.mem (dirpath (sp_of_global r)) dirs) all in
+  let these = List.filter (has_suffix_in_dirs dirs) all in
   match these with
     | [x] -> constr_of_reference x
     | [] ->
@@ -58,6 +61,9 @@ let gen_constant_in_modules locstr dirs s =
 let init_reference dir s=gen_reference "Coqlib" ("Init"::dir) s
 
 let init_constant dir s=gen_constant "Coqlib" ("Init"::dir) s  
+
+let arith_dir = ["Coq";"Arith"]
+let arith_modules = [arith_dir]
 
 let zarith_dir = ["Coq";"ZArith"]
 let zarith_base_modules = [
