@@ -3,7 +3,7 @@
 
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Declarations
 open Reduction
@@ -30,29 +30,31 @@ exception Elimconst
 
 let compute_consteval c = 
   let rec srec n labs c =
-    match whd_betadeltaeta_stack (Global.env()) Evd.empty c [] with 
-      | (DOP2(Lambda, t, DLAM(_,g)), []) -> 
-	  srec (n+1) (t::labs) g
-      | (DOPN(Fix (nv,i), bodies), l) -> 
+    let c',l = whd_betadeltaeta_stack (Global.env()) Evd.empty c [] in
+    match kind_of_term c' with
+      | IsLambda (_,t,g) when l=[] -> srec (n+1) (t::labs) g
+      | IsFix ((nv,i),(tys,_,bds)) -> 
           if (List.length l) > n then raise Elimconst;
+	  let nbfix = Array.length bds in
           let li = 
-            List.map (function
-                        | Rel k ->
-                            if array_for_all (noccurn k) bodies then 
-			      (k, List.nth labs (k-1)) 
-			    else 
-			      raise Elimconst
-                        | _ -> 
-			    raise Elimconst) l
+            List.map
+	      (function
+                 | Rel k ->
+                     if
+		       array_for_all (noccurn k) tys
+		       && array_for_all (noccurn (k+nbfix)) bds
+		     then 
+		       (k, List.nth labs (k-1)) 
+		     else 
+		       raise Elimconst
+                 | _ -> 
+		     raise Elimconst) l
           in 
 	  if list_distinct (List.map fst li) then 
 	    EliminationFix (li,n) 
           else 
 	    raise Elimconst
-      | (DOPN(MutCase _,_) as mc,lapp) -> 
-          (match destCase mc with
-             | (_,_,Rel _,_) -> EliminationCases n
-             | _ -> raise Elimconst)
+      | IsMutCase (_,_,Rel _,_) -> EliminationCases n
       | _ -> raise Elimconst
   in
   try srec 0 [] c
