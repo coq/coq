@@ -82,7 +82,7 @@ PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
 	  pretyping/syntax_def.cmo
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
-	parsing/g_prim.cmo parsing/g_corevernac.cmo parsing/g_basevernac.cmo \
+	parsing/g_prim.cmo parsing/g_basevernac.cmo \
 	parsing/g_vernac.cmo parsing/g_tactic.cmo \
 	parsing/g_constr.cmo parsing/g_cases.cmo \
         parsing/extend.cmo parsing/termast.cmo \

@@ -123,10 +123,28 @@ let map_entry f en =
 let parse_string f x =
   let strm = Stream.of_string x in Gram.Entry.parse f (Gram.parsable strm)
 
-let slam_ast loc id ast =
+let slam_ast (_,fin) id ast =
   match id with
-    | Coqast.Nvar (_, s) -> Coqast.Slam (loc, Some s, ast)
+    | Coqast.Nvar ((deb,_), s) -> Coqast.Slam ((deb,fin), Some s, ast)
     | _ -> invalid_arg "Ast.slam_ast"
+
+(* This is to interpret the macro $ABSTRACT used in binders        *)
+(* $ABSTRACT should occur in this configuration :                  *)
+(* ($ABSTRACT name (s1 a1 ($LIST l1)) ... (s2 an ($LIST ln)) b)    *)
+(* where li is id11::...::id1p1 and it produces the ast            *)
+(* (s1' a1 [id11]...[id1p1](... (sn' an [idn1]...[idnpn]b)...))    *)
+(* where s1' is overwritten by name if s1 is $BINDER otherwise s1  *)
+
+let abstract_binder_ast (_,fin as loc) name a b =
+  match a with
+    | Coqast.Node((deb,_),s,d::l) ->
+	let s' = if s="$BINDER" then name else s in
+	Coqast.Node((deb,fin),s', [d; List.fold_right (slam_ast loc) l b])
+    | _ -> invalid_arg "Bad usage of $ABSTRACT macro"
+
+let abstract_binders_ast loc name =
+  List.fold_right (abstract_binder_ast loc name)
+
 
 type entry_type = ETast | ETastl
     
@@ -211,7 +229,7 @@ module Constr =
     let gec s =
       let e = Gram.Entry.create ("Constr." ^ s) in
       Hashtbl.add uconstr s (Ast e); e
-	
+
     let gec_list s =
       let e = Gram.Entry.create ("Constr." ^ s) in
       Hashtbl.add uconstr s (ListAst e); e
@@ -234,24 +252,10 @@ module Constr =
     let ident = gec "ident"
     let ne_ident_comma_list = gec_list "ne_ident_comma_list"
     let ne_constr_list = gec_list "ne_constr_list"
-
+    let sort = gec "sort"
     let pattern = Gram.Entry.create "Constr.pattern"
+    let ne_binders_list = gec_list "ne_binders_list"
 
-(*
-    let binder = gec "binder"
-
-    let abstraction_tail = gec "abstraction_tail"
-    let cofixbinder = gec "cofixbinder"
-    let cofixbinders = gec_list "cofixbinders"
-    let fixbinder = gec "fixbinder"
-    let fixbinders = gec_list "fixbinders"
-
-    let ne_binder_list = gec_list "ne_binder_list"
-
-    let ne_pattern_list = Gram.Entry.create "Constr.ne_pattern_list"
-    let pattern_list = Gram.Entry.create "Constr.pattern_list"
-    let simple_pattern = Gram.Entry.create "Constr.simple_pattern"
-*)
     let uconstr = snd (get_univ "constr")
   end
 
@@ -323,68 +327,21 @@ module Vernac =
       let e = Gram.Entry.create ("Vernac." ^ s) in
       Hashtbl.add uvernac s (ListAst e); e
     
-    let binder = gec "binder"
-    let block = gec_list "block"
-    let block_old_style = gec_list "block_old_style"
-    let comarg = gec "comarg"
-    let def_tok = gec "def_tok"
-    let definition_tail  = gec "definition_tail"
-    let dep = gec "dep"
-    let destruct_location = gec "destruct_location"
-    let check_tok = gec "check_tok"
-    let extracoindblock = gec_list "extracoindblock"
-    let extraindblock = gec_list "extraindblock"
-    let field = gec "field"
-    let nefields = gec_list "nefields"
-    let fields = gec "fields"
-    let destruct_location = gec "destruct_location"
-    let finite_tok = gec "finite_tok"
-    let grammar_entry_arg = gec "grammar_entry_arg"
-    let hyp_tok = gec "hyp_tok"
-    let hyps_tok = gec "hyps_tok"
-    let idcom = gec "idcom"
     let identarg = gec "identarg"
-    let import_tok = gec "import_tok"
-    let indpar = gec "indpar"
-    let lcomarg = gec "lcomarg"
-    let lidcom = gec "lidcom"
-    let orient=gec "orient"
-    let lvernac = gec_list "lvernac"
-    let meta_binding = gec "meta_binding"
-    let meta_binding_list = gec_list "meta_binding_list"
-    let ne_binder_list = gec_list "ne_binder_list"
-    let ne_comarg_list = gec_list "ne_comarg_list"
-    let ne_identarg_comma_list = gec_list "ne_identarg_comma_list"
-    let identarg_list = gec_list "identarg_list"
     let ne_identarg_list = gec_list "ne_identarg_list"
-    let ne_lidcom = gec_list "ne_lidcom"
-    let ne_numarg_list = gec_list "ne_numarg_list"
-    let ne_stringarg_list = gec_list "ne_stringarg_list"
     let numarg = gec "numarg"
     let numarg_list = gec_list "numarg_list"
-    let onecorec = gec "onecorec"
-    let oneind = gec "oneind"
-    let oneind_old_style = gec "oneind_old_style"
-    let onerec = gec "onerec"
-    let onescheme = gec "onescheme"
-    let opt_identarg_list = gec_list "opt_identarg_list"
-    let rec_constr = gec "rec_constr"
-    let record_tok = gec "record_tok"
-    let option_value = gec "option_value"
-    let param_tok = gec "param_tok"
-    let params_tok = gec "params_tok"
-    let sortdef = gec "sortdef"
-    let specif_tok = gec "specif_tok"
-    let specifcorec = gec_list "specifcorec"
-    let specifrec = gec_list "specifrec"
-    let specifscheme = gec_list "specifscheme"
+    let ne_numarg_list = gec_list "ne_numarg_list"
     let stringarg = gec "stringarg"
+    let ne_stringarg_list = gec_list "ne_stringarg_list"
+    let constrarg = gec "constrarg"
     let tacarg = gec "tacarg"
-    let theorem_body = gec "theorem_body"
-    let theorem_body_line = gec "theorem_body_line"
-    let theorem_body_line_list = gec_list "theorem_body_line_list"
-    let thm_tok = gec "thm_tok"
-    let varg_ne_stringarg_list = gec "varg_ne_stringarg_list"
+    let sortarg = gec "sortarg"
+
+    let gallina = gec "gallina"
+    let gallina_ext = gec "gallina_ext"
+    let command = gec "command"
+    let syntax_command = gec "syntax_command"
     let vernac = gec "vernac"
     let vernac_eoi = eoi_entry vernac
   end

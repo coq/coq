@@ -309,7 +309,8 @@ GEXTEND Gram
       | r = red_tactic; cl = clausearg -> <:ast< (Reduce (REDEXP $r) $cl) >>
       (* Change ne doit pas s'appliquer dans un Definition t := Eval ... *)
       | IDENT "Change"; c = comarg; cl = clausearg ->
-	  <:ast< (Change $c $cl) >> ]
+	  <:ast< (Change $c $cl) >> 
+      | IDENT "ML"; s = Prim.string -> <:ast< (MLTACTIC $s) >> ]
 
     | [ id = identarg; l = comarg_list ->
           match (isMeta (nvar_of_ast id), l) with

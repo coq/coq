@@ -71,10 +71,6 @@ parsing/printer.cmi: parsing/coqast.cmi kernel/names.cmi lib/pp.cmi \
     pretyping/rawterm.cmi kernel/sign.cmi kernel/term.cmi 
 parsing/termast.cmi: parsing/coqast.cmi kernel/names.cmi \
     pretyping/rawterm.cmi kernel/sign.cmi kernel/term.cmi 
-pretyping/cases.debug.cmi: kernel/environ.cmi pretyping/evarutil.cmi \
-    kernel/evd.cmi kernel/generic.cmi kernel/inductive.cmi kernel/names.cmi \
-    lib/pp.cmi pretyping/rawterm.cmi kernel/sign.cmi kernel/term.cmi \
-    kernel/type_errors.cmi 
 pretyping/cases.cmi: kernel/environ.cmi pretyping/evarutil.cmi kernel/evd.cmi \
     kernel/names.cmi pretyping/rawterm.cmi kernel/term.cmi 
 pretyping/class.cmi: pretyping/classops.cmi library/declare.cmi \
@@ -605,12 +601,14 @@ pretyping/syntax_def.cmx: library/lib.cmx library/libobject.cmx \
     library/summary.cmx pretyping/syntax_def.cmi 
 pretyping/tacred.cmo: kernel/closure.cmi library/declare.cmi \
     kernel/environ.cmi kernel/generic.cmi kernel/inductive.cmi \
-    kernel/instantiate.cmi kernel/names.cmi lib/pp.cmi library/redinfo.cmi \
-    kernel/reduction.cmi kernel/term.cmi lib/util.cmi pretyping/tacred.cmi 
+    kernel/instantiate.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
+    library/redinfo.cmi kernel/reduction.cmi kernel/sign.cmi kernel/term.cmi \
+    lib/util.cmi pretyping/tacred.cmi 
 pretyping/tacred.cmx: kernel/closure.cmx library/declare.cmx \
     kernel/environ.cmx kernel/generic.cmx kernel/inductive.cmx \
-    kernel/instantiate.cmx kernel/names.cmx lib/pp.cmx library/redinfo.cmx \
-    kernel/reduction.cmx kernel/term.cmx lib/util.cmx pretyping/tacred.cmi 
+    kernel/instantiate.cmx kernel/names.cmx library/nametab.cmx lib/pp.cmx \
+    library/redinfo.cmx kernel/reduction.cmx kernel/sign.cmx kernel/term.cmx \
+    lib/util.cmx pretyping/tacred.cmi 
 pretyping/typing.cmo: kernel/environ.cmi kernel/generic.cmi kernel/names.cmi \
     kernel/reduction.cmi kernel/term.cmi kernel/type_errors.cmi \
     kernel/typeops.cmi lib/util.cmi pretyping/typing.cmi 
@@ -833,8 +831,10 @@ tactics/wcclausenv.cmx: proofs/clenv.cmx kernel/environ.cmx kernel/evd.cmx \
     kernel/generic.cmx library/global.cmx proofs/logic.cmx kernel/names.cmx \
     lib/pp.cmx proofs/proof_trees.cmx kernel/reduction.cmx kernel/sign.cmx \
     proofs/tacmach.cmx kernel/term.cmx lib/util.cmx tactics/wcclausenv.cmi 
-tools/coqdep.cmo: config/coq_config.cmi 
-tools/coqdep.cmx: config/coq_config.cmx 
+tools/coqdep.cmo: config/coq_config.cmi tools/coqdep_lexer.cmo 
+tools/coqdep.cmx: config/coq_config.cmx tools/coqdep_lexer.cmx 
+tools/coqdep_lexer.cmo: config/coq_config.cmi 
+tools/coqdep_lexer.cmx: config/coq_config.cmx 
 toplevel/command.cmo: parsing/ast.cmi parsing/astterm.cmi kernel/constant.cmi \
     parsing/coqast.cmi library/declare.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/generic.cmi library/global.cmi library/indrec.cmi \

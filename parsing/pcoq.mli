@@ -26,6 +26,8 @@ val eoi_entry : 'a Gram.Entry.e -> 'a Gram.Entry.e
 val map_entry : ('a -> 'b) -> 'a Gram.Entry.e -> 'b Gram.Entry.e
 
 val slam_ast : Coqast.loc -> Coqast.t -> Coqast.t -> Coqast.t
+val abstract_binders_ast :
+  Coqast.loc -> string -> Coqast.t list -> Coqast.t -> Coqast.t
 
 (* Entry types *)
 
@@ -76,24 +78,9 @@ module Constr :
     val ident : Coqast.t Gram.Entry.e
     val ne_ident_comma_list : Coqast.t list Gram.Entry.e
     val ne_constr_list : Coqast.t list Gram.Entry.e
-
+    val sort : Coqast.t Gram.Entry.e
     val pattern : Coqast.t Gram.Entry.e
-
-(*
-    val binder : Coqast.t Gram.Entry.e
-
-    val abstraction_tail : Coqast.t Gram.Entry.e
-    val cofixbinder : Coqast.t Gram.Entry.e
-    val cofixbinders : Coqast.t list Gram.Entry.e
-    val fixbinder : Coqast.t Gram.Entry.e
-    val fixbinders : Coqast.t list Gram.Entry.e
-
-    val ne_binder_list : Coqast.t list Gram.Entry.e
-
-    val ne_pattern_list : Coqast.t list Gram.Entry.e
-    val pattern_list : Coqast.t list Gram.Entry.e
-    val simple_pattern : Coqast.t Gram.Entry.e
-*)
+    val ne_binders_list : Coqast.t list Gram.Entry.e
   end
 
 module Tactic :
@@ -143,66 +130,21 @@ module Tactic :
 
 module Vernac :
   sig
-    val binder : Coqast.t Gram.Entry.e
-    val block : Coqast.t list Gram.Entry.e
-    val block_old_style : Coqast.t list Gram.Entry.e
-    val check_tok : Coqast.t Gram.Entry.e
-    val comarg : Coqast.t Gram.Entry.e
-    val def_tok : Coqast.t Gram.Entry.e
-    val definition_tail : Coqast.t Gram.Entry.e
-    val dep : Coqast.t Gram.Entry.e
-    val destruct_location : Coqast.t Gram.Entry.e
-    val destruct_location : Coqast.t Gram.Entry.e
-    val extracoindblock : Coqast.t list Gram.Entry.e
-    val extraindblock : Coqast.t list Gram.Entry.e
-    val field : Coqast.t Gram.Entry.e
-    val fields : Coqast.t Gram.Entry.e
-    val finite_tok : Coqast.t Gram.Entry.e
-    val hyp_tok : Coqast.t Gram.Entry.e
-    val hyps_tok : Coqast.t Gram.Entry.e
-    val idcom : Coqast.t Gram.Entry.e
     val identarg : Coqast.t Gram.Entry.e
-    val import_tok : Coqast.t Gram.Entry.e
-    val indpar : Coqast.t Gram.Entry.e
-    val lcomarg : Coqast.t Gram.Entry.e
-    val lidcom : Coqast.t Gram.Entry.e
-    val orient:Coqast.t Gram.Entry.e;; 
-    val lvernac : Coqast.t list Gram.Entry.e
-    val meta_binding : Coqast.t Gram.Entry.e
-    val meta_binding_list : Coqast.t list Gram.Entry.e
-    val ne_binder_list : Coqast.t list Gram.Entry.e
-    val ne_comarg_list : Coqast.t list Gram.Entry.e
-    val ne_identarg_comma_list : Coqast.t list Gram.Entry.e
     val ne_identarg_list : Coqast.t list Gram.Entry.e
-    val ne_lidcom : Coqast.t list Gram.Entry.e
-    val ne_numarg_list : Coqast.t list Gram.Entry.e
-    val ne_stringarg_list : Coqast.t list Gram.Entry.e
-    val nefields : Coqast.t list Gram.Entry.e
     val numarg : Coqast.t Gram.Entry.e
     val numarg_list : Coqast.t list Gram.Entry.e
-    val onecorec : Coqast.t Gram.Entry.e
-    val oneind : Coqast.t Gram.Entry.e
-    val oneind_old_style : Coqast.t Gram.Entry.e
-    val onerec : Coqast.t Gram.Entry.e
-    val onescheme : Coqast.t Gram.Entry.e
-    val opt_identarg_list : Coqast.t list Gram.Entry.e
-    val option_value : Coqast.t Gram.Entry.e
-    val param_tok : Coqast.t Gram.Entry.e
-    val params_tok : Coqast.t Gram.Entry.e
-    val rec_constr : Coqast.t Gram.Entry.e
-    val record_tok : Coqast.t Gram.Entry.e
-    val sortdef : Coqast.t Gram.Entry.e
-    val specif_tok : Coqast.t Gram.Entry.e
-    val specifcorec : Coqast.t list Gram.Entry.e
-    val specifrec : Coqast.t list Gram.Entry.e
-    val specifscheme : Coqast.t list Gram.Entry.e
+    val ne_numarg_list : Coqast.t list Gram.Entry.e
     val stringarg : Coqast.t Gram.Entry.e
+    val ne_stringarg_list : Coqast.t list Gram.Entry.e
+    val constrarg : Coqast.t Gram.Entry.e
     val tacarg : Coqast.t Gram.Entry.e
-    val theorem_body : Coqast.t Gram.Entry.e
-    val theorem_body_line : Coqast.t Gram.Entry.e
-    val theorem_body_line_list : Coqast.t list Gram.Entry.e
-    val thm_tok : Coqast.t Gram.Entry.e
-    val varg_ne_stringarg_list : Coqast.t Gram.Entry.e
+    val sortarg : Coqast.t Gram.Entry.e
+
+    val gallina : Coqast.t Gram.Entry.e
+    val gallina_ext : Coqast.t Gram.Entry.e
+    val command : Coqast.t Gram.Entry.e
+    val syntax_command : Coqast.t Gram.Entry.e
     val vernac : Coqast.t Gram.Entry.e
     val vernac_eoi : Coqast.t Gram.Entry.e
   end

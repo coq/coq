@@ -724,13 +724,14 @@ let _ =
 let _ =
   add "DEFINITION"
     (function 
-       | (VARG_STRING kind :: VARG_IDENTIFIER id :: VARG_CONSTR c ::optred) ->
-	   let red_option = match optred with 
-	     | [] -> None
-	     | [VARG_TACTIC_ARG (Redexp(r1,r2))] -> 
-		 let env = Global.env() in
-		 let redexp = redexp_of_ast Evd.empty env (r1,r2) in 
-		 Some redexp
+       | (VARG_STRING kind :: VARG_IDENTIFIER id :: VARG_CONSTR c :: rest) ->
+	   let typ_opt,red_option = match rest with
+	     | [] -> None, None
+	     | [VARG_CONSTR t] -> Some t, None
+	     | [VARG_TACTIC_ARG (Redexp(r1,r2))] ->
+		 None, Some (redexp_of_ast Evd.empty (Global.env()) (r1,r2))
+	     | [VARG_CONSTR t; VARG_TACTIC_ARG (Redexp(r1,r2))] ->
+		 Some t, Some (redexp_of_ast Evd.empty (Global.env()) (r1,r2))
 	     | _ -> bad_vernac_args "DEFINITION"
 	   in 
 	   let stre,coe,objdef,idcoe = match kind with
@@ -748,7 +749,7 @@ let _ =
              | _       -> anomaly "Unexpected string"
 	   in 
 	   fun () ->
-	     definition_body_red id stre c red_option;
+	     definition_body_red id stre c typ_opt red_option;
              if coe then begin
 	       Class.try_add_new_coercion id stre;
                message ((string_of_id id) ^ " is now a coercion")

@@ -28,21 +28,11 @@ let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
 
 (* 1| Constant definitions *)
 
-let constant_entry_of_com com =
+let constant_entry_of_com (com,comtypopt) =
   let sigma = Evd.empty in
   let env = Global.env() in
-  match com with
-    | Node(_,"CAST",[_;t]) ->
-        { const_entry_body = Cooked (constr_of_com sigma env com);
-	  const_entry_type = Some (constr_of_com1 true sigma env t) }
-    | _ -> 
-	{ const_entry_body = Cooked (constr_of_com sigma env com);
-	  const_entry_type = None }
-
-let definition_body ident n com = 
-  let ce = constant_entry_of_com com in
-  declare_constant ident (ce,n);
-  if is_verbose() then message ((string_of_id ident) ^ " is defined")
+    { const_entry_body = Cooked (constr_of_com sigma env com);
+      const_entry_type = option_app (constr_of_com1 true sigma env) comtypopt }
 
 let red_constant_entry ce = function
   | None -> ce
@@ -56,11 +46,13 @@ let red_constant_entry ce = function
 	const_entry_type = 
 	  ce.const_entry_type }
 
-let definition_body_red ident n com red_option = 
-  let ce = constant_entry_of_com com in
+let definition_body_red ident n com comtypeopt red_option = 
+  let ce = constant_entry_of_com (com,comtypeopt) in
   let ce' = red_constant_entry ce red_option in
   declare_constant ident (ce',n);
   if is_verbose() then message ((string_of_id ident) ^ " is defined")
+
+let definition_body ident n com typ = definition_body_red ident n com typ None
 
 let syntax_definition ident com =
   let c = raw_constr_of_com Evd.empty (Global.context()) com in 

@@ -24,6 +24,10 @@ let anti loc x =
   in
   <:expr< $anti:e$ >>
 
+(* [expr_of_ast] contributes to translate g_*.ml4 files into g_*.ppo *)
+(* This is where $id's (and macros) in ast are translated in ML variables *)
+(* which will bind their actual ast value *)
+
 let rec expr_of_ast = function
   | Coqast.Nvar loc id when is_meta id -> anti loc id
   | Coqast.Id loc id when is_meta id -> anti loc id
@@ -35,7 +39,10 @@ let rec expr_of_ast = function
       <:expr< Coqast.Str loc $anti loc x$ >>
   | Coqast.Node _ "$SLAM" [Coqast.Nvar loc idl; y] ->
       <:expr<
-        List.fold_right (Pcoq.slam_ast loc) $anti loc idl$ $expr_of_ast y$ >>
+      List.fold_right (Pcoq.slam_ast loc) $anti loc idl$ $expr_of_ast y$ >>
+  | Coqast.Node _ "$ABSTRACT" [Coqast.Str _ s;Coqast.Nvar loc idl; y] ->
+      <:expr<
+      Pcoq.abstract_binders_ast loc $str:s$ $anti loc idl$ $expr_of_ast y$ >>
   | Coqast.Node loc nn al ->
       let e = expr_list_of_ast_list al in
       <:expr< Coqast.Node loc $str:nn$ $e$ >>
@@ -60,7 +67,9 @@ and expr_list_of_ast_list al =
        | (Coqast.Node _ "$LIST" [Coqast.Nvar locv pv]) ->
            let e1 = anti locv pv in
            let loc = (fst(MLast.loc_of_expr e1), snd(MLast.loc_of_expr e2)) in
-           <:expr< ( $lid:"@"$ $e1$ $e2$) >>
+	     if e2 = (let loc = dummy_loc in <:expr< [] >>)
+	     then <:expr< $e1$ >>
+	     else <:expr< ( $lid:"@"$ $e1$ $e2$) >>
        | _ ->
            let e1 = expr_of_ast a in
            let loc = (fst(MLast.loc_of_expr e1), snd(MLast.loc_of_expr e2)) in

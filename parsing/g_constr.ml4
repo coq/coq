@@ -7,7 +7,7 @@ open Constr
 GEXTEND Gram
   GLOBAL: ident constr0 constr1 constr2 constr3 lassoc_constr4 constr5
           constr6 constr7 constr8 constr9 constr10 lconstr constr
-          ne_ident_comma_list ne_constr_list;
+          ne_ident_comma_list ne_constr_list sort ne_binders_list;
 
   ident:
     [ [ id = IDENT -> <:ast< ($VAR $id) >> ] ]
@@ -25,22 +25,15 @@ GEXTEND Gram
     [ [ c1 = constr; cl = ne_constr_list -> c1::cl
       | c1 = constr -> [c1] ] ]
   ;
+  sort:
+    [ [ "Set"  -> <:ast< (SET) >>
+      | "Prop" -> <:ast< (PROP) >>
+      | "Type" -> <:ast< (TYPE) >> ] ]
+  ;
   constr0:
     [ [ "?" -> <:ast< (ISEVAR) >>
       | "?"; n = Prim.number -> <:ast< (META $n) >>
-      | "["; id1 = IDENT; ":"; c = constr; c2 = abstraction_tail ->
-          <:ast< (LAMBDALIST $c [$id1]$c2) >>
-      | "["; id1 = IDENT; ","; idl = ne_ident_comma_list;
-        ":"; c = constr; c2 = abstraction_tail ->
-          <:ast< (LAMBDALIST $c [$id1]($SLAM $idl $c2)) >>
-      | "["; id1 = IDENT; ","; idl = ne_ident_comma_list;
-             c = abstraction_tail ->
-          <:ast< (LAMBDALIST (ISEVAR) [$id1]($SLAM $idl $c)) >>
-      | "["; id1 = IDENT; c = abstraction_tail ->
-          <:ast< (LAMBDALIST (ISEVAR) [$id1]$c) >>
-      | "["; id1 = IDENT; "="; c = constr; "]"; c2 = constr ->
-          <:ast< (ABST #Core#let.cci $c [$id1]$c2) >> 
-      | "<<"; id1 = IDENT; ">>"; c = constr -> <:ast< [$id1]$c >>
+      | bl = binders; c = constr -> <:ast< ($ABSTRACT "LAMBDALIST" $bl $c) >>
       | "("; lc1 = lconstr; ":"; c = constr; body = product_tail ->
           let id = Ast.coerce_to_var "lc1" lc1 in
             <:ast< (PROD $c [$id]$body) >>
@@ -59,13 +52,11 @@ GEXTEND Gram
       | "("; lc1 = lconstr; ")"; "@"; "["; cl = ne_constr_list; "]" ->
           <:ast< (XTRA"$SOAPP" $lc1 ($LIST $cl)) >>
 *)
-      | "Prop" -> <:ast< (PROP) >>
-      | "Set"  -> <:ast< (SET) >>
-      | "Type" -> <:ast< (TYPE) >>
       | IDENT "Fix"; id = ident; "{"; fbinders = fixbinders; "}" ->
           <:ast< (FIX $id ($LIST $fbinders)) >>
       | IDENT "CoFix"; id = ident; "{"; fbinders = cofixbinders; "}" ->
           <:ast< (COFIX $id ($LIST $fbinders)) >>
+      | s = sort -> s
       | v = ident -> v ] ]
   ;
   constr1:
@@ -107,7 +98,7 @@ GEXTEND Gram
           <:ast< (CASE "NOREC" $l1 $c1 $c2 $c3) >>
       | c = constr0 -> c ] ]
   ;
-  constr2:
+  constr2: (* ~ will be here *)
     [ [ c = constr1 -> c ] ]
   ;
   constr3:
@@ -117,23 +108,21 @@ GEXTEND Gram
     [ [ c1 = constr3 -> c1 ] ]
   ;
   constr5:
-    [ [ c1 = lassoc_constr4 -> c1
-      | c1 = lassoc_constr4; "::"; c2 = constr5 ->
-          <:ast< (CAST $c1 $c2) >> ] ]
+    [ [ c1 = lassoc_constr4 -> c1 ] ]
   ;
-  constr6:
+  constr6:  (* /\ will be here *)
     [ [ c1 = constr5 -> c1 ] ]
   ;
-  constr7:
+  constr7:  (* \/ will be here *)
     [ RIGHTA [ c1 = constr6 -> c1 ] ]
   ;
-  constr8:
+  constr8:  (* <-> will be here *)
     [ [ c1 = constr7 -> c1
-      | c1 = constr7; "->"; c2 = constr8 ->
-          <:ast< (PROD $c1 [<>]$c2) >> ] ]
+      | c1 = constr7; "->"; c2 = constr8 -> <:ast< (PROD $c1 [<>]$c2) >> ] ]
   ;
   constr9:
-    [ [ c1 = constr8 -> c1 ] ]
+    [ [ c1 = constr8 -> c1
+      | c1 = constr8; "::"; c2 = constr8 -> <:ast< (CAST $c1 $c2) >> ] ]
   ;
   constr10:
     [ [ "!"; f = IDENT; args = ne_constr9_list ->
@@ -143,30 +132,35 @@ GEXTEND Gram
       | f = constr9 -> f ] ]
   ;
   ne_ident_comma_list:
-    [ [ id = ident; ","; idl = ne_ident_comma_list -> id::idl
+    [ [ id = ident; ","; idl = ne_ident_comma_list -> id :: idl
       | id = ident -> [id] ] ]
   ;
-  binder:
-    [ [ idl = ne_ident_comma_list; c = type_option ->
-          <:ast< (BINDER $c ($LIST $idl)) >> ] ]
+  ident_comma_list_tail:
+    [ [ ","; idl = ne_ident_comma_list -> idl
+      | -> [] ] ]
   ;
-  ne_binder_list:
-    [ [ id = binder; ";"; idl = ne_binder_list -> id::idl
-      | id = binder -> [id] ] ]
+  vardecls:
+    [ [ id = ident; idl = ident_comma_list_tail; c = type_option ->
+          <:ast< ($BINDER $c $id ($LIST $idl)) >>
+      | id = ident; "="; c = constr ->
+	  <:ast< (ABST #Core#let.cci $c $id) >> ] ]
+  ;
+  ne_vardecls_list:
+    [ [ id = vardecls; ";"; idl = ne_vardecls_list -> id :: idl
+      | id = vardecls -> [id] ] ]
+  ;
+  binders:
+    [ [ "["; bl = ne_vardecls_list; "]" -> bl ] ]
+  ;
+  ne_binders_list:
+    [ [ bl = binders; bll = ne_binders_list -> bl @ bll
+      | bl = binders -> bl ] ]
   ;
   type_option:
     [ [ ":"; c = constr -> c 
       | -> <:ast< (ISEVAR) >> ] ]
   ;
-(*  parameters:
-    [ [ "["; bl = ne_binder_semi_list; "]" -> $bl ] ]
-  ;
-  parameters_list:
-    [ [ 
-          <:ast< (BINDERLIST ($LIST $bl)) >>
-      |  -> <:ast< (BINDERLIST) >> ] ]
-  ;
-*)  constr91:
+  constr91:
     [ [ n = Prim.number; "!"; c1 = constr9 ->
           <:ast< (EXPL $n $c1) >>
       | c1 = constr9 -> c1 ] ]
@@ -182,7 +176,7 @@ GEXTEND Gram
   fixbinder:
     [ [ id = ident; "/"; recarg = Prim.number; ":"; type_ = constr;
         ":="; def = constr -> <:ast< (NUMFDECL $id $recarg $type_ $def) >>
-      | id = ident; "["; idl = ne_binder_list; "]"; ":"; type_ = constr;
+      | id = ident; idl = ne_binders_list; ":"; type_ = constr;
         ":="; def = constr ->
           <:ast< (FDECL $id (BINDERS ($LIST $idl)) $type_ $def) >> ] ]
   ;
@@ -197,14 +191,6 @@ GEXTEND Gram
   cofixbinders:
     [ [ fb = cofixbinder; "with"; fbs = cofixbinders -> fb::fbs
       | fb = cofixbinder -> [fb] ] ]
-  ;
-  abstraction_tail:
-    [ [ ";"; idl = ne_ident_comma_list;
-        ":"; c = constr; c2 = abstraction_tail ->
-          <:ast< (LAMBDALIST $c ($SLAM $idl $c2)) >>
-      | ";"; idl = ne_ident_comma_list; c2 = abstraction_tail ->
-          <:ast< (LAMBDALIST (ISEVAR) ($SLAM $idl $c2)) >>
-      | "]"; c = constr -> c ] ]
   ;
   product_tail:
     [ [ ";"; idl = ne_ident_comma_list;
