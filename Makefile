@@ -36,8 +36,9 @@ OBJS=$(CONFIG) $(LIB) $(KERNEL)
 
 world: $(OBJS)
 
-MLI=$(OBJS:.cmo=.mli)
-LPFILES=doc/macros.tex $(MLI)
+LPLIB = lib/doc.tex $(LIB:.cmo=.mli)
+LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
+LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL)
 lp: doc/coq.ps
 doc/coq.ps: doc/coq.tex
 	cd doc; make coq.ps
