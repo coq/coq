@@ -71,6 +71,8 @@ let print_uni u = (pP (pr_uni u))
 
 let pp_universes u = pP [< 'sTR"[" ; pr_universes u ; 'sTR"]" >]
 
+let cnt = ref 0
+
 let constr_display csr =
   let rec term_display c = match kind_of_term c with
   | IsRel n -> "Rel("^(string_of_int n)^")"
@@ -80,13 +82,13 @@ let constr_display csr =
   | IsXtra s -> "Xtra("^s^")"
   | IsCast (c,t) -> "Cast("^(term_display c)^","^(term_display t)^")"
   | IsProd (na,t,c) ->
-      "Prod("^(name_display na)^","^(term_display t)^","^(term_display c)^")"
+      "Prod("^(name_display na)^","^(term_display t)^","^(term_display c)^")\n"
   | IsLambda (na,t,c) ->
-      "Lambda("^(name_display na)^","^(term_display t)^","^(term_display c)^")"
+      "Lambda("^(name_display na)^","^(term_display t)^","^(term_display c)^")\n"
   | IsLetIn (na,b,t,c) ->
       "LetIn("^(name_display na)^","^(term_display b)^","
       ^(term_display t)^","^(term_display c)^")"
-  | IsApp (c,l) -> "App("^(term_display c)^","^(array_display l)^")"
+  | IsApp (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
   | IsEvar (e,l) -> "Evar("^(string_of_int e)^","^(array_display l)^")"
   | IsConst (c,l) -> "Const("^(string_of_path c)^","^(array_display l)^")"
   | IsMutInd ((sp,i),l) ->
@@ -121,7 +123,9 @@ let constr_display csr =
   and sort_display = function
     | Prop(Pos) -> "Prop(Pos)"
     | Prop(Null) -> "Prop(Null)"
-    | Type _ -> "Type"
+    | Type u ->
+	incr cnt; pP [< 'sTR "with "; 'iNT !cnt; pr_uni u; 'fNL >];
+	"Type("^(string_of_int !cnt)^")"
 
   and name_display = function
     | Name id -> "Name("^(string_of_id id)^")"
