@@ -9,9 +9,7 @@ type error =
   | Unterminated_comment
   | Unterminated_string
 
-exception BadToken of string
-
-exception Error of error * int * int
+exception Error of error
 
 (* token trees *)
 
@@ -157,6 +155,8 @@ rule token = parse
         token lexbuf }
   | eof 
       { ("EOI","") }
+  | _ { let loc = (Lexing.lexeme_start lexbuf, Lexing.lexeme_end lexbuf) in
+	raise (Stdpp.Exc_located (loc, Error Illegal_character)) }
 
 and comment = parse
   | "(*"
@@ -178,8 +178,8 @@ and comment = parse
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { comment lexbuf }
   | eof
-      { raise (Error (Unterminated_comment,
-                      !comment_start_pos, !comment_start_pos+2)) }
+      { let loc = (!comment_start_pos, !comment_start_pos+2) in
+	raise (Stdpp.Exc_located (loc, Error Unterminated_comment)) }
   | _
       { comment lexbuf }
 
@@ -196,8 +196,8 @@ and string = parse
       { Buffer.add_char string_buffer (char_for_decimal_code lexbuf 1);
         string lexbuf }
   | eof
-      { raise (Error (Unterminated_string,
-                      !string_start_pos, !string_start_pos+1)) }
+      { let loc = (!string_start_pos, !string_start_pos+1) in
+	raise (Stdpp.Exc_located (loc, Error Unterminated_string)) }
   | _
       { Buffer.add_char string_buffer (Lexing.lexeme_char lexbuf 0);
         string lexbuf }

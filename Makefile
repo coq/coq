@@ -111,12 +111,12 @@ CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PRETYPING) $(PARSING) \
 CMX=$(CMO:.cmo=.cmx) $(ARITHSYNTAX:.cmo=.cmx)
 
 ###########################################################################
-# Main targets
+# Main targets (coqmktop, coqtop, coqtop.byte)
 ###########################################################################
 
 COQMKTOP=scripts/coqmktop
 
-world: minicoq coqtop.byte $(COQMKTOP) dev/db_printers.cmo
+world: $(COQMKTOP) coqtop.byte coqtop states tools
 
 coqtop: $(COQMKTOP) $(CMX)
 	$(COQMKTOP) -opt -notactics $(OPTFLAGS) -o coqtop
@@ -156,10 +156,18 @@ toplevel: $(TOPLEVEL)
 
 # states
 
+states: states/barestate.coq
+
 SYNTAXPP=syntax/PPCommand.v syntax/PPTactic.v syntax/PPMultipleCase.v
 
 states/barestate.coq: $(SYNTAXPP) coqtop.byte
 	./coqtop.byte -q -batch -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
+
+###########################################################################
+# tools
+###########################################################################
+
+tools: dev/db_printers.cmo
 
 ###########################################################################
 # minicoq

@@ -6,6 +6,7 @@ open Util
 open Ast
 open Inductive
 open Type_errors
+open Lexer
 
 let print_loc loc =
   if loc = dummy_loc then 
@@ -55,6 +56,12 @@ let rec explain_exn_default = function
       hOV 0 [< if loc = Ast.dummy_loc then [<>]
                else [< 'sTR"At location "; print_loc loc; 'sTR":"; 'fNL >];
                explain_exn_default exc >]
+
+  | Lexer.Error Illegal_character -> [< 'sTR "Illegal character." >]
+	
+  | Lexer.Error Unterminated_comment -> [< 'sTR "Unterminated comment." >]
+	
+  | Lexer.Error Unterminated_string -> [< 'sTR "Unterminated string." >]
 	
   | reraise ->
       flush_all();

@@ -1,7 +1,12 @@
 
 (* $Id$ *)
 
-exception BadToken of string
+type error =
+  | Illegal_character
+  | Unterminated_comment
+  | Unterminated_string
+
+exception Error of error
 
 val add_keyword : string -> unit
 val is_keyword : string -> bool

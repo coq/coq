@@ -37,21 +37,22 @@ let load_rcfile() =
        raise e)
   else mSGNL [< 'sTR"Skipping rcfile loading." >]
 
-(*Puts dir in the path of ML and in the LoadPath*)
+(* Puts dir in the path of ML and in the LoadPath *)
 let add_include s =
   Mltop.dir_ml_dir s;
   add_path s
 
-(*By the option -include -I or -R of the command line*)
+(* By the option -include -I or -R of the command line *)
 let includes = ref []
 let push_include s = includes := s :: !includes
-let rec_include s = includes := (all_subdirs s)@(!includes)
+let rec_include s = includes := (all_subdirs s) @ !includes
 
-(*Because find puts "./" and the loadpath is not really pretty-printed*)
-let hm2 str=
-  String.sub str 2 ((String.length str)-2)
+(* Because find puts "./" and the loadpath is not nicely pretty-printed *)
+let hm2 s = 
+  let n = String.length s in
+  if n > 1 && s.[0] = '.' && s.[1] = '/' then String.sub s 2 (n-2) else s
 
-(*Initializes the LoadPath according to COQLIB and Coq_config*)
+(* Initializes the LoadPath according to COQLIB and Coq_config *)
 let init_load_path () =
   (* default load path; only if COQLIB is defined *)
   begin
@@ -62,18 +63,15 @@ let init_load_path () =
 	  (fun s -> add_include (Filename.concat coqlib s))
       	  ("states" :: 
 	   (List.map (fun s -> Filename.concat "theories" (hm2 s))
-             Coq_config.theories_dirs))
+              Coq_config.theories_dirs))
     with Not_found -> ()
   end ;
-
   begin
     try
       let camlp4 = Sys.getenv "CAMLP4LIB" in add_include camlp4
     with Not_found -> ()
   end ;
-
   add_include "." ;
-
   (* additional loadpath, given with -I -include -R options *)
   List.iter add_include (List.rev !includes);
   includes := []
