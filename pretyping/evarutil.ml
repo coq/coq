@@ -118,13 +118,12 @@ let new_isevar_sign env sigma typ instance =
 
 (* We don't try to guess in which sort the type should be defined, since
    any type has type Type. May cause some trouble, but not so far... *)
-(*
 let new_Type () = mkType (new_univ ())
 
 let new_Type_sort () = Type (new_univ ())
 
 let judge_of_new_Type () = fst (Typeops.judge_of_type (new_univ ()))
-*)
+(*
 let new_Type () = mkType dummy_univ
 
 let new_Type_sort () = Type dummy_univ
@@ -132,7 +131,7 @@ let new_Type_sort () = Type dummy_univ
 let judge_of_new_Type () = 
   { uj_val = mkSort (Type dummy_univ);
     uj_type = mkSort (Type dummy_univ) }
-
+*)
 
 (* Declaring any type to be in the sort Type shouldn't be harmful since
    cumulativity now includes Prop and Set in Type. *)

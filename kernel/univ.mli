@@ -16,11 +16,15 @@ open Names
 
 type universe
 
+(*
 val dummy_univ : universe
+*)
 val implicit_univ : universe
 
 val prop_univ : universe
+(*
 val prop_univ_univ : universe
+*)
 
 val set_module : dir_path -> unit
 
@@ -34,9 +38,11 @@ val initial_universes : universes
 
 (*s Constraints. *)
 
+(*
 type constraint_type = Gt | Geq | Eq
+*)
 
-type univ_constraint = universe * constraint_type * universe
+type univ_constraint (* = universe * constraint_type * universe *)
 
 module Constraint : Set.S with type elt = univ_constraint
 
@@ -44,7 +50,9 @@ type constraints = Constraint.t
 
 type constraint_function = universe -> universe -> constraints -> constraints
 
+(*
 val enforce_gt : constraint_function
+*)
 val enforce_geq : constraint_function
 val enforce_eq : constraint_function
 

@@ -23,29 +23,49 @@
 open Pp
 open Util
 
-type universe = { u_mod : Names.dir_path; u_num : int }
+type universe_level = { u_mod : Names.dir_path; u_num : int }
+
+type universe =
+  | Variable of universe_level
+  | Max of universe_level list * universe_level list
 
 let universe_ord x y =
   let c = x.u_num - y.u_num in
   if c <> 0 then c else compare x.u_mod y.u_mod
   
 module UniverseOrdered = struct
-  type t = universe
+  type t = universe_level
   let compare = universe_ord
 end
 
-let string_of_univ u = 
+let string_of_univ_level u = 
   (Names.string_of_dirpath u.u_mod)^"."^(string_of_int u.u_num)
 
-let pr_uni u =
+let string_of_univ = function
+  | Variable u -> string_of_univ_level u
+  | Max (gel,gtl) -> 
+      "max("^
+      (String.concat ","
+	 ((List.map string_of_univ_level gel)@
+	  (List.map (fun u -> "("^(string_of_univ_level u)^")+1") gtl)))^")"
+
+let pr_uni_level u =
   [< 'sTR (Names.string_of_dirpath u.u_mod) ; 'sTR"." ; 'iNT u.u_num >]
 
-let dummy_univ =  (* for prover terms *)
-  { u_mod = Names.make_dirpath [Names.id_of_string "dummy_univ"];
-    u_num = 0 }
+let pr_uni = function
+  | Variable u -> pr_uni_level u
+  | Max (gel,gtl) ->
+      [< 'sTR "max("; 
+	 prlist_with_sep pr_coma pr_uni_level gel;
+	 if gel <> [] & gtl <> [] then pr_coma () else [< >];
+	 prlist_with_sep pr_coma
+	   (fun x -> [< 'sTR "("; pr_uni_level x; 'sTR")+1" >]) gtl;
+	 'sTR ")" >]
+
 let implicit_univ =
-  { u_mod = Names.make_dirpath [Names.id_of_string "implicit_univ"];
-    u_num = 0 }
+  Variable 
+    { u_mod = Names.make_dirpath [Names.id_of_string "implicit_univ"];
+      u_num = 0 }
 
 let current_module = ref []
 
@@ -53,11 +73,13 @@ let set_module m = current_module := m
 
 let new_univ = 
   let univ_gen = ref 0 in
-  (fun sp -> incr univ_gen; { u_mod = !current_module; u_num = !univ_gen })
+  (fun sp ->
+     incr univ_gen; 
+     Variable { u_mod = !current_module; u_num = !univ_gen })
 
 (* Comparison on this type is pointer equality *)
 type canonical_arc =
-    { univ: universe; gt: universe list; ge: universe list }
+    { univ: universe_level; gt: universe_level list; ge: universe_level list }
 
 let terminal u = {univ=u; gt=[]; ge=[]}
 
@@ -65,7 +87,7 @@ let terminal u = {univ=u; gt=[]; ge=[]}
    for which we know the universes that are smaller *)
 type univ_entry =
     Canonical of canonical_arc
-  | Equiv of universe * universe
+  | Equiv of universe_level * universe_level
 
 module UniverseMap = Map.Make(UniverseOrdered)
 
@@ -85,13 +107,9 @@ let declare_univ u g =
 
 (* The universes of Prop and Set: Type_0, Type_1 and the
    resulting graph. *)
-let (initial_universes,prop_univ,prop_univ_univ) =
-  let prop_sp = Names.make_dirpath [Names.id_of_string "prop_univ"] in
-  let u = { u_mod = prop_sp; u_num = 0 } in
-  let su = { u_mod = prop_sp; u_num = 1 } in
-  let g = enter_arc (terminal u) UniverseMap.empty in
-  let g = enter_arc {univ=su; gt=[u]; ge=[]} g in
-  (g,u,su)
+
+let initial_universes = UniverseMap.empty
+let prop_univ = Max ([],[])
 
 (* Every universe has a unique canonical arc representative *)
 
@@ -102,7 +120,7 @@ let repr g u =
     let a =
       try UniverseMap.find u g
       with Not_found -> anomalylabstrm "Univ.repr"
-	  [< 'sTR"Universe "; pr_uni u; 'sTR" undefined" >] 
+	  [< 'sTR"Universe "; pr_uni_level u; 'sTR" undefined" >] 
     in
     match a with 
       | Equiv(_,v) -> repr_rec v
@@ -309,6 +327,7 @@ let enforce_univ_gt u v g =
 	(match compare g v u with
            | NGE -> setgt g u v
            | _ -> error_inconsistency())
+
 (*
 let enforce_univ_relation g = function 
   | Equiv (u,v) -> enforce_univ_eq u v g
@@ -316,6 +335,7 @@ let enforce_univ_relation g = function
       let g' = List.fold_right (enforce_univ_gt u) gt g in
       List.fold_right (enforce_univ_geq u) ge g'
 *)
+
 (* Merging 2 universe graphs *)
 (*
 let merge_universes sp u1 u2 =
@@ -327,7 +347,7 @@ let merge_universes sp u1 u2 =
 
 type constraint_type = Gt | Geq | Eq
 
-type univ_constraint = universe * constraint_type * universe
+type univ_constraint = universe_level * constraint_type * universe_level
 
 let enforce_constraint cst g =
   match cst with
@@ -348,8 +368,20 @@ type constraint_function =
     universe -> universe -> constraints -> constraints
 
 let enforce_gt u v c = Constraint.add (u,Gt,v) c
-let enforce_geq u v c = Constraint.add (u,Geq,v) c
-let enforce_eq u v c = Constraint.add (u,Eq,v) c
+
+let enforce_geq u v c =
+  match u with
+    | Variable u -> (match v with
+	| Variable v -> Constraint.add (u,Geq,v) c
+	| Max (l1, l2) ->
+	    let d = List.fold_right (fun v -> Constraint.add (u,Geq,v)) l1 c in
+	    List.fold_right (fun v -> Constraint.add (u,Gt,v)) l2 d) 
+    | Max _ -> anomaly "A universe bound can only be a variable"
+
+let enforce_eq u v c =
+  match (u,v) with
+    | Variable u, Variable v -> Constraint.add (u,Eq,v) c
+    | _ -> anomaly "A universe comparison can only happen between variables"
 
 let merge_constraints c g =
   Constraint.fold enforce_constraint c g
@@ -357,31 +389,24 @@ let merge_constraints c g =
 (* Returns a fresh universe, juste above u. Does not create new universes
    for Type_0 (the sort of Prop and Set).
    Used to type the sort u. *)
-let super u = 
-  if u == prop_univ then 
-    prop_univ_univ, Constraint.empty
-  else
-    let v = new_univ () in
-    let c = Constraint.singleton (v,Gt,u) in
-    v,c
+let super = function
+  | Variable u -> Max ([],[u]), Constraint.empty
+  | Max _ ->
+      anomaly ("Cannot take the successor of a non variable universes:\n"^
+       "you are probably typing a type already known to be the type\n"^
+       "of a user-provided term; if you really need this, please report")
 
-(* Returns the least upper bound of universes u and v. If they are not
+(* returns the least upper bound of universes u and v. If they are not
    constrained, then a new universe is created.
    Used to type the products. *)
 let sup u v g = 
-  let g = declare_univ u g in
-  let g = declare_univ v g in
-  match compare g u v with
-    | NGE -> 
-	(match compare g v u with
-           | NGE -> 
-	       let w = new_univ () in
-	       let c = Constraint.add (w,Geq,u) 
-			 (Constraint.singleton (w,Geq,v)) in
-	       w, c
-           | _ -> v, Constraint.empty)
-    | _ -> u, Constraint.empty
-
+  (match u,v with
+    | Variable u, Variable v -> Max ((if u = v then [u] else [u;v]),[])
+    | Variable u, Max (gel,gtl) -> Max (list_add_set u gel,gtl)
+    | Max (gel,gtl), Variable v -> Max (list_add_set v gel,gtl)
+    | Max (gel,gtl), Max (gel',gtl') ->
+	Max (list_union gel gel',list_union gtl gtl')),
+  Constraint.empty
 
 (* Pretty-printing *)
 
@@ -398,12 +423,12 @@ let num_edges g =
 let pr_arc = function 
   | Canonical {univ=u; gt=gt; ge=ge} -> 
       hOV 2
-        [< pr_uni u; 'sPC;
-           prlist_with_sep pr_spc (fun v -> [< 'sTR">"; pr_uni v >]) gt;
-           prlist_with_sep pr_spc (fun v -> [< 'sTR">="; pr_uni v >]) ge
+        [< pr_uni_level u; 'sPC;
+           prlist_with_sep pr_spc (fun v -> [< 'sTR">"; pr_uni_level v >]) gt;
+           prlist_with_sep pr_spc (fun v -> [< 'sTR">="; pr_uni_level v >]) ge
         >]
   | Equiv (u,v) -> 
-      [< pr_uni u ; 'sTR"=" ; pr_uni v >]
+      [< pr_uni_level u ; 'sTR"=" ; pr_uni_level v >]
 
 let pr_universes g =
   let graph = UniverseMap.fold (fun k a l -> (k,a)::l) g [] in
@@ -415,17 +440,20 @@ let pr_universes g =
 let dump_universes output g = 
   let dump_arc _ = function
     | Canonical {univ=u; gt=gt; ge=ge} -> 
-	let u_str = string_of_univ u in
+	let u_str = string_of_univ_level u in
 	  List.iter 
 	    (fun v -> 
-	       Printf.fprintf output "%s > %s ;\n" u_str (string_of_univ v)) 
+	       Printf.fprintf output "%s > %s ;\n" u_str
+		 (string_of_univ_level v)) 
 	    gt;
 	  List.iter 
 	    (fun v -> 
-	       Printf.fprintf output "%s >= %s ;\n" u_str (string_of_univ v)) 
+	       Printf.fprintf output "%s >= %s ;\n" u_str
+		 (string_of_univ_level v)) 
 	    ge
     | Equiv (u,v) ->
-	Printf.fprintf output "%s = %s ;\n" (string_of_univ u) (string_of_univ v)
+	Printf.fprintf output "%s = %s ;\n"
+	  (string_of_univ_level u) (string_of_univ_level v)
   in
     UniverseMap.iter dump_arc g 
 
@@ -434,14 +462,19 @@ module Huniv =
     struct
       type t = universe
       type u = Names.identifier -> Names.identifier
-      let hash_sub hstr {u_mod=sp; u_num=n} = 
-	{u_mod=List.map hstr sp; u_num=n}
-      let equal {u_mod=sp1; u_num=n1} {u_mod=sp2; u_num=n2} =
-          (List.length sp1 = List.length sp2)
-              & List.for_all2 (==) sp1 sp2 & n1=n2
+      let hash_aux hstr {u_mod=sp; u_num=n} = {u_mod=List.map hstr sp; u_num=n}
+      let hash_sub hstr = function
+	| Variable u -> Variable (hash_aux hstr u)
+	| Max (gel,gtl) ->
+	    Max (List.map (hash_aux hstr) gel, List.map (hash_aux hstr) gtl)
+      let equal u v =
+	match u, v with
+	  | Variable u, Variable v -> u == v
+	  | Max (gel,gtl), Max (gel',gtl') ->
+	      (List.for_all2 (==) gel gel') && (List.for_all2 (==) gtl gtl')
+	  | _ -> false
       let hash = Hashtbl.hash
     end)
-
 
 let hcons1_univ u =
   let _,_,_,hid,_ = Names.hcons_names () in

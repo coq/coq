@@ -85,11 +85,11 @@ let typeur sigma metamap =
     match kind_of_term t with
     | IsCast (c,s) when isSort s -> destSort s
     | IsSort (Prop c) -> type_0
-    | IsSort (Type u) -> Type Univ.dummy_univ
+    | IsSort (Type u) -> Type (fst (Univ.super u))
     | IsProd (name,t,c2) ->
         (match (sort_of (push_rel_assum (name,t) env) c2) with
 	  | Prop _ as s -> s
-	  | Type u2 -> Type Univ.dummy_univ)
+	  | Type u2 as s -> s (*Type Univ.dummy_univ*))
     | IsApp(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
     | IsLambda _ | IsFix _ | IsMutConstruct _ ->
         anomaly "sort_of: Not a type (1)"
