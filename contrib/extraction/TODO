@@ -18,3 +18,14 @@
        let t = 1 
        let u = The.External.t (* ?? *)
     end
+
+ 20. Support the .v-as-internal-module, like in 
+    
+    <file A.v>
+    Definition foo :=O.
+    <End file A.v>
+
+    <at toplevel>
+    Require A.
+    Module M:=A
+    Extraction M.
