@@ -94,12 +94,13 @@ let replace_by_meta env = function
 	    mkNamedProd id c1 (snd (destCast c2))
 	| IsLambda (Anonymous,c1,c2) when isCast c2 ->
 	    mkArrow c1 (snd (destCast c2))
-	| (IsApp _ | IsMutCase _) ->
-	    (** let j = ise_resolve true empty_evd mm (gLOB sign) c in **)
+	| _ -> (* (IsApp _ | IsMutCase _) -> *)
 	    Retyping.get_type_of_with_meta env Evd.empty mm c
+	(*
 	| IsFix ((_,j),(v,_,_)) ->
 	    v.(j) (* en pleine confiance ! *)
 	| _ -> invalid_arg "Tcc.replace_by_meta (TO DO)" 
+        *)
       in
       mkCast (m,ty),[n,ty],[Some th]
 
@@ -124,13 +125,18 @@ let fresh env n =
 let rec compute_metamap env c = match kind_of_term c with
   (* le terme est directement une preuve *)
   | (IsConst _ | IsEvar _ | IsMutInd _ | IsMutConstruct _ |
-    IsSort _ | IsVar _ | IsRel _) -> TH (c,[],[])
+    IsSort _ | IsVar _ | IsRel _) -> 
+      TH (c,[],[])
 
   (* le terme est une mv => un but *)
   | IsMeta n ->
+      (* 
       Pp.warning (Printf.sprintf ("compute_metamap: MV(%d) sans type !\n") n);
+      let ty = Retyping.get_type_of_with_meta env Evd.empty lmeta c in 
+      *)
       TH (c,[],[None])
-  | IsCast (m,ty) when isMeta m -> TH (c,[destMeta m,ty],[None])
+  | IsCast (m,ty) when isMeta m -> 
+      TH (c,[destMeta m,ty],[None])
 
   (* abstraction => il faut décomposer si le terme dessous n'est pas pur
    *    attention : dans ce cas il faut remplacer (Rel 1) par (Var x)
