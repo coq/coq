@@ -80,6 +80,12 @@ let get_tab_label i =
 
 let get_current_tab_label () = get_tab_label (notebook())#current_page
 
+let get_current_page () = 
+  let i = (notebook())#current_page in
+  (notebook())#get_nth_page i
+
+				      
+
 let reset_tab_label i = set_tab_label i (get_tab_label i)
 
 let to_do_on_page_switch = ref []
@@ -135,7 +141,8 @@ object('self)
     method set_filename : string option -> unit
     method update_stats : unit
     method revert : unit
-    method save : string -> unit
+    method save : string -> bool
+    method save_as : string -> bool
     method read_only : bool
     method set_read_only : bool -> unit
     method is_active : bool
@@ -185,8 +192,9 @@ let crash_save i =
 	 | Some f -> f^".crashcoqide"
        in
        try 
-	 try_export filename (view#buffer#get_text ());
-	 Pervasives.prerr_endline ("Saved "^filename)
+	 if try_export filename (view#buffer#get_text ()) then
+	   Pervasives.prerr_endline ("Saved "^filename)
+	 else Pervasives.prerr_endline ("Could not save "^filename)
        with _ -> Pervasives.prerr_endline ("Could not save "^filename))
        | _ -> Pervasives.prerr_endline "Unanalyzed view found. Please report."
     )
@@ -440,21 +448,41 @@ object(self)
 		     "Some unsaved buffers changed on disk"
 		  )
 	    with 1 -> do_revert ()
-	      | 2 -> self#save f
+	      | 2 -> if self#save f then !flash_info "Overwritten" else
+		  !flash_info "Could not overwrite file"
 	      | _ -> 
 		  prerr_endline "Auto revert set to false";
-		  current.global_auto_revert <- false;
+		  !current.global_auto_revert <- false;
 		  disconnect_revert_timer ()
 	  else do_revert () 
 	end
       | None -> ()
 	  
   method save f = 
-    filename <- Some f;
-    try_export f (input_buffer#get_text ());
-    input_buffer#set_modified false;
-    stats <- my_stat f;
+    if try_export f (input_buffer#get_text ()) then begin
+      filename <- Some f;
+      input_buffer#set_modified false;
+      stats <- my_stat f;
+      true
+    end
+    else false
+    
 
+  method save_as f =
+    if Sys.file_exists f then 
+      match (GToolbox.question_box ~title:"File exists on disk"
+	       ~buttons:["Overwrite";
+			 "Cancel";] 
+	       ~default:1
+	       ~icon:
+	       (let img = GMisc.image () in
+		img#set_stock "gtk-dialog-warning" ~size:6;
+		img#coerce)
+	       ("File "^f^"already exists")
+	    )
+      with 1 -> self#save f
+	| _ -> false
+    else self#save f
 
   method set_read_only b = read_only<-b
   method read_only = read_only
@@ -1034,7 +1062,8 @@ let create_input_tab filename =
   let image = GMisc.image ~packing:v_box#pack () in
   let label = GMisc.label ~text:filename ~packing:v_box#pack () in
   let fr1 = GBin.frame ~shadow_type:`ETCHED_OUT
-	      ~packing:((notebook ())#append_page ~tab_label:v_box#coerce) () 
+	      ~packing:((notebook ())#append_page
+			  ~tab_label:v_box#coerce) () 
   in 
   let sw1 = GBin.scrolled_window
 	      ~vpolicy:`AUTOMATIC 
@@ -1097,7 +1126,7 @@ let main files =
 	    ~width:window_width ~height:window_height 
 	    ~title:"CoqIde" ()
   in
-  let accel_group = GtkData.AccelGroup.create () in
+(*  let accel_group = GtkData.AccelGroup.create () in *)
   let vbox = GPack.vbox ~homogeneous:false ~packing:w#add () in
   let menubar = GMenu.menu_bar ~packing:vbox#pack () in
   let factory = new GMenu.factory menubar in
@@ -1167,13 +1196,16 @@ let main files =
 	     with
 	       | None -> ()
 	       | Some f -> 
-		   (out_some current.analyzed_view)#save f;
-		   set_current_tab_label (Filename.basename f);
-		   !flash_info "Saved"
+		   if (out_some current.analyzed_view)#save_as f then begin
+		     set_current_tab_label (Filename.basename f);
+		     !flash_info "Saved"
+		   end
+		   else !flash_info "Save Failed"
 	     end
 	 | Some f -> 
-	     (out_some current.analyzed_view)#save f;
-	     !flash_info "Saved"
+	     if (out_some current.analyzed_view)#save f then 
+	       !flash_info "Saved"
+	     else !flash_info "Save Failed"
 	       
       )
     with 
@@ -1191,9 +1223,11 @@ let main files =
 	       with
 		 | None -> ()
 		 | Some f -> 
-		     (out_some current.analyzed_view)#save f;
-		     set_current_tab_label (Filename.basename f);
-		     !flash_info "Saved"
+		     if (out_some current.analyzed_view)#save_as f then begin
+		       set_current_tab_label (Filename.basename f);
+		       !flash_info "Saved"
+		     end
+		     else !flash_info "Save Failed"
 	       end
 	   | Some f -> 
 	       begin match GToolbox.select_file 
@@ -1203,11 +1237,12 @@ let main files =
 	       with
 		 | None -> ()
 		 | Some f -> 
-		     (out_some current.analyzed_view)#save f;
-		     set_current_tab_label (Filename.basename f);
-		     !flash_info "Saved"
+		     if (out_some current.analyzed_view)#save_as f then begin
+		       set_current_tab_label (Filename.basename f);
+		       !flash_info "Saved"
+		     end else !flash_info "Save Failed"
 	       end);
-    with e -> !flash_info "Save failed"
+    with e -> !flash_info "Save Failed"
   in   
   ignore (saveas_m#connect#activate saveas_f);
   
@@ -1221,7 +1256,7 @@ let main files =
 	     begin match av#filename with 
 	       | None -> ()
 	       | Some f ->
-		   av#save f;
+		   ignore (av#save f)
 	     end
 	 | _ -> ()
       )  input_views
@@ -1275,8 +1310,8 @@ let main files =
       | Some f ->
 	  let cmd = 
 	    "cd " ^ Filename.dirname f ^ "; " ^
-	    current.cmd_coqdoc ^ " -ps " ^ Filename.basename f ^ 
-	    " | " ^ current.cmd_print
+	    !current.cmd_coqdoc ^ " -ps " ^ Filename.basename f ^ 
+	    " | " ^ !current.cmd_print
 	  in
 	  let c = Sys.command cmd in
 	  !flash_info (cmd ^ if c = 0 then " succeeded" else " failed")
@@ -1301,7 +1336,7 @@ let main files =
 	  in
 	  let cmd = 
 	    "cd " ^ Filename.dirname f ^ "; " ^
-	    current.cmd_coqdoc ^ " --" ^ kind ^ " -o " ^ output ^ " " ^ basef
+	    !current.cmd_coqdoc ^ " --" ^ kind ^ " -o " ^ output ^ " " ^ basef
 	  in
 	  let c = Sys.command cmd in
 	  !flash_info (cmd ^ if c = 0 then " succeeded" else " failed")
@@ -1402,7 +1437,7 @@ let main files =
   let navigation_factory = 
     new GMenu.factory navigation_menu 
       ~accel_group 
-      ~accel_modi:current.modifier_for_navigation 
+      ~accel_modi:!current.modifier_for_navigation 
   in
   let do_or_activate f () = 
     let current = get_current_view () in
@@ -1442,7 +1477,7 @@ let main files =
   let tactics_factory = 
     new GMenu.factory tactics_menu 
       ~accel_group 
-      ~accel_modi:current.modifier_for_tactics
+      ~accel_modi:!current.modifier_for_tactics
   in
   let do_if_active f () = 
     let current = get_current_view () in
@@ -1494,21 +1529,15 @@ let main files =
   ignore (tactics_factory#add_item "<Proof _Wizzard>"
 	    ~key:GdkKeysyms._dollar
 	    ~callback:(do_if_active (fun a -> a#insert_commands 
-				       ["Progress Trivial.\n","Trivial.\n";
-					"Progress Auto.\n","Auto.\n";
-					"Tauto.\n","Tauto.\n";
-					"Omega.\n","Omega.\n";
-					"Progress Auto with *.\n","Auto with *.\n";
-					"Progress EAuto with *.\n","EAuto with *.\n";
-					"Progress Intuition.\n","Intuition.\n";
-				       ]))
+				       !current.automatic_tactics
+				    ))
 	 );
   
   (* Templates Menu *)
   let templates_menu =  factory#add_submenu "_Templates" in
   let templates_factory = new GMenu.factory templates_menu 
 			    ~accel_group 
-			    ~accel_modi:current.modifier_for_templates
+			    ~accel_modi:!current.modifier_for_templates
   in
   let add_complex_template (menu_text, text, offset, len, key) =
   (* Templates/Lemma *)
@@ -1598,7 +1627,7 @@ let main files =
       | None -> 
 	  !flash_info "Active buffer has no name"
       | Some f ->
-	  let c = Sys.command (current.cmd_coqc ^ " " ^ f) in
+	  let c = Sys.command (!current.cmd_coqc ^ " " ^ f) in
 	  if c = 0 then
 	    !flash_info (f ^ " successfully compiled")
 	  else begin
@@ -1611,16 +1640,16 @@ let main files =
   (* Command/Make Menu *)
   let make_f () =
     save_f ();
-    let c = Sys.command current.cmd_make in
-    !flash_info (current.cmd_make ^ if c = 0 then " succeeded" else " failed")
+    let c = Sys.command !current.cmd_make in
+    !flash_info (!current.cmd_make ^ if c = 0 then " succeeded" else " failed")
   in
   let make_m = commands_factory#add_item "_Make" ~callback:make_f in
   
   (* Command/CoqMakefile Menu*)
   let coq_makefile_f () =
-    let c = Sys.command current.cmd_coqmakefile in
+    let c = Sys.command !current.cmd_coqmakefile in
     !flash_info 
-      (current.cmd_coqmakefile ^ if c = 0 then " succeeded" else " failed")
+      (!current.cmd_coqmakefile ^ if c = 0 then " succeeded" else " failed")
   in
   let _ = commands_factory#add_item "_Make Makefile" ~callback:coq_makefile_f 
   in
@@ -1628,9 +1657,9 @@ let main files =
   (* Configuration Menu *)
   let reset_revert_timer () =
     disconnect_revert_timer ();
-    if current.global_auto_revert then 
+    if !current.global_auto_revert then 
       revert_timer := Some
-	(GMain.Timeout.add ~ms:current.global_auto_revert_delay 
+	(GMain.Timeout.add ~ms:!current.global_auto_revert_delay 
 	   ~callback:(fun () -> revert_f ();true))
   in reset_revert_timer (); (* to enable statup preferences timer *)
 
@@ -1658,10 +1687,26 @@ let main files =
   font_selector#selection#set_preview_text 
     "Lemma Truth: (p:Prover) `p < Coq`. Proof. Auto with *. Save."; 
   let customize_fonts_m = 
-    configuration_factory#add_item "Customize fonts"
+    configuration_factory#add_item "Customize _fonts"
       ~callback:(fun () -> font_selector#present ())
   in
 
+  let detach_menu = configuration_factory#add_item 
+		      "_Detach Scripting Window"
+		      ~callback:
+		      (fun () -> 
+			 let nb = notebook () in
+			 if nb#misc#toplevel#get_oid = w#coerce#get_oid then 
+			   begin  
+			     let nw = GWindow.window ~show:true () in
+			     let parent = out_some nb#misc#parent in
+			     ignore (nw#connect#destroy 
+				       ~callback:
+				       (fun () -> nb#misc#reparent parent));
+			     nw#add_accel_group accel_group;
+			     nb#misc#reparent nw#coerce
+			   end	      )
+  in
   (* Help Menu *)
 
   let help_menu = factory#add_submenu "_Help" in
@@ -1669,9 +1714,9 @@ let main files =
 		       ~accel_modi:[]
 		       ~accel_group in
   let _ = help_factory#add_item "Browse Coq _Manual" 
-	    ~callback:(fun () -> browse (current.doc_url ^ "main.html")) in
+	    ~callback:(fun () -> browse (!current.doc_url ^ "main.html")) in
   let _ = help_factory#add_item "Browse Coq _Library" 
-	    ~callback:(fun () -> browse current.library_url) in
+	    ~callback:(fun () -> browse !current.library_url) in
   let _ = 
     help_factory#add_item "Help for _keyword" ~key:GdkKeysyms._F1
       ~callback:(fun () -> 
@@ -1692,7 +1737,9 @@ let main files =
   (* Window layout *)
 
   let hb = GPack.paned `HORIZONTAL  ~border_width:3 ~packing:vbox#add () in
-  _notebook := Some (GPack.notebook ~scrollable:true ~packing:hb#add1 ());
+  _notebook := Some (GPack.notebook ~scrollable:true 
+		       ~packing:hb#add1
+		       ());
   let nb = notebook () in
   let fr2 = GBin.frame ~shadow_type:`ETCHED_OUT ~packing:hb#add2 () in 
   let hb2 = GPack.paned `VERTICAL  ~border_width:3 ~packing:fr2#add () in

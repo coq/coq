@@ -58,15 +58,17 @@ let try_export file_name s =
       if (fst (Glib.Convert.get_charset ())) then
 	s 
       else
-	(try Glib.Convert.locale_from_utf8 s with _ -> prerr_endline "Warning: exporting to utf8";s)
+	(try Glib.Convert.locale_from_utf8 s 
+	 with _ -> prerr_endline "Warning: exporting to utf8";s)
     in
     let oc = open_out file_name in
     output_string oc s;
-    close_out oc
-  with e -> prerr_endline (Printexc.to_string e)
+    close_out oc;
+    true
+  with e -> prerr_endline (Printexc.to_string e);false
 
 let browse url =
-  let l,r = current.cmd_browse in
+  let l,r = !current.cmd_browse in
   ignore (Sys.command (l ^ url ^ r))
 
 let url_for_keyword =
@@ -92,7 +94,7 @@ let url_for_keyword =
 
 let browse_keyword text = 
   try 
-    let u = url_for_keyword text in browse (current.doc_url ^ u) 
+    let u = url_for_keyword text in browse (!current.doc_url ^ u) 
   with _ -> ()
 
 let my_stat f = try Some (Unix.stat f) with _ -> None
