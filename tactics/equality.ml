@@ -27,17 +27,14 @@ open Tacmach
 open Proof_type
 open Logic
 open Evar_refiner
-open Wcclausenv
 open Pattern
 open Matching
 open Hipattern
 open Tacexpr
 open Tacticals
 open Tactics
-open Tacinterp
 open Tacred
 open Rawterm
-open Vernacinterp
 open Coqlib
 open Vernacexpr
 open Setoid_replace
