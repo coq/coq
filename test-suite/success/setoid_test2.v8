@@ -28,21 +28,25 @@ Require Export Setoid.
     3. iff invece di if in "Add Morphism" nel caso di predicati
     4. setoid_replace poteva riscrivere sia c1 in c2 che c2 in c1
 
+### setoid_replace ... with ... dovrebbe tentare le due vie;
+    che fare se entrambe funzionano?
+### coq_impl (in mark_occur) ha implicitamente tipo 'a -> 'a
+    dove 'a = (Prop,iff) oppure 'a = (Prof,impl). Altri tipi (e.g.
+    (Prop,iff) -> (Prop,impl)) non sono ammessi.
+### Pre-dichiarare il morfismo impl.
+### Dichiarazione dentro a un module type e a una sezione: ???
+### Relazioni universalmente quantificate: ???
+### Implementare zucchero sintattico per partial setoids.
+### Nota: il parsing e pretty printing delle relazioni non e' in synch!
+    eq contro (ty,eq). Uniformare
+
   Implementare:
-   -1. scelta dei cammini con backtracking.
-       Nota: in effetti ogni morfismo puo' essere anche interpretato
-       semplicemente come avente Leibniz in input e, quando ha Leibniz
-       in input, come avente qualunque setoide o Leibniz come output.
-       Nel caso di rewrite e' l'uguaglianza usata che va a imporre un vincolo
-       sulle scelte globali. Nel caso di replace tale vincolo non c'e' e si e'
-       sempre in presenza di ambiguita'. Dare un comando che permette
-       di indicare il setoide di default associato a una funzione in un
-       determinato momento?
+   -1. user-defined subrelations && user-proved subrelations
     0. trucco di Bruno
     1. rewrite ... in ...
     2. setoid_replace ... with ... in ...
     3. perche' rewrite ma non replace?
-    4. [setoid_]symmetry, [setoid_]reflexivity
+    4. [setoid_]symmetry, [setoid_]reflexivity, [setoid_]transitivity (?!?)
 
   Sorgenti di inefficacia:
     1. scelta del setoide di default per un sostegno: per farlo velocemente
@@ -59,10 +63,10 @@ Require Export Setoid.
     4. accetta di avere morfismi differenti sulla stessa funzione e con
        lo stesso dominio e codominio, scegliendo a caso quello da usare
        (proof irrelevance)
-   #5. quando un morfismo viene definito, se la scelta del dominio o del
+    5. quando un morfismo viene definito, se la scelta del dominio o del
        codominio e' ambigua l'utente puo' esplicitamente disambiguare
        la scelta fornendo esplicitamente il "tipo" del morfismo
-   #6. permette di gestire riscritture ove ad almeno una funzione venga
+    6. permette di gestire riscritture ove ad almeno una funzione venga
        associato piu' di un morfismo. Vengono automaticamente calcolate
        le scelte globali che rispettano il tipaggio.
    #7. se esistono piu' scelte globali che rispettano le regole di tipaggio
@@ -70,14 +74,12 @@ Require Export Setoid.
        esplicitamente la scelta per alcune occorrenze di una funzione.
     8. nel caso in cui la setoid_replace sia stata invocata al posto
        della replace la setoid_replace invoca direttamente la replace
-   #9. permette di gestire termini in cui il prefisso iniziale dell'albero
+    9. permette di gestire termini in cui il prefisso iniziale dell'albero
        (fino a trovare il termine da riscrivere) non sia formato esclusivamente
        da morfismi il cui dominio e codominio sia un setoide.
        Ovvero ammette anche morfismi il cui dominio e/o codominio sia
        l'uguaglianza di Leibniz. (Se entrambi sono uguaglianze di Leibniz
        allora il setoide e' una semplice funzione).
-       L'implementazione di fatto alterna passi di setoid_replace a passi
-       di replace (per gestire i due casi)
   ?10. maggiore uniformita' sintattica: rewrite == setoid_rewrite;
        replace == setoid_replace; symmetry == setoid_symmetry;
        reflexivity == setoid_reflexivity. Nota: in tal caso, pero',
