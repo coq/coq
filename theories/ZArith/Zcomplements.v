@@ -210,27 +210,3 @@ End Zlength_properties.
 Implicits Zlength_correct [1].
 Implicits Zlength_cons [1].
 Implicits Zlength_nil_inv [1].
-
-(**********************************************************************)
-V7only [
-(* Compatibility *)
-Notation Zcompare_Zmult_right := Zcompare_Zmult_right.
-Notation Zcompare_Zmult_left := Zcompare_Zmult_left.
-Notation Zmult_zero := Zmult_zero.
-Notation Zeq_Zminus := Zeq_Zminus.
-Notation Zminus_Zeq := Zminus_Zeq.
-Notation Zmult_Zminus_distr_l := Zmult_Zminus_distr_l.
-Notation Zmult_reg_left := Zmult_reg_left.
-Notation Zmult_reg_right := Zmult_reg_right.
-Notation Zgt0_le_pred := Zgt0_le_pred.
-Notation Zlt_Zplus := Zlt_Zplus.
-Notation Zlt_Zmult_right := Zlt_Zmult_right.
-Notation Zlt_Zmult_right2 := Zlt_Zmult_right2.
-Notation Zle_Zmult_right := Zle_Zmult_right.
-Notation Zle_Zmult_right2 := Zle_Zmult_right2.
-Notation Zgt_Zmult_right := Zgt_Zmult_right.
-Notation Zlt_Zmult_left := Zlt_Zmult_left.
-Notation Zgt_Zmult_left := Zgt_Zmult_left.
-Export BinInt.
-Export Zorder.
-].
