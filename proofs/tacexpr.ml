@@ -204,7 +204,6 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr =
   | TacId of string
   | TacFail of int or_var * string
   | TacInfo of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
-
   | TacLetRecIn of (identifier located * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_fun_ast) list * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
   | TacLetIn of (identifier located * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr option * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg) list * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
   | TacMatch of lazy_flag * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr * ('pat,('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr) match_rule list
@@ -226,6 +225,8 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg =
   | Integer        of int
   | TacCall        of loc *
       'ref * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg list
+  | TacExternal of loc * string * string * 
+      ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg list
   | TacFreshId     of string option
   | Tacexp of 'tac
 
@@ -285,8 +286,8 @@ type glob_tactic_arg =
      constr_pattern,
      evaluable_global_reference and_short_name or_var,
      inductive or_var,
-     ltac_constant located,
-     identifier located or_var,
+     ltac_constant located or_var,
+     identifier located,
      glob_tactic_expr) gen_tactic_arg
 
 type glob_generic_argument =

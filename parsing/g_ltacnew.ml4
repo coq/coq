@@ -86,6 +86,8 @@ GEXTEND Gram
       | IDENT "idtac"; s = [ s = STRING -> s | -> ""] -> TacId s		
       | IDENT "fail"; n = [ n = int_or_var -> n | -> fail_default_value ];
 	  s = [ s = STRING -> s | -> ""] -> TacFail (n,s)
+      | IDENT "external"; com = STRING; req = STRING; la = LIST1 tactic_arg ->
+	  TacArg (TacExternal (loc,com,req,la))
       | st = simple_tactic -> TacAtom (loc,st)
       | a = may_eval_arg -> TacArg(a)
       | IDENT "constr"; ":"; c = Constr.constr ->

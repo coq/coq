@@ -818,6 +818,9 @@ and pr_tacarg env = function
   | ConstrMayEval c ->
       pr_may_eval (pr_constr env) (pr_lconstr env) (pr_cst env) c
   | TacFreshId sopt -> str "fresh" ++ pr_opt qsnew sopt
+  | TacExternal (_,com,req,la) ->
+      str "external" ++ spc() ++ qsnew com ++ spc() ++ qsnew req ++ spc() ++
+      prlist_with_sep spc (pr_tacarg env) la
   | (TacCall _|Tacexp _|Integer _) as a ->
       str "ltac:" ++ pr_tac env (latom,E) (TacArg a)
 
