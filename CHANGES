@@ -1,3 +1,16 @@
+Changes from V7.3 to V7.3.1
+===========================
+
+Fixes
+
+  - Corrupted Field tactic and Match Context tactic construction fixed
+  - Setoid_replace/Setoid_rewrite bug wrt "==" fixed
+  - Creation of non-colliding fresh names bug for Assert, Pose and LetTac fixed
+
+Misc
+
+  - Ocaml version >= 3.06 is needed to compile Coq from sources
+
 Changes from V7.2 to V7.3
 =========================
 

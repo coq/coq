@@ -15,8 +15,7 @@ COMPILATION.
     distribution. If you really need to recompile under Windows, here
     are some indications:
 
-    1- Install ocaml version 3.01 or later and camlp4 with same
-       version number as ocaml (but at least 3.01.6), Visual C++ (needed
+    1- Install ocaml version 3.06 or later, Visual C++ (needed
        for the -custom option of ocaml) and MASM (needed if you want
        to produce a native version).
 
