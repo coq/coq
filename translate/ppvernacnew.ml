@@ -296,9 +296,11 @@ let rec pr_module_expr = function
   | CMEapply (me1,me2) ->
       pr_module_expr me1 ++ spc() ++ str"(" ++ pr_module_expr me2 ++ str")"
 
+(*
 let pr_opt_casted_constr pr_c = function
   | CCast (loc,c,t) -> pr_c c ++ str":" ++ pr_c t
   | _ as c -> pr_c c
+*)
 
 let pr_type_option pr_c = function
   | CHole loc -> mt()
@@ -319,12 +321,14 @@ let anonymize_binder na c =
 
 let surround p = str"(" ++ p ++ str")"
 
+(*
 let pr_binder pr_c ty na =
   match anonymize_binder (snd na) ty with
       CHole _ -> pr_located pr_name na
     | _ ->
         hov 1
         (surround (pr_located pr_name na ++ str":" ++ cut() ++ pr_c ty))
+*)
 
 let pr_vbinders l =
   hv 0 (pr_binders l)
@@ -526,8 +530,11 @@ let rec pr_vernac = function
   | VernacOpenScope (local,sc) ->
       str "Open " ++ pr_locality local ++ str "Scope" ++ spc() ++ str sc
   | VernacDelimiters (sc,key) ->
-      str"Delimits Scope" ++ spc () ++ str sc ++
+      str"Delimit Scope" ++ spc () ++ str sc ++
       spc() ++ str "with " ++ str key
+  | VernacBindScope (sc,cll) ->
+      str"Bind Scope" ++ spc () ++ str sc ++
+      spc() ++ str "with " ++ prlist_with_sep spc pr_class_rawexpr cll
   | VernacArgumentsScope (q,scl) -> let pr_opt_scope = function 
       |	None -> str"_"
       |	Some sc -> str sc in 
@@ -613,9 +620,9 @@ let rec pr_vernac = function
               | Some ty ->
                   let bl2,body,ty' = extract_def_binders c ty in
                   (bl2,body, spc() ++ str":" ++ spc () ++
-                    pr_lconstr_env_n (Global.env())
+                    pr_type_env_n (Global.env())
                     (local_binders_length bl + local_binders_length bl2)
-                    false (prod_rawconstr ty bl)) in
+                    (prod_rawconstr ty bl)) in
             let bindings =
 	      pr_ne_sep spc pr_vbinders bl ++ pr_binders_arg bl2 in
 	    let n = local_binders_length bl + local_binders_length bl2 in
@@ -628,7 +635,7 @@ let rec pr_vernac = function
             in
             (bindings,ty,ppred)
         | ProveBody (bl,t) ->
-            (pr_vbinders bl, str" :" ++ pr_lconstrarg t, None) in
+            (pr_vbinders bl, str" :" ++ spc () ++ pr_type t, None) in
       let (binds,typ,c) = pr_def_body b in
       hov 2 (pr_def_token e ++ spc() ++ pr_id id ++ binds ++ typ ++
       (match c with
@@ -644,7 +651,7 @@ let rec pr_vernac = function
 (*
 pr_vbinders bl ++ spc())
 *)
-      ++ str":" ++ spc() ++ pr_lconstr c)
+      ++ str":" ++ spc() ++ pr_type c)
   | VernacEndProof (opac,o) -> (match o with
     | None -> if opac then str"Qed" else str"Defined"
     | Some (id,th) -> (match th with
@@ -656,7 +663,7 @@ pr_vbinders bl ++ spc())
   | VernacAssumption (stre,l) ->
       hov 2
         (pr_assumption_token (List.length l > 1) stre ++ spc() ++ 
-	 pr_ne_params_list pr_lconstr l)
+	 pr_ne_params_list pr_type l)
   | VernacInductive (f,l) ->
 
       (* Copie simplifiée de command.ml pour recalculer les implicites, *)
@@ -735,7 +742,7 @@ pr_vbinders bl ++ spc())
       let pr_constructor (coe,(id,c)) =
         hov 2 (pr_id id ++ str" " ++
                (if coe then str":>" else str":") ++ spc () ++
-               pr_lconstr_env ind_env_params c) in
+               pr_type_env_n ind_env_params 0 c) in
       let pr_constructor_list l = match l with
         | [] -> mt()
         | _ ->
@@ -745,7 +752,7 @@ pr_vbinders bl ++ spc())
 	hov 0 (
           str key ++ spc() ++
           pr_id id ++ pr_binders_arg indpar ++ spc() ++ str":" ++ spc() ++
-          pr_lconstr s ++ 
+          pr_type s ++ 
 	  pr_decl_notation ntn ++ str" :=") ++ pr_constructor_list lc in
 
       (* Copie simplifiée de command.ml pour déclarer les notations locales *)
@@ -817,7 +824,7 @@ pr_vbinders bl ++ spc())
                 pr_name (snd (List.nth ids n)) ++ str"}"
               else mt() in
             pr_id id ++ str" " ++ pr_binders bl ++ annot ++ spc()
-            ++ pr_type_option (fun c -> spc() ++ pr_lconstr c) type_
+            ++ pr_type_option (fun c -> spc() ++ pr_type c) type_
             ++ pr_decl_notation ntn ++ str" :=" ++ brk(1,1) ++
             pr_lconstr_env_n rec_sign (local_binders_length bl)
 	      true (CCast (dummy_loc,def0,type_0))
@@ -829,7 +836,7 @@ pr_vbinders bl ++ spc())
       let pr_onecorec (id,c,def) =
         let (bl,def,c) = extract_def_binders def c in
         pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
-        pr_lconstrarg c ++
+        spc() ++ pr_type c ++
         str" :=" ++ brk(1,1) ++ pr_lconstr def in
       hov 1 (str"CoFixpoint" ++ spc() ++
       prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onecorec corecs)  
@@ -843,19 +850,19 @@ pr_vbinders bl ++ spc())
         | (oc,AssumExpr (id,t)) ->
             hov 1 (pr_id id ++
             (if oc then str" :>" else str" :") ++ spc() ++
-            pr_lconstr t)
+            pr_type t)
         | (oc,DefExpr(id,b,opt)) -> (match opt with
 	    | Some t ->
                 hov 1 (pr_id id ++
                 (if oc then str" :>" else str" :") ++ spc() ++
-                pr_lconstr t ++ str" :=" ++ pr_lconstr b)
+                pr_type t ++ str" :=" ++ pr_lconstr b)
 	    | None ->
                 hov 1 (pr_id id ++ str" :=" ++ spc() ++
                 pr_lconstr b)) in
       hov 2
         (str (if b then "Record" else "Structure") ++
          (if oc then str" > " else str" ") ++ pr_id name ++ 
-         pr_binders_arg ps ++ str" :" ++ spc() ++ pr_lconstr s ++ str" := " ++
+         pr_binders_arg ps ++ str" :" ++ spc() ++ pr_type s ++ str" := " ++
          (match c with
            | None -> mt()
            | Some sc -> pr_id sc) ++
@@ -978,7 +985,7 @@ pr_vbinders bl ++ spc())
   | VernacReserve (idl,c) ->
       hov 1 (str"Implicit Variable" ++
         str (if List.length idl > 1 then "s " else " ") ++ str "Type " ++
-        prlist_with_sep spc pr_id idl ++ str " : " ++ pr_constr c)
+        prlist_with_sep spc pr_id idl ++ str " :" ++ spc () ++ pr_type c)
   | VernacSetOpacity (fl,l) ->
       hov 1 ((if fl then str"Opaque" else str"Transparent") ++
              spc() ++ prlist_with_sep sep pr_reference l)
@@ -1038,6 +1045,7 @@ pr_vbinders bl ++ spc())
 	| PrintModuleType qid -> str"Print Module Type" ++ spc() ++ pr_reference qid
 	| PrintModule qid -> str"Print Module" ++ spc() ++ pr_reference qid
 	| PrintInspect n -> str"Inspect" ++ spc() ++ int n
+	| PrintScopes -> str"Print Scopes"
 	| PrintScope s -> str"Print Scope" ++ spc() ++ str s 
       in pr_printable p
   | VernacSearch (sea,sea_r) -> pr_search sea sea_r pr_pattern
