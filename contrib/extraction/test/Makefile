@@ -10,6 +10,7 @@ AXIOMSVO:= \
 theories/Arith/Arith.vo \
 theories/Lists/List.vo \
 theories/Reals/% \
+theories/Num/% \
 theories/Relations/Rstar.vo \
 theories/Sets/Integers.vo \
 theories/ZArith/Zsyntax.vo
@@ -78,7 +79,6 @@ $(REALSML): realsml
 #	Utilities
 #
 
-	
 ml2v: ml2v.ml
 	ocamlc -o $@ $<
 
