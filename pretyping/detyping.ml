@@ -7,6 +7,7 @@ open Univ
 open Names
 open Term
 open Inductive
+open Environ
 open Sign
 open Declare
 open Impargs
@@ -94,7 +95,7 @@ let encode_inductive id =
   let (indsp,_ as ind) =
     try 
       match kind_of_term (global_reference CCI id) with
-	| IsMutInd (indsp,args) -> (indsp,args)
+        | IsMutInd (indsp,args) -> (indsp,args)
 	| _ -> errorlabstrm "indsp_of_id" 
 	    [< 'sTR ((string_of_id id)^" is not an inductive type") >]
     with Not_found -> 
@@ -268,15 +269,15 @@ let rec detype avoid env t =
   match kind_of_term (collapse_appl t) with
     | IsRel n ->
       (try match lookup_name_of_rel n env with
-	 | Name id   -> RRef (dummy_loc, RVar id)
+	 | Name id   -> RVar (dummy_loc, id)
 	 | Anonymous -> anomaly "detype: index to an anonymous variable"
        with Not_found ->
 	 let s = "[REL "^(string_of_int n)^"]"
-	 in RRef (dummy_loc, RVar (id_of_string s)))
+	 in RVar (dummy_loc, id_of_string s))
     | IsMeta n -> RMeta (dummy_loc, n)
-    | IsVar id -> RRef (dummy_loc,RVar id)
+    | IsVar id -> RVar (dummy_loc, id)
     | IsXtra s -> warning "bdize: Xtra should no longer occur in constr";
-	RRef(dummy_loc,RVar (id_of_string ("XTRA"^s)))
+	RVar(dummy_loc, id_of_string ("XTRA"^s))
         (* ope("XTRA",((str s):: pl@(List.map detype cl)))*) 
     | IsSort (Prop c) -> RSort (dummy_loc,RProp c)
     | IsSort (Type _) -> RSort (dummy_loc,RType)
@@ -288,13 +289,14 @@ let rec detype avoid env t =
     | IsApp (f,args) ->
 	RApp (dummy_loc,detype avoid env f,array_map_to_list (detype avoid env) args)
     | IsConst (sp,cl) ->
-	RRef(dummy_loc,RConst(sp,Array.map (detype avoid env) cl))
+	detype_reference avoid env (ConstRef sp) cl
     | IsEvar (ev,cl) ->
-	RRef(dummy_loc,REVar(ev,Array.map (detype avoid env) cl))
+	let f = RRef (dummy_loc, EvarRef ev) in
+	RApp (dummy_loc, f, List.map (detype avoid env) (Array.to_list cl))
     | IsMutInd (ind_sp,cl) ->
-	RRef (dummy_loc,RInd (ind_sp,Array.map (detype avoid env) cl))
+	detype_reference avoid env (IndRef ind_sp) cl
     | IsMutConstruct (cstr_sp,cl) ->
-	RRef (dummy_loc,RConstruct (cstr_sp,Array.map (detype avoid env) cl))
+	detype_reference avoid env (ConstructRef cstr_sp) cl
     | IsMutCase (annot,p,c,bl) ->
 	let synth_type = synthetize_type () in
 	let tomatch = detype avoid env c in
@@ -330,6 +332,20 @@ let rec detype avoid env t =
 	
     | IsFix (nvn,(cl,lfn,vt)) -> detype_fix (RFix nvn) avoid env cl lfn vt
     | IsCoFix (n,(cl,lfn,vt))  -> detype_fix (RCoFix n) avoid env cl lfn vt
+
+and detype_reference avoid env ref args =
+  let args = 
+    try Array.to_list (extract_instance ref args)
+    with Not_found -> (* May happen in debugger *)
+      if Array.length args = 0 then []
+      else
+	let m = "<<Cannot split "^(string_of_int (Array.length args))^
+		" arguments>>" in
+	(mkVar (id_of_string m))::(Array.to_list args)
+  in
+  let f = RRef (dummy_loc, ref) in
+  if args = [] then f
+  else RApp (dummy_loc, f, List.map (detype avoid env) args)
 
 and detype_fix fk avoid env cl lfn vt =
   let lfi = List.map (fun id -> next_name_away id avoid) lfn in
