@@ -156,7 +156,7 @@ proved. Otherwise, it fails.
 \item  \errindex{No such assumption}
 \end{ErrMsgs}
 
-\subsection{\tt Clear {\ident}.}\tacindex{Clear}
+\subsection{\tt Clear {\ident}.}\tacindex{Clear}\label{Clear}
 This tactic erases the hypothesis named {\ident} in the local context
 of the current goal. Then {\ident} is no more displayed and no more
 usable in the proof development.
@@ -241,7 +241,9 @@ reducible.
     \ident$_n$}.\\
 More generally, the \texttt{Intros} tactic takes a pattern as argument
   in order to introduce names for components of an inductive
-  definition, it will be explained in~\ref{Intros-pattern}.
+  definition or to clear introduced hypotheses; 
+  it will be explained in~\ref{Intros-pattern}.
+
 \item {\tt Intros until {\ident}}
   \tacindex{Intros until}\\ 
   Repeats {\tt Intro} until it meets a premise of the goal having form
@@ -874,7 +876,8 @@ analysis without recursion. The type of {\term} must be inductively defined.
   dependent premises of the goal.
 \end{Variants}
 
-\subsection{\tt Intros \pattern}\label{Intros-pattern}\tacindex{Intros}
+\subsection{\tt Intros \pattern}\label{Intros-pattern}
+\tacindex{Intros \pattern}
 
 The tactic {\tt Intros} applied to a pattern performs both
 introduction of variables and case analysis in order to give names to
@@ -882,6 +885,7 @@ components of an hypothesis.
 
 A pattern is either:
 \begin{itemize}
+\item the wildcard: {\tt \_}
 \item a variable
 \item a list of patterns: $p_1~\ldots~p_n$
 \item a disjunction of patterns: {\tt [}$p_1$ {\tt |} {\ldots} {\tt
@@ -893,6 +897,8 @@ A pattern is either:
 The behavior of \texttt{Intros} is defined inductively over the
 structure of the pattern given as argument:
 \begin{itemize}
+\item introduction on the wildcard do the introduction and then
+  immediately clear (cf~\ref{Clear}) the corresponding hypothesis;
 \item introduction on a variable behaves like described in~\ref{Intro}; 
 \item introduction over a
 list of patterns $p_1~\ldots~p_n$ is equivalent to the sequence of
@@ -918,7 +924,7 @@ clears $X$ and performs an introduction over the list of patterns $p_1~\ldots~p_
 \end{itemize}
 \begin{coq_example}
 Lemma intros_test : (A,B,C:Prop)(A\/(B/\C))->(A->C)->C.
-Intros A B C [a|(b,c)] f.
+Intros A B C [a|(_,c)] f.
 Apply (f a).
 Proof c.
 \end{coq_example}
