@@ -23,7 +23,7 @@ Bugs
 - Confusion between implicit args of locals and globals of same base name fixed
 - NatRing works (to check)
 - "Discriminate 1", "Injection 1", "Simplify_eq 1" now working
-
+- Various incompatibilities wrt inference of "?" in V6.3.1 fixed
 
 ----------------------------------------------------------------------------
 Changes from V6.3.1 and V7.0 to V7.1
