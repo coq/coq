@@ -23,7 +23,7 @@ type value =
   | VTactic of tactic
   | VFTactic of tactic_arg list * (tactic_arg list -> tactic)
   | VRTactic of (goal list sigma * validation)
-  | VContext of (interp_sign -> goal sigma -> value)
+  | VContext of (goal sigma -> value)
   | VArg of tactic_arg
   | VFun of (string * value) list * string option list * Coqast.t
   | VVoid

@@ -38,7 +38,7 @@ type value =
   | VTactic of tactic
   | VFTactic of tactic_arg list * (tactic_arg list->tactic)
   | VRTactic of (goal list sigma * validation)
-  | VContext of (interp_sign -> goal sigma -> value)
+  | VContext of (goal sigma -> value)
   | VArg of tactic_arg
   | VFun of (string * value) list * string option list * Coqast.t
   | VVoid
@@ -517,12 +517,12 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
     | Nvar(_,s) ->
       (try (unrec (List.assoc s lfun))
        with | Not_found ->
-         (try (vcontext_interp (evc,env,lfun,lmatch,goalopt,debug) (lookup s))
+         (try (vcontext_interp goalopt (lookup s))
           with | Not_found -> VArg (Identifier (id_of_string s))))
     | Node(_,"QUALID",[Nvar(_,s)]) ->
       (try (unrec (List.assoc s lfun))
        with | Not_found ->
-         (try (vcontext_interp (evc,env,lfun,lmatch,goalopt,debug) (lookup s))
+         (try (vcontext_interp goalopt (lookup s))
           with | Not_found -> VArg (Identifier (id_of_string s))))
 (*    | Node(loc,"METAID",[Num(_,n)]) ->
       (try VArg (Identifier (destVar (List.assoc n lmatch))) with
@@ -806,12 +806,19 @@ and match_context_interp (evc,env,lfun,lmatch,goalopt,debug) ast lmr =
       errorlabstrm "Tacinterp.apply_match_context" [<'sTR
         "No matching clauses for Match Context">] in
   let app_wo_goal = 
-    (fun (evc,env,lfun,lmatch,goalopt,debug) goal ->
+    (fun goal ->
+       let evc = project goal
+       and env = pf_env goal in
+       apply_match_context (evc,env,lfun,lmatch,goalopt,debug) goal
+         (read_match_context_rule evc env (constr_list goalopt lfun) lmr)) in
+
+(*    (fun (evc,env,lfun,lmatch,goalopt,debug) goal ->
      apply_match_context (evc,env,lfun,lmatch,goalopt,debug) goal
-     (read_match_context_rule evc env (constr_list goalopt lfun) lmr)) in
+     (read_match_context_rule evc env (constr_list goalopt lfun) lmr)) in*)
+
  (match goalopt with
     | None -> VContext app_wo_goal
-    | Some g -> app_wo_goal (evc,env,lfun,lmatch,goalopt,debug) g)
+    | Some g -> app_wo_goal g)
 
 (*  apply_match_context evc env lfun lmatch goal (read_match_context_rule evc env
     (constr_list goalopt lfun) lmr)*)
@@ -856,11 +863,11 @@ and apply_hyps_context evc env lfun_glob lmatch_glob goal debug mt lgmatch
     hyps hyps None
 
 (* Interprets a VContext value *)
-and vcontext_interp (evc,env,lfun,lmatch,goalopt,debug) = function
+and vcontext_interp goalopt = function
   | (VContext f) as v ->
     (match goalopt with
     | None -> v
-    | Some g -> f (evc,env,lfun,lmatch,goalopt,debug) g)
+    | Some g -> f g)
   | v -> v
 
 (* Interprets the Match expressions *)
@@ -888,15 +895,35 @@ and match_interp (evc,env,lfun,lmatch,goalopt,debug) ast lmr =
            csr mt)
   in
   let rec apply_match (evc,env,lfun,lmatch,goalopt,debug) csr = function
-    | (All t)::tl -> val_interp (evc,env,lfun,lmatch,goalopt,debug) t
+    | (All t)::_ ->
+      (match goalopt with
+        | None ->
+          (try val_interp (evc,env,lfun,lmatch,goalopt,debug) t
+           with | No_match | _ ->
+             apply_match (evc,env,lfun,lmatch,goalopt,debug) csr [])
+        | Some g ->
+          (try
+            eval_with_fail (val_interp (evc,env,lfun,lmatch,goalopt,debug)) t g
+           with
+           | (FailError _) as e -> raise e
+           | _ -> apply_match (evc,env,lfun,lmatch,goalopt,debug) csr []))
     | (Pat ([],mp,mt))::tl ->
       (match mp with
       |	Term c ->
-        (try
-           val_interp
-             (evc,env,lfun,(apply_matching c csr)@lmatch,goalopt,debug) mt
-         with | No_match ->
-           apply_match (evc,env,lfun,lmatch,goalopt,debug) csr tl)
+        (match goalopt with
+        | None ->
+          (try
+             val_interp
+               (evc,env,lfun,(apply_matching c csr)@lmatch,goalopt,debug) mt
+           with | No_match | _ ->
+             apply_match (evc,env,lfun,lmatch,goalopt,debug) csr tl)
+        | Some g ->
+          (try
+            eval_with_fail (val_interp
+              (evc,env,lfun,(apply_matching c csr)@lmatch,goalopt,debug)) mt g
+           with
+           | (FailError _) as e -> raise e
+           | _ -> apply_match (evc,env,lfun,lmatch,goalopt,debug) csr tl))
       |	Subterm (id,c) ->
         (try
            apply_sub_match (evc,env,lfun,lmatch,goalopt,debug) 0 (id,c) csr mt
