@@ -58,7 +58,7 @@ let ml_liftn k n c =
 
 let ml_lift k c = ml_liftn k 1 c
 
-let pop c = ml_lift (-1) c
+let ml_pop c = ml_lift (-1) c
 
 (*s substitution *)
 
@@ -119,12 +119,14 @@ let rec betared_ast = function
       (match f' with
 	 | MLlam (id,t) -> 
 	     (match nb_occur t with
-		| 0 -> betared_ast (MLapp (ml_lift 1 t, List.tl a'))
+		| 0 -> betared_ast (MLapp (ml_pop t, List.tl a'))
 		| 1 -> betared_ast (MLapp (ml_subst (List.hd a') t,List.tl a'))
-		| _ -> MLapp (f',a'))
+		| _ -> MLletin (id, List.hd a', 
+				betared_ast (MLapp (t, List.tl a'))))
 	 | _ ->
 	     MLapp (f',a'))
-  | a -> ast_map betared_ast a
+  | a -> 
+      ast_map betared_ast a
     
 let betared_decl = function
  | Dglob (id, a) -> Dglob (id, betared_ast a)

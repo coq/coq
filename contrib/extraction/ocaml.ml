@@ -196,8 +196,8 @@ let rec pp_expr par env args =
 		    'fNL; 'sTR "  "; pp_pat env pv >];
 	     if args <> [] then [< 'sTR ")" >] else close_par par >]
     | MLfix (i,ids,defs) ->
-	let ids',env' = push_vars ids env in
-      	pp_fix par env' (Some i) (ids',defs) args
+	let ids',env' = push_vars (List.rev ids) env in
+      	pp_fix par env' (Some i) (List.rev ids',defs) args
     | MLexn id -> 
 	[< open_par par; 'sTR "failwith"; 'sPC; 
 	   'qS (string_of_id id); close_par par >]
@@ -319,12 +319,6 @@ let pp_decl = function
       let id = P.rename_global r in
       let env' = ([id], !current_ids) in
       [<  hOV 2 (pp_fix false env' None ([id],[def]) []) >]
-  | Dglob (r, MLfix (n,ids,defs)) ->
-      let ids',env' = push_vars ids (empty_env ()) in
-      [< 'sTR "let "; P.pp_global r; 'sTR " ="; 'fNL;
-	 v 0 [< 'sTR "  "; 
-		hOV 2 (pp_fix false env' (Some n) (ids',defs) []); 
-		'fNL >] >]
   | Dglob (r, a) ->
       hOV 0 [< 'sTR "let "; 
 	       pp_function (empty_env ()) (P.pp_global r) a; 'fNL >]

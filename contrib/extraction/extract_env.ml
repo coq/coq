@@ -102,7 +102,8 @@ let globals_of_decl = function
 
 let add_dependency r r' g = 
   let normalize = function
-    | ConstructRef (ip,_) -> IndRef ip
+    | ConstructRef ((sp,_),_) -> IndRef (sp,0)
+    | IndRef (sp,i) as r -> if i = 0 then r else IndRef (sp,0)
     | r -> r
   in
   add_arc (normalize r') (normalize r) g
