@@ -1335,21 +1335,20 @@ command \texttt{Functional Scheme} which builds induction
 principles following the recursive structure of (possibly
 mutually recursive) functions.
 
-\texttt{functional induction} does not work on dependently typed
-function yet. It may also fail on functions built by certain
-tactics.
+\Rem \texttt{functional induction} does not work on polymorphic
+and dependently typed functions yet. It may also fail on
+functions built by certain tactics.
 
 \SeeAlso{\ref{FunScheme},\ref{FunScheme-examples}}
 
 \section{Equality}
-These tactics use the equality {\tt
-eq:(A:Set)A->A->Prop} defined in file {\tt Logic.v} and the equality
-{\tt eqT:(A:Type)A->A->Prop} defined in file {\tt
-Logic\_Type.v} (see section \ref{Equality}). They
-are simply written {\tt t=u} and {\tt t==u},
-respectively.  In the following, the notation {\tt
-t=u} will represent either one of these two
-equalities.
+
+These tactics use the equality {\tt eq:(A:Set)A->A->Prop} defined
+in file {\tt Logic.v} and the equality {\tt
+  eqT:(A:Type)A->A->Prop} defined in file {\tt Logic\_Type.v} (see
+section \ref{Equality}). They are simply written {\tt t=u} and
+{\tt t==u}, respectively.  In the following, the notation {\tt
+  t=u} will represent either one of these two equalities.
 
 \subsection{\tt rewrite \term}
 \label{rewrite}
