@@ -10,12 +10,12 @@ noargument:
 	@echo "   make cleanall"
 	@echo or make archclean
 
+INCLUDES=-I config -I lib -I kernel -I library -I parsing -I $(CAMLP4LIB)
+
 BYTEFLAGS=$(INCLUDES) $(CAMLDEBUG)
 OPTFLAGS=$(INCLUDES) $(CAMLTIMEPROF)
 OCAMLDEP=ocamldep
 DEPFLAGS=$(INCLUDES)
-
-INCLUDES=-I config -I lib -I kernel -I library -I parsing -I $(CAMLP4LIB)
 
 CAMLP4EXTEND=camlp4o $(INCLUDES) pa_extend.cmo
 OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
@@ -29,8 +29,8 @@ CAMLP4OBJS=gramlib.cma
 
 CONFIG=config/coq_config.cmo
 
-LIB=lib/pp_control.cmo lib/pp.cmo lib/system.cmo lib/util.cmo \
-    lib/hashcons.cmo lib/dyn.cmo
+LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
+    lib/hashcons.cmo lib/dyn.cmo lib/system.cmo
 
 KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/sign.cmo kernel/evd.cmo kernel/constant.cmo \
@@ -40,8 +40,8 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/type_errors.cmo kernel/typeops.cmo kernel/indtypes.cmo \
        kernel/typing.cmo
 
-LIBRARY=library/libobject.cmo library/summary.cmo \
-	library/global.cmo
+LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
+	library/global.cmo library/states.cmo
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
@@ -57,7 +57,7 @@ CMX=$(CMO:.cmo=.cmx)
 
 # Targets
 
-world: minicoq coqtop doc dev/db_printers.cmo
+world: minicoq coqtop.byte dev/db_printers.cmo
 
 # coqtop
 
@@ -106,10 +106,15 @@ tags:
 	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
 
-# Special rules
+### Special rules
+
+# lexer (compiled with camlp4 to get optimized streams)
 
 parsing/lexer.cmo: parsing/lexer.ml
 	$(OCAMLC_P4O) -c $<
+
+cleanall::
+	rm -f parsing/lexer.ml
 
 beforedepend:: parsing/lexer.ml
 
@@ -118,10 +123,13 @@ beforedepend:: parsing/lexer.ml
 parsing/q_coqast.cmo: parsing/q_coqast.ml4
 	$(OCAMLC) $(BYTEFLAGS) -c -pp "camlp4o q_MLast.cmo -impl" -impl $<
 
+# the generic rules could be used for g_prim.ml4, but this implies
+# circular dependencies between g_prim and grammar
 parsing/g_prim.cmo: parsing/g_prim.ml4
-	$(OCAMLC) $(BYTEFLAGS) -c -pp "camlp4o pa_extend.cmo -impl" -impl $<
+	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4EXTEND) -impl" -impl $<
+
 parsing/g_prim.cmx: parsing/g_prim.ml4
-	$(OCAMLOPT) $(OPTFLAGS) -c -pp "camlp4o pa_extend.cmo -impl" -impl $<
+	$(OCAMLOPT) $(OPTFLAGS) -c -pp "$(CAMLP4EXTEND) -impl" -impl $<
 
 GRAMMARCMO=./lib/pp_control.cmo ./lib/pp.cmo ./lib/util.cmo ./lib/dyn.cmo \
 	   ./lib/hashcons.cmo ./parsing/coqast.cmo ./parsing/lexer.cmo \
@@ -130,11 +138,13 @@ GRAMMARCMO=./lib/pp_control.cmo ./lib/pp.cmo ./lib/util.cmo ./lib/dyn.cmo \
 parsing/grammar.cma: $(GRAMMARCMO)
 	$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
 
+CAMLP4GRAMMAR=camlp4o -I parsing pa_extend.cmo grammar.cma
+
 parsing/g_%.cmo: parsing/g_%.ml4 parsing/grammar.cma
-	$(OCAMLC) $(BYTEFLAGS) -c -pp "camlp4o -I parsing pa_extend.cmo grammar.cma -impl" -impl $<
+	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4GRAMMAR) -impl" -impl $<
 
 parsing/g_%.cmx: parsing/g_%.ml4 parsing/grammar.cma
-	$(OCAMLOPT) $(OPTFLAGS) -c -pp "camlp4o -I parsing pa_extend.cmo grammar.cma -impl" -impl $<
+	$(OCAMLOPT) $(OPTFLAGS) -c -pp "$(CAMLP4GRAMMAR) -impl" -impl $<
 
 beforedepend:: $(GRAMMARCMO)
 
@@ -155,10 +165,10 @@ beforedepend:: $(GRAMMARCMO)
 	ocamllex $<
 
 .ml4.cmo:
-	$(OCAMLC) $(BYTEFLAGS) -I $(CAMLP4LIB) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
+	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
 
 .ml4.cmx:
-	$(OCAMLOPT) $(OPTFLAGS) -I $(CAMLP4LIB) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
+	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
 
 # Cleaning
 
@@ -175,7 +185,7 @@ cleanall:: archclean
 	rm -f lib/*.cm[io] lib/*~
 	rm -f kernel/*.cm[io] kernel/*~
 	rm -f library/*.cm[io] library/*~
-	rm -f parsing/*.cm[io] parsing/*~
+	rm -f parsing/*.cm[io] parsing/*.ppo parsing/*~
 
 cleanconfig::
 	rm -f config/Makefile config/coq_config.ml

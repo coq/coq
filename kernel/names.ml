@@ -55,7 +55,7 @@ let print_id { atom = a; index = n } =
     | ("",n)  -> [< 'sTR"[" ; 'iNT n ; 'sTR"]" >]
     | (s,n)   -> [< 'sTR s ; (if n = (-1) then [< >] else [< 'iNT n >]) >]
 
-let pr_idl idl = prlist_with_sep pr_spc print_id idl
+let print_idl idl = prlist_with_sep pr_spc print_id idl
 
 let id_ord id1 id2 =
   let (s1,n1) = repr_ident id1
@@ -167,6 +167,8 @@ let path_of_string s =
     make_path sl (id_of_string s) (kind_of_string k)
   with
     | Invalid_argument _ -> invalid_arg "path_of_string"
+
+let print_sp sp = [< 'sTR (string_of_path sp) >]
 
 
 let coerce_path k { dirpath = p; basename = id } =

@@ -1,9 +1,6 @@
 
- o Himsg
-     en faire un foncteur qui prend en arguments des fonctions
-     sachant afficher les termes, et retournant des fonctions
-     expliquant les messages d'erreur (de typage, d'inductifs, de
-     convertibilité), retournant des std_ppcmds.
+ o Minicoq
+     utilisation de Himsg
 
  o Lexer
      à compléter

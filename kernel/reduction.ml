@@ -160,7 +160,7 @@ let subst_term_occ locs c t =
 		 (occ,[]) cl
              in 
 	     (occ',DLAMV(n,Array.of_list (List.rev cl') ))
-	|  _               -> occ,t
+	|  _ -> occ,t
   in 
   if locs = [] then 
     subst_term c t

@@ -28,7 +28,7 @@ let declare_summary sumname sdecl =
       [< 'sTR "Cannot declare a summary twice: " ; 'sTR sumname >];
   Hashtbl.add summaries sumname ddecl
 
-type frozen_summaries = Dyn.t Stringmap.t
+type frozen = Dyn.t Stringmap.t
 
 let freeze_summaries () =
   let m = ref Stringmap.empty in

@@ -28,6 +28,9 @@ kernel/typing.cmi: kernel/constant.cmi kernel/environ.cmi kernel/evd.cmi \
 kernel/univ.cmi: kernel/names.cmi lib/pp.cmi 
 lib/pp.cmi: lib/pp_control.cmi 
 lib/util.cmi: lib/pp.cmi 
+library/global.cmi: kernel/constant.cmi kernel/evd.cmi kernel/inductive.cmi \
+    kernel/names.cmi kernel/sign.cmi kernel/term.cmi kernel/univ.cmi 
+library/lib.cmi: library/libobject.cmi kernel/names.cmi library/summary.cmi 
 library/libobject.cmi: kernel/names.cmi 
 library/summary.cmi: kernel/names.cmi 
 parsing/ast.cmi: parsing/coqast.cmi lib/dyn.cmi parsing/pcoq.cmi lib/pp.cmi 
@@ -145,14 +148,24 @@ lib/pp.cmo: lib/pp_control.cmi lib/pp.cmi
 lib/pp.cmx: lib/pp_control.cmx lib/pp.cmi 
 lib/pp_control.cmo: lib/pp_control.cmi 
 lib/pp_control.cmx: lib/pp_control.cmi 
-lib/system.cmo: lib/system.cmi 
-lib/system.cmx: lib/system.cmi 
+lib/system.cmo: lib/pp.cmi lib/util.cmi lib/system.cmi 
+lib/system.cmx: lib/pp.cmx lib/util.cmx lib/system.cmi 
 lib/util.cmo: lib/pp.cmi lib/util.cmi 
 lib/util.cmx: lib/pp.cmx lib/util.cmi 
+library/global.cmo: library/summary.cmi kernel/typing.cmi library/global.cmi 
+library/global.cmx: library/summary.cmx kernel/typing.cmx library/global.cmi 
+library/lib.cmo: library/libobject.cmi kernel/names.cmi library/summary.cmi \
+    lib/util.cmi library/lib.cmi 
+library/lib.cmx: library/libobject.cmx kernel/names.cmx library/summary.cmx \
+    lib/util.cmx library/lib.cmi 
 library/libobject.cmo: lib/dyn.cmi kernel/names.cmi lib/util.cmi \
     library/libobject.cmi 
 library/libobject.cmx: lib/dyn.cmx kernel/names.cmx lib/util.cmx \
     library/libobject.cmi 
+library/states.cmo: library/lib.cmi library/summary.cmi lib/system.cmi \
+    library/states.cmi 
+library/states.cmx: library/lib.cmx library/summary.cmx lib/system.cmx \
+    library/states.cmi 
 library/summary.cmo: lib/dyn.cmi kernel/names.cmi lib/pp.cmi lib/util.cmi \
     library/summary.cmi 
 library/summary.cmx: lib/dyn.cmx kernel/names.cmx lib/pp.cmx lib/util.cmx \

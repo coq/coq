@@ -16,7 +16,7 @@ val id_of_string : string -> identifier
 
 val explode_id : identifier -> string list
 val print_id : identifier -> std_ppcmds
-val pr_idl : identifier list -> std_ppcmds
+val print_idl : identifier list -> std_ppcmds
 val atompart_of_id : identifier -> string
 val index_of_id : identifier -> int
 val id_ord : identifier -> identifier -> int
@@ -51,6 +51,7 @@ val kind_of_path : section_path -> path_kind
 val path_of_string : string -> section_path
 val string_of_path : section_path -> string
 val string_of_path_mind : section_path -> identifier -> string
+val print_sp : section_path -> std_ppcmds
 
 val coerce_path : path_kind -> section_path -> section_path
 val fwsp_of : section_path -> section_path

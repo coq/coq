@@ -159,7 +159,8 @@ and execute_array mf env v =
   (Array.of_list jl, u1)
 
 and execute_list mf env = function
-  | [] -> ([], universes env)
+  | [] -> 
+      ([], universes env)
   | c::r -> 
       let (j,u') = execute mf env c in 
       let (jr,u'') = execute_list mf (set_universes u' env) r in

@@ -15,10 +15,10 @@ type 'a summary_declaration = {
 
 val declare_summary : string -> 'a summary_declaration -> unit
 
-type frozen_summaries
+type frozen
 
-val freeze_summaries : unit -> frozen_summaries
-val unfreeze_summaries : frozen_summaries -> unit
+val freeze_summaries : unit -> frozen
+val unfreeze_summaries : frozen -> unit
 val init_summaries : unit -> unit
 
 
