@@ -36,7 +36,7 @@ LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/bstack.cmo lib/edit.cmo lib/stamps.cmo
 
 KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
-       kernel/sign.cmo kernel/constant.cmo \
+       kernel/sign.cmo kernel/constant.cmo kernel/evd.cmo \
        kernel/inductive.cmo kernel/sosub.cmo kernel/abstraction.cmo \
        kernel/environ.cmo kernel/instantiate.cmo \
        kernel/closure.cmo kernel/reduction.cmo \
@@ -51,7 +51,7 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
 	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_multiple_case.cmo
 
-PROOFS=proofs/evd.cmo proofs/proof_trees.cmo proofs/logic.cmo
+PROOFS=proofs/proof_trees.cmo proofs/logic.cmo
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernac.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo
@@ -189,6 +189,7 @@ archclean::
 	rm -f lib/*.cmx lib/*.[so]
 	rm -f kernel/*.cmx kernel/*.[so]
 	rm -f library/*.cmx library/*.[so]
+	rm -f proofs/*.cmx proofs/*.[so]
 	rm -f parsing/*.cmx parsing/*.[so]
 
 cleanall:: archclean
@@ -198,6 +199,7 @@ cleanall:: archclean
 	rm -f lib/*.cm[io] lib/*~
 	rm -f kernel/*.cm[io] kernel/*~
 	rm -f library/*.cm[io] library/*~
+	rm -f proofs/*.cm[io] proofs/*~
 	rm -f parsing/*.cm[io] parsing/*.ppo parsing/*~
 
 cleanconfig::
