@@ -1378,13 +1378,15 @@ let xlate_vernac =
 
   | (*Record from tactics/Record.v *)
     VernacRecord 
-      ((add_coercion, s), binders, c1, rec_constructor_or_none, field_list) ->
+      ((add_coercion, s), binders, CSort (_,c1), rec_constructor_or_none, field_list) ->
       let record_constructor = xlate_ident_opt rec_constructor_or_none in
       CT_record
        ((if add_coercion then CT_coercion_atm else
           CT_coerce_NONE_to_COERCION_OPT(CT_none)),
         xlate_ident s, cvt_vernac_binders binders, xlate_sort c1, record_constructor,
          build_record_field_list field_list)
+
+  |    VernacRecord _ -> xlate_error "TODO: Record in a defined sort"
 
 (* TODO
      | (*Inversions from tactics/Inv.v *)
@@ -1543,7 +1545,7 @@ let xlate_vernac =
      VernacHintDestruct (_, _, _, _, _)|VernacBack _|VernacRestoreState _|
      VernacWriteState _|VernacSolveExistential (_, _)|VernacCanonical _|
      VernacImport (_, _)|VernacExactProof _|VernacDistfix (_, _, _, _, _)|
-     VernacTacticGrammar _|VernacVar _|VernacTime _)
+     VernacTacticGrammar _|VernacVar _|VernacTime _|VernacProof _)
     -> xlate_error "TODO: vernac"
 
   (* Modules and Module Types *)

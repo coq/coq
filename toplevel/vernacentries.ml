@@ -444,7 +444,14 @@ let vernac_record struc binders sort nameopt cfs =
   let const = match nameopt with 
     | None -> add_prefix "Build_" (snd struc)
     | Some id -> id in
-  let s = interp_sort sort in
+  let sigma = Evd.empty in
+  let env = Global.env() in
+  let s = interp_constr sigma env sort in
+  let s = Reductionops.whd_betadeltaiota env sigma s in
+  let s = match kind_of_term s with
+    | Sort s -> s
+    | _ -> user_err_loc
+        (constr_loc sort,"definition_structure", str "Sort expected") in
   Record.definition_structure (struc,binders,cfs,const,s)
 
   (* Sections *)

@@ -183,7 +183,7 @@ type vernac_expr =
 
   (* Gallina extensions *)
   | VernacRecord of identifier with_coercion * simple_binder list
-      * sort_expr * identifier option * local_decl_expr with_coercion list
+      * constr_expr * identifier option * local_decl_expr with_coercion list
   | VernacBeginSection of identifier
   | VernacEndSegment of identifier
   | VernacRequire of
