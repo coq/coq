@@ -124,8 +124,8 @@ let rec pp_expr par env args =
 	  (hov 0 (open_par par' ++
 		  hov 2 (str "let" ++ spc () ++ pr_id (List.hd i) ++ 
 			 str " = " ++ pp_expr false env [] a1 ++ spc () ++ 
-			 str "in") 
-		  ++ spc () ++ pp_expr par2 env' [] a2 ++ close_par par'))
+			 str "in") ++
+		  spc () ++ hov 0 (pp_expr par2 env' [] a2) ++ close_par par'))
     | MLglob r -> 
 	apply (pp_global r)
     | MLcons (r,[]) ->
