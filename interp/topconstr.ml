@@ -286,17 +286,12 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | _,_ -> raise No_match
 
 and match_binders alp metas sigma b1 b2 na1 na2 = match (na1,na2) with
-  | (na1,Name id2) when List.mem id2 metas ->
-      let sigma =
-	name_fold
-	  (fun id sigma -> bind_env sigma id2 (RVar (dummy_loc,id))) na1 sigma
-      in 
+  | (Name id1,Name id2) when List.mem id2 metas ->
+      let sigma = bind_env sigma id2 (RVar (dummy_loc,id1)) in 
       match_ alp metas sigma b1 b2
-  | (na1,na2) -> 
-      let alp =
-        name_fold
-	  (fun id1 -> name_fold (fun id2 alp -> (id1,id2)::alp) na2) na1 alp in
-      match_ alp metas sigma b1 b2
+  | (Name id1,Name id2) -> match_ ((id1,id2)::alp) metas sigma b1 b2
+  | (Anonymous,Anonymous) -> match_  alp metas sigma b1 b2
+  | _ -> raise No_match
 
 and match_equations alp metas sigma (_,idl1,pat1,rhs1) (idl2,pat2,rhs2) =
   if idl1 = idl2 & pat1 = pat2 (* Useful to reason up to alpha ?? *) then
