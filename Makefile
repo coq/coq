@@ -338,19 +338,21 @@ COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
 
 coqbinaries:: ${COQBINARIES}
 
-world: coqlib tools coqbinaries coqide
+world: coqlib tools coqbinaries coqide coqlib7
+
+world8: coqlib tools coqbinaries coqide
 
 world7: coqlib7 tools coqbinaries coqide
 
 coqlib:: newtheories newcontrib
 
-coqlib7: theories contrib
+coqlib7: theories7 contrib7
 
 coqlight: theories-light tools coqbinaries
 
-states7:: states/initial.coq
+states7:: states7/initial.coq
 
-states:: states/initial.coq states/initialnew.coq
+states:: states/initial.coq
 
 $(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
 	$(SHOW)'COQMKTOP -o $@'	
@@ -417,12 +419,12 @@ beforedepend:: ide/utf8_convert.ml
 
 FULLIDELIB=$(FULLCOQLIB)/ide
 
-COQIDEVO=ide/utf8.vo
+OLDCOQIDEVO=ide/utf8.vo
 
-$(COQIDEVO): states/initial.coq
+$(OLDCOQIDEVO): states/initial.coq states7/initial.coq
 	$(BOOTCOQTOP) $(TRANSLATE) -compile $*
 
-IDEFILES=$(COQIDEVO) ide/coq.png ide/.coqide-gtk2rc ide/FAQ
+IDEFILES=$(OLDCOQIDEVO) ide/coq.png ide/.coqide-gtk2rc ide/FAQ
 
 coqide: $(IDEFILES) coqide-$(HASCOQIDE)
 coqide-no:
@@ -432,7 +434,7 @@ coqide-opt:  $(COQIDEBYTE) $(COQIDEOPT) $(COQIDE)
 ide: coqide-$(HASCOQIDE) states
 
 clean-ide: 
-	rm -f ide/utf8.vo $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT)
+	rm -f $(OLDCOQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT)
 
 $(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) $(COQIDECMX)
 	$(SHOW)'COQMKTOP -o $@'	
@@ -474,7 +476,7 @@ clean::
 	rm -f ide/extract_index.ml ide/find_phrase.ml ide/highlight.ml
 	rm -f ide/config_lexer.ml ide/config_parser.mli ide/config_parser.ml
 	rm -f ide/utf8_convert.ml
-	rm -f ide/utf8.vo $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi)
+	rm -f $(OLDCOQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi)
 	rm -f $(COQIDEBYTE) $(COQIDEOPT)
 
 # coqc
@@ -586,12 +588,10 @@ NARITHVO=\
  theories/NArith/BinNat.vo	theories/NArith/NArith.vo
 
 ZARITHVO=\
- theories/ZArith/BinInt.vo \
- theories/ZArith/Wf_Z.vo	theories/ZArith/Zsyntax.vo \
- theories/ZArith/ZArith.vo	theories/ZArith/auxiliary.vo \
- theories/ZArith/ZArith_dec.vo	theories/ZArith/fast_integer.vo \
+ theories/ZArith/BinInt.vo      theories/ZArith/Wf_Z.vo \
+ theories/ZArith/ZArith.vo      theories/ZArith/ZArith_dec.vo \
+ theories/ZArith/auxiliary.vo   theories/ZArith/Zmisc.vo \
  theories/ZArith/Zcompare.vo    theories/ZArith/Znat.vo \
- theories/ZArith/Zmisc.vo	theories/ZArith/zarith_aux.vo \
  theories/ZArith/Zorder.vo      theories/ZArith/Zabs.vo \
  theories/ZArith/Zmin.vo        theories/ZArith/Zeven.vo \
  theories/ZArith/Zhints.vo	theories/ZArith/Zlogarithm.vo \
@@ -602,10 +602,9 @@ ZARITHVO=\
  theories/ZArith/Znumtheory.vo
 
 LISTSVO=\
- theories/Lists/MonoList.vo	theories/Lists/PolyListSyntax.vo \
+ theories/Lists/MonoList.vo \
  theories/Lists/ListSet.vo   	theories/Lists/Streams.vo \
- theories/Lists/PolyList.vo  	theories/Lists/TheoryList.vo \
- theories/Lists/List.vo
+ theories/Lists/TheoryList.vo   theories/Lists/List.vo
 
 SETSVO=\
  theories/Sets/Classical_sets.vo    theories/Sets/Permut.vo \
@@ -686,6 +685,7 @@ REALS_all=\
 REALSVO=$(REALSBASEVO) $(REALS_$(REALS))
 
 ALLREALS=$(REALSBASEVO) $(REALS_all)
+ALLOLDREALS=$(REALSBASEVO:theories%.vo:theories7%.vo) $(REALS_all:theories%.vo:theories7%.vo)
 
 SETOIDSVO=theories/Setoids/Setoid.vo
 
@@ -775,7 +775,7 @@ omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
 ring: $(RINGVO) $(RINGCMO)
 # xml_ instead of xml to avoid conflict with "make xml"
 xml_: $(XMLVO) $(XMLCMO)
-extraction: $(EXTRACTIONCMO) $(EXTRACTIONVO)
+extraction: $(EXTRACTIONCMO)
 correctness: $(CORRECTNESSCMO) $(CORRECTNESSVO)
 field: $(FIELDVO) $(FIELDCMO)
 fourier: $(FOURIERVO) $(FOURIERCMO)
@@ -783,23 +783,38 @@ jprover: $(JPROVERVO) $(JPROVERCMO)
 funind: $(FUNINDCMO) $(FUNINDVO)
 cc: $(CCVO) $(CCCMO)
 
-NEWINITVO=$(INITVO:%.vo=new%.vo)
-NEWTHEORIESVO=$(THEORIESVO:%.vo=new%.vo)
-NEWCONTRIBVO=$(CONTRIBVO:%.vo=new%.vo)
+NEWINITVO=$(INITVO)
+NEWTHEORIESVO=$(THEORIESVO)
+NEWCONTRIBVO=$(CONTRIBVO)
 
-NEWINITV=$(INITVO:%.vo=new%.v)
-NEWTHEORIESV=$(THEORIESVO:%.vo=new%.v)
-NEWCONTRIBV=$(CONTRIBVO:%.vo=new%.v)
+OBSOLETETHEORIESVO=\
+ theories7/Lists/PolyList.vo theories7/Lists/PolyListSyntax.vo \
+ theories7/ZArith/Zsyntax.vo \
+ theories7/ZArith/zarith_aux.vo	theories7/ZArith/fast_integer.vo
+
+OLDINITVO=$(INITVO:theories%.vo=theories7%.vo)
+OLDTHEORIESVO=$(THEORIESVO:theories%.vo=theories7%.vo) $(OBSOLETETHEORIESVO)
+OLDCONTRIBVO=$(CONTRIBVO:contrib%.vo=contrib7%.vo)
+
+$(CONTRIBVO): states7/initial.coq
+
+NEWINITV=$(INITVO:%.vo=%.v)
+NEWTHEORIESV=$(THEORIESVO:%.vo=%.v)
+NEWCONTRIBV=$(CONTRIBVO:%.vo=%.v)
 
 # Made *.vo and new*.v targets explicit, otherwise "make" 
 # either removes them after use or don't do them (e.g. List.vo)
 newinit:: $(NEWINITV) $(NEWINITVO)
-newtheories:: $(THEORIESVO) $(NEWTHEORIESV) $(NEWTHEORIESVO)
-newcontrib::$(CONTRIBVO) $(NEWCONTRIBV) $(NEWCONTRIBVO) $(CONTRIBCMO)
+newtheories:: $(NEWTHEORIESV) $(NEWTHEORIESVO)
+newcontrib:: $(NEWCONTRIBV) $(NEWCONTRIBVO) $(CONTRIBCMO)
+
+theories7:: $(OLDTHEORIESVO)
+contrib7:: $(OLDCONTRIBVO) 
 
 translation:: $(NEWTHEORIESV) $(NEWCONTRIBV)
 
-ALLVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO) $(EXTRACTIONVO)
+ALLNEWVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO)
+ALLOLDVO = $(OLDINITVO) $(OLDTHEORIESVO) $(OLDCONTRIBVO)
 
 ###########################################################################
 # rules to make theories, contrib and states
@@ -807,78 +822,97 @@ ALLVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO) $(EXTRACTIONVO)
 
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
 
-states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
+states7/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
 	$(BESTCOQTOP) -v7 -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
 
-states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(BESTCOQTOP)
-	$(BOOTCOQTOP) -v7 -batch -silent -is states/barestate.coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+states7/initial.coq: states7/barestate.coq states7/MakeInitial.v $(OLDINITVO) $(BESTCOQTOP)
+	$(BOOTCOQTOP) -v7 -batch -silent -is states7/barestate.coq -load-vernac-source states7/MakeInitial.v -outputstate states7/initial.coq
 
-states/initialnew.coq: states/MakeInitialNew.v $(NEWINITVO)
-	$(BOOTCOQTOP) -batch -silent -nois -load-vernac-source states/MakeInitialNew.v -outputstate states/initialnew.coq
+states/initial.coq: states/MakeInitial.v $(NEWINITVO)
+	$(BOOTCOQTOP) -batch -silent -nois -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
-newtheories/Init/%.v: $(BESTCOQTOP) theories/Init/%.vo
-	@$(MKDIR) newtheories/Init
-	@cp -f theories/Init/$*.v8  newtheories/Init/$*.v
+#newtheories/Init/%.v: $(BESTCOQTOP) theories/Init/%.vo
+#	@$(MKDIR) newtheories/Init
+#	@cp -f theories/Init/$*.v8  newtheories/Init/$*.v
+
+theories7/Init/%.vo: $(BESTCOQTOP) theories7/Init/%.v
+	$(BOOTCOQTOP) $(TRANSLATE) -nois -compile theories7/Init/$*
+
+#newtheories/%.v: theories/%.vo
+#	@$(MKDIR) newtheories/`dirname $*`
+#	@cp -f theories/$*.v8  newtheories/$*.v
+
+theories7/%.vo: theories7/%.v states7/initial.coq
+	$(BOOTCOQTOP) $(TRANSLATE) -compile theories7/$*
+
+#newcontrib/%.v: contrib/%.vo
+#	@$(MKDIR) newcontrib/`dirname $*`
+#	@cp -f contrib/$*.v8  newcontrib/$*.v
+
+contrib7/%.vo: contrib7/%.v states7/initial.coq
+	$(BOOTCOQTOP) $(TRANSLATE) -compile contrib7/$*
+
+#newtheories/Init/%.vo: $(BESTCOQTOP) newtheories/Init/%.v
+#	$(BOOTCOQTOP) -nois -compile $*
 
 theories/Init/%.vo: $(BESTCOQTOP) theories/Init/%.v
-	$(BOOTCOQTOP) $(TRANSLATE) -nois -compile theories/Init/$*
+	$(BOOTCOQTOP) -nois -compile theories/Init/$*
 
-newtheories/%.v: theories/%.vo
-	@$(MKDIR) newtheories/`dirname $*`
-	@cp -f theories/$*.v8  newtheories/$*.v
+#newtheories/%.vo: newtheories/%.v states/initialnew.coq
+#	$(BOOTCOQTOP) -compile newtheories/$*
 
 theories/%.vo: theories/%.v states/initial.coq
-	$(BOOTCOQTOP) $(TRANSLATE) -compile theories/$*
+	$(BOOTCOQTOP) -compile theories/$*
 
-newcontrib/%.v: contrib/%.vo
-	@$(MKDIR) newcontrib/`dirname $*`
-	@cp -f contrib/$*.v8  newcontrib/$*.v
+#newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
+#	$(BOOTCOQTOP) -compile newcontrib/$*
 
-contrib/%.vo: contrib/%.v states/initial.coq
-	$(BOOTCOQTOP) $(TRANSLATE) -compile contrib/$*
-
-newtheories/Init/%.vo: $(BESTCOQTOP) newtheories/Init/%.v
-	$(BOOTCOQTOP) -nois -compile $*
-
-newtheories/%.vo: newtheories/%.v states/initialnew.coq
-	$(BOOTCOQTOP) -compile newtheories/$*
-
-newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
-	$(BOOTCOQTOP) -compile newcontrib/$*
+contrib/%.vo: contrib/%.v
+	$(BOOTCOQTOP) -compile contrib/$*
 
 contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
-	$(BOOTCOQTOP) $(TRANSLATE) -is states/barestate.coq -compile $*
+	$(BOOTCOQTOP) -is states/barestate.coq -compile $*
+
+contrib7/extraction/%.vo: contrib7/extraction/%.v states/barestate.coq $(COQC)
+	$(BOOTCOQTOP) $(TRANSLATE) -is states7/barestate.coq -compile $*
+
 # Obsolete ?
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
+	$(BESTCOQTOP) -boot -byte $(COQOPTS) -compile $*
+
+contrib7/interface/Centaur.vo: contrib7/interface/Centaur.v $(INTERFACE)
 	$(BESTCOQTOP) $(TRANSLATE) -boot -byte $(COQOPTS) -compile $*
 
-newtheories/Lists/List.v: newtheories/Lists/PolyList.v
-	(cd newtheories/Lists; cp -f PolyList.v List.v)
+#newtheories/Lists/List.v: newtheories/Lists/PolyList.v
+#	(cd newtheories/Lists; cp -f PolyList.v List.v)
 
-newtheories/Lists/PolyList.vo:
-	@cd #nil command: don't compile it
+#newtheories/Lists/PolyList.vo:
+#	@cd #nil command: don't compile it
 
-newtheories/Lists/PolyListSyntax.vo:
-	@cd #nil command: don't compile it
+#newtheories/Lists/PolyListSyntax.vo:
+#	@cd #nil command: don't compile it
 
-newtheories/ZArith/ZSyntax.vo:
-	@cd #nil command: obsolete, don't compile it
+#newtheories/ZArith/ZSyntax.vo:
+#	@cd #nil command: obsolete, don't compile it
 
-newtheories/ZArith/zarith_aux.vo:
-	@cd #nil command: obsolete, don't compile it
+#newtheories/ZArith/zarith_aux.vo:
+#	@cd #nil command: obsolete, don't compile it
 
 # Obsolete ?
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
+	$(BESTCOQTOP) -boot -byte  $(COQOPTS) -compile $*
+
+contrib7/interface/AddDad.vo: contrib7/interface/AddDad.v $(INTERFACE) states7/initial.coq
 	$(BESTCOQTOP) $(TRANSLATE) -boot -byte  $(COQOPTS) -compile $*
 
 clean::
-	rm -f states/*.coq
+	rm -f states/*.coq states7/*.coq
 
 clean::
-	rm -f theories/*/*.vo
+	rm -f theories/*/*.vo theories7/*/*.vo
 
 clean::
-	rm -f contrib/*/*.cm[io] contrib/*/*.vo user-contrib/*.cm[io]
+	rm -f contrib/*/*.cm[io] contrib/*/*.vo contrib7/*/*.vo user-contrib/*.cm[io]
 
 archclean::
 	rm -f contrib/*/*.cmx contrib/*/*.[so]
@@ -1035,6 +1069,8 @@ install-library:
         done
 	$(MKDIR) $(FULLCOQLIB)/states
 	cp states/*.coq $(FULLCOQLIB)/states
+	$(MKDIR) $(FULLCOQLIB)/states7
+	cp states7/*.coq $(FULLCOQLIB)/states7
 	$(MKDIR) $(FULLEMACSLIB)
 	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
 	$(MKDIR) $(FULLIDELIB)
@@ -1051,6 +1087,8 @@ install-library-light:
         done
 	$(MKDIR) $(FULLCOQLIB)/states
 	cp states/*.coq $(FULLCOQLIB)/states
+	$(MKDIR) $(FULLCOQLIB)/states7
+	cp states7/*.coq $(FULLCOQLIB)/states7
 	$(MKDIR) $(FULLEMACSLIB)
 	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
 
@@ -1366,10 +1404,12 @@ alldepend: depend dependcoq
 
 dependcoq:: beforedepend
 	$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
-	 $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
+	 $(ALLREALS:.vo=.v) $(ALLNEWVO:.vo=.v) > .depend.coq
+	$(COQDEP) -coqlib . -R theories7 Coq -R contrib7 Coq $(COQINCLUDES) \
+	 $(ALLOLDREALS:.vo=.v) $(ALLOLDVO:.vo=.v) > .depend.coq7
 
-.depend.newcoq: .depend.coq Makefile
-	sed -e "s|theories/\([^ ]*\.v\)|newtheories/\1|g" -e "s|contrib/\([^ ]*\.v\)|newcontrib/\1|g" -e "s| newtheories/Lists/PolyListSyntax| newtheories/Lists/List|g" -e "s| newtheories/Lists/PolyList| newtheories/Lists/List|g" .depend.coq > .depend.newcoq
+#.depend.newcoq: .depend.coq Makefile
+#	sed -e "s|theories/\([^ ]*\.v\)|newtheories/\1|g" -e "s|contrib/\([^ ]*\.v\)|newcontrib/\1|g" -e "s| newtheories/Lists/PolyListSyntax| newtheories/Lists/List|g" -e "s| newtheories/Lists/PolyList| newtheories/Lists/List|g" .depend.coq > .depend.newcoq
 
 # Build dependencies ignoring failures in building ml files from ml4 files
 # This is useful to rebuild dependencies when they are strongly corrupted:
@@ -1431,7 +1471,8 @@ devel:
 
 include .depend
 include .depend.coq
-include .depend.newcoq
+#include .depend.newcoq
+include .depend.coq7
 
 clean::
 	rm -fr *.v8 newtheories newcontrib
