@@ -88,8 +88,7 @@ let var_occurs_in_pf gl id =
 type inversion_status = Dep of constr option | NoDep
 
 let compute_eqn env sigma n i ai =
-  (ai,get_type_of env sigma ai),
-  (mkRel (n-i),get_type_of env sigma (mkRel (n-i)))
+  (ai, (mkRel (n-i),get_type_of env sigma (mkRel (n-i))))
 
 let make_inv_predicate env sigma indf realargs id status concl =
   let nrealargs = List.length realargs in
@@ -128,12 +127,12 @@ let make_inv_predicate env sigma indf realargs id status concl =
    In any case, we carry along the rest of pairs *)
   let rec build_concl eqns n = function
     | [] -> (prod_it concl eqns,n)
-    | ((ai,ati),(xi,ti))::restlist ->
+    | (ai,(xi,ti))::restlist ->
         let (lhs,eqnty,rhs) =
           if closed0 ti then 
 	    (xi,ti,ai)
           else 
-	    make_iterated_tuple env' sigma (ai,ati) (xi,ti)
+	    make_iterated_tuple env' sigma ai (xi,ti)
 	in
         let type_type_rhs = get_sort_of env sigma (type_of env sigma rhs) in
         let sort = get_sort_of env sigma concl in 

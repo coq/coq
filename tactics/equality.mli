@@ -55,8 +55,7 @@ val dEq : quantified_hypothesis option -> tactic
 val dEqThen : (int -> tactic) -> quantified_hypothesis option -> tactic
 
 val make_iterated_tuple : 
-  env -> evar_map -> (constr * constr) -> (constr * constr) 
-    -> constr * constr * constr
+  env -> evar_map -> constr -> (constr * types) -> constr * constr * constr
 
 val substHypInConcl : bool -> identifier -> tactic
 val substConcl : bool -> constr -> tactic
