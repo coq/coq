@@ -290,4 +290,4 @@ contrib/correctness/Sorted.vo: contrib/correctness/Sorted.v contrib/correctness/
 contrib/correctness/Tuples.vo: contrib/correctness/Tuples.v
 contrib/fourier/Fourier_util.vo: contrib/fourier/Fourier_util.v theories/Reals/Rbase.vo
 contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/field/field.cmo contrib/fourier/Fourier_util.vo contrib/field/Field.vo theories/Reals/DiscrR.vo
-contrib/cc/CC.vo: contrib/cc/CC.v theories/Logic/Eqdep_dec.vo
+contrib/cc/CC.vo: contrib/cc/CC.v
