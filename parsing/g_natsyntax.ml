@@ -10,7 +10,7 @@ open Util
 open Names
 open Coqast
 open Ast
-open Stdlib
+open Coqlib
 open Termast
 
 exception Non_closed_number
@@ -46,7 +46,7 @@ let nat_of_string s dloc =
   nat_of_int (int_of_string s) dloc
 
 let pat_nat_of_string s dloc = 
-  nat_of_int (int_of_string s) dloc
+  pat_nat_of_int (int_of_string s) dloc
     
 let rec int_of_nat_rec astS astO p =
   match p with
