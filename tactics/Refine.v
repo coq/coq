@@ -7,4 +7,4 @@ Grammar tactic simple_tactic: ast :=
   tcc [ "Refine" castedopenconstrarg($c) ] -> [(Tcc $c)].
 
 Syntax tactic level 0:
-  tcc [(Tcc $C)] -> ["Refine " $C].
+  tcc [ (Refine $C) ] -> ["Refine " $C].
