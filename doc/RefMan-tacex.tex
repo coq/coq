@@ -518,7 +518,7 @@ Inductive Type formula :=
 | f_or : formula -> formula -> formula  
 | f_not : formula -> formula            (* unary constructor *)
 | f_true : formula                      (* 0-ary constructor *)
-| f_const : Prop -> formula.            (* contructor for constants *)
+| f_const : Prop -> formula             (* contructor for constants *).
 
 Fixpoint interp_f [f:formula] : Prop := 
   Cases f of
@@ -528,7 +528,6 @@ Fixpoint interp_f [f:formula] : Prop :=
   | f_true => True
   | (f_const c) => c
   end.
-
 Goal A/\(A\/True)/\~B/\(A <-> A).
 Quote interp_f.
 \end{coq_example}
@@ -541,7 +540,7 @@ return the corresponding constructor (here \texttt{f\_const}) applied
 to the term. 
 
 \begin{ErrMsgs}
-\item \errindex{Quote: not a simple fixpoint}
+\item \errindex{Quote: not a simple fixpoint} \\
   Happens when \texttt{Quote} is not able to perform inversion properly.
 \end{ErrMsgs}
 
@@ -576,7 +575,7 @@ Inductive Set formula :=
 | f_or : formula -> formula -> formula  
 | f_not : formula -> formula           
 | f_true : formula                     
-| f_atom : index -> formula.            (* contructor for variables *)
+| f_atom : index -> formula.
 \end{coq_example*}
 
 \texttt{index} is defined in module \texttt{Quote}. Equality on that

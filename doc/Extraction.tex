@@ -1,7 +1,12 @@
-\achapter{Execution of extracted programs in Objective Caml} %and Haskell}
+\achapter{Execution of extracted programs in Objective Caml and Haskell}
 \label{Extraction}
 \aauthor{Jean-Christophe Filliâtre and Pierre Letouzey}
 \index{Extraction}
+
+\begin{center}
+  \em The status of extraction is experimental \\
+  Haskell extraction is not yet implemented
+\end{center}
 
 It is possible to use \Coq\ to build certified and relatively
 efficient programs, extracting them from the proofs of their
@@ -10,7 +15,7 @@ obtained at the \Coq\ toplevel with the command {\tt Extraction}
 (see \ref{ExtractionTerm}).
 
 We present here a \Coq\ module, {\tt Extraction}, which translates the
-extracted terms to ML dialects, namely Objective Caml. % and Haskell. 
+extracted terms to ML dialects, namely Objective Caml and Haskell. 
 In the following, we will not refer to a particular dialect
 when possible and ``ML'' will be used to refer to any of the target
 dialects.
@@ -18,83 +23,80 @@ dialects.
 \Rem
 The extraction mechanism has been completely rewritten in version 7.0.
 In particular, the \FW\ toplevel used as intermediate step between 
-\Coq\ and ML has been abondoned.  It is also not possible 
+\Coq\ and ML has been abandoned.  It is also not possible 
 any more to import ML objects in this \FW\ toplevel.
 The current mechanism also differs from
-the one in versions of \Coq\ anterior to the version 
- to the version V5.8. In these versions, there were an
-explicit toplevel for the language {\sf Fml}. 
+the one in previous versions of \Coq: there is no more
+an explicit toplevel for the language (formerly called {\sf Fml}). 
 
 
 %\section{Extraction facilities}
 %
 %(* TO DO *)
 %
+\begin{coq_eval}
+  Require Extraction.
+\end{coq_eval}
 
 \medskip
 In the first part of this document we describe the commands of the
 {\tt Extraction} module, and we give some examples in the second part.
 
-
-\asection{The {\tt Extraction} module}
-\label{Extraction}
-
-This section explains how to import ML objects, to realize axioms and
-finally to generate ML code from the extracted programs of \FW.
-These features now belong to the core system.  
-
-\asubsection{Generating executable ML code}
+\asection{Generating ML code}
 \comindex{Extraction}
 \comindex{Recursive Extraction}
 \comindex{Extraction Module}
+
 The \Coq\ commands to generate ML code are:
-\begin{center}\begin{tabular}{ll}
-  {\tt Extraction \ident.}
-    & ({\em for extracting one definition at the \Coq\ toplevel\/}) \\
-  {\tt Recursive Extraction  \ident$_1$ \dots\ \ident$_n$.} 
-    & ({\em for extraction Objective Caml\/}) \\
-  {\tt Write Caml File "\str" [ \ident$_1$ \dots\ \ident$_n$ ] 
-       {\it options}.}
-    & ({\em for Objective Caml\/}) \\
-  {\tt Write Caml File "\str" [ \ident$_1$ \dots\ \ident$_n$ ] 
-       {\it options}.}
-    & ({\em for Objective Caml\/}) \\
-  {\tt Write CamlLight File "\str" [ \ident$_1$ \dots\ \ident$_n$ ]
-       {\it options}.} & \\
-  {\tt Write Haskell File "\str" [ \ident$_1$ \dots\ \ident$_n$ ]
-       {\it options}.} & \\
-\end{tabular}\end{center}
-where \str\ is the name given to the file to be produced (the suffix
-{\tt .ml} is added if necessary), and \ident$_1$ \dots\ \ident$_n$ the
-names of the constants to be extracted. This list does not need to be
-exhaustive: it is automatically completed into a complete and minimal
-environment.  Remaining axioms are translated into exceptions, and a
-warning is printed in that case. In particular, this will be the case
-for {\tt False\_rec}. (We will see below how to realize axioms).
-
-\paragraph{Optimizations.} 
-Since Caml Light and Objective Caml are strict languages, the extracted
-code has to be optimized in order to be efficient (for instance, when
-using induction principles we do not want to compute all the recursive
-calls but only the needed ones). So an optimization routine will be
-called each time the user want to generate Caml programs. Essentially,
-it performs constants expansions and reductions.  Therefore some
-constants will not appear in the resulting Caml program (A warning is
-printed for each such constant). To avoid this, just put the constant
-name in the previous list \ident$_1$ \dots\ \ident$_n$ and it will not
-be expanded. Moreover, three options allow the user to control the
-expansion strategy :
 \begin{description}
-  \item[\texttt{noopt}] : specifies not to do any optimization.
-  \item[\texttt{exact}] : specifies to extract exactly the given
-    objects (no recursivity).
-  \item[\texttt{expand [ \ident$_1$ \dots\ \ident$_n$ ]}] : 
-    forces the expansion of the constants \ident$_1$ \dots\ \ident$_n$
-    (when it is possible).
+\item {\tt Extraction \term.} ~\par
+  Extracts one term in the \Coq\ toplevel.
+  Extracted terms are displayed with an \ocaml\ syntax, where globals
+  are printed as in the \Coq\ toplevel (thus without any renaming).
+
+\item {\tt Recursive Extraction  \qualid$_1$ \dots\ \qualid$_n$.} ~\par
+  Recursive extraction of all the globals \qualid$_1$ \dots\
+  \qualid$_n$ and all their dependencies in the \Coq\ toplevel.
+
+\item {\tt Extraction "{\em file}" \qualid$_1$ \dots\ \qualid$_n$.} ~\par
+  Recursive extraction of all the globals \qualid$_1$ \dots\
+  \qualid$_n$ and all their dependencies in file {\em file}.
+  Global and local identifiers are renamed accordingly to the target
+  language to fullfill its syntactic conventions, keeping original
+  names as much as possible.
+
+\item  {\tt Extraction Module \ident.} ~\par
+  Extraction of the \Coq\ module \ident\ to an ML module {\tt\ident.ml}.
+  Identifiers are here renamed using prefixes \verb!coq_! or
+  \verb!Coq_! to ensure a session-independent renaming.
 \end{description}
+The list of globals \qualid$_i$ does not need to be
+exhaustive: it is automatically completed into a complete and minimal
+environment. Extraction will fail if it encounters an axiom.
+
+% \paragraph{Optimizations.} 
+% Since Caml Light and Objective Caml are strict languages, the extracted
+% code has to be optimized in order to be efficient (for instance, when
+% using induction principles we do not want to compute all the recursive
+% calls but only the needed ones). So an optimization routine will be
+% called each time the user want to generate Caml programs. Essentially,
+% it performs constants expansions and reductions.  Therefore some
+% constants will not appear in the resulting Caml program (A warning is
+% printed for each such constant). To avoid this, just put the constant
+% name in the previous list \ident$_1$ \dots\ \ident$_n$ and it will not
+% be expanded. Moreover, three options allow the user to control the
+% expansion strategy :
+% \begin{description}
+%   \item[\texttt{noopt}] : specifies not to do any optimization.
+%   \item[\texttt{exact}] : specifies to extract exactly the given
+%     objects (no recursivity).
+%   \item[\texttt{expand [ \ident$_1$ \dots\ \ident$_n$ ]}] : 
+%     forces the expansion of the constants \ident$_1$ \dots\ \ident$_n$
+%     (when it is possible).
+% \end{description}
 
 
-\asubsection{Realizing axioms}
+\asection{Realizing axioms}
 \comindex{Link}
 
 It is possible to assume some axioms while developing a proof. Since
@@ -102,189 +104,27 @@ these axioms can be any kind of proposition or object type, they may
 perfectly well have some computational content. But a program must be
 a closed term, and of course the system cannot guess the program which
 realizes an axiom.  Therefore, it is possible to tell the system
-what program (an \FW\ term actually) corresponds to a given \Coq\
-axiom. The command is {\tt Link} and the syntax:
-$$\mbox{\tt Link \ident\ := Fwterm.}$$
-where \ident\ is the name of the axiom to realize and Fwterm\ the
-term which realizes it. The system checks that this term has the same
-type as the axiom \ident, and returns an error if not.  This command
-attaches a body to an axiom, and can be seen as a transformation of an
-axiom into a constant.
+what ML term corresponds to a given axiom. Of course, it is the
+responsability of the user to ensure that the ML terms given to
+realize the axioms do have the expected types.
 
-These semantical attachments have to be done {\em before} generating
-the ML code. All type variables must be realized, and term variables
-which are not realized will be translated into exceptions. 
-
-\Example Let us illustrate this feature on a small
-example. Assume that you have a type variable {\tt A} of type \Set:
-
-\begin{coq_example*}
-Parameter A : Set.
-\end{coq_example*}
-
-and that your specification proof assumes that there is an order
-relation {\em inf} over that type (which has no computational
-content), and that this relation is total and decidable:
-
-\begin{coq_example*}
-Parameter inf : A -> A -> Prop.
-Axiom inf_total : (x,y:A) {(inf x y)}+{(inf y x)}.
-\end{coq_example*}
-
-Now suppose that we want to use this specification proof on natural
-numbers; this means {\tt A} has to be instantiated by {\tt nat}
-and the axiom {\tt inf\_total} will be realized, for instance, using the
-order relation {\tt le} on that type and the decidability lemma 
-{\tt le\_lt\_dec}. Here is how to proceed:
-
-\begin{coq_example*}
-Require Compare_dec.
-\end{coq_example*}
-\begin{coq_example}
-Link A := nat.
-Link inf_total := le_lt_dec.
-\end{coq_example}
-
-\Warning There is no rollback on the command {\tt Link}, that
-is the semantical attachments are not forgotten when doing a {\tt Reset},
-or a {\tt Restore State} command. This will be corrected in a later
-version.
-
-\asubsection{Importing ML objects}
-In order to realize axioms and to instantiate programs on real data
-types, like {\tt int}, {\tt string}, \dots\ or more complicated data
-structures, one want to import existing ML objects in the \FW\
-environment.  The system provides such features, through the commands
-{\tt ML Import Constant} and {\tt ML Import Inductive}.
-The first one imports an ML
-object as a new axiom and the second one adds a new inductive
-definition corresponding to an ML inductive type.  
-
-\paragraph{Warning.}
-In the case of Caml dialects, the system would be able to check the
-correctness of the imported objects by looking into the interfaces
-files of Caml modules ({\tt .mli} files), but this feature is not yet
-implemented. So one must be careful when declaring the types of the
-imported objects.
-
-\paragraph{Caml names.}
-When referencing a Caml object, you can use strings instead of
-identifiers. Therefore you can use the double
-underscore notation \verb!module__name! (Caml Light objects)
-or the dot notation \verb!module.name! (Objective Caml objects)
-to precise the module in which lies the object.
-
-
-\asubsection{Importing inductive types}
-\comindex{ML Import Inductive}
-
-The \Coq\ command to import an ML inductive type is:
-$$\mbox{\tt ML Import Inductive \ident\ [\ident$_1$ \dots\ \ident$_n$] == %
-{\em <Inductive Definition>}.}$$
-where \ident\ is the name of the ML type, \ident$_1$ \dots\
-\ident$_n$ the name of its constructors, and {\tt\em<Inductive
-  Definition>} the corresponding \Coq\ inductive definition
-(see \ref{Inductive} in the Reference Manual for the syntax of
-inductive definitions). 
-
-This command inserts the {\tt\em<Inductive Definition>} in the \FW\
-environment, without elimination principles. From that moment, it is
-possible to use that type like any other \FW\ object, and in
-particular to use it to realize axioms. The names \ident\ \ident$_1$
-\dots\ \ident$_n$ may be different from the names given in the
-inductive definition, in order to avoid clash with previous
-constants, and are restored when generating the ML code. 
-
-\noindent One can also import mutual inductive types with the command:
-$$\begin{array}{rl}
-  \mbox{\tt ML Import Inductive} &
-              \mbox{\tt\ident$_1$ [\ident$^1_1$ \dots\ \ident$^1_{n_1}$]} \\
-    & \dots \\
-    & \mbox{\tt\ident$_k$ [\ident$^k_1$ \dots\ \ident$^k_{n_k}$]} \\
-    & \qquad \mbox{\tt== {\em<Mutual Inductive Definition>}.}
-  \end{array}$$ %$$
-
-\begin{Examples}
-\item Let us show for instance how to import the
-  type {\tt bool} of Caml Light booleans:
-
-\begin{coq_example}
-ML Import Inductive bool [ true false ] ==
-         Inductive BOOL : Set := TRUE  : BOOL
-                               | FALSE : BOOL.
-\end{coq_example}
-
-Here we changed the names because the type {\tt bool} is already
-defined in the initial state of \Coq.
-
-  \item Assuming that one defined the mutual inductive types {\tt
-tree} and {\tt forest} in a Caml Light module, one can import them
-with the command:
-
-\begin{coq_example}
-ML Import Inductive tree [node] forest [empty cons] ==
-    Mutual [A:Set] Inductive 
-       tree : Set := node : A -> (forest A) -> (tree A)
-    with
-       forest : Set := empty : (forest A) 
-                    | cons : (tree A) -> (forest A) -> (forest A).
-\end{coq_example}
-
-  \item One can import the polymorphic type of Caml Light lists with
-the command:
-\begin{coq_example}
-ML Import Inductive list [nil cons] == 
-    Inductive list [A:Set] : Set := nil : (list A)
-                                 | cons : A->(list A)->(list A).
-\end{coq_example}
-
-\Rem One would have to re-define {\tt nil} and {\tt cons} at
-the top of its program because these constructors have no name in Caml Light.
-\end{Examples}
-
-\asubsection{Importing terms and abstract types}
-\comindex{ML Import Constant}
-
-The other command to import an ML object is:
-$$\mbox{\tt ML Import Constant \ident$_{ML}$\ == \ident\ : Fwterm.}$$
-where \ident$_{ML}$\ is the name of the ML object and Fwterm\ its type in
-\FW. This command defines an axiom in \FW\ of name \ident\ and type
-Fwterm.
-
-\Example To import the type {\tt int} of Caml Light
-integers, and the $<$ binary relation on this type, just do
-\begin{coq_example}
-ML Import Constant int == int : Set.
-ML Import Constant lt_int == lt_int : int -> int -> BOOL.
-\end{coq_example}
-assuming that the Caml Light type {\tt bool} is already imported (with the
-name {\tt BOOL}, as above).
-
-
-\asubsection{Direct use of ML\ objects}
 \comindex{Extract Constant}
 \comindex{Extract Inductive}
-
-Sometimes the user do not want to extract \Coq\ objects to new ML code
-but wants to use already existing ML objects.  For instance, it is the
-case for the booleans, which already exist in ML: the user do not want
-to extract the \Coq\ inductive type \texttt{bool} to a new type for
-booleans, but wants to use the primitive boolean of ML.
-
-The command \texttt{Extract} fulfills this requirement.
-It allows the user to declare constant and inductive types which will not be
-extracted but replaced by ML objects. The syntax is the following
-$$
-\begin{tabular}{l}
-  \mbox{\tt Extract Constant \ident\ => \ident'.} \\
-  \mbox{\tt Extract Inductive \ident\ 
-            => \ident' [ \ident'$_1$ \dots \ident'$_n$ ].} 
-\end{tabular}
-$$ %$$
-where \ident\/ is the name of the \Coq\ object and the prime identifiers 
-the name of the corresponding ML objects (the names between brackets
-are the names of the constructors).
-Mutually recursive types are declared one by one, in any order.
+The system actually provides a more general mechanism to specify ML
+terms even for defined constants, inductive types and constructors.
+For instance, the user may want to use the ML native boolean type
+instead of \Coq\ one.
+The syntax is the following:
+\begin{description}
+\item{\tt Extract Constant \qualid\ => \str.} ~\par
+  Give an ML extraction for the given constant.
+  The \str\ may be an identifier or a quoted string.
+\item{\tt Extract Inductive \qualid\ => \str\ [ \str\ \dots \str\ ].} ~\par
+  Give an ML extraction for the given inductive type. You must specify
+  extractions for the type itself (first \str) and all its
+  constructors (between square brackets). The ML extraction must be an
+  ML recursive datatype.
+\end{description}
 
 \Example
 Typical examples are the following:
@@ -295,252 +135,73 @@ Extract Inductive sumbool => bool [ true false ].
 \end{coq_example}
 
 
-\asubsection{Differences between \Coq\ and ML type systems}
+% \asubsection{Differences between \Coq\ and ML type systems}
 
-\subsubsection{ML types that are not \FW\ types}
+% \subsubsection{ML types that are not \FW\ types}
 
-Some ML recursive types have no counterpart in the type system of
-\Coq, like types using the record construction, or non positive types
-like
-\begin{verbatim}
-# type T = C of T->T;;
-\end{verbatim}
-In that case, you cannot import those types as inductive types, and
-the only way to do is to import them as abstract types (with {\tt ML
-Import}) together with the corresponding building and de-structuring
-functions (still with {\tt ML Import Constant}).
-
-
-\subsubsection{Programs that are not ML-typable}
-
-On the contrary, some extracted programs in \FW\ are not typable in
-ML. There are in fact two cases which can be problematic:
-\begin{itemize}
-  \item If some part of the program is {\em very} polymorphic, there
-    may be no ML type for it. In that case the extraction to ML works
-    all right but the generated code may be refused by the ML
-    type-checker. A very well known example is the {\em distr-pair}
-    function:
-$$\mbox{\tt
-Definition dp := [A,B:Set][x:A][y:B][f:(C:Set)C->C](f A x,f B y).
-}$$
-In Caml Light, for instance, the extracted term is 
-\verb!let dp x y f = pair((f x),(f y))!  and has type
-$$\mbox{\tt
-dp : 'a -> 'a -> ('a -> 'b) -> ('b,'b) prod
-}$$
-which is not its original type, but a restriction.
-
-  \item Some definitions of \FW\ may have no counterpart in ML. This
-    happens when there is a quantification over types inside the type
-    of a constructor; for example:
-$$\mbox{\tt
-Inductive anything : Set := dummy : (A:Set)A->anything.
-}$$
-which corresponds to the definition of ML dynamics.
-\end{itemize}
-
-The first case is not too problematic: it is still possible to run the
-programs by switching off the type-checker during compilation. Unless
-you misused the semantical attachment facilities you should never get
-any message like ``segmentation fault'' for which the extracted code
-would be to blame. To switch off the Caml type-checker, use the
-function {\tt obj\_\_magic} which gives the type {\tt 'a} to any
-object; but this implies changing a little the extracted code by hand.
-
-The second case is fatal. If some inductive type cannot be translated
-to ML, one has to change the proof (or possibly to ``cheat'' by
-some low-level manipulations we would not describe here). 
-
-We have to say, though, that in most ``realistic'' programs, these
-problems do not occur. For example all the programs of the library are
-accepted by Caml type-checker except {\tt Higman.v}\footnote{Should
-  you obtain a not ML-typable program out of a self developed example,
-  we would be interested in seeing it; so please mail us the example at
-  {\em coq@pauillac.inria.fr}}.
+% Some ML recursive types have no counterpart in the type system of
+% \Coq, like types using the record construction, or non positive types
+% like
+% \begin{verbatim}
+% # type T = C of T->T;;
+% \end{verbatim}
+% In that case, you cannot import those types as inductive types, and
+% the only way to do is to import them as abstract types (with {\tt ML
+% Import}) together with the corresponding building and de-structuring
+% functions (still with {\tt ML Import Constant}).
 
 
-\asection{Some examples}
+% \subsubsection{Programs that are not ML-typable}
 
-We present here few examples of extractions, taken from the {\tt
-theories} library of \Coq\ (into the {\tt PROGRAMS} directory). We
-choose Caml Light as target language, but all can be done in the other
-dialects with slight modifications.
+% On the contrary, some extracted programs in \FW\ are not typable in
+% ML. There are in fact two cases which can be problematic:
+% \begin{itemize}
+%   \item If some part of the program is {\em very} polymorphic, there
+%     may be no ML type for it. In that case the extraction to ML works
+%     all right but the generated code may be refused by the ML
+%     type-checker. A very well known example is the {\em distr-pair}
+%     function:
+% $$\mbox{\tt
+% Definition dp := [A,B:Set][x:A][y:B][f:(C:Set)C->C](f A x,f B y).
+% }$$
+% In Caml Light, for instance, the extracted term is 
+% \verb!let dp x y f = pair((f x),(f y))!  and has type
+% $$\mbox{\tt
+% dp : 'a -> 'a -> ('a -> 'b) -> ('b,'b) prod
+% }$$
+% which is not its original type, but a restriction.
 
+%   \item Some definitions of \FW\ may have no counterpart in ML. This
+%     happens when there is a quantification over types inside the type
+%     of a constructor; for example:
+% $$\mbox{\tt
+% Inductive anything : Set := dummy : (A:Set)A->anything.
+% }$$
+% which corresponds to the definition of ML dynamics.
+% \end{itemize}
 
-\asubsection{Euclidean division}
+% The first case is not too problematic: it is still possible to run the
+% programs by switching off the type-checker during compilation. Unless
+% you misused the semantical attachment facilities you should never get
+% any message like ``segmentation fault'' for which the extracted code
+% would be to blame. To switch off the Caml type-checker, use the
+% function {\tt obj\_\_magic} which gives the type {\tt 'a} to any
+% object; but this implies changing a little the extracted code by hand.
 
-The file {\tt Euclid\_prog} contains the proof of Euclidean division
-(theorem {\tt eucl\_dev}). The natural numbers defined in the example
-files are unary integers defined by two constructors $O$ and $S$:
-\begin{coq_example*}
-Inductive nat : Set := O : nat | S : nat -> nat.
-\end{coq_example*}
+% The second case is fatal. If some inductive type cannot be translated
+% to ML, one has to change the proof (or possibly to ``cheat'' by
+% some low-level manipulations we would not describe here). 
 
-To use the proof, we begin by loading the module {\tt Extraction} and the
-file into the \Coq\ environment:
-
-\begin{coq_eval}
-Reset Initial.
-AddPath "../theories/DEMOS/PROGRAMS".
-\end{coq_eval}
-\begin{coq_example*}
-Require Extraction.
-Require Euclid_prog.
-\end{coq_example*}
-
-This module contains a theorem {\tt eucl\_dev}, and its extracted term
-is of type {\tt (b:nat)(a:nat) (di\-veucl a b)}, where {\tt diveucl} is a
-type for the pair of the quotient and the modulo.
-We can now extract this program to Caml Light:
-
-\begin{coq_example}
-Write CamlLight File "euclid" [ eucl_dev ].
-\end{coq_example}
-
-This produces a file {\tt euclid.ml} containing all the necessary
-definitions until {\tt let eucl\_dev = ..}. Let us play the resulting program:
-
-\begin{verbatim}
-# include "euclid";;
-# eucl_dev (S (S O)) (S (S (S (S (S O)))));;
-- : diveucl = divex (S (S O), S O)
-\end{verbatim}
-It is easier to test on Caml Light integers:
-\begin{verbatim}
-# let rec nat_of = function 0 -> O
-                          | n -> S (nat_of (pred n));;
-# let rec int_of = function O   -> 0
-                          | S p -> succ (int_of p);;
-# let div a b = match eucl_dev (nat_of b) (nat_of a) with
-                  divex(q,r) -> (int_of q, int_of r);;
-div : int -> int -> int * int = <fun>
-# div 173 15;;
-- : int * int = 11, 8
-\end{verbatim}
-
-\asubsection{Heapsort}
-
-Let us see a more complicated example. The file {\tt Heap\_prog.v}
-contains the proof of an efficient list sorting algorithm described by
-Bjerner. Is is an adaptation of the well-known {\em heapsort}
-algorithm to functional languages. We first load the files:
-
-\begin{coq_eval}
-Reset Initial.
-\end{coq_eval}
-\begin{coq_example*}
-Require Extraction.
-Require Heap_prog.
-\end{coq_example*}
-
-As we saw it above we have to instantiate or realize by hand some of
-the \Coq\ variables, which are in this case the type of the elements
-to sort ({\tt List\_Dom}, defined in {\tt List.v}) and the
-decidability of the order relation ({\tt inf\_total}). We proceed as
-in section \ref{Extraction}:
-
-\begin{coq_example}
-ML Import Constant int == int : Set.
-Link List_Dom := int.
-ML Import Inductive bool [ true false ] ==
-         Inductive BOOL : Set := TRUE  : BOOL
-                               | FALSE : BOOL.
-ML Import Constant lt_int == lt_int : int->int->BOOL.
-Link inf_total :=
-         [x,y:int]Cases (lt_int x y) of
-                            TRUE => left
-                          | FALSE => right
-                          end.
-\end{coq_example}
-
-Then we extract the Caml Light program
-
-\begin{coq_example}
-Write CamlLight File "heapsort" [ heapsort ].
-\end{coq_example}
-and test it 
-\begin{verbatim}
-
-# include "heapsort";;
-# let rec listn = function 0 -> nil
-                         | n -> cons(random__int 10000,listn (pred n));;
-# heapsort (listn 10);;
-- : list = cons (136, cons (760, cons (1512, cons (2776, cons (3064, 
-cons (4536, cons (5768, cons (7560, cons (8856, cons (8952, nil))))))))))
-\end{verbatim}
-
-Some tests on longer lists (100000 elements) show that the program is
-quite efficient for Caml code.
-
-\asubsection{Balanced trees}
-
-The file {\tt Avl\_prog.v} contains the proof of insertion in binary
-balanced trees (AVL). Here we choose to instantiate such trees on the
-type {\tt string} of Caml Light (for instance to get efficient
-dictionary); as above we must realize the decidability of the order
-relation. It gives the following commands:
-
-\begin{coq_eval}
-Reset Initial.
-\end{coq_eval}
-\begin{coq_example*}
-Require Extraction.
-Require Avl_prog.
-\end{coq_example*}
-\begin{coq_eval}
-Pwd.
-\end{coq_eval}
-\begin{coq_example}
-ML Import Constant string == string : Set.
-ML Import Inductive bool [ true false ] ==
-  Inductive BOOL : Set := TRUE  : BOOL
-                        | FALSE : BOOL.
-ML Import Constant lt_string == lt_string : string->string->BOOL.
-Link a := string.
-Link inf_dec :=
-  [x,y:string]Cases (lt_string x y) of
-                TRUE => left
-              | FALSE => right
-              end.
-Write CamlLight File "avl" [rot_d rot_g rot_gd insert].
-\end{coq_example}
-
-Notice that we do not want the constants {\tt rot\_d}, {\tt rot\_g}
-and {\tt rot\_gd} to be expanded in the function {\tt insert}, and
-that is why we added them in the list of required functions. It makes
-the resulting program clearer, even if it becomes less efficient.
-
-Let us insert random words in an initially empty tree to check that it
-remains balanced:
-\begin{verbatim}
-% camllight
-# include "avl";;
-# let add a t = match insert a t with
-                 h_eq x -> x
-               | h_plus x -> x ;;
-# let rdmw () = let s = create_string 5 in
-                for i = 0 to 4 do
-                  set_nth_char s i (char_of_int (97+random__int 26))
-                done ; s ;;
-# let rec built = function 0 -> nil
-                         | n -> add (rdmw()) (built (pred n));;
-# built 10;;
-- : abe = node ("ogccy", node ("gmygy", node ("cwqug", node ("cjyrc", nil, ...
+% We have to say, though, that in most ``realistic'' programs, these
+% problems do not occur. For example all the programs of the library are
+% accepted by Caml type-checker except {\tt Higman.v}\footnote{Should
+%   you obtain a not ML-typable program out of a self developed example,
+%   we would be interested in seeing it; so please mail us the example at
+%   {\em coq@pauillac.inria.fr}}.
 
 
-# let rec size = function
-    nil -> 0
-  | node(_,t1,t2,_) -> 1+(max (size t1) (size t2)) ;;
-# let rec check = function
-    nil -> true
-  | node(_,a1,a2,_) -> 
-         let t1 = size a1 and t2 =size a2 in
-         if abs(t1-t2)>1 then false else (check a1) & (check a2) ;;
-
-# check (built 100);;
-- : bool = true
-\end{verbatim}
+% \asection{Some examples}
+% TODO
 
 
 \section{Bugs}
