@@ -62,8 +62,6 @@ type constr
 
 type typed_type
 
-type flat_arity = (name * constr) list * sorts
-
 (*s Functions about [typed_type] *)
 
 val make_typed : constr -> sorts -> typed_type
@@ -82,6 +80,8 @@ val outcast_type : constr -> typed_type
 
 type var_declaration = identifier * constr option * typed_type
 type rel_declaration = name * constr option * typed_type
+
+type arity = rel_declaration list * sorts
 
 (**********************************************************************)
 type global_reference =
@@ -256,7 +256,7 @@ val mkCoFix : cofixpoint -> constr
    raise [invalid_arg "dest*"] if the term has not the expected form. *)
 
 (* Destructs a term of the form $(x_1:T_1)..(x_n:T_n)s$ into the pair *)
-val destArity : constr -> flat_arity
+val destArity : constr -> arity
 val isArity : constr -> bool
 
 (* Destructs a DeBrujin index *)
@@ -466,12 +466,7 @@ val lift : int -> constr -> constr
 (* [pop c] lifts by -1 the positive indexes in [c] *)
 val pop : constr -> constr
 
-(* [lift_context n ctxt] lifts terms in [ctxt] by [n] preserving
-   (i.e. not lifting) the internal references between terms of [ctxt];
-   more recent terms come first in [ctxt] *)
-val lift_context : int -> (name * constr) list -> (name * constr) list
-
-(* [substnl [a1;...;an] k c] substitutes in parallele [a1],...,[an]
+(* [substnl [a1;...;an] k c] substitutes in parallel [a1],...,[an]
     for respectively [Rel(k+1)],...,[Rel(k+n)] in [c]; it relocates
     accordingly indexes in [a1],...,[an] *)
 val substnl : constr list -> int -> constr -> constr

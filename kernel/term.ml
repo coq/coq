@@ -910,10 +910,6 @@ let lift k = liftn k 1
 
 let pop t = lift (-1) t
 
-let lift_context n l = 
-  let k = List.length l in 
-  list_map_i (fun i (name,c) -> (name,liftn n (k-i) c)) 0 l
-
 (*********************)
 (*   Substituting    *)
 (*********************)
@@ -1242,14 +1238,15 @@ let prod_applist t nL = List.fold_left prod_app t nL
 (* Other term destructors        *)
 (*********************************)
 
-type flat_arity = (name * constr) list * sorts
+type arity = rel_declaration list * sorts
 
 (* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
 let destArity = 
   let rec prodec_rec l c =
     match kind_of_term c with
-    | IsProd (x,t,c) -> prodec_rec ((x,t)::l) c
+    | IsProd (x,t,c) -> prodec_rec ((x,None,t)::l) c
+    | IsLetIn (x,b,t,c) -> prodec_rec ((x,Some b,t)::l) c
     | IsCast (c,_)   -> prodec_rec l c
     | IsSort s       -> l,s
     | _              -> anomaly "decompose_arity: not an arity"
