@@ -11,7 +11,7 @@ open Tactics;;
 open Tacticals;;
 open Pattern;;
 open Reduction;;
-open Coqast;;
+open Ctast;;
 open Termast;;
 open Astterm;;
 open Vernacinterp;;
@@ -36,10 +36,10 @@ open Paths;;
 *)
 
 
-type dad_rule = Coqast.t * int list * int list * int * int list * Coqast.t;;
+type dad_rule = Ctast.t * int list * int list * int * int list * Ctast.t;;
 
 (* This value will be used systematically when constructing objects of
-   type Coqast.t, the value is stupid and meaningless, but it is needed
+   type Ctast.t, the value is stupid and meaningless, but it is needed
    to construct well-typed terms. *)
 
 let zz = (0,0);;
@@ -66,7 +66,7 @@ let map_subst (env :env)
    let rec map_subst_aux = function
     Node(_, "META", [Num(_, i)]) ->
       let constr = List.assoc i subst in
-      ast_of_constr false env constr
+      Ctast.ast_to_ct (ast_of_constr false env constr)
   | Node(loc, s, l) -> Node(loc, s, List.map map_subst_aux l)
   | ast -> ast in
     map_subst_aux;;
@@ -89,7 +89,7 @@ let rec find_cmd (l:(string * dad_rule) list) env constr p p1 p2 =
                 Failure s -> failwith "internal" in
          let _, constr_pat = 
             interp_constrpattern Evd.empty (Global.env())
-               pat in
+               (ct_to_ast pat) in
          let subst = matches constr_pat term_to_match in
          if (is_prefix p_f (p_r@p1)) & (is_prefix p_l (p_r@p2)) then
            map_subst env subst cmd
@@ -251,7 +251,7 @@ vinterp_add "AddDadRule"
              VARG_NUMBERLIST p2; VARG_TACTIC com] ->
             (function () ->
               let pr = match decompose_path (p1, p2) with pr, _, _ -> pr in
-              (add_dad_rule name pat p1 p2 (List.length pr) pr com))
+              (add_dad_rule name (Ctast.ast_to_ct pat) p1 p2 (List.length pr) pr (Ctast.ast_to_ct com)))
             | _ -> errorlabstrm "AddDadRule1"
                     [< 'sTR "AddDadRule2">]);
 add_dad_rule "distributivity-inv"

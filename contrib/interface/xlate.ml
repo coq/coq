@@ -6,14 +6,14 @@ open Char;;
 open Util;;
 open Ast;;
 open Names;;
+open Ctast;;
 open Ascent;;
-open Coqast;;
 
 let in_coq_ref = ref false;;
 
 let xlate_mut_stuff = ref ((fun _ -> 
           Nvar((0,0), "function xlate_mut_stuff should not be used here")):
-              Coqast.t -> Coqast.t);;
+              Ctast.t -> Ctast.t);;
 
 let set_xlate_mut_stuff v = xlate_mut_stuff := v;;
 
@@ -383,10 +383,10 @@ let xlate_op the_node opn a b =
   (match a, b with
   | ((Path (_, sl, kind)) :: []), [] ->
     CT_coerce_ID_to_FORMULA(CT_ident
-       (Names.string_of_id (Names.basename (Ast.section_path sl kind))))
+       (Names.string_of_id (Names.basename (section_path sl kind))))
   | ((Path (_, sl, kind)) :: []), tl ->
  CT_coerce_ID_to_FORMULA(CT_ident   
-       (Names.string_of_id(Names.basename (Ast.section_path sl kind))))
+       (Names.string_of_id(Names.basename (section_path sl kind))))
   | _, _ -> xlate_error "xlate_op : CONST")
  | (** string_of_path needs to be investigated.
     *)
@@ -402,7 +402,7 @@ let xlate_op the_node opn a b =
 	    CT_coerce_ID_to_FORMULA(
 	      CT_ident(Names.string_of_id
 			 (Names.basename
-			    (Ast.section_path sl kind))))
+			    (section_path sl kind))))
   	| _, _ -> xlate_error "xlate_op : MUTIND")
  | "MUTCASE" 
  | "CASE" ->
@@ -425,7 +425,7 @@ let xlate_op the_node opn a b =
 	 | Some(Rform x) -> x
 	 | _ -> assert false
    else
-   let name = Names.string_of_path (Ast.section_path sl kind) in
+   let name = Names.string_of_path (section_path sl kind) in
      (* This is rather a patch to cope with the fact that identifier
         names have disappeared from the vo files for grammar rules *)
        let type_desc = (try Some (Hashtbl.find type_table name) with
@@ -1372,7 +1372,7 @@ and xlate_tac =
      CT_user_tac (id, CT_targ_list (List.map coerce_iTARG_to_TARG l))
     | s, l ->
      CT_user_tac (CT_ident s, CT_targ_list (List.map coerce_iTARG_to_TARG l))
-and (xlate_context_rule: Coqast.t -> ct_CONTEXT_RULE) =
+and (xlate_context_rule: Ctast.t -> ct_CONTEXT_RULE) =
   function
     | Node(_, "MATCHCONTEXTRULE", parts) ->
 	let rec xlate_ctxt_rule_aux = function

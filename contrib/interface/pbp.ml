@@ -9,7 +9,7 @@ open Tacticals;;
 open Hipattern;;
 open Pattern;;
 open Reduction;;
-open Coqast;;
+open Ctast;;
 open Rawterm;;
 open Environ;;
 
@@ -38,8 +38,8 @@ type pbp_rule = (identifier list *
                     (identifier list ->
                      string list ->
                      bool ->
-                       string option -> (types, constr) kind_of_term -> int list -> Coqast.t)) ->
-                    Coqast.t option;;
+                       string option -> (types, constr) kind_of_term -> int list -> Ctast.t)) ->
+                    Ctast.t option;;
 
 let zz = (0,0);;
 
@@ -176,7 +176,7 @@ let (imply_elim2: pbp_rule) = function
   | _ -> None;;
 
 let reference dir s =
-  let dir = "Coq"::"Init"::[dir] in
+  let dir = List.map id_of_string ("Coq"::"Init"::[dir]) in
   let id = id_of_string s in
   try 
     Nametab.locate_in_absolute_module dir id

@@ -16,7 +16,7 @@ open Evd;;
 open Evarutil;;
 
 open Xlate;;
-open Coqast;;
+open Ctast;;
 open Vtp;;
 open Ascent;;
 open Environ;;
@@ -111,7 +111,7 @@ let rec discard_coercions =
 let translate_constr assumptions c =
  let com = ast_of_constr true assumptions c in
 (* dead code:  let rcom = relativize_cci (discard_coercions com) in *)
- xlate_formula com (* dead code: rcom *);;
+ xlate_formula (Ctast.ast_to_ct com) (* dead code: rcom *);;
 
 (*translates a named_context into a centaur-tree --> PREMISES_LIST *)
 (* this code is inspired from printer.ml (function pr_named_context_of) *)

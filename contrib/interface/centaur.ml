@@ -302,12 +302,12 @@ and ntyp = nf_betaiota typ in
 
 (* The following function is copied from globpr in env/printer.ml *)
 let globcv = function
-  | Node(_,"MUTIND", (Path(_,sl,s))::(Num(_,tyi))::_) ->
+  | Node(_,"MUTIND", (Path(_,sp))::(Num(_,tyi))::_) ->
        convert_qualid
-	 (Global.qualid_of_global (IndRef(section_path sl s,tyi)))
-  | Node(_,"MUTCONSTRUCT",(Path(_,sl,s))::(Num(_,tyi))::(Num(_,i))::_) ->
+	 (Global.qualid_of_global (IndRef(sp,tyi)))
+  | Node(_,"MUTCONSTRUCT",(Path(_,sp))::(Num(_,tyi))::(Num(_,i))::_) ->
        convert_qualid
-          (Global.qualid_of_global (ConstructRef ((section_path sl s, tyi), i)))
+          (Global.qualid_of_global (ConstructRef ((sp, tyi), i)))
   | _ -> failwith "globcv : unexpected value";;
 
 let pbp_tac_pcoq =
@@ -446,7 +446,7 @@ let logical_kill n =
 let command_changes = [
   ("TEXT_MODE",
    (function
-     |  [VARG_AST (Id(_,x))] ->
+     |  [VARG_AST (Str(_,x))] ->
 	 (match x with
 	   "fr" -> (function () -> text_proof_flag := "fr")
 	 | "en" -> (function () -> text_proof_flag := "en")
@@ -626,7 +626,7 @@ let command_changes = [
    (function
       | [VARG_QUALID qid] ->
 	 (function () -> 
-	   let results = xlate_vernac_list (name_to_ast qid) in
+	   let results = xlate_vernac_list (Ctast.ast_to_ct (name_to_ast qid)) in
 	   output_results 
 	     [<'fNL; 'sTR "message"; 'fNL; 'sTR "PRINT_VALUE"; 'fNL >]
 	     (Some (P_cl results)))
@@ -653,7 +653,7 @@ let command_changes = [
      | VARG_TACTIC_ARG(Redexp redexp):: VARG_CONSTR c :: g ->
 	 let evmap, env = Vernacentries.get_current_context_of_args g in
 	 let redfun =
-	   ct_print_eval c (Tacred.reduction_of_redexp redexp env evmap) env in
+	   ct_print_eval (Ctast.ast_to_ct c) (Tacred.reduction_of_redexp redexp env evmap) env in
 	 fun () -> 
 	   let strm, vtp = redfun evmap (judgment_of_rawconstr evmap env c) in
 	   output_results strm vtp
@@ -728,7 +728,7 @@ let command_creations = [
 let start_pcoq_mode debug = 
   begin
     start_dad();
-    set_xlate_mut_stuff globcv;
+    set_xlate_mut_stuff (fun x ->Ctast.ast_to_ct (globcv (Ctast.ct_to_ast x)));
     declare_in_coq();
     add_tactic "PcoqPbp" pbp_tac_pcoq;
     add_tactic "Dad" dad_tac_pcoq;

@@ -1,3 +1,4 @@
+Declare ML Module "ctast".
 Declare ML Module "paths".
 Declare ML Module "name_to_ast".
 Declare ML Module "xlate".
@@ -73,10 +74,10 @@ Grammar tactic simple_tactic : ast :=
    procedure changed from V6.1 and does not reprint the command anymore. *)
 Grammar vernac vernac : ast :=
   text_proof_flag_on [ "Text" "Mode" "fr" "." ] ->
-       [(TEXT_MODE (AST {fr}))]
+       [(TEXT_MODE (AST "fr"))]
 | text_proof_flag_on [ "Text" "Mode" "en" "." ] ->
-       [(TEXT_MODE (AST {en}))]
+       [(TEXT_MODE (AST "en"))]
 | text_proof_flag_on [ "Text" "Mode" "Off" "." ] ->
-       [(TEXT_MODE (AST {off}))].
+       [(TEXT_MODE (AST "off"))].
 
 

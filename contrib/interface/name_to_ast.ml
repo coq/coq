@@ -26,7 +26,7 @@ let convert_env =
       match na with 
        | Name id ->
            ope("BINDER",
-               [ast_of_constr true env c;nvar(string_of_id id)])
+               [ast_of_constr true env c;nvar id])
        | Anonymous -> failwith "anomaly: Anonymous variables in inductives" in
     let rec cvrec env = function
        [] -> []
@@ -85,9 +85,9 @@ let implicit_args_to_ast_list sp mipv =
 let convert_qualid qid =
   let d, id = Nametab.repr_qualid qid in
     match d with
-	[] -> nvar(string_of_id id)
+	[] -> nvar id
       | _ -> ope("QUALID", List.fold_right (fun s l -> (nvar s)::l) d
-		   [nvar (string_of_id id)]);;
+		   [nvar id]);;
 
 (* This function converts constructors for an inductive definition to a
    Coqast.t.  It is obtained directly from print_constructors in pretty.ml *)
@@ -96,7 +96,7 @@ let convert_constructors envpar names types =
   let array_idC = 
     array_map2 
       (fun n t -> ope("BINDER",
-		      [ast_of_constr true envpar t; nvar(string_of_id n)]))
+		      [ast_of_constr true envpar t; nvar n]))
       names types in
     Node((0,0), "BINDERLIST", Array.to_list array_idC);;
   
@@ -163,9 +163,9 @@ let constant_to_ast_list sp =
       let l = constant_implicits_list sp in
 	(match c with
 	     None -> 
-	       make_variable_ast (string_of_id (basename sp)) typ l
+	       make_variable_ast (basename sp) typ l
 	   | Some c1 ->
-	       make_definition_ast (string_of_id (basename sp)) c1 typ l)
+	       make_definition_ast (basename sp) c1 typ l)
     else
       errorlabstrm "print" [< 'sTR "printing of FW terms not implemented" >];;
 
@@ -174,9 +174,9 @@ let variable_to_ast_list sp =
   let l = implicits_of_var sp in
     (match c with
 	 None -> 
-	   make_variable_ast (string_of_id id) v l
+	   make_variable_ast id v l
        | Some c1 ->
-	   make_definition_ast (string_of_id id) c1 v l);;
+	   make_definition_ast id c1 v l);;
 
 (* this function is taken from print_inductive in file pretty.ml *)
 
@@ -208,7 +208,7 @@ let leaf_entry_to_ast_list (sp,lobj) =
 let name_to_ast (qid:Nametab.qualid) = 
   let l = 
     try
-      let sp,_ = Nametab.locate_obj qid in
+      let sp = Nametab.locate_obj qid in
       let (sp,lobj) = 
       	let (sp,entry) =
           List.find (fun en -> (fst en) = sp) (Lib.contents_after None)
@@ -231,9 +231,8 @@ let name_to_ast (qid:Nametab.qualid) =
 	      if dir <> [] then raise Not_found;
 	      let (c,typ) = Global.lookup_named name in 
 		(match c with
-		     None -> make_variable_ast (string_of_id name) typ []
-		   | Some c1 -> make_definition_ast 
-		       (string_of_id name) c1 typ [])
+		     None -> make_variable_ast name typ []
+		   | Some c1 -> make_definition_ast name c1 typ [])
 	  with Not_found ->
 	    try
 	      let sp = Syntax_def.locate_syntactic_definition qid in

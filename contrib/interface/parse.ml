@@ -4,7 +4,7 @@ open System;;
 
 open Pp;;
 
-open Coqast;;
+open Ctast;;
 
 open Library;;
 
@@ -58,14 +58,14 @@ let ctf_FileErrorMessage reqid pps =
   function has no effect on parsing *)
 let try_require_module import specif name fname =
  try Library.require_module (if specif = "UNSPECIFIED" then None
-  else Some (specif = "SPECIFICATION")) name fname (import = "IMPORT")
+  else Some (specif = "SPECIFICATION")) (Nametab.make_qualid [] (Names.id_of_string name)) fname (import = "IMPORT")
  with
  | e -> mSGNL [< 'sTR "Reinterning of "; 'sTR name; 'sTR " failed" >];;
 
 let execute_when_necessary ast =
  (match ast with
   | Node (_, "GRAMMAR", ((Nvar (_, s)) :: ((Node (_, "ASTLIST", al)) :: []))) ->
-   Metasyntax.add_grammar_obj s al
+   Metasyntax.add_grammar_obj s (List.map Ctast.ct_to_ast al)
   | Node (_, "TOKEN", ((Str (_, s)) :: [])) -> Metasyntax.add_token_obj s
   | Node (_, "Require",
             ((Str (_, import)) ::
@@ -91,9 +91,9 @@ let rec discard_to_dot stream =
 
 let rec decompose_string s n =
     try let index = String.index_from s n '\n' in
-            (Ast.str (String.sub s n (index - n)))::
+            (Ctast.str (String.sub s n (index - n)))::
             (decompose_string s (index + 1))
-    with Not_found -> [Ast.str(String.sub s n ((String.length s) - n))];;
+    with Not_found -> [Ctast.str(String.sub s n ((String.length s) - n))];;
 
 let make_string_list file_chan fst_pos snd_pos =
     let len = (snd_pos - fst_pos) in
@@ -140,11 +140,12 @@ let rec get_substring_list string_list fst_pos snd_pos =
 
 (* When parsing a list of commands, we try to recover error messages for
    each individual command. *)
+
 let parse_command_list reqid stream string_list =
     let rec parse_whole_stream () =
     let this_pos = Stream.count stream in
     let first_ast = 
-        try Gram.Entry.parse Pcoq.main_entry (Gram.parsable stream)
+        try option_app Ctast.ast_to_ct (Gram.Entry.parse Pcoq.main_entry (Gram.parsable stream))
         with
         | (Stdpp.Exc_located(l, Stream.Error txt)) as e -> 
           begin
@@ -154,7 +155,7 @@ let parse_command_list reqid stream string_list =
                 mSGNL [< 'sTR "debug"; 'fNL; 'iNT this_pos; 'fNL; 'iNT 
                   (Stream.count stream) >];
                 Some( Node(l, "PARSING_ERROR",
-                        List.map Ast.str
+                        List.map Ctast.str
                         (get_substring_list string_list this_pos
                             (Stream.count stream))))
              with End_of_file -> None
@@ -163,7 +164,7 @@ let parse_command_list reqid stream string_list =
           begin
             discard_to_dot stream;
             Some(Node((0,0), "PARSING_ERROR2",
-                   List.map Ast.str
+                   List.map Ctast.str
 		   (get_substring_list string_list this_pos
                      (Stream.count stream))))
           end in
@@ -190,25 +191,25 @@ let parse_string_action reqid phylum char_stream string_list =
        P_c
         (xlate_vernac
         (execute_when_necessary
-        (Gram.Entry.parse Pcoq.Vernac_.vernac_eoi (Gram.parsable char_stream))))
+        (Ctast.ast_to_ct (Gram.Entry.parse Pcoq.Vernac_.vernac_eoi (Gram.parsable char_stream)))))
       | "TACTIC_COM" ->
        P_t
-        (xlate_tactic (Gram.Entry.parse Pcoq.Tactic.tactic_eoi 
-                         (Gram.parsable char_stream)))
+        (xlate_tactic (Ctast.ast_to_ct(Gram.Entry.parse Pcoq.Tactic.tactic_eoi 
+                         (Gram.parsable char_stream))))
       | "FORMULA" ->
        P_f
         (xlate_formula
-        (Gram.Entry.parse Pcoq.Constr.constr_eoi (Gram.parsable char_stream)))
+        (Ctast.ast_to_ct (Gram.Entry.parse Pcoq.Constr.constr_eoi (Gram.parsable char_stream))))
       | "ID" -> P_id (xlate_id 
-                       (Gram.Entry.parse Pcoq.Prim.ident 
-                              (Gram.parsable char_stream)))
+                       (Ctast.ast_to_ct (Gram.Entry.parse Pcoq.Prim.ident 
+                              (Gram.parsable char_stream))))
       | "STRING" ->
 	  P_s
-         (xlate_string (Gram.Entry.parse Pcoq.Prim.string 
-                  (Gram.parsable char_stream)))
+         (xlate_string (Ctast.ast_to_ct (Gram.Entry.parse Pcoq.Prim.string 
+                  (Gram.parsable char_stream))))
       | "INT" ->
-	  P_i (xlate_int (Gram.Entry.parse Pcoq.Prim.number
-                              (Gram.parsable char_stream)))
+	  P_i (xlate_int (Ctast.ast_to_ct (Gram.Entry.parse Pcoq.Prim.number
+                              (Gram.parsable char_stream))))
       | _ -> error "parse_string_action : bad phylum" in
       print_parse_results reqid msg
  with
@@ -242,7 +243,7 @@ let parse_file_action reqid file_name =
             match 
               try
                 let this_ast = 
-                     Gram.Entry.parse Pcoq.main_entry (Gram.parsable stream) in
+                     option_app Ctast.ast_to_ct (Gram.Entry.parse Pcoq.main_entry (Gram.parsable stream)) in
                 this_ast
               with
             | Stdpp.Exc_located(l,Stream.Error txt ) -> 
@@ -294,8 +295,7 @@ let add_path dir coq_dirpath =
   if coq_dirpath = [] then anomaly "add_path: empty path in library";
   if exists_dir dir then
     begin
-      Library.add_load_path_entry
-        { directory = dir; coq_dirpath = coq_dirpath };
+      Library.add_load_path_entry (dir,coq_dirpath);
       Nametab.push_library_root (List.hd coq_dirpath)
     end
   else
@@ -303,8 +303,10 @@ let add_path dir coq_dirpath =
 
 let add_rec_path dir coq_dirpath =
   if coq_dirpath = [] then anomaly "add_path: empty path in library";
-  let dirs = all_subdirs dir (Some coq_dirpath) in
+  let dirs = all_subdirs dir in
   if dirs <> [] then
+    let convert = List.map Names.id_of_string in
+    let dirs = List.map (fun (lp,cp) -> (lp,coq_dirpath@(convert cp))) dirs in
     begin
       List.iter Library.add_load_path_entry dirs;
       Nametab.push_library_root (List.hd coq_dirpath)
@@ -316,7 +318,7 @@ let add_path_action reqid string_arg =
   let directory_name = glob string_arg in
   let alias = Filename.basename directory_name in
     begin
-      add_path directory_name [alias]
+      add_path directory_name [Names.id_of_string alias]
     end;;
 
 let print_version_action () =
@@ -325,9 +327,12 @@ let print_version_action () =
 
 let load_syntax_action reqid module_name =
  mSG [< 'sTR "loading "; 'sTR module_name; 'sTR "... " >];
- try (load_module module_name None;
+ try
+      (let qid = Nametab.make_qualid [] (Names.id_of_string module_name) in
+      read_module qid;
       mSG [< 'sTR "opening... ">];
-      import_module module_name; 
+      let fullname = Nametab.locate_loaded_library qid in 
+      import_module fullname; 
       mSGNL [< 'sTR "done"; 'fNL >];
       ())
  with
@@ -367,7 +372,7 @@ Libobject.relax true;
        add_rec_path (Filename.concat coqdir "theories") [Nametab.coq_root];
        add_path (Filename.concat coqdir "tactics") [Nametab.coq_root];
        add_rec_path (Filename.concat coqdir "contrib") [Nametab.coq_root];
-       List.iter (fun {directory=a} -> mSGNL [< 'sTR a >]) (get_load_path())
+       List.iter (fun a -> mSGNL [< 'sTR a >]) (get_load_path())
      end;
 (try 
   (match create_entry (get_univ "nat") "number" ETast with
