@@ -180,8 +180,20 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
         lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo \
         lib/system.cmo lib/bstack.cmo lib/edit.cmo lib/options.cmo \
 	lib/rtree.cmo lib/gset.cmo lib/tlm.cmo \
-	$(KERNEL) \
-	$(LIBRARY) \
+        kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
+        kernel/term.cmo kernel/sign.cmo kernel/declarations.cmo \
+	kernel/environ.cmo \
+	kernel/closure.cmo kernel/conv_oracle.cmo kernel/reduction.cmo \
+	kernel/modops.cmo \
+	kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
+	kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
+        kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo \
+	library/libnames.cmo \
+	library/nameops.cmo library/libobject.cmo library/summary.cmo \
+	library/nametab.cmo library/lib.cmo library/global.cmo \
+	library/declaremods.cmo \
+	library/library.cmo lib/options.cmo library/impargs.cmo \
+        library/goptions.cmo \
 	pretyping/evd.cmo pretyping/instantiate.cmo \
         pretyping/termops.cmo \
         pretyping/reductionops.cmo pretyping/retyping.cmo library/declare.cmo \
@@ -365,7 +377,7 @@ bin/coq-interface$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
 	$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
 
 bin/parser$(EXE): contrib/interface/ctast.cmo contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
-	$(OCAMLC) -cclib -lunix -custom $(MLINCLUDES) -o $@ $(CMA) \
+	$(OCAMLC) -cclib -lunix -custom $(BYTEFLAGS) -o $@ $(CMA) \
 	$(PARSERREQUIRES) \
 	ctast.cmo line_parser.cmo vtp.cmo xlate.cmo parse.cmo
 
