@@ -16,6 +16,7 @@ Tactics
 - New tactic "ClearBody H" to clear the body of definitions in local context
 - New tactic "Assert H := c" for forward reasoning
 - Slight improvement in naming strategy for NewInduction/NewDestruct
+- Intuition/Tauto does not perform useless unfolding
 
 Standard library
 
@@ -29,10 +30,6 @@ Standard library
   and new theorems about continuity and derivability in Ranalysis.v;  some
   properties in plane geometry such as translation, rotation or similarity
   in Rgeom.v; finite sums and Chasles property in Rsigma.v
-
-Efficiency
-
-- Improved efficiency wrt .vo sizes and compilation times
 
 Bugs
 
