@@ -9,7 +9,7 @@ install_printer Top_printers.prastpatl
 install_printer Top_printers.pppattern
 install_printer Top_printers.pprawterm
 
-install_printer Top_printers.ppterm0
+install_printer Top_printers.ppterm
 install_printer Top_printers.print_uni
 install_printer Top_printers.pp_universes
 install_printer Top_printers.pptype
