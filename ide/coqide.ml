@@ -2546,8 +2546,8 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 	    (fun ev -> GdkEvent.Button.button ev = 3));
   ignore (tv3#event#connect#button_press ~callback:
 	    (fun ev -> GdkEvent.Button.button ev = 3));
-  tv2#misc#set_can_focus false;
-  tv3#misc#set_can_focus false;
+  tv2#misc#set_can_focus true;
+  tv3#misc#set_can_focus true;
   ignore (tv2#buffer#create_mark 
 	    ~name:"end_of_conclusion" 
 	    tv2#buffer#start_iter);
