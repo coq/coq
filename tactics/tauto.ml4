@@ -61,6 +61,7 @@ let axioms ist =
     |[_:?1 |- ?] -> $t_is_empty
     |[_:?1 |- ?1] -> Assumption>>
 
+
 let simplif t_reduce ist =
   let t_is_unit = tacticIn is_unit
   and t_is_conj = tacticIn is_conj
@@ -98,8 +99,7 @@ let rec tauto_intuit t_reduce t_solver ist =
       (Match Reverse Context With
       | [id:(?1-> ?2)-> ?3|- ?] ->
         Cut ?2-> ?3;[Intro;Cut ?1-> ?2;[Intro;Cut ?3;[Intro;Clear id|
-          Intros;Apply id;Assumption]|Clear id]|Intros;Apply id;Try Intro;
-          Assumption]; Solve [ $t_tauto_intuit ]
+          Intros;Apply id;Assumption]|Clear id]|Intros;Apply id; (Assumption Orelse (Intro; Assumption))]; Solve [ $t_tauto_intuit ]
       | [|- (?1 ? ?)] ->
         $t_is_disj;Solve [Left;$t_tauto_intuit | Right;$t_tauto_intuit]
       )
@@ -122,6 +122,8 @@ let t_reduction_not_iff = Tacexpr.TacArg (valueIn (VTactic reduction_not_iff))
 let intuition_gen tac =
   interp (tacticIn (tauto_intuit t_reduction_not_iff tac))
 
+let simplif_gen = interp (tacticIn (simplif t_reduction_not_iff))
+
 let tauto g =
   try intuition_gen <:tactic<Fail>> g
   with UserError _ -> errorlabstrm "tauto" [< str "Tauto failed" >]
@@ -130,6 +132,10 @@ let default_intuition_tac = <:tactic< Auto with * >>
 
 TACTIC EXTEND Tauto
 | [ "Tauto" ] -> [ tauto ]
+END
+
+TACTIC EXTEND TSimplif
+| [ "Simplif" ] -> [ simplif_gen ]
 END
 
 TACTIC EXTEND Intuition
