@@ -94,8 +94,9 @@ module Programs =
 
 open Programs
 
-let ast_of_int n =
-  G_zsyntax.z_of_string true n dummy_loc
+let ast_of_int n = 
+  CDelimiters
+    (dummy_loc, "Z", CNumeral (dummy_loc, Bignat.POS (Bignat.of_string n)))
 
 let constr_of_int n =
   Constrintern.interp_constr Evd.empty (Global.env ()) (ast_of_int n)
