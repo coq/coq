@@ -336,10 +336,10 @@ let make_hunks etyps symbols from =
 	  else 
 	    UnpTerminal s :: add_break 1 (make NoBreak prods)
 	else
-	  if ws = CanBreak then
+	  if ws = CanBreak or is_ident_tail s.[String.length s - 1] then
 	    add_break 1 (UnpTerminal (s^" ") :: make CanBreak prods)
 	  else
-	    UnpTerminal (s^" ") :: make CanBreak prods
+	    UnpTerminal s :: make CanBreak prods
 
     | Terminal s :: prods ->
 	if is_right_bracket s then
