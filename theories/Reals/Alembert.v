@@ -16,25 +16,21 @@ Require Rbase.
 Require Rseries.
 Require Rtrigo_fun.
 
-Axiom fct_eq : (A:Type)(f1,f2:A->R) ((x:A)(f1 x)==(f2 x)) -> f1 == f2.
-
-Definition SigT := Specif.sigT.
+(*********************)
+(* Lemmes techniques *)
+(*********************)
 
 Lemma not_sym : (r1,r2:R) ``r1<>r2`` -> ``r2<>r1``.
 Intros; Red; Intro H0; Rewrite H0 in H; Elim H; Reflexivity.
 Qed.
 
 Lemma Rgt_2_0 : ``0<2``.
-Cut ~(O=(2)); [Intro H0; Generalize (lt_INR_0 (2) (neq_O_lt (2) H0)); Unfold INR; Intro H; Assumption | Discriminate].
+Sup0.
 Qed.
 
 Lemma Rgt_3_0 : ``0<3``.
-Cut ~(O=(3)); [Intro H0; Generalize (lt_INR_0 (3) (neq_O_lt (3) H0)); Rewrite INR_eq_INR2; Unfold INR2; Intro H; Assumption | Discriminate].
+Sup0.
 Qed.
-
-(*********************)
-(* Lemmes techniques *)
-(*********************)
 
 Lemma tech1 : (An:nat->R;N:nat) ((n:nat)``(le n N)``->``0<(An n)``) -> ``0 < (sum_f_R0 An N)``.
 Intros; Induction N.
@@ -382,6 +378,7 @@ Replace ``k+(1-k)`` with R1; [Assumption | Ring].
 Apply Rlt_Rinv; Apply Rgt_2_0.
 Qed.
 
+Definition SigT := Specif.sigT.
 
 (*************************************************)
 (* Différentes versions du critère de D'Alembert *)

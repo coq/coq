@@ -74,16 +74,13 @@ Unfold exp_in; Unfold infinit_sum; Intros.
 Exists O.
 Intros; Replace (sum_f_R0 ([i:nat]``/(INR (fact i))*(pow R0 i)``) n) with R1.
 Unfold R_dist; Replace ``1-1`` with R0; [Rewrite Rabsolu_R0; Assumption | Ring].
-Replace [i:nat]``/(INR (fact i))*(pow 0 i)`` with [i:nat](Cases i of O => R1 | _ => R0 end).
 Induction n.
-Simpl; Reflexivity.
-Simpl; Rewrite <- Hrecn; [Ring | Unfold ge; Apply le_O_n].
-Apply fct_eq.
-Intro; Case x.
-Unfold fact; Rewrite pow_O.
-Replace (INR (S O)) with R1; [Idtac | Reflexivity].
-Rewrite Rinv_R1; Ring.
-Intro; Rewrite pow_i; [Ring | Apply lt_O_Sn].
+Simpl; Rewrite Rinv_R1; Ring.
+Rewrite tech5.
+Rewrite <- Hrecn.
+Simpl.
+Ring.
+Unfold ge; Apply le_O_n.
 Defined.
 
 Lemma exp_0 : ``(exp 0)==1``. 
@@ -403,16 +400,18 @@ Qed.
 Lemma exist_cos0 : (SigT R [l:R](cos_in R0 l)).
 Apply Specif.existT with R1.
 Unfold cos_in; Unfold infinit_sum; Intros; Exists O.
-Intros; Replace (sum_f_R0 ([i:nat]``(cos_n i)*(pow R0 i)``) n) with R1.
-Unfold R_dist; Replace ``1-1`` with R0; [Idtac | Ring].
-Rewrite Rabsolu_R0; Assumption.
-Replace [i:nat]``(cos_n i)*(pow 0 i)`` with [i:nat](Cases i of O => R1 | _ => R0 end).
+Intros.
+Unfold R_dist.
 Induction n.
-Simpl; Reflexivity.
-Simpl; Rewrite <- Hrecn; [Ring | Unfold ge; Apply le_O_n].
-Apply fct_eq; Intro; Induction x.
-Unfold cos_n; Repeat Rewrite pow_O; Replace (mult (S (S O)) O) with O; [Idtac | Ring]; Unfold fact; Replace (INR (S O)) with R1; [Idtac | Reflexivity]; Unfold Rdiv; Rewrite Rinv_R1; Ring.
-Rewrite pow_i; [Ring | Apply lt_O_Sn].
+Unfold cos_n; Simpl.
+Unfold Rdiv; Rewrite Rinv_R1.
+Do 2 Rewrite Rmult_1r.
+Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Assumption.
+Rewrite tech5.
+Replace ``(cos_n (S n))*(pow 0 (S n))`` with R0.
+Rewrite Rplus_Or.
+Apply Hrecn; Unfold ge; Apply le_O_n.
+Simpl; Ring.
 Defined.
 
 (* Calcul de (cos 0) *)

@@ -27,8 +27,8 @@ Apply derivable_pt_div.
 Apply derivable_pt_const.
 Assumption.
 Assumption.
-Unfold div_fct inv_fct fct_cte; Intro.
-Replace [x:R]``/(f x)`` with [x:R]``1/(f x)``; [Assumption | Apply fct_eq; Intro; Unfold Rdiv; Rewrite Rmult_1l; Reflexivity].
+Unfold div_fct inv_fct fct_cte; Intro; Elim X0; Intros; Unfold derivable_pt; Apply Specif.existT with x0; Unfold derivable_pt_abs; Unfold derivable_pt_lim; Unfold derivable_pt_abs in p; Unfold derivable_pt_lim in p; Intros; Elim (p eps H0); Intros; Exists x1; Intros; Unfold Rdiv in H1; Unfold Rdiv; Rewrite <- (Rmult_1l ``/(f x)``); Rewrite <- (Rmult_1l ``/(f (x+h))``).
+Apply H1; Assumption.
 Qed.
 
 (**********)
@@ -39,6 +39,26 @@ Elim pr2; Intros.
 Simpl.
 Rewrite H in p.
 Apply unicite_limite with g x; Assumption.
+Qed.
+
+(**********)
+Lemma pr_nu_var2 : (f,g:R->R;x:R;pr1:(derivable_pt f x);pr2:(derivable_pt g x)) ((h:R)(f h)==(g h)) -> (derive_pt f x pr1) == (derive_pt g x pr2).
+Unfold derivable_pt derive_pt; Intros.
+Elim pr1; Intros.
+Elim pr2; Intros.
+Simpl.
+Assert H0 := (unicite_step2 ? ? ? p). 
+Assert H1 := (unicite_step2 ? ? ? p0). 
+Cut (limit1_in [h:R]``((f (x+h))-(f x))/h`` [h:R]``h <> 0`` x1 ``0``).
+Intro; Assert H3 := (unicite_step1 ? ? ? ? H0 H2). 
+Assumption.
+Unfold limit1_in; Unfold limit_in; Unfold dist; Simpl; Unfold R_dist; Unfold limit1_in in H1; Unfold limit_in in H1; Unfold dist in H1; Simpl in H1; Unfold R_dist in H1.
+Intros; Elim (H1 eps H2); Intros.
+Elim H3; Intros.
+Exists x2.
+Split.
+Assumption.
+Intros; Do 2 Rewrite H; Apply H5; Assumption.
 Qed.
 
 (**********)
@@ -53,9 +73,9 @@ Qed.
 Lemma derive_pt_inv : (f:R->R;x:R;pr:(derivable_pt f x);na:``(f x)<>0``) (derive_pt (inv_fct f) x (derivable_pt_inv f x na pr)) == ``-(derive_pt f x pr)/(Rsqr (f x))``.
 Intros; Replace (derive_pt (inv_fct f) x (derivable_pt_inv f x na pr)) with (derive_pt (div_fct (fct_cte R1) f) x (derivable_pt_div (fct_cte R1) f x (derivable_pt_const R1 x) pr na)).
 Rewrite derive_pt_div; Rewrite derive_pt_const; Unfold fct_cte; Rewrite Rmult_Ol; Rewrite Rmult_1r; Unfold Rminus; Rewrite Rplus_Ol; Reflexivity.
-Apply pr_nu_var.
-Unfold div_fct fct_cte inv_fct; Apply fct_eq.
-Intro; Unfold Rdiv; Rewrite Rmult_1l; Reflexivity.
+Apply pr_nu_var2.
+Intro; Unfold div_fct fct_cte inv_fct.
+Unfold Rdiv; Ring.
 Qed.
 
 (* Regularity of hyperbolic functions *)
@@ -63,38 +83,34 @@ Axiom derivable_pt_lim_exp : (x:R) (derivable_pt_lim exp x (exp x)).
 
 Lemma derivable_pt_lim_cosh : (x:R) (derivable_pt_lim cosh x ``(sinh x)``).
 Intro.
-Unfold cosh sinh.
-Replace [x0:R]``((exp x0)+(exp ( -x0)))/2`` with (plus_fct (mult_real_fct ``/2`` exp) (mult_real_fct ``/2`` (comp exp (opp_fct id)))).
-Replace ``((exp x)-(exp ( -x)))/2`` with ``/2*(exp x)+/2*((exp (-x))*-1)``. 
+Unfold cosh sinh; Unfold Rdiv.
+Replace [x0:R]``((exp x0)+(exp ( -x0)))*/2`` with (mult_fct (plus_fct exp (comp exp (opp_fct id))) (fct_cte ``/2``)); [Idtac | Reflexivity].
+Replace ``((exp x)-(exp ( -x)))*/2`` with ``((exp x)+((exp (-x))*-1))*((fct_cte (Rinv 2)) x)+((plus_fct exp (comp exp (opp_fct id))) x)*0``. 
+Apply derivable_pt_lim_mult.
 Apply derivable_pt_lim_plus.
-Apply derivable_pt_lim_scal.
 Apply derivable_pt_lim_exp.
-Apply derivable_pt_lim_scal.
 Apply derivable_pt_lim_comp.
 Apply derivable_pt_lim_opp.
 Apply derivable_pt_lim_id.
 Apply derivable_pt_lim_exp.
-Unfold Rdiv; Ring.
-Unfold plus_fct mult_real_fct comp opp_fct id; Apply fct_eq.
-Intro; Unfold Rdiv; Ring.
+Apply derivable_pt_lim_const.
+Unfold plus_fct mult_real_fct comp opp_fct id fct_cte; Ring.
 Qed.
 
 Lemma derivable_pt_lim_sinh : (x:R) (derivable_pt_lim sinh x ``(cosh x)``).
 Intro.
-Unfold cosh sinh.
-Replace [x0:R]``((exp x0)-(exp ( -x0)))/2`` with (minus_fct (mult_real_fct ``/2`` exp) (mult_real_fct ``/2`` (comp exp (opp_fct id)))).
-Replace ``((exp x)+(exp ( -x)))/2`` with ``/2*(exp x)-/2*((exp (-x))*-1)``. 
+Unfold cosh sinh; Unfold Rdiv.
+Replace [x0:R]``((exp x0)-(exp ( -x0)))*/2`` with (mult_fct (minus_fct exp (comp exp (opp_fct id))) (fct_cte ``/2``)); [Idtac | Reflexivity].
+Replace ``((exp x)+(exp ( -x)))*/2`` with ``((exp x)-((exp (-x))*-1))*((fct_cte (Rinv 2)) x)+((minus_fct exp (comp exp (opp_fct id))) x)*0``. 
+Apply derivable_pt_lim_mult.
 Apply derivable_pt_lim_minus.
-Apply derivable_pt_lim_scal.
 Apply derivable_pt_lim_exp.
-Apply derivable_pt_lim_scal.
 Apply derivable_pt_lim_comp.
 Apply derivable_pt_lim_opp.
 Apply derivable_pt_lim_id.
 Apply derivable_pt_lim_exp.
-Unfold Rdiv; Ring.
-Unfold minus_fct mult_real_fct comp opp_fct id; Apply fct_eq.
-Intro; Unfold Rdiv; Ring.
+Apply derivable_pt_lim_const.
+Unfold plus_fct mult_real_fct comp opp_fct id fct_cte; Ring.
 Qed.
 
 Lemma derivable_pt_exp : (x:R) (derivable_pt exp x).

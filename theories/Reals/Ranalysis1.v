@@ -339,9 +339,18 @@ Intros.
 Apply unicite_step3.
 Assert H1 := (unicite_step2 ? ? ? H).
 Assert H2 := (unicite_step2 ? ? ? H0).
-Unfold  plus_fct; Replace [h:R]``((f1 (x+h))+(f2 (x+h))-((f1 x)+(f2 x)))/h`` with [h:R](Rplus ([h':R]``((f1 (x+h'))-(f1 x))/h'`` h) ([h':R]``((f2 (x+h'))-(f2 x))/h'`` h)).
-Apply (limit_plus [h':R]``((f1 (x+h'))-(f1 x))/h'`` [h':R]``((f2 (x+h'))-(f2 x))/h'`` [h:R]``h <> 0`` l1 l2 ``0`` H1 H2).
-Apply fct_eq; Intro; Unfold Rdiv; Ring.
+Unfold  plus_fct.
+Cut (h:R)``((f1 (x+h))+(f2 (x+h))-((f1 x)+(f2 x)))/h``==``((f1 (x+h))-(f1 x))/h+((f2 (x+h))-(f2 x))/h``.
+Intro.
+Generalize(limit_plus [h':R]``((f1 (x+h'))-(f1 x))/h'`` [h':R]``((f2 (x+h'))-(f2 x))/h'`` [h:R]``h <> 0`` l1 l2 ``0`` H1 H2).
+Unfold limit1_in; Unfold limit_in; Unfold dist; Simpl; Unfold R_dist; Intros.
+Elim (H4 eps H5); Intros.
+Exists x0.
+Elim H6; Intros.
+Split.
+Assumption.
+Intros; Rewrite H3; Apply H8; Assumption.
+Intro; Unfold Rdiv; Ring.
 Qed.
 
 Lemma derivable_pt_lim_opp : (f:R->R;x,l:R) (derivable_pt_lim f x l) -> (derivable_pt_lim (opp_fct f) x (Ropp l)).
@@ -349,9 +358,17 @@ Intros.
 Apply unicite_step3.
 Assert H1 := (unicite_step2 ? ? ? H).
 Unfold opp_fct.
-Replace [h:R]``( -(f (x+h))- -(f x))/h`` with [h:R](Ropp ``((f (x+h))-(f x))/h``).
-Apply (limit_Ropp [h:R]``((f (x+h))-(f x))/h``[h:R]``h <> 0`` l ``0`` H1).
-Apply fct_eq; Intro; Unfold Rdiv; Ring.
+Cut (h:R) ``( -(f (x+h))- -(f x))/h``==(Ropp ``((f (x+h))-(f x))/h``).
+Intro.
+Generalize (limit_Ropp [h:R]``((f (x+h))-(f x))/h``[h:R]``h <> 0`` l ``0`` H1).
+Unfold limit1_in; Unfold limit_in; Unfold dist; Simpl; Unfold R_dist; Intros.
+Elim (H2 eps H3); Intros.
+Exists x0.
+Elim H4; Intros.
+Split.
+Assumption.
+Intros; Rewrite H0; Apply H6; Assumption.
+Intro; Unfold Rdiv; Ring.
 Qed.
 
 Lemma derivable_pt_lim_minus : (f1,f2:R->R;x,l1,l2:R) (derivable_pt_lim f1 x l1) -> (derivable_pt_lim f2 x l2) -> (derivable_pt_lim (minus_fct f1 f2) x ``l1-l2``).
@@ -360,9 +377,17 @@ Apply unicite_step3.
 Assert H1 := (unicite_step2 ? ? ? H).
 Assert H2 := (unicite_step2 ? ? ? H0).
 Unfold  minus_fct.
-Replace [h:R]``((f1 (x+h))-(f2 (x+h)) - ((f1 x)-(f2 x)))/h`` with [h:R](Rminus ([h':R]``((f1 (x+h'))-(f1 x))/h'`` h) ([h':R]``((f2 (x+h'))-(f2 x))/h'`` h)).
-Apply (limit_minus [h':R]``((f1 (x+h'))-(f1 x))/h'`` [h':R]``((f2 (x+h'))-(f2 x))/h'`` [h:R]``h <> 0`` l1 l2 ``0`` H1 H2).
-Apply fct_eq; Intro; Unfold Rdiv; Ring.
+Cut (h:R)``((f1 (x+h))-(f1 x))/h-((f2 (x+h))-(f2 x))/h``==``((f1 (x+h))-(f2 (x+h))-((f1 x)-(f2 x)))/h``.
+Intro.
+Generalize (limit_minus [h':R]``((f1 (x+h'))-(f1 x))/h'`` [h':R]``((f2 (x+h'))-(f2 x))/h'`` [h:R]``h <> 0`` l1 l2 ``0`` H1 H2).
+Unfold limit1_in; Unfold limit_in; Unfold dist; Simpl; Unfold R_dist; Intros.
+Elim (H4 eps H5); Intros.
+Exists x0.
+Elim H6; Intros.
+Split.
+Assumption.
+Intros; Rewrite <- H3; Apply H8; Assumption.
+Intro; Unfold Rdiv; Ring.
 Qed.
 
 Lemma derivable_pt_lim_mult : (f1,f2:R->R;x,l1,l2:R) (derivable_pt_lim f1 x l1) -> (derivable_pt_lim f2 x l2) -> (derivable_pt_lim (mult_fct f1 f2) x ``l1*(f2 x)+(f1 x)*l2``).
@@ -449,19 +474,22 @@ Axiom derivable_pt_lim_sqrt : (x:R) ``0<x`` -> (derivable_pt_lim sqrt x ``/(2*(s
 Axiom derivable_pt_lim_sin : (x:R) (derivable_pt_lim sin x (cos x)).
 
 Lemma derivable_pt_lim_cos : (x:R) (derivable_pt_lim cos x ``-(sin x)``).
-Intro; Cut (comp sin (plus_fct id (fct_cte ``PI/2``)))==cos.
-Intro; Rewrite <- H.
-Replace ``-(sin x)`` with (Rmult (cos ``x+PI/2``) (Rplus R1 R0)).
-Apply derivable_pt_lim_comp.
+Intro; Cut (h:R)``(sin (h+PI/2))``==(cos h).
+Intro; Replace ``-(sin x)`` with (Rmult (cos ``x+PI/2``) (Rplus R1 R0)).
+Generalize (derivable_pt_lim_comp (plus_fct id (fct_cte ``PI/2``)) sin); Intros.
+Cut (derivable_pt_lim (plus_fct id (fct_cte ``PI/2``)) x ``1+0``).
+Cut (derivable_pt_lim sin (plus_fct id (fct_cte ``PI/2``) x) ``(cos (x+PI/2))``).
+Intros; Generalize (H0 ? ? ? H2 H1); Replace (comp sin (plus_fct id (fct_cte ``PI/2``))) with [x:R]``(sin (x+PI/2))``; [Idtac | Reflexivity].
+Unfold derivable_pt_lim; Intros.
+Elim (H3 eps H4); Intros.
+Exists x0.
+Intros; Rewrite <- (H ``x+h``); Rewrite <- (H x); Apply H5; Assumption.
+Apply derivable_pt_lim_sin.
 Apply derivable_pt_lim_plus.
 Apply derivable_pt_lim_id.
 Apply derivable_pt_lim_const.
-Replace (plus_fct id (fct_cte ``PI/2``) x) with ``x+PI/2``.
-Apply derivable_pt_lim_sin.
-Unfold plus_fct id fct_cte; Reflexivity.
-Rewrite Rplus_Or; Rewrite Rmult_1r; Rewrite sin_cos; Rewrite Ropp_Ropp; Rewrite Rplus_sym; Reflexivity.
-Unfold comp plus_fct id fct_cte; Apply fct_eq; Intro.
-Rewrite cos_sin; Rewrite Rplus_sym; Reflexivity.
+Rewrite sin_cos; Rewrite <- (Rplus_sym x); Ring.
+Intro; Rewrite cos_sin; Rewrite Rplus_sym; Reflexivity.
 Qed.
 
 Lemma derivable_pt_plus : (f1,f2:R->R;x:R) (derivable_pt f1 x) -> (derivable_pt f2 x) -> (derivable_pt (plus_fct f1 f2) x).
@@ -1088,26 +1116,30 @@ Unfold increasing decreasing opp_fct; Intros; Generalize (H x y H0); Intro; Appl
 Qed.
 
 (**********)
-Lemma opp_opp_fct : (f:R->R) (opp_fct (opp_fct f))==f.
-Intro; Unfold opp_fct; Apply fct_eq; Intro; Rewrite Ropp_Ropp; Reflexivity.
-Qed.
-
-
-
-(**********)
 Lemma nonpos_derivative_1 : (f:R->R;pr:(derivable f)) ((x:R) ``(derive_pt f x (pr x))<=0``) -> (decreasing f).
-Intros; Rewrite <- (opp_opp_fct f); Apply increasing_decreasing_opp.
+Intros.
+Cut (h:R)``-(-(f h))==(f h)``.
+Intro.
+Generalize (increasing_decreasing_opp (opp_fct f)).
+Unfold decreasing.
+Unfold opp_fct.
+Intros.
+Rewrite <- (H0 x); Rewrite <- (H0 y).
+Apply H1.
 Cut (x:R)``0<=(derive_pt (opp_fct f) x ((derivable_opp f pr) x))``.
 Intros.
-Apply (nonneg_derivative_1 (opp_fct f) (derivable_opp f pr) H0).
+Replace [x:R]``-(f x)`` with (opp_fct f); [Idtac | Reflexivity].
+Apply (nonneg_derivative_1 (opp_fct f) (derivable_opp f pr) H3).
 Intro.
-Assert H0 := (derive_pt_opp f x (pr x)).
-Cut ``(derive_pt (opp_fct f) x (derivable_pt_opp f x (pr x)))==(derive_pt (opp_fct f) x (derivable_opp f pr x))``.
+Assert H3 := (derive_pt_opp f x0 (pr x0)).
+Cut ``(derive_pt (opp_fct f) x0 (derivable_pt_opp f x0 (pr x0)))==(derive_pt (opp_fct f) x0 (derivable_opp f pr x0))``.
 Intro.
-Rewrite <- H1.
-Rewrite H0.
-Rewrite <- Ropp_O; Apply Rge_Ropp; Apply Rle_sym1; Apply (H x).
+Rewrite <- H4.
+Rewrite H3.
+Rewrite <- Ropp_O; Apply Rge_Ropp; Apply Rle_sym1; Apply (H x0).
 Apply pr_nu.
+Assumption.
+Intro; Ring.
 Qed.
  
 (**********)
@@ -1121,16 +1153,25 @@ Qed.
  
 (**********)
 Lemma negative_derivative : (f:R->R;pr:(derivable f)) ((x:R) ``(derive_pt f x (pr x))<0``)->(strict_decreasing f).
-Intros; Rewrite <- (opp_opp_fct f); Apply strictincreasing_strictdecreasing_opp.
+Intros.
+Cut (h:R)``- (-(f h))==(f h)``.
+Intros.
+Generalize (strictincreasing_strictdecreasing_opp (opp_fct f)).
+Unfold strict_decreasing opp_fct.
+Intros.
+Rewrite <- (H0 x).
+Rewrite <- (H0 y).
+Apply H1; [Idtac | Assumption].
 Cut (x:R)``0<(derive_pt (opp_fct f) x (derivable_opp f pr x))``.
-Intros; EApply positive_derivative; Apply H0.
+Intros; EApply positive_derivative; Apply H3.
 Intro.
-Assert H0 := (derive_pt_opp f x (pr x)).
-Cut ``(derive_pt (opp_fct f) x (derivable_pt_opp f x (pr x)))==(derive_pt (opp_fct f) x (derivable_opp f pr x))``.
+Assert H3 := (derive_pt_opp f x0 (pr x0)).
+Cut ``(derive_pt (opp_fct f) x0 (derivable_pt_opp f x0 (pr x0)))==(derive_pt (opp_fct f) x0 (derivable_opp f pr x0))``.
 Intro.
-Rewrite <- H1; Rewrite H0.
-Rewrite <- Ropp_O; Apply Rlt_Ropp; Apply (H x).
+Rewrite <- H4; Rewrite H3.
+Rewrite <- Ropp_O; Apply Rlt_Ropp; Apply (H x0).
 Apply pr_nu.
+Intro; Ring.
 Qed.
  
 (**********)
