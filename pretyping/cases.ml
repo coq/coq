@@ -115,8 +115,6 @@ type rhs =
       rhs_lift   : int;
       it         : rawconstr }
 
-type pattern_source = DefaultPat of int | RegularPat
-
 type equation =
     { dependencies : constr lifted list;
       patterns     : pattern list; 
@@ -222,9 +220,9 @@ let liftn_ind_data n depth md =
     nrealargs = md.nrealargs;
     nconstr = md.nconstr;
     params = List.map (liftn n depth) md.params;
-    realargs = List.map (liftn n depth) md.realargs;
-    make_arity = md.make_arity;
-    make_constrs = md.make_constrs }
+    realargs = List.map (liftn n depth) md.realargs }
+
+let lift_ind_data n = liftn_ind_data n 1
 
 let liftn_tomatch_type n depth = function
   | IsInd ind_data -> IsInd (liftn_ind_data n depth ind_data)
@@ -245,9 +243,7 @@ let substn_many_ind_data cv depth md =
     nrealargs = md.nrealargs;
     nconstr = md.nconstr;
     params = List.map (substn_many cv depth) md.params;
-    realargs = List.map (substn_many cv depth) md.realargs;
-    make_arity = md.make_arity;
-    make_constrs = md.make_constrs }
+    realargs = List.map (substn_many cv depth) md.realargs }
 
 let substn_many_tomatch v depth = function
   | IsInd ind_data -> IsInd (substn_many_ind_data v depth ind_data)
@@ -501,7 +497,7 @@ let infer_predicate env isevars typs cstrs ind_data =
   let (cclargs,_,typn) = eqns.(ind_data.nconstr -1) in
   if array_for_all (fun (_,_,typ) -> the_conv_x env isevars typn typ) eqns
   then
-    let (sign,_) = ind_data.make_arity ind_data.mind ind_data.params in
+    let (sign,_) = get_arity env !isevars ind_data in
     let pred = lam_it (lift (List.length sign) typn) sign in
     (false,pred) (* true = dependent -- par défaut *)
   else
@@ -559,10 +555,10 @@ let rec extract_predicate = function
   | PrLetIn ((args,None),pred) -> substl args (extract_predicate pred)
   | PrCcl ccl -> ccl
 
-let abstract_predicate ind_data = function
+let abstract_predicate env sigma ind_data = function
   | PrProd _ | PrCcl _ -> anomaly "abstract_predicate: must be some LetIn"
   | PrLetIn ((_,copt),pred) ->
-      let asign,_ = ind_data.make_arity ind_data.mind ind_data.params in
+      let asign,_ = get_arity env sigma ind_data in
       let sign =
 	List.map (fun (na,t) -> (named_hd (Global.env()) t na,t)) asign in
       let dep = copt<> None in
@@ -590,7 +586,7 @@ let specialize_predicate_match tomatchs cs = function
 let find_predicate env isevars p typs cstrs current ind_data =
   let (dep,pred) =
     match p with
-      | Some p -> abstract_predicate ind_data p
+      | Some p -> abstract_predicate env !isevars ind_data p
       | None -> infer_predicate env isevars typs cstrs ind_data in
   let typ = applist (pred, ind_data.realargs) in
   if dep then (pred, applist (typ, [current]), dummy_sort)
@@ -721,7 +717,7 @@ and match_current pb (n,tm) =
 	check_all_variables typ pb.mat;
 	compile (shift_problem pb)
     | IsInd ind_data ->
-	let cstrs = ind_data.make_constrs ind_data.mind ind_data.params in
+	let cstrs = get_constructors pb.env !(pb.isevars) ind_data in
 	let eqns,defaults = group_equations ind_data.mind cstrs pb.mat in
 	if array_for_all ((=) []) eqns
 	then compile (shift_problem pb)
@@ -736,8 +732,9 @@ and match_current pb (n,tm) =
 	  let (pred,typ,s) =
 	    find_predicate pb.env pb.isevars 
 	      pb.pred brtyps cstrs current ind_data in
-	  { uj_val = mkMutCaseA (ci_of_mind (mkMutInd ind_data.mind (*,tags*)))
-		       (*eta_reduce_if_rel*) pred current brvals;
+	  let ci = make_case_info
+		     (lookup_mind_specif ind_data.mind pb.env) None tags in
+	  { uj_val = mkMutCaseA ci (*eta_reduce_if_rel*) pred current brvals;
 	    uj_type = typ;
 	    uj_kind = s }
 
@@ -858,11 +855,11 @@ let coerce_to_indtype typing_fun isevars env matx tomatchl =
 (***********************************************************************)
 (* preparing the elimination predicate if any                          *)
 
-let build_expected_arity isdep tomatchl sort =
+let build_expected_arity env sigma isdep tomatchl sort =
   let cook n = function
     | _,IsInd ind_data ->
-	(build_dependent_inductive ind_data,
-	 fst (ind_data.make_arity ind_data.mind ind_data.params))
+	let is = lift_ind_data n ind_data in
+	(build_dependent_inductive is, fst (get_arity env sigma is))
     | _,NotInd _ -> anomaly "Should have been catched in case_dependent"
   in
   let rec buildrec n = function
@@ -870,7 +867,7 @@ let build_expected_arity isdep tomatchl sort =
     | tm::ltm ->
 	let (ty1,aritysign) = cook n tm in
 	let rec follow n = function
-	  | (na,ty2)::sign -> DOP2(Prod,lift n ty2,DLAM(na,follow (n+1) sign))
+	  | (na,ty2)::sign -> DOP2(Prod,ty2,DLAM(na,follow (n+1) sign))
 	  | _ ->
 	      if isdep then DOP2(Prod,ty1,DLAM(Anonymous,buildrec (n+1) ltm))
 	      else buildrec n ltm
@@ -930,9 +927,9 @@ let case_dependent env sigma loc predj tomatchs =
   let ndepv = List.map nb_dep_ity tomatchs in
   let sum = List.fold_right (fun i j -> i+j)  ndepv 0 in
   let depsum = sum + List.length tomatchs in
-  if n = sum then (false,build_expected_arity true tomatchs sort)
+  if n = sum then (false,build_expected_arity env sigma false tomatchs sort)
   else if n = depsum
-  then (true,build_expected_arity true tomatchs sort)
+  then (true,build_expected_arity env sigma true tomatchs sort)
   else error_wrong_predicate_arity_loc loc CCI env etapred sum depsum
 
 let prepare_predicate typing_fun isevars env tomatchs = function

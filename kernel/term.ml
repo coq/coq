@@ -13,6 +13,13 @@ open Univ
 
 type existential_key = int
 
+type pattern_source = DefaultPat of int | RegularPat
+type case_style = PrintLet | PrintIf | PrintCases
+type case_printing =
+    inductive_path * identifier array * int
+    * case_style option * pattern_source array
+type case_info = int array * case_printing
+
 type 'a oper = 
   (* DOP0 *)
   | Meta of int
@@ -31,8 +38,6 @@ type 'a oper =
   | XTRA of string
       (* an extra slot, for putting in whatever sort of
          operator we need for whatever sort of application *)
-
-and case_info = inductive_path
 
 (* Sorts. *)
 
@@ -457,8 +462,6 @@ let op_of_mind = function
 let args_of_mind = function
   | DOPN(MutInd _,args) -> args
   | _ -> anomaly "args_of_mind called with bad args"
-
-let ci_of_mind = op_of_mind
 
 (* Destructs a constructor *)
 let destMutConstruct = function
@@ -1325,8 +1328,8 @@ module Hoper =
         | Abst sp -> Abst (hsp sp)
         | MutInd (sp,i) -> MutInd (hsp sp, i)
         | MutConstruct ((sp,i),j) -> MutConstruct ((hsp sp,i),j)
-        | MutCase(sp,i) -> MutCase(hsp sp, i)
-        | t -> t 
+        | MutCase ci as t -> t (* TO DO: extract ind_sp *)
+        | t -> t
       let equal o1 o2 =
         match (o1,o2) with
           | (XTRA s1, XTRA s2) -> s1==s2
@@ -1336,10 +1339,10 @@ module Hoper =
           | (MutInd (sp1,i1), MutInd (sp2,i2)) -> sp1==sp2 & i1=i2
           | (MutConstruct((sp1,i1),j1), MutConstruct((sp2,i2),j2)) ->
               sp1==sp2 & i1=i2 & j1=j2
-          | (MutCase(sp1,i1),MutCase(sp2,i2)) -> sp1==sp2 & i1=i2
+          | (MutCase ci1,MutCase ci2) -> ci1==ci2 (* A simplification ?? *)
           | _ -> o1=o2
       let hash = Hashtbl.hash
-    end)
+    end)    
 
 module Hconstr =
   Hashcons.Make(

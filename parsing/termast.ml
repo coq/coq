@@ -390,6 +390,7 @@ let ids_of_env = Sign.ids_of_env
 (* These functions implement a light form of Termenv.mind_specif_of_mind    *)
 (* specially for handle Cases printing; they respect arities but not typing *)
 
+(*
 let mind_specif_of_mind_light (sp,tyi) =
   let mib = Global.lookup_mind sp in
   (mib,mind_nth_type_packet mib tyi)
@@ -407,7 +408,7 @@ let rec remove_params n t =
       | DOP2(Prod,_,DLAM(_,c)) -> remove_params (n-1) c
       | DOP2(Cast,c,_)         -> remove_params n c
       | _ -> anomaly "remove_params : insufficiently quantified"
-	    
+
 let rec get_params = function
   | DOP2(Prod,_,DLAM(x,c)) -> x::(get_params c)
   | DOP2(Cast,c,_)         -> get_params c
@@ -421,6 +422,7 @@ let sp_of_spi ((sp,_) as spi) =
   let (_,mip) = mind_specif_of_mind_light spi in
   let (pa,_,k) = repr_path sp in 
   make_path pa (mip.mind_typename) k
+*)	    
 
 let bdize_app c al =
   let impl =
@@ -564,32 +566,25 @@ let old_bdize at_top env t =
 		     let pred = bdrec avoid env p in
 		     let bl' = array_map_to_list (bdrec avoid env) bl in
 		     ope("MUTCASE",pred::tomatch::bl')
-		 | Some *) indsp ->
-		     let (mib,mip as lmis) = 
-		       mind_specif_of_mind_light indsp in
-		     let lc = lc_of_lmis lmis in
-		     let lcparams = Array.map get_params lc in
-		     let k = (nb_prod mip.mind_arity.body) - 
-			     mib.mind_nparams in
+		 | Some *) (consnargsl,(_,considl,k,style,tags) as ci) ->
 		     let pred = 
-		       if synth_type & computable p k & lcparams <> [||] then
+		       if synth_type & computable p k & considl <> [||] then
 			 (str "SYNTH")
 		       else 
 			 bdrec avoid env p 
 		     in
-		     if Detyping.force_if indsp then 
+		     if Detyping.force_if ci then 
 		       ope("FORCEIF", [ pred; tomatch;
 					bdrec avoid env bl.(0); 
 					bdrec avoid env bl.(1) ])
 		     else
-		       let idconstructs = mip.mind_consnames in
 		       let asttomatch = ope("TOMATCH", [tomatch]) in
 		       let eqnv =
-			 array_map3 (bdize_eqn avoid env) idconstructs
-			   lcparams bl in
+			 array_map3 (bdize_eqn avoid env)
+			   considl consnargsl bl in
 		       let eqnl = Array.to_list eqnv in
 		       let tag =
-			 if Detyping.force_let indsp then 
+			 if Detyping.force_let ci then 
 			   "FORCELET" 
 			 else 
 			   "CASES"
@@ -658,12 +653,19 @@ let old_bdize at_top env t =
 	       in 
 	       ope("COFIX", (nvar (string_of_id f))::listdecl))
 
-  and bdize_eqn avoid env constructid construct_params branch =
+  and bdize_eqn avoid env constructid nargs branch =
     let print_underscore = Detyping.force_wildcard () in
     let cnvar = nvar (string_of_id constructid) in
     let rec buildrec nvarlist avoid env = function
 
-	_::l, DOP2(Lambda,_,DLAM(x,b))
+      | 0, b
+	-> let pattern =
+          if nvarlist = [] then cnvar
+          else ope ("PATTCONSTRUCT", cnvar::(List.rev nvarlist)) in
+	   let action = bdrec avoid env b in
+	     ope("EQN", [action; pattern])
+
+      | n, DOP2(Lambda,_,DLAM(x,b))
 	-> let x'=
           if not print_underscore or (dependent (Rel 1) b) then x 
           else Anonymous in
@@ -671,29 +673,22 @@ let old_bdize at_top env t =
            let new_env = (add_rel (Name id,()) env) in
            let new_avoid = id::avoid in
            let new_nvarlist = (nvar (string_of_id id))::nvarlist in
-             buildrec new_nvarlist new_avoid new_env (l,b)
+             buildrec new_nvarlist new_avoid new_env (n-1,b)
 	       
-      | l   , DOP2(Cast,b,_)     (* Oui, il y a parfois des cast *)
-	-> buildrec nvarlist avoid env (l,b)
+      | n, DOP2(Cast,b,_)     (* Oui, il y a parfois des cast *)
+	-> buildrec nvarlist avoid env (n,b)
 	  
-      | x::l, b (* eta-expansion : n'arrivera plus lorsque tous les
+      | n, b (* eta-expansion : n'arrivera plus lorsque tous les
                    termes seront construits à partir de la syntaxe Cases *)
 	-> (* nommage de la nouvelle variable *)
-          let id = next_name_away_with_default "x" x avoid in
+          let id = next_ident_away (id_of_string "x") avoid in
 	  let new_nvarlist = (nvar (string_of_id id))::nvarlist in
           let new_env = (add_rel (Name id,()) env) in
           let new_avoid = id::avoid in
           let new_b = DOPN(AppL,[|lift 1 b; Rel 1|]) in
-            buildrec new_nvarlist new_avoid new_env (l,new_b)
+            buildrec new_nvarlist new_avoid new_env (n-1,new_b)
 
-      | []  , b
-	-> let pattern =
-          if nvarlist = [] then cnvar
-          else ope ("PATTCONSTRUCT", cnvar::(List.rev nvarlist)) in
-	   let action = bdrec avoid env b in
-	     ope("EQN", [action; pattern])
-
-    in buildrec [] avoid env (construct_params,branch)
+    in buildrec [] avoid env (nargs,branch)
 
   and factorize_binder n avoid env oper na ty c =
     let (env2, avoid2,na2) =

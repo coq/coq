@@ -53,14 +53,14 @@ let rec type_of env cstr=
     | IsMutConstruct cstr -> 
         let (typ,kind) = destCast (type_of_constructor env sigma cstr) in typ
     | IsMutCase (_,p,c,lf) ->
-        let {realargs=args;make_arity=make_arity;params=params;mind=mind} =
+        let ind_data =
           try try_mutind_of env sigma (type_of env c)
           with Induc -> anomaly "type_of: Bad inductive" in
-	let (aritysign,_) = make_arity mind params in
+	let (aritysign,_) = get_arity env sigma ind_data in
 	let (psign,_) = splay_prod env sigma (type_of env p) in
         let al =
 	  if List.length psign > List.length aritysign
-	  then args@[c] else args in
+	  then ind_data.realargs@[c] else ind_data.realargs in
         whd_betadeltaiota env sigma (applist (p,al))
     | IsLambda (name,c1,c2) ->
         let var = make_typed c1 (sort_of env c1) in

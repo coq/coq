@@ -83,7 +83,7 @@ let transform_rec loc env sigma cl (ct,pt) =
     error_number_branches_loc loc CCI env c ct expn;
   if is_recursive [mispec.mis_tyi] recargs then
     let (dep,_) = find_case_dep_nparams env sigma (c,p) appmind pt in 
-    let ntypes = mis_nconstr mispec 
+    let ntypes = mis_ntypes mispec (* was mis_nconstr !?! *)
     and tyi = mispec.mis_tyi 
     and nparams = mis_nparams mispec in
     let depFvec = Array.create ntypes (None : (bool * constr) option) in 
@@ -96,6 +96,7 @@ let transform_rec loc env sigma cl (ct,pt) =
       hnf_prod_appvect env sigma "make_branch" (mis_arity mispec) vargs in
     let lnames,_ = splay_prod env sigma realar in 
     let nar = List.length lnames in
+    let ci = make_default_case_info mispec in
     let branches = 
       array_map3
 	(fun f t reca -> 
@@ -110,8 +111,7 @@ let transform_rec loc env sigma cl (ct,pt) =
 	(lambda_create env
 	   (appvect (mI,Array.append (Array.map (lift (nar+1)) vargs)
                        (rel_vect 0 nar)),
-            mkMutCaseA (ci_of_mind mI) 
-              (lift (nar+2) p) (Rel 1) branches))
+            mkMutCaseA ci (lift (nar+2) p) (Rel 1) branches))
         (lift_context 1 lnames) 
     in
     if noccurn 1 deffix then 
@@ -136,8 +136,11 @@ let transform_rec loc env sigma cl (ct,pt) =
 		       DLAMV(Name(id_of_string "F"),[|deffix|])|])
       in 
       applist (fix,realargs@[c])
-  else 
-    mkMutCaseA (ci_of_mind mI) p c lf
+  else
+    let lnames,_ = splay_prod env sigma (mis_arity mispec) in 
+    let nar = List.length lnames in
+    let ci = make_default_case_info mispec in
+    mkMutCaseA ci p c lf
 
 (***********************************************************************)
 let ctxt_of_ids ids =
@@ -411,7 +414,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
   let evalct = nf_ise1 !isevars cj.uj_type
   and evalPt = nf_ise1 !isevars pj.uj_type in
 
-  let (mind,bty,rsty) =
+  let (_,bty,rsty) =
     Indrec.type_rec_branches isrec env !isevars evalct evalPt pj.uj_val cj.uj_val in
   if Array.length bty <> Array.length lf then
     wrong_number_of_cases_message loc env isevars (cj.uj_val,evalct)
@@ -428,7 +431,8 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
       then 
 	let rEC = Array.append [|pj.uj_val; cj.uj_val|] lfv in
 	transform_rec loc env !isevars rEC (evalct,evalPt)
-      else let ci = ci_of_mind mind in
+      else
+	let ci = make_default_case_info (lookup_mind_specif mind env) in
 	mkMutCaseA ci pj.uj_val cj.uj_val (Array.map (fun j-> j.uj_val) lfj) in
 
        {uj_val = v;

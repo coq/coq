@@ -13,6 +13,14 @@ open Generic
 
 type existential_key = int
 
+type pattern_source = DefaultPat of int | RegularPat
+type case_style = PrintLet | PrintIf | PrintCases
+type case_printing =
+    inductive_path * identifier array * int
+    * case_style option * pattern_source array
+(* the integer is the number of real args, needed for reduction *)
+type case_info = int array * case_printing
+
 type 'a oper = 
   | Meta of int
   | Sort of 'a
@@ -25,8 +33,6 @@ type 'a oper =
   | Fix of int array * int
   | CoFix of int
   | XTRA of string
-
-and case_info = inductive_path
 
 (*s The sorts of CCI. *)
 
@@ -300,7 +306,6 @@ val args_of_abst : constr -> constr array
 val destMutInd : constr -> inductive
 val op_of_mind : constr -> inductive_path
 val args_of_mind : constr -> constr array
-val ci_of_mind : constr -> case_info
 
 (* Destructs a constructor *)
 val destMutConstruct : constr -> constructor
