@@ -107,7 +107,12 @@ let pr_comments = function
 let rec vernac_com interpfun (loc,com) =
   let rec interp = function
     | VernacLoad (verbosely, fname) ->
-        read_vernac_file verbosely (make_suffix fname ".v")
+        let ch = !chan_translate in
+        begin try
+          chan_translate := stdout;
+          read_vernac_file verbosely (make_suffix fname ".v")
+        with _ -> () end;
+        chan_translate := ch
 
     | VernacList l -> List.iter (fun (_,v) -> interp v) l
 
