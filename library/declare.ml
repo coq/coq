@@ -177,6 +177,7 @@ let (in_constant, out_constant) =
 
 let hcons_constant_declaration = function
   | DefinitionEntry ce ->
+      let (hcons1_constr,_) = hcons_constr (hcons_names()) in
       DefinitionEntry
        { const_entry_body = hcons1_constr ce.const_entry_body;
 	 const_entry_type = option_app hcons1_constr ce.const_entry_type;
