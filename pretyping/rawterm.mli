@@ -103,6 +103,8 @@ val map_rawconstr_with_binders_loc : loc ->
   ('a -> rawconstr -> rawconstr) -> 'a -> rawconstr -> rawconstr
 *)
 
+val occur_rawconstr : identifier -> rawconstr -> bool
+
 val loc_of_rawconstr : rawconstr -> loc
 
 val subst_raw : Names.substitution -> rawconstr -> rawconstr

@@ -582,37 +582,6 @@ let extract_rhs pb =
 
 (**********************************************************************)
 (* Functions to deal with matrix factorization *)
-let occur_rawconstr id =
-  let rec occur = function
-    | RVar (loc,id') -> id = id'
-    | RApp (loc,f,args) -> (occur f) or (List.exists occur args)
-    | RLambda (loc,na,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
-    | RProd (loc,na,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
-    | RLetIn (loc,na,b,c) -> (occur b) or ((na <> Name id) & (occur c))
-    | RCases (loc,(tyopt,rtntypopt),tml,pl) ->
-	(occur_option tyopt) or (occur_option !rtntypopt)
-        or (List.exists (fun (tm,_) -> occur tm) tml)
-	or (List.exists occur_pattern pl)
-    | ROrderedCase (loc,b,tyopt,tm,bv,_) -> 
-	(occur_option tyopt) or (occur tm) or (array_exists occur bv)
-    | RLetTuple (loc,nal,rtntyp,b,c) -> 
-	occur_return_type rtntyp id
-        or (occur b) or (not (List.mem (Name id) nal) & (occur c))
-    | RIf (loc,c,rtntyp,b1,b2) -> 
-	occur_return_type rtntyp id or (occur c) or (occur b1) or (occur b2)
-    | RRec (loc,fk,idl,tyl,bv) ->
-	(array_exists occur tyl) or
-	(not (array_exists (fun id2 -> id=id2) idl) & array_exists occur bv)
-    | RCast (loc,c,t) -> (occur c) or (occur t)
-    | (RSort _ | RHole _ | RRef _ | REvar _ | RPatVar _ | RDynamic _) -> false
-
-  and occur_pattern (loc,idl,p,c) = not (List.mem id idl) & (occur c)
-
-  and occur_option = function None -> false | Some p -> occur p
-
-  and occur_return_type (na,tyopt) id = na <> Name id & occur_option tyopt
-
-  in occur
 
 let occur_in_rhs na rhs =
   match na with

@@ -525,7 +525,7 @@ let rec pretype tycon env isevars lvar = function
                 if List.for_all
                   (function
                     | Anonymous -> true
-                    | Name id -> not (Cases.occur_rawconstr id rtntyp)) nal
+                    | Name id -> not (occur_rawconstr id rtntyp)) nal
                 then (* No dependency in realargs *)
                   None
                 else

@@ -41,8 +41,6 @@ type ml_case_error =
 
 exception NotInferable of ml_case_error
 
-val occur_rawconstr : identifier -> rawconstr -> bool
-
 val pred_case_ml : (* raises [NotInferable] if not inferable *)
   env -> evar_map -> bool -> inductive_type -> int * types -> constr 
 
