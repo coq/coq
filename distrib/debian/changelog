@@ -1,0 +1,34 @@
+coq (7.0.0-1) unstable; urgency=low
+  * New maintainer Judicaël Courant <Judicael.Courant@lri.fr>.
+  * New upstream version.
+  * Added Build-Depends (closes: Bug#70273).
+  * Cleaned up dependencies.
+  * Made compilation non-interactive (closes: Bug#92461).
+  
+
+ -- Judicaël Courant <Judicael.Courant@lri.fr>  Tue,  17 Apr 2001 19:24:34 +0200
+
+coq (6.3.1-3) unstable; urgency=low
+
+  * Patched to allow use of ocaml3.
+
+ -- Fernando Sanchez <fer@debian.org>  Fri,  7 Jul 2000 08:05:47 +0200
+
+coq (6.3.1-2) unstable; urgency=low
+
+  * Some changes to allow successful porting of this package:
+  * Added checking for ocamlopt.opt before running ./configure with -opt,
+    and configure without it if it is not present for this architecture.
+  * Added checking for ocamlopt before making world-opt.
+
+ -- Fernando Sanchez <fer@debian.org>  Sat, 18 Dec 1999 16:45:01 +0100
+
+coq (6.3.1-1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Fernando Sanchez <fer@debian.org>  Fri,  3 Dec 1999 22:06:04 +0100
+
+Local variables:
+mode: debian-changelog
+End:
