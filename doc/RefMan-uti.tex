@@ -166,11 +166,13 @@ the sources of \Coq{} somewhere and have an environment variable named
 % \end{description}
 
 
-\section{\Coq\ and \LaTeX}\label{Latex}
-  \index{Latex@{\LaTeX}}
+\section{Documenting \Coq\ files with coqdoc}
+  \index{Coqdoc@{\sf coqdoc}}
 
-\subsection{Embedded \Coq\ phrases inside \LaTeX\ documents}
-  \index{Coqtex@{\tt coq-tex}}
+\input{./coqdoc}
+
+\section{Embedded \Coq\ phrases inside \LaTeX\ documents}\label{Latex}
+  \index{Coqtex@{\tt coq-tex}}\index{Latex@{\LaTeX}}
 
 When writing a documentation about a proof development, one may want
 to insert \Coq\ phrases inside a \LaTeX\ document, possibly together with
@@ -190,23 +192,6 @@ See the man page of {\tt coq-tex} for more details.
 
 \medskip\noindent {\bf Remark.} This Reference Manual and the Tutorial
 have been completely produced with {\tt coq-tex}.
-
-
-\subsection{Documenting \Coq\ files}
-  \index{Coqdoc@{\tt coqdoc}}
-
-A nice documentation can be produced from \Coq\ sources using the 
-documentation tool \verb!coqdoc!.
-The task of \verb!coqdoc! is
-\begin{enumerate}
-\item to produce a nice \LaTeX\ and/or HTML document from the Coq
-  sources, readable for a human and not only for the proof assistant; 
-\item to help the user navigating in his own (or third-party) sources. 
-\end{enumerate}
-
-\verb!coqdoc! is developped and distributed independently of the
-system \Coq. It is freely available, with sources, binaries and a full
-documentation, at \verb!www.lri.fr/~filliatr/coqdoc/!.
 
 
 \section{\Coq\ and \emacs}\label{Emacs}\index{Emacs}
