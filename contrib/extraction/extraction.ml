@@ -113,6 +113,10 @@ let id_of_name = function
   | Anonymous -> id_of_string "x"
   | Name id   -> id
 
+let s_of_tmltype = function 
+  | Tmltype (_,s,_) -> s 
+  | _ -> assert false
+
 (* [list_of_ml_arrows] applied to the ML type [a->b->]\dots[z->t]
    returns the list [[a;b;...;z]]. It is used when making the ML types
    of inductive definitions. We also suppress [Prop] parts. *)
@@ -232,6 +236,7 @@ let decompose_lam_eta n env c =
 
 let rec abstract_n n a = 
   if n = 0 then a else MLlam (anonymous, ml_lift 1 (abstract_n (n-1) a))
+
 
 (*s Eta-expansion to bypass ML type inference limitations (due to possible
     polymorphic references, the ML type system does not generalize all
@@ -437,7 +442,7 @@ and extract_type_app env (r,sc,vlc) vl args =
     List.fold_right 
       (fun (v,a) ((args,vl) as acc) -> match v with
 	 | _, NotArity -> acc
-	 | Logic, Arity -> acc (* TO JUSTIFY *)
+	 | Logic, Arity -> acc
 	 | Info, Arity -> match extract_type_rec_info env a vl [] with
 	     | Tarity -> (Miniml.Tarity :: args, vl) 
   	           (* we pass a dummy type [arity] as argument *)
@@ -486,68 +491,86 @@ and extract_term_info_with_type env ctx c t =
    match kind_of_term c with
      | IsLambda (n, t, d) ->
 	 let v = v_of_t env t in 
-	  let env' = push_rel_assum (n,t) env in
-	  let ctx' = (snd v = NotArity) :: ctx in
-	  let d' = extract_term_info env' ctx' d in
-	  (* If [d] was of type an arity, [c] too would be so *)
-	  (match v with
-	     | _,Arity -> d'
-	     | l,NotArity -> 
-		 let id = if l = Logic then prop_name else id_of_name n in
-		 MLlam (id, d'))
-      | IsRel n ->
-	  (* TODO : magic or not *) 
-	  MLrel (renum_db ctx n)
-      | IsApp (f,a) ->
-  	  let tf = type_of env f in
-          let s = signature_of_application env f tf a in  
-      	  extract_app env ctx (f,tf,s) (Array.to_list a) 
-      | IsConst (sp,_) ->
-	  MLglob (ConstRef sp)
-      | IsMutConstruct (cp,_) ->
-	  let (s,n) = signature_of_constructor cp in
-	  let rec abstract rels i = function
-	    | [] -> 
-		let rels = List.rev_map (fun x -> MLrel (i-x)) rels in
-		if (is_singleton_constructor cp) then 
-		  match rels with 
-		    | [var]->var
-		    | _ -> assert false
-		else
-		  MLcons (ConstructRef cp, rels)
-	    | (Info,NotArity) :: l -> 
-		MLlam (id_of_name Anonymous, abstract (i :: rels) (succ i) l)
-	    | (Logic,NotArity) :: l ->
-		MLlam (id_of_name Anonymous, abstract rels (succ i) l)
-	    | (_,Arity) :: l -> 
-		abstract rels i l
-	  in
-	  abstract_n n (abstract [] 1 s)
-      | IsMutCase ((ni,(ip,cnames,_,_,_)),p,c,br) ->
-	  extract_case env ctx ni ip cnames p c br
-      | IsFix ((_,i),recd) -> 
-	  extract_fix env ctx i recd
-      | IsCoFix (i,recd) -> 
-	  extract_fix env ctx i recd  
-      | IsLetIn (n, c1, t1, c2) ->
-	  let id = id_of_name n in
-	  let env' = push_rel_def (n,c1,t1) env in
-	  let tag = v_of_t env t1 in
-	  (match tag with
-	     | (Info, NotArity) -> 
-		 let c1' = extract_term_info_with_type env ctx c1 t1 in
-		 let c2' = extract_term_info env' (true :: ctx) c2 in
-		 (* If [c2] was of type an arity, [c] too would be so *)
-		 MLletin (id,c1',c2')
-	     | _ ->
-		 extract_term_info env' (false :: ctx) c2)
-      | IsCast (c, _) ->
-	  extract_term_info_with_type env ctx c t
-      | IsMutInd _ | IsProd _ | IsSort _ | IsVar _ | IsMeta _ | IsEvar _ ->
-	  assert false 
-	    
+	 let env' = push_rel_assum (n,t) env in
+	 let ctx' = (snd v = NotArity) :: ctx in
+	 let d' = extract_term_info env' ctx' d in
+	 (* If [d] was of type an arity, [c] too would be so *)
+	 (match v with
+	    | _,Arity -> d'
+	    | Logic,NotArity -> MLlam (prop_name, d')
+	    | Info,NotArity -> MLlam (id_of_name n, d'))
+     | IsLetIn (n, c1, t1, c2) ->
+	 let id = id_of_name n in
+	 let env' = push_rel_def (n,c1,t1) env in
+	 let tag = v_of_t env t1 in
+	 (match tag with
+	    | (Info, NotArity) -> 
+		let c1' = extract_term_info_with_type env ctx c1 t1 in
+		let c2' = extract_term_info env' (true :: ctx) c2 in
+		(* If [c2] was of type an arity, [c] too would be so *)
+		MLletin (id,c1',c2')
+	    | _ ->
+		extract_term_info env' (false :: ctx) c2)
+     | IsRel n ->
+	 MLrel (renum_db ctx n)
+     | IsConst (sp,_) ->
+	 MLglob (ConstRef sp)
+     | IsApp (f,a) ->
+      	 extract_app env ctx f a 
+     | IsMutConstruct (cp,_) ->
+	 abstract_constructor cp
+     | IsMutCase ((ni,(ip,cnames,_,_,_)),p,c,br) ->
+	 extract_case env ctx ni ip cnames p c br
+     | IsFix ((_,i),recd) -> 
+	 extract_fix env ctx i recd
+     | IsCoFix (i,recd) -> 
+	 extract_fix env ctx i recd  
+     | IsCast (c, _) ->
+	 extract_term_info_with_type env ctx c t
+     | IsMutInd _ | IsProd _ | IsSort _ | IsVar _ | IsMeta _ | IsEvar _ ->
+	 assert false 
+
+(* Abstraction of an inductive constructor: 
+   \begin{itemize}
+   \item In ML, contructor arguments are uncurryfied. 
+   \item We managed to suppress logical parts inside inductive definitions,
+   but they must appears outside (for partial applications for instance)
+   \item We also suppressed all Coq parameters to the inductives, since
+   they are fixed, and thus are not used for the computation.
+   \end{itemize}
+
+   The following code deals with those 3 questions: from constructor [C], it 
+   produces: 
+
+   [fun ]$p_1 \ldots p_n ~ x_1 \ldots x_n $[-> C (]$x_{i_1}, \ldots, x_{i_k}$[)].
+   This ML term will be reduced later on when applied, see [mlutil.ml].
+
+   In the special case of a informative singleton inductive, [C] is identity *)
+
+and abstract_constructor cp  =
+  let s,n = signature_of_constructor cp in 
+  let rec abstract rels i = function
+    | [] -> 
+	let rels = List.rev_map (fun x -> MLrel (i-x)) rels in
+	if (is_singleton_constructor cp) then 
+	  match rels with 
+	    | [var]->var
+	    | _ -> assert false
+	else
+	  MLcons (ConstructRef cp, rels)
+    | (Info,NotArity) :: l -> 
+	MLlam (id_of_name Anonymous, abstract (i :: rels) (succ i) l)
+    | (Logic,NotArity) :: l ->
+	MLlam (id_of_name Anonymous, abstract rels (succ i) l)
+    | (_,Arity) :: l -> 
+	abstract rels i l
+  in
+  abstract_n n (abstract [] 1 s)
+
+(* Extraction of a case *)
+
 and extract_case env ctx ni ip cnames p c br = 
-  let extract_branch_aux j b = 	  
+  let extract_branch_1 j b = 	  
     let (rb,e) = decompose_lam_eta ni.(j) env b in
     let lb = List.rev rb in
     let env' = push_rels_assum rb env in
@@ -560,12 +583,12 @@ and extract_case env ctx ni ip cnames p c br =
       | Emlterm a -> a
     in (lb,e')
   in
-  let extract_branch j b =
+  let extract_branch_2 j b =
     let cp = (ip,succ j) in
     let (s,_) = signature_of_constructor cp in
     assert (List.length s = ni.(j));
     (* number of arguments, without parameters *)
-    let (lb, e') = extract_branch_aux j b in
+    let (lb, e') = extract_branch_1 j b in
     let ids = 
       List.fold_right 
 	(fun (v,(n,_)) acc -> 
@@ -581,23 +604,25 @@ and extract_case env ctx ni ip cnames p c br =
 	   begin
 	     (* informative singleton case *)
 	     assert (Array.length br = 1);
-	     let (_,ids,e') = extract_branch 0 br.(0) in
+	     let (_,ids,e') = extract_branch_2 0 br.(0) in
 	     assert (List.length ids = 1);
 	     MLletin (List.hd ids,a,e')
 	   end
 	 else
-	   MLcase (a, Array.mapi extract_branch br)
+	   MLcase (a, Array.mapi extract_branch_2 br)
      | Rprop -> (* Logical singleton elimination *)
 	 assert (Array.length br = 1);
-	 snd (extract_branch_aux 0 br.(0)))
+	 snd (extract_branch_1 0 br.(0)))
   
+(* Extraction of a (co)-fixpoint *)
+
 and extract_fix env ctx i (fi,ti,ci as recd) = 
   let n = Array.length ti in
-  let env' = push_rec_types recd env in
   let ti' = Array.mapi lift ti in 
-  let lb =
-    Array.to_list
-      (array_map2_i (fun i na t -> (na, type_app (lift i) t)) fi ti) in
+  (* QUESTION: ou (fun i -> type_app (lift i)) a la place de lift ?*)
+  let lb = Array.to_list (array_map2 (fun a b -> (a,b)) fi ti') in
+  (* QUESTION: vaut-il mieux un combine ou un (tolist o map2) *)
+  let env' = push_rels_assum (List.rev lb) env in
   let ctx' = 
     lbinders_fold (fun _ _ v a -> (snd v = NotArity) :: a) ctx env lb in
   let extract_fix_body c t =
@@ -608,10 +633,16 @@ and extract_fix env ctx i (fi,ti,ci as recd) =
   let ei = array_map2 extract_fix_body ci ti in
   MLfix (i, Array.map id_of_name fi, ei)
 
-and extract_app env ctx (f,tyf,sf) args =
-  let nargs = List.length args in
-  assert (List.length sf >= nargs);
-  (* We have reduced type of [f] if needed to ensure this property *)
+(* Auxiliary function dealing with term application. 
+   Precondition: the head [f] is [Info] *)
+
+and extract_app env ctx f args =
+  let tyf = type_of env f in
+  let nargs = Array.length args in
+  let sf = signature_of_application env f tyf args in  
+  assert (List.length sf >= nargs); 
+  (* Cf. postcondition of [signature_of_application]. *)
+  let args = Array.to_list args in 
   let mlargs = 
     List.fold_right 
       (fun (v,a) args -> match v with
@@ -629,18 +660,22 @@ and extract_app env ctx (f,tyf,sf) args =
   let f' = extract_term_info_with_type env ctx f tyf in 
   MLapp (f', mlargs)
 
+(* [signature_of_application] is used to generate a long enough signature.
+   Precondition: the head [f] is [Info].
+   Postcondition: the returned signature is longer than the arguments *)
+    
 and signature_of_application env f t a =
   let nargs = Array.length a in	 	
-  let t = force_n_prod nargs env t  in
+  let t = force_n_prod nargs env t in 
+  (* It does not really ensure that [t] start by [n] products, 
+     but it reduces as much as possible *)
   let nbp = nb_prod t in
-  let s = match extract_type env t with
-    | Tmltype (_,s,_) -> s	
-    | Tarity -> assert false (* Cf. precondition *)
-    | Tprop -> assert false
-  in 
+  let s = s_of_tmltype (extract_type env t) in
+  (* Cf precondition: [t] gives a [Tmltype] *)
   if nbp >= nargs then 
     s
   else 
+    (* This case can really occur. Cf [test_extraction.v]. *)
     let f' = mkApp (f, Array.sub a 0 nbp) in 
     let a' = Array.sub a nbp (nargs-nbp) in 
     let t' = type_of env f' in
