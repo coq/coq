@@ -374,7 +374,7 @@ let case_then_using tac predicate (indbindings,elimbindings) c gl =
   let (ity,_,_,t) = reduce_to_ind gl (pf_type_of gl c) in
   let sigma = project gl in 
   let sort  = sort_of_goal gl  in
-  let elim  = Indrec.make_case_gen sigma ity sort in  
+  let elim  = Indrec.make_case_gen (pf_env gl) sigma ity sort in  
   general_elim_then_using 
     elim case_sign tac predicate (indbindings,elimbindings) c gl
 
@@ -383,7 +383,7 @@ let case_nodep_then_using tac predicate (indbindings,elimbindings) c gl =
   let (ity,_,_,t) = reduce_to_ind gl (pf_type_of gl c) in
   let sigma = project gl in 
   let sort  = sort_of_goal gl  in
-  let elim  = Indrec.make_case_nodep sigma ity sort in  
+  let elim  = Indrec.make_case_nodep (pf_env gl) sigma ity sort in  
   general_elim_then_using 
     elim case_sign tac predicate (indbindings,elimbindings) c gl
 

@@ -26,6 +26,8 @@ type type_error =
   | IllFormedRecBody of std_ppcmds * name list * int * constr array
   | IllTypedRecBody of int * name list * unsafe_judgment array 
       * typed_type array
+  | NotInductive of constr
+  | MLCase of string * constr * constr * constr * constr
 
 exception TypeError of path_kind * context * type_error
 
@@ -71,4 +73,8 @@ let error_ill_formed_rec_body k env str lna i vdefs =
 let error_ill_typed_rec_body k env i lna vdefj vargs =
   raise (TypeError (k, context env, IllTypedRecBody (i,lna,vdefj,vargs)))
 
+let error_not_inductive k env c =
+  raise (TypeError (k, context env, NotInductive c))
 
+let error_ml_case k env mes c ct br brt =
+  raise (TypeError (k, context env, MLCase (mes,c,ct,br,brt)))

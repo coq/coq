@@ -2,6 +2,7 @@
 (* $Id$ *)
 
 (*i*)
+open Pp
 open Names
 open Generic
 (*i*)
@@ -38,6 +39,8 @@ type sorts =
 
 val mk_Set  : sorts
 val mk_Prop : sorts
+
+val print_sort : sorts -> std_ppcmds
 
 (*s The type [constr] of the terms of CCI
   is obtained by instanciating the generic terms (type [term], 

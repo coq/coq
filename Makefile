@@ -56,7 +56,8 @@ PROOFS=proofs/typing_ev.cmo proofs/tacred.cmo \
 
 TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/nbtermdn.cmo tactics/stock.cmo tactics/pattern.cmo \
-	tactics/wcclausenv.cmo tactics/tacticals.cmo \
+	tactics/wcclausenv.cmo tactics/tacticals.cmo tactics/tactics.cmo \
+        tactics/tacentries.cmo tactics/hiddentac.cmo
 
 PRETYPING=pretyping/astterm.cmo
 

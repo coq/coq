@@ -175,7 +175,7 @@ let global_reference kind id =
 let is_global id =
   try 
     let osp = Nametab.sp_of_id CCI id in
-    prefix_of (dirpath osp) (Lib.cwd())
+    list_prefix_of (dirpath osp) (Lib.cwd())
   with Not_found -> 
     false
 

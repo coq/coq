@@ -48,4 +48,3 @@ val mind_arity : constr -> constr
 
 val mind_lc_without_abstractions : constr -> constr array
 
-

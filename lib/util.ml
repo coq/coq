@@ -73,7 +73,7 @@ let list_chop n l =
   let rec chop_aux acc = function
     | (0, l2) -> (List.rev acc, l2)
     | (n, (h::t)) -> chop_aux (h::acc) (pred n, t)
-    | (_, []) -> failwith "chop_list"
+    | (_, []) -> failwith "list_chop"
   in 
   chop_aux [] (n,l)
 
@@ -109,8 +109,8 @@ let list_fold_left_i f =
   let rec it_list_f i a = function
     | [] -> a 
     | b::l -> it_list_f (i+1) (f i a b) l
- in 
- it_list_f 
+  in 
+  it_list_f 
 
 let list_for_all_i p = 
   let rec for_all_p i = function
@@ -182,6 +182,14 @@ let list_lastn n l =
   in
   if len < n then failwith "lastn" else aux len l
 
+let list_prefix_of prefl l = 
+  let rec prefrec = function
+    | (h1::t1, h2::t2) -> h1 = h2 && prefrec (t1,t2)
+    | ([], _) -> true
+    | (_, _) -> false
+  in 
+  prefrec (prefl,l)
+    
 (* Arrays *)
 
 let array_exists f v = 
@@ -228,20 +236,16 @@ let array_fold_left2 f a v1 v2 =
   let rec fold a n = 
     if n >= lv1 then a else fold (f a v1.(n) v2.(n)) (succ n)
   in
-  if Array.length v2 <> lv1 then
-    invalid_arg "array_fold_left2"
-  else
-    fold a 0
+  if Array.length v2 <> lv1 then invalid_arg "array_fold_left2";
+  fold a 0
 
 let array_fold_left2_i f a v1 v2 =
   let lv1 = Array.length v1 in
   let rec fold a n = 
     if n >= lv1 then a else fold (f n a v1.(n) v2.(n)) (succ n)
   in
-  if Array.length v2 <> lv1 then
-    invalid_arg "array_fold_left2"
-  else
-    fold a 0
+  if Array.length v2 <> lv1 then invalid_arg "array_fold_left2";
+  fold a 0
 
 let array_fold_left_from n f a v = 
   let rec fold a n =
@@ -256,36 +260,42 @@ let array_fold_right_from n f v a =
   fold n
 
 let array_app_tl v l = 
-  if Array.length v = 0 then 
-    invalid_arg "array_app_tl"
-  else 
-    array_fold_right_from 1 (fun e l -> e::l) v l
+  if Array.length v = 0 then invalid_arg "array_app_tl";
+  array_fold_right_from 1 (fun e l -> e::l) v l
 
 let array_list_of_tl v =
-  if Array.length v = 0 then 
-    invalid_arg "array_list_of_tl"
-  else 
-    array_fold_right_from 1 (fun e l -> e::l) v []
+  if Array.length v = 0 then invalid_arg "array_list_of_tl";
+  array_fold_right_from 1 (fun e l -> e::l) v []
 
 let array_map_to_list f v =
   List.map f (Array.to_list v)
 
 let array_chop n v =
   let vlen = Array.length v in
-  if n > vlen then 
-    failwith "chop_vect"
-  else 
-    (Array.sub v 0 n, Array.sub v n (vlen-n))
+  if n > vlen then failwith "array_chop";
+  (Array.sub v 0 n, Array.sub v n (vlen-n))
 
 let array_map2 f v1 v2 =
-  if Array.length v1 <> Array.length v2 then
-    invalid_arg "map2_vect"
-  else if Array.length v1 == 0 then 
+  if Array.length v1 <> Array.length v2 then invalid_arg "array_map2";
+  if Array.length v1 == 0 then 
     [| |] 
   else begin
     let res = Array.create (Array.length v1) (f v1.(0) v2.(0)) in
     for i = 1 to pred (Array.length v1) do
       res.(i) <- f v1.(i) v2.(i)
+    done;
+    res
+  end
+
+let array_map3 f v1 v2 v3 =
+  if Array.length v1 <> Array.length v2 ||
+     Array.length v1 <> Array.length v3 then invalid_arg "array_map3";
+  if Array.length v1 == 0 then 
+    [| |] 
+  else begin
+    let res = Array.create (Array.length v1) (f v1.(0) v2.(0) v3.(0)) in
+    for i = 1 to pred (Array.length v1) do
+      res.(i) <- f v1.(i) v2.(i) v3.(i)
     done;
     res
   end

@@ -60,9 +60,27 @@ let const_abst_opt_value env c =
 	if evaluable_abst env c then Some (abst_value env c) else None
     | _ -> invalid_arg "const_abst_opt_value"
 
-let mis_lc env mis =
+let mis_lc mis =
   instantiate_constr (ids_of_sign mis.mis_mib.mind_hyps) mis.mis_mip.mind_lc
     (Array.to_list mis.mis_args)
+
+let mis_lc_without_abstractions mis = 
+  let rec strip_DLAM = function
+    | (DLAM (n,c1)) -> strip_DLAM c1 
+    | (DLAMV (n,v)) -> v
+    | _ -> assert false
+  in 
+  strip_DLAM (mis_lc mis)
+
+let mis_type_mconstructs mispec =
+  let specif = mis_lc mispec
+  and ntypes = mis_ntypes mispec
+  and nconstr = mis_nconstr mispec in
+  let make_Ik k = DOPN(MutInd(mispec.mis_sp,k),mispec.mis_args) 
+  and make_Ck k = DOPN(MutConstruct((mispec.mis_sp,mispec.mis_tyi),k+1),
+		       mispec.mis_args) in
+  (Array.init nconstr make_Ck, 
+   sAPPVList specif (list_tabulate make_Ik ntypes))
 
 (* Existentials. *)
 
@@ -83,3 +101,14 @@ let existential_value sigma c =
 	instantiate_constr (ids_of_sign hyps) c (Array.to_list args)
     | Evar_empty ->
 	anomaly "a defined existential with no body"
+
+let mis_arity' mis =
+  let idhyps = ids_of_sign mis.mis_mib.mind_hyps 
+  and largs = Array.to_list mis.mis_args in 
+  { body = instantiate_constr idhyps mis.mis_mip.mind_arity.body largs;
+    typ = mis.mis_mip.mind_arity.typ }
+
+let mis_arity mispec =
+  let { body = b; typ = t } = mis_arity' mispec in
+  DOP2 (Cast, b, DOP0 (Sort t))
+

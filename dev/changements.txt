@@ -46,6 +46,7 @@ Changements dans les fonctions :
 	  rev_append	 ->  List.rev_append
 
 	Termenv
+	  mind_specif_of_mind  ->  Global.lookup_mind_specif
 	  mis_arity      ->  instantiate_arity
 	  mis_lc	 ->  instantiate_lc	
 

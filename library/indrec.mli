@@ -11,19 +11,20 @@ open Evd
 
 (* Eliminations. *)
 
-val make_case_dep : 'c evar_map -> constr -> sorts -> constr
-val make_case_nodep : 'c evar_map -> constr -> sorts -> constr
-val make_case_gen : 'c evar_map -> constr -> sorts -> constr
+val make_case_dep : unsafe_env -> 'a evar_map -> constr -> sorts -> constr
+val make_case_nodep : unsafe_env -> 'a evar_map -> constr -> sorts -> constr
+val make_case_gen : unsafe_env -> 'a evar_map -> constr -> sorts -> constr
 
-val make_indrec : 'c evar_map -> (mind_specif * bool * sorts) list 
-  -> constr -> constr array
+val make_indrec : unsafe_env -> 'a evar_map -> 
+  (mind_specif * bool * sorts) list -> constr -> constr array
 
-val mis_make_indrec : 'c evar_map -> (mind_specif * bool * sorts) list 
-  -> mind_specif -> constr array
+val mis_make_indrec : unsafe_env -> 'a evar_map -> 
+  (mind_specif * bool * sorts) list -> mind_specif -> constr array
 
 val instanciate_indrec_scheme : sorts -> int -> constr -> constr
 
-val build_indrec : 'c evar_map -> (constr * bool * sorts) list -> constr array
+val build_indrec : 
+  unsafe_env -> 'a evar_map -> (constr * bool * sorts) list -> constr array
 
 val type_rec_branches : bool -> unsafe_env -> 'c evar_map -> constr 
   -> constr -> constr -> constr -> constr * constr array * constr
@@ -31,9 +32,10 @@ val type_rec_branches : bool -> unsafe_env -> 'c evar_map -> constr
 val transform_rec : unsafe_env -> 'c evar_map -> (constr array) 
   -> (constr * constr) -> constr
 
-val is_mutind : 'c evar_map -> constr -> bool 
+val is_mutind : unsafe_env -> 'a evar_map -> constr -> bool 
 
-val branch_scheme : 'c evar_map -> bool -> int -> constr -> constr
+val branch_scheme : 
+  unsafe_env -> 'a evar_map -> bool -> int -> constr -> constr
 
 val pred_case_ml : unsafe_env -> 'c evar_map -> bool -> (constr * constr) 
   ->  constr array -> (int*constr)  ->constr

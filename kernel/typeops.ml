@@ -150,6 +150,31 @@ let type_mconstructs env sigma mind =
   let mis = lookup_mind_specif redmind env in 
   mis_type_mconstructs mis
 
+let mis_type_mconstruct i mispec =
+  let specif = instantiate_lc mispec
+  and ntypes = mis_ntypes mispec
+  and nconstr = mis_nconstr mispec in
+  let make_Ik k = DOPN(MutInd(mispec.mis_sp,k),mispec.mis_args) in 
+  if i > nconstr then error "Not enough constructors in the type";
+  sAPPViList (i-1) specif (list_tabulate make_Ik ntypes)
+
+let type_mconstruct env sigma i mind =
+  let redmind = check_mrectype_spec env sigma mind in
+  let (sp,tyi,args) = destMutInd redmind in
+  let mispec = lookup_mind_specif redmind env in 
+  mis_type_mconstruct i mispec
+
+let type_inst_construct env sigma i mind = 
+  try 
+    let (mI,largs) = find_mrectype env sigma mind in 
+    let mispec = lookup_mind_specif mI env in 
+    let nparams = mis_nparams mispec in 
+    let tc = mis_type_mconstruct i mispec in
+    let (globargs,_) = list_chop nparams largs in
+    hnf_prod_applist env sigma "Typing.type_construct" tc globargs
+  with Induc -> 
+    error_not_inductive CCI env mind
+
 (* Case. *)
 
 let rec sort_of_arity env sigma c =
@@ -221,8 +246,10 @@ let is_correct_arity env sigma kelim (c,p) =
 	   (fun s -> make_arity_dep env sigma (DOP0(Sort s)) t ind) kelim)
 	@(List.map 
 	    (fun s -> make_arity_nodep env sigma (DOP0(Sort s)) t) kelim)
-      in error_elim_arity CCI env ind listarity c p pt kinds
-  in srec 
+      in 
+      error_elim_arity CCI env ind listarity c p pt kinds
+  in 
+  srec 
 
 let cast_instantiate_arity mis =
   let tty = instantiate_arity mis in
@@ -291,15 +318,12 @@ let type_case_branches env sigma ct pt p c =
 let check_branches_message env sigma (c,ct) (explft,lft) = 
   let n = Array.length explft 
   and expn = Array.length lft in
-  let rec check_conv i = 
-    if not (i = n) then
-      if not (is_conv_leq env sigma lft.(i) (explft.(i))) then
-	error_ill_formed_branch CCI env c i (nf_betaiota env sigma lft.(i))
-	  (nf_betaiota env sigma explft.(i))
-      else 
-	check_conv (i+1) 
-  in
-  if n<>expn then error_number_branches CCI env c ct expn else check_conv 0
+  if n<>expn then error_number_branches CCI env c ct expn;
+  for i = 0 to n-1 do
+    if not (is_conv_leq env sigma lft.(i) (explft.(i))) then
+      error_ill_formed_branch CCI env c i (nf_betaiota env sigma lft.(i))
+	(nf_betaiota env sigma explft.(i))
+  done
 
 let type_of_case env sigma pj cj lfj =
   let lft = Array.map (fun j -> j.uj_type) lfj in

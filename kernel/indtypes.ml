@@ -110,7 +110,7 @@ let listrec_mconstr env ntypes nparams i indlc =
     let (lpar,auxlargs) = array_chop auxnpar largs in 
     if not (array_for_all (noccur_bet n ntypes) auxlargs) then
       raise (InductiveError (NonPos n));
-    let auxlc = mis_lc env mispeci 
+    let auxlc = mis_lc mispeci 
     and auxntyp = mis_ntypes mispeci in 
     if auxntyp <> 1 then raise (InductiveError (NonPos n));
     let lrecargs = array_map_to_list (check_param_pos n) lpar in

@@ -53,6 +53,7 @@ val list_subset : 'a list -> 'a list -> bool
 val list_splitby : ('a -> bool) -> 'a list -> 'a list * 'a list
 val list_firstn : int -> 'a list -> 'a list
 val list_lastn : int -> 'a list -> 'a list
+val list_prefix_of : 'a list -> 'a list -> bool
 
 (*s Arrays. *)
 
@@ -74,6 +75,8 @@ val array_list_of_tl : 'a array -> 'a list
 val array_map_to_list : ('a -> 'b) -> 'a array ->'b list
 val array_chop : int -> 'a array -> 'a array * 'a array
 val array_map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
+val array_map3 : 
+  ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
 
 (*s Functions. *)
 

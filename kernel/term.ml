@@ -52,6 +52,11 @@ type sorts =
 let mk_Set  = Prop Pos
 let mk_Prop = Prop Null
 
+let print_sort = function
+  | Prop Pos -> [< 'sTR "Set" >]
+  | Prop Null -> [< 'sTR "Prop" >]
+  | Type _ -> [< 'sTR "Type" >]
+
 type constr = sorts oper term
 
 type 'a judge = { body : constr; typ : 'a }

@@ -186,6 +186,33 @@ let explain_ill_typed_rec_body k ctx i lna vdefj vargs =
      'sTR"recursive definition" ; 'sPC; pvd; 'sPC;
      'sTR "has type"; 'sPC; pvdt;'sPC; 'sTR "it should be"; 'sPC; pv >]
 
+let explain_not_inductive k ctx c =
+  let pc = P.pr_term k ctx c in
+  [< 'sTR"The term"; 'bRK(1,1); pc; 'sPC;
+     'sTR "is not an inductive definition" >]
+
+let explain_ml_case k ctx mes c ct br brt =
+  let pc = P.pr_term k ctx c in
+  let pct = P.pr_term k ctx ct in
+  let expln =
+    match mes with
+      | "Inductive" -> [< pct; 'sTR "is not an inductive definition">]
+      | "Predicate" -> [< 'sTR "ML case not allowed on a predicate">]
+      | "Absurd" -> [< 'sTR "Ill-formed case expression on an empty type" >]
+      | "Decomp" ->
+          let plf = P.pr_term k ctx br in
+          let pft = P.pr_term k ctx brt in
+          [< 'sTR "The branch "; plf; 'wS 1; 'cUT; 'sTR "has type "; pft;
+             'wS 1; 'cUT;
+             'sTR "does not correspond to the inductive definition" >]
+      | "Dependent" ->
+          [< 'sTR "ML case not allowed for a dependent case elimination">]
+      | _ -> [<>]
+  in
+  hOV 0 [< 'sTR "In ML case expression on "; pc; 'wS 1; 'cUT ;
+           'sTR "of type";  'wS 1; pct; 'wS 1; 'cUT; 
+           'sTR "which is an inductive predicate."; 'fNL; expln >]
+
 let explain_type_error k ctx = function
   | UnboundRel n -> 
       explain_unbound_rel k ctx n
@@ -215,6 +242,10 @@ let explain_type_error k ctx = function
       explain_ill_formed_rec_body k ctx i lna vdefj vargs
   | IllTypedRecBody (i, lna, vdefj, vargs) ->
       explain_ill_typed_rec_body k ctx i lna vdefj vargs
+  | NotInductive c ->
+      explain_not_inductive k ctx c
+  | MLCase (mes,c,ct,br,brt) ->
+      explain_ml_case k ctx mes c ct br brt
 
 let explain_refiner_bad_type k ctx arg ty conclty =
   errorlabstrm "Logic.conv_leq_goal"

@@ -24,5 +24,10 @@ val existential_type : 'a evar_map -> constr -> constr
 
 val const_abst_opt_value : unsafe_env -> constr -> constr option
 
-val mis_lc : unsafe_env -> mind_specif -> constr
+val mis_arity : mind_specif -> constr
+
+val mis_lc : mind_specif -> constr
+val mis_lc_without_abstractions : mind_specif -> constr array
+
+val mis_type_mconstructs : mind_specif -> constr array * constr array
 

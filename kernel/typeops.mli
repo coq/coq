@@ -1,4 +1,3 @@
-
 (* $Id$ *)
 
 (*i*)
@@ -66,3 +65,22 @@ val check_cofix : unsafe_env -> 'a evar_map -> Spset.t -> constr -> unit
 
 val type_fixpoint : unsafe_env -> 'a evar_map -> name list -> typed_type array 
     -> unsafe_judgment array -> constraints
+
+val type_one_branch_dep : unsafe_env -> 'a evar_map -> 
+  int * constr list * constr -> constr -> constr -> constr 
+
+val type_one_branch_nodep : unsafe_env -> 'a evar_map -> 
+  int * constr list * constr -> constr -> constr 
+
+val make_arity_dep : 
+  unsafe_env -> 'a evar_map -> constr -> constr -> constr -> constr 
+
+val make_arity_nodep : 
+  unsafe_env -> 'a evar_map -> constr -> constr -> constr 
+
+val find_case_dep_nparams :
+  unsafe_env -> 'a evar_map -> constr * constr ->
+    constr * constr list ->
+      constr -> bool * (int * constr list * constr list) 
+
+val type_inst_construct : unsafe_env -> 'a evar_map -> int -> constr -> constr 

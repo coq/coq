@@ -310,9 +310,8 @@ let fold_commands cl env sigma c =
 
 let abstract_scheme env (locc,a,ta) t =
   let na = named_hd env ta Anonymous in
-  if occur_meta ta then
-    error "cannot find a type for the generalisation"
-  else if occur_meta a then 
+  if occur_meta ta then error "cannot find a type for the generalisation";
+  if occur_meta a then 
     DOP2(Lambda,ta,DLAM(na,t))
   else 
     DOP2(Lambda, ta, DLAM(na,subst_term_occ locc a t))

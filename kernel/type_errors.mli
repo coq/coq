@@ -28,6 +28,8 @@ type type_error =
   | IllFormedRecBody of std_ppcmds * name list * int * constr array
   | IllTypedRecBody of int * name list * unsafe_judgment array 
       * typed_type array
+  | NotInductive of constr
+  | MLCase of string * constr * constr * constr * constr
 
 exception TypeError of path_kind * context * type_error
 
@@ -71,4 +73,9 @@ val error_ill_formed_rec_body :
 val error_ill_typed_rec_body  :
   path_kind -> unsafe_env -> int -> name list -> unsafe_judgment array 
     -> typed_type array -> 'b
+
+val error_not_inductive : path_kind -> unsafe_env -> constr -> 'a
+
+val error_ml_case : path_kind -> unsafe_env -> 
+  string -> constr -> constr -> constr -> constr -> 'a
 
