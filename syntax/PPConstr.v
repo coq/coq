@@ -51,8 +51,10 @@ Syntax constr
       -> [ [<hov 0> "[_=" $M "]" [0 1] $N:E ] ]
 
   | let [<<[$x = $M]$N>>] -> [ [<hov 0> "[" $x "=" $M:E "]" [0 1] $N:E ] ]
- 
-  | abstpat  [[$id1]$c] -> [ [<hov 0> "<<" $id1 ">>" [0 1] $c:E ] ]
+
+  (* For debug *)
+  | abstpatnamed [[$id1]$c] -> [ [<hov 0> "<<" $id1 ">>" [0 1] $c:E ] ]
+  | abstpatanon  [[ <> ]$c] -> [ [<hov 0> "<<_>>" [0 1] $c:E ] ]
   ;
 
 (* Things parsed in command2 *)
