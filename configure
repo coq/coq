@@ -317,7 +317,7 @@ esac
 
 # lablgtk2 and CoqIDE
 
-if test $coqide_spec == "no"; then
+if [ "$coqide_spec" = "no" ] ; then
 if test -x ${CAMLLIB}/lablgtk2; then
     if grep -q -w convert_with_fallback ${CAMLLIB}/lablgtk2/glib.mli; then
 	COQIDE=byte;
