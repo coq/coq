@@ -218,6 +218,6 @@ END
 (* Subst *)
 
 TACTIC EXTEND Subst
-| [ "Subst" ident(x) ] -> [ subst x ]
+| [ "Subst" ne_ident_list(l) ] -> [ subst l ]
 END
 

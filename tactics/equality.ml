@@ -1206,7 +1206,7 @@ let is_eq_x x c =
   (let (_,y,_) = match_eq eqpat c in
    match kind_of_term y with Var y -> x = y | _ -> false)
 
-let subst x gl = 
+let subst_one x gl = 
   let varx = mkVar x in
   let hyps = pf_hyps_types gl in
   let hyp = 
@@ -1232,4 +1232,8 @@ let subst x gl =
     clear [hyp];
     tclTRY (clear [x])
   ] gl
+
+let rec subst = function
+  | [] -> tclIDTAC
+  | x :: r -> tclTHEN (subst_one x) (subst r)
 
