@@ -103,9 +103,9 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/tacticals.cmo tactics/tactics.cmo tactics/tacentries.cmo \
         tactics/hiddentac.cmo tactics/elim.cmo
 
-TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
+TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo \
          toplevel/metasyntax.cmo toplevel/command.cmo toplevel/record.cmo \
-         toplevel/discharge.cmo \
+         toplevel/discharge.cmo toplevel/vernacinterp.cmo \
          toplevel/vernacentries.cmo toplevel/vernac.cmo toplevel/mltop.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo \
          toplevel/usage.cmo toplevel/coqinit.cmo toplevel/coqtop.cmo
