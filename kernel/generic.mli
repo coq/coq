@@ -116,6 +116,8 @@ val decomp_DLAMV : int -> 'a term -> 'a term array
 val decomp_DLAMV_name : int -> 'a term -> name list * 'a term array
 val decomp_all_DLAMV_name : 'a term -> name list * 'a term array
 val put_DLAMSV_subst : identifier list -> 'a term array -> 'a term
+
+(* [rel_list n m] and [rel_vect n m] compute [[Rel (n+m);...;Rel(n+1)]] *)
 val rel_vect : int -> int -> 'a term array
 val rel_list : int -> int -> 'a term list
 

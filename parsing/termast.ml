@@ -338,6 +338,9 @@ let ast_of_rawconstr = ast_of_raw
 
 type used_idents = identifier list
 
+(* This avoids var names, const/ind/construct names but also names of
+   de Bruijn variables bound in env *)
+
 let occur_id env id0 c =
   let rec occur n = function
     | VAR id             -> id=id0
