@@ -476,6 +476,68 @@ Locate "'exists' _ , _".
 \label{notation-syntax}
 \end{figure}
 
+\subsection{Notations with recursive patterns}
+
+An experimental mechanism is provided for declaring elementary
+notations including recursive patterns. The basic syntax is
+
+\begin{coq_eval}
+Require Import List.
+\end{coq_eval}
+
+\begin{coq_example*}
+Notation "[ x ; .. ; y ]" := (cons x .. (cons y nil) ..).
+\end{coq_example*}
+
+On the right-hand-side, an extra construction of the form {\tt ..} ($f$
+$t_1$ $\ldots$ $t_n$) {\tt ..} can be used. Notice that {\tt ..} is part of
+the {\Coq} syntax while $\ldots$ is just a meta-notation of this
+manual to denote a sequence of terms of arbitrary size.
+
+This extra construction enclosed within {\tt ..}, let's call it $t$,
+must be one of the argument of an applicative term of the form {\tt
+($f$ $u_1$ $\ldots$ $u_n$)}. The sequences $t_1$ $\ldots$ $t_n$ and
+$u_1$ $\ldots$ $u_n$ must coincide everywhere but in two places. In
+one place, say the terms of indice $i$, we must have $u_i = t$. In the
+other place, say the terms of indice $j$, both $u_j$ and $t_j$ must be
+variables, say $x$ and $y$ which are bound by the notation string on
+the left-hand-side of the declaration. The variables $x$ and $y$ in
+the string must occur in a substring of the form "$x$ $s$ {\tt ..} $s$
+$y$" where {\tt ..} is part of the syntax and $s$ is two times the
+same sequence of terminal symbols (i.e. symbols which are not
+variables).
+
+These invariants must be satisfied in order the notation to be
+correct.  The term $t_i$ is the {\em terminating} expression of
+the notation and the pattern {\tt ($f$ $u_1$ $\ldots$ $u_{i-1}$ {\rm [I]}
+$u_{i+1}$ $\ldots$ $u_{j-1}$ {\rm [E]} $u_{j+1}$ $\ldots$ $u_{n}$)} is the
+{\em iterating pattern}. The hole [I] is the {\em iterative} place
+and the hole [E] is the {\em enumerating} place. Remark that if $j<i$, the
+iterative place comes after the enumerating place accordingly.
+
+The notation parses sequences of tokens such that the subpart "$x$ $s$
+{\tt ..} $s$ $y$" parses any number of time (but at least one time) a
+sequence of expressions separated by the sequence of tokens $s$. The
+parsing phase produces a list of expressions which
+are used to fill in order the holes [E] of the iterating pattern
+which is nested as many time as the length of the list, the hole [I]
+being the nesting point. In the innermost occurrence of the nested
+iterating pattern, the hole [I] is finally filled with the terminating
+expression.
+
+In the example above, $f$ is {\tt cons}, $n=3$ (because {\tt cons} has
+a hidden implicit argument!), $i=3$ and $j=2$. The {\em terminating}
+expression is {\tt nil} and the {\em iterating pattern} is {\tt cons
+{\rm [E] [I]}}. Finally, the sequence $s$ is made of the single token
+``{\tt ;}''. Here is another example.
+\begin{coq_example*}
+Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) (at level 0).
+\end{coq_example*}
+
+Notations with recursive patterns can be reserved like standard
+notations, they can also be declared within interpretation scopes (see
+section \ref{scopes}).
+
 \subsection{Summary}
 
 \paragraph{Syntax of notations}
@@ -707,7 +769,6 @@ and comes with an interpretation for numerals as closed term of type {\tt Z}.
 This includes the standard arithmetical operators and relations on
 type {\tt Z} (binary integer numbers). It is delimited by key {\tt Z} 
 and comes with an interpretation for numerals as closed term of type {\tt Z}.
-
 
 \subsubsection{\tt positive\_scope}
 
