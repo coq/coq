@@ -230,13 +230,13 @@ let extract_to_file f prm decls =
     | None -> stdout
     | Some f -> open_out f in
   let ft = Pp_control.with_output_to cout in
+  pp_with ft (preamble prm used_modules print_dummys);
   if not prm.modular then 
     List.iter (fun r -> pp_with ft (pp_logical_ind r)) 
       (List.filter decl_is_logical_ind prm.to_appear); 
   if not prm.modular then 
     List.iter (fun r -> pp_with ft (pp_singleton_ind r)) 
       (List.filter decl_is_singleton prm.to_appear); 
-  pp_with ft (preamble prm used_modules print_dummys);
   begin 
     try
       List.iter (fun d -> msgnl_with ft (pp_decl d)) decls
