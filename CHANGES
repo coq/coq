@@ -1,5 +1,5 @@
 Changes from V7.3.1 to V7.4
--------------------------
+---------------------------
 
 Grammar extension
 
@@ -35,9 +35,12 @@ Library
   unrealistic cases).
 - More efficient versions of Zmult and times (30% faster)
 
+Modules
+
+- Beta version, see doc chap 2.5 for commands and chap 5 for theory
+
 Language
 
-- Modules (see doc chap 2.5 for commands and chap 4 for theory)
 - Inductive definitions now accept ">" in constructor types to declare
   the corresponding constructor as a coercion.
 - Idem for assumptions declarations and constants when the type is mentionned.
@@ -64,6 +67,7 @@ ML tactic and vernacular commands
   COMMAND EXTEND.
 - "Check n c" now "n:Check c", "Eval n ..." now "n:Eval ..."
 - "Proof with T" (* no documentation *)
+-  SearchAbout id - prints all theorems which contain id in their type
 
 Tactic definitions
 
@@ -87,6 +91,9 @@ Tactics
   it can also recognize 'False' in the hypothesis and use it to solve the
   goal.
 - Coercions now handled in "with" bindings
+- "Subst x" replaces all ocurrences of x by t in the goal and hypotheses 
+   when an hypothesis x=t or x:=t or t=x exists
+- LinearIntuition (* no documentation *)
 
 Miscellaneous
 
