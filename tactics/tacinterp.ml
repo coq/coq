@@ -895,19 +895,21 @@ let hyp_or_metanum_interp ist = function
 let forward_vcontext_interp = ref (fun ist v -> failwith "not implemented")
 
 let interp_pure_qualid ist (loc,qid) =
+  try VConstr (constr_of_reference (find_reference ist qid))
+  with Not_found ->
+    let (dir,id) = repr_qualid qid in
+    if dir = empty_dirpath then VIdentifier id
+    else user_err_loc (loc,"interp_pure_qualid",str "Unknown reference")
+
+let interp_ltac_qualid ist (loc,qid as lqid) =
   try (!forward_vcontext_interp ist (lookup qid))
-  with | Not_found ->
-    try VConstr (constr_of_reference (find_reference ist qid))
-    with Not_found ->
-      let (dir,id) = repr_qualid qid in
-      if dir = empty_dirpath then VIdentifier id
-      else user_err_loc (loc,"interp_pure_qualid",str "Unknown reference")
+  with Not_found -> interp_pure_qualid ist lqid
 
 let interp_ltac_reference ist = function
   | RIdent (loc,id) -> 
       (try unrec (List.assoc id ist.lfun)
-      with | Not_found -> interp_pure_qualid ist (loc,make_short_qualid id))
-  | RQualid qid -> interp_pure_qualid ist qid
+      with | Not_found -> interp_ltac_qualid ist (loc,make_short_qualid id))
+  | RQualid qid -> interp_ltac_qualid ist qid
 
 (* Interprets a qualified name *)
 let eval_qualid ist (loc,qid as locqid) =
