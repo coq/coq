@@ -24,20 +24,11 @@ Bordeaux/EXCEPTIONS : OK
 Dyade/Otway-Rees : OK
 Dyade/BDD : 
 File "./bdd4.v", line 122, characters 10-28
-Error: Tactic generated a subgoal identical to the original goal.
+--> Out of memory après plus de 500Mo utilisés
 
 Lyon/AUTOMATA : OK
 Lyon/CIRCUITS : OK
-Lyon/COINDUCTIVES : 
-File "./Specified_Streams.v", line 11, characters 0-132
-Error: Illegal application (Type Error): 
-The term SStream of type (A:Set)(nat->A->Prop)->Set
-cannot be applied to the terms
- A : Set
- x : (SStream A P)
-The 2nd term has type (SStream A P) which should be coercible to
- nat->A->Prop
-
+Lyon/COINDUCTIVES : OK
 Lyon/IEEE754 : OK
 
 Rocq/MUTUAL-EXCLUSION : échec sur Realizer
@@ -47,8 +38,8 @@ Realizer dans Conv_Dec.v, Expr.v, Infer.v, Machine.v MyList.v Names.v
 File "./Int_typ.v", line 209, characters 30-44
 Problème d'alias dépendant dans un Cases (idem SUBST)
 
-Rocq/ALGEBRA/RELATIONS/Relations.v
---> Un problème de Coercion au discharge
+Rocq/ALGEBRA/SETOIDS
+--> Token "=_S" non reconnus
 
 Rocq/ARITH/Chinese
 File "./Zdiv.v", line 34, characters 0-944
@@ -88,10 +79,4 @@ Montevideo/RailroadCrossing OK (TemporalOperators.v ne doit pas etre compile)
 
 Nijmegen OK
 Utrecht/Ramsey OK
-
-Utrecht/ABP
-coqc  -q  -I . abp_base
-File "./abp_base.v", line 42, characters 0-154
-Error: Cannot declare a variable or hypothesis over the term Y
-because this term is not a type.
---> Pb de calcul de de Bruijn dans le vieux Match
+Utrecht/ABP OK

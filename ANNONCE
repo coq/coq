@@ -10,9 +10,9 @@ provided for users willing to experiment the new features which are:
   - an improved Search facilities using patterns (by Yves Bertot)
   - a "natural" syntax for real numbers (by Micaëla Mayero)
   - various bug fixes
-  - a command to export definitions, theorems and proofs to XML to be used with
-    Helm's publishing and rendering tools (see http://www.cs.unibo.it/helm)
-    (by Claudio Sacerdoti Coen)
+  - a command to export theories to XML to be used with Helm's publishing
+    and rendering tools (see http://www.cs.unibo.it/helm) (by Claudio
+    Sacerdoti Coen)
 
   Extraction and the Realizer/Program tactics are not available in Coq
 V7.0beta.

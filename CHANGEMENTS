@@ -28,7 +28,8 @@ Extensions de syntaxe avec Grammar et Syntax
 
 - L'analyseur syntaxique considère maintenant comme token toute suite
   de symboles (source d'incompatibilité : il faut insérer des espaces
-  entre tokens spéciaux consécutifs).
+  entre tokens spéciaux consécutifs). Les tokens contenant non
+  constitués de caractères spéciaux sont provisoirement interdits.
 
 - L'entrée "command" dans "Grammar" et dans les piquants s'appelle
   maintenant "constr" comme dans "Syntax".
@@ -62,6 +63,9 @@ Syntaxe des constructions
 
 - Cases engendre parfois des noms differents (source théorique
   d'incompatibilité mais insensible dans la pratique)
+
+- Les alias de motifs ayant un type dépendant ne sont pour l'instant
+  pas traités
 
 - Davantage d'inférence automatique de "?".
 
