@@ -270,7 +270,7 @@ Qed.
     d(a,a'')+d(a'',a')$,
   but in fact $d(a,a')\leq max(d(a,a''),d(a'',a'))$.
   This means that $min(pd(a,a''),pd(a'',a'))<=pd(a,a')$ (lemma [ad_pdist_ultra] below).
-  This follows from the fact that $a \Ra |a| = 1/2^{\texttt{ad\_plength}}(a))$
+  This follows from the fact that $a ~Ra~|a| = 1/2^{\texttt{ad\_plength}}(a))$
   is an ultrametric norm, i.e. that $|a-a'| \leq max (|a-a''|, |a''-a'|)$,
   or equivalently that $|a+b|<=max(|a|,|b|)$, i.e. that
   min $(\texttt{ad\_plength}(a), \texttt{ad\_plength}(b)) \leq 

@@ -181,32 +181,6 @@ let constrOut = constrOut
 
 let loc = dummy_loc
 
-(* Table of interpretation functions *)
-let interp_tab =
-  (Hashtbl.create 17 : (string , interp_sign -> Coqast.t -> value) Hashtbl.t)
-
-(* Adds an interpretation function *)
-let interp_add (ast_typ,interp_fun) =
-  try
-    Hashtbl.add interp_tab ast_typ interp_fun
-  with
-      Failure _ ->
-        errorlabstrm "interp_add"
-          (str "Cannot add the interpretation function for " ++ str ast_typ ++
-            str " twice")
-
-(* Adds a possible existing interpretation function *)
-let overwriting_interp_add (ast_typ,interp_fun) =
-  if Hashtbl.mem interp_tab ast_typ then
-  begin
-    Hashtbl.remove interp_tab ast_typ;
-    warning ("Overwriting definition of tactic interpreter command " ^ ast_typ)
-  end;
-  Hashtbl.add interp_tab ast_typ interp_fun
-
-(* Finds the interpretation function corresponding to a given ast type *)
-let look_for_interp = Hashtbl.find interp_tab
-
 (* Globalizes the identifier *)
 let glob_const_nvar loc env qid =
   try
@@ -548,23 +522,12 @@ let rec val_interp ist ast =
         VArg ((Intropattern (cvt_intro_pattern ist ast)))
     | Node(_,"LETPATTERNS",astl) ->
         VArg (Letpatterns (List.fold_left (cvt_letpattern ist) (None,[]) astl))
+    | Node(loc,s,[]) ->
+        VFTactic ([],(interp_atomic s))
     | Node(loc,s,l) ->
-        (try
-          ((look_for_interp s) ist ast)
-        with
-           Not_found ->
-             if l = [] then
-               VFTactic ([],(interp_atomic s))
-             else
-               let fv = val_interp ist
-                          (Node(loc,"PRIMTACTIC",[Node(loc,s,[])]))
-               and largs = List.map (val_interp ist) l in
-               app_interp ist fv largs ast)
-
-       (*     val_interp ist (Node(dummy_loc,"APP",[Node(loc,"PRIMTACTIC",
-                            [Node(loc,s,[])])]@l)))*)
- 
-(*             val_interp ist (Node(dummy_loc,"APPTACTIC",[ast])))*)
+        let fv = val_interp ist (Node(loc,"PRIMTACTIC",[Node(loc,s,[])]))
+        and largs = List.map (val_interp ist) l in
+        app_interp ist fv largs ast
     | Dynamic(_,t) ->
       let tg = (tag t) in
       if tg = "tactic" then

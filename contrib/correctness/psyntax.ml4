@@ -499,12 +499,6 @@ let is_assumed global ids =
 
 let add = vinterp_add
 
-let _ = add "PROGDEBUGON"
-     (function [] -> fun () -> debug := true | _  -> assert false)
-
-let _ = add "PROGDEBUGOFF"
-     (function [] -> fun () -> debug := false | _  -> assert false)
-
 let _ = add "CORRECTNESS"
      (function
 	 [ VARG_STRING s; VARG_DYN d ] -> 
@@ -583,10 +577,6 @@ GEXTEND Gram
 	let d = Ast.dynamic (in_prog p) in
 	let str = Ast.string s in
 	<:ast< (CORRECTNESS $str (VERNACDYN $d) (TACTIC $tac)) >> ] ];
-  Pcoq.Vernac_.command:
-  [ [ IDENT "Debug"; IDENT "on"; "." -> <:ast< (PROGDEBUGON) >>
-	
-    | IDENT "Debug"; IDENT "off"; "." -> <:ast< (PROGDEBUGOFF) >> ] ];
  END
 ;;
 
