@@ -486,7 +486,7 @@ let ast_adjust_consts sigma = (* locations are kept *)
   in 
   dbrec
 
-let globalize_command ast =
+let globalize_constr ast =
   let sign = Global.var_context () in
   ast_adjust_consts Evd.empty (from_list (ids_of_var_context sign)) ast
 
@@ -509,10 +509,10 @@ let globalize_ast ast =
   glob_ast Evd.empty (from_list (ids_of_var_context sign)) ast
 
 
-(* Installation of the AST quotations. "command" is used by default. *)
+(* Installation of the AST quotations. "constr" is used by default. *)
 let _ = 
-  Pcoq.define_quotation true "command" 
-    (Pcoq.map_entry globalize_command Pcoq.Constr.constr)
+  Pcoq.define_quotation true "constr" 
+    (Pcoq.map_entry globalize_constr Pcoq.Constr.constr)
 let _ = 
   Pcoq.define_quotation false "tactic" 
     (Pcoq.map_entry globalize_ast Pcoq.Tactic.tactic)

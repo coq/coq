@@ -78,7 +78,7 @@ val raw_constr_of_compattern :
   'c evar_map -> 'a assumptions -> Coqast.t -> rawconstr
 
 *)
-val globalize_command : Coqast.t -> Coqast.t
+val globalize_constr : Coqast.t -> Coqast.t
 (*
 val globalize_ast     : Coqast.t -> Coqast.t
 
