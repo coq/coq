@@ -7,13 +7,7 @@
 (**** Intuition:
   Simplifications of goals, based on LJT calcul ****)
 
-(**** Introduction heuristic w.r.t. the dependent products:
- - Initially: Intros until the first non-dependent product and Intros of all
-   the non-dependent products
- - In the algorithm: Intros only the non-dependent products ****)
-
-(* Fails because False is after a dependent product which is after a
-   non-dependent product *)
-Goal (x,y:nat)x=y->(z:nat)False->x=z.
+(* Fails because Tauto does not perform any Apply *)
+Goal ((A:Prop)A\/~A)->(x,y:nat)(x=y\/~x=y).
 Proof.
   Tauto.
