@@ -486,8 +486,10 @@ let explain_bad_constructor ctx cstr ind =
 
 let explain_wrong_numarg_of_constructor ctx cstr n =
   let pc = pr_constructor ctx (cstr,[||]) in
-  [<'sTR "The constructor "; pc;
-    'sTR " expects " ; 'iNT n ; 'sTR " arguments. ">]
+    [<'sTR "The constructor "; pc; 'sTR " expects " ; 
+      if n = 0 then [< 'sTR "no argument.">]
+      else [< 'iNT n ; 'sTR " arguments.">]
+    >]
 
 let explain_wrong_predicate_arity ctx pred nondep_arity dep_arity=
   let pp = prterm_env ctx pred in
