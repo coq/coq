@@ -17,15 +17,6 @@
 let dtdname = "http://localhost:8081/getdtd?url=cic.dtd";;
 let verbose = ref false;; (* always set to true during a "Print XML All" *)
 
-
-
-exception ImpossiblePossible;;
-type formal_parameters =
-   Actual of string
- | Possible of string
-;;
-
-
 (* UTILITY FUNCTIONS *)
 
 let print_if_verbose s = if !verbose then print_string s;;
@@ -146,7 +137,23 @@ let string_of_name =
 (* list of variables availables in the actual section *)
 let pvars = ref [];;
 
-let pvars_to_string pvars =
+let string_of_vars_list =
+ let add_prefix n s = string_of_int n ^ ": " ^ s in
+ let rec aux =
+  function
+     [n,v] -> (n,v)
+   | (n,v)::tl ->
+      let (k,s) = aux tl in
+       if k = n then (k, v ^ " " ^ s) else (n, v ^ " " ^ add_prefix k s)
+   | [] -> assert false
+ in
+  function
+     [] -> ""
+   | vl -> let (k,s) = aux vl in add_prefix k s
+;;
+
+(*
+let string_of_pvars pvars hyps =
  let rec aux =
   function
      [] -> (0, "")
@@ -158,6 +165,20 @@ let pvars_to_string pvars =
        )
  in
   snd (aux (List.rev pvars))
+;;
+*)
+
+let string_of_pvars pvars hyps =
+ let find_depth pvars v =
+  let rec aux n =
+   function
+      [] -> assert false
+    | l::_ when List.mem v l -> (n,v)
+    | _::tl -> aux (n+1) tl
+  in
+   aux 0 pvars
+ in
+  string_of_vars_list (List.map (find_depth pvars) hyps)
 ;;
 
 exception XmlCommandInternalError;;
@@ -370,38 +391,36 @@ let print_current_proof c typ id mv =
 (*  and   id          is the identifier (name) of a                        *)
 (*  and   params      is the list of formal params for a                   *)
 (* returns a stream of XML tokens suitable to be pretty printed via Xml.pp *)
-let print_axiom id typ fv =
+let print_axiom id typ fv hyps =
  let module X = Xml in
  let module N = Names in
   reset_id () ;
   [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
      X.xml_cdata ("<!DOCTYPE Axiom SYSTEM \"" ^ dtdname ^ "\">\n\n") ;
      X.xml_nempty "Axiom"
-      (["name",(N.string_of_id id) ; "id", get_next_id ()] @
-       match fv with
-          Possible _ -> raise ImpossiblePossible
-        | Actual fv' -> ["params",fv']
-      ) [< X.xml_nempty "type" [] (print_term [] typ) >]
+      ["name",(N.string_of_id id) ;
+        "id", get_next_id () ;
+        "params",(string_of_pvars fv hyps)]
+      [< X.xml_nempty "type" [] (print_term [] typ) >]
   >]
 ;;
 
-(* print_definition id term type params                                    *)
+(* print_definition id term type params hyps                               *)
 (*  where id          is the identifier (name) of a definition d           *)
 (*  and   term        is the term (body) of d                              *)
 (*  and   type        is the type of d                                     *)
 (*  and   params      is the list of formal params for d                   *)
 (* returns a stream of XML tokens suitable to be pretty printed via Xml.pp *)
-let print_definition id c typ fv =
+let print_definition id c typ fv hyps =
  let module X = Xml in
  let module N = Names in
   reset_id () ;
   [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
      X.xml_cdata ("<!DOCTYPE Definition SYSTEM \"" ^ dtdname ^ "\">\n\n") ;
      X.xml_nempty "Definition"
-      (["name",(N.string_of_id id) ; "id", get_next_id ()] @
-       match fv with
-          Possible fv' -> ["params",fv' ; "paramMode","POSSIBLE"]
-        | Actual fv' -> ["params",fv'])
+      ["name",(N.string_of_id id) ;
+       "id", get_next_id () ;
+       "params",(string_of_pvars fv hyps)]
       [< X.xml_nempty "body" [] (print_term [] c) ;
          X.xml_nempty "type"  [] (print_term [] typ) >]
   >]
@@ -464,7 +483,7 @@ let print_mutual_inductive_packet names p =
 (*  and   nparams     is the number of "parameters" in the arity of the    *)
 (*                    mutual inductive types                               *)
 (* returns a stream of XML tokens suitable to be pretty printed via Xml.pp *)
-let print_mutual_inductive packs fv nparams =
+let print_mutual_inductive packs fv hyps nparams =
  let module D = Declarations in
  let module X = Xml in
  let module N = Names in
@@ -478,10 +497,9 @@ let print_mutual_inductive packs fv nparams =
       X.xml_cdata ("<!DOCTYPE InductiveDefinition SYSTEM \"" ^
        dtdname ^ "\">\n\n") ;
       X.xml_nempty "InductiveDefinition"
-       (["noParams",string_of_int nparams ; "id",get_next_id ()] @
-        (match fv with
-            Possible fv' -> ["params",fv' ; "paramMode","POSSIBLE"]
-          | Actual fv' -> ["params",fv']))
+       ["noParams",string_of_int nparams ;
+        "id",get_next_id () ;
+        "params",(string_of_pvars fv hyps)]
        [< (Array.fold_right
             (fun x i -> [< print_mutual_inductive_packet names x ; i >])
             packs
@@ -489,6 +507,14 @@ let print_mutual_inductive packs fv nparams =
           )
        >]
    >]
+;;
+
+let string_list_of_named_context_list =
+ List.map
+  (function
+      (n,None,_) -> Names.string_of_id n
+    | _          -> assert false
+  )
 ;;
 
 (* print id dest                                                          *)
@@ -510,14 +536,16 @@ let print id fn =
   let pp_cmds =
    begin
     try
-     let {D.const_body=val0 ; D.const_type = typ} = G.lookup_constant sp in
+     let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
+      G.lookup_constant sp in
+     let hyps = string_list_of_named_context_list hyps in
      let typ = T.body_of_type typ in
       begin
        match val0 with
-          None -> print_axiom id typ (Actual "")
+          None -> print_axiom id typ [] hyps
         | Some lcvr ->
            match !lcvr with
-              D.Cooked c -> print_definition id c typ (Actual "")
+              D.Cooked c -> print_definition id c typ [] hyps
             | D.Recipe _ ->
                print_string " COOKING THE RECIPE\n" ;
                ignore (D.cook_constant lcvr) ;
@@ -527,17 +555,18 @@ let print id fn =
                 begin
                  match val0 with
                    Some {contents= D.Cooked c} ->
-                    print_definition id c typ (Actual "")
+                    print_definition id c typ [] hyps
                  | _ -> Util.error "COOKING FAILED"
                 end
           end
     with
      Not_found ->
       try
-       let {D.mind_packets=packs ; D.mind_nparams=nparams} =
+       let {D.mind_packets=packs ; D.mind_nparams=nparams ; D.mind_hyps=hyps} =
         G.lookup_mind sp
        in
-        print_mutual_inductive packs (Actual "") nparams
+        let hyps = string_list_of_named_context_list hyps in
+         print_mutual_inductive packs [] hyps nparams
       with
        Not_found ->
         try
@@ -619,28 +648,29 @@ let print_object o id sp dn fv =
    match tag with
       "CONSTANT"  (* = Definition, Theorem *)
     | "PARAMETER" (* = Axiom *) ->
-         (*CSC: QUI CI SONO ANCHE LE VARIABILI, CREDO, CHIAMATE const_hyps *)
-(*
-         let {D.const_body=val0 ; D.const_type = typ} = G.lookup_constant sp in
-*)
-let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} = G.lookup_constant sp in
-if (Names.string_of_id id) = "SN" then
- List.iter (fun (id,_,_) -> print_string ("*** " ^ N.string_of_id id ^ "\n")) hyps ;
+        let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
+         G.lookup_constant sp
+        in
+         let hyps = string_list_of_named_context_list hyps in
          let typ = T.body_of_type typ in
           begin
            match val0 with
-              None -> print_axiom id typ fv
+              None -> print_axiom id typ fv hyps
             | Some lcvr ->
                match !lcvr with
-                  D.Cooked c -> print_definition id c typ fv
+                  D.Cooked c -> print_definition id c typ fv hyps
                 | D.Recipe _ -> Util.anomaly "trying to print a recipe"
           end
     | "INDUCTIVE" ->
          (*CSC: QUI CI SONO ANCHE LE VARIABILI, CREDO, CHIAMATE mind_hyps *)
-         let {D.mind_packets=packs ; D.mind_nparams=nparams} =
-          G.lookup_mind sp
+         let
+          {D.mind_packets=packs ;
+           D.mind_nparams=nparams ;
+           D.mind_hyps = hyps
+          } = G.lookup_mind sp
          in
-           print_mutual_inductive packs fv nparams
+          let hyps = string_list_of_named_context_list hyps in
+           print_mutual_inductive packs fv hyps nparams
     | "VARIABLE" ->
 (*V7 DON'T KNOW HOW TO DO IT
         let (_,typ) = G.lookup_named id in
@@ -698,7 +728,7 @@ and print_node n id sp bprintleaf dn =
             toprint := (id,sp,sp,o,!pvars,dn)::!toprint
            else
             (* this is a local term *)
-            print_object o id sp dn (Possible (pvars_to_string !pvars)) ;
+            print_object o id sp dn !pvars ;
             print_if_verbose ("OK, stampo " ^ Names.string_of_id id ^ "\n")
           end
          else
@@ -738,7 +768,6 @@ and print_node n id sp bprintleaf dn =
 (* print_library_segment on all its sons                                     *)
 let print_closed_section s ls dn =
  let module L = Lib in
- let module C = Cooking in
   toprint := [] ;
   (*CSC: this should always be empty yet! But just to be sure... :-) *)
   pvars := [] ;
@@ -750,10 +779,10 @@ let print_closed_section s ls dn =
       (id,usp,csp,uo,pv,dn) ->
        print_if_verbose ("\nCooked=" ^ (Names.string_of_path csp) ^
         "\tUncooked=" ^ (Names.string_of_path usp)) ;
-       let formal_vars = C.add_cooking_information csp pv in
+       let formal_vars = pv in
         pvars := pv ;
         (*CSC Actual was Some *)
-        print_object uo id usp dn (Actual formal_vars)
+        print_object uo id usp dn formal_vars
    ) !toprint ;
   print_if_verbose "\n/Module\n" ;
 ;;

@@ -185,7 +185,6 @@ toplevel/vernacentries.cmi: kernel/names.cmi kernel/term.cmi \
     toplevel/vernacinterp.cmi 
 toplevel/vernacinterp.cmi: parsing/coqast.cmi lib/dyn.cmi kernel/names.cmi \
     proofs/proof_type.cmi 
-contrib/xml/cooking.cmi: kernel/names.cmi 
 contrib/xml/xmlcommand.cmi: kernel/names.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
 config/coq_config.cmx: config/coq_config.cmi 
@@ -955,10 +954,8 @@ tactics/wcclausenv.cmx: proofs/clenv.cmx kernel/environ.cmx kernel/evd.cmx \
     library/global.cmx proofs/logic.cmx kernel/names.cmx lib/pp.cmx \
     proofs/proof_trees.cmx kernel/reduction.cmx kernel/sign.cmx \
     proofs/tacmach.cmx kernel/term.cmx lib/util.cmx tactics/wcclausenv.cmi 
-tools/coqdep.cmo: config/coq_config.cmi tools/coqdep_lexer.cmo 
-tools/coqdep.cmx: config/coq_config.cmx tools/coqdep_lexer.cmx 
-tools/coqdep_lexer.cmo: config/coq_config.cmi 
-tools/coqdep_lexer.cmx: config/coq_config.cmx 
+tools/coqdep.cmo: config/coq_config.cmi 
+tools/coqdep.cmx: config/coq_config.cmx 
 toplevel/command.cmo: parsing/ast.cmi parsing/astterm.cmi parsing/coqast.cmi \
     kernel/declarations.cmi library/declare.cmi kernel/environ.cmi \
     kernel/evd.cmi library/global.cmi library/indrec.cmi kernel/inductive.cmi \
@@ -979,7 +976,7 @@ toplevel/coqinit.cmo: config/coq_config.cmi library/library.cmi \
     toplevel/mltop.cmi lib/options.cmi lib/pp.cmi lib/system.cmi \
     toplevel/toplevel.cmi toplevel/vernac.cmi toplevel/coqinit.cmi 
 toplevel/coqinit.cmx: config/coq_config.cmx library/library.cmx \
-    toplevel/mltop.cmx lib/options.cmx lib/pp.cmx lib/system.cmx \
+    toplevel/mltop.cmi lib/options.cmx lib/pp.cmx lib/system.cmx \
     toplevel/toplevel.cmx toplevel/vernac.cmx toplevel/coqinit.cmi 
 toplevel/coqtop.cmo: config/coq_config.cmi toplevel/coqinit.cmi \
     toplevel/errors.cmi library/lib.cmi library/library.cmi \
@@ -988,7 +985,7 @@ toplevel/coqtop.cmo: config/coq_config.cmi toplevel/coqinit.cmi \
     toplevel/usage.cmi lib/util.cmi toplevel/vernac.cmi toplevel/coqtop.cmi 
 toplevel/coqtop.cmx: config/coq_config.cmx toplevel/coqinit.cmx \
     toplevel/errors.cmx library/lib.cmx library/library.cmx \
-    toplevel/mltop.cmx lib/options.cmx lib/pp.cmx lib/profile.cmx \
+    toplevel/mltop.cmi lib/options.cmx lib/pp.cmx lib/profile.cmx \
     library/states.cmx lib/system.cmx toplevel/toplevel.cmx \
     toplevel/usage.cmx lib/util.cmx toplevel/vernac.cmx toplevel/coqtop.cmi 
 toplevel/discharge.cmo: pretyping/class.cmi pretyping/classops.cmi \
@@ -1049,12 +1046,6 @@ toplevel/minicoq.cmx: kernel/declarations.cmx toplevel/fhimsg.cmx \
     parsing/g_minicoq.cmi kernel/inductive.cmx kernel/names.cmx lib/pp.cmx \
     kernel/safe_typing.cmx kernel/sign.cmx kernel/term.cmx \
     kernel/type_errors.cmx lib/util.cmx 
-toplevel/mltop.cmo: library/lib.cmi library/libobject.cmi library/library.cmi \
-    lib/pp.cmi library/summary.cmi lib/system.cmi lib/util.cmi \
-    toplevel/vernacinterp.cmi toplevel/mltop.cmi 
-toplevel/mltop.cmx: library/lib.cmx library/libobject.cmx library/library.cmx \
-    lib/pp.cmx library/summary.cmx lib/system.cmx lib/util.cmx \
-    toplevel/vernacinterp.cmx toplevel/mltop.cmi 
 toplevel/protectedtoplevel.cmo: toplevel/errors.cmi parsing/pcoq.cmi \
     lib/pp.cmi toplevel/vernac.cmi toplevel/vernacinterp.cmi \
     toplevel/protectedtoplevel.cmi 
@@ -1077,7 +1068,7 @@ toplevel/toplevel.cmo: parsing/ast.cmi toplevel/errors.cmi toplevel/mltop.cmi \
     kernel/names.cmi lib/options.cmi parsing/pcoq.cmi proofs/pfedit.cmi \
     lib/pp.cmi toplevel/protectedtoplevel.cmi lib/util.cmi \
     toplevel/vernac.cmi toplevel/vernacinterp.cmi toplevel/toplevel.cmi 
-toplevel/toplevel.cmx: parsing/ast.cmx toplevel/errors.cmx toplevel/mltop.cmx \
+toplevel/toplevel.cmx: parsing/ast.cmx toplevel/errors.cmx toplevel/mltop.cmi \
     kernel/names.cmx lib/options.cmx parsing/pcoq.cmx proofs/pfedit.cmx \
     lib/pp.cmx toplevel/protectedtoplevel.cmx lib/util.cmx \
     toplevel/vernac.cmx toplevel/vernacinterp.cmx toplevel/toplevel.cmi 
@@ -1171,25 +1162,19 @@ contrib/ring/ring.cmx: parsing/astterm.cmx kernel/closure.cmx \
     library/summary.cmx proofs/tacmach.cmx pretyping/tacred.cmx \
     tactics/tactics.cmx kernel/term.cmx pretyping/typing.cmx lib/util.cmx \
     toplevel/vernacinterp.cmx 
-contrib/xml/cooking.cmo: kernel/declarations.cmi library/global.cmi \
-    kernel/names.cmi kernel/term.cmi lib/util.cmi contrib/xml/xml.cmi \
-    contrib/xml/cooking.cmi 
-contrib/xml/cooking.cmx: kernel/declarations.cmx library/global.cmx \
-    kernel/names.cmx kernel/term.cmx lib/util.cmx contrib/xml/xml.cmx \
-    contrib/xml/cooking.cmi 
 contrib/xml/xml.cmo: contrib/xml/xml.cmi 
 contrib/xml/xml.cmx: contrib/xml/xml.cmi 
-contrib/xml/xmlcommand.cmo: contrib/xml/cooking.cmi kernel/declarations.cmi \
-    library/declare.cmi kernel/evd.cmi library/global.cmi library/lib.cmi \
-    library/libobject.cmi library/library.cmi kernel/names.cmi \
-    library/nametab.cmi proofs/pfedit.cmi proofs/proof_trees.cmi \
-    proofs/tacmach.cmi kernel/term.cmi lib/util.cmi contrib/xml/xml.cmi \
+contrib/xml/xmlcommand.cmo: kernel/declarations.cmi library/declare.cmi \
+    kernel/evd.cmi library/global.cmi library/lib.cmi library/libobject.cmi \
+    library/library.cmi kernel/names.cmi library/nametab.cmi \
+    proofs/pfedit.cmi proofs/proof_trees.cmi proofs/tacmach.cmi \
+    kernel/term.cmi lib/util.cmi contrib/xml/xml.cmi \
     contrib/xml/xmlcommand.cmi 
-contrib/xml/xmlcommand.cmx: contrib/xml/cooking.cmx kernel/declarations.cmx \
-    library/declare.cmx kernel/evd.cmx library/global.cmx library/lib.cmx \
-    library/libobject.cmx library/library.cmx kernel/names.cmx \
-    library/nametab.cmx proofs/pfedit.cmx proofs/proof_trees.cmx \
-    proofs/tacmach.cmx kernel/term.cmx lib/util.cmx contrib/xml/xml.cmx \
+contrib/xml/xmlcommand.cmx: kernel/declarations.cmx library/declare.cmx \
+    kernel/evd.cmx library/global.cmx library/lib.cmx library/libobject.cmx \
+    library/library.cmx kernel/names.cmx library/nametab.cmx \
+    proofs/pfedit.cmx proofs/proof_trees.cmx proofs/tacmach.cmx \
+    kernel/term.cmx lib/util.cmx contrib/xml/xml.cmx \
     contrib/xml/xmlcommand.cmi 
 contrib/xml/xmlentries.cmo: lib/util.cmi toplevel/vernacinterp.cmi \
     contrib/xml/xmlcommand.cmi 

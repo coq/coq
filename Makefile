@@ -125,7 +125,7 @@ USERTACCMX=$(USERTAC:.ml4=.cmx)
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
         contrib/ring/quote.cmo contrib/ring/ring.cmo \
-        contrib/xml/xml.cmo contrib/xml/cooking.cmo \
+        contrib/xml/xml.cmo \
 	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
