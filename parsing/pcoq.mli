@@ -181,6 +181,7 @@ module Vernac_ :
     val constrarg : Coqast.t Gram.Entry.e
     val ne_constrarg_list : Coqast.t list Gram.Entry.e
     val tacarg : Coqast.t Gram.Entry.e
+    val reduce : Coqast.t list Gram.Entry.e
     val sortarg : Coqast.t Gram.Entry.e
     val theorem_body : Coqast.t Gram.Entry.e
     val thm_tok : Coqast.t Gram.Entry.e

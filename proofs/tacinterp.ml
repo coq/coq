@@ -105,14 +105,25 @@ let make_ids ast = function
   | _ -> anomalylabstrm "make_ids" (str "Not an identifier")
 
 (* Gives Qualid's and makes the possible injection identifier -> qualid *)
-let make_qid = function
+(*let make_qid = function
   | VArg (Qualid _) as arg -> arg
   | VArg (Identifier id) -> VArg (Qualid (make_short_qualid id))
   | VArg (Constr c) ->
     (match (kind_of_term c) with
     | Const cst -> VArg (Qualid (qualid_of_sp cst))
     | _ -> anomalylabstrm "make_qid" (str "Not a Qualid"))
-  | _ -> anomalylabstrm "make_qid" (str "Not a Qualid")
+  | _ -> anomalylabstrm "make_qid" (str "Not a Qualid")*)
+
+(* Gives qualid's and makes the possible injection identifier -> qualid *)
+let make_qid = function
+  | VArg (Qualid q) -> q
+  | VArg (Identifier id) -> make_short_qualid id
+  | VArg (Constr c) ->
+    (match (kind_of_term c) with
+    | Const cst -> qualid_of_sp cst
+    | Var id -> make_short_qualid id
+    | _ -> anomalylabstrm "make_qid" (str "Not a qualid"))
+  | _ -> anomalylabstrm "make_qid" (str "Not a qualid")
 
 (* Transforms a named_context into a (string * constr) list *)
 let make_hyps = List.map (fun (id,_,typ) -> (string_of_id id,body_of_type typ))
@@ -520,10 +531,10 @@ let rec val_interp ist ast =
         with | Not_found ->
                  (try (vcontext_interp ist (lookup s))
                  with | Not_found -> VArg (Identifier s)))
-    | Node(_,"QUALIDARG",[Nvar(_,s)]) ->
+  (*  | Node(_,"QUALIDARG",[Nvar(_,s)]) ->
         (try (make_qid (unrec (List.assoc s ist.lfun)))
         with | Not_found ->
-                 VArg (Qualid (qid_interp ist ast)))
+                 VArg (Qualid (qid_interp ist ast)))*)
     | Node(_,"QUALIDARG",_) | Node(_,"QUALIDMETA",_) ->
         VArg (Qualid (qid_interp ist ast))
     | Str(_,s) -> VArg (Quoted_string s)
@@ -1064,9 +1075,16 @@ and cast_opencom_interp ist com =
 
 (* Interprets a qualified name. This can be a metavariable to be injected *)
 and qid_interp ist = function
-  | Node(loc,"QUALIDARG",p) -> interp_qualid p
+  | Node(_,"QUALIDARG",p) -> 
+    (match p with
+     | [Nvar(_,s)] ->
+       (try (make_qid (unrec (List.assoc s ist.lfun)))
+        with | Not_found -> interp_qualid p)
+     | _ -> interp_qualid p)
   | Node(loc,"QUALIDMETA",[Num(_,n)]) ->
-      Nametab.qualid_of_sp (destConst(List.assoc n ist.lmatch))
+    (try Nametab.qualid_of_sp (destConst (List.assoc n ist.lmatch)) with
+     | Invalid_argument "destConst" ->
+       make_qualid (make_dirpath []) (destVar (List.assoc n ist.lmatch)))
   | ast -> 
       anomaly_loc (Ast.loc ast, "Tacinterp.qid_interp",(str
         "Unrecognizable qualid ast: " ++ print_ast ast))

@@ -371,6 +371,7 @@ module Vernac_ =
     let constrarg = gec "constrarg"
     let ne_constrarg_list = gec_list "ne_constrarg_list"
     let tacarg = gec "tacarg"
+    let reduce = gec_list "reduce"
     let sortarg = gec "sortarg"
     let theorem_body = gec "theorem_body"
     let thm_tok = gec "thm_tok"

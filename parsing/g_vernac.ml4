@@ -51,7 +51,7 @@ END
 
 (* Gallina declarations *)
 GEXTEND Gram
-  GLOBAL: gallina gallina_ext thm_tok theorem_body;
+  GLOBAL: gallina gallina_ext reduce thm_tok theorem_body;
 
   theorem_body_line:
     [ [ n = numarg; ":"; tac = tacarg; "." ->
@@ -105,7 +105,7 @@ GEXTEND Gram
   ;
   reduce:
     [ [ IDENT "Eval"; r = Tactic.red_tactic; "in" ->
-	  [ <:ast< (TACTIC_ARG (REDEXP $r)) >> ]
+        [ <:ast< (TACTIC_ARG (REDEXP $r)) >> ]
       | -> [] ] ]
   ;
   binders_list:

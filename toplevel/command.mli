@@ -21,6 +21,14 @@ open Nametab
    functions of [Declare]; they return an absolute reference to the
    defined object *)
 
+val constant_entry_of_com :
+  Coqast.t * Coqast.t option * bool -> Safe_typing.constant_entry
+
+val declare_global_definition :
+  Names.identifier ->
+  Safe_typing.constant_entry ->
+  Declare.strength -> bool -> Nametab.global_reference
+
 val definition_body : identifier -> bool * strength -> 
   Coqast.t -> Coqast.t option -> global_reference
 

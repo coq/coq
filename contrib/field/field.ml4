@@ -11,10 +11,12 @@
 (* $Id$ *)
 
 open Names
+open Pp
 open Proof_type
 open Tacinterp
 open Tacmach
 open Term
+open Typing
 open Util
 open Vernacinterp
 
@@ -77,7 +79,10 @@ let add_field a aplus amult aone azero aopp aeq ainv aminus_o adiv_o rth
      with | UserError("Add Semi Ring",_) -> ());
     let th = mkApp ((constant ["Field_Theory"] "Build_Field_Theory"),
       [|a;aplus;amult;aone;azero;aopp;aeq;ainv;aminus_o;adiv_o;rth;ainv_l|]) in
-    Lib.add_anonymous_leaf (in_addfield (a,th))
+    begin
+      let _ = type_of (Global.env ()) Evd.empty th in ();
+      Lib.add_anonymous_leaf (in_addfield (a,th))
+    end
   end
 
 (* Vernac command declaration *)
@@ -128,5 +133,36 @@ let field g =
           | [id:t |- ?] -> Rewrite id;Reflexivity)|Field_Gen FT]
       | [|- (eqT ? ? ?)] -> Field_Gen FT>>) g
 
+(* Verifies that all the terms have the same type and gives the right theory *)
+let guess_theory env evc = function
+  | c::tl ->
+    let t = type_of env evc c in
+    if List.exists (fun c1 ->
+      not (Reductionops.is_conv env evc t (type_of env evc c1))) tl then
+      errorlabstrm "Field:" (str" All the terms must have the same type")
+    else
+      lookup t
+  | [] -> anomaly "Field: must have a non-empty constr list here"
+
+(* Guesses the type and calls Field_Term with the right theory *)
+let field_term l g =
+  let env = (pf_env g)
+  and evc = (project g) in
+  let th = constrIn (guess_theory env evc l)
+  and nl = List.map constrIn (Quote.sort_subterm g l) in
+  (List.fold_right
+    (fun c a ->
+     let tac = (Tacinterp.interp <:tactic<(Field_Term $th $c)>>) in
+     tclTHENSI tac [a]) nl tclIDTAC) g
+
+(* Gives the constr list from the tactic_arg list *)
+let targ_constr =
+   List.map
+     (fun e ->
+        match e with
+        | Constr c -> c
+        | _ -> anomaly "Field: must be a constr")
+
 (* Declaration of Field *)
-let _ = hide_tactic "Field" (function _ -> field)
+let _ = hide_tactic "Field"
+        (fun l -> if l = [] then field else field_term (targ_constr l))

@@ -97,12 +97,16 @@ let dir_ml_load s =
   match !load with
     | WithTop t -> 
 	if is_in_path !coq_mlpath_copy s then
-          try t.load_obj s
+          try 
+            t.load_obj s
           with
-            | (UserError _ | Failure _ | Anomaly _ | Not_found as u) -> raise u
+            | (UserError _ | Failure _ | Anomaly _ | Not_found as u) ->
+              raise u
             | _ -> errorlabstrm "Mltop.load_object"
                   [< str"Cannot link ml-object "; str s;
 		     str" to Coq code." >]
+
+
 	else 
 	  errorlabstrm "Mltop.load_object"
             [< str"File not found on loadpath : "; str s >]

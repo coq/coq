@@ -35,7 +35,8 @@ with vernac : ast :=
                   $ainv_l ($LIST $l))].
 
 Grammar tactic simple_tactic: ast :=
-  | field [ "Field" ] -> [(Field)].
+  | field [ "Field" constrarg_list($arg) ] -> [(Field ($LIST $arg))].
 
 Syntax tactic level 0:
-  | field [(Field)] -> ["Field"].
+  | field [ <<(Field ($LIST $lc))>> ] -> ["Field" [1 1] (LISTSPC ($LIST $lc))]
+  | field_e [(Field)] -> ["Field"].

@@ -21,7 +21,7 @@ open Util
 (* Tactics grammar rules *)
 
 GEXTEND Gram
-  GLOBAL: tactic_expr input_fun;
+  GLOBAL: tactic_atom tactic_atom0 tactic_expr input_fun;
   input_fun:
     [ [ l = identarg -> l
       | "()" -> <:ast< (VOID) >> ] ]
@@ -144,7 +144,8 @@ GEXTEND Gram
       | IDENT "Inst"; id = identarg; "["; c = Constr.constr; "]" ->
         <:ast< (COMMAND (CONTEXT $id $c)) >>
       |	st = simple_tactic -> st
-      | id = lqualid; la = LIST1 tactic_atom0 -> <:ast< (APP $id ($LIST $la)) >>
+      | id = lqualid; la = LIST1 tactic_atom0 ->
+        <:ast< (APP $id ($LIST $la)) >>
       | id = lqualid -> id
       | ta = tactic_atom0 -> ta ] ]
   ;

@@ -19,17 +19,17 @@ Recursive Tactic Definition MemAssoc var lvar :=
   | [(nilT ?)] -> false
   | [(consT ? ?1 ?2)] ->
     (Match ?1==var With
-     | [?1== ?1] -> true
+     | [?1==?1] -> true
      | _ -> (MemAssoc var ?2)).
 
 Recursive Tactic Definition SeekVarAux FT lvar trm :=
-  Let AT     = Eval Compute in (A FT)
-  And AzeroT = Eval Compute in (Azero FT)
-  And AoneT  = Eval Compute in (Aone FT)
-  And AplusT = Eval Compute in (Aplus FT)
-  And AmultT = Eval Compute in (Amult FT)
-  And AoppT  = Eval Compute in (Aopp FT)
-  And AinvT  = Eval Compute in (Ainv FT) In
+  Let AT     = Eval Cbv Beta Delta [A] Iota in (A FT)
+  And AzeroT = Eval Cbv Beta Delta [Azero] Iota in (Azero FT)
+  And AoneT  = Eval Cbv Beta Delta [Aone] Iota in (Aone FT)
+  And AplusT = Eval Cbv Beta Delta [Aplus] Iota in (Aplus FT)
+  And AmultT = Eval Cbv Beta Delta [Amult] Iota in (Amult FT)
+  And AoppT  = Eval Cbv Beta Delta [Aopp] Iota in (Aopp FT)
+  And AinvT  = Eval Cbv Beta Delta [Ainv] Iota in (Ainv FT) In 
   Match trm With
   | [(AzeroT)] -> lvar
   | [(AoneT)] -> lvar
@@ -48,7 +48,7 @@ Recursive Tactic Definition SeekVarAux FT lvar trm :=
     | [(false)] -> '(consT AT ?1 lvar).
 
 Tactic Definition SeekVar FT trm :=
-  Let AT = Eval Compute in (A FT) In
+  Let AT = Eval Cbv Beta Delta [A] Iota in (A FT) In
   (SeekVarAux FT '(nilT AT) trm).
 
 Recursive Tactic Definition NumberAux lvar cpt :=
@@ -72,14 +72,14 @@ Recursive Tactic Definition Assoc elt lst :=
     | [?1== ?1] -> ?2
     | _ -> (Assoc elt ?3).
 
-Recursive Tactic Definition interp_A FT lvar trm :=
-  Let AT     = Eval Compute in (A FT)
-  And AzeroT = Eval Compute in (Azero FT)
-  And AoneT  = Eval Compute in (Aone FT)
-  And AplusT = Eval Compute in (Aplus FT)
-  And AmultT = Eval Compute in (Amult FT)
-  And AoppT  = Eval Compute in (Aopp FT)
-  And AinvT  = Eval Compute in (Ainv FT) In
+Recursive Meta Definition interp_A FT lvar trm :=
+  Let AT     = Eval Cbv Beta Delta [A] Iota in (A FT)
+  And AzeroT = Eval Cbv Beta Delta [Azero] Iota in (Azero FT)
+  And AoneT  = Eval Cbv Beta Delta [Aone] Iota in (Aone FT)
+  And AplusT = Eval Cbv Beta Delta [Aplus] Iota in (Aplus FT)
+  And AmultT = Eval Cbv Beta Delta [Amult] Iota in (Amult FT)
+  And AoppT  = Eval Cbv Beta Delta [Aopp] Iota in (Aopp FT)
+  And AinvT  = Eval Cbv Beta Delta [Ainv] Iota in (Ainv FT) In
   Match trm With
   | [(AzeroT)] -> EAzero
   | [(AoneT)] -> EAone
@@ -169,20 +169,25 @@ Tactic Definition GrepMult :=
   Match Context With
     | [ id: ~(interp_ExprA ? ? ?)== ? |- ?] -> id.
 
+Tactic Definition WeakReduce :=
+  Match Context With
+  | [|-[(interp_ExprA ?1 ?2 ?)]] ->
+    Cbv Beta Delta [interp_ExprA assoc_2nd eq_nat_dec mult_of_list ?1 ?2 A
+                    Azero Aone Aplus Amult Aopp Ainv] Zeta Iota.
+
 Tactic Definition Multiply mul :=
   Match Context With
   | [|-(interp_ExprA ?1 ?2 ?3)==(interp_ExprA ?1 ?2 ?4)] ->
-    Let AzeroT = Eval Compute in (Azero ?1) In
+    Let AzeroT = Eval Cbv Beta Delta [Azero ?1] Iota in (Azero ?1) In
     Cut ~(interp_ExprA ?1 ?2 mul)==AzeroT;
     [Intro;
      Let id = GrepMult In
-     Apply (mult_eq ?1 ?3 ?4 mul ?2 id)(*;
-     Cbv Beta Delta -[interp_ExprA] Zeta Iota*)
-    |Cbv Beta Delta -[not] Zeta Iota;
-     Let AmultT = Eval Compute in (Amult ?1)
-     And AoneT = Eval Compute in (Aone ?1) In
-     (Match Context With
-      | [|-[(AmultT ? AoneT)]] -> Rewrite (AmultT_1r ?1));Clear ?1 ?2].
+     Apply (mult_eq ?1 ?3 ?4 mul ?2 id)
+    |WeakReduce;
+     Let AoneT  = Eval Cbv Beta Delta [Aone ?1] Iota in (Aone ?1)
+     And AmultT = Eval Cbv Beta Delta [Amult ?1] Iota in (Amult ?1) In
+     Try (Match Context With
+          | [|-[(AmultT ? AoneT)]] -> Rewrite (AmultT_1r ?1));Clear ?1 ?2].
 
 Tactic Definition ApplyMultiply FT lvar trm :=
   Cut (interp_ExprA FT lvar (multiply trm))==(interp_ExprA FT lvar trm);
@@ -210,10 +215,10 @@ Tactic Definition ApplyInverse mul FT lvar trm :=
 Tactic Definition StrongFail tac := First [tac|Fail 2].
 
 Tactic Definition InverseTestAux FT trm :=
-  Let AplusT = Eval Compute in (Aplus FT)
-  And AmultT = Eval Compute in (Amult FT)
-  And AoppT  = Eval Compute in (Aopp FT)
-  And AinvT  = Eval Compute in (Ainv FT) In
+  Let AplusT = Eval Cbv Beta Delta [Aplus] Iota in (Aplus FT)
+  And AmultT = Eval Cbv Beta Delta [Amult] Iota in (Amult FT)
+  And AoppT  = Eval Cbv Beta Delta [Aopp] Iota in (Aopp FT)
+  And AinvT  = Eval Cbv Beta Delta [Ainv] Iota in (Ainv FT) In
   Match trm With
   | [(AinvT ?)] -> Fail 1
   | [(AoppT ?1)] -> StrongFail (InverseTestAux FT ?1)
@@ -224,7 +229,7 @@ Tactic Definition InverseTestAux FT trm :=
   | _ -> Idtac.
 
 Tactic Definition InverseTest FT :=
-  Let AplusT = Eval Compute in (Aplus FT) In
+  Let AplusT = Eval Cbv Beta Delta [Aplus] Iota in (Aplus FT) In
   Match Context With
   | [|- ?1==?2] -> (InverseTestAux FT '(AplusT ?1 ?2)).
 
@@ -246,9 +251,18 @@ Tactic Definition Unfolds FT :=
    | [(Some ? ?1)] -> Unfold ?1
    | _ -> Idtac).
 
-Tactic Definition Field_Gen FT :=
-  Let AplusT = Eval Compute in (Aplus FT) In
-  Unfolds FT;
+Tactic Definition Reduce FT :=
+  Let AzeroT = Eval Cbv Beta Delta [Azero] Iota in (Azero FT)
+  And AoneT  = Eval Cbv Beta Delta [Aone] Iota in (Aone FT)
+  And AplusT = Eval Cbv Beta Delta [Aplus] Iota in (Aplus FT)
+  And AmultT = Eval Cbv Beta Delta [Amult] Iota in (Amult FT)
+  And AoppT  = Eval Cbv Beta Delta [Aopp] Iota in (Aopp FT)
+  And AinvT  = Eval Cbv Beta Delta [Ainv] Iota in (Ainv FT) In
+  Cbv Beta Delta -[AzeroT AoneT AplusT AmultT AoppT AinvT] Zeta Iota
+  Orelse Compute.
+
+Tactic Definition Field_Gen_Aux FT :=
+  Let AplusT = Eval Cbv Beta Delta [Aplus] Iota in (Aplus FT) In
   Match Context With
   | [|- ?1==?2] ->
     Let lvar = (BuildVarList FT '(AplusT ?1 ?2)) In
@@ -260,5 +274,128 @@ Tactic Definition Field_Gen FT :=
     |Intros;(ApplySimplif ApplyDistrib);(ApplySimplif ApplyAssoc);
      (Multiply mul);[(ApplySimplif ApplyMultiply);
        (ApplySimplif (ApplyInverse mul));
-       (Let id = GrepMult In Clear id);Compute;
-       First [(InverseTest FT);Ring|Clear ft vm;(Field_Gen FT)]|Idtac]].
+       (Let id = GrepMult In Clear id);WeakReduce;Clear ft vm;
+       First [(InverseTest FT);Ring|(Field_Gen_Aux FT)]|Idtac]].
+
+Tactic Definition Field_Gen FT :=
+  Unfolds FT;((InverseTest FT);Ring) Orelse (Field_Gen_Aux FT).
+
+(*****************************)
+(*    Term Simplification    *)
+(*****************************)
+
+(**** Minus and division expansions ****)
+
+Meta Definition InitExp FT trm :=
+  Let e =
+    (Match Eval Cbv Beta Delta [Aminus] Iota in (Aminus FT) With
+     | [(Some ? ?1)] -> Eval Cbv Beta Delta [?1] in trm
+     | _ -> trm) In
+  Match Eval Cbv Beta Delta [Adiv] Iota in (Adiv FT) With
+  | [(Some ? ?1)] -> Eval Cbv Beta Delta [?1] in e
+  | _ -> e.
+
+(**** Inverses simplification ****)
+
+Recursive Meta Definition SimplInv trm:=
+  Match trm With
+  | [(EAplus ?1 ?2)] ->
+    Let e1 = (SimplInv ?1)
+    And e2 = (SimplInv ?2) In
+    '(EAplus e1 e2)
+  | [(EAmult ?1 ?2)] ->
+    Let e1 = (SimplInv ?1)
+    And e2 = (SimplInv ?2) In
+    '(EAmult e1 e2)
+  | [(EAopp ?1)] -> Let e = (SimplInv ?1) In '(EAopp e)
+  | [(EAinv ?1)] -> (SimplInvAux ?1)
+  | [?1] -> ?1
+And SimplInvAux trm :=
+  Match trm With
+  | [(EAinv ?1)] -> (SimplInv ?1)
+  | [(EAmult ?1 ?2)] ->
+    Let e1 = (SimplInv '(EAinv ?1))
+    And e2 = (SimplInv '(EAinv ?2)) In
+    '(EAmult e1 e2)
+  | [?1] -> Let e = (SimplInv ?1) In '(EAinv e).
+
+(**** Monom simplification ****)
+
+Recursive Meta Definition Map fcn lst :=
+  Match lst With
+  | [(nilT ?)] -> lst
+  | [(consT ?1 ?2 ?3)] ->
+    Let r = (fcn ?2)
+    And t = (Map fcn ?3) In
+    '(consT ?1 r t).
+
+Recursive Meta Definition BuildMonomAux lst trm :=
+  Match lst With
+  | [(nilT ?)] -> Eval Compute in (assoc trm)
+  | [(consT ? ?1 ?2)] -> BuildMonomAux ?2 '(EAmult trm ?1).
+
+Recursive Meta Definition BuildMonom lnum lden :=
+  Let ildn = (Map (Fun e -> '(EAinv e)) lden) In
+  Let ltot = Eval Compute in (appT ExprA lnum ildn) In
+  Let trm = (BuildMonomAux ltot EAone) In
+  Match trm With
+  | [(EAmult ? ?1)] -> ?1
+  | [?1] -> ?1.
+
+Recursive Meta Definition SimplMonomAux lnum lden trm :=
+  Match trm With
+  | [(EAmult (EAinv ?1) ?2)] ->
+    Let mma = (MemAssoc ?1 lnum) In
+    (Match mma With
+     | [true] ->
+       Let newlnum = (Remove ?1 lnum) In SimplMonomAux newlnum lden ?2
+     | [false] -> SimplMonomAux lnum '(consT ExprA ?1 lden) ?2)
+  | [(EAmult ?1 ?2)] ->
+    Let mma = (MemAssoc ?1 lden) In
+    (Match mma With
+     | [true] ->
+       Let newlden = (Remove ?1 lden) In SimplMonomAux lnum newlden ?2
+     | [false] -> SimplMonomAux '(consT ExprA ?1 lnum) lden ?2)
+  | [(EAinv ?1)] ->
+    Let mma = (MemAssoc ?1 lnum) In
+    (Match mma With
+     | [true] ->
+       Let newlnum = (Remove ?1 lnum) In BuildMonom newlnum lden
+     | [false] -> BuildMonom lnum '(consT ExprA ?1 lden))
+  | [?1] ->
+    Let mma = (MemAssoc ?1 lden) In
+    (Match mma With
+     | [true] ->
+       Let newlden = (Remove ?1 lden) In BuildMonom lnum newlden
+     | [false] -> BuildMonom '(consT ExprA ?1 lnum) lden).
+
+Meta Definition SimplMonom trm :=
+  SimplMonomAux '(nilT ExprA) '(nilT ExprA) trm.
+
+Recursive Meta Definition SimplAllMonoms trm :=
+  Match trm With
+  | [(EAplus ?1 ?2)] ->
+    Let e1 = (SimplMonom ?1)
+    And e2 = (SimplAllMonoms ?2) In
+    '(EAplus e1 e2)
+  | [?1] -> SimplMonom ?1.
+
+(**** Associativity and distribution ****)
+
+Meta Definition AssocDistrib trm := Eval Compute in (assoc (distrib trm)).
+
+(**** The tactic Field_Term ****)
+
+Tactic Definition EvalWeakReduce trm :=
+  Eval Cbv Beta Delta [interp_ExprA assoc_2nd eq_nat_dec mult_of_list A Azero
+                       Aone Aplus Amult Aopp Ainv] Zeta Iota in trm.
+
+Tactic Definition Field_Term FT exp :=
+  Let newexp = (InitExp FT exp) In
+  Let lvar = (BuildVarList FT newexp) In
+  Let trm = (interp_A FT lvar newexp) In
+  Let tma = Eval Compute in (assoc trm) In
+  Let tsmp = (SimplAllMonoms (AssocDistrib (SimplAllMonoms
+                (SimplInv tma)))) In
+  Let trep = (EvalWeakReduce '(interp_ExprA FT lvar tsmp)) In
+  Replace exp with trep;[Ring trep|Field_Gen FT].
