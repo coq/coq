@@ -6,6 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
+Set Implicit Arguments.
+V7only [Unset Implicit Arguments.].
+
 (*i $Id$ i*)
 
 (** This module proves the validity of

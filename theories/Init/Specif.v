@@ -8,6 +8,9 @@
 
 (*i $Id$ i*)
 
+Set Implicit Arguments.
+V7only [Unset Implicit Arguments.].
+
 (** Basic specifications : Sets containing logical information *)
 
 Require Datatypes.

@@ -8,6 +8,9 @@
 
 (*i $Id$ i*)
 
+Set Implicit Arguments.
+V7only [Unset Implicit Arguments.].
+
 (** [unit] is a singleton datatype with sole inhabitant [tt] *)
 
 Inductive unit : Set := tt : unit.

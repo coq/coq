@@ -8,6 +8,9 @@
 
 (*i $Id$ i*)
 
+Set Implicit Arguments.
+V7only [Unset Implicit Arguments.].
+
 (** This module defines quantification on the world [Type]
     ([Logic.v] was defining it on the world [Set]) *)
 
