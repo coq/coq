@@ -5,8 +5,7 @@ A revision of the standard library and of concrete syntax of Coq, including
 
 - a completely new syntax for terms
 - renaming of various standard notions from French to English (esp in ZArith)
-- all notions of the standard library are declared with (strict)
-  implicit arguments
+- notions of the standard library are declared with (strict) implicit arguments
 - eq merged with eqT: old eq disappear, new eq (written =) is old eqT
   and new eqT is syntactic sugar for new eq (notation == is an alias
   for = and is written as it)
@@ -19,11 +18,19 @@ Vernacular commands
 - "Set Printing Width n" added, allows to change the size of width printing
    (TODO : doc).
 - "Implicit Variables Type x,y:t" assigns default types for binding variables.
+- "Set Implicits Printing" disable printing of implicit arguments
 
 Gallina
 
 - New syntax of the form "Inductive bool : Set := true, false : bool." for
   enumerated types
+
+Implicit arguments
+
+- Inductive in sections declared with implicits now "discharged" with
+  implicits (like constants and variables)
+- Set Implicit Arguments is strict by default in new syntax
+- Implicit Arguments flags are now synchronous with reset
 
 Grammar extensions
 
@@ -36,6 +43,10 @@ Grammar extensions
 Tactic language
 
 - Fail tactic now accepts a failure message
+- Fail levels are now decremented at "Match Context" blocks only and
+  if the right-hand-side of "Match term With" are tactics, these
+  tactics are never evaluated immediately and do not induce
+  backtracking (in contrast with "Match Context")
 
 Bugs
 
