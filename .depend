@@ -37,6 +37,8 @@ parsing/g_minicoq.cmi: /usr/local/lib/camlp4/grammar.cmi kernel/names.cmi \
 parsing/lexer.cmi: /usr/local/lib/camlp4/token.cmi 
 parsing/pcoq.cmi: parsing/coqast.cmi /usr/local/lib/camlp4/gramext.cmi \
     /usr/local/lib/camlp4/grammar.cmi /usr/local/lib/camlp4/token.cmi 
+toplevel/himsg.cmi: kernel/environ.cmi kernel/names.cmi lib/pp.cmi \
+    kernel/sign.cmi kernel/term.cmi kernel/type_errors.cmi 
 config/coq_config.cmo: config/coq_config.cmi 
 config/coq_config.cmx: config/coq_config.cmi 
 dev/db_printers.cmo: kernel/names.cmi lib/pp.cmi 
@@ -165,6 +167,12 @@ parsing/coqast.cmo: lib/dyn.cmi lib/hashcons.cmi parsing/coqast.cmi
 parsing/coqast.cmx: lib/dyn.cmx lib/hashcons.cmx parsing/coqast.cmi 
 parsing/lexer.cmo: lib/util.cmi parsing/lexer.cmi 
 parsing/lexer.cmx: lib/util.cmx parsing/lexer.cmi 
+toplevel/himsg.cmo: kernel/environ.cmi kernel/generic.cmi kernel/names.cmi \
+    lib/pp.cmi kernel/reduction.cmi kernel/sign.cmi kernel/term.cmi \
+    kernel/type_errors.cmi lib/util.cmi toplevel/himsg.cmi 
+toplevel/himsg.cmx: kernel/environ.cmx kernel/generic.cmx kernel/names.cmx \
+    lib/pp.cmx kernel/reduction.cmx kernel/sign.cmx kernel/term.cmx \
+    kernel/type_errors.cmx lib/util.cmx toplevel/himsg.cmi 
 toplevel/minicoq.cmo: kernel/constant.cmi parsing/g_minicoq.cmi \
     kernel/generic.cmi /usr/local/lib/camlp4/grammar.cmi kernel/inductive.cmi \
     kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
