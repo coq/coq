@@ -30,7 +30,8 @@ val require_module : bool option -> string -> string option -> bool -> unit
 (*s [save_module_to s f] saves the current environment as a module [s]
   in the file [f]. *)
 
-val save_module_to : string -> string -> unit
+val save_module_to : (Lib.library_segment -> Nametab.module_contents) -> 
+  string -> string -> unit
 
 (*s [module_segment m] returns the segment of the loaded module
     [m]; if not given, the segment of the current module is returned

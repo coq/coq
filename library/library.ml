@@ -32,7 +32,7 @@ let rec_add_path dir =
 type module_disk = { 
   md_name : string;
   md_compiled_env : compiled_env;
-  md_declarations : library_segment;
+  md_declarations : library_segment * Nametab.module_contents;
   md_deps : (string * Digest.t * bool) list }
 
 (*s Modules loaded in memory contain the following informations. They are
@@ -42,7 +42,7 @@ type module_t = {
   module_name : string;
   module_filename : load_path_entry * string;
   module_compiled_env : compiled_env;
-  module_declarations : library_segment;
+  module_declarations : library_segment * Nametab.module_contents;
   mutable module_opened : bool;
   mutable module_exported : bool;
   module_deps : (string * Digest.t * bool) list;
@@ -77,7 +77,7 @@ let opened_modules () =
 
 let module_segment = function
   | None -> contents_after None
-  | Some m -> (find_module m).module_declarations
+  | Some m -> fst (find_module m).module_declarations
 
 let module_filename m = (find_module m).module_filename
 
@@ -90,7 +90,7 @@ let segment_rec_iter f =
   let rec apply = function
     | sp,Leaf obj -> f (sp,obj)
     | _,OpenedSection _ -> assert false
-    | _,ClosedSection (_,seg) -> iter seg
+    | _,ClosedSection (_,_,seg,_) -> iter seg
     | _,(FrozenState _ | Module _) -> ()
   and iter seg =
     List.iter apply seg
@@ -101,7 +101,7 @@ let segment_iter f =
   let rec apply = function
     | sp,Leaf obj -> f (sp,obj)
     | _,OpenedSection _ -> assert false
-    | _,ClosedSection (_,seg) -> ()
+    | _,ClosedSection (export,_,seg,_) -> if export then iter seg
     | _,(FrozenState _ | Module _) -> ()
   and iter seg =
     List.iter apply seg
@@ -119,7 +119,8 @@ let rec open_module s =
   let m = find_module s in
   if not m.module_opened then begin
     List.iter (fun (m,_,exp) -> if exp then open_module m) m.module_deps;
-    open_objects m.module_declarations;
+    (* open_objects m.module_declarations; *)
+    Nametab.open_module_contents s;
     m.module_opened <- true
   end
 
@@ -150,7 +151,8 @@ let rec load_module_from s f =
     error ("The file " ^ fname ^ " does not contain module " ^ s);
   List.iter (load_mandatory_module s) m.module_deps;
   Global.import m.module_compiled_env;
-  load_objects m.module_declarations;
+  load_objects (fst m.module_declarations);
+  Nametab.push_module s (snd m.module_declarations);
   modules_table := Stringmap.add s m !modules_table;
   m
 
@@ -188,12 +190,12 @@ let current_imports () =
     (fun _ m l -> (m.module_name, m.module_digest, m.module_exported) :: l)
     !modules_table []
 
-let save_module_to s f =
+let save_module_to process s f =
   let seg = export_module () in
   let md = { 
     md_name = s;
     md_compiled_env = Global.export s;
-    md_declarations = seg;
+    md_declarations = seg, process seg;
     md_deps = current_imports () } in
   let (f',ch) = raw_extern_module f in
   System.marshal_out ch md;
