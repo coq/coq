@@ -1,6 +1,12 @@
 Changes from V7.3.1 to ????
 -------------------------
 
+Symbolic notations
+
+- precedence of + (sum) and * (prod) moved to 7 (like \/) and 6 (like /\)
+- introduction of a notion of scope gathering notations in a consistent set;
+  set a notation sets has been developped for nat, Z and R
+
 Library
 
 - Lemmas in Compare_dec.v (le_lt_dec, ...) are now transparent. This
@@ -28,6 +34,7 @@ ML tactic and vernacular commands
 - Concrete syntax for ML written vernacular commands and tactics is
   now declared at ML level using camlp4 macros TACTIC EXTEND et VERNAC
   COMMAND EXTEND.
+- "Check n c" now "n:Check c", "Eval n ..." now "n:Eval ..."
 
 Tactic definitions
 
@@ -39,7 +46,7 @@ Tactic definitions
 
 Tactics
 
-- Double Induction now referring to hypotheses like "Intro until"
+- Double Induction now referring to hypotheses like "Intros until"
 - "Inversion" now applies also on quantified hypotheses (naming as
   for Intros until)
 - NewDestruct now accepts terms with missing hypotheses
@@ -60,6 +67,10 @@ Incompatibilities
 - Transparency of le_lt_dec and co (leads to some simplification in
   proofs; in some cases, incompatibilites is solved by declaring locally 
   opaque the relevant constant)
+
+Bugs
+
+- Improved localisation of errors in Syntactic Definitions
 
 Changes from V7.3 to V7.3.1
 ===========================
