@@ -1216,3 +1216,63 @@ Module Make [X:OrderedType] <: S with Module E := X.
  Defined.
 
 End Make.
+
+(* TODO: functions in Raw should be all tail-recursive; 
+   here is a beginning
+
+  Fixpoint rev_append [s:t] : t -> t := Cases s of
+    nil => [s']s'
+  | (cons x l) => [s'](rev_append l x::s')
+  end.
+
+  Lemma rev_append_correct : (s,s':t)(rev_append s s')=(app (rev s) s').
+  Proof.
+  Induction s; Simpl; Auto.
+  Intros.
+  Rewrite H.
+  Rewrite app_ass.
+  Simpl; Auto.
+  Qed.
+
+  (* a tail_recursive [rev]. *)
+  Definition rev_tl := [s:t](rev_append s []).
+
+  Lemma rev_tl_correct : (s:t)(rev_tl s)=(rev s).
+  Proof.
+  Unfold rev_tl; Intros; Rewrite rev_append_correct; Symmetry;
+    Exact (app_nil_end (rev s)).
+  Qed.
+
+  (* a tail_recursive [union] *)
+  Fixpoint union_tl_aux [acc,s:t] : t -> t := Cases s of
+    nil => [s'](rev_append s' acc)
+  | (cons x l) =>
+       (Fix union_aux { union_aux / 2 : t -> t -> t := [acc,s']Cases s' of
+           nil => (rev_append s acc)
+         | (cons x' l') => Cases (E.compare x x') of
+              (Lt _ ) => (union_tl_aux x::acc l s')
+            | (Eq _ ) => (union_tl_aux x::acc l l')
+            | (Gt _) => (union_aux x'::acc l')
+            end
+         end} acc)
+   end.
+
+  Definition union_tl := [s,s':t](rev_tl (union_tl_aux [] s s')).
+
+  Lemma union_tl_correct :
+    (s,s':t)(union_tl s s')=(union s s').
+  Proof.
+  Assert  (s,s',acc:t)(union_tl_aux acc s s')=(rev_append (union s s') acc).
+   Induction s.
+   Simpl; Auto.
+   Intros x l Hrec; Induction s'; Auto; Intros x' l' Hrec' acc.
+   Simpl; Case (E.compare x x'); Simpl; Intros; Auto.
+   Change (union_tl_aux x'::acc x::l l')=(rev_append (union x::l l') x'::acc); Ground.
+  Unfold union_tl; Intros; Rewrite H; Auto.
+  Change (rev_append (union s s') []) with (rev_tl (union s s')).
+  Do 2 Rewrite rev_tl_correct.
+  Exact (idempot_rev (union s s')).
+  Qed.
+
+*)
+
