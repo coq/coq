@@ -205,8 +205,12 @@ let make_apply_entry env sigma (eapply,verbose) name (c,cty) =
         in 
 	if eapply & (nmiss <> 0) then begin
           if verbose then 
+	    if !Options.v7 then
 	    warn (str "the hint: EApply " ++ prterm c ++
-		    str " will only be used by EAuto"); 
+		    str " will only be used by EAuto")
+	    else
+	    warn (str "the hint: eapply " ++ prterm c ++
+		    str " will only be used by eauto"); 
           (hd,
            { hname = name;
 	     pri = nb_hyp cty + nmiss;
@@ -287,40 +291,8 @@ let add_hint dbname hintlist =
 
 let cache_autohint (_,(local,name,hintlist)) = add_hint name hintlist
 
-(*  let recalc_hints hintlist =
-    let env = Global.env() and sigma = Evd.empty in
-    let recalc_hint ((_,data) as hint) =
-      match data.code with
-	| Res_pf (c,_) ->
-	    let c' = subst_mps subst c in
-	      if c==c' then hint else
-		make_apply_entry env sigma (false,false) 
-		  data.hname (c', type_of env sigma c')
-	| ERes_pf (c,_) ->
-	    let c' = subst_mps subst c in
-	      if c==c' then hint else
-		make_apply_entry env sigma (true,false) 
-		  data.hname (c', type_of env sigma c')
-	| Give_exact c ->
-	    let c' = subst_mps subst c in
-	      if c==c' then hint else
-		make_exact_entry data.hname (c',type_of env sigma c')
-	| Res_pf_THEN_trivial_fail (c,_) ->
-	    let c' = subst_mps subst c in
-	      if c==c' then hint else
-		make_trivial env sigma (data.hname,c')
-	| Unfold_nth ref -> 
-	    let ref' = subst_global subst ref in
-	      if ref==ref' then hint else
-		make_unfold (data.hname,ref')
-	| Extern _ ->
-	    anomaly "Extern hints cannot be substituted!!!"
-    in
-      list_smartmap recalc_hint hintlist
-*)
-
 let forward_subst_tactic = 
-  ref (fun _ -> failwith "subst_tactic is not installed for Auto")
+  ref (fun _ -> failwith "subst_tactic is not installed for auto")
 
 let set_extern_subst_tactic f = forward_subst_tactic := f
 
@@ -436,7 +408,7 @@ let add_trivials env sigma l local dbnames =
     dbnames
 
 let forward_intern_tac = 
-  ref (fun _ -> failwith "intern_tac is not installed for Auto")
+  ref (fun _ -> failwith "intern_tac is not installed for auto")
 
 let set_extern_intern_tac f = forward_intern_tac := f
 
@@ -498,7 +470,9 @@ let add_hints local dbnames0 h =
 (*                    Functions for printing the hints                    *)
 (**************************************************************************)
 
-let fmt_autotactic = function
+let fmt_autotactic =
+  if !Options.v7 then
+  function
   | Res_pf (c,clenv) -> (str"Apply " ++ prterm c)
   | ERes_pf (c,clenv) -> (str"EApply " ++ prterm c)
   | Give_exact c -> (str"Exact " ++ prterm c)
@@ -506,6 +480,16 @@ let fmt_autotactic = function
       (str"Apply " ++ prterm c ++ str" ; Trivial")
   | Unfold_nth c -> (str"Unfold " ++  pr_global c)
   | Extern tac -> (str "Extern " ++ Pptactic.pr_glob_tactic tac)
+  else
+  function
+  | Res_pf (c,clenv) -> (str"apply " ++ prterm c)
+  | ERes_pf (c,clenv) -> (str"eapply " ++ prterm c)
+  | Give_exact c -> (str"exact " ++ prterm c)
+  | Res_pf_THEN_trivial_fail (c,clenv) -> 
+      (str"apply " ++ prterm c ++ str" ; trivial")
+  | Unfold_nth c -> (str"unfold " ++  pr_global c)
+  | Extern tac -> 
+      (str "(external) " ++ Pptacticnew.pr_glob_tactic (Global.env()) tac)
 
 let fmt_hint v =
   (fmt_autotactic v.code ++ str"(" ++ int v.pri ++ str")" ++ spc ())
@@ -636,7 +620,7 @@ si après Intros la conclusion matche le pattern.
 (* conclPattern doit échouer avec error car il est rattraper par tclFIRST *)
 
 let forward_interp_tactic = 
-  ref (fun _ -> failwith "interp_tactic is not installed for Auto")
+  ref (fun _ -> failwith "interp_tactic is not installed for auto")
 
 let set_extern_interp f = forward_interp_tactic := f
 
@@ -705,7 +689,10 @@ let trivial dbnames gl =
 	 try 
 	   searchtable_map x
 	 with Not_found -> 
-	   error ("Trivial: "^x^": No such Hint database"))
+	   if !Options.v7 then
+	     error ("Trivial: "^x^": No such Hint database")
+	   else
+	     error ("trivial: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
   tclTRY (trivial_fail_db db_list (make_local_hint_db gl)) gl 
@@ -804,7 +791,10 @@ let auto n dbnames gl =
 	 try 
 	   searchtable_map x
 	 with Not_found -> 
-	   error ("Auto: "^x^": No such Hint database"))
+	   if !Options.v7 then
+	     error ("Auto: "^x^": No such Hint database")
+	   else
+	     error ("auto: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
   let hyps = pf_hyps gl in
