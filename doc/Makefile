@@ -1,7 +1,38 @@
 
 # Makefile for doc/
 
-all: newsyntax.dvi minicoq.dvi
+all:: newparse 
+#newsyntax.dvi minicoq.dvi
+
+
+OBJS=lex.cmo ast.cmo parse.cmo syntax.cmo
+
+newparse: $(OBJS) syntax.mli lex.ml syntax.ml
+	ocamlc -o newparse $(OBJS)
+
+.ml.cmo:
+	ocamlc -c $<
+
+.mli.cmi:
+	ocamlc -c $<
+
+.mll.ml:
+	ocamllex $<
+
+.mly.ml:
+	ocamlyacc -v $<
+
+.mly.mli:
+	ocamlyacc -v $<
+
+clean::
+	rm -f *.cm* *.output syntax.ml syntax.mli lex.ml newparse
+
+parse.cmo: ast.cmo
+syntax.cmi: parse.cmo
+syntax.cmo: lex.cmo parse.cmo syntax.cmi
+lex.cmo: syntax.cmi
+ast.cmo: ast.ml
 
 newsyntax.dvi: newsyntax.tex
 	latex $<
@@ -26,7 +57,7 @@ depend:: kernel.dep.ps library.dep.ps pretyping.dep.ps parsing.dep.ps \
 clean::
 	rm -f *~ *.log *.aux
 
-.SUFFIXES: .tex .dvi .ps
+.SUFFIXES: .tex .dvi .ps .cmo .cmi .mli .ml .mll .mly
 
 .tex.dvi:
 	latex $< && latex $<

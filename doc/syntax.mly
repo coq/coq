@@ -1,60 +1,30 @@
 %{
-
-type constr_ast =
-  Pair of constr_ast * constr_ast
-| Prod of binder list * constr_ast
-| Lambda of binder list * constr_ast
-| Cast of constr_ast * constr_ast
-| Let of string * constr_ast * constr_ast
-| LetCase of binder list * constr_ast * constr_ast
-| IfCase of constr_ast * constr_ast * constr_ast
-| Eval of red_fun * constr_ast
-| Infix of string * constr_ast * constr_ast
-| Prefix of string * constr_ast
-| Postfix of string * constr_ast
-| Appl of constr_ast * constr_arg list
-| ApplExpl of constr_ast * constr_ast list
-| Scope of string * constr_ast
-| Qualid of string list
-| Prop | Set | Type
-| Int of string
-| Hole
-| Meta of string
-| Fixp of fix_kind *
-      (string * binder list * constr_ast * string option * constr_ast) list *
-      string
-| Match of case_item list * constr_ast option *
-           (pattern list * constr_ast) list 
-
-and redfun = Simpl
-
-and binder = string * constr_ast
-
-and constr_arg = string option * constr_ast
-
-and fix_kind = Fix | CoFix
-
-and case_item = constr_ast * (string option * constr_ast option)
-
-and pattern = 
-  PatAs of pattern * string
-| PatType of pattern * constr_ast
-| PatConstr of string * pattern list
-| PatVar of string
+open Ast
+open Parse
 %}
 
-%token <string> META
-%token <string> INT
-%token <string> IDENT
-%token <string> INFIX
-%token <string> PREFIX
-%token <string> POSTFIX
-%token LPAR RPAR BAR COMMA COLON BANG FUN DOT RARROW LET COLONEQ IN IF THEN ELSE EVAL AT FOR BQUOTE PROP SET TYPE WILDCARD FIX COFIX MATCH WITH ENDKW AND LBRACE RBRACE STRUCT AS SIMPL
+%token <string> META INT IDENT
+%token <string> OPER
+%token LPAR RPAR BAR COMMA COLON BANG FUN DOT RARROW LET COLONEQ IN IF
+%token THEN ELSE EVAL AT FOR PROP SET TYPE WILDCARD FIX
+%token COFIX MATCH WITH END AND LBRACE RBRACE STRUCT AS SIMPL PERCENT
+%token EOF
+
+%start main
+%type <Ast.constr_ast> main
 
 %start constr
-%type <constr_ast> constr
+%type <Ast.constr_ast> constr
+
+%start simple_constr
+%type <Ast.constr_ast> simple_constr
 
 %%
+
+main:
+          constr EOF { $1 }
+;
+
 
 paren_constr:
           constr COMMA paren_constr  { Pair($1,$3) }
@@ -63,20 +33,19 @@ paren_constr:
 
 constr:
           binder_constr  { $1 }
-        | oper_constr    { $1}
+        | oper_constr    { close_stack $1 }
 ;
 
 binder_constr:
-          BANG ne_binders DOT constr                  { Prod($2, $4) }
-        | FUN ne_binders type RARROW constr
-            { Lambda($2,Cast($5,$3)) }
-        | LET IDENT binders type COLONEQ constr IN constr
-            { Let($2,$6,Lambda($3,Cast($8,4))) }
+          BANG ne_binders DOT constr              { Prod($2, $4) }
+        | FUN ne_binders type_cstr RARROW constr  { Lambda($2,mk_cast $5 $3) }
+        | LET IDENT binders type_cstr COLONEQ constr IN constr
+            { Let($2,mk_lambda $3 (mk_cast $6 $4),$8) }
         | LET LPAR comma_binders RPAR COLONEQ constr IN constr
             { LetCase($3,$6,$8) }
-        | IF constr THEN constr ELSE constr           { IfCase($2,$4,$6) }
-        | fix_constr                                  { $1 }
-        | EVAL rfun IN constr                         { Eval($2,$4) }
+        | IF constr THEN constr ELSE constr       { IfCase($2,$4,$6) }
+        | fix_constr                              { $1 }
+        | EVAL rfun IN constr                     { Eval($2,$4) }
 ;
 
 comma_binders:
@@ -94,11 +63,20 @@ rfun:
 ;
 
 
+/* 2 Conflits shift/reduce */
 oper_constr:
-          oper_constr INFIX oper_constr  { Infix($2,$1,$3) }
-        | PREFIX oper_constr             { Prefix($1,$2) }
-        | oper_constr POSTFIX            { Postfix($2,$1) }
-        | appl_constr                    { $1 }
+          oper_constr oper appl_constr
+            { parse_term $3 (parse_oper $2 $1) }
+        | oper_constr oper binder_constr
+            { parse_term $3 (parse_oper $2 $1) }
+        | oper_constr oper  { parse_oper $2 $1 }
+        |                   { empty }
+        | appl_constr       { parse_term $1 empty }
+;
+
+oper:
+          OPER {$1}
+        | COLON {":"}
 ;
 
 appl_constr:
@@ -121,7 +99,7 @@ simple_constr:
           atomic_constr                           { $1 }
         | match_constr                            { $1 }
         | LPAR paren_constr RPAR                  { $2 }
-        | BQUOTE IDENT COLON paren_constr BQUOTE  { Scope($2,$4) }
+        | simple_constr PERCENT IDENT { Scope($3,$1) }
 ;
 
 simple_constrs:
@@ -144,17 +122,18 @@ global:
         | IDENT             { [$1] }
 ;
 
+/* Conflit normal */
 fix_constr:
           fix_kw fix_decl
             { let (id,_,_,_,_ as fx) = $2 in Fixp($1,[fx],id) }
-        | fix_kw fix_decl fix_decls FOR IDENT  { ($1, $2::$3, $5) }
+        | fix_kw fix_decl fix_decls FOR IDENT  { Fixp($1, $2::$3, $5) }
 ;
 
 fix_kw: FIX {Fix} | COFIX {CoFix}
 ;
 
 fix_decl:
-          IDENT binders type annot COLONEQ constr  { ($1,$2,$3,$4,$6) }
+          IDENT binders type_cstr annot COLONEQ constr  { ($1,$2,$3,$4,$6) }
 ;
 
 fix_decls:
@@ -168,7 +147,7 @@ annot:
 ;
 
 match_constr:
-          MATCH case_items case_type WITH branches ENDKW  { Match($2,$3,$5) }
+          MATCH case_items case_type WITH branches END  { Match($2,$3,$5) }
 ;
 
 case_items:
@@ -227,7 +206,7 @@ simple_patterns:
 
 binder:
           IDENT                 { ($1,Hole) }
-        | LPAR IDENT type RPAR  { ($2,$3) }
+        | LPAR IDENT type_cstr RPAR  { ($2,$3) }
 ;
 
 binders:
@@ -235,12 +214,11 @@ binders:
         |             { [] }
 
 ne_binders:
-          binder             { $1 }
+          binder             { [$1] }
         | binder ne_binders  { $1::$2 }
 ;
 
-type:
+type_cstr:
           COLON constr  { $2 }
         |               { Hole }
 ;
-
