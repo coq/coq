@@ -123,6 +123,8 @@ type atoms = {positive:constr list;negative:constr list}
 
 let no_atoms = (false,{positive=[];negative=[]})
 
+let dummy_id=VarRef (id_of_string "")
+
 let build_atoms gl metagen polarity cciterm =
   let trivial =ref false
   and positive=ref []
@@ -171,17 +173,14 @@ let build_atoms gl metagen polarity cciterm =
 
        
 type right_pattern =
-    Rand
+    Rarrow
+  | Rand
   | Ror 
+  | Rfalse
   | Rforall
   | Rexists of metavariable*constr*bool
-  | Rarrow
   | Revaluable of evaluable_global_reference
-      
-type right_formula =
-    Complex of right_pattern*constr*atoms
-  | Atomic of constr
-      
+   
 type left_arrow_pattern=
     LLatom
   | LLfalse of inductive*constr list
@@ -201,46 +200,62 @@ type left_pattern=
   | Levaluable of evaluable_global_reference
   | LA of constr*left_arrow_pattern
 
-type left_formula={id:global_reference;
-		   constr:constr;
-		   pat:left_pattern;
-		   atoms:atoms;
-		   internal:bool}
+type t={id:global_reference;
+	constr:constr;
+	pat:(left_pattern,right_pattern) sum;
+	atoms:atoms}
     
-let build_left_entry nam typ internal gl metagen=
+let build_formula side nam typ gl metagen=
   try 
     let m=meta_succ(metagen false) in
     let trivial,atoms=
       if !qflag then 
-	build_atoms gl metagen false typ 
+	build_atoms gl metagen side typ 
       else no_atoms in
     let pattern=
-      match kind_of_formula gl typ with
-	  False(i,_)        ->  Lfalse
-	| Atom a       ->  raise (Is_atom a)
-	| And(i,_)         ->  Land i
-	| Or(i,_)          ->  Lor i
-	| Exists (ind,_) ->  Lexists ind 
-	| Forall (d,_) -> 
-	    Lforall(m,d,trivial)
-	| Evaluable (egc,_) ->Levaluable egc 
-	| Arrow (a,b) ->LA (a, 
-			    match kind_of_formula gl a with
-				False(i,l)-> LLfalse(i,l)
-			      | Atom t->     LLatom
-			      | And(i,l)->      LLand(i,l)
-			      | Or(i,l)->       LLor(i,l)
-			      | Arrow(a,c)-> LLarrow(a,c,b)
-			      | Exists(i,l)->LLexists(i,l)
-			      | Forall(_,_)->LLforall a
-			      | Evaluable (egc,_)-> LLevaluable egc) in
+      if side then
+	let pat=
+	  match kind_of_formula gl typ with
+	      False(_,_)        -> Rfalse
+	    | Atom a       -> raise (Is_atom a)
+	    | And(_,_)        -> Rand
+	    | Or(_,_)         -> Ror
+	    | Exists (i,l) -> 
+		let (_,_,d)=list_last (ind_hyps 0 i l).(0) in
+		  Rexists(m,d,trivial)
+	    | Forall (_,a) -> Rforall 
+	    | Arrow (a,b) -> Rarrow 
+	    | Evaluable (egc,_)->Revaluable egc in
+	  Right pat
+      else
+	let pat=
+	  match kind_of_formula gl typ with
+	      False(i,_)        ->  Lfalse
+	    | Atom a       ->  raise (Is_atom a)
+	    | And(i,_)         ->  Land i
+	    | Or(i,_)          ->  Lor i
+	    | Exists (ind,_) ->  Lexists ind 
+	    | Forall (d,_) -> 
+		Lforall(m,d,trivial)
+	    | Evaluable (egc,_) ->Levaluable egc 
+	    | Arrow (a,b) ->LA (a, 
+				match kind_of_formula gl a with
+				    False(i,l)-> LLfalse(i,l)
+				  | Atom t->     LLatom
+				  | And(i,l)->      LLand(i,l)
+				  | Or(i,l)->       LLor(i,l)
+				  | Arrow(a,c)-> LLarrow(a,c,b)
+				  | Exists(i,l)->LLexists(i,l)
+				  | Forall(_,_)->LLforall a
+				  | Evaluable (egc,_)-> LLevaluable egc) in
+	  Left pat
+    in
       Left {id=nam;
 	    constr=typ;
 	    pat=pattern;
-	    atoms=atoms;
-	    internal=internal}
+	    atoms=atoms}
   with Is_atom a-> Right a
-    
+(*    
 let build_right_entry typ gl metagen=
   try
     let m=meta_succ(metagen false) in 
@@ -262,4 +277,4 @@ let build_right_entry typ gl metagen=
 	| Evaluable (egc,_)->Revaluable egc in
       Complex(pattern,typ,atoms)
   with Is_atom a-> Atomic a
-
+*)

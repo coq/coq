@@ -21,34 +21,43 @@ let newcnt ()=
   let cnt=ref (-1) in
     fun b->if b then incr cnt;!cnt
 
-let priority = function (* pure heuristics, <=0 for non reversible *)
-      Lfalse             ->1000
-    | Land _             ->  90
-    | Lor _              ->  40
-    | Lforall (_,_,_)      -> -30 (* must stay at lowest priority *)
-    | Lexists _           ->  60
-    | Levaluable _       -> 100
-    | LA(_,lap) ->
-	match lap with
-	    LLatom             ->   0
-	  | LLfalse (_,_)      -> 100
-	  | LLand (_,_)        ->  80
-	  | LLor (_,_)         ->  70
-	  | LLforall _         -> -20
-	  | LLexists (_,_)     ->  50
-	  | LLarrow  (_,_,_)   -> -10 
-	  | LLevaluable _      -> 100
-
-let right_reversible=
+let priority = (* pure heuristics, <=0 for non reversible *)
   function
-      Rarrow | Rand | Rforall | Revaluable _ ->true
-    | _ ->false
-	
+      Right rf->
+	begin
+	  match rf with
+	      Rarrow ->          100
+	    | Rand ->             40 
+	    | Ror ->             -15
+	    | Rfalse ->          -50 (* dead end for sure *)
+	    | Rforall ->         100
+	    | Revaluable _ ->    100 
+	    | Rexists (_,_,_) -> -30
+	end
+    | Left lf ->
+	match lf with
+	    Lfalse             ->  1000 (* yipee ! *)
+	  | Land _             ->    90
+	  | Lor _              ->    40
+	  | Lforall (_,_,_)      -> -30 (* must stay at lowest priority *)
+	  | Lexists _           ->   60
+	  | Levaluable _       ->   100
+	  | LA(_,lap) ->
+	      match lap with
+		  LLatom             ->   0
+		| LLfalse (_,_)      -> 100
+		| LLand (_,_)        ->  80
+		| LLor (_,_)         ->  70
+		| LLforall _         -> -20
+		| LLexists (_,_)     ->  50
+		| LLarrow  (_,_,_)   -> -10 
+		| LLevaluable _      -> 100
+
 let left_reversible lpat=(priority lpat)>0
 
 module OrderedFormula=
 struct
-  type t=left_formula
+  type t=Formula.t
   let compare e1 e2=
 	(priority e1.pat) - (priority e2.pat)
 end
@@ -64,7 +73,6 @@ let rec compare_list f l1 l2=
     | [],_ -> -1
     | _,[] -> 1
     | (h1::q1),(h2::q2) -> (f =? (compare_list f)) h1 h2 q1 q2
-
 
 let compare_array f v1 v2=  
   let l=Array.length v1 in
@@ -160,7 +168,8 @@ type t=
     {redexes:HP.t;
      context:(global_reference list) CM.t;
      latoms:constr list;
-     gl:right_formula;
+     gl:types;
+     glatom:constr option;
      cnt:counter;
      history:History.t;
      depth:int}
@@ -180,49 +189,65 @@ let lookup item seq=
 	    | Some ((m2,t2) as c2)->id=id2 && m2>m && more_general c2 c in
 	  History.exists p seq.history
 
-let add_left (nam,t) seq internal gl=
-  match build_left_entry nam t internal gl seq.cnt with
-      Left f->{seq with 
-		 redexes=HP.add f seq.redexes;
-		 context=cm_add f.constr nam seq.context}
-    | Right t->{seq with 
-		  context=cm_add t nam seq.context;
-		  latoms=t::seq.latoms}
+let add_formula side nam t seq gl=
+  match build_formula side nam t gl seq.cnt with
+      Left f->
+	if side then
+	  {seq with 
+	     redexes=HP.add f seq.redexes;
+	     gl=f.constr;
+	     glatom=None}
+	else
+	  {seq with 
+	     redexes=HP.add f seq.redexes;
+	     context=cm_add f.constr nam seq.context}
+    | Right t->
+	if side then
+	  {seq with gl=t;glatom=Some t}
+	else
+	  {seq with 
+	     context=cm_add t nam seq.context;
+	     latoms=t::seq.latoms}
 
-let re_add_left_list lf seq=
+let re_add_formula_list lf seq=
+  let do_one f cm=
+    if f.id == dummy_id then cm
+    else cm_add f.constr f.id cm in
   {seq with 
      redexes=List.fold_right HP.add lf seq.redexes;
-     context=List.fold_right 
-	       (fun f cm->cm_add f.constr f.id cm) lf seq.context}
-
-let change_right t seq gl=
-  {seq with gl=build_right_entry t gl seq.cnt}
+     context=List.fold_right do_one lf seq.context}
 
 let find_left t seq=List.hd (CM.find t seq.context)
 
-let rev_left seq=
+(*let rev_left seq=
   try
     let lpat=(HP.maximum seq.redexes).pat in
       left_reversible lpat
   with Heap.EmptyHeap -> false
-
-let is_empty_left seq=
+*)
+let no_formula seq=
   seq.redexes=HP.empty
 
-let take_left seq=
+let rec take_formula seq=
   let hd=HP.maximum seq.redexes
   and hp=HP.remove seq.redexes in
-    hd,{seq with 
-	  redexes=hp;
-	  context=cm_remove hd.constr hd.id seq.context}
-
-let take_right seq=seq.gl
-
+    if hd.id == dummy_id then
+      let nseq={seq with redexes=hp} in
+	if seq.gl==hd.constr then 
+	  hd,nseq
+	else
+	  take_formula nseq (* discarding deprecated goal *)
+    else
+      hd,{seq with 
+	    redexes=hp;
+	    context=cm_remove hd.constr hd.id seq.context}
+	
 let empty_seq depth=
   {redexes=HP.empty;   
    context=CM.empty;
    latoms=[];
-   gl=Atomic (mkMeta 1);
+   gl=(mkMeta 1);
+   glatom=None;
    cnt=newcnt ();
    history=History.empty;
    depth=depth}
@@ -231,7 +256,7 @@ let create_with_ref_list l depth gl=
   let f gr seq=
     let c=constr_of_reference gr in    
     let typ=(pf_type_of gl c) in
-      add_left (gr,typ) seq false gl in
+      add_formula false gr typ seq gl in
     List.fold_right f l (empty_seq depth)
 
 open Auto
@@ -245,7 +270,7 @@ let create_with_auto_hints depth gl=
 	  (try 
 	     let gr=reference_of_constr c in 
 	     let typ=(pf_type_of gl c) in
-	       seqref:=add_left (gr,typ) !seqref false gl
+	       seqref:=add_formula false  gr typ !seqref gl
 	   with Not_found->())
       | _-> () in
   let g _ l=List.iter f l in

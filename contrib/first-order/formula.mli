@@ -31,7 +31,7 @@ val ind_hyps : int -> inductive -> constr list -> Sign.rel_context array
 val match_with_evaluable : Proof_type.goal Tacmach.sigma ->
   constr -> (evaluable_global_reference * constr) option
 
-type kind_of_formula=
+type kind_of_formula =
     Arrow of constr*constr
   | False of inductive*constr list
   | And of inductive*constr list
@@ -45,22 +45,21 @@ val kind_of_formula : Proof_type.goal Tacmach.sigma ->
   constr -> kind_of_formula
 
 type atoms = {positive:constr list;negative:constr list}
+
+val dummy_id: global_reference
 			
 val build_atoms : Proof_type.goal Tacmach.sigma -> counter -> 
   bool -> constr -> bool * atoms
 
 type right_pattern =
-    Rand
+    Rarrow
+  | Rand
   | Ror 
+  | Rfalse
   | Rforall
   | Rexists of metavariable*constr*bool
-  | Rarrow
   | Revaluable of Names.evaluable_global_reference
     
-type right_formula =
-    Complex of right_pattern*constr*atoms
-  | Atomic of constr
-      
 type left_arrow_pattern=
     LLatom
   | LLfalse of inductive*constr list
@@ -80,17 +79,13 @@ type left_pattern=
   | Levaluable of Names.evaluable_global_reference
   | LA of constr*left_arrow_pattern
       
-type left_formula={id:global_reference;
-		   constr:constr;
-		   pat:left_pattern;
-		   atoms:atoms;
-		   internal:bool}
-
+type t={id: global_reference;
+	constr: constr;
+	pat: (left_pattern,right_pattern) sum;
+	atoms: atoms}
+    
 (*exception Is_atom of constr*)
 
-val build_left_entry : 
-  global_reference -> types -> bool -> Proof_type.goal Tacmach.sigma ->
-  counter -> (left_formula,types) sum
+val build_formula : bool -> global_reference -> types -> 
+  Proof_type.goal Tacmach.sigma -> counter -> (t,types) sum
 
-val build_right_entry : types -> Proof_type.goal Tacmach.sigma -> 
-  counter -> right_formula

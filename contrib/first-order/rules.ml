@@ -38,9 +38,10 @@ let wrap n b tacrec seq gls=
 	      List.exists (occur_var_in_decl env id) ctx then
 		(aux (i-1) q (nd::ctx))
 	    else
-	      add_left (VarRef id,typ) (aux (i-1) q (nd::ctx)) true gls in
+	      add_formula false (VarRef id) typ (aux (i-1) q (nd::ctx)) gls in
   let seq1=aux n nc [] in
-  let seq2=if b then change_right (pf_concl gls) seq1 gls else seq1 in
+  let seq2=if b then 
+    add_formula true dummy_id (pf_concl gls) seq1 gls else seq1 in
     tacrec seq2 gls
 
 let id_of_global=function
