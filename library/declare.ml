@@ -63,20 +63,19 @@ let make_strength_2 () =
   if depth > 2 then DischargeAt (list_firstn (List.length cwd -2) cwd, depth-2)
   else NeverDischarge
 
+
 (* Section variables. *)
 
 type section_variable_entry =
   | SectionLocalDef of constr
   | SectionLocalAssum of constr
 
-type sticky = bool
-
-type variable_declaration = section_variable_entry * strength * sticky
+type variable_declaration = section_variable_entry * strength
 
 type checked_section_variable = constr option * types * Univ.constraints
 
 type checked_variable_declaration =
-    checked_section_variable * strength * sticky
+    checked_section_variable * strength
 
 let vartab =
   ref ((Spmap.empty, []) :
@@ -91,7 +90,7 @@ let _ = Summary.declare_summary "VARIABLE"
 	    Summary.init_function = (fun () -> vartab := (Spmap.empty, []));
 	    Summary.survive_section = false }
 
-let cache_variable (sp,(id,(d,str,sticky))) =
+let cache_variable (sp,(id,(d,str))) =
   (* Constr raisonne sur les noms courts *)
   if List.mem_assoc id (current_section_context ()) then
     errorlabstrm "cache_variable"
@@ -101,7 +100,7 @@ let cache_variable (sp,(id,(d,str,sticky))) =
     | SectionLocalDef c -> Global.push_named_def (id,c)
   in
   Nametab.push 0 (restrict_path 0 sp) (VarRef sp);
-  vartab := let (m,l) = !vartab in (Spmap.add sp (id,(vd,str,sticky)) m, sp::l)
+  vartab := let (m,l) = !vartab in (Spmap.add sp (id,(vd,str)) m, sp::l)
 
 let (in_variable, out_variable) =
   let od = {
@@ -160,9 +159,7 @@ type constant_declaration_type =
   | ConstantEntry  of constant_entry
   | ConstantRecipe of Cooking.recipe
 
-type opacity = bool
-
-type constant_declaration = constant_declaration_type * strength * opacity
+type constant_declaration = constant_declaration_type * strength
 
 let csttab = ref (Spmap.empty : strength Spmap.t)
 
@@ -172,7 +169,7 @@ let _ = Summary.declare_summary "CONSTANT"
 	    Summary.init_function = (fun () -> csttab := Spmap.empty);
 	    Summary.survive_section = false }
 
-let cache_constant (sp,(cdt,stre,op)) =
+let cache_constant (sp,(cdt,stre)) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_constant"
       [< pr_id (basename sp); 'sTR " already exists" >] ;
@@ -190,12 +187,11 @@ let cache_constant (sp,(cdt,stre,op)) =
         (* All qualifications of Theorem, Lemma & Definition are visible *)
         Nametab.push 0 sp (ConstRef sp)
     | NotDeclare -> assert false);
-  if op then Global.set_opaque sp;
   csttab := Spmap.add sp stre !csttab
 
 (* At load-time, the segment starting from the module name to the discharge *)
 (* section (if Remark or Fact) is needed to access a construction *)
-let load_constant (sp,(ce,stre,op)) =
+let load_constant (sp,(ce,stre)) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_constant"
       [< pr_id (basename sp); 'sTR " already exists" >] ;
@@ -203,16 +199,17 @@ let load_constant (sp,(ce,stre,op)) =
   Nametab.push (depth_of_strength stre + 1) sp (ConstRef sp)
 
 (* Opening means making the name without its module qualification available *)
-let open_constant (sp,(_,stre,_)) =
+let open_constant (sp,(_,stre)) =
   let n = depth_of_strength stre in
   Nametab.push n (restrict_path n sp) (ConstRef sp)
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = ConstantEntry { 
   const_entry_body = mkProp;
-  const_entry_type = None }
+  const_entry_type = None;
+  const_entry_opaque = false }
 
-let export_constant (ce,stre,op) = Some (dummy_constant_entry,stre,op)
+let export_constant (ce,stre) = Some (dummy_constant_entry,stre)
 
 let (in_constant, out_constant) =
   let od = {
@@ -227,7 +224,8 @@ let hcons_constant_declaration = function
   | (ConstantEntry ce, stre) ->
       (ConstantEntry 
 	 { const_entry_body = hcons1_constr ce.const_entry_body;
-	   const_entry_type = option_app hcons1_constr ce.const_entry_type },
+	   const_entry_type = option_app hcons1_constr ce.const_entry_type;
+           const_entry_opaque = ce.const_entry_opaque },
 	 stre)
   | cd -> cd
 
@@ -328,17 +326,17 @@ let constant_or_parameter_strength sp =
   try constant_strength sp with Not_found -> NeverDischarge
 
 let get_variable sp = 
-  let (id,((c,ty,cst),str,sticky)) = Spmap.find sp (fst !vartab) in
+  let (id,((c,ty,cst),str)) = Spmap.find sp (fst !vartab) in
 (*  let (c,ty) = Global.lookup_named id in*)
-  ((id,c,ty),str,sticky)
+  ((id,c,ty),str)
 
 let get_variable_with_constraints sp = 
-  let (id,((c,ty,cst),str,sticky)) = Spmap.find sp (fst !vartab) in
+  let (id,((c,ty,cst),str)) = Spmap.find sp (fst !vartab) in
 (*  let (c,ty) = Global.lookup_named id in*)
-  ((id,c,ty),cst,str,sticky)
+  ((id,c,ty),cst,str)
 
 let variable_strength sp =
-  let _,(_,str,_) = Spmap.find sp (fst !vartab) in str
+  let _,(_,str) = Spmap.find sp (fst !vartab) in str
 
 (* Global references. *)
 
@@ -570,8 +568,11 @@ let declare_one_elimination mispec =
     let c = instantiate_inductive_section_params c (fst (mis_inductive mispec))
     in
     let _ = declare_constant (id_of_string na)
-      (ConstantEntry { const_entry_body = c; const_entry_type = None }, 
-       NeverDischarge,false) in
+      (ConstantEntry
+        { const_entry_body = c;
+          const_entry_type = None;
+          const_entry_opaque = false }, 
+       NeverDischarge) in
     Options.if_verbose pPNL [< 'sTR na; 'sTR " is defined" >]
   in
   let env = Global.env () in

@@ -170,7 +170,7 @@ let constant_to_ast_list sp =
       errorlabstrm "print" [< 'sTR "printing of FW terms not implemented" >];;
 
 let variable_to_ast_list sp =
-  let ((id, c, v), _, _) = get_variable sp in
+  let ((id, c, v), _) = get_variable sp in
   let l = implicits_of_var sp in
     (match c with
 	 None -> 

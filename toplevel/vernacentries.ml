@@ -643,23 +643,26 @@ let _ =
     (fun id_list () ->
        List.iter 
 	 (function 
-	    | VARG_CONSTANT sp -> Global.set_transparent sp
+	    | VARG_QUALID qid ->
+                (match locate_qualid dummy_loc qid with
+                  | ConstRef sp -> Opaque.set_transparent_const sp
+                  | VarRef sp -> Opaque.set_transparent_var (basename sp) 
+                  | _ -> error
+              "cannot set an inductive type or a constructor as transparent")
 	    |   _  -> bad_vernac_args "TRANSPARENT")
 	 id_list)
-
-let warning_opaque s =
-  if_verbose warning
-      ("This command turns the constants which depend on the definition/proof
-of "^s^" un-re-checkable until the next \"Transparent "^s^"\" command.")
 
 let _ =
   add "OPAQUE"
     (fun id_list () ->
        List.iter
 	 (function 
-	    | VARG_CONSTANT sp ->
-		warning_opaque (Global.string_of_global (ConstRef sp));
-		Global.set_opaque sp
+	    | VARG_QUALID qid ->
+                (match locate_qualid dummy_loc qid with
+                  | ConstRef sp -> Opaque.set_opaque_const sp
+                  | VarRef sp -> Opaque.set_opaque_var (basename sp) 
+                  | _ -> error
+             "cannot set an inductive type or a constructor as opaque")
 	    |   _  -> bad_vernac_args "OPAQUE")
 	 id_list)
 

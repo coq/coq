@@ -145,6 +145,7 @@ module IdOrdered =
 
 module Idset = Set.Make(IdOrdered)
 module Idmap = Map.Make(IdOrdered)
+module Idpred = Predicate.Make(IdOrdered)
 
 let atompart_of_id id = fst (repr_ident id)
 let index_of_id id = snd (repr_ident id)
@@ -310,7 +311,7 @@ module SpOrdered =
   end
 
 module Spset = Set.Make(SpOrdered)
-
+module Sppred = Predicate.Make(SpOrdered)
 module Spmap = Map.Make(SpOrdered)
 
 (* Special references for inductive objects *)

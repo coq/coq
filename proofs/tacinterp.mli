@@ -31,8 +31,12 @@ type value =
 
 (* Signature for interpretation: val\_interp and interpretation functions *)
 and interp_sign =
-  enamed_declarations * Environ.env * (identifier * value) list *
-    (int * constr) list * goal sigma option * debug_info
+  { evc : enamed_declarations;
+    env : Environ.env;
+    lfun : (identifier * value) list;
+    lmatch : (int * constr) list;
+    goalopt : goal sigma option;
+    debug : debug_info }
 
 (* Gives the constr corresponding to a CONSTR [tactic_arg] *)
 val constr_of_Constr : tactic_arg -> constr

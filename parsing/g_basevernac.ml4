@@ -18,7 +18,7 @@ open Vernac_
 GEXTEND Gram
   GLOBAL: identarg ne_identarg_list numarg ne_numarg_list numarg_list
           stringarg ne_stringarg_list constrarg sortarg tacarg 
-          ne_qualidarg_list qualidarg qualidconstarg commentarg 
+          ne_qualidarg_list qualidarg commentarg 
           commentarg_list;
 
   identarg:
@@ -33,9 +33,6 @@ GEXTEND Gram
   ne_qualidarg_list:
     [ [ q = qualidarg; l = ne_qualidarg_list -> q::l
       | q = qualidarg -> [q] ] ]
-  ;
-  qualidconstarg:
-    [ [ l = Constr.qualid -> <:ast< (QUALIDCONSTARG ($LIST $l)) >> ] ]
   ;
   numarg:
     [ [ n = Prim.number -> n 

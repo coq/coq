@@ -32,7 +32,6 @@ type vernac_arg =
   | VARG_NUMBERLIST of int list
   | VARG_IDENTIFIER of identifier
   | VARG_QUALID of Nametab.qualid
-  | VARG_CONSTANT of constant_path
   | VCALL of string * vernac_arg list
   | VARG_CONSTR of Coqast.t
   | VARG_CONSTRLIST of Coqast.t list
@@ -85,12 +84,6 @@ let rec cvt_varg ast =
 
     | Nvar(_,id) -> VARG_IDENTIFIER id
     | Node(loc,"QUALIDARG",p) -> VARG_QUALID (Astterm.interp_qualid p)
-    | Node(loc,"QUALIDCONSTARG",p) ->
-	let q = Astterm.interp_qualid p in
-	let sp =
-	  try Nametab.locate_constant q
-	  with Not_found -> Nametab.error_global_constant_not_found_loc loc q
-	in VARG_CONSTANT sp
     | Str(_,s) -> VARG_STRING s
     | Id(_,s) -> VARG_STRING s
     | Num(_,n) -> VARG_NUMBER n
@@ -112,7 +105,9 @@ let rec cvt_varg ast =
     | Node(_,"ASTLIST",al) -> VARG_ASTLIST al
     | Node(_,"TACTIC_ARG",[targ]) ->
       let (evc,env)= Command.get_current_context () in
-      VARG_TACTIC_ARG (interp_tacarg (evc,env,[],[],None,get_debug ()) targ)
+      let ist = { evc=evc; env=env; lfun=[]; lmatch=[];
+                  goalopt=None; debug=get_debug ()} in
+      VARG_TACTIC_ARG (interp_tacarg ist targ)
     | Node(_,"VERNACDYN",[Dynamic (_,d)]) -> VARG_DYN d
     | _ -> anomaly_loc (Ast.loc ast, "Vernacinterp.cvt_varg",
                         [< 'sTR "Unrecognizable ast node of vernac arg:";

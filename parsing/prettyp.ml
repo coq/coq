@@ -259,7 +259,7 @@ let print_mutual sp =
              implicit_args_msg sp mipv >])
 *)
 let print_section_variable sp =
-  let (d,_,_) = get_variable sp in
+  let (d,_) = get_variable sp in
   let l = implicits_of_var sp in
   [< print_named_decl d; print_impl_args l; 'fNL >]
 
@@ -473,7 +473,7 @@ let print_local_context () =
     | [] -> [< >]
     | (sp,Lib.Leaf lobj)::rest ->
 	if "VARIABLE" = object_tag lobj then
-          let (d,_,_) = get_variable sp in 
+          let (d,_) = get_variable sp in 
 	  [< print_var_rec rest;
              print_named_decl d >]
 	else 

@@ -331,7 +331,7 @@ let make_all_name_different env =
 (* Constants *)
 let defined_constant env sp = is_defined (lookup_constant sp env)
 
-let opaque_constant env sp = is_opaque (lookup_constant sp env)
+let opaque_constant env sp = (lookup_constant sp env).const_opaque
 
 (* A global const is evaluable if it is defined and not opaque *)
 let evaluable_constant env sp =
@@ -352,16 +352,6 @@ let evaluable_rel_decl env n =
     lookup_rel_value n env <> None
   with Not_found -> 
     false
-
-(*s Opaque / Transparent switching *)
-
-let set_opaque env sp =
-  let cb = lookup_constant sp env in
-  cb.const_opaque <- true
-
-let set_transparent env sp =
-  let cb = lookup_constant sp env in
-  cb.const_opaque <- false
 
 (*s Modules (i.e. compiled environments). *)
 

@@ -389,7 +389,7 @@ let inspect n =
              	sp, Lib.Leaf lobj ->
 		  (match sp, object_tag lobj with
                        _, "VARIABLE" ->
-			 let ((_, _, v), _, _) = get_variable sp in
+			 let ((_, _, v), _) = get_variable sp in
 			   add_search2 (Nametab.locate (qualid_of_sp sp)) v
 		     | sp, ("CONSTANT"|"PARAMETER") ->
 			 let {const_type=typ} = Global.lookup_constant sp in

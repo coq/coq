@@ -61,9 +61,6 @@ GEXTEND Gram
     [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST $l)) >>
       | "?"; n = Prim.number -> <:ast< (QUALIDMETA $n) >> ] ]
   ;
-  qualidconstarg:
-    [ [ l = Constr.qualid -> <:ast< (QUALIDCONSTARG ($LIST $l)) >> ] ]
-  ;
   pure_numarg:
      [ [ n = Prim.number -> n
        | "-"; n = Prim.number -> Coqast.Num (Ast.loc n, ( - Ast.num_of_ast n))
@@ -106,9 +103,6 @@ GEXTEND Gram
   ;
   ne_qualidarg_list:
     [ [ l = LIST1 qualidarg -> l ] ]
-  ;
-  ne_qualidconstarg_list:
-    [ [ l = LIST1 qualidconstarg -> l ] ]
   ;
   pattern_occ:
     [ [ nl = LIST1 pure_numarg; c = constrarg ->

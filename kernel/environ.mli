@@ -164,11 +164,6 @@ val evaluable_constant : env -> constant_path -> bool
 val evaluable_named_decl : env -> identifier -> bool
 val evaluable_rel_decl : env -> int -> bool
 
-(*s Opaque / Transparent switching *)
-
-val set_opaque : env -> constant_path -> unit
-val set_transparent : env -> constant_path -> unit
-
 (*s Modules. *)
 
 type compiled_env

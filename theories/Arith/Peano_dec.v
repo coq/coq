@@ -15,17 +15,17 @@ Proof.
 NewInduction n.
 Auto.
 Left; Exists n; Auto.
-Qed.
+Defined.
 
 Theorem eq_nat_dec : (n,m:nat){n=m}+{~(n=m)}.
 Proof.
 NewInduction n; NewInduction m; Auto.
 Elim (IHn m); Auto.
-Qed.
+Defined.
 
 Hints Resolve O_or_S eq_nat_dec : arith.
 
 Theorem dec_eq_nat:(x,y:nat)(decidable (x=y)).
 Intros x y; Unfold decidable; Elim (eq_nat_dec x y); Auto with arith.
-Qed.
+Defined.
 

@@ -19,12 +19,23 @@ open Closure
 open Instantiate
 open Cbv
 
+exception Elimconst
+exception Redelimination
+
+let check_transparency env ref =
+  match ref with
+      EvalConst (sp,_) -> Opaque.is_evaluable env (EvalConstRef sp)
+    | EvalVar id -> Opaque.is_evaluable env (EvalVarRef id)
+    | _ -> false
+
+let isEvalRef env x =
+  Instantiate.isEvalRef x &
+  let ref = Instantiate.destEvalRef x in
+  check_transparency env ref
+
 (************************************************************************)
 (* Reduction of constant hiding fixpoints (e.g. for Simpl). The trick   *)
 (* is to reuse the name of the function after reduction of the fixpoint *)
-
-exception Elimconst
-exception Redelimination
 
 type constant_evaluation = 
   | EliminationFix of int * (int * (int * constr) list * int)
@@ -171,7 +182,7 @@ let compute_consteval_mutual_fix sigma env ref =
 		 let new_minarg = max (minarg'+minarg-nargs) minarg' in
 		 EliminationMutualFix (new_minarg,ref,(refs,infos))
 	     | _ -> assert false)
-      | _ when isEvalRef c' ->
+      | _ when isEvalRef env c' ->
 	  (* Forget all \'s and args and do as if we had started with c' *)
 	  let ref = destEvalRef c' in
 	  (match reference_opt_value sigma env ref with
@@ -310,15 +321,15 @@ let special_red_case env whfun (ci, p, c, lf)  =
     let (constr, cargs) = whfun s in 
     match kind_of_term constr with 
       | IsConst (sp,args as cst) -> 
-	  (match constant_opt_value env cst with
-	     | Some gvalue ->
-		 if reducible_mind_case gvalue then
-		   reduce_mind_case_use_function cst env
-		     {mP=p; mconstr=gvalue; mcargs=list_of_stack cargs;
-		      mci=ci; mlf=lf}
-		 else
-		   redrec (gvalue, cargs)
-             | None -> raise Redelimination)
+          (if not (Opaque.is_evaluable env (EvalConstRef sp)) then
+            raise Redelimination;
+	  let gvalue = constant_value env cst in
+	  if reducible_mind_case gvalue then
+	    reduce_mind_case_use_function cst env
+	      {mP=p; mconstr=gvalue; mcargs=list_of_stack cargs;
+               mci=ci; mlf=lf}
+	  else
+	    redrec (gvalue, cargs))
       | _ ->
           if reducible_mind_case constr then
             reduce_mind_case
@@ -329,8 +340,8 @@ let special_red_case env whfun (ci, p, c, lf)  =
   in 
   redrec (c, empty_stack)
 
+
 let rec red_elim_const env sigma ref largs =
-  if not (evaluable_reference sigma env ref) then raise Redelimination;
   match reference_eval sigma env ref with
     | EliminationCases n when stack_args_size largs >= n ->
 	let c = reference_value sigma env ref in
@@ -376,17 +387,18 @@ and construct_const env sigma =
       | IsLetIn (n,b,t,c) -> stacklam hnfstack [b] c stack
       | IsMutCase (ci,p,c,lf) ->
           hnfstack 
-	    (special_red_case env (construct_const env sigma) (ci,p,c,lf), stack)
+	    (special_red_case env
+              (construct_const env sigma) (ci,p,c,lf), stack)
       | IsMutConstruct _ -> s
       | IsCoFix _ -> s
       | IsFix fix -> 
 	  (match reduce_fix hnfstack fix stack with
              | Reduced s' -> hnfstack s'
 	     | NotReducible -> raise Redelimination)
-      | _ when isEvalRef x ->
+      | _ when isEvalRef env x ->
 	  let ref = destEvalRef x in
           (try
-	     hnfstack (red_elim_const env sigma ref stack)
+	    hnfstack (red_elim_const env sigma ref stack)
            with Redelimination ->
 	     (match reference_opt_value sigma env ref with
 		| Some cval ->
@@ -423,10 +435,11 @@ let internal_red_product env sigma c =
       | IsProd (x,a,b) -> mkProd (x, a, redrec (push_rel_assum (x,a) env) b)
       | IsLetIn (x,a,b,t) -> redrec env (subst1 a t)
       | IsMutCase (ci,p,d,lf) -> simpfun (mkMutCase (ci,p,redrec env d,lf))
-      | _ when isEvalRef x -> 
+      | _ when isEvalRef env x -> 
           (* TO DO: re-fold fixpoints after expansion *)
           (* to get true one-step reductions *)
-	  (match reference_opt_value sigma env (destEvalRef x) with
+          let ref = destEvalRef x in
+	  (match reference_opt_value sigma env ref with
 	     | None -> raise Redelimination
 	     | Some c -> c)
       | _ -> raise Redelimination
@@ -460,11 +473,11 @@ let hnf_constr env sigma c =
 	  (match reduce_fix (whd_betadeltaiota_state env sigma) fix largs with
              | Reduced s' -> redrec s'
 	     | NotReducible -> app_stack s)
-      | _ when isEvalRef x ->
+      | _ when isEvalRef env x ->
 	  let ref = destEvalRef x in
           (try
-             let (c',lrest) = red_elim_const env sigma ref largs in 
-	     redrec (c', lrest)
+            let (c',lrest) = red_elim_const env sigma ref largs in 
+	    redrec (c', lrest)
            with Redelimination ->
              match reference_opt_value sigma env ref with
 	       | Some c ->
@@ -499,7 +512,7 @@ let whd_nf env sigma c =
 	  (match reduce_fix nf_app fix stack with
              | Reduced s' -> nf_app s'
 	     | NotReducible -> s)
-      | _ when isEvalRef c ->
+      | _ when isEvalRef env c ->
           (try
 	     nf_app (red_elim_const env sigma (destEvalRef c) stack)
            with Redelimination -> 
@@ -609,13 +622,16 @@ let rec substlin env name n ol c =
 
     | (IsRel _|IsMeta _|IsVar _|IsSort _
       |IsEvar _|IsConst _|IsMutInd _|IsMutConstruct _) -> (n,ol,c)
-	
-let unfold env sigma name =
-  clos_norm_flags (unfold_flags name) env sigma
 
 let string_of_evaluable_ref = function
   | EvalVarRef id -> string_of_id id
   | EvalConstRef sp -> string_of_path sp
+
+let unfold env sigma name =
+  if Opaque.is_evaluable env name then
+    clos_norm_flags (unfold_flags name) env sigma
+  else
+    error (string_of_evaluable_ref name^" is opaque")
 
 (* [unfoldoccs : (readable_constraints -> (int list * section_path) -> constr -> constr)]
  * Unfolds the constant name in a term c following a list of occurrences occl.
@@ -719,10 +735,12 @@ let one_step_reduce env sigma c =
              | Reduced s' -> s'
 	     | NotReducible -> raise NotStepReducible)
       | IsCast (c,_) -> redrec (c,largs)
-      | _ when isEvalRef x ->
-	  let ref = destEvalRef x in
+      | _ when isEvalRef env x ->
+	  let ref =
+            try destEvalRef x
+            with Redelimination -> raise NotStepReducible in
           (try
-             red_elim_const env sigma ref largs
+            red_elim_const env sigma ref largs
            with Redelimination ->
 	     match reference_opt_value sigma env ref with
 	       | Some d -> d, largs

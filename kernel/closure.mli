@@ -32,6 +32,11 @@ type evaluable_global_reference =
   Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of 
   a LetIn expression is Letin reduction *)
 
+type transparent_state = Idpred.t * Sppred.t
+
+val all_opaque      : transparent_state
+val all_transparent : transparent_state
+
 (* Sets of reduction kinds. *)
 module type RedFlagsSig = sig
   type reds
@@ -47,16 +52,20 @@ module type RedFlagsSig = sig
   val fDELTA : red_kind
   val fIOTA : red_kind
   val fZETA : red_kind
-  val fCONST : constant_path -> red_kind
-  val fCONSTBUT : constant_path -> red_kind
+  val fCONST : section_path -> red_kind
   val fVAR : identifier -> red_kind
-  val fVARBUT : identifier -> red_kind
 
   (* No reduction at all *)
   val no_red : reds
 
   (* Adds a reduction kind to a set *)
   val red_add : reds -> red_kind -> reds
+
+  (* Removes a reduction kind to a set *)
+  val red_sub : reds -> red_kind -> reds
+
+  (* Adds a reduction kind to a set *)
+  val red_add_transparent : reds -> transparent_state -> reds
 
   (* Build a reduction set from scratch = iter [red_add] on [no_red] *)
   val mkflags : red_kind list -> reds
@@ -104,7 +113,7 @@ val unfold_flags : evaluable_global_reference -> flags
 
 type 'a table_key =
   | ConstBinding of constant
-  | EvarBinding of (existential * 'a subs)
+  | EvarBinding of existential
   | VarBinding of identifier
   | FarRelBinding of int
 
@@ -113,7 +122,7 @@ val ref_value_cache: ('a,'b) infos -> 'a table_key -> 'a option
 val info_flags: ('a,'b) infos -> flags
 val infos_under: ('a,'b) infos -> ('a,'b) infos
 val create:
-  (('a,'b) infos -> 'a subs -> constr -> 'a) ->
+  (('a,'b) infos -> constr -> 'a) ->
   flags -> env -> 'b evar_map -> ('a,'b) infos
 
 (***********************************************************************)
@@ -174,7 +183,7 @@ type fterm =
 
 and freference =
   | FConst of section_path * fconstr array
-  | FEvar of (existential * fconstr subs)
+  | FEvar of existential_key * fconstr array
   | FVar of identifier
   | FFarRel of int
 

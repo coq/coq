@@ -121,7 +121,6 @@ module Tactic :
     val idmeta_arg : Coqast.t Gram.Entry.e
     val idmetahyp : Coqast.t Gram.Entry.e
     val qualidarg : Coqast.t Gram.Entry.e
-    val qualidconstarg : Coqast.t Gram.Entry.e
     val input_fun : Coqast.t Gram.Entry.e
     val intropattern : Coqast.t Gram.Entry.e
     val lconstrarg : Coqast.t Gram.Entry.e
@@ -138,7 +137,6 @@ module Tactic :
     val ne_hyp_list : Coqast.t list Gram.Entry.e
     val ne_idmetahyp_list : Coqast.t list Gram.Entry.e
     val ne_qualidarg_list : Coqast.t list Gram.Entry.e
-    val ne_qualidconstarg_list : Coqast.t list Gram.Entry.e
     val ne_intropattern : Coqast.t Gram.Entry.e
     val ne_pattern_list : Coqast.t list Gram.Entry.e
     val clause_pattern : Coqast.t Gram.Entry.e
@@ -172,7 +170,6 @@ module Vernac_ :
     val identarg : Coqast.t Gram.Entry.e
     val ne_identarg_list : Coqast.t list Gram.Entry.e
     val qualidarg : Coqast.t Gram.Entry.e
-    val qualidconstarg : Coqast.t Gram.Entry.e
     val commentarg : Coqast.t Gram.Entry.e
     val commentarg_list : Coqast.t list Gram.Entry.e
     val ne_qualidarg_list : Coqast.t list Gram.Entry.e

@@ -67,9 +67,6 @@ val lookup_constant : section_path -> safe_environment -> constant_body
 val lookup_mind : section_path -> safe_environment -> mutual_inductive_body
 val lookup_mind_specif : inductive -> safe_environment -> inductive_instance
 
-val set_opaque : safe_environment -> section_path -> unit
-val set_transparent : safe_environment -> section_path -> unit
-
 val export : safe_environment -> dir_path -> compiled_env
 val import : compiled_env -> safe_environment -> safe_environment
 

@@ -40,8 +40,9 @@ val add_suffix : identifier -> string -> identifier
 val add_prefix : string -> identifier -> identifier
 
 (* Identifiers sets and maps *)
-module Idset : Set.S with type elt = identifier
-module Idmap : Map.S with type key = identifier
+module Idset  : Set.S with type elt = identifier
+module Idpred : Predicate.S with type elt = identifier
+module Idmap  : Map.S with type key = identifier
 
 val lift_ident : identifier -> identifier
 val next_ident_away_from : identifier -> identifier list -> identifier
@@ -106,7 +107,9 @@ val sp_ord : section_path -> section_path -> int
 (* [is_dirpath_prefix p1 p2=true] if [p1] is a prefix of or is equal to [p2] *)
 val is_dirpath_prefix_of : dir_path -> dir_path -> bool
 
-module Spmap : Map.S with type key = section_path
+module Spset  : Set.S with type elt = section_path
+module Sppred : Predicate.S with type elt = section_path
+module Spmap  : Map.S with type key = section_path
 
 (*s Specific paths for declarations *)
 type variable_path = section_path

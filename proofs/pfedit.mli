@@ -89,7 +89,7 @@ val resume_proof : identifier -> unit
 
 val suspend_proof : unit -> unit
 
-(*s [cook_proof ()] turns the current proof (assumed completed)
+(*s [cook_proof opacity] turns the current proof (assumed completed)
     into a constant with its name and strength; it fails if there is
     no current proof of if it is not completed *)
 

@@ -109,8 +109,10 @@ let _ =
 let field g =
   let evc = project g
   and env = pf_env g in
-  let typ = constr_of_Constr (interp_tacarg (evc,env,[],[],Some g,get_debug ())
-    <:tactic<
+  let ist = { evc=evc; env=env; lfun=[]; lmatch=[];
+              goalopt=Some g; debug=get_debug () } in
+  let typ = constr_of_Constr (interp_tacarg ist
+  <:tactic<
       Match Context With
       | [|-(eq ?1 ? ?)] -> ?1
       |	[|-(eqT ?1 ? ?)] -> ?1>>) in

@@ -58,10 +58,7 @@ Proof.
   Elim (eq_nat_dec n n0);Intro y.
   Left; Rewrite y; Auto.
   Right;Red;Intro;Inversion H;Auto. 
-Save.
-
-Transparent Peano_dec.eq_nat_dec.
-Transparent eqExprA_O.
+Defined.
 
 Definition eq_nat_dec := Eval Compute in Peano_dec.eq_nat_dec.
 Definition eqExprA := Eval Compute in eqExprA_O.

@@ -37,26 +37,26 @@ let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
 
 (* 1| Constant definitions *)
 
-let constant_entry_of_com (com,comtypopt) =
+let constant_entry_of_com (com,comtypopt,opacity) =
   let sigma = Evd.empty in
   let env = Global.env() in
   match comtypopt with
       None -> 
 	{ const_entry_body = interp_constr sigma env com;
-	  const_entry_type = None }
+	  const_entry_type = None;
+          const_entry_opaque = opacity }
     | Some comtyp ->
 	let typ = interp_type sigma env comtyp in
 	{ const_entry_body = interp_casted_constr sigma env com typ;
-	  const_entry_type = Some typ }
+	  const_entry_type = Some typ;
+          const_entry_opaque = opacity }
 
 let red_constant_entry ce = function
   | None -> ce
   | Some red ->
       let body = ce.const_entry_body in
-      { const_entry_body = 
-	  reduction_of_redexp red (Global.env()) Evd.empty body; 
-	const_entry_type = 
-	  ce.const_entry_type }
+      { ce with const_entry_body = 
+	  reduction_of_redexp red (Global.env()) Evd.empty body }
 
 let constr_of_constr_entry ce =
   match ce.const_entry_type with
@@ -64,21 +64,21 @@ let constr_of_constr_entry ce =
     | Some t -> mkCast (ce.const_entry_body, t)
 
 let declare_global_definition ident ce n local =
-  let sp = declare_constant ident (ConstantEntry ce,n,false) in
+  let sp = declare_constant ident (ConstantEntry ce,n) in
   if local then
     wARNING [< pr_id ident; 'sTR" is declared as a global definition" >];
   if_verbose message ((string_of_id ident) ^ " is defined");
   ConstRef sp
 
 let definition_body_red red_option ident (local,n) com comtypeopt = 
-  let ce = constant_entry_of_com (com,comtypeopt) in
+  let ce = constant_entry_of_com (com,comtypeopt,false) in
   let ce' = red_constant_entry ce red_option in
   match n with
     | NeverDischarge -> declare_global_definition ident ce' n local
     | DischargeAt (disch_sp,_) ->
         if Lib.is_section_p disch_sp then begin
 	  let c = constr_of_constr_entry ce' in
-          let sp = declare_variable ident (SectionLocalDef c,n,false) in
+          let sp = declare_variable ident (SectionLocalDef c,n) in
 	  if_verbose message ((string_of_id ident) ^ " is defined");
           if Pfedit.refining () then 
             mSGERRNL [< 'sTR"Warning: Local definition "; pr_id ident; 
@@ -118,7 +118,7 @@ let hypothesis_def_var is_refining ident n c =
     | DischargeAt (disch_sp,_) ->
         if Lib.is_section_p disch_sp then begin
 	  let t = interp_type Evd.empty (Global.env()) c in
-          let sp = declare_variable ident (SectionLocalAssum t,n,false) in
+          let sp = declare_variable ident (SectionLocalAssum t,n) in
 	  if_verbose message ((string_of_id ident) ^ " is assumed");
           if is_refining then 
             mSGERRNL [< 'sTR"Warning: Variable "; pr_id ident; 
@@ -271,7 +271,7 @@ let build_recursive lnameargsardef =
            let raw_arity = mkProdCit lparams arityc in
            let arity = interp_type sigma env0 raw_arity in
            let _ = declare_variable recname
-	     (SectionLocalAssum arity, NeverDischarge, false) in
+	     (SectionLocalAssum arity, NeverDischarge) in
            (Environ.push_named_assum (recname,arity) env, (arity::arl)))
         (env0,[]) lnameargsardef
     with e ->
@@ -299,8 +299,9 @@ let build_recursive lnameargsardef =
 	         (Array.map (fun id -> Name id) namerec,
                   arrec,
 		  recvec));
-        const_entry_type = None } in
-    let sp = declare_constant fi (ConstantEntry ce, n, false) in
+        const_entry_type = None;
+        const_entry_opaque = false } in
+    let sp = declare_constant fi (ConstantEntry ce, n) in
     (ConstRef sp)
   in 
   (* declare the recursive definitions *)
@@ -312,8 +313,9 @@ let build_recursive lnameargsardef =
     List.fold_left
       (fun subst (f,def) ->
 	 let ce = { const_entry_body = replace_vars subst def;
-		    const_entry_type = None } in
-	 let _ = declare_constant f (ConstantEntry ce,n,false) in
+		    const_entry_type = None;
+                    const_entry_opaque = false } in
+	 let _ = declare_constant f (ConstantEntry ce,n) in
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst (Array.to_list namerec))
@@ -333,7 +335,7 @@ let build_corecursive lnameardef =
            let arj = type_judgment_of_rawconstr Evd.empty env0 arityc in
 	   let arity = arj.utj_val in
            let _ = declare_variable recname
-	     (SectionLocalAssum arj.utj_val,NeverDischarge,false) in
+	     (SectionLocalAssum arj.utj_val,NeverDischarge) in
            (Environ.push_named_assum (recname,arity) env, (arity::arl)))
         (env0,[]) lnameardef
     with e -> 
@@ -360,9 +362,10 @@ let build_corecursive lnameardef =
 	  mkCoFix (i, (Array.map (fun id -> Name id) namerec,
                        arrec,
 		       recvec));
-        const_entry_type = None } 
+        const_entry_type = None;
+        const_entry_opaque = false } 
     in
-    let sp = declare_constant fi (ConstantEntry ce,n,false) in
+    let sp = declare_constant fi (ConstantEntry ce,n) in
     (ConstRef sp)
   in 
   let lrefrec = Array.mapi declare namerec in
@@ -372,8 +375,9 @@ let build_corecursive lnameardef =
     List.fold_left
       (fun subst (f,def) ->
 	 let ce = { const_entry_body = replace_vars subst def;
-		    const_entry_type = None } in
-	 let _ = declare_constant f (ConstantEntry ce,n,false) in
+		    const_entry_type = None;
+                    const_entry_opaque = false } in
+	 let _ = declare_constant f (ConstantEntry ce,n) in
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst (Array.to_list namerec))
@@ -406,8 +410,10 @@ let build_scheme lnamedepindsort =
   let n = NeverDischarge in 
   let listdecl = Indrec.build_mutual_indrec env0 sigma lrecspec in 
   let rec declare decl fi lrecref =
-    let ce = { const_entry_body = decl; const_entry_type = None } in
-    let sp = declare_constant fi (ConstantEntry ce,n,false) in
+    let ce = { const_entry_body = decl;
+               const_entry_type = None;
+               const_entry_opaque = false } in
+    let sp = declare_constant fi (ConstantEntry ce,n) in
     ConstRef sp :: lrecref
   in 
   let lrecref = List.fold_right2 declare listdecl lrecnames [] in
@@ -434,14 +440,18 @@ let apply_tac_not_declare id pft = function
     Pfedit.delete_current_proof ();
     Pfedit.by (tclTHENS cutt [introduction id;exat])
 
-let save opacity id ({const_entry_body = pft; const_entry_type = tpo} as const)
-  strength =
+let save id const strength =
+  let {const_entry_body = pft;
+       const_entry_type = tpo;
+       const_entry_opaque = opacity } = const in
   begin match strength with
     | DischargeAt (disch_sp,_) when Lib.is_section_p disch_sp && not opacity ->
 	let c = constr_of_constr_entry const in
-	let _ = declare_variable id (SectionLocalDef c,strength,opacity) in ()
+	let _ = declare_variable id (SectionLocalDef c,strength)
+        in ()
     | NeverDischarge | DischargeAt _ ->
-        let _ = declare_constant id (ConstantEntry const,strength,opacity)in ()
+        let _ = declare_constant id (ConstantEntry const,strength)
+        in ()
     | NotDeclare -> apply_tac_not_declare id pft tpo
   end;
   if not (strength = NotDeclare) then
@@ -452,7 +462,8 @@ let save opacity id ({const_entry_body = pft; const_entry_type = tpo} as const)
 
 let save_named opacity =
   let id,(const,strength) = Pfedit.cook_proof () in
-  save opacity id const strength
+  let const = { const with const_entry_opaque = opacity } in
+  save id const strength
 
 let check_anonymity id save_ident =
   if atompart_of_id id <> "Unnamed_thm" then
@@ -463,13 +474,15 @@ let check_anonymity id save_ident =
 
 let save_anonymous opacity save_ident =
   let id,(const,strength) = Pfedit.cook_proof () in
+  let const = { const with const_entry_opaque = opacity } in
   check_anonymity id save_ident;
-  save opacity save_ident const strength
+  save save_ident const strength
 
 let save_anonymous_with_strength strength opacity save_ident =
   let id,(const,_) = Pfedit.cook_proof () in
+  let const = { const with const_entry_opaque = opacity } in
   check_anonymity id save_ident;
-  save opacity save_ident const strength
+  save save_ident const strength
 
 let get_current_context () =
   try Pfedit.get_current_goal_context ()

@@ -75,9 +75,8 @@ Definition log_inf_correct1 :=
 Definition log_inf_correct2 := 
 	[p:positive](proj2 ? ? (log_inf_correct p)).
 
-(***TODO: retablir les commandes Opaque / Transparent
 Opaque log_inf_correct1 log_inf_correct2.
-***)
+
 Hints Resolve log_inf_correct1 log_inf_correct2 : zarith.
 
 Lemma log_sup_correct1 : (p:positive)` 0 <= (log_sup p)`.

@@ -117,9 +117,11 @@ let declare_projections indsp coers fields =
 	   let name = 
 	     try
 	       let proj = instantiate_inductive_section_params proj indsp in
-	       let cie = { const_entry_body = proj; const_entry_type = None} in
+	       let cie = { const_entry_body = proj;
+                           const_entry_type = None;
+                           const_entry_opaque = false } in
 	       let sp =
-		 declare_constant fi (ConstantEntry cie,NeverDischarge,false)
+		 declare_constant fi (ConstantEntry cie,NeverDischarge)
 	       in Some sp
              with Type_errors.TypeError (k,ctx,te) -> begin
                warning_or_error coe (BadTypedProj (fi,k,ctx,te));

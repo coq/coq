@@ -339,9 +339,9 @@ GEXTEND Gram
       | IDENT "End"; id = identarg -> <:ast< (EndSection $id) >>
 
 (* Transparent and Opaque *)
-      | IDENT "Transparent"; l = ne_qualidconstarg_list ->
+      | IDENT "Transparent"; l = ne_qualidarg_list ->
           <:ast< (TRANSPARENT ($LIST $l)) >>
-      | IDENT "Opaque"; l = ne_qualidconstarg_list -> 
+      | IDENT "Opaque"; l = ne_qualidarg_list -> 
 	  <:ast< (OPAQUE ($LIST $l)) >>
 
 (* Coercions *)

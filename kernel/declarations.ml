@@ -21,7 +21,7 @@ type constant_body = {
   const_type : types;
   const_hyps : section_context;
   const_constraints : constraints;
-  mutable const_opaque : bool }
+  const_opaque : bool }
 
 let is_defined cb = 
   match cb.const_body with Some _ -> true | _ -> false
@@ -31,8 +31,9 @@ let is_opaque cb = cb.const_opaque
 (*s Global and local constant declaration. *)
 
 type constant_entry = {
-  const_entry_body : constr;
-  const_entry_type : constr option }
+  const_entry_body   : constr;
+  const_entry_type   : constr option;
+  const_entry_opaque : bool }
 
 type local_entry =
   | LocalDef of constr

@@ -88,9 +88,9 @@ let _ = vinterp_add "HintRewrite"
        let lcsr =
          List.map (function
 	   | Node(loc,"CONSTR",l) ->
-             constr_of_Constr (interp_tacarg
-             (evc,env,[],[],None,Tactic_debug.DebugOff)
-             (Node(loc,"COMMAND",l)))
+             let ist = { evc=evc; env=env; lfun=[]; lmatch=[];
+                         goalopt=None; debug=Tactic_debug.DebugOff } in
+             constr_of_Constr (interp_tacarg ist (Node(loc,"COMMAND",l)))
            | _ -> bad_vernac_args "HintRewrite") lcom in
        add_rew_rules (string_of_id id)
          (List.map (fun csr -> (csr,ort = "LR",t)) lcsr))

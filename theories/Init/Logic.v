@@ -139,17 +139,20 @@ Section Logic_lemmas.
     Theorem sym_eq : (eq ? x y) -> (eq ? y x).
       Proof.
      Induction 1; Trivial.
-    Qed.
+    Defined.
+    Opaque sym_eq.
 
     Theorem trans_eq : (eq ? x y) -> (eq ? y z) -> (eq ? x z).
     Proof.
      Induction 2; Trivial.
-    Qed.
+    Defined.
+    Opaque trans_eq.
 
     Theorem f_equal : (eq ? x y) -> (eq ? (f x) (f y)).
     Proof.
      Induction 1; Trivial.
-    Qed.
+    Defined.
+    Opaque f_equal.
 
     Theorem sym_not_eq : (not (eq ? x y)) -> (not (eq ? y x)).
     Proof.

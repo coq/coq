@@ -847,7 +847,7 @@ let print_object lobj id sp dn fv env =
             let hyps = string_list_of_named_context_list hyps in
              print_mutual_inductive packs fv hyps env inner_types
       | "VARIABLE" ->
-          let (_,(varentry,_,_)) = Declare.out_variable lobj in
+          let (_,(varentry,_)) = Declare.out_variable lobj in
            begin
             match varentry with
                Declare.SectionLocalDef body ->

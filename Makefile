@@ -71,7 +71,8 @@ CONFIG=config/coq_config.cmo
 LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
     lib/bstack.cmo lib/edit.cmo lib/stamps.cmo lib/gset.cmo lib/gmap.cmo \
-    lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo
+    lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
+    lib/predicate.cmo 
 
 KERNEL=kernel/names.cmo kernel/univ.cmo \
        kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
@@ -82,7 +83,8 @@ KERNEL=kernel/names.cmo kernel/univ.cmo \
 
 LIBRARY=library/libobject.cmo library/summary.cmo library/nametab.cmo \
 	library/lib.cmo library/goptions.cmo \
-	library/global.cmo library/library.cmo library/states.cmo \
+	library/global.cmo library/opaque.cmo \
+	library/library.cmo library/states.cmo \
 	library/impargs.cmo library/indrec.cmo library/declare.cmo 
 
 PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
@@ -147,8 +149,8 @@ INTERFACE=contrib/interface/vtp.cmo \
 
 PARSERREQUIRES=lib/pp_control.cmo lib/pp.cmo \
 	lib/util.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
-	lib/hashcons.cmo lib/profile.cmo library/libobject.cmo \
-	library/summary.cmo kernel/names.cmo \
+        lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo \
+	library/libobject.cmo library/summary.cmo kernel/names.cmo \
 	parsing/lexer.cmo parsing/coqast.cmo \
 	parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo \
@@ -162,7 +164,7 @@ PARSERREQUIRES=lib/pp_control.cmo lib/pp.cmo \
 	kernel/instantiate.cmo kernel/closure.cmo kernel/reduction.cmo \
 	kernel/inductive.cmo kernel/type_errors.cmo kernel/typeops.cmo \
 	kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo \
-	library/global.cmo \
+	library/global.cmo library/opaque.cmo \
 	library/library.cmo lib/options.cmo library/indrec.cmo \
 	library/impargs.cmo pretyping/retyping.cmo library/declare.cmo \
 	pretyping/cbv.cmo pretyping/tacred.cmo pretyping/classops.cmo \
@@ -702,7 +704,7 @@ ML4FILES += parsing/lexer.ml4 parsing/q_coqast.ml4 \
             parsing/g_prim.ml4 parsing/pcoq.ml4
 
 GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/dyn.cmo \
-	   lib/hashcons.cmo kernel/names.cmo \
+	   lib/hashcons.cmo lib/predicate.cmo kernel/names.cmo \
 	   parsing/coqast.cmo parsing/lexer.cmo \
 	   parsing/pcoq.cmo parsing/q_coqast.cmo parsing/g_prim.cmo
 

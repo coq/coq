@@ -48,9 +48,6 @@ val lookup_constant : section_path -> constant_body
 val lookup_mind : section_path -> mutual_inductive_body
 val lookup_mind_specif : inductive -> inductive_instance
 
-val set_opaque : section_path -> unit
-val set_transparent : section_path -> unit
-
 val export : dir_path -> compiled_env
 val import : compiled_env -> unit
 

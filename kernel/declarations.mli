@@ -26,17 +26,16 @@ type constant_body = {
   const_type : types;
   const_hyps : section_context; (* New: younger hyp at top *)
   const_constraints : constraints;
-  mutable const_opaque : bool }
+  const_opaque : bool }
 
 val is_defined : constant_body -> bool
-
-val is_opaque : constant_body -> bool
 
 (*s Global and local constant declaration. *)
 
 type constant_entry = {
-  const_entry_body : constr;
-  const_entry_type : constr option }
+  const_entry_body   : constr;
+  const_entry_type   : constr option;
+  const_entry_opaque : bool }
 
 type local_entry =
   | LocalDef of constr

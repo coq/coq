@@ -33,9 +33,7 @@ type section_variable_entry =
   | SectionLocalDef of constr
   | SectionLocalAssum of constr
 
-type sticky = bool
-
-type variable_declaration = section_variable_entry * strength * sticky
+type variable_declaration = section_variable_entry * strength
 
 val declare_variable : identifier -> variable_declaration -> variable_path
 
@@ -43,9 +41,7 @@ type constant_declaration_type =
   | ConstantEntry  of constant_entry
   | ConstantRecipe of Cooking.recipe
 
-type opacity = bool
-
-type constant_declaration = constant_declaration_type * strength * opacity
+type constant_declaration = constant_declaration_type * strength
 
 (* [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
@@ -78,9 +74,9 @@ val constant_strength : constant_path -> strength
 val constant_or_parameter_strength : constant_path -> strength
 
 val out_variable : Libobject.obj -> identifier * variable_declaration
-val get_variable : variable_path -> named_declaration * strength * sticky
+val get_variable : variable_path -> named_declaration * strength
 val get_variable_with_constraints : 
-  variable_path -> named_declaration * Univ.constraints * strength * sticky
+  variable_path -> named_declaration * Univ.constraints * strength
 val variable_strength : variable_path -> strength
 val find_section_variable : identifier -> variable_path
 val last_section_hyps : dir_path -> identifier list

@@ -266,7 +266,7 @@ let safe_infer_declaration env = function
 
 type local_names = (identifier * variable_path) list
 
-let add_global_declaration sp env locals (body,typ,cst) =
+let add_global_declaration sp env locals (body,typ,cst) op =
   let env' = add_constraints cst env in
   let ids = match body with 
     | None -> global_vars_set typ
@@ -285,22 +285,24 @@ let add_global_declaration sp env locals (body,typ,cst) =
     const_type = typ;
     const_hyps = sp_hyps;
     const_constraints = cst;
-    const_opaque = false } 
+    const_opaque = op } 
   in
   Environ.add_constant sp cb env'
 
 let add_parameter sp t locals env =
-  add_global_declaration sp env locals (safe_infer_declaration env (Assum t))
+  add_global_declaration
+    sp env locals (safe_infer_declaration env (Assum t)) false
 
-let add_constant_with_value sp body typ locals env =
+let add_constant sp ce locals env =
+  let { const_entry_body = body;
+        const_entry_type = typ;
+        const_entry_opaque = op } = ce in
   let body' =
     match typ with
       | None -> body
       | Some ty -> mkCast (body, ty) in
-  add_global_declaration sp env locals (safe_infer_declaration env (Def body'))
-
-let add_constant sp ce locals env =
-  add_constant_with_value sp ce.const_entry_body ce.const_entry_type locals env
+  add_global_declaration
+    sp env locals (safe_infer_declaration env (Def body')) op
 
 let add_discharged_constant sp r locals env =
   let (body,typ,cst) = Cooking.cook_constant env r in
@@ -463,9 +465,6 @@ let rec pop_named_decls idl env =
   match idl with 
     | [] -> env
     | id::l -> pop_named_decls l (Environ.pop_named_decl id env)
-
-let set_opaque = Environ.set_opaque
-let set_transparent = Environ.set_transparent
 
 let export = export
 let import = import

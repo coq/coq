@@ -58,6 +58,11 @@ type evaluable_global_reference =
   | EvalVarRef of identifier
   | EvalConstRef of section_path
 
+type transparent_state = Idpred.t * Sppred.t
+
+let all_opaque = (Idpred.empty, Sppred.empty)
+let all_transparent = (Idpred.full, Sppred.full)
+
 module type RedFlagsSig = sig
   type reds
   type red_kind
@@ -66,12 +71,12 @@ module type RedFlagsSig = sig
   val fDELTA : red_kind
   val fIOTA : red_kind
   val fZETA : red_kind
-  val fCONST : constant_path -> red_kind
-  val fCONSTBUT : constant_path -> red_kind
+  val fCONST : section_path -> red_kind
   val fVAR : identifier -> red_kind
-  val fVARBUT : identifier -> red_kind
   val no_red : reds
   val red_add : reds -> red_kind -> reds
+  val red_sub : reds -> red_kind -> reds
+  val red_add_transparent : reds -> transparent_state -> reds
   val mkflags : red_kind list -> reds
   val red_set : reds -> red_kind -> bool
   val red_get_const : reds -> bool * evaluable_global_reference list
@@ -86,84 +91,84 @@ module RedFlags = (struct
   type reds = {
     r_beta : bool;
     r_delta : bool;
-    r_const : bool * constant_path list * identifier list;
+    r_const : transparent_state;
     r_zeta : bool;
     r_evar : bool;
     r_iota : bool }
 
   type red_kind = BETA | DELTA | EVAR | IOTA | ZETA
-	      | CONST of constant_path | CONSTBUT of constant_path
-	      | VAR of identifier | VARBUT of identifier
+	      | CONST of constant_path | VAR of identifier
   let fBETA = BETA
   let fDELTA = DELTA
   let fEVAR = EVAR 
   let fIOTA = IOTA
   let fZETA = ZETA
   let fCONST sp  = CONST sp
-  let fCONSTBUT sp = CONSTBUT sp
-  let fVAR id = VAR id
-  let fVARBUT id = VARBUT id
+  let fVAR id  = VAR id
   let no_red = {
     r_beta = false;
     r_delta = false;
-    r_const = false,[],[];
+    r_const = all_opaque;
     r_zeta = false;
     r_evar = false;
     r_iota = false }
 
   let red_add red = function
     | BETA -> { red with r_beta = true }
-    | DELTA ->
-	(match red.r_const with
-	   | _,_::_,[] | _,[],_::_ -> error "Conflict in the reduction flags"
-	   | _ -> { red with r_const = true,[],[]; r_delta = true })
+    | DELTA -> { red with r_delta = true; r_const = all_transparent }
     | CONST sp ->
-	let (oldallbut,l1,l2) = red.r_const in
-	if oldallbut then error "Conflict in the reduction flags"
-	else { red with r_const = false, list_union [sp] l1, l2 }
-    | CONSTBUT sp ->
-	(match red.r_const with
-	   | (false,_::_,_ | false,_,_::_ | true,[],[]) ->
-	       error "Conflict in the reduction flags"
-	   | (_,l1,l2) -> { red with r_const = true, list_union [sp] l1, l2 })
+	let (l1,l2) = red.r_const in
+	{ red with r_const = l1, Sppred.add sp l2 }
     | IOTA -> { red with r_iota = true }
     | EVAR -> { red with r_evar = true }
     | ZETA -> { red with r_zeta = true }
     | VAR id ->
-	let (oldallbut,l1,l2) = red.r_const in
-	if oldallbut then error "Conflict in the reduction flags"
-	else { red with r_const = false, l1, list_union [id] l2 }
-    | VARBUT id ->
-	(match red.r_const with
-	   | (false,_::_,_ | false,_,_::_ | true,[],[]) ->
-	       error "Conflict in the reduction flags"
-	   | (_,l1,l2) -> { red with r_const = true, l1, list_union [id] l2 })
+	let (l1,l2) = red.r_const in
+	{ red with r_const = Idpred.add id l1, l2 }
+
+  let red_sub red = function
+    | BETA -> { red with r_beta = false }
+    | DELTA -> { red with r_delta = false }
+    | CONST sp ->
+ 	let (l1,l2) = red.r_const in
+	{ red with r_const = l1, Sppred.remove sp l2 }
+    | IOTA -> { red with r_iota = false }
+    | EVAR -> { red with r_evar = false }
+    | ZETA -> { red with r_zeta = false }
+    | VAR id ->
+	let (l1,l2) = red.r_const in
+	{ red with r_const = Idpred.remove id l1, l2 }
+
+  let red_add_transparent red tr =
+    { red with r_const = tr } 
 
   let mkflags = List.fold_left red_add no_red
 
   let red_set red = function
     | BETA -> incr_cnt red.r_beta beta
     | CONST sp -> 
-	let (b,l,_) = red.r_const in
-	let c = List.mem sp l in
-	incr_cnt ((b & not c) or (c & not b)) delta
+	let (_,l) = red.r_const in
+	let c = Sppred.mem sp l in
+	incr_cnt c delta
     | VAR id -> (* En attendant d'avoir des sp pour les Var *)
-	let (b,_,l) = red.r_const in
-	let c = List.mem id l in
-	incr_cnt ((b & not c) or (c & not b)) delta
+	let (l,_) = red.r_const in
+	let c = Idpred.mem id l in
+	incr_cnt c delta
     | ZETA -> incr_cnt red.r_zeta zeta
     | EVAR -> incr_cnt red.r_zeta evar
     | IOTA -> incr_cnt red.r_iota iota
     | DELTA -> (* Used for Rel/Var defined in context *)
 	incr_cnt red.r_delta delta
-    | (CONSTBUT _ | VARBUT _) -> (* Not for internal use *)
-	failwith "not implemented"
 
   let red_get_const red =
-    let b,l1,l2 = red.r_const in
-    let l1' = List.map (fun x -> EvalConstRef x) l1 in
-    let l2' = List.map (fun x -> EvalVarRef x) l2 in
-    b, l1' @ l2'
+    let p1,p2 = red.r_const in
+    let (b1,l1) = Idpred.elements p1 in
+    let (b2,l2) = Sppred.elements p2 in
+    if b1=b2 then
+      let l1' = List.map (fun x -> EvalVarRef x) l1 in
+      let l2' = List.map (fun x -> EvalConstRef x) l2 in
+      (b1, l1' @ l2')
+    else error "unrepresentable pair of predicate"
 
 end : RedFlagsSig)
 
@@ -376,13 +381,13 @@ let red_under (md,r) rk =
 
 type 'a table_key =
   | ConstBinding of constant
-  | EvarBinding of (existential * 'a subs)
+  | EvarBinding of existential
   | VarBinding of identifier
   | FarRelBinding of int
 
 type ('a, 'b) infos = {
   i_flags : flags;
-  i_repr : ('a, 'b) infos -> 'a subs -> constr -> 'a;
+  i_repr : ('a, 'b) infos -> constr -> 'a;
   i_env : env;
   i_evc : 'b evar_map;
   i_rels : int * (int * constr) list;
@@ -396,15 +401,15 @@ let ref_value_cache info ref =
     Some (Hashtbl.find info.i_tab ref)
   with Not_found ->
   try
-    let body,subs =
+    let body =
       match ref with
 	| FarRelBinding n ->
-	    let (s,l) = info.i_rels in lift n (List.assoc (s-n) l), ESID 0
-	| VarBinding id -> List.assoc id info.i_vars, ESID 0
-	| EvarBinding (evc,subs) -> existential_value info.i_evc evc, subs
-	| ConstBinding cst -> constant_value info.i_env cst, ESID 0
+	    let (s,l) = info.i_rels in lift n (List.assoc (s-n) l)
+	| VarBinding id -> List.assoc id info.i_vars
+	| EvarBinding evc -> existential_value info.i_evc evc
+	| ConstBinding cst -> constant_value info.i_env cst
     in
-    let v = info.i_repr info subs body in
+    let v = info.i_repr info body in
     Hashtbl.add info.i_tab ref v;
     Some v
   with
@@ -579,7 +584,7 @@ and fterm =
 and freference =
   (* only vars as args of FConst ... exploited for caching *)
   | FConst of section_path * fconstr array
-  | FEvar of (existential * fconstr subs)
+  | FEvar of existential_key * fconstr array
   | FVar of identifier
   | FFarRel of int (* index in the rel_context part of _initial_ environment *)
 
@@ -679,9 +684,9 @@ let mk_clos_deep clos_fun env t =
     | IsConst (sp,v) ->
         { norm = Red;
 	  term = FFlex (FConst (sp,Array.map (clos_fun env) v)) }
-    | IsEvar (_,v as ev) ->
+    | IsEvar (n,v) ->
         { norm = Red;
-	  term = FFlex (FEvar (ev, env)) }
+	  term = FFlex (FEvar (n, Array.map (clos_fun env) v)) }
 
     | IsMutCase (ci,p,c,v) ->
         { norm = Red;
@@ -733,9 +738,8 @@ let rec to_constr constr_fun lfts v =
         mkCast (constr_fun lfts a, constr_fun lfts b)
     | FFlex (FConst (op,ve)) ->
 	mkConst (op, Array.map (constr_fun lfts) ve)
-    | FFlex (FEvar ((n,args),env)) ->
-	let f a = constr_fun lfts (mk_clos env a) in
-	mkEvar (n, Array.map f args)
+    | FFlex (FEvar (n,args)) ->
+	mkEvar (n, Array.map (constr_fun lfts) args)
     | FInd (op,ve) ->
 	mkMutInd (op, Array.map (constr_fun lfts) ve)
     | FConstruct (op,ve) -> 
@@ -985,10 +989,11 @@ let rec knr info m stk =
       (match ref_value_cache info (ConstBinding cst) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
-  | FFlex(FEvar ev) when can_red info stk fEVAR ->
+  | FFlex(FEvar (n,args)) when can_red info stk fEVAR ->
 (* In the case of evars, if it is not defined, then we do not set the
    flag to Norm, because it may be instantiated later on *)
-      (match ref_value_cache info (EvarBinding ev) with
+      let evar = (n, Array.map term_of_fconstr args) in
+      (match ref_value_cache info (EvarBinding evar) with
           Some v -> kni info v stk
         | None -> (m,stk))
   | FFlex(FVar id) when can_red info stk (fVAR id) ->
@@ -1065,8 +1070,8 @@ and down_then_up info m stk =
                           Array.map (kl info) fbds),bds,e)
         | FFlex(FConst(sp,args)) ->
             FFlex(FConst(sp, Array.map (kl info) args))
-        | FFlex(FEvar((i,args),e)) ->
-            FFlex(FEvar((i,args),e))
+        | FFlex(FEvar(i,args)) ->
+            FFlex(FEvar(i, Array.map (kl info) args))
         | t -> t in
       {norm=Norm;term=nt} in
 (* Precondition: m.norm = Norm *)
@@ -1089,13 +1094,15 @@ let inject = mk_clos (ESID 0)
 type 'a clos_infos = (fconstr, 'a) infos
 
 let create_clos_infos flgs env sigma =
-  create (fun _ -> mk_clos) flgs env sigma
+  create (fun _ -> inject) flgs env sigma
 
 let unfold_reference info = function
   | FConst (op,v) -> 
       let cst = (op, Array.map (norm_val info) v) in
       ref_value_cache info (ConstBinding cst)
-  | FEvar ev -> ref_value_cache info (EvarBinding ev)
+  | FEvar (n,v) ->
+      let evar = (n, Array.map (norm_val info) v) in
+      ref_value_cache info (EvarBinding evar)
   | FVar id -> ref_value_cache info (VarBinding id)
   | FFarRel p -> ref_value_cache info (FarRelBinding p)
 

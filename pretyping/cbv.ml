@@ -236,7 +236,9 @@ let rec norm_head info env t stack =
       let normt = (sp,Array.map (cbv_norm_term info env) vars) in
       norm_head_ref 0 info env stack (ConstBinding normt)
 
-  | IsEvar ev -> norm_head_ref 0 info env stack (EvarBinding (ev,env))
+  | IsEvar (ev,args) ->
+      let evar = (ev, Array.map (cbv_norm_term info env) args) in
+      norm_head_ref 0 info env stack (EvarBinding evar)
 
   | IsLetIn (x, b, t, c) ->
       (* zeta means letin are contracted; delta without zeta means we *)
@@ -283,8 +285,8 @@ and norm_head_ref k info env stack normt =
 and make_constr_ref n info = function
   | FarRelBinding p -> mkRel (n+p)
   | VarBinding id -> mkVar id
-  | EvarBinding ((ev,args),env) ->
-      mkEvar (ev,Array.map (cbv_norm_term info env) args)
+  | EvarBinding (ev,args) ->
+      mkEvar (ev,Array.map (cbv_norm_term info (ESID 0)) args)
   | ConstBinding cst -> mkConst cst
 
 (* cbv_stack_term performs weak reduction on constr t under the subs
@@ -403,7 +405,7 @@ type 'a cbv_infos = (cbv_value, 'a) infos
 (* constant bodies are normalized at the first expansion *)
 let create_cbv_infos flgs env sigma =
   create
-    (fun old_info s c -> cbv_stack_term old_info TOP s c)
+    (fun old_info c -> cbv_stack_term old_info TOP (ESID 0) c)
     flgs
     env
     sigma

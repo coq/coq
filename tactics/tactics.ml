@@ -1823,7 +1823,7 @@ let abstract_subproof name tac gls =
       with e when catchable_exception e -> 
 	(delete_current_proof(); raise e)
     in   (* Faudrait un peu fonctionnaliser cela *)
-    let sp = Declare.declare_constant na (ConstantEntry const,strength,true) in
+    let sp = Declare.declare_constant na (ConstantEntry const,strength) in
     let newenv = Global.env() in
     Declare.constr_of_reference Evd.empty newenv (ConstRef sp)
   in
