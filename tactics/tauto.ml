@@ -6,7 +6,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Sign
 open Environ
@@ -65,7 +65,7 @@ let not_pattern_mark   = put_pat mmk "(not ?1)"
 let imply_squeleton = put_squel mmk "?1 -> ?2"
 let mkIMP a b = soinstance imply_squeleton [a;b]
 *)
-let mkIMP a b = mkProd Anonymous a b
+let mkIMP a b = mkProd (Anonymous, a, b)
 
 let false_pattern () = get_pat false_pattern_mark
 let true_pattern () = get_pat true_pattern_mark
@@ -1667,8 +1667,8 @@ let (tAUTOFAIL : tactic) = fun _ -> errorlabstrm "TAUTOFAIL"
                                           [< 'sTR "Tauto failed.">]
 
 let is_imp_term t =
-  match t with
-    | DOP2(Prod,_,DLAM(_,b)) -> (not((dependent (Rel 1) b)))
+  match kind_of_term t with
+    | IsProd (_,_,b) -> (not((dependent (mkRel 1) b)))
     | _ -> false
 
 (* Chet's code depends on the names of the logical constants. *)
@@ -1700,8 +1700,8 @@ let tauto_of_cci_fmla gls cciterm =
     else if pf_is_matching gls (true_pattern ()) cciterm then
       FTrue
     else if is_imp_term cciterm then
-      match cciterm with
-        | DOP2(Prod,a,DLAM(_,b)) -> FImp(tradrec a,tradrec (Generic.pop b))
+      match kind_of_term cciterm with
+        | IsProd (_,a,b) -> FImp(tradrec a,tradrec (pop b))
 	| _ -> assert false
     else FPred cciterm
   in 

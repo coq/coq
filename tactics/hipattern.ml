@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Reduction
 open Inductive
@@ -211,9 +211,9 @@ let match_with_nottype t =
 
 let is_nottype t = op2bool (match_with_nottype t)
 		     
-let is_imp_term = function
-  | DOP2(Prod,_,DLAM(_,b)) -> not (dependent (Rel 1) b)
-  | _                      -> false
+let is_imp_term c = match kind_of_term c with
+  | IsProd (_,_,b) -> not (dependent (mkRel 1) b)
+  | _              -> false
 
 
 

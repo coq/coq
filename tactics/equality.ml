@@ -5,7 +5,7 @@ open Pp
 open Util
 open Names
 open Univ
-open Generic
+(*i open Generic i*)
 open Term
 open Inductive
 open Environ
@@ -40,7 +40,7 @@ let general_rewrite_bindings lft2rgt (c,l) gl =
   let ctype = pf_type_of gl c in 
   let env = pf_env gl in
   let sigma = project gl in 
-  let sign,t = splay_prod env sigma ctype in
+  let _,t = splay_prod env sigma ctype in
   match match_with_equation t with
     | None -> error "The term provided does not end with an equation" 
     | Some (hdcncl,_) -> 
@@ -267,12 +267,6 @@ let match_eq eqn eq_pat =
     | [(1,t);(2,x);(3,y)] -> (t,x,y)
     | _ -> anomaly "match_eq: an eq pattern should match 3 terms"
 
-
-let rec hd_of_prod prod =
-  match strip_outer_cast prod with
-    | (DOP2(Prod,c,DLAM(n,t'))) -> hd_of_prod t'
-    |  t -> t
-
 type elimination_types =
   | Set_Type
   | Type_Type
@@ -470,8 +464,8 @@ let descend_then sigma env head dirn =
 	let result = if i = dirn then dirnval else dfltval in
 	it_mkLambda_or_LetIn_name env result cstr.(i-1).cs_args
       in
-      mkMutCase (make_default_case_info mispec) p head 
-	(List.map build_branch (interval 1 (mis_nconstr mispec)))))
+      mkMutCase (make_default_case_info mispec, p, head,
+		 List.map build_branch (interval 1 (mis_nconstr mispec)))))
   
 (* Now we need to construct the discriminator, given a discriminable
    position.  This boils down to:
@@ -515,8 +509,8 @@ let construct_discriminator sigma env dirn c sort =
     it_mkLambda_or_LetIn endpt cstrs.(i-1).cs_args 
   in
   let build_match =
-    mkMutCase (make_default_case_info mispec) p c 
-      (List.map build_branch (interval 1 (mis_nconstr mispec)))
+    mkMutCase (make_default_case_info mispec, p, c,
+	       List.map build_branch (interval 1 (mis_nconstr mispec)))
   in
   build_match
     
@@ -571,8 +565,8 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
   let env = pf_env gls in
   let (indt,_) = find_mrectype env (project gls) t in 
   let arity = Global.mind_arity indt in
-  let sort = pf_type_of gls (pf_concl gls) in 
-  match necessary_elimination (destSort(hd_of_prod arity)) (destSort sort) with
+  let sort = pf_type_of gls (pf_concl gls) in
+  match necessary_elimination (snd (destArity arity)) (destSort sort) with
     | Type_Type  ->
  	let eq_elim     = build_rect lbeq in
 	let eq_term     = build_eq lbeq in
@@ -710,14 +704,14 @@ let find_sigma_data s =
  *)
 
 let make_tuple env sigma (rterm,rty) lind =
-  if dependent (Rel lind) rty then
+  if dependent (mkRel lind) rty then
     let {intro = exist_term; ex = sig_term} =
       find_sigma_data (get_sort_of env sigma rty) in
     let a = type_of env sigma (Rel lind) in
     (* We replace (Rel lind) by (Rel 1) in rty then abstract on (na:a) *)
     let rty' = substnl [Rel 1] lind rty in
     let na = fst (lookup_rel_type lind env) in
-    let p = mkLambda na a rty' in
+    let p = mkLambda (na, a, rty') in
     (applist(exist_term,[a;p;(Rel lind);rterm]),
      applist(sig_term,[a;p]))
   else
@@ -859,10 +853,10 @@ let build_injector sigma env (t1,t2) c cpath =
 let try_delta_expand env sigma t =
   let whdt = whd_betadeltaiota env sigma t  in 
   let rec hd_rec c  =
-    match c with
-      | DOPN(MutConstruct _,_) -> whdt
-      | DOPN(AppL,cl)  -> hd_rec (array_hd cl)
-      | DOP2(Cast,c,_) -> hd_rec c
+    match kind_of_term c with
+      | IsMutConstruct _ -> whdt
+      | IsAppL (f,_)  -> hd_rec f
+      | IsCast (c,_) -> hd_rec c
       | _  -> t
   in 
   hd_rec whdt 
@@ -1200,7 +1194,7 @@ let subst_tuple_term env sigma dep_pair b =
 let revSubstInConcl eqn gls =
   let (lbeq,(t,e1,e2)) = find_eq_data_decompose eqn in
   let body = subst_tuple_term (pf_env gls) (project gls) e2 (pf_concl gls) in
-  assert (dependent (Rel 1) body);
+  assert (dependent (mkRel 1) body);
   bareRevSubstInConcl lbeq body (t,e1,e2) gls
 
 (* |- (P e1)
@@ -1216,7 +1210,7 @@ let substInConcl eqn gls =
 let substInHyp eqn id gls =
   let (lbeq,(t,e1,e2)) = (find_eq_data_decompose eqn) in 
   let body = subst_term e1 (clause_type (Some id) gls) in
-  if not (dependent (Rel 1) body) then errorlabstrm  "SubstInHyp" [<>];
+  if not (dependent (mkRel 1) body) then errorlabstrm  "SubstInHyp" [<>];
   (tclTHENS (cut_replacing id (subst1 e2 body))
      ([tclIDTAC;
        (tclTHENS (bareRevSubstInConcl lbeq body (t,e1,e2))
@@ -1251,118 +1245,104 @@ let rec list_int n cmr l =
 
 (* Tells if two constrs are equal modulo unification *)
 
+(* Alpha-conversion *)
 let bind_eq = function
   | (Anonymous,Anonymous) -> true
   | (Name _,Name _) -> true
   | _ -> false
 
-let rec eq_mod_rel l_meta = function
-  | (t,DOP0(Meta n)) ->
-      if not (List.mem n (fst (List.split l_meta))) then
-	Some ([(n,t)]@l_meta)
-      else if (List.assoc n l_meta) = t then
-	Some l_meta
-     else
-       None
-  | (DOP1(op0,c0),DOP1(op1,c1)) ->
-      if op0 = op1 then
-	eq_mod_rel l_meta (c0,c1)
-      else
-	None
-  | (DOP2(op0,t0,c0),DOP2(op1,t1,c1)) ->
-      if op0 = op1 then
-	match (eq_mod_rel l_meta (t0,t1)) with
-          | None -> None
-          | Some l -> eq_mod_rel l (c0,c1)	
-      else
-	None
-  | (DOPN(op0,t0),DOPN(op1,t1)) ->
-      if (op0 = op1) & (Array.length t0 = Array.length t1) then
-	List.fold_left2
-          (fun a c1 c2 ->
-             match a with
-	       | None -> None
-               | Some l -> eq_mod_rel l (c1,c2)) (Some l_meta)
-          (Array.to_list t0) (Array.to_list t1)
-      else
-	None
-  | (DLAM(n0,t0),DLAM(n1,t1)) ->
-      if bind_eq (n0,n1) then
-	eq_mod_rel l_meta (t0,t1)
-      else
-	None
-  | (t,u) ->
-      if t = u then
-	Some l_meta
-      else
-	None
+let eqop_mod_names = function
+  | OpLambda n0, OpLambda n1 -> bind_eq (n0,n1)
+  | OpProd n0, OpProd n1 -> bind_eq (n0,n1)
+  | OpLetIn n0, OpLetIn n1 -> bind_eq (n0,n1)
+  | op0, op1 -> op0 = op1
+
+exception NotEqModRel
+
+let rec eq_mod_rel l_meta t0 t1 =
+  match splay_constr_with_binders t1 with
+    | OpMeta n, [], [||] ->
+	if not (List.mem_assoc n l_meta) then
+	  [(n,t0)]@l_meta
+	else if (List.assoc n l_meta) = t0 then
+	  l_meta
+	else
+	  raise NotEqModRel
+    | op1, bd1, v1 ->
+	match splay_constr_with_binders t0 with
+	  | op0, bd0, v0
+	      when (eqop_mod_names (op0, op1)
+		    & (List.length bd0 = List.length bd1)
+		    & (Array.length v0 = Array.length v1)) ->
+	      array_fold_left2 eq_mod_rel
+		(List.fold_left2 eq_mod_rel_binders l_meta bd0 bd1)
+		v0 v1
+	    | _ -> raise NotEqModRel
+
+  and eq_mod_rel_binders l_meta t0 t1 = match (t0,t1) with
+    | (na0,Some b0,t0), (na1,Some b1,t1) when bind_eq (na0,na1) ->
+	eq_mod_rel (eq_mod_rel l_meta b0 b1) t0 t1
+    | (na0,None,t0), (na1,None,t1) when bind_eq (na0,na1) ->
+	eq_mod_rel l_meta t0 t1
+    | _ -> raise NotEqModRel
 
 (* Verifies if the constr has an head constant *)
 
-let is_hd_const = function
-  | DOPN(AppL,t) ->
-      (match t.(0) with
-         | DOPN(Const c,_) -> Some (Const c, array_tl t)
+let is_hd_const c = match kind_of_term c with
+  | IsAppL (f,args) ->
+      (match kind_of_term f with
+         | IsConst (c,_) -> Some (c, Array.of_list args)
          |_ -> None)
   | _ -> None
-	  
-(* Gives the occurences number of t in u *)
-let rec nb_occ_term t u =
-  let one_step t = function
-    | DOP1(_,c) -> nb_occ_term t c
-    | DOP2(_,c0,c1) -> (nb_occ_term t c0) + (nb_occ_term t c1)
-    | DOPN(_,a) -> Array.fold_left (fun a x -> a + (nb_occ_term t x)) 0 a
-    | DOPL(_,l) -> List.fold_left (fun a x -> a + (nb_occ_term t x)) 0 l
-    | DLAM(_,c) -> nb_occ_term t c
-    | DLAMV(_,a) -> Array.fold_left (fun a x -> a + (nb_occ_term t x)) 0 a
-    | _ -> 0
-  in
-  if t = u then
-    1
-  else
-    one_step t u
+
+(* Gives the occurrences number of a t in u
+   Rem: t is assumed closed then there is no need to lift it
+*)
+
+let nb_occ_term t u =
+  let rec nbrec nocc u =
+    if t = u then   (* Pourquoi pas eq_constr ?? *)
+      nocc + 1
+    else
+      Array.fold_left nbrec nocc (snd (splay_constr u))
+  in nbrec 0 u
+    
 
 (* Gives Some(first instance of ceq in cref,occurence number for this
-   instance) or None if no instance of ceq can be found in cref *)
-
+   instance) or None if no instance of ceq can be found in cref
+   Rem: t_eq is assumed closed then there is no need to lift it
+*)
 let sub_term_with_unif cref ceq =
-  let rec find_match l_meta nb_occ op_ceq t_eq = function
-    | DOPN(AppL,t) as u ->
-	(match (t.(0)) with
-           | DOPN(op,t_op) ->
-               let t_args=Array.of_list (List.tl (Array.to_list t)) in
-               if op = op_ceq then
-                 match
-                   (List.fold_left2 
-                      (fun a c0 c1 ->
-                         match a with
-                           | None -> None
-                           | Some l -> eq_mod_rel l (c0,c1)) (Some l_meta)
-                      (Array.to_list t_args) (Array.to_list t_eq))
-                 with
-                   | None ->
-                       List.fold_left
-                         (fun (l_meta,nb_occ) x -> find_match l_meta nb_occ
-                              op_ceq t_eq x) (l_meta,nb_occ) (Array.to_list
-								t_args)
-                   | Some l -> (l,nb_occ+1)
-               else
-                 List.fold_left 
-		   (fun (l_meta,nb_occ) x -> find_match l_meta
-			nb_occ op_ceq t_eq x) (l_meta,nb_occ) (Array.to_list t)
-           | VAR _ ->
-	       List.fold_left 
+  let rec find_match l_meta nb_occ hdsp t_args u = match splay_constr u with
+    | OpAppL, cl -> begin
+	let f, args = destApplication u in
+	match kind_of_term f with
+          | IsConst (sp,_) when sp = hdsp -> begin
+	      try (array_fold_left2 eq_mod_rel l_meta args t_args, nb_occ+1)
+	      with NotEqModRel ->
+		Array.fold_left
+                  (fun (l_meta,nb_occ) x -> find_match l_meta nb_occ
+                       hdsp t_args x) (l_meta,nb_occ) args
+	    end
+
+          | IsConst _ | IsVar _ | IsMutInd _ | IsMutConstruct _
+	  | IsFix _ | IsCoFix _ ->
+               Array.fold_left 
 		 (fun (l_meta,nb_occ) x -> find_match l_meta
-		      nb_occ op_ceq t_eq x) (l_meta,nb_occ) (Array.to_list t)
-           |_ -> (l_meta,nb_occ))
-    | DOP2(_,t,DLAM(_,c)) ->
-	let (lt,nbt)=find_match l_meta nb_occ op_ceq t_eq t in
-        find_match lt nbt op_ceq t_eq c
-    | DOPN(_,t) -> 
-	List.fold_left 
-	  (fun (l_meta,nb_occ) x -> find_match l_meta nb_occ op_ceq
-	       t_eq x) (l_meta,nb_occ) (Array.to_list t)
-    |_ -> (l_meta,nb_occ)
+		      nb_occ hdsp t_args x) (l_meta,nb_occ) cl
+
+	   (* Pourquoi ne récurre-t-on pas dans f ? *)
+           | _ -> (l_meta,nb_occ)
+      end
+
+(* Le code original ne récurrait pas sous les Cast 
+    | OpCast, _ -> (l_meta,nb_occ)
+*)
+    | _, t -> 
+	Array.fold_left 
+	  (fun (l_meta,nb_occ) x -> find_match l_meta nb_occ hdsp t_args x)
+	  (l_meta,nb_occ) t
+
   in
   match (is_hd_const ceq) with
     | None ->

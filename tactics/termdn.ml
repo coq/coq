@@ -2,7 +2,7 @@
 (* $Id$ *)
 
 open Util
-open Generic
+(*i open Generic i*)
 open Names
 open Term
 open Pattern
@@ -16,10 +16,10 @@ type 'a t = (constr_label,constr_pattern,'a) Dn.t
 (*If we have: f a b c ..., decomp gives: (f,[a;b;c;...])*)
 
 let decomp = 
-  let rec decrec acc = function
-    | DOPN(AppL,cl) -> decrec (array_app_tl cl acc) (array_hd cl)
-    | DOP2(Cast,c1,_) -> decrec acc c1
-    | c -> (c,acc)
+  let rec decrec acc c = match kind_of_term c with
+    | IsAppL (f,l) -> decrec (l@acc) f
+    | IsCast (c1,_) -> decrec acc c1
+    | _ -> (c,acc)
   in 
   decrec []
 
@@ -41,12 +41,13 @@ let constr_pat_discr t =
       | _ -> None
 
 let constr_val_discr t =
-  match decomp t with
-    (* DOPN(Const _,_) as c,l -> Some(TERM c,l) *)
-    | DOPN(MutInd ind_sp,_) as c,l -> Some(IndNode ind_sp,l)
-    | DOPN(MutConstruct cstr_sp,_) as c,l -> Some(CstrNode cstr_sp,l)
-    | VAR id as c,l -> Some(VarNode id,l)
-    | c -> None
+  let c, l = decomp t in
+  match kind_of_term c with
+    (* IsConst _,_) -> Some(TERM c,l) *)
+    | IsMutInd (ind_sp,_) -> Some(IndNode ind_sp,l)
+    | IsMutConstruct (cstr_sp,_) -> Some(CstrNode cstr_sp,l)
+    | IsVar id -> Some(VarNode id,l)
+    | _ -> None
 
 (* Les deux fonctions suivantes ecrasaient les precedentes, 
    ajout d'un suffixe _nil CP 16/08 *) 

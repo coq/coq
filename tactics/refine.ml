@@ -42,7 +42,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Tacmach
 open Sign
@@ -85,24 +85,24 @@ and pp_sg sg =
  *)
 
 let replace_by_meta env = function
-  | TH (DOP0(Meta _) | DOP2(Cast,DOP0(Meta _),_) as m, mm, sgp) -> m,mm,sgp
+  | TH (m, mm, sgp) when isMeta (strip_outer_cast m) -> m,mm,sgp
   | (TH (c,mm,_)) as th ->
       let n = new_meta() in
       let m = DOP0(Meta n) in
       (* quand on introduit une mv on calcule son type *)
-      let ty = match c with
-	| DOP2(Lambda,c1,DLAM(Name id,DOP2(Cast,_,ty))) ->
-	    mkNamedProd id c1 ty
-	| DOP2(Lambda,c1,DLAM(Anonymous,DOP2(Cast,_,ty))) ->
-	    mkArrow c1 ty
-	| DOPN((AppL|MutCase _),_) ->
+      let ty = match kind_of_term c with
+	| IsLambda (Name id,c1,c2) when isCast c2 ->
+	    mkNamedProd id c1 (snd (destCast c2))
+	| IsLambda (Anonymous,c1,c2) when isCast c2 ->
+	    mkArrow c1 (snd (destCast c2))
+	| (IsAppL _ | IsMutCase _) ->
 	    (** let j = ise_resolve true empty_evd mm (gLOB sign) c in **)
 	    Retyping.get_type_of_with_meta env Evd.empty mm c
-	| DOPN(Fix (_,j),v) ->
+	| IsFix ((_,j),(v,_,_)) ->
 	    v.(j) (* en pleine confiance ! *)
 	| _ -> invalid_arg "Tcc.replace_by_meta (TO DO)" 
       in
-      DOP2(Cast,m,ty),[n,ty],[Some th]
+      mkCast (m,ty),[n,ty],[Some th]
 
 exception NoMeta
 
@@ -122,24 +122,22 @@ let fresh env n =
   let id = match n with Name x -> x | _ -> id_of_string "_" in
   next_global_ident_away id (ids_of_var_context (var_context env))
 
-let rec compute_metamap env = function
+let rec compute_metamap env c = match kind_of_term c with
   (* le terme est directement une preuve *)
-  | DOP0(Sort _)
-  | DOPN((Const _ | Abst _ | MutInd _ | MutConstruct _),_)
-  | VAR _ | Rel _ as c -> TH (c,[],[])
+  | (IsConst _ | IsEvar _ | IsAbst _ | IsMutInd _ | IsMutConstruct _ |
+    IsSort _ | IsVar _ | IsRel _) -> TH (c,[],[])
 
   (* le terme est une mv => un but *)
-  | DOP0(Meta n) as c ->
+  | IsMeta n ->
       Pp.warning (Printf.sprintf ("compute_metamap: MV(%d) sans type !\n") n);
       TH (c,[],[None])
-  | DOP2(Cast,DOP0(Meta n),ty) as c -> TH (c,[n,ty],[None])
+  | IsCast (DOP0(Meta n),ty) -> TH (c,[n,ty],[None])
 
   (* abstraction => il faut décomposer si le terme dessous n'est pas pur
    *    attention : dans ce cas il faut remplacer (Rel 1) par (VAR x)
    *    où x est une variable FRAICHE *)
-  | DOP2(Lambda,c1,DLAM(name,c2)) as c ->
+  | IsLambda (name,c1,c2) ->
       let v = fresh env name in
-      (** let tj = ise_resolve_type true empty_evd [] (gLOB sign) c1 in **)
       let tj = Retyping.get_assumption_of env Evd.empty c1 in
       let env' = push_var_decl (v,tj) env in
       begin match compute_metamap env' (subst1 (VAR v) c2) with
@@ -148,11 +146,26 @@ let rec compute_metamap env = function
 	(* terme de preuve incomplet *)    
 	| th ->
 	    let m,mm,sgp = replace_by_meta env' th in
-	    TH (DOP2(Lambda,c1,DLAM(Name v,m)), mm, sgp)
+	    TH (mkLambda (Name v,c1,m), mm, sgp)
       end
 
+  | IsLetIn (name, c1, t1, c2) -> (* Adaptation to confirm *)
+      compute_metamap env (subst1 c1 c2)
+
   (* 4. Application *)
-  | DOPN((AppL|MutCase _) as op,v) as c ->
+  | IsAppL (f,v) ->
+      let a = Array.map (compute_metamap env) (Array.of_list (f::v)) in
+      begin
+	try
+	  let v',mm,sgp = replace_in_array env a in TH (mkAppL v',mm,sgp)
+	with NoMeta ->
+	  TH (c,[],[])
+      end
+
+  | IsMutCase _ ->
+      (* bof... *)
+      let op,v =
+	match c with DOPN(MutCase _ as op,v) -> (op,v) | _ -> assert false in
       let a = Array.map (compute_metamap env) v in
       begin
 	try
@@ -162,8 +175,7 @@ let rec compute_metamap env = function
       end
 
   (* 5. Fix. *)
-  | DOPN(Fix _,_) as c ->
-      let ((ni,i),(ai,fi,v)) = destFix c in
+  | IsFix ((ni,i),(ai,fi,v)) ->
       let vi = List.rev (List.map (fresh env) fi) in
       let env' =
 	List.fold_left
@@ -186,19 +198,19 @@ let rec compute_metamap env = function
       end
 	      
   (* Cast. Est-ce bien exact ? *)
-  | DOP2(Cast,c,t) -> compute_metamap env c
+  | IsCast (c,t) -> compute_metamap env c
       (*let TH (c',mm,sgp) = compute_metamap sign c in
-	TH (DOP2(Cast,c',t),mm,sgp) *)
+	TH (mkCast (c',t),mm,sgp) *)
       
   (* Produit. Est-ce bien exact ? *)
-  | DOP2(Prod,_,_) as c ->
+  | IsProd (_,_,_) ->
       if occur_meta c then
 	error "Refine: proof term contains metas in a product"
       else
       	TH (c,[],[])
- 
+
   (* Autres cas. *)
-  | _ ->
+  | IsXtra _|IsCoFix _ ->
       invalid_arg "Tcc.compute_metamap"
 
 
@@ -208,9 +220,12 @@ let rec compute_metamap env = function
  *)
 
 let rec tcc_aux (TH (c,mm,sgp) as th) gl =
-  match (c,sgp) with
+  match (kind_of_term c,sgp) with
     (* mv => sous-but : on ne fait rien *)
-    | (DOP0(Meta _) | DOP2(Cast,DOP0(Meta _),_)) , _ ->
+    | IsMeta _ , _ ->
+	tclIDTAC gl
+
+    | IsCast (c,_), _ when isMeta c ->
 	tclIDTAC gl
 	  
     (* terme pur => refine *)
@@ -218,8 +233,7 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 	refine c gl
 	
     (* abstraction => intro *)
-    | DOP2(Lambda,_,
-	   DLAM(Name id,(DOP0(Meta _)|DOP2(Cast,DOP0(Meta _),_) as m))) ,_ ->
+    | IsLambda (Name id,_,m) , _ when isMeta (strip_outer_cast m) ->
 	begin match sgp with
 	  | [None] -> introduction id gl
 	  | [Some th] ->
@@ -227,12 +241,11 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 	  | _ -> invalid_arg "Tcc.tcc_aux (bad length)"
 	end
 	
-    | DOP2(Lambda,_,_),_ ->
+    | IsLambda (_,_,_) , _ ->
 	error "invalid abstraction passed to function tcc_aux !"
       
     (* fix => tactique Fix *)
-    | DOPN(Fix _,_) , _ ->
-      	let ((ni,_),(ai,fi,_)) = destFix c in
+    | IsFix ((ni,_),(ai,fi,_)) , _ ->
 	let ids =
 	  List.map (function Name id -> id | _ ->
 		      error "recursive functions must have names !") fi 
@@ -269,7 +282,7 @@ let my_constr_of_com_casted sigma env com typ =
   Printf.printf "LA\n"; flush stdout;
   c
   (**
-  let cc = mkCast (nf_ise1 sigma c) (nf_ise1 sigma typ) in
+  let cc = mkCast (nf_ise1 sigma c, nf_ise1 sigma typ) in
   try (unsafe_machine env sigma cc).uj_val
   with e -> Stdpp.raise_with_loc (Ast.loc com) e
   **)

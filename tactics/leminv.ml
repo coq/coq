@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Sign
 open Evd
@@ -130,6 +130,11 @@ let rec add_prods_sign env sigma t =
 	let b'= subst1 (VAR id) b in
 	let j = Retyping.get_assumption_of env sigma c1 in
         add_prods_sign (Environ.push_var_decl (id,j) env) sigma b'
+    | IsLetIn (na,c1,t1,b) ->
+	let id = Environ.id_of_name_using_hdchar env t na in
+	let b'= subst1 (VAR id) b in
+	let j = Retyping.get_assumption_of env sigma t1 in
+        add_prods_sign (Environ.push_var_def (id,c1,j) env) sigma b'
     | _ -> (env,t)
 
 (* [dep_option] indicates wether the inversion lemma is dependent or not.
@@ -153,7 +158,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
     if dep_option  then
       let pty = make_arity env true indf sort in
       let goal = 
-	mkProd Anonymous (mkAppliedInd ind) (applist(VAR p,realargs@[Rel 1]))
+	mkProd (Anonymous, mkAppliedInd ind, applist(VAR p,realargs@[Rel 1]))
       in
       pty,goal
     else

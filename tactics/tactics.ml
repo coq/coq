@@ -6,7 +6,7 @@ open Util
 open Stamps
 open Names
 open Sign
-open Generic
+(*i open Generic i*)
 open Term
 open Inductive
 open Reduction
@@ -67,15 +67,14 @@ let string_head c =
 
 let rec head_constr_bound t l =
   let t = strip_outer_cast(collapse_appl t) in
-  match t with
-    | DOP2(Prod,_,DLAM(_,c2))     -> head_constr_bound c2 l 
-    | DOPN(AppL,cl)               -> 
-	head_constr_bound (array_hd cl) ((List.tl (Array.to_list cl))@l)
-    | DOPN(Const _,_) as x        -> x::l
-    | DOPN(MutInd _,_) as x       -> x::l
-    | DOPN(MutConstruct _,_) as x -> x::l
-    | VAR _ as x                  -> x::l
-    | _                           -> raise Bound
+  match kind_of_term t with
+    | IsProd (_,_,c2)  -> head_constr_bound c2 l 
+    | IsAppL (f,args)  -> head_constr_bound f (args@l)
+    | IsConst _        -> t::l
+    | IsMutInd _       -> t::l
+    | IsMutConstruct _ -> t::l
+    | IsVar _          -> t::l
+    | _                -> raise Bound
 
 let head_constr c = 
   try head_constr_bound c [] with Bound -> error "Bound head variable"
@@ -269,8 +268,8 @@ let id_of_name_with_default s = function
   | Name id   -> id
 
 let default_id gl =
-  match strip_outer_cast (pf_concl gl) with
-    | DOP2(Prod,c1,DLAM(name,c2)) ->
+  match kind_of_term (strip_outer_cast (pf_concl gl)) with
+    | IsProd (name,c1,c2) ->
   	(match pf_whd_betadeltaiota gl (pf_type_of gl c1) with
 	   | DOP0(Sort(Prop _))  -> (id_of_name_with_default "H" name)
 	   | DOP0(Sort(Type(_))) -> (id_of_name_with_default "X" name)
@@ -383,11 +382,11 @@ let dyn_intros_until = function
 
 let intros_do n g = 
   let depth = 
-    let rec lookup all nodep = function
-      | DOP2(Prod,_,DLAM(name,c')) -> 
+    let rec lookup all nodep c = match kind_of_term c with
+      | IsProd (name,_,c') -> 
 	  (match name with
 	     | Name(s')  -> 
-		 if dependent (Rel 1) c' then 
+		 if dependent (mkRel 1) c' then 
 		   lookup (all+1) nodep c'
 		 else if nodep = n then 
 		   all
@@ -395,7 +394,7 @@ let intros_do n g =
 		   lookup (all+1) (nodep+1) c'
              | Anonymous -> 
 		 if nodep=n then all else lookup (all+1) (nodep+1) c')
-      | DOP2(Cast,c,_) -> lookup all nodep c
+      | IsCast (c,_) -> lookup all nodep c
       | _ -> error "No such hypothesis in current goal"
     in 
     lookup 1 1 (pf_concl g)
@@ -453,11 +452,10 @@ let rec intros_rmove = function
  *  of the type of a term. *)
 
 let apply_type hdcty argl gl =
-  refine (DOPN(AppL,Array.of_list
-                 ((DOP2(Cast,DOP0(Meta(new_meta())),hdcty))::argl))) gl
+  refine (applist (mkCast (mkMeta (new_meta()),hdcty),argl)) gl
     
 let apply_term hdc argl gl =
-  refine (DOPN(AppL,Array.of_list(hdc::argl))) gl
+  refine (applist (hdc,argl)) gl
 
 let bring_hyps clsl gl = 
   let ids = 
@@ -495,8 +493,8 @@ let apply_with_bindings  (c,lbind) gl =
   let t = w_hnf_constr wc (w_type_of wc c) in 
   let clause = make_clenv_binding_apply wc (c,t) lbind in
   let apply = 
-    match c with 
-      | DOP2(Lambda,_,_) -> res_pf_cast 
+    match kind_of_term c with 
+      | IsLambda _ -> res_pf_cast 
       | _ -> res_pf 
   in 
   apply kONT clause gl
@@ -532,12 +530,12 @@ let dyn_apply l =
 
 let cut_and_apply c gl =
   let goal_constr = pf_concl gl in 
-  match (pf_hnf_constr gl (pf_type_of gl c)) with
-    | DOP2(Prod,c1,DLAM(_,c2)) when not (dependent (Rel 1) c2) ->
+  match kind_of_term (pf_hnf_constr gl (pf_type_of gl c)) with
+    | IsProd (_,c1,c2) when not (dependent (mkRel 1) c2) ->
 	tclTHENS 
-	  (apply_type (DOP2(Prod,c2,DLAM(Anonymous,goal_constr))) 
-	     [DOP0(Meta(new_meta()))]) 
-	  [tclIDTAC;apply_term c [DOP0(Meta(new_meta()))]] gl
+	  (apply_type (mkProd (Anonymous,c2,goal_constr))
+	     [DOP0(Meta(new_meta()))])
+	  [tclIDTAC;apply_term c [mkMeta (new_meta())]] gl
     | _ -> error "Imp_elim needs a non-dependent product"
 
 let dyn_cut_and_apply = function 
@@ -552,8 +550,8 @@ let dyn_cut_and_apply = function
 let cut c gl =
   match hnf_type_of gl c with
     | (DOP0(Sort _)) ->
-	apply_type (DOP2(Prod,c,DLAM(Anonymous,(pf_concl gl)))) 
-          [DOP0(Meta (new_meta()))] gl
+	apply_type (mkProd (Anonymous, c, pf_concl gl)) 
+          [mkMeta (new_meta())] gl
     | _  -> error "Not a proposition or a type"
 
 let dyn_cut = function
@@ -588,7 +586,7 @@ let generalize_goal gl c cl =
     | _        -> 
         let cl' = subst_term c cl in 
         if noccurn 1 cl' then 
-	  DOP2(Prod,t,DLAM(Anonymous,cl))
+	  mkProd (Anonymous,t,cl)
           (* On ne se casse pas la tete : on prend pour nom de variable
              la premiere lettre du type, meme si "ci" est une
              constante et qu'on pourrait prendre directement son nom *)
@@ -1057,17 +1055,19 @@ let induct_discharge indpath statuslists cname destopt avoid (_,t) =
       id_of_string ((string_of_id cname)^"_1") 
   in
   let hyprecname = id_of_string ("Hrec"^(string_of_id recvarname)) in
-  let rec peel_tac = function
-    | DOP2 (Prod,t,DLAM(na,DOP2(Prod,tr,DLAM(nar,c))))
-	when is_rec_arg indpath t
-	  -> if !tophyp=None then tophyp:=Some hyprecname;(* for lstatus *)
-	    tclTHENLIST
-	      [ central_intro (IBasedOn (recvarname,avoid)) destopt false;
-		central_intro (IBasedOn (hyprecname,avoid)) None false;
-		peel_tac c]
-    | DOP2 (Cast,c,_) -> peel_tac c
-    | DOP2 (Prod,t,DLAM(na,c))
-      -> tclTHEN (central_intro (IAvoid avoid) destopt false)
+  let rec peel_tac c = match kind_of_term c with
+    | IsProd (na,t,c2) when is_rec_arg indpath t ->
+	(match kind_of_term c2 with
+	   | IsProd (nar,tr,c3) ->
+	       if !tophyp=None then tophyp:=Some hyprecname;(* for lstatus *)
+	       tclTHENLIST
+		 [ central_intro (IBasedOn (recvarname,avoid)) destopt false;
+		   central_intro (IBasedOn (hyprecname,avoid)) None false;
+		   peel_tac c3]
+	   | _ -> anomaly "induct_discharge: rec arg leads to 2 products")
+    | IsCast (c,_) -> peel_tac c
+    | IsProd (na,t,c) ->
+	tclTHEN (central_intro (IAvoid avoid) destopt false)
 	  (peel_tac c)
     | _ -> tclIDTAC
   in
@@ -1271,7 +1271,7 @@ let induction_tac varname typ (elimc,elimt) gl =
   let c = VAR varname in
   let (wc,kONT)  = startWalk gl                    in
   let indclause  = make_clenv_binding wc (c,typ) []  in
-  let elimclause = make_clenv_binding wc (DOP2(Cast,elimc,elimt),elimt) [] in
+  let elimclause = make_clenv_binding wc (mkCast (elimc,elimt),elimt) [] in
   elimination_clause_scheme kONT wc elimclause indclause gl
 
 let get_constructors varname (elimc,elimt) mind mindpath =
@@ -1425,8 +1425,8 @@ let elim_scheme_type elim t gl =
 let elim_type t gl =
   let (path_name,tind,t) = reduce_to_ind (pf_env gl) (project gl) t in
   let elimc = lookup_eliminator (pf_env gl) path_name (sort_of_goal gl) in
-  match t with 
-    | DOP2(Prod,_,_) -> error "Not an inductive definition"
+  match kind_of_term t with 
+    | IsProd (_,_,_) -> error "Not an inductive definition"
     | _              -> elim_scheme_type elimc tind gl
 
 let dyn_elim_type = function
@@ -1437,8 +1437,8 @@ let dyn_elim_type = function
 let case_type t gl =
   let env = pf_env gl in
   let (mind,_,t) = reduce_to_mind env (project gl) t in  
-  match t with 
-    | DOP2(Prod,_,_) -> error "Not an inductive definition"
+  match kind_of_term t with 
+    | IsProd (_,_,_) -> error "Not an inductive definition"
     | _             -> 
         let sigma = project gl in 
         let sort  = sort_of_goal gl in

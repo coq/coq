@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Sign
 open Declarations
@@ -243,17 +243,22 @@ type branch_assumptions = {
  *  --Eduardo (11/8/97) *)
 
 let reduce_to_ind_goal gl t = 
-  let rec elimrec t l = 
-    match decomp_app(t) with
-      | (DOPN(MutInd ind_sp,args) as mind,_) -> 
-	  ((ind_sp,args),path_of_inductive_path ind_sp,t,prod_it t l)
-      | (DOPN(Const _,_),_) -> 
-	  elimrec (pf_nf_betaiota gl (pf_one_step_reduce gl t)) l
-      | (DOP2(Cast,c,_),[]) -> elimrec c l
-      | (DOP2(Prod,ty,DLAM(n,t')),[]) -> elimrec t' ((n,ty)::l)
+  let rec elimrec t =
+    let c,args = decomp_app t in
+    match kind_of_term c with
+      | IsMutInd (ind_sp,args as ity) -> 
+	  ((ity, path_of_inductive_path ind_sp, t), t)
+      | IsConst _ ->
+	  elimrec (pf_nf_betaiota gl (pf_one_step_reduce gl t))
+      | IsCast (c,_) when args = [] ->
+	  elimrec c
+      | IsProd (n,ty,t') when args = [] ->
+	  let (ind, t) = elimrec t' in (ind, mkProd (n,ty,t))
+      | IsLetIn (n,c,ty,t') when args = [] ->
+	  let (ind, t) = elimrec t' in (ind, mkLetIn (n,c,ty,t))
       | _ -> error "Not an inductive product"
   in 
-  elimrec t []
+  elimrec t
 
 let case_sign ity i = 
   let rec analrec acc = function 
@@ -284,13 +289,13 @@ let sort_of_goal gl =
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)
 
-let last_arg = function
-  | DOPN(AppL,cl) -> cl.(Array.length cl - 1)
+let last_arg c = match kind_of_term c with
+  | IsAppL (f,cl) -> List.nth cl (List.length cl - 1)
   | _ -> anomaly "last_arg"
 
 let general_elim_then_using 
   elim elim_sign_fun tac predicate (indbindings,elimbindings) c gl =
-  let (ity,_,_,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
+  let ((ity,_,_),t) = reduce_to_ind_goal gl (pf_type_of gl c) in
   let name_elim =
     (match elim with
        | DOPN(Const sp,_) -> id_of_string(string_of_path sp)
@@ -302,10 +307,10 @@ let general_elim_then_using
   let indclause  = mk_clenv_from wc (c,t) in
   let indclause' = clenv_constrain_with_bindings indbindings indclause in
   let elimclause = mk_clenv_from () (elim,w_type_of wc elim) in
-  let indmv  = 
-    match last_arg (clenv_template elimclause).rebus with
-      | DOP0(Meta mv) -> mv
-      | _            -> error "elimination"
+  let indmv = 
+    match kind_of_term (last_arg (clenv_template elimclause).rebus) with
+      | IsMeta mv -> mv
+      | _         -> error "elimination"
   in
   let pmv = 
     match decomp_app (clenv_template_type elimclause).rebus with
@@ -338,7 +343,7 @@ let general_elim_then_using
 
 
 let elimination_then_using tac predicate (indbindings,elimbindings) c gl = 
-  let (ity,path_name,_,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
+  let ((ity,path_name,_),t) = reduce_to_ind_goal gl (pf_type_of gl c) in
   let elim = lookup_eliminator (pf_env gl) path_name (sort_of_goal gl) in
   general_elim_then_using
     elim elim_sign tac predicate (indbindings,elimbindings) c gl
@@ -349,7 +354,7 @@ let simple_elimination_then tac = elimination_then tac ([],[])
 
 let case_then_using tac predicate (indbindings,elimbindings) c gl =
   (* finding the case combinator *)
-  let (ity,_,_,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
+  let ((ity,_,_),t) = reduce_to_ind_goal gl (pf_type_of gl c) in
   let sigma = project gl in 
   let sort  = sort_of_goal gl  in
   let elim  = Indrec.make_case_gen (pf_env gl) sigma ity sort in  
@@ -358,7 +363,7 @@ let case_then_using tac predicate (indbindings,elimbindings) c gl =
 
 let case_nodep_then_using tac predicate (indbindings,elimbindings) c gl =
   (* finding the case combinator *)
-  let (ity,_,_,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
+  let ((ity,_,_),t) = reduce_to_ind_goal gl (pf_type_of gl c) in
   let sigma = project gl in 
   let sort  = sort_of_goal gl  in
   let elim  = Indrec.make_case_nodep (pf_env gl) sigma ity sort in  

@@ -51,7 +51,7 @@ let real_error = function
    the file we parse seems a bit risky to me.  B.B.  *)
 
 let open_file_twice_if verbosely fname =
-  let longfname = find_file_in_path fname in
+  let longfname = find_file_in_path (Library.get_load_path ()) fname in
   let in_chan = open_in longfname in
   let verb_ch = if verbosely then Some (open_in longfname) else None in
   let po = Pcoq.Gram.parsable (Stream.of_channel in_chan) in
@@ -104,9 +104,12 @@ let rec vernac interpfun input =
             (raw_compile_module verbosely only_spec mname)
             (make_suffix fname ".v")
 	    
-      | Node(_,"Time",l) ->
+      | Node(_,"VernacList",l) ->
+	  List.iter interp l
+
+      | Node(_,"Time",[v]) ->
 	  let tstart = System.get_time() in
-          List.iter interp l;
+          interp v;
 	  let tend = System.get_time() in
           mSGNL [< 'sTR"Finished transaction in " ;
                    System.fmt_time_difference tstart tend >]

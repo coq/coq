@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Declarations
 open Declare
@@ -127,14 +127,14 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
                  print_id_list bad_projs; 'sTR " were not defined" >]);
            (None::sp_projs,fi::ids_not_ok,subst)
          end else 
-	   let p = mkLambda x rp2 (replace_vars subst ti) in
+	   let p = mkLambda (x, rp2, replace_vars subst ti) in
 	   let branch = mk_LambdaCit newfs (VAR fi) in
 	   let ci = Inductive.make_case_info
 		      (Global.lookup_mind_specif (destMutInd r))
 		      (Some PrintLet) [| RegularPat |] in
 	   let proj = mk_LambdaCit newps 
-			(mkLambda x rp1 
-			   (mkMutCaseA ci p (Rel 1) [|branch|])) in
+			(mkLambda (x, rp1,
+				   mkMutCaseA ci p (Rel 1) [|branch|])) in
 	   let ok = 
 	     try
 	       let cie =

@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Global
 open Sign
@@ -323,9 +323,7 @@ let res_case_then gene thin indbinding id status gl =
   let env = pf_env gl and sigma = project gl in
   let c = VAR id in
   let (wc,kONT) = startWalk gl in
-  let t = 
-    strong_prodspine (fun _ _ -> pf_whd_betadeltaiota gl) 
-      env sigma (pf_type_of gl c) in
+  let t = strong_prodspine (pf_whd_betadeltaiota gl) (pf_type_of gl c) in
   let indclause = mk_clenv_from wc (c,t) in
   let indclause' = clenv_constrain_with_bindings indbinding indclause in
   let newc = clenv_instance_template indclause' in

@@ -2,7 +2,7 @@
 (* $Id$ *)
 
 (*i*)
-open Generic
+(*i open Generic i*)
 open Term
 open Pattern
 (*i*)

@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Sign
 open Declarations
@@ -37,9 +37,11 @@ let rec globalize bv = function
   | DOPN (MutConstruct ((sp,_),_) as op, _) ->
       let mib = lookup_mind sp !env in DOPN (op, args mib.mind_hyps)
   | DOPN (op,v) -> DOPN (op, Array.map (globalize bv) v)
-  | DOPL (op,l) -> DOPL (op, List.map (globalize bv) l)
   | DLAM (na,c) -> DLAM (na, globalize (na::bv) c)
   | DLAMV (na,v) -> DLAMV (na, Array.map (globalize (na::bv)) v)
+  | CLam(n,t,c)   -> CLam (n, globalize bv t, globalize (n::bv) c)  
+  | CPrd(n,t,c)   -> CPrd (n, globalize bv t, globalize (n::bv) c)
+  | CLet(n,b,t,c) -> CLet (n,globalize bv b,globalize bv t,globalize (n::bv) c)
   | Rel _ | DOP0 _ as c -> c
 
 let check c = 

@@ -107,7 +107,7 @@ Qed.
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Environ
 open Reduction

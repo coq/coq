@@ -43,7 +43,7 @@ let load_rcfile() =
 (* Puts dir in the path of ML and in the LoadPath *)
 let add_include s =
   Mltop.dir_ml_dir s;
-  add_path s
+  Library.add_path s
 
 (* By the option -include -I or -R of the command line *)
 let includes = ref []

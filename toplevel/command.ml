@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Options
-open Generic
+(*i open Generic i*)
 open Term
 open Declarations
 open Inductive
@@ -201,7 +201,7 @@ let collect_non_rec  =
 	    | _ -> [] (* nrec=[] for cofixpoints *)
         with Failure "list_chop" -> []
       in 
-      searchrec ((f,DOP2(Cast,def,body_of_type ar))::lnonrec) 
+      searchrec ((f,mkCast (def,body_of_type ar))::lnonrec) 
         (lf1@lf2) (ldef1@ldef2) (lar1@lar2) newlnv
     with Failure "try_find_i" -> 
       (lnonrec, (lnamerec,ldefrec,larrec,nrec))
@@ -267,7 +267,7 @@ let build_recursive lnameargsardef =
   let _ = 
     List.fold_left
       (fun subst (f,def) ->
-	 let ce = { const_entry_body = Cooked (Generic.replace_vars subst def);
+	 let ce = { const_entry_body = Cooked (replace_vars subst def);
 		    const_entry_type = None } in
 	 declare_constant f (ce,n);
       	 warning ((string_of_id f)^" is non-recursively defined");
@@ -333,7 +333,7 @@ let build_corecursive lnameardef =
   let _ = 
     List.fold_left
       (fun subst (f,def) ->
-	 let ce = { const_entry_body = Cooked (Generic.replace_vars subst def);
+	 let ce = { const_entry_body = Cooked (replace_vars subst def);
 		    const_entry_type = None } in
 	 declare_constant f (ce,n);
       	 warning ((string_of_id f)^" is non-recursively defined");

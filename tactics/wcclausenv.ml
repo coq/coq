@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Sign
 open Reduction
@@ -91,9 +91,11 @@ let clenv_constrain_with_bindings bl clause =
     matchrec clause bl
 
 let add_prod_rel sigma (t,env) =
-  match t with
-    | DOP2(Prod,c1,(DLAM(na,b))) ->
-        (b,push_rel_decl (na,Retyping.get_assumption_of env sigma c1) env)
+  match kind_of_term t with
+    | IsProd (na,t1,b) ->
+        (b,push_rel_decl (na,Retyping.get_assumption_of env sigma t1) env)
+    | IsLetIn (na,c1,t1,b) ->
+        (b,push_rel_def (na,c1,Retyping.get_assumption_of env sigma t1) env)
     | _ -> failwith "add_prod_rel"
 
 let rec add_prods_rel sigma (t,env) =
@@ -101,22 +103,6 @@ let rec add_prods_rel sigma (t,env) =
     add_prods_rel sigma (add_prod_rel sigma (whd_betadeltaiota env sigma t,env))
   with Failure "add_prod_rel" -> 
     (t,env)
-
-(***TODO: SUPPRIMMER ??
-let add_prod_sign sigma (t,sign) =
-  match t with
-    | DOP2(Prod,c1,(DLAM(na,_) as b)) ->
-        let id = Environ.id_of_name_using_hdchar t na in  
-	(sAPP b (VAR id),
-         add_sign (id, fexecute_type sigma sign c1) sign)
-    | _ -> failwith "add_prod_sign"
-
-let rec add_prods_sign sigma (t,sign) =
-  try 
-    add_prods_sign sigma (add_prod_sign sigma (whd_betadeltaiota sigma t,sign))
-  with Failure "add_prod_sign" -> 
-    (t,sign)
-***)
 
 (* What follows is part of the contents of the former file tactics3.ml *)
     
@@ -133,22 +119,23 @@ let elim_res_pf_THEN_i kONT clenv tac gls =
   tclTHEN_i (clenv_refine kONT clenv') (tac clenv') gls
 
 let rec build_args acc ce p_0 p_1 =
-  match p_0,p_1 with 
-    | ((DOP2(Prod,a,DLAM(na,b))), (a_0::bargs)) ->
+  match kind_of_term p_0, p_1 with 
+    | (IsProd (na,a,b), (a_0::bargs)) ->
         let (newa,ce') = (build_term ce (na,Some a) a_0) in 
 	build_args (newa::acc) ce' (subst1 a_0 b) bargs
+    | (IsLetIn (na,a,t,b), args) -> build_args acc ce (subst1 a b) args
     | (_, [])     -> (List.rev acc,ce)
     | (_, (_::_)) -> failwith "mk_clenv_using"
 
-and build_term ce p_0 p_1 =
+and build_term ce p_0 c =
   let env = Global.env() in
-  match p_0,p_1 with 
-    | ((na,Some t), (DOP0(Meta mv))) -> 
+  match p_0, kind_of_term c with 
+    | ((na,Some t), IsMeta mv) -> 
 (*    	let mv = new_meta() in *)
 	(DOP0(Meta mv),
          clenv_pose (na,mv,t) ce)
-    | ((na,_), (DOP2(Cast,c,t))) -> build_term ce (na,Some t) c
-    | ((na,Some t), c) ->
+    | ((na,_), IsCast (c,t)) -> build_term ce (na,Some t) c
+    | ((na,Some t), _) ->
     	if (not((occur_meta c))) then 
 	  (c,ce)
     	else 
@@ -163,7 +150,7 @@ and build_term ce p_0 p_1 =
 	    (newc,ce') 
 	  else 
 	    failwith "mk_clenv_using"
-    | ((na,None), c) ->
+    | ((na,None), _) ->
     	if (not((occur_meta c))) then 
 	  (c,ce)
     	else 
@@ -195,13 +182,16 @@ let clenv_apply_n_times n ce =
   and templval = (clenv_template ce).rebus in   
   let rec apprec ce argacc (n,ty) =
     let env = Global.env () in
-    match (n, whd_betadeltaiota env (w_Underlying ce.hook) ty) with 
-      | (0, templtyp) ->
+    let templtyp = whd_betadeltaiota env (w_Underlying ce.hook) ty in
+    match (n, kind_of_term templtyp) with 
+      | (0, _) ->
 	  clenv_change_head (applist(templval,List.rev argacc), templtyp) ce
-      | (n, (DOP2(Prod,dom,DLAM(na,rng)))) ->
+      | (n, IsProd (na,dom,rng)) ->
           let mv = new_meta() in
           let newce = clenv_pose (na,mv,dom) ce in
 	  apprec newce (mkMeta mv::argacc) (n-1, subst1 (mkMeta mv) rng)
+      | (n, IsLetIn (na,b,t,c)) ->
+	  apprec ce argacc (n, subst1 b c)
       | (n, _) -> failwith "clenv_apply_n_times"
   in 
   apprec ce [] (n, templtyp)

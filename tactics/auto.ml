@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Sign
 open Inductive
@@ -177,9 +177,8 @@ let (inAutoHint,outAutoHint) =
 (*                     The "Hint" vernacular command                      *)
 (**************************************************************************)
 
-let rec nb_hyp = function
-  | DOP2(Prod,_,DLAM(_,c2)) -> 
-      if dependent (Rel 1) c2 then nb_hyp c2 else 1+(nb_hyp c2)
+let rec nb_hyp c = match kind_of_term c with
+  | IsProd(_,_,c2) -> if dependent (mkRel 1) c2 then nb_hyp c2 else 1+(nb_hyp c2)
   | _ -> 0 
 
 (* adding and removing tactics in the search table *)
@@ -189,16 +188,18 @@ let try_head_pattern c =
   with BoundPattern -> error "Bound head variable"
 
 let make_exact_entry name (c,cty) =
-  match strip_outer_cast cty with
-    | DOP2(Prod,_,_) -> 
+  let cty = strip_outer_cast cty in
+  match kind_of_term cty with
+    | IsProd (_,_,_) -> 
 	failwith "make_exact_entry"
-    | cty ->
+    | _ ->
 	(head_of_constr_reference (List.hd (head_constr cty)),
 	   { hname=name; pri=0; pat=None; code=Give_exact c })
 
 let make_apply_entry (eapply,verbose) name (c,cty) =
-  match hnf_constr (Global.env()) Evd.empty cty with
-    | DOP2(Prod,_,_) as cty ->
+  let cty = hnf_constr (Global.env()) Evd.empty cty in
+  match kind_of_term cty with
+    | IsProd _ ->
         let ce = mk_clenv_from () (c,cty) in
 	let pat = Pattern.pattern_of_constr (clenv_template_type ce).rebus in
         let hd = (try head_pattern_bound pat

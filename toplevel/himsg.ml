@@ -5,7 +5,7 @@ open Pp
 open Util
 open Options
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Inductive
 open Indtypes
@@ -131,9 +131,9 @@ let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
      'sTR"The term"; 'bRK(1,1); pr; 'sPC;
      'sTR"of type"; 'bRK(1,1); prt; 'sPC ;
      'sTR("cannot be applied to the "^term_string1); 'fNL; 
-     'sTR" "; v 0 appl; 'fNL;
-     'sTR (term_string2^" has type"); 'bRK(1,1); prterm_env ctx exptyp; 'sPC;
-     'sTR"which should be coercible to"; 'bRK(1,1); prterm_env ctx actualtyp >]
+     'sTR" "; v 0 appl; 'fNL; 'sTR (term_string2^" has type");
+     'bRK(1,1); prterm_env ctx actualtyp; 'sPC;
+     'sTR"which should be coercible to"; 'bRK(1,1); prterm_env ctx exptyp >]
 
 let explain_cant_apply_not_functional k ctx rator randl =
   let ctx = make_all_name_different ctx in
@@ -167,7 +167,43 @@ let explain_not_product k ctx c =
      'bRK(1,1); pr; 'fNL >]
 
 (* (co)fixpoints *)
-let explain_ill_formed_rec_body k ctx str lna i vdefs =
+let explain_ill_formed_rec_body k ctx err lna i vdefs =
+  let str = match err with
+
+  (* Fixpoint guard errors *)
+  | NotEnoughAbstractionInFixBody ->
+      [< 'sTR "Not enough abstractions in the definition" >]
+  | RecursionNotOnInductiveType ->
+      [< 'sTR "Recursive definition on a non inductive type" >]
+  | RecursionOnIllegalTerm ->
+      [< 'sTR "Recursive call applied to an illegal term" >]
+  | NotEnoughArgumentsForFixCall ->
+      [< 'sTR "Not enough arguments for the recursive call" >]
+
+  (* CoFixpoint guard errors *)
+  (* TODO : récupérer le contexte des termes pour pouvoir les afficher *)
+  | CodomainNotInductiveType c ->
+      [< 'sTR "The codomain is"; 'sPC; prterm c; 'sPC;
+	 'sTR "which should be a coinductive type" >]
+  | NestedRecursiveOccurrences ->
+      [< 'sTR "Nested recursive occurrences" >]
+  | UnguardedRecursiveCall c ->
+      [< 'sTR "Unguarded recursive call" >]
+  | RecCallInTypeOfAbstraction c ->
+      [< 'sTR "Not allowed recursive call in the domain of an abstraction" >]
+  | RecCallInNonRecArgOfConstructor c ->
+      [< 'sTR "Not allowed recursive call in a non-recursive argument of constructor" >]
+  | RecCallInTypeOfDef c ->
+      [< 'sTR "Not allowed recursive call in the type of a recursive definition" >]
+  | RecCallInCaseFun c ->
+      [< 'sTR "Not allowed recursive call in a branch of cases" >]
+  | RecCallInCaseArg c -> 
+      [< 'sTR "Not allowed recursive call in the argument of cases" >]
+  | RecCallInCasePred c ->
+      [< 'sTR "Not allowed recursive call in the type of cases in" >]
+  | NotGuardedForm ->
+      [< 'sTR "Definition not in guarded form" >]
+in
   let pvd = prterm_env ctx vdefs.(i) in
   let s =
     match List.nth lna i with Name id -> string_of_id id | Anonymous -> "_" in

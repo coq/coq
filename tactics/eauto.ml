@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Sign
 open Reduction
@@ -70,16 +70,11 @@ let prolog_tac lcom n gl =
     errorlabstrm "Prolog.prolog" [< 'sTR "Prolog failed" >]
 
 let evars_of evc c = 
-  let rec evrec acc = function
-    | DOPN(Evar n,_) as k when Evd.in_dom evc n -> k :: acc
-    | DOPN(_,cl) -> Array.fold_right (fun c acc -> evrec acc c) cl acc
-    | DOP2(_,c1,c2) -> evrec (evrec acc c2) c1
-    | DOP1(_,c) -> evrec acc c
-    | DLAM(_,c) -> evrec acc c
-    | DLAMV(_,cl) -> Array.fold_right (fun c acc -> evrec acc c) cl acc
-    | _ -> acc
+  let rec evrec acc c = match splay_constr c with
+    | OpEvar n, _ when Evd.in_dom evc n -> c :: acc
+    | _, cl -> Array.fold_left evrec acc cl
   in 
-  List.rev (evrec [] c)
+  evrec [] c
 
 let instantiate n c gl =
   let sigma = project gl in

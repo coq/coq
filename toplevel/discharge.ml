@@ -5,7 +5,7 @@ open Pp
 open Util
 open Names
 open Sign
-open Generic
+(*i open Generic i*)
 open Term
 open Declarations
 open Inductive
@@ -55,36 +55,63 @@ let modify_opers replfun absfun oper_alist =
          'sPC ; 'sTR"is broken - this function is an internal system" ;
          'sPC ; 'sTR"for internal system use only" >]
   in
-  let rec substrec = function
-    (* Hack pour ls sp dans l'annotation du Cases *)
-    | DOPN(MutCase(n,(spi,a,b,c,d)) as oper,cl) ->
-	let cl' = Array.map substrec cl in
-	(try
-	   match List.assoc (MutInd spi) oper_alist with
-	     | DO_ABSTRACT (MutInd spi',_) ->
-		 DOPN(MutCase(n,(spi',a,b,c,d)),cl')
-	     | _ -> raise Not_found
-	 with
-	   | Not_found -> DOPN(oper,cl'))
-    | DOPN(oper,cl) as c ->
-	let cl' = Array.map substrec cl in
-	(try
-	   (match List.assoc oper oper_alist with
-	      | NOT_OCCUR -> failure ()
-	      | DO_ABSTRACT (oper',modif) ->
-		  if List.length modif > Array.length cl then
-		    anomaly "found a reference with too few args"
-		  else 
-		    interp_modif absfun oper (oper',modif) (Array.to_list cl')
-	      | DO_REPLACE -> substrec (replfun (DOPN(oper,cl'))))
-	 with 
-	   | Not_found -> DOPN(oper,cl'))
-    | DOP1(i,c) -> DOP1(i,substrec c)
-    | DOPL(oper,cl) -> DOPL(oper,List.map substrec cl)
-    | DOP2(oper,c1,c2) -> DOP2(oper,substrec c1,substrec c2)
-    | DLAM(na,c) -> DLAM(na,substrec c)
-    | DLAMV(na,v) -> DLAMV(na,Array.map substrec v)
-    | x -> x
+  let rec substrec c =
+    let op, cl = splay_constr c in
+    let cl' = Array.map substrec cl in
+    match op with
+      (* Hack pour le sp dans l'annotation du Cases *)
+      | OpMutCase (n,(spi,a,b,c,d) as oper) ->
+	  (try
+	     match List.assoc (MutInd spi) oper_alist with
+	       | DO_ABSTRACT (MutInd spi',_) ->
+		   DOPN(MutCase(n,(spi',a,b,c,d)),cl')
+	       | _ -> raise Not_found
+	   with
+	     | Not_found -> DOPN(MutCase oper,cl'))
+
+      | OpMutInd spi ->
+	  (try
+	     (match List.assoc (MutInd spi) oper_alist with
+		| NOT_OCCUR -> failure ()
+		| DO_ABSTRACT (oper',modif) ->
+		    if List.length modif > Array.length cl then
+		      anomaly "found a reference with too few args"
+		    else 
+		      interp_modif absfun (MutInd spi) (oper',modif)
+			(Array.to_list cl')
+		| DO_REPLACE -> substrec (replfun (DOPN(MutInd spi,cl'))))
+	   with 
+	     | Not_found -> DOPN(MutInd spi,cl'))
+
+      | OpMutConstruct spi ->
+	  (try
+	     (match List.assoc (MutConstruct spi) oper_alist with
+		| NOT_OCCUR -> failure ()
+		| DO_ABSTRACT (oper',modif) ->
+		    if List.length modif > Array.length cl then
+		      anomaly "found a reference with too few args"
+		    else 
+		      interp_modif absfun (MutConstruct spi) (oper',modif)
+			(Array.to_list cl')
+		| DO_REPLACE -> substrec (replfun (DOPN(MutConstruct spi,cl'))))
+	   with 
+	     | Not_found -> DOPN(MutConstruct spi,cl'))
+
+      | OpConst sp ->
+	  (try
+	     (match List.assoc (Const sp) oper_alist with
+		| NOT_OCCUR -> failure ()
+		| DO_ABSTRACT (oper',modif) ->
+		    if List.length modif > Array.length cl then
+		      anomaly "found a reference with too few args"
+		    else 
+		      interp_modif absfun (Const sp) (oper',modif)
+			(Array.to_list cl')
+		| DO_REPLACE -> substrec (replfun (DOPN(Const sp,cl'))))
+	   with 
+	     | Not_found -> DOPN(Const sp,cl'))
+  
+    | _ -> gather_constr (op, cl')
   in 
   if oper_alist = [] then fun x -> x else substrec
 
