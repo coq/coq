@@ -1666,6 +1666,7 @@ let xlate_vernac =
 
   (* Modules and Module Types *)
   | VernacDeclareModule _ -> xlate_error "TODO: vernac"
+  | VernacDefineModule _ -> xlate_error "TODO: vernac"
   | VernacDeclareModuleType _ -> xlate_error "TODO: vernac"
 
 let rec xlate_vernac_list =
