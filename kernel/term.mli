@@ -127,12 +127,12 @@ val mkConst : constant -> constr
 
 (* Inductive types *)
 
-(* Constructs the ith (co)inductive type of the block named sp *)
+(* Constructs the ith (co)inductive type of the block named kn *)
 (* The array of terms correspond to the variables introduced in the section *)
 val mkInd : inductive -> constr
 
 (* Constructs the jth constructor of the ith (co)inductive type of the 
-   block named sp. The array of terms correspond to the variables
+   block named kn. The array of terms correspond to the variables
    introduced in the section *)
 val mkConstruct : constructor -> constr
 
@@ -495,7 +495,7 @@ val compare_constr : (constr -> constr -> bool) -> constr -> constr -> bool
 (*********************************************************************)
 
 val hcons_constr:
-  (section_path -> section_path) *
+  (kernel_name -> kernel_name) *
   (dir_path -> dir_path) *
   (name -> name) *
   (identifier -> identifier) *

@@ -8,6 +8,9 @@
 
 (* $Id$ *)
 
+open Names
+open Libnames
+
 let dummy_loc = (0,0)
 
 let is_meta s = String.length s > 0 && s.[0] == '$'
@@ -77,13 +80,13 @@ let rec expr_of_ast = function
   | Coqast.Num loc i -> <:expr< Coqast.Num loc $int:string_of_int i$ >>
   | Coqast.Id loc id -> <:expr< Coqast.Id loc $str:id$ >>
   | Coqast.Str loc str -> <:expr< Coqast.Str loc $str:str$ >>
-  | Coqast.Path loc qid ->
-      let l,a = Names.repr_path qid in
+  | Coqast.Path loc kn ->
+      let l,a = Libnames.decode_kn kn in
       let expr_of_modid id =
-	<:expr< Names.id_of_string $str:Names.string_of_id id$ >> in
-      let e = List.map expr_of_modid (Names.repr_dirpath l) in
+	<:expr< Names.id_of_string $str:string_of_id id$ >> in
+      let e = List.map expr_of_modid (repr_dirpath l) in
       let e = expr_list_of_var_list e in
-      <:expr< Coqast.Path loc (Names.make_path (Names.make_dirpath $e$)
+      <:expr< Coqast.Path loc (Libnames.encode_kn (Names.make_dirpath $e$)
                 (Names.id_of_string $str:Names.string_of_id a$)) >> 
   | Coqast.Dynamic _ _ ->
       failwith "Q_Coqast: dynamic: not implemented"

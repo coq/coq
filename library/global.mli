@@ -15,11 +15,11 @@ open Term
 open Declarations
 open Indtypes
 open Safe_typing
-(*i*)
+   (*i*)
 
 (* This module defines the global environment of Coq. 
-   The functions below are exactly the same as the ones in [Typing],
-   operating on that global environment. *)
+ * The functions below are exactly the same as the ones in [Typing],
+ * operating on that global environment. *)
 
 val safe_env : unit -> safe_environment
 val env : unit -> Environ.env
@@ -46,7 +46,12 @@ val export : dir_path -> Environ.compiled_env
 val import : Environ.compiled_env -> unit
 
 (*s Function to get an environment from the constants part of the global
-    environment and a given context. *)
-
-val type_of_global : Nametab.global_reference -> types
+ * environment and a given context. *)
+  
+val type_of_global : Libnames.global_reference -> types
 val env_of_context : Sign.named_context -> Environ.env
+
+(* [get_kn dir id] creates a kernel_name for an object in the current
+ * module, in section dir, named id *)
+val get_kn : dir_path -> label -> kernel_name
+

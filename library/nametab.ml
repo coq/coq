@@ -11,23 +11,10 @@
 open Util
 open Pp
 open Names
+open Libnames
 open Nameops
 open Declarations
 
-(*s qualified names *)
-type qualid = section_path
-
-let make_qualid = make_path
-let repr_qualid = repr_path
-
-let string_of_qualid = string_of_path
-let pr_qualid = pr_sp
-
-let qualid_of_sp sp = sp
-let make_short_qualid id = make_qualid empty_dirpath id
-let qualid_of_dirpath dir = 
-  let (l,a) = split_dirpath dir in
-  make_qualid l a
 
 exception GlobalizationError of qualid
 exception GlobalizationConstantError of qualid
@@ -41,34 +28,9 @@ let error_global_constant_not_found_loc loc q =
 let error_global_not_found q = raise (GlobalizationError q)
 
 (* Constructions and syntactic definitions live in the same space *)
-type global_reference =
-  | VarRef of variable
-  | ConstRef of constant
-  | IndRef of inductive
-  | ConstructRef of constructor
-
 type extended_global_reference =
   | TrueGlobal of global_reference
   | SyntacticDef of section_path
-
-let sp_of_global env = function
-  | VarRef id -> make_path empty_dirpath id
-  | ConstRef sp -> sp
-  | IndRef (sp,tyi) -> 
-      (* Does not work with extracted inductive types when the first 
-	 inductive is logic : if tyi=0 then basename sp else *)
-      let mib = Environ.lookup_mind sp env in
-      assert (tyi < mib.mind_ntypes && tyi >= 0);
-      let mip = mib.mind_packets.(tyi) in
-      let (p,_) = repr_path sp in
-      make_path p mip.mind_typename
-  | ConstructRef ((sp,tyi),i) ->
-      let mib = Environ.lookup_mind sp env in
-      assert (tyi < mib.mind_ntypes && i >= 0);
-      let mip = mib.mind_packets.(tyi) in
-      assert (i <= Array.length mip.mind_consnames && i > 0);
-      let (p,_) = repr_path sp in
-      make_path p mip.mind_consnames.(i-1)
 
 
 (* Dictionaries of short names *)
@@ -82,17 +44,36 @@ let the_libtab = ref (ModIdmap.empty : dirtab)
 let the_sectab = ref (ModIdmap.empty : dirtab)
 let the_objtab = ref (Idmap.empty : objtab)
 
-let dirpath_of_reference ref =
-  let sp = match ref with
-    | ConstRef sp -> sp
-    | VarRef id -> make_path empty_dirpath id
-    | ConstructRef ((sp,_),_) -> sp
-    | IndRef (sp,_) -> sp in
+(* This table will translate global_references back to section paths *)
+module Globtab = Map.Make(struct type t=global_reference 
+				 let compare = compare end)
+
+type globtab = section_path Globtab.t
+
+let the_globtab = ref (Globtab.empty : globtab)
+
+
+let sp_of_global ctx_opt ref = 
+  match (ctx_opt,ref) with
+    | Some ctx, VarRef id -> 
+	let _ = Sign.lookup_named id ctx in
+	  make_path empty_dirpath id
+    | _ -> Globtab.find ref !the_globtab
+
+
+let full_name = sp_of_global None
+
+let id_of_global ctx_opt ref = 
+  let (_,id) = repr_path (sp_of_global ctx_opt ref) in 
+  id
+
+let dirpath_of_global ref = 
+  let sp = sp_of_global None ref in
   let (p,_) = repr_path sp in
   p
 
 let dirpath_of_extended_ref = function
-  | TrueGlobal ref -> dirpath_of_reference ref
+  | TrueGlobal ref -> dirpath_of_global ref
   | SyntacticDef sp ->
       let (p,_) = repr_path sp in p
 
@@ -160,7 +141,9 @@ let push_long_names_libpath = push_modidtree the_libtab
 let push_cci ~visibility:n sp ref =
   let dir, s = repr_path sp in
   (* We push partially qualified name (with at least one prefix) *)
-  push_long_names_ccipath n dir s (TrueGlobal ref)
+  push_long_names_ccipath n dir s (TrueGlobal ref);
+  the_globtab := Globtab.add ref sp !the_globtab
+
 
 let push = push_cci
 
@@ -233,9 +216,15 @@ let locate_section qid =
 let locate_constant qid =
   (* TODO: restrict to defined constants *)
   match locate_cci qid with
-    | TrueGlobal (ConstRef sp) -> sp
+    | TrueGlobal (ConstRef kn) -> kn
     | _ -> raise Not_found
 
+let locate_mind qid = 
+  match locate_cci qid with
+    | TrueGlobal (IndRef (kn,0)) -> kn
+    | _ -> raise Not_found
+
+(*
 let sp_of_id id = match locate_cci (make_short_qualid id) with
   | TrueGlobal ref -> ref
   | SyntacticDef _ ->
@@ -246,12 +235,10 @@ let constant_sp_of_id id =
   match locate_cci (make_short_qualid id) with
     | TrueGlobal (ConstRef sp) -> sp
     | _ -> raise Not_found
+*)
 
 let absolute_reference sp =
-  let a = locate_cci sp in
-  let (p,_) = repr_path sp in
-  if not (dirpath_of_extended_ref a = p) then
-    anomaly ("Not an absolute path: "^(string_of_path sp));
+  let a = locate_cci (qualid_of_sp sp) in
   match a with
     | TrueGlobal ref -> ref
     | _ -> raise Not_found
@@ -270,7 +257,7 @@ let global loc qid =
     error_global_not_found_loc loc qid
 
 let exists_cci sp =
-  try let _ = locate_cci sp in true
+  try let _ = locate_cci (qualid_of_sp sp) in true
   with Not_found -> false
 
 let exists_section dir =
@@ -304,25 +291,28 @@ let pr_global_env env ref =
 (********************************************************************)
 (* Registration of tables as a global table and rollback            *)
 
-type frozen = ccitab * dirtab * dirtab * objtab * identifier list
+type frozen = ccitab * dirtab * dirtab * objtab * globtab
 
 let init () = 
   the_ccitab := Idmap.empty; 
   the_libtab := ModIdmap.empty;
   the_sectab := ModIdmap.empty;
-  the_objtab := Idmap.empty
+  the_objtab := Idmap.empty;
+  the_globtab := Globtab.empty
 
 let freeze () =
   !the_ccitab, 
   !the_libtab,
   !the_sectab,
-  !the_objtab
+  !the_objtab,
+  !the_globtab
 
-let unfreeze (mc,ml,ms,mo) =
+let unfreeze (mc,ml,ms,mo,gt) =
   the_ccitab := mc;
   the_libtab := ml;
   the_sectab := ms;
-  the_objtab := mo
+  the_objtab := mo;
+  the_globtab := gt
 
 let _ = 
   Summary.declare_summary "names"

@@ -11,6 +11,7 @@
 open Util
 open Names
 open Term
+open Libnames
 open Declare
 open Pattern
 open Nametab
@@ -25,6 +26,9 @@ let logic_module = make_dir ["Coq";"Init";"Logic"]
 let logic_type_module = make_dir ["Coq";"Init";"Logic_Type"]
 let datatypes_module = make_dir ["Coq";"Init";"Datatypes"]
 let arith_module = make_dir ["Coq";"Arith";"Arith"]
+
+(* TODO: temporary hack *)
+let make_path dir id = Libnames.encode_kn dir id
 
 let nat_path = make_path datatypes_module (id_of_string "nat")
 let myvar_path =

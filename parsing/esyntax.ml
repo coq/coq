@@ -10,6 +10,8 @@
 
 open Pp
 open Util
+open Names
+open Libnames
 open Coqast
 open Ast
 open Extend
@@ -23,9 +25,9 @@ open Extend
  * according to the key of the pattern. *)
 
 type key =
-  | Cst of Names.section_path (* keys for global constants rules *)
-  | Ind of Names.section_path * int 
-  | Cstr of (Names.section_path * int) * int
+  | Cst of constant (* keys for global constants rules *)
+  | Ind of inductive 
+  | Cstr of constructor
   | Nod of string      (* keys for other constructed asts rules *)
   | Oth                (* key for other syntax rules *)
   | All     (* key for catch-all rules (i.e. with a pattern such as $x .. *)

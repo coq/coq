@@ -8,4 +8,4 @@
 
 (* $Id$ *)
 
-val objdef_declare : Nametab.global_reference -> unit
+val objdef_declare : Libnames.global_reference -> unit

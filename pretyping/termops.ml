@@ -15,6 +15,7 @@ open Nameops
 open Term
 open Sign
 open Environ
+open Libnames
 open Nametab
 
 let print_sort = function
@@ -510,7 +511,7 @@ let first_char id =
 
 let lowercase_first_char id = String.lowercase (first_char id)
 
-let id_of_global env ref = basename (sp_of_global env ref)
+let id_of_global env ref = Nametab.id_of_global (Some (named_context env)) ref
 
 let sort_hdchar = function
   | Prop(_) -> "P"
@@ -524,12 +525,12 @@ let hdchar env c =
     | LetIn (_,_,_,c)    -> hdrec (k+1) c
     | Cast (c,_)         -> hdrec k c
     | App (f,l)         -> hdrec k f
-    | Const sp       ->
-	let c = lowercase_first_char (basename sp) in
+    | Const kn       ->
+	let c = lowercase_first_char (id_of_label (label kn)) in
 	if c = "?" then "y" else c
-    | Ind ((sp,i) as x) ->
+    | Ind ((kn,i) as x) ->
 	if i=0 then 
-	  lowercase_first_char (basename sp)
+	  lowercase_first_char (id_of_label (label kn))
 	else 
 	  lowercase_first_char (id_of_global env (IndRef x))
     | Construct ((sp,i) as x) ->
@@ -644,12 +645,12 @@ let occur_rel p env id =
 let occur_id env nenv id0 c =
   let rec occur n c = match kind_of_term c with
     | Var id when  id=id0 -> raise Occur
-    | Const sp when basename sp = id0 -> raise Occur
+    | Const kn when id_of_global env (ConstRef kn) = id0 -> raise Occur
     | Ind ind_sp
-	when basename (path_of_inductive env ind_sp) = id0 ->
+	when id_of_global env (IndRef ind_sp) = id0 ->
         raise Occur
     | Construct cstr_sp
-	when basename (path_of_constructor env cstr_sp) = id0 ->
+	when id_of_global env (ConstructRef cstr_sp) = id0 ->
         raise Occur
     | Rel p when p>n & occur_rel (p-n) nenv id0 -> raise Occur
     | _ -> iter_constr_with_binders succ occur n c

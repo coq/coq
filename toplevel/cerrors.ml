@@ -78,12 +78,12 @@ let rec explain_exn_default = function
       hov 0 (str "Error:" ++ spc () ++ Himsg.explain_refiner_error e)
   | Nametab.GlobalizationError q ->
       hov 0 (str "Error:" ++ spc () ++
-	       str "The reference" ++ spc () ++ Nametab.pr_qualid q ++
+	       str "The reference" ++ spc () ++ Libnames.pr_qualid q ++
 	       spc () ++ str "was not found" ++ 
 	       spc () ++ str "in the current" ++ spc () ++ str "environment")
   | Nametab.GlobalizationConstantError q ->
       hov 0 (str "Error:" ++ spc () ++
-	       str "No constant of this name:" ++ spc () ++ Nametab.pr_qualid q)
+	       str "No constant of this name:" ++ spc () ++ Libnames.pr_qualid q)
   | Tacmach.FailError i ->
       hov 0 (str "Error: Fail tactic always fails (level " ++ 
 	       int i ++ str").")

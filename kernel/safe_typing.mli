@@ -45,11 +45,11 @@ type global_declaration =
   | GlobalRecipe of Cooking.recipe
 
 val add_constant : 
-  section_path -> global_declaration -> safe_environment -> safe_environment
+  kernel_name -> global_declaration -> safe_environment -> safe_environment
 
 (* Adding an inductive type *)
 val add_mind : 
-  section_path -> Indtypes.mutual_inductive_entry -> safe_environment ->
+  kernel_name -> Indtypes.mutual_inductive_entry -> safe_environment ->
     safe_environment
 
 (* Adding universe constraints *)

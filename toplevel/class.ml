@@ -21,6 +21,7 @@ open Inductive
 open Lib
 open Classops
 open Declare
+open Libnames
 open Nametab
 open Safe_typing
 
@@ -166,7 +167,7 @@ let uniform_cond nargs lt =
 let id_of_cl  = function
   | CL_FUN -> id_of_string "FUNCLASS"
   | CL_SORT -> id_of_string "SORTCLASS"
-  | CL_CONST sp -> basename sp
+  | CL_CONST kn -> id_of_label (label kn)
   | CL_IND ind ->
       let (_,mip) = Global.lookup_inductive ind in
       mip.mind_typename
@@ -387,29 +388,28 @@ let count_extra_abstractions hyps ids_to_discard =
       (hyps,0) ids_to_discard
   in n
 
-let defined_in_sec sp sec_sp = dirpath sp = sec_sp
+let defined_in_sec kn sec_sp = 
+  let dir,_ = decode_kn kn in
+    dir = sec_sp
 
 (* This moves the global path one step below *)
 let process_global sec_sp = function
   | VarRef _ ->
       anomaly "process_global only processes global surviving the section"
-  | ConstRef sp as x ->
-      if defined_in_sec sp sec_sp then
-        let (_,spid) = repr_path sp in
-        let newsp = Lib.make_path spid in
-        ConstRef newsp
+  | ConstRef kn as x ->
+      if defined_in_sec kn sec_sp then
+        let newkn = Lib.make_kn (id_of_label (label kn)) in
+        ConstRef newkn
       else x
-  | IndRef (sp,i) as x -> 
-      if defined_in_sec sp sec_sp then
-        let (_,spid) = repr_path sp in
-        let newsp = Lib.make_path spid in
-        IndRef (newsp,i)
+  | IndRef (kn,i) as x -> 
+      if defined_in_sec kn sec_sp then
+        let newkn = Lib.make_kn (id_of_label (label kn)) in
+        IndRef (newkn,i)
       else x
-  | ConstructRef ((sp,i),j) as x -> 
-      if defined_in_sec sp sec_sp then
-        let (_,spid) = repr_path sp in
-        let newsp = Lib.make_path spid in
-        ConstructRef ((newsp,i),j)
+  | ConstructRef ((kn,i),j) as x -> 
+      if defined_in_sec kn sec_sp then
+        let newkn = Lib.make_kn (id_of_label (label kn)) in
+        ConstructRef ((newkn,i),j)
       else x
 
 let process_class sec_sp ids_to_discard x =
@@ -417,22 +417,20 @@ let process_class sec_sp ids_to_discard x =
 (*  let env = Global.env () in*)
   match cl with 
     | CL_SECVAR _ -> x
-    | CL_CONST sp -> 
-        if defined_in_sec sp sec_sp then
-	  let (_,spid) = repr_path sp in
-          let newsp = Lib.make_path spid in
-	  let hyps = (Global.lookup_constant sp).const_hyps in
+    | CL_CONST kn -> 
+       if defined_in_sec kn sec_sp then
+         let newkn = Lib.make_kn (id_of_label (label kn)) in
+	 let hyps = (Global.lookup_constant kn).const_hyps in
+	 let n = count_extra_abstractions hyps ids_to_discard in
+           (CL_CONST newkn,{cl_strength=stre;cl_param=p+n})
+       else 
+	 x
+    | CL_IND (kn,i) ->
+	if defined_in_sec kn sec_sp then
+          let newkn = Lib.make_kn (id_of_label (label kn)) in
+	  let hyps = (Global.lookup_mind kn).mind_hyps in
 	  let n = count_extra_abstractions hyps ids_to_discard in
-          (CL_CONST newsp,{cl_strength=stre;cl_param=p+n})
-        else 
-	  x
-    | CL_IND (sp,i) ->
-        if defined_in_sec sp sec_sp then
-	  let (_,spid) = repr_path sp in
-          let newsp = Lib.make_path spid in 
-	  let hyps = (Global.lookup_mind sp).mind_hyps in
-	  let n = count_extra_abstractions hyps ids_to_discard in
-          (CL_IND (newsp,i),{cl_strength=stre;cl_param=p+n})
+          (CL_IND (newkn,i),{cl_strength=stre;cl_param=p+n})
         else 
 	  x
     | _ -> anomaly "process_class" 
@@ -440,18 +438,16 @@ let process_class sec_sp ids_to_discard x =
 let process_cl sec_sp cl =
   match cl with
     | CL_SECVAR id -> cl
-    | CL_CONST sp ->
-	if defined_in_sec sp sec_sp then
-	  let (_,spid) = repr_path sp in
-          let newsp = Lib.make_path spid in 
-          CL_CONST newsp
+    | CL_CONST kn ->
+	if defined_in_sec kn sec_sp then
+          let newkn = Lib.make_kn (id_of_label (label kn)) in
+          CL_CONST newkn
         else 
 	  cl
-    | CL_IND (sp,i) ->
-	if defined_in_sec sp sec_sp then
-	  let (_,spid) = repr_path sp in
-          let newsp = Lib.make_path spid in 
-          CL_IND (newsp,i)
+    | CL_IND (kn,i) ->
+	if defined_in_sec kn sec_sp then
+          let newkn = Lib.make_kn (id_of_label (label kn)) in
+          CL_IND (newkn,i)
         else 
 	  cl
     | _ -> cl

@@ -14,6 +14,7 @@ open Names
 open Term
 open Termops
 open Environ
+open Libnames
 open Reduction
 open Inductiveops
 open Proof_type
@@ -110,7 +111,7 @@ let inductive_of_qualid gls qid =
     | Ind ity -> ity
     | _ ->
 	errorlabstrm "Decompose"
-	  (Nametab.pr_qualid qid ++ str " is not an inductive type")
+	  (pr_qualid qid ++ str " is not an inductive type")
 
 let decompose_these c l gls =
   let indl = List.map (inductive_of_qualid gls) l in 
@@ -146,7 +147,7 @@ let h_decompose =
   let v_decompose = hide_tactic "DecomposeThese" dyn_decompose in 
   fun ids c ->
     v_decompose 
-      (Constr c :: List.map (fun x -> Qualid (Nametab.qualid_of_sp x)) ids)
+      (Constr c :: List.map (fun x -> Qualid (qualid_of_sp x)) ids)
 
 let vernac_decompose_and = 
   hide_constr_tactic "DecomposeAnd" decompose_and

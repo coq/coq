@@ -39,7 +39,7 @@ type 'ctxt reference =
   | REVar of int * 'ctxt
 
 type rawconstr = 
-  | RRef of loc * global_reference
+  | RRef of loc * Libnames.global_reference
   | RVar of loc * identifier
   | REvar of loc * existential_key
   | RMeta of loc * int

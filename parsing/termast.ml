@@ -18,6 +18,7 @@ open Termops
 open Inductive
 open Sign
 open Environ
+open Libnames
 open Declare
 open Impargs
 open Coqast

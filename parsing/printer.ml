@@ -21,28 +21,29 @@ open Declare
 open Coqast
 open Ast
 open Termast
+open Libnames
 open Nametab
 
 let emacs_str s = if !Options.print_emacs then s else "" 
 
 let dfltpr ast = (str"#GENTERM " ++ print_ast ast);;
 
-let pr_global ref = pr_global_env (Global.env()) ref
+let pr_global ref = pr_global_env None ref
 
 let global_const_name sp =
   try pr_global (ConstRef sp)
   with Not_found -> (* May happen in debug *)
-    (str ("CONST("^(string_of_path sp)^")"))
+    (str ("CONST("^(string_of_kn sp)^")"))
 
 let global_ind_name (sp,tyi) =
   try pr_global (IndRef (sp,tyi))
   with Not_found -> (* May happen in debug *)
-    (str ("IND("^(string_of_path sp)^","^(string_of_int tyi)^")"))
+    (str ("IND("^(string_of_kn sp)^","^(string_of_int tyi)^")"))
 
 let global_constr_name ((sp,tyi),i) =
   try pr_global (ConstructRef ((sp,tyi),i))
   with Not_found -> (* May happen in debug *)
-    (str ("CONSTRUCT("^(string_of_path sp)^","^(string_of_int tyi)
+    (str ("CONSTRUCT("^(string_of_kn sp)^","^(string_of_int tyi)
 		  ^","^(string_of_int i)^")"))
 
 let globpr gt = match gt with

@@ -13,6 +13,7 @@ open Util
 open Names
 open Sign
 open Term
+open Libnames
 open Nametab
 (*i*)
 

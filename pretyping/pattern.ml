@@ -10,6 +10,7 @@
 
 open Util
 open Names
+open Libnames
 open Nameops
 open Term
 open Termops

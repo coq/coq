@@ -12,6 +12,7 @@ open Pp
 open Util
 
 open Names
+open Libnames
 open Nameops
 open Environ
 open Libobject
@@ -503,7 +504,7 @@ let import_module export qid =
     try 
       Nametab.locate_loaded_library qid
     with Not_found ->
-      error ((Nametab.string_of_qualid qid)^" not loaded") in
+      error ((string_of_qualid qid)^" not loaded") in
   add_anonymous_leaf (in_require ([modref],Some export))
 
 let read_module qid =

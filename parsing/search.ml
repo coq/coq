@@ -22,6 +22,7 @@ open Astterm
 open Environ
 open Pattern
 open Printer
+open Libnames
 open Nametab
 
 (* The functions print_constructors and crible implement the behavior needed
@@ -60,19 +61,21 @@ let crible (fn : global_reference -> env -> constr -> unit) ref =
 	   with Not_found -> (* we are in a section *) ())
       | "CONSTANT" 
       | "PARAMETER" ->
-	  let {const_type=typ} = Global.lookup_constant sp in
-	  if (head_const typ) = const then fn (ConstRef sp) env typ
+	  let kn=locate_constant (qualid_of_sp sp) in
+	  let {const_type=typ} = Global.lookup_constant kn in
+	  if (head_const typ) = const then fn (ConstRef kn) env typ
       | "INDUCTIVE" -> 
-          let mib = Global.lookup_mind sp in 
-	  let arities =
+	  let kn=locate_mind (qualid_of_sp sp) in
+          let mib = Global.lookup_mind kn in 
+(*	  let arities =
 	    array_map_to_list 
 	      (fun mip ->
 		 (Name mip.mind_typename, None, mip.mind_nf_arity))
-	      mib.mind_packets in
+	      mib.mind_packets in*)
           (match kind_of_term const with 
-	     | Ind ((sp',tyi) as indsp) -> 
-		 if sp=sp' then
-		   print_constructors indsp fn env mib.mind_packets.(tyi)
+	     | Ind ((kn',tyi) as ind) -> 
+		 if kn=kn' then
+		   print_constructors ind fn env mib.mind_packets.(tyi)
 	     | _ -> ())
       | _ -> ()
   in 
@@ -104,9 +107,9 @@ let plain_display ref a c =
   msg (hov 2 (pr ++ str":" ++ spc () ++ pc) ++ fnl ())
 
 let filter_by_module (module_list:dir_path list) (accept:bool) 
-  (ref:global_reference) (env:env) _ =
+  (ref:global_reference) _ _ =
   try
-    let sp = sp_of_global env ref in
+    let sp = sp_of_global None ref in
     let sl = dirpath sp in
     let rec filter_aux = function
       | m :: tl -> (not (is_dirpath_prefix_of m sl)) && (filter_aux tl)
@@ -117,9 +120,9 @@ let filter_by_module (module_list:dir_path list) (accept:bool)
     false
 
 let gref_eq =
-  IndRef (make_path Coqlib.logic_module (id_of_string "eq"), 0)
+  IndRef (Libnames.encode_kn Coqlib.logic_module (id_of_string "eq"), 0)
 let gref_eqT =
-  IndRef (make_path Coqlib.logic_type_module (id_of_string "eqT"), 0)
+  IndRef (Libnames.encode_kn Coqlib.logic_type_module (id_of_string "eqT"), 0)
 
 let mk_rewrite_pattern1 eq pattern =
   PApp (PRef eq, [| PMeta None; pattern; PMeta None |])

@@ -10,6 +10,7 @@
 
 (*i*)
 open Names
+open Libnames
 open Term
 open Sign
 open Declarations
@@ -44,16 +45,16 @@ type constant_declaration = global_declaration * strength
 (* [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
    the full path of the declaration *)
-val declare_constant : identifier -> constant_declaration -> constant
+val declare_constant : identifier -> constant_declaration -> kernel_name
 
-val redeclare_constant : constant -> Cooking.recipe * strength -> unit
+val redeclare_constant : identifier -> Cooking.recipe * strength * constant -> unit
 
 (* [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of
    the whole block *)
-val declare_mind : mutual_inductive_entry -> mutual_inductive
+val declare_mind : mutual_inductive_entry -> kernel_name
 
-val out_inductive : Libobject.obj -> mutual_inductive_entry 
+val out_inductive : Libobject.obj -> mutual_inductive * mutual_inductive_entry 
 
 val make_strength_0 : unit -> strength
 val make_strength_1 : unit -> strength
@@ -62,7 +63,7 @@ val make_strength_2 : unit -> strength
 (*s Corresponding test and access functions. *)
 
 val is_constant : section_path -> bool
-val constant_strength : constant -> strength
+val constant_strength : section_path -> strength
 
 val out_variable : Libobject.obj -> identifier * variable_declaration
 val get_variable : variable -> named_declaration * strength
@@ -83,11 +84,11 @@ val constr_of_reference : global_reference -> constr
    raise [Not_found] if not a global *)
 val reference_of_constr : constr -> global_reference
 
-val global_qualified_reference : Nametab.qualid -> constr
+val global_qualified_reference : qualid -> constr
 val global_absolute_reference : section_path -> constr
 val global_reference_in_absolute_module : dir_path -> identifier -> constr
 
-val construct_qualified_reference : Nametab.qualid -> constr
+val construct_qualified_reference : qualid -> constr
 val construct_absolute_reference : section_path -> constr
 
 (* This should eventually disappear *)
@@ -95,7 +96,7 @@ val construct_absolute_reference : section_path -> constr
     the name [id] in the global environment. It looks also for variables in a 
     given environment instead of looking in the current global environment. *)
 val global_reference : identifier -> constr
-val construct_reference : Environ.env -> identifier -> constr
+val construct_reference : Sign.named_context option -> identifier -> constr
 
 val is_global : identifier -> bool
 

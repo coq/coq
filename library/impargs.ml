@@ -10,6 +10,7 @@
 
 open Util
 open Names
+open Libnames
 open Term
 open Reduction
 open Declarations
@@ -92,7 +93,7 @@ let list_of_implicits = function
 
 (*s Constants. *)
 
-let constants_table = ref Spmap.empty
+let constants_table = ref KNmap.empty
 
 let compute_constant_implicits sp =
   let env = Global.env () in
@@ -100,7 +101,7 @@ let compute_constant_implicits sp =
   auto_implicits env (body_of_type cb.const_type)
 
 let cache_constant_implicits (_,(sp,imps)) = 
-  constants_table := Spmap.add sp imps !constants_table
+  constants_table := KNmap.add sp imps !constants_table
 
 let (in_constant_implicits, _) =
   let od = {
@@ -111,12 +112,12 @@ let (in_constant_implicits, _) =
   in
   declare_object ("CONSTANT-IMPLICITS", od)
 
-let declare_constant_implicits sp =
-  let imps = compute_constant_implicits sp in
-  add_anonymous_leaf (in_constant_implicits (sp,imps))
+let declare_constant_implicits kn =
+  let imps = compute_constant_implicits kn in
+  add_anonymous_leaf (in_constant_implicits (kn,imps))
 
 let constant_implicits sp =
-  try Spmap.find sp !constants_table with Not_found -> No_impl
+  try KNmap.find sp !constants_table with Not_found -> No_impl
 
 let constant_implicits_list sp =
   list_of_implicits (constant_implicits sp)
@@ -296,7 +297,7 @@ let declare_manual_implicits r l =
 (*s Tests if declared implicit *)
 
 let is_implicit_constant sp =
-  try let _ = Spmap.find sp !constants_table in true with Not_found -> false
+  try let _ = KNmap.find sp !constants_table in true with Not_found -> false
 
 let is_implicit_inductive_definition indp =
   try let _ = Indmap.find indp !inductives_table in true 
@@ -313,13 +314,13 @@ let implicits_of_global = function
 
 (*s Registration as global tables and rollback. *)
 
-type frozen_t = implicits Spmap.t 
+type frozen_t = implicits KNmap.t 
               * implicits Indmap.t 
 	      * implicits Constrmap.t
               * implicits Idmap.t
 
 let init () =
-  constants_table := Spmap.empty;
+  constants_table := KNmap.empty;
   inductives_table := Indmap.empty;
   constructors_table := Constrmap.empty;
   var_table := Idmap.empty

@@ -11,6 +11,7 @@
 open Util
 open Pp
 open Names
+open Libnames
 open Nameops
 open Term
 open Instantiate
@@ -31,7 +32,7 @@ let typ_lams_of t =
 
 let objdef_err ref =
   errorlabstrm "object_declare"
-    (pr_id (Termops.id_of_global (Global.env()) ref) ++
+    (pr_id (id_of_global None ref) ++
        str" is not a structure object")
 
 let objdef_declare ref =

@@ -16,6 +16,8 @@ type name = Name of identifier | Anonymous
 val string_of_id : identifier -> string
 val id_of_string : string -> identifier
 
+val id_ord : identifier -> identifier -> int
+
 (* Identifiers sets and maps *)
 module Idset  : Set.S with type elt = identifier
 module Idpred : Predicate.S with type elt = identifier
@@ -36,40 +38,121 @@ val repr_dirpath : dir_path -> module_ident list
 val string_of_dirpath : dir_path -> string
 
 
-(*s Section paths are {\em absolute} names *)
-type section_path
+(*s Unique identifier to be used as "self" in structures and 
+  signatures - invisible for users *)
+  
+type mod_self_id
 
-(* Constructors of [section_path] *)
-val make_path : dir_path -> identifier -> section_path
+(* The first argument is a file name - to prevent conflict between 
+   different files *)
+val make_msid : dir_path -> string -> mod_self_id
+val string_of_msid : mod_self_id -> string
 
-(* Destructors of [section_path] *)
-val repr_path : section_path -> dir_path * identifier
+(*s Unique names for bound modules *)
+type mod_bound_id
 
-(* Parsing and printing of section path as ["coq_root.module.id"] *)
-val string_of_path : section_path -> string
+val make_mbid : dir_path -> string -> mod_bound_id
+val string_of_mbid : mod_bound_id -> string
 
-module Spset  : Set.S with type elt = section_path
-module Sppred : Predicate.S with type elt = section_path
-module Spmap  : Map.S with type key = section_path
+(*s Names of structure elements *)
+type label
+val mk_label : string -> label
+val string_of_label : label -> string
 
-(*s********************************************************************)
-(* type of global reference *)
+val label_of_id : identifier -> label
+val id_of_label : label -> identifier
+
+module Labset : Set.S with type elt = label
+
+(*s The module part of the kernel name *)
+type module_path =
+  | MPfile of dir_path
+  | MPbound of mod_bound_id
+  | MPself of mod_self_id 
+  | MPdot of module_path * label
+(*i  | MPapply of module_path * module_path    in the future (maybe) i*)
+
+(*
+type substitution
+
+val empty_subst : substitution
+
+val add_msid : 
+  mod_str_id -> module_path -> substitution -> substitution
+val add_mbid : 
+  mod_bound_id -> module_path -> substitution -> substitution
+
+val map_msid : mod_str_id -> module_path -> substitution
+val map_mbid : mod_bound_id -> module_path -> substitution
+
+val join : substitution -> substitution -> substitution
+
+(*i debugging *)
+val debug_string_of_subst : substitution -> string
+val debug_pr_subst : substitution -> std_ppcmds
+(*i*)
+
+(* [subst_modpath_*id id by_path in_path] replaces bound/structure ident 
+   [id] with [by_path] in [in_path]. They quarantee that whenever 
+   [id] does not occur in [in_path], the result is [==] equal to 
+   [in_path] *)
+
+val subst_modpath : 
+  substitution -> module_path -> module_path
+
+(* [occur_*id id sub] returns true iff [id] occurs in [sub] 
+   on either side *)
+
+val occur_msid : mod_str_id -> substitution -> bool
+val occur_mbid : mod_bound_id -> substitution -> bool
+*)
+
+val string_of_mp : module_path -> string
+
+module MPmap : Map.S with type key = module_path
+
+
+(* Name of the toplevel structure *)
+(* TODO: revise!*)
+val initial_path : module_path 
+
+(*s The absolute names of objects seen by kernel *)
+
+type kernel_name
+
+(* Constructor and destructor *)
+val make_kn : module_path -> dir_path -> label -> kernel_name
+val repr_kn : kernel_name -> module_path * dir_path * label
+
+val modpath : kernel_name -> module_path
+val label : kernel_name -> label
+
+val string_of_kn : kernel_name -> string
+val pr_kn : kernel_name -> Pp.std_ppcmds
+(*val subst_kn : substitution -> kernel_name -> kernel_name
+*)
+
+module KNset  : Set.S with type elt = kernel_name
+module KNpred : Predicate.S with type elt = kernel_name
+module KNmap  : Map.S with type key = kernel_name
+
+
+(*s Specific paths for declarations *)
 
 type variable = identifier
-type constant = section_path
+type constant = kernel_name
+type mutual_inductive = kernel_name
 (* Beware: first inductive has index 0 *)
-type inductive = section_path * int
+type inductive = mutual_inductive * int
 (* Beware: first constructor has index 1 *)
 type constructor = inductive * int
-type mutual_inductive = section_path
 
 val ith_mutual_inductive : inductive -> int -> inductive
-
 val ith_constructor_of_inductive : inductive -> int -> constructor
 val inductive_of_constructor : constructor -> inductive
 val index_of_constructor : constructor -> int
 
 (* Hash-consing *)
 val hcons_names : unit ->
-  (section_path -> section_path) * (dir_path -> dir_path) *
+  (kernel_name -> kernel_name) * (dir_path -> dir_path) *
   (name -> name) * (identifier -> identifier) * (string -> string)

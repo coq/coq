@@ -13,6 +13,7 @@ open Names
 open Term
 open Declare
 open Library
+open Libnames
 open Nametab
 (*i*)
 
@@ -27,7 +28,7 @@ val constant_entry_of_com :
 val declare_global_definition :
   Names.identifier ->
   Safe_typing.constant_entry ->
-  Declare.strength -> bool -> Nametab.global_reference
+  Declare.strength -> bool -> global_reference
 
 val definition_body : identifier -> bool * strength -> 
   Coqast.t -> Coqast.t option -> global_reference
@@ -51,7 +52,7 @@ val build_mutual :
     (identifier * Coqast.t * (identifier * Coqast.t) list) list -> bool -> unit
 
 val declare_mutual_with_eliminations :
-  Indtypes.mutual_inductive_entry -> section_path
+  Indtypes.mutual_inductive_entry -> mutual_inductive
 
 val build_recursive :
   (identifier * ((identifier * Coqast.t) list) * Coqast.t * Coqast.t) list 
@@ -59,7 +60,7 @@ val build_recursive :
 
 val build_corecursive :  (identifier * Coqast.t * Coqast.t) list -> unit
 
-val build_scheme : (identifier * bool * Nametab.qualid * Coqast.t) list -> unit
+val build_scheme : (identifier * bool * qualid * Coqast.t) list -> unit
 
 val start_proof_com : identifier option -> strength -> Coqast.t -> unit
 

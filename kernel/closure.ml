@@ -55,10 +55,10 @@ type evaluable_global_reference =
   | EvalVarRef of identifier
   | EvalConstRef of constant
 
-type transparent_state = Idpred.t * Sppred.t
+type transparent_state = Idpred.t * KNpred.t
 
-let all_opaque = (Idpred.empty, Sppred.empty)
-let all_transparent = (Idpred.full, Sppred.full)
+let all_opaque = (Idpred.empty, KNpred.empty)
+let all_transparent = (Idpred.full, KNpred.full)
 
 module type RedFlagsSig = sig
   type reds
@@ -98,7 +98,7 @@ module RedFlags = (struct
   let fDELTA = DELTA
   let fIOTA = IOTA
   let fZETA = ZETA
-  let fCONST sp  = CONST sp
+  let fCONST kn  = CONST kn
   let fVAR id  = VAR id
   let no_red = {
     r_beta = false;
@@ -111,9 +111,9 @@ module RedFlags = (struct
   let red_add red = function
     | BETA -> { red with r_beta = true }
     | DELTA -> { red with r_delta = true; r_const = all_transparent }
-    | CONST sp ->
+    | CONST kn ->
 	let (l1,l2) = red.r_const in
-	{ red with r_const = l1, Sppred.add sp l2 }
+	{ red with r_const = l1, KNpred.add kn l2 }
     | IOTA -> { red with r_iota = true }
     | ZETA -> { red with r_zeta = true }
     | VAR id ->
@@ -123,9 +123,9 @@ module RedFlags = (struct
   let red_sub red = function
     | BETA -> { red with r_beta = false }
     | DELTA -> { red with r_delta = false }
-    | CONST sp ->
+    | CONST kn ->
  	let (l1,l2) = red.r_const in
-	{ red with r_const = l1, Sppred.remove sp l2 }
+	{ red with r_const = l1, KNpred.remove kn l2 }
     | IOTA -> { red with r_iota = false }
     | ZETA -> { red with r_zeta = false }
     | VAR id ->
@@ -139,11 +139,11 @@ module RedFlags = (struct
 
   let red_set red = function
     | BETA -> incr_cnt red.r_beta beta
-    | CONST sp -> 
+    | CONST kn -> 
 	let (_,l) = red.r_const in
-	let c = Sppred.mem sp l in
+	let c = KNpred.mem kn l in
 	incr_cnt c delta
-    | VAR id -> (* En attendant d'avoir des sp pour les Var *)
+    | VAR id -> (* En attendant d'avoir des kn pour les Var *)
 	let (l,_) = red.r_const in
 	let c = Idpred.mem id l in
 	incr_cnt c delta
@@ -155,7 +155,7 @@ module RedFlags = (struct
   let red_get_const red =
     let p1,p2 = red.r_const in
     let (b1,l1) = Idpred.elements p1 in
-    let (b2,l2) = Sppred.elements p2 in
+    let (b2,l2) = KNpred.elements p2 in
     if b1=b2 then
       let l1' = List.map (fun x -> EvalVarRef x) l1 in
       let l2' = List.map (fun x -> EvalConstRef x) l2 in
@@ -171,10 +171,10 @@ let betadeltaiotanolet = mkflags [fBETA;fDELTA;fIOTA]
 let betaiota = mkflags [fBETA;fIOTA]
 let beta = mkflags [fBETA]
 let betaiotazeta = mkflags [fBETA;fIOTA;fZETA]
-let unfold_red sp = 
-  let flag = match sp with
+let unfold_red kn = 
+  let flag = match kn with
     | EvalVarRef id -> fVAR id
-    | EvalConstRef sp -> fCONST sp
+    | EvalConstRef kn -> fCONST kn
   in (* Remove fZETA for finer behaviour ? *)
   mkflags [fBETA;flag;fIOTA;fZETA]
 
@@ -223,10 +223,10 @@ let betaiotazeta_red = {
   r_evar = false;
   r_iota = true }
 
-let unfold_red sp =
-  let c = match sp with
+let unfold_red kn =
+  let c = match kn with
     | EvalVarRef id -> false,[],[id]
-    | EvalConstRef sp -> false,[sp],[]
+    | EvalConstRef kn -> false,[kn],[]
   in {
   r_beta = true;
   r_const = c;
@@ -236,7 +236,7 @@ let unfold_red sp =
 
 (* Sets of reduction kinds.
    Main rule: delta implies all consts (both global (= by
-   section_path) and local (= by Rel or Var)), all evars, and zeta (= letin's).
+   kernel_name) and local (= by Rel or Var)), all evars, and zeta (= letin's).
    Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of 
    a LetIn expression is Letin reduction *)
 
@@ -284,11 +284,11 @@ let red_local_const = red_delta_set
 (* to know if a redex is allowed, only a subset of red_kind is used ... *)
 let red_set red = function
   | BETA -> incr_cnt red.r_beta beta
-  | CONST [sp] -> 
+  | CONST [kn] -> 
       let (b,l,_) = red.r_const in
-      let c = List.mem sp l in
+      let c = List.mem kn l in
       incr_cnt ((b & not c) or (c & not b)) delta
-  | VAR id -> (* En attendant d'avoir des sp pour les Var *)
+  | VAR id -> (* En attendant d'avoir des kn pour les Var *)
      let (b,_,l) = red.r_const in
       let c = List.mem id l in
       incr_cnt ((b & not c) or (c & not b)) delta
@@ -584,8 +584,8 @@ let rec mk_clos e t =
     | Rel i -> clos_rel e i
     | Var x -> { norm = Red; term = FFlex (VarKey x) }
     | Meta _ | Sort _ ->  { norm = Norm; term = FAtom t }
-    | Ind sp -> { norm = Norm; term = FInd sp }
-    | Construct sp -> { norm = Cstr; term = FConstruct sp }
+    | Ind kn -> { norm = Norm; term = FInd kn }
+    | Construct kn -> { norm = Cstr; term = FConstruct kn }
     | Evar (ev,args) ->
         { norm = Cstr; term = FEvar (ev,Array.map (mk_clos e) args) }
     | (Fix _|CoFix _|Lambda _|Prod _) ->
@@ -609,9 +609,9 @@ let mk_clos_deep clos_fun env t =
     | App (f,v) ->
         { norm = Red;
 	  term = FApp (clos_fun env f, Array.map (clos_fun env) v) }
-    | Const sp ->
+    | Const kn ->
         { norm = Red;
-	  term = FFlex (ConstKey sp) }
+	  term = FFlex (ConstKey kn) }
     | Case (ci,p,c,v) ->
         { norm = Red;
 	  term = FCases (ci, clos_fun env p, clos_fun env c,
@@ -903,8 +903,8 @@ let rec knr info m stk =
       (match get_arg m stk with
           (Some(depth,arg),s) -> knit info (subs_shift_cons(depth,e,arg)) f s
         | (None,s) -> (m,s))
-  | FFlex(ConstKey sp) when red_set info.i_flags (fCONST sp) ->
-      (match ref_value_cache info (ConstKey sp) with
+  | FFlex(ConstKey kn) when red_set info.i_flags (fCONST kn) ->
+      (match ref_value_cache info (ConstKey kn) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
   | FFlex(VarKey id) when red_set info.i_flags (fVAR id) ->

@@ -11,6 +11,7 @@
 open Pp
 open Util
 open Names
+open Libnames
 open Nameops
 open Term
 open Termops
@@ -500,13 +501,14 @@ let declare_one_elimination ind =
   let (mib,mip) = Global.lookup_inductive ind in 
   let mindstr = string_of_id mip.mind_typename in
   let declare na c t =
-    let sp = Declare.declare_constant (id_of_string na)
+    let kn = Declare.declare_constant (id_of_string na)
       (ConstantEntry
         { const_entry_body = c;
           const_entry_type = t;
           const_entry_opaque = false }, 
        NeverDischarge) in
-    Options.if_verbose ppnl (str na ++ str " is defined"); sp
+    Options.if_verbose ppnl (str na ++ str " is defined"); 
+    kn
   in
   let env = Global.env () in
   let sigma = Evd.empty in
@@ -548,8 +550,27 @@ let declare_eliminations sp =
 (* Look up function for the default elimination constant *)
 
 let lookup_eliminator ind_sp s =
-  let env = Global.env() in
-  let path = sp_of_global env (IndRef ind_sp) in
+  let kn,_ = ind_sp in
+  let mp,dp,l = repr_kn kn in
+  let id = add_suffix (id_of_label l) (elimination_suffix s) in
+  let ref = ConstRef (make_kn mp dp (label_of_id id)) in
+  try 
+    let _ = full_name ref in
+      constr_of_reference ref
+  with Not_found ->
+    try construct_reference None id
+    with Not_found ->
+      errorlabstrm "default_elim"
+	(str "Cannot find the elimination combinator " ++
+           pr_id id ++ spc () ++
+	   str "The elimination of the inductive definition " ++
+           pr_id id ++ spc () ++ str "on sort " ++ 
+           spc () ++ print_sort_family s ++
+	   str " is probably not allowed")
+
+
+(*  let env = Global.env() in
+  let path = sp_of_global None (IndRef ind_sp) in
   let dir, base = repr_path path in
   let id = add_suffix base (elimination_suffix s) in
   (* Try first to get an eliminator defined in the same section as the *)
@@ -558,7 +579,7 @@ let lookup_eliminator ind_sp s =
   with Not_found ->
   (* Then try to get a user-defined eliminator in some other places *)
   (* using short name (e.g. for "eq_rec") *)
-    try construct_reference env id
+    try construct_reference None id
     with Not_found ->
       errorlabstrm "default_elim"
 	(str "Cannot find the elimination combinator " ++
@@ -567,3 +588,4 @@ let lookup_eliminator ind_sp s =
            pr_id base ++ spc () ++ str "on sort " ++ 
            spc () ++ print_sort_family s ++
 	   str " is probably not allowed")
+*)

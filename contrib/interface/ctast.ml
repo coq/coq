@@ -1,6 +1,7 @@
 (* A copy of pre V7 ast *)
 
 open Names
+open Libnames
 
 type loc = int * int
 

@@ -12,6 +12,7 @@
 open Environ
 open Evd
 open Names
+open Libnames
 open Term
 open Util
 (*i*)
@@ -112,7 +113,7 @@ and tactic_arg =
   | OpenConstr     of Pretyping.open_constr
   | Constr_context of constr
   | Identifier     of identifier
-  | Qualid         of Nametab.qualid
+  | Qualid         of qualid
   | Integer        of int
   | Clause         of hyp_location list
   | Bindings       of Coqast.t substitution

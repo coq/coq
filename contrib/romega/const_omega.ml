@@ -17,19 +17,19 @@ type result =
 
 let destructurate t =
   let c, args = Term.decompose_app t in
-  let env = Global.env() in
+(*  let env = Global.env() in*)
   match Term.kind_of_term c, args with
     | Term.Const sp, args ->
 	Kapp (Names.string_of_id
-		(Termops.id_of_global env (Nametab.ConstRef sp)),
+		(Nametab.id_of_global None (Libnames.ConstRef sp)),
               args)
     | Term.Construct csp , args ->
 	Kapp (Names.string_of_id
-		(Termops.id_of_global env (Nametab.ConstructRef csp)),
+		(Nametab.id_of_global None (Libnames.ConstructRef csp)),
 	        args)
     | Term.Ind isp, args ->
 	Kapp (Names.string_of_id
-		(Termops.id_of_global env (Nametab.IndRef isp)),args)
+		(Nametab.id_of_global None (Libnames.IndRef isp)),args)
     | Term.Var id,[] -> Kvar(Names.string_of_id id)
     | Term.Prod (Names.Anonymous,typ,body), [] -> Kimp(typ,body)
     | Term.Prod (Names.Name _,_,_),[] ->
@@ -42,12 +42,12 @@ let dest_const_apply t =
   let f,args = Term.decompose_app t in
   let ref = 
   match Term.kind_of_term f with 
-    | Term.Const sp         -> Nametab.ConstRef sp
-    | Term.Construct csp -> Nametab.ConstructRef csp
-    | Term.Ind isp       -> Nametab.IndRef isp
+    | Term.Const sp         -> Libnames.ConstRef sp
+    | Term.Construct csp -> Libnames.ConstructRef csp
+    | Term.Ind isp       -> Libnames.IndRef isp
     | _ -> raise Destruct
   in
-  Termops.id_of_global (Global.env()) ref, args
+  Nametab.id_of_global None ref, args
 
 let recognize_number t =
   let rec loop t =
@@ -65,7 +65,7 @@ let recognize_number t =
 let constant dir s =
   try
     Declare.global_absolute_reference
-      (Names.make_path
+      (Libnames.make_path
         (Names.make_dirpath (List.map Names.id_of_string (List.rev dir)))
         (Names.id_of_string s))
   with e -> print_endline (String.concat "." dir); print_endline s; 

@@ -32,7 +32,7 @@ let constant dir s =
     Declare.global_reference_in_absolute_module dir id
   with Not_found ->
     anomaly ("Field: cannot find "^
-	     (Nametab.string_of_qualid (Nametab.make_qualid dir id)))
+	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))
 
 (* To deal with the optional arguments *)
 let constr_of_opt a opt =

@@ -66,50 +66,111 @@ let string_of_dirpath = function
   | sl ->
       String.concat "." (List.map string_of_id (List.rev sl))
 
-(*s Section paths are absolute names *)
 
-type section_path = {
-  dirpath : dir_path ;
-  basename : identifier }
+let u_number = ref 0 
+type uniq_ident = int * string * dir_path
+let string_of_uid (i,s,p) = "<"^string_of_dirpath p ^ s ^ string_of_int i^">"
 
-let make_path pa id = { dirpath = pa; basename = id }
-let repr_path { dirpath = pa; basename = id } = (pa,id)
+type mod_self_id = uniq_ident
+let make_msid dir s = incr u_number;(!u_number,s,dir)
+let string_of_msid = string_of_uid
 
-(* parsing and printing of section paths *)
-let string_of_path sp =
-  let (sl,id) = repr_path sp in
-  if sl = [] then string_of_id id
-  else (string_of_dirpath sl) ^ "." ^ (string_of_id id)
+type mod_bound_id = uniq_ident
+let make_mbid dir s = incr u_number;(!u_number,s,dir)
+let string_of_mbid = string_of_uid
 
-let sp_ord sp1 sp2 =
-  let (p1,id1) = repr_path sp1
-  and (p2,id2) = repr_path sp2 in
-  let p_bit = compare p1 p2 in
-  if p_bit = 0 then id_ord id1 id2 else p_bit
+type label = string
+let mk_label l = l
+let string_of_label l = l
 
-module SpOrdered =
-  struct
-    type t = section_path
-    let compare = sp_ord
-  end
+let id_of_label l = l
+let label_of_id id = id
 
-module Spset = Set.Make(SpOrdered)
-module Sppred = Predicate.Make(SpOrdered)
-module Spmap = Map.Make(SpOrdered)
+module Labset = Idset
 
-(*s********************************************************************)
-(* type of global reference *)
+type module_path =
+  | MPfile of dir_path
+  | MPbound of mod_bound_id
+  | MPself of mod_self_id 
+  | MPdot of module_path * label
+
+let rec string_of_mp = function
+  | MPfile sl -> string_of_dirpath sl
+  | MPbound uid -> string_of_uid uid
+  | MPself uid -> string_of_uid uid
+  | MPdot (mp,l) -> string_of_mp mp ^ "." ^ string_of_label l
+
+(* we compare labels first if two MPdot's *)
+let rec mp_ord mp1 mp2 = match (mp1,mp2) with
+    MPdot(mp1,l1), MPdot(mp2,l2) -> 
+      let c = Pervasives.compare l1 l2 in
+	if c<>0 then
+	  c
+	else
+	  mp_ord mp1 mp2
+  |  _,_ -> Pervasives.compare mp1 mp2
+
+module MPord = struct
+  type t = module_path
+  let compare = mp_ord
+end
+
+module MPmap = Map.Make(MPord)
+
+
+type kernel_name = module_path * dir_path * label
+
+let make_kn mp dir l = (mp,dir,l)
+let repr_kn kn = kn
+
+let modpath kn = 
+  let mp,_,_ = repr_kn kn in mp
+
+let label kn = 
+  let _,_,l = repr_kn kn in l
+
+let string_of_kn (mp,dir,l) = 
+  string_of_mp mp ^ "#" ^ string_of_dirpath dir ^ "#" ^ string_of_label l
+
+let pr_kn kn = str (string_of_kn kn)
+
+let kn_ord kn1 kn2 = 
+    let mp1,dir1,l1 = kn1 in
+    let mp2,dir2,l2 = kn2 in
+    let c = Pervasives.compare l1 l2 in
+      if c <> 0 then
+	c
+      else 
+	let c = Pervasives.compare dir1 dir2 in
+	  if c<>0 then
+	    c 
+	  else
+	    MPord.compare mp1 mp2
+
+
+module KNord = struct
+  type t = kernel_name
+  let compare =kn_ord
+end
+
+module KNmap = Map.Make(KNord)
+module KNpred = Predicate.Make(KNord)
+module KNset = Set.Make(KNord)
+
+
+(* TODO: revise this!!! *)
+let initial_path = MPself (make_msid [] "INIT")
 
 type variable = identifier
-type constant = section_path
-type inductive = section_path * int
+type constant = kernel_name
+type mutual_inductive = kernel_name
+type inductive = mutual_inductive * int
 type constructor = inductive * int
-type mutual_inductive = section_path
 
-let ith_mutual_inductive (sp,_) i = (sp,i)
-let ith_constructor_of_inductive ind_sp i = (ind_sp,i)
-let inductive_of_constructor (ind_sp,i) = ind_sp
-let index_of_constructor (ind_sp,i) = i
+let ith_mutual_inductive (kn,_) i = (kn,i)
+let ith_constructor_of_inductive ind i = (ind,i)
+let inductive_of_constructor (ind,i) = ind
+let index_of_constructor (ind,i) = i
 
 (* Hash-consing of name objects *)
 module Hname = Hashcons.Make(
@@ -136,16 +197,12 @@ module Hdir = Hashcons.Make(
     let hash = Hashtbl.hash
   end)
 
-module Hsp = Hashcons.Make(
+module Hkn = Hashcons.Make(
   struct 
-    type t = section_path
+    type t = kernel_name
     type u = identifier -> identifier
-    let hash_sub hident sp =
-      { dirpath = List.map hident sp.dirpath;
-        basename = hident sp.basename }
-    let equal sp1 sp2 =
-      (List.length sp1.dirpath = List.length sp2.dirpath) &&
-      (List.for_all2 (==) sp1.dirpath sp2.dirpath)
+    let hash_sub hident kn = Util.todo "hash_cons"; kn
+    let equal kn1 kn2 = kn1==kn2
     let hash = Hashtbl.hash
   end)
 
@@ -154,5 +211,5 @@ let hcons_names () =
   let hident = Hashcons.simple_hcons Hident.f hstring in
   let hname = Hashcons.simple_hcons Hname.f hident in
   let hdir = Hashcons.simple_hcons Hdir.f hident in
-  let hspcci = Hashcons.simple_hcons Hsp.f hident in
-  (hspcci,hdir,hname,hident,hstring)
+  let hkn = Hashcons.simple_hcons Hkn.f hident in
+  (hkn,hdir,hname,hident,hstring)

@@ -25,6 +25,7 @@ open Declare
 open Impargs
 open Libobject
 open Printer
+open Libnames
 open Nametab
 
 let print_basename sp = pr_global (ConstRef sp)
@@ -302,9 +303,9 @@ let print_leaf_entry with_values sep (sp,lobj) =
     | (_,"VARIABLE") ->
 	print_section_variable (basename sp)
     | (_,("CONSTANT"|"PARAMETER")) ->
-	print_constant with_values sep sp
+	print_constant with_values sep (locate_constant (qualid_of_sp sp))
     | (_,"INDUCTIVE") ->
-	print_inductive sp
+	print_inductive (locate_mind (qualid_of_sp sp))
     | (_,"AUTOHINT") -> 
 (*	(str" Hint Marker" ++ fnl ())*)
 	(mt ())
@@ -384,7 +385,7 @@ let read_sec_context qid =
     try Nametab.locate_section qid
     with Not_found -> error "Unknown section" in
   let rec get_cxt in_cxt = function
-    | ((sp,Lib.OpenedSection (dir',_)) as hd)::rest ->
+    | ((sp,Lib.OpenedSection ((dir',_),_)) as hd)::rest ->
         if dir = dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | ((sp,Lib.ClosedSection (_,_,ctxt)) as hd)::rest ->
         error "Cannot print the contents of a closed section"
@@ -486,13 +487,15 @@ let print_local_context () =
     | (sp,Lib.Leaf lobj)::rest -> 
         (match object_tag lobj with
            | "CONSTANT" | "PARAMETER" -> 
+	       let kn = locate_constant (qualid_of_sp sp) in
                let {const_body=val_0;const_type=typ} = 
-		 Global.lookup_constant sp in
-               (print_last_const rest ++
-                  print_basename sp ++str" = " ++
+		 Global.lookup_constant kn in
+		 (print_last_const rest ++
+                  print_basename kn ++str" = " ++
                   print_typed_body (val_0,typ))
            | "INDUCTIVE" -> 
-               (print_last_const rest ++print_mutual sp ++ fnl ())
+	       let kn = locate_mind (qualid_of_sp sp) in
+               (print_last_const rest ++print_mutual kn ++ fnl ())
            | "VARIABLE" ->  (mt ())
            | _          ->  print_last_const rest)
     | _ -> (mt ())

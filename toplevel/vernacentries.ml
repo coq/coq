@@ -36,6 +36,7 @@ open Tactic_debug
 open Command
 open Goptions
 open Declare
+open Libnames
 open Nametab
 open Safe_typing
 
@@ -121,13 +122,13 @@ let locate_file f =
 
 let print_located_qualid qid =
   try
-    let sp = Nametab.sp_of_global (Global.env()) (Nametab.locate qid) in
+    let sp = Nametab.sp_of_global None (Nametab.locate qid) in
     msg (pr_sp sp ++ fnl ())
   with Not_found -> 
   try
     msg (pr_sp (Syntax_def.locate_syntactic_definition qid) ++ fnl ())
   with Not_found ->
-    error ((Nametab.string_of_qualid qid) ^ " is not a defined object")
+    error ((string_of_qualid qid) ^ " is not a defined object")
 
 let print_path_entry (s,l) =
   (str s ++ tbrk (0,2) ++ str (string_of_dirpath l))
@@ -164,14 +165,14 @@ let msg_found_library = function
 
 let msg_notfound_library qid = function
   | Library.LibUnmappedDir ->
-      let dir = fst (Nametab.repr_qualid qid) in
+      let dir = fst (repr_qualid qid) in
       errorlabstrm "locate_library"
         (str "Cannot find a physical path bound to logical path " ++
            pr_dirpath dir ++ fnl ())
   | Library.LibNotFound ->
       msg (hov 0 
 	(str"Unable to locate library" ++
-           spc () ++ Nametab.pr_qualid qid ++ fnl ()))
+           spc () ++ pr_qualid qid ++ fnl ()))
   | e -> assert false
 
 let _ = 
@@ -196,7 +197,7 @@ let _ =
        | [VARG_STRING dir] ->
 	   (fun () -> Mltop.add_path dir Nameops.default_root_prefix)
        | [VARG_STRING dir ; VARG_QUALID alias] ->
-           let aliasdir,aliasname = Nametab.repr_qualid alias in
+           let aliasdir,aliasname = repr_qualid alias in
 	   (fun () -> Mltop.add_path dir (extend_dirpath aliasdir aliasname))
        | _ -> bad_vernac_args "ADDPATH")
 
@@ -213,7 +214,7 @@ let _ =
        | [VARG_STRING dir] ->
 	   (fun () -> Mltop.add_rec_path dir Nameops.default_root_prefix)
        | [VARG_STRING dir ; VARG_QUALID alias] ->
-           let aliasdir,aliasname = Nametab.repr_qualid alias in
+           let aliasdir,aliasname = repr_qualid alias in
 	   (fun () ->Mltop.add_rec_path dir (extend_dirpath aliasdir aliasname))
        | _ -> bad_vernac_args "RECADDPATH")
 
@@ -1011,7 +1012,7 @@ let extract_qualid = function
   | VARG_QUALID qid ->
       (try Nametab.locate_loaded_library qid
        with Not_found -> 
-	 error ("Module/section "^(Nametab.string_of_qualid qid)^" not found"))
+	 error ("Module/section "^(string_of_qualid qid)^" not found"))
   | _ -> bad_vernac_args "extract_qualid"
 
 let inside_outside = function
@@ -1320,11 +1321,11 @@ let _ =
 	     let ref = Nametab.global dummy_loc qid in
 	     Class.try_add_new_class ref stre;
              if_verbose message
-               ((Nametab.string_of_qualid qid) ^ " is now a class")
+               ((string_of_qualid qid) ^ " is now a class")
        | _ -> bad_vernac_args "CLASS")
 
 let cl_of_qualid qid =
-  match Nametab.repr_qualid qid with
+  match repr_qualid qid with
     | d, id when string_of_id id = "FUNCLASS" & repr_dirpath d = [] ->
 	Classops.CL_FUN
     | d, id when string_of_id id = "SORTCLASS"  & repr_dirpath d = [] ->
@@ -1346,7 +1347,7 @@ let _ =
 	   let target = cl_of_qualid qidt in
 	   let source = cl_of_qualid qids in
 	   fun () ->
-	     if isid then match Nametab.repr_qualid qid with
+	     if isid then match repr_qualid qid with
 	       | d, id when repr_dirpath d = [] ->
 		   Class.try_add_new_identity_coercion id stre source target
 	       | _ -> bad_vernac_args "COERCION"
@@ -1355,7 +1356,7 @@ let _ =
 	       Class.try_add_new_coercion_with_target ref stre source target;
 	       if_verbose
 		 message
-                 ((Nametab.string_of_qualid qid) ^ " is now a coercion")
+                 ((string_of_qualid qid) ^ " is now a coercion")
        | _ -> bad_vernac_args "COERCION")
 
 let _ =
@@ -1627,11 +1628,11 @@ let _ =
 		   let coe = coercion_of_qualid dummy_loc qid in
 	           if Classops.is_coercion_visible coe then
 		     message
-		       ("Printing of coercion "^(Nametab.string_of_qualid qid)^
+		       ("Printing of coercion "^(string_of_qualid qid)^
 			" is set")
 		   else 
 		     message 
-		       ("Printing of coercion "^(Nametab.string_of_qualid qid)^
+		       ("Printing of coercion "^(string_of_qualid qid)^
 			" is unset"))
 		ql)
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_QUALID v] -> 
@@ -1723,7 +1724,7 @@ let _ =
             if (string_of_id t) = "Tables" then 
 	      print_tables ()
 	    else 
-	      msg(print_name (Nametab.make_short_qualid t)))
+	      msg(print_name (make_short_qualid t)))
      | _ -> bad_vernac_args "TableField")
 
 

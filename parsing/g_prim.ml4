@@ -11,6 +11,7 @@
 open Coqast
 open Pcoq
 open Names
+open Libnames
 open Prim
 
 GEXTEND Gram
@@ -35,7 +36,7 @@ GEXTEND Gram
   astpath:
     [ [ id = IDENT; (l,a) = astfields -> 
           let p = make_dirpath (List.rev (id_of_string id :: l)) in
-          Path(loc, make_path p a)
+          Path(loc, Libnames.encode_kn p a)
       | id = IDENT -> Nvar(loc, id_of_string id)
       ] ]
   ;

@@ -21,6 +21,7 @@ open Evar_refiner
 open Clenv
 open Tacred
 open Tacticals
+open Libnames
 open Nametab
 (*i*)
 

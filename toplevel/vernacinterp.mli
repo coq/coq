@@ -10,6 +10,7 @@
 
 (*i*)
 open Names
+open Libnames
 open Proof_type
 (*i*)
 
@@ -27,7 +28,7 @@ type vernac_arg =
   | VARG_NUMBER of int
   | VARG_NUMBERLIST of int list
   | VARG_IDENTIFIER of identifier
-  | VARG_QUALID of Nametab.qualid
+  | VARG_QUALID of qualid
   | VCALL of string * vernac_arg list
   | VARG_CONSTR of Coqast.t
   | VARG_CONSTRLIST of Coqast.t list

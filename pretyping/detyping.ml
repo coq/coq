@@ -23,6 +23,7 @@ open Impargs
 open Rawterm
 open Nameops
 open Termops
+open Libnames
 open Nametab
 
 (****************************************************************************)
@@ -33,7 +34,7 @@ let encode_inductive ref =
     | IndRef indsp -> indsp
     | _ ->
         errorlabstrm "indsp_of_id"
-          (pr_global_env (Global.env()) ref ++
+          (pr_global_env None ref ++
 	     str" is not an inductive type") in
   let constr_lengths = mis_constr_nargs indsp in
   (indsp,constr_lengths)
@@ -62,7 +63,7 @@ module PrintingCasesMake =
       if not (Test.test lc) then 
 	errorlabstrm "check_encode" (str Test.error_message)
     let printer (ind,_) =
-      pr_id (basename (path_of_inductive (Global.env()) ind))
+      pr_id (id_of_global None (IndRef ind))
     let key = Goptions.SecondaryTable ("Printing",Test.field)
     let title = Test.title
     let member_message = Test.member_message
@@ -76,7 +77,7 @@ module PrintingCasesIf =
     let field = "If"
     let title = "Types leading to pretty-printing of Cases using a `if' form: "
     let member_message ref b =
-      let s = string_of_qualid(shortest_qualid_of_global (Global.env()) ref) in
+      let s = string_of_qualid(shortest_qualid_of_global None ref) in
       if b then
         "Cases on elements of " ^ s ^ " are printed using a `if' form"
       else
@@ -91,7 +92,7 @@ module PrintingCasesLet =
     let title = 
       "Types leading to a pretty-printing of Cases using a `let' form:"
     let member_message ref b =
-      let s = string_of_qualid(shortest_qualid_of_global (Global.env()) ref) in
+      let s = string_of_qualid(shortest_qualid_of_global None ref) in
       if b then
         "Cases on elements of " ^ s ^ " are printed using a `let' form"
       else

@@ -20,6 +20,7 @@ open Reduction
 open Tacred
 open Declare
 open Names
+open Libnames
 open Nameops
 open Coqast
 open Ast
@@ -393,7 +394,7 @@ let inductive_of_ident qid =
   match Nametab.global dummy_loc qid with
     | IndRef ind -> ind
     | ref -> errorlabstrm "inductive_of_ident"
-	(pr_id (id_of_global (Global.env()) ref) ++ 
+	(pr_id (id_of_global None ref) ++ 
            spc () ++ str "is not an inductive type")
 
 let build_scheme lnamedepindsort = 

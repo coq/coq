@@ -55,6 +55,7 @@
 (*i*)
 open Pp
 open Names
+open Libnames
 open Term
 open Nametab
 (*i*)

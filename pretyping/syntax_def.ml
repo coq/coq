@@ -11,6 +11,7 @@
 open Util
 open Pp
 open Names
+open Libnames
 open Rawterm
 open Libobject
 open Lib

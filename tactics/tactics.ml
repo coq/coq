@@ -20,6 +20,7 @@ open Inductive
 open Inductiveops
 open Reductionops
 open Environ
+open Libnames
 open Declare
 open Evd
 open Pfedit
@@ -1196,7 +1197,7 @@ let general_elim_in id (c,lbindc) (elimc,lbindelimc) gl =
 
 (* We recompute recargs because we are not sure the elimination lemma
 comes from a canonically generated one *)
-
+(* dead code ?
 let rec is_rec_arg env sigma indpath t =
   try
     let (ind_sp,_) = find_mrectype env sigma t in
@@ -1209,7 +1210,7 @@ let rec recargs indpath env sigma t =
 	(is_rec_arg env sigma indpath t)
 	::(recargs indpath (push_rel_assum (na,t) env) sigma c2)
     | _ -> []
-
+*)
 let induct_discharge old_style mind statuslists cname destopt avoid ra gl =
   let (lstatus,rstatus) = statuslists in
   let tophyp = ref None in

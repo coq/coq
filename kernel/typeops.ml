@@ -242,8 +242,8 @@ let judge_of_cast env cj tj =
 let judge_of_inductive env i =
   let constr = mkInd i in
   let _ =
-    let (sp,_) = i in
-    let mib = lookup_mind sp env in
+    let (kn,_) = i in
+    let mib = lookup_mind kn env in
     check_args env constr mib.mind_hyps in 
   make_judge constr (type_of_inductive env i)
 
@@ -258,8 +258,8 @@ let judge_of_inductive env i
 let judge_of_constructor env c =
   let constr = mkConstruct c in
   let _ =
-    let ((sp,_),_) = c in
-    let mib = lookup_mind sp env in
+    let ((kn,_),_) = c in
+    let mib = lookup_mind kn env in
     check_args env constr mib.mind_hyps in 
   make_judge constr (type_of_constructor env c)
 

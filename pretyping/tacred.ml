@@ -13,6 +13,7 @@ open Util
 open Names
 open Nameops
 open Term
+open Libnames
 open Termops
 open Declarations
 open Inductive
@@ -31,7 +32,7 @@ let set_transparent_const sp =
   if cb.const_body <> None & cb.const_opaque then
     errorlabstrm "set_transparent_const"
       (str "Cannot make" ++ spc () ++ 
-         Nametab.pr_global_env (Global.env()) (Nametab.ConstRef sp) ++
+         Nametab.pr_global_env None (ConstRef sp) ++
          spc () ++ str "transparent because it was declared opaque.");
   Conv_oracle.set_transparent_const sp
 
@@ -47,10 +48,10 @@ let _ =
 
 let is_evaluable env ref =
   match ref with
-      EvalConstRef sp ->
-        let (ids,sps) = Conv_oracle.freeze() in
-        Sppred.mem sp sps &
-        let cb = Environ.lookup_constant sp env in
+      EvalConstRef kn ->
+        let (ids,kns) = Conv_oracle.freeze() in
+        KNpred.mem kn kns &
+        let cb = Environ.lookup_constant kn env in
         cb.const_body <> None & not cb.const_opaque
     | EvalVarRef id ->
         let (ids,sps) = Conv_oracle.freeze() in
@@ -194,8 +195,9 @@ let invert_name labs l na0 env sigma ref = function
 	let refi = match ref with
 	  | EvalRel _ | EvalEvar _ -> None
 	  | EvalVar id' -> Some (EvalVar id)
-	  | EvalConst sp ->
-	      Some (EvalConst (make_path (dirpath sp) id)) in
+	  | EvalConst kn ->
+	      let (mp,dp,_) = repr_kn kn in
+	      Some (EvalConst (make_kn mp dp (label_of_id id))) in
 	match refi with
 	  | None -> None
 	  | Some ref ->
@@ -364,7 +366,7 @@ let contract_cofix_use_function f (bodynum,(_,names,bodies as typedbodies)) =
   let subbodies = list_tabulate make_Fi nbodies in
   substl subbodies bodies.(bodynum)
 
-let reduce_mind_case_use_function sp env mia =
+let reduce_mind_case_use_function kn env mia =
   match kind_of_term mia.mconstr with 
     | Construct(ind_sp,i as cstr_sp) ->
 	let real_cargs = snd (list_chop mia.mci.ci_npar mia.mcargs) in
@@ -373,10 +375,11 @@ let reduce_mind_case_use_function sp env mia =
 	let build_fix_name i =
 	  match names.(i) with 
 	    | Name id ->
-		let sp = make_path (dirpath sp) id in
-		(match constant_opt_value env sp with
+		let (mp,dp,_) = repr_kn kn in
+		let kn = make_kn mp dp (label_of_id id) in
+		(match constant_opt_value env kn with
 		  | None -> None
-		  | Some _ -> Some (mkConst sp))
+		  | Some _ -> Some (mkConst kn))
 	    | Anonymous -> None in 
 	let cofix_def = contract_cofix_use_function build_fix_name cofix in
 	mkCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
@@ -594,14 +597,14 @@ let nf env sigma c = strong whd_nf env sigma c
  * ol is the occurence list to find. *)
 let rec substlin env name n ol c =
   match kind_of_term c with
-    | Const const when EvalConstRef const = name ->
+    | Const kn when EvalConstRef kn = name ->
         if List.hd ol = n then
           try 
-	    (n+1, List.tl ol, constant_value env const)
+	    (n+1, List.tl ol, constant_value env kn)
           with
 	      NotEvaluableConst _ ->
 		errorlabstrm "substlin"
-		  (pr_sp const ++ str " is not a defined constant")
+		  (pr_kn kn ++ str " is not a defined constant")
         else 
 	  ((n+1), ol, c)
 
@@ -691,7 +694,7 @@ let rec substlin env name n ol c =
 
 let string_of_evaluable_ref = function
   | EvalVarRef id -> string_of_id id
-  | EvalConstRef sp -> string_of_path sp
+  | EvalConstRef kn -> string_of_kn kn
 
 let unfold env sigma name =
   if is_evaluable env name then

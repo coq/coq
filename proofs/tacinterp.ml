@@ -22,6 +22,7 @@ open Tacred
 open Util
 open Names
 open Nameops
+open Libnames
 open Nametab
 open Pfedit
 open Proof_type
@@ -120,7 +121,7 @@ let make_qid = function
   | VArg (Identifier id) -> make_short_qualid id
   | VArg (Constr c) ->
     (match (kind_of_term c) with
-    | Const cst -> qualid_of_sp cst
+    | Const cst -> shortest_qualid_of_global None (ConstRef cst)
     | Var id -> make_short_qualid id
     | _ -> anomalylabstrm "make_qid" (str "Not a qualid"))
   | _ -> anomalylabstrm "make_qid" (str "Not a qualid")
@@ -131,7 +132,7 @@ let make_hyps = List.map (fun (id,_,typ) -> (string_of_id id,body_of_type typ))
 (* Transforms an id into a constr if possible *)
 let constr_of_id ist id =
   match ist.goalopt with
-  | None -> construct_reference ist.env id
+  | None -> construct_reference (Some (Environ.named_context ist.env)) id
   | Some goal ->
     let hyps = pf_hyps goal in
     if mem_named_context id hyps then
@@ -223,7 +224,7 @@ let look_for_interp = Hashtbl.find interp_tab
 let glob_const_nvar loc env qid =
   try
     (* We first look for a variable of the current proof *)
-    match Nametab.repr_qualid qid with
+    match repr_qualid qid with
       | d,id when repr_dirpath d = [] ->
           let v = EvalVarRef id in
           if Tacred.is_evaluable env v then v
@@ -235,10 +236,10 @@ let glob_const_nvar loc env qid =
     let ev = (match Nametab.locate qid with
       | ConstRef sp -> EvalConstRef sp
       | VarRef id -> EvalVarRef id
-      | _ -> error ((Nametab.string_of_qualid qid) ^
+      | _ -> error ((string_of_qualid qid) ^
 		    " does not denote an evaluable constant")) in
     if Tacred.is_evaluable env ev then ev
-    else error ((Nametab.string_of_qualid qid) ^
+    else error ((string_of_qualid qid) ^
 		    " does not denote an evaluable constant")
   with Not_found ->
     Nametab.error_global_not_found_loc loc qid
@@ -1090,9 +1091,12 @@ and qid_interp ist = function
         with | Not_found -> interp_qualid p)
      | _ -> interp_qualid p)
   | Node(loc,"QUALIDMETA",[Num(_,n)]) ->
-    (try Nametab.qualid_of_sp (destConst (List.assoc n ist.lmatch)) with
-     | Invalid_argument "destConst" ->
-       make_qualid (make_dirpath []) (destVar (List.assoc n ist.lmatch)))
+    (try 
+       shortest_qualid_of_global None 
+	 (ConstRef (destConst (List.assoc n ist.lmatch))) 
+     with
+       | Invalid_argument "destConst" ->
+	   make_qualid (make_dirpath []) (destVar (List.assoc n ist.lmatch)))
   | ast -> 
       anomaly_loc (Ast.loc ast, "Tacinterp.qid_interp",(str
         "Unrecognizable qualid ast: " ++ print_ast ast))

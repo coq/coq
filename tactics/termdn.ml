@@ -14,6 +14,7 @@ open Nameops
 open Term
 open Pattern
 open Rawterm
+open Libnames
 open Nametab
 
 (* Discrimination nets of terms.

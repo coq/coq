@@ -21,6 +21,7 @@ open Evarutil
 open Proof_type
 open Tacred
 open Typing
+open Libnames
 open Nametab
 
 let is_bind = function
@@ -271,9 +272,9 @@ let last_of_cvt_flags red =
      List.map
        (function
 	  | EvalVarRef id -> nvar id
-	  | EvalConstRef sp ->
+	  | EvalConstRef kn ->
 	      ast_of_qualid
-                (shortest_qualid_of_global (Global.env()) (ConstRef sp)))
+                (shortest_qualid_of_global None (ConstRef kn)))
        lconst in
    if lqid = [] then []
    else if n_unf then [ope("Delta",[]);ope("UnfBut",lqid)]
@@ -292,9 +293,9 @@ let ast_of_cvt_redexp = function
     ope("Unfold",List.map (fun (locc,sp) -> ope("UNFOLD",
       [match sp with
 	| EvalVarRef id -> nvar id
-	| EvalConstRef sp -> 					
+	| EvalConstRef kn -> 					
 	    ast_of_qualid
-	      (shortest_qualid_of_global (Global.env()) (ConstRef sp))]
+	      (shortest_qualid_of_global None (ConstRef kn))]
       @(List.map num locc))) l)
   | Fold l ->
     ope("Fold",List.map (fun c -> ope ("COMMAND",

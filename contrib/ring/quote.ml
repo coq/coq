@@ -127,7 +127,7 @@ let constant dir s =
     Declare.global_reference_in_absolute_module dir id
   with Not_found ->
     anomaly ("Quote: cannot find "^
-	     (Nametab.string_of_qualid (Nametab.make_qualid dir id)))
+	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))
 
 let coq_Empty_vm = lazy (constant ["Quote"] "Empty_vm")
 let coq_Node_vm = lazy (constant ["Quote"] "Node_vm")

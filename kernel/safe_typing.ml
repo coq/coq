@@ -94,7 +94,7 @@ let safe_infer_declaration env dcl =
   | GlobalRecipe r ->
       Cooking.cook_constant env r
 
-let add_global_declaration sp env (body,typ,cst,op) =
+let add_global_declaration kn env (body,typ,cst,op) =
   let env' = add_constraints cst env in
   let ids = match body with 
     | None -> global_vars_set env typ
@@ -107,19 +107,19 @@ let add_global_declaration sp env (body,typ,cst,op) =
     const_hyps = hyps;
     const_constraints = cst;
     const_opaque = op } in
-  Environ.add_constant sp cb env'
+  Environ.add_constant kn cb env'
 
 (*s Global and local constant declaration. *)
 
-let add_constant sp ce env =
-  add_global_declaration sp env (safe_infer_declaration env ce)
+let add_constant kn ce env =
+  add_global_declaration kn env (safe_infer_declaration env ce)
 
 (* Insertion of inductive types. *)
 
-let add_mind sp mie env =
+let add_mind kn mie env =
   let mib = check_inductive env mie in
   let cst = mib.mind_constraints in
-  Environ.add_mind sp mib (add_constraints cst env)
+  Environ.add_mind kn mib (add_constraints cst env)
 
 let add_constraints = Environ.add_constraints
 

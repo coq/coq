@@ -11,6 +11,7 @@
 open Pp
 open Util
 open Names
+open Libnames
 open Nameops
 open Libobject
 open Summary
@@ -19,7 +20,7 @@ open Summary
 type node = 
   | Leaf of obj
   | Module of dir_path
-  | OpenedSection of dir_path * Summary.frozen
+  | OpenedSection of (dir_path * dir_path) * Summary.frozen
   (* bool is to tell if the section must be opened automatically *)
   | ClosedSection of bool * dir_path * library_segment
   | FrozenState of Summary.frozen
@@ -39,28 +40,33 @@ and library_segment = library_entry list
 let lib_stk = ref ([] : library_segment)
 
 let module_name = ref None
-let path_prefix = ref (default_module : dir_path)
+let path_prefix = ref (default_module,empty_dirpath : dir_path * dir_path)
 
-let module_sp () =
+let module_dp () =
   match !module_name with Some m -> m | None -> default_module
 
 let recalc_path_prefix () =
   let rec recalc = function
     | (sp, OpenedSection (dir,_)) :: _ -> dir
     | _::l -> recalc l
-    | [] -> module_sp ()
+    | [] -> (module_dp (),empty_dirpath)
   in
   path_prefix := recalc !lib_stk
 
-let pop_path_prefix () = path_prefix := fst (split_dirpath !path_prefix)
+let pop_path_prefix () = 
+  let prefix,tail = !path_prefix in
+    path_prefix := fst (split_dirpath prefix), fst (split_dirpath tail)
 
-let make_path id = Names.make_path !path_prefix id
+let make_path id = Libnames.make_path (fst !path_prefix) id
+
+let make_kn id = 
+  Names.make_kn (MPfile (module_dp ())) (snd !path_prefix) (label_of_id id)
+
 
 let sections_depth () =
-  List.length (repr_dirpath !path_prefix)
-  - List.length (repr_dirpath (module_sp ()))
+  List.length (repr_dirpath (snd !path_prefix))
 
-let cwd () = !path_prefix
+let cwd () = (fst !path_prefix)
 
 let find_entry_p p = 
   let rec find = function
@@ -126,11 +132,11 @@ let check_for_module () =
 let start_module s =
   if !module_name <> None then
     error "a module is already started";
-  if !path_prefix <> default_module then
+  if snd (!path_prefix) <> empty_dirpath then
     error "some sections are already opened";
   module_name := Some s;
   let _ = add_anonymous_entry (Module s) in
-  path_prefix := s
+  path_prefix := s, empty_dirpath
 
 let end_module s =
   match !module_name with
@@ -144,16 +150,18 @@ let end_module s =
 (* Sections. *)
 
 let open_section id =
-  let dir = extend_dirpath !path_prefix id in
+  let oldpr,oldtl = !path_prefix in
+  let pref = extend_dirpath oldpr id in
+  let tail = extend_dirpath oldtl id in
   let sp = make_path id in
-  if Nametab.exists_section dir then
+  if Nametab.exists_section pref then
     errorlabstrm "open_section" (pr_id id ++ str " already exists");
   let sum = freeze_summaries() in
-  add_entry sp (OpenedSection (dir, sum));
+  add_entry sp (OpenedSection ((pref,tail), sum));
   (*Pushed for the lifetime of the section: removed by unfrozing the summary*)
-  Nametab.push_section dir;
-  path_prefix := dir;
-  sp
+  Nametab.push_section pref;
+  path_prefix := (pref,tail);
+  sp,tail
 
 let is_opened_section = function (_,OpenedSection _) -> true | _ -> false
 
@@ -177,12 +185,12 @@ let export_segment seg =
 (* Restore lib_stk and summaries as before the section opening, and
    add a ClosedSection object. *)
 let close_section ~export id =
-  let sp,dir,fs = 
+  let sp,dir,dir_rel,fs = 
     try match find_entry_p is_opened_section with
-      | sp,OpenedSection (dir,fs) -> 
+      | sp,OpenedSection ((dir,dir_rel),fs) -> 
 	  if id<>snd(split_dirpath dir) then
 	    error "this is not the last opened section";
-	  (sp,dir,fs)
+	  (sp,dir,dir_rel,fs)
       | _ -> assert false
     with Not_found ->
       error "no opened section"
@@ -192,7 +200,7 @@ let close_section ~export id =
   pop_path_prefix ();
   let closed_sec = ClosedSection (export, dir, export_segment after) in
   add_entry (make_path id) closed_sec;
-  (dir,after,fs)
+  (dir, dir_rel, after, fs)
 
 (* The following function exports the whole library segment, that will be 
    saved as a module. Objects are presented in chronological order, and
@@ -258,8 +266,8 @@ let back n = reset_to (back_stk n !lib_stk)
 
 (* [dir] is a section dir if [module] < [dir] <= [path_prefix] *)
 let is_section_p sp =
-  not (is_dirpath_prefix_of sp (module_sp ()))
-  & (is_dirpath_prefix_of sp !path_prefix)
+  not (is_dirpath_prefix_of sp (module_dp ()))
+  & (is_dirpath_prefix_of sp (fst !path_prefix))
 
 (* State and initialization. *)
 
@@ -276,7 +284,7 @@ let init () =
   lib_stk := [];
   add_frozen_state ();
   module_name := None;
-  path_prefix := make_dirpath [];
+  path_prefix := default_module,empty_dirpath;
   init_summaries()
 
 (* Initial state. *)

@@ -11,6 +11,7 @@
 open Pp
 open Util
 open Names
+open Libnames
 open Nameops
 open Term
 open Sign
@@ -122,40 +123,41 @@ let _ = Summary.declare_summary "CONSTANT"
 	    Summary.init_function = (fun () -> csttab := Spmap.empty);
 	    Summary.survive_section = false }
 
-let cache_constant (sp,(cdt,stre)) =
+let cache_constant (sp,(cdt,stre,kn)) =
   (if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
     errorlabstrm "cache_constant" (pr_id id ++ str " already exists"));
-  Global.add_constant sp cdt;
+  Global.add_constant kn cdt;
   (match stre with
     | DischargeAt (dp,n) when not (is_dirpath_prefix_of dp (Lib.cwd ())) ->
         (* Only qualifications including the sections segment from the current
            section to the discharge section is available for Remark & Fact *)
-        Nametab.push (n-Lib.sections_depth()) sp (ConstRef sp)
+        Nametab.push (n-Lib.sections_depth()) sp (ConstRef kn)
     | (NeverDischarge| DischargeAt _) -> 
         (* All qualifications of Theorem, Lemma & Definition are visible *)
-        Nametab.push 0 sp (ConstRef sp)
+        Nametab.push 0 sp (ConstRef kn)
     | NotDeclare -> assert false);
   csttab := Spmap.add sp stre !csttab
 
 (* At load-time, the segment starting from the module name to the discharge *)
 (* section (if Remark or Fact) is needed to access a construction *)
-let load_constant (sp,(ce,stre)) =
+let load_constant (sp,(ce,stre,kn)) =
   (if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
     errorlabstrm "cache_constant" (pr_id id ++ str " already exists"));
   csttab := Spmap.add sp stre !csttab;
-  Nametab.push (depth_of_strength stre + 1) sp (ConstRef sp)
+  Nametab.push (depth_of_strength stre + 1) sp (ConstRef kn)
 
 (* Opening means making the name without its module qualification available *)
-let open_constant (sp,(_,stre)) =
+let open_constant (sp,(_,stre,kn)) =
   let n = depth_of_strength stre in
-  Nametab.push n (restrict_path n sp) (ConstRef sp)
+(*  Nametab.push n (restrict_path n sp) (ConstRef kn) *)
+  Nametab.push n sp (ConstRef kn)
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = ParameterEntry mkProp
 
-let export_constant (ce,stre) = Some (dummy_constant_entry,stre)
+let export_constant (ce,stre,kn) = Some (dummy_constant_entry,stre,kn)
 
 let (in_constant, out_constant) =
   let od = {
@@ -174,56 +176,62 @@ let hcons_constant_declaration = function
          const_entry_opaque = ce.const_entry_opaque }, stre)
   | cd -> cd
 
-let declare_constant id cd =
+let declare_constant id (cd,stre) =
   (* let cd = hcons_constant_declaration cd in *)
-  let sp = add_leaf id (in_constant cd) in
-  if is_implicit_args() then declare_constant_implicits sp;
-  sp
+  let kn = Lib.make_kn id in
+  let sp = add_leaf id (in_constant (cd,stre,kn)) in
+  if is_implicit_args() then declare_constant_implicits kn;
+  kn
 
-let redeclare_constant sp (cd,stre) =
-  add_absolutely_named_leaf sp (in_constant (GlobalRecipe cd,stre));
-  if is_implicit_args() then declare_constant_implicits sp
+let redeclare_constant id (cd,stre,kn) =
+  let _ = add_leaf id (in_constant (GlobalRecipe cd,stre,kn)) in
+  if is_implicit_args() then declare_constant_implicits kn
 
 (* Inductives. *)
 
-let inductive_names sp mie =
+let inductive_names sp kn mie =
   let (dp,_) = repr_path sp in
   let names, _ = 
     List.fold_left
       (fun (names, n) ind ->
-	 let indsp = (sp,n) in
+	 let ind_p = (kn,n) in
 	 let names, _ =
 	   List.fold_left
-	     (fun (names, p) id ->
-		let sp = Names.make_path dp id in
-		((sp, ConstructRef (indsp,p)) :: names, p+1))
+	     (fun (names, p) l ->
+		let sp = 
+		  Libnames.make_path dp l
+		in
+		  ((sp, ConstructRef (ind_p,p)) :: names, p+1))
 	     (names, 1) ind.mind_entry_consnames in
-	 let sp = Names.make_path dp ind.mind_entry_typename in
-	 ((sp, IndRef indsp) :: names, n+1))
+	 let sp = Libnames.make_path dp ind.mind_entry_typename
+	 in
+	   ((sp, IndRef ind_p) :: names, n+1))
       ([], 0) mie.mind_entry_inds
   in names
+
 
 let check_exists_inductive (sp,_) =
   if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
     errorlabstrm "cache_inductive" (pr_id id ++ str " already exists")
 
-let cache_inductive (sp,mie) =
-  let names = inductive_names sp mie in
+let cache_inductive (sp,(kn,mie)) =
+  let names = inductive_names sp kn mie in
   List.iter check_exists_inductive names;
-  Global.add_mind sp mie;
+  Global.add_mind kn mie;
   List.iter 
     (fun (sp, ref) -> Nametab.push 0 sp ref)
     names
 
-let load_inductive (sp,mie) =
-  let names = inductive_names sp mie in
+let load_inductive (sp,(kn,mie)) =
+  let names = inductive_names sp kn mie in
   List.iter check_exists_inductive names;
   List.iter (fun (sp, ref) -> Nametab.push 1 sp ref) names
 
-let open_inductive (sp,mie) =
-  let names = inductive_names sp mie in
-  List.iter (fun (sp, ref) -> Nametab.push 0 (restrict_path 0 sp) ref) names
+let open_inductive (sp,(kn,mie)) =
+  let names = inductive_names sp kn mie in
+(*  List.iter (fun (sp, ref) -> Nametab.push 0 (restrict_path 0 sp) ref) names*)
+  List.iter (fun (sp, ref) -> Nametab.push 0 sp ref) names
 
 let dummy_one_inductive_entry mie = {
   mind_entry_params = [];
@@ -234,7 +242,7 @@ let dummy_one_inductive_entry mie = {
 }
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
-let dummy_inductive_entry m = {
+let dummy_inductive_entry (kn,m) = kn,{
   mind_entry_finite = true;
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds }
 
@@ -254,15 +262,16 @@ let declare_mind mie =
     | ind::_ -> ind.mind_entry_typename
     | [] -> anomaly "cannot declare an empty list of inductives"
   in
-  let sp = add_leaf id (in_inductive mie) in
-  if is_implicit_args() then declare_mib_implicits sp;
-  sp
+  let kn = Lib.make_kn id in  
+  let sp = add_leaf id (in_inductive (kn,mie)) in
+  if is_implicit_args() then declare_mib_implicits kn;
+  kn
 
 
 (*s Test and access functions. *)
 
 let is_constant sp = 
-  try let _ = Global.lookup_constant sp in true with Not_found -> false
+  try let _ = Spmap.find sp !csttab in true with Not_found -> false
 
 let constant_strength sp = Spmap.find sp !csttab
 
@@ -278,7 +287,7 @@ let variable_strength id =
   let (_,_,str) = Idmap.find id !vartab in str
 
 let find_section_variable id =
-  let (p,_,_) = Idmap.find id !vartab in Names.make_path p id
+  let (p,_,_) = Idmap.find id !vartab in Libnames.make_path p id
 
 (* Global references. *)
 
@@ -340,12 +349,14 @@ let construct_qualified_reference qid =
   let ref = Nametab.locate qid in
   constr_of_reference ref
 
-let construct_reference env id =
-  try
-    mkVar (let _ = Environ.lookup_named id env in id)
-  with Not_found ->
-    let ref = Nametab.sp_of_id id in
-    constr_of_reference ref
+let construct_reference ctx_opt id =
+  match ctx_opt with
+    | None -> construct_qualified_reference (make_short_qualid id)
+    | Some ctx -> 
+	try
+	  mkVar (let _ = Sign.lookup_named id ctx in id)
+	with Not_found ->
+	  construct_qualified_reference (make_short_qualid id)
 
 let global_qualified_reference qid =
   construct_qualified_reference qid
@@ -357,36 +368,42 @@ let global_reference_in_absolute_module dir id =
   constr_of_reference (Nametab.locate_in_absolute_module dir id)
 
 let global_reference id = 
-  construct_reference (Global.env()) id
-
-let dirpath sp = let (p,_) = repr_path sp in p
-
-let dirpath_of_global = function
-  | VarRef id -> empty_dirpath
-  | ConstRef sp -> dirpath sp
-  | IndRef (sp,_) -> dirpath sp
-  | ConstructRef ((sp,_),_) -> dirpath sp
+  construct_qualified_reference (make_short_qualid id)
 
 let is_section_variable = function
   | VarRef _ -> true
   | _ -> false
 
+(* TODO temporary hack!!! *)
+let rec is_imported_modpath = function
+  | MPfile dp -> dp <> (Lib.module_dp ())
+(*  | MPdot (mp,_) -> is_imported_modpath mp *)
+  | _ -> false
+
+let is_imported_ref = function
+  | VarRef _ -> false
+  | ConstRef kn 
+  | IndRef (kn,_)
+  | ConstructRef ((kn,_),_) 
+(*  | ModTypeRef ln  *) -> 
+      let (mp,_,_) = repr_kn kn in is_imported_modpath mp
+(*  | ModRef mp ->
+      is_imported_modpath mp
+*)
 let is_global id =
   try 
-    let osp = Nametab.locate (make_short_qualid id) in
-    (* Compatibilité V6.3: Les variables de section ne sont pas globales
-    not (is_section_variable osp) && *)
-    is_dirpath_prefix_of (dirpath_of_global osp) (Lib.cwd())
+    let ref = Nametab.locate (make_short_qualid id) in
+      not (is_imported_ref ref)
   with Not_found -> 
     false
 
-let strength_of_global = function
-  | ConstRef sp -> constant_strength sp
+let strength_of_global ref = match ref with 
+  | ConstRef kn -> constant_strength (full_name ref)
   | VarRef id -> variable_strength id
   | IndRef _ | ConstructRef _ -> NeverDischarge 
 
 let library_part ref =
-  let sp = Nametab.sp_of_global (Global.env ()) ref in
+  let sp = Nametab.sp_of_global None ref in
   let dir,_ = repr_path sp in
   match strength_of_global ref with
   | DischargeAt (dp,n) -> 
@@ -399,3 +416,4 @@ let library_part ref =
 	(* Theorem/Lemma outside its outer section of definition *)
 	dir
   | NotDeclare -> assert false
+

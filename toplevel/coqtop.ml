@@ -13,6 +13,7 @@ open Util
 open System
 open Options
 open Names
+open Libnames
 open Nameops
 open States
 open Toplevel
@@ -69,7 +70,7 @@ let add_require s = require_list := s :: !require_list
 let require () =
   List.iter
     (fun s -> 
-      let qid = Nametab.make_short_qualid (id_of_string (Filename.basename s)) in
+      let qid = make_short_qualid (id_of_string (Filename.basename s)) in
       Library.require_module_from_file None qid s false)
     (List.rev !require_list)
 

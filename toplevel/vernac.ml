@@ -163,7 +163,7 @@ let compile verbosely f =
     let m = Names.id_of_string s in
     let _,longf = find_file_in_path (Library.get_load_path ()) (f^".v") in
     let ldir0 = Library.find_logical_path (Filename.dirname longf) in
-    let ldir = Nameops.extend_dirpath ldir0 m in
+    let ldir = Libnames.extend_dirpath ldir0 m in
     Termops.set_module ldir; (* Just for universe naming *)
     Lib.start_module ldir;
     if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");

@@ -15,6 +15,7 @@ open Reductionops
 open Term
 open Termops
 open Names
+open Libnames
 open Nameops
 open Util
 open Pp
@@ -49,7 +50,7 @@ let constant dir s =
     try 
       Declare.global_reference_in_absolute_module dir id
   with Not_found ->
-    anomaly ("Setoid: cannot find "^(Nametab.string_of_qualid (Nametab.make_qualid dir id)))
+    anomaly ("Setoid: cannot find "^(string_of_qualid (make_qualid dir id)))
 
 let global_constant dir s =
   let dir = make_dirpath
@@ -58,7 +59,7 @@ let global_constant dir s =
     try 
       Declare.global_reference_in_absolute_module dir id
   with Not_found ->
-    anomaly ("Setoid: cannot find "^(Nametab.string_of_qualid (Nametab.make_qualid dir id)))
+    anomaly ("Setoid: cannot find "^(string_of_qualid (make_qualid dir id)))
 
 let current_constant id =
   try
@@ -300,10 +301,10 @@ let check_is_dependent t n =
 
 let gen_lem_name m = match kind_of_term m with 
   | Var id -> add_suffix id "_ext"
-  | Const sp -> add_suffix (basename sp) "_ext"
-  | Ind (sp, i) -> add_suffix (basename sp) ((string_of_int i)^"_ext")
-  | Construct ((sp,i),j) -> add_suffix
-      (basename sp) ((string_of_int i)^(string_of_int i)^"_ext")
+  | Const kn -> add_suffix (id_of_label (label kn)) "_ext"
+  | Ind (kn, i) -> add_suffix (id_of_label (label kn)) ((string_of_int i)^"_ext")
+  | Construct ((kn,i),j) -> add_suffix
+      (id_of_label (label kn)) ((string_of_int i)^(string_of_int j)^"_ext")
   | _ -> errorlabstrm "New Morphism" (str "The term " ++ prterm m ++ str "is not a known name")
 
 let gen_lemma_tail m lisset body n =

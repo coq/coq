@@ -12,44 +12,43 @@
 open Util
 open Pp
 open Names
+open Libnames
 (*i*)
 
 (*s This module contains the table for globalization, which associates global
    names (section paths) to qualified names. *)
 
-type global_reference =
-  | VarRef of variable
-  | ConstRef of constant
-  | IndRef of inductive
-  | ConstructRef of constructor
-
 (* Finds the real name of a global (e.g. fetch the constructor names
    from the inductive name and constructor number) *)
-val sp_of_global : Environ.env -> global_reference -> section_path
+val sp_of_global : Sign.named_context option -> global_reference -> section_path
 
 type extended_global_reference =
   | TrueGlobal of global_reference
   | SyntacticDef of section_path
 
+(* moved to libnames 
 (*s A [qualid] is a partially qualified ident; it includes fully
     qualified names (= absolute names) and all intermediate partial
-    qualifications of absolute names, including single identifiers *)
+    qualifications of absolute names, including single identifiers *))
 type qualid
 
 val make_qualid : dir_path -> identifier -> qualid
 val repr_qualid : qualid -> dir_path * identifier
 val make_short_qualid : identifier -> qualid
-
+ 
 val string_of_qualid : qualid -> string
 val pr_qualid : qualid -> std_ppcmds
 
 val qualid_of_sp : section_path -> qualid
+*)
 
 (* Turns an absolute name into a qualified name denoting the same name *)
-val shortest_qualid_of_global : Environ.env -> global_reference -> qualid
+val full_name : global_reference -> section_path
+val shortest_qualid_of_global : Sign.named_context option -> global_reference -> qualid
+val id_of_global : Sign.named_context option -> global_reference -> identifier
 
 (* Printing of global references using names as short as possible *)
-val pr_global_env : Environ.env -> global_reference -> std_ppcmds
+val pr_global_env : Sign.named_context option -> global_reference -> std_ppcmds
 
 exception GlobalizationError of qualid
 exception GlobalizationConstantError of qualid
@@ -70,14 +69,9 @@ val push_short_name_object : section_path -> unit
 (*s Register visibility by all qualifications *)
 val push_section : dir_path -> unit
 
-(* This should eventually disappear *)
-val sp_of_id : identifier -> global_reference
-
 (*s The following functions perform globalization of qualified names *)
 
 (* This returns the section path of a constant or fails with [Not_found] *)
-val constant_sp_of_id : identifier -> section_path
-
 val locate : qualid -> global_reference
 
 (* This function is used to transform a qualified identifier into a
@@ -90,6 +84,7 @@ val extended_locate : qualid -> extended_global_reference
 val locate_obj : qualid -> section_path
 
 val locate_constant : qualid -> constant
+val locate_mind : qualid -> mutual_inductive
 val locate_section : qualid -> dir_path
 
 (* [exists sp] tells if [sp] is already bound to a cci term *)
@@ -109,3 +104,11 @@ val locate_in_absolute_module : dir_path -> identifier -> global_reference
 
 val push_loaded_library : dir_path -> unit
 val locate_loaded_library : qualid -> dir_path
+
+
+
+type frozen
+
+val freeze : unit -> frozen
+val unfreeze : frozen -> unit
+

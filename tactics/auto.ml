@@ -30,11 +30,12 @@ open Tactics
 open Tacticals
 open Clenv
 open Hiddentac
+open Libnames
 open Libobject
 open Library
 open Vernacinterp
 open Printer
-open Nametab
+open Libnames
 open Declarations
 
 (****************************************************************************)
@@ -381,18 +382,16 @@ let _ =
                  let (mib,mip) = Global.lookup_inductive isp in
                  mip.mind_consnames in
 	       let lcons = 
-		 array_map_to_list
-		   (fun id ->
-                     let sp = make_path (dirpath (fst isp)) id in
-		     let c = Declare.global_absolute_reference sp in
-		      (id, c))
-		   conspaths in
+		 list_map_i 
+		   (fun i id -> (id, mkConstruct (isp,i)))
+		   1
+		   (Array.to_list conspaths) in
 	       let dbnames = if l = [] then ["core"] else 
 	      	 List.map (function VARG_IDENTIFIER i -> string_of_id i
 			     | _ -> bad_vernac_args "HintConstructors") l in
     	       fun () -> add_resolves env sigma lcons dbnames
 	     with Invalid_argument("mind_specif_of_mind") -> 
-	       error ((Nametab.string_of_qualid qid) ^ " is not an inductive type")
+	       error ((string_of_qualid qid) ^ " is not an inductive type")
 	   end 
        | _ -> bad_vernac_args "HintConstructors")
     
@@ -423,7 +422,7 @@ let _ =
 		      let ref = Nametab.global dummy_loc qid in
 		      let env = Global.env() in
 		      let c = Declare.constr_of_reference ref in
-		      let _,i = Nametab.repr_qualid qid in
+		      let _,i = repr_qualid qid in
 		      (i, c)
 		  | _-> bad_vernac_args "HintsResolve") lh in
 	   let dbnames = if l = [] then ["core"] else 
@@ -440,7 +439,7 @@ let _ =
 	   let lhints = 
 	     List.map (function
 			 | VARG_QUALID qid ->
-			     let _,n = Nametab.repr_qualid qid in
+			     let _,n = repr_qualid qid in
 			     (n, Nametab.global dummy_loc qid)
 		      	 | _ -> bad_vernac_args "HintsUnfold") lh in
 	   let dbnames = if l = [] then ["core"] else 
@@ -459,7 +458,7 @@ let _ =
 	     List.map
 	       (function
 		  | VARG_QUALID qid -> 
-		      let _,n = Nametab.repr_qualid qid in
+		      let _,n = repr_qualid qid in
 		      let ref = Nametab.locate qid in
 		      let env = Global.env () in
 		      let c = Declare.constr_of_reference ref in
@@ -946,7 +945,7 @@ let cvt_autoArgs =
 
 let interp_to_add gl = function
   | Qualid qid ->
-      let _,id = Nametab.repr_qualid qid in
+      let _,id = repr_qualid qid in
       (next_ident_away id (pf_ids_of_hyps gl), 
        Declare.constr_of_reference (Nametab.global dummy_loc qid))
   | _ -> errorlabstrm "cvt_autoArgs" (str "Qualid expected")

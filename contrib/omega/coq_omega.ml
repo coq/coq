@@ -33,6 +33,7 @@ open Evar_refiner
 open Tactics
 open Clenv
 open Logic
+open Libnames
 open Nametab
 open Omega
 
@@ -187,7 +188,7 @@ let dest_const_apply t =
     | Ind isp       -> IndRef isp
     | _ -> raise Destruct
   in
-  id_of_global (Global.env()) ref, args
+  id_of_global None ref, args
 
 type result = 
   | Kvar of string
@@ -197,14 +198,14 @@ type result =
 
 let destructurate t =
   let c, args = get_applist t in
-  let env = Global.env() in
+(*  let env = Global.env() in*)
   match kind_of_term c, args with
     | Const sp, args ->
-	Kapp (string_of_id (id_of_global env (ConstRef sp)),args)
+	Kapp (string_of_id (id_of_global None (ConstRef sp)),args)
     | Construct csp , args ->
-	Kapp (string_of_id (id_of_global env(ConstructRef csp)), args)
+	Kapp (string_of_id (id_of_global None (ConstructRef csp)), args)
     | Ind isp, args ->
-	Kapp (string_of_id (id_of_global env (IndRef isp)),args)
+	Kapp (string_of_id (id_of_global None (IndRef isp)),args)
     | Var id,[] -> Kvar(string_of_id id)
     | Prod (Anonymous,typ,body), [] -> Kimp(typ,body)
     | Prod (Name _,_,_),[] -> error "Omega: Not a quantifier-free goal"
@@ -236,7 +237,7 @@ let constant dir s =
     Declare.global_reference_in_absolute_module dir id
   with Not_found ->
     anomaly ("Coq_omega: cannot find "^
-	     (Nametab.string_of_qualid (Nametab.make_qualid dir id)))
+	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))
 
 let arith_constant dir = constant ("Arith"::dir)
 let zarith_constant dir = constant ("ZArith"::dir)
@@ -400,12 +401,12 @@ let make_coq_path dir s =
     try Nametab.locate_in_absolute_module dir id 
     with Not_found ->
       anomaly("Coq_omega: cannot find "^
-	      (Nametab.string_of_qualid(Nametab.make_qualid dir id)))
+	      (Libnames.string_of_qualid(Libnames.make_qualid dir id)))
   in
   match ref with
     | ConstRef sp -> EvalConstRef sp
     | _ -> anomaly ("Coq_omega: "^
-		    (Nametab.string_of_qualid (Nametab.make_qualid dir id))^
+		    (Libnames.string_of_qualid (Libnames.make_qualid dir id))^
 		    " is not a constant")
 
 let sp_Zs = lazy (make_coq_path ["ZArith";"zarith_aux"] "Zs")

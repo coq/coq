@@ -20,6 +20,8 @@ exception UserError of string * std_ppcmds (* User errors *)
 let error string = raise (UserError(string, str string))
 let errorlabstrm l pps = raise (UserError(l,pps))
 
+let todo s = () (*prerr_string ("TODO: "^s^"\n")*)
+
 (* raising located exceptions *)
 type loc = int * int
 let anomaly_loc (loc,s,strm) = Stdpp.raise_with_loc loc (Anomaly (s,strm))
@@ -120,6 +122,13 @@ let list_assign l n e =
     | ([], _) -> failwith "list_assign"
   in 
   assrec [] (l,n)
+
+let rec list_smartmap f l = match l with
+    [] -> l
+  | h::tl -> 
+      let h' = f h and tl' = list_smartmap f tl in
+	if h'==h && tl'==tl then l
+	else h'::tl'
 
 let list_map_left f = (* ensures the order in case of side-effects *)
   let rec map_rec = function
@@ -299,6 +308,23 @@ let list_share_tails l1 l2 =
   shr_rev [] (List.rev l1, List.rev l2)
 
 let list_join_map f l = List.flatten (List.map f l)
+
+let rec list_fold_map f e = function 
+  |  []  -> (e,[])
+  |  h::t -> 
+       let e',h' = f e h in
+       let e'',t' = list_fold_map f e' t in
+	 e'',h'::t'
+
+(* (* tail-recursive version of the above function *)
+let list_fold_map f e l = 
+  let g (e,b') h = 
+    let (e',h') = f e h in
+      (e',h'::b') 
+  in
+  let (e',lrev) = List.fold_left g (e,[]) l in
+    (e',List.rev lrev)
+*)
 
 (* Arrays *)
 

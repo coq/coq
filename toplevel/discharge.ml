@@ -20,6 +20,7 @@ open Instantiate
 open Reduction
 open Cooking
 open Typeops
+open Libnames
 open Libobject
 open Lib
 open Declare
@@ -32,7 +33,11 @@ open Indtypes
 open Nametab
 
 let recalc_sp dir sp =
-  let (_,spid) = repr_path sp in Names.make_path dir spid
+  let (_,spid) = repr_path sp in Libnames.make_path dir spid
+
+let recalc_kn dir kn = 
+  let (mp,_,l) = Names.repr_kn kn in
+    Names.make_kn mp dir l
 
 let rec find_var id = function
   | [] -> false
@@ -169,7 +174,7 @@ type opacity = bool
 
 type discharge_operation = 
   | Variable of identifier * section_variable_entry * strength * bool
-  | Constant of section_path * recipe * strength * bool
+  | Constant of identifier * recipe * strength * constant * bool
   | Inductive of mutual_inductive_entry * bool
   | Class of cl_typ * cl_info_typ
   | Struc of inductive * (unit -> struc_typ)
@@ -221,27 +226,30 @@ let process_object oldenv dir sec_sp
 	  (ops, ids_to_discard, (constl,indl,cstrl))
 	else
 *)
-	let cb = Environ.lookup_constant sp oldenv in
-	let imp = is_implicit_constant sp in
-	let newsp = match stre with
-	  | DischargeAt (d,_) when not (is_dirpath_prefix_of d dir) -> sp
-	  | _ -> recalc_sp dir sp in
+	let kn = Nametab.locate_constant (qualid_of_sp sp) in
+	let lab = label kn in
+	let cb = Environ.lookup_constant kn oldenv in
+	let imp = is_implicit_constant kn in
+	let newkn = match stre with
+	  | DischargeAt (d,_) when not (is_dirpath_prefix_of d dir) -> kn
+	  | _ -> recalc_kn dir kn in
         let mods = 
 	  let abs_vars = build_abstract_list cb.const_hyps ids_to_discard in
-	  [ (sp, DO_ABSTRACT(newsp,abs_vars)) ]
+	  [ (kn, DO_ABSTRACT(newkn,abs_vars)) ]
 	in
 	let r = { d_from = cb;
 	          d_modlist = work_alist;
 	          d_abstract = ids_to_discard } in
-	let op = Constant (newsp,r,stre,imp) in
+	let op = Constant (id_of_label lab, r,stre,newkn,imp) in
         (op :: ops, ids_to_discard, (mods@constl, indl, cstrl))
   
     | "INDUCTIVE" ->
-	let mib = Environ.lookup_mind sp oldenv in
-	let newsp = recalc_sp dir sp in
+	let kn = Nametab.locate_mind (qualid_of_sp sp) in
+	let mib = Environ.lookup_mind kn oldenv in
+	let newkn = recalc_kn dir kn in
 	let imp = is_implicit_args() (* CHANGE *) in
 	let (mie,indmods,cstrmods) = 
-	  process_inductive sp newsp oldenv (ids_to_discard,work_alist) mib in
+	  process_inductive kn newkn oldenv (ids_to_discard,work_alist) mib in
 	((Inductive(mie,imp)) :: ops, ids_to_discard,
 	 (constl,indmods@indl,cstrmods@cstrl))
 
@@ -262,19 +270,19 @@ let process_object oldenv dir sec_sp
           ((Coercion y)::ops, ids_to_discard, work_alist)
                     
     | "STRUCTURE" ->
-	let ((sp,i),info) = outStruc lobj in
-	let newsp = recalc_sp dir sp in
+	let ((kn,i),info) = outStruc lobj in
+	let newkn = recalc_kn dir kn in
 	let strobj () =
-	  let mib = Environ.lookup_mind newsp (Global.env ()) in
+	  let mib = Environ.lookup_mind newkn (Global.env ()) in
 	  { s_CONST = info.s_CONST;
 	    s_PARAM = mib.mind_packets.(0).mind_nparams;
-	    s_PROJ = List.map (option_app (recalc_sp dir)) info.s_PROJ } in
-	((Struc ((newsp,i),strobj))::ops, ids_to_discard, work_alist)
+	    s_PROJ = List.map (option_app (fun kn -> Global.get_kn dir (label kn))) info.s_PROJ } in
+	((Struc ((newkn,i),strobj))::ops, ids_to_discard, work_alist)
 
     | "OBJDEF1" -> 
-	let sp = outObjDef1 lobj in
-	let new_sp = recalc_sp dir sp in
-        ((Objdef new_sp)::ops, ids_to_discard, work_alist)
+	let kn = outObjDef1 lobj in
+	let new_kn = recalc_kn dir kn in
+        ((Objdef new_kn)::ops, ids_to_discard, work_alist)
 
     | "REQUIRE" -> 
 	let c = out_require lobj in
@@ -292,9 +300,9 @@ let process_operation = function
       let _ =
         with_implicits imp (declare_variable id) (Lib.cwd(),expmod_a,stre) in
       ()
-  | Constant (sp,r,stre,imp) ->
-      with_implicits imp (redeclare_constant sp) (r,stre);
-      constant_message (basename sp)
+  | Constant (id,r,stre,kn,imp) ->
+      with_implicits imp (redeclare_constant id) (r,stre,kn);
+      constant_message id
   | Inductive (mie,imp) ->
       let _ = with_implicits imp declare_mind mie in
       inductive_message mie.mind_entry_inds
@@ -316,7 +324,7 @@ let catch_not_found f x =
 
 let close_section _ s = 
   let oldenv = Global.env() in
-  let olddir,decls,fs = close_section false s in
+  let full_olddir,olddir,decls,fs = close_section false s in
   let newdir = fst (split_dirpath olddir) in
   let (ops,ids,_) = 
     List.fold_left 
@@ -325,4 +333,5 @@ let close_section _ s =
   let ids = last_section_hyps olddir in
   Summary.unfreeze_lost_summaries fs;
   catch_not_found (List.iter process_operation) (List.rev ops);
-  Nametab.push_section olddir
+  Nametab.push_section full_olddir
+

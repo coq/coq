@@ -104,7 +104,7 @@ val eta_eq_constr : constr -> constr -> bool
 (* finding "intuitive" names to hypotheses *)
 val first_char : identifier -> string
 val lowercase_first_char : identifier -> string
-val id_of_global : env -> Nametab.global_reference -> identifier
+(*val id_of_global : env -> Libnames.global_reference -> identifier*)
 val sort_hdchar : sorts -> string
 val hdchar : env -> types -> string
 val id_of_name_using_hdchar :

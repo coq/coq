@@ -18,6 +18,7 @@ open Declarations
 open Inductive
 open Reduction
 open Environ
+open Libnames
 open Declare
 open Tacmach
 open Clenv
@@ -326,7 +327,7 @@ let general_elim_then_using
       | _ ->
 	  let name_elim =
 	    match kind_of_term elim with
-	      | Const sp -> string_of_path sp
+	      | Const kn -> string_of_kn kn
 	      | Var id -> string_of_id id
 	      | _ -> "\b"
 	  in

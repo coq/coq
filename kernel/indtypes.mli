@@ -29,6 +29,7 @@ type inductive_error =
   | NonPar of env * constr * int * constr * constr
   | SameNamesTypes of identifier
   | SameNamesConstructors of identifier * identifier
+  | SameNamesOverlap of identifier list
   | NotAnArity of identifier
   | BadEntry
   (* These are errors related to recursors building in Indrec *)

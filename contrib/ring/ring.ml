@@ -15,6 +15,7 @@ open Util
 open Options
 open Term
 open Names
+open Libnames
 open Nameops
 open Reductionops
 open Tacmach
@@ -42,7 +43,7 @@ let constant dir s =
     Declare.global_reference_in_absolute_module dir id
   with Not_found ->
     anomaly ("Ring: cannot find "^
-	     (Nametab.string_of_qualid (Nametab.make_qualid dir id)))
+	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))
 
 (* Ring theory *)
 let coq_Ring_Theory = lazy (constant ["ring";"Ring_theory"] "Ring_Theory")
@@ -790,24 +791,30 @@ module SectionPathSet =
    SectionPathSet; peut-être faudra-t-il la déplacer dans Closure *)
 let constants_to_unfold = 
 (*  List.fold_right SectionPathSet.add *)
-    [ path_of_string "Coq.ring.Ring_normalize.interp_cs";
-      path_of_string "Coq.ring.Ring_normalize.interp_var";
-      path_of_string "Coq.ring.Ring_normalize.interp_vl";
-      path_of_string "Coq.ring.Ring_abstract.interp_acs";
-      path_of_string "Coq.ring.Ring_abstract.interp_sacs";
-      path_of_string "Coq.ring.Quote.varmap_find";
+  let transform s = 
+    let sp = path_of_string s in
+    let dir, id = repr_path sp in
+      Libnames.encode_kn dir id 
+  in
+  List.map transform
+    [ "Coq.ring.Ring_normalize.interp_cs";
+      "Coq.ring.Ring_normalize.interp_var";
+      "Coq.ring.Ring_normalize.interp_vl";
+      "Coq.ring.Ring_abstract.interp_acs";
+      "Coq.ring.Ring_abstract.interp_sacs";
+      "Coq.ring.Quote.varmap_find";
       (* anciennement des Local devenus Definition *)
-      path_of_string "Coq.ring.Ring_normalize.ics_aux";
-      path_of_string "Coq.ring.Ring_normalize.ivl_aux";
-      path_of_string "Coq.ring.Ring_normalize.interp_m";
-      path_of_string "Coq.ring.Ring_abstract.iacs_aux";
-      path_of_string "Coq.ring.Ring_abstract.isacs_aux";
-      path_of_string "Coq.ring.Setoid_ring_normalize.interp_cs";
-      path_of_string "Coq.ring.Setoid_ring_normalize.interp_var";
-      path_of_string "Coq.ring.Setoid_ring_normalize.interp_vl";
-      path_of_string "Coq.ring.Setoid_ring_normalize.ics_aux";
-      path_of_string "Coq.ring.Setoid_ring_normalize.ivl_aux";
-      path_of_string "Coq.ring.Setoid_ring_normalize.interp_m";
+      "Coq.ring.Ring_normalize.ics_aux";
+      "Coq.ring.Ring_normalize.ivl_aux";
+      "Coq.ring.Ring_normalize.interp_m";
+      "Coq.ring.Ring_abstract.iacs_aux";
+      "Coq.ring.Ring_abstract.isacs_aux";
+      "Coq.ring.Setoid_ring_normalize.interp_cs";
+      "Coq.ring.Setoid_ring_normalize.interp_var";
+      "Coq.ring.Setoid_ring_normalize.interp_vl";
+      "Coq.ring.Setoid_ring_normalize.ics_aux";
+      "Coq.ring.Setoid_ring_normalize.ivl_aux";
+      "Coq.ring.Setoid_ring_normalize.interp_m";
     ]
 (*    SectionPathSet.empty *)
 

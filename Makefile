@@ -85,7 +85,8 @@ KERNEL=kernel/names.cmo kernel/univ.cmo \
        kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
        kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo
 
-LIBRARY=library/nameops.cmo library/libobject.cmo library/summary.cmo \
+LIBRARY=library/libnames.cmo library/nameops.cmo library/libobject.cmo \
+	library/summary.cmo \
         library/nametab.cmo library/lib.cmo library/global.cmo \
 	library/goptions.cmo library/library.cmo library/states.cmo \
 	library/impargs.cmo library/declare.cmo 
@@ -157,16 +158,16 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	lib/util.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
         lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo \
         lib/system.cmo lib/bstack.cmo lib/edit.cmo lib/options.cmo \
-	lib/rtree.cmo \
+	lib/rtree.cmo lib/options.cmo \
         kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
         kernel/term.cmo kernel/sign.cmo kernel/declarations.cmo \
 	kernel/environ.cmo \
 	kernel/closure.cmo kernel/conv_oracle.cmo kernel/reduction.cmo \
 	kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
 	kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo \
-	library/nameops.cmo library/libobject.cmo library/summary.cmo \
-	library/nametab.cmo library/lib.cmo library/global.cmo \
-	library/library.cmo lib/options.cmo library/impargs.cmo \
+	library/libnames.cmo library/nameops.cmo library/libobject.cmo \
+	library/summary.cmo library/nametab.cmo library/lib.cmo \
+	library/global.cmo library/library.cmo library/impargs.cmo \
 	pretyping/evd.cmo pretyping/instantiate.cmo \
         pretyping/termops.cmo \
         pretyping/reductionops.cmo pretyping/retyping.cmo library/declare.cmo \
@@ -231,9 +232,12 @@ JPROVERCMO=contrib/jprover/opname.cmo \
            contrib/jprover/jprover.cmo
 
 
-CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) $(XMLCMO) \
-	$(FOURIERCMO) \
-	$(EXTRACTIONCMO) $(CORRECTNESSCMO) $(JPROVERCMO)
+CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
+	$(FOURIERCMO) 
+
+#later 	$(EXTRACTIONCMO) $(CORRECTNESSCMO) $(JPROVERCMO)
+#later :) $(XMLCMO)
+#$(OMEGACMO) $(RINGCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -744,6 +748,7 @@ ML4FILES += parsing/lexer.ml4 parsing/q_coqast.ml4 \
 
 GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/dyn.cmo \
 	   lib/hashcons.cmo lib/predicate.cmo kernel/names.cmo \
+	   library/libnames.cmo \
 	   parsing/coqast.cmo parsing/lexer.cmo \
 	   parsing/pcoq.cmo parsing/q_coqast.cmo parsing/g_prim.cmo
 

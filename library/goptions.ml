@@ -14,6 +14,7 @@ open Pp
 open Util
 open Libobject
 open Names
+open Libnames
 open Term
 open Nametab
 
@@ -303,7 +304,7 @@ let msg_option_value (name,v) =
     | BoolValue false -> str "false"
     | IntValue n      -> int n
     | StringValue s   -> str s
-    | IdentValue r    -> pr_global_env (Global.env()) r
+    | IdentValue r    -> pr_global_env None r
 
 let print_option_value key =
   let (name,(_,read,_)) = get_option key in

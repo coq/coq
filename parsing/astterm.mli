@@ -14,6 +14,7 @@ open Term
 open Sign
 open Evd
 open Environ
+open Libnames
 open Rawterm
 open Pattern
 (*i*)
@@ -75,11 +76,11 @@ val interp_constrpattern :
     bound idents in grammar or pretty-printing rules) *)
 val globalize_constr : Coqast.t -> Coqast.t
 val globalize_ast    : Coqast.t -> Coqast.t
-val globalize_qualid : Nametab.qualid -> Coqast.t
+val globalize_qualid : qualid -> Coqast.t
 
 (* This transforms args of a qualid keyword into a qualified ident *)
 (* it does no relocation *)
-val interp_qualid : Coqast.t list -> Nametab.qualid
+val interp_qualid : Coqast.t list -> qualid
 
 (*i Translation rules from V6 to V7:
 

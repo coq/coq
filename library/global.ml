@@ -64,7 +64,7 @@ let import cenv = global_env := import cenv !global_env
 let env_of_context hyps = 
   reset_with_named_context hyps (env())
 
-open Nametab
+open Libnames
 
 let type_of_reference env = function
   | VarRef id -> let (_,_,t) = Environ.lookup_named id env in t
@@ -73,3 +73,7 @@ let type_of_reference env = function
   | ConstructRef cstr -> Inductive.type_of_constructor env cstr
 
 let type_of_global t = type_of_reference (env ()) t
+
+
+let get_kn dp l = 
+  Libnames.encode_kn dp (id_of_label l)

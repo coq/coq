@@ -12,6 +12,7 @@ open Util
 open Pp
 open Options
 open Names
+open Libnames
 open Nametab
 open Environ
 open Libobject
@@ -237,16 +238,16 @@ let inductive_class_of ind = fst (class_info (CL_IND ind))
 let class_args_of c = snd (decompose_app c)
 
 let strength_of_cl = function 
-  | CL_CONST sp -> constant_strength sp
+  | CL_CONST kn -> constant_strength (sp_of_global None (ConstRef kn))
   | CL_SECVAR sp -> variable_strength sp
   | _ -> NeverDischarge
 
 let string_of_class = function
   | CL_FUN -> "FUNCLASS"
   | CL_SORT -> "SORTCLASS" 
-  | CL_CONST sp -> string_of_id (id_of_global (Global.env()) (ConstRef sp))
-  | CL_IND sp -> string_of_id (id_of_global (Global.env()) (IndRef sp))
-  | CL_SECVAR sp -> string_of_id (id_of_global (Global.env()) (VarRef sp))
+  | CL_CONST sp -> string_of_id (id_of_global None (ConstRef sp))
+  | CL_IND sp -> string_of_id (id_of_global None (IndRef sp))
+  | CL_SECVAR sp -> string_of_id (id_of_global None (VarRef sp))
 
 (* coercion_value : coe_index -> unsafe_judgment * bool *)
 

@@ -19,8 +19,8 @@ open Reduction
 open Type_errors
 
 (* raise Not_found if not an inductive type *)
-let lookup_mind_specif env (sp,tyi) =
-  let mib = Environ.lookup_mind sp env in
+let lookup_mind_specif env (kn,tyi) =
+  let mib = Environ.lookup_mind kn env in
   if tyi >= Array.length mib.mind_packets then
     error "Inductive.lookup_mind_specif: invalid inductive index";
   (mib, mib.mind_packets.(tyi))
@@ -336,8 +336,8 @@ type guard_env =
     genv    : subterm_spec list;
   }
 
-let make_renv env minds recarg (sp,tyi) =
-  let mib = Environ.lookup_mind sp env in
+let make_renv env minds recarg (kn,tyi) =
+  let mib = Environ.lookup_mind kn env in
   let mind_recvec =
     Array.map (fun mip -> mip.mind_recargs) mib.mind_packets in
   { env = env;
@@ -585,12 +585,12 @@ let check_one_fix renv recpos def =
                 bodies in
             array_for_all (fun b -> b) ok_vect
 
-      | Const sp as c -> 
+      | Const kn as c -> 
           (try List.for_all (check_rec_call renv) l
            with (FixGuardError _ ) as e ->
-             if evaluable_constant sp renv.env then 
+             if evaluable_constant kn renv.env then 
 	       check_rec_call renv
-                 (applist(constant_value renv.env sp, l))
+                 (applist(constant_value renv.env kn, l))
 	     else raise e)
 
       (* The cases below simply check recursively the condition on the
@@ -733,9 +733,9 @@ let check_one_cofix env nbfix def deftype =
              else  
 	       error "check_one_cofix: ???"  (* ??? *)
 		 
-	| Construct (_,i as cstr_sp)  ->
+	| Construct (_,i as cstr_kn)  ->
             let lra =vlra.(i-1) in 
-            let mI = inductive_of_constructor cstr_sp in
+            let mI = inductive_of_constructor cstr_kn in
 	    let (mib,mip) = lookup_mind_specif env mI in
             let _,realargs = list_chop mip.mind_nparams args in
             let rec process_args_of_constr = function

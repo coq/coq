@@ -10,6 +10,7 @@
 
 (*i*)
 open Names
+open Libnames
 (*i*)
 
 (* This module registers the declaration of global tables, which will be kept
