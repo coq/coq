@@ -428,6 +428,11 @@ let end_module id =
 
 
 
+let module_objects mp = 
+  let _,substituted,keep = MPmap.find mp !modtab in
+    substituted,keep
+
+
 
 
 
