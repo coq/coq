@@ -44,22 +44,6 @@ User contributions
 
 - User contributions have been updated to the new syntax
 
-New user contributions
-
-- A modular formalization of dictionaries based on binary search trees
-- The Constructive Coq Repository at Nijmegen
-- Coqoban: playing Sokoban within Coq
-- Preliminary linear algebra from the book "Linear Algebra" by Friedberg
-- A theory of rational numbers represented as finite binary lists
-- A theory of rational numbers represented as a quotient of Z * N
-- A modular theory of finite sets as sorted lists, red-black trees or AVLs
-- Non analytic high school geometry
-- A proof of correctness of Huffman algorithm
-- A theory of squared matrices
-- Properties of Lambek calculus
-- A formalization of Coquand's proof of Higman's lemma
-- The Formal Verification of an Incremental Garbage Collector
-
 Bug fixes
 
 - Many bugs have been fixed (cf coq-bugs web page)
