@@ -20,15 +20,15 @@
 
 (*i $Id$ i*)
 
-(* print id dest                                                          *)
-(*  where id   is the identifier (name) of a definition/theorem or of an  *)
-(*             inductive definition                                       *)
+(* print_global qid fn                                                    *)
+(*  where qid  is a long name denoting a definition/theorem or            *)
+(*             an inductive definition                                    *)
 (*  and   dest is either None (for stdout) or (Some filename)             *)
-(* pretty prints via Xml.pp the object whose identifier is id on dest     *)
+(* pretty prints via Xml.pp the object whose name is ref on dest          *)
 (* Note: it is printed only (and directly) the most discharged available  *)
 (*       form of the definition (all the parameters are                   *)
 (*       lambda-abstracted, but the object can still refer to variables)  *)
-val print : bool -> Libnames.global_reference -> string option -> unit
+val print_ref : Libnames.reference -> string option -> unit
 
 (* show dest                                                  *)
 (*  where dest is either None (for stdout) or (Some filename) *)

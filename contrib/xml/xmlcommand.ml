@@ -444,33 +444,46 @@ let kind_of_goal = function
   | Decl_kinds.IsGlobal (Decl_kinds.Proof k) -> "THEOREM",kind_of_theorem k
   | Decl_kinds.IsLocal -> "VARIABLE","Hypothesis"
 
-let kind_of_object r =
+let kind_of_inductive isrecord kn =
+ "DEFINITION",
+ if (fst (Global.lookup_inductive (kn,0))).Declarations.mind_finite
+ then if isrecord then "Record" else "Inductive"
+ else "CoInductive"
+;;
+
+let kind_of_variable id =
+  let module DK = Decl_kinds in
+  match Declare.variable_kind id with
+    | DK.IsAssumption DK.Definitional -> "VARIABLE","Assumption"
+    | DK.IsAssumption DK.Logical -> "VARIABLE","Hypothesis"
+    | DK.IsAssumption DK.Conjectural -> "VARIABLE","Conjecture"
+    | DK.IsDefinition -> "VARIABLE","LocalDefinition"
+    | DK.IsConjecture -> "VARIABLE","Conjecture"
+    | DK.IsProof DK.LocalStatement -> "VARIABLE","Hypothesis"
+;;
+
+let kind_of_constant kn = 
+  let module DK = Decl_kinds in
+  match Declare.constant_kind (Nametab.sp_of_global(Libnames.ConstRef kn)) with
+    | DK.IsAssumption DK.Definitional -> "AXIOM","Declaration"
+    | DK.IsAssumption DK.Logical -> "AXIOM","Axiom"
+    | DK.IsAssumption DK.Conjectural -> "AXIOM","Conjecture"
+    | DK.IsDefinition -> "DEFINITION","Definition"
+    | DK.IsConjecture -> "THEOREM","Conjecture"
+    | DK.IsProof thm -> "THEOREM",kind_of_theorem thm
+;;
+
+let kind_of_global r =
   let module Ln = Libnames in
   let module DK = Decl_kinds in
   match r with
-    Ln.IndRef kn -> "DEFINITION",
-      if (fst (Global.lookup_inductive kn)).Declarations.mind_finite then
-        try let _ = Recordops.find_structure kn in "Record"
-        with Not_found -> "Inductive"
-      else "CoInductive"
-  | Ln.VarRef id ->
-      (match Declare.variable_kind id with
-      | DK.IsAssumption DK.Definitional -> "VARIABLE","Assumption"
-      | DK.IsAssumption DK.Logical -> "VARIABLE","Hypothesis"
-      | DK.IsAssumption DK.Conjectural -> "VARIABLE","Conjecture"
-      | DK.IsDefinition -> "VARIABLE","LocalDefinition"
-      | DK.IsConjecture -> "VARIABLE","Conjecture"
-      | DK.IsProof DK.LocalStatement -> "VARIABLE","Hypothesis")
-  | Ln.ConstRef sp ->
-      (match Declare.constant_kind (Nametab.sp_of_global r) with
-      | DK.IsAssumption DK.Definitional -> "AXIOM","Declaration"
-      | DK.IsAssumption DK.Logical -> "AXIOM","Axiom"
-      | DK.IsAssumption DK.Conjectural -> "AXIOM","Conjecture"
-      | DK.IsDefinition -> "DEFINITION","Definition"
-      | DK.IsConjecture -> "THEOREM","Conjecture"
-      | DK.IsProof thm -> "THEOREM",kind_of_theorem thm)
-  | Ln.ConstructRef _ -> 
-       Util.anomaly ("print: this should not happen")
+  | Ln.IndRef kn | Ln.ConstructRef (kn,_) -> 
+      let isrecord =
+	try let _ = Recordops.find_structure kn in true
+        with Not_found -> false in
+      kind_of_inductive isrecord (fst kn)
+  | Ln.VarRef id -> kind_of_variable id
+  | Ln.ConstRef kn -> kind_of_constant kn
 ;;
 
 let print_object_kind uri (xmltag,variation) =
@@ -488,7 +501,7 @@ let print_object_kind uri (xmltag,variation) =
 (* Note: it is printed only (and directly) the most cooked available      *)
 (*       form of the definition (all the parameters are                   *)
 (*       lambda-abstracted, but the object can still refer to variables)  *)
-let print internal glob_ref xml_library_root =
+let print internal glob_ref kind xml_library_root =
  let module D = Declarations in
  let module De = Declare in
  let module G = Global in
@@ -526,9 +539,13 @@ let print internal glob_ref xml_library_root =
   in
   let fn = filename_of_path ~keep_sections xml_library_root kn tag in
   let uri = Cic2acic.uri_of_kernel_name ~keep_sections kn tag in
-   if not internal then print_object_kind uri (kind_of_object glob_ref);
+   if not internal then print_object_kind uri kind;
    print_object uri obj Evd.empty None fn
 ;;
+
+let print_ref qid fn =
+  let ref = Nametab.global qid in
+  print false ref (kind_of_global ref) fn
 
 (* show dest                                                  *)
 (*  where dest is either None (for stdout) or (Some filename) *)
@@ -576,7 +593,8 @@ let _ =
 let _ =
   Declare.set_xml_declare_variable
    (function (sp,kn) ->
-      print false (Libnames.VarRef (Libnames.basename sp)) xml_library_root)
+     let id = Libnames.basename sp in
+     print false (Libnames.VarRef id) (kind_of_variable id) xml_library_root)
 ;;
 
 let _ =
@@ -584,7 +602,8 @@ let _ =
    (function (internal,(sp,kn)) ->
      match !proof_to_export with
         None ->
-          print internal (Libnames.ConstRef kn) xml_library_root
+          print internal (Libnames.ConstRef kn) (kind_of_constant kn) 
+	    xml_library_root
       | Some pftreestate ->
          (* It is a proof. Let's export it starting from the proof-tree *)
          (* I saved in the Pfedit.set_xml_cook_proof callback.          *)
@@ -596,8 +615,9 @@ let _ =
 
 let _ =
   Declare.set_xml_declare_inductive
-   (function (sp,kn) ->
-      print false (Libnames.IndRef (kn,0)) xml_library_root)
+   (function (isrecord,(sp,kn)) ->
+      print false (Libnames.IndRef (kn,0)) (kind_of_inductive isrecord kn) 
+        xml_library_root)
 ;;
 
 let _ =
