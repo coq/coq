@@ -337,7 +337,7 @@ let add_discharged_constant sp r locals env =
   let (body,typ) = Cooking.cook_constant env r in
   match body with
     | None -> 
-	add_parameter sp typ [] (* Bricolage avant poubelle *) env
+	add_parameter sp typ locals (* Bricolage avant poubelle *) env
     | Some c -> 
 	(* let c = hcons1_constr c in *)
 	let (jtyp,cst) = safe_infer env typ in
