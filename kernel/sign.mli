@@ -20,8 +20,17 @@ val map_sign_typ : ('a -> 'b) -> 'a signature -> 'b signature
 val isnull_sign : 'a signature -> bool
 val hd_sign : 'a signature -> identifier * 'a
 val tl_sign : 'a signature -> 'a signature
+
+(* [sign_it f sign a] iters [f] on [sign] starting from [a] and
+   peeling [sign] from the oldest declaration *)
+
 val sign_it : (identifier -> 'a -> 'b -> 'b) -> 'a signature -> 'b -> 'b
+
+(* [it_sign f a sign] iters [f] on [sign] starting from [a] and
+   peeling [sign] from the more recent declaration *)
+
 val it_sign : ('b -> identifier -> 'a -> 'b) -> 'b -> 'a signature -> 'b
+
 val concat_sign : 'a signature -> 'a signature -> 'a signature
 
 val ids_of_sign : 'a signature -> identifier list

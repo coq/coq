@@ -356,6 +356,9 @@ val abs_implicit : constr -> constr
 val lambda_implicit : constr -> constr
 val lambda_implicit_lift : int -> constr -> constr
 
+(* [applist (f,args)] and co build [mkAppL (f,args)] if [args] non
+   empty and build [f] otherwise *)
+
 val applist : constr * constr list -> constr
 val applistc : constr -> constr list -> constr
 val appvect : constr * constr array -> constr
