@@ -129,7 +129,7 @@ theories/ZArith/Znat.vo: theories/ZArith/Znat.v theories/Arith/Arith.vo theories
 theories/ZArith/Zmisc.vo: theories/ZArith/Zmisc.v theories/ZArith/BinInt.vo theories/ZArith/Zcompare.vo theories/ZArith/Zorder.vo theories/ZArith/Zsyntax.vo theories/Bool/Bool.vo theories/ZArith/Zbool.vo theories/ZArith/Zeven.vo theories/ZArith/Zabs.vo theories/ZArith/Zmin.vo
 theories/ZArith/zarith_aux.vo: theories/ZArith/zarith_aux.v theories/ZArith/BinInt.vo theories/ZArith/Zcompare.vo theories/ZArith/Zorder.vo theories/ZArith/Zmin.vo theories/ZArith/Zabs.vo
 theories/ZArith/Zorder.vo: theories/ZArith/Zorder.v theories/NArith/BinPos.vo theories/ZArith/BinInt.vo theories/Arith/Arith.vo theories/Logic/Decidable.vo theories/ZArith/Zsyntax.vo theories/ZArith/Zcompare.vo
-theories/ZArith/Zabs.vo: theories/ZArith/Zabs.v theories/Arith/Arith.vo theories/NArith/BinPos.vo theories/ZArith/BinInt.vo theories/ZArith/Zorder.vo
+theories/ZArith/Zabs.vo: theories/ZArith/Zabs.v theories/Arith/Arith.vo theories/NArith/BinPos.vo theories/ZArith/BinInt.vo theories/ZArith/Zorder.vo theories/ZArith/Zsyntax.vo theories/ZArith/ZArith_dec.vo
 theories/ZArith/Zmin.vo: theories/ZArith/Zmin.v theories/Arith/Arith.vo theories/ZArith/BinInt.vo theories/ZArith/Zcompare.vo theories/ZArith/Zorder.vo
 theories/ZArith/Zeven.vo: theories/ZArith/Zeven.v theories/ZArith/BinInt.vo theories/ZArith/Zsyntax.vo
 theories/ZArith/Zhints.vo: theories/ZArith/Zhints.v theories/ZArith/BinInt.vo theories/ZArith/Zorder.vo theories/ZArith/Zmin.vo theories/ZArith/Zabs.vo theories/ZArith/Zcompare.vo theories/ZArith/Znat.vo theories/ZArith/auxiliary.vo theories/ZArith/Zsyntax.vo theories/ZArith/Zmisc.vo theories/ZArith/Wf_Z.vo
@@ -290,4 +290,4 @@ contrib/correctness/Sorted.vo: contrib/correctness/Sorted.v contrib/correctness/
 contrib/correctness/Tuples.vo: contrib/correctness/Tuples.v
 contrib/fourier/Fourier_util.vo: contrib/fourier/Fourier_util.v theories/Reals/Rbase.vo
 contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/field/field.cmo contrib/fourier/Fourier_util.vo contrib/field/Field.vo theories/Reals/DiscrR.vo
-contrib/cc/CC.vo: contrib/cc/CC.v
+contrib/cc/CCSolve.vo: contrib/cc/CCSolve.v

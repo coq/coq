@@ -129,7 +129,7 @@ newtheories/ZArith/Znat.vo: newtheories/ZArith/Znat.v newtheories/Arith/Arith.vo
 newtheories/ZArith/Zmisc.vo: newtheories/ZArith/Zmisc.v newtheories/ZArith/BinInt.vo newtheories/ZArith/Zcompare.vo newtheories/ZArith/Zorder.vo newtheories/ZArith/Zsyntax.vo newtheories/Bool/Bool.vo newtheories/ZArith/Zbool.vo newtheories/ZArith/Zeven.vo newtheories/ZArith/Zabs.vo newtheories/ZArith/Zmin.vo
 newtheories/ZArith/zarith_aux.vo: newtheories/ZArith/zarith_aux.v newtheories/ZArith/BinInt.vo newtheories/ZArith/Zcompare.vo newtheories/ZArith/Zorder.vo newtheories/ZArith/Zmin.vo newtheories/ZArith/Zabs.vo
 newtheories/ZArith/Zorder.vo: newtheories/ZArith/Zorder.v newtheories/NArith/BinPos.vo newtheories/ZArith/BinInt.vo newtheories/Arith/Arith.vo newtheories/Logic/Decidable.vo newtheories/ZArith/Zsyntax.vo newtheories/ZArith/Zcompare.vo
-newtheories/ZArith/Zabs.vo: newtheories/ZArith/Zabs.v newtheories/Arith/Arith.vo newtheories/NArith/BinPos.vo newtheories/ZArith/BinInt.vo newtheories/ZArith/Zorder.vo
+newtheories/ZArith/Zabs.vo: newtheories/ZArith/Zabs.v newtheories/Arith/Arith.vo newtheories/NArith/BinPos.vo newtheories/ZArith/BinInt.vo newtheories/ZArith/Zorder.vo newtheories/ZArith/Zsyntax.vo newtheories/ZArith/ZArith_dec.vo
 newtheories/ZArith/Zmin.vo: newtheories/ZArith/Zmin.v newtheories/Arith/Arith.vo newtheories/ZArith/BinInt.vo newtheories/ZArith/Zcompare.vo newtheories/ZArith/Zorder.vo
 newtheories/ZArith/Zeven.vo: newtheories/ZArith/Zeven.v newtheories/ZArith/BinInt.vo newtheories/ZArith/Zsyntax.vo
 newtheories/ZArith/Zhints.vo: newtheories/ZArith/Zhints.v newtheories/ZArith/BinInt.vo newtheories/ZArith/Zorder.vo newtheories/ZArith/Zmin.vo newtheories/ZArith/Zabs.vo newtheories/ZArith/Zcompare.vo newtheories/ZArith/Znat.vo newtheories/ZArith/auxiliary.vo newtheories/ZArith/Zsyntax.vo newtheories/ZArith/Zmisc.vo newtheories/ZArith/Wf_Z.vo
@@ -290,4 +290,4 @@ newcontrib/correctness/Sorted.vo: newcontrib/correctness/Sorted.v newcontrib/cor
 newcontrib/correctness/Tuples.vo: newcontrib/correctness/Tuples.v
 newcontrib/fourier/Fourier_util.vo: newcontrib/fourier/Fourier_util.v newtheories/Reals/Rbase.vo
 newcontrib/fourier/Fourier.vo: newcontrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/field/field.cmo newcontrib/fourier/Fourier_util.vo newcontrib/field/Field.vo newtheories/Reals/DiscrR.vo
-newcontrib/cc/CC.vo: newcontrib/cc/CC.v
+newcontrib/cc/CCSolve.vo: newcontrib/cc/CCSolve.v
