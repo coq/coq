@@ -509,8 +509,8 @@ let vernac_require import _ qidl =
 	  warning ("Module "^(string_of_qualid qid)^
 	  " is now built-in and shouldn't be required")) qidl
     else
-      if not !Options.v7 then List.iter test_renamed_module qidl;
-      raise e
+      (if not !Options.v7 then List.iter test_renamed_module qidl;
+       raise e)
       
 let vernac_import export refl =
   let import_one ref = 
@@ -977,9 +977,9 @@ let vernac_show = function
 	| None -> pr_open_subgoals ()
 	| Some n -> pr_nth_open_subgoal n)
   | ShowGoalImplicitly None ->
-      msg (Constrextern.with_implicits pr_open_subgoals ())
+      Constrextern.with_implicits msg (pr_open_subgoals ())
   | ShowGoalImplicitly (Some n) ->
-      msg (Constrextern.with_implicits pr_nth_open_subgoal n)
+      Constrextern.with_implicits msg (pr_nth_open_subgoal n)
   | ShowProof -> show_proof ()
   | ShowNode -> show_node ()
   | ShowScript -> show_script ()
