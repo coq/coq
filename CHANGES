@@ -3,15 +3,18 @@ Changes from V7.4
 
 A revision of the standard library and of concrete syntax of Coq, including
 
-- a completely new syntax for terms coming with an automatic translator
-- renaming of various standard notions from French to English (esp in ZArith)
-- notions of the standard library are declared with (strict) implicit arguments
+- A completely new syntax for terms coming with an automatic translator
+- Renaming of various standard notions from French to English (esp in ZArith)
+- Notions of the standard library are declared with (strict) implicit arguments
 - eq merged with eqT: old eq disappear, new eq (written =) is old eqT
   and new eqT is syntactic sugar for new eq (notation == is an alias
   for = and is written as it)
-- similarly, ex, ex2 and all are merged with exT, exT2 and allT.
-- a additional elimination Acc_iter for Acc, simplier than Acc_rect. 
+- Similarly, ex, ex2 and all are merged with exT, exT2 and allT.
+- A additional elimination Acc_iter for Acc, simplier than Acc_rect. 
   This new elimination principle is used for definition well_founded_induction.
+- Arithmetical notations for nat, positive, Z, R, without needing
+  backquote or double-backquotes delimiters.
+- Symbolic notations for lists and argument of nil is implicit
 
 Syntax translator
 
@@ -26,7 +29,8 @@ Syntax for arithmetic
   (with possible introduction of a coercion), use <Z>...=... or
   <Z>...<>... instead
 - "inject_nat" renamed into "INZ"; "INZ" from Reals do not longer exist
-- Locate applied to symbols also searches for substrings
+- Locate applied to a simple string (e.g. "+") searches for all
+  notations containing this string
 
 Vernacular commands
 
@@ -36,8 +40,12 @@ Vernacular commands
    (TODO : doc).
 - "Implicit Variables Type x,y:t" assigns default types for binding variables.
 - "Set Implicits Printing" disable printing of implicit arguments
-- Declaration of Hints and Notation now accept a "Local" flag not to
+- Declarations of Hints and Notation now accept a "Local" flag not to
   be exported outside the current file even if not in section
+- "Print Scopes" prints all notations
+- Notation now mandatorily requires a precedence and associativity
+  (default was to set precedence to 1 and associativity to none)
+- New command "About name" for light printing of type, implicit arguments, etc.
 
 Gallina
 
@@ -65,6 +73,10 @@ Grammar extensions
 
 Library
 
+- "true_sub" used in Zplus now a definition, not a local one
+- Some lemmas about minus moved from fast_integer to Arith/Minus.v
+  (le_minus, lt_mult_left)
+- Lemma add_x_x moved from auxiliary.v to fast_integer.v
 - New file about the factorial function in Arith
 - Variables names of iff_trans changed (source of incompatibilities)
 
@@ -85,6 +97,9 @@ Tactics
   Intro names did) [source of rare incompatibilities: 2 changes in the set of
   user contribs]
 - NewDestruct/NewInduction accepts intro patterns as introduction names
+- A NewInduction naming bug for inductive types with functional
+  arguments (e.g. the accessibility predicate) has been fixed (source
+  of incompatibilities)
 
 Bugs
 
