@@ -261,9 +261,12 @@ let token_text = function
   | (con, prm) -> con ^ " \"" ^ prm ^ "\""
 
 let tparse (p_con, p_prm) =
-  if p_prm = "" then
-    parser [< '(con, prm) when con = p_con >] -> prm
+  ifdef CAMLP4_300 then 
+    None
   else
-    parser [< '(con, prm) when con = p_con && prm = p_prm >] -> prm
+    if p_prm = "" then
+      parser [< '(con, prm) when con = p_con >] -> prm
+    else
+      parser [< '(con, prm) when con = p_con && prm = p_prm >] -> prm
 
 }

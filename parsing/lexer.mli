@@ -15,6 +15,9 @@ val func : char Stream.t -> (string * string) Stream.t * (int -> int * int)
 
 val add_token : Token.pattern -> unit
 
+ifdef CAMLP4_300 then
+val tparse : string * string -> ((string * string) Stream.t -> string) option
+else
 val tparse : string * string -> (string * string) Stream.t -> string
 
 val token_text : string * string -> string

@@ -204,7 +204,7 @@ let clean file =
   end
 
 (*Gives all modules in dir. Uses .cmi. Unix again sorry again*)
-let all_modules_in_dir dir=
+let all_modules_in_dir dir =
   try
     let lst = ref []
     and stg = ref ""
@@ -245,15 +245,16 @@ let tmp_dynlink()=
   tmp
 
 (*Initializes the kind of loading in the main program*)
-let declare_loading_string()=
+let declare_loading_string () =
   if !opt then
     "Mltop.set Mltop.Native;;\n"
   else if not !top then
     "Mltop.set Mltop.WithoutTop;;\n"
   else
-    "Mltop.set (Mltop.WithTop {Mltop.load_obj=Topdirs.dir_load;
-                                 Mltop.use_file=Topdirs.dir_use;
-                                 Mltop.add_dir=Topdirs.dir_directory});;\n"
+    "let ppf = Format.std_formatter;;
+     Mltop.set (Mltop.WithTop {Mltop.load_obj=Topdirs.dir_load ppf;
+                               Mltop.use_file=Topdirs.dir_use ppf;
+                               Mltop.add_dir=Topdirs.dir_directory});;\n"
 
 (* create a temporary main file to link *)
 let create_tmp_main_file modules =
@@ -273,7 +274,7 @@ let create_tmp_main_file modules =
       output_string oc "Coqtop.start();;\n";
     (* Start the Ocaml toplevel if it exists *)
     if !top then
-      output_string oc "Printexc.catch Toploop.loop(); exit 1;;\n";
+      output_string oc "Printexc.catch Toploop.loop ppf; exit 1;;\n";
     close_out oc;
     main_name
   with e -> 

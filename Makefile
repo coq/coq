@@ -41,7 +41,7 @@ OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
 CAMLP4IFDEF=camlp4o pa_ifdef.cmo -D$(OSTYPE)
 
-COQINCLUDES=-I theories/Init -I theories/Logic -I theories/Arith \
+COQINCLUDES=-I parsing -I theories/Init -I theories/Logic -I theories/Arith \
             -I theories/Bool -I theories/Zarith
 
 ###########################################################################
@@ -361,7 +361,13 @@ tags:
 # lexer (compiled with camlp4 to get optimized streams)
 
 parsing/lexer.cmo: parsing/lexer.ml
-	$(OCAMLC_P4O) -c $<
+	$(OCAMLC) $(BYTEFLAGS) -pp "camlp4o pa_ifdef.cmo" -c $<
+
+parsing/lexer.cmx: parsing/lexer.ml
+	$(OCAMLOPT) $(OPTFLAGS) -pp "camlp4o pa_ifdef.cmo" -c $<
+
+parsing/lexer.cmi: parsing/lexer.mli
+	$(OCAMLC) $(BYTEFLAGS) -pp "camlp4o pa_ifdef.cmo" -c $<
 
 clean::
 	rm -f parsing/lexer.ml
