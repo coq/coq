@@ -54,30 +54,29 @@ let constr_of_constr_entry ce =
     | None -> ce.const_entry_body 
     | Some t -> mkCast (ce.const_entry_body, t)
 
+let declare_global_definition ident ce n local =
+  declare_constant ident (ConstantEntry ce,n,false);
+  if local then
+    wARNING [< pr_id ident; 'sTR" is declared as a global definition" >];
+  if is_verbose() then
+    message ((string_of_id ident) ^ " is defined")
+
 let definition_body_red red_option ident (local,n) com comtypeopt = 
-  let warning () = 
-    mSGERRNL [< 'sTR"Warning: "; pr_id ident; 
-                'sTR" is declared as a global definition" >] in
   let ce = constant_entry_of_com (com,comtypeopt) in
   let ce' = red_constant_entry ce red_option in
   match n with
-    | NeverDischarge ->
-	declare_constant ident (ConstantEntry ce',n,false);
-	if local then warning ();
-	if is_verbose() then message ((string_of_id ident) ^ " is defined")
+    | NeverDischarge -> declare_global_definition ident ce n local
     | DischargeAt disch_sp ->
         if Lib.is_section_p disch_sp then begin
 	  let c = constr_of_constr_entry ce in
           declare_variable ident (SectionLocalDef c,n,false);
 	  if is_verbose() then message ((string_of_id ident) ^ " is defined");
           if Pfedit.refining () then 
-            mSGERRNL [< 'sTR"Warning: Variable "; pr_id ident; 
+            mSGERRNL [< 'sTR"Warning: Local definition "; pr_id ident; 
                         'sTR" is not visible from current goals" >]
-        end else begin
-	  declare_constant ident (ConstantEntry ce',n,false);
-	  warning ();
-	  if is_verbose() then message ((string_of_id ident) ^ " is defined")
-	end
+        end
+	else
+	  declare_global_definition ident ce' n true
 
 let definition_body = definition_body_red None
 
@@ -93,17 +92,15 @@ let parameter_def_var ident c =
   let c = interp_type Evd.empty (Global.env()) c in
   declare_parameter (id_of_string ident) c;
   if is_verbose() then message (ident ^ " is assumed")
-    
+
+let declare_global_assumption ident c =
+  parameter_def_var ident c;
+  wARNING [< 'sTR ident; 'sTR" is declared as a parameter";
+             'sTR" because it is at a global level" >]
+
 let hypothesis_def_var is_refining ident n c =
-  let warning () = 
-    mSGERRNL [< 'sTR"Warning: "; 'sTR ident; 
-                'sTR" is declared as a parameter";
-                'sTR" because it is at a global level" >]
-  in
   match n with
-    | NeverDischarge -> 
-	parameter_def_var ident c;
-	warning()
+    | NeverDischarge -> declare_global_assumption ident c
     | DischargeAt disch_sp ->
         if Lib.is_section_p disch_sp then begin
 	  let t = interp_type Evd.empty (Global.env()) c in
@@ -113,10 +110,9 @@ let hypothesis_def_var is_refining ident n c =
           if is_refining then 
             mSGERRNL [< 'sTR"Warning: Variable "; 'sTR ident; 
                         'sTR" is not visible from current goals" >]
-        end else begin
-          parameter_def_var ident c;
-	  warning()
-	end
+        end
+	else
+	  declare_global_assumption ident c
 
 (* 3| Mutual Inductive definitions *)
 
