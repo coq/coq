@@ -447,7 +447,8 @@ let pr_syntax_entry (p,rl) =
 let pr_vernac_solve (i,env,tac,deftac) =
   (if i = 1 then mt() else int i ++ str ": ") ++
   Pptacticnew.pr_glob_tactic env tac
-  ++ (if deftac & Pfedit.get_end_tac() <> None then str ".." else mt ())
+  ++ (try if deftac & Pfedit.get_end_tac() <> None then str ".." else mt ()
+      with UserError _|Stdpp.Exc_located _ -> mt())
 
 (**************************************)
 (* Pretty printer for vernac commands *)
@@ -877,10 +878,12 @@ let rec pr_vernac = function
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
       (* Normally shunted by vernac.ml *)
-      let (_,env) = Pfedit.get_goal_context i in
+      let env =
+        try snd (Pfedit.get_goal_context i)
+        with UserError _ -> Global.env() in
       let tac = 
 	Options.with_option Options.translate_syntax 
-	  (Tacinterp.glob_tactic_env [] env) tac in
+	  (Constrintern.for_grammar (Tacinterp.glob_tactic_env [] env)) tac in
       pr_vernac_solve (i,env,tac,deftac)
 
   | VernacSolveExistential (i,c) ->

@@ -124,12 +124,14 @@ let set_formatter_translator() =
 
 let pre_printing = function
   | VernacSolve (i,tac,deftac) when Options.do_translate () ->
-      let (_,env) = Pfedit.get_goal_context i in
-      let t = Options.with_option Options.translate_syntax
-	(Tacinterp.glob_tactic_env [] env) tac in
-      let pfts = Pfedit.get_pftreestate () in
-      let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in
-      Some (env,t,Pfedit.focus(),List.length gls)
+      (try
+        let (_,env) = Pfedit.get_goal_context i in
+        let t = Options.with_option Options.translate_syntax
+	  (Tacinterp.glob_tactic_env [] env) tac in
+        let pfts = Pfedit.get_pftreestate () in
+        let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in
+        Some (env,t,Pfedit.focus(),List.length gls)
+      with UserError _|Stdpp.Exc_located _ -> None)
   | _ -> None
 
 let post_printing loc (env,t,f,n) = function
@@ -213,10 +215,20 @@ let rec vernac_com interpfun (loc,com) =
   in 
   try
     Options.v7_only := false;
-    let pp = pre_printing com in
-    if pp = None & do_translate() then pr_new_syntax loc (Some com);
-    interp com;
-    if pp <> None & do_translate() then post_printing loc (out_some pp) com
+    if do_translate () then
+      match pre_printing com with
+          None ->
+            pr_new_syntax loc (Some com);
+            interp com
+        | Some state ->
+            (try
+              interp com;
+              post_printing loc state com
+            with e ->
+              post_printing loc state com;
+              raise e)
+    else
+      interp com
   with e -> 
     Format.set_formatter_out_channel stdout;
     Options.v7_only := false;

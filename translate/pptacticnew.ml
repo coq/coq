@@ -40,6 +40,11 @@ let strip_prod_binders_expr n ty =
       | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 
+let is_ident_expr = function
+    Topconstr.CRef(Ident _) -> true
+  | _ -> false
+
+
 (* In v8 syntax only double quote char is escaped by repeating it *)
 let rec escape_string_v8 s =
   let rec escape_at s i =
@@ -369,7 +374,7 @@ let pr_then () = str ";"
 
 open Closure
 
-let make_pr_tac (pr_tac,pr_tac0,pr_constr,pr_lconstr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,strip_prod_binders) =
+let make_pr_tac (pr_tac,pr_tac0,pr_constr,pr_lconstr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,strip_prod_binders,is_ident) =
 
 let pr_bindings env = pr_bindings (pr_lconstr env) (pr_constr env) in
 let pr_ex_bindings env = pr_bindings_gen true (pr_lconstr env) (pr_constr env) in
@@ -744,7 +749,8 @@ let rec pr_tac env inherited tac =
       pr_with_comments loc (hov 1 (pr_atom1 env t)), ltatom
   | TacArg(Tacexp e) -> pr_tac0 env e, latom
   | TacArg(ConstrMayEval (ConstrTerm c)) ->
-      str "constr:" ++ pr_constr env c, latom
+      if is_ident c then pr_constr env c, latom
+      else str "constr:" ++ pr_constr env c, latom
   | TacArg(ConstrMayEval c) ->
       pr_may_eval (pr_constr env) (pr_lconstr env) (pr_cst env) c, leval
   | TacArg(TacFreshId sopt) -> str "fresh" ++ pr_opt qsnew sopt, latom
@@ -789,6 +795,10 @@ let strip_prod_binders_rawterm n (ty,_) =
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 
+let is_ident_rawterm = function
+    (Rawterm.RRef(_,VarRef _),_) -> true
+  | _ -> false
+
 let strip_prod_binders_constr n ty =
   let rec strip_ty acc n ty =
     if n=0 then (List.rev acc, ty) else
@@ -810,7 +820,7 @@ let rec raw_printers =
      pr_reference,
      pr_or_metaid (pr_located pr_id),
      Pptactic.pr_raw_extend,
-     strip_prod_binders_expr)
+     strip_prod_binders_expr, is_ident_expr)
 
 and pr_raw_tactic env (t:raw_tactic_expr) =
   pi1 (make_pr_tac raw_printers) env t
@@ -835,7 +845,7 @@ let rec glob_printers =
      pr_ltac_or_var (pr_located pr_ltac_constant),
      pr_located pr_id,
      Pptactic.pr_glob_extend,
-     strip_prod_binders_rawterm)
+     strip_prod_binders_rawterm, is_ident_rawterm)
 
 and pr_glob_tactic env (t:glob_tactic_expr) =
   pi1 (make_pr_tac glob_printers) env t
@@ -858,5 +868,5 @@ let (pr_tactic,_,_) =
      pr_ltac_constant,
      pr_id,
      Pptactic.pr_extend,
-     strip_prod_binders_constr)
+     strip_prod_binders_constr,Term.isVar)
 
