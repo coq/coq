@@ -59,11 +59,18 @@ let error_cannot_unify (m,n) =
 
 (* Tells if the refiner should check that the submitted rules do not
    produce invalid subgoals *)
-let check = ref true
+let check = ref false
 
 let without_check tac gl =
   let c = !check in
   check := false;
+  let r = tac gl in
+  check := c;
+  r
+
+let with_check tac gl =
+  let c = !check in
+  check := true;
   let r = tac gl in
   check := c;
   r
@@ -145,8 +152,11 @@ let apply_to_hyp_and_dependent_on sign id f g =
   in
   if (not !check) || !found then sign else error "No such assumption"
 
+let check_typability env sigma c =
+  if !check then let _ = type_of env sigma c in () 
+
 let recheck_typability (what,id) env sigma t =
-  try let _ = type_of env sigma t in ()
+  try check_typability env sigma t
   with _ ->
     let s = match what with
       | None -> "the conclusion"
@@ -281,9 +291,12 @@ let collect_meta_variables c =
   in 
   List.rev(collrec [] c)
 
-let conv_leq_goal env sigma arg ty conclty =
-  if not (is_conv_leq env sigma ty conclty) then 
+let check_conv_leq_goal env sigma arg ty conclty =
+  if !check & not (is_conv_leq env sigma ty conclty) then 
     raise (RefinerError (BadType (arg,ty,conclty)))
+
+let goal_type_of env sigma c =
+  (if !check then type_of else Retyping.get_type_of) env sigma c
 
 let rec mk_refgoals sigma goal goalacc conclty trm =
   let env = evar_env goal in
@@ -302,31 +315,31 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	(mk_goal hyps (nf_betaiota conclty))::goalacc, conclty
 
     | Cast (t,ty) ->
-	let _ = type_of env sigma ty in
-	conv_leq_goal env sigma trm ty conclty;
+	check_typability env sigma ty;
+	check_conv_leq_goal env sigma trm ty conclty;
 	mk_refgoals sigma goal goalacc ty t
 
     | App (f,l) ->
 	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
 	let (acc'',conclty') =
 	  mk_arggoals sigma goal acc' hdty (Array.to_list l) in
-	let _ = conv_leq_goal env sigma trm conclty' conclty in
+	check_conv_leq_goal env sigma trm conclty' conclty;
         (acc'',conclty')
 
     | Case (_,p,c,lf) ->
 	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
+	check_conv_leq_goal env sigma trm conclty' conclty;
 	let acc'' = 
 	  array_fold_left2
             (fun lacc ty fi -> fst (mk_refgoals sigma goal lacc ty fi))
             acc' lbrty lf 
 	in
-	let _ = conv_leq_goal env sigma trm conclty' conclty in 
 	(acc'',conclty')
 
     | _ -> 
 	if occur_meta trm then raise (RefinerError (OccurMeta trm));
-      	let t'ty = type_of env sigma trm in
-	conv_leq_goal env sigma trm t'ty conclty;
+      	let t'ty = goal_type_of env sigma trm in
+	check_conv_leq_goal env sigma trm t'ty conclty;
         (goalacc,t'ty)
 
 (* Same as mkREFGOALS but without knowing te type of the term. Therefore,
@@ -337,7 +350,7 @@ and mk_hdgoals sigma goal goalacc trm =
   let hyps = goal.evar_hyps in
   match kind_of_term trm with
     | Cast (c,ty) when isMeta c ->
-	let _ = type_of env sigma ty in
+	check_typability env sigma ty;
 	(mk_goal hyps (nf_betaiota ty))::goalacc,ty
 
     | App (f,l) ->
@@ -353,7 +366,7 @@ and mk_hdgoals sigma goal goalacc trm =
 	in
 	(acc'',conclty')
 
-    | _ -> goalacc, type_of env sigma trm
+    | _ -> goalacc, goal_type_of env sigma trm
 
 and mk_arggoals sigma goal goalacc funty = function
   | [] -> goalacc,funty
@@ -421,8 +434,7 @@ let prim_refiner r sigma goal =
 		   (subst1 (mkVar id) b) in
 	       [sg]
 	   | _ ->
-	       if !check then raise (RefinerError IntroNeedsProduct)
-	       else anomaly "Intro: expects a product")
+	       raise (RefinerError IntroNeedsProduct))
 	
     | Intro_replacing id ->
 	(match kind_of_term (strip_outer_cast cl) with
@@ -437,8 +449,7 @@ let prim_refiner r sigma goal =
 	       let sg = mk_goal sign' (subst1 (mkVar id) b) in
 	       [sg]
 	   | _ ->
-	       if !check then error "Introduction needs a product"
-	       else anomaly "Intro_replacing: expects a product")
+	       raise (RefinerError IntroNeedsProduct))
 	
     | Cut (b,id,t) ->
     	if !check && mem_named_context id sign then
@@ -512,8 +523,8 @@ let prim_refiner r sigma goal =
 
     (* Conversion rules *)
     | Convert_concl cl' ->
-    	let cl'ty = type_of env sigma cl' in
-	if is_conv_leq env sigma cl' cl then
+	check_typability env sigma cl';
+	if (not !check) || is_conv_leq env sigma cl' cl then
           let sg = mk_goal sign cl' in
           [sg]
 	else 
@@ -523,7 +534,8 @@ let prim_refiner r sigma goal =
 	[mk_goal (convert_hyp sign sigma (id,copt,ty)) cl]
 
     (* And now the structural rules *)
-    | Thin ids -> [clear_hyps ids goal]
+    | Thin ids -> 
+	[clear_hyps ids goal]
 
     | ThinBody ids ->
 	let clear_aux env id =
@@ -542,7 +554,7 @@ let prim_refiner r sigma goal =
   	[mk_goal hyps' cl]
 
     | Rename (id1,id2) ->
-        if id1 <> id2 & List.mem id2 (ids_of_named_context sign) then
+        if !check & id1 <> id2 & List.mem id2 (ids_of_named_context sign) then
           error ((string_of_id id2)^" is already used");
         let sign' = rename_hyp id1 id2 sign in
         let cl' = replace_vars [id1,mkVar id2] cl in
@@ -648,7 +660,7 @@ let pr_prim_rule = function
 	
   | Cut (b,id,t) ->
       if b then
-        (str"TrueCut " ++ prterm t)
+        (str"Assert " ++ prterm t)
       else
         (str"Cut " ++ prterm t ++ str ";[Intro " ++ pr_id id ++ str "|Idtac]")
 	
@@ -674,7 +686,8 @@ let pr_prim_rule = function
       (str"Cofix " ++ pr_id f ++  str" with " ++ print_mut others)
 
   | Refine c -> 
-      (str(if occur_meta c then "Refine " else "Exact ")  ++ prterm c)
+      str(if occur_meta c then "Refine " else "Exact ") ++
+      Constrextern.with_meta_as_hole prterm c
       
   | Convert_concl c ->
       (str"Change "  ++ prterm c)
