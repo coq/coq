@@ -1,14 +1,95 @@
 %!PS-Adobe-2.0
-%%Creator: dot version gviz 1.7.3b (Mon Feb 26 14:10:22 EST 2001)
-%%For: (herbelin) Hugo Herbelin
+%%Creator: dot version 1.7.16 (Wed Feb  6 02:14:52 MST 2002)
+%%For: (filliatr) Jean-Christophe Filliatre
 %%Title: G
 %%Pages: (atend)
-%%BoundingBox: 36 36 577 136
+%%BoundingBox: 35 35 577 125
 %%EndComments
-%%BeginProlog
 save
+%%BeginProlog
 /DotDict 200 dict def
 DotDict begin
+
+/setupLatin1 {
+mark
+/EncodingVector 256 array def
+ EncodingVector 0
+
+ISOLatin1Encoding 0 255 getinterval putinterval
+
+EncodingVector
+  dup 306 /AE
+  dup 301 /Aacute
+  dup 302 /Acircumflex
+  dup 304 /Adieresis
+  dup 300 /Agrave
+  dup 305 /Aring
+  dup 303 /Atilde
+  dup 307 /Ccedilla
+  dup 311 /Eacute
+  dup 312 /Ecircumflex
+  dup 313 /Edieresis
+  dup 310 /Egrave
+  dup 315 /Iacute
+  dup 316 /Icircumflex
+  dup 317 /Idieresis
+  dup 314 /Igrave
+  dup 334 /Udieresis
+  dup 335 /Yacute
+  dup 376 /thorn
+  dup 337 /germandbls
+  dup 341 /aacute
+  dup 342 /acircumflex
+  dup 344 /adieresis
+  dup 346 /ae
+  dup 340 /agrave
+  dup 345 /aring
+  dup 347 /ccedilla
+  dup 351 /eacute
+  dup 352 /ecircumflex
+  dup 353 /edieresis
+  dup 350 /egrave
+  dup 355 /iacute
+  dup 356 /icircumflex
+  dup 357 /idieresis
+  dup 354 /igrave
+  dup 360 /dcroat
+  dup 361 /ntilde
+  dup 363 /oacute
+  dup 364 /ocircumflex
+  dup 366 /odieresis
+  dup 362 /ograve
+  dup 365 /otilde
+  dup 370 /oslash
+  dup 372 /uacute
+  dup 373 /ucircumflex
+  dup 374 /udieresis
+  dup 371 /ugrave
+  dup 375 /yacute
+  dup 377 /ydieresis  
+
+% Set up ISO Latin 1 character encoding
+/starnetISO {
+        dup dup findfont dup length dict begin
+        { 1 index /FID ne { def }{ pop pop } ifelse
+        } forall
+        /Encoding EncodingVector def
+        currentdict end definefont
+} def
+/Times-Roman starnetISO def
+/Times-Italic starnetISO def
+/Times-Bold starnetISO def
+/Times-BoldItalic starnetISO def
+/Helvetica starnetISO def
+/Helvetica-Oblique starnetISO def
+/Helvetica-Bold starnetISO def
+/Helvetica-BoldOblique starnetISO def
+/Courier starnetISO def
+/Courier-Oblique starnetISO def
+/Courier-Bold starnetISO def
+/Courier-BoldOblique starnetISO def
+cleartomark
+} bind def
 
 %%BeginResource: procset
 /coord-font-family /Times-Roman def
@@ -58,19 +139,15 @@ DotDict begin
 } def
 
 % draw aligned label in bounding box aligned to current point
-% alignfactor tells what fraction to place on the left.
-% -.5 is centered.
-/alignedtext {			% text labelwidth fontsz alignfactor
-	/alignfactor exch def
-	/fontsz exch def
-	/width exch def
+/alignedtext {			% width adj text
 	/text exch def
+	/adj exch def
+	/width exch def
 	gsave
-		% even if node or edge is dashed, don't paint text with dashes
+		width 0 gt {
+			text stringwidth pop adj mul 0 rmoveto
+		} if
 		[] 0 setdash
-		currentpoint newpath moveto
-		text stringwidth pop
-		alignfactor mul fontsz -.3 mul rmoveto
 		text show
 	grestore
 } def
@@ -131,6 +208,7 @@ def
 
 /curlayer 0 def
 
+%%EndResource
 %%EndProlog
 %%BeginSetup
 14 default-font-family set_font
@@ -147,230 +225,241 @@ def
     userdict (>>) cvn ([) cvn load put
 } if
 
-%%EndResource
 %%EndSetup
 %%Page: 1 1
-%%PageBoundingBox: 36 36 577 136
+%%PageBoundingBox: 36 36 577 125
 %%PageOrientation: Portrait
 gsave
-35 35 542 101 boxprim clip newpath
+35 35 542 90 boxprim clip newpath
 36 36 translate
 0 0 1 beginpage
-0.6905 set_scale
+0.6136 set_scale
 0 0 translate 0 rotate
-[ /CropBox [36 36 577 136] /PAGES pdfmark
+[ /CropBox [36 36 577 125] /PAGES pdfmark
 0.000 0.000 0.000 graphcolor
 14.00 /Times-Roman set_font
 
 %	Tactic_debug
 gsave 10 dict begin
-167 18 48 18 ellipse_path
+66 126 57 18 ellipse_path
 stroke
 gsave 10 dict begin
-167 19 moveto (Tactic_debug) 76 14.00 -0.50 alignedtext
+66 121 moveto 93 -0.5 (Tactic_debug) alignedtext
 end grestore
 end grestore
 
 %	Tacmach
 gsave 10 dict begin
-298 72 36 18 ellipse_path
+217 72 42 18 ellipse_path
 stroke
 gsave 10 dict begin
-298 73 moveto (Tacmach) 51 14.00 -0.50 alignedtext
+217 67 moveto 63 -0.5 (Tacmach) alignedtext
 end grestore
 end grestore
 
 %	Tactic_debug -> Tacmach
-newpath 200 31 moveto
-219 39 243 49 262 57 curveto
+newpath 104 112 moveto
+126 104 154 95 176 87 curveto
 stroke
-newpath 262 54 moveto
-270 60 lineto
-260 59 lineto
+0.000 0.000 0.000 edgecolor
+newpath 174 85 moveto
+184 84 lineto
+176 90 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Refiner
 gsave 10 dict begin
-411 99 31 18 ellipse_path
+348 45 37 18 ellipse_path
 stroke
 gsave 10 dict begin
-411 100 moveto (Refiner) 41 14.00 -0.50 alignedtext
+348 40 moveto 53 -0.5 (Refiner) alignedtext
 end grestore
 end grestore
 
 %	Tacmach -> Refiner
-newpath 331 80 moveto
-344 83 360 87 373 90 curveto
+newpath 255 64 moveto
+270 61 288 57 304 54 curveto
 stroke
-newpath 373 87 moveto
-382 92 lineto
-372 92 lineto
+0.000 0.000 0.000 edgecolor
+newpath 303 52 moveto
+313 52 lineto
+304 57 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Logic
 gsave 10 dict begin
-505 99 27 18 ellipse_path
+452 45 30 18 ellipse_path
 stroke
 gsave 10 dict begin
-505 100 moveto (Logic) 32 14.00 -0.50 alignedtext
+452 40 moveto 38 -0.5 (Logic) alignedtext
 end grestore
 end grestore
 
 %	Refiner -> Logic
-newpath 442 99 moveto
-450 99 459 99 468 99 curveto
+newpath 386 45 moveto
+395 45 404 45 412 45 curveto
 stroke
-newpath 468 97 moveto
-478 99 lineto
-468 102 lineto
+0.000 0.000 0.000 edgecolor
+newpath 412 43 moveto
+422 45 lineto
+412 48 lineto
 closepath
-gsave 0 setgray stroke grestore fill
-
-%	Tacinterp
-gsave 10 dict begin
-45 72 37 18 ellipse_path
-stroke
-gsave 10 dict begin
-45 73 moveto (Tacinterp) 53 14.00 -0.50 alignedtext
-end grestore
-end grestore
-
-%	Tacinterp -> Tactic_debug
-newpath 72 60 moveto
-88 53 109 44 127 36 curveto
-stroke
-newpath 126 34 moveto
-136 32 lineto
-128 38 lineto
-closepath
-gsave 0 setgray stroke grestore fill
-
-%	Pfedit
-gsave 10 dict begin
-167 126 27 18 ellipse_path
-stroke
-gsave 10 dict begin
-167 127 moveto (Pfedit) 33 14.00 -0.50 alignedtext
-end grestore
-end grestore
-
-%	Tacinterp -> Pfedit
-newpath 72 84 moveto
-91 93 117 104 136 112 curveto
-stroke
-newpath 136 109 moveto
-144 116 lineto
-134 114 lineto
-closepath
-gsave 0 setgray stroke grestore fill
-
-%	Pfedit -> Tacmach
-newpath 190 116 moveto
-210 108 239 96 261 87 curveto
-stroke
-newpath 260 85 moveto
-270 83 lineto
-262 89 lineto
-closepath
-gsave 0 setgray stroke grestore fill
-
-%	Evar_refiner
-gsave 10 dict begin
-298 126 45 18 ellipse_path
-stroke
-gsave 10 dict begin
-298 127 moveto (Evar_refiner) 70 14.00 -0.50 alignedtext
-end grestore
-end grestore
-
-%	Pfedit -> Evar_refiner
-newpath 194 126 moveto
-208 126 226 126 242 126 curveto
-stroke
-newpath 242 124 moveto
-252 126 lineto
-242 129 lineto
-closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Proof_trees
 gsave 10 dict begin
-611 99 42 18 ellipse_path
+569 45 51 18 ellipse_path
 stroke
 gsave 10 dict begin
-611 100 moveto (Proof_trees) 64 14.00 -0.50 alignedtext
+569 40 moveto 80 -0.5 (Proof_trees) alignedtext
 end grestore
 end grestore
 
 %	Logic -> Proof_trees
-newpath 532 99 moveto
-540 99 549 99 558 99 curveto
+newpath 482 45 moveto
+490 45 499 45 508 45 curveto
 stroke
-newpath 558 97 moveto
-568 99 lineto
-558 102 lineto
+0.000 0.000 0.000 edgecolor
+newpath 508 43 moveto
+518 45 lineto
+508 48 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Proof_type
 gsave 10 dict begin
-732 99 41 18 ellipse_path
+707 45 50 18 ellipse_path
 stroke
 gsave 10 dict begin
-732 100 moveto (Proof_type) 62 14.00 -0.50 alignedtext
+707 40 moveto 79 -0.5 (Proof_type) alignedtext
 end grestore
 end grestore
+
+%	Tacexpr
+gsave 10 dict begin
+833 45 39 18 ellipse_path
+stroke
+gsave 10 dict begin
+833 40 moveto 56 -0.5 (Tacexpr) alignedtext
+end grestore
+end grestore
+
+%	Proof_type -> Tacexpr
+newpath 758 45 moveto
+767 45 775 45 784 45 curveto
+stroke
+0.000 0.000 0.000 edgecolor
+newpath 784 43 moveto
+794 45 lineto
+784 48 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Proof_trees -> Proof_type
-newpath 654 99 moveto
-663 99 672 99 680 99 curveto
+newpath 620 45 moveto
+629 45 637 45 646 45 curveto
 stroke
-newpath 680 97 moveto
-690 99 lineto
-680 102 lineto
+0.000 0.000 0.000 edgecolor
+newpath 646 43 moveto
+656 45 lineto
+646 48 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
+
+%	Pfedit
+gsave 10 dict begin
+66 18 31 18 ellipse_path
+stroke
+gsave 10 dict begin
+66 13 moveto 41 -0.5 (Pfedit) alignedtext
+end grestore
+end grestore
+
+%	Pfedit -> Tacmach
+newpath 93 28 moveto
+115 36 149 48 175 57 curveto
+stroke
+0.000 0.000 0.000 edgecolor
+newpath 175 54 moveto
+184 60 lineto
+174 59 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+
+%	Evar_refiner
+gsave 10 dict begin
+217 18 56 18 ellipse_path
+stroke
+gsave 10 dict begin
+217 13 moveto 91 -0.5 (Evar_refiner) alignedtext
+end grestore
+end grestore
+
+%	Pfedit -> Evar_refiner
+newpath 98 18 moveto
+113 18 132 18 150 18 curveto
+stroke
+0.000 0.000 0.000 edgecolor
+newpath 150 16 moveto
+160 18 lineto
+150 21 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Evar_refiner -> Refiner
-newpath 337 117 moveto
-349 114 362 111 373 108 curveto
+newpath 265 28 moveto
+278 30 291 33 304 36 curveto
 stroke
-newpath 372 106 moveto
-382 106 lineto
-373 111 lineto
+0.000 0.000 0.000 edgecolor
+newpath 304 33 moveto
+313 38 lineto
+303 38 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Clenv
 gsave 10 dict begin
-167 72 27 18 ellipse_path
+66 72 31 18 ellipse_path
 stroke
 gsave 10 dict begin
-167 73 moveto (Clenv) 33 14.00 -0.50 alignedtext
+66 67 moveto 40 -0.5 (Clenv) alignedtext
 end grestore
 end grestore
 
 %	Clenv -> Tacmach
-newpath 194 72 moveto
-211 72 232 72 252 72 curveto
+newpath 97 72 moveto
+117 72 142 72 164 72 curveto
 stroke
-newpath 252 70 moveto
-262 72 lineto
-252 75 lineto
+0.000 0.000 0.000 edgecolor
+newpath 164 70 moveto
+174 72 lineto
+164 75 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Clenv -> Evar_refiner
-newpath 190 82 moveto
-208 89 235 100 257 109 curveto
+newpath 93 62 moveto
+114 55 144 44 170 34 curveto
 stroke
-newpath 258 107 moveto
-266 113 lineto
-256 111 lineto
+0.000 0.000 0.000 edgecolor
+newpath 169 32 moveto
+179 31 lineto
+170 37 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 endpage
 grestore
 %%PageTrailer

@@ -260,7 +260,7 @@ let open_libraries export modl =
 
 let compunit_cache = ref CompilingLibraryMap.empty
 
-let vo_magic_number = 0703 (* V7.3 *)
+let vo_magic_number = 0704 (* V7.4 *)
 
 let (raw_extern_library, raw_intern_library) =
   System.raw_extern_intern vo_magic_number ".vo"

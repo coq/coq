@@ -1,14 +1,14 @@
-  The Coq development team is pleased to announce the release of Coq
+The Coq development team is pleased to announce the release of Coq
 version 7.4. 
 
-This is not a major release, the main purpose this version is to offer
+  This is not a major release; the main purpose of this version is to offer
 novelties (including the module system) required by the Why
 (http://why.lri.fr) and Krakatoa (http://www.lri.fr/~marche/krakatoa)
 systems.  See file CHANGES for a detailed list of changes, novelties,
 bug-fixes and incompatibilities.
 
-  Coq V7.4 is available in several formats from http://coq.inria.fr
-and ftp://ftp.inria.fr/INRIA/coq/V7.4.
+  Coq V7.4 is available in several formats from http://coq.inria.fr/
+and ftp://ftp.inria.fr/INRIA/coq/V7.4/
 
   The documentation is available in postscript, pdf and html format.
 
@@ -20,8 +20,7 @@ by coqdoc).
 ftp://ftp.inria.fr/INRIA/coq/V7.4/doc/Changes.html for a full list of
 changes including sources of incompatibilities.
 
-  Users are kindly invited to report bugs at 
-	http://coq.inria.fr/bin/coq-bugs
+  Users are kindly invited to report bugs at http://coq.inria.fr/bin/coq-bugs
 and to mail Coq-Club@pauillac.inria.fr for general questions or remarks.
 Note that you can now choose your personal options at
 http://pauillac.inria.fr/mailman/listinfo/coq-club and consult the 

@@ -1,14 +1,95 @@
 %!PS-Adobe-2.0
-%%Creator: dot version gviz 1.7.3b (Mon Feb 26 14:10:22 EST 2001)
-%%For: (herbelin) Hugo Herbelin
+%%Creator: dot version 1.7.16 (Wed Feb  6 02:14:52 MST 2002)
+%%For: (filliatr) Jean-Christophe Filliatre
 %%Title: G
 %%Pages: (atend)
-%%BoundingBox: 36 36 577 201
+%%BoundingBox: 35 35 577 159
 %%EndComments
-%%BeginProlog
 save
+%%BeginProlog
 /DotDict 200 dict def
 DotDict begin
+
+/setupLatin1 {
+mark
+/EncodingVector 256 array def
+ EncodingVector 0
+
+ISOLatin1Encoding 0 255 getinterval putinterval
+
+EncodingVector
+  dup 306 /AE
+  dup 301 /Aacute
+  dup 302 /Acircumflex
+  dup 304 /Adieresis
+  dup 300 /Agrave
+  dup 305 /Aring
+  dup 303 /Atilde
+  dup 307 /Ccedilla
+  dup 311 /Eacute
+  dup 312 /Ecircumflex
+  dup 313 /Edieresis
+  dup 310 /Egrave
+  dup 315 /Iacute
+  dup 316 /Icircumflex
+  dup 317 /Idieresis
+  dup 314 /Igrave
+  dup 334 /Udieresis
+  dup 335 /Yacute
+  dup 376 /thorn
+  dup 337 /germandbls
+  dup 341 /aacute
+  dup 342 /acircumflex
+  dup 344 /adieresis
+  dup 346 /ae
+  dup 340 /agrave
+  dup 345 /aring
+  dup 347 /ccedilla
+  dup 351 /eacute
+  dup 352 /ecircumflex
+  dup 353 /edieresis
+  dup 350 /egrave
+  dup 355 /iacute
+  dup 356 /icircumflex
+  dup 357 /idieresis
+  dup 354 /igrave
+  dup 360 /dcroat
+  dup 361 /ntilde
+  dup 363 /oacute
+  dup 364 /ocircumflex
+  dup 366 /odieresis
+  dup 362 /ograve
+  dup 365 /otilde
+  dup 370 /oslash
+  dup 372 /uacute
+  dup 373 /ucircumflex
+  dup 374 /udieresis
+  dup 371 /ugrave
+  dup 375 /yacute
+  dup 377 /ydieresis  
+
+% Set up ISO Latin 1 character encoding
+/starnetISO {
+        dup dup findfont dup length dict begin
+        { 1 index /FID ne { def }{ pop pop } ifelse
+        } forall
+        /Encoding EncodingVector def
+        currentdict end definefont
+} def
+/Times-Roman starnetISO def
+/Times-Italic starnetISO def
+/Times-Bold starnetISO def
+/Times-BoldItalic starnetISO def
+/Helvetica starnetISO def
+/Helvetica-Oblique starnetISO def
+/Helvetica-Bold starnetISO def
+/Helvetica-BoldOblique starnetISO def
+/Courier starnetISO def
+/Courier-Oblique starnetISO def
+/Courier-Bold starnetISO def
+/Courier-BoldOblique starnetISO def
+cleartomark
+} bind def
 
 %%BeginResource: procset
 /coord-font-family /Times-Roman def
@@ -58,19 +139,15 @@ DotDict begin
 } def
 
 % draw aligned label in bounding box aligned to current point
-% alignfactor tells what fraction to place on the left.
-% -.5 is centered.
-/alignedtext {			% text labelwidth fontsz alignfactor
-	/alignfactor exch def
-	/fontsz exch def
-	/width exch def
+/alignedtext {			% width adj text
 	/text exch def
+	/adj exch def
+	/width exch def
 	gsave
-		% even if node or edge is dashed, don't paint text with dashes
+		width 0 gt {
+			text stringwidth pop adj mul 0 rmoveto
+		} if
 		[] 0 setdash
-		currentpoint newpath moveto
-		text stringwidth pop
-		alignfactor mul fontsz -.3 mul rmoveto
 		text show
 	grestore
 } def
@@ -131,6 +208,7 @@ def
 
 /curlayer 0 def
 
+%%EndResource
 %%EndProlog
 %%BeginSetup
 14 default-font-family set_font
@@ -147,533 +225,538 @@ def
     userdict (>>) cvn ([) cvn load put
 } if
 
-%%EndResource
 %%EndSetup
 %%Page: 1 1
-%%PageBoundingBox: 36 36 577 201
+%%PageBoundingBox: 36 36 577 159
 %%PageOrientation: Portrait
 gsave
-35 35 542 166 boxprim clip newpath
+35 35 542 124 boxprim clip newpath
 36 36 translate
 0 0 1 beginpage
-0.4796 set_scale
+0.3634 set_scale
 0 0 translate 0 rotate
-[ /CropBox [36 36 577 201] /PAGES pdfmark
+[ /CropBox [36 36 577 159] /PAGES pdfmark
 0.000 0.000 0.000 graphcolor
 14.00 /Times-Roman set_font
 
-%	Multcase
+%	Typing
 gsave 10 dict begin
-355 272 36 18 ellipse_path
+523 241 36 18 ellipse_path
 stroke
 gsave 10 dict begin
-355 273 moveto (Multcase) 51 14.00 -0.50 alignedtext
+523 236 moveto 50 -0.5 (Typing) alignedtext
 end grestore
 end grestore
-
-%	Evarutil
-gsave 10 dict begin
-468 272 33 18 ellipse_path
-stroke
-gsave 10 dict begin
-468 273 moveto (Evarutil) 45 14.00 -0.50 alignedtext
-end grestore
-end grestore
-
-%	Multcase -> Evarutil
-newpath 391 272 moveto
-402 272 414 272 425 272 curveto
-stroke
-newpath 425 270 moveto
-435 272 lineto
-425 275 lineto
-closepath
-gsave 0 setgray stroke grestore fill
 
 %	Pretype_errors
 gsave 10 dict begin
-596 272 51 18 ellipse_path
+898 264 62 18 ellipse_path
 stroke
 gsave 10 dict begin
-596 273 moveto (Pretype_errors) 82 14.00 -0.50 alignedtext
-end grestore
-end grestore
-
-%	Evarutil -> Pretype_errors
-newpath 501 272 moveto
-511 272 523 272 534 272 curveto
-stroke
-newpath 534 270 moveto
-544 272 lineto
-534 275 lineto
-closepath
-gsave 0 setgray stroke grestore fill
-
-%	Indrec
-gsave 10 dict begin
-596 326 28 18 ellipse_path
-stroke
-gsave 10 dict begin
-596 327 moveto (Indrec) 35 14.00 -0.50 alignedtext
-end grestore
-end grestore
-
-%	Evarutil -> Indrec
-newpath 494 283 moveto
-514 292 542 304 564 313 curveto
-stroke
-newpath 564 310 moveto
-572 316 lineto
-562 315 lineto
-closepath
-gsave 0 setgray stroke grestore fill
-
-%	Typing
-gsave 10 dict begin
-468 218 30 18 ellipse_path
-stroke
-gsave 10 dict begin
-468 219 moveto (Typing) 40 14.00 -0.50 alignedtext
+898 259 moveto 102 -0.5 (Pretype_errors) alignedtext
 end grestore
 end grestore
 
 %	Typing -> Pretype_errors
-newpath 493 229 moveto
-510 236 534 246 554 254 curveto
+newpath 559 243 moveto
+621 247 750 255 830 260 curveto
 stroke
-newpath 555 252 moveto
-563 258 lineto
-553 256 lineto
+0.000 0.000 0.000 edgecolor
+newpath 827 258 moveto
+837 260 lineto
+827 263 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Rawterm
 gsave 10 dict begin
-731 164 36 18 ellipse_path
+1051 114 43 18 ellipse_path
 stroke
 gsave 10 dict begin
-731 165 moveto (Rawterm) 51 14.00 -0.50 alignedtext
+1051 109 moveto 65 -0.5 (Rawterm) alignedtext
 end grestore
 end grestore
 
 %	Pretype_errors -> Rawterm
-newpath 630 258 moveto
-637 255 644 251 648 248 curveto
-667 233 692 206 710 187 curveto
+newpath 939 250 moveto
+946 247 954 242 960 237 curveto
+983 218 979 206 996 183 curveto
+1008 168 1021 151 1032 138 curveto
 stroke
-newpath 708 186 moveto
-716 180 lineto
-711 189 lineto
+0.000 0.000 0.000 edgecolor
+newpath 1029 138 moveto
+1037 131 lineto
+1033 141 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Inductiveops
 gsave 10 dict begin
-731 245 46 18 ellipse_path
+1051 210 54 18 ellipse_path
 stroke
 gsave 10 dict begin
-731 246 moveto (Inductiveops) 72 14.00 -0.50 alignedtext
+1051 205 moveto 87 -0.5 (Inductiveops) alignedtext
 end grestore
 end grestore
 
 %	Pretype_errors -> Inductiveops
-newpath 641 263 moveto
-654 261 667 258 680 255 curveto
+newpath 937 250 moveto
+958 243 984 234 1005 226 curveto
 stroke
-newpath 679 253 moveto
-689 253 lineto
-680 258 lineto
+0.000 0.000 0.000 edgecolor
+newpath 1004 224 moveto
+1014 223 lineto
+1005 229 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Tacred
 gsave 10 dict begin
-731 56 29 18 ellipse_path
+761 120 34 18 ellipse_path
 stroke
 gsave 10 dict begin
-731 57 moveto (Tacred) 38 14.00 -0.50 alignedtext
+761 115 moveto 47 -0.5 (Tacred) alignedtext
 end grestore
 end grestore
 
 %	Cbv
 gsave 10 dict begin
-863 56 27 18 ellipse_path
+1200 18 27 18 ellipse_path
 stroke
 gsave 10 dict begin
-863 57 moveto (Cbv) 23 14.00 -0.50 alignedtext
+1200 13 moveto 29 -0.5 (Cbv) alignedtext
 end grestore
 end grestore
 
 %	Tacred -> Cbv
-newpath 761 56 moveto
-781 56 806 56 827 56 curveto
+newpath 775 103 moveto
+794 80 828 41 836 37 curveto
+852 30 1077 22 1165 19 curveto
 stroke
-newpath 826 54 moveto
-836 56 lineto
-826 59 lineto
+0.000 0.000 0.000 edgecolor
+newpath 1163 17 moveto
+1173 19 lineto
+1163 22 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
-%	Reductionops
+%	Tacred -> Rawterm
+newpath 796 119 moveto
+847 118 941 116 999 115 curveto
+stroke
+0.000 0.000 0.000 edgecolor
+newpath 997 113 moveto
+1007 115 lineto
+997 118 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+
+%	Retyping
 gsave 10 dict begin
-863 110 49 18 ellipse_path
+898 210 43 18 ellipse_path
 stroke
 gsave 10 dict begin
-863 111 moveto (Reductionops) 77 14.00 -0.50 alignedtext
+898 205 moveto 64 -0.5 (Retyping) alignedtext
 end grestore
 end grestore
 
-%	Tacred -> Reductionops
-newpath 756 66 moveto
-774 74 800 84 821 92 curveto
+%	Tacred -> Retyping
+newpath 779 135 moveto
+801 154 835 182 836 183 curveto
+837 183 847 188 859 193 curveto
 stroke
-newpath 822 90 moveto
-830 96 lineto
-820 94 lineto
+0.000 0.000 0.000 edgecolor
+newpath 860 191 moveto
+868 197 lineto
+858 195 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Instantiate
 gsave 10 dict begin
-988 56 39 18 ellipse_path
+1341 18 46 18 ellipse_path
 stroke
 gsave 10 dict begin
-988 57 moveto (Instantiate) 58 14.00 -0.50 alignedtext
+1341 13 moveto 71 -0.5 (Instantiate) alignedtext
 end grestore
 end grestore
 
 %	Cbv -> Instantiate
-newpath 890 56 moveto
-904 56 922 56 938 56 curveto
+newpath 1227 18 moveto
+1243 18 1264 18 1284 18 curveto
 stroke
-newpath 938 54 moveto
-948 56 lineto
-938 59 lineto
+0.000 0.000 0.000 edgecolor
+newpath 1284 16 moveto
+1294 18 lineto
+1284 21 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
+
+%	Retyping -> Inductiveops
+newpath 941 210 moveto
+955 210 971 210 986 210 curveto
+stroke
+0.000 0.000 0.000 edgecolor
+newpath 986 208 moveto
+996 210 lineto
+986 213 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+
+%	Reductionops
+gsave 10 dict begin
+1200 72 58 18 ellipse_path
+stroke
+gsave 10 dict begin
+1200 67 moveto 94 -0.5 (Reductionops) alignedtext
+end grestore
+end grestore
+
+%	Inductiveops -> Reductionops
+newpath 1070 193 moveto
+1097 169 1146 123 1175 95 curveto
+stroke
+0.000 0.000 0.000 edgecolor
+newpath 1172 94 moveto
+1181 89 lineto
+1176 98 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Reductionops -> Instantiate
-newpath 895 96 moveto
-912 88 933 80 951 72 curveto
+newpath 1237 58 moveto
+1256 51 1279 42 1299 34 curveto
 stroke
-newpath 949 70 moveto
-959 68 lineto
-951 75 lineto
+0.000 0.000 0.000 edgecolor
+newpath 1298 32 moveto
+1308 31 lineto
+1299 37 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Termops
 gsave 10 dict begin
-988 110 35 18 ellipse_path
+1341 72 41 18 ellipse_path
 stroke
 gsave 10 dict begin
-988 111 moveto (Termops) 49 14.00 -0.50 alignedtext
+1341 67 moveto 60 -0.5 (Termops) alignedtext
 end grestore
 end grestore
 
 %	Reductionops -> Termops
-newpath 912 110 moveto
-923 110 933 110 943 110 curveto
+newpath 1258 72 moveto
+1269 72 1280 72 1290 72 curveto
 stroke
-newpath 943 108 moveto
-953 110 lineto
-943 113 lineto
+0.000 0.000 0.000 edgecolor
+newpath 1290 70 moveto
+1300 72 lineto
+1290 75 lineto
 closepath
-gsave 0 setgray stroke grestore fill
-
-%	Syntax_def
-gsave 10 dict begin
-596 164 42 18 ellipse_path
-stroke
-gsave 10 dict begin
-596 165 moveto (Syntax_def) 63 14.00 -0.50 alignedtext
-end grestore
-end grestore
-
-%	Syntax_def -> Rawterm
-newpath 638 164 moveto
-653 164 670 164 685 164 curveto
-stroke
-newpath 685 162 moveto
-695 164 lineto
-685 167 lineto
-closepath
-gsave 0 setgray stroke grestore fill
-
-%	Retyping
-gsave 10 dict begin
-355 49 36 18 ellipse_path
-stroke
-gsave 10 dict begin
-355 50 moveto (Retyping) 51 14.00 -0.50 alignedtext
-end grestore
-end grestore
-
-%	Retyping -> Reductionops
-newpath 389 43 moveto
-469 30 670 2 778 26 curveto
-801 31 798 69 814 86 curveto
-817 89 820 91 824 92 curveto
-stroke
-newpath 825 90 moveto
-833 96 lineto
-823 94 lineto
-closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Evd
 gsave 10 dict begin
-1091 56 27 18 ellipse_path
+1451 18 27 18 ellipse_path
 stroke
 gsave 10 dict begin
-1091 57 moveto (Evd) 22 14.00 -0.50 alignedtext
+1451 13 moveto 28 -0.5 (Evd) alignedtext
 end grestore
 end grestore
 
 %	Instantiate -> Evd
-newpath 1028 56 moveto
-1037 56 1046 56 1054 56 curveto
+newpath 1388 18 moveto
+1397 18 1406 18 1414 18 curveto
 stroke
-newpath 1054 54 moveto
-1064 56 lineto
-1054 59 lineto
+0.000 0.000 0.000 edgecolor
+newpath 1414 16 moveto
+1424 18 lineto
+1414 21 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Recordops
 gsave 10 dict begin
-468 110 40 18 ellipse_path
+523 149 47 18 ellipse_path
 stroke
 gsave 10 dict begin
-468 111 moveto (Recordops) 59 14.00 -0.50 alignedtext
+523 144 moveto 72 -0.5 (Recordops) alignedtext
 end grestore
 end grestore
 
 %	Classops
 gsave 10 dict begin
-596 56 35 18 ellipse_path
+646 139 39 18 ellipse_path
 stroke
 gsave 10 dict begin
-596 57 moveto (Classops) 49 14.00 -0.50 alignedtext
+646 134 moveto 57 -0.5 (Classops) alignedtext
 end grestore
 end grestore
 
 %	Recordops -> Classops
-newpath 497 98 moveto
-516 90 541 79 561 71 curveto
+newpath 569 145 moveto
+578 144 588 144 597 143 curveto
 stroke
-newpath 559 69 moveto
-569 68 lineto
-561 74 lineto
+0.000 0.000 0.000 edgecolor
+newpath 597 141 moveto
+607 142 lineto
+597 145 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Classops -> Tacred
-newpath 631 56 moveto
-650 56 673 56 692 56 curveto
+newpath 683 133 moveto
+694 131 707 129 718 127 curveto
 stroke
-newpath 691 54 moveto
-701 56 lineto
-691 59 lineto
+0.000 0.000 0.000 edgecolor
+newpath 718 125 moveto
+728 125 lineto
+719 129 lineto
 closepath
-gsave 0 setgray stroke grestore fill
-
-%	Classops -> Rawterm
-newpath 622 68 moveto
-635 74 648 80 648 80 curveto
-667 94 692 121 710 141 curveto
-stroke
-newpath 711 138 moveto
-716 147 lineto
-707 142 lineto
-closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Pretyping
 gsave 10 dict begin
-46 114 37 18 ellipse_path
+53 241 44 18 ellipse_path
 stroke
 gsave 10 dict begin
-46 115 moveto (Pretyping) 54 14.00 -0.50 alignedtext
+53 236 moveto 67 -0.5 (Pretyping) alignedtext
 end grestore
 end grestore
 
 %	Cases
 gsave 10 dict begin
-147 114 27 18 ellipse_path
+164 241 29 18 ellipse_path
 stroke
 gsave 10 dict begin
-147 115 moveto (Cases) 32 14.00 -0.50 alignedtext
+164 236 moveto 37 -0.5 (Cases) alignedtext
 end grestore
 end grestore
 
 %	Pretyping -> Cases
-newpath 84 114 moveto
-93 114 102 114 110 114 curveto
+newpath 98 241 moveto
+107 241 116 241 124 241 curveto
 stroke
-newpath 110 112 moveto
-120 114 lineto
-110 117 lineto
+0.000 0.000 0.000 edgecolor
+newpath 124 239 moveto
+134 241 lineto
+124 244 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Coercion
 gsave 10 dict begin
-246 114 36 18 ellipse_path
+272 241 41 18 ellipse_path
 stroke
 gsave 10 dict begin
-246 115 moveto (Coercion) 51 14.00 -0.50 alignedtext
+272 236 moveto 61 -0.5 (Coercion) alignedtext
 end grestore
 end grestore
 
 %	Cases -> Coercion
-newpath 174 114 moveto
-182 114 191 114 200 114 curveto
+newpath 194 241 moveto
+202 241 211 241 220 241 curveto
 stroke
-newpath 200 112 moveto
-210 114 lineto
-200 117 lineto
+0.000 0.000 0.000 edgecolor
+newpath 220 239 moveto
+230 241 lineto
+220 244 lineto
 closepath
-gsave 0 setgray stroke grestore fill
-
-%	Inductiveops -> Reductionops
-newpath 748 228 moveto
-771 204 815 159 841 132 curveto
-stroke
-newpath 837 132 moveto
-846 127 lineto
-841 136 lineto
-closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Pattern
 gsave 10 dict begin
-596 110 30 18 ellipse_path
+898 64 35 18 ellipse_path
 stroke
 gsave 10 dict begin
-596 111 moveto (Pattern) 39 14.00 -0.50 alignedtext
+898 59 moveto 49 -0.5 (Pattern) alignedtext
 end grestore
 end grestore
-
-%	Pattern -> Reductionops
-newpath 626 110 moveto
-670 110 751 110 806 110 curveto
-stroke
-newpath 804 108 moveto
-814 110 lineto
-804 113 lineto
-closepath
-gsave 0 setgray stroke grestore fill
 
 %	Pattern -> Rawterm
-newpath 621 120 moveto
-641 129 671 140 694 150 curveto
+newpath 928 74 moveto
+950 81 982 91 1008 100 curveto
 stroke
-newpath 694 147 moveto
-703 153 lineto
-693 152 lineto
+0.000 0.000 0.000 edgecolor
+newpath 1008 97 moveto
+1017 103 lineto
+1007 102 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
+
+%	Pattern -> Reductionops
+newpath 934 65 moveto
+983 66 1072 69 1134 70 curveto
+stroke
+0.000 0.000 0.000 edgecolor
+newpath 1132 68 moveto
+1142 70 lineto
+1132 73 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+
+%	Indrec
+gsave 10 dict begin
+898 318 32 18 ellipse_path
+stroke
+gsave 10 dict begin
+898 313 moveto 43 -0.5 (Indrec) alignedtext
+end grestore
+end grestore
 
 %	Indrec -> Inductiveops
-newpath 619 316 moveto
-630 311 641 306 648 302 curveto
-663 293 683 279 700 267 curveto
+newpath 926 308 moveto
+937 304 949 298 960 291 curveto
+973 282 1004 255 1026 234 curveto
 stroke
-newpath 699 265 moveto
-708 261 lineto
-702 269 lineto
+0.000 0.000 0.000 edgecolor
+newpath 1024 232 moveto
+1033 227 lineto
+1028 236 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
+
+%	Evarutil
+gsave 10 dict begin
+761 287 39 18 ellipse_path
+stroke
+gsave 10 dict begin
+761 282 moveto 56 -0.5 (Evarutil) alignedtext
+end grestore
+end grestore
+
+%	Evarutil -> Pretype_errors
+newpath 798 281 moveto
+809 279 822 277 834 275 curveto
+stroke
+0.000 0.000 0.000 edgecolor
+newpath 834 273 moveto
+844 273 lineto
+835 277 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+
+%	Evarutil -> Indrec
+newpath 796 295 moveto
+815 299 839 304 859 309 curveto
+stroke
+0.000 0.000 0.000 edgecolor
+newpath 859 306 moveto
+868 311 lineto
+858 311 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Evarconv
 gsave 10 dict begin
-355 180 37 18 ellipse_path
+395 241 44 18 ellipse_path
 stroke
 gsave 10 dict begin
-355 181 moveto (Evarconv) 53 14.00 -0.50 alignedtext
+395 236 moveto 67 -0.5 (Evarconv) alignedtext
 end grestore
 end grestore
-
-%	Evarconv -> Evarutil
-newpath 372 196 moveto
-388 212 412 235 428 248 curveto
-431 250 433 251 436 253 curveto
-stroke
-newpath 438 251 moveto
-445 259 lineto
-435 256 lineto
-closepath
-gsave 0 setgray stroke grestore fill
 
 %	Evarconv -> Typing
-newpath 386 190 moveto
-400 195 418 201 432 206 curveto
+newpath 440 241 moveto
+452 241 465 241 477 241 curveto
 stroke
-newpath 432 203 moveto
-441 209 lineto
-431 208 lineto
+0.000 0.000 0.000 edgecolor
+newpath 477 239 moveto
+487 241 lineto
+477 244 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Evarconv -> Recordops
-newpath 378 166 moveto
-395 156 418 141 436 130 curveto
+newpath 417 225 moveto
+439 210 471 187 494 170 curveto
 stroke
-newpath 434 128 moveto
-444 125 lineto
-437 132 lineto
+0.000 0.000 0.000 edgecolor
+newpath 491 169 moveto
+501 165 lineto
+494 173 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
+
+%	Evarconv -> Evarutil
+newpath 427 254 moveto
+442 259 460 264 476 268 curveto
+482 269 636 278 715 284 curveto
+stroke
+0.000 0.000 0.000 edgecolor
+newpath 712 282 moveto
+722 284 lineto
+712 287 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Detyping
 gsave 10 dict begin
-596 218 36 18 ellipse_path
+898 156 43 18 ellipse_path
 stroke
 gsave 10 dict begin
-596 219 moveto (Detyping) 52 14.00 -0.50 alignedtext
+898 151 moveto 64 -0.5 (Detyping) alignedtext
 end grestore
 end grestore
 
 %	Detyping -> Rawterm
-newpath 625 207 moveto
-645 199 673 188 694 179 curveto
+newpath 934 146 moveto
+956 141 983 133 1006 127 curveto
 stroke
-newpath 693 177 moveto
-703 175 lineto
-695 181 lineto
+0.000 0.000 0.000 edgecolor
+newpath 1005 125 moveto
+1015 124 lineto
+1006 130 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Detyping -> Inductiveops
-newpath 630 225 moveto
-645 228 663 232 679 235 curveto
+newpath 931 168 moveto
+952 176 981 185 1004 194 curveto
 stroke
-newpath 680 233 moveto
-689 237 lineto
-679 237 lineto
+0.000 0.000 0.000 edgecolor
+newpath 1004 191 moveto
+1013 197 lineto
+1003 196 lineto
 closepath
-gsave 0 setgray stroke grestore fill
-
-%	Coercion -> Retyping
-newpath 269 100 moveto
-285 91 306 78 323 68 curveto
-stroke
-newpath 321 66 moveto
-331 63 lineto
-324 70 lineto
-closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 
 %	Coercion -> Evarconv
-newpath 269 128 moveto
-285 138 306 151 324 161 curveto
+newpath 314 241 moveto
+323 241 331 241 340 241 curveto
 stroke
-newpath 325 159 moveto
-332 166 lineto
-322 163 lineto
+0.000 0.000 0.000 edgecolor
+newpath 340 239 moveto
+350 241 lineto
+340 244 lineto
 closepath
-gsave 0 setgray stroke grestore fill
+fill
+0.000 0.000 0.000 edgecolor
 endpage
 grestore
 %%PageTrailer
