@@ -1,0 +1,133 @@
+
+(* $Id$ *)
+
+{
+open Util
+
+type error =
+  | Illegal_character
+  | Unterminated_comment
+  | Unterminated_string
+
+exception Error of error * int * int
+
+let is_keyword =
+  let table = Hashtbl.create 149 in
+  List.iter (fun kw -> Hashtbl.add table kw ())
+    [ "Grammar"; "Syntax"; "Quit"; "Load"; "Compile";
+      "of"; "with"; "end"; "as"; "in"; "using";
+      "Cases"; "Fixpoint"; "CoFixpoint";
+      "Definition"; "Inductive"; "CoInductive"; 
+      "Theorem"; "Variable"; "Axiom"; "Parameter"; "Hypothesis";
+      "Orelse"; "Proof"; "Qed";
+      "Prop"; "Set"; "Type" ];
+  fun s -> try Hashtbl.find table s; true with Not_found -> false
+      
+let char_for_backslash =
+  match Sys.os_type with
+  | "Unix" | "Win32" ->
+      begin function
+      | 'n' -> '\010'
+      | 'r' -> '\013'
+      | 'b' -> '\008'
+      | 't' -> '\009'
+      | c   -> c
+      end
+  | "MacOS" ->
+      begin function
+      | 'n' -> '\013'
+      | 'r' -> '\010'
+      | 'b' -> '\008'
+      | 't' -> '\009'
+      | c   -> c
+      end
+  | x -> error "Lexer: unknown system type"
+
+let char_for_decimal_code lexbuf i =
+  let c = 100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
+           10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
+                (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in  
+  Char.chr(c land 0xFF)
+
+let string_buffer = Buffer.create 80
+let string_start_pos = ref 0
+			 
+let comment_depth = ref 0
+let comment_start_pos = ref 0
+
+}
+
+let blank = [' ' '\010' '\013' '\009' '\012']
+let firstchar = 
+  ['A'-'Z' 'a'-'z' '\192'-'\214' '\216'-'\246' '\248'-'\255']
+let identchar = 
+  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+let symbolchar =
+  ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+
+rule token = parse
+  | blank+ 
+      { token lexbuf }
+  | firstchar identchar* 
+      { let s = Lexing.lexeme lexbuf in
+	if is_keyword s then ("",s) else ("IDENT",s) }
+  | symbolchar+
+      { ("SPECIAL", Lexing.lexeme lexbuf) }
+  | '`' [^'`']* '`'
+      { ("QUOTED", Lexing.lexeme lexbuf) }
+  | "\""
+      { Buffer.reset string_buffer;
+        let string_start = Lexing.lexeme_start lexbuf in
+        string_start_pos := string_start;
+        string lexbuf;
+        ("STRING", Buffer.contents string_buffer) }
+  | "(*"
+      { comment_depth := 1;
+        comment_start_pos := Lexing.lexeme_start lexbuf;
+        comment lexbuf;
+        token lexbuf }
+
+and comment = parse
+    "(*"
+      { comment_depth := succ !comment_depth; comment lexbuf }
+  | "*)"
+      { comment_depth := pred !comment_depth;
+        if !comment_depth > 0 then comment lexbuf }
+  | "\""
+      { Buffer.reset string_buffer;
+        string_start_pos := Lexing.lexeme_start lexbuf;
+        string lexbuf;
+        comment lexbuf }
+  | "''"
+      { comment lexbuf }
+  | "'" [^ '\\' '\''] "'"
+      { comment lexbuf }
+  | "'\\" ['\\' '\'' 'n' 't' 'b' 'r'] "'"
+      { comment lexbuf }
+  | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
+      { comment lexbuf }
+  | eof
+      { raise (Error (Unterminated_comment,
+                      !comment_start_pos, !comment_start_pos+2)) }
+  | _
+      { comment lexbuf }
+
+and string = parse
+    '"'
+      { () }
+  | '\\' ("\010" | "\013" | "\013\010") [' ' '\009'] *
+      { string lexbuf }
+  | '\\' ['\\' '"' 'n' 't' 'b' 'r']
+      { let c = char_for_backslash (Lexing.lexeme_char lexbuf 1) in
+	Buffer.add_char string_buffer c;
+        string lexbuf }
+  | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']
+      { Buffer.add_char string_buffer (char_for_decimal_code lexbuf 1);
+        string lexbuf }
+  | eof
+      { raise (Error (Unterminated_string,
+                      !string_start_pos, !string_start_pos+1)) }
+  | _
+      { Buffer.add_char string_buffer (Lexing.lexeme_char lexbuf 0);
+        string lexbuf }
+
