@@ -77,6 +77,7 @@ parsing/printer.cmi: parsing/coqast.cmi kernel/environ.cmi kernel/names.cmi \
     kernel/term.cmi 
 parsing/search.cmi: kernel/environ.cmi kernel/names.cmi pretyping/pattern.cmi \
     lib/pp.cmi kernel/term.cmi 
+parsing/stdlib.cmi: kernel/term.cmi 
 parsing/termast.cmi: parsing/coqast.cmi kernel/environ.cmi kernel/names.cmi \
     library/nametab.cmi pretyping/pattern.cmi pretyping/rawterm.cmi \
     kernel/sign.cmi kernel/term.cmi 
@@ -135,6 +136,7 @@ proofs/proof_type.cmi: parsing/coqast.cmi kernel/environ.cmi kernel/evd.cmi \
     lib/stamps.cmi pretyping/tacred.cmi kernel/term.cmi lib/util.cmi 
 proofs/refiner.cmi: lib/pp.cmi proofs/proof_trees.cmi proofs/proof_type.cmi \
     kernel/sign.cmi kernel/term.cmi 
+proofs/stock.cmi: kernel/names.cmi 
 proofs/tacinterp.cmi: parsing/coqast.cmi lib/dyn.cmi kernel/environ.cmi \
     kernel/names.cmi lib/pp.cmi proofs/proof_type.cmi proofs/tacmach.cmi \
     proofs/tactic_debug.cmi kernel/term.cmi 
@@ -624,6 +626,10 @@ parsing/search.cmx: parsing/astterm.cmx parsing/coqast.cmx \
     library/library.cmx kernel/names.cmx pretyping/pattern.cmx lib/pp.cmx \
     parsing/pretty.cmx parsing/printer.cmx kernel/term.cmx \
     pretyping/typing.cmx lib/util.cmx parsing/search.cmi 
+parsing/stdlib.cmo: library/declare.cmi kernel/names.cmi kernel/term.cmi \
+    parsing/stdlib.cmi 
+parsing/stdlib.cmx: library/declare.cmx kernel/names.cmx kernel/term.cmx \
+    parsing/stdlib.cmi 
 parsing/termast.cmo: parsing/ast.cmi pretyping/classops.cmi \
     parsing/coqast.cmi library/declare.cmi pretyping/detyping.cmi \
     kernel/environ.cmi library/impargs.cmi kernel/inductive.cmi \
@@ -856,6 +862,10 @@ proofs/refiner.cmx: parsing/ast.cmx kernel/environ.cmx kernel/evd.cmx \
     parsing/printer.cmx proofs/proof_trees.cmx proofs/proof_type.cmx \
     kernel/reduction.cmx kernel/sign.cmx lib/stamps.cmx kernel/term.cmx \
     kernel/type_errors.cmx lib/util.cmx proofs/refiner.cmi 
+proofs/stock.cmo: lib/bij.cmi lib/gmap.cmi lib/gmapl.cmi library/library.cmi \
+    kernel/names.cmi lib/pp.cmi lib/util.cmi proofs/stock.cmi 
+proofs/stock.cmx: lib/bij.cmx lib/gmap.cmx lib/gmapl.cmx library/library.cmx \
+    kernel/names.cmx lib/pp.cmx lib/util.cmx proofs/stock.cmi 
 proofs/tacinterp.cmo: parsing/ast.cmi parsing/astterm.cmi kernel/closure.cmi \
     parsing/coqast.cmi kernel/declarations.cmi library/declare.cmi \
     lib/dyn.cmi kernel/environ.cmi kernel/evd.cmi library/global.cmi \
@@ -1706,6 +1716,8 @@ contrib/interface/history.cmo: contrib/interface/paths.cmi \
     contrib/interface/history.cmi 
 contrib/interface/history.cmx: contrib/interface/paths.cmx \
     contrib/interface/history.cmi 
+contrib/interface/line_parser.cmo: contrib/interface/line_parser.cmi 
+contrib/interface/line_parser.cmx: contrib/interface/line_parser.cmi 
 contrib/interface/name_to_ast.cmo: parsing/ast.cmi pretyping/classops.cmi \
     parsing/coqast.cmi kernel/declarations.cmi library/declare.cmi \
     kernel/environ.cmi library/global.cmi library/impargs.cmi \
@@ -1722,6 +1734,18 @@ contrib/interface/name_to_ast.cmx: parsing/ast.cmx pretyping/classops.cmx \
     kernel/reduction.cmx kernel/sign.cmx pretyping/syntax_def.cmx \
     kernel/term.cmx parsing/termast.cmx lib/util.cmx \
     contrib/interface/name_to_ast.cmi 
+contrib/interface/parse.cmo: contrib/interface/ascent.cmi parsing/ast.cmi \
+    config/coq_config.cmi parsing/coqast.cmi toplevel/errors.cmi \
+    parsing/esyntax.cmi library/libobject.cmi library/library.cmi \
+    contrib/interface/line_parser.cmi toplevel/metasyntax.cmi \
+    library/nametab.cmi parsing/pcoq.cmi lib/pp.cmi lib/system.cmi \
+    lib/util.cmi contrib/interface/vtp.cmi contrib/interface/xlate.cmi 
+contrib/interface/parse.cmx: contrib/interface/ascent.cmi parsing/ast.cmx \
+    config/coq_config.cmx parsing/coqast.cmx toplevel/errors.cmx \
+    parsing/esyntax.cmx library/libobject.cmx library/library.cmx \
+    contrib/interface/line_parser.cmx toplevel/metasyntax.cmx \
+    library/nametab.cmx parsing/pcoq.cmx lib/pp.cmx lib/system.cmx \
+    lib/util.cmx contrib/interface/vtp.cmx contrib/interface/xlate.cmx 
 contrib/interface/paths.cmo: contrib/interface/paths.cmi 
 contrib/interface/paths.cmx: contrib/interface/paths.cmi 
 contrib/interface/pbp.cmo: parsing/coqast.cmi parsing/coqlib.cmi \
