@@ -34,6 +34,7 @@ Changements dans les fonctions :
 	  cons_vect	   ->  array_cons
 	  map_i_vect	   ->  Array.mapi
 	  map2_vect	   ->  array_map2
+	  list_of_tl_vect  ->  array_list_of_tl
 
 	Std 
 	  comp           ->  Util.compose
