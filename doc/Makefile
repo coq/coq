@@ -23,6 +23,7 @@ BIBTEX=bibtex
 MAKEINDEX=makeindex
 PDFLATEX=pdflatex
 
+MKDIR=mkdir
 TEST=test
 
 TEXINPUTS=/usr/local/lib/rrkit/RRINPUTSDIR:$(COQWEBSTY):.:
@@ -66,7 +67,7 @@ FTPHTMLDOCS=doc-html.tar.gz
 # Principal targets 
 ########################
 
-all: check-env all-dvi all-pdf
+all: check-env all-ps all-pdf
 
 check-env:
 	@if $(TEST) "$(COQBIN)" = ""; then echo "COQBIN undefined"; exit 1; fi
@@ -103,10 +104,10 @@ compress-latex:
 	- mv -f Changes.v.pdf Changes.pdf
 	tar cf all-ps-docs.tar Reference-Manual-base.ps \
 	  Reference-Manual-addendum.ps Changes.ps Tutorial.ps Library.ps
-	gzip *.ps
-	gzip *.dvi
-	gzip *.pdf
-	gzip all-ps-docs.tar
+	gzip -f *.ps
+	gzip -f *.dvi
+	gzip -f *.pdf
+	gzip -f all-ps-docs.tar
 
 Tutorial.v.html: Tutorial.v.tex
 	hevea ./book-html.sty ./coq-html.sty ./Tutorial.v.tex
@@ -114,21 +115,24 @@ Tutorial.v.html: Tutorial.v.tex
 Changes.v.html: Changes.v.tex
 	hevea ./Changes.v.tex
 
-Reference-Manual.html: 
-	hevea ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
+Reference-Manual.html: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
+	hevea -fix ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
+#1.04	hevea ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
+
 
 doc-html.tar.gz: all-html
 	- $(MKDIR) coq-docs-html
 	rm -rf coq-docs-html/*
 	cp Tutorial.v.html coq-docs-html/tutorial.html
 	cp Changes.v.html coq-docs-html/changes.html
+	cp Library.html coq-docs-html/library.html
 	cp Reference-Manual.html coq-docs-html 
 	(cd coq-docs-html;\
 	 htmlsplit -N -T "The Coq Proof Assistant Reference Manual"\
 	   ./Reference-Manual.html; rm ./Reference-Manual.html)
-	cp cover.html coq-docs-html
+#	cp cover.html coq-docs-html
 	tar cf doc-html.tar coq-docs-html
-	gzip doc-html.tar
+	gzip -f doc-html.tar
 
 # Pour le site de Coq.
 html-www: all-html
@@ -136,13 +140,14 @@ html-www: all-html
 	rm -rf www/*
 	cp Tutorial.v.html www/tutorial.html
 	cp Changes.v.html www/changes.html
+	cp Library.html www/library.html
 	cp Reference-Manual.html www
 	(cd www;\
 	 htmlsplit -N -T "The Coq Proof Assistant Reference Manual"\
 	   -n ../icons/next.gif -p ../icons/prev.gif -r ../icons/root.gif\
 	   -s ../icons/sub.gif ./Reference-Manual.html;\
 	 rm ./Reference-Manual.html)
-	cp cover.html www
+#	cp cover.html www
 
 
 clean-refman:
@@ -204,9 +209,11 @@ Library.pdf: $(INPUTS) library.coqweb.tex Library.tex
 	$(PDFLATEX) Library
 	$(PDFLATEX) Library
 
-# The option -exec xxdate.exe is to product today's date (\today TeX macro)
+# L'option -exec xxdate.exe sert a produire la date (macro \today) 
+# mais ne marche pas avec hevea 1.04
 Library.html: $(INPUTS) library.coqweb.tex Library.tex
 	hevea ./coq-html.sty -exec xxdate.exe $(COQWEBSTY)/coqweb.sty ./Library.tex
+#1.04	hevea ./coq-html.sty $(COQWEBSTY)/coqweb.sty ./Library.tex
 
 LIBDIRS= Logic Bool Arith ZArith Reals Lists Sets Relations \
          Wellfounded IntMap
@@ -218,24 +225,33 @@ library.coqweb.tex: library.files
 
 GALLINA=$(COQBIN)/gallina
 
-# ls -tr trie les fichiers dans l'ordre inverse de leur date de création
+# On garde la liste de tous les *.v avec dates dans library.files.ls
+# Si elle a change depuis la derniere fois ou library.files n'existe pas
+# on fabrique des .g (si besoin) et la liste library.files dans 
+# l'ordre de ls -tr des *.vo
+# Ce dernier trie les fichiers dans l'ordre inverse de leur date de création
 # En supposant que make fait son boulot, ca fait un tri topologique du
 # graphe des dépendances
 library.files::
-	rm -f library.files; touch library.files
-	ABSOLUTE=`pwd`/library.files ; \
-	for rep in $(LIBDIRS) ; do \
-	  (cd $(COQTOP)/theories/$$rep ; \
-	   echo $$rep/intro.tex >> $$ABSOLUTE ; \
-	   VOFILES=`ls -tr *.vo` ; \
-	   for file in $$VOFILES ; do \
+	rm -f library.files.ls.tmp
+	(cd $(COQTOP)/theories ; find $(LIBDIRS) -name "*.v" -ls) > library.files.ls.tmp
+	if ! test -e library.files || ! cmp library.files.ls library.files.ls.tmp; then \
+	  mv -f library.files.ls.tmp library.files.ls; \
+	  rm -f library.files; touch library.files; \
+	  ABSOLUTE=`pwd`/library.files ; \
+	  for rep in $(LIBDIRS) ; do \
+	    (cd $(COQTOP)/theories/$$rep ; \
+	     echo $$rep/intro.tex >> $$ABSOLUTE ; \
+	     VOFILES=`ls -tr *.vo` ; \
+	     for file in $$VOFILES ; do \
 		VF=`basename $$file \.vo` ; \
 		if $(TEST) \( ! -e $$VF.g \) -o \( $$VF.v -nt $$VF.g \) ; then \
 	          $(GALLINA) $$VF.v; fi ; \
 		echo $$rep/$$VF.g >> $$ABSOLUTE ; \
-           done \
-	  ) ; \
-	done
+             done \
+	    ) ; \
+	  done ; \
+	fi
 
 demos-programs:
 #	(cd ../theories/DEMOS/PROGRAMS ; make all)
