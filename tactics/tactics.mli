@@ -43,7 +43,7 @@ exception Bound
 val introduction    : identifier -> tactic
 val refine          : constr -> tactic
 val convert_concl   : constr -> tactic
-val convert_hyp     : identifier -> constr -> tactic
+val convert_hyp     : named_declaration -> tactic
 val thin            : identifier list -> tactic
 val mutual_fix      : identifier list -> int list -> constr list -> tactic
 val fix             : identifier -> int -> tactic

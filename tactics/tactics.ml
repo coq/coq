@@ -161,7 +161,7 @@ type tactic_reduction = env -> evar_map -> constr -> constr
 
 let reduct_in_concl redfun gl = 
   convert_concl (pf_reduce redfun gl (pf_concl gl)) gl
-    
+
 let reduct_in_hyp redfun idref gl =
   let inhyp,id = match idref with
     | InHyp id -> true, id
@@ -169,12 +169,12 @@ let reduct_in_hyp redfun idref gl =
   let (_,c, ty) = pf_get_hyp gl id in
   let redfun' = under_casts (pf_reduce redfun gl) in
   match c with
-    | None -> convert_hyp id (redfun' ty) gl
+    | None -> convert_hyp (id,None,redfun' ty) gl
     | Some b ->
 	if inhyp then (* Default for defs: reduce in body *)
-	  convert_defbody id (redfun' b) gl
+	  convert_hyp (id,Some (redfun' b),ty) gl
 	else
-	  convert_deftype id (redfun' ty) gl
+	  convert_hyp (id,Some b,redfun' ty) gl
 
 let reduct_option redfun = function
   | Some id -> reduct_in_hyp   redfun id 
@@ -739,13 +739,35 @@ let quantify lconstr =
 let letin_abstract id c (occ_ccl,occ_hyps) gl =
   let everywhere = (occ_ccl = None) & (occ_hyps = []) in
   let env = pf_env gl in
+  let compute_dependency _ (hyp,_,_ as d) ctxt =
+    let d' =
+      try
+        let occ = if everywhere then [] else List.assoc hyp occ_hyps in
+        let newdecl = subst_term_occ_decl env occ c d in
+        if d = newdecl then
+	  if not everywhere then raise (RefinerError (DoesNotOccurIn (c,hyp)))
+	  else raise Not_found
+        else 
+	  (subst1_decl (mkVar id) newdecl, true)
+      with Not_found -> 
+      (d,List.exists (fun((id,_,_),dep) -> dep && occur_var_in_decl env id d) ctxt)
+    in d'::ctxt
+  in 
+  let ctxt' = fold_named_context compute_dependency ~init:[] env in
+  let compute_marks ((depdecls,marks as accu),lhyp) ((hyp,_,_) as d,b) =
+    if b then ((d::depdecls,(hyp,lhyp)::marks), lhyp)
+    else (accu, Some hyp) in
+  let (depdecls,marks),_ = List.fold_left compute_marks (([],[]),None) ctxt' in
+(*
   let abstract ((depdecls,marks as accu),lhyp) (hyp,_,_ as d) =
     try
       let occ = if everywhere then [] else List.assoc hyp occ_hyps in
       let newdecl = subst_term_occ_decl env occ c d in
       if d = newdecl then
 	if not everywhere then raise (RefinerError (DoesNotOccurIn (c,hyp)))
-	else (accu, Some hyp)
+	else
+          if List.exists (fun (id,_,_) -> occur_var id d) 
+          (accu, Some hyp)
       else 
 	let newdecl = subst1_decl (mkVar id) newdecl in
 	((newdecl::depdecls,(hyp,lhyp)::marks), lhyp)
@@ -753,7 +775,8 @@ let letin_abstract id c (occ_ccl,occ_hyps) gl =
       (accu, Some hyp) 
   in
   let (depdecls,marks),_ =
-    fold_named_context_reverse abstract ~init:(([],[]),None) env in
+    fold_named_context_reverse abstract ~init:(([],[]),None) env in(*  *)
+*)
   let occ_ccl = if everywhere then Some [] else occ_ccl in
   let ccl = match occ_ccl with
     | None -> pf_concl gl
