@@ -171,12 +171,16 @@ TACTICS=\
   tactics/nbtermdn.cmo tactics/wcclausenv.cmo \
   tactics/tacticals.cmo tactics/hipattern.cmo tactics/tactics.cmo \
   tactics/hiddentac.cmo tactics/elim.cmo \
-  tactics/dhyp.cmo tactics/auto.cmo tactics/tacinterp.cmo
+  tactics/dhyp.cmo tactics/auto.cmo 
 
 TOPLEVEL=\
   toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
   toplevel/vernacexpr.cmo  toplevel/metasyntax.cmo \
-  toplevel/command.cmo toplevel/record.cmo toplevel/recordobj.cmo \
+  toplevel/command.cmo \
+  tactics/setoid_replace.cmo tactics/equality.cmo \
+  tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
+tactics/tacinterp.cmo \
+toplevel/record.cmo toplevel/recordobj.cmo \
   toplevel/discharge.cmo translate/ppvernacnew.cmo \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
   toplevel/vernacentries.cmo toplevel/vernac.cmo \
@@ -185,8 +189,6 @@ TOPLEVEL=\
   toplevel/coqinit.cmo toplevel/coqtop.cmo
 
 HIGHTACTICS=\
-  tactics/setoid_replace.cmo tactics/equality.cmo \
-  tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
   tactics/autorewrite.cmo tactics/refine.cmo \
   tactics/extraargs.cmo tactics/extratactics.cmo tactics/eauto.cmo
 
