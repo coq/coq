@@ -69,7 +69,7 @@ let cache_hintrewrite (_,(rbase,lrl)) =
     try 
       List.rev_append l (Stringmap.find rbase !rewtab) 
     with
-      | Not_found -> l
+      | Not_found -> List.rev l
   in
     rewtab:=Stringmap.add rbase l !rewtab
 
