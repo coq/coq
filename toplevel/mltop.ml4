@@ -36,7 +36,7 @@ open Vernacinterp
 let coq_mlpath_copy = ref []
 let keep_copy_mlpath s = 
   let dir = glob s in
-  let lpe = { directory = dir; root_dir = dir; relative_subdir = [] } in
+  let lpe = { directory = dir; coq_dirpath = [] } in
   coq_mlpath_copy := lpe :: !coq_mlpath_copy
 
 (* If there is a toplevel under Coq *)
