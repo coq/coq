@@ -482,6 +482,7 @@ let rec pr_vernac = function
 	| LocateTerm qid ->  pr_reference qid
 	| LocateFile f -> str"File" ++ spc() ++ qs f
 	| LocateLibrary qid -> str"Library" ++ spc () ++ pr_reference qid
+	| LocateNotation s -> str ("\""^s^"\"")
       in str"Locate" ++ spc() ++ pr_locate loc
   | VernacComments l -> hov 1 (str"Comments" ++ spc() ++ prlist_with_sep sep (pr_comment pr_constr) l)
   | VernacNop -> str"Proof"
