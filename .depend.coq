@@ -53,17 +53,17 @@ theories/Reals/RiemannInt.vo: theories/Reals/RiemannInt.v theories/Reals/Rfuncti
 theories/Reals/Integration.vo: theories/Reals/Integration.v theories/Reals/NewtonInt.vo theories/Reals/RiemannInt_SF.vo theories/Reals/RiemannInt.vo
 theories/Reals/Reals.vo: theories/Reals/Reals.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo.vo theories/Reals/Ranalysis.vo theories/Reals/Integration.vo
 theories/Init/Notations.vo: theories/Init/Notations.v
-theories/Init/Datatypes.vo: theories/Init/Datatypes.v theories/Init/Notations.vo
+theories/Init/Datatypes.vo: theories/Init/Datatypes.v theories/Init/Notations.vo theories/Init/Logic.vo
 theories/Init/Peano.vo: theories/Init/Peano.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo
-theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Notations.vo theories/Init/Datatypes.vo
+theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Notations.vo
 theories/Init/Specif.vo: theories/Init/Specif.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo
 theories/Init/Logic_Type.vo: theories/Init/Logic_Type.v theories/Init/Datatypes.vo theories/Init/Logic.vo
 theories/Init/Wf.vo: theories/Init/Wf.v theories/Init/Notations.vo theories/Init/Logic.vo theories/Init/Datatypes.vo
 theories/Init/Prelude.vo: theories/Init/Prelude.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo theories/Init/Specif.vo theories/Init/Peano.vo theories/Init/Wf.vo
 theories/Init/Notations.vo: theories/Init/Notations.v
-theories/Init/Datatypes.vo: theories/Init/Datatypes.v theories/Init/Notations.vo
+theories/Init/Datatypes.vo: theories/Init/Datatypes.v theories/Init/Notations.vo theories/Init/Logic.vo
 theories/Init/Peano.vo: theories/Init/Peano.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo
-theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Notations.vo theories/Init/Datatypes.vo
+theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Notations.vo
 theories/Init/Specif.vo: theories/Init/Specif.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo
 theories/Init/Logic_Type.vo: theories/Init/Logic_Type.v theories/Init/Datatypes.vo theories/Init/Logic.vo
 theories/Init/Wf.vo: theories/Init/Wf.v theories/Init/Notations.vo theories/Init/Logic.vo theories/Init/Datatypes.vo
