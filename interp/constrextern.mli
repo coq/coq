@@ -22,6 +22,11 @@ open Topconstr
 open Symbols
 (*i*)
 
+(* v7->v8 translation *)
+val id_of_v7_string : string -> identifier
+val v7_to_v8_id : identifier -> identifier (* v7->v8 translation *)
+val shortest_qualid_of_v7_global : Idset.t -> global_reference -> qualid
+
 (* Translation of pattern, cases pattern, rawterm and term into syntax
    trees for printing *)
 
