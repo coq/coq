@@ -441,6 +441,7 @@ LOGICVO=theories/Logic/Hurkens.vo          theories/Logic/ProofIrrelevance.vo\
       theories/Logic/Classical.vo          theories/Logic/Classical_Type.vo \
       theories/Logic/Classical_Pred_Set.vo   theories/Logic/Eqdep.vo          \
       theories/Logic/Classical_Pred_Type.vo  theories/Logic/Classical_Prop.vo \
+      theories/Logic/ClassicalFacts.vo \
       theories/Logic/Berardi.vo       	     theories/Logic/Eqdep_dec.vo \
       theories/Logic/Decidable.vo            theories/Logic/JMeq.vo
 
@@ -604,7 +605,9 @@ FIELDVO = contrib/field/Field_Compl.vo     contrib/field/Field_Theory.vo \
 
 XMLVO = Xml.vo
 
-INTERFACEV0 = contrib/interface/Centaur.vo contrib/interface/vernacrc
+INTERFACEV0 = contrib/interface/Centaur.vo
+
+INTERFACERC = contrib/interface/vernacrc
 
 FOURIERVO = contrib/fourier/Fourier_util.vo    contrib/fourier/Fourier.vo
 
@@ -624,7 +627,7 @@ CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 
 $(CONTRIBVO): states/initial.coq
 
-contrib: $(CONTRIBVO) $(CONTRIBCMO)
+contrib: $(CONTRIBVO) $(CONTRIBCMO) $(INTERFACERC)
 omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
 ring: $(RINGVO) $(RINGCMO)
 # xml_ instead of xml to avoid conflict with "make xml"

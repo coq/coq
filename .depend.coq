@@ -184,6 +184,7 @@ theories/Logic/JMeq.vo: theories/Logic/JMeq.v
 theories/Logic/Decidable.vo: theories/Logic/Decidable.v
 theories/Logic/Eqdep_dec.vo: theories/Logic/Eqdep_dec.v
 theories/Logic/Berardi.vo: theories/Logic/Berardi.v
+theories/Logic/ClassicalFacts.vo: theories/Logic/ClassicalFacts.v
 theories/Logic/Classical_Prop.vo: theories/Logic/Classical_Prop.v theories/Logic/ProofIrrelevance.vo
 theories/Logic/Classical_Pred_Type.vo: theories/Logic/Classical_Pred_Type.v theories/Logic/Classical_Prop.vo
 theories/Logic/Eqdep.vo: theories/Logic/Eqdep.v
