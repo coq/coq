@@ -471,7 +471,7 @@ Qed.
 (* Radian -> Degree | Degree -> Radian                         *)
 (***************************************************************)
 
-Definition plat : R := (IZR `180`).
+Definition plat : R := ``180``.
 Definition toRad [x:R] : R := ``x*PI*/plat``.
 Definition toDeg [x:R] : R := ``x*plat*/PI``.
 
@@ -485,9 +485,7 @@ Rewrite <- Rinv_l_sym.
 Rewrite Rmult_1r; Rewrite <- Rinv_l_sym. 
 Apply Rmult_1r.
 Apply PI_neq0.
-Unfold plat.
-Apply not_O_IZR.
-Discriminate.
+Unfold plat; DiscrR.
 Qed.
 
 Lemma toRad_inj : (x,y:R) (toRad x)==(toRad y) -> x==y.
@@ -496,9 +494,7 @@ Rewrite <- (Rmult_sym x); Rewrite <- (Rmult_sym y).
 Apply r_Rmult_mult with ``/plat``.
 Rewrite <- (Rmult_sym ``x*PI``); Rewrite <- (Rmult_sym ``y*PI``); Assumption.
 Apply Rinv_neq_R0.
-Unfold plat.
-Apply not_O_IZR.
-Discriminate.
+Unfold plat; DiscrR.
 Apply PI_neq0.
 Qed.
 
