@@ -31,6 +31,7 @@ val constr_of_reference : global_reference -> constr
    raise [Not_found] if not a global *)
 val reference_of_constr : constr -> global_reference
 
+module Refset : Set.S with type elt = global_reference 
 module Refmap : Map.S with type key = global_reference
 
 (*s Dirpaths *)
@@ -49,6 +50,8 @@ val add_dirpath_prefix : module_ident -> dir_path -> dir_path
 
 val extract_dirpath_prefix : int -> dir_path -> dir_path
 val is_dirpath_prefix_of : dir_path -> dir_path -> bool
+
+module Dirset : Set.S with type elt = dir_path
 
 (*s Section paths are {\em absolute} names *)
 type section_path

@@ -51,6 +51,7 @@ module RefOrdered =
     let compare = Pervasives.compare
   end
 
+module Refset = Set.Make(RefOrdered)
 module Refmap = Map.Make(RefOrdered)
 
 (**********************************************)
@@ -115,6 +116,7 @@ let dirpath_of_string s =
       [] -> invalid_arg "dirpath_of_string"
     | dir -> make_dirpath dir
 
+module Dirset = Set.Make(struct type t = dir_path let compare = compare end)
 
 (*s Section paths are absolute names *)
 
