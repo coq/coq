@@ -501,7 +501,9 @@ Qed.
 
 \Question[assumption2bis]{What can be the difference between applying one hypotheses or another in the context of the last question ?}
 
-From a proof point of view it is equivalent but if you want to extract a program from your proof, the two hyphoteses can lead to different programs.
+From a proof point of view it is equivalent but if you want to extract
+a program from your proof, the two hyphoteses can lead to different
+programs.
 
 
 \subsubsection{Automation}
@@ -755,17 +757,12 @@ You can use the {\tt Admitted} command to state your current proof as an axiom.
 
 You can use the \discriminate tactic.
 
-
 \begin{coq_example}
-Inductive toto : Set := 
-	C1 : toto
-      | C2 : toto.
-
+Inductive toto : Set := C1 : toto | C2 : toto.
 Goal C1 <> C2.
 discriminate.
 Qed.
 \end{coq_example}
-
 
 \Question[coqccoqtop]{What is the difference between coqc et coqtop ?}
 
@@ -861,7 +858,7 @@ You can increase the depth of the proof search or add some lemmas in the base of
 
 PS: Notice for people that are interested in proof rendering that Assert
 and Pose (and Cut) are not rendered the same as Generalize (see the
-HELM experimental rendering tool at http://mowgli.cs.unibo.it, link
+HELM experimental rendering tool at \url{http://mowgli.cs.unibo.it}, link
 HELM, link COQ Online). Indeed Generalize builds a beta-expanded term
 while Assert, Pose and Cut uses a let-in.
 
@@ -987,7 +984,7 @@ Program extraction consist in generating a program from a constructive proof.
 
 You can extract your programs to Objective Caml and Haskell.
 
-\Question[extraaxiom]{How can I change extract an incomplete proof ?}
+\Question[extraaxiom]{How can I extract an incomplete proof ?}
 
 You can provide programs for your axioms.
 
