@@ -242,6 +242,7 @@ GEXTEND Gram
       | "'"; test_ident_colon; key = IDENT; ":"; c = constr; "'" -> 
 	  (* Delimiter "N" implicitly moved to "nat" in V7 *)
 	  let key = if key = "N" then "nat" else key in
+	  let key = if key = "P" then "positive" else key in
 	  CDelimiters (loc,key,c) ] ]
   ;
   constr91:
