@@ -1205,7 +1205,7 @@ and tactic_of_value vle g =
 
 (* Evaluation with FailError catching *)
 and eval_with_fail interp tac goal =
-  try 
+  try
     (match interp goal tac with
     | VTactic tac -> VRTactic (tac goal)
     | a -> a)
@@ -1297,7 +1297,7 @@ and match_context_interp ist g lr lmr =
     with
     | (FailError _) as e -> raise e
     | NextOccurrence _ -> raise No_match
-    | e when e = No_match or Logic.catchable_exception e ->
+    | e when is_match_catchable e ->
       apply_goal_sub ist env goal (nocc + 1) (id,c) csr mt mhyps hyps in
   let rec apply_match_context ist env goal nrs lex lpt = 
     begin
