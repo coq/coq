@@ -396,8 +396,8 @@ let rec pretype tycon env isevars lvar lmeta = function
 	    mkCase (ci, (nf_betaiota pj.uj_val), cj.uj_val,
                        Array.map (fun j-> j.uj_val) lfj)
 	in
-	{uj_val = v;
-	 uj_type = rsty }
+	{ uj_val = v;
+	  uj_type = rsty }
 
   | RCases (loc,prinfo,po,tml,eqns) ->
       Cases.compile_cases loc
@@ -407,7 +407,9 @@ let rec pretype tycon env isevars lvar lmeta = function
   | RCast(loc,c,t) ->
       let tj = pretype_type (valcon_of_tycon tycon) env isevars lvar lmeta t in
       let cj = pretype (mk_tycon tj.utj_val) env isevars lvar lmeta c in
-      let cj = {uj_val = mkCast (cj.uj_val,tj.utj_val); uj_type=tj.utj_val} in
+      (* User Casts are for helping pretyping, experimentally not to be kept*)
+      let v = (* mkCast ( *) cj.uj_val (* , tj.utj_val) *) in
+      let cj = { uj_val = v; uj_type = tj.utj_val } in
       inh_conv_coerce_to_tycon loc env isevars cj tycon
 
   | RDynamic (loc,d) ->
