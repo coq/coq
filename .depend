@@ -40,8 +40,7 @@ library/goptions.cmi: kernel/names.cmi lib/pp.cmi
 library/impargs.cmi: kernel/inductive.cmi kernel/names.cmi kernel/term.cmi 
 library/indrec.cmi: kernel/declarations.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/inductive.cmi kernel/names.cmi kernel/term.cmi 
-library/lib.cmi: library/libobject.cmi kernel/names.cmi library/nametab.cmi \
-    library/summary.cmi 
+library/lib.cmi: library/libobject.cmi kernel/names.cmi library/summary.cmi 
 library/libobject.cmi: kernel/names.cmi 
 library/library.cmi: library/lib.cmi library/libobject.cmi kernel/names.cmi \
     library/nametab.cmi lib/pp.cmi lib/system.cmi 
@@ -377,10 +376,10 @@ library/indrec.cmx: kernel/declarations.cmx kernel/environ.cmx \
     kernel/names.cmx lib/pp.cmx kernel/reduction.cmx kernel/sign.cmx \
     kernel/term.cmx kernel/type_errors.cmx kernel/typeops.cmx lib/util.cmx \
     library/indrec.cmi 
-library/lib.cmo: library/libobject.cmi kernel/names.cmi library/nametab.cmi \
-    library/summary.cmi kernel/univ.cmi lib/util.cmi library/lib.cmi 
-library/lib.cmx: library/libobject.cmx kernel/names.cmx library/nametab.cmx \
-    library/summary.cmx kernel/univ.cmx lib/util.cmx library/lib.cmi 
+library/lib.cmo: library/libobject.cmi kernel/names.cmi library/summary.cmi \
+    kernel/univ.cmi lib/util.cmi library/lib.cmi 
+library/lib.cmx: library/libobject.cmx kernel/names.cmx library/summary.cmx \
+    kernel/univ.cmx lib/util.cmx library/lib.cmi 
 library/libobject.cmo: lib/dyn.cmi kernel/names.cmi lib/util.cmi \
     library/libobject.cmi 
 library/libobject.cmx: lib/dyn.cmx kernel/names.cmx lib/util.cmx \
