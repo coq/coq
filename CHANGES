@@ -22,6 +22,7 @@ Ltac
 Tactics
 
 - Added "dependent rewrite term" and "dependent rewrite term in hyp" (doc TODO)
+- Omega now handles arbitrary precision integers
 
 Modules
 

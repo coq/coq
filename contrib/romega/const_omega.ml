@@ -53,14 +53,16 @@ let recognize_number t =
   let rec loop t =
     let f,l = dest_const_apply t in
     match Names.string_of_id f,l with
-       "xI",[t] -> 1 + 2 * loop t
-     | "xO",[t] -> 2 * loop t 
-     | "xH",[] -> 1
+       "xI",[t] -> Bigint.add Bigint.one (Bigint.mult Bigint.two (loop t))
+     | "xO",[t] -> Bigint.mult Bigint.two (loop t)
+     | "xH",[] -> Bigint.one
      | _ -> failwith "not a number" in
   let f,l = dest_const_apply t in
     match Names.string_of_id f,l with
-       "Zpos",[t] -> loop t | "Zneg",[t] -> - (loop t) | "Z0",[] -> 0
-     | _ -> failwith "not a number";;
+        "Zpos",[t] -> loop t
+      | "Zneg",[t] -> Bigint.neg (loop t)
+      | "Z0",[] -> Bigint.zero
+      | _ -> failwith "not a number";;
 
 
 let logic_dir = ["Coq";"Logic";"Decidable"]
@@ -450,16 +452,20 @@ let rec do_list = function
   | [x] -> x
   | (x::l) -> do_seq x (do_list l)
 
-				 
 let mk_integer n =
   let rec loop n = 
-    if n=1 then Lazy.force coq_xH else 
-      Term.mkApp ((if n mod 2 = 0 then Lazy.force coq_xO else Lazy.force coq_xI),
-		 [| loop (n/2) |]) in
+    if n=Bigint.one then Lazy.force coq_xH else
+      let (q,r) = Bigint.euclid n Bigint.two in
+      Term.mkApp
+        ((if r = Bigint.zero then Lazy.force coq_xO else Lazy.force coq_xI),
+	[| loop q |]) in
     
-    if n = 0 then Lazy.force coq_ZERO 
-    else Term.mkApp ((if n > 0 then Lazy.force coq_POS else Lazy.force coq_NEG),
-		     [| loop (abs n) |])
+    if n = Bigint.zero then Lazy.force coq_ZERO 
+    else
+      if Bigint.is_strictly_pos n then
+        Term.mkApp (Lazy.force coq_POS, [| loop n |])
+      else
+        Term.mkApp (Lazy.force coq_NEG, [| loop (Bigint.neg n) |])
 
 let mk_Z = mk_integer
 
