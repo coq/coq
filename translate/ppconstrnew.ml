@@ -133,24 +133,14 @@ let pr_eqn pr (_,pl,rhs) =
      hov 0 (prlist_with_sep sep_v (pr_patt ltop) pl ++ str " =>") ++
      spc() ++ pr ltop rhs)
 
-
-(*
-let pr_binder pr (nal,t) =
-  hov 0 (
-    prlist_with_sep sep (pr_located pr_name) nal ++
-    pr_opt_type pr t)
-*)
-
 let surround p = str"(" ++ p ++ str")"
 
 let pr_binder many pr (nal,t) =
   match t with
-      CHole _ -> 
-        prlist_with_sep sep (pr_located pr_name) nal
-    | _ ->
-        let s = 
-          (prlist_with_sep sep (pr_located pr_name) nal ++ str ":" ++ pr t) in
-        hov 1 (if many then surround s else s)
+  | CHole _ -> prlist_with_sep sep (pr_located pr_name) nal
+  | _ ->
+    let s = prlist_with_sep sep (pr_located pr_name) nal ++ str ":" ++ pr t in
+    hov 1 (if many then surround s else s)
 
 let pr_binder_among_many pr_c = function
   | LocalRawAssum (nal,t) ->
@@ -196,11 +186,6 @@ let rec extract_lam_binders = function
       LocalRawAssum (nal,t) :: bl, c
   | c -> [], c
     
-(*
-let pr_arg_binders pr bl =
-  if bl = [] then mt() else (spc() ++ pr_binders pr bl)
-*)
-
 let pr_global vars ref =
   (* pr_global_env vars ref *)
   let s = string_of_qualid (Constrextern.shortest_qualid_of_v7_global vars ref) in
@@ -514,12 +499,33 @@ let rec pr inherited a =
 
 let rec strip_context n iscast t =
   if n = 0 then
-    if iscast then match t with RCast (_,c,_) -> c | _ -> t else t
+    [], if iscast then match t with CCast (_,c,_) -> c | _ -> t else t
   else match t with
-    | RLambda (_,_,_,c) -> strip_context (n-1) iscast c
-    | RProd (_,_,_,c) -> strip_context (n-1) iscast c
-    | RLetIn (_,_,_,c) -> strip_context (n-1) iscast c
-    | RCast (_,c,_) -> strip_context n false c
+    | CLambdaN (loc,(nal,t)::bll,c) ->
+	let n' = List.length nal in
+	if n' > n then
+	  let nal1,nal2 = list_chop n nal in
+	  [LocalRawAssum (nal1,t)], CLambdaN (loc,(nal2,t)::bll,c)
+	else
+	let bl', c = strip_context (n-n') iscast
+	  (if bll=[] then c else CLambdaN (loc,bll,c)) in
+	LocalRawAssum (nal,t) :: bl', c 
+    | CProdN (loc,(nal,t)::bll,c) ->
+	let n' = List.length nal in
+	if n' > n then
+	  let nal1,nal2 = list_chop n nal in
+	  [LocalRawAssum (nal1,t)], CLambdaN (loc,(nal2,t)::bll,c)
+	else
+	let bl', c = strip_context (n-n') iscast
+	  (if bll=[] then c else CProdN (loc,bll,c)) in
+	LocalRawAssum (nal,t) :: bl', c 
+    | CArrow (loc,t,c) ->
+	let bl', c = strip_context (n-1) iscast c in
+	LocalRawAssum ([loc,Anonymous],t) :: bl', c 
+    | CCast (_,c,_) -> strip_context n false c
+    | CLetIn (_,na,b,c) -> 
+	let bl', c = strip_context (n-1) iscast c in
+	LocalRawDef (na,b) :: bl', c
     | _ -> anomaly "ppconstrnew: strip_context"
 
 let transf istype env n iscast c =
@@ -534,22 +540,24 @@ let transf istype env n iscast c =
       let _ = Pretyping.understand_gen_tcc Evd.empty env [] None r in 
       (*msgerrnl (str "Typage OK");*) ()
     with e -> (*msgerrnl (str "Warning: can't type")*) () end;
-    (if istype then Constrextern.extern_rawtype
-    else Constrextern.extern_rawconstr)
-      (Termops.vars_of_env env)
-      (strip_context n iscast r)
-  else c
+    let c =
+      (if istype then Constrextern.extern_rawtype
+      else Constrextern.extern_rawconstr)
+      (Termops.vars_of_env env) r in
+    strip_context n iscast c
+  else [], c
 
-let pr_constr_env env c = pr lsimple (transf false env 0 false c)
-let pr_lconstr_env env c = pr ltop (transf false env 0 false c)
+let pr_constr_env env c = pr lsimple (snd (transf false env 0 false c))
+let pr_lconstr_env env c = pr ltop (snd (transf false env 0 false c))
 let pr_constr c = pr_constr_env (Global.env()) c
 let pr_lconstr c = pr_lconstr_env (Global.env()) c
 
-let pr_lconstr_env_n env n b c = pr ltop (transf false env n b c)
-let pr_type_env_n env n c = pr ltop (transf true env n false c)
-let pr_type c = pr ltop (transf true (Global.env()) 0 false c)
+let pr_binders = pr_undelimited_binders (pr ltop)
 
-let pr_binders = pr_undelimited_binders pr_lconstr
+let pr_lconstr_env_n env n b c =
+  let bl, c = transf false env n b c in bl, pr ltop c
+let pr_type_env_n env n c = pr ltop (snd (transf true env n false c))
+let pr_type c = pr ltop (snd (transf true (Global.env()) 0 false c))
 
 let transf_pattern env c =
   if Options.do_translate() then

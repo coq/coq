@@ -311,30 +311,31 @@ let pr_decl_notation =
     str "as " ++ str (quote ntn) ++ 
     pr_opt (fun sc -> str " :" ++ str sc) scopt)
 
-let anonymize_binder na c =
-  if Options.do_translate() then
-    Constrextern.extern_rawconstr (Termops.vars_of_env (Global.env()))
-      (Reserve.anonymize_if_reserved na
-      (Constrintern.for_grammar
-        (Constrintern.interp_rawconstr Evd.empty (Global.env())) c))
-  else c
-
-let surround p = str"(" ++ p ++ str")"
-
-(*
-let pr_binder pr_c ty na =
-  match anonymize_binder (snd na) ty with
-      CHole _ -> pr_located pr_name na
-    | _ ->
-        hov 1
-        (surround (pr_located pr_name na ++ str":" ++ cut() ++ pr_c ty))
-*)
+let rec abstract_rawconstr c = function
+  | [] -> c
+  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_rawconstr c bl)
+  | LocalRawAssum (idl,t)::bl ->
+      List.fold_right (fun x b -> mkLambdaC([x],t,b)) idl
+      (abstract_rawconstr c bl)
+      
+let rec prod_rawconstr c = function
+  | [] -> c
+  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,prod_rawconstr c bl)
+  | LocalRawAssum (idl,t)::bl ->
+      List.fold_right (fun x b -> mkProdC([x],t,b)) idl
+      (prod_rawconstr c bl)
 
 let pr_vbinders l =
   hv 0 (pr_binders l)
 
-let pr_binders_arg bl =
-  if bl = [] then mt () else spc () ++ pr_binders bl
+let pr_binders_arg =
+  pr_ne_sep spc pr_binders
+
+let pr_and_type_binders_arg bl =
+  let n = local_binders_length bl in
+  let c = abstract_rawconstr (CHole dummy_loc) bl in
+  let bl, _ = pr_lconstr_env_n (Global.env()) n false c in
+  pr_binders_arg bl
 
 let pr_onescheme (id,dep,ind,s) =
   hov 0 (pr_id id ++ str" :=") ++ spc() ++
@@ -599,18 +600,6 @@ let rec pr_vernac = function
             str" in" ++ spc() in
       let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b)) in
       let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b)) in
-      let rec abstract_rawconstr c = function
-        | [] -> c
-        | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_rawconstr c bl)
-        | LocalRawAssum (idl,t)::bl ->
-            List.fold_right (fun x b -> mkLambdaC([x],t,b)) idl
-            (abstract_rawconstr c bl) in
-      let rec prod_rawconstr c = function
-        | [] -> c
-        | LocalRawDef (x,b)::bl -> mkLetInC(x,b,prod_rawconstr c bl)
-        | LocalRawAssum (idl,t)::bl ->
-            List.fold_right (fun x b -> mkProdC([x],t,b)) idl
-            (prod_rawconstr c bl) in
       let pr_def_body = function
         | DefineBody (bl,red,c,d) ->
             let (bl2,body,ty) = match d with
@@ -619,23 +608,19 @@ let rec pr_vernac = function
                   (bl2,body,mt())
               | Some ty ->
                   let bl2,body,ty' = extract_def_binders c ty in
-                  (bl2,body, spc() ++ str":" ++ spc () ++
+                  (bl2,CCast (dummy_loc,body,ty'), spc() ++ str":" ++ spc () ++
                     pr_type_env_n (Global.env())
                     (local_binders_length bl + local_binders_length bl2)
                     (prod_rawconstr ty bl)) in
-            let bindings =
-	      pr_ne_sep spc pr_vbinders bl ++ pr_binders_arg bl2 in
 	    let n = local_binders_length bl + local_binders_length bl2 in
-	    let c',iscast = match d with None -> c, false
-	      | Some d -> CCast (dummy_loc,c,d), true in
-            let ppred =
-              Some (pr_reduce red ++
-              pr_lconstr_env_n (Global.env()) n iscast
-		(abstract_rawconstr c' bl))
-            in
-            (bindings,ty,ppred)
+	    let iscast = d <> None in
+            let bindings,ppred =
+	      pr_lconstr_env_n (Global.env()) n iscast
+		(abstract_rawconstr (abstract_rawconstr body bl2) bl) in
+            (pr_binders_arg bindings,ty,Some (pr_reduce red ++ ppred))
         | ProveBody (bl,t) ->
-            (pr_vbinders bl, str" :" ++ spc () ++ pr_type t, None) in
+            (pr_and_type_binders_arg bl, str" :" ++ spc () ++ pr_type t, None)
+      in
       let (binds,typ,c) = pr_def_body b in
       hov 2 (pr_def_token e ++ spc() ++ pr_id id ++ binds ++ typ ++
       (match c with
@@ -751,8 +736,8 @@ pr_vbinders bl ++ spc())
       let pr_oneind key (id,ntn,indpar,s,lc) =
 	hov 0 (
           str key ++ spc() ++
-          pr_id id ++ pr_binders_arg indpar ++ spc() ++ str":" ++ spc() ++
-          pr_type s ++ 
+          pr_id id ++ pr_and_type_binders_arg indpar ++ spc() ++ str":" ++ 
+	  spc() ++ pr_type s ++ 
 	  pr_decl_notation ntn ++ str" :=") ++ pr_constructor_list lc in
 
       (* Copie simplifiée de command.ml pour déclarer les notations locales *)
@@ -823,11 +808,12 @@ pr_vbinders bl ++ spc())
                 spc() ++ str "{struct " ++
                 pr_name (snd (List.nth ids n)) ++ str"}"
               else mt() in
-            pr_id id ++ str" " ++ pr_binders bl ++ annot ++ spc()
+	    let bl, ppc = 
+              pr_lconstr_env_n rec_sign (local_binders_length bl)
+		true (abstract_rawconstr (CCast (dummy_loc,def,type_)) bl) in
+            pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_type c) type_
-            ++ pr_decl_notation ntn ++ str" :=" ++ brk(1,1) ++
-            pr_lconstr_env_n rec_sign (local_binders_length bl)
-	      true (CCast (dummy_loc,def0,type_0))
+            ++ pr_decl_notation ntn ++ str" :=" ++ brk(1,1) ++ ppc
       in
       hov 1 (str"Fixpoint" ++ spc() ++
         prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onerec recs)
@@ -862,7 +848,8 @@ pr_vbinders bl ++ spc())
       hov 2
         (str (if b then "Record" else "Structure") ++
          (if oc then str" > " else str" ") ++ pr_id name ++ 
-         pr_binders_arg ps ++ str" :" ++ spc() ++ pr_type s ++ str" := " ++
+          pr_and_type_binders_arg ps ++ str" :" ++ spc() ++ pr_type s ++ 
+	  str" := " ++
          (match c with
            | None -> mt()
            | Some sc -> pr_id sc) ++
@@ -989,19 +976,23 @@ pr_vbinders bl ++ spc())
   | VernacSetOpacity (fl,l) ->
       hov 1 ((if fl then str"Opaque" else str"Transparent") ++
              spc() ++ prlist_with_sep sep pr_reference l)
-  | VernacUnsetOption na ->
-      hov 1 (str"Unset" ++ spc() ++ pr_printoption na None)
-  | VernacSetOption (Goptions.SecondaryTable ("Implicit","Arguments"),BoolValue true) -> str"Set Implicit Arguments" 
+
+  | VernacSetOption (Goptions.SecondaryTable ("Implicit","Arguments"),BoolValue true) -> 
+      str"Set Implicit Arguments" 
       ++
       (if !Options.translate_strict_impargs then
 	sep_end () ++ fnl () ++ str"Unset Strict Implicits"
       else mt ())
+  | VernacUnsetOption (Goptions.SecondaryTable ("Implicit","Arguments"))
   | VernacSetOption (Goptions.SecondaryTable ("Implicit","Arguments"),BoolValue false) -> 
-      str"Set Strict Implicits" 
-      ++
       (if !Options.translate_strict_impargs then
-	sep_end () ++ fnl () ++ str"Unset Implicit Arguments"
+	str"Set Strict Implicits" ++ sep_end () ++ fnl ()
       else mt ())
+      ++
+      str"Unset Implicit Arguments" 
+
+  | VernacUnsetOption na ->
+      hov 1 (str"Unset" ++ spc() ++ pr_printoption na None)
   | VernacSetOption (na,v) -> hov 2 (str"Set" ++ spc() ++ pr_set_option na v)
   | VernacAddOption (na,l) -> hov 2 (str"Add" ++ spc() ++ pr_printoption na (Some l))
   | VernacRemoveOption (na,l) -> hov 2 (str"Remove" ++ spc() ++ pr_printoption na (Some l))
