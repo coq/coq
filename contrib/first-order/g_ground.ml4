@@ -25,7 +25,7 @@ let ground_depth=ref 5
 
 let _=
   let gdopt=
-    { optsync=false;
+    { optsync=true;
       optname="ground_depth";
       optkey=SecondaryTable("Ground","Depth"); 
       optread=(fun ()->Some !ground_depth); 
