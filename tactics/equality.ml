@@ -566,32 +566,6 @@ let sig_clausal_form env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
   let isevars = Evarutil.create_evar_defs sigma in
   let rec sigrec_clausal_form siglen p_i =
     if siglen = 0 then
-(*
-      (* We obtain the components dependent in dFLT by matching *)
-      let headpat = nf_betadeltaiota env sigma p_i in
-      let nf_ty = nf_betadeltaiota env sigma dFLTty in
-      let bindings =
-        (* Test inutile car somatch ne prend pas en compte les univers *) 
-	if is_Type headpat & is_Type nf_ty then
-	  []
-        else
-          let headpat = pattern_of_constr headpat in
-          let weakpat = pattern_of_constr (nf_betaiota p_i) in
-	  list_try_find
-	    (fun ty -> 
-              try 
-		matches headpat ty 
-              with PatternMatchingFailure ->
-              try
-                (* Needed in cases such as pat=([x]T ?) and ty=(T C)
-                   with T reducible against constructor C *)
-                matches weakpat ty 
-              with PatternMatchingFailure ->
-                failwith "caught")
-	  [dFLTty; nf_ty]
-      in
-      (bindings,dFLT)
-*)
       if Evarconv.the_conv_x env isevars p_i dFLTty then
 	(* the_conv_x had a side-effect on isevars *)
 	dFLT
@@ -601,18 +575,6 @@ let sig_clausal_form env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
       let (a,p_i_minus_1) = match whd_beta_stack p_i with
 	| (_sigS,[a;p]) -> (a,p)
  	| _ -> anomaly "sig_clausal_form: should be a sigma type" in
-(*
-      let mv = Clenv.new_meta() in
-      let rty = applist(p_i_minus_1,[mkMeta mv]) in
-      let (bindings,tuple_tail) = sigrec_clausal_form (siglen-1) rty in
-      let w =
-	try List.assoc mv bindings
-	with Not_found ->
-	  anomaly "Not enough components to build the dependent tuple" in
-      (bindings,applist(exist_term,[a;p;w;tuple_tail]))
-  in
-  snd (sigrec_clausal_form siglen ty)
-*)
       let ev = Evarutil.new_isevar isevars env (dummy_loc,InternalHole)
 	(Evarutil.new_Type ()) in
       let rty = beta_applist(p_i_minus_1,[ev]) in
@@ -624,7 +586,8 @@ let sig_clausal_form env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
 	| Some w -> applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
 	| None -> anomaly "Not enough components to build the dependent tuple"
   in
-  Evarutil.nf_evar (Evarutil.evars_of isevars) (sigrec_clausal_form siglen ty)
+  let scf = sigrec_clausal_form siglen ty in
+  Evarutil.nf_evar (Evarutil.evars_of isevars) scf
 
 (* The problem is to build a destructor (a generalization of the
    predecessor) which, when applied to a term made of constructors
