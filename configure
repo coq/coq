@@ -473,7 +473,7 @@ echo_e "\nlet theories_dirs = [" >> $mlconfig_file
 subdirs theories
 echo_e "]\n" >> $mlconfig_file
 
-echo_e "\nlet tactics_dirs = [" >> $mlconfig_file
+echo_e "\nlet contrib_dirs = [" >> $mlconfig_file
 subdirs contrib
 echo_e "]\n" >> $mlconfig_file
 

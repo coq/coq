@@ -11,10 +11,7 @@ val set_rcuser : string -> unit
 val no_load_rc : unit -> unit
 val load_rcfile : unit -> unit
 
-val add_include : string -> unit
 val push_include : string -> unit
-val rec_include : string -> unit
-
-val hm2 : string -> string
+val push_rec_include : string -> unit
 
 val init_load_path : unit -> unit

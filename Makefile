@@ -355,12 +355,14 @@ COQDEPCMO=config/coq_config.cmo tools/coqdep_lexer.cmo tools/coqdep.cmo
 $(COQDEP): $(COQDEPCMO)
 	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ unix.cma $(COQDEPCMO) $(OSDEPLIBS)
 
-beforedepend:: $(COQDEP)
+beforedepend:: tools/coqdep_lexer.ml $(COQDEP)
 
 GALLINACMO=tools/gallina_lexer.cmo tools/gallina.cmo
 
 $(GALLINA): $(GALLINACMO)
 	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ $(GALLINACMO)
+
+beforedepend:: tools/gallina_lexer.ml
 
 $(COQMAKEFILE): tools/coq_makefile.ml
 	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coq_makefile.ml
@@ -415,6 +417,8 @@ install-library:
 	  $(MKDIR) $(COQLIB)/`dirname $$f`; \
 	  cp $$f $(COQLIB)/`dirname $$f`; \
         done
+	$(MKDIR) $(COQLIB)/states
+	cp states/*.coq $(COQLIB)/states
 	$(MKDIR) $(EMACSLIB)
 	cp tools/coq.el tools/coq.elc $(EMACSLIB)
 

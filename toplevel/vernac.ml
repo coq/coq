@@ -51,7 +51,7 @@ let real_error = function
    the file we parse seems a bit risky to me.  B.B.  *)
 
 let open_file_twice_if verbosely fname =
-  let longfname = find_file_in_path (Library.get_load_path ()) fname in
+  let _,longfname = find_file_in_path (Library.get_load_path ()) fname in
   let in_chan = open_in longfname in
   let verb_ch = if verbosely then Some (open_in longfname) else None in
   let po = Pcoq.Gram.parsable (Stream.of_channel in_chan) in

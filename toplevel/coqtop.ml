@@ -78,7 +78,7 @@ let parse_args () =
     | ("-I"|"-include") :: d :: rem -> push_include d; parse rem
     | ("-I"|"-include") :: []       -> usage ()
 
-    | "-R" :: d :: rem -> rec_include d; parse rem
+    | "-R" :: d :: rem -> push_rec_include d; parse rem
     | "-R" :: []       -> usage ()
 
     | "-q" :: rem -> no_load_rc (); parse rem

@@ -397,9 +397,10 @@ let coqdep () =
       Coq_config.theories_dirs;
     let tactics = Filename.concat !coqlib "tactics" in
     add_coqlib_directory tactics;
+    let contrib = Filename.concat !coqlib "contrib" in
     List.iter 
-      (fun s -> add_coqlib_directory (Filename.concat tactics s))
-      Coq_config.tactics_dirs;
+      (fun s -> add_coqlib_directory (Filename.concat contrib s))
+      Coq_config.contrib_dirs;
     mliKnown := !mliKnown @ (List.map (fun (f,_,d) -> (f,d)) !mliAccu);
     mlKnown  := !mlKnown @ (List.map (fun (f,_,d) -> (f,d)) !mlAccu);
     vKnown   := !vKnown @ !vAccu;

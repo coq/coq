@@ -8,15 +8,23 @@ open Unix
 (* Files and load path. *)
 (* All subdirectories, recursively *)
 
+type load_path_entry = {
+  directory : string;
+  root_dir : string;
+  relative_subdir : string }
+
+type load_path = load_path_entry list
+
 let exists_dir dir =
   try let _ = opendir dir in true
   with Unix_error _ -> false
 
-let all_subdirs dir =
+let all_subdirs root =
   let l = ref [] in
-  let add f = l := f :: !l in
-  let rec traverse dir =
-    Printf.printf "%s\n" dir;
+  let add f rel = 
+    l := { directory = f; root_dir = root; relative_subdir = rel } :: !l 
+  in
+  let rec traverse dir rel =
     let dirh = 
       try opendir dir with Unix_error _ -> invalid_arg "all_subdirs" 
     in
@@ -26,14 +34,15 @@ let all_subdirs dir =
 	if f <> "." && f <> ".." then
 	  let file = Filename.concat dir f in
 	  if (stat file).st_kind = S_DIR then begin
-	    add file;
-	    traverse file
+	    let newrel = Filename.concat rel f in
+	    add file newrel;
+	    traverse file newrel
 	  end
       done
     with End_of_file ->
       closedir dirh
   in
-  traverse dir; List.rev !l
+  traverse root ""; List.rev !l
 
 let safe_getenv_def var def =
   try 
@@ -49,9 +58,9 @@ let glob s = s
 
 let search_in_path path filename =
   let rec search = function
-    | dir :: rem ->
-	let f = glob (Filename.concat dir filename) in
-	if Sys.file_exists f then f else search rem
+    | lpe :: rem ->
+	let f = glob (Filename.concat lpe.directory filename) in
+	if Sys.file_exists f then (lpe,f) else search rem
     | [] ->
 	raise Not_found
   in
@@ -62,7 +71,8 @@ let where_in_path = search_in_path
 let find_file_in_path paths name =
   let globname = glob name in
   if not (Filename.is_relative globname) then
-    globname
+    let root = Filename.dirname globname in
+    { directory = root; root_dir = root; relative_subdir = "" }, globname
   else 
     try 
       search_in_path paths name
@@ -97,47 +107,40 @@ let marshal_in ch = Marshal.from_channel ch
 
 exception Bad_magic_number of string
 
-let (raw_extern_intern :
-     int -> string -> 
-       (string -> string * out_channel)
-       * (string list -> string -> string * in_channel))
-  = fun magic suffix ->
-    let extern_state name = 
-      let (_,channel) as filec =
-	open_trapping_failure (fun n -> n,open_out_bin n) name suffix in
-      output_binary_int channel magic;
-      filec
-    and intern_state paths name = 
-      let fname = find_file_in_path paths (make_suffix name suffix) in
-      let channel = open_in_bin fname in
-      if input_binary_int channel <> magic then
-        raise (Bad_magic_number fname);
-      (fname,channel)
-    in 
-    (extern_state,intern_state)
+let raw_extern_intern magic suffix =
+  let extern_state name = 
+    let (_,channel) as filec =
+      open_trapping_failure (fun n -> n,open_out_bin n) name suffix in
+    output_binary_int channel magic;
+    filec
+  and intern_state paths name = 
+    let lpe,fname = find_file_in_path paths (make_suffix name suffix) in
+    let channel = open_in_bin fname in
+    if input_binary_int channel <> magic then
+      raise (Bad_magic_number fname);
+    (lpe,fname,channel)
+  in 
+  (extern_state,intern_state)
 
-let (extern_intern :
-     int -> string -> (string -> 'a -> unit) * (string list -> string -> 'a))
-  = fun magic suffix ->
-    let (raw_extern,raw_intern) = raw_extern_intern magic suffix in
-    let extern_state name val_0 = 
+let extern_intern magic suffix =
+  let (raw_extern,raw_intern) = raw_extern_intern magic suffix in
+  let extern_state name val_0 = 
+    try
+      let (fname,channel) = raw_extern name in
       try
-	let (fname,channel) = raw_extern name in
-      	try
-          marshal_out channel val_0;
-          close_out channel
-      	with e -> 
-	  begin try_remove fname; raise e end
-      with Sys_error s -> error ("System error: " ^ s)
-
+        marshal_out channel val_0;
+        close_out channel
+      with e -> 
+	begin try_remove fname; raise e end
+    with Sys_error s -> error ("System error: " ^ s)
   and intern_state paths name = 
     try
-      let (fname,channel) = raw_intern paths name in
+      let (_,fname,channel) = raw_intern paths name in
       let v = marshal_in channel in
       close_in channel; 
       v
-    with Sys_error s -> error("System error: " ^ s)
-
+    with Sys_error s -> 
+      error("System error: " ^ s)
   in 
   (extern_state,intern_state)
 

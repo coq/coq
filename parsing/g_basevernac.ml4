@@ -88,8 +88,7 @@ GEXTEND Gram
       | IDENT "AddPath"; dir = stringarg; "." -> <:ast< (ADDPATH $dir) >>
       | IDENT "DelPath"; dir = stringarg; "." -> <:ast< (DELPATH $dir) >>
       | IDENT "Print"; IDENT "LoadPath"; "." -> <:ast< (PrintPath) >>
-      | IDENT "AddRecPath"; dir = stringarg; "." ->
-          <:ast< (RECADDPATH $dir) >>
+      | IDENT "AddRecPath"; dir = stringarg; "." -> <:ast< (RECADDPATH $dir) >>
 	  
       | IDENT "Print"; IDENT "Modules"; "." -> <:ast< (PrintModules) >>
       | IDENT "Print"; "Proof"; id = identarg; "." ->

@@ -23,5 +23,5 @@ val date : string       (* release date *)
 val compile_date : string (* compile date *)
 
 val theories_dirs : string list
-val tactics_dirs : string list
+val contrib_dirs : string list
 

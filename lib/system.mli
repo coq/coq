@@ -1,11 +1,20 @@
 
 (* $Id$ *)
 
-(*s Files. *)
+(*s Files and load paths. Load path entries remember the original root
+    given by the user. For efficiency, we keep the full path (field
+    [directory]), the root path and the path relative to the root. *)
 
-val all_subdirs : string -> string list
-val is_in_path : string list -> string -> bool
-val where_in_path : string list -> string -> string
+type load_path_entry = {
+  directory : string;
+  root_dir : string;
+  relative_subdir : string }
+
+type load_path = load_path_entry list
+
+val all_subdirs : string -> load_path
+val is_in_path : load_path -> string -> bool
+val where_in_path : load_path -> string -> load_path_entry * string
 
 val make_suffix : string -> string -> string
 val file_readable_p : string -> bool
@@ -16,7 +25,7 @@ val home : string
 
 val exists_dir : string -> bool
 
-val find_file_in_path : string list -> string -> string
+val find_file_in_path : load_path -> string -> load_path_entry * string
 
 (*s Generic input and output functions, parameterized by a magic number
   and a suffix. The intern functions raise the exception [Bad_magic_number]
@@ -29,11 +38,10 @@ exception Bad_magic_number of string
 
 val raw_extern_intern : int -> string -> 
   (string -> string * out_channel) *
-  (path:string list -> string -> string * in_channel)
+  (load_path -> string -> load_path_entry * string * in_channel)
 
 val extern_intern : 
-  int -> string -> (string -> 'a -> unit) *
-    (path:string list -> string -> 'a)
+  int -> string -> (string -> 'a -> unit) * (load_path -> string -> 'a)
 
 (*s Time stamps. *)
 

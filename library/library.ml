@@ -3,33 +3,28 @@
 
 open Pp
 open Util
+open System
 open Names
 open Environ
 open Libobject
 open Lib
 
-(*s Load path. Used for commands Add Path, Remove Path, Print Path *)
+(*s Load path. *)
 
-let loadpath_name = "LoadPath"
+let load_path = ref ([] : load_path)
 
-module LoadPath = struct
-  let check s = if not (System.exists_dir s) then warning (s^" was not found")
-  let key = Goptions.PrimaryTable loadpath_name
-  let title = "Load Paths for Coq files"
-  let member_message s b =
-    if b then s^" is declared in the load path for Coq files"
-    else s^" is not declared in the load path for Coq files"
-  let synchronous = false
-end
+let get_load_path () = !load_path
 
-module LoadPathTable = Goptions.MakeStringTable(LoadPath)
+let add_load_path_entry lpe = load_path := lpe :: !load_path
 
-let get_load_path = LoadPathTable.elements
 let add_path dir = 
-  (Goptions.get_string_table (Goptions.PrimaryTable loadpath_name))#add dir
+  add_load_path_entry { directory = dir; root_dir = dir; relative_subdir = "" }
+
 let remove_path dir =
-  (Goptions.get_string_table (Goptions.PrimaryTable loadpath_name))#remove dir
-let rec_add_path dir = List.iter add_path (System.all_subdirs dir)
+  load_path := List.filter (fun lpe -> lpe.directory <> dir) !load_path
+
+let rec_add_path dir = 
+  load_path := (all_subdirs dir) @ !load_path
 
 (*s Modules on disk contain the following informations (after the magic 
     number, and before the digest). *)
@@ -45,7 +40,7 @@ type module_disk = {
 
 type module_t = {
   module_name : string;
-  module_filename : string;
+  module_filename : load_path_entry * string;
   module_compiled_env : compiled_env;
   module_declarations : library_segment;
   mutable module_opened : bool;
@@ -129,12 +124,12 @@ let load_objects decls =
   segment_iter load_object decls
 
 let rec load_module_from s f =
-  let (fname,ch) = raw_intern_module (get_load_path ()) f in
+  let (lpe,fname,ch) = raw_intern_module (get_load_path ()) f in
   let md = System.marshal_in ch in
   let digest = System.marshal_in ch in
   close_in ch;
   let m = { module_name = md.md_name;
-	    module_filename = fname;
+	    module_filename = (lpe,fname);
 	    module_compiled_env = md.md_compiled_env;
 	    module_declarations = md.md_declarations;
 	    module_opened = false;

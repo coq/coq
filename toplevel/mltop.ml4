@@ -3,6 +3,7 @@
 
 open Util
 open Pp
+open System
 open Libobject
 open Library
 open System
@@ -33,7 +34,10 @@ open Vernacinterp
 
 (* This path is where we look for .cmo *)
 let coq_mlpath_copy = ref []
-let keep_copy_mlpath s = coq_mlpath_copy := (glob s)::!coq_mlpath_copy
+let keep_copy_mlpath s = 
+  let dir = glob s in
+  let lpe = { directory = dir; root_dir = dir; relative_subdir = "" } in
+  coq_mlpath_copy := lpe :: !coq_mlpath_copy
 
 (* If there is a toplevel under Coq *)
 type toplevel = { 
@@ -86,7 +90,7 @@ let dir_ml_load s =
     | WithoutTop ->
       ifdef Byte then
 	(if is_in_path !coq_mlpath_copy s then
-          let gname = where_in_path !coq_mlpath_copy s in
+          let _,gname = where_in_path !coq_mlpath_copy s in
           try
             Dynlink.loadfile gname;
 	    Dynlink.add_interfaces 
@@ -119,7 +123,8 @@ let dir_ml_dir s =
     | _ -> ()
 
 (* For Rec Add ML Path *)
-let rdir_ml_dir dir = List.iter dir_ml_dir (all_subdirs dir)
+let rdir_ml_dir dir = 
+  List.iter (fun lpe -> dir_ml_dir lpe.directory) (all_subdirs dir)
 
 (* convertit un nom quelconque en nom de fichier ou de module *) 
 let mod_of_name name =
@@ -231,7 +236,7 @@ let declare_ml_modules l =
 let print_ml_path () =
   let l = !coq_mlpath_copy in
   pPNL [< 'sTR"ML Load Path:"; 'fNL; 'sTR"  ";
-          hV 0 (prlist_with_sep pr_fnl (fun s -> [< 'sTR s >]) l) >]
+          hV 0 (prlist_with_sep pr_fnl (fun e -> [< 'sTR e.directory >]) l) >]
 
 let _ = vinterp_add "DeclareMLModule"
 	  (fun l ->

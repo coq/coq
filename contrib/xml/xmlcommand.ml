@@ -110,7 +110,8 @@ let uri_of_path sp =
      match sl with
         []             -> assert false (*V7 WHAT NOW? *)
       | module_name::_ ->
-        trim_wrong_uri_prefix (Library.module_filename module_name)
+	  let _,file = Library.module_filename module_name in
+          trim_wrong_uri_prefix file
    in
     "cic:" ^ module_path ^ "/" ^ (String.concat "/" sl) ^ "/" ^
      (N.string_of_id id) ^ "." ^ (ext_of_sp sp)
@@ -786,10 +787,10 @@ let printModule id dn =
   let sp = Lib.make_path id N.OBJ in
   let ls = L.module_segment (Some str) in
    print_if_verbose ("MODULE_BEGIN " ^ str ^ " " ^ N.string_of_path sp ^ " " ^
-    L.module_filename str ^ "\n") ;
+    (snd (L.module_filename str)) ^ "\n") ;
    print_closed_section str ls dn ;
    print_if_verbose ("MODULE_END " ^ str ^ " " ^ N.string_of_path sp ^ " " ^
-    L.module_filename str ^ "\n")
+    (snd (L.module_filename str)) ^ "\n")
 ;;
 
 (* printSection identifier directory_name                                    *)

@@ -45,10 +45,15 @@ let add_include s =
   Mltop.dir_ml_dir s;
   Library.add_path s
 
+let add_rec_include s = 
+  let subdirs = all_subdirs s in
+  List.iter (fun lpe -> Mltop.dir_ml_dir lpe.directory) subdirs;
+  List.iter Library.add_load_path_entry subdirs
+
 (* By the option -include -I or -R of the command line *)
 let includes = ref []
-let push_include s = includes := s :: !includes
-let rec_include s = includes := (all_subdirs s) @ !includes
+let push_include s = includes := (s,false) :: !includes
+let push_rec_include s = includes := (s,true) :: !includes
 
 (* Because find puts "./" and the loadpath is not nicely pretty-printed *)
 let hm2 s = 
@@ -59,22 +64,31 @@ let getenv_else s dft = try Sys.getenv s with Not_found -> dft
 
 (* Initializes the LoadPath according to COQLIB and Coq_config *)
 let init_load_path () =
-  if Coq_config.local then
+  if Coq_config.local then begin
     (* local use (no installation) *)
     List.iter 
       (fun s -> add_include (Filename.concat Coq_config.coqtop s))
-      ("states" :: "dev" ::
-       (List.map 
-	  (fun s -> Filename.concat "theories" (hm2 s))
-          Coq_config.theories_dirs))
-  else begin
-    (* default load path; only if COQLIB is defined *)
+      ["states"; "dev"];
+    let theories = Filename.concat Coq_config.coqtop "theories" in
+    List.iter
+      (fun s -> add_include (Filename.concat theories (hm2 s)))
+      Coq_config.theories_dirs;
+    add_include (Filename.concat Coq_config.coqtop "tactics");
+    let contrib = Filename.concat Coq_config.coqtop "contrib" in
+    List.iter
+      (fun s -> add_include (Filename.concat contrib (hm2 s)))
+      Coq_config.contrib_dirs
+  end else begin
+    (* default load path; variable COQLIB overrides the default library *)
     let coqlib = getenv_else "COQLIB" Coq_config.coqlib in
-    add_include coqlib
+    add_rec_include coqlib
   end;
   let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
   add_include camlp4;
   add_include ".";
   (* additional loadpath, given with -I -include -R options *)
-  List.iter add_include (List.rev !includes);
+  List.iter 
+    (fun (s,reci) -> if reci then add_rec_include s else add_include s)
+    (List.rev !includes);
   includes := []
+

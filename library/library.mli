@@ -38,10 +38,11 @@ val save_module_to : string -> string -> unit
     [module_filename] returns the full filename of a loaded module. *)
 
 val module_segment : string option -> Lib.library_segment
-val module_filename : string -> string
+val module_filename : string -> System.load_path_entry * string
 
 (*s Global load path *)
-val get_load_path : unit -> string list
+val get_load_path : unit -> System.load_path
+val add_load_path_entry : System.load_path_entry -> unit
 val add_path : string -> unit
 val rec_add_path : string -> unit
 val remove_path : string -> unit

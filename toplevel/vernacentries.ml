@@ -106,7 +106,8 @@ let show_top_evars () =
  
 let locate_file f =
   try
-    mSG [< 'sTR (System.where_in_path (get_load_path()) f); 'fNL >]
+    let _,file = System.where_in_path (get_load_path()) f in
+    mSG [< 'sTR file; 'fNL >]
   with Not_found -> 
     mSG (hOV 0 [< 'sTR"Can't find file"; 'sPC; 'sTR f; 'sPC;
 		  'sTR"on loadpath"; 'fNL >])
@@ -120,7 +121,7 @@ let locate_id id =
 let print_loadpath () =
   let l = get_load_path () in
   mSGNL [< 'sTR"Load Path:"; 'fNL; 'sTR"  ";
-           hV 0 (prlist_with_sep pr_fnl (fun s -> [< 'sTR s >]) l) >]
+           hV 0 (prlist_with_sep pr_fnl (fun s -> [< 'sTR s.directory >]) l) >]
 
 let get_current_context_of_args = function
   | [VARG_NUMBER n] -> get_goal_context n
