@@ -1,0 +1,7 @@
+- Consecutive as in patterns are forbidden
+
+- Names generated in cases are different
+
+- "command" in grammars is now "constr" as in pretty-printing rules
+
+- Numérotation dans l'ordre des hypothèses créées par Decompose
