@@ -1316,7 +1316,7 @@ let normalize_equation id flag theorem pos t t1 t2 (tactic,defs) =
   let shift_left = 
     tclTHEN 
       (generalize_tac [mkApp (theorem, [| t1; t2; mkVar id |]) ])
-      (clear [id]) 
+      (tclTRY (clear [id]))
   in
   if tac <> [] then
     let id' = new_identifier () in 
