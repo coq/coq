@@ -22,7 +22,7 @@ open Vernacinterp
 open Tacexpr
 
 (* Rewriting rules *)
-type rew_rule = constr * bool * tactic
+type rew_rule = constr * bool * glob_tactic_expr
 
 (* Summary and Object declaration *)
 let rewtab =
@@ -39,7 +39,6 @@ let _ =
       Summary.survive_module = false;
       Summary.survive_section   = false }
 
-(* Rewriting rules before tactic interpretation *)
 type raw_rew_rule = constr * bool * raw_tactic_expr
 
 (* Applies all the rules of one base *)
@@ -51,6 +50,7 @@ let one_base tac_main bas =
       errorlabstrm "AutoRewrite" 
         (str ("Rewriting base "^(bas)^" does not exist"))
   in
+  let lrul = List.map (fun (c,b,t) -> (c,b,Tacinterp.eval_tactic t)) lrul in
     tclREPEAT_MAIN (tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
       tclTHEN tac
         (tclREPEAT_MAIN 
@@ -65,12 +65,11 @@ let autorewrite tac_main lbas =
 
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (_,(rbase,lrl)) =
-  let l = List.rev_map (fun (c,b,t) -> (c,b,Tacinterp.eval_tactic t)) lrl in
   let l = 
     try 
-      List.rev_append l (Stringmap.find rbase !rewtab) 
+      List.rev_append lrl (Stringmap.find rbase !rewtab) 
     with
-      | Not_found -> List.rev l
+      | Not_found -> List.rev lrl
   in
     rewtab:=Stringmap.add rbase l !rewtab
 
