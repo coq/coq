@@ -1,0 +1,7 @@
+Fix F
+  {F [A,B:Set; f:(A ->B); l:(list A)] : (list B) :=
+     Cases l of
+       nil => (nil B)
+     | (cons a l0) => (cons (f a) (F A B f l0))
+     end}
+     : (A,B:Set)(A ->B) ->(list A) ->(list B)
