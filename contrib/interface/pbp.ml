@@ -193,12 +193,12 @@ let prodconstr () = constant "Datatypes" "prod";;
 let exconstr () = constant "Logic" "ex";;
 let exTconstr () = constant "Logic_Type" "exT";;
 let sigconstr () = constant "Specif" "sig";;
-let sigTconstr () = constant "Logic_type" "sigT";;
+let sigTconstr () = constant "Logic_Type" "sigT";;
 let orconstr = Coqlib.build_coq_or;;
 let sumboolconstr = Coqlib.build_coq_sumbool;;
 let sumconstr() = constant "Datatypes" "sum";;
 let notconstr = Coqlib.build_coq_not;;
-let notTconstr () = constant "Logic_type" "notT";;
+let notTconstr () = constant "Logic_Type" "notT";;
 
 let is_matching_local a b = is_matching (pattern_of_constr a) b;;
 
