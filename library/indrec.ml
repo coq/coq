@@ -377,8 +377,7 @@ let build_mutual_indrec env sigma = function
 let build_indrec env sigma mispec =
   let kind = mis_sort mispec in
   let dep = kind <> Prop Null in
-  strip_all_casts
-    (List.hd (mis_make_indrec env sigma [(mispec,dep,kind)] mispec))
+  List.hd (mis_make_indrec env sigma [(mispec,dep,kind)] mispec)
 
 (**********************************************************************)
 (* To handle old Case/Match syntax in Pretyping                       *)
