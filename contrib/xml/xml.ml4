@@ -31,8 +31,7 @@ let xml_cdata str = [< 'Str str >]
 (* Usage:                                                                   *)
 (*  pp tokens None     pretty prints the output on stdout                   *)
 (*  pp tokens (Some filename) pretty prints the output on the file filename *)
-let pp strm fn =
- let channel = ref stdout in
+let pp_ch strm channel =
  let rec pp_r m =
   parser
     [< 'Str a ; s >] ->
@@ -58,16 +57,22 @@ let pp strm fn =
  and print_spaces m =
   for i = 1 to m do fprint_string "  " done
  and fprint_string str =
-  output_string !channel str
+  output_string channel str
  in
+  pp_r 0 strm
+;;
+
+
+let pp strm fn =
   match fn with
      Some filename ->
       let filename = filename ^ ".xml" in
-       channel := open_out filename ;
-       pp_r 0 strm ;
-       close_out !channel ;
+      let ch = open_out filename in
+       pp_ch strm ch;
+       close_out ch ;
        print_string ("\nWriting on file \"" ^ filename ^ "\" was succesful\n");
        flush stdout
    | None ->
-       pp_r 0 strm
+       pp_ch strm stdout
 ;;
+

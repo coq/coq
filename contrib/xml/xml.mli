@@ -31,6 +31,8 @@ val xml_nempty :
   string -> (string * string) list -> token Stream.t -> token Stream.t
 val xml_cdata : string -> token Stream.t
 
+val pp_ch : token Stream.t -> out_channel -> unit
+
 (* The pretty printer for streams of token                                  *)
 (* Usage:                                                                   *)
 (*  pp tokens None     pretty prints the output on stdout                   *)
