@@ -40,7 +40,8 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/type_errors.cmo kernel/typeops.cmo kernel/indtypes.cmo \
        kernel/typing.cmo
 
-LIBRARY=library/libobject.cmo library/summary.cmo
+LIBRARY=library/libobject.cmo library/summary.cmo \
+	library/global.cmo
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
@@ -48,7 +49,11 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 
 TOPLEVEL=toplevel/himsg.cmo
 
-OBJS=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PARSING) $(TOPLEVEL)
+CMA=$(CLIBS) $(CAMLP4OBJS)
+CMXA=$(CMA:.cma=.cmxa)
+
+CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PARSING) $(TOPLEVEL)
+CMX=$(CMO:.cmo=.cmx)
 
 # Targets
 
@@ -56,18 +61,21 @@ world: minicoq coqtop doc dev/db_printers.cmo
 
 # coqtop
 
-coqtop: $(OBJS)
-	ocamlmktop $(INCLUDES) -o coqtop -custom $(CLIBS) $(CAMLP4OBJS) \
-	  $(OBJS) $(OSDEPLIBS)
+coqtop: $(CMX)
+	$(OCAMLOPT) $(INCLUDES) -o coqtop $(CMXA) $(CMX) $(OSDEPLIBS)
+
+coqtop.byte: $(CMO)
+	ocamlmktop $(INCLUDES) -o coqtop.byte -custom $(CMA) \
+	  $(CMO) $(OSDEPLIBS)
 
 # minicoq
 
-MINICOQOBJS=$(CONFIG) $(LIB) $(KERNEL) \
-	    parsing/lexer.cmo parsing/g_minicoq.cmo toplevel/minicoq.cmo
+MINICOQCMO=$(CONFIG) $(LIB) $(KERNEL) \
+	   parsing/lexer.cmo parsing/g_minicoq.cmo toplevel/minicoq.cmo
 
-minicoq: $(MINICOQOBJS)
-	$(OCAMLC) $(INCLUDES) -o minicoq -custom $(CLIBS) $(CAMLP4OBJS) \
-	  $(MINICOQOBJS) $(OSDEPLIBS)
+minicoq: $(MINICOQCMO)
+	$(OCAMLC) $(INCLUDES) -o minicoq -custom $(CMA) $(MINICOQCMO) \
+	  $(OSDEPLIBS)
 
 # Documentation
 
@@ -112,18 +120,23 @@ parsing/q_coqast.cmo: parsing/q_coqast.ml4
 
 parsing/g_prim.cmo: parsing/g_prim.ml4
 	$(OCAMLC) $(BYTEFLAGS) -c -pp "camlp4o pa_extend.cmo -impl" -impl $<
+parsing/g_prim.cmx: parsing/g_prim.ml4
+	$(OCAMLOPT) $(OPTFLAGS) -c -pp "camlp4o pa_extend.cmo -impl" -impl $<
 
-GRAMMAROBJS=./lib/pp_control.cmo ./lib/pp.cmo ./lib/util.cmo ./lib/dyn.cmo \
-	    ./lib/hashcons.cmo ./parsing/coqast.cmo ./parsing/lexer.cmo \
-	    ./parsing/pcoq.cmo ./parsing/q_coqast.cmo ./parsing/g_prim.cmo
+GRAMMARCMO=./lib/pp_control.cmo ./lib/pp.cmo ./lib/util.cmo ./lib/dyn.cmo \
+	   ./lib/hashcons.cmo ./parsing/coqast.cmo ./parsing/lexer.cmo \
+	   ./parsing/pcoq.cmo ./parsing/q_coqast.cmo ./parsing/g_prim.cmo
 
-parsing/grammar.cma: $(GRAMMAROBJS)
-	$(OCAMLC) $(BYTEFLAGS) $(GRAMMAROBJS) -linkall -a -o $@
+parsing/grammar.cma: $(GRAMMARCMO)
+	$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
 
 parsing/g_%.cmo: parsing/g_%.ml4 parsing/grammar.cma
 	$(OCAMLC) $(BYTEFLAGS) -c -pp "camlp4o -I parsing pa_extend.cmo grammar.cma -impl" -impl $<
 
-beforedepend:: $(GRAMMAROBJS)
+parsing/g_%.cmx: parsing/g_%.ml4 parsing/grammar.cma
+	$(OCAMLOPT) $(OPTFLAGS) -c -pp "camlp4o -I parsing pa_extend.cmo grammar.cma -impl" -impl $<
+
+beforedepend:: $(GRAMMARCMO)
 
 # Default rules
 
@@ -144,7 +157,7 @@ beforedepend:: $(GRAMMAROBJS)
 .ml4.cmo:
 	$(OCAMLC) $(BYTEFLAGS) -I $(CAMLP4LIB) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
 
-.ml44.cmx:
+.ml4.cmx:
 	$(OCAMLOPT) $(OPTFLAGS) -I $(CAMLP4LIB) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
 
 # Cleaning
@@ -173,7 +186,7 @@ depend: beforedepend
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*.ml > .depend
 	for f in */*.ml4; do \
 	  file=`dirname $$f`/`basename $$f .ml4`; \
-	  camlp4o $(INCLUDES) pa_extend.cmo q_MLast.cmo $(GRAMMAROBJS) pr_o.cmo -impl $$f > $$file.ml; \
+	  camlp4o $(INCLUDES) pa_extend.cmo q_MLast.cmo $(GRAMMARCMO) pr_o.cmo -impl $$f > $$file.ml; \
 	  ocamldep $(DEPFLAGS) $$file.ml >> .depend; \
 	  rm -f $$file.ml; \
 	done
