@@ -235,13 +235,10 @@ let computable p k =
        sinon on perd la réciprocité de la synthèse (qui, lui,
        engendrera un prédicat non dépendant) *)
 
-  let rec striprec (n,c) = match n, kind_of_term c with
-    | (0,IsLambda (_,_,d)) -> false
-    | (0,_)                -> noccur_between 1 k c
-    | (n,IsLambda (_,_,d)) -> striprec (n-1,d)
-    |  _                           -> false
-  in 
-  striprec (k,p)
+  let _,ccl = decompose_lam p in 
+  noccur_between 1 (k+1) ccl
+
+
 
 let lookup_name_as_renamed ctxt t s =
   let rec lookup avoid env_names n c = match kind_of_term c with
@@ -300,35 +297,27 @@ let rec detype avoid env t =
     | IsMutCase (annot,p,c,bl) ->
 	let synth_type = synthetize_type () in
 	let tomatch = detype avoid env c in
-	begin 
-	  match annot with
-(*	  | None -> (* Pas d'annotation --> affichage avec vieux Case *)
-	      warning "Printing in old Case syntax";
-	      ROldCase (dummy_loc,false,Some (detype avoid env p),
-			tomatch,Array.map (detype avoid env) bl)
-	  | Some *) (consnargsl,(indsp,considl,k,style,tags)) ->
-	    let pred = 
-	      if synth_type & computable p k & considl <> [||] then
-		None
-	      else 
-		Some (detype avoid env p) 
-	    in
-	    let constructs = 
-	      Array.init (Array.length considl)
-		(fun i -> ((indsp,i+1),[] (* on triche *))) in
-	    let eqnv =
-	      array_map3 (detype_eqn avoid env) constructs consnargsl bl in
-	    let eqnl = Array.to_list eqnv in
-	    let tag =
-	      if PrintingLet.active (indsp,consnargsl) then 
-		PrintLet 
-	      else if PrintingIf.active (indsp,consnargsl) then 
-		PrintIf 
-	      else 
-		PrintCases
-	    in 
-	    RCases (dummy_loc,tag,pred,[tomatch],eqnl)
-	end
+	let (consnargsl,(indsp,considl,k,style,tags)) = annot in
+	let pred = 
+	  if synth_type & computable p k & considl <> [||] then
+	    None
+	  else 
+	    Some (detype avoid env p) in
+	let constructs = 
+	  Array.init (Array.length considl)
+	    (fun i -> ((indsp,i+1),[] (* on triche *))) in
+	let eqnv =
+	  array_map3 (detype_eqn avoid env) constructs consnargsl bl in
+	let eqnl = Array.to_list eqnv in
+	let tag =
+	  if PrintingLet.active (indsp,consnargsl) then 
+	    PrintLet 
+	  else if PrintingIf.active (indsp,consnargsl) then 
+	    PrintIf 
+	  else 
+	    PrintCases
+	in 
+	RCases (dummy_loc,tag,pred,[tomatch],eqnl)
 	
     | IsFix (nvn,(cl,lfn,vt)) -> detype_fix (RFix nvn) avoid env cl lfn vt
     | IsCoFix (n,(cl,lfn,vt))  -> detype_fix (RCoFix n) avoid env cl lfn vt

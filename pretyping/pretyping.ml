@@ -346,11 +346,7 @@ let rec pretype tycon env isevars lvar lmeta cstr =
 	  | Some p -> pretype empty_tycon env isevars lvar lmeta p
 	  | None -> 
 	      try match tycon with
-		  Some pred -> 
-		    let predj = Retyping.get_judgment_of env !isevars pred in
-		    let tj = inh_coerce_to_sort env isevars predj in (* Utile ?? *)
-		    let { utj_val = v; utj_type = s } = tj in
-		    { uj_val = v; uj_type = mkSort s }
+		  Some pred -> Retyping.get_judgment_of env !isevars pred
 		| None -> error "notype"
 	      with UserError _ -> (* get type information from type of branches *)
 		let expbr = Cases.branch_scheme env isevars isrec indf in
@@ -374,11 +370,16 @@ let rec pretype tycon env isevars lvar lmeta cstr =
 		    with UserError _ -> findtype (i+1) in
 		findtype 0 in
 
-	let evalct = find_rectype env !isevars cj.uj_type (*Pour normaliser evars*)
-	and evalPt = nf_ise1 !isevars pj.uj_type in
+	let evalPt = nf_ise1 !isevars pj.uj_type in
 
+	let dep = find_case_dep_nparams env !isevars (cj.uj_val,pj.uj_val) indf evalPt in
+
+	let (p,pt) =
+	  if dep then (pj.uj_val, evalPt) else
+	    (mkLambda (Anonymous, mkAppliedInd indt, lift 1 pj.uj_val),
+	     mkProd (Anonymous, mkAppliedInd indt, lift 1 evalPt)) in
 	let (bty,rsty) =
-	  Indrec.type_rec_branches isrec env !isevars evalct evalPt pj.uj_val cj.uj_val in
+	  Indrec.type_rec_branches isrec env !isevars indt pt p cj.uj_val in
 	if Array.length bty <> Array.length lf then
 	  wrong_number_of_cases_message loc env isevars 
 	    (cj.uj_val,nf_ise1 !isevars cj.uj_type)
@@ -394,11 +395,11 @@ let rec pretype tycon env isevars lvar lmeta cstr =
 	  let v =
 	    if isrec
 	    then 
-	      transform_rec loc env !isevars(pj.uj_val,cj.uj_val,lfv) (evalct,evalPt)
+	      transform_rec loc env !isevars(p,cj.uj_val,lfv) (indt,pt)
 	    else
 	      let mis,_ = dest_ind_family indf in
 	      let ci = make_default_case_info mis in
-	      mkMutCase (ci, pj.uj_val, cj.uj_val, Array.map (fun j-> j.uj_val) lfj)
+	      mkMutCase (ci, p, cj.uj_val, Array.map (fun j-> j.uj_val) lfj)
 	  in
 	  {uj_val = v;
 	   uj_type = rsty }
