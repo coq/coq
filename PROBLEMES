@@ -1,3 +1,11 @@
+Variable + Record => clash. Exemple:
+======================================================================
+Section S.
+Variable F:Set.
+Record R [ F:Set; x:F ] : Set := { c : x=x }.
+  =>  Error: new_isevar_sign: two vars have the same name
+======================================================================
+
 Hints Resolve fait une anomalie si la constante n'existe pas
 --> CORRIGÉ
 
