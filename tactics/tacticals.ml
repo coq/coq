@@ -255,62 +255,28 @@ type branch_assumptions = {
   recargs   : identifier list; (* the RECURSIVE constructor arguments *)
   indargs   : identifier list} (* the inductive arguments *)
 
-(* Hum ... the following function looks quite similar to the one 
- * (previously) defined with the same name in Tactics.ml. 
- *  --Eduardo (11/8/97) *)
-
-(* This function reduces less than Tacred.reduce_to_quantified_ind (no
-   beta/iota reduction if not induced by a constant), but since it is called
-   with types coming from pf_type_of which betaiota reduces, it should
-   behaves the same.  Moreover, the env in the call to pf_one_step_reduce
-   is not synchronous with the local environment (HH 9/9/01)
-
-   Let's try to replace it by pf_reduce_to_quantified_ind
-
-let pf_one_step_reduce = pf_reduce one_step_reduce
-
-let reduce_to_ind_goal gl t = 
-  let rec elimrec t =
-    let c,args = decomp_app t in
-    match kind_of_term c with
-      | Ind (ind_sp,args as ity) -> 
-	  ((ity, path_of_inductive_path ind_sp, t), t)
-      | Cast (c,_) when args = [] ->
-	  elimrec c
-      | Prod (n,ty,t') when args = [] ->
-	  let (ind, t) = elimrec t' in (ind, mkProd (n,ty,t))
-      | LetIn (n,c,ty,t') when args = [] ->
-	  let (ind, t) = elimrec t' in (ind, mkLetIn (n,c,ty,t))
-      | _ when Instantiate.isEvalRef c ->
-	  elimrec (pf_nf_betaiota gl (pf_one_step_reduce gl t))
-      | _ -> error "Not an inductive product"
-  in 
-  elimrec t
-*)
-
-let reduce_to_ind_goal = pf_reduce_to_quantified_ind
-
-let case_sign ity i = 
-  let rec analrec acc = function 
-    | [] -> acc 
-    | (c::rest) -> analrec (false::acc) rest
-  in
-  let (mib,mip) = Global.lookup_inductive ity in
-  let recarg = mip.mind_listrec in 
-  analrec [] recarg.(i-1)
-
-let elim_sign ity i =
-  let (_,j) = ity in
-  let rec analrec acc = function 
-    | (Param(_)::rest) -> analrec (false::acc) rest
-    | (Norec::rest)    -> analrec (false::acc) rest
-    | (Imbr(_)::rest)  -> analrec (false::acc) rest
-    | (Mrec k::rest)   -> analrec ((j=k)::acc) rest
-    | []               -> List.rev acc 
+let compute_construtor_signatures isrec (_,k as ity) =
+  let rec analrec c recargs =
+    match kind_of_term c, recargs with 
+    | Prod (_,_,c), recarg::rest ->
+	  (match recarg with
+	    | Param _ -> false :: (analrec c rest)
+	    | Norec   -> false :: (analrec c rest)
+	    | Imbr _  -> false :: (analrec c rest)
+	    | Mrec j  -> (isrec & j=k) :: (analrec c rest))
+    | LetIn (_,_,_,c), rest -> false :: (analrec c rest)
+    | _, [] -> []
+    | _ -> anomaly "compute_construtor_signatures"
   in 
   let (mib,mip) = Global.lookup_inductive ity in
-  let recarg = mip.mind_listrec in 
-  analrec [] recarg.(i-1)
+  let n = mip.mind_nparams in
+  let lc =
+    Array.map (fun c -> snd (decompose_prod_n_assum n c)) mip.mind_nf_lc in
+  let lrecargs = mip.mind_listrec in
+  array_map2 analrec lc lrecargs
+
+let case_sign = compute_construtor_signatures false
+let elim_sign = compute_construtor_signatures true
 
 let elimination_sort_of_goal gl = 
   match kind_of_term (hnf_type_of gl (pf_concl gl)) with 
@@ -331,7 +297,7 @@ let last_arg c = match kind_of_term c with
 
 let general_elim_then_using 
   elim elim_sign_fun tac predicate (indbindings,elimbindings) c gl =
-  let (ity,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
+  let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   (* applying elimination_scheme just a little modified *)
   let (wc,kONT)  = startWalk gl in
   let indclause  = mk_clenv_from wc (c,t) in
@@ -357,13 +323,14 @@ let general_elim_then_using
   in
   let elimclause' = clenv_fchain indmv elimclause indclause' in
   let elimclause' = clenv_constrain_with_bindings elimbindings elimclause' in
+  let branchsigns = elim_sign_fun ity in
   let after_tac ce i gl =
     let (hd,largs) = decompose_app (clenv_template_type ce).rebus in
-    let branchsign =  elim_sign_fun ity i in
-    let ba = { branchsign = branchsign;
+    let ba = { branchsign = branchsigns.(i-1);
                nassums = 
 		 List.fold_left 
-                   (fun acc b -> if b then acc+2 else acc+1) 0 branchsign;
+                   (fun acc b -> if b then acc+2 else acc+1)
+                   0 branchsigns.(i-1);
                branchnum = i;
                ity = ity;
                largs = List.map (clenv_instance_term ce) largs;
@@ -380,7 +347,7 @@ let general_elim_then_using
 
 
 let elimination_then_using tac predicate (indbindings,elimbindings) c gl = 
-  let (ind,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
+  let (ind,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   let elim =
     Indrec.lookup_eliminator ind (elimination_sort_of_goal gl) in
   general_elim_then_using
@@ -392,7 +359,7 @@ let simple_elimination_then tac = elimination_then tac ([],[])
 
 let case_then_using tac predicate (indbindings,elimbindings) c gl =
   (* finding the case combinator *)
-  let (ity,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
+  let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   let sigma = project gl in 
   let sort  = elimination_sort_of_goal gl  in
   let elim  = Indrec.make_case_gen (pf_env gl) sigma ity sort in  
@@ -401,7 +368,7 @@ let case_then_using tac predicate (indbindings,elimbindings) c gl =
 
 let case_nodep_then_using tac predicate (indbindings,elimbindings) c gl =
   (* finding the case combinator *)
-  let (ity,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
+  let (ity,t) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   let sigma = project gl in 
   let sort  = elimination_sort_of_goal gl  in
   let elim  = Indrec.make_case_nodep (pf_env gl) sigma ity sort in  
