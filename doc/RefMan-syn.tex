@@ -10,11 +10,11 @@ notation is expected in different contexts. To achieve this form of
 overloading, {\Coq} offers a notion of interpretation scope. This is
 described in section \ref{scopes}.
 
-\Rem: Commands {\tt Grammar}, {\tt Syntax} and {\tt Distfix} which
+\Rem The commands {\tt Grammar}, {\tt Syntax} and {\tt Distfix} which
 were present for a while in {\Coq} are no longer available from {\Coq}
 version 8.0. The underlying AST structure is also no longer available.
 The functionalities of the command {\tt Syntactic Definition} are
-still available, see section \label{Abbreviations}.
+still available, see section \ref{Abbreviations}.
 
 \section{Notations}
 \label{Notation}
@@ -26,7 +26,7 @@ A {\em notation} is a symbolic abbreviation denoting some term
 or term pattern.
 
 A typical notation is the use of the infix symbol \verb=/\= to denote
-the logical and connective (\texttt{and}). Such a notation is declared
+the logical conjunction (\texttt{and}). Such a notation is declared
 by
 
 \begin{coq_example*}
@@ -37,7 +37,7 @@ The expression \texttt{(and A B)} is the abbreviated term and the
 string \verb="A /\ B"= (called a {\em notation}) tells how it is 
 symbolically written.
 
-A notation is always surrounded by quotes (excepted when the
+A notation is always surrounded by double quotes (excepted when the
 abbreviation is a single ident, see \ref{Abbreviations}). The
 notation is composed of {\em tokens} separated by spaces.  Identifiers
 in the string (such as \texttt{A} and \texttt{B}) are the {\em
@@ -46,7 +46,9 @@ denoted term. The other elements of the string (such as \verb=/\=) are
 the {\em symbols}.
 
 An identifier can be used as a symbol but it must be surrounded by
-simple quotes to avoid the confusion with a parameter. Here is an example.
+simple quotes to avoid the confusion with a parameter. Similarly,
+every symbol of at least 3 characters and starting with a simple quote
+must be quoted (then it starts by two single quotes). Here is an example.
 
 \begin{coq_example*}
 Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3).
@@ -69,15 +71,14 @@ Consider for example the new notation
 Notation "A \/ B" := (or A B).
 \end{coq_example*}
 
-Clearly, an expression such as {\tt (A:Prop)True \verb=/\= A
-\verb=\/= A \verb=\/= False} is ambiguous. To tell the {\Coq} parser how
-to interpret the expression, a priority between the symbols \verb=/\=
-and \verb=\/=, and an associativity for each of the symbols has to be
-given. The convention is that conjunction binds more than
-disjunction. This is expressed in {\Coq} by assigning a precedence level
-to each notation, knowing that a lower level binds more than a higher
-level. Hence the level for disjunction must be higher than the level
-for conjunction.
+Clearly, an expression such as {\tt (A:Prop)True \verb=/\= A \verb=\/=
+A \verb=\/= False} is ambiguous. To tell the {\Coq} parser how to
+interpret the expression, a priority between the symbols \verb=/\= and
+\verb=\/= has to be given. Assume for instance that we want conjunction
+to bind more than disjunction. This is expressed by assigning a
+precedence level to each notation, knowing that a lower level binds
+more than a higher level.  Hence the level for disjunction must be
+higher than the level for conjunction.
 
 Since connectives are the less tight articulation points of a text, it
 is reasonable to choose levels not so far from the higher level which
@@ -85,10 +86,10 @@ is 100, for example 85 for disjunction and 80 for
 conjunction\footnote{which are the levels effectively chosen in the
 current implementation of {\Coq}}.
 
-An associativity is also needed to tells if {\tt True \verb=/\=
+Similarly, an associativity is needed to decide whether {\tt True \verb=/\=
 False \verb=/\= False} defaults to {\tt True \verb=/\= (False
-\verb=/\= False)} (this is right associativity) or to {\tt (True
-\verb=/\= False) \verb=/\= False} (this is left associativity). We may
+\verb=/\= False)} (right associativity) or to {\tt (True
+\verb=/\= False) \verb=/\= False} (left associativity). We may
 even consider that the expression is not well-formed and that
 parentheses are mandatory (this is a ``no associativity'')\footnote{
 {\Coq} accepts notations declared as no associative but the parser on
@@ -109,7 +110,7 @@ Notation "A /\ B" (and A B) (at level 80, right associativity).
 Notation "A \/ B" (or A B)  (at level 85, right associativity).
 \end{coq_example*}
 
-By default, the notation is considered non associative, but the
+By default, a notation is considered non associative, but the
 precedence level is mandatory (except for special cases whose level is
 canonical). The level is either a number or the mention {\tt next
 level} whose meaning is obvious. The list of levels already assigned
@@ -123,13 +124,20 @@ is on figure~\ref{coq-symbols}.
 notation & precedence/associativity \\
 \hline
 \verb$"_ , _"$ & 250 \\
+\verb$exists _ : _ | _$ & 200 \\
+\verb$exists _ | _$ & 200 \\
+\verb$exists2 _ : _ | _ & _$ & 200 \\
+\verb$exists2 _ | _ & _$ & 200 \\
 \verb$"_ <-> _"$ & 95 \\
 \verb$"_ -> _"$ & 90\, R (primitive) \\
 \verb$"_ \/ _"$ & 85\, R \\
 \verb$"_ /\ _"$ & 80\, R \\
 \verb$"~ _"$    & 75\, R \\
 \verb$"_ = _"$  & 70 \\
+\verb$"_ = _ :> _"$  & 70 \\
+\verb$"_ = _ = _"$  & 70 \\
 \verb$"_ <> _"$  & 70 \\
+\verb$"_ <> _ :> _"$  & 70 \\
 \verb$"_ <= _"$ & 70 \\
 \verb$"_ < _"$  & 70 \\
 \verb$"_ > _"$  & 70 \\
@@ -142,9 +150,11 @@ notation & precedence/associativity \\
 \verb$"_ - _"$  & 50\, L \\
 \verb$"_ * _"$  & 40\, L \\
 \verb$"_ / _"$  & 40\, L \\
+\verb$"- _"$  & 35\, R \\
+\verb$"/ _"$  & 35\, R \\
 \verb$"_ ^ _"$  & 30\, L \\
 \verb$"{ _ } + { _ }"$ & 0 \\
-\verb$"_ + { _ }"$  & 0 \\
+\verb$"_ + { _ }"$  & 50\, L \\
 \verb$"{ _ : _ | _ }"$ & 0 \\
 \verb$"{ _ : _ | _ & _ }"$ & 0 \\
 \verb$"{ _ : _ & _ }"$ & 0 \\
@@ -171,7 +181,7 @@ expected to be inferred at typing time.
 Notation "x = y" := (@eq ? x y) (at level 70, no associativity).
 \end{coq_example*}
 
-One can define notations with parameters surrounded by symbols. In
+One can define {\em closed} notations whose both sides are symbols. In
 this case, the default precedence level for inner subexpression is 200.
 
 \begin{coq_example*}
@@ -187,44 +197,33 @@ Notation "{ x : A  |  P }" := (sig A (fun x => P)) (at level 0).
 \subsection{Simple factorisation rules}
 
 {\Coq} extensible parsing is performed by Camlp4 which is essentially a
-LL1 parser. Hence, some care has to be made not to hide already
+LL1 parser. Hence, some care has to be taken not to hide already
 existing rules by new rules. Some simple left factorisation work has
 to be done. Here is an example.
 
 \begin{coq_example*}
-Notation "'myexists' x | p"     := (ex ? (fun x => p)) (at level 200).
-Notation "'myexists' x | p & q" := (ex2 ? (fun x => p) (fun x => q))
-   (at level 200).
+Notation "x < y"     := (lt x y) (at level 70).
+Notation "x < y < z" := (x < y /\ y < z) (at level 70).
 \end{coq_example*}
 
 In order to factorise the left part of the rules, the subexpression
-referred by {\tt p} has to be at the same level in both rules. However
-the default behaviour puts {\tt p} at the next existing level below 10
+referred by {\tt y} has to be at the same level in both rules. However
+the default behaviour puts {\tt y} at the next level below 70
 in the first rule (no associativity is the default), and at the level
-200 in the second rule (level 200 is the default when not on the border
-of a notation). To fix this, we need to force the parsing level of p,
+200 in the second rule (level 200 is the default for inner expressions).
+To fix this, we need to force the parsing level of {\tt y},
 as follows.
 
 \begin{coq_example*}
-Notation "'myexists'' x | p"     := (ex ? (fun x => p)) (at level 200)
-Notation "'myexists''' x | p & q" := (ex2 ? (fun x => p) (fun x => q))
-  (at level 200, p at next level).
+Notation "x < y"     := (lt x y) (at level 70).
+Notation "x < y < z" := (x < y /\ y < z) (at level 70, y at next level).
 \end{coq_example*}
 
-Actually, for a better homogeneity between p and q, it is reasonable
-to put q at the same level as p, hence the final version of the rules
-
-\begin{coq_example*}
-Notation "'EX' x | p"     := (ex ? (fun x => p)) (at level 200).
-Notation "'EX' x | p & q" := (ex2 ? (fun x => p) (fun x => q))
-  (at level 200, p, q at next level).
-\end{coq_example*}
-
-For the sake of factorisation with {\Coq} predefined rules, simple rules
-have to be observed for notations starting with a symbol: e.g. rules
-starting with ``\{'' should be put at level 0 and rules
-starting with ``('' at level 0. The list of {\Coq} predefined notations
-are given on figure~\ref{coq-symbols}.
+For the sake of factorisation with {\Coq} predefined rules, simple
+rules have to be observed for notations starting with a symbol:
+e.g. rules starting with ``\{'' or ``('' should be put at level 0. The
+list of {\Coq} predefined notations is given on
+figure~\ref{coq-symbols}.
 
 \subsection{Displaying symbolic notations}
 
@@ -235,21 +234,20 @@ on the {\Coq} printer. For example:
 Check (and True True).
 \end{coq_example}
 
-However, printing, especially when we expect it to be pretty, requires
-more care than parsing. We may want well-chosen indentation,
-line-break, alignment if on several lines, etc. 
+However, printing, especially pretty-printing, requires
+more care than parsing. We may want specific indentations,
+line breaks, alignment if on several lines, etc. 
 
-Printing notation is very rudimentary. When printed, each notation
-opens a {\em formatting box} in such a way that if a line-break is
-needed to print a large expression, all components of the notation are
-at the same indentation of the different lines required for the
-printing.  Line breaks are applied by default just before the symbols of
-the notation.
+The default printing of notations is very rudimentary. For printing a
+notation, a {\em formatting box} is opened in such a way that if the
+notation and its arguments cannot fit on a single line, a line break
+is inserted before the symbols of the notation and the arguments on
+the next lines are aligned with the argument on the first line.
 
-A first, simple control that a user can haves on the printing of a
+A first, simple control that a user can have on the printing of a
 notation is the insertion of spaces at some places of the
 notation. This is performed by adding extra spaces between the symbols
-and parameters: each extra space (more that the single spaces needed
+and parameters: each extra space (other than the single space needed
 to separate the components) is interpreted as a space to be inserted
 by the printer. Here is an example showing how to add spaces around
 the bar of the notation.
@@ -263,52 +261,58 @@ Check (sig (fun x : nat => x=x)).
 The second, more powerful control on printing is by using the {\tt
 format} modifier. Here is an example
 
+\begin{small}
 \begin{coq_example}
-Notation "'If' c1 'then' c2 'else' c3" := (@IF c1 c2 c3)
-  (at level 200, right associativity,
-   format "'[v   ' 'If'  c1 '/' '[' 'then'  c2  ']' '/' '[' 'else'  c3 ']' ']'").
+Notation "'If' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
+ (at level 200, right associativity, format
+  "'[v   ' 'If'  c1 '/' '[' 'then'  c2  ']' '/' '[' 'else'  c3 ']' ']'").
 \end{coq_example}
+\end{small}
 
-A format is an extension of the string denotion the notation with
-the possible following elements:
+A {\em format} is an extension of the string denoting the notation with
+the possible following elements delimited by single quotes:
 
 \begin{itemize}
 \item extra spaces are translated into simple spaces
-\item token of the form '/~~' are translated into breaking point,
+\item tokens of the form \verb='/  '= are translated into breaking point,
   in case a line break occurs, an indentation of the number of spaces
-  after the ``/`` is applied
-\item token of the form '//' force writing on a new line
-\item well-bracketed pairs of tokens of the form {\tt '[~~~~'} and {\tt
-  ']'}: are translated into printing boxes; in case a line break occurs,
-  an indentation of the number of spaces given after the ``[`` is applied
-\item well-bracketed pairs of tokens of the form {\tt '[h~~~~~'} and {\tt
-  ']'}: are translated into vertical printing boxes; if the content of
-  the box cannot be printed on a single line, then every breaking
-  point forces a newline and an indentation of the number of spaces
-  given after the ``[`` is applied at the beginning of each newline
-\item well-bracketed pairs of tokens of the form {\tt '[v~~~'} and {\tt
-  ']'}: are translated into vertical printing boxes; every breaking
-  point forces a newline and an indentation of the number of spaces
-  given after the ``[`` is applied at the beginning of each newline
+  after the ``\verb=/='' is applied (2 spaces in the given example)
+\item token of the form \verb='//'= force writing on a new line
+\item well-bracketed pairs of tokens of the form \verb='[    '= and \verb=']'=
+  are translated into printing boxes; in case a line break occurs,
+  an extra indentation of the number of spaces given after the ``\verb=[=''
+  is applied (4 spaces in the example)
+\item well-bracketed pairs of tokens of the form \verb='[hv   '= and \verb=']'=
+  are translated into horizontal-orelse-vertical printing boxes; 
+  if the content of the box does not fit on a single line, then every breaking
+  point forces a newline and an extra  indentation of the number of spaces
+  given after the ``\verb=[='' is applied at the beginning of each newline
+  (3 spaces in the example)
+\item well-bracketed pairs of tokens of the form \verb='[v '= and
+  \verb=']'= are translated into vertical printing boxes; every
+  breaking point forces a newline, even if the line is large enough to
+  display the whole content of the box, and an extra indentation of the
+  number of spaces given after the ``\verb=[='' is applied at the beginning
+  of each newline
 \end{itemize}
 
-Thus, for the previous example, we get\footnote{The ``@'' is here to shunt
-the notation "'IF' A 'then' B 'else' C" which is defined in {\Coq}
-initial state}:
-
-Notations do not survive the end of sections. No typing of the denoted
-expression is performed at definition time. Type-checking is done only
-at the time of use of the notation.
+Thus, for the previous example, we get
+%\footnote{The ``@'' is here to shunt
+%the notation "'IF' A 'then' B 'else' C" which is defined in {\Coq}
+%initial state}:
 
 \begin{coq_example}
 Check 
- (@IF (@IF True False True) (@IF True False True) (@IF True False True)).   
+ (IF_then_else (IF_then_else True False True) 
+   (IF_then_else True False True)
+   (IF_then_else True False True)).   
 \end{coq_example}
 
 \Rem
-Sometimes, a notation is expected only for the parser (e.g. because
-the underlying parser of {\Coq}, namely {\camlpppp}, is LL1 and some extra
-rules are needed to circumvent the absence of factorisation).
+Sometimes, a notation is expected only for the parser.
+%(e.g. because
+%the underlying parser of {\Coq}, namely {\camlpppp}, is LL1 and some extra
+%rules are needed to circumvent the absence of factorisation).
 To do so, the option {\em only parsing} is allowed in the list of modifiers of
 \texttt{Notation}.
 
@@ -389,9 +393,9 @@ is given with no quotes around. Example:
 Notation List := (list nat).
 \end{coq_example*}
 
-An abbreviation expects no precedence nor associativity, since such a
-notation can always be put at the lower level of atomic expressions,
-and associativity is irrelevant. Abbreviations are used as much as
+An abbreviation expects no precedence nor associativity, since it can
+always be put at the lower level of atomic expressions, and
+associativity is irrelevant. Abbreviations are used as much as
 possible by the {\Coq} printers unless the modifier
 \verb=(only parsing)= is given.
 
@@ -412,18 +416,18 @@ Reset Initial.
 \begin{coq_example}
 Definition explicit_id (A:Set) (a:A) := a.
 Notation id := (explicit_id _).
-Check (id 0%N).
+Check (id 0).
 \end{coq_example}
 
 Abbreviations do not survive the end of sections. No typing of the denoted
 expression is performed at definition time. Type-checking is done only
 at the time of use of the abbreviation.
 
-\Rem \comindex{Syntactic Definition (cf Abbreviations)} % For compatibility
-Abbreviations are similar to the {\em syntactic definitions}
-available in versions of {\Coq} prior to version 8.0, except that
-abbreviation are printed too (unless the modifier
-\verb=(only parsing)= is given).
+\Rem \comindex{Syntactic Definition (cf Abbreviations)} % For
+compatibility Abbreviations are similar to the {\em syntactic
+definitions} available in versions of {\Coq} prior to version 8.0,
+except that abbreviations are used for printing (unless the modifier
+\verb=(only parsing)= is given) while syntactic definitions were not.
 
 \section{Summary}
 
@@ -432,6 +436,8 @@ abbreviation are printed too (unless the modifier
 Notations do not survive the end of sections. They survive modules
 unless the command {\tt Notation Local} is used instead of {\tt
 Notation}.
+
+\paragraph{Syntax of notations}
 
 The different syntactic variants of the command \texttt{Notation} are
 the following
@@ -454,7 +460,7 @@ associativity}, \texttt{ left associativity},
 \texttt{ \nelist{\ident}{,} at next level}, \texttt{ only parsing} or
 \texttt{ format {\str}}.
 
-No typing of the denoted expression is performed at definition
+\Rem No typing of the denoted expression is performed at definition
 time. Type-checking is done only at the time of use of the notation.
 
 %\section{Symbolic interpretation scopes}
