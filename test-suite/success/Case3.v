@@ -1,3 +1,6 @@
+Inductive Le : nat->nat->Set :=
+  LeO: (n:nat)(Le O n) 
+| LeS: (n,m:nat)(Le n m) -> (Le (S n) (S m)).
 
 Parameter iguales : (n,m:nat)(h:(Le n m))Prop .
 

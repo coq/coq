@@ -1,3 +1,6 @@
+Inductive List [A:Set] :Set := 
+ Nil:(List A) | Cons:A->(List A)->(List A).
+
 Inductive Empty [A:Set] : (List A)-> Prop := 
   intro_Empty: (Empty A (Nil A)).
 

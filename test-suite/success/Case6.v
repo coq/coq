@@ -1,3 +1,7 @@
+Parameter ff: (n,m:nat)~n=m -> ~(S n)=(S m).
+Parameter discr_r : (n:nat) ~(O=(S n)).
+Parameter discr_l : (n:nat) ~((S n)=O).
+
 Fixpoint eqdec [n:nat] : (m:nat) n=m \/ ~n=m := 
 [m:nat]
  <[n,m:nat] n=m \/ ~n=m>Cases n m of
