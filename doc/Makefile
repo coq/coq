@@ -73,7 +73,7 @@ FTPDOCS=Reference-Manual-base.ps.gz Reference-Manual-base.dvi.gz \
         Reference-Manual-all.ps.gz Reference-Manual-all.dvi.gz\
 #	Library.dvi.gz Library.ps.gz\
         Tutorial.dvi.gz Tutorial.ps.gz\
-        README all-ps-docs.tar.gz\
+#        README all-ps-docs.tar.gz\
 #	Changes.dvi.gz Changes.ps.gz
 
 FTPHTMLDOCS=doc-html.tar.gz
@@ -168,6 +168,7 @@ html-www: all-html
 	cp coqide-queries.png coqide.png www
 	(cd www; hacha -o toc.html ../Reference-Manual.html)
 	cp cover.html main.html main-0.html www
+	ln -s main.html www/index.html
 
 
 clean-refman:
