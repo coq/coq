@@ -49,6 +49,9 @@ val pop : 'a term -> 'a term
    more recent terms come first in [ctxt] *)
 val lift_context : int -> (name * 'a term) list -> (name * 'a term) list
 
+(* [substnl [a1;...;an] k c] substitutes in parallele [a1],...,[an]
+    for respectively [Rel(k+1)],...,[Rel(k+n)] in [c]; it relocates
+    accordingly indexes in [a1],...,[an] *)
 val substnl : 'a term list -> int -> 'a term -> 'a term
 val substl : 'a term list -> 'a term -> 'a term
 val subst1 : 'a term -> 'a term -> 'a term
