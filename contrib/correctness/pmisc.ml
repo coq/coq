@@ -170,7 +170,7 @@ let coq_false = mkConstruct ((bool_sp,0),2)
 
 let constant s =
   let id = id_of_string s in
-  Declare.global_reference id
+  Termops.global_reference id
 
 let connective_and = id_of_string "prog_bool_and"
 let connective_or  = id_of_string "prog_bool_or"

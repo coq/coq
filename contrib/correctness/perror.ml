@@ -66,7 +66,7 @@ let check_for_array loc id = function
 let is_constant_type s = function
     TypePure c ->
       let id = id_of_string s in
-      let c' = Declare.global_reference id in
+      let c' = Termops.global_reference id in
       Reductionops.is_conv (Global.env()) Evd.empty c c'
   | _ -> false 
 
