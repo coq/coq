@@ -453,7 +453,7 @@ let push_rels vars env =
 
 let descend_then sigma env head dirn =
   let IndType (indf,_) as indt =
-    try find_inductive env sigma (get_type_of env sigma head)
+    try find_rectype env sigma (get_type_of env sigma head)
     with Not_found -> assert false in
   let mispec,_ = dest_ind_family indf in
   let cstr = get_constructors indf in
@@ -490,7 +490,7 @@ let descend_then sigma env head dirn =
 
 let construct_discriminator sigma env dirn c sort =
   let (IndType(IndFamily (mispec,_) as indf,_) as indt) =
-    try find_inductive env sigma (type_of env sigma c)
+    try find_rectype env sigma (type_of env sigma c)
     with Not_found ->
        (* one can find Rel(k) in case of dependent constructors 
           like T := c : (A:Set)A->T and a discrimination 
@@ -523,7 +523,7 @@ let rec build_discriminator sigma env dirn c sort = function
   | (MutConstruct(sp,cnum),argnum)::l ->
       let cty = type_of env sigma c in
       let IndType (indf,_) =
-	try find_inductive env sigma cty with Not_found -> assert false in
+	try find_rectype env sigma cty with Not_found -> assert false in
       let _,arsort = get_arity env sigma indf in
       let nparams = mis_nparams (fst (dest_ind_family indf)) in
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in

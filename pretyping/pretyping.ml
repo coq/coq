@@ -360,7 +360,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 | ROldCase (loc,isrec,po,c,lf) ->
   let cj = pretype empty_tycon env isevars lvar lmeta c in
   let (IndType (indf,realargs) as indt) = 
-    try find_inductive env !isevars (body_of_type cj.uj_type)
+    try find_rectype env !isevars (body_of_type cj.uj_type)
     with Induc -> error_case_not_inductive CCI env
 	(nf_ise1 !isevars cj.uj_val) (nf_ise1 !isevars (body_of_type cj.uj_type)) in
   let pj = match po with
@@ -393,7 +393,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 	      with UserError _ -> findtype (i+1) in
 	    findtype 0 in
 
-  let evalct = find_inductive env !isevars (body_of_type cj.uj_type) (*Pour normaliser evars*)
+  let evalct = find_rectype env !isevars (body_of_type cj.uj_type) (*Pour normaliser evars*)
   and evalPt = nf_ise1 !isevars (body_of_type pj.uj_type) in
 
   let (bty,rsty) =

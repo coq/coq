@@ -52,8 +52,8 @@ let rec type_of env cstr=
     | IsMutConstruct cstr -> body_of_type (type_of_constructor env sigma cstr)
     | IsMutCase (_,p,c,lf) ->
         let IndType (indf,realargs) =
-          try find_inductive env sigma (type_of env c)
-          with Induc -> anomaly "type_of: Bad inductive" in
+          try find_rectype env sigma (type_of env c)
+          with Induc -> anomaly "type_of: Bad recursive type" in
 	let (aritysign,_) = get_arity env sigma indf in
 	let (psign,_) = splay_prod env sigma (type_of env p) in
         let al =

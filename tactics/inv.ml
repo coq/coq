@@ -337,7 +337,10 @@ let res_case_then gene thin indbinding id status gl =
   let indclause' = clenv_constrain_with_bindings indbinding indclause in
   let newc = clenv_instance_template indclause' in
   let (IndType (indf,realargs) as indt) =
-    find_inductive env sigma (clenv_instance_template_type indclause') in
+    try find_rectype env sigma (clenv_instance_template_type indclause')
+    with Induc ->
+      errorlabstrm "res_case_then"
+	[< 'sTR ("The type of "^(string_of_id id)^" is not inductive") >] in
   let (elim_predicate,neqns) =
     make_inv_predicate env sigma indt id status (pf_concl gl) in
   let (cut_concl,case_tac) =

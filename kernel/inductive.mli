@@ -147,11 +147,11 @@ val find_mcoinductype : env -> 'a evar_map -> constr -> inductive * constr list
 
 val lookup_mind_specif : inductive -> env -> inductive_instance
 
-(* [find_inductive env sigma t] builds an [inductive_type] or raises
-   [Induc] if [t] is not an inductive type; The result is relative to
+(* [find_rectype env sigma t] builds an [inductive_type] or raises
+   [Induc] if [t] is not a (co-)inductive type; The result is relative to
    [env] and [sigma] *)
 
-val find_inductive : env -> 'a evar_map -> constr -> inductive_type
+val find_rectype : env -> 'a evar_map -> constr -> inductive_type
 
 (* [get_constructors indf] build an array of [constructor_summary]
    from some inductive type already analysed as an [inductive_family];

@@ -196,8 +196,8 @@ let lookup_mind_specif ((sp,tyi),args) env =
   { mis_sp = sp; mis_mib = mib; mis_tyi = tyi; mis_args = args;
     mis_mip = mind_nth_type_packet mib tyi }
 
-let find_inductive env sigma ty =
-  let (mind,largs) = find_minductype env sigma ty in
+let find_rectype env sigma ty =
+  let (mind,largs) = find_mrectype env sigma ty in
   let mispec = lookup_mind_specif mind env in 
   let nparams = mis_nparams mispec in
   let (params,realargs) = list_chop nparams largs in

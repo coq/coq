@@ -72,7 +72,7 @@ let explain_case_not_inductive k ctx c ct =
   let pct = prterm_env ctx ct in
   [< 'sTR "In Cases expression, the matched term"; 'bRK(1,1); pc; 'sPC; 
      'sTR "has type"; 'bRK(1,1); pct; 'sPC; 
-     'sTR "which is not an inductive definition" >]
+     'sTR "which is not a (co-)inductive type" >]
   
 let explain_number_branches k ctx c ct expn =
   let pc = prterm_env ctx c in

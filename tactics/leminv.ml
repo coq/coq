@@ -184,7 +184,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
 let inversion_scheme env sigma t sort dep_option inv_op =
   let (env,i) = add_prods_sign env sigma t in
   let ind =
-    try find_inductive env sigma i
+    try find_rectype env sigma i
     with Induc ->
       errorlabstrm "inversion_scheme" (no_inductive_inconstr env i) in
   let (invEnv,invGoal) =
