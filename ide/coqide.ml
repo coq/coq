@@ -1505,6 +1505,7 @@ let main files =
 
   (* Main window *)
   let w = GWindow.window 
+	    ~wm_class:"CoqIde" ~wm_name:"CoqIde"
 	    ~allow_grow:true ~allow_shrink:true 
 	    ~width:!current.window_width ~height:!current.window_height 
 	    ~title:"CoqIde" ()
