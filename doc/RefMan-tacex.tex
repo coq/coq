@@ -416,8 +416,15 @@ Reset Initial.
 \section{\tt AutoRewrite}
 \label{AutoRewrite-example}
 
-\Example
-Here is a basic use of {\tt AutoRewrite} with the Ackermann function:
+Here are two examples of {\tt AutoRewrite} use. The first one ({\em Ackermann
+function}) shows actually a quite basic use where there is no conditional
+rewriting. The second one ({\em Mac Carthy function}) involves conditional
+rewritings and shows how to deal with them using the optional tactic of the
+{\tt Hint~Rewrite} command.
+
+\firstexample
+\example{Ackermann function}
+%Here is a basic use of {\tt AutoRewrite} with the Ackermann function:
 
 \begin{coq_example*}
 Require Arith.
@@ -430,18 +437,18 @@ Axiom Ack2:(n,m:nat)(Ack (S n) (S m))=(Ack n (Ack (S n) m)).
 \end{coq_example*}
 
 \begin{coq_example}
-Hint Rewrite -> [ Ack0 Ack1 Ack2 ] in base0.
+Hint Rewrite [ Ack0 Ack1 Ack2 ] in base0.
 
-Lemma ResAck0:(Ack (2) (1))=(5).
-AutoRewrite [base0] using Trivial.
+Lemma ResAck0:(Ack (3) (2))=(29).
+AutoRewrite [ base0 ] using Try Reflexivity.
 \end{coq_example}
 
 \begin{coq_eval}
 Reset Initial.  
 \end{coq_eval}
 
-\Example
-The Mac Carthy function shows a more complex case:
+\example{Mac Carthy function}
+%The Mac Carthy function shows a more complex case:
 
 \begin{coq_example*}
 Require Omega.
@@ -450,48 +457,28 @@ Variable g:nat->nat->nat.
 
 Axiom g0:(m:nat)(g (0) m)=m.
 Axiom g1:
-  (n,m:nat)(gt n (0))->(gt m (100))->
-  (g n m)=(g (pred n) (minus m (10))).
-Axiom g2:
-  (n,m:nat)(gt n (0))->(le m (100))->(g n m)=(g (S n) (plus m (11))).
+  (n,m:nat)(gt n (0))->(gt m (100))->(g n m)=(g (pred n) (minus m (10))).
+Axiom g2:(n,m:nat)(gt n (0))->(le m (100))->(g n m)=(g (S n) (plus m (11))).
 \end{coq_example*}
 
 \begin{coq_example}
-Hint Rewrite -> [ g0 g1 ] in base1.
-Hint Rewrite -> [ g2 ] in base2.
+Hint Rewrite [ g0 g1 g2 ] in base1 using Omega.
 
-Lemma Resg0:(g (1) (90))=(91).
-AutoRewrite [base1 base2] 
-  Step=[Simpl|Reflexivity] with All
-  Rest=[Omega] with Cond 
-  Depth=10.
+Lemma Resg0:(g (1) (110))=(100).
+AutoRewrite [ base1 ] using Reflexivity Orelse Simpl.
 \end{coq_example}
+
 \begin{coq_eval}
 Abort.
 \end{coq_eval}
-
-\begin{coq_eval}
-Lemma maccarthy_90 : 
-  (g0:(m:nat)(g (0) m)=m)
-  (g1:(n,m:nat)(gt n (0))->(gt m (100))-> (g n m)=(g (pred n) (minus m (10))))
-  (g2:(n,m:nat)(gt n (0))->(le m (100))->(g n m)=(g (S n) (plus m (11))))
-  (g (1) (90))=(91).
-  Intros.
-\end{coq_eval}
-
-One can also give the full base definition instead of a name. This is
-useful to do rewritings with the hypotheses of current goal:
 
 \begin{coq_example}
-  Show.
-  AutoRewrite [[g0 LR g1 LR] [g2 LR]] 
-  Step=[Simpl|Reflexivity] with All
-  Rest=[Omega] with Cond 
-  Depth=10.
+Lemma Resg1:(g (1) (95))=(91).
+AutoRewrite [ base1 ] using Reflexivity Orelse Simpl.
 \end{coq_example}
 
 \begin{coq_eval}
-Abort.
+Reset Initial.
 \end{coq_eval}
 
 \section{\tt Quote}

@@ -1461,15 +1461,19 @@ depth is {\tt \num}.
   The Prolog tactic was not able to prove the subgoal.
 \end{ErrMsgs}
 
-\subsection{\tt Tauto}\tacindex{Tauto}\label{Tauto}
-This tactic, due to César Mu\~noz \cite{Mun94}, implements a
-decision procedure for intuitionistic propositional calculus based on
-the contraction-free sequent calculi LJT* of R. Dyckhoff \cite{Dyc92}.
-Note tha
- t {\tt Tauto} succeeds on any instance of an intuitionistic
-tautological proposition. For instance it succeeds on
-\verb!(x:nat)(P:nat->Prop)x=O\/(P x)->~x=O->(P x)!
-while {\tt Auto} fails.
+\subsection{\tt Tauto}
+\tacindex{Tauto}\label{Tauto}
+
+This tactic implements a decision procedure for intuitionistic propositional
+calculus based on the contraction-free sequent calculi LJT* of Roy Dyckhoff
+\cite{Dyc92}. Note that {\tt Tauto} succeeds on any instance of an
+intuitionistic tautological proposition. For instance, it succeeds on:
+
+\begin{verbatim}
+(x:nat)(P:nat->Prop)x=O\/(P x)->~x=O->(P x)
+\end{verbatim}
+
+\noindent{}while {\tt Auto} fails.
 
 \subsection{\tt Intuition}
 \tacindex{Intuition}\label{Intuition}
@@ -1491,6 +1495,14 @@ internally replaces it by the equivalent one:
 \end{verbatim}
 and then uses {\tt Auto with *} which completes the proof.
 
+Originally due to César~Muñoz, these tactics ({\tt Tauto} and {\tt Intuition})
+have been completely reenginered by David~Delahaye using mainly the tactic
+language (see chapter~\ref{TacticLanguage}). The code is now quite shorter and
+a significant increase in performances has been noticed. The general behavior
+with respect to dependent types has slightly changed to get clearer semantics.
+This may lead to some incompatibilities.
+
+\SeeAlso file \texttt{contrib/Rocq/DEMOS/Demo\_tauto.v}
 
 % \subsection{\tt Linear}\tacindex{Linear}\label{Linear}
 % The tactic \texttt{Linear}, due to Jean-Christophe Filliâatre
@@ -1611,88 +1623,64 @@ You can have a look at the files \texttt{Ring.v},
 
 \SeeAlso Chapter~\ref{Ring} for more detailed explanations about this tactic.
 
-\subsection{\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]}
+\subsection{\tt AutoRewrite  [ \ident$_1$ \dots \ident$_n$ ]}
 \tacindex{AutoRewrite}
 
-This tactic carries out rewritings according the given rewriting
-rules.
+This tactic \footnote{The behavior of this tactic has much changed compared to
+the versions available in the previous distributions (V6). This may cause
+significant changes in your theories to obtain the same result. As a drawback
+of the reenginering of the code, this tactic has also been completely revised
+to get a very compact and readable version.} carries out rewritings according
+the rewriting rule bases {\tt \ident$_1$ \dots \ident$_n$}.
 
-A \emph{rewriting rule} is, by definition, a list of terms which type is an
-equality, each term being followed by the keyword \texttt{LR} (for
-left-to-right) or \texttt{RL} (for right-to-left):
+Each rewriting rule of a base \ident$_i$ is applied to the main subgoal until
+it fails. Once all the rules have been processed, if the main subgoal has
+progressed (e.g., if it is distinct from the initial main goal) then the rules
+of this base are processed again. If the main subgoal has not progressed then
+the next base is processed. For the bases, the behavior is exactly similar to
+the processing of the rewriting rules.
 
-\begin{tabular}{rcl}
-\rewrule & ::= & \texttt{[{\term} {\switch} {\dots} {\term} {\switch} ]}\\
-\switch & ::= & \texttt{LR}\\
-\switch & | & \texttt{RL} \\
-\end{tabular}
+The rewriting rule bases are built with the {\tt Hint~Rewrite} vernacular
+command.
 
-\texttt{AutoRewrite} tries each rewriting of each rule, until 
-it succeeds; then the rewriting is processed and \texttt{AutoRewrite}
-tries again all rewritings from the first one. This tactic may not
-terminate and warnings are produced every 100 rewritings. 
+\Warning{} This tactic may loop if you build non terminating rewriting systems.
+
+\begin{Variant}
+\item {\tt AutoRewrite  [ \ident$_1$ \dots \ident$_n$ ] using \tac}\\
+Performs, in the same way, all the rewritings of the bases {\tt $ident_1$ $...$
+$ident_n$} applying {\tt \tac} to the main subgoal after each rewriting step.
+\end{Variant}
+
+\subsection{\tt HintRewrite [ \term$_1$ \dots \term$_n$ ] in \ident}
+\comindex{HintRewrite}
+
+This vernacular command adds the terms {\tt \term$_1$ \dots \term$_n$} (their
+types must be equalities) in the rewriting base {\tt \ident} with the default
+orientation (left to right).
+
+This command is synchronous with the section mechanism (see \ref{Section}):
+when closing a section, all aliases created by \texttt{HintRewrite} in that
+section are lost. Conversely, when loading a module, all \texttt{HintRewrite}
+declarations at the global level of that module are loaded.
 
 \begin{Variants}
-\item {\tt AutoRewrite [\ident$_1$\dots\ \ident$_n$]
-Step=[\tac$_1$|...|\tac$_m$]}\\
-Each time a rewriting rule is successful, it tries to solve with the tactics of
-{\tt Step}.
+\item {\tt HintRewrite -> [ \term$_1$ \dots \term$_n$ ] in \ident}\\
+This is strictly equivalent to the command above (we only precise the
+orientation which is the default one).
 
-\item {\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]
-Step=[\tac$_1$|...|\tac$_m$] with Solve}\\
-This is equivalent to the previous variant.
+\item {\tt HintRewrite <- [ \term$_1$ \dots \term$_n$ ] in \ident}\\
+Adds the rewriting rules {\tt \term$_1$ \dots \term$_n$} with a right-to-left
+orientation in the base {\tt \ident}.
 
-\item{\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]
-Step=[\tac$_1$|...|\tac$_m$] with Use}\\
-Each time a rewriting rule is successful, it tries to apply a tactic of {\tt
-Step}.
-
-\item{\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]
-Step=[\tac$_1$|...|\tac$_m$] with All}\\
-Each time a rewriting rule is successful, it tries to solve with the tactics of
-{\tt Step}, if it fails, it tries to apply a tactic of {\tt Step}. In fact, it
-behaves like the {\tt Solve} switch first and the {\tt Use} switch next in case
-of failure.
-
-\item {\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]
-Rest=[\tac$_1$|...|\tac$_m$]}\\
-If subgoals are generated by a conditional rewriting, it tries to solve each of
-them with the tactics in {\tt Rest}.
-
-\item {\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]
-Rest=[\tac$_1$|...|\tac$_m$] with Solve}\\
-This is equivalent to the previous variant.
-
-\item {\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]
-Rest=[\tac$_1$|...|\tac$_m$] with Cond}\\
-Each time subgoals are generated by a successful conditional rewriting, it
-tries to solve all of them, if it fails, it considers that the rewriting rule
-fails and takes the next one in the bases.
-
-\item {\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}] Depth=\num}\\
-Produces a warning giving the number of rewritings carried out every {\num}
-rewritings.
+\item {\tt HintRewrite [ \term$_1$ \dots \term$_n$ ] in {\ident} using \tac}\\
+When the rewriting rules {\tt \term$_1$ \dots \term$_n$} in {\tt \ident} will
+be used, the tactic {\tt \tac} will be applied to the generated subgoals, the
+main subgoal excluded.
 \end{Variants}
 
-The three options {\tt Step}, {\tt Solve} et {\tt Depth} can be combined.
+\SeeAlso \ref{AutoRewrite-example} for examples showing the use of this tactic.
 
-\subsection{\tt HintRewrite {\ident} {\rewrule}}\comindex{HintRewrite}
-
-This vernacular command makes an alias for a rewriting rule.
-Then, instead of \texttt{AutoRewrite [{\rewrule} \dots ]} you can
-type: \texttt{AutoRewrite [{\ident} \dots ]}
-
-This vernacular command is synchronous with the section mechanism (see
-\ref{Section}): when closing a section, all aliases created by
-\texttt{HintRewrite} in that section are lost. Conversely, when
-loading a module, all \texttt{HintRewrite} declarations at the global
-level of that module are loaded.
-
-\SeeAlso \ref{AutoRewrite-example} for examples showing the use of
-this tactic.
-
-\SeeAlso file \texttt{theories/DEMOS/DemoAutoRewrite.v}
-
+\SeeAlso file \texttt{contrib/Rocq/DEMOS/Demo\_AutoRewrite.v}
 
 \section{The hints databases for Auto and EAuto}
 \index{Hints databases}\label{Hints-databases}
