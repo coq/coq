@@ -91,80 +91,79 @@ struct
 
   let empty = Idmap.empty
 		
-  (* [push_many] is used to register [Until vis] visibility and 
-     [push_one] to [Exactly vis] and [push_tree] chooses the right one*)
+  (* [push_until] is used to register [Until vis] visibility and 
+     [push_exactly] to [Exactly vis] and [push_tree] chooses the right one*)
 
-  let push_many vis tab dir uname o = 
-    let rec push level (current,dirmap) = function
-      | modid :: path as dir ->
-	  let mc = 
-	    try ModIdmap.find modid dirmap
-	    with Not_found -> (Nothing, ModIdmap.empty)
-	  in
-	  let this =
-            if level >= vis then
-	      match current with
-		| Absolute (n,_) -> 
-		    (* This is an absolute name, we must keep it otherwise it may
-		       become unaccessible forever *)
-		    warning ("Trying to mask the absolute name \"" 
-			     ^ U.to_string n ^ "\"!"); 
-		    current
-		| Nothing
-		| Relative _ -> Relative (uname,o)
-            else current 
-	  in
-	    (this, ModIdmap.add modid (push (level+1) mc path) dirmap)
-      | [] -> 
-	  match current with
-	    | Absolute (n,_) -> 
-		(* This is an absolute name, we must keep it otherwise it may
-		   become unaccessible forever *)
-		(* But ours is also absolute! This is an error! *)
-		error ("Trying to mask an absolute name \""
-  		       ^ U.to_string n ^ "\"!")
-	    | Nothing
-	    | Relative _ -> Absolute (uname,o), dirmap
-    in
-      push 0 tab dir
-
-let push_one vis tab dir uname o =
-  let rec push level (current,dirmap) = function
+  let rec push_until uname o level (current,dirmap) = function
     | modid :: path as dir ->
 	let mc = 
 	  try ModIdmap.find modid dirmap
 	  with Not_found -> (Nothing, ModIdmap.empty)
 	in
-          if level = vis then
-	    let this =
-	      match current with
-		| Absolute _ -> 
-	(* This is an absolute name, we must keep it otherwise it may
-           become unaccessible forever *)
-		    error "Trying to mask an absolute name!"
-		| Nothing
-		| Relative _ -> Relative (uname,o)
-	    in
-	      (this, dirmap)
-	  else
-	    (current, ModIdmap.add modid (push (level+1) mc path) dirmap)
-    | [] -> anomaly "We should never come to this point"
-  in
-    push 0 tab dir
+	let this =
+          if level <= 0 then
+	    match current with
+	      | Absolute (n,_) -> 
+		  (* This is an absolute name, we must keep it 
+		     otherwise it may become unaccessible forever *)
+		  warning ("Trying to mask the absolute name \"" 
+			   ^ U.to_string n ^ "\"!"); 
+		  current
+	      | Nothing
+	      | Relative _ -> Relative (uname,o)
+          else current 
+	in
+	let ptab' = push_until uname o (level-1) mc path in
+	  (this, ModIdmap.add modid ptab' dirmap)
+    | [] -> 
+	match current with
+	  | Absolute (n,_) -> 
+	      (* This is an absolute name, we must keep it otherwise it may
+		 become unaccessible forever *)
+	      (* But ours is also absolute! This is an error! *)
+	      error ("Cannot mask an absolute name \""
+  		     ^ U.to_string n ^ "\"!")
+	  | Nothing
+	  | Relative _ -> Absolute (uname,o), dirmap
 
 
-let push_tree = function 
-  | Until i -> push_many (i-1)
-  | Exactly i -> push_one (i-1)
+let rec push_exactly uname o level (current,dirmap) = function
+  | modid :: path as dir ->
+      let mc = 
+	try ModIdmap.find modid dirmap
+	with Not_found -> (Nothing, ModIdmap.empty)
+      in
+        if level = 0 then
+	  let this =
+	    match current with
+	      | Absolute (n,_) -> 
+		  (* This is an absolute name, we must keep it 
+		     otherwise it may become unaccessible forever *)
+		  warning ("Trying to mask an absolute name \""
+  			   ^ U.to_string n ^ "\"!");
+		  current
+	      | Nothing
+	      | Relative _ -> Relative (uname,o)
+	  in
+	    (this, dirmap)
+	else (* not right level *)
+	  let ptab' = push_exactly uname o (level-1) mc path in
+	    (current, ModIdmap.add modid ptab' dirmap)
+  | [] -> 
+      anomaly "Prefix longer than path! Impossible!"
 
 
 let push visibility uname o tab =
   let id,dir = U.repr uname in
-  let modtab =
+  let ptab =
     try Idmap.find id tab
     with Not_found -> (Nothing, ModIdmap.empty) 
   in
-    Idmap.add id (push_tree visibility modtab dir uname o) tab
+  let ptab' = match visibility with
+    | Until i -> push_until uname o (i-1) ptab dir
+    | Exactly i -> push_exactly uname o (i-1) ptab dir
+  in
+    Idmap.add id ptab' tab
 
 
 let rec search (current,modidtab) = function

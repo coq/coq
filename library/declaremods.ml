@@ -344,6 +344,7 @@ let classify_modtype (_,(_,substobjs)) =
 let (in_modtype,out_modtype) =
     declare_object {(default_object "MODULE TYPE") with
       cache_function = cache_modtype;
+      open_function = open_modtype;
       load_function = load_modtype;
       subst_function = subst_modtype;
       classify_function = classify_modtype;

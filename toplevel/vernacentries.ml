@@ -211,30 +211,40 @@ let locate_file f =
 		  str"on loadpath"))
 
 let print_located_qualid (_,qid) =
-  try
-    let sp = Nametab.sp_of_global None (Nametab.locate qid) in
-    msgnl (pr_sp sp)
-  with Not_found -> 
-  try
-    let kn = Nametab.locate_syntactic_definition qid in
-    let sp = Nametab.sp_of_syntactic_definition kn in
-    msgnl (pr_sp sp)
-  with Not_found ->
-  try
-    let dir = match Nametab.locate_dir qid with
-      | DirOpenModule (dir,_)
-      | DirOpenModtype (dir,_)
-      | DirOpenSection (dir,_)
-      | DirModule (dir,_)
-      | DirClosedSection dir -> dir
-    in
-    msgnl (pr_dirpath dir)
-  with Not_found ->
-  try
-    let sp = Nametab.full_name_modtype qid in
-    msgnl (pr_sp sp)
-  with Not_found ->
-    msgnl (pr_qualid qid ++ str " is not a defined object")
+  let msg = 
+    try
+      let ref = Nametab.locate qid in
+      let ref_str = match ref with
+	  ConstRef _ -> "Constant"
+	| IndRef _ -> "Inductive"
+	| ConstructRef _ -> "Constructor"
+	| VarRef _ -> "Variable"
+      in
+      let sp = Nametab.sp_of_global None ref in
+	str ref_str ++ spc () ++ pr_sp sp
+    with Not_found -> 
+      try
+	let kn = Nametab.locate_syntactic_definition qid in
+	let sp = Nametab.sp_of_syntactic_definition kn in
+	  str "Syntactic Definition" ++ spc () ++ pr_sp sp
+      with Not_found ->
+	try
+	  let s,dir = match Nametab.locate_dir qid with
+	    | DirOpenModule (dir,_) -> "Open Module", dir
+	    | DirOpenModtype (dir,_) -> "Open Module Type", dir
+	    | DirOpenSection (dir,_) -> "Open Section", dir
+	    | DirModule (dir,_) -> "Module", dir
+	    | DirClosedSection dir -> "Closed Section", dir
+	  in
+	    str s ++ spc () ++ pr_dirpath dir
+	with Not_found ->
+	  try
+	    let sp = Nametab.full_name_modtype qid in
+	      str "Module Type" ++ spc () ++ pr_sp sp
+	  with Not_found ->
+	    pr_qualid qid ++ str " is not a defined object"
+  in
+    msgnl (hov 0 msg)
 
 (*let print_path_entry (s,l) =
   (str s ++ tbrk (0,2) ++ str (string_of_dirpath l))
