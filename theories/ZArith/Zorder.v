@@ -849,11 +849,14 @@ intros p H1; unfold Zgt in |- *; pattern 0 at 2 in |- *;
 intros p H; discriminate H.
 Qed.
 
-Lemma Zmult_lt_O_compat : forall n m:Z, 0 < n -> 0 < m -> 0 < n * m.
+Lemma Zmult_lt_0_compat : forall n m:Z, 0 < n -> 0 < m -> 0 < n * m.
 intros a b apos bpos.
 apply Zgt_lt.
 apply Zmult_gt_0_compat; try apply Zlt_gt; assumption.
 Qed.
+
+(* For compatibility *)
+Notation Zmult_lt_O_compat := Zmult_lt_0_compat (only parsing).
 
 Lemma Zmult_gt_0_le_0_compat : forall n m:Z, n > 0 -> 0 <= m -> 0 <= m * n.
 Proof.
