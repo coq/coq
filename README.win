@@ -16,7 +16,7 @@ COMPILATION.
     are some indications:
 
     1- Install ocaml version 3.01 or later and camlp4 with same
-       version number as ocaml (must be compiled), Visual C++ (needed
+       version number as ocaml (but at least 3.01.6), Visual C++ (needed
        for the -custom option of ocaml) and MASM (needed if you want
        to produce a native version).
 
