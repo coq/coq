@@ -84,12 +84,12 @@ Qed.
 
 Lemma Zsgn_Zabs: (x:Z)(Zmult x (Zsgn x))=(Zabs x).
 Proof.
-Destruct x;Intros;Rewrite Zmult_sym;Auto with arith.
+NewDestruct x; Rewrite Zmult_sym; Auto with arith.
 Qed.
 
 Lemma Zabs_Zsgn: (x:Z)(Zmult (Zabs x) (Zsgn x))=x.
 Proof.
-Destruct x;Intros; Rewrite Zmult_sym; Auto with arith.
+NewDestruct x; Rewrite Zmult_sym; Auto with arith.
 Qed.
 
 (** From [nat] to [Z] *)

@@ -119,14 +119,14 @@ Save.
 Lemma Zmod2_twice : (z:Z)
 	`z = (2*(Zmod2 z) + (bit_value (Zodd_bool z)))`.
 Proof.
-	Destruct z; Simpl; Intros.
+	NewDestruct z; Simpl.
 	Trivial.
 
-	Case p; Simpl; Trivial.
+	NewDestruct p; Simpl; Trivial.
 
-	Case p; Simpl; Intros.
-	Case p0; Simpl; Intros.
-	Rewrite (double_moins_un_add_un p1); Trivial.
+	NewDestruct p; Simpl.
+	NewDestruct p as [p|p|]; Simpl.
+	Rewrite (double_moins_un_add_un p); Trivial.
 
 	Trivial.
 
@@ -202,24 +202,24 @@ Lemma Z_to_binary_Sn : (n:nat) (b:bool) (z:Z)
 	`z>=0`->
 	(Z_to_binary (S n) `(bit_value b) + 2*z`)=(Bcons b n (Z_to_binary n z)).
 Proof.
-	Destruct b; Destruct z; Simpl; Auto.
-	Intros. Elim H; Trivial.
+	NewDestruct b; NewDestruct z; Simpl; Auto.
+	Intro H; Elim H; Trivial.
 Save.
 
 Lemma binary_value_pos : (n:nat) (bv:(Bvector n))
 	`(binary_value n bv) >= 0`.
 Proof.
-	Induction bv; Intros; Simpl.
+	NewInduction bv as [|a n v IHbv]; Simpl.
 	Omega.
 
-	Generalize H; Clear H; Case a; Case (binary_value n0 v); Simpl; Intros; 		Auto.
-	Omega.
+	NewDestruct a; NewDestruct (binary_value n v); Simpl; Auto.
+	Auto with zarith.
 Save.
 
 Lemma add_un_double_moins_un_xO : (p:positive)
 	(add_un (double_moins_un p))=(xO p).
 Proof.
-	Induction p; Simpl; Intros.
+	NewInduction p as [|p H|]; Simpl.
 	Trivial.
 
 	Rewrite H; Trivial.
@@ -238,10 +238,10 @@ Lemma Z_to_two_compl_Sn : (n:nat) (b:bool) (z:Z)
 	(Z_to_two_compl (S n) `(bit_value b) + 2*z`) =
 		(Bcons b (S n) (Z_to_two_compl n z)).
 Proof.
-	Destruct b; Destruct z; Auto.
-	Destruct p; Auto.
-	Destruct p0; Simpl; Auto.
-	Intros; Rewrite (add_un_double_moins_un_xO p1); Trivial.
+	NewDestruct b; NewDestruct z as [|p|p]; Auto.
+	NewDestruct p as [p|p|]; Auto.
+	NewDestruct p as [p|p|]; Simpl; Auto.
+	Intros; Rewrite (add_un_double_moins_un_xO p); Trivial.
 Save.
 
 Lemma Z_to_binary_Sn_z : (n:nat) (z:Z)
@@ -254,22 +254,22 @@ Lemma Z_div2_value : (z:Z)
 	` z>=0 `->
 	 `(bit_value (Zodd_bool z))+2*(Zdiv2 z) = z`.
 Proof.
-	Destruct z; Auto.
-	Destruct p; Auto.
-  Intros; Elim H; Trivial.
+	NewDestruct z as [|p|p]; Auto.
+	NewDestruct p; Auto.
+  Intro H; Elim H; Trivial.
 Save.
 
 Lemma Zdiv2_pos : (z:Z)
 	` z >= 0 ` ->
 	`(Zdiv2 z) >= 0 `.
 Proof.
-	Destruct z.
+	NewDestruct z as [|p|p].
 	Auto.
 
-	Destruct p; Auto.
+	NewDestruct p; Auto.
 	Simpl; Intros; Omega.
 
-  Intros; Elim H; Trivial.
+  Intro H; Elim H; Trivial.
 
 Save.
 
@@ -283,7 +283,7 @@ Proof.
 	Omega.
 
 	Rewrite <- two_power_nat_S.
-	Case (Zeven_odd_dec z); Intros.
+	NewDestruct (Zeven_odd_dec z); Intros.
 	Rewrite <- Zeven_div2; Auto.
 
 	Generalize (Zodd_div2 z H z0); Omega.
@@ -296,8 +296,8 @@ Lemma Z_minus_one_or_zero : (z:Z)
 	`z < 1` ->
 	{`z=-1`} + {`z=0`}.
 Proof.
-	Destruct z; Auto.
-	Destruct p; Auto.
+	NewDestruct z; Auto.
+	NewDestruct p; Auto.
 	Tauto.
 
 	Tauto.
@@ -305,7 +305,7 @@ Proof.
 	Intros.
 	Right; Omega.
 
-	Destruct p.
+	NewDestruct p.
 	Tauto.
 
 	Tauto.
@@ -324,43 +324,43 @@ Lemma Zeven_bit_value : (z:Z)
 	(Zeven z) ->
 	`(bit_value (Zodd_bool z))=0`.
 Proof.
-	Destruct z; Unfold bit_value; Auto.
-	Destruct p; Tauto Orelse (Intros; Elim H).
- 	Destruct p; Tauto Orelse (Intros; Elim H).
+	NewDestruct z; Unfold bit_value; Auto.
+	NewDestruct p; Tauto Orelse (Intro H; Elim H).
+ 	NewDestruct p; Tauto Orelse (Intro H; Elim H).
 Save.
 
 Lemma Zodd_bit_value : (z:Z)
 	(Zodd z) ->
 	`(bit_value (Zodd_bool z))=1`.
 Proof.
-	Destruct z; Unfold bit_value; Auto.
+	NewDestruct z; Unfold bit_value; Auto.
   Intros; Elim H.
-  Destruct p; Tauto Orelse (Intros; Elim H).
-  Destruct p; Tauto Orelse (Intros; Elim H).
+  NewDestruct p; Tauto Orelse (Intros; Elim H).
+  NewDestruct p; Tauto Orelse (Intros; Elim H).
 Save.
 
 Lemma Zge_minus_two_power_nat_S : (n:nat) (z:Z)
 	`z >= (-(two_power_nat (S n)))`->
 	`(Zmod2 z) >= (-(two_power_nat n))`.
 Proof.
-	Intros n; Rewrite (two_power_nat_S n).
-	Intros z; Generalize (Zmod2_twice z).
-	Case (Zeven_odd_dec z); Intros.
-	Generalize (Zeven_bit_value z z0); Intros; Omega.
+	Intros n z; Rewrite (two_power_nat_S n).
+	Generalize (Zmod2_twice z).
+	NewDestruct (Zeven_odd_dec z) as [H|H].
+	Rewrite (Zeven_bit_value z H); Intros; Omega.
 
-	Generalize (Zodd_bit_value z z0); Intros; Omega.
+        Rewrite (Zodd_bit_value z H); Intros; Omega.
 Save.
 
 Lemma Zlt_two_power_nat_S : (n:nat) (z:Z)
 	`z < (two_power_nat (S n))`->
 	`(Zmod2 z) < (two_power_nat n)`.
 Proof.
-	Intros n; Rewrite (two_power_nat_S n).
-	Intros z; Generalize (Zmod2_twice z).
-	Case (Zeven_odd_dec z); Intros.
-	Generalize (Zeven_bit_value z z0); Intros; Omega.
+	Intros n z; Rewrite (two_power_nat_S n).
+	Generalize (Zmod2_twice z).
+	NewDestruct (Zeven_odd_dec z) as [H|H].
+	Rewrite (Zeven_bit_value z H); Intros; Omega.
 
-	Generalize (Zodd_bit_value z z0); Intros; Omega.
+	Rewrite (Zodd_bit_value z H); Intros; Omega.
 Save.
 
 End Z_BRIC_A_BRAC.
@@ -376,12 +376,12 @@ Elles utilisent les lemmes du bric-a-brac.
 Lemma binary_to_Z_to_binary : (n:nat) (bv : (Bvector n))
 	(Z_to_binary n (binary_value n bv))=bv.
 Proof.
-	Induction bv; Intros.
+	NewInduction bv as [|a n bv IHbv].
 	Auto.
 
 	Rewrite binary_value_Sn.
 	Rewrite Z_to_binary_Sn.
-	Rewrite H; Trivial.
+	Rewrite IHbv; Trivial.
 
 	Apply binary_value_pos.
 Save.
@@ -390,12 +390,12 @@ Lemma two_compl_to_Z_to_two_compl : (n:nat) (bv : (Bvector n)) (b:bool)
 	(Z_to_two_compl n (two_compl_value n (Bcons b n bv)))=
 		(Bcons b n bv).
 Proof.
-	Induction bv; Intros.
-	Case b; Auto.
+	NewInduction bv as [|a n bv IHbv]; Intro b.
+	NewDestruct b; Auto.
 
 	Rewrite two_compl_value_Sn.
 	Rewrite Z_to_two_compl_Sn.
-	Rewrite H; Trivial.
+	Rewrite IHbv; Trivial.
 Save.
 
 Lemma Z_to_binary_to_Z : (n:nat) (z : Z)
@@ -403,12 +403,12 @@ Lemma Z_to_binary_to_Z : (n:nat) (z : Z)
 	`z < (two_power_nat n) `->
 	 (binary_value n (Z_to_binary n z))=z.
 Proof.
-	Induction n.
+	NewInduction n as [|n IHn].
 	Unfold two_power_nat shift_nat; Simpl; Intros; Omega.
 
 	Intros; Rewrite Z_to_binary_Sn_z.
 	Rewrite binary_value_Sn.
-	Rewrite H.
+	Rewrite IHn.
 	Apply Z_div2_value; Auto.
 
 	Apply Zdiv2_pos; Trivial.
@@ -421,14 +421,14 @@ Lemma Z_to_two_compl_to_Z : (n:nat) (z : Z)
 	`z < (two_power_nat n) `->
 	(two_compl_value n (Z_to_two_compl n  z))=z.
 Proof.
-	Induction n.
+	NewInduction n as [|n IHn].
 	Unfold two_power_nat shift_nat; Simpl; Intros.
 	Assert `z=-1`\/`z=0`. Omega.
 Intuition; Subst z; Trivial.
 
 	Intros; Rewrite Z_to_two_compl_Sn_z.
 	Rewrite two_compl_value_Sn.
-	Rewrite H.
+	Rewrite IHn.
 	Generalize (Zmod2_twice z); Omega.
 
 	Apply Zge_minus_two_power_nat_S; Auto.
