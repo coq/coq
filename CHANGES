@@ -1,4 +1,4 @@
-Changes from V7.2 to ????
+Changes from V7.2 to V7.3
 =========================
 
 Language
@@ -25,8 +25,8 @@ Tactics
 - Intuition does no longer unfold constants except "<->" and "~". It
   can be parameterized by a tactic. It also can introduce dependent
   product if needed
-- "Match Context" now matching more recent hypotheses first
-- "Match Context" now failing only on user errors and Fail tactic
+- "Match Context" now matching more recent hypotheses first and failing only 
+  on user errors and Fail tactic (possible source of incompatibilities)
 - Tactic Definition's without arguments now allowed in Coq states
 
 Bugs
@@ -67,6 +67,9 @@ Incompatibilities
   "Cases ... of C _ => ... | _ D => ..."  (effects on 2 definitions of
   submitted user contributions necessitating the removal of now superflous
   proof steps in 3 different proofs)
+- Match Context, in case of incompatibilities because of a now non
+  trapped error (e.g. Not_found or Failure), use instead tactic Fail
+  to force Match Context trying the next clause
 
 Changes from V7.1 to V7.2
 =========================
