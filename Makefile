@@ -671,7 +671,7 @@ PARSERCMX= $(PARSERREQUIRESCMX) $(PARSERCODE:.cmo=.cmx)
 
 bin/parser$(EXE): $(PARSERCMO)
 	$(SHOW)'OCAMLC -o $@'
-	$(HIDE)$(OCAMLC) -linkall -cclib -lunix $(OPTFLAGS) -o $@ \
+	$(HIDE)$(OCAMLC) -linkall -custom -cclib -lunix $(OPTFLAGS) -o $@ \
 	  dynlink.cma $(CMA) $(PARSERCMO)
 
 bin/parser.opt$(EXE): $(PARSERCMX)
