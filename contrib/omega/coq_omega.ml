@@ -791,7 +791,7 @@ let rec scalar p n = function
   | Otimes(t1,t2) -> error "Omega: Can't solve a goal with non-linear products"
   | (Oatom _ as t) -> [], Otimes(t,Oz n)
   | Oz i -> [focused_simpl p],Oz(n*i)
-  | Oufo c -> [], Oufo (mkApp (Lazy.force coq_Zmult, [| mk_integer n |]))
+  | Oufo c -> [], Oufo (mkApp (Lazy.force coq_Zmult, [| mk_integer n; c |]))
       
 let rec scalar_norm p_init = 
   let rec loop p = function
@@ -1409,7 +1409,14 @@ let coq_omega gl =
   end
 
 let coq_omega = solver_time coq_omega
-		  
+
+let rec is_nat_constant t =
+  match destructurate_term t with
+  | Kapp((Plus|Mult|Minus),[t1;t2]) -> is_nat_constant t1 & is_nat_constant t2
+  | Kapp((S|Pred),[t]) -> is_nat_constant t
+  | Kapp(O,[]) -> true
+  | _ -> false
+
 let nat_inject gl =
   let aux = id_of_string "auxiliary" in
   let table = Hashtbl.create 7 in
@@ -1422,7 +1429,7 @@ let nat_inject gl =
 	    (explore (P_APP 1 :: p) t1);
 	    (explore (P_APP 2 :: p) t2)
           ]
-      | Kapp(Mult,[t1;t2]) ->
+      | Kapp(Mult,[t1;t2]) when is_nat_constant t1 or is_nat_constant t2 ->
           tclTHENLIST [
 	    (clever_rewrite_gen p (mk_times (mk_inj t1) (mk_inj t2))
               ((Lazy.force coq_inj_mult),[t1;t2]));
@@ -1528,7 +1535,7 @@ let nat_inject gl =
 		  (explore [P_APP 2; P_TYPE] t2);
 		  (reintroduce i);
 		  (loop lit)
-]
+                ]
             | Kapp(Eq,[typ;t1;t2]) ->
 		if pf_conv_x gl typ (Lazy.force coq_nat) then
                   tclTHENLIST [
