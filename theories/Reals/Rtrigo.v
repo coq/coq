@@ -69,12 +69,6 @@ Intro x; Generalize (cos2 x); Intro H1; Rewrite -> H1.
 Unfold Rminus; Rewrite Ropp_distr1; Rewrite <- Rplus_assoc; Rewrite Rplus_Ropp_r; Rewrite Rplus_Ol; Symmetry; Apply Ropp_Ropp.
 Qed.
 
-Axiom arc_sin_cos : (x,y,z:R) ``0<=x`` -> ``0<=y`` -> ``0<=z`` -> ``(Rsqr x)+(Rsqr y)==(Rsqr z)`` -> (EXT t : R | (x==(Rmult z (cos t))) /\ (y==(Rmult z (sin t)))).
-
-Lemma pythagorean : (x,y,z:R) ``(Rsqr x)+(Rsqr y)==(Rsqr z)`` -> ``0<=x`` -> ``0<=y`` -> ``0<=z`` -> (EXT t : R | z==(Rplus (Rmult x (cos t)) (Rmult y (sin t)))).
-Intros x y z H1 H2 H3 H4; Generalize (arc_sin_cos x y z H2 H3 H4); Intro H5; Elim H5; [ Intros x0 H6; Elim H6; Intros H7 H8; Exists x0; Rewrite H7; Rewrite H8; Replace ``z*(cos x0)*(cos x0)+z*(sin x0)*(sin x0)`` with ``z*((Rsqr (sin x0))+(Rsqr (cos x0)))``; [ Rewrite sin2_cos2; Ring | Unfold Rsqr; Ring] | Assumption].
-Qed.
-
 Lemma aze : ``2<>0``.
 DiscrR.
 Qed.
