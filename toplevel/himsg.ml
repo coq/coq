@@ -122,7 +122,7 @@ let explain_number_branches ctx cj expn =
   let ctx = make_all_name_different ctx in
   let pc = prterm_env ctx cj.uj_val in
   let pct = prterm_env ctx cj.uj_type in
-  str "Cases on term" ++ brk(1,1) ++ pc ++ spc ()  ++
+  str "Matching on term" ++ brk(1,1) ++ pc ++ spc ()  ++
   str "of type" ++ brk(1,1) ++ pct ++ spc () ++
   str "expects " ++  int expn ++ str " branches"
 
@@ -131,7 +131,7 @@ let explain_ill_formed_branch ctx c i actty expty =
   let pc = prterm_env ctx c in
   let pa = prterm_env ctx actty in
   let pe = prterm_env ctx expty in
-  str "In Cases expression on term" ++ brk(1,1) ++ pc ++
+  str "In pattern-matching on term" ++ brk(1,1) ++ pc ++
   spc () ++ str "the branch "  ++ int (i+1) ++
   str " has type" ++ brk(1,1) ++ pa  ++ spc () ++ 
   str "which should be" ++ brk(1,1) ++ pe
@@ -280,7 +280,7 @@ let explain_ill_formed_rec_body ctx err names i =
   | NotGuardedForm c ->
       str "sub-expression " ++ prterm_env ctx c ++ spc() ++
       str "not in guarded form" ++ spc()++
-      str"(should be a constructor, abstraction, Cases, CoFix or recursive call)"
+      str"(should be a constructor, an abstraction, a match, a cofix or a recursive call)"
   in
   prt_name i ++ str" is ill-formed." ++ fnl() ++
   pr_ne_context_of (str "In environment") ctx ++
@@ -357,12 +357,12 @@ let explain_wrong_case_info ctx ind ci =
   let ctx = make_all_name_different ctx in
   let pi = prterm (mkInd ind) in
   if ci.ci_ind = ind then
-    str"Cases expression on an object of inductive" ++ spc () ++ pi ++
+    str"Pattern-matching expression on an object of inductive" ++ spc () ++ pi ++
     spc () ++ str"has invalid information"
   else
     let pc = prterm (mkInd ci.ci_ind) in
     str"A term of inductive type" ++ spc () ++ pi ++ spc () ++
-    str"was given to a Cases expression on the inductive type" ++
+    str"was given to a pattern-matching expression on the inductive type" ++
     spc () ++ pc
        
 
