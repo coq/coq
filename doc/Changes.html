@@ -1,0 +1,126 @@
+<HTML>
+<body bgcolor=white>
+<BR>
+<b><font size=18>Changes from V7.3 to V7.3.1</font></b>
+<BR>
+
+<H3>Bug fixes</H3>
+<UL>
+<LI> Corrupted Field tactic and Match Context tactic construction fixed
+<LI> Checking of names already existing in Assert added (PR#182)
+<LI> Invalid argument bug in Exact tactic solved (PR#183)
+<LI> Colliding bound names bug fixed (PR#202)
+<LI> Wrong non-recursivity test for Record fixed (PR#189)
+<LI> Out of memory/seg fault bug related to parametric inductive fixed (PR#195)
+<LI> Setoid_replace/Setoid_rewrite bug wrt "==" fixed
+</UL>
+
+<H3>Miscellaneous</H3>
+<UL>
+<LI> Ocaml version >= 3.06 is needed to compile Coq from sources
+<LI> Simplification of fresh names creation strategy for Assert, Pose and 
+    LetTac (PR#192)
+</UL>
+
+<BR>
+<b><font size=18>Changes from V7.2 to V7.3</font></b>
+<BR>
+
+<H3>Language</H3>
+<UL>
+<LI> Slightly improved compilation of pattern-matching (slight source of
+  incompatibilities)
+<LI> Record's now accept anonymous fields "_" which does not build projections
+<LI> Changes in the allowed elimination sorts for certain class of inductive
+  definitions : an inductive definition without constructors
+  of Sort Prop can be eliminated on sorts Set and Type A "singleton"
+  inductive definition (one constructor with arguments in the sort Prop
+  like conjunction of two propositions or equality) can be eliminated
+  directly on sort Type (In V7.2, only the sorts Prop and Set were allowed)
+</UL>
+
+<H3>Tactics</H3>
+<UL>
+<LI> New tactic "Rename x into y" for renaming hypotheses
+<LI> New tactics "Pose x:=u" and "Pose u" to add definitions to local context
+<LI> Pattern now working on partially applied subterms
+<LI> Ring no longer applies irreversible congruence laws of mult but
+  better applies congruence laws of plus (slight source of incompatibilities).
+<LI> Intuition does no longer unfold constants except "<->" and "~". It
+  can be parameterized by a tactic. It also can introduce dependent
+  product if needed (source of incompatibilities)
+<LI> "Match Context" now matching more recent hypotheses first and failing only 
+  on user errors and Fail tactic (possible source of incompatibilities)
+<LI> Tactic Definition's without arguments now allowed in Coq states
+<LI> Better simplification and discrimination made by Inversion (source
+  of incompatibilities)
+</UL>
+
+<H3>Bugs</H3>
+<UL>
+<LI> "Intros H" now working like "Intro H" trying first to reduce if not a product
+<LI> Forward dependencies in Cases now taken into account
+<LI> Known bugs related to Inversion and let-in's fixed
+<LI> Bug unexpected Delta with let-in now fixed
+</UL>
+
+<H3>Extraction (details in contrib/extraction/CHANGES or documentation)</H3>
+<UL>
+<LI> Signatures of extracted terms are now mostly expunged from dummy arguments.
+<LI> Haskell extraction is now operational (tested & debugged).  
+</UL>
+
+<H3>Standard library</H3>
+<UL>
+<LI> Some additions in [ZArith]: three files (Zcomplements.v, Zpower.v
+  and Zlogarithms.v) moved from contrib/omega in order to be more
+  visible, one Zsgn function, more induction principles (Wf_Z.v and
+  tail of Zcomplements.v), one more general Euclid theorem
+<LI> Peano_dec.v and Compare_dec.v now part of Arith.v
+</UL>
+
+<H3>Tools</H3>
+<UL>
+<LI> new option -dump-glob to coqtop to dump globalizations (to be used by the 
+  new documentation tool coqdoc; see http://www.lri.fr/~filliatr/coqdoc) 
+</UL>
+
+<H3>User Contributions</H3>
+<UL>
+<LI> CongruenceClosure (congruence closure decision procedure)
+<LI> MapleMode (an interface to embed Maple simplification procedures in Coq)
+<LI> Presburger (a formalization of Presburger's algorithm as stated in the initial paper by Presburger)
+<LI> Chinese has been rewritten using Z from ZArith as datatype
+  ZChinese is the new version, Chinese the obsolete one
+</UL>
+
+<H3>Incompatibilities</H3>
+<UL>
+<LI> Ring: exceptional incompatibilities (1 above 650 in submitted user
+  contribs, leading to a simplification)
+<LI> Intuition: does not unfold any definition except "<->" and "~"
+<LI> Cases: removal of some extra Cases in configurations of the form
+  "Cases ... of C _ => ... | _ D => ..."  (effects on 2 definitions of
+  submitted user contributions necessitating the removal of now superfluous
+  proof steps in 3 different proofs)
+<LI> Match Context, in case of incompatibilities because of a now non
+  trapped error (e.g. Not_found or Failure), use instead tactic Fail
+  to force Match Context trying the next clause
+<LI> Inversion: better simplification and discrimination may occasionally
+  lead to less subgoals and/or hypotheses and different naming of hypotheses
+<LI> Unification done by Apply/Elim has been changed and may exceptionally lead
+  to incompatible instantiations
+<LI> Peano_dec.v and Compare_dec.v parts of Arith.v make Auto more
+  powerful if these files were not already required (1 occurrence of
+  this in submitted user contribs)
+</UL>
+
+<BR><BR>
+<HR>
+<BR>
+
+<a href="ftp://ftp.inria.fr/INRIA/coq/V7.2/doc/Changes.html">Previous changes (from Coq V7.1 to V7.2)</a>
+<BR>
+
+</BODY>
+</HTML>
