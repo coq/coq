@@ -689,7 +689,7 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
 	      else check_occur env' (n+1) b
             else anomaly "check_one_fix: Bad occurrence of recursive call"
         | _ -> raise_err i NotEnoughAbstractionInFixBody in
-    check_occur env 1 def in
+    check_occur fixenv 1 def in
   (* Do it on every fixpoint *)
   let rv = array_map2_i find_ind nvect bodies in
   (Array.map fst rv, Array.map snd rv)
