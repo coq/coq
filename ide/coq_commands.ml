@@ -67,8 +67,6 @@ let commands = [
    "Hint Unfold";
    "Hypothesis";];
   ["Identity Coercion";
-   "Implicit Arguments Off.";
-   "Implicit Arguments On.";
    "Implicits";
    "Inductive";
    "Infix";

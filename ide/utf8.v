@@ -21,9 +21,7 @@ Notation "∃ x : t , P" := (exists x : t, P) (at level 200, x ident) : type_sco
 
 Notation "x ∨ y" := (x \/ y) (at level 85, right associativity) : type_scope.
 Notation "x ∧ y" := (x /\ y) (at level 80, right associativity) : type_scope.
-(* DOES NOT WORK 
 Notation "x → y" := (x -> y) (at level 90, right associativity): type_scope.
-*)
 Notation "x ↔ y" := (x <-> y) (at level 95, no associativity): type_scope.
 Notation "⌉ x" := (~x) (at level 75, right associativity) : type_scope.
 
@@ -40,7 +38,7 @@ Notation "x ≥ y" := (ge x y) (at level 70, no associativity).
 
 (* test *)
 (*
-Goal ∀ x, (∃ y , x ≥ y + 1) ∨ x ≤ 0.
+Goal ∀ x, True -> (∃ y , x ≥ y + 1) ∨ x ≤ 0.
 *)
 
 (* Integer Arithmetic *)

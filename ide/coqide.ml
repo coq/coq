@@ -3213,7 +3213,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 	 ~pixbuf:startup_image;
        b#insert ~iter:b#start_iter "\t\t";
      with _ -> ());
-    b#insert 
+    let about_string =
       "\nCoqIDE: an Integrated Development Environment for Coq\n\
        \nMain author  : Benjamin Monate\
        \nContributors : Jean-Christophe Filliâtre\
@@ -3221,8 +3221,13 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
        \nFeature wish or bug report: use Web interface\n\
        \n\thttp://coq.inria.fr/bin/coq-bugs\n\
        \nVersion information\
-       \n-------------------\n";
-    b#insert ((Coq.version ()))
+       \n-------------------\n"
+    in
+    if Glib.Utf8.validate about_string
+    then b#insert about_string;
+    let coq_version = Coq.version () in
+    if Glib.Utf8.validate coq_version
+    then b#insert coq_version;
       
   in
   about  tv2#buffer;

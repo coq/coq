@@ -41,13 +41,20 @@ let init () =
   (* To hide goal in lower window. 
      Problem: should not hide "xx is assumed"
      messages *)
+(**)
   Options.make_silent true;
+(**)
   Coqtop.init_ide ()
 
 
 let i = ref 0
 
 let version () =
+  let date =
+    if Glib.Utf8.validate Coq_config.date
+    then Coq_config.date
+    else "<date not printable>"
+  in
   Printf.sprintf 
     "The Coq Proof Assistant, version %s (%s)\
    \nConfigured on %s\
@@ -55,7 +62,7 @@ let version () =
    \nGtk version is %s\
    \nThis is the %s version (%s is the best one for this architecture and OS)\
    \n"
-    Coq_config.version Coq_config.date Coq_config.compile_date
+    Coq_config.version date Coq_config.compile_date
     Coq_config.arch Sys.os_type
     (let x,y,z = GMain.Main.version in Printf.sprintf "%d.%d.%d" x y z)
     (if Mltop.get () = Mltop.Native then "native" else "bytecode") 
@@ -134,11 +141,19 @@ let interp s =
 		  | VernacCheckMayEval _
 		  | VernacGlobalCheck _
 		  | VernacPrint _
-		  | VernacSearch _ ->   
-		      !flash_info ~delay:1000000 "Warning: query commands should not be inserted in scripts" 
+		  | VernacSearch _ 
+		    -> !flash_info 
+			"Warning: query commands should not be inserted in scripts" 
+		  | VernacDefinition (_,_,DefineBody _,_) 
+		  | VernacInductive _
+		  | VernacFixpoint _
+		  | VernacCoFixpoint _
+		  | VernacEndProof _
+		    -> Options.make_silent false
 		  | _ -> ()
 	      end;
 	      Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s));
+	      Options.make_silent true;
 	      prerr_endline ("...Done with interp of : "^s);
 	      last
 

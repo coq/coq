@@ -29,27 +29,19 @@ let identchar =
 let ident = firstchar identchar*
 
 let keyword = 
-  "Add" | "AddPath" | "Chapter" | "Check" | 
-  "CoInductive" |  "Compile" | "Defined" | 
-  "End" | "Export" | "Extraction" | "Fact" | "Fix" | "Global" | 
-  "Grammar" | "Hint" |
-  "Hints" | ("Hints" space+ "Resolve") |
-  "Immediate" | "Implicits" | "Import" | 
-  "Infix" | "Load" | "LoadPath" | "Local" | 
-  "Match" | "Module" | "Module Type" |
-  "Mutual" | "Print" | "Proof" | "Qed" |
-  "Record" | "Recursive" | 
-  ("Require" (space+ "Export")? space+ ident) | "Save" | "Scheme" |
-  "Section" | "Show" | "Syntactic" | "Syntax" | "Tactic" |
-  "Unset" |
-  ("Set" space+ "Implicit" space+ "Arguments") |
-  ("Implicit" space+ "Arguments" space+ ("On" | "Off")) | "Cases"
+  "Add" | "CoInductive" | "Defined" | 
+  "End" | "Export" | "Extraction" | "Hint" |
+  "Implicits" | "Import" | 
+  "Infix" | "Load" | "match" | "Module" | "Module Type" |
+  "Proof" | "Qed" |
+  "Record" | "Require" | "Save" | "Scheme" |
+  "Section" | "Unset" |
+  "Set"  
 
 let declaration = 
   "Lemma" | "Axiom" | "CoFixpoint" | "Definition"  |
-  ("Tactic" space+ "Definition") |
   "Fixpoint" | "Hypothesis" | 
-  "Inductive" | "Parameter" | "Remark" |  "Theorem" | 
+  "Inductive" | "Parameter" | "Theorem" | 
   "Variable" | "Variables" 
 
 rule next_order = parse
