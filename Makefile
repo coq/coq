@@ -354,10 +354,10 @@ ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
 BOOLVO=theories/Bool/Bool.vo  theories/Bool/IfProp.vo \
        theories/Bool/Zerob.vo theories/Bool/DecBool.vo theories/Bool/Sumbool.vo
 
-ZARITHVO=theories/Zarith/Wf_Z.vo        theories/Zarith/Zsyntax.vo \
-	 theories/Zarith/ZArith.vo      theories/Zarith/auxiliary.vo \
-	 theories/Zarith/ZArith_dec.vo  theories/Zarith/fast_integer.vo \
-	 theories/Zarith/Zmisc.vo       theories/Zarith/zarith_aux.vo
+ZARITHVO=theories/ZArith/Wf_Z.vo        theories/ZArith/Zsyntax.vo \
+	 theories/ZArith/ZArith.vo      theories/ZArith/auxiliary.vo \
+	 theories/ZArith/ZArith_dec.vo  theories/ZArith/fast_integer.vo \
+	 theories/ZArith/Zmisc.vo       theories/ZArith/zarith_aux.vo
 
 LISTSVO=theories/Lists/List.vo      theories/Lists/PolyListSyntax.vo \
         theories/Lists/ListSet.vo   theories/Lists/Streams.vo \
