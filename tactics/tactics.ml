@@ -688,21 +688,11 @@ let letin_tac with_eq name c occ_ccl occ_hyps gl =
     error "New variable is already declared";
   let (depdecls,marks,ccl)= letin_abstract id c occ_ccl occ_hyps gl in 
   let t = pf_type_of gl c in
-  let (eqc,reflc) =
-    let sort = pf_type_of gl t in
-    if is_Set sort then
-      (pf_parse_const gl "eq", pf_parse_const gl "refl_equal")
-    else if is_Type sort then
-      (pf_parse_const gl "eqT", pf_parse_const gl "refl_eqT")
-    else error "Not possible with proofs yet" 
-  in
   let heq = next_global_ident_away (id_of_string "Heq") used_ids in
   let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
   let args = List.map (fun (id,_,_) -> mkVar id) depdecls in
   let newcl =
     if with_eq then
-      let eq = applist (eqc,[t;mkVar id;c]) in
-      let refl = applist (reflc,[t;c]) in
       mkNamedLetIn id c t tmpcl
     else
       mkNamedProd id t tmpcl
@@ -1526,13 +1516,18 @@ let contradiction_on_hyp id gl =
   else 
     error "Not a contradiction"
 
+let constant dir id = 
+  Declare.global_qualified_reference (make_path dir (id_of_string id) CCI)
+
+let coq_False = lazy (constant ["Logic"] "False")
+let coq_not = lazy (constant ["Logic"] "not")
+
 (* Absurd *)
 let absurd c gls =
-  let falseterm = pf_interp_type gls (Ast.nvar "False") in
   (tclTHENS
-     (tclTHEN (elim_type falseterm) (cut c)) 
+     (tclTHEN (elim_type (Lazy.force coq_False)) (cut c)) 
      ([(tclTHENS
-          (cut (applist(pf_global gls (id_of_string "not"),[c]))) 
+          (cut (applist(Lazy.force coq_not,[c]))) 
 	  ([(tclTHEN intros
 	       ((fun gl ->
 		   let ida = pf_nth_hyp_id gl 1
@@ -1547,8 +1542,7 @@ let dyn_absurd = function
   | l             -> bad_tactic_args "absurd" l
 
 let contradiction gls = 
-  let falseterm = pf_interp_type gls (Ast.nvar "False") in 
-  tclTHENLIST [ intros; elim_type falseterm; assumption ] gls
+  tclTHENLIST [ intros; elim_type (Lazy.force coq_False); assumption ] gls
 
 let dyn_contradiction = function
   | []  -> contradiction
