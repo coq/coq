@@ -1308,12 +1308,13 @@ and build_nondep_branch trad env gd next_pred bty
      let sign,nind_data = abstracted_inductive !(trad.isevars) env ind_data in
      let env1 = push_rels sign env in
      let relargs = ind_data.realargs@[current] in
-
+     let nrelargs = n+1 in
      (* we lift predicate and type branch w.r.t. to pushed arguments *) 
-     let (curgd,lpred)= lift_gd n gd, lift_lfconstr n (insert_lifted next_pred)
-     in (env1, relargs, (Rel 1), 
-	 (replace_gd_current(IsInd(Rel 1,nind_data),info) curgd),
-         lpred, lift n bty.(i-1))     in
+     let curgd = lift_gd nrelargs gd in
+     let lpred = lift_lfconstr nrelargs (insert_lifted next_pred) in
+     (env1, relargs, (Rel 1), 
+      (replace_gd_current(IsInd(Rel 1,nind_data),info) curgd),
+      lpred, lift nrelargs bty.(i-1))     in
 
  let body,(next_env,ngd) = 
    push_lpatt k nbty SYNT
@@ -1382,14 +1383,10 @@ and build_nondep_branch trad env gd next_pred bty
 
  (* we restablish initial current by abstracting and applying  *)
  let p = List.length ncurargs  in
- let abstenv,localenv = list_chop p (get_rels final_env) in
- let abstenv = List.map (fun (na,t) -> (na,incast_type t)) abstenv in
+ let _,localenv = list_chop p (get_rels final_env) in
   (* Avant ici, on nommait les Anonymous *)
- let abst = lam_it final_branch.uj_val abstenv in
- let typ = 
-   substn_many (Array.map make_substituend (Array.of_list ncurargs)) 0
-     final_branch.uj_type in
- let app = whd_beta env !(trad.isevars) (applist (abst, ncurargs)) in
+ let app = substl ncurargs final_branch.uj_val in
+ let typ = substl ncurargs final_branch.uj_type in
  ENVIRON(get_globals final_env, localenv),
  {uj_val = eta_reduce_if_rel app;
   uj_type = typ;
