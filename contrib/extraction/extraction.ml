@@ -30,8 +30,9 @@ open Mlutil
 
 exception I of inductive_info
 
-(* A flag used to avoid loops in [extract_inductive] *)
-let internal_call = ref (None : kernel_name option) 
+(* A set of all inductive currently being computed, 
+   to avoid loops in [extract_inductive] *)
+let internal_call = ref KNset.empty
 
 let none = Evd.empty
 
@@ -284,11 +285,11 @@ and extract_type_scheme env db c p =
 
 and extract_ind env kn = (* kn is supposed to be in long form *)
   try 
-    if (!internal_call = Some kn) || (is_modfile (base_mp (modpath kn))) 
+    if (KNset.mem kn !internal_call) || (is_modfile (base_mp (modpath kn))) 
     then lookup_ind kn
     else raise Not_found 
   with Not_found -> 
-    internal_call := Some kn;
+    internal_call := KNset.add kn !internal_call;
     let mib = Environ.lookup_mind kn env in 
     (* Everything concerning parameters. *)
     (* We do that first, since they are common to all the [mib]. *)
@@ -359,7 +360,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
     in
     let i = {ind_info = ind_info; ind_nparams = npar; ind_packets = packets} in 
     add_ind kn i; 
-    internal_call := None;
+    internal_call := KNset.remove kn !internal_call;
     i
 
 (*s [extract_type_cons] extracts the type of an inductive 
