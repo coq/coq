@@ -130,8 +130,12 @@ let parse_args () =
 	image := f; parse (cfiles,args) rem
     | "-image" :: [] ->
 	usage ()
+    | "-libdir" :: _ :: rem -> warning "option -libdir deprecated\n"; parse rem
+    | ("-db"|"-debugger") :: rem ->
+        warning "option -db/-debugger deprecated\n"; parse rem
+
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
-    | ("-libdir"|"-I"|"-include"|"-outputstate"
+    | ("-I"|"-include"|"-outputstate"
       |"-inputstate"|"-is"|"-load-vernac-source"|"-l"|"-load-vernac-object"
       |"-load-ml-source"|"-require"|"-load-ml-object"|"-user"
       |"-init-file"|"-dump-glob" as o) :: rem ->
@@ -141,7 +145,7 @@ let parse_args () =
 	    | []        -> usage ()
 	end
     | "-R" as o :: s :: t :: rem -> parse (cfiles,t::s::o::args) rem
-    | ("-notactics"|"-debug"|"-db"|"-debugger"|"-nolib"|"-batch"|"-nois"
+    | ("-notactics"|"-debug"|"-nolib"|"-batch"|"-nois"
       |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
       |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-translate"|"-strict-implicit"
       |"-dont-load-proofs"|"-impredicative-set" as o) :: rem ->
