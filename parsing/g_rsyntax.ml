@@ -80,9 +80,3 @@ let r_printer_outside std_pr p =
 
 let _ = Esyntax.Ppprim.add ("r_printer", r_printer)
 let _ = Esyntax.Ppprim.add ("r_printer_outside", r_printer_outside)
-
-
-
-
-
-

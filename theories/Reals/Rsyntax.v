@@ -184,7 +184,3 @@ Syntax constr
     Rzero_inside [<<(REXPR <<R0>>)>>] -> ["0"]
   | Rone_inside [<<(REXPR <<R1>>)>>] -> ["1"]
   | Rconst_inside [<<(REXPR <<(Rplus R1 $r)>>)>>] -> [$r:"r_printer"].
-
-
-
-
