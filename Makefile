@@ -556,7 +556,7 @@ WELLFOUNDEDVO=theories/Wellfounded/Disjoint_Union.vo \
 	      theories/Wellfounded/Well_Ordering.vo \
 	      theories/Wellfounded/Lexicographic_Product.vo 
 
-REALSBASEVO=theories/Reals/TypeSyntax.votheories/Reals/ \
+REALSBASEVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Rdefinitions.vo theories/Reals/Rsyntax.vo \
 	theories/Reals/Raxioms.vo      theories/Reals/Rbase.vo \
 	theories/Reals/DiscrR.vo       theories/Reals/RealsB.vo \
