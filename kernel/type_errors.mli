@@ -24,7 +24,9 @@ type type_error =
   | IllFormedBranch of constr * int * constr * constr
   | Generalization of (name * typed_type) * constr
   | ActualType of constr * constr * constr
-  | CantAply of string * unsafe_judgment * unsafe_judgment list
+  | CantApplyBadType of (int * constr * constr)
+      * unsafe_judgment * unsafe_judgment list
+  | CantApplyNonFunctional of unsafe_judgment * unsafe_judgment list
   | IllFormedRecBody of std_ppcmds * name list * int * constr array
   | IllTypedRecBody of int * name list * unsafe_judgment array 
       * typed_type array
@@ -71,9 +73,12 @@ val error_generalization :
 val error_actual_type :
   path_kind -> env -> constr -> constr -> constr -> 'b
 
-val error_cant_apply : 
-  path_kind -> env -> string -> unsafe_judgment 
-    -> unsafe_judgment list -> 'b
+val error_cant_apply_not_functional : 
+  path_kind -> env -> unsafe_judgment -> unsafe_judgment list -> 'b
+
+val error_cant_apply_bad_type : 
+  path_kind -> env -> int * constr * constr -> 
+      unsafe_judgment -> unsafe_judgment list -> 'b
 
 val error_ill_formed_rec_body :
   path_kind -> env -> std_ppcmds

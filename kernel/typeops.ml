@@ -317,7 +317,7 @@ let cast_rel env sigma cj tj =
 (* Type of an application. *)
 
 let apply_rel_list env sigma nocheck argjl funj =
-  let rec apply_rec typ cst = function
+  let rec apply_rec n typ cst = function
     | [] -> 
 	{ uj_val  = applist (j_val_only funj, List.map j_val_only argjl);
           uj_type = typ;
@@ -327,18 +327,19 @@ let apply_rel_list env sigma nocheck argjl funj =
         match whd_betadeltaiota env sigma typ with
           | DOP2(Prod,c1,DLAM(_,c2)) ->
               if nocheck then
-                apply_rec (subst1 hj.uj_val c2) cst restjl
+                apply_rec (n+1) (subst1 hj.uj_val c2) cst restjl
 	      else 
 		(try 
 		   let c = conv_leq env sigma hj.uj_type c1 in
 		   let cst' = Constraint.union cst c in
-		   apply_rec (subst1 hj.uj_val c2) cst' restjl
+		   apply_rec (n+1) (subst1 hj.uj_val c2) cst' restjl
 		 with NotConvertible -> 
-		   error_cant_apply CCI env "Type Error" funj argjl)
+		   error_cant_apply_bad_type CCI env (n,hj.uj_type,c1)
+		     funj argjl)
           | _ ->
-              error_cant_apply CCI env "Non-functional construction" funj argjl
+	      error_cant_apply_not_functional CCI env funj argjl
   in 
-  apply_rec funj.uj_type Constraint.empty argjl
+  apply_rec 1 funj.uj_type Constraint.empty argjl
 
 
 (* Fixpoints. *)

@@ -125,10 +125,24 @@ let dbize_ctxt ctxt =
       (function
 	 | Nvar (loc,s) ->
 	     (* RRef (dummy_loc,RVar (ident_of_nvar loc s)) *)
-	     VAR (ident_of_nvar loc s)
+	     RRef (loc, RVar (ident_of_nvar loc s))
 	 | _ -> anomaly "Bad ast for local ctxt of a global reference") ctxt
   in
   Array.of_list l
+
+let dbize_constr_ctxt =
+  Array.map
+    (function
+       | VAR id ->
+	   (* RRef (dummy_loc,RVar (ident_of_nvar loc s)) *)
+	   RRef (dummy_loc, RVar id)
+       | _ -> anomaly "Bad ast for local ctxt of a global reference")
+
+let dbize_rawconstr_ctxt =
+  Array.map
+    (function
+       | RRef (_, RVar id) -> VAR id
+       | _ -> anomaly "Bad ast for local ctxt of a global reference")
 
 let dbize_global loc = function
   | ("CONST", sp::ctxt) -> 
@@ -145,10 +159,11 @@ let dbize_global loc = function
 		      [< 'sTR "Bad ast for this global a reference">])
 
 let ref_from_constr = function
-  | DOPN (Const sp,ctxt) -> RConst (sp, ctxt)
-  | DOPN (Evar ev,ctxt) -> REVar (ev, ctxt) 
-  | DOPN (MutConstruct (spi,j),ctxt) -> RConstruct ((spi,j), ctxt)
-  | DOPN (MutInd (sp,i),ctxt) -> RInd ((sp,i), ctxt)
+  | DOPN (Const sp,ctxt) -> RConst (sp, dbize_constr_ctxt ctxt)
+  | DOPN (Evar ev,ctxt) -> REVar (ev, dbize_constr_ctxt ctxt) 
+  | DOPN (MutConstruct (spi,j),ctxt) -> 
+      RConstruct ((spi,j), dbize_constr_ctxt ctxt)
+  | DOPN (MutInd (sp,i),ctxt) -> RInd ((sp,i), dbize_constr_ctxt ctxt)
   | VAR id -> RVar id  (* utilisé pour coe_value (tmp) *)
   | _ -> anomaly "Not a reference"
 
@@ -630,10 +645,10 @@ let ctxt_of_ids ids =
   Array.of_list (List.map (function id -> VAR id) ids)
 
 let rec pat_of_ref metas vars = function
-  | RConst (sp,ctxt) -> RConst (sp, ctxt)
-  | RInd (ip,ctxt) -> RInd (ip, ctxt)
-  | RConstruct(cp,ctxt) ->RConstruct(cp, ctxt)
-  | REVar (n,ctxt) -> REVar (n, ctxt)
+  | RConst (sp,ctxt) -> RConst (sp, dbize_rawconstr_ctxt ctxt)
+  | RInd (ip,ctxt) -> RInd (ip, dbize_rawconstr_ctxt ctxt)
+  | RConstruct(cp,ctxt) ->RConstruct(cp, dbize_rawconstr_ctxt ctxt)
+  | REVar (n,ctxt) -> REVar (n, dbize_rawconstr_ctxt ctxt)
   | RAbst _ -> error "pattern_of_rawconstr: not implemented"
   | RVar _ -> assert false (* Capturé dans pattern_of_raw *)
 

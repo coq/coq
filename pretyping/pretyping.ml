@@ -212,11 +212,11 @@ let pretype_var loc env lvar id =
 let trad_metamap = ref []
 let trad_nocheck = ref false
 
-let pretype_ref loc isevars env lvar = function
+let pretype_ref pretype loc isevars env lvar = function
 | RVar id -> pretype_var loc env lvar id
 
 | RConst (sp,ctxt) ->
-    let cst = (sp,ctxt_of_ids ctxt) in
+    let cst = (sp,Array.map pretype ctxt) in
     make_judge (mkConst cst) (type_of_constant env !isevars cst)
 
 | RAbst sp -> failwith "Pretype: abst doit disparaître"
@@ -246,11 +246,11 @@ let pretype_ref loc isevars env lvar = function
     make_judge cstr (type_of_existential env !isevars cstr)
 *)
 | RInd (ind_sp,ctxt) ->
-    let ind = (ind_sp,ctxt_of_ids ctxt) in
+    let ind = (ind_sp,Array.map pretype ctxt) in
     make_judge (mkMutInd ind) (type_of_inductive env !isevars ind)
  
 | RConstruct (cstr_sp,ctxt) ->
-    let cstr = (cstr_sp,ctxt_of_ids ctxt) in
+    let cstr = (cstr_sp,Array.map pretype ctxt) in
     let (typ,kind) = destCast (type_of_constructor env !isevars cstr) in
     {uj_val=mkMutConstruct cstr; uj_type=typ; uj_kind=kind}
 
@@ -266,7 +266,9 @@ let rec pretype vtcon env isevars lvar lmeta cstr =
 match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 
 | RRef (loc,ref) -> 
-    pretype_ref loc isevars env lvar ref
+    pretype_ref
+      (fun c -> (pretype empty_tycon env isevars lvar lmeta c).uj_val)
+      loc isevars env lvar ref
 
 | RMeta (loc,n) ->
     (try

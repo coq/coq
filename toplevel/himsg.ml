@@ -59,7 +59,7 @@ let msg_bad_elimination ctx k = function
       [<>]
 
 let explain_elim_arity k ctx ind aritylst c p pt okinds = 
-  let pi = pr_inductive ind in
+  let pi = pr_inductive ctx ind in
   let ppar = prlist_with_sep pr_coma (prterm_env ctx) aritylst in
   let pc = prterm_env ctx c in
   let pp = prterm_env ctx p in
@@ -115,24 +115,45 @@ let explain_actual_type k ctx c ct pt =
      'sTR"does not have type"; 'bRK(1,1); pt; 'fNL;
      'sTR"Actually, it has type" ; 'bRK(1,1); pct >]
 
-let explain_cant_apply k ctx s rator randl =
+let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
   let ctx = make_all_name_different ctx in
   let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
   let pr = prterm_env ctx rator.uj_val in
   let prt = prterm_env ctx rator.uj_type in
   let term_string = if List.length randl > 1 then "terms" else "term" in
-  let appl = 
-    prlist_with_sep pr_fnl
-      (fun c ->
-         let pc = prterm_env ctx c.uj_val in
-         let pct = prterm_env ctx c.uj_type in
-         hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl 
+  let many = match n mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
+  let appl = prlist_with_sep pr_fnl 
+	       (fun c ->
+		  let pc = prterm_env ctx c.uj_val in
+		  let pct = prterm_env ctx c.uj_type in
+		  hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl
   in
-  [< 'sTR"Illegal application ("; 'sTR s; 'sTR"): "; pe; 'fNL;
+  [< 'sTR"Illegal application (Type Error): "; pe; 'fNL;
      'sTR"The term"; 'bRK(1,1); pr; 'sPC;
      'sTR"of type"; 'bRK(1,1); prt; 'sPC ;
      'sTR("cannot be applied to the "^term_string); 'fNL; 
-     'sTR" "; v 0 appl >]
+     'sTR" "; v 0 appl; 'fNL;
+     'sTR"The ";'iNT n; 'sTR (many^" term of type ");
+     prterm_env ctx actualtyp;
+     'sTR" should be coercible to type "; prterm_env ctx exptyp >]
+
+let explain_cant_apply_not_functional k ctx rator randl =
+  let ctx = make_all_name_different ctx in
+  let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
+  let pr = prterm_env ctx rator.uj_val in
+  let prt = prterm_env ctx rator.uj_type in
+  let term_string = if List.length randl > 1 then "terms" else "term" in
+  let appl = prlist_with_sep pr_fnl 
+	       (fun c ->
+		  let pc = prterm_env ctx c.uj_val in
+		  let pct = prterm_env ctx c.uj_type in
+		  hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl
+  in
+  [< 'sTR"Illegal application (Non-functional construction): "; pe; 'fNL;
+     'sTR"The term"; 'bRK(1,1); pr; 'sPC;
+     'sTR"of type"; 'bRK(1,1); prt; 'sPC ;
+     'sTR("cannot be applied to the "^term_string); 'fNL; 
+     'sTR" "; v 0 appl; 'fNL >]
 
 (* (co)fixpoints *)
 let explain_ill_formed_rec_body k ctx str lna i vdefs =
@@ -215,15 +236,15 @@ let explain_var_not_found k ctx id =
 
 (* Pattern-matching errors *)
 let explain_bad_constructor k ctx cstr ind =
-  let pi = pr_inductive ind in
-  let pc = pr_constructor cstr in
-  let pt = pr_inductive (inductive_of_constructor cstr) in
+  let pi = pr_inductive ctx ind in
+  let pc = pr_constructor ctx cstr in
+  let pt = pr_inductive ctx (inductive_of_constructor cstr) in
   [< 'sTR "Expecting a constructor in inductive type "; pi; 'bRK(1,1) ;
      'sTR " but found the constructor " ; pc; 'bRK(1,1) ;
      'sTR " in inductive type "; pt >]
 
 let explain_wrong_numarg_of_constructor k ctx cstr n =
-  let pc = pr_constructor (cstr,[||]) in
+  let pc = pr_constructor ctx (cstr,[||]) in
   [<'sTR "The constructor "; pc;
     'sTR " expects " ; 'iNT n ; 'sTR " arguments. ">]
 
@@ -264,8 +285,10 @@ let explain_type_error k ctx = function
       explain_generalization k ctx nvar c
   | ActualType (c, ct, pt) -> 
       explain_actual_type k ctx c ct pt
-  | CantAply (s, rator, randl) ->
-      explain_cant_apply k ctx s rator randl
+  | CantApplyBadType (t, rator, randl) ->
+      explain_cant_apply_bad_type k ctx t rator randl
+  | CantApplyNonFunctional (rator, randl) ->
+      explain_cant_apply_not_functional k ctx rator randl
   | IllFormedRecBody (i, lna, vdefj, vargs) ->
       explain_ill_formed_rec_body k ctx i lna vdefj vargs
   | IllTypedRecBody (i, lna, vdefj, vargs) ->
@@ -390,7 +413,7 @@ let error_not_allowed_case_analysis dep kind i =
   [< 'sTR (if dep then "Dependent" else "Non Dependent");
      'sTR " case analysis on sort: "; print_sort kind; 'fNL;
      'sTR "is not allowed for inductive definition: ";
-     pr_inductive i >]
+     pr_inductive (Global.context()) i >]
 
 let error_bad_induction dep indid kind =
   [<'sTR (if dep then "Dependent" else "Non dependend");

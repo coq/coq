@@ -167,7 +167,7 @@ let inh_cast_rel env isevars cj tj =
     uj_kind = whd_betadeltaiota env !isevars tj.uj_type }
 
 let inh_apply_rel_list nocheck env isevars argjl funj vtcon =
-  let rec apply_rec acc typ = function
+  let rec apply_rec n acc typ = function
     | [] -> 
 	let resj =
       	  { uj_val=applist(j_val_only funj,List.map j_val_only (List.rev acc));
@@ -190,14 +190,14 @@ let inh_apply_rel_list nocheck env isevars argjl funj vtcon =
 		  (try 
 		     inh_conv_coerce_to env isevars c1 hj 
 		   with Failure _ | Not_found ->
-                     error_cant_apply CCI env "Type Error" 
-		       (j_nf_ise env !isevars funj) 
+                     error_cant_apply_bad_type CCI env (n,c1,hj.uj_type)
+		       (j_nf_ise env !isevars funj)
 		       (jl_nf_ise env !isevars argjl)) 
 	      in
-              apply_rec (hj'::acc) (subst1 hj'.uj_val c2) restjl
+              apply_rec (n+1) (hj'::acc) (subst1 hj'.uj_val c2) restjl
           | _ ->
-              error_cant_apply CCI env "Non-functional construction" 
+              error_cant_apply_not_functional CCI env
 	      	(j_nf_ise env !isevars funj) (jl_nf_ise env !isevars argjl)
   in 
-  apply_rec [] funj.uj_type argjl
+  apply_rec 1 [] funj.uj_type argjl
 

@@ -25,10 +25,10 @@ val ast_of_constr : bool -> unit assumptions -> constr -> Coqast.t
 val bdize_no_casts : bool -> unit assumptions -> constr -> Coqast.t
 i*)
 
-val ast_of_constant     : constant -> Coqast.t
-val ast_of_existential  : existential -> Coqast.t
-val ast_of_constructor  : constructor -> Coqast.t
-val ast_of_inductive    : inductive -> Coqast.t
+val ast_of_constant     : unit assumptions -> constant -> Coqast.t
+val ast_of_existential  : unit assumptions -> existential -> Coqast.t
+val ast_of_constructor  : unit assumptions -> constructor -> Coqast.t
+val ast_of_inductive    : unit assumptions -> inductive -> Coqast.t
 
 (* For debugging *)
 val print_implicits : bool ref

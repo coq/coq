@@ -119,16 +119,17 @@ let fprtype a =
 (* For compatibility *)
 let fterm0 = fprterm_env
 
-let pr_constant cst = gentermpr (ast_of_constant cst)
-let pr_existential ev = gentermpr (ast_of_existential ev)
-let pr_inductive ind = gentermpr (ast_of_inductive ind)
-let pr_constructor cstr = gentermpr (ast_of_constructor cstr)
+let pr_constant env cst = gentermpr (ast_of_constant (unitize_env env) cst)
+let pr_existential env ev = gentermpr (ast_of_existential (unitize_env env) ev)
+let pr_inductive env ind = gentermpr (ast_of_inductive (unitize_env env) ind)
+let pr_constructor env cstr =
+  gentermpr (ast_of_constructor (unitize_env env) cstr)
 
 open Pattern
 let pr_ref_label = function (* On triche sur le contexte *)
-  | ConstNode sp -> pr_constant (sp,[||])
-  | IndNode sp -> pr_inductive (sp,[||])
-  | CstrNode sp -> pr_constructor (sp,[||])
+  | ConstNode sp -> pr_constant (Global.context()) (sp,[||])
+  | IndNode sp -> pr_inductive (Global.context()) (sp,[||])
+  | CstrNode sp -> pr_constructor (Global.context()) (sp,[||])
   | VarNode id -> print_id id
 
 let pr_cases_pattern t = gentermpr (Termast.ast_of_cases_pattern t)

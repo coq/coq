@@ -148,23 +148,45 @@ let explain_actual_type k ctx c ct pt =
      'sTR"does not have type"; 'bRK(1,1); pt; 'fNL;
      'sTR"Actually, it has type" ; 'bRK(1,1); pct >]
 
-let explain_cant_apply k ctx s rator randl =
-  let pe = pr_ne_ctx [< 'sTR"in environment" >] k ctx in
-  let pr = P.pr_term k ctx rator.uj_val in
-  let prt = P.pr_term k ctx rator.uj_type in
+let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
+  let ctx = make_all_name_different ctx in
+  let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
+  let pr = prterm_env ctx rator.uj_val in
+  let prt = prterm_env ctx rator.uj_type in
   let term_string = if List.length randl > 1 then "terms" else "term" in
-  let appl = 
-    prlist_with_sep pr_fnl
-      (fun c ->
-         let pc = P.pr_term k ctx c.uj_val in
-         let pct = P.pr_term k ctx c.uj_type in
-         hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl 
+  let many = match n mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
+  let appl = prlist_with_sep pr_fnl 
+	       (fun c ->
+		  let pc = prterm_env ctx c.uj_val in
+		  let pct = prterm_env ctx c.uj_type in
+		  hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl
   in
-  [< 'sTR"Illegal application ("; 'sTR s; 'sTR"): "; pe; 'fNL;
+  [< 'sTR"Illegal application (Type Error): "; pe; 'fNL;
      'sTR"The term"; 'bRK(1,1); pr; 'sPC;
      'sTR"of type"; 'bRK(1,1); prt; 'sPC ;
      'sTR("cannot be applied to the "^term_string); 'fNL; 
-     'sTR" "; v 0 appl >]
+     'sTR" "; v 0 appl; 'fNL;
+     'sTR"The ";'iNT n; 'sTR (many^" term of type ");
+     prterm_env ctx actualtyp;
+     'sTR" should be of type "; prterm_env ctx exptyp >]
+
+let explain_cant_apply_not_functional k ctx rator randl =
+  let ctx = make_all_name_different ctx in
+  let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
+  let pr = prterm_env ctx rator.uj_val in
+  let prt = prterm_env ctx rator.uj_type in
+  let term_string = if List.length randl > 1 then "terms" else "term" in
+  let appl = prlist_with_sep pr_fnl 
+	       (fun c ->
+		  let pc = prterm_env ctx c.uj_val in
+		  let pct = prterm_env ctx c.uj_type in
+		  hOV 2 [< pc; 'sPC; 'sTR": " ; pct >]) randl
+  in
+  [< 'sTR"Illegal application (Non-functional construction): "; pe; 'fNL;
+     'sTR"The term"; 'bRK(1,1); pr; 'sPC;
+     'sTR"of type"; 'bRK(1,1); prt; 'sPC ;
+     'sTR("cannot be applied to the "^term_string); 'fNL; 
+     'sTR" "; v 0 appl; 'fNL >]
 
 (* (co)fixpoints *)
 let explain_ill_formed_rec_body k ctx str lna i vdefs =
@@ -243,8 +265,10 @@ let explain_type_error k ctx = function
       explain_generalization k ctx nvar c
   | ActualType (c, ct, pt) -> 
       explain_actual_type k ctx c ct pt
-  | CantAply (s, rator, randl) ->
-      explain_cant_apply k ctx s rator randl
+  | CantApplyBadType (s, rator, randl) ->
+      explain_cant_apply_bad_type k ctx n rator randl
+  | CantApplyNonFunctional (rator, randl) ->
+      explain_cant_apply_not_functional k ctx rator randl
   | IllFormedRecBody (i, lna, vdefj, vargs) ->
       explain_ill_formed_rec_body k ctx i lna vdefj vargs
   | IllTypedRecBody (i, lna, vdefj, vargs) ->

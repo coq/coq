@@ -22,10 +22,10 @@ val prtype          : typed_type -> std_ppcmds
 val pr_rawterm       : Rawterm.rawconstr -> std_ppcmds
 val pr_cases_pattern : Rawterm.cases_pattern -> std_ppcmds
 
-val pr_constant     : constant -> std_ppcmds
-val pr_existential  : existential -> std_ppcmds
-val pr_constructor  : constructor -> std_ppcmds
-val pr_inductive    : inductive -> std_ppcmds
+val pr_constant     : 'a assumptions -> constant -> std_ppcmds
+val pr_existential  : 'a assumptions -> existential -> std_ppcmds
+val pr_constructor  : 'a assumptions -> constructor -> std_ppcmds
+val pr_inductive    : 'a assumptions -> inductive -> std_ppcmds
 val pr_ref_label    : constr_label -> std_ppcmds
 val pr_pattern      : constr_pattern -> std_ppcmds
 val pr_pattern_env  : 'a assumptions -> constr_pattern -> std_ppcmds

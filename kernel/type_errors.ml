@@ -22,7 +22,9 @@ type type_error =
   | IllFormedBranch of constr * int * constr * constr
   | Generalization of (name * typed_type) * constr
   | ActualType of constr * constr * constr
-  | CantAply of string * unsafe_judgment * unsafe_judgment list
+  | CantApplyBadType of (int * constr * constr)
+      * unsafe_judgment * unsafe_judgment list
+  | CantApplyNonFunctional of unsafe_judgment * unsafe_judgment list
   | IllFormedRecBody of std_ppcmds * name list * int * constr array
   | IllTypedRecBody of int * name list * unsafe_judgment array 
       * typed_type array
@@ -73,8 +75,11 @@ let error_generalization k env nvar c =
 let error_actual_type k env c actty expty =
   raise (TypeError (k, context env, ActualType (c,actty,expty)))
 
-let error_cant_apply k env s rator randl =
-  raise (TypeError (k, context env, CantAply (s,rator,randl)))
+let error_cant_apply_not_functional k env rator randl =
+  raise (TypeError (k, context env, CantApplyNonFunctional (rator,randl)))
+
+let error_cant_apply_bad_type k env t rator randl =
+  raise (TypeError (k, context env, CantApplyBadType (t,rator,randl)))
 
 let error_ill_formed_rec_body k env str lna i vdefs =
   raise (TypeError (k, context env, IllFormedRecBody (str,lna,i,vdefs)))

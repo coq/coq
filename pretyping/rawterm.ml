@@ -23,7 +23,7 @@ type rawsort = RProp of Term.contents | RType
 
 (*i Pas beau ce constr dans rawconstr, mais mal compris ce ctxt des ref i*)
 type rawconstr = 
-  | RRef of loc * constr array reference
+  | RRef of loc * rawconstr array reference
   | RMeta of loc * int
   | RApp of loc * rawconstr * rawconstr list
   | RBinder of loc * binder_kind * name * rawconstr * rawconstr
