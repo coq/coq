@@ -14,3 +14,10 @@
    produce the output state if any, and finally will launch [Toplevel.loop]. *)
 
 val start : unit -> unit
+
+(* [init] is already called by [start], but exported here to be reused 
+   by the Coq IDE. It does everything [start] does, except launching
+   the toplevel loop. *)
+
+val init : unit -> unit
+

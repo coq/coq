@@ -36,7 +36,7 @@ val err_fp : (int*string) pp_formatter_params
 val with_fp : 'a pp_formatter_params -> Format.formatter
 val with_output_to : out_channel -> Format.formatter
 
-val std_ft : Format.formatter
+val std_ft : Format.formatter ref
 val err_ft : Format.formatter
 val deep_ft : Format.formatter
 

@@ -215,11 +215,10 @@ let parse_args () =
 (* To prevent from doing the initialization twice *)
 let initialized = ref false
 
-(* Ctrl-C is fatal during the initialisation *)
-let start () =
+let init () =
   if not !initialized then begin
     initialized := true;
-    Sys.catch_break false;
+    Sys.catch_break false; (* Ctrl-C is fatal during the initialisation *)
     Lib.init();
     try
       parse_args ();
@@ -241,7 +240,10 @@ let start () =
       exit 1
   end;
   if !batch_mode then (flush_all(); Profile.print_profile (); exit 0);
-  Lib.declare_initial_state ();
+  Lib.declare_initial_state ()
+
+let start () =
+  init ();
   Toplevel.loop();
   (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();

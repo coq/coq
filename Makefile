@@ -39,7 +39,7 @@ noargument:
 
 LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
               -I proofs -I tactics -I pretyping \
-              -I interp -I toplevel -I parsing \
+              -I interp -I toplevel -I parsing -I ide \
               -I contrib/omega -I contrib/romega \
 	      -I contrib/ring -I contrib/xml \
 	      -I contrib/extraction -I contrib/correctness \
@@ -412,6 +412,34 @@ scripts/tolink.ml: Makefile
 	echo "let contrib = \""$(CONTRIB)"\"" >> $@
 
 beforedepend:: scripts/tolink.ml
+
+# Coq IDE
+
+COQIDEBYTE=bin/coqide.byte$(EXE)
+COQIDEOPT=bin/coqide.opt$(EXE)
+COQIDECMO=ide/find_phrase.cmo ide/highlight.cmo ide/coq.cmo ide/coqide.cmo
+COQIDECMX=$(COQIDECMO:.cmo=.cmx)
+COQIDEFLAGS=-I +lablgtk2
+beforedepend:: ide/find_phrase.ml ide/highlight.ml
+
+$(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) $(COQIDECMX)
+	$(COQMKTOP) -ide -opt $(COQIDEFLAGS) lablgtk.cmxa $(OPTFLAGS) -o $@ $(COQIDECMX)
+	$(STRIP) $@
+
+$(COQIDEBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(COQIDECMO)
+	$(COQMKTOP) -g -ide -top $(COQIDEFLAGS) lablgtk.cma $(LOCALINCLUDES) $(CAMLDEBUG) -o $@ $(COQIDECMO)
+
+ide/%.cmo: ide/%.ml
+	$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+
+ide/%.cmi: ide/%.mli
+	$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+
+ide/%.cmx: ide/%.ml
+	$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
+
+clean::
+	rm -f $(COQIDEBYTE) $(COQIDEOPT)
 
 # coqc
 
@@ -1094,6 +1122,7 @@ archclean::
 	rm -f parsing/*.cmx parsing/*.[so]
 	rm -f pretyping/*.cmx pretyping/*.[so]
 	rm -f toplevel/*.cmx toplevel/*.[so]
+	rm -f ide/*.cmx ide/*.[so]
 	rm -f tools/*.cmx tools/*.[so]
 	rm -f scripts/*.cmx scripts/*.[so]
 	rm -f dev/*.cmx dev/*.[so]
@@ -1111,6 +1140,7 @@ clean:: archclean
 	rm -f parsing/*.cm[io] parsing/*.ppo
 	rm -f pretyping/*.cm[io]
 	rm -f toplevel/*.cm[io]
+	rm -f ide/*.cm[io]
 	rm -f tools/*.cm[io]
 	rm -f scripts/*.cm[io]
 	rm -f dev/*.cm[io]

@@ -61,6 +61,7 @@ let opt        = ref false
 let full       = ref false
 let top        = ref false
 let searchisos = ref false
+let coqide     = ref false
 let echo       = ref false
 
 let src_dirs = [ []; [ "config" ]; [ "toplevel" ] ]
@@ -138,6 +139,7 @@ Options are:
   -full         Link high level tactics
   -top          Build Coq on a ocaml toplevel (incompatible with -opt)
   -searchisos   Build a toplevel for SearchIsos
+  -ide          Build a toplevel for the Coq IDE
   -R dir        Specify recursively directories for Ocaml\n";
   exit 1
 
@@ -152,6 +154,8 @@ let parse_args () =
     | "-top" :: rem -> top := true ; parse (op,fl) rem
     | "-searchisos" :: rem ->
         searchisos := true; parse (op,fl) rem
+    | "-ide" :: rem ->
+        coqide := true; parse (op,fl) rem
     | "-echo" :: rem -> echo := true ; parse (op,fl) rem
     | ("-cclib"|"-ccopt"|"-I"|"-o" as o) :: rem' ->
 	begin
@@ -259,7 +263,9 @@ let create_tmp_main_file modules =
     (* Start the right toplevel loop: Coq or Coq_searchisos *)
     if !searchisos then 
       output_string oc "Cmd_searchisos_line.start();;\n"
-    else 
+    else if !coqide then
+      output_string oc "Coqide.start();;\n"
+    else
       output_string oc "Coqtop.start();;\n";
     close_out oc;
     main_name

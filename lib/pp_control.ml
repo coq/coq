@@ -86,8 +86,8 @@ let with_output_to ch =
   set_gp ft deep_gp; 
   ft
 
-let std_ft = Format.std_formatter
-let _ = set_dflt_gp std_ft
+let std_ft = ref Format.std_formatter
+let _ = set_dflt_gp !std_ft
 
 let err_ft = with_output_to stderr
 
@@ -95,8 +95,8 @@ let deep_ft = with_output_to stdout
 let _ = set_gp deep_ft deep_gp
 
 (* For parametrization through vernacular *)
-let default = Format.pp_get_max_boxes std_ft ()
-let get_depth_boxes () = Some (Format.pp_get_max_boxes std_ft ())
+let default = Format.pp_get_max_boxes !std_ft ()
+let get_depth_boxes () = Some (Format.pp_get_max_boxes !std_ft ())
 let set_depth_boxes v =
-  Format.pp_set_max_boxes std_ft (match v with None -> default | Some v -> v)
+  Format.pp_set_max_boxes !std_ft (match v with None -> default | Some v -> v)
 
