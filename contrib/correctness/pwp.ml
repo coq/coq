@@ -115,8 +115,7 @@ let is_bool = function
   | TypePure c ->
       (match kind_of_term (strip_outer_cast c) with
 	 | Ind op ->
-	     let sign = Global.named_context () in
-             string_of_id (id_of_global (Some sign) (IndRef op)) = "bool"
+             string_of_id (id_of_global (IndRef op)) = "bool"
 	 | _ -> false)
   | _ -> false
 

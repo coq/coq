@@ -15,6 +15,7 @@ Require ArrayPermut.
 
 Require ZArithRing.
 Require Omega.
+Import Z_scope.
 
 Set Implicit Arguments.
 

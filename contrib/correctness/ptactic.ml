@@ -226,8 +226,7 @@ let register id n =
   Penv.register id id'
 
 let correctness_hook _ ref = 
-  let ctx = Global.named_context () in
-  let pf_id = basename (Nametab.sp_of_global (Some ctx) ref) in
+  let pf_id = Nametab.id_of_global ref in
   register pf_id None
 
 let correctness s p opttac =

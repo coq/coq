@@ -62,8 +62,10 @@ CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
 GLOB=   # is "-dump-glob file" when making the doc
+COQ_XML=	# is "-xml" when building XML library
+COQOPTS=$(COQINCLUDES) $(GLOB) $(COQ_XML)
 
-BOOTCOQTOP=$(BESTCOQTOP) -boot -$(BEST) $(COQINCLUDES) $(GLOB) $(COQ_XML)
+BOOTCOQTOP=$(BESTCOQTOP) -boot -$(BEST) $(COQOPTS)
 
 ###########################################################################
 # Objects files 
@@ -120,18 +122,22 @@ INTERP=\
 PARSING=\
   parsing/lexer.cmo parsing/coqast.cmo parsing/ast.cmo \
   parsing/termast.cmo parsing/extend.cmo parsing/esyntax.cmo \
-  parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
+  parsing/pcoq.cmo parsing/egrammar.cmo \
+  parsing/ppconstr.cmo translate/ppconstrnew.cmo parsing/printer.cmo \
+  parsing/pptactic.cmo translate/pptacticnew.cmo \
   parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo
 
-TRANSLATE=\
-  translate/ppconstrnew.cmo translate/pptacticnew.cmo translate/ppvernacnew.cmo
-
 HIGHPARSING=\
-  parsing/g_prim.cmo parsing/g_basevernac.cmo \
-  parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
+  parsing/g_prim.cmo parsing/g_proofs.cmo parsing/g_basevernac.cmo \
+  parsing/g_vernac.cmo parsing/g_tactic.cmo \
   parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
   parsing/g_module.cmo \
   parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
+
+HIGHPARSINGNEW=\
+  parsing/g_primnew.cmo parsing/g_constrnew.cmo parsing/g_tacticnew.cmo \
+  parsing/g_ltacnew.cmo parsing/g_vernacnew.cmo parsing/g_proofsnew.cmo \
+  parsing/g_natsyntaxnew.cmo parsing/g_zsyntaxnew.cmo parsing/g_rsyntaxnew.cmo
 
 ARITHSYNTAX=\
   parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
@@ -140,7 +146,7 @@ PROOFS=\
   proofs/tacexpr.cmo proofs/proof_type.cmo \
   proofs/proof_trees.cmo proofs/logic.cmo \
   proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
-  proofs/clenv.cmo proofs/pfedit.cmo \
+  proofs/clenv.cmo proofs/pfedit.cmo translate/ppvernacnew.cmo \
   proofs/tactic_debug.cmo
 
 TACTICS=\
@@ -155,7 +161,7 @@ TOPLEVEL=\
   toplevel/command.cmo toplevel/record.cmo toplevel/recordobj.cmo \
   toplevel/discharge.cmo toplevel/vernacexpr.cmo $(TRANSLATE) \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
-  parsing/pcoq.cmo parsing/egrammar.cmo toplevel/metasyntax.cmo \
+  toplevel/metasyntax.cmo \
   toplevel/vernacentries.cmo toplevel/vernac.cmo \
   toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
   toplevel/toplevel.cmo toplevel/usage.cmo \
@@ -200,93 +206,9 @@ INTERFACECMX=$(INTERFACE:.cmo=.cmx)
 
 ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
 
-PARSERREQUIRES=\
-  config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
-  lib/util.cmo lib/bignat.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
-  lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo lib/system.cmo \
-  lib/bstack.cmo lib/edit.cmo lib/options.cmo lib/rtree.cmo lib/gset.cmo \
-  lib/tlm.cmo kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
-  kernel/term.cmo kernel/sign.cmo kernel/declarations.cmo \
-  kernel/environ.cmo kernel/closure.cmo kernel/conv_oracle.cmo \
-  kernel/reduction.cmo kernel/modops.cmo kernel/type_errors.cmo \
-  kernel/inductive.cmo kernel/typeops.cmo kernel/indtypes.cmo \
-  kernel/cooking.cmo kernel/term_typing.cmo kernel/subtyping.cmo \
-  kernel/mod_typing.cmo kernel/safe_typing.cmo library/nameops.cmo \
-  library/libnames.cmo library/libobject.cmo library/summary.cmo \
-  library/nametab.cmo library/lib.cmo library/global.cmo \
-  library/declaremods.cmo library/library.cmo library/impargs.cmo \
-  library/dischargedhypsmap.cmo library/goptions.cmo pretyping/evd.cmo \
-  pretyping/instantiate.cmo pretyping/termops.cmo \
-  pretyping/reductionops.cmo pretyping/inductiveops.cmo \
-  pretyping/retyping.cmo library/declare.cmo pretyping/cbv.cmo \
-  pretyping/tacred.cmo pretyping/classops.cmo pretyping/rawterm.cmo \
-  pretyping/pattern.cmo pretyping/pretype_errors.cmo \
-  pretyping/evarutil.cmo pretyping/recordops.cmo pretyping/evarconv.cmo \
-  pretyping/coercion.cmo pretyping/cases.cmo pretyping/indrec.cmo \
-  pretyping/pretyping.cmo parsing/lexer.cmo parsing/coqast.cmo \
-  interp/genarg.cmo proofs/tacexpr.cmo toplevel/vernacexpr.cmo \
-  interp/topconstr.cmo interp/symbols.cmo interp/ppextend.cmo \
-  interp/syntax_def.cmo interp/constrintern.cmo interp/coqlib.cmo \
-  parsing/pcoq.cmo parsing/ast.cmo parsing/extend.cmo \
-  pretyping/detyping.cmo parsing/termast.cmo interp/modintern.cmo \
-  interp/constrextern.cmo parsing/egrammar.cmo parsing/esyntax.cmo \
-  toplevel/metasyntax.cmo parsing/g_prim.cmo parsing/g_basevernac.cmo \
-  parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo $(TRANSLATE) \
-  pretyping/typing.cmo proofs/proof_trees.cmo \
-  proofs/logic.cmo proofs/refiner.cmo proofs/evar_refiner.cmo \
-  proofs/tacmach.cmo proofs/tactic_debug.cmo toplevel/himsg.cmo \
-  parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
-  toplevel/class.cmo toplevel/recordobj.cmo toplevel/cerrors.cmo \
-  parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
-  parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
-  proofs/pfedit.cmo proofs/clenv.cmo tactics/wcclausenv.cmo \
-  tactics/tacticals.cmo tactics/hipattern.cmo tactics/tactics.cmo \
-  tactics/hiddentac.cmo tactics/dn.cmo tactics/termdn.cmo \
-  tactics/btermdn.cmo tactics/nbtermdn.cmo tactics/dhyp.cmo \
-  tactics/elim.cmo tactics/auto.cmo tactics/tacinterp.cmo \
-  tactics/extraargs.cmo lib/bij.cmo lib/explore.cmo kernel/entries.cmo \
-  library/states.cmo library/decl_kinds.cmo proofs/proof_type.cmo \
-  parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo \
-  toplevel/command.cmo toplevel/record.cmo toplevel/discharge.cmo \
-  toplevel/vernacinterp.cmo toplevel/mltop.cmo \
-  toplevel/vernacentries.cmo toplevel/vernac.cmo \
-  toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
-  toplevel/toplevel.cmo toplevel/usage.cmo toplevel/coqinit.cmo \
-  toplevel/coqtop.cmo parsing/g_module.cmo tactics/setoid_replace.cmo \
-  tactics/equality.cmo tactics/contradiction.cmo tactics/inv.cmo \
-  tactics/leminv.cmo tactics/autorewrite.cmo tactics/refine.cmo \
-  tactics/extratactics.cmo tactics/eauto.cmo contrib/omega/omega.cmo \
-  contrib/omega/coq_omega.cmo contrib/omega/g_omega.cmo \
-  contrib/romega/const_omega.cmo contrib/romega/refl_omega.cmo \
-  contrib/romega/g_romega.cmo contrib/ring/quote.cmo \
-  contrib/ring/g_quote.cmo contrib/ring/ring.cmo contrib/ring/g_ring.cmo \
-  contrib/field/field.cmo contrib/fourier/fourier.cmo \
-  contrib/fourier/fourierR.cmo contrib/fourier/g_fourier.cmo \
-  contrib/extraction/table.cmo contrib/extraction/mlutil.cmo \
-  contrib/extraction/ocaml.cmo contrib/extraction/haskell.cmo \
-  contrib/extraction/scheme.cmo contrib/extraction/extraction.cmo \
-  contrib/extraction/common.cmo contrib/extraction/extract_env.cmo \
-  contrib/extraction/g_extraction.cmo contrib/jprover/opname.cmo \
-  contrib/jprover/jterm.cmo contrib/jprover/jlogic.cmo \
-  contrib/jprover/jtunify.cmo contrib/jprover/jall.cmo \
-  contrib/jprover/jprover.cmo contrib/xml/unshare.cmo \
-  contrib/xml/xml.cmo contrib/xml/acic.cmo \
-  contrib/xml/doubleTypeInference.cmo contrib/xml/cic2acic.cmo \
-  contrib/xml/acic2Xml.cmo contrib/xml/proof2aproof.cmo \
-  contrib/xml/proofTree2Xml.cmo contrib/xml/xmlcommand.cmo \
-  contrib/xml/xmlentries.cmo contrib/correctness/pmisc.cmo \
-  contrib/correctness/peffect.cmo contrib/correctness/prename.cmo \
-  contrib/correctness/perror.cmo contrib/correctness/penv.cmo \
-  contrib/correctness/putil.cmo contrib/correctness/pdb.cmo \
-  contrib/correctness/pcic.cmo contrib/correctness/pmonad.cmo \
-  contrib/correctness/pcicenv.cmo contrib/correctness/pred.cmo \
-  contrib/correctness/ptyping.cmo contrib/correctness/pwp.cmo \
-  contrib/correctness/pmlize.cmo contrib/correctness/ptactic.cmo \
-  contrib/correctness/psyntax.cmo contrib/cc/ccalgo.cmo \
-  contrib/cc/ccproof.cmo contrib/cc/cctac.cmo contrib/funind/tacinvutils.cmo \
-  contrib/funind/tacinv.cmo
-
-PARSERREQUIRESCMX=$(PARSERREQUIRES:.cmo=.cmx)
+PARSERREQUIRES=$(CMO) # Solution de facilité...
+PARSERREQUIRESCMX1=$(PARSERREQUIRES:.cmo=.cmx)
+PARSERREQUIRESCMX=$(PARSERREQUIRESCMX1:.cma=.cmxa)
 
 ML4FILES += contrib/correctness/psyntax.ml4 contrib/omega/g_omega.ml4 \
   contrib/romega/g_romega.ml4 contrib/ring/g_quote.ml4 \
@@ -376,7 +298,7 @@ CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
 CMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) \
-    $(PROOFS) $(TACTICS) $(INTERP) $(PARSING) $(TRANSLATE) $(TOPLEVEL) \
+    $(PROOFS) $(TACTICS) $(INTERP) $(PARSING) $(TOPLEVEL) \
     $(HIGHPARSING) $(HIGHTACTICS) $(CONTRIB)
 CMX=$(CMO:.cmo=.cmx)
 
@@ -390,10 +312,11 @@ COQTOPBYTE=bin/coqtop.byte$(EXE)
 COQTOPOPT=bin/coqtop.opt$(EXE)
 BESTCOQTOP=bin/coqtop.$(BEST)$(EXE)
 COQTOP=bin/coqtop$(EXE)
+COQTOPNEW=bin/coqtopnew$(EXE)
 COQINTERFACE=bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE) bin/parser$(EXE)
 
 COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
-             $(COQINTERFACE) 
+#             $(COQINTERFACE) 
 
 coqbinaries:: ${COQBINARIES}
 
@@ -430,6 +353,7 @@ scripts/tolink.ml: Makefile
 	echo "let parsing = \""$(PARSING)"\"" >> $@
 	echo "let toplevel = \""$(TOPLEVEL)"\"" >> $@
 	echo "let highparsing = \""$(HIGHPARSING)"\"" >> $@
+	echo "let highparsingnew = \""$(HIGHPARSINGNEW)"\"" >> $@
 	echo "let hightactics = \""$(HIGHTACTICS)" "$(USERTACCMO)"\"" >> $@
 	echo "let contrib = \""$(CONTRIB)"\"" >> $@
 
@@ -513,7 +437,6 @@ pretyping: $(PRETYPING)
 highparsing: $(HIGHPARSING)
 toplevel: $(TOPLEVEL)
 hightactics: $(HIGHTACTICS)
-translate: $(TRANSLATE)
 
 # special binaries for debugging
 
@@ -549,7 +472,7 @@ states:: states/barestate.coq states/initial.coq
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
 
 states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
-	$(BESTCOQTOP) -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
+	$(BESTCOQTOP) -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
 
 #       theories/Init/DatatypesHints.vo   theories/Init/PeanoHints.vo \
 #       theories/Init/LogicHints.vo       theories/Init/SpecifHints.vo \
@@ -792,10 +715,10 @@ JPROVERVO =
 CCVO = contrib/cc/CC.vo
 
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
-	$(BESTCOQTOP) -boot -byte  $(COQINCLUDES) -compile $*
+	$(BESTCOQTOP) -boot -byte  $(COQOPTS) -compile $*
 
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
-	$(BESTCOQTOP) -boot -byte  $(COQINCLUDES) -compile $*
+	$(BESTCOQTOP) -boot -byte  $(COQOPTS) -compile $*
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(CORRECTNESSVO) $(FOURIERVO) \
@@ -1080,7 +1003,11 @@ ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
 	   parsing/g_constr.ml4 parsing/g_module.ml4 \
 	   parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
 	   parsing/argextend.ml4 parsing/tacextend.ml4 \
-	   parsing/vernacextend.ml4
+	   parsing/vernacextend.ml4 \
+           parsing/g_primnew.ml4 \
+           parsing/g_vernacnew.ml4 parsing/g_proofsnew.ml4 \
+	   parsing/g_constrnew.ml4 \
+	   parsing/g_tacticnew.ml4 parsing/g_ltacnew.ml4 \
 
 # beforedepend:: $(GRAMMARCMO)
 
@@ -1229,7 +1156,7 @@ dependcoq:: beforedepend
 
 # Build dependencies ignoring failures in building ml files from ml4 files
 # This is useful to rebuild dependencies when they are strongly corrupted:
-# by making scratchdependml, one gets dependencies OK for .ml files and
+# by making scratchdepend, one gets dependencies OK for .ml files and
 # .ml4 files not using fancy parsers. This is sufficient to get beforedepend
 # and depend targets successfully built
 scratchdepend:: dependp4
@@ -1288,3 +1215,59 @@ devel:
 	touch .depend.devel
 	$(MAKE) -f dev/Makefile.devel setup-devel
 	$(MAKE) dev/top_printers.cmo
+
+
+############################################################################
+# Entries for new syntax
+############################################################################
+
+# 1. Translate the old syntax files and build new syntax theories hierarchy
+translation::
+	@$(MAKE) COQ_XML=-ftranslate world
+	@$(MAKE) movenew
+
+movenew::
+	-mv *.v8 theories/Init/
+	for i in theories/*/*.v8 contrib/*/*.v8; do \
+	  j=new`expr $$i : \\\\\(.*\\\\\)8` ; \
+	  mkdir -p `dirname $$j` ; \
+	  mv -u -f $$i $$j ; \
+	done
+
+# 2. Build new syntax images and compile theories
+newworld:: newinit newtheories newcontrib
+
+newinit:: $(INITVO:%.vo=new%.vo)
+newtheories:: $(THEORIESVO:%.vo=new%.vo)
+newcontrib:: $(CONTRIBVO:%.vo=new%.vo) $(CONTRIBCMO)
+
+
+COQTOPNEW=bin/coqtopnew.$(BEST)$(EXE)
+
+NEWCMX=$(HIGHPARSINGNEW:.cmo=.cmx)
+NEWOPTS=-boot $(GLOB) -R newtheories Coq -R newcontrib Coq
+NEWCOQBARE=$(COQTOPNEW) $(NEWOPTS) -nois
+NEWCOQ=$(COQTOPNEW) $(NEWOPTS) -is states/initialnew.coq
+
+bin/coqtopnew.opt$(EXE): $(COQMKTOP) $(CMX) $(USERTACCMX) $(NEWCMX)
+	$(COQMKTOP) -opt $(OPTFLAGS) $(NEWCMX) -o $@
+
+bin/coqtopnew.byte$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(HIGHPARSINGNEW)
+	$(COQMKTOP) -top $(OPTFLAGS) $(HIGHPARSINGNEW) -o $@
+
+newtheories/Init/%.vo: newtheories/Init/%.v
+	$(NEWCOQBARE) -compile $*
+
+states/initialnew.coq: states/MakeInitialNew.v $(INITVO:%.vo=t%.vo)
+	$(NEWCOQBARE) -batch -silent -load-vernac-source states/MakeInitialNew.v -outputstate states/initialnew.coq
+
+newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
+	$(NEWCOQ) -compile $*
+newtheories/%.vo: newtheories/%.v states/initialnew.coq
+	$(NEWCOQ) -compile $*
+
+# Dependencies
+.depend.newcoq: .depend.coq Makefile
+	sed -e "s|theories/\([^ ]*\.v\)|newtheories/\1|g" -e "s|contrib/\([^ ]*\.v\)|newcontrib/\1|g" .depend.coq > .depend.newcoq
+
+include .depend.newcoq
