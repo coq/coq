@@ -428,17 +428,7 @@ GEXTEND Gram
 	   VernacDeclareImplicits (qid,pos)
 
       | IDENT "Implicit"; ["Type" | IDENT "Types"];
-	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c)
-
-      (* For compatibility *)
-      | IDENT "Implicit"; IDENT "Arguments"; IDENT "On" ->
-	  VernacSetOption
-	    (Goptions.SecondaryTable ("Implicit","Arguments"),
-             BoolValue true)
-      | IDENT "Implicit"; IDENT "Arguments"; IDENT "Off" ->
-	  VernacSetOption
-	    (Goptions.SecondaryTable ("Implicit","Arguments"),
-             BoolValue false) ] ]
+	   idl = LIST1 identref; ":"; c = lconstr -> VernacReserve (idl,c) ] ]
   ;
 END
 
