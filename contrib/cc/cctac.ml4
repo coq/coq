@@ -126,7 +126,7 @@ let make_prb gl=
 let build_projection intype outtype (cstr:constructor) special default gls=
   let env=pf_env gls in 
   let (h,argv) = 
-    try destApplication intype with 
+    try destApp intype with 
 	Invalid_argument _ -> (intype,[||])  in
   let ind=destInd h in 
   let types=Inductiveops.arities_of_constructors env ind in

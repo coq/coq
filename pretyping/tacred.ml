@@ -608,7 +608,7 @@ let contextually byhead (locs,c) f env sigma t =
 	f env sigma t
       else if byhead then
 	(* find other occurrences of c in t; TODO: ensure left-to-right *)
-        let (f,l) = destApplication t in
+        let (f,l) = destApp t in
 	mkApp (f, array_map_left (traverse envc) l)
       else
 	t

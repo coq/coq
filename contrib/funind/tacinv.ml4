@@ -650,7 +650,7 @@ let rec applistc_iota cstr lcstr env sigma =
   | [] -> cstr,[]
   | arg::lcstr' -> 
      let arghd = 
-      if isApp arg then let x,_ = destApplication arg in x else arg in
+      if isApp arg then let x,_ = destApp arg in x else arg in
      if isConstruct arghd (* of the form [(C ...)]*)
      then 
         applistc_iota (Tacred.nf env sigma (nf_beta (applistc cstr [arg])))

@@ -126,7 +126,7 @@ let apply_leqtrpl_t t leq =
 
 
 let apply_refl_term eq t =
-  let _,arr = destApplication eq in
+  let _,arr = destApp eq in
   let reli= (Array.get arr 1) in
   let by_t= (Array.get arr 2) in
   substitterm 0 reli by_t t
@@ -144,7 +144,7 @@ let apply_eq_leqtrpl leq eq =
 let constr_head_match u t=
   if isApp u 
   then 
-	 let uhd,args= destApplication u in
+	 let uhd,args= destApp u in
     uhd=t
   else false
 
@@ -187,7 +187,7 @@ let rec buildrefl_from_eqs eqs =
   match eqs with 
     | []  ->  []
     | cstr::eqs' -> 
-        let eq,args = destApplication cstr in
+        let eq,args = destApp cstr in
         (mkRefl (Array.get args 0) (Array.get args 2))
 	:: (buildrefl_from_eqs eqs')
 
@@ -218,7 +218,7 @@ let hdMatchSub_cpl u (d,f) =
 
 (* destApplication raises an exception if [t] is not an application *)      
 let exchange_hd_prod subst_hd t =
-    let (hd,args)= destApplication t in mkApp (subst_hd,args)
+    let (hd,args)= destApp t in mkApp (subst_hd,args)
 
 (* substitute t by by_t in head of products inside in_u, reduces each
 	product found  *)
@@ -237,7 +237,7 @@ let rec substit_red prof t by_t in_u =
 (* [exchange_reli_arrayi t=(reli x y ...) tarr (d,f)] exchange each
 	reli by tarr.(f-i). *) 
 let exchange_reli_arrayi tarr (d,f) t =
-  let hd,args= destApplication t in 
+  let hd,args= destApp t in 
   let i = destRel hd in
   whd_beta (mkApp (tarr.(f-i) ,args))
 

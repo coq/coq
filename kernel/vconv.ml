@@ -299,7 +299,7 @@ let constructor_instantiate mind mib params ctyp =
     let sp = List.rev (Array.to_list params) in substl sp ctyp2
   
 let destApplication t =
-  try destApplication t 
+  try destApp t 
   with _ -> t,[||]
 
 let construct_of_constr_const env tag typ =
