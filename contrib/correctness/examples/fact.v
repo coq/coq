@@ -18,7 +18,7 @@
 
 (* Proof of an imperative program computing the factorial (over type nat) *)
 
-Require Programs.
+Require Correctness.
 Require Omega.
 Require Arith.
 
@@ -60,7 +60,6 @@ Correctness factorielle
   end
   { y = (fact x@0) }.
 Proof.
-Split.
 (* decreasing of the variant *)
 Omega.
 (* preservation of the invariant *)

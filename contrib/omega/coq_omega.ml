@@ -228,6 +228,7 @@ let constant dir s =
     anomaly ("Coq_omega: cannot find "^
 	     (Nametab.string_of_qualid (Nametab.make_qualid dir id)))
 
+let arith_constant dir = constant ("Arith"::dir)
 let zarith_constant dir = constant ("Zarith"::dir)
 let logic_constant dir = constant ("Logic"::dir)
 
@@ -266,7 +267,7 @@ let coq_inj_ge = lazy (zarith_constant ["auxiliary"] "inj_ge")
 let coq_inj_gt = lazy (zarith_constant ["auxiliary"] "inj_gt")
 let coq_inj_neq = lazy (zarith_constant ["auxiliary"] "inj_neq")
 let coq_inj_eq = lazy (zarith_constant ["auxiliary"] "inj_eq")
-let coq_pred_of_minus = lazy (zarith_constant ["auxiliary"] "pred_of_minus")
+let coq_pred_of_minus = lazy (arith_constant ["Minus"] "pred_of_minus")
 let coq_fast_Zplus_assoc_r = lazy (zarith_constant ["auxiliary"] "fast_Zplus_assoc_r")
 let coq_fast_Zplus_assoc_l = lazy (zarith_constant ["auxiliary"] "fast_Zplus_assoc_l")
 let coq_fast_Zmult_assoc_r = lazy (zarith_constant ["auxiliary"] "fast_Zmult_assoc_r")

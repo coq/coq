@@ -133,8 +133,8 @@ Correctness i_exp
 .
 Proof.
 (* Zodd *)
-Decompose [and] I.
-Rewrite (Zodd_div2 e0 H1 Test1) in H0. Rewrite H0.
+Decompose [and] Inv.
+Rewrite (Zodd_div2 e0 H0 Test1) in H. Rewrite H.
 Rewrite Zpower_exp.
 Unfold Zdouble.
 Replace (Zpower m0 `1`) with m0.
@@ -143,11 +143,9 @@ Unfold Zpower; Unfold Zpower_pos; Simpl; Ring.
 Generalize (Zdiv2_ge_0 e0); Omega.
 Omega.
 (* Zeven *)
-Decompose [and] I.
-Rewrite (Zeven_div2 e0 Test1) in H0. Rewrite H0.
+Decompose [and] Inv.
+Rewrite (Zeven_div2 e0 Test1) in H. Rewrite H.
 Auto with zarith.
-(* Zwf /\ I *)
-Split.
 (* Zwf *)
 Unfold Zwf.
 Repeat Split.
@@ -163,9 +161,9 @@ Generalize (Zdiv2_ge_0 e0); Omega.
 Generalize (Zdiv2_ge_0 e0); Omega.
 Split; [ Ring | Assumption ].
 (* exit fo loop *)
-Decompose [and] I.
+Decompose [and] Inv.
 Cut `e0 = 0`. Intro.
-Rewrite H. Rewrite H0.
+Rewrite H1. Rewrite H.
 Simpl; Ring.
 Omega.
 Save.

@@ -18,7 +18,7 @@
 
 (* Proof of an imperative program computing the factorial (over type Z) *)
 
-Require Programs.
+Require Correctness.
 Require Omega.
 Require ZArithRing.
 
@@ -70,7 +70,7 @@ Omega.
 Ring.
 
 Intros.
-Rewrite <- y0.
+Rewrite <- b.
 Omega.
 
 Omega.
@@ -171,7 +171,7 @@ Correctness factorielle
   begin
     y := 1;
     while !x <> 0 do
-      { invariant `0 <= x` /\ (invariant y x x@0) as I
+      { invariant `0 <= x` /\ (invariant y x x@0) as Inv
         variant x for (Zwf ZERO) }
       y := (Zmult !x !y);
       x := (Zpred !x)
@@ -179,15 +179,14 @@ Correctness factorielle
   end
   { (fact x@0 y) }.
 Proof.
-Split.
 (* decreasing *)
 Unfold Zwf. Unfold Zpred. Omega.
 (* preservation of the invariant *)
 Split.
   Unfold Zpred; Omega.
   Cut `0 < x0`. Intro Hx0.
-  Decompose [and] I.
-  Exact (fact_rec x x0 y1 Hx0 H1).
+  Decompose [and] Inv.
+  Exact (fact_rec x x0 y1 Hx0 H0).
   Omega.
 (* entrance of the loop *)
 Split; Auto.
@@ -195,8 +194,8 @@ Elim (fact_function x Pre1). Intros.
 Apply c_inv with f:=x0 f0:=x0; Auto.
 Omega.
 (* exit of the loop *)
-Decompose [and] I.
-Rewrite H1 in H2.
+Decompose [and] Inv.
+Rewrite H0 in H2.
 Exact (invariant_0 x y1 H2).
 Save.
 
