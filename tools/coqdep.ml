@@ -369,10 +369,7 @@ let all_subdirs root_dir log_dir =
   let l = ref [(root_dir,[log_dir])] in
   let add f = l := f :: !l in
   let rec traverse phys_dir dir =
-    let dirh = 
-      try opendir phys_dir
-      with Unix_error _ -> invalid_arg "all_subdirs" 
-    in
+    let dirh = handle_unix_error opendir phys_dir in
     try
       while true do
 	let f = readdir dirh in
