@@ -335,8 +335,7 @@ let vernac_definition local id def hook =
         | Some r -> 
 	    let (evc,env)= Command.get_current_context () in
 	    Some (interp_redexp env evc r) in
-      let ref = declare_definition id local bl red_option c typ_opt in
-      hook local ref
+      declare_definition id local bl red_option c typ_opt hook
 
 let vernac_start_proof kind sopt (bl,t) lettop hook =
   if not(refining ()) then
@@ -362,11 +361,8 @@ let vernac_exact_proof c =
   by (Tactics.exact_proof c); 
   save_named true
 
-let vernac_assumption (islocal,_ as kind) l =
-  List.iter
-    (fun (is_coe,(id,c)) ->
-      let r = declare_assumption id kind [] c in
-      if is_coe then Class.try_add_new_coercion r islocal) l
+let vernac_assumption kind l =
+  List.iter (fun (is_coe,(id,c)) -> declare_assumption id is_coe kind [] c) l
 
 let vernac_inductive f indl = build_mutual indl f
 
@@ -707,7 +703,7 @@ let vernac_syntactic_definition id c = function
   | None -> syntax_definition id c
   | Some n ->
       let l = list_tabulate (fun _ -> (CHole (dummy_loc),None)) n in
-      let c = CApp (dummy_loc,c,l) in
+      let c = CApp (dummy_loc,(false,c),l) in
       syntax_definition id c
 
 let vernac_declare_implicits locqid = function
@@ -1054,7 +1050,7 @@ let vernac_check_guard () =
   msgnl message
 
 let vernac_debug b =
-  set_debug (if b then Tactic_debug.DebugOn else Tactic_debug.DebugOff)
+  set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
 
 
 (**************************)
