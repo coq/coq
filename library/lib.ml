@@ -24,8 +24,7 @@ type node =
   | OpenedModule of bool option * object_prefix * Summary.frozen
   | OpenedModtype of object_prefix * Summary.frozen
   | OpenedSection of object_prefix * Summary.frozen
-  (* bool is to tell if the section must be opened automatically *)
-  | ClosedSection of bool * dir_path * library_segment
+  | ClosedSection
   | FrozenState of Summary.frozen
 
 and library_entry = object_name * node
@@ -61,7 +60,7 @@ let classify_segment seg =
 		 clean ((id,o')::substl, keepl, anticipl) stk
 	     | Anticipate o' ->
 		 clean (substl, keepl, o'::anticipl) stk)
-    | (oname,ClosedSection _ as item) :: stk -> clean acc stk
+    | (oname,ClosedSection) :: stk -> clean acc stk
     | (_,OpenedSection _) :: _ -> error "there are still opened sections"
     | (_,OpenedModule _) :: _ -> error "there are still opened modules"
     | (_,OpenedModtype _) :: _ -> error "there are still opened module types"
@@ -214,23 +213,6 @@ let is_something_opened = function
   | (_,OpenedModule _) -> true
   | (_,OpenedModtype _) -> true
   | _ -> false
-
-(*
-let export_segment seg =
-  let rec clean acc = function
-    | (_,CompilingLibrary _) :: _ | [] -> acc
-    | (oname,Leaf o) as node :: stk ->
-	(match export_object o with
-	   | None -> clean acc stk
-	   | Some o' -> clean ((oname,Leaf o') :: acc) stk)
-    | (oname,ClosedSection _ as item) :: stk -> clean (item :: acc) stk
-    | (_,OpenedSection _) :: _ -> error "there are still opened sections"
-    | (_,OpenedModule _) :: _ -> error "there are still opened modules"
-    | (_,OpenedModtype _) :: _ -> error "there are still opened module types"
-    | (_,FrozenState _) :: stk -> clean acc stk
-  in
-    clean [] seg
-*)
 
 let start_module export id mp nametab = 
   let dir = extend_dirpath (fst !path_prefix) id in
@@ -468,8 +450,7 @@ let open_section id =
   Nametab.push_dir (Nametab.Until 1) dir (DirOpenSection prefix);
   path_prefix := prefix;
   if !Options.xml_export then !xml_open_section id;
-  add_section ();
-  prefix
+  add_section ()
 
 
 (* Restore lib_stk and summaries as before the section opening, and
@@ -481,7 +462,7 @@ let discharge_item = function
   | _ ->
       None
 
-let close_section ~export id =
+let close_section id =
   let oname,fs = 
     try match find_entry_p is_something_opened with
       | oname,OpenedSection (_,fs) -> 
@@ -496,12 +477,7 @@ let close_section ~export id =
   lib_stk := before;
   let full_olddir = fst !path_prefix in
   pop_path_prefix ();
-(*
-  let closed_sec = 
-    ClosedSection (export, full_olddir, export_segment secdecls) in
-  let name = make_path id, make_kn id in
-  add_entry name closed_sec;
-*)
+  add_entry (make_oname id) ClosedSection;
   if !Options.xml_export then !xml_close_section id;
   let newdecls = List.map discharge_item secdecls in
   Summary.section_unfreeze_summaries fs;
@@ -544,7 +520,7 @@ let reset_name (loc,id) =
 
 let is_mod_node = function 
   | OpenedModule _ | OpenedModtype _ | OpenedSection _ 
-  | ClosedSection _ -> true 
+  | ClosedSection -> true 
   | Leaf o -> let t = object_tag o in t = "MODULE" || t = "MODULE TYPE"
   | _ -> false
 

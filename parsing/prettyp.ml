@@ -390,7 +390,7 @@ let rec print_library_entry with_values ent =
 	print_leaf_entry with_values sep (oname,lobj)
     | (oname,Lib.OpenedSection (dir,_)) -> 
         Some (str " >>>>>>> Section " ++ pr_name oname)
-    | (oname,Lib.ClosedSection _) -> 
+    | (oname,Lib.ClosedSection) -> 
         Some (str " >>>>>>> Closed Section " ++ pr_name oname)
     | (_,Lib.CompilingLibrary (dir,_)) ->
 	Some (str " >>>>>>> Library " ++ pr_dirpath dir)
@@ -440,9 +440,9 @@ let read_sec_context r =
     with Not_found ->
       user_err_loc (loc,"read_sec_context", str "Unknown section") in
   let rec get_cxt in_cxt = function
-    | ((_,Lib.OpenedSection ((dir',_),_)) as hd)::rest ->
+    | (_,Lib.OpenedSection ((dir',_),_) as hd)::rest ->
         if dir = dir' then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
-    | ((_,Lib.ClosedSection (_,_,ctxt)) as hd)::rest ->
+    | (_,Lib.ClosedSection)::rest ->
         error "Cannot print the contents of a closed section"
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest 

@@ -783,7 +783,7 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
 
 (*s Iterators. *)
 
-let iter_all_segments insec f =
+let iter_all_segments f =
   let _ = 
     MPmap.iter 
       (fun _ (prefix,objects) -> 
@@ -793,11 +793,9 @@ let iter_all_segments insec f =
   in
   let rec apply_node = function
     | sp, Leaf o -> f sp o
-    | _, ClosedSection (_,_,seg) -> if insec then List.iter apply_node seg
     | _ -> ()
   in
     List.iter apply_node (Lib.contents_after None)
-
 
 
 let debug_print_modtab _ =
@@ -811,5 +809,3 @@ let debug_print_modtab _ =
   in
   let modules = MPmap.fold pr_modinfo !modtab_objects (mt ()) in
     hov 0 modules
-
-

@@ -462,9 +462,9 @@ let vernac_record struc binders sort nameopt cfs =
 
   (* Sections *)
 
-let vernac_begin_section id = let _ = Lib.open_section id in ()
+let vernac_begin_section = Lib.open_section
 
-let vernac_end_section id = Lib.close_section false id
+let vernac_end_section = Lib.close_section
 
 let vernac_end_segment id =
   check_no_pending_proofs ();

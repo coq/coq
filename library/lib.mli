@@ -27,7 +27,7 @@ type node =
   | OpenedModule of bool option * object_prefix * Summary.frozen
   | OpenedModtype of object_prefix * Summary.frozen
   | OpenedSection of object_prefix * Summary.frozen
-  | ClosedSection of bool * dir_path * library_segment
+  | ClosedSection
   | FrozenState of Summary.frozen
 
 and library_segment = (object_name * node) list
@@ -126,9 +126,8 @@ val library_part : global_reference -> dir_path
 
 (*s Sections *)
 
-val open_section : identifier -> object_prefix
-
-val close_section : export:bool -> identifier -> unit
+val open_section : identifier -> unit
+val close_section : identifier -> unit
 
 (*s Backtracking (undo). *)
 

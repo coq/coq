@@ -80,7 +80,7 @@ let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
     | _ -> ()
   in 
   try 
-    Declaremods.iter_all_segments false crible_rec
+    Declaremods.iter_all_segments crible_rec
   with Not_found -> 
     ()
 
