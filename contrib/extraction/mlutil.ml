@@ -181,7 +181,7 @@ let rec betaiota = function
 		| 0 -> betaiota (MLapp (ml_pop t, List.tl a'))
 		| 1 -> betaiota (MLapp (ml_subst (List.hd a') t, List.tl a'))
 		| _ -> betaiota (MLletin (id, List.hd a', 
-					  MLapp (t, List.tl a'))))
+					  MLapp (t, List.map (ml_lift 1) (List.tl a')))))
 	 (* application of a let in: we push arguments inside *)
 	 | MLletin (id,e1,e2) ->
 	     MLletin (id, e1, betaiota (MLapp (e2, List.map (ml_lift 1) a')))
