@@ -7,3 +7,4 @@ Require Export Inv.
 Require Export EAuto.
 Require Export AutoRewrite.
 Require Export Refine.
+Require Export EqDecide.
