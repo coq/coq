@@ -90,6 +90,8 @@ type rawconstr =
    - option in PHole tell if the "?" was apparent or has been implicitely added
 i*)
 
+val map_rawconstr : (rawconstr -> rawconstr) -> rawconstr -> rawconstr
+
 val dummy_loc : loc
 val loc_of_rawconstr : rawconstr -> loc
 val join_loc : loc -> loc -> loc

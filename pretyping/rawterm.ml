@@ -90,6 +90,21 @@ type rawconstr =
    - boolean in POldCase means it is recursive
 i*)
 
+let map_rawconstr f = function
+  | RVar (loc,id) -> RVar (loc,id)
+  | RApp (loc,g,args) -> RApp (loc,f g, List.map f args)
+  | RLambda (loc,na,ty,c) -> RLambda (loc,na,f ty,f c)
+  | RProd (loc,na,ty,c) -> RProd (loc,na,f ty,f c)
+  | RLetIn (loc,na,b,c) -> RLetIn (loc,na,f b,f c)
+  | RCases (loc,prinfo,tyopt,tml,pl) ->
+      RCases (loc,prinfo,option_app f tyopt,List.map f tml,
+        List.map (fun (loc,idl,p,c) -> (loc,idl,p,f c)) pl)
+  | ROldCase (loc,b,tyopt,tm,bv) ->
+      ROldCase (loc,b,option_app f tyopt,f tm, Array.map f bv)
+  | RRec (loc,fk,idl,tyl,bv) -> RRec (loc,fk,idl,Array.map f tyl,Array.map f bv)
+  | RCast (loc,c,t) -> RCast (loc,f c,f t)
+  | (RSort _ | RHole _ | RRef _ | REvar _ | RMeta _ | RDynamic _) as x -> x
+
 let rec subst_pat subst pat = 
   match pat with
   | PatVar _ -> pat
