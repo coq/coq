@@ -290,7 +290,7 @@ let lemInv id c gls =
   try
     let (wc,kONT) = startWalk gls in
     let clause = mk_clenv_type_of wc c in
-    let clause = clenv_constrain_with_bindings [(Abs (-1),mkVar id)] clause in
+    let clause = clenv_constrain_with_bindings [(-1,mkVar id)] clause in
     res_pf kONT clause gls
   with 
 (* Ce n'est pas l'endroit pour cela

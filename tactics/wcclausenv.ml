@@ -29,8 +29,6 @@ open Evar_refiner
    write to Eduardo.Gimenez@inria.fr and ask for the prize :-)
    -- Eduardo (11/8/97) *)
 
-type wc = named_context sigma
-
 let pf_get_new_id id gls = 
   next_ident_away id (pf_ids_of_hyps gls)
 
@@ -40,72 +38,9 @@ let pf_get_new_ids ids gls =
     (fun id acc -> (next_ident_away id (acc@avoid))::acc)
     ids []
 
-type arg_binder =
-  | Dep of identifier
-  | Nodep of int
-  | Abs of int
-
-type arg_bindings = (arg_binder * constr) list
-
-let clenv_constrain_with_bindings bl clause =
-  if bl = [] then 
-    clause 
-  else 
-    let all_mvs = collect_metas (clenv_template clause).rebus
-    and ind_mvs = clenv_independent clause in
-    let nb_indep = List.length ind_mvs in
-    let rec matchrec clause = function
-      | []       -> clause
-      | (b,c)::t ->
-          let k = 
-            match b with
-              | Dep s ->
-		  if List.mem_assoc b t then 
-		    errorlabstrm "clenv_match_args" 
-                      (str "The variable " ++ pr_id s ++ 
-			 str " occurs more than once in binding");
-		  clenv_lookup_name clause s
-              | Nodep n ->
-		  let index = if n > 0 then n-1 else nb_indep+n in
-                  if List.mem_assoc (Nodep (index+1)) t or 
-                    List.mem_assoc (Nodep (index-nb_indep)) t
-                  then errorlabstrm "clenv_match_args"
-                    (str "The position " ++ int n ++
-		       str " occurs more than once in binding");
-		  (try 
-		     List.nth ind_mvs index
-		   with Failure _ ->
-                     errorlabstrm "clenv_constrain_with_bindings"
-                       (str"Clause did not have " ++ int n ++ str"-th" ++
-                          str" unnamed argument"))
-              | Abs n -> 
-                  (try
-                     if n > 0 then 
-		       List.nth all_mvs (n-1)
-                     else if n < 0 then 
-		       List.nth (List.rev all_mvs) (-n-1)
-                     else error "clenv_constrain_with_bindings" 
-                   with Failure _ ->
-                     errorlabstrm "clenv_constrain_with_bindings"
-                       (str"Clause did not have " ++ int n ++ str"-th" ++
-                          str" absolute argument"))
-	  in
-	  let env = Global.env () in
-	  let sigma = Evd.empty in
-	  let k_typ = nf_betaiota (clenv_instance_type clause k) in
-	  let c_typ = nf_betaiota (w_type_of clause.hook c) in 
-	  matchrec
-            (clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clause)) t
-    in 
-    matchrec clause bl
-
 (* What follows is part of the contents of the former file tactics3.ml *)
 (* 2/2002: replaced THEN_i by THENSLAST to solve a bug in
    Tacticals.general_elim when the eliminator has missing bindings *)
-
-let elim_res_pf_THEN_i kONT clenv tac gls =  
-  let clenv' = (clenv_unique_resolver true clenv gls) in
-  tclTHENLASTn (clenv_refine kONT clenv') (tac clenv') gls
 
 let rec build_args acc ce p_0 p_1 =
   match kind_of_term p_0, p_1 with 

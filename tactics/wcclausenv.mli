@@ -25,17 +25,6 @@ open Clenv
 val pf_get_new_id  : identifier      -> goal sigma -> identifier
 val pf_get_new_ids : identifier list -> goal sigma -> identifier list
 
-type arg_binder = 
-  | Dep of identifier 
-  | Nodep of int 
-  | Abs of int
-
-type arg_bindings = (arg_binder * constr) list
-
-type wc = named_context sigma
-
-val clenv_constrain_with_bindings : arg_bindings -> wc clausenv -> wc clausenv
-
 (*i**
 val add_prod_sign : 
   'a evar_map -> constr * types signature -> constr * types signature
@@ -43,8 +32,5 @@ val add_prod_sign :
 val add_prods_sign : 
   'a evar_map -> constr * types signature -> constr * types signature
 **i*)
-
-val elim_res_pf_THEN_i : 
-  (wc -> tactic) -> wc clausenv -> (wc clausenv -> tactic array) -> tactic
 
 val applyUsing : constr -> tactic

@@ -30,8 +30,18 @@ open Rawterm
 
 let guill s = "\""^s^"\""
 
+let nth i =
+  let many = match i mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
+  int i ++ str many
+
+let pr_db ctx i =
+  try
+    match lookup_rel i ctx with
+        Name id, _, _ -> pr_id id
+      | Anonymous, _, _ -> str"<>"
+  with Not_found -> str"UNBOUND_REL_"++int i
+
 let explain_unbound_rel ctx n =
-  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str "In environment") ctx in
   str"Unbound reference: " ++ pe ++
   str"The reference " ++ int n ++ str " is free"
@@ -41,7 +51,6 @@ let explain_unbound_var ctx v =
   str"No such section variable or assumption : " ++ var
 
 let explain_not_type ctx j =
-  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str"In environment") ctx in
   let pc,pt = prjudge_env ctx j in
   pe ++ str "the term" ++ brk(1,1) ++ pc ++ spc () ++
@@ -49,7 +58,6 @@ let explain_not_type ctx j =
   str"which should be Set, Prop or Type."
 
 let explain_bad_assumption ctx j =
-  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str"In environment") ctx in
   let pc,pt = prjudge_env ctx j in
   pe ++ str "cannot declare a variable or hypothesis over the term" ++
@@ -121,7 +129,6 @@ let explain_ill_formed_branch ctx c i actty expty =
   str "which should be" ++ brk(1,1) ++ pe
 
 let explain_generalization ctx (name,var) j =
-  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str "In environment") ctx in
   let pv = prtype_env ctx var in
   let (pc,pt) = prjudge_env (push_rel_assum (name,var) ctx) j in
@@ -132,7 +139,6 @@ let explain_generalization ctx (name,var) j =
   spc () ++ str"which should be Set, Prop or Type."
 
 let explain_actual_type ctx j pt =
-  let ctx = make_all_name_different ctx in
   let pe = pr_ne_context_of (str "In environment") ctx in
   let (pc,pct) = prjudge_env ctx j in
   let pt = prterm_env ctx pt in
@@ -143,15 +149,13 @@ let explain_actual_type ctx j pt =
 
 let explain_cant_apply_bad_type ctx (n,exptyp,actualtyp) rator randl =
   let randl = Array.to_list randl in
-  let ctx = make_all_name_different ctx in
 (*  let pe = pr_ne_context_of (str"in environment") ctx in*)
   let pr,prt = prjudge_env ctx rator in
   let term_string1,term_string2 =
     if List.length randl > 1 then
-      let many = match n mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
-      "terms", "The "^(string_of_int n)^many^" term"
+      str "terms", (str"The "++nth n++str" term")
     else
-      "term","This term" in
+      str "term", str "This term" in
   let appl = prlist_with_sep pr_fnl 
 	       (fun c ->
 		  let pc,pct = prjudge_env ctx c in
@@ -160,14 +164,13 @@ let explain_cant_apply_bad_type ctx (n,exptyp,actualtyp) rator randl =
   str"Illegal application (Type Error): " ++ (* pe ++ *) fnl () ++
   str"The term" ++ brk(1,1) ++ pr ++ spc () ++
   str"of type" ++ brk(1,1) ++ prt ++ spc ()  ++
-  str("cannot be applied to the "^term_string1) ++ fnl () ++ 
-  str" " ++ v 0 appl ++ fnl () ++ str (term_string2^" has type") ++
+  str"cannot be applied to the " ++ term_string1 ++ fnl () ++ 
+  str" " ++ v 0 appl ++ fnl () ++ term_string2 ++ str" has type" ++
   brk(1,1) ++ prterm_env ctx actualtyp ++ spc () ++
   str"which should be coercible to" ++ brk(1,1) ++ prterm_env ctx exptyp
 
 let explain_cant_apply_not_functional ctx rator randl =
   let randl = Array.to_list randl in
-  let ctx = make_all_name_different ctx in
 (*  let pe = pr_ne_context_of (str"in environment") ctx in*)
   let pr = prterm_env ctx rator.uj_val in
   let prt = prterm_env ctx rator.uj_type in
@@ -202,7 +205,12 @@ let explain_not_product ctx c =
 
 (* TODO: use the names *)
 (* (co)fixpoints *)
-let explain_ill_formed_rec_body ctx err names i vdefs =
+let explain_ill_formed_rec_body ctx err names i =
+  let prt_name i =
+    match names.(i) with
+        Name id -> str "Recursive definition of " ++ pr_id id
+      | Anonymous -> str"The " ++ nth i ++ str" definition" in
+
   let st = match err with
 
   (* Fixpoint guard errors *)
@@ -210,10 +218,33 @@ let explain_ill_formed_rec_body ctx err names i vdefs =
       str "Not enough abstractions in the definition"
   | RecursionNotOnInductiveType ->
       str "Recursive definition on a non inductive type"
-  | RecursionOnIllegalTerm ->
-      str "Recursive call applied to an illegal term"
-  | NotEnoughArgumentsForFixCall ->
-      str "Not enough arguments for the recursive call"
+  | RecursionOnIllegalTerm(j,arg,le,lt) ->
+      let called =
+        match names.(j) with
+            Name id -> pr_id id
+          | Anonymous -> str"the " ++ nth i ++ str" definition" in
+      let vars =
+        match (lt,le) with
+            ([],[]) -> mt()
+          | ([],[x]) ->
+              str "a subterm of " ++ pr_db ctx x
+          | ([],_) ->
+              str "a subterm of the following variables: " ++
+              prlist_with_sep pr_spc (pr_db ctx) le
+          | ([x],_) -> pr_db ctx x
+          | _ ->
+              str "one of the following variables: " ++
+              prlist_with_sep pr_spc (pr_db ctx) lt in
+      str "Recursive call to " ++ called ++ spc() ++
+      str "has principal argument equal to" ++ spc() ++
+      prterm_env ctx arg ++ fnl() ++ str "instead of " ++ vars
+
+  | NotEnoughArgumentsForFixCall j ->
+      let called =
+        match names.(j) with
+            Name id -> pr_id id
+          | Anonymous -> str"the " ++ nth i ++ str" definition" in
+     str "Recursive call to " ++ called ++ str " had not enough arguments"
 
   (* CoFixpoint guard errors *)
   (* TODO : récupérer le contexte des termes pour pouvoir les afficher *)
@@ -239,13 +270,9 @@ let explain_ill_formed_rec_body ctx err names i vdefs =
   | NotGuardedForm ->
       str "Definition not in guarded form"
   in
-  let pvd = prterm_env ctx vdefs.(i) in
-  let s = match names.(i) with Name id -> string_of_id id | Anonymous -> "_" in
-  st ++ fnl () ++ str"The " ++
-  (if Array.length vdefs = 1 then mt () else (int (i+1) ++ str "-th ")) ++
-  str"recursive definition" ++ spc () ++ str s ++
-  spc ()  ++ str":=" ++ spc ()  ++ pvd ++ spc () ++
-  str "is not well-formed"
+  prt_name i ++ str" is ill-formed." ++ fnl() ++
+  pr_ne_context_of (str "In environment") ctx ++
+  st
 
 let explain_ill_typed_rec_body ctx i names vdefj vargs =
   let pvd,pvdt = prjudge_env ctx (vdefj.(i)) in
@@ -341,8 +368,8 @@ let explain_type_error ctx = function
       explain_cant_apply_bad_type ctx t rator randl
   | CantApplyNonFunctional (rator, randl) ->
       explain_cant_apply_not_functional ctx rator randl
-  | IllFormedRecBody (i, lna, vdefj, vargs) ->
-      explain_ill_formed_rec_body ctx i lna vdefj vargs
+  | IllFormedRecBody (err, lna, i) ->
+      explain_ill_formed_rec_body ctx err lna i
   | IllTypedRecBody (i, lna, vdefj, vargs) -> 
      explain_ill_typed_rec_body ctx i lna vdefj vargs
   | WrongCaseInfo (ind,ci) ->

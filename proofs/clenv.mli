@@ -13,9 +13,7 @@ open Util
 open Names
 open Term
 open Sign
-open Tacmach
 open Proof_type
-open Evar_refiner
 (*i*)
 
 (* [new_meta] is a generator of unique meta variables *)
@@ -44,6 +42,8 @@ type 'a clausenv = {
   env : clbinding Intmap.t;
   hook : 'a }
 
+type wc = named_context sigma (* for a better reading of the following *)
+
 (* [templval] is the template which we are trying to fill out.
  * [templtyp] is its type.
  * [namenv] is a mapping from metavar numbers to names, for
@@ -52,11 +52,6 @@ type 'a clausenv = {
  *       and values.
  * [hook] is the pointer to the current walking context, for
  *        integrating existential vars and metavars. *)
-
-val unify : constr -> tactic
-val unify_0 : 
-  Reductionops.conv_pb -> wc -> constr -> constr 
-    -> (int * constr) list * (constr * constr) list
 
 val collect_metas : constr -> int list
 val mk_clenv : 'a -> constr -> 'a clausenv
@@ -80,14 +75,24 @@ val clenv_template_type : 'a clausenv -> constr freelisted
 val clenv_instance_type : wc clausenv -> int -> constr
 val clenv_instance_template : wc clausenv -> constr
 val clenv_instance_template_type : wc clausenv -> constr
+val clenv_type_of : wc clausenv -> constr -> constr
+val clenv_fchain : int -> 'a clausenv -> wc clausenv -> wc clausenv
+val clenv_bchain : int -> 'a clausenv -> wc clausenv -> wc clausenv
+
+(* Unification with clenv *)
+type arg_bindings = (int * constr) list
+
+val unify_0 : 
+  Reductionops.conv_pb -> wc -> constr -> constr 
+    -> (int * constr) list * (constr * constr) list
 val clenv_unify : 
   bool -> Reductionops.conv_pb -> constr -> constr ->
   wc clausenv -> wc clausenv
-val clenv_fchain : int -> 'a clausenv -> wc clausenv -> wc clausenv
-val clenv_refine : (wc -> tactic) -> wc clausenv -> tactic
-val res_pf      : (wc -> tactic) -> wc clausenv -> tactic
-val res_pf_cast : (wc -> tactic) -> wc clausenv -> tactic
-val elim_res_pf : (wc -> tactic) -> wc clausenv -> tactic
+val clenv_match_args :
+  constr Rawterm.explicit_substitution -> wc clausenv -> wc clausenv
+val clenv_constrain_with_bindings : arg_bindings -> wc clausenv -> wc clausenv
+
+(* Bindings *)
 val clenv_independent : wc clausenv -> int list
 val clenv_missing : 'a clausenv -> int list
 val clenv_constrain_missing_args : (* Used in user contrib Lannion *)
@@ -96,21 +101,27 @@ val clenv_constrain_missing_args : (* Used in user contrib Lannion *)
 val clenv_constrain_dep_args : constr list -> wc clausenv -> wc clausenv
 *)
 val clenv_lookup_name : 'a clausenv -> identifier -> int
-val clenv_match_args : constr Rawterm.explicit_substitution -> wc clausenv -> wc clausenv
-val e_res_pf : (wc -> tactic) -> wc clausenv -> tactic
-val clenv_type_of : wc clausenv -> constr -> constr
 val clenv_unique_resolver : bool -> wc clausenv -> goal sigma -> wc clausenv
 
 val make_clenv_binding_apply :
-  named_context sigma -> int -> constr * constr ->
-      types Rawterm.substitution -> named_context sigma clausenv
+  wc -> int -> constr * constr -> types Rawterm.substitution -> wc clausenv
 val make_clenv_binding :
-  named_context sigma -> constr * constr ->
-      types Rawterm.substitution -> named_context sigma clausenv
+  wc -> constr * constr -> types Rawterm.substitution -> wc clausenv
 
-(* Exported for program.ml only *)
-val clenv_add_sign : 
-  (identifier * types) -> wc clausenv -> wc clausenv
+(* Tactics *)
+val unify : constr -> tactic
+val clenv_refine : (wc -> tactic) -> wc clausenv -> tactic
+val res_pf      : (wc -> tactic) -> wc clausenv -> tactic
+val res_pf_cast : (wc -> tactic) -> wc clausenv -> tactic
+val elim_res_pf : (wc -> tactic) -> wc clausenv -> tactic
+val e_res_pf : (wc -> tactic) -> wc clausenv -> tactic
+val elim_res_pf_THEN_i : 
+  (wc -> tactic) -> wc clausenv -> (wc clausenv -> tactic array) -> tactic
+
+(* Pretty-print *)
+val pr_clenv : 'a clausenv -> Pp.std_ppcmds
+
+(* Exported for debugging *)
 val unify_to_subterm : 
   wc clausenv -> constr * constr -> wc clausenv * constr
 val unify_to_subterm_list : 
@@ -118,12 +129,9 @@ val unify_to_subterm_list :
 val clenv_typed_unify :
   Reductionops.conv_pb -> constr -> constr -> wc clausenv -> wc clausenv
 
-val pr_clenv : 'a clausenv -> Pp.std_ppcmds
-
 (*i This should be in another module i*)
 
 (* [abstract_list_all env sigma t c l]                     *)
 (* abstracts the terms in l over c to get a term of type t *)
 val abstract_list_all :
   Environ.env -> Evd.evar_map -> constr -> constr -> constr list -> constr
-
