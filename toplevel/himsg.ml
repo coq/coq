@@ -157,6 +157,7 @@ let explain_actual_type ctx j pt =
   str "while it is expected to have type" ++ brk(1,1) ++ pt
 
 let explain_cant_apply_bad_type ctx (n,exptyp,actualtyp) rator randl =
+  let ctx = make_all_name_different ctx in
   let randl = Array.to_list randl in
 (*  let pe = pr_ne_context_of (str"in environment") ctx in*)
   let pr,prt = prjudge_env ctx rator in
@@ -179,6 +180,7 @@ let explain_cant_apply_bad_type ctx (n,exptyp,actualtyp) rator randl =
   str"which should be coercible to" ++ brk(1,1) ++ prterm_env ctx exptyp
 
 let explain_cant_apply_not_functional ctx rator randl =
+  let ctx = make_all_name_different ctx in
   let randl = Array.to_list randl in
 (*  let pe = pr_ne_context_of (str"in environment") ctx in*)
   let pr = prterm_env ctx rator.uj_val in
