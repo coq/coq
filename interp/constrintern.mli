@@ -33,9 +33,11 @@ open Termops
    - insert existential variables for implicit arguments
 *)
 
-type implicits_env = (* For interpretation of inductive type with implicits *)
-    identifier list * 
+type implicits_env = (* To interpret inductive type with implicits *)
     (identifier * (identifier list * Impargs.implicits_list)) list
+
+type full_implicits_env =
+    identifier list * implicits_env
 
 type ltac_sign = 
   identifier list * (identifier * identifier option) list
@@ -62,7 +64,10 @@ val interp_casted_openconstr    :
    argument associates a list of implicit positions to identifiers
    declared in the rel_context of [env] *)
 val interp_type_with_implicits : 
-  evar_map -> env -> implicits_env -> constr_expr -> types
+  evar_map -> env -> full_implicits_env -> constr_expr -> types
+
+val interp_rawconstr_with_implicits :
+  env -> identifier list -> implicits_env -> constr_expr -> rawconstr
 
 (*s Build a judgement from *)
 val judgment_of_rawconstr : evar_map -> env -> constr_expr -> unsafe_judgment
@@ -91,7 +96,8 @@ val interp_constrpattern :
 val interp_reference : ltac_sign -> reference -> rawconstr
 
 (* Interprets into a abbreviatable constr *)
-val interp_aconstr : identifier list -> constr_expr -> interpretation
+val interp_aconstr : implicits_env -> identifier list -> constr_expr ->
+  interpretation
 
 (* Globalization leak for Grammar *)
 val for_grammar : ('a -> 'b) -> 'a -> 'b

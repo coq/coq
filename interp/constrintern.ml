@@ -22,9 +22,11 @@ open Topconstr
 open Nametab
 open Symbols
 
-type implicits_env = (* For interpretation of inductive type with implicits *)
-    identifier list * 
+type implicits_env = (* To interpret inductive type with implicits *)
     (identifier * (identifier list * Impargs.implicits_list)) list
+
+type full_implicits_env =
+    identifier list * implicits_env
 
 let interning_grammar = ref false
 
@@ -161,17 +163,17 @@ let set_var_scope loc id (_,scopt,scopes) (_,_,varscopes,_,_) =
    abstracted until this point *)
 
 let intern_var (env,_,_) ((vars1,unbndltacvars),vars2,_,_,impls) loc id =
+  (* Is [id] an inductive type potentially with implicit *)
+  try
+    let l,impl = List.assoc id impls in
+    let l = List.map 
+      (fun id -> CRef (Ident (loc,id)), Some (loc,ExplByName id)) l in
+    RVar (loc,id), impl, [],
+    (if !Options.v7 & !interning_grammar then [] else l)
+  with Not_found ->
   (* Is [id] bound in current env or ltac vars bound to constr *)
   if Idset.mem id env or List.mem id vars1
   then
-    (* Is [id] an inductive type with implicit *)
-    try
-      let l,impl = List.assoc id impls in
-      let l = List.map 
-	(fun id -> CRef (Ident (loc,id)), Some (loc,ExplByName id)) l in
-      RVar (loc,id), impl, [],
-      (if !Options.v7 & !interning_grammar then [] else l)
-    with Not_found ->
       RVar (loc,id), [], [], []
   else
   (* Is [id] bound to a free name in ltac (this is an ltac error message) *)
@@ -412,10 +414,10 @@ let locate_if_isevar loc na = function
       with Not_found -> RHole (loc, BinderType na))
   | x -> x
 
-let check_hidden_implicit_parameters id (_,_,_,indparams,_) =
-  if List.mem id indparams then
-    errorlabstrm "" (str "A parameter of inductive type " ++ pr_id id
-      ++ str " must not be used as a bound variable in the type \
+let check_hidden_implicit_parameters id (_,_,_,indnames,_) =
+  if List.mem id indnames then
+    errorlabstrm "" (str "A parameter or name of an inductive type " ++
+    pr_id id ++ str " must not be used as a bound variable in the type \
 of its constructor")
 
 let push_name_env lvar (ids,tmpsc,scopes as env) = function
@@ -795,6 +797,10 @@ let interp_rawtype sigma env c =
 let interp_rawtype_with_implicits sigma env impls c =
   interp_rawconstr_gen_with_implicits true sigma env impls false ([],[]) c
 
+let interp_rawconstr_with_implicits env vars impls c =
+  interp_rawconstr_gen_with_implicits false Evd.empty env ([],impls) false
+    (vars,[]) c
+
 (*
 (* The same as interp_rawconstr but with a list of variables which must not be
    globalized *)
@@ -872,12 +878,12 @@ let interp_constrpattern_gen sigma env ltacvar c =
 let interp_constrpattern sigma env c =
   interp_constrpattern_gen sigma env [] c
 
-let interp_aconstr vars a =
+let interp_aconstr impls vars a =
   let env = Global.env () in
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let vl = List.map (fun id -> (id,ref None)) vars in
   let c = for_grammar (internalise Evd.empty (extract_ids env, None, [])
-    false (([],[]),Environ.named_context env,vl,[],[])) a in
+    false (([],[]),Environ.named_context env,vl,[],impls)) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a = aconstr_of_rawconstr vars c in
   (* Returns [a] and the ordered list of variables with their scopes *)
