@@ -831,11 +831,11 @@ let swapEquandsInHyp id gls =
     (tclTHEN swapEquandsInConcl) gls
 
 (* find_elim determines which elimination principle is necessary to
-   eliminate lbeq on sort_of_gl. It yields the boolean true wether
+   eliminate lbeq on sort_of_gl. It yields the boolean true if
    it is a dependent elimination principle (as idT.rect) and false
    otherwise *)
 
-let find_elim  sort_of_gl  lbeq =
+let find_elim sort_of_gl lbeq =
   match kind_of_term sort_of_gl  with
     | Sort(Prop Null)  (* Prop *)  -> (lbeq.ind, false)  
     | Sort(Prop Pos)   (* Set *)   ->  
@@ -861,14 +861,14 @@ let build_dependent_rewrite_predicate (t,t1,t2) body lbeq gls =
      (mkNamedLambda h (applist (eq_term, [t;t1;(mkRel 1)])) 
         (lift 1 body))) 
 
-(* builds a predicate [e:t](body e) ???
+(* builds a predicate [e:t](body e)
    to be used as an argument for equality non-dependent elimination principle:
    Preconditon: dependent body (mkRel 1) *)
 
 let build_non_dependent_rewrite_predicate (t,t1,t2) body gls =
   lambda_create (pf_env gls) (t,body)
 
-let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
+let bareRevSubstInConcl lbeq body (t,e1,e2 as eq) gls =
   let (eq_elim,dep) =
     try 
       find_elim (pf_type_of gls (pf_concl gls)) lbeq  
@@ -877,10 +877,8 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
         (str "this type of substitution is not allowed")  
   in 
   let p =
-    if dep then
-      (build_dependent_rewrite_predicate (t,e1,e2)  body lbeq gls)
-    else
-      (build_non_dependent_rewrite_predicate (t,e1,e2)  body  gls)
+    if dep then build_dependent_rewrite_predicate eq body lbeq gls
+    else build_non_dependent_rewrite_predicate eq body gls
   in
   refine (applist(eq_elim,[t;e1;p;Evarutil.mk_new_meta();
                            e2;Evarutil.mk_new_meta()])) gls
@@ -915,8 +913,7 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
 let decomp_tuple_term env c t = 
   let rec decomprec inner_code ex exty =
     try
-      let {proj1 = p1; proj2 = p2 },(a,p,car,cdr) =
-	find_sigma_data_decompose ex in
+      let {proj1=p1; proj2=p2},(a,p,car,cdr) = find_sigma_data_decompose ex in
       let car_code = applist (p1,[a;p;inner_code])
       and cdr_code = applist (p2,[a;p;inner_code]) in
       let cdrtyp = beta_applist (p,[car]) in
@@ -932,24 +929,18 @@ let subst_tuple_term env sigma dep_pair b =
   let abst_B =
     List.fold_right
       (fun (e,t) body -> lambda_create env (t,subst_term e body)) e_list b in
-  let app_B = applist(abst_B,proj_list) in app_B
+  applist(abst_B,proj_list)
     
-(* |- (P e2)
-     BY RevSubstInConcl (eq T e1 e2)
-     |- (P e1)
-     |- (eq T e1 e2)
- *)
-
-(* Redondant avec Replace ! *)
+(* Comme "replace" mais decompose les egalites dependantes *)
 
 let cutSubstInConcl_RL eqn gls =
-  let (lbeq,(t,e1,e2)) = find_eq_data_decompose eqn in
-  let body = subst_tuple_term (pf_env gls) (project gls) e2 (pf_concl gls) in
+  let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose eqn in
+  let body = pf_apply subst_tuple_term gls e2 (pf_concl gls) in
   assert (dependent (mkRel 1) body);
-  bareRevSubstInConcl lbeq body (t,e1,e2) gls
+  bareRevSubstInConcl lbeq body eq gls
 
 (* |- (P e1)
-     BY SubstInConcl (eq T e1 e2)
+     BY CutSubstInConcl_LR (eq T e1 e2)
      |- (P e2)
      |- (eq T e1 e2)
  *)
@@ -961,11 +952,11 @@ let cutSubstInConcl_LR eqn gls =
 let cutSubstInConcl l2r =if l2r then cutSubstInConcl_LR else cutSubstInConcl_RL
 
 let cutSubstInHyp_LR eqn id gls =
-  let (lbeq,(t,e1,e2)) = find_eq_data_decompose eqn in 
-  let body = subst_term e1 (pf_get_hyp_typ gls id) in
-  if not (dependent (mkRel 1) body) then errorlabstrm  "SubstInHyp" (mt ());
+  let (lbeq,(t,e1,e2 as eq)) = find_eq_data_decompose eqn in 
+  let body = pf_apply subst_tuple_term gls e1 (pf_get_hyp_typ gls id) in
+  assert (dependent (mkRel 1) body);
   cut_replacing id (subst1 e2 body)
-    (tclTHENFIRST (bareRevSubstInConcl lbeq body (t,e1,e2))) gls
+    (tclTHENFIRST (bareRevSubstInConcl lbeq body eq)) gls
 
 let cutSubstInHyp_RL eqn id gls =
   (tclTHENS (cutSubstInHyp_LR (swap_equands gls eqn) id)

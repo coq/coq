@@ -84,24 +84,23 @@ END
 let h_injHyp id = h_injection (Some id)
 
 TACTIC EXTEND ConditionalRewrite
-  [ "Conditional" tactic(tac) "Rewrite" orient(b) constr_with_bindings(c) ]
+| [ "Conditional" tactic(tac) "Rewrite" orient(b) constr_with_bindings(c) ]
     -> [ conditional_rewrite b (snd tac) c ]
-END
-
-TACTIC EXTEND ConditionalRewriteIn
-  [ "Conditional" tactic(tac) "Rewrite" orient(b) constr_with_bindings(c)
+| [ "Conditional" tactic(tac) "Rewrite" orient(b) constr_with_bindings(c)
     "in" hyp(h) ]
     -> [ conditional_rewrite_in b h (snd tac) c ]
 END
 
 TACTIC EXTEND DependentRewrite
 | [ "Dependent" "Rewrite" orient(b) constr(c) ] -> [ rewriteInConcl b c ]
+| [ "Dependent" "Rewrite" orient(b) constr(c) "in" hyp(id) ]
+    -> [ rewriteInHyp b c id ]
 END
 
 TACTIC EXTEND CutRewrite
 | [ "CutRewrite" orient(b) constr(eqn) ] -> [ cutRewriteInConcl b eqn ]
 | [ "CutRewrite" orient(b) constr(eqn) "in" hyp(id) ]
-      -> [ cutRewriteInHyp b eqn id ]
+    -> [ cutRewriteInHyp b eqn id ]
 END
 
 (* Contradiction *)
