@@ -290,13 +290,13 @@ let _=
   add_tactic "DHyp"
     (function
        | [Identifier id] -> dHyp id
-       | _ -> bad_tactic_args "DHyp")
+       | l -> bad_tactic_args "DHyp" l)
 
 let _=
   add_tactic "CDHyp"
     (function
        | [Identifier id] -> cDHyp id
-       | _ -> bad_tactic_args "CDHyp")
+       | l -> bad_tactic_args "CDHyp" l)
 
 (* [DConcl gls]
 
@@ -313,7 +313,7 @@ let _=
   add_tactic "DConcl"
     (function
        | [] -> dConcl
-       | _ -> bad_tactic_args "DConcl")
+       | l -> bad_tactic_args "DConcl" l)
 
 let to2Lists (table : t) = Nbtermdn.to2lists table
 
@@ -336,6 +336,6 @@ let sarch_depth_tdb = ref(5)
 let dyn_auto_tdb = function 
   | [Integer n] -> auto_tdb n 
   | []          -> auto_tdb !sarch_depth_tdb
-  | _           -> bad_tactic_args "AutoTDB"
+  | l           -> bad_tactic_args "AutoTDB" l
 
 let h_auto_tdb = hide_tactic "AutoTDB" dyn_auto_tdb
