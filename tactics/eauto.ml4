@@ -20,6 +20,7 @@ open Sign
 open Reduction
 open Proof_type
 open Proof_trees
+open Declarations
 open Tacticals
 open Tacmach
 open Evar_refiner
@@ -69,6 +70,68 @@ TACTIC EXTEND eapply
 END
 
 let vernac_e_resolve_constr c = h_eapply (c,NoBindings)
+
+let e_constructor_tac boundopt i lbind gl = 
+    let cl = pf_concl gl in 
+  let (mind,redcl) = pf_reduce_to_quantified_ind gl cl in 
+  let nconstr =
+    Array.length (snd (Global.lookup_inductive mind)).mind_consnames
+  and sigma   = project gl in
+  if i=0 then error "The constructors are numbered starting from 1";
+  if i > nconstr then error "Not enough constructors";
+  begin match boundopt with 
+    | Some expctdnum -> 
+        if expctdnum <> nconstr then 
+	  error "Not the expected number of constructors"
+    | None -> ()
+  end;
+  let cons = mkConstruct (ith_constructor_of_inductive mind i) in
+  let apply_tac = e_resolve_with_bindings_tac (cons,lbind) in
+  (tclTHENLIST [convert_concl_no_check redcl; intros; apply_tac]) gl
+
+let e_one_constructor i = e_constructor_tac None i
+
+let e_any_constructor tacopt gl =
+  let t = match tacopt with None -> tclIDTAC | Some t -> t in
+  let mind = fst (pf_reduce_to_quantified_ind gl (pf_concl gl)) in
+  let nconstr =
+    Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
+  if nconstr = 0 then error "The type has no constructors";
+  tclFIRST (List.map (fun i -> tclTHEN (e_one_constructor i NoBindings) t) 
+              (interval 1 nconstr)) gl
+
+let e_left = e_constructor_tac (Some 2) 1
+
+let e_right = e_constructor_tac (Some 2) 2
+
+let e_split = e_constructor_tac (Some 1) 1
+
+(* This automatically define h_econstructor (among other things) *)
+(*V8 TACTIC EXTEND eapply
+  [ "econstructor" integer(n) with_bindings(c) ] -> [ e_constructor_tac None n c ]
+END*)
+TACTIC EXTEND econstructor
+  [ "EConstructor" integer(n) with_bindings(c) ] -> [ e_constructor_tac None n c ]
+  | [ "EConstructor" tactic_opt(t) ] -> [ e_any_constructor (option_app Tacinterp.eval_tactic t) ] 
+END
+
+TACTIC EXTEND eleft
+  [ "ELeft" with_bindings(l) ] -> [e_left l]
+END
+
+TACTIC EXTEND eright
+  [ "ERight" with_bindings(l) ] -> [e_right l]
+END
+
+TACTIC EXTEND esplit
+  [ "ESplit" with_bindings(l) ] -> [e_split l]
+END
+
+(*
+TACTIC EXTEND eexists
+  [ "EExists" with_bindings(l) ] -> [e_split l]
+END
+*)
 
 (************************************************************************)
 (*   PROLOG tactic                                                      *)

@@ -268,6 +268,8 @@ let rec pr_raw_generic prc prlc prtac prref x =
       pr_arg prc (out_gen rawwit_casted_open_constr x)
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen rawwit_constr_with_bindings x)
+  | WithBindingsArgType -> 
+      pr_arg (pr_bindings prc prlc) (out_gen rawwit_with_bindings x)
   | List0ArgType _ -> 
       hov 0 (fold_list0 (fun x a -> pr_raw_generic prc prlc prtac prref x ++ a) x (mt()))
   | List1ArgType _ ->
@@ -311,6 +313,8 @@ let rec pr_glob_generic prc prlc prtac x =
       pr_arg prc (out_gen globwit_casted_open_constr x)
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen globwit_constr_with_bindings x)
+  | WithBindingsArgType -> 
+      pr_arg (pr_bindings prc prlc) (out_gen globwit_with_bindings x)
   | List0ArgType _ -> 
       hov 0 (fold_list0 (fun x a -> pr_glob_generic prc prlc prtac x ++ a) x (mt()))
   | List1ArgType _ ->
@@ -353,6 +357,8 @@ let rec pr_generic prc prlc prtac x =
       pr_arg prc (snd (out_gen wit_casted_open_constr x))
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen wit_constr_with_bindings x)
+  | WithBindingsArgType -> 
+      pr_arg (pr_bindings prc prlc) (out_gen wit_with_bindings x)
   | List0ArgType _ -> 
       hov 0 (fold_list0 (fun x a -> pr_generic prc prlc prtac x ++ a) x (mt()))
   | List1ArgType _ ->

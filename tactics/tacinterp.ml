@@ -821,6 +821,9 @@ and intern_genarg ist x =
   | ConstrWithBindingsArgType ->
       in_gen globwit_constr_with_bindings
         (intern_constr_with_bindings ist (out_gen rawwit_constr_with_bindings x))
+  | WithBindingsArgType ->
+      in_gen globwit_with_bindings
+        (intern_bindings ist (out_gen rawwit_with_bindings x))
   | List0ArgType _ -> app_list0 (intern_genarg ist) x
   | List1ArgType _ -> app_list1 (intern_genarg ist) x
   | OptArgType _ -> app_opt (intern_genarg ist) x
@@ -1530,6 +1533,9 @@ and interp_genarg ist goal x =
   | ConstrWithBindingsArgType ->
       in_gen wit_constr_with_bindings
         (interp_constr_with_bindings ist goal (out_gen globwit_constr_with_bindings x))
+  | WithBindingsArgType ->
+      in_gen wit_with_bindings
+        (interp_bindings ist goal (out_gen globwit_with_bindings x))
   | List0ArgType _ -> app_list0 (interp_genarg ist goal) x
   | List1ArgType _ -> app_list1 (interp_genarg ist goal) x
   | OptArgType _ -> app_opt (interp_genarg ist goal) x
@@ -1722,8 +1728,8 @@ and interp_atomic ist gl = function
     | QuantHypArgType | RedExprArgType 
     | TacticArgType -> 
 	val_interp ist gl (out_gen globwit_tactic x)
-    | CastedOpenConstrArgType | ConstrWithBindingsArgType | ExtraArgType _
-    | List0ArgType _ | List1ArgType _ | OptArgType _ | PairArgType _ 
+    | CastedOpenConstrArgType | ConstrWithBindingsArgType | WithBindingsArgType 
+    | ExtraArgType _ | List0ArgType _ | List1ArgType _ | OptArgType _ | PairArgType _ 
 	-> error "This generic type is not supported in alias"
     in
     let lfun = (List.map (fun (x,c) -> (x,f c)) l)@ist.lfun in
@@ -2011,6 +2017,9 @@ and subst_genarg subst (x:glob_generic_argument) =
   | ConstrWithBindingsArgType ->
       in_gen globwit_constr_with_bindings
         (subst_raw_with_bindings subst (out_gen globwit_constr_with_bindings x))
+  | WithBindingsArgType ->
+      in_gen globwit_with_bindings
+        (subst_bindings subst (out_gen globwit_with_bindings x))
   | List0ArgType _ -> app_list0 (subst_genarg subst) x
   | List1ArgType _ -> app_list1 (subst_genarg subst) x
   | OptArgType _ -> app_opt (subst_genarg subst) x

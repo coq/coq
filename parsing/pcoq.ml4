@@ -369,6 +369,8 @@ module Tactic =
       make_gen_entry utactic rawwit_casted_open_constr "castedopenconstr"
     let constr_with_bindings =
       make_gen_entry utactic rawwit_constr_with_bindings "constr_with_bindings"
+    let with_bindings =
+      make_gen_entry utactic rawwit_with_bindings "with_bindings"
     let constrarg = make_gen_entry utactic rawwit_constr_may_eval "constrarg"
     let quantified_hypothesis =
       make_gen_entry utactic rawwit_quant_hyp "quantified_hypothesis"
@@ -410,6 +412,7 @@ let reset_all_grammars () =
   f Tactic.simple_tactic;
   f Tactic.castedopenconstr;
   f Tactic.constr_with_bindings;
+  f Tactic.with_bindings;
   f Tactic.constrarg;
   f Tactic.quantified_hypothesis;
   f Tactic.int_or_var;

@@ -32,6 +32,7 @@ type argument_type =
   | TacticArgType
   | CastedOpenConstrArgType
   | ConstrWithBindingsArgType
+  | WithBindingsArgType
   | RedExprArgType
   | List0ArgType of argument_type
   | List1ArgType of argument_type
@@ -119,6 +120,10 @@ let wit_casted_open_constr = CastedOpenConstrArgType
 let rawwit_constr_with_bindings = ConstrWithBindingsArgType
 let globwit_constr_with_bindings = ConstrWithBindingsArgType
 let wit_constr_with_bindings = ConstrWithBindingsArgType
+
+let rawwit_with_bindings = WithBindingsArgType
+let globwit_with_bindings = WithBindingsArgType
+let wit_with_bindings = WithBindingsArgType
 
 let rawwit_red_expr = RedExprArgType
 let globwit_red_expr = RedExprArgType

@@ -62,8 +62,8 @@ let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
 
 if !Options.v7 then
 GEXTEND Gram
-  GLOBAL: simple_tactic constrarg constr_with_bindings quantified_hypothesis
-    red_expr int_or_var castedopenconstr;
+  GLOBAL: simple_tactic constrarg with_bindings constr_with_bindings 
+  quantified_hypothesis red_expr int_or_var castedopenconstr;
 
   int_or_var:
     [ [ n = integer  -> Genarg.ArgArg n
@@ -161,9 +161,9 @@ GEXTEND Gram
 	  ImplicitBindings (c1 :: bl) ] ]
   ;
   constr_with_bindings:
-    [ [ c = constr; l = with_binding_list -> (c, l) ] ]
+    [ [ c = constr; l = with_bindings -> (c, l) ] ]
   ;
-  with_binding_list:
+  with_bindings:
     [ [ "with"; bl = binding_list -> bl | -> NoBindings ] ]
   ;
   unfold_occ:
@@ -343,12 +343,12 @@ GEXTEND Gram
 	  id2 = id_or_ltac_ref -> TacRename (id1,id2)
 
       (* Constructors *)
-      | IDENT "Left"; bl = with_binding_list -> TacLeft bl
-      | IDENT "Right"; bl = with_binding_list -> TacRight bl
-      | IDENT "Split"; bl = with_binding_list -> TacSplit (false,bl)
+      | IDENT "Left"; bl = with_bindings -> TacLeft bl
+      | IDENT "Right"; bl = with_bindings -> TacRight bl
+      | IDENT "Split"; bl = with_bindings -> TacSplit (false,bl)
       | IDENT "Exists"; bl = binding_list -> TacSplit (true,bl)
       | IDENT "Exists" -> TacSplit (true,NoBindings)
-      | IDENT "Constructor"; n = num_or_meta; l = with_binding_list ->
+      | IDENT "Constructor"; n = num_or_meta; l = with_bindings ->
 	  TacConstructor (n,l)
       | IDENT "Constructor"; t = OPT tactic -> TacAnyConstructor t
 
