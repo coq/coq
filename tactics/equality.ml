@@ -1169,17 +1169,16 @@ let unfold_body x gl =
 
 
 
-exception FoundHyp of named_declaration
+exception FoundHyp of (identifier * constr * bool)
 
-let is_eq_x x c =
+(* tests whether hyp [c] is [x = t] or [t = x], [x] not occuring in [t] *)
+let is_eq_x x (id,_,c) =
   try
     let (_,lhs,rhs) = snd (find_eq_data_decompose c) in
-    (x = lhs) && not (occur_term x rhs)
+    if (x = lhs) && not (occur_term x rhs) then raise (FoundHyp (id,rhs,true));
+    if (x = rhs) && not (occur_term x lhs) then raise (FoundHyp (id,lhs,false))
   with PatternMatchingFailure ->
-    false
-
-let eq_rhs eq =
-  (snd (destApplication eq)).(2)
+    ()
 
 let subst_one x gl = 
   let hyps = pf_hyps gl in
@@ -1189,13 +1188,14 @@ let subst_one x gl =
   (* x is a variable: *)
   let varx = mkVar x in
   (* Find a non-recursive definition for x *)
-  let (hyp,rhs) = 
+  let (hyp,rhs,dir) = 
     try
-      let test (_,_,c as d) _ = if is_eq_x varx c then raise (FoundHyp d) in
+      let test hyp _ = is_eq_x varx hyp in
       Sign.fold_named_context test ~init:() hyps;
       errorlabstrm "Subst"
         (str "cannot find any non-recursive equality over " ++ pr_id x)
-    with FoundHyp (id,_,c) -> (id, eq_rhs c) in
+    with FoundHyp res -> res
+  in
   (* The set of hypotheses using x *)
   let depdecls = 
     let test (id,_,c as dcl) = 
@@ -1222,7 +1222,7 @@ let subst_one x gl =
   tclTHENLIST 
     ((if need_rewrite then
       [generalize abshyps;
-       rewriteLR (mkVar hyp);
+       (if dir then rewriteLR else rewriteRL) (mkVar hyp);
        thin dephyps;
        tclMAP introtac depdecls]
     else
@@ -1235,8 +1235,9 @@ let subst = tclMAP subst_one
 let subst_all gl =
   let test (_,c) =
     try
-      let (_,x,_) = snd (find_eq_data_decompose c) in
-      match kind_of_term x with Var x -> x | _ -> failwith "caught"
+      let (_,x,y) = snd (find_eq_data_decompose c) in
+      match kind_of_term x with Var x -> x | _ -> 
+      match kind_of_term y with Var y -> y | _ -> failwith "caught"
     with PatternMatchingFailure -> failwith "caught"
   in
   let ids = map_succeed test (pf_hyps_types gl) in
