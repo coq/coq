@@ -1,0 +1,4 @@
+t_rect = 
+[P:(t->Type); f:([x:=t](x0:x)(P x0)->(P (k x0)))]
+ Fix F{F [t:t] : (P t) := <P>Cases t of (k x x0) => (f x0 (F x0)) end}
+     : (P:(t->Type))([x:=t](x0:x)(P x0)->(P (k x0)))->(t:t)(P t)
