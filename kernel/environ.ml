@@ -175,12 +175,12 @@ let hdchar env c =
     | VAR id  -> lowercase_first_char id
     | DOP0(Sort s) -> sort_hdchar s
     | Rel n ->
-	if n<=k then "p" (* the initial term is flexible product/function *)
-	else
-	  try match lookup_rel (n-k) env with
-	    | Name id,_ -> lowercase_first_char id
-	    | Anonymous,t -> hdrec 0 (lift (n-k) (body_of_type t))
-	  with Not_found -> "y"
+	(if n<=k then "p" (* the initial term is flexible product/function *)
+	 else
+	   try match lookup_rel (n-k) env with
+	     | Name id,_ -> lowercase_first_char id
+	     | Anonymous,t -> hdrec 0 (lift (n-k) (body_of_type t))
+	   with Not_found -> "y")
     | _ -> "y"
   in 
   hdrec 0 c
