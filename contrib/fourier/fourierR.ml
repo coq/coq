@@ -186,10 +186,10 @@ type hineq={hname:constr; (* le nom de l'hypothèse *)
 let ineq1_of_constr (h,t) =
     match (kind_of_term t) with
        App (f,args) ->
-         let t1= args.(0) in
-         let t2= args.(1) in
          (match kind_of_term f with
-           Const c ->
+           Const c when Array.length args = 2 ->
+             let t1= args.(0) in
+             let t2= args.(1) in
             (match (string_of_R_constant c) with
 		 "Rlt" -> [{hname=h;
                            htype="Rlt";
