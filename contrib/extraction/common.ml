@@ -64,8 +64,6 @@ module MonoParams = struct
   
   let globals () = ! global_ids
 		     
-  let cache r f = f r
-		    
   let rename_global_id id = 
     let id' = rename_id id !global_ids in
     global_ids := Idset.add id' !global_ids; 
