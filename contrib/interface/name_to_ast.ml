@@ -97,7 +97,7 @@ let convert_constructors envpar names types =
     array_map2 
       (fun n t -> 
 	let coercion_flag = false (* arbitrary *) in
-	(n, coercion_flag, ast_of_constr true envpar t))
+	(coercion_flag, (n, ast_of_constr true envpar t)))
       names types in
   Array.to_list array_idC;;
   
@@ -146,7 +146,7 @@ let make_variable_ast name typ implicits =
 *)
 let make_variable_ast name typ implicits =
   (VernacAssumption
-    (AssumptionVariable, [name, constr_to_ast (body_of_type typ)]))
+    (AssumptionVariable, [false,(name, constr_to_ast (body_of_type typ))]))
   ::(implicits_to_ast_list implicits);;
     
 (*

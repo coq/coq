@@ -209,7 +209,7 @@ let declare_projections indsp coers fields =
 
 (* [fs] corresponds to fields and [ps] to parameters; [coers] is a boolean 
    list telling if the corresponding fields must me declared as coercion *)
-let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
+let definition_structure ((is_coe,idstruc),ps,cfs,idbuild,s) =
   let coers,fs = List.split cfs in
   let nparams = List.length ps in
   let idps = List.map fst ps in

@@ -307,7 +307,10 @@ let vernac_exact_proof c =
 
 let vernac_assumption kind l =
   let stre = interp_assumption kind in
-  List.iter (fun (id,c) -> declare_assumption id stre c) l
+  List.iter
+    (fun (is_coe,(id,c)) ->
+      let r = declare_assumption id stre c in
+      if is_coe then Class.try_add_new_coercion r stre) l
 
 let vernac_inductive f indl = build_mutual indl f
 
@@ -321,12 +324,12 @@ let vernac_scheme = build_scheme
 (**********************)
 (* Gallina extensions *)
 
-let vernac_record iscoe struc binders sort nameopt cfs =
+let vernac_record struc binders sort nameopt cfs =
   let const = match nameopt with 
-    | None -> add_prefix "Build_" struc
+    | None -> add_prefix "Build_" (snd struc)
     | Some id -> id in
   let s = Astterm.interp_sort sort in
-  Record.definition_structure (iscoe,struc,binders,cfs,const,s)
+  Record.definition_structure (struc,binders,cfs,const,s)
 
   (* Sections *)
 
@@ -876,7 +879,7 @@ let interp c = match c with
   | VernacScheme l -> vernac_scheme l
 
   (* Gallina extensions *)
-  | VernacRecord (coe,id,bl,s,idopt,fs) -> vernac_record coe id bl s idopt fs
+  | VernacRecord (id,bl,s,idopt,fs) -> vernac_record id bl s idopt fs
   | VernacBeginSection id -> vernac_begin_section id
   | VernacEndSection id -> vernac_end_section id
   | VernacRequire (export,spec,qidl) -> vernac_require export spec qidl
