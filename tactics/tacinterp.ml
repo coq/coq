@@ -393,11 +393,14 @@ let intern_reference strict ist r =
 
 let rec intern_intro_pattern lf ist = function
   | IntroOrAndPattern l ->
-      IntroOrAndPattern (List.map (List.map (intern_intro_pattern lf ist)) l)
+      IntroOrAndPattern (intern_case_intro_pattern lf ist l)
   | IntroWildcard ->
       IntroWildcard
   | IntroIdentifier id ->
       IntroIdentifier (intern_ident lf ist id)
+
+and intern_case_intro_pattern lf ist =
+  List.map (List.map (intern_intro_pattern lf ist))
 
 let intern_quantified_hypothesis ist x =
   (* We use identifier both for variables and quantified hyps (no way to
@@ -485,6 +488,16 @@ let intern_redexp ist = function
   | Simpl o -> Simpl (option_app (intern_constr_occurrence ist) o)
   | (Red _ | Hnf as r) -> r
   | ExtraRedExpr (s,c) -> ExtraRedExpr (s, intern_constr ist c)
+
+let intern_inversion_strength lf ist = function
+  | NonDepInversion (k,idl,ids) ->
+      NonDepInversion (k,List.map (intern_hyp_or_metaid ist) idl,
+      intern_case_intro_pattern lf ist ids)
+  | DepInversion (k,copt,ids) ->
+      DepInversion (k, option_app (intern_constr ist) copt,
+      intern_case_intro_pattern lf ist ids)
+  | InversionUsing (c,idl) ->
+      InversionUsing (intern_constr ist c, List.map (intern_hyp_or_metaid ist) idl)
 
 (* Interprets an hypothesis name *)
 let intern_hyp_location ist = function
@@ -592,13 +605,13 @@ let rec intern_atomic lf ist x =
   | TacNewInduction (c,cbo,ids) ->
       TacNewInduction (intern_induction_arg ist c,
                option_app (intern_constr_with_bindings ist) cbo,
-               List.map (List.map (intern_intro_pattern lf ist)) ids)
+               intern_case_intro_pattern lf ist ids)
   | TacSimpleDestruct h ->
       TacSimpleDestruct (intern_quantified_hypothesis ist h)
   | TacNewDestruct (c,cbo,ids) ->
       TacNewDestruct (intern_induction_arg ist c,
                option_app (intern_constr_with_bindings ist) cbo,
-               List.map (List.map (intern_intro_pattern lf ist)) ids)
+	       intern_case_intro_pattern lf ist ids)
   | TacDoubleInduction (h1,h2) ->
       let h1 = intern_quantified_hypothesis ist h1 in
       let h2 = intern_quantified_hypothesis ist h2 in
@@ -636,6 +649,11 @@ let rec intern_atomic lf ist x =
   | TacSymmetry idopt -> 
       TacSymmetry (option_app (intern_hyp_or_metaid ist) idopt)
   | TacTransitivity c -> TacTransitivity (intern_constr ist c)
+
+  (* Equality and inversion *)
+  | TacInversion (inv,hyp) ->
+      TacInversion (intern_inversion_strength lf ist inv,
+        intern_quantified_hypothesis ist hyp)
 
   (* For extensions *)
   | TacExtend (loc,opn,l) ->
@@ -1149,12 +1167,12 @@ let interp_constr_may_eval ist gl c =
   end
 
 let rec interp_intro_pattern ist = function
-  | IntroOrAndPattern l ->
-      IntroOrAndPattern (List.map (List.map (interp_intro_pattern ist)) l)
-  | IntroWildcard ->
-      IntroWildcard
-  | IntroIdentifier id ->
-      IntroIdentifier (eval_ident ist id)
+  | IntroOrAndPattern l -> IntroOrAndPattern (interp_case_intro_pattern ist l)
+  | IntroWildcard -> IntroWildcard
+  | IntroIdentifier id -> IntroIdentifier (eval_ident ist id)
+
+and interp_case_intro_pattern ist =
+  List.map (List.map (interp_intro_pattern ist))
 
 (* Quantified named or numbered hypothesis or hypothesis in context *)
 (* (as in Inversion) *)
@@ -1564,7 +1582,7 @@ and interp_atomic ist gl = function
       h_intros_until (interp_quantified_hypothesis ist gl hyp)
   | TacIntroMove (ido,ido') ->
       h_intro_move (option_app (eval_ident ist) ido)
-        (option_app (interp_hyp ist gl) ido')
+      (option_app (interp_hyp ist gl) ido')
   | TacAssumption -> h_assumption
   | TacExact c -> h_exact (pf_interp_casted_constr ist gl c)
   | TacApply cb -> h_apply (interp_constr_with_bindings ist gl cb)
@@ -1609,13 +1627,13 @@ and interp_atomic ist gl = function
   | TacNewInduction (c,cbo,ids) ->
       h_new_induction (interp_induction_arg ist gl c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
-        (List.map (List.map (interp_intro_pattern ist)) ids)
+        (interp_case_intro_pattern ist ids)
   | TacSimpleDestruct h ->
       h_simple_destruct (interp_quantified_hypothesis ist gl h)
   | TacNewDestruct (c,cbo,ids) -> 
       h_new_destruct (interp_induction_arg ist gl c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
-        (List.map (List.map (interp_intro_pattern ist)) ids)
+        (interp_case_intro_pattern ist ids)
   | TacDoubleInduction (h1,h2) ->
       let h1 = interp_quantified_hypothesis ist gl h1 in
       let h2 = interp_quantified_hypothesis ist gl h2 in
@@ -1659,6 +1677,21 @@ and interp_atomic ist gl = function
   | TacReflexivity -> h_reflexivity
   | TacSymmetry c -> h_symmetry (option_app (interp_hyp ist gl) c)
   | TacTransitivity c -> h_transitivity (pf_interp_constr ist gl c)
+
+  (* Equality and inversion *)
+  | TacInversion (DepInversion (k,c,ids),hyp) ->
+      Inv.dinv k (option_app (pf_interp_constr ist gl) c)
+        (interp_case_intro_pattern ist ids)
+        (interp_quantified_hypothesis ist gl hyp)
+  | TacInversion (NonDepInversion (k,idl,ids),hyp) ->
+      Inv.inv_clause k 
+        (interp_case_intro_pattern ist ids)
+        (List.map (interp_hyp ist gl) idl)
+        (interp_quantified_hypothesis ist gl hyp)
+  | TacInversion (InversionUsing (c,idl),hyp) ->
+      Leminv.lemInv_clause (interp_quantified_hypothesis ist gl hyp)
+        (pf_interp_constr ist gl c)
+        (List.map (interp_hyp ist gl) idl)
 
   (* For extensions *)
   | TacExtend (loc,opn,l) ->
@@ -1873,6 +1906,13 @@ let rec subst_atomic subst (t:glob_atomic_tactic_expr) = match t with
   (* Equivalence relations *)
   | TacReflexivity | TacSymmetry _ as x -> x
   | TacTransitivity c -> TacTransitivity (subst_rawconstr subst c)
+
+  (* Equality and inversion *)
+  | TacInversion (DepInversion (k,c,l),hyp) ->
+     TacInversion (DepInversion (k,option_app (subst_rawconstr subst) c,l),hyp)
+  | TacInversion (NonDepInversion _,_) as x -> x
+  | TacInversion (InversionUsing (c,cl),hyp) ->
+      TacInversion (InversionUsing (subst_rawconstr subst c,cl),hyp)
 
   (* For extensions *)
   | TacExtend (_loc,opn,l) ->

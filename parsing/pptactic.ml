@@ -117,19 +117,23 @@ let pr_bindings prc prlc = function
 let pr_with_bindings prc prlc (c,bl) = 
   prc c ++ hv 0 (pr_bindings prc prlc bl)
 
+let pr_with_constr prc = function
+  | None -> mt ()
+  | Some c -> spc () ++ hov 1 (str "with" ++ spc () ++ prc c)
+
 let rec pr_intro_pattern = function
-  | IntroOrAndPattern pll ->
-      str "[" ++
-      hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
-      ++ str "]"
+  | IntroOrAndPattern pll -> pr_case_intro_pattern pll
   | IntroWildcard -> str "_"
   | IntroIdentifier id -> pr_id id
 
+and pr_case_intro_pattern pll =
+  str "[" ++
+  hv 0 (prlist_with_sep pr_bar (prlist_with_sep spc pr_intro_pattern) pll)
+  ++ str "]"
+
 let pr_with_names = function
   | [] -> mt ()
-  | ids -> spc () ++ str "as [" ++
-      hv 0 (prlist_with_sep (fun () -> spc () ++ str "| ")
-              (prlist_with_sep spc pr_intro_pattern) ids ++ str "]")
+  | ids -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_case_intro_pattern ids)
 
 let pr_hyp_location pr_id = function
   | InHyp id -> spc () ++ pr_id id
@@ -138,6 +142,11 @@ let pr_hyp_location pr_id = function
 let pr_clause pr_id = function
   | [] -> mt ()
   | l -> spc () ++ hov 0 (str "in" ++ prlist (pr_hyp_location pr_id) l)
+
+let pr_simple_clause pr_id = function
+  | [] -> mt ()
+  | l -> spc () ++
+      hov 0 (str "in" ++ spc () ++ prlist_with_sep spc pr_id l)
 
 let pr_clause_pattern pr_id = function
   | (None, []) -> mt ()
@@ -155,6 +164,11 @@ let pr_induction_arg prc = function
   | ElimOnConstr c -> prc c
   | ElimOnIdent (_,id) -> pr_id id
   | ElimOnAnonHyp n -> int n
+
+let pr_induction_kind = function
+  | SimpleInversion -> str "Simple Inversion"
+  | FullInversion -> str "Inversion"
+  | FullInversionClear -> str "Inversion_clear"
 
 let pr_match_pattern pr_pat = function
   | Term a -> pr_pat a
@@ -525,6 +539,20 @@ and pr_atom1 = function
   | (TacReflexivity | TacSymmetry None) as x -> pr_atom0 x
   | TacSymmetry (Some id) -> str "Symmetry " ++ pr_ident id
   | TacTransitivity c -> str "Transitivity" ++ pr_arg pr_constr c
+
+  (* Equality and inversion *)
+  | TacInversion (DepInversion (k,c,ids),hyp) ->
+      hov 1 (str "Dependent " ++ pr_induction_kind k ++ 
+      pr_quantified_hypothesis hyp ++
+      pr_with_names ids ++ pr_with_constr pr_constr c)
+  | TacInversion (NonDepInversion (k,cl,ids),hyp) ->
+      hov 1 (pr_induction_kind k ++ spc () ++
+      pr_quantified_hypothesis hyp ++
+      pr_with_names ids ++ pr_simple_clause pr_ident cl)
+  | TacInversion (InversionUsing (c,cl),hyp) ->
+      hov 1 (str "Inversion" ++ spc() ++ pr_quantified_hypothesis hyp ++ 
+      str "using" ++ spc () ++ pr_constr c ++ 
+      pr_simple_clause pr_ident cl)
 
 and pr_tactic_seq_body tl = 
   hv 0 (str "[ " ++

@@ -257,6 +257,10 @@ GEXTEND Gram
     [ [ "in"; idl = LIST1 hypident -> idl
       | -> [] ] ]
   ;
+  simple_clause:
+    [ [ "in"; idl = LIST1 id_or_meta -> idl
+      | -> [] ] ]
+  ;
   fixdecl:
     [ [ id = base_ident; bl=LIST0 Constr.binder; ann=fixannot;
         ":"; ty=lconstr -> (loc,id,bl,ann,ty) ] ]
@@ -380,6 +384,27 @@ GEXTEND Gram
       | IDENT "symmetry"; ido = OPT [ "in"; id = id_or_meta -> id ] -> 
 	  TacSymmetry ido
       | IDENT "transitivity"; c = constr -> TacTransitivity c
+
+      (* Equality and inversion *)
+      | IDENT "dependent"; k =
+	  [ IDENT "simple"; IDENT "inversion" -> SimpleInversion
+	  | IDENT "inversion" -> FullInversion
+	  | IDENT "inversion_clear" -> FullInversionClear ];
+	  hyp = quantified_hypothesis; 
+	  ids = with_names; co = OPT ["with"; c = constr -> c] ->
+	    TacInversion (DepInversion (k,co,ids),hyp)
+      | IDENT "simple"; IDENT "inversion";
+	  hyp = quantified_hypothesis; ids = with_names; cl = simple_clause ->
+	    TacInversion (NonDepInversion (SimpleInversion, cl, ids), hyp)
+      | IDENT "inversion"; 
+	  hyp = quantified_hypothesis; ids = with_names; cl = simple_clause ->
+	    TacInversion (NonDepInversion (FullInversion, cl, ids), hyp)
+      | IDENT "inversion_clear"; 
+	  hyp = quantified_hypothesis; ids = with_names; cl = simple_clause ->
+	    TacInversion (NonDepInversion (FullInversionClear, cl, ids), hyp)
+      | IDENT "inversion"; hyp = quantified_hypothesis; 
+	  "using"; c = constr; cl = simple_clause ->
+	    TacInversion (InversionUsing (c,cl), hyp)
 
       (* Conversion *)
       | r = red_tactic; cl = clause -> TacReduce (r, cl)

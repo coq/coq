@@ -110,43 +110,6 @@ TACTIC EXTEND Contradiction
  [ "Contradiction" ] -> [ contradiction ]
 END
 
-(* Inversion *)
-
-open Inv
-open Leminv
-
-TACTIC EXTEND SimpleInversion
-| [ "Simple" "Inversion" quantified_hypothesis(id) ] -> [ inv None id ]
-| [ "Simple" "Inversion" quantified_hypothesis(id) "in" ne_ident_list(l) ]
-  -> [ invIn_gen None id l]
-| [ "Dependent" "Simple" "Inversion" quantified_hypothesis(id) with_constr(c) ]
-  -> [ dinv None c id ]
-END
-
-TACTIC EXTEND Inversion
-| [ "Inversion" quantified_hypothesis(id) ] -> [ inv (Some false) id ]
-| [ "Inversion" quantified_hypothesis(id) "in" ne_ident_list(l) ]
-      -> [ invIn_gen (Some false) id l]
-| [ "Dependent" "Inversion" quantified_hypothesis(id) with_constr(c) ]
-    -> [ dinv (Some false) c id ]
-END
-
-TACTIC EXTEND InversionClear
-| [ "Inversion_clear" quantified_hypothesis(id) ] -> [ inv (Some true) id ]
-| [ "Inversion_clear" quantified_hypothesis(id) "in" ne_ident_list(l) ]
-      -> [ invIn_gen (Some true) id l]
-| [ "Dependent" "Inversion_clear" quantified_hypothesis(id) with_constr(c) ]
-    -> [ dinv (Some true) c id ]
-END
-
-TACTIC EXTEND InversionUsing
-| [ "Inversion" quantified_hypothesis(id) "using" constr(c) ]
-     -> [ lemInv_gen id c ]
-| [ "Inversion" quantified_hypothesis(id) "using" constr(c)
-    "in" ne_ident_list(l) ]
-     -> [ lemInvIn_gen id c l ]
-END        
-
 (* AutoRewrite *)
 
 open Autorewrite
@@ -199,6 +162,9 @@ VERNAC COMMAND EXTEND AddSetoid
 END
 
 (* Inversion lemmas (Leminv) *)
+
+open Inv
+open Leminv
 
 VERNAC COMMAND EXTEND DeriveInversionClear
   [ "Derive" "Inversion_clear" ident(na) ident(id) ]

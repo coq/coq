@@ -224,6 +224,10 @@ GEXTEND Gram
     [ [ "in"; idl = LIST1 hypident -> idl
       | -> [] ] ]
   ;
+  simple_clause:
+    [ [ "in"; idl = LIST1 id_or_meta -> idl
+      | -> [] ] ]
+  ;
   fixdecl:
     [ [ id = base_ident; "/"; n = natural; ":"; c = constr -> (id,n,c) ] ]
   ;
@@ -252,7 +256,7 @@ GEXTEND Gram
 	  TacIntroMove (Some id, Some id2)
       | IDENT "Intro"; IDENT "after"; id2 = identref ->
 	  TacIntroMove (None, Some id2)
-      | IDENT "Intro"; id = base_ident -> TacIntroMove (Some id, None)
+      | IDENT "Intro"; id = base_ident -> TacIntroMove (Some id,None)
       | IDENT "Intro" -> TacIntroMove (None, None)
 
       | IDENT "Assumption" -> TacAssumption
@@ -344,14 +348,32 @@ GEXTEND Gram
 	  TacSymmetry ido
       | IDENT "Transitivity"; c = constr -> TacTransitivity c
 
+      (* Equality and inversion *)
+      | IDENT "Dependent"; k =
+	  [ IDENT "Simple"; IDENT "Inversion" -> SimpleInversion
+	  | IDENT "Inversion" -> FullInversion
+	  | IDENT "Inversion_clear" -> FullInversionClear ];
+	  hyp = quantified_hypothesis; 
+	  ids = with_names; co = OPT ["with"; c = constr -> c] ->
+	    TacInversion (DepInversion (k,co,ids),hyp)
+      | IDENT "Simple"; IDENT "Inversion";
+	  hyp = quantified_hypothesis; ids = with_names; cl = simple_clause ->
+	    TacInversion (NonDepInversion (SimpleInversion, cl, ids), hyp)
+      | IDENT "Inversion"; 
+	  hyp = quantified_hypothesis; ids = with_names; cl = simple_clause ->
+	    TacInversion (NonDepInversion (FullInversion, cl, ids), hyp)
+      | IDENT "Inversion_clear"; 
+	  hyp = quantified_hypothesis; ids = with_names; cl = simple_clause ->
+	    TacInversion (NonDepInversion (FullInversionClear, cl, ids), hyp)
+      | IDENT "Inversion"; hyp = quantified_hypothesis; 
+	  "using"; c = constr; cl = simple_clause ->
+	    TacInversion (InversionUsing (c,cl), hyp)
+
       (* Conversion *)
       | r = red_tactic; cl = clause -> TacReduce (r, cl)
       (* Change ne doit pas s'appliquer dans un Definition t := Eval ... *)
       | IDENT "Change"; (oc,c) = conversion; cl = clause -> TacChange (oc,c,cl)
 
-(* Unused ??
-      | IDENT "ML"; s = string -> ExtraTactic<:ast< (MLTACTIC $s) >>
-*)
     ] ]
   ;
 END;;
