@@ -1049,8 +1049,13 @@ let induct_discharge indpath statuslists cname destopt avoid (_,t) =
     | IsProd (na,t,c2) when is_rec_arg indpath t ->
 	(match kind_of_term c2 with
 	   | IsProd (nar,tr,c3) ->
-	       if !tophyp=None then tophyp:=Some hyprecname;(* for lstatus *)
-	       tclTHENLIST
+		 (* For lstatus but _buggy_: if intro_gen renames
+		    hyprecname differently (because it already exists
+		    in goal, then hypothesis associated to None in
+		    lstatus will be moved at a wrong place *)
+	       if !tophyp=None then
+		 tophyp := Some (next_global_ident_away hyprecname avoid);
+               tclTHENLIST
 		 [ intro_gen (IBasedOn (recvarname,avoid)) destopt false;
 		   intro_gen (IBasedOn (hyprecname,avoid)) None false;
 		   peel_tac c3]
