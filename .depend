@@ -2316,40 +2316,6 @@ translate/ppvernacnew.cmx: parsing/ast.cmx interp/constrextern.cmx \
     pretyping/rawterm.cmx interp/reserve.cmx proofs/tacexpr.cmx \
     tactics/tacinterp.cmx pretyping/termops.cmx interp/topconstr.cmx \
     lib/util.cmx toplevel/vernacexpr.cmx translate/ppvernacnew.cmi 
-user-contrib/formula.cmo: interp/coqlib.cmi kernel/declarations.cmi \
-    library/global.cmi tactics/hipattern.cmi pretyping/inductiveops.cmi \
-    kernel/names.cmi pretyping/reductionops.cmi kernel/sign.cmi \
-    proofs/tacmach.cmi kernel/term.cmi pretyping/termops.cmi lib/util.cmi 
-user-contrib/formula.cmx: interp/coqlib.cmx kernel/declarations.cmx \
-    library/global.cmx tactics/hipattern.cmx pretyping/inductiveops.cmx \
-    kernel/names.cmx pretyping/reductionops.cmx kernel/sign.cmx \
-    proofs/tacmach.cmx kernel/term.cmx pretyping/termops.cmx lib/util.cmx 
-user-contrib/rules.cmo: kernel/declarations.cmi \
-    contrib/first-order/formula.cmi kernel/names.cmi pretyping/rawterm.cmi \
-    pretyping/reductionops.cmi contrib/first-order/sequent.cmi \
-    kernel/sign.cmi proofs/tacmach.cmi tactics/tacticals.cmi \
-    tactics/tactics.cmi kernel/term.cmi pretyping/termops.cmi \
-    contrib/first-order/unify.cmi lib/util.cmi 
-user-contrib/rules.cmx: kernel/declarations.cmx \
-    contrib/first-order/formula.cmx kernel/names.cmx pretyping/rawterm.cmx \
-    pretyping/reductionops.cmx contrib/first-order/sequent.cmx \
-    kernel/sign.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
-    tactics/tactics.cmx kernel/term.cmx pretyping/termops.cmx \
-    contrib/first-order/unify.cmx lib/util.cmx 
-user-contrib/sequent.cmo: interp/constrextern.cmi \
-    contrib/first-order/formula.cmi library/global.cmi kernel/names.cmi \
-    lib/pp.cmi parsing/ppconstr.cmi proofs/tacmach.cmi kernel/term.cmi \
-    lib/util.cmi 
-user-contrib/sequent.cmx: interp/constrextern.cmx \
-    contrib/first-order/formula.cmx library/global.cmx kernel/names.cmx \
-    lib/pp.cmx parsing/ppconstr.cmx proofs/tacmach.cmx kernel/term.cmx \
-    lib/util.cmx 
-user-contrib/unify.cmo: proofs/clenv.cmi contrib/first-order/formula.cmi \
-    pretyping/reductionops.cmi contrib/first-order/sequent.cmi \
-    proofs/tacmach.cmi kernel/term.cmi pretyping/termops.cmi lib/util.cmi 
-user-contrib/unify.cmx: proofs/clenv.cmx contrib/first-order/formula.cmx \
-    pretyping/reductionops.cmx contrib/first-order/sequent.cmx \
-    proofs/tacmach.cmx kernel/term.cmx pretyping/termops.cmx lib/util.cmx 
 contrib/cc/ccalgo.cmo: kernel/names.cmi kernel/term.cmi contrib/cc/ccalgo.cmi 
 contrib/cc/ccalgo.cmx: kernel/names.cmx kernel/term.cmx contrib/cc/ccalgo.cmi 
 contrib/cc/ccproof.cmo: contrib/cc/ccalgo.cmi kernel/names.cmi \
