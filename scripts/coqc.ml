@@ -125,15 +125,15 @@ let parse_args () =
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
     | ("-image"|"-libdir"|"-I"|"-R"|"-include"|"-outputstate"|"-inputstate"
       |"-is"|"-load-vernac-source"|"-load-vernac-object"|"-load-ml-source"
-      |"-require"|"-unsafe"|"-quiet"|"-silent"|"-v"|"--version"
-      |"-load-ml-object"|"-user"|"-init-file" as o) :: rem ->
+      |"-require"|"-load-ml-object"|"-user"|"-init-file" as o) :: rem ->
 	begin
 	  match rem with
 	    | s :: rem' -> parse (cfiles,s::o::args) rem'
 	    | []        -> usage ()
 	end
     | ("-notactics"|"-debug"|"-db"|"-debugger"|"-nolib"|"-batch"|"-nois"
-      |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" as o) :: rem ->
+      |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
+      |"-silent"|"-v"|"--version" as o) :: rem ->
 	parse (cfiles,o::args) rem
     | f :: rem -> 
 	if Sys.file_exists f then
