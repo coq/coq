@@ -84,7 +84,7 @@ let standard sds =
   if !opt = "" then print "\t@echo \"WARNING: opt is disabled\"\n";
   print "\t$(MAKE) all \"OPT="; print !opt; print "\"\n\n";
   if !some_file then print "include .depend\n\n";
-  print "depend:\n";
+  print ".depend depend:\n";
   if !some_file then begin
     print "\trm .depend\n";
     print "\t$(COQDEP) -i $(COQLIBS) *.v *.ml *.mli >.depend\n";
