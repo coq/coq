@@ -56,6 +56,10 @@ Lemma Rlt_antirefl:(r:R)~``r<r``.
 Qed.
 Hints Resolve Rlt_antirefl : real.
 
+Lemma Rle_refl : (x:R) ``x<=x``.
+Intro; Right; Reflexivity.
+Qed.
+
 Lemma Rlt_not_eq:(r1,r2:R)``r1<r2``->``r1<>r2``.
   Red; Intros r1 r2 H H0; Apply (Rlt_antirefl r1).
   Pattern 2 r1; Rewrite H0; Trivial.
@@ -118,6 +122,10 @@ Intros r1 r2 ; Generalize (total_order r1 r2) ; Unfold Rle; Tauto.
 Qed.
 
 Hints Immediate Rge_le not_Rle : real.
+
+Lemma not_Rge:(r1,r2:R)~``r1>=r2`` -> ``r1<r2``.
+Intros; Apply not_Rle; Auto with real.
+Qed.
 
 (**********)
 Lemma Rlt_le_not:(r1,r2:R)``r2<r1`` -> ~``r1<=r2``.
@@ -890,6 +898,11 @@ Replace ``1`` with ``(Rsqr 1)``; Auto with real.
 Unfold Rsqr; Auto with real.
 Qed.
 Hints Resolve Rlt_R0_R1 : real.
+
+Lemma Rle_R0_R1:``0<=1``.
+Left.
+Exact Rlt_R0_R1.
+Qed.
 
 (** Order and inverse *)
 Lemma Rlt_Rinv:(r:R)``0<r``->``0</r``.
