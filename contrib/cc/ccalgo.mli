@@ -45,6 +45,7 @@ sig
   val empty : unit -> t
   val find : t -> int -> int
   val size : t -> int -> int
+  val get_constructor : t -> int -> Names.constructor
   val pac_arity : t -> int -> int * int -> int
   val mem_node_pac : t -> int -> int * int -> int 
   val add_pacs : t -> int -> pa_constructor PacMap.t -> 

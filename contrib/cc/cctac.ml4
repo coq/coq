@@ -20,6 +20,7 @@ open Nameops
 open Inductiveops
 open Declarations
 open Term
+open Termops
 open Tacmach
 open Tactics
 open Tacticals
@@ -37,6 +38,8 @@ let fail()=raise Not_an_eq
 let constant dir s = lazy (Coqlib.gen_constant "CC" dir s)
 
 let f_equal_theo = constant ["Init";"Logic"] "f_equal"
+
+let eq_rect_theo = constant ["Init";"Logic"] "eq_rect"
 
 (* decompose member of equality in an applicative format *)
 
@@ -101,8 +104,10 @@ let make_prb gl=
 
 (* indhyps builds the array of arrays of constructor hyps for (ind largs) *)
 
-let build_projection (cstr:constructor) nargs argind ttype default atype gls=
-  let (h,argv) = destApplication ttype in
+let build_projection intype outtype (cstr:constructor) special default gls=
+  let (h,argv) = 
+    try destApplication intype with 
+	Invalid_argument _ -> (intype,[||])  in
   let ind=destInd h in 
   let (mib,mip) = Global.lookup_inductive ind in
   let n = mip.mind_nparams in
@@ -114,16 +119,16 @@ let build_projection (cstr:constructor) nargs argind ttype default atype gls=
     let ti=Term.prod_appvect types.(i) argv in
     let rc=fst (Sign.decompose_prod_assum ti) in
     let head=
-      if i=ci then mkRel (1+nargs-argind) else default in  
+      if i=ci then special else default in  
       Sign.it_mkLambda_or_LetIn head rc in
   let branches=Array.init lp branch in
   let casee=mkRel 1 in
-  let pred=mkLambda(Anonymous,ttype,atype) in
+  let pred=mkLambda(Anonymous,intype,outtype) in
   let env=pf_env gls in 
   let case_info=make_default_case_info (pf_env gls) RegularStyle ind in
   let body= mkCase(case_info, pred, casee, branches) in
   let id=pf_get_new_id (id_of_string "t") gls in     
-    mkLambda(Name id,ttype,body)
+    mkLambda(Name id,intype,body)
 
 (* generate an adhoc tactic following the proof tree  *)
 
@@ -165,11 +170,13 @@ let rec proof_tac axioms=function
 	 let cti=make_term ti in
 	 let ctj=make_term tj in
 	 let cai=make_term ai in
-	 let ttype=pf_type_of gls cti in
-	 let atype=pf_type_of gls cai in
-	 let proj=build_projection cstr nargs argind ttype cai atype gls in
+	 let intype=pf_type_of gls cti in
+	 let outtype=pf_type_of gls cai in
+	 let special=mkRel (1+nargs-argind) in
+	 let default=make_term ai in
+	 let proj=build_projection intype outtype cstr special default gls in
 	 let injt=
-	   mkApp (Lazy.force f_equal_theo,[|ttype;atype;proj;cti;ctj|]) in   
+	   mkApp (Lazy.force f_equal_theo,[|intype;outtype;proj;cti;ctj|]) in 
 	   tclTHEN (apply injt) (proof_tac axioms prf) gls)
 
 (* wrap everything *)
@@ -179,14 +186,30 @@ let cc_tactic gls=
   let prb=make_prb gls in
     match (cc_proof prb) with
         Prove (p,axioms)-> proof_tac axioms p gls
-      | Refute (t1,t2,p,axioms) ->
+      | Refute (cstr,t1,t2,p,axioms) ->
 	  let tt1=make_term t1 and tt2=make_term t2 in
-	  let typ=pf_type_of gls tt1 in
-	  let id=pf_get_new_id (id_of_string "Heq") gls in     
+	  let intype=pf_type_of gls tt1 in
+	  let concl=pf_concl gls in
+	  let outsort=mkType (new_univ ()) in
+	  let xid=pf_get_new_id (id_of_string "X") gls in
+	  let tid=pf_get_new_id (id_of_string "t") gls in
+	  let identity=
+	    mkLambda(Name xid,outsort,mkLambda(Name tid,mkRel 1,mkRel 1)) in
+	  let trivial=pf_type_of gls identity in
+	  let outtype=mkType (new_univ ()) in
+	  let pred=mkLambda(Name xid,outtype,mkRel 1) in
+	  let hid=pf_get_new_id (id_of_string "Heq") gls in     
+	  let proj=build_projection intype outtype cstr trivial concl gls in
+	  let injt=
+	    mkApp (Lazy.force f_equal_theo,
+		   [|intype;outtype;proj;tt1;tt2;mkVar hid|]) in   
+	  let endt=
+	    mkApp (Lazy.force eq_rect_theo,
+		   [|outtype;trivial;pred;identity;concl;injt|]) in
 	  let neweq=
-	    mkApp(constr_of_reference Coqlib.glob_eq,[|typ;tt1;tt2|]) in
-	    tclTHENS (true_cut (Some id) neweq)
-	      [proof_tac axioms p;Equality.discr id] gls
+	    mkApp(constr_of_reference Coqlib.glob_eq,[|intype;tt1;tt2|]) in
+	    tclTHENS (true_cut (Some hid) neweq)
+	      [proof_tac axioms p;exact_check endt] gls
 
 (* Tactic registration *)
       

@@ -35,5 +35,6 @@ val type_proof :
 val cc_proof :
   (Names.identifier * (term * term)) list * (term * term) option ->
   (proof * (Names.identifier * (term * term)) list, 
-   term * term * proof * (Names.identifier * (term * term)) list ) mission
+   Names.constructor * term * term * proof * 
+   (Names.identifier * (term * term)) list ) mission
 

@@ -150,6 +150,6 @@ let cc_proof (axioms,m)=
     with UF.Discriminable (i,ci,j,cj,uf) ->
       let prf=build_proof uf (Refute(i,ci,j,cj)) in 
       let (t1,t2)=type_proof axioms prf in 
-	Refute (t1,t2,prf,axioms) 
+	Refute (UF.get_constructor uf ci,t1,t2,prf,axioms) 
 
 
