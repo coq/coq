@@ -873,7 +873,7 @@ object(self)
 					   true
 					   true 
 					   false 
-					   (ip^"\n") 
+					   ("progress "^ip^"\n") 
 					   (ip^"\n"))
 				     )
 				  )

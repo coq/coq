@@ -112,6 +112,7 @@ let interp s =
 	  | VernacDefinition _  | VernacStartTheoremProof _ 
 	  | VernacBeginSection _ | VernacGoal _
 	  | VernacDefineModule _ | VernacDeclareModuleType _
+	  | VernacDeclareTacticDefinition _
 		when is_in_proof_mode () -> 
 		  user_error_loc loc (str "CoqIDE do not support nested goals")
 	  | VernacDebug _ ->
@@ -277,7 +278,7 @@ let kwd = [(* "Compile";"Inductive";"Qed";"Type";"end";"Axiom";
   "Add"; "AddPath"; "Axiom"; "Chapter"; "CoFixpoint";
   "CoInductive"; "Defined"; "Definition"; 
   "End"; "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Hint";
-  "Hints"; "Hypothesis"; "Immediate"; "Implicits"; "Import"; "Inductive"; 
+  "Hypothesis"; "Immediate"; "Implicits"; "Import"; "Inductive"; 
   "Infix"; "Lemma"; "Load"; "Local"; 
   "Match"; "Module"; "Module Type";
   "Mutual"; "Parameter"; "Print"; "Proof"; "Qed";
@@ -336,73 +337,73 @@ let reset_to_mod id =
 
 
 let hyp_menu (env, sigma, ((coqident,ident),_,ast),(s,pr_ast)) =
-  [("Clear "^ident),("Clear "^ident^".");
+  [("clear "^ident),("clear "^ident^".");
    
-   ("Apply "^ident),
-   ("Apply "^ident^".");
+   ("apply "^ident),
+   ("apply "^ident^".");
    
-   ("Exact "^ident),
-   ("Exact "^ident^".");
+   ("exact "^ident),
+   ("exact "^ident^".");
 
-   ("Generalize "^ident),
-   ("Generalize "^ident^".");
+   ("generalize "^ident),
+   ("generalize "^ident^".");
    
-   ("Absurd <"^ident^">"),
-   ("Absurd "^
+   ("absurd <"^ident^">"),
+   ("absurd "^
     pr_ast
     ^".") ] @
 
    (if is_equation ast then
-      [ "Discriminate "^ident, "Discriminate "^ident^".";
-	"Injection "^ident, "Injection "^ident^"." ]
+      [ "discriminate "^ident, "discriminate "^ident^".";
+	"injection "^ident, "injection "^ident^"." ]
     else
       []) @
    
    (let _,t = splay_prod env sigma ast in
     if is_equation t then 
-      [ "Rewrite "^ident, "Rewrite "^ident^".";
-	"Rewrite <- "^ident, "Rewrite <- "^ident^"." ]
+      [ "rewrite "^ident, "rewrite "^ident^".";
+	"rewrite <- "^ident, "rewrite <- "^ident^"." ]
     else
       []) @
    
-  [("Elim "^ident),
-   ("Elim "^ident^".");
+  [("elim "^ident),
+   ("elim "^ident^".");
    
-   ("Inversion "^ident),
-   ("Inversion "^ident^".");
+   ("inversion "^ident),
+   ("inversion "^ident^".");
    
-   ("Inversion_clear "^ident),
-   ("Inversion_clear "^ident^".")] 
+   ("inversion clear "^ident),
+   ("inversion_clear "^ident^".")] 
 
 let concl_menu (_,_,concl,_) = 
   let is_eq = is_equation concl in
-  ["Intro", "Intro.";
-   "Intros", "Intros.";
-   "Intuition","Intuition." ] @
+  ["intro", "intro.";
+   "intros", "intros.";
+   "intuition","intuition." ] @
    
    (if is_eq then 
-      ["Reflexivity", "Reflexivity.";
-       "Discriminate", "Discriminate.";
-       "Symmetry", "Symmetry." ]
+      ["reflexivity", "reflexivity.";
+       "discriminate", "discriminate.";
+       "symmetry", "symmetry." ]
     else 
       []) @
 
-  ["Assumption" ,"Assumption.";
-   "Omega", "Omega.";
-   "Ring", "Ring.";
-   "Auto with *", "Auto with *.";
-   "EAuto with *", "EAuto with *.";
-   "Tauto", "Tauto.";
-   "Trivial", "Trivial.";
-   "Decide Equality", "Decide Equality.";
+  ["assumption" ,"assumption.";
+   "omega", "omega.";
+   "ring", "ring.";
+   "auto with *", "auto with *.";
+   "eauto with *", "eauto with *.";
+   "tauto", "tauto.";
+   "trivial", "trivial.";
+   "decide equality", "decide equality.";
 
-   "Simpl", "Simpl.";
-   "Subst", "Subst.";
+   "simpl", "simpl.";
+   "subst", "subst.";
 
-   "Red", "Red.";
-   "Split", "Split.";
-   "Left", "Left.";
-   "Right", "Right.";
+   "red", "red.";
+   "split", "split.";
+   "left", "left.";
+   "right", "right.";
   ]
 
 
