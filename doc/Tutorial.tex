@@ -1496,18 +1496,34 @@ constructions, you should request:
 Require Arith.
 \end{coq_example*}
 
-Such a command looks for a (compiled) module file \verb:Arith.vo:
-on the current \verb:LoadPath:. This loadpath may be changed
-with the commands \verb:AddPath: and \verb:DelPath:.
+Such a command looks for a (compiled) module file \verb:Arith.vo: in
+the libraries registered by \Coq. Libraries inherit the structure of
+the file system of the operating system and are registered with the
+command \verb:Add LoadPath:. Physical directories are mapped to
+logical directories. Especially the standard library of \Coq~ is
+pre-registered as a library of name \verb=Coq=.  Modules have absolute
+unique names denoting their place in \Coq~ libraries.  An absolute
+name is a sequence of single identifiers separated by dots.  E.g. the
+module \verb=Arith= has full name \verb=Coq.Arith.Arith= and because
+it resides in eponym subdirectory \verb=Arith= of the standard
+library, it can be as well required by the command
 
-The loading of such a compiled file is quick, because the corresponding
-development is not typechecked again. This is a great saving compared
-to previous versions of our proof assistant.
+\begin{coq_example*}
+Require Coq.Arith.Arith.
+\end{coq_example*}
 
-If you want to recursively import modules which are required for module
-M, you should use \verb:Require Export M:. 
+This may be useful to avoid ambiguities if somewhere, in another branch
+of the libraries known by Coq, another module is also called
+\verb=Arith=. Notice that by default, when a library is registered,
+all its contents, and all the contents of its subdirectories recursively are
+visible and accessible by a short (relative) name as \verb=Arith=.
+Notice also that modules or definitions not explicitely registered in
+a library are put in a default library called \verb=Scratch=.
 
-{\bf Warning} \Coq~ does not yet provides parametric modules.
+The loading of a compiled file is quick, because the corresponding
+development is not typechecked again. 
+
+{\bf Warning}: \Coq~ does not yet provides parametric modules.
 
 \section{Creating your own modules}
 
@@ -1519,6 +1535,12 @@ using the command \verb:Compile Module my_module: directly at the
 \verb:coqc:. Compiling the module \verb:my_module.v: creates a 
 file \verb:my_module.vo: that can be reloaded with command
 \verb:Require my_module:. 
+
+If a required module depends on other modules then the latters are
+automatically required beforehand. However their contents is not
+automatically visible.  If you want a module \verb=M= required in a
+module \verb=N= to be automatically visible when \verb=N= is required,
+you should use \verb:Require Export M: in your module \verb:N:.
 
 %CP- Non compatible avec la version distribuee.
 %Compiling a module creates actually 2 files in the current version:
