@@ -594,7 +594,7 @@ GEXTEND Gram
       | IDENT "Hint"; qid = global -> PrintHint qid
       | IDENT "Hint"; "*" -> PrintHintDb
       | IDENT "HintDb"; s = IDENT -> PrintHintDbName s
-      | IDENT "Rewrite"; IDENT "HintDb"; s = IDENT -> PrintRewriteHintDbName s
+      | "Rewrite"; IDENT "HintDb"; s = IDENT -> PrintRewriteHintDbName s
       | IDENT "Setoids" -> PrintSetoids
       | IDENT "Scopes" -> PrintScopes
       | IDENT "Scope"; s = IDENT -> PrintScope s
@@ -723,7 +723,10 @@ GEXTEND Gram
       | IDENT "right"; IDENT "associativity" -> SetAssoc Gramext.RightA
       | IDENT "no"; IDENT "associativity" -> SetAssoc Gramext.NonA
       | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ)
-      | IDENT "only"; IDENT "parsing" -> SetOnlyParsing
+      | IDENT "only"; x = [ 
+          IDENT "parsing" -> SetOnlyParsing
+        | IDENT "printing" -> SetOnlyPrinting
+        ] -> x
       | IDENT "format"; s = [s = STRING -> (loc,s)] -> SetFormat s ] ]
   ;
   syntax_extension_type:
