@@ -25,7 +25,7 @@
 Set Implicit Arguments.
 
   (** Bijection between [eq] and [eqT] *)
-  Definition eq2eqT (A:Set) (x y:A) (eqxy:x = y) : 
+  Definition eq2eqT (A:Set) (x y:A) (eqxy:x = y) :
     x = y :=
     match eqxy in (_ = y) return x = y with
     | refl_equal => refl_equal x
@@ -146,8 +146,7 @@ End DecidableEqDep.
      (forall x y:A, {x = y} + {x <> y}) ->
      forall (x:A) (P:x = x -> Prop), P (refl_equal x) -> forall p:x = x, P p.
 intros.
-rewrite eq_eqT_bij.
-elim (eq2eqT p) using K_dec.
+elim p using K_dec.
 intros.
 case (H x0 y); intros.
 elim e; left; reflexivity.
