@@ -9,7 +9,8 @@
 (*i $Id$ i*)
   
 {
- 
+
+  open Filename 
   open Lexing
    
   type mL_token = Use_module of string
@@ -20,6 +21,7 @@
     | Require of spec * string
     | RequireString of spec * string
     | Declare of string list
+    | Load of string
 
   let mlAccu  = ref ([] : (string * string * string option) list) 
   and mliAccu = ref ([] : (string * string * string option) list) 
@@ -70,12 +72,16 @@ rule coq_action = parse
       { specif := false; opened_file lexbuf}
   | "Declare" space+ "ML" space+ "Module" space+
       { mllist := []; modules lexbuf}
+  | "Load" space+
+      { load_file lexbuf }
   | "\""
       { string lexbuf; coq_action lexbuf}
   | "(*"
       { comment_depth := 1; comment lexbuf; coq_action lexbuf }  
-  | eof { raise Fin_fichier} 
-  | _   { coq_action lexbuf }
+  | eof 
+      { raise Fin_fichier} 
+  | _   
+      { coq_action lexbuf }
 
 and caml_action = parse
   | [' ' '\010' '\013' '\009' '\012'] +
@@ -156,6 +162,24 @@ and string = parse
       { raise Fin_fichier }
   | _
       { string lexbuf }
+
+and load_file = parse
+  | '"' [^ '"']* '"'
+      { let s = lexeme lexbuf in
+	let f = String.sub s 1 (String.length s - 2) in
+	skip_to_dot lexbuf;
+	Load (if check_suffix f ".v" then chop_suffix f ".v" else f) }
+  | coq_ident
+      { let s = lexeme lexbuf in skip_to_dot lexbuf; Load s }
+  | eof	
+      { raise Fin_fichier }
+  | _
+      { load_file lexbuf }
+
+and skip_to_dot = parse
+  | '.' { () }
+  | eof { () }
+  | _   { skip_to_dot lexbuf }
 
 and opened_file = parse
   | "(*"  	{ comment_depth := 1; comment lexbuf; opened_file lexbuf }

@@ -146,6 +146,15 @@ let traite_fichier_Coq f =
               	     with Not_found -> () 
 		   end)
 		sl
+	  | Load str -> 
+	      let str = Filename.basename str in
+	      if not (List.mem str !deja_vu_v) then begin
+	        deja_vu_v := str :: !deja_vu_v;
+                try
+                  let vdir = List.assoc str !vKnown in
+                  printf " %s.v" (file_name (str,vdir))
+                with Not_found -> ()
+       	      end
       done
     with Fin_fichier -> ();
       close_in chan
