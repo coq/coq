@@ -83,13 +83,6 @@ let pr_gen env t =
 let pr_raw_tactic tac =
   pr_raw_tactic_env [] (Global.env()) tac
 
-let pr_raw_tactic_goal n tac =
-  let (_,env) = Pfedit.get_goal_context n in
-  pr_raw_tactic_env [] env tac
-let pr_lconstr_goal n c =
-  let (_,env) = Pfedit.get_goal_context n in
-  Ppconstrnew.pr_lconstr_env env c
-
 let rec extract_signature = function
   | [] -> []
   | Egrammar.TacNonTerm (_,(_,t),_) :: l -> t :: extract_signature l
