@@ -108,8 +108,8 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo \
          toplevel/usage.cmo toplevel/coqinit.cmo toplevel/coqtop.cmo
 
-HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
-            tactics/tauto.cmo 
+HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo # tactics/equality.cmo \
+#            tactics/tauto.cmo 
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -198,15 +198,15 @@ INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/Logic_TypeSyntax.vo
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq
-	$(COQC) -bindir $(COQTOP) -q -I theories/Init -is states/barestate.coq $<
+	$(COQC) -q -I theories/Init -is states/barestate.coq $<
 
 TACTICSVO=tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo
 
 tactics/%.vo: tactics/%.v states/barestate.coq
-	$(COQC) -bindir $(COQTOP) -q -I tactics -is states/barestate.coq $<
+	$(COQC) -q -I tactics -is states/barestate.coq $<
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO)
-	./coqtop.byte -q -batch -silent -is states/barestate.coq -I tactics -I theories/Init -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+	./coqtop.byte -q -batch -silent -is states/barestate.coq -I tactics -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 clean::
 	rm -f states/barestate.coq states/initial.coq
@@ -447,7 +447,7 @@ toplevel/mltop.cmx: toplevel/mltop.ml4
 	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
 
 .v.vo:
-	$(COQC) -bindir $(COQTOP) -I states $(COQINCLUDES) -q $<
+	$(COQC) $(COQINCLUDES) -q $<
 
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile
