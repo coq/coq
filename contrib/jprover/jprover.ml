@@ -135,6 +135,11 @@ let new_ecounter =
   let ectr = ref 0 in
     fun () -> incr ectr;!ectr
 
+(* provide new variables for address naming *)
+let new_acounter =
+  let actr = ref 0 in
+    fun () -> incr actr;!actr
+
 let is_coq_forall ct =
   match TR.kind_of_term (RO.whd_betaiota ct) with
     | TR.Prod (_,_,b) -> Termops.dependent (TR.mkRel 1) b
@@ -240,6 +245,7 @@ let rec parsing2 c =        (* for function symbols, variables, constants *)
 (* the main parsing function *)
 let rec parsing c =
     let ct = Reduction.whd_betadeltaiota (Global.env ()) c in
+(*    let ct = Reduction.whd_betaiotazeta (Global.env ()) c in *)
     if is_coq_true ct then
        JT.true_
     else if is_coq_false ct then
@@ -300,14 +306,27 @@ let rec constr_of_jterm t =
    applied rule.
 *)
 
+let assoc_addr = Hashtbl.create 97
+
+let short_addr s =
+  let ad =
+    try
+       Hashtbl.find assoc_addr s
+    with Not_found ->
+       let t = ("jp_H"^(string_of_int (new_acounter()))) in
+          Hashtbl.add assoc_addr s t;
+          t
+  in
+    N.id_of_string ad
+
 (* and-right *)
 let dyn_andr =
   T.split []
 
 (* For example, the following implements the [and-left] rule: *)
 let dyn_andl id =   (* [id1]: left child; [id2]: right child *)
-  let id1 = (N.id_of_string (id^"_1")) and id2 = (N.id_of_string (id^"_2")) in
-    (TCL.tclTHEN (T.simplest_elim (TR.mkVar (N.id_of_string id))) (T.intros_using [id1;id2]))
+  let id1 = (short_addr (id^"_1")) and id2 = (short_addr (id^"_2")) in
+    (TCL.tclTHEN (T.simplest_elim (TR.mkVar (short_addr id))) (T.intros_using [id1;id2]))
 
 let dyn_orr1 =
   T.left []
@@ -316,27 +335,28 @@ let dyn_orr2 =
   T.right []
 
 let dyn_orl id =
-  let id1 = (N.id_of_string (id^"_1")) and id2 = (N.id_of_string (id^"_2")) in
-    (TCL.tclTHENS (T.simplest_elim (TR.mkVar (N.id_of_string id)))
+  let id1 = (short_addr (id^"_1")) and id2 = (short_addr (id^"_2")) in
+    (TCL.tclTHENS (T.simplest_elim (TR.mkVar (short_addr id)))
                   [T.intro_using id1; T.intro_using id2])
 
 let dyn_negr id =
   let id1 = id^"_1_1" in
-     TE.v_intro [PT.Identifier (N.id_of_string id1)]
+     TE.v_intro [PT.Identifier (short_addr id1)]
 
 let dyn_negl id =
-  T.simplest_elim (TR.mkVar (N.id_of_string id))
+  T.simplest_elim (TR.mkVar (short_addr id))
 
 let dyn_impr id =
   let id1 = id^"_1_1" in
-     TE.v_intro [PT.Identifier (N.id_of_string id1)]
+     TE.v_intro [PT.Identifier (short_addr id1)]
 
 let dyn_impl id gl =
-  let t = TM.pf_get_hyp_typ gl (N.id_of_string id) in
-    let (_,b) = dest_coq_impl t in
-      let id2 = (N.id_of_string (id^"_1_2")) in
+  let t = TM.pf_get_hyp_typ gl (short_addr id) in
+    let ct = Reduction.whd_betadeltaiota (Global.env ()) t in   (* unfolding *)
+    let (_,b) = dest_coq_impl ct in
+      let id2 = (short_addr (id^"_1_2")) in
          (TCL.tclTHENL (TCL.tclTHENS (T.cut b) [T.intro_using id2;TCL.tclIDTAC])
-         (T.apply_term (TR.mkVar (N.id_of_string id))
+         (T.apply_term (TR.mkVar (short_addr id))
                        [TR.mkMeta (Clenv.new_meta())])) gl
 
 let dyn_allr c =       (* [c] must be an eigenvariable which replaces [v] *)
@@ -344,15 +364,16 @@ let dyn_allr c =       (* [c] must be an eigenvariable which replaces [v] *)
 
 (* [id2] is the path of the instantiated term for [id]*)
 let dyn_alll id id2 t gl =
-  let id' = N.id_of_string id in
-  let id2' = N.id_of_string id2 in
+  let id' = short_addr id in
+  let id2' = short_addr id2 in
   let ct = TM.pf_get_hyp_typ gl id' in
-    let ta = sAPP ct t in
+    let ct' = Reduction.whd_betadeltaiota (Global.env ()) ct in   (* unfolding *)
+    let ta = sAPP ct' t in
        TCL.tclTHENS (T.cut ta) [T.intro_using id2'; T.apply (TR.mkVar id')] gl
 
 let dyn_exl id id2 c = (* [c] must be an eigenvariable *)
-  (TCL.tclTHEN (T.simplest_elim (TR.mkVar (N.id_of_string id)))
-               (T.intros_using [(N.id_of_string c);(N.id_of_string id2)]))
+  (TCL.tclTHEN (T.simplest_elim (TR.mkVar (short_addr id)))
+               (T.intros_using [(N.id_of_string c);(short_addr id2)]))
 
 let dyn_exr t =
   T.one_constructor 1 [(PT.Com,t)]
@@ -459,15 +480,16 @@ let rec build_jptree inf =
 let jp limits gls =
    let concl = TM.pf_concl gls in
    let ct = concl in
-(*i     print_constr ct; i*) 
+(*i     print_constr ct; i*)
      Hashtbl.clear jtbl;    (* empty the hash tables *)
      Hashtbl.clear rtbl;
+     Hashtbl.clear assoc_addr;
      let t = parsing ct in
-(*i     JT.print_term stdout t;*) 
+(*i     JT.print_term stdout t; i*)
         try
         let p = (J.prover limits [] t) in
 (*i            print_string "\n";
-            JLogic.print_inf p;  i*)   
+            JLogic.print_inf p; i*)
             let (il,tr) = build_jptree p in
                if (il = []) then
                begin
@@ -480,11 +502,18 @@ let jp limits gls =
                   UT.error "JProver terminated."
 
 (* an unfailed generalization procedure *)
+let non_dep_gen b gls =
+  let concl = TM.pf_concl gls in
+      if (not (Termops.dependent b concl)) then
+         T.generalize [b] gls
+      else
+         TCL.tclIDTAC gls
+
 let rec unfail_gen = function
   | [] -> TCL.tclIDTAC
   | h::r ->
      TCL.tclTHEN
-        (TCL.tclORELSE (T.generalize [h]) (TCL.tclIDTAC))
+        (TCL.tclORELSE (non_dep_gen h) (TCL.tclIDTAC))
         (unfail_gen r)
 
 (* no argument, which stands for no multiplicity limit *)
