@@ -330,14 +330,14 @@ type compiled_env = {
 
 let exported_objects env =
   let gl = env.env_globals in
-  let separate (cst,ind,abs) = function
-    | (Constant,sp) -> (sp,Spmap.find sp gl.env_constants)::cst,ind,abs
-    | (Inductive,sp) -> cst,(sp,Spmap.find sp gl.env_inductives)::ind,abs
+  let separate (cst,ind) = function
+    | (Constant,sp) -> (sp,Spmap.find sp gl.env_constants)::cst,ind
+    | (Inductive,sp) -> cst,(sp,Spmap.find sp gl.env_inductives)::ind
   in
-  List.fold_left separate ([],[],[]) gl.env_locals
+  List.fold_left separate ([],[]) gl.env_locals
 
 let export env id = 
-  let (cst,ind,abs) = exported_objects env in
+  let (cst,ind) = exported_objects env in
   { cenv_id = id;
     cenv_stamp = 0;
     cenv_needed = env.env_globals.env_imports;
