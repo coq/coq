@@ -1530,18 +1530,13 @@ Lemma prod_neq_R0 : (x,y:R) ~``x==0``->~``y==0``->~``x*y==0``.
 Intros; Red; Intro; Generalize (without_div_Od x y H1); Intro; Elim H2; Intro; [Rewrite H3 in H; Elim H | Rewrite H3 in H0; Elim H0]; Reflexivity.
 Save.
 
-(**********)
-Lemma regle_signe : (x,y:R) ``0<x`` -> ``0<y`` -> ``0<x*y``.
-Intros; Rewrite <- (Rmult_Ol x); Rewrite <- (Rmult_sym x); Apply (Rlt_monotony x R0 y H H0).
-Save.
-
 (*********)
-Lemma regle_signe_le : (x,y:R) ``0<=x`` -> ``0<=y`` -> ``0<=x*y``.
+Lemma Rmult_le_pos : (x,y:R) ``0<=x`` -> ``0<=y`` -> ``0<=x*y``.
 Intros; Rewrite <- (Rmult_Ol x); Rewrite <- (Rmult_sym x); Apply (Rle_monotony x R0 y H H0).
 Save.
 
 (**********************************************************)
-(* Quelques règles concernant < et <=                     *)
+(* Other rules about < and <=                             *)
 (**********************************************************)
 
 Lemma gt0_plus_gt0_is_gt0 : (x,y:R) ``0<x`` -> ``0<y`` -> ``0<x+y``.
@@ -1560,20 +1555,8 @@ Lemma ge0_plus_ge0_is_ge0 : (x,y:R) ``0<=x`` -> ``0<=y`` -> ``0<=x+y``.
 Intros; Apply Rle_trans with x; [Assumption | Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Assumption].
 Save.
 
-Lemma ge0_plus_ge0_eq_0 : (x,y:R) ``0<=x`` -> ``0<=y`` -> ``x+y==0`` -> ``x==0``/\``y==0``.
-Intros; Split; [Elim H; Intro; [Generalize (gt0_plus_ge0_is_gt0 x y H2 H0); Intro; Rewrite H1 in H3; Elim (Rlt_antirefl ``0`` H3) | Symmetry; Assumption] | Elim H0; Intro; [Generalize (ge0_plus_gt0_is_gt0 x y H H2); Intro; Rewrite H1 in H3; Elim (Rlt_antirefl R0 H3) | Symmetry; Assumption]].
-Save.
-
-Lemma Rmult_le : (r1,r2,r3,r4:R) ``0<=r1`` -> ``0<=r3`` -> ``r1<=r2`` -> ``r3<=r4`` -> ``r1*r3<=r2*r4``.
-Intros; Apply Rle_trans with ``r2*r3``; [Apply Rle_monotony_r; Assumption | Apply Rle_monotony; [ Apply Rle_trans with r1; Assumption | Assumption]].
-Save.
-
 Lemma plus_le_is_le : (x,y,z:R) ``0<=y`` -> ``x+y<=z`` -> ``x<=z``.
 Intros; Apply Rle_trans with ``x+y``; [Pattern 1 x; Rewrite <- (Rplus_Or x); Apply Rle_compatibility; Assumption | Assumption].
-Save.
-
-Lemma le_plus_lt_is_lt : (x,y,z,t:R) ``x<=y`` -> ``z<t`` -> ``x+z<y+t``. 
-Intros; Apply Rle_lt_trans with ``y+z``; [Apply Rle_compatibility_r; Assumption | Apply Rlt_compatibility; Assumption].
 Save.
 
 Lemma plus_lt_is_lt : (x,y,z:R) ``0<=y`` -> ``x+y<z`` -> ``x<z``.
