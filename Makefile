@@ -706,7 +706,7 @@ PCOQMANPAGES=man/coq-interface.1 man/parser.1
 
 install-pcoq-manpages:
 	$(MKDIR) $(FULLMANDIR)/man1
-	cp $(COQMANPAGES) $(FULLMANDIR)/man1
+	cp $(PCOQMANPAGES) $(FULLMANDIR)/man1
 
 ###########################################################################
 # tests
