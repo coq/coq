@@ -1128,10 +1128,10 @@ let induct_discharge statuslists destopt avoid' (avoid,ra) names gl =
         check_unused_names names;
         tclIDTAC gl
   in
-  let intros_move lstatus gl =
+  let intros_move lstatus =
     let newlstatus = (* if some IH has taken place at the top of hyps *)
       List.map (function (hyp,None) -> (hyp,!tophyp) | x -> x) lstatus in
-    intros_move newlstatus gl
+    intros_move newlstatus
   in 
   tclTHENLIST [ peel_tac ra names;
 		intros_rmove rstatus;
