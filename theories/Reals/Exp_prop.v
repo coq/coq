@@ -805,7 +805,7 @@ Apply pow_maj_Rabs.
 Rewrite Rabsolu_Rabsolu; Left; Apply H1.
 Apply Rle_sym1; Left; Apply Rlt_Rinv; Apply H2.
 Apply INR_fact_lt_0.
-Cut ``r<>0``.
+Cut (r::R)<>``0``.
 Intro; Apply Alembert_C2.
 Intro; Apply Rabsolu_no_R0.
 Unfold Rdiv; Apply prod_neq_R0.

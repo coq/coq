@@ -23,13 +23,18 @@ with rnumber :=
 
 with rformula : constr :=
   form_expr [ rexpr($p) ] -> [ $p ]
-| form_eq [ rexpr($p) "==" rexpr($c) ] -> [ (eqT R $p $c) ]
+(* | form_eq [ rexpr($p) "==" rexpr($c) ] -> [ (eqT R $p $c) ] *)
+| form_eq [ rexpr($p) "==" rexpr($c) ] -> [ (eqT ? $p $c) ]
 | form_le [ rexpr($p) "<=" rexpr($c) ] -> [ (Rle $p $c) ]
 | form_lt [ rexpr($p) "<" rexpr($c) ] -> [ (Rlt $p $c) ]
 | form_ge [ rexpr($p) ">=" rexpr($c) ] -> [ (Rge $p $c) ]
 | form_gt [ rexpr($p) ">" rexpr($c) ] -> [ (Rgt $p $c) ]
+(*
 | form_eq_eq [ rexpr($p) "==" rexpr($c) "==" rexpr($c1) ]
               -> [ (eqT R $p $c)/\(eqT R $c $c1) ]
+*)
+| form_eq_eq [ rexpr($p) "==" rexpr($c) "==" rexpr($c1) ]
+              -> [ (eqT ? $p $c)/\(eqT ? $c $c1) ]
 | form_le_le [ rexpr($p) "<=" rexpr($c) "<=" rexpr($c1) ]
               -> [ (Rle $p $c)/\(Rle $c $c1) ]
 | form_le_lt [ rexpr($p) "<=" rexpr($c) "<" rexpr($c1) ]
@@ -38,7 +43,7 @@ with rformula : constr :=
               -> [ (Rlt $p $c)/\(Rle $c $c1) ]
 | form_lt_lt [ rexpr($p) "<" rexpr($c) "<" rexpr($c1) ]
               -> [ (Rlt $p $c)/\(Rlt $c $c1) ]
-| form_neq  [ rexpr($p) "<>" rexpr($c) ] -> [ ~(eqT R $p $c) ]
+| form_neq  [ rexpr($p) "<>" rexpr($c) ] -> [ ~(eqT ? $p $c) ]
 
 with rexpr : constr :=
   expr_plus [ rexpr($p) "+" rexpr($c) ] -> [ (Rplus $p $c) ]
