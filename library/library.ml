@@ -339,10 +339,13 @@ let with_magic_number_check f a =
     spc () ++ str"It is corrupted" ++ spc () ++
     str"or was compiled with another version of Coq.")
 
+let lighten_library m = 
+  if !Options.dont_load_proofs then lighten_library m else m
+
 let mk_library md f digest = {
   library_name = md.md_name;
   library_filename = f;
-  library_compiled = md.md_compiled;
+  library_compiled = lighten_library md.md_compiled;
   library_objects = md.md_objects;
   library_deps = md.md_deps;
   library_imports = md.md_imports;
@@ -371,13 +374,16 @@ let rec intern_library (dir, f) =
 	(str ("The file " ^ f ^ " contains library") ++ spc () ++
 	 pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
          spc() ++ pr_dirpath dir);
-    compunit_cache := CompilingLibraryMap.add dir m !compunit_cache;
-    try
-      List.iter (intern_mandatory_library dir) m.library_deps;
-      m
-    with e ->
-      compunit_cache := CompilingLibraryMap.remove dir !compunit_cache; 
-      raise e
+    intern_and_cache_library dir m
+
+and intern_and_cache_library dir m =
+  compunit_cache := CompilingLibraryMap.add dir m !compunit_cache;
+  try
+    List.iter (intern_mandatory_library dir) m.library_deps;
+    m
+  with e ->
+    compunit_cache := CompilingLibraryMap.remove dir !compunit_cache; 
+    raise e
 
 and intern_mandatory_library caller (dir,d) =
   let m = intern_absolute_library_from dir in
@@ -422,8 +428,7 @@ let rec_intern_by_filename_only id f =
        m'.library_filename);
     m.library_name
   with Not_found ->
-    compunit_cache := CompilingLibraryMap.add m.library_name m !compunit_cache;
-    List.iter (intern_mandatory_library m.library_name) m.library_deps;
+    let m = intern_and_cache_library m.library_name m in
     m.library_name
 
 let locate_qualified_library qid =

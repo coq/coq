@@ -102,6 +102,9 @@ val export : safe_environment -> dir_path
 val import : compiled_library -> Digest.t -> safe_environment 
       -> module_path * safe_environment
 
+(* Remove the body of opaque constants *)
+
+val lighten_library : compiled_library -> compiled_library
 
 (*s Typing judgments *)
 

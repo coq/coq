@@ -481,7 +481,6 @@ let check_imports senv needed =
   in
   List.iter check needed
 
-
 (* we have an inefficiency: Since loaded files are added to the
 environment every time a module is closed, their components are
 calculated many times. Thic could be avoided in several ways:
@@ -504,6 +503,52 @@ let import (dp,mb,depends) digest senv =
 	  imports = (dp,digest)::senv.imports;
 	  loads = (mp,mb)::senv.loads }
 
+
+(** Remove the body of opaque constants in modules *)
+ 
+let rec lighten_module mb =
+  { mb with
+    mod_expr = option_app lighten_modexpr mb.mod_expr;
+    mod_type = lighten_modtype mb.mod_type;
+    mod_user_type = option_app lighten_modtype mb.mod_user_type }
+
+and lighten_modtype = function
+  | MTBident kn as x -> x
+  | MTBfunsig (mbid,mtb1,mtb2) ->
+      MTBfunsig (mbid, lighten_modtype mtb1, lighten_modtype mtb2)
+  | MTBsig (msid,sign) -> MTBsig (msid, lighten_sig sign)
+
+and lighten_modspec ms =
+  { ms with msb_modtype = lighten_modtype ms.msb_modtype }
+
+and lighten_sig sign = 
+  let lighten_spec (l,spec) = (l,match spec with
+    | SPBconst ({const_opaque=true} as x) -> SPBconst {x with const_body=None}
+    | (SPBconst _ | SPBmind _) as x -> x
+    | SPBmodule m -> SPBmodule (lighten_modspec m)
+    | SPBmodtype m -> SPBmodtype (lighten_modtype m))
+  in
+    List.map lighten_spec sign
+
+and lighten_struct struc = 
+  let lighten_body (l,body) = (l,match body with
+    | SEBconst ({const_opaque=true} as x) -> SEBconst {x with const_body=None}
+    | (SEBconst _ | SEBmind _) as x -> x
+    | SEBmodule m -> SEBmodule (lighten_module m)
+    | SEBmodtype m -> SEBmodtype (lighten_modtype m))
+  in
+    List.map lighten_body struc
+
+and lighten_modexpr = function
+  | MEBfunctor (mbid,mty,mexpr) ->
+      MEBfunctor (mbid,lighten_modtype mty,lighten_modexpr mexpr)
+  | MEBident mp as x -> x
+  | MEBstruct (msid, struc) ->
+      MEBstruct (msid, lighten_struct struc)
+  | MEBapply (mexpr,marg,u) ->
+      MEBapply (lighten_modexpr mexpr,lighten_modexpr marg,u)
+
+let lighten_library (dp,mb,depends) = (dp,lighten_module mb,depends)
 
 
 type judgment = unsafe_judgment
