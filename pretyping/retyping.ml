@@ -84,7 +84,7 @@ let typeur sigma metamap =
         strip_outer_cast
           (subst_type env sigma (type_of env f) (Array.to_list args))
     | Cast (c,t) -> t
-    | Sort _ | Prod (_,_,_) | Ind _ -> mkSort (sort_of env cstr)
+    | Sort _ | Prod _ -> mkSort (sort_of env cstr)
 
   and sort_of env t = 
     match kind_of_term t with
