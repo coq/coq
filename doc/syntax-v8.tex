@@ -1013,6 +1013,7 @@ $$
 \nlsep \TERM{HintDb}~\NT{ident}
 \nlsep \TERM{Scopes}
 \nlsep \TERM{Scope}~\NT{ident}
+\nlsep \TERM{Visibility}~\OPT{\NT{ident}}
 \SEPDEF
 \DEFNT{class-rawexpr}
        \TERM{Funclass}~\mid~\TERM{Sortclass}~\mid~\NT{reference}
@@ -1189,6 +1190,7 @@ $$
 \begin{rules}
 \DEFNT{syntax}
        \TERM{Open}~\TERM{Scope}~\NT{ident}
+\nlsep \TERM{Close}~\TERM{Scope}~\NT{ident}
 \nlsep \TERM{Delimit}~\TERM{Scope}~\NT{ident}~\KWD{with}~\NT{ident}
 \nlsep \TERM{Bind}~\TERM{Scope}~\NT{ident}~\KWD{with}~\PLUS{\NT{class-rawexpr}}
 \nlsep \TERM{Arguments}~\TERM{Scope}~\NT{reference}
