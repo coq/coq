@@ -92,7 +92,7 @@ let is_flexible_reference env bound depth f =
   match kind_of_term f with
     | Rel n when n >= bound+depth -> (* inductive type *) false
     | Rel n when n >= depth -> (* previous argument *) true
-    | Rel n -> (* internal variable [TODO: deal local definitions] *) false
+    | Rel n -> (* since local definitions have been expanded *) false
     | Const kn ->
         let cb = Environ.lookup_constant kn env in
         cb.const_body <> None & not cb.const_opaque
@@ -110,6 +110,8 @@ let add_free_rels_until bound env m pos acc =
         iter_constr_with_binders succ (frec false) depth c
     | Case _ ->
         iter_constr_with_binders succ (frec false) depth c
+    | LetIn (_,b,_,c) ->
+        frec rig depth (subst1 b c)
     | _ ->
         iter_constr_with_binders succ (frec rig) depth c
   in 
@@ -470,4 +472,3 @@ let _ =
 let rollback f x =
   let fs = freeze () in
   try f x with e -> begin unfreeze fs; raise e end
-
