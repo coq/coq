@@ -642,8 +642,10 @@ let check_typed_pat_meta env = function
 *)
 
 let rec occur_var_ast s = function
-  | Node(loc,op,args) -> List.exists (occur_var_ast s) args
+  | Node(_,"QUALID",_::_::_) -> false
+  | Node(_,"QUALID",[Nvar(_,s2)]) -> s = s2
   | Nvar(_,s2) -> s = s2
+  | Node(loc,op,args) -> List.exists (occur_var_ast s) args
   | Smetalam _ | Nmeta _ -> anomaly "occur_var: metas should not occur here"
   | Slam(_,sopt,body) -> (Some s <> sopt) & occur_var_ast s body
   | Id _ | Str _ | Num _ | Path _ -> false
