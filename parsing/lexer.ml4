@@ -470,26 +470,30 @@ let rec next_token = parser bp
 
 let locerr () = invalid_arg "Lexer: location function"
 
-let loct_create () = ref (Array.create 1024 None)
+let tsz = 256   (* up to 2^29 entries on a 32-bit machine, 2^61 on 64-bit *)
+
+let loct_create () = ref [| [| |] |]
 
 let loct_func loct i =
   match
-    if i < 0 || i >= Array.length !loct then None
-    else Array.unsafe_get !loct i
+    if i < 0 || i/tsz >= Array.length !loct then None
+    else if !loct.(i/tsz) = [| |] then None
+    else !loct.(i/tsz).(i mod tsz)
   with
     | Some loc -> loc
     | _ -> locerr ()
 
 let loct_add loct i loc =
-  if i >= Array.length !loct then begin
+  while i/tsz >= Array.length !loct do
     let new_tmax = Array.length !loct * 2 in
-    let new_loct = Array.create new_tmax None in
+    let new_loct = Array.make new_tmax [| |] in
     Array.blit !loct 0 new_loct 0 (Array.length !loct);
-    loct := new_loct
-  end;
-  !loct.(i) <- Some loc
+    loct := new_loct;
+  done;
+  if !loct.(i/tsz) = [| |] then !loct.(i/tsz) <- Array.make tsz None;
+  !loct.(i/tsz).(i mod tsz) <- Some loc
 
-let current_location_table = ref (ref [||])
+let current_location_table = ref (ref [| [| |] |])
 
 let location_function n =
   loct_func !current_location_table n
@@ -505,7 +509,7 @@ let func cs =
   current_location_table := loct;
   (ts, loct_func loct)
 
-type location_table = (int * int) option array ref
+type location_table = (int * int) option array array ref
 let location_table () = !current_location_table
 let restore_location_table t = current_location_table := t
 
