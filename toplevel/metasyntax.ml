@@ -888,6 +888,13 @@ let rec rename x vars n = function
   | WhiteSpace _::l ->
       rename x vars n l
 
+let translate_distfix assoc df r = 
+  let (vars,l) = rename "x" [] 1 (split df) in
+  let df = String.concat " " l in
+  let a = mkAppC (mkRefC r, vars) in
+  let assoc = match assoc with None -> Gramext.LeftA | Some a -> a in
+  (assoc,df,a)
+
 let add_distfix local assoc n df r sc =
   (* "x" cannot clash since r is globalized (included section vars) *)
   let (vars,l) = rename "x" [] 1 (split df) in

@@ -294,7 +294,11 @@ GEXTEND Gram
            VernacInfix (local,ai,ni,op,p,b,v8,sc)
      | IDENT "Distfix"; local = locality; a = entry_prec; n = natural; 
 	   s = STRING; p = global; sc = OPT [ ":"; sc = IDENT -> sc ] ->
+             let (a,s,c) = Metasyntax.translate_distfix a s p in
+             VernacNotation (local,c,Some(s,[SetLevel n;SetAssoc a]),None,sc)
+(*
 	     VernacDistfix (local,a,n,s,p,sc)
+*)
      | IDENT "Notation"; local = locality; s = IDENT; ":="; c = constr;
 	   l = [ "("; IDENT "only"; IDENT "parsing"; ")" -> [SetOnlyParsing]
 	       | -> [] ] ->

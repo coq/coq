@@ -35,6 +35,9 @@ val add_infix : locality_flag ->
 val add_distfix : locality_flag ->
   grammar_associativity -> precedence -> string -> reference
     -> scope_name option -> unit
+val translate_distfix : grammar_associativity -> string -> reference ->
+  Gramext.g_assoc * string * constr_expr
+
 val add_delimiters : scope_name -> string -> unit
 
 val add_notation : locality_flag -> constr_expr
