@@ -348,7 +348,7 @@ let glob_quantified_hypothesis ist x =
 
 let glob_constr ist c =
   let _ =
-    Constrintern.interp_rawconstr_gen
+    Constrintern.interp_rawconstr_gen false
       Evd.empty (Global.env()) [] false (fst ist) c
   in c
 
