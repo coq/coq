@@ -177,7 +177,7 @@ let constant_to_ast_list kn =
       None -> 
 	make_variable_ast (id_of_label (label kn)) typ l
     | Some c1 ->
-	make_definition_ast (id_of_label (label kn)) (Lazy.force_val c1) typ l)
+	make_definition_ast (id_of_label (label kn)) (Declarations.force c1) typ l)
 
 let variable_to_ast_list sp =
   let ((id, c, v), _) = get_variable sp in

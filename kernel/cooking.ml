@@ -107,7 +107,7 @@ let expmod_constr modlist c =
         str"and then require that theorems which use them" ++ spc () ++
         str"be transparent");
     match cb.const_body with
-      | Some body -> Lazy.force_val body
+      | Some body -> Declarations.force body
       | None -> assert false
   in
   let c' = modify_opers expfun modlist c in
@@ -141,11 +141,12 @@ let abstract_constant ids_to_abs hyps (body,typ) =
   let body' = match body with
       None -> None
     | Some l_body -> 
-	Some (lazy (let body = Lazy.force_val l_body in
-		    let (_,body') = 
-		      List.fold_left abstract_once_body (hyps,body) ids_to_abs
-		    in
-		      body'))
+	Some (Declarations.from_val
+		(let body = Declarations.force l_body in
+		 let (_,body') = 
+		   List.fold_left abstract_once_body (hyps,body) ids_to_abs
+		 in
+		   body'))
   in
     (body',typ')
 
@@ -154,7 +155,9 @@ let cook_constant env r =
   let typ = expmod_type r.d_modlist cb.const_type in
   let body = 
     option_app 
-      (fun lconstr -> lazy (expmod_constr r.d_modlist (Lazy.force_val lconstr))) 
+      (fun lconstr -> 
+	 Declarations.from_val 
+	   (expmod_constr r.d_modlist (Declarations.force lconstr))) 
       cb.const_body
   in
   let hyps =

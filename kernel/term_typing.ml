@@ -81,7 +81,7 @@ let infer_declaration env dcl =
   | DefinitionEntry c ->
       let (j,cst) = infer env c.const_entry_body in
       let (typ,cst) = constrain_type env j cst c.const_entry_type in
-      Some (Lazy.lazy_from_val j.uj_val), typ, cst, c.const_entry_opaque
+      Some (Declarations.from_val j.uj_val), typ, cst, c.const_entry_opaque
   | ParameterEntry t ->
       let (j,cst) = infer env t in
       None, Typeops.assumption_of_judgment env j, cst, false
@@ -91,7 +91,7 @@ let build_constant_declaration env (body,typ,cst,op) =
     | None -> global_vars_set env typ
     | Some b ->
         Idset.union 
-	  (global_vars_set env (Lazy.force_val b)) 
+	  (global_vars_set env (Declarations.force b)) 
 	  (global_vars_set env typ) 
   in
   let hyps = keep_hyps env ids in

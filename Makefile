@@ -304,13 +304,10 @@ COQTOPBYTE=bin/coqtop.byte$(EXE)
 COQTOPOPT=bin/coqtop.opt$(EXE)
 BESTCOQTOP=bin/coqtop.$(BEST)$(EXE)
 COQTOP=bin/coqtop$(EXE)
+COQINTERFACE=bin/coq-interface$(EXE) bin/parser$(EXE)
 
-# COQINTERFACE=bin/coq-interface$(EXE) bin/parser$(EXE)
-
-COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) 
-
-#\
-# $(COQINTERFACE) 
+COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
+             $(COQINTERFACE) 
 
 coqbinaries:: ${COQBINARIES}
 
@@ -393,7 +390,7 @@ clean::
 # tests
 ###########################################################################
 
-check:: world bin/parser
+check:: world
 	cd test-suite; ./check -$(BEST) | tee check.log
 	if grep -F 'Error!' test-suite/check.log ; then false; fi
 
@@ -623,8 +620,7 @@ contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/init
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(CORRECTNESSVO) $(FOURIERVO) \
-	    $(JPROVERVO) $(CCVO)
-# $(INTERFACEV0)
+	    $(JPROVERVO) $(INTERFACEV0) $(CCVO)
 
 $(CONTRIBVO): states/initial.coq
 

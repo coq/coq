@@ -121,8 +121,8 @@ type global_declaration =
 let hcons_constant_body cb =
   let body = match cb.const_body with
       None -> None
-    | Some l_constr -> let constr = Lazy.force_val l_constr in
-	Some (Lazy.lazy_from_val (hcons1_constr constr))
+    | Some l_constr -> let constr = Declarations.force l_constr in
+	Some (Declarations.from_val (hcons1_constr constr))
   in
     { cb with
 	const_body = body;

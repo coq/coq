@@ -740,7 +740,7 @@ let print (_,qid as locqid) fn =
          match val0 with
             None ->   print_axiom id typ [] hyps env inner_types
           | Some lc -> 
-	      let c = Lazy.force_val lc in
+	      let c = Declarations.force lc in
 	      print_definition id c typ [] hyps env inner_types
         end
     | Ln.IndRef (kn,_) ->
@@ -859,7 +859,7 @@ let print_object lobj id (sp,kn) dn fv env =
              match val0 with
                 None -> print_axiom id typ fv hyps env inner_types
               | Some lc -> 
-		  let c = Lazy.force_val lc in
+		  let c = Declarations.force lc in
 		  print_definition id c typ fv hyps env inner_types
             end
       | "INDUCTIVE" ->

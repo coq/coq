@@ -21,9 +21,30 @@ open Sign
 
 (*s Constants (internal representation) (Definition/Axiom) *)
 
+type subst_internal = 
+  | Constr of constr 
+  | LazyConstr of substitution * constr
+
+type constr_substituted = subst_internal ref
+
+let from_val c = ref (Constr c)
+
+let force cs = match !cs with
+    Constr c -> c
+  | LazyConstr (subst,c) -> 
+      let c' = subst_mps subst c in
+	cs := Constr c';
+	c'
+
+let subst_constr_subst subst cs = match !cs with
+    Constr c -> ref (LazyConstr (subst,c))
+  | LazyConstr (subst',c) -> 
+      let subst'' = join subst' subst in
+	ref (LazyConstr (subst'',c))
+
 type constant_body = {
   const_hyps : section_context; (* New: younger hyp at top *)
-  const_body : constr Lazy.t option;
+  const_body : constr_substituted option;
   const_type : types;
   const_constraints : constraints;
   const_opaque : bool }
@@ -88,12 +109,9 @@ type mutual_inductive_body = {
   mind_equiv : kernel_name option
  }
 
-let lazy_subst sub l_constr = 
-  lazy (subst_mps sub (Lazy.force_val l_constr))
-
 (* TODO: should be changed to non-coping after Term.subst_mps *)
 let subst_const_body sub cb = 
-  { const_body = option_app (lazy_subst sub) cb.const_body;
+  { const_body = option_app (subst_constr_subst sub) cb.const_body;
     const_type = type_app (Term.subst_mps sub) cb.const_type;
     const_hyps = (assert (cb.const_hyps=[]); []);
     const_constraints = cb.const_constraints;

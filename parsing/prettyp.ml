@@ -266,7 +266,7 @@ let print_section_variable sp =
   (print_named_decl d ++ print_impl_args l)
 
 let print_body = function
-  | Some lc  -> prterm (Lazy.force_val lc)
+  | Some lc  -> prterm (Declarations.force lc)
   | None -> (str"<no body>")
 
 let print_typed_body (val_0,typ) =
