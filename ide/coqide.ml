@@ -1226,7 +1226,7 @@ Please restart and report NOW.";
     else prerr_endline "undo_last_step discarded"
 
       
-  method blaster () = 
+  method blaster () =
     prerr_endline "Blaster called";
     let c = Blaster_window.blaster_window () in
     c#clear ();

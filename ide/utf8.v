@@ -1,5 +1,9 @@
 (* Logic *)
 Notation "∀ x : t , P" := (x:t)P (at level 1, x,t,P at level 10).
+Notation "∀ x y : t , P" := (x:t)(y:t)P (at level 1, x,y,t,P at level 10).
+Notation "∀ x y z : t , P" := (x:t)(y:t)(z:t) P (at level 1, x,y,z,t,P at level 10).
+Notation "∀ x y z u : t , P" := (x:t)(y:t)(z:t)(u:t)P (at level 1, x,y,z,u,t,P at level 10).
+
 Notation "∃ x : t , P" := (EXT x:t|P) (at level 1, x,t,P at level 10).
 Notation "x ∨ y" := (x \/ y) (at level 1, y at level 10).
 Notation "x ∧ y" := (x /\ y) (at level 1, y at level 10).

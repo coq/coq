@@ -11,6 +11,8 @@
 open Gobject.Data
 open Ideutils
 
+exception Stop
+
 class blaster_window (n:int) = 
   let window = GWindow.window 
 		 ~allow_grow:true ~allow_shrink:true 
@@ -68,6 +70,8 @@ object(self)
   val window = window
   val roots = Hashtbl.create 17
   val tbl = Hashtbl.create 17
+  val blaster_lock = Mutex.create () 
+  method lock = blaster_lock 
   method window = window
   method set
     root
@@ -92,23 +96,28 @@ object(self)
 
       
   method blaster () = 
-    view#expand_all ();
-    Hashtbl.iter 
-      (fun k (nt,compute,on_click) ->
-	 match compute () with 
-	 | Coq.Interrupted -> 
-	     prerr_endline "Interrupted"
-	 | Coq.Failed -> 
-	     prerr_endline "Failed";
-	     model#set ~row:nt ~column:status false;
-	     model#set ~row:nt ~column:nb_goals "N/A"
-	     
-	 | Coq.Success n -> 
-	     prerr_endline "Success";
-	     model#set ~row:nt ~column:status true;
-	     model#set ~row:nt ~column:nb_goals (string_of_int n)
-      )
-      tbl
+    if Mutex.try_lock blaster_lock then begin
+      view#expand_all ();
+      try Hashtbl.iter 
+	(fun k (nt,compute,on_click) ->
+	   match compute () with 
+	   | Coq.Interrupted -> 
+	       prerr_endline "Interrupted";
+	       raise Stop
+	   | Coq.Failed -> 
+	       prerr_endline "Failed";
+	       model#set ~row:nt ~column:status false;
+	       model#set ~row:nt ~column:nb_goals "N/A"
+	       
+	   | Coq.Success n -> 
+	       prerr_endline "Success";
+	       model#set ~row:nt ~column:status true;
+	       model#set ~row:nt ~column:nb_goals (string_of_int n)
+	)
+	tbl;
+      Mutex.unlock blaster_lock
+      with Stop -> Mutex.unlock blaster_lock
+    end else prerr_endline "blaster is till computing"
 
   initializer 
     ignore (window#event#connect#delete (fun _ -> window#misc#hide(); true));

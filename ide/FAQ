@@ -22,11 +22,12 @@ Notation "∃ x : t | P" := (EXT x:t|P) (at level 1, x,t,P at level 10).
 ======================================================================
 Copy/Paste of these lines from this file will not work outside of CoqIde.
 You need to load a file containing these lines or to enter the "∀" 
-using an input method (see Q5). As a convenience, you may put these lines in
-a utf8.v file and start coqide with : 
-	coqide -l utf8.v
+using an input method (see Q5). To try it just use "Require utf8" from inside
+CoqIde. 
+To enable these notations automatically start coqide with
+	coqide -l utf8
 In the ide subdir of Coq library, you will find a sample utf8.v with some 
-pretty notations.
+pretty simple notations.
 
 Q5) How to define an input method for non ASCII symbols?
 R5)-First solution : type "<CONTROL><SHIFT>2200" to enter a forall in the script widow. 
@@ -62,9 +63,11 @@ R7) Two solutions are offered:
     shortcut. Do not forget to save your preferences.
 
 Q8) What encoding should I use? What is this \x{iiii} in my file?
-R8) The encoding option is related to the way files are saved. Keep it as UTF-8 until
-    it becomes important for you to exchange files with non UTF-8 aware applications.
+R8) The encoding option is related to the way files are saved. 
+ Keep it as UTF-8 until it becomes important for you to exchange files 
+ with non UTF-8 aware applications.
+ If you choose something else than UTF-8, then missing characters will 
+ be encoded by \x{....} or \x{........} where each dot is an hex. digit. 
+ The number between braces is the hexadecimal UNICODE index for the
+  missing character.
     
-    If you choose something else than UTF-8, then missing characters will be encoded by
-	\x{....} or \x{........} where the dot is a digit. The number between braces is 
-    the hexadecimal UNICODE index for the missing character.
