@@ -53,19 +53,18 @@ theories/Reals/RiemannInt_SF.vo: theories/Reals/RiemannInt_SF.v theories/Reals/R
 theories/Reals/RiemannInt.vo: theories/Reals/RiemannInt.v theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Ranalysis.vo theories/Reals/Rbase.vo theories/Reals/RiemannInt_SF.vo theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Type.vo theories/Arith/Max.vo
 theories/Reals/Integration.vo: theories/Reals/Integration.v theories/Reals/NewtonInt.vo theories/Reals/RiemannInt_SF.vo theories/Reals/RiemannInt.vo
 theories/Reals/Reals.vo: theories/Reals/Reals.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo.vo theories/Reals/Ranalysis.vo theories/Reals/Integration.vo
-theories/Init/Notations.vo: theories/Init/Notations.v
 theories/Init/Datatypes.vo: theories/Init/Datatypes.v
 theories/Init/DatatypesSyntax.vo: theories/Init/DatatypesSyntax.v
 theories/Init/Peano.vo: theories/Init/Peano.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo theories/Init/Datatypes.vo
 theories/Init/PeanoSyntax.vo: theories/Init/PeanoSyntax.v theories/Init/Datatypes.vo theories/Init/Peano.vo
-theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Notations.vo theories/Init/Datatypes.vo
+theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Datatypes.vo
 theories/Init/Specif.vo: theories/Init/Specif.v theories/Init/Datatypes.vo theories/Init/Logic.vo theories/Init/LogicSyntax.vo
 theories/Init/LogicSyntax.vo: theories/Init/LogicSyntax.v theories/Init/Logic.vo
 theories/Init/SpecifSyntax.vo: theories/Init/SpecifSyntax.v theories/Init/Datatypes.vo theories/Init/Specif.vo
 theories/Init/Logic_Type.vo: theories/Init/Logic_Type.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo
 theories/Init/Wf.vo: theories/Init/Wf.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo
 theories/Init/Logic_TypeSyntax.vo: theories/Init/Logic_TypeSyntax.v theories/Init/Logic_Type.vo
-theories/Init/Prelude.vo: theories/Init/Prelude.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/DatatypesSyntax.vo theories/Init/Logic.vo theories/Init/LogicSyntax.vo theories/Init/Specif.vo theories/Init/SpecifSyntax.vo theories/Init/Peano.vo theories/Init/PeanoSyntax.vo theories/Init/Wf.vo
+theories/Init/Prelude.vo: theories/Init/Prelude.v theories/Init/Datatypes.vo theories/Init/DatatypesSyntax.vo theories/Init/Logic.vo theories/Init/LogicSyntax.vo theories/Init/Specif.vo theories/Init/SpecifSyntax.vo theories/Init/Peano.vo theories/Init/PeanoSyntax.vo theories/Init/Wf.vo
 theories/Logic/Hurkens.vo: theories/Logic/Hurkens.v
 theories/Logic/ProofIrrelevance.vo: theories/Logic/ProofIrrelevance.v theories/Logic/Hurkens.vo
 theories/Logic/Classical.vo: theories/Logic/Classical.v theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Set.vo
@@ -90,7 +89,7 @@ theories/Arith/Compare_dec.vo: theories/Arith/Compare_dec.v theories/Arith/Le.vo
 theories/Arith/Min.vo: theories/Arith/Min.v theories/Arith/Arith.vo
 theories/Arith/Div2.vo: theories/Arith/Div2.v theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Compare_dec.vo theories/Arith/Even.vo
 theories/Arith/Minus.vo: theories/Arith/Minus.v theories/Arith/Lt.vo theories/Arith/Le.vo
-theories/Arith/Mult.vo: theories/Arith/Mult.v theories/Arith/Plus.vo theories/Arith/Minus.vo theories/Arith/Lt.vo
+theories/Arith/Mult.vo: theories/Arith/Mult.v theories/Arith/Plus.vo theories/Arith/Minus.vo theories/Arith/Lt.vo theories/Arith/Le.vo
 theories/Arith/Even.vo: theories/Arith/Even.v
 theories/Arith/EqNat.vo: theories/Arith/EqNat.v
 theories/Arith/Peano_dec.vo: theories/Arith/Peano_dec.v theories/Logic/Decidable.vo
@@ -99,7 +98,7 @@ theories/Arith/Plus.vo: theories/Arith/Plus.v theories/Arith/Le.vo theories/Arit
 theories/Arith/Wf_nat.vo: theories/Arith/Wf_nat.v theories/Arith/Lt.vo
 theories/Arith/Max.vo: theories/Arith/Max.v theories/Arith/Arith.vo
 theories/Arith/Bool_nat.vo: theories/Arith/Bool_nat.v theories/Arith/Compare_dec.vo theories/Arith/Peano_dec.vo theories/Bool/Sumbool.vo
-theories/Arith/Factorial.vo: theories/Arith/Factorial.v theories/Arith/Plus.vo theories/Arith/Lt.vo
+theories/Arith/Factorial.vo: theories/Arith/Factorial.v theories/Arith/Plus.vo theories/Arith/Mult.vo theories/Arith/Lt.vo
 theories/Bool/Bool.vo: theories/Bool/Bool.v
 theories/Bool/IfProp.vo: theories/Bool/IfProp.v theories/Bool/Bool.vo
 theories/Bool/Zerob.vo: theories/Bool/Zerob.v theories/Arith/Arith.vo theories/Bool/Bool.vo
