@@ -541,9 +541,18 @@ convertible.
 \item \errindex{Not convertible}
 \end{ErrMsgs}
 
+\tacindex{Change \dots\ in}
 \begin{Variants}
+\item {\tt Change \term$_1$ with \term$_2$} \\
+This replaces the occurrences of \term$_1$ by \term$_2$ in the current goal.
+The terms \term$_1$ and \term$_2$ must be convertible.
+\item {\tt Change \num$_1$ \dots\ \num$_i$ \term$_1$ with \term$_2$} \\
+This replaces the occurrences numbered \num$_1$ \dots\ \num$_i$ of \term$_1$ by \term$_2$ in the current goal.
+The terms \term$_1$ and \term$_2$ must be convertible.\\
+\ErrMsg {\tt Too few occurrences}
 \item {\tt Change {\term} in {\ident}}\\ 
-  \tacindex{Change \dots\ in}
+\item {\tt Change \term$_1$ with \term$_2$ in {\ident}}\\ 
+\item {\tt Change \num$_1$ \dots\ \num$_i$ \term$_1$ with \term$_2$ in {\ident}}\\ 
   This applies the {\tt Change} tactic not to the goal but to the
   hypothesis {\ident}.
 \end{Variants}
@@ -701,6 +710,17 @@ according, once more, to
 $\beta\iota$ rules. But when the $\iota$ rule is not applicable then
 possible $\delta$-reductions are not applied.  For instance trying to
 use {\tt Simpl} on {\tt (plus n O)=n} will change nothing.
+
+\tacindex{Simpl \dots\ in}
+\begin{Variants}
+\item {\tt Simpl {\term}}\\ 
+This applies {\tt Simpl} only to the occurrences of {\term} in the
+current goal.
+\item {\tt Simpl \num$_1$ \dots\ \num$_i$ {\term}}\\ 
+This applies {\tt Simpl} only to the \num$_1$, \dots, \num$_i$ 
+occurrences of {\term} in the current goal.\\
+\ErrMsg {\tt Too few occurrences}
+\end{Variants}
 
 \subsection{\tt Unfold \qualid}
 \tacindex{Unfold}\label{Unfold}
