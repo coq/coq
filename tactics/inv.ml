@@ -69,7 +69,7 @@ let push_rel_type sigma (na,t) env =
   push_rel_decl (na,make_typed t (get_sort_of env sigma t)) env
 
 let push_rels vars env =
-  List.fold_left (fun env nvar -> push_rel_type Evd.empty nvar env) env vars
+  List.fold_right (push_rel_type Evd.empty) vars env
 
 type inversion_status = Dep of constr option | NoDep
 
