@@ -64,6 +64,8 @@ let extract texfile inputv =
       outside ()
   in
   try
+    output_string chan_out 
+      ("Set Printing Width " ^ (string_of_int !linelen) ^".\n");
     outside ()
   with End_of_file -> 
     begin close_in chan_in; close_out chan_out end
@@ -205,6 +207,7 @@ let insert texfile coq_output result =
   in
   try
     let _ = next_block 0 in (* to skip the Coq banner *)
+    let _ = next_block 0 in (* to skip the Coq answer to Set Printing Width *)
     outside ()
   with End_of_file -> begin
     close_in c_tex;
