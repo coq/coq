@@ -1149,26 +1149,26 @@ let _ =
 let _ =
   add "PrintGRAPH"
     (function 
-       | [] -> (fun () -> pPNL (Classops.print_graph()))
+       | [] -> (fun () -> pPNL (Pretty.print_graph()))
        | _  -> bad_vernac_args "PrintGRAPH")
 
 let _ =
   add "PrintCLASSES"
     (function 
-       | [] -> (fun () -> pPNL (Classops.print_classes()))
+       | [] -> (fun () -> pPNL (Pretty.print_classes()))
        | _  -> bad_vernac_args "PrintCLASSES")
 
 let _ =
   add "PrintCOERCIONS"
     (function 
-       | [] -> (fun () -> pPNL (Classops.print_coercions()))
+       | [] -> (fun () -> pPNL (Pretty.print_coercions()))
        | _  -> bad_vernac_args "PrintCOERCIONS")
 
 let _ =
   add "PrintPATH"
     (function 
        | [VARG_IDENTIFIER ids;VARG_IDENTIFIER idt] -> 
-	   (fun () -> pPNL (Classops.print_path_between ids idt))
+	   (fun () -> pPNL (Pretty.print_path_between ids idt))
        | _ -> bad_vernac_args "PrintPATH")
 
 (* Meta-syntax commands *)
