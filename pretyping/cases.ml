@@ -1018,19 +1018,25 @@ let build_expected_arity env isevars isdep tomatchl =
 	Some (build_dependent_inductive indf', fst (get_arity indf'))
     | _,NotInd _ -> None
   in
-  let rec buildrec n = function
+  let rec buildrec n env = function
     | [] -> dummy_sort
     | tm::ltm ->
 	match cook n tm with
-	  | None -> buildrec n ltm
+	  | None -> buildrec n env ltm
 	  | Some (ty1,aritysign) ->
-	      let rec follow n = function
-		| d::sign -> mkProd_or_LetIn d (follow (n+1) sign)
+	      let rec follow n env = function
+		| d::sign ->
+		    mkProd_or_LetIn_name env
+		      (follow (n+1) (push_rel d env) sign) d
 		| [] ->
-		    if isdep then mkProd (Anonymous, ty1, buildrec (n+1) ltm)
-		    else buildrec n ltm
-	      in follow n (List.rev aritysign)
-  in buildrec 0 tomatchl
+		    if isdep then
+		      mkProd (Anonymous, ty1, 
+			      buildrec (n+1)
+				(push_rel_assum (Anonymous, ty1) env)
+				ltm)
+		    else buildrec n env ltm
+	      in follow n env (List.rev aritysign)
+  in buildrec 0 env tomatchl
 
 let build_initial_predicate env sigma isdep pred tomatchl =
   let cook n = function

@@ -307,9 +307,9 @@ let explain_wrong_numarg_of_constructor k ctx cstr n =
 
 let explain_wrong_predicate_arity k ctx pred nondep_arity dep_arity=
   let pp = prterm_env ctx pred in
-  [<'sTR "The elimination predicate " ; pp; 'cUT;
+  [<'sTR "The elimination predicate "; 'sPC; pp; 'fNL;
     'sTR "should be of arity" ; 'sPC;
-    prterm_env ctx nondep_arity ; 'sPC; 'sTR "(for non dependent case)  or" ;
+    prterm_env ctx nondep_arity ; 'sPC; 'sTR "(for non dependent case) or" ;
     'sPC; prterm_env ctx dep_arity ; 'sPC; 'sTR "(for dependent case).">]
 
 let explain_needs_inversion k ctx x t =
