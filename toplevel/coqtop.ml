@@ -21,7 +21,7 @@ open Coqinit
 
 let get_version_date () =
   try
-    let ch = open_in "make.result" in
+    let ch = open_in (Coq_config.coqtop^"/make.result") in
     let l = input_line ch in
     let i = String.index l ' ' in
     let j = String.index_from l (i+1) ' ' in
