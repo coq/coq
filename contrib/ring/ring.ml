@@ -558,7 +558,7 @@ let raw_polynom th op lc gl =
     List.fold_right2
       (fun ci (c'i, c''i, c'i_eq_c''i) tac ->
         let c'''i = pf_nf gl c''i in
-          if pf_conv_x gl c'''i ci then tac (* Ring == Reflexivity *)
+          if pf_conv_x gl c'''i ci then tac (* convertible terms *)
           else
            (tclORELSE
              (tclORELSE
