@@ -106,7 +106,7 @@ NewDestruct n; NewDestruct m; Simpl; Try Reflexivity.
 Rewrite add_sym; Reflexivity.
 Qed.
 
-Theorem Nplus_assoc_l : 
+Theorem Nplus_assoc : 
   (n,m,p:entier)(Nplus (Nplus n m) p)=(Nplus n (Nplus m p)).
 Proof.
 Intros.
@@ -162,7 +162,7 @@ NewDestruct n; NewDestruct m; Simpl; Try Reflexivity.
 Rewrite times_sym; Reflexivity.
 Qed.
 
-Theorem Nmult_assoc_l : 
+Theorem Nmult_assoc : 
   (n,m,p:entier)(Nmult (Nmult n m) p)=(Nmult n (Nmult m p)).
 Proof.
 Intros.
@@ -172,7 +172,7 @@ NewDestruct p; Try Reflexivity.
 Simpl; Rewrite times_assoc; Reflexivity.
 Qed.
 
-Theorem Nmult_Nplus_distr_l :
+Theorem Nmult_plus_distr_r :
   (n,m,p:entier)(Nmult (Nplus n m) p)=(Nplus (Nmult n p) (Nmult m p)).
 Proof.
 Intros.
@@ -181,11 +181,11 @@ NewDestruct m; NewDestruct p; Try Reflexivity.
 Simpl; Rewrite times_add_distr_l; Reflexivity.
 Qed.
 
-Theorem Nmult_int_r : (n,m,p:entier) (Nmult n p)=(Nmult m p) -> n=m\/p=Nul.
+Theorem Nmult_reg_r : (n,m,p:entier) ~p=Nul->(Nmult n p)=(Nmult m p) -> n=m.
 Proof.
-NewDestruct p; Intro H.
-Right; Reflexivity.
-Left; NewDestruct n; NewDestruct m; Reflexivity Orelse Try Discriminate H.
+NewDestruct p; Intros Hp H.
+Contradiction Hp; Reflexivity.
+NewDestruct n; NewDestruct m; Reflexivity Orelse Try Discriminate H.
 Injection H; Clear H; Intro H; Rewrite simpl_times_r with 1:=H; Reflexivity.
 Qed. 
 
