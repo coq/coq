@@ -1096,9 +1096,8 @@ let apply_coq_setoid_rewrite hole_relation prop_relation c1 c2 (direction,h)
 let relation_rewrite c1 c2 (input_direction,cl) gl =
  let but = pf_concl gl in
  let (hyp,c1,c2) =
-   let cl' =
-     {cl with env = fst (w_unify_to_subterm (pf_env gl) (c1,but) cl.env)} in
-   let c1 = Clenv.clenv_nf_meta cl' c1 in
+   let (env',c1) = w_unify_to_subterm (pf_env gl) (c1,but) cl.env in
+   let cl' = {cl with env = env' } in
    let c2 = Clenv.clenv_nf_meta cl' c2 in
    (input_direction,Clenv.clenv_value cl'), c1, c2
  in
@@ -1146,8 +1145,9 @@ let temporary_solution2 prop_relation gl =
       (mkApp (th, [| mkCast (Evarutil.mk_new_meta(), new_but) |])) gl
 in
  (*CSC: the prop_relation will be returned by mark_occur *)
- Tacticals.tclORELSE (temporary_solution (Lazy.force coq_prop_relation))
-  (temporary_solution2 (Lazy.force coq_prop_relation2)) gl
+ Tacticals.tclFIRST 
+   [temporary_solution (Lazy.force coq_prop_relation);
+    temporary_solution2 (Lazy.force coq_prop_relation2)] gl
 
 let general_s_rewrite lft2rgt c gl =
  let direction = if lft2rgt then Left2Right else Right2Left in
