@@ -51,18 +51,20 @@ let cache r f =
 (*s Renaming issues at toplevel *)
 
 module ToplevelParams = struct
+  let cofix_warning = false
   let globals () = Idset.empty
   let rename_global r = Names.id_of_string (Global.string_of_global r)
   let pp_type_global = Printer.pr_global
   let pp_global = Printer.pr_global
-  let cofix_warning = false
 end
 
 (*s Renaming issues for a monolithic extraction. *)
 
 module MonoParams = struct
-  
-  let globals () = ! global_ids
+
+  let cofix_warning = true
+
+  let globals () = !global_ids
 		     
   let rename_global_id id = 
     let id' = rename_id id !global_ids in
@@ -89,14 +91,14 @@ module MonoParams = struct
   let pp_global r = 
     string (check_ml r (string_of_id (rename_global r)))
       
-  let cofix_warning = true
-
 end
 
 
 (*s Renaming issues in a modular extraction. *)
 
 module ModularParams = struct
+
+  let cofix_warning = true
 
   let globals () = !global_ids 
 
@@ -135,7 +137,6 @@ module ModularParams = struct
     string 
       (check_ml r ((module_option r)^(string_of_id (rename_global r))))
 
-  let cofix_warning = true
 end
 
 
@@ -148,36 +149,25 @@ module HaskellMonoPp = Haskell.Make(MonoParams)
 module HaskellModularPp = Haskell.Make(ModularParams)
 
 
-
 (*s Extraction to a file. *)
 
 let init_global_ids lang = 
+  Hashtbl.clear renamings;
   keywords := 
-  Idset.add (id_of_string "prop") 
-    (Idset.add (id_of_string "arity") 
-       (match lang with 
-	  | "ocaml" -> Ocaml.keywords
-	  | "haskell" -> Haskell.keywords
-	  | _ -> assert false));
+  (match lang with 
+     | "ocaml" -> Ocaml.keywords
+     | "haskell" -> Haskell.keywords
+     | _ -> assert false);
   global_ids := !keywords
 
 let extract_to_file f prm decls =
-  Hashtbl.clear renamings;
-  init_global_ids prm.lang; 
-  current_module := 
-    if prm.modular then 
-      Some prm.module_name 
-    else None;
-  let preamble = match prm.lang with 
-    | "ocaml" -> Ocaml.preamble
-    | "haskell" -> Haskell.preamble
-    | _ -> assert false
-  in
-  let pp_decl = match prm.lang,prm.modular with 
-    | "ocaml", true -> OcamlModularPp.pp_decl
-    | "ocaml", false -> OcamlMonoPp.pp_decl
-    | "haskell",true -> HaskellModularPp.pp_decl
-    | "haskell",false -> HaskellMonoPp.pp_decl 
+  current_module := prm.mod_name;
+  init_global_ids prm.lang;
+  let preamble,pp_decl = match prm.lang,prm.mod_name with 
+    | "ocaml", None -> Ocaml.preamble, OcamlMonoPp.pp_decl
+    | "ocaml", _ -> Ocaml.preamble, OcamlModularPp.pp_decl
+    | "haskell", None -> Haskell.preamble, HaskellMonoPp.pp_decl
+    | "haskell", _ -> Haskell.preamble, HaskellModularPp.pp_decl
     | _ -> assert false
   in
   let cout = open_out f in

@@ -112,7 +112,7 @@ let keywords =
     "module"; "mutable"; "new"; "object"; "of"; "open"; "or";
     "parser"; "private"; "rec"; "sig"; "struct"; "then"; "to"; "true";
     "try"; "type"; "val"; "virtual"; "when"; "while"; "with"; "mod";
-    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ] 
+    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "prop" ; "arity" ] 
   Idset.empty
 
 let preamble _ =

@@ -505,11 +505,11 @@ let rec optimize prm = function
       let b = expand (strict_language prm.lang) r t in
       let l = if b then 
 	begin
-	  if_verbose warning_expansion r;
+	  if prm.toplevel then if_verbose warning_expansion r;
 	  List.map (subst_glob_decl r t) l
 	end
       else l in 
-      if prm.modular || List.mem r prm.to_appear || not b then 
+      if (prm.mod_name <> None) || List.mem r prm.to_appear || not b then 
 	Dglob (r,t) :: (optimize prm l)
       else
 	optimize prm l

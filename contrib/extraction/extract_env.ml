@@ -112,8 +112,8 @@ let decl_of_refs refs =
 
 let local_optimize refs = 
   let prm = 
-    { lang = "ocaml" ; modular = false ; 
-      module_name = "" ; to_appear = refs} in
+    { lang = "ocaml" ; toplevel = true; 
+      mod_name = None; to_appear = refs} in
   optimize prm (decl_of_refs refs)
 
 let print_user_extract r = 
@@ -168,8 +168,8 @@ let _ =
 	   (fun () -> 
 	      let refs = refs_of_vargl vl in
 	      let prm = {lang=lang;
-			 modular=false;
-			 module_name="";
+			 toplevel=false;
+			 mod_name = None;
 			 to_appear= refs} in 
 	      let decls = decl_of_refs refs in 
 	      let decls = add_ml_decls prm decls in 
@@ -215,8 +215,8 @@ let _ =
 	      let ms = Names.string_of_id m in
 	      let f = (String.uncapitalize ms) ^ (file_suffix lang) in
 	      let prm = {lang=lang;
-			 modular=true;
-			 module_name= ms;
+			 toplevel=false;
+			 mod_name= Some ms;
 			 to_appear= []} in 
 	      let rl = extract_module m in 
 	      let decls = optimize prm (decl_of_refs rl) in

@@ -26,11 +26,14 @@ let keywords =
   [ "case"; "class"; "data"; "default"; "deriving"; "do"; "else";
     "if"; "import"; "in"; "infix"; "infixl"; "infixr"; "instance"; 
     "let"; "module"; "newtype"; "of"; "then"; "type"; "where"; "_";
-    "as"; "qualified"; "hiding" ]
+    "as"; "qualified"; "hiding" ; "prop" ; "arity" ]
   Idset.empty
 
 let preamble prm =
-  let m = if prm.modular then String.capitalize prm.module_name else "Main" in
+  let m = match prm.mod_name with 
+    | None -> "Main" 
+    | Some m -> String.capitalize m 
+  in 
   [< 'sTR "module "; 'sTR m; 'sTR " where"; 'fNL; 'fNL;
      'sTR "type Prop = ()"; 'fNL;
      'sTR "prop = ()"; 'fNL; 'fNL;
