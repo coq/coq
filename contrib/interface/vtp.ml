@@ -137,12 +137,13 @@ and fCOMMAND = function
    fID x2;
    fSTRING_OPT x3;
    fNODE "compile_module" 3
-| CT_definition(x1, x2, x3, x4) ->
+| CT_definition(x1, x2, x3, x4, x5) ->
    fDEFN x1;
    fID x2;
-   fDEF_BODY x3;
-   fFORMULA_OPT x4;
-   fNODE "definition" 4
+   fBINDER_LIST x3;
+   fDEF_BODY x4;
+   fFORMULA_OPT x5;
+   fNODE "definition" 5
 | CT_delpath(x1) ->
    fSTRING x1;
    fNODE "delpath" 1
@@ -584,16 +585,16 @@ and fFORMULA = function
    fINT x1;
    fNODE "int_encapsulator" 1
 | CT_lambdac(x1, x2) ->
-   fBINDER x1;
+   fBINDER_NE_LIST x1;
    fFORMULA x2;
    fNODE "lambdac" 2
 | CT_letin(x1, x2, x3) ->
-   fID x1;
+   fID_OPT x1;
    fFORMULA x2;
    fFORMULA x3;
    fNODE "letin" 3
 | CT_prodc(x1, x2) ->
-   fBINDER x1;
+   fBINDER_NE_LIST x1;
    fFORMULA x2;
    fNODE "prodc" 2
 and fFORMULA_LIST = function

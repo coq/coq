@@ -55,7 +55,7 @@ and ct_COMMAND =
   | CT_coercion of ct_LOCAL_OPT * ct_IDENTITY_OPT * ct_ID * ct_ID * ct_ID
   | CT_cofix_decl of ct_COFIX_REC_LIST
   | CT_compile_module of ct_VERBOSE_OPT * ct_ID * ct_STRING_OPT
-  | CT_definition of ct_DEFN * ct_ID * ct_DEF_BODY * ct_FORMULA_OPT
+  | CT_definition of ct_DEFN * ct_ID * ct_BINDER_LIST * ct_DEF_BODY * ct_FORMULA_OPT
   | CT_delpath of ct_STRING
   | CT_derive_depinversion of ct_INV_TYPE * ct_ID * ct_FORMULA * ct_SORT_TYPE
   | CT_derive_inversion of ct_INV_TYPE * ct_INT_OPT * ct_ID * ct_ID
@@ -225,9 +225,9 @@ and ct_FORMULA =
   | CT_fixc of ct_ID * ct_FIX_BINDER_LIST
   | CT_incomplete_binary of ct_FORMULA * ct_BINARY
   | CT_int_encapsulator of ct_INT
-  | CT_lambdac of ct_BINDER * ct_FORMULA
-  | CT_letin of ct_ID * ct_FORMULA * ct_FORMULA
-  | CT_prodc of ct_BINDER * ct_FORMULA
+  | CT_lambdac of ct_BINDER_NE_LIST * ct_FORMULA
+  | CT_letin of ct_ID_OPT * ct_FORMULA * ct_FORMULA
+  | CT_prodc of ct_BINDER_NE_LIST * ct_FORMULA
 and ct_FORMULA_LIST =
     CT_formula_list of ct_FORMULA list
 and ct_FORMULA_NE_LIST =

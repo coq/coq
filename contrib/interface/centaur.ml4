@@ -65,11 +65,6 @@ let current_proof_name () =
 
 let current_goal_index = ref 0;;
 
-set_flags := (function () ->
-                if List.mem "G_natsyntax" (Mltop.get_loaded_modules()) then
-                  (g_nat_syntax_flag := true; ())
-                else ());;
-
 let guarded_force_eval_stream (s : std_ppcmds) = 
   let l = ref [] in
   let f elt = l:= elt :: !l in 
