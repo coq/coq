@@ -151,8 +151,6 @@ pretyping/inductiveops.cmi: kernel/declarations.cmi kernel/environ.cmi \
     pretyping/evd.cmi kernel/names.cmi kernel/sign.cmi kernel/term.cmi 
 pretyping/instantiate.cmi: kernel/environ.cmi pretyping/evd.cmi \
     kernel/names.cmi kernel/sign.cmi kernel/term.cmi 
-pretyping/multcase.cmi: kernel/environ.cmi pretyping/evarutil.cmi \
-    pretyping/evd.cmi kernel/names.cmi pretyping/rawterm.cmi kernel/term.cmi 
 pretyping/pattern.cmi: kernel/environ.cmi pretyping/evd.cmi \
     library/libnames.cmi kernel/names.cmi library/nametab.cmi \
     pretyping/rawterm.cmi kernel/sign.cmi kernel/term.cmi 
