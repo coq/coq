@@ -114,9 +114,16 @@ let translate_constr at_top env c =
 (* this code is inspired from printer.ml (function pr_named_context_of) *)
 let translate_sign env =
   let l = 
-    fold_named_context
+    Environ.fold_named_context
       (fun env (id,v,c) l -> 
-	 (CT_premise(CT_ident(string_of_id id), translate_constr false env c))::l)
+	 (match v with
+	      None ->
+	       	CT_premise(CT_ident(string_of_id id), translate_constr false env c)
+	    | Some v1 ->
+		CT_eval_result
+		  (CT_coerce_ID_to_FORMULA (CT_ident (string_of_id id)),
+		   translate_constr false env v1,
+		   translate_constr false env c))::l)
       env ~init:[] 
   in
   CT_premises_list l;;
