@@ -90,7 +90,8 @@ let rec execute mf env cstr =
 	(judge_of_prop_contents c, cst0)
 
     | IsSort (Type u) ->
-	judge_of_type u
+	let inst_u = if u == dummy_univ then new_univ() else u in
+	judge_of_type inst_u
 	  
     | IsApp (f,args) ->
 	let (j,cst1) = execute mf env f in

@@ -116,7 +116,7 @@ let init () =
   var_table := Idmap.empty
 
 let freeze () =
-  (!implicit_args,!constants_table, !inductives_table, !var_table)
+  (!implicit_args, !constants_table, !inductives_table, !var_table)
 
 let unfreeze (imps,ct,it,vt) =
   implicit_args := imps;

@@ -7,15 +7,18 @@ open Names
 
 (* Universes. *)
 
-type universe = { u_sp : section_path; u_num : int }
+type universe
 
 val dummy_univ : universe
+val implicit_univ : universe
 
 val prop_univ : universe
 val prop_univ_univ : universe
 val prop_univ_univ_univ : universe
 
-val new_univ : section_path -> universe
+val set_module : string -> unit
+
+val new_univ : unit -> universe
 
 (*s Graphs of universes. *)
 

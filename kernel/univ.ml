@@ -15,27 +15,30 @@
 
 open Pp
 open Util
-open Names
 
-type universe = { u_sp : section_path; u_num : int }
+type universe = { u_mod : string; u_num : int }
 
 let universe_ord x y =
   let c = x.u_num - y.u_num in
-  if c <> 0 then c else sp_ord x.u_sp y.u_sp
+  if c <> 0 then c else compare x.u_mod y.u_mod
   
 module UniverseOrdered = struct
   type t = universe
   let compare = universe_ord
 end
 
-let pr_uni u = [< 'sTR(string_of_path u.u_sp) ; 'sTR"." ; 'iNT u.u_num >]
+let pr_uni u = [< 'sTR u.u_mod ; 'sTR"." ; 'iNT u.u_num >]
 
-let dummy_sp = make_path ["univ"] (id_of_string "dummy") OBJ
-let dummy_univ = {u_sp = dummy_sp; u_num = 0} (* for prover terms *)
+let dummy_univ = { u_mod = "dummy univ"; u_num = 0 } (* for prover terms *)
+let implicit_univ = { u_mod = "implicit univ"; u_num = 0 }
+
+let current_module = ref ""
+
+let set_module m = current_module := m
 
 let new_univ = 
   let univ_gen = ref 0 in
-  (fun sp -> incr univ_gen; { u_sp = sp; u_num = !univ_gen })
+  (fun sp -> incr univ_gen; { u_mod = !current_module; u_num = !univ_gen })
 
 type relation = 
   | Greater of bool * universe * relation (* if bool then > else >= *)
@@ -65,10 +68,10 @@ let declare_univ u g =
 (* The universes of Prop and Set: Type_0, Type_1 and Type_2, and the
    resulting graph. *)
 let (initial_universes,prop_univ,prop_univ_univ,prop_univ_univ_univ) =
-  let prop_sp = make_path ["univ"] (id_of_string "prop_univ") OBJ in
-  let u = { u_sp = prop_sp; u_num = 0 } in
-  let su = { u_sp = prop_sp; u_num = 1 } in
-  let ssu = { u_sp = prop_sp; u_num = 2 } in
+  let prop_sp = "prop_univ" in
+  let u = { u_mod = prop_sp; u_num = 0 } in
+  let su = { u_mod = prop_sp; u_num = 1 } in
+  let ssu = { u_mod = prop_sp; u_num = 2 } in
   let g = enter_arc (Arc(u,Terminal)) UniverseMap.empty in
   let g = enter_arc (Arc(su,Terminal)) g in
   let g = enter_arc (Arc(ssu,Terminal)) g in
@@ -342,7 +345,7 @@ let sup u v g =
     | NGE -> 
 	(match compare g v u with
            | NGE -> 
-	       let w = new_univ u.u_sp in
+	       let w = new_univ () in
 	       let c = Constraint.add (w,Geq,u) 
 			 (Constraint.singleton (w,Geq,v)) in
 	       w, c
@@ -358,7 +361,7 @@ let super u =
   else if u == prop_univ_univ then 
     prop_univ_univ_univ, Constraint.empty
   else
-    let v = new_univ u.u_sp in
+    let v = new_univ () in
     let c = Constraint.singleton (v,Gt,u) in
     v,c
 
@@ -366,11 +369,11 @@ let super_super u =
   if u == prop_univ then
     prop_univ_univ, prop_univ_univ_univ, Constraint.empty
   else if u == prop_univ_univ then 
-    let v = new_univ u.u_sp in
+    let v = new_univ () in
     prop_univ_univ_univ, v, Constraint.singleton (v,Gt,prop_univ_univ_univ)
   else
-    let v = new_univ u.u_sp in
-    let w = new_univ u.u_sp in
+    let v = new_univ () in
+    let w = new_univ () in
     let c = Constraint.add (w,Gt,v) (Constraint.singleton (v,Gt,u)) in
     v, w, c
 

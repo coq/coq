@@ -1141,8 +1141,7 @@ let mkFix = mkFix
 let mkCoFix = mkCoFix
 
 (* Construct an implicit *)
-let implicit_univ = make_path ["Implicit"] (id_of_string "dummy") OBJ
-let implicit_sort = Type { u_sp = implicit_univ ; u_num = 0}
+let implicit_sort = Type implicit_univ
 let mkImplicit = mkSort implicit_sort
 
 let rec strip_outer_cast c = match kind_of_term c with
@@ -1668,26 +1667,11 @@ module Htype =
       let hash = Hashtbl.hash
     end)
 
-module Hsorts =
-  Hashcons.Make(
-    struct
-      type t = sorts
-      type u = section_path -> section_path
-      let hash_sub hsp = function
-	| Prop c -> Prop c
-        | Type {u_sp=sp; u_num=n} -> Type {u_sp=hsp sp; u_num=n}
-      let equal s1 s2 =
-        match (s1,s2) with
-          | (Prop c1, Prop c2) -> c1=c2
-          | (Type {u_sp=sp1; u_num=n1}, Type {u_sp=sp2; u_num=n2}) ->
-              sp1==sp2 & n1=n2
-          |_ -> false
-      let hash = Hashtbl.hash
-    end)
+let hsort _ _ s = s
 
 let hcons_constr (hspcci,hspfw,hname,hident,hstr) =
-  let hsortscci = Hashcons.simple_hcons Hsorts.f hspcci in
-  let hsortsfw = Hashcons.simple_hcons Hsorts.f hspfw in
+  let hsortscci = Hashcons.simple_hcons hsort hspcci in
+  let hsortsfw = Hashcons.simple_hcons hsort hspfw in
   let hcci = hcons_term (hsortscci,hspcci,hname,hident,hstr) in
   let hfw = hcons_term (hsortsfw,hspfw,hname,hident,hstr) in
   let htcci = Hashcons.simple_hcons Htype.f (hcci,hsortscci) in
