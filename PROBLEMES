@@ -1,3 +1,7 @@
+Probleme d'affichage des scripts de preuve (disparition des THEN)
+Compute affiche Cbv Beta Iota
+
+
 Variable + Record => clash. Exemple:
 ======================================================================
 Section S.
