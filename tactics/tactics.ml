@@ -319,7 +319,7 @@ let rec intros_using = function
 
 let intros = tclREPEAT (intro_force false)
 
-let intro_erasing id = tclTHEN (thin [id]) (intro_using id gl)
+let intro_erasing id = tclTHEN (thin [id]) (intro_using id)
 
 let intros_replacing ids gls = 
   let rec introrec = function
