@@ -1,7 +1,9 @@
 
 (* $Id$ *)
 
+(*i*)
 open Pp_control
+(*i*)
 
 type 'a ppcmd_token
 
@@ -57,7 +59,7 @@ val mSG_with      : Format.formatter -> std_ppcmds -> unit
 val mSGNL_with    : Format.formatter -> std_ppcmds -> unit
 
 
-(* These are instances of the previous ones on std_ft and err_ft *)
+(* These are instances of the previous ones on [std_ft] and [err_ft] *)
 
 (* pretty printing functions WITHOUT FLUSH on stdout and stderr *)
 val pP       : std_ppcmds -> unit

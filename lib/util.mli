@@ -1,7 +1,9 @@
 
 (* $Id$ *)
 
+(*i*)
 open Pp
+(*i*)
 
 (* Errors *)
 

@@ -1,9 +1,11 @@
 
 (* $Id$ *)
 
+(*i*)
 open Names
 open Generic
 open Term
+(*i*)
 
 type 'a signature = identifier list * 'a list
 type 'a db_signature = (name * 'a) list

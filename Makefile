@@ -35,6 +35,14 @@ OBJS=$(CONFIG) $(LIB) $(KERNEL)
 
 world: $(OBJS)
 
+MLI=$(OBJS:.cmo=.mli)
+LPFILES=doc/macros.tex $(MLI)
+lp: doc/coq.ps
+doc/coq.ps: doc/coq.tex
+	cd doc; make coq.ps
+doc/coq.tex: $(LPFILES)
+	ocamlweb -o doc/coq.tex $(LPFILES)
+
 # Default rules
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx

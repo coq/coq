@@ -1,11 +1,16 @@
 
 (* $Id$ *)
 
+(*i*)
 open Util
 open Names
+(*i*)
 
 exception FreeVar
 exception Occur
+
+(* \label{generic_terms}
+   Generic terms, over any kind of operators. *)
 
 type 'oper term =
   | DOP0 of 'oper                            (* atomic terms *)
@@ -42,9 +47,9 @@ val reloc_rel: int -> lift_spec -> int
 type 'a subs =
   | ESID                   (* ESID       =          identity *)
   | CONS of 'a * 'a subs   (* CONS(t,S)  = (S.t)    parallel substitution *)
-  | SHIFT of int * 'a subs (* SHIFT(n,S) = (^n o S) terms in S are relocated *)
+  | SHIFT of int * 'a subs (* SHIFT(n,S)= (\^n o S) terms in S are relocated *)
                            (*                        with n vars *)
-  | LIFT of int * 'a subs  (* LIFT(n,S) = (%n S) stands for ((^n o S).n...1) *)
+  | LIFT of int * 'a subs  (* LIFT(n,S)=(\%n S) stands for ((\^n o S).n...1) *)
 
 val subs_cons  : 'a * 'a subs -> 'a subs
 val subs_lift  : 'a subs -> 'a subs

@@ -1,7 +1,9 @@
 
 (* $Id$ *)
 
+(*i*)
 open Pp
+(*i*)
 
 type identifier
 type name = Name of identifier | Anonymous

@@ -1,12 +1,14 @@
 
 (* $Id$ *)
 
+(*i*)
 open Pp
 open Names
 open Generic
 open Term
 open Evd
 open Environ
+(*i*)
 
 (* flags for profiling... *)
 val stats : bool ref
