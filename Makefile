@@ -98,7 +98,7 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 
 PROOFS=proofs/proof_type.cmo proofs/proof_trees.cmo proofs/logic.cmo \
        proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
-       proofs/macros.cmo proofs/clenv.cmo proofs/stock.cmo proofs/pfedit.cmo \
+       proofs/clenv.cmo proofs/stock.cmo proofs/pfedit.cmo \
        proofs/tactic_debug.cmo proofs/tacinterp.cmo
 
 TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
