@@ -58,7 +58,7 @@ and trad_desc ren env ct d =
       	let ty = trad_ml_type_v ren env tt in
       	make_tuple [ CC_expr c',ty ] qt ren env (current_date ren)
       
-  | Var id ->
+  | Variable id ->
       if is_mutable_in_env env id then
 	invalid_arg "Mlise.trad_desc"
       else if is_local env id then
@@ -170,7 +170,7 @@ and trad_desc ren env ct d =
       let te = trans ren' e in
       CC_lam (bl', te)
 
-  | SApp ([Var id; Expression q1; Expression q2], [e1; e2])
+  | SApp ([Variable id; Expression q1; Expression q2], [e1; e2])
       when id = connective_and or id = connective_or ->
       let c = constant (string_of_id id) in
       let te1 = trad ren e1
@@ -179,7 +179,7 @@ and trad_desc ren env ct d =
       and q2' = apply_post ren env (current_date ren) (anonymous q2) in
       CC_app (CC_expr c, [CC_expr q1'.a_value; CC_expr q2'.a_value; te1; te2])
 
-  | SApp ([Var id; Expression q], [e]) when id = connective_not ->
+  | SApp ([Variable id; Expression q], [e]) when id = connective_not ->
       let c = constant (string_of_id id) in
       let te = trad ren e in
       let q' = apply_post ren env (current_date ren) (anonymous q) in
@@ -188,7 +188,7 @@ and trad_desc ren env ct d =
   | SApp _ ->
       invalid_arg "mlise.trad (SApp)"
 
-  | App (f, args) ->
+  | Apply (f, args) ->
       let trad_arg (ren,args) = function
 	| Term a ->
 	    let ((_,tya),efa,_,_) as ca = a.info.kappa in
@@ -239,7 +239,7 @@ and trad_desc ren env ct d =
       in
       t
 
-  | LetIn (x, e1, e2) ->
+  | Let (x, e1, e2) ->
       let (_,v1),ef1,p1,q1 = e1.info.kappa in
       let te1 = trad ren e1 in
       let tv1 = trad_ml_type_v ren env v1 in

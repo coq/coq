@@ -10,12 +10,12 @@
 
 open Pp
 open Names
+open Nameops
 open Miniml
 open Table
 open Mlutil
 open Ocaml
 open Nametab
-
 
 (*s Modules considerations *)
 
@@ -53,7 +53,7 @@ let cache r f =
 module ToplevelParams = struct
   let toplevel = true
   let globals () = Idset.empty
-  let rename_global r = Names.id_of_string (Global.string_of_global r)
+  let rename_global r = Termops.id_of_global (Global.env()) r
   let pp_type_global = Printer.pr_global
   let pp_global = Printer.pr_global
 end
@@ -74,13 +74,13 @@ module MonoParams = struct
   let rename_type_global r =  
     cache r
       (fun r -> 
-	 let id = Environ.id_of_global (Global.env()) r in
+	 let id = Termops.id_of_global (Global.env()) r in
 	 rename_global_id (lowercase_id id))
       
   let rename_global r = 
     cache r
       (fun r -> 
-	 let id = Environ.id_of_global (Global.env()) r in
+	 let id = Termops.id_of_global (Global.env()) r in
 	 match r with
 	   | ConstructRef _ -> rename_global_id (uppercase_id id)
 	   | _ -> rename_global_id (lowercase_id id))
@@ -118,13 +118,13 @@ module ModularParams = struct
   let rename_type_global r = 
     cache r 
       (fun r ->     
-	 let id = Environ.id_of_global (Global.env()) r in 
+	 let id = Termops.id_of_global (Global.env()) r in 
 	 rename_global_id r id (lowercase_id id) "coq_")
 
   let rename_global r =
     cache r 
       (fun r -> 
-	 let id = Environ.id_of_global (Global.env()) r in 
+	 let id = Termops.id_of_global (Global.env()) r in 
 	 match r with
 	   | ConstructRef _ -> rename_global_id r id (uppercase_id id) "Coq_"
 	   | _ -> rename_global_id r id (lowercase_id id) "coq_")

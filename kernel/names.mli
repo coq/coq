@@ -16,99 +16,43 @@ open Pp
 
 type identifier
 type name = Name of identifier | Anonymous
-
-(* Constructor of an identifier;
-   [make_ident] builds an identifier from a string and an optional index; if
-   the string ends by a digit, a ["_"] is inserted *)
-val make_ident : string -> int option -> identifier
-
-(* Some destructors of an identifier *)
-val atompart_of_id : identifier -> string
-val first_char : identifier -> string
-val index_of_id : identifier -> int option
-
 (* Parsing and printing of identifiers *)
 val string_of_id : identifier -> string
 val id_of_string : string -> identifier
 val pr_id : identifier -> std_ppcmds
-
-(* This is the identifier ["_"] *)
-val wildcard : identifier
-
-(* Deriving ident from other idents *)
-val add_suffix : identifier -> string -> identifier
-val add_prefix : string -> identifier -> identifier
 
 (* Identifiers sets and maps *)
 module Idset  : Set.S with type elt = identifier
 module Idpred : Predicate.S with type elt = identifier
 module Idmap  : Map.S with type key = identifier
 
-val lift_ident : identifier -> identifier
-val next_ident_away_from : identifier -> identifier list -> identifier
-val next_ident_away : identifier -> identifier list -> identifier
-val next_name_away : name -> identifier list -> identifier
-val next_name_away_with_default : 
-  string -> name -> identifier list -> identifier
-
-(* [out_name na] raises an anomaly if [na] is [Anonymous] *)
-val out_name : name -> identifier
-
-(*s [path_kind] is currently degenerated, [FW] is not used *)
-type path_kind = CCI | FW | OBJ
-
-(* parsing and printing of path kinds *)
-val string_of_kind : path_kind -> string
-val kind_of_string : string -> path_kind
-
 (*s Directory paths = section names paths *)
 type module_ident = identifier
-type dir_path (*= module_ident list*)
+type dir_path
 
 module ModIdmap : Map.S with type key = module_ident
 
+(* Inner modules idents on top of list *)
 val make_dirpath : module_ident list -> dir_path
 val repr_dirpath : dir_path -> module_ident list
-val rev_repr_dirpath : dir_path -> module_ident list
-val is_empty_dirpath : dir_path -> bool
-
-(* Give the immediate prefix of a [dir_path] *)
-val dirpath_prefix : dir_path -> dir_path 
-
-(* Give the immediate prefix and basename of a [dir_path] *)
-val split_dirpath : dir_path -> dir_path * identifier
-
-val extend_dirpath : dir_path -> module_ident -> dir_path
-val add_dirpath_prefix : module_ident -> dir_path -> dir_path
 
 (* Printing of directory paths as ["coq_root.module.submodule"] *)
 val string_of_dirpath : dir_path -> string
 val pr_dirpath : dir_path -> std_ppcmds
 
-val default_module : dir_path
 
 (*s Section paths are {\em absolute} names *)
 type section_path
 
 (* Constructors of [section_path] *)
-val make_path : dir_path -> identifier -> path_kind -> section_path
+val make_path : dir_path -> identifier -> section_path
 
 (* Destructors of [section_path] *)
-val repr_path : section_path -> dir_path * identifier * path_kind
-val dirpath : section_path -> dir_path
-val basename : section_path -> identifier
-val kind_of_path : section_path -> path_kind
+val repr_path : section_path -> dir_path * identifier
 
 (* Parsing and printing of section path as ["coq_root.module.id"] *)
-val path_of_string : string -> section_path
 val string_of_path : section_path -> string
 val pr_sp : section_path -> std_ppcmds
-val dirpath_of_string : string -> dir_path
-
-val sp_ord : section_path -> section_path -> int
-
-(* [is_dirpath_prefix p1 p2=true] if [p1] is a prefix of or is equal to [p2] *)
-val is_dirpath_prefix_of : dir_path -> dir_path -> bool
 
 module Spset  : Set.S with type elt = section_path
 module Sppred : Predicate.S with type elt = section_path
@@ -117,17 +61,19 @@ module Spmap  : Map.S with type key = section_path
 (*s********************************************************************)
 (* type of global reference *)
 
-type variable = section_path
+type variable = identifier
 type constant = section_path
+(* Beware: first inductive has index 0 *)
 type inductive = section_path * int
+(* Beware: first constructor has index 1 *)
 type constructor = inductive * int
 type mutual_inductive = section_path
 
-type global_reference =
-  | VarRef of section_path
-  | ConstRef of constant
-  | IndRef of inductive
-  | ConstructRef of constructor
+val ith_mutual_inductive : inductive -> int -> inductive
+
+val ith_constructor_of_inductive : inductive -> int -> constructor
+val inductive_of_constructor : constructor -> inductive
+val index_of_constructor : constructor -> int
 
 (* Hash-consing *)
 val hcons_names : unit ->

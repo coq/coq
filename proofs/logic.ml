@@ -13,10 +13,12 @@ open Util
 open Names
 open Evd
 open Term
+open Termops
 open Sign
 open Environ
-open Reduction
+open Reductionops
 open Inductive
+open Inductiveops
 open Typing
 open Proof_trees
 open Proof_type
@@ -31,10 +33,10 @@ open Evarutil
 variables only in Application and Case *)
 
 let collect_meta_variables c = 
-  let rec collrec acc c = match splay_constr c with
-    | OpMeta mv, _ -> mv::acc
-    | OpCast, [|c;_|] -> collrec acc c
-    | (OpApp | OpMutCase _), cl -> Array.fold_left collrec acc cl
+  let rec collrec acc c = match kind_of_term c with
+    | Meta mv -> mv::acc
+    | Cast(c,_) -> collrec acc c
+    | (App _| Case _) -> fold_constr collrec acc c
     | _ -> acc
   in 
   List.rev(collrec [] c)
@@ -64,7 +66,7 @@ let catchable_exception = function
     Nametab.GlobalizationError _)) -> true
   | _ -> false
 
-let error_cannot_unify k (m,n) =
+let error_cannot_unify (m,n) =
   raise (RefinerError (CannotUnify (m,n)))
 
 let check = ref true
@@ -91,25 +93,25 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
   else
 *)
   match kind_of_term trm with
-    | IsMeta _ ->
+    | Meta _ ->
 	if occur_meta conclty then
           raise (RefinerError (OccurMetaGoal conclty));
 	let ctxt = out_some goal.evar_info in 
 	(mk_goal ctxt hyps (nf_betaiota conclty))::goalacc, conclty
 
-    | IsCast (t,ty) ->
+    | Cast (t,ty) ->
 	let _ = type_of env sigma ty in
 	conv_leq_goal env sigma trm ty conclty;
 	mk_refgoals sigma goal goalacc ty t
 
-    | IsApp (f,l) ->
+    | App (f,l) ->
 	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
 	let (acc'',conclty') =
 	  mk_arggoals sigma goal acc' hdty (Array.to_list l) in
 	let _ = conv_leq_goal env sigma trm conclty' conclty in
         (acc'',conclty')
 
-    | IsMutCase (_,p,c,lf) ->
+    | Case (_,p,c,lf) ->
 	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
 	let acc'' = 
 	  array_fold_left2
@@ -132,16 +134,16 @@ and mk_hdgoals sigma goal goalacc trm =
   let env = evar_env goal in
   let hyps = goal.evar_hyps in
   match kind_of_term trm with
-    | IsCast (c,ty) when isMeta c ->
+    | Cast (c,ty) when isMeta c ->
 	let _ = type_of env sigma ty in
 	let ctxt = out_some goal.evar_info in  
 	(mk_goal ctxt hyps (nf_betaiota ty))::goalacc,ty
 
-    | IsApp (f,l) ->
+    | App (f,l) ->
 	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
 	mk_arggoals sigma goal acc' hdty (Array.to_list l)
 
-    | IsMutCase (_,p,c,lf) ->
+    | Case (_,p,c,lf) ->
 	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
 	let acc'' = 
 	  array_fold_left2
@@ -157,10 +159,10 @@ and mk_arggoals sigma goal goalacc funty = function
   | harg::tlargs as allargs ->
       let t = whd_betadeltaiota (evar_env goal) sigma funty in
       match kind_of_term t with
-	| IsProd (_,c1,b) ->
+	| Prod (_,c1,b) ->
 	    let (acc',hargty) = mk_refgoals sigma goal goalacc c1 harg in
 	    mk_arggoals sigma goal acc' (subst1 harg b) tlargs
-	| IsLetIn (_,c1,_,b) ->
+	| LetIn (_,c1,_,b) ->
 	    mk_arggoals sigma goal goalacc (subst1 c1 b) allargs
 	| _ -> raise (RefinerError (CannotApply (t,harg)))
 
@@ -170,10 +172,10 @@ and mk_casegoals sigma goal goalacc p c =
   let (acc'',pt) = mk_hdgoals sigma goal acc' p in
   let pj = {uj_val=p; uj_type=pt} in 
   let indspec =
-    try find_rectype env sigma ct
+    try find_mrectype env sigma ct
     with Induc -> anomaly "mk_casegoals" in
-  let (lbrty,conclty,_) =
-    type_case_branches env sigma indspec pj c in
+  let (lbrty,conclty) =
+    type_case_branches_with_names env indspec pj c in
   (acc'',lbrty,conclty)
 
 
@@ -377,15 +379,15 @@ let prim_refiner r sigma goal =
     	if !check && mem_named_context id sign then
 	  error "New variable is already declared";
         (match kind_of_term (strip_outer_cast cl) with
-	   | IsProd (_,c1,b) ->
+	   | Prod (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let sg = mk_goal info (add_named_assum (id,c1) sign)
+	       let sg = mk_goal info (add_named_decl (id,None,c1) sign)
 			  (subst1 (mkVar id) b) in
 	       [sg]
-	   | IsLetIn (_,c1,t1,b) ->
+	   | LetIn (_,c1,t1,b) ->
 	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
 	       let sg =
-		 mk_goal info (add_named_def (id,c1,t1) sign)
+		 mk_goal info (add_named_decl (id,Some c1,t1) sign)
 		   (subst1 (mkVar id) b) in
 	       [sg]
 	   | _ ->
@@ -396,12 +398,12 @@ let prim_refiner r sigma goal =
     	if !check && mem_named_context id sign then
 	  error "New variable is already declared";
         (match kind_of_term (strip_outer_cast cl) with
-	   | IsProd (_,c1,b) ->
+	   | Prod (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let sign' = insert_after_hyp sign whereid (id,None,c1) in
 	       let sg = mk_goal info sign' (subst1 (mkVar id) b) in 
 	       [sg]
-	   | IsLetIn (_,c1,t1,b) ->
+	   | LetIn (_,c1,t1,b) ->
 	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
 	       let sign' = insert_after_hyp sign whereid (id,Some c1,t1) in
 	       let sg = mk_goal info sign' (subst1 (mkVar id) b) in 
@@ -412,12 +414,12 @@ let prim_refiner r sigma goal =
 	
     | { name = Intro_replacing; newids = []; hypspecs = [id] } ->
 	(match kind_of_term (strip_outer_cast cl) with
-           | IsProd (_,c1,b) ->
+           | Prod (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let sign' = replace_hyp sign id (id,None,c1) in
 	       let sg = mk_goal info sign' (subst1 (mkVar id) b) in
 	       [sg]
-           | IsLetIn (_,c1,t1,b) ->
+           | LetIn (_,c1,t1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let sign' = replace_hyp sign id (id,Some c1,t1) in
 	       let sg = mk_goal info sign' (subst1 (mkVar id) b) in
@@ -432,11 +434,11 @@ let prim_refiner r sigma goal =
         let sg2 = mk_goal info (add_named_decl (id,None,t) sign) cl in
         if b then [sg1;sg2] else [sg2;sg1]  
 
-    | { name = Fix; hypspecs = []; terms = []; 
+    | { name = FixRule; hypspecs = []; terms = []; 
 	newids = [f]; params = [Num(_,n)] } ->
      	let rec check_ind k cl = 
           match kind_of_term (strip_outer_cast cl) with 
-            | IsProd (_,c1,b) -> 
+            | Prod (_,c1,b) -> 
             	if k = 1 then 
 		  try 
 		    let _ = find_inductive env sigma c1 in ()
@@ -449,13 +451,13 @@ let prim_refiner r sigma goal =
      	check_ind n cl;
 	if !check && mem_named_context f sign then
 	  error ("The name "^(string_of_id f)^" is already used");
-        let sg = mk_goal info (add_named_assum (f,cl) sign) cl in
+        let sg = mk_goal info (add_named_decl (f,None,cl) sign) cl in
         [sg]
     
-    | { name = Fix; hypspecs = []; terms = lar; newids = lf; params = ln } ->
+    | { name = FixRule; hypspecs = []; terms = lar; newids = lf; params = ln } ->
      	let rec check_ind k cl = 
           match kind_of_term (strip_outer_cast cl) with 
-            | IsProd (_,c1,b) -> 
+            | Prod (_,c1,b) -> 
             	if k = 1 then 
 		  try 
 		    fst (find_inductive env sigma c1)
@@ -475,7 +477,7 @@ let prim_refiner r sigma goal =
 		       "mutual inductive declaration");
 	      if mem_named_context f sign then 
 		error "name already used in the environment";
-	      mk_sign (add_named_assum (f,ar) sign) (lar',lf',ln')
+	      mk_sign (add_named_decl (f,None,ar) sign) (lar',lf',ln')
 	  | ([],[],[]) -> 
 	      List.map (mk_goal info sign) (cl::lar)
 	  | _ -> error "not the right number of arguments"
@@ -486,7 +488,7 @@ let prim_refiner r sigma goal =
      	let rec check_is_coind cl = 
 	  let b = whd_betadeltaiota env sigma cl in
           match kind_of_term b with
-            | IsProd (_,c1,b) -> check_is_coind  b
+            | Prod (_,c1,b) -> check_is_coind  b
             | _ -> 
 		try 
 		  let _ = find_coinductive env sigma b in ()
@@ -498,10 +500,11 @@ let prim_refiner r sigma goal =
         let rec mk_sign sign = function 
           | (ar::lar'),(f::lf') ->
 	      (try
-                (let _ = lookup_id f sign in
+                (let _ = Sign.lookup_named f sign in
                 error "name already used in the environment")
               with
-              |	Not_found -> mk_sign (add_named_assum (f,ar) sign) (lar',lf'))
+              |	Not_found ->
+                  mk_sign (add_named_decl (f,None,ar) sign) (lar',lf'))
 	  | ([],[]) -> List.map (mk_goal info sign) (cl::lar)
 	  | _ -> error "not the right number of arguments"
      	in 
@@ -566,10 +569,10 @@ let prim_extractor subfun vl pft =
   match pft with
     | { ref = Some (Prim { name = Intro; newids = [id] }, [spf]) } ->
 	(match kind_of_term (strip_outer_cast cl) with
-	   | IsProd (_,ty,_) ->
+	   | Prod (_,ty,_) ->
 	       let cty = subst_vars vl ty in
 	       mkLambda (Name id, cty, subfun (id::vl) spf)
-	   | IsLetIn (_,b,ty,_) ->
+	   | LetIn (_,b,ty,_) ->
 	       let cb = subst_vars vl b in
 	       let cty = subst_vars vl ty in
 	       mkLetIn (Name id, cb, cty, subfun (id::vl) spf)
@@ -577,10 +580,10 @@ let prim_extractor subfun vl pft =
 	
     | { ref = Some (Prim { name = Intro_after; newids = [id]}, [spf]) } -> 
 	(match kind_of_term (strip_outer_cast cl) with
-	   | IsProd (_,ty,_) ->
+	   | Prod (_,ty,_) ->
 	       let cty = subst_vars vl ty in
 	       mkLambda (Name id, cty, subfun (id::vl) spf)
-	   | IsLetIn (_,b,ty,_) ->
+	   | LetIn (_,b,ty,_) ->
 	       let cb = subst_vars vl b in
 	       let cty = subst_vars vl ty in
 	       mkLetIn (Name id, cb, cty, subfun (id::vl) spf)
@@ -588,10 +591,10 @@ let prim_extractor subfun vl pft =
 	
     | {ref=Some(Prim{name=Intro_replacing;hypspecs=[id]},[spf]) } ->
 	(match kind_of_term (strip_outer_cast cl) with
-	   | IsProd (_,ty,_) ->
+	   | Prod (_,ty,_) ->
 	       let cty = subst_vars vl ty in
 	       mkLambda (Name id, cty, subfun (id::vl) spf)
-	   | IsLetIn (_,b,ty,_) ->
+	   | LetIn (_,b,ty,_) ->
 	       let cb = subst_vars vl b in
 	       let cty = subst_vars vl ty in
 	       mkLetIn (Name id, cb, cty, subfun (id::vl) spf)
@@ -601,12 +604,12 @@ let prim_extractor subfun vl pft =
         let spf1, spf2 = if b then spf1, spf2 else spf2, spf1 in
 	mkLetIn (Name id,subfun vl spf1,subst_vars vl t,subfun (id::vl) spf2)
 
-    | {ref=Some(Prim{name=Fix;newids=[f];params=[Num(_,n)]},[spf]) } -> 
+    | {ref=Some(Prim{name=FixRule;newids=[f];params=[Num(_,n)]},[spf]) } -> 
 	let cty = subst_vars vl cl in 
 	let na = Name f in 
 	mkFix (([|n-1|],0),([|na|], [|cty|], [|subfun (f::vl) spf|]))
 
-    | {ref=Some(Prim{name=Fix;newids=lf;terms=lar;params=ln},spfl) } ->
+    | {ref=Some(Prim{name=FixRule;newids=lf;terms=lar;params=ln},spfl) } ->
 	let lcty = List.map (subst_vars vl) (cl::lar) in 
 	let vn = 
 	  Array.of_list (List.map (function Num(_,n) -> n-1
@@ -680,10 +683,10 @@ let pr_prim_rule = function
       else
         [< 'sTR"Cut "; prterm t; 'sTR ";[Intro "; pr_id id; 'sTR "|Idtac]" >]
 	
-  | {name=Fix;newids=[f];params=[Num(_,n)]} -> 
+  | {name=FixRule;newids=[f];params=[Num(_,n)]} -> 
       [< 'sTR"Fix "; pr_id f; 'sTR"/"; 'iNT n>]
       
-  | {name=Fix;newids=(f::lf);params=(Num(_,n))::ln;terms=lar} -> 
+  | {name=FixRule;newids=(f::lf);params=(Num(_,n))::ln;terms=lar} -> 
       let rec print_mut = 
         function (f::lf),((Num(_,n))::ln),(ar::lar) -> 
           [< pr_id f; 'sTR"/"; 'iNT n; 'sTR" : "; prterm ar;

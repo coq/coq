@@ -11,6 +11,7 @@
 open Miniml
 open Mlutil
 open Names
+open Nametab
 
 module ToplevelPp : Mlpp
 

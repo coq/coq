@@ -16,37 +16,38 @@ type result =
  | Kufo;;
 
 let destructurate t =
-  let c, args = Reduction.whd_stack t in
+  let c, args = Term.decompose_app t in
+  let env = Global.env() in
   match Term.kind_of_term c, args with
-    | Term.IsConst sp, args ->
+    | Term.Const sp, args ->
 	Kapp (Names.string_of_id
-		(Names.basename (Global.sp_of_global (Names.ConstRef sp))),
-                args)
-    | Term.IsMutConstruct csp , args ->
+		(Termops.id_of_global env (Nametab.ConstRef sp)),
+              args)
+    | Term.Construct csp , args ->
 	Kapp (Names.string_of_id
-		(Names.basename (Global.sp_of_global(Names.ConstructRef csp))),
+		(Termops.id_of_global env (Nametab.ConstructRef csp)),
 	        args)
-    | Term.IsMutInd isp, args ->
+    | Term.Ind isp, args ->
 	Kapp (Names.string_of_id
-		(Names.basename (Global.sp_of_global (Names.IndRef isp))),args)
-    | Term.IsVar id,[] -> Kvar(Names.string_of_id id)
-    | Term.IsProd (Names.Anonymous,typ,body), [] -> Kimp(typ,body)
-    | Term.IsProd (Names.Name _,_,_),[] ->
+		(Termops.id_of_global env (Nametab.IndRef isp)),args)
+    | Term.Var id,[] -> Kvar(Names.string_of_id id)
+    | Term.Prod (Names.Anonymous,typ,body), [] -> Kimp(typ,body)
+    | Term.Prod (Names.Name _,_,_),[] ->
 	Util.error "Omega: Not a quantifier-free goal"
     | _ -> Kufo
 
 exception Destruct
 
 let dest_const_apply t = 
-  let f,args = Reduction.whd_stack t in
+  let f,args = Term.decompose_app t in
   let ref = 
   match Term.kind_of_term f with 
-    | Term.IsConst sp         -> Names.ConstRef sp
-    | Term.IsMutConstruct csp -> Names.ConstructRef csp
-    | Term.IsMutInd isp       -> Names.IndRef isp
+    | Term.Const sp         -> Nametab.ConstRef sp
+    | Term.Construct csp -> Nametab.ConstructRef csp
+    | Term.Ind isp       -> Nametab.IndRef isp
     | _ -> raise Destruct
   in
-  Names.basename (Global.sp_of_global ref), args
+  Termops.id_of_global (Global.env()) ref, args
 
 let recognize_number t =
   let rec loop t =
@@ -64,8 +65,9 @@ let recognize_number t =
 let constant dir s =
   try
     Declare.global_absolute_reference
-      (Names.make_path (Names.make_dirpath (List.map Names.id_of_string dir))
-                       (Names.id_of_string s) Names.CCI)
+      (Names.make_path
+        (Names.make_dirpath (List.map Names.id_of_string (List.rev dir)))
+        (Names.id_of_string s))
   with e -> print_endline (String.concat "." dir); print_endline s; 
             raise e
 

@@ -13,7 +13,7 @@ open Names
 open Term
 open Environ
 open Evd
-open Reduction
+open Reductionops
 open Closure
 (*i*)
 

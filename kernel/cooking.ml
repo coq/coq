@@ -14,7 +14,6 @@ open Names
 open Term
 open Sign
 open Declarations
-open Instantiate
 open Environ
 open Reduction
 
@@ -47,61 +46,59 @@ let failure () =
 
 let modify_opers replfun (constl,indl,cstrl) =
   let rec substrec c =
-    let op, cl = splay_constr c in
-    let cl' = Array.map substrec cl in
-    match op with
-      | OpMutCase (n,(spi,a,b,c,d) as oper) ->
+    let c' = map_constr substrec c in
+    match kind_of_term c' with
+      | Case (ci,p,t,br) ->
 	  (try
-	     match List.assoc spi indl with
-	       | DO_ABSTRACT (spi',abs_vars) ->
-		   let n' = Array.length abs_vars + n in
-		   gather_constr (OpMutCase (n',(spi',a,b,c,d)),cl')
+	     match List.assoc ci.ci_ind indl with
+	       | DO_ABSTRACT (ind,abs_vars) ->
+		   let n' = Array.length abs_vars + ci.ci_npar in
+                   let ci' = { ci with
+                               ci_ind = ind;
+                               ci_npar = n' } in
+		   mkCase (ci',p,t,br)
 	       | _ -> raise Not_found
 	   with
-	     | Not_found -> gather_constr (op,cl'))
+	     | Not_found -> c')
 
-      | OpMutInd spi ->
-	  assert (Array.length cl=0);
+      | Ind spi ->
 	  (try
 	     (match List.assoc spi indl with
 		| NOT_OCCUR -> failure ()
 		| DO_ABSTRACT (oper',abs_vars) ->
-                    mkApp (mkMutInd oper', abs_vars)
+                    mkApp (mkInd oper', abs_vars)
 		| DO_REPLACE _ -> assert false)
 	   with 
-	     | Not_found -> mkMutInd spi)
+	     | Not_found -> c')
 
-      | OpMutConstruct spi ->
-	  assert (Array.length cl=0);
+      | Construct spi ->
 	  (try
 	     (match List.assoc spi cstrl with
 		| NOT_OCCUR -> failure ()
 		| DO_ABSTRACT (oper',abs_vars) ->
-		    mkApp (mkMutConstruct oper', abs_vars)
+		    mkApp (mkConstruct oper', abs_vars)
 		| DO_REPLACE _ -> assert false)
 	   with 
-	     | Not_found -> mkMutConstruct spi)
+	     | Not_found -> c')
 
-      | OpConst sp ->
-	  assert (Array.length cl=0);
+      | Const sp ->
 	  (try
 	     (match List.assoc sp constl with
 		| NOT_OCCUR -> failure ()
 		| DO_ABSTRACT (oper',abs_vars) ->
 		    mkApp (mkConst oper', abs_vars)
-		| DO_REPLACE cb -> substrec (replfun sp cb cl'))
+		| DO_REPLACE cb -> substrec (replfun (sp,cb)))
 	   with 
-	     | Not_found -> mkConst sp)
+	     | Not_found -> c')
   
-    | _ -> gather_constr (op, cl')
+    | _ -> c'
   in 
   if (constl,indl,cstrl) = ([],[],[]) then fun x -> x else substrec
 
 let expmod_constr modlist c =
-  let sigma = Evd.empty in
   let simpfun = 
     if modlist = ([],[],[]) then fun x -> x else nf_betaiota in
-  let expfun sp cb args = 
+  let expfun (sp,cb) = 
     if cb.const_opaque then
       errorlabstrm "expmod_constr"
 	[< 'sTR"Cannot unfold the value of ";
@@ -110,14 +107,12 @@ let expmod_constr modlist c =
         'sTR"and then require that theorems which use them"; 'sPC;
         'sTR"be transparent" >];
     match cb.const_body with
-      | Some body -> 
-          instantiate_constr cb.const_hyps body (Array.to_list args)
+      | Some body -> body
       | None -> assert false
   in
-  let c' =
-    modify_opers expfun modlist c in
+  let c' = modify_opers expfun modlist c in
   match kind_of_term c' with
-    | IsCast (val_0,typ) -> mkCast (simpfun val_0,simpfun typ)
+    | Cast (value,typ) -> mkCast (simpfun value,simpfun typ)
     | _ -> simpfun c'
 
 let expmod_type modlist c =
@@ -141,7 +136,13 @@ let cook_constant env r =
   let cb = r.d_from in
   let typ = expmod_type r.d_modlist cb.const_type in
   let body = option_app (expmod_constr r.d_modlist) cb.const_body in
-  let hyps = List.map (fun (sp,c,t) -> (basename sp,c,t)) cb.const_hyps in
-  let hyps = map_named_context (expmod_constr r.d_modlist) hyps in
+  let hyps =
+    Sign.fold_named_context
+      (fun d ctxt ->
+        Sign.add_named_decl
+          (map_named_declaration (expmod_constr r.d_modlist) d)
+          ctxt)
+      cb.const_hyps
+      empty_named_context in
   let body,typ = abstract_constant r.d_abstract hyps (body,typ) in
   (body, typ, cb.const_constraints, cb.const_opaque)

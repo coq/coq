@@ -36,12 +36,12 @@ let lookup_named id =
 let args sign = Array.of_list (instance_from_section_context sign)
 
 let rec globalize bv c = match kind_of_term c with
-  | IsVar id -> lookup_named id bv
-  | IsConst (sp, _) ->
+  | Var id -> lookup_named id bv
+  | Const (sp, _) ->
       let cb = lookup_constant sp !env in mkConst (sp, args cb.const_hyps)
-  | IsMutInd (sp,_ as spi, _) ->
+  | Ind (sp,_ as spi, _) ->
       let mib = lookup_mind sp !env in mkMutInd (spi, args mib.mind_hyps)
-  | IsMutConstruct ((sp,_),_ as spc, _) ->
+  | Construct ((sp,_),_ as spc, _) ->
       let mib = lookup_mind sp !env in mkMutConstruct (spc, args mib.mind_hyps)
   | _ -> map_constr_with_named_binders (fun na l -> na::l) globalize bv c
 

@@ -11,7 +11,9 @@
 open Util
 open Pp
 open Names
+open Nametab
 open Term
+open Termops
 open Typeops
 open Libobject
 open Library

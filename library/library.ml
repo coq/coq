@@ -12,6 +12,7 @@ open Pp
 open Util
 
 open Names
+open Nameops
 open Environ
 open Libobject
 open Lib
@@ -57,7 +58,7 @@ let find_logical_path phys_dir =
   let phys_dir = canonical_path_name phys_dir in
   match list_filter2 (fun p d -> p = phys_dir) !load_path with
   | _,[dir] -> dir
-  | _,[] -> Nametab.default_root_prefix
+  | _,[] -> Nameops.default_root_prefix
   | _,l -> anomaly ("Two logical paths are associated to "^phys_dir)
 
 let remove_path dir =
@@ -71,11 +72,11 @@ let add_load_path_entry (phys_path,coq_path) =
         (* If this is not the default -I . to coqtop *)
         && not
         (phys_path = canonical_path_name Filename.current_dir_name
-         && coq_path = Nametab.default_root_prefix)
+         && coq_path = Nameops.default_root_prefix)
       then
 	begin
           (* Assume the user is concerned by module naming *)
-	  if dir <> Nametab.default_root_prefix then
+	  if dir <> Nameops.default_root_prefix then
 	    (Options.if_verbose warning (phys_path^" was previously bound to "
 	    ^(string_of_dirpath dir)
 	    ^("\nIt is remapped to "^(string_of_dirpath coq_path)));
@@ -264,7 +265,6 @@ let rec load_module = function
 	  [< 'sTR ("The file " ^ f ^ " contains module"); 'sPC;
 	  pr_dirpath md.md_name; 'sPC; 'sTR "and not module"; 'sPC;
 	  pr_dirpath dir >];
-      Nametab.push_library_root dir;
       compunit_cache := Stringmap.add f (md, digest) !compunit_cache;
       (md, digest) in
     intern_module digest f md
@@ -316,7 +316,7 @@ let locate_qualified_library qid =
   try
     let dir, base = repr_qualid qid in 
     let loadpath =
-      if is_empty_dirpath dir then get_load_path ()
+      if repr_dirpath dir = [] then get_load_path ()
       else 
         (* we assume dir is an absolute dirpath *)
 	load_path_of_logical_path dir
@@ -364,7 +364,6 @@ let locate_by_filename_only id f =
        m.module_filename);
     (LibLoaded, md.md_name, m.module_filename)
   with Not_found ->
-    Nametab.push_library_root md.md_name;
     compunit_cache := Stringmap.add f (md, digest) !compunit_cache;
     (LibInPath, md.md_name, f)
 
@@ -372,7 +371,7 @@ let locate_module qid = function
   | Some f ->
       (* A name is specified, we have to check it contains module id *)
       let prefix, id = repr_qualid qid in
-      assert (is_empty_dirpath prefix);
+      assert (repr_dirpath prefix = []);
       let _, f = System.find_file_in_path (get_load_path ()) (f^".vo") in
       locate_by_filename_only (Some id) f
   | None ->

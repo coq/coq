@@ -170,7 +170,8 @@ let add_rec_path dir coq_dirpath =
   let prefix = Names.repr_dirpath coq_dirpath in
   if dirs <> [] then
     let convert_dirs (lp,cp) =
-      (lp,Names.make_dirpath (prefix@(List.map convert_string cp))) in
+      (lp,Names.make_dirpath
+            ((List.map convert_string (List.rev cp))@prefix)) in
     let dirs = map_succeed convert_dirs dirs in
     begin
       List.iter (fun lpe -> add_ml_dir (fst lpe)) dirs;

@@ -11,9 +11,11 @@
 open Tacmach
 open Proof_type
 open Libobject
-open Reduction
+open Reductionops
 open Term
+open Termops
 open Names
+open Nameops
 open Util
 open Pp
 open Printer
@@ -22,6 +24,8 @@ open Environ
 open Termast
 open Command
 open Tactics 
+open Safe_typing
+open Nametab
 
 type setoid =
     { set_a : constr;
@@ -39,7 +43,8 @@ type morphism =
 let constr_of c = Astterm.interp_constr Evd.empty (Global.env()) c
 
 let constant dir s =
-  let dir = make_dirpath (List.map id_of_string ("Coq"::"Setoids"::dir)) in
+  let dir = make_dirpath
+              (List.map id_of_string (List.rev ("Coq"::"Setoids"::dir))) in
   let id = id_of_string s in
     try 
       Declare.global_reference_in_absolute_module dir id
@@ -47,7 +52,8 @@ let constant dir s =
     anomaly ("Setoid: cannot find "^(Nametab.string_of_qualid (Nametab.make_qualid dir id)))
 
 let global_constant dir s =
-  let dir = make_dirpath (List.map id_of_string ("Coq"::"Init"::dir)) in
+  let dir = make_dirpath
+              (List.map id_of_string (List.rev ("Coq"::"Init"::dir))) in
   let id = id_of_string s in
     try 
       Declare.global_reference_in_absolute_module dir id
@@ -228,14 +234,14 @@ let add_setoid a aeq th =
 	    let eq_ext_name = gen_eq_lem_name () in 
 	    let eq_ext_name2 = gen_eq_lem_name () in 
 	    let _ = Declare.declare_constant eq_ext_name
-		      ((Declare.ConstantEntry {Declarations.const_entry_body = eq_morph; 
-					       Declarations.const_entry_type = None;
-                                               Declarations.const_entry_opaque = true}),
+		      ((Declare.ConstantEntry {const_entry_body = eq_morph; 
+					       const_entry_type = None;
+                                               const_entry_opaque = true}),
 		       Declare.NeverDischarge) in
 	    let _ = Declare.declare_constant eq_ext_name2
-		      ((Declare.ConstantEntry {Declarations.const_entry_body = eq_morph2; 
-					       Declarations.const_entry_type = None;
-                                               Declarations.const_entry_opaque = true}),
+		      ((Declare.ConstantEntry {const_entry_body = eq_morph2; 
+					       const_entry_type = None;
+                                               const_entry_opaque = true}),
 		       Declare.NeverDischarge) in
 	    let eqmorph = (current_constant eq_ext_name) in
 	    let eqmorph2 = (current_constant eq_ext_name2) in
@@ -291,10 +297,10 @@ let check_is_dependent t n =
   in aux t 0 n
 
 let gen_lem_name m = match kind_of_term m with 
-  | IsVar id -> add_suffix id "_ext"
-  | IsConst sp -> add_suffix (basename sp) "_ext"
-  | IsMutInd (sp, i) -> add_suffix (basename sp) ((string_of_int i)^"_ext")
-  | IsMutConstruct ((sp,i),j) -> add_suffix
+  | Var id -> add_suffix id "_ext"
+  | Const sp -> add_suffix (basename sp) "_ext"
+  | Ind (sp, i) -> add_suffix (basename sp) ((string_of_int i)^"_ext")
+  | Construct ((sp,i),j) -> add_suffix
       (basename sp) ((string_of_int i)^(string_of_int i)^"_ext")
   | _ -> errorlabstrm "New Morphism" [< 'sTR "The term "; prterm m; 'sTR "is not a known name">]
 
@@ -453,9 +459,9 @@ let add_morphism lem_name (m,profil) =
 	 (let lem_2 = gen_lem_iff env m mext args_t poss in
 	  let lem2_name = add_suffix lem_name "2" in
 	  let _ = Declare.declare_constant lem2_name
-		    ((Declare.ConstantEntry {Declarations.const_entry_body = lem_2; 
-					     Declarations.const_entry_type = None;
-                                               Declarations.const_entry_opaque = true}),
+		    ((Declare.ConstantEntry {const_entry_body = lem_2; 
+					     const_entry_type = None;
+                                               const_entry_opaque = true}),
 		     Declare.NeverDischarge) in
 	  let lem2 = (current_constant lem2_name) in
 	    (Lib.add_anonymous_leaf
@@ -542,10 +548,10 @@ let get_mark a =
 let rec mark_occur t in_c =
   if (eq_constr t in_c) then Toreplace else
     match kind_of_term in_c with
-      | IsApp (c,al) -> 
+      | App (c,al) -> 
 	  let a = Array.map (mark_occur t) al
 	  in if (get_mark a) then (MApp a) else Tokeep
-      | IsProd (_, c1, c2) -> 
+      | Prod (_, c1, c2) -> 
 	  if (dependent (mkRel 1) c2)
 	  then Tokeep
 	  else 
@@ -599,7 +605,7 @@ let rec create_tac_list i a al c1 c2 hyp args_t = function
 (*      else tclIDTAC::(create_tac_list (i+1) a al c1 c2 hyp q) *)
 
 and zapply is_r gl gl_m c1 c2 hyp glll = (match ((kind_of_term gl), gl_m) with
-  | ((IsApp (c,al)),(MApp a)) -> (
+  | ((App (c,al)),(MApp a)) -> (
       try 
 	let m = morphism_table_find c in
 	let args = Array.of_list (create_args al a m.profil c1 c2) in
@@ -613,7 +619,7 @@ and zapply is_r gl gl_m c1 c2 hyp glll = (match ((kind_of_term gl), gl_m) with
 		      tclTHENS (apply (mkApp (xom, args))) (create_tac_list 0 a al c1 c2 hyp m.arg_types m.profil))
       with Not_found -> errorlabstrm "Setoid_replace" 
 	  [< 'sTR "The term "; prterm c; 'sTR " has not been declared as a morphism">])
-  | ((IsProd (_,hh, cc)),(Mimp (hhm, ccm))) ->
+  | ((Prod (_,hh, cc)),(Mimp (hhm, ccm))) ->
       let al = [|hh; cc|] in
       let a = [|hhm; ccm|] in
       let fleche_constr = (Lazy.force coq_fleche) in
@@ -649,7 +655,7 @@ let setoid_replace c1 c2 hyp gl =
 
 let general_s_rewrite lft2rgt c gl =
   let ctype = pf_type_of gl c in
-  let (equiv, args) = decomp_app ctype in
+  let (equiv, args) = decompose_app ctype in
   let rec get_last_two = function
     | [c1;c2] -> (c1, c2)
     | x::y::z -> get_last_two (y::z)

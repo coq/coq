@@ -24,14 +24,17 @@ open Past
 
 (* VERY UGLY!! find some work around *)
 let modify_sign id t s =
-  let t' = lookup_id_type id s in
-  map_named_context (fun t'' -> if t'' == t' then t else t'') s
+  fold_named_context
+    (fun ((x,b,ty) as d) sign ->
+      if x=id then add_named_decl (x,b,t) sign else add_named_decl d sign)
+    s empty_named_context
 
 let add_sign (id,t) s =
-  if mem_named_context id s then
+  try 
+    let _ = lookup_named id s in
     modify_sign id t s
-  else
-    add_named_assum (id,t) s
+  with Not_found ->
+    add_named_decl (id,None,t) s
 
 let cast_set c = mkCast (c, mkSet)
 

@@ -13,6 +13,7 @@ open Util
 open System
 open Options
 open Names
+open Nameops
 open States
 open Toplevel
 open Coqinit
@@ -47,8 +48,8 @@ let outputstate () = if !outputstate <> "" then extern_state !outputstate
 
 let set_include d p = push_include (d,p)
 let set_rec_include d p = push_rec_include (d,p)
-let set_default_include d = set_include d Nametab.default_root_prefix
-let set_default_rec_include d = set_rec_include d Nametab.default_root_prefix
+let set_default_include d = set_include d Nameops.default_root_prefix
+let set_default_rec_include d = set_rec_include d Nameops.default_root_prefix
  
 let load_vernacular_list = ref ([] : string list)
 let add_load_vernacular s =
@@ -230,7 +231,6 @@ let start () =
       exit 1
   end;
   if !batch_mode then (flush_all(); Profile.print_profile ();exit 0);
-  Lib.init_toplevel_root ();
   Toplevel.loop();
 (* Initialise and launch the Ocaml toplevel *)
   Coqinit.init_ocaml_path();

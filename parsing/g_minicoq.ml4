@@ -41,7 +41,7 @@ let inductive = Grammar.Entry.create gram "inductive"
 let constructor = Grammar.Entry.create gram "constructor"
 let command = Grammar.Entry.create gram "command"
 
-let path_of_string s = make_path [] (id_of_string s) CCI
+let path_of_string s = make_path [] (id_of_string s)
 
 EXTEND
   name: 
@@ -145,32 +145,32 @@ let rename bv = function
 
 let rec pp bv t =
   match kind_of_term t with
-  | IsSort (Prop Pos) -> [< 'sTR "Set" >]
-  | IsSort (Prop Null) -> [< 'sTR "Prop" >]
-  | IsSort (Type u) -> print_type u
-  | IsLambda (na, t, c) ->
+  | Sort (Prop Pos) -> [< 'sTR "Set" >]
+  | Sort (Prop Null) -> [< 'sTR "Prop" >]
+  | Sort (Type u) -> print_type u
+  | Lambda (na, t, c) ->
       [< 'sTR"["; print_name na; 'sTR":"; pp bv t; 'sTR"]"; pp (na::bv) c >]
-  | IsProd (Anonymous, t, c) ->
+  | Prod (Anonymous, t, c) ->
       [< pp bv t; 'sTR"->"; pp (Anonymous::bv) c >]
-  | IsProd (na, t, c) ->
+  | Prod (na, t, c) ->
       [< 'sTR"("; print_name na; 'sTR":"; pp bv t; 'sTR")"; pp (na::bv) c >]
-  | IsCast (c, t) ->
+  | Cast (c, t) ->
       if !print_casts then 
 	[< 'sTR"("; pp bv c; 'sTR"::"; pp bv t; 'sTR")" >]
       else 
 	pp bv c
-  | IsApp(h, v) ->
+  | App(h, v) ->
       [< 'sTR"("; pp bv h; 'sPC;
          prvect_with_sep (fun () -> [< 'sPC >]) (pp bv) v; 'sTR")" >]
-  | IsConst (sp, _) ->
+  | Const (sp, _) ->
       [< 'sTR"Const "; pr_id (basename sp) >]
-  | IsMutInd ((sp,i), _) ->
+  | Ind ((sp,i), _) ->
       [< 'sTR"Ind "; pr_id (basename sp); 'sTR" "; 'iNT i >]
-  | IsMutConstruct (((sp,i),j), _) ->
+  | Construct (((sp,i),j), _) ->
       [< 'sTR"Construct "; pr_id (basename sp); 'sTR" "; 'iNT i; 
 	 'sTR" "; 'iNT j >]
-  | IsVar id -> pr_id id
-  | IsRel n -> print_rel bv n
+  | Var id -> pr_id id
+  | Rel n -> print_rel bv n
   | _ -> [< 'sTR"<???>" >]
 
 let pr_term _ ctx = pp (fold_rel_context (fun _ (n,_,_) l -> n::l) ctx [])

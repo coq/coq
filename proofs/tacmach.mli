@@ -56,7 +56,7 @@ val hnf_type_of           : goal sigma -> constr -> constr
 val pf_interp_constr      : goal sigma -> Coqast.t -> constr
 val pf_interp_type        : goal sigma -> Coqast.t -> constr
 
-val pf_get_hyp            : goal sigma -> identifier -> constr option * types
+val pf_get_hyp            : goal sigma -> identifier -> named_declaration
 val pf_get_hyp_typ        : goal sigma -> identifier -> types
 
 val pf_reduction_of_redexp : goal sigma -> red_expr -> constr -> constr

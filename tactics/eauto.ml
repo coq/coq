@@ -12,6 +12,7 @@ open Pp
 open Util
 open Names
 open Term
+open Termops
 open Sign
 open Reduction
 open Proof_type
@@ -79,9 +80,10 @@ let prolog_tac l n gl =
     errorlabstrm "Prolog.prolog" [< 'sTR "Prolog failed" >]
 
 let evars_of evc c = 
-  let rec evrec acc c = match splay_constr c with
-    | OpEvar n, _ when Evd.in_dom evc n -> c :: acc
-    | _, cl -> Array.fold_left evrec acc cl
+  let rec evrec acc c =
+    match kind_of_term c with
+    | Evar (n, _) when Evd.in_dom evc n -> c :: acc
+    | _ -> fold_constr evrec acc c
   in 
   evrec [] c
 

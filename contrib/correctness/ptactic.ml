@@ -95,6 +95,7 @@ open Tacmach
 open Tactics
 open Tacticals
 open Equality
+open Nametab
 
 let nat = IndRef (coq_constant ["Init";"Datatypes"] "nat", 0)
 let lt = ConstRef (coq_constant ["Init";"Peano"] "lt")
@@ -136,7 +137,7 @@ let (loop_ids : tactic) = fun gl ->
 	    match pf_matches gl eq_pattern (body_of_type a) with
 	      | [_; _,varphi; _] when isVar varphi ->
 		  let phi = destVar varphi in
-		  if Environ.occur_var env phi concl then
+		  if Termops.occur_var env phi concl then
 		    tclTHEN (rewriteLR (mkVar id)) (arec al) gl
 		  else
 		    arec al gl
@@ -200,11 +201,11 @@ let (automatic : tactic) =
 let reduce_open_constr (em,c) =
   let existential_map_of_constr = 
     let rec collect em c = match kind_of_term c with
-      | IsCast (c',t) -> 
+      | Cast (c',t) -> 
 	  (match kind_of_term c' with
-	     | IsEvar ev -> (ev,t) :: em
+	     | Evar ev -> (ev,t) :: em
 	     | _ -> fold_constr collect em c)
-      | IsEvar _ -> 
+      | Evar _ -> 
 	  assert false (* all existentials should be casted *)
       | _ -> 
 	  fold_constr collect em c

@@ -53,8 +53,8 @@ let add_ml_include s =
   Mltop.add_ml_dir s
 
 (* Puts dir in the path of ML and in the LoadPath *)
-let coq_add_path s = Mltop.add_path s (Names.make_dirpath [Nametab.coq_root])
-let coq_add_rec_path s = Mltop.add_rec_path s (Names.make_dirpath [Nametab.coq_root])
+let coq_add_path s = Mltop.add_path s (Names.make_dirpath [Nameops.coq_root])
+let coq_add_rec_path s = Mltop.add_rec_path s (Names.make_dirpath [Nameops.coq_root])
 
 (* By the option -include -I or -R of the command line *)
 let includes = ref []
@@ -79,23 +79,20 @@ let init_load_path () =
   (* first user-contrib *)
   let user_contrib = Filename.concat coqlib "user-contrib" in
   if Sys.file_exists user_contrib then 
-    Mltop.add_path user_contrib Nametab.default_root_prefix;
+    Mltop.add_path user_contrib Nameops.default_root_prefix;
   (* then standard library *)
   let dirs = "states" :: dev @ [ "theories"; "tactics"; "contrib" ] in
   List.iter (fun s -> coq_add_rec_path (Filename.concat coqlib s)) dirs;
   let camlp4 = getenv_else "CAMLP4LIB" Coq_config.camlp4lib in
   add_ml_include camlp4;
   (* then current directory *)
-  Mltop.add_path "." Nametab.default_root_prefix;
+  Mltop.add_path "." Nameops.default_root_prefix;
   (* additional loadpath, given with -I -include -R options *)
   List.iter 
     (fun (s,alias,reci) ->
        if reci then Mltop.add_rec_path s alias else Mltop.add_path s alias)
     (List.rev !includes)
-
-(* Must be done after restoring initial state! *)
 let init_library_roots () =
-  List.iter (fun (_,alias,_) -> Nametab.push_library_root alias) !includes;
   includes := []
 
 (* Initialises the Ocaml toplevel before launching it, so that it can

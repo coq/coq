@@ -12,6 +12,7 @@ open System
 open Pp
 open Ast
 open Names
+open Nameops
 open Sign
 open Univ
 open Proof_trees
@@ -20,6 +21,7 @@ open Printer
 open Refiner
 open Tacmach
 open Term
+open Termops
 open Clenv
 open Errors
 
@@ -85,37 +87,37 @@ let cnt = ref 0
 
 let constr_display csr =
   let rec term_display c = match kind_of_term c with
-  | IsRel n -> "Rel("^(string_of_int n)^")"
-  | IsMeta n -> "Meta("^(string_of_int n)^")"
-  | IsVar id -> "Var("^(string_of_id id)^")"
-  | IsSort s -> "Sort("^(sort_display s)^")"
-  | IsCast (c,t) -> "Cast("^(term_display c)^","^(term_display t)^")"
-  | IsProd (na,t,c) ->
+  | Rel n -> "Rel("^(string_of_int n)^")"
+  | Meta n -> "Meta("^(string_of_int n)^")"
+  | Var id -> "Var("^(string_of_id id)^")"
+  | Sort s -> "Sort("^(sort_display s)^")"
+  | Cast (c,t) -> "Cast("^(term_display c)^","^(term_display t)^")"
+  | Prod (na,t,c) ->
       "Prod("^(name_display na)^","^(term_display t)^","^(term_display c)^")\n"
-  | IsLambda (na,t,c) ->
+  | Lambda (na,t,c) ->
       "Lambda("^(name_display na)^","^(term_display t)^","^(term_display c)^")\n"
-  | IsLetIn (na,b,t,c) ->
+  | LetIn (na,b,t,c) ->
       "LetIn("^(name_display na)^","^(term_display b)^","
       ^(term_display t)^","^(term_display c)^")"
-  | IsApp (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
-  | IsEvar (e,l) -> "Evar("^(string_of_int e)^","^(array_display l)^")"
-  | IsConst c -> "Const("^(string_of_path c)^")"
-  | IsMutInd (sp,i) ->
+  | App (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
+  | Evar (e,l) -> "Evar("^(string_of_int e)^","^(array_display l)^")"
+  | Const c -> "Const("^(string_of_path c)^")"
+  | Ind (sp,i) ->
       "MutInd("^(string_of_path sp)^","^(string_of_int i)^")"
-  | IsMutConstruct ((sp,i),j) ->
+  | Construct ((sp,i),j) ->
       "MutConstruct(("^(string_of_path sp)^","^(string_of_int i)^"),"
       ^(string_of_int j)^")"
-  | IsMutCase (ci,p,c,bl) ->
+  | Case (ci,p,c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
       ^(array_display bl)^")"
-  | IsFix ((t,i),(lna,tl,bl)) ->
+  | Fix ((t,i),(lna,tl,bl)) ->
       "Fix(([|"^(Array.fold_right (fun x i -> (string_of_int x)^(if not(i="")
         then (";"^i) else "")) t "")^"|],"^(string_of_int i)^"),"
       ^(array_display tl)^","
       ^(Array.fold_right (fun x i -> (name_display x)^(if not(i="")
         then (";"^i) else "")) lna "")^","
       ^(array_display bl)^")"
-  | IsCoFix(i,(lna,tl,bl)) ->
+  | CoFix(i,(lna,tl,bl)) ->
       "CoFix("^(string_of_int i)^"),"
       ^(array_display tl)^","
       ^(Array.fold_right (fun x i -> (name_display x)^(if not(i="")
@@ -146,53 +148,53 @@ open Format;;
 
 let print_pure_constr csr =
   let rec term_display c = match kind_of_term c with
-  | IsRel n -> print_string "#"; print_int n
-  | IsMeta n -> print_string "Meta("; print_int n; print_string ")"
-  | IsVar id -> print_string (string_of_id id)
-  | IsSort s -> sort_display s
-  | IsCast (c,t) -> open_hovbox 1;
+  | Rel n -> print_string "#"; print_int n
+  | Meta n -> print_string "Meta("; print_int n; print_string ")"
+  | Var id -> print_string (string_of_id id)
+  | Sort s -> sort_display s
+  | Cast (c,t) -> open_hovbox 1;
       print_string "("; (term_display c); print_cut();
       print_string "::"; (term_display t); print_string ")"; close_box()
-  | IsProd (Name(id),t,c) ->
+  | Prod (Name(id),t,c) ->
       open_hovbox 1;
       print_string"("; print_string (string_of_id id); 
       print_string ":"; box_display t; 
       print_string ")"; print_cut(); 
       box_display c; close_box()
-  | IsProd (Anonymous,t,c) ->
+  | Prod (Anonymous,t,c) ->
       print_string"("; box_display t; print_cut(); print_string "->";
       box_display c; print_string ")"; 
-  | IsLambda (na,t,c) ->
+  | Lambda (na,t,c) ->
       print_string "["; name_display na;
       print_string ":"; box_display t; print_string "]";
       print_cut(); box_display c; 
-  | IsLetIn (na,b,t,c) ->
+  | LetIn (na,b,t,c) ->
       print_string "["; name_display na; print_string "="; 
       box_display b; print_cut();
       print_string ":"; box_display t; print_string "]";
       print_cut(); box_display c; 
-  | IsApp (c,l) -> 
+  | App (c,l) -> 
       print_string "("; 
       box_display c; 
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string ")"
-  | IsEvar (e,l) -> print_string "Evar#"; print_int e; print_string "{";
+  | Evar (e,l) -> print_string "Evar#"; print_int e; print_string "{";
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string"}"
-  | IsConst c -> print_string "Cons(";
+  | Const c -> print_string "Cons(";
       sp_display c;
       print_string ")"
-  | IsMutInd (sp,i) ->
+  | Ind (sp,i) ->
       print_string "Ind(";
       sp_display sp;
       print_string ","; print_int i;
       print_string ")"
-  | IsMutConstruct ((sp,i),j) ->
+  | Construct ((sp,i),j) ->
       print_string "Constr(";
       sp_display sp;
       print_string ",";
       print_int i; print_string ","; print_int j; print_string ")"
-  | IsMutCase (ci,p,c,bl) ->
+  | Case (ci,p,c,bl) ->
       open_vbox 0;
       print_string "<"; box_display p; print_string ">";
       print_cut(); print_string "Case";
@@ -203,7 +205,7 @@ let print_pure_constr csr =
       print_cut(); 
       print_string "end"; 
       close_box()
-  | IsFix ((t,i),(lna,tl,bl)) ->
+  | Fix ((t,i),(lna,tl,bl)) ->
       print_string "Fix("; print_int i; print_string ")"; 
       print_cut();
       open_vbox 0;
@@ -217,7 +219,7 @@ let print_pure_constr csr =
 	  print_cut()
         done
       in print_string"{"; print_fix(); print_string"}"
-  | IsCoFix(i,(lna,tl,bl)) ->
+  | CoFix(i,(lna,tl,bl)) ->
       print_string "CoFix("; print_int i; print_string ")"; 
       print_cut();
       open_vbox 0;
@@ -244,7 +246,7 @@ let print_pure_constr csr =
     | Anonymous -> print_string "_"
 (* Remove the top names for library and Scratch to avoid long names *)
   and sp_display sp = let ls = 
-    match List.map string_of_id (repr_dirpath (dirpath sp)) with 
+    match List.rev (List.map string_of_id (repr_dirpath (dirpath sp))) with 
         ("Scratch"::l)-> l
       | ("Coq"::_::l) -> l 
       | l             -> l

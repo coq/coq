@@ -13,6 +13,7 @@ open Names
 open Term
 open Environ
 open Inductive
+open Nametab
 (*i*)
 
 (*s Implicit arguments. Here we store the implicit arguments. Notice that we 
@@ -29,7 +30,7 @@ type implicits_list = int list
 
 (* Computation of the positions of arguments automatically inferable
    for an object of the given type in the given env *)
-val compute_implicits : env -> 'a Evd.evar_map -> types -> implicits_list
+val compute_implicits : env -> types -> implicits_list
 
 (*s Computation of implicits (done using the global environment). *)
 

@@ -12,10 +12,14 @@ open Pp
 open Util
 open Stamps
 open Names
+open Nameops
 open Sign
 open Term
+open Termops
+open Declarations
 open Inductive
-open Reduction
+open Inductiveops
+open Reductionops
 open Environ
 open Declare
 open Evd
@@ -30,15 +34,16 @@ open Clenv
 open Tacticals
 open Hipattern
 open Coqlib
+open Nametab
 
 exception Bound
 
 let rec nb_prod x =
   let rec count n c =
     match kind_of_term c with
-        IsProd(_,_,t) -> count (n+1) t
-      | IsLetIn(_,a,_,t) -> count n (subst1 a t)
-      | IsCast(c,_) -> count n c
+        Prod(_,_,t) -> count (n+1) t
+      | LetIn(_,a,_,t) -> count n (subst1 a t)
+      | Cast(c,_) -> count n c
       | _ -> n
   in count 0 x
 
@@ -59,23 +64,23 @@ let get_pairs_from_bindings =
 
 let string_of_inductive c = 
   try match kind_of_term c with
-  | IsMutInd ind_sp -> 
-      let mispec = Global.lookup_mind_specif ind_sp in 
-      string_of_id (mis_typename mispec)
+  | Ind ind_sp -> 
+      let (mib,mip) = Global.lookup_inductive ind_sp in 
+      string_of_id mip.mind_typename
   | _ -> raise Bound
   with Bound -> error "Bound head variable"
 
 let rec head_constr_bound t l =
   let t = strip_outer_cast(collapse_appl t) in
   match kind_of_term t with
-    | IsProd (_,_,c2)  -> head_constr_bound c2 l 
-    | IsLetIn (_,_,_,c2) -> head_constr_bound c2 l 
-    | IsApp (f,args)  -> 
+    | Prod (_,_,c2)  -> head_constr_bound c2 l 
+    | LetIn (_,_,_,c2) -> head_constr_bound c2 l 
+    | App (f,args)  -> 
 	head_constr_bound f (Array.fold_right (fun a l -> a::l) args l)
-    | IsConst _        -> t::l
-    | IsMutInd _       -> t::l
-    | IsMutConstruct _ -> t::l
-    | IsVar _          -> t::l
+    | Const _        -> t::l
+    | Ind _       -> t::l
+    | Construct _ -> t::l
+    | Var _          -> t::l
     | _                -> raise Bound
 
 let head_constr c = 
@@ -161,7 +166,7 @@ let reduct_in_hyp redfun idref gl =
   let inhyp,id = match idref with
     | InHyp id -> true, id
     | InHypType id -> false, id in
-  let c, ty = pf_get_hyp gl id in
+  let (_,c, ty) = pf_get_hyp gl id in
   let redfun' = under_casts (pf_reduce redfun gl) in
   match c with
     | None -> convert_hyp id (redfun' ty) gl
@@ -247,7 +252,7 @@ let dyn_reduce = function
 
 let unfold_constr = function 
   | ConstRef sp -> unfold_in_concl [[],Closure.EvalConstRef sp]
-  | VarRef sp -> unfold_in_concl [[],Closure.EvalVarRef (basename sp)]
+  | VarRef id -> unfold_in_concl [[],Closure.EvalVarRef id]
   | _ -> errorlabstrm "unfold_constr" [< 'sTR "Cannot unfold a non-constant.">]
 
 (*******************************************)
@@ -280,12 +285,12 @@ let id_of_name_with_default s = function
 
 let default_id gl =
   match kind_of_term (strip_outer_cast (pf_concl gl)) with
-    | IsProd (name,c1,c2) ->
+    | Prod (name,c1,c2) ->
   	(match kind_of_term (pf_whd_betadeltaiota gl (pf_type_of gl c1)) with
-	   | IsSort (Prop _) -> (id_of_name_with_default "H" name)
-	   | IsSort (Type _) -> (id_of_name_with_default "X" name)
+	   | Sort (Prop _) -> (id_of_name_with_default "H" name)
+	   | Sort (Type _) -> (id_of_name_with_default "X" name)
 	   | _                   -> anomaly "Wrong sort")
-    | IsLetIn (name,b,_,_) -> id_of_name_using_hdchar (pf_env gl) b name
+    | LetIn (name,b,_,_) -> id_of_name_using_hdchar (pf_env gl) b name
     | _ -> raise (RefinerError IntroNeedsProduct)
 
 (* Non primitive introduction tactics are treated by central_intro
@@ -424,7 +429,7 @@ let hide_ident_or_numarg_tactic s tac =
 let intros_do n g = 
   let depth = 
     let rec lookup all nodep c = match kind_of_term c with
-      | IsProd (name,_,c') -> 
+      | Prod (name,_,c') -> 
 	  (match name with
 	     | Name(s')  -> 
 		 if dependent (mkRel 1) c' then 
@@ -435,7 +440,7 @@ let intros_do n g =
 		   lookup (all+1) (nodep+1) c'
              | Anonymous -> 
 		 if nodep=n then all else lookup (all+1) (nodep+1) c')
-      | IsCast (c,_) -> lookup all nodep c
+      | Cast (c,_) -> lookup all nodep c
       | _ -> error "No such hypothesis in current goal"
     in 
     lookup 1 1 (pf_concl g)
@@ -507,7 +512,7 @@ let bring_hyps ids gl =
 let apply_with_bindings  (c,lbind) gl = 
   let apply = 
     match kind_of_term c with 
-      | IsLambda _ -> res_pf_cast 
+      | Lambda _ -> res_pf_cast 
       | _ -> res_pf 
   in 
   let (wc,kONT) = startWalk gl in
@@ -566,7 +571,7 @@ let dyn_apply l =
 let cut_and_apply c gl =
   let goal_constr = pf_concl gl in 
   match kind_of_term (pf_hnf_constr gl (pf_type_of gl c)) with
-    | IsProd (_,c1,c2) when not (dependent (mkRel 1) c2) ->
+    | Prod (_,c1,c2) when not (dependent (mkRel 1) c2) ->
 	tclTHENS 
 	  (apply_type (mkProd (Anonymous,c2,goal_constr))
 	     [mkMeta (new_meta())])
@@ -584,12 +589,12 @@ let dyn_cut_and_apply = function
 
 let true_cut id c gl =
   match kind_of_term (hnf_type_of gl c) with
-    | IsSort _ -> internal_cut id c gl
+    | Sort _ -> internal_cut id c gl
     | _  -> error "Not a proposition or a type"
 
 let true_cut_anon c gl =
   match kind_of_term (hnf_type_of gl c) with
-    | IsSort s -> 
+    | Sort s -> 
         let d = match s with Prop _ -> "H" | Type _ -> "X" in
         let id = next_name_away_with_default d Anonymous (pf_ids_of_hyps gl) in
         internal_cut id c gl
@@ -604,7 +609,7 @@ let dyn_true_cut = function
 
 let cut c gl =
   match kind_of_term (hnf_type_of gl c) with
-    | IsSort _ ->
+    | Sort _ ->
         let id=next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
         let t = mkProd (Anonymous, c, pf_concl gl) in
         tclTHENS
@@ -641,7 +646,7 @@ let cut_in_parallel l =
 let generalize_goal gl c cl =
   let t = pf_type_of gl c in
   match kind_of_term c with
-    | IsVar id -> mkNamedProd id t cl
+    | Var id -> mkNamedProd id t cl
     | _        -> 
         let cl' = subst_term c cl in 
         if noccurn 1 cl' then 
@@ -668,7 +673,7 @@ let generalize_dep c gl =
   let tothin = List.filter (fun id -> not (List.mem id init_ids)) qhyps in
   let tothin' =
     match kind_of_term c with
-      | IsVar id when mem_named_context id sign & not (List.mem id init_ids)
+      | Var id when mem_named_context id sign & not (List.mem id init_ids)
 	  -> id::tothin
       | _ -> tothin
   in
@@ -955,7 +960,8 @@ let dyn_move_dep = function
 let constructor_checking_bound  boundopt i lbind gl =
   let cl = pf_concl gl in 
   let (mind,redcl) = pf_reduce_to_quantified_ind gl cl in 
-  let nconstr = mis_nconstr (Global.lookup_mind_specif mind) 
+  let nconstr =
+    Array.length (snd (Global.lookup_inductive mind)).mind_consnames
   and sigma   = project gl in
   if i=0 then error "The constructors are numbered starting from 1";
   if i > nconstr then error "Not enough constructors";
@@ -965,7 +971,7 @@ let constructor_checking_bound  boundopt i lbind gl =
 	  error "Not the expected number of constructors"
     | None -> ()
   end;
-  let cons = mkMutConstruct (ith_constructor_of_inductive mind i) in
+  let cons = mkConstruct (ith_constructor_of_inductive mind i) in
   let apply_tac = apply_with_bindings (cons,lbind) in
   (tclTHENLIST [convert_concl redcl; intros; apply_tac]) gl
 
@@ -974,7 +980,8 @@ let one_constructor i = (constructor_checking_bound None i)
 let any_constructor gl = 
   let cl = pf_concl gl in 
   let (mind,redcl) = pf_reduce_to_quantified_ind gl cl in
-  let nconstr = mis_nconstr (Global.lookup_mind_specif mind)
+  let nconstr =
+    Array.length (snd (Global.lookup_inductive mind)).mind_consnames
   and sigma   = project gl in
   if nconstr = 0 then error "The type has no constructors";
   tclFIRST (List.map (fun i -> one_constructor i []) 
@@ -1024,13 +1031,13 @@ let dyn_split  = function
 *)
 
 let last_arg c = match kind_of_term c with
-  | IsApp (f,cl) ->  array_last cl
+  | App (f,cl) ->  array_last cl
   | _ -> anomaly "last_arg"
 	
 let elimination_clause_scheme kONT wc elimclause indclause gl = 
   let indmv = 
     (match kind_of_term (last_arg (clenv_template elimclause).rebus) with
-       | IsMeta mv -> mv
+       | Meta mv -> mv
        | _  -> errorlabstrm "elimination_clause"
              [< 'sTR "The type of elimination clause is not well-formed" >]) 
   in
@@ -1067,19 +1074,8 @@ let default_elim (c,lbindc)  gl =
   let env = pf_env gl in
   let (ind,t) = reduce_to_quantified_ind env (project gl) (pf_type_of gl c) in
   let s = elimination_sort_of_goal gl in
-  let elimc =
-    try lookup_eliminator env ind s 
-    with Not_found -> 
-      let dir, base,k = repr_path (path_of_inductive_path ind) in
-      let id = make_elimination_ident base s in
-      errorlabstrm "default_elim"
-	[< 'sTR "Cannot find the elimination combinator :";
-           pr_id id; 'sPC;
-	   'sTR "The elimination of the inductive definition :";
-           pr_id base; 'sPC; 'sTR "on sort "; 
-           'sPC; print_sort (new_sort_in_family s) ;
-	   'sTR " is probably not allowed" >]
-  in  general_elim (c,lbindc) (elimc,[]) gl
+  let elimc = Indrec.lookup_eliminator ind s in
+  general_elim (c,lbindc) (elimc,[]) gl
 
 
 (* The simplest elimination tactic, with no substitutions at all. *)
@@ -1124,13 +1120,13 @@ comes from a canonically generated one *)
 let rec is_rec_arg env sigma indpath t =
   try
     let (ind_sp,_) = find_mrectype env sigma t in
-    Declare.path_of_inductive_path ind_sp = indpath
+    path_of_inductive env ind_sp = indpath
   with Induc -> 
     false
 
 let rec recargs indpath env sigma t =
   match kind_of_term (whd_betadeltaiota env sigma t) with
-    | IsProd (na,t,c2) ->
+    | Prod (na,t,c2) ->
 	(is_rec_arg env sigma indpath t)
 	::(recargs indpath (push_rel_assum (na,t) env) sigma c2)
     | _ -> []
@@ -1149,7 +1145,7 @@ let induct_discharge old_style mind statuslists cname destopt avoid ra gl =
   let hyprecname =
     add_prefix indhyp 
       (if old_style || atompart_of_id recvarname <> "H" then recvarname
-       else mis_typename (lookup_mind_specif mind (Global.env())))
+       else (snd (Global.lookup_inductive mind)).mind_typename)
   in
   let avoid =
     if old_style then avoid
@@ -1190,10 +1186,10 @@ let induct_discharge old_style mind statuslists cname destopt avoid ra gl =
 let atomize_param_of_ind hyp0 gl =
   let tmptyp0 = pf_get_hyp_typ gl hyp0 in
   let (mind,typ0) = pf_reduce_to_quantified_ind gl tmptyp0 in
-  let mis = Global.lookup_mind_specif mind in
-  let nparams = mis_nparams mis in
+  let (mib,mip) = Global.lookup_inductive mind in
+  let nparams = mip.mind_nparams in
   let prods, indtyp = decompose_prod typ0 in
-  let argl = snd (decomp_app indtyp) in
+  let argl = snd (decompose_app indtyp) in
   let params = list_firstn nparams argl in
   (* le gl est important pour ne pas préévaluer *)
   let rec atomize_one i avoid gl =
@@ -1202,12 +1198,12 @@ let atomize_param_of_ind hyp0 gl =
       (* If argl <> [], we expect typ0 not to be quantified, in order to
          avoid bound parameters... then we call pf_reduce_to_atomic_ind *)
       let (_,indtyp) = pf_reduce_to_atomic_ind gl tmptyp0 in
-      let argl = snd (decomp_app indtyp) in
+      let argl = snd (decompose_app indtyp) in
       let c = List.nth argl (i-1) in
       match kind_of_term c with
-	| IsVar id when not (List.exists (occur_var (pf_env gl) id) avoid) ->
+	| Var id when not (List.exists (occur_var (pf_env gl) id) avoid) ->
 	    atomize_one (i-1) ((mkVar id)::avoid) gl
-	| IsVar id ->
+	| Var id ->
 	    let x = fresh_id [] id gl in
 	    tclTHEN
 	      (letin_tac true (Name x) (mkVar id) (None,[]))
@@ -1225,15 +1221,15 @@ let atomize_param_of_ind hyp0 gl =
   atomize_one (List.length argl) params gl
 
 let find_atomic_param_of_ind mind indtyp =
-  let mis = Global.lookup_mind_specif mind in
-  let nparams = mis_nparams mis in
-  let argl = snd (decomp_app indtyp) in
+  let (mib,mip) = Global.lookup_inductive mind in
+  let nparams = mip.mind_nparams in
+  let argl = snd (decompose_app indtyp) in
   let argv = Array.of_list argl in
   let params = list_firstn nparams argl in
   let indvars = ref Idset.empty in
   for i = nparams to (Array.length argv)-1 do
     match kind_of_term argv.(i) with
-      | IsVar id
+      | Var id
           when not (List.exists (occur_var (Global.env()) id) params) -> 
 	  indvars := Idset.add id !indvars
       | _ -> ()
@@ -1389,28 +1385,28 @@ let induction_tac varname typ (elimc,elimt) gl =
   elimination_clause_scheme kONT wc elimclause indclause gl
 
 let is_indhyp p n t =
-  let c,_ = decomp_app t in 
+  let c,_ = decompose_app t in 
   match kind_of_term c with
-    | IsRel k when p < k & k <= p + n -> true
+    | Rel k when p < k & k <= p + n -> true
     | _ -> false
 
 (* We check that the eliminator has been build by Coq (usual *)
 (* eliminator _ind, _rec or _rect, or eliminator built by Scheme) *)
 let compute_elim_signature_and_roughly_check elimt mind =
-  let mis = Global.lookup_mind_specif mind in
-  let lra = mis_recarg mis in
-  let nconstr = mis_nconstr mis in
-  let _,elimt2 = decompose_prod_n (mis_nparams mis) elimt in
+  let (mib,mip) = Global.lookup_inductive mind in
+  let lra = mip.mind_listrec in
+  let nconstr = Array.length mip.mind_consnames in
+  let _,elimt2 = decompose_prod_n mip.mind_nparams elimt in
   let n = nb_prod elimt2 in
-  let npred = n - nconstr - (mis_nrealargs mis) - 1 in
+  let npred = n - nconstr - mip.mind_nrealargs - 1 in
   let rec check_branch p c ra = match kind_of_term c, ra with
-    | IsProd (_,_,c), Declarations.Mrec i :: ra' ->
+    | Prod (_,_,c), Declarations.Mrec i :: ra' ->
 	(match kind_of_term c with
-	   | IsProd (_,t,c) when is_indhyp (p+1) npred t ->
+	   | Prod (_,t,c) when is_indhyp (p+1) npred t ->
 	       true::(check_branch (p+2) c ra')
 	   | _ -> false::(check_branch (p+1) c ra'))
-    | IsLetIn (_,_,_,c), ra' -> false::(check_branch (p+1) c ra)
-    | IsProd (_,_,c), _ :: ra -> false::(check_branch (p+1) c ra)
+    | LetIn (_,_,_,c), ra' -> false::(check_branch (p+1) c ra)
+    | Prod (_,_,c), _ :: ra -> false::(check_branch (p+1) c ra)
     | _, [] -> []
     | _ ->
 	error"Not a recursive eliminator: some constructor argument is lacking"
@@ -1418,7 +1414,7 @@ let compute_elim_signature_and_roughly_check elimt mind =
   let rec check_elim c n =
     if n = nconstr then []
     else match kind_of_term c with
-    | IsProd (_,t,c) -> (check_branch n t lra.(n)) :: (check_elim c (n+1))
+    | Prod (_,t,c) -> (check_branch n t lra.(n)) :: (check_elim c (n+1))
     | _ -> error "Not an eliminator: some constructor case is lacking" in
   let _,elimt3 = decompose_prod_n npred elimt2 in
   check_elim elimt3 0
@@ -1433,7 +1429,7 @@ let induction_from_context isrec style hyp0 gl =
   let (mind,typ0) = pf_reduce_to_quantified_ind gl tmptyp0 in
   let indvars = find_atomic_param_of_ind mind (snd (decompose_prod typ0)) in
   let elimc =
-    if isrec then lookup_eliminator env mind (elimination_sort_of_goal gl)
+    if isrec then Indrec.lookup_eliminator mind (elimination_sort_of_goal gl)
     else Indrec.make_case_gen env (project gl) mind (elimination_sort_of_goal gl)
   in
   let elimt = pf_type_of gl elimc in
@@ -1476,7 +1472,7 @@ let induction_with_atomization_of_ind_arg isrec hyp0 =
 
 let new_induct isrec c gl =
   match kind_of_term c with
-    | IsVar id when not (mem_named_context id (Global.named_context())) ->
+    | Var id when not (mem_named_context id (Global.named_context())) ->
 	induction_with_atomization_of_ind_arg isrec id gl
     | _        ->
 	let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) 
@@ -1592,7 +1588,7 @@ let elim_scheme_type elim t gl =
   let (wc,kONT) = startWalk gl in
   let clause = mk_clenv_type_of wc elim in 
   match kind_of_term (last_arg (clenv_template clause).rebus) with
-    | IsMeta mv ->
+    | Meta mv ->
         let clause' =
 	  (* t is inductive, then CUMUL or CONV is irrelevant *)
 	  clenv_unify CUMUL t (clenv_instance_type clause mv) clause in
@@ -1601,7 +1597,7 @@ let elim_scheme_type elim t gl =
 
 let elim_type t gl =
   let (ind,t) = pf_reduce_to_atomic_ind gl t in
-  let elimc = lookup_eliminator (pf_env gl) ind (elimination_sort_of_goal gl) in
+  let elimc = Indrec.lookup_eliminator ind (elimination_sort_of_goal gl) in
   elim_scheme_type elimc t gl
 
 let dyn_elim_type = function

@@ -11,13 +11,15 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Term
+open Termops
 open Sign
 open Evd
 open Printer
-open Reduction
+open Reductionops
 open Declarations
-open Inductive
+open Inductiveops
 open Environ
 open Tacmach
 open Proof_trees
@@ -30,6 +32,7 @@ open Wcclausenv
 open Tacticals
 open Tactics
 open Inv
+open Safe_typing
 
 let not_work_message = "tactic fails to build the inversion lemma, may be because the predicate has arguments that depend on other arguments"
 
@@ -131,14 +134,14 @@ let max_prefix_sign lid sign =
 *)
 let rec add_prods_sign env sigma t =
   match kind_of_term (whd_betadeltaiota env sigma t) with
-    | IsProd (na,c1,b) ->
-	let id = Environ.id_of_name_using_hdchar env t na in
+    | Prod (na,c1,b) ->
+	let id = id_of_name_using_hdchar env t na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (Environ.push_named_assum (id,c1) env) sigma b'
-    | IsLetIn (na,c1,t1,b) ->
-	let id = Environ.id_of_name_using_hdchar env t na in
+        add_prods_sign (push_named_decl (id,None,c1) env) sigma b'
+    | LetIn (na,c1,t1,b) ->
+	let id = id_of_name_using_hdchar env t na in
 	let b'= subst1 (mkVar id) b in
-        add_prods_sign (Environ.push_named_def (id,c1,t1) env) sigma b'
+        add_prods_sign (push_named_decl (id,Some c1,t1) env) sigma b'
     | _ -> (env,t)
 
 (* [dep_option] indicates wether the inversion lemma is dependent or not.
@@ -180,7 +183,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       (pty,goal)
   in
   let npty = nf_betadeltaiota env sigma pty in
-  let extenv = push_named_assum (p,npty) env in
+  let extenv = push_named_decl (p,None,npty) env in
   extenv, goal
 
 (* [inversion_scheme sign I]
@@ -224,7 +227,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
     List.fold_left
       (fun (avoid,sign,mvb) (mv,mvty) ->
          let h = next_ident_away (id_of_string "H") avoid in
-	 (h::avoid, add_named_assum (h,mvty) sign, (mv,mkVar h)::mvb))
+	 (h::avoid, add_named_decl (h,None,mvty) sign, (mv,mkVar h)::mvb))
       (ids_of_context invEnv, ownSign, [])
       meta_types 
   in
@@ -271,7 +274,7 @@ let _ =
     (function
        | [VARG_NUMBER n; VARG_IDENTIFIER na; VARG_IDENTIFIER id] ->
 	   fun () ->
-	     inversion_lemma_from_goal n na id prop false inv_clear_tac
+	     inversion_lemma_from_goal n na id mk_Prop false inv_clear_tac
        | _ -> bad_vernac_args "MakeInversionLemmaFromHyp")
 
 let add_inversion_lemma_exn na com comsort bool tac =
@@ -299,7 +302,7 @@ let _ =
     (function
        | [VARG_NUMBER n; VARG_IDENTIFIER na; VARG_IDENTIFIER id] ->
 	   fun () ->
-	     inversion_lemma_from_goal n na id prop false half_inv_tac
+	     inversion_lemma_from_goal n na id mk_Prop false half_inv_tac
        | _ -> bad_vernac_args "MakeSemiInversionLemmaFromHyp")
 
 let _ = 

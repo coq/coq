@@ -8,6 +8,4 @@
 
 (* $Id$ *)
 
-open Names
-
-val objdef_declare : global_reference -> unit
+val objdef_declare : Nametab.global_reference -> unit

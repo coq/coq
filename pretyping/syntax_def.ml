@@ -14,6 +14,7 @@ open Names
 open Rawterm
 open Libobject
 open Lib
+open Nameops
 
 (* Syntactic definitions. *)
 
@@ -57,7 +58,7 @@ let (in_syntax_constant, out_syntax_constant) =
   declare_object ("SYNTAXCONSTANT", od)
 
 let declare_syntactic_definition id c =
-  let _ = add_leaf id CCI (in_syntax_constant c) in ()
+  let _ = add_leaf id (in_syntax_constant c) in ()
 
 let search_syntactic_definition sp = Spmap.find sp !syntax_table
 

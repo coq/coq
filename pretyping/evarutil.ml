@@ -11,13 +11,15 @@
 open Util
 open Pp
 open Names
+open Nameops
 open Univ
 open Term
+open Termops
 open Sign
 open Environ
 open Evd
 open Instantiate
-open Reduction
+open Reductionops
 open Indrec
 open Pretype_errors
 
@@ -54,7 +56,7 @@ exception Uninstantiated_evar of int
 
 let rec whd_ise sigma c =
   match kind_of_term c with
-    | IsEvar (ev,args) when Evd.in_dom sigma ev ->
+    | Evar (ev,args) when Evd.in_dom sigma ev ->
 	if Evd.is_defined sigma ev then
           whd_ise sigma (existential_value sigma (ev,args))
 	else raise (Uninstantiated_evar ev)
@@ -65,10 +67,10 @@ let rec whd_ise sigma c =
 let whd_castappevar_stack sigma c = 
   let rec whrec (c, l as s) =
     match kind_of_term c with
-      | IsEvar (ev,args) when Evd.in_dom sigma ev & Evd.is_defined sigma ev -> 
+      | Evar (ev,args) when Evd.in_dom sigma ev & Evd.is_defined sigma ev -> 
 	  whrec (existential_value sigma (ev,args), l)
-      | IsCast (c,_) -> whrec (c, l)
-      | IsApp (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
+      | Cast (c,_) -> whrec (c, l)
+      | App (f,args) -> whrec (f, Array.fold_right (fun a l -> a::l) args l)
       | _ -> s
   in 
   whrec (c, [])
@@ -146,12 +148,12 @@ let split_evar_to_arrow sigma (ev,args) =
   let (sigma1,dom) = new_type_var evenv sigma in
   let hyps = evd.evar_hyps in
   let nvar = next_ident_away (id_of_string "x") (ids_of_named_context hyps) in
-  let newenv = push_named_assum (nvar, dom) evenv in
+  let newenv = push_named_decl (nvar, None, dom) evenv in
   let (sigma2,rng) = new_type_var newenv sigma1 in
   let prod = mkProd (named_hd newenv dom Anonymous, dom, subst_var nvar rng) in
   let sigma3 = Evd.define sigma2 ev prod in
-  let dsp = num_of_evar dom in
-  let rsp = num_of_evar rng in
+  let dsp = fst (destEvar dom) in
+  let rsp = fst (destEvar rng) in
   (sigma3, prod,
    (dsp,args), (rsp, array_cons (mkRel 1) (Array.map (lift 1) args)))
 
@@ -188,7 +190,7 @@ let do_restrict_hyps sigma ev args =
       (hyps,([],[])) args 
   in
   let sign' = List.rev rsign in
-  let env' = change_hyps (fun _ -> sign') env in
+  let env' = reset_with_named_context sign' env in
   let instance = make_evar_instance env' in
   let (sigma',nc) = new_isevar_sign env' sigma evd.evar_concl instance in
   let sigma'' = Evd.define sigma' ev nc in
@@ -241,7 +243,7 @@ let is_defined_evar isevars (n,_) = Evd.is_defined isevars.evars n
 
 (* Does k corresponds to an (un)defined existential ? *)
 let ise_undefined isevars c = match kind_of_term c with
-  | IsEvar ev -> not (is_defined_evar isevars ev)
+  | Evar ev -> not (is_defined_evar isevars ev)
   | _ -> false
 
 let need_restriction isevars args = not (array_for_all closed0 args)
@@ -259,10 +261,10 @@ let real_clean isevars ev args rhs =
   let subst = List.map (fun (x,y) -> (y,mkVar x)) (filter_unique args) in
   let rec subs k t =
     match kind_of_term t with
-      | IsRel i ->
+      | Rel i ->
  	 if i<=k then t
  	 else (try List.assoc (mkRel (i-k)) subst with Not_found -> t)
-      | IsEvar (ev,args) ->
+      | Evar (ev,args) ->
 	  let args' = Array.map (subs k) args in
 	  if need_restriction isevars args' then
 	    if Evd.is_defined isevars.evars ev then 
@@ -275,7 +277,7 @@ let real_clean isevars ev args rhs =
 	    end
 	  else
 	    mkEvar (ev,args')
-      | IsVar _ -> (try List.assoc t subst with Not_found -> t)
+      | Var _ -> (try List.assoc t subst with Not_found -> t)
       | _ -> map_constr_with_binders succ subs k t
   in
   let body = subs 0 rhs in
@@ -305,7 +307,22 @@ let make_subst env args =
 (* [new_isevar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 
-let new_isevar isevars env typ k =
+let push_rel_context_to_named_context env =
+  let sign0 = named_context env in
+  let (subst,_,sign) =
+  Sign.fold_rel_context
+    (fun (na,c,t) (subst,avoid,sign) ->
+       let na = if na = Anonymous then Name(id_of_string"_") else na in
+       let id = next_name_away na avoid in
+       ((mkVar id)::subst,
+        id::avoid,
+	add_named_decl (id,option_app (substl subst) c,
+                        type_app (substl subst) t)
+	  sign))
+    (rel_context env) ([],ids_of_named_context sign0,sign0)
+  in (subst, reset_with_named_context sign env)
+
+let new_isevar isevars env typ =
   let subst,env' = push_rel_context_to_named_context env in
   let typ' = substl subst typ in
   let instance = make_evar_instance_with_rel env in
@@ -331,14 +348,10 @@ let new_isevar isevars env typ k =
  * ?1 would be instantiated by (le y y) but y is not in the scope of ?1
  *)
 
-let keep_rels_and_vars c = match kind_of_term c with
-  | IsVar _ | IsRel _ -> c
-  | _ -> mkImplicit   (* Mettre mkMeta ?? *)
-
 let evar_define isevars (ev,argsv) rhs =
   if occur_evar ev rhs
   then error_occur_check empty_env (evars_of isevars) ev rhs;
-  let args = List.map keep_rels_and_vars (Array.to_list argsv) in 
+  let args = Array.to_list argsv in 
   let evd = ise_map isevars ev in
   (* the substitution to invert *)
   let worklist = make_subst (evar_env evd) args in
@@ -356,17 +369,17 @@ let has_undefined_isevars isevars t =
 
 let head_is_evar isevars = 
   let rec hrec k = match kind_of_term k with
-    | IsEvar (n,_)   -> not (Evd.is_defined isevars.evars n)
-    | IsApp (f,_) -> hrec f
-    | IsCast (c,_) -> hrec c
+    | Evar (n,_)   -> not (Evd.is_defined isevars.evars n)
+    | App (f,_) -> hrec f
+    | Cast (c,_) -> hrec c
     | _ -> false
   in 
   hrec 
 
 let rec is_eliminator c = match kind_of_term c with
-  | IsApp _    -> true
-  | IsMutCase _ -> true
-  | IsCast (c,_) -> is_eliminator c
+  | App _    -> true
+  | Case _ -> true
+  | Cast (c,_) -> is_eliminator c
   | _ -> false
 
 let head_is_embedded_evar isevars c =
@@ -374,10 +387,10 @@ let head_is_embedded_evar isevars c =
 
 let head_evar = 
   let rec hrec c = match kind_of_term c with
-    | IsEvar (ev,_)       -> ev
-    | IsMutCase (_,_,c,_) -> hrec c
-    | IsApp (c,_)        -> hrec c
-    | IsCast (c,_)        -> hrec c
+    | Evar (ev,_)       -> ev
+    | Case (_,_,c,_) -> hrec c
+    | App (c,_)        -> hrec c
+    | Cast (c,_)        -> hrec c
     | _                   -> failwith "headconstant"
   in 
   hrec 
@@ -466,7 +479,7 @@ let solve_refl conv_algo env isevars ev argsv1 argsv2 =
 let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
   let t2 = nf_evar isevars.evars t2 in
   let lsp = match kind_of_term t2 with
-    | IsEvar (n2,args2 as ev2)
+    | Evar (n2,args2 as ev2)
         when not (Evd.is_defined isevars.evars n2) ->
 	if n1 = n2 then
 	  solve_refl conv_algo env isevars n1 args1 args2
@@ -522,8 +535,8 @@ let split_tycon loc env isevars = function
       let sigma = evars_of isevars in
       let t = whd_betadeltaiota env sigma c in
       match kind_of_term t with
-        | IsProd (na,dom,rng) -> Some dom, Some rng
-	| IsEvar (n,_ as ev) when not (Evd.is_defined isevars.evars n) ->
+        | Prod (na,dom,rng) -> Some dom, Some rng
+	| Evar (n,_ as ev) when not (Evd.is_defined isevars.evars n) ->
 	    let (sigma',_,evdom,evrng) = split_evar_to_arrow sigma ev in
 	    evars_reset_evd sigma' isevars;
 	    Some (mkEvar evdom), Some (mkEvar evrng)

@@ -13,87 +13,16 @@ open Util
 open Univ
 open Names
 open Term
+open Declarations
 open Inductive
 open Environ
 open Sign
 open Declare
 open Impargs
 open Rawterm
-
-(* Nouvelle version de renommage des variables (DEC 98) *)
-(* This is the algorithm to display distinct bound variables 
-
-    - Règle 1 : un nom non anonyme, même non affiché, contribue à la liste
-      des noms à éviter 
-    - Règle 2 : c'est la dépendance qui décide si on affiche ou pas
-
-    Exemple : 
-    si bool_ind = (P:bool->Prop)(f:(P true))(f:(P false))(b:bool)(P b), alors
-    il est affiché (P:bool->Prop)(P true)->(P false)->(b:bool)(P b)
-    mais f et f0 contribue à la liste des variables à éviter (en supposant 
-    que les noms f et f0 ne sont pas déjà pris)
-    Intérêt : noms homogènes dans un but avant et après Intro
-*)
-
-type used_idents = identifier list
-
-exception Occur
-
-let occur_rel p env id = 
-  try lookup_name_of_rel p env = Name id
-  with Not_found -> false (* Unbound indice : may happen in debug *)
-
-let occur_id env id0 c =
-  let rec occur n c = match kind_of_term c with
-    | IsVar id when  id=id0 -> raise Occur
-    | IsConst sp when basename sp = id0 -> raise Occur
-    | IsMutInd ind_sp
-	when basename (path_of_inductive_path ind_sp) = id0 -> raise Occur
-    | IsMutConstruct cstr_sp
-	when basename (path_of_constructor_path cstr_sp) = id0 -> raise Occur
-    | IsRel p when p>n & occur_rel (p-n) env id0 -> raise Occur
-    | _ -> iter_constr_with_binders succ occur n c
-  in 
-  try occur 1 c; false
-  with Occur -> true
-
-let next_name_not_occuring name l env_names t =
-  let rec next id =
-    if List.mem id l or occur_id env_names id t then next (lift_ident id)
-    else id
-  in 
-  match name with
-    | Name id   -> next id
-    | Anonymous -> id_of_string "_"
-
-(* Remark: Anonymous var may be dependent in Evar's contexts *)
-let concrete_name l env_names n c =
-  if n = Anonymous & not (dependent (mkRel 1) c) then
-    (None,l)
-  else
-    let fresh_id = next_name_not_occuring n l env_names c in
-    let idopt = if dependent (mkRel 1) c then (Some fresh_id) else None in
-    (idopt, fresh_id::l)
-
-let concrete_let_name l env_names n c =
-  let fresh_id = next_name_not_occuring n l env_names c in
-  (Name fresh_id, fresh_id::l)
-
-    (* Returns the list of global variables and constants in a term *)
-let global_vars_and_consts t =
-  let rec collect acc c =
-    let op, cl = splay_constr c in
-    let acc' = Array.fold_left collect acc cl in
-    match op with
-    | OpVar id -> id::acc'
-    | OpConst sp -> (basename sp)::acc'
-    | OpMutInd ind_sp -> (basename (path_of_inductive_path ind_sp))::acc'
-    | OpMutConstruct csp -> (basename (path_of_constructor_path csp))::acc'
-    | _ -> acc'
-  in
-  list_uniquize (collect [] t)
-    
-let used_of = global_vars_and_consts
+open Nameops
+open Termops
+open Nametab
 
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)
@@ -101,23 +30,20 @@ let used_of = global_vars_and_consts
 let encode_inductive ref =
   let indsp = match ref with
     | IndRef indsp -> indsp
-    | _ -> errorlabstrm "indsp_of_id"
-        [< 'sTR ((Global.string_of_global ref)^" is not an inductive type") >]
-  in
-  let mis = Global.lookup_mind_specif indsp in
-  let constr_lengths = Array.map List.length (mis_recarg mis) in
+    | _ ->
+        let id = basename (Nametab.sp_of_global (Global.env()) ref) in
+        errorlabstrm "indsp_of_id"
+          [< pr_id id; 'sTR" is not an inductive type" >] in
+  let (mib,mip) = Global.lookup_inductive indsp in
+  let constr_lengths = Array.map List.length mip.mind_listrec in
   (indsp,constr_lengths)
 
 let constr_nargs indsp =
-  let mis = Global.lookup_mind_specif indsp in
-  let nparams = mis_nparams mis in
-  Array.map (fun t -> List.length (fst (decompose_prod_assum t)) - nparams)
-    (mis_nf_lc mis)
-
-let sp_of_spi (refsp,tyi) =
-  let mip = Declarations.mind_nth_type_packet (Global.lookup_mind refsp) tyi in
-  let (pa,_,k) = repr_path refsp in 
-  make_path pa mip.Declarations.mind_typename k
+  let (mib,mip) = Global.lookup_inductive indsp in
+  let nparams = mip.mind_nparams in
+  Array.map
+    (fun t -> List.length (fst (decompose_prod_assum t)) - nparams)
+    mip.mind_nf_lc
 
 (* Parameterization of the translation from constr to ast      *)
 
@@ -142,7 +68,8 @@ module PrintingCasesMake =
     let check (_,lc) =
       if not (Test.test lc) then 
 	errorlabstrm "check_encode" [< 'sTR Test.error_message >]
-    let printer (spi,_) = [< 'sTR(string_of_path (sp_of_spi spi)) >]
+    let printer (ind,_) =
+      pr_id (basename (path_of_inductive (Global.env()) ind))
     let key = Goptions.SecondaryTable ("Printing",Test.field)
     let title = Test.title
     let member_message = Test.member_message
@@ -155,13 +82,12 @@ module PrintingCasesIf =
     let error_message = "This type cannot be seen as a boolean type"
     let field = "If"
     let title = "Types leading to pretty-printing of Cases using a `if' form: "
-    let member_message id = function
-      | true  -> 
-          "Cases on elements of " ^ (Global.string_of_global id)
-          ^ " are printed using a `if' form"
-      | false -> 
-          "Cases on elements of " ^ (Global.string_of_global id)
-          ^ " are not printed using `if' form"
+    let member_message ref b =
+      let s = string_of_id (basename (sp_of_global (Global.env()) ref)) in
+      if b then
+        "Cases on elements of " ^ s ^ " are printed using a `if' form"
+      else
+        "Cases on elements of " ^ s ^ " are not printed using `if' form"
   end)
 
 module PrintingCasesLet =
@@ -171,21 +97,22 @@ module PrintingCasesLet =
     let field = "Let"
     let title = 
       "Types leading to a pretty-printing of Cases using a `let' form:"
-    let member_message id = function
-      | true  -> 
-          "Cases on elements of " ^ (Global.string_of_global id)
-          ^ " are printed using a `let' form"
-      | false -> 
-          "Cases on elements of " ^ (Global.string_of_global id)
-          ^ " are not printed using a `let' form"
+    let member_message ref b =
+      let s = string_of_id (basename (sp_of_global (Global.env()) ref)) in
+      if b then
+        "Cases on elements of " ^ s ^ " are printed using a `let' form"
+      else
+        "Cases on elements of " ^ s ^ " are not printed using a `let' form"
   end)
 
 module PrintingIf  = Goptions.MakeIdentTable(PrintingCasesIf)
 module PrintingLet = Goptions.MakeIdentTable(PrintingCasesLet)
 
-let force_let (_,(indsp,_,_,_,_)) = 
+let force_let ci =
+  let indsp = ci.ci_ind in
   let lc = constr_nargs indsp in PrintingLet.active (indsp,lc)
-let force_if (_,(indsp,_,_,_,_)) =
+let force_if ci =
+  let indsp = ci.ci_ind in
   let lc = constr_nargs indsp in PrintingIf.active (indsp,lc)
 
 (* Options for printing or not wildcard and synthetisable types *)
@@ -241,68 +168,70 @@ let computable p k =
 
 let lookup_name_as_renamed ctxt t s =
   let rec lookup avoid env_names n c = match kind_of_term c with
-    | IsProd (name,_,c') ->
+    | Prod (name,_,c') ->
 	(match concrete_name avoid env_names name c' with
            | (Some id,avoid') -> 
 	       if id=s then (Some n) 
 	       else lookup avoid' (add_name (Name id) env_names) (n+1) c'
 	   | (None,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
-    | IsLetIn (name,_,_,c') ->
+    | LetIn (name,_,_,c') ->
 	(match concrete_name avoid env_names name c' with
            | (Some id,avoid') -> 
 	       if id=s then (Some n) 
 	       else lookup avoid' (add_name (Name id) env_names) (n+1) c'
 	   | (None,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
-    | IsCast (c,_) -> lookup avoid env_names n c
+    | Cast (c,_) -> lookup avoid env_names n c
     | _ -> None
   in lookup (ids_of_named_context ctxt) empty_names_context 1 t
 
 let lookup_index_as_renamed t n =
   let rec lookup n d c = match kind_of_term c with
-    | IsProd (name,_,c') ->
+    | Prod (name,_,c') ->
 	  (match concrete_name [] empty_names_context name c' with
                (Some _,_) -> lookup n (d+1) c'
              | (None  ,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
-    | IsLetIn (name,_,_,c') ->
+    | LetIn (name,_,_,c') ->
 	  (match concrete_name [] empty_names_context name c' with
              | (Some _,_) -> lookup n (d+1) c'
              | (None  ,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
-    | IsCast (c,_) -> lookup n d c
+    | Cast (c,_) -> lookup n d c
     | _ -> None
   in lookup n 1 t
 
 let rec detype avoid env t =
   match kind_of_term (collapse_appl t) with
-    | IsRel n ->
+    | Rel n ->
       (try match lookup_name_of_rel n env with
 	 | Name id   -> RVar (dummy_loc, id)
 	 | Anonymous -> anomaly "detype: index to an anonymous variable"
        with Not_found ->
 	 let s = "_UNBOUND_REL_"^(string_of_int n)
 	 in RVar (dummy_loc, id_of_string s))
-    | IsMeta n -> RMeta (dummy_loc, n)
-    | IsVar id -> RVar (dummy_loc, id)
-    | IsSort (Prop c) -> RSort (dummy_loc,RProp c)
-    | IsSort (Type u) -> RSort (dummy_loc,RType (Some u))
-    | IsCast (c1,c2) ->
+    | Meta n -> RMeta (dummy_loc, n)
+    | Var id -> RVar (dummy_loc, id)
+    | Sort (Prop c) -> RSort (dummy_loc,RProp c)
+    | Sort (Type u) -> RSort (dummy_loc,RType (Some u))
+    | Cast (c1,c2) ->
 	RCast(dummy_loc,detype avoid env c1,detype avoid env c2)
-    | IsProd (na,ty,c) -> detype_binder BProd avoid env na ty c
-    | IsLambda (na,ty,c) -> detype_binder BLambda avoid env na ty c
-    | IsLetIn (na,b,_,c) -> detype_binder BLetIn avoid env na b c
-    | IsApp (f,args) ->
+    | Prod (na,ty,c) -> detype_binder BProd avoid env na ty c
+    | Lambda (na,ty,c) -> detype_binder BLambda avoid env na ty c
+    | LetIn (na,b,_,c) -> detype_binder BLetIn avoid env na b c
+    | App (f,args) ->
 	RApp (dummy_loc,detype avoid env f,array_map_to_list (detype avoid env) args)
-    | IsConst sp -> RRef (dummy_loc, ConstRef sp)
-    | IsEvar (ev,cl) ->
+    | Const sp -> RRef (dummy_loc, ConstRef sp)
+    | Evar (ev,cl) ->
 	let f = REvar (dummy_loc, ev) in
 	RApp (dummy_loc, f, List.map (detype avoid env) (Array.to_list cl))
-    | IsMutInd ind_sp ->
+    | Ind ind_sp ->
 	RRef (dummy_loc, IndRef ind_sp)
-    | IsMutConstruct cstr_sp ->
+    | Construct cstr_sp ->
 	RRef (dummy_loc, ConstructRef cstr_sp)
-    | IsMutCase (annot,p,c,bl) ->
+    | Case (annot,p,c,bl) ->
 	let synth_type = synthetize_type () in
 	let tomatch = detype avoid env c in
-	let (_,(indsp,considl,k,style,tags)) = annot in
+	let indsp = annot.ci_ind in
+        let considl = annot.ci_pp_info.cnames in
+        let k = annot.ci_pp_info.ind_nargs in
 	let consnargsl = constr_nargs indsp in
 	let pred = 
 	  if synth_type & computable p k & considl <> [||] then
@@ -324,8 +253,8 @@ let rec detype avoid env t =
 	in 
 	RCases (dummy_loc,tag,pred,[tomatch],eqnl)
 	
-    | IsFix (nvn,recdef) -> detype_fix avoid env (RFix nvn) recdef
-    | IsCoFix (n,recdef) -> detype_fix avoid env (RCoFix n) recdef
+    | Fix (nvn,recdef) -> detype_fix avoid env (RFix nvn) recdef
+    | CoFix (n,recdef) -> detype_fix avoid env (RCoFix n) recdef
 
 and detype_fix avoid env fixkind (names,tys,bodies) =
   let lfi = Array.map (fun id -> next_name_away id avoid) names in
@@ -351,15 +280,15 @@ and detype_eqn avoid env constr construct_nargs branch =
        detype avoid env b)
     else
       match kind_of_term b with
-	| IsLambda (x,_,b) -> 
+	| Lambda (x,_,b) -> 
 	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b ids in
             buildrec new_ids (pat::patlist) new_avoid new_env (n-1) b
 
-	| IsLetIn (x,_,_,b) -> 
+	| LetIn (x,_,_,b) -> 
 	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b ids in
             buildrec new_ids (pat::patlist) new_avoid new_env (n-1) b
 
-	| IsCast (c,_) ->    (* Oui, il y a parfois des cast *)
+	| Cast (c,_) ->    (* Oui, il y a parfois des cast *)
 	    buildrec ids patlist avoid env n c
 
 	| _ -> (* eta-expansion : n'arrivera plus lorsque tous les

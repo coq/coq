@@ -75,7 +75,7 @@ let make_final_cmd f optname clear_names constr path =
     add_clear_names_if_necessary (f optname constr path) clear_names;;
 
 let (rem_cast:pbp_rule) = function
-    (a,c,cf,o, IsCast(f,_), p, func) ->
+    (a,c,cf,o, Cast(f,_), p, func) ->
       Some(func a c cf o (kind_of_term f) p)
   | _ -> None;;
 
@@ -84,7 +84,7 @@ let (forall_intro: pbp_rule) = function
    clear_names,
    clear_flag,
    None,
-   IsProd(Name x, _, body),
+   Prod(Name x, _, body),
    (2::path),
    f) ->
      let x' = next_global_ident_away x avoid in
@@ -95,7 +95,7 @@ let (forall_intro: pbp_rule) = function
 
 let (imply_intro2: pbp_rule) = function
   avoid, clear_names,
-  clear_flag, None, IsProd(Anonymous, _, body), 2::path, f ->
+  clear_flag, None, Prod(Anonymous, _, body), 2::path, f ->
    let h' = next_global_ident_away (id_of_string "H") avoid in
      Some(Node(zz, "TACTICLIST",
             [make_named_intro (string_of_id h');
@@ -105,7 +105,7 @@ let (imply_intro2: pbp_rule) = function
 
 let (imply_intro1: pbp_rule) = function
   avoid, clear_names,
-  clear_flag, None, IsProd(Anonymous, prem, body), 1::path, f ->
+  clear_flag, None, Prod(Anonymous, prem, body), 1::path, f ->
    let h' = next_global_ident_away (id_of_string "H") avoid in
    let str_h' = (string_of_id h') in
      Some(Node(zz, "TACTICLIST",
@@ -117,7 +117,7 @@ let (imply_intro1: pbp_rule) = function
 
 let (forall_elim: pbp_rule) = function
   avoid, clear_names, clear_flag, 
-  Some h, IsProd(Name x, _, body), 2::path, f ->
+  Some h, Prod(Name x, _, body), 2::path, f ->
   let h' = next_global_ident_away (id_of_string "H") avoid in
   let clear_names' = if clear_flag then h::clear_names else clear_names in
   let str_h' = (string_of_id h') in
@@ -135,7 +135,7 @@ let (forall_elim: pbp_rule) = function
           
 let (imply_elim1: pbp_rule) = function
   avoid, clear_names, clear_flag,
-  Some h, IsProd(Anonymous, prem, body), 1::path, f ->
+  Some h, Prod(Anonymous, prem, body), 1::path, f ->
   let clear_names' = if clear_flag then h::clear_names else clear_names in
   let h' = next_global_ident_away (id_of_string "H") avoid in
   let str_h' = (string_of_id h') in
@@ -156,7 +156,7 @@ let (imply_elim1: pbp_rule) = function
 
 let (imply_elim2: pbp_rule) = function
   avoid, clear_names, clear_flag,
-  Some h, IsProd(Anonymous, prem, body), 2::path, f ->
+  Some h, Prod(Anonymous, prem, body), 2::path, f ->
   let clear_names' = if clear_flag then h::clear_names else clear_names in
   let h' = next_global_ident_away (id_of_string "H") avoid in
   let str_h' = (string_of_id h') in
@@ -176,7 +176,8 @@ let (imply_elim2: pbp_rule) = function
   | _ -> None;;
 
 let reference dir s =
-  let dir = make_dirpath (List.map id_of_string ("Coq"::"Init"::[dir])) in
+  let dir = make_dirpath 
+              (List.map id_of_string (List.rev ("Coq"::"Init"::[dir]))) in
   let id = id_of_string s in
   try 
     Nametab.locate_in_absolute_module dir id
@@ -204,7 +205,7 @@ let is_matching_local a b = is_matching (pattern_of_constr a) b;;
 
 let (and_intro: pbp_rule) = function
     avoid, clear_names, clear_flag,
-    None, IsApp(and_oper, [|c1; c2|]), 2::a::path, f 
+    None, App(and_oper, [|c1; c2|]), 2::a::path, f 
       ->
       if ((is_matching_local (andconstr()) and_oper) or
           (is_matching_local (prodconstr ()) and_oper)) & (a = 1 or a = 2) then
@@ -229,12 +230,12 @@ let (and_intro: pbp_rule) = function
 
 let (ex_intro: pbp_rule) = function
     avoid, clear_names, clear_flag, None,
-    IsApp(oper, [| c1; c2|]), 2::2::2::path, f
+    App(oper, [| c1; c2|]), 2::2::2::path, f
       when (is_matching_local (exconstr ()) oper) or (is_matching_local (exTconstr ()) oper)
  	or (is_matching_local (sigconstr ()) oper)
 	      or (is_matching_local (sigTconstr ()) oper) ->
 		(match kind_of_term c2 with
-		  IsLambda(Name x, _, body) ->
+		  Lambda(Name x, _, body) ->
 		    Some(Node(zz, "Split",
 			      [Node(zz, "BINDINGS",
 				    [Node(zz, "BINDING",
@@ -250,7 +251,7 @@ let (ex_intro: pbp_rule) = function
 
 let (or_intro: pbp_rule) = function
     avoid, clear_names, clear_flag, None,
-    IsApp(or_oper, [|c1; c2 |]), 2::a::path, f ->
+    App(or_oper, [|c1; c2 |]), 2::a::path, f ->
       if ((is_matching_local (orconstr ()) or_oper) or
         (is_matching_local (sumboolconstr ()) or_oper) or 
 	(is_matching_local (sumconstr ()) or_oper))
@@ -270,7 +271,7 @@ let dummy_id = id_of_string "Dummy";;
 
 let (not_intro: pbp_rule) = function
     avoid, clear_names, clear_flag, None,
-    IsApp(not_oper, [|c1|]), 2::1::path, f ->
+    App(not_oper, [|c1|]), 2::1::path, f ->
       if(is_matching_local (notconstr ()) not_oper) or 
 	(is_matching_local (notTconstr ()) not_oper) then
 	let h' = next_global_ident_away (id_of_string "H") avoid in
@@ -336,11 +337,11 @@ let rec down_prods: (types, constr) kind_of_term * (int list) * int ->
            string list * (int list) * int * (types, constr) kind_of_term *
   (int list) = 
    function
-     IsProd(Name x, _, body), 2::path, k ->
+     Prod(Name x, _, body), 2::path, k ->
 	let res_sl, res_il, res_i, res_cstr, res_p 
 	    = down_prods (kind_of_term body, path, k+1) in
 	(string_of_id x)::res_sl, (k::res_il), res_i, res_cstr, res_p
-   | IsProd(Anonymous, _, body), 2::path, k ->
+   | Prod(Anonymous, _, body), 2::path, k ->
         let res_sl, res_il, res_i, res_cstr, res_p 
 	    = down_prods (kind_of_term body, path, k+1) in
 	res_sl, res_il, res_i+1, res_cstr, res_p
@@ -361,14 +362,14 @@ let (check_apply: (types, constr) kind_of_term -> (int list) -> bool) =
      | [] -> []
      | p::tl -> if n = p then tl else p::(delete n tl) in
    let rec check_rec l = function
-   | IsApp(f, array) ->
+   | App(f, array) ->
        Array.fold_left (fun l c -> check_rec l (kind_of_term c))
 	 (check_rec l (kind_of_term f)) array
-   | IsConst _ -> l
-   | IsMutInd _ -> l
-   | IsMutConstruct _ -> l
-   | IsVar _ -> l
-   | IsRel p ->
+   | Const _ -> l
+   | Ind _ -> l
+   | Construct _ -> l
+   | Var _ -> l
+   | Rel p ->
        let result = delete p l in
        if result = [] then
 	 raise (Pbp_internal [])
@@ -399,7 +400,7 @@ let (head_tactic_patt: pbp_rule) = function
     avoid, clear_names, clear_flag, Some h, cstr, path, f ->
     (match down_prods (cstr, path, 0) with
     | (str_list, _, nprems, 
-       IsApp(oper,[|c1|]), 2::1::path) 
+       App(oper,[|c1|]), 2::1::path) 
       	when
  	  (is_matching_local (notconstr ()) oper) or
  	  (is_matching_local (notTconstr ()) oper) ->
@@ -407,7 +408,7 @@ let (head_tactic_patt: pbp_rule) = function
 		   [elim_with_bindings h str_list;
 		     f avoid clear_names false None (kind_of_term c1) path]))
     | (str_list, _, nprems, 
-       IsApp(oper, [|c1; c2|]), 2::a::path) 
+       App(oper, [|c1; c2|]), 2::a::path) 
       when ((is_matching_local (andconstr()) oper) or
 	    (is_matching_local (prodconstr()) oper)) & (a = 1 or a = 2) ->
 	let h1 = next_global_ident_away (id_of_string "H") avoid in
@@ -431,18 +432,18 @@ let (head_tactic_patt: pbp_rule) = function
 			   cont_tac::(auxiliary_goals
 					clear_names clear_flag
 					h nprems))]))
-    | (str_list, _, nprems, IsApp(oper,[|c1; c2|]), 2::a::path)
+    | (str_list, _, nprems, App(oper,[|c1; c2|]), 2::a::path)
       when ((is_matching_local (exconstr ()) oper) or
 	    (is_matching_local (exTconstr ()) oper) or
 	    (is_matching_local (sigconstr ()) oper) or
 	    (is_matching_local (sigTconstr()) oper)) & a = 2 ->
 		   (match (kind_of_term c2),path with
-		     IsLambda(Name x, _,body), (2::path) ->
+		     Lambda(Name x, _,body), (2::path) ->
 		       Some(Node(zz,"TACTICLIST",
 		    		 [elim_with_bindings h str_list;
 				   let x' = next_global_ident_away x avoid in
 				   let cont_body =
-				     IsProd(Name x', c1,
+				     Prod(Name x', c1,
 					    mkProd(Anonymous, body, 
 						   mkVar(dummy_id))) in
 				   let cont_tac 
@@ -456,7 +457,7 @@ let (head_tactic_patt: pbp_rule) = function
 						       clear_names clear_flag
 						       h nprems))]))
 		   | _ -> None)
-    | (str_list, _, nprems, IsApp(oper,[|c1; c2|]), 2::a::path)
+    | (str_list, _, nprems, App(oper,[|c1; c2|]), 2::a::path)
 	when ((is_matching_local (orconstr ()) oper) or
               (is_matching_local (sumboolconstr ()) oper) or
 	      (is_matching_local (sumconstr ()) oper)) &
@@ -491,7 +492,7 @@ let (head_tactic_patt: pbp_rule) = function
 				   false "dummy" nprems))]))
     | (str_list, int_list, nprems, c, []) 
         when  (check_apply c (mk_db_indices int_list nprems)) &
-              (match c with IsProd(_,_,_) -> false
+              (match c with Prod(_,_,_) -> false
               |  _ -> true) &
               (List.length int_list) + nprems > 0 ->
           Some(add_clear_names_if_necessary

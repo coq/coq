@@ -66,7 +66,7 @@ let is_constant_type s = function
     TypePure c ->
       let id = id_of_string s in
       let c' = Declare.global_reference id in
-      Reduction.is_conv (Global.env()) Evd.empty c c'
+      Reductionops.is_conv (Global.env()) Evd.empty c c'
   | _ -> false 
 
 let check_for_index_type loc v =

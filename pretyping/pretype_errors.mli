@@ -15,7 +15,7 @@ open Term
 open Sign
 open Environ
 open Rawterm
-open Inductive
+open Inductiveops
 (*i*)
 
 (*s The type of errors raised by the pretyper *)
@@ -65,18 +65,18 @@ val error_cant_find_case_type_loc :
   loc -> env -> 'a Evd.evar_map -> constr -> 'b
 
 val error_case_not_inductive_loc :
-  loc -> path_kind -> env -> 'a Evd.evar_map -> unsafe_judgment -> 'b
+  loc -> env -> 'a Evd.evar_map -> unsafe_judgment -> 'b
 
 val error_ill_formed_branch_loc : 
-  loc -> path_kind -> env -> 'a Evd.evar_map ->
+  loc -> env -> 'a Evd.evar_map ->
       constr -> int -> constr -> constr -> 'b
 
 val error_number_branches_loc : 
-  loc -> path_kind -> env -> 'a Evd.evar_map ->
+  loc -> env -> 'a Evd.evar_map ->
       unsafe_judgment -> int -> 'b
 
 val error_ill_typed_rec_body_loc :
-  loc -> path_kind -> env -> 'a Evd.evar_map ->
+  loc -> env -> 'a Evd.evar_map ->
       int -> name array -> unsafe_judgment array -> types array -> 'b
 
 (*s Implicit arguments synthesis errors *)

@@ -177,8 +177,8 @@ Tactic Definition Multiply mul :=
     [Intro;
      Let id = GrepMult In
      Apply (mult_eq ?1 ?3 ?4 mul ?2 id)(*;
-     Cbv Beta Delta -[interp_ExprA] Zeta Evar Iota*)
-    |Cbv Beta Delta -[not] Zeta Evar Iota;
+     Cbv Beta Delta -[interp_ExprA] Zeta Iota*)
+    |Cbv Beta Delta -[not] Zeta Iota;
      Let AmultT = Eval Compute in (Amult ?1)
      And AoneT = Eval Compute in (Aone ?1) In
      (Match Context With

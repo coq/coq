@@ -40,7 +40,7 @@ type prim_rule_name =
   | Intro_after
   | Intro_replacing
   | Cut of bool
-  | Fix
+  | FixRule
   | Cofix
   | Refine 
   | Convert_concl

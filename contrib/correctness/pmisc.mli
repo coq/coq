@@ -13,8 +13,6 @@
 open Names
 open Term
 
-module SpSet : Set.S with type elt = section_path
-
 (* Some misc. functions *)
 
 val reraise_with_loc : Coqast.loc -> ('a -> 'b) -> 'a -> 'b

@@ -11,7 +11,9 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Term
+open Termops
 open Sign
 open Inductive
 open Evd
@@ -32,6 +34,8 @@ open Libobject
 open Library
 open Vernacinterp
 open Printer
+open Nametab
+open Declarations
 
 (****************************************************************************)
 (*            The Type of Constructions Autotactic Hints                    *)
@@ -186,7 +190,7 @@ let (inAutoHint,outAutoHint) =
 (**************************************************************************)
 
 let rec nb_hyp c = match kind_of_term c with
-  | IsProd(_,_,c2) -> if dependent (mkRel 1) c2 then nb_hyp c2 else 1+(nb_hyp c2)
+  | Prod(_,_,c2) -> if dependent (mkRel 1) c2 then nb_hyp c2 else 1+(nb_hyp c2)
   | _ -> 0 
 
 (* adding and removing tactics in the search table *)
@@ -198,7 +202,7 @@ let try_head_pattern c =
 let make_exact_entry name (c,cty) =
   let cty = strip_outer_cast cty in
   match kind_of_term cty with
-    | IsProd (_,_,_) -> 
+    | Prod (_,_,_) -> 
 	failwith "make_exact_entry"
     | _ ->
 	(head_of_constr_reference (List.hd (head_constr cty)),
@@ -207,7 +211,7 @@ let make_exact_entry name (c,cty) =
 let make_apply_entry env sigma (eapply,verbose) name (c,cty) =
   let cty = hnf_constr env sigma cty in
   match kind_of_term cty with
-    | IsProd _ ->
+    | Prod _ ->
         let ce = mk_clenv_from () (c,cty) in
 	let c' = (clenv_template_type ce).rebus in
 	let pat = Pattern.pattern_of_constr c' in
@@ -374,14 +378,16 @@ let _ =
 	   begin 
 	     try
 	       let env = Global.env() and sigma = Evd.empty in
-	       let isp = destMutInd (Declare.global_qualified_reference qid) in
+	       let isp = destInd (Declare.global_qualified_reference qid) in
 	       let conspaths =
-		 mis_conspaths (Global.lookup_mind_specif isp) in
+                 let (mib,mip) = Global.lookup_inductive isp in
+                 mip.mind_consnames in
 	       let lcons = 
 		 array_map_to_list
-		   (fun sp ->
-		      let c = Declare.global_absolute_reference sp in
-		      (basename sp, c))
+		   (fun id ->
+                     let sp = make_path (dirpath (fst isp)) id in
+		     let c = Declare.global_absolute_reference sp in
+		      (id, c))
 		   conspaths in
 	       let dbnames = if l = [] then ["core"] else 
 	      	 List.map (function VARG_IDENTIFIER i -> string_of_id i
@@ -726,7 +732,7 @@ let decomp_unary_term c gls =
 
 let decomp_empty_term c gls = 
   let typc = pf_type_of gls c in 
-  let (hd,_) = decomp_app typc in 
+  let (hd,_) = decompose_app typc in 
   if Hipattern.is_empty_type hd then 
     simplest_case c gls 
   else 
@@ -874,7 +880,8 @@ let compileAutoArg contac = function
 	 tclFIRST 
            (List.map 
               (fun (id,_,typ) -> 
-                 if (Hipattern.is_conjunction (hd_of_prod (body_of_type typ)))
+                let cl = snd (decompose_prod (body_of_type typ)) in
+                 if (Hipattern.is_conjunction cl)
 		 then 
 		   (tclTHEN
                       (tclTHEN (simplest_elim (mkVar id)) 
@@ -918,7 +925,7 @@ let rec super_search n db_list local_db argl goal =
 let search_superauto n to_add argl g = 
   let sigma =
     List.fold_right
-      (fun (id,c) -> add_named_assum (id, pf_type_of g c))
+      (fun (id,c) -> add_named_decl (id, None, pf_type_of g c))
       to_add empty_named_context in
   let db0 = list_map_append (make_resolve_hyp (pf_env g) (project g)) sigma in
   let db = Hint_db.add_list db0 (make_local_hint_db g) in

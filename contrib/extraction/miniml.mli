@@ -13,6 +13,7 @@
 open Pp
 open Names
 open Term
+open Nametab
 
 (*s ML type expressions. *)
 

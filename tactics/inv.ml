@@ -12,12 +12,13 @@ open Pp
 open Util
 open Names
 open Term
+open Termops
 open Global
 open Sign
 open Environ
-open Inductive
+open Inductiveops
 open Printer
-open Reduction
+open Reductionops
 open Retyping
 open Tacmach
 open Proof_type
@@ -88,7 +89,7 @@ let make_inv_predicate env sigma ind id status concl =
     match status with
       | NoDep ->
 	  (* We push the arity and leave concl unchanged *)
-	  let hyps_arity,_ = get_arity indf in
+	  let hyps_arity,_ = get_arity env indf in
 	  (hyps_arity,concl)
       | Dep dflt_concl ->
 	  if not (dependent (mkVar id) concl) then
@@ -188,7 +189,7 @@ let rec dependent_hyps id idlist sign =
   let rec dep_rec =function
     | [] -> []
     | (id1::l) -> 
-	let id1ty = snd (lookup_named id1 sign) in  
+	let (_,_,id1ty) = lookup_named id1 sign in  
 	if occur_var (Global.env()) id (body_of_type id1ty)
         then id1::dep_rec l
         else dep_rec l
@@ -233,21 +234,21 @@ let projectAndApply thin id depids gls =
       let (t,t1,t2) = dest_eq gls (pf_get_hyp_typ gls id) in
       match (kind_of_term (strip_outer_cast t1),
 	     kind_of_term (strip_outer_cast t2)) with
-        | IsVar id1, _ -> generalizeRewriteIntros (subst_hyp_LR id) depids id1
-        | _, IsVar id2 -> generalizeRewriteIntros (subst_hyp_RL id) depids id2
+        | Var id1, _ -> generalizeRewriteIntros (subst_hyp_LR id) depids id1
+        | _, Var id2 -> generalizeRewriteIntros (subst_hyp_RL id) depids id2
         | _ -> subst_hyp_RL id
     in 
     onLastHyp orient_rule gls 
   in
   let (t,t1,t2) = dest_eq gls (pf_get_hyp_typ gls id)  in
   match (thin, kind_of_term (strip_outer_cast t1), kind_of_term (strip_outer_cast t2)) with
-    | (true, IsVar id1,  _) -> generalizeRewriteIntros
+    | (true, Var id1,  _) -> generalizeRewriteIntros
           (tclTHEN (subst_hyp_LR id) (clear_clause id)) depids id1 gls
-    | (false, IsVar id1,  _) ->
+    | (false, Var id1,  _) ->
         generalizeRewriteIntros (subst_hyp_LR id) depids id1 gls
-    | (true, _ , IsVar id2) -> generalizeRewriteIntros
+    | (true, _ , Var id2) -> generalizeRewriteIntros
           (tclTHEN (subst_hyp_RL id) (clear_clause id)) depids id2 gls
-    | (false, _ , IsVar id2) ->
+    | (false, _ , Var id2) ->
         generalizeRewriteIntros (subst_hyp_RL id) depids id2 gls
     | (true, _, _) ->
         let deq_trailer neqns =
@@ -323,7 +324,7 @@ let case_trailer othin neqns ba gl =
 
 let collect_meta_variables c = 
   let rec collrec acc c = match kind_of_term c with
-    | IsMeta mv -> mv::acc
+    | Meta mv -> mv::acc
     | _ -> fold_constr collrec acc c
   in 
   collrec [] c

@@ -14,6 +14,7 @@ open Term
 open Sign
 open Environ
 open Rawterm
+open Termops
 (*i*)
 
 (* [detype avoid env c] turns [c], typed in [env], into a rawconstr. *)
@@ -22,7 +23,8 @@ open Rawterm
 val detype : identifier list -> names_context -> constr -> rawconstr
 
 (* look for the index of a named var or a nondep var as it is renamed *)
-val lookup_name_as_renamed : named_context -> constr -> identifier -> int option
+val lookup_name_as_renamed :
+  named_context -> constr -> identifier -> int option
 val lookup_index_as_renamed : constr -> int -> int option
 
 

@@ -56,7 +56,7 @@ type wc = walking_constraints (* for a better reading of the following *)
 
 val unify : constr -> tactic
 val unify_0 : 
-  Reduction.conv_pb -> (int * constr) list -> wc -> constr -> constr 
+  Reductionops.conv_pb -> (int * constr) list -> wc -> constr -> constr 
     -> (int * constr) list * (constr * constr) list
 
 val collect_metas : constr -> int list
@@ -80,7 +80,7 @@ val clenv_instance_type : wc clausenv -> int -> constr
 val clenv_instance_template : wc clausenv -> constr
 val clenv_instance_template_type : wc clausenv -> constr
 val clenv_unify : 
-  Reduction.conv_pb -> constr -> constr -> wc clausenv -> wc clausenv
+  Reductionops.conv_pb -> constr -> constr -> wc clausenv -> wc clausenv
 val clenv_fchain : int -> 'a clausenv -> wc clausenv -> wc clausenv
 val clenv_refine : (wc -> tactic) -> wc clausenv -> tactic
 val res_pf      : (wc -> tactic) -> wc clausenv -> tactic
@@ -120,7 +120,7 @@ val clenv_constrain_dep_args_of :
 val constrain_clenv_using_subterm_list : 
   bool -> wc clausenv -> constr list -> constr -> wc clausenv * constr list
 val clenv_typed_unify :
-  Reduction.conv_pb -> constr -> constr -> wc clausenv -> wc clausenv
+  Reductionops.conv_pb -> constr -> constr -> wc clausenv -> wc clausenv
 
 val pr_clenv : 'a clausenv -> Pp.std_ppcmds
 

@@ -21,6 +21,7 @@ open Sign
 open Tacred
 open Util
 open Names
+open Nameops
 open Nametab
 open Pfedit
 open Proof_type
@@ -29,7 +30,9 @@ open Tactic_debug
 open Coqast
 open Ast
 open Term
+open Termops
 open Declare
+open Safe_typing
 
 let err_msg_tactic_not_found macro_loc macro =
   user_err_loc
@@ -107,7 +110,7 @@ let make_qid = function
   | VArg (Identifier id) -> VArg (Qualid (make_short_qualid id))
   | VArg (Constr c) ->
     (match (kind_of_term c) with
-    | IsConst cst -> VArg (Qualid (qualid_of_sp cst))
+    | Const cst -> VArg (Qualid (qualid_of_sp cst))
     | _ -> anomalylabstrm "make_qid" [< 'sTR "Not a Qualid" >])
   | _ -> anomalylabstrm "make_qid" [< 'sTR "Not a Qualid" >]
 
@@ -124,7 +127,7 @@ let constr_of_id id = function
     else
       let csr = global_qualified_reference (make_short_qualid id) in
       (match kind_of_term csr with
-      | IsVar _ -> raise Not_found
+      | Var _ -> raise Not_found
       | _ -> csr)
 
 (* Extracted the constr list from lfun *)
@@ -209,21 +212,21 @@ let glob_const_nvar loc env qid =
   try
     (* We first look for a variable of the current proof *)
     match Nametab.repr_qualid qid with
-      | d,id when is_empty_dirpath d ->
+      | d,id when repr_dirpath d = [] ->
 	  (* lookup_value may raise Not_found *)
-	  (match Environ.lookup_named_value id env with
-	     | Some _ ->
+	  (match Environ.lookup_named id env with
+	     | (_,Some _,_) ->
                  let v = EvalVarRef id in
                  if Opaque.is_evaluable env v then v
                  else error ("variable "^(string_of_id id)^" is opaque")
-	     | None -> error ((string_of_id id)^
+	     | _ -> error ((string_of_id id)^
 			      " does not denote an evaluable constant"))
       | _ -> raise Not_found
   with Not_found ->
   try
     let ev = (match Nametab.locate qid with
       | ConstRef sp -> EvalConstRef sp
-      | VarRef sp -> EvalVarRef (basename sp)
+      | VarRef id -> EvalVarRef id
       | _ -> error ((Nametab.string_of_qualid qid) ^
 		    " does not denote an evaluable constant")) in
     if Opaque.is_evaluable env ev then ev
@@ -1135,7 +1138,6 @@ and flag_of_ast ist lf =
         add_flag red lf
     | Node(_,"Iota",[])::lf -> add_flag (red_add red fIOTA) lf
     | Node(_,"Zeta",[])::lf -> add_flag (red_add red fZETA) lf
-    | Node(_,"Evar",[])::lf -> add_flag (red_add red fEVAR) lf
     | Node(loc,("Unf"|"UnfBut"),l)::_ ->
 	user_err_loc(loc,"flag_of_ast",
                      [<'sTR "Delta must be specified just before">])
@@ -1232,6 +1234,6 @@ let add_tacdef na vbody =
       [< 'sTR
          "There is already a Meta Definition or a Tactic Definition named ";
          pr_id na>];
-    let _ = Lib.add_leaf na OBJ (inMD (na,vbody)) in
+    let _ = Lib.add_leaf na (inMD (na,vbody)) in
     Options.if_verbose mSGNL [< pr_id na; 'sTR " is defined" >]
   end

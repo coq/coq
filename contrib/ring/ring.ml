@@ -15,7 +15,8 @@ open Util
 open Options
 open Term
 open Names
-open Reduction
+open Nameops
+open Reductionops
 open Tacmach
 open Proof_type
 open Proof_trees
@@ -28,13 +29,14 @@ open Tacred
 open Tactics
 open Pattern 
 open Hiddentac
+open Nametab
 open Quote
 
 let mt_evd = Evd.empty
 let constr_of com = Astterm.interp_constr mt_evd (Global.env()) com
 
 let constant dir s =
-  let dir = make_dirpath (List.map id_of_string ("Coq"::dir)) in
+  let dir = make_dirpath (List.map id_of_string (List.rev ("Coq"::dir))) in
   let id = id_of_string s in
   try 
     Declare.global_reference_in_absolute_module dir id
@@ -138,6 +140,7 @@ val build_coq_eqT : constr delayed
 val build_coq_sym_eqT : constr delayed
 *)
 
+let mkLApp(fc,v) = mkApp(Lazy.force fc, v)
 
 (*********** Useful types and functions ************)
 
@@ -226,30 +229,31 @@ let unbox = function
 
 let add_theory want_ring want_abstract want_setoid a aequiv asetth amorph aplus amult aone azero aopp aeq t cset = 
   if theories_map_mem a then errorlabstrm "Add Semi Ring" 
-    [< 'sTR "A (Semi-)(Setoid-)Ring Structure is already declared for "; prterm a >];
+    [< 'sTR "A (Semi-)(Setoid-)Ring Structure is already declared for ";
+       prterm a >];
   let env = Global.env () in
     if (want_ring & want_setoid &
 	(not (is_conv env Evd.empty (Typing.type_of env Evd.empty t)
-		(mkApp (Lazy.force coq_Setoid_Ring_Theory, 
+		(mkLApp (coq_Setoid_Ring_Theory, 
 			[| a; (unbox aequiv); aplus; amult; aone; azero; (unbox aopp); aeq|])))) &
 	(not (is_conv env Evd.empty (Typing.type_of env Evd.empty (unbox asetth))
-		(mkApp ((Lazy.force coq_Setoid_Theory), [| a; (unbox aequiv) |]))))) then 
+		(mkLApp (coq_Setoid_Theory, [| a; (unbox aequiv) |]))))) then 
       errorlabstrm "addring" [< 'sTR "Not a valid Setoid-Ring theory" >];
     if (not want_ring & want_setoid &
 	(not (is_conv env Evd.empty (Typing.type_of env Evd.empty t)
-		(mkApp (Lazy.force coq_Semi_Setoid_Ring_Theory, 
+		(mkLApp (coq_Semi_Setoid_Ring_Theory, 
 			[| a; (unbox aequiv); aplus; amult; aone; azero; aeq|])))) &
 	(not (is_conv env Evd.empty (Typing.type_of env Evd.empty (unbox asetth))
-		(mkApp ((Lazy.force coq_Setoid_Theory), [| a; (unbox aequiv) |]))))) then 
+		(mkLApp (coq_Setoid_Theory, [| a; (unbox aequiv) |]))))) then 
       errorlabstrm "addring" [< 'sTR "Not a valid Semi-Setoid-Ring theory" >];
     if (want_ring & not want_setoid &
 	not (is_conv env Evd.empty (Typing.type_of env Evd.empty t)
-	       (mkApp (Lazy.force coq_Ring_Theory, 
+	       (mkLApp (coq_Ring_Theory, 
 		       [| a; aplus; amult; aone; azero; (unbox aopp); aeq |])))) then
       errorlabstrm "addring" [< 'sTR "Not a valid Ring theory" >];
     if (not want_ring & not want_setoid &
 	not (is_conv  env Evd.empty (Typing.type_of env Evd.empty t) 
-	       (mkApp (Lazy.force coq_Semi_Ring_Theory, 
+	       (mkLApp (coq_Semi_Ring_Theory, 
 		       [| a; aplus; amult; aone; azero; aeq |])))) then 
       errorlabstrm "addring" [< 'sTR "Not a valid Semi-Ring theory" >];
     Lib.add_anonymous_leaf
@@ -437,17 +441,17 @@ let build_spolynom gl th lc =
      and builds the varmap with side-effects *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | IsApp (binop,[|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
-	  mkAppA [| Lazy.force coq_SPplus; th.th_a; aux c1; aux c2 |]
-      | IsApp (binop,[|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
-	  mkAppA [| Lazy.force coq_SPmult; th.th_a; aux c1; aux c2 |]
+      | App (binop,[|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+	  mkLApp(coq_SPplus, [|th.th_a; aux c1; aux c2 |])
+      | App (binop,[|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+	  mkLApp(coq_SPmult, [|th.th_a; aux c1; aux c2 |])
       | _ when closed_under th.th_closed c ->
-	  mkAppA [| Lazy.force coq_SPconst; th.th_a; c |]
+	  mkLApp(coq_SPconst, [|th.th_a; c |])
       | _ -> 
 	  try Hashtbl.find varhash c 
 	  with Not_found -> 
-	    let newvar = mkAppA [| Lazy.force coq_SPvar; th.th_a; 
-				   (path_of_int !counter) |] in
+	    let newvar =
+              mkLApp(coq_SPvar, [|th.th_a; (path_of_int !counter) |]) in
 	    begin 
 	      incr counter;
 	      varlist := c :: !varlist;
@@ -459,18 +463,18 @@ let build_spolynom gl th lc =
   let v = btree_of_array (Array.of_list (List.rev !varlist)) th.th_a in
   List.map 
     (fun p -> 
-       (mkAppA [| Lazy.force coq_interp_sp; th.th_a; th.th_plus; th.th_mult; 
-		  th.th_zero; v; p |],
-	mkAppA [| Lazy.force coq_interp_cs; th.th_a; th.th_plus; th.th_mult; 
-		  th.th_one; th.th_zero; v;
+       (mkLApp (coq_interp_sp,
+               [|th.th_a; th.th_plus; th.th_mult; th.th_zero; v; p |]),
+	mkLApp (coq_interp_cs,
+               [|th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; v;
 		  pf_reduce cbv_betadeltaiota gl 
-		    (mkAppA [| Lazy.force coq_spolynomial_simplify; 
-			       th.th_a; th.th_plus; th.th_mult; 
+		    (mkLApp (coq_spolynomial_simplify, 
+			    [| th.th_a; th.th_plus; th.th_mult; 
 			       th.th_one; th.th_zero; 
-			       th.th_eq; p|]) |],
-	mkAppA [| Lazy.force coq_spolynomial_simplify_ok;
-		  th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; 
-		  th.th_eq; v; th.th_t; p |]))
+			       th.th_eq; p|])) |]),
+	mkLApp (coq_spolynomial_simplify_ok,
+	        [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; 
+		  th.th_eq; v; th.th_t; p |])))
     lp
 
 (*
@@ -491,25 +495,26 @@ let build_polynom gl th lc =
   let counter = ref 1 in (* number of variables created + 1 *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
-	  mkAppA [| Lazy.force coq_Pplus; th.th_a; aux c1; aux c2 |]
-      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
-	  mkAppA [| Lazy.force coq_Pmult; th.th_a; aux c1; aux c2 |]
+      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+	  mkLApp(coq_Pplus, [|th.th_a; aux c1; aux c2 |])
+      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+	  mkLApp(coq_Pmult, [|th.th_a; aux c1; aux c2 |])
       (* The special case of Zminus *)
-      | IsApp (binop, [|c1; c2|])
-	  when pf_conv_x gl c (mkAppA [| th.th_plus; c1; 
-	                                 mkAppA [| (unbox th.th_opp); c2 |] |]) ->
-	    mkAppA [| Lazy.force coq_Pplus; th.th_a; aux c1;
-	              mkAppA [| Lazy.force coq_Popp; th.th_a; aux c2 |] |]
-      | IsApp (unop, [|c1|]) when pf_conv_x gl unop (unbox th.th_opp) ->
-	  mkAppA [| Lazy.force coq_Popp; th.th_a; aux c1 |]
+      | App (binop, [|c1; c2|])
+	  when pf_conv_x gl c
+            (mkApp (th.th_plus, [|c1; mkApp(unbox th.th_opp, [|c2|])|])) ->
+	    mkLApp(coq_Pplus,
+                  [|th.th_a; aux c1;
+	            mkLApp(coq_Popp, [|th.th_a; aux c2|]) |])
+      | App (unop, [|c1|]) when pf_conv_x gl unop (unbox th.th_opp) ->
+	  mkLApp(coq_Popp, [|th.th_a; aux c1|])
       | _ when closed_under th.th_closed c ->
-	  mkAppA [| Lazy.force coq_Pconst; th.th_a; c |]
+	  mkLApp(coq_Pconst, [|th.th_a; c |])
       | _ -> 
 	  try Hashtbl.find varhash c 
 	  with Not_found -> 
-	    let newvar = mkAppA [| Lazy.force coq_Pvar; th.th_a; 
-				   (path_of_int !counter) |] in
+	    let newvar =
+              mkLApp(coq_Pvar, [|th.th_a; (path_of_int !counter) |]) in
 	    begin 
 	      incr counter;
 	      varlist := c :: !varlist;
@@ -521,18 +526,18 @@ let build_polynom gl th lc =
   let v = (btree_of_array (Array.of_list (List.rev !varlist)) th.th_a) in
   List.map 
     (fun p -> 
-       (mkAppA [| Lazy.force coq_interp_p;
-		  th.th_a; th.th_plus; th.th_mult; th.th_zero; (unbox th.th_opp);
-		  v; p |],
-	mkAppA [| Lazy.force coq_interp_cs;
-		  th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; v;
+       (mkLApp(coq_interp_p,
+	       [| th.th_a; th.th_plus; th.th_mult; th.th_zero;
+                 (unbox th.th_opp); v; p |])),
+	mkLApp(coq_interp_cs,
+	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; v;
 		  pf_reduce cbv_betadeltaiota gl 
-		    (mkAppA [| Lazy.force coq_polynomial_simplify; 
-			       th.th_a; th.th_plus; th.th_mult; 
+		    (mkLApp(coq_polynomial_simplify,
+			    [| th.th_a; th.th_plus; th.th_mult; 
 			       th.th_one; th.th_zero; 
-			       (unbox th.th_opp); th.th_eq; p |]) |],
-	mkAppA [| Lazy.force coq_polynomial_simplify_ok;
-		  th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; 
+			       (unbox th.th_opp); th.th_eq; p |])) |]),
+	mkLApp(coq_polynomial_simplify_ok,
+	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; 
 		  (unbox th.th_opp); th.th_eq; v; th.th_t; p |]))
     lp
 
@@ -556,17 +561,16 @@ let build_aspolynom gl th lc =
      and builds the varmap with side-effects *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
-	  mkAppA [| Lazy.force coq_ASPplus; aux c1; aux c2 |]
-      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
-	  mkAppA [| Lazy.force coq_ASPmult; aux c1; aux c2 |]
+      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+	  mkLApp(coq_ASPplus, [| aux c1; aux c2 |])
+      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+	  mkLApp(coq_ASPmult, [| aux c1; aux c2 |])
       | _ when pf_conv_x gl c th.th_zero -> Lazy.force coq_ASP0
       | _ when pf_conv_x gl c th.th_one -> Lazy.force coq_ASP1
       | _ -> 
 	  try Hashtbl.find varhash c 
 	  with Not_found -> 
-	    let newvar = mkAppA [| Lazy.force coq_ASPvar; 
-				   (path_of_int !counter) |] in
+	    let newvar = mkLApp(coq_ASPvar, [|(path_of_int !counter) |]) in
 	    begin 
 	      incr counter;
 	      varlist := c :: !varlist;
@@ -578,15 +582,17 @@ let build_aspolynom gl th lc =
   let v = btree_of_array (Array.of_list (List.rev !varlist)) th.th_a in
   List.map 
     (fun p -> 
-       (mkAppA [| Lazy.force coq_interp_asp; th.th_a; th.th_plus; th.th_mult; 
-		  th.th_one; th.th_zero; v; p |],
-	mkAppA [| Lazy.force coq_interp_acs; th.th_a; th.th_plus; th.th_mult; 
+       (mkLApp(coq_interp_asp,
+               [| th.th_a; th.th_plus; th.th_mult; 
+		  th.th_one; th.th_zero; v; p |]),
+	mkLApp(coq_interp_acs,
+               [| th.th_a; th.th_plus; th.th_mult; 
 		  th.th_one; th.th_zero; v;
 		  pf_reduce cbv_betadeltaiota gl 
-		    (mkAppA [| Lazy.force coq_aspolynomial_normalize; p|]) |],
-	mkAppA [| Lazy.force coq_spolynomial_simplify_ok;
-		  th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; 
-		  th.th_eq; v; th.th_t; p |]))
+		    (mkLApp(coq_aspolynomial_normalize,[|p|])) |]),
+	mkLApp(coq_spolynomial_simplify_ok,
+	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; 
+		  th.th_eq; v; th.th_t; p |])))
     lp
 
 (*
@@ -607,25 +613,25 @@ let build_apolynom gl th lc =
   let counter = ref 1 in (* number of variables created + 1 *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
-	  mkAppA [| Lazy.force coq_APplus; aux c1; aux c2 |]
-      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
-	  mkAppA [| Lazy.force coq_APmult; aux c1; aux c2 |]
+      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+	  mkLApp(coq_APplus, [| aux c1; aux c2 |])
+      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+	  mkLApp(coq_APmult, [| aux c1; aux c2 |])
       (* The special case of Zminus *)
-      | IsApp (binop, [|c1; c2|]) 
-	  when pf_conv_x gl c (mkAppA [| th.th_plus; c1; 
-	                                 mkAppA [|(unbox th.th_opp); c2 |] |]) ->
-	    mkAppA [| Lazy.force coq_APplus; aux c1;
-	              mkAppA [| Lazy.force coq_APopp; aux c2 |] |]
-      | IsApp (unop, [|c1|]) when pf_conv_x gl unop (unbox th.th_opp) ->
-	  mkAppA [| Lazy.force coq_APopp; aux c1 |]
+      | App (binop, [|c1; c2|]) 
+	  when pf_conv_x gl c
+            (mkApp(th.th_plus, [|c1; mkApp(unbox th.th_opp,[|c2|]) |])) ->
+	    mkLApp(coq_APplus,
+                   [|aux c1; mkLApp(coq_APopp,[|aux c2|]) |])
+      | App (unop, [|c1|]) when pf_conv_x gl unop (unbox th.th_opp) ->
+	  mkLApp(coq_APopp, [| aux c1 |])
       | _ when pf_conv_x gl c th.th_zero -> Lazy.force coq_AP0
       | _ when pf_conv_x gl c th.th_one -> Lazy.force coq_AP1
       | _ -> 
 	  try Hashtbl.find varhash c 
 	  with Not_found -> 
-	    let newvar = mkAppA [| Lazy.force coq_APvar; 
-				   (path_of_int !counter) |] in
+	    let newvar =
+              mkLApp(coq_APvar, [| path_of_int !counter |]) in
 	    begin 
 	      incr counter;
 	      varlist := c :: !varlist;
@@ -637,17 +643,17 @@ let build_apolynom gl th lc =
   let v = (btree_of_array (Array.of_list (List.rev !varlist)) th.th_a) in
   List.map 
     (fun p -> 
-       (mkAppA [| Lazy.force coq_interp_ap;
-		  th.th_a; th.th_plus; th.th_mult; th.th_one; 
-		  th.th_zero; (unbox th.th_opp); v; p |],
-	mkAppA [| Lazy.force coq_interp_sacs;
-		  th.th_a; th.th_plus; th.th_mult; 
+       (mkLApp(coq_interp_ap,
+	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; 
+		  th.th_zero; (unbox th.th_opp); v; p |]),
+	mkLApp(coq_interp_sacs,
+	       [| th.th_a; th.th_plus; th.th_mult; 
 		  th.th_one; th.th_zero; (unbox th.th_opp); v; 
 		  pf_reduce cbv_betadeltaiota gl 
-		    (mkAppA [| Lazy.force coq_apolynomial_normalize; p |]) |],
-	mkAppA [| Lazy.force coq_apolynomial_normalize_ok;
-		  th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; 
-		  (unbox th.th_opp); th.th_eq; v; th.th_t; p |]))
+		    (mkLApp(coq_apolynomial_normalize, [|p|])) |]),
+	mkLApp(coq_apolynomial_normalize_ok,
+	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; 
+		  (unbox th.th_opp); th.th_eq; v; th.th_t; p |])))
     lp
     
 (*
@@ -668,25 +674,26 @@ let build_setpolynom gl th lc =
   let counter = ref 1 in (* number of variables created + 1 *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
-	  mkAppA [| Lazy.force coq_SetPplus; th.th_a; aux c1; aux c2 |]
-      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
-	  mkAppA [| Lazy.force coq_SetPmult; th.th_a; aux c1; aux c2 |]
+      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+	  mkLApp(coq_SetPplus, [|th.th_a; aux c1; aux c2 |])
+      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+	  mkLApp(coq_SetPmult, [|th.th_a; aux c1; aux c2 |])
       (* The special case of Zminus *)
-      | IsApp (binop, [|c1; c2|])
-	  when pf_conv_x gl c (mkAppA [| th.th_plus; c1; 
-	                                 mkAppA [|(unbox th.th_opp); c2 |] |]) ->
-	    mkAppA [| Lazy.force coq_SetPplus; th.th_a; aux c1;
-	              mkAppA [| Lazy.force coq_SetPopp; th.th_a; aux c2 |] |]
-      | IsApp (unop, [|c1|]) when pf_conv_x gl unop (unbox th.th_opp) ->
-	  mkAppA [| Lazy.force coq_SetPopp; th.th_a; aux c1 |]
+      | App (binop, [|c1; c2|])
+	  when pf_conv_x gl c
+            (mkApp(th.th_plus, [|c1; mkApp(unbox th.th_opp,[|c2|])|])) ->
+	    mkLApp(coq_SetPplus,
+                   [| th.th_a; aux c1;
+	              mkLApp(coq_SetPopp, [|th.th_a; aux c2|]) |])
+      | App (unop, [|c1|]) when pf_conv_x gl unop (unbox th.th_opp) ->
+	  mkLApp(coq_SetPopp, [| th.th_a; aux c1 |])
       | _ when closed_under th.th_closed c ->
-	  mkAppA [| Lazy.force coq_SetPconst; th.th_a; c |]
+	  mkLApp(coq_SetPconst, [| th.th_a; c |])
       | _ -> 
 	  try Hashtbl.find varhash c 
 	  with Not_found -> 
-	    let newvar = mkAppA [| Lazy.force coq_SetPvar; th.th_a; 
-				   (path_of_int !counter) |] in
+	    let newvar =
+              mkLApp(coq_SetPvar, [| th.th_a; path_of_int !counter |]) in
 	    begin 
 	      incr counter;
 	      varlist := c :: !varlist;
@@ -698,21 +705,22 @@ let build_setpolynom gl th lc =
   let v = (btree_of_array (Array.of_list (List.rev !varlist)) th.th_a) in
   List.map 
     (fun p -> 
-       (mkAppA [| Lazy.force coq_interp_setp;
-		  th.th_a; th.th_plus; th.th_mult; th.th_zero; (unbox th.th_opp);
-		  v; p |],
-	mkAppA [| Lazy.force coq_interp_setcs;
-		  th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; v;
+       (mkLApp(coq_interp_setp,
+	       [| th.th_a; th.th_plus; th.th_mult; th.th_zero;
+                  (unbox th.th_opp); v; p |]),
+	mkLApp(coq_interp_setcs,
+	       [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; v;
 		  pf_reduce cbv_betadeltaiota gl 
-		    (mkAppA [| Lazy.force coq_setpolynomial_simplify; 
-			       th.th_a; th.th_plus; th.th_mult; 
+		    (mkLApp(coq_setpolynomial_simplify,
+			    [| th.th_a; th.th_plus; th.th_mult; 
 			       th.th_one; th.th_zero; 
-			       (unbox th.th_opp); th.th_eq; p |]) |],
-	mkAppA [| Lazy.force coq_setpolynomial_simplify_ok;
-		  th.th_a; (unbox th.th_equiv); th.th_plus; th.th_mult; th.th_one;
-		  th.th_zero;(unbox th.th_opp); th.th_eq; v; th.th_t; (unbox th.th_setoid_th);
+			       (unbox th.th_opp); th.th_eq; p |])) |]),
+	mkLApp(coq_setpolynomial_simplify_ok,
+	       [| th.th_a; (unbox th.th_equiv); th.th_plus;
+                  th.th_mult; th.th_one; th.th_zero;(unbox th.th_opp);
+                  th.th_eq; v; th.th_t; (unbox th.th_setoid_th);
 		  (unbox th.th_morph).plusm; (unbox th.th_morph).multm;
-		  (unbox th.th_morph).oppm; p |]))
+		  (unbox th.th_morph).oppm; p |])))
     lp
 
 (*
@@ -733,17 +741,17 @@ let build_setspolynom gl th lc =
   let counter = ref 1 in (* number of variables created + 1 *)
   let rec aux c = 
     match (kind_of_term (strip_outer_cast c)) with 
-      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
-	  mkAppA [| Lazy.force coq_SetSPplus; th.th_a; aux c1; aux c2 |]
-      | IsApp (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
-	  mkAppA [| Lazy.force coq_SetSPmult; th.th_a; aux c1; aux c2 |]
+      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_plus ->
+	  mkLApp(coq_SetSPplus, [|th.th_a; aux c1; aux c2 |])
+      | App (binop, [|c1; c2|]) when pf_conv_x gl binop th.th_mult ->
+	  mkLApp(coq_SetSPmult, [| th.th_a; aux c1; aux c2 |])
       | _ when closed_under th.th_closed c ->
-	  mkAppA [| Lazy.force coq_SetSPconst; th.th_a; c |]
+	  mkLApp(coq_SetSPconst, [| th.th_a; c |])
       | _ -> 
 	  try Hashtbl.find varhash c
 	  with Not_found ->
-	    let newvar = mkAppA [| Lazy.force coq_SetSPvar; th.th_a; 
-				   (path_of_int !counter) |] in
+	    let newvar =
+              mkLApp(coq_SetSPvar, [|th.th_a; path_of_int !counter |]) in
 	    begin 
 	      incr counter;
 	      varlist := c :: !varlist;
@@ -755,20 +763,21 @@ let build_setspolynom gl th lc =
   let v = (btree_of_array (Array.of_list (List.rev !varlist)) th.th_a) in
   List.map
     (fun p ->
-       (mkAppA [| Lazy.force coq_interp_setsp;
-		  th.th_a; th.th_plus; th.th_mult; th.th_zero;
-		  v; p |],
-	mkAppA [| Lazy.force coq_interp_setcs;
-		  th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; v;
+       (mkLApp(coq_interp_setsp,
+	       [| th.th_a; th.th_plus; th.th_mult; th.th_zero; v; p |]),
+	mkLApp(coq_interp_setcs,
+               [| th.th_a; th.th_plus; th.th_mult; th.th_one; th.th_zero; v;
 		  pf_reduce cbv_betadeltaiota gl 
-		    (mkAppA [| Lazy.force coq_setspolynomial_simplify; 
-			       th.th_a; th.th_plus; th.th_mult; 
+		    (mkLApp(coq_setspolynomial_simplify,
+			    [| th.th_a; th.th_plus; th.th_mult; 
 			       th.th_one; th.th_zero; 
-			       th.th_eq; p |]) |],
-	mkAppA [| Lazy.force coq_setspolynomial_simplify_ok;
-		  th.th_a; (unbox th.th_equiv); th.th_plus; th.th_mult; th.th_one;
-		  th.th_zero; th.th_eq; v; th.th_t; (unbox th.th_setoid_th);
-		  (unbox th.th_morph).plusm; (unbox th.th_morph).multm; p |]))
+			       th.th_eq; p |])) |]),
+	mkLApp(coq_setspolynomial_simplify_ok,
+	       [| th.th_a; (unbox th.th_equiv); th.th_plus;
+                  th.th_mult; th.th_one; th.th_zero; th.th_eq; v;
+                  th.th_t; (unbox th.th_setoid_th);
+		  (unbox th.th_morph).plusm;
+                  (unbox th.th_morph).multm; p |])))
     lp
 
 module SectionPathSet =
@@ -806,12 +815,12 @@ let constants_to_unfold =
 open RedFlags
 let polynom_unfold_tac =
   let flags =
-    (UNIFORM, mkflags(fBETA::fIOTA::fEVAR::(List.map fCONST constants_to_unfold))) in
+    (UNIFORM, mkflags(fBETA::fIOTA::(List.map fCONST constants_to_unfold))) in
   reduct_in_concl (cbv_norm_flags flags)
       
 let polynom_unfold_tac_in_term gl =
   let flags = 
-    (UNIFORM,mkflags(fBETA::fIOTA::fEVAR::fZETA::(List.map fCONST constants_to_unfold)))
+    (UNIFORM,mkflags(fBETA::fIOTA::fZETA::(List.map fCONST constants_to_unfold)))
   in
   cbv_norm_flags flags (pf_env gl) (project gl)
 
@@ -854,10 +863,10 @@ let raw_polynom th op lc gl =
            (tclORELSE 
               (tclORELSE
 		 (h_exact c'i_eq_c''i)
-		 (h_exact (mkAppA
-			     [| (Lazy.force coq_seq_sym); 
-				th.th_a; (unbox th.th_equiv); (unbox th.th_setoid_th);
-				c'''i; ci; c'i_eq_c''i |])))
+		 (h_exact (mkLApp(coq_seq_sym, 
+				  [| th.th_a; (unbox th.th_equiv);
+                                     (unbox th.th_setoid_th);
+				     c'''i; ci; c'i_eq_c''i |]))))
 	      (tclTHENS 
 		 (Setoid_replace.setoid_replace ci c'''i None)
 		 [ tac;
@@ -866,12 +875,11 @@ let raw_polynom th op lc gl =
            (tclORELSE
               (tclORELSE
 		 (h_exact c'i_eq_c''i)
-		 (h_exact (mkAppA
-			     [| build_coq_sym_eqT (); 
-				th.th_a; c'''i; ci; c'i_eq_c''i |]))) 
+		 (h_exact (mkApp(build_coq_sym_eqT (),
+				 [|th.th_a; c'''i; ci; c'i_eq_c''i |]))))
 	      (tclTHENS 
 		 (elim_type 
-		    (mkAppA [| build_coq_eqT (); th.th_a; c'''i; ci |]))
+		    (mkApp(build_coq_eqT (), [|th.th_a; c'''i; ci |])))
 		 [ tac;
                    h_exact c'i_eq_c''i ]))
 )
@@ -885,16 +893,16 @@ let guess_eq_tac th =
 	polynom_unfold_tac
 	(tclREPEAT 
 	   (tclORELSE 
-	      (apply (mkAppA [| build_coq_f_equal2 ();
-				th.th_a; th.th_a; th.th_a;
-				th.th_plus |])) 
-	      (apply (mkAppA [| build_coq_f_equal2 ();
-				th.th_a; th.th_a; th.th_a; 
-				th.th_mult |]))))))
+	      (apply (mkApp(build_coq_f_equal2 (),
+		            [| th.th_a; th.th_a; th.th_a;
+			       th.th_plus |])))
+	      (apply (mkApp(build_coq_f_equal2 (),
+		            [| th.th_a; th.th_a; th.th_a; 
+			       th.th_mult |])))))))
 let guess_equiv_tac th = 
-  (tclORELSE (apply (mkAppA [|(Lazy.force coq_seq_refl);
-			      th.th_a; (unbox th.th_equiv);
-			      (unbox th.th_setoid_th)|]))
+  (tclORELSE (apply (mkLApp(coq_seq_refl,
+			    [| th.th_a; (unbox th.th_equiv);
+			       (unbox th.th_setoid_th)|])))
      (tclTHEN 
 	polynom_unfold_tac
 	(tclREPEAT 
@@ -903,9 +911,9 @@ let guess_equiv_tac th =
 	      (apply (unbox th.th_morph).multm)))))
 
 let match_with_equiv c = match (kind_of_term c) with
-  | IsApp (e,a) -> 
+  | App (e,a) -> 
       if (List.mem e (Setoid_replace.equiv_list ()))
-      then Some (decomp_app c)
+      then Some (decompose_app c)
       else None
   | _ -> None
 

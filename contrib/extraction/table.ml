@@ -18,7 +18,7 @@ open Util
 open Pp
 open Term 
 open Declarations
-
+open Nametab
 
 (*s AutoInline parameter *)
 

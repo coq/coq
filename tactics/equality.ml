@@ -13,9 +13,11 @@ open Util
 open Names
 open Univ
 open Term
+open Termops
 open Inductive
+open Inductiveops
 open Environ
-open Reduction
+open Reductionops
 open Instantiate
 open Typeops
 open Typing
@@ -34,6 +36,7 @@ open Tacred
 open Vernacinterp
 open Coqlib
 open Setoid_replace
+open Declarations
 
 (* Rewriting tactics *)
 
@@ -57,7 +60,7 @@ let general_rewrite_bindings lft2rgt (c,l) gl =
 	else error "The term provided does not end with an equation" 
     | Some (hdcncl,_) -> 
         let hdcncls = string_of_inductive hdcncl in 
-	let suffix = Declare.elimination_suffix (elimination_sort_of_goal gl)in
+	let suffix = Indrec.elimination_suffix (elimination_sort_of_goal gl)in
         let elim =
 	  if lft2rgt then
             pf_global gl (id_of_string (hdcncls^suffix^"_r"))
@@ -105,8 +108,8 @@ let abstract_replace (eq,sym_eq) (eqt,sym_eqt) c2 c1 unsafe gl =
   if unsafe or (pf_conv_x gl t1 t2) then
     let (e,sym) = 
       match kind_of_term (hnf_type_of gl t1) with 
-        | IsSort (Prop(Pos)) -> (eq,sym_eq)
-        | IsSort (Type(_))   -> (eqt,sym_eqt)
+        | Sort (Prop(Pos)) -> (eq,sym_eq)
+        | Sort (Type(_))   -> (eqt,sym_eqt)
         | _                  -> error "replace"
     in 
     (tclTHENL (elim_type (applist (e, [t1;c1;c2])))
@@ -176,7 +179,7 @@ let v_conditional_rewriteRL =
 let find_constructor env sigma c =
   let hd,stack = whd_betadeltaiota_stack env sigma c in
   match kind_of_term hd with
-    | IsMutConstruct _ -> (hd,stack)
+    | Construct _ -> (hd,stack)
     | _ -> error "find_constructor"
 
 (* Patterns *)
@@ -204,23 +207,24 @@ type elimination_types =
 
 let necessary_elimination sort_arity sort =
   let sort_arity = mkSort sort_arity in
-  if (isType sort) then
-    if is_Set sort_arity then
-      Set_Type
-    else 
-      if is_Type sort_arity then
-	Type_Type
-      else  
-	errorlabstrm "necessary_elimination" 
-	  [< 'sTR "no primitive equality on proofs" >]  
-  else
-    if is_Set sort_arity then
-      Set_SetorProp
-    else
-      if is_Type sort_arity then
-	Type_SetorProp
-      else  errorlabstrm "necessary_elimination" 
-        [< 'sTR "no primitive equality on proofs" >]
+  match sort with
+      Type _ ->
+        if is_Set sort_arity then
+          Set_Type
+        else 
+          if is_Type sort_arity then
+	    Type_Type
+          else  
+	    errorlabstrm "necessary_elimination" 
+	      [< 'sTR "no primitive equality on proofs" >]  
+    | _ ->
+        if is_Set sort_arity then
+          Set_SetorProp
+        else
+          if is_Type sort_arity then
+	    Type_SetorProp
+          else  errorlabstrm "necessary_elimination" 
+            [< 'sTR "no primitive equality on proofs" >]
 
 let find_eq_pattern aritysort sort = 
   match necessary_elimination aritysort sort with
@@ -273,7 +277,7 @@ let find_positions env sigma t1 t2 =
     let hd2,args2 = whd_betadeltaiota_stack env sigma t2 in
     match (kind_of_term hd1, kind_of_term hd2) with
   	
-      | IsMutConstruct sp1, IsMutConstruct sp2 ->
+      | Construct sp1, Construct sp2 ->
         (* both sides are constructors, so either we descend, or we can
            discriminate here. *)
 	  if sp1 = sp2 then
@@ -378,21 +382,24 @@ let descend_then sigma env head dirn =
   let IndType (indf,_) as indt =
     try find_rectype env sigma (get_type_of env sigma head)
     with Not_found -> assert false in
-  let mispec,_ = dest_ind_family indf in
-  let cstr = get_constructors indf in
+  let ind,_ = dest_ind_family indf in
+  let (mib,mip) = lookup_mind_specif env ind in
+  let cstr = get_constructors env indf in
   let dirn_nlams = cstr.(dirn-1).cs_nargs in
   let dirn_env = push_rels cstr.(dirn-1).cs_args env in
   (dirn_nlams,
    dirn_env,
    (fun dirnval (dfltval,resty) ->
-      let arign,_ = get_arity indf in
-      let p = it_mkLambda_or_LetIn (lift (mis_nrealargs mispec) resty) arign in
+      let arign,_ = get_arity env indf in
+      let p = it_mkLambda_or_LetIn (lift mip.mind_nrealargs resty) arign in
       let build_branch i =
 	let result = if i = dirn then dirnval else dfltval in
-	it_mkLambda_or_LetIn_name env result cstr.(i-1).cs_args
-      in
-      mkMutCaseL (make_default_case_info mispec, p, head,
-		 List.map build_branch (interval 1 (mis_nconstr mispec)))))
+	it_mkLambda_or_LetIn_name env result cstr.(i-1).cs_args in
+      let brl =
+        List.map build_branch
+          (interval 1 (Array.length mip.mind_consnames)) in
+      let ci = make_default_case_info env ind in
+      mkCase (ci, p, head, Array.of_list brl)))
   
 (* Now we need to construct the discriminator, given a discriminable
    position.  This boils down to:
@@ -412,7 +419,7 @@ let descend_then sigma env head dirn =
    giving [True], and all the rest giving False. *)
 
 let construct_discriminator sigma env dirn c sort =
-  let (IndType(IndFamily (mispec,_) as indf,_) as indt) =
+  let (IndType((ind,_) as indf,_) as indt) =
     try find_rectype env sigma (type_of env sigma c)
     with Not_found ->
        (* one can find Rel(k) in case of dependent constructors 
@@ -423,7 +430,8 @@ let construct_discriminator sigma env dirn c sort =
       errorlabstrm "Equality.construct_discriminator"
 	[< 'sTR "Cannot discriminate on inductive constructors with 
 		 dependent types" >] in
-  let arsign,arsort = get_arity indf in
+  let (mib,mip) = lookup_mind_specif env ind in
+  let arsign,arsort = get_arity env indf in
   let (true_0,false_0,sort_0) = 
     match necessary_elimination arsort (destSort sort) with
       | Type_Type ->
@@ -431,25 +439,24 @@ let construct_discriminator sigma env dirn c sort =
       | _         -> build_coq_True (),  build_coq_False (), (Prop Null)
   in
   let p = it_mkLambda_or_LetIn (mkSort sort_0) arsign in
-  let cstrs = get_constructors indf in
+  let cstrs = get_constructors env indf in
   let build_branch i =
     let endpt = if i = dirn then true_0 else false_0 in
-    it_mkLambda_or_LetIn endpt cstrs.(i-1).cs_args 
-  in
-  let build_match =
-    mkMutCaseL (make_default_case_info mispec, p, c,
-	       List.map build_branch (interval 1 (mis_nconstr mispec)))
-  in
-  build_match
+    it_mkLambda_or_LetIn endpt cstrs.(i-1).cs_args in
+  let brl =
+    List.map build_branch(interval 1 (Array.length mip.mind_consnames)) in
+  let ci = make_default_case_info env ind in
+  mkCase (ci, p, c, Array.of_list brl)
     
 let rec build_discriminator sigma env dirn c sort = function
   | [] -> construct_discriminator sigma env dirn c sort
   | ((sp,cnum),argnum)::l ->
       let cty = type_of env sigma c in
-      let IndType (indf,_) =
+      let IndType ((ind,_)as indf,_) =
 	try find_rectype env sigma cty with Not_found -> assert false in
-      let _,arsort = get_arity indf in
-      let nparams = mis_nparams (fst (dest_ind_family indf)) in
+      let (mib,mip) = lookup_mind_specif env ind in
+      let _,arsort = get_arity env indf in
+      let nparams = mip.mind_nparams  in
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
       let newc = mkRel(cnum_nlams-(argnum-nparams)) in
       let subval = build_discriminator sigma cnum_env dirn newc sort l  in
@@ -489,7 +496,8 @@ let gen_absurdity id gl =
 let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
   let env = pf_env gls in
   let (indt,_) = find_mrectype env (project gls) t in 
-  let aritysort = mis_sort (Global.lookup_mind_specif indt) in
+  let (mib,mip) = lookup_mind_specif env indt in
+  let aritysort = mip.mind_sort in
   let sort = pf_type_of gls (pf_concl gls) in
   match necessary_elimination aritysort (destSort sort) with
     | Type_Type  ->
@@ -530,7 +538,7 @@ let discr id gls =
 	 errorlabstrm "discr" [< 'sTR" Not a discriminable equality" >]
      | Inl (cpath, (_,dirn), _) ->
 	 let e = pf_get_new_id (id_of_string "ee") gls in
-	 let e_env = push_named_assum (e,t) env in
+	 let e_env = push_named_decl (e,None,t) env in
 	 let discriminator =
 	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
 	 let (indt,_) = find_mrectype env sigma t in 
@@ -601,7 +609,7 @@ let make_tuple env sigma (prev_lind,rterm,rty) lind =
   let {intro = exist_term; typ = sig_term} =
     find_sigma_data (get_sort_of env sigma rty) in
   let a = type_of env sigma (mkRel lind) in
-  let na = fst (lookup_rel_type lind env) in
+  let (na,_,_) = lookup_rel lind env in
   (* If [lind] is not [prev_lind+1] then we lift down rty *)
   let rty = lift (- lind + prev_lind + 1) rty in
   (* Now [lind] is [mkRel 1] and we abstract on (na:a) *)
@@ -729,7 +737,8 @@ let rec build_injrec sigma env (t1,t2) c = function
   | ((sp,cnum),argnum)::l ->
       let cty = type_of env sigma c in
       let (ity,_) = find_mrectype env sigma cty in
-      let nparams = Global.mind_nparams ity in
+      let (mib,mip) = lookup_mind_specif env ity in
+      let nparams = mip.mind_nparams in
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
       let newc = mkRel(cnum_nlams-(argnum-nparams)) in
       let (subval,tuplety,dfltval) =
@@ -746,9 +755,9 @@ let try_delta_expand env sigma t =
   let whdt = whd_betadeltaiota env sigma t  in 
   let rec hd_rec c  =
     match kind_of_term c with
-      | IsMutConstruct _ -> whdt
-      | IsApp (f,_)  -> hd_rec f
-      | IsCast (c,_) -> hd_rec c
+      | Construct _ -> whdt
+      | App (f,_)  -> hd_rec f
+      | Cast (c,_) -> hd_rec c
       | _  -> t
   in 
   hd_rec whdt 
@@ -778,7 +787,7 @@ let inj id gls =
 	   [<'sTR"Nothing to do, it is an equality between convertible terms">]
     | Inr posns ->
 	let e = pf_get_new_id (id_of_string "e") gls in
-	let e_env = push_named_assum (e,t) env in
+	let e_env = push_named_decl (e,None,t) env in
 	let injectors =
 	  map_succeed
 	    (fun (cpath,t1_0,t2_0) ->
@@ -832,7 +841,7 @@ let decompEqThen ntac id gls =
   (match find_positions env sigma t1 t2 with
      | Inl (cpath, (_,dirn), _) ->
 	 let e = pf_get_new_id (id_of_string "e") gls in
-	 let e_env = push_named_assum (e,t) env in
+	 let e_env = push_named_decl (e,None,t) env in
 	 let discriminator =
 	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
 	 let (pf, absurd_term) =
@@ -846,7 +855,7 @@ let decompEqThen ntac id gls =
 	   [<'sTR"Nothing to do, it is an equality between convertible terms">]
      | Inr posns ->
 	 (let e = pf_get_new_id (id_of_string "e") gls in
-	  let e_env = push_named_assum (e,t) env in
+	  let e_env = push_named_decl (e,None,t) env in
 	  let injectors =
 	    map_succeed
 	      (fun (cpath,t1_0,t2_0) ->
@@ -924,8 +933,8 @@ let swapEquandsInHyp id gls =
 
 let find_elim  sort_of_gl  lbeq =
   match kind_of_term sort_of_gl  with
-    | IsSort(Prop Null)  (* Prop *)  ->  (lbeq.ind (), false)  
-    | IsSort(Prop Pos)   (* Set *)   ->  
+    | Sort(Prop Null)  (* Prop *)  ->  (lbeq.ind (), false)  
+    | Sort(Prop Pos)   (* Set *)   ->  
 	(match lbeq.rrec with
            | Some eq_rec -> (eq_rec (), false) 
 	   | None -> errorlabstrm "find_elim"
@@ -1097,54 +1106,25 @@ let rec list_int n cmr l =
 
 (* Tells if two constrs are equal modulo unification *)
 
-(* Alpha-conversion *)
-let bind_eq = function
-  | (Anonymous,Anonymous) -> true
-  | (Name _,Name _) -> true
-  | _ -> false
-
-(* TODO: Fix and CoFix also contain bound names *)
-let eqop_mod_names = function
-  | OpLambda n0, OpLambda n1 -> bind_eq (n0,n1)
-  | OpProd n0, OpProd n1 -> bind_eq (n0,n1)
-  | OpLetIn n0, OpLetIn n1 -> bind_eq (n0,n1)
-  | op0, op1 -> op0 = op1
-
 exception NotEqModRel
 
-let rec eq_mod_rel l_meta t0 t1 =
-  match splay_constr_with_binders t1 with
-    | OpMeta n, [], [||] ->
-	if not (List.mem_assoc n l_meta) then
-	  [(n,t0)]@l_meta
-	else if (List.assoc n l_meta) = t0 then
-	  l_meta
-	else
-	  raise NotEqModRel
-    | op1, bd1, v1 ->
-	match splay_constr_with_binders t0 with
-	  | op0, bd0, v0
-	      when (eqop_mod_names (op0, op1)
-		    & (List.length bd0 = List.length bd1)
-		    & (Array.length v0 = Array.length v1)) ->
-	      array_fold_left2 eq_mod_rel
-		(List.fold_left2 eq_mod_rel_binders l_meta bd0 bd1)
-		v0 v1
-	    | _ -> raise NotEqModRel
-
-  and eq_mod_rel_binders l_meta t0 t1 = match (t0,t1) with
-    | (na0,Some b0,t0), (na1,Some b1,t1) when bind_eq (na0,na1) ->
-	eq_mod_rel (eq_mod_rel l_meta b0 b1) t0 t1
-    | (na0,None,t0), (na1,None,t1) when bind_eq (na0,na1) ->
-	eq_mod_rel l_meta t0 t1
-    | _ -> raise NotEqModRel
+let eq_mod_rel l_meta t0 t1 =
+  let bindings = ref l_meta in
+  let rec eq_rec t0 t1 = 
+    match kind_of_term t1 with
+      | Meta n ->
+	  if not (List.mem_assoc n !bindings) then
+	    (bindings := (n,t0) :: !bindings; true)
+	  else (List.assoc n l_meta) = t0
+      | _ -> compare_constr eq_rec t0 t1 in
+  if eq_rec t0 t1 then !bindings else raise NotEqModRel
 
 (* Verifies if the constr has an head constant *)
 
 let is_hd_const c = match kind_of_term c with
-  | IsApp (f,args) ->
+  | App (f,args) ->
       (match kind_of_term f with
-         | IsConst c -> Some (c, args)
+         | Const c -> Some (c, args)
          |_ -> None)
   | _ -> None
 
@@ -1154,10 +1134,10 @@ let is_hd_const c = match kind_of_term c with
 
 let nb_occ_term t u =
   let rec nbrec nocc u =
-    if t = u then   (* Pourquoi pas eq_constr ?? *)
+    if eq_constr t u then
       nocc + 1
     else
-      Array.fold_left nbrec nocc (snd (splay_constr u))
+      fold_constr nbrec nocc u
   in nbrec 0 u
     
 
@@ -1166,35 +1146,24 @@ let nb_occ_term t u =
    Rem: t_eq is assumed closed then there is no need to lift it
 *)
 let sub_term_with_unif cref ceq =
-  let rec find_match l_meta nb_occ hdsp t_args u = match splay_constr u with
-    | OpApp, cl -> begin
-	let f, args = destApplication u in
-	match kind_of_term f with
-          | IsConst sp when sp = hdsp -> begin
+  let rec find_match hdsp t_args (l_meta,nb_occ) u =
+    match kind_of_term u with
+    | App(f,args) ->
+	(match kind_of_term f with
+          | Const sp when sp = hdsp -> begin
 	      try (array_fold_left2 eq_mod_rel l_meta args t_args, nb_occ+1)
 	      with NotEqModRel ->
-		Array.fold_left
-                  (fun (l_meta,nb_occ) x -> find_match l_meta nb_occ
-                       hdsp t_args x) (l_meta,nb_occ) args
+		Array.fold_left (find_match hdsp t_args) (l_meta,nb_occ) args
 	    end
 
-          | IsConst _ | IsVar _ | IsMutInd _ | IsMutConstruct _
-	  | IsFix _ | IsCoFix _ ->
-               Array.fold_left 
-		 (fun (l_meta,nb_occ) x -> find_match l_meta
-		      nb_occ hdsp t_args x) (l_meta,nb_occ) cl
+          | (Const _ | Var _ | Ind _ | Construct _ | Fix _ | CoFix _) ->
+              fold_constr (find_match hdsp t_args) (l_meta,nb_occ) u
 
 	   (* Pourquoi ne récurre-t-on pas dans f ? *)
-           | _ -> (l_meta,nb_occ)
-      end
+           | _ -> (l_meta,nb_occ))
 
-(* Le code original ne récurrait pas sous les Cast 
-    | OpCast, _ -> (l_meta,nb_occ)
-*)
-    | _, t -> 
-	Array.fold_left 
-	  (fun (l_meta,nb_occ) x -> find_match l_meta nb_occ hdsp t_args x)
-	  (l_meta,nb_occ) t
+    | _ ->
+        fold_constr (find_match hdsp t_args) (l_meta,nb_occ) u
 
   in
   match (is_hd_const ceq) with
@@ -1208,7 +1177,7 @@ let sub_term_with_unif cref ceq =
           else
             Some (ceq,nb_occ)
     |Some (head,t_args) ->
-        let (l,nb) = find_match [] 0 head t_args cref in
+        let (l,nb) = find_match head t_args ([],0) cref in
         if nb = 0 then
           None
         else

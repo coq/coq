@@ -21,7 +21,10 @@ open Reduction
 open Proof_type
 open Ast
 open Names
+open Nameops
 open Term
+open Termops
+open Declarations
 open Environ
 open Sign
 open Inductive
@@ -30,6 +33,7 @@ open Evar_refiner
 open Tactics
 open Clenv
 open Logic
+open Nametab
 open Omega
 
 (* Added by JCF, 09/03/98 *)
@@ -97,24 +101,24 @@ let reduce_to_mind gl t =
   let rec elimrec t l =
     let c, args = whd_stack t in
     match kind_of_term c, args with
-    | (IsMutInd ind,_) -> (ind,Environ.it_mkProd_or_LetIn t l)
-    | (IsConst _,_) -> 
+    | (Ind ind,_) -> (ind,Environ.it_mkProd_or_LetIn t l)
+    | (Const _,_) -> 
 	(try 
 	   let t' = pf_nf_betaiota gl (pf_one_step_reduce gl t) in elimrec t' l
          with e when catchable_exception e -> 
 	   errorlabstrm "tactics__reduce_to_mind"
              [< 'sTR"Not an inductive product" >])
-    | (IsMutCase _,_) ->
+    | (Case _,_) ->
 	(try 
 	   let t' = pf_nf_betaiota gl (pf_one_step_reduce gl t) in elimrec t' l
          with e when catchable_exception e -> 
 	   errorlabstrm "tactics__reduce_to_mind"
              [< 'sTR"Not an inductive product" >])
-    | (IsCast (c,_),[]) -> elimrec c l
-    | (IsProd (n,ty,t'),[]) -> 
+    | (Cast (c,_),[]) -> elimrec c l
+    | (Prod (n,ty,t'),[]) -> 
 	let ty' = Retyping.get_assumption_of (Global.env()) Evd.empty ty in
 	elimrec t' ((n,None,ty')::l)
-    | (IsLetIn (n,b,ty,t'),[]) ->
+    | (LetIn (n,b,ty,t'),[]) ->
 	let ty' = Retyping.get_assumption_of (Global.env()) Evd.empty ty in
 	elimrec t' ((n,Some b,ty')::l)
     | _ -> error "Not an inductive product"
@@ -127,7 +131,8 @@ let reduce_to_mind = pf_reduce_to_quantified_ind
 let constructor_tac nconstropt i lbind gl = 
   let cl = pf_concl gl in
   let (mind, redcl) = reduce_to_mind gl cl in
-  let nconstr = Global.mind_nconstr mind
+  let (mib,mip) = Global.lookup_inductive mind in
+  let nconstr = Array.length mip.mind_consnames
   and sigma = project gl in
   (match nconstropt with 
      | Some expnconstr -> 
@@ -135,7 +140,7 @@ let constructor_tac nconstropt i lbind gl =
            error "Not the expected number of constructors"
      | _ -> ());
   if i > nconstr then error "Not enough Constructors";
-  let c = mkMutConstruct (ith_constructor_of_inductive mind i) in 
+  let c = mkConstruct (ith_constructor_of_inductive mind i) in 
   let resolve_tac = resolve_with_bindings_tac (c,lbind) in
   (tclTHEN (tclTHEN (change_in_concl redcl) intros) resolve_tac) gl
 
@@ -169,7 +174,7 @@ let hide_constr,find_constr,clear_tables,dump_tables =
   (fun () -> l := []),
   (fun () -> !l)
 
-let get_applist = whd_stack
+let get_applist = decompose_app
 
 exception Destruct
 
@@ -177,12 +182,12 @@ let dest_const_apply t =
   let f,args = get_applist t in
   let ref = 
   match kind_of_term f with 
-    | IsConst sp         -> ConstRef sp
-    | IsMutConstruct csp -> ConstructRef csp
-    | IsMutInd isp       -> IndRef isp
+    | Const sp         -> ConstRef sp
+    | Construct csp -> ConstructRef csp
+    | Ind isp       -> IndRef isp
     | _ -> raise Destruct
   in
-  basename (Global.sp_of_global ref), args
+  id_of_global (Global.env()) ref, args
 
 type result = 
   | Kvar of string
@@ -192,17 +197,17 @@ type result =
 
 let destructurate t =
   let c, args = get_applist t in
+  let env = Global.env() in
   match kind_of_term c, args with
-    | IsConst sp, args ->
-	Kapp (string_of_id (basename (Global.sp_of_global (ConstRef sp))),args)
-    | IsMutConstruct csp , args ->
-	Kapp (string_of_id (basename (Global.sp_of_global (ConstructRef csp))),
-			    args)
-    | IsMutInd isp, args ->
-	Kapp (string_of_id (basename (Global.sp_of_global (IndRef isp))),args)
-    | IsVar id,[] -> Kvar(string_of_id id)
-    | IsProd (Anonymous,typ,body), [] -> Kimp(typ,body)
-    | IsProd (Name _,_,_),[] -> error "Omega: Not a quantifier-free goal"
+    | Const sp, args ->
+	Kapp (string_of_id (id_of_global env (ConstRef sp)),args)
+    | Construct csp , args ->
+	Kapp (string_of_id (id_of_global env(ConstructRef csp)), args)
+    | Ind isp, args ->
+	Kapp (string_of_id (id_of_global env (IndRef isp)),args)
+    | Var id,[] -> Kvar(string_of_id id)
+    | Prod (Anonymous,typ,body), [] -> Kimp(typ,body)
+    | Prod (Name _,_,_),[] -> error "Omega: Not a quantifier-free goal"
     | _ -> Kufo
 
 let recognize_number t =
@@ -225,7 +230,7 @@ let recognize_number t =
  This is the right way to access to Coq constants in tactics ML code *)
 
 let constant dir s =
-  let dir = make_dirpath (List.map id_of_string ("Coq"::dir)) in
+  let dir = make_dirpath (List.map id_of_string (List.rev ("Coq"::dir))) in
   let id = id_of_string s in
   try 
     Declare.global_reference_in_absolute_module dir id
@@ -389,7 +394,7 @@ let coq_imp_simp = lazy (logic_constant ["Decidable"] "imp_simp")
 (* Section paths for unfold *)
 open Closure
 let make_coq_path dir s =
-  let dir = make_dirpath (List.map id_of_string ("Coq"::dir)) in
+  let dir = make_dirpath (List.map id_of_string (List.rev ("Coq"::dir))) in
   let id = id_of_string s in
   let ref = 
     try Nametab.locate_in_absolute_module dir id 
@@ -441,7 +446,7 @@ type constr_path =
   (* Abstraction and product *)
   | P_BODY 
   | P_TYPE
-  (* Mutcase *)
+  (* Case *)
   | P_BRANCH of int
   | P_ARITY
   | P_ARG
@@ -449,37 +454,37 @@ type constr_path =
 let context operation path (t : constr) =
   let rec loop i p0 t = 
     match (p0,kind_of_term t) with 
-      | (p, IsCast (c,t)) -> mkCast (loop i p c,t)
+      | (p, Cast (c,t)) -> mkCast (loop i p c,t)
       | ([], _) -> operation i t
-      | ((P_APP n :: p),  IsApp (f,v)) ->
+      | ((P_APP n :: p),  App (f,v)) ->
 (*	  let f,l = get_applist t in   NECESSAIRE ??
 	  let v' = Array.of_list (f::l) in  *)
 	  let v' = Array.copy v in
 	  v'.(n-1) <- loop i p v'.(n-1); mkApp (f, v')
-      | ((P_BRANCH n :: p), IsMutCase (ci,q,c,v)) ->
+      | ((P_BRANCH n :: p), Case (ci,q,c,v)) ->
 	  (* avant, y avait mkApp... anyway, BRANCH seems nowhere used *)
 	  let v' = Array.copy v in
-	  v'.(n) <- loop i p v'.(n); (mkMutCase (ci,q,c,v'))
-      | ((P_ARITY :: p),  IsApp (f,l)) ->
+	  v'.(n) <- loop i p v'.(n); (mkCase (ci,q,c,v'))
+      | ((P_ARITY :: p),  App (f,l)) ->
 	  appvect (loop i p f,l)
-      | ((P_ARG :: p),  IsApp (f,v)) ->
+      | ((P_ARG :: p),  App (f,v)) ->
 	  let v' = Array.copy v in
 	  v'.(0) <- loop i p v'.(0); mkApp (f,v')
-      | (p, IsFix ((_,n as ln),(tys,lna,v))) ->
+      | (p, Fix ((_,n as ln),(tys,lna,v))) ->
 	  let l = Array.length v in
 	  let v' = Array.copy v in
 	  v'.(n) <- loop (i+l) p v.(n); (mkFix (ln,(tys,lna,v')))
-      | ((P_BODY :: p), IsProd (n,t,c)) ->
+      | ((P_BODY :: p), Prod (n,t,c)) ->
 	  (mkProd (n,t,loop (i+1) p c))
-      | ((P_BODY :: p), IsLambda (n,t,c)) ->
+      | ((P_BODY :: p), Lambda (n,t,c)) ->
 	  (mkLambda (n,t,loop (i+1) p c))
-      | ((P_BODY :: p), IsLetIn (n,b,t,c)) ->
+      | ((P_BODY :: p), LetIn (n,b,t,c)) ->
 	  (mkLetIn (n,b,t,loop (i+1) p c))
-      | ((P_TYPE :: p), IsProd (n,t,c)) ->
+      | ((P_TYPE :: p), Prod (n,t,c)) ->
 	  (mkProd (n,loop i p t,c))
-      | ((P_TYPE :: p), IsLambda (n,t,c)) ->
+      | ((P_TYPE :: p), Lambda (n,t,c)) ->
 	  (mkLambda (n,loop i p t,c))
-      | ((P_TYPE :: p), IsLetIn (n,b,t,c)) ->
+      | ((P_TYPE :: p), LetIn (n,b,t,c)) ->
 	  (mkLetIn (n,b,loop i p t,c))
       | (p, _) -> 
 	  pPNL [<Printer.prterm t>];
@@ -489,19 +494,19 @@ let context operation path (t : constr) =
 
 let occurence path (t : constr) =
   let rec loop p0 t = match (p0,kind_of_term t) with
-    | (p, IsCast (c,t)) -> loop p c
+    | (p, Cast (c,t)) -> loop p c
     | ([], _) -> t
-    | ((P_APP n :: p),  IsApp (f,v)) -> loop p v.(n-1)
-    | ((P_BRANCH n :: p), IsMutCase (_,_,_,v)) -> loop p v.(n)
-    | ((P_ARITY :: p),  IsApp (f,_)) -> loop p f
-    | ((P_ARG :: p),  IsApp (f,v)) -> loop p v.(0)
-    | (p, IsFix((_,n) ,(_,_,v))) -> loop p v.(n)
-    | ((P_BODY :: p), IsProd (n,t,c)) -> loop p c
-    | ((P_BODY :: p), IsLambda (n,t,c)) -> loop p c
-    | ((P_BODY :: p), IsLetIn (n,b,t,c)) -> loop p c
-    | ((P_TYPE :: p), IsProd (n,term,c)) -> loop p term
-    | ((P_TYPE :: p), IsLambda (n,term,c)) -> loop p term
-    | ((P_TYPE :: p), IsLetIn (n,b,term,c)) -> loop p term
+    | ((P_APP n :: p),  App (f,v)) -> loop p v.(n-1)
+    | ((P_BRANCH n :: p), Case (_,_,_,v)) -> loop p v.(n)
+    | ((P_ARITY :: p),  App (f,_)) -> loop p f
+    | ((P_ARG :: p),  App (f,v)) -> loop p v.(0)
+    | (p, Fix((_,n) ,(_,_,v))) -> loop p v.(n)
+    | ((P_BODY :: p), Prod (n,t,c)) -> loop p c
+    | ((P_BODY :: p), Lambda (n,t,c)) -> loop p c
+    | ((P_BODY :: p), LetIn (n,b,t,c)) -> loop p c
+    | ((P_TYPE :: p), Prod (n,term,c)) -> loop p term
+    | ((P_TYPE :: p), Lambda (n,term,c)) -> loop p term
+    | ((P_TYPE :: p), LetIn (n,b,term,c)) -> loop p term
     | (p, _) -> 
 	pPNL [<Printer.prterm t>];
 	failwith ("occurence " ^ string_of_int(List.length p)) 

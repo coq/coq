@@ -16,6 +16,7 @@ open Util
 open Options
 open System
 open Names
+open Nameops
 open Term
 open Pfedit
 open Tacmach
@@ -34,6 +35,8 @@ open Tactic_debug
 open Command
 open Goptions
 open Declare
+open Nametab
+open Safe_typing
 
 (* Dans join_binders, s'il y a un "?", on perd l'info qu'il est partagé *)
 let join_binders binders = 
@@ -119,7 +122,7 @@ let print_located_qualid qid =
   try
     let ref = Nametab.locate qid in
     mSG
-      [< 'sTR (string_of_path (sp_of_global (Global.env()) ref)); 'fNL >]
+      [< pr_id (Termops.id_of_global (Global.env()) ref); 'fNL >]
   with Not_found -> 
   try
     mSG
@@ -193,7 +196,7 @@ let _ =
   add "ADDPATH"
     (function 
        | [VARG_STRING dir] ->
-	   (fun () -> Mltop.add_path dir Nametab.default_root_prefix)
+	   (fun () -> Mltop.add_path dir Nameops.default_root_prefix)
        | [VARG_STRING dir ; VARG_QUALID alias] ->
            let aliasdir,aliasname = Nametab.repr_qualid alias in
 	   (fun () -> Mltop.add_path dir (extend_dirpath aliasdir aliasname))
@@ -210,7 +213,7 @@ let _ =
   add "RECADDPATH"
     (function 
        | [VARG_STRING dir] ->
-	   (fun () -> Mltop.add_rec_path dir Nametab.default_root_prefix)
+	   (fun () -> Mltop.add_rec_path dir Nameops.default_root_prefix)
        | [VARG_STRING dir ; VARG_QUALID alias] ->
            let aliasdir,aliasname = Nametab.repr_qualid alias in
 	   (fun () ->Mltop.add_rec_path dir (extend_dirpath aliasdir aliasname))
@@ -588,7 +591,7 @@ let _ =
 	    | VARG_QUALID qid ->
                 (match Nametab.global dummy_loc qid with
                   | ConstRef sp -> Opaque.set_transparent_const sp
-                  | VarRef sp -> Opaque.set_transparent_var (basename sp) 
+                  | VarRef id -> Opaque.set_transparent_var id
                   | _ -> error
               "cannot set an inductive type or a constructor as transparent")
 	    |   _  -> bad_vernac_args "TRANSPARENT")
@@ -602,7 +605,7 @@ let _ =
 	    | VARG_QUALID qid ->
                 (match Nametab.global dummy_loc qid with
                   | ConstRef sp -> Opaque.set_opaque_const sp
-                  | VarRef sp -> Opaque.set_opaque_var (basename sp) 
+                  | VarRef id -> Opaque.set_opaque_var id
                   | _ -> error
              "cannot set an inductive type or a constructor as opaque")
 	    |   _  -> bad_vernac_args "OPAQUE")
@@ -686,8 +689,8 @@ let _ =
 	      let (pfterm,_) = extract_open_pftreestate pts in
 	      let message = 
 		try 
-		  Typeops.control_only_guard (Evarutil.evar_env pf.goal)
-		    Evd.empty pfterm; 
+		  Inductiveops.control_only_guard (Evarutil.evar_env pf.goal)
+		    pfterm; 
 		  [< 'sTR "The condition holds up to here" >]
                 with UserError(_,s) -> 
 		  [< 'sTR ("Condition violated : ") ;s >]
@@ -845,8 +848,7 @@ let _ =
                        save_named opacity
                      else
                        let csr = interp_type Evd.empty (Global.env ()) com
-                       and (_,({const_entry_body = pft;
-                                const_entry_type = _},_)) = cook_proof () in
+                       and (_,({const_entry_body = pft},_)) = cook_proof () in
                        let cutt = vernac_tactic ("Cut",[Constr csr])
                        and exat = vernac_tactic ("Exact",[Constr pft]) in
                        delete_proof id;
@@ -973,8 +975,9 @@ let _ =
 	   (fun () ->
 	      let (evmap, env) = get_current_context_of_args g in
               let c = interp_constr evmap env c in
-              let j = Safe_typing.typing_in_unsafe_env env c in
-              mSG (print_safe_judgment env j))
+              let (j,cst) = Typeops.infer env c in
+              let _ = Environ.add_constraints cst env in
+              mSG (print_judgment env j))
        | _ -> bad_vernac_args "Check")
     
 
@@ -1294,9 +1297,9 @@ let _ =
 
 let cl_of_qualid qid =
   match Nametab.repr_qualid qid with
-    | d, id when string_of_id id = "FUNCLASS" & is_empty_dirpath d ->
+    | d, id when string_of_id id = "FUNCLASS" & repr_dirpath d = [] ->
 	Classops.CL_FUN
-    | d, id when string_of_id id = "SORTCLASS"  & is_empty_dirpath d ->
+    | d, id when string_of_id id = "SORTCLASS"  & repr_dirpath d = [] ->
 	Classops.CL_SORT
     | _ -> Class.class_of_ref (Nametab.global dummy_loc qid)	
 
@@ -1316,7 +1319,7 @@ let _ =
 	   let source = cl_of_qualid qids in
 	   fun () ->
 	     if isid then match Nametab.repr_qualid qid with
-	       | d, id when is_empty_dirpath d ->
+	       | d, id when repr_dirpath d = [] ->
 		   Class.try_add_new_identity_coercion id stre source target
 	       | _ -> bad_vernac_args "COERCION"
 	     else

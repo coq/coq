@@ -10,10 +10,13 @@
 
 open Util
 open Names
+open Nameops
 open Term
-open Reduction
+open Termops
+open Reductionops
 open Rawterm
 open Environ
+open Nametab
 
 type constr_pattern =
   | PRef of global_reference
@@ -57,7 +60,7 @@ let label_of_ref = function
   | ConstRef sp     -> ConstNode sp
   | IndRef sp       -> IndNode sp
   | ConstructRef sp -> CstrNode sp
-  | VarRef sp       -> VarNode (basename sp)
+  | VarRef id       -> VarNode id
 
 let rec head_pattern_bound t =
   match t with
@@ -74,10 +77,10 @@ let rec head_pattern_bound t =
     | PCoFix _ -> anomaly "head_pattern_bound: not a type"
 
 let head_of_constr_reference c = match kind_of_term c with
-  | IsConst sp -> ConstNode sp
-  | IsMutConstruct sp -> CstrNode sp
-  | IsMutInd sp -> IndNode sp
-  | IsVar id -> VarNode id
+  | Const sp -> ConstNode sp
+  | Construct sp -> CstrNode sp
+  | Ind sp -> IndNode sp
+  | Var id -> VarNode id
   | _ -> anomaly "Not a rigid reference"
 
 
@@ -157,29 +160,29 @@ let matches_core convert pat c =
 
       | PMeta None, m -> sigma
 
-      | PRef (VarRef sp1), IsVar v2 when basename sp1 = v2 -> sigma
+      | PRef (VarRef v1), Var v2 when v1 = v2 -> sigma
 
-      | PVar v1, IsVar v2 when v1 = v2 -> sigma
+      | PVar v1, Var v2 when v1 = v2 -> sigma
 
       | PRef ref, _ when Declare.constr_of_reference ref = cT -> sigma
 
-      | PRel n1, IsRel n2 when n1 = n2 -> sigma
+      | PRel n1, Rel n2 when n1 = n2 -> sigma
 
-      | PSort (RProp c1), IsSort (Prop c2) when c1 = c2 -> sigma
+      | PSort (RProp c1), Sort (Prop c2) when c1 = c2 -> sigma
 
-      | PSort (RType _), IsSort (Type _) -> sigma
+      | PSort (RType _), Sort (Type _) -> sigma
 
-      | PApp (c1,arg1), IsApp (c2,arg2) ->
+      | PApp (c1,arg1), App (c2,arg2) ->
         (try array_fold_left2 (sorec stk) (sorec stk sigma c1 c2) arg1 arg2
          with Invalid_argument _ -> raise PatternMatchingFailure)
 
-      | PProd (na1,c1,d1), IsProd(na2,c2,d2) ->
+      | PProd (na1,c1,d1), Prod(na2,c2,d2) ->
 	  sorec ((na2,c2)::stk) (sorec stk sigma c1 c2) d1 d2
 
-      | PLambda (na1,c1,d1), IsLambda(na2,c2,d2) ->
+      | PLambda (na1,c1,d1), Lambda(na2,c2,d2) ->
 	  sorec ((na2,c2)::stk) (sorec stk sigma c1 c2) d1 d2
 
-      | PLetIn (na1,c1,d1), IsLetIn(na2,c2,t2,d2) ->
+      | PLetIn (na1,c1,d1), LetIn(na2,c2,t2,d2) ->
 	  sorec ((na2,t2)::stk) (sorec stk sigma c1 c2) d1 d2
 
       | PRef (ConstRef _ as ref), _ when convert <> None ->
@@ -188,15 +191,15 @@ let matches_core convert pat c =
 	  if is_conv env evars c cT then sigma
 	  else raise PatternMatchingFailure
 
-      | PCase (_,a1,br1), IsMutCase (_,_,a2,br2) ->
+      | PCase (_,a1,br1), Case (_,_,a2,br2) ->
 	  (* On ne teste pas le prédicat *)
           if (Array.length br1) = (Array.length br2) then
   	    array_fold_left2 (sorec stk) (sorec stk sigma a1 a2) br1 br2
           else
             raise PatternMatchingFailure
       (* À faire *)
-      |	PFix f0, IsFix f1 when f0 = f1 -> sigma
-      |	PCoFix c0, IsCoFix c1 when c0 = c1 -> sigma
+      |	PFix f0, Fix f1 when f0 = f1 -> sigma
+      |	PCoFix c0, CoFix c1 when c0 = c1 -> sigma
       | _ -> raise PatternMatchingFailure
 
   in 
@@ -223,7 +226,7 @@ let rec try_matches nocc pat = function
 (* Tries to match a subterm of [c] with [pat] *)
 let rec sub_match nocc pat c =
   match kind_of_term c with
-  | IsCast (c1,c2) ->
+  | Cast (c1,c2) ->
     (try authorized_occ nocc ((matches pat c), mkMeta (-1)) with
     | PatternMatchingFailure ->
       let (lm,lc) = try_sub_match nocc pat [c1] in
@@ -231,7 +234,7 @@ let rec sub_match nocc pat c =
     | NextOccurrence nocc ->
       let (lm,lc) = try_sub_match (nocc - 1) pat [c1] in
       (lm,mkCast (List.hd lc, c2)))
-  | IsLambda (x,c1,c2) ->
+  | Lambda (x,c1,c2) ->
     (try authorized_occ nocc ((matches pat c), mkMeta (-1)) with
     | PatternMatchingFailure ->
       let (lm,lc) = try_sub_match nocc pat [c1;c2] in
@@ -239,7 +242,7 @@ let rec sub_match nocc pat c =
     | NextOccurrence nocc ->
       let (lm,lc) = try_sub_match (nocc - 1) pat [c1;c2] in
       (lm,mkLambda (x,List.hd lc,List.nth lc 1)))
-  | IsProd (x,c1,c2) ->
+  | Prod (x,c1,c2) ->
     (try authorized_occ nocc ((matches pat c), mkMeta (-1)) with
     | PatternMatchingFailure ->
       let (lm,lc) = try_sub_match nocc pat [c1;c2] in
@@ -247,7 +250,7 @@ let rec sub_match nocc pat c =
     | NextOccurrence nocc ->
       let (lm,lc) = try_sub_match (nocc - 1) pat [c1;c2] in
       (lm,mkProd (x,List.hd lc,List.nth lc 1)))
-  | IsLetIn (x,c1,t2,c2) ->
+  | LetIn (x,c1,t2,c2) ->
     (try authorized_occ nocc ((matches pat c), mkMeta (-1)) with
     | PatternMatchingFailure ->
       let (lm,lc) = try_sub_match nocc pat [c1;t2;c2] in
@@ -255,7 +258,7 @@ let rec sub_match nocc pat c =
     | NextOccurrence nocc ->
       let (lm,lc) = try_sub_match (nocc - 1) pat [c1;t2;c2] in
       (lm,mkLetIn (x,List.hd lc,List.nth lc 1,List.nth lc 2)))
-  | IsApp (c1,lc) ->
+  | App (c1,lc) ->
     (try authorized_occ nocc ((matches pat c), mkMeta (-1)) with
     | PatternMatchingFailure ->
       let (lm,le) = try_sub_match nocc pat (c1::(Array.to_list lc)) in
@@ -263,16 +266,16 @@ let rec sub_match nocc pat c =
     | NextOccurrence nocc ->
       let (lm,le) = try_sub_match (nocc - 1) pat (c1::(Array.to_list lc)) in
       (lm,mkApp (List.hd le, Array.of_list (List.tl le))))
-  | IsMutCase (ci,hd,c1,lc) ->
+  | Case (ci,hd,c1,lc) ->
     (try authorized_occ nocc ((matches pat c), mkMeta (-1)) with
     | PatternMatchingFailure ->
       let (lm,le) = try_sub_match nocc pat (c1::Array.to_list lc) in
-      (lm,mkMutCaseL (ci,hd,List.hd le,List.tl le))
+      (lm,mkCase (ci,hd,List.hd le,Array.of_list (List.tl le)))
     | NextOccurrence nocc ->
       let (lm,le) = try_sub_match (nocc - 1) pat (c1::Array.to_list lc) in
-      (lm,mkMutCaseL (ci,hd,List.hd le,List.tl le)))
-  | IsMutConstruct _ | IsFix _ | IsMutInd _|IsCoFix _ |IsEvar _|IsConst _
-  | IsRel _|IsMeta _|IsVar _|IsSort _ ->
+      (lm,mkCase (ci,hd,List.hd le,Array.of_list (List.tl le))))
+  | Construct _ | Fix _ | Ind _|CoFix _ |Evar _|Const _
+  | Rel _|Meta _|Var _|Sort _ ->
     (try authorized_occ nocc ((matches pat c),mkMeta (-1)) with
     | PatternMatchingFailure -> raise (NextOccurrence nocc)
     | NextOccurrence nocc -> raise (NextOccurrence (nocc - 1)))
@@ -301,25 +304,25 @@ let is_matching_conv env sigma pat n =
 
 let rec pattern_of_constr t =
   match kind_of_term t with
-    | IsRel n  -> PRel n
-    | IsMeta n -> PMeta (Some n)
-    | IsVar id -> PVar id
-    | IsSort (Prop c) -> PSort (RProp c)
-    | IsSort (Type _) -> PSort (RType None)
-    | IsCast (c,_)      -> pattern_of_constr c
-    | IsLetIn (na,c,_,b) -> PLetIn (na,pattern_of_constr c,pattern_of_constr b)
-    | IsProd (na,c,b)   -> PProd (na,pattern_of_constr c,pattern_of_constr b)
-    | IsLambda (na,c,b) -> PLambda (na,pattern_of_constr c,pattern_of_constr b)
-    | IsApp (f,a) -> PApp (pattern_of_constr f,Array.map pattern_of_constr a)
-    | IsConst sp         -> PRef (ConstRef sp)
-    | IsMutInd sp        -> PRef (IndRef sp)
-    | IsMutConstruct sp -> PRef (ConstructRef sp)
-    | IsEvar (n,ctxt) ->
+    | Rel n  -> PRel n
+    | Meta n -> PMeta (Some n)
+    | Var id -> PVar id
+    | Sort (Prop c) -> PSort (RProp c)
+    | Sort (Type _) -> PSort (RType None)
+    | Cast (c,_)      -> pattern_of_constr c
+    | LetIn (na,c,_,b) -> PLetIn (na,pattern_of_constr c,pattern_of_constr b)
+    | Prod (na,c,b)   -> PProd (na,pattern_of_constr c,pattern_of_constr b)
+    | Lambda (na,c,b) -> PLambda (na,pattern_of_constr c,pattern_of_constr b)
+    | App (f,a) -> PApp (pattern_of_constr f,Array.map pattern_of_constr a)
+    | Const sp         -> PRef (ConstRef sp)
+    | Ind sp        -> PRef (IndRef sp)
+    | Construct sp -> PRef (ConstructRef sp)
+    | Evar (n,ctxt) ->
 	if ctxt = [||] then PEvar n
 	else PApp (PEvar n, Array.map pattern_of_constr ctxt)
-    | IsMutCase (ci,p,a,br) ->
+    | Case (ci,p,a,br) ->
 	PCase (Some (pattern_of_constr p),pattern_of_constr a,
 	       Array.map pattern_of_constr br)
-    | IsFix f -> PFix f
-    | IsCoFix _ ->
+    | Fix f -> PFix f
+    | CoFix _ ->
 	error "pattern_of_constr: (co)fix currently not supported"

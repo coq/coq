@@ -14,6 +14,7 @@ open Pp
 open Miniml
 open Names
 open Term
+open Nametab
 
 val current_module : identifier option ref
 

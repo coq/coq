@@ -12,10 +12,8 @@
 open Names
 open Univ
 open Term
-open Sign
 open Declarations
-open Inductive
-open Environ
+open Indtypes
 open Safe_typing
 (*i*)
 
@@ -24,51 +22,34 @@ open Safe_typing
    operating on that global environment. *)
 
 val safe_env : unit -> safe_environment
-val env : unit -> env
+val env : unit -> Environ.env
 
 val universes : unit -> universes
-val context : unit -> context
-val named_context : unit -> named_context
+val named_context : unit -> Sign.named_context
 
-(* This has also a side-effect to push the declaration in the environment*)
-val push_named_assum : identifier * constr -> constr option * types*constraints
-val push_named_def : identifier * constr -> constr option * types * constraints
+(* Extending env with variables, constants and inductives *)
+val push_named_assum : (identifier * types) -> Univ.constraints
+val push_named_def   : (identifier * constr) -> Univ.constraints
+val pop_named_decls  : identifier list -> unit
 
-val add_parameter : section_path -> constr -> local_names -> unit
-val add_constant : section_path -> constant_entry -> local_names -> unit
-val add_discharged_constant : section_path -> Cooking.recipe -> 
-  local_names -> unit
-val add_mind : section_path -> mutual_inductive_entry -> local_names -> unit
+val add_parameter           : constant -> types -> unit
+val add_constant            : constant -> constant_entry -> unit
+val add_discharged_constant : constant -> Cooking.recipe -> unit
+
+val add_mind        : mutual_inductive -> mutual_inductive_entry -> unit
 val add_constraints : constraints -> unit
 
-val pop_named_decls : identifier list -> unit
+(* Queries *)
+val lookup_named     : variable -> named_declaration
+val lookup_constant  : constant -> constant_body
+val lookup_inductive : inductive -> mutual_inductive_body * one_inductive_body
+val lookup_mind      : mutual_inductive -> mutual_inductive_body
 
-val lookup_named : identifier -> constr option * types
-val lookup_constant : section_path -> constant_body
-val lookup_mind : section_path -> mutual_inductive_body
-val lookup_mind_specif : inductive -> inductive_instance
-
-val export : dir_path -> compiled_env
-val import : compiled_env -> unit
-
-(*s Some functions of [Environ] instanciated on the global environment. *)
-
-val sp_of_global : global_reference -> section_path
-
-(*s This is for printing purpose *)
-val qualid_of_global : global_reference -> Nametab.qualid
-val string_of_global : global_reference -> string
+(* Modules *)
+val export : dir_path -> Environ.compiled_env
+val import : Environ.compiled_env -> unit
 
 (*s Function to get an environment from the constants part of the global
     environment and a given context. *)
 
-val env_of_context : named_context -> env
-
-(*s Re-exported functions of [Inductive], composed with 
-    [lookup_mind_specif]. *)
-
-val mind_is_recursive : inductive -> bool
-val mind_nconstr : inductive -> int
-val mind_nparams : inductive -> int
-val mind_nf_lc : inductive -> constr array
-
+val env_of_context : Sign.named_context -> Environ.env

@@ -12,12 +12,17 @@ open Pp
 open Util
 open Names
 open Term
+open Termops
 open Environ
 open Declarations
 open Declare
 open Coqast
 open Astterm
 open Command
+open Inductive
+open Safe_typing
+open Nametab
+open Indtypes
 
 (********** definition d'un record (structure) **************)
 
@@ -63,7 +68,7 @@ let typecheck_params_and_field ps fs =
 
 type record_error =
   | MissingProj of identifier * identifier list
-  | BadTypedProj of identifier * path_kind * env * Type_errors.type_error
+  | BadTypedProj of identifier * env * Type_errors.type_error
 
 let warning_or_error coe err =
   let st = match err with
@@ -72,33 +77,33 @@ let warning_or_error coe err =
         [< 'sTR(string_of_id fi);
 	   'sTR" cannot be defined because the projection"; 'sTR s; 'sPC;
            prlist_with_sep pr_coma pr_id projs; 'sPC; 'sTR have; 'sTR "n't." >]
-    | BadTypedProj (fi,k,ctx,te) ->
+    | BadTypedProj (fi,ctx,te) ->
         [<'sTR (string_of_id fi); 
           'sTR" cannot be defined for the following reason:";
-	  'fNL; 'sTR "  "; hOV 2 (Himsg.explain_type_error k ctx te) >]
+	  'fNL; 'sTR "  "; hOV 2 (Himsg.explain_type_error ctx te) >]
   in
   if coe then errorlabstrm "structure" st;
   pPNL (hOV 0 [< 'sTR"Warning: "; st >])
 
 (* We build projections *)
 let declare_projections indsp coers fields =
-  let mispec = Global.lookup_mind_specif indsp in
-  let paramdecls = Inductive.mis_params_ctxt mispec in
+  let env = Global.env() in
+  let (mib,mip) = Global.lookup_inductive indsp in
+  let paramdecls = mip.mind_params_ctxt in
   let paramdecls = 
     List.map (fun (na,b,t) -> match na with Name id -> (id,b,t) | _ -> assert false)
       paramdecls in
-  let r = mkMutInd indsp in
+  let r = mkInd indsp in
   let paramargs = List.rev (List.map (fun (id,_,_) -> mkVar id) paramdecls) in
   let rp = applist (r, paramargs) in
-  let x = Environ.named_hd (Global.env()) r Anonymous in
+  let x = Termops.named_hd (Global.env()) r Anonymous in
   let proj_args = (* Rel 1 refers to "x" *) paramargs@[mkRel 1] in
   let (sp_projs,_,_) =
     List.fold_left2
       (fun (sp_projs,ids_not_ok,subst) coe (fi,optci,ti) ->
 	 let fv_ti = match optci with
-	   | Some ci ->
-               global_vars (Global.env()) ci (* Type is then meaningless *)
-	   | None -> global_vars (Global.env()) ti in
+	   | Some ci -> global_vars env ci (* Type is then meaningless *)
+	   | None -> global_vars env ti in
 	 let bad_projs = (list_intersect ids_not_ok fv_ti) in
 	 if bad_projs <> [] then begin
 	   warning_or_error coe (MissingProj (fi,bad_projs));
@@ -109,10 +114,9 @@ let declare_projections indsp coers fields =
 	     | None ->
 		 let p = mkLambda (x, rp, replace_vars subst ti) in
 		 let branch = it_mkNamedLambda_or_LetIn (mkVar fi) fields in
-		 let ci = Inductive.make_case_info
-			    (Global.lookup_mind_specif (destMutInd r))
+		 let ci = Inductiveops.make_case_info env indsp
 			    (Some PrintLet) [| RegularPat |] in
-		 mkMutCase (ci, p, mkRel 1, [|branch|]) in
+		 mkCase (ci, p, mkRel 1, [|branch|]) in
 	   let proj =
 	     it_mkNamedLambda_or_LetIn (mkLambda (x, rp, body)) paramdecls in
 	   let name = 
@@ -123,8 +127,8 @@ let declare_projections indsp coers fields =
 	       let sp =
 		 declare_constant fi (ConstantEntry cie,NeverDischarge)
 	       in Some sp
-             with Type_errors.TypeError (k,ctx,te) -> begin
-               warning_or_error coe (BadTypedProj (fi,k,ctx,te));
+             with Type_errors.TypeError (ctx,te) -> begin
+               warning_or_error coe (BadTypedProj (fi,ctx,te));
 	       None
 	     end in
 	   match name with
@@ -147,8 +151,8 @@ let degenerate_decl env =
     (List.fold_right
        (fun (id,c,t) (ids,env) ->
 	  let d = match c with
-	    | None -> LocalAssum (subst_vars ids t)
-	    | Some c -> LocalDef (subst_vars ids c) in
+	    | None -> Typeops.LocalAssum (subst_vars ids t)
+	    | Some c -> Typeops.LocalDef (subst_vars ids c) in
 	  (id::ids, (id,d)::env))
        env ([],[]))
 

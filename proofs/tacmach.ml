@@ -13,9 +13,10 @@ open Stamps
 open Names
 open Sign
 open Term
+open Termops
 open Instantiate
 open Environ
-open Reduction
+open Reductionops
 open Evd
 open Typing
 open Tacred
@@ -60,11 +61,13 @@ let pf_last_hyp gl = List.hd (pf_hyps gl)
 
 let pf_get_hyp gls id = 
   try 
-    lookup_id id (pf_hyps gls)
+    Sign.lookup_named id (pf_hyps gls)
   with Not_found -> 
     error ("No such hypothesis : " ^ (string_of_id id))
 
-let pf_get_hyp_typ gls id = snd (pf_get_hyp gls id)
+let pf_get_hyp_typ gls id =
+  let (_,_,ty)= (pf_get_hyp gls id) in
+  ty
 
 let pf_ids_of_hyps gls = ids_of_named_context (pf_hyps gls)
 
@@ -264,7 +267,7 @@ let move_hyp with_dep id1 id2 gl =
 		  newids = []; params = []}) gl
 
 let mutual_fix lf ln lar pf = 
-  refiner (Prim { name = Fix; newids = lf;
+  refiner (Prim { name = FixRule; newids = lf;
                   hypspecs = []; terms = lar;
                   params = List.map Ast.num ln}) pf
 

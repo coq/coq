@@ -22,9 +22,9 @@ open Esubst
 (*s Call-by-value reduction *)
 
 (* Entry point for cbv normalization of a constr *)
-type 'a cbv_infos
-val create_cbv_infos : flags -> env -> 'a evar_map -> 'a cbv_infos
-val cbv_norm : 'a cbv_infos -> constr -> constr
+type cbv_infos
+val create_cbv_infos : flags -> env -> cbv_infos
+val cbv_norm : cbv_infos -> constr -> constr
 
 (***********************************************************************)
 (*i This is for cbv debug *)
@@ -52,12 +52,12 @@ val reduce_const_body :
   (cbv_value -> cbv_value) -> cbv_value -> cbv_stack -> cbv_value * cbv_stack
 
 (* recursive functions... *)
-val cbv_stack_term : 'a cbv_infos ->
+val cbv_stack_term : cbv_infos ->
   cbv_stack -> cbv_value subs -> constr -> cbv_value
-val cbv_norm_term : 'a cbv_infos -> cbv_value subs -> constr -> constr
-val cbv_norm_more : 'a cbv_infos -> cbv_value subs -> cbv_value -> cbv_value
-val norm_head : 'a cbv_infos ->
+val cbv_norm_term : cbv_infos -> cbv_value subs -> constr -> constr
+val cbv_norm_more : cbv_infos -> cbv_value subs -> cbv_value -> cbv_value
+val norm_head : cbv_infos ->
   cbv_value subs -> constr -> cbv_stack -> cbv_value * cbv_stack
-val apply_stack : 'a cbv_infos -> constr -> cbv_stack -> constr
-val cbv_norm_value : 'a cbv_infos -> cbv_value -> constr
+val apply_stack : cbv_infos -> constr -> cbv_stack -> constr
+val cbv_norm_value : cbv_infos -> cbv_value -> constr
 (* End of cbv debug section i*)

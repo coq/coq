@@ -8,7 +8,7 @@ and ct_AST =
     CT_coerce_ID_OR_INT_to_AST of ct_ID_OR_INT
   | CT_coerce_ID_OR_STRING_to_AST of ct_ID_OR_STRING
   | CT_astnode of ct_ID * ct_AST_LIST
-  | CT_astpath of ct_ID_LIST * ct_ID
+  | CT_astpath of ct_ID_LIST
   | CT_astslam of ct_ID_OPT * ct_AST
 and ct_AST_LIST =
     CT_ast_list of ct_AST list

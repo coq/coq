@@ -50,6 +50,7 @@ open Pp
 open Util
 open Names
 open Term
+open Termops
 open Tacmach
 open Sign
 open Environ
@@ -97,14 +98,14 @@ let replace_by_meta env = function
       let m = mkMeta n in
       (* quand on introduit une mv on calcule son type *)
       let ty = match kind_of_term c with
-	| IsLambda (Name id,c1,c2) when isCast c2 ->
+	| Lambda (Name id,c1,c2) when isCast c2 ->
 	    mkNamedProd id c1 (snd (destCast c2))
-	| IsLambda (Anonymous,c1,c2) when isCast c2 ->
+	| Lambda (Anonymous,c1,c2) when isCast c2 ->
 	    mkArrow c1 (snd (destCast c2))
-	| _ -> (* (IsApp _ | IsMutCase _) -> *)
+	| _ -> (* (App _ | Case _) -> *)
 	    Retyping.get_type_of_with_meta env Evd.empty mm c
 	(*
-	| IsFix ((_,j),(v,_,_)) ->
+	| Fix ((_,j),(v,_,_)) ->
 	    v.(j) (* en pleine confiance ! *)
 	| _ -> invalid_arg "Tcc.replace_by_meta (TO DO)" 
         *)
@@ -131,25 +132,25 @@ let fresh env n =
 
 let rec compute_metamap env c = match kind_of_term c with
   (* le terme est directement une preuve *)
-  | (IsConst _ | IsEvar _ | IsMutInd _ | IsMutConstruct _ |
-    IsSort _ | IsVar _ | IsRel _) -> 
+  | (Const _ | Evar _ | Ind _ | Construct _ |
+    Sort _ | Var _ | Rel _) -> 
       TH (c,[],[])
   (* le terme est une mv => un but *)
-  | IsMeta n ->
+  | Meta n ->
       (* 
       Pp.warning (Printf.sprintf ("compute_metamap: MV(%d) sans type !\n") n);
       let ty = Retyping.get_type_of_with_meta env Evd.empty lmeta c in 
       *)
       TH (c,[],[None])
-  | IsCast (m,ty) when isMeta m -> 
+  | Cast (m,ty) when isMeta m -> 
       TH (c,[destMeta m,ty],[None])
 
   (* abstraction => il faut décomposer si le terme dessous n'est pas pur
    *    attention : dans ce cas il faut remplacer (Rel 1) par (Var x)
    *    où x est une variable FRAICHE *)
-  | IsLambda (name,c1,c2) ->
+  | Lambda (name,c1,c2) ->
       let v = fresh env name in
-      let env' = push_named_assum (v,c1) env in
+      let env' = push_named_decl (v,None,c1) env in
       begin match compute_metamap env' (subst1 (mkVar v) c2) with
 	(* terme de preuve complet *)
 	| TH (_,_,[]) -> TH (c,[],[])
@@ -159,11 +160,11 @@ let rec compute_metamap env c = match kind_of_term c with
 	    TH (mkLambda (Name v,c1,m), mm, sgp)
       end
 
-  | IsLetIn (name, c1, t1, c2) ->
+  | LetIn (name, c1, t1, c2) ->
       if occur_meta c1 then 
 	error "Refine: body of let-in cannot contain existentials";
       let v = fresh env name in
-      let env' = push_named_def (v,c1,t1) env in
+      let env' = push_named_decl (v,Some c1,t1) env in
       begin match compute_metamap env' (subst1 (mkVar v) c2) with
 	(* terme de preuve complet *)
 	| TH (_,_,[]) -> TH (c,[],[])
@@ -174,16 +175,18 @@ let rec compute_metamap env c = match kind_of_term c with
       end
 
   (* 4. Application *)
-  | IsApp (f,v) ->
+  | App (f,v) ->
       let a = Array.map (compute_metamap env) (Array.append [|f|] v) in
       begin
 	try
-	  let v',mm,sgp = replace_in_array env a in TH (mkAppA v',mm,sgp)
+	  let v',mm,sgp = replace_in_array env a in
+          let v'' = Array.sub v' 1 (Array.length v) in
+          TH (mkApp(v'.(0), v''),mm,sgp)
 	with NoMeta ->
 	  TH (c,[],[])
       end
 
-  | IsMutCase (ci,p,c,v) ->
+  | Case (ci,p,c,v) ->
       (* bof... *)
       let nbr = Array.length v in
       let v = Array.append [|p;c|] v in
@@ -192,13 +195,13 @@ let rec compute_metamap env c = match kind_of_term c with
 	try
 	  let v',mm,sgp = replace_in_array env a in
 	  let v'' = Array.sub v' 2 nbr in
-	  TH (mkMutCase (ci,v'.(0),v'.(1),v''),mm,sgp)
+	  TH (mkCase (ci,v'.(0),v'.(1),v''),mm,sgp)
 	with NoMeta ->
 	  TH (c,[],[])
       end
 
   (* 5. Fix. *)
-  | IsFix ((ni,i),(fi,ai,v)) ->
+  | Fix ((ni,i),(fi,ai,v)) ->
       (* TODO: use a fold *)
       let vi = Array.map (fresh env) fi in
       let fi' = Array.map (fun id -> Name id) vi in
@@ -217,19 +220,19 @@ let rec compute_metamap env c = match kind_of_term c with
       end
 	      
   (* Cast. Est-ce bien exact ? *)
-  | IsCast (c,t) -> compute_metamap env c
+  | Cast (c,t) -> compute_metamap env c
       (*let TH (c',mm,sgp) = compute_metamap sign c in
 	TH (mkCast (c',t),mm,sgp) *)
       
   (* Produit. Est-ce bien exact ? *)
-  | IsProd (_,_,_) ->
+  | Prod (_,_,_) ->
       if occur_meta c then
 	error "Refine: proof term contains metas in a product"
       else
       	TH (c,[],[])
 
   (* Cofix. *)
-  | IsCoFix (i,(fi,ai,v)) ->
+  | CoFix (i,(fi,ai,v)) ->
       let vi = Array.map (fresh env) fi in
       let fi' = Array.map (fun id -> Name id) vi in
       let env' = push_named_rec_types (fi',ai,v) env in
@@ -255,10 +258,10 @@ let rec compute_metamap env c = match kind_of_term c with
 let rec tcc_aux (TH (c,mm,sgp) as th) gl =
   match (kind_of_term c,sgp) with
     (* mv => sous-but : on ne fait rien *)
-    | IsMeta _ , _ ->
+    | Meta _ , _ ->
 	tclIDTAC gl
 
-    | IsCast (c,_), _ when isMeta c ->
+    | Cast (c,_), _ when isMeta c ->
 	tclIDTAC gl
 	  
     (* terme pur => refine *)
@@ -266,18 +269,18 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 	refine c gl
 	
     (* abstraction => intro *)
-    | IsLambda (Name id,_,m), _ when isMeta (strip_outer_cast m) ->
+    | Lambda (Name id,_,m), _ when isMeta (strip_outer_cast m) ->
 	begin match sgp with
 	  | [None] -> introduction id gl
 	  | [Some th] -> tclTHEN (introduction id) (tcc_aux th) gl
 	  | _ -> assert false
 	end
 	
-    | IsLambda _, _ ->
+    | Lambda _, _ ->
 	anomaly "invalid lambda passed to function tcc_aux"
 
     (* let in *)
-    | IsLetIn (Name id,c1,t1,c2), _ when isMeta (strip_outer_cast c2) ->
+    | LetIn (Name id,c1,t1,c2), _ when isMeta (strip_outer_cast c2) ->
 	let c = pf_concl gl in
 	let newc = mkNamedLetIn id c1 t1 c in
 	tclTHEN 
@@ -288,11 +291,11 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 	     | _ -> assert false) 
 	  gl
 
-    | IsLetIn _, _ ->
+    | LetIn _, _ ->
 	anomaly "invalid let-in passed to function tcc_aux"
 
     (* fix => tactique Fix *)
-    | IsFix ((ni,_),(fi,ai,_)) , _ ->
+    | Fix ((ni,_),(fi,ai,_)) , _ ->
 	let ids =
 	  Array.to_list
             (Array.map
@@ -309,7 +312,7 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 	  gl
 
     (* cofix => tactique CoFix *)
-    | IsCoFix (_,(fi,ai,_)) , _ ->
+    | CoFix (_,(fi,ai,_)) , _ ->
 	let ids =
 	  Array.to_list
             (Array.map

@@ -10,7 +10,9 @@
 
 open Util
 open Names
+open Nameops
 open Term
+open Declarations
 open Tactics
 open Tacticals
 open Hiddentac
@@ -65,9 +67,9 @@ let h_solveRightBranch =
 (* Constructs the type {c1=c2}+{~c1=c2} *)
 
 let mkDecideEqGoal rectype c1 c2 g = 
-  let equality    = mkAppA [|build_coq_eq_data.eq (); rectype; c1; c2|] in
-  let disequality = mkAppA [|build_coq_not (); equality|] in
-  mkAppA [|build_coq_sumbool (); equality; disequality |]
+  let equality    = mkApp(build_coq_eq_data.eq (), [|rectype; c1; c2|]) in
+  let disequality = mkApp(build_coq_not (), [|equality|]) in
+  mkApp(build_coq_sumbool (), [|equality; disequality |])
 
 
 (* Constructs the type (x1,x2:R){x1=x2}+{~x1=x2} *)
@@ -110,8 +112,9 @@ let solveLeftBranch rectype g =
     with Pattern.PatternMatchingFailure -> error "Unexpected conclusion!"
   with 
     | _ :: lhs :: rhs :: _ -> 
-	let nparams   = Global.mind_nparams rectype in
-	let getargs l = snd (list_chop nparams (snd (decomp_app l))) in
+        let (mib,mip) = Global.lookup_inductive rectype in
+	let nparams   = mip.mind_nparams in
+	let getargs l = snd (list_chop nparams (snd (decompose_app l))) in
 	let rargs   = getargs (snd rhs)
 	and largs   = getargs (snd lhs) in 
 	List.fold_right2 
@@ -122,7 +125,7 @@ let solveLeftBranch rectype g =
 (* The tactic Decide Equality *)
 
 let hd_app c = match kind_of_term c with
-  | IsApp (h,_) -> h
+  | App (h,_) -> h
   | _ -> c
 
 let decideGralEquality g =
@@ -135,7 +138,7 @@ let decideGralEquality g =
 	let headtyp = hd_app (pf_compute g typ) in
 	let rectype =
 	  match kind_of_term headtyp with
-            | IsMutInd mi -> mi
+            | Ind mi -> mi
 	    | _ -> error 
 		"This decision procedure only works for inductive objects" 
 	in 

@@ -11,8 +11,10 @@
 (*i*)
 open Names
 open Term
+open Termops
 open Sign
 open Environ
+open Nametab
 open Rawterm
 open Pattern
 (*i*)

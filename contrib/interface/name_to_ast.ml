@@ -1,6 +1,7 @@
 open Sign;;
 open Classops;;
 open Names;;
+open Nameops
 open Coqast;;
 open Ast;;
 open Termast;;
@@ -15,6 +16,7 @@ open Inductive;;
 open Util;;
 open Pp;;
 open Declare;;
+open Nametab
 
 
 (* This function converts the parameter binders of an inductive definition,
@@ -86,8 +88,8 @@ let convert_qualid qid =
   let d, id = Nametab.repr_qualid qid in
     match repr_dirpath d with
 	[] -> nvar id
-      | d -> ope("QUALID", List.fold_right (fun s l -> (nvar s)::l) d
-		   [nvar id]);;
+      | d -> ope("QUALID", List.fold_left (fun l s -> (nvar s)::l)
+		   [nvar id] d);;
 
 (* This function converts constructors for an inductive definition to a
    Coqast.t.  It is obtained directly from print_constructors in pretty.ml *)
@@ -106,9 +108,9 @@ let convert_constructors envpar names types =
 let convert_one_inductive sp tyi =
   let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp tyi in
   let env = Global.env () in
-  let envpar = push_rels params env in
+  let envpar = push_rel_context params env in
   ope("VERNACARGLIST",
-      [convert_qualid (Global.qualid_of_global(IndRef (sp, tyi)));
+      [convert_qualid (Nametab.qualid_of_global env (IndRef (sp, tyi)));
        ope("CONSTR", [ast_of_constr true envpar arity]);
        ope("BINDERLIST", convert_env(List.rev params));
        convert_constructors envpar cstrnames cstrtypes]);;
@@ -123,7 +125,7 @@ let mutual_to_ast_list sp mib =
     Array.fold_right
       (fun mi (n,l) -> (n+1, (convert_one_inductive sp n)::l)) mipv (0, []) in
   (ope("MUTUALINDUCTIVE",
-	  [str (if (mipv.(0)).mind_finite then "Inductive" else "CoInductive");
+	  [str (if mib.mind_finite then "Inductive" else "CoInductive");
 	  ope("VERNACARGLIST", ast_list)])::
      (implicit_args_to_ast_list sp mipv));;
 
@@ -157,17 +159,14 @@ let make_definition_ast name c typ implicits =
 (* This function is inspired by print_constant *)
 let constant_to_ast_list sp =
   let cb = Global.lookup_constant sp in
-    if kind_of_path sp = CCI then
-      let c = cb.const_body in
-      let typ = cb.const_type in
-      let l = constant_implicits_list sp in
-	(match c with
-	     None -> 
-	       make_variable_ast (basename sp) typ l
-	   | Some c1 ->
-	       make_definition_ast (basename sp) c1 typ l)
-    else
-      errorlabstrm "print" [< 'sTR "printing of FW terms not implemented" >];;
+  let c = cb.const_body in
+  let typ = cb.const_type in
+  let l = constant_implicits_list sp in
+  (match c with
+      None -> 
+	make_variable_ast (basename sp) typ l
+    | Some c1 ->
+	make_definition_ast (basename sp) c1 typ l)
 
 let variable_to_ast_list sp =
   let ((id, c, v), _) = get_variable sp in
@@ -182,18 +181,14 @@ let variable_to_ast_list sp =
 
 let inductive_to_ast_list sp =
   let mib = Global.lookup_mind sp in
-    if kind_of_path sp = CCI then
-      mutual_to_ast_list sp mib
-    else
-      errorlabstrm "print"
-	[< 'sTR "printing of FW not implemented" >];;
+  mutual_to_ast_list sp mib
 
 (* this function is inspired by print_leaf_entry from pretty.ml *)
 
 let leaf_entry_to_ast_list (sp,lobj) =
   let tag = object_tag lobj in
   match (sp,tag) with
-  | (_, "VARIABLE") -> variable_to_ast_list sp
+  | (_, "VARIABLE") -> variable_to_ast_list (basename sp)
   | (_, ("CONSTANT"|"PARAMETER")) -> constant_to_ast_list sp
   | (_, "INDUCTIVE") -> inductive_to_ast_list sp
   | (_, s) -> 
@@ -228,8 +223,8 @@ let name_to_ast (qid:Nametab.qualid) =
   	with Not_found -> 
 	  try  (* Var locale de but, pas var de section... donc pas d'implicits *)
 	    let dir,name = Nametab.repr_qualid qid in 
-	      if dir <> make_dirpath [] then raise Not_found;
-	      let (c,typ) = Global.lookup_named name in 
+	      if (repr_dirpath dir) <> [] then raise Not_found;
+	      let (_,c,typ) = Global.lookup_named name in 
 		(match c with
 		     None -> make_variable_ast name typ []
 		   | Some c1 -> make_definition_ast name c1 typ [])

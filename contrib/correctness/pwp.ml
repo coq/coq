@@ -13,7 +13,9 @@
 open Util
 open Names
 open Term
+open Termops
 open Environ
+open Nametab
 
 open Pmisc
 open Ptype
@@ -79,7 +81,7 @@ let post_if_none env q = function
  * post-condition *)
 
 let annotation_candidate = function
-  | { desc = If _ | LetIn _ | LetRef _ ; post = None } -> true
+  | { desc = If _ | Let _ | LetRef _ ; post = None } -> true
   | _ -> false
 
 (* [extract_pre p] erase the pre-condition of p and returns it *)
@@ -111,7 +113,8 @@ let create_bool_post c =
 let is_bool = function
   | TypePure c ->
       (match kind_of_term (strip_outer_cast c) with
-	 | IsMutInd op -> Global.string_of_global (IndRef op) = "bool"
+	 | Ind op ->
+             string_of_id (id_of_global (Global.env()) (IndRef op)) = "bool"
 	 | _ -> false)
   | _ -> false
 
@@ -145,8 +148,8 @@ let normalize_boolean ren env b =
 
 let decomp_boolean = function
   | Some { a_value = q } ->
-      Reduction.whd_betaiota (Term.applist (q, [constant "true"])),
-      Reduction.whd_betaiota (Term.applist (q, [constant "false"]))
+      Reductionops.whd_betaiota (Term.applist (q, [constant "true"])),
+      Reductionops.whd_betaiota (Term.applist (q, [constant "false"]))
   | _ -> invalid_arg "Ptyping.decomp_boolean"
 
 (* top point of a program *)
@@ -213,8 +216,8 @@ let rec propagate_desc ren info d =
       	TabAff (false, x, propagate ren e1', propagate ren e2)
     | TabAff (ch,x,e1,e2) ->
       	TabAff (ch, x, propagate ren e1, propagate ren e2)
-    | App (f,l) ->
-      	App (propagate ren f, List.map (propagate_arg ren) l)
+    | Apply (f,l) ->
+      	Apply (propagate ren f, List.map (propagate_arg ren) l)
     | SApp (f,l) ->
 	let l = 
 	  List.map (fun e -> normalize_boolean ren env (propagate ren e)) l
@@ -236,16 +239,16 @@ let rec propagate_desc ren info d =
 	let ren' = push_date ren top in
 	PPoint (top, LetRef (x, propagate ren' e1, 
 	      		     propagate ren' (post_if_none_up env top q e2)))
-    | LetIn (x,e1,e2) ->
+    | Let (x,e1,e2) ->
 	let top = label_name() in
 	let ren' = push_date ren top in
-      	PPoint (top, LetIn (x, propagate ren' e1, 
+      	PPoint (top, Let (x, propagate ren' e1, 
 			    propagate ren' (post_if_none_up env top q e2)))
     | LetRec (f,bl,v,var,e) ->
       	LetRec (f, bl, v, var, propagate ren e)
     | PPoint (s,d) -> 
       	PPoint (s, propagate_desc ren info d)
-    | Debug _ | Var _ 
+    | Debug _ | Variable _ 
     | Acc _ | Expression _ as d -> d
 	  
 
@@ -253,7 +256,7 @@ let rec propagate_desc ren info d =
 and propagate ren p =
   let env = p.info.env in
   let p = match p.desc with
-    | App (f,l) ->
+    | Apply (f,l) ->
 	let _,(_,so,ok),(_,_,_,qapp) = effect_app ren env f l in
 	if ok then
 	  let q = option_app (named_app (real_subst_in_constr so)) qapp in
@@ -284,7 +287,7 @@ and propagate ren p =
 	let q = option_app (named_app abstract_unit) q in
 	post_if_none env q p
 
-    | SApp ([Var id], [e1;e2]) 
+    | SApp ([Variable id], [e1;e2]) 
       when id = connective_and or id = connective_or ->
 	let (_,_,_,q1) = e1.info.kappa
 	and (_,_,_,q2) = e2.info.kappa in
@@ -293,24 +296,26 @@ and propagate ren p =
 	let q =
 	  let conn = if id = connective_and then "spec_and" else "spec_or" in
 	  let c = Term.applist (constant conn, [r1; s1; r2; s2]) in
-	  let c = Reduction.whd_betadeltaiota (Global.env()) Evd.empty c in
+	  let c = Reduction.whd_betadeltaiota (Global.env()) c in
 	  create_bool_post c
 	in
 	let d = 
-	  SApp ([Var id; Expression (out_post q1); Expression (out_post q2)], 
+	  SApp ([Variable id;
+                 Expression (out_post q1);
+                 Expression (out_post q2)], 
 		[e1; e2] ) 
 	in
 	post_if_none env q (change_desc p d)
 
-    | SApp ([Var id], [e1]) when id = connective_not ->
+    | SApp ([Variable id], [e1]) when id = connective_not ->
 	let (_,_,_,q1) = e1.info.kappa in
 	let (r1,s1) = decomp_boolean q1 in
 	let q = 
 	  let c = Term.applist (constant "spec_not", [r1; s1]) in
-	  let c = Reduction.whd_betadeltaiota (Global.env ()) Evd.empty c in
+	  let c = Reduction.whd_betadeltaiota (Global.env ()) c in
 	  create_bool_post c 
 	in
-	let d = SApp ([Var id; Expression (out_post q1)], [ e1 ]) in
+	let d = SApp ([Variable id; Expression (out_post q1)], [ e1 ]) in
 	post_if_none env q (change_desc p d)
 
     | _ -> p

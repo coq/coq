@@ -12,6 +12,7 @@ open Pp
 open Util
 open Names
 open Term
+open Termops
 open Sign
 open Environ
 open Global
@@ -19,6 +20,7 @@ open Declare
 open Coqast
 open Ast
 open Termast
+open Nametab
 
 let emacs_str s = if !Options.print_emacs then s else "" 
 
@@ -28,7 +30,7 @@ let pr_global ref =
   (* Il est important de laisser le let-in, car les streams s'évaluent
   paresseusement : il faut forcer l'évaluation pour capturer
   l'éventuelle levée d'une exception (le cas échoit dans le debugger) *)
-  let s = Global.string_of_global ref in
+  let s = string_of_id (id_of_global (Global.env()) ref) in
   [< 'sTR s >]
 
 let global_const_name sp =
@@ -224,8 +226,9 @@ let pr_context_unlimited env =
   in 
   [< sign_env; db_env >]
 
-let pr_ne_context_of header k env =
-  if Environ.context env = empty_context then [< >]
+let pr_ne_context_of header env =
+  if Environ.rel_context env = empty_rel_context &
+    Environ.named_context env = empty_named_context  then [< >]
   else let penv = pr_context_unlimited env in [< header; penv; 'fNL >]
 
 let pr_context_limit n env =

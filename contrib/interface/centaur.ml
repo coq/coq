@@ -1,6 +1,7 @@
 
 (*Toplevel loop for the communication between Coq and Centaur *)
 open Names;;
+open Nameops
 open Util;;
 open Ast;;
 open Term;;
@@ -243,8 +244,10 @@ let filter_by_module_from_varg_list (l:vernac_arg list) =
 
 let add_search (global_reference:global_reference) assumptions cstr =
   try 
-  let id_string = string_of_qualid (Global.qualid_of_global global_reference) in
-  let ast = 
+    let env = Global.env() in
+    let id_string =
+      string_of_qualid (Nametab.qualid_of_global env global_reference) in
+    let ast = 
     try
       CT_premise (CT_ident id_string, translate_constr assumptions cstr)
     with Not_found ->
@@ -303,11 +306,13 @@ and ntyp = nf_betaiota typ in
 (* The following function is copied from globpr in env/printer.ml *)
 let globcv = function
   | Node(_,"MUTIND", (Path(_,sp))::(Num(_,tyi))::_) ->
-       convert_qualid
-	 (Global.qualid_of_global (IndRef(sp,tyi)))
+      let env = Global.env() in
+      convert_qualid
+	 (Nametab.qualid_of_global env (IndRef(sp,tyi)))
   | Node(_,"MUTCONSTRUCT",(Path(_,sp))::(Num(_,tyi))::(Num(_,i))::_) ->
-       convert_qualid
-          (Global.qualid_of_global (ConstructRef ((sp, tyi), i)))
+      let env = Global.env() in
+      convert_qualid
+          (Nametab.qualid_of_global env (ConstructRef ((sp, tyi), i)))
   | _ -> failwith "globcv : unexpected value";;
 
 let pbp_tac_pcoq =
@@ -389,7 +394,7 @@ let inspect n =
              	sp, Lib.Leaf lobj ->
 		  (match sp, object_tag lobj with
                        _, "VARIABLE" ->
-			 let ((_, _, v), _) = get_variable sp in
+			 let ((_, _, v), _) = get_variable (basename sp) in
 			   add_search2 (Nametab.locate (qualid_of_sp sp)) v
 		     | sp, ("CONSTANT"|"PARAMETER") ->
 			 let {const_type=typ} = Global.lookup_constant sp in

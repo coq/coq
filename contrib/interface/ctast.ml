@@ -11,15 +11,15 @@ type t =
   | Num of loc * int
   | Id of loc * string
   | Str of loc * string
-  | Path of loc * string list* string
+  | Path of loc * string list
   | Dynamic of loc * Dyn.t
 
-let section_path sl k =
+let section_path sl =
   match List.rev sl with
     | s::pa ->
 	make_path
 	  (make_dirpath (List.rev (List.map id_of_string pa)))
-	  (id_of_string s) (kind_of_string k)
+	  (id_of_string s)
     | [] -> invalid_arg "section_path"
 
 let is_meta s = String.length s > 0 && s.[0] == '$'
@@ -40,7 +40,7 @@ let rec ct_to_ast = function
   | Num (loc,a) -> Coqast.Num (loc,a)
   | Id (loc,a) -> Coqast.Id (loc,a)
   | Str (loc,a) -> Coqast.Str (loc,a)
-  | Path (loc,sl,k) -> Coqast.Path (loc,section_path sl k)
+  | Path (loc,sl) -> Coqast.Path (loc,section_path sl)
   | Dynamic (loc,a) -> Coqast.Dynamic (loc,a)
 
 let rec ast_to_ct = function
@@ -55,8 +55,9 @@ let rec ast_to_ct = function
   | Coqast.Id (loc,a) -> Id (loc,a)
   | Coqast.Str (loc,a) -> Str (loc,a)
   | Coqast.Path (loc,a) ->
-    let (sl,bn,pk) = repr_path a in
-    Path(loc, (List.map string_of_id (repr_dirpath sl)) @ [string_of_id bn],(* Bidon *) "CCI")
+    let (sl,bn) = repr_path a in
+    Path(loc, (List.map string_of_id
+                (List.rev (repr_dirpath sl))) @ [string_of_id bn])
   | Coqast.Dynamic (loc,a) -> Dynamic (loc,a)
 
 let loc = function
@@ -66,7 +67,7 @@ let loc = function
   | Num (loc,_) -> loc
   | Id (loc,_) -> loc
   | Str (loc,_) -> loc
-  | Path (loc,_,_) -> loc
+  | Path (loc,_) -> loc
   | Dynamic (loc,_) -> loc
 
 let str s = Str(Ast.dummy_loc,s)

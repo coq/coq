@@ -12,9 +12,10 @@ open Pp
 open Util
 open Names
 open Term
+open Termops
 open Environ
 open Reduction
-open Inductive
+open Inductiveops
 open Proof_type
 open Clenv
 open Hipattern
@@ -104,7 +105,7 @@ let inductive_of_qualid gls qid =
     with Not_found -> Nametab.error_global_not_found qid
   in
   match kind_of_term c with
-    | IsMutInd ity -> ity
+    | Ind ity -> ity
     | _ ->
 	errorlabstrm "Decompose"
 	  [< Nametab.pr_qualid qid; 'sTR " is not an inductive type" >]

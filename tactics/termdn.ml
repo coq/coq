@@ -10,9 +10,11 @@
 
 open Util
 open Names
+open Nameops
 open Term
 open Pattern
 open Rawterm
+open Nametab
 
 (* Discrimination nets of terms.
    See the module dn.ml for further explanations.
@@ -24,8 +26,8 @@ type 'a t = (constr_label,constr_pattern,'a) Dn.t
 
 let decomp = 
   let rec decrec acc c = match kind_of_term c with
-    | IsApp (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
-    | IsCast (c1,_) -> decrec acc c1
+    | App (f,l) -> decrec (Array.fold_right (fun a l -> a::l) l acc) f
+    | Cast (c1,_) -> decrec acc c1
     | _ -> (c,acc)
   in 
   decrec []
@@ -44,17 +46,17 @@ let constr_pat_discr t =
     match decomp_pat t with
       | PRef (IndRef sp), args -> Some(IndNode sp,args)
       | PRef (ConstructRef sp), args -> Some(CstrNode sp,args)
-      | PRef (VarRef sp), args -> Some(VarNode (basename sp),args)
+      | PRef (VarRef id), args -> Some(VarNode id,args)
       | _ -> None
 
 let constr_val_discr t =
   let c, l = decomp t in
   match kind_of_term c with
-    (* IsConst _,_) -> Some(TERM c,l) *)
-    | IsMutInd ind_sp -> Some(IndNode ind_sp,l)
-    | IsMutConstruct cstr_sp -> Some(CstrNode cstr_sp,l)
+    (* Const _,_) -> Some(TERM c,l) *)
+    | Ind ind_sp -> Some(IndNode ind_sp,l)
+    | Construct cstr_sp -> Some(CstrNode cstr_sp,l)
     (* Ici, comment distinguer SectionVarNode de VarNode ?? *)
-    | IsVar id -> Some(VarNode id,l)
+    | Var id -> Some(VarNode id,l)
     | _ -> None
 
 (* Les deux fonctions suivantes ecrasaient les precedentes, 

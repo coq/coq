@@ -13,6 +13,7 @@ open Names
 open Term
 open Classops
 open Declare
+open Nametab
 (*i*)
 
 (* Classes and coercions. *)

@@ -115,15 +115,16 @@ let isevar = Expression isevar
 
 let bin_op op loc e1 e2 =
   without_effect loc
-    (App (without_effect loc (Expression (constant op)), [ Term e1; Term e2 ]))
+    (Apply (without_effect loc (Expression (constant op)),
+            [ Term e1; Term e2 ]))
 
 let un_op op loc e =
   without_effect loc
-    (App (without_effect loc (Expression (constant op)), [Term e]))
+    (Apply (without_effect loc (Expression (constant op)), [Term e]))
 
 let bool_bin op loc a1 a2 =
   let w = without_effect loc in
-  let d = SApp ( [Var op], [a1; a2]) in
+  let d = SApp ( [Variable op], [a1; a2]) in
   w d
 
 let bool_or  loc = bool_bin connective_or loc
@@ -131,7 +132,7 @@ let bool_and loc = bool_bin connective_and loc
 
 let bool_not loc a =
   let w = without_effect loc in
-  let d = SApp ( [Var connective_not ], [a]) in
+  let d = SApp ( [Variable connective_not ], [a]) in
   w d
 
 let ast_zwf_zero loc =
@@ -147,9 +148,9 @@ let bdize c =
   Termast.ast_of_constr true env c
 
 let rec coqast_of_program loc = function
-  | Var id -> let s = string_of_id id in <:ast< ($VAR $s) >>
+  | Variable id -> let s = string_of_id id in <:ast< ($VAR $s) >>
   | Acc id -> let s = string_of_id id in <:ast< ($VAR $s) >>
-  | App (f,l) -> 
+  | Apply (f,l) -> 
       let f = coqast_of_program f.loc f.desc in
       let args = List.map 
 		   (function Term t -> coqast_of_program t.loc t.desc
@@ -178,8 +179,8 @@ let ast_plus_un loc ast =
 let make_ast_for loc i v1 v2 inv block =
   let f = for_name() in
   let id_i = id_of_string i in
-  let var_i = without_effect loc (Var id_i) in
-  let var_f = without_effect loc (Var f) in
+  let var_i = without_effect loc (Variable id_i) in
+  let var_f = without_effect loc (Variable f) in
   let succ_v2 = 
     let a_v2 = coqast_of_program v2.loc v2.desc in
     ast_plus_un loc a_v2 in
@@ -190,7 +191,7 @@ let make_ast_for loc i v1 v2 inv block =
     let br_f = 
       let un = without_effect loc (Expression (constr_of_int "1")) in
       let succ_i = bin_op "Zplus" loc var_i un in
-      let f_succ_i = without_effect loc (App (var_f, [Term succ_i])) in
+      let f_succ_i = without_effect loc (Apply (var_f, [Term succ_i])) in
       without_effect loc (Seq (block @ [Statement f_succ_i]))
     in
     let inv' = 
@@ -205,14 +206,14 @@ let make_ast_for loc i v1 v2 inv block =
     let typez = ast_constant loc "Z" in
     [(id_of_string i, BindType (TypePure typez))] 
   in
-  let fv1 = without_effect loc (App (var_f, [Term v1])) in
+  let fv1 = without_effect loc (Apply (var_f, [Term v1])) in
   let v = TypePure (ast_constant loc "unit") in
   let var = 
     let zminus = ast_constant loc "Zminus" in
     let a = <:ast< (APPLIST $zminus $succ_v2 ($VAR $i)) >> in
     (a, ast_zwf_zero loc)
   in
-  LetIn (f, without_effect loc (LetRec (f,bl,v,var,e1)), fv1)
+  Let (f, without_effect loc (LetRec (f,bl,v,var,e1)), fv1)
 
 let mk_prog loc p pre post =
   { desc = p.desc; 
@@ -376,7 +377,7 @@ GEXTEND Gram
     ;
   ast7:
     [ [ v = variable -> 
-	  Var v
+	  Variable v
       | n = INT ->
 	  Expression (constr_of_int n)
       | "!"; v = variable ->
@@ -408,7 +409,7 @@ GEXTEND Gram
 	"in"; p2 = program ->
 	  LetRef (v, p1, p2)
       | IDENT "let"; v = variable; "="; p1 = program; "in"; p2 = program ->
-	  LetIn (v, p1, p2)
+	  Let (v, p1, p2)
       | IDENT "begin"; b = block; "end" ->
 	  Seq b
       | IDENT "fun"; bl = binders; "->"; p = program ->
@@ -421,7 +422,7 @@ GEXTEND Gram
 	bl = binders; ":"; v = type_v;
 	"{"; IDENT "variant"; var = variant; "}"; "="; p = program;
  	"in"; p2 = program ->
-	  LetIn (f, without_effect loc (LetRec (f,bl,v,var,p)), p2)
+	  Let (f, without_effect loc (LetRec (f,bl,v,var,p)), p2)
 
       | "@"; s = STRING; p = program ->
 	  Debug (s,p)
@@ -433,7 +434,7 @@ GEXTEND Gram
 		  Pp.warning "Some annotations are lost";
 		p.desc
             | _  -> 
-		App(p,args)
+		Apply(p,args)
      ] ]
   ;
   arg:

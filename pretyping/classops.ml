@@ -12,11 +12,13 @@ open Util
 open Pp
 open Options
 open Names
+open Nametab
 open Environ
 open Libobject
 open Library
 open Declare
 open Term
+open Termops
 open Rawterm
 
 (* usage qque peu general: utilise aussi dans record *)
@@ -189,14 +191,14 @@ let _ =
 
 let constructor_at_head t = 
   let rec aux t' = match kind_of_term t' with
-    | IsVar id -> CL_SECVAR (find_section_variable id),0
-    | IsConst sp -> CL_CONST sp,0
-    | IsMutInd ind_sp -> CL_IND ind_sp,0
-    | IsProd (_,_,c) -> CL_FUN,0
-    | IsLetIn (_,_,_,c) -> aux c
-    | IsSort _ -> CL_SORT,0
-    | IsCast (c,_) -> aux (collapse_appl c)
-    | IsApp (f,args) -> let c,_ = aux f in c, Array.length args
+    | Var id -> CL_SECVAR id,0
+    | Const sp -> CL_CONST sp,0
+    | Ind ind_sp -> CL_IND ind_sp,0
+    | Prod (_,_,c) -> CL_FUN,0
+    | LetIn (_,_,_,c) -> aux c
+    | Sort _ -> CL_SORT,0
+    | Cast (c,_) -> aux (collapse_appl c)
+    | App (f,args) -> let c,_ = aux f in c, Array.length args
     |  _ -> raise Not_found
   in 
   aux (collapse_appl t)
@@ -217,7 +219,7 @@ let class_of env sigma t =
   in
   if n = n1 then t,i else raise Not_found
 
-let class_args_of c = snd (decomp_app c)
+let class_args_of c = snd (decompose_app c)
 
 let strength_of_cl = function 
   | CL_CONST sp -> constant_or_parameter_strength sp
@@ -227,9 +229,9 @@ let strength_of_cl = function
 let string_of_class = function
   | CL_FUN -> "FUNCLASS"
   | CL_SORT -> "SORTCLASS" 
-  | CL_CONST sp -> Global.string_of_global (ConstRef sp)
-  | CL_IND sp -> Global.string_of_global (IndRef sp)
-  | CL_SECVAR sp -> Global.string_of_global (VarRef sp)
+  | CL_CONST sp -> string_of_id (id_of_global (Global.env()) (ConstRef sp))
+  | CL_IND sp -> string_of_id (id_of_global (Global.env()) (IndRef sp))
+  | CL_SECVAR sp -> string_of_id (id_of_global (Global.env()) (VarRef sp))
 
 (* coercion_value : int -> unsafe_judgment * bool *)
 

@@ -38,7 +38,8 @@ let is_evaluable env ref =
     | EvalVarRef id ->
         let (ids,sps) = !tr_state in
         Idpred.mem id ids &
-        Environ.lookup_named_value id env <> None
+        let (_,value,_) = Environ.lookup_named id env in
+        value <> None
 
 (* Modifying this state *)
 let set_opaque_const sp =
@@ -48,8 +49,8 @@ let set_transparent_const sp =
   let (ids,sps) = !tr_state in
   let cb = Global.lookup_constant sp in
   if cb.const_body <> None & cb.const_opaque then
-    error ("Cannot make "^Global.string_of_global (ConstRef sp)^
-           " transparent because it was declared opaque.");
+    let s = string_of_path sp in
+    error ("Cannot make "^s^" transparent because it was declared opaque.");
   tr_state := (ids, Sppred.add sp sps)
 
 let set_opaque_var id =

@@ -120,7 +120,8 @@ open Proof_type
   the constants are loaded in the environment *)
 
 let constant dir s =
-  let dir = make_dirpath (List.map id_of_string ("Coq"::"ring"::dir)) in
+  let dir = make_dirpath
+              (List.map id_of_string (List.rev ("Coq"::"ring"::dir))) in
   let id = id_of_string s in
   try 
     Declare.global_reference_in_absolute_module dir id
@@ -200,9 +201,9 @@ let decomp_term c = kind_of_term (strip_outer_cast c)
 
 let compute_lhs typ i nargsi =
   match kind_of_term typ with
-    | IsMutInd(sp,0) -> 
+    | Ind(sp,0) -> 
         let argsi = Array.init nargsi (fun j -> mkMeta (nargsi - j)) in
-        mkApp (mkMutConstruct ((sp,0),i+1), argsi)
+        mkApp (mkConstruct ((sp,0),i+1), argsi)
     | _ -> i_can't_do_that ()
 
 (*s This function builds the pattern from the RHS. Recursive calls are
@@ -211,11 +212,11 @@ let compute_lhs typ i nargsi =
 let compute_rhs bodyi index_of_f =
   let rec aux c = 
     match decomp_term c with
-      | IsApp (j, args) when j = mkRel (index_of_f) (* recursive call *) -> 
+      | App (j, args) when j = mkRel (index_of_f) (* recursive call *) -> 
           let i = destRel (array_last args) in mkMeta i
-      | IsApp (f,args) ->
+      | App (f,args) ->
           mkApp (f, Array.map aux args)
-      | IsCast (c,t) -> aux c 
+      | Cast (c,t) -> aux c 
       | _ -> c
   in
   pattern_of_constr (aux bodyi)
@@ -224,13 +225,13 @@ let compute_rhs bodyi index_of_f =
 
 let compute_ivs gl f cs =
   let cst = try destConst f with _ -> i_can't_do_that () in
-  let body = constant_value (Global.env()) cst in
+  let body = Environ.constant_value (Global.env()) cst in
   match decomp_term body with
-    | IsFix(([| len |], 0), ([| name |], [| typ |], [| body2 |])) ->
+    | Fix(([| len |], 0), ([| name |], [| typ |], [| body2 |])) ->
         let (args3, body3) = decompose_lam body2 in
         let nargs3 = List.length args3 in
         begin match decomp_term body3 with
-          | IsMutCase(_,p,c,lci) -> (* <p> Case c of c1 ... cn end *)
+          | Case(_,p,c,lci) -> (* <p> Case c of c1 ... cn end *)
               let n_lhs_rhs = ref []
               and v_lhs = ref (None : constr option)
               and c_lhs = ref (None : constr option) in
@@ -246,7 +247,7 @@ let compute_ivs gl f cs =
                      c_lhs := Some (compute_lhs (snd (List.hd args3))
                                       i nargsi)
            (* Then we test if the RHS is the RHS for variables *)
-                   else begin match decomp_app bodyi with 
+                   else begin match decompose_app bodyi with 
                      | vmf, [_; _; a3; a4 ]
                          when isRel a3 & isRel a4 &
 			   pf_conv_x gl vmf 
@@ -267,7 +268,7 @@ let compute_ivs gl f cs =
 
 	      (* The Cases predicate is a lambda; we assume no dependency *)
 	      let p = match kind_of_term p with
-		| IsLambda (_,_,p) -> pop p
+		| Lambda (_,_,p) -> pop p
 		| _ -> p
 	      in
               
@@ -300,8 +301,8 @@ binary search trees (see file \texttt{Quote.v}) *)
 let rec closed_under cset t =
   (ConstrSet.mem t cset) or
   (match (kind_of_term t) with
-     | IsCast(c,_) -> closed_under cset c  
-     | IsApp(f,l) -> closed_under cset f & array_for_all (closed_under cset) l
+     | Cast(c,_) -> closed_under cset c  
+     | App(f,l) -> closed_under cset f & array_for_all (closed_under cset) l
      | _ -> false)
     
 (*s [btree_of_array [| c1; c2; c3; c4; c5 |]] builds the complete
@@ -362,8 +363,8 @@ let path_of_int n =
 let rec subterm gl (t : constr) (t' : constr) = 
   (pf_conv_x gl t t') or
   (match (kind_of_term t) with 
-     | IsApp (f,args) -> array_exists (fun t -> subterm gl t t') args
-     | IsCast(t,_) -> (subterm gl t t')
+     | App (f,args) -> array_exists (fun t -> subterm gl t t') args
+     | Cast(t,_) -> (subterm gl t t')
      | _ -> false)
            
 (*s We want to sort the list according to reverse subterm order. *)
@@ -398,26 +399,26 @@ let quote_terms ivs lc gl=
             begin try 
               let s1 = matches rhs c in
               let s2 = List.map (fun (i,c_i) -> (i,aux c_i)) s1 in
-              Term.subst_meta s2 lhs
+              Termops.subst_meta s2 lhs
             with PatternMatchingFailure -> auxl tail
             end 
         |  [] -> 
              begin match ivs.variable_lhs with 
                | None -> 
                    begin match ivs.constant_lhs with
-                     | Some c_lhs -> Term.subst_meta [1, c] c_lhs
+                     | Some c_lhs -> Termops.subst_meta [1, c] c_lhs
                      | None -> anomaly "invalid inversion scheme for quote"
                    end
                | Some var_lhs -> 
                    begin match ivs.constant_lhs with
                      | Some c_lhs when closed_under ivs.constants c ->
-			 Term.subst_meta [1, c] c_lhs
+			 Termops.subst_meta [1, c] c_lhs
                      | _ -> 
 			 begin 
                            try Hashtbl.find varhash c 
                            with Not_found -> 
                              let newvar = 
-                               Term.subst_meta [1, (path_of_int !counter)] 
+                               Termops.subst_meta [1, (path_of_int !counter)] 
 				 var_lhs in
                              begin 
                                incr counter;

@@ -137,10 +137,9 @@ let red_allowed flags stack rk =
 open RedFlags
 
 let red_allowed_ref flags stack = function
-  | FarRelBinding _ -> red_allowed flags stack fDELTA
-  | VarBinding id -> red_allowed flags stack (fVAR id)
-  | EvarBinding _ -> red_allowed flags stack fEVAR
-  | ConstBinding sp -> red_allowed flags stack (fCONST sp)
+  | FarRelKey _ -> red_allowed flags stack fDELTA
+  | VarKey id -> red_allowed flags stack (fVAR id)
+  | ConstKey sp -> red_allowed flags stack (fCONST sp)
 
 (* Transfer application lists from a value to the stack
  * useful because fixpoints may be totally applied in several times
@@ -190,7 +189,7 @@ let cofixp_reducible redfun flgs _ stk =
 
 let mindsp_nparams env (sp,i) =
   let mib = lookup_mind sp env in
-  (Declarations.mind_nth_type_packet mib i).Declarations.mind_nparams
+  mib.Declarations.mind_packets.(i).Declarations.mind_nparams
 
 (* The main recursive functions
  *
@@ -207,17 +206,17 @@ let rec norm_head info env t stack =
   (* no reduction under binders *)
   match kind_of_term t with
   (* stack grows (remove casts) *)
-  | IsApp (head,args) -> (* Applied terms are normalized immediately;
+  | App (head,args) -> (* Applied terms are normalized immediately;
                         they could be computed when getting out of the stack *)
       let nargs = Array.map (cbv_stack_term info TOP env) args in
       norm_head info env head (stack_app (Array.to_list nargs) stack)
-  | IsMutCase (ci,p,c,v) -> norm_head info env c (CASE(p,v,ci,env,stack))
-  | IsCast (ct,_) -> norm_head info env ct stack
+  | Case (ci,p,c,v) -> norm_head info env c (CASE(p,v,ci,env,stack))
+  | Cast (ct,_) -> norm_head info env ct stack
 
   (* constants, axioms
    * the first pattern is CRUCIAL, n=0 happens very often:
    * when reducing closed terms, n is always 0 *)
-  | IsRel i -> (match expand_rel i env with
+  | Rel i -> (match expand_rel i env with
                 | Inl (0,v) ->
                     reduce_const_body (cbv_norm_more info env) v stack
                 | Inl (n,v) ->
@@ -226,18 +225,14 @@ let rec norm_head info env t stack =
                 | Inr (n,None) ->
 		    (VAL(0, mkRel n), stack)
                 | Inr (n,Some p) ->
-		    norm_head_ref (n-p) info env stack (FarRelBinding p))
+		    norm_head_ref (n-p) info env stack (FarRelKey p))
 
-  | IsVar id -> norm_head_ref 0 info env stack (VarBinding id)
+  | Var id -> norm_head_ref 0 info env stack (VarKey id)
 
-  | IsConst sp ->
-      norm_head_ref 0 info env stack (ConstBinding sp)
+  | Const sp ->
+      norm_head_ref 0 info env stack (ConstKey sp)
 
-  | IsEvar (ev,args) ->
-      let evar = (ev, Array.map (cbv_norm_term info env) args) in
-      norm_head_ref 0 info env stack (EvarBinding evar)
-
-  | IsLetIn (x, b, t, c) ->
+  | LetIn (x, b, t, c) ->
       (* zeta means letin are contracted; delta without zeta means we *)
       (* allow substitution but leave let's in place *)
       let zeta = red_allowed (info_flags info) stack fZETA in
@@ -256,14 +251,14 @@ let rec norm_head info env t stack =
 	(VAL(0,normt), stack) (* Considérer une coupure commutative ? *)
 
   (* non-neutral cases *)
-  | IsLambda (x,a,b) -> (LAM(x,a,b,env), stack)
-  | IsFix fix -> (FIXP(fix,env,[]), stack)
-  | IsCoFix cofix -> (COFIXP(cofix,env,[]), stack)
-  | IsMutConstruct c -> (CONSTR(c, []), stack)
+  | Lambda (x,a,b) -> (LAM(x,a,b,env), stack)
+  | Fix fix -> (FIXP(fix,env,[]), stack)
+  | CoFix cofix -> (COFIXP(cofix,env,[]), stack)
+  | Construct c -> (CONSTR(c, []), stack)
 
   (* neutral cases *)
-  | (IsSort _ | IsMeta _ | IsMutInd _) -> (VAL(0, t), stack)
-  | IsProd (x,t,c) -> 
+  | (Sort _ | Meta _ | Ind _|Evar _) -> (VAL(0, t), stack)
+  | Prod (x,t,c) -> 
       (VAL(0, mkProd (x, cbv_norm_term info env t,
 		      cbv_norm_term info (subs_lift env) c)),
 	     stack)
@@ -277,11 +272,9 @@ and norm_head_ref k info env stack normt =
   else (VAL(0,make_constr_ref k info normt), stack)
 
 and make_constr_ref n info = function
-  | FarRelBinding p -> mkRel (n+p)
-  | VarBinding id -> mkVar id
-  | EvarBinding (ev,args) ->
-      mkEvar (ev,Array.map (cbv_norm_term info (ESID 0)) args)
-  | ConstBinding cst -> mkConst cst
+  | FarRelKey p -> mkRel (n+p)
+  | VarKey id -> mkVar id
+  | ConstKey cst -> mkConst cst
 
 (* cbv_stack_term performs weak reduction on constr t under the subs
  * env, with context stack, i.e. ([env]t stack).  First computes weak
@@ -311,9 +304,9 @@ and cbv_stack_term info stack env t =
 
     (* constructor in a Case -> IOTA
        (use red_under because we know there is a Case) *)
-    | (CONSTR((sp,n),_), APP(args,CASE(_,br,(arity,_),env,stk)))
+    | (CONSTR((sp,n),_), APP(args,CASE(_,br,ci,env,stk)))
             when red_under (info_flags info) fIOTA ->
-	let real_args = snd (list_chop arity args) in
+	let real_args = snd (list_chop ci.ci_npar args) in
         cbv_stack_term info (stack_app real_args stk) env br.(n-1)
          
     (* constructor of arity 0 in a Case -> IOTA ( "   " )*)
@@ -349,7 +342,7 @@ and apply_stack info t = function
       apply_stack info (applistc t (List.map (cbv_norm_value info) args)) st
   | CASE (ty,br,ci,env,st) ->
       apply_stack info
-        (mkMutCase (ci, cbv_norm_term info env ty, t,
+        (mkCase (ci, cbv_norm_term info env ty, t,
 		    Array.map (cbv_norm_term info env) br))
         st
 
@@ -382,7 +375,7 @@ and cbv_norm_value info = function (* reduction under binders *)
         (List.map (cbv_norm_value info) args)
   | CONSTR (c,args) ->
       applistc
-        (mkMutConstruct c)
+        (mkConstruct c)
         (List.map (cbv_norm_value info) args)
 
 (* with profiling *)
@@ -390,12 +383,11 @@ let cbv_norm infos constr =
   with_stats (lazy (cbv_norm_term infos (ESID 0) constr))
 
 
-type 'a cbv_infos = (cbv_value, 'a) infos
+type cbv_infos = cbv_value infos
 
 (* constant bodies are normalized at the first expansion *)
-let create_cbv_infos flgs env sigma =
+let create_cbv_infos flgs env =
   create
     (fun old_info c -> cbv_stack_term old_info TOP (ESID 0) c)
     flgs
     env
-    sigma

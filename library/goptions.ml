@@ -15,6 +15,7 @@ open Util
 open Libobject
 open Names
 open Term
+open Nametab
 
 (****************************************************************************)
 (* 0- Common things                                                         *)
@@ -301,7 +302,7 @@ let msg_option_value (name,v) =
     | BoolValue false -> [< 'sTR "false" >]
     | IntValue n      -> [< 'iNT n >]
     | StringValue s   -> [< 'sTR s >]
-    | IdentValue id    -> [< 'sTR (Global.string_of_global id) >]
+    | IdentValue id    -> pr_sp(Nametab.sp_of_global (Global.env())id)
 
 let print_option_value key =
   let (name,(_,read,_)) = get_option key in

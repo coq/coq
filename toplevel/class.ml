@@ -11,7 +11,9 @@
 open Util
 open Pp
 open Names
+open Nameops
 open Term
+open Termops
 open Inductive
 open Declarations
 open Environ
@@ -19,6 +21,8 @@ open Inductive
 open Lib
 open Classops
 open Declare
+open Nametab
+open Safe_typing
 
 (* manipulations concernant les strength *)
 
@@ -47,7 +51,7 @@ let stre_max4 stre1 stre2 stre3 stre4 =
   stre_max ((stre_max (stre1,stre2)),(stre_max (stre3,stre4)))
 
 let id_of_varid c = match kind_of_term c with
-  | IsVar id -> id
+  | Var id -> id
   | _ -> anomaly "class__id_of_varid"
 
 (* lf liste des variable dont depend la coercion f
@@ -67,16 +71,16 @@ let rec stre_unif_cond = function
 
 let stre_of_global = function
   | ConstRef sp -> constant_or_parameter_strength sp
-  | VarRef sp -> variable_strength sp
+  | VarRef id -> variable_strength id
   | IndRef _ | ConstructRef _ -> NeverDischarge 
 
 (* verfications pour l'ajout d'une classe *)
 
 let rec arity_sort a = match kind_of_term a with
-  | IsSort (Prop _ | Type _) -> 0
-  | IsProd (_,_,c) -> (arity_sort c) +1
-  | IsLetIn (_,_,_,c) -> arity_sort c    (* Utile ?? *)
-  | IsCast (c,_) -> arity_sort c
+  | Sort (Prop _ | Type _) -> 0
+  | Prod (_,_,c) -> (arity_sort c) +1
+  | LetIn (_,_,_,c) -> arity_sort c    (* Utile ?? *)
+  | Cast (c,_) -> arity_sort c
   | _ -> raise Not_found
 
 (* try_add_class : Names.identifier ->
@@ -185,15 +189,15 @@ let check_target clt = function
 let constructor_at_head1 t = 
   let rec aux t' =
     match kind_of_term t' with
-      | IsConst sp -> t',[],CL_CONST sp,0
-      | IsMutInd ind_sp -> t',[],CL_IND ind_sp,0
-      | IsVar id -> t',[],CL_SECVAR (find_section_variable id),0
-      | IsCast (c,_) -> aux c
-      | IsApp(f,args) -> 
+      | Const sp -> t',[],CL_CONST sp,0
+      | Ind ind_sp -> t',[],CL_IND ind_sp,0
+      | Var id -> t',[],CL_SECVAR id,0
+      | Cast (c,_) -> aux c
+      | App(f,args) -> 
 	  let t',_,l,_ = aux f in t',Array.to_list args,l,Array.length args
-      | IsProd (_,_,_) -> t',[],CL_FUN,0
-      | IsLetIn (_,_,_,c) -> aux c
-      | IsSort _ -> t',[],CL_SORT,0
+      | Prod (_,_,_) -> t',[],CL_FUN,0
+      | LetIn (_,_,_,c) -> aux c
+      | Sort _ -> t',[],CL_SORT,0
       |  _ -> raise Not_found
   in 
   aux (collapse_appl t)
@@ -210,17 +214,18 @@ let uniform_cond nargs lt =
   aux (nargs,lt)
 
 let id_of_cl  = function
-  | CL_FUN -> (id_of_string "FUNCLASS")
-  | CL_SORT -> (id_of_string "SORTCLASS") 
-  | CL_CONST sp -> (basename sp)
-  | CL_IND (sp,i) ->
-      (mind_nth_type_packet (Global.lookup_mind sp) i).mind_typename
-  | CL_SECVAR sp -> (basename sp)
+  | CL_FUN -> id_of_string "FUNCLASS"
+  | CL_SORT -> id_of_string "SORTCLASS"
+  | CL_CONST sp -> basename sp
+  | CL_IND ind ->
+      let (_,mip) = Global.lookup_inductive ind in
+      mip.mind_typename
+  | CL_SECVAR id -> id
 
 let class_of_ref = function
   | ConstRef sp -> CL_CONST sp
   | IndRef sp -> CL_IND sp
-  | VarRef sp -> CL_SECVAR sp
+  | VarRef id -> CL_SECVAR id
   | ConstructRef _ as c -> 
       errorlabstrm "class_of_ref"
 	[< 'sTR "Constructors, such as "; Printer.pr_global c; 
@@ -268,8 +273,8 @@ let get_target t ind =
 
 let prods_of t = 
   let rec aux acc d = match kind_of_term d with
-    | IsProd (_,c1,c2) -> aux (c1::acc) c2
-    | IsCast (c,_) -> aux acc c
+    | Prod (_,c1,c2) -> aux (c1::acc) c2
+    | Cast (c,_) -> aux acc c
     | _ -> d::acc
   in 
   aux [] t
@@ -296,7 +301,7 @@ let build_id_coercion idf_opt source =
   let vs = match source with
     | CL_CONST sp -> mkConst sp
     | _ -> error_not_transparent source in
-  let c = match Instantiate.constant_opt_value env (destConst vs) with
+  let c = match constant_opt_value env (destConst vs) with
     | Some c -> c
     | None -> error_not_transparent source in
   let lams,t = Sign.decompose_lam_assum c in
@@ -315,7 +320,7 @@ let build_id_coercion idf_opt source =
   (* juste pour verification *)
   let _ = 
     try 
-      Reduction.conv_leq env Evd.empty
+      Reductionops.conv_leq env Evd.empty
 	(Typing.type_of env Evd.empty val_f) typ_f
     with _ -> 
       error ("cannot be defined as coercion - "^
@@ -417,7 +422,7 @@ let count_extra_abstractions hyps ids_to_discard =
     List.fold_left
       (fun (hyps,n as sofar) id -> 
 	 match hyps with
-	   | (hyp,None,_)::rest when id = basename hyp ->(rest, n+1)
+	   | (hyp,None,_)::rest when id = hyp ->(rest, n+1)
 	   | _ -> sofar)
       (hyps,0) ids_to_discard
   in n
@@ -430,20 +435,20 @@ let process_global sec_sp = function
       anomaly "process_global only processes global surviving the section"
   | ConstRef sp as x ->
       if defined_in_sec sp sec_sp then
-        let ((_,spid,spk)) = repr_path sp in
-        let newsp = Lib.make_path spid CCI in
+        let (_,spid) = repr_path sp in
+        let newsp = Lib.make_path spid in
         ConstRef newsp
       else x
   | IndRef (sp,i) as x -> 
       if defined_in_sec sp sec_sp then
-        let ((_,spid,spk)) = repr_path sp in
-        let newsp = Lib.make_path spid CCI in
+        let (_,spid) = repr_path sp in
+        let newsp = Lib.make_path spid in
         IndRef (newsp,i)
       else x
   | ConstructRef ((sp,i),j) as x -> 
       if defined_in_sec sp sec_sp then
-        let ((_,spid,spk)) = repr_path sp in
-        let newsp = Lib.make_path spid CCI in
+        let (_,spid) = repr_path sp in
+        let newsp = Lib.make_path spid in
         ConstructRef ((newsp,i),j)
       else x
 
@@ -454,8 +459,8 @@ let process_class sec_sp ids_to_discard x =
     | CL_SECVAR _ -> x
     | CL_CONST sp -> 
         if defined_in_sec sp sec_sp then
-	  let ((_,spid,spk)) = repr_path sp in
-          let newsp = Lib.make_path spid CCI in
+	  let (_,spid) = repr_path sp in
+          let newsp = Lib.make_path spid in
 	  let hyps = (Global.lookup_constant sp).const_hyps in
 	  let n = count_extra_abstractions hyps ids_to_discard in
           (CL_CONST newsp,{cl_strength=stre;cl_param=p+n})
@@ -463,8 +468,8 @@ let process_class sec_sp ids_to_discard x =
 	  x
     | CL_IND (sp,i) ->
         if defined_in_sec sp sec_sp then
-	  let ((_,spid,spk)) = repr_path sp in
-          let newsp = Lib.make_path spid CCI in 
+	  let (_,spid) = repr_path sp in
+          let newsp = Lib.make_path spid in 
 	  let hyps = (Global.lookup_mind sp).mind_hyps in
 	  let n = count_extra_abstractions hyps ids_to_discard in
           (CL_IND (newsp,i),{cl_strength=stre;cl_param=p+n})
@@ -477,15 +482,15 @@ let process_cl sec_sp cl =
     | CL_SECVAR id -> cl
     | CL_CONST sp ->
 	if defined_in_sec sp sec_sp then
-	  let ((_,spid,spk)) = repr_path sp in
-          let newsp = Lib.make_path spid CCI in 
+	  let (_,spid) = repr_path sp in
+          let newsp = Lib.make_path spid in 
           CL_CONST newsp
         else 
 	  cl
     | CL_IND (sp,i) ->
 	if defined_in_sec sp sec_sp then
-	  let ((_,spid,spk)) = repr_path sp in
-          let newsp = Lib.make_path spid CCI in 
+	  let (_,spid) = repr_path sp in
+          let newsp = Lib.make_path spid in 
           CL_IND (newsp,i)
         else 
 	  cl

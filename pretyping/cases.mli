@@ -13,7 +13,7 @@ open Names
 open Term
 open Evd
 open Environ
-open Inductive
+open Inductiveops
 open Rawterm
 open Evarutil
 (*i*)
@@ -32,7 +32,7 @@ exception PatternMatchingError of env * pattern_matching_error
 (* Used for old cases in pretyping *)
 
 val branch_scheme : 
-  env -> 'a evar_defs -> bool -> inductive_family -> constr array
+  env -> 'a evar_defs -> bool -> inductive * constr list -> constr array
 
 val pred_case_ml_onebranch : loc -> env -> 'c evar_map -> bool ->
   inductive_type -> int * unsafe_judgment -> constr 

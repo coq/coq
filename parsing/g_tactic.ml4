@@ -196,7 +196,6 @@ GEXTEND Gram
       | IDENT "Delta" -> <:ast< (Delta) >>
       | IDENT "Iota" -> <:ast< (Iota) >>
       | IDENT "Zeta" -> <:ast< (Zeta) >>
-      | IDENT "Evar" -> <:ast< (Evar) >>
       | "["; idl = ne_qualidarg_list; "]" -> <:ast< (Unf ($LIST $idl)) >>
       | "-"; "["; idl = ne_qualidarg_list; "]" ->
           <:ast< (UnfBut ($LIST $idl)) >> ] ]
@@ -207,7 +206,7 @@ GEXTEND Gram
       | IDENT "Simpl" -> <:ast< (Simpl) >>
       | IDENT "Cbv"; s = LIST1 red_flag -> <:ast< (Cbv ($LIST $s)) >>
       | IDENT "Lazy"; s = LIST1 red_flag -> <:ast< (Lazy ($LIST $s)) >>
-      | IDENT "Compute" -> <:ast< (Cbv (Beta) (Delta) (Evar) (Iota) (Zeta)) >>
+      | IDENT "Compute" -> <:ast< (Cbv (Beta) (Delta) (Iota) (Zeta)) >>
       | IDENT "Unfold"; ul = ne_unfold_occ_list ->
           <:ast< (Unfold ($LIST $ul)) >>
       | IDENT "Fold"; cl = constrarg_list -> <:ast< (Fold ($LIST $cl)) >>

@@ -13,11 +13,13 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Term
 open Miniml
 open Table
 open Mlutil
 open Options
+open Nametab
 
 let current_module = ref None
 

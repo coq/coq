@@ -56,6 +56,7 @@
 open Pp
 open Names
 open Term
+open Nametab
 (*i*)
 
 (*s Things common to tables and options. *)

@@ -19,6 +19,7 @@ open Clenv
 open Pattern
 open Environ
 open Evd
+open Nametab
 (*i*)
   
 type auto_tactic = 

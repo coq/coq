@@ -14,7 +14,7 @@ open Term
 open Sign
 open Evd
 open Environ
-open Reduction
+open Reductionops
 (*i*)
 
 (*s This modules provides useful functions for unification modulo evars *)
@@ -22,14 +22,14 @@ open Reduction
 (* [whd_ise] raise [Uninstantiated_evar] if an evar remains uninstantiated; *)
 (* *[whd_evar]* and *[nf_evar]* leave uninstantiated evar as is *)
 
-val nf_evar : 'a Evd.evar_map -> constr -> constr
-val j_nf_evar : 'a Evd.evar_map -> unsafe_judgment -> unsafe_judgment
+val nf_evar : 'a evar_map -> constr -> constr
+val j_nf_evar : 'a evar_map -> unsafe_judgment -> unsafe_judgment
 val jl_nf_evar :
-  'a Evd.evar_map -> unsafe_judgment list -> unsafe_judgment list
+  'a evar_map -> unsafe_judgment list -> unsafe_judgment list
 val jv_nf_evar :
-  'a Evd.evar_map -> unsafe_judgment array -> unsafe_judgment array
+  'a evar_map -> unsafe_judgment array -> unsafe_judgment array
 val tj_nf_evar :
-  'a Evd.evar_map -> unsafe_type_judgment -> unsafe_type_judgment
+  'a evar_map -> unsafe_type_judgment -> unsafe_type_judgment
 
 (* Replacing all evars *)
 exception Uninstantiated_evar of int
@@ -55,7 +55,7 @@ val ise_try : 'a evar_defs -> (unit -> bool) list -> bool
 val ise_undefined : 'a evar_defs -> constr -> bool
 val has_undefined_isevars : 'a evar_defs -> constr -> bool
 
-val new_isevar : 'a evar_defs -> env -> constr -> path_kind -> constr
+val new_isevar : 'a evar_defs -> env -> constr -> constr
 
 val is_eliminator : constr -> bool
 val head_is_embedded_evar : 'a evar_defs -> constr -> bool

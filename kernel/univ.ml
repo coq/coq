@@ -67,7 +67,7 @@ let implicit_univ =
     { u_mod = Names.make_dirpath [Names.id_of_string "implicit_univ"];
       u_num = 0 }
 
-let current_module = ref Names.default_module
+let current_module = ref (Names.make_dirpath[Names.id_of_string"Top"])
 
 let set_module m = current_module := m
 

@@ -13,9 +13,11 @@ open Pp
 open Names
 open Sign
 open Term
+open Termops
 open Inductive
-open Reduction
 open Environ
+open Reductionops
+open Nametab
 (*i*)
 
 (* A Pretty-Printer for the Calculus of Inductive Constructions. *)

@@ -14,6 +14,7 @@ open Names
 open Term
 open Miniml
 open Environ
+open Nametab
 
 (*s Result of an extraction. *)
 

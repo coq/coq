@@ -12,6 +12,8 @@
 
 open Names
 open Term
+open Termops
+open Nametab
 
 open Ptype
 open Past
@@ -90,7 +92,7 @@ let rec db_binders ((tids,pids,refs) as idl) = function
 let rec db_pattern = function
   | (PatVar id) as t ->
       (try 
-	 (match Nametab.sp_of_id CCI id with
+	 (match Nametab.sp_of_id id with
 	    | ConstructRef (x,y) -> [], PatConstruct (id,(x,y))
 	    | _                  -> [id],t)
        with Not_found -> [id],t)
@@ -115,7 +117,7 @@ let rec db_pattern = function
 let db_prog e =
   (* tids = type identifiers, ids = variables, refs = references and arrays *)
   let rec db_desc ((tids,ids,refs) as idl) = function
-    | (Var x) as t ->
+    | (Variable x) as t ->
 	(match lookup_var ids (Some e.loc) x with
 	     None -> t
 	   | Some c -> Expression c)
@@ -145,14 +147,14 @@ let db_prog e =
 	  
     | Lam (bl,e) ->
 	let idl',bl' = db_binders idl bl in Lam(bl', db idl' e)
-    | App (e1,l) ->
-	App (db idl e1, List.map (db_arg idl) l)
+    | Apply (e1,l) ->
+	Apply (db idl e1, List.map (db_arg idl) l)
     | SApp (dl,l) ->
 	SApp (dl, List.map (db idl) l)
     | LetRef (x,e1,e2) ->
 	LetRef (x, db idl e1, db (tids,ids,x::refs) e2)
-    | LetIn (x,e1,e2) ->
-	LetIn (x, db idl e1, db (tids,x::ids,refs) e2)
+    | Let (x,e1,e2) ->
+	Let (x, db idl e1, db (tids,x::ids,refs) e2)
 	  
     | LetRec (f,bl,v,var,e) ->
 	let (tids',ids',refs'),bl' = db_binders idl bl in
@@ -166,7 +168,7 @@ let db_prog e =
     | PPoint (s,d) -> PPoint (s, db_desc idl d)
 	  
   and db_arg ((tids,_,refs) as idl) = function
-    | Term ({ desc = Var id } as t) -> 
+    | Term ({ desc = Variable id } as t) -> 
 	if List.mem id refs then Refarg id else Term (db idl t)
     | Term t -> Term (db idl t)
     | Type v as ty -> check_type_v refs v; ty
@@ -178,7 +180,7 @@ let db_prog e =
       loc = e.loc; info = e.info }
 
   in
-  let ids = Sign.ids_of_named_context (Global.named_context ()) in
+  let ids = Termops.ids_of_named_context (Global.named_context ()) in
             (* TODO: separer X:Set et x:V:Set
                      virer le reste (axiomes, etc.) *)
   let vars,refs = all_vars (), all_refs () in

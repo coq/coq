@@ -128,7 +128,7 @@ let add_global id v p =
 	if is_mutable v then id 
         else id_of_string ("prog_" ^ (string_of_id id)) 
       in
-      Lib.add_leaf id' OBJ (inProg (id,TypeV v,p))
+      Lib.add_leaf id' (inProg (id,TypeV v,p))
     end
 
 let add_global_set id =
@@ -136,7 +136,7 @@ let add_global_set id =
     let _ = Env.find id !env in
     Perror.clash id None
   with
-    Not_found -> Lib.add_leaf id OBJ (inProg (id,Set,None))
+    Not_found -> Lib.add_leaf id (inProg (id,Set,None))
 
 let is_global id =
   try

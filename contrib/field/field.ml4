@@ -23,7 +23,8 @@ let constr_of com = Astterm.interp_constr Evd.empty (Global.env()) com
 
 (* Construction of constants *)
 let constant dir s =
-  let dir = make_dirpath (List.map id_of_string ("Coq"::"field"::dir)) in
+  let dir = make_dirpath
+    (List.map id_of_string (List.rev ("Coq"::"field"::dir))) in
   let id = id_of_string s in
   try 
     Declare.global_reference_in_absolute_module dir id

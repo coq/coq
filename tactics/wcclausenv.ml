@@ -11,9 +11,11 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Term
+open Termops
 open Sign
-open Reduction
+open Reductionops
 open Environ
 open Logic
 open Tacmach
@@ -99,10 +101,10 @@ let clenv_constrain_with_bindings bl clause =
 
 let add_prod_rel sigma (t,env) =
   match kind_of_term t with
-    | IsProd (na,t1,b) ->
+    | Prod (na,t1,b) ->
         (b,push_rel_assum (na, t1) env)
-    | IsLetIn (na,c1,t1,b) ->
-        (b,push_rel_def (na,c1, t1) env)
+    | LetIn (na,c1,t1,b) ->
+        (b,push_rel (na,Some c1, t1) env)
     | _ -> failwith "add_prod_rel"
 
 let rec add_prods_rel sigma (t,env) =
@@ -127,20 +129,20 @@ let elim_res_pf_THEN_i kONT clenv tac gls =
 
 let rec build_args acc ce p_0 p_1 =
   match kind_of_term p_0, p_1 with 
-    | (IsProd (na,a,b), (a_0::bargs)) ->
+    | (Prod (na,a,b), (a_0::bargs)) ->
         let (newa,ce') = (build_term ce (na,Some a) a_0) in 
 	build_args (newa::acc) ce' (subst1 a_0 b) bargs
-    | (IsLetIn (na,a,t,b), args) -> build_args acc ce (subst1 a b) args
+    | (LetIn (na,a,t,b), args) -> build_args acc ce (subst1 a b) args
     | (_, [])     -> (List.rev acc,ce)
     | (_, (_::_)) -> failwith "mk_clenv_using"
 
 and build_term ce p_0 c =
   let env = w_env ce.hook in
   match p_0, kind_of_term c with 
-    | ((na,Some t), IsMeta mv) -> 
+    | ((na,Some t), Meta mv) -> 
 (*    	let mv = new_meta() in *)
 	(mkMeta mv, clenv_pose (na,mv,t) ce)
-    | ((na,_), IsCast (c,t)) -> build_term ce (na,Some t) c
+    | ((na,_), Cast (c,t)) -> build_term ce (na,Some t) c
     | ((na,Some t), _) ->
     	if (not((occur_meta c))) then 
 	  (c,ce)
@@ -169,7 +171,7 @@ and build_term ce p_0 c =
 	  (newc,ce')
 
 let mk_clenv_using wc c =
-  let ce = mk_clenv wc mkImplicit in
+  let ce = mk_clenv wc mkProp in
   let (newc,ce') = 
     try 
       build_term ce (Anonymous,None) c
@@ -192,11 +194,11 @@ let clenv_apply_n_times n ce =
     match (n, kind_of_term templtyp) with 
       | (0, _) ->
 	  clenv_change_head (applist(templval,List.rev argacc), templtyp) ce
-      | (n, IsProd (na,dom,rng)) ->
+      | (n, Prod (na,dom,rng)) ->
           let mv = new_meta() in
           let newce = clenv_pose (na,mv,dom) ce in
 	  apprec newce (mkMeta mv::argacc) (n-1, subst1 (mkMeta mv) rng)
-      | (n, IsLetIn (na,b,t,c)) ->
+      | (n, LetIn (na,b,t,c)) ->
 	  apprec ce argacc (n, subst1 b c)
       | (n, _) -> failwith "clenv_apply_n_times"
   in 

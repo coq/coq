@@ -11,21 +11,20 @@
 open Util
 open Pp
 open Names
+open Nameops
+open Declarations
 
 (*s qualified names *)
-type qualid = dir_path * identifier
+type qualid = section_path
 
-let make_qualid p id = (p,id)
-let repr_qualid q = q
+let make_qualid = make_path
+let repr_qualid = repr_path
 
-let empty_dirpath = make_dirpath []
-let make_short_qualid id = (empty_dirpath,id)
+let string_of_qualid = string_of_path
+let pr_qualid = pr_sp
 
-let string_of_qualid (l,id) = string_of_path (make_path l id CCI)
-
-let pr_qualid p = pr_str (string_of_qualid p)
-
-let qualid_of_sp sp = make_qualid (dirpath sp) (basename sp)
+let qualid_of_sp sp = sp
+let make_short_qualid id = make_qualid empty_dirpath id
 let qualid_of_dirpath dir = 
   let (l,a) = split_dirpath dir in
   make_qualid l a
@@ -41,24 +40,38 @@ let error_global_constant_not_found_loc loc q =
 
 let error_global_not_found q = raise (GlobalizationError q)
 
-(*s Roots of the space of absolute names *)
-
-let coq_root = id_of_string "Coq"
-let default_root_prefix = make_dirpath []
-
-(* Obsolète
-let roots = ref []
-let push_library_root = function
-  | [] -> ()
-  | s::_ -> roots := list_add_set s !roots
-*)
-let push_library_root s = ()
-
 (* Constructions and syntactic definitions live in the same space *)
+type global_reference =
+  | VarRef of variable
+  | ConstRef of constant
+  | IndRef of inductive
+  | ConstructRef of constructor
+
 type extended_global_reference =
   | TrueGlobal of global_reference
   | SyntacticDef of section_path
 
+let sp_of_global env = function
+  | VarRef id -> make_path empty_dirpath id
+  | ConstRef sp -> sp
+  | IndRef (sp,tyi) -> 
+      (* Does not work with extracted inductive types when the first 
+	 inductive is logic : if tyi=0 then basename sp else *)
+      let mib = Environ.lookup_mind sp env in
+      assert (tyi < mib.mind_ntypes && tyi >= 0);
+      let mip = mib.mind_packets.(tyi) in
+      let (p,_) = repr_path sp in
+      make_path p mip.mind_typename
+  | ConstructRef ((sp,tyi),i) ->
+      let mib = Environ.lookup_mind sp env in
+      assert (tyi < mib.mind_ntypes && i >= 0);
+      let mip = mib.mind_packets.(tyi) in
+      assert (i <= Array.length mip.mind_consnames && i > 0);
+      let (p,_) = repr_path sp in
+      make_path p mip.mind_consnames.(i-1)
+
+
+(* Dictionaries of short names *)
 type 'a nametree = ('a option * 'a nametree ModIdmap.t)
 type ccitab = extended_global_reference nametree Idmap.t
 type objtab = section_path nametree Idmap.t
@@ -69,15 +82,19 @@ let the_libtab = ref (ModIdmap.empty : dirtab)
 let the_sectab = ref (ModIdmap.empty : dirtab)
 let the_objtab = ref (Idmap.empty : objtab)
 
-let dirpath_of_reference = function
-  | ConstRef sp -> dirpath sp
-  | VarRef sp -> dirpath sp
-  | ConstructRef ((sp,_),_) -> dirpath sp
-  | IndRef (sp,_) -> dirpath sp
+let dirpath_of_reference ref =
+  let sp = match ref with
+    | ConstRef sp -> sp
+    | VarRef id -> make_path empty_dirpath id
+    | ConstructRef ((sp,_),_) -> sp
+    | IndRef (sp,_) -> sp in
+  let (p,_) = repr_path sp in
+  p
 
 let dirpath_of_extended_ref = function
   | TrueGlobal ref -> dirpath_of_reference ref
-  | SyntacticDef sp -> dirpath sp
+  | SyntacticDef sp ->
+      let (p,_) = repr_path sp in p
 
 (* How [visibility] works: a value of [0] means all suffixes of [dir] are
    allowed to access the object, a value of [1] means all suffixes, except the
@@ -94,7 +111,7 @@ let dirpath_of_extended_ref = function
 (* We add a binding of [[modid1;...;modidn;id]] to [o] in the name tab *)
 (* We proceed in the reverse way, looking first to [id] *)
 let push_tree extract_dirpath tab visibility dir o =
-  let extract = option_app (fun c -> rev_repr_dirpath (extract_dirpath c)) in
+  let extract = option_app (fun c -> repr_dirpath (extract_dirpath c)) in
   let rec push level (current,dirmap) = function
     | modid :: path as dir ->
 	let mc = 
@@ -112,7 +129,7 @@ let push_tree extract_dirpath tab visibility dir o =
           else current in
 	(this, ModIdmap.add modid (push (level+1) mc path) dirmap)
     | [] -> (Some o,dirmap) in
-  push 0 tab (rev_repr_dirpath dir)
+  push 0 tab (repr_dirpath dir)
 
 let push_idtree extract_dirpath tab n dir id o =
   let modtab =
@@ -122,7 +139,8 @@ let push_idtree extract_dirpath tab n dir id o =
 
 let push_long_names_ccipath = push_idtree dirpath_of_extended_ref the_ccitab
 let push_short_name_ccipath = push_idtree dirpath_of_extended_ref the_ccitab
-let push_short_name_objpath = push_idtree dirpath the_objtab
+let push_short_name_objpath =
+  push_idtree (fun sp -> let (p,_) = repr_path sp in p) the_objtab
 
 let push_modidtree tab dir id o =
   let modtab =
@@ -140,7 +158,7 @@ let push_long_names_libpath = push_modidtree the_libtab
    Parameter but also Remark and Fact) *)
 
 let push_cci n sp ref =
-  let dir, s = repr_qualid (qualid_of_sp sp) in
+  let dir, s = repr_path sp in
   (* We push partially qualified name (with at least one prefix) *)
   push_long_names_ccipath n dir s (TrueGlobal ref)
 
@@ -149,7 +167,7 @@ let push = push_cci
 (* This is for Syntactic Definitions *)
 
 let push_syntactic_definition sp =
-  let dir, s = repr_qualid (qualid_of_sp sp) in
+  let dir, s = repr_path sp in
   push_long_names_ccipath 0 dir s (SyntacticDef sp)
 
 let push_short_name_syntactic_definition sp =
@@ -164,7 +182,6 @@ let push_short_name_object sp =
   push_short_name_objpath 0 empty_dirpath s sp
 
 (* This is to remember absolute Section/Module names and to avoid redundancy *)
-
 let push_section fulldir =
   let dir, s = split_dirpath fulldir in
   (* We push all partially qualified name *)
@@ -173,7 +190,7 @@ let push_section fulldir =
 
 (* These are entry points to locate names *)
 let locate_in_tree tab dir =
-  let dir = rev_repr_dirpath dir in
+  let dir = repr_dirpath dir in
   let rec search (current,modidtab) = function
     | modid :: path -> search (ModIdmap.find modid modidtab) path
     | [] -> match current with Some o -> o | _ -> raise Not_found
@@ -217,10 +234,9 @@ let locate_constant qid =
   (* TODO: restrict to defined constants *)
   match locate_cci qid with
     | TrueGlobal (ConstRef sp) -> sp
-    | TrueGlobal (VarRef sp) -> sp
     | _ -> raise Not_found
 
-let sp_of_id _ id = match locate_cci (make_short_qualid id) with
+let sp_of_id id = match locate_cci (make_short_qualid id) with
   | TrueGlobal ref -> ref
   | SyntacticDef _ ->
       anomaly ("sp_of_id: "^(string_of_id id)
@@ -232,15 +248,16 @@ let constant_sp_of_id id =
     | _ -> raise Not_found
 
 let absolute_reference sp =
-  let a = locate_cci (qualid_of_sp sp) in
-  if not (dirpath_of_extended_ref a = dirpath sp) then
+  let a = locate_cci sp in
+  let (p,_) = repr_path sp in
+  if not (dirpath_of_extended_ref a = p) then
     anomaly ("Not an absolute path: "^(string_of_path sp));
   match a with
     | TrueGlobal ref -> ref
     | _ -> raise Not_found
 
 let locate_in_absolute_module dir id =
-  absolute_reference (make_path dir id CCI)
+  absolute_reference (make_path dir id)
 
 let global loc qid =
   try match extended_locate qid with
@@ -253,12 +270,27 @@ let global loc qid =
     error_global_not_found_loc loc qid
 
 let exists_cci sp =
-  try let _ = locate_cci (qualid_of_sp sp) in true
+  try let _ = locate_cci sp in true
   with Not_found -> false
 
 let exists_section dir =
   try let _ = locate_section (qualid_of_dirpath dir) in true
   with Not_found -> false
+
+
+(* For a sp Coq.A.B.x, try to find the shortest among x, B.x, A.B.x
+   and Coq.A.B.x is a qualid that denotes the same object. *)
+let qualid_of_global env ref =  
+  let sp = sp_of_global env ref in
+  let (pth,id) = repr_path sp in
+  let rec find_visible dir qdir =
+    let qid = make_qualid qdir id in
+    if (try locate qid = ref with Not_found -> false) then qid
+    else match dir with
+      | [] -> qualid_of_sp sp
+      | a::l -> find_visible l (add_dirpath_prefix a qdir)
+  in
+  find_visible (repr_dirpath pth) (make_dirpath [])
 
 (********************************************************************)
 
@@ -272,21 +304,18 @@ let init () =
   the_libtab := ModIdmap.empty;
   the_sectab := ModIdmap.empty;
   the_objtab := Idmap.empty
-(*  ;roots := []*)
 
 let freeze () =
   !the_ccitab, 
   !the_libtab,
   !the_sectab,
   !the_objtab
-(*  ,!roots*)
 
-let unfreeze (mc,ml,ms,mo(*,r*)) =
+let unfreeze (mc,ml,ms,mo) =
   the_ccitab := mc;
   the_libtab := ml;
   the_sectab := ms;
-  the_objtab := mo(*;
-  roots := r*)
+  the_objtab := mo
 
 let _ = 
   Summary.declare_summary "names"

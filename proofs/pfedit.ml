@@ -23,6 +23,7 @@ open Proof_trees
 open Proof_type
 open Lib
 open Astterm
+open Safe_typing
 
 (*********************************************************************)
 (* Managing the proofs state                                         *)

@@ -15,6 +15,7 @@ open Ctast;;
 open Termast;;
 open Astterm;;
 open Vernacinterp;;
+open Nametab
 
 open Proof_type;;
 open Proof_trees;;
@@ -51,7 +52,7 @@ let zz = (0,0);;
 let rec get_subterm  (depth:int) (path: int list) (constr:constr) =
   match depth, path, kind_of_term constr with
     0, l, c -> (constr,l)
-  | n, 2::a::tl, IsApp(func,arr) -> 
+  | n, 2::a::tl, App(func,arr) -> 
       get_subterm (n - 2) tl arr.(a-1)
   | _,l,_ -> failwith (int_list_to_string 
                         "wrong path or wrong form of term"

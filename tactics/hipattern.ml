@@ -11,15 +11,18 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Term
-open Reduction
-open Inductive
+open Termops
+open Reductionops
+open Inductiveops
 open Evd
 open Environ
 open Proof_trees
 open Clenv
 open Pattern
 open Coqlib
+open Declarations
 
 (* I implemented the following functions which test whether a term t
    is an inductive but non-recursive type, a general conjuction, a
@@ -39,11 +42,11 @@ let op2bool = function Some _ -> true | None -> false
 
 let match_with_non_recursive_type t = 
   match kind_of_term t with 
-    | IsApp _ -> 
-        let (hdapp,args) = decomp_app t in
+    | App _ -> 
+        let (hdapp,args) = decompose_app t in
         (match kind_of_term hdapp with
-           | IsMutInd ind -> 
-               if not (Global.mind_is_recursive ind) then 
+           | Ind ind -> 
+               if not (Global.lookup_mind (fst ind)).mind_finite then 
 		 Some (hdapp,args) 
 	       else 
 		 None 
@@ -56,12 +59,13 @@ let is_non_recursive_type t = op2bool (match_with_non_recursive_type t)
    only one constructor. *)
 
 let match_with_conjunction t =
-  let (hdapp,args) = decomp_app t in 
+  let (hdapp,args) = decompose_app t in 
   match kind_of_term hdapp with
-    | IsMutInd ind -> 
-	let mispec = Global.lookup_mind_specif ind in
-	if (mis_nconstr mispec = 1)
-	  && (not (mis_is_recursive mispec)) && (mis_nrealargs mispec = 0)
+    | Ind ind -> 
+	let (mib,mip) = Global.lookup_inductive ind in
+	if (Array.length mip.mind_consnames = 1)
+	  && (not (mis_is_recursive (mib,mip)))
+          && (mip.mind_nrealargs = 0)
         then 
 	  Some (hdapp,args)
         else 
@@ -74,15 +78,15 @@ let is_conjunction t = op2bool (match_with_conjunction t)
    whose constructors have a single argument. *)
 
 let match_with_disjunction t =
-  let (hdapp,args) = decomp_app t in 
+  let (hdapp,args) = decompose_app t in 
   match kind_of_term hdapp with
-    | IsMutInd ind  ->
-	let mispec = Global.lookup_mind_specif ind in
-        let constr_types = mis_nf_lc mispec in
+    | Ind ind  ->
+	let (mib,mip) = Global.lookup_inductive ind in
+        let constr_types = mip.mind_nf_lc in
         let only_one_arg c =
-	  ((nb_prod c) - (mis_nparams mispec)) = 1 in 
+	  ((nb_prod c) - mip.mind_nparams) = 1 in 
 	if (array_for_all only_one_arg constr_types) &&
-          (not (mis_is_recursive mispec))
+          (not (mis_is_recursive (mib,mip)))
         then 
 	  Some (hdapp,args)
         else 
@@ -92,22 +96,25 @@ let match_with_disjunction t =
 let is_disjunction t = op2bool (match_with_disjunction t)
 
 let match_with_empty_type t =
-  let (hdapp,args) = decomp_app t in
+  let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
-    | IsMutInd ind -> 
-        let nconstr = Global.mind_nconstr ind in  
+    | Ind ind -> 
+        let (mib,mip) = Global.lookup_inductive ind in
+        let nconstr = Array.length mip.mind_consnames in  
 	if nconstr = 0 then Some hdapp else None
     | _ ->  None
 	  
 let is_empty_type t = op2bool (match_with_empty_type t)
 
 let match_with_unit_type t =
-  let (hdapp,args) = decomp_app t in
+  let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
-    | IsMutInd ind  -> 
-        let constr_types = Global.mind_nf_lc ind in 
-        let nconstr = Global.mind_nconstr ind in
-        let zero_args c =  nb_prod c = Global.mind_nparams ind in  
+    | Ind ind  -> 
+        let (mib,mip) = Global.lookup_inductive ind in
+        let constr_types = mip.mind_nf_lc in 
+        let nconstr = Array.length mip.mind_consnames in
+        let zero_args c =
+          nb_prod c = mip.mind_nparams in  
 	if nconstr = 1 && array_for_all zero_args constr_types then 
 	  Some hdapp
         else 
@@ -122,11 +129,12 @@ let is_unit_type t = op2bool (match_with_unit_type t)
    establishing its reflexivity.  *)
 
 let match_with_equation t =
-  let (hdapp,args) = decomp_app t in
+  let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
-    | IsMutInd ind -> 
-        let constr_types = Global.mind_nf_lc ind in 
-        let nconstr = Global.mind_nconstr ind in
+    | Ind ind -> 
+        let (mib,mip) = Global.lookup_inductive ind in
+        let constr_types = mip.mind_nf_lc in 
+        let nconstr = Array.length mip.mind_consnames in
 	if nconstr = 1 &&
            (is_matching (build_coq_refl_rel1_pattern ()) constr_types.(0) ||
             is_matching (build_coq_refl_rel1_pattern ()) constr_types.(0)) 
@@ -149,7 +157,7 @@ let match_with_nottype t =
 let is_nottype t = op2bool (match_with_nottype t)
 		     
 let is_imp_term c = match kind_of_term c with
-  | IsProd (_,_,b) -> not (dependent (mkRel 1) b)
+  | Prod (_,_,b) -> not (dependent (mkRel 1) b)
   | _              -> false
 
 

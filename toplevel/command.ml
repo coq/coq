@@ -12,6 +12,7 @@ open Pp
 open Util
 open Options
 open Term
+open Termops
 open Declarations
 open Inductive
 open Environ
@@ -19,6 +20,7 @@ open Reduction
 open Tacred
 open Declare
 open Names
+open Nameops
 open Coqast
 open Ast
 open Library
@@ -26,6 +28,10 @@ open Libobject
 open Astterm
 open Proof_type
 open Tacmach
+open Safe_typing
+open Nametab
+open Typeops
+open Indtypes
 
 let mkCastC(c,t) = ope("CAST",[c;t])
 let mkLambdaC(x,a,b) = ope("LAMBDA",[a;slam(Some x,b)])
@@ -78,12 +84,12 @@ let definition_body_red red_option ident (local,n) com comtypeopt =
     | DischargeAt (disch_sp,_) ->
         if Lib.is_section_p disch_sp then begin
 	  let c = constr_of_constr_entry ce' in
-          let sp = declare_variable ident (SectionLocalDef c,n) in
+          let sp = declare_variable ident (Lib.cwd(),SectionLocalDef c,n) in
 	  if_verbose message ((string_of_id ident) ^ " is defined");
           if Pfedit.refining () then 
             mSGERRNL [< 'sTR"Warning: Local definition "; pr_id ident; 
                         'sTR" is not visible from current goals" >];
-	  VarRef sp
+	  VarRef ident
         end
 	else
 	  declare_global_definition ident ce' n true
@@ -118,12 +124,12 @@ let hypothesis_def_var is_refining ident n c =
     | DischargeAt (disch_sp,_) ->
         if Lib.is_section_p disch_sp then begin
 	  let t = interp_type Evd.empty (Global.env()) c in
-          let sp = declare_variable ident (SectionLocalAssum t,n) in
+          let sp = declare_variable ident (Lib.cwd(),SectionLocalAssum t,n) in
 	  if_verbose message ((string_of_id ident) ^ " is assumed");
           if is_refining then 
             mSGERRNL [< 'sTR"Warning: Variable "; pr_id ident; 
                         'sTR" is not visible from current goals" >];
-	  VarRef sp
+	  VarRef ident
         end
 	else
 	  declare_global_assumption ident c
@@ -166,12 +172,12 @@ let interp_mutual lparams lnamearconstrs finite =
     List.fold_left
       (fun (env, params) (id,t) ->
 	 let p = interp_type sigma env t in
-	 (Environ.push_rel_assum (Name id,p) env, (Name id,p)::params))
+	 (Termops.push_rel_assum (Name id,p) env, (Name id,None,p)::params))
       (env0,[]) lparams
   in
   (* Pour permettre à terme les let-in dans les params *)
   let params' =
-    List.map (fun (na,p) ->
+    List.map (fun (na,_,p) ->
 		let id = match na with
 		  | Name id -> id
 		  | Anonymous -> anomaly "Unnamed inductive variable"
@@ -181,16 +187,17 @@ let interp_mutual lparams lnamearconstrs finite =
     List.fold_left
       (fun (env, ind_impls, arl) (recname, arityc,_) ->
          let arity = interp_type sigma env_params arityc in
-	 let fullarity = prod_it arity params in
-	 let env' = Environ.push_rel_assum (Name recname,fullarity) env in
+	 let fullarity =
+           prod_it arity (List.map (fun (id,_,ty) -> (id,ty)) params) in
+	 let env' = Termops.push_rel_assum (Name recname,fullarity) env in
 	 let impls = 
 	   if Impargs.is_implicit_args()
-	   then Impargs.compute_implicits env_params sigma fullarity
+	   then Impargs.compute_implicits env_params fullarity
 	   else [] in
 	 (env', (recname,impls)::ind_impls, (arity::arl)))
       (env0, [], []) lnamearconstrs
   in
-  let ind_env_params = Environ.push_rels_assum params ind_env in
+  let ind_env_params = push_rel_context params ind_env in
   let mispecvec = 
     List.map2
       (fun ar (name,_,lname_constr) ->
@@ -214,7 +221,7 @@ let declare_mutual_with_eliminations mie =
     List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let sp = declare_mind mie in
   if_verbose pPNL (minductive_message lrecnames);
-  declare_eliminations sp;
+  Indrec.declare_eliminations sp;
   sp
 
 let build_mutual lparams lnamearconstrs finite =
@@ -271,8 +278,8 @@ let build_recursive lnameargsardef =
            let raw_arity = mkProdCit lparams arityc in
            let arity = interp_type sigma env0 raw_arity in
            let _ = declare_variable recname
-	     (SectionLocalAssum arity, NeverDischarge) in
-           (Environ.push_named_assum (recname,arity) env, (arity::arl)))
+	     (Lib.cwd(),SectionLocalAssum arity, NeverDischarge) in
+           (Environ.push_named_decl (recname,None,arity) env, (arity::arl)))
         (env0,[]) lnameargsardef
     with e ->
       States.unfreeze fs; raise e in
@@ -335,8 +342,8 @@ let build_corecursive lnameardef =
            let arj = type_judgment_of_rawconstr Evd.empty env0 arityc in
 	   let arity = arj.utj_val in
            let _ = declare_variable recname
-	     (SectionLocalAssum arj.utj_val,NeverDischarge) in
-           (Environ.push_named_assum (recname,arity) env, (arity::arl)))
+	     (Lib.cwd(),SectionLocalAssum arj.utj_val,NeverDischarge) in
+           (Environ.push_named_decl (recname,None,arity) env, (arity::arl)))
         (env0,[]) lnameardef
     with e -> 
       States.unfreeze fs; raise e in 
@@ -389,7 +396,7 @@ let inductive_of_ident qid =
   match Nametab.global dummy_loc qid with
     | IndRef ind -> ind
     | ref -> errorlabstrm "inductive_of_ident"
-	[< 'sTR (Global.string_of_global ref); 
+	[< pr_id (id_of_global (Global.env()) ref); 
            'sPC; 'sTR "is not an inductive type">]
 
 let build_scheme lnamedepindsort = 
@@ -398,8 +405,10 @@ let build_scheme lnamedepindsort =
   and env0 = Global.env() in
   let lrecspec =
     List.map
-      (fun (_,dep,indid,sort) -> 
-         (inductive_of_ident indid,dep,interp_elimination_sort sort)) 
+      (fun (_,dep,indid,sort) ->
+        let ind = inductive_of_ident indid in
+        let (mib,mip) = Global.lookup_inductive ind in
+         (ind,mib,mip,dep,interp_elimination_sort sort)) 
       lnamedepindsort
   in
   let n = NeverDischarge in 
@@ -420,7 +429,7 @@ let start_proof_com sopt stre com =
   let id = match sopt with
     | Some id ->
         (* We check existence here: it's a bit late at Qed time *)
-        if Nametab.exists_cci (Lib.make_path id CCI) then
+        if Nametab.exists_cci (Lib.make_path id) then
           errorlabstrm "start_proof" [< pr_id id; 'sTR " already exists" >];
         id
     | None ->
@@ -428,7 +437,7 @@ let start_proof_com sopt stre com =
 	  (Pfedit.get_all_proof_names ())
   in
   let c = interp_type Evd.empty env com in
-  let _ = Safe_typing.typing_in_unsafe_env env c in
+  let _ = Typeops.infer_type env c in
   Pfedit.start_proof id stre sign c
 
 let apply_tac_not_declare id pft = function
@@ -446,7 +455,7 @@ let save id const strength =
   begin match strength with
     | DischargeAt (disch_sp,_) when Lib.is_section_p disch_sp && not opacity ->
 	let c = constr_of_constr_entry const in
-	let _ = declare_variable id (SectionLocalDef c,strength)
+	let _ = declare_variable id (Lib.cwd(),SectionLocalDef c,strength)
         in ()
     | NeverDischarge | DischargeAt _ ->
         let _ = declare_constant id (ConstantEntry const,strength)

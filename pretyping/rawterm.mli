@@ -12,6 +12,7 @@
 open Names
 open Sign
 open Term
+open Nametab
 (*i*)
 
 (* Untyped intermediate terms, after ASTs and before constr. *)
@@ -25,6 +26,8 @@ type cases_pattern =
   | PatCstr of loc * constructor * cases_pattern list * name
 
 type rawsort = RProp of Term.contents | RType of Univ.universe option
+
+type fix_kind = RFix of (int array * int) | RCoFix of int
 
 type binder_kind = BProd | BLambda | BLetIn
 

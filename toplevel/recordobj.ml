@@ -17,37 +17,38 @@ open Lib
 open Declare
 open Recordops
 open Classops
+open Nametab
 
 (*****  object definition ******)
  
 let typ_lams_of t = 
   let rec aux acc c = match kind_of_term c with
-    | IsLambda (x,c1,c2) -> aux (c1::acc) c2
-    | IsCast (c,_) -> aux acc c
+    | Lambda (x,c1,c2) -> aux (c1::acc) c2
+    | Cast (c,_) -> aux acc c
     | t -> acc,t
   in aux [] t
 
 let objdef_err ref =
   errorlabstrm "object_declare"
-    [< pr_id (basename (Global.sp_of_global ref));
+    [< pr_id (Termops.id_of_global (Global.env()) ref);
        'sTR" is not a structure object" >]
 
 let objdef_declare ref =
   let sp = match ref with ConstRef sp -> sp | _ -> objdef_err ref in
   let env = Global.env () in
   let v = constr_of_reference ref in
-  let vc = match constant_opt_value env sp with
+  let vc = match Environ.constant_opt_value env sp with
     | Some vc -> vc
     | None -> objdef_err ref in
   let lt,t = decompose_lam vc in
   let lt = List.rev (List.map snd lt) in
   let f,args = match kind_of_term t with
-    | IsApp (f,args) -> f,args 
+    | App (f,args) -> f,args 
     | _ -> objdef_err ref in
   let { s_PARAM = p; s_PROJ = lpj } = 
     try (find_structure
 	   (match kind_of_term f with
-              | IsMutConstruct (indsp,1) -> indsp
+              | Construct (indsp,1) -> indsp
 	      | _ -> objdef_err ref))
     with Not_found -> objdef_err ref in
   let params, projs =
@@ -62,7 +63,7 @@ let objdef_declare ref =
 	 match spopt with
 	   | None -> l
            | Some proji_sp ->
-	       let c, args = decomp_app t in
+	       let c, args = decompose_app t in
 	       try (ConstRef proji_sp, reference_of_constr c, args) :: l
                with Not_found -> l)
       [] lps in

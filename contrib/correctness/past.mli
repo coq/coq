@@ -48,7 +48,7 @@ type ('a, 'b) t = {
 }
 
 and ('a, 'b) t_desc =
-  | Var of variable
+  | Variable of variable
   | Acc of variable
   | Aff of variable * ('a, 'b) t
   | TabAcc of bool * variable * ('a, 'b) t
@@ -58,10 +58,10 @@ and ('a, 'b) t_desc =
                (('a, 'b) t, 'b) block
   | If of ('a, 'b) t * ('a, 'b) t * ('a, 'b) t
   | Lam of 'b Ptype.ml_type_v Ptype.binder list * ('a, 'b) t
-  | App of ('a, 'b) t * ('a, 'b) arg list
+  | Apply of ('a, 'b) t * ('a, 'b) arg list
   | SApp of ('a, 'b) t_desc list * ('a, 'b) t list
   | LetRef of variable * ('a, 'b) t * ('a, 'b) t
-  | LetIn of variable * ('a, 'b) t * ('a, 'b) t
+  | Let of variable * ('a, 'b) t * ('a, 'b) t
   | LetRec of variable * 'b Ptype.ml_type_v Ptype.binder list *
                 'b Ptype.ml_type_v * ('b * 'b) * ('a, 'b) t
   | PPoint of string * ('a, 'b) t_desc

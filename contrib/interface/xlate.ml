@@ -381,18 +381,18 @@ let xlate_op the_node opn a b =
       *)
    "CONST" ->
   (match a, b with
-  | ((Path (_, sl, kind)) :: []), [] ->
+  | ((Path (_, sl)) :: []), [] ->
     CT_coerce_ID_to_FORMULA(CT_ident
-       (Names.string_of_id (Names.basename (section_path sl kind))))
-  | ((Path (_, sl, kind)) :: []), tl ->
+       (Names.string_of_id (Nameops.basename (section_path sl))))
+  | ((Path (_, sl)) :: []), tl ->
  CT_coerce_ID_to_FORMULA(CT_ident   
-       (Names.string_of_id(Names.basename (section_path sl kind))))
+       (Names.string_of_id(Nameops.basename (section_path sl))))
   | _, _ -> xlate_error "xlate_op : CONST")
  | (** string_of_path needs to be investigated.
     *)
  "MUTIND" ->
      (match a, b with
-  	| [Path(_, sl, kind); Num(_, tyi)], [] ->
+  	| [Path(_, sl); Num(_, tyi)], [] ->
 	    if !in_coq_ref then
 	      match special_case_qualid ()
 		(!xlate_mut_stuff (Node((0,0),"MUTIND", a))) with
@@ -401,8 +401,7 @@ let xlate_op the_node opn a b =
 	    else
 	    CT_coerce_ID_to_FORMULA(
 	      CT_ident(Names.string_of_id
-			 (Names.basename
-			    (section_path sl kind))))
+			 (Nameops.basename (section_path sl))))
   	| _, _ -> xlate_error "xlate_op : MUTIND")
  | "MUTCASE" 
  | "CASE" ->
@@ -417,7 +416,7 @@ let xlate_op the_node opn a b =
       *)
    "MUTCONSTRUCT" ->
   (match a, b with
-	  | [Path(_, sl, kind);Num(_, tyi);Num(_, n)], cl ->
+	  | [Path(_, sl);Num(_, tyi);Num(_, n)], cl ->
    if !in_coq_ref then
      match
        special_case_qualid ()
@@ -425,7 +424,7 @@ let xlate_op the_node opn a b =
 	 | Some(Rform x) -> x
 	 | _ -> assert false
    else
-   let name = Names.string_of_path (section_path sl kind) in
+   let name = Names.string_of_path (section_path sl) in
      (* This is rather a patch to cope with the fact that identifier
         names have disappeared from the vo files for grammar rules *)
        let type_desc = (try Some (Hashtbl.find type_table name) with
@@ -1512,9 +1511,9 @@ let xlate_ast =
       CT_coerce_ID_OR_STRING_to_AST
        (CT_coerce_STRING_to_ID_OR_STRING (CT_string s))
      | Dynamic(_,_) -> failwith "Dynamics not treated in xlate_ast"
-     | Path (_, sl, s) ->
+     | Path (_, sl) ->
       CT_astpath
-       (CT_id_list (List.map (function s -> CT_ident s) sl), CT_ident s) in
+       (CT_id_list (List.map (function s -> CT_ident s) sl)) in
  xlate_ast_aux;;
 
 let get_require_flags impexp spec =

@@ -11,10 +11,12 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Term
+open Termops
 open Declarations
 open Environ
-open Reduction
+open Reductionops
 open Inductive
 open Instantiate
 open Miniml
@@ -22,6 +24,7 @@ open Table
 open Mlutil
 open Closure
 open Summary
+open Nametab
 
 (*s Extraction results. *)
 
@@ -110,7 +113,7 @@ let whd_betaiotalet = clos_norm_flags (UNIFORM, mkflags [fBETA;fIOTA;fZETA])
 
 let is_axiom sp = (Global.lookup_constant sp).const_body = None
 
-type lamprod = Lam | Prod
+type lamprod = Lam | Product
 
 let flexible_name = id_of_string "flex"
 
@@ -141,19 +144,19 @@ let rec list_of_ml_arrows = function
 
 let rec get_arity env c =
   match kind_of_term (whd_betadeltaiota env none c) with
-    | IsProd (x,t,c0) -> get_arity (push_rel_assum (x,t) env) c0
-    | IsCast (t,_) -> get_arity env t
-    | IsSort s -> Some (family_of_sort s)
+    | Prod (x,t,c0) -> get_arity (push_rel (x,None,t) env) c0
+    | Cast (t,_) -> get_arity env t
+    | Sort s -> Some (family_of_sort s)
     | _ -> None
 
 (* idem, but goes through [Lambda] as well. Cf. [find_conclusion]. *)
 
 let rec get_lam_arity env c =
   match kind_of_term (whd_betadeltaiota env none c) with
-    | IsLambda (x,t,c0) -> get_lam_arity (push_rel_assum (x,t) env) c0
-    | IsProd (x,t,c0) -> get_lam_arity (push_rel_assum (x,t) env) c0
-    | IsCast (t,_) -> get_lam_arity env t
-    | IsSort s -> Some (family_of_sort s)
+    | Lambda (x,t,c0) -> get_lam_arity (push_rel (x,None,t) env) c0
+    | Prod (x,t,c0) -> get_lam_arity (push_rel (x,None,t) env) c0
+    | Cast (t,_) -> get_lam_arity env t
+    | Sort s -> Some (family_of_sort s)
     | _ -> None
 
 (*s Detection of non-informative parts. *)
@@ -193,7 +196,8 @@ type binders = (name * constr) list
 let rec lbinders_fold f acc env = function 
   | [] -> acc
   | (n,t) as b :: l -> 
-      f n t (v_of_t env t) (lbinders_fold f acc (push_rel_assum b env) l)
+      f n t (v_of_t env t)
+        (lbinders_fold f acc (push_rel_assum b env) l)
 
 (* [sign_of_arity] transforms an arity into a signature. It is used 
    for example with the types of inductive definitions, which are known
@@ -340,32 +344,31 @@ and extract_type_rec env c vl args =
 	    
 and extract_type_rec_info env c vl args = 
   match (kind_of_term (whd_betaiotalet env none c)) with
-    | IsSort _ ->
+    | Sort _ ->
 	assert (args = []); (* A sort can't be applied. *)
 	Tarity 
-    | IsProd (n,t,d) ->
+    | Prod (n,t,d) ->
 	assert (args = []); (* A product can't be applied. *)
-	extract_prod_lam env (n,t,d) vl Prod
-    | IsLambda (n,t,d) ->
+	extract_prod_lam env (n,t,d) vl Product
+    | Lambda (n,t,d) ->
 	assert (args = []); (* [c] is now in head normal form. *)
 	extract_prod_lam env (n,t,d) vl Lam
-    | IsApp (d, args') ->
+    | App (d, args') ->
 	(* We just accumulate the arguments. *)
 	extract_type_rec_info env d vl (Array.to_list args' @ args)
-    | IsRel n -> 
-	(match lookup_rel_value n env with
-	   | Some t -> 
+    | Rel n -> 
+	(match lookup_rel n env with
+	   | (_,Some t,_) -> 
 	       extract_type_rec_info env (lift n t) vl args  
-	   | None ->
-	       let id = id_of_name (fst (lookup_rel_type n env)) in 
-	       Tmltype (Tvar id, [], vl))
-    | IsConst sp when args = [] && is_ml_extraction (ConstRef sp) ->
+	   | (id,_,_) ->
+	       Tmltype (Tvar (id_of_name id), [], vl))
+    | Const sp when args = [] && is_ml_extraction (ConstRef sp) ->
 	Tmltype (Tglob (ConstRef sp), [], vl)
-    | IsConst sp when is_axiom sp -> 
+    | Const sp when is_axiom sp -> 
 	let id = next_ident_away (basename sp) vl in 
 	Tmltype (Tvar id, [], id :: vl)
-    | IsConst sp ->
-	let t = constant_type env none sp in 
+    | Const sp ->
+	let t = constant_type env sp in 
 	if is_arity env none t then
 	  (match extract_constant sp with 
 	     | Emltype (Miniml.Tarity,_,_) -> Tarity
@@ -378,19 +381,19 @@ and extract_type_rec_info env c vl args =
 	  (*   which type is not an arity: we reduce this constant. *)
 	  let cvalue = constant_value env sp in
 	  extract_type_rec_info env (applist (cvalue, args)) vl []
-    | IsMutInd spi ->
+    | Ind spi ->
 	(match extract_inductive spi with 
 	   |Iml (si,vli) -> 
 	       extract_type_app env (IndRef spi,si,vli) vl args 
 	   |Iprop -> assert false (* Cf. initial tests *))
-    | IsMutCase _ | IsFix _ | IsCoFix _ ->
+    | Case _ | Fix _ | CoFix _ ->
 	let id = next_ident_away flexible_name vl in
 	Tmltype (Tvar id, [], id :: vl)
 	  (* Type without counterpart in ML: we generate a 
 	     new flexible type variable. *) 
-    | IsCast (c, _) ->
+    | Cast (c, _) ->
 	extract_type_rec_info env c vl args
-    | IsVar _ -> section_message ()
+    | Var _ -> section_message ()
     | _ -> 
 	assert false
 
@@ -412,12 +415,12 @@ and extract_prod_lam env (n,t,d) vl flag =
 	(match extract_type_rec_info  env' d vl [] with 
 	   | Tmltype (mld, sign, vl') -> Tmltype (mld, tag::sign, vl')
 	   | et -> et)
-    | (Logic, NotArity), Prod ->
+    | (Logic, NotArity), Product ->
 	(match extract_type_rec_info env' d vl [] with 
 	   | Tmltype (mld, sign, vl') ->
 	       Tmltype (Tarr (Miniml.Tprop, mld), tag::sign, vl')
 	   | et -> et)
-    | (Info, NotArity), Prod ->
+    | (Info, NotArity), Product ->
 	(* It is important to treat [d] first and [t] in second. *)
 	(* This ensures that the end of [vl] correspond to external binders. *)
 	(match extract_type_rec_info env' d vl [] with 
@@ -499,7 +502,7 @@ and extract_term_info env ctx c =
 
 and extract_term_info_with_type env ctx c t = 
    match kind_of_term c with
-     | IsLambda (n, t, d) ->
+     | Lambda (n, t, d) ->
 	 let v = v_of_t env t in 
 	 let env' = push_rel_assum (n,t) env in
 	 let ctx' = (snd v = NotArity) :: ctx in
@@ -509,9 +512,9 @@ and extract_term_info_with_type env ctx c t =
 	    | _,Arity -> d'
 	    | Logic,NotArity -> MLlam (prop_name, d')
 	    | Info,NotArity -> MLlam (id_of_name n, d'))
-     | IsLetIn (n, c1, t1, c2) ->
+     | LetIn (n, c1, t1, c2) ->
 	 let v = v_of_t env t1 in
-	 let env' = push_rel_def (n,c1,t1) env in
+	 let env' = push_rel (n,Some c1,t1) env in
 	 (match v with
 	    | (Info, NotArity) -> 
 		let c1' = extract_term_info_with_type env ctx c1 t1 in
@@ -520,25 +523,25 @@ and extract_term_info_with_type env ctx c t =
 		MLletin (id_of_name n,c1',c2')
 	    | _ ->
 		extract_term_info env' (false :: ctx) c2)
-     | IsRel n ->
+     | Rel n ->
 	 MLrel (renum_db ctx n)
-     | IsConst sp ->
+     | Const sp ->
 	 MLglob (ConstRef sp)
-     | IsApp (f,a) ->
+     | App (f,a) ->
       	 extract_app env ctx f a 
-     | IsMutConstruct cp ->
+     | Construct cp ->
 	 abstract_constructor cp
-     | IsMutCase ((_,(ip,_,_,_,_)),_,c,br) ->
+     | Case ({ci_ind=ip},_,c,br) ->
 	 extract_case env ctx ip c br
-     | IsFix ((_,i),recd) -> 
+     | Fix ((_,i),recd) -> 
 	 extract_fix env ctx i recd
-     | IsCoFix (i,recd) -> 
+     | CoFix (i,recd) -> 
 	 extract_fix env ctx i recd  
-     | IsCast (c, _) ->
+     | Cast (c, _) ->
 	 extract_term_info_with_type env ctx c t
-     | IsMutInd _ | IsProd _ | IsSort _ | IsMeta _ | IsEvar _ ->
+     | Ind _ | Prod _ | Sort _ | Meta _ | Evar _ ->
 	 assert false 
-     | IsVar _ -> section_message ()
+     | Var _ -> section_message ()
 	 
 
 (* Abstraction of an inductive constructor: 
@@ -581,8 +584,8 @@ and abstract_constructor cp  =
 (* Extraction of a case *)
 
 and extract_case env ctx ip c br = 
-  let mis = Global.lookup_mind_specif ip in
-  let ni = Array.map List.length (mis_recarg mis) in
+  let (mib,mip) = Global.lookup_inductive ip in
+  let ni = Array.map List.length (mip.mind_listrec) in
   (* [ni]: number of arguments without parameters in each branch *)
   (* [br]: bodies of each branch (in functional form) *)
   let extract_branch j b = 	  
@@ -596,7 +599,7 @@ and extract_case env ctx ip c br =
     let ctx' = List.fold_left (fun l v -> (v = default)::l) ctx s in 
     (* Some pathological cases need an [extract_constr] here rather *)
     (* than an [extract_term]. See exemples in [test_extraction.v] *)
-    let env' = push_rels_assum rb env in
+    let env' = push_rel_context (List.map (fun (x,t) -> (x,None,t)) rb) env in
     let e' = mlterm_of_constr (extract_constr env' ctx' e) in
     let ids = 
       List.fold_right 
@@ -757,13 +760,13 @@ and extract_constructor (((sp,_),_) as c) =
    constructor which has one informative argument. This dummy case will 
    be simplified. *)
 
-and is_singleton_inductive (sp,_) = 
-  let mib = Global.lookup_mind sp in 
+and is_singleton_inductive ind = 
+  let (mib,mip) = Global.lookup_inductive ind in 
   (mib.mind_ntypes = 1) &&
-  let mis = build_mis (sp,0) mib in
-  (mis_nconstr mis = 1) && 
-  match extract_constructor ((sp,0),1) with 
-    | Cml ([mlt],_,_)-> (try parse_ml_type sp mlt; true with Found_sp -> false)
+  (Array.length mip.mind_consnames = 1) && 
+  match extract_constructor (ind,1) with 
+    | Cml ([mlt],_,_)->
+        (try parse_ml_type (fst ind) mlt; true with Found_sp -> false)
     | _ -> false
 	  
 and is_singleton_constructor ((sp,i),_) = 
@@ -774,15 +777,15 @@ and signature_of_constructor cp = match extract_constructor cp with
   | Cml (_,s,n) -> (s,n)
 
 and extract_mib sp =
-  if not (Gmap.mem (sp,0) !inductive_extraction_table) then begin
-    let mib = Global.lookup_mind sp in
+  let ind = (sp,0) in
+  if not (Gmap.mem ind !inductive_extraction_table) then begin
+    let (mib,mip) = Global.lookup_inductive ind in
     let genv = Global.env () in 
     (* Everything concerning parameters. 
        We do that first, since they are common to all the [mib]. *)
-    let mis = build_mis (sp,0) mib in
-    let nb = mis_nparams mis in
-    let rb = mis_params_ctxt mis in 
-    let env = push_rels rb genv in
+    let nb = mip.mind_nparams in
+    let rb = mip.mind_params_ctxt in 
+    let env = push_rel_context rb genv in
     let lb = List.rev_map (fun (n,s,t)->(n,t)) rb in 
     let nbtokeep = 
       lbinders_fold 
@@ -793,11 +796,11 @@ and extract_mib sp =
     let vl0 = iterate_for 0 (mib.mind_ntypes - 1)
 	(fun i vl -> 
 	   let ip = (sp,i) in 
-	   let mis = build_mis ip mib in 
-	   if (mis_sort mis) = (Prop Null) then begin
+	   let (mib,mip) = Global.lookup_inductive ip in 
+	   if mip.mind_sort = (Prop Null) then begin
 	     add_inductive_extraction ip Iprop; vl
 	   end else begin
-	     let arity = mis_nf_arity mis in
+	     let arity = mip.mind_nf_arity in
 	     let vla = List.rev (vl_of_arity genv arity) in 
 	     add_inductive_extraction ip 
 	       (Iml (sign_of_arity genv arity, vla));
@@ -812,16 +815,16 @@ and extract_mib sp =
       iterate_for 0 (mib.mind_ntypes - 1)
 	(fun i vl -> 
 	   let ip = (sp,i) in
-	   let mis = build_mis ip mib in
-	   if mis_sort mis = Prop Null then begin
-	     for j = 1 to mis_nconstr mis do
+           let (mib,mip) = Global.lookup_inductive ip in
+	   if mip.mind_sort = Prop Null then begin
+	     for j = 1 to Array.length mip.mind_consnames do
 	       add_constructor_extraction (ip,j) Cprop
 	     done;
 	     vl
 	   end else 
-	     iterate_for 1 (mis_nconstr mis)
+	     iterate_for 1 (Array.length mip.mind_consnames)
 	       (fun j vl -> 
-		  let t = mis_constructor_type j mis in
+		  let t = type_of_constructor genv (ip,j) in
 		  let t = snd (decompose_prod_n nb t) in
 		  match extract_type_rec_info env t vl [] with
 		    | Tarity | Tprop -> assert false
@@ -836,7 +839,6 @@ and extract_mib sp =
     (* Third pass: we update the type variables list in the inductives table *)
     for i = 0 to mib.mind_ntypes-1 do 
       let ip = (sp,i) in 
-      let mis = build_mis ip mib in
       match lookup_inductive_extraction ip with 
 	| Iprop -> ()
 	| Iml (s,l) -> add_inductive_extraction ip (Iml (s,vl@l));
@@ -844,8 +846,7 @@ and extract_mib sp =
     (* Fourth pass: we update also in the constructors table *)
     for i = 0 to mib.mind_ntypes-1 do 
       let ip = (sp,i) in 
-      let mis = build_mis ip mib in 
-      for j = 1 to mis_nconstr mis do
+      for j = 1 to Array.length mib.mind_packets.(i).mind_consnames do
 	let cp = (ip,j) in 
 	match lookup_constructor_extraction cp  with 
 	  | Cprop -> ()
@@ -884,14 +885,14 @@ and extract_inductive_declaration sp =
       iterate_for (1 - mib.mind_ntypes) 0
 	(fun i acc -> 
 	   let ip = (sp,-i) in
-	   let mis = build_mis ip mib in 
+	   let nc = Array.length mib.mind_packets.(-i).mind_consnames in 
 	   match lookup_inductive_extraction ip with
 	     | Iprop -> acc
 	     | Iml (_,vl) -> 
-		 (List.rev vl, IndRef ip, one_ind ip (mis_nconstr mis)) :: acc)
+		 (List.rev vl, IndRef ip, one_ind ip nc) :: acc)
 	[] 
     in
-    Dtype (l, not (mind_type_finite mib 0))
+    Dtype (l, not mib.mind_finite)
 
 (*s Extraction of a global reference i.e. a constant or an inductive. *)
 

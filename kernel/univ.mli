@@ -8,10 +8,6 @@
 
 (*i $Id$ i*)
 
-(*i*)
-open Names
-(*i*)
-
 (* Universes. *)
 
 type universe
@@ -20,7 +16,7 @@ val implicit_univ : universe
 
 val prop_univ : universe
 
-val set_module : dir_path -> unit
+val set_module : Names.dir_path -> unit
 
 val new_univ : unit -> universe
 
@@ -32,9 +28,7 @@ val initial_universes : universes
 
 (*s Constraints. *)
 
-type univ_constraint
-
-module Constraint : Set.S with type elt = univ_constraint
+module Constraint : Set.S
 
 type constraints = Constraint.t
 

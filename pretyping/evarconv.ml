@@ -11,7 +11,7 @@
 open Util
 open Names
 open Term
-open Reduction
+open Reductionops
 open Closure
 open Instantiate
 open Environ
@@ -28,22 +28,22 @@ type flex_kind_of_term =
 
 let flex_kind_of_term c =
   match kind_of_term c with
-    | IsConst c -> MaybeFlexible (FConst c)
-    | IsRel n -> MaybeFlexible (FRel n)
-    | IsVar id -> MaybeFlexible (FVar id)
-    | IsEvar ev -> Flexible ev
+    | Const c -> MaybeFlexible (FConst c)
+    | Rel n -> MaybeFlexible (FRel n)
+    | Var id -> MaybeFlexible (FVar id)
+    | Evar ev -> Flexible ev
     | _ -> Rigid c
 
 let eval_flexible_term env = function
   | FConst c -> constant_opt_value env c
-  | FRel n -> option_app (lift n) (lookup_rel_value n env)
-  | FVar id -> lookup_named_value id env
+  | FRel n -> let (_,v,_) = lookup_rel n env in option_app (lift n) v
+  | FVar id -> let (_,v,_) = lookup_named id env in v
 
 let evar_apprec env isevars stack c =
   let rec aux s =
-    let (t,stack as s') = Reduction.apprec env (evars_of isevars) s in
+    let (t,stack as s') = Reductionops.apprec env (evars_of isevars) s in
     match kind_of_term t with
-      | IsEvar (n,_ as ev) when Evd.is_defined (evars_of isevars) n ->
+      | Evar (n,_ as ev) when Evd.is_defined (evars_of isevars) n ->
 	  aux (existential_value (evars_of isevars) ev, stack)
       | _ -> (t, list_of_stack stack)
   in aux (c, append_stack (Array.of_list stack) empty_stack)
@@ -239,25 +239,25 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 
     | Rigid c1, Rigid c2 -> match kind_of_term c1, kind_of_term c2 with
 	  
-	| IsCast (c1,_), _ -> evar_eqappr_x env isevars pbty (c1,l1) appr2
+	| Cast (c1,_), _ -> evar_eqappr_x env isevars pbty (c1,l1) appr2
 
-	| _, IsCast (c2,_) -> evar_eqappr_x env isevars pbty appr1 (c2,l2)
+	| _, Cast (c2,_) -> evar_eqappr_x env isevars pbty appr1 (c2,l2)
 
-	| IsSort s1, IsSort s2 when l1=[] & l2=[] -> base_sort_cmp pbty s1 s2
+	| Sort s1, Sort s2 when l1=[] & l2=[] -> base_sort_cmp pbty s1 s2
 
-	| IsLambda (na,c1,c'1), IsLambda (_,c2,c'2) when l1=[] & l2=[] -> 
+	| Lambda (na,c1,c'1), Lambda (_,c2,c'2) when l1=[] & l2=[] -> 
 	    evar_conv_x env isevars CONV c1 c2
 	    & 
 	    (let c = nf_evar (evars_of isevars) c1 in
-             evar_conv_x (push_rel_assum (na,c) env) isevars CONV c'1 c'2)
+             evar_conv_x (push_rel (na,None,c) env) isevars CONV c'1 c'2)
 
-	| IsLetIn (na,b1,t1,c'1), IsLetIn (_,b2,_,c'2) ->
+	| LetIn (na,b1,t1,c'1), LetIn (_,b2,_,c'2) ->
 	    let f1 () =
 	      evar_conv_x env isevars CONV b1 b2
 	      & 
               (let b = nf_evar (evars_of isevars) b1 in
 	       let t = nf_evar (evars_of isevars) t1 in
-               evar_conv_x (push_rel_def (na,b,t) env) isevars pbty c'1 c'2)
+               evar_conv_x (push_rel (na,Some b,t) env) isevars pbty c'1 c'2)
 	      & (List.length l1 = List.length l2)
 	      & (List.for_all2 (evar_conv_x env isevars CONV) l1 l2)
 	    and f2 () =
@@ -267,35 +267,35 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	    in 
 	    ise_try isevars [f1; f2]
 
-	| IsLetIn (_,b1,_,c'1), _ ->(* On fait commuter les args avec le Let *)
+	| LetIn (_,b1,_,c'1), _ ->(* On fait commuter les args avec le Let *)
 	     let appr1 = evar_apprec env isevars l1 (subst1 b1 c'1)
              in evar_eqappr_x env isevars pbty appr1 appr2
 
-	| _, IsLetIn (_,b2,_,c'2) ->
+	| _, LetIn (_,b2,_,c'2) ->
 	    let appr2 = evar_apprec env isevars l2 (subst1 b2 c'2)
             in evar_eqappr_x env isevars pbty appr1 appr2
 
-	| IsProd (n,c1,c'1), IsProd (_,c2,c'2) when l1=[] & l2=[] -> 
+	| Prod (n,c1,c'1), Prod (_,c2,c'2) when l1=[] & l2=[] -> 
             evar_conv_x env isevars CONV c1 c2
             & 
 	    (let c = nf_evar (evars_of isevars) c1 in
-	     evar_conv_x (push_rel_assum (n,c) env) isevars pbty c'1 c'2)
+	     evar_conv_x (push_rel (n,None,c) env) isevars pbty c'1 c'2)
 
-	| IsMutInd sp1, IsMutInd sp2 ->
+	| Ind sp1, Ind sp2 ->
 	    sp1=sp2
             & list_for_all2eq (evar_conv_x env isevars CONV) l1 l2
              
-	| IsMutConstruct sp1, IsMutConstruct sp2 ->
+	| Construct sp1, Construct sp2 ->
 	    sp1=sp2
             & list_for_all2eq (evar_conv_x env isevars CONV) l1 l2
 
-	| IsMutCase (_,p1,c1,cl1), IsMutCase (_,p2,c2,cl2) ->
+	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
 	    evar_conv_x env isevars CONV p1 p2
 	    & evar_conv_x env isevars CONV c1 c2
 	    & (array_for_all2 (evar_conv_x env isevars CONV) cl1 cl2)
 	    & (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
 
-	| IsFix (li1,(_,tys1,bds1 as recdef1)), IsFix (li2,(_,tys2,bds2)) ->
+	| Fix (li1,(_,tys1,bds1 as recdef1)), Fix (li2,(_,tys2,bds2)) ->
 	    li1=li2
 	    & (array_for_all2 (evar_conv_x env isevars CONV) tys1 tys2)
 	    & (array_for_all2
@@ -303,7 +303,7 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 		 bds1 bds2)
 	    & (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
 	     
-	| IsCoFix (i1,(_,tys1,bds1 as recdef1)), IsCoFix (i2,(_,tys2,bds2)) ->
+	| CoFix (i1,(_,tys1,bds1 as recdef1)), CoFix (i2,(_,tys2,bds2)) ->
 	    i1=i2 
 	    & (array_for_all2 (evar_conv_x env isevars CONV) tys1 tys2)
 	    & (array_for_all2
@@ -311,22 +311,22 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 		 bds1 bds2)
 	    & (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
 
-	| (IsMeta _ | IsLambda _), _ -> false
-	| _, (IsMeta _ | IsLambda _) -> false
+	| (Meta _ | Lambda _), _ -> false
+	| _, (Meta _ | Lambda _) -> false
 
-	| (IsMutInd _ | IsMutConstruct _ | IsSort _ | IsProd _), _ -> false
-	| _, (IsMutInd _ | IsMutConstruct _ | IsSort _ | IsProd _) -> false
+	| (Ind _ | Construct _ | Sort _ | Prod _), _ -> false
+	| _, (Ind _ | Construct _ | Sort _ | Prod _) -> false
 
-	| (IsApp _ | IsMutCase _ | IsFix _ | IsCoFix _), 
-	  (IsApp _ | IsMutCase _ | IsFix _ | IsCoFix _) -> false
+	| (App _ | Case _ | Fix _ | CoFix _), 
+	  (App _ | Case _ | Fix _ | CoFix _) -> false
 
-	| (IsRel _ | IsVar _ | IsConst _ | IsEvar _), _ -> assert false
-	| _, (IsRel _ | IsVar _ | IsConst _ | IsEvar _) -> assert false
+	| (Rel _ | Var _ | Const _ | Evar _), _ -> assert false
+	| _, (Rel _ | Var _ | Const _ | Evar _) -> assert false
 
 and conv_record env isevars (c,bs,(params,params1),(us,us2),(ts,ts1),c1) = 
   let ks =
     List.fold_left
-      (fun ks b -> (new_isevar isevars env (substl ks b) CCI) :: ks)
+      (fun ks b -> (new_isevar isevars env (substl ks b)) :: ks)
       [] bs
   in
   if (list_for_all2eq 

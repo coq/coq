@@ -13,6 +13,7 @@ open Names
 open Term
 open Declare
 open Library
+open Nametab
 (*i*)
 
 (*s Declaration functions. The following functions take ASTs,
@@ -41,7 +42,8 @@ val build_mutual :
   (identifier * Coqast.t) list -> 
     (identifier * Coqast.t * (identifier * Coqast.t) list) list -> bool -> unit
 
-val declare_mutual_with_eliminations : Declarations.mutual_inductive_entry -> section_path
+val declare_mutual_with_eliminations :
+  Indtypes.mutual_inductive_entry -> section_path
 
 val build_recursive :
   (identifier * ((identifier * Coqast.t) list) * Coqast.t * Coqast.t) list 

@@ -5,19 +5,22 @@ open Coqast;;
 open Environ
 open Evd
 open Names
+open Nameops
 open Stamps
 open Term
+open Termops
 open Util
 open Proof_type
 open Coqast
 open Pfedit
 open Translate
 open Term
-open Reduction
+open Reductionops
 open Clenv
 open Astterm
 open Typing
 open Inductive
+open Inductiveops
 open Vernacinterp
 open Declarations
 open Showproof_ct
@@ -205,7 +208,7 @@ let fill_unproved nt l =
 let new_sign osign sign =
     let res=ref [] in
     List.iter (fun (id,c,ty) ->
-		   try (let  ty1= (lookup_id_type id osign) in
+		   try (let  (_,_,ty1)= (lookup_named id osign) in
 			())
 		   with Not_found -> res:=(id,c,ty)::(!res))
               sign;
@@ -215,7 +218,7 @@ let new_sign osign sign =
 let old_sign osign sign =
     let res=ref [] in
     List.iter (fun (id,c,ty) ->
-		   try (let  ty1= (lookup_id_type id osign) in
+		   try (let (_,_,ty1) = (lookup_named id osign) in
 			if ty1 = ty then res:=(id,c,ty)::(!res))
 		   with Not_found -> ())
               sign;
@@ -711,7 +714,7 @@ let sort_of_type t ts =
        match ts with
          Prop(Null) -> Nformula
         |_ -> (match (kind_of_term t) with
-                IsProd(_,_,_) -> Nfunction
+                Prod(_,_,_) -> Nfunction
                |_ -> Ntype)
 ;;
 
@@ -722,22 +725,22 @@ let adrel (x,t) e =
 
 let rec nsortrec vl x = 
      match (kind_of_term x) with
-     IsProd(n,t,c)->
+     Prod(n,t,c)->
         let vl = (adrel (n,t) vl) in nsortrec vl c
-   | IsLambda(n,t,c) ->
+   | Lambda(n,t,c) ->
         let vl = (adrel (n,t) vl) in nsortrec vl c
-   | IsApp(f,args) -> nsortrec vl f
-   | IsSort(Prop(Null)) -> Prop(Null)
-   | IsSort(c) -> c
-   | IsMutInd(ind) ->
-          let dmi = lookup_mind_specif ind vl in
-          (mis_sort dmi)
-   | IsMutConstruct(c) ->
-          nsortrec vl (mkMutInd (inductive_of_constructor c))
-   | IsMutCase(_,x,t,a) 
+   | App(f,args) -> nsortrec vl f
+   | Sort(Prop(Null)) -> Prop(Null)
+   | Sort(c) -> c
+   | Ind(ind) ->
+          let (mib,mip) = lookup_mind_specif vl ind in
+          mip.mind_sort
+   | Construct(c) ->
+          nsortrec vl (mkInd (inductive_of_constructor c))
+   | Case(_,x,t,a) 
         -> nsortrec vl x
-   | IsCast(x,t)-> nsortrec vl t
-   | IsConst c  -> nsortrec vl (lookup_constant c vl).const_type
+   | Cast(x,t)-> nsortrec vl t
+   | Const c  -> nsortrec vl (lookup_constant c vl).const_type
    | _ -> nsortrec vl (type_of vl Evd.empty x)
 ;;
 let nsort x =
@@ -1056,7 +1059,7 @@ let first_name_hyp_of_ntree {t_goal={newhyp=lh}}=
 
 let rec find_type x t=
     match (kind_of_term (strip_outer_cast t)) with 
-      IsProd(y,ty,t) ->
+      Prod(y,ty,t) ->
 	(match y with
 	  Name y -> 
             if x=(string_of_id y) then ty
@@ -1071,9 +1074,9 @@ Traitement des égalités
 (*
 let is_equality e =
    match  (kind_of_term e) with
-     IsAppL args ->
+     AppL args ->
        (match (kind_of_term args.(0)) with
-	 IsConst (c,_) ->
+	 Const (c,_) ->
 	   (match (string_of_sp c) with
 	     "Equal" -> true
            | "eq" -> true
@@ -1088,14 +1091,14 @@ let is_equality e =
 let is_equality e =
   let e= (strip_outer_cast e) in
    match  (kind_of_term e) with
-     IsApp (f,args) -> (Array.length args) >= 3
+     App (f,args) -> (Array.length args) >= 3
    | _ -> false
 ;;
 
 let terms_of_equality e =
   let e= (strip_outer_cast e) in
   match  (kind_of_term e) with
-     IsApp (f,args) -> (args.(1) , args.(2))
+     App (f,args) -> (args.(1) , args.(2))
     | _ -> assert false
 ;;
 
@@ -1404,22 +1407,24 @@ and whd_betadeltaiota x = whd_betaiotaevar (Global.env()) Evd.empty x
 and type_of_ast s c = type_of (Global.env()) Evd.empty (constr_of_ast c)
 and prod_head t =
   match (kind_of_term (strip_outer_cast t)) with 
-     IsProd(_,_,c) -> prod_head c
-(*    |IsApp(f,a) -> f *)
+     Prod(_,_,c) -> prod_head c
+(*    |App(f,a) -> f *)
     | _ -> t
 and string_of_sp sp = string_of_id (basename sp)
-and  constr_of_mind dmi i = (string_of_id (mis_consnames dmi).(i-1))
-and arity_of_constr_of_mind indf i =
-     (get_constructors indf).(i-1).cs_nargs
+and constr_of_mind mip i =
+  (string_of_id mip.mind_consnames.(i-1))
+and arity_of_constr_of_mind env indf i =
+     (get_constructors env indf).(i-1).cs_nargs
 and gLOB ge = Global.env_of_context ge  (* (Global.env()) *)
 
 and natural_case ig lh g gs ge arg1 ltree with_intros =
  let env= (gLOB ge) in
  let targ1 = prod_head (type_of env Evd.empty arg1) in
  let IndType (indf,targ) = find_rectype env Evd.empty targ1 in
- let ncti= Array.length(get_constructors indf) in
- let IndFamily(dmi,_) = indf in
- let ti =(string_of_id (mis_typename dmi)) in
+ let ncti= Array.length(get_constructors env indf) in
+ let (ind,_) = indf in
+ let (mib,mip) = lookup_mind_specif env ind in
+ let ti =(string_of_id mip.mind_typename) in
  let type_arg= targ1 (* List.nth targ (mis_index dmi)*)  in
  if  ncti<>1
 (* Zéro ou Plusieurs constructeurs *)
@@ -1436,9 +1441,9 @@ and natural_case ig lh g gs ge arg1 ltree with_intros =
             (let ci=ref 0 in
              (prli
                  (fun treearg -> ci:=!ci+1;
-                      let nci=(constr_of_mind dmi !ci) in
+                      let nci=(constr_of_mind mip !ci) in
                       let aci=if with_intros
-			      then (arity_of_constr_of_mind indf !ci)
+			      then (arity_of_constr_of_mind env indf !ci)
 		              else 0 in
                       let ici= (!ci) in
                     sph[ (natural_ntree  
@@ -1464,10 +1469,10 @@ and natural_case ig lh g gs ge arg1 ltree with_intros =
        (show_goal2 lh ig g gs "");
        de_A_on_a arg1;
        (let treearg=List.hd ltree in
-       let nci=(constr_of_mind dmi 1) in
+       let nci=(constr_of_mind mip 1) in
        let aci=
 	 if with_intros
-         then (arity_of_constr_of_mind indf 1)
+         then (arity_of_constr_of_mind env indf 1)
 	 else 0 in
        let ici= 1 in
        sph[ (natural_ntree  
@@ -1493,21 +1498,25 @@ and natural_case ig lh g gs ge arg1 ltree with_intros =
 *)
 and prod_list_var t =
    match (kind_of_term (strip_outer_cast t)) with 
-      IsProd(_,t,c) -> t::(prod_list_var c)
+      Prod(_,t,c) -> t::(prod_list_var c)
      |_ -> []
 and  hd_is_mind t ti =
-    try (let IndType (indf,targ) = find_rectype (Global.env()) Evd.empty t in
-	     let ncti= Array.length(get_constructors indf) in
-	     let IndFamily(dmi,_) = indf in
-	     (string_of_id (mis_typename dmi)) = ti)
+    try (let env = Global.env() in
+         let IndType (indf,targ) = find_rectype env Evd.empty t in
+	 let ncti= Array.length(get_constructors env indf) in
+	 let (ind,_) = indf in
+         let (mib,mip) = lookup_mind_specif env ind in
+	 (string_of_id mip.mind_typename) = ti)
     with _ -> false
 and mind_ind_info_hyp_constr indf c =
-  let IndFamily(dmi,_) = indf in
-  let p= mis_nparams dmi in
-  let a=arity_of_constr_of_mind indf c in
-  let lp=ref (get_constructors indf).(c).cs_args in
+  let env = Global.env() in
+  let (ind,_) = indf in
+  let (mib,mip) = lookup_mind_specif env ind in
+  let p = mip.mind_nparams in
+  let a = arity_of_constr_of_mind env indf c in
+  let lp=ref (get_constructors env indf).(c).cs_args in
   let lr=ref [] in
-  let ti = (string_of_id (mis_typename dmi)) in
+  let ti = (string_of_id mip.mind_typename) in
   for i=1 to a do
      match !lp with
      ((_,_,t)::lp1)->
@@ -1530,9 +1539,10 @@ and natural_elim ig lh g gs ge arg1 ltree with_intros=
  let env= (gLOB ge) in
  let targ1 = prod_head (type_of env Evd.empty arg1) in
  let IndType (indf,targ) = find_rectype env Evd.empty targ1 in
- let ncti= Array.length(get_constructors indf) in
- let IndFamily(dmi,_) = indf in
- let ti =(string_of_id (mis_typename dmi)) in
+ let ncti= Array.length(get_constructors env indf) in
+ let (ind,_) = indf in
+ let (mib,mip) = lookup_mind_specif env ind in
+ let ti =(string_of_id mip.mind_typename) in
  let type_arg=targ1 (* List.nth targ (mis_index dmi) *) in
   spv
          [  (natural_lhyp lh ig.ihsg);
@@ -1543,8 +1553,8 @@ and natural_elim ig lh g gs ge arg1 ltree with_intros=
             (let ci=ref 0 in
              (prli
                  (fun treearg -> ci:=!ci+1;
-                      let nci=(constr_of_mind dmi !ci) in
-                      let aci=(arity_of_constr_of_mind indf !ci) in
+                      let nci=(constr_of_mind mip !ci) in
+                      let aci=(arity_of_constr_of_mind env indf !ci) in
                       let hci=
 			if with_intros
 			then mind_ind_info_hyp_constr indf  !ci
@@ -1575,13 +1585,14 @@ and natural_induction ig lh g gs ge arg1 ltree with_intros=
  let env = (gLOB (g_env (List.hd ltree))) in
  let arg1=dbize env arg1 in
  let arg2 = match (kind_of_term arg1) with
-       IsVar(arg2) -> arg2
+       Var(arg2) -> arg2
       | _ -> assert false in
  let targ1 = prod_head (type_of env Evd.empty arg1) in
  let IndType (indf,targ) = find_rectype env Evd.empty targ1 in
- let ncti= Array.length(get_constructors indf) in
- let IndFamily(dmi,_) = indf in
- let ti =(string_of_id (mis_typename dmi)) in
+ let ncti= Array.length(get_constructors env indf) in
+ let (ind,_) = indf in
+ let (mib,mip) = lookup_mind_specif env ind in
+ let ti =(string_of_id mip.mind_typename) in
  let type_arg= targ1(*List.nth targ (mis_index dmi)*) in
 
  let lh1= hyps (List.hd ltree) in (* la liste des hyp jusqu'a n *)
@@ -1604,8 +1615,8 @@ and natural_induction ig lh g gs ge arg1 ltree with_intros=
             (let ci=ref 0 in
              (prli
                  (fun treearg -> ci:=!ci+1;
-                      let nci=(constr_of_mind dmi !ci) in
-                      let aci=(arity_of_constr_of_mind indf !ci) in
+                      let nci=(constr_of_mind mip !ci) in
+                      let aci=(arity_of_constr_of_mind env indf !ci) in
                       let hci= 
 			if with_intros
 			then mind_ind_info_hyp_constr indf  !ci

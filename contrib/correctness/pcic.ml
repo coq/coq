@@ -12,9 +12,13 @@
 
 open Names
 open Term
+open Termops
+open Nametab
 open Declarations
+open Indtypes
 open Sign
 open Rawterm
+open Typeops
 
 open Pmisc
 open Past
@@ -30,7 +34,7 @@ let make_hole c = mkCast (isevar, c)
  * If necessary, tuples are generated ``on the fly''. *)
 
 let tuple_exists id =
-  try let _ = Nametab.sp_of_id CCI id in true with Not_found -> false
+  try let _ = Nametab.sp_of_id id in true with Not_found -> false
 
 let ast_set = Ast.ope ("SET", [])
 
@@ -73,8 +77,10 @@ let sig_n n =
     (List.rev_map (fun id -> (id, LocalAssum mkSet)) lT)
   in
   let lc = 
-    let app_sig = mkAppA (Array.init (n+2) (fun i -> mkRel (2*n+3-i))) in
-    let app_p = mkAppA (Array.init (n+1) (fun i -> mkRel (n+1-i))) in
+    let app_sig = mkApp(mkRel (2*n+3),
+                        Array.init (n+1) (fun i -> mkRel (2*n+2-i))) in
+    let app_p = mkApp(mkRel (n+1),
+                      Array.init n (fun i -> mkRel (n-i))) in
     let c = mkArrow app_p app_sig in
     List.fold_right (fun id c -> mkProd (Name id, mkRel (n+1), c)) lx c
   in
@@ -118,13 +124,13 @@ let tuple_ref dep n =
 	let name = Printf.sprintf "exist_%d" n in
 	let id = id_of_string name in
 	if not (tuple_exists id) then ignore (sig_n n);
-	Nametab.sp_of_id CCI id
+	Nametab.sp_of_id id
       end
     else begin
       let name = Printf.sprintf "Build_tuple_%d" n in
       let id = id_of_string name in
       if not (tuple_exists id) then tuple_n n;
-      Nametab.sp_of_id CCI id
+      Nametab.sp_of_id id
     end
 
 (* Binders. *)

@@ -13,9 +13,8 @@
 open Pp
 open Coqast
 open Names
+open Nameops
 open Term
-
-module SpSet = Set.Make(struct type t = section_path let compare = sp_ord end)
 
 (* debug *)
 
@@ -144,11 +143,12 @@ let real_subst_in_constr = replace_vars
 
 let coq_constant d s =
   make_path
-    (make_dirpath (List.map id_of_string ("Coq" :: d))) (id_of_string s) CCI
+    (make_dirpath (List.rev (List.map id_of_string ("Coq"::d))))
+    (id_of_string s)
 
 let bool_sp = coq_constant ["Init"; "Datatypes"] "bool"
-let coq_true = mkMutConstruct ((bool_sp,0),1)
-let coq_false = mkMutConstruct ((bool_sp,0),2)
+let coq_true = mkConstruct ((bool_sp,0),1)
+let coq_false = mkConstruct ((bool_sp,0),2)
 
 let constant s =
   let id = id_of_string s in

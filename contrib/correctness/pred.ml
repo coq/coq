@@ -88,7 +88,7 @@ let rec red = function
 (* How to reduce uncomplete proof terms when they have become constr *)
 
 open Term
-open Reduction
+open Reductionops
 
 (* Il ne faut pas reduire de redexe (beta/iota) qui impliquerait
  * la substitution d'une métavariable.

@@ -11,6 +11,7 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Sign
 open Term
 open Declarations
@@ -27,13 +28,15 @@ open Classops
 open Class
 open Recordops
 open Library
+open Indtypes
+open Nametab
 
 let recalc_sp dir sp =
-  let (_,spid,k) = repr_path sp in Names.make_path dir spid k
+  let (_,spid) = repr_path sp in Names.make_path dir spid
 
 let rec find_var id = function
   | [] -> false
-  | (sp,b,_)::l -> if basename sp = id then b=None else find_var id l
+  | (x,b,_)::l -> if x = id then b=None else find_var id l
 
 let build_abstract_list hyps ids_to_discard =
   let l =
@@ -104,13 +107,13 @@ let abstract_inductive ids_to_abs hyps inds =
 
 let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
   assert (Array.length mib.mind_packets > 0);
-  let finite = mib.mind_packets.(0).mind_finite in
+  let finite = mib.mind_finite in
   let inds = 
     array_map_to_list
       (fun mip ->
 	 let nparams = mip.mind_nparams in
-	 let arity = expmod_type modlist (mind_user_arity mip) in
-	 let lc = Array.map (expmod_type modlist) (mind_user_lc mip) in
+	 let arity = expmod_type modlist mip.mind_user_arity in
+	 let lc = Array.map (expmod_type modlist) mip.mind_user_lc in
 	 (nparams,
 	  mip.mind_typename,
 	  arity,
@@ -118,11 +121,17 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
 	  Array.to_list lc))
       mib.mind_packets
   in
-  let hyps = List.map (fun (sp,c,t) -> (basename sp,c,t)) mib.mind_hyps in
-  let hyps' = map_named_context (expmod_constr modlist) hyps in
+  let hyps = mib.mind_hyps in
+  let hyps' =
+    Sign.fold_named_context
+      (fun (x,b,t) sgn ->
+        Sign.add_named_decl
+          (x, option_app (expmod_constr modlist) b,expmod_constr modlist t)
+          sgn)
+      mib.mind_hyps empty_named_context in
   let (inds',abs_vars) = abstract_inductive ids_to_discard hyps' inds in
   let lmodif_one_mind i = 
-    let nbc = Array.length (mind_nth_type_packet mib i).mind_consnames in 
+    let nbc = Array.length mib.mind_packets.(i).mind_consnames in 
     (((osecsp,i), DO_ABSTRACT ((nsecsp,i),abs_vars)),
      list_tabulate
        (function j -> 
@@ -179,7 +188,8 @@ let process_object oldenv dir sec_sp
   let tag = object_tag lobj in 
   match tag with
     | "VARIABLE" ->
-	let ((id,c,t),cst,stre) = get_variable_with_constraints sp in
+	let ((id,c,t),cst,stre) =
+          get_variable_with_constraints (basename sp) in
 	(* VARIABLE means local (entry Variable/Hypothesis/Local and are *)
 	(* always discharged *)
 (*
@@ -259,7 +269,7 @@ let process_object oldenv dir sec_sp
 	let strobj () =
 	  let mib = Environ.lookup_mind newsp (Global.env ()) in
 	  { s_CONST = info.s_CONST;
-	    s_PARAM = (mind_nth_type_packet mib 0).mind_nparams;
+	    s_PARAM = mib.mind_packets.(0).mind_nparams;
 	    s_PROJ = List.map (option_app (recalc_sp dir)) info.s_PROJ } in
 	((Struc ((newsp,i),strobj))::ops, ids_to_discard, work_alist)
 
@@ -281,7 +291,8 @@ let process_item oldenv dir sec_sp acc = function
 let process_operation = function
   | Variable (id,expmod_a,stre,imp) ->
       (* Warning:parentheses needed to get a side-effect from with_implicits *)
-      let _ = with_implicits imp (declare_variable id) (expmod_a,stre) in
+      let _ =
+        with_implicits imp (declare_variable id) (Lib.cwd(),expmod_a,stre) in
       ()
   | Parameter (spid,typ,imp) ->
       let _ = with_implicits imp (declare_parameter spid) typ in

@@ -11,6 +11,7 @@
 open Names
 open Term
 open Miniml
+open Nametab
 
 (*s Special identifiers. [prop_name] is to be used for propositions
     and will be printed as [_] in concrete (Caml) code. *)

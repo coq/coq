@@ -11,8 +11,10 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Libobject
 open Summary
+
 
 type node = 
   | Leaf of obj
@@ -36,7 +38,6 @@ and library_segment = library_entry list
 
 let lib_stk = ref ([] : (section_path * node) list)
 
-let init_toplevel_root () = Nametab.push_library_root default_module
 
 let module_name = ref None
 let path_prefix = ref (default_module : dir_path)
@@ -54,11 +55,11 @@ let recalc_path_prefix () =
 
 let pop_path_prefix () = path_prefix := fst (split_dirpath !path_prefix)
 
-let make_path id k = Names.make_path !path_prefix id k
+let make_path id = Names.make_path !path_prefix id
 
 let sections_depth () =
-  List.length (rev_repr_dirpath !path_prefix)
-  - List.length (rev_repr_dirpath (module_sp ()))
+  List.length (repr_dirpath !path_prefix)
+  - List.length (repr_dirpath (module_sp ()))
 
 let cwd () = !path_prefix
 
@@ -87,7 +88,7 @@ let anonymous_id =
   fun () -> incr n; id_of_string ("_" ^ (string_of_int !n))
 
 let add_anonymous_entry node =
-  let sp = make_path (anonymous_id()) OBJ in
+  let sp = make_path (anonymous_id()) in
   add_entry sp node;
   sp
 
@@ -95,14 +96,14 @@ let add_absolutely_named_lead sp obj =
   cache_object (sp,obj);
   add_entry sp (Leaf obj)
 
-let add_leaf id kind obj =
-  let sp = make_path id kind in
+let add_leaf id obj =
+  let sp = make_path id in
   cache_object (sp,obj);
   add_entry sp (Leaf obj);
   sp
 
 let add_anonymous_leaf obj =
-  let sp = make_path (anonymous_id()) OBJ in
+  let sp = make_path (anonymous_id()) in
   cache_object (sp,obj);
   add_entry sp (Leaf obj)
 
@@ -117,7 +118,7 @@ let contents_after = function
 
 let open_section id =
   let dir = extend_dirpath !path_prefix id in
-  let sp = make_path id OBJ in
+  let sp = make_path id in
   if Nametab.exists_section dir then
     errorlabstrm "open_section" [< pr_id id; 'sTR " already exists" >];
   add_entry sp (OpenedSection (dir, freeze_summaries()));
@@ -139,7 +140,6 @@ let start_module s =
   if !path_prefix <> default_module then
     error "some sections are already opened";
   module_name := Some s;
-  Nametab.push_library_root s;
   Univ.set_module s;
   let _ = add_anonymous_entry (Module s) in
   path_prefix := s
@@ -148,7 +148,7 @@ let end_module s =
   match !module_name with
     | None -> error "no module declared"
     | Some m ->
-	let bm = snd (split_dirpath m) in
+        let (_,bm) = split_dirpath m in
 	if bm <> s then
 	  error ("The current open module has basename "^(string_of_id bm));
 	m
@@ -187,7 +187,7 @@ let close_section export id =
   lib_stk := before;
   let after' = export_segment after in
   pop_path_prefix ();
-  add_entry (make_path id OBJ) (ClosedSection (export, dir, after'));
+  add_entry (make_path id) (ClosedSection (export, dir, after'));
   (dir,after,fs)
 
 (* The following function exports the whole library segment, that will be 
@@ -222,7 +222,7 @@ let reset_to sp =
 let reset_name id =
   let (sp,_) = 
     try
-      find_entry_p (fun (sp,_) -> id = basename sp)
+      find_entry_p (fun (sp,_) -> let (_,spi) = repr_path sp in id = spi)
     with Not_found ->
       error (string_of_id id ^ ": no such entry")
   in

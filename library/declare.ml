@@ -11,19 +11,23 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Term
 open Sign
 open Declarations
 open Inductive
+open Indtypes
 open Reduction
 open Type_errors
 open Typeops
 open Libobject
 open Lib
 open Impargs
-open Indrec
 open Nametab
 open Library
+open Safe_typing
+
+(**********************************************)
 
 (* For [DischargeAt (dir,n)], [dir] is the minimum prefix that a
    construction keeps in its name (if persistent), or the section name
@@ -41,19 +45,10 @@ let depth_of_strength = function
   | NeverDischarge -> 0
   | NotDeclare -> assert false
 
-let restrict_path n sp =
-  let dir, s, k = repr_path sp in
-  let dir' = list_lastn n (repr_dirpath dir) in
-  Names.make_path (make_dirpath dir') s k
-
 let make_strength_0 () = 
   let depth = Lib.sections_depth () in
   let cwd = Lib.cwd() in
   if depth > 0 then DischargeAt (cwd, depth) else NeverDischarge
-
-let extract_dirpath_prefix n dir =
-  let dir = repr_dirpath dir in
-  make_dirpath (list_firstn (List.length dir -n) dir)
 
 let make_strength_1 () =
   let depth = Lib.sections_depth () in
@@ -74,37 +69,32 @@ type section_variable_entry =
   | SectionLocalDef of constr
   | SectionLocalAssum of constr
 
-type variable_declaration = section_variable_entry * strength
+type variable_declaration = dir_path * section_variable_entry * strength
 
 type checked_section_variable = constr option * types * Univ.constraints
 
 type checked_variable_declaration =
-    checked_section_variable * strength
+    dir_path * checked_section_variable * strength
 
-let vartab =
-  ref ((Spmap.empty, []) :
-       (identifier * checked_variable_declaration) Spmap.t * section_path list)
-
-let current_section_context () =
-  List.map (fun sp -> (basename sp, sp)) (snd !vartab)
+let vartab = ref (Idmap.empty : checked_variable_declaration Idmap.t)
 
 let _ = Summary.declare_summary "VARIABLE"
 	  { Summary.freeze_function = (fun () -> !vartab);
 	    Summary.unfreeze_function = (fun ft -> vartab := ft);
-	    Summary.init_function = (fun () -> vartab := (Spmap.empty, []));
+	    Summary.init_function = (fun () -> vartab := Idmap.empty);
 	    Summary.survive_section = false }
 
-let cache_variable (sp,(id,(d,str))) =
+let cache_variable (sp,(id,(p,d,str))) =
   (* Constr raisonne sur les noms courts *)
-  if List.mem_assoc id (current_section_context ()) then
-    errorlabstrm "cache_variable"
-      [< pr_id (basename sp); 'sTR " already exists" >];
-  let vd = match d with (* Fails if not well-typed *)
+  if Idmap.mem id !vartab then
+    errorlabstrm "cache_variable" [< pr_id id; 'sTR " already exists" >];
+  let cst = match d with (* Fails if not well-typed *)
     | SectionLocalAssum ty -> Global.push_named_assum (id,ty)
-    | SectionLocalDef c -> Global.push_named_def (id,c)
-  in
-  Nametab.push 0 (restrict_path 0 sp) (VarRef sp);
-  vartab := let (m,l) = !vartab in (Spmap.add sp (id,(vd,str)) m, sp::l)
+    | SectionLocalDef c -> Global.push_named_def (id,c) in
+  let (_,bd,ty) = Global.lookup_named id in
+  let vd = (bd,ty,cst) in
+  Nametab.push 0 (restrict_path 0 sp) (VarRef id);
+  vartab := Idmap.add id (p,vd,str) !vartab
 
 let (in_variable, out_variable) =
   let od = {
@@ -116,23 +106,23 @@ let (in_variable, out_variable) =
   declare_object ("VARIABLE", od)
 
 let declare_variable id obj =
-  let sp = add_leaf id CCI (in_variable (id,obj)) in
-  if is_implicit_args() then declare_var_implicits sp;
+  let sp = add_leaf id (in_variable (id,obj)) in
+  if is_implicit_args() then declare_var_implicits id;
   sp
 
 (* Parameters. *)
 
 let cache_parameter (sp,c) =
-  if Nametab.exists_cci sp then
-    errorlabstrm "cache_parameter"
-      [< pr_id (basename sp); 'sTR " already exists" >];
-  Global.add_parameter sp c (current_section_context ());
+  (if Nametab.exists_cci sp then
+    let (_,id) = repr_path sp in
+    errorlabstrm "cache_parameter" [< pr_id id; 'sTR " already exists" >]);
+  Global.add_parameter sp c;
   Nametab.push 0 sp (ConstRef sp)
 
 let load_parameter (sp,_) =
-  if Nametab.exists_cci sp then
-    errorlabstrm "cache_parameter"
-      [< pr_id (basename sp); 'sTR " already exists" >];
+  (if Nametab.exists_cci sp then
+    let (_,id) = repr_path sp in
+    errorlabstrm "cache_parameter" [< pr_id id; 'sTR " already exists" >]);
   Nametab.push 1 sp (ConstRef sp)
 
 let open_parameter (sp,_) =
@@ -153,7 +143,7 @@ let (in_parameter, out_parameter) =
   declare_object ("PARAMETER", od)
 
 let declare_parameter id c =
-  let sp = add_leaf id CCI (in_parameter c) in 
+  let sp = add_leaf id (in_parameter c) in 
   if is_implicit_args() then declare_constant_implicits sp;
   sp
 
@@ -174,16 +164,15 @@ let _ = Summary.declare_summary "CONSTANT"
 	    Summary.survive_section = false }
 
 let cache_constant (sp,(cdt,stre)) =
-  if Nametab.exists_cci sp then
-    errorlabstrm "cache_constant"
-      [< pr_id (basename sp); 'sTR " already exists" >] ;
-  let sc = current_section_context() in
+  (if Nametab.exists_cci sp then
+    let (_,id) = repr_path sp in
+    errorlabstrm "cache_constant" [< pr_id id; 'sTR " already exists" >]);
   begin match cdt with 
-    | ConstantEntry ce -> Global.add_constant sp ce sc
-    | ConstantRecipe r -> Global.add_discharged_constant sp r sc
+    | ConstantEntry ce -> Global.add_constant sp ce
+    | ConstantRecipe r -> Global.add_discharged_constant sp r
   end;
   (match stre with
-    | DischargeAt (sp',n) when not (is_dirpath_prefix_of sp' (Lib.cwd ())) ->
+    | DischargeAt (dp,n) when not (is_dirpath_prefix_of dp (Lib.cwd ())) ->
         (* Only qualifications including the sections segment from the current
            section to the discharge section is available for Remark & Fact *)
         Nametab.push (n-Lib.sections_depth()) sp (ConstRef sp)
@@ -196,9 +185,9 @@ let cache_constant (sp,(cdt,stre)) =
 (* At load-time, the segment starting from the module name to the discharge *)
 (* section (if Remark or Fact) is needed to access a construction *)
 let load_constant (sp,(ce,stre)) =
-  if Nametab.exists_cci sp then
-    errorlabstrm "cache_constant"
-      [< pr_id (basename sp); 'sTR " already exists" >] ;
+  (if Nametab.exists_cci sp then
+    let (_,id) = repr_path sp in
+    errorlabstrm "cache_constant" [< pr_id id; 'sTR " already exists" >]);
   csttab := Spmap.add sp stre !csttab;
   Nametab.push (depth_of_strength stre + 1) sp (ConstRef sp)
 
@@ -235,7 +224,7 @@ let hcons_constant_declaration = function
 
 let declare_constant id cd =
   (* let cd = hcons_constant_declaration cd in *)
-  let sp = add_leaf id CCI (in_constant cd) in
+  let sp = add_leaf id (in_constant cd) in
   if is_implicit_args() then declare_constant_implicits sp;
   sp
 
@@ -245,8 +234,8 @@ let redeclare_constant sp cd =
 
 (* Inductives. *)
 
-
 let inductive_names sp mie =
+  let (dp,_) = repr_path sp in
   let names, _ = 
     List.fold_left
       (fun (names, n) ind ->
@@ -254,23 +243,23 @@ let inductive_names sp mie =
 	 let names, _ =
 	   List.fold_left
 	     (fun (names, p) id ->
-		let sp = Names.make_path (dirpath sp) id CCI in
+		let sp = Names.make_path dp id in
 		((sp, ConstructRef (indsp,p)) :: names, p+1))
 	     (names, 1) ind.mind_entry_consnames in
-	 let sp = Names.make_path (dirpath sp) ind.mind_entry_typename CCI in
+	 let sp = Names.make_path dp ind.mind_entry_typename in
 	 ((sp, IndRef indsp) :: names, n+1))
       ([], 0) mie.mind_entry_inds
   in names
 
 let check_exists_inductive (sp,_) =
   if Nametab.exists_cci sp then
-    errorlabstrm "cache_inductive"
-      [< pr_id (basename sp); 'sTR " already exists" >]
+    let (_,id) = repr_path sp in
+    errorlabstrm "cache_inductive" [< pr_id id; 'sTR " already exists" >]
 
 let cache_inductive (sp,mie) =
   let names = inductive_names sp mie in
   List.iter check_exists_inductive names;
-  Global.add_mind sp mie (current_section_context ());
+  Global.add_mind sp mie;
   List.iter 
     (fun (sp, ref) -> Nametab.push 0 sp ref)
     names
@@ -314,7 +303,7 @@ let declare_mind mie =
     | ind::_ -> ind.mind_entry_typename
     | [] -> anomaly "cannot declare an empty list of inductives"
   in
-  let sp = add_leaf id CCI (in_inductive mie) in
+  let sp = add_leaf id (in_inductive mie) in
   if is_implicit_args() then declare_mib_implicits sp;
   sp
 
@@ -329,18 +318,19 @@ let constant_strength sp = Spmap.find sp !csttab
 let constant_or_parameter_strength sp =
   try constant_strength sp with Not_found -> NeverDischarge
 
-let get_variable sp = 
-  let (id,((c,ty,cst),str)) = Spmap.find sp (fst !vartab) in
-(*  let (c,ty) = Global.lookup_named id in*)
+let get_variable id = 
+  let (p,(c,ty,cst),str) = Idmap.find id !vartab in
   ((id,c,ty),str)
 
-let get_variable_with_constraints sp = 
-  let (id,((c,ty,cst),str)) = Spmap.find sp (fst !vartab) in
-(*  let (c,ty) = Global.lookup_named id in*)
+let get_variable_with_constraints id = 
+  let (p,(c,ty,cst),str) = Idmap.find id !vartab in
   ((id,c,ty),cst,str)
 
-let variable_strength sp =
-  let _,(_,str) = Spmap.find sp (fst !vartab) in str
+let variable_strength id =
+  let (_,_,str) = Idmap.find id !vartab in str
+
+let find_section_variable id =
+  let (p,_,_) = Idmap.find id !vartab in Names.make_path p id
 
 (* Global references. *)
 
@@ -367,54 +357,33 @@ let mind_oper_of_id sp id mib =
     mib.mind_packets
 
 let context_of_global_reference = function
-  | VarRef sp -> []
+  | VarRef id -> []
   | ConstRef sp -> (Global.lookup_constant sp).const_hyps
   | IndRef (sp,_) -> (Global.lookup_mind sp).mind_hyps
   | ConstructRef ((sp,_),_) -> (Global.lookup_mind sp).mind_hyps
 
-let find_section_variable id =
-  let l =
-    Spmap.fold
-      (fun sp (id',_) hyps -> if id=id' then sp::hyps else hyps)
-      (fst !vartab) [] in
-  match l with
-    | [] -> raise Not_found
-    | [sp] -> sp
-    | _ -> anomaly "Several section variables with same base name"
-
 let reference_of_constr c = match kind_of_term c with
-  | IsConst sp -> ConstRef sp
-  | IsMutInd ind_sp -> IndRef ind_sp
-  | IsMutConstruct cstr_cp -> ConstructRef cstr_cp
-  | IsVar id -> VarRef (find_section_variable id)
+  | Const sp -> ConstRef sp
+  | Ind ind_sp -> IndRef ind_sp
+  | Construct cstr_cp -> ConstructRef cstr_cp
+  | Var id -> VarRef id
   |  _ -> raise Not_found
 
 let last_section_hyps dir =
-  List.fold_right
-    (fun sp hyps -> if dirpath sp = dir then basename sp :: hyps else hyps)
-    (snd !vartab) []
-
-let rec find_var id = function
-  | [] -> raise Not_found
-  | sp::l -> if basename sp = id then sp else find_var id l
-
-let extract_instance ref args =
-  let hyps = context_of_global_reference ref in
-  let hyps0 = current_section_context () in
-  let na = Array.length args in
-  let rec peel n acc = function
-    | (sp,None,_ as d)::hyps ->
-	if List.mem_assoc (basename sp) hyps0 then peel (n-1) acc hyps
-	else peel (n-1) (args.(n)::acc) hyps
-    | (_,Some _,_)::hyps -> peel n acc hyps
-    | [] -> Array.of_list acc
-  in peel (na-1) [] hyps
+  fold_named_context
+    (fun (id,_,_) sec_ids ->
+      try
+        let (p,_,_) = Idmap.find id !vartab in
+        if dir=p then id::sec_ids else sec_ids
+      with Not_found -> sec_ids)
+    (Environ.named_context (Global.env()))
+    []
 
 let constr_of_reference = function
-  | VarRef sp -> mkVar (basename sp)
+  | VarRef id -> mkVar id
   | ConstRef sp -> mkConst sp
-  | ConstructRef sp -> mkMutConstruct sp
-  | IndRef sp -> mkMutInd sp
+  | ConstructRef sp -> mkConstruct sp
+  | IndRef sp -> mkInd sp
 
 let construct_absolute_reference sp =
   constr_of_reference (Nametab.absolute_reference sp)
@@ -427,7 +396,7 @@ let construct_reference env id =
   try
     mkVar (let _ = Environ.lookup_named id env in id)
   with Not_found ->
-    let ref = Nametab.sp_of_id CCI id in
+    let ref = Nametab.sp_of_id id in
     constr_of_reference ref
 
 let global_qualified_reference qid =
@@ -442,8 +411,10 @@ let global_reference_in_absolute_module dir id =
 let global_reference id = 
   construct_reference (Global.env()) id
 
+let dirpath sp = let (p,_) = repr_path sp in p
+
 let dirpath_of_global = function
-  | VarRef sp -> dirpath sp
+  | VarRef id -> empty_dirpath
   | ConstRef sp -> dirpath sp
   | IndRef (sp,_) -> dirpath sp
   | ConstructRef ((sp,_),_) -> dirpath sp
@@ -460,80 +431,3 @@ let is_global id =
     is_dirpath_prefix_of (dirpath_of_global osp) (Lib.cwd())
   with Not_found -> 
     false
-
-let path_of_constructor_path ((sp,tyi),ind) =
-   let mib = Global.lookup_mind sp in
-   let mip = mind_nth_type_packet mib tyi in 
-   let (pa,_,k) = repr_path sp in 
-   Names.make_path pa (mip.mind_consnames.(ind-1)) k 
-
-let path_of_inductive_path (sp,tyi) =
-  if tyi = 0 then sp
-  else
-    let mib = Global.lookup_mind sp in
-    let mip = mind_nth_type_packet mib tyi in 
-    let (pa,_,k) = repr_path sp in 
-    Names.make_path pa (mip.mind_typename) k 
-
-(*s Eliminations. *)
-
-let eliminations =
-  [ (InProp,"_ind") ; (InSet,"_rec") ; (InType,"_rect") ]
-
-let elimination_suffix = function
-  | InProp -> "_ind"
-  | InSet  -> "_rec"
-  | InType -> "_rect"
-
-let make_elimination_ident id s = add_suffix id (elimination_suffix s)
-  
-let declare_one_elimination mispec =
-  let mindstr = string_of_id (mis_typename mispec) in
-  let declare na c =
-    let _ = declare_constant (id_of_string na)
-      (ConstantEntry
-        { const_entry_body = c;
-          const_entry_type = None;
-          const_entry_opaque = false }, 
-       NeverDischarge) in
-    Options.if_verbose pPNL [< 'sTR na; 'sTR " is defined" >]
-  in
-  let env = Global.env () in
-  let sigma = Evd.empty in
-  let elim_scheme = build_indrec env sigma mispec in
-  let npars = mis_nparams mispec in
-  let make_elim s = instanciate_indrec_scheme s npars elim_scheme in
-  let kelim = mis_kelim mispec in
-  List.iter
-    (fun (sort,suff) -> 
-       if List.mem sort kelim then
-	 declare (mindstr^suff) (make_elim (new_sort_in_family sort)))
-    eliminations
-
-let declare_eliminations sp =
-  let mib = Global.lookup_mind sp in
-(*
-  let ids = ids_of_named_context mib.mind_hyps in
-  if not (list_subset ids (ids_of_named_context (Global.named_context ()))) then    error ("Declarations of elimination scheme outside the section "^
-    "of the inductive definition is not implemented");
-*)
-  for i = 0 to Array.length mib.mind_packets - 1 do
-    if mind_type_finite mib i then
-      let mispec = Global.lookup_mind_specif (sp,i) in 
-      declare_one_elimination mispec
-  done
-
-(* Look up function for the default elimination constant *)
-
-let lookup_eliminator env ind_sp s =
-  let path = path_of_inductive_path ind_sp in
-  let dir, base,k = repr_path path in
-  let id = add_suffix base (elimination_suffix s) in
-  (* Try first to get an eliminator defined in the same section as the *)
-  (* inductive type *)
-  try construct_absolute_reference (Names.make_path dir id k)
-  with Not_found ->
-  (* Then try to get a user-defined eliminator in some other places *)
-  (* using short name (e.g. for "eq_rec") *)
-  construct_reference env id
-  

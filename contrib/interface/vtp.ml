@@ -26,10 +26,9 @@ and fAST = function
    fID x1;
    fAST_LIST x2;
    fNODE "astnode" 2
-| CT_astpath(x1, x2) ->
+| CT_astpath(x1) ->
    fID_LIST x1;
-   fID x2;
-   fNODE "astpath" 2
+   fNODE "astpath" 1
 | CT_astslam(x1, x2) ->
    fID_OPT x1;
    fAST x2;

@@ -11,11 +11,13 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Sign
 open Term
+open Termops
 open Environ
 open Evd
-open Reduction
+open Reductionops
 open Impargs
 open Declare
 open Rawterm
@@ -135,7 +137,7 @@ let interp_qualid p =
     | [] -> anomaly "interp_qualid: empty qualified identifier"
     | l -> 
 	let p, r = list_chop (List.length l -1) (List.map outnvar l) in
-	make_qualid (make_dirpath p) (List.hd r)
+	make_qualid (make_dirpath (List.rev p)) (List.hd r)
 
 let maybe_variable = function
   | [Nvar (_,s)] -> Some s
@@ -145,44 +147,44 @@ let ids_of_ctxt ctxt =
   Array.to_list
     (Array.map
        (function c -> match kind_of_term c with
-	  | IsVar id -> id
+	  | Var id -> id
 	  | _ ->
       error
 	"Astterm: arbitrary substitution of references not yet implemented")
     ctxt)
 
 type pattern_qualid_kind =
-  | IsConstrPat of loc * constructor
-  | IsVarPat of loc * identifier
+  | ConstrPat of loc * constructor
+  | VarPat of loc * identifier
 
 let maybe_constructor env = function
   | Node(loc,"QUALID",l) ->
       let qid = interp_qualid l in
       (try 
 	match kind_of_term (global_qualified_reference qid) with 
-	  | IsMutConstruct c -> IsConstrPat (loc,c)
+	  | Construct c -> ConstrPat (loc,c)
 	  | _ -> 
 	      (match maybe_variable l with
 		 | Some s -> 
 		     warning ("Defined reference "^(string_of_qualid qid)
 			      ^" is here considered as a matching variable");
-		     IsVarPat (loc,s)
+		     VarPat (loc,s)
 		 | _ -> error ("This reference does not denote a constructor: "
 			       ^(string_of_qualid qid)))
       with Not_found -> 
 	match maybe_variable l with
-	  | Some s -> IsVarPat (loc,s)
+	  | Some s -> VarPat (loc,s)
 	  | _ -> error ("Unknown qualified constructor: "
 			^(string_of_qualid qid)))
 
   (* This may happen in quotations *)
   | Node(loc,"MUTCONSTRUCT",[sp;Num(_,ti);Num(_,n)]) ->
       (* Buggy: needs to compute the context *)
-      IsConstrPat (loc,((ast_to_sp sp,ti),n))
+      ConstrPat (loc,((ast_to_sp sp,ti),n))
 
   | Path(loc,sp) ->
       (match absolute_reference sp with 
-	| ConstructRef c -> IsConstrPat (loc,c)
+	| ConstructRef c -> ConstrPat (loc,c)
 	| _ ->
             error ("Unknown absolute constructor name: "^(string_of_path sp)))
 
@@ -216,11 +218,11 @@ let ast_to_global loc c =
 
 (*
 let ref_from_constr c = match kind_of_term c with
-  | IsConst (sp,ctxt) -> RConst (sp, ast_to_constr_ctxt ctxt)
-  | IsEvar (ev,ctxt) -> REVar (ev, ast_to_constr_ctxt ctxt) 
-  | IsMutConstruct (csp,ctxt) -> RConstruct (csp, ast_to_constr_ctxt ctxt)
-  | IsMutInd (isp,ctxt) -> RInd (isp, ast_to_constr_ctxt ctxt)
-  | IsVar id -> RVar id  (* utilisé pour coercion_value (tmp) *)
+  | Const (sp,ctxt) -> RConst (sp, ast_to_constr_ctxt ctxt)
+  | Evar (ev,ctxt) -> REVar (ev, ast_to_constr_ctxt ctxt) 
+  | Construct (csp,ctxt) -> RConstruct (csp, ast_to_constr_ctxt ctxt)
+  | Ind (isp,ctxt) -> RInd (isp, ast_to_constr_ctxt ctxt)
+  | Var id -> RVar id  (* utilisé pour coercion_value (tmp) *)
   | _ -> anomaly "Not a reference"
 *)
 
@@ -235,10 +237,10 @@ let ast_to_var (env,impls) (vars1,vars2) loc id =
       try List.assoc id impls
       with Not_found -> []
     else
-      let _ = lookup_id id vars2 in
+      let _ = lookup_named id vars2 in
       (* Car Fixpoint met les fns définies tmporairement comme vars de sect *)
       try
-	let ref = VarRef (find_section_variable id) in
+	let ref = VarRef id in
 	implicits_of_global ref
       with _ -> []
   in RVar (loc, id), imps
@@ -255,7 +257,7 @@ let rawconstr_of_qualid env vars loc qid =
   (* Is it a bound variable? *)
   try
     match repr_qualid qid with
-      | d,s when is_empty_dirpath d -> ast_to_var env vars loc s
+      | d,s when repr_dirpath d = [] -> ast_to_var env vars loc s
       | _ -> raise Not_found
   with Not_found ->
   (* Is it a global reference or a syntactic definition? *)
@@ -301,18 +303,18 @@ let rec ast_to_pattern env aliases = function
 
   | Node(_,"PATTCONSTRUCT", head::((_::_) as pl)) ->
       (match maybe_constructor env head with
-	 | IsConstrPat (loc,c) ->
+	 | ConstrPat (loc,c) ->
 	     let (idsl,pl') =
 	       List.split (List.map (ast_to_pattern env ([],[])) pl) in
 	     (aliases::(List.flatten idsl),
 	      PatCstr (loc,c,pl',alias_of aliases))
-	 | IsVarPat (loc,s) ->
+	 | VarPat (loc,s) ->
 	     user_err_loc (loc,"ast_to_pattern",mssg_hd_is_not_constructor s))
 
   | ast ->
       (match maybe_constructor env ast with
-	 | IsConstrPat (loc,c) -> ([aliases], PatCstr (loc,c,[],alias_of aliases))
-	 | IsVarPat (loc,s) ->
+	 | ConstrPat (loc,c) -> ([aliases], PatCstr (loc,c,[],alias_of aliases))
+	 | VarPat (loc,s) ->
 	     let aliases = merge_aliases aliases (name_of_nvar s) in
 	     ([aliases], PatVar (loc,alias_of aliases)))
 
@@ -573,7 +575,7 @@ let adjust_qualid env loc ast qid =
   (* Is it a bound variable? *)
   try
     match repr_qualid qid with
-      | d,id when is_empty_dirpath d -> ast_of_var env ast id
+      | d,id when repr_dirpath d = [] -> ast_of_var env ast id
       | _ -> raise Not_found
   with Not_found ->
   (* Is it a global reference or a syntactic definition? *)
@@ -636,7 +638,7 @@ let globalize_ast ast =
 let interp_rawconstr_gen sigma env impls allow_soapp lvar com =
   ast_to_rawconstr sigma
     (from_list (ids_of_rel_context (rel_context env)), impls)
-    allow_soapp (lvar,named_context env) com
+    allow_soapp (lvar,env) com
 
 let interp_rawconstr sigma env com =
   interp_rawconstr_gen sigma env [] false [] com
@@ -786,7 +788,7 @@ let interp_constrpattern_gen sigma env lvar com =
   let c =
     ast_to_rawconstr sigma
       (from_list (ids_of_rel_context (rel_context env)), [])
-      true (List.map fst lvar,named_context env) com
+      true (List.map fst lvar,env) com
   and nlvar = List.map (fun (id,c) -> (id,pattern_of_constr c)) lvar in
   try 
     pattern_of_rawconstr nlvar c

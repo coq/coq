@@ -76,21 +76,24 @@ LIBREP=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
 
 KERNEL=kernel/names.cmo kernel/univ.cmo \
        kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
-       kernel/declarations.cmo kernel/environ.cmo kernel/evd.cmo \
-       kernel/instantiate.cmo kernel/closure.cmo kernel/reduction.cmo \
-       kernel/inductive.cmo kernel/type_errors.cmo kernel/typeops.cmo \
+       kernel/declarations.cmo kernel/environ.cmo kernel/closure.cmo \
+       kernel/reduction.cmo \
+       kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
        kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo
 
-LIBRARY=library/libobject.cmo library/summary.cmo library/nametab.cmo \
-	library/lib.cmo library/global.cmo \
+LIBRARY=library/nameops.cmo library/libobject.cmo library/summary.cmo \
+        library/nametab.cmo library/lib.cmo library/global.cmo \
 	library/goptions.cmo library/opaque.cmo \
 	library/library.cmo library/states.cmo \
-	library/impargs.cmo library/indrec.cmo library/declare.cmo 
+	library/impargs.cmo library/declare.cmo 
 
-PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
-	  pretyping/retyping.cmo pretyping/cbv.cmo pretyping/tacred.cmo \
+PRETYPING=pretyping/termops.cmo \
+          pretyping/evd.cmo pretyping/instantiate.cmo \
+          pretyping/reductionops.cmo pretyping/inductiveops.cmo \
+          pretyping/rawterm.cmo pretyping/detyping.cmo pretyping/retyping.cmo \
+	  pretyping/cbv.cmo pretyping/tacred.cmo \
 	  pretyping/pretype_errors.cmo pretyping/typing.cmo \
-	  pretyping/classops.cmo pretyping/recordops.cmo \
+	  pretyping/classops.cmo pretyping/recordops.cmo pretyping/indrec.cmo \
 	  pretyping/evarutil.cmo pretyping/evarconv.cmo \
           pretyping/coercion.cmo pretyping/cases.cmo pretyping/pretyping.cmo \
 	  pretyping/syntax_def.cmo pretyping/pattern.cmo 
@@ -147,34 +150,38 @@ INTERFACE=contrib/interface/vtp.cmo \
 	contrib/interface/showproof_ct.cmo contrib/interface/showproof.cmo \
 	contrib/interface/centaur.cmo
 
-PARSERREQUIRES=lib/pp_control.cmo lib/pp.cmo \
+PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	lib/util.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
         lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo \
-	library/libobject.cmo library/summary.cmo kernel/names.cmo \
+        lib/system.cmo lib/bstack.cmo lib/edit.cmo lib/options.cmo \
+        kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
+        kernel/term.cmo kernel/sign.cmo kernel/environ.cmo \
+	kernel/closure.cmo kernel/reduction.cmo \
+	kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
+	kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo \
+	library/nameops.cmo library/libobject.cmo library/summary.cmo \
+	library/nametab.cmo library/lib.cmo \
+	library/global.cmo library/opaque.cmo \
+	library/library.cmo lib/options.cmo library/impargs.cmo \
+	pretyping/evd.cmo pretyping/instantiate.cmo \
+        pretyping/termops.cmo \
+        pretyping/reductionops.cmo pretyping/retyping.cmo library/declare.cmo \
+        pretyping/cbv.cmo pretyping/tacred.cmo pretyping/classops.cmo \
+        pretyping/rawterm.cmo \
+        pretyping/pattern.cmo pretyping/pretype_errors.cmo \
+	pretyping/evarutil.cmo pretyping/recordops.cmo pretyping/evarconv.cmo \
+	pretyping/coercion.cmo pretyping/inductiveops.cmo pretyping/cases.cmo \
+        pretyping/indrec.cmo \
+	pretyping/pretyping.cmo pretyping/syntax_def.cmo \
 	parsing/lexer.cmo parsing/coqast.cmo \
 	parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo \
 	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
 	parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
-	parsing/extend.cmo config/coq_config.cmo\
-        lib/system.cmo lib/bstack.cmo lib/edit.cmo \
-	library/nametab.cmo kernel/univ.cmo library/lib.cmo kernel/esubst.cmo \
-        kernel/term.cmo kernel/declarations.cmo lib/options.cmo \
-	kernel/sign.cmo kernel/environ.cmo kernel/evd.cmo \
-	kernel/instantiate.cmo kernel/closure.cmo kernel/reduction.cmo \
-	kernel/inductive.cmo kernel/type_errors.cmo kernel/typeops.cmo \
-	kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo \
-	library/global.cmo library/opaque.cmo \
-	library/library.cmo lib/options.cmo library/indrec.cmo \
-	library/impargs.cmo pretyping/retyping.cmo library/declare.cmo \
-	pretyping/cbv.cmo pretyping/tacred.cmo pretyping/classops.cmo \
-	pretyping/rawterm.cmo \
+	parsing/extend.cmo \
 	parsing/coqlib.cmo library/goptions.cmo pretyping/detyping.cmo \
 	parsing/termast.cmo \
-	pretyping/pattern.cmo pretyping/pretype_errors.cmo \
-	pretyping/evarutil.cmo pretyping/recordops.cmo pretyping/evarconv.cmo \
-	pretyping/coercion.cmo pretyping/cases.cmo \
-	pretyping/pretyping.cmo pretyping/syntax_def.cmo parsing/astterm.cmo \
+ parsing/astterm.cmo \
 	parsing/egrammar.cmo parsing/esyntax.cmo toplevel/metasyntax.cmo \
 	parsing/printer.cmo lib/stamps.cmo pretyping/typing.cmo \
 	proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \

@@ -12,7 +12,9 @@ open Pp
 open Util
 open Univ
 open Names
+open Nameops
 open Term
+open Termops
 open Inductive
 open Sign
 open Environ
@@ -71,7 +73,7 @@ let ids_of_ctxt ctxt =
   Array.to_list
     (Array.map
        (function c -> match kind_of_term c with
-	  | IsVar id -> id
+	  | Var id -> id
 	  | _ ->
        error
        "Termast: arbitrary substitution of references not yet implemented")
@@ -103,11 +105,11 @@ let ast_of_ref = function
   | ConstRef sp -> ast_of_constant_ref sp
   | IndRef sp -> ast_of_inductive_ref sp
   | ConstructRef sp -> ast_of_constructor_ref sp
-  | VarRef sp -> ast_of_ident (basename sp)
+  | VarRef id -> ast_of_ident id
 
 let ast_of_qualid p =
   let dir, s = repr_qualid p in
-  let args = List.map nvar ((repr_dirpath dir)@[s]) in
+  let args = List.map nvar ((List.rev(repr_dirpath dir))@[s]) in
   ope ("QUALID", args)
 
 (**********************************************************************)
@@ -298,7 +300,7 @@ let ast_of_rawconstr = ast_of_raw
 let ast_of_constr at_top env t =
   let t' =
     if !print_casts then t
-    else Reduction.local_strong strip_outer_cast t in
+    else Reductionops.local_strong strip_outer_cast t in
   let avoid = if at_top then ids_of_context env else [] in
   ast_of_raw 
     (Detyping.detype avoid (names_of_rel_context env) t')

@@ -13,6 +13,7 @@
 open Util
 open Names
 open Term
+open Termops
 open Pattern
 open Environ
 
@@ -196,15 +197,15 @@ let dest_sig c = match matches (Coqlib.build_coq_sig_pattern ()) c with
 
 (* TODO: faire un test plus serieux sur le type des objets Coq *)
 let rec is_pure_cci c = match kind_of_term c with
-  | IsCast (c,_) -> is_pure_cci c
-  | IsProd(_,_,c') -> is_pure_cci c'
-  | IsRel _ | IsMutInd _ | IsConst _ -> true (* heu... *)
-  | IsApp _ -> not (is_matching (Coqlib.build_coq_sig_pattern ()) c)
+  | Cast (c,_) -> is_pure_cci c
+  | Prod(_,_,c') -> is_pure_cci c'
+  | Rel _ | Ind _ | Const _ -> true (* heu... *)
+  | App _ -> not (is_matching (Coqlib.build_coq_sig_pattern ()) c)
   | _ -> Util.error "CCI term not acceptable in programs"
 
 let rec v_of_constr c = match kind_of_term c with
-  | IsCast (c,_) -> v_of_constr c
-  | IsProd _ ->
+  | Cast (c,_) -> v_of_constr c
+  | Prod _ ->
       let revbl,t2 = Term.decompose_prod c in
       let bl =
 	List.map
@@ -213,7 +214,7 @@ let rec v_of_constr c = match kind_of_term c with
       in
       let vars = List.rev (List.map (fun (id,_) -> mkVar id) bl) in
       Arrow (bl, c_of_constr (substl vars t2))
-  | IsMutInd _ | IsConst _ | IsApp _ ->
+  | Ind _ | Const _ | App _ ->
       TypePure c
   | _ -> 
       failwith "v_of_constr: TODO"

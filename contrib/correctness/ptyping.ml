@@ -14,6 +14,7 @@ open Pp
 open Util
 open Names
 open Term
+open Termops
 open Environ
 open Astterm
 open Himsg
@@ -50,11 +51,11 @@ let typed_var ren env (phi,r) =
 
 let rec convert = function
   | (TypePure c1, TypePure c2) -> 
-      Reduction.is_conv (Global.env ()) Evd.empty c1 c2
+      Reductionops.is_conv (Global.env ()) Evd.empty c1 c2
   | (Ref v1, Ref v2) -> 
       convert (v1,v2)
   | (Array (s1,v1), Array (s2,v2)) -> 
-      (Reduction.is_conv (Global.env ()) Evd.empty s1 s2) && (convert (v1,v2))
+      (Reductionops.is_conv (Global.env ()) Evd.empty s1 s2) && (convert (v1,v2))
   | (v1,v2) -> v1 = v2
       
 let effect_app ren env f args =
@@ -132,15 +133,16 @@ and is_pure_type_c = function
   | _ -> false
 
 let rec is_pure_desc ren env = function
-    Var id -> not (is_in_env env id) or (is_pure_type_v (type_in_env env id))
+    Variable id ->
+      not (is_in_env env id) or (is_pure_type_v (type_in_env env id))
   | Expression c -> 
       (c = isevar) or (is_pure_cci (type_of_expression ren env c))
   | Acc _ -> true
   | TabAcc (_,_,p) -> is_pure ren env p
-  | App (p,args) -> 
+  | Apply (p,args) -> 
       is_pure ren env p & List.for_all (is_pure_arg ren env) args
   | SApp _ | Aff _ | TabAff _ | Seq _ | While _ | If _ 
-  | Lam _ | LetRef _ | LetIn _ | LetRec _ -> false
+  | Lam _ | LetRef _ | Let _ | LetRec _ -> false
   | Debug (_,p) -> is_pure ren env p
   | PPoint (_,d) -> is_pure_desc ren env d
 and is_pure ren env p =
@@ -304,7 +306,7 @@ and cic_binders env ren = function
 
 let states_expression ren env expr =
   let rec effect pl = function
-    | Var id -> 
+    | Variable id -> 
 	(if is_global id then constant (string_of_id id) else mkVar id),
 	pl, Peffect.bottom
     | Expression c -> c, pl, Peffect.bottom
@@ -314,7 +316,7 @@ let states_expression ren env expr =
 	let pre = Pmonad.make_pre_access ren env id c in
 	Pmonad.make_raw_access ren env (id,id) c, 
 	(anonymous_pre true pre)::pl, Peffect.add_read id ef
-    | App (p,args) ->
+    | Apply (p,args) ->
 	let a,pl,e = effect pl p.desc in
 	let args,pl,e =
 	  List.fold_right
@@ -373,10 +375,10 @@ let rec states_desc ren env loc = function
   | Acc _ ->
       failwith "Ptyping.states: term is supposed not to be pure"
 
-  | Var id ->
+  | Variable id ->
       let v = type_in_env env id in
       let ef = Peffect.bottom in
-      Var id, (v,ef)
+      Variable id, (v,ef)
 
   | Aff (x, e1) ->
       Perror.check_for_reference loc x (type_in_env env x);
@@ -437,20 +439,20 @@ let rec states_desc ren env loc = function
       Lam(bl',s_e), (v,ef)
 	 
   (* Connectives AND and OR *)
-  | SApp ([Var id], [e1;e2]) ->
+  | SApp ([Variable id], [e1;e2]) ->
       let s_e1 = states ren env e1
       and s_e2 = states ren env e2 in
       let (_,ef1,_,_) = s_e1.info.kappa
       and (_,ef2,_,_) = s_e2.info.kappa in
       let ef = Peffect.union ef1 ef2 in
-      SApp ([Var id], [s_e1; s_e2]), 
+      SApp ([Variable id], [s_e1; s_e2]), 
       (TypePure (constant "bool"), ef)
 
   (* Connective NOT *)
-  | SApp ([Var id], [e]) ->
+  | SApp ([Variable id], [e]) ->
       let s_e = states ren env e in
       let (_,ef,_,_) = s_e.info.kappa in
-      SApp ([Var id], [s_e]), 
+      SApp ([Variable id], [s_e]), 
       (TypePure (constant "bool"), ef)
       
   | SApp _ -> invalid_arg "Ptyping.states (SApp)"
@@ -463,7 +465,7 @@ let rec states_desc ren env loc = function
             donc si on l'applique à r justement, elle ne modifiera que r
             mais le séquencement ne sera pas correct. *)
 
-  | App (f, args) ->
+  | Apply (f, args) ->
       let s_f = states ren env f in
       let _,eff,_,_ = s_f.info.kappa in
       let s_args = List.map (states_arg ren env) args in
@@ -477,7 +479,7 @@ let rec states_desc ren env loc = function
       let ef = 
 	Peffect.compose (List.fold_left Peffect.compose eff ef_args) efapp
       in
-      App (s_f, s_args), (tapp, ef)
+      Apply (s_f, s_args), (tapp, ef)
       
   | LetRef (x, e1, e2) ->
       let s_e1 = states ren env e1 in
@@ -490,7 +492,7 @@ let rec states_desc ren env loc = function
       let ef = Peffect.compose ef1 (Peffect.remove ef2 x) in
       LetRef (x, s_e1, s_e2), (v2,ef)
 	
-  | LetIn (x, e1, e2) ->
+  | Let (x, e1, e2) ->
       let s_e1 = states ren env e1 in
       let (_,v1),ef1,_,_ = s_e1.info.kappa in
       Perror.check_for_not_mutable e1.loc v1;
@@ -498,7 +500,7 @@ let rec states_desc ren env loc = function
       let s_e2 = states ren env' e2 in
       let (_,v2),ef2,_,_ = s_e2.info.kappa in
       let ef = Peffect.compose ef1 ef2 in
-      LetIn (x, s_e1, s_e2), (v2,ef)
+      Let (x, s_e1, s_e2), (v2,ef)
 	    
   | If (b, e1, e2) ->
       let s_b = states ren env b in

@@ -13,11 +13,13 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Term
 open Miniml
 open Mlutil
 open Options
 open Ocaml
+open Nametab
 
 (*s Haskell renaming issues. *)
 

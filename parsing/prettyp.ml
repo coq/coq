@@ -11,9 +11,12 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Term
+open Termops
 open Declarations
 open Inductive
+open Inductiveops
 open Sign
 open Reduction
 open Environ
@@ -33,11 +36,6 @@ let print_typed_value_in_env env (trm,typ) =
      'sTR "     : "; prtype_env env typ ; 'fNL >]
 
 let print_typed_value x = print_typed_value_in_env (Global.env ()) x
-
-let pkprinters = function
-  | FW -> (fprterm,fprterm_env)
-  | CCI -> (prterm,prterm_env)
-  | _ -> anomaly "pkprinters"
 			  		  
 let print_impl_args = function
   | []  -> [<>]
@@ -105,19 +103,19 @@ let print_constructors envpar names types =
   in hV 0 [< 'sTR "  "; pc >] 
 
 let build_inductive sp tyi =
-  let mis = Global.lookup_mind_specif (sp,tyi) in
-  let params = mis_params_ctxt mis in
+  let (mib,mip) = Global.lookup_inductive (sp,tyi) in
+  let params = mip.mind_params_ctxt in
   let args = extended_rel_list 0 params in
-  let indf = make_ind_family (mis,args) in
-  let arity = get_arity_type indf in
-  let cstrtypes = get_constructors_types indf in
-  let cstrnames = mis_consnames mis in
+  let indf = make_ind_family ((sp,tyi),args) in
+  let arity = mip.mind_user_arity in
+  let cstrtypes = arities_of_constructors (Global.env()) (sp,tyi) in
+  let cstrnames = mip.mind_consnames in
   (IndRef (sp,tyi), params, arity, cstrnames, cstrtypes)
 
 let print_one_inductive sp tyi =
   let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp tyi in
   let env = Global.env () in
-  let envpar = push_rels params env in
+  let envpar = push_rel_context params env in
   (hOV 0
      [< (hOV 0
 	   [< pr_global (IndRef (sp,tyi)) ; 'bRK(1,2); print_params env params;
@@ -125,26 +123,27 @@ let print_one_inductive sp tyi =
 	'bRK(1,2); print_constructors envpar cstrnames cstrtypes >]) 
 
 let print_mutual sp =
-  let mipv = (Global.lookup_mind sp).mind_packets in
-  if Array.length mipv = 1 then
+  let (mib,mip) = Global.lookup_inductive (sp,0) in
+  let mipv = mib.mind_packets in
+  if Array.length mib.mind_packets = 1 then
     let (ref, params, arity, cstrnames, cstrtypes) = build_inductive sp 0 in
     let sfinite =
-      if mipv.(0).mind_finite then "Inductive " else "CoInductive " in
+      if mib.mind_finite then "Inductive " else "CoInductive " in
     let env = Global.env () in
-    let envpar = push_rels params env in
+    let envpar = push_rel_context params env in
     (hOV 0 [< 
        'sTR sfinite ; 
       pr_global (IndRef (sp,0)); 'bRK(1,2);
        print_params env params; 'bRK(1,5);
        'sTR": "; prterm_env envpar arity; 'sTR" :=";
        'bRK(0,4); print_constructors envpar cstrnames cstrtypes; 'fNL;
-       implicit_args_msg sp mipv  >] )
+       implicit_args_msg sp mib.mind_packets  >] )
   (* Mutual [co]inductive definitions *)
   else
     let _,(mipli,miplc) =
       Array.fold_right
         (fun mi (n,(li,lc)) ->
-           if mi.mind_finite then (n+1,(n::li,lc)) else (n+1,(li,n::lc)))
+           if mib.mind_finite then (n+1,(n::li,lc)) else (n+1,(li,n::lc)))
         mipv (0,([],[])) 
     in 
     let strind =
@@ -161,7 +160,7 @@ let print_mutual sp =
                  (print_one_inductive sp) miplc); 'fNL >] 
     in
     (hV 0 [< 'sTR"Mutual " ; 
-             if mipv.(0).mind_finite then 
+             if mib.mind_finite then 
 	       [< strind; strcoind >] 
              else 
 	       [<strcoind; strind>];
@@ -270,11 +269,10 @@ let print_typed_body (val_0,typ) =
 
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
-  if kind_of_path sp = CCI then
-    let val_0 = cb.const_body in
-    let typ = cb.const_type in
-    let impls = constant_implicits_list sp in
-    hOV 0 [< (match val_0 with 
+  let val_0 = cb.const_body in
+  let typ = cb.const_type in
+  let impls = constant_implicits_list sp in
+  hOV 0 [< (match val_0 with 
 		| None -> 
 		    [< 'sTR"*** [ "; 
 		       print_basename sp;  
@@ -287,16 +285,8 @@ let print_constant with_values sep sp =
 		       else 
 			 [< prtype typ ; 'fNL >] >]); 
 	     print_impl_args impls; 'fNL >]
-  else
-    hOV 0 [< 'sTR"Fw constant " ; 
-	     print_basename sp ; 'fNL>]
 
-let print_inductive sp =
-  if kind_of_path sp = CCI then
-    [< print_mutual sp; 'fNL >]
-  else
-    hOV 0 [< 'sTR"Fw inductive definition "; 
-	     print_basename sp; 'fNL >]
+let print_inductive sp = [< print_mutual sp; 'fNL >]
 
 let print_syntactic_def sep sp =
   let id = basename sp in
@@ -307,7 +297,7 @@ let print_leaf_entry with_values sep (sp,lobj) =
   let tag = object_tag lobj in
   match (sp,tag) with
     | (_,"VARIABLE") ->
-	print_section_variable sp
+	print_section_variable (basename sp)
     | (_,("CONSTANT"|"PARAMETER")) ->
 	print_constant with_values sep sp
     | (_,"INDUCTIVE") ->
@@ -439,8 +429,8 @@ let print_name qid =
   with Not_found -> 
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in 
-    if not (is_empty_dirpath dir) then raise Not_found;
-    let (c,typ) = Global.lookup_named str in 
+    if (repr_dirpath dir) <> [] then raise Not_found;
+    let (_,c,typ) = Global.lookup_named str in 
     [< print_named_decl (str,c,typ) >]
   with Not_found ->
   try
@@ -457,19 +447,19 @@ let print_opaque_name qid =
   try 
     let x = global_qualified_reference qid in
     match kind_of_term x with
-      | IsConst cst ->
+      | Const cst ->
 	  let cb = Global.lookup_constant cst in
-          if is_defined cb then
+          if cb.const_body <> None then
 	    print_constant true " = " cst
           else 
 	    error "not a defined constant"
-      | IsMutInd (sp,_) ->
+      | Ind (sp,_) ->
           print_mutual sp
-      | IsMutConstruct cstr -> 
-	  let ty = Typeops.type_of_constructor env sigma cstr in
+      | Construct cstr -> 
+	  let ty = Inductive.type_of_constructor env cstr in
 	  print_typed_value (x, ty)
-      | IsVar id ->
-          let (c,ty) = lookup_named id env in 
+      | Var id ->
+          let (_,c,ty) = lookup_named id env in 
 	  print_named_decl (id,c,ty)
       | _ -> 
 	  assert false
@@ -482,7 +472,7 @@ let print_local_context () =
     | [] -> [< >]
     | (sp,Lib.Leaf lobj)::rest ->
 	if "VARIABLE" = object_tag lobj then
-          let (d,_) = get_variable sp in 
+          let (d,_) = get_variable (basename sp) in 
 	  [< print_var_rec rest;
              print_named_decl d >]
 	else 
@@ -514,9 +504,9 @@ let fprint_judge {uj_val=trm;uj_type=typ} =
 
 let unfold_head_fconst = 
   let rec unfrec k = match kind_of_term k with
-    | IsConst cst -> constant_value (Global.env ()) cst 
-    | IsLambda (na,t,b) -> mkLambda (na,t,unfrec b)
-    | IsApp (f,v) -> appvect (unfrec f,v)
+    | Const cst -> constant_value (Global.env ()) cst 
+    | Lambda (na,t,b) -> mkLambda (na,t,unfrec b)
+    | App (f,v) -> appvect (unfrec f,v)
     | _ -> k
   in 
   unfrec

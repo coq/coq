@@ -78,13 +78,13 @@ let rec expr_of_ast = function
   | Coqast.Id loc id -> <:expr< Coqast.Id loc $str:id$ >>
   | Coqast.Str loc str -> <:expr< Coqast.Str loc $str:str$ >>
   | Coqast.Path loc qid ->
-      let l,a,_ = Names.repr_path qid in
+      let l,a = Names.repr_path qid in
       let expr_of_modid id =
 	<:expr< Names.id_of_string $str:Names.string_of_id id$ >> in
       let e = List.map expr_of_modid (Names.repr_dirpath l) in
       let e = expr_list_of_var_list e in
-      <:expr< Coqast.Path loc (Names.make_path (Names.make_dirpath
-      $e$) (Names.id_of_string $str:Names.string_of_id a$) Names.CCI) >> 
+      <:expr< Coqast.Path loc (Names.make_path (Names.make_dirpath $e$)
+                (Names.id_of_string $str:Names.string_of_id a$)) >> 
   | Coqast.Dynamic _ _ ->
       failwith "Q_Coqast: dynamic: not implemented"
 

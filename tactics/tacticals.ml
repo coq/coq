@@ -12,6 +12,7 @@ open Pp
 open Util
 open Names
 open Term
+open Termops
 open Sign
 open Declarations
 open Inductive
@@ -272,13 +273,13 @@ let reduce_to_ind_goal gl t =
   let rec elimrec t =
     let c,args = decomp_app t in
     match kind_of_term c with
-      | IsMutInd (ind_sp,args as ity) -> 
+      | Ind (ind_sp,args as ity) -> 
 	  ((ity, path_of_inductive_path ind_sp, t), t)
-      | IsCast (c,_) when args = [] ->
+      | Cast (c,_) when args = [] ->
 	  elimrec c
-      | IsProd (n,ty,t') when args = [] ->
+      | Prod (n,ty,t') when args = [] ->
 	  let (ind, t) = elimrec t' in (ind, mkProd (n,ty,t))
-      | IsLetIn (n,c,ty,t') when args = [] ->
+      | LetIn (n,c,ty,t') when args = [] ->
 	  let (ind, t) = elimrec t' in (ind, mkLetIn (n,c,ty,t))
       | _ when Instantiate.isEvalRef c ->
 	  elimrec (pf_nf_betaiota gl (pf_one_step_reduce gl t))
@@ -294,7 +295,8 @@ let case_sign ity i =
     | [] -> acc 
     | (c::rest) -> analrec (false::acc) rest
   in
-  let recarg = mis_recarg (lookup_mind_specif ity (Global.env())) in 
+  let (mib,mip) = Global.lookup_inductive ity in
+  let recarg = mip.mind_listrec in 
   analrec [] recarg.(i-1)
 
 let elim_sign ity i =
@@ -306,12 +308,13 @@ let elim_sign ity i =
     | (Mrec k::rest)   -> analrec ((j=k)::acc) rest
     | []               -> List.rev acc 
   in 
-  let recarg = mis_recarg (lookup_mind_specif ity (Global.env())) in
+  let (mib,mip) = Global.lookup_inductive ity in
+  let recarg = mip.mind_listrec in 
   analrec [] recarg.(i-1)
 
 let elimination_sort_of_goal gl = 
   match kind_of_term (hnf_type_of gl (pf_concl gl)) with 
-    | IsSort s ->
+    | Sort s ->
 	(match s with
 	   | Prop Null -> InProp
 	   | Prop Pos -> InSet
@@ -323,7 +326,7 @@ let elimination_sort_of_goal gl =
 (* c should be of type A1->.. An->B with B an inductive definition *)
 
 let last_arg c = match kind_of_term c with
-  | IsApp (f,cl) -> array_last cl
+  | App (f,cl) -> array_last cl
   | _ -> anomaly "last_arg"
 
 let general_elim_then_using 
@@ -336,18 +339,18 @@ let general_elim_then_using
   let elimclause = mk_clenv_from () (elim,w_type_of wc elim) in
   let indmv = 
     match kind_of_term (last_arg (clenv_template elimclause).rebus) with
-      | IsMeta mv -> mv
+      | Meta mv -> mv
       | _         -> error "elimination"
   in
   let pmv =
-    let p, _ = decomp_app (clenv_template_type elimclause).rebus in
+    let p, _ = decompose_app (clenv_template_type elimclause).rebus in
     match kind_of_term p with
-      | IsMeta p -> p
+      | Meta p -> p
       | _ ->
 	  let name_elim =
 	    match kind_of_term elim with
-	      | IsConst sp -> string_of_path sp
-	      | IsVar id -> string_of_id id
+	      | Const sp -> string_of_path sp
+	      | Var id -> string_of_id id
 	      | _ -> "\b"
 	  in
 	  error ("The elimination combinator " ^ name_elim ^ " is not known") 
@@ -355,7 +358,7 @@ let general_elim_then_using
   let elimclause' = clenv_fchain indmv elimclause indclause' in
   let elimclause' = clenv_constrain_with_bindings elimbindings elimclause' in
   let after_tac ce i gl =
-    let (hd,largs) = decomp_app (clenv_template_type ce).rebus in
+    let (hd,largs) = decompose_app (clenv_template_type ce).rebus in
     let branchsign =  elim_sign_fun ity i in
     let ba = { branchsign = branchsign;
                nassums = 
@@ -378,7 +381,8 @@ let general_elim_then_using
 
 let elimination_then_using tac predicate (indbindings,elimbindings) c gl = 
   let (ind,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
-  let elim = lookup_eliminator (pf_env gl) ind (elimination_sort_of_goal gl) in
+  let elim =
+    Indrec.lookup_eliminator ind (elimination_sort_of_goal gl) in
   general_elim_then_using
     elim elim_sign tac predicate (indbindings,elimbindings) c gl
 

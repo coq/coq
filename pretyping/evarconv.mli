@@ -12,7 +12,7 @@
 open Term
 open Sign
 open Environ
-open Reduction
+open Reductionops
 open Evarutil
 (*i*)
 

@@ -20,6 +20,7 @@ open Evar_refiner
 open Clenv
 open Tacred
 open Tacticals
+open Nametab
 (*i*)
 
 (* Main tactics. *)

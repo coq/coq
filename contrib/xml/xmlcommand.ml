@@ -64,11 +64,11 @@ let extract_nparams pack =
  let module S = Sign in
 
   let {D.mind_nparams=nparams0} = pack.(0) in
-  let arity0 = D.mind_user_arity pack.(0) in
+  let arity0 = pack.(0).D.mind_user_arity in
   let params0, _ = S.decompose_prod_n_assum nparams0 arity0 in
   for i = 1 to Array.length pack - 1 do
     let {D.mind_nparams=nparamsi} = pack.(i) in
-    let arityi = D.mind_user_arity pack.(i) in
+    let arityi = pack.(i).D.mind_user_arity in
     let paramsi, _ = S.decompose_prod_n_assum nparamsi arityi in
     if params0 <> paramsi then U.error "Cannot convert a block of inductive definitions with parameters specific to each inductive to a block of mutual inductive definitions with parameters global to the whole block"
   done;
@@ -99,9 +99,10 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
 (* section path is sp                                                         *)
 let uri_of_path sp tag =
  let module N = Names in
+ let module No = Nameops in
   let ext_of_sp sp = ext_of_tag tag in
-  let dir0 = N.extend_dirpath (N.dirpath sp) (N.basename sp) in
-  let dir = List.map N.string_of_id (N.repr_dirpath dir0) in
+  let dir0 = No.extend_dirpath (No.dirpath sp) (No.basename sp) in
+  let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir0)) in
    "cic:/" ^ (String.concat "/" dir) ^ "." ^ (ext_of_sp sp)
 ;;
 
@@ -193,10 +194,12 @@ let add_to_pvars x =
   let v =
    match x with
       Definition (v, bod, typ) ->
-       cumenv := E.push_named_def (Names.id_of_string v, bod, typ) !cumenv ;
+       cumenv :=
+         E.push_named_decl (Names.id_of_string v, Some bod, typ) !cumenv ;
        v
     | Assumption (v, typ) ->
-       cumenv := E.push_named_assum (Names.id_of_string v, typ) !cumenv ;
+       cumenv :=
+         E.push_named_decl (Names.id_of_string v, None, typ) !cumenv ;
        v
   in
    match !pvars with
@@ -305,18 +308,18 @@ let print_term inner_types l env csr =
     (* kind_of_term helps doing pattern matching hiding the lower level of *)
    (* coq coding of terms (the one of the logical framework)              *)
    match T.kind_of_term cstr with
-     T.IsRel n  ->
+     T.Rel n  ->
       let id =
        match List.nth l (n - 1) with
           N.Name id   -> id
-        | N.Anonymous -> N.make_ident "_" None
+        | N.Anonymous -> Nameops.make_ident "_" None
       in
        X.xml_empty "REL"
         (add_sort_attribute false
           ["value",(string_of_int n) ;
            "binder",(N.string_of_id id) ;
            "id", next_id])
-   | T.IsVar id ->
+   | T.Var id ->
       let depth =
        match get_depth_of_var (N.string_of_id id) with
           None -> "?" (* when printing via Show XML Proof or Print XML id *)
@@ -328,33 +331,33 @@ let print_term inner_types l env csr =
         (add_sort_attribute false
          ["relUri",depth ^ "," ^ (N.string_of_id id) ;
           "id", next_id])
-   | T.IsMeta n ->
+   | T.Meta n ->
       X.xml_empty "META"
        (add_sort_attribute false ["no",(string_of_int n) ; "id", next_id])
-   | T.IsSort s ->
+   | T.Sort s ->
       X.xml_empty "SORT" ["value",(string_of_sort s) ; "id", next_id]
-   | T.IsCast (t1,t2) ->
+   | T.Cast (t1,t2) ->
       X.xml_nempty "CAST" (add_sort_attribute false ["id", next_id])
 (force
        [< X.xml_nempty "term" [] (term_display idradix false l env t1) ;
           X.xml_nempty "type" [] (term_display idradix false l env t2)
        >]
 )
-   | T.IsLetIn (nid,s,t,d)->
-      let nid' = N.next_name_away nid (names_to_ids l) in
+   | T.LetIn (nid,s,t,d)->
+      let nid' = Nameops.next_name_away nid (names_to_ids l) in
        X.xml_nempty "LETIN" (add_sort_attribute true ["id", next_id])
 (force
         [< X.xml_nempty "term" [] (term_display idradix false l env s) ;
            X.xml_nempty "letintarget" ["binder",(N.string_of_id nid')]
             (term_display idradix false
              ((N.Name nid')::l)
-             (E.push_rel_def (N.Name nid', s, t) env)
+             (E.push_rel (N.Name nid', Some s, t) env)
              d
             )
         >]
 )
-   | T.IsProd (N.Name _ as nid, t1, t2) ->
-      let nid' = N.next_name_away nid (names_to_ids l) in
+   | T.Prod (N.Name _ as nid, t1, t2) ->
+      let nid' = Nameops.next_name_away nid (names_to_ids l) in
        X.xml_nempty "PROD" (add_type_attribute ["id", next_id])
 (force
         [< X.xml_nempty "source" [] (term_display idradix false l env t1) ;
@@ -365,49 +368,49 @@ let print_term inner_types l env csr =
              else ["binder",(N.string_of_id nid')])
             (term_display idradix false
              ((N.Name nid')::l)
-             (E.push_rel_assum (N.Name nid', t1) env)
+             (E.push_rel (N.Name nid', None, t1) env)
              t2
             )
         >]
 )
-   | T.IsProd (N.Anonymous as nid, t1, t2) ->
+   | T.Prod (N.Anonymous as nid, t1, t2) ->
       X.xml_nempty "PROD" (add_type_attribute ["id", next_id])
 (force
        [< X.xml_nempty "source" [] (term_display idradix false l env t1) ;
           X.xml_nempty "target" []
            (term_display idradix false
             (nid::l)
-            (E.push_rel_assum (nid, t1) env)
+            (E.push_rel (nid, None, t1) env)
             t2
            )
        >]
 )
-   | T.IsLambda (N.Name _ as nid, t1, t2) ->
-      let nid' = N.next_name_away nid (names_to_ids l) in
+   | T.Lambda (N.Name _ as nid, t1, t2) ->
+      let nid' = Nameops.next_name_away nid (names_to_ids l) in
        X.xml_nempty "LAMBDA" (add_sort_attribute (not in_lambda) ["id",next_id])
 (force
         [< X.xml_nempty "source" [] (term_display idradix false l env t1) ;
            X.xml_nempty "target" ["binder",(N.string_of_id nid')]
             (term_display idradix true
              ((N.Name nid')::l)
-             (E.push_rel_assum (N.Name nid', t1) env)
+             (E.push_rel (N.Name nid', None, t1) env)
              t2
             )
         >]
 )
-   | T.IsLambda (N.Anonymous as nid, t1, t2) ->
+   | T.Lambda (N.Anonymous as nid, t1, t2) ->
       X.xml_nempty "LAMBDA" (add_sort_attribute (not in_lambda) ["id", next_id])
 (force
        [< X.xml_nempty "source" [] (term_display idradix false l env t1) ;
           X.xml_nempty "target" []
            (term_display idradix true
             (nid::l)
-            (E.push_rel_assum (nid, t1) env)
+            (E.push_rel (nid, None, t1) env)
             t2
           )
        >]
 )
-   | T.IsApp (h,t) ->
+   | T.App (h,t) ->
       X.xml_nempty "APPLY" (add_sort_attribute true ["id", next_id])
 (force
        [< (term_display idradix false l env h) ;
@@ -415,23 +418,23 @@ let print_term inner_types l env csr =
           (fun x i -> [< (term_display idradix false l env x); i >]) t [<>])
        >]
 )
-   | T.IsConst sp ->
+   | T.Const sp ->
       X.xml_empty "CONST"
        (add_sort_attribute false
         ["uri",(uri_of_path sp Constant) ; "id", next_id])
-   | T.IsMutInd (sp,i) ->
+   | T.Ind (sp,i) ->
       X.xml_empty "MUTIND"
        ["uri",(uri_of_path sp Inductive) ;
         "noType",(string_of_int i) ;
         "id", next_id]
-   | T.IsMutConstruct ((sp,i),j) ->
+   | T.Construct ((sp,i),j) ->
       X.xml_empty "MUTCONSTRUCT"
        (add_sort_attribute false
         ["uri",(uri_of_path sp Inductive) ;
          "noType",(string_of_int i) ;
          "noConstr",(string_of_int j) ;
          "id", next_id])
-   | T.IsMutCase ((_,((sp,i),_,_,_,_)),ty,term,a) ->
+   | T.Case ({T.ci_ind=(sp,i)},ty,term,a) ->
       let (uri, typeno) = (uri_of_path sp Inductive),i in
        X.xml_nempty "MUTCASE"
         (add_sort_attribute true
@@ -448,7 +451,7 @@ let print_term inner_types l env csr =
             ) a [<>]
         >]
 )
-   | T.IsFix ((ai,i),((f,t,b) as rec_decl)) ->
+   | T.Fix ((ai,i),((f,t,b) as rec_decl)) ->
       X.xml_nempty "FIX"
        (add_sort_attribute true ["noFun", (string_of_int i) ; "id",next_id])
 (force
@@ -472,7 +475,7 @@ let print_term inner_types l env csr =
            [<>]
        >]
 )
-   | T.IsCoFix (i,((f,t,b) as rec_decl)) ->
+   | T.CoFix (i,((f,t,b) as rec_decl)) ->
       X.xml_nempty "COFIX"
        (add_sort_attribute true ["noFun", (string_of_int i) ; "id",next_id])
 (force
@@ -494,7 +497,7 @@ let print_term inner_types l env csr =
 	   (Array.mapi (fun j x -> (x,t.(j),b.(j)) ) f ) [<>]
        >]
 )
-   | T.IsEvar _ ->
+   | T.Evar _ ->
       Util.anomaly "Evar node in a term!!!"
   in
     (*CSC: ad l vanno andrebbero aggiunti i nomi da non *)
@@ -590,7 +593,7 @@ let print_variable id body typ env inner_types =
 (*          of mutual inductive definitions)                                 *)
 (* returns a stream of XML tokens suitable to be pretty printed via Xml.pp   *)
 (* Used only by print_mutual_inductive                                       *)
-let print_mutual_inductive_packet inner_types names env p =
+let print_mutual_inductive_packet inner_types names env finite p =
  let module D = Declarations in
  let module N = Names in
  let module T = Term in
@@ -598,8 +601,7 @@ let print_mutual_inductive_packet inner_types names env p =
   let {D.mind_consnames=consnames ;
        D.mind_typename=typename ;
        D.mind_nf_lc=lc ;
-       D.mind_nf_arity=arity ;
-       D.mind_finite=finite} = p
+       D.mind_nf_arity=arity} = p
   in
    [< X.xml_nempty "InductiveType"
        ["name",(N.string_of_id typename) ;
@@ -628,7 +630,7 @@ let print_mutual_inductive_packet inner_types names env p =
 (*  and   nparams     is the number of "parameters" in the arity of the    *)
 (*                    mutual inductive types                               *)
 (* returns a stream of XML tokens suitable to be pretty printed via Xml.pp *)
-let print_mutual_inductive packs fv hyps env inner_types =
+let print_mutual_inductive finite packs fv hyps env inner_types =
  let module D = Declarations in
  let module E = Environ in
  let module X = Xml in
@@ -642,7 +644,7 @@ let print_mutual_inductive packs fv hyps env inner_types =
   let env =
    List.fold_right
     (fun {D.mind_typename=typename ; D.mind_nf_arity=arity} env ->
-     E.push_rel_assum (N.Name typename, arity) env)
+     E.push_rel (N.Name typename, None, arity) env)
     (Array.to_list packs)
     env
   in
@@ -655,7 +657,8 @@ let print_mutual_inductive packs fv hyps env inner_types =
         "params",(string_of_pvars fv hyps)]
        [< (Array.fold_right
             (fun x i ->
-             [< print_mutual_inductive_packet inner_types names env x ; i >]
+             [< print_mutual_inductive_packet
+                  inner_types names env finite x ; i >]
             ) packs [< >]
           )
        >]
@@ -664,7 +667,7 @@ let print_mutual_inductive packs fv hyps env inner_types =
 
 let string_list_of_named_context_list =
  List.map
-  (function (n,_,_) -> Names.string_of_id (Names.basename n))
+  (function (n,_,_) -> Names.string_of_id n)
 ;;
 
 let types_filename_of_filename =
@@ -700,24 +703,25 @@ let pp_cmds_of_inner_types inner_types target_uri =
 (* Note: it is printed only (and directly) the most cooked available      *)
 (*       form of the definition (all the parameters are                   *)
 (*       lambda-abstracted, but the object can still refer to variables)  *)
-let print sp fn =
+let print qid fn =
  let module D = Declarations in
  let module G = Global in
  let module N = Names in
  let module Nt = Nametab in
  let module T = Term in
  let module X = Xml in
-  let (_,id) = Nt.repr_qualid sp in
-  let glob_ref = Nametab.locate sp in
+  let (_,id) = Nt.repr_qualid qid in
+  let glob_ref = Nametab.locate qid in
   let env = (Safe_typing.env_of_safe_env (G.safe_env ())) in
   reset_ids () ;
   let inner_types = ref [] in
   let sp,tag,pp_cmds =
    match glob_ref with
-      N.VarRef sp ->
-       let (body,typ) = G.lookup_named id in
+      Nt.VarRef id ->
+        let sp = Declare.find_section_variable id in
+       let (_,body,typ) = G.lookup_named id in
         sp,Variable,print_variable id body (T.body_of_type typ) env inner_types
-    | N.ConstRef sp ->
+    | Nt.ConstRef sp ->
        let {D.const_body=val0 ; D.const_type = typ ; D.const_hyps = hyps} =
         G.lookup_constant sp in
        let hyps = string_list_of_named_context_list hyps in
@@ -728,12 +732,14 @@ let print sp fn =
             None ->   print_axiom id typ [] hyps env inner_types
           | Some c -> print_definition id c typ [] hyps env inner_types
         end
-    | N.IndRef (sp,_) ->
-       let {D.mind_packets=packs ; D.mind_hyps=hyps} = G.lookup_mind sp in
+    | Nt.IndRef (sp,_) ->
+       let {D.mind_packets=packs ;
+            D.mind_hyps=hyps;
+            D.mind_finite=finite} = G.lookup_mind sp in
         let hyps = string_list_of_named_context_list hyps in
          sp,Inductive,
-          print_mutual_inductive packs [] hyps env inner_types
-    | N.ConstructRef _ ->
+          print_mutual_inductive finite packs [] hyps env inner_types
+    | Nt.ConstructRef _ ->
        Util.anomaly ("print: this should not happen")
   in
    Xml.pp pp_cmds fn ;
@@ -795,11 +801,12 @@ let mkfilename dn sp ext =
   let module L = Library in
   let module S = System in
   let module N = Names in
+  let module No = Nameops in
    match dn with
       None         -> None
     | Some basedir ->
-	let dir0 = N.extend_dirpath (N.dirpath sp) (N.basename sp) in
-	let dir = List.map N.string_of_id (N.repr_dirpath dir0) in
+	let dir0 = No.extend_dirpath (No.dirpath sp) (No.basename sp) in
+	let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir0)) in
        Some (basedir ^ join_dirs basedir dir ^ "." ^ ext)
 ;;
 
@@ -844,13 +851,14 @@ let print_object lobj id sp dn fv env =
       | "INDUCTIVE" ->
            let
             {D.mind_packets=packs ;
-             D.mind_hyps = hyps
+             D.mind_hyps = hyps;
+             D.mind_finite = finite
             } = G.lookup_mind sp
            in
             let hyps = string_list_of_named_context_list hyps in
-             print_mutual_inductive packs fv hyps env inner_types
+             print_mutual_inductive finite packs fv hyps env inner_types
       | "VARIABLE" ->
-          let (_,(varentry,_)) = Declare.out_variable lobj in
+          let (_,(_,varentry,_)) = Declare.out_variable lobj in
            begin
             match varentry with
                Declare.SectionLocalDef body ->
@@ -883,7 +891,7 @@ let rec print_library_segment state bprintleaf dn =
   List.iter
    (function (sp, node) ->
      print_if_verbose ("Print_library_segment: " ^ Names.string_of_path sp ^ "\n") ;
-     print_node node (Names.basename sp) sp bprintleaf dn ;
+     print_node node (Nameops.basename sp) sp bprintleaf dn ;
      print_if_verbose "\n"
    ) (List.rev state)
 (* print_node node id section_path bprintleaf directory_name             *)
@@ -921,10 +929,10 @@ with _ -> print_if_verbose ("EXCEPTION RAISED!!!\n");
           end
        end
    | L.OpenedSection (dir,_) ->
-       let id = snd (Names.split_dirpath dir) in
+       let id = snd (Nameops.split_dirpath dir) in
        print_if_verbose ("OpenDir " ^ Names.string_of_id id ^ "\n")
    | L.ClosedSection (_,dir,state) ->
-      let id = snd (Names.split_dirpath dir) in
+      let id = snd (Nameops.split_dirpath dir) in
       print_if_verbose("ClosedDir " ^ Names.string_of_id id ^ "\n") ;
       if bprintleaf then
        begin
@@ -992,13 +1000,14 @@ let printModule qid dn =
 let printSection id dn =
  let module L = Library in
  let module N = Names in
+ let module No = Nameops in
  let module X = Xml in
-  let sp = Lib.make_path id N.OBJ in
+  let sp = Lib.make_path id in
   let ls =
    let rec find_closed_section =
     function
        [] -> raise Not_found
-     | (_,Lib.ClosedSection (_,dir,ls))::_ when snd (N.split_dirpath dir) = id
+     | (_,Lib.ClosedSection (_,dir,ls))::_ when snd (No.split_dirpath dir) = id
 	 -> ls
      | _::t -> find_closed_section t
    in

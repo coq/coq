@@ -10,97 +10,83 @@
 
 (*i*)
 open Names
-open Sign
 open Univ
 open Term
-open Evd
 open Environ
+open Inductive
 (*i*)
 
+(*s Typing functions (not yet tagged as safe) *)
 
-(* Basic operations of the typing machine. *)
+val infer      : env -> constr       -> unsafe_judgment * constraints
+val infer_v    : env -> constr array -> unsafe_judgment array * constraints
+val infer_type : env -> types        -> unsafe_type_judgment * constraints
 
-val make_judge : constr -> types -> unsafe_judgment
+type local_entry =
+  | LocalDef of constr
+  | LocalAssum of constr
 
-val j_val : unsafe_judgment -> constr
+val infer_local_decls :
+  env -> (identifier * local_entry) list
+    -> env * Sign.rel_context * constraints
+
+(*s Basic operations of the typing machine. *)
 
 (* If [j] is the judgement $c:t$, then [assumption_of_judgement env j]
    returns the type $c$, checking that $t$ is a sort. *)
 
-val assumption_of_judgment : 
-  env -> 'a evar_map -> unsafe_judgment -> types
-
-val type_judgment : 
-  env -> 'a evar_map -> unsafe_judgment -> unsafe_type_judgment
+val assumption_of_judgment :  env -> unsafe_judgment -> types
+val type_judgment          :  env -> unsafe_judgment -> unsafe_type_judgment
 
 (*s Type of sorts. *)
 val judge_of_prop_contents : contents -> unsafe_judgment
+val judge_of_type          : universe -> unsafe_judgment * constraints
 
-val judge_of_type : universe -> unsafe_judgment * constraints
+(*s Type of a bound variable. *)
+val judge_of_relative : env -> int -> unsafe_judgment
 
-(*s Type of atomic terms. *)
-val relative : env -> int -> unsafe_judgment
+(*s Type of variables *)
+val judge_of_variable : env -> identifier -> unsafe_judgment
 
-val type_of_constant : env -> 'a evar_map -> constant -> types
+(*s type of a constant *)
+val judge_of_constant : env -> constant -> unsafe_judgment
 
-val type_of_existential : env -> 'a evar_map -> existential -> types
+(*s Type of application. *)
+val judge_of_apply : 
+  env -> unsafe_judgment -> unsafe_judgment array
+    -> unsafe_judgment * constraints
 
 (*s Type of an abstraction. *)
-val abs_rel : 
-  env -> 'a evar_map -> name -> types -> unsafe_judgment 
+val judge_of_abstraction : 
+  env -> name -> unsafe_type_judgment -> unsafe_judgment 
+    -> unsafe_judgment
+
+(*s Type of a product. *)
+val judge_of_product :
+  env -> name -> unsafe_type_judgment -> unsafe_type_judgment 
     -> unsafe_judgment * constraints
 
 (* s Type of a let in. *)
 val judge_of_letin :
-  env -> 'a evar_map -> name -> unsafe_judgment -> unsafe_judgment 
-    -> unsafe_judgment * constraints
-
-(*s Type of application. *)
-val apply_rel_list : 
-  env -> 'a evar_map -> bool -> unsafe_judgment list -> unsafe_judgment
-    -> unsafe_judgment * constraints
-
-(*s Type of a product. *)
-val gen_rel :
-  env -> 'a evar_map -> name -> unsafe_type_judgment -> unsafe_type_judgment 
-    -> unsafe_judgment * constraints
-
-val sort_of_product : sorts -> sorts -> universes -> sorts * constraints
+  env -> name -> unsafe_judgment -> unsafe_judgment 
+    -> unsafe_judgment
 
 (*s Type of a cast. *)
-val cast_rel :
-  env -> 'a evar_map -> unsafe_judgment -> types
+val judge_of_cast :
+  env -> unsafe_judgment -> unsafe_type_judgment
     -> unsafe_judgment * constraints
 
 (*s Inductive types. *)
-open Inductive
 
-val type_of_inductive : env -> 'a evar_map -> inductive -> types
+val judge_of_inductive : env -> inductive -> unsafe_judgment
 
-val type_of_constructor : env -> 'a evar_map -> constructor -> types
+val judge_of_constructor : env -> constructor -> unsafe_judgment
 
 (*s Type of Cases. *)
-val judge_of_case : env -> 'a evar_map -> case_info
-  -> unsafe_judgment -> unsafe_judgment 
-    -> unsafe_judgment array -> unsafe_judgment * constraints
+val judge_of_case : env -> case_info
+  -> unsafe_judgment -> unsafe_judgment -> unsafe_judgment array
+    -> unsafe_judgment * constraints
 
-val find_case_dep_nparams :
-  env -> 'a evar_map -> constr * unsafe_judgment -> inductive_family
-    -> bool * constraints
-
-val type_case_branches :
-  env -> 'a evar_map -> Inductive.inductive_type -> unsafe_judgment
-    -> constr -> types array * types * constraints
-
-(*s Type of fixpoints and guard condition. *)
-val check_fix : env -> 'a evar_map -> fixpoint -> unit
-val check_cofix : env -> 'a evar_map -> cofixpoint -> unit
-val type_fixpoint : env -> 'a evar_map -> name array -> types array 
+(* Typecheck general fixpoint (not checking guard conditions) *)
+val type_fixpoint : env -> name array -> types array 
     -> unsafe_judgment array -> constraints
-
-val control_only_guard : env -> 'a evar_map -> constr -> unit
-
-(*i
-val hyps_inclusion : env -> 'a evar_map -> named_context -> named_context -> bool
-i*)
-

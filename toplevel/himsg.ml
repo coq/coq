@@ -13,6 +13,7 @@ open Util
 open Options
 open Names
 open Term
+open Termops
 open Inductive
 open Indtypes
 open Sign
@@ -27,30 +28,34 @@ open Ast
 
 let guill s = "\""^s^"\""
 
-let explain_unbound_rel k ctx n =
+let explain_unbound_rel ctx n =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_context_of [< 'sTR "In environment" >] k ctx in
+  let pe = pr_ne_context_of [< 'sTR "In environment" >] ctx in
   [< 'sTR"Unbound reference: "; pe;
      'sTR"The reference "; 'iNT n; 'sTR" is free" >]
 
-let explain_not_type k ctx j =
+let explain_not_type ctx j =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_context_of [< 'sTR"In environment" >] k ctx in
+  let pe = pr_ne_context_of [< 'sTR"In environment" >] ctx in
   let pc,pt = prjudge_env ctx j in
   [< pe; 'sTR "the term"; 'bRK(1,1); pc; 'sPC;
      'sTR"has type"; 'sPC; pt; 'sPC; 
      'sTR"which should be Set, Prop or Type." >];;
 
-let explain_bad_assumption k ctx c =
-  let pc = prterm_env ctx c in
-  [< 'sTR "Cannot declare a variable or hypothesis over the term";
-     'bRK(1,1); pc; 'sPC; 'sTR "because this term is not a type." >];;
+let explain_bad_assumption ctx j =
+  let ctx = make_all_name_different ctx in
+  let pe = pr_ne_context_of [< 'sTR"In environment" >] ctx in
+  let pc,pt = prjudge_env ctx j in
+  [< pe; 'sTR "cannot declare a variable or hypothesis over the term";
+     'bRK(1,1); pc; 'sPC; 'sTR"of type"; 'sPC; pt; 'sPC;
+     'sTR "because this term is not a type." >];;
 
-let explain_reference_variables id =
-  [< 'sTR "the constant"; 'sPC; pr_id id; 'sPC; 
+let explain_reference_variables c =
+  let pc = prterm c in
+  [< 'sTR "the constant"; 'sPC; pc; 'sPC; 
      'sTR "refers to variables which are not in the context" >]
 
-let msg_bad_elimination ctx k = function
+let msg_bad_elimination ctx = function
   | Some(kp,ki,explanation) ->
       let pki = prterm_env ctx ki in
       let pkp = prterm_env ctx kp in
@@ -62,7 +67,7 @@ let msg_bad_elimination ctx k = function
   | None -> 
       [<>]
 
-let explain_elim_arity k ctx ind aritylst c pj okinds = 
+let explain_elim_arity ctx ind aritylst c pj okinds = 
   let pi = pr_inductive ctx ind in
   let ppar = prlist_with_sep pr_coma (prterm_env ctx) aritylst in
   let pc = prterm_env ctx c in
@@ -73,23 +78,23 @@ let explain_elim_arity k ctx ind aritylst c pj okinds =
      'sTR "The elimination predicate"; 'bRK(1,1); pp; 'sPC;
      'sTR "has type"; 'bRK(1,1); ppt; 'fNL;
      'sTR "It should be one of :"; 'bRK(1,1) ; hOV 0 ppar; 'fNL;
-     msg_bad_elimination ctx k okinds >]
+     msg_bad_elimination ctx okinds >]
 
-let explain_case_not_inductive k ctx cj =
+let explain_case_not_inductive ctx cj =
   let pc = prterm_env ctx cj.uj_val in
   let pct = prterm_env ctx cj.uj_type in
   [< 'sTR "In Cases expression, the matched term"; 'bRK(1,1); pc; 'sPC; 
      'sTR "has type"; 'bRK(1,1); pct; 'sPC; 
      'sTR "which is not a (co-)inductive type" >]
   
-let explain_number_branches k ctx cj expn =
+let explain_number_branches ctx cj expn =
   let pc = prterm_env ctx cj.uj_val in
   let pct = prterm_env ctx cj.uj_type in
   [< 'sTR "Cases on term"; 'bRK(1,1); pc; 'sPC ;
      'sTR "of type"; 'bRK(1,1); pct; 'sPC;
      'sTR "expects ";  'iNT expn; 'sTR " branches" >]
 
-let explain_ill_formed_branch k ctx c i actty expty =
+let explain_ill_formed_branch ctx c i actty expty =
   let pc = prterm_env ctx c in
   let pa = prterm_env ctx actty in
   let pe = prterm_env ctx expty in
@@ -98,9 +103,9 @@ let explain_ill_formed_branch k ctx c i actty expty =
      'sTR " has type"; 'bRK(1,1); pa ; 'sPC; 
      'sTR "which should be"; 'bRK(1,1); pe >]
 
-let explain_generalization k ctx (name,var) j =
+let explain_generalization ctx (name,var) j =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_context_of [< 'sTR "In environment" >] k ctx in
+  let pe = pr_ne_context_of [< 'sTR "In environment" >] ctx in
   let pv = prtype_env ctx var in
   let (pc,pt) = prjudge_env (push_rel_assum (name,var) ctx) j in
   [< 'sTR"Illegal generalization: "; pe;
@@ -108,20 +113,20 @@ let explain_generalization k ctx (name,var) j =
      'sTR"over"; 'bRK(1,1); pc; 'sTR","; 'sPC; 'sTR"it has type"; 'sPC; pt; 
      'sPC; 'sTR"which should be Set, Prop or Type." >]
 
-let explain_actual_type k ctx c ct pt =
+let explain_actual_type ctx j pt =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_context_of [< 'sTR "In environment" >] k ctx in
-  let pc = prterm_env ctx c in
-  let pct = prterm_env ctx ct in
+  let pe = pr_ne_context_of [< 'sTR "In environment" >] ctx in
+  let (pc,pct) = prjudge_env ctx j in
   let pt = prterm_env ctx pt in
   [< pe;
      'sTR "The term"; 'bRK(1,1); pc ; 'sPC ;
      'sTR "has type" ; 'bRK(1,1); pct; 'bRK(1,1); 
      'sTR "while it is expected to have type"; 'bRK(1,1); pt >]
 
-let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
+let explain_cant_apply_bad_type ctx (n,exptyp,actualtyp) rator randl =
+  let randl = Array.to_list randl in
   let ctx = make_all_name_different ctx in
-(*  let pe = pr_ne_context_of [< 'sTR"in environment" >] k ctx in*)
+(*  let pe = pr_ne_context_of [< 'sTR"in environment" >] ctx in*)
   let pr,prt = prjudge_env ctx rator in
   let term_string1,term_string2 =
     if List.length randl > 1 then
@@ -142,9 +147,10 @@ let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
      'bRK(1,1); prterm_env ctx actualtyp; 'sPC;
      'sTR"which should be coercible to"; 'bRK(1,1); prterm_env ctx exptyp >]
 
-let explain_cant_apply_not_functional k ctx rator randl =
+let explain_cant_apply_not_functional ctx rator randl =
+  let randl = Array.to_list randl in
   let ctx = make_all_name_different ctx in
-(*  let pe = pr_ne_context_of [< 'sTR"in environment" >] k ctx in*)
+(*  let pe = pr_ne_context_of [< 'sTR"in environment" >] ctx in*)
   let pr = prterm_env ctx rator.uj_val in
   let prt = prterm_env ctx (body_of_type rator.uj_type) in
   let term_string = if List.length randl > 1 then "terms" else "term" in
@@ -160,14 +166,14 @@ let explain_cant_apply_not_functional k ctx rator randl =
      'sTR("cannot be applied to the "^term_string); 'fNL; 
      'sTR" "; v 0 appl >]
 
-let explain_unexpected_type k ctx actual_type expected_type =
+let explain_unexpected_type ctx actual_type expected_type =
   let ctx = make_all_name_different ctx in
   let pract = prterm_env ctx actual_type in
   let prexp = prterm_env ctx expected_type in
   [< 'sTR"This type is"; 'sPC; pract; 'sPC; 'sTR "but is expected to be";
      'sPC; prexp >]
 
-let explain_not_product k ctx c =
+let explain_not_product ctx c =
   let ctx = make_all_name_different ctx in
   let pr = prterm_env ctx c in
   [< 'sTR"The type of this term is a product,"; 'sPC;
@@ -176,7 +182,7 @@ let explain_not_product k ctx c =
 
 (* TODO: use the names *)
 (* (co)fixpoints *)
-let explain_ill_formed_rec_body k ctx err names i vdefs =
+let explain_ill_formed_rec_body ctx err names i vdefs =
   let str = match err with
 
   (* Fixpoint guard errors *)
@@ -222,7 +228,7 @@ let explain_ill_formed_rec_body k ctx err names i vdefs =
 	 'sPC ; 'sTR":="; 'sPC ; pvd; 'sPC;
      'sTR "is not well-formed" >]
 
-let explain_ill_typed_rec_body k ctx i names vdefj vargs =
+let explain_ill_typed_rec_body ctx i names vdefj vargs =
   let pvd,pvdt = prjudge_env ctx (vdefj.(i)) in
   let pv = prterm_env ctx (body_of_type vargs.(i)) in
   [< 'sTR"The " ;
@@ -230,12 +236,12 @@ let explain_ill_typed_rec_body k ctx i names vdefj vargs =
      'sTR"recursive definition" ; 'sPC; pvd; 'sPC;
      'sTR "has type"; 'sPC; pvdt;'sPC; 'sTR "it should be"; 'sPC; pv >]
 
-let explain_not_inductive k ctx c =
+let explain_not_inductive ctx c =
   let pc = prterm_env ctx c in
   [< 'sTR"The term"; 'bRK(1,1); pc; 'sPC;
      'sTR "is not an inductive definition" >]
 
-let explain_ml_case k ctx mes =
+let explain_ml_case ctx mes =
   let expln = match mes with
     | MlCaseAbsurd ->
 	[< 'sTR "Unable to infer a predicate for an elimination an empty type">]
@@ -244,17 +250,17 @@ let explain_ml_case k ctx mes =
   in
   hOV 0 [< 'sTR "Cannot infer ML Case predicate:"; 'fNL; expln >] 
 
-let explain_cant_find_case_type k ctx c =
+let explain_cant_find_case_type ctx c =
   let pe = prterm_env ctx c in
   hOV 3 [<'sTR "Cannot infer type of whole Case expression on"; 'wS 1; pe >]
 
-let explain_occur_check k ctx ev rhs =
+let explain_occur_check ctx ev rhs =
   let id = "?" ^ string_of_int ev in
   let pt = prterm_env ctx rhs in
   [< 'sTR"Occur check failed: tried to define "; 'sTR id;
      'sTR" with term"; 'bRK(1,1); pt >]
 
-let explain_not_clean k ctx ev t =
+let explain_not_clean ctx ev t =
   let c = mkRel (Intset.choose (free_rels t)) in
   let id = "?" ^ string_of_int ev in
   let var = prterm_env ctx c in
@@ -262,59 +268,73 @@ let explain_not_clean k ctx ev t =
      'sTR" with a term using variable "; var; 'sPC;
      'sTR"which is not in its scope." >]
 
-let explain_var_not_found k ctx id = 
+let explain_var_not_found ctx id = 
   [< 'sTR "The variable"; 'sPC; 'sTR (string_of_id id);
      'sPC ; 'sTR "was not found"; 
      'sPC ; 'sTR "in the current"; 'sPC ; 'sTR "environment" >]
 
-let explain_type_error k ctx = function
+let explain_wrong_case_info ctx ind ci =
+  let pi = prterm (mkInd ind) in
+  if ci.ci_ind = ind then
+    [< 'sTR"Cases expression on an object of inductive"; 'sPC; pi;
+       'sPC; 'sTR"has invalid information" >]
+  else
+    let pc = prterm (mkInd ci.ci_ind) in
+    [< 'sTR"A term of inductive type"; 'sPC; pi; 'sPC;
+       'sTR"was given to a Cases expression on the inductive type";
+       'sPC; pc >]
+       
+
+let explain_type_error ctx = function
   | UnboundRel n -> 
-      explain_unbound_rel k ctx n
+      explain_unbound_rel ctx n
   | NotAType j -> 
-      explain_not_type k ctx j
+      explain_not_type ctx j
   | BadAssumption c -> 
-      explain_bad_assumption k ctx c
+      explain_bad_assumption ctx c
   | ReferenceVariables id -> 
       explain_reference_variables id
   | ElimArity (ind, aritylst, c, pj, okinds) ->
-      explain_elim_arity k ctx ind aritylst c pj okinds 
+      explain_elim_arity ctx ind aritylst c pj okinds 
   | CaseNotInductive cj -> 
-      explain_case_not_inductive k ctx cj
+      explain_case_not_inductive ctx cj
   | NumberBranches (cj, n) -> 
-      explain_number_branches k ctx cj n
+      explain_number_branches ctx cj n
   | IllFormedBranch (c, i, actty, expty) -> 
-      explain_ill_formed_branch k ctx c i actty expty 
+      explain_ill_formed_branch ctx c i actty expty 
   | Generalization (nvar, c) ->
-      explain_generalization k ctx nvar c
-  | ActualType (c, ct, pt) -> 
-      explain_actual_type k ctx c ct pt
+      explain_generalization ctx nvar c
+  | ActualType (j, pt) -> 
+      explain_actual_type ctx j pt
   | CantApplyBadType (t, rator, randl) ->
-      explain_cant_apply_bad_type k ctx t rator randl
+      explain_cant_apply_bad_type ctx t rator randl
   | CantApplyNonFunctional (rator, randl) ->
-      explain_cant_apply_not_functional k ctx rator randl
+      explain_cant_apply_not_functional ctx rator randl
   | IllFormedRecBody (i, lna, vdefj, vargs) ->
-      explain_ill_formed_rec_body k ctx i lna vdefj vargs
+      explain_ill_formed_rec_body ctx i lna vdefj vargs
   | IllTypedRecBody (i, lna, vdefj, vargs) -> 
-     explain_ill_typed_rec_body k ctx i lna vdefj vargs
+     explain_ill_typed_rec_body ctx i lna vdefj vargs
+  | WrongCaseInfo (ind,ci) ->
+      explain_wrong_case_info ctx ind ci
 (*
   | NotInductive c ->
-      explain_not_inductive k ctx c
+      explain_not_inductive ctx c
 *)
 let explain_pretype_error ctx = function
   | MlCase (mes,_,_) ->
-      explain_ml_case CCI ctx mes
+      explain_ml_case ctx mes
   | CantFindCaseType c ->
-      explain_cant_find_case_type CCI ctx c
+      explain_cant_find_case_type ctx c
   | OccurCheck (n,c) ->
-      explain_occur_check CCI ctx n c
+      explain_occur_check ctx n c
   | NotClean (n,c) ->
-      explain_not_clean CCI ctx n c
+      explain_not_clean ctx n c
   | VarNotFound id ->
-      explain_var_not_found CCI ctx id
+      explain_var_not_found ctx id
   | UnexpectedType (actual,expected) ->
-      explain_unexpected_type CCI ctx actual expected
+      explain_unexpected_type ctx actual expected
   | NotProduct c ->
-      explain_not_product CCI ctx c
+      explain_not_product ctx c
 
 (* Refiner errors *)
 
@@ -381,19 +401,19 @@ let explain_refiner_error = function
 
 (* Inductive errors *)
 
-let error_non_strictly_positive k env c v  =
+let error_non_strictly_positive env c v  =
   let pc = prterm_env env c in
   let pv = prterm_env env v in
   [< 'sTR "Non strictly positive occurrence of "; pv; 'sTR " in";
      'bRK(1,1); pc >]
 
-let error_ill_formed_inductive k env c v =
+let error_ill_formed_inductive env c v =
   let pc = prterm_env env c in
   let pv = prterm_env env v in
   [< 'sTR "Not enough arguments applied to the "; pv;
      'sTR " in"; 'bRK(1,1); pc >]
 
-let error_ill_formed_constructor k env c v =
+let error_ill_formed_constructor env c v =
   let pc = prterm_env env c in
   let pv = prterm_env env v in
   [< 'sTR "The conclusion of"; 'bRK(1,1); pc; 'bRK(1,1); 
@@ -407,7 +427,7 @@ let str_of_nth n =
      | 3 -> "rd"
      | _ -> "th")
 
-let error_bad_ind_parameters k env c n v1 v2  =
+let error_bad_ind_parameters env c n v1 v2  =
   let pc = prterm_env_at_top env c in
   let pv1 = prterm_env env v1 in
   let pv2 = prterm_env env v2 in
@@ -446,16 +466,17 @@ let error_not_mutual_in_scheme () =
 
 let explain_inductive_error = function
   (* These are errors related to inductive constructions *)
-  | NonPos (env,c,v) -> error_non_strictly_positive CCI env c v
-  | NotEnoughArgs (env,c,v) -> error_ill_formed_inductive CCI env c v
-  | NotConstructor (env,c,v) -> error_ill_formed_constructor CCI env c v
-  | NonPar (env,c,n,v1,v2) -> error_bad_ind_parameters CCI env c n v1 v2
+  | NonPos (env,c,v) -> error_non_strictly_positive env c v
+  | NotEnoughArgs (env,c,v) -> error_ill_formed_inductive env c v
+  | NotConstructor (env,c,v) -> error_ill_formed_constructor env c v
+  | NonPar (env,c,n,v1,v2) -> error_bad_ind_parameters env c n v1 v2
   | SameNamesTypes id -> error_same_names_types id
   | SameNamesConstructors (id,cid) -> error_same_names_constructors id cid
   | NotAnArity id -> error_not_an_arity id
   | BadEntry -> error_bad_entry ()
   (* These are errors related to recursors *)
-  | NotAllowedCaseAnalysis (dep,k,i) -> error_not_allowed_case_analysis dep k i
+  | NotAllowedCaseAnalysis (dep,k,i) ->
+      error_not_allowed_case_analysis dep k i
   | BadInduction (dep,indid,kind) -> error_bad_induction dep indid kind
   | NotMutualInScheme -> error_not_mutual_in_scheme ()
 

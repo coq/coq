@@ -1,0 +1,25 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(*i $Id$ i*)
+
+(*i*)
+open Names
+open Term
+open Evd
+open Sign
+open Environ
+(*i*)
+
+(*s [existential_value sigma ev] raises [NotInstantiatedEvar] if [ev] has
+no body and [Not_found] if it does not exist in [sigma] *)
+
+exception NotInstantiatedEvar
+val existential_value : 'a evar_map -> existential -> constr
+val existential_type : 'a evar_map -> existential -> types
+val existential_opt_value : 'a evar_map -> existential -> constr option

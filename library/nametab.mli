@@ -17,6 +17,16 @@ open Names
 (*s This module contains the table for globalization, which associates global
    names (section paths) to qualified names. *)
 
+type global_reference =
+  | VarRef of variable
+  | ConstRef of constant
+  | IndRef of inductive
+  | ConstructRef of constructor
+
+(* Finds the real name of a global (e.g. fetch the constructor names
+   from the inductive name and constructor number) *)
+val sp_of_global : Environ.env -> global_reference -> section_path
+
 type extended_global_reference =
   | TrueGlobal of global_reference
   | SyntacticDef of section_path
@@ -33,8 +43,10 @@ val make_short_qualid : identifier -> qualid
 val string_of_qualid : qualid -> string
 val pr_qualid : qualid -> std_ppcmds
 
-(* Turns an absolute name into a qualified name denoting the same name *)
 val qualid_of_sp : section_path -> qualid
+
+(* Turns an absolute name into a qualified name denoting the same name *)
+val qualid_of_global : Environ.env -> global_reference -> qualid
 
 exception GlobalizationError of qualid
 exception GlobalizationConstantError of qualid
@@ -56,7 +68,7 @@ val push_short_name_object : section_path -> unit
 val push_section : dir_path -> unit
 
 (* This should eventually disappear *)
-val sp_of_id : path_kind -> identifier -> global_reference
+val sp_of_id : identifier -> global_reference
 
 (*s The following functions perform globalization of qualified names *)
 
@@ -82,15 +94,6 @@ val exists_cci : section_path -> bool
 val exists_section : dir_path -> bool
 
 (*s Roots of the space of absolute names *)
-
-(* This is the root of the standard library of Coq *)
-val coq_root : module_ident
-
-(* This is the default root prefix for developments which doesn't mention a root *)
-val default_root_prefix : dir_path
-
-(* This is to declare a new root *)
-val push_library_root : dir_path -> unit
 
 (* This turns a "user" absolute name into a global reference;
    especially, constructor/inductive names are turned into internal

@@ -15,7 +15,7 @@ open Names
 open Term
 open Environ
 open Evd
-open Reduction
+open Reductionops
 open Typing
 open Instantiate
 open Tacred
@@ -104,7 +104,7 @@ let w_add_sign (id,t) (wc : walking_constraints) =
   ids_mk (ts_mod
             (fun evr ->
                { focus = evr.focus;
-		 hyps = Sign.add_named_assum (id,t) evr.hyps;
+		 hyps = Sign.add_named_decl (id,None,t) evr.hyps;
 		 decls = evr.decls })
             (ids_it wc))
 
@@ -144,14 +144,13 @@ let w_Declare_At sp sp' c = w_Focusing sp (w_Declare sp' c)
 
 let evars_of sigma constr = 
   let rec filtrec acc c =
-    match splay_constr c with
-    | OpEvar ev, cl ->
+    match kind_of_term c with
+    | Evar (ev, cl) ->
 	if Evd.in_dom (ts_it sigma).decls ev then
 	  Intset.add ev (Array.fold_left filtrec acc cl)
 	else
 	  Array.fold_left filtrec acc cl
-    | _, cl ->
-	Array.fold_left filtrec acc cl
+    | _ -> fold_constr filtrec acc c
   in 
   filtrec Intset.empty constr
 

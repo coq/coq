@@ -33,7 +33,7 @@ and library_segment = library_entry list
 (*s Adding operations (which calls the [cache] method, and getting the
   current list of operations (most recent ones coming first). *)
 
-val add_leaf : identifier -> path_kind -> obj -> section_path
+val add_leaf : identifier -> obj -> section_path
 val add_absolutely_named_lead : section_path -> obj -> unit
 val add_anonymous_leaf : obj -> unit
 val add_frozen_state : unit -> unit
@@ -53,13 +53,10 @@ val close_section :
   export:bool -> identifier -> dir_path * library_segment * Summary.frozen
 val sections_are_opened : unit -> bool
 
-val make_path : identifier -> path_kind -> section_path
+val make_path : identifier -> section_path
 val cwd : unit -> dir_path
 val sections_depth : unit -> int
 val is_section_p : dir_path -> bool
-
-(* This is to declare the interactive toplevel default module name as a root*)
-val init_toplevel_root : unit -> unit
 
 val start_module : dir_path -> unit
 val end_module : module_ident -> dir_path

@@ -93,7 +93,7 @@ val suspend_proof : unit -> unit
     into a constant with its name and strength; it fails if there is
     no current proof of if it is not completed *)
 
-val cook_proof : unit -> identifier * (Declarations.constant_entry * strength)
+val cook_proof : unit -> identifier * (Safe_typing.constant_entry * strength)
 
 (*s [get_pftreestate ()] returns the current focused pending proof or
    raises [UserError "no focused proof"] *)

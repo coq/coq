@@ -17,6 +17,7 @@ open Environ
 open Inductive
 open Libobject
 open Lib
+open Nametab
 
 (* calcul des arguments implicites *)
 
@@ -31,7 +32,7 @@ let ord_add x l =
     
 let add_free_rels_until bound m acc =
   let rec frec depth acc c = match kind_of_term c with
-    | IsRel n when (n < bound+depth) & (n >= depth) ->
+    | Rel n when (n < bound+depth) & (n >= depth) ->
 	Intset.add (bound+depth-n) acc
     | _ -> fold_constr_with_binders succ frec depth acc c
   in 
@@ -39,17 +40,17 @@ let add_free_rels_until bound m acc =
 
 (* calcule la liste des arguments implicites *)
 
-let compute_implicits env sigma t =
+let compute_implicits env t =
   let rec aux env n t =
-    match kind_of_term (whd_betadeltaiota env sigma t) with
-      | IsProd (x,a,b) ->
+    match kind_of_term (whd_betadeltaiota env t) with
+      | Prod (x,a,b) ->
 	  add_free_rels_until n a
-	    (aux (push_rel_assum (x,a) env) (n+1) b)
+	    (aux (push_rel (x,None,a) env) (n+1) b)
       | _ -> Intset.empty
   in 
-  match kind_of_term (whd_betadeltaiota env sigma t) with 
-    | IsProd (x,a,b) ->
-	Intset.elements (aux (push_rel_assum (x,a) env) 1 b)
+  match kind_of_term (whd_betadeltaiota env t) with 
+    | Prod (x,a,b) ->
+	Intset.elements (aux (push_rel (x,None,a) env) 1 b)
     | _ -> []
 
 type implicits_list = int list
@@ -82,7 +83,7 @@ let using_implicits = function
   | No_impl -> with_implicits false
   | _ -> with_implicits true
 
-let auto_implicits env ty = Impl_auto (compute_implicits env Evd.empty ty)
+let auto_implicits env ty = Impl_auto (compute_implicits env ty)
 
 let list_of_implicits = function 
   | Impl_auto l -> l
@@ -128,7 +129,7 @@ let constant_implicits_list sp =
 module Inductive_path = struct
   type t = inductive
   let compare (spx,ix) (spy,iy) = 
-    let c = ix - iy in if c = 0 then sp_ord spx spy else c
+    let c = ix - iy in if c = 0 then compare spx spy else c
 end
 
 module Indmap = Map.Make(Inductive_path)
@@ -174,11 +175,16 @@ let (in_constructor_implicits, _) =
 let compute_mib_implicits sp =
   let env = Global.env () in
   let mib = lookup_mind sp env in
-  let env_ar = push_rels (mind_arities_context mib) env in
+  let ar =
+    Array.to_list
+      (Array.map  (* No need to lift, arities contain no de Bruijn *)
+        (fun mip -> (Name mip.mind_typename, None, mip.mind_user_arity))
+        mib.mind_packets) in
+  let env_ar = push_rel_context ar env in
   let imps_one_inductive mip =
-    (auto_implicits env (body_of_type (mind_user_arity mip)),
+    (auto_implicits env (body_of_type mip.mind_user_arity),
      Array.map (fun c -> auto_implicits env_ar (body_of_type c))
-       (mind_user_lc mip))
+       mip.mind_user_lc)
   in
   Array.map imps_one_inductive mib.mind_packets
 
@@ -220,15 +226,15 @@ let inductive_implicits_list ind_sp =
 
 (*s Variables. *)
 
-let var_table = ref Spmap.empty
+let var_table = ref Idmap.empty
 
-let compute_var_implicits sp =
+let compute_var_implicits id =
   let env = Global.env () in
-  let (_,ty) = lookup_named (basename sp) env in
+  let (_,_,ty) = lookup_named id env in
   auto_implicits env (body_of_type ty)
 
-let cache_var_implicits (_,(sp,imps)) =
-  var_table := Spmap.add sp imps !var_table
+let cache_var_implicits (_,(id,imps)) =
+  var_table := Idmap.add id imps !var_table
 
 let (in_var_implicits, _) =
   let od = {
@@ -239,12 +245,12 @@ let (in_var_implicits, _) =
   in
   declare_object ("VARIABLE-IMPLICITS", od)
 
-let declare_var_implicits sp =
-  let imps = compute_var_implicits sp in
-  add_anonymous_leaf (in_var_implicits (sp,imps))
+let declare_var_implicits id =
+  let imps = compute_var_implicits id in
+  add_anonymous_leaf (in_var_implicits (id,imps))
 
-let implicits_of_var sp =
-  list_of_implicits (try Spmap.find sp !var_table with Not_found -> No_impl)
+let implicits_of_var id =
+  list_of_implicits (try Idmap.find id !var_table with Not_found -> No_impl)
 
 (*s Implicits of a global reference. *)
 
@@ -270,27 +276,28 @@ let context_of_global_reference = function
 
 let type_of_global r =
   match r with
-  | VarRef sp ->
-      lookup_named_type (basename sp) (Global.env ())
+  | VarRef id ->
+      let (_,_,ty) = lookup_named id (Global.env ()) in
+      ty
   | ConstRef sp ->
-      Typeops.type_of_constant (Global.env ()) Evd.empty sp
+      Environ.constant_type (Global.env ()) sp
   | IndRef sp -> 
-      Typeops.type_of_inductive (Global.env ()) Evd.empty sp
+      Inductive.type_of_inductive (Global.env ()) sp
   | ConstructRef sp ->
-      Typeops.type_of_constructor (Global.env ()) Evd.empty sp
+      Inductive.type_of_constructor (Global.env ()) sp
 
 let check_range n i =
   if i<1 or i>n then error ("Bad argument number: "^(string_of_int i))
 
 let declare_manual_implicits r l =
   let t = type_of_global r in
-  let n = List.length (fst (splay_prod (Global.env()) Evd.empty t)) in
+  let n = List.length (fst (dest_prod (Global.env()) t)) in
   if not (list_distinct l) then error ("Some numbers occur several time");
   List.iter (check_range n) l;
   let l = List.sort (-) l in
   match r with
-  | VarRef sp -> 
-      add_anonymous_leaf (in_var_implicits (sp,Impl_manual l))
+  | VarRef id -> 
+      add_anonymous_leaf (in_var_implicits (id,Impl_manual l))
   | ConstRef sp ->
       add_anonymous_leaf (in_constant_implicits (sp,Impl_manual l))
   | IndRef indp ->
@@ -307,11 +314,11 @@ let is_implicit_inductive_definition indp =
   try let _ = Indmap.find indp !inductives_table in true 
   with Not_found -> false
 
-let is_implicit_var sp =
-  try let _ = Spmap.find sp !var_table in true with Not_found -> false
+let is_implicit_var id =
+  try let _ = Idmap.find id !var_table in true with Not_found -> false
 
 let implicits_of_global = function
-  | VarRef sp -> implicits_of_var sp
+  | VarRef id -> implicits_of_var id
   | ConstRef sp -> list_of_implicits (constant_implicits sp)
   | IndRef isp -> list_of_implicits (inductive_implicits isp)
   | ConstructRef csp ->	list_of_implicits (constructor_implicits csp)
@@ -321,13 +328,13 @@ let implicits_of_global = function
 type frozen_t = implicits Spmap.t 
               * implicits Indmap.t 
 	      * implicits Constrmap.t
-              * implicits Spmap.t
+              * implicits Idmap.t
 
 let init () =
   constants_table := Spmap.empty;
   inductives_table := Indmap.empty;
   constructors_table := Constrmap.empty;
-  var_table := Spmap.empty
+  var_table := Idmap.empty
 
 let freeze () =
   (!constants_table, !inductives_table, 

@@ -10,6 +10,7 @@
 
 (*i*)
 open Names
+open Nametab
 open Term
 open Classops
 open Libobject

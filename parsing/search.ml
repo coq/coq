@@ -11,6 +11,7 @@
 open Pp
 open Util
 open Names
+open Nameops
 open Term
 open Rawterm
 open Declarations
@@ -21,6 +22,7 @@ open Astterm
 open Environ
 open Pattern
 open Printer
+open Nametab
 
 (* The functions print_constructors and crible implement the behavior needed
    for the Coq searching commands.
@@ -30,7 +32,7 @@ open Printer
    and the constr term that represent its type. *)
 
 let print_constructors indsp fn env mip =
-  let lc = mind_user_lc mip in
+  let lc = mip.mind_user_lc in
   for i=1 to Array.length lc do
       fn (ConstructRef (indsp,i)) env
 	(Retyping.get_type_of env Evd.empty
@@ -39,10 +41,10 @@ let print_constructors indsp fn env mip =
   done
 
 let rec head_const c = match kind_of_term c with
-  | IsProd (_,_,d) -> head_const d
-  | IsLetIn (_,_,_,d) -> head_const d
-  | IsApp (f,_)   -> head_const f
-  | IsCast (d,_)   -> head_const d
+  | Prod (_,_,d) -> head_const d
+  | LetIn (_,_,_,d) -> head_const d
+  | App (f,_)   -> head_const f
+  | Cast (d,_)   -> head_const d
   | _            -> c
 
 let crible (fn : global_reference -> env -> constr -> unit) ref =
@@ -53,8 +55,8 @@ let crible (fn : global_reference -> env -> constr -> unit) ref =
     match object_tag lobj with
       | "VARIABLE" ->
 	  (try 
-	     let ((idc,_,typ),_) = get_variable sp in 
-             if (head_const typ) = const then fn (VarRef sp) env typ
+	     let ((idc,_,typ),_) = get_variable (basename sp) in 
+             if (head_const typ) = const then fn (VarRef idc) env typ
 	   with Not_found -> (* we are in a section *) ())
       | "CONSTANT" 
       | "PARAMETER" ->
@@ -68,10 +70,9 @@ let crible (fn : global_reference -> env -> constr -> unit) ref =
 		 (Name mip.mind_typename, None, mip.mind_nf_arity))
 	      mib.mind_packets in
           (match kind_of_term const with 
-	     | IsMutInd ((sp',tyi) as indsp) -> 
+	     | Ind ((sp',tyi) as indsp) -> 
 		 if sp=sp' then
-		   print_constructors indsp fn env
-		     (mind_nth_type_packet mib tyi)
+		   print_constructors indsp fn env mib.mind_packets.(tyi)
 	     | _ -> ())
       | _ -> ()
   in 
@@ -88,11 +89,11 @@ exception No_section_path
 let rec head c = 
   let c = strip_outer_cast c in
   match kind_of_term c with
-  | IsProd (_,_,c) -> head c
+  | Prod (_,_,c) -> head c
   | _              -> c
       
 let constr_to_section_path c = match kind_of_term c with
-  | IsConst sp -> sp
+  | Const sp -> sp
   | _ -> raise No_section_path
       
 let xor a b = (a or b) & (not (a & b))
@@ -116,9 +117,9 @@ let filter_by_module (module_list:dir_path list) (accept:bool)
     false
 
 let gref_eq =
-  IndRef (make_path Coqlib.logic_module (id_of_string "eq") CCI, 0)
+  IndRef (make_path Coqlib.logic_module (id_of_string "eq"), 0)
 let gref_eqT =
-  IndRef (make_path Coqlib.logic_type_module (id_of_string "eqT") CCI, 0)
+  IndRef (make_path Coqlib.logic_type_module (id_of_string "eqT"), 0)
 
 let mk_rewrite_pattern1 eq pattern =
   PApp (PRef eq, [| PMeta None; pattern; PMeta None |])

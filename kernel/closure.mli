@@ -12,7 +12,6 @@
 open Pp
 open Names
 open Term
-open Evd
 open Environ
 open Esubst
 (*i*)
@@ -48,7 +47,6 @@ module type RedFlagsSig = sig
      of Constbut/Varbut should be unfolded (there may be several such
      Constbut/Varbut *)
   val fBETA : red_kind
-  val fEVAR : red_kind
   val fDELTA : red_kind
   val fIOTA : red_kind
   val fZETA : red_kind
@@ -84,6 +82,7 @@ val beta_red : reds
 val betaiota_red : reds
 val betadeltaiota_red : reds
 val betaiotazeta_red : reds
+val betadeltaiotanolet_red : reds
 
 (*s Reduction function specification. *)
 
@@ -105,25 +104,24 @@ val no_flag : flags
 val beta : flags
 val betaiota : flags
 val betadeltaiota : flags
+val betadeltaiotanolet : flags
 
 val hnf_flags : flags
 val unfold_flags : evaluable_global_reference -> flags
 
 (***********************************************************************)
 
-type 'a table_key =
-  | ConstBinding of constant
-  | EvarBinding of existential
-  | VarBinding of identifier
-  | FarRelBinding of int
+type table_key =
+  | ConstKey of constant
+  | VarKey of identifier
+  | FarRelKey of int
+   (* FarRel: index in the rel_context part of _initial_ environment *)
 
-type ('a,'b) infos
-val ref_value_cache: ('a,'b) infos -> 'a table_key -> 'a option
-val info_flags: ('a,'b) infos -> flags
-val infos_under: ('a,'b) infos -> ('a,'b) infos
-val create:
-  (('a,'b) infos -> constr -> 'a) ->
-  flags -> env -> 'b evar_map -> ('a,'b) infos
+type 'a infos
+val ref_value_cache: 'a infos -> table_key -> 'a option
+val info_flags: 'a infos -> flags
+val infos_under: 'a infos -> 'a infos
+val create: ('a infos -> constr -> 'a) -> flags -> env -> 'a infos
 
 (***********************************************************************)
 (*s A [stack] is a context of arguments, arguments are pushed by
@@ -165,7 +163,7 @@ type fterm =
   | FRel of int
   | FAtom of constr
   | FCast of fconstr * fconstr
-  | FFlex of freference
+  | FFlex of table_key
   | FInd of inductive
   | FConstruct of constructor
   | FApp of fconstr * fconstr array
@@ -177,15 +175,10 @@ type fterm =
   | FLambda of name * fconstr * fconstr * constr * fconstr subs
   | FProd of name * fconstr * fconstr * constr * fconstr subs
   | FLetIn of name * fconstr * fconstr * fconstr * constr * fconstr subs
+  | FEvar of existential_key * fconstr array
   | FLIFT of int * fconstr
   | FCLOS of constr * fconstr subs
   | FLOCKED
-
-and freference =
-  | FConst of constant
-  | FEvar of existential_key * fconstr array
-  | FVar of identifier
-  | FFarRel of int
 
 
 (* To lazy reduce a constr, create a ['a clos_infos] with
@@ -197,28 +190,28 @@ val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr
 
 (* Global and local constant cache *)
-type 'a clos_infos
-val create_clos_infos : flags -> env -> 'a evar_map -> 'a clos_infos
+type clos_infos
+val create_clos_infos : flags -> env -> clos_infos
 
 (* Reduction function *)
 
 (* [norm_val] is for strong normalization *)
-val norm_val : 'a clos_infos -> fconstr -> constr
+val norm_val : clos_infos -> fconstr -> constr
 
 (* [whd_val] is for weak head normalization *)
-val whd_val : 'a clos_infos -> fconstr -> constr
+val whd_val : clos_infos -> fconstr -> constr
 
 (* Conversion auxiliary functions to do step by step normalisation *)
 
 (* [fhnf] and [fnf_apply] are for weak head normalization but staying
    in [fconstr] world to perform step by step weak head normalization *)
 
-val fhnf: 'a clos_infos -> fconstr -> int * fconstr * fconstr stack
-val fhnf_apply : 'a clos_infos ->
+val fhnf: clos_infos -> fconstr -> int * fconstr * fconstr stack
+val fhnf_apply : clos_infos ->
   int -> fconstr -> fconstr stack -> int * fconstr * fconstr stack
 
 (* [unfold_reference] unfolds references in a [fconstr] *)
-val unfold_reference : 'a clos_infos -> freference -> fconstr option
+val unfold_reference : clos_infos -> table_key -> fconstr option
 
 (***********************************************************************)
 (*i This is for lazy debug *)
@@ -232,9 +225,9 @@ val mk_clos_deep :
   (fconstr subs -> constr -> fconstr) ->
    fconstr subs -> constr -> fconstr
 
-val knr: 'a clos_infos -> fconstr -> fconstr stack ->
+val knr: clos_infos -> fconstr -> fconstr stack ->
   fconstr * fconstr stack
-val kl: 'a clos_infos -> fconstr -> fconstr
+val kl: clos_infos -> fconstr -> fconstr
 
 val to_constr :
   (lift -> fconstr -> constr) -> lift -> fconstr -> constr

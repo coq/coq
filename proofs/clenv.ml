@@ -12,13 +12,14 @@ open Pp
 open Util
 open Names
 open Term
+open Termops
 open Sign
 open Instantiate
 open Environ
 open Evd
 open Proof_type
 open Logic
-open Reduction
+open Reductionops
 open Tacmach
 open Evar_refiner
 
@@ -39,7 +40,7 @@ let exist_to_meta (emap, c) =
   List.iter add_binding emap;
   let rec replace c =
     match kind_of_term c with
-        IsEvar k -> List.assoc k !subst
+        Evar k -> List.assoc k !subst
       | _ -> map_constr replace c in
   (!mmap, replace c)
 
@@ -66,7 +67,7 @@ let applyHead n c wc =
       (wc,c)
     else 
       match kind_of_term (w_whd_betadeltaiota wc cty) with
-        | IsProd (_,c1,c2) ->
+        | Prod (_,c1,c2) ->
 	    let evar = Evarutil.new_evar_in_sign (w_env wc) in
             let (evar_n, _) = destEvar evar in
 	    (compose 
@@ -99,20 +100,20 @@ let unify_0 cv_pb mc wc m n =
     and cN = Evarutil.whd_castappevar sigma n in 
     try 
       match (kind_of_term cM,kind_of_term cN) with
-	| IsCast (c,_), _ -> unirec_rec pb substn c cN
-	| _, IsCast (c,_) -> unirec_rec pb substn cM c
-	| IsMeta k1, IsMeta k2 ->
+	| Cast (c,_), _ -> unirec_rec pb substn c cN
+	| _, Cast (c,_) -> unirec_rec pb substn cM c
+	| Meta k1, Meta k2 ->
 	    if k1 < k2 then (k1,cN)::metasubst,evarsubst
 	    else if k1 = k2 then substn
 	    else (k2,cM)::metasubst,evarsubst
-	| IsMeta k, _    -> (k,cN)::metasubst,evarsubst
-	| _, IsMeta k    -> (k,cM)::metasubst,evarsubst
-	| IsLambda (_,t1,c1), IsLambda (_,t2,c2) ->
+	| Meta k, _    -> (k,cN)::metasubst,evarsubst
+	| _, Meta k    -> (k,cM)::metasubst,evarsubst
+	| Lambda (_,t1,c1), Lambda (_,t2,c2) ->
 	    unirec_rec CONV (unirec_rec CONV substn t1 t2) c1 c2
-	| IsProd (_,t1,c1), IsProd (_,t2,c2) ->
+	| Prod (_,t1,c1), Prod (_,t2,c2) ->
 	    unirec_rec pb (unirec_rec CONV substn t1 t2) c1 c2
 
-	| IsApp (f1,l1), IsApp (f2,l2) ->
+	| App (f1,l1), App (f2,l2) ->
 	    let len1 = Array.length l1
 	    and len2 = Array.length l2 in
 	    if len1 = len2 then
@@ -129,42 +130,42 @@ let unify_0 cv_pb mc wc m n =
 		(unirec_rec CONV substn (appvect (f1,extras)) f2)
                 restl1 l2
 		
-	| IsMutCase (_,p1,c1,cl1), IsMutCase (_,p2,c2,cl2) ->
+	| Case (_,p1,c1,cl1), Case (_,p2,c2,cl2) ->
             array_fold_left2 (unirec_rec CONV)
 	      (unirec_rec CONV (unirec_rec CONV substn p1 p2) c1 c2) cl1 cl2
 		
-	| IsMutConstruct _, IsMutConstruct _ ->
+	| Construct _, Construct _ ->
 	    if is_conv env sigma cM cN then
 	      substn
 	    else
-	      error_cannot_unify CCI (m,n)
+	      error_cannot_unify (m,n)
 	      
-	| IsMutInd _, IsMutInd _ ->
+	| Ind _, Ind _ ->
 	    if is_conv env sigma  cM cN then
 	      substn
 	    else
-	      error_cannot_unify CCI (m,n)
+	      error_cannot_unify (m,n)
 	      
-	| IsEvar _, _ ->
+	| Evar _, _ ->
 	    metasubst,((cM,cN)::evarsubst)
-	| _, IsEvar _ ->
+	| _, Evar _ ->
 	    metasubst,((cN,cM)::evarsubst)
 
-	| (IsConst _ | IsVar _ | IsRel _), _ ->
+	| (Const _ | Var _ | Rel _), _ ->
 	    if is_conv env sigma cM cN then
 	      substn
 	    else 
-	      error_cannot_unify CCI (m,n)
+	      error_cannot_unify (m,n)
 		
-	| _, (IsConst _ | IsVar _| IsRel _) ->
+	| _, (Const _ | Var _| Rel _) ->
 	    if (not (occur_meta cM)) & is_conv env sigma cM cN then 
 	      substn
 	    else 
-	      error_cannot_unify CCI (m,n)
+	      error_cannot_unify (m,n)
 
-	| IsLetIn (_,b,_,c), _ -> unirec_rec pb substn (subst1 b c) cN
+	| LetIn (_,b,_,c), _ -> unirec_rec pb substn (subst1 b c) cN
 		
-	| _ -> error_cannot_unify CCI (m,n)
+	| _ -> error_cannot_unify (m,n)
 	      
     with ex when catchable_exception ex ->
       if (not(occur_meta cM)) & is_fconv pb env sigma cM cN then 
@@ -239,12 +240,12 @@ and w_resrec metas evars wc =
     | (lhs,rhs) :: t ->
     match kind_of_term rhs with
 
-      | IsMeta k -> w_resrec ((k,lhs)::metas) t wc
+      | Meta k -> w_resrec ((k,lhs)::metas) t wc
 
       | krhs ->
       match kind_of_term lhs with
 
-	| IsEvar (evn,_) ->
+	| Evar (evn,_) ->
 	    if w_defined_evar wc evn then
 	      let (wc',metas') = w_Unify CONV rhs lhs metas wc in 
 	      w_resrec metas' t wc'
@@ -253,7 +254,7 @@ and w_resrec metas evars wc =
 		 w_resrec metas t (w_Define evn rhs wc)
                with ex when catchable_exception ex ->
 		 (match krhs with
-             	    | IsApp (f,cl) when isConst f ->
+             	    | App (f,cl) when isConst f ->
 			let wc' = mimick_evar f (Array.length cl) evn wc in
 			w_resrec metas evars wc'
 		    | _ -> error "w_Unify"))
@@ -276,7 +277,7 @@ let unify m gls =
 let collect_metas c = 
   let rec collrec acc c =
     match kind_of_term c with
-      | IsMeta mv -> mv::acc
+      | Meta mv -> mv::acc
       | _         -> fold_constr collrec acc c
   in
   List.rev (collrec [] c)
@@ -284,7 +285,7 @@ let collect_metas c =
 let metavars_of c =  
   let rec collrec acc c =
     match kind_of_term c with
-      | IsMeta mv -> Intset.add mv acc
+      | Meta mv -> Intset.add mv acc
       | _         -> fold_constr collrec acc c
   in 
   collrec Intset.empty c
@@ -326,8 +327,8 @@ let clenv_environments bound c =
   let rec clrec (ne,e,metas) n c =
     match n, kind_of_term c with
       | (0, _) -> (ne, e, List.rev metas, c)
-      | (n, IsCast (c,_)) -> clrec (ne,e,metas) n c
-      | (n, IsProd (na,c1,c2)) ->
+      | (n, Cast (c,_)) -> clrec (ne,e,metas) n c
+      | (n, Prod (na,c1,c2)) ->
 	  let mv = new_meta () in
 	  let dep = dependent (mkRel 1) c2 in
 	  let ne' =
@@ -347,7 +348,7 @@ let clenv_environments bound c =
 	  let e' = Intmap.add mv (Cltyp (mk_freelisted c1)) e in 
 	  clrec (ne',e', (mkMeta mv)::metas) (n-1)
 	    (if dep then (subst1 (mkMeta mv) c2) else c2)
-      | (n, IsLetIn (na,b,_,c)) -> clrec (ne,e,metas) (n-1) (subst1 b c)
+      | (n, LetIn (na,b,_,c)) -> clrec (ne,e,metas) (n-1) (subst1 b c)
       | (n, _) -> (ne, e, List.rev metas, c)
   in 
   clrec (Intmap.empty,Intmap.empty,[]) bound c
@@ -463,13 +464,13 @@ let clenv_instance_term clenv c =
 let clenv_cast_meta clenv = 
   let rec crec u =
     match kind_of_term u with
-      | IsApp _ | IsMutCase _ -> crec_hd u
-      | IsCast (c,_) when isMeta c -> u
+      | App _ | Case _ -> crec_hd u
+      | Cast (c,_) when isMeta c -> u
       | _  -> map_constr crec u
 	    
   and crec_hd u =
     match kind_of_term (strip_outer_cast u) with
-      | IsMeta mv ->
+      | Meta mv ->
 	  (try 
 	     match Intmap.find mv clenv.env with
                | Cltyp b ->
@@ -478,9 +479,9 @@ let clenv_cast_meta clenv =
 	       | Clval(_) -> u
 	   with Not_found -> 
 	     u)
-      | IsApp(f,args) -> mkApp (crec_hd f, Array.map crec args)
-      | IsMutCase(ci,p,c,br) ->
-	  mkMutCase (ci, crec_hd p, crec_hd c, Array.map crec br)
+      | App(f,args) -> mkApp (crec_hd f, Array.map crec args)
+      | Case(ci,p,c,br) ->
+	  mkCase (ci, crec_hd p, crec_hd c, Array.map crec br)
       | _ -> u
   in 
   crec
@@ -564,12 +565,12 @@ let clenv_merge with_types =
       | ((lhs,rhs)::t, metas) ->
       (match kind_of_term rhs with
 
-	| IsMeta k -> clenv_resrec ((k,lhs)::metas) t clenv
+	| Meta k -> clenv_resrec ((k,lhs)::metas) t clenv
 
 	| krhs ->
         (match kind_of_term lhs with
 
-	  | IsEvar (evn,_) ->
+	  | Evar (evn,_) ->
     	      if w_defined_evar clenv.hook evn then
 		let (metas',evars') = unify_0 CONV [] clenv.hook rhs lhs in
 		clenv_resrec (metas'@metas) (evars'@t) clenv
@@ -583,7 +584,7 @@ let clenv_merge with_types =
 		    (clenv_wtactic (w_Define evn rhs') clenv)
 		with ex when catchable_exception ex ->
 		  (match krhs with
-		     | IsApp (f,cl) when isConst f or isMutConstruct f ->
+		     | App (f,cl) when isConst f or isConstruct f ->
 			 clenv_resrec metas evars 
 			   (clenv_wtactic
 			      (mimick_evar f (Array.length cl) evn)
@@ -728,7 +729,7 @@ let constrain_clenv_to_subterm clause (op,cl) =
        else error "Bound 1"
      with ex when catchable_exception ex ->
        (match kind_of_term cl with 
-	  | IsApp (f,args) ->
+	  | App (f,args) ->
 	      let n = Array.length args in
 	      assert (n>0);
 	      let c1 = mkApp (f,Array.sub args 0 (n-1)) in
@@ -737,35 +738,35 @@ let constrain_clenv_to_subterm clause (op,cl) =
 		 matchrec c1
 	       with ex when catchable_exception ex -> 
 		 matchrec c2)
-          | IsMutCase(_,_,c,lf) -> (* does not search in the predicate *)
+          | Case(_,_,c,lf) -> (* does not search in the predicate *)
 	       (try 
 		 matchrec c
 	       with ex when catchable_exception ex -> 
 		 iter_fail matchrec lf)
-	  | IsLetIn(_,c1,_,c2) -> 
+	  | LetIn(_,c1,_,c2) -> 
 	       (try 
 		 matchrec c1
 	       with ex when catchable_exception ex -> 
 		 matchrec c2)
 
-	  | IsFix(_,(_,types,terms)) -> 
+	  | Fix(_,(_,types,terms)) -> 
 	       (try 
 		 iter_fail matchrec types
 	       with ex when catchable_exception ex -> 
 		 iter_fail matchrec terms)
 	
-	  | IsCoFix(_,(_,types,terms)) -> 
+	  | CoFix(_,(_,types,terms)) -> 
 	       (try 
 		 iter_fail matchrec types
 	       with ex when catchable_exception ex -> 
 		 iter_fail matchrec terms)
 
-          | IsProd (_,t,c) ->
+          | Prod (_,t,c) ->
 	      (try 
 		 matchrec t 
 	       with ex when catchable_exception ex -> 
 		 matchrec c)
-          | IsLambda (_,t,c) ->
+          | Lambda (_,t,c) ->
 	      (try 
 		 matchrec t 
 	       with ex when catchable_exception ex -> 
@@ -1007,7 +1008,7 @@ let secondOrderAbstraction allow_K gl p oplist clause =
 let clenv_so_resolver allow_K clause gl =
   let c, oplist = whd_stack (clenv_instance_template_type clause) in
   match kind_of_term c with
-    | IsMeta p ->
+    | Meta p ->
 	let clause' = secondOrderAbstraction allow_K gl p oplist clause in 
 	clenv_fo_resolver clause' gl
     | _ -> error "clenv_so_resolver"
@@ -1027,7 +1028,7 @@ let clenv_unique_resolver allow_K clenv gls =
   let pathd,_ = whd_stack (clenv_instance_template_type clenv) in
   let glhd,_ = whd_stack (pf_concl gls) in
   match kind_of_term pathd, kind_of_term glhd with
-    | IsMeta _, IsLambda _ ->
+    | Meta _, Lambda _ ->
 	(try 
 	   clenv_typed_fo_resolver clenv gls
 	 with ex when catchable_exception ex -> 
@@ -1036,7 +1037,7 @@ let clenv_unique_resolver allow_K clenv gls =
 	   with ex when catchable_exception ex -> 
 	     error "Cannot solve a second-order unification problem")
 
-    | IsMeta _, _ -> 
+    | Meta _, _ -> 
 	(try 
 	   clenv_so_resolver allow_K clenv gls
          with ex when catchable_exception ex -> 

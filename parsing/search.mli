@@ -13,6 +13,7 @@ open Names
 open Term
 open Environ
 open Pattern
+open Nametab
 
 (*s Search facilities. *)
 

@@ -292,14 +292,9 @@ let parse_file_action reqid file_name =
 (* This function is taken from Mltop.add_path *)
 
 let add_path dir coq_dirpath =
-(*
-  if coq_dirpath = Names.make_dirpath [] then
-    anomaly "add_path: empty path in library";
-*)
   if exists_dir dir then
     begin
-      Library.add_load_path_entry (dir,coq_dirpath);
-      Nametab.push_library_root coq_dirpath
+      Library.add_load_path_entry (dir,coq_dirpath)
     end
   else
     wARNING [< 'sTR ("Cannot open " ^ dir) >]
@@ -309,18 +304,15 @@ let convert_string d =
   with _ -> failwith "caught"
 
 let add_rec_path dir coq_dirpath =
-(*
-  if coq_dirpath = Names.make_dirpath [] then anomaly "add_path: empty path in library";
-*)
   let dirs = all_subdirs dir in
   let prefix = Names.repr_dirpath coq_dirpath in
   if dirs <> [] then
     let convert_dirs (lp,cp) =
-      (lp,Names.make_dirpath (prefix@(List.map convert_string cp))) in
+      (lp,
+       Names.make_dirpath ((List.map convert_string (List.rev cp))@prefix)) in
     let dirs = map_succeed convert_dirs dirs in
     begin
-      List.iter Library.add_load_path_entry dirs;
-      Nametab.push_library_root coq_dirpath
+      List.iter Library.add_load_path_entry dirs
     end
     else
       wARNING [< 'sTR ("Cannot open " ^ dir) >];;
@@ -380,9 +372,9 @@ Libobject.relax true;
        else
 	 (mSGNL [< 'sTR "could not find the value of COQDIR" >]; exit 1) in
      begin
-       add_rec_path (Filename.concat coqdir "theories") (Names.make_dirpath [Nametab.coq_root]);
-       add_path (Filename.concat coqdir "tactics") (Names.make_dirpath [Nametab.coq_root]);
-       add_rec_path (Filename.concat coqdir "contrib") (Names.make_dirpath [Nametab.coq_root]);
+       add_rec_path (Filename.concat coqdir "theories") (Names.make_dirpath [Nameops.coq_root]);
+       add_path (Filename.concat coqdir "tactics") (Names.make_dirpath [Nameops.coq_root]);
+       add_rec_path (Filename.concat coqdir "contrib") (Names.make_dirpath [Nameops.coq_root]);
        List.iter (fun a -> mSGNL [< 'sTR a >]) (get_load_path())
      end;
 (try 

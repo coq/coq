@@ -12,11 +12,12 @@ open Pp
 open Util
 open Stamps
 open Term
+open Termops
 open Sign
 open Evd
 open Sign
 open Environ
-open Reduction
+open Reductionops
 open Instantiate
 open Type_errors
 open Proof_trees
@@ -52,7 +53,11 @@ let norm_goal sigma gl =
   let red_fun = Evarutil.nf_evar sigma in
   let ncl = red_fun gl.evar_concl in
   { evar_concl = ncl;
-    evar_hyps = map_named_context red_fun gl.evar_hyps;
+    evar_hyps =
+    Sign.fold_named_context 
+      (fun (d,b,ty) sign ->
+        add_named_decl (d, option_app red_fun b, red_fun ty) sign)
+      empty_named_context gl.evar_hyps;
     evar_body = gl.evar_body;
     evar_info = gl.evar_info }
 
@@ -252,7 +257,7 @@ let extract_open_proof sigma pf =
 	let abs_concl =
           List.fold_right
             (fun (_,id) concl ->
-	       let (c,ty) = lookup_id id goal.evar_hyps in
+	       let (_,c,ty) = Sign.lookup_named id goal.evar_hyps in
 	       mkNamedProd_or_LetIn (id,c,ty) concl)
             sorted_rels goal.evar_concl	in
         incr meta_cnt;
@@ -811,7 +816,7 @@ let thin_sign osign sign =
   Sign.fold_named_context
     (fun (id,c,ty as d) sign ->
        try 
-	 if lookup_id id osign = (c,ty) then sign
+	 if Sign.lookup_named id osign = (id,c,ty) then sign
 	 else raise Different
        with Not_found | Different -> add_named_decl d sign)
     sign empty_named_context

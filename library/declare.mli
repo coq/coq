@@ -13,8 +13,10 @@ open Names
 open Term
 open Sign
 open Declarations
-open Inductive
+open Indtypes
+open Safe_typing
 open Library
+open Nametab
 (*i*)
 
 (* This module provides the official functions to declare new variables, 
@@ -33,9 +35,9 @@ type section_variable_entry =
   | SectionLocalDef of constr
   | SectionLocalAssum of constr
 
-type variable_declaration = section_variable_entry * strength
+type variable_declaration = dir_path * section_variable_entry * strength
 
-val declare_variable : identifier -> variable_declaration -> variable
+val declare_variable : variable -> variable_declaration -> section_path
 
 type constant_declaration_type =
   | ConstantEntry  of constant_entry
@@ -57,10 +59,6 @@ val declare_parameter : identifier -> constr -> constant
    the whole block *)
 val declare_mind : mutual_inductive_entry -> mutual_inductive
 
-(* [declare_eliminations sp] declares elimination schemes associated
-   to the mutual inductive block refered by [sp] *)
-val declare_eliminations : mutual_inductive -> unit
-
 val out_inductive : Libobject.obj -> mutual_inductive_entry 
 
 val make_strength_0 : unit -> strength
@@ -78,13 +76,12 @@ val get_variable : variable -> named_declaration * strength
 val get_variable_with_constraints : 
   variable -> named_declaration * Univ.constraints * strength
 val variable_strength : variable -> strength
-val find_section_variable : identifier -> variable
+val find_section_variable : variable -> section_path
 val last_section_hyps : dir_path -> identifier list
 
 (*s Global references *)
 
 val context_of_global_reference : global_reference -> section_context
-val extract_instance : global_reference -> constr array -> constr array
 
 (* Turn a global reference into a construction *)
 val constr_of_reference : global_reference -> constr
@@ -108,12 +105,3 @@ val global_reference : identifier -> constr
 val construct_reference : Environ.env -> identifier -> constr
 
 val is_global : identifier -> bool
-
-val path_of_inductive_path : inductive -> mutual_inductive
-val path_of_constructor_path : constructor -> mutual_inductive
-
-(* Look up function for the default elimination constant *)
-val elimination_suffix : sorts_family -> string
-val make_elimination_ident :
-  inductive_ident:identifier -> sorts_family -> identifier
-val lookup_eliminator : Environ.env -> inductive -> sorts_family -> constr

@@ -14,6 +14,7 @@ open Term
 open Declarations
 open Util
 open Miniml
+open Nametab
 open Table
 open Options
 
@@ -602,5 +603,4 @@ let rec optimize prm = function
 	optimize prm l
   | (Dtype _ | Dabbrev _ | Dcustom _) as d :: l -> 
       d :: (optimize prm l)
-
 
