@@ -305,7 +305,16 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 
      CRef r -> varc (xlate_reference r)
    | CArrow(_,a,b)-> CT_arrowc (xlate_formula a, xlate_formula b)
-   | CProdN(_,ll,b)-> CT_prodc(xlate_binder_ne_list ll, xlate_formula b)
+   | CProdN(_,ll,b) as whole_term -> 
+       let rec gather_binders = function
+	   CProdN(_, ll, b) ->
+	     ll@(gather_binders b)
+	 | _ -> [] in
+       let rec fetch_ultimate_body = function
+	   CProdN(_, _, b) -> fetch_ultimate_body b
+	 | a -> a in
+	 CT_prodc(xlate_binder_ne_list (gather_binders whole_term), 
+		  xlate_formula (fetch_ultimate_body b))
    | CLambdaN(_,ll,b)-> CT_lambdac(xlate_binder_ne_list ll, xlate_formula b)
    | CLetIn(_, v, a, b) -> 
        CT_letin(CT_def(xlate_id_opt v, xlate_formula a), xlate_formula b)
