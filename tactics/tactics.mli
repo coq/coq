@@ -70,7 +70,7 @@ val dyn_intro_move       : tactic_arg list -> tactic
 
 val intro_replacing      : identifier -> tactic
 val intro_using          : identifier -> tactic
-val intro_using_warning  : identifier -> tactic
+val intro_mustbe         : identifier -> tactic
 val intros_using         : identifier list -> tactic
 val intro_erasing        : identifier -> tactic
 val intros_replacing     : identifier list -> tactic
@@ -87,6 +87,14 @@ val intros_until_n_wored : int -> tactic
 val dyn_intros_until     : tactic_arg list -> tactic
 
 val intros_clearing      : bool list -> tactic
+
+(* Assuming a tactic [tac] depending on an hypothesis identifier,
+   [tactic_try_intros_until tac arg] first assumes that arg denotes a
+   quantified hypothesis (denoted by name or by index) and try to
+   introduce it in context before to apply [tac], otherwise assume the
+   hypothesis is already in context and directly apply [tac] *)
+val tactic_try_intros_until : (identifier,tactic_arg) parse_combinator
+
 
 (*s Exact tactics. *)
 
@@ -143,8 +151,8 @@ val clear         : identifier list -> tactic
 val clear_one     : identifier -> tactic
 val dyn_clear     : tactic_arg list -> tactic
 
-val clear_clauses : clause list -> tactic
-val clear_clause  : clause -> tactic
+val clear_clauses : identifier list -> tactic
+val clear_clause  : identifier -> tactic
 
 val new_hyp       : int option ->constr -> constr substitution -> tactic
 val dyn_new_hyp   : tactic_arg list -> tactic
@@ -156,7 +164,7 @@ val dyn_move_dep  : tactic_arg list -> tactic
 
 val apply_type : constr -> constr list -> tactic
 val apply_term : constr -> constr list -> tactic
-val bring_hyps : clause list -> tactic
+val bring_hyps : identifier list -> tactic
 
 val apply                 : constr      -> tactic
 val apply_without_reduce  : constr      -> tactic
@@ -189,6 +197,7 @@ val dyn_case              : tactic_arg list -> tactic
 val destruct              : identifier -> tactic
 val destruct_nodep        : int -> tactic
 val dyn_destruct          : tactic_arg list -> tactic
+val dyn_new_destruct      : tactic_arg list -> tactic
 
 (*s Eliminations giving the type instead of the proof. *)
 

@@ -327,7 +327,7 @@ let rec intro_gen name_flag move_flag force_flag gl =
     else
       raise e
 
-let intro_using_warning id = intro_gen (IntroMustBe id) None false
+let intro_mustbe id = intro_gen (IntroMustBe id) None false
 let intro_using id = intro_gen (IntroBasedOn (id,[])) None false
 let intro_force force_flag = intro_gen (IntroAvoid []) None force_flag
 let intro = intro_force false
@@ -391,7 +391,8 @@ let rec intros_until_n_gen red n g =
 	with Redelimination ->
           errorlabstrm "Intros" 
 	    [<'sTR ("No "^(string_of_int n));
-	      'sTR "th non dependent hypothesis in current goal";
+	      'sTR (match n with 1 -> "st" | 2 -> "nd" | _ -> "th");
+	      'sTR " non dependent hypothesis in current goal";
 	      'sTR " even after head-reduction" >]
       else
         errorlabstrm "Intros" [<'sTR "No such hypothesis in current goal" >]
@@ -403,6 +404,25 @@ let dyn_intros_until = function
   | [Identifier id] -> intros_until id
   | [Integer n]     -> intros_until_n n
   | l -> bad_tactic_args "Intros until" l
+
+let tactic_try_intros_until tac = function
+  | Identifier id ->
+      tclTHEN (tclTRY (intros_until id)) (tac id)
+  | Integer n ->
+      tclTHEN (intros_until_n n)
+	(fun gl -> let id,_,_ = pf_last_hyp gl in tac id gl)
+  | c -> bad_tactic_args "tactic_try_intros_until" [c]
+
+let hide_ident_or_numarg_tactic s tac =
+  let tacfun = function
+   | [Identifier id] -> tclTHEN (tclTRY (intros_until id)) (tac id)
+   | [Integer n] ->
+       tclTHEN (intros_until_n n)
+	 (fun gl -> let id,_,_ = pf_last_hyp gl in tac id gl)
+   | _ -> assert false in
+  add_tactic s tacfun;
+  fun id -> vernac_tactic(s,[Identifier id])
+      
 
 (* Obsolete, remplace par intros_unitl_n ?
 let intros_do n g = 
@@ -448,12 +468,12 @@ let move_to_rhyp rhyp gl =
 	  lastfixed
 	else if List.exists (occur_var_in_decl hyp) depdecls then 
 	  get_lhyp lastfixed (ht::depdecls) rest
-        else 
+        else
 	  get_lhyp (Some hyp) depdecls rest
   in
   let sign = pf_hyps gl in
   let (hyp,c,typ as decl) = List.hd sign in
-  match get_lhyp None [decl] sign with
+  match get_lhyp None [decl] (List.tl sign) with
     | None -> tclIDTAC gl
     | Some hypto -> move_hyp true hyp hypto gl
 
@@ -477,12 +497,7 @@ let apply_type hdcty argl gl =
 let apply_term hdc argl gl =
   refine (applist (hdc,argl)) gl
 
-let bring_hyps clsl gl = 
-  let ids = 
-    List.map 
-      (function 
-	 | (Some id) -> id 
-         | None      -> error "BringHyps") clsl in
+let bring_hyps ids gl = 
   let newcl = 
     List.fold_right 
       (fun id cl' -> mkNamedProd id (pf_type_of gl (mkVar id)) cl')
@@ -828,12 +843,14 @@ let dyn_clear = function
   | _ -> assert false
 
 (* Clears a list of identifiers clauses form the context *)
-
+(*
 let clear_clauses clsl =
   clear (List.map 
            (function 
 	      | Some id -> id
               | None    -> error "ThinClauses") clsl)
+*)
+let clear_clauses = clear
 
 (* Clears one identifier clause from the context *)
 
@@ -1084,7 +1101,7 @@ let rec recargs indpath env sigma t =
 	::(recargs indpath (push_rel_assum (na,t) env) sigma c2)
     | _ -> []
 
-let induct_discharge old_style indpath statuslists cname destopt avoid ra gl =
+let induct_discharge old_style mind statuslists cname destopt avoid ra gl =
   let (lstatus,rstatus) = statuslists in
   let tophyp = ref None in
   let n = List.fold_left (fun n b -> if b then n+1 else n) 0 ra in
@@ -1095,7 +1112,11 @@ let induct_discharge old_style indpath statuslists cname destopt avoid ra gl =
       make_ident (string_of_id cname) (Some 1)
   in
   let indhyp = if old_style then "Hrec" else "IH" in
-  let hyprecname = add_prefix indhyp recvarname in
+  let hyprecname =
+    add_prefix indhyp 
+      (if old_style || atompart_of_id recvarname <> "H" then recvarname
+       else mis_typename (lookup_mind_specif mind (Global.env())))
+  in
   let avoid =
     if old_style then avoid
     else (* Forbid to use cname0 and hyprecname0 *)
@@ -1132,10 +1153,8 @@ let induct_discharge old_style indpath statuslists cname destopt avoid ra gl =
 
 (* Marche pas... faut prendre en compte l'occurrence précise... *)
 
-let atomize_param_of_ind hyp0opt gl =
-  let hyp0,tmptyp0 = match hyp0opt with
-    | None -> let (hyp0,_,typ0) = pf_last_hyp gl in (hyp0, typ0)
-    | Some hyp0 -> hyp0, pf_get_hyp_typ gl hyp0 in
+let atomize_param_of_ind hyp0 gl =
+  let tmptyp0 = pf_get_hyp_typ gl hyp0 in
   let (mind,indtyp,typ0) = pf_reduce_to_mind gl tmptyp0 in
   let mis = Global.lookup_mind_specif mind in
   let nparams = mis_nparams mis in
@@ -1204,7 +1223,7 @@ let find_atomic_param_of_ind mind indtyp =
 
    Induction hypothesis is H4 ([hyp0])
    Variable parameters of (le O n) is the singleton list with "n" ([indvars])
-   Part of [indvars] really in context is the same ([indhyps]
+   Part of [indvars] really in context is the same ([indhyps])
    The dependent hyps are H3 and H6 ([dephyps])
    For H3 the memorized places are H5 ([lhyp]) and H2 ([rhyp])
     because these names are among the hyp which are fixed through the induction
@@ -1236,10 +1255,15 @@ let find_atomic_param_of_ind mind indtyp =
 
    Others solutions are welcome *)
 
+(*
+type hyp_status = 
+let hyps_map
+*)
+
 exception Shunt of identifier option
 
 let cook_sign hyp0 indvars env =
-  (* First pass from L to R: get [indhyps], [dephyps] and [statuslist]
+  (* First phase from L to R: get [indhyps], [decldep] and [statuslist]
      for the hypotheses before (= more ancient than) hyp0 (see above) *)
   let allindhyps = hyp0::indvars in
   let indhyps = ref [] in
@@ -1263,20 +1287,20 @@ let cook_sign hyp0 indvars env =
 	if !before then 
 	  rstatus := (hyp,rhyp)::!rstatus
 	else 
-	  ldeps := hyp::!ldeps; (* status calculé lors de la 2ème passe *)
+	  ldeps := hyp::!ldeps; (* status computed in 2nd phase *)
 	Some hyp end
       else
 	Some hyp
   in
   let _ = fold_named_context seek_deps env None in
-  (* 2nd pass from R to L: get left hyp of [hyp0] and [lhyps] *)
+  (* 2nd phase from R to L: get left hyp of [hyp0] and [lhyps] *)
   let compute_lstatus lhyp (hyp,_,_ as d) =
     if hyp = hyp0 then raise (Shunt lhyp);
     if List.mem hyp !ldeps then begin
       lstatus := (hyp,lhyp)::!lstatus;
       lhyp
-    end else 
-      (Some hyp) 
+    end else
+      if List.mem hyp !indhyps then lhyp else (Some hyp) 
   in
   try 
     let _ = fold_named_context_reverse compute_lstatus None env in
@@ -1360,15 +1384,12 @@ let compute_elim_signature_and_roughly_check elimt mind =
   let _,elimt3 = decompose_prod_n npred elimt2 in
   check_elim elimt3 0
 
-let induction_from_context isrec style hyp0opt gl =
-  let hyp0,tmptyp0 = match hyp0opt with
-    | None -> let (hyp0,_,typ0) = pf_last_hyp gl in (hyp0, typ0)
-    | Some hyp0 ->
-	(*test suivant sans doute inutile car refait par le letin_tac*)
-	if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
-	  errorlabstrm "induction" 
-	    [< 'sTR "Cannot generalize a global variable" >];
-	hyp0, pf_get_hyp_typ gl hyp0 in
+let induction_from_context isrec style hyp0 gl =
+  (*test suivant sans doute inutile car refait par le letin_tac*)
+  if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
+    errorlabstrm "induction" 
+      [< 'sTR "Cannot generalize a global variable" >];
+  let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
   let env = pf_env gl in
   let ((ind_sp,_) as mind,indtyp,typ0) = pf_reduce_to_mind gl tmptyp0 in
   let indvars = find_atomic_param_of_ind mind indtyp in
@@ -1383,15 +1404,28 @@ let induction_from_context isrec style hyp0opt gl =
   let lr = compute_elim_signature_and_roughly_check elimt mind in
   let dephyps = List.rev (List.map (fun (id,_,_) -> id) deps) in
   let args = List.map mkVar dephyps in
+
+  (* Magistral effet de bord: si hyp0 a des arguments, ceux d'entre
+     eux qui ouvrent de nouveaux buts arrivent en premier dans la
+     liste des sous-buts du fait qu'ils sont le plus à gauche dans le
+     combinateur engendré par make_case_gen (un "Cases (hyp0 ?) of
+     ...")  et on ne peut plus appliquer tclTHENST après; en revanche,
+     comme lookup_eliminator renvoie un combinateur de la forme
+     "ind_rec ... (hyp0 ?)", les buts correspondant à des arguments de
+     hyp0 sont maintenant à la fin et tclTHENS marche !!! *)
+  if not isrec && nb_prod typ0 <> 0 && lr <> [] (* passe-droit *) then
+    error "Cases analysis on a functional term not implemented";
+
   tclTHENLIST
     [ apply_type tmpcl args;
       thin dephyps;
-      tclTHENS
+      tclTHENST
        	(tclTHEN
 	   (induction_tac hyp0 typ0 (elimc,elimt))
-	   (thin (hyp0::(List.rev indhyps))))
+	   (thin (hyp0::indhyps)))
        	(List.map
-	   (induct_discharge style mindpath statlists hyp0 lhyp0 dephyps) lr)]
+	   (induct_discharge style mind statlists hyp0 lhyp0 dephyps) lr)
+	tclIDTAC ]
     gl
 
 let induction_with_atomization_of_ind_arg isrec hyp0 =
@@ -1402,23 +1436,19 @@ let induction_with_atomization_of_ind_arg isrec hyp0 =
 let new_induct isrec c gl =
   match kind_of_term c with
     | IsVar id when not (mem_named_context id (Global.named_context())) ->
-	tclORELSE
-	  (* Either the hypothesis is quantified and we first introduce it *)
-	  (tclTHEN
-	     (intros_until id)
-	     (induction_with_atomization_of_ind_arg isrec None))
-	  (* Or it is already in context *)
-	  (induction_with_atomization_of_ind_arg isrec (Some id)) gl
+	induction_with_atomization_of_ind_arg isrec id gl
     | _        ->
 	let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) 
 		  Anonymous in
 	let id = fresh_id [] x gl in
 	tclTHEN
 	  (letin_tac true (Name id) c (None,[]))
-	  (induction_with_atomization_of_ind_arg isrec (Some id)) gl
+	  (induction_with_atomization_of_ind_arg isrec id) gl
 
+(*
 let new_induct_nodep isrec n =
   tclTHEN (intros_until_n n) (induction_with_atomization_of_ind_arg isrec None)
+*)
 
 (* The registered tactic, which calls the default elimination
  * if no elimination constant is provided. *)
@@ -1444,8 +1474,7 @@ let raw_induct s = tclTHEN (intros_until s) (tclLAST_HYP simplest_elim)
 let raw_induct_nodep n = tclTHEN (intros_until_n n) (tclLAST_HYP simplest_elim)
 
 (* This was Induction in 6.3 (hybrid form) *)
-let old_induct s =
-  tclORELSE (raw_induct s) (induction_from_context true true (Some s))
+let old_induct s =tclORELSE (raw_induct s) (induction_from_context true true s)
 let old_induct_nodep = raw_induct_nodep
 
 (* This is Induction since V7 ("natural" induction both in quantified
@@ -1453,9 +1482,9 @@ let old_induct_nodep = raw_induct_nodep
 let dyn_new_induct = function
   | [(Command c)] -> tactic_com (new_induct true) c
   | [(Constr x)]  -> new_induct true x
-  | [(Integer n)] -> new_induct_nodep true n
   (* Identifier apart because id can be quantified in goal and not typable *)
-  | [(Identifier id)] -> new_induct true (mkVar id)
+  | [Integer _ | Identifier _ as arg] ->
+      tactic_try_intros_until (fun id -> new_induct true (mkVar id)) arg
   | l             -> bad_tactic_args "induct" l
 
 (* This was Induction before 6.3 (induction only in quantified premisses)
@@ -1499,9 +1528,9 @@ let destruct_nodep n = (tclTHEN (intros_until_n n)    (tclLAST_HYP simplest_case
 let dyn_new_destruct = function
   | [(Command c)] -> tactic_com (new_induct false) c
   | [(Constr x)]  -> new_induct false x
-  | [(Integer n)] -> new_induct_nodep false n
   (* Identifier apart because id can be quantified in goal and not typable *)
-  | [(Identifier id)] -> new_induct false (mkVar id)
+  | [Integer _ | Identifier _ as arg] ->
+      tactic_try_intros_until (fun id -> new_induct false (mkVar id)) arg
   | l             -> bad_tactic_args "induct" l
 
 let dyn_old_destruct = function  

@@ -46,6 +46,7 @@ let v_new_induction = hide_tactic "NewInduction"  dyn_new_induct
 let v_case          = hide_tactic "Case"          dyn_case
 let v_caseType      = hide_tactic "CaseType"      dyn_case_type
 let v_destruct      = hide_tactic "Destruct"      dyn_destruct
+let v_new_destruct  = hide_tactic "NewDestruct"   dyn_new_destruct
 let v_fix           = hide_tactic "Fix"           dyn_mutual_fix
 let v_cofix         = hide_tactic "Cofix"         dyn_mutual_cofix
 

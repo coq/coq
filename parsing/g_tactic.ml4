@@ -87,6 +87,10 @@ GEXTEND Gram
   castedconstrarg:
     [ [ c = Constr.constr -> <:ast< (CASTEDCOMMAND $c) >> ] ]
   ;
+  ident_or_numarg:
+    [ [ id = identarg -> id
+      | n = numarg -> n ] ]
+  ;
   ident_or_constrarg:
     [ [ c = Constr.constr ->
 	  match c with
@@ -303,8 +307,10 @@ GEXTEND Gram
       | IDENT "Case"; cl = constrarg_binding_list ->
           <:ast< (Case ($LIST $cl)) >>
       | IDENT "CaseType"; c = constrarg -> <:ast< (CaseType $c) >>
-      | IDENT "Destruct"; s = identarg -> <:ast< (Destruct $s) >>
+      | IDENT "Destruct"; s = ident_or_constrarg -> <:ast< (Destruct $s) >>
       | IDENT "Destruct"; n = numarg -> <:ast< (Destruct $n) >>
+      | IDENT "NewDestruct"; s = ident_or_constrarg -> <:ast<(NewDestruct $s)>>
+      | IDENT "NewDestruct"; n = numarg -> <:ast< (NewDestruct $n) >>
       | IDENT "Decompose"; IDENT "Record" ; c = constrarg -> 
              <:ast< (DecomposeAnd $c) >>
       | IDENT "Decompose"; IDENT "Sum"; c = constrarg -> 
