@@ -245,7 +245,9 @@ EXTEND
   ;
   tacrule:
     [ [ "["; s = STRING; l = LIST0 tacargs; "]"; "->"; "["; e = Pcaml.expr; "]"
-        -> (s,l,e)
+        ->
+       if s = "" then Util.user_err_loc (loc,"",Pp.str "Tactic name is empty");
+       (s,l,e)
     ] ]
   ;
   tacargs:

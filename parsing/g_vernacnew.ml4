@@ -181,7 +181,7 @@ GEXTEND Gram
       | -> None ] ]
   ;
   decl_notation:
-    [ [ OPT [ "where"; ntn = STRING; ":="; c = constr; 
+    [ [ OPT [ "where"; ntn = ne_string; ":="; c = constr; 
          scopt = OPT [ ":"; sc = IDENT -> sc] -> (ntn,c,scopt) ] ] ]
     ;
   (* Inductives and records *)
@@ -333,7 +333,7 @@ GEXTEND Gram
         qidl = LIST1 global ->
           VernacRequire (export, specif, qidl)
       | IDENT "Require"; export = export_token; specif = specif_token;
-        filename = STRING -> 
+        filename = ne_string -> 
 	  VernacRequireFrom (export, specif, filename)
       | IDENT "Import"; qidl = LIST1 global -> VernacImport (false,qidl)
       | IDENT "Export"; qidl = LIST1 global -> VernacImport (true,qidl) ] ]
@@ -457,7 +457,7 @@ GEXTEND Gram
       (* System directory *)
       | IDENT "Pwd" -> VernacChdir None
       | IDENT "Cd" -> VernacChdir None
-      | IDENT "Cd"; dir = STRING -> VernacChdir (Some dir)
+      | IDENT "Cd"; dir = ne_string -> VernacChdir (Some dir)
 
       (* Toplevel control *)
       | IDENT "Drop" -> VernacToplevelControl Drop
@@ -465,31 +465,31 @@ GEXTEND Gram
       | IDENT "Quit" -> VernacToplevelControl Quit
 
       | IDENT "Load"; verbosely = [ IDENT "Verbose" -> true | -> false ];
-	s = [ s = STRING -> s | s = IDENT -> s ] ->
+	s = [ s = ne_string -> s | s = IDENT -> s ] ->
 	  VernacLoad (verbosely, s)
-      | IDENT "Declare"; IDENT "ML"; IDENT "Module"; l = LIST1 STRING ->
+      | IDENT "Declare"; IDENT "ML"; IDENT "Module"; l = LIST1 ne_string ->
 	  VernacDeclareMLModule l
 
       (* Dump of the universe graph - to file or to stdout *) 
-      | IDENT "Dump"; IDENT "Universes"; fopt = OPT STRING ->
+      | IDENT "Dump"; IDENT "Universes"; fopt = OPT ne_string ->
 	  VernacPrint (PrintUniverses fopt)
 
       | IDENT "Locate"; l = locatable -> VernacLocate l
 
       (* Managing load paths *)
-      | IDENT "Add"; IDENT "LoadPath"; dir = STRING; alias = as_dirpath ->
+      | IDENT "Add"; IDENT "LoadPath"; dir = ne_string; alias = as_dirpath ->
 	  VernacAddLoadPath (false, dir, alias)
-      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; dir = STRING; 
+      | IDENT "Add"; IDENT "Rec"; IDENT "LoadPath"; dir = ne_string; 
 	  alias = as_dirpath -> VernacAddLoadPath (true, dir, alias)
-      | IDENT "Remove"; IDENT "LoadPath"; dir = STRING ->
+      | IDENT "Remove"; IDENT "LoadPath"; dir = ne_string ->
 	  VernacRemoveLoadPath dir
 
        (* For compatibility *)
-      | IDENT "AddPath"; dir = STRING; "as"; alias = as_dirpath ->
+      | IDENT "AddPath"; dir = ne_string; "as"; alias = as_dirpath ->
 	  VernacAddLoadPath (false, dir, alias)
-      | IDENT "AddRecPath"; dir = STRING; "as"; alias = as_dirpath ->
+      | IDENT "AddRecPath"; dir = ne_string; "as"; alias = as_dirpath ->
 	  VernacAddLoadPath (true, dir, alias)
-      | IDENT "DelPath"; dir = STRING ->
+      | IDENT "DelPath"; dir = ne_string ->
 	  VernacRemoveLoadPath dir
 
       (* Type-Checking (pas dans le refman) *)
@@ -515,14 +515,14 @@ GEXTEND Gram
 	  VernacSearch (SearchRewrite c, l)
       | IDENT "SearchAbout"; 
 	  sl = [ "["; l = LIST1 [ r = global -> SearchRef r
-                                  | s = STRING -> SearchString s ]; "]" -> l 
+                                | s = ne_string -> SearchString s ]; "]" -> l 
    		 | qid = global -> [SearchRef qid] ];
 	  l = in_or_out_modules -> 
 	  VernacSearch (SearchAbout sl, l)
 
-      | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = STRING ->
+      | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = ne_string ->
 	  VernacAddMLPath (false, dir)
-      | IDENT "Add"; IDENT "Rec"; IDENT "ML"; IDENT "Path"; dir = STRING ->
+      | IDENT "Add"; IDENT "Rec"; IDENT "ML"; IDENT "Path"; dir = ne_string ->
 	  VernacAddMLPath (true, dir)
 
       (* Pour intervenir sur les tables de paramètres *)
@@ -612,9 +612,9 @@ GEXTEND Gram
   ;
   locatable:
     [ [ qid = global -> LocateTerm qid
-      | IDENT "File"; f = STRING -> LocateFile f
+      | IDENT "File"; f = ne_string -> LocateFile f
       | IDENT "Library"; qid = global -> LocateLibrary  qid
-      | s = STRING -> LocateNotation s ] ]
+      | s = ne_string -> LocateNotation s ] ]
   ;
   option_value:
     [ [ n  = integer   -> IntValue n
@@ -645,9 +645,9 @@ GEXTEND Gram
     [ [ 
 (* State management *)
         IDENT "Write"; IDENT "State"; s = IDENT -> VernacWriteState s
-      | IDENT "Write"; IDENT "State"; s = STRING -> VernacWriteState s
+      | IDENT "Write"; IDENT "State"; s = ne_string -> VernacWriteState s
       | IDENT "Restore"; IDENT "State"; s = IDENT -> VernacRestoreState s
-      | IDENT "Restore"; IDENT "State"; s = STRING -> VernacRestoreState s
+      | IDENT "Restore"; IDENT "State"; s = ne_string -> VernacRestoreState s
 
 (* Resetting *)
       | IDENT "Reset"; id = identref -> VernacResetName id
@@ -686,7 +686,7 @@ GEXTEND Gram
          "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
 
      | IDENT "Infix"; local = locality;
-	 op = STRING; ":="; p = global; 
+	 op = ne_string; ":="; p = global; 
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
          VernacInfix (local,(op,modl),p,Some(op,modl),sc)
@@ -694,16 +694,16 @@ GEXTEND Gram
 	   l = [ "("; IDENT "only"; IDENT "parsing"; ")" -> [SetOnlyParsing]
 	       | -> [] ] ->
 	 VernacNotation (local,c,Some("'"^s^"'",l),Some("'"^s^"'",l),None)
-     | IDENT "Notation"; local = locality; s = STRING; ":="; c = constr;
+     | IDENT "Notation"; local = locality; s = ne_string; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
            VernacNotation (local,c,Some(s,modl),Some(s,modl),sc)
 
-     | IDENT "Tactic"; IDENT "Notation"; s = STRING; 
+     | IDENT "Tactic"; IDENT "Notation"; s = ne_string; 
 	 pil = LIST0 production_item; ":="; t = Tactic.tactic -> 
 	   VernacTacticGrammar ["",(s,pil),t]
 
-     | IDENT "Reserved"; IDENT "Notation"; local = locality; s = STRING; 
+     | IDENT "Reserved"; IDENT "Notation"; local = locality; s = ne_string; 
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
 	 -> VernacSyntaxExtension (local,Some(s,l),None)
 
@@ -739,7 +739,7 @@ GEXTEND Gram
     [ [ "_" -> None | sc = IDENT -> Some sc ] ]
   ;
   production_item:
-    [[ s = STRING -> VTerm s
+    [[ s = ne_string -> VTerm s
      | nt = non_terminal; po = OPT [ "("; p = ident; ")" -> p ] ->
 	 VNonTerm (loc,nt,po) ]]
   ;

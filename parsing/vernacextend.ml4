@@ -145,7 +145,9 @@ EXTEND
   ;
   rule:
     [ [ "["; s = STRING; l = LIST0 args; "]"; "->"; "["; e = Pcaml.expr; "]"
-        -> (s,l,<:expr< fun () -> $e$ >>)
+        -> 
+      if s = "" then Util.user_err_loc (loc,"",Pp.str "Command name is empty");
+      (s,l,<:expr< fun () -> $e$ >>)
     ] ]
   ;
   args:
