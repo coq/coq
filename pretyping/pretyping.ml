@@ -268,7 +268,7 @@ let rec pretype tycon env isevars lvar lmeta = function
       let lfi = List.map (fun id -> Name id) (Array.to_list lfi) in
       let newenv =
 	array_fold_left2 (fun env id ar -> (push_rel_assum (id,ar) env))
-	  env (Array.of_list (List.rev lfi)) (vect_lift_type lara) in
+	  env (Array.of_list lfi) (vect_lift_type lara) in
       let vdefj =
 	Array.mapi 
 	  (fun i def -> (* we lift nbfix times the type in tycon, because of
@@ -279,11 +279,11 @@ let rec pretype tycon env isevars lvar lmeta = function
       let fixj =
 	match fixkind with
 	  | RFix (vn,i as vni) ->
-	      let fix = (vni,(lara,List.rev lfi,Array.map j_val vdefj)) in
+	      let fix = (vni,(lara,lfi,Array.map j_val vdefj)) in
 	      check_fix env (evars_of isevars) fix;
 	      make_judge (mkFix fix) lara.(i)
 	  | RCoFix i -> 
-	      let cofix = (i,(lara,List.rev lfi,Array.map j_val vdefj)) in
+	      let cofix = (i,(lara,lfi,Array.map j_val vdefj)) in
 	      check_cofix env (evars_of isevars) cofix;
 	      make_judge (mkCoFix cofix) lara.(i) in
       inh_conv_coerce_to_tycon loc env isevars fixj tycon
