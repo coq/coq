@@ -7,15 +7,13 @@
 
 This section describes the full form of pattern-matching in {\Coq} terms.
 
-The current implementation contains two strategies, one for compiling
-non-dependent case and another one for dependent case.
-
-\asection{Patterns}\label{implementation}
-The full syntax of {\tt Cases} is presented in figure \ref{cases-grammar}.
-Identifiers in patterns are either constructor names or variables. Any
-identifier that is not the constructor of an inductive or coinductive
-type is considered to be a variable. A variable name cannot occur more
-than once in a given pattern. 
+\asection{Patterns}\label{implementation} The full syntax of {\tt
+Cases} is presented in figure \ref{cases-grammar}.  Identifiers in
+patterns are either constructor names or variables. Any identifier
+that is not the constructor of an inductive or coinductive type is
+considered to be a variable. A variable name cannot occur more than
+once in a given pattern. It is recommended to start variable names by
+a lowercase letter.
 
 If a pattern has the form $(c~\vec{x})$ where $c$ is a constructor
 symbol and $\vec{x}$ is a linear vector of variables, it is called
@@ -25,7 +23,7 @@ not simple we call it {\em nested}.
 
 A variable pattern matches any value, and the identifier is bound to
 that value. The pattern ``\texttt{\_}'' (called ``don't care'' or
-``wildcard'' symbol) also matches any value, but does not binds anything. It
+``wildcard'' symbol) also matches any value, but does not bind anything. It
 may occur an arbitrary number of times in a pattern. Alias patterns
 written \texttt{(}{\sl pattern} \texttt{as} {\sl identifier}\texttt{)} are
 also accepted. This pattern matches the same values as {\sl pattern}
@@ -72,9 +70,9 @@ to see the result of the expansion is by printing the term with
 The extended \texttt{Cases} still accepts an optional {\em elimination
 predicate} enclosed between brackets \texttt{<>}.  Given a pattern
 matching expression, if all the right hand sides of \texttt{=>} ({\em
-rhs} in short) have the same type, then this term can be sometimes
-synthesized, and so we can omit the \texttt{<>}.  Otherwise we have
-toprovide the predicate between \texttt{<>} as for the basic
+rhs} in short) have the same type, then this type can be sometimes
+synthesized, and so we can omit the \texttt{<>}. Otherwise 
+the predicate between \texttt{<>} has to be provided, like for the basic
 \texttt{Cases}.
 
 Let us illustrate through examples the different aspects of extended
@@ -107,9 +105,10 @@ Fixpoint max [n,m:nat] : nat :=
 
 which will be compiled into the previous form.
 
-The strategy examines patterns from left to right. A \texttt{Cases} expression
-is generated {\bf only} when there is at least one constructor in the
-column of patterns. For example:
+The pattern-matching compilation strategy examines patterns from left
+to right. A \texttt{Cases} expression is generated {\bf only} when
+there is at least one constructor in the column of patterns. E.g. the
+following example does not build a \texttt{Cases} expression.
 
 \begin{coq_example}
 Check [x:nat]<nat>Cases x of y => y end.
@@ -123,7 +122,7 @@ Reset max.
 Fixpoint max [n:nat] : nat -> nat :=
   [m:nat] Cases n m of
              O     _         => m   
-          | ((S n') as N) O  => N
+          | ((S n') as p) O  => p
           | (S n') (S m')    => (S (max n' m')) 
          end.
 \end{coq_example}
@@ -146,7 +145,7 @@ Print even.
 \end{coq_example}
 
 In the previous examples patterns do not conflict with, but
-sometimes it is comfortable to write patterns that admits a non
+sometimes it is comfortable to write patterns that admit a non
 trivial superposition. Consider
 the boolean function \texttt{lef} that given two natural numbers
 yields \texttt{true} if the first one is less or equal than the second
@@ -166,7 +165,7 @@ the couple of values \texttt{O O} matches both. Thus, what is the result
 of the function on those values?  To eliminate ambiguity we use the
 {\em textual priority rule}: we consider patterns ordered from top to
 bottom, then a value is matched by the pattern at the $ith$ row if and
-only if is not matched by some pattern of a previous row. Thus in the
+only if it is not matched by some pattern of a previous row. Thus in the
 example,
 \texttt{O O} is matched by the first pattern, and so \texttt{(lef O O)}
 yields \texttt{true}.
@@ -189,18 +188,11 @@ of the priority rule, the last pattern
 will be used only for values that do not match neither the  first nor
 the second one.  
 
-Terms with useless patterns are accepted by the
-system. For example,
+Terms with useless patterns are not accepted by the
+system. Here is an example:
 \begin{coq_example}
 Check [x:nat]Cases x of O => true | (S _) => false | x => true end.
 \end{coq_example}
-
-is accepted even though the last pattern is never used.
-Beware,  the
-current implementation rises no warning message when there are unused
-patterns in a term.
-
-
 
 \asection{About patterns of parametric types}
 When matching objects of a parametric type, constructors in patterns
@@ -228,8 +220,8 @@ Check [l:(List nat)]Cases l of
 When we use parameters in patterns there is an error message:
 \begin{coq_example}
 Check [l:(List nat)]Cases l of 
-                             (nil nat)      => (nil nat)
-                          | (cons nat _ l') => l'
+                             (nil A)      => (nil nat)
+                          | (cons A _ l') => l'
                            end.
 \end{coq_example}
 
@@ -256,6 +248,7 @@ Definition length := [n:nat][l:(listn n)] n.
 
 Just for illustrating pattern matching, 
 we can define it by case analysis:
+
 \begin{coq_example}
 Reset length.
 Definition length := [n:nat][l:(listn n)]
@@ -268,6 +261,10 @@ Definition length := [n:nat][l:(listn n)]
 We can understand the meaning of this definition using the
 same notions of usual pattern matching.
 
+%
+% Constraining of dependencies is not longer valid in V7
+%
+\iffalse
 Now suppose we split the second pattern  of \texttt{length} into two 
 cases so to give an
 alternative definition using nested patterns:
@@ -332,7 +329,10 @@ expansion of \texttt{length3} is completely different. \texttt{length1} and
 
 In practice the user can think about the patterns as independent and
 it is the expansion algorithm that cares to relate them. \\
-
+\fi
+%
+%
+%
 
 \asubsection{When the elimination predicate must be provided}
 The examples  given so far do not need an explicit elimination predicate
@@ -360,7 +360,7 @@ we destructure several terms at the same time and the branches have
 different type  we need to provide
 the elimination predicate for this multiple pattern.
 
-For example, an equivalent definition for \texttt{concat} (even though with a useless extra pattern) would have
+For example, an equivalent definition for \texttt{concat} (even though the matching on the second term is trivial) would have
 been:
 
 \begin{coq_example}
@@ -373,7 +373,7 @@ Fixpoint concat [n:nat; l:(listn n)] : (m:nat) (listn m) -> (listn (plus n m))
                   end.
 \end{coq_example}
 
-Note that this time, the predicate \texttt{[n,\_:nat](listn (plus n
+Notice that this time, the predicate \texttt{[n,\_:nat](listn (plus n
   m))}  is binary because we
 destructure both \texttt{l} and \texttt{l'} whose types have arity one.
 In general, if we destructure the terms $e_1\ldots e_n$
@@ -383,7 +383,11 @@ number of dependencies of the type of $e_1, e_2,\ldots e_n$
 should correspond from left to right to each dependent argument of the
 type of $e_1\ldots e_n$).
 When the arity of the predicate (i.e. number of abstractions) is not
-correct Coq rises an error message. For example:
+correct Coq raises an error message. For example:
+
+\begin{coq_eval}
+Reset concat.
+\end{coq_eval}
 
 \begin{coq_example}
 Fixpoint concat [n:nat; l:(listn n)] 
@@ -397,14 +401,14 @@ Fixpoint concat [n:nat; l:(listn n)]
 
 \asection{Using pattern matching to write proofs}
 In all the previous examples the elimination predicate does not depend
-on the object(s) matched.  The typical case where this is not possible
+on the object(s) matched. But it may depend and the typical case 
 is when we write a proof by induction or a function that yields an
 object of dependent type. An example of proof using \texttt{Cases} in
 given in section \ref{Refine-example}
 
 For example, we can write 
 the function \texttt{buildlist} that given a natural number
-$n$ builds a list length $n$ containing zeros as follows:
+$n$ builds a list of length $n$ containing zeros as follows:
 
 \begin{coq_example}
 Fixpoint buildlist [n:nat] : (listn n) :=
@@ -427,29 +431,29 @@ Inductive LE : nat->nat->Prop :=
 \end{coq_example}
 
 We can use multiple patterns to write  the proof of the lemma
- \texttt{(n,m:nat) (LE n m)\/(LE m n)}:
+ \texttt{(n,m:nat) (LE n m)}\verb=\/=\texttt{(LE m n)}:
 
 \begin{coq_example}
 Fixpoint dec  [n:nat] : (m:nat)(LE n m) \/ (LE m n) :=
  [m:nat] <[n,m:nat](LE n m) \/ (LE m n)>Cases n m of
            O   x =>  (or_introl ? (LE x O) (LEO x))
          | x   O =>  (or_intror (LE x O) ? (LEO x))
-         | ((S n) as N) ((S m) as M) =>
+         | ((S n) as n') ((S m) as m') =>
               Cases (dec n m) of
-                  (or_introl h) => (or_introl ? (LE M N) (LES n m h))
-               |  (or_intror h) => (or_intror (LE N M) ? (LES m n h))
+                  (or_introl h) => (or_introl ? (LE m' n') (LES n m h))
+               |  (or_intror h) => (or_intror (LE n' m') ? (LES m n h))
               end
         end.
 \end{coq_example}
 In the example of \texttt{dec} the elimination predicate is binary
-because we destructure two arguments of \texttt{nat} that is a
-non-dependent type. Note the first \texttt{Cases} is dependent while the
-second  is not.
+because we destructure two arguments of \texttt{nat} which is a
+non-dependent type. Notice that the first \texttt{Cases} is dependent while 
+the second is not.
 
 In general, consider the terms $e_1\ldots e_n$,
 where  the type of $e_i$ is an instance of a family type
 $[\vec{d_i}:\vec{D_i}]T_i$  ($1\leq i
-\leq n$). Then to  write \texttt{<}${\cal P}$\texttt{>Cases}  $e_1\ldots
+\leq n$). Then, in expression \texttt{<}${\cal P}$\texttt{>Cases}  $e_1\ldots
 e_n$ \texttt{of} \ldots \texttt{end}, the 
 elimination predicate ${\cal P}$ should be of the form:
 $[\vec{d_1}:\vec{D_1}][x_1:T_1]\ldots [\vec{d_n}:\vec{D_n}][x_n:T_n]Q.$
@@ -487,19 +491,19 @@ Here is a summary of the error messages corresponding to each situation:
   the correct number of the arguments, because they are not linear or
   they are wrongly typed)
 \begin{itemize}
-\item \sverb{In pattern } {\sl term} \sverb{the constructor } {\sl
+\item \sverb{The constructor } {\sl
     ident} \sverb{expects } {\sl num} \sverb{arguments}
   
 \item \sverb{The variable } {\sl ident} \sverb{is bound several times
     in pattern } {\sl term}
   
-\item \sverb{Constructor pattern: } {\sl term} \sverb{cannot match
-    values of type } {\sl term}
+\item \sverb{Found a constructor of inductive type} {\term}
+ \sverb{while a constructor of} {\term} \sverb{is expected}
 \end{itemize}
 
 \item the pattern matching is not exhaustive
 \begin{itemize}
-\item \sverb{This pattern-matching is not exhaustive}
+\item \sverb{Non exhaustive pattern-matching}
 \end{itemize}
 \item the elimination predicate provided to \texttt{Cases} has not the
   expected arity
@@ -510,96 +514,105 @@ Here is a summary of the error messages corresponding to each situation:
     num} \sverb{(for dependent case)}
 \end{itemize}
 
-\item the whole expression is wrongly typed, or the synthesis of
-  implicit arguments fails (for example to find the elimination
-  predicate or to resolve implicit arguments in the rhs).
+\item the whole expression is wrongly typed
 
+% CADUC ?
+% , or the synthesis of
+%   implicit arguments fails (for example to find the elimination
+%   predicate or to resolve implicit arguments in the rhs).
+ 
+%   There are {\em nested patterns of dependent type}, the elimination
+%   predicate corresponds to non-dependent case and has the form
+%   $[x_1:T_1]...[x_n:T_n]T$ and {\bf some} $x_i$ occurs {\bf free} in
+%   $T$.  Then, the strategy may fail to find out a correct elimination
+%   predicate during some step of compilation.  In this situation we
+%   recommend the user to rewrite the nested dependent patterns into
+%   several \texttt{Cases} with {\em simple patterns}.
   
-  There are {\em nested patterns of dependent type}, the elimination
-  predicate corresponds to non-dependent case and has the form
-  $[x_1:T_1]...[x_n:T_n]T$ and {\bf some} $x_i$ occurs {\bf free} in
-  $T$.  Then, the strategy may fail to find out a correct elimination
-  predicate during some step of compilation.  In this situation we
-  recommend the user to rewrite the nested dependent patterns into
-  several \texttt{Cases} with {\em simple patterns}.
-  
-  In all these cases we have the following error message:
+\item there is a type mismatch between the different branches
 
   \begin{itemize}
-  \item {\tt Expansion strategy failed to build a well typed case
-      expression.  There is a branch that mismatches the expected
-      type.  The risen \\ type error on the result of expansion was:}
+  \item {\tt Unable to infer a Cases predicate\\
+Either there is a type incompatiblity or the problem involves dependencies}
   \end{itemize}
-  
-\item because of nested patterns, it may happen that even though all
-  the rhs have the same type, the strategy needs dependent elimination
-  and so an elimination predicate must be provided. The system warns
-  about this situation, trying to compile anyway with the
-  non-dependent strategy. The risen message is:
-\begin{itemize}
-\item {\tt Warning: This pattern matching may need dependent
-    elimination to be compiled.  I will try, but if fails try again
-    giving dependent elimination predicate.}
-\end{itemize}
 
-\item there are {\em nested patterns of dependent type} and the
-  strategy builds a term that is well typed but recursive calls in fix
-  point are reported as illegal:
-\begin{itemize}
-\item {\tt Error: Recursive call applied to an illegal term ...}
-\end{itemize}
+  Then the user should provide an elimination predicate.
 
-This is because the strategy generates a term that is correct w.r.t.
-to the initial term but which does not pass the guard condition.  In
-this situation we recommend the user to transform the nested dependent
-patterns into {\em several \texttt{Cases} of simple patterns}.  Let us
-explain this with an example.  Consider the following definition of a
-function that yields the last element of a list and \texttt{O} if it is
-empty:
+% Obsolete ?  
+% \item because of nested patterns, it may happen that even though all
+%   the rhs have the same type, the strategy needs dependent elimination
+%   and so an elimination predicate must be provided. The system warns
+%   about this situation, trying to compile anyway with the
+%   non-dependent strategy. The risen message is:
 
-\begin{coq_example}
-  Fixpoint last [n:nat; l:(listn n)] : nat :=
-   Cases l of 
-     (consn _ a niln) => a
-   | (consn m _ x) => (last m x) | niln => O
-   end.
-\end{coq_example}
+% \begin{itemize}
+% \item {\tt Warning: This pattern matching may need dependent
+%     elimination to be compiled.  I will try, but if fails try again
+%     giving dependent elimination predicate.}
+% \end{itemize}
 
-It fails because of the priority between patterns, we know that this
-definition is equivalent to the following more explicit one (which
-fails too):
 
-\begin{coq_example*}
-  Fixpoint last [n:nat; l:(listn n)] : nat :=
-   Cases l of
-     (consn _ a niln) => a
-   | (consn n _ (consn m b x)) => (last n (consn m b x))
-   | niln => O
-   end.
-\end{coq_example*}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % LA PROPAGATION DES CONTRAINTES ARRIERE N'EST PAS FAITE DANS LA V7
+% TODO
+% \item there are {\em nested patterns of dependent type} and the
+%   strategy builds a term that is well typed but recursive calls in fix
+%   point are reported as illegal:
+% \begin{itemize}
+% \item {\tt Error: Recursive call applied to an illegal term ...}
+% \end{itemize}
 
-Note that the recursive call {\tt (last n (consn m b x))} is not
-guarded. When treating with patterns of dependent types the strategy
-interprets the first definition of \texttt{last} as the second
-one\footnote{In languages of the ML family the first definition would
-  be translated into a term where the variable \texttt{x} is shared in
-  the expression.  When patterns are of non-dependent types, Coq
-  compiles as in ML languages using sharing. When patterns are of
-  dependent types the compilation reconstructs the term as in the
-  second definition of \texttt{last} so to ensure the result of
-  expansion is well typed.}.  Thus it generates a term where the
-recursive call is rejected by the guard condition.
+% This is because the strategy generates a term that is correct w.r.t.
+% the initial term but which does not pass the guard condition.  In
+% this situation we recommend the user to transform the nested dependent
+% patterns into {\em several \texttt{Cases} of simple patterns}.  Let us
+% explain this with an example.  Consider the following definition of a
+% function that yields the last element of a list and \texttt{O} if it is
+% empty:
 
-You can get rid of this problem by writing the definition with
-\emph{simple patterns}:
+% \begin{coq_example}
+%   Fixpoint last [n:nat; l:(listn n)] : nat :=
+%    Cases l of 
+%      (consn _ a niln) => a
+%    | (consn m _ x) => (last m x) | niln => O
+%    end.
+% \end{coq_example}
 
-\begin{coq_example}
-  Fixpoint last [n:nat; l:(listn n)] : nat :=
-  <[_:nat]nat>Cases l of
-    (consn m a x) => Cases x of niln => a | _ => (last m x) end
-  | niln => O
-  end.
-\end{coq_example}
+% It fails because of the priority between patterns, we know that this
+% definition is equivalent to the following more explicit one (which
+% fails too):
+
+% \begin{coq_example*}
+%   Fixpoint last [n:nat; l:(listn n)] : nat :=
+%    Cases l of
+%      (consn _ a niln) => a
+%    | (consn n _ (consn m b x)) => (last n (consn m b x))
+%    | niln => O
+%    end.
+% \end{coq_example*}
+
+% Note that the recursive call {\tt (last n (consn m b x))} is not
+% guarded. When treating with patterns of dependent types the strategy
+% interprets the first definition of \texttt{last} as the second
+% one\footnote{In languages of the ML family the first definition would
+%   be translated into a term where the variable \texttt{x} is shared in
+%   the expression.  When patterns are of non-dependent types, Coq
+%   compiles as in ML languages using sharing. When patterns are of
+%   dependent types the compilation reconstructs the term as in the
+%   second definition of \texttt{last} so to ensure the result of
+%   expansion is well typed.}.  Thus it generates a term where the
+% recursive call is rejected by the guard condition.
+
+% You can get rid of this problem by writing the definition with
+% \emph{simple patterns}:
+
+% \begin{coq_example}
+%   Fixpoint last [n:nat; l:(listn n)] : nat :=
+%   <[_:nat]nat>Cases l of
+%     (consn m a x) => Cases x of niln => a | _ => (last m x) end
+%   | niln => O
+%   end.
+% \end{coq_example}
 
 \end{itemize}
 
