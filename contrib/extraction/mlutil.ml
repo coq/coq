@@ -15,6 +15,7 @@ open Declarations
 open Util
 open Miniml
 open Table
+open Options
 
 (*s Dummy names. *)
 
@@ -460,10 +461,10 @@ let subst_glob_decl r m = function
   | Dglob(r',t') -> Dglob(r', subst_glob_ast r m t')
   | d -> d
 
-let warning_expansion r t= 
+let warning_expansion r = 
   wARN (hOV 0 [< 'sTR "The constant"; 'sPC;
 		 Printer.pr_global r; 
-    'sTR (" of size "^ (string_of_int (ml_size t))^" "); 
+(*    'sTR (" of size "^ (string_of_int (ml_size t))); *)
     'sPC; 'sTR "is expanded." >])
 
 type extraction_params =  
@@ -496,7 +497,7 @@ let rec optimize prm = function
       let b = expand prm.strict r t in
       let l = if b then 
 	begin
-	  (*i if_verbose i*) warning_expansion r t;
+	  if_verbose warning_expansion r;
 	  List.map (subst_glob_decl r t) l
 	end
       else l in 

@@ -53,22 +53,31 @@ let refs_of_vargl = List.map reference_of_varg
 
 (*s AutoInline parameter *)
 
-let auto_inline_params = 
-  {optsyncname = "Extraction AutoInline";
-   optsynckey = SecondaryTable ("Extraction", "AutoInline");
-   optsyncdefault = true}
+let auto_inline_ref = ref true
 
-let auto_inline = declare_sync_bool_option auto_inline_params
+let auto_inline () = !auto_inline_ref
+
+let auto_inline_params = 
+  {optasyncname = "Extraction AutoInline";
+   optasynckey = SecondaryTable ("Extraction", "AutoInline");
+   optasyncread = auto_inline;
+   optasyncwrite = (fun b ->auto_inline_ref := b)}
+
+let _ = declare_async_bool_option auto_inline_params
 
 (*s Optimize parameter *)
 
+let optim_ref = ref true
+
+let optim () = !optim_ref
+
 let optim_params = 
-  {optsyncname = "Extraction Optimize";
-   optsynckey = SecondaryTable ("Extraction", "Optimize");
-   optsyncdefault = true}
+  {optasyncname = "Extraction Optimize";
+   optasynckey = SecondaryTable ("Extraction", "Optimize");
+   optasyncread = optim;
+   optasyncwrite = (fun b ->optim_ref := b)}
 
-let optim = declare_sync_bool_option optim_params
-
+let _ = declare_async_bool_option optim_params
 
 (*s Table for custom inlining *)
 
@@ -194,7 +203,7 @@ let extract_inductive r (id2,l2) = match r with
 	[< Printer.pr_global r; 'sPC; 'sTR "is not an inductive type" >]
 
 let _ = 
-  vinterp_add "ExtarctInductive"
+  vinterp_add "ExtractInductive"
     (function 
        | [q1; VARG_VARGLIST (id2 :: l2)] ->
 	   (fun () -> 

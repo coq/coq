@@ -184,7 +184,7 @@ let extract_to_file = function
 let _ = 
   vinterp_add "ExtractionFile"
     (function 
-       | VARG_STRING lang :: VARG_VARGLIST o :: VARG_STRING f :: vl ->
+       | VARG_STRING lang :: VARG_STRING f :: vl ->
 	   (fun () -> 
 	      let refs = refs_of_vargl vl in
 	      let prm = {strict=strict_language lang;
@@ -230,7 +230,7 @@ let file_suffix = function
 let _ = 
   vinterp_add "ExtractionModule"
     (function 
-       | [VARG_STRING lang; VARG_VARGLIST o; VARG_IDENTIFIER m] ->
+       | [VARG_STRING lang; VARG_IDENTIFIER m] ->
 	   (fun () -> 
 	      Ocaml.current_module := Some m;
 	      let ms = Names.string_of_id m in

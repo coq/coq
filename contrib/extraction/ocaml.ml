@@ -93,10 +93,11 @@ let module_option r =
   else (String.capitalize (string_of_id m)) ^ "."
 
 let check_ml r d = 
-  if to_inline r then d else 
+  if to_inline r then 
     try 
       find_ml_extraction r 
     with Not_found -> d
+  else d
 
 (*s de Bruijn environments for programs *)
 
