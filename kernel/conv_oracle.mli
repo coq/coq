@@ -24,6 +24,9 @@ val set_transparent_const : kernel_name -> unit
 val set_opaque_var      : identifier -> unit
 val set_transparent_var : identifier -> unit
 
+val is_opaque_cst : constant -> bool
+val is_opaque_var : identifier -> bool
+
 (*****************************)
 
 (* transparent state summary operations *)

@@ -19,10 +19,6 @@ let set_transparent_const kn = cst_transp := KNpred.add kn !cst_transp
 
 let is_opaque_cst kn = not (KNpred.mem kn !cst_transp)
 
-(* Unfold the first only if it is not opaque and the second is
-   opaque *)
-let const_order kn1 kn2 = is_opaque_cst kn2 & not (is_opaque_cst kn1)
-
 (* Opaque variables *)
 let var_transp = ref Idpred.full
 
@@ -31,14 +27,14 @@ let set_transparent_var kn = var_transp := Idpred.add kn !var_transp
 
 let is_opaque_var kn = not (Idpred.mem kn !var_transp)
 
-let var_order id1 id2 = is_opaque_var id2 & not (is_opaque_var id1)
+(* Opaque reference keys *)
+let is_opaque = function
+  | ConstKey cst -> is_opaque_cst cst
+  | VarKey id -> is_opaque_var id
+  | FarRelKey _ -> false
 
-(* *)
-let oracle_order k1 k2 =
-  match (k1,k2) with
-      (ConstKey kn1, ConstKey kn2) -> const_order kn1 kn2
-    | (VarKey id1, VarKey id2) -> var_order id1 id2
-    | _ -> false
+(* Unfold the first only if it is not opaque and the second is opaque *)
+let oracle_order k1 k2 = is_opaque k2 & not (is_opaque k1)
 
 (* summary operations *)
 
