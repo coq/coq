@@ -172,7 +172,7 @@ let coq_ZERO = lazy (constant "ZERO")
 let coq_POS = lazy (constant "POS")
 let coq_NEG = lazy (constant  "NEG")
 let coq_Z = lazy (constant "Z")
-let coq_relation = lazy (constant "relation")
+let coq_relation = lazy (constant (if !Options.v7 then "relation" else "comparison"))
 let coq_SUPERIEUR = lazy (constant "SUPERIEUR")
 let coq_INFEEIEUR = lazy (constant "INFERIEUR")
 let coq_EGAL = lazy (constant "EGAL")
@@ -309,31 +309,20 @@ let coq_imp_simp = lazy (constant "imp_simp")
 
 (* uses build_coq_and, build_coq_not, build_coq_or, build_coq_ex *)
 
-
-(* Section paths for unfold *)
+(* For unfold *)
 open Closure
-let make_coq_path dir s =
-  let dir = make_dirpath (List.map id_of_string (List.rev ("Coq"::dir))) in
-  let id = id_of_string s in
-  let ref = 
-    try Nametab.absolute_reference (Libnames.make_path dir id)
-    with Not_found ->
-      anomaly("Coq_omega: cannot find "^
-	      (Libnames.string_of_qualid(Libnames.make_qualid dir id)))
-  in
-  match ref with
-    | ConstRef sp -> EvalConstRef sp
-    | _ -> anomaly ("Coq_omega: "^
-		    (Libnames.string_of_qualid (Libnames.make_qualid dir id))^
-		    " is not a constant")
+let evaluable_ref_of_constr s c = match kind_of_term (Lazy.force c) with
+  | Const kn when Tacred.is_evaluable (Global.env()) (EvalConstRef kn) ->
+      EvalConstRef kn
+  | _ -> anomaly ("Coq_omega: "^s^" is not an evaluable constant")
 
-let sp_Zs = lazy (make_coq_path ["ZArith";"zarith_aux"] "Zs")
-let sp_Zminus = lazy (make_coq_path ["ZArith";"zarith_aux"] "Zminus")
-let sp_Zle = lazy (make_coq_path ["ZArith";"zarith_aux"] "Zle")
-let sp_Zgt = lazy (make_coq_path ["ZArith";"zarith_aux"] "Zgt")
-let sp_Zge = lazy (make_coq_path ["ZArith";"zarith_aux"] "Zge")
-let sp_Zlt = lazy (make_coq_path ["ZArith";"zarith_aux"] "Zlt")
-let sp_not = lazy (make_coq_path ["Init";"Logic"] "not")
+let sp_Zs =     lazy (evaluable_ref_of_constr "Zs" coq_Zs)
+let sp_Zminus = lazy (evaluable_ref_of_constr "Zminus" coq_Zminus)
+let sp_Zle = lazy (evaluable_ref_of_constr "Zle" coq_Zle)
+let sp_Zgt = lazy (evaluable_ref_of_constr "Zgt" coq_Zgt)
+let sp_Zge = lazy (evaluable_ref_of_constr "Zge" coq_Zge)
+let sp_Zlt = lazy (evaluable_ref_of_constr "Zlt" coq_Zlt)
+let sp_not = lazy (evaluable_ref_of_constr "not" (lazy (build_coq_not ())))
 
 let mk_var v = mkVar (id_of_string v)
 let mk_plus t1 t2 = mkApp (Lazy.force coq_Zplus, [| t1; t2 |])
