@@ -165,14 +165,13 @@ Local definitions can be done as follows:
 \phantom{}
 \vfill{}
 
-\begin{tabbing}
-{\sf And} \=\kill
-{\sf Let}\>$ident_1$ {\sf =} $expr_1$\\
+\begin{tabular}{l}
+{\sf Let} $ident_1$ {\sf =} $expr_1$\\
 {\sf And} $ident_2$ {\sf =} $expr_2$\\
 ...\\
 {\sf And} $ident_n$ {\sf =} $expr_n$ {\sf In}\\
-\>$expr$
-\end{tabbing}
+$expr$
+\end{tabular}
 
 $expr_i$ is evaluated to $v_i$, then, $expr$ is evaluated by subsituting $v_i$
 to each occurrence of $ident_i$, for $i=1,...,n$. There is no dependencies
@@ -184,15 +183,14 @@ We can carry out pattern matching on terms with:
 
 \newpage{}
 
-\begin{tabbing}
-\hx{3}\={\sf |} \=$term_n$ \=\kill
+\begin{tabular}{l}
 {\sf Match} $term$ {\sf With}\\
-\>\>$term_1$ {\sf ->} $expr_1$\\
-\>{\sf |} $term_2$ {\sf ->} $expr_2$\\
-\>...\\
-\>{\sf |} $term_n$ {\sf ->} $expr_n$\\
-\>{\sf |} {\sf \_}\>\>{\sf ->} $expr_{n+1}$
-\end{tabbing}
+~~~$term_1$ {\sf ->} $expr_1$\\
+~{\sf |} $term_2$ {\sf ->} $expr_2$\\
+~...\\
+~{\sf |} $term_n$ {\sf ->} $expr_n$\\
+~{\sf |} {\sf \_} {\sf ->} $expr_{n+1}$
+\end{tabular}
 
 if $term$ is matched (non-linear first order unification) by $term_1$ then
 $expr_1$ is evaluated by substituting the pattern matching instantiations to
@@ -339,18 +337,17 @@ script and can be catched by {\sf Try}.
 We can make pattern matching on proof contexts using the following
 expression:
 
-\begin{tabbing}
-\hx{3}\={\sf |}\={\sf [}$context\_hyps_{n,1}${\sf ;}...{\sf ;}$context\_hyps_{n,m_n}$\={\sf |-}$term_n${\sf ] }\=\kill
+\begin{tabular}{l}
 {\sf Match Context With}\\
-\>\>{\sf [}$context\_hyps_{1,1}${\sf ;}...{\sf ;}$context\_hyps_{1,m_1}$\>{\sf
-|-}$term_1${\sf ] ->} $expr_1$\\
-\>{\sf |[}$context\_hyps_{2,1}${\sf ;}...{\sf ;}$context\_hyps_{2,m_2}$\>\>{\sf
-|-}$term_2${\sf ] ->} $expr_2$\\
-\>...\\
-\>{\sf |[}$context\_hyps_{n,1}${\sf ;}...{\sf ;}$context\_hyps_{n,m_n}$\>\>{\sf
-|-}$term_n${\sf ] ->} $expr_n$\\
-\>{\sf |\_}\>\>\>{\sf ->} $expr_{n+1}$
-\end{tabbing}
+~~~{\sf [}$context\_hyps_{1,1}${\sf ;}...{\sf ;}$context\_hyps_{1,m_1}$
+   ~~{\sf |-}$term_1${\sf ] ->} $expr_1$\\
+~~{\sf |[}$context\_hyps_{2,1}${\sf ;}...{\sf ;}$context\_hyps_{2,m_2}$
+   ~~{\sf |-}$term_2${\sf ] ->} $expr_2$\\
+~~...\\
+~~{\sf |[}$context\_hyps_{n,1}${\sf ;}...{\sf ;}$context\_hyps_{n,m_n}$
+   ~~{\sf |-}$term_n${\sf ] ->} $expr_n$\\
+~~{\sf |\_}~~~~{\sf ->} $expr_{n+1}$
+\end{tabular}
 
 If each hypothesis pattern $context\_hyps_{1,i}$, with $i=1,...,m_1$ is matched
 (non-linear first order unification) by an hypothesis of the goal and if
@@ -396,17 +393,16 @@ Then, this definition is treated as above.
 
 Finally, mutal recursive function definitions are possible with:
 
-\begin{tabbing}
-\hx{4}\={\sf And} \=$ident_n$ $input\_fun_{n,1}$ ... $input\_fun_{n,m_n}$ \=\kill
-\>{\sf Recursive Tactic Definition}\\
-\>\>$ident_1$ $input\_fun_{1,1}$ ...
-$input\_fun_{1,m_1}$\>{\sf :=} $expr_1$\\
-\>{\sf And} $ident_2$ $input\_fun_{2,1}$ ... $input\_fun_{2,m_2}$\>\>{\sf :=}
+\begin{tabular}{l}
+{\sf Recursive Tactic Definition}\\
+~~~$ident_1$ $input\_fun_{1,1}$ ...
+$input\_fun_{1,m_1}$~~{\sf :=} $expr_1$\\
+{\sf And} $ident_2$ $input\_fun_{2,1}$ ... $input\_fun_{2,m_2}$~~{\sf :=}
 $expr_2$\\
-\>...\\
-\>{\sf And} $ident_n$ $input\_fun_{n,1}$ ... $input\_fun_{n,m_n}$ {\sf :=}
+...\\
+{\sf And} $ident_n$ $input\_fun_{n,1}$ ... $input\_fun_{n,m_n}$~~{\sf :=}
 $expr_n$
-\end{tabbing}
+\end{tabular}
 
 This definition bloc is a set of simultaneous functional definitions (use of
 the same previous syntactical sugar) and the other scripts are evaluated as
@@ -421,22 +417,30 @@ A first example which shows how to use the pattern matching over the proof
 contexts is the proof that natural numbers have more than two elements. The
 proof of such a lemma can be done as shown in table~\ref{cnatltac}.
 
+\begin{coq_eval}
+Reset Initial.
+Require Arith.
+Require PolyList.
+Require PolyListSyntax.
+\end{coq_eval}
+
 \begin{table}[ht]
 \noindent{}\framebox[6in][l]
 {\parbox{6in}
-{\begin{tabbing}
-\hx{4}\=\hx{4}\=\hx{4}\=\hx{4}\=\hx{4}\=\kill
-\>{\sf Lemma card\_nat: \~{}(EX x:nat|(EX y:nat|(z:nat)(x=z)$\bs{}$/(y=z))).}\\
-\>{\sf Proof.}\\
-\>\>{\sf Red;Intro H.}\\
-\>\>{\sf Elim H;Intros a Ha.}\\
-\>\>{\sf Elim Ha;Intros b Hb.}\\
-\>\>{\sf Elim (Hb (0));Elim (Hb (1));Elim (Hb (2));Intros;}\\
-\>\>\>{\sf Match Context With}\\
-\>\>\>\>{\sf [\_:?1=?2;\_:?1=?3|-?] ->}\\
-\>\>\>\>\>{\sf Cut ?2=?3;[Discriminate|Apply trans\_equal with ?1;Auto].}\\
-\>{\sf Save.}
-\end{tabbing}}}
+{
+\begin{coq_example*}
+Lemma card_nat: ~(EX x:nat|(EX y:nat|(z:nat)(x=z)/\(y=z))).
+Proof.
+Red;Intro H.
+Elim H;Intros a Ha.
+Elim Ha;Intros b Hb.
+Elim (Hb (0));Elim (Hb (1));Elim (Hb (2));Intros;
+  Match Context With
+    [_:?1=?2;_:?1=?3|-?] ->
+      Cut ?2=?3;[Discriminate|Apply trans_equal with ?1;Auto].
+Save.
+\end{coq_example*}
+}}
 \caption{A proof on cardinality of natural numbers}
 \label{cnatltac}
 \end{table}
@@ -456,25 +460,24 @@ First, we define the permutation predicate as shown in table~\ref{permutpred}.
 \begin{table}[ht]
 \noindent{}\framebox[6in][l]
 {\parbox{6in}
-{\begin{tabbing}
-\hx{4}\=\hx{4}\={\sf |}\=\hx{3}\=\kill
-\>{\sf Section Sort.}\\
-\\
-\>{\sf Variable A:Set.}\\
-\\
-\>{\sf Inductive permut:(list A)->(list A)->Prop:=}\\
-\>\>\>{\sf  permut\_refl:(l:(list A))(permut l l)}\\
-\>\>{\sf |permut\_cons:}\\
-\>\>\>\>{\sf (a:A)(l0,l1:(list A))(permut l0 l1)->(permut (cons a l0) (cons a
-l1))}\\
-\>\>{\sf |permut\_append:(a:A)(l:(list A))(permut (cons a l) (l\^{}(cons a (nil
-A))))}\\
-\>\>{\sf |permut\_trans:}\\
-\>\>\>\>{\sf (l0,l1,l2:(list A))(permut l0 l1)->(permut l1 l2)->(permut l0
-l2).}\\
-\\
-\>{\sf End Sort.}
-\end{tabbing}}}
+{
+\begin{coq_example*}
+Section Sort.
+Variable A:Set.
+
+Inductive permut:(list A)->(list A)->Prop:=
+  permut_refl:(l:(list A))(permut l l)
+ |permut_cons:
+    (a:A)(l0,l1:(list A))(permut l0 l1)->
+      (permut (cons a l0) (cons a l1))
+ |permut_append:
+    (a:A)(l:(list A))(permut (cons a l) (l^(cons a (nil A))))
+ |permut_trans:
+    (l0,l1,l2:(list A))(permut l0 l1)->(permut l1 l2)->
+      (permut l0 l2).
+End Sort.
+\end{coq_example*}
+}}
 \caption{Definition of the permutation predicate}
 \label{permutpred}
 \end{table}
@@ -504,32 +507,30 @@ Compute in} and we can get the terms back by {\sf Match}.
 \begin{table}[p]
 \noindent{}\framebox[6in][l]
 {\parbox{6in}
-{\begin{tabbing}
-\hx{4}\=\hx{4}\=\hx{4}\={\sf |}\=\hx{3}\=\hx{4}\={\sf |}\=\hx{3}\=\hx{4}\=
-\hx{4}\=\kill
-\>{\sf Tactic Definition Permut n:=}\\
-\>\>{\sf Match Context With}\\
-\>\>\>\>{\sf [|-(permut ? ?1 ?1)] -> Apply permut\_refl}\\
-\>\>\>{\sf |[|-(permut ? (cons ?1 ?2) (cons ?1 ?3))] ->}\\
-\>\>\>\>\>{\sf Let newn=Eval Compute in (length ?2)}\\
-\>\>\>\>\>{\sf In}\\
-\>\>\>\>\>\>{\sf Apply permut\_cons;(Permut newn)}\\
-\>\>\>{\sf |[|-(permut ?1 (cons ?2 ?3) ?4)] ->}\\
-\>\>\>\>\>{\sf (Match Eval Compute in n With}\\
-\>\>\>\>\>\>\>{\sf [(1)] -> Fail}\\
-\>\>\>\>\>\>{\sf |\_ ->}\\
-\>\>\>\>\>\>\>\>{\sf Let l0'='(?3\^{}(cons ?2 (nil ?1)))}\\
-\>\>\>\>\>\>\>\>{\sf In}\\
-\>\>\>\>\>\>\>\>\>{\sf Apply (permut\_trans ?1 (cons ?2 ?3) l0' ?4);}\\
-\>\>\>\>\>\>\>\>\>\>{\sf [Apply permut\_append|}\\
-\>\>\>\>\>\>\>\>\>\>{\sf Compute;(Permut (pred n))]).}\\
-\\
-\>{\sf Tactic Definition PermutProve:=}\\
-\>\>{\sf Match Context With}\\
-\>\>\>\>{\sf [|-(permut ? ?1 ?2)] ->}\\
-\>\>\>\>\>{\sf (Match Eval Compute in ((length ?1)=(length ?2)) With}\\
-\>\>\>\>\>\>\>{\sf [?1=?1] -> (Permut ?1)).}
-\end{tabbing}}}
+{
+\begin{coq_example}
+Tactic Definition Permut n:=
+ Match Context With
+   [|-(permut ? ?1 ?1)] -> Apply permut_refl
+  |[|-(permut ? (cons ?1 ?2) (cons ?1 ?3))] ->
+     Let newn=Eval Compute in (length ?2) In
+     Apply permut_cons;(Permut newn)
+  |[|-(permut ?1 (cons ?2 ?3) ?4)] ->
+     (Match Eval Compute in n With
+        [(1)] -> Fail
+       |_ ->
+         Let l0'='(?3^(cons ?2 (nil ?1))) In
+         Apply (permut_trans ?1 (cons ?2 ?3) l0' ?4);
+         [Apply permut_append|
+          Compute;(Permut '(pred n))]).
+
+Tactic Definition PermutProve:=
+ Match Context With
+   [|-(permut ? ?1 ?2)] ->
+     (Match Eval Compute in ((length ?1)=(length ?2)) With
+        [?1=?1] -> (Permut ?1)).
+\end{coq_example}
+}}
 \caption{Permutation tactic}
 \label{permutltac}
 \end{table}
@@ -540,25 +541,26 @@ table~\ref{permutlem}.
 \begin{table}[p]
 \noindent{}\framebox[6in][l]
 {\parbox{6in}
-{\begin{tabbing}
-\hx{4}\=\hx{4}\=\hx{4}\=\hx{4}\=\kill
-\>{\sf Lemma permut\_ex1:}\\
-\>\>{\sf (permut nat (cons (1) (cons (2) (cons (3) (nil nat))))}\\
-\>\>\>{\sf (cons (3) (cons (2) (cons (1) (nil nat))))).}\\
-\>{\sf Proof.}\\
-\>\>{\sf PermutProve.}\\
-\>{\sf Save.}\\
-\\
-\>{\sf Lemma permut\_ex2:}\\
-\>\>{\sf (permut nat}\\
-\>\>\>{\sf (cons (0) (cons (1) (cons (2) (cons (3) (cons (4) (cons (5) (cons (6)}\\
-\>\>\>\>{\sf (cons (7) (cons (8) (cons (9) (nil nat)))))))))))}\\
-\>\>\>{\sf (cons (0) (cons (2) (cons (4) (cons (6) (cons (8) (cons (9) (cons (7)}\\
-\>\>\>\>{\sf (cons (5) (cons (3) (cons (1) (nil nat)))))))))))).}\\
-\>{\sf Proof.}\\
-\>\>{\sf PermutProve.}\\
-\>{\sf Save.}
-\end{tabbing}}}
+{
+\begin{coq_example*}
+Lemma permut_ex1:
+  (permut nat (cons (1) (cons (2) (cons (3) (nil nat))))
+     (cons (3) (cons (2) (cons (1) (nil nat))))).
+Proof.
+PermutProve.
+Save.
+
+Lemma permut_ex2:
+ (permut nat
+   (cons (0) (cons (1) (cons (2) (cons (3) (cons (4) (cons (5)
+     (cons (6) (cons (7) (cons (8) (cons (9) (nil nat)))))))))))
+   (cons (0) (cons (2) (cons (4) (cons (6) (cons (8) (cons (9)
+     (cons (7) (cons (5) (cons (3) (cons (1) (nil nat)))))))))))).
+Proof.
+PermutProve.
+Save.
+\end{coq_example*}
+}}
 \caption{Examples of {\sf PermutProve} use}
 \label{permutlem}
 \end{table}
@@ -580,48 +582,50 @@ for the left implication to get rid of the contraction and the right or).
 \begin{table}[ht]
 \noindent{}\framebox[6in][l]
 {\parbox{6in}
-{\begin{tabbing}
-\hx{4}\=\hx{4}\=\hx{4}\={\sf |}\=\hx{3}\={\sf |}\=\hx{3}\={\sf |}\=\hx{3}\=\hx{4}\=\hx{4}\=\kill
-\>{\sf Tactic Definition Axioms:=}\\
-\>\>{\sf Match Context With}\\
-\>\>\>\>{\sf [|-True] -> Trivial}\\
-\>\>\>{\sf |[\_:False|- ?] -> ElimType False;Assumption}\\
-\>\>\>{\sf |[\_:?1|-?1] -> Auto.}\\
-\\
-\>{\sf Tactic Definition Simplif:=}\\
-\>\>{\sf Repeat}\\
-\>\>\>{\sf (Intros;}\\
-\>\>\>\>\>{\sf (Match Context With}\\
-\>\>\>\>\>\>\>\>{\sf [id:\~{}?|-?] -> Red in id}\\
-\>\>\>\>\>\>\>{\sf |[id:?/$\bs{}$?|-?] -> Elim id;Do 2 Intro;Clear id}\\
-\>\>\>\>\>\>\>{\sf |[id:?$\bs{}$/?|-?] -> Elim id;Intro;Clear id}\\
-\>\>\>\>\>\>\>{\sf |[id:?1/$\bs{}$?2->?3|-?] ->}\\
-\>\>\>\>\>\>\>\>\>{\sf Cut ?1->?2->?3;[Intro|Intros;Apply id;Split;Assumption]}\\
-\>\>\>\>\>\>\>{\sf |[id:?1$\bs{}$/?2->?3|-?] ->}\\
-\>\>\>\>\>\>\>\>\>{\sf Cut ?2->?3;[Cut ?1->?3;[Intros|}\\
-\>\>\>\>\>\>\>\>\>\>{\sf Intro;Apply id;Left;Assumption]|}\\
-\>\>\>\>\>\>\>\>\>\>{\sf Intro;Apply id;Right;Assumption]}\\
-\>\>\>\>\>\>\>{\sf |[id0:?1->?2;id1:?1|-?] ->}\\
-\>\>\>\>\>\>\>\>\>{\sf Cut ?2;[Intro;Clear id0|Apply id0;Assumption]}\\
-\>\>\>\>\>\>\>{\sf |[|-?/$\bs{}$?] -> Split}\\
-\>\>\>\>\>\>\>{\sf |[|-\~{}?] -> Red)).}\\
-\\
-\>{\sf Recursive Tactic Definition TautoProp:=}\\
-\>\>{\sf Simplif;}\\
-\>\>{\sf Axioms}\\
-\>\>{\sf Orelse}\\
-\>\>\>{\sf Match Context With}\\
-\>\>\>\>\>\>{\sf [id:(?1->?2)->?3|-?] ->}\\
-\>\>\>\>\>\>\>{\sf Cut ?2->?3;[Intro;Cut ?1->?2;[Intro;Cut ?3;[Intro;Clear id|}\\
-\>\>\>\>\>\>\>\>\>{\sf Apply id;Assumption]|Clear id]|}\\
-\>\>\>\>\>\>\>\>\>{\sf Intro;Apply id;Intro;Assumption];TautoProp}\\
-\>\>\>\>\>{\sf |[id:\~{}?1->?2|-?]->}\\
-\>\>\>\>\>\>\>{\sf Cut False->?2;[Intro;Cut ?1->False;[Intro;Cut ?2;[Intro;Clear id|}\\
-\>\>\>\>\>\>\>\>\>{\sf Apply id;Assumption]|Clear id]|}\\
-\>\>\>\>\>\>\>\>\>{\sf Intro;Apply id;Red;Intro;Assumption];TautoProp}\\
-\>\>\>\>\>{\sf |[|-?$\bs{}$/?] ->}\\
-\>\>\>\>\>\>\>{\sf (Left;TautoProp) Orelse (Right;TautoProp).}
-\end{tabbing}}}
+{
+\begin{coq_example}
+Tactic Definition Axioms:=
+  Match Context With
+   [|-True] -> Trivial
+  |[_:False|- ?] -> ElimType False;Assumption
+  |[_:?1|-?1] -> Auto.
+
+Tactic Definition Simplif:=
+ Repeat
+  (Intros;
+   (Match Context With
+     [id:~?|-?] -> Red in id
+    |[id:?/\?|-?] -> Elim id;Do 2 Intro;Clear id
+    |[id:?\/?|-?] -> Elim id;Intro;Clear id
+    |[id:?1/\?2->?3|-?] ->
+       Cut ?1->?2->?3;[Intro|Intros;Apply id;Split;Assumption]
+    |[id:?1\/?2->?3|-?] ->
+       Cut ?2->?3;[Cut ?1->?3;[Intros|
+                               Intro;Apply id;Left;Assumption]|
+                   Intro;Apply id;Right;Assumption]
+    |[id0:?1->?2;id1:?1|-?] ->
+       Cut ?2;[Intro;Clear id0|Apply id0;Assumption]
+    |[|-?/\?] -> Split
+    |[|-~?] -> Red)).
+
+Recursive Tactic Definition TautoProp:=
+  Simplif;
+   Axioms
+   Orelse
+   Match Context With
+    [id:(?1->?2)->?3|-?] ->
+      Cut ?2->?3;[Intro;Cut ?1->?2;[Intro;Cut ?3;[Intro;Clear id|
+                              Apply id;Assumption]|Clear id]|
+                  Intro;Apply id;Intro;Assumption];TautoProp
+   |[id:~?1->?2|-?]->
+      Cut False->?2;
+      [Intro;Cut ?1->False;[Intro;Cut ?2;[Intro;Clear id|
+                               Apply id;Assumption]|Clear id]|
+       Intro;Apply id;Red;Intro;Assumption];TautoProp
+   |[|-?\/?] ->
+      (Left;TautoProp) Orelse (Right;TautoProp).
+\end{coq_example}
+}}
 \caption{Deciding intuitionistic propositions}
 \label{tautoltac}
 \end{table}
@@ -632,18 +636,19 @@ table~\ref{tautolem}.
 \begin{table}[ht]
 \noindent{}\framebox[6in][l]
 {\parbox{6in}
-{\begin{tabbing}
-\hx{4}\=\hx{4}\=\hx{4}\=\hx{4}\=\kill
-\>{\sf Lemma tauto\_ex1:(A,B:Prop)A/$\bs{}$B->A$\bs{}$/B.}\\
-\>{\sf Proof.}\\
-\>\>{\sf TautoProp.}\\
-\>{\sf Save.}\\
-\\
-\>{\sf Lemma tauto\_ex2:(A,B:Prop)(\~{}\~{}B->B)->(A->B)->\~{}\~{}A->B.}\\
-\>{\sf Proof.}\\
-\>\>{\sf TautoProp.}\\
-\>{\sf Save.}
-\end{tabbing}}}
+{
+\begin{coq_example*}
+Lemma tauto_ex1:(A,B:Prop)A/\B->A\/B.
+Proof.
+TautoProp.
+Save.
+
+Lemma tauto_ex2:(A,B:Prop)(~~B->B)->(A->B)->~~A->B.
+Proof.
+TautoProp.
+Save.
+\end{coq_example*}
+}}
 \caption{Proofs of tautologies with {\sf TautoProp}}
 \label{tautolem}
 \end{table}
@@ -659,27 +664,32 @@ table~\ref{isosax}.
 \begin{table}[ht]
 \noindent{}\framebox[6in][l]
 {\parbox{6in}
-{\begin{tabbing}
-\hx{4}\=\hx{4}\=\kill
-\>{\sf Section Iso\_axioms.}\\
-\\
-\>{\sf Variable A,B,C:Set.}\\
-\\
-\>{\sf Axiom Com:(A*B)==(B*A).}\\
-\>{\sf Axiom Ass:(A*(B*C))==((A*B)*C).}\\
-\>{\sf Axiom Cur:((A*B)->C)==(A->B->C).}\\
-\>{\sf Axiom Dis:(A->(B*C))==((A->B)*(A->C)).}\\
-\>{\sf Axiom P\_unit:(A*unit)==A.}\\
-\>{\sf Axiom AR\_unit:(A->unit)==unit.}\\
-\>{\sf Axiom AL\_unit:(unit->A)==A.}\\
-\\
-\>{\sf Lemma Cons:B==C->(A*B)==(A*C).}\\
-\>{\sf Proof.}\\
-\>\>{\sf Intro Heq;Rewrite Heq;Apply refl\_eqT.}\\
-\>{\sf Save.}\\
-\\
-\>{\sf End Iso\_axioms.}
-\end{tabbing}}}
+{
+\begin{coq_eval}
+Reset Initial.
+Require Arith.
+\end{coq_eval}
+\begin{coq_example*}
+Section Iso_axioms.
+
+Variable A,B,C:Set.
+
+Axiom Com:(A*B)==(B*A).
+Axiom Ass:(A*(B*C))==((A*B)*C).
+Axiom Cur:((A*B)->C)==(A->B->C).
+Axiom Dis:(A->(B*C))==((A->B)*(A->C)).
+Axiom P_unit:(A*unit)==A.
+Axiom AR_unit:(A->unit)==unit.
+Axiom AL_unit:(unit->A)==A.
+
+Lemma Cons:B==C->(A*B)==(A*C).
+Proof.
+Intro Heq;Rewrite Heq;Apply refl_eqT.
+Save.
+
+End Iso_axioms.
+\end{coq_example*}
+}}
 \caption{Type isomorphism axioms}
 \label{isosax}
 \end{table}
@@ -690,43 +700,43 @@ simple. Types are reduced using axioms that can be oriented (this done by {\sf
 MainSimplif}). The normal forms are sequences of Cartesian
 products without Cartesian product in the left component. These normal forms
 are then compared modulo permutation of the components (this is done by {\sf
-Compare}). The main tactic to be called and realizing this algorithm is
+CompareStruct}). The main tactic to be called and realizing this algorithm is
 {\sf IsoProve}.
 
 \begin{table}[ht]
 \noindent{}\framebox[6in][l]
 {\parbox{6in}
-{\begin{tabbing}
-\hx{4}\=\hx{4}\=\hx{4}\={\sf |}\=\hx{3}\=\hx{4}\=\kill
-\>{\sf Recursive Tactic Definition Simplif trm:=}\\
-\>\>{\sf Match trm With}\\
-\>\>\>\>{\sf [(?1*?2)*?3] -> Rewrite <- (Ass ?1 ?2 ?3);Try MainSimplif}\\
-\>\>\>{\sf |[(?1*?2)->?3] -> Rewrite (Cur ?1 ?2 ?3);Try MainSimplif}\\
-\>\>\>{\sf |[?1->(?2*?3)] -> Rewrite (Dis ?1 ?2 ?3);Try MainSimplif}\\
-\>\>\>{\sf |[?1*unit] -> Rewrite (P\_unit ?1);Try MainSimplif}\\
-\>\>\>{\sf |[unit*?1] -> Rewrite (Com unit ?1);Try MainSimplif}\\
-\>\>\>{\sf |[?1->unit] -> Rewrite (AR\_unit ?1);Try MainSimplif}\\
-\>\>\>{\sf |[unit-> ?1] -> Rewrite (AL\_unit ?1);Try MainSimplif}\\
-\>\>\>{\sf |[?1*?2] ->}\\
-\>\>\>\>\>{\sf ((Simplif ?1);Try MainSimplif) Orelse}\\
-\>\>\>\>\>\>{\sf ((Simplif ?2);Try MainSimplif)}\\
-\>\>\>{\sf |[?1-> ?2] ->}\\
-\>\>\>\>\>{\sf ((Simplif ?1);Try MainSimplif) Orelse}\\
-\>\>\>\>\>\>{\sf ((Simplif ?2);Try MainSimplif)}\\
-\>{\sf And MainSimplif:=}\\
-\>\>{\sf Match Context With}\\
-\>\>\>\>{\sf [|- ?1== ?2] -> Try (Simplif ?1);Try (Simplif ?2).}\\
-\\
-\>{\sf Tactic Definition Length trm:=}\\
-\>\>{\sf Match trm With}\\
-\>\>\>\>{\sf [?*?1] ->}\\
-\>\>\>\>\>{\sf Let succ=(Length ?1)}\\
-\>\>\>\>\>{\sf In}\\
-\>\>\>\>\>\>{\sf '(S succ)}\\
-\>\>\>{\sf |\_ -> '(1).}\\
-\\
-\>{\sf Tactic Definition Assoc:= Repeat Rewrite <- Ass.}
-\end{tabbing}}}
+{
+\begin{coq_example}
+Recursive Tactic Definition Simplif trm:=
+  Match trm With
+   [(?1*?2)*?3] -> Rewrite <- (Ass ?1 ?2 ?3);Try MainSimplif
+  |[(?1*?2)->?3] -> Rewrite (Cur ?1 ?2 ?3);Try MainSimplif
+  |[?1->(?2*?3)] -> Rewrite (Dis ?1 ?2 ?3);Try MainSimplif
+  |[?1*unit] -> Rewrite (P_unit ?1);Try MainSimplif
+  |[unit*?1] -> Rewrite (Com unit ?1);Try MainSimplif
+  |[?1->unit] -> Rewrite (AR_unit ?1);Try MainSimplif
+  |[unit-> ?1] -> Rewrite (AL_unit ?1);Try MainSimplif
+  |[?1*?2] ->
+     ((Simplif ?1);Try MainSimplif) Orelse
+     ((Simplif ?2);Try MainSimplif)
+  |[?1-> ?2] ->
+     ((Simplif ?1);Try MainSimplif) Orelse
+     ((Simplif ?2);Try MainSimplif)
+And MainSimplif:=
+  Match Context With
+   [|- ?1== ?2] -> Try (Simplif ?1);Try (Simplif ?2).
+
+Tactic Definition Length trm:=
+  Match trm With
+   [?*?1] ->
+     Let succ=(Length ?1) In
+     '(S succ)
+  |_ -> '(1).
+
+Tactic Definition Assoc:= Repeat Rewrite <- Ass.
+\end{coq_example}
+}}
 \caption{Type isomorphism tactic (1)}
 \label{isosltac1}
 \end{table}
@@ -734,34 +744,33 @@ Compare}). The main tactic to be called and realizing this algorithm is
 \begin{table}[ht]
 \noindent{}\framebox[6in][l]
 {\parbox{6in}
-{\begin{tabbing}
-\hx{4}\=\hx{4}\=\hx{4}\={\sf |}\=\hx{3}\=\hx{4}\={\sf |}\=\hx{3}\=\hx{1}\=\hx{3}\=\kill
-\>{\sf Recursive Tactic Definition DoCompare n:=}\\
-\>\>{\sf Match Context With}\\
-\>\>\>\>{\sf [|-?1==?1] -> Apply refl\_eqT}\\
-\>\>\>{\sf |[|-(?1*?2)==(?1*?3)] ->}\\
-\>\>\>\>\>{\sf Apply Cons;}\\
-\>\>\>\>\>\>{\sf Let newn=(Length ?2)}\\
-\>\>\>\>\>\>{\sf  In}\\
-\>\>\>\>\>\>\>\>{\sf (DoCompare newn)}\\
-\>\>\>{\sf |[|-(?1*?2)==?3] ->}\\
-\>\>\>\>\>{\sf (Match Eval Compute in n With}\\
-\>\>\>\>\>\>\>{\sf [(1)] -> Fail}\\
-\>\>\>\>\>\>{\sf |\_ -> }\\
-\>\>\>\>\>\>\>\>{\sf Pattern 1 (?1*?2);Rewrite Com;Assoc;}\\
-\>\>\>\>\>\>\>\>\>\>{\sf (DoCompare '(pred n))).}\\
-\\
-\>{\sf Tactic Definition Compare:=}\\
-\>\>{\sf Match Context With}\\
-\>\>\>\>{\sf [|-?1==?2] ->}\\
-\>\>\>\>\>{\sf Let l1=(Length ?1)}\\
-\>\>\>\>\>{\sf And l2=(Length ?2)}\\
-\>\>\>\>\>{\sf In}\\
-\>\>\>\>\>\>{\sf (Match Eval Compute in l1=l2 With}\\
-\>\>\>\>\>\>\>\>\>{\sf [?1=?1] -> (DoCompare ?1)).}\\
-\\
-\>{\sf Tactic Definition IsoProve:=MainSimplif;Compare.}
-\end{tabbing}}}
+{
+\begin{coq_example}
+Recursive Tactic Definition DoCompare n:=
+  Match Context With
+   [|-?1==?1] -> Apply refl_eqT
+  |[|-(?1*?2)==(?1*?3)] ->
+     Apply Cons;
+     Let newn=(Length ?2) In
+     (DoCompare newn)
+  |[|-(?1*?2)==?3] ->
+     (Match Eval Compute in n With
+       [(1)] -> Fail
+      |_ -> 
+        Pattern 1 (?1*?2);Rewrite Com;Assoc;
+        (DoCompare '(pred n))).
+
+Tactic Definition CompareStruct:=
+  Match Context With
+   [|-?1==?2] ->
+     Let l1=(Length ?1)
+     And l2=(Length ?2) In
+     (Match Eval Compute in l1=l2 With
+        [?1=?1] -> (DoCompare ?1)).
+
+Tactic Definition IsoProve:=MainSimplif;CompareStruct.
+\end{coq_example}
+}}
 \caption{Type isomorphism tactic (2)}
 \label{isosltac2}
 \end{table}
@@ -771,19 +780,21 @@ Table~\ref{isoslem} gives examples of what can be solved by {\sf IsoProve}.
 \begin{table}[ht]
 \noindent{}\framebox[6in][l]
 {\parbox{6in}
-{\begin{tabbing}
-\hx{4}\=\hx{4}\=\kill
-\>{\sf Lemma isos\_ex1:(A,B:Set)((A*unit)*B)==(B*(unit*A)).}\\
-\>{\sf Proof.}\\
-\>\>{\sf Intros;IsoProve.}\\
-\>{\sf Save.}\\
-\\
-\>{\sf Lemma isos\_ex2:(A,B,C:Set)}\\
-\>\>{\sf ((A*unit)->(B*C*unit))==(((A*unit)->((C->unit)*C))*(unit->(A->B))).}\\
-\>{\sf Proof.}\\
-\>\>{\sf Intros;IsoProve.}\\
-\>{\sf Save.}
-\end{tabbing}}}
+{
+\begin{coq_example*}
+Lemma isos_ex1:(A,B:Set)((A*unit)*B)==(B*(unit*A)).
+Proof.
+Intros;IsoProve.
+Save.
+
+Lemma isos_ex2:(A,B,C:Set)
+  ((A*unit)->(B*C*unit))==
+  (((A*unit)->((C->unit)*C))*(unit->(A->B))).
+Proof.
+Intros;IsoProve.
+Save.
+\end{coq_example*}
+}}
 \caption{Type equalities solved by {\sf IsoProve}}
 \label{isoslem}
 \end{table}
