@@ -171,20 +171,20 @@ Notation "{ x : A  |  P }" := (sig A (fun x => P)) (at level 0, x at level 99).
 \end{coq_example*}
 
 %This change has retrospectively an effect on the notation for notation
-%{\tt "{ A } + { B }"}. For the sake of factorisation, {\tt A} must be
+%{\tt "{ A } + { B }"}. For the sake of factorization, {\tt A} must be
 %put at level 99 too, which gives
 %
 %\begin{coq_example*}
 %Notation "{ A } + { B }" := (sumbool A B) (at level 0, A at level 99).
 %\end{coq_example*}
 
-See the next section for more about factorisation.
+See the next section for more about factorization.
 
-\subsection{Simple factorisation rules}
+\subsection{Simple factorization rules}
 
 {\Coq} extensible parsing is performed by Camlp4 which is essentially a
 LL1 parser. Hence, some care has to be taken not to hide already
-existing rules by new rules. Some simple left factorisation work has
+existing rules by new rules. Some simple left factorization work has
 to be done. Here is an example.
 
 \begin{coq_eval}
@@ -196,7 +196,7 @@ Notation "x < y"     := (lt x y) (at level 70).
 Notation "x < y < z" := (x < y /\ y < z) (at level 70).
 \end{coq_example*}
 
-In order to factorise the left part of the rules, the subexpression
+In order to factorize the left part of the rules, the subexpression
 referred by {\tt y} has to be at the same level in both rules. However
 the default behavior puts {\tt y} at the next level below 70
 in the first rule (no associativity is the default), and at the level
@@ -209,7 +209,7 @@ Notation "x < y"     := (lt x y) (at level 70).
 Notation "x < y < z" := (x < y /\ y < z) (at level 70, y at next level).
 \end{coq_example*}
 
-For the sake of factorisation with {\Coq} predefined rules, simple
+For the sake of factorization with {\Coq} predefined rules, simple
 rules have to be observed for notations starting with a symbol:
 e.g. rules starting with ``\{'' or ``('' should be put at level 0. The
 list of {\Coq} predefined notations can be found in chapter \ref{Theories}.
@@ -312,7 +312,7 @@ Check
 Sometimes, a notation is expected only for the parser.
 %(e.g. because
 %the underlying parser of {\Coq}, namely {\camlpppp}, is LL1 and some extra
-%rules are needed to circumvent the absence of factorisation).
+%rules are needed to circumvent the absence of factorization).
 To do so, the option {\em only parsing} is allowed in the list of modifiers of
 \texttt{Notation}.
 
@@ -539,6 +539,51 @@ Notation "( x , y , .. , z )" := (pair .. (pair x y) .. z) (at level 0).
 Notations with recursive patterns can be reserved like standard
 notations, they can also be declared within interpretation scopes (see
 section \ref{scopes}).
+
+\subsection{Notations and binders}
+
+Notations can be defined for binders as in the example:
+
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following is correct but produces **********)
+(**** an incompatibility with the reserved notation ********)
+\end{coq_eval}
+\begin{coq_example*}
+Notation "{ x : A  |  P  }" := (sig (fun x : A => P)) (at level 0).
+\end{coq_example*}
+
+The binding variables in the left-hand-side that occur as a parameter
+of the notation naturally bind all their occurrences appearing in
+their respective scope after instantiation of the parameters of the
+notation.
+
+Contrastingly, the binding variables that are not a parameter of the
+notation do not capture the variables of same name that
+could appear in their scope after instantiation of the
+notation. E.g., for the notation
+
+\begin{coq_example*}
+Notation "'exists_different' n" := (exists p:nat, p<>n) (at level 200).
+\end{coq_example*}
+the next command fails because {\tt p} does not bind in 
+the instance of {\tt n}.
+\begin{coq_eval}
+Set Printing Depth 50.
+(********** The following produces **********)
+(**** The reference p was not found in the current environment ********)
+\end{coq_eval}
+\begin{coq_example}
+Check (exists_different p).
+\end{coq_example}
+
+\Rem Binding variables must not necessarily be parsed using the
+{\tt ident} entry. For factorization purposes, they can be said to be
+parsed at another level (e.g. {\tt x} in \verb="{ x : A | P }"= must be
+parsed at level 99 to be factorized with the notation
+\verb="{ A } + { B }"= for which {\tt A} can be any term).  
+However, even if parsed as a term, this term must at the end be effectively 
+a single identifier.
 
 \subsection{Summary}
 
