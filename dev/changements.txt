@@ -153,6 +153,9 @@ Changements dans les fonctions :
 	  ise_resolve1        -> understand, understand_type
 	  ise_resolve         -> understand_judgment, understand_type_judgment
 
+        ex-Tradevar, maintenant Evarutil
+          mt_tycon            -> empty_tycon
+
 Changements dans les inductifs
 ------------------------------
 Nouveaux types "constructor" et "inductive" dans Term
