@@ -139,6 +139,10 @@ let start_module s =
 
 let is_opened_section = function (_,OpenedSection _) -> true | _ -> false
 
+let sections_are_opened () =
+  try let _ = find_entry_p is_opened_section in true
+  with Not_found -> false
+
 let export_segment seg =
   let rec clean acc = function
     | (_,Module _) :: _ | [] -> acc

@@ -50,6 +50,7 @@ val contents_after : section_path option -> library_segment
 val open_section : string -> section_path
 val close_section : 
   export:bool -> string -> section_path * library_segment * Summary.frozen
+val sections_are_opened : unit -> bool
 
 val make_path : identifier -> path_kind -> section_path
 val cwd : unit -> dir_path
