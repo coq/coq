@@ -54,7 +54,7 @@ Hints Unfold seq.
 
 Lemma leb_refl : (b:bool)(leb b b).
 Proof.
-Induction b; Simpl; Auto.
+NewDestruct b; Simpl; Auto.
 Qed.
 Hints Resolve leb_refl.
 
@@ -70,21 +70,21 @@ Qed.
 
 Lemma seq_refl : (x:uniset)(seq x x).
 Proof.
-Induction x; Unfold seq; Auto.
+NewDestruct x; Unfold seq; Auto.
 Qed.
 Hints Resolve seq_refl.
 
 Lemma seq_trans : (x,y,z:uniset)(seq x y)->(seq y z)->(seq x z).
 Proof.
 Unfold seq.
-Induction x; Induction y; Induction z; Simpl; Intros.
+NewDestruct x; NewDestruct y; NewDestruct z; Simpl; Intros.
 Rewrite H; Auto.
 Qed.
 
 Lemma seq_sym : (x,y:uniset)(seq x y)->(seq y x).
 Proof.
 Unfold seq.
-Induction x; Induction y; Simpl; Auto.
+NewDestruct x; NewDestruct y; Simpl; Auto.
 Qed.
 
 (** uniset union *)
@@ -109,7 +109,7 @@ Hints Resolve union_empty_right.
 Lemma union_comm : (x,y:uniset)(seq (union x y) (union y x)).
 Proof.
 Unfold seq; Unfold charac; Unfold union.
-Induction x; Induction y; Auto with bool.
+NewDestruct x; NewDestruct y; Auto with bool.
 Qed.
 Hints Resolve union_comm.
 
@@ -117,14 +117,14 @@ Lemma union_ass :
       (x,y,z:uniset)(seq (union (union x y) z) (union x (union y z))).
 Proof.
 Unfold seq; Unfold union; Unfold charac.
-Induction x; Induction y; Induction z; Auto with bool.
+NewDestruct x; NewDestruct y; NewDestruct z; Auto with bool.
 Qed.
 Hints Resolve union_ass.
 
 Lemma seq_left :  (x,y,z:uniset)(seq x y)->(seq (union x z) (union y z)).
 Proof.
 Unfold seq; Unfold union; Unfold charac.
-Induction x; Induction y; Induction z.
+NewDestruct x; NewDestruct y; NewDestruct z.
 Intros; Elim H; Auto.
 Qed.
 Hints Resolve seq_left.
@@ -132,7 +132,7 @@ Hints Resolve seq_left.
 Lemma seq_right : (x,y,z:uniset)(seq x y)->(seq (union z x) (union z y)).
 Proof.
 Unfold seq; Unfold union; Unfold charac.
-Induction x; Induction y; Induction z.
+NewDestruct x; NewDestruct y; NewDestruct z.
 Intros; Elim H; Auto.
 Qed.
 Hints Resolve seq_right.

@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(** Authors: Bruno Barras,Cristina Cornes *)
+(** Authors: Bruno Barras, Cristina Cornes *)
 
 Require Eqdep.
 Require Relation_Operators.
@@ -32,14 +32,13 @@ Lemma acc_A_B_lexprod : (x:A)(Acc A leA x)
                 ->(y:(B x))(Acc (B x) (leB x) y)
                         ->(Acc (sigS A B) LexProd (existS A B x y)).
 Proof.
- Induction 1; Intros x0 H0 H1 H2 y.
- Induction 1;Intros.
+ NewInduction 1 as [x _ IHAcc]; Intros H2 y.
+ NewInduction 1 as [x0 H IHAcc0];Intros.
  Apply Acc_intro.
- Induction y0.
- Intros x2 y1 H6.
- Simple Inversion H6;Intros.
- Cut (leA x2 x0);Intros.
- Apply H1;Auto with sets.
+ NewDestruct y as [x2 y1]; Intro H6.
+ Simple Inversion H6; Intro.
+ Cut (leA x2 x);Intros.
+ Apply IHAcc;Auto with sets.
  Intros.
  Apply H2.
  Apply t_trans with x2 ;Auto with sets.
@@ -48,20 +47,16 @@ Proof.
  Apply H2.
  Auto with sets.
 
- Injection H8.
- Induction 2.
- Injection H9.
- Induction 2;Auto with sets.
+ Injection H1.
+ NewDestruct 2.
+ Injection H3.
+ NewDestruct 2;Auto with sets.
 
- Elim H8.
- Generalize y2 y' H9 H7 .
- Replace x3 with x0.
- Clear  H7 H8 H9 y2 y' x3 H6 y1 x2 y0.
- Intros.
- Apply H5.
- Elim inj_pair2 with A B x0 y' x1 ;Auto with sets.
-
- Injection H9;Auto with sets.
+ Rewrite <- H1.
+ Injection H3; Intros _ Hx1.
+ Subst x1.
+ Apply IHAcc0.
+ Elim inj_pair2 with A B x y' x0; Assumption.
 Qed.
 
 Theorem wf_lexprod: 
@@ -69,7 +64,7 @@ Theorem wf_lexprod:
              -> (well_founded (sigS A B) LexProd).
 Proof.
  Intros wfA wfB;Unfold well_founded .
- Induction a;Intros.
+ NewDestruct a.
  Apply acc_A_B_lexprod;Auto with sets;Intros.
  Red in wfB.
  Auto with sets.
@@ -108,13 +103,13 @@ i*)
 
   Lemma Acc_symprod: (x:A)(Acc A leA x)->(y:B)(Acc B leB y)
                         ->(Acc (A*B) Symprod (x,y)).
-Proof.
- Induction 1;Intros.
- Elim H2;Intros.
- Apply Acc_intro;Intros.
+ Proof.
+ NewInduction 1 as [x _ IHAcc]; Intros y H2.
+ NewInduction H2 as [x1 H3 IHAcc1].
+ Apply Acc_intro;Intros y H5.
  Inversion_clear H5;Auto with sets.
- Apply H1;Auto with sets.
- Apply Acc_intro;Auto with sets.
+ Apply IHAcc; Auto.
+ Apply Acc_intro;Trivial.
 Qed.
 
 
@@ -122,7 +117,7 @@ Lemma wf_symprod: (well_founded A leA)->(well_founded B leB)
                         ->(well_founded (A*B) Symprod).
 Proof.
  Red.
- Induction a;Intros.
+ NewDestruct a.
  Apply Acc_symprod;Auto with sets.
 Qed.
 
@@ -161,24 +156,24 @@ Qed.
   Lemma Acc_swapprod: (x,y:A)(Acc A R x)->(Acc A R y)
                                 ->(Acc A*A SwapProd (x,y)).
 Proof.
- Induction 1;Intros.
+ NewInduction 1 as [x0 _ IHAcc0];Intros H2.
  Cut (y0:A)(R y0 x0)->(Acc ? SwapProd (y0,y)).
- Clear  H1.
- Elim H2;Intros.
+ Clear  IHAcc0.
+ NewInduction H2 as [x1 _ IHAcc1]; Intros H4.
  Cut (y:A)(R y x1)->(Acc ? SwapProd (x0,y)).
- Clear  H3.
+ Clear  IHAcc1.
  Intro.
  Apply Acc_intro.
- Induction y0;Intros.
+ NewDestruct y; Intro H5.
  Inversion_clear H5.
- Inversion_clear H6;Auto with sets.
+ Inversion_clear H0;Auto with sets.
 
  Apply swap_Acc.
- Inversion_clear H6;Auto with sets.
+ Inversion_clear H0;Auto with sets.
 
  Intros.
- Apply H3;Auto with sets;Intros.
- Apply Acc_inv with (y1,x1) ;Auto with sets.
+ Apply IHAcc1;Auto with sets;Intros.
+ Apply Acc_inv with (y0,x1) ;Auto with sets.
  Apply sp_noswap.
  Apply right_sym;Auto with sets.
 
@@ -189,7 +184,7 @@ Qed.
   Lemma wf_swapprod: (well_founded A R)->(well_founded A*A SwapProd).
 Proof.
  Red.
- Induction a;Intros.
+ NewDestruct a;Intros.
  Apply Acc_swapprod;Auto with sets.
 Qed.
 

@@ -59,8 +59,8 @@ Lemma cardinal_invert :
    [n:nat] (EXT A | (EXT x | 
            X == (Add U A x) /\ ~ (In U A x) /\ (cardinal U A n))) end.
 Proof.
-Induction 1; Simpl; Auto.
-Intros; Exists A; Exists x; Auto.
+NewInduction 1; Simpl; Auto.
+Exists A; Exists x; Auto.
 Qed.
 
 Lemma cardinal_elim :

@@ -65,8 +65,7 @@ Proof.
  Intros.
  Apply (sup A B x).
  Unfold 1 B .
- Induction 1.
- Intros.
+ NewDestruct 1 as [x0].
  Apply (H1 x0);Auto.
 Qed.
 

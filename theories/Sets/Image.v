@@ -62,11 +62,11 @@ Split; Red; Intros x0 H'.
 Elim H'; Intros.
 Rewrite H0.
 Elim Add_inv with U X x x1; Auto with sets.
-Induction 1; Auto with sets.
+NewDestruct 1; Auto with sets.
 Elim Add_inv with V (Im X f) (f x) x0; Auto with sets.
-Induction 1; Intros.
-Rewrite H1; Auto with sets.
-Induction 1; Auto with sets.
+NewDestruct 1 as [x0 H y H0].
+Rewrite H0; Auto with sets.
+NewDestruct 1; Auto with sets.
 Qed.
 
 Lemma image_empty: (f: U -> V) (Im (Empty_set U) f) == (Empty_set V).
@@ -110,10 +110,10 @@ Unfold injective; Intros f H.
 Cut (EXT x | ~ ((y: U) (f x) == (f y) -> x == y)).
 2: Apply not_all_ex_not with P:=[x:U](y: U) (f x) == (f y) -> x == y; 
    Trivial with sets.
-Induction 1; Intros x C; Exists x.
+NewDestruct 1 as [x C]; Exists x.
 Cut (EXT y | ~((f x)==(f y)->x==y)).
 2: Apply not_all_ex_not with P:=[y:U](f x)==(f y)->x==y; Trivial with sets.
-Induction 1; Intros y D; Exists y.
+NewDestruct 1 as [y D]; Exists y.
 Apply imply_to_and; Trivial with sets.
 Qed.
 
@@ -140,21 +140,21 @@ Lemma injective_preserves_cardinal:
   (A: (Ensemble U)) (f: U -> V) (n: nat) (injective f) -> (cardinal ? A n) ->
    (n': nat) (cardinal ? (Im A f) n') -> n' = n.
 Proof.
-Induction 2; Auto with sets.
+NewInduction 2 as [|A n H'0 H'1 x H'2]; Auto with sets.
 Rewrite (image_empty f).
 Intros n' CE.
 Apply cardinal_unicity with V (Empty_set V); Auto with sets.
-Intros A0 n0 H'0 H'1 x H'2 n'.
-Rewrite (Im_add A0 x f).
+Intro n'.
+Rewrite (Im_add A x f).
 Intro H'3.
-Elim cardinal_Im_intro with A0 f n0; Trivial with sets.
+Elim cardinal_Im_intro with A f n; Trivial with sets.
 Intros i CI.
 LApply (H'1 i); Trivial with sets.
-Cut ~ (In ? (Im A0 f) (f x)).
-Intros.
-Apply cardinal_unicity with V (Add ? (Im A0 f) (f x)); Trivial with sets.
+Cut ~ (In ? (Im A f) (f x)).
+Intros H0 H1.
+Apply cardinal_unicity with V (Add ? (Im A f) (f x)); Trivial with sets.
 Apply card_add; Auto with sets.
-Rewrite <- H2; Trivial with sets.
+Rewrite <- H1; Trivial with sets.
 Red; Intro; Apply H'2.
 Apply In_Image_elim with f; Trivial with sets.
 Qed.
@@ -163,17 +163,17 @@ Lemma cardinal_decreases:
   (A: (Ensemble U)) (f: U -> V) (n: nat) (cardinal U A n) ->
    (n': nat) (cardinal V (Im A f) n') -> (le n' n).
 Proof.
-Induction 1; Auto with sets.
+NewInduction 1 as [|A n H'0 H'1 x H'2]; Auto with sets.
 Rewrite (image_empty f); Intros.
 Cut n' = O.
 Intro E; Rewrite E; Trivial with sets.
 Apply cardinal_unicity with V (Empty_set V); Auto with sets.
-Intros A0 n0 H'0 H'1 x H'2 n'.
-Rewrite (Im_add A0 x f).
-Elim cardinal_Im_intro with A0 f n0; Trivial with sets.
+Intro n'.
+Rewrite (Im_add A x f).
+Elim cardinal_Im_intro with A f n; Trivial with sets.
 Intros p C H'3.
 Apply le_trans with (S p).
-Apply card_Add_gen with V (Im A0 f) (f x); Trivial with sets.
+Apply card_Add_gen with V (Im A f) (f x); Trivial with sets.
 Apply le_n_S; Auto with sets.
 Qed.
 

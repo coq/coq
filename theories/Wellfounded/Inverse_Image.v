@@ -19,10 +19,10 @@ Section Inverse_Image.
   Local Rof : A->A->Prop := [x,y:A](R (f x) (f y)).
 
   Remark Acc_lemma : (y:B)(Acc B R y)->(x:A)(y=(f x))->(Acc A Rof x).
-    Induction 1; Intros.
-    Apply Acc_intro; Intros.
-    Apply (H1 (f y0)); Try Trivial.
-    Rewrite H2; Trivial.
+    NewInduction 1 as [y _ IHAcc]; Intros x H.
+    Apply Acc_intro; Intros y0 H1.
+    Apply (IHAcc (f y0)); Try Trivial.
+    Rewrite H; Trivial.
   Qed.
 
   Lemma Acc_inverse_image : (x:A)(Acc B R (f x)) -> (Acc A Rof x).
@@ -39,10 +39,10 @@ Section Inverse_Image.
 
 Lemma Acc_inverse_rel :
    (b:B)(Acc B R b)->(x:A)(F x b)->(Acc A RoF x).
-Induction 1; Intros.
-Constructor; Intros.
-Case H3; Intros.
-Apply (H1 x1); Auto.
+NewInduction 1 as [x _ IHAcc]; Intros x0 H2.
+Constructor; Intros y H3.
+NewDestruct H3.
+Apply (IHAcc x1); Auto.
 Save.
 
 

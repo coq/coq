@@ -18,7 +18,7 @@ Section WfInclusion.
 
   Lemma Acc_incl: (inclusion A R1 R2)->(z:A)(Acc A R2 z)->(Acc A R1 z).
   Proof.
-    Induction 2;Intros.
+    NewInduction 2.
     Apply Acc_intro;Auto with sets.
   Qed.
 

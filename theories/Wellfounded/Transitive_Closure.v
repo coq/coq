@@ -24,23 +24,19 @@ Section Wf_Transitive_Closure.
   Qed.
 
   Lemma Acc_clos_trans: (x:A)(Acc A R x)->(Acc A trans_clos x).
-    Induction 1.
-    Intros x0 H0 H1.
+    NewInduction 1 as [x0 _ H1].
     Apply Acc_intro.
     Intros y H2.
-    Generalize H1 .
-    Elim H2;Auto with sets.
-    Intros x1 y0 z H3 H4 H5 H6 H7.
-    Apply Acc_inv with y0 ;Auto with sets.
+    NewInduction H2;Auto with sets.
+    Apply Acc_inv with y ;Auto with sets.
   Qed.
 
   Hints Resolve Acc_clos_trans.
 
   Lemma Acc_inv_trans: (x,y:A)(trans_clos y x)->(Acc A R x)->(Acc A R y).
   Proof.
-    Induction 1;Auto with sets.
-    Intros x0 y0 H0 H1.
-    Apply Acc_inv with y0 ;Auto with sets.
+    NewInduction 1 as [|x y];Auto with sets.
+    Intro; Apply Acc_inv with y; Assumption.
   Qed.
 
   Theorem wf_clos_trans: (well_founded A R)  ->(well_founded A trans_clos).

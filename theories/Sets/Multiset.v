@@ -42,21 +42,21 @@ Hints Unfold  meq multiplicity.
 
 Lemma meq_refl : (x:multiset)(meq x x).
 Proof.
-Induction x; Auto.
+NewDestruct x; Auto.
 Qed.
 Hints Resolve meq_refl.
 
 Lemma meq_trans : (x,y,z:multiset)(meq x y)->(meq y z)->(meq x z).
 Proof.
 Unfold meq.
-Induction x; Induction y; Induction z.
+NewDestruct x; NewDestruct y; NewDestruct z.
 Intros; Rewrite H; Auto.
 Qed.
 
 Lemma meq_sym : (x,y:multiset)(meq x y)->(meq y x).
 Proof.
 Unfold meq.
-Induction x; Induction y; Auto.
+NewDestruct x; NewDestruct y; Auto.
 Qed.
 Hints Immediate meq_sym.
 
@@ -83,7 +83,7 @@ Require Plus. (* comm. and ass. of plus *)
 Lemma munion_comm : (x,y:multiset)(meq (munion x y) (munion y x)).
 Proof.
 Unfold meq; Unfold multiplicity; Unfold munion.
-Induction x; Induction y; Auto with arith.
+NewDestruct x; NewDestruct y; Auto with arith.
 Qed.
 Hints Resolve munion_comm.
 
@@ -91,14 +91,14 @@ Lemma munion_ass :
       (x,y,z:multiset)(meq (munion (munion x y) z) (munion x (munion y z))).
 Proof.
 Unfold meq; Unfold munion; Unfold multiplicity.
-Induction x; Induction y; Induction z; Auto with arith.
+NewDestruct x; NewDestruct y; NewDestruct z; Auto with arith.
 Qed.
 Hints Resolve munion_ass.
 
 Lemma meq_left :  (x,y,z:multiset)(meq x y)->(meq (munion x z) (munion y z)).
 Proof.
 Unfold meq; Unfold munion; Unfold multiplicity.
-Induction x; Induction y; Induction z.
+NewDestruct x; NewDestruct y; NewDestruct z.
 Intros; Elim H; Auto with arith.
 Qed.
 Hints Resolve meq_left.
@@ -106,7 +106,7 @@ Hints Resolve meq_left.
 Lemma meq_right : (x,y,z:multiset)(meq x y)->(meq (munion z x) (munion z y)).
 Proof.
 Unfold meq; Unfold munion; Unfold multiplicity.
-Induction x; Induction y; Induction z.
+NewDestruct x; NewDestruct y; NewDestruct z.
 Intros; Elim H; Auto.
 Qed.
 Hints Resolve meq_right.

@@ -38,7 +38,7 @@ Qed.
 
 Lemma Noone_in_empty: (x: U) ~ (In U (Empty_set U) x).
 Proof.
-Intro x; Red; Induction 1.
+Red; NewDestruct 1.
 Qed.
 Hints Resolve Noone_in_empty.
 
