@@ -43,14 +43,15 @@ let is_in_coq_lib dir =
 			Coq_config.coqlib 
 			(Filename.concat "theories" s) 
 	   in
-	   prerr_endline ("Comparing to : "^fdir);
-	   let fstat = Unix.stat dir in 
-	   fstat.Unix.st_dev = stat.Unix.st_dev &&
-	   fstat.Unix.st_ino = stat.Unix.st_ino 
-	 with _ -> false
+	   prerr_endline (" Comparing to : "^fdir);
+	   let fstat = Unix.stat fdir in 
+	   (fstat.Unix.st_dev = stat.Unix.st_dev) &&
+	   (fstat.Unix.st_ino = stat.Unix.st_ino) && 
+           (prerr_endline " YES";true)
+	 with _ -> prerr_endline " No(because of a local exn)";false
       )
       Coq_config.theories_dirs
-  with _ -> false
+  with _ -> prerr_endline " No(because of a global exn)";false
 
 let interp s = 
   prerr_endline s;

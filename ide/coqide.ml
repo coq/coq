@@ -106,7 +106,7 @@ module Vector = struct
   let exists f t =
     let l = Array.length !t in
     let rec test i = 
-      i < l && ((!t.(i) <> None && f (out_some !t.(i))) || test (i+1)) 
+      (i < l) && (((!t.(i) <> None) && f (out_some !t.(i))) || test (i+1)) 
     in 
     test 0
 end
@@ -304,11 +304,18 @@ let do_if_not_computing f x =
   
 (* push a new Coq phrase *)
 
-let update_on_end_of_proof () =
+let update_on_end_of_proof id =
   let lookup_lemma = function
   | { ast = _, ( VernacDefinition (_, _, ProveBody _, _, _)
-	       | VernacStartTheoremProof _) ; reset_info = Reset (_, r) } ->
-      r := true; raise Exit
+	       | VernacStartTheoremProof _) ; 
+      reset_info = Reset (_, r) } -> 
+      if not !r then begin 
+	prerr_endline "Toggling Reset info to true";
+	r := true; raise Exit end
+      else begin
+	prerr_endline "Toggling Changing Reset id"; 
+	r:=false
+      end
   | { ast = _, (VernacAbort _ | VernacAbortAll) } -> raise Exit
   | _ -> ()
   in
@@ -321,7 +328,7 @@ let update_on_end_of_segment id =
 		 | VernacDeclareModule (id',_,_,None)
 		 | VernacDeclareModuleType (id',_,None)); 
 	reset_info = Reset (_, r) } 
-      when id = id' -> raise Exit
+       when id = id' -> raise Exit
     | { reset_info = Reset (_, r) } -> r := false
     | _ -> ()
   in
@@ -331,7 +338,9 @@ let push_phrase start_of_phrase_mark end_of_phrase_mark ast =
   let x = {start = start_of_phrase_mark;
 	   stop = end_of_phrase_mark;
 	   ast = ast;
-	   reset_info = Coq.compute_reset_info (snd ast)} in
+	   reset_info = Coq.compute_reset_info (snd ast)
+	  } 
+  in
   push x;
   match snd ast with
     | VernacEndProof (_, None) -> update_on_end_of_proof ()
@@ -776,7 +785,7 @@ object(self)
     !flash_info "Coq is computing";
     process_pending ();
     while ((stop#compare self#get_start_of_input>=0) 
-	   && self#process_next_phrase false false)
+	   && (self#process_next_phrase false false))
     do () done;
     self#show_goals;
     input_buffer#remove_tag_by_name ~start ~stop "to_process" ;
@@ -887,9 +896,16 @@ object(self)
 	    reset_to id;
 	    update_input ()
 	| { ast = _, ( VernacStartTheoremProof _ 
-		     | VernacDefinition (_,_,ProveBody _,_,_)) } ->
+		     | VernacDefinition (_,_,ProveBody _,_,_));
+	    reset_info=Reset(id,{contents=false})} ->
 	    ignore (pop ());
-	    Pfedit.delete_current_proof ();
+	    (try 
+	       Pfedit.delete_current_proof () 
+	     with e ->
+	       begin 
+		 prerr_endline "WARNING : found a closed environment";
+		 raise e
+	       end);
 	    update_input ()
 	| _ -> 
 	    self#backtrack_to start
