@@ -72,8 +72,9 @@ let constant_entry_of_com (bl,com,comtypopt,opacity) =
   match comtypopt with
       None -> 
 	let b = abstract_rawconstr com bl in
-	{ const_entry_body = interp_constr sigma env b;
-	  const_entry_type = None;
+	let j = judgment_of_rawconstr sigma env b in
+	{ const_entry_body = j.uj_val;
+	  const_entry_type = Some (Evarutil.refresh_universes j.uj_type);
           const_entry_opaque = opacity }
     | Some comtyp ->
 	(* We use a cast to avoid troubles with evars in comtyp *)
