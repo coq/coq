@@ -117,12 +117,18 @@ struct
 	  (this, ModIdmap.add modid ptab' dirmap)
     | [] -> 
 	match current with
-	  | Absolute (n,_) -> 
-	      (* This is an absolute name, we must keep it otherwise it may
-		 become unaccessible forever *)
-	      (* But ours is also absolute! This is an error! *)
-	      error ("Cannot mask an absolute name \""
-  		     ^ U.to_string n ^ "\"!")
+	  | Absolute (uname',o') -> 
+	      if o'=o then begin
+		assert (uname=uname');
+		current, dirmap 
+		  (* we are putting the same thing for the second time :) *)
+	      end
+	      else
+		(* This is an absolute name, we must keep it otherwise it may
+		   become unaccessible forever *)
+		(* But ours is also absolute! This is an error! *)
+		error ("Cannot mask the absolute name \""
+  		       ^ U.to_string uname' ^ "\"!")
 	  | Nothing
 	  | Relative _ -> Absolute (uname,o), dirmap
 
@@ -139,7 +145,7 @@ let rec push_exactly uname o level (current,dirmap) = function
 	      | Absolute (n,_) -> 
 		  (* This is an absolute name, we must keep it 
 		     otherwise it may become unaccessible forever *)
-		  warning ("Trying to mask an absolute name \""
+		  warning ("Trying to mask the absolute name \""
   			   ^ U.to_string n ^ "\"!");
 		  current
 	      | Nothing
