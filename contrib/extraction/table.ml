@@ -20,6 +20,7 @@ open Pp
 open Term 
 open Declarations
 open Nametab
+open Reduction
 
 (*s AutoInline parameter *)
 
@@ -157,36 +158,53 @@ let reset_extraction_inline () = add_anonymous_leaf (reset_inline ())
 
 (*s Table for direct ML extractions. *)
 
-let empty_extractions = (Refmap.empty, Refset.empty, [])
+type kind = Term | Type | Ind | Construct 
+
+let check_term_or_type r = match r with 
+  | ConstRef sp -> 
+      let env = Global.env () in 
+      let typ = whd_betadeltaiota env (Environ.constant_type env sp) in 
+      (match kind_of_term typ with 
+	 | Sort _ -> (r,Type)
+	 | _ -> if not (is_arity env typ) then (r,Term)
+	   else errorlabstrm "extract_constant"
+	     (Printer.pr_global r ++ spc () ++ 
+	      str "is a type scheme, not a type."))
+  | _ -> errorlabstrm "extract_constant"
+	(Printer.pr_global r ++ spc () ++ str "is not a constant.") 
+
+let empty_extractions = (Refmap.empty, Refset.empty)
 
 let extractions = ref empty_extractions
 
-let ml_extractions () = let (_,set,_) =  !extractions in set 
+let ml_extractions () = snd !extractions
 
-let sorted_ml_extractions () = let (_,_,l) = !extractions in l
+let ml_term_extractions () = 
+  Refmap.fold (fun r (k,s) l -> if k=Term then (r,s)::l else l)
+    (fst !extractions) []
 
-let add_ml_extraction r s = 
-  let (map,set,list) = !extractions in
-  let list' = if (is_constant r) then 
-    (r,s)::(List.remove_assoc r list) 
-  else list in 
-  extractions := (Refmap.add r s map, Refset.add r set, list')
+let ml_type_extractions () = 
+  Refmap.fold (fun r (k,s) l -> if k=Type then (r,s)::l else l) 
+    (fst !extractions) []
+    
+let add_ml_extraction r k s = 
+  let (map,set) = !extractions in
+  extractions := (Refmap.add r (k,s) map, Refset.add r set)
 
-let is_ml_extraction r = 
-  let (_,set,_) = !extractions in Refset.mem r set
+let is_ml_extraction r = Refset.mem r (snd !extractions)
 
-let find_ml_extraction r = 
-  let (map,_,_) = !extractions in Refmap.find r map
+let find_ml_extraction r = snd (Refmap.find r (fst !extractions))
 
 (*s Registration of operations for rollback. *)
 
 let (in_ml_extraction,_) = 
-  declare_object ("ML extractions",
-		  { cache_function = (fun (_,(r,s)) -> add_ml_extraction r s);
-		    load_function = (fun (_,(r,s)) -> add_ml_extraction r s);
-		    open_function = (fun _ -> ());
-		    export_function = (fun x -> Some x) })
-
+  declare_object 
+    ("ML extractions",
+     { cache_function = (fun (_,(r,k,s)) -> add_ml_extraction r k s);
+       load_function = (fun (_,(r,k,s)) -> add_ml_extraction r k s);
+       open_function = (fun _ -> ());
+       export_function = (fun x -> Some x) })
+    
 let _ = declare_summary "ML extractions"
 	  { freeze_function = (fun () -> !extractions);
 	    unfreeze_function = ((:=) extractions);
@@ -197,23 +215,24 @@ let _ = declare_summary "ML extractions"
 (*s Grammar entries. *)
 
 let extract_constant_inline inline qid s =
-  let r = check_constant (Nametab.global qid) in
+  let r,k = check_term_or_type (Nametab.global qid) in
   add_anonymous_leaf (inline_extraction (inline,[r]));
-  add_anonymous_leaf (in_ml_extraction (r,s))
+  add_anonymous_leaf (in_ml_extraction (r,k,s))
 
-let extract_inductive r (id2,l2) =
-  let r = Nametab.global r in match r with
+let extract_inductive qid (id2,l2) =
+  let r = Nametab.global qid in match r with
   | IndRef ((sp,i) as ip) ->
       let mib = Global.lookup_mind sp in
       let n = Array.length mib.mind_packets.(i).mind_consnames in
       if n <> List.length l2 then
 	error "Not the right number of constructors.";
-      add_anonymous_leaf (in_ml_extraction (r,id2));
+      add_anonymous_leaf (inline_extraction (true,[r]));
+      add_anonymous_leaf (in_ml_extraction (r,Ind,id2));
       list_iter_i
 	(fun j s -> 
 	   let r = ConstructRef (ip,succ j) in 
 	   add_anonymous_leaf (inline_extraction (true,[r]));
-	   add_anonymous_leaf (in_ml_extraction (r,s))) l2
+	   add_anonymous_leaf (in_ml_extraction (r,Construct,s))) l2
   | _ -> 
       errorlabstrm "extract_inductive"
 	(Printer.pr_global r ++ spc () ++ str "is not an inductive type.")

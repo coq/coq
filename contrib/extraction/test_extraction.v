@@ -388,3 +388,12 @@ let oups h0 = match h0 with
 Extraction (sigT Set [a:Set](option a)).
 (* (unit, Obj.t option) sigT *)
 
+
+(* Coq term non strongly-normalizable after extraction *)
+
+Require Gt.
+Definition loop := 
+ [Ax:(Acc nat gt O)]
+ (Fix F {F [a:nat;b:(Acc nat gt a)] : nat := 
+          (F (S a) (Acc_inv nat gt a b (S a) (gt_Sn_n a)))}
+ O Ax).

@@ -10,8 +10,9 @@
 
 open Names
 open Term
-open Miniml
 open Nametab
+open Miniml
+
 
 (*s Special identifiers. [dummy_name] is to be used for dead code
     and will be printed as [_] in concrete (Caml) code. *)
@@ -46,7 +47,7 @@ val type_mem_sp : section_path -> ml_type -> bool
 
 (*s Utility functions over ML terms. [occurs n t] checks whether [Rel
     n] occurs (freely) in [t]. [ml_lift] is de Bruijn
-    lifting. [ml_subst e t] substitutes [e] for [Rel 1] in [t]. *)
+    lifting. *)
 
 val ast_iter : (ml_ast -> unit) -> ml_ast -> unit 
 
@@ -54,24 +55,22 @@ val occurs : int -> ml_ast -> bool
 
 val ml_lift : int -> ml_ast -> ml_ast
 
-val ml_subst : ml_ast -> ml_ast -> ml_ast
+val ml_pop : ml_ast -> ml_ast
 
-val decl_search : ml_ast -> ml_decl list -> bool
-
-(*s Some transformations of ML terms. [normalize] simplify
+(*s Some transformations of ML terms. [optimize] simplify
     all beta redexes (when the argument does not occur, it is just
     thrown away; when it occurs exactly once it is substituted; otherwise
     a let-in redex is created for clarity) and iota redexes, plus some other
     optimizations. *)
 
-val normalize : ml_ast -> ml_ast
-
-(*s Optimization. *)
-
-val add_ml_decls : 
+val optimize : 
   extraction_params -> ml_decl list -> ml_decl list
 
-val optimize : 
+(* Misc. *)
+
+val decl_search : ml_ast -> ml_decl list -> bool
+
+val add_ml_decls : 
   extraction_params -> ml_decl list -> ml_decl list
 
 val kill_some_lams : 

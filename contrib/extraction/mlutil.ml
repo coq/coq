@@ -125,7 +125,7 @@ let rec ast_search t a =
 
 let decl_search t l = 
   let one_decl = function 
-    | Dglob (_,a) -> ast_search t a
+    | Dterm (_,a) -> ast_search t a
     | Dfix (_,c) -> Array.iter (ast_search t) c
     | _ -> () 
   in 
@@ -752,7 +752,7 @@ let inline_test t =
 
 let manual_inline_list = 
   List.map (fun s -> path_of_string ("Coq.Init."^s))
-    [ "Wf.Acc_rec" ; "Wf.Acc_rect" ; 
+    [ (* "Wf.Acc_rec" ; "Wf.Acc_rect" ; *)
       "Wf.well_founded_induction" ; "Wf.well_founded_induction_type" ]
 
 let manual_inline = function 
@@ -781,7 +781,7 @@ let subst_glob_ast r m =
   in substrec
 
 let subst_glob_decl r m = function
-  | Dglob(r',t') -> Dglob(r', subst_glob_ast r m t')
+  | Dterm(r',t') -> Dterm(r', subst_glob_ast r m t')
   | d -> d
 
 let inline_glob r t l = 
@@ -792,14 +792,17 @@ let print_ml_decl prm (r,_) =
   not (to_inline r) || List.mem r prm.to_appear
 
 let add_ml_decls prm decls = 
-  let l = sorted_ml_extractions () in 
-  let l = List.filter (print_ml_decl prm) l in 
-  let l = List.map (fun (r,s)-> Dcustom (r,s)) l in 
-  (List.rev l @ decls)
+  let l1 = ml_type_extractions () in 
+  let l1 = List.filter (print_ml_decl prm) l1 in 
+  let l1 = List.map (fun (r,s)-> DcustomType (r,s)) l1 in 
+  let l2 = ml_term_extractions () in 
+  let l2 = List.filter (print_ml_decl prm) l2 in 
+  let l2 = List.map (fun (r,s)-> DcustomTerm (r,s)) l2 in
+  l1 @ l2 @ decls
 
 let rec expunge_fix_decls prm v c b = function 
   | [] -> b, [] 
-  | Dglob (r, t) :: l when array_exists ((=) r) v -> 
+  | Dterm (r, t) :: l when array_exists ((=) r) v -> 
       let t = normalize t in 
       let t' = optimize_fix t in 
       (match t' with 
@@ -812,17 +815,17 @@ let rec expunge_fix_decls prm v c b = function
 let rec optimize prm = function
   | [] -> 
       []
-  | (Dabbrev (r,_,Tdummy) | Dglob(r,MLdummy)) as d :: l ->
+  | (DdummyType r | Dterm(r,MLdummy)) as d :: l ->
       if List.mem r prm.to_appear then d :: (optimize prm l) 
       else optimize prm l
-  | Dglob (r,t) :: l ->
+  | Dterm (r,t) :: l ->
       let t = normalize t in
       let b,l = inline_glob r t l in 
       let b = b || prm.modular || List.mem r prm.to_appear in 
       let t' = optimize_fix t in
       (try optimize_Dfix prm r t' b l 
       with Impossible -> 
-	if b then Dglob (r,t') :: (optimize prm l)
+	if b then Dterm (r,t') :: (optimize prm l)
 	else optimize prm l)
   | d :: l -> d :: (optimize prm l)
 

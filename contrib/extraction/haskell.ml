@@ -207,8 +207,6 @@ and pp_function env f t =
      str " =" ++ fnl () ++ str "  " ++
      hov 2 (pp_expr false env' [] t'))
 	
-let pp_ast a = hov 0 (pp_expr false (empty_env ()) [] a)
-
 (*s Pretty-printing of inductive types declaration. *)
 
 let pp_one_inductive (pl,name,cl) =
@@ -237,10 +235,12 @@ let pp_inductive il =
 (*s Pretty-printing of a declaration. *)
 
 let pp_decl = function
-  | Dtype ([], _) -> mt ()
-  | Dtype (i, _) -> 
+  | Dind ([], _) -> mt ()
+  | Dind (i, _) -> 
       hov 0 (pp_inductive i)
-  | Dabbrev (r, l, t) ->
+  | DdummyType r -> 
+      hov 0 (str "type " ++ pp_type_global r ++ str " = ()" ++ fnl ())
+  | Dtype (r, l, t) ->
       let l = rename_tvars keywords l in
       let l' = List.rev l in 
       hov 0 (str "type " ++ pp_type_global r ++ spc () ++ 
@@ -253,12 +253,12 @@ let pp_decl = function
       (prlist_with_sep (fun () -> fnl () ++ fnl ()) 
 	   (fun (fi,ti) -> pp_function env (pr_id fi) ti)
 	   (List.combine ids (Array.to_list defs)) ++ fnl ())
-  | Dglob (r, a) ->
+  | Dterm (r, a) ->
       hov 0 (pp_function (empty_env ()) (pp_global r) a ++ fnl ())
-  | Dcustom (r,s) -> 
+  | DcustomTerm (r,s) -> 
       hov 0  (pp_global r ++ str " =" ++ spc () ++ str s ++ fnl ())
-
-let pp_type = pp_type false []
+  | DcustomType (r,s) -> 
+      hov 0  (str "type " ++ pp_type_global r ++ str " = " ++ str s ++ fnl ())
 
 end
 

@@ -34,7 +34,7 @@ END
 
 VERNAC COMMAND EXTEND Extraction
 (* Extraction in the Coq toplevel *)
-| [ "Extraction" constr(c) ] -> [ extraction c ]
+| [ "Extraction" qualid(x) ] -> [ extraction x ]
 | [ "Recursive" "Extraction" ne_qualid_list(l) ] -> [ extraction_rec l ]
 
 (* Monolithic extraction to a file *)

@@ -50,11 +50,13 @@ let check_r m sm r =
   then clash_error sm m (library_part r)
 
 let check_decl m sm = function 
-  | Dglob (r,_) -> check_r m sm r 
-  | Dabbrev (r,_,_) -> check_r m sm r
-  | Dtype ((_,r,_)::_, _) -> check_r m sm r 
-  | Dtype ([],_) -> ()
-  | Dcustom (r,_) ->  check_r m sm r
+  | Dterm (r,_) -> check_r m sm r 
+  | Dtype (r,_,_) -> check_r m sm r
+  | Dind ((_,r,_)::_, _) -> check_r m sm r 
+  | Dind ([],_) -> ()
+  | DdummyType r -> check_r m sm r
+  | DcustomTerm (r,_) ->  check_r m sm r
+  | DcustomType (r,_) ->  check_r m sm r	
   | Dfix(rv,_) -> Array.iter (check_r m sm) rv 
 
 (* [check_one_module] checks that no module names in [l] clashes with [m]. *)
@@ -167,11 +169,11 @@ and visit_inductive m eenv inds =
   List.iter visit_ind inds
 
 and visit_decl m eenv = function
-  | Dtype (inds,_) -> visit_inductive m eenv inds
-  | Dabbrev (_,_,t) -> visit_type m eenv t
-  | Dglob (_,a) -> visit_ast m eenv a
-  | Dcustom _ -> ()
+  | Dind (inds,_) -> visit_inductive m eenv inds
+  | Dtype (_,_,t) -> visit_type m eenv t
+  | Dterm (_,a) -> visit_ast m eenv a
   | Dfix (_,c) -> Array.iter (visit_ast m eenv) c
+  | _ -> ()
 	
 (*s Recursive extracted environment for a list of reference: we just
     iterate [visit_reference] on the list, starting with an empty
@@ -192,8 +194,7 @@ let modules_extract_env m =
 
 (*s Extraction in the Coq toplevel. We display the extracted term in
     Ocaml syntax and we use the Coq printers for globals. The
-    vernacular command is \verb!Extraction! [term]. Whenever [term] is
-    a global, its definition is displayed. *)
+    vernacular command is \verb!Extraction! [qualid]. *)
 
 let decl_of_refs refs = List.map extract_declaration (extract_env refs)
 
@@ -202,60 +203,32 @@ let print_user_extract r =
 	   spc () ++ str (find_ml_extraction r) ++ fnl ())
 
 let decl_in_r r0 = function 
-  | Dglob (r,_) -> r = r0
-  | Dabbrev (r,_,_) -> r = r0
-  | Dtype ((_,r,_)::_, _) -> sp_of_r r = sp_of_r r0
-  | Dtype ([],_) -> false
-  | Dcustom (r,_) ->  r = r0 
+  | Dterm (r,_) -> r = r0
+  | Dtype (r,_,_) -> r = r0
+  | Dind ((_,r,_)::_, _) -> sp_of_r r = sp_of_r r0
+  | Dind ([],_) -> false
+  | DdummyType r -> r = r0
+  | DcustomTerm (r,_) ->  r = r0 
+  | DcustomType (r,_) ->  r = r0 
   | Dfix (rv,_) -> array_exists ((=) r0) rv
 
-let pp_decl d = match lang () with 
-  | Ocaml -> OcamlMonoPp.pp_decl d
-  | Haskell -> HaskellMonoPp.pp_decl d
-  | Scheme -> SchemeMonoPp.pp_decl d
-  | Toplevel -> ToplevelPp.pp_decl d
-
-let pp_ast a = match lang () with 
-  | Ocaml -> OcamlMonoPp.pp_ast a
-  | Haskell -> HaskellMonoPp.pp_ast a
-  | Scheme -> SchemeMonoPp.pp_ast a
-  | Toplevel -> ToplevelPp.pp_ast a
-
-let pp_type t = match lang () with 
-  | Ocaml -> OcamlMonoPp.pp_type t
-  | Haskell -> HaskellMonoPp.pp_type t
-  | Scheme -> SchemeMonoPp.pp_type t
-  | Toplevel -> ToplevelPp.pp_type t
-
-let extract_reference r =
+let extraction qid =
+  let r = Nametab.global qid in 
   if is_ml_extraction r then
     print_user_extract r 
   else if decl_is_logical_ind r then 
     msgnl (pp_logical_ind r) 
   else if decl_is_singleton r then 
     msgnl (pp_singleton_ind r) 
-  else
+  else 
     let prm = 
-      { modular = false; mod_name = id_of_string "Main"; to_appear = [r]} in
+      { modular = false; mod_name = id_of_string "Main"; to_appear = [r]} in 
+    set_globals ();
     let decls = optimize prm (decl_of_refs [r]) in 
     let d = list_last decls in
     let d = if (decl_in_r r d) then d 
     else List.find (decl_in_r r) decls
-    in msgnl (pp_decl d)
-	 
-let extraction rawconstr =
-  set_globals ();
-  let c = Astterm.interp_constr Evd.empty (Global.env()) rawconstr in
-  match kind_of_term c with
-    (* If it is a global reference, then output the declaration *)
-    | Const sp -> extract_reference (ConstRef sp)
-    | Ind ind -> extract_reference (IndRef ind)
-    | Construct cs -> extract_reference (ConstructRef cs)
-    (* Otherwise, output the ML type or expression *)
-    | _ ->
-	match extract_constr (Global.env()) c with
-	  | Emltype (t,_,_) -> msgnl (pp_type t ++ fnl ())
-	  | Emlterm a -> msgnl (pp_ast (normalize a) ++ fnl ())
+    in msgnl (pp_decl false d)
 
 (*s Recursive extraction in the Coq toplevel. The vernacular command is
     \verb!Recursive Extraction! [qualid1] ... [qualidn]. We use [extract_env]
@@ -301,11 +274,13 @@ let extraction_file f vl =
   \verb!Extraction Module! [M]. *) 
 
 let decl_in_m m = function 
-  | Dglob (r,_) -> is_long_module m r
-  | Dabbrev (r,_,_) -> is_long_module m r
-  | Dtype ((_,r,_)::_, _) -> is_long_module m r 
-  | Dtype ([],_) -> false
-  | Dcustom (r,_) ->  is_long_module m r
+  | Dterm (r,_) -> is_long_module m r
+  | Dtype (r,_,_) -> is_long_module m r
+  | Dind ((_,r,_)::_, _) -> is_long_module m r 
+  | Dind ([],_) -> false
+  | DdummyType r -> is_long_module m r
+  | DcustomTerm (r,_) ->  is_long_module m r
+  | DcustomType (r,_) ->  is_long_module m r
   | Dfix (rv,_) -> is_long_module m rv.(0)
 
 let module_file_name m = match lang () with 

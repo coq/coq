@@ -152,13 +152,13 @@ and pp_fix env j (ids,bl) args =
 	     fnl () ++
       	     hov 2 (apply (pr_id (ids.(j))) args))))
 
-let pp_ast a = hov 0 (pp_expr (empty_env ()) [] a)
-
 (*s Pretty-printing of a declaration. *)
 
 let pp_decl = function
-  | Dtype _ -> mt ()
-  | Dabbrev _ -> mt () 
+  | Dind _ -> mt ()
+  | DdummyType _ -> mt () 
+  | Dtype _ -> mt () 
+  | DcustomType _ -> mt ()
   | Dfix (rv, defs) ->
       let ids = Array.map rename_global rv in 
       let env = List.rev (Array.to_list ids), P.globals() in
@@ -170,13 +170,11 @@ let pp_decl = function
 		     (pp_expr env [] ti)) 
 	      ++ fnl ()))
 	(array_map2 (fun id b -> (id,b)) ids defs)
-  | Dglob (r, a) ->
+  | Dterm (r, a) ->
       hov 2 (paren (str "define " ++ (pp_global' r) ++ spc () ++
 		    pp_expr (empty_env ()) [] a)) ++ fnl ()  
-  | Dcustom (r,s) -> 
+  | DcustomTerm (r,s) -> 
       hov 2 (paren (str "define " ++ pp_global' r ++ spc () ++ str s) ++ fnl ())
-	
-let pp_type _ = mt () 
 
 end
 

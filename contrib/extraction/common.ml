@@ -80,12 +80,12 @@ let mltype_get_modules m t =
 let decl_get_modules ld = 
   let m = ref Idset.empty in 
   let one_decl = function 
-    | Dtype (l,_) -> 
+    | Dind (l,_) -> 
 	List.iter (fun (_,_,l) -> 
 		     List.iter (fun (_,l) -> 
 				  List.iter (mltype_get_modules m) l) l) l
-    | Dabbrev (_,_,t) -> mltype_get_modules m t 
-    | Dglob (_,a) -> ast_get_modules m a
+    | Dtype (_,_,t) -> mltype_get_modules m t 
+    | Dterm (_,a) -> ast_get_modules m a
     | Dfix(_,c) -> Array.iter (ast_get_modules m) c  
     | _ -> ()
   in 
@@ -189,6 +189,14 @@ module HaskellModularPp = Haskell.Make(ModularParams)
 
 module SchemeMonoPp = Scheme.Make(MonoParams)
 
+let pp_decl modular = match lang(), modular with 
+    | Ocaml, false -> OcamlMonoPp.pp_decl
+    | Ocaml, _ -> OcamlModularPp.pp_decl
+    | Haskell, false -> HaskellMonoPp.pp_decl    
+    | Haskell, _ -> HaskellModularPp.pp_decl
+    | Scheme, _ -> SchemeMonoPp.pp_decl
+    | Toplevel, _ -> ToplevelPp.pp_decl
+
 let pp_comment s = match lang () with 
   | Haskell -> str "-- " ++ s ++ fnl () 
   | Scheme -> str ";" ++ s ++ fnl () 
@@ -222,14 +230,7 @@ let extract_to_file f prm decls =
     | Scheme -> Scheme.preamble
     | _ -> assert false 
   in 
-  let pp_decl = match lang (),prm.modular with 
-    | Ocaml, false -> OcamlMonoPp.pp_decl
-    | Ocaml, _ -> OcamlModularPp.pp_decl
-    | Haskell, false -> HaskellMonoPp.pp_decl    
-    | Haskell, _ -> HaskellModularPp.pp_decl
-    | Scheme, _ -> SchemeMonoPp.pp_decl
-    | _ -> assert false 
-  in
+  let pp_decl = pp_decl prm.modular in 
   let used_modules = if prm.modular then 
     Idset.remove prm.mod_name (decl_get_modules decls)
   else Idset.empty
