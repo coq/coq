@@ -229,7 +229,7 @@ tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
 	$(COQC) -bindir bin -q -I tactics -is states/barestate.coq $<
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO) $(BESTCOQTOP)
-	$(BESTCOQTOP) -q -batch -silent -is states/barestate.coq -I tactics -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+	$(BESTCOQTOP) -q -batch -silent -is states/barestate.coq -I tactics -I theories/Init -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 clean::
 	rm -f states/*~ states/*.coq
@@ -369,6 +369,9 @@ $(COQMAKEFILE): tools/coq_makefile.ml
 
 $(COQTEX): tools/coq-tex.ml
 	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma tools/coq-tex.ml
+
+clean::
+	rm -f tools/coqdep_lexer.ml tools/gallina_lexer.ml
 
 archclean::
 	rm -f $(COQDEP) $(GALLINA) $(COQTEX) $(COQMAKEFILE)
