@@ -1235,21 +1235,14 @@ install-latex:
 doc: doc/coq.tex
 	$(MAKE) -C doc coq.ps minicoq.dvi
 
-LPLIB = lib/doc.tex $(LIBREP:.cmo=.mli)
-LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
-LPLIBRARY = library/doc.tex $(LIBRARY:.cmo=.mli)
-LPPRETYPING = pretyping/doc.tex pretyping/rawterm.mli $(PRETYPING:.cmo=.mli)
-LPINTERP = $(INTERP:.cmo=.mli)
-LPPARSING = $(PARSING:.cmo=.mli) $(HIGHPARSING:.cmo=.mli)
-LPPROOFS = proofs/doc.tex $(PROOFS:.cmo=.mli)
-LPTACTICS = tactics/doc.tex $(TACTICS:.cmo=.mli) $(HIGHTACTICS:.cmo=.mli)
-LPTOPLEVEL = toplevel/doc.tex $(TOPLEVEL:.cmo=.mli)
-LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL) $(LPLIBRARY) \
-	  $(LPPRETYPING) $(LPPROOFS) $(LPTACTICS) $(LPTOPLEVEL)
-
-doc/coq.tex: $(LPFILES)
-	ocamlweb -p "\usepackage{epsfig}" $(LPFILES) -o doc/coq.tex
-#	ocamlweb $(LPFILES) -o doc/coq.tex
+doc/coq.tex:
+	ocamlweb -p "\usepackage{epsfig}" \
+	doc/macros.tex doc/intro.tex \
+	lib/{doc.tex,*.mli} kernel/{doc.tex,*.mli} library/{doc.tex,*.mli} \
+	pretyping/{doc.tex,*.mli} interp/{doc.tex,*.mli} \
+	parsing/{doc.tex,*.mli} proofs/{doc.tex,tacexpr.ml,*.mli} \
+	tactics/{doc.tex,*.mli} toplevel/{doc.tex,vernacexpr.ml,*.mli} \
+	-o doc/coq.tex
 
 clean::
 	rm -f doc/coq.tex
