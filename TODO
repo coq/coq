@@ -26,11 +26,12 @@ Grammaires:
 
 Doc:
 
-- restriction de syntaxe pour Cbv Delta [- toto].
+- restriction de syntaxe pour Cbv Delta [- toto]. FAIT
 - documenter tactiques Induction, LetTac
 - documenter AutoRewrite
 - Ajouter let dans les règles du CIC
   -> FAIT, mais reste a documenter le let dans les inductifs
+  et les champs manifestes dans les Record   
 - changement syntaxe de AddPath
 - une passe sur le chapitre extensions de syntaxe
 - une passe sur le chapitre Cases
@@ -42,3 +43,5 @@ Doc:
 - documenter @Definition and co
 - rectifier le paragraphe sur Coercions et pretty-printing
   + Set Printing Coercions
+
+
