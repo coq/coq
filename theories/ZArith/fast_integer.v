@@ -1095,17 +1095,6 @@ Do 2 Rewrite convert_add; Do 2 Rewrite times_convert;
 Do 3 Rewrite (mult_sym (convert x)); Apply mult_plus_distr.
 Qed.
 
-Theorem lt_mult_left :
- (x,y,z:nat) (lt x y) -> (lt (mult (S z) x) (mult (S z) y)).
-Proof.
-Intros x y z H;Elim z; [
-  Simpl; Do 2 Rewrite <- plus_n_O; Assumption
-| Simpl; Intros n H1; Apply lt_trans with m:=(plus y (plus x (mult n x))); [
-    Rewrite (plus_sym x (plus x (mult n x)));
-    Rewrite (plus_sym y (plus x (mult n x))); Apply lt_reg_l; Assumption
-  | Apply lt_reg_l;Assumption ]].
-Qed.
-
 Theorem times_true_sub_distr:
   (x,y,z:positive) (compare y z EGAL) = SUPERIEUR -> 
       (times x (true_sub y z)) = (true_sub (times x y) (times x z)).
