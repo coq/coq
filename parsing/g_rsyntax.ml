@@ -42,6 +42,16 @@ let get_r_sign_ast loc =
     mkid (id_of_string "NRplus"),
     mkid (id_of_string "NRmult")))
 
+(* We have the following interpretation:
+  [| 0 |] = 0
+  [| 1 |] = 1
+  [| 2 |] = 1 + 1
+  [| 3 |] = 1 + (1 + 1)
+  [| 2n |] = 2 * [| n |]         for n >= 2
+  [| 2n+1 |] = 1 + 2 * [| n |]   for n >= 2
+  [| -n |] = - [| n |]           for n >= 0
+*)
+
 let int_decomp n = 
 let div2 k = 
 let x = k mod 2 in
@@ -60,7 +70,7 @@ let r_of_int n dloc =
     match l with
     | [] -> failwith "Error r_of_int"
     | [a] -> if a=1 then a1 else a0
-    | a::[b] -> if a==1 then mkAppC (plus, [a1; a2]) else a2
+    | [a;b] -> if a==1 then mkAppC (plus, [a1; a2]) else a2
     | a::l' -> if a=1 then mkAppC (plus, [a1; mkAppC (mult, [a2; mk_r l'])]) else mkAppC (mult, [a2; mk_r l'])
   in mk_r list_ch
 in
@@ -229,27 +239,12 @@ let r_of_int dloc z =
 (**********************************************************************)
 
 let bignat_of_r =
-if !Options.v7 then
-let rec bignat_of_r = function
-  | RApp (_,RRef (_,p), [RRef (_,o1); RRef (_,o2)]) when p = glob_Rplus & o1 = glob_R1 & o2 = glob_R1 -> add_1 one
-  | RApp (_,RRef (_,p), [RRef (_,o); RApp (_,RRef (_,p2),_) as a]) when p = glob_Rplus & o = glob_R1 -> 
-      if p2 = glob_Rmult then add_1 (bignat_of_r a)
-      else (match a with 
-      |	RApp (_,RRef (_,p), [RRef (_,o1); RRef (_,o2)]) when p = glob_Rplus & o1 = glob_R1 & o2 = glob_R1 -> add_1 (add_1 one)
-      |	_ -> raise Non_closed_number)
-  | RApp (_,RRef (_,p), [RApp (_,RRef (_,o1), [RRef (_,o2); RRef (_,o3)]); RRef (_,q)]) when p = glob_Rmult & o1 = glob_Rplus & o2 = glob_R1 & o3 = glob_R1 & q = glob_R1 -> raise Non_closed_number 
-  | RApp (_,RRef (_,p), [RApp (_,RRef (_,o1), [RRef (_,o2); RRef (_,o3)]); a]) when p = glob_Rmult & o1 = glob_Rplus & o2 = glob_R1 & o3 = glob_R1 -> mult_2 (bignat_of_r a) 
-  | RRef (_,a) when a = glob_R1 -> one
-  | RRef (_,a) when a = glob_R0 -> zero
-  | _ -> raise Non_closed_number
-in bignat_of_r
-else
 (* for numbers > 1 *)
 let rec bignat_of_pos = function
   (* 1+1 *)
   | RApp (_,RRef (_,p), [RRef (_,o1); RRef (_,o2)])
       when p = glob_Rplus & o1 = glob_R1 & o2 = glob_R1 -> two
-  (* 1+1+1 *)
+  (* 1+(1+1) *)
   | RApp (_,RRef (_,p1), [RRef (_,o1);
       RApp(_,RRef (_,p2),[RRef(_,o2);RRef(_,o3)])])
       when p1 = glob_Rplus & p2 = glob_Rplus &
