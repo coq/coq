@@ -433,20 +433,6 @@ let rec whd_evar sigma c =
 let nf_evar sigma =
   local_strong (whd_evar sigma)
 
-let subst1_nf_evar sigma v =
-  let rec substrec depth c = match kind_of_term c with
-    | Rel k     ->
-        if k <= depth then c
-        else if k = depth+1 then lift depth v
-        else mkRel (k-1)
-    | Evar (ev,args as evar) ->
-	(try substrec depth (Evd.existential_value sigma evar)
-	 with Evd.NotInstantiatedEvar ->
-	   mkEvar (ev, Array.map (substrec depth) args))
-    | _ -> map_constr_with_binders succ substrec depth c
-  in 
-  substrec 0
-
 (* lazy reduction functions. The infos must be created for each term *)
 let clos_norm_flags flgs env sigma t =
   norm_val (create_clos_infos flgs env) (inject (nf_evar sigma t))
