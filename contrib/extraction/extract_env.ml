@@ -50,11 +50,11 @@ let extract_module m =
 type extracted_env = {
   mutable visited : Refset.t;
   mutable to_extract : global_reference list;
-  mutable modules : identifier list
+  mutable modules : Idset.t
 }
 
 let empty () = 
-  { visited = ml_extractions (); to_extract = []; modules = []}
+  { visited = ml_extractions (); to_extract = []; modules = Idset.empty }
 
 let rec visit_reference m eenv r =
   let r' = match r with
@@ -68,8 +68,8 @@ let rec visit_reference m eenv r =
     eenv.visited <- Refset.add r' eenv.visited;
     if m then begin 
       let m_name = module_of_r r' in 
-      if not (List.mem m_name eenv.modules) then begin
-	eenv.modules <- m_name :: eenv.modules;
+      if not (Idset.mem m_name eenv.modules) then begin
+	eenv.modules <- Idset.add m_name eenv.modules;
  	List.iter (visit_reference m eenv) (extract_module m_name)
       end
     end;
@@ -129,7 +129,7 @@ let extract_env rl =
 
 let modules_extract_env m =
   let eenv = empty () in
-  eenv.modules <- [m];
+  eenv.modules <- Idset.singleton m;
   List.iter (visit_reference true eenv) (extract_module m);
   eenv.modules, List.rev eenv.to_extract
 
@@ -257,7 +257,7 @@ let _ =
 			      to_appear= []} in
 	      let decls = optimize dummy_prm (decl_of_refs refs) in
 	      let decls = add_ml_decls dummy_prm decls in
-	      List.iter 
+	      Idset.iter 
 		(fun m ->
 		   let f = (String.uncapitalize (string_of_id m))
 			   ^ (file_suffix lang) in
