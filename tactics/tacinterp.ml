@@ -2080,6 +2080,7 @@ let make_empty_glob_sign () =
     metavars = []; gsigma = Evd.empty; genv = Global.env() }
 
 let add_tacdef isrec tacl =
+  let isrec = if !Options.p1 then isrec else true in
   let rfun = List.map (fun ((loc,id as locid),_) -> (id,make_absolute_name locid)) tacl in
   let ist =
     {(make_empty_glob_sign()) with ltacrecvars = if isrec then rfun else []} in

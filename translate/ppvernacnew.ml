@@ -243,7 +243,7 @@ let anonymize_binder na c =
   else c
 
 let sep_fields () =
-  if !Options.p1 then str ";" ++ spc () else fnl ()
+  if !Options.p1 then fnl () else str ";" ++ spc ()
 
 let surround_binder p = 
   if !Options.p1 then str"(" ++ p ++ str")" else p
@@ -708,7 +708,7 @@ let rec pr_vernac = function
 
   (* Solving *)
   | VernacSolve (i,tac,deftac) ->
-      (if i = 1 then mt() else int i ++ str ": ") ++
+      (if i = 1 then mt() else int i ++ str ": ") ++
       (if !Options.p1 then mt () else str "By ") ++
       (if deftac then mt() else str "!! ") ++
       pr_raw_tactic_goal i tac
@@ -753,9 +753,11 @@ let rec pr_vernac = function
           (List.map (fun ((_,id),_) -> (id,Lib.make_path id)) l) 
           (Global.env()) body in
       hov 1
-        ((* Rec by default: (if rc then str "Recursive " else mt()) ++ *)
-         str "Ltac " ++
-         prlist_with_sep (fun () -> fnl() ++ str"with ") pr_tac_body l)
+        ((if !Options.p1 then
+	  (if rc then str "Recursive " else mt()) ++
+	  str "Tactic Definition " else
+	    (* Rec by default *) str "Ltac ") ++
+        prlist_with_sep (fun () -> fnl() ++ str"with ") pr_tac_body l)
   | VernacHints (dbnames,h) -> pr_hints dbnames h pr_constr
   | VernacHintDestruct (id,loc,c,i,tac) ->
       hov 2 (str"HintDestruct " ++ pr_destruct_location loc ++ spc() ++
