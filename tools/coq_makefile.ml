@@ -93,6 +93,11 @@ let standard sds =
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) depend)\n")
     sds;
   print "\n";
+  print "xml::\n";
+  List.iter
+    (fun x -> print "\t(cd "; print x; print " ; $(MAKE) xml)\n")
+    sds;
+  print "\n";
   print "install:\n";
   print "\t@if test -z $(TARGETDIR); then echo \"You must set TARGETDIR (for instance with 'make TARGETDIR=foobla install')\"; exit 1; fi\n";
   if !some_vfile then print "\tcp -f *.vo $(TARGETDIR)\n";
@@ -131,7 +136,7 @@ let implicit () =
     print ".v.tex:\n\t$(COQ2LATEX) $< -latex -o $@\n\n" ;
     print ".v.g.html:\n\t$(GALLINA) -stdout $< | $(COQ2HTML) -f > $@\n\n" ;
     print 
-      ".v.g.tex:\n\t$(GALLINA) -stdout $< | $(COQ2LATEX) - -latex -o $@\n\n"
+      ".v.g.tex:\n\t$(GALLINA) -stdout $< | $(COQ2LATEX) - -latex -o $@\n\n" ;
   and ml_suffixes =
     if !some_mlfile then 
       [ ".mli" ; ".ml" ; ".cmo" ; ".cmi"; ".cmx" ]
@@ -183,6 +188,7 @@ let variables l =
   print "CAMLLINK=ocamlc\n";
   print "CAMLOPTLINK=ocamlopt\n";
   print "COQDEP=$(COQBIN)coqdep -c\n";
+  print "COQVO2XML=coq_vo2xml\n";
   var_aux l;
   print "\n"
 
@@ -234,7 +240,7 @@ let subdirs l =
   section "Special targets.";
   print ".PHONY: " ;
   print_list " "
-    ("all"::"opt"::"byte"::"archclean"::"clean"::"install"::"depend"::sds);
+    ("all"::"opt"::"byte"::"archclean"::"clean"::"install"::"depend"::"xml"::sds);
   print "\n\n";
   sds
 
@@ -242,17 +248,18 @@ let subdirs l =
 
 let rec other_files suff = function
   | V n :: r -> 
-      let f = (Filename.chop_suffix n "vo") ^ suff in
+      let f = (Filename.chop_suffix n ".vo") ^ suff in
       f :: (other_files suff r)
   | _   :: r -> other_files suff r
   | []       -> []
 
-let gfiles = other_files "g"
-let hfiles = other_files "html"
-let tfiles = other_files "tex"
-let vifiles = other_files "vi"
+let gfiles = other_files ".g"
+let hfiles = other_files ".html"
+let tfiles = other_files ".tex"
+let vifiles = other_files ".vi"
 let gtfiles l = List.map (fun f -> f^".tex") (gfiles l)
 let ghfiles l = List.map (fun f -> f^".html") (gfiles l)
+let vofiles = other_files ".vo"
 
 let all_target l =
   let rec fnames = function
@@ -281,6 +288,11 @@ let all_target l =
     print "\n\n";
     print "gallinahtml: "; print_list "\\\n  " (ghfiles l) ;
     print "\n\n";
+    print "xml:: .xml_time_stamp\n" ;
+    print ".xml_time_stamp: "; print_list "\\\n  " (vofiles l) ;
+     print "\n\t$(COQVO2XML) $(COQFLAGS) $(?:%.o=%)\n" ;
+     print "\ttouch .xml_time_stamp" ;
+    print "\n\n"
   end
 
 let parse f =

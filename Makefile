@@ -489,7 +489,8 @@ $(CONTRIBVO): states/initial.coq
 contrib: $(CONTRIBVO)
 omega: $(OMEGAVO)
 ring: $(RINGVO)
-xml: $(XMLVO)
+# xml_ instead of xml to avoid conflict with "make xml"
+xml_: $(XMLVO)
 extraction: $(EXTRACTIONCMO) $(EXTRACTIONVO)
 correctness: $(CORRECTNESSCMO) $(CORRECTNESSVO)
 field: $(FIELDVO)
@@ -509,8 +510,10 @@ COQDEP=bin/coqdep$(EXE)
 COQMAKEFILE=bin/coq_makefile$(EXE)
 GALLINA=bin/gallina$(EXE)
 COQTEX=bin/coq-tex$(EXE)
+COQVO2XML=bin/coq_vo2xml$(EXE)
+RUNCOQVO2XML=coq_vo2xml$(EXE)   # Uses the one in PATH and not the one in bin
 
-tools: $(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) dev/top_printers.cmo
+tools: $(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) $(COQVO2XML) dev/top_printers.cmo
 
 COQDEPCMO=config/coq_config.cmo tools/coqdep_lexer.cmo tools/coqdep.cmo
 
@@ -532,11 +535,16 @@ $(COQMAKEFILE): tools/coq_makefile.ml
 $(COQTEX): tools/coq-tex.ml
 	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma tools/coq-tex.ml
 
+COQVO2XMLCMO=$(CONFIG) toplevel/usage.cmo tools/coq_vo2xml.cmo
+
+$(COQVO2XML): $(COQVO2XMLCMO)
+	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ unix.cma $(COQVO2XMLCMO)
+
 clean::
 	rm -f tools/coqdep_lexer.ml tools/gallina_lexer.ml
 
 archclean::
-	rm -f $(COQDEP) $(GALLINA) $(COQTEX) $(COQMAKEFILE)
+	rm -f $(COQDEP) $(GALLINA) $(COQTEX) $(COQMAKEFILE) $(COQVO2XML)
 
 ###########################################################################
 # minicoq
@@ -553,6 +561,18 @@ $(MINICOQ): $(MINICOQCMO)
 
 archclean::
 	rm -f $(MINICOQ)
+
+###########################################################################
+# XML
+###########################################################################
+
+# Warning: coq_vo2xml in PATH and not the one in bin is used
+
+.PHONY: xml
+xml: .xml_time_stamp
+.xml_time_stamp: $(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO)
+	$(RUNCOQVO2XML) -boot -byte $(COQINCLUDES) $(?:%.o=%)
+	touch .xml_time_stamp
 
 ###########################################################################
 # Installation
@@ -581,7 +601,7 @@ install-opt:
 
 install-binaries:
 	$(MKDIR) $(FULLBINDIR)
-	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(COQINTERFACE) $(FULLBINDIR)
+	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(COQINTERFACE) $(COQVO2XML) $(FULLBINDIR)
 
 LIBFILES=$(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO)
 
@@ -599,7 +619,7 @@ install-library:
 MANPAGES=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1 \
 	man/coq_makefile.1 man/coqmktop.1 \
-	man/coq-interface.1 man/parser.1
+	man/coq-interface.1 man/parser.1 man/coq_vo2xml.1
 
 install-manpages:
 	$(MKDIR) $(FULLMANDIR)/man1

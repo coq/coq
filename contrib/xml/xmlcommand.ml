@@ -305,15 +305,16 @@ let print_term inner_types l env csr =
    (* coq coding of terms (the one of the logical framework)              *)
    match T.kind_of_term cstr with
      T.IsRel n  ->
-      (match List.nth l (n - 1) with
-          N.Name id ->
-            X.xml_empty "REL"
-             (add_sort_attribute false
-              ["value",(string_of_int n) ;
-               "binder",(N.string_of_id id) ;
-               "id", next_id])
-        | N.Anonymous -> assert false
-      )
+      let id =
+       match List.nth l (n - 1) with
+          N.Name id   -> id
+        | N.Anonymous -> N.make_ident "_" None
+      in
+       X.xml_empty "REL"
+        (add_sort_attribute false
+          ["value",(string_of_int n) ;
+           "binder",(N.string_of_id id) ;
+           "id", next_id])
    | T.IsVar id ->
       let depth =
        match get_depth_of_var (N.string_of_id id) with

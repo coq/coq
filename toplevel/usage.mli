@@ -12,7 +12,9 @@
 
 val version : unit -> 'a
 
-(*s Prints the usage on the error output. *)
+(*s Prints the usage on the error output, preceeded by a user-provided message. *)
+val print_usage : string -> unit
 
+(*s Prints the usage on the error output. *)
 val print_usage_coqtop : unit -> unit
 val print_usage_coqc : unit -> unit
