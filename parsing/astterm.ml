@@ -174,25 +174,6 @@ let maybe_constructor env = function
 
   | _ -> anomaly "ast_to_pattern: badly-formed ast for Cases pattern"
 
-
-(*
-let ast_to_ctxt ctxt =
-  let l =
-    List.map
-      (function
-	 | Nvar (loc,s) ->
-	     (* RRef (dummy_loc,RVar (ident_of_nvar loc s)) *)
-	     RRef (loc, RVar (ident_of_nvar loc s))
-	 | _ -> anomaly "Bad ast for local ctxt of a global reference") ctxt
-  in
-  Array.of_list l
-
-let ast_to_rawconstr_ctxt =
-  Array.map
-    (function
-       | RRef (_, RVar id) -> mkVar id
-       | _ -> anomaly "Bad ast for local ctxt of a global reference")
-*)
 let ast_to_global loc c =
   match c with
     | ("CONST", [sp]) ->
@@ -226,11 +207,13 @@ let ref_from_constr c = match kind_of_term c with
    [vars2] is the set of global variables, env is the set of variables
    abstracted until this point *)
 
-let ast_to_var env (vars1,vars2) loc s =
+let ast_to_var (env,impls) (vars1,vars2) loc s =
   let id = id_of_string s in
   let imp = 
     if Idset.mem id env or List.mem s vars1
-    then []
+    then
+      try List.assoc id impls
+      with Not_found -> []
     else
       let _ = lookup_id id vars2 in
       (* Car Fixpoint met les fns définies tmporairement comme vars de sect *)
@@ -378,7 +361,7 @@ let check_capture loc s ty = function
   | _ -> ()
 
 let ast_to_rawconstr sigma env allow_soapp lvar =
-  let rec dbrec env = function
+  let rec dbrec (ids,impls as env) = function
     | Nvar(loc,s) ->
 	fst (rawconstr_of_var env lvar loc s)
 
@@ -392,9 +375,8 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	    (list_index (ident_of_nvar locid iddef) lf) -1
           with Not_found ->
 	    error_fixname_unbound "ast_to_rawconstr (FIX)" false locid iddef in
-	let ext_env =
-	  List.fold_left (fun env fid -> Idset.add fid env) env lf in
-	let defl = Array.of_list (List.map (dbrec ext_env) lt) in
+	let ext_ids = List.fold_right Idset.add lf ids in
+	let defl = Array.of_list (List.map (dbrec (ext_ids,impls)) lt) in
 	let arityl = Array.of_list (List.map (dbrec env) lA) in
 	RRec (loc,RFix (Array.of_list ln,n), Array.of_list lf, arityl, defl)
 	  
@@ -404,23 +386,23 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
           try 
 	    (list_index (ident_of_nvar locid iddef) lf) -1
           with Not_found ->
-	    error_fixname_unbound "ast_to_rawconstr (COFIX)" true locid iddef in
-	let ext_env =
-	  List.fold_left (fun env fid -> Idset.add fid env) env lf in
-	let defl = Array.of_list (List.map (dbrec ext_env) lt) in
+	    error_fixname_unbound "ast_to_rawconstr (COFIX)" true locid iddef
+	in
+	let ext_ids = List.fold_right Idset.add lf ids in
+	let defl = Array.of_list (List.map (dbrec (ext_ids,impls)) lt) in
 	let arityl = Array.of_list (List.map (dbrec env) lA) in
 	RRec (loc,RCoFix n, Array.of_list lf, arityl, defl)
 	  
     | Node(loc,("PROD"|"LAMBDA"|"LETIN" as k), [c1;Slam(_,ona,c2)]) ->
-	let na,env' = match ona with
-	  | Some s -> let id = id_of_string s in Name id, Idset.add id env
-	  | _ -> Anonymous, env in
+	let na,ids' = match ona with
+	  | Some s -> let id = id_of_string s in Name id, Idset.add id ids
+	  | _ -> Anonymous, ids in
 	let kind = match k with
 	  | "PROD" -> BProd
 	  | "LAMBDA" -> BLambda
 	  | "LETIN" -> BLetIn
 	  | _ -> assert false in
-	RBinder(loc, kind, na, dbrec env c1, dbrec env' c2)
+	RBinder(loc, kind, na, dbrec env c1, dbrec (ids',impls) c2)
 
     | Node(_,"PRODLIST", [c1;(Slam _ as c2)]) -> 
 	iterated_binder BProd 0 c1 env c2
@@ -489,34 +471,33 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 
     | _ -> anomaly "ast_to_rawconstr: unexpected ast"
 
-  and ast_to_eqn n env = function
+  and ast_to_eqn n (ids,impls as env) = function
     | Node(loc,"EQN",rhs::lhs) ->
 	let (idsl_substl_list,pl) =
 	  List.split (List.map (ast_to_pattern env ([],[])) lhs) in
 	let idsl, substl = List.split (List.flatten idsl_substl_list) in
-	let ids = List.flatten idsl in
+	let eqn_ids = List.flatten idsl in
 	let subst = List.flatten substl in 
 	(* Linearity implies the order in ids is irrelevant *)
-	check_linearity loc ids;
-	check_uppercase loc ids;
+	check_linearity loc eqn_ids;
+	check_uppercase loc eqn_ids;
 	check_number_of_pattern loc n pl;
 	let rhs = replace_vars_ast subst rhs in
 	List.iter message_redondant_alias subst;
-	let env' =
-	  List.fold_left (fun env id -> Idset.add id env) env ids in
-	(ids,pl,dbrec env' rhs)
+	let env_ids = List.fold_right Idset.add eqn_ids ids in
+	(eqn_ids,pl,dbrec (env_ids,impls) rhs)
     | _ -> anomaly "ast_to_rawconstr: badly-formed ast for Cases equation"
 
-  and iterated_binder oper n ty env = function
+  and iterated_binder oper n ty (ids,impls as env) = function
     | Slam(loc,ona,body) ->
-	let na,env' = match ona with 
+	let na,ids' = match ona with 
 	  | Some s ->
 	      if n>0 then check_capture loc s ty body;
-	      let id = id_of_string s in Name id, Idset.add id env
-	  | _ -> Anonymous, env
+	      let id = id_of_string s in Name id, Idset.add id ids
+	  | _ -> Anonymous, ids
 	in
 	RBinder(loc, oper, na, dbrec env ty,
-		(iterated_binder oper (n+1) ty env' body))
+		(iterated_binder oper (n+1) ty (ids',impls) body))
     | body -> dbrec env body
 
   and ast_to_impargs env l args =
@@ -641,27 +622,22 @@ let globalize_ast ast =
 (* Functions to translate ast into rawconstr                              *)
 (**************************************************************************)
 
-let interp_rawconstr_gen sigma env allow_soapp lvar com =
+let interp_rawconstr_gen sigma env impls allow_soapp lvar com =
   ast_to_rawconstr sigma
-    (from_list (ids_of_rel_context (rel_context env)))
+    (from_list (ids_of_rel_context (rel_context env)), impls)
     allow_soapp (lvar,named_context env) com
 
 let interp_rawconstr sigma env com =
-  interp_rawconstr_gen sigma env false [] com
+  interp_rawconstr_gen sigma env [] false [] com
+
+let interp_rawconstr_with_implicits sigma env impls com =
+  interp_rawconstr_gen sigma env impls false [] com
 
 (*The same as interp_rawconstr but with a list of variables which must not be
   globalized*)
 
 let interp_rawconstr_wo_glob sigma env lvar com =
-  ast_to_rawconstr sigma
-    (from_list (ids_of_rel_context (rel_context env)))
-    false (lvar,named_context env) com
-
-(*let raw_fconstr_of_com sigma env com =
-  ast_to_fw sigma (unitize_env (context env)) [] com
-
-let raw_constr_of_compattern sigma env com = 
-  ast_to_cci sigma (unitize_env env) com*)
+  interp_rawconstr_gen sigma env [] false lvar com
 
 (*********************************************************************)
 (* V6 compat: Functions before in ex-trad                            *)
@@ -677,8 +653,11 @@ let interp_openconstr sigma env c =
 let interp_casted_openconstr sigma env c typ =
   understand_gen_tcc sigma env [] [] (Some typ) (interp_rawconstr sigma env c)
 
-let interp_type sigma env   c =
+let interp_type sigma env c =
   understand_type sigma env (interp_rawconstr sigma env c)
+
+let interp_type_with_implicits sigma env impls c =
+  understand_type sigma env (interp_rawconstr_with_implicits sigma env impls c)
 
 let interp_sort = function
   | Node(loc,"PROP", []) -> Prop Null
@@ -694,27 +673,28 @@ let type_judgment_of_rawconstr sigma env c =
 
 (*To retype a list of key*constr with undefined key*)
 let retype_list sigma env lst=
-  List.map (fun (x,csr) -> (x,Retyping.get_judgment_of env sigma csr)) lst;;
+  List.map (fun (x,csr) -> (x,Retyping.get_judgment_of env sigma csr)) lst
 
-(*Interprets a constr according to two lists of instantiations (variables and
-  metas)*)
+(* Interprets a constr according to two lists *)
+(* of instantiations (variables and metas)    *)
 (* Note: typ is retyped *)
 let interp_constr_gen sigma env lvar lmeta com exptyp =
   let c =
-    interp_rawconstr_gen sigma env false (List.map (fun x -> string_of_id (fst
-      x)) lvar) com
-  and rtype=fun lst -> retype_list sigma env lst in
+    interp_rawconstr_gen sigma env [] false
+      (List.map (fun x -> string_of_id (fst x)) lvar)
+      com
+  and rtype lst = retype_list sigma env lst in
   understand_gen sigma env (rtype lvar) (rtype lmeta) exptyp c;;
 
 (*Interprets a casted constr according to two lists of instantiations
   (variables and metas)*)
 let interp_openconstr_gen sigma env lvar lmeta com exptyp =
   let c =
-    interp_rawconstr_gen sigma env false (List.map (fun x -> string_of_id (fst
-      x)) lvar) com
-  and rtype=fun lst -> retype_list sigma env lst in
+    interp_rawconstr_gen sigma env [] false
+      (List.map (fun x -> string_of_id (fst x)) lvar)
+      com
+  and rtype lst = retype_list sigma env lst in
   understand_gen_tcc sigma env (rtype lvar) (rtype lmeta) exptyp c;;
-
 
 let interp_casted_constr sigma env com typ = 
   understand_gen sigma env [] [] (Some typ) (interp_rawconstr sigma env com)
@@ -771,7 +751,8 @@ let pattern_of_rawconstr lvar c =
 
 let interp_constrpattern_gen sigma env lvar com = 
   let c =
-    ast_to_rawconstr sigma (from_list (ids_of_rel_context (rel_context env)))
+    ast_to_rawconstr sigma
+      (from_list (ids_of_rel_context (rel_context env)), [])
       true (List.map
 	      (fun x ->
 		 string_of_id (fst x)) lvar,named_context env) com

@@ -32,7 +32,7 @@ let add_free_rels_until bound m acc =
 
 (* calcule la liste des arguments implicites *)
 
-let poly_args env sigma t =
+let compute_implicits env sigma t =
   let rec aux env n t =
     match kind_of_term (whd_betadeltaiota env sigma t) with
       | IsProd (x,a,b) ->
@@ -45,9 +45,11 @@ let poly_args env sigma t =
 	Intset.elements (aux (push_rel_assum (x,a) env) 1 b)
     | _ -> []
 
+type implicits_list = int list
+
 type implicits =
-  | Impl_auto of int list
-  | Impl_manual of int list
+  | Impl_auto of implicits_list
+  | Impl_manual of implicits_list
   | No_impl
 
 let implicit_args = ref false
@@ -73,7 +75,7 @@ let using_implicits = function
   | No_impl -> with_implicits false
   | _ -> with_implicits true
 
-let auto_implicits env ty = Impl_auto (poly_args env Evd.empty ty)
+let auto_implicits env ty = Impl_auto (compute_implicits env Evd.empty ty)
 
 let list_of_implicits = function 
   | Impl_auto l -> l

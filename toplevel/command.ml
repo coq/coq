@@ -171,21 +171,28 @@ let interp_mutual lparams lnamearconstrs finite =
 		  | Anonymous -> anomaly "Unnamed inductive variable"
 		in (id, LocalAssum p)) params
   in
-  let (ind_env,arityl) =
+  let (ind_env,ind_impls,arityl) =
     List.fold_left
-      (fun (env,arl) (recname,arityc,_) ->
+      (fun (env, ind_impls, arl) (recname, arityc,_) ->
          let arity = interp_type sigma env_params arityc in
 	 let fullarity = prod_it arity params in
 	 let env' = Environ.push_rel_assum (Name recname,fullarity) env in
-	 (env', (arity::arl)))
-      (env0,[]) lnamearconstrs
+	 let impls = 
+	   if Impargs.is_implicit_args()
+	   then Impargs.compute_implicits env_params sigma fullarity
+	   else [] in
+	 (env', (recname,impls)::ind_impls, (arity::arl)))
+      (env0, [], []) lnamearconstrs
   in
   let ind_env_params = Environ.push_rels_assum params ind_env in
   let mispecvec = 
     List.map2
       (fun ar (name,_,lname_constr) ->
 	 let constrnames, bodies = List.split lname_constr in
-         let constrs = List.map (interp_constr sigma ind_env_params) bodies in
+         let constrs =
+	   List.map 
+	     (interp_type_with_implicits sigma ind_env_params ind_impls) bodies
+	 in
 	 { mind_entry_nparams = nparams;
 	   mind_entry_params = params';
 	   mind_entry_typename = name;
