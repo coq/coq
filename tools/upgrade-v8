@@ -4,7 +4,7 @@ mv v7 v7.bak
 
 echo ---------------- Saving v7 files into directory v7 ------------------
 vfiles=`find . -name \*.v`
-for i in $files; do
+for i in $vfiles; do
   if expr $i : 'v7\.bak/.*\.v' > /dev/null ; then continue ; fi
   if expr $i : 'v7/.*\.v' > /dev/null ; then continue ; fi
   echo Saving $i into v7/$i
