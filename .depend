@@ -2225,12 +2225,13 @@ toplevel/vernacentries.cmo: tactics/auto.cmi toplevel/class.cmi \
     proofs/proof_type.cmi pretyping/rawterm.cmi toplevel/record.cmi \
     toplevel/recordobj.cmi pretyping/reductionops.cmi proofs/refiner.cmi \
     interp/reserve.cmi kernel/safe_typing.cmi parsing/search.cmi \
-    library/states.cmi interp/symbols.cmi interp/syntax_def.cmi \
-    lib/system.cmi proofs/tacexpr.cmo tactics/tacinterp.cmi \
-    proofs/tacmach.cmi pretyping/tacred.cmi proofs/tactic_debug.cmi \
-    tactics/tactics.cmi kernel/term.cmi interp/topconstr.cmi \
-    kernel/typeops.cmi kernel/univ.cmi lib/util.cmi toplevel/vernacexpr.cmo \
-    toplevel/vernacinterp.cmi toplevel/vernacentries.cmi 
+    tactics/setoid_replace.cmi library/states.cmi interp/symbols.cmi \
+    interp/syntax_def.cmi lib/system.cmi proofs/tacexpr.cmo \
+    tactics/tacinterp.cmi proofs/tacmach.cmi pretyping/tacred.cmi \
+    proofs/tactic_debug.cmi tactics/tactics.cmi kernel/term.cmi \
+    interp/topconstr.cmi kernel/typeops.cmi kernel/univ.cmi lib/util.cmi \
+    toplevel/vernacexpr.cmo toplevel/vernacinterp.cmi \
+    toplevel/vernacentries.cmi 
 toplevel/vernacentries.cmx: tactics/auto.cmx toplevel/class.cmx \
     pretyping/classops.cmx toplevel/command.cmx interp/constrextern.cmx \
     interp/constrintern.cmx library/decl_kinds.cmx library/declaremods.cmx \
@@ -2246,12 +2247,13 @@ toplevel/vernacentries.cmx: tactics/auto.cmx toplevel/class.cmx \
     proofs/proof_type.cmx pretyping/rawterm.cmx toplevel/record.cmx \
     toplevel/recordobj.cmx pretyping/reductionops.cmx proofs/refiner.cmx \
     interp/reserve.cmx kernel/safe_typing.cmx parsing/search.cmx \
-    library/states.cmx interp/symbols.cmx interp/syntax_def.cmx \
-    lib/system.cmx proofs/tacexpr.cmx tactics/tacinterp.cmx \
-    proofs/tacmach.cmx pretyping/tacred.cmx proofs/tactic_debug.cmx \
-    tactics/tactics.cmx kernel/term.cmx interp/topconstr.cmx \
-    kernel/typeops.cmx kernel/univ.cmx lib/util.cmx toplevel/vernacexpr.cmx \
-    toplevel/vernacinterp.cmx toplevel/vernacentries.cmi 
+    tactics/setoid_replace.cmx library/states.cmx interp/symbols.cmx \
+    interp/syntax_def.cmx lib/system.cmx proofs/tacexpr.cmx \
+    tactics/tacinterp.cmx proofs/tacmach.cmx pretyping/tacred.cmx \
+    proofs/tactic_debug.cmx tactics/tactics.cmx kernel/term.cmx \
+    interp/topconstr.cmx kernel/typeops.cmx kernel/univ.cmx lib/util.cmx \
+    toplevel/vernacexpr.cmx toplevel/vernacinterp.cmx \
+    toplevel/vernacentries.cmi 
 toplevel/vernacexpr.cmo: library/decl_kinds.cmo parsing/extend.cmi \
     interp/genarg.cmi library/goptions.cmi library/libnames.cmi \
     kernel/names.cmi library/nametab.cmi interp/ppextend.cmi \
