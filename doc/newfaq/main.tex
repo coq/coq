@@ -1277,6 +1277,19 @@ is rendered into something like
 Otherwise said, {\generalize} is not rendered in a forward-reasoning way,
 while {\assert} is.
 
+\Question{What can I do if \Coq can not infer some implicit argument ?}
+
+You can state explicitely what this implicit argument is. See \ref{implicit}.
+
+\Question{How can I explicit some implicit argument ?}\label{implicit}
+
+Just use \texttt{A:=term} where \texttt{A} is the argument.
+
+For instance if you want to use the existence of ``nil'' on nat*nat lists:
+\begin{verbatim}
+exists (nil (A:=(nat*nat))).
+\end{verbatim}
+
 \Question{Is there anyway to do pattern matching with dependent types?}
 
 todo
