@@ -1,13 +1,3 @@
-coqtop -byte
-Anomaly: Uncaught exception Unix.Unix_error(20, "execv", "./coqtop.byte").
-Please report.
-portable-demons ~/coq/V7 > which \coqtop
-/home/cpaulin/coq/V7/bin//coqtop
-portable-demons ~/coq/V7 > \coqtop -byte
-Anomaly: Uncaught exception Unix.Unix_error(20, "execv", "./coqtop.byte").
-Please report.
-portable-demons ~/coq/V7 > which coqtop.byte
-/home/cpaulin/coq/V7/bin//coqtop.byte
 
 Declaration de Local a l'interieur d'un but ...
 Certains Clear deviennent impossible car la variable apparait dans 
