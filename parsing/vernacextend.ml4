@@ -35,7 +35,7 @@ let rec make_when loc = function
       <:expr< Genarg.genarg_tag $lid:p$ = $t$ && $l$ >>
   | _::l -> make_when loc l
 
-let rec make_wit loc = function
+let rec make_rawwit loc = function
   | BoolArgType -> <:expr< Genarg.rawwit_bool >>
   | IntArgType -> <:expr< Genarg.rawwit_int >>
   | IntOrVarArgType -> <:expr< Genarg.rawwit_int_or_var >>
@@ -50,11 +50,11 @@ let rec make_wit loc = function
   | RedExprArgType -> <:expr< Genarg.rawwit_red_expr >>
   | CastedOpenConstrArgType -> <:expr< Genarg.rawwit_casted_open_constr >>
   | ConstrWithBindingsArgType -> <:expr< Genarg.rawwit_constr_with_bindings >>
-  | List0ArgType t -> <:expr< Genarg.wit_list0 $make_wit loc t$ >>
-  | List1ArgType t -> <:expr< Genarg.wit_list1 $make_wit loc t$ >>
-  | OptArgType t -> <:expr< Genarg.wit_opt $make_wit loc t$ >>
+  | List0ArgType t -> <:expr< Genarg.wit_list0 $make_rawwit loc t$ >>
+  | List1ArgType t -> <:expr< Genarg.wit_list1 $make_rawwit loc t$ >>
+  | OptArgType t -> <:expr< Genarg.wit_opt $make_rawwit loc t$ >>
   | PairArgType (t1,t2) -> 
-      <:expr< Genarg.wit_pair $make_wit loc t1$ $make_wit loc t2$ >>
+      <:expr< Genarg.wit_pair $make_rawwit loc t1$ $make_rawwit loc t2$ >>
   | ExtraArgType s -> <:expr< $lid:"rawwit_"^s$ >>
 
 let rec make_let e = function
@@ -62,19 +62,28 @@ let rec make_let e = function
   | VernacNonTerm(loc,t,_,Some p)::l ->
       let loc = join_loc loc (MLast.loc_of_expr e) in
       let e = make_let e l in
-      <:expr< let $lid:p$ = Genarg.out_gen $make_wit loc t$ $lid:p$ in $e$ >>
+      <:expr< let $lid:p$ = Genarg.out_gen $make_rawwit loc t$ $lid:p$ in $e$ >>
   | _::l -> make_let e l
 
 let add_clause s (_,pt,e) l =
   let p = make_patt pt in
   let w = Some (make_when (MLast.loc_of_expr e) pt) in
-  if List.exists (fun (p',w',_) -> p=p' & w=w') l then
-    Pp.warning_with Pp_control.err_ft
-      ("Two distinct rules of entry "^s^" have the same\n"^
-      "non-terminals in the same order: put them in distinct tactic entries");
   (p, w, make_let e pt)::l
 
+let rec extract_signature = function
+  | [] -> []
+  | VernacNonTerm (_,t,_,_) :: l -> t :: extract_signature l
+  | _::l -> extract_signature l
+
+let check_unicity s l =
+  let l' = List.map (fun (_,l,_) -> extract_signature l) l in
+  if not (Util.list_distinct l') then
+    Pp.warning_with Pp_control.err_ft
+      ("Two distinct rules of entry "^s^" have the same\n"^
+      "non-terminals in the same order: put them in distinct vernac entries")
+
 let make_clauses s l =
+  check_unicity s l;
   let default =
     (<:patt< _ >>,None,<:expr< failwith "Vernac extension: cannot occur" >>) in
   List.fold_right (add_clause s) l [default]
