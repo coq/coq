@@ -103,13 +103,28 @@ let is_axiom sp = (Global.lookup_constant sp).const_body = None
 
 type lamprod = Lam | Prod
 
+let dest_fix_cofix = function
+  | IsFix ((_,i),(ti,fi,ci)) -> (i,ti,fi,ci)
+  | IsCoFix (i,(ti,fi,ci)) -> (i,ti,fi,ci)
+  | _ -> assert false
+
 let flexible_name = id_of_string "flex"
 
 let id_of_name = function
   | Anonymous -> id_of_string "x"
   | Name id   -> id
 
-(* [get_arity c] returns [Some s] if [c] is an arity of sort [s], 
+(* [list_of_ml_arrows] applied to the ML type [a->b->]\dots[z->t]
+   returns the list [[a;b;...;z]]. It is used when making the ML types
+   of inductive definitions. We also suppress [Prop] parts. *)
+
+let rec list_of_ml_arrows = function
+  | Tarr (Miniml.Tarity, b) -> assert false
+  | Tarr (Miniml.Tprop, b) -> list_of_ml_arrows b
+  | Tarr (a, b) -> a :: list_of_ml_arrows b
+  | t -> []
+
+(*s [get_arity c] returns [Some s] if [c] is an arity of sort [s], 
    and [None] otherwise. *)
 
 let rec get_arity env c =
@@ -137,6 +152,9 @@ let is_non_info_type env t =
   let s = Typing.type_of env Evd.empty t in
   (is_non_info_sort env s) || ((get_arity env t) = (Some (Prop Null)))
 
+(*i This one is not used, left only to precise what we call a non-informative 
+   term.
+
 let is_non_info_term env c = 
   let t = Typing.type_of env Evd.empty c in
   let s = Typing.type_of env Evd.empty t in
@@ -145,7 +163,7 @@ let is_non_info_term env c =
     | Some (Prop Null) -> true
     | Some (Type _) -> (get_lam_arity env c = Some (Prop Null))
     | _ -> false
-
+i*)
 
 (* [v_of_t] transforms a type [t] into a [type_var] flag. *)
 
@@ -154,10 +172,9 @@ let v_of_t env t = match get_arity env t with
   | Some _ -> info_arity
   | _ -> if is_non_info_type env t then logic else default
 
+(*s Operations on binders *)
 
-(* Operations on binders *)
-
-type binders = (identifier * constr) list
+type binders = (name * constr) list
 
 (* Convention: right binders give [Rel 1] at the head, like those answered by 
    [decompose_prod]. Left binders are the converse. *)
@@ -165,53 +182,27 @@ type binders = (identifier * constr) list
 let rec lbinders_fold f acc env = function 
   | [] -> acc
   | (n,t) :: l -> 
-      f n t (v_of_t env t) (lbinders_fold f acc (push_rel (n,None,t) env) l)
+      f n t (v_of_t env t) (lbinders_fold f acc (push_rel_assum (n,t) env) l)
 
-let rec rbinders_fold f init env = function 
-  | [] -> env, init 
-  | (n,t) :: l -> let env, res = rbinders_fold f init env l in 
-    (push_rel (n,None,t) env), (f n t (v_of_t env t) res)  
-      
-let nb_notarity = 
-  lbinders_fold (fun _ _ v acc -> if snd v = NotArity then succ acc else acc) 0
-
-
-(* The next function transforms an arity into a signature. It is used 
+(* [sign_of_arity] transforms an arity into a signature. It is used 
    for example with the types of inductive definitions, which are known
    to be already in arity form. *)
 
-let sign_of_lbinders = lbinders_fold (fun _ _ v acc -> v::acc) [] 
+let sign_of_lbinders = lbinders_fold (fun _ _ v a -> v::a) [] 
 
-let rec signature_of_arity env c = match kind_of_term c with
-  | IsProd (n, t, c') ->
-      let env' = push_rel (n,None,t) env in
-      (v_of_t env t) :: (signature_of_arity env' c')
-  | IsSort _ -> []
-  | _ -> assert false
+let sign_of_arity env c = sign_of_lbinders env (List.rev (fst (decompose_prod c)))
 
-let rec vl_of_binders env vl b = match b with 
-  | [] -> vl
-  | (n,t) :: l 
-      when ((v_of_t env t) = info_arity) -> 
-	let id = next_ident_away (id_of_name n) vl in 
-	let env' = push_rel (Name id, None, t) env in 
-	vl_of_binders env' (id :: vl) l
-  | (n,t) :: l ->
-      vl_of_binders (push_rel (n, None, t) env) vl l
+(* [vl_of_arity] returns the list of the lambda variables tagged [info_arity]
+   in an arity. Renaming is done. *)
 
-let rec vl_of_arity env vl c = 
-  vl_of_binders env vl (List.rev (fst (decompose_prod c)))
-
-(* [list_of_ml_arrows] applied to the ML type [a->b->]\dots[z->t]
-   returns the list [[a;b;...;z]]. It is used when making the ML types
-   of inductive definitions. We also suppress [Prop] parts. *)
-
-let rec list_of_ml_arrows = function
-  | Tarr (Miniml.Tprop, b) -> list_of_ml_arrows b
-  | Tarr (a, b) -> a :: list_of_ml_arrows b
-  | t -> []
-
-(* [renum_db] gives the new de Bruijn indices for variables in an ML
+let vl_of_lbinders = 
+  lbinders_fold 
+    (fun n _ v a -> 
+       if v = info_arity then (next_ident_away (id_of_name n) a)::a else a) []
+  
+let vl_of_arity env c = vl_of_lbinders env (List.rev (fst (decompose_prod c)))
+	 
+(*s [renum_db] gives the new de Bruijn indices for variables in an ML
    term.  This translation is made according to an [extraction_context]. *)
 	
 let renum_db ctx n = 
@@ -223,21 +214,7 @@ let renum_db ctx n =
   in
   renum (n, ctx)
 
-(*s Environment for the bodies of some mutual fixpoints. *)
-
-let rec push_many_rels_ctx keep_prop env ctx = function
-  | (fi,ti) :: l -> 
-      let v = v_of_t env ti in
-      let keep = (v = default) || (keep_prop && v = logic) in
-      push_many_rels_ctx keep_prop (push_rel (fi,None,ti) env) (keep :: ctx) l
-  | [] ->
-      (env, ctx)
-
-let fix_environment env ctx fl tl =
-  let tl' = Array.mapi lift tl in
-  push_many_rels_ctx true env ctx (List.combine fl (Array.to_list tl'))
-
-(* Decomposition of a function expecting n arguments at least. We eta-expanse
+(*s Decomposition of a function expecting n arguments at least. We eta-expanse
    if needed *)
 
 let force_n_prod n env c = 
@@ -247,21 +224,16 @@ let decompose_lam_eta n env c =
   let dif = n - (nb_lam c) in 
   if dif <= 0 then 
     decompose_lam_n n c
-  else 
-    let tyc = Typing.type_of env Evd.empty c in
-    let (type_binders,_) = decompose_prod_n n (force_n_prod n env tyc) in
-    let (binders, e) = decompose_lam c in 
-    let binders = (list_firstn dif type_binders) @ binders in 
+  else
+    let t = Typing.type_of env Evd.empty c in
+    let (trb,_) = decompose_prod_n n (force_n_prod n env t) in
+    let (rb, e) = decompose_lam c in 
+    let rb = (list_firstn dif trb) @ rb in 
     let e = applist (lift dif e, List.rev_map mkRel (interval 1 dif)) in
-    (binders, e)
+    (rb, e)
 
 let rec abstract_n n a = 
   if n = 0 then a else MLlam (anonymous, ml_lift 1 (abstract_n (n-1) a))
-
-let dest_fix_cofix = function
-  | IsFix ((_,i),(ti,fi,ci)) -> (false,i,ti,fi,ci)
-  | IsCoFix (i,(ti,fi,ci)) -> (true,i,ti,fi,ci)
-  | _ -> assert false
 
 (*s Eta-expansion to bypass ML type inference limitations (due to possible
     polymorphic references, the ML type system does not generalize all
@@ -330,7 +302,7 @@ let _ = declare_summary "Extraction tables"
 (*s Extraction of a type. *)
 
 (* When calling [extract_type] we suppose that the type of [c] is an
-   arity.  This is for example checked in [extract_constr]. 
+   arity. This is for example checked in [extract_constr]. 
 
    Relation with [v_of_t]: it is less precise, since we do not 
    delta-reduce in [extract_type] in general.
@@ -390,8 +362,8 @@ and extract_type_rec_info env vl c args =
 		 extract_type_app env vl (ConstRef sp,sc,vlc) args 
 	     | Emlterm _ -> assert false) 
 	else begin
-	  (* We can't keep as ML type abbreviation a CIC constant 
-	     which type is not an arity: we reduce this constant. *)
+	  (* We can't keep as ML type abbreviation a CIC constant *)
+	  (*   which type is not an arity: we reduce this constant. *)
 	  let cvalue = constant_value env (sp,a) in
 	  extract_type_rec_info env vl (applist (cvalue, args)) []
 	end
@@ -405,7 +377,7 @@ and extract_type_rec_info env vl c args =
     | IsFix _ | IsCoFix _ ->
 	let id = next_ident_away flexible_name vl in
 	Tmltype (Tvar id, [], id :: vl)
-	  (* CIC type without counterpart in ML: we generate a 
+	  (* Type without counterpart in ML: we generate a 
 	     new flexible type variable. *) 
     | IsCast (c, _) ->
 	extract_type_rec_info env vl c args
@@ -416,11 +388,11 @@ and extract_type_rec_info env vl c args =
 
 and extract_prod_lam env vl (n,t,d) flag = 
   let tag = v_of_t env t in
-  let env' = push_rel (n, None, t) env in
+  let env' = push_rel_assum (n,t) env in
   match tag,flag with
     | (Info, Arity), _ -> 
 	  let id' = next_ident_away (id_of_name n) vl in 
-	  let env' = push_rel (Name id', None, t) env in
+	  let env' = push_rel_assum (Name id', t) env in
 	  (match extract_type_rec_info env' (id'::vl) d [] with 
 	     | Tmltype (mld, sign, vl') -> Tmltype (mld, tag::sign, vl')
 	     | et -> et)
@@ -505,7 +477,7 @@ and extract_term_info_with_type env ctx c t =
    match kind_of_term c with
      | IsLambda (n, t, d) ->
 	 let v = v_of_t env t in 
-	  let env' = push_rel (n,None,t) env in
+	  let env' = push_rel_assum (n,t) env in
 	  let ctx' = (snd v = NotArity) :: ctx in
 	  let d' = extract_term_info env' ctx' d in
 	  (* If [d] was of type an arity, [c] too would be so *)
@@ -544,28 +516,29 @@ and extract_term_info_with_type env ctx c t =
 	  abstract_n n (abstract [] 1 s)
       | IsMutCase ((ni,(ip,cnames,_,_,_)),p,c,br) ->
 	  let extract_branch_aux j b = 	  
-	    let (binders,e) = decompose_lam_eta ni.(j) env b in
-	    let binders = List.rev binders in
-	    let (env',ctx') = push_many_rels_ctx false env ctx binders in
-	    (* Some pathological cases need an [extract_constr] here 
-	       rather than an [extract_term]. See exemples in 
-	       [test_extraction.v] *)
+	    let (rb,e) = decompose_lam_eta ni.(j) env b in
+	    let lb = List.rev rb in
+	    let env' = push_rels_assum rb env in
+	    let ctx' = 
+	      lbinders_fold (fun _ _ v a -> (v = default) :: a) ctx env lb in
+	    (* Some pathological cases need an [extract_constr] here rather *)
+	    (* than an [extract_term]. See exemples in [test_extraction.v] *)
 	    let e' = match extract_constr env' ctx' e with
 	      | Emltype _ -> MLarity
 	      | Emlterm a -> a
-	    in (binders,e')
+	    in (lb,e')
 	  in
 	  let extract_branch j b =
 	    let cp = (ip,succ j) in
 	    let (s,_) = signature_of_constructor cp in
 	    assert (List.length s = ni.(j));
 	    (* number of arguments, without parameters *)
-	    let (binders, e') = extract_branch_aux j b in
+	    let (lb, e') = extract_branch_aux j b in
 	    let ids = 
 	      List.fold_right 
-		(fun (v,(n,_)) acc ->
+		(fun (v,(n,_)) acc -> 
 		   if v = default then (id_of_name n :: acc) else acc)
-		(List.combine s binders) []
+		(List.combine s lb) []
 	    in
 	    (ConstructRef cp, ids, e')
 	  in
@@ -586,9 +559,13 @@ and extract_term_info_with_type env ctx c t =
 		 assert (Array.length br = 1);
 		 snd (extract_branch_aux 0 br.(0)))
       | IsFix _ | IsCoFix _ as c ->
-          let (cofix,i,ti,fi,ci) = dest_fix_cofix c in
+          let (i,ti,fi,ci) = dest_fix_cofix c in
 	  let n = Array.length ti in
-	  let (env', ctx') = fix_environment env ctx fi ti in
+	  let ti' = Array.mapi lift ti in 
+	  let lb = (List.combine fi (Array.to_list ti')) in
+	  let env' = push_rels_assum (List.rev lb) env in
+	  let ctx' = 
+	    lbinders_fold (fun _ _ v a -> (snd v = NotArity) :: a) ctx env lb in
 	  let extract_fix_body c t =
 	    match extract_constr_with_type env' ctx' c (lift n t) with
 	      | Emltype _ -> MLarity
@@ -598,7 +575,7 @@ and extract_term_info_with_type env ctx c t =
 	  MLfix (i, List.map id_of_name fi, ei)
       | IsLetIn (n, c1, t1, c2) ->
 	  let id = id_of_name n in
-	  let env' = push_rel (n,Some c1,t1) env in
+	  let env' = push_rel_def (n,c1,t1) env in
 	  let tag = v_of_t env t1 in
 	  (match tag with
 	     | (Info, NotArity) -> 
@@ -720,8 +697,18 @@ and signature_of_constructor cp = match extract_constructor cp with
 and extract_mib sp =
   if not (Gmap.mem (sp,0) !inductive_extraction_table) then begin
     let mib = Global.lookup_mind sp in
-    let genv = Global.env () in
-    (* first pass: we store inductive signatures together with 
+    let genv = Global.env () in 
+    (* Everything concerning parameters: *)
+    let mis = build_mis ((sp,0),[||]) mib in
+    let nb = mis_nparams mis in
+    let rb = mis_params_ctxt mis in 
+    let env = push_rels rb genv in
+    let lb = List.rev_map (fun (n,s,t)->(n,t)) rb in 
+    let nbtokeep = 
+      lbinders_fold 
+	(fun _ _ v a -> if snd v = NotArity then a+1 else a) 0 genv lb in
+    let vl = vl_of_lbinders genv lb in
+    (* First pass: we store inductive signatures together with 
        an initial type var list. *)
     Array.iteri
       (fun i ib -> 
@@ -730,18 +717,11 @@ and extract_mib sp =
 	   add_inductive_extraction (sp,i) Iprop
 	 else
 	   add_inductive_extraction (sp,i) 
-	     (Iml (signature_of_arity genv ib.mind_nf_arity, 
-		   vl_of_arity genv [] ib.mind_nf_arity)))
+	     (Iml (sign_of_arity genv ib.mind_nf_arity, 
+		   vl_of_arity genv ib.mind_nf_arity)))
       mib.mind_packets;
-    (* second pass: we extract constructors arities and we accumulate
+    (* Second pass: we extract constructors arities and we accumulate
        type variables. *)
-    let mis = build_mis ((sp,0),[||]) mib in
-    let nparams = mis_nparams mis in 
-    let params = mis_params_ctxt mis in 
-    let env =  Environ.push_rels params genv in
-    let params = List.rev_map (fun (n,s,t)->(n,t)) params in 
-    let nparams' = nb_notarity genv params in
-    let vlparams = vl_of_binders genv [] params in 
     let vl = 
       array_fold_left_i 
 	(fun i vl packet -> 
@@ -756,19 +736,19 @@ and extract_mib sp =
 	     array_fold_left_i
 	       (fun j vl _ -> 
 		  let t = mis_constructor_type (succ j) mis in
-		  let t = snd (decompose_prod_n nparams t) in
+		  let t = snd (decompose_prod_n nb t) in
 		  match extract_type_rec_info env vl t [] with
 		    | Tarity | Tprop -> assert false
 		    | Tmltype (mlt, s, v) -> 
 			let l = list_of_ml_arrows mlt in
 			let cp = (ip,succ j) in
-			  add_constructor_extraction cp (Cml (l,s,nparams'));
+			  add_constructor_extraction cp (Cml (l,s,nbtokeep));
 			v)
 	       vl packet.mind_nf_lc
 	   end) 
-	vlparams mib.mind_packets
+	vl mib.mind_packets
     in
-    (* third pass: we update the type variables list in every tables *)
+    (* Third pass: we update the type variables list in every tables *)
     for i = 0 to mib.mind_ntypes-1 do 
       match lookup_inductive_extraction (sp,i) with 
 	| Iprop -> ()

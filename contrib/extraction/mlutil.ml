@@ -283,9 +283,10 @@ let rec non_stricts add cand = function
       pop 1 (non_stricts add cand t)
   | MLrel n -> 
       List.filter ((<>) n) cand  
+(*i old particular case 
   | MLapp (MLrel n, _) -> 
       List.filter ((<>) n) cand  
-	(* In [(x y)] we say that only x is strict. (WHY?) *)
+	(* In [(x y)] we say that only x is strict. (WHY?) *) i*)
   | MLapp (t,l)-> 
       let cand = non_stricts false cand t in 
       List.fold_left (non_stricts false) cand l 
@@ -309,8 +310,8 @@ let rec non_stricts add cand = function
 	   let n = List.length i in 
 	   let cand = lift n cand in 
 	   let cand = pop n (non_stricts add cand t) in
-	   Sort.merge (<=) cand c)
-	[] v
+	   Sort.merge (<=) cand c) [] v
+	(* [merge] may duplicates some indices, but I don't mind. *)
   | MLcast (t,_) -> 
       non_stricts add cand t
   | MLmagic t -> 
