@@ -102,11 +102,12 @@ GEXTEND Gram
           VernacStartTheoremProof (thm, id, (bl, c), false, (fun _ _ -> ()))
       | (f,d,e) = def_token; id = base_ident; b = def_body -> 
           VernacDefinition (d, id, b, f, e)
-      | stre = assumption_token; bl = LIST1 assum_coe -> 
+      | stre = assumption_token; bl = assum_list -> 
 	  VernacAssumption (stre, flatten_assum bl)
-      | stre = assumptions_token; bl = LIST1 assum_coe ->
-	  test_plurial_form bl;
-	  VernacAssumption (stre, flatten_assum bl)
+      | stre = assumptions_token; bl = assum_list ->
+	  let l = flatten_assum bl in
+	  test_plurial_form l;
+	  VernacAssumption (stre, l)
       (* Gallina inductive declarations *)
       | (* Non porté (?) : OPT[IDENT "Mutual"];*) f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
@@ -152,6 +153,7 @@ GEXTEND Gram
   assumptions_token:
     [ [ IDENT "Hypotheses" -> (Local, Logical)
       | IDENT "Variables" -> (Local, Definitional)
+      | IDENT "Axioms" -> (Global, Logical)
       | IDENT "Parameters" -> (Global, Definitional) ] ]
   ;
   finite_token:
@@ -271,9 +273,15 @@ GEXTEND Gram
              CCast(_,b,t) -> (false,DefExpr(id,b,Some t))
            | _ -> (false,DefExpr(id,b,None)) ] ]
   ;
+  assum_list:
+    [ [ bl = LIST1 assum_coe -> bl | b = simple_assum_coe -> [b] ] ]
+  ;
   assum_coe:
-    [ [ "("; idl = LIST1 base_ident; oc = of_type_with_opt_coercion;
-        c = lconstr; ")" -> (oc,(idl,c)) ] ]
+    [ [ "("; a = simple_assum_coe; ")" -> a ] ]
+  ;
+  simple_assum_coe:
+    [ [ idl = LIST1 base_ident; oc = of_type_with_opt_coercion; c = lconstr -> 
+        (oc,(idl,c)) ] ]
   ;
   simple_binder_coe:
     [ [ id=base_ident -> (false,(id,CHole loc))
@@ -283,8 +291,11 @@ GEXTEND Gram
          (oc,(id,t)) ] ]
   ;
   constructor:
-    [ [ id = base_ident; coe = of_type_with_opt_coercion; c = lconstr ->
-        (coe,(id,c)) ] ]
+    [ [ id = base_ident; l = LIST0 binder_let; 
+        coe = of_type_with_opt_coercion; c = lconstr ->
+	  (coe,(id,G_constrnew.mkCProdN loc l c))
+      | id = base_ident; l = LIST0 binder_let ->
+	  (false,(id,G_constrnew.mkCProdN loc l (CHole loc))) ] ]
   ;
   of_type_with_opt_coercion:
     [ [ ":>" -> true
