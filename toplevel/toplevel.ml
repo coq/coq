@@ -11,7 +11,7 @@
 open Pp
 open Util
 open Options
-open Errors
+open Cerrors
 open Vernac
 open Pcoq
 open Protectedtoplevel
@@ -124,7 +124,7 @@ let print_highlight_location ib (bp,ep) =
                       str sn ++ str dn) in 
 	  (l1 ++ li ++ ln)
   in 
-  (str"Toplevel input, characters " ++ Errors.print_loc (bp,ep) ++ fnl () ++
+  (str"Toplevel input, characters " ++ Cerrors.print_loc (bp,ep) ++ fnl () ++
      highlight_lines ++ fnl ())
 
 (* Functions to report located errors in a file. *)
@@ -147,7 +147,7 @@ let print_location_in_file s fname (bp,ep) =
       let (line, bol) = line_of_pos 1 0 0 in
       close_in ic;
       (errstrm ++ str", line " ++ int line ++
-         str", characters " ++ Errors.print_loc (bp-bol,ep-bol) ++ fnl ())
+         str", characters " ++ Cerrors.print_loc (bp-bol,ep-bol) ++ fnl ())
     with e -> (close_in ic; (errstrm ++ str", invalid location." ++ fnl ()))
 	
 let print_command_location ib dloc =
@@ -235,7 +235,7 @@ let print_toplevel_error exc =
 	raise Vernacinterp.Quit
     | _ -> 
 	(if is_pervasive_exn exc then (mt ()) else locstrm) ++
-        Errors.explain_exn exc
+        Cerrors.explain_exn exc
 
 (* Read the input stream until a dot is encountered *)
 let parse_to_dot =

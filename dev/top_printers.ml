@@ -23,7 +23,7 @@ open Tacmach
 open Term
 open Termops
 open Clenv
-open Errors
+open Cerrors
 
 let _ = Termast.print_evar_arguments := true
 

@@ -171,7 +171,7 @@ let parse_command_list reqid stream string_list =
         with
         | (Stdpp.Exc_located(l, Stream.Error txt)) as e -> 
           begin
-             msgnl (ctf_SyntaxWarningMessage reqid (Errors.explain_exn e));
+             msgnl (ctf_SyntaxWarningMessage reqid (Cerrors.explain_exn e));
              try
                 discard_to_dot stream;
                 msgnl (str "debug" ++ fnl () ++ int this_pos ++ fnl () ++
@@ -244,11 +244,11 @@ let parse_string_action reqid phylum char_stream string_list =
  | Stdpp.Exc_located(l,Match_failure(_,_,_)) ->
     flush_until_end_of_stream char_stream;
     msgnl (ctf_SyntaxErrorMessage reqid
-              (Errors.explain_exn 
+              (Cerrors.explain_exn 
                  (Stdpp.Exc_located(l,Stream.Error "match failure"))))
  | e ->
     flush_until_end_of_stream char_stream;
-    msgnl (ctf_SyntaxErrorMessage reqid (Errors.explain_exn e));;
+    msgnl (ctf_SyntaxErrorMessage reqid (Cerrors.explain_exn e));;
 
 
 let quiet_parse_string_action char_stream =
@@ -282,7 +282,7 @@ let parse_file_action reqid file_name =
                    msgnl (ctf_SyntaxWarningMessage reqid
 			    (str "Error with file" ++ spc () ++
 			     str file_name ++ fnl () ++
-			     Errors.explain_exn 
+			     Cerrors.explain_exn 
 				 (Stdpp.Exc_located(l,Stream.Error txt))));
 		   (try 
 		      begin
@@ -328,13 +328,13 @@ let parse_file_action reqid file_name =
 	       (ctf_SyntaxErrorMessage reqid
 		  (str "Error with file" ++ spc () ++ str file_name ++ 
 		   fnl () ++
-		     Errors.explain_exn
+		     Cerrors.explain_exn
 		       (Stdpp.Exc_located(l,Stream.Error "match failure"))))
 	 | e ->
 	     msgnl
 	       (ctf_SyntaxErrorMessage reqid
 		  (str "Error with file" ++ spc () ++ str file_name ++
-		   fnl () ++ Errors.explain_exn e));;
+		   fnl () ++ Cerrors.explain_exn e));;
 
 (* This function is taken from Mltop.add_path *)
 
@@ -442,7 +442,7 @@ Libobject.relax true;
    with
      | End_of_file -> ()
      | e ->
-	 (msgnl (Errors.explain_exn e);
+	 (msgnl (Cerrors.explain_exn e);
 	  msgnl (str "could not load the VERNACRC file"));
 	 try
 	   msgnl (str vernacrc)
@@ -459,11 +459,11 @@ Libobject.relax true;
  with
    | End_of_file -> ()
    | e ->
-       msgnl (Errors.explain_exn e);
+       msgnl (Cerrors.explain_exn e);
        msgnl (str "error in your .vernacrc file"));
 msgnl (str "Starting Centaur Specialized Parser Loop");
 try
   coqparser_loop stdin
 with 
   | End_of_file -> ()
-  | e -> msgnl(Errors.explain_exn e))
+  | e -> msgnl(Cerrors.explain_exn e))

@@ -55,7 +55,7 @@ let acknowledge_command_ref =
          str "successfully executed " ++ int command_count ++ fnl () ++
            str "error message" ++ fnl () ++
          (match opt_exn with
-           Some e -> Errors.explain_exn e
+           Some e -> Cerrors.explain_exn e
          | None -> (mt ())) ++ fnl () ++
          str "E-n-d---M-e-s-s-a-g-e" ++ fnl ()))
 
@@ -151,7 +151,7 @@ let rec parse_one_command_group input_channel =
 let protected_loop input_chan =
   let rec explain_and_restart e =
     begin
-      output_results_nl(Errors.explain_exn e);
+      output_results_nl(Cerrors.explain_exn e);
       rearm_break();
       looprec input_chan;
     end

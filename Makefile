@@ -122,7 +122,7 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/tacticals.cmo tactics/tactics.cmo tactics/tacentries.cmo \
         tactics/hiddentac.cmo tactics/elim.cmo
 
-TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo \
+TOPLEVEL=toplevel/himsg.cmo toplevel/cerrors.cmo \
          toplevel/metasyntax.cmo toplevel/command.cmo toplevel/class.cmo \
          toplevel/record.cmo toplevel/recordobj.cmo \
          toplevel/discharge.cmo toplevel/vernacinterp.cmo toplevel/mltop.cmo \
@@ -189,7 +189,7 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
 	proofs/evar_refiner.cmo proofs/tacmach.cmo toplevel/himsg.cmo \
 	parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
-	toplevel/errors.cmo
+	toplevel/cerrors.cmo
 
 ML4FILES += contrib/correctness/psyntax.ml4 contrib/field/field.ml4
 

@@ -206,9 +206,9 @@ let parse_args () =
 	try
 	  Stream.empty s; exit 1
 	with Stream.Failure ->
-	  msgnl (Errors.explain_exn e); exit 1
+	  msgnl (Cerrors.explain_exn e); exit 1
       end
-    | e -> begin msgnl (Errors.explain_exn e); exit 1 end
+    | e -> begin msgnl (Cerrors.explain_exn e); exit 1 end
 
 
 (* To prevent from doing the initialization twice *)

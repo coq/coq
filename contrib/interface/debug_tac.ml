@@ -463,7 +463,7 @@ let descr_first_error = function
 	with
 	  e ->
 	    (msgnl (str "Execution of this tactic raised message " ++ fnl () ++
-		    fnl () ++ Errors.explain_exn e ++ fnl () ++
+		    fnl () ++ Cerrors.explain_exn e ++ fnl () ++
 		    fnl () ++ str "on goal"  ++ fnl () ++
 		    pr_goal (sig_it (strip_some !the_goal)) ++ fnl () ++
 		    str "faulty tactic is" ++ fnl () ++ fnl () ++

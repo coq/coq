@@ -102,7 +102,7 @@ let ctf_acknowledge_command request_id command_count opt_exn =
     int goal_index ++ fnl () ++
     str !current_proof_name ++ fnl() ++
     (match opt_exn with
-      Some e -> Errors.explain_exn e
+      Some e -> Cerrors.explain_exn e
     | None -> mt ()) ++ fnl() ++ str "E-n-d---M-e-s-s-a-g-e" ++ fnl ());;
 
 let ctf_undoResults = ctf_header "undo_results";;
