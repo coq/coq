@@ -939,7 +939,8 @@ object(self)
 	  
   method process_next_phrase display_goals do_highlight = 
     begin
-      try self#clear_message;
+      try 
+	self#clear_message;
 	prerr_endline "process_next_phrase starting now";
 	if do_highlight then begin
 	  !push_info "Coq is computing";
@@ -2175,21 +2176,29 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
     | None -> 
 	!flash_info "Active buffer has no name"
     | Some f ->
-	let c = Sys.command (!current.cmd_coqc ^ " " ^ f) in
-	if c = 0 then
+	let s,res = run_command 
+		      av#insert_message 
+		      (!current.cmd_coqc ^ " " ^ f) 
+	in
+	if s = Unix.WEXITED 0 then
 	  !flash_info (f ^ " successfully compiled")
 	else begin
 	  !flash_info (f ^ " failed to compile");
-	  av#process_until_end_or_error
+	  av#process_until_end_or_error;
+	  av#insert_message "Compilation output:\n";
+	  av#insert_message res
 	end
   in
   let compile_m = externals_factory#add_item "_Compile" ~callback:compile_f in
 
   (* Command/Make Menu *)
   let make_f () =
+    let v = get_active_view () in
+    let av = out_some v.analyzed_view in
     save_f ();
-    let c = Sys.command !current.cmd_make in
-    !flash_info (!current.cmd_make ^ if c = 0 then " succeeded" else " failed")
+    av#insert_message "Command output:\n";
+    let s,res = run_command av#insert_message !current.cmd_make in
+    !flash_info (!current.cmd_make ^ if s = Unix.WEXITED 0 then " succeeded" else " failed")
   in
   let make_m = externals_factory#add_item "_Make" ~callback:make_f in
   
