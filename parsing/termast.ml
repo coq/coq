@@ -54,18 +54,6 @@ let with_coercions f = with_option print_coercions f
 (**********************************************************************)
 (* conversion of references                                           *)
 
-(*
-let ids_of_rctxt ctxt =
-  Array.to_list
-    (Array.map
-       (function
-	  | RRef (_,RVar id) -> id
-	  | _ ->
-       error
-       "Termast: arbitrary substitution of references not yet implemented")
-     ctxt)
-*)
-
 let ids_of_ctxt ctxt =
   Array.to_list
     (Array.map
@@ -116,6 +104,10 @@ let ast_of_ref pr r =
   | VarRef sp -> ast_of_ident (basename sp)
   | EvarRef ev -> ast_of_existential_ref pr (ev,ctxt)
 
+let ast_of_qualid p =
+  let dir, s = repr_qualid p in
+  let args = List.map nvar (dir@[s]) in
+  ope ("QUALID", args)
 
 (**********************************************************************)
 (* conversion of patterns                                             *)

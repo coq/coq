@@ -15,7 +15,6 @@ open Environ
 
 val assumptions_for_print : name list -> names_context
 
-val print_basename : section_path -> string
 val print_closed_sections : bool ref
 val print_impl_args : int list -> std_ppcmds
 val print_context : bool -> Lib.library_segment -> std_ppcmds
@@ -48,6 +47,6 @@ val print_path_between : identifier -> identifier -> std_ppcmds
 
 
 val search_by_head : global_reference -> unit
-val crible : (string -> env -> constr -> unit) -> global_reference -> unit
+val crible : (std_ppcmds -> env -> constr -> unit) -> global_reference -> unit
 val inspect : int -> std_ppcmds
 

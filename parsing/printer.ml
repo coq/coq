@@ -20,36 +20,21 @@ let section_path sl s =
   let sl = List.rev sl in
   make_path (List.tl sl) (id_of_string (List.hd sl)) (kind_of_string s)
 
-(*
-let pr_global k oper =
-  let id = id_of_global oper in
-  [< 'sTR (string_of_id id) >]
-*)
-
-let is_visible sp id =
-  match Nametab.sp_of_id CCI id with
-    | VarRef sp' -> sp' = sp
-    | ConstRef sp' -> sp' = sp
-    | IndRef (sp',_) -> dirpath sp' = dirpath sp
-    | ConstructRef ((sp',_),_) -> dirpath sp' = dirpath sp
-    | EvarRef _ -> anomaly "is_visible: should not occur"
-  
-let pr_qualified_path sp id =
-  if is_visible sp id then [<'sTR(string_of_id id)>]
-  else [<'sTR(string_of_path (make_path (dirpath sp) id (kind_of_path sp)))>]
+let pr_global ref =
+  [< 'sTR (string_of_qualid (Nametab.qualid_of_global ref)) >]
 
 let global_const_name sp =
-  try pr_qualified_path sp (basename sp)
+  try pr_global (ConstRef sp)
   with Not_found -> (* May happen in debug *)
     [< 'sTR ("CONST("^(string_of_path sp)^")") >]
 
 let global_ind_name (sp,tyi) =
-  try pr_qualified_path sp (Global.id_of_global (IndRef (sp,tyi)))
+  try pr_global (IndRef (sp,tyi))
   with Not_found -> (* May happen in debug *)
     [< 'sTR ("IND("^(string_of_path sp)^","^(string_of_int tyi)^")") >]
 
 let global_constr_name ((sp,tyi),i) =
-  try pr_qualified_path sp (Global.id_of_global (ConstructRef ((sp,tyi),i)))
+  try pr_global (ConstructRef ((sp,tyi),i))
   with Not_found -> (* May happen in debug *)
     [< 'sTR ("CONSTRUCT("^(string_of_path sp)^","^(string_of_int tyi)
 		  ^","^(string_of_int i)^")") >]
@@ -133,8 +118,8 @@ let pr_ref_label = function (* On triche sur le contexte *)
   | ConstNode sp -> pr_constant (Global.env()) (sp,[||])
   | IndNode sp -> pr_inductive (Global.env()) (sp,[||])
   | CstrNode sp -> pr_constructor (Global.env()) (sp,[||])
-  | VarNode id -> print_id id
-  | SectionVarNode sp -> print_id (basename sp)
+  | VarNode id -> pr_id id
+  | SectionVarNode sp -> pr_id (basename sp)
 
 let pr_cases_pattern t = gentermpr (Termast.ast_of_cases_pattern t)
 let pr_rawterm t = gentermpr (Termast.ast_of_rawconstr t)
@@ -151,13 +136,13 @@ and default_tacpr = function
     | Node(_,"EVAR", [Num (_,ev)]) -> [< 'sTR ("?" ^ (string_of_int ev)) >]
     | Node(_,"CONST",[Path(_,sl,s)]) ->
 	let sp = section_path sl s in
-	pr_qualified_path sp (basename (section_path sl s))
+	pr_global (ConstRef (section_path sl s))
     | Node(_,"MUTIND",[Path(_,sl,s); Num(_,tyi)]) ->
 	let sp = section_path sl s in
-	pr_qualified_path sp (Global.id_of_global (IndRef (sp,tyi)))
+	pr_global (IndRef (sp,tyi))
     | Node(_,"MUTCONSTRUCT",[Path(_,sl,s); Num(_,tyi); Num(_,i)]) ->
 	let sp = section_path sl s in
-	pr_qualified_path sp (Global.id_of_global (ConstructRef ((sp,tyi),i)))
+	pr_global (ConstructRef ((sp,tyi),i))
 
     (* This should be tactics *)
     | Node(_,s,[]) -> [< 'sTR s >]
@@ -170,7 +155,7 @@ let pr_var_decl env (id,c,typ) =
     | None ->  [<  >]
     | Some c ->  [< 'sTR" := "; prterm_env env c >] in
   let ptyp = [< 'sTR" : "; prtype_env env typ >] in
-  [< print_id id ; hOV 0 [< pbody; ptyp >] >]
+  [< pr_id id ; hOV 0 [< pbody; ptyp >] >]
 
 let pr_rel_decl env (na,c,typ) =
   let pbody = match c with
@@ -179,7 +164,7 @@ let pr_rel_decl env (na,c,typ) =
   let ptyp = prtype_env env typ in
   match na with
     | Anonymous -> [< 'sTR"<>" ; 'sPC; pbody; 'sTR" :"; 'sPC; ptyp >]
-    | Name id -> [< print_id id ; 'sPC; pbody; 'sTR" :"; 'sPC; ptyp >]
+    | Name id -> [< pr_id id ; 'sPC; pbody; 'sTR" :"; 'sPC; ptyp >]
 
 
 (* Prints out an "env" in a nice format.  We print out the

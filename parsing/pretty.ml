@@ -16,16 +16,7 @@ open Impargs
 open Libobject
 open Printer
 
-let print_basename sp =
-  let (_,id,k) = repr_path sp in
-  try 
-    if is_visible sp id then 
-      string_of_id id
-    else 
-      (string_of_id id)^"."^(string_of_kind k)
-  with Not_found -> 
-    warning "Undeclared constants in print_name";
-    string_of_path sp
+let print_basename sp = pr_global (ConstRef sp)
 
 let print_closed_sections = ref false
 
@@ -74,7 +65,7 @@ let implicit_args_id id l =
   if l = [] then 
     [<>]
   else 
-    [< 'sTR"For "; print_id id; 'sTR": "; print_impl_args l ; 'fNL >]
+    [< 'sTR"For "; pr_id id; 'sTR": "; print_impl_args l ; 'fNL >]
 
 let implicit_args_msg sp mipv = 
   [< prvecti
@@ -102,7 +93,7 @@ let print_mutual sp mib =
   let arities = Array.map (fun mip -> (Name mip.mind_typename, None, mip.mind_nf_arity)) mipv in
   let env_ar = push_rels lpars env in
   let pr_constructor (id,c) =
-    [< print_id id; 'sTR " : "; prterm_env env_ar c >] in
+    [< pr_id id; 'sTR " : "; prterm_env env_ar c >] in
   let print_constructors mis =
     let (_,lC) = mis_type_mconstructs mis in
     let lidC =
@@ -126,7 +117,7 @@ let print_mutual sp mib =
 		      (body_of_type (mis_user_arity mis)) in
       (hOV 0
          [< (hOV 0
-	       [< print_id (mis_typename mis) ; 'bRK(1,2); params;
+	       [< pr_id (mis_typename mis) ; 'bRK(1,2); params;
 	          'sTR ": "; prterm_env env_ar arity; 'sTR " :=" >]);
             'bRK(1,2); print_constructors mis >]) 
   in 
@@ -136,7 +127,7 @@ let print_mutual sp mib =
     let (_,arity) = decomp_n_prod env evd nparams
 		      (body_of_type (mis_user_arity mis0)) in 
     let sfinite = if mis_finite mis0 then "Inductive " else "CoInductive " in
-    (hOV 0 [< 'sTR sfinite ; print_id (mis_typename mis0);
+    (hOV 0 [< 'sTR sfinite ; pr_id (mis_typename mis0);
               if nparams = 0 then 
 		[<>] 
               else 
@@ -194,10 +185,10 @@ let print_constant with_values sep sp =
     hOV 0 [< (match val_0 with 
 		| None -> 
 		    [< 'sTR"*** [ "; 
-		       'sTR (print_basename sp);  
+		       print_basename sp;  
 		       'sTR " : "; 'cUT ; prtype typ ; 'sTR" ]"; 'fNL >]
 		| _ -> 
-		    [< 'sTR(print_basename sp) ; 
+		    [< print_basename sp; 
 		       'sTR sep; 'cUT ;
 		       if with_values then 
 			 print_typed_body (val_0,typ) 
@@ -206,7 +197,7 @@ let print_constant with_values sep sp =
 	     print_impl_args (list_of_implicits l); 'fNL >]
   else
     hOV 0 [< 'sTR"Fw constant " ; 
-	     'sTR (print_basename sp) ; 'fNL>]
+	     print_basename sp ; 'fNL>]
 
 let print_inductive sp =
   let mib = Global.lookup_mind sp in
@@ -214,12 +205,12 @@ let print_inductive sp =
     [< print_mutual sp mib; 'fNL >]
   else
     hOV 0 [< 'sTR"Fw inductive definition "; 
-	     'sTR (print_basename sp); 'fNL >]
+	     print_basename sp; 'fNL >]
 
 let print_syntactic_def with_values sep sp =
   let id = basename sp in
   [< 'sTR" Syntax Macro "; 
-     print_id id ; 'sTR sep;  
+     pr_id id ; 'sTR sep;  
      if with_values then 
        let c = Syntax_def.search_syntactic_definition sp in 
        [< pr_rawterm c >]
@@ -309,11 +300,12 @@ let list_filter_vec f vec =
 
 let print_constructors fn env_ar mip = 
   let _ =
-    array_map2 (fun id c -> fn (string_of_id id) env_ar (body_of_type c))
+    array_map2 (fun id c -> fn (pr_id id) (* il faudrait qualifier... *)
+		    env_ar (body_of_type c))
     mip.mind_consnames (mind_user_lc mip)
   in ()
 
-let crible (fn : string -> env -> constr -> unit) ref =
+let crible (fn : std_ppcmds -> env -> constr -> unit) ref =
   let env = Global.env () in
   let imported = Library.opened_modules() in
   let const = constr_of_reference Evd.empty env ref in 
@@ -323,12 +315,12 @@ let crible (fn : string -> env -> constr -> unit) ref =
 	   | (_,"VARIABLE") ->
 	       let ((idc,_,typ),_,_) = get_variable spopt in 
                if (head_const (body_of_type typ)) = const then  
-                 fn (string_of_id idc) env (body_of_type typ);
+                 fn (pr_id idc) env (body_of_type typ);
                crible_rec rest
 	   | (sp,("CONSTANT"|"PARAMETER")) ->
 	       let {const_type=typ} = Global.lookup_constant sp in
                if (head_const (body_of_type typ)) = const then
-                 fn (print_basename sp) env (body_of_type typ);
+                 fn (pr_global (ConstRef sp)) env (body_of_type typ);
                crible_rec rest
 	   | (sp,"INDUCTIVE") -> 
                let mib = Global.lookup_mind sp in 
@@ -357,12 +349,12 @@ let crible (fn : string -> env -> constr -> unit) ref =
     crible_rec (Lib.contents_after None)
   with Not_found -> 
     errorlabstrm "search"
-      [< pr_global_reference env ref; 'sPC; 'sTR "not declared" >]
+      [< pr_global ref; 'sPC; 'sTR "not declared" >]
 
 let search_by_head ref =
-  crible (fun str ass_name constr -> 
+  crible (fun pname ass_name constr -> 
             let pc = prterm_env ass_name constr in
-            mSG[<'sTR str; 'sTR":"; pc; 'fNL >]) ref
+            mSG[< pname; 'sTR":"; pc; 'fNL >]) ref
 
 let read_sec_context sec =
   let rec get_cxt in_cxt = function
@@ -466,7 +458,7 @@ let print_local_context () =
                let {const_body=val_0;const_type=typ} = 
 		 Global.lookup_constant sp in
                [< print_last_const rest;
-                  'sTR(print_basename sp) ;'sTR" = ";
+                  print_basename sp ;'sTR" = ";
                   print_typed_body (val_0,typ) >]
            | "INDUCTIVE" -> 
                let mib = Global.lookup_mind sp in 
