@@ -174,7 +174,7 @@ parsing/q_tactic.ml4: parsing/g_tactic.ml4
 parsing/q_ltac.ml4: parsing/g_ltac.ml4
 	camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_ltac.ml4 -impl parsing/g_ltac.ml4
 
-SPECTAC= tactics/tauto.ml4 tactics/eqdecide.ml4
+SPECTAC= tactics/tauto.ml4 tactics/newtauto.ml4 tactics/eqdecide.ml4
 USERTAC = $(SPECTAC)
 ML4FILES += $(USERTAC) tactics/extraargs.ml4 tactics/extratactics.ml4 \
 	tactics/eauto.ml4 
@@ -309,14 +309,13 @@ JPROVERCMO=\
   contrib/jprover/jtunify.cmo contrib/jprover/jall.cmo \
   contrib/jprover/jprover.cmo
 
-CCCMO=\
-  contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo  
+CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo  
 
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
-	$(CORRECTNESSCMO) $(CCCMO)
+	$(CORRECTNESSCMO) $(CCCMO) $(USERCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -706,7 +705,7 @@ cc: $(CCVO) $(CCCMO)
 ALLVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO) $(EXTRACTIONVO)
 
 clean::
-	rm -f contrib/*/*.cm[io] contrib/*/*.vo
+	rm -f contrib/*/*.cm[io] contrib/*/*.vo user-contrib/*.cm[io]
 
 archclean::
 	rm -f contrib/*/*.cmx contrib/*/*.[so]
@@ -1100,6 +1099,7 @@ scratchdepend:: dependp4
 	-$(MAKE) -k -f Makefile.dep $(ML4FILESML)
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
 	$(MAKE) depend
+
 
 # Computing the dependencies in camlp4 files is tricky.
 # We proceed in several steps:

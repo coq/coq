@@ -1,4 +1,5 @@
 tactics/tauto.ml: parsing/grammar.cma
+tactics/newtauto.ml: parsing/grammar.cma
 tactics/eqdecide.ml: parsing/grammar.cma
 tactics/extraargs.ml: parsing/grammar.cma
 tactics/extratactics.ml: parsing/grammar.cma

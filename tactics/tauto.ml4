@@ -150,6 +150,26 @@ let tauto g =
 
 let default_intuition_tac = <:tactic< Auto with * >>
 
+let q_elim tac=
+  <:tactic<
+  Match Context With 
+    [x:?1|-(? ?1 ?)]->
+      Exists x;$tac
+  |[x:?1;H:?1->?|-?]->
+      Generalize (H x);Clear H;$tac>>
+
+let rec lfo n gl=
+  if n=0 then (tclFAIL 0 gl) else
+    let p=if n<0 then n else (n-1) in
+    let lfo_rec=q_elim (Tacexpr.TacArg (valueIn (VTactic (lfo p)))) in
+      intuition_gen lfo_rec gl
+
+let lfo_wrap n gl= 
+  try lfo n gl
+  with
+    Refiner.FailError _ | UserError _ ->
+      errorlabstrm "LinearIntuition" [< str "LinearIntuition failed." >]
+
 TACTIC EXTEND Tauto
 | [ "Tauto" ] -> [ tauto ]
 END
@@ -162,3 +182,9 @@ TACTIC EXTEND Intuition
 | [ "Intuition" ] -> [ intuition_gen default_intuition_tac ]
 | [ "Intuition" tactic(t) ] -> [ intuition_gen t ]
 END
+
+TACTIC EXTEND LinearIntuition
+| [ "LinearIntuition" ] -> [ lfo_wrap (-1)]
+| [ "LinearIntuition" integer(n)] -> [ lfo_wrap n]
+END
+
