@@ -66,7 +66,7 @@ let print_constr_pair op c1 c2 =
 (* [is_coq_???] : testing functions *)
 (* [dest_coq_???] : destructors     *)
 
-let is_coq_true = HP.is_unit_type
+let is_coq_true ct = (HP.is_unit_type ct) && not (HP.is_equation ct)
 
 let is_coq_false = HP.is_empty_type
 
@@ -219,18 +219,18 @@ let create_coq_name ct s =
           Hashtbl.add rtbl t ct;
           t
 
-let dest_coq_app ct =
+let dest_coq_app ct s =
     let (hd, args) = TR.decompose_app ct in
 (*i        print_constr hd;
         print_constr_list args; i*)
        if TR.isVar hd then
           (dest_coq_symb hd, args)
        else                         (* unknown constr *)
-          (create_coq_name hd "P_", args)
+          (create_coq_name hd s, args)
 
 let rec parsing2 c =        (* for function symbols, variables, constants *)
     if (TR.isApp c) then    (* function symbol? *)
-        let (f,args) = dest_coq_app c in
+        let (f,args) = dest_coq_app c "fun_" in
             JT.fun_ f (List.map parsing2 args)
     else if TR.isVar c then (* identifiable variable or constant *)
             JT.var_ (dest_coq_symb c)
@@ -262,7 +262,7 @@ let rec parsing c =
         let (v,t) = dest_coq_exists ct in
             JT.exists v (parsing t)
     else if TR.isApp ct then            (* predicate symbol with arguments *)
-        let (p,args) = dest_coq_app ct in
+        let (p,args) = dest_coq_app ct "P_" in
             JT.pred_ p (List.map parsing2 args)
     else if TR.isVar ct then            (* predicate symbol without arguments *)
         let p = dest_coq_symb ct in
@@ -459,15 +459,15 @@ let rec build_jptree inf =
 let jp limits gls =
    let concl = TM.pf_concl gls in
    let ct = concl in
-(*i     print_constr ct; i*)
+(*i     print_constr ct; i*) 
      Hashtbl.clear jtbl;    (* empty the hash tables *)
      Hashtbl.clear rtbl;
      let t = parsing ct in
-(*i     JT.print_term stdout t; i*)
+(*i     JT.print_term stdout t;*) 
         try
         let p = (J.prover limits [] t) in
 (*i            print_string "\n";
-            JLogic.print_inf p; i*)
+            JLogic.print_inf p;  i*)   
             let (il,tr) = build_jptree p in
                if (il = []) then
                begin
@@ -490,7 +490,7 @@ let rec unfail_gen = function
 (* no argument, which stands for no multiplicity limit *)
 let dyn_jp l gls =
   assert (l = []);
-  let ls = List.map (fst) (List.rev (TM.pf_hyps_types gls)) in
+  let ls = List.map (fst) (TM.pf_hyps_types gls) in
 (*i     T.generalize (List.map TR.mkVar ls) gls i*)
     (* generalize the context *)
     TCL.tclTHEN (TCL.tclTRY T.red_in_concl)
@@ -501,7 +501,7 @@ let dyn_jp l gls =
 let dyn_jpn l gls =
   match l with
    | [PT.Integer n] ->
-        let ls = List.map (fst) (List.rev (TM.pf_hyps_types gls)) in
+        let ls = List.map (fst) (TM.pf_hyps_types gls) in
             TCL.tclTHEN (TCL.tclTRY T.red_in_concl)
             (TCL.tclTHEN (unfail_gen (List.map TR.mkVar ls))
                          (jp (Some n))) gls
