@@ -261,7 +261,7 @@ let rec anonym_lams a = function
 
 let rec dummy_lams a = function 
   | 0 -> a 
-  | n -> anonym_lams (MLlam (dummy_name,a)) (pred n)
+  | n -> dummy_lams (MLlam (dummy_name,a)) (pred n)
 
 (*S Operations concerning eta. *)
 
