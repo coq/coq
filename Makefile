@@ -507,49 +507,8 @@ check:: world $(COQINTERFACE)
 	if grep -F 'Error!' test-suite/check.log ; then false; fi
 
 ###########################################################################
-# theories and states
+# theories and contrib files
 ###########################################################################
-
-SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
-
-states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
-	$(BESTCOQTOP) -v7 -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
-
-states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(BESTCOQTOP)
-	$(BOOTCOQTOP) -v7 -batch -silent -is states/barestate.coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
-
-states/initialnew.coq: states/MakeInitialNew.v $(NEWINITVO)
-	$(BOOTCOQTOP) -batch -silent -nois -load-vernac-source states/MakeInitialNew.v -outputstate states/initialnew.coq
-
-newtheories/Init/%.v: $(BESTCOQTOP) theories/Init/%.vo
-	@$(MKDIR) newtheories/Init
-	@cp -f theories/Init/$*.v8  newtheories/Init/$*.v
-
-theories/Init/%.vo: $(BESTCOQTOP) theories/Init/%.v
-	$(BOOTCOQTOP) -translate -no-strict -nois -compile theories/Init/$*
-
-newtheories/%.v: theories/%.vo states/initialnew.coq
-	@$(MKDIR) newtheories/`dirname $*`
-	@cp -f theories/$*.v8  newtheories/$*.v
-
-theories/%.vo: theories/%.v states/initial.coq
-	$(BOOTCOQTOP) -translate -no-strict -compile theories/$*
-
-newcontrib/%.v: contrib/%.vo states/initial.coq
-	@$(MKDIR) newcontrib/`dirname $*`
-	@cp -f contrib/$*.v8  newcontrib/$*.v
-
-contrib/%.vo: contrib/%.v states/initial.coq
-	$(BOOTCOQTOP) -translate -no-strict -compile contrib/$*
-
-newtheories/Init/%.vo: $(BESTCOQTOP) newtheories/Init/%.v
-	$(BOOTCOQTOP) -nois -compile $*
-
-newtheories/%.vo: newtheories/%.v states/initialnew.coq
-	$(BOOTCOQTOP) -compile newtheories/$*
-
-newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
-	$(BOOTCOQTOP) -compile newcontrib/$*
 
 INITVO=\
  theories/Init/Notations.vo \
@@ -559,12 +518,6 @@ INITVO=\
  theories/Init/Prelude.vo
 
 init: $(INITVO)
-
-contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
-	$(BOOTCOQTOP) -translate -no-strict -is states/barestate.coq -compile $*
-
-clean::
-	rm -f states/*.coq
 
 LOGICVO=\
  theories/Logic/Hurkens.vo          	theories/Logic/ProofIrrelevance.vo\
@@ -705,34 +658,23 @@ THEORIESLIGHTVO = $(INITVO) $(LOGICVO) $(ARITHVO)
 theories: $(THEORIESVO)
 theories-light: $(THEORIESLIGHTVO)
 
-logic: $(LOGICVO)
-arith: $(ARITHVO)
-bool: $(BOOLVO)
-zarith: $(ZARITHVO)
-lists: $(LISTSVO)
-sets: $(SETSVO)
-intmap: $(INTMAPVO)
-relations: $(RELATIONSVO)
-wellfounded: $(WELLFOUNDEDVO)
+logic: $(LOGICVO:%.vo=new%.vo)
+arith: $(ARITHVO:%.vo=new%.vo)
+bool: $(BOOLVO:%.vo=new%.vo)
+zarith: $(ZARITHVO:%.vo=new%.vo)
+lists: $(LISTSVO:%.vo=new%.vo)
+sets: $(SETSVO:%.vo=new%.vo)
+intmap: $(INTMAPVO:%.vo=new%.vo)
+relations: $(RELATIONSVO:%.vo=new%.vo)
+wellfounded: $(WELLFOUNDEDVO:%.vo=new%.vo)
 # reals
-reals: $(REALSVO)
-allreals: $(ALLREALS)
-install-allreals::
-	for f in $(ALLREALS); do \
-	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
-	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
-        done
-setoids: $(SETOIDSVO)
-sorting: $(SORTINGVO)
+reals: $(REALSVO:%.vo=new%.vo)
+allreals: $(ALLREALS:%.vo=new%.vo)
+setoids: $(SETOIDSVO:%.vo=new%.vo)
+sorting: $(SORTINGVO:%.vo=new%.vo)
 
 noreal: logic arith bool zarith lists sets intmap relations wellfounded \
 	setoids sorting
-
-NEWINITV=$(INITVO:%.vo=new%.v)
-NEWTHEORIESV=$(THEORIESVO:%.vo=new%.v)
-NEWCONTRIBV=$(CONTRIBVO:%.vo=new%.v)
-
-translation:: $(NEWTHEORIESV) $(NEWCONTRIBV)
 
 NEWINITVO=$(INITVO:%.vo=new%.vo)
 NEWTHEORIESVO=$(THEORIESVO:%.vo=new%.vo)
@@ -741,6 +683,62 @@ NEWCONTRIBVO=$(CONTRIBVO:%.vo=new%.vo)
 newinit:: $(NEWINITVO)
 newtheories:: $(NEWTHEORIESVO)
 newcontrib:: $(NEWCONTRIBVO) $(CONTRIBCMO)
+
+NEWINITV=$(INITVO:%.vo=new%.v)
+NEWTHEORIESV=$(THEORIESVO:%.vo=new%.v)
+NEWCONTRIBV=$(CONTRIBVO:%.vo=new%.v)
+
+translation:: $(NEWTHEORIESV) $(NEWCONTRIBV)
+
+###########################################################################
+# rules to make theories and states
+###########################################################################
+
+SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
+
+states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
+	$(BESTCOQTOP) -v7 -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
+
+states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(BESTCOQTOP)
+	$(BOOTCOQTOP) -v7 -batch -silent -is states/barestate.coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+
+states/initialnew.coq: states/MakeInitialNew.v $(NEWINITVO)
+	$(BOOTCOQTOP) -batch -silent -nois -load-vernac-source states/MakeInitialNew.v -outputstate states/initialnew.coq
+
+newtheories/Init/%.v: $(BESTCOQTOP) theories/Init/%.vo
+	@$(MKDIR) newtheories/Init
+	@cp -f theories/Init/$*.v8  newtheories/Init/$*.v
+
+theories/Init/%.vo: $(BESTCOQTOP) theories/Init/%.v
+	$(BOOTCOQTOP) -translate -no-strict -nois -compile theories/Init/$*
+
+newtheories/%.v: theories/%.vo
+	@$(MKDIR) newtheories/`dirname $*`
+	@cp -f theories/$*.v8  newtheories/$*.v
+
+theories/%.vo: theories/%.v states/initial.coq
+	$(BOOTCOQTOP) -translate -no-strict -compile theories/$*
+
+newcontrib/%.v: contrib/%.vo
+	@$(MKDIR) newcontrib/`dirname $*`
+	@cp -f contrib/$*.v8  newcontrib/$*.v
+
+contrib/%.vo: contrib/%.v states/initial.coq
+	$(BOOTCOQTOP) -translate -no-strict -compile contrib/$*
+
+newtheories/Init/%.vo: $(BESTCOQTOP) newtheories/Init/%.v
+	$(BOOTCOQTOP) -nois -compile $*
+
+newtheories/%.vo: newtheories/%.v states/initialnew.coq
+	$(BOOTCOQTOP) -compile newtheories/$*
+
+newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
+	$(BOOTCOQTOP) -compile newcontrib/$*
+
+contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
+	$(BOOTCOQTOP) -translate -no-strict -is states/barestate.coq -compile $*
+clean::
+	rm -f states/*.coq
 
 # globalizations (for coqdoc)
 
@@ -986,6 +984,12 @@ install-library-light:
 	cp states/*.coq $(FULLCOQLIB)/states
 	$(MKDIR) $(FULLEMACSLIB)
 	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
+
+install-allreals::
+	for f in $(ALLREALS); do \
+	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
+	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
+        done
 
 MANPAGES=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1 \
