@@ -20,7 +20,7 @@ open Toplevel
 open Coqinit
 
 let print_header () =
-  Printf.printf "Welcome to Coq %s (%s)\n" Coq_config.version Coq_config.date;
+  Printf.printf "Welcome to the experimental extension of Coq %s (%s) with rewriting.\n" Coq_config.version Coq_config.date;
   flush stdout
 
 let memory_stat = ref false
