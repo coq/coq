@@ -14,62 +14,62 @@ Axiom NRplus : R->R->R.
 Grammar rnatural ident :=
   nat_id [ prim:var($id) ] -> [$id]
 
-with rnegnumber := 
-  neg_expr [ "-" rnumber ($c) ] -> [<<(Ropp $c)>>] 
+with rnegnumber : constr := 
+  neg_expr [ "-" rnumber ($c) ] -> [ (Ropp $c) ] 
 
 with rnumber :=
 
-with rformula :=
-  form_expr [ rexpr($p) ] -> [$p]
-| form_eq [ rexpr($p) "==" rexpr($c) ] -> [<<(eqT R $p $c)>>]
-| form_le [ rexpr($p) "<=" rexpr($c) ] -> [<<(Rle $p $c)>>]
-| form_lt [ rexpr($p) "<" rexpr($c) ] -> [<<(Rlt $p $c)>>]
-| form_ge [ rexpr($p) ">=" rexpr($c) ] -> [<<(Rge $p $c)>>]
-| form_gt [ rexpr($p) ">" rexpr($c) ] -> [<<(Rgt $p $c)>>]
+with rformula : constr :=
+  form_expr [ rexpr($p) ] -> [ $p ]
+| form_eq [ rexpr($p) "==" rexpr($c) ] -> [ (eqT R $p $c) ]
+| form_le [ rexpr($p) "<=" rexpr($c) ] -> [ (Rle $p $c) ]
+| form_lt [ rexpr($p) "<" rexpr($c) ] -> [ (Rlt $p $c) ]
+| form_ge [ rexpr($p) ">=" rexpr($c) ] -> [ (Rge $p $c) ]
+| form_gt [ rexpr($p) ">" rexpr($c) ] -> [ (Rgt $p $c) ]
 | form_eq_eq [ rexpr($p) "==" rexpr($c) "==" rexpr($c1) ]
-              -> [<<(eqT R $p $c)/\(eqT R $c $c1)>>]
+              -> [ (eqT R $p $c)/\(eqT R $c $c1) ]
 | form_le_le [ rexpr($p) "<=" rexpr($c) "<=" rexpr($c1) ]
-              -> [<<(Rle $p $c)/\(Rle $c $c1)>>]
+              -> [ (Rle $p $c)/\(Rle $c $c1) ]
 | form_le_lt [ rexpr($p) "<=" rexpr($c) "<" rexpr($c1) ]
-              -> [<<(Rle $p $c)/\(Rlt $c $c1)>>]
+              -> [ (Rle $p $c)/\(Rlt $c $c1) ]
 | form_lt_le [ rexpr($p) "<" rexpr($c) "<=" rexpr($c1) ]
-              -> [<<(Rlt $p $c)/\(Rle $c $c1)>>]
+              -> [ (Rlt $p $c)/\(Rle $c $c1) ]
 | form_lt_lt [ rexpr($p) "<" rexpr($c) "<" rexpr($c1) ]
-              -> [<<(Rlt $p $c)/\(Rlt $c $c1)>>]
-| form_neq  [ rexpr($p) "<>" rexpr($c) ] -> [<< ~(eqT R $p $c)>>]
+              -> [ (Rlt $p $c)/\(Rlt $c $c1) ]
+| form_neq  [ rexpr($p) "<>" rexpr($c) ] -> [ ~(eqT R $p $c) ]
 
-with rexpr :=
-  expr_plus [ rexpr($p) "+" rexpr($c) ] -> [<<(Rplus $p $c)>>]
-| expr_minus [ rexpr($p) "-" rexpr($c) ] -> [<<(Rminus $p $c)>>]
-| rexpr2 [ rexpr2($e) ] -> [$e]
+with rexpr : constr :=
+  expr_plus [ rexpr($p) "+" rexpr($c) ] -> [ (Rplus $p $c) ]
+| expr_minus [ rexpr($p) "-" rexpr($c) ] -> [ (Rminus $p $c) ]
+| rexpr2 [ rexpr2($e) ] -> [ $e ]
 
-with rexpr2 :=
-  expr_mult [ rexpr2($p) "*" rexpr2($c) ] -> [<<(Rmult $p $c)>>]
-| rexpr0 [ rexpr0($e) ] -> [$e]
+with rexpr2 : constr :=
+  expr_mult [ rexpr2($p) "*" rexpr2($c) ] -> [ (Rmult $p $c) ]
+| rexpr0 [ rexpr0($e) ] -> [ $e ]
 
 
-with rexpr0 :=
-  expr_id [ constr:global($c) ] -> [$c]
-| expr_hole [ "?" ] -> [<< ? >>]
-| expr_com [ "[" constr:constr($c) "]" ] -> [$c]
-| expr_appl [ "(" rapplication($a) ")" ] -> [$a]
-| expr_num [ rnumber($s) ] -> [$s ]
+with rexpr0 : constr :=
+  expr_id [ constr:global($c) ] -> [ $c ]
+| expr_hole [ "?" ] -> [ ? ]
+| expr_com [ "[" constr:constr($c) "]" ] -> [ $c ]
+| expr_appl [ "(" rapplication($a) ")" ] -> [ $a ]
+| expr_num [ rnumber($s) ] -> [ $s ]
 | expr_negnum [ "-" rnegnumber($n) ] -> [ $n ]
-| expr_div [ rexpr0($p) "/" rexpr0($c) ] -> [<<(Rdiv $p $c)>>]
-| expr_opp [ "-" rexpr0($c) ] -> [<<(Ropp $c)>>] 
-| expr_inv [ "/" rexpr0($c) ] -> [<<(Rinv $c)>>]
+| expr_div [ rexpr0($p) "/" rexpr0($c) ] -> [ (Rdiv $p $c) ]
+| expr_opp [ "-" rexpr0($c) ] -> [ (Ropp $c) ] 
+| expr_inv [ "/" rexpr0($c) ] -> [ (Rinv $c) ]
 
-with rapplication :=
-  apply [ rapplication($p) rexpr($c1) ] -> [<<($p $c1)>>]
-| pair [ rexpr($p) "," rexpr($c) ] -> [<<($p, $c)>>]
-| appl0 [ rexpr($a) ] -> [$a].
+with rapplication : constr :=
+  apply [ rapplication($p) rexpr($c1) ] -> [ ($p $c1) ]
+| pair [ rexpr($p) "," rexpr($c) ] -> [ ($p, $c) ]
+| appl0 [ rexpr($a) ] -> [ $a ].
 
 
-Grammar command command0 :=
-  r_in_com [ "``" rnatural:rformula($c) "``" ] -> [$c].
+Grammar constr constr0 :=
+  r_in_com [ "``" rnatural:rformula($c) "``" ] -> [ $c ].
 
-Grammar command atomic_pattern :=
-  r_in_pattern [ "``" rnatural:rnumber($c) "``" ] -> [$c].   
+Grammar constr atomic_pattern :=
+  r_in_pattern [ "``" rnatural:rnumber($c) "``" ] -> [ $c ].   
 
 (*i* pp **)
 (* pb: on rajoute des () lorsque les constantes commencent par 1 lors de
