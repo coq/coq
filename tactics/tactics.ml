@@ -33,6 +33,15 @@ open Coqlib
 
 exception Bound
 
+let rec nb_prod x =
+  let rec count n c =
+    match kind_of_term c with
+        IsProd(_,_,t) -> count (n+1) t
+      | IsLetIn(_,a,_,t) -> count n (subst1 a t)
+      | IsCast(c,_) -> count n c
+      | _ -> n
+  in count 0 x
+
 (*********************************************)
 (*                 Tactics                   *)
 (*********************************************)
@@ -482,6 +491,7 @@ let bring_hyps clsl gl =
 
 (* Resolution with missing arguments *)
 
+
 let apply_with_bindings  (c,lbind) gl = 
   let apply = 
     match kind_of_term c with 
@@ -489,20 +499,27 @@ let apply_with_bindings  (c,lbind) gl =
       | _ -> res_pf 
   in 
   let (wc,kONT) = startWalk gl in
+  (* The actual type of the theorem. It will be matched against the
+  goal. If this fails, then the head constant will be unfolded step by
+  step. *)
+  let thm_ty0 = (w_type_of wc c) in
   let rec try_apply thm_ty =
     try
-      let clause = make_clenv_binding_apply wc (c,thm_ty) lbind in
+      let n = nb_prod thm_ty - nb_prod (pf_concl gl) in
+      if n<0 then error "Apply: theorem has not enough premisses.";
+      let clause = make_clenv_binding_apply wc n (c,thm_ty) lbind in
       apply kONT clause gl
     with (RefinerError _|UserError _|Failure _) as exn ->
-      let ored =
-        try Some (Tacred.red_product (w_env wc) (w_Underlying wc) thm_ty)
-        with Tacred.Redelimination -> None
-      in
-      (match ored with
-          Some rty ->
-            try_apply rty
-        | None -> raise exn) in
-  try_apply (w_type_of wc c)
+      let red_thm =
+        try red_product (w_env wc) (w_Underlying wc) thm_ty
+        with (Redelimination | UserError _) -> raise exn in
+      try_apply red_thm in
+  try try_apply thm_ty0
+  with (RefinerError _|UserError _|Failure _) ->
+    (* Last chance: if the head is a variable, apply may try
+       second order unification *)
+    let clause = make_clenv_binding_apply wc (-1) (c,thm_ty0) lbind in 
+    apply kONT clause gl
 
 
 let apply c = apply_with_bindings (c,[])

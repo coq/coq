@@ -352,6 +352,14 @@ let clenv_environments bound c =
   in 
   clrec (Intmap.empty,Intmap.empty,[]) bound c
 
+let mk_clenv_from_n wc n (c,cty) =
+  let (namenv,env,args,concl) = clenv_environments n cty in
+  { templval = mk_freelisted (match args with [] -> c | _ -> applist (c,args));
+    templtyp = mk_freelisted concl;
+    namenv = namenv;
+    env = env;
+    hook = wc }
+
 let mk_clenv_from wc (c,cty) =
   let (namenv,env,args,concl) = clenv_environments (-1) cty in
   { templval = mk_freelisted (match args with [] -> c | _ -> applist (c,args));
@@ -1060,11 +1068,11 @@ let e_res_pf kONT clenv gls =
 let collect_com lbind = 
   map_succeed (function (Com,c)->c | _ -> failwith "Com") lbind
 
-let make_clenv_binding_apply wc (c,t) lbind = 
+let make_clenv_binding_apply wc n (c,t) lbind = 
   let largs = collect_com lbind in
   let lcomargs = List.length largs in
   if lcomargs = List.length lbind then 
-    let clause = mk_clenv_from wc (c,t) in
+    let clause = mk_clenv_from_n wc n (c,t) in
     clenv_constrain_missing_args largs clause
   else if lcomargs = 0 then 
     let clause = mk_clenv_rename_from wc (c,t) in

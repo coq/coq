@@ -97,6 +97,7 @@ val clenv_unique_resolver : bool -> wc clausenv -> goal sigma -> wc clausenv
 
 val make_clenv_binding_apply :
   walking_constraints ->
+  int ->
   constr * constr ->
   (bindOcc * types) list ->
   walking_constraints clausenv

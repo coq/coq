@@ -42,7 +42,7 @@ let registered_e_assumption gl =
 let e_resolve_with_bindings_tac  (c,lbind) gl = 
   let (wc,kONT) = startWalk gl in
   let t = w_hnf_constr wc (w_type_of wc c) in 
-  let clause = make_clenv_binding_apply wc (c,t) lbind in 
+  let clause = make_clenv_binding_apply wc (-1) (c,t) lbind in 
   e_res_pf kONT clause gl
 
 let e_resolve_with_bindings = 
