@@ -18,6 +18,7 @@ open Environ
 open Reductionops
 open Evd
 open Typing
+open Redexpr
 open Tacred
 open Proof_trees
 open Proof_type
@@ -90,8 +91,8 @@ let pf_global gls id = Constrintern.construct_reference (pf_hyps gls) id
 
 let pf_parse_const gls = compose (pf_global gls) id_of_string
 
-let pf_reduction_of_redexp gls re c = 
-  reduction_of_redexp re (pf_env gls) (project gls) c 
+let pf_reduction_of_red_expr gls re c = 
+  reduction_of_red_expr re (pf_env gls) (project gls) c 
 
 let pf_apply f gls = f (pf_env gls) (project gls)
 let pf_reduce = pf_apply

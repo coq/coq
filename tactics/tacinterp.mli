@@ -105,7 +105,7 @@ val val_interp : interp_sign -> goal sigma -> glob_tactic_expr -> value
 
 (* Interprets redexp arguments *)
 val interp_redexp : Environ.env -> Evd.evar_map -> raw_red_expr
-  -> Tacred.red_expr
+  -> Redexpr.red_expr
 
 (* Interprets tactic expressions *)
 val interp_tac_gen : (identifier * value) list -> 

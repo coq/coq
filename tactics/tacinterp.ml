@@ -1242,7 +1242,7 @@ let pf_redexp_interp ist gl = redexp_interp ist (project gl) (pf_env gl)
 let interp_may_eval f ist gl = function
   | ConstrEval (r,c) ->
       let redexp = pf_redexp_interp ist gl  r in
-      pf_reduction_of_redexp gl redexp (f ist gl c)
+      pf_reduction_of_red_expr gl redexp (f ist gl c)
   | ConstrContext ((loc,s),c) ->
       (try
 	let ic = f ist gl c

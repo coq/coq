@@ -42,7 +42,7 @@ prerr_endline "###whd_betadeltaiotacprop:" ;
 let xxx =
 (*Pp.msgerr (Printer.prterm_env env ty);*)
 prerr_endline "";
-   Tacred.reduction_of_redexp red_exp env evar_map ty
+   Redexpr.reduction_of_red_expr red_exp env evar_map ty
 in
 prerr_endline "###FINE" ;
 (*

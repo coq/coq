@@ -26,31 +26,6 @@ open Rawterm
 exception Elimconst
 exception Redelimination
 
-let set_opaque_const sp = 
-  Conv_oracle.set_opaque_const sp;
-  Csymtable.set_opaque_const sp
-
-let set_transparent_const sp =
-  let cb = Global.lookup_constant sp in
-  if cb.const_body <> None & cb.const_opaque then
-    errorlabstrm "set_transparent_const"
-      (str "Cannot make" ++ spc () ++ 
-         Nametab.pr_global_env Idset.empty (ConstRef sp) ++
-         spc () ++ str "transparent because it was declared opaque.");
-  Conv_oracle.set_transparent_const sp;
-  Csymtable.set_transparent_const sp
-
-let set_opaque_var      = Conv_oracle.set_opaque_var
-let set_transparent_var = Conv_oracle.set_transparent_var
-
-let _ = 
-  Summary.declare_summary "Transparent constants and variables"
-    { Summary.freeze_function = Conv_oracle.freeze;
-      Summary.unfreeze_function = Conv_oracle.unfreeze;
-      Summary.init_function = Conv_oracle.init;
-      Summary.survive_module = false;
-      Summary.survive_section = false }
-
 let is_evaluable env ref =
   match ref with
       EvalConstRef kn ->
@@ -503,7 +478,7 @@ and construct_const env sigma =
 
 (* Red reduction tactic: reduction to a product *)
 
-let internal_red_product env sigma c = 
+let try_red_product env sigma c = 
   let simpfun = clos_norm_flags betaiotazeta env sigma in
   let rec redrec env x =
     match kind_of_term x with
@@ -533,10 +508,8 @@ let internal_red_product env sigma c =
   in redrec env c
 
 let red_product env sigma c = 
-  try internal_red_product env sigma c
+  try try_red_product env sigma c
   with Redelimination -> error "Not reducible"
-
-(* Hnf reduction tactic: *)
 
 let hnf_constr env sigma c = 
   let rec redrec (x, largs as s) =
@@ -609,9 +582,6 @@ let whd_nf env sigma c =
   app_stack (nf_app (c, empty_stack))
 
 let nf env sigma c = strong whd_nf env sigma c
-
-let is_reference c = 
-  try let r = reference_of_constr c in true with _ -> false
 
 let is_head c t =
   match kind_of_term t with
@@ -804,11 +774,6 @@ let cbv_betadeltaiota env sigma =  cbv_norm_flags betadeltaiota env sigma
 
 let compute = cbv_betadeltaiota
 
-(* call by value reduction functions using virtual machine *)
-let cbv_vm env _ c =
-  let ctyp = (fst (Typeops.infer env c)).uj_type in
-  Vconv.cbv_vm env c ctyp
-
 (* Pattern *)
 
 (* gives [na:ta]c' such that c converts to ([na:ta]c' a), abstracting only
@@ -828,58 +793,6 @@ let pattern_occs loccs_trm env sigma c =
   let _ = Typing.type_of env sigma abstr_trm in
   applist(abstr_trm, List.map snd loccs_trm)
 
-(* Generic reduction: reduction functions used in reduction tactics *)
-
-type red_expr = (constr, evaluable_global_reference) red_expr_gen
-
-open RedFlags
-
-let make_flag_constant = function
-  | EvalVarRef id -> fVAR id
-  | EvalConstRef sp -> fCONST sp
-
-let make_flag f =
-  let red = no_red in
-  let red = if f.rBeta then red_add red fBETA else red in
-  let red = if f.rIota then red_add red fIOTA else red in
-  let red = if f.rZeta then red_add red fZETA else red in
-  let red =
-    if f.rDelta then (* All but rConst *)
-        let red = red_add red fDELTA in
-        let red = red_add_transparent red (Conv_oracle.freeze ()) in
-	List.fold_right
-	  (fun v red -> red_sub red (make_flag_constant v))
-	  f.rConst red
-    else (* Only rConst *)
-        let red = red_add_transparent (red_add red fDELTA) all_opaque in
-	List.fold_right
-	  (fun v red -> red_add red (make_flag_constant v))
-	  f.rConst red
-  in red
-
-let red_expr_tab = ref Stringmap.empty
-
-let declare_red_expr s f =
-  try 
-    let _ = Stringmap.find s !red_expr_tab in
-    error ("There is already a reduction expression of name "^s)
-  with Not_found ->
-    red_expr_tab := Stringmap.add s f !red_expr_tab
-
-let reduction_of_redexp = function
-  | Red internal -> if internal then internal_red_product else red_product
-  | Hnf -> hnf_constr
-  | Simpl (Some (_,c as lp)) -> contextually (is_reference c) lp nf
-  | Simpl None -> nf
-  | Cbv f -> cbv_norm_flags (make_flag f)
-  | Lazy f -> clos_norm_flags (make_flag f)
-  | Unfold ubinds -> unfoldn ubinds
-  | Fold cl -> fold_commands cl
-  | Pattern lp -> pattern_occs lp
-  | ExtraRedExpr s ->
-      (try Stringmap.find s !red_expr_tab
-      with Not_found -> error("unknown user-defined reduction \""^s^"\""))
-  | CbvVm -> cbv_vm 
 (* Used in several tactics. *)
 
 exception NotStepReducible

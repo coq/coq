@@ -19,7 +19,7 @@ open Reduction
 open Evd
 open Evar_refiner
 open Clenv
-open Tacred
+open Redexpr
 open Tacticals
 open Libnames
 open Genarg

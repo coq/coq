@@ -18,7 +18,7 @@ open Reduction
 open Proof_trees
 open Proof_type
 open Refiner
-open Tacred
+open Redexpr
 open Tacexpr
 open Rawterm
 (*i*)
@@ -62,7 +62,7 @@ val pf_get_hyp_typ        : goal sigma -> identifier -> types
 val pf_get_new_id  : identifier      -> goal sigma -> identifier
 val pf_get_new_ids : identifier list -> goal sigma -> identifier list
 
-val pf_reduction_of_redexp : goal sigma -> red_expr -> constr -> constr
+val pf_reduction_of_red_expr : goal sigma -> red_expr -> constr -> constr
 
 
 val pf_apply : (env -> evar_map -> 'a) -> goal sigma -> 'a
