@@ -113,7 +113,7 @@ CONFIG=\
   config/coq_config.cmo
 
 LIBREP=\
-  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bignat.cmo \
+  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bigint.cmo \
   lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
   lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
   lib/tlm.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
@@ -1349,7 +1349,7 @@ ML4FILES += parsing/lexer.ml4 parsing/q_util.ml4 parsing/q_coqast.ml4 \
             parsing/g_prim.ml4 parsing/pcoq.ml4
 
 GRAMMARNEEDEDCMO=\
-  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bignat.cmo \
+  lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bigint.cmo \
   lib/dyn.cmo lib/options.cmo lib/hashcons.cmo lib/predicate.cmo \
   lib/rtree.cmo \
   kernel/names.cmo kernel/univ.cmo \
