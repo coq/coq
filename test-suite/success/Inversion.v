@@ -55,6 +55,7 @@ Qed.
 
 (* Example from Norbert Schirmer on Coq-Club, Sep 2000 *)
 
+Unset Implicit Arguments.
 Definition Q[n,m:nat;prf:(le n m)]:=True.
 Goal (n,m:nat;H:(le (S n) m))(Q (S n) m H)==True.
 Intros.
@@ -62,3 +63,23 @@ Dependent Inversion_clear H.
 Elim magic.
 Elim magic.
 Qed.
+
+(* Submitted by Boris Yakobowski (bug #529) *)
+(* Check that Inversion does not fail due to unnormalized evars *)
+
+Set Implicit Arguments.
+Require Import Bvector.
+
+Inductive I : nat -> Set :=
+| C1 : (I (S O))
+| C2 : (k,i:nat)(vector (I i) k) -> (I i).
+
+Inductive SI : (k:nat)(I k) -> (vector nat k) -> nat -> Prop :=
+| SC2 : (k,i,vf:nat) (v:(vector (I i) k))(xi:(vector nat i))(SI (C2 v) xi vf).
+
+Theorem SUnique : (k:nat)(f:(I k))(c:(vector nat k))
+(v,v':?) (SI f c v) -> (SI f c v') -> v=v'.
+Proof.
+NewInduction 1.
+Intros H ; Inversion H.
+Admitted.
