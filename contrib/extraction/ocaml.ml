@@ -214,7 +214,7 @@ let rec pp_expr par env args =
 	      spc () ++ hov 0 pp_a2))
     | MLglob r when is_proj r && args <> [] ->
 	let record = List.hd args in 
-	pp_apply (record ++ str "." ++ pp_global r) par (List.tl args)
+	pp_apply (record ++ str "." ++ pp_global_ctx2 r) par (List.tl args)
     | MLglob r -> 
 	apply (pp_global_ctx r env )
     | MLcons (r,[]) ->
@@ -223,37 +223,41 @@ let rec pp_expr par env args =
 	if Refset.mem r !cons_cofix then 
 	  pp_par par (str "lazy " ++ cons)
 	else cons 
-    | MLcons (r,args') ->
-	assert (args=[]);
-	let cons = pp_global_up_ctx r env
-	and tuple = pp_tuple (pp_expr true env []) args' in 
-	if Refset.mem r !cons_cofix then 
-	  pp_par par (str "lazy (" ++ cons ++ spc () ++ tuple ++ str ")")
-	else pp_par par (cons ++ spc () ++ tuple)
-    | MLcase (t,[|(r,_,_) as x|])->
+    | MLcons (r,args') -> 
+	(try 
+	   let projs = find_proj (kn_of_r r, 0) in 
+	   pp_record (projs, List.map (pp_expr true env []) args')
+	 with Not_found ->
+	   assert (args=[]);
+	   let cons = pp_global_up_ctx r env
+	   and tuple = pp_tuple (pp_expr true env []) args' in 
+	   if Refset.mem r !cons_cofix then 
+	     pp_par par (str "lazy (" ++ cons ++ spc () ++ tuple ++ str ")")
+	   else pp_par par (cons ++ spc () ++ tuple))
+    | MLcase (t, pv) ->
+	let r,_,_ = pv.(0) in 
 	let expr = if Refset.mem r !cons_cofix then 
 	  (str "Lazy.force" ++ spc () ++ pp_expr true env [] t)
 	else 
 	  (pp_expr false env [] t) 
 	in 
-	let s1,s2 = pp_one_pat env x in 
-	apply 
-	  (hv 0 
-	     (pp_par par' 
-		(hv 0 
-		   (hov 2 (str "let " ++ s1 ++ str " =" ++ spc () ++ expr) ++ 
-		    spc () ++ str "in") ++ 
-		 spc () ++ hov 0 s2)))
-    | MLcase (t, pv) ->
-	let r,_,_ = pv.(0) in 
-	let expr = 
-	  if Refset.mem r !cons_cofix then 
-	    (str "Lazy.force" ++ spc () ++ pp_expr true env [] t)
-	  else pp_expr false env [] t in 
-	apply
-      	  (pp_par par' 
-      	     (v 0 (str "match " ++ expr ++ str " with" ++
-		   fnl () ++ str "  | " ++ pp_pat env pv)))
+	let record = 
+	  try ignore (find_proj (kn_of_r r, 0)); true with Not_found -> false
+	in 
+	if Array.length pv = 1 && not record then 
+	  let s1,s2 = pp_one_pat env pv.(0) in 
+	  apply 
+	    (hv 0 
+	       (pp_par par' 
+		  (hv 0 
+		     (hov 2 (str "let " ++ s1 ++ str " =" ++ spc () ++ expr) 
+		      ++ spc () ++ str "in") ++ 
+		   spc () ++ hov 0 s2)))
+	else
+	  apply
+      	    (pp_par par' 
+      	       (v 0 (str "match " ++ expr ++ str " with" ++
+		     fnl () ++ str "  | " ++ pp_pat env pv)))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' i (Array.of_list (List.rev ids'),defs) args
@@ -268,15 +272,26 @@ let rec pp_expr par env args =
 		  spc () ++ pp_type true [] t))
     | MLmagic a ->
 	pp_apply (str "Obj.magic") par (pp_expr true env [] a :: args) 
-
+	  
+and pp_record (projs, args) =
+   str "{ " ++
+   prlist_with_sep (fun () -> str ";" ++ spc ()) 
+     (fun (r,a) -> 
+	pp_global_ctx2 r ++ str " =" ++ spc () ++ a)
+     (List.combine projs args) ++
+   str " }"
 
 and pp_one_pat env (r,ids,t) = 
   let ids,env' = push_vars (List.rev ids) env in
-  let par = expr_needs_par t in
-  let args = 
-    if ids = [] then (mt ()) 
-    else str " " ++ pp_boxed_tuple pr_id (List.rev ids) in 
-  (pp_global_up_ctx r env ++ args), (pp_expr par env' [] t)
+  let expr = pp_expr (expr_needs_par t) env' [] t in 
+  try 
+    let projs = find_proj (kn_of_r r,0) in 
+    pp_record (projs, List.rev_map pr_id ids), expr
+  with Not_found -> 
+    let args = 
+      if ids = [] then (mt ()) 
+      else str " " ++ pp_boxed_tuple pr_id (List.rev ids) in 
+    pp_global_up_ctx r env ++ args, expr
   
 and pp_pat env pv = 
   prvect_with_sep (fun () -> (fnl () ++ str "  | ")) 
@@ -408,6 +423,10 @@ let pp_decl = function
       (* We compute renamings of [rv] before asking [empty_env ()]... *)
       let ppv = Array.map pp_global rv in 
       hov 0 (pp_Dfix (empty_env ()) (ppv,defs,typs))
+  | Dterm (r, a, t) when is_proj r -> 
+      let e = pp_global r in 
+      (pp_val e t ++ 
+       hov 0 (str "let " ++ e ++ str " x = x." ++ e ++ fnl() ++ fnl ())) 
   | Dterm (r, a, t) ->
       let e = pp_global r in 
       (pp_val e t ++ 
