@@ -33,19 +33,6 @@ let add_structure mp msb env =
       | SEBmodtype mtb -> Environ.add_modtype kn mtb env  
   in List.fold_left add_one env msb
 
-(* Add _all_ direct subobjects of a module, not only those exported. 
-   Build on the Modops.add_signature model. *)
-
-let add_structure mp msb env = 
-  let add_one env (l,elem) = 
-    let kn = make_kn mp empty_dirpath l in 
-    match elem with 
-      | SEBconst cb -> Environ.add_constant kn cb env 
-      | SEBmind mib -> Environ.add_mind kn mib env 
-      | SEBmodule mb -> Modops.add_module (MPdot (mp,l)) mb env 
-      | SEBmodtype mtb -> Environ.add_modtype kn mtb env  
-  in List.fold_left add_one env msb
-
 let add_functor mbid mtb env = 
   Modops.add_module (MPbound mbid) (Modops.module_body_of_type mtb) env 
 
@@ -393,14 +380,16 @@ let print_structure_to_file f prm struc =
      struct_type_search Tunknown struc)
   in
   (* print the implementation *)
-  let cout = match f with None -> stdout | Some (f,_) -> open_out f in
-  let ft = Pp_control.with_output_to cout in
+  let cout = option_app (fun (f,_) -> open_out f) f in 
+  let ft = match cout with 
+    | None -> Pp_control.std_ft
+    | Some cout -> Pp_control.with_output_to cout in 
   begin try 
     msg_with ft (preamble prm used_modules print_dummys);
     msg_with ft (pp_struct struc);
-    if f <> None then close_out cout;
+    option_iter close_out cout; 
   with e -> 
-    if f <> None then close_out cout; raise e 
+    option_iter close_out cout; raise e
   end;
   (* print the signature *)
   match f with 

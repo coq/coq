@@ -154,15 +154,16 @@ let is_recursor = function
 let records = ref (KNmap.empty : global_reference list KNmap.t)
 let init_records () = records := KNmap.empty
 
-let projs = ref Refset.empty
-let init_projs () = projs := Refset.empty
+let projs = ref (Refmap.empty : int Refmap.t)
+let init_projs () = projs := Refmap.empty
 
-let add_record kn l = 
+let add_record kn n l = 
   records := KNmap.add (long_kn kn) l !records; 
-  projs := List.fold_right (fun r -> Refset.add (long_r r)) l !projs
+  projs := List.fold_right (fun r -> Refmap.add (long_r r) n) l !projs
 
 let find_projections kn = KNmap.find (long_kn kn) !records
-let is_projection r = Refset.mem (long_r r) !projs
+let is_projection r = Refmap.mem (long_r r) !projs
+let projection_arity r = Refmap.find (long_r r) !projs
 
 (*s Tables synchronization. *)
 
@@ -188,9 +189,10 @@ let pr_global r = pr_id (id_of_global r)
 
 let err s = errorlabstrm "Extraction" s
 
-let error_axiom_scheme r = 
-  err (str "Extraction cannot accept the type scheme axiom " ++ spc () ++
-       pr_global r ++ spc () ++ str ".") 
+let error_axiom_scheme r i = 
+  err (str "The type scheme axiom " ++ spc () ++
+       pr_global r ++ spc () ++ str "needs " ++ pr_int i ++ 
+       str " type variable(s).") 
 
 let error_axiom r =
   err (str "You must specify an extraction for axiom" ++ spc () ++ 
@@ -380,30 +382,22 @@ let reset_extraction_inline () = Lib.add_anonymous_leaf (reset_inline ())
 
 (*s Extract Constant/Inductive. *)
 
-type kind = Term | Type | Ind | Construct 
+let ugly_hack_arity_nb_args = ref (fun _ _ -> 0) 
 
-let check_term_or_type r = match r with 
+let check_term_or_type r ids = match r with 
   | ConstRef sp -> 
       let env = Global.env () in 
       let typ = Environ.constant_type env sp in 
       let typ = Reduction.whd_betadeltaiota env typ in
-      if isSort typ then (r,Type) 
-      else if Reduction.is_arity env typ then error_type_scheme r
-      else (r,Term)
+      if Reduction.is_arity env typ 
+      then 
+	let nargs = !ugly_hack_arity_nb_args env typ in 
+	if List.length ids <> nargs then error_axiom_scheme r nargs
   | _ -> error_constant r
 	
 let customs = ref Refmap.empty
 
-let all_customs () = 
-  Refmap.fold (fun r _ -> Refset.add r) !customs Refset.empty
-
-let term_customs () = 
-  Refmap.fold (fun r (k,s) l -> if k=Term then (r,s)::l else l) !customs []
-
-let type_customs () = 
-  Refmap.fold (fun r (k,s) l -> if k=Type then (r,s)::l else l) !customs []
-    
-let add_custom r k s = customs := Refmap.add r (k,s) !customs
+let add_custom r ids s = customs := Refmap.add r (ids,s) !customs
 
 let is_custom r = Refmap.mem (long_r r) !customs
 
@@ -412,13 +406,15 @@ let is_inline_custom r =
 
 let find_custom r = snd (Refmap.find (long_r r) !customs)
 
+let find_type_custom r = Refmap.find (long_r r) !customs
+
 (* Registration of operations for rollback. *)
 
 let (in_customs,_) = 
   declare_object 
     {(default_object "ML extractions") with 
-       cache_function = (fun (_,(r,k,s)) -> add_custom r k s);
-       load_function = (fun _ (_,(r,k,s)) -> add_custom r k s);
+       cache_function = (fun (_,(r,ids,s)) -> add_custom r ids s);
+       load_function = (fun _ (_,(r,ids,s)) -> add_custom r ids s);
        export_function = (fun x -> Some x)}
 
 let _ = declare_summary "ML extractions"
@@ -429,26 +425,28 @@ let _ = declare_summary "ML extractions"
 
 (* Grammar entries. *)
 
-let extract_constant_inline inline r s =
+let extract_constant_inline inline r ids s =
   if is_something_opened () then error_section (); 
-  let g,k = check_term_or_type (Nametab.global r) in
+  let g = Nametab.global r in 
+  check_term_or_type g ids;
   Lib.add_anonymous_leaf (inline_extraction (inline,[g]));
-  Lib.add_anonymous_leaf (in_customs (g,k,s))
+  Lib.add_anonymous_leaf (in_customs (g,ids,s))
 
 let extract_inductive r (s,l) =
   if is_something_opened () then error_section (); 
-  let g = Nametab.global r in match g with
-  | IndRef ((kn,i) as ip) ->
-      let mib = Global.lookup_mind kn in
-      let n = Array.length mib.mind_packets.(i).mind_consnames in
-      if n <> List.length l then error_nb_cons (); 
-      Lib.add_anonymous_leaf (inline_extraction (true,[g]));
-      Lib.add_anonymous_leaf (in_customs (g,Ind,s));
-      list_iter_i
-	(fun j s -> 
-	   let g = ConstructRef (ip,succ j) in 
-	   Lib.add_anonymous_leaf (inline_extraction (true,[g]));
-	   Lib.add_anonymous_leaf (in_customs (g,Construct,s))) l
-  | _ -> error_inductive g 
+  let g = Nametab.global r in 
+  match g with
+    | IndRef ((kn,i) as ip) ->
+	let mib = Global.lookup_mind kn in
+	let n = Array.length mib.mind_packets.(i).mind_consnames in
+	if n <> List.length l then error_nb_cons (); 
+	Lib.add_anonymous_leaf (inline_extraction (true,[g]));
+	Lib.add_anonymous_leaf (in_customs (g,[],s));
+	list_iter_i
+	  (fun j s -> 
+	     let g = ConstructRef (ip,succ j) in 
+	     Lib.add_anonymous_leaf (inline_extraction (true,[g]));
+	     Lib.add_anonymous_leaf (in_customs (g,[],s))) l
+    | _ -> error_inductive g 
 
 

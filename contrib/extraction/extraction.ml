@@ -30,7 +30,7 @@ open Mlutil
 
 exception I of inductive_info
 
-(* A flag used to avoid loop in extract_inductive *)
+(* A flag used to avoid loops in [extract_inductive] *)
 let internal_call = ref (None : kernel_name option) 
 
 let none = Evd.empty
@@ -88,6 +88,15 @@ let rec type_sign env c =
 	(is_info_scheme env t)::(type_sign (push_rel_assum (n,t) env) d)
     | _ -> []
 
+let rec type_scheme_nb_args env c = 
+  match kind_of_term (whd_betadeltaiota env none c) with
+    | Prod (n,t,d) -> 
+	let n = type_scheme_nb_args (push_rel_assum (n,t) env) d in 
+	if is_info_scheme env t then n+1 else n
+    | _ -> 0
+
+let _ = ugly_hack_arity_nb_args := type_scheme_nb_args
+
 (*s [type_sign_vl] does the same, plus a type var list. *)
 
 let rec type_sign_vl env c = 
@@ -97,6 +106,13 @@ let rec type_sign_vl env c =
 	if not (is_info_scheme env t) then false::s, vl
 	else true::s, (next_ident_away (id_of_name n) vl) :: vl
     | _ -> [],[]
+
+let rec nb_default_params env c = 
+  match kind_of_term (whd_betadeltaiota env none c) with
+    | Prod (n,t,d) ->
+	let n = nb_default_params (push_rel_assum (n,t) env) d in 
+	if is_default env t then n+1 else n
+    | _ -> 0
 
 (*S Management of type variable contexts. *)
 
@@ -332,11 +348,12 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	  with Not_found -> raise (I Standard);
 	in 
 	let s = List.map (type_neq (mlt_env env) Tdummy) typ in
+	let n = nb_default_params env mip0.mind_nf_arity in
 	let check (_,o) = match o with 
 	  | None -> raise (I Standard)
 	  | Some kn -> ConstRef kn 
 	in  
-	add_record kn (List.map check (List.filter fst (List.combine s projs))); 
+	add_record kn n (List.map check (List.filter fst (List.combine s projs))); 
 	raise (I Record)
       with (I info) -> info
     in
@@ -509,31 +526,44 @@ and extract_cst_app env mle mlt kn args =
   let schema = nb, type_expand env t in 
   (* Then the expected type of this constant. *)
   let metas = List.map new_meta args in 
-  let type_head = type_recomp (metas,mlt) in 
-  (* The head gets a magic if stored and expected types differ. *)
-  let head = 
-    let h = MLglob (ConstRef kn) in 
-    put_magic (type_recomp (metas,mlt), instantiation schema) h in
+  (* We compare stored and expected types in two steps. *)
+  (* First, can [kn] be applied to all args ? *)
+  let a = new_meta () in 
+  let magic1 = needs_magic (type_recomp (metas, a), instantiation schema) in 
+  (* Second, is the resulting type compatible with the expected type [mlt] ? *)
+  let magic2 = needs_magic (a, mlt) in 
+  (* The internal head receives a magic if [magic1] *)
+  let head = put_magic_if magic1 (MLglob (ConstRef kn)) in 
   (* Now, the extraction of the arguments. *)
   let s = type_to_sign env (snd schema) in 
   let ls = List.length s in 
   let la = List.length args in
   let mla = make_mlargs env mle s args metas in 
+  let mla =
+    if not magic1 then 
+      try 
+	let l,l' = list_chop (projection_arity (ConstRef kn)) mla in 
+	if l' <> [] then (List.map (fun _ -> MLexn "Proj Args") l) @ l'
+	else mla
+      with _ -> mla
+    else mla
+  in 			    
   (* Different situations depending of the number of arguments: *)
-  if ls = 0 then head
+  if ls = 0 then put_magic_if magic2 head
   else if List.mem true s then 
-    if la >= ls then MLapp (head, mla)
+    if la >= ls then put_magic_if (magic2 && not magic1) (MLapp (head, mla))
     else 
       (* Not enough arguments. We complete via eta-expansion. *)
       let ls' = ls-la in
       let s' = list_lastn ls' s in
       let mla = (List.map (ast_lift ls') mla) @ (eta_args_sign ls' s') in
-      anonym_or_dummy_lams (MLapp (head, mla)) s'
+      put_magic_if magic2 (anonym_or_dummy_lams (MLapp (head, mla)) s')
   else 
     (* In the special case of always false signature, one dummy lam is left. *)
     (* So a [MLdummy] is left accordingly. *) 
-    if la >= ls then MLapp (head, MLdummy :: mla)
-    else dummy_lams head (ls-la-1)
+    if la >= ls 
+    then put_magic_if (magic2 && not magic1) (MLapp (head, MLdummy :: mla))
+    else put_magic_if magic2 (dummy_lams head (ls-la-1))
 
 (*s Extraction of an inductive constructor applied to arguments. *)
 
@@ -564,26 +594,29 @@ and extract_cons_app env mle mlt (((kn,i) as ip,j) as cp) args =
   let args' = list_lastn la' args in 
   (* Now, we build the expected type of the constructor *)
   let metas = List.map new_meta args' in 
-  let type_head = type_recomp (metas, mlt) in
   (* If stored and expected types differ, then magic! *)
-  let magic = needs_magic (type_cons, type_head) in 
+  let a = new_meta () in 
+  let magic1 = needs_magic (type_cons, type_recomp (metas, a)) in
+  let magic2 = needs_magic (a, mlt) in 
   let head mla = 
     if mi.ind_info = Singleton then 
-      put_magic_if magic (List.hd mla) (* assert (List.length mla = 1) *)
-    else put_magic_if magic (MLcons (ConstructRef cp, mla))
+      put_magic_if magic1 (List.hd mla) (* assert (List.length mla = 1) *)
+    else put_magic_if magic1 (MLcons (ConstructRef cp, mla))
   in 
   (* Different situations depending of the number of arguments: *)
   if la < params_nb then 
     let head' = head (eta_args_sign ls s) in 
-    dummy_lams (anonym_or_dummy_lams head' s) (params_nb - la)
+    put_magic_if magic2 
+      (dummy_lams (anonym_or_dummy_lams head' s) (params_nb - la))
   else 
     let mla = make_mlargs env mle s args' metas in 
-    if la = ls + params_nb then head mla
+    if la = ls + params_nb 
+    then put_magic_if (magic2 && not magic1) (head mla)
     else (* [ params_nb <= la <= ls + params_nb ] *) 
       let ls' = params_nb + ls - la in 
       let s' = list_lastn ls' s in 
       let mla = (List.map (ast_lift ls') mla) @ (eta_args_sign ls' s') in
-      anonym_or_dummy_lams (head mla) s'
+      put_magic_if magic2 (anonym_or_dummy_lams (head mla) s')
 
 (*S Extraction of a case. *)
 
@@ -658,9 +691,9 @@ and extract_fix env mle i (fi,ti,ci as recd) mlt =
 (* [decomp_lams_eta env c t] finds the number [n] of products in the type [t], 
    and decompose the term [c] in [n] lambdas, with eta-expansion if needed. *)
 
-let rec decomp_lams_eta env c t = 
-  let rels = fst (splay_prod env none t) in 
-  let n = List.length rels in 
+let rec decomp_lams_eta_n n env c t = 
+  let rels = fst (decomp_n_prod env none n t) in 
+  let rels = List.map (fun (id,_,c) -> (id,c)) rels in 
   let m = nb_lam c in 
   if m >= n then decompose_lam_n n c 
   else
@@ -674,13 +707,6 @@ let rec decomp_lams_eta env c t =
 (*s From a constant to a ML declaration. *)
 
 let extract_std_constant env kn body typ = 
-  (* Decomposing the top level lambdas of [body]. *)
-  let rels,c = decomp_lams_eta env body typ in
-  (* The lambdas names. *)
-  let ids = List.map (fun (n,_) -> id_of_name n) rels in 
-  (* The according Coq environment. *)
-  let env = push_rels_assum rels env in
-  (* The ML part: *)
   reset_meta_count (); 
   (* The short type [t] (i.e. possibly with abbreviations). *)
   let t = snd (record_constant_type env kn (Some typ)) in 
@@ -690,6 +716,12 @@ let extract_std_constant env kn body typ =
   let s = List.map ((<>) Tdummy) l in 
   (* The initial ML environment. *)
   let mle = List.fold_left Mlenv.push_std_type Mlenv.empty l in 
+  (* Decomposing the top level lambdas of [body]. *)
+  let rels,c = decomp_lams_eta_n (List.length s) env body typ in
+  (* The lambdas names. *)
+  let ids = List.map (fun (n,_) -> id_of_name n) rels in 
+  (* The according Coq environment. *)
+  let env = push_rels_assum rels env in
   (* The real extraction: *)
   let e = extract_term env mle t' c [] in
   (* Expunging term and type from dummy lambdas. *) 
@@ -718,10 +750,8 @@ let extract_constant env kn cb =
     | None -> (* A logical axiom is risky, an informative one is fatal. *) 
         (match flag_of_type env typ with
 	   | (Info,TypeScheme) -> 
-	       if isSort typ then 
-		 if is_custom (long_r r) then Dtype (r, [], Tunknown) 
-		 else error_axiom r
-	       else error_axiom_scheme r
+	       if is_custom (long_r r) then Dtype (r, [], Tunknown) 
+	       else error_axiom r
            | (Info,Default) -> 
 	       if is_custom (long_r r) then 
 		 let t = snd (record_constant_type env kn (Some typ)) in 

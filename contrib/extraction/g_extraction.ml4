@@ -82,13 +82,13 @@ END
 
 (* Overriding of a Coq object by an ML one *)
 VERNAC COMMAND EXTEND ExtractionConstant
-| [ "Extract" "Constant" global(x) "=>" mlname(y) ]
-  -> [ extract_constant_inline false x y ]
+| [ "Extract" "Constant" global(x) string_list(idl) "=>" mlname(y) ]
+  -> [ extract_constant_inline false x idl y ]
 END
 
 VERNAC COMMAND EXTEND ExtractionInlinedConstant
 | [ "Extract" "Inlined" "Constant" global(x) "=>" mlname(y) ]
-  -> [ extract_constant_inline true x y ]
+  -> [ extract_constant_inline true x [] y ]
 END
 
 VERNAC COMMAND EXTEND ExtractionInductive

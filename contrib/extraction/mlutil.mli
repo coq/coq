@@ -96,6 +96,7 @@ val eta_args_sign : int -> bool list -> ml_ast list
 
 val ast_iter : (ml_ast -> unit) -> ml_ast -> unit
 val ast_occurs : int -> ml_ast -> bool
+val ast_occurs_itvl : int -> int -> ml_ast -> bool
 val ast_lift : int -> ml_ast -> ml_ast
 val ast_pop : ml_ast -> ml_ast
 

@@ -401,7 +401,7 @@ let ast_occurs k t =
 (*s [occurs_itvl k k' t] returns [true] if there is a [(Rel i)] 
    in [t] with [k<=i<=k'] *)
 
-let occurs_itvl k k' t = 
+let ast_occurs_itvl k k' t = 
   try 
     ast_iter_rel (fun i -> if (k <= i) && (i <= k') then raise Found) t; false 
   with Found -> true
@@ -561,7 +561,7 @@ let eta_red e =
 	else
 	  let a1,a2 = list_chop m a in 
 	  let f = if m = 0 then f else MLapp (f,a1) in 
-	  if test_eta_args_lift 0 n a2 && not (occurs_itvl 1 n f)
+	  if test_eta_args_lift 0 n a2 && not (ast_occurs_itvl 1 n f)
 	  then ast_lift (-n) f
 	  else e 
     | _ -> e
@@ -601,12 +601,12 @@ let check_constant_case br =
   if br = [||] then raise Impossible; 
   let (r,l,t) = br.(0) in
   let n = List.length l in 
-  if occurs_itvl 1 n t then raise Impossible; 
+  if ast_occurs_itvl 1 n t then raise Impossible; 
   let cst = ast_lift (-n) t in 
   for i = 1 to Array.length br - 1 do 
     let (r,l,t) = br.(i) in
     let n = List.length l in
-    if (occurs_itvl 1 n t) || (cst <> (ast_lift (-n) t)) 
+    if (ast_occurs_itvl 1 n t) || (cst <> (ast_lift (-n) t)) 
     then raise Impossible
   done; cst
 
@@ -683,7 +683,7 @@ let rec simpl o = function
 	simpl o (ast_subst c e)
   | MLfix(i,ids,c) as t when o -> 
       let n = Array.length ids in 
-      if occurs_itvl 1 n c.(i) then 
+      if ast_occurs_itvl 1 n c.(i) then 
 	MLfix (i, ids, Array.map (simpl o) c)
       else simpl o (ast_lift (-n) c.(i)) (* Dummy fixpoint *)
   | a -> ast_map (simpl o) a 
@@ -917,7 +917,7 @@ let optimize_fix a =
 	  let m = List.length args in 
 	  (match a' with 
 	     | MLfix(_,_,_) when 
-		 (test_eta_args_lift 0 n args) && not (occurs_itvl 1 m a') 
+		 (test_eta_args_lift 0 n args) && not (ast_occurs_itvl 1 m a') 
 		 -> a'
 	     | MLfix(_,[|f|],[|c|]) -> 
 		 (try general_optimize_fix f ids n args m c
@@ -1061,8 +1061,8 @@ let inline r t =
   not (to_keep r) (* The user DOES want to keep it *)
   && not (is_inline_custom r) 
   && (to_inline r (* The user DOES want to inline it *) 
-     || (auto_inline () && lang () <> Haskell 
-	 && (is_recursor r || manual_inline r || inline_test t)))
+     || (auto_inline () && lang () <> Haskell && not (is_projection r)
+         && (is_recursor r || manual_inline r || inline_test t)))
 
 (*S Optimization. *)
 
