@@ -254,11 +254,11 @@ module KNpred = Predicate.Make(KNord)
 module KNset = Set.Make(KNord)
 
 
-let default_module_name = id_of_string "Top"
+let default_module_name = id_of_string "If you see this, it's a bug"
 
 let initial_dir = make_dirpath [default_module_name]
 
-let initial_msid = (make_msid initial_dir "Top")
+let initial_msid = (make_msid initial_dir "If you see this, it's a bug")
 let initial_path = MPself initial_msid
 
 type variable = identifier
