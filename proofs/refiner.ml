@@ -463,11 +463,10 @@ let tclORELSE0 t1 t2 g =
     t1 g
   with
   | e when catchable_exception e -> t2 g
-  | FailError lvl ->
-    if lvl = 0 then
-      t2 g
-    else
-      raise (FailError (lvl - 1))
+  | FailError 0 | Stdpp.Exc_located(_, FailError 0) -> t2 g
+  | FailError lvl -> raise (FailError (lvl - 1))
+  | Stdpp.Exc_located (s,FailError lvl) ->
+      raise (Stdpp.Exc_located (s,FailError (lvl - 1)))
 
 (* ORELSE t1 t2 tries to apply t1 and if it fails or does not progress, 
    then applies t2 *)
