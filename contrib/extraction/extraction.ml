@@ -263,6 +263,9 @@ let add_constructor_extraction c e =
 
 let lookup_constructor_extraction i = Gmap.find i !constructor_extraction_table
 
+let constant_table = 
+  ref (Gmap.empty : (section_path, extraction_result) Gmap.t)
+
 (*s Extraction of a type. *)
 
 (* When calling [extract_type] we suppose that the type of [c] is an
@@ -553,11 +556,16 @@ and extract_constr env ctx c =
 (*s Extraction of a constant. *)
 		
 and extract_constant sp =
-  (* TODO: Axioms *)
-  let cb = Global.lookup_constant sp in
-  let typ = cb.const_type in
-  let body = match cb.const_body with Some c -> c | None -> assert false in
-  extract_constr_with_type (Global.env()) [] body typ
+  try
+    Gmap.find sp !constant_table
+  with Not_found ->
+    (* TODO: Axioms *)
+    let cb = Global.lookup_constant sp in
+    let typ = cb.const_type in
+    let body = match cb.const_body with Some c -> c | None -> assert false in
+    let e = extract_constr_with_type (Global.env()) [] body typ in
+    constant_table := Gmap.add sp e !constant_table;
+    e
     
 (*s Extraction of an inductive. *)
     
