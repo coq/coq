@@ -15,7 +15,7 @@ type metamap = (int * constr) list
 let outsort env sigma t =
   match whd_betadeltaiota env sigma t with
       DOP0(Sort s) -> s
-    | _ -> anomaly "outsort: Not a sort"
+    | _ -> anomaly "Retyping: found a type of type which is not a sort"
 
 let rec subst_type env sigma typ = function
     [] -> typ

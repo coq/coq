@@ -279,6 +279,10 @@ let pretype_ref loc isevars env lvar = function
     let (typ,kind) = destCast (type_of_constructor env !isevars cstr) in
     {uj_val=mkMutConstruct cstr; uj_type=typ; uj_kind=kind}
 
+let pretype_sort = function
+  | RProp c -> judge_of_prop_contents c
+  | RType -> { uj_val = dummy_sort; uj_type = dummy_sort; uj_kind = dummy_sort}
+
 (* pretype vtcon isevars env constr tries to solve the *)
 (* existential variables in constr in environment env with the *)
 (* constraint vtcon (see Tradevar). *)
@@ -358,10 +362,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 	check_cofix env !isevars cofix;
 	make_judge cofix lara.(i))
 
-| RSort (loc,RProp c) -> judge_of_prop_contents c
-
-| RSort (loc,RType) -> 
-    { uj_val = dummy_sort; uj_type = dummy_sort; uj_kind = dummy_sort }
+| RSort (loc,s) -> pretype_sort s
 
 | RApp (loc,f,args) -> 
     let j = pretype empty_tycon env isevars lvar lmeta f in
