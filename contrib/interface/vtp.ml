@@ -249,6 +249,14 @@ and fCOMMAND = function
    fID_NE_LIST x2;
    fID_LIST x3;
    fNODE "hints" 3
+| CT_hints_immediate(x1, x2) ->
+   fFORMULA_NE_LIST x1;
+   fID_LIST x2;
+   fNODE "hints_immediate" 2
+| CT_hints_resolve(x1, x2) ->
+   fFORMULA_NE_LIST x1;
+   fID_LIST x2;
+   fNODE "hints_resolve" 2
 | CT_implicits(x1, x2) ->
    fID x1;
    fID_LIST_OPT x2;
@@ -303,6 +311,14 @@ and fCOMMAND = function
    fID_NE_LIST x2;
    fID_LIST x3;
    fNODE "local_hints" 3
+| CT_local_hints_immediate(x1, x2) ->
+   fFORMULA_NE_LIST x1;
+   fID_LIST x2;
+   fNODE "local_hints_immediate" 2
+| CT_local_hints_resolve(x1, x2) ->
+   fFORMULA_NE_LIST x1;
+   fID_LIST x2;
+   fNODE "local_hints_resolve" 2
 | CT_local_infix(x1, x2, x3, x4) ->
    fSTRING x1;
    fID x2;
@@ -312,6 +328,10 @@ and fCOMMAND = function
 | CT_local_open_scope(x1) ->
    fID x1;
    fNODE "local_open_scope" 1
+| CT_local_reserve_notation(x1, x2) ->
+   fSTRING x1;
+   fMODIFIER_LIST x2;
+   fNODE "local_reserve_notation" 2
 | CT_locate(x1) ->
    fID x1;
    fNODE "locate" 1
@@ -456,6 +476,10 @@ and fCOMMAND = function
    fID_NE_LIST x1;
    fFORMULA x2;
    fNODE "reserve" 2
+| CT_reserve_notation(x1, x2) ->
+   fSTRING x1;
+   fMODIFIER_LIST x2;
+   fNODE "reserve_notation" 2
 | CT_reset(x1) ->
    fID x1;
    fNODE "reset" 1

@@ -78,6 +78,8 @@ and ct_COMMAND =
   | CT_hint_extern of ct_INT * ct_FORMULA * ct_TACTIC_COM * ct_ID_LIST
   | CT_hintrewrite of ct_ORIENTATION * ct_FORMULA_NE_LIST * ct_ID * ct_TACTIC_COM
   | CT_hints of ct_ID * ct_ID_NE_LIST * ct_ID_LIST
+  | CT_hints_immediate of ct_FORMULA_NE_LIST * ct_ID_LIST
+  | CT_hints_resolve of ct_FORMULA_NE_LIST * ct_ID_LIST
   | CT_implicits of ct_ID * ct_ID_LIST_OPT
   | CT_import_id of ct_ID_NE_LIST
   | CT_ind_scheme of ct_SCHEME_SPEC_LIST
@@ -90,8 +92,11 @@ and ct_COMMAND =
   | CT_local_hint_destruct of ct_ID * ct_INT * ct_DESTRUCT_LOCATION * ct_FORMULA * ct_TACTIC_COM * ct_ID_LIST
   | CT_local_hint_extern of ct_INT * ct_FORMULA * ct_TACTIC_COM * ct_ID_LIST
   | CT_local_hints of ct_ID * ct_ID_NE_LIST * ct_ID_LIST
+  | CT_local_hints_immediate of ct_FORMULA_NE_LIST * ct_ID_LIST
+  | CT_local_hints_resolve of ct_FORMULA_NE_LIST * ct_ID_LIST
   | CT_local_infix of ct_STRING * ct_ID * ct_MODIFIER_LIST * ct_ID_OPT
   | CT_local_open_scope of ct_ID
+  | CT_local_reserve_notation of ct_STRING * ct_MODIFIER_LIST
   | CT_locate of ct_ID
   | CT_locate_file of ct_STRING
   | CT_locate_lib of ct_ID
@@ -144,6 +149,7 @@ and ct_COMMAND =
   | CT_remove_natural_feature of ct_NATURAL_FEATURE * ct_ID
   | CT_require of ct_IMPEXP * ct_SPEC_OPT * ct_ID_NE_LIST_OR_STRING
   | CT_reserve of ct_ID_NE_LIST * ct_FORMULA
+  | CT_reserve_notation of ct_STRING * ct_MODIFIER_LIST
   | CT_reset of ct_ID
   | CT_reset_section of ct_ID
   | CT_restart
