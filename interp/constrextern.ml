@@ -236,10 +236,12 @@ let translation_table = [
 "times_convert", (bp,"nat_of_P_mult_morphism");
 "true_sub", (bp,"Pminus");
 "times_x_1", (bp,"Pmult_1_r");
-"times_x_double", (bp,"Pmult_xO_permute_r");
-"times_x_double_plus_one", (bp,"Pmult_xI_permute_r");
+"times_x_double", (bp,"Pmult_xO_permute_r"); 
+   (* Changer en Pmult_xO_distrib_r_reverse *)
+"times_x_double_plus_one", (bp,"Pmult_xI_permute_r"); (* Changer ? *)
 "times_discr_xO_xI", (bp,"Pmult_xI_mult_xO_discr");
 "times_discr_xO", (bp,"Pmult_xO_discr");
+"times_one_inversion_l", (bp,"Pmult_1_inversion_l");
 "true_sub_convert", (bp,"nat_of_P_minus_morphism");
 "compare_true_sub_right", (bp,"Pcompare_minus_r");
 "compare_true_sub_left", (bp,"Pcompare_minus_l");
@@ -254,7 +256,9 @@ let translation_table = [
 "ZL12", (bp,"Pplus_one_succ_r");
 "ZL12bis", (bp,"Pplus_one_succ_l");
 "ZL13", (bp,"Pplus_carry_spec");
+      (* Changer en Pplus_succ_distrib_r_reverse ? *)
 "ZL14", (bp,"Pplus_succ_permute_r");
+      (* Changer en Plus_succ_distrib_l_reverse *)
 "ZL14bis", (bp,"Pplus_succ_permute_l");
 "sub_un", (bp,"Ppred");
 "sub_pos", (bp,"Pminus_mask");
@@ -280,7 +284,7 @@ let translation_table = [
 "ZPminus_add_un_permute", (bz,"ZPminus_succ_permute");
 "ZPminus_add_un_permute_Zopp", (bz,"ZPminus_succ_permute_opp");
 "ZPminus_double_moins_un_xO_add_un", (bz,"ZPminus_double_minus_one_xO_succ");
-"ZL1", (bp,"xO_succ_permute");
+"ZL1", (bp,"xO_succ_permute");  (* ?? *)
 "Zplus_assoc_r", (bz,"Zplus_assoc_reverse");
 "Zplus_sym", (bz,"Zplus_comm");
 "Zero_left", (bz,"Zplus_0_l");
@@ -508,7 +512,22 @@ let translation_table = [
 "Zle_le_S", (zo,"Zle_le_succ");
 "Zlt_minus", (zo,"Zlt_minus_simpl_swap");
 "le_trans_S", (le,"le_Sn_le");
-  (* Arith *)
+(* Znumtheory *)
+"Zdivide_Zmod", ([],"Zdivide_mod");
+"Zmod_Zdivide", ([],"Zmod_divide");
+"Zdivide_mult_left", ([],"Zmult_divide_compat_l");
+"Zdivide_mult_right", ([],"Zmult_divide_compat_r");
+"Zdivide_opp", ([],"Zdivide_opp_r");
+"Zdivide_opp_rev", ([],"Zdivide_opp_r_rev");
+"Zdivide_opp_left", ([],"Zdivide_opp_l");
+"Zdivide_opp_left_rev", ([],"Zdivide_opp_l_rev");
+"Zdivide_right", ([],"Zdivide_mult_r");
+"Zdivide_left", ([],"Zdivide_mult_l");
+"Zdivide_plus", ([],"Zdivide_plus_r");
+"Zdivide_minus", ([],"Zdivide_minus_l");
+"Zdivide_a_ab", ([],"Zdivide_factor_r");
+"Zdivide_a_ba", ([],"Zdivide_factor_l");
+(* Arith *)
 (* Peano.v
 "plus_n_O", ("plus_0_r_reverse");
 "plus_O_n", ("plus_0_l");
@@ -607,6 +626,7 @@ let translation_table = [
 "Pow_Rabsolu", ("Pow_Rabs");
 ...
 *)
+(* Raxioms *)
 "complet", ([],"completeness");
 "complet_weak", ([],"completeness_weak");
 "Rle_sym1", ([],"Rle_ge");
@@ -618,8 +638,9 @@ let translation_table = [
 "Rmult_1l", ([],"Rmult_1_l");
 "Rplus_Ol", ([],"Rplus_0_l");
 "Rplus_Ropp_r", ([],"Rplus_opp_r");
-"Rmult_Rplus_distr_l", ([],"Rmult_plus_distr_l");
+"Rmult_Rplus_distr", ([],"Rmult_plus_distr_l");
 "Rlt_antisym", ([],"Rlt_asym");
+(* RIneq *)
 "Rlt_antirefl", ([],"Rlt_irrefl");
 "Rlt_compatibility", ([],"Rplus_lt_compat_l");
 "Rgt_plus_plus_r", ([],"Rplus_gt_compat_l");
@@ -630,20 +651,232 @@ let translation_table = [
 "Rlt_monotony", ([],"Rmult_lt_compat_l");
 "Rlt_monotony_r", ([],"Rmult_lt_compat_r");
 "Rlt_monotony_contra", ([],"Rmult_lt_reg_l");
+(*"Rlt_monotony_rev", ([],"Rmult_lt_reg_l");*)
 "Rlt_anti_monotony", ([],"Rmult_lt_gt_compat_neg_l");
 "Rle_monotony", ([],"Rmult_le_compat_l");
 "Rle_monotony_r", ([],"Rmult_le_compat_r");
 "Rle_monotony_contra", ([],"Rmult_le_reg_l");
 "Rle_anti_monotony1", ([],"Rmult_le_compat_neg_l");
 "Rle_anti_monotony", ([],"Rmult_le_ge_compat_neg_l");
-"Rle_Rmult_comp", ([],"Rmult_le_compat");
-    (* Expliciter que la contrainte est r2>0 dans r1<r2 et non 0<r1 ce
-       qui est plus général mais différent de Rmult_le_compat *)
-"Rmult_lt", ([],"Rmult_lt_compat");
-"Rlt_monotony_rev", ([],"Rmult_lt_reg_l");
 "Rge_monotony", ([],"Rmult_ge_compat_r");
-"Rmult_lt_0", ([],"Rmult_lt_compat_ge" (* Un truc hybride *));
-"Rge_ge_eq", ([],"Rge_antisym")
+"Rge_ge_eq", ([],"Rge_antisym");
+(* Le reste de RIneq *)
+"imp_not_Req", ([],"Rlt_dichotomy_converse");
+"Req_EM", ([],"Req_dec");
+"total_order", ([],"Rtotal_order");
+"not_Req", ([],"Rdichotomy");
+(* "Rlt_le" -> c dir,"Rlt_le_weak" ? *)
+"not_Rle", ([],"Rnot_le_lt");
+"not_Rge", ([],"Rnot_ge_lt");
+"Rlt_le_not", ([],"Rlt_not_le");
+"Rle_not", ([],"Rgt_not_le");
+"Rle_not_lt", ([],"Rle_not_lt");
+"Rlt_ge_not", ([],"Rlt_not_ge");
+"eq_Rle", ([],"Req_le");
+"eq_Rge", ([],"Req_ge");
+"eq_Rle_sym", ([],"Req_le_sym");
+"eq_Rge_sym", ([],"Req_ge_sym");
+(* "Rle_le_eq" -> ?   x<=y/\y<=x <-> x=y *)
+"Rlt_rew", ([],"Rlt_eq_compat");
+"total_order_Rlt", ([],"Rlt_dec");
+"total_order_Rle", ([],"Rle_dec");
+"total_order_Rgt", ([],"Rgt_dec");
+"total_order_Rge", ([],"Rge_dec");
+"total_order_Rlt_Rle", ([],"Rlt_le_dec");
+(* "Rle_or_lt" -> c dir,"Rle_or_lt"*)
+"total_order_Rle_Rlt_eq", ([],"Rle_lt_or_eq_dec");
+(* "inser_trans_R" -> c dir,"Rle_lt_inser_trans" ?*)
+(* "Rplus_ne" -> c dir,"Rplus_0_r_l" ? *)
+"Rplus_Or", ([],"Rplus_0_r");
+"Rplus_Ropp_l", ([],"Rplus_opp_l");
+"Rplus_Ropp", ([],"Rplus_opp_r_uniq");
+"Rplus_plus_r", ([],"Rplus_eq_compat_l");
+"r_Rplus_plus", ([],"Rplus_eq_reg_l");
+"Rplus_ne_i", ([],"Rplus_0_r_uniq");
+"Rmult_Or", ([],"Rmult_0_r");
+"Rmult_Ol", ([],"Rmult_0_l");
+(* "Rmult_ne" -> c dir,"Rmult_1_l_r" ? *)
+"Rmult_1r", ([],"Rmult_1_r");
+"Rmult_mult_r", ([],"Rmult_eq_compat_l");
+"r_Rmult_mult", ([],"Rmult_eq_reg_l");
+"without_div_Od", ([],"Rmult_integral");
+"without_div_Oi", ([],"Rmult_eq_0_compat");
+"without_div_Oi1", ([],"Rmult_eq_0_compat_r");
+"without_div_Oi2", ([],"Rmult_eq_0_compat_l");
+"without_div_O_contr", ([],"Rmult_neq_0_reg");
+"mult_non_zero", ([],"Rmult_integral_contrapositive");
+"Rmult_Rplus_distrl", ([],"Rmult_plus_distr_r");
+"Rsqr_O", ([],"Rsqr_0");
+"Rsqr_r_R0", ([],"Rsqr_0_uniq");
+"eq_Ropp", ([],"Ropp_eq_compat");
+"Ropp_O", ([],"Ropp_0");
+"eq_RoppO", ([],"Ropp_eq_0_compat");
+"Ropp_Ropp", ([],"Ropp_involutive");
+"Ropp_neq", ([],"Ropp_neq_0_compat");
+"Ropp_distr1", ([],"Ropp_plus_distr");
+"Ropp_mul1", ([],"Ropp_mult_distr_l_reverse");
+"Ropp_mul2", ([],"Rmult_opp_opp");
+"Ropp_mul3", ([],"Ropp_mult_distr_r_reverse");
+"minus_R0", ([],"Rminus_0_r");
+"Rminus_Ropp", ([],"Rminus_0_l");
+"Ropp_distr2", ([],"Ropp_minus_distr");
+"Ropp_distr3", ([],"Ropp_minus_distr'");
+"eq_Rminus", ([],"Rminus_diag_eq");
+"Rminus_eq", ([],"Rminus_diag_uniq");
+"Rminus_eq_right", ([],"Rminus_diag_uniq_sym");
+"Rplus_Rminus", ([],"Rplus_minus");
+(*
+"Rminus_eq_contra", ([],"Rminus_diag_neq");
+"Rminus_not_eq", ([],"Rminus_neq_diag_sym");
+ "Rminus_not_eq_right" -> ?
+*)
+"Rminus_distr", ([],"Rmult_minus_distr_l");
+"Rinv_R1", ([],"Rinv_1");
+"Rinv_neq_R0", ([],"Rinv_neq_0_compat");
+"Rinv_Rinv", ([],"Rinv_involutive");
+"Rinv_Rmult", ([],"Rinv_mult_distr");
+"Ropp_Rinv", ([],"Ropp_inv_permute");
+(* "Rinv_r_simpl_r" -> OK ? *)
+(* "Rinv_r_simpl_l" -> OK ? *)
+(* "Rinv_r_simpl_m" -> OK ? *)
+"Rinv_Rmult_simpl", ([],"Rinv_mult_simpl"); (* ? *)
+"Rlt_compatibility_r", ([],"Rplus_lt_compat_r");
+"Rlt_anti_compatibility", ([],"Rplus_lt_reg_r");
+"Rle_compatibility", ([],"Rplus_le_compat_l");
+"Rle_compatibility_r", ([],"Rplus_le_compat_r");
+"Rle_anti_compatibility", ([],"Rplus_le_reg_l");
+(* "sum_inequa_Rle_lt" -> ? *)
+"Rplus_lt", ([],"Rplus_lt_compat");
+"Rplus_le", ([],"Rplus_le_compat");
+"Rplus_lt_le_lt", ([],"Rplus_lt_le_compat");
+"Rplus_le_lt_lt", ([],"Rplus_le_lt_compat");
+"Rgt_Ropp", ([],"Ropp_gt_lt_contravar");
+"Rlt_Ropp", ([],"Ropp_lt_gt_contravar");
+"Ropp_Rlt", ([],"Ropp_lt_cancel");  (* ?? *)
+"Rlt_Ropp1", ([],"Ropp_lt_contravar");
+"Rle_Ropp", ([],"Ropp_le_ge_contravar");
+"Ropp_Rle", ([],"Ropp_le_cancel");
+"Rle_Ropp1", ([],"Ropp_le_contravar");
+"Rge_Ropp", ([],"Ropp_ge_le_contravar");
+"Rlt_RO_Ropp", ([],"Ropp_0_lt_gt_contravar");
+"Rgt_RO_Ropp", ([],"Ropp_0_gt_lt_contravar");
+"Rle_RO_Ropp", ([],"Ropp_0_le_ge_contravar");
+"Rge_RO_Ropp", ([],"Ropp_0_ge_le_contravar");
+(* ... cf plus haut pour les lemmes intermediaires *)
+"Rle_Rmult_comp", ([],"Rmult_le_compat");
+   (* Expliciter que la contrainte est r2>0 dans r1<r2 et non 0<r1 ce
+      qui est plus général mais différent de Rmult_le_compat ? *)
+"Rmult_lt", ([],"Rmult_gt_0_lt_compat"); (* Hybride aussi *)
+"Rmult_lt_0", ([],"Rmult_ge_0_gt_0_lt_compat"); (* Un truc hybride *)
+(*
+ "Rlt_minus" -> 
+ "Rle_minus" -> 
+ "Rminus_lt" -> 
+ "Rminus_le" -> 
+ "tech_Rplus" -> 
+*)
+"pos_Rsqr", ([],"Rle_0_sqr");
+"pos_Rsqr1", ([],"Rlt_0_sqr");
+"Rlt_R0_R1", ([],"Rlt_0_1");
+"Rle_R0_R1", ([],"Rle_0_1");
+"Rlt_Rinv", ([],"Rinv_0_lt_compat");
+"Rlt_Rinv2", ([],"Rinv_lt_0_compat");
+"Rinv_lt", ([],"Rinv_lt_contravar");
+"Rlt_Rinv_R1", ([],"Rinv_1_lt_contravar");
+"Rlt_not_ge", ([],"Rnot_lt_ge");
+"Rgt_not_le", ([],"Rnot_gt_le");
+(*
+ "Rgt_ge" -> "Rgt_ge_weak" ?
+*)
+"Rlt_sym", ([],"Rlt_gt_iff");
+(* | "Rle_sym1" -> c dir,"Rle_ge" OK *)
+"Rle_sym2", ([],"Rge_le");
+"Rle_sym", ([],"Rle_ge_iff");
+(*
+ "Rge_gt_trans" -> OK
+ "Rgt_ge_trans" -> OK
+ "Rgt_trans" -> OK
+ "Rge_trans" -> OK
+*)
+"Rgt_RoppO", ([],"Ropp_lt_gt_0_contravar");
+"Rlt_RoppO", ([],"Ropp_gt_lt_0_contravar");
+"Rlt_r_plus_R1", ([],"Rle_lt_0_plus_1");
+"Rlt_r_r_plus_R1", ([],"Rlt_plus_1");
+(* "tech_Rgt_minus" -> ? *)
+(* OK, cf plus haut
+"Rgt_r_plus_plus", ([],"Rplus_gt_reg_l");
+"Rgt_plus_plus_r", ([],"Rplus_gt_compat_l");
+"Rge_plus_plus_r", ([],"Rplus_ge_compat_l");
+"Rge_r_plus_plus", ([],"Rplus_ge_reg_l");
+"Rge_monotony" ->  *)
+(*
+ "Rgt_minus" -> 
+ "minus_Rgt" -> 
+ "Rge_minus" -> 
+ "minus_Rge" -> 
+*)
+"Rmult_gt", ([],"Rmult_gt_0_compat");
+"Rmult_lt_pos", ([],"Rmult_lt_0_compat");  (* lt_0 ou 0_lt ?? *)
+"Rplus_eq_R0_l", ([],"Rplus_eq_0_l"); (* ? *)
+"Rplus_eq_R0", ([],"Rplus_eq_R0");
+"Rplus_Rsr_eq_R0_l", ([],"Rplus_sqr_eq_0_l");
+"Rplus_Rsr_eq_R0", ([],"Rplus_sqr_eq_0");
+(*
+ "S_INR" -> 
+ "S_O_plus_INR" -> 
+ "plus_INR" -> 
+ "minus_INR" -> 
+ "mult_INR" -> 
+ "lt_INR_0" -> 
+ "lt_INR" -> 
+ "INR_lt_1" -> 
+ "INR_pos" -> 
+ "pos_INR" -> 
+ "INR_lt" -> 
+ "le_INR" -> 
+ "not_INR_O" -> 
+ "not_O_INR" -> 
+ "not_nm_INR" -> 
+ "INR_eq" -> 
+ "INR_le" -> 
+ "not_1_INR" -> 
+ "IZN" -> 
+ "INR_IZR_INZ" -> 
+ "plus_IZR_NEG_POS" -> 
+ "plus_IZR" -> 
+ "mult_IZR" -> 
+ "Ropp_Ropp_IZR" -> 
+ "Z_R_minus" -> 
+ "lt_O_IZR" -> 
+ "lt_IZR" -> 
+ "eq_IZR_R0" -> 
+ "eq_IZR" -> 
+ "not_O_IZR" -> 
+ "le_O_IZR" -> 
+ "le_IZR" -> 
+ "le_IZR_R1" -> 
+ "IZR_ge" -> 
+ "IZR_le" -> 
+ "IZR_lt" -> 
+ "one_IZR_lt1" -> 
+ "one_IZR_r_R1" -> 
+ "single_z_r_R1" -> 
+ "tech_single_z_r_R1" -> 
+ "prod_neq_R0" -> 
+ "Rmult_le_pos" -> 
+ "double" -> 
+ "double_var" -> 
+*)
+"gt0_plus_gt0_is_gt0", ([],"Rplus_lt_0_compat");
+"ge0_plus_gt0_is_gt0", ([],"Rplus_le_lt_0_compat");
+"gt0_plus_ge0_is_gt0", ([],"Rplus_lt_le_0_compat");
+"ge0_plus_ge0_is_ge0", ([],"Rplus_le_le_0_compat");
+(*
+ "plus_le_is_le" -> ?
+ "plus_lt_is_lt" -> ?
+*)
+"Rmult_lt2", ([],"Rmult_le_0_lt_compat");
+(* "Rge_ge_eq" -> c dir,"Rge_antisym" OK *)
 ]
 
 let translate_v7_string dir s =
@@ -671,6 +904,9 @@ let translate_v7_string dir s =
       let s' = String.sub s 0 7 in
       (s' = "unicite" or s' = "unicity") -> c dir,
       "uniqueness"^(String.sub s 7 (String.length s - 7))
+  | s when String.length s >= 3 &
+      let s' = String.sub s 0 3 in
+      s' = "gcd" -> c dir, "Zis_gcd"^(String.sub s 3 (String.length s - 3))
   (* Default *)
   | x -> [],x
 
