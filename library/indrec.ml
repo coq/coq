@@ -169,15 +169,13 @@ let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs =
              | None -> 
 		 lambda_name env
 		   (n,t,process_constr (i+1) cprest 
-		      (applist(whd_beta_stack env sigma (lift 1 f) 
-				 [(Rel 1)])) rest)
+		      (applist(whd_beta_stack (lift 1 f) [(Rel 1)])) rest)
              | Some(_,f_0) -> 
 		 let nF = lift (i+1+decF) f_0 in
 		 let arg = process_pos nF (lift 1 t) in 
                  lambda_name env
 		   (n,t,process_constr (i+1) cprest 
-		      (applist(whd_beta_stack env sigma (lift 1 f) 
-				 [(Rel 1); arg])) 
+		      (applist(whd_beta_stack (lift 1 f) [(Rel 1); arg])) 
 		      rest))
       | [] -> f
   in 

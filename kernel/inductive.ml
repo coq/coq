@@ -171,8 +171,8 @@ let ith_constructor_of_inductive (ind_sp,args) i = ((ind_sp,i),args)
 
 exception Induc
 
-let extract_mrectype env sigma t =
-  let (t,l) = whd_stack env sigma t [] in
+let extract_mrectype t =
+  let (t,l) = whd_stack t [] in
   match t with
     | DOPN(MutInd ind_sp,args) -> ((ind_sp,args),l)
     | _ -> raise Induc

@@ -1703,7 +1703,7 @@ let tauto_of_cci_fmla gls cciterm =
 	| _ -> assert false
     else FPred cciterm
   in 
-  tradrec (whd_betaiota (pf_env gls) (project gls) cciterm)   
+  tradrec (whd_betaiota cciterm)   
 
 (*-- Retorna una lista de todas las variables proposicionales que
   aparescan en una lista de formulasS --*)

@@ -132,9 +132,7 @@ let make_inv_predicate env sigma ind id status concl =
 		abstract_list_all env sigma p concl (realargs@[VAR id])
 	  in
 	  let hyps,_ = decompose_lam pred in
-	  let c3 =
-	    whd_beta env sigma
-	      (applist (pred,rel_list nrealargs (nrealargs +1))) 
+	  let c3 = whd_beta (applist (pred,rel_list nrealargs (nrealargs +1))) 
 	  in
 	  (hyps,c3)
   in

@@ -20,14 +20,19 @@ type 'a contextual_reduction_function = env -> 'a evar_map -> constr -> constr
 type 'a reduction_function = 'a contextual_reduction_function
 type local_reduction_function = constr -> constr
 
-type 'a stack_reduction_function = 
+type 'a contextual_stack_reduction_function = 
     env -> 'a evar_map -> constr -> constr list -> constr * constr list
+type 'a stack_reduction_function = 'a contextual_stack_reduction_function
+type local_stack_reduction_function = 
+    constr -> constr list -> constr * constr list
 
-val whd_stack : 'a stack_reduction_function
+val whd_stack : local_stack_reduction_function
 
 (*s Reduction Function Operators *)
 
-val under_casts : 'a reduction_function -> 'a reduction_function
+val local_under_casts : local_reduction_function -> local_reduction_function
+val under_casts :
+  'a contextual_reduction_function -> 'a contextual_reduction_function
 val strong : 'a reduction_function -> 'a reduction_function
 val local_strong : local_reduction_function -> local_reduction_function
 val strong_prodspine : 'a reduction_function -> 'a reduction_function
@@ -52,13 +57,13 @@ val cbv_betaiota : 'a reduction_function
 val cbv_betadeltaiota : 'a reduction_function
 
 (* 3. lazy strategy, weak head reduction *)
-val whd_beta : 'a reduction_function
-val whd_betaiota : 'a reduction_function
-val whd_betadeltaiota : 'a reduction_function
+val whd_beta : local_reduction_function
+val whd_betaiota : local_reduction_function
+val whd_betadeltaiota : 'a contextual_reduction_function
 
-val whd_beta_stack : 'a stack_reduction_function
-val whd_betaiota_stack : 'a stack_reduction_function
-val whd_betadeltaiota_stack : 'a stack_reduction_function
+val whd_beta_stack : local_stack_reduction_function
+val whd_betaiota_stack : local_stack_reduction_function
+val whd_betadeltaiota_stack : 'a contextual_stack_reduction_function
 
 
 (*s Head normal forms *)

@@ -97,7 +97,7 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
         (lift_context 1 lnames) 
     in
     if noccurn 1 deffix then 
-      whd_beta env sigma (applist (pop deffix,realargs@[c]))
+      whd_beta (applist (pop deffix,realargs@[c]))
     else
       let typPfix = 
 	it_prod_name env
@@ -106,11 +106,9 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
 			     (List.map (lift nar) params)
 			     (rel_list 0 nar))),
 	      (if dep then 
-		 applist (whd_beta_stack env sigma 
-			    (lift (nar+1) p) (rel_list 0 (nar+1)))
+		 applist (whd_beta_stack (lift (nar+1) p) (rel_list 0 (nar+1)))
 	       else 
-		 applist (whd_beta_stack env sigma 
-			    (lift (nar+1) p) (rel_list 1 nar)))))
+		 applist (whd_beta_stack (lift (nar+1) p) (rel_list 1 nar)))))
           lnames 
       in
       let fix = DOPN(Fix([|nar|],0),

@@ -20,8 +20,11 @@ type 'a contextual_reduction_function = env -> 'a evar_map -> constr -> constr
 type 'a reduction_function = 'a contextual_reduction_function
 type local_reduction_function = constr -> constr
 
-type 'a stack_reduction_function = 
+type 'a contextual_stack_reduction_function = 
     env -> 'a evar_map -> constr -> constr list -> constr * constr list
+type 'a stack_reduction_function = 'a contextual_stack_reduction_function
+type local_stack_reduction_function = 
+    constr -> constr list -> constr * constr list
 
 (*************************************)
 (*** Reduction Functions Operators ***)
@@ -31,15 +34,19 @@ let rec under_casts f env sigma = function
   | DOP2(Cast,c,t) -> DOP2(Cast,under_casts f env sigma c, t)
   | c              -> f env sigma c
 
-let rec whd_stack env sigma x stack =
+let rec local_under_casts f = function
+  | DOP2(Cast,c,t) -> DOP2(Cast,local_under_casts f c, t)
+  | c              -> f c
+
+let rec whd_stack x stack =
   match x with
-    | DOPN(AppL,cl)  -> whd_stack env sigma cl.(0) (array_app_tl cl stack)
-    | DOP2(Cast,c,_) -> whd_stack env sigma c stack
+    | DOPN(AppL,cl)  -> whd_stack cl.(0) (array_app_tl cl stack)
+    | DOP2(Cast,c,_) -> whd_stack c stack
     | _              -> (x,stack)
 	  
 let stack_reduction_of_reduction red_fun env sigma x stack =
   let t = red_fun env sigma (applistc x stack) in
-  whd_stack env sigma t []
+  whd_stack t []
 
 let strong whdfun env sigma = 
   let rec strongrec t = match whdfun env sigma t with
@@ -291,7 +298,7 @@ let rec stacklam recfun env t stack =
 let beta_applist (c,l) = stacklam (fun c l -> applist(c,l)) [] c l
 
 
-let whd_beta_stack_gen = 
+let whd_beta_stack = 
   let rec whrec x stack = match x with
     | DOP2(Lambda,c1,DLAM(name,c2)) ->
 	(match stack with
@@ -304,10 +311,7 @@ let whd_beta_stack_gen =
   in 
   whrec
 
-let whd_beta_gen x = applist (whd_beta_stack_gen x [])
-
-let whd_beta_stack env sigma = whd_beta_stack_gen 
-let whd_beta env sigma = whd_beta_gen
+let whd_beta x = applist (whd_beta_stack x [])
 
 (* 2. Delta Reduction *)
 		   
@@ -542,7 +546,7 @@ let reduce_fix whfun fix stack =
                                      --------------------
 qui coute cher dans whd_betadeltaiota *)
 
-let whd_betaiota_stack_gen = 
+let whd_betaiota_stack = 
   let rec whrec x stack =
     match x with
       | DOP2(Cast,c,_) -> whrec c stack
@@ -567,11 +571,7 @@ let whd_betaiota_stack_gen =
   in 
   whrec    
 
-let whd_betaiota_gen x = applist (whd_betaiota_stack_gen x [])
-
-let whd_betaiota_stack env sigma = whd_betaiota_stack_gen 
-let whd_betaiota env sigma = whd_betaiota_gen
-
+let whd_betaiota x = applist (whd_betaiota_stack x [])
 
 let whd_betaiotaevar_stack env sigma = 
   let rec whrec x stack =
@@ -970,7 +970,7 @@ let plain_instance s c =
     
 (* Pourquoi ne fait-on pas nf_betaiota si s=[] ? *)
 let instance s c = 
-  if s = [] then c else strong whd_betaiota () () (plain_instance s c)
+  if s = [] then c else local_strong whd_betaiota (plain_instance s c)
 
 
 (* pseudo-reduction rule:
@@ -1080,7 +1080,7 @@ let compute_consteval env sigma c =
 (* One step of approximation *)
 
 let rec apprec env sigma c stack =
-  let (t,stack) = whd_betaiota_stack env sigma c stack in
+  let (t,stack) = whd_betaiota_stack c stack in
   match t with
     | DOPN(MutCase _,_) ->
         let (ci,p,d,lf) = destCase t in

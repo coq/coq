@@ -791,7 +791,7 @@ let sig_clausale_forme env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
       in
       (bindings,dFLT)
     else
-      let (a,p) = match whd_stack env sigma (whd_beta env sigma ty) [] with
+      let (a,p) = match whd_beta_stack ty [] with
 	| (_,[a;p]) -> (a,p)
  	| _ -> anomaly "sig_clausale_forme: should be a sigma type" in
       let mv = new_meta() in
@@ -1200,7 +1200,8 @@ let subst_tuple_term env sigma dep_pair b =
   strong (fun _ _ -> 
 	    compose (whd_betaiota env sigma)
 	      (whd_const [proj1_sp;proj2_sp;sig_elim_sp] env sigma)) 
-    env sigma*) whd_betaiota env sigma app_B
+    env sigma *)
+  (* whd_betaiota *) app_B
     
 (* |- (P e2)
      BY RevSubstInConcl (eq T e1 e2)

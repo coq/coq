@@ -128,17 +128,24 @@ val make_arity : env -> 'a evar_map -> bool -> inductive_family ->
 val build_branch_type : env -> bool -> constr -> constructor_summary -> constr 
 
 
-(*s [find_m*type env sigma c] coerce [c] to an recursive type (I args).
+(*s Extracting an inductive type from a constructions *)
+
+exception Induc
+
+(* [extract_mrectype c] assumes [c] is syntactically an inductive type
+   applied to arguments then it returns its components; if not an
+   inductive type, it raises [Induc] *)
+val extract_mrectype  : constr -> inductive * constr list
+
+(* [find_m*type env sigma c] coerce [c] to an recursive type (I args).
    [find_mrectype], [find_minductype] and [find_mcoinductype]
    respectively accepts any recursive type, only an inductive type and
    only a coinductive type.
    They raise [Induc] if not convertible to a recursive type. *)
 
-exception Induc
 val find_mrectype     : env -> 'a evar_map -> constr -> inductive * constr list
 val find_minductype   : env -> 'a evar_map -> constr -> inductive * constr list
 val find_mcoinductype : env -> 'a evar_map -> constr -> inductive * constr list
-val extract_mrectype  : env -> 'a evar_map -> constr -> inductive * constr list
 
 val lookup_mind_specif : inductive -> env -> inductive_instance
 
