@@ -74,18 +74,6 @@ Lemma complementaire_P1 : (D:R->Prop) ~(EXT y:R | (intersection_domaine D (compl
 Intro; Red; Intro; Elim H; Intros; Unfold intersection_domaine complementaire in H0; Elim H0; Intros; Elim H2; Assumption.
 Qed.
 
-(* Schéma d'induction de l'égalité entre domaines de R *)
-Axiom eqDom : (P:(R->Prop)->Prop)(x:R->Prop)(P x)->((y:R->Prop)(inclus x y)->(inclus y x)->(P y)).
-
-Lemma eqDD : (D1,D2:R->Prop) ((x:R)(D1 x)<->(D2 x)) -> D1==D2.
-Intros; Cut (x:R)(D1 x)->(D2 x).
-Cut (x:R)(D2 x)->(D1 x).
-Intros; Cut (inclus D1 D2); [Intro | Assumption]; Cut (inclus D2 D1); [Intro | Assumption]; Pose P := [X:R->Prop]D1==X.
-Cut D1==D1; [Intro; Apply (eqDom P D1 H4 D2 H2 H3) | Reflexivity].
-Intros; Elim (H x); Intros; Apply (H2 H0).
-Intros; Elim (H x); Intros; Apply (H1 H0).
-Qed.
-
 Lemma adherence_P2 : (D:R->Prop) (ferme D) -> (inclus (adherence D) D).
 Unfold ferme; Unfold ouvert complementaire; Intros; Unfold inclus adherence; Intros; Assert H1 := (classic (D x)); Elim H1; Intro.
 Assumption.
@@ -105,30 +93,26 @@ Unfold del; Simpl; Rewrite <- (Rabsolu_Ropp ``x-x1``); Rewrite Ropp_distr2; Ring
 Apply Rlt_anti_compatibility with ``(Rabsolu (x-x1))``; Rewrite Rplus_Or; Replace ``(Rabsolu (x-x1))+(x0-(Rabsolu (x-x1)))`` with (pos x0); [Rewrite <- Rabsolu_Ropp; Rewrite Ropp_distr2; Apply H6 | Ring].
 Qed.
 
-Lemma ouvert_P1 : (D:R->Prop) (ouvert D) <-> D==(interieur D).
+Definition eq_Dom [D1,D2:R->Prop] : Prop := (inclus D1 D2)/\(inclus D2 D1).
+
+Infix 6 "=_D" eq_Dom.
+
+Lemma ouvert_P1 : (D:R->Prop) (ouvert D) <-> D =_D (interieur D).
 Intro; Split.
-Intro; Apply eqDom with D.
-Reflexivity.
+Intro; Unfold eq_Dom; Split.
 Apply interieur_P2; Assumption.
 Apply interieur_P1.
-Intro; Rewrite H; Apply interieur_P3.
+Intro; Unfold eq_Dom in H; Elim H; Clear H; Intros; Unfold ouvert; Intros; Unfold inclus interieur in H; Unfold inclus in H0; Apply (H ? H1).
 Qed.
 
-Lemma ferme_P1 : (D:R->Prop) (ferme D) <-> D==(adherence D).
+Lemma ferme_P1 : (D:R->Prop) (ferme D) <-> D =_D (adherence D).
 Intro; Split.
-Intro; Apply eqDom with D.
-Reflexivity.
+Intro; Unfold eq_Dom; Split.
 Apply adherence_P1.
 Apply adherence_P2; Assumption.
-Intro; Rewrite H; Apply adherence_P3.
-Qed.
-
-Lemma union_sym : (D1,D2:R->Prop) (union_domaine D1 D2)==(union_domaine D2 D1).
-Intros; Apply eqDD; Intro; Unfold union_domaine; Tauto.
-Qed.
-
-Lemma intersection_sym : (D1,D2:R->Prop) (intersection_domaine D1 D2)==(intersection_domaine D2 D1).
-Intros; Apply eqDD; Intro; Unfold intersection_domaine; Tauto.
+Unfold eq_Dom; Unfold inclus; Intros; Assert H0 := (adherence_P3 D); Unfold ferme in H0; Unfold ferme; Unfold ouvert; Unfold ouvert in H0; Intros; Assert H2 : (complementaire (adherence D) x).
+Unfold complementaire; Unfold complementaire in H1; Red; Intro; Elim H; Clear H; Intros _ H; Elim H1; Apply (H ? H2).
+Assert H3 := (H0 ? H2); Unfold voisinage; Unfold voisinage in H3; Elim H3; Intros; Exists x0; Unfold inclus; Unfold inclus in H4; Intros; Assert H6 := (H4 ? H5); Unfold complementaire in H6; Unfold complementaire; Red; Intro; Elim H; Clear H; Intros H _; Elim H6; Apply (H ? H7).
 Qed.
 
 Lemma voisinage_P1 : (D1,D2:R->Prop;x:R) (inclus D1 D2) -> (voisinage D1 x) -> (voisinage D2 x).
@@ -174,8 +158,7 @@ Qed.
 Lemma disque_P1 : (x:R;del:posreal) (ouvert (Disque x del)).
 Intros; Assert H := (ouvert_P1 (Disque x del)).
 Elim H; Intros; Apply H1.
-Apply eqDom with (Disque x del).
-Reflexivity.
+Unfold eq_Dom; Split.
 Unfold inclus interieur Disque; Intros; Cut ``0<del-(Rabsolu (x-x0))``.
 Intro; Pose del2 := (mkposreal ? H3).
 Exists del2; Unfold inclus; Intros.
@@ -365,6 +348,14 @@ Apply Rle_trans with (MaxRlist (cons r0 l)); [Apply Hrecl; Simpl; Tauto | Left; 
 Reflexivity.
 Qed.
 
+Lemma ouvert_P6 : (D1,D2:R->Prop) (ouvert D1) -> D1 =_D D2 -> (ouvert D2).
+Unfold ouvert; Unfold voisinage; Intros.
+Unfold eq_Dom in H0; Elim H0; Intros.
+Assert H4 := (H ? (H3 ? H1)).
+Elim H4; Intros.
+Exists x0; Apply inclus_trans with D1; Assumption.
+Qed.
+
 (* Les parties compactes de R sont bornées *)
 Lemma compact_P1 : (X:R->Prop) (compact X) -> (bornee X).
 Intros; Unfold compact in H; Pose D := [x:R]True; Pose g := [x:R][y:R]``(Rabsolu y)<x``; Cut (x:R)(EXT y|(g x y))->True; [Intro | Intro; Trivial].
@@ -390,12 +381,16 @@ Unfold intersection_domaine D; Tauto.
 Unfold recouvrement_ouvert; Split.
 Unfold recouvrement; Intros; Simpl; Exists ``(Rabsolu x)+1``; Unfold g; Pattern 1 (Rabsolu x); Rewrite <- Rplus_Or; Apply Rlt_compatibility; Apply Rlt_R0_R1.
 Unfold famille_ouvert; Intro; Case (total_order R0 x); Intro.
-Cut (f0 x)==(Disque R0 (mkposreal ? H2)).
-Intro; Rewrite H3; Apply disque_P1.
-Unfold f0; Simpl; Unfold g Disque; Apply eqDom with [y:R]``(Rabsolu y) < x``; [Reflexivity | Unfold inclus; Intros; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Apply H3 | Unfold inclus; Intros; Unfold Rminus in H3; Rewrite Ropp_O in H3; Rewrite Rplus_Or in H3; Apply H3].
-Cut (f0 x)==[x:R]False.
-Intro; Rewrite H3; Apply ouvert_P4.
-Apply eqDom with (f0 x); [Reflexivity | Unfold inclus f0; Simpl; Unfold g; Intros; Elim H2; Intro; [Rewrite <- H4 in H3; Assert H5 := (Rabsolu_pos x0); Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H5 H3)) | Assert H6 := (Rabsolu_pos x0); Assert H7 := (Rlt_trans ? ? ? H3 H4); Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H6 H7))] | Unfold inclus; Intros; Elim H3].
+Apply ouvert_P6 with (Disque R0 (mkposreal ? H2)).
+Apply disque_P1.
+Unfold eq_Dom; Unfold f0; Simpl; Unfold g Disque; Split.
+Unfold inclus; Intros; Unfold Rminus in H3; Rewrite Ropp_O in H3; Rewrite Rplus_Or in H3; Apply H3.
+Unfold inclus; Intros; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Apply H3.
+Apply ouvert_P6 with [x:R]False.
+Apply ouvert_P4.
+Unfold eq_Dom; Split.
+Unfold inclus; Intros; Elim H3.
+Unfold inclus f0; Simpl; Unfold g; Intros; Elim H2; Intro; [Rewrite <- H4 in H3; Assert H5 := (Rabsolu_pos x0); Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H5 H3)) | Assert H6 := (Rabsolu_pos x0); Assert H7 := (Rlt_trans ? ? ? H3 H4); Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H6 H7))].
 Qed.
 
 Fixpoint AbsList [l:Rlist] : R->Rlist :=
@@ -457,8 +452,8 @@ Qed.
 
 (* Les parties compactes de R sont fermées *)
 Lemma compact_P2 : (X:R->Prop) (compact X) -> (ferme X).
-Intros; Assert H0 := (ferme_P1 X); Elim H0; Clear H0; Intros _ H0; Apply H0; Clear H0; Apply eqDom with X.
-Reflexivity.
+Intros; Assert H0 := (ferme_P1 X); Elim H0; Clear H0; Intros _ H0; Apply H0; Clear H0.
+Unfold eq_Dom; Split.
 Apply adherence_P1.
 Unfold inclus; Unfold adherence; Unfold point_adherent; Intros; Unfold compact in H; Assert H1 := (classic (X x)); Elim H1; Clear H1; Intro.
 Assumption.
@@ -483,20 +478,18 @@ Unfold recouvrement; Intros; Exists x0; Simpl; Unfold g; Split.
 Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Unfold Rminus in H2; Apply (H2 ? H5).
 Apply H5.
 Unfold famille_ouvert; Intro; Simpl; Unfold g; Elim (classic (D x0)); Intro.
-Cut ([z:R]``(Rabsolu (x0-z)) < (Rabsolu (x0-x))/2``/\(D x0))==(Disque x0 (mkposreal ? (H2 ? H5))).
-Intro; Rewrite H6; Apply disque_P1.
-Apply eqDom with [z:R]``(Rabsolu (x0-z)) < (Rabsolu (x0-x))/2``/\(D x0).
-Reflexivity.
-Unfold inclus Disque; Simpl; Intros; Elim H6; Intros; Rewrite <- (Rabsolu_Ropp ``x1-x0``); Rewrite Ropp_distr2; Apply H7.
+Apply ouvert_P6 with (Disque x0 (mkposreal ? (H2 ? H5))).
+Apply disque_P1.
+Unfold eq_Dom; Split.
 Unfold inclus Disque; Simpl; Intros; Split.
 Rewrite <- (Rabsolu_Ropp ``x0-x1``); Rewrite Ropp_distr2; Apply H6.
 Apply H5.
-Cut ([z:R]``(Rabsolu (x0-z)) < (Rabsolu (x0-x))/2``/\(D x0))==[z:R]False.
-Intro; Rewrite H6; Apply ouvert_P4.
-Apply eqDom with [z:R]``(Rabsolu (x0-z)) < (Rabsolu (x0-x))/2``/\(D x0).
-Reflexivity.
-Unfold inclus; Intros; Elim H6; Intros; Elim H5; Assumption.
+Unfold inclus Disque; Simpl; Intros; Elim H6; Intros; Rewrite <- (Rabsolu_Ropp ``x1-x0``); Rewrite Ropp_distr2; Apply H7.
+Apply ouvert_P6 with [z:R]False.
+Apply ouvert_P4.
+Unfold eq_Dom; Split.
 Unfold inclus; Intros; Elim H6.
+Unfold inclus; Intros; Elim H6; Intros; Elim H5; Assumption.
 Intros; Elim H3; Intros; Unfold g in H4; Elim H4; Clear H4; Intros _ H4; Apply H4.
 Intros; Unfold Rdiv; Apply Rmult_lt_pos.
 Apply Rabsolu_pos_lt; Apply Rminus_eq_contra; Red; Intro; Rewrite H3 in H2; Elim H1; Apply H2.
@@ -512,6 +505,16 @@ Split.
 Simpl; Unfold intersection_domaine; Intros; Elim H0.
 Elim H0; Clear H0; Intros _ H0; Elim H0.
 Simpl; Intro; Elim H0.
+Qed.
+
+Lemma compact_eqDom : (X1,X2:R->Prop) (compact X1) -> X1 =_D X2 -> (compact X2).
+Unfold compact; Intros; Unfold eq_Dom in H0; Elim H0; Clear H0; Unfold inclus; Intros; Assert H3 : (recouvrement_ouvert X1 f0).
+Unfold recouvrement_ouvert; Unfold recouvrement_ouvert in H1; Elim H1; Clear H1; Intros; Split.
+Unfold recouvrement in H1; Unfold recouvrement; Intros; Apply (H1 ? (H0 ? H4)).
+Apply H3.
+Elim (H ? H3); Intros D H4; Exists D; Unfold recouvrement_fini; Unfold recouvrement_fini in H4; Elim H4; Intros; Split.
+Unfold recouvrement in H5; Unfold recouvrement; Intros; Apply (H5 ? (H2 ? H7)).
+Apply H6.
 Qed.
 
 (* Lemme de Borel-Lebesgue *)
@@ -651,13 +654,11 @@ Simpl; Unfold intersection_domaine; Intro; Elim H3; Intro.
 Split; [Rewrite H4; Apply (cond_fam f0); Exists a; Apply H2 | Apply H4].
 Elim H4.
 Split; [Right; Reflexivity | Apply r].
-Cut ([c:R]``a<=c<=b``)==[c:R]False.
-Intro; Rewrite H.
+Apply compact_eqDom with [c:R]False.
 Apply compact_EMP.
-Apply eqDom with [c:R]``a <= c <= b``.
-Reflexivity.
-Unfold inclus; Intros; Elim H; Clear H; Intros; Assert H1 := (Rle_trans ? ? ? H H0); Elim n; Apply H1.
+Unfold eq_Dom; Split.
 Unfold inclus; Intros; Elim H.
+Unfold inclus; Intros; Elim H; Clear H; Intros; Assert H1 := (Rle_trans ? ? ? H H0); Elim n; Apply H1.
 Qed.
 
 Lemma compact_P4 : (X,F:R->Prop) (compact X) -> (ferme F) -> (inclus F X) -> (compact F).
@@ -695,37 +696,34 @@ Elim Hyp_F_NE; Intros z0 H7.
 Assert H8 := (H2 ? H7).
 Elim H8; Clear H8; Intros t H8; Exists t; Apply (cond_fam f0); Exists z0; Apply H8.
 Unfold famille_ouvert; Intro; Simpl; Unfold g'; Elim (classic (D x)); Intro.
-Cut ([y:R](f0 x y)\/(complementaire F y)/\(D x))==(union_domaine (f0 x) (complementaire F)).
-Intro; Rewrite H6; Apply ouvert_P2.
+Apply ouvert_P6 with (union_domaine (f0 x) (complementaire F)).
+Apply ouvert_P2.
 Unfold famille_ouvert in H4; Apply H4.
 Apply H0.
-Apply eqDom with [y:R](f0 x y)\/(complementaire F y)/\(D x).
-Reflexivity.
-Unfold inclus union_domaine complementaire; Intros.
-Elim H6; Intro; [Left; Apply H7 | Right; Elim H7; Intros; Apply H8].
+Unfold eq_Dom; Split.
 Unfold inclus union_domaine complementaire; Intros.
 Elim H6; Intro; [Left; Apply H7 | Right; Split; Assumption].
-Cut ([y:R](f0 x y)\/(complementaire F y)/\(D x))==(f0 x).
-Intro; Rewrite H6; Unfold famille_ouvert in H4; Apply H4.
-Apply eqDom with [y:R](f0 x y)\/(complementaire F y)/\(D x).
-Reflexivity.
+Unfold inclus union_domaine complementaire; Intros.
+Elim H6; Intro; [Left; Apply H7 | Right; Elim H7; Intros; Apply H8].
+Apply ouvert_P6 with (f0 x).
+Unfold famille_ouvert in H4; Apply H4.
+Unfold eq_Dom; Split.
+Unfold inclus complementaire; Intros; Left; Apply H6.
 Unfold inclus complementaire; Intros.
 Elim H6; Intro.
 Apply H7.
 Elim H7; Intros _ H8; Elim H5; Apply H8.
-Unfold inclus complementaire; Intros; Left; Apply H6.
 Intros; Elim H3; Intros y0 H4; Unfold g' in H4; Elim H4; Intro.
 Apply (cond_fam f0); Exists y0; Apply H5.
 Elim H5; Clear H5; Intros _ H5; Apply H5.
 (* Cas ou F est l'ensemble vide *)
-Cut F==[x:R]False.
-Intro; Cut (compact F).
-Intro; Apply (H4 f0 H2).
-Rewrite H3; Apply compact_EMP.
-Apply eqDom with F.
-Reflexivity.
-Assert H3 := (not_ex_all_not ? ? Hyp_F_NE); Unfold inclus; Intros; Elim (H3 x); Apply H4.
+Cut (compact F).
+Intro; Apply (H3 f0 H2).
+Apply compact_eqDom with [_:R]False.
+Apply compact_EMP.
+Unfold eq_Dom; Split.
 Unfold inclus; Intros; Elim H3.
+Assert H3 := (not_ex_all_not ? ? Hyp_F_NE); Unfold inclus; Intros; Elim (H3 x); Apply H4.
 Qed.
 
 (* Les parties fermées et bornées sont compactes *)
@@ -823,7 +821,9 @@ Apply H12.
 Apply (not_ex_all_not ? ? H13).
 Red; Intro; Cut (adherence (image_dir f0 [c:R]``a <= c <= b``) M).
 Intro; Elim (ferme_P1 (image_dir f0 [c:R]``a <= c <= b``)); Intros H11 _; Assert H12 := (H11 H3).
-Rewrite <- H12 in H10; Elim H8; Apply H10.
+Elim H8.
+Unfold eq_Dom in H12; Elim H12; Clear H12; Intros.
+Apply (H13 ? H10).
 Apply H9.
 Exists (f0 a); Unfold image_dir; Exists a; Split.
 Reflexivity.
