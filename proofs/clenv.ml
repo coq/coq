@@ -605,7 +605,7 @@ let clenv_unify_core with_types m n clenv =
   clenv_merge with_types mc ec clenv
     
 (* let clenv_unify = clenv_unify_core false *)
-let clenv_unify = clenv_unify_core true
+let clenv_unify = clenv_unify_core false
 let clenv_typed_unify = clenv_unify_core true
 
 (* [clenv_bchain mv clenv' clenv]
@@ -1041,6 +1041,37 @@ let elim_res_pf kONT clenv gls =
 let e_res_pf kONT clenv gls =
   clenv_refine kONT
     (clenv_pose_dependent_evars (clenv_unique_resolver false clenv gls)) gls
+
+(* Clausal environment for an application *)
+
+let collect_com lbind = 
+  map_succeed (function (Com,c)->c | _ -> failwith "Com") lbind
+
+let make_clenv_binding_apply wc (c,t) lbind = 
+  let largs = collect_com lbind in
+  let lcomargs = List.length largs in
+  if lcomargs = List.length lbind then 
+    let clause = mk_clenv_from wc (c,t) in
+    clenv_constrain_missing_args largs clause
+  else if lcomargs = 0 then 
+    let clause = mk_clenv_rename_from wc (c,t) in
+    clenv_match_args lbind clause
+  else 
+    errorlabstrm "make_clenv_bindings"
+      [<'sTR "Cannot mix bindings and free associations">]
+
+let make_clenv_binding wc (c,t) lbind = 
+  let largs    = collect_com lbind in
+  let lcomargs = List.length largs in 
+  if lcomargs = List.length lbind then 
+    let clause = mk_clenv_from wc (c,t) in  
+    clenv_constrain_dep_args largs clause
+  else if lcomargs = 0 then 
+    let clause = mk_clenv_rename_from wc (c,t) in  
+    clenv_match_args lbind clause
+  else 
+    errorlabstrm "make_clenv_bindings"
+      [<'sTR "Cannot mix bindings and free associations">]
 
 open Printer
 

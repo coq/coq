@@ -78,6 +78,17 @@ val e_res_pf : (wc -> tactic) -> wc clausenv -> tactic
 val clenv_type_of : wc clausenv -> constr -> constr
 val clenv_unique_resolver : bool -> wc clausenv -> goal sigma -> wc clausenv
 
+val make_clenv_binding_apply :
+  walking_constraints ->
+  constr * constr ->
+  (bindOcc * types) list ->
+  walking_constraints clausenv
+val make_clenv_binding :
+  walking_constraints ->
+  constr * constr ->
+  (bindOcc * types) list ->
+  walking_constraints clausenv
+
 (* Exported for program.ml only *)
 val clenv_add_sign : 
   (identifier * types) -> wc clausenv -> wc clausenv

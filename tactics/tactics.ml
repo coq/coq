@@ -465,22 +465,6 @@ let bring_hyps clsl gl =
 
 (* Resolution with missing arguments *)
 
-let collect_com lbind = 
-  map_succeed (function (Com,c)->c | _ -> failwith "Com") lbind
-
-let make_clenv_binding_apply wc (c,t) lbind = 
-  let largs = collect_com lbind in
-  let lcomargs = List.length largs in
-  if lcomargs = List.length lbind then 
-    let clause = mk_clenv_from wc (c,t) in
-    clenv_constrain_missing_args largs clause
-  else if lcomargs = 0 then 
-    let clause = mk_clenv_rename_from wc (c,t) in
-    clenv_match_args lbind clause
-  else 
-    errorlabstrm "make_clenv_bindings"
-      [<'sTR "Cannot mix bindings and free associations">]
-
 let apply_with_bindings  (c,lbind) gl = 
   let (wc,kONT) = startWalk gl in
   let t = w_hnf_constr wc (w_type_of wc c) in 
@@ -954,19 +938,6 @@ let elimination_clause_scheme kONT wc elimclause indclause gl =
 
 (* cast added otherwise tactics Case (n1,n2) generates (?f x y) and 
  * refine fails *)
-
-let make_clenv_binding wc (c,t) lbind = 
-  let largs    = collect_com lbind in
-  let lcomargs = List.length largs in 
-  if lcomargs = List.length lbind then 
-    let clause = mk_clenv_from wc (c,t) in  
-    clenv_constrain_dep_args largs clause
-  else if lcomargs = 0 then 
-    let clause = mk_clenv_rename_from wc (c,t) in  
-    clenv_match_args lbind clause
-  else 
-    errorlabstrm "make_clenv_bindings"
-      [<'sTR "Cannot mix bindings and free associations">]
 
 let type_clenv_binding wc (c,t) lbind = 
   clenv_instance_template_type (make_clenv_binding wc (c,t) lbind)

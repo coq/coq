@@ -18,10 +18,6 @@ open Tacticals
 
 (*s General functions. *)
 
-val make_clenv_binding_apply : 
-  walking_constraints -> constr * constr -> constr substitution  -> 
-    walking_constraints clausenv
-
 val type_clenv_binding : walking_constraints ->
   constr * constr -> constr substitution  -> constr
 
