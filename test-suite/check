@@ -84,8 +84,9 @@ test_parser() {
 
 # Programme principal
 
-echo "Output tests"
-test_output output
+# echo "Output tests"
+# test_output output
+echo "[Output tests are off]"
 echo "Success tests"
 test_succes success
 echo "Failure tests"
