@@ -44,6 +44,7 @@ noarguments:
 	@echo "make arch-tar-gz-ftp-install    |to be already"
 	@echo "make contrib-ftp-install	       |prepared"
 	@echo "make deb		 to build a debian package"
+	@echo "make win		 to build a windows package"
 
 ################## Main targets
 
@@ -127,6 +128,22 @@ arch-tar-gz: ${COQPACKAGE}.tar.gz
 	rm -rf ${ARCHBUILDROOT}/buildroot/* || true;\
 	make -e COQINSTALLPREFIX=${ARCHBUILDROOT}/buildroot/ install)
 	$(MAKE) arch-tar-gz-final
+
+win: ${COQPACKAGE}.tar.gz
+	@echo "Building $(COQPACKAGE)-Win.zip to be installed in \coq\bin"
+	@echo "Warning: leading / is removed"
+	- mkdir -p ${ARCHBUILDROOT}
+	(cd ${ARCHBUILDROOT};\
+	rm -rf ${COQPACKAGE} || true;\
+	gunzip -c $(DISTRIBDIR)/${COQPACKAGE}.tar.gz | tar xf -;\
+	cd ${COQPACKAGE};\
+	./configure -bindir /coq/bin -libdir /coq/lib -mandir /coq/man -emacslib /coq/emacs;\
+	make world;\
+	rm -rf ${ARCHBUILDROOT}/buildroot/* || true;\
+	make -e COQINSTALLPREFIX=${ARCHBUILDROOT}/buildroot/ install;\
+	cd ${ARCHBUILDROOT}/buildroot;\
+	zip -A -r $(COQPACKAGE)-win.zip *;\
+	mv $(COQPACKAGE)-Win.zip ../..)
 
 rpm-dirs:
 	- mkdir ${RPMTOPDIR}
