@@ -143,3 +143,9 @@ val traverse : int -> unit
 val traverse_nth_goal : int -> unit
 val traverse_next_unproven : unit -> unit
 val traverse_prev_unproven : unit -> unit
+
+
+(* These two functions make it possible to implement more elaborate
+   proof and goal management, as it is done, for instance in pcoq *)
+val traverse_to : int list -> unit
+val mutate : (pftreestate -> pftreestate) -> unit
