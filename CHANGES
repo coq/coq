@@ -29,11 +29,13 @@ Vernac
 phrases (utile pour Time et pour des grammaires abrégeant plusieurs
 commandes)
 
-- Le parseur par défaut des actions des règles de grammaires est
-maintenant celui associé au nom de la grammaire (vernac, tactic ou
-constr). Donc plus de piquants <:vernac:<...>> etc. Pour retourner de
-l'ast, il faut typer explicitement la grammaire avec Ast ou List
-(renommé d'ailleurs AstList).
+- Le parseur par défaut des actions des règles de grammaires et des
+motifs des règles d'affichage est maintenant celui associé au nom de
+la grammaire (vernac, tactic ou constr). Donc plus de piquants
+<:vernac:<...>> etc. Pour retourner de l'ast, il faut typer
+explicitement la grammaire avec Ast ou List (renommé d'ailleurs
+AstList), ou, si c'est dans une règle Syntax, utiliser la quotation
+<< ... >> qui replace dans ast.
 
 - AddPath -> Add Path;
   Print LoadPath -> Print Path;
