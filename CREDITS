@@ -2,55 +2,64 @@
 The "Coq proof assistant" was developed conjointly by 
 	INRIA Formel-Coq-LogiCal projects (since 1985), 
 	Laboratoire de l'Informatique du Parallelisme (LIP) 
-	associated to CNRS and ENS Lyon (sept.89-sept.97),
+	associated to CNRS and ENS Lyon (Sep. 1989 to Aug. 1997),
 	Laboratoire de Recherche en Informatique (LRI)
-	associated to CNRS and Paris Sud (since sept. 97),
-	Laboratoire d'Informatique de l'Ecole Polytechnique (since jan. 03)
+	associated to CNRS and Paris Sud (since Sep. 1997),
+	Laboratoire d'Informatique de l'Ecole Polytechnique (since Jan. 2003)
 	associated to CNRS and Ecole Polytechnique.
 
 All files of the "Coq proof assistant" in directories or sub-directories of
-	config contrib dev doc kernel lib library parsing pretyping 
-	proofs scripts syntax tactics test-suite theories tools toplevel
+	config dev doc interp kernel lib library parsing pretyping proofs
+	scripts syntax tactics test-suite theories tools toplevel translate
 are distributed under the terms of the GNU Lesser General Public License 
 Version 2.1 (see file LICENSE).
 These files are COPYRIGHT 1999-2004, The Coq development team, 
 CNRS, INRIA and Université Paris Sud
 
 
-The following directories contain independant contributions supported 
+The following directories contain independent contributions supported 
 by the Coq development team :
+contrib/cc
+	developed by Pierre Corbineau (ENS Cachan, 2001)
 contrib/correctness
 	developed by Jean-Christophe Filliâtre (LRI, 1999-2001)
 contrib/extraction
-	developed by Pierre Letouzey (LRI, 2000-2001)
+	developed by Pierre Letouzey (LRI, 2000-2004)
 contrib/field
 	developed by David Delahaye and Micaela Mayero (INRIA-LogiCal, 2001)
 contrib/first-order 
-	developed by Pierre Corbineau (Paris Sud, 2003-2004)
+	developed by Pierre Corbineau (LRI, 2003-2004)
 contrib/fourier
-	developed by Loic Pottier (INRIA-Lemme, 2001)
+	developed by Loïc Pottier (INRIA-Lemme, 2001)
 contrib/funind
-	developed by P. Courtieu (INRIA-Lemme, 2003-2004)
+	developed by Pierre Courtieu (INRIA-Lemme, 2003-2004)
 contrib/interface
-	developed by Yves Bertot (INRIA-Lemme, 1997)
+	developed by Yves Bertot with contributions from Loïc Pottier and
+	Laurence Rideau as part of the Pcoq project (INRIA-Lemme, 1997-2004)
 contrib/jprover
 	The author of JProver is Stephan Schmitt <schmitts@spmail.slu.edu>,
 	and is integrated into MetaPRL by Aleksey Nogin <nogin@cs.cornell.edu>
 	and then into Coq by Guan-Shieng Huang (LRI, 2001-2002)
+	original files from Stephan Schmitt are "GPL"
 contrib/omega
 	developed by Pierre Crégut (France Telecom R&D, 1996)
 contrib/romega
 	developed by Pierre Crégut (France Telecom R&D, 2001-2004)
 contrib/ring
-	developed by Samuel Boutin (INRIA-Coq, 1996)
-	          and Patrick Loiseleur (LRI, 1997-1999)
+	developed by Samuel Boutin (INRIA-Coq, 1996) and Patrick 
+	Loiseleur (LRI, 1997-1999)
 contrib/xml
-	developed by Claudio Sacerdotti (Univ. Bologna, 2000-2001)
+	developed by Claudio Sacerdoti (Univ. Bologna, 2000-2004) 
+	as part of the HELM and MoWGLI project
 
 parsing/search.ml
-	developed by Yves Bertot (INRIA-Lemme, 2000)
+	developed by Yves Bertot (INRIA-Lemme, 2000-2004)
 theories/ZArith
 	started by Pierre Crégut (France Telecom R&D, 1996)
+ide/
+	developed by Benjamin Monate (LRI, 2003) with contributions 
+	from Claude Marché (INRIA, 2003-2004); some files from ide/utils 
+	come from Maxence Guesdon's Cameleon project and are "GPL"
 
 Many discussions within the Démons team and the LogiCal project
 influenced significantly the design of Coq especially with
@@ -59,49 +68,48 @@ A. Miquel, C. Marché, B. Monate, B. Werner
 
 Intensive users suggested improvements of the system : 
 Y. Bertot, L. Pottier, L. Théry (INRIA-Lemme project) 
-C. Alvarado, P. Crégut, J.-F. Monin (France Telecom R & D)
+C. Alvarado, P. Crégut, J.-F. Monin (France Telecom R&D)
+P. Castéran (Université Bordeaux 1)
 
 The following people have contributed to the development of different versions 
 of the Coq Proof assistant during the indicated time :
 
-	Bruno Barras, 	 (INRIA, 1995-now)
-	Jacek Chrzaszcz, (Paris Sud, 1998-2003)
+	Bruno Barras (INRIA, 1995-now)
+	Jacek Chrzaszcz (Paris Sud, 1998-2003)
 	Thierry Coquand (INRIA, 1985-1989)
-  	Cristina Cornes, (INRIA, 1993-1996)
+	Cristina Cornes (INRIA, 1993-1996)
 	Yann Coscoy (INRIA Sophia-Antipolis, 1995-1996)
-	David Delahaye,  (INRIA, 1997-2001)
-	Daniel de Rauglaudre, (INRIA, 1996-1998)
-        Olivier Desmettre (INRIA, 2001-2002)
-	Gilles Dowek, (INRIA, 1991-1994)
-	Amy Felty, (INRIA, 1993)
-	Jean-Christophe Filliâtre, (ENS Lyon, 1994-1997) (Paris Sud,1997-now)
-	Eduardo Giménez, (ENS Lyon, 1993-1996, INRIA, 1997-1998)
-	Hugo Herbelin, (INRIA, 1996-now)
-	Gérard Huet, (INRIA, 1985-1997)
+	David Delahaye (INRIA, 1997-2002)
+	Daniel de Rauglaudre (INRIA, 1996-1998)
+	Olivier Desmettre (INRIA, 2001-2003)
+	Gilles Dowek (INRIA, 1991-1994)
+	Amy Felty (INRIA, 1993)
+	Jean-Christophe Filliâtre (ENS Lyon, 1994-1997, Paris Sud, 1997-now)
+	Eduardo Giménez (ENS Lyon, 1993-1996, INRIA, 1997-1998)
+	Hugo Herbelin (INRIA, 1996-now)
+	Gérard Huet (INRIA, 1985-1997)
 	Pierre Letouzey (LRI, 2000-now)
-	Pascal Manoury, (INRIA, 1993)
-	Micaela Mayero (INRIA, 1997-now)
+	Pascal Manoury (INRIA, 1993)
+	Micaela Mayero (INRIA, 1997-2002)
 	Claude Marché (Paris Sud & INRIA, 2003-now)
-	César Muñoz, (INRIA, 1994-1995)
-  	Chetan Murthy, (INRIA, 1992-1994)
-	Catherine Parent-Vigouroux, (ENS Lyon 1992-1995)
-	Patrick Loiseleur, (Paris Sud, 1997-1999)
-  	Christine Paulin-Mohring, (INRIA, 1985-1989) (ENS Lyon, 1989-1997) 
-				  (Paris Sud, 1997-now)
-        Clément Renard, (INRIA, 2001-now)
-	Amokrane Saïbi, (INRIA, 1993-1998)
-	Benjamin Werner, (INRIA, 1989-1994)
+	César Muñoz (INRIA, 1994-1995)
+	Chetan Murthy (INRIA, 1992-1994)
+	Catherine Parent-Vigouroux (ENS Lyon, 1992-1995)
+	Patrick Loiseleur (Paris Sud, 1997-1999)
+	Christine Paulin-Mohring (INRIA, 1985-1989, ENS Lyon, 1989-1997, 
+				  Paris Sud, 1997-now)
+	Clément Renard (INRIA, 2001-now)
+	Amokrane Saïbi (INRIA, 1993-1998)
+	Benjamin Werner (INRIA, 1989-1994)
 
 
 ***************************************************************************
 INRIA refers to :
-	Institute National de la Recherche en Informatique et Automatique
+	Institut National de la Recherche en Informatique et Automatique
 CNRS refers to :
 	Centre National de la Recherche Scientifique
 Paris Sud refers to :
-	Universite Paris Sud
+	Université Paris Sud
 ENS Lyon refers to :
-	Ecole Normale Superieure de Lyon
+	Ecole Normale Supérieure de Lyon
 ****************************************************************************
-
-
