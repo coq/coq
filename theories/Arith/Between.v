@@ -126,8 +126,8 @@ Qed.
 
 Lemma in_int_exists : (k,l,r:nat)(in_int k l r)->(Q r)->(exists k l).
 Proof.
-NewInduction 1; Intros.
-Elim H1; Auto with arith.
+NewDestruct 1; Intros.
+Elim H0; Auto with arith.
 Qed.
 
 Lemma between_or_exists : 
