@@ -814,7 +814,7 @@ let new_hyp mopt c blist g =
   let (wc,kONT) = startWalk g in
   let clause  = mk_clenv_printable_type_of wc c in
   let clause' = clenv_match_args blist clause in
-  let (thd,tstack) = whd_castapp_stack (clenv_instance_template clause')[] in
+  let (thd,tstack) = whd_stack (clenv_instance_template clause') in
   let nargs = List.length tstack in
   let cut_pf = 
     applist(thd, 
@@ -1089,7 +1089,8 @@ let atomize_param_of_ind hyp0 gl =
     if i<>nparams then 
       let tmptyp0 = pf_get_hyp_typ gl hyp0 in
       let (_,indtyp,_) = pf_reduce_to_mind gl tmptyp0 in
-      match kind_of_term (destAppL (whd_castapp indtyp)).(i) with
+      let argl = snd (decomp_app indtyp) in
+      match kind_of_term (List.index argl (i-1)) with
 	| IsVar id when not (List.exists (occur_var id) avoid) ->
 	    atomize_one (i-1) ((mkVar id)::avoid) gl
 	| IsVar id ->

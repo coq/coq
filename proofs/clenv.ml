@@ -676,10 +676,14 @@ let constrain_clenv_to_subterm clause (op,cl) =
        then clenv_unify op cl clause,cl
        else error "Bound 1"
      with ex when catchable_exception ex ->
-       (match kind_of_term (telescope_appl cl) with 
-	  | IsAppL (c1,[|c2|]) ->
+       (match kind_of_term cl with 
+	  | IsAppL (f,args) ->
+	      let n = Array.length args in
+	      assert (n>0);
+	      let c1 = mkAppL (f,Array.sub args 0 (n-1)) in
+	      let c2 = args.(n-1) in
 	      (try 
-		 matchrec c1 
+		 matchrec c1
 	       with ex when catchable_exception ex -> 
 		 matchrec c2)
           | IsProd (_,t,c) ->
@@ -929,7 +933,7 @@ let secondOrderAbstraction allow_K gl p oplist clause =
     clause'
 
 let clenv_so_resolver allow_K clause gl =
-  let c, oplist = whd_castapp_stack (clenv_instance_template_type clause) [] in
+  let c, oplist = whd_stack (clenv_instance_template_type clause) in
   match kind_of_term c with
     | IsMeta p ->
 	let clause' = secondOrderAbstraction allow_K gl p oplist clause in 
@@ -948,8 +952,8 @@ let clenv_so_resolver allow_K clause gl =
    Meta(1) had meta-variables in it. *)
 
 let clenv_unique_resolver allow_K clenv gls =
-  let pathd,_ = whd_castapp_stack (clenv_instance_template_type clenv) [] in
-  let glhd,_ = whd_castapp_stack (pf_concl gls) [] in
+  let pathd,_ = whd_stack (clenv_instance_template_type clenv) in
+  let glhd,_ = whd_stack (pf_concl gls)in
   match kind_of_term pathd, kind_of_term glhd with
     | IsMeta _, IsLambda _ ->
 	(try 
