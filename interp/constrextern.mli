@@ -58,3 +58,6 @@ val with_universes : ('a -> 'b) -> 'a -> 'b
 
 (* This suppresses printing of numeral and symbols *)
 val without_symbols : ('a -> 'b) -> 'a -> 'b
+
+(* This prints metas as anonymous holes *)
+val with_meta_as_hole : ('a -> 'b) -> 'a -> 'b
