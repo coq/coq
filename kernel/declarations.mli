@@ -44,6 +44,11 @@ type local_entry =
 
 (*s Inductive types (internal representation). *)
 
+type elimination_sorts = ElimOnProp | ElimOnSet | ElimOnType
+
+val elimination_of_sort : sorts -> elimination_sorts
+val sort_of_elimination : elimination_sorts -> sorts
+
 type recarg = 
   | Param of int 
   | Norec 
@@ -65,7 +70,7 @@ type one_inductive_body = {
   mind_user_arity : types option;
   mind_sort : sorts;
   mind_nrealargs : int;
-  mind_kelim : sorts list;
+  mind_kelim : elimination_sorts list;
   mind_listrec : (recarg list) array;
   mind_finite : bool;
   mind_nparams : int;

@@ -57,7 +57,7 @@ let general_rewrite_bindings lft2rgt (c,l) gl =
 	else error "The term provided does not end with an equation" 
     | Some (hdcncl,_) -> 
         let hdcncls = string_head hdcncl in 
-	let suffix = Declare.elimination_suffix (sort_of_goal gl) in
+	let suffix = Declare.elimination_suffix (elimination_sort_of_goal gl)in
         let elim =
 	  if lft2rgt then
             pf_global gl (id_of_string (hdcncls^suffix^"_r"))

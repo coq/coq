@@ -301,31 +301,37 @@ let is_correct_arity env sigma kelim (c,pj) indf t =
           srec (a2,a2') (Constraint.union u univ)
       | IsProd (_,a1,a2), _ -> 
           let k = whd_betadeltaiota env sigma a2 in 
-          let ksort = (match kind_of_term k with IsSort s -> s 
-			 | _ -> raise (Arity None)) in
+          let ksort = match kind_of_term k with
+	    | IsSort s -> elimination_of_sort s 
+	    | _ -> raise (Arity None) in
 	  let ind = build_dependent_inductive indf in
           let univ =
             try conv env sigma a1 ind
             with NotConvertible -> raise (Arity None) in
-          if List.exists (base_sort_cmp CONV ksort) kelim then
+          if List.exists ((=) ksort) kelim then
 	    ((true,k), Constraint.union u univ)
           else 
 	    raise (Arity (Some(k,t',error_elim_expln env sigma k t')))
       | k, IsProd (_,_,_) ->
 	  raise (Arity None)
       | k, ki -> 
-	  let ksort = (match k with IsSort s -> s 
-                         | _ ->  raise (Arity None)) in
-          if List.exists (base_sort_cmp CONV ksort) kelim then 
+	  let ksort = match k with
+	    | IsSort s -> elimination_of_sort s
+            | _ ->  raise (Arity None) in
+          if List.exists ((=) ksort) kelim then 
 	    (false, pt'), u
           else 
 	    raise (Arity (Some(pt',t',error_elim_expln env sigma pt' t')))
   in 
   try srec (pj.uj_type,t) Constraint.empty
   with Arity kinds ->
+    let create_sort = function 
+      | ElimOnProp -> prop
+      | ElimOnSet -> spec
+      | ElimOnType -> Type (Univ.new_univ ()) in
     let listarity =
-      (List.map (make_arity env true indf) kelim)
-      @(List.map (make_arity env false indf) kelim)
+      (List.map (fun s -> make_arity env true indf (create_sort s)) kelim)
+      @(List.map (fun s -> make_arity env false indf (create_sort s)) kelim)
     in 
     let ind = mis_inductive (fst (dest_ind_family indf)) in
     error_elim_arity CCI env ind listarity c pj kinds

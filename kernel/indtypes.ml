@@ -101,11 +101,12 @@ let mind_check_wellformed env mie =
 
 let allowed_sorts issmall isunit = function
   | Type _ -> 
-      [prop;spec;types]
+      [ElimOnProp;ElimOnSet;ElimOnType]
   | Prop Pos -> 
-      if issmall then [prop;spec;types] else [prop;spec]
+      if issmall then [ElimOnProp;ElimOnSet;ElimOnType]
+      else [ElimOnProp;ElimOnSet]
   | Prop Null -> 
-      if isunit then [prop;spec] else [prop]
+      if isunit then [ElimOnProp;ElimOnSet] else [ElimOnProp]
 
 type ill_formed_ind =
   | LocalNonPos of int

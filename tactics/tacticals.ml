@@ -309,9 +309,13 @@ let elim_sign ity i =
   let recarg = mis_recarg (lookup_mind_specif ity (Global.env())) in
   analrec [] recarg.(i-1)
 
-let sort_of_goal gl = 
+let elimination_sort_of_goal gl = 
   match kind_of_term (hnf_type_of gl (pf_concl gl)) with 
-    | IsSort s -> s
+    | IsSort s ->
+	(match s with
+	   | Prop Null -> ElimOnProp
+	   | Prop Pos -> ElimOnSet
+	   | Type _ -> ElimOnType)
     | _        -> anomaly "goal should be a type"
 
 
@@ -374,7 +378,7 @@ let general_elim_then_using
 
 let elimination_then_using tac predicate (indbindings,elimbindings) c gl = 
   let (ind,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
-  let elim = lookup_eliminator (pf_env gl) ind (sort_of_goal gl) in
+  let elim = lookup_eliminator (pf_env gl) ind (elimination_sort_of_goal gl) in
   general_elim_then_using
     elim elim_sign tac predicate (indbindings,elimbindings) c gl
 
@@ -386,7 +390,7 @@ let case_then_using tac predicate (indbindings,elimbindings) c gl =
   (* finding the case combinator *)
   let (ity,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
   let sigma = project gl in 
-  let sort  = sort_of_goal gl  in
+  let sort  = elimination_sort_of_goal gl  in
   let elim  = Indrec.make_case_gen (pf_env gl) sigma ity sort in  
   general_elim_then_using 
     elim case_sign tac predicate (indbindings,elimbindings) c gl
@@ -395,7 +399,7 @@ let case_nodep_then_using tac predicate (indbindings,elimbindings) c gl =
   (* finding the case combinator *)
   let (ity,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
   let sigma = project gl in 
-  let sort  = sort_of_goal gl  in
+  let sort  = elimination_sort_of_goal gl  in
   let elim  = Indrec.make_case_nodep (pf_env gl) sigma ity sort in  
   general_elim_then_using 
     elim case_sign tac predicate (indbindings,elimbindings) c gl

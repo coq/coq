@@ -1058,7 +1058,7 @@ let general_elim (c,lbindc) (elimc,lbindelimc) gl =
 let default_elim (c,lbindc)  gl = 
   let env = pf_env gl in
   let (ind,t) = reduce_to_quantified_ind env (project gl) (pf_type_of gl c) in
-  let s = sort_of_goal gl in
+  let s = elimination_sort_of_goal gl in
   let elimc =
     try lookup_eliminator env ind s 
     with Not_found -> 
@@ -1069,7 +1069,8 @@ let default_elim (c,lbindc)  gl =
            pr_id id; 'sPC;
 	   'sTR "The elimination of the inductive definition :";
            pr_id base; 'sPC; 'sTR "on sort "; 
-           'sPC; print_sort s ; 'sTR " is probably not allowed" >]
+           'sPC; print_sort (Declarations.sort_of_elimination s) ;
+	   'sTR " is probably not allowed" >]
   in  general_elim (c,lbindc) (elimc,[]) gl
 
 
@@ -1422,8 +1423,8 @@ let induction_from_context isrec style hyp0 gl =
   let (mind,typ0) = pf_reduce_to_quantified_ind gl tmptyp0 in
   let indvars = find_atomic_param_of_ind mind (snd (decompose_prod typ0)) in
   let elimc =
-    if isrec then lookup_eliminator env mind (sort_of_goal gl)
-    else Indrec.make_case_gen env (project gl) mind (sort_of_goal gl)
+    if isrec then lookup_eliminator env mind (elimination_sort_of_goal gl)
+    else Indrec.make_case_gen env (project gl) mind (elimination_sort_of_goal gl)
   in
   let elimt = pf_type_of gl elimc in
   let (statlists,lhyp0,indhyps,deps) = cook_sign hyp0 indvars env in
@@ -1533,7 +1534,7 @@ let general_case_analysis (c,lbindc) gl =
   let env = pf_env gl in
   let (mind,_) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   let sigma    = project gl in 
-  let sort     = sort_of_goal gl in
+  let sort     = elimination_sort_of_goal gl in
   let elim     = Indrec.make_case_gen env sigma mind sort in 
   general_elim (c,lbindc) (elim,[]) gl
     
@@ -1585,7 +1586,7 @@ let elim_scheme_type elim t gl =
 
 let elim_type t gl =
   let (ind,t) = pf_reduce_to_atomic_ind gl t in
-  let elimc = lookup_eliminator (pf_env gl) ind (sort_of_goal gl) in
+  let elimc = lookup_eliminator (pf_env gl) ind (elimination_sort_of_goal gl) in
   elim_scheme_type elimc t gl
 
 let dyn_elim_type = function
@@ -1596,7 +1597,7 @@ let dyn_elim_type = function
 let case_type t gl =
   let (ind,t) = pf_reduce_to_atomic_ind gl t in
   let env = pf_env gl in
-  let elimc = Indrec.make_case_gen env (project gl) ind (sort_of_goal gl) in 
+  let elimc = Indrec.make_case_gen env (project gl) ind (elimination_sort_of_goal gl) in 
   elim_scheme_type elimc t gl
 
 let dyn_case_type = function

@@ -152,7 +152,7 @@ val mkSet : constr
 val mkType : Univ.universe -> constr
 val prop : sorts
 val spec : sorts
-val types : sorts 
+(*val types : sorts *)
 val type_0 : sorts
 
 (* Construct an implicit (see implicit arguments in the RefMan).

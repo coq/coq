@@ -117,6 +117,7 @@ val path_of_inductive_path : inductive_path -> mutual_inductive_path
 val path_of_constructor_path : constructor_path -> mutual_inductive_path
 
 (* Look up function for the default elimination constant *)
-val elimination_suffix : sorts -> string
-val make_elimination_ident : inductive_ident:identifier -> sorts -> identifier
-val lookup_eliminator : Environ.env -> inductive -> sorts -> constr
+val elimination_suffix : elimination_sorts -> string
+val make_elimination_ident :
+  inductive_ident:identifier -> elimination_sorts -> identifier
+val lookup_eliminator : Environ.env -> inductive -> elimination_sorts -> constr

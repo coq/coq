@@ -523,12 +523,13 @@ let instantiate_inductive_section_params t ind =
   else t
 (* Eliminations. *)
 
-let eliminations = [ (prop,"_ind") ; (spec,"_rec") ; (types,"_rect") ]
+let eliminations =
+  [ (ElimOnProp,"_ind") ; (ElimOnSet,"_rec") ; (ElimOnType,"_rect") ]
 
 let elimination_suffix = function
-  | Type _    -> "_rect"
-  | Prop Null -> "_ind"
-  | Prop Pos  -> "_rec"
+  | ElimOnProp -> "_ind"
+  | ElimOnSet  -> "_rec"
+  | ElimOnType -> "_rect"
 
 let make_elimination_ident id s = add_suffix id (elimination_suffix s)
   
@@ -551,7 +552,8 @@ let declare_one_elimination mispec =
   let kelim = mis_kelim mispec in
   List.iter
     (fun (sort,suff) -> 
-       if List.mem sort kelim then declare (mindstr^suff) (make_elim sort))
+       if List.mem sort kelim then
+	 declare (mindstr^suff) (make_elim (sort_of_elimination sort)))
     eliminations
 
 let declare_eliminations sp =
