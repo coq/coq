@@ -177,18 +177,6 @@ V8Infix "*" times : positive_scope.
 (**********************************************************************)
 (** Comparison on binary positive numbers *)
 
-Inductive relation : Set := 
-  EGAL :relation | INFERIEUR : relation | SUPERIEUR : relation.
-
-Definition Op := [r:relation]
-  Cases r of
-    EGAL => EGAL
-  | INFERIEUR => SUPERIEUR
-  | SUPERIEUR => INFERIEUR
-  end.
-
-(** Comparison of binary positive numbers *)
-
 Fixpoint compare [x,y:positive]: relation -> relation :=
   [r:relation] 
   Cases x y of
