@@ -28,6 +28,7 @@ type red_kind =
   | IOTA
   | CONST of section_path list
   | CONSTBUT of section_path list
+  | VAR of identifier
 
 (* Sets of reduction kinds. *)
 type reds

@@ -90,6 +90,7 @@ let unfold_red sp = {
 type red_kind =
     BETA | DELTA | ZETA | EVAR | IOTA
   | CONST of constant_path list | CONSTBUT of constant_path list
+  | VAR of identifier
 
 let rec red_add red = function
   | BETA -> { red with r_beta = true }
@@ -107,6 +108,7 @@ let rec red_add red = function
   | IOTA -> { red with r_iota = true }
   | EVAR -> { red with r_evar = true }
   | ZETA -> { red with r_zeta = true }
+  | VAR id -> red_add red (CONST [make_path [] id CCI])
 
 let incr_cnt red cnt =
   if red then begin
@@ -124,12 +126,16 @@ let red_set red = function
       let (b,l) = red.r_const in
       let c = List.mem sp l in
       incr_cnt ((b & not c) or (c & not b)) delta
+  | VAR id -> (* En attendant d'avoir des sp pour les Var *)
+      let (b,l) = red.r_const in
+      let c = List.exists (fun sp -> basename sp = id) l in
+      incr_cnt ((b & not c) or (c & not b)) delta
   | ZETA -> incr_cnt red.r_zeta zeta
   | EVAR -> incr_cnt red.r_zeta evar
   | IOTA -> incr_cnt red.r_iota iota
   | DELTA -> fst red.r_const  (* Used for Rel/Var defined in context *)
   (* Not for internal use *)
-  | CONST _ | CONSTBUT _ -> failwith "not implemented"
+  | CONST _ | CONSTBUT _ | VAR _ -> failwith "not implemented"
 
 (* Gives the constant list *)
 let red_get_const red =
@@ -294,24 +300,24 @@ let ref_value_cache info ref =
       -> None
 
 let defined_vars flags env =
-  if red_local_const (snd flags) then
+(*  if red_local_const (snd flags) then*)
     fold_named_context 
       (fun env (id,b,t) e ->
 	 match b with
 	   | None -> e
 	   | Some body -> (id, body)::e)
       env []
-  else []
+(*  else []*)
 
 let defined_rels flags env =
-  if red_local_const (snd flags) then
+(*  if red_local_const (snd flags) then*)
   fold_rel_context 
       (fun env (id,b,t) (i,subs) ->
 	 match b with
 	   | None -> (i+1, subs)
 	   | Some body -> (i+1, (i,body) :: subs))
       env (0,[])
-  else (0,[])
+(*  else (0,[])*)
 
 let infos_under infos = { infos with i_flags = flags_under infos.i_flags }
 
@@ -434,7 +440,8 @@ let red_allowed flags stack rk =
     red_top flags rk
 
 let red_allowed_ref flags stack = function
-  | FarRelBinding _ | VarBinding _ -> red_allowed flags stack DELTA
+  | FarRelBinding _ -> red_allowed flags stack DELTA
+  | VarBinding id -> red_allowed flags stack (VAR id)
   | EvarBinding _ -> red_allowed flags stack EVAR
   | ConstBinding (sp,_) -> red_allowed flags stack (CONST [sp])
 
@@ -1098,7 +1105,7 @@ and whnf_frterm info ft =
 	  else 
 	    ft
       | FFlex (FVar id) as t->
-	  if red_under info.i_flags DELTA then
+	  if red_under info.i_flags (VAR id) then
 	    match ref_value_cache info (VarBinding id) with
 	      | Some def ->
 		  let udef = unfreeze info def in
