@@ -69,6 +69,8 @@
 \def\intuition{{\tt intuition }}
 \def\try{{\tt try }}
 \def\repeat{{\tt repeat }}
+\def\eauto{{\tt eauto }}
+\def\subst{{\tt subst }}
 
 
 \begin{document}
@@ -598,26 +600,40 @@ You need the \gb tactic.
 \Question{I want to state a fact that I will use later as an hypothesis, how can I do it ?}
 
 If you want to use forward reasoning (first proving the fact and then
-using it) You just need to use the \assert tactic. If you want to use
+using it) you just need to use the \assert tactic. If you want to use
 backward reasoning (proving your goal using an assumption and then
 proving the assumption) use the \cut tactic.
 
 \Question{I want to state a fact that I will use later as an hypothesis and prove it later, how can I do it ?}
 
-You can use \elim followed by \intro or you can use the following \Ltac command :
+You can use \cut followed by \intro or you can use the following \Ltac command :
 \begin{verbatim}
 Ltac assert_later t := cut t;[intro|idtac]. 
 \end{verbatim}
 
-
-
 \Question{What is the difference between saved qed and defined ?}
+
+These three commands perform type checking, but when defined is used the new definition is set as transparent, otherwise it is defined as opaque.
+
 
 \Question{What is the difference between opaque and transparent ?}
 
+Opaque definition can not be unfolded but transparent one can.
+
+\Question{How can I know what does a tactic ?}
+
+You can use the {\tt Info} command.
+
+\Question{Why auto does not work ? How can I fix it ?}
+
+You can increase the depth of the proof search or add some lemmas in the base of hints.
+Perhaps you may need to use \eauto.
+
+\Question{What is \eauto ?}
+
+This is the same tactic as \auto, but it does some \eapply instead of \apply.
 
 
-\Question{My goal is ???, how can I prove it ?}
 
 \Question{I want to replace some term with another in the goal, how can I do it ?}
 
@@ -711,6 +727,10 @@ auto.
 Qed.
 \end{coq_example}
 
+\Question{One of the hypothesis is an equality between a varible and some term, I want to get  rid of this variable. how can I do it ?}
+
+You can use the \subst tactic. This will rewrite the equality everywhere and clear the assumption.
+
 \Question{What can I do if I get {\tt generated subgoal term' has metavariables in it } ?}
 
 You should use the \eapply tactic, this will generate some goals containing metavariables. 
@@ -741,11 +761,15 @@ You can use the \Focus command to concentrate on some goal. When the goal is pro
 
 \Question{How can I change the order of the hypothesis ?}
 
-You can use the {\tt move ... after} command.
+You can use the {\tt Move ... after} command.
 
 \Question{How can I change the name of an hypothesis ?}
 
-You can use the {\tt rename ... into} command.
+You can use the {\tt Rename ... into} command.
+
+\Question{How can I delete some hypothesis ?}
+
+You can use the {\tt Clear} command.
 
 \Question{How can use a proof which is not finished ?}
 
@@ -779,16 +803,16 @@ Qed.
 
 
 
-\subsection{Notations}
+\section{Notations}
 
-\subsection{Modules}
+\section{Modules}
 
-\subsection{Tactics in ml}
+\section{Tactics in ml}
 
 
 
 %%%%%%%
-\subsection{\Ltac}
+\section{\Ltac}
 
 \Question{What is \Ltac ?}
 
@@ -859,12 +883,6 @@ Ltac introIdGen := let id:=fresh in intro id.
 
 \Question{What can I do if I get ``Cannot solve a second-order unification problem'' ?}
 
-\Question{How can I know what does a tactic ?}
-
-\Question{Why auto does not work ? How can I fix it ?}
-
-You can increase the depth of the proof search or add some lemmas in the base of hints.
-
 \Question{What is the use of the pattern tactic ?}
 
 \Question{What is the difference between assert, cut and generalize ?}
@@ -923,7 +941,7 @@ Currently there are no equivalent tactic for classical logic.
 
 
 %%%%%%%
-\subsection{Glossary}
+\section{Glossary}
 
 \Question{What is a goal ?}
 
