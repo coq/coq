@@ -337,7 +337,7 @@ let ast_of_constr at_top env t =
     else Reductionops.local_strong strip_outer_cast t in
   let avoid = if at_top then ids_of_context env else [] in
   ast_of_raw 
-    (Detyping.detype env avoid (names_of_rel_context env) t')
+    (Detyping.detype (at_top,env) avoid (names_of_rel_context env) t')
 
 let ast_of_constant env sp =
   let a = ast_of_constant_ref sp in
@@ -432,8 +432,8 @@ let rec ast_of_pattern tenv env = function
 
   | PMeta (Some n) -> ope("META",[ast_of_ident n])
   | PMeta None -> ope("ISEVAR",[])
-  | PFix f -> ast_of_raw (Detyping.detype tenv [] env (mkFix f))
-  | PCoFix c -> ast_of_raw (Detyping.detype tenv [] env (mkCoFix c))
+  | PFix f -> ast_of_raw (Detyping.detype (false,tenv) [] env (mkFix f))
+  | PCoFix c -> ast_of_raw (Detyping.detype (false,tenv) [] env (mkCoFix c))
 	
 and ast_of_patopt tenv env = function
   | None -> (string "SYNTH")

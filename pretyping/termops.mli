@@ -151,16 +151,15 @@ val add_vname : Idset.t -> name -> Idset.t
 (* sets of free identifiers *)
 type used_idents = identifier list
 val occur_rel : int -> name list -> identifier -> bool
-val occur_id : env -> name list -> identifier -> constr -> bool
+val occur_id : name list -> identifier -> constr -> bool
 
 val next_name_not_occuring :
-  env -> name -> identifier list -> name list -> constr -> identifier
+  bool -> name -> identifier list -> name list -> constr -> identifier
 val concrete_name :
-  env -> identifier list -> name list -> name ->
-  constr -> identifier option * identifier list
+  bool -> identifier list -> name list -> name -> constr -> 
+    name * identifier list
 val concrete_let_name :
-  env -> identifier list -> name list ->
-  name -> constr -> name * identifier list
+  bool -> identifier list -> name list -> name -> constr -> name * identifier list
 val rename_bound_var : env -> identifier list -> types -> types
 
 (* other signature iterators *)

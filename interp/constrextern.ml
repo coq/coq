@@ -738,7 +738,7 @@ let extern_constr_gen at_top scopt env t =
   let vars = vars_of_env env in
   let avoid = if at_top then ids_of_context env else [] in
   extern (not at_top) (scopt,Symbols.current_scopes()) vars
-    (Detyping.detype env avoid (names_of_rel_context env) t)
+    (Detyping.detype (at_top,env) avoid (names_of_rel_context env) t)
 
 let extern_constr_in_scope at_top scope env t =
   extern_constr_gen at_top (Some scope) env t
@@ -782,13 +782,11 @@ let rec raw_of_pat tenv env = function
   | PCase ((Some ind,cs),typopt,tm,bv) ->
       let avoid = List.fold_right (name_fold (fun x l -> x::l)) env [] in
       let k = (snd (lookup_mind_specif (Global.env()) ind)).Declarations.mind_nrealargs in
-      Detyping.detype_case false
-	(fun tenv _ -> raw_of_pat tenv)
-	(fun tenv _ -> raw_of_eqn tenv)
-	tenv avoid env ind cs typopt k tm bv
+      Detyping.detype_case false (raw_of_pat tenv env)(raw_of_eqn tenv env)
+	tenv avoid ind cs typopt k tm bv
   | PCase _ -> error "Unsupported case-analysis while printing pattern"
-  | PFix f -> Detyping.detype tenv [] env (mkFix f)
-  | PCoFix c -> Detyping.detype tenv [] env (mkCoFix c)
+  | PFix f -> Detyping.detype (false,tenv) [] env (mkFix f)
+  | PCoFix c -> Detyping.detype (false,tenv) [] env (mkCoFix c)
   | PSort s -> RSort (loc,s)
 
 and raw_of_eqn tenv env constr construct_nargs branch =

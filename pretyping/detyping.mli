@@ -20,15 +20,14 @@ open Termops
 (* [detype env avoid nenv c] turns [c], typed in [env], into a rawconstr. *)
 (* De Bruijn indexes are turned to bound names, avoiding names in [avoid] *)
 
-val detype : env -> identifier list -> names_context -> constr -> rawconstr
+val detype : bool * env -> identifier list -> names_context -> constr -> 
+  rawconstr
 
 val detype_case : 
-  bool ->
-  (env -> identifier list -> names_context -> 'a -> rawconstr) ->
-  (env -> identifier list -> names_context -> constructor -> int -> 
-    'a -> Rawterm.loc * Names.identifier list * Rawterm.cases_pattern list *
-    Rawterm.rawconstr) ->
-    env -> identifier list -> names_context -> inductive -> case_style ->
+  bool -> ('a -> rawconstr) ->
+  (constructor -> int -> 'a -> loc * identifier list * cases_pattern list *
+    rawconstr) ->
+    env -> identifier list -> inductive -> case_style ->
       'a option -> int -> 'a -> 'a array -> rawconstr
 
 (* look for the index of a named var or a nondep var as it is renamed *)

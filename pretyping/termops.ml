@@ -714,7 +714,7 @@ let occur_rel p env id =
   try lookup_name_of_rel p env = Name id
   with Not_found -> false (* Unbound indice : may happen in debug *)
 
-let occur_id env nenv id0 c =
+let occur_id nenv id0 c =
   let rec occur n c = match kind_of_term c with
     | Var id when  id=id0 -> raise Occur
     | Const kn when id_of_global (ConstRef kn) = id0 -> raise Occur
@@ -731,11 +731,11 @@ let occur_id env nenv id0 c =
   with Occur -> true
     | Not_found -> false (* Case when a global is not in the env *)
 
-let next_name_not_occuring env name l env_names t =
+let next_name_not_occuring is_goal_ccl name l env_names t =
   let rec next id =
-    if List.mem id l or occur_id env env_names id t or 
+    if List.mem id l or occur_id env_names id t or 
       (* To be consistent with intro mechanism *)
-      (is_global id & not (is_section_variable id))
+      (is_goal_ccl & is_global id & not (is_section_variable id))
     then next (lift_ident id)
     else id
   in 
@@ -826,16 +826,16 @@ let global_vars_set_of_decl env = function
         (global_vars_set env c)
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
-let concrete_name env l env_names n c =
+let concrete_name is_goal_ccl l env_names n c =
   if n = Anonymous & noccurn 1 c then
-    (None,l)
+    (Anonymous,l)
   else
-    let fresh_id = next_name_not_occuring env n l env_names c in
-    let idopt = if noccurn 1 c then None else (Some fresh_id) in
+    let fresh_id = next_name_not_occuring is_goal_ccl n l env_names c in
+    let idopt = if noccurn 1 c then Anonymous else Name fresh_id in
     (idopt, fresh_id::l)
 
-let concrete_let_name env l env_names n c =
-  let fresh_id = next_name_not_occuring env n l env_names c in
+let concrete_let_name is_goal_ccl l env_names n c =
+  let fresh_id = next_name_not_occuring is_goal_ccl n l env_names c in
   (Name fresh_id, fresh_id::l)
 
 let rec rename_bound_var env l c =

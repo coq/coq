@@ -759,7 +759,7 @@ let rec pretype tycon env isevars lvar = function
           let nconstr = Array.length mip.mind_consnames in
           let tyi = snd ind in
           if isrec && mis_is_recursive_subset [tyi] recargs then
-            Some (Detyping.detype env 
+            Some (Detyping.detype (false,env)
 	      (ids_of_context env) (names_of_rel_context env)
               (nf_evar (evars_of isevars) v))
 	  else
