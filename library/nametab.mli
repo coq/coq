@@ -116,8 +116,3 @@ val locate_in_absolute_module : dir_path -> identifier -> global_reference
 
 val push_loaded_library : dir_path -> unit
 val locate_loaded_library : qualid -> dir_path
-
-type strength = 
-  | NotDeclare
-  | DischargeAt of dir_path * int
-  | NeverDischarge

@@ -37,6 +37,7 @@ open Hipattern
 open Coqlib
 open Nametab
 open Tacexpr
+open Decl_kinds
 
 exception Bound
 
@@ -1600,8 +1601,8 @@ let abstract_subproof name tac gls =
   in
   if occur_existential concl then error "Abstract cannot handle existentials";
   let lemme =
-    start_proof na (false,Nametab.NeverDischarge) current_sign concl (fun _ _ -> ());
-    let _,(const,(_,strength),_) =
+    start_proof na (IsGlobal (Proof Lemma)) current_sign concl (fun _ _ -> ());
+    let _,(const,kind,_) =
       try
 	by (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)); 
 	let r = cook_proof () in 
@@ -1610,7 +1611,7 @@ let abstract_subproof name tac gls =
 	(delete_current_proof(); raise e)
     in   (* Faudrait un peu fonctionnaliser cela *)
     let cd = Safe_typing.ConstantEntry const in
-    let sp = Declare.declare_constant na (cd,strength) in
+    let sp = Declare.declare_constant na (cd,IsProof Lemma) in
     let newenv = Global.env() in
     Declare.constr_of_reference (ConstRef sp)
   in

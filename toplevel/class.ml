@@ -22,6 +22,7 @@ open Lib
 open Classops
 open Declare
 open Nametab
+open Decl_kinds
 open Safe_typing
 
 let strength_min4 stre1 stre2 stre3 stre4 =
@@ -35,7 +36,7 @@ let id_of_varid c = match kind_of_term c with
    lc liste des variable dont depend la classe source *)
 
 let rec stre_unif_cond = function
-  | ([],[]) -> NeverDischarge
+  | ([],[]) -> Global
   | (v::l,[]) -> variable_strength v
   | ([],v::l) -> variable_strength v
   | (v1::l1,v2::l2) ->
@@ -211,7 +212,7 @@ let get_strength stre ref cls clt =
 (* 01/00: Supprimé la prise en compte de la force des variables locales. Sens ?
   let streunif = stre_unif_cond (s_vardep,f_vardep) in
  *)
-  let streunif = NeverDischarge in
+  let streunif = Global in
   let stre' = strength_min4 stres stret stref streunif in
   strength_min (stre,stre')
 
@@ -263,7 +264,7 @@ let build_id_coercion idf_opt source =
       { const_entry_body = mkCast (val_f, typ_f);
 	const_entry_type = None;
         const_entry_opaque = false } in
-  let sp = declare_constant idf (constr_entry,NeverDischarge) in
+  let sp = declare_constant idf (constr_entry,Decl_kinds.IsDefinition) in
   ConstRef sp
 
 (* 

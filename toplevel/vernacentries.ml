@@ -27,6 +27,7 @@ open Command
 open Goptions
 open Nametab
 open Vernacexpr
+open Decl_kinds
 
 (* Pcoq hooks *)
 
@@ -250,23 +251,6 @@ let vernac_distfix assoc n inf qid =
 (***********)
 (* Gallina *)
 
-let interp_assumption = function
-  | (AssumptionHypothesis | AssumptionVariable) -> Declare.make_strength_0 ()
-  | (AssumptionAxiom | AssumptionParameter) -> Nametab.NeverDischarge
-
-let interp_definition = function
-  | Definition -> (false, Nametab.NeverDischarge)
-  | LocalDefinition -> (true, Declare.make_strength_0 ())
-
-let interp_theorem = function
-  | (Theorem | Lemma | Decl) -> Nametab.NeverDischarge
-  | Fact -> Declare.make_strength_1 ()
-  | Remark -> Declare.make_strength_0 ()
-
-let interp_goal = function
-  | StartTheoremProof x -> (false, interp_theorem x)
-  | StartDefinitionBody x -> interp_definition x
-
 let start_proof_and_print idopt k t hook =
   start_proof_com idopt k t hook;
   print_subgoals ();
@@ -279,21 +263,22 @@ let rec generalize_rawconstr c = function
       List.fold_right (fun x b -> Ast.mkProdC(x,t,b)) idl
         (generalize_rawconstr c bl)
 
-let vernac_definition kind id def hook =
-  let (local,stre as k) = interp_definition kind in
+
+let vernac_definition local id def hook =
   match def with
   | ProveBody (bl,t) ->
       let hook _ _ = () in
       let t = generalize_rawconstr t bl in
-      start_proof_and_print (Some id) k t hook
+      let kind = if local = Local then IsLocal else IsGlobal DefinitionBody in
+      start_proof_and_print (Some id) kind t hook
   | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
         | None -> None
         | Some r -> 
 	    let (evc,env)= Command.get_current_context () in
 	    Some (interp_redexp env evc r) in
-      let ref = declare_definition id k bl red_option c typ_opt in
-      hook stre ref
+      let ref = declare_definition id local bl red_option c typ_opt in
+      hook local ref
 
 let vernac_start_proof kind sopt t lettop hook =
   if not(refining ()) then
@@ -302,15 +287,14 @@ let vernac_start_proof kind sopt t lettop hook =
 	(str "Let declarations can only be used in proof editing mode")
 (*    else if s = None then
       error "repeated Goal not permitted in refining mode"*);
-  start_proof_and_print sopt (false, interp_theorem kind) t hook
+  start_proof_and_print sopt (IsGlobal (Proof kind)) t hook
 
 let vernac_end_proof is_opaque idopt =
   if_verbose show_script ();
   match idopt with
     | None -> save_named is_opaque
     | Some (id,None) -> save_anonymous is_opaque id
-    | Some (id,Some kind) ->
-	save_anonymous_with_strength (interp_theorem kind) is_opaque id
+    | Some (id,Some kind) -> save_anonymous_with_strength kind is_opaque id
 
   (* A stupid macro that should be replaced by ``Exact c. Save.'' all along
      the theories [??] *)
@@ -319,12 +303,11 @@ let vernac_exact_proof c =
   by (Tactics.exact_proof c); 
   save_named true
 
-let vernac_assumption kind l =
-  let stre = interp_assumption kind in
+let vernac_assumption (islocal,_ as kind) l =
   List.iter
     (fun (is_coe,(id,c)) ->
-      let r = declare_assumption id stre c in
-      if is_coe then Class.try_add_new_coercion r stre) l
+      let r = declare_assumption id kind c in
+      if is_coe then Class.try_add_new_coercion r islocal) l
 
 let vernac_inductive f indl = build_mutual indl f
 
@@ -692,7 +675,8 @@ let vernac_goal = function
   | None -> ()
   | Some c ->
       if not (refining()) then begin
-        start_proof_com None (false,Nametab.NeverDischarge) c (fun _ _ ->());
+        let unnamed_kind = Lemma (* Arbitrary *) in
+        start_proof_com None (IsGlobal (Proof unnamed_kind)) c (fun _ _ ->());
 	print_subgoals ()
       end else 
 	error "repeated Goal not permitted in refining mode"

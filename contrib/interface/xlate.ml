@@ -12,6 +12,7 @@ open Genarg;;
 open Rawterm;;
 open Tacexpr;;
 open Vernacexpr;;
+open Decl_kinds;;
 
 let in_coq_ref = ref false;;
 
@@ -1001,7 +1002,77 @@ and xlate_red_tactic =
 
 and xlate_tactic =
  function
+(*
+   | TacFun (largs, t) ->
+       let fst, rest =  xlate_largs_to_id_unit largs in
+       CT_tactic_fun (CT_id_unit_list(fst, rest), xlate_tactic t)
+   | TacFunRec _ -> xlate_error "Merged with Tactic Definition"
+   | TacThen (t1, t2) ->
+      (match xlate_tactic t1 with
+      | CT_then(t,tl) -> CT_then (t, tl@[xlate_tactic t2])
+      | xt1 -> CT_then (xt1, [xlate_tactic t2]))
+   | TacThens (t, tl) -> CT_parallel (xlate_tactic t, List.map xlate_tactic tl)
+   | TacFirst [] -> xlate_error ""
+   | TacFirst (a::l) ->
+	 CT_first(xlate_tactic a,List.map xlate_tactic l)
+   | TacSolve [] -> xlate_error ""
+   | TacSolve (a::l) ->
+         CT_tacsolve(xlate_tactic a, List.map xlate_tactic l)
+   | TacDo (n, t) -> CT_do (CT_int n, xlate_tactic t)
+   | TacTry t -> CT_try (xlate_tactic t)
+   | TacRepeat t -> CT_repeat (xlate_tactic t)
+   | TacAbstract (t, None) -> CT_abstract(ctv_ID_OPT_NONE, (xlate_tactic t))
+   | TacAbstract (t, Some id) ->
+       CT_abstract(ctf_ID_OPT_SOME (xlate_ident id), (xlate_tactic t))
+   | TacInfo t -> CT_info (xlate_tactic t)
+   | TacProgress t -> xlate_error "TODO: Progress t"
+   | TacOrelse (t1, t2) -> CT_orelse (xlate_tactic t1, xlate_tactic t2)
+   | TacMatch (exp, rules) ->
+        CT_match_tac(CT_coerce_DEF_BODY_to_LET_VALUE(formula_to_def_body exp),
+		     match List.map 
+		       (function 
+			  | Pat ([],p,tac) ->
+			      CT_match_tac_rule(xlate_context_pattern p,
+						mk_let_value tac)
+			  | Pat (_,p,tac) -> xlate_error"No hyps in pure Match"
+                          | All tac ->
+			      CT_match_tac_rule
+				(CT_coerce_FORMULA_to_CONTEXT_PATTERN
+				   CT_existvarc, 
+				   mk_let_value tac)) rules with
+			 | [] -> assert false
+			 | fst::others ->
+			     CT_match_tac_rules(fst, others))
 
+   | TacMatchContext (_,[]) -> failwith ""
+   | TacMatchContext (lr,rule1::rules) ->
+         (* TODO : traiter la direction "lr" *)
+	 CT_match_context(xlate_context_rule rule1,
+                          List.map xlate_context_rule rules)
+   | TacLetIn (l, t) ->
+       let cvt_clause =
+	 function
+	     ((_,s),None,ConstrMayEval v) ->
+		 CT_let_clause(xlate_ident s,
+			       CT_coerce_DEF_BODY_to_LET_VALUE
+                               (formula_to_def_body v))
+	   | ((_,s),None,Tacexp t) -> 
+		 CT_let_clause(xlate_ident s,
+			       CT_coerce_TACTIC_COM_to_LET_VALUE
+                               (xlate_tactic t))
+	   | ((_,s),None,t) -> 
+		 CT_let_clause(xlate_ident s,
+			       CT_coerce_TACTIC_COM_to_LET_VALUE
+                               (xlate_call_or_tacarg t))
+	   | ((_,s),Some c,v) -> xlate_error "TODO: Let id : c := t In t'" in
+	 let cl_l = List.map cvt_clause l in
+         (match cl_l with
+	    | [] -> assert false 
+	    | fst::others ->
+	   	CT_lettac (CT_let_clauses(fst, others), mk_let_value t))
+   | TacLetCut _ -> xlate_error "Unclear future of syntax Let x := t"
+   | TacLetRecIn _ -> xlate_error "TODO: Rec x = t In"
+*)
    | TacAtom (_, t) -> xlate_tac t 
    | TacFail 0 -> CT_fail
    | TacFail n -> xlate_error "TODO: Fail n"
@@ -1356,28 +1427,18 @@ let xlate_thm x = CT_thm (match x with
   | Theorem -> "Theorem"
   | Remark -> "Remark"
   | Lemma -> "Lemma"
-  | Fact -> "Fact"
-  | Decl -> "Decl")
+  | Fact -> "Fact")
 
 
 let xlate_defn x = CT_defn (match x with
- | LocalDefinition -> "Local"
- | Definition -> "Definition")
-
-
-let xlate_defn_or_thm =
-  function
- (* Unable to decide if a fact in one section or at toplevel, a remark
-    at toplevel or a theorem or a Definition *)
- | StartTheoremProof k -> CT_coerce_THM_to_DEFN_OR_THM (xlate_thm k)
- | StartDefinitionBody k -> CT_coerce_DEFN_to_DEFN_OR_THM (xlate_defn k);;
+ | Local -> "Local"
+ | Global -> "Definition")
 
 let xlate_var x = CT_var (match x with
- | AssumptionParameter -> "Parameter"
- | AssumptionAxiom -> "Axiom"
- | AssumptionVariable -> "Variable"
- | AssumptionHypothesis -> "Hypothesis");;
-
+ | (Global,Definitional) -> "Parameter"
+ | (Global,Logical) -> "Axiom"
+ | (Local,Definitional) -> "Variable"
+ | (Local,Logical) -> "Hypothesis");;
 
 let xlate_dep =
  function
@@ -1807,9 +1868,8 @@ let xlate_vernac =
       let local_opt =
        match s with
        (* Cannot decide whether it is a global or a Local but at toplevel *)
-       | Nametab.NeverDischarge -> CT_coerce_NONE_to_LOCAL_OPT CT_none
-       | Nametab.DischargeAt _ -> CT_local
-       | Nametab.NotDeclare -> assert false in
+       | Global -> CT_coerce_NONE_to_LOCAL_OPT CT_none
+       | Local -> CT_local in
       CT_coercion (local_opt, id_opt, loc_qualid_to_ct_ID id1,
         xlate_class id2, xlate_class id3)
 
@@ -1818,9 +1878,8 @@ let xlate_vernac =
       let local_opt =
        match s with
        (* Cannot decide whether it is a global or a Local but at toplevel *)
-       | Nametab.NeverDischarge -> CT_coerce_NONE_to_LOCAL_OPT CT_none
-       | Nametab.DischargeAt _ -> CT_local 
-       | Nametab.NotDeclare -> assert false in
+       | Global -> CT_coerce_NONE_to_LOCAL_OPT CT_none
+       | Local -> CT_local in
       CT_coercion (local_opt, id_opt, xlate_ident id1,
         xlate_class id2, xlate_class id3)
   | VernacResetName id -> CT_reset (xlate_ident id)

@@ -26,6 +26,7 @@ open Impargs
 open Nametab
 open Library
 open Safe_typing
+open Decl_kinds
 
 (**********************************************)
 
@@ -37,38 +38,12 @@ open Safe_typing
 
 open Nametab
 
-let depth_of_strength = function
-  | DischargeAt (sp',n) -> n
-  | NeverDischarge -> 0
-  | NotDeclare -> assert false
-
-let make_strength_0 () = 
-  let depth = Lib.sections_depth () in
-  let cwd = Lib.cwd() in
-  if depth > 0 then DischargeAt (cwd, depth) else NeverDischarge
-
-let make_strength_1 () =
-  let depth = Lib.sections_depth () in
-  let cwd = Lib.cwd() in
-  if depth > 1 then DischargeAt (extract_dirpath_prefix 1 cwd, depth-1)
-  else NeverDischarge
-
-let make_strength_2 () =
-  let depth = Lib.sections_depth () in
-  let cwd = Lib.cwd() in
-  if depth > 2 then DischargeAt (extract_dirpath_prefix 2 cwd, depth-2)
-  else NeverDischarge
-
-let is_less_persistent_strength = function
-  | (NeverDischarge,_) -> false
-  | (NotDeclare,_) -> false
-  | (_,NeverDischarge) -> true
-  | (_,NotDeclare) -> true
-  | (DischargeAt (sp1,_),DischargeAt (sp2,_)) ->
-      is_dirpath_prefix_of sp1 sp2
-
 let strength_min (stre1,stre2) =
-  if is_less_persistent_strength (stre1,stre2) then stre1 else stre2
+  if stre1 = Local or stre2 = Local then Local else Global
+
+let string_of_strength = function
+  | Local -> "(local)"
+  | Global -> "(global)"
 
 (* XML output hooks *)
 let xml_declare_variable = ref (fun sp -> ())
@@ -85,14 +60,13 @@ type section_variable_entry =
   | SectionLocalDef of constr * types option * bool (* opacity *)
   | SectionLocalAssum of types
 
-type variable_declaration = dir_path * section_variable_entry * strength
+type variable_declaration = dir_path * section_variable_entry * local_kind
 
 type checked_section_variable =
   | CheckedSectionLocalDef of constr * types * Univ.constraints * bool
   | CheckedSectionLocalAssum of types * Univ.constraints
 
-type checked_variable_declaration =
-    dir_path * checked_section_variable * strength
+type checked_variable_declaration = dir_path * checked_section_variable
 
 let vartab = ref (Idmap.empty : checked_variable_declaration Idmap.t)
 
@@ -102,7 +76,7 @@ let _ = Summary.declare_summary "VARIABLE"
 	    Summary.init_function = (fun () -> vartab := Idmap.empty);
 	    Summary.survive_section = false }
 
-let cache_variable (sp,(id,(p,d,strength))) =
+let cache_variable (sp,(id,(p,d,mk))) =
   (* Constr raisonne sur les noms courts *)
   if Idmap.mem id !vartab then
     errorlabstrm "cache_variable" (pr_id id ++ str " already exists");
@@ -116,7 +90,7 @@ let cache_variable (sp,(id,(p,d,strength))) =
         let (_,bd,ty) = Global.lookup_named id in
         CheckedSectionLocalDef (out_some bd,ty,cst,opaq) in
   Nametab.push 0 (restrict_path 0 sp) (VarRef id);
-  vartab := Idmap.add id (p,vd,strength) !vartab
+  vartab := Idmap.add id (p,vd) !vartab
 
 let (in_variable, out_variable) =
   let od = {
@@ -147,9 +121,9 @@ let redeclare_variable id discharged_hyps obj =
 
 (* Globals: constants and parameters *)
 
-type constant_declaration = global_declaration * strength
+type constant_declaration = global_declaration * global_kind
 
-let csttab = ref (Spmap.empty : strength Spmap.t)
+let csttab = ref (Spmap.empty : global_kind Spmap.t)
 
 let _ = Summary.declare_summary "CONSTANT"
 	  { Summary.freeze_function = (fun () -> !csttab);
@@ -157,7 +131,7 @@ let _ = Summary.declare_summary "CONSTANT"
 	    Summary.init_function = (fun () -> csttab := Spmap.empty);
 	    Summary.survive_section = false }
 
-let cache_constant (sp,(cdt,stre)) =
+let cache_constant (sp,(cdt,kind)) =
   (if Idmap.mem (basename sp) !vartab then
     errorlabstrm "cache_constant" 
       (pr_id (basename sp) ++ str " already exists"));
@@ -165,35 +139,26 @@ let cache_constant (sp,(cdt,stre)) =
     let (_,id) = repr_path sp in
     errorlabstrm "cache_constant" (pr_id id ++ str " already exists"));
   Global.add_constant sp cdt;
-  (match stre with
-    | DischargeAt (dp,n) when not (is_dirpath_prefix_of dp (Lib.cwd ())) ->
-        (* Only qualifications including the sections segment from the current
-           section to the discharge section is available for Remark & Fact *)
-        Nametab.push (n-Lib.sections_depth()) sp (ConstRef sp)
-    | (NeverDischarge| DischargeAt _) -> 
-        (* All qualifications of Theorem, Lemma & Definition are visible *)
-        Nametab.push 0 sp (ConstRef sp)
-    | NotDeclare -> assert false);
-  csttab := Spmap.add sp stre !csttab
+  Nametab.push 0 sp (ConstRef sp);
+  csttab := Spmap.add sp kind !csttab
 
 (* At load-time, the segment starting from the module name to the discharge *)
 (* section (if Remark or Fact) is needed to access a construction *)
-let load_constant (sp,(ce,stre)) =
+let load_constant (sp,(_,kind)) =
   (if Nametab.exists_cci sp then
     let (_,id) = repr_path sp in
     errorlabstrm "cache_constant" (pr_id id ++ str " already exists"));
-  csttab := Spmap.add sp stre !csttab;
-  Nametab.push (depth_of_strength stre + 1) sp (ConstRef sp)
+  csttab := Spmap.add sp kind !csttab;
+  Nametab.push 1 sp (ConstRef sp)
 
 (* Opening means making the name without its module qualification available *)
-let open_constant (sp,(_,stre)) =
-  let n = depth_of_strength stre in
-  Nametab.push n (restrict_path n sp) (ConstRef sp)
+let open_constant (sp,_) =
+  Nametab.push 0 (restrict_path 0 sp) (ConstRef sp)
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_constant_entry = ParameterEntry mkProp
 
-let export_constant (ce,stre) = Some (dummy_constant_entry,stre)
+let export_constant (ce,mk) = Some (dummy_constant_entry,mk)
 
 let (in_constant, out_constant) =
   let od = {
@@ -212,17 +177,18 @@ let hcons_constant_declaration = function
          const_entry_opaque = ce.const_entry_opaque }, stre)
   | cd -> cd
 
-let declare_constant id cd =
+let declare_constant id (cd,kind) =
   (* let cd = hcons_constant_declaration cd in *)
-  let sp = add_leaf id (in_constant cd) in
+  let sp = add_leaf id (in_constant (cd,kind)) in
   if is_implicit_args() then declare_constant_implicits sp;
   Dischargedhypsmap.set_discharged_hyps sp [] ;
   !xml_declare_constant sp;
   sp
 
 (* when coming from discharge *)
-let redeclare_constant sp discharged_hyps (cd,stre) =
-  add_absolutely_named_leaf sp (in_constant (GlobalRecipe cd,stre));
+
+let redeclare_constant sp discharged_hyps (cd,kind) =
+  add_absolutely_named_leaf sp (in_constant (GlobalRecipe cd,kind));
   if is_implicit_args() then declare_constant_implicits sp ;
   Dischargedhypsmap.set_discharged_hyps sp discharged_hyps
 
@@ -321,29 +287,28 @@ let redeclare_inductive discharged_hyps mie =
 let is_constant sp = 
   try let _ = Global.lookup_constant sp in true with Not_found -> false
 
-let constant_strength sp = Spmap.find sp !csttab
+let constant_strength sp = Global
+let constant_kind sp = Spmap.find sp !csttab
 
 let get_variable id = 
-  let (p,x,str) = Idmap.find id !vartab in
-  let d = match x with
+  let (p,x) = Idmap.find id !vartab in
+  match x with
     | CheckedSectionLocalDef (c,ty,cst,opaq) -> (id,Some c,ty)
-    | CheckedSectionLocalAssum (ty,cst) -> (id,None,ty) in
-  (d,str)
+    | CheckedSectionLocalAssum (ty,cst) -> (id,None,ty)
 
 let get_variable_with_constraints id = 
-  let (p,x,str) = Idmap.find id !vartab in
+  let (p,x) = Idmap.find id !vartab in
   match x with
-    | CheckedSectionLocalDef (c,ty,cst,opaq) -> ((id,Some c,ty),cst,str)
-    | CheckedSectionLocalAssum (ty,cst) -> ((id,None,ty),cst,str)
+    | CheckedSectionLocalDef (c,ty,cst,opaq) -> ((id,Some c,ty),cst)
+    | CheckedSectionLocalAssum (ty,cst) -> ((id,None,ty),cst)
 
-let variable_strength id =
-  let (_,_,str) = Idmap.find id !vartab in str
+let variable_strength _ = Local
 
 let find_section_variable id =
-  let (p,_,_) = Idmap.find id !vartab in Names.make_path p id
+  let (p,_) = Idmap.find id !vartab in Names.make_path p id
 
 let variable_opacity id =
-  let (_,x,_) = Idmap.find id !vartab in
+  let (_,x) = Idmap.find id !vartab in
   match x with
     | CheckedSectionLocalDef (c,ty,cst,opaq) -> opaq
     | CheckedSectionLocalAssum (ty,cst) -> false (* any.. *)
@@ -389,7 +354,7 @@ let last_section_hyps dir =
   fold_named_context
     (fun (id,_,_) sec_ids ->
       try
-        let (p,_,_) = Idmap.find id !vartab in
+        let (p,_) = Idmap.find id !vartab in
         if dir=p then id::sec_ids else sec_ids
       with Not_found -> sec_ids)
     (Environ.named_context (Global.env()))
@@ -449,21 +414,20 @@ let is_global id =
     false
 
 let strength_of_global = function
-  | ConstRef sp -> constant_strength sp
-  | VarRef id -> variable_strength id
-  | IndRef _ | ConstructRef _ -> NeverDischarge 
+  | VarRef _ -> Local
+  | IndRef _ | ConstructRef _ | ConstRef _ -> Global
 
 let library_part ref =
   let sp = Nametab.sp_of_global (Global.env ()) ref in
   let dir,_ = repr_path sp in
   match strength_of_global ref with
-  | DischargeAt (dp,n) -> 
-      extract_dirpath_prefix n dp
-  | NeverDischarge ->
+  | Local -> 
+      anomaly "TODO";
+      extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ())
+  | Global ->
       if is_dirpath_prefix_of dir (Lib.cwd ()) then
-	(* Theorem/Lemma not yet (fully) discharged *)
-	extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ())
+        (* Not yet (fully) discharged *)
+        extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ())
       else
 	(* Theorem/Lemma outside its outer section of definition *)
 	dir
-  | NotDeclare -> assert false

@@ -17,6 +17,7 @@ open Indtypes
 open Safe_typing
 open Library
 open Nametab
+open Decl_kinds
 (*i*)
 
 (* This module provides the official functions to declare new variables, 
@@ -28,11 +29,13 @@ open Nametab
 
 open Nametab
 
+(* Declaration of local constructions (Variable/Hypothesis/Local) *)
+
 type section_variable_entry =
   | SectionLocalDef of constr * types option * bool (* opacity *)
   | SectionLocalAssum of types
 
-type variable_declaration = dir_path * section_variable_entry * strength
+type variable_declaration = dir_path * section_variable_entry * local_kind
 
 val declare_variable : variable -> variable_declaration -> section_path
 
@@ -41,7 +44,10 @@ val redeclare_variable :
  variable -> Dischargedhypsmap.discharged_hyps -> variable_declaration 
  -> section_path
 
-type constant_declaration = global_declaration * strength
+(* Declaration of global constructions *)
+(* i.e. Definition/Theorem/Axiom/Parameter/... *)
+
+type constant_declaration = global_declaration * global_kind
 
 (* [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
@@ -49,8 +55,8 @@ type constant_declaration = global_declaration * strength
 val declare_constant : identifier -> constant_declaration -> constant
 
 val redeclare_constant :
- constant -> Dischargedhypsmap.discharged_hyps -> Cooking.recipe * strength 
-  -> unit
+ constant -> Dischargedhypsmap.discharged_hyps -> 
+      Cooking.recipe * global_kind -> unit
 
 (*
 val declare_parameter : identifier -> constr -> constant
@@ -68,22 +74,20 @@ val redeclare_inductive :
 
 val out_inductive : Libobject.obj -> mutual_inductive_entry 
 
-val make_strength_0 : unit -> strength
-val make_strength_1 : unit -> strength
-val make_strength_2 : unit -> strength
-val is_less_persistent_strength : strength * strength -> bool
 val strength_min : strength * strength -> strength
+val string_of_strength : strength -> string
 
 (*s Corresponding test and access functions. *)
 
 val is_constant : section_path -> bool
 val constant_strength : constant -> strength
+val constant_kind : constant -> global_kind
 
 val out_variable : Libobject.obj -> identifier * variable_declaration
-val get_variable : variable -> named_declaration * strength
+val get_variable : variable -> named_declaration
 val get_variable_with_constraints : 
-  variable -> named_declaration * Univ.constraints * strength
-val variable_strength : variable -> strength
+  variable -> named_declaration * Univ.constraints
+val variable_strength : variable -> strength 
 val find_section_variable : variable -> section_path
 val last_section_hyps : dir_path -> identifier list
 

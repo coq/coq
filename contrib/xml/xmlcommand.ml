@@ -77,16 +77,15 @@ let extract_nparams pack =
 (* than that could exists in cooked form with the same name in a super        *)
 (* section of the actual section                                              *)
 let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
- let module N = Nametab in
+ let module DK = Decl_kinds in
  let module D = Declare in
   let tag = Libobject.object_tag o in
    print_if_verbose ("Object tag: " ^ tag ^ "\n") ;
    match tag with
       "CONSTANT" ->
         (match D.constant_strength sp with
-          | N.DischargeAt _  -> false (* a local definition *)
-          | N.NotDeclare     -> false (* not a definition *)
-          | N.NeverDischarge -> true  (* a non-local one    *)
+          | DK.Local  -> false (* a local definition *)
+          | DK.Global -> true  (* a non-local one    *)
         )
     | "PARAMETER"                 (* axioms and                               *)
     | "INDUCTIVE"       -> true   (* mutual inductive types are never local   *)

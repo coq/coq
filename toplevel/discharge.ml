@@ -31,6 +31,7 @@ open Recordops
 open Library
 open Indtypes
 open Nametab
+open Decl_kinds
 
 let recalc_sp dir sp =
   let (_,spid) = repr_path sp in Names.make_path dir spid
@@ -176,10 +177,10 @@ type opacity = bool
 
 type discharge_operation = 
   | Variable of
-     identifier * section_variable_entry * strength * bool *
+     identifier * section_variable_entry * local_kind * bool *
       Dischargedhypsmap.discharged_hyps
   | Constant of
-     section_path * recipe * strength * bool * Dischargedhypsmap.discharged_hyps
+     section_path * recipe * global_kind * bool * Dischargedhypsmap.discharged_hyps
   | Inductive of
      mutual_inductive_entry * bool * Dischargedhypsmap.discharged_hyps
   | Class of cl_typ * cl_info_typ
@@ -197,46 +198,20 @@ let process_object oldenv dir sec_sp
   let tag = object_tag lobj in 
   match tag with
     | "VARIABLE" ->
-	let ((id,c,t),cst,stre) =
-          get_variable_with_constraints (basename sp) in
+	let ((id,c,t),cst) = get_variable_with_constraints (basename sp) in
 	(* VARIABLE means local (entry Variable/Hypothesis/Local and are *)
 	(* always discharged *)
-(*
- 	if stre = (DischargeAt sec_sp) or ids_to_discard <> [] then
-*)
-	  (Constraints cst :: ops, id :: ids_to_discard, work_alist)
-(*
-	else
-	  let imp = is_implicit_var sp in
-	  let newdecl =
-	    match c with
-	      | None ->
-		  SectionLocalAssum
-		    (expmod_constr oldenv work_alist (body_of_type t))
-	      | Some body ->
-		  SectionLocalDef
-		    (expmod_constr oldenv work_alist body)
-	  in
-	  (Variable (id,newdecl,stre,sticky,imp) :: ops,
-	   ids_to_discard,work_alist)
-*)
+	(Constraints cst :: ops, id :: ids_to_discard, work_alist)
 
     | ("CONSTANT" | "PARAMETER") ->
 	(* CONSTANT/PARAMETER means never discharge (though visibility *)
 	(* may vary) *)
- 	let stre = constant_strength sp in
-(*
-	if stre = (DischargeAt sec_sp) then
-	  let cb = Environ.lookup_constant sp oldenv in
-	  let constl = (sp, DO_REPLACE cb)::constl in
-	  (ops, ids_to_discard, (constl,indl,cstrl))
-	else
-*)
+ 	let kind = constant_kind sp in
 	let cb = Environ.lookup_constant sp oldenv in
 	let imp = is_implicit_constant sp in
-	let newsp = match stre with
+	let newsp = (* match stre with
 	  | DischargeAt (d,_) when not (is_dirpath_prefix_of d dir) -> sp
-	  | _ -> recalc_sp dir sp in
+	  | _ -> *) recalc_sp dir sp in
 	let abs_vars,discharged_hyps0 =
          build_abstract_list sec_sp cb.const_hyps ids_to_discard in
         (* let's add the new discharged hypothesis to those already discharged*)
@@ -246,7 +221,7 @@ let process_object oldenv dir sec_sp
 	let r = { d_from = cb;
 	          d_modlist = work_alist;
 	          d_abstract = ids_to_discard } in
-	let op = Constant (newsp,r,stre,imp,discharged_hyps) in
+	let op = Constant (newsp,r,kind,imp,discharged_hyps) in
         (op :: ops, ids_to_discard, (mods@constl, indl, cstrl))
   
     | "INDUCTIVE" ->
@@ -264,7 +239,7 @@ let process_object oldenv dir sec_sp
 
     | "CLASS" -> 
 	let ((cl,clinfo) as x) = outClass lobj in
-	if (match clinfo.cl_strength with DischargeAt (sp,_) -> sp = sec_sp | _ -> false) then 
+	if clinfo.cl_strength = Local then 
 	  (ops,ids_to_discard,work_alist)
 	else
 	  let (y1,y2) = process_class sec_sp ids_to_discard x in
@@ -272,7 +247,7 @@ let process_object oldenv dir sec_sp
 	  
     | "COERCION" -> 
 	let (((_,coeinfo),_,_)as x) = outCoercion lobj in
-	if (match coercion_strength coeinfo with DischargeAt (sp,_) -> sp = sec_sp | _ -> false) then 
+	if coercion_strength coeinfo = Local then
 	  (ops,ids_to_discard,work_alist)
         else
 	  let y = process_coercion sec_sp ids_to_discard x in

@@ -55,7 +55,7 @@ let crible (fn : global_reference -> env -> constr -> unit) ref =
     match object_tag lobj with
       | "VARIABLE" ->
 	  (try 
-	     let ((idc,_,typ),_) = get_variable (basename sp) in 
+	     let (idc,_,typ) = get_variable (basename sp) in 
              if (head_const typ) = const then fn (VarRef idc) env typ
 	   with Not_found -> (* we are in a section *) ())
       | "CONSTANT" 

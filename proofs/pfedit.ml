@@ -34,7 +34,7 @@ open Safe_typing
 type proof_topstate = {
   top_hyps : named_context * named_context;
   top_goal : goal;
-  top_strength : bool * Nametab.strength;
+  top_strength : Decl_kinds.goal_kind;
   top_hook : declaration_hook }
 
 let proof_edits =

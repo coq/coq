@@ -88,7 +88,8 @@ KERNEL=kernel/names.cmo kernel/univ.cmo \
 LIBRARY=library/nameops.cmo library/libobject.cmo library/summary.cmo \
         library/nametab.cmo library/lib.cmo library/global.cmo \
 	library/goptions.cmo library/library.cmo library/states.cmo \
-	library/impargs.cmo library/dischargedhypsmap.cmo library/declare.cmo 
+	library/impargs.cmo library/dischargedhypsmap.cmo \
+	library/decl_kinds.cmo library/declare.cmo 
 
 PRETYPING=pretyping/termops.cmo \
           pretyping/evd.cmo pretyping/instantiate.cmo \
@@ -813,7 +814,8 @@ GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
 	   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo $(KERNEL) \
 	   library/summary.cmo library/nameops.cmo library/nametab.cmo \
 	   library/libobject.cmo library/lib.cmo library/global.cmo \
-	   library/goptions.cmo pretyping/rawterm.cmo pretyping/evd.cmo \
+	   library/goptions.cmo library/decl_kinds.cmo \
+           pretyping/rawterm.cmo pretyping/evd.cmo \
 	   parsing/coqast.cmo parsing/genarg.cmo \
 	   proofs/tacexpr.cmo proofs/proof_type.cmo parsing/ast.cmo \
            parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \

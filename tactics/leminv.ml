@@ -34,6 +34,7 @@ open Tactics
 open Inv
 open Vernacexpr
 open Safe_typing
+open Decl_kinds
 
 let not_work_message = "tactic fails to build the inversion lemma, may be because the predicate has arguments that depend on other arguments"
 
@@ -247,7 +248,7 @@ let add_inversion_lemma name env sigma t sort dep inv_op =
     (ConstantEntry { const_entry_body = invProof;
                      const_entry_type = None;
                      const_entry_opaque = false }, 
-     Nametab.NeverDischarge)
+     IsProof Lemma)
   in ()
 
 (* open Pfedit *)

@@ -505,7 +505,7 @@ let declare_one_elimination ind =
         { const_entry_body = c;
           const_entry_type = t;
           const_entry_opaque = false }, 
-       NeverDischarge) in
+       Decl_kinds.IsDefinition) in
     Options.if_verbose ppnl (str na ++ str " is defined"); sp
   in
   let env = Global.env () in
