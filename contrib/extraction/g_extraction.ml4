@@ -58,12 +58,12 @@ END
 (* Modular extraction (one Coq library = one ML module) *)
 VERNAC COMMAND EXTEND ExtractionLibrary
 | [ "Extraction" "Library" ident(m) ]
-  -> [ extraction_library m ]
+  -> [ extraction_library false m ]
 END
 
 VERNAC COMMAND EXTEND RecursiveExtractionLibrary
 | [ "Recursive" "Extraction" "Library" ident(m) ]
-  -> [ recursive_extraction_library m ]
+  -> [ extraction_library true m ]
 END
 
 (* Target Language *)

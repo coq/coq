@@ -310,8 +310,8 @@ let extraction_module m =
 	print_structure_to_file None prm struc; 
 	reset_tables ()
 
-(*s Extraction of a library. The vernacular command is 
-  \verb!Extraction Library! [M]. *) 
+(*s (Recursive) Extraction of a library. The vernacular command is 
+  \verb!(Recursive) Extraction Library! [M]. *) 
 
 let module_file_name m = match lang () with 
   | Ocaml -> let f = String.uncapitalize (string_of_id m) in  f^".ml", f^".mli"
@@ -322,44 +322,7 @@ let dir_module_of_id m =
   let q = make_short_qualid m in 
   try Nametab.full_name_module q with Not_found -> error_unknown_module q
 
-let extraction_library m =
-  if is_something_opened () then error_section (); 
-  match lang () with 
-    | Toplevel -> error_toplevel ()
-    | Scheme -> error_scheme ()
-    | _ -> 
-	let dir_m = dir_module_of_id m in 
-	let v = { kn = KNset.empty; mp = MPset.singleton (MPfile dir_m) } in 
-	let l = environment_until (Some dir_m) in 
-(* TEMPORARY: make Extraction Library look like Recursive Extraction Library *)
-	let struc = 
-	  let env = Global.env () in
-	  let select l (mp,meb) = 
-	    if in_mp v mp (* [mp] est long -> [in_mp] peut etre sans [long_mp] *)
-	    then (mp, unpack (extract_meb env v (Some mp) true meb)) :: l 
-	    else l
-	  in 
-	  List.fold_left select [] (List.rev l)
-	in 
-	let dummy_prm = {modular=true; mod_name=m; to_appear=[]} in
-	let struc = optimize_struct dummy_prm None struc in 
-	let rec print = function 
-	  | [] -> () 
-	  | (MPfile dir, _) :: l when dir <> dir_m -> print l 
-	  | (MPfile dir, sel) as e :: l -> 
-	      let short_m = snd (split_dirpath dir) in
-	      let f = module_file_name short_m in 
-	      let prm = {modular=true;mod_name=short_m;to_appear=[]} in
-	      print_structure_to_file (Some f) prm [e]; 
-	      print l 
-	  | _ -> assert false
-	in print struc; 
-	reset_tables ()
-	  
-(*s Recursive Extraction of all the libraries [M] depends on. 
-  The vernacular command is \verb!Recursive Extraction Library! [M]. *) 
-
-let recursive_extraction_library m =
+let extraction_library is_rec m =
   if is_something_opened () then error_section (); 
   match lang () with 
     | Toplevel -> error_toplevel ()
@@ -381,6 +344,7 @@ let recursive_extraction_library m =
 	let struc = optimize_struct dummy_prm None struc in 
 	let rec print = function 
 	  | [] -> () 
+	  | (MPfile dir, _) :: l when not is_rec && dir <> dir_m -> print l 
 	  | (MPfile dir, sel) as e :: l -> 
 	      let short_m = snd (split_dirpath dir) in
 	      let f = module_file_name short_m in 

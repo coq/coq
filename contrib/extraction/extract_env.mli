@@ -17,5 +17,8 @@ val extraction : reference -> unit
 val extraction_rec : reference list -> unit
 val extraction_file : string -> reference list -> unit
 val extraction_module : reference -> unit
-val extraction_library : identifier -> unit
-val recursive_extraction_library : identifier -> unit
+val extraction_library : bool -> identifier -> unit
+
+
+
+
