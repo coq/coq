@@ -15,6 +15,129 @@ Require Rlimit.
 Require Rtrigo.
 Require R_sqrt.
 
+Lemma tan_PI : ``(tan PI)==0``.
+Unfold tan; Rewrite -> sin_PI; Rewrite -> cos_PI.
+Unfold Rdiv; Apply Rmult_Ol. 
+Qed.
+
+Lemma sin_3PI2 : ``(sin (3*(PI/2)))==(-1)``.
+Replace ``3*(PI/2)`` with ``PI+(PI/2)``.
+Rewrite -> sin_plus; Rewrite -> sin_PI; Rewrite -> cos_PI; Rewrite -> sin_PI2; Ring.
+Pattern 1 PI; Rewrite (double_var PI).
+Ring.
+Qed.
+
+Lemma tan_2PI : ``(tan (2*PI))==0``.
+Unfold tan; Rewrite sin_2PI; Unfold Rdiv; Apply Rmult_Ol.
+Qed.
+
+Lemma sin_cos_PI4 : ``(sin (PI/4)) == (cos (PI/4))``.
+Rewrite cos_sin.
+Replace ``PI/2+PI/4`` with ``-(PI/4)+PI``.
+Rewrite neg_sin; Rewrite sin_neg; Ring.
+Cut ``PI==PI/2+PI/2``; [Intro | Apply double_var].
+Pattern 2 3 PI; Rewrite H.
+Pattern 2 3 PI; Rewrite H.
+Unfold Rdiv; Cut ``2*2==4``.
+Intro; Rewrite Rmult_Rplus_distrl.
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_Rmult; [Rewrite H0; Ring | Apply aze | Apply aze].
+Ring.
+Qed.
+
+
+Lemma sin_PI3_cos_PI6 : ``(sin (PI/3))==(cos (PI/6))``.
+Replace ``PI/6`` with ``(PI/2)-(PI/3)``.
+Rewrite cos_shift; Reflexivity.
+Pattern 2 PI; Rewrite double_var.
+Cut ``PI == 3*(PI/3)``.
+Intro.
+Pattern 1 PI; Rewrite H.
+Unfold Rdiv.
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_Rmult.
+Unfold Rminus.
+Rewrite (Rmult_Rplus_distrl ``PI*/2`` ``PI*/2`` ``/3``).
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_Rmult.
+Rewrite (Rmult_sym ``2``).
+Replace ``3*2`` with ``6``.
+Rewrite Ropp_distr1.
+Ring.
+Ring.
+Apply aze.
+DiscrR.
+DiscrR.
+Apply aze.
+Unfold Rdiv.
+Rewrite (Rmult_sym ``3``).
+Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Reflexivity.
+DiscrR.
+Qed.
+
+Lemma sin_PI6_cos_PI3 : ``(cos (PI/3))==(sin (PI/6))``.
+Replace ``PI/6`` with ``(PI/2)-(PI/3)``.
+Rewrite sin_shift; Reflexivity.
+Pattern 2 PI; Rewrite double_var.
+Cut ``PI == 3*(PI/3)``.
+Intro.
+Pattern 1 PI; Rewrite H.
+Unfold Rdiv.
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_Rmult.
+Unfold Rminus.
+Rewrite (Rmult_Rplus_distrl ``PI*/2`` ``PI*/2`` ``/3``).
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_Rmult.
+Rewrite (Rmult_sym ``2``).
+Replace ``3*2`` with ``6``.
+Rewrite Ropp_distr1.
+Ring.
+Ring.
+Apply aze.
+DiscrR.
+DiscrR.
+DiscrR.
+Unfold Rdiv.
+Rewrite (Rmult_sym ``3``).
+Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Reflexivity.
+DiscrR.
+Qed.
+
+Lemma sin_PI6 : ``(sin (PI/6))==1/2``.
+Apply r_Rmult_mult with ``2*(cos (PI/6))``.
+Replace ``2*(cos (PI/6))*(sin (PI/6))`` with ``2*(sin (PI/6))*(cos (PI/6))``.
+Rewrite <- sin_2a; Replace ``2*(PI/6)`` with ``PI/3``.
+Rewrite sin_PI3_cos_PI6.
+Unfold Rdiv. 
+Rewrite Rmult_1l.
+Rewrite Rmult_assoc.
+Rewrite (Rmult_sym ``2``).
+Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r; Reflexivity.
+Apply aze.
+Replace ``6`` with ``2*3``.
+Unfold Rdiv.
+Rewrite Rinv_Rmult.
+Rewrite (Rmult_sym ``/2``).
+Rewrite (Rmult_sym ``2``).
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym.
+Rewrite Rmult_1r.
+Reflexivity.
+Apply aze.
+Apply aze.
+DiscrR.
+Ring.
+Ring.
+Apply prod_neq_R0; [DiscrR | Cut ``0<(cos (PI/6))``; [Intro H1; Auto with real | Apply cos_gt_0; [Apply (Rlt_trans ``-(PI/2)`` ``0`` ``PI/6`` _PI2_RLT_0 PI6_RGT_0) | Apply PI6_RLT_PI2]]].
+Qed.
+
 Lemma sqrt2_neq_0 : ~``(sqrt 2)==0``.
 Generalize (Rlt_le ``0`` ``2`` Rgt_2_0); Intro H1; Red; Intro H2; Generalize (sqrt_eq_0 ``2`` H1 H2); Intro H; Absurd ``2==0``; [ DiscrR | Assumption].
 Qed.
@@ -314,4 +437,51 @@ Qed.
 
 Lemma sin_cos5PI4 : ``(cos (5*(PI/4)))==(sin (5*(PI/4)))``.
 Rewrite cos_5PI4; Rewrite sin_5PI4; Reflexivity.
+Qed.
+
+(***************************************************************)
+(* Radian -> Degree | Degree -> Radian                         *)
+(***************************************************************)
+
+Definition plat : R := (IZR `180`).
+Definition toRad [x:R] : R := ``x*PI*/plat``.
+Definition toDeg [x:R] : R := ``x*plat*/PI``.
+
+Lemma rad_deg : (x:R) (toRad (toDeg x))==x.
+Intro x; Unfold toRad toDeg.
+Rewrite <- (Rmult_sym plat).
+Repeat Rewrite Rmult_assoc.
+Rewrite (Rmult_sym plat).
+Repeat Rewrite Rmult_assoc.
+Rewrite <- Rinv_l_sym. 
+Rewrite Rmult_1r; Rewrite <- Rinv_l_sym. 
+Apply Rmult_1r.
+Apply PI_neq0.
+Unfold plat.
+Apply not_O_IZR.
+Discriminate.
+Qed.
+
+Lemma toRad_inj : (x,y:R) (toRad x)==(toRad y) -> x==y.
+Intros; Unfold toRad in H; Apply r_Rmult_mult with PI.
+Rewrite <- (Rmult_sym x); Rewrite <- (Rmult_sym y).
+Apply r_Rmult_mult with ``/plat``.
+Rewrite <- (Rmult_sym ``x*PI``); Rewrite <- (Rmult_sym ``y*PI``); Assumption.
+Apply Rinv_neq_R0.
+Unfold plat.
+Apply not_O_IZR.
+Discriminate.
+Apply PI_neq0.
+Qed.
+
+Lemma deg_rad : (x:R) (toDeg (toRad x))==x.
+Intro x; Apply toRad_inj; Rewrite -> (rad_deg (toRad x)); Reflexivity.
+Qed.
+
+Definition sind [x:R] : R := (sin (toRad x)).
+Definition cosd [x:R] : R := (cos (toRad x)).
+Definition tand [x:R] : R := (tan (toRad x)).
+
+Lemma Rsqr_sin_cos_d_one : (x:R) ``(Rsqr (sind x))+(Rsqr (cosd x))==1``.
+Intro x; Unfold sind; Unfold cosd; Apply sin2_cos2.
 Qed.
