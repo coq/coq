@@ -73,6 +73,12 @@ let general_rewrite_bindings lft2rgt (c,l) gl =
       and did not fail for useless conditional rewritings generating an
       extra condition *)
 
+(* Conditional rewriting, the success of a rewriting is related 
+   to the resolution of the conditions by a given tactic *)
+let conditional_rewrite lft2rgt tac (c,bl) = 
+  tclTHEN_i (general_rewrite_bindings lft2rgt (c,bl))
+    (fun i -> if i=1 then tclIDTAC else tclCOMPLETE tac)
+
 let general_rewrite lft2rgt c = general_rewrite_bindings lft2rgt (c,[])
 
 let rewriteLR_bindings = general_rewrite_bindings true
@@ -94,6 +100,15 @@ let dyn_rewriteRL = function
   | [Constr c; Cbindings binds] -> 
       rewriteRL_bindings (c,binds)
   | _ -> assert false
+
+let dyn_conditional_rewrite lft2rgt = function
+  | [(Tacexp tac); (Command com);(Bindings binds)] -> 
+      tactic_com_bind_list 
+	(conditional_rewrite lft2rgt (Tacinterp.interp tac)) 
+	(com,binds)
+  | [(Tacexp tac); (Constr c);(Cbindings binds)] -> 
+      conditional_rewrite lft2rgt (Tacinterp.interp tac) (c,binds)
+  | _ -> assert false
                  
 let v_rewriteLR = hide_tactic "RewriteLR" dyn_rewriteLR
 let h_rewriteLR_bindings (c,bl) = v_rewriteLR [(Constr c);(Cbindings bl)] 
@@ -102,8 +117,14 @@ let h_rewriteLR c = h_rewriteLR_bindings (c,[])
 let v_rewriteRL = hide_tactic "RewriteRL" dyn_rewriteRL
 let h_rewriteRL_bindings (c,bl) = v_rewriteRL [(Constr c);(Cbindings bl)] 
 let h_rewriteRL c = h_rewriteRL_bindings (c,[])
+	
+let v_conditional_rewriteLR = 
+  hide_tactic "CondRewriteLR" (dyn_conditional_rewrite true)
+let v_conditional_rewriteRL = 
+  hide_tactic "CondRewriteRL" (dyn_conditional_rewrite false)
 
-(*The Rewrite in tactic*)
+
+(* The Rewrite in tactic *)
 let general_rewrite_in lft2rgt id (c,l) gl =
   let ctype = pf_type_of gl c in 
   let env = pf_env gl in
@@ -124,6 +145,10 @@ let general_rewrite_in lft2rgt id (c,l) gl =
         in 
 	general_elim_in id (c,l) (elim,[]) gl
 
+let conditional_rewrite_in lft2rgt id tac (c,bl) = 
+  tclTHEN_i (general_rewrite_in lft2rgt id (c,bl))
+    (fun i -> if i=1 then tclIDTAC else tclCOMPLETE tac)
+
 
 let dyn_rewrite_in lft2rgt = function
   | [Identifier id;(Command com);(Bindings binds)] -> 
@@ -131,9 +156,22 @@ let dyn_rewrite_in lft2rgt = function
   | [Identifier id;(Constr c);(Cbindings binds)] -> 
       general_rewrite_in lft2rgt id (c,binds)
   | _ -> assert false
+    
+let dyn_conditional_rewrite_in lft2rgt = function
+  | [(Tacexp tac); Identifier id; (Command com);(Bindings binds)] -> 
+      tactic_com_bind_list 
+	(conditional_rewrite_in lft2rgt id (Tacinterp.interp tac)) 
+	(com,binds)
+  | [(Tacexp tac); Identifier id; (Constr c);(Cbindings binds)] -> 
+      conditional_rewrite_in lft2rgt id (Tacinterp.interp tac) (c,binds)
+  | _ -> assert false
 
 let rewriteLR_in_tac =  hide_tactic "RewriteLRin" (dyn_rewrite_in true)
 let rewriteRL_in_tac = hide_tactic "RewriteRLin" (dyn_rewrite_in false)
+let v_conditional_rewriteLR_in = 
+  hide_tactic "CondRewriteLRin" (dyn_conditional_rewrite_in true) 
+let v_conditional_rewriteRL_in = 
+  hide_tactic "CondRewriteRLin" (dyn_conditional_rewrite_in false)
 
 
 (* Replacing tactics *)
@@ -178,28 +216,6 @@ let dyn_replace args gl =
 let v_replace = hide_tactic "Replace" dyn_replace
 let h_replace c1 c2 = v_replace [(Constr c1);(Constr c2)]
 
-(* Conditional rewriting, the success of a rewriting is related 
-   to the resolution of the conditions by a given tactic *)
-
-let conditional_rewrite lft2rgt tac (c,bl) = 
-  tclTHEN_i (general_rewrite_bindings lft2rgt (c,bl))
-    (fun i -> if i=1 then tclIDTAC else tclCOMPLETE tac)
-
-let dyn_conditional_rewrite lft2rgt = function
-  | [(Tacexp tac); (Command com);(Bindings binds)] -> 
-      tactic_com_bind_list 
-	(conditional_rewrite lft2rgt (Tacinterp.interp tac)) 
-	(com,binds)
-  | [(Tacexp tac); (Constr c);(Cbindings binds)] -> 
-      conditional_rewrite lft2rgt (Tacinterp.interp tac) (c,binds)
-  | _ -> assert false
-	
-let v_conditional_rewriteLR = 
-  hide_tactic "CondRewriteLR" (dyn_conditional_rewrite true)
-
-let v_conditional_rewriteRL = 
-  hide_tactic "CondRewriteRL" (dyn_conditional_rewrite false)
-
 (* End of Eduardo's code. The rest of this file could be improved
    using the functions match_with_equation, etc that I defined
    in Pattern.ml.
@@ -209,12 +225,6 @@ let v_conditional_rewriteRL =
 (* Tactics for equality reasoning with the "eq"  or "eqT"
    relation This code  will work with any equivalence relation which 
    is substitutive *)
-
-let find_constructor env sigma c =
-  let hd,stack = whd_betadeltaiota_stack env sigma c in
-  match kind_of_term hd with
-    | Construct _ -> (hd,stack)
-    | _ -> error "find_constructor"
 
 (* Patterns *)
 
@@ -1126,111 +1136,7 @@ let try_rewrite tac gls =
 	errorlabstrm "try_rewrite"
           (str "Cannot find a well type generalisation of the goal that" ++
              str " makes progress the proof.")
-
-(* list_int n 0 [] gives the list [1;2;...;n] *)
-let rec list_int n cmr l =
-  if cmr = n then
-    l @ [n]
-  else
-    list_int n (cmr+1) (l @ [cmr])
-
-(* Tells if two constrs are equal modulo unification *)
-
-exception NotEqModRel
-
-let eq_mod_rel l_meta t0 t1 =
-  let bindings = ref l_meta in
-  let rec eq_rec t0 t1 = 
-    match kind_of_term t1 with
-      | Meta n ->
-	  if not (List.mem_assoc n !bindings) then
-	    (bindings := (n,t0) :: !bindings; true)
-	  else (List.assoc n l_meta) = t0
-      | _ -> compare_constr eq_rec t0 t1 in
-  if eq_rec t0 t1 then !bindings else raise NotEqModRel
-
-(* Verifies if the constr has an head constant *)
-
-let is_hd_const c = match kind_of_term c with
-  | App (f,args) ->
-      (match kind_of_term f with
-         | Const c -> Some (c, args)
-         |_ -> None)
-  | _ -> None
-
-(* Gives the occurrences number of a t in u
-   Rem: t is assumed closed then there is no need to lift it
-*)
-
-let nb_occ_term t u =
-  let rec nbrec nocc u =
-    if eq_constr t u then
-      nocc + 1
-    else
-      fold_constr nbrec nocc u
-  in nbrec 0 u
-    
-
-(* Gives Some(first instance of ceq in cref,occurence number for this
-   instance) or None if no instance of ceq can be found in cref
-   Rem: t_eq is assumed closed then there is no need to lift it
-*)
-let sub_term_with_unif cref ceq =
-  let rec find_match hdsp t_args (l_meta,nb_occ) u =
-    match kind_of_term u with
-    | App(f,args) ->
-	(match kind_of_term f with
-          | Const sp when sp = hdsp -> begin
-	      try (array_fold_left2 eq_mod_rel l_meta args t_args, nb_occ+1)
-	      with NotEqModRel ->
-		Array.fold_left (find_match hdsp t_args) (l_meta,nb_occ) args
-	    end
-
-          | (Const _ | Var _ | Ind _ | Construct _ | Fix _ | CoFix _) ->
-              fold_constr (find_match hdsp t_args) (l_meta,nb_occ) u
-
-	   (* Pourquoi ne récurre-t-on pas dans f ? *)
-           | _ -> (l_meta,nb_occ))
-
-    | _ ->
-        fold_constr (find_match hdsp t_args) (l_meta,nb_occ) u
-
-  in
-  match (is_hd_const ceq) with
-    | None ->
-        if (occur_meta ceq) then
-          None
-        else
-          let nb_occ = nb_occ_term ceq cref in
-          if nb_occ = 0 then
-            None
-          else
-            Some (ceq,nb_occ)
-    |Some (head,t_args) ->
-        let (l,nb) = find_match head t_args ([],0) cref in
-        if nb = 0 then
-          None
-        else
-          Some ((plain_instance l ceq),nb)
 	 
-let conditional_rewrite_in lft2rgt id tac (c,bl) = 
-  tclTHEN_i (general_rewrite_in lft2rgt id (c,bl))
-    (fun i -> if i=1 then tclIDTAC else tclCOMPLETE tac)
-    
-let dyn_conditional_rewrite_in lft2rgt = function
-  | [(Tacexp tac); Identifier id; (Command com);(Bindings binds)] -> 
-      tactic_com_bind_list 
-	(conditional_rewrite_in lft2rgt id (Tacinterp.interp tac)) 
-	(com,binds)
-  | [(Tacexp tac); Identifier id; (Constr c);(Cbindings binds)] -> 
-      conditional_rewrite_in lft2rgt id (Tacinterp.interp tac) (c,binds)
-  | _ -> assert false
-
-let v_conditional_rewriteLR_in = 
-  hide_tactic "CondRewriteLRin" (dyn_conditional_rewrite_in true) 
-
-let v_conditional_rewriteRL_in = 
-  hide_tactic "CondRewriteRLin" (dyn_conditional_rewrite_in false)
 
 let subst eqn cls gls =
   match cls with
