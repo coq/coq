@@ -50,7 +50,8 @@ LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
 
 PROOFS=proofs/typing_ev.cmo proofs/tacred.cmo \
        proofs/proof_trees.cmo proofs/logic.cmo \
-       proofs/refiner.cmo proofs/evar_refiner.cmo proofs/clenv.cmo
+       proofs/refiner.cmo proofs/evar_refiner.cmo \
+       proofs/macros.cmo proofs/tacinterp.cmo proofs/clenv.cmo
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \

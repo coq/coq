@@ -58,12 +58,16 @@ proofs/evar_refiner.cmi: kernel/environ.cmi kernel/evd.cmi kernel/names.cmi \
     proofs/proof_trees.cmi proofs/refiner.cmi kernel/sign.cmi kernel/term.cmi 
 proofs/logic.cmi: kernel/environ.cmi kernel/evd.cmi kernel/names.cmi \
     proofs/proof_trees.cmi kernel/sign.cmi kernel/term.cmi 
+proofs/macros.cmi: parsing/ast.cmi parsing/coqast.cmi kernel/names.cmi \
+    proofs/proof_trees.cmi proofs/tacmach.cmi 
 proofs/pfedit.cmi: library/declare.cmi lib/pp.cmi proofs/proof_trees.cmi \
     proofs/refiner.cmi kernel/sign.cmi 
 proofs/proof_trees.cmi: parsing/coqast.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/names.cmi kernel/sign.cmi lib/stamps.cmi kernel/term.cmi \
     lib/util.cmi 
 proofs/refiner.cmi: proofs/proof_trees.cmi kernel/sign.cmi kernel/term.cmi 
+proofs/tacinterp.cmi: parsing/coqast.cmi kernel/names.cmi lib/pp.cmi \
+    proofs/proof_trees.cmi proofs/tacmach.cmi kernel/term.cmi 
 proofs/tacmach.cmi: kernel/environ.cmi proofs/evar_refiner.cmi \
     kernel/names.cmi proofs/proof_trees.cmi kernel/reduction.cmi \
     proofs/refiner.cmi kernel/sign.cmi proofs/tacred.cmi kernel/term.cmi 
@@ -285,6 +289,14 @@ proofs/logic.cmx: parsing/coqast.cmx library/declare.cmx kernel/environ.cmx \
     lib/pp.cmx proofs/proof_trees.cmx kernel/reduction.cmx kernel/sign.cmx \
     kernel/term.cmx kernel/typeops.cmx kernel/typing.cmx proofs/typing_ev.cmx \
     lib/util.cmx proofs/logic.cmi 
+proofs/macros.cmo: parsing/ast.cmi parsing/coqast.cmi library/lib.cmi \
+    library/libobject.cmi library/library.cmi kernel/names.cmi \
+    parsing/pcoq.cmi lib/pp.cmi proofs/proof_trees.cmi library/summary.cmi \
+    kernel/term.cmi lib/util.cmi proofs/macros.cmi 
+proofs/macros.cmx: parsing/ast.cmx parsing/coqast.cmx library/lib.cmx \
+    library/libobject.cmx library/library.cmx kernel/names.cmx \
+    parsing/pcoq.cmi lib/pp.cmx proofs/proof_trees.cmx library/summary.cmx \
+    kernel/term.cmx lib/util.cmx proofs/macros.cmi 
 proofs/proof_trees.cmo: parsing/coqast.cmi kernel/environ.cmi kernel/evd.cmi \
     kernel/names.cmi kernel/sign.cmi lib/stamps.cmi kernel/term.cmi \
     lib/util.cmi proofs/proof_trees.cmi 
@@ -299,6 +311,12 @@ proofs/refiner.cmx: kernel/environ.cmx kernel/evd.cmx kernel/generic.cmx \
     kernel/instantiate.cmx proofs/logic.cmx lib/pp.cmx proofs/proof_trees.cmx \
     kernel/reduction.cmx kernel/sign.cmx lib/stamps.cmx kernel/term.cmx \
     lib/util.cmx proofs/refiner.cmi 
+proofs/tacinterp.cmo: parsing/ast.cmi parsing/coqast.cmi proofs/macros.cmi \
+    kernel/names.cmi lib/pp.cmi proofs/proof_trees.cmi proofs/tacmach.cmi \
+    kernel/term.cmi lib/util.cmi proofs/tacinterp.cmi 
+proofs/tacinterp.cmx: parsing/ast.cmx parsing/coqast.cmx proofs/macros.cmx \
+    kernel/names.cmx lib/pp.cmx proofs/proof_trees.cmx proofs/tacmach.cmx \
+    kernel/term.cmx lib/util.cmx proofs/tacinterp.cmi 
 proofs/tacmach.cmo: parsing/ast.cmi kernel/environ.cmi \
     proofs/evar_refiner.cmi kernel/evd.cmi kernel/generic.cmi \
     kernel/instantiate.cmi proofs/logic.cmi kernel/names.cmi \
