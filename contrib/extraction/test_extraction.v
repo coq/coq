@@ -66,16 +66,20 @@ Extraction let n=O in let p=(S n) in (S p).
 
 Extraction (x:(X:Type)X->X)(x Type Type).
 
-Inductive tree : Set := node : nat -> forest -> tree
+Inductive tree : Set := 
+   Node : nat -> forest -> tree
 with forest : Set :=
-         |leaf : nat -> forest
-         |cons : tree -> forest -> forest .
+ | Leaf : nat -> forest
+ | Cons : tree -> forest -> forest .
 
 Extraction tree.
 
 Fixpoint tree_size [t:tree] : nat :=
-         Cases t of (node a f) => (S (forest_size f)) end
+         Cases t of (Node a f) => (S (forest_size f)) end
 with forest_size [f:forest] : nat :=
-         Cases f of (leaf b) => (S O)
-         | (cons t f') => (plus (tree_size t) (forest_size f'))
+         Cases f of 
+	 | (Leaf b) => (S O)
+         | (Cons t f') => (plus (tree_size t) (forest_size f'))
          end.
+
+Extraction tree_size.

@@ -1,3 +1,10 @@
+- Problème affichage de Cases (alpha-conversion dans les patterns)
+======================================================================
+Inductive t  : Set :=  c : nat->nat->t.
+Definition foo' := [x:t]Cases x of (c y z) => (plus y z) end.  
+Print foo'.
+======================================================================
+
 Des CASTEDCOMMAND s'affiche dans les scripts de preuves.
 
 Probleme d'affichage des scripts de preuve (disparition des THEN)

@@ -35,6 +35,13 @@ let pp_tuple f = function
       	    prlist_with_sep (fun () -> [< 'sTR ","; 'sPC >]) f l;
 	    'sTR ")" >]
 
+let pp_boxed_tuple f = function
+  | [] -> [< >]
+  | [x] -> f x
+  | l -> [< 'sTR "(";
+      	    hOV 0 [< prlist_with_sep (fun () -> [< 'sTR ","; 'sPC >]) f l;
+		     'sTR ")" >] >]
+
 let space_if = function true -> [< 'sPC >] | false -> [<>]
 
 (* collect_lambda MLlam(id1,...MLlam(idn,t)...) = [id1;...;idn],t *)
@@ -54,10 +61,13 @@ let rec rename_bvars avoid = function
 
 let abst = function
   | [] -> [< >]
-  | l  -> [< 'sTR"fun " ;
-             prlist_with_sep (fun  ()-> [< 'sTR" " >])
-      	       	       	     (fun id -> [< 'sTR(string_of_id id) >]) l ;
-             'sTR" ->" ; 'sPC >]
+  | l  -> [< 'sTR "fun " ;
+             prlist_with_sep (fun  ()-> [< 'sTR " " >]) pr_id l;
+             'sTR " ->" ; 'sPC >]
+
+let pr_binding = function
+  | [] -> [< >]
+  | l  -> [< 'sTR " "; prlist_with_sep (fun () -> [< 'sTR " " >]) pr_id l >]
 
 (*s The pretty-printing functor. *)
 
@@ -152,10 +162,71 @@ let rec pp_expr par env args =
 	[< open_par true; 'sTR "Obj.magic"; 'sPC; 
 	   pp_expr false env args a; close_par true >]
 
-and pp_pat env pv = failwith "todo"
+and pp_pat env pv = 
+  let pp_one_pat (name,ids,t) =
+    let ids = rename_bvars env ids in
+    let par = match t with
+      | MLlam _  -> true
+      | MLcase _ -> true
+      | _        -> false 
+    in
+    hOV 2 [< 'sTR(string_of_id name) ;
+	     begin match ids with 
+		 [] -> [< >]
+	       | _  -> 
+      		   [< 'sTR " ";
+		      pp_boxed_tuple
+			(fun id -> [< 'sTR(string_of_id id) >]) 
+			(List.rev ids) >]
+	     end ;
+	     'sTR" ->" ; 'sPC ; pp_expr par (ids@env) [] t
+          >]
+  in 
+  [< prvect_with_sep (fun () -> [< 'fNL ; 'sTR"| " >]) pp_one_pat pv >]
 
-and pp_fix par env f args = failwith "todo"
+and pp_fix par env (j,in_p,fid,bl) args =
+  let env' = (List.rev fid) @ env in
+  [< open_par par; 
+     v 0 [< 'sTR"let rec " ;
+	    prlist_with_sep
+      	      (fun () -> [< 'fNL; 'sTR "and " >])
+	      (fun (fi,ti) -> pp_function env' fi ti)
+	      (List.combine fid bl) ;
+	    'fNL ;
+	    if in_p then 
+      	      hOV 2 [< 'sTR "in "; pr_id (List.nth fid j);
+                       if args <> [] then
+			 [< 'sTR " "; prlist_with_sep (fun () -> [<'sTR " ">])
+                              (fun s -> s) args >]
+                       else [< >]
+      		    >]
+	    else 
+	      [< >] >];
+     close_par par >]
 
+and pp_function env f t =
+  let bl,t' = collect_lambda t in
+  let bl = rename_bvars env bl in
+  let is_function pv =
+    let ktl = array_map_to_list (fun (_,l,t0) -> (List.length l,t0)) pv in
+    not (List.exists (fun (k,t0) -> Mlutil.occurs (k+1) t0) ktl)
+  in
+  match t' with 
+    | MLcase(MLrel 1,pv) ->
+	if is_function pv then
+	  [< 'sTR(string_of_id f) ; pr_binding (List.rev (List.tl bl)) ;
+       	     'sTR" = function" ; 'fNL ;
+	     v 0 [< 'sTR"  " ; pp_pat (bl@env) pv >] >]
+	else
+          [< 'sTR(string_of_id f) ; pr_binding (List.rev bl) ; 
+             'sTR" = match " ;
+	     'sTR(string_of_id (List.hd bl)) ; 'sTR" with" ; 'fNL ;
+	     v 0 [< 'sTR"  " ; pp_pat (bl@env) pv >] >]
+	  
+    | _ -> [< 'sTR(string_of_id f) ; pr_binding (List.rev bl) ;
+	      'sTR" =" ; 'fNL ; 'sTR"  " ;
+	      hOV 2 (pp_expr false (bl@env) [] t') >]
+	
 let pp_ast a = hOV 0 (pp_expr false [] [] a)
 
 (*s Pretty-printing of inductive types declaration. *)

@@ -201,6 +201,17 @@ let renum_db ctx n =
   in
   renum (n, ctx)
 
+(*s Environment for the bodies of some mutual fixpoints. *)
+
+let rec push_many_rels env ctx = function
+  | (fi,ti) :: l -> 
+      push_many_rels (push_rel (fi,None,ti) env) ((v_of_arity env ti)::ctx) l
+  | [] ->
+      (env, ctx)
+
+let fix_environment env ctx fl tl =
+  push_many_rels env ctx (List.combine fl (Array.to_list tl))
+
 (*s Tables to keep the extraction of inductive types and constructors. *)
 
 type inductive_extraction_result = signature * identifier list
@@ -380,17 +391,50 @@ and extract_term_with_type env ctx c t =
 	    whd_betadeltaiota env Evd.empty tyf 
 	in
 	(match extract_type env tyf with
-	   | Tmltype (_,s,_) -> extract_app env ctx (f,tyf,s) (Array.to_list a) 
+	   | Tmltype (_,s,_) -> 
+	       extract_app env ctx (f,tyf,s) (Array.to_list a) 
 	   | Tarity -> assert false (* Cf. precondition *)
 	   | Tprop -> assert false)
     | IsConst (sp,_) ->
 	Rmlterm (MLglob (ConstRef sp))
     | IsMutConstruct (cp,_) ->
 	Rmlterm (MLglob (ConstructRef cp)) (* TODO eta-expansion *)
-    | IsMutCase _ ->
-	failwith "todo"
-    | IsFix _ ->
-	failwith "todo"
+    | IsMutCase ((ni,(ip,cnames,_,_,_)),p,c,br) ->
+	let extract_branch j b =
+	  let (_,s) = extract_constructor (ip,succ j) in
+	  assert (List.length s = ni.(j));
+	  let (binders,e) = decompose_lam_n ni.(j) b in
+	  let binders = List.rev binders in
+	  let (env',ctx') = push_many_rels env ctx binders in
+	  let e' = match extract_constr env' ctx' e with
+	    | Eprop -> MLprop (* TODO: probably wrong *)
+	    | Emltype _ -> assert false
+	    | Emlterm a -> a
+	  in
+	  let ids = 
+	    List.fold_right 
+	      (fun ((v,_),(n,_)) acc ->
+		 if v = Vdefault then (id_of_name n :: acc) else acc)
+	      (List.combine s binders) []
+	  in
+	  (cnames.(j), ids, e')
+	in
+	let a = match extract_constr env ctx c with
+	  | Emlterm a -> a
+	  | Eprop -> MLprop
+	  | Emltype _ -> assert false
+	in
+	Rmlterm (MLcase (a, Array.mapi extract_branch br))
+    | IsFix ((_,i),(ti,fi,ci)) ->
+	let (env', ctx') = fix_environment env ctx fi ti in
+	let extract_fix_body c = 
+	  match extract_constr env' ctx' c with
+	    | Eprop -> MLprop (* TODO: probably wrong *)
+	    | Emltype _ -> assert false
+	    | Emlterm a -> a
+	in
+	let ei = array_map_to_list extract_fix_body ci in
+	Rmlterm (MLfix (i, true, List.map id_of_name fi, ei))
     | IsLetIn (n, c1, t1, c2) ->
 	let id = id_of_name n in
 	let env' = push_rel (n,Some c1,t1) env in
