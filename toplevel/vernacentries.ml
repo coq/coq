@@ -213,7 +213,6 @@ let dump_universes s =
   with
       e -> close_out output; raise e
 
-
 (*********************)
 (* "Locate" commands *)
 
@@ -225,53 +224,6 @@ let locate_file f =
   with Not_found -> 
     msgnl (hov 0 (str"Can't find file" ++ spc () ++ str f ++ spc () ++
 		  str"on loadpath"))
-
-let print_located_qualid r =
-  let (loc,qid) = qualid_of_reference r in
-  let msg = 
-    try
-      let ref = Nametab.locate qid in
-      let ref_str = match ref with
-	  ConstRef _ -> "Constant"
-	| IndRef _ -> "Inductive"
-	| ConstructRef _ -> "Constructor"
-	| VarRef _ -> "Variable"
-      in
-      let sp = Nametab.sp_of_global ref in
-	str ref_str ++ spc () ++ pr_sp sp
-    with Not_found -> 
-      try
-	let kn = Nametab.locate_syntactic_definition qid in
-	let sp = Nametab.sp_of_syntactic_definition kn in
-	  str "Syntactic Definition" ++ spc () ++ pr_sp sp
-      with Not_found ->
-	try
-	  let s,dir = match Nametab.locate_dir qid with
-	    | DirOpenModule (dir,_) -> "Open Module", dir
-	    | DirOpenModtype (dir,_) -> "Open Module Type", dir
-	    | DirOpenSection (dir,_) -> "Open Section", dir
-	    | DirModule (dir,_) -> "Module", dir
-	    | DirClosedSection dir -> "Closed Section", dir
-	  in
-	    str s ++ spc () ++ pr_dirpath dir
-	with Not_found ->
-	  try
-	    let sp = Nametab.full_name_modtype qid in
-	      str "Module Type" ++ spc () ++ pr_sp sp
-	  with Not_found ->
-	    pr_qualid qid ++ str " is not a defined object"
-  in
-    msgnl (hov 0 msg)
-
-(*let print_path_entry (s,l) =
-  (str s ++ tbrk (0,2) ++ str (string_of_dirpath l))
-
-let print_loadpath () =
-  let l = Library.get_full_load_path () in
-  msgnl (Pp.t (str "Physical path:                                 " ++
-		 tab () ++ str "Logical Path:" ++ fnl () ++ 
-		 prlist_with_sep pr_fnl print_path_entry l))
-*)
 
 let msg_found_library = function
   | Library.LibLoaded, fulldir, file ->
@@ -294,7 +246,6 @@ let print_located_library r =
   let (loc,qid) = qualid_of_reference r in
   try msg_found_library (Library.locate_qualified_library qid)
   with e -> msg_notfound_library loc qid e
-
 
 (**********)
 (* Syntax *)
@@ -917,6 +868,7 @@ let vernac_print = function
       pp (Symbols.pr_scopes (Constrextern.without_symbols pr_rawterm))
   | PrintScope s ->
       pp (Symbols.pr_scope (Constrextern.without_symbols pr_rawterm) s)
+  | PrintAbout qid -> msgnl (print_about qid)
 
 let global_module r =
   let (loc,qid) = qualid_of_reference r in
@@ -945,7 +897,7 @@ let vernac_search s r =
       Search.search_about (Nametab.global locqid) r
 
 let vernac_locate = function
-  | LocateTerm qid -> print_located_qualid qid
+  | LocateTerm qid -> msgnl (print_located_qualid qid)
   | LocateLibrary qid -> print_located_library qid
   | LocateFile f -> locate_file f
   | LocateNotation ntn ->

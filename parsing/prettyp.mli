@@ -43,6 +43,7 @@ val print_mutual : mutual_inductive -> std_ppcmds
 val print_name : reference -> std_ppcmds
 val print_opaque_name : reference -> std_ppcmds
 val print_local_context : unit -> std_ppcmds
+val print_about : reference -> std_ppcmds
 
 (*i
 val print_extracted_name : identifier -> std_ppcmds
@@ -56,6 +57,7 @@ val print_classes : unit -> std_ppcmds
 val print_coercions : unit -> std_ppcmds
 val print_path_between : Classops.cl_typ -> Classops.cl_typ -> std_ppcmds
 
-
 val inspect : int -> std_ppcmds
 
+(* Locate *)
+val print_located_qualid : reference -> std_ppcmds

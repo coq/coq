@@ -29,15 +29,15 @@ open Printmod
 open Libnames
 open Nametab
 
+(*********************)
+(** Basic printing   *)
+
 let print_basename sp = pr_global (ConstRef sp)
 
 let print_closed_sections = ref false
 
-let print_typed_value_in_env env (trm,typ) =
-  (prterm_env env trm ++ fnl () ++
-     str "     : " ++ prtype_env env typ ++ fnl ())
-
-let print_typed_value x = print_typed_value_in_env (Global.env ()) x
+(********************************)
+(** Printing implicit arguments *)
 			  		  
 let print_impl_args_by_pos = function
   | []  -> mt ()
@@ -61,6 +61,9 @@ let print_impl_args l =
   if !Options.v7 then print_impl_args_by_pos (positions_of_implicits l)
   else print_impl_args_by_name (List.filter is_status_implicit l)
 
+(*********************)
+(** Printing Scopes  *)
+
 let print_argument_scopes = function
   | [Some sc] -> str"Argument scope is [" ++ str sc ++ str"]" ++ fnl()
   | l when not (List.for_all ((=) None) l) ->
@@ -74,6 +77,97 @@ let print_name_infos ref =
   print_impl_args (implicits_of_global ref) ++
   print_argument_scopes (Symbols.find_arguments_scope ref)
 
+let print_id_args_data test pr id l =
+  if List.exists test l then
+    str"For " ++ pr_id id ++ str": " ++ pr l
+  else 
+    mt()
+
+let print_args_data_of_inductive_ids get test pr sp mipv =
+  prvecti
+    (fun i mip -> 
+      print_id_args_data test pr mip.mind_typename (get (IndRef (sp,i))) ++
+      prvecti 
+	(fun j idc ->
+	  print_id_args_data test pr idc (get (ConstructRef ((sp,i),j+1))))
+        mip.mind_consnames)
+    mipv
+
+let print_inductive_implicit_args =
+  print_args_data_of_inductive_ids
+    implicits_of_global is_status_implicit print_impl_args
+
+let print_inductive_argument_scopes =
+  print_args_data_of_inductive_ids 
+    Symbols.find_arguments_scope ((<>) None) print_argument_scopes
+
+(*********************)
+(* "Locate" commands *)
+
+type logical_name =
+  | Term of global_reference
+  | Dir of global_dir_reference
+  | Syntactic of kernel_name
+  | ModuleType of qualid * kernel_name
+  | Undefined of qualid
+
+let locate_any_name ref =
+  let module N = Nametab in
+  let (loc,qid) = qualid_of_reference ref in
+  try Term (N.locate qid)
+  with Not_found -> 
+  try Syntactic (N.locate_syntactic_definition qid)
+  with Not_found ->
+  try Dir (N.locate_dir qid)
+  with Not_found ->
+  try ModuleType (qid, N.locate_modtype qid)
+  with Not_found -> Undefined qid
+
+let pr_located_qualid = function
+  | Term ref ->
+      let ref_str = match ref with
+	  ConstRef _ -> "Constant"
+	| IndRef _ -> "Inductive"
+	| ConstructRef _ -> "Constructor"
+	| VarRef _ -> "Variable" in
+      str ref_str ++ spc () ++ pr_sp (Nametab.sp_of_global ref)
+  | Syntactic kn ->
+      str "Syntactic Definition" ++ spc () ++
+      pr_sp (Nametab.sp_of_syntactic_definition kn)
+  | Dir dir ->
+      let s,dir = match dir with
+	| DirOpenModule (dir,_) -> "Open Module", dir
+	| DirOpenModtype (dir,_) -> "Open Module Type", dir
+	| DirOpenSection (dir,_) -> "Open Section", dir
+	| DirModule (dir,_) -> "Module", dir
+	| DirClosedSection dir -> "Closed Section", dir
+      in
+      str s ++ spc () ++ pr_dirpath dir
+  | ModuleType (qid,_) ->
+      str "Module Type" ++ spc () ++ pr_sp (Nametab.full_name_modtype qid)
+  | Undefined qid ->    
+      pr_qualid qid ++ str " is not a defined object"
+
+let print_located_qualid ref =
+  hov 0 (pr_located_qualid (locate_any_name ref))
+
+(******************************************)
+(**** Printing declarations and judgments *)
+
+let print_typed_value_in_env env (trm,typ) =
+  (prterm_env env trm ++ fnl () ++
+     str "     : " ++ prtype_env env typ ++ fnl ())
+
+let print_typed_value x = print_typed_value_in_env (Global.env ()) x
+
+let print_judgment env {uj_val=trm;uj_type=typ} =
+  print_typed_value_in_env env (trm, typ)
+    
+let print_safe_judgment env j =
+  let trm = Safe_typing.j_val j in
+  let typ = Safe_typing.j_type j in
+  print_typed_value_in_env env (trm, typ)
+    
 (* To be improved; the type should be used to provide the types in the
    abstractions. This should be done recursively inside prterm, so that
    the pretty-print of a proposition (P:(nat->nat)->Prop)(P [u]u)
@@ -99,29 +193,8 @@ let print_named_decl (id,c,typ) =
 let assumptions_for_print lna =
   List.fold_right (fun na env -> add_name na env) lna empty_names_context
 
-let print_id_args_data test pr id l =
-  if List.exists test l then
-    str"For " ++ pr_id id ++ str": " ++ pr l
-  else 
-    mt()
-
-let print_args_data_of_inductive_ids get test pr sp mipv =
-  prvecti
-    (fun i mip -> 
-      print_id_args_data test pr mip.mind_typename (get (IndRef (sp,i))) ++
-      prvecti 
-	(fun j idc ->
-	  print_id_args_data test pr idc (get (ConstructRef ((sp,i),j+1))))
-        mip.mind_consnames)
-    mipv
-
-let print_inductive_implicit_args =
-  print_args_data_of_inductive_ids
-    implicits_of_global is_status_implicit print_impl_args
-
-let print_inductive_argument_scopes =
-  print_args_data_of_inductive_ids 
-    Symbols.find_arguments_scope ((<>) None) print_argument_scopes
+(*********************)
+(* *)
 
 let print_params env params =
   if List.length params = 0 then 
@@ -209,7 +282,7 @@ let print_inductive sp = (print_mutual sp)
 let print_syntactic_def sep kn =
   let qid = Nametab.shortest_qualid_of_syndef kn in
   let c = Syntax_def.search_syntactic_definition dummy_loc kn in 
-  (str" Syntactic Definition " ++ pr_qualid qid ++ str sep ++ 
+  (str"Syntactic Definition " ++ pr_qualid qid ++ str sep ++ 
   Constrextern.without_symbols pr_rawterm c ++ fnl ())
 
 let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
@@ -326,20 +399,27 @@ let print_sec_context sec = print_context true (read_sec_context sec)
 
 let print_sec_context_typ sec = print_context false (read_sec_context sec)
 
-let print_judgment env {uj_val=trm;uj_type=typ} =
-  print_typed_value_in_env env (trm, typ)
-    
-let print_safe_judgment env j =
-  let trm = Safe_typing.j_val j in
-  let typ = Safe_typing.j_type j in
-  print_typed_value_in_env env (trm, typ)
-    
 let print_eval red_fun env {uj_val=trm;uj_type=typ} =
   let ntrm = red_fun env Evd.empty trm in
   (str "     = " ++ print_judgment env {uj_val = ntrm; uj_type = typ})
 
-let print_name r = 
-  let loc,qid = qualid_of_reference r in
+let print_name ref = 
+  match locate_any_name ref with
+  | Term (ConstRef sp) -> print_constant true " = " sp
+  | Term (IndRef (sp,_)) -> print_inductive sp
+  | Term (ConstructRef ((sp,_),_)) -> print_inductive sp
+  | Term (VarRef sp) -> print_section_variable sp
+  | Syntactic kn -> print_syntactic_def " = " kn
+  | Dir (DirModule(dirpath,(mp,_))) -> print_module (printable_body dirpath) mp
+  | Dir _ -> mt ()
+  | ModuleType (_,kn) -> print_modtype kn
+  | Undefined qid ->
+  try  (* Var locale de but, pas var de section... donc pas d'implicits *)
+    let dir,str = repr_qualid qid in 
+    if (repr_dirpath dir) <> [] then raise Not_found;
+    let (_,c,typ) = Global.lookup_named str in 
+    (print_named_decl (str,c,typ))
+  with Not_found ->
   try 
     let sp = Nametab.locate_obj qid in
     let (oname,lobj) = 
@@ -351,35 +431,9 @@ let print_name r =
 	| _ -> raise Not_found
     in
     print_leaf_entry true " = " (oname,lobj)
-  with Not_found -> 
-  try 
-    match Nametab.locate qid with
-      | ConstRef sp -> print_constant true " = " sp
-      | IndRef (sp,_) -> print_inductive sp
-      | ConstructRef ((sp,_),_) -> print_inductive sp
-      | VarRef sp -> print_section_variable sp
-  with Not_found -> 
-  try  (* Var locale de but, pas var de section... donc pas d'implicits *)
-    let dir,str = repr_qualid qid in 
-    if (repr_dirpath dir) <> [] then raise Not_found;
-    let (_,c,typ) = Global.lookup_named str in 
-    (print_named_decl (str,c,typ))
   with Not_found ->
-  try
-    let kn = Nametab.locate_syntactic_definition qid in
-    print_syntactic_def " = " kn
-  with Not_found ->
-  try 
-    let globdir = Nametab.locate_dir qid in
-      match globdir with
-	  DirModule (dirpath,(mp,_)) ->
-	    print_module (printable_body dirpath) mp
-	| _ -> raise Not_found
-  with Not_found -> 
-  try print_modtype (Nametab.locate_modtype qid)
-  with Not_found ->
-    user_err_loc
-      (loc,"print_name",pr_qualid qid ++ spc () ++ str "not a defined object")
+    errorlabstrm
+      "print_name" (pr_qualid qid ++ spc () ++ str "not a defined object")
 
 let print_opaque_name qid = 
   let sigma = Evd.empty in
@@ -400,6 +454,30 @@ let print_opaque_name qid =
     | VarRef id ->
         let (_,c,ty) = lookup_named id env in 
 	print_named_decl (id,c,ty)
+
+let print_about ref = 
+  let sigma = Evd.empty in
+  let env = Global.env () in
+  let k = locate_any_name ref in
+  begin match k with
+  | Term (ConstRef sp as ref) -> 
+      print_constant false " = " sp
+  | Term (IndRef ind as ref) ->
+      let ty = Inductive.type_of_inductive env ind in
+      print_typed_value (mkInd ind, ty) ++
+      print_name_infos ref
+  | Term (ConstructRef cstr as ref) ->
+      let ty = Inductive.type_of_constructor env cstr in
+      print_typed_value (mkConstruct cstr, ty) ++
+      print_name_infos ref
+  | Term (VarRef sp as ref) ->
+      print_named_decl (get_variable sp) ++
+      print_name_infos ref
+  | Syntactic kn ->
+      print_syntactic_def " = " kn
+  | Dir _ | ModuleType _ | Undefined _ -> mt () end
+  ++
+  hov 0 (str "Expands to: " ++ pr_located_qualid k)
 
 let print_local_context () =
   let env = Lib.contents_after None in

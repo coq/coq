@@ -512,6 +512,7 @@ GEXTEND Gram
       | IDENT "Print"; IDENT "Module"; qid = global -> 
 	  VernacPrint (PrintModule qid)
       | IDENT "Inspect"; n = natural -> VernacPrint (PrintInspect n)
+      | IDENT "About"; qid = global -> VernacPrint (PrintAbout qid)
 
       (* Searching the environment *)
       | IDENT "Search"; qid = global; l = in_or_out_modules -> 

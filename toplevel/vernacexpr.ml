@@ -53,6 +53,7 @@ type printable =
   | PrintHintDb
   | PrintScopes
   | PrintScope of string
+  | PrintAbout of reference
 
 type searchable =
   | SearchPattern of pattern_expr
