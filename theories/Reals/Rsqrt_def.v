@@ -331,7 +331,7 @@ Assumption.
 Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H r)).
 Qed.
 
-Definition cond_pos [x:R] : bool := Cases (total_order_Rle R0 x) of 
+Definition cond_positivity [x:R] : bool := Cases (total_order_Rle R0 x) of 
   (leftT _) => true 
 | (rightT _) => false end.
 
@@ -392,8 +392,8 @@ Lemma f_pos : (f:R->R;x,y:R) (continuity f) -> ``x<y`` -> ``(f x)<0`` -> ``0<(f 
 Intros.
 Cut ``x<=y``.
 Intro.
-Generalize (dicho_lb_cv x y [z:R](cond_pos (f z)) H3). 
-Generalize (dicho_up_cv x y [z:R](cond_pos (f z)) H3). 
+Generalize (dicho_lb_cv x y [z:R](cond_positivity (f z)) H3). 
+Generalize (dicho_up_cv x y [z:R](cond_positivity (f z)) H3). 
 Intros.
 Elim X; Intros.
 Elim X0; Intros.
@@ -402,20 +402,20 @@ Rewrite H4 in p0.
 Apply existTT with x0.
 Split.
 Split.
-Apply Rle_trans with (dicho_lb x y [z:R](cond_pos (f z)) O).
+Apply Rle_trans with (dicho_lb x y [z:R](cond_positivity (f z)) O).
 Simpl.
 Right; Reflexivity.
 Apply growing_ineq.
 Apply dicho_lb_growing; Assumption.
 Assumption.
-Apply Rle_trans with (dicho_up x y [z:R](cond_pos (f z)) O).
+Apply Rle_trans with (dicho_up x y [z:R](cond_positivity (f z)) O).
 Apply decreasing_ineq.
 Apply dicho_up_decreasing; Assumption.
 Assumption.
 Right; Reflexivity.
 2:Left; Assumption.
-Pose Vn := [n:nat](dicho_lb x y [z:R](cond_pos (f z)) n).
-Pose Wn := [n:nat](dicho_up x y [z:R](cond_pos (f z)) n).
+Pose Vn := [n:nat](dicho_lb x y [z:R](cond_positivity (f z)) n).
+Pose Wn := [n:nat](dicho_up x y [z:R](cond_positivity (f z)) n).
 Cut ((n:nat)``(f (Vn n))<=0``)->``(f x0)<=0``.
 Cut ((n:nat)``0<=(f (Wn n))``)->``0<=(f x0)``.
 Intros.
@@ -427,17 +427,17 @@ Assert H10 := (H5 H7).
 Apply Rle_antisym; Assumption.
 Intro.
 Unfold Wn.
-Cut (z:R) (cond_pos z)=true <-> ``0<=z``.
+Cut (z:R) (cond_positivity z)=true <-> ``0<=z``.
 Intro.
-Assert H8 := (dicho_up_car x y [z:R](cond_pos (f z)) n).
-Elim (H7 (f (dicho_up x y [z:R](cond_pos (f z)) n))); Intros.
+Assert H8 := (dicho_up_car x y [z:R](cond_positivity (f z)) n).
+Elim (H7 (f (dicho_up x y [z:R](cond_positivity (f z)) n))); Intros.
 Apply H9.
 Apply H8.
 Elim (H7 (f y)); Intros.
 Apply H12.
 Left; Assumption.
 Intro.
-Unfold cond_pos.
+Unfold cond_positivity.
 Case (total_order_Rle R0 z); Intro.
 Split.
 Intro; Assumption.
@@ -447,18 +447,18 @@ Intro; Elim diff_false_true; Assumption.
 Intro.
 Elim n0; Assumption.
 Unfold Vn.
-Cut (z:R) (cond_pos z)=false <-> ``z<0``.
+Cut (z:R) (cond_positivity z)=false <-> ``z<0``.
 Intros.
-Assert H8 := (dicho_lb_car x y [z:R](cond_pos (f z)) n).
+Assert H8 := (dicho_lb_car x y [z:R](cond_positivity (f z)) n).
 Left.
-Elim (H7 (f (dicho_lb x y [z:R](cond_pos (f z)) n))); Intros.
+Elim (H7 (f (dicho_lb x y [z:R](cond_positivity (f z)) n))); Intros.
 Apply H9.
 Apply H8.
 Elim (H7 (f x)); Intros.
 Apply H12.
 Assumption.
 Intro.
-Unfold cond_pos.
+Unfold cond_positivity.
 Case (total_order_Rle R0 z); Intro.
 Split.
 Intro; Elim diff_true_false; Assumption.
