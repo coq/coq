@@ -749,7 +749,6 @@ let add_setoid a aeq th =
       Relation
        {rel_a = a ; rel_aeq = aeq ; rel_refl = Some refl ; rel_sym = Some sym}
     in
-     (*CSC: coq_prop_relation used here *)
      add_morphism None mor_name
       (aeq,[aeq_rel;aeq_rel],Lazy.force coq_prop_relation)
    end
@@ -924,8 +923,6 @@ let cartesian_product a =
   List.map Array.of_list
    (aux (List.map (elim_duplicates identity) (Array.to_list a)))
 
-exception BackTrack
-
 let mark_occur gl t in_c input_relation input_direction =
  let rec aux output_relation output_direction in_c =
   if eq_constr t in_c then
@@ -995,24 +992,29 @@ let mark_occur gl t in_c input_relation input_direction =
             =
              function
                 [] ->
-                 if not (get_mark (Array.of_list a_rev)) then
+                 if a_rev = [] then
                   [ToKeep (in_c,output_relation,output_direction)]
                  else
-                  let err =
-                   match output_relation with
-                      Leibniz typ' when eq_constr typ typ' -> false
-                    | _ when output_relation = (Lazy.force coq_prop_relation) ->
-                       false
-                    | _ -> true
-                  in
-                   if err then []
-                   else
-                    let mor =
-                     ACFunction {f_args=List.rev f_args_rev; f_output=typ} in
-                    let func = beta_expand c c_args_rev in
-                     [MApp
-                       (func,mor,Array.of_list (List.rev a_rev),
-                        output_direction)]
+                  let a' = cartesian_product (Array.of_list (List.rev a_rev)) in
+                   List.fold_left
+                    (fun res a ->
+                      if not (get_mark a) then
+                       (ToKeep (in_c,output_relation,output_direction))::res
+                      else
+                       let err =
+                        match output_relation with
+                           Leibniz typ' when eq_constr typ typ' -> false
+                         | _ when output_relation = Lazy.force coq_prop_relation
+                             -> false
+                         | _ -> true
+                       in
+                        if err then res
+                        else
+                         let mor =
+                          ACFunction{f_args=List.rev f_args_rev;f_output=typ} in
+                         let func = beta_expand c c_args_rev in
+                          (MApp (func,mor,a,output_direction))::res
+                    ) [] a'
               | (he::tl) as a->
                  let typnf = Reduction.whd_betadeltaiota env typ in
                   match kind_of_term typnf with
@@ -1024,35 +1026,42 @@ let mark_occur gl t in_c input_relation input_direction =
                      let he =
                       (aux (Leibniz s) Left2Right he) @
                       (aux (Leibniz s) Right2Left he) in
-(*CSC: let's make it simple at first *)
-let he = match he with [] -> raise BackTrack | he::_ -> (*ppnl (str "!!!!!! THE TACTIC IS STILL INCOMPLETE HERE !!!!!");*) he in
-                     begin
-                      match noccurn 1 t, he with
-                         _, ToKeep (arg,_,_) ->
-                          (* generic product, to keep *)
-                          find_non_dependent_function
-                           env' c ((Toapply arg)::c_args_rev)
-                           (subst1 arg t) f_args_rev a_rev tl
-                       | true, _ ->
-                          (* non-dependent product, to replace *)
-                          find_non_dependent_function
-                           env' c ((Toexpand (name,s))::c_args_rev)
-                            (lift 1 t) (s::f_args_rev) (he::a_rev) tl
-                       | false, _ ->
-                          (* dependent product, to replace *)
-                          (*CSC: this limitation is due to the reflexive
-                            implementation and it is hard to lift *)
-                          errorlabstrm "Setoid_replace"
-                           (str "Cannot rewrite in the argument of a " ++
-                            str "dependent product. If you need this " ++
-                            str "feature, please report to the author.")
-                     end
+                     if he = [] then []
+                     else
+                      let he0 = List.hd he in
+                      begin
+                       match noccurn 1 t, he0 with
+                          _, ToKeep (arg,_,_) ->
+                           (* invariant: if he0 = ToKeep (t,_,_) then every
+                              element in he is = ToKeep (t,_,_) *)
+                           assert
+                            (List.for_all
+                              (function
+                                  ToKeep (arg',_,_) when eq_constr arg arg' ->
+                                    true
+                                | _ -> false) he) ;
+                           (* generic product, to keep *)
+                           find_non_dependent_function
+                            env' c ((Toapply arg)::c_args_rev)
+                            (subst1 arg t) f_args_rev a_rev tl
+                        | true, _ ->
+                           (* non-dependent product, to replace *)
+                           find_non_dependent_function
+                            env' c ((Toexpand (name,s))::c_args_rev)
+                             (lift 1 t) (s::f_args_rev) (he::a_rev) tl
+                        | false, _ ->
+                           (* dependent product, to replace *)
+                           (* This limitation is due to the reflexive
+                             implementation and it is hard to lift *)
+                           errorlabstrm "Setoid_replace"
+                            (str "Cannot rewrite in the argument of a " ++
+                             str "dependent product. If you need this " ++
+                             str "feature, please report to the author.")
+                      end
                   | _ -> assert false
             in
-try
              find_non_dependent_function (Tacmach.pf_env gl) c [] typ [] []
               (Array.to_list al)
-with BackTrack -> []
           in
            elim_duplicates identity (res_functions @ res_mors)
       | Prod (_, c1, c2) -> 
@@ -1159,7 +1168,6 @@ let syntactic_but_representation_of_marked_but hole_relation hole_direction =
           ACMorphism { args = args ; lem = lem } -> lem,args
         | ACFunction { f_args = f_args ; f_output = f_output } ->
            let mt =
-            (*CSC: coq_prop_relation used here *)
             if eq_constr out (cic_relation_class_of_relation_class
               (Lazy.force coq_prop_relation))
             then
@@ -1243,7 +1251,6 @@ let apply_coq_setoid_rewrite hole_relation prop_relation c1 c2 (direction,h)
 let relation_rewrite c1 c2 (input_direction,cl) gl =
  let but = pf_concl gl in
  let (hyp,c1,c2) =
-let oldc1 = c1 in
    let (env',c1) =
     try
      w_unify_to_subterm ~mod_delta:false (pf_env gl) (c1,but) cl.env
@@ -1306,7 +1313,7 @@ let general_s_rewrite lft2rgt c gl =
 
 exception Use_replace
 
-(*CSC: the name should be changed *)
+(*CSC: still setoid in the name *)
 let setoid_replace c1 c2 gl =
  try
   let relation =
