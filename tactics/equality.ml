@@ -13,6 +13,7 @@ open Reduction
 open Instantiate
 open Typeops
 open Typing
+open Retyping
 open Tacmach
 open Proof_type
 open Logic
@@ -180,6 +181,13 @@ type leibniz_eq = {
   rect : marked_term option;
   congr: marked_term;
   sym  : marked_term }
+
+type sigma_type = {
+  proj1 : constr;
+  proj2 : constr;
+  elim  : constr;
+  intro : constr;
+  ex    : constr }
 
 let mmk = make_module_marker [ "Prelude"; "Logic_Type"; "Specif"; "Logic" ]
 
@@ -684,43 +692,45 @@ let h_discrHyp   = hide_ident_tactic  "DiscrHyp"   discrHyp
  *  re-lift it. *)
 
 let bind_ith na i t = lift i (DLAM(na,lift (-(i-1)) t))
-
+(*
 let existS_term = put_squel mmk "existS"
-let existS_pattern = put_pat mmk "(existS ? ? ? ?)"
 let sigS_term = put_squel mmk "sigS"
 let projS1_term = put_squel mmk "projS1"
 let projS2_term = put_squel mmk "projS2"
 let sigS_rec_term = put_squel mmk "sigS_rec"
-
+*)
+let existS_pattern = put_pat mmk "(existS ? ? ? ?)"
+(*
 let existT_term = put_squel mmk "existT"
-let existT_pattern = put_pat mmk "(existT ? ? ? ?)"
 let sigT_term = put_squel mmk "sigT"
 let projT1_term = put_squel mmk "projT1"
 let projT2_term = put_squel mmk "projT2"
 let sigT_rect_term = put_squel mmk "sigT_rect"
+*)
+let existT_pattern = put_pat mmk "(existT ? ? ? ?)"
 
-let build_sigma_prop () =
-  (fst (destConst (get_squel projS1_term)),
-   fst (destConst (get_squel projS2_term)),
-   fst (destConst (get_squel sigS_rec_term)),
-   get_squel existS_term,
-   get_squel sigS_term)
+let build_sigma_set () =
+  { proj1 = get_reference ["Specif"] "projS1";
+    proj2 = get_reference ["Specif"] "projS2";
+    elim = get_reference ["Specif"] "sigS_rec";
+    intro = get_reference ["Specif"] "existS";
+    ex = get_reference ["Specif"] "sigS" }
 
 let build_sigma_type () =
-  (fst (destConst (get_squel projT1_term)),
-   fst (destConst (get_squel projT2_term)),
-   fst (destConst (get_squel sigT_rect_term)),
-   get_squel existT_term,
-   get_squel sigT_term)
+  { proj1 = get_reference ["Specif"] "projT1";
+    proj2 = get_reference ["Specif"] "projT2";
+    elim = get_reference ["Specif"] "sigT_rec";
+    intro = get_reference ["Specif"] "existT";
+    ex = get_reference ["Specif"] "sigT" }
 
 (* returns the sigma type (sigS, sigT) with the respective
     constructor depending on the sort *)
 
 let find_sigma_data s =
-  match strip_outer_cast s with  
-    | DOP0(Sort(Prop Pos)) -> build_sigma_prop ()                  (* Set *) 
-    | DOP0(Sort(Type(_))) -> build_sigma_type ()                   (* Type *)
-    |   _     -> error "find_sigma_data"
+  match s with  
+    | Prop Pos  -> build_sigma_set ()                    (* Set *) 
+    | Type _    -> build_sigma_type ()                   (* Type *)
+    | Prop Null -> error "find_sigma_data"
 
 (* [make_tuple env na lind rterm rty]
 
@@ -740,8 +750,8 @@ let find_sigma_data s =
 
 let make_tuple sigma env na lind rterm rty =
   if dependent (Rel lind) rty then
-    let (_,_,_,exist_term,sig_term) =
-      find_sigma_data (type_of env sigma rty) in
+    let {intro = exist_term; ex = sig_term} =
+      find_sigma_data (get_sort_of env sigma rty) in
     let a = type_of env sigma (Rel lind) in
     let p = DOP2(Lambda,a,
                  bind_ith (fst(lookup_rel lind env)) lind rty) in
@@ -787,7 +797,7 @@ let minimal_free_rels env sigma (c,cty) =
  *)
 
 let sig_clausale_forme env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
-  let (_,_,_,exist_term,_) = find_sigma_data sort_of_ty in 
+  let { ex = exist_term } = find_sigma_data sort_of_ty in 
   let rec sigrec_clausale_forme siglen ty =
     if siglen = 0 then
       (* We obtain the components dependent in dFLT by matching *)
@@ -850,7 +860,7 @@ let sig_clausale_forme env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
 
 let make_iterated_tuple sigma env (dFLT,dFLTty) (c,cty) =
   let (cty,rels) = minimal_free_rels env sigma (c,cty) in
-  let sort_of_cty = type_of env sigma cty in
+  let sort_of_cty = get_sort_of env sigma cty in
   let sorted_rels = Sort.list (>=) (Intset.elements rels) in
   let (tuple,tuplety) =
     List.fold_left (fun (rterm,rty) lind ->
@@ -1167,12 +1177,13 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
 
  *)
 
-(* squeletons *)
+(*
 let comp_carS_squeleton = put_squel mmk "<<x>>(projS1 ? ? (?)@[x])"
 let comp_cdrS_squeleton = put_squel mmk "<<x>>(projS2 ? ? (?)@[x])"
 
 let comp_carT_squeleton = put_squel mmk "<<x>>(projT1 ? ? (?)@[x])"
 let comp_cdrT_squeleton = put_squel mmk "<<x>>(projT2 ? ? (?)@[x])"
+*)
 
 let match_sigma ex ex_pat =
   match matches (get_pat ex_pat) ex with
@@ -1181,48 +1192,45 @@ let match_sigma ex ex_pat =
 	anomaly "match_sigma: a successful sigma pattern should match 4 terms"
 
 let find_sigma_data_decompose ex =
-  try 
-    (comp_carS_squeleton, comp_cdrS_squeleton,
-     match_sigma ex existS_pattern)
-  with PatternMatchingFailure -> 
+  try
+    let subst = match_sigma ex existS_pattern in
+    (build_sigma_set (),subst)
+  with PatternMatchingFailure ->
     (try 
-       (comp_carT_squeleton,comp_cdrT_squeleton,
-        match_sigma ex existT_pattern)   
+       let subst = match_sigma ex existT_pattern in
+       (build_sigma_type (),subst)
      with PatternMatchingFailure -> 
        errorlabstrm "find_sigma_data_decompose" [< >])
 
-let decomp_tuple_term env = 
-  let rec decomprec to_here_fun ex =
+let decomp_tuple_term env c t = 
+  let rec decomprec inner_code ex exty =
     try
-      let (comp_car_squeleton,comp_cdr_squeleton,(a,p,car,cdr)) =
-	find_sigma_data_decompose  ex in
-      let car_code = soinstance comp_car_squeleton [a;p;to_here_fun]
-      and cdr_code = soinstance comp_cdr_squeleton [a;p;to_here_fun] in
-      (car,named_hd env a Anonymous,car_code)::(decomprec cdr_code cdr)
+      let {proj1 = p1; proj2 = p2 },(a,p,car,cdr) =
+	find_sigma_data_decompose ex in
+      let car_code = applist (p1,[a;p;inner_code])
+      and cdr_code = applist (p2,[a;p;inner_code]) in
+      let cdrtyp = beta_applist (p,[car]) in
+      ((car,a),car_code)::(decomprec cdr_code cdr cdrtyp)
     with e when catchable_exception e ->
-      [(ex,named_hd env ex Anonymous,to_here_fun)]
+      [((ex,exty),inner_code)]
   in
-  decomprec (DLAM(Anonymous,Rel 1))
+  List.split (decomprec (Rel 1) c t)
 
 let subst_tuple_term env sigma dep_pair b =
-  let sort_of_dep_pair =
-    type_of env sigma (type_of env sigma dep_pair) in
-  let (proj1_sp,proj2_sp,sig_elim_sp,_,_) =
-    find_sigma_data sort_of_dep_pair in 
-  let e_list = decomp_tuple_term env dep_pair in
+  let typ = get_type_of env sigma dep_pair in
+  let e_list,proj_list = decomp_tuple_term env dep_pair typ in
   let abst_B =
-    List.fold_right (fun (e,na,_) b ->
-                       let body = subst_term e b in
-                       let pB = DLAM(na,body) in
-		       DOP2(Lambda,type_of env sigma e,pB))
-      e_list b 
-  in
-  let app_B = 
-    applist(abst_B,(List.map (fun (_,_,c) -> (sAPP c (Rel 1))) e_list)) in
+    List.fold_right
+      (fun (e,t) body -> lambda_create env (t,subst_term e body)) e_list b in
+  let app_B = applist(abst_B,proj_list) in
+  (* inutile ?? les projs sont appliquées à (Rel 1) ?? *)
+(*
+  let { proj1 = proj1_sp; proj2 = proj2_sp; elim = sig_elim_sp } =
+    find_sigma_data (get_sort_of env sigma typ) in
   strong (fun _ _ -> 
 	    compose (whd_betaiota env sigma)
 	      (whd_const [proj1_sp;proj2_sp;sig_elim_sp] env sigma)) 
-    env sigma app_B
+    env sigma*) app_B
     
 (* |- (P e2)
      BY RevSubstInConcl (eq T e1 e2)
@@ -1232,7 +1240,7 @@ let subst_tuple_term env sigma dep_pair b =
 let revSubstInConcl eqn gls =
   let (lbeq,(t,e1,e2)) = find_eq_data_decompose eqn in
   let body = subst_tuple_term (pf_env gls) (project gls) e2 (pf_concl gls) in
-  if not (dependent (Rel 1) body) then errorlabstrm  "RevSubstInConcl" [<>];
+  assert (not (dependent (Rel 1) body));
   bareRevSubstInConcl lbeq body (t,e1,e2) gls
 
 (* |- (P e1)
@@ -1610,9 +1618,9 @@ let substHypInConcl_RL_tac =
     id:a=b H:(P a) |- G
 *)
 
-(***************)
-(* AutoRewrite *)
-(***************)
+(**********************************************************************)
+(*                    AutoRewrite                                     *)
+(**********************************************************************)
 
 (****Dealing with the rewriting rules****)
 
