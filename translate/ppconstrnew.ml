@@ -367,28 +367,31 @@ let rec split_fix n typ def =
     let (bl,typ,def) = split_fix (n-1) typ def in
     (LocalRawAssum ([na],t)::bl,typ,def)
 
-let pr_recursive_decl pr id bl annot t c =
+let pr_recursive_decl pr pr_dangling dangling_with_for id bl annot t c =
+  let pr_body =
+    if dangling_with_for then pr_dangling else pr in
   pr_id id ++ str" " ++
   hov 0 (pr_undelimited_binders (pr ltop) bl ++ annot) ++
   pr_opt_type_spc pr t ++ str " :=" ++
-  pr_sep_com (fun () -> brk(1,2)) (pr ltop) c
+  pr_sep_com (fun () -> brk(1,2)) (pr_body ltop) c
 
-let pr_fixdecl pr (id,n,bl,t,c) =
+let pr_fixdecl pr prd dangling_with_for (id,n,bl,t,c) =
   let annot =
     let ids = names_of_local_assums bl in
     if List.length ids > 1 then 
       spc() ++ str "{struct " ++ pr_name (snd (List.nth ids n)) ++ str"}"
     else mt() in
-  pr_recursive_decl pr id bl annot t c
+  pr_recursive_decl pr prd dangling_with_for id bl annot t c
 
-let pr_cofixdecl pr (id,bl,t,c) =
-  pr_recursive_decl pr id bl (mt()) t c
+let pr_cofixdecl pr prd dangling_with_for (id,bl,t,c) =
+  pr_recursive_decl pr prd dangling_with_for id bl (mt()) t c
 
 let pr_recursive pr_decl id = function
   | [] -> anomaly "(co)fixpoint with no definition"
-  | [d1] -> pr_decl d1
+  | [d1] -> pr_decl false d1
   | dl ->
-      prlist_with_sep (fun () -> fnl() ++ str "with ") pr_decl dl ++
+      prlist_with_sep (fun () -> fnl() ++ str "with ")
+        (pr_decl true) dl ++
       fnl() ++ str "for " ++ pr_id id
 
 let pr_arg pr x = spc () ++ pr x
@@ -462,16 +465,15 @@ let rec pr sep inherited a =
   let (strm,prec) = match a with
   | CRef r -> pr_reference r, latom
   | CFix (_,id,fix) ->
-      let p = hov 0 (str"fix " ++
-                pr_recursive (pr_fixdecl (pr mt)) (snd id) fix) in
-      if List.length fix = 1 & prec_less (fst inherited) ltop
-      then surround p, latom else p, lfix
+      hov 0 (str"fix " ++
+             pr_recursive
+               (pr_fixdecl (pr mt) (pr_dangling_with_for mt)) (snd id) fix),
+      lfix
   | CCoFix (_,id,cofix) ->
-      let p =
-        hov 0 (str "cofix " ++
-               pr_recursive (pr_cofixdecl (pr mt)) (snd id) cofix) in
-      if List.length cofix = 1 & prec_less (fst inherited) ltop
-      then surround p, latom else p, lfix
+      hov 0 (str "cofix " ++
+             pr_recursive
+              (pr_cofixdecl (pr mt) (pr_dangling_with_for mt)) (snd id) cofix),
+      lfix
   | CArrow (_,a,b) ->
       hov 0 (pr mt (larrow,L) a ++ str " ->" ++
              pr (fun () ->brk(1,0)) (-larrow,E) b),
@@ -530,8 +532,9 @@ let rec pr sep inherited a =
       v 0
         (hv 0 (str "match" ++ brk (1,2) ++
 	  hov 0 (
-	    prlist_with_sep sep_v (pr_case_item (pr mt)) c
-            ++ pr_case_type (pr mt) rtntypopt) ++
+	    prlist_with_sep sep_v
+              (pr_case_item (pr_dangling_with_for mt)) c
+            ++ pr_case_type (pr_dangling_with_for mt) rtntypopt) ++
 	spc () ++ str "with") ++
         prlist (pr_eqn (pr mt)) eqns ++ spc() ++ str "end"),
       latom
@@ -579,7 +582,7 @@ let rec pr sep inherited a =
       hv 0 (
 	str (if style=MatchStyle then "old_match " else "match ") ++ 
 	pr mt ltop c ++
-	pr_return_type (pr mt) po ++
+	pr_return_type (pr_dangling_with_for mt) po ++
 	str " with" ++ brk (1,0) ++
 	hov 0 (prlist
           (fun b -> str "| ??? =>" ++ pr spc ltop b ++ fnl ()) bl) ++
@@ -603,6 +606,11 @@ let rec pr sep inherited a =
   let loc = constr_loc a in
   pr_with_comments loc
     (sep() ++ if prec_less prec inherited then strm else surround strm)
+
+and pr_dangling_with_for sep inherited a =
+  match a with
+  | (CFix (_,_,[_])|CCoFix(_,_,[_])) -> pr sep (latom,E) a
+  | _ -> pr sep inherited a
 
 let pr = pr mt
 
