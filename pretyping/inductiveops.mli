@@ -42,6 +42,8 @@ val mis_nf_constructor_type :
   inductive * mutual_inductive_body * one_inductive_body -> int -> constr
 val mis_constr_nargs : inductive -> int array
 
+val mis_constr_nargs_env : env -> inductive -> int array
+
 type constructor_summary = {
   cs_cstr : constructor;
   cs_params : constr list;

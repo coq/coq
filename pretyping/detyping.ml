@@ -236,7 +236,7 @@ let rec detype tenv avoid env t =
 	let indsp = annot.ci_ind in
         let considl = annot.ci_pp_info.cnames in
         let k = annot.ci_pp_info.ind_nargs in
-	let consnargsl = mis_constr_nargs indsp in
+	let consnargsl = mis_constr_nargs_env tenv indsp in
 	let pred = 
 	  if synth_type & computable p k & considl <> [||] then
 	    None
@@ -248,12 +248,14 @@ let rec detype tenv avoid env t =
 	  array_map3 (detype_eqn tenv avoid env) constructs consnargsl bl in
 	let eqnl = Array.to_list eqnv in
 	let tag =
-	  if PrintingLet.active (indsp,consnargsl) then
-	    LetStyle
-	  else if PrintingIf.active (indsp,consnargsl) then 
-	    IfStyle
-	  else 
-	    annot.ci_pp_info.style
+	  try 
+	    if PrintingLet.active (indsp,consnargsl) then
+	      LetStyle
+	    else if PrintingIf.active (indsp,consnargsl) then 
+	      IfStyle
+	    else 
+	      annot.ci_pp_info.style
+	  with Not_found -> annot.ci_pp_info.style
 	in 
 	if tag = RegularStyle then
 	  RCases (dummy_loc,pred,[tomatch],eqnl)
