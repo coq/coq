@@ -26,22 +26,26 @@ let libobjs = ocamlobjs @ camlp4objs @ configobjs
 let spaces = Str.regexp "[ \t\n]+"
 let split_cmo l = Str.split spaces l
 
-let lib = split_cmo Tolink.lib
+let lib = split_cmo Tolink.lib 
 let kernel = split_cmo Tolink.kernel
-let library = split_cmo Tolink.library
-let pretyping = split_cmo Tolink.pretyping
+let library = split_cmo Tolink.library 
+let pretyping = split_cmo Tolink.pretyping 
 let interp = split_cmo Tolink.interp
-let parsing = split_cmo Tolink.parsing
-let proofs = split_cmo Tolink.proofs
-let tactics = split_cmo Tolink.tactics
-let toplevel = split_cmo Tolink.toplevel
-let highparsing = split_cmo Tolink.highparsing
+let parsing = split_cmo Tolink.parsing 
+let proofs = split_cmo Tolink.proofs 
+let tactics = split_cmo Tolink.tactics 
+let toplevel = split_cmo Tolink.toplevel 
+let highparsing = split_cmo Tolink.highparsing 
 let highparsingnew = split_cmo Tolink.highparsingnew
-let ide = split_cmo Tolink.ide
+let ide = split_cmo Tolink.ide 
 
 let core_objs = 
   libobjs @ lib @ kernel @ library @ pretyping @ interp @ parsing @ 
   proofs @ tactics
+
+let core_libs = 
+  libobjs @ [ "lib.cma" ; "kernel.cma" ; "library.cma" ; "pretyping.cma" ;
+  "interp.cma" ; "parsing.cma" ; "proofs.cma" ; "tactics.cma" ]
 
 (* 3. Files only in coqsearchisos (if option -searchisos is used) *)
 let coqsearch = ["version_searchisos.cmo"; "cmd_searchisos_line.cmo"]
@@ -55,7 +59,8 @@ let gramobjs = []
 let notopobjs = gramobjs
 
 (* 5. High-level tactics objects *)
-let hightactics = (split_cmo Tolink.hightactics) @ (split_cmo Tolink.contrib)
+let hightactics = 
+ (split_cmo Tolink.hightactics) @ (split_cmo Tolink.contrib) 
 
 (* environment *)
 let src_coqtop = ref Coq_config.coqtop
@@ -103,18 +108,28 @@ let files_to_link userfiles =
     "str.cma"::"threads.cma"::"lablgtk.cma"::"gtkThread.cmo"::ide 
   else [] 
   in
+  let ide_libs = if !coqide then 
+    ["str.cma" ; "threads.cma" ; "lablgtk.cma" ; "gtkThread.cmo" ; "ide.cma" ]
+  else [] 
+  in
   let objs = 
     core_objs @ dyn_objs @ toplevel @ highparsing @ highparsingnew @ 
     command_objs @ hightactics @ toplevel_objs @ ide_objs
+  and libs =
+    core_libs @ dyn_objs @ 
+    [ "toplevel.cma" ; "highparsing.cma" ; "highparsingnew.cma" ] @ 
+    command_objs @ [ "hightactics.cma" ; "contrib.cma" ] @ toplevel_objs @ 
+    ide_libs      
   in
-  let tolink =
+  let objstolink,libstolink =
     if !opt then 
-      (List.map native_suffix objs) @ userfiles
+      ((List.map native_suffix objs) @ userfiles,
+       (List.map native_suffix libs) @ userfiles)
     else 
-      objs @ userfiles 
+      (objs @ userfiles ,libs @ userfiles )
   in
-  let modules = List.map module_of_file tolink in
-  (modules, tolink)
+  let modules = List.map module_of_file objstolink in
+  (modules, libstolink)
 
 (* Gives the list of all the directories under [dir].
    Uses [Unix] (it is hard to do without it). *)
@@ -317,7 +332,14 @@ let main () =
     let args = if !top then args @ [ "topstart.cmo" ] else args in
     (* Now, with the .cma, we MUST use the -linkall option *)
     let command = String.concat " " ((prog^" -linkall")::args) in
-    if !echo then begin print_endline command; flush Pervasives.stdout end;
+    if !echo then 
+      begin 
+	print_endline command; 
+	print_endline 
+	  ("(command length is " ^ 
+	   (string_of_int (String.length command)) ^ " characters)");
+	flush Pervasives.stdout 
+      end;
     let retcode = Sys.command command in
     clean main_file;
     (* command gives the exit code in HSB, and signal in LSB !!! *)

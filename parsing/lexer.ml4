@@ -431,11 +431,20 @@ let rec next_token = parser bp
 	    (try ("", find_keyword id) with Not_found -> ("IDENT", id)),
 	    (bp, ep))
   (* iso 8859-1 accentuated letters *)
-  | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255' as c);
-      len = ident_tail (store 0 c) >] ep ->
-      let id = get_buff len in
-      comment_stop bp;
-      (try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
+  | [< ' ('\192'..'\214' | '\216'..'\246' | '\248'..'\255' as c) ; s >] ->
+      if !Options.v7 then
+	begin
+	  match s with parser
+	      [< len = ident_tail (store 0 c) >] ep ->
+		let id = get_buff len in
+		comment_stop bp;
+		(try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
+	end
+      else
+	begin
+	  match s with parser
+	      [< t = process_chars bp c >] -> comment_stop bp; t
+	end
   | [< ' ('0'..'9' as c); len = number (store 0 c) >] ep ->
       comment_stop bp;
       (("INT", get_buff len), (bp, ep))

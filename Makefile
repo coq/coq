@@ -61,7 +61,7 @@ LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
 	      -I ide -I translate \
               -I contrib/omega -I contrib/romega \
 	      -I contrib/ring -I contrib/xml \
-	      -I contrib/extraction -I contrib/correctness \
+	      -I contrib/extraction \
               -I contrib/interface -I contrib/fourier \
 	      -I contrib/jprover -I contrib/cc \
 	      -I contrib/funind -I contrib/first-order
@@ -231,10 +231,10 @@ INTERFACECMX=$(INTERFACE:.cmo=.cmx)
 ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
 
 PARSERREQUIRES=$(CMO) # Solution de facilité...
-PARSERREQUIRESCMX=$(PARSERREQUIRES:.cmo=.cmx)
+PARSERREQUIRESCMX=$(CMX)
 
 ML4FILES +=\
-  contrib/correctness/psyntax.ml4 contrib/omega/g_omega.ml4 \
+  contrib/omega/g_omega.ml4 \
   contrib/romega/g_romega.ml4 contrib/ring/g_quote.ml4 \
   contrib/ring/g_ring.ml4 \
   contrib/field/field.ml4 contrib/fourier/g_fourier.ml4 \
@@ -278,17 +278,6 @@ EXTRACTIONCMO=\
   contrib/extraction/extract_env.cmo \
   contrib/extraction/g_extraction.cmo
 
-CORRECTNESSCMO=\
-  contrib/correctness/pmisc.cmo					  \
-  contrib/correctness/peffect.cmo contrib/correctness/prename.cmo \
-  contrib/correctness/perror.cmo contrib/correctness/penv.cmo  	  \
-  contrib/correctness/putil.cmo contrib/correctness/pdb.cmo	  \
-  contrib/correctness/pcic.cmo contrib/correctness/pmonad.cmo     \
-  contrib/correctness/pcicenv.cmo  				  \
-  contrib/correctness/pred.cmo contrib/correctness/ptyping.cmo	  \
-  contrib/correctness/pwp.cmo contrib/correctness/pmlize.cmo	  \
-  contrib/correctness/ptactic.cmo  contrib/correctness/psyntax.cmo
-
 JPROVERCMO=\
   contrib/jprover/opname.cmo \
   contrib/jprover/jterm.cmo contrib/jprover/jlogic.cmo \
@@ -311,21 +300,22 @@ ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4 \
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
-	$(CORRECTNESSCMO) $(CCCMO) $(FUNINDCMO) $(FOCMO)
+	$(CCCMO) $(FUNINDCMO) $(FOCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
-CMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) \
-    $(INTERP) $(PARSING) $(PROOFS) $(TACTICS) $(TOPLEVEL) \
-    $(HIGHPARSING) $(HIGHTACTICS) $(CONTRIB) $(HIGHPARSINGNEW)
-CMX=$(CMO:.cmo=.cmx)
+CMO=$(CONFIG) lib.cma kernel.cma library.cma pretyping.cma \
+    interp.cma parsing.cma proofs.cma tactics.cma toplevel.cma \
+    highparsing.cma hightactics.cma contrib.cma highparsingnew.cma
+CMOCMXA=$(CMO:.cma=.cmxa)
+CMX=$(CMOCMXA:.cmo=.cmx)
 
 ###########################################################################
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
 ###########################################################################
 
-COQMKTOP=bin/coqmktop$(EXE)
+COQMKTOP=bin/coqmktop$(EXE) 
 COQC=bin/coqc$(EXE)
 COQTOPBYTE=bin/coqtop.byte$(EXE)
 COQTOPOPT=bin/coqtop.opt$(EXE)
@@ -436,12 +426,12 @@ ide: coqide-$(HASCOQIDE) states
 clean-ide: 
 	rm -f $(OLDCOQIDEVO) $(COQIDECMO) $(COQIDECMX) $(COQIDECMO:.cmo=.cmi) $(COQIDEBYTE) $(COQIDEOPT)
 
-$(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) $(COQIDECMX)
+$(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) ide.cmxa
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -ide -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
-$(COQIDEBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(COQIDECMO)
+$(COQIDEBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO) ide.cma
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -g -ide -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
 
@@ -508,6 +498,121 @@ highparsing: $(HIGHPARSING)
 highparsingnew: $(HIGHPARSINGNEW)
 toplevel: $(TOPLEVEL)
 hightactics: $(HIGHTACTICS)
+
+# target for libraries
+
+lib.cma: $(LIBREP)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(LIBREP)
+
+lib.cmxa: $(LIBREP:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(LIBREP:.cmo=.cmx)
+
+kernel.cma: $(KERNEL)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(KERNEL)
+
+kernel.cmxa: $(KERNEL:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(KERNEL:.cmo=.cmx)
+
+library.cma: $(LIBRARY)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(LIBRARY)
+
+library.cmxa: $(LIBRARY:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(LIBRARY:.cmo=.cmx)
+
+pretyping.cma: $(PRETYPING)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(PRETYPING)
+
+pretyping.cmxa: $(PRETYPING:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(PRETYPING:.cmo=.cmx)
+
+interp.cma: $(INTERP)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(INTERP)
+
+interp.cmxa: $(INTERP:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(INTERP:.cmo=.cmx)
+
+parsing.cma: $(PARSING)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(PARSING)
+
+parsing.cmxa: $(PARSING:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(PARSING:.cmo=.cmx)
+
+proofs.cma: $(PROOFS)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(PROOFS)
+
+proofs.cmxa: $(PROOFS:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(PROOFS:.cmo=.cmx)
+
+tactics.cma: $(TACTICS)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(TACTICS)
+
+tactics.cmxa: $(TACTICS:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(TACTICS:.cmo=.cmx)
+
+toplevel.cma: $(TOPLEVEL)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(TOPLEVEL)
+
+toplevel.cmxa: $(TOPLEVEL:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(TOPLEVEL:.cmo=.cmx)
+
+highparsing.cma: $(HIGHPARSING)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(HIGHPARSING)
+
+highparsing.cmxa: $(HIGHPARSING:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHPARSING:.cmo=.cmx)
+
+hightactics.cma: $(HIGHTACTICS) $(USERTACCMO)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(HIGHTACTICS) $(USERTACCMO)
+
+hightactics.cmxa: $(HIGHTACTICS:.cmo=.cmx) $(USERTACCMO:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHTACTICS:.cmo=.cmx) \
+		$(USERTACCMO:.cmo=.cmx)
+
+contrib.cma: $(CONTRIB)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(CONTRIB)
+
+contrib.cmxa: $(CONTRIB:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(CONTRIB:.cmo=.cmx)
+
+highparsingnew.cma: $(HIGHPARSINGNEW)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(HIGHPARSINGNEW)
+
+highparsingnew.cmxa: $(HIGHPARSINGNEW:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(HIGHPARSINGNEW:.cmo=.cmx)
+
+ide.cma: $(COQIDECMO)
+	$(SHOW)'OCAMLC -a -o $@'
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -a -o $@ $(COQIDECMO)
+
+ide.cmxa: $(COQIDECMO:.cmo=.cmx)
+	$(SHOW)'OCAMLOPT -a -o $@'
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -a -o $@ $(COQIDECMO:.cmo=.cmx)
 
 # special binaries for debugging
 
@@ -723,15 +828,6 @@ noreal: logic arith bool zarith lists sets intmap relations wellfounded \
 # contribs
 ###########################################################################
 
-CORRECTNESSVO=\
- contrib/correctness/Arrays.vo					\
- contrib/correctness/Correctness.vo				\
- contrib/correctness/Exchange.vo				\
- contrib/correctness/ArrayPermut.vo				\
- contrib/correctness/ProgBool.vo contrib/correctness/ProgInt.vo	\
- contrib/correctness/Sorted.vo	contrib/correctness/Tuples.vo   
-# contrib/correctness/ProgramsExtraction.vo			
-
 OMEGAVO=\
  contrib/omega/OmegaLemmas.vo contrib/omega/Omega.vo
 
@@ -767,7 +863,7 @@ CCVO=\
  contrib/cc/CCSolve.vo
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
-	    $(CORRECTNESSVO) $(FOURIERVO) \
+	    $(FOURIERVO) \
 	    $(JPROVERVO) $(INTERFACEVO) $(CCVO) $(FUNINDVO)
 
 $(CONTRIBVO): states/initial.coq
@@ -778,7 +874,6 @@ ring: $(RINGVO) $(RINGCMO)
 # xml_ instead of xml to avoid conflict with "make xml"
 xml_: $(XMLVO) $(XMLCMO)
 extraction: $(EXTRACTIONCMO)
-correctness: $(CORRECTNESSCMO) $(CORRECTNESSVO)
 field: $(FIELDVO) $(FIELDCMO)
 fourier: $(FOURIERVO) $(FOURIERCMO)
 jprover: $(JPROVERVO) $(JPROVERCMO)
