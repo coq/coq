@@ -1,4 +1,4 @@
-\section{Module system}
+\section{Module system}\index{Modules}\label{Modules}
 
 The module system provides a way of packaging related elements
 together, as well as a mean of massive abstraction.
@@ -140,11 +140,11 @@ only in module types.
 Let us define a simple module.
 \begin{coq_example}
 Module M.
-Definition T := nat.
-Definition x := 0.
-Definition y : bool.
-  exact true.
-Defined.
+  Definition T := nat.
+  Definition x := 0.
+  Definition y : bool.
+    exact true.
+  Defined.
 End M.
 \end{coq_example}
 
@@ -159,8 +159,8 @@ Print M.x.
 A simple module type:
 \begin{coq_example}
 Module Type SIG.
-Parameter T : Set.
-Parameter x : T.
+  Parameter T : Set.
+  Parameter x : T.
 End SIG.
 \end{coq_example}
 
@@ -175,7 +175,7 @@ precise specification: the \texttt{y} component is dropped as well
 as the body of \texttt{x}.
 
 \begin{coq_example}
-Module N : SIG with Definition T := nat := M.
+Module N  :  SIG with Definition T := nat  :=  M.
 Print N.T.
 Print N.x.
 Print N.y.
@@ -191,8 +191,8 @@ one:
 
 \begin{coq_example*}
 Module Type SIG'.
-Definition T : Set := nat.
-Parameter x : T.
+  Definition T : Set := nat.
+  Parameter x : T.
 End SIG'.
 Module N : SIG' := M.
 \end{coq_example*}
@@ -208,8 +208,8 @@ Now let us create a functor, i.e.\ a parametric module
 Module Two (X Y: SIG).
 \end{coq_example}
 \begin{coq_example*}
-Definition T := X.T * Y.T.
-Definition x := (X.x, Y.x).
+  Definition T := X.T * Y.T.
+  Definition x := (X.x, Y.x).
 \end{coq_example*}
 \begin{coq_example}
 End Two.
@@ -223,24 +223,27 @@ In the end, let us define a module type with two sub-modules, sharing
 some of the fields and give one of its possible implementations:
 \begin{coq_example}
 Module Type SIG2.
-Declare Module M1 : SIG.
-Declare Module M2 <: SIG.
-Definition T := M1.T.
-Parameter x : T.
-End M2.
+  Declare Module M1 : SIG.
+  Declare Module M2 <: SIG.
+    Definition T := M1.T.
+    Parameter x : T.
+  End M2.
 End SIG2.
 \end{coq_example}
 \begin{coq_example*}
 Module Mod <: SIG2.
-Module M1.
-Definition T := nat.
-Definition x := 1.
-End M1.
-Module M2 := M.
+  Module M1.
+    Definition T := nat.
+    Definition x := 1.
+  End M1.
+  Module M2 := M.
 \end{coq_example*}
 \begin{coq_example}
 End Mod.
 \end{coq_example}
+Notice that \texttt{M} is a correct body for the component \texttt{M2}
+since its \texttt{T} component is equal \texttt{nat} and hence
+\texttt{M1.T} as specified.
 \begin{coq_eval}
 Reset Initial.
 \end{coq_eval}
@@ -273,6 +276,46 @@ Reset Initial.
     \texttt{SIG}.
 
 \end{Remarks}
+
+\subsection{Import {\qualid}}\comindex{Import}\label{Import}
+If {\qualid} denotes a valid basic module (i.e. its module type is a
+signature), makes its components available by their short names.
+
+Example:
+
+\begin{coq_example}
+Module Mod.
+\end{coq_example}
+\begin{coq_example}
+  Definition T:=nat.
+  Check T.
+\end{coq_example}
+\begin{coq_example}
+End Mod.
+Check Mod.T.
+Check T. (* Incorrect ! *)
+Import Mod.
+Check T. (* Now correct *)
+\end{coq_example}
+\begin{coq_eval}
+Reset Mod.
+\end{coq_eval}
+
+
+\begin{Variants}
+\item{\tt Export {\qualid}}\comindex{Export}\\
+  When the module containing the command {\tt Export {\qualid}} is
+  imported, {\qualid} is imported as well.
+\end{Variants}
+
+\begin{ErrMsgs}
+  \item \errindex{{\qualid} is not a module}
+% this error is impossible in the import command
+%  \item \errindex{Cannot mask the absolute name {\qualid} !}
+\end{ErrMsgs}
+\begin{Warnings}
+  \item Warning: Trying to mask the absolute name {\qualid} !
+\end{Warnings}
 
 \subsection{\tt Print Module {\ident}}\comindex{Print Module}
 Prints the module type and (optionally) the body of the module {\ident}.

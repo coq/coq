@@ -4,6 +4,7 @@
 The module system extends the Calculus of Inductive Constructions
 providing a convinient way to structure large developments as well as
 a mean of massive abstraction.
+%It is described in details in Judicael's thesis and Jacek's thesis
 
 \section{Modules and module types}
 
@@ -28,7 +29,7 @@ or a definition of a module or a module type abbreviation.
 specification of a constant, an assumption, an inductive, a module or
 a module type abbreviation.
 
-\paragraph{Module type}, denoted by $T$ can be:
+\paragraph{Module type,} denoted by $T$ can be:
 \begin{itemize}
 \item a module type name
 \item an access path $p$
@@ -37,29 +38,29 @@ a module type abbreviation.
   module types
 \end{itemize}
 
-\paragraph{Module definition}, written $\Mod{X}{T}{M}$ can be a
+\paragraph{Module definition,} written $\Mod{X}{T}{M}$ can be a
 structure element. It consists of a module variable $X$, a module type
 $T$ and a module expression $M$.
 
-\paragraph{Module specification}, written $\ModS{X}{T}$ or
+\paragraph{Module specification,} written $\ModS{X}{T}$ or
 $\ModSEq{X}{T}{p}$ can be a signature element or a part of an
 environment. It consists of a module variable $X$, a module type $T$
 and, optionally, a module path $p$. 
 
-\paragraph{Module type abbreviation}, written $\ModType{S}{T}$, where
+\paragraph{Module type abbreviation,} written $\ModType{S}{T}$, where
 $S$ is a module type name and $T$ is a module type.
 
 
 \section{Typing Modules}
 
-In order to introduce the typing system we must first slightly extend
+In order to introduce the typing system we first slightly extend
 the syntactic class of terms and environments given in
 section~\ref{Terms}. The environments, apart from definitions of
-constants and inductives will also hold any other signature elements.
-Terms, apart from variables, constants and complex terms, will also
-include access paths.
+constants and inductives now also hold any other signature elements.
+Terms, apart from variables, constants and complex terms, 
+include also access paths.
 
-We will also need additional typing judgments: 
+We also need additional typing judgments: 
 \begin{itemize}
 \item \WFT{E}{T}, denoting that a module type $T$ is well-formed, 
 
@@ -77,7 +78,7 @@ module type $T_2$.
 \end{itemize}
 The rules for forming module types are the following:
 \begin{itemize}
-\item [WF-SIG]
+\item [] WF-SIG
 \inference{%
   \frac{
     \WF{E;E'}{}
@@ -85,7 +86,7 @@ The rules for forming module types are the following:
     \WFT{E}{\sig{E'}}
   }
 }
-\item [WF-FUN]
+\item [] WF-FUN
 \inference{%
   \frac{
     \WFT{E;\ModS{X}{T}}{T'}
@@ -96,7 +97,7 @@ The rules for forming module types are the following:
 \end{itemize}
 Rules for typing module expressions:
 \begin{itemize}
-\item [MT-STRUCT]
+\item [] MT-STRUCT
 \inference{%
   \frac{
     \begin{array}{c}
@@ -108,7 +109,7 @@ Rules for typing module expressions:
     \WTM{E}{\struct{\Impl_1;\dots;\Impl_n}}{\sig{\Spec_1;\dots;\Spec_n}}
   }
 }
-\item [MT-FUN]
+\item [] MT-FUN
 \inference{%
   \frac{
     \WTM{E;\ModS{X}{T}}{M}{T'}
@@ -116,15 +117,19 @@ Rules for typing module expressions:
     \WTM{E}{\functor{X}{T}{M}}{\funsig{X}{T}{T'}}
   }
 }
-\item [MT-APP]
+\item [] MT-APP
 \inference{%
   \frac{
-    \WTM{E}{p'}{\funsig{X}{T}{T'}}~~~~~~~~~~~\WTM{E}{p''}{T}
+    \begin{array}{c}
+      \WTM{E}{p}{\funsig{X_1}{T_1}{\!\dots\funsig{X_n}{T_n}{T'}}}\\
+      \WTM{E}{p_i}{T_i\{X_1/p_1\dots X_{i-1}/p_{i-1}\}}
+                                   \textrm{ \ \ for } i=1\dots n
+    \end{array}
   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WTM{E}{p' p''}{T'\{X/p''\}}
+    \WTM{E}{p\; p_1 \dots p_n}{T'\{X_1/p_1\dots X_n/p_n\}}
   }
 }
-\item [MT-SUB]
+\item [] MT-SUB
 \inference{%
   \frac{
     \WTM{E}{M}{T}~~~~~~~~~~~~\WS{E}{T}{T'}
@@ -132,7 +137,7 @@ Rules for typing module expressions:
     \WTM{E}{M}{T'}
   }
 }
-\item [MT-STR]
+\item [] MT-STR
 \inference{%
   \frac{
     \WTM{E}{p}{T}
@@ -152,11 +157,11 @@ meaning:
   \item $\Def{}{c}{U}{t}/p ~=~ \Def{}{c}{U}{t}$
   \item $\Assum{}{c}{U}/p ~=~ \Def{}{c}{U}{p.c}$
   \item $\ModS{X}{T}/p ~=~ \ModSEq{X}{T/p.X}{p.X}$
-  \item $\ModSEq{X}{T}{p'}/p ~=~ \ModSEq{X}{T}{p'}$
+  \item $\ModSEq{X}{T}{p'}/p ~=~ \ModSEq{X}{T/p}{p'}$
   \item $\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}/p ~=~ \Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}$
   \item $\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'}/p ~=~ \Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'}$
   \end{itemize}
-\item if $T=\funsig{X}{T}{T'}$ then $T/p=T$
+\item if $T=\funsig{X}{T'}{T''}$ then $T/p=T$
 \item if $T$ is an access path or a module type name, then we have to
   unfold its definition and proceed according to the rules above. 
 \end{itemize}
@@ -170,19 +175,19 @@ the equality rules on inductive types and constructors.
 
 The module subtyping rules:
 \begin{itemize}
-\item [MSUB-SIG]
+\item[] MSUB-SIG
 \inference{%
   \frac{
     \begin{array}{c}
-      \WS{E;\Spec_1;\dots;\Spec_n}{\Spec_i}{\Spec'_{\sigma(i)}} 
-                                  \textrm{ \ for } i=1..n \\
-      \sigma : \{1\dots n\} \ra \{1\dots m\} \textrm{ \ injective}
+      \WS{E;\Spec_1;\dots;\Spec_n}{\Spec_{\sigma(i)}}{\Spec'_i}
+                                  \textrm{ \ for } i=1..m \\
+      \sigma : \{1\dots m\} \ra \{1\dots n\} \textrm{ \ injective}
     \end{array}
   }{
     \WS{E}{\sig{\Spec_1;\dots;\Spec_n}}{\sig{\Spec'_1;\dots;\Spec'_m}}
   }
 }
-\item [MSUB-FUN]
+\item[] MSUB-FUN
 \inference{%       T_1 -> T_2 <: T_1' -> T_2'
   \frac{
     \WS{E}{T_1'}{T_1}~~~~~~~~~~\WS{E;\ModS{X}{T_1'}}{T_2}{T_2'}
@@ -190,26 +195,27 @@ The module subtyping rules:
     \WS{E}{\funsig{X}{T_1}{T_2}}{\funsig{X}{T_1'}{T_2'}}
   }
 }
-\item [MSUB-EQ]
-\inference{%
-  \frac{
-    \WS{E}{T_1}{T_2}~~~~~~~~~~\WTERED{}{T_1}{=}{T_1'}~~~~~~~~~~\WTERED{}{T_2}{=}{T_2'}
-  }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    \WS{E}{T_1'}{T_2'}
-  }
-}
-\item [MSUB-REFL]
-\inference{%
-  \frac{
-    \WFT{E}{T}
-  }{
-    \WS{E}{T}{T}
-  }
-}
+% these are derived rules
+% \item[] MSUB-EQ
+% \inference{%
+%   \frac{
+%     \WS{E}{T_1}{T_2}~~~~~~~~~~\WTERED{}{T_1}{=}{T_1'}~~~~~~~~~~\WTERED{}{T_2}{=}{T_2'}
+%   }{%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     \WS{E}{T_1'}{T_2'}
+%   }
+% }
+% \item[] MSUB-REFL
+% \inference{%
+%   \frac{
+%     \WFT{E}{T}
+%   }{
+%     \WS{E}{T}{T}
+%   }
+% }
 \end{itemize}
 Specification subtyping rules:
 \begin{itemize}
-\item [ASSUM-ASSUM]
+\item []ASSUM-ASSUM
 \inference{%
   \frac{
     \WTELECONV{}{U_1}{U_2}
@@ -217,7 +223,7 @@ Specification subtyping rules:
     \WSE{\Assum{}{c}{U_1}}{\Assum{}{c}{U_2}}
   }
 }
-\item [DEF-ASSUM]
+\item []DEF-ASSUM
 \inference{%
   \frac{
     \WTELECONV{}{U_1}{U_2}
@@ -225,7 +231,7 @@ Specification subtyping rules:
     \WSE{\Def{}{c}{U_1}{t}}{\Assum{}{c}{U_2}}
   }
 }
-\item [ASSUM-DEF]
+\item []ASSUM-DEF
 \inference{%
   \frac{
     \WTELECONV{}{U_1}{U_2}~~~~~~~~\WTECONV{}{c}{t_2}
@@ -233,7 +239,7 @@ Specification subtyping rules:
     \WSE{\Assum{}{c}{U_1}}{\Def{}{c}{U_2}{t_2}}
   }
 }
-\item [DEF-DEF]
+\item []DEF-DEF
 \inference{%
   \frac{
     \WTELECONV{}{U_1}{U_2}~~~~~~~~\WTECONV{}{t_1}{t_2}
@@ -241,8 +247,42 @@ Specification subtyping rules:
     \WSE{\Def{}{c}{U_1}{t_1}}{\Def{}{c}{U_2}{t_2}}
   }
 }
+\item []IND-IND
+\inference{%
+  \frac{
+    \WTECONV{}{\Gamma_P}{\Gamma_P'}%
+    ~~~~~~~~\WTECONV{\Gamma_P}{\Gamma_C}{\Gamma_C'}%
+    ~~~~~~~~\WTECONV{\Gamma_P;\Gamma_C}{\Gamma_I}{\Gamma_I'}%
+  }{
+    \WSE{\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I}}%
+        {\Ind{}{\Gamma_P'}{\Gamma_C'}{\Gamma_I'}}
+  }
+}
+\item []INDP-IND
+\inference{%
+  \frac{
+    \WTECONV{}{\Gamma_P}{\Gamma_P'}%
+    ~~~~~~~~\WTECONV{\Gamma_P}{\Gamma_C}{\Gamma_C'}%
+    ~~~~~~~~\WTECONV{\Gamma_P;\Gamma_C}{\Gamma_I}{\Gamma_I'}%
+  }{
+    \WSE{\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}}%
+        {\Ind{}{\Gamma_P'}{\Gamma_C'}{\Gamma_I'}}
+  }
+}
+\item []INDP-INDP
+\inference{%
+  \frac{
+    \WTECONV{}{\Gamma_P}{\Gamma_P'}%
+    ~~~~~~~~\WTECONV{\Gamma_P}{\Gamma_C}{\Gamma_C'}%
+    ~~~~~~~~\WTECONV{\Gamma_P;\Gamma_C}{\Gamma_I}{\Gamma_I'}%
+    ~~~~~~~~\WTECONV{}{p}{p'}
+  }{
+    \WSE{\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}}%
+        {\Indp{}{\Gamma_P'}{\Gamma_C'}{\Gamma_I'}{p'}}
+  }
+}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\item [MODS-MODS]
+\item []MODS-MODS
 \inference{%
   \frac{
     \WSE{T_1}{T_2}
@@ -250,7 +290,7 @@ Specification subtyping rules:
     \WSE{\ModS{m}{T_1}}{\ModS{m}{T_2}}
   }
 }
-\item [MODEQ-MODS]
+\item []MODEQ-MODS
 \inference{%
   \frac{
     \WSE{T_1}{T_2}
@@ -258,23 +298,23 @@ Specification subtyping rules:
     \WSE{\ModSEq{m}{T_1}{p}}{\ModS{m}{T_2}}
   }
 }
-\item [MODS-MODEQ]
+\item []MODS-MODEQ
 \inference{%
   \frac{
-    \WSE{T_1}{T_2}~~~~~~~~\WTERED{}{m}{=}{p_2}
+    \WSE{T_1}{T_2}~~~~~~~~\WTECONV{}{m}{p_2}
   }{
     \WSE{\ModS{m}{T_1}}{\ModSEq{m}{T_2}{p_2}}
   }
 }
-\item [MODEQ-MODEQ]
+\item []MODEQ-MODEQ
 \inference{%
   \frac{
-    \WSE{T_1}{T_2}~~~~~~~~\WTERED{}{p_1}{=}{p_2}
+    \WSE{T_1}{T_2}~~~~~~~~\WTECONV{}{p_1}{p_2}
   }{
     \WSE{\ModSEq{m}{T_1}{p_1}}{\ModSEq{m}{T_2}{p_2}}
   }
 }
-\item [MODTYPE-MODTYPE]
+\item []MODTYPE-MODTYPE
 \inference{%
   \frac{
     \WSE{T_1}{T_2}~~~~~~~~\WSE{T_2}{T_1}
@@ -285,7 +325,7 @@ Specification subtyping rules:
 \end{itemize}
 Verification of the specification
 \begin{itemize}
-\item [IMPL-SPEC]
+\item []IMPL-SPEC
 \inference{%
   \frac{
     \begin{array}{c}
@@ -296,7 +336,7 @@ Verification of the specification
     \WTE{}{\Spec}{\Spec}
   }
 }
-\item [MOD-MODS]
+\item []MOD-MODS
 \inference{%
   \frac{
     \WF{E;\ModS{m}{T}}{}~~~~~~~~\WTE{}{M}{T}
@@ -304,10 +344,10 @@ Verification of the specification
     \WTE{}{\Mod{m}{T}{M}}{\ModS{m}{T}}
   }
 }
-\item [MOD-MODEQ]
+\item []MOD-MODEQ
 \inference{%
   \frac{
-    \WF{E;\ModSEq{m}{T}{p}}{}~~~~~~~~~~~\WTERED{}{p}{=}{p'}
+    \WF{E;\ModSEq{m}{T}{p}}{}~~~~~~~~~~~\WTECONV{}{p}{p'}
   }{
     \WTE{}{\Mod{m}{T}{p'}}{\ModSEq{m}{T}{p'}}
   }
@@ -316,7 +356,7 @@ Verification of the specification
 \end{itemize}
 New environment formation rules
 \begin{itemize}
-\item [WF-MODS]
+\item []WF-MODS
 \inference{%
   \frac{
     \WF{E}{}~~~~~~~~\WFT{E}{T}
@@ -324,7 +364,7 @@ New environment formation rules
     \WF{E;\ModS{m}{T}}{}
   }
 }
-\item [WF-MODEQ]
+\item []WF-MODEQ
 \inference{%
   \frac{
     \WF{E}{}~~~~~~~~~~~\WTE{}{p}{T}
@@ -332,7 +372,7 @@ New environment formation rules
     \WF{E,\ModSEq{m}{T}{p}}{}
   }
 }
-\item [WF-MODTYPE]
+\item []WF-MODTYPE
 \inference{%
   \frac{
     \WF{E}{}~~~~~~~~~~~\WFT{E}{T}
@@ -340,7 +380,7 @@ New environment formation rules
     \WF{E,\ModType{S}{T}}{}
   }
 }
-\item [WF-IND]
+\item []WF-IND
 \inference{%
   \frac{
     \begin{array}{c}
@@ -356,7 +396,7 @@ New environment formation rules
 \end{itemize}
 Component access rules
 \begin{itemize}
-\item [ACC-TYPE]
+\item []ACC-TYPE
 \inference{%
   \frac{
     \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\Assum{}{c}{U};\dots}}
@@ -374,7 +414,7 @@ Component access rules
 }
 \item[] Notice that the following rule extends the delta rule defined in
 section~\ref{delta}
-\item [ACC-DELTA]
+\item [] ACC-DELTA
 \inference{%
   \frac{
     \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\Def{}{c}{U}{t};\dots}}
@@ -385,7 +425,7 @@ section~\ref{delta}
 \item [] in the rules below we assume $\Gamma_P$ is $[p_1:P_1;\ldots;p_r:P_r]$,
   $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
   $[c_1:C_1;\ldots;c_n:C_n]$
-\item [ACC-IND]
+\item []ACC-IND
 \inference{%
   \frac{
     \WTEG{p}{\sig{\Spec_1;\dots;\Spec_i;\Ind{}{\Gamma_P}{\Gamma_C}{\Gamma_I};\dots}}
@@ -401,7 +441,7 @@ section~\ref{delta}
        p_r)}_{j=1\ldots k}}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
   }
 }
-\item [ACC-INDP]
+\item []ACC-INDP
 \inference{%
   \frac{
     \WT{E}{}{p}{\sig{\Spec_1;\dots;\Spec_n;\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p'};\dots}}
@@ -417,7 +457,7 @@ section~\ref{delta}
   }
 }
 %%%%%%%%%%%%%%%%%%%%%%%%%%% MODULES
-\item [ACC-MOD]
+\item []ACC-MOD
 \inference{%
   \frac{
     \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\ModS{m}{T};\dots}}
@@ -433,20 +473,20 @@ section~\ref{delta}
     \WTEG{p.m}{\subst{T}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
   }
 }
-\item [ACC-MODEQ]
+\item []ACC-MODEQ
 \inference{%
   \frac{
     \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\ModSEq{m}{T}{p'};\dots}}
   }{
-    \WTEGRED{p.m}{=}{\subst{p'}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
+    \WTEGRED{p.m}{\triangleright_\delta}{\subst{p'}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
   }
 }
-\item [ACC-MODTYPE]
+\item []ACC-MODTYPE
 \inference{%
   \frac{
     \WTEG{p}{\sig{\Spec_1;\dots;Spec_i;\ModType{S}{T};\dots}}
   }{
-    \WTEGRED{p.S}{=}{\subst{T}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
+    \WTEGRED{p.S}{\triangleright_\delta}{\subst{T}{p.l}{l}_{l \in \lab{Spec_1;\dots;Spec_i}}}
   }
 }
 \end{itemize}
@@ -465,7 +505,7 @@ where $\lab{\Spec}$ is defined as follows:
 \end{itemize}
 Environment access for modules and module types
 \begin{itemize}
-\item [ENV-MOD]
+\item []ENV-MOD
 \inference{%
   \frac{
     \WF{E;\ModS{m}{T};E'}{\Gamma}
@@ -481,23 +521,23 @@ Environment access for modules and module types
     \WT{E;\ModSEq{m}{T}{p};E'}{\Gamma}{m}{T}
   }
 }
-\item [ENV-MODEQ]
+\item []ENV-MODEQ
 \inference{%
   \frac{
     \WF{E;\ModSEq{m}{T}{p};E'}{\Gamma}
   }{
-    \WTRED{E;\ModSEq{m}{T}{p};E'}{\Gamma}{m}{=}{p}
+    \WTRED{E;\ModSEq{m}{T}{p};E'}{\Gamma}{m}{\triangleright_\delta}{p}
   }
 }
-\item [ENV-MODTYPE]
+\item []ENV-MODTYPE
 \inference{%
   \frac{
     \WF{E;\ModType{S}{T};E'}{\Gamma}
   }{
-    \WTRED{E;\ModType{S}{T};E'}{\Gamma}{S}{=}{T}
+    \WTRED{E;\ModType{S}{T};E'}{\Gamma}{S}{\triangleright_\delta}{T}
   }
 }
-\item [ENV-INDP]
+\item []ENV-INDP
 \inference{%
   \frac{
     \WF{E;\Indp{}{\Gamma_P}{\Gamma_C}{\Gamma_I}{p}}{}
@@ -513,27 +553,28 @@ Environment access for modules and module types
   }
 }
 \end{itemize}
-Module path equality is a transitive and reflexive closure of the
-relation generated by ACC-MODEQ and ENV-MODEQ.
-\begin{itemize}
-\item [MP-EQ-REFL]
-\inference{%
-  \frac{
-    \WTEG{p}{T}
-  }{
-    \WTEG{p}{p}
-  }
-}
-\item [MP-EQ-TRANS]
-\inference{%
-  \frac{
-    \WTEGRED{p}{=}{p'}~~~~~~\WTEGRED{p'}{=}{p''}
-  }{
-    \WTEGRED{p'}{=}{p''}
-  }
-}
+% %%% replaced by \triangle_\delta
+% Module path equality is a transitive and reflexive closure of the
+% relation generated by ACC-MODEQ and ENV-MODEQ.
+% \begin{itemize}
+% \item []MP-EQ-REFL
+% \inference{%
+%   \frac{
+%     \WTEG{p}{T}
+%   }{
+%     \WTEG{p}{p}
+%   }
+% }
+% \item []MP-EQ-TRANS
+% \inference{%
+%   \frac{
+%     \WTEGRED{p}{=}{p'}~~~~~~\WTEGRED{p'}{=}{p''}
+%   }{
+%     \WTEGRED{p'}{=}{p''}
+%   }
+% }
 
-\end{itemize}
+% \end{itemize}
 
 
 % $Id$
