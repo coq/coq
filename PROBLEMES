@@ -14,9 +14,9 @@ CONTRIBS
 ---------
 BellLabs/lazyPCF : OK
 
-Bordeaux/TREES :
-Bordeaux/Additions :
-  echecs sur Realizer
+Bordeaux/TREES : echec sur Realizer
+Bordeaux/Additions : echec sur Realizer
+Bordeaux/SearchTrees : echec sur Realizer
 
 Bordeaux/GROUPS : OK
 Bordeaux/EXCEPTIONS : OK
@@ -64,6 +64,12 @@ Anomaly: type_of: variable h1 unbound. Please report.
 --> Pb de "Remark" local à un thm pas pris en compte dans
 l'environnement de la preuve de ce théorème
 
+Rocq/TreeAutomata
+File "./defs.v", line 309, characters 34-47
+Error: Not a recursive eliminator: some induction hypothesis is lacking
+File "./lattice_fixpoint.v", line 29, characters 44-57
+Anomaly: Search error. Please report.
+
 Rocq/RATIONAL
 --> Des fichiers ML à porter
 
@@ -76,7 +82,10 @@ Lyon/PROGRAMS : Nécessite Programs.v
 Lyon/STREAMS OK
 Lyon/FIRING-SQUAD : des identificateurs avec le symbole $ !! (plus autorisé)
 Lyon/INSERTION-SORT : Nécessite Programs.v
-Lyon/DISTRIBUTED_REFERENCE_COUNTING -> Preuve incomplète (lié à Intuition)
+Lyon/DISTRIBUTED_REFERENCE_COUNTING
+File "./fifo.v", line 181, characters 0-6
+Error: Attempt to save an incomplete proof
+--> Preuve incomplète (lié à Intuition)
 
 Marseille/CCS OK
 Marseille/CIRCUITS -> Realizer
@@ -90,15 +99,21 @@ Nijmegen OK
 
 Paris/ZF OK
 
-Sophia-Antipolis/Cours-de-Coq
-File "./Partial_order_facts.v", line 123, characters 3-96
-Error: Not an inductive product
-Sophia-Antipolis/HARDWARE ??
-Sophia-Antipolis/MATHS ??
+Sophia-Antipolis/HARDWARE OK
+Sophia-Antipolis/Cours-de-Coq OK
+
+Sophia-Antipolis/MATHS/GEOMETRY
+File "./part3.v", line 78, characters 0-5
+Error: Attempt to save an incomplete proof
+--> Changement de sémantique de Intuition
+
 Sophia-Antipolis/condom ... vide 
+
 Sophia-Antipolis/param_pi
 File "./fresh.v", line 173, characters 0-20
 Error: Too few occurences
+
+Suresnes/BDD OK
 
 Utrecht/Ramsey OK
 Utrecht/ABP OK
