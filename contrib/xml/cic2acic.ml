@@ -125,11 +125,37 @@ let token_list_of_kernel_name ~keep_sections kn tag =
     [N.string_of_label label ^ "." ^ (ext_of_tag tag)]
 ;;
 
-let uri_of_kernel_name ?(keep_sections=false) kn tag =
+let token_list_of_path dir id tag =
  let module N = Names in
+  let token_list_of_dirpath dirpath =
+   List.rev_map N.string_of_id (N.repr_dirpath dirpath) in
+  token_list_of_dirpath dir @ [N.string_of_id id ^ "." ^ (ext_of_tag tag)]
+
+let token_list_of_kernel_name ~keep_sections kn tag =
+ let module N = Names in
+ let module LN = Libnames in
+ let dir = match tag with
+   | Variable -> if keep_sections then Lib.cwd () else N.empty_dirpath
+   | Constant -> 
+       let ref = LN.ConstRef kn in
+       if keep_sections then LN.dirpath (Nametab.sp_of_global ref)
+       else Lib.library_part ref
+   | Inductive ->
+       let ref = LN.IndRef (kn,0) in
+      if keep_sections then LN.dirpath(Nametab.sp_of_global ref)
+      else Lib.library_part ref
+ in
+ let id = N.id_of_label (N.label kn) in
+ token_list_of_path dir id tag
+;;
+
+let uri_of_kernel_name ?(keep_sections=false) kn tag =
   let tokens = token_list_of_kernel_name ~keep_sections kn tag in
    "cic:/" ^ String.concat "/" tokens
-;;
+
+let uri_of_path dir id tag =
+  let tokens = token_list_of_path dir id tag in
+   "cic:/" ^ String.concat "/" tokens
 
 (* Special functions for handling of CCorn's CProp "sort" *)
 
