@@ -241,10 +241,11 @@ let rec detype tenv avoid env t =
         let (mib,mip) = Inductive.lookup_mind_specif tenv indsp in
         let get_consnarg j = 
           let typi = mis_nf_constructor_type (indsp,mib,mip) (j+1) in
-          let l,_ = decompose_prod_assum typi in
-          List.length l - mip.mind_nparams in
-        let consnargsl =
+          let _,t = decompose_prod_n_assum mip.mind_nparams typi in
+          List.rev (fst (decompose_prod_assum t)) in
+        let consnargs =
           Array.init (Array.length mip.mind_consnames) get_consnarg in
+        let consnargsl = Array.map List.length consnargs in
 	let pred = 
 	  if synth_type & computable p k & considl <> [||] then
 	    None
@@ -268,16 +269,26 @@ let rec detype tenv avoid env t =
 	if tag = RegularStyle then
 	  RCases (dummy_loc,pred,[tomatch],eqnl)
 	else
-	  let rec remove_type n c = if n = 0 then c else
-	    match c with
-	      | RLambda (loc,na,t,c) ->
-		  let h = RHole (loc,AbstractionType na) in
-		  RLambda (loc,na,h,remove_type (n-1) c)
-	      | RLetIn (loc,na,b,c) ->
-		  RLetIn (loc,na,b,remove_type (n-1) c)
-	      | c -> c in
+	  let rec remove_type avoid args c =
+                match c,args with
+                  | RLambda (loc,na,t,c), _::args ->
+                      let h = RHole (loc,AbstractionType na) in
+                        RLambda (loc,na,h,remove_type avoid args c)
+                  | RLetIn (loc,na,b,c), _::args ->
+                        RLetIn (loc,na,b,remove_type avoid args c)
+                  | c, (na,None,t)::args ->
+                      let id = next_name_away_with_default "x" na avoid in
+                      let h = RHole (dummy_loc,AbstractionType na) in
+                      let c = remove_type (id::avoid) args
+                        (RApp (dummy_loc,c,[RVar (dummy_loc,id)])) in
+                      RLambda (dummy_loc,Name id,h,c)
+                  | c, (na,Some b,t)::args ->
+                      let h = RHole (dummy_loc,AbstractionType na) in
+                      let avoid = name_fold (fun x l -> x::l) na avoid in
+                      RLetIn (dummy_loc,na,h,remove_type avoid args c)
+                  | c, [] -> c in
 	  let bl = Array.map (detype tenv avoid env) bl in
-	  let bl = array_map2 remove_type consnargsl bl in
+	  let bl = array_map2 (remove_type avoid) consnargs bl in
 	  ROrderedCase (dummy_loc,tag,pred,tomatch,bl)
 	
     | Fix (nvn,recdef) -> detype_fix tenv avoid env nvn recdef
