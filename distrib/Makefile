@@ -80,38 +80,18 @@ arch-rpm: ${COQRPMPACKAGE}.${ARCH}.rpm
 test:
 	cp ${COQPACKAGE}.tar.gz tmp.tar.gz
 	gunzip tmp.tar.gz
-	@echo Trying "make world" then "make world-opt"
+	@echo Trying "make world"
 	- rm -rf ${COQPACKAGE}
 	tar xf tmp.tar
 	(cd ${COQPACKAGE};\
 	configure -local -opt -emacs emacs;\
 	make world >& log.world;\
-	if [ `tail -1 log.world` = "=== Compilation in bytecode is done ===" ];\
+	if [ $$? = 0 ];\
 	then echo make world succeeded;\
 	else echo make world failed; exit 1;\
-	fi;\
-	make world-opt >& log.world-opt;\
-	if [ `tail -1 log.world` = "=== Compilation in native code is done ===" ];\
-	then echo make world-opt succeeded;\
-	else echo make world-opt failed; exit 1;\
-	fi)
-	rm -r ${COQPACKAGE}
-	@echo Trying "make world" then "make world-opt"
-	tar xf tmp.tar
-	(cd ${COQPACKAGE};\
-	configure -local -opt -emacs emacs;\
-	make world >& log.world;\
-	if [ `tail -1 log.world` = "=== Compilation in bytecode is done ===" ];\
-	then echo make world succeeded;\
-	else echo make world failed; exit 1;\
-	fi;\
-	make world-opt >& log.world-opt;\
-	if [ `tail -1 log.world` = "=== Compilation in native code is done ===" ];\
-	then echo make world-opt succeeded;\
-	else echo make world-opt failed; exit 1;\
 	fi)
 	rm tmp.tar
-	@echo "Both orders of compilation suceeded"
+	@echo "Compilation succeeded"
 
 release-bin:
 	@echo
@@ -141,7 +121,7 @@ arch-tar-gz: ${COQPACKAGE}.tar.gz
 	gunzip -c $(DISTRIBDIR)/${COQPACKAGE}.tar.gz | tar xf -;\
 	cd ${COQPACKAGE};\
 	./configure -bindir /usr/local/bin -libdir /usr/local/lib/coq -mandir /usr/local/man -emacs emacs -emacslib /usr/local/lib/emacs/site-lisp -opt;\
-	make world-opt world;\
+	make world;\
 	rm -rf ${ARCHBUILDROOT}/buildroot/* || true;\
 	make -e COQINSTALLPREFIX=${ARCHBUILDROOT}/buildroot/ install)
 	$(MAKE) arch-tar-gz-final
@@ -184,8 +164,7 @@ ${COQRPMPACKAGE}.src.rpm: ${COQPACKAGE}.tar.gz
 	${RPM} -ba coq.spec
 	mv ${RPMTOPDIR}/SRPMS/${COQRPMPACKAGE}.src.rpm .
 	(if [ -f ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${LOCALARCH}.rpm ];\
-	then mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${LOCALARCH}.rpm ${RPMT\
-OPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${ARCH}.rpm;
+	then mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${LOCALARCH}.rpm ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${ARCH}.rpm;
 	fi)
 	- mv ${RPMTOPDIR}/RPMS/${ARCH}/${COQRPMPACKAGE}.${ARCH}.rpm .
 
