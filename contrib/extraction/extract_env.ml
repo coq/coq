@@ -26,7 +26,13 @@ open Common
   We just keep constants and inductives. *)
 
 let extract_module m =
-  let m = Nametab.locate_loaded_library (Nametab.make_short_qualid m) in
+  let m = 
+    try 
+      Nametab.locate_loaded_library (Nametab.make_short_qualid m) 
+    with Not_found ->  
+      errorlabstrm "module_message"
+	[< 'sTR "Module"; 'sPC;pr_id m; 'sPC; 'sTR "not found." >] 
+    in
   let seg = Library.module_segment (Some m) in
   let get_reference = function
     | sp, Leaf o ->
@@ -72,7 +78,9 @@ let rec visit_reference m eenv r =
       let m_name = module_of_r r' in 
       if not (Idset.mem m_name eenv.modules) then begin
 	eenv.modules <- Idset.add m_name eenv.modules;
- 	List.iter (visit_reference m eenv) (extract_module m_name)
+ 	try (* HACK temporaire pour eviter les m_name qui sont des sections *)
+	  List.iter (visit_reference m eenv) (extract_module m_name)
+	with _ -> ()
       end
     end;
     visit_decl m eenv (extract_declaration r);
