@@ -22,6 +22,7 @@ Require Export Rfunctions.
 Require Export Rtrigo.
 Require Export Rtrigo_calc.
 Require Export Rgeom.
+Require Export Rpower.
 Require Export Rderiv.
 Require Export Rseries.
 Require Export Binome.

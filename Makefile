@@ -541,7 +541,7 @@ REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Ranalysis2.vo   theories/Reals/Ranalysis3.vo \
 	theories/Reals/Sqrt_reg.vo     theories/Reals/Ranalysis4.vo \
 	theories/Reals/Ranalysis.vo    theories/Reals/Rgeom.vo \
-	theories/Reals/Reals.vo 
+	theories/Reals/Rpower.vo       theories/Reals/Reals.vo 
 
 SETOIDSVO=theories/Setoids/Setoid.vo
 
