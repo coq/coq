@@ -52,7 +52,7 @@ while : ; do
 		      shift;;
     -local|--local) local=true
                     bindir_spec=yes
-                    bindir=$COQTOP
+                    bindir=$COQTOP/bin
                     libdir_spec=yes
 		    libdir=$COQTOP
                     mandir_spec=yes

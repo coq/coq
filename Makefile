@@ -139,27 +139,29 @@ CMX=$(CMO:.cmo=.cmx)
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
 ###########################################################################
 
-COQMKTOP=scripts/coqmktop
-COQC=scripts/coqc
+COQMKTOP=bin/coqmktop
+COQC=bin/coqc
+COQTOPBYTE=bin/coqtop.byte
+COQTOPOPT=bin/coqtop.opt
+BESTCOQTOP=bin/coqtop.$(BEST)
 
-BESTCOQTOP=coqtop.$(BEST)
-COQBINARIES= $(COQMKTOP) $(COQC) coqtop.byte $(BESTCOQTOP) 
+COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) 
 
 world: $(COQBINARIES) states theories contrib tools
 
-coqtop.opt: $(COQMKTOP) $(CMX) $(USERTACCMX)
-	$(COQMKTOP) -opt $(OPTFLAGS) -o coqtop.opt
-	$(STRIP) ./coqtop.opt
+$(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
+	$(COQMKTOP) -opt $(OPTFLAGS) -o $@
+	$(STRIP) $@
 
-coqtop.byte: $(COQMKTOP) $(CMO) $(USERTACCMO)
-	$(COQMKTOP) -top $(BYTEFLAGS) -o coqtop.byte
+$(COQTOPBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO)
+	$(COQMKTOP) -top $(BYTEFLAGS) -o $@
 
 # coqmktop 
 
 COQMKTOPCMO=$(CONFIG) scripts/tolink.cmo scripts/coqmktop.cmo 
 
 $(COQMKTOP): $(COQMKTOPCMO)
-	$(OCAMLC) $(BYTEFLAGS) -o $(COQMKTOP) -custom str.cma unix.cma \
+	$(OCAMLC) $(BYTEFLAGS) -o $@ -custom str.cma unix.cma \
           $(COQMKTOPCMO) $(OSDEPLIBS)
 
 scripts/tolink.ml: Makefile
@@ -180,12 +182,11 @@ beforedepend:: scripts/tolink.ml
 
 COQCCMO=$(CONFIG) toplevel/usage.cmo scripts/coqc.cmo
 
-$(COQC): $(COQCCMO) coqtop.byte coqtop.$(BEST)
-	$(OCAMLC) $(BYTEFLAGS) -o $(COQC) -custom unix.cma $(COQCCMO) \
-	  $(OSDEPLIBS)
+$(COQC): $(COQCCMO) $(COQTOPBYTE) $(BESTCOQTOP)
+	$(OCAMLC) $(BYTEFLAGS) -o $@ -custom unix.cma $(COQCCMO) $(OSDEPLIBS)
 
 archclean::
-	rm -f scripts/coqc scripts/coqmktop
+	rm -f $(COQTOPBYTE) $(COQTOPOPT) $(BESTCOQTOP) $(COQC) $(COQMKTOP)
 
 # we provide targets for each subdirectories
 
@@ -207,7 +208,7 @@ states: states/barestate.coq states/initial.coq
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v syntax/PPTactic.v
 
 states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
-	./$(BESTCOQTOP) -q -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
+	$(BESTCOQTOP) -q -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
 
 INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/DatatypesSyntax.vo   theories/Init/Prelude.vo       \
@@ -228,7 +229,7 @@ tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
 	$(COQC) -q -I tactics -is states/barestate.coq $<
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO) $(BESTCOQTOP)
-	./$(BESTCOQTOP) -q -batch -silent -is states/barestate.coq -I tactics -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+	$(BESTCOQTOP) -q -batch -silent -is states/barestate.coq -I tactics -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 clean::
 	rm -f states/*~ states/*.coq
@@ -341,30 +342,34 @@ archclean::
 # tools
 ###########################################################################
 
-tools: tools/coqdep tools/coq_makefile tools/gallina tools/coq-tex \
+COQDEP=bin/coqdep
+COQMAKEFILE=bin/coq_makefile
+GALLINA=bin/gallina
+COQTEX=bin/coq-tex
+
+tools: $(COQDEP) $(COQMAKEFILE) $(GALLINA) $(COQTEX) \
        tools/coq.elc dev/top_printers.cmo
 
-COQDEPCMX= config/coq_config.cmx tools/coqdep_lexer.cmx tools/coqdep.cmx
+COQDEPCMO=config/coq_config.cmo tools/coqdep_lexer.cmo tools/coqdep.cmo
 
-tools/coqdep: $(COQDEPCMX)
-	$(OCAMLOPT) $(OPTFLAGS) -o tools/coqdep unix.cmxa $(COQDEPCMX) \
-          $(OSDEPLIBS)
+$(COQDEP): $(COQDEPCMO)
+	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ unix.cma $(COQDEPCMO) $(OSDEPLIBS)
 
-beforedepend:: tools/coqdep
+beforedepend:: $(COQDEP)
 
-GALLINACMX=tools/gallina_lexer.cmx tools/gallina.cmx
+GALLINACMO=tools/gallina_lexer.cmo tools/gallina.cmo
 
-tools/gallina: $(GALLINACMX)
-	$(OCAMLOPT) $(OPTFLAGS) -o tools/gallina $(GALLINACMX)
+$(GALLINA): $(GALLINACMO)
+	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ $(GALLINACMO)
 
-tools/coq_makefile: tools/coq_makefile.ml
-	$(OCAMLOPT) $(OPTFLAGS) -o tools/coq_makefile tools/coq_makefile.ml
+$(COQMAKEFILE): tools/coq_makefile.ml
+	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ tools/coq_makefile.ml
 
-tools/coq-tex: tools/coq-tex.ml
-	$(OCAMLOPT) $(OPTFLAGS) -o tools/coq-tex str.cmxa tools/coq-tex.ml
+$(COQTEX): tools/coq-tex.ml
+	$(OCAMLC) $(BYTEFLAGS) -custom -o $@ str.cma tools/coq-tex.ml
 
 archclean::
-	rm -f tools/coqdep tools/gallina tools/coq-tex tools/coq_makefile
+	rm -f $(COQDEP) $(GALLINA) $(COQTEX) $(COQMAKEFILE)
 
 ###########################################################################
 # minicoq
@@ -374,9 +379,13 @@ MINICOQCMO=$(CONFIG) $(LIB) $(KERNEL) \
 	   parsing/lexer.cmo parsing/g_minicoq.cmo \
 	   toplevel/fhimsg.cmo toplevel/minicoq.cmo
 
-minicoq: $(MINICOQCMO)
-	$(OCAMLC) $(INCLUDES) -o minicoq -custom $(CMA) $(MINICOQCMO) \
-	  $(OSDEPLIBS)
+MINICOQ=bin/minicoq
+
+$(MINICOQ): $(MINICOQCMO)
+	$(OCAMLC) $(INCLUDES) -o $@ -custom $(CMA) $(MINICOQCMO) $(OSDEPLIBS)
+
+archclean::
+	rm -f $(MINICOQ)
 
 ###########################################################################
 # Installation
@@ -386,18 +395,17 @@ install: install-$(BEST) install-binaries install-library install-manpages
 
 install-byte:
 	$(MKDIR) $(BINDIR)
-	cp $(COQMKTOP) $(COQC) coqtop.byte $(BINDIR)
+	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BINDIR)
 	cd $(BINDIR); ln -s coqtop.byte coqtop
 
 install-opt:
 	$(MKDIR) $(BINDIR)
-	cp $(COQMKTOP) $(COQC) coqtop.byte coqtop.opt $(BINDIR)
+	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(BINDIR)
 	cd $(BINDIR); ln -s coqtop.opt coqtop
 
 install-binaries:
 	$(MKDIR) $(BINDIR)
-	cp tools/coqdep tools/gallina tools/coq_makefile tools/coq-tex \
-	  $(BINDIR)
+	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(BINDIR)
 
 ALLVO=$(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO)
 
@@ -571,7 +579,6 @@ archclean::
 	rm -f pretyping/*.cmx pretyping/*.[so]
 	rm -f toplevel/*.cmx toplevel/*.[so]
 	rm -f tools/*.cmx tools/*.[so]
-	rm -f coqtop.opt coqtop.byte minicoq
 	rm -f scripts/*.cmx scripts/*.[so]
 	rm -f dev/*.cmx dev/*.[so]
 
@@ -604,7 +611,7 @@ depend: beforedepend
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
 
 dependcoq: beforedepend
-	tools/coqdep $(COQINCLUDES) */*.v */*/*.v > .depend.coq
+	$(COQDEP) $(COQINCLUDES) */*.v */*/*.v > .depend.coq
 
 ML4FILESML = $(ML4FILES:.ml4=.ml)
 dependcamlp4: beforedepend $(ML4FILESML)
