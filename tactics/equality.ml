@@ -624,7 +624,7 @@ let sig_clausal_form env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
 	| Some w -> applist(exist_term,[a;p_i_minus_1;w;tuple_tail])
 	| None -> anomaly "Not enough components to build the dependent tuple"
   in
-  sigrec_clausal_form siglen ty
+  Evarutil.nf_evar (Evarutil.evars_of isevars) (sigrec_clausal_form siglen ty)
 
 (* The problem is to build a destructor (a generalization of the
    predecessor) which, when applied to a term made of constructors
