@@ -76,7 +76,7 @@ let crible (fn : global_reference -> env -> constr -> unit) ref =
       | _ -> ()
   in 
   try 
-    Library.iter_all_segments true crible_rec 
+    Library.iter_all_segments false crible_rec 
   with Not_found -> 
     errorlabstrm "search"
       [< pr_global ref; 'sPC; 'sTR "not declared" >]
