@@ -165,6 +165,7 @@ type local_decl_expr =
   | AssumExpr of identifier * constr_ast
   | DefExpr of identifier * constr_ast * constr_ast option
 
+type precedence = int
 type grammar_entry_ast = 
   (loc * string) * Ast.entry_type option * 
     grammar_associativity * raw_grammar_rule list
@@ -188,11 +189,14 @@ type vernac_expr =
   | VernacDelimiters of scope_name * (string * string)
   | VernacArgumentsScope of qualid located * scope_name option list
   | VernacInfix of
-      grammar_associativity * int * string * qualid located * scope_name option
+      grammar_associativity * precedence * string * qualid located
+      * scope_name option
   | VernacDistfix of
-      grammar_associativity * int * string * qualid located * scope_name option
+      grammar_associativity * precedence * string * qualid located
+      * scope_name option
   | VernacNotation of
-      grammar_associativity * int * string * constr_ast * scope_name option
+      grammar_associativity * precedence * string * constr_ast
+      * (string * precedence) list * scope_name option
 
   (* Gallina *)
   | VernacDefinition of definition_kind * identifier * definition_expr *

@@ -229,10 +229,10 @@ Infix 3 "+" Zplus : Z_scope.
 Infix 3 "-" Zminus : Z_scope.
 Infix 2 "*" Zmult : Z_scope.
 Distfix 0 "- _" Zopp : Z_scope.
-Notation NONA 4 "x <= y <= z" (Zle x y)/\(Zle y z) : Z_scope.
-Notation NONA 4 "x <= y <  z" (Zle x y)/\(Zlt y z) : Z_scope.
-Notation NONA 4 "x <  y <  z" (Zlt x y)/\(Zlt y z) : Z_scope.
-Notation NONA 4 "x <  y <= z" (Zlt x y)/\(Zle y z) : Z_scope.
+Notation NONA 4 "x <= y <= z" (Zle x y)/\(Zle y z) (y at level 3) : Z_scope.
+Notation NONA 4 "x <= y <  z" (Zle x y)/\(Zlt y z) (y at level 3) : Z_scope.
+Notation NONA 4 "x <  y <  z" (Zlt x y)/\(Zlt y z) (y at level 3) : Z_scope.
+Notation NONA 4 "x <  y <= z" (Zlt x y)/\(Zle y z) (y at level 3) : Z_scope.
 Notation NONA 4 "x <> y"      ~(eq Z x y)          : Z_scope.
 (* Notation NONA 1 "| x |" (Zabs x) : Z_scope.(* "|" conflicts with THENS *)*)
 Notation NONA 1 "|| x ||" (Zabs x) : Z_scope.

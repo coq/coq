@@ -207,7 +207,7 @@ let prec_assoc = function
 
 let constr_tab =
   [| "constr0"; "constr1"; "constr2"; "constr3"; "lassoc_constr4";
-     "constr5"; "constr6"; "constr7"; "constr8"; "constr9"; "constr10";
+     "constr5"; "constr6"; "constr7"; "constr8"; "constr9"; "lconstr";
      "pattern" |]
   
 let constr_rule (n,p) =
@@ -237,8 +237,11 @@ let make_hunks symbols =
 	  UNP_BRK (n, 1) :: RO s :: l)
     symbols []
 
+let string_of_prec (n,p) =
+  (string_of_int n)^(match p with E -> "E" | L -> "L" | _ -> "")
+
 let string_of_symbol = function
-  | NonTerminal _ -> "_"
+  | NonTerminal (lp,_) -> "_:"^(string_of_prec lp)
   | Terminal s -> s
 
 let string_of_assoc = function
@@ -285,24 +288,29 @@ let strip s =
   let n = String.length s in
   if n > 2 & s.[0] = '\'' & s.[n-1] = '\'' then String.sub s 1 (n-2) else s
 
-let rec find_symbols c_first c_next c_last vars new_var = function
+let rec find_symbols c_first c_next c_last vars new_var varprecl = function
   | []    -> (vars, [])
   | x::sl when is_letter x.[0] ->
       let id = Names.id_of_string x in
       if List.mem_assoc id vars then
         error ("Variable "^x^" occurs more than once");
-      let prec = if sl = [] then c_last else c_first in
-      let (vars,l) = find_symbols c_next c_next c_last vars (new_var+1) sl in
+      let prec =
+        try (List.assoc x varprecl,E)
+        with Not_found -> if sl = [] then c_last else c_first in
+      let (vars,l) =
+        find_symbols c_next c_next c_last vars (new_var+1) varprecl sl in
       let meta = create_meta new_var in
       ((id,ope ("META",[num new_var]))::vars, NonTerminal (prec, meta) :: l)
   | "_"::sl ->
       warning "Found '_'";
       let prec = if sl = [] then c_last else c_first in
-      let (vars,l) = find_symbols c_next c_next c_last vars (new_var+1) sl in
+      let (vars,l) =
+        find_symbols c_next c_next c_last vars (new_var+1) varprecl sl in
       let meta = create_meta new_var in
       (vars, NonTerminal (prec, meta) :: l)
   | s :: sl ->
-      let (vars,l) = find_symbols c_next c_next c_last vars new_var sl in
+      let (vars,l) =
+        find_symbols c_next c_next c_last vars new_var varprecl sl in
       (vars, Terminal (strip s) :: l)
 
 let make_grammar_pattern symbols ntn =
@@ -365,10 +373,11 @@ let rec reify_meta_ast = function
 
 (* Distfix, Infix, Notations *)
 
-let add_notation assoc n df ast sc =
+let add_notation assoc n df ast varprecl sc =
   let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
   let (lp,rp) = prec_assoc assoc in
-  let (subst,symbols) = find_symbols (n,lp) (n,L) (n,rp) [] 1 (split df) in
+  let (subst,symbols) =
+    find_symbols (n,lp) (10,E) (n,rp) [] 1 varprecl (split df) in
   let notation = make_symbolic assoc n symbols in
   let rule_name = notation^"_"^scope^"_notation" in
   (* To globalize... *)
@@ -403,7 +412,7 @@ let add_distfix assoc n df astf sc =
   let (vars,l) = rename "x" [] 1 (split df) in
   let df = String.concat " " l in
   let ast = ope("APPLIST",astf::vars) in
-  add_notation assoc n df ast sc
+  add_notation assoc n df ast [] sc
 
 let add_infix assoc n inf qid sc =
   let pr = Astterm.globalize_qualid qid in
@@ -418,7 +427,7 @@ let add_infix assoc n inf qid sc =
   *)
   let metas = [inject_var "x"; inject_var "y"] in 
   let ast = ope("APPLIST",pr::metas) in
-  add_notation assoc n ("x "^(quote inf)^" y") ast sc
+  add_notation assoc n ("x "^(quote inf)^" y") ast [] sc
 
 (* Delimiters *)
 let load_delimiters _ (_,(_,_,scope,dlm)) =

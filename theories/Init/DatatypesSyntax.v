@@ -25,8 +25,8 @@ with constr0 :=
          [ (pair ? ? $lc1 $lc2) ]
 .
 
-Infix 7 "+" sum.
-Infix RIGHTA 6 "*" prod.
+Infix 3 "+" sum.
+Infix RIGHTA 2 "*" prod.
 
 (** Pretty-printing of things in Datatypes.v *)
 

@@ -203,11 +203,11 @@ Infix 3 "+" Rplus : R_scope.
 Infix 3 "-" Rminus : R_scope.
 Infix 2 "*" Rmult : R_scope.
 Distfix 0 "- _" Ropp : R_scope.
-Notation NONA 4 "x == y == z" (eqT R x y)/\(eqT R y z) : R_scope.
-Notation NONA 4 "x <= y <= z" (Rle x y)/\(Rle y z) : R_scope.
-Notation NONA 4 "x <= y <  z" (Rle x y)/\(Rlt y z) : R_scope.
-Notation NONA 4 "x <  y <  z" (Rlt x y)/\(Rlt y z) : R_scope.
-Notation NONA 4 "x <  y <= z" (Rlt x y)/\(Rle y z) : R_scope.
+Notation NONA 4 "x == y == z" (eqT R x y)/\(eqT R y z) (y at level 3): R_scope.
+Notation NONA 4 "x <= y <= z" (Rle x y)/\(Rle y z) (y at level 3) : R_scope.
+Notation NONA 4 "x <= y <  z" (Rle x y)/\(Rlt y z) (y at level 3) : R_scope.
+Notation NONA 4 "x <  y <  z" (Rlt x y)/\(Rlt y z) (y at level 3) : R_scope.
+Notation NONA 4 "x <  y <= z" (Rlt x y)/\(Rle y z) (y at level 3) : R_scope.
 Notation NONA 4 "x <> y"  ~(eqT R x y) : R_scope.
 Infix LEFTA 2 "/" Rdiv : R_scope.
 Distfix 0 "/ _" Rinv : R_scope.

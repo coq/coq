@@ -232,11 +232,16 @@ GEXTEND Gram
      | IDENT "Distfix"; a = entry_prec; n = natural; s = STRING; p = qualid;
 	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacDistfix (a,n,s,p,sc)
      | IDENT "Notation"; a = entry_prec; n = natural; s = STRING; c = constr;
-	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacNotation (a,n,s,c,sc)
+         precl = [ "("; l = LIST1 var_precedence SEP ","; ")" -> l | -> [] ];
+	 sc = OPT [ ":"; sc = IDENT -> sc ] -> 
+           VernacNotation (a,n,s,c,precl,sc)
 
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
   ] ]
+  ;
+  var_precedence:
+    [ [ x = IDENT; IDENT "at"; IDENT "level"; n = natural -> (x,n) ] ]
   ;
   opt_scope:
     [ [ IDENT "_" -> None | sc = IDENT -> Some sc ] ]

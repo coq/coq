@@ -14,25 +14,25 @@ Require Specif.
 (** Parsing of things in Specif.v *)
 
 (* To accept {x:A|P}*B without parentheses *)
-Grammar constr constr6 :=
+Grammar constr constr2 :=
   sigprod [ "{" lconstr($lc) ":" lconstr($c1) "|" lconstr($c2) "}"
-            "*" constr6($c) ]
+            "*" constr2($c) ]
        -> [ (prod (sig $c1 [$lc : $c1]$c2) $c) ]
 
 | sig2prod [ "{" lconstr($lc) ":" lconstr($c1)
-           "|" lconstr($c2) "&" lconstr($c3) "}" "*" constr6($c) ]
+           "|" lconstr($c2) "&" lconstr($c3) "}" "*" constr2($c) ]
        -> [ (prod (sig2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3) $c) ]
 
 | sigSprod [ "{" lconstr($lc) ":" lconstr($c1) "&" lconstr($c2) "}"
-         "*" constr6($c)]
+         "*" constr2($c)]
        -> [ (prod (sigS $c1 [$lc : $c1]$c2) $c) ]
 
 | sigS2prod [ "{" lconstr($lc) ":" lconstr($c1)
-             "&" lconstr($c2) "&" lconstr($c3) "}" "*" constr6($c) ]
+             "&" lconstr($c2) "&" lconstr($c3) "}" "*" constr2($c) ]
        -> [ (prod (sigS2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3) $c) ].
 
 (* To factor with {A}+{B} *)
-Grammar constr constr6 :=
+Grammar constr constr2 :=
   sig [ "{" lconstr($lc) ":" lconstr($c1) "|" lconstr($c2) "}" ]
        -> [ (sig $c1 [$lc : $c1]$c2) ]
 
@@ -47,25 +47,21 @@ Grammar constr constr6 :=
              "&" lconstr($c2) "&" lconstr($c3) "}" ]
        -> [ (sigS2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3) ].
 
-Grammar constr constr6 :=
-  sumbool [ "{" lconstr($lc) "}" "+" "{" lconstr($lc2) "}" ] -> 
-    [ (sumbool $lc $lc2) ].
+Notation 2 "{ x } + { y }" (sumbool x y).
+Notation LEFTA 3 " x + { y }" (sumor x y).
 
-Grammar constr constr7 :=
-  sumor [ constr7($c1) "+" "{" lconstr($c2) "}" ] ->
-    [ (sumor $c1 $c2) ]
-
-| sumsig [ constr7($c) "+" "{" lconstr($lc) ":" constr($c1) "|" lconstr($c2) "}" ] ->
+Grammar constr constr3 :=
+  sumsig [ constr3($c) "+" "{" lconstr($lc) ":" constr($c1) "|" lconstr($c2) "}" ] ->
     [ (sum $c (sig $c1 [$lc : $c1]$c2)) ]
 
-| sumsig2 [ constr7($c) "+" "{" lconstr($lc) ":" constr($c1)
+| sumsig2 [ constr3($c) "+" "{" lconstr($lc) ":" constr($c1)
            "|" lconstr($c2) "&" lconstr($c3) "}" ]
        -> [ (sum $c (sig2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3)) ]
 
-| sumsigS [ constr7($c) "+" "{" lconstr($lc) ":" constr($c1) "&" lconstr($c2) "}" ]
+| sumsigS [ constr3($c) "+" "{" lconstr($lc) ":" constr($c1) "&" lconstr($c2) "}" ]
        -> [ (sum $c (sigS $c1 [$lc : $c1]$c2)) ]
 
-| sumsigS2 [ constr7($c) "+" "{" lconstr($lc) ":" constr($c1)
+| sumsigS2 [ constr3($c) "+" "{" lconstr($lc) ":" constr($c1)
              "&" lconstr($c2) "&" lconstr($c3) "}" ]
        -> [ (sum $c (sigS2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3)) ]
 .
@@ -118,19 +114,9 @@ Syntax constr
 (** Pretty-printing of [projS1] and [projS2] *)
   | projS1_imp [ (projS1 ? ? $a) ] -> ["(ProjS1 " $a:E ")"]  
   | projS2_imp [ (projS2 ? ? $a) ] -> ["(ProjS2 " $a:E ")"]
-  ;
-
-(** Pretty-printing of [sumbool] and [sumor] *)
-  level 7:
-    sumbool [ (sumbool $t1 $t2) ]
-       -> [ [<hov 0> "{" $t1:E "}" [0 1] "+" "{" $t2:L "}"] ]
-  | sumor [ (sumor $t1 $t2) ]
-       -> [ [<hov 0> $t1:E [0 1]  "+" "{" $t2:L "}"] ]
-  ;
 
 (** Pretty-printing of [except] *)
-  level 1:
-    Except_imp [ (except $1 $t2) ] -> [ [<hov 0> "Except " $t2 ] ]
+  | Except_imp [ (except $1 $t2) ] -> [ [<hov 0> "Except " $t2 ] ]
 
 (** Pretty-printing of [error] and [value] *)
   | Error_imp [ (error $t1) ]     -> [ [<hov 0> "Error" ] ]

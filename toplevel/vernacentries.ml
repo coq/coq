@@ -1038,7 +1038,7 @@ let interp c = match c with
   | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope qid scl
   | VernacInfix (assoc,n,inf,qid,sc) -> vernac_infix assoc n inf qid sc
   | VernacDistfix (assoc,n,inf,qid,sc) -> vernac_distfix assoc n inf qid sc
-  | VernacNotation (assoc,n,inf,c,sc) -> vernac_notation assoc n inf c sc
+  | VernacNotation (assoc,n,inf,c,pl,sc) -> vernac_notation assoc n inf c pl sc
 
   (* Gallina *)
   | VernacDefinition (k,id,d,f) -> vernac_definition k id d f
