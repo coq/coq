@@ -33,6 +33,10 @@ val type_of_constructor : unsafe_env -> constr -> constr
 val type_of_case : unsafe_env -> unsafe_judgment -> unsafe_judgment 
   -> unsafe_judgment array -> unsafe_judgment
 
+val type_case_branches :
+  unsafe_env -> constr -> constr -> constr -> constr 
+    -> constr * constr array * constr 
+
 val type_of_prop_or_set : contents -> unsafe_judgment
 
 val type_of_type : universe -> unsafe_judgment * constraints

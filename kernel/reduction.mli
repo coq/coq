@@ -16,58 +16,58 @@ exception Redelimination
 exception Induc
 exception Elimconst
 
-type 'a reduction_function = unsafe_env -> constr -> constr
+type reduction_function = unsafe_env -> constr -> constr
 
-type 'a stack_reduction_function = 
+type stack_reduction_function = 
     unsafe_env -> constr -> constr list -> constr * constr list
 
-val whd_stack : 'a stack_reduction_function
+val whd_stack : stack_reduction_function
 
 (*s Reduction Function Operators *)
-val under_casts : 'a reduction_function -> 'a reduction_function
-val strong : 'a reduction_function -> 'a reduction_function
-val strong_prodspine : 'a reduction_function -> 'a reduction_function
+val under_casts : reduction_function -> reduction_function
+val strong : reduction_function -> reduction_function
+val strong_prodspine : reduction_function -> reduction_function
 val stack_reduction_of_reduction : 
-  'a reduction_function -> 'a stack_reduction_function
+  reduction_function -> stack_reduction_function
 
 (*s Generic Optimized Reduction Functions using Closures *)
 
 (* 1. lazy strategy *)
-val clos_norm_flags : Closure.flags -> 'a reduction_function
+val clos_norm_flags : Closure.flags -> reduction_function
 (* Same as [(strong whd_beta[delta][iota])], but much faster on big terms *) 
-val nf_beta : 'a reduction_function
-val nf_betaiota : 'a reduction_function
-val nf_betadeltaiota : 'a reduction_function
+val nf_beta : reduction_function
+val nf_betaiota : reduction_function
+val nf_betadeltaiota : reduction_function
 
 (* 2. call by value strategy *)
-val cbv_norm_flags : flags -> 'a reduction_function
-val cbv_beta : 'a reduction_function
-val cbv_betaiota : 'a reduction_function
-val cbv_betadeltaiota : 'a reduction_function
+val cbv_norm_flags : flags -> reduction_function
+val cbv_beta : reduction_function
+val cbv_betaiota : reduction_function
+val cbv_betadeltaiota : reduction_function
 
 (* 3. lazy strategy, weak head reduction *)
-val whd_beta : 'a reduction_function
-val whd_betaiota : 'a reduction_function
-val whd_betadeltaiota : 'a reduction_function
+val whd_beta : reduction_function
+val whd_betaiota : reduction_function
+val whd_betadeltaiota : reduction_function
 
-val whd_beta_stack : 'a stack_reduction_function
-val whd_betaiota_stack : 'a stack_reduction_function
-val whd_betadeltaiota_stack : 'a stack_reduction_function
+val whd_beta_stack : stack_reduction_function
+val whd_betaiota_stack : stack_reduction_function
+val whd_betadeltaiota_stack : stack_reduction_function
 
 
 (*s Head normal forms *)
-val whd_const_stack : section_path list -> 'a stack_reduction_function
-val whd_const : section_path list -> 'a reduction_function
-val whd_delta_stack : 'a stack_reduction_function
-val whd_delta : 'a reduction_function
-val whd_betadelta_stack : 'a stack_reduction_function
-val whd_betadelta : 'a reduction_function
-val whd_betadeltat_stack : 'a stack_reduction_function
-val whd_betadeltat : 'a reduction_function
-val whd_betadeltatiota_stack : 'a stack_reduction_function
-val whd_betadeltatiota : 'a reduction_function
-val whd_betadeltaiotaeta_stack : 'a stack_reduction_function
-val whd_betadeltaiotaeta : 'a reduction_function
+val whd_const_stack : section_path list -> stack_reduction_function
+val whd_const : section_path list -> reduction_function
+val whd_delta_stack : stack_reduction_function
+val whd_delta : reduction_function
+val whd_betadelta_stack : stack_reduction_function
+val whd_betadelta : reduction_function
+val whd_betadeltat_stack : stack_reduction_function
+val whd_betadeltat : reduction_function
+val whd_betadeltatiota_stack : stack_reduction_function
+val whd_betadeltatiota : reduction_function
+val whd_betadeltaiotaeta_stack : stack_reduction_function
+val whd_betadeltaiotaeta : reduction_function
 
 val beta_applist : (constr * constr list) -> constr
 
@@ -98,15 +98,15 @@ val is_info_cast_type : unsafe_env -> constr -> bool
 val contents_of_cast_type : unsafe_env -> constr -> contents
 val poly_args : unsafe_env -> constr -> int list
 
-val whd_programs : 'a reduction_function
+val whd_programs : reduction_function
 
 val unfoldn : 
-  (int list * section_path) list -> 'a reduction_function
-val fold_one_com : constr -> 'a reduction_function
-val fold_commands : constr list -> 'a reduction_function
+  (int list * section_path) list -> reduction_function
+val fold_one_com : constr -> reduction_function
+val fold_commands : constr list -> reduction_function
 val subst_term_occ : int list -> constr -> constr -> constr
-val pattern_occs : (int list * constr * constr) list -> 'a reduction_function
-val compute : 'a reduction_function
+val pattern_occs : (int list * constr * constr) list -> reduction_function
+val compute : reduction_function
 
 
 (*s Conversion Functions (uses closures, lazy strategy) *)
@@ -131,32 +131,45 @@ val convert_or : conversion_test -> conversion_test -> conversion_test
 val convert_forall2 : 
   ('a -> 'b -> conversion_test) -> 'a array -> 'b array -> conversion_test
 
-type 'a conversion_function = unsafe_env -> constr -> constr -> constraints
+type conversion_function = unsafe_env -> constr -> constr -> constraints
 
-val fconv : conv_pb -> 'a conversion_function
+val fconv : conv_pb -> conversion_function
 
 (* [fconv] has 2 instances: [conv = fconv CONV] i.e. conversion test, and
    [conv_leq = fconv CONV_LEQ] i.e. cumulativity test. *)
 
-val conv : 'a conversion_function
-val conv_leq : 'a conversion_function
+val conv : conversion_function
+val conv_leq : conversion_function
 
 val conv_forall2 : 
-  'a conversion_function -> unsafe_env 
-    -> constr array -> constr array -> constraints
+  conversion_function -> unsafe_env -> constr array 
+    -> constr array -> constraints
 
 val conv_forall2_i : 
-  (int -> 'a conversion_function) -> unsafe_env 
+  (int -> conversion_function) -> unsafe_env 
     -> constr array -> constr array -> constraints
 
 val is_conv : unsafe_env -> constr -> constr -> bool
 val is_conv_leq : unsafe_env -> constr -> constr -> bool
 
+
+(*s Special-Purpose Reduction Functions *)
+
+val whd_meta : reduction_function
+val plain_instance : (int * constr) list -> constr -> constr
+val instance : (int * constr) list -> reduction_function
+
+val whd_ise : reduction_function
+val whd_ise1 : reduction_function
+val nf_ise1 : reduction_function
+val whd_ise1_metas : reduction_function
+
+
 (*s Obsolete Reduction Functions *)
 
 val hnf : unsafe_env -> constr -> constr * constr list
-val apprec : 'a stack_reduction_function
-val red_product : 'a reduction_function
+val apprec : stack_reduction_function
+val red_product : reduction_function
 val find_mrectype : unsafe_env -> constr -> constr * constr list
 val find_minductype : unsafe_env -> constr -> constr * constr list
 val find_mcoinductype : unsafe_env -> constr -> constr * constr list

@@ -2,153 +2,114 @@
 (* $Id$ *)
 
 open Pp
+open Util
 open Names
 open Evd
+open Generic
 open Term
+open Sign
+open Environ
 open Reduction
 open Proof_trees
-open Typing
+open Typeops
 open Coqast
+open Declare
 
-let pr_prim_rule = function
-  | {name=Intro;newids=[id]} -> [< 'sTR"Intro " ; print_id id >]
+type refiner_error =
+  | BadType of constr * constr * constr
+  | OccurMeta of constr
+  | CannotApply of constr * constr
 
-  | {name=Intro_after;newids=[id]} -> [< 'sTR"Intro after " ; print_id id >]
+exception RefinerError of refiner_error
 
-  | {name=Intro_replacing;newids=[id]} -> 
-      [< 'sTR"Intro replacing " ; print_id id >]
+let conv_leq_goal env arg ty conclty =
+  if not (is_conv_leq env ty conclty) then 
+    raise (RefinerError (BadType (arg,ty,conclty)))
 
-  | {name=Fix;newids=[f];params=[Num(_,n)]} -> 
-         [< 'sTR"Fix "; print_id f; 'sTR"/"; 'iNT n>]
+let type_of env hyps c =
+  failwith "TODO: typage avec VE"
 
-  | {name=Fix;newids=(f::lf);params=(Num(_,n))::ln;terms=lar} -> 
-      let rec print_mut = function 
-	| (f::lf),((Num(_,n))::ln),(ar::lar) -> 
-            [< print_id f; 'sTR"/"; 'iNT n; 'sTR" : "; prterm ar;
-               print_mut (lf,ln,lar)>]
-        | _ -> [<>] 
-      in
-      [< 'sTR"Fix "; print_id f; 'sTR"/"; 'iNT n;
-	 'sTR" with "; print_mut (lf,ln,lar) >]
+let execute_type env ty =
+  failwith "TODO: typage type avec VE"
 
-  | {name=COFIX;newids=[f];terms=[]} -> 
-      [< 'sTR"Cofix "; print_id f >]
-
-  | {name=COFIX;newids=(f::lf);terms=lar} -> 
-      let rec print_mut = function 
-	| (f::lf),(ar::lar) -> 
-	    [< print_id f; 'sTR" : "; prterm ar; print_mut (lf,lar)>]
-        | _ -> [<>] 
-      in
-      [< 'sTR"Cofix "; print_id f;  'sTR" with "; print_mut (lf,lar) >]
-
-  | {name=REFINE;terms=[c]} -> 
-      [< 'sTR(if occur_meta c then "Refine " else "Exact ") ; prterm c >]
-      
-  | {name=CONVERT_CONCL;terms=[c]} ->
-      [< 'sTR"Change " ; prterm c >]
-      
-  | {name=CONVERT_HYP;hypspecs=[id];terms=[c]} ->
-      [< 'sTR"Change " ; prterm c ; 'sPC ; 'sTR"in " ; print_id id >]
-      
-  | {name=THIN;hypspecs=ids} ->
-      [< 'sTR"Clear " ; prlist_with_sep pr_spc print_id ids >]
-      
-  | {name=MOVE withdep;hypspecs=[id1;id2]} ->
-      [< 'sTR (if withdep then "Dependent " else "");
-	 'sTR"Move " ; print_id id1; 'sTR " after "; print_id id2 >]
-      
-  | _ -> anomaly "pr_prim_rule: Unrecognized primitive rule"
-
-let conv_leq_goal sigma arg ty conclty =
-  if not (conv_x_leq sigma ty conclty) then
-    errorlabstrm "Logic.conv_leq_goal"
-      [< 'sTR"refiner was given an argument"; 'bRK(1,1); prterm arg; 'sPC;
-         'sTR"of type"; 'bRK(1,1); prterm ty; 'sPC;
-         'sTR"instead of"; 'bRK(1,1); prterm conclty >]
-
-let rec mkREFGOALS sigma goal goalacc conclty trm =
+let rec mk_refgoals env goal goalacc conclty trm =
+  let hyps = goal.goal_ev.evar_hyps in
   match trm with
     | DOP0(Meta mv) ->
 	if occur_meta conclty then
           error "Cannot refine to conclusions with meta-variables";
-	let ctxt = outSOME goal.info in 
-	(mkGOAL ctxt goal.hyps (nf_betaiota conclty))::goalacc,conclty
+	let ctxt = goal.goal_ctxtty in 
+	(mk_goal ctxt hyps (nf_betaiota env conclty))::goalacc, conclty
 
     | DOP2(Cast,t,ty) ->
-	let _ = type_of sigma goal.hyps ty in
-	let _ = conv_leq_goal sigma trm ty conclty in
-	mkREFGOALS sigma goal goalacc ty t
+	let _ = type_of env hyps ty in
+	conv_leq_goal env trm ty conclty;
+	mk_refgoals env goal goalacc ty t
 
     | DOPN(AppL,cl) ->
-	let (acc',hdty) = mkHDGOALS sigma goal goalacc (hd_vect cl) in
+	let (acc',hdty) = mk_hdgoals env goal goalacc (array_hd cl) in
 	let (acc'',conclty') = 
-	  mkARGGOALS sigma goal acc' hdty (list_of_tl_vect cl) in
-	let _ = conv_leq_goal sigma trm conclty' conclty in
+	  mk_arggoals env goal acc' hdty (array_list_of_tl cl) in
+	let _ = conv_leq_goal env trm conclty' conclty in
         (acc'',conclty')
 
     | DOPN(MutCase _,_) as mc -> 
 	let (_,p,c,lf) = destCase mc in
-	let (acc',lbrty,conclty') = mkCASEGOALS sigma goal goalacc p c in
+	let (acc',lbrty,conclty') = mk_casegoals env goal goalacc p c in
 	let acc'' = 
-	  it_vect2
-            (fun lacc ty fi -> fst (mkREFGOALS sigma goal lacc ty fi))
+	  array_fold_left2
+            (fun lacc ty fi -> fst (mk_refgoals env goal lacc ty fi))
             acc' lbrty lf 
 	in
-	let _ = conv_leq_goal sigma trm conclty' conclty in 
+	let _ = conv_leq_goal env trm conclty' conclty in 
 	(acc'',conclty')
 
     | t -> 
-	if occur_meta t then
-          errorlabstrm "Logic.mkREFGOALS"
-            [< 'sTR"cannot refine with term"; 'bRK(1,1); prterm t;
-               'sPC; 'sTR"because there are metavariables, and it is";
-               'sPC; 'sTR"neither an application nor a Case" >];
-      	let t'ty = type_of sigma goal.hyps t in
-	conv_leq_goal sigma t t'ty conclty;
+	if occur_meta t then raise (RefinerError (OccurMeta t));
+      	let t'ty = type_of env hyps t in
+	conv_leq_goal env t t'ty conclty;
         (goalacc,t'ty)
 
 (* Same as mkREFGOALS but without knowing te type of the term. Therefore,
  * Metas should be casted. *)
 
-and mkHDGOALS sigma goal goalacc = function
-  | DOP2(Cast,DOP0(Meta mv),ty) ->
-      let _ = type_of sigma goal.hyps ty in
-      let ctxt = outSOME goal.info in  
-      (mkGOAL ctxt goal.hyps (nf_betaiota ty))::goalacc,ty
+and mk_hdgoals env goal goalacc trm =
+  let hyps = goal.goal_ev.evar_hyps in
+  match trm with
+    | DOP2(Cast,DOP0(Meta mv),ty) ->
+	let _ = type_of env hyps ty in
+	let ctxt = goal.goal_ctxtty in  
+	(mk_goal ctxt hyps (nf_betaiota env ty))::goalacc,ty
+	  
+    | DOPN(AppL,cl) ->
+	let (acc',hdty) = mk_hdgoals env goal goalacc (array_hd cl) in
+	mk_arggoals env goal acc' hdty (array_list_of_tl cl)
 	
-  | DOPN(AppL,cl) ->
-      let (acc',hdty) = mkHDGOALS sigma goal goalacc (hd_vect cl) in
-      mkARGGOALS sigma goal acc' hdty (list_of_tl_vect cl)
-	
-  | DOPN(MutCase _,_) as mc -> 
-      let (_,p,c,lf) = destCase mc in
-      let (acc',lbrty,conclty') = mkCASEGOALS sigma goal goalacc p c in
-      let acc'' = it_vect2 
-                    (fun lacc ty fi -> fst (mkREFGOALS sigma goal lacc ty fi))
-                    acc' lbrty lf in
-      (acc'',conclty')
+    | DOPN(MutCase _,_) as mc -> 
+	let (_,p,c,lf) = destCase mc in
+	let (acc',lbrty,conclty') = mk_casegoals env goal goalacc p c in
+	let acc'' = 
+	  array_fold_left2
+            (fun lacc ty fi -> fst (mk_refgoals env goal lacc ty fi))
+            acc' lbrty lf 
+	in
+	(acc'',conclty')
 
-  | t -> goalacc,type_of sigma goal.hyps t
+    | t -> goalacc,type_of env hyps t
 
-and mkARGGOALS sigma goal goalacc funty = function
+and mk_arggoals env goal goalacc funty = function
   | [] -> goalacc,funty
   | harg::tlargs ->
-      (match whd_betadeltaiota sigma funty with
+      (match whd_betadeltaiota env funty with
 	 | DOP2(Prod,c1,b) ->
-	     let (acc',hargty) = mkREFGOALS sigma goal goalacc c1 harg in
-	     mkARGGOALS sigma goal acc' (sAPP b harg) tlargs
-	 | t ->
-             errorlabstrm "Logic.mkARGGOALS"
-               [< 'sTR"in refiner, a term of type "; 'bRK(1,1);
-                  prterm t; 'sPC; 'sTR"could not be applied to"; 'bRK(1,1);
-                  prterm harg >])
+	     let (acc',hargty) = mk_refgoals env goal goalacc c1 harg in
+	     mk_arggoals env goal acc' (sAPP b harg) tlargs
+	 | t -> raise (RefinerError (CannotApply (t,harg))))
 
-and mkCASEGOALS sigma goal goalacc p c= 
-  let (acc',ct) = mkHDGOALS sigma goal goalacc c in 
-  let (acc'',pt) = mkHDGOALS sigma goal acc' p in
-  let (_,lbrty,conclty) =
-    type_case_branches (gLOB goal.hyps) sigma ct pt p c in
+and mk_casegoals env goal goalacc p c= 
+  let (acc',ct) = mk_hdgoals env goal goalacc c in 
+  let (acc'',pt) = mk_hdgoals env goal acc' p in
+  let (_,lbrty,conclty) = type_case_branches env ct pt p c in
   (acc'',lbrty,conclty)
 
 
@@ -159,18 +120,19 @@ let collect_meta_variables c =
   let rec collrec acc = function
     | DOP0(Meta mv) -> mv::acc
     | DOP2(Cast,c,t) -> collrec acc c
-    | DOPN(AppL,cl) -> it_vect collrec acc cl
-    | DOPN(MutCase _,_) as mc -> let (_,p,c,lf) = destCase mc in
-      it_vect collrec (collrec (collrec acc p) c) lf
+    | DOPN(AppL,cl) -> Array.fold_left collrec acc cl
+    | DOPN(MutCase _,_) as mc -> 
+	let (_,p,c,lf) = destCase mc in
+	Array.fold_left collrec (collrec (collrec acc p) c) lf
     | _ -> acc
   in 
   List.rev(collrec [] c)
 
 let new_meta_variables = 
   let rec newrec = function
-    | DOP0(Meta mv) -> DOP0(Meta (newMETA()))
-    | DOP2(Cast,c,t) -> DOP2(Cast,newrec c,t)
-    | DOPN(AppL,cl) -> DOPN(AppL,Array.map newrec cl)
+    | DOP0(Meta _) -> DOP0(Meta (new_meta()))
+    | DOP2(Cast,c,t) -> DOP2(Cast, newrec c, t)
+    | DOPN(AppL,cl) -> DOPN(AppL, Array.map newrec cl)
     | DOPN(MutCase _,_) as mc ->
         let (ci,p,c,lf) = destCase mc in
         mkMutCaseA ci (newrec p) (newrec c) (Array.map newrec lf)
@@ -178,7 +140,7 @@ let new_meta_variables =
   in 
   newrec
 
-let mk_assumption sigma sign c = fexecute_type sigma sign c
+let mk_assumption env c = execute_type env c
 				   
 let sign_before id = 
   let rec aux = function
@@ -247,21 +209,24 @@ let move_after with_dep toleft (left,htfrom,right) hto =
     
 (* Primitive tactics are handled here *)
 
-let prim_refiner r sigma goal =
-  match r, goal with
-    | {name=INTRO;newids=[id]}, {hyps=sign;concl=cl;info=(Some info)} ->
+let prim_refiner r env goal =
+  let ev = goal.goal_ev in
+  let sign = ev.evar_hyps in
+  let cl = ev.evar_concl in
+  let info = goal.goal_ctxtty in
+  match r with
+    | { name = Intro; newids = [id] } ->
     	if mem_sign sign id then error "New variable is already declared";
         (match strip_outer_cast cl with
 	   | DOP2(Prod,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let a = mk_assumption sigma sign c1
+	       let a = mk_assumption env sign c1
 	       and v = VAR id in
-	       let sg = mkGOAL info (add_sign (id,a) sign) (sAPP b v) in 
+	       let sg = mk_goal info (add_sign (id,a) sign) (sAPP b v) in 
 	       [sg]
 	   | _ -> error "Introduction needs a product")
 	
-    | {name=INTRO_AFTER;newids=[id];hypspecs=[whereid]}, 
-      {hyps=sign;concl=cl;info=(Some info)} ->
+    | { name = Intro_after; newids = [id]; hypspecs = [whereid] } ->
     	if mem_sign sign id then error "New variable is already declared";
         (match strip_outer_cast cl with
 	   | DOP2(Prod,c1,b) ->
@@ -271,15 +236,14 @@ let prim_refiner r sigma goal =
                          (global_vars c1)) then
 		 error 
 		   "Can't introduce at that location: free variable conflict";
-	       let a = mk_assumption sigma sign c1
+	       let a = mk_assumption env sign c1
 	       and v = VAR id in
-	       let sg = mkGOAL info 
+	       let sg = mk_goal info 
 			  (add_sign_after whereid (id,a) sign) (sAPP b v) in 
 	       [sg]
 	   | _ -> error "Introduction needs a product")
 	
-    | {name=INTRO_REPLACING;newids=[];hypspecs=[id]},
-      {hyps=sign;concl=cl;info=(Some info)} ->
+    | { name = Intro_replacing; newids = []; hypspecs = [id] } ->
 	(match strip_outer_cast cl with
            | DOP2(Prod,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
@@ -291,21 +255,21 @@ let prim_refiner r sigma goal =
 	       then 
 		 error 
 		   "Can't introduce at that location: free variable conflict";
-	       let a = mk_assumption sigma sign c1
+	       let a = mk_assumption env sign c1
 	       and v = VAR id in
-	       let sg = mkGOAL info (add_sign_replacing id (id,a) sign) 
+	       let sg = mk_goal info (add_sign_replacing id (id,a) sign) 
 			  (sAPP b v) in
 	       [sg]
 	   | _ -> error "Introduction needs a product")
 	
-    | {name=FIX;hypspecs=[];terms=[];newids=[f];params=[Num(_,n)]},
-      {hyps=sign;concl=cl;info=(Some info)} ->
+    | { name = Fix; hypspecs = []; terms = []; 
+	newids = [f]; params = [Num(_,n)] } ->
      	let rec check_ind k cl = 
           match whd_castapp cl with 
             | DOP2(Prod,c1,DLAM(_,b)) -> 
             	if k = 1 then 
 		  (try 
-		     find_minductype sigma c1 
+		     find_minductype env c1 
 		   with Induc -> 
 		     error "cannot do a fixpoint on a non inductive type")
             	else 
@@ -314,18 +278,17 @@ let prim_refiner r sigma goal =
 	in
      	let _ = check_ind n cl in 
 	if mem_sign sign f then error "name already used in the environment";
-        let a = mk_assumption sigma sign cl in
-        let sg = mkGOAL info (add_sign (f,a) sign) cl in
+        let a = mk_assumption env sign cl in
+        let sg = mk_goal info (add_sign (f,a) sign) cl in
         [sg]
     
-    | {name=FIX;hypspecs=[];terms=lar;newids=lf;params=ln},
-      {hyps=sign;concl=cl;info=(Some info)} ->
+    | { name = Fix; hypspecs = []; terms = lar; newids = lf; params = ln } ->
      	let rec check_ind k cl = 
           match whd_castapp cl with 
             | DOP2(Prod,c1,DLAM(_,b)) -> 
             	if k = 1 then 
 		  (try 
-		     find_minductype sigma c1 
+		     find_minductype env c1 
 		   with Induc -> 
 		     error "cannot do a fixpoint on a non inductive type")
             	else 
@@ -338,64 +301,64 @@ let prim_refiner r sigma goal =
 	  | (ar::lar'),(f::lf'),((Num(_,n))::ln')->
 	      let (sp',_,_)  = destMutInd (fst (check_ind n ar)) in 
 	      if not (sp=sp') then 
-		error "fixpoints should be on the same mutual inductive declaration";
+		error ("fixpoints should be on the same " ^ 
+		       "mutual inductive declaration");
 	      if mem_sign sign f then 
 		error "name already used in the environment";
-	      let a = mk_assumption sigma sign ar in
+	      let a = mk_assumption env sign ar in
 	      mk_sign (add_sign (f,a) sign) (lar',lf',ln')
 	  | ([],[],[]) -> 
-	      List.map (mkGOAL info sign) (cl::lar)
+	      List.map (mk_goal info sign) (cl::lar)
 	  | _ -> error "not the right number of arguments"
 	in 
 	mk_sign sign (cl::lar,lf,ln)
 
-    | {name=COFIX;hypspecs=[];terms=lar;newids=lf;params=[]},
-      {hyps=sign;concl=cl;info=(Some info)} ->
+    | { name = Cofix; hypspecs = []; terms = lar; newids = lf; params = [] } ->
      	let rec check_is_coind cl = 
-          match (whd_betadeltaiota sigma (whd_castapp cl)) with 
+          match (whd_betadeltaiota env (whd_castapp cl)) with 
             | DOP2(Prod,c1,DLAM(_,b)) -> check_is_coind  b
             | b  -> 
 		(try 
-		   let _ = find_mcoinductype sigma b in true
+		   let _ = find_mcoinductype env b in true
                  with Induc -> 
-		   error "All methods must construct elements in coinductive types")
+		   error ("All methods must construct elements " ^
+			  "in coinductive types"))
 	in
      	let _ = List.for_all check_is_coind (cl::lar) in
         let rec mk_sign sign = function 
           | (ar::lar'),(f::lf') ->
 	      if mem_sign sign f then 
 		error "name already used in the environment";
-	      let a = mk_assumption sigma sign ar in
+	      let a = mk_assumption env sign ar in
 	      mk_sign (add_sign (f,a) sign) (lar',lf')
-	  | ([],[]) -> List.map (mkGOAL info sign) (cl::lar)
+	  | ([],[]) -> List.map (mk_goal info sign) (cl::lar)
 	  | _ -> error "not the right number of arguments"
      	in 
 	mk_sign sign (cl::lar,lf)
 	  
-    | {name=REFINE;terms=[c]},{hyps=sign;concl=cl;info=(Some info)} ->
+    | { name = Refine; terms = [c] } ->
 	let c = new_meta_variables c in
-	let (sgl,cl') = mkREFGOALS sigma goal [] cl c in
+	let (sgl,cl') = mk_refgoals env goal [] cl c in
 	let sgl = List.rev sgl in
 	sgl
 
-    | {name=CONVERT_CONCL;terms=[cl']},{hyps=sign;concl=cl;info=Some info} ->
-    	let cl'ty = type_of sigma sign cl' in
-	if conv_x_leq sigma cl' cl then
-          let sg = mkGOAL info sign (DOP2(Cast,cl',cl'ty)) in
+    | { name = Convert_concl; terms = [cl'] } ->
+    	let cl'ty = type_of env sign cl' in
+	if is_conv_leq env cl' cl then
+          let sg = mk_goal info sign (DOP2(Cast,cl',cl'ty)) in
           [sg]
 	else 
 	  error "convert-concl rule passed non-converting term"
 
-    | {name=CONVERT_HYP;hypspecs=[id];terms=[ty']},
-      {hyps=sign;concl=cl;info=(Some info)} ->
+    | { name = Convert_hyp; hypspecs = [id]; terms = [ty'] } ->
       (* Faut-il garder la sorte d'origine ou celle du converti ?? *)
-    	let tj = fexecute_type sigma (sign_before id sign) ty' in
-	if conv_x sigma ty' (snd(lookup_sign id sign)).body then
-          [mkGOAL info (modify_sign id tj sign) cl]
+    	let tj = execute_type env (sign_before id sign) ty' in
+	if is_conv env ty' (snd(lookup_sign id sign)).body then
+          [mk_goal info (modify_sign id tj sign) cl]
 	else 
 	  error "convert-hyp rule passed non-converting term"
 	    
-    | {name=THIN;hypspecs=ids}, {hyps=sign;concl=cl;info=(Some info)} ->
+    | { name = Thin; hypspecs = ids } ->
      	let rec remove_pair s = function
           | ([],[]) -> 
 	      error ((string_of_id s) ^ " is not among the assumptions.")
@@ -414,20 +377,23 @@ let prim_refiner r sigma goal =
             error ((string_of_id s) ^ " is used in the conclusion.");
           remove_pair s sign 
 	in
-     	let sg = mkGOAL info (List.fold_left clear_aux sign ids) cl in
+     	let sg = mk_goal info (List.fold_left clear_aux sign ids) cl in
      	[sg]
 
-    | {name=MOVE withdep;hypspecs=ids},{hyps=sign;concl=cl;info=(Some info)} ->
+    | { name = Move withdep; hypspecs = ids } ->
 	let (hfrom,hto) =
 	  match ids with [h1;h2] ->(h1,h2)| _ -> anomaly "prim_refiner:MOVE" in
   	let hyps = list_of_sign sign in
   	let (left,right,typfrom,toleft) = split_sign hfrom hto hyps in
   	let hyps' = 
 	  move_after withdep toleft (left,(hfrom,typfrom),right) hto in
-  	[mkGOAL info (make_sign hyps') cl]
+  	[mk_goal info (make_sign hyps') cl]
 	
     | _ -> anomaly "prim_refiner: Unrecognized primitive rule"
-	  
+
+let abst_value c =
+  let env = Global.env () in
+  Environ.abst_value (Typing.unsafe_env_of_env env) c
 	  
 let extract_constr = 
   let rec crec vl = function
@@ -437,8 +403,8 @@ let extract_constr =
               | GLOBNAME (id,_) -> VAR id
               | RELNAME (n,_) -> Rel n)
          with Not_found -> 
-           (try search_reference vl str
-            with Not_found -> error((string_of_id str)^"  not declared")))
+           (try global_reference str
+            with Not_found -> error ((string_of_id str)^" not declared")))
 	
     | (Rel _) as val_0 -> val_0
 	  
@@ -446,21 +412,23 @@ let extract_constr =
         let u1 = crec vl c1 in
         DOP2(Lambda,u1,DLAM(na,crec (add_rel (Anonymous,u1) vl) c2))
 	  
-    | DOPN(Fix (x_0,x_1),cl) ->
+    | DOPN(Term.Fix (x_0,x_1),cl) ->
         let listar = Array.sub cl 0 ((Array.length cl) -1) 
-        and def = last_vect cl in 
+        and def = array_last cl in 
         let newar = Array.map (crec vl) listar in
         let newenv =
-          it_vect (fun env ar -> add_rel (Anonymous,ar) env) vl newar in
+          Array.fold_left
+	    (fun env ar -> add_rel (Anonymous,ar) env) vl newar in
         let newdef = under_dlams (crec newenv) def in 
-        DOPN(Fix (x_0,x_1),Array.append newar [|newdef|])
+        DOPN(Term.Fix (x_0,x_1),Array.append newar [|newdef|])
 	  
     | DOPN(CoFix par,cl) ->
         let listar = Array.sub cl 0 ((Array.length cl) -1) 
-        and def = last_vect cl in 
+        and def = array_last cl in 
         let newar = Array.map (crec vl) listar in
         let newenv =
-          it_vect (fun env ar -> add_rel (Anonymous,ar) env) vl newar in
+          Array.fold_left (fun env ar -> add_rel (Anonymous,ar) env) vl newar 
+	in
         let newdef = under_dlams (crec newenv) def in 
         DOPN(CoFix par,Array.append newar [|newdef|])
 	  
@@ -472,7 +440,6 @@ let extract_constr =
     | DOPN(Abst _,_) as val_0 -> crec vl (abst_value val_0)
     | DOPN(oper,cl) -> DOPN(oper,Array.map (crec vl) cl)
     | DOPL(oper,cl) -> DOPL(oper,List.map (crec vl) cl)
-    | DOP0(Implicit) -> anomaly "found a term Implicit in a construction"
     | DOP0(Meta _) as c -> c
     | DOP0 _ as c -> c
     | _ -> anomaly "extract_constr : term not matched"
@@ -480,88 +447,87 @@ let extract_constr =
   crec 
 
 
-let prim_extractor subfun vl = function
-    
-  | {ref=Some(PRIM{name=INTRO;newids=[id]},[spf]);
-     goal={concl=cl}} ->
-      (match strip_outer_cast cl with
-	 | DOP2(Prod,ty,b) ->
-	     let cty = extract_constr vl ty in
-             let na = Name id in 
-	     DOP2(Lambda,cty,DLAM(na,subfun (add_rel (na,cty) vl) spf))
-	 | _ -> error "incomplete proof!")
-
-  | {ref=Some(PRIM{name=INTRO_AFTER;newids=[id]},[spf]);
-     goal={concl=cl}} ->
-      (match strip_outer_cast cl with
-	 | DOP2(Prod,ty,b) ->
-	     let cty = extract_constr vl ty in
-             let na = Name id in 
-	     DOP2(Lambda,cty,DLAM(na,subfun (add_rel (na,cty) vl) spf))
-	 | _ -> error "incomplete proof!")
-      
-  | {ref=Some(PRIM{name=INTRO_REPLACING;hypspecs=[id]},[spf]);
-     goal={concl=cl}} ->
-      (match strip_outer_cast cl with
-	 | DOP2(Prod,ty,b) ->
-	     let cty = extract_constr vl ty in
-             let na = Name id in 
-	     DOP2(Lambda,cty,DLAM(na,subfun (add_rel (na,cty) vl) spf))
-	 | _ -> error "incomplete proof!")
-
-  | {ref=Some(PRIM{name=FIX;newids=[f];params=[Num(_,n)]},[spf]);
-     goal={concl=cl}} ->
-      let cty = extract_constr vl cl in 
-      let na = Name f in 
-      DOPN(Fix([|n-1|],0),
-	   [| cty ; DLAMV(na,[|subfun (add_rel (na,cty) vl) spf|])|])
+let prim_extractor subfun vl pft =
+  let cl = pft.goal.goal_ev.evar_concl in
+  match pft with
+    | { ref = Some (Prim { name = Intro; newids = [id] }, [spf]) } ->
+	(match strip_outer_cast cl with
+	   | DOP2(Prod,ty,b) ->
+	       let cty = extract_constr vl ty in
+               let na = Name id in 
+	       DOP2(Lambda,cty,DLAM(na,subfun (add_rel (na,cty) vl) spf))
+	   | _ -> error "incomplete proof!")
 	
-  | {ref=Some(PRIM{name=FIX;newids=lf;terms=lar;params=ln},spfl);
-     goal={concl=cl}} ->
-      let lcty = List.map (extract_constr vl) (cl::lar) in 
-      let vn = Array.of_list (List.map (function Num(_,n) -> n-1
-					  | _ -> anomaly "mutual_fix_refiner")
-				ln) in 
-      let lna = List.map (fun f -> Name f) lf in
-      let newvl = List.fold_left2 (fun sign na ar -> (add_rel (na,ar) sign)) 
-                    vl lna lcty in 
-      let lfix =Array.map (subfun newvl) (Array.of_list spfl) in
-      DOPN(Fix(vn,0),Array.of_list (lcty@[put_DLAMSV (List.rev lna) lfix]))
+    | { ref = Some (Prim { name = Intro_after; newids = [id]}, [spf]) } -> 
+	(match strip_outer_cast cl with
+	   | DOP2(Prod,ty,b) ->
+	       let cty = extract_constr vl ty in
+               let na = Name id in 
+	       DOP2(Lambda,cty,DLAM(na,subfun (add_rel (na,cty) vl) spf))
+	   | _ -> error "incomplete proof!")
 	
-  | {ref=Some(PRIM{name=COFIX;newids=lf;terms=lar},spfl);
-     goal={concl=cl}} ->
-      let lcty = List.map (extract_constr vl) (cl::lar) in 
-      let lna  = List.map (fun f -> Name f) lf in
-      let newvl = List.fold_left2 (fun sign na ar -> (add_rel (na,ar) sign)) 
-                    vl lna lcty in 
-      let lfix =Array.map (subfun newvl) (Array.of_list spfl) in
-      DOPN(CoFix(0),Array.of_list (lcty@[put_DLAMSV (List.rev lna) lfix]))
+    | {ref=Some(Prim{name=Intro_replacing;hypspecs=[id]},[spf]) } ->
+	(match strip_outer_cast cl with
+	   | DOP2(Prod,ty,b) ->
+	       let cty = extract_constr vl ty in
+               let na = Name id in 
+	       DOP2(Lambda,cty,DLAM(na,subfun (add_rel (na,cty) vl) spf))
+	   | _ -> error "incomplete proof!")
 	
-  | {ref=Some(PRIM{name=REFINE;terms=[c]},spfl);
-     goal={concl=cl}} ->
-      let mvl = collect_meta_variables c in
-      let metamap = List.combine mvl (List.map (subfun vl) spfl) in
-      let cc = extract_constr vl c in 
-      plain_instance metamap cc
+    | {ref=Some(Prim{name=Fix;newids=[f];params=[Num(_,n)]},[spf]) } -> 
+	let cty = extract_constr vl cl in 
+	let na = Name f in 
+	DOPN(Term.Fix([|n-1|],0),
+	     [| cty ; DLAMV(na,[|subfun (add_rel (na,cty) vl) spf|])|])
+	  
+    | {ref=Some(Prim{name=Fix;newids=lf;terms=lar;params=ln},spfl) } ->
+	let lcty = List.map (extract_constr vl) (cl::lar) in 
+	let vn = 
+	  Array.of_list (List.map (function Num(_,n) -> n-1
+				     | _ -> anomaly "mutual_fix_refiner")
+			   ln) 
+	in 
+	let lna = List.map (fun f -> Name f) lf in
+	let newvl = List.fold_left2 (fun sign na ar -> (add_rel (na,ar) sign)) 
+                      vl lna lcty in 
+	let lfix =Array.map (subfun newvl) (Array.of_list spfl) in
+	DOPN(Term.Fix(vn,0),
+	     Array.of_list (lcty@[put_DLAMSV (List.rev lna) lfix]))
 	
-  | {ref=Some(PRIM{name=CONVERT_CONCL;terms=[c]},[pf])} ->
-      subfun vl pf
+    | {ref=Some(Prim{name=Cofix;newids=lf;terms=lar},spfl) } ->
+	let lcty = List.map (extract_constr vl) (cl::lar) in 
+	let lna  = List.map (fun f -> Name f) lf in
+	let newvl = 
+	  List.fold_left2 (fun sign na ar -> (add_rel (na,ar) sign)) 
+            vl lna lcty 
+	in 
+	let lfix =Array.map (subfun newvl) (Array.of_list spfl) in
+	DOPN(CoFix(0),Array.of_list (lcty@[put_DLAMSV (List.rev lna) lfix]))
+	  
+    | {ref=Some(Prim{name=Refine;terms=[c]},spfl) } ->
+	let mvl = collect_meta_variables c in
+	let metamap = List.combine mvl (List.map (subfun vl) spfl) in
+	let cc = extract_constr vl c in 
+	plain_instance metamap cc
+	  
+    | {ref=Some(Prim{name=Convert_concl;terms=[c]},[pf])} ->
+	subfun vl pf
 	
-  | {ref=Some(PRIM{name=CONVERT_HYP;hypspecs=[id];terms=[c]},[pf])} ->
-      subfun vl pf
+    | {ref=Some(Prim{name=Convert_hyp;hypspecs=[id];terms=[c]},[pf])} ->
+	subfun vl pf
 	
-  | {ref=Some(PRIM{name=THIN;hypspecs=ids},[pf])} ->
-      subfun vl pf
+    | {ref=Some(Prim{name=Thin;hypspecs=ids},[pf])} ->
+	subfun vl pf
 	
-  | {ref=Some(PRIM{name=MOVE _;hypspecs=ids},[pf])} ->
-      subfun vl pf
-	
-  | {ref=Some(PRIM _,_)} ->
-      error "prim_extractor handed unrecognizable primitive proof"
-	
-  | {ref=None} -> error "prim_extractor handed incomplete proof"
-
-  | _ -> anomaly "prim_extractor"
+    | {ref=Some(Prim{name=Move _;hypspecs=ids},[pf])} ->
+	subfun vl pf
+	  
+    | {ref=Some(Prim _,_)} ->
+	error "prim_extractor handed unrecognizable primitive proof"
+	  
+    | {ref=None} -> error "prim_extractor handed incomplete proof"
+	  
+    | _ -> anomaly "prim_extractor"
 	
 (***
 let prim_extractor = Profile.profile3 "prim_extractor" prim_extractor

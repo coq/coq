@@ -17,8 +17,8 @@ exception Redelimination
 exception Induc
 exception Elimconst
 
-type 'a reduction_function = unsafe_env -> constr -> constr
-type 'a stack_reduction_function = 
+type reduction_function = unsafe_env -> constr -> constr
+type stack_reduction_function = 
     unsafe_env -> constr -> constr list -> constr * constr list
 
 (*************************************)
@@ -739,7 +739,7 @@ let pb_equal = function
   | CONV_LEQ -> CONV
   | CONV -> CONV
 
-type 'a conversion_function = unsafe_env -> constr -> constr -> constraints
+type conversion_function = unsafe_env -> constr -> constr -> constraints
 
 (* Conversion utility functions *)
 
@@ -936,13 +936,40 @@ let is_conv env = test_conversion conv env
 let is_conv_leq env = test_conversion conv_leq env
 
 
+(********************************************************************)
+(*             Special-Purpose Reduction                            *)
+(********************************************************************)
+
+let whd_meta env = function
+  | DOP0(Meta p) as u -> (try List.assoc p (metamap env) with Not_found -> u)
+  | x -> x
+	
+(* Try to replace all metas. Does not replace metas in the metas' values
+ * Differs from (strong whd_meta). *)
+let plain_instance s c = 
+  let rec irec = function
+    | DOP0(Meta p) as u -> (try List.assoc p s with Not_found -> u)
+    | DOP1(oper,c)      -> DOP1(oper, irec c)
+    | DOP2(oper,c1,c2)  -> DOP2(oper, irec c1, irec c2)
+    | DOPN(oper,cl)     -> DOPN(oper, Array.map irec cl)
+    | DOPL(oper,cl)     -> DOPL(oper, List.map irec cl)
+    | DLAM(x,c)         -> DLAM(x, irec c)
+    | DLAMV(x,v)        -> DLAMV(x, Array.map irec v)
+    | u                 -> u
+  in 
+  if s = [] then c else irec c
+    
+(* Pourquoi ne fait-on pas nf_betaiota si s=[] ? *)
+let instance s env c = 
+  if s = [] then c else nf_betaiota env (plain_instance s c)
+
 
 (* pseudo-reduction rule:
  * [hnf_prod_app env s (Prod(_,B)) N --> B[N]
  * with an HNF on the first argument to produce a product.
  * if this does not work, then we use the string S as part of our
- * error message.
- *)
+ * error message. *)
+
 let hnf_prod_app env s t n =
   match whd_betadeltaiota env t with
     | DOP2(Prod,_,b) -> sAPP b n
@@ -1302,6 +1329,56 @@ let poly_args env t =
   match (strip_outer_cast (whd_betadeltaiota env t)) with 
     | DOP2(Prod,a,DLAM(_,b)) -> aux 1 b
     | _ -> []
+
+
+(* Expanding existential variables (trad.ml, progmach.ml) *)
+(* 1- whd_ise fails if an existential is undefined *)
+let rec whd_ise env = function
+  | DOPN(Evar sp,_) as k ->
+      let evm = evar_map env in
+      if Evd.in_dom evm sp then
+        if Evd.is_defined evm sp then
+          whd_ise env (constant_value env k)
+        else
+          errorlabstrm "whd_ise"
+            [< 'sTR"There is an unknown subterm I cannot solve" >]
+      else 
+	k
+  | DOP2(Cast,c,_) -> whd_ise env c
+  | DOP0(Sort(Type(_))) -> DOP0(Sort(Type(dummy_univ)))
+  | c -> c
+
+
+(* 2- undefined existentials are left unchanged *)
+let rec whd_ise1 env = function
+  | (DOPN(Evar sp,_) as k) ->
+      let evm = evar_map env in
+      if Evd.in_dom evm sp & Evd.is_defined evm sp then
+        whd_ise1 env (existential_value env k)
+      else 
+	k
+  | DOP2(Cast,c,_) -> whd_ise1 env c
+  | DOP0(Sort(Type _)) -> DOP0(Sort(Type dummy_univ))
+  | c -> c
+
+let nf_ise1 env = strong (whd_ise1 env) env
+
+(* Same as whd_ise1, but replaces the remaining ISEVAR by Metavariables
+ * Similarly we have is_fmachine1_metas and is_resolve1_metas *)
+
+let rec whd_ise1_metas env = function
+  | (DOPN(Evar n,_) as k) ->
+      let evm = evar_map env in
+      if Evd.in_dom evm n then
+	if Evd.is_defined evm n then
+      	  whd_ise1_metas env (existential_value env k)
+	else 
+      	  let m = DOP0(Meta (new_meta())) in
+	  DOP2(Cast,m,existential_type env k)
+      else
+	k
+  | DOP2(Cast,c,_) -> whd_ise1_metas env c
+  | c -> c
 
 
 (* Fonction spéciale qui laisse les cast clés sous les Fix ou les MutCase *)

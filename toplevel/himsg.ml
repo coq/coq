@@ -213,4 +213,23 @@ let explain_type_error k ctx = function
   | IllTypedRecBody (i, lna, vdefj, vargs) ->
       explain_ill_typed_rec_body k ctx i lna vdefj vargs
 
+let explain_refiner_bad_type k ctx arg ty conclty =
+  errorlabstrm "Logic.conv_leq_goal"
+    [< 'sTR"refiner was given an argument"; 'bRK(1,1); 
+       P.pr_term k ctx arg; 'sPC;
+       'sTR"of type"; 'bRK(1,1); P.pr_term k ctx ty; 'sPC;
+       'sTR"instead of"; 'bRK(1,1); P.pr_term k ctx conclty >]
+
+let explain_refiner_occur_meta k ctx t =
+  errorlabstrm "Logic.mk_refgoals"
+    [< 'sTR"cannot refine with term"; 'bRK(1,1); P.pr_term k ctx t;
+       'sPC; 'sTR"because there are metavariables, and it is";
+       'sPC; 'sTR"neither an application nor a Case" >]
+
+let explain_refiner_cannot_applt k ctx t harg =
+  errorlabstrm "Logic.mkARGGOALS"
+    [< 'sTR"in refiner, a term of type "; 'bRK(1,1);
+       P.pr_term k ctx t; 'sPC; 'sTR"could not be applied to"; 'bRK(1,1);
+       P.pr_term k ctx harg >]
+
 end

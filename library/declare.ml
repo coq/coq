@@ -3,6 +3,9 @@
 
 open Util
 open Names
+open Generic
+open Term
+open Sign
 open Constant
 open Inductive
 open Libobject
@@ -125,4 +128,43 @@ let declare_mind mie =
   Global.add_mind sp mie;
   push_inductive_names sp mie;
   declare_inductive_implicits sp
+
+
+(* Global references. *)
+
+let first f v =
+  let n = Array.length v in
+  let rec look_for i =
+    if i = n then raise Not_found;
+    try f i v.(i) with Not_found -> look_for (succ i)
+  in
+  look_for 0
+
+let mind_oper_of_id sp id mib =
+  first 
+    (fun tyi mip ->
+       if id = mip.mind_typename then 
+	 MutInd (sp,tyi)
+       else
+	 first 
+	   (fun cj cid -> 
+	      if id = cid then 
+		MutConstruct((sp,tyi),succ cj) 
+	      else raise Not_found) 
+	   mip.mind_consnames)
+    mib.mind_packets
+
+let global_operator sp id =
+  try
+    let _ = Global.lookup_constant sp in Const sp
+  with Not_found -> 
+    let mib = Global.lookup_mind sp in
+    mind_oper_of_id sp id mib
+
+let global_reference id =
+  let sp = Nametab.sp_of_id CCI id in
+  let oper = global_operator sp id in
+  let hyps = get_globals (Global.context ()) in
+  let ids =  ids_of_sign hyps in
+  DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids))
 

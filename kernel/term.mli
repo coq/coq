@@ -272,6 +272,9 @@ val destConst : constr -> section_path * constr array
 val path_of_const : constr -> section_path
 val args_of_const : constr -> constr array
 
+(* Destructs an existential variable *)
+val destEvar : constr -> int * constr array
+
 (* Destrucy an abstract term *)
 val destAbst : constr -> section_path * constr array
 val path_of_abst : constr -> section_path

@@ -353,7 +353,7 @@ let hd_app  = function
 
 (* Destructs a constant *)
 let destConst = function
-  | DOPN (Const  sp, a) -> (sp, a)
+  | DOPN (Const sp, a) -> (sp, a)
   | _ -> invalid_arg "destConst"
 
 let path_of_const = function
@@ -363,6 +363,11 @@ let path_of_const = function
 let args_of_const = function
   | DOPN (Const _,args) -> args
   | _ -> anomaly "args_of_const called with bad args"
+
+(* Destructs an existential variable *)
+let destEvar = function
+  | DOPN (Evar n, a) -> (n,a)
+  | _ -> invalid_arg "destEvar"
 
 (* Destructs an abstract term *)
 let destAbst = function

@@ -23,3 +23,11 @@ val declare_constant : identifier -> constant_entry -> unit
 
 val declare_mind : mutual_inductive_entry -> unit
 
+
+(*s It also provides a function [global_reference] to construct a global
+  constr (a constant, an inductive or a constructor) from an identifier.
+  To do so, it first looks for the section path using [Nametab.sp_of_id] and
+  then constructs the corresponding term, associated to the current 
+  environment of variables. *)
+
+val global_reference : identifier -> constr

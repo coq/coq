@@ -7,6 +7,7 @@ open Names
 open Generic
 open Term
 open Sign
+open Evd
 open Constant
 open Inductive
 open Environ
@@ -47,7 +48,7 @@ let constant_value env k =
 	    (ids_of_sign cb.const_hyps) body (Array.to_list args)
       | None -> 
 	  anomalylabstrm "termenv__constant_value"
-	    [< 'sTR "a defined constant as no body." >]
+	    [< 'sTR "a defined constant with no body." >]
   else 
     failwith "opaque"
 
@@ -63,3 +64,22 @@ let mis_lc env mis =
   instantiate_constr (ids_of_sign mis.mis_mib.mind_hyps) mis.mis_mip.mind_lc
     (Array.to_list mis.mis_args)
 
+(* Existentials. *)
+
+let name_of_existential n = id_of_string ("?" ^ string_of_int n)
+
+let existential_type env c =
+  let (n,args) = destEvar c in
+  let info = Evd.map (evar_map env) n in
+  let hyps = info.evar_hyps in
+  instantiate_constr (ids_of_sign hyps) info.evar_concl (Array.to_list args)
+
+let existential_value env c =
+  let (n,args) = destEvar c in
+  let info = Evd.map (evar_map env) n in
+  let hyps = info.evar_hyps in
+  match info.evar_body with
+    | Evar_defined c -> 
+	instantiate_constr (ids_of_sign hyps) c (Array.to_list args)
+    | Evar_empty ->
+	anomaly "a defined existential with no body"
