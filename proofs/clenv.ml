@@ -175,6 +175,7 @@ let unify_0 cv_pb mc wc m n =
 	      error_cannot_unify (m,n)
 
 	| LetIn (_,b,_,c), _ -> unirec_rec pb substn (subst1 b c) cN
+	| _, LetIn (_,b,_,c) -> unirec_rec pb substn cM (subst1 b c)
 		
 	| _ -> error_cannot_unify (m,n)
 	      
