@@ -274,7 +274,7 @@ CAMLBIN=`dirname "$CAMLC"`
 CAMLVERSION=`"$CAMLC" -v | sed -n -e 's|.*version* *\(.*\)$|\1|p' `
 
 case $CAMLVERSION in
-  1.*|2.*|3.01|3.02|3.03|3.03alpha|3.04|3.05beta|3.05)
+  1.*|2.*|3.00|3.01|3.02|3.03|3.03alpha|3.04|3.05beta|3.05)
 	echo "Your version of Objective-Caml is $CAMLVERSION."
 	echo "You need Objective-Caml 3.06 or later !"
 	echo "Configuration script failed!"
