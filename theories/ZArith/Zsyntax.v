@@ -162,6 +162,7 @@ Syntax constr
 
  level 3:
     var_inside [ << (ZEXPR ($VAR $i)) >> ] -> [$i]
+  | secvar_inside [ << (ZEXPR (SECVAR $i)) >> ] -> [(SECVAR $i)]
   | const_inside [ << (ZEXPR (CONST $c)) >> ] -> [(CONST $c)]
   | mutind_inside [ << (ZEXPR (MUTIND $i $n)) >> ] 
       -> [(MUTIND $i $n)]

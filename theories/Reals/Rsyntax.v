@@ -147,6 +147,7 @@ Syntax constr
 
  level 3:
     rvar_inside [<<(REXPR ($VAR $i))>>] -> [$i]
+  | rsecvar_inside [<<(REXPR (SECVAR $i))>>] -> [(SECVAR $i)]
   | rconst_inside [<<(REXPR (CONST $c))>>] -> [(CONST $c)]
   | rmutind_inside [<<(REXPR (MUTIND $i $n))>>] 
       -> [(MUTIND $i $n)]
