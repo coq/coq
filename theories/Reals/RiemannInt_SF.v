@@ -920,7 +920,7 @@ Pose g' := [x:R]Cases (total_order_Rle r1 x) of
 Assert H7 : ``r1<=b``.
 Rewrite <- H4; Apply RList_P7; [Assumption | Left; Reflexivity].
 Assert H8 : (IsStepFun g' a b).
-Unfold IsStepFun; Assert H8 := (pre g); Unfold IsStepFun in H8; Elim H8; Intros lg H9; Unfold is_subdivision in H9; Elim H9; Clear H9 H10; Intros lg2 H9; Split with (cons a lg); Unfold is_subdivision; Split with (cons (f a) lg2); Unfold adapted_couple in H9; Decompose [and] H9; Clear H9; Unfold adapted_couple; Repeat Split.
+Unfold IsStepFun; Assert H8 := (pre g); Unfold IsStepFun in H8; Elim H8; Intros lg H9; Unfold is_subdivision in H9; Elim H9; Clear H9; Intros lg2 H9; Split with (cons a lg); Unfold is_subdivision; Split with (cons (f a) lg2); Unfold adapted_couple in H9; Decompose [and] H9; Clear H9; Unfold adapted_couple; Repeat Split.
 Unfold ordered_Rlist; Intros; Simpl in H9; Induction i.
 Simpl; Rewrite H12; Replace (Rmin r1 b) with r1.
 Simpl in H0; Rewrite <- H0; Apply (H O); Simpl; Apply lt_O_Sn.

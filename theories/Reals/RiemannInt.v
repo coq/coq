@@ -347,7 +347,7 @@ Rewrite S_INR; Ring.
 Assumption.
 Apply le_lt_n_Sm; Assumption.
 Apply Rge_minus; Apply Rle_sym1; Assumption.
-Intros; Clear H0 eos H1 H4 phi H5 H6 t H7; Case (Req_EM t0 b); Intro.
+Intros; Clear H0 H1 H4 phi H5 H6 t H7; Case (Req_EM t0 b); Intro.
 Left; Assumption.
 Right; Pose I := [j:nat]``a+(INR j)*del<=t0``; Assert H1 : (EX n:nat | (I n)).
 Exists O; Unfold I; Rewrite Rmult_Ol; Rewrite Rplus_Or; Elim H8; Intros; Assumption.
