@@ -673,7 +673,7 @@ let _ =
            let dot = if fn.[0]='/' then "." else "" in
            command ("mv "^dir^"/"^dot^"*.html "^fn^".xml ");
            command ("rm "^fn^".v");
-           print_string("\nWriting on file \"" ^ fn ^ ".xml\" was succesful\n"))
+           print_string("\nWriting on file \"" ^ fn ^ ".xml\" was successful\n"))
        ofn)
 ;;
 
