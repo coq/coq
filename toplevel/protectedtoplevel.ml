@@ -82,56 +82,56 @@ let rec parse_one_command_group input_channel =
     if !start_marker_buffer = !start_marker then
       let req_id_line = input_line input_channel in
       	begin 
-	  try
+	  (try
             global_request_id := int_of_string req_id_line
 	  with
             | e -> failwith ("could not parse the request identifier |"^
-                             req_id_line ^ "|") ;
-	      	let count_line = input_line input_channel in
-	      	  begin
-		    try
-		      count := int_of_string count_line
-		    with
-		      | e -> failwith("could not parse the count|" ^ count_line
-				      ^ "|");
-			  let stream_tail =
-			    Stream.from
-			      (line_oriented_channel_to_option
-				 !end_marker input_channel) in
-			    begin
-			      check_break();
-			      rearm_break();
-			      let rec execute_n_commands rank =
-				if rank = !count then
-				  None
-				else
-				  let first_cmd_status =
-                      		    try 
-				      raw_do_vernac
-					(Pcoq.Gram.parsable stream_tail);
-				      None
-				    with e -> Some(rank,e) in
-				    match first_cmd_status with
-					None ->
-					  execute_n_commands (rank + 1)
-				      | v -> v in
-			      let r = execute_n_commands 0 in
-				(match r with
-				     None ->
-				       output_results_nl 
-					 (acknowledge_command
-					    !global_request_id !count None)
-				   | Some(rank, e) ->
-				       (match e with 
-                    			    DuringCommandInterp(a,e1) ->
-					      output_results_nl
-						(acknowledge_command
-						   !global_request_id rank (Some e1))
-		      | e -> raise e));
-          rearm_break();
-	  flush_until_end_of_stream stream_tail
-			    end
-		  end
+                             req_id_line ^ "|")) ;
+	  let count_line = input_line input_channel in
+	    begin
+	      (try
+		count := int_of_string count_line
+	      with
+		| e -> failwith("could not parse the count|" ^ count_line
+				^ "|"));
+	      let stream_tail =
+	      	Stream.from
+		  (line_oriented_channel_to_option
+		     !end_marker input_channel) in
+	      	begin
+		  check_break();
+		  rearm_break();
+		  let rec execute_n_commands rank =
+		    if rank = !count then
+		      None
+		    else
+		      let first_cmd_status =
+                      	try 
+			  raw_do_vernac
+			    (Pcoq.Gram.parsable stream_tail);
+		      	None
+		      	with e -> Some(rank,e) in
+		      	match first_cmd_status with
+			    None ->
+			      execute_n_commands (rank + 1)
+			  | v -> v in
+		  let r = execute_n_commands 0 in
+		    (match r with
+			 None ->
+			   output_results_nl 
+			     (acknowledge_command
+			      	!global_request_id !count None)
+		       | Some(rank, e) ->
+			   (match e with 
+                    	      	DuringCommandInterp(a,e1) ->
+				  output_results_nl
+				    (acknowledge_command
+				       !global_request_id rank (Some e1))
+			      | e -> raise e));
+		    rearm_break();
+		    flush_until_end_of_stream stream_tail
+	      	end
+	    end
 	end
     else
       parse_one_command_group input_channel
