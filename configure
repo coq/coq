@@ -81,7 +81,6 @@ while : ; do
                   arch=$2
 		  shift;;
     -opt|--opt) bytecamlc=ocamlc.opt
-                camlp4o=camlp4o.opt
                 nativecamlc=ocamlopt.opt;;
     -byte-only|-byteonly|--byteonly|--byte-only) best_compiler=byte;;
     -debug|--debug) coq_debug_flag=-g;;
