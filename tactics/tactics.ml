@@ -1871,6 +1871,11 @@ let intros_transitivity  n  = tclTHEN intros (transitivity n)
    the current goal, abstracted with respect to the local signature, 
    is solved by tac *)
 
+let interpretable_as_section_decl d1 d2 = match d1,d2 with
+  | (_,Some _,_), (_,None,_) -> false
+  | (_,Some b1,t1), (_,Some b2,t2) -> eq_constr b1 b2 & eq_constr t1 t2
+  | (_,None,t1), (_,_,t2) -> eq_constr t1 t2
+
 let abstract_subproof name tac gls = 
   let env = Global.env() in
   let current_sign = Global.named_context()
@@ -1878,7 +1883,9 @@ let abstract_subproof name tac gls =
   let sign,secsign = 
     List.fold_right
       (fun (id,_,_ as d) (s1,s2) -> 
-	 if mem_named_context id current_sign then (s1,add_named_decl d s2)
+	 if mem_named_context id current_sign &
+           interpretable_as_section_decl (Sign.lookup_named id current_sign) d
+         then (s1,add_named_decl d s2)
 	 else (add_named_decl d s1,s2)) 
       global_sign (empty_named_context,empty_named_context) in
   let na = next_global_ident_away false name (pf_ids_of_hyps gls) in
