@@ -25,6 +25,9 @@ Syntax constr
          (BINDERS ($LIST $b))  ]
   | bindersone  [(BINDERS (BINDER $c ($LIST $id)))] -> 
        [ [<hov 0> (IDBINDER ($LIST $id))] ":" $c:E ]
+
+  | letbinder  [(BINDERS (LETBINDER $c $id))] -> 
+       [ [<hov 0> $id ":=" $c:E ] ]
   ;
 
 
@@ -54,10 +57,10 @@ Syntax constr
   level 1:
     soap [(SOAPP $lc1 ($LIST $cl))]
       -> [ [<hov 0> "(" $lc1 ")@[" (NECOMMANDLIST ($LIST $cl)) "]"] ]
-  | let_K [(ABST #Core#let.cci $M [<>]$N)]
-      -> [ [<hov 0> "[_=" $M "]" [0 1] $N:E ] ]
 
+(* These are synonymous *)
   | let [<<[$x = $M]$N>>] -> [ [<hov 0> "[" $x "=" $M:E "]" [0 1] $N:E ] ]
+  | letin [<<[$x := $A]$B>>] -> [ [ <hov 0> "[" $x ":=" $A:E "]" [0 1] $B:E ] ]
 
   (* For debug *)
   | abstpatnamed [[$id1]$c] -> [ [<hov 0> "<<" $id1 ">>" [0 1] $c:E ] ]
@@ -128,8 +131,6 @@ Syntax constr
       -> [(LAMLBOX $pbi $c (IDS ($LIST $ids) _) $body)]
   | lambdal_cons [(LAMLBOX $pbi $c (IDS ($LIST $ids)) [$id]$body)]
       -> [(LAMLBOX $pbi $c (IDS ($LIST $ids) $id) $body)]
-
-  | letin [<<[$x = $A] $B>>] -> [ [ <hov 0> "[" $x ":=" $A "]" [0 1] $B:E ] ]
 
   | pi [<<($x : $A)$B>>] -> [(PRODBOX (BINDERS) <<($x : $A)$B>>)]
   | prodlist  [(PRODLIST $c $b)]
