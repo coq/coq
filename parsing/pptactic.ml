@@ -499,7 +499,7 @@ and pr1 = function
   | TacAtom (_,t) -> pr_atom1 t
   | TacFail (0,s) -> str "Fail \"" ++ str s ++ str "\""
   | TacFail (n,"") -> str "Fail " ++ int n
-  | TacFail (n,s) -> str "Fail " ++ int n ++ str "\"" ++ str s ++ str "\""
+  | TacFail (n,s) -> str "Fail " ++ int n ++ str " \"" ++ str s ++ str "\""
   | t -> pr0 t
 
   (* Orelse tactic expressions (printed as if parsed associating on the right
