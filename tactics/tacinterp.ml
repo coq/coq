@@ -2056,7 +2056,9 @@ let _ = Auto.set_extern_interp
     let l = List.map (fun (id,c) -> (id,VConstr c)) l in
     interp_tactic {lfun=l;debug=get_debug()})
 let _ = Auto.set_extern_intern_tac 
-  (fun l -> intern_tactic {(make_empty_glob_sign()) with ltacvars=(l,[])})
+  (fun l ->
+    Options.with_option strict_check
+    (intern_tactic {(make_empty_glob_sign()) with ltacvars=(l,[])}))
 let _ = Auto.set_extern_subst_tactic subst_tactic
 let _ = Dhyp.set_extern_interp eval_tactic
 let _ = Dhyp.set_extern_intern_tac
