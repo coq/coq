@@ -1091,7 +1091,11 @@ and coerce_genarg_to_TARG x =
   | TacticArgType ->
       let t = xlate_tactic (out_gen rawwit_tactic x) in
       CT_coerce_TACTIC_COM_to_TARG t
-  | CastedOpenConstrArgType -> xlate_error "TODO: open constr"
+  | CastedOpenConstrArgType -> 
+      CT_coerce_SCOMMENT_CONTENT_to_TARG
+      	(CT_coerce_FORMULA_to_SCOMMENT_CONTENT(xlate_formula
+						 (out_gen
+						    rawwit_casted_open_constr x)))
   | ConstrWithBindingsArgType -> xlate_error "TODO: constr with bindings"
   | RedExprArgType -> xlate_error "TODO: red expr as generic argument"
   | List0ArgType l -> xlate_error "TODO: lists of generic arguments"
