@@ -972,7 +972,7 @@ let case_dependent env sigma loc predj tomatchs =
   in
   let etapred = eta_expand env sigma predj.uj_val (body_of_type predj.uj_type) in
   let n = nb_lam etapred in
-  let _,sort = decomp_prod env sigma (body_of_type predj.uj_type) in
+  let _,sort = splay_prod env sigma (body_of_type predj.uj_type) in
   let ndepv = List.map nb_dep_ity tomatchs in
   let sum = List.fold_right (fun i j -> i+j)  ndepv 0 in
   let depsum = sum + List.length tomatchs in
