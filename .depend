@@ -2967,18 +2967,20 @@ contrib/interface/vtp.cmx: contrib/interface/ascent.cmi \
     contrib/interface/vtp.cmi 
 contrib/interface/xlate.cmo: contrib/interface/ascent.cmi parsing/ast.cmi \
     lib/bignat.cmi library/decl_kinds.cmo tactics/eauto.cmi \
-    parsing/extend.cmi tactics/extraargs.cmi interp/genarg.cmi \
-    library/goptions.cmi library/libnames.cmi kernel/names.cmi \
-    lib/options.cmi parsing/ppconstr.cmi pretyping/rawterm.cmi \
-    proofs/tacexpr.cmo kernel/term.cmi interp/topconstr.cmi lib/util.cmi \
-    toplevel/vernacexpr.cmo contrib/interface/xlate.cmi 
+    parsing/extend.cmi tactics/extraargs.cmi contrib/field/field.cmo \
+    interp/genarg.cmi library/goptions.cmi library/libnames.cmi \
+    kernel/names.cmi lib/options.cmi parsing/ppconstr.cmi \
+    pretyping/rawterm.cmi proofs/tacexpr.cmo kernel/term.cmi \
+    interp/topconstr.cmi lib/util.cmi toplevel/vernacexpr.cmo \
+    contrib/interface/xlate.cmi 
 contrib/interface/xlate.cmx: contrib/interface/ascent.cmi parsing/ast.cmx \
     lib/bignat.cmx library/decl_kinds.cmx tactics/eauto.cmx \
-    parsing/extend.cmx tactics/extraargs.cmx interp/genarg.cmx \
-    library/goptions.cmx library/libnames.cmx kernel/names.cmx \
-    lib/options.cmx parsing/ppconstr.cmx pretyping/rawterm.cmx \
-    proofs/tacexpr.cmx kernel/term.cmx interp/topconstr.cmx lib/util.cmx \
-    toplevel/vernacexpr.cmx contrib/interface/xlate.cmi 
+    parsing/extend.cmx tactics/extraargs.cmx contrib/field/field.cmx \
+    interp/genarg.cmx library/goptions.cmx library/libnames.cmx \
+    kernel/names.cmx lib/options.cmx parsing/ppconstr.cmx \
+    pretyping/rawterm.cmx proofs/tacexpr.cmx kernel/term.cmx \
+    interp/topconstr.cmx lib/util.cmx toplevel/vernacexpr.cmx \
+    contrib/interface/xlate.cmi 
 contrib/jprover/jall.cmo: contrib/jprover/jlogic.cmi \
     contrib/jprover/jterm.cmi contrib/jprover/jtunify.cmi \
     contrib/jprover/opname.cmi lib/pp.cmi contrib/jprover/jall.cmi 
