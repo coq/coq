@@ -33,7 +33,6 @@ let tjudge_of_judge env j =
     typ = match whd_betadeltaiota env j.uj_type with
       (* Nécessaire pour ZFC *)
       | DOP0 (Sort s) -> s
-      | DOP0 Implicit -> anomaly "Tiens, un implicit"
       | _ -> anomaly "Not a type (tjudge_ofjudge)" }
 
 let vect_lift = Array.mapi lift
@@ -255,6 +254,8 @@ let safe_machine_v env cv =
 (*s Safe environments. *)
 
 type 'a environment = 'a unsafe_env
+
+let empty_environment = empty_env
 
 let evar_map = evar_map
 let universes = universes

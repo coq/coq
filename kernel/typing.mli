@@ -18,6 +18,8 @@ open Typeops
 
 type 'a environment
 
+val empty_environment : 'a environment
+
 val evar_map : 'a environment -> 'a evar_map
 val universes : 'a environment -> universes
 val metamap : 'a environment -> (int * constr) list

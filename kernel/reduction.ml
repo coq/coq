@@ -519,6 +519,9 @@ let contract_cofix = function
       sAPPViList bodynum (array_last bodyvect) (list_tabulate make_Fi nbodies)
   | _ -> assert false
 
+let mind_nparams env i =
+  let mis = lookup_mind_specif i env in mis.mis_mib.mind_nparams
+
 let reduce_mind_case env mia =
   match mia.mconstr with 
     | DOPN(MutConstruct((indsp,tyindx),i),_) ->
@@ -826,9 +829,6 @@ and eqappr cv_pb infos appr1 appr2 =
     | (FOP0(Meta(n)), FOP0(Meta(m))) ->
         bool_and_convert (n=m) 
 	  (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
-
-    | (FOP0 Implicit, FOP0 Implicit) ->
-        convert_of_bool (Array.length v1 = 0 & Array.length v2 = 0)
 
     (* 2 constants or 2 abstractions *)
     | (FOPN(Const sp1,al1), FOPN(Const sp2,al2)) ->

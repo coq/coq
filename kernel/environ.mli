@@ -18,6 +18,8 @@ open Sign
 
 type 'a unsafe_env
 
+val empty_env : 'a unsafe_env
+
 val evar_map : 'a unsafe_env -> 'a evar_map
 val universes : 'a unsafe_env -> universes
 val metamap : 'a unsafe_env -> (int * constr) list
@@ -54,8 +56,6 @@ val translucent_const : 'a unsafe_env -> constr -> bool
 val evaluable_const : 'a unsafe_env -> constr -> bool
 
 val is_existential : constr -> bool
-
-val mind_nparams : 'a unsafe_env -> constr -> int
 
 (*s Unsafe judgments. We introduce here the pre-type of judgments, which is
   actually only a datatype to store a term with its type and the type of its

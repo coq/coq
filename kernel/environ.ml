@@ -26,6 +26,16 @@ type 'a unsafe_env = {
   env_metamap : (int * constr) list;
   env_universes : universes }
 
+let empty_env = { 
+  env_context = ENVIRON (([],[]),[]);
+  env_globals = {
+    env_constants = Spmap.empty;
+    env_inductives = Spmap.empty;
+    env_abstractions = Spmap.empty };
+  env_sigma = mt_evd;
+  env_metamap = [];
+  env_universes = initial_universes }
+
 let universes env = env.env_universes
 let metamap env = env.env_metamap
 let evar_map env = env.env_sigma
@@ -79,9 +89,6 @@ let lookup_mind_specif i env =
 	  mis_mip = mind_nth_type_packet mib tyi }
     | _ -> invalid_arg "lookup_mind_specif"
 
-let mind_nparams env i =
-  let mis = lookup_mind_specif i env in mis.mis_mib.mind_nparams
-
 let lookup_meta n env =
   List.assoc n env.env_metamap
 
@@ -94,7 +101,8 @@ let lowercase_first_char id = String.lowercase (first_char id)
 
 (* id_of_global gives the name of the given sort oper *)
 let id_of_global env = function
-  | Const sp -> basename sp
+  | Const sp -> 
+      basename sp
   | MutInd (sp,tyi) -> 
       (* Does not work with extracted inductive types when the first 
 	 inductive is logic : if tyi=0 then basename sp else *)
@@ -104,11 +112,10 @@ let id_of_global env = function
   | MutConstruct ((sp,tyi),i) ->
       let mib = lookup_mind sp env in
       let mip = mind_nth_type_packet mib tyi in
-      if i <= Array.length mip.mind_consnames & i > 0 then
-        mip.mind_consnames.(i-1)
-      else 
-	failwith "id_of_global"
-  | _ -> assert false
+      assert (i <= Array.length mip.mind_consnames && i > 0);
+      mip.mind_consnames.(i-1)
+  | _ -> 
+      assert false
 
 let hdchar env c = 
   let rec hdrec = function

@@ -349,7 +349,6 @@ let type_of_sort c g =
   match c with
     | DOP0 (Sort (Type u)) -> let (uu,g') = super u g in mkType uu, g'
     | DOP0 (Sort (Prop _)) -> mkType prop_univ, g
-    | DOP0 (Implicit) -> mkImplicit, g
     | _ -> invalid_arg "type_of_sort"
 
 (* Type of a lambda-abstraction. *)
@@ -742,6 +741,9 @@ let check_fix env = function
   | _ -> assert false
 
 (* Co-fixpoints. *)
+
+let mind_nparams env i =
+  let mis = lookup_mind_specif i env in mis.mis_mib.mind_nparams
 
 let check_guard_rec_meta env nbfix def deftype = 
   let rec codomain_is_coind c  =

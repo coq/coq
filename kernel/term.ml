@@ -15,7 +15,6 @@ type 'a oper =
   (* DOP0 *)
   | Meta of int
   | Sort of 'a
-  | Implicit
   (* DOP2 *)
   | Cast | Prod | Lambda
   (* DOPN *)
@@ -472,7 +471,6 @@ type kindOfTerm =
   | IsVar            of identifier
   | IsXtra           of string
   | IsSort           of sorts
-  | IsImplicit       
   | IsCast           of constr*constr
   | IsProd           of name*constr*constr
   | IsLambda         of name*constr*constr
@@ -501,7 +499,6 @@ let kind_of_term c =
     | DOP0 (Meta n)                        -> IsMeta  n
     | DOP0 (Sort s)                        -> IsSort  s
     | DOP0 (XTRA s)                        -> IsXtra s
-    | DOP0 Implicit                        -> IsImplicit
     | DOP2 (Cast, t1, t2)                  -> IsCast   (t1,t2)
     | DOP2 (Prod, t1, (DLAM (x,t2)))       -> IsProd (x,t1,t2) 
     | DOP2 (Lambda, t1, (DLAM (x,t2)))     -> IsLambda (x,t1,t2)
@@ -1075,34 +1072,11 @@ let prefix_application_eta k (c:constr) (t:constr) =
 	  None
   | (_,_) -> None
 
-(* Used in trad and progmach *)
-let rec rename_rels curidx sofar = function
-  | [] -> sofar
-  | ((id,Rel n)::tl as l) ->
-      if curidx = n then
-	rename_rels (curidx+1) (subst1 (VAR id) sofar) tl
-      else 
-	rename_rels (curidx+1) (subst1 (DOP0 Implicit) sofar) l
-  | _ -> assert false
-
 let sort_increasing_snd = 
   Sort.list 
     (fun x y -> match x,y with 
 	 (_,Rel m),(_,Rel n) -> m < n
        | _ -> assert false)
-
-let clean_rhs rhs worklist =
-  let workvars = List.filter (compose isVAR snd) worklist in
-  let rhs' =
-    replace_vars
-      (List.map (fun (id',v) -> let id = destVar v in 
-		 (id,{sinfo=Closed; sit=VAR id'})) 
-	 workvars)
-      rhs 
-  in
-  let workrels = List.filter (compose isRel snd) worklist in
-  let workrels' = sort_increasing_snd workrels in
-  rename_rels 1 rhs' workrels'
 
 (* Recognizing occurrences of a given subterm in a term for Pattern :
    (subst_term c t) substitutes (Rel 1) for all occurrences of term c 

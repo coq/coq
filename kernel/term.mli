@@ -13,7 +13,6 @@ type 'a oper =
   (* DOP0 *)
   | Meta of int
   | Sort of 'a
-  | Implicit
   (* DOP2 *)
   | Cast | Prod | Lambda
   (* DOPN *)
@@ -77,7 +76,6 @@ type kindOfTerm =
   | IsVar          of identifier
   | IsXtra         of string
   | IsSort         of sorts
-  | IsImplicit
   | IsCast         of constr * constr
   | IsProd         of name * constr * constr
   | IsLambda       of name * constr * constr
@@ -495,8 +493,6 @@ val rename_bound_var : identifier list -> constr -> constr
 val eta_reduce_head : constr -> constr
 val eq_constr : constr -> constr -> bool
 val eta_eq_constr : constr -> constr -> bool
-val rename_rels : int -> constr -> (identifier * constr) list -> constr
-val clean_rhs : constr -> (identifier * constr) list -> constr
 val subst_term : constr -> constr -> constr
 val subst_term_eta_eq : constr -> constr -> constr
 val replace_consts :

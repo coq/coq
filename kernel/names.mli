@@ -40,7 +40,6 @@ type path_kind = CCI | FW | OBJ
 val string_of_kind : path_kind -> string
 val kind_of_string : string -> path_kind
 
-
 type section_path
 
 val make_path : string list -> identifier -> path_kind -> section_path
