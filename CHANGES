@@ -161,6 +161,7 @@ Library
 Tactic language
 
 - Fail tactic now accepts a failure message
+- Idtac tactic now accepts a message
 - New primitive tactic "FreshId" (new syntax: "Fresh") to generate new names
 - Debugger prints levels of calls
 
