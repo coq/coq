@@ -49,12 +49,13 @@ object(self)
     try begin
       let r = 
 	match Stack.pop history with
-	  | Insert(s,p,l) as act -> let start = self#buffer#get_iter_at_char p in
-	    (self#buffer#delete_interactive 
-	       ~start
-	       ~stop:(start#forward_chars l)
-	       ()) or
-	    (Stack.push act history; false)
+	  | Insert(s,p,l) as act -> 
+	      let start = self#buffer#get_iter_at_char p in
+	      (self#buffer#delete_interactive 
+		 ~start
+		 ~stop:(start#forward_chars l)
+		 ()) or
+	      (Stack.push act history; false)
 	  | Delete(s,p,l) as act -> 
 	      let iter = self#buffer#get_iter_at_char p in
 	      (self#buffer#insert_interactive ~iter s) or
@@ -76,7 +77,8 @@ object(self)
 
   method redo = prerr_endline "REDO"; true
   initializer
-    ignore (self#buffer#connect#mark_set
+(* INCORRECT: is called even while undoing...
+   ignore (self#buffer#connect#mark_set
 	      ~callback:
 	      (fun it tm -> if !undo_lock && not (Queue.is_empty redo) then begin
 		 Stack.iter (fun e -> Stack.push (neg e) history) nredo;
@@ -85,18 +87,26 @@ object(self)
 		 Queue.clear redo;
 	       end)
 	   );
+*)
     ignore (self#buffer#connect#insert_text 
 	      ~callback:
 	      (fun it s ->
+		 if !undo_lock && not (Queue.is_empty redo) then begin
+		   Stack.iter (fun e -> Stack.push (neg e) history) nredo;
+		   Stack.clear nredo;
+		   Queue.iter (fun e -> Stack.push e history) redo;
+		   Queue.clear redo;
+		 end;
 		 let pos = it#offset in
-		 if Stack.is_empty history or 
+(*		 if Stack.is_empty history or 
 		   s=" " or s="\t" or s="\n" or
 					(match Stack.top history with 
 					   | Insert(old,opos,olen) -> 
 					       opos + olen <> pos
 					   | _ -> true)
-		 then Stack.push (Insert(s,it#offset,Glib.Utf8.length s)) history
-		 else begin
+		 then *)
+		 Stack.push (Insert(s,it#offset,Glib.Utf8.length s)) history
+		 (*else begin
 		   match Stack.pop history with
 		     | Insert(olds,offset,len) -> 
 			 Stack.push 
@@ -105,7 +115,7 @@ object(self)
 				 len+(Glib.Utf8.length s)))
 			 history
 		     | _ -> assert false
-		 end;
+		   end*);
 		 self#dump_debug
 	      ));
     ignore (self#buffer#connect#delete_range
@@ -118,19 +128,19 @@ object(self)
 		 let start_offset = start#offset in
 		 let stop_offset = stop#offset in
 		 let s = self#buffer#get_text ~start ~stop () in
-		 if Stack.is_empty history or (match Stack.top history with
+(*		 if Stack.is_empty history or (match Stack.top history with
 						 | Delete(old,opos,olen) -> 
 						     olen=1 or opos <> start_offset
 						 | _ -> true
 					      )
 		 then
-		   Stack.push 
+*)		   Stack.push 
 		     (Delete(s,
 			     start_offset,
 			     stop_offset - start_offset
 			    ))
 		     history
-	       else begin
+	(*	 else begin
 		   match Stack.pop history with
 		     | Delete(olds,offset,len) -> 
 			 Stack.push 
@@ -139,9 +149,9 @@ object(self)
 				 len+(Glib.Utf8.length s)))
 			 history
 		     | _ -> assert false
-		 
-	       end;
-	    self#dump_debug
+			 
+		 end*);
+		 self#dump_debug
 	      ))
 end
 
