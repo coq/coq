@@ -176,15 +176,15 @@ let (in_constant, out_constant) =
     export_function = export_constant } 
 
 let hcons_constant_declaration = function
-  | (DefinitionEntry ce, stre) ->
-      (DefinitionEntry
+  | DefinitionEntry ce ->
+      DefinitionEntry
        { const_entry_body = hcons1_constr ce.const_entry_body;
 	 const_entry_type = option_app hcons1_constr ce.const_entry_type;
-         const_entry_opaque = ce.const_entry_opaque }, stre)
+         const_entry_opaque = ce.const_entry_opaque }
   | cd -> cd
 
 let declare_constant id (cd,kind) =
-  (* let cd = hcons_constant_declaration cd in *)
+  let cd = hcons_constant_declaration cd in
   let (sp,kn as oname) = add_leaf id (in_constant (ConstantEntry cd,kind)) in
   if is_implicit_args() then declare_constant_implicits kn;
   Dischargedhypsmap.set_discharged_hyps sp [] ;
