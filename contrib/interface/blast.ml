@@ -402,7 +402,7 @@ and my_find_search db_list local_db hdc concl =
 	match t with
 	  | Res_pf (term,cl)  -> unify_resolve (term,cl)
 	  | ERes_pf (_,c) -> (fun gl -> error "eres_pf")
-	  | Give_exact c  -> exact_no_check c
+	  | Give_exact c  -> exact_check c
 	  | Res_pf_THEN_trivial_fail (term,cl) -> 
 	      tclTHEN 
 		(unify_resolve (term,cl)) 
@@ -516,7 +516,7 @@ let blast_auto = (free_try default_full_auto)
 			  (free_try (my_full_eauto 2)))
 *)
 ;;
-let blast_simpl = (free_try (reduce Simpl []))
+let blast_simpl = (free_try (reduce (Simpl None) []))
 ;;
 let blast_induction1 = 
     (free_try (tclTHEN (tclTRY intro)

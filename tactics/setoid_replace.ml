@@ -636,7 +636,7 @@ and zapply is_r gl gl_m c1 c2 hyp glll = (match ((kind_of_term gl), gl_m) with
 	then
 	  let m = morphism_table_find fleche_constr in
 	  let args = Array.of_list (create_args al a m.profil c1 c2) in  
-	    tclTHEN (change_in_concl new_concl)
+	    tclTHEN (change_in_concl None new_concl)
 	      (tclTHENS (apply (mkApp (m.lem, args)))
 		 ((create_tac_list 0 a al c1 c2 hyp m.arg_types m.profil)@[unfold_constr (ConstRef fleche_cp)]))
 (*		 ((create_tac_list 0 a al c1 c2 hyp m.arg_types m.profil)@[tclIDTAC])) *)

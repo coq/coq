@@ -538,7 +538,8 @@ and xlate_red_tactic =
   | Red true -> xlate_error ""
   | Red false -> CT_red
   | Hnf -> CT_hnf
-  | Simpl -> CT_simpl
+  | Simpl None -> CT_simpl
+  | Simpl (Some c) -> xlate_error "Simpl: TODO"
   | Cbv flag_list ->
      let conv_flags, red_ids = get_flag flag_list in
      CT_cbv (CT_conversion_flag_list conv_flags, red_ids)
@@ -649,7 +650,8 @@ and xlate_tac =
   function
     | TacExtend (_,"Absurd",[c]) ->
        CT_absurd (xlate_formula (out_gen rawwit_constr c))
-    | TacChange (f, b) -> CT_change (xlate_formula f, xlate_clause b)
+    | TacChange (None, f, b) -> CT_change (xlate_formula f, xlate_clause b)
+    | TacChange (_, f, b) -> xlate_error "TODO: Change subterms"
     | TacExtend (_,"Contradiction",[]) -> CT_contradiction
     | TacDoubleInduction (AnonHyp n1, AnonHyp n2) ->
 	CT_tac_double (CT_int n1, CT_int n2)

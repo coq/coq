@@ -250,15 +250,17 @@ type 'a raw_red_flag = {
   rConst : 'a list
 }
 
+type 'a occurrences = int list * 'a
+
 type ('a,'b) red_expr_gen =
   | Red of bool
   | Hnf
-  | Simpl
+  | Simpl of 'a occurrences option
   | Cbv of 'b raw_red_flag
   | Lazy of 'b raw_red_flag
-  | Unfold of (int list * 'b) list
+  | Unfold of 'b occurrences list
   | Fold of 'a list
-  | Pattern of (int list * 'a) list
+  | Pattern of 'a occurrences list
   | ExtraRedExpr of string * 'a
 
 type 'a or_metanum = AN of 'a | MetaNum of int located

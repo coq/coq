@@ -595,6 +595,34 @@ let whd_nf env sigma c =
 
 let nf env sigma c = strong whd_nf env sigma c
 
+let contextually (locs,c) f env sigma t =
+  let maxocc = List.fold_right max locs 0 in
+  let pos = ref 1 in
+  let check = ref true in
+  let except = List.exists (fun n -> n<0) locs in
+  if except & (List.exists (fun n -> n>=0) locs) 
+  then error "mixing of positive and negative occurences"
+  else
+   let rec traverse (env,c as envc) t =
+    if locs <> [] & (not except) & (!pos > maxocc) then t
+    else
+    if eq_constr c t then
+      let r =
+	if except then 
+	  if List.mem (- !pos) locs then t else f env sigma t
+	else 
+	  if locs = [] or List.mem !pos locs then f env sigma t else t
+      in incr pos; r
+    else
+      map_constr_with_binders_left_to_right
+	(fun d (env,c) -> (push_rel d env,lift 1 c))
+        traverse envc t
+  in
+  let t' = traverse (env,c) t in
+  if locs <> [] & List.exists (fun o -> o >= !pos or o <= - !pos) locs then
+    errorlabstrm "contextually" (str "Too few occurences");
+  t'
+
 (* linear substitution (following pretty-printer) of the value of name in c.
  * n is the number of the next occurence of name.
  * ol is the occurence list to find. *)
@@ -804,7 +832,8 @@ let declare_red_expr s f =
 let reduction_of_redexp = function
   | Red internal -> if internal then internal_red_product else red_product
   | Hnf -> hnf_constr
-  | Simpl -> nf
+  | Simpl (Some lp) -> contextually lp nf
+  | Simpl None -> nf
   | Cbv f -> cbv_norm_flags (make_flag f)
   | Lazy f -> clos_norm_flags (make_flag f)
   | Unfold ubinds -> unfoldn ubinds

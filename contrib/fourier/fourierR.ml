@@ -357,6 +357,7 @@ let my_cut c gl=
      let concl = pf_concl gl in
        apply_type (mkProd(Anonymous,c,concl)) [create_meta()] gl
 ;;
+
 let exact = exact_check;;
 
 let tac_use h = match h.htype with
@@ -522,7 +523,7 @@ let rec fourier gl=
                       else tac_zero_infeq_false gl (rational_to_fraction cres)
            in
            tac:=(tclTHENS (my_cut ineq) 
-                     [tclTHEN (change_in_concl
+                     [tclTHEN (change_in_concl None
 			       (mkAppL [| parse "not"; ineq|]
 				       ))
 		      (tclTHEN (apply (if sres then parse "Rnot_lt_lt"

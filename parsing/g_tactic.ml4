@@ -139,6 +139,12 @@ GEXTEND Gram
     [ [ id = base_ident -> NamedHyp id
       | n = natural -> AnonHyp n ] ]
   ;
+  conversion:
+    [ [ nl = LIST1 integer; c1 = constr; "with"; c2 = constr ->
+         (Some (nl,c1), c2)
+      |	c1 = constr; "with"; c2 = constr -> (Some ([],c1), c2)
+      | c = constr -> (None, c) ] ]
+  ;
   pattern_occ:
     [ [ nl = LIST0 integer; c = constr -> (nl,c) ] ]
   ;
@@ -195,7 +201,7 @@ GEXTEND Gram
   red_tactic:
     [ [ IDENT "Red" -> Red false
       | IDENT "Hnf" -> Hnf
-      | IDENT "Simpl" -> Simpl
+      | IDENT "Simpl"; po = OPT pattern_occ -> Simpl po
       | IDENT "Cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
       | IDENT "Lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)
       | IDENT "Compute" -> Cbv (make_red_flag [FBeta;FIota;FDeltaBut [];FZeta])
@@ -207,7 +213,7 @@ GEXTEND Gram
   red_expr:
     [ [ IDENT "Red" -> Red false
       | IDENT "Hnf" -> Hnf
-      | IDENT "Simpl" -> Simpl
+      | IDENT "Simpl"; po = OPT pattern_occ -> Simpl po
       | IDENT "Cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
       | IDENT "Lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)
       | IDENT "Compute" -> Cbv (make_red_flag [FBeta;FIota;FDeltaBut [];FZeta])
@@ -346,7 +352,7 @@ GEXTEND Gram
       (* Conversion *)
       | r = red_tactic; cl = clause -> TacReduce (r, cl)
       (* Change ne doit pas s'appliquer dans un Definition t := Eval ... *)
-      | IDENT "Change"; c = constr; cl = clause -> TacChange (c,cl)
+      | IDENT "Change"; (oc,c) = conversion; cl = clause -> TacChange (oc,c,cl)
 
 (* Unused ??
       | IDENT "ML"; s = string -> ExtraTactic<:ast< (MLTACTIC $s) >>

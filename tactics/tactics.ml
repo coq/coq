@@ -142,7 +142,7 @@ type tactic_reduction = env -> evar_map -> constr -> constr
    certain hypothesis *)
 
 let reduct_in_concl redfun gl = 
-  convert_concl (pf_reduce redfun gl (pf_concl gl)) gl
+  convert_concl_no_check (pf_reduce redfun gl (pf_concl gl)) gl
 
 let reduct_in_hyp redfun idref gl =
   let inhyp,id = match idref with
@@ -151,12 +151,12 @@ let reduct_in_hyp redfun idref gl =
   let (_,c, ty) = pf_get_hyp gl id in
   let redfun' = under_casts (pf_reduce redfun gl) in
   match c with
-    | None -> convert_hyp (id,None,redfun' ty) gl
+    | None -> convert_hyp_no_check (id,None,redfun' ty) gl
     | Some b ->
 	if inhyp then (* Default for defs: reduce in body *)
-	  convert_hyp (id,Some (redfun' b),ty) gl
+	  convert_hyp_no_check (id,Some (redfun' b),ty) gl
 	else
-	  convert_hyp (id,Some b,redfun' ty) gl
+	  convert_hyp_no_check (id,Some b,redfun' ty) gl
 
 let reduct_option redfun = function
   | Some id -> reduct_in_hyp   redfun id 
@@ -166,34 +166,32 @@ let reduct_option redfun = function
    function has to be applied to the conclusion or
    to the hypotheses. *) 
 
-let in_combinator tac1 tac2 = function 
-  | [] -> tac1 
-  | x  -> (tclMAP tac2 x)
-	
 let redin_combinator redfun = function 
   | [] ->  reduct_in_concl redfun 
   | x  -> (tclMAP (reduct_in_hyp redfun) x)
 
 
 (* Now we introduce different instances of the previous tacticals *)
-let change_hyp_and_check t env sigma c =
-  if is_conv env sigma t c then 
+let change_and_check cv_pb t env sigma c =
+  if is_fconv cv_pb env sigma t c then 
     t
   else 
     errorlabstrm "convert-check-hyp" (str "Not convertible")
 
-let change_concl_and_check t env sigma c =
-  if is_conv_leq env sigma t c then 
-    t
-  else 
-    errorlabstrm "convert-check-concl" (str "Not convertible")
+(* Use cumulutavity only if changing the conclusion not a subterm *)
+let change_on_subterm cv_pb t = function
+  | None -> change_and_check cv_pb t
+  | Some occl -> contextually occl (change_and_check CONV t) 
 
-let change_in_concl t = reduct_in_concl (change_concl_and_check t)
-let change_in_hyp t   = reduct_in_hyp (change_hyp_and_check t)
+let change_in_concl occl t = reduct_in_concl (change_on_subterm CUMUL t occl) 
+let change_in_hyp occl t   = reduct_in_hyp (change_on_subterm CONV t occl)
 
-let change_option t = function
-  | Some id -> reduct_in_hyp   (change_hyp_and_check t) id
-  | None    -> reduct_in_concl (change_concl_and_check t) 
+let change occl c = function
+  | [] -> change_in_concl occl c
+  | l  -> 
+      if List.tl l <> [] & occl <> None then
+	error "No occurrences expected when changing several hypotheses";
+      tclMAP (change_in_hyp occl c) l
 
 (* Pour usage interne (le niveau User est pris en compte par reduce) *)
 let red_in_concl        = reduct_in_concl red_product
@@ -212,8 +210,6 @@ let unfold_in_concl loccname   = reduct_in_concl (unfoldn loccname)
 let unfold_in_hyp   loccname   = reduct_in_hyp   (unfoldn loccname) 
 let unfold_option   loccname   = reduct_option   (unfoldn loccname) 
 let pattern_option l = reduct_option (pattern_occs l)
-
-let change c = in_combinator (change_in_concl c) (change_in_hyp c)
 
 (* A function which reduces accordingly to a reduction expression,
    as the command Eval does. *)
@@ -259,15 +255,13 @@ let id_of_name_with_default s = function
   | Anonymous -> id_of_string s
   | Name id   -> id
 
-let default_id gl =
-  match kind_of_term (strip_outer_cast (pf_concl gl)) with
-    | Prod (name,c1,c2) ->
-  	(match kind_of_term (pf_whd_betadeltaiota gl (pf_type_of gl c1)) with
-	   | Sort (Prop _) -> (id_of_name_with_default "H" name)
-	   | Sort (Type _) -> (id_of_name_with_default "X" name)
-	   | _                   -> anomaly "Wrong sort")
-    | LetIn (name,b,_,_) -> id_of_name_using_hdchar (pf_env gl) b name
-    | _ -> raise (RefinerError IntroNeedsProduct)
+let default_id gl = function
+  | (name,None,t) ->
+      (match kind_of_term (pf_whd_betadeltaiota gl (pf_type_of gl t)) with
+	| Sort (Prop _) -> (id_of_name_with_default "H" name)
+	| Sort (Type _) -> (id_of_name_with_default "X" name)
+	| _                   -> anomaly "Wrong sort")
+  | (name,Some b,_) -> id_of_name_using_hdchar (pf_env gl) b name
 
 (* Non primitive introduction tactics are treated by central_intro
    There is possibly renaming, with possibly names to avoid and 
@@ -278,31 +272,32 @@ type intro_name_flag =
   | IntroBasedOn of identifier * identifier list
   | IntroMustBe of identifier
 
+let find_name decl gl = function
+  | IntroAvoid idl        -> fresh_id idl (default_id gl decl) gl
+  | IntroBasedOn (id,idl) -> fresh_id idl id gl
+  | IntroMustBe id        -> 
+      let id' = fresh_id [] id gl in
+      if id' <> id then error ((string_of_id id)^" is already used");
+      id'
+
+let build_intro_tac id = function
+  | None      -> introduction id
+  | Some dest -> tclTHEN (introduction id) (move_hyp true id dest)
+
 let rec intro_gen name_flag move_flag force_flag gl =
-  try
-    let id =
-      match name_flag with
-        | IntroAvoid idl        -> fresh_id idl (default_id gl) gl
-        | IntroBasedOn (id,idl) -> fresh_id idl id gl
-        | IntroMustBe id        -> 
-	    let id' = fresh_id [] id gl in
-  	    if id' <> id then error ((string_of_id id)^" is already used");
-	    id'
-    in
-    begin match move_flag with
-      | None      -> introduction id gl
-      | Some dest -> tclTHEN (introduction id) (move_hyp true id dest) gl
-    end
-  with RefinerError IntroNeedsProduct as e ->
-    if force_flag then
-      try
-        ((tclTHEN (reduce (Red true) [])
-	    (intro_gen name_flag move_flag force_flag)) gl)
-      with Redelimination ->
-        errorlabstrm "Intro" 
-	  (str "No product even after head-reduction")
-    else
-      raise e
+  match kind_of_term (pf_concl gl) with
+    | Prod (name,t,_) -> 
+	build_intro_tac (find_name (name,None,t) gl name_flag) move_flag gl
+    | LetIn (name,b,t,_) ->
+	build_intro_tac (find_name (name,Some b,t) gl name_flag) move_flag gl
+    | _ -> 
+	if not force_flag then raise (RefinerError IntroNeedsProduct);
+	try
+	  tclTHEN
+	    (reduce (Red true) [])
+	    (intro_gen name_flag move_flag force_flag) gl
+	with Redelimination ->
+	  errorlabstrm "Intro" (str "No product even after head-reduction")
 
 let intro_mustbe_force id = intro_gen (IntroMustBe id) None true
 let intro_using id = intro_gen (IntroBasedOn (id,[])) None false
@@ -446,7 +441,7 @@ let bring_hyps hyps =
     (fun gl ->
       let newcl = List.fold_right mkNamedProd_or_LetIn hyps (pf_concl gl) in
       let f = mkCast (mkMeta (new_meta()),newcl) in
-      refine (mkApp (f, instance_from_named_context hyps)) gl)
+      refine_no_check (mkApp (f, instance_from_named_context hyps)) gl)
 
 (* Resolution with missing arguments *)
 
@@ -478,7 +473,6 @@ let apply_with_bindings (c,lbind) gl =
        second order unification *)
     let clause = make_clenv_binding_apply wc (-1) (c,thm_ty0) lbind in 
     apply kONT clause gl
-
 
 let apply c = apply_with_bindings (c,NoBindings)
 
@@ -739,23 +733,23 @@ let exact_check c gl =
   let concl = (pf_concl gl) in
   let ct = pf_type_of gl c in
   if pf_conv_x_leq gl ct concl then  
-    refine c gl 
+    refine_no_check c gl 
   else 
     error "Not an exact proof"
 
-let exact_no_check = refine
+let exact_no_check = refine_no_check
 
 let exact_proof c gl =
   (* on experimente la synthese d'ise dans exact *)
   let c = Constrintern.interp_casted_constr (project gl) (pf_env gl) c (pf_concl gl)
-  in refine c gl 
+  in refine_no_check c gl 
 
 let (assumption : tactic) = fun gl ->
   let concl =  pf_concl gl in 
   let rec arec = function
     | [] -> error "No such assumption"
     | (id,c,t)::rest -> 
-	if pf_conv_x_leq gl t concl then refine (mkVar id) gl
+	if pf_conv_x_leq gl t concl then refine_no_check (mkVar id) gl
 	else arec rest
   in
   arec (pf_hyps gl)
@@ -770,7 +764,7 @@ let (assumption : tactic) = fun gl ->
  * goal. *)                                                               
 
 let clear ids gl = (* avant seul dyn_clear n'echouait pas en [] *)
-  if ids=[] then tclIDTAC gl else thin ids gl
+  if ids=[] then tclIDTAC gl else with_check (thin ids) gl
 
 let clear_body = thin_body
 
@@ -822,7 +816,7 @@ let constructor_tac boundopt i lbind gl =
   end;
   let cons = mkConstruct (ith_constructor_of_inductive mind i) in
   let apply_tac = apply_with_bindings (cons,lbind) in
-  (tclTHENLIST [convert_concl redcl; intros; apply_tac]) gl
+  (tclTHENLIST [convert_concl_no_check redcl; intros; apply_tac]) gl
 
 let one_constructor i = constructor_tac None i
 
@@ -956,7 +950,7 @@ let elimination_in_clause_scheme kONT id elimclause indclause =
       [ (* Try to insert the new hyp at the same place *)
         tclORELSE (intro_replacing id)
           (tclTHEN (clear [id]) (introduction id));
-        refine new_hyp_prf])
+        refine_no_check new_hyp_prf])
 
 let general_elim_in id (c,lbindc) (elimc,lbindelimc) gl = 
   let (wc,kONT)  = startWalk gl in

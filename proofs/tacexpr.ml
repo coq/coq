@@ -152,7 +152,8 @@ type ('constr,'cst,'ind,'id) gen_atomic_tactic_expr =
 
   (* Conversion *)
   | TacReduce of ('constr,'cst) red_expr_gen * 'id raw_hyp_location list
-  | TacChange of 'constr * 'id raw_hyp_location list
+  | TacChange of
+      'constr occurrences option * 'constr * 'id raw_hyp_location list
 
   (* Equivalence relations *)
   | TacReflexivity

@@ -86,7 +86,7 @@ let h_simplest_right  = h_right NoBindings
 
 (* Conversion *)
 let h_reduce r cl  = abstract_tactic (TacReduce (r,cl)) (reduce r cl)
-let h_change c cl  = abstract_tactic (TacChange (c,cl)) (change c cl)
+let h_change oc c cl  = abstract_tactic (TacChange (oc,c,cl)) (change oc c cl)
 
 (* Equivalence relations *)
 let h_reflexivity    = abstract_tactic TacReflexivity intros_reflexivity

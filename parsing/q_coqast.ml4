@@ -205,10 +205,13 @@ let rec mlexpr_of_constr = function
   | Topconstr.CMeta (loc,n) -> <:expr< Topconstr.CMeta $dloc$ $mlexpr_of_int n$ >>
   | _ -> failwith "mlexpr_of_constr: TODO"
 
+let mlexpr_of_occ_constr =
+  mlexpr_of_pair (mlexpr_of_list mlexpr_of_int) mlexpr_of_constr
+
 let mlexpr_of_red_expr = function
   | Rawterm.Red b -> <:expr< Rawterm.Red $mlexpr_of_bool b$ >>
   | Rawterm.Hnf -> <:expr< Rawterm.Hnf >>
-  | Rawterm.Simpl -> <:expr< Rawterm.Simpl >>
+  | Rawterm.Simpl o -> <:expr< Rawterm.Simpl $mlexpr_of_option mlexpr_of_occ_constr o$ >>
   | Rawterm.Cbv f ->
       <:expr< Rawterm.Cbv $mlexpr_of_red_flags f$ >>
   | Rawterm.Lazy f ->
@@ -221,8 +224,7 @@ let mlexpr_of_red_expr = function
   | Rawterm.Fold l ->
       <:expr< Rawterm.Fold $mlexpr_of_list mlexpr_of_constr l$ >>
   | Rawterm.Pattern l ->
-      let f1 = mlexpr_of_list mlexpr_of_int in
-      let f = mlexpr_of_list (mlexpr_of_pair f1 mlexpr_of_constr) in
+      let f = mlexpr_of_list mlexpr_of_occ_constr in
       <:expr< Rawterm.Pattern $f l$ >>
   | Rawterm.ExtraRedExpr (s,c) ->
       let l = mlexpr_of_constr c in
@@ -415,9 +417,10 @@ let rec mlexpr_of_atomic_tactic = function
   | Tacexpr.TacReduce (r,cl) ->
       let l = mlexpr_of_list mlexpr_of_hyp_location cl in
       <:expr< Tacexpr.TacReduce $mlexpr_of_red_expr r$ $l$ >>
-  | Tacexpr.TacChange (c,cl) ->
+  | Tacexpr.TacChange (occl,c,cl) ->
       let l = mlexpr_of_list mlexpr_of_hyp_location cl in
-      <:expr< Tacexpr.TacChange $mlexpr_of_constr c$ $l$ >>
+      let g = mlexpr_of_option mlexpr_of_occ_constr in
+      <:expr< Tacexpr.TacChange $g occl$ $mlexpr_of_constr c$ $l$ >>
 
   (* Equivalence relations *)
   | Tacexpr.TacReflexivity -> <:expr< Tacexpr.TacReflexivity >>

@@ -387,15 +387,16 @@ let glob_unfold ist (l,qid) = (l,glob_evaluable_or_metanum ist qid)
 let glob_flag ist red =
   { red with rConst = List.map (glob_evaluable_or_metanum ist) red.rConst }
 
-let glob_pattern ist (l,c) = (l,glob_constr ist c)
+let glob_constr_occurrence ist (l,c) = (l,glob_constr ist c)
 
 let glob_redexp ist = function
   | Unfold l -> Unfold (List.map (glob_unfold ist) l)
   | Fold l -> Fold (List.map (glob_constr ist) l)
   | Cbv f -> Cbv (glob_flag ist f)
   | Lazy f -> Lazy (glob_flag ist f)
-  | Pattern l -> Pattern (List.map (glob_pattern ist) l)
-  | (Red _ | Simpl | Hnf as r) -> r
+  | Pattern l -> Pattern (List.map (glob_constr_occurrence ist) l)
+  | Simpl o -> Simpl (option_app (glob_constr_occurrence ist) o)
+  | (Red _ | Hnf as r) -> r
   | ExtraRedExpr (s,c) -> ExtraRedExpr (s, glob_constr ist c)
 
 (* Interprets an hypothesis name *)
@@ -544,8 +545,9 @@ let rec glob_atomic lf ist = function
   (* Conversion *)
   | TacReduce (r,cl) ->
       TacReduce (glob_redexp ist r, List.map (glob_hyp_location ist) cl)
-  | TacChange (c,cl) ->
-      TacChange (glob_constr ist c, List.map (glob_hyp_location ist) cl)
+  | TacChange (occl,c,cl) ->
+      TacChange (option_app (glob_constr_occurrence ist) occl,
+        glob_constr ist c, List.map (glob_hyp_location ist) cl)
 
   (* Equivalence relations *)
   | TacReflexivity -> TacReflexivity
@@ -1008,7 +1010,8 @@ let redexp_interp ist = function
   | Cbv f -> Cbv (flag_interp ist f)
   | Lazy f -> Lazy (flag_interp ist f)
   | Pattern l -> Pattern (List.map (pattern_interp ist) l)
-  | (Red _ | Simpl | Hnf as r) -> r
+  | Simpl o -> Simpl (option_app (pattern_interp ist) o)
+  | (Red _ |  Hnf as r) -> r
   | ExtraRedExpr (s,c) -> ExtraRedExpr (s,constr_interp ist c)
 
 let interp_may_eval f ist = function
@@ -1661,8 +1664,9 @@ and interp_atomic ist = function
   (* Conversion *)
   | TacReduce (r,cl) ->
       h_reduce (redexp_interp ist r) (List.map (interp_hyp_location ist) cl)
-  | TacChange (c,cl) ->
-      h_change (constr_interp ist c) (List.map (interp_hyp_location ist) cl)
+  | TacChange (occl,c,cl) ->
+      h_change (option_app (pattern_interp ist) occl)
+        (constr_interp ist c) (List.map (interp_hyp_location ist) cl)
 
   (* Equivalence relations *)
   | TacReflexivity -> h_reflexivity

@@ -15,6 +15,7 @@ open Environ
 open Evd
 open Reductionops
 open Closure
+open Rawterm
 (*i*)
 
 (*s Reduction functions associated to tactics. \label{tacred} *)
@@ -60,20 +61,9 @@ val reduce_to_atomic_ind : env ->  evar_map -> types -> inductive * types
    returns [I] and [t'] or fails with a user error *)
 val reduce_to_quantified_ind : env ->  evar_map -> types -> inductive * types
 
-open Rawterm
-(*
-type red_expr =
-  | Red of bool    (* raise Redelimination if true otherwise UserError *)
-  | Hnf
-  | Simpl
-  | Cbv of Closure.RedFlags.reds
-  | Lazy of Closure.RedFlags.reds
-  | Unfold of (int list * evaluable_global_reference) list
-  | Fold of constr list
-  | Pattern of (int list * constr * constr) list
-*)
 type red_expr = (constr, evaluable_global_reference) red_expr_gen
 
+val contextually : constr occurrences -> reduction_function->reduction_function
 val reduction_of_redexp : red_expr -> reduction_function
 
 val declare_red_expr : string -> reduction_function -> unit

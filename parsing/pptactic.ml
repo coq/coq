@@ -124,6 +124,9 @@ let pr_clause_pattern pr_id = function (* To check *)
 	  ++ spc () ++ pr_id id) l ++
         pr_opt (prlist_with_sep spc int) glopt
 
+let pr_subterms pr occl =
+  hov 0 (pr_occurrences pr occl ++ spc () ++ str "with")
+
 let pr_induction_arg prc = function
   | ElimOnConstr c -> prc c
   | ElimOnIdent (_,id) -> pr_id id
@@ -452,8 +455,9 @@ and pr_atom1 = function
   (* Conversion *)  
   | TacReduce (r,h) ->
       hov 1 (pr_red_expr (pr_constr,pr_cst) r ++ pr_clause pr_ident h)
-  | TacChange (c,h) ->
-      hov 1 (str "Change" ++ brk (1,1) ++ pr_constr c ++ pr_clause pr_ident h)
+  | TacChange (occl,c,h) ->
+      hov 1 (str "Change" ++ pr_opt (pr_subterms pr_constr) occl ++ 
+        brk (1,1) ++ pr_constr c ++ pr_clause pr_ident h)
 
   (* Equivalence relations *)
   | (TacReflexivity | TacSymmetry) as x -> pr_atom0 x

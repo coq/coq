@@ -284,7 +284,7 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 	let c = pf_concl gl in
 	let newc = mkNamedLetIn id c1 t1 c in
 	tclTHEN 
-	  (change_in_concl newc) 
+	  (change_in_concl None newc) 
 	  (match sgp with 
 	     | [None] -> introduction id
 	     | [Some th] -> tclTHEN (introduction id) (tcc_aux th)

@@ -90,7 +90,8 @@ val h_simplest_right  : tactic
 
 (* Conversion *)
 val h_reduce          : Tacred.red_expr -> hyp_location list -> tactic
-val h_change          : constr -> hyp_location list -> tactic
+val h_change          : 
+  constr occurrences option -> constr -> hyp_location list -> tactic
 
 (* Equivalence relations *)
 val h_reflexivity     : tactic

@@ -93,8 +93,8 @@ val try_intros_until :
 
 (*s Exact tactics. *)
 
-val assumption         : tactic
-val exact_no_check      : constr -> tactic
+val assumption       : tactic
+val exact_no_check   : constr -> tactic
 val exact_check      : constr -> tactic
 val exact_proof      : Topconstr.constr_expr -> tactic
 
@@ -105,10 +105,9 @@ type tactic_reduction = env -> evar_map -> constr -> constr
 val reduct_in_hyp     : tactic_reduction -> hyp_location -> tactic
 val reduct_option     : tactic_reduction -> hyp_location option -> tactic
 val reduct_in_concl   : tactic_reduction -> tactic
-val change_in_concl   : constr -> tactic
-
-val change_in_hyp     : constr -> hyp_location -> tactic
-val change_option     : constr -> hyp_location option -> tactic
+val change_in_concl   : constr occurrences option -> constr -> tactic
+val change_in_hyp     : constr occurrences option -> constr -> hyp_location ->
+  tactic
 val red_in_concl      : tactic
 val red_in_hyp        : hyp_location        -> tactic
 val red_option        : hyp_location option -> tactic
@@ -128,7 +127,8 @@ val unfold_option     :
   (int list * evaluable_global_reference) list -> hyp_location option
     -> tactic
 val reduce            : red_expr -> hyp_location list -> tactic
-val change            : constr -> hyp_location list -> tactic
+val change            :
+  constr occurrences option -> constr -> hyp_location list -> tactic
 
 val unfold_constr     : global_reference -> tactic
 val pattern_option  : (int list * constr) list -> hyp_location option -> tactic
@@ -136,7 +136,6 @@ val pattern_option  : (int list * constr) list -> hyp_location option -> tactic
 (*s Modification of the local context. *)
 
 val clear         : identifier list -> tactic
-
 val clear_body    : identifier list -> tactic
 
 val new_hyp       : int option ->constr -> constr substitution -> tactic
