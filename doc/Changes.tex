@@ -35,6 +35,8 @@ dot notation to access names (see section \ref{Names})
 provided by Yves Bertot (see section \ref{Search})
 \item A ``natural'' syntax for real numbers (see section
 \ref{SyntaxExtensions}) 
+\item The tactic {\tt Field} which solves equalities using commutative field
+theory (see section~\ref{NewTactics})
 \item A command to export theories to XML to
 be used with Helm's publishing and rendering tools (see section \ref{XML})
 \item As usual, several bugs fixed and a lot of new ones introduced
@@ -276,17 +278,28 @@ expressions are currently not supported.
 
 $\ltac$ is a new layer of metalanguage to write tactics and especially to deal
 with small automations for which the use of the full programmable metalanguage
-(\oc{}) would be excessive. $\ltac$ is mainly a	small functional core with
+(\oc{}) would be excessive. $\ltac$ is mainly a small functional core with
 recursors and elaborated matching operators for terms but also for proof
 contexts. This language can be directly used in proof scripts or in toplevel
 definitions ({\tt Tactic~Definition}). It has been noticed that non-trivial
 tactics can be written with $\ltac$ and to provide a Turing-complete
 programmation framework, a quotation has been built to use $\ltac$ in \oc{}.
-$\ltac$ has been contributed by David Delahaye and to know the foundations of
-this language as well as to get a temporary documentation of $\ltac$, the
-author page can be visited at the following URL:\\
+$\ltac$ has been contributed by David Delahaye and, for more details, see the
+Reference Manual. Regarding the foundations of this language, the author page
+can be visited at the following URL:\\
 
-http://logical.inria.fr/\~{}delahaye/
+{\sf http://logical.inria.fr/\~{}delahaye/}
+
+\subsection{New tactics}
+\label{NewTactics}
+\def\ml{{\sf ML}}
+
+   \paragraph{{\tt Field}} written by David~Delahaye and Micaela~Mayero solves
+equalities using commutative field theory. This tactic is reflexive and has
+been implemented using essentially the new tactic language $\ltac$. Only the
+table of field theories (as for the tactic {\tt Ring}) is dealt by means of an
+\ml{} part. This tactic is currently used in the real number theory. For more
+details, see the Reference Manual.
 
 \subsection{Changes in pre-existing tactics}
 \label{TacticChanges}
@@ -427,8 +440,8 @@ http://www.cs.unibo.it/helm).
   mode on for {\ident} even if the mode is not globally turned on.
 
   \paragraph{{\tt Implicits {\ident} [{\num} \ldots {\num}]}}
-	allows to explicitly give what arguments
-	have to be considered as implicit in {\ident}.
+        allows to explicitly give what arguments
+        have to be considered as implicit in {\ident}.
 
 \subsection{Tactic debuger}
 
@@ -598,7 +611,7 @@ Syntax} and {\tt Grammar} default parsers.
 \begin{verbatim}
 Grammar command command0 :=
   pair [ "(" lcommand($lc1) "," lcommand($lc2) ")" ] ->
-	 [<<(pair ? ? $lc1 $lc2)>>].
+         [<<(pair ? ? $lc1 $lc2)>>].
 
 Syntax constr
   level 1:
