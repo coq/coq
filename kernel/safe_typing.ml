@@ -66,14 +66,27 @@ let push_rels_with_univ vars env =
   List.fold_left (fun env nvar -> push_rel_assum nvar env) env vars
 
 (* Insertion of constants and parameters in environment. *)
-type global_declaration = Def of constr * bool | Assum of constr
+type constant_entry = {
+  const_entry_body   : constr;
+  const_entry_type   : types option;
+  const_entry_opaque : bool }
+
+type global_declaration = Def of constant_entry | Assum of types
 
 (* Definition always declared transparent *)
 let safe_infer_declaration env dcl =
   match dcl with
-  | Def (c,op) ->
-      let (j,cst) = safe_infer env c in
-      Some j.uj_val, j.uj_type, cst, op
+  | Def c ->
+      let (j,cst) = safe_infer env c.const_entry_body in
+      let typ,cst = match c.const_entry_type with
+	| None -> j.uj_type,cst
+	| Some t -> 
+	    let (tj,cst2) = safe_infer_type env t in
+	    let cst3 =
+	      try conv_leq env j.uj_type tj.utj_val
+	      with NotConvertible -> error_actual_type env j tj.utj_val in
+	    tj.utj_val, Constraint.union (Constraint.union cst cst2) cst3 in
+      Some j.uj_val, typ, cst, c.const_entry_opaque
   | Assum t ->
       let (j,cst) = safe_infer env t in
       None, Typeops.assumption_of_judgment env j, cst, false
@@ -98,18 +111,8 @@ let add_parameter sp t env =
 
 (*s Global and local constant declaration. *)
 
-type constant_entry = {
-  const_entry_body   : constr;
-  const_entry_type   : types option;
-  const_entry_opaque : bool }
-
 let add_constant sp ce env =
-  let body =
-    match ce.const_entry_type with
-      | None -> ce.const_entry_body
-      | Some ty -> mkCast (ce.const_entry_body, ty) in
-  add_global_declaration sp env
-    (safe_infer_declaration env (Def (body, ce.const_entry_opaque)))
+  add_global_declaration sp env (safe_infer_declaration env (Def ce))
 
 let add_discharged_constant sp r env =
   let (body,typ,cst,op) = Cooking.cook_constant env r in
