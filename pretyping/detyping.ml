@@ -365,14 +365,14 @@ and detype_fix tenv avoid env (vn,_ as nvn) (names,tys,bodies) =
           let t = detype tenv avoid env t in
 	  let id = next_name_away na avoid in 
           let avoid = id::avoid and env = add_name (Name id) env in
-          share_names (n-1) ((na,None,t)::l) avoid env c c'
+          share_names (n-1) ((Name id,None,t)::l) avoid env c c'
       (* May occur for fix built interactively *)
       | LetIn (na,b,t',c), _ ->
           let t' = detype tenv avoid env t' in
           let b = detype tenv avoid env b in
 	  let id = next_name_away na avoid in 
           let avoid = id::avoid and env = add_name (Name id) env in
-          share_names n ((na,Some b,t')::l) avoid env c t
+          share_names n ((Name id,Some b,t')::l) avoid env c t
       (* Only if built with the f/n notation or w/o let-expansion in types *)
       | _, LetIn (_,b,_,t) ->
 	  share_names n l avoid env c (subst1 b t)
