@@ -1,56 +1,70 @@
 
 The "Coq proof assistant" was developed conjointly by 
-	INRIA (since 1985), 
-	Laboratoire de l'Informatique du Parallelisme LIP 
+	INRIA Formel-Coq-LogiCal projects (since 1985), 
+	Laboratoire de l'Informatique du Parallelisme (LIP) 
 	associated to CNRS and ENS Lyon (sept.89-sept.97),
-	Laboratoire de Recherche en Informatique 
+	Laboratoire de Recherche en Informatique (LRI)
 	associated to CNRS and Paris 11 (since sept. 97).
 
 All files of the "Coq proof assistant" in directories or sub-directories of
-	src, tactics, theories, tools
+	config contrib dev doc kernel lib library parsing pretyping 
+	proofs scripts syntax tactics test-suite theories tools toplevel
 are distributed under the terms of the GNU Lesser General Public License 
-Version 2.1 (included below).
+Version 2.1 (see file LICENSE).
 
-The following people have contributed to the core of the system 
-during the indicated time :
+The current version V7 is a new implementation started in september 1999.
+  	J-C. Filliâtre designed the architecture of the new system, 
+a new represention of environments and wrote a new kernel for type-checking terms (LRI)
+	H. Herbelin introduced a new structure of terms with local definitions and redesigned 
+the translation from the high-level language of Coq to the internal representation (INRIA)
+	D. Delahaye introduced a new language for tactics (INRIA)
+	B. Barras improved the reduction strategy for lazy evaluation (INRIA)
+The development was coordinated by C. Paulin (LRI).
 
-	Bruno Barras, 	 (INRIA, 1995-1999)
+The following directories contain independant contributions supported 
+by the Coq development team for the new architecture :
+contrib/omega
+	developed by Pierre Cregut (France Telecom R&D, 1996)
+contrib/ring
+	developed by Samuel Boutin (INRIA, 1996)
+	          and Patrick Loiseleur (LRI, 1997-1999)
+contrib/xml
+	developed by Claudio Sacerdotti (Univ. Bologna, 2000-2001)
+
+Many discussions within the Démons team and the LogiCal project influenced significantly 
+the design of Coq especially with 
+J. Chrzaszcz, J. Courant, P. Courtieu, J. Duprat, J. Goubault, A. Miquel, C. Marché, 
+M. Mayero, B. Monate, B. Werner
+
+Intensive users suggested improvements of the system : 
+Y. Bertot, L. Pottier, L. Théry (INRIA-Lemme project) 
+C. Alvarado, P. Crégut, J.-F. Monin (France Telecom R & D)
+
+The following people have contributed to the development of different versions 
+of the Coq Proof assistant during the indicated time :
+
+	Bruno Barras, 	 (INRIA, 1995-2000)
   	Cristina Cornes, (INRIA, 1993-1996)
-	David Delahaye,  (INRIA, 1997-1999)
+	David Delahaye,  (INRIA, 1997-2000)
 	Daniel de Rauglaudre, (INRIA, 1996-1998)
-	Jean-Christophe Filliâtre, (ENS Lyon, 1994-1997) (Paris 11,1997-1999)
+	Gilles Dowek, (INRIA, 1991-1994)
+	Amy Felty, (INRIA, 1993)
+	Jean-Christophe Filliâtre, (ENS Lyon, 1994-1997) (Paris 11,1997-2000)
 	Eduardo Giménez, (ENS Lyon, 1993-1996, INRIA, 1997-1998)
-	Hugo Herbelin, (INRIA, 1996-1999)
+	Hugo Herbelin, (INRIA, 1996-2000)
 	Gérard Huet, (INRIA, 1985-1997)
+	Pascal Manoury, (INRIA, 1993)
+	Micaela Mayero (INRIA, 1997-2000)
 	César Muñoz, (INRIA, 1994-1995)
   	Chetan Murthy, (INRIA, 1992-1994)
 	Catherine Parent-Vigouroux, (ENS Lyon 1992-1995)
 	Patrick Loiseleur, (Paris 11, 1997-1999)
   	Christine Paulin-Mohring, (INRIA, 1985-1989) (ENS Lyon, 1989-1997) 
-				  (Paris 11, 1997-1999)
+				  (Paris 11, 1997-2001)
 	Amokrane Saïbi, (INRIA, 1993-1998)
+	Benjamin Werner, (INRIA, 1989-1994)
 
-The following directories contain independant contributions:
-tactics/contrib/eqdecide 
-	developed by Eduardo Gimenez (INRIA, 1997-1998)
-tactics/contrib/extraction 
-	developed by Benjamin Werner (INRIA, 1989)
-		  and Jean-Christophe Filliatre (ENS Lyon, 1994-1997)
-tactics/contrib/linear 
-        developed by Jean-Christophe Filliatre (ENS Lyon, 1994-1997)
-tactics/contrib/natural
-	developed by Yann Coscoy (INRIA, 1996)
-tactics/contrib/omega
-	developed by Pierre Cregut (CNET-France Telecom, 1996)
-tactics/contrib/pcoq
-	developed by Yves Bertot (INRIA, 1996-1999)
-tactics/contrib/polynom
-	developed by Samuel Boutin (INRIA, 1996)
-	          and Patrick Loiseleur (LRI, 1997-1999)
-tactics/programs
-	developed by Jean-Christophe Filliatre (LRI, 1997-1999)
-theories/REALS
-	developed by Micaela Mayero (INRIA, 1997-1999)	
+
 ***************************************************************************
 INRIA refers to :
 	Institute National de la Recherche en Informatique et Automatique
@@ -61,3 +75,5 @@ Paris 11 refers to :
 ENS Lyon refers to :
 	Ecole Normale Superieure de Lyon
 ****************************************************************************
+
+
