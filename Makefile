@@ -535,7 +535,8 @@ LOGICVO=\
  theories/Logic/Berardi.vo       	theories/Logic/Eqdep_dec.vo \
  theories/Logic/Decidable.vo            theories/Logic/JMeq.vo \
  theories/Logic/ClassicalDescription.vo theories/Logic/ClassicalChoice.vo \
- theories/Logic/RelationalChoice.vo     theories/Logic/Diaconescu.vo
+ theories/Logic/RelationalChoice.vo     theories/Logic/Diaconescu.vo \
+ theories/Logic/Hurkens_Set.vo
 
 ARITHVO=\
  theories/Arith/Arith.vo        theories/Arith/Gt.vo          \
@@ -560,11 +561,17 @@ BOOLVO=\
  theories/Bool/Sumbool.vo 	theories/Bool/BoolEq.vo \
  theories/Bool/Bvector.vo
 
+NARITHVO=\
+ theories/NArith/BinPos.vo       theories/NArith/BinNat.vo \
+ theories/NArith/NArith.vo
+
 ZARITHVO=\
  theories/ZArith/Wf_Z.vo	theories/ZArith/Zsyntax.vo \
  theories/ZArith/ZArith.vo	theories/ZArith/auxiliary.vo \
  theories/ZArith/ZArith_dec.vo	theories/ZArith/fast_integer.vo \
  theories/ZArith/Zmisc.vo	theories/ZArith/zarith_aux.vo \
+ theories/ZArith/Zorder.vo      theories/ZArith/Zabs.vo \
+ theories/ZArith/Zmin.vo        theories/ZArith/Zeven.vo \
  theories/ZArith/Zhints.vo	theories/ZArith/Zlogarithm.vo \
  theories/ZArith/Zpower.vo 	theories/ZArith/Zcomplements.vo \
  theories/ZArith/Zdiv.vo	theories/ZArith/Zsqrt.vo \
@@ -659,7 +666,7 @@ ALLREALS=$(REALSBASEVO) $(REALS_all)
 
 SETOIDSVO=theories/Setoids/Setoid.vo
 
-THEORIESVO = $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
+THEORIESVO = $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(NARITHVO) $(ZARITHVO) $(LISTSVO) \
              $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) \
 	     $(REALSVO) $(SETOIDSVO) $(SORTINGVO)
 
@@ -671,6 +678,7 @@ theories-light: $(THEORIESLIGHTVO)
 logic: $(LOGICVO:%.vo=new%.vo)
 arith: $(ARITHVO:%.vo=new%.vo)
 bool: $(BOOLVO:%.vo=new%.vo)
+narith: $(NARITHVO:%.vo=new%.vo)
 zarith: $(ZARITHVO:%.vo=new%.vo)
 lists: $(LISTVO) $(LISTSVO:%.vo=new%.vo)
 sets: $(SETSVO:%.vo=new%.vo)
@@ -700,7 +708,7 @@ CORRECTNESSVO=\
 # contrib/correctness/ProgramsExtraction.vo			
 
 OMEGAVO=\
- contrib/omega/Omega.vo
+ contrib/omega/OmegaLemmas.vo contrib/omega/Omega.vo
 
 ROMEGAVO=\
  contrib/romega/ReflOmegaCore.vo contrib/romega/ROmega.vo 
@@ -829,6 +837,12 @@ newtheories/Lists/PolyList.vo:
 
 newtheories/Lists/PolyListSyntax.vo:
 	@cd #nil command: don't compile it
+
+newtheories/ZArith/ZSyntax.vo:
+	@cd #nil command: obsolete, don't compile it
+
+newtheories/ZArith/zarith_aux.vo:
+	@cd #nil command: obsolete, don't compile it
 
 # Obsolete ?
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
