@@ -8,16 +8,8 @@ parsing/g_basevernac.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmx \
     toplevel/vernac.cmx 
 parsing/g_cases.cmo: parsing/coqast.cmi parsing/pcoq.cmi 
 parsing/g_cases.cmx: parsing/coqast.cmx parsing/pcoq.cmx 
-parsing/g_command.cmo: parsing/ast.cmi toplevel/command.cmi \
-    parsing/coqast.cmi parsing/pcoq.cmi 
-parsing/g_command.cmx: parsing/ast.cmx toplevel/command.cmx \
-    parsing/coqast.cmx parsing/pcoq.cmx 
 parsing/g_constr.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi 
 parsing/g_constr.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmx 
-parsing/g_corevernac.cmo: parsing/coqast.cmi parsing/pcoq.cmi \
-    toplevel/vernac.cmi 
-parsing/g_corevernac.cmx: parsing/coqast.cmx parsing/pcoq.cmx \
-    toplevel/vernac.cmx 
 parsing/g_minicoq.cmo: kernel/generic.cmi parsing/lexer.cmi kernel/names.cmi \
     lib/pp.cmi kernel/sign.cmi kernel/term.cmi kernel/univ.cmi lib/util.cmi \
     parsing/g_minicoq.cmi 
