@@ -99,6 +99,14 @@ let modify_opers replfun absfun oper_alist =
 
 (**)
 
+let under_dlams f = 
+  let rec apprec = function 
+    | DLAMV(na,c) -> DLAMV(na,Array.map f c)
+    | DLAM(na,c)  -> DLAM(na,apprec c)
+    | _           -> failwith "under_dlams"
+  in 
+  apprec 
+
 let abstract_inductive ids_to_abs hyps inds =
   let abstract_one_var id ty inds =
     let ntyp = List.length inds in 
@@ -108,8 +116,7 @@ let abstract_inductive ids_to_abs hyps inds =
       	(function (tname,arity,cnames,lc) -> 
 	   let arity' = generalize_type id ty arity in
 	   let lc' =
-	     under_dlams 
-               (fun b -> casted_generalize id ty (substl new_refs b)) lc
+	     List.map (fun b-> casted_generalize id ty (substl new_refs b)) lc
 	   in
            (tname,arity',cnames,lc'))
       	inds
@@ -119,9 +126,9 @@ let abstract_inductive ids_to_abs hyps inds =
   let abstract_once ((hyps,inds,modl) as sofar) id =
     if isnull_sign hyps or id <> fst (hd_sign hyps) then 
       sofar
-  else
-    let (inds',modif) = abstract_one_var id (snd (hd_sign hyps)) inds in 
-    (tl_sign hyps,inds',modif::modl)
+    else
+      let (inds',modif) = abstract_one_var id (snd (hd_sign hyps)) inds in 
+      (tl_sign hyps,inds',modif::modl)
   in
   let (_,inds',revmodl) =
     List.fold_left abstract_once (hyps,inds,[]) ids_to_abs in
@@ -206,7 +213,7 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
 	 (mip.mind_typename,
 	  expmod_type oldenv modlist mip.mind_arity,
 	  Array.to_list mip.mind_consnames,
-	  under_dlams (expmod_constr oldenv modlist) mip.mind_lc))
+	  array_map_to_list (expmod_constr oldenv modlist) mip.mind_lc))
       mib.mind_packets
   in
   let (inds',modl) = abstract_inductive ids_to_discard mib.mind_hyps inds in

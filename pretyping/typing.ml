@@ -58,19 +58,21 @@ let rec execute mf env sigma cstr =
         let lfj = execute_array mf env sigma lf in
         type_of_case env sigma ci pj cj lfj
   
-    | IsFix (vn,i,lar,lfi,vdef) ->
+    | IsFix ((vn,i as vni),(lar,lfi,vdef)) ->
         if (not mf.fix) && array_exists (fun n -> n < 0) vn then
           error "General Fixpoints not allowed";
-        let larv,vdefv = execute_fix mf env sigma lar lfi vdef in
-        let fix = mkFix vn i larv lfi vdefv in
+        let larjv,vdefv = execute_fix mf env sigma lar lfi vdef in
+ 	let larv = Array.map body_of_type larjv in
+	let fix = vni,(larv,lfi,vdefv) in
         check_fix env sigma fix;
-	make_judge fix larv.(i)
+	make_judge (mkFix fix) larjv.(i)
 	  
-    | IsCoFix (i,lar,lfi,vdef) ->
-        let (larv,vdefv) = execute_fix mf env sigma lar lfi vdef in
-        let cofix = mkCoFix i larv lfi vdefv in
+    | IsCoFix (i,(lar,lfi,vdef)) ->
+        let (larjv,vdefv) = execute_fix mf env sigma lar lfi vdef in
+	let larv = Array.map body_of_type larjv in
+        let cofix = i,(larv,lfi,vdefv) in
         check_cofix env sigma cofix;
-	make_judge cofix larv.(i)
+	make_judge (mkCoFix cofix) larjv.(i)
 	  
     | IsSort (Prop c) -> 
 	judge_of_prop_contents c

@@ -153,7 +153,7 @@ let mkCast t1 t2 =
 (* Constructs the product (x:t1)t2 *)
 let mkProd x t1 t2 = (DOP2 (Prod,t1,(DLAM (x,t2))))
 
-(* non-dependant product t1 -> t2 *)
+(* non-dependent product t1 -> t2 *)
 let mkArrow t1 t2 = mkProd Anonymous t1 t2
 
 (* named product *)
@@ -215,15 +215,14 @@ let mkMutCaseA ci p c ac =
 
 (* Here, we assume the body already constructed *)
 let mkFixDlam recindxs i jtypsarray body =
-  let typsarray = Array.map incast_type jtypsarray in
+  let typsarray = (*Array.map incast_type*) jtypsarray in
   DOPN (Fix (recindxs,i),Array.append typsarray body)
 
-let mkFix recindxs i jtypsarray funnames bodies = 
-  let rec wholebody l = 
-    match l with 
-      | [h]    -> (DLAMV (h,bodies)) 
-      | (x::l) -> (DLAM  (x, wholebody l))
-      | [] -> anomaly "in Term.mkFix : empty list of funnames"
+let mkFix ((recindxs, i), (jtypsarray, funnames, bodies)) = 
+  let rec wholebody = function 
+    | [h]    -> (DLAMV (h,bodies)) 
+    | (x::l) -> (DLAM  (x, wholebody l))
+    | [] -> anomaly "in Term.mkFix : empty list of funnames"
   in 
   mkFixDlam recindxs i jtypsarray [|(wholebody funnames)|]
 
@@ -244,10 +243,10 @@ let mkFix recindxs i jtypsarray funnames bodies =
 *)
 (* Here, we assume the body already constructed *)
 let mkCoFixDlam i jtypsarray body =
-  let typsarray = Array.map incast_type jtypsarray in
+  let typsarray = (*Array.map incast_type*) jtypsarray in
   DOPN ((CoFix i),(Array.append typsarray body))
 
-let mkCoFix i jtypsarray funnames bodies = 
+let mkCoFix (i, (jtypsarray, funnames, bodies)) = 
   let rec wholebody l = 
     match l with 
       | [h]    -> (DLAMV (h,bodies))
@@ -387,6 +386,12 @@ let rec strip_all_casts t =
     | VAR _ as t -> t
     | Rel _ as t -> t
 
+(* Tests if a de Bruijn index *)
+let isRel = function Rel _ -> true | _ -> false
+
+(* Tests if a variable *)
+let isVar = function VAR _ -> true | _ -> false
+
 (* Destructs the product (x:t1)t2 *)
 let destProd = function 
   | DOP2 (Prod, t1, (DLAM (x,t2))) -> (x,t1,t2) 
@@ -525,13 +530,13 @@ let destGralFix a =
 let destFix = function 
   | DOPN (Fix (recindxs,i),a) -> 
       let (types,funnames,bodies) = destGralFix a in 
-      (recindxs,i,Array.map out_fixcast types,funnames,bodies)
+      ((recindxs,i),((*Array.map out_fixcast *) types,funnames,bodies))
   | _ -> invalid_arg "destFix"
 	
 let destCoFix = function 
   | DOPN ((CoFix i),a) ->
       let (types,funnames,bodies) = destGralFix a in
-      (i,Array.map out_fixcast types,funnames,bodies)
+      (i,((*Array.map out_fixcast *) types,funnames,bodies))
   | _ -> invalid_arg "destCoFix"
 
 (* Provisoire, le temps de maitriser les cast *)
@@ -551,7 +556,7 @@ let destUntypedCoFix = function
 
 type binder_kind = BProd | BLambda
 
-type fix_kind = RFix of int array * int | RCofix of int
+type fix_kind = RFix of (int array * int) | RCofix of int
 
 type 'ctxt reference =
   | RConst of section_path * 'ctxt
@@ -565,6 +570,8 @@ type existential = int * constr array
 type constant = section_path * constr array
 type constructor = constructor_path * constr array
 type inductive = inductive_path * constr array
+type fixpoint = (int array * int) * (constr array * name list * constr array)
+type cofixpoint = int * (constr array * name list * constr array)
 
 (******************)
 (* Term analysis  *)
@@ -586,9 +593,8 @@ type kindOfTerm =
   | IsMutInd       of inductive
   | IsMutConstruct of constructor
   | IsMutCase      of case_info * constr * constr * constr array
-  | IsFix          of int array * int * constr array * name list * constr array
-  | IsCoFix        of int * constr array * name list * constr array
-
+  | IsFix          of fixpoint
+  | IsCoFix        of cofixpoint
 
 (* Discriminates which kind of term is it.  
 
@@ -616,11 +622,11 @@ let kind_of_term c =
     | DOPN (MutCase ci,v)                  -> 
 	IsMutCase (ci,v.(0),v.(1),Array.sub v 2 (Array.length v - 2))
     | DOPN ((Fix (recindxs,i),a))           ->  
-      	let (types,funnames,bodies) = destGralFix a in
-	IsFix (recindxs,i,types,funnames,bodies)
+      	let typedbodies = destGralFix a in
+	IsFix ((recindxs,i),typedbodies)
     | DOPN ((CoFix i),a)                    ->  
-      	let (types,funnames,bodies) = destGralFix a in
-      	IsCoFix (i,types,funnames,bodies)
+      	let typedbodies = destGralFix a in
+      	IsCoFix (i,typedbodies)
     | _ -> errorlabstrm "Term.kind_of_term" [< 'sTR "ill-formed constr" >]
 
 (***************************)
@@ -711,7 +717,7 @@ let rec to_prod n lam =
 
 let prod_app t n =
   match strip_outer_cast t with
-    | DOP2(Prod,_,b) -> sAPP b n
+    | DOP2(Prod,_,DLAM(na,b)) -> subst1 n b
     | _ ->
 	errorlabstrm "prod_app"
 	  [< 'sTR"Needed a product, but didn't find one" ; 'fNL >]
@@ -969,7 +975,7 @@ let rec decomp_app c =
     | c -> (c,[])
 
 (* strips head casts and flattens head applications *)
-let strip_head_cast = function
+let rec strip_head_cast = function
   | DOPN(AppL,cl) -> 
       let rec collapse_rec = function
 	| (DOPN(AppL,cl),l2) -> collapse_rec(array_hd cl, array_app_tl cl l2)
@@ -978,11 +984,41 @@ let strip_head_cast = function
 	| (f,l) -> let v = Array.of_list (f::l) in DOPN(AppL,v)
       in 
       collapse_rec(array_hd cl, array_app_tl cl [])
+  | DOP2(Cast,c,t) -> strip_head_cast c
   | c -> c
+
+(* Various occurs checks *)
+
+let occur_opern s = 
+  let rec occur_rec = function
+    | DOPN(oper,cl) -> s=oper or (array_exists occur_rec cl)
+    | DOPL(oper,cl) -> s=oper or (List.exists occur_rec cl)
+    | VAR _         -> false
+    | DOP1(_,c)     -> occur_rec c 
+    | DOP2(_,c1,c2) -> (occur_rec c1) or (occur_rec c2)
+    | DLAM(_,c)     -> occur_rec c
+    | DLAMV(_,v)    -> array_exists occur_rec v
+    | _             -> false
+  in 
+  occur_rec 
 
 (* (occur_const (s:section_path) c) -> true if constant s occurs in c,
  * false otherwise *)
 let occur_const s = occur_opern (Const s)
+let occur_evar ev = occur_opern (Evar ev)
+
+let occur_var s = 
+  let rec occur_rec = function
+    | DOPN(_,cl)    -> array_exists occur_rec cl
+    | DOPL(_,cl)    -> List.exists occur_rec cl
+    | VAR id        -> s=id
+    | DOP1(_,c)     -> occur_rec c 
+    | DOP2(_,c1,c2) -> (occur_rec c1) or (occur_rec c2)
+    | DLAM(_,c)     -> occur_rec c
+    | DLAMV(_,v)    -> array_exists occur_rec v
+    | _             -> false
+  in 
+  occur_rec 
 
 (* let sigma be a finite function mapping sections paths to 
    constants represented as (identifier list * constr) option.
@@ -1010,9 +1046,7 @@ let replace_consts const_alist =
                  if List.length hyps <> Array.length cl then
                    anomaly "found a constant with a bad number of args"
                  else
-      	       	   replace_vars
-      	       	     (List.combine hyps 
-			(array_map_to_list make_substituend cl')) body
+      	       	   replace_vars (List.combine hyps (Array.to_list cl')) body
              | None -> anomaly ("a constant which was never"^
       	       	       		" supposed to appear has just appeared")
 	 with Not_found -> DOPN(Const sp,cl'))
@@ -1048,10 +1082,9 @@ let whd_castapp x = applist(whd_castapp_stack x [])
 
 (* alpha conversion : ignore print names and casts *)
 let rec eq_constr_rec m n = 
+  (m == n) or
   (m = n) or
   match (strip_head_cast m,strip_head_cast n) with
-    | (DOP2(Cast,c1,_),c2) 	       -> eq_constr_rec c1 c2
-    | (c1,DOP2(Cast,c2,_))              -> eq_constr_rec c1 c2
     | (Rel p1,Rel p2)                   -> p1=p2
     | (DOPN(oper1,cl1),DOPN(oper2,cl2)) ->
         oper1=oper2 & array_for_all2 eq_constr_rec cl1 cl2
@@ -1067,10 +1100,9 @@ let rec eq_constr_rec m n =
 let eq_constr = eq_constr_rec
 
 let rec eq_constr_with_meta_rec m n=
+  (m == n) or
   (m=n) or 
   (match (strip_head_cast m,strip_head_cast n) with
-     | (DOP2(Cast,c1,_),c2) 	       -> eq_constr_rec c1 c2
-     | (c1,DOP2(Cast,c2,_))              -> eq_constr_rec c1 c2
      | (Rel p1,Rel p2)                   -> p1=p2
      | (DOPN(oper1,cl1),DOPN(oper2,cl2)) ->
          oper1=oper2 & array_for_all2 eq_constr_rec cl1 cl2
@@ -1082,6 +1114,24 @@ let rec eq_constr_with_meta_rec m n=
      | (DLAMV(_,cl1),DLAMV(_,cl2))       -> 
       	 array_for_all2 eq_constr_rec cl1 cl2
      | _ -> false)
+
+(* (dependent M N) is true iff M is eq_term with a subterm of N 
+   M is appropriately lifted through abstractions of N *)
+
+let dependent =
+  let rec deprec m t =
+    (eq_constr m t)
+    or (match t with
+	  | VAR _       -> false
+	  | DOP1(_,c)   -> deprec m c
+	  | DOP2(_,c,t) -> deprec m c or deprec m t
+	  | DOPN(_,cl)  -> array_exists (deprec m) cl
+	  | DOPL(_,cl)  -> List.exists (deprec m) cl
+	  | DLAM(_,c)   -> deprec (lift 1 m) c
+	  | DLAMV(_,v)  -> array_exists (deprec (lift 1 m)) v
+	  | _ -> false)
+  in 
+  deprec
 
 (* On reduit une serie d'eta-redex de tete ou rien du tout  *)
 (* [x1:c1;...;xn:cn]@(f;a1...an;x1;...;xn) --> @(f;a1...an) *)
@@ -1329,6 +1379,37 @@ let occur_existential =
 (***************************)
 (* hash-consing functions  *)                         
 (***************************)
+
+let comp_term t1 t2 =
+  match (t1,t2) with
+    | (DOP0 o1, DOP0 o2) -> o1==o2
+    | (DOP1(o1,t1), DOP1(o2,t2)) -> o1==o2 & t1==t2
+    | (DOP2(o1,t1,u1), DOP2(o2,t2,u2)) -> o1==o2 & t1==t2 & u1==u2
+    | (DOPN(o1,v1), DOPN(o2,v2)) ->
+        (o1==o2) & (Array.length v1 = Array.length v2)
+        & array_for_all2 (==) v1 v2
+    | (DOPL(o1,l1), DOPL(o2,l2)) ->
+        (o1==o2) & (List.length l1 = List.length l2)
+        & List.for_all2 (==) l1 l2
+    | (DLAM(x1,t1), DLAM(x2,t2)) -> x1==x2 & t1==t2
+    | (DLAMV(x1,v1), DLAMV(x2,v2)) ->
+        (x1==x2) & (Array.length v1 = Array.length v2)
+        & array_for_all2 (==) v1 v2
+    | (Rel i, Rel j) -> i=j
+    | (VAR x, VAR y) -> x==y
+    | _ -> false
+
+let hash_term (sh_rec,(sh_op,sh_na,sh_id)) t =
+  match t with
+    | DOP0 o -> DOP0 (sh_op o)
+    | DOP1(o,t) -> DOP1(sh_op o, sh_rec t)
+    | DOP2(o,t1,t2) -> DOP2(sh_op o, sh_rec t1, sh_rec t2)
+    | DOPN(o,v) -> DOPN(sh_op o, Array.map sh_rec v)
+    | DOPL(o,l) -> DOPL(sh_op o, List.map sh_rec l)
+    | DLAM(n,t) -> DLAM(sh_na n, sh_rec t)
+    | DLAMV(n,v) -> DLAMV(sh_na n, Array.map sh_rec v)
+    | Rel i -> t
+    | VAR x -> VAR (sh_id x) 
 
 module Hsorts =
   Hashcons.Make(

@@ -351,6 +351,7 @@ let apply_rel_list env sigma nocheck argjl funj =
  which may contain the CoFix variables. These occurrences of CoFix variables
  are not considered *)
 
+exception Occur
 let noccur_with_meta n m term = 
   let rec occur_rec n = function
     | Rel p -> if n<=p & p<n+m then raise Occur
@@ -629,30 +630,19 @@ nvect is [|n1;..;nk|] which gives for each recursive definition
 the inductive-decreasing index 
 the function checks the convertibility of ti with Ai *)
 
-let check_fix env sigma = function
-  | DOPN(Fix(nvect,j),vargs) -> 
-      let nbfix = let nv = Array.length vargs in 
-      if nv < 2 then error "Ill-formed recursive definition" else nv-1 in
-      let varit = Array.sub vargs 0 nbfix in
-      let ldef = array_last vargs in
-      let ln = Array.length nvect 
-      and la = Array.length varit in
-      if ln <> la then 
-	error "Ill-formed fix term"
-      else 
-	let (lna,vdefs) = decomp_DLAMV_name ln ldef in 
-	let vlna = Array.of_list lna in
-	let check_type i = 
-	  try
-	    let _ = 
-	      check_subterm_rec_meta env sigma nvect nvect.(i) vdefs.(i) in 
-	    ()
-	  with UserError (s,str) ->
-	    error_ill_formed_rec_body CCI env str lna i vdefs 
-	in
-	for i = 0 to ln-1 do check_type i done 
-
-  | _ -> assert false
+let check_fix env sigma ((nvect,bodynum),(types,names,bodies)) =
+  let nbfix = Array.length bodies in 
+  if nbfix = 0
+    or Array.length nvect <> nbfix 
+    or Array.length types <> nbfix
+    or List.length names <> nbfix
+  then error "Ill-formed fix term";
+  for i = 0 to nbfix - 1 do
+    try
+      let _ = check_subterm_rec_meta env sigma nvect nvect.(i) bodies.(i) in ()
+    with UserError (s,str) ->
+      error_ill_formed_rec_body	CCI env str (List.rev names) i bodies
+  done 
 
 (* Co-fixpoints. *)
 
@@ -733,28 +723,18 @@ let check_guard_rec_meta env sigma nbfix def deftype =
             else 
 	      error "Recursive call in the type of an abstraction"
 	      
-	| (DOPN(CoFix(j),vargs),l) -> 
-          if  (List.for_all (noccur_with_meta n nbfix) l)
-          then 
-            let nbfix = let nv = Array.length vargs in 
-            if nv < 2 then
-              error "Ill-formed recursive definition" 
-            else 
-	      nv-1 
-	    in
-            let varit = Array.sub vargs 0 nbfix in
-            let ldef = array_last vargs in
-            let la = Array.length varit in
-            let (lna,vdefs) = decomp_DLAMV_name la ldef in
-            let vlna = Array.of_list lna 
-            in 
-	    if (array_for_all (noccur_with_meta n nbfix) varit) then
-              (array_for_all (check_rec_call alreadygrd (n+1) vlra) vdefs)
-              &&
-              (List.for_all (check_rec_call alreadygrd (n+1) vlra) l) 
-            else 
-	      error "Recursive call in the type of a declaration"
-	  else error "Unguarded recursive call"
+	| (DOPN(CoFix(j),vargs) as cofix,l) ->
+            if (List.for_all (noccur_with_meta n nbfix) l)
+            then 
+	      let (j,(varit,lna,vdefs)) = destFix cofix in
+              let nbfix = Array.length vdefs in
+	      if (array_for_all (noccur_with_meta n nbfix) varit) then
+		(array_for_all (check_rec_call alreadygrd (n+1) vlra) vdefs)
+		&&
+		(List.for_all (check_rec_call alreadygrd (n+1) vlra) l) 
+              else 
+		error "Recursive call in the type of a declaration"
+	    else error "Unguarded recursive call"
 
 	| (DOPN(MutCase _,_) as mc,l) -> 
             let (_,p,c,vrest) = destCase mc in
@@ -777,6 +757,17 @@ let check_guard_rec_meta env sigma nbfix def deftype =
 (* The  function which checks that the whole block of definitions 
    satisfies the guarded condition *)
 
+let check_cofix env sigma (bodynum,(types,names,bodies)) = 
+  let nbfix = Array.length bodies in 
+  for i = 0 to nbfix-1 do
+    try 
+      let _ = 
+	check_guard_rec_meta env sigma nbfix bodies.(i) types.(i) in 
+      ()
+    with UserError (s,str) -> 
+      error_ill_formed_rec_body CCI env str (List.rev names) i bodies
+  done
+(*
 let check_cofix env sigma f = 
   match f with
     | DOPN(CoFix(j),vargs) -> 
@@ -801,7 +792,7 @@ let check_cofix env sigma f =
 	in
 	for i = 0 to nbfix-1 do check_type i done
     | _ -> assert false
-
+*)
 
 (* Checks the type of a (co)fixpoint.
    Fix and CoFix are typed the same way; only the guard condition differs. *)
@@ -831,10 +822,10 @@ let control_only_guard env sigma =
     | VAR _         -> ()
     | DOP0(_)       -> ()
     | DOPN(CoFix(_),cl) as cofix ->
-	check_cofix env sigma cofix; 
+	check_cofix env sigma (destCoFix cofix); 
 	Array.iter control_rec cl
     | DOPN(Fix(_),cl) as fix  -> 
-	check_fix env sigma fix; 
+	check_fix env sigma (destFix fix); 
         Array.iter control_rec cl
     | DOPN(_,cl)    -> Array.iter control_rec cl
     | DOPL(_,cl)    -> List.iter control_rec cl

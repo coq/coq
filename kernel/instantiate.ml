@@ -22,7 +22,7 @@ let instantiate_constr ids c args =
   if is_id_inst ids args then
     c
   else
-    replace_vars (List.combine ids (List.map make_substituend args)) c
+    replace_vars (List.combine ids args) c
 
 let instantiate_type ids tty args =
   typed_app (fun c -> instantiate_constr ids c args) tty

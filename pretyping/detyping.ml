@@ -247,7 +247,7 @@ let computable p k =
 
   let rec striprec = function
     | (0,DOP2(Lambda,_,DLAM(_,d))) -> false
-    | (0,d               )         -> noccur_bet 1 k d
+    | (0,d               )         -> noccur_between 1 k d
     | (n,DOP2(Lambda,_,DLAM(_,d))) -> striprec (n-1,d)
     |  _                           -> false
   in 
@@ -356,8 +356,8 @@ let rec detype avoid env t =
 	    RCases (dummy_loc,tag,pred,[tomatch],eqnl)
 	end
 	
-    | IsFix (nv,n,cl,lfn,vt) -> detype_fix (RFix (nv,n)) avoid env cl lfn vt
-    | IsCoFix (n,cl,lfn,vt)  -> detype_fix (RCofix n) avoid env cl lfn vt)
+    | IsFix (nvn,(cl,lfn,vt)) -> detype_fix (RFix nvn) avoid env cl lfn vt
+    | IsCoFix (n,(cl,lfn,vt))  -> detype_fix (RCofix n) avoid env cl lfn vt)
 
 and detype_fix fk avoid env cl lfn vt =
   let lfi = List.map (fun id -> next_name_away id avoid) lfn in

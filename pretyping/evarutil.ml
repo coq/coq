@@ -244,7 +244,7 @@ let new_isevar isevars env typ k =
  *)
 let evar_define isevars lhs rhs =
   let (ev,argsv) = destEvar lhs in
-  if occur_opern (Evar ev) rhs then error_occur_check CCI empty_env ev rhs;
+  if occur_evar ev rhs then error_occur_check CCI empty_env ev rhs;
   let args = List.map (function (VAR _ | Rel _) as t -> t | _ -> mkImplicit)
       (Array.to_list argsv) in 
   let evd = ise_map isevars ev in

@@ -85,14 +85,11 @@ let reduce_fix_use_function f whfun fix stack =
 		  | _ -> (false,(fix,stack'))))
     | _ -> assert false
 
-let contract_cofix_use_function f cofix =
-  match cofix with 
-    | DOPN(CoFix(bodynum),bodyvect) ->
-  	let nbodies =  (Array.length bodyvect) -1 in
-  	let make_Fi j = DOPN(CoFix(j),bodyvect) in
-  	let lbodies = list_assign (list_tabulate make_Fi nbodies) bodynum f in
-  	sAPPViList bodynum (array_last bodyvect) lbodies
-    | _ -> assert false
+let contract_cofix_use_function f (bodynum,(_,_,bodies as typedbodies)) =
+  let nbodies = Array.length bodies in
+  let make_Fi j = mkCoFix (nbodies-j-1,typedbodies) in
+  let subbodies = list_assign (list_tabulate make_Fi nbodies) bodynum f in
+  substl subbodies bodies.(bodynum)
 
 let reduce_mind_case_use_function env f mia =
   match mia.mconstr with 
@@ -101,7 +98,7 @@ let reduce_mind_case_use_function env f mia =
 	let real_cargs = list_lastn ncargs mia.mcargs in
 	applist (mia.mlf.(i-1),real_cargs)
     | DOPN(CoFix _,_) as cofix ->
-	let cofix_def = contract_cofix_use_function f cofix in
+	let cofix_def = contract_cofix_use_function f (destCoFix cofix) in
 	mkMutCaseA mia.mci mia.mP (applist(cofix_def,mia.mcargs)) mia.mlf
     | _ -> assert false
 	  

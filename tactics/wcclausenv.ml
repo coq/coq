@@ -134,9 +134,9 @@ let elim_res_pf_THEN_i kONT clenv tac gls =
 
 let rec build_args acc ce p_0 p_1 =
   match p_0,p_1 with 
-    | ((DOP2(Prod,a,(DLAM(na,_) as b))), (a_0::bargs)) ->
+    | ((DOP2(Prod,a,DLAM(na,b))), (a_0::bargs)) ->
         let (newa,ce') = (build_term ce (na,Some a) a_0) in 
-	build_args (newa::acc) ce' (sAPP b a_0) bargs
+	build_args (newa::acc) ce' (subst1 a_0 b) bargs
     | (_, [])     -> (List.rev acc,ce)
     | (_, (_::_)) -> failwith "mk_clenv_using"
 

@@ -64,8 +64,8 @@ let rec type_of env cstr=
     | IsLambda (name,c1,c2) ->
         let var = make_typed c1 (sort_of env c1) in
           mkProd name c1 (type_of (push_rel (name,var) env) c2)
-    | IsFix (vn,i,lar,lfi,vdef) -> lar.(i)
-    | IsCoFix (i,lar,lfi,vdef) -> lar.(i)
+    | IsFix ((vn,i),(lar,lfi,vdef)) -> lar.(i)
+    | IsCoFix (i,(lar,lfi,vdef)) -> lar.(i)
     | IsAppL(f,args)->
       strip_outer_cast (subst_type env sigma (type_of env f) args)
     | IsCast (c,t) -> t

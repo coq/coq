@@ -253,12 +253,8 @@ let mis_make_indrec env sigma listdepkind mispec =
 	    let fixn = Array.of_list (List.rev ln) in
             let fixtyi = Array.of_list (List.rev ltyp) in
             let fixdef = Array.of_list (List.rev ldef) in 
-            let makefixdef = 
-              put_DLAMSV 
-		(list_tabulate (fun _ -> Name(id_of_string "F")) nrec) fixdef 
-	    in 
-            let fixspec = Array.append fixtyi [|makefixdef|] in 
-	    DOPN(Fix(fixn,p),fixspec)
+            let names = list_tabulate (fun _ -> Name(id_of_string "F")) nrec in
+	    mkFix ((fixn,p),(fixtyi,names,fixdef))
       in 
       mrec 0 [] [] [] 
     in 
@@ -442,7 +438,7 @@ let pred_case_ml_fail env sigma isrec (IndType (indf,realargs)) (i,ft) =
     let nbrec = if isrec then count_rec_arg j recargi else 0 in
     let nb_arg = List.length (recargs.(i-1)) + nbrec in
     let pred = concl_n env sigma nb_arg ft in
-    if noccur_bet 1 nb_arg pred then 
+    if noccur_between 1 nb_arg pred then 
       lift (-nb_arg) pred
     else 
       failwith "Dependent"

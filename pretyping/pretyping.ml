@@ -329,15 +329,16 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
         pretype (mk_tycon (lift nbfix (larj.(i).uj_val))) newenv isevars lvar
           lmeta def) vdef in
   (evar_type_fixpoint env isevars lfi lara vdefj;
-  match fixkind with
-    | RFix(vn,i) ->
-      let fix = mkFix vn i lara (List.rev lfi) (Array.map j_val_only vdefj) in
-	check_fix env !isevars fix;
-	make_judge fix lara.(i)
-    | RCofix i -> 
-      let cofix = mkCoFix i lara (List.rev lfi) (Array.map j_val_only vdefj) in
-	check_cofix env !isevars cofix;
-	make_judge cofix lara.(i))
+   let larav = Array.map body_of_type lara in
+   match fixkind with
+     | RFix (vn,i as vni) ->
+	 let fix = (vni,(larav,List.rev lfi,Array.map j_val_only vdefj)) in
+	 check_fix env !isevars fix;
+	 make_judge (mkFix fix) lara.(i)
+     | RCofix i -> 
+	 let cofix = (i,(larav,List.rev lfi,Array.map j_val_only vdefj)) in
+	 check_cofix env !isevars cofix;
+	 make_judge (mkCoFix cofix) lara.(i))
 
 | RSort (loc,s) -> pretype_sort s
 

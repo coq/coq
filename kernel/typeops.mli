@@ -67,8 +67,8 @@ val apply_rel_list :
   env -> 'a evar_map -> bool -> unsafe_judgment list -> unsafe_judgment
     -> unsafe_judgment * constraints
 
-val check_fix : env -> 'a evar_map -> constr -> unit
-val check_cofix : env -> 'a evar_map -> constr -> unit
+val check_fix : env -> 'a evar_map -> fixpoint -> unit
+val check_cofix : env -> 'a evar_map -> cofixpoint -> unit
 val control_only_guard : env -> 'a evar_map -> constr -> unit
 
 val type_fixpoint : env -> 'a evar_map -> name list -> typed_type array 

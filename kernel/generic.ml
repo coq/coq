@@ -23,9 +23,6 @@ type 'oper term =
 exception FreeVar
 exception Occur
 
-let isRel = function Rel _ -> true | _ -> false
-let isVAR = function VAR _ -> true | _ -> false
-
 (* returns the list of free debruijn indices in a term *)
 
 let free_rels m = 
@@ -59,7 +56,7 @@ let closedn =
   in 
   closed_rec
 
-(* (closed M) is true iff M is a (deBruijn) closed term *)
+(* [closed0 M] is true iff [M] is a (deBruijn) closed term *)
 
 let closed0 term =
   try closedn 0 term; true with FreeVar -> false
@@ -80,10 +77,10 @@ let noccurn n term =
   in 
   try occur_rec n term; true with Occur -> false
 
-(* (noccur_bet n m M) returns true iff (Rel p) does NOT occur in term M 
+(* (noccur_between n m M) returns true iff (Rel p) does NOT occur in term M 
   for n <= p < n+m *)
 
-let noccur_bet n m term = 
+let noccur_between n m term = 
   let rec occur_rec n = function
     | Rel(p)        -> if n<=p && p<n+m then raise Occur
     | VAR _         -> ()
@@ -146,7 +143,8 @@ let liftn k n =
     | el -> exliftn el
  
 let lift k = liftn k 1
-let lift1 c = exliftn (ELSHFT(ELID,1)) c
+
+let pop t = lift (-1) t
 
 let lift_context n l = 
   let k = List.length l in 
@@ -242,85 +240,11 @@ let substn_many lamv n =
   in 
   substrec n
 
+let substnl laml k =
+  substn_many (Array.map make_substituend (Array.of_list laml)) k
 let substl laml =
   substn_many (Array.map make_substituend (Array.of_list laml)) 0
 let subst1 lam = substl [lam]
-let pop t = lift (-1) t
-
-
-(* Various occurs checks *)
-
-let occur_opern s = 
-  let rec occur_rec = function
-    | DOPN(oper,cl) -> s=oper or (array_exists occur_rec cl)
-    | DOPL(oper,cl) -> s=oper or (List.exists occur_rec cl)
-    | VAR _         -> false
-    | DOP1(_,c)     -> occur_rec c 
-    | DOP2(_,c1,c2) -> (occur_rec c1) or (occur_rec c2)
-    | DLAM(_,c)     -> occur_rec c
-    | DLAMV(_,v)    -> array_exists occur_rec v
-    | _             -> false
-  in 
-  occur_rec 
-
-let occur_oper0 s = 
-  let rec occur_rec = function
-    | DOPN(_,cl)    -> (array_exists occur_rec cl)
-    | DOPL(_,cl)    -> (List.exists occur_rec cl)
-    | DOP0 oper     -> s=oper
-    | VAR _         -> false
-    | DOP1(_,c)     -> occur_rec c 
-    | DOP2(_,c1,c2) -> (occur_rec c1) or (occur_rec c2)
-    | DLAM(_,c)     -> occur_rec c
-    | DLAMV(_,v)    -> array_exists occur_rec v
-    | _             -> false
-  in 
-  occur_rec 
-
-let occur_var s = 
-  let rec occur_rec = function
-    | DOPN(_,cl)    -> array_exists occur_rec cl
-    | DOPL(_,cl)    -> List.exists occur_rec cl
-    | VAR id        -> s=id
-    | DOP1(_,c)     -> occur_rec c 
-    | DOP2(_,c1,c2) -> (occur_rec c1) or (occur_rec c2)
-    | DLAM(_,c)     -> occur_rec c
-    | DLAMV(_,v)    -> array_exists occur_rec v
-    | _             -> false
-  in 
-  occur_rec 
-
-let occur_oper s = 
-  let rec occur_rec = function
-    | DOPN(oper,cl)    -> s=oper or (array_exists occur_rec cl)
-    | DOPL(oper,cl)    -> s=oper or (List.exists occur_rec cl)
-    | VAR _            -> false
-    | DOP0 oper        -> s=oper
-    | DOP1(oper,c)     -> s=oper or occur_rec c 
-    | DOP2(oper,c1,c2) -> s=oper or (occur_rec c1) or (occur_rec c2)
-    | DLAM(_,c)        -> occur_rec c
-    | DLAMV(_,v)       -> array_exists occur_rec v
-    | _                -> false
-  in 
-  occur_rec 
-
-let process_opers_of_term p f l constr = 
-  let rec filtrec acc = function
-    | DOP0 oper        -> if p oper then ((f oper)::acc) else acc
-    | VAR _            -> acc
-    | DOP1(oper,c)     -> let newacc = filtrec acc c in
-                          if p oper then ((f oper)::newacc) else newacc
-    | DOP2(oper,c1,c2) -> let newacc = filtrec (filtrec acc c1) c2 in
-                          if p oper then ((f oper)::newacc) else newacc
-    | DOPN(oper,cl)    -> let newacc = (Array.fold_left filtrec acc cl) in
-                          if p oper then ((f oper)::newacc) else newacc
-    | DOPL(oper,cl)    -> let newacc = (List.fold_left filtrec acc cl) in
-                          if p oper then ((f oper)::newacc) else newacc
-    | DLAM(_,c)        -> filtrec acc c
-    | DLAMV(_,v)       -> Array.fold_left filtrec acc v
-    | _                -> acc
-  in 
-  filtrec l constr
 
 (* Returns the list of global variables in a term *)
 
@@ -352,42 +276,6 @@ let global_vars_set constr =
   in 
   filtrec Idset.empty constr
 
-(* alpha equality for generic terms : checks first if M and M' are equal,
-   otherwise checks equality forgetting the name annotation of DLAM and DLAMV*)
-
-let rec eq_term m m' =
-     (m == m') 
-  or (m = m')
-  or (match (m,m') with
-	| (DOP1(oper1,c1),DOP1(oper2,c2)) ->
-            oper1 = oper2 & eq_term c1 c2
-	| (DOP2(oper1,c1,t1),DOP2(oper2,c2,t2)) ->
-            oper1 = oper2 & eq_term c1 c2 & eq_term t1 t2
-	| (DOPN(oper1,cl1),DOPN(oper2,cl2)) ->
-            oper1 = oper2 & array_for_all2 eq_term cl1 cl2
-	| (DOPL(oper1,cl1),DOPL(oper2,cl2)) ->
-            oper1 = oper2 & List.for_all2 eq_term cl1 cl2
-	| (DLAM(_,c1),DLAM(_,c2)) -> eq_term c1 c2
-	| (DLAMV(_,cl1),DLAMV(_,cl2)) -> array_for_all2 eq_term cl1 cl2
-	| _ -> false)
-
-(* (dependent M N) is true iff M is eq_term with a subterm of N 
-   M is appropriately lifted through abstractions of N *)
-let dependent =
-  let rec deprec m = function t ->
-       (eq_term m t)
-    or (match t with
-	  | VAR _       -> false
-	  | DOP1(_,c)   -> deprec m c
-	  | DOP2(_,c,t) -> deprec m c or deprec m t
-	  | DOPN(_,cl)  -> array_exists (deprec m) cl
-	  | DOPL(_,cl)  -> List.exists (deprec m) cl
-	  | DLAM(_,c)   -> deprec (lift1 m) c
-	  | DLAMV(_,v)  -> array_exists (deprec (lift1 m)) v
-	  | _ -> false)
-  in 
-  deprec
-
 (* (thin_val sigma) removes identity substitutions from sigma *)
 
 let rec thin_val = function
@@ -398,6 +286,8 @@ let rec thin_val = function
 
 (* (replace_vars sigma M) applies substitution sigma to term M *)
 let replace_vars var_alist = 
+  let var_alist =
+    List.map (fun (str,c) -> (str,make_substituend c)) var_alist in
   let var_alist = thin_val var_alist in 
   let rec substrec n = function
     | (VAR(x) as c)    ->
@@ -414,54 +304,22 @@ let replace_vars var_alist =
   in 
   if var_alist = [] then (function x -> x) else substrec 0
 
-let subst_varn str n = replace_vars [(str,make_substituend (Rel n))]
+let subst_varn str n = replace_vars [(str, (Rel n))]
 
 (* (subst_var str t) substitute (VAR str) by (Rel 1) in t *)
 let subst_var str = subst_varn str 1
 
+(* [Rel (n+m);...;Rel(n+1)] *)
 
-(* renames different  ocurrences of (VAR id) in t with a fresh identifier
-   wrt. acc *)
-let rename_diff_occ  id acc t =
-  let rec rename_occ acc  = function
-    | (VAR(x)  as c) -> 
-	if x <> id then 
-	  acc,c
-        else 
-	  let nid = next_ident_away id acc in (nid::acc), (VAR nid)
-    | DOPN(oper,cl) -> 
-	let nacc,ncl = vrename_occ acc  cl in nacc,DOPN(oper, ncl)
-    | DOPL(oper,cl) -> 
-	let nacc,ncl = lrename_occ acc cl in nacc, DOPL(oper,ncl)
-    | DOP1(oper,c) ->
-	let nacc,nc = rename_occ acc c in nacc, DOP1(oper,nc)
-    | DOP2(oper,c1,c2) -> 
-	let nacc,nc1 = rename_occ acc c1 in
-        let nacc2,nc2 = rename_occ   nacc c2 in
-        nacc2, DOP2(oper,nc1,nc2) 
-    | DLAM(na,c) -> 
-	let nacc,nc = rename_occ acc c in (nacc, DLAM(na,nc))
-    | DLAMV(na,v) -> 
-	let nacc,nv = vrename_occ acc v in (nacc, DLAMV(na, nv))
-    | x -> acc,x
-  and lrename_occ acc = function
-    | [] -> acc,[]
-    | (t::lt) -> 
-	let nacc,nt = rename_occ acc t in
-        let nacc2,nlt = lrename_occ nacc lt
-        in nacc2,(nt::nlt)
-  and vrename_occ acc v = 
-    let nacc,nl = lrename_occ acc (Array.to_list v)
-    in nacc, Array.of_list nl
+let rel_vect n m = Array.init m (fun i -> Rel(n+m-i))
+
+let rel_list n m = 
+  let rec reln l p = 
+    if p>m then l else reln (Rel(n+p)::l) (p+1)
   in 
-  rename_occ acc t
+  reln [] 1
 
-
-let sAPP c n =
-  match c with 
-    | DLAM(na,m) -> subst1 n m
-    | _ -> invalid_arg "SAPP"
-	  
+(* Obsolète 
 let sAPPV c n =
   match c with
     | DLAMV(na,mV) -> Array.map (subst1 n) mV
@@ -480,22 +338,6 @@ let sAPPList constr cl =
   in 
   srec [] (constr,cl) 
 
-let sAPPVList constr cl = 
-  let rec srec stack = function
-    | (DLAM(_,c), (h::t)) -> srec (h::stack) (c,t)
-    | (DLAMV(_,c), [h])   -> Array.map (substl (h::stack)) c
-    | (_,             _)  -> failwith "SAPPVList"
-  in 
-  srec [] (constr,cl) 
-
-let sAPPViList i constr cl= 
-  let rec srec stack = function
-    | (DLAM(_,c), (h::t)) -> srec (h::stack) (c,t)
-    | (DLAMV(_,c), [h])   -> substl (h::stack) c.(i)
-    | (_,             _)  -> failwith "SAPPViList"
-  in 
-  srec [] (constr,cl)
-
 let under_dlams f = 
   let rec apprec = function 
     | DLAMV(na,c) -> DLAMV(na,Array.map f c)
@@ -504,18 +346,10 @@ let under_dlams f =
   in 
   apprec 
 
-
 let put_DLAMSV lna lc = 
   match lna with 
     | [] -> anomaly "put_DLAM"
     | na::lrest -> List.fold_left (fun c na -> DLAM(na,c)) (DLAMV(na,lc)) lrest
-
-let put_DLAMSV_subst lid lc = 
-  match lid with
-    | [] -> anomaly "put_DLAM"
-    | id::lrest ->  
-        List.fold_left (fun c id' -> DLAM(Name id',subst_var id' c)) 
-          (DLAMV(Name id,Array.map (subst_var id) lc)) lrest
 
 let rec decomp_DLAMV n = function 
   | DLAM(_,lc)  -> decomp_DLAMV (n-1) lc
@@ -537,50 +371,4 @@ let decomp_all_DLAMV_name constr =
     | _ -> assert false
   in 
   decomprec [] constr
-  
-
-(* [Rel (n+m);...;Rel(n+1)] *)
-
-let rel_vect n m = Array.init m (fun i -> Rel(n+m-i))
-
-let rel_list n m = 
-  let rec reln l p = 
-    if p>m then l else reln (Rel(n+p)::l) (p+1)
-  in 
-  reln [] 1
-
-let rec count_dlam = function
-  | DLAM (_,c) -> 1 + (count_dlam c)
-  | _ -> 0
-
-(* Hash-consing *)
-let comp_term t1 t2 =
-  match (t1,t2) with
-    | (DOP0 o1, DOP0 o2) -> o1==o2
-    | (DOP1(o1,t1), DOP1(o2,t2)) -> o1==o2 & t1==t2
-    | (DOP2(o1,t1,u1), DOP2(o2,t2,u2)) -> o1==o2 & t1==t2 & u1==u2
-    | (DOPN(o1,v1), DOPN(o2,v2)) ->
-        (o1==o2) & (Array.length v1 = Array.length v2)
-        & array_for_all2 (==) v1 v2
-    | (DOPL(o1,l1), DOPL(o2,l2)) ->
-        (o1==o2) & (List.length l1 = List.length l2)
-        & List.for_all2 (==) l1 l2
-    | (DLAM(x1,t1), DLAM(x2,t2)) -> x1==x2 & t1==t2
-    | (DLAMV(x1,v1), DLAMV(x2,v2)) ->
-        (x1==x2) & (Array.length v1 = Array.length v2)
-        & array_for_all2 (==) v1 v2
-    | (Rel i, Rel j) -> i=j
-    | (VAR x, VAR y) -> x==y
-    | _ -> false
-
-let hash_term (sh_rec,(sh_op,sh_na,sh_id)) t =
-  match t with
-    | DOP0 o -> DOP0 (sh_op o)
-    | DOP1(o,t) -> DOP1(sh_op o, sh_rec t)
-    | DOP2(o,t1,t2) -> DOP2(sh_op o, sh_rec t1, sh_rec t2)
-    | DOPN(o,v) -> DOPN(sh_op o, Array.map sh_rec v)
-    | DOPL(o,l) -> DOPL(sh_op o, List.map sh_rec l)
-    | DLAM(n,t) -> DLAM(sh_na n, sh_rec t)
-    | DLAMV(n,v) -> DLAMV(sh_na n, Array.map sh_rec v)
-    | Rel i -> t
-    | VAR x -> VAR (sh_id x) 
+*)  

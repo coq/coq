@@ -486,12 +486,19 @@ let reducible_mind_case = function
   | DOPN(MutConstruct _,_) | DOPN(CoFix _,_) -> true
   | _  -> false
 
+(*
 let contract_cofix = function
   | DOPN(CoFix(bodynum),bodyvect) ->
       let nbodies = (Array.length bodyvect) -1 in
       let make_Fi j = DOPN(CoFix(j),bodyvect) in
       sAPPViList bodynum (array_last bodyvect) (list_tabulate make_Fi nbodies)
   | _ -> assert false
+*)
+
+let contract_cofix (bodynum,(types,names,bodies as typedbodies)) =
+  let nbodies = Array.length bodies in
+  let make_Fi j = mkCoFix (nbodies-j-1,typedbodies) in
+  substl (list_tabulate make_Fi nbodies) bodies.(bodynum)
 
 let reduce_mind_case mia =
   match mia.mconstr with
@@ -500,19 +507,25 @@ let reduce_mind_case mia =
 	let real_cargs = list_lastn ncargs mia.mcargs in
         applist (mia.mlf.(i-1),real_cargs)
     | DOPN(CoFix _,_) as cofix ->
-	let cofix_def = contract_cofix cofix in
+	let cofix_def = contract_cofix (destCoFix cofix) in
 	mkMutCaseA mia.mci mia.mP (applist(cofix_def,mia.mcargs)) mia.mlf
     | _ -> assert false
 
 (* contracts fix==FIX[nl;i](A1...Ak;[F1...Fk]{B1....Bk}) to produce
    Bi[Fj --> FIX[nl;j](A1...Ak;[F1...Fk]{B1...Bk})] *)
 
+(*
 let contract_fix = function 
   | DOPN(Fix(recindices,bodynum),bodyvect) -> 
       let nbodies = Array.length recindices in
       let make_Fi j = DOPN(Fix(recindices,j),bodyvect) in
       sAPPViList bodynum (array_last bodyvect) (list_tabulate make_Fi nbodies)
   | _ -> assert false
+*)
+let contract_fix ((recindices,bodynum),(types,names,bodies as typedbodies)) =
+  let nbodies = Array.length recindices in
+  let make_Fi j = mkFix ((recindices,nbodies-j-1),typedbodies) in
+  substl (list_tabulate make_Fi nbodies) bodies.(bodynum)
 
 let fix_recarg fix stack =
   match fix with 
@@ -537,7 +550,7 @@ let reduce_fix whfun fix stack =
                let stack' = list_assign stack recargnum (applist recarg') in
 	       (match recarg'hd with
                   | DOPN(MutConstruct _,_) -> 
-		      (true,(contract_fix fix,stack'))
+		      (true,(contract_fix (destFix fix),stack'))
 		  | _ -> (false,(fix,stack'))))
     | _ -> assert false
 
@@ -981,7 +994,7 @@ let instance s c =
 
 let hnf_prod_app env sigma t n =
   match whd_betadeltaiota env sigma t with
-    | DOP2(Prod,_,b) -> sAPP b n
+    | DOP2(Prod,_,DLAM(_,b)) -> subst1 n b
     | _ -> anomaly "hnf_prod_app: Need a product"
 
 let hnf_prod_appvect env sigma t nl = 
@@ -992,7 +1005,7 @@ let hnf_prod_applist env sigma t nl =
 				    
 let hnf_lam_app env sigma t n =
   match whd_betadeltaiota env sigma t with
-    | DOP2(Lambda,_,b) -> sAPP b n
+    | DOP2(Lambda,_,DLAM(_,b)) -> subst1 n b
     | _ -> anomaly "hnf_lam_app: Need an abstraction"
 
 let hnf_lam_appvect env sigma t nl = 

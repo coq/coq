@@ -474,7 +474,7 @@ let computable p k =
 
   let rec striprec = function
     | (0,DOP2(Lambda,_,DLAM(_,d))) -> false
-    | (0,d               )         -> noccur_bet 1 k d
+    | (0,d               )         -> noccur_between 1 k d
     | (n,DOP2(Lambda,_,DLAM(_,d))) -> striprec (n-1,d)
     |  _                           -> false
   in 
@@ -606,7 +606,7 @@ let old_bdize at_top env t =
 		       ope(tag,pred::asttomatch::eqnl)
 	       end
 	       
-	   | IsFix (nv,n,cl,lfn,vt) ->
+	   | IsFix ((nv,n),(cl,lfn,vt)) ->
 	       let lfi = List.map (fun na -> next_name_away na avoid) lfn in
 	       let def_env = 
 		 List.fold_left
@@ -651,7 +651,7 @@ let old_bdize at_top env t =
 	       in 
 	       ope("FIX", (nvar (string_of_id f))::listdecl)
 
-	   | IsCoFix (n,cl,lfn,vt) ->
+	   | IsCoFix (n,(cl,lfn,vt)) ->
 	       let lfi = List.map (fun na -> next_name_away na avoid) lfn in
 	       let def_env =
 		 List.fold_left 

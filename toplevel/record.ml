@@ -152,8 +152,7 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
              let constr_fip = (* Rel 1 refers to "x" *)
                applist (constr_fi,(List.map (fun id -> VAR id) idps)@[Rel 1])
              in (Some(path_of_const constr_fi)::sp_projs,
-		 ids_not_ok,
-		 (fi,{sinfo=Closed;sit=constr_fip})::subst)
+		 ids_not_ok, (fi,constr_fip)::subst)
 	   end)
       ([],[],[]) coers newfs
   in 

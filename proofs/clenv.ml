@@ -53,12 +53,12 @@ let applyHead n c wc =
       (wc,c)
     else 
       match w_whd_betadeltaiota wc cty with
-        | DOP2(Prod,c1,c2) ->
+        | DOP2(Prod,c1,DLAM(_,c2)) ->
             let c1ty = w_type_of wc c1 in
 	    let evar = new_evar_in_sign (w_env wc) in
             let (evar_n, _) = destEvar evar in
 	    (compose 
-	       (apprec (n-1) (applist(c,[evar])) (sAPP c2 evar))
+	       (apprec (n-1) (applist(c,[evar])) (subst1 evar c2))
 	       (w_Declare evar_n (DOP2(Cast,c1,c1ty))))
 	    wc
 	| _ -> error "Apply_Head_Then"

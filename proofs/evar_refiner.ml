@@ -133,16 +133,23 @@ let w_Declare sp c (wc : walking_constraints) =
 
 let w_Declare_At sp sp' c = w_Focusing sp (w_Declare sp' c)
 
-let evars_of sigma c =
-  List.fold_right Intset.add 
-    (list_uniquize (process_opers_of_term
-             	      (function 
-			 | Evar ev -> Evd.in_dom (ts_it sigma).decls ev
-			 | _ -> false)
-             	      (function 
-			 | Evar ev -> ev
-	     		 | _ -> assert false) [] c))
-    Intset.empty
+let evars_of sigma constr = 
+  let rec filtrec acc = function
+    | DOP0 oper        -> acc
+    | VAR _            -> acc
+    | DOP1(oper,c)     -> filtrec acc c
+    | DOP2(oper,c1,c2) -> filtrec (filtrec acc c1) c2
+    | DOPN(Evar ev,cl) ->
+	let newacc = (Array.fold_left filtrec acc cl) in
+	if Evd.in_dom (ts_it sigma).decls ev
+	then Intset.add ev newacc else newacc
+    | DOPN(oper,cl)    -> Array.fold_left filtrec acc cl
+    | DOPL(oper,cl)    -> List.fold_left filtrec acc cl
+    | DLAM(_,c)        -> filtrec acc c
+    | DLAMV(_,v)       -> Array.fold_left filtrec acc v
+    | _                -> acc
+  in 
+  filtrec Intset.empty constr
 
 let w_Define sp c wc =
   let spdecl = Evd.map (w_Underlying wc) sp in

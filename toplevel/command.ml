@@ -122,56 +122,54 @@ let corecursive_message = function
   | l   -> hOV 0 [< prlist_with_sep pr_coma print_id l;
                     'sPC; 'sTR "are corecursively defined">]
 
+let put_DLAMSV_subst lid lc = 
+  match lid with
+    | [] -> anomaly "put_DLAM"
+    | id::lrest ->  
+        List.fold_left (fun c id' -> DLAM(Name id',subst_var id' c)) 
+          (DLAMV(Name id,Array.map (subst_var id) lc)) lrest
+
 let build_mutual lparams lnamearconstrs finite =
   let allnames = 
     List.fold_left 
       (fun acc (id,_,l) -> id::(List.map fst l)@acc) [] lnamearconstrs in
   if not (list_distinct allnames) then
     error "Two inductive objects have the same name";
-  let lrecnames = List.map (fun (x,_,_)->x)  lnamearconstrs
+  let lrecnames = List.map (fun (x,_,_) -> x)  lnamearconstrs
   and nparams = List.length lparams
   and sigma = Evd.empty 
   and env0 = Global.env() in
-(*  let fs = States.freeze() in*)
-  try
-    let mispecvec =
-      let (ind_env,arityl) =
-      	List.fold_left 
-	  (fun (env,arl) (recname,arityc,_) -> 
-             let arity =
-	       typed_type_of_com Evd.empty env (mkProdCit lparams arityc) in
-	     let env' = Environ.push_var (recname,arity) env in
-(*	A quoi cela sert ?
-	declare_variable recname (arity.body,NeverDischarge,false);*)
-	     (env', (arity::arl)))
-	  (env0,[]) lnamearconstrs 
-      in
-      List.map2
-        (fun ar (name,_,lname_constr) -> 
-           let consconstrl =
-             List.map 
-               (fun (_,constr) -> interp_constr sigma ind_env
-                    (mkProdCit lparams constr))
-               lname_constr 
-	   in
-           (name, (body_of_type ar), List.map fst lname_constr,
-            put_DLAMSV_subst (List.rev lrecnames) (Array.of_list consconstrl)))
-        (List.rev arityl) lnamearconstrs
+  let mispecvec =
+    let (ind_env,arityl) =
+      List.fold_left 
+	(fun (env,arl) (recname,arityc,_) -> 
+           let arity =
+	     typed_type_of_com Evd.empty env (mkProdCit lparams arityc) in
+	   let env' = Environ.push_rel (Name recname,arity) env in
+	   (env', (arity::arl)))
+	(env0,[]) lnamearconstrs 
     in
-    let mie = { 
-      mind_entry_nparams = nparams;
-      mind_entry_finite = finite;
-      mind_entry_inds = mispecvec }
-    in
-(*    States.unfreeze fs;*)
-    let sp = declare_mind mie in
-    if is_verbose() then pPNL(minductive_message lrecnames);
-    for i = 0 to List.length mispecvec - 1 do
-      declare_eliminations sp i
-    done
-  with e ->
-(*    States.unfreeze fs; *)raise e
-
+    List.map2
+      (fun ar (name,_,lname_constr) -> 
+         let consconstrl =
+           List.map 
+             (fun (_,constr) -> interp_constr sigma ind_env
+                  (mkProdCit lparams constr))
+             lname_constr 
+	 in
+         (name, (body_of_type ar), List.map fst lname_constr, consconstrl))
+      (List.rev arityl) lnamearconstrs
+  in
+  let mie = { 
+    mind_entry_nparams = nparams;
+    mind_entry_finite = finite;
+    mind_entry_inds = mispecvec }
+  in
+  let sp = declare_mind mie in
+  if is_verbose() then pPNL(minductive_message lrecnames);
+  for i = 0 to List.length mispecvec - 1 do
+    declare_eliminations sp i
+  done
 
 (* try to find non recursive definitions *)
 
@@ -241,7 +239,7 @@ let build_recursive lnameargsardef =
   if lnamerec <> [] then begin
     let recvec = [|put_DLAMSV_subst (List.rev lnamerec)
                        (Array.of_list ldefrec)|] in
-    let varrec = Array.of_list larrec in
+    let varrec = Array.of_list (List.map incast_type larrec) in
     let rec declare i = function 
       | fi::lf ->
 	  let ce = 
@@ -258,7 +256,7 @@ let build_recursive lnameargsardef =
     if is_verbose() then pPNL(recursive_message lnamerec)
   end;
   (* The others are declared as normal definitions *)
-  let var_subst id = (id,make_substituend (global_reference CCI id)) in
+  let var_subst id = (id, global_reference CCI id) in
   let _ = 
     List.fold_left
       (fun subst (f,def) ->
@@ -308,11 +306,11 @@ let build_corecursive lnameardef =
       else 
 	[|put_DLAMSV_subst (List.rev lnamerec) (Array.of_list ldefrec)|] 
     in
+    let varrec = Array.of_list (List.map incast_type larrec) in
     let rec declare i = function 
       | fi::lf ->
 	  let ce = 
-	    { const_entry_body = 
-		Cooked (mkCoFixDlam i (Array.of_list larrec) recvec);
+	    { const_entry_body = Cooked (mkCoFixDlam i varrec recvec);
 	      const_entry_type = None } 
 	  in
           declare_constant fi (ce,n);
@@ -322,8 +320,7 @@ let build_corecursive lnameardef =
     declare 0 lnamerec; 
     if is_verbose() then pPNL(corecursive_message lnamerec)
   end;
-  let var_subst id =
-    (id,make_substituend (global_reference CCI id)) in
+  let var_subst id = (id, global_reference CCI id) in
   let _ = 
     List.fold_left
       (fun subst (f,def) ->

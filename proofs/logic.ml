@@ -114,9 +114,9 @@ and mk_arggoals sigma goal goalacc funty = function
   | harg::tlargs ->
       let env = goal.evar_env in
       (match whd_betadeltaiota env sigma funty with
-	 | DOP2(Prod,c1,b) ->
+	 | DOP2(Prod,c1,DLAM(_,b)) ->
 	     let (acc',hargty) = mk_refgoals sigma goal goalacc c1 harg in
-	     mk_arggoals sigma goal acc' (sAPP b harg) tlargs
+	     mk_arggoals sigma goal acc' (subst1 harg b) tlargs
 	 | t -> raise (RefinerError (CannotApply (t,harg))))
 
 and mk_casegoals sigma goal goalacc p c =
@@ -234,18 +234,18 @@ let prim_refiner r sigma goal =
     | { name = Intro; newids = [id] } ->
     	if mem_sign sign id then error "New variable is already declared";
         (match strip_outer_cast cl with
-	   | DOP2(Prod,c1,b) ->
+	   | DOP2(Prod,c1,DLAM(_,b)) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let a = mk_assumption env sigma c1
 	       and v = VAR id in
-	       let sg = mk_goal info (push_var (id,a) env) (sAPP b v) in 
+	       let sg = mk_goal info (push_var (id,a) env) (subst1 v b) in 
 	       [sg]
 	   | _ -> error "Introduction needs a product")
 	
     | { name = Intro_after; newids = [id]; hypspecs = [whereid] } ->
     	if mem_sign sign id then error "New variable is already declared";
         (match strip_outer_cast cl with
-	   | DOP2(Prod,c1,b) ->
+	   | DOP2(Prod,c1,DLAM(_,b)) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       if not (List.for_all
                          (mem_sign (sign_prefix whereid sign))
@@ -255,13 +255,13 @@ let prim_refiner r sigma goal =
 	       let a = mk_assumption env sigma c1
 	       and v = VAR id in
 	       let env' = change_hyps (add_sign_after whereid (id,a)) env in
-	       let sg = mk_goal info env' (sAPP b v) in 
+	       let sg = mk_goal info env' (subst1 v b) in 
 	       [sg]
 	   | _ -> error "Introduction needs a product")
 	
     | { name = Intro_replacing; newids = []; hypspecs = [id] } ->
 	(match strip_outer_cast cl with
-           | DOP2(Prod,c1,b) ->
+           | DOP2(Prod,c1,DLAM(_,b)) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       if not (List.for_all 
 			 (mem_sign (tl_sign (sign_prefix id sign))) 
@@ -274,7 +274,7 @@ let prim_refiner r sigma goal =
 	       let a = mk_assumption env sigma c1
 	       and v = VAR id in
 	       let env' = change_hyps (add_sign_replacing id (id,a)) env in
-	       let sg = mk_goal info env' (sAPP b v) in
+	       let sg = mk_goal info env' (subst1 v b) in
 	       [sg]
 	   | _ -> error "Introduction needs a product")
 	
@@ -432,25 +432,23 @@ let extract_constr =
         let u1 = crec vl c1 in
         DOP2(Lambda,u1,DLAM(na,crec (add_rel (Anonymous,u1) vl) c2))
 	  
-    | DOPN(Term.Fix (x_0,x_1),cl) ->
-        let listar = Array.sub cl 0 ((Array.length cl) -1) 
-        and def = array_last cl in 
-        let newar = Array.map (crec vl) listar in
+    | DOPN(Term.Fix _,_) as fix ->
+	let (vn,(lar,lna,defs)) = destFix fix in
+        let newar = Array.map (crec vl) lar in
         let newenv =
-          Array.fold_left
-	    (fun env ar -> add_rel (Anonymous,ar) env) vl newar in
-        let newdef = under_dlams (crec newenv) def in 
-        DOPN(Term.Fix (x_0,x_1),Array.append newar [|newdef|])
-	  
-    | DOPN(CoFix par,cl) ->
-        let listar = Array.sub cl 0 ((Array.length cl) -1) 
-        and def = array_last cl in 
-        let newar = Array.map (crec vl) listar in
+          array_fold_left2
+	    (fun env na ar -> add_rel (na,ar) env) vl
+	    (Array.of_list lna) newar in
+  	mkFix (vn,(newar,lna,Array.map (crec newenv) defs))
+
+    | DOPN(CoFix _,_) as cofix ->
+	let (n,(lar,lna,defs)) = destCoFix cofix in
+        let newar = Array.map (crec vl) lar in
         let newenv =
-          Array.fold_left (fun env ar -> add_rel (Anonymous,ar) env) vl newar 
-	in
-        let newdef = under_dlams (crec newenv) def in 
-        DOPN(CoFix par,Array.append newar [|newdef|])
+          array_fold_left2
+	    (fun env na ar -> add_rel (na,ar) env) vl
+	    (Array.of_list lna) newar in
+  	mkCoFix (n,(newar,lna,Array.map (crec newenv) defs))
 	  
     | DOP2(Prod,c1,DLAM(na,c2)) ->
         let u1 = crec vl c1 in
@@ -510,8 +508,7 @@ let prim_extractor subfun vl pft =
 	let newvl = List.fold_left2 (fun sign na ar -> (add_rel (na,ar) sign)) 
                       vl lna lcty in 
 	let lfix =Array.map (subfun newvl) (Array.of_list spfl) in
-	DOPN(Term.Fix(vn,0),
-	     Array.of_list (lcty@[put_DLAMSV (List.rev lna) lfix]))
+	mkFix ((vn,0),(Array.of_list lcty,lna,lfix))
 	
     | {ref=Some(Prim{name=Cofix;newids=lf;terms=lar},spfl) } ->
 	let lcty = List.map (extract_constr vl) (cl::lar) in 
@@ -521,7 +518,7 @@ let prim_extractor subfun vl pft =
             vl lna lcty 
 	in 
 	let lfix =Array.map (subfun newvl) (Array.of_list spfl) in
-	DOPN(CoFix(0),Array.of_list (lcty@[put_DLAMSV (List.rev lna) lfix]))
+	mkCoFix (0,(Array.of_list lcty,lna,lfix))
 	  
     | {ref=Some(Prim{name=Refine;terms=[c]},spfl) } ->
 	let mvl = collect_meta_variables c in

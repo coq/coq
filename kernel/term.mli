@@ -76,7 +76,7 @@ val outcast_type : constr -> typed_type
 (**********************************************************************)
 type binder_kind = BProd | BLambda
 
-type fix_kind = RFix of int array * int | RCofix of int
+type fix_kind = RFix of (int array * int) | RCofix of int
 
 type 'ctxt reference =
   | RConst of section_path * 'ctxt
@@ -96,6 +96,9 @@ type existential = int * constr array
 type constant = section_path * constr array
 type constructor = constructor_path * constr array
 type inductive = inductive_path * constr array
+type fixpoint = (int array * int) * (constr array * name list * constr array)
+type cofixpoint = int * (constr array * name list * constr array)
+
 
 type kindOfTerm =
   | IsRel          of int
@@ -113,8 +116,8 @@ type kindOfTerm =
   | IsMutInd       of inductive
   | IsMutConstruct of constructor
   | IsMutCase      of case_info * constr * constr * constr array
-  | IsFix          of int array * int * constr array * name list * constr array
-  | IsCoFix        of int * constr array * name list * constr array
+  | IsFix          of fixpoint
+  | IsCoFix        of cofixpoint
 
 (* Discriminates which kind of term is it.  
   Note that there is no cases for [DLAM] and [DLAMV].  These terms do not
@@ -212,7 +215,7 @@ val mkMutCaseA : case_info -> constr -> constr -> constr array -> constr
       [typarray = [|t1,...tn|]]
       [funnames = [f1,.....fn]]
       [bodies   = [b1,.....bn]]
-   then [ mkFix recindxs i typarray funnames bodies]
+   then [ mkFix ((recindxs,i),typarray, funnames, bodies) ]
    constructs the $i$th function of the block  
 
     [Fixpoint f1 [ctx1] = b1
@@ -222,17 +225,15 @@ val mkMutCaseA : case_info -> constr -> constr -> constr array -> constr
 
    \noindent where the lenght of the $j$th context is $ij$.
 *)
-val mkFix : int array -> int -> typed_type array -> name list 
-  -> constr array -> constr
+val mkFix : fixpoint -> constr
 
 (* Similarly, but we assume the body already constructed *)
-val mkFixDlam : int array -> int -> typed_type array
-  -> constr array -> constr 
+val mkFixDlam : int array -> int -> constr array -> constr array -> constr 
 
 (* If [typarray = [|t1,...tn|]]
       [funnames = [f1,.....fn]]
       [bodies   = [b1,.....bn]] \par\noindent
-   then [mkCoFix i typsarray funnames bodies]
+   then [mkCoFix (i, (typsarray, funnames, bodies))]
    constructs the ith function of the block  
    
     [CoFixpoint f1 = b1
@@ -240,11 +241,10 @@ val mkFixDlam : int array -> int -> typed_type array
      ...
      with       fn = bn.]
  *)
-val mkCoFix : int -> typed_type array -> name list 
-  -> constr array -> constr
+val mkCoFix : cofixpoint -> constr
 
 (* Similarly, but we assume the body already constructed *)
-val mkCoFixDlam : int -> typed_type array -> constr array -> constr
+val mkCoFixDlam : int -> constr array -> constr array -> constr
 
 
 (*s Term destructors. 
@@ -292,6 +292,12 @@ val strip_outer_cast : constr -> constr
 (* Special function, which keep the key casts under Fix and MutCase. *)
 val strip_all_casts : constr -> constr
 
+(* Tests if a de Bruijn index *)
+val isRel  : constr -> bool
+
+(* Tests if a variable *)
+val isVar  : constr -> bool
+
 (* Destructs the product $(x:t_1)t_2$ *)
 val destProd : constr -> name * constr * constr
 val hd_of_prod : constr -> constr
@@ -316,7 +322,7 @@ val args_of_const : constr -> constr array
 val destEvar : constr -> int * constr array
 val num_of_evar : constr -> int
 
-(* Destrucy an abstract term *)
+(* Destructs an abstract term *)
 val destAbst : constr -> section_path * constr array
 val path_of_abst : constr -> section_path
 val args_of_abst : constr -> constr array
@@ -343,11 +349,9 @@ val destCase : constr -> case_info * constr * constr * constr array
 *)
 val destGralFix : 
   constr array -> constr array * Names.name list * constr array
-val destFix : constr -> 
-  int array * int * typed_type array * Names.name list * constr array
+val destFix : constr -> fixpoint
 
-val destCoFix : 
-  constr -> int * typed_type array * Names.name list * constr array
+val destCoFix : constr -> cofixpoint
 
 (* Provisoire, le temps de maitriser les cast *)
 val destUntypedFix : 
@@ -533,6 +537,18 @@ val rel_vect : int -> int -> constr array
 (* [(occur_const (s:section_path) c)] returns [true] if constant [s] occurs 
    in c, [false] otherwise *)
 val occur_const : section_path -> constr -> bool
+
+(* [(occur_evar ev c)] returns [true] if existential variable [ev] occurs 
+   in c, [false] otherwise *)
+val occur_evar : existential_key -> constr -> bool
+
+(* [(occur_var id c)] returns [true] if variable [id] occurs free
+   in c, [false] otherwise *)
+val occur_var : identifier -> 'a term -> bool
+
+(* [dependent M N] is true iff M is eq_constr with a subterm of N 
+   M is appropriately lifted through abstractions of N *)
+val dependent : constr -> constr -> bool
 
 (* strips head casts and flattens head applications *)
 val strip_head_cast : constr -> constr

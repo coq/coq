@@ -220,12 +220,11 @@ let lift_tomatch_type n = liftn_tomatch_type n 1
 let lift_tomatch n ((current,typ),info) =
   ((lift n current,lift_tomatch_type n typ),info)
 
-let substn_many_tomatch v depth = function
-  | IsInd (t,indt) ->
-      IsInd (substn_many v depth t,substn_many_ind_type v depth indt)
-  | NotInd t -> NotInd (substn_many v depth t)
+let substnl_tomatch v depth = function
+  | IsInd (t,indt) -> IsInd (substnl v depth t,substnl_ind_type v depth indt)
+  | NotInd t -> NotInd (substnl v depth t)
 
-let subst_tomatch (depth,c) = substn_many_tomatch [|make_substituend c|] depth
+let subst_tomatch (depth,c) = substnl_tomatch [c] depth
 
 
 (**********************************************************************)
@@ -361,8 +360,7 @@ let rec lift_subst_tomatch n (depth,ci as binder) = function
   | Pushed (lift,tm)::rest ->
       Pushed (n+lift, tm)::(lift_subst_tomatch n binder rest)
 
-let subst_in_subst id t (id2,c) =
-   (id2,replace_vars [(id,make_substituend t)] c)
+let subst_in_subst id t (id2,c) = (id2,replace_vars [(id,t)] c)
 
 let replace_id_in_rhs id t rhs =
   if List.mem id rhs.private_ids then
@@ -454,9 +452,9 @@ let prepare_unif_pb typ cs =
 
   (* We may need to invert ci if its parameters occur in p *)
   let p' =
-    if noccur_bet 1 n p then lift (-n) p
+    if noccur_between 1 n p then lift (-n) p
     else 
-      (* Il faudrait que noccur_bet ne regarde pas la subst des Evar *)
+      (* Il faudrait que noccur_between ne regarde pas la subst des Evar *)
       if match p with DOPN(Evar _,_) -> true | _ -> false then lift (-n) p
       else failwith "TODO4-1" in
   let ci = applist
@@ -494,15 +492,15 @@ let lift_predicate n pred =
 
 let subst_predicate (args,copt) pred =
   let sigma = match copt with
-    | None -> Array.map make_substituend (Array.of_list args)
-    | Some c -> Array.map make_substituend (Array.of_list (args@[c])) in
+    | None -> args
+    | Some c -> args@[c] in
   let rec substrec k = function
-    | PrCcl ccl -> PrCcl (substn_many sigma k ccl)
+    | PrCcl ccl -> PrCcl (substnl sigma k ccl)
     | PrProd ((dep,na,t),pred) ->
-	PrProd ((dep,na,substn_many_tomatch sigma k t), substrec (k+1) pred)
+	PrProd ((dep,na,substnl_tomatch sigma k t), substrec (k+1) pred)
     | PrLetIn ((args,copt),pred) ->
-	let args' = List.map (substn_many sigma k) args in
-	let copt' = option_app (substn_many sigma k) copt in
+	let args' = List.map (substnl sigma k) args in
+	let copt' = option_app (substnl sigma k) copt in
 	PrLetIn ((args',copt'), substrec (k+1) pred) in
   substrec 0 pred
 

@@ -726,7 +726,7 @@ let make_tuple env sigma (rterm,rty) lind =
       find_sigma_data (get_sort_of env sigma rty) in
     let a = type_of env sigma (Rel lind) in
     (* We replace (Rel lind) by (Rel 1) in rty then abstract on (na:a) *)
-    let rty' = substn_many [|make_substituend (Rel 1)|] lind rty in
+    let rty' = substnl [Rel 1] lind rty in
     let na = fst (lookup_rel lind env) in
     let p = mkLambda na a rty' in
     (applist(exist_term,[a;p;(Rel lind);rterm]),
@@ -1228,8 +1228,7 @@ let substInHyp eqn id gls =
   let (lbeq,(t,e1,e2)) = (find_eq_data_decompose eqn) in 
   let body = subst_term e1 (clause_type (Some id) gls) in
   if not (dependent (Rel 1) body) then errorlabstrm  "SubstInHyp" [<>];
-  let pB = DLAM(Environ.named_hd (pf_env gls) t Anonymous,body) in
-  (tclTHENS (cut_replacing id (sAPP pB e2))
+  (tclTHENS (cut_replacing id (subst1 e2 body))
      ([tclIDTAC;
        (tclTHENS (bareRevSubstInConcl lbeq body (t,e1,e2))
           ([exact (VAR id);tclIDTAC]))])) gls
