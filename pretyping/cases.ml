@@ -1,4 +1,6 @@
 
+(* $Id$ *)
+
 open Util
 open Names
 open Term
@@ -198,6 +200,43 @@ type predicate_signature =
   | PrNotInd of constr option * predicate_signature
   | PrCcl of constr
 
+type pattern_history =
+  | Top
+  | Arg of constr * pattern_history
+  | LiftHistory of int * pattern_history
+  | MakeConstruct of constr * pattern_continuation
+
+and pattern_continuation = 
+  | Continuation of int * pattern_history
+  | Result of constr list
+
+let lift_history p = function
+  | Continuation (n, h) -> Continuation (n, LiftHistory (n, h))
+  | Result l -> Result (List.map (lift p) l)
+
+let starting_history n = Continuation (n, Top)
+
+let rec build_partial_pattern k args = function
+  | Top -> Result args
+  | Arg (u, h) -> build_partial_pattern k ((lift k u)::args) h
+  | LiftHistory (n, h) -> build_partial_pattern (k+n) args h 
+  | MakeConstruct (ci, rh) -> contract_history (applist(lift k ci,args)) rh
+
+and contract_history c = function
+  | Continuation (1, h) -> build_partial_pattern 0 [c] h
+  | Continuation (n, h) when n>1 -> Continuation (n-1, Arg (c, h))
+  | Continuation (n, _) ->
+      anomaly ("Bad number of expected remaining patterns: "^(string_of_int n))
+  | Result _ -> 
+      anomaly "Exhausted pattern history"
+
+(* Builds a continuation expecting [n] arguments and building [ci] applied
+   to this [n] arguments *)
+
+let history_continuation n ci cont =
+  if n=0 then contract_history ci cont
+  else Continuation (n, MakeConstruct (ci, cont))
+
 (* A pattern-matching problem has the following form:
 
    env, isevars |- <pred> Cases tomatch of mat end
@@ -235,6 +274,7 @@ type 'a pattern_matching_problem =
       isevars  : 'a evar_defs;
       pred     : predicate_signature option;
       tomatch  : tomatch_stack;
+      history  : pattern_continuation;
       mat      : matrix;
       typing_function: type_constraint -> env -> rawconstr -> unsafe_judgment }
 
@@ -468,11 +508,22 @@ let expand_defaults pats (* current *) (name,eqn) =
 
 (************************************************************************)
 (* Some heuristics to get names for variables pushed in pb environment *)
+(* Typical requirement:
 
-let merge_names get_name =
-  List.map2 (fun obj na -> match na with
-	       | Anonymous -> get_name obj
-	       | _ -> na)
+   [Cases y of (S (S x)) => x | x => x end] should be compiled into
+   [Cases y of O => y | (S n) => Cases n of O => y | (S x) => x end end]
+
+   and [Cases y of (S (S n)) => n | n => n end] into 
+   [Cases y of O => y | (S n0) => Cases n0 of O => y | (S n) => n end end]
+
+  i.e. user names should be preserved and created names should not
+  interfere with user names *)
+
+let merge_name get_name obj = function
+  | Anonymous -> get_name obj
+  | na -> na
+
+let merge_names get_name = List.map2 (merge_name get_name)
 
 let get_names env sign eqns =
   let names1 = list_tabulate (fun _ -> Anonymous) (List.length sign) in
@@ -481,16 +532,19 @@ let get_names env sign eqns =
     List.fold_right
       (fun (pats,eqn) names -> merge_names alias_of_pat pats names)
       eqns names1 in
-  (* Otherwise, we take names from the parameters of the constructor *)
-  let names3 = merge_names (fun (na,t) -> named_hd env t na) sign names2 in
-  (* Then we rename the base names to avoid conflicts *)
+  (* Otherwise, we take names from the parameters of the constructor but
+     avoiding conflicts with user ids *)
   let allvars =
     List.fold_left (fun l (_,eqn) -> list_union l eqn.rhs.other_ids) [] eqns in
   let names4,_ =
-    List.fold_left
-      (fun (l,avoid) na ->
-	 let id = next_name_away na avoid in
-      ((Name id)::l,id::avoid)) ([],allvars) names3 in
+    List.fold_left2
+      (fun (l,avoid) d na ->
+	 let na =
+	   merge_name
+	     (fun (na,t) -> Name (next_name_away (named_hd env t na) avoid))
+	     d na 
+	 in
+      (na::l,(out_name na)::avoid)) ([],allvars) sign names2 in
   List.rev names4
 
 (************************************************************************)
@@ -787,10 +841,12 @@ let build_leaf pb =
   pb.typing_function tycon rhs.rhs_env (prepare_rhs rhs)
 
 (* Building the sub-problem when all patterns are variables *)
-let shift_problem pb =
+let shift_problem current pb =
   (* rhs have alr. the right env: we just have to pop a pattern & cook pred *)
+  let history = contract_history current pb.history in
   {pb with
      pred = option_app specialize_predicate_var pb.pred;
+     history = history;
      mat = List.map pop_pattern pb.mat }
 
 (* Building the sub-pattern-matching problem for a given branch *)
@@ -825,12 +881,19 @@ let build_branch pb defaults eqns const_info =
        (List.map (lift const_info.cs_nargs) const_info.cs_params)
        @(extended_rel_list 0 const_info.cs_args)) in
 
+  (* We remember that we descend through a constructor *)
+  let partialci =
+    applist (mkMutConstruct const_info.cs_cstr, 
+	     (List.map (lift const_info.cs_nargs) const_info.cs_params)) in
+  let history= history_continuation const_info.cs_nargs partialci pb.history in
+
   (* We replace [(mkRel 1)] by its expansion [ci] *)
   let updated_old_tomatch =
     lift_subst_tomatch const_info.cs_nargs (1,ci) pb.tomatch in
   { pb with
       tomatch = topushs@updated_old_tomatch;
       mat = submat@submatdef;
+      history = history;
       pred = option_app (specialize_predicate_match tomatchs const_info) pb.pred }
 
 (**********************************************************************
@@ -860,13 +923,13 @@ and match_current pb (n,tm) =
   match typ with
     | NotInd typ ->
 	check_all_variables typ pb.mat;
-	compile (shift_problem pb)
+	compile (shift_problem current pb)
     | IsInd (_,(IndType(indf,realargs) as indt)) ->
 	let mis,_ = dest_ind_family indf in
 	let cstrs = get_constructors indf in
 	let eqns,defaults = group_equations (mis_inductive mis) cstrs pb.mat in
 	if cstrs <> [||] & array_for_all ((=) []) eqns 
-	then compile (shift_problem pb)
+	then compile (shift_problem current pb)
 	else
           let constraints = Array.map (solve_constraints indt) cstrs in
 	  let pbs = array_map2 (build_branch pb defaults) eqns cstrs in
@@ -896,12 +959,12 @@ and compile_further pb firstnext rest =
 		env = push_rels sign pb.env;
 		tomatch = List.rev_append currents future;
                 pred= option_app (weaken_predicate (List.length sign)) pb.pred;
+		history = lift_history (List.length sign) pb.history;
 		mat = List.map (push_rels_eqn sign) pb.mat } in
   let j = compile pb' in
   { uj_val = lam_it j.uj_val sign;
     uj_type = (* Pas d'univers ici: imprédicatif si Prop/Set, dummy si Type *)
       type_app (fun t -> prod_it t sign) j.uj_type }
-
 
 (* pour les alias des initiaux, enrichir les env de ce qu'il faut et
 substituer après par les initiaux *)
@@ -1134,6 +1197,7 @@ let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
       isevars  = isevars;
       pred     = pred;
       tomatch  = initial_pushed;
+      history  = starting_history (List.length initial_pushed);
       mat      = matx;
       typing_function = typing_fun } in
   
