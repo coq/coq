@@ -302,10 +302,15 @@ CAMLLIB=`"$CAMLC" -v | sed -n -e 's|.*directory:* *\(.*\)$|\1|p' `
 
 # Camlp4 (greatly simplified since merged with ocaml)
 
-# CAMLP4LIB=+camlp4
-CAMLP4LIB=${CAMLLIB}/camlp4
 CAMLP4BIN=${CAMLBIN}
 
+case $OS in
+  Win32)
+    CAMLP4LIB=+camlp4;;
+  *)
+    CAMLP4LIB=${CAMLLIB}/camlp4
+esac
+  
 # Tell on windows if ocaml understands cygwin or windows path formats
 
 "$CAMLC" -o config/giveostype config/giveostype.ml
@@ -329,7 +334,7 @@ echo ""
 echo "  Coq top directory                 : $COQTOP"
 echo "  Architecture                      : $ARCH"
 if test ! -z "$OS" ; then
-  echo "  Operating system               : $OS"
+  echo "  Operating system                  : $OS"
 fi
 echo "  OS dependent libraries            : $OSDEPLIBS"
 echo "  Objective-Caml/Camlp4 version     : $CAMLVERSION"
