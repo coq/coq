@@ -18,13 +18,9 @@ open Instantiate
 exception Elimconst
 exception Redelimination
 
-type constant_evaluation_style = 
-  | EliminationFix of (int * constr) list * int
-  | EliminationCases
-  | EliminationConst of constant_evaluation_style
-
-type constant_evaluation =
-  | IsElimination of (int * constant_evaluation_style)
+type constant_evaluation = 
+  | EliminationFix of int * (constant * int * (int * constr) list * int)
+  | EliminationCases of int
   | NotAnElimination
 
 (* We use a cache registered as a global table *)
@@ -60,53 +56,87 @@ let _ =
    == [yip:Bip]..[yi1:Bi1](Fix(f|t)[xi<-ai] (Rel 1)..(Rel p))
    with bj=aj if j<>ik and bj=(Rel c) and Bic=Aic[xn..xic-1 <- an..aic-1] *)
 
-let rec compute_consteval c = 
+let check_fix_reversibility cst labs args ((lv,i),(tys,_,bds)) =
+  let n = List.length labs in
+  let nargs = List.length args in
+  if nargs > n then raise Elimconst;
+  let nbfix = Array.length bds in
+  let li =
+    List.map
+      (function d -> match kind_of_term d with
+         | IsRel k ->
+             if
+	       array_for_all (noccurn k) tys
+	       && array_for_all (noccurn (k+nbfix)) bds
+	     then 
+	       (k, List.nth labs (k-1)) 
+	     else 
+	       raise Elimconst
+         | _ -> 
+	     raise Elimconst) args
+  in 
+  if list_distinct (List.map fst li) then 
+    EliminationFix (n-nargs+lv.(i)+1,(cst,nbfix,li,n))
+  else 
+    raise Elimconst
+
+(* [compute_consteval_direct] expand all constant in a whole, but
+   [compute_consteval] only one by one, until finding the one which is
+   reversible (in case of a unary Fix) or the last one before the Fix
+   if the latter is mutually defined *)
+
+let compute_consteval_direct cst c =
+  let rec srec n labs c =
+    let c',l = whd_betadeltaeta_stack (Global.env()) Evd.empty c in
+    match kind_of_term c' with
+      | IsLambda (_,t,g) when l=[] -> srec (n+1) (t::labs) g
+      | IsFix fix -> check_fix_reversibility cst labs l fix
+      | IsMutCase (_,_,d,_) when isRel d -> EliminationCases n
+      | _ -> NotAnElimination
+  in srec 0 [] c
+
+let rec compute_consteval cst c = 
   let rec srec n labs c =
     let c',l = whd_betaetalet_stack c in
     let nargs = List.length l in
     match kind_of_term c' with
-      | IsConst cst ->
-	  (match constant_descend cst with
-	     | NotAnElimination -> raise Elimconst
-	     | IsElimination (p,e) -> (max (p+n-nargs) n, EliminationConst e))
+      | IsConst cst2 ->
+	  (match descend_consteval cst2 with
+	     | NotAnElimination -> NotAnElimination
+	     | EliminationFix (minarg,(_,nbfix,_,_ as info)) ->
+		 (* We know that the underlying Fix must be fold by oldcst *)
+		 (* We now try to fold it as cst only if nbfix=1 and n=0 *)
+		 let new_minarg = max (minarg+n-nargs) minarg in
+		 if nbfix=1 then
+		   try
+		     (* We try to name the Fix by cst *)
+		     (* Complexité en n^2, bof, peut mieux faire *)
+		     compute_consteval_direct cst c
+		   with
+		       Elimconst -> EliminationFix (new_minarg,info)
+		 else
+		   EliminationFix (new_minarg,info)
+	     | EliminationCases minarg ->
+		 let new_minarg = max (minarg+n-nargs) minarg in
+		 EliminationCases new_minarg)
       | IsLambda (_,t,g) when l=[] -> srec (n+1) (t::labs) g
-      | IsFix ((lv,i),(tys,_,bds)) -> 
-          if (List.length l) > n then raise Elimconst;
-	  let nbfix = Array.length bds in
-          let li = 
-            List.map
-	      (function d -> match kind_of_term d with
-                 | IsRel k ->
-                     if
-		       array_for_all (noccurn k) tys
-		       && array_for_all (noccurn (k+nbfix)) bds
-		     then 
-		       (k, List.nth labs (k-1)) 
-		     else 
-		       raise Elimconst
-                 | _ -> 
-		     raise Elimconst) l
-          in 
-	  if list_distinct (List.map fst li) then 
-	    (n-nargs+nbfix, EliminationFix (li,n))
-          else 
-	    raise Elimconst
-      | IsMutCase (_,_,d,_) when isRel d -> (n, EliminationCases)
+      | IsFix fix -> check_fix_reversibility cst labs l fix
+      | IsMutCase (_,_,d,_) when isRel d -> EliminationCases n
       | _ -> raise Elimconst
   in
-  try IsElimination (srec 0 [] c)
+  try srec 0 [] c
   with Elimconst -> NotAnElimination
 
-and constant_descend cst =
+and descend_consteval cst =
   match constant_opt_value (Global.env ()) cst with
     | None -> NotAnElimination
-    | Some c -> compute_consteval c
+    | Some c -> compute_consteval cst c
 
 let constant_eval (sp,_ as cst) =
   try
     Spmap.find sp !eval_table
   with Not_found -> begin
-    let v = constant_descend cst in
+    let v = descend_consteval cst in
     eval_table := Spmap.add sp v !eval_table;
     v
   end
@@ -130,7 +160,7 @@ let rev_firstn_liftn fn ln =
    where a1...an are the n first arguments of largs and Tik' is Tik[yil=al]
    To check ... *)
 
-let make_elim_fun (sp,args) lv n largs =
+let make_elim_fun ((sp,args as cst),nbfix,lv,n) largs =
   let labs,_ = list_chop n (list_of_stack largs) in
   let p = List.length lv in
   let ylv = List.map fst lv in
@@ -141,13 +171,18 @@ let make_elim_fun (sp,args) lv n largs =
               (List.map (lift p) labs) 
   in 
   fun id -> 
-    let fi = mkConst (make_path (dirpath sp) id (kind_of_path sp),args) in
-    list_fold_left_i 
-      (fun i c (k,a) -> 
-	 mkLambda (Name(id_of_string"x"),
-		   substl (rev_firstn_liftn (n-k) (-i) la') a,
-		   c))
-      0 (applistc fi la') lv
+    let fi = 
+      if nbfix = 1 then
+	mkConst cst
+      else
+	mkConst (make_path (dirpath sp) id (kind_of_path sp),args)
+    in
+      list_fold_left_i 
+	(fun i c (k,a) -> 
+	   mkLambda (Name(id_of_string"x"),
+		     substl (rev_firstn_liftn (n-k) (-i) la') a,
+		     c))
+	0 (applistc fi la') lv
 
 (* [f] is convertible to [Fix(recindices,bodynum),bodyvect)] make 
    the reduction using this extra information *)
@@ -217,29 +252,29 @@ let special_red_case env whfun (ci, p, c, lf)  =
 
 let rec red_elim_const env sigma cst largs =
   if not (evaluable_constant env cst) then raise Redelimination;
-  let rec descend cst args = function
-    | EliminationConst e ->
+  match constant_eval cst with
+    | EliminationCases n when stack_args_size largs >= n ->
 	let c = constant_value env cst in
-	let c', lrest = whd_betaetalet_state (c,args) in
-	descend (destConst c') lrest e
-    | EliminationCases ->
-	let c = constant_value env cst in
-	let c', lrest = whd_betaetalet_state (c,args) in
+	let c', lrest = whd_betaetalet_state (c,largs) in
         (special_red_case env (construct_const env sigma) (destCase c'),
 	 lrest)
-    | EliminationFix (lv,n) ->
-	let c = constant_value env cst in
-	let d, lrest = whd_betaetalet_state (c, args) in
-	let f id = make_elim_fun cst lv n args id in
+    | EliminationFix (min,(cstgoal,_,_,_ as infos))
+	when stack_args_size largs >=min ->
+	let rec descend cst args =
+	  let c = constant_value env cst in
+	  if cst = cstgoal then
+	    (c,args)
+	  else
+	    let c', lrest = whd_betaetalet_state (c,args) in
+	    descend (destConst c') lrest in
+	let (_, midargs as s) = descend cst largs in
+	let d, lrest = whd_betadeltaeta_state env sigma s in
+	let f = make_elim_fun infos midargs in
 	let co = construct_const env sigma in
 	(match reduce_fix_use_function f co (destFix d) lrest with
 	   | NotReducible -> raise Redelimination
 	   | Reduced (c,rest) -> (nf_beta env sigma c, rest))
-  in match constant_eval cst with
-    | IsElimination (n,e) when stack_args_size largs >= n ->
-	descend cst largs e
     | _ -> raise Redelimination
-
 
 and construct_const env sigma = 
   let rec hnfstack (x, stack as s) =
