@@ -30,6 +30,8 @@ contrib/ring
 	          and Patrick Loiseleur (LRI, 1997-1999)
 contrib/xml
 	developed by Claudio Sacerdotti (Univ. Bologna, 2000-2001)
+parsing/search.ml
+	developed by Yves Bertot (INRIA, 2000)
 
 Many discussions within the Démons team and the LogiCal project influenced significantly 
 the design of Coq especially with 
@@ -46,6 +48,7 @@ of the Coq Proof assistant during the indicated time :
 	Bruno Barras, 	 (INRIA, 1995-2000)
 	Thierry Coquand (INRIA, 1985-1989)
   	Cristina Cornes, (INRIA, 1993-1996)
+	Yann Coscoy (INRIA Sophia-Antipolis, 1995-1996)
 	David Delahaye,  (INRIA, 1997-2000)
 	Daniel de Rauglaudre, (INRIA, 1996-1998)
 	Gilles Dowek, (INRIA, 1991-1994)
