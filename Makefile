@@ -380,7 +380,8 @@ states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTIC
 clean::
 	rm -f states/*.coq
 
-LOGICVO=theories/Logic/Classical.vo          theories/Logic/Classical_Type.vo \
+LOGICVO=theories/Logic/Hurkens.vo          theories/Logic/ProofIrrelevance.vo\
+      theories/Logic/Classical.vo          theories/Logic/Classical_Type.vo \
       theories/Logic/Classical_Pred_Set.vo   theories/Logic/Eqdep.vo          \
       theories/Logic/Classical_Pred_Type.vo  theories/Logic/Classical_Prop.vo \
       theories/Logic/Berardi.vo       	     theories/Logic/Eqdep_dec.vo \
