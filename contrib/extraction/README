@@ -17,16 +17,16 @@ But don't be mistaken:
 1) Principles 
 
 The main goal of the new extraction is to handle any Coq term, even 
-those upon sort Type, and to produce code that always compile. 
+those upon sort Type, and to produce code that always compiles. 
 Thus it will never answer something like "Not an ML type", but rather
 a dummy term like the ML unit. 
 
-Traduction between Coq and ML is based upon the following principles: 
+Translation between Coq and ML is based upon the following principles: 
 
 - Terms of sort Prop don't have any computational meaning, so they are
 merged in one ML term "prop", which is for the moment the ML constant ().
 
-- Terms that are arity (i.e. something of shape ( : )( : )...s with 
+- Terms that are arities (i.e. something of shape ( : )( : )...s with 
 s a sort ) don't have any ML counterpart, since they are types of 
 types transformers. We have also a special constant "arity" to 
 represent them if needed.
@@ -34,12 +34,12 @@ represent them if needed.
 - A Coq term gives a ML term or a ML type depending of its type: 
 a term of type an arity will give a ML type, and otherwise a ML term.
 
-And the rest of the traduction is (almost) straightforward: an inductive
+And the rest of the translation is (almost) straightforward: an inductive
 gives an inductive, etc...
 
 This gives ML code that have no special reason to typecheck, due 
 to the incompatibilities between Coq and ML typing systems. In fact
-most of the time everything goes right. For exemple, it is sufficient 
+most of the time everything goes right. For example, it is sufficient 
 to extract and compile everything in the "theories" directory 
 (cf test subdirectory).
 The last feature (not yet implemented) is to ensure that the extracted
@@ -53,7 +53,7 @@ calls in the code.
 The ability to extract every Coq term, as explain in the previous 
 paragraph. 
 
-The ability to extract modularly (cf Extraction Module in the 
+The ability to extract from a file an ML module (cf Extraction Module in the 
 documentation)
 
 You can have a taste of extraction directly at the toplevel by 
@@ -62,7 +62,7 @@ This toplevel extraction was already there in V6.3, but was printing
 Fw terms. It now prints in an Ocaml-like syntax.
 
 The optimization done on extracted code has been mostly ported between 
-V6.3 and V7, and in particular the mechanism of atomatic expansion. 
+V6.3 and V7, and in particular the mechanism of automatic expansion. 
 
 2.b) The cons 
 
@@ -74,7 +74,7 @@ The presence of some parasite "unit" or "prop" as dummy arguments
 in functions. This denotes the rests of a proof part. The previous 
 extraction was able to remove them totally, but this is no more possible
 due to extraction upon Type.
-For exemple, let's take this pathological term: 
+For example, let's take this pathological term: 
 	(if b then Set else Prop)  : Type
 The only way to know if this is an Set (to keep) or a Prop (to remove) 
 is to compute the boolean b, and we do not want to do that during 
@@ -84,15 +84,15 @@ There is no more "ML import" feature. You can compensate by using
 Axioms, and then "Extract Constant ..." 
 
 Still no assurance of typechecking, since there is still no "Obj.magic"
-yet. Coming real soon ...
+yet. Coming really soon ...
 
 Absolutely no benchmarking nor profiling nor optimizing has been 
 done on the new extraction code. 
 
 
-3) Exemples 
+3) Examples 
 
-The file "test-extraction.v" is made of some exemples used while debugging.
+The file "test-extraction.v" is made of some examples used while debugging.
 
 In the subdirectory "test", you can test extraction on the Coq theories.
 Go there.
