@@ -204,12 +204,12 @@ double-checked by the kernel.
 You have to trust :
 
 \begin{description}
-\item[The theory behind Coq] The proof of constitency is quite complicated. You can check the papers. 
+\item[The theory behind Coq] The proof of consistency is quite complicated. You can check the papers. 
 \item[The Coq kernel implementation] You have to trust that the implementation of the Coq kernel mirrors the theory behind Coq.
-\item[The Objective Caml compiler] The Coq kernel is writen using the Objective Caml langage, if the compiler contains a bug, Coq may prove False. The Coq kernel does not use every Ocaml features. (no object, no label ...)
+\item[The Objective Caml compiler] The Coq kernel is written using the Objective Caml language, if the compiler contains a bug, Coq may prove False. The Coq kernel does not use every Ocaml features. (no object, no label ...)
 \item[Your hardware] In theory, if your hardware does not work properly, Coq can prove False.
 You can check your proof using different computers if you feel the need to. 
-\item[Your axioms] Your axioms must be consistant with the theory behind Coq.
+\item[Your axioms] Your axioms must be consistent with the theory behind Coq.
 \end{description}
 
 
@@ -310,7 +310,7 @@ The main {\Coq} mailing list is \url{coq-club@coq.inria.fr}, which
 broadcasts questions and suggestions about the implementation, the
 logical formalism or proof developments. See
 \ahref{http://coq.inria.fr/mailman/listinfo/coq-club}{\url{http://coq.inria.fr/mailman/listinfo/coq-club}} for
-subsription. For bugs reports see question \ref{coqbug}.
+subscription. For bugs reports see question \ref{coqbug}.
 
 \Question{Where can I find an archive of the list?}
 The archives of the {\Coq} mailing list are available at
@@ -425,7 +425,7 @@ predicate extensionality are inconsistent in the {\Set}-impredicative
 version of the Calculus of Inductive Constructions.
 
 The main purpose of the \Set-predicative restriction of the Calculus
-of Inductive Constructions is precisely to accomodate these axioms
+of Inductive Constructions is precisely to accommodate these axioms
 which are quite standard in mathematical usage.
 
 The $\Set$-predicative system is commonly considered consistent by
@@ -681,7 +681,7 @@ Qed.
 \end{coq_example}
 
 
-\Question{My goal is a disjonction, how can I prove it ?}
+\Question{My goal is a disjunction, how can I prove it ?}
 
 You can prove the left part or the right part of the disjunction using
 {\left} or {\right} tactics. If you want to do a classical
@@ -1283,7 +1283,7 @@ a look at the manual for further information.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Inductive and Coinductive types}
+\section{Inductive and Co-inductive types}
 
 \subsection{General}
 
@@ -1510,7 +1510,7 @@ Fixpoint ack (n:nat) : nat -> nat :=
 \end{coq_example}
 
 
-\subsection{Coinductive types}
+\subsection{Co-inductive types}
 
 \Question{I have a cofixpoint t:=F(t) and I want to prove t=F(t). What is
 the simplest way?}
@@ -1641,9 +1641,9 @@ todo
 
 \Question{How can I define static and dynamic code ?}
 
-\section{Tactics writen in Ocaml}
+\section{Tactics written in Ocaml}
 
-\Question{Can you show me an example of a tactic writen in OCaml ?}
+\Question{Can you show me an example of a tactic written in OCaml ?}
 
 You have some examples of tactics written in Ocaml in the ``contrib'' directory of {\Coq} sources. 
 
@@ -1655,7 +1655,7 @@ You have some examples of tactics written in Ocaml in the ``contrib'' directory 
 
 \Question{How can I define vectors or lists of size n ?}
 
-\Question{How to prove that 2 sets are differents?}
+\Question{How to prove that 2 sets are different?}
 
  You need to find a property true on one set and false on the
 other one. As an example we show how to prove that {\tt bool} and {\tt
@@ -1953,7 +1953,7 @@ It is the language of commands of Gallina i.e. definitions, lemmas, {\ldots}
 
 A dependant type is a type which depends on some term. For instance
 ``vector of size n'' is a dependant type representing all the vectors
-of size $n$. Theis type depends on $n$
+of size $n$. Its type depends on $n$
 
 \Question{What is a proof by reflection ?}
 
@@ -2006,7 +2006,7 @@ well-typed.}
 
  This is probably due to invisible implicit information (implicit
 arguments, coercions and Cases annotations) in the printed term, which
-is not re-synthetised from the copied-pasted term in the same way as
+is not re-synthesised from the copied-pasted term in the same way as
 it is in the original term.
 
   Consider for instance {\tt (@eq Type True True)}. This term is
@@ -2017,7 +2017,7 @@ like {\tt pattern}).
   There is currently no satisfactory answer to the problem.
  
   Due to coercions, one may even face type-checking errors. In some
-rare cases, the criterion to hide coercions is a bit too loosy, which
+rare cases, the criterion to hide coercions is a bit too loose, which
 may result in a typing error message if the parser is not able to find
 again the missing coercion.
 
@@ -2029,7 +2029,7 @@ again the missing coercion.
 \Question{What if my question isn't answered here ?} 
 \label{lastquestion}
 
-Don't panic. You can try the {\Coq} manual~\cite{Coq:manual} for a technical
+Don't panic \verb+:-)+. You can try the {\Coq} manual~\cite{Coq:manual} for a technical
 description of the prover. The Coq'Art~\cite{Coq:coqart} is the first
 book written on {\Coq} and provides a comprehensive review of the
 theorem prover as well as a number of example and exercises. Finally,
