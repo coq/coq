@@ -26,6 +26,7 @@ Module nat_scope.
 Open Scope nat_scope.
 
 Infix 4 "+" plus : nat_scope V8only (left associativity).
+Infix 4 "-" minus : nat_scope V8only (left associativity).
 Infix 3 "*" mult : nat_scope V8only (left associativity).
 Infix NONA 5 "<=" le : nat_scope.
 Infix NONA 5 "<" lt : nat_scope.

@@ -127,6 +127,15 @@ Proof.
 Qed.
 Hints Resolve mult_n_Sm : core v62.
 
+(** Definition of subtraction on [nat] : [m-n] is [0] if [n>=m] *)
+
+Fixpoint minus [n:nat] : nat -> nat := 
+  [m:nat]Cases n m of
+            O    _     =>  O
+         | (S k) O     => (S k)
+         | (S k) (S l) => (minus k l)
+        end. 
+
 (** Definition of the usual orders, the basic properties of [le] and [lt] 
     can be found in files Le and Lt *)
 
