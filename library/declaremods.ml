@@ -475,10 +475,10 @@ let end_module id =
   let substituted = subst_substobjs dir mp substobjs in
   let node = in_module (None,substobjs,substituted) in
   let objects = 
-    if keep = [] then 
-      special@[node]
+    if keep = [] || mbids <> [] then 
+      special@[node]   (* no keep objects or we are defining a functor *)
     else
-      special@[node;in_modkeep keep]
+      special@[node;in_modkeep keep]   (* otherwise *)
   in
   let newoname = Lib.add_leaves id objects in
 
