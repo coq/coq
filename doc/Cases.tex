@@ -53,7 +53,7 @@ empty.
  && \\
 
 {\term} & := &  
- \zeroone{\annotation} \texttt{Cases} \nelist{\term}{} \texttt{of} 
+ \texttt{match} \nelist{\term}{} \texttt{with} 
  \sequence{\exteqn}{$|$} \texttt{end} \\
 \end{tabular}
 \end{minipage}}
@@ -197,18 +197,16 @@ system. Here is an example:
 % Test failure
 \begin{coq_eval}
 Set Printing Depth 50.
-\end{coq_eval}
-\begin{coq_example}
-Check
-  
   (********** The following is not correct and should produce **********)
   (**************** Error: This clause is redundant ********************)
-  (* Just to adjust the prompt: *) (fun x:nat =>
-                                      match x with
-                                      | O => true
-                                      | S _ => false
-                                      | x => true
-                                      end).
+\end{coq_eval}
+\begin{coq_example}
+Check (fun x:nat =>
+         match x with
+         | O => true
+         | S _ => false
+         | x => true
+         end).
 \end{coq_example}
 
 \asection{About patterns of parametric types}
@@ -240,17 +238,16 @@ When we use parameters in patterns there is an error message:
 % Test failure
 \begin{coq_eval}
 Set Printing Depth 50.
+(********** The following is not correct and should produce **********)
+(******** Error: The constructor cons expects 2 arguments ************)
 \end{coq_eval}
 \begin{coq_example}
 Check
-  
-  (********** The following is not correct and should produce **********)
-  (******** Error: The constructor cons expects 2 arguments ************)
-  (* Just to adjust the prompt: *) (fun l:List nat =>
-                                      match l with
-                                      | nil A => nil nat
-                                      | cons A _ l' => l'
-                                      end).
+  (fun l:List nat =>
+     match l with
+     | nil A => nil nat
+     | cons A _ l' => l'
+     end).
 \end{coq_example}
 
 
@@ -263,7 +260,7 @@ Consider the type \texttt{listn} of lists of a certain length:
 
 \begin{coq_example}
 Inductive listn : nat -> Set :=
-  | niln : listn 0%N
+  | niln : listn 0
   | consn : forall n:nat, nat -> listn n -> listn (S n).
 \end{coq_example}
 
@@ -281,7 +278,7 @@ we can define it by case analysis:
 Reset length.
 Definition length (n:nat) (l:listn n) :=
   match l with
-  | niln => 0%N
+  | niln => 0
   | consn n _ _ => S n
   end.
 \end{coq_example}
@@ -299,7 +296,7 @@ alternative definition using nested patterns:
 \begin{coq_example}
 Definition length1 (n:nat) (l:listn n) :=
   match l with
-  | niln => 0%N
+  | niln => 0
   | consn n _ niln => S n
   | consn n _ (consn _ _ _) => S n
   end.
@@ -310,8 +307,8 @@ It is obvious that \texttt{length1} is  another version of
 \begin{coq_example}
 Definition length2 (n:nat) (l:listn n) :=
   match l with
-  | niln => 0%N
-  | consn n _ niln => 1%N
+  | niln => 0
+  | consn n _ niln => 1
   | consn n _ (consn m _ _) => S (S m)
   end.
 \end{coq_example}
@@ -335,8 +332,8 @@ Thus, the following term \texttt{length3} corresponds to the function
 \begin{coq_example}
 Definition length3 (n:nat) (l:listn n) :=
   match l with
-  | niln => 0%N
-  | consn O _ _ => 1%N
+  | niln => 0
+  | consn O _ _ => 1
   | consn (S n) _ _ => S (S n)
   end.
 \end{coq_example}
@@ -416,17 +413,15 @@ correct Coq raises an error message. For example:
 \begin{coq_eval}
 Reset concat.
 Set Printing Depth 50.
+(********** The following is not correct and should produce **********)
+(**** Error: The elimination predicate [n:nat](listn (plus n m))  ****)
+(*** should be of arity nat->nat->Type (for non dependent case) or ***)
+(** (n:nat)(listn n)->(n0:nat)(listn n0)->Type (for dependent case) **)
 \end{coq_eval}
 
 \begin{coq_example}
 Fixpoint concat
- (n:
-  (********** The following is not correct and should produce **********)
-  (**** Error: The elimination predicate [n:nat](listn (plus n m))  ****)
-  (*** should be of arity nat->nat->Type (for non dependent case) or ***)
-  (** (n:nat)(listn n)->(n0:nat)(listn n0)->Type (for dependent case) **)
-  (* Just to adjust the prompt: *) nat) (l:listn n) (m:nat)
- (l':listn m) {struct l} : listn (n + m) :=
+ (n: nat) (l:listn n) (m:nat) (l':listn m) {struct l} : listn (n + m) :=
   match l, l' with
   | niln, x => x
   | consn n' a y, x => consn (n' + m) a (concat n' y m x)
@@ -460,7 +455,7 @@ Consider the following definition of the predicate less-equal
 
 \begin{coq_example}
 Inductive LE : nat -> nat -> Prop :=
-  | LEO : forall n:nat, LE 0%N n
+  | LEO : forall n:nat, LE 0 n
   | LES : forall n m:nat, LE n m -> LE (S n) (S m).
 \end{coq_example}
 
@@ -514,8 +509,8 @@ Require Import Arith.
 
 \begin{coq_example*}
 Inductive list : nat -> Set :=
-  | nil : list 0%N
-  | cons : forall n:nat, let m := (2 * n)%N in list m -> list (S (S m)).
+  | nil : list 0
+  | cons : forall n:nat, let m := (2 * n) in list m -> list (S (S m)).
 \end{coq_example*}
 
 In the next example, the local definition is not caught.
@@ -523,8 +518,8 @@ In the next example, the local definition is not caught.
 \begin{coq_example}
 Fixpoint length n (l:list n) {struct l} : nat :=
   match l with
-  | nil => 0%N
-  | cons n l0 => S (length (2 * n)%N l0)
+  | nil => 0
+  | cons n l0 => S (length (2 * n) l0)
   end.
 \end{coq_example}
 
@@ -533,7 +528,7 @@ But in this example, it is.
 \begin{coq_example}
 Fixpoint length' n (l:list n) {struct l} : nat :=
   match l with
-  | nil => 0%N
+  | nil => 0
   | cons _ m l0 => S (length' m l0)
   end.
 \end{coq_example}
@@ -556,8 +551,8 @@ Inductive I : Set :=
   | C2 : I -> I.
 Coercion C1 : nat >-> I.
 Check (fun x => match x with
-                | C2 O => 0%N
-                | _ => 0%N
+                | C2 O => 0
+                | _ => 0
                 end).
 \end{coq_example}
 
