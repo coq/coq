@@ -174,7 +174,10 @@ Syntax constr
   | app_imp_last [ << (APPLISTIMPL (ACC ($LIST $A)) $T) >> ]
          -> [ (APPLIST ($LIST $A) $T):E ]
 *)
+  ;
 
+  (* To force parenthesis on arguments *)
+  level 0:
   | apptailcons [ << (APPTAIL $H ($LIST $T)) >> ]
 	 -> [ [1 1] $H:L  (APPTAIL ($LIST $T)):E ]
   | apptailnil [ << (APPTAIL) >> ] -> [ ]
