@@ -381,11 +381,11 @@ let is_unit env_par nparams ar spec =
 let type_one_inductive i env_ar env_par nparams ninds (id,ar,cnames,spec) =
   let (lna,vc) = decomp_all_DLAMV_name spec in
   let (env',(issmall,jlc)) = 
-    List.fold_left 
-      (fun (env,(small,jl)) c -> 
+    List.fold_right
+      (fun c (env,(small,jl)) -> 
 	 let (env',(sm,jc)) = type_one_constructor env nparams ar c in
 	 (env', (small && sm,jc::jl)))
-      (env_ar,(true,[])) (Array.to_list vc)
+       (Array.to_list vc) (env_ar,(true,[]))
   in
   let castlc = List.map cast_of_judgment jlc in
   let spec' = put_DLAMSV lna (Array.of_list castlc) in
