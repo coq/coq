@@ -217,7 +217,9 @@ toplevel: $(TOPLEVEL)
 
 # special binaries for debugging
 
-EXTRACTIONCMO=contrib/extraction/ocaml.cmo contrib/extraction/extraction.cmo 
+EXTRACTIONCMO=contrib/extraction/mlutil.cmo contrib/extraction/ocaml.cmo \
+	      contrib/extraction/extraction.cmo \
+	      contrib/extraction/extract_env.cmo
 
 bin/coq-extraction: $(COQMKTOP) $(CMO) $(USERTACCMO) $(EXTRACTIONCMO)
 	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@ $(EXTRACTIONCMO)
