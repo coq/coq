@@ -33,6 +33,7 @@ val check_same_type : constr_expr -> constr_expr -> unit
 
 val extern_cases_pattern : Idset.t -> cases_pattern -> cases_pattern_expr
 val extern_rawconstr : Idset.t -> rawconstr -> constr_expr
+val extern_rawtype : Idset.t -> rawconstr -> constr_expr
 val extern_pattern : env -> names_context -> constr_pattern -> constr_expr
 
 (* If [b=true] in [extern_constr b env c] then the variables in the first 

@@ -20,7 +20,6 @@ open Inductive
 open Sign
 open Environ
 open Libnames
-open Declare
 open Impargs
 open Topconstr
 open Rawterm
@@ -573,7 +572,7 @@ and factorize_prod scopes vars aty = function
 	-> let id = avoid_wildcard id in
            let (nal,c) = factorize_prod scopes (Idset.add id vars) aty c in
            ((loc,Name id)::nal,c)
-  | c -> ([],extern true scopes vars c)
+  | c -> ([],extern_type scopes vars c)
 
 and factorize_lambda inctx scopes vars aty = function
   | RLambda (loc,na,ty,c)
@@ -636,6 +635,9 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
 
 let extern_rawconstr vars c = 
   extern false (None,Symbols.current_scopes()) vars c
+
+let extern_rawtype vars c =
+  extern_type (None,Symbols.current_scopes()) vars c
 
 let extern_cases_pattern vars p = 
   extern_cases_pattern_in_scope (Symbols.current_scopes()) vars p
