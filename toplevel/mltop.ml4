@@ -57,6 +57,7 @@ let load = ref Native
 
 (* Sets and initializes the kind of loading *)
 let set kload = load := kload
+let get () = !load
 
 (* Resets load *)
 let remove ()= load := Native

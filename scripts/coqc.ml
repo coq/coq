@@ -18,7 +18,7 @@
 let environment = Unix.environment ()
 
 let bindir = ref Coq_config.bindir
-let binary = ref "coqtop.byte"
+let binary = ref ("coqtop." ^ Coq_config.best)
 
 (* the $COQBIN environment variable has priority over the Coq_config value *)
 let _ = 
@@ -133,8 +133,12 @@ let parse_args () =
 	end
     | ("-notactics"|"-debug"|"-db"|"-debugger"|"-nolib"|"-batch"|"-nois"
       |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
-      |"-silent"|"-v"|"--version" as o) :: rem ->
+      |"-silent" as o) :: rem ->
 	parse (cfiles,o::args) rem
+    | ("-v"|"--version") :: _ ->
+        Usage.version ()
+    | "-where" :: _ -> 
+	print_endline Coq_config.coqlib; exit 0
     | f :: rem -> 
 	if Sys.file_exists f then
 	  parse (f::cfiles,args) rem

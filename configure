@@ -451,6 +451,7 @@ let coqlib = "$LIBDIR"
 let coqtop = "$COQTOP"
 let camllib = "$CAMLLIB"
 let camlp4lib = "$CAMLP4LIB"
+let best = "$best_compiler"
 let arch = "$ARCH"
 let osdeplibs = "$OSDEPLIBS"
 let defined = [ "$OSTYPE" ]

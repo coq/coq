@@ -1,8 +1,6 @@
 Distribution:
 
 - faire une passe sur les options de coqtop et coqc
-- option -byte à coqtop
-- coqc utilise coqtop.opt par défaut, sauf si -byte indiqué
 
 Environnement:
 

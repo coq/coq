@@ -51,6 +51,18 @@ let require () =
     (fun s -> Library.require_module None (Filename.basename s) (Some s) false)
     (List.rev !require_list)
 
+(* Re-exec Coq in bytecode or native code if necessary. [s] is either
+   ["byte"] or ["opt"]. Notice that this is possible since the nature of
+   the toplevel has already been set in [Mltop] by the main file created
+   by coqmktop (see scripts/coqmktop.ml). *)
+
+let re_exec s =
+  let is_native = (Mltop.get()) = Mltop.Native in
+  if (is_native && s = "byte") || ((not is_native) && s = "opt") then 
+    let prog = Sys.argv.(0) in
+    let newprog = Filename.concat (Filename.dirname prog) ("coqtop." ^ s) in
+    Sys.argv.(0) <- newprog;
+    Unix.execv newprog Sys.argv
 
 (* Parsing of the command line.
  *
@@ -65,11 +77,7 @@ let usage () =
   flush stderr ;
   exit 1
 
-let version () =
-  Printf.printf "The Coq Proof Assistant, version %s (%s)\n"
-    Coq_config.version Coq_config.date;
-  Printf.printf "compiled on %s\n" Coq_config.compile_date;
-  exit 0
+let warning s = wARNING [< 'sTR s >]
 
 let parse_args () =
   let rec parse = function
@@ -82,6 +90,10 @@ let parse_args () =
     | "-R" :: []       -> usage ()
 
     | "-q" :: rem -> no_load_rc (); parse rem
+
+    | "-opt" :: rem -> re_exec "opt"; parse rem
+    | "-byte" :: rem -> re_exec "byte"; parse rem
+    | "-full" :: rem -> warning "option -full deprecated\n"; parse rem
 
     | "-batch" :: rem -> set_batch_mode (); parse rem
 	     
@@ -121,7 +133,7 @@ let parse_args () =
 
     | ("-?"|"-h"|"-H"|"-help"|"--help") :: _ -> usage ()
 
-    | ("-v"|"--version") :: _ -> version ()
+    | ("-v"|"--version") :: _ -> Usage.version ()
 
     | "-init-file" :: f :: rem -> set_rcfile f; parse rem
     | "-init-file" :: []       -> usage ()

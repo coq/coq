@@ -12,6 +12,7 @@ val camllib : string    (* for Dynlink *)
 
 val camlp4lib : string  (* where is the library of Camlp4 *)
 
+val best : string       (* byte/opt *)
 val arch : string       (* architecture *)
 val osdeplibs : string  (* OS dependant link options for ocamlc *)
 

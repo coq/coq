@@ -17,6 +17,7 @@ type kind_load=
 
 (*Sets and initializes the kind of loading*)
 val set : kind_load -> unit
+val get : unit -> kind_load
 
 (*Resets the kind of loading*)
 val remove : unit -> unit
