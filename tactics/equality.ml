@@ -1211,3 +1211,5 @@ let replace_term_in_left t = rewrite_assumption_cond_in (cond_eq_term_left t)
 let replace_term_in_right t = rewrite_assumption_cond_in (cond_eq_term_right t)
    
 let replace_term_in t = rewrite_assumption_cond_in (cond_eq_term t)
+
+let _ = Setoid_replace.register_replace replace
