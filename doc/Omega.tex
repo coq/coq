@@ -50,7 +50,7 @@ on atomic formulas. Atomic formulas are built from the predicates
 and in expressions of type \verb=Z=, {\tt Omega}~recognizes 
 
 \begin{quote}
-\verb!+,_,*, Zs!, and constants.
+\verb!+, -, *, Zs!, and constants.
 \end{quote}
 
 All expressions of type \verb=nat= or \verb=Z= not built on these
@@ -142,7 +142,7 @@ Goal (z:Z)`z>0` -> `2*z + 1 > z`.
 Intro; Omega.
 \end{coq_example}
 
-Other examples can be found in \verb+$COQLIB/theories/DEMOS/OMEGA+.
+% Other examples can be found in \verb+$COQLIB/theories/DEMOS/OMEGA+.
 
 \asection{Technical data}
 \label{technical}
@@ -209,7 +209,7 @@ decision procedure is only partial.
 
 \item Much too slow.
 
-\item Certainely plenty other bugs !! You can report them to
+\item Certainely other bugs! You can report them to
 
 \begin{quote}
   \verb=Pierre.Cregut@cnet.francetelecom.fr= 
