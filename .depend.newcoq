@@ -59,7 +59,7 @@ newtheories/Init/Logic.vo: newtheories/Init/Logic.v newtheories/Init/Notations.v
 newtheories/Init/Specif.vo: newtheories/Init/Specif.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo
 newtheories/Init/Logic_Type.vo: newtheories/Init/Logic_Type.v newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo
 newtheories/Init/Wf.vo: newtheories/Init/Wf.v newtheories/Init/Notations.vo newtheories/Init/Logic.vo newtheories/Init/Datatypes.vo
-newtheories/Init/Prelude.vo: newtheories/Init/Prelude.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo newtheories/Init/Specif.vo newtheories/Init/Peano.vo newtheories/Init/Wf.vo
+newtheories/Init/Prelude.vo: newtheories/Init/Prelude.v newtheories/Init/Notations.vo newtheories/Init/Logic.vo newtheories/Init/Datatypes.vo newtheories/Init/Specif.vo newtheories/Init/Peano.vo newtheories/Init/Wf.vo
 newtheories/Init/Notations.vo: newtheories/Init/Notations.v
 newtheories/Init/Datatypes.vo: newtheories/Init/Datatypes.v newtheories/Init/Notations.vo newtheories/Init/Logic.vo
 newtheories/Init/Peano.vo: newtheories/Init/Peano.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo
@@ -67,7 +67,7 @@ newtheories/Init/Logic.vo: newtheories/Init/Logic.v newtheories/Init/Notations.v
 newtheories/Init/Specif.vo: newtheories/Init/Specif.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo
 newtheories/Init/Logic_Type.vo: newtheories/Init/Logic_Type.v newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo
 newtheories/Init/Wf.vo: newtheories/Init/Wf.v newtheories/Init/Notations.vo newtheories/Init/Logic.vo newtheories/Init/Datatypes.vo
-newtheories/Init/Prelude.vo: newtheories/Init/Prelude.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo newtheories/Init/Specif.vo newtheories/Init/Peano.vo newtheories/Init/Wf.vo
+newtheories/Init/Prelude.vo: newtheories/Init/Prelude.v newtheories/Init/Notations.vo newtheories/Init/Logic.vo newtheories/Init/Datatypes.vo newtheories/Init/Specif.vo newtheories/Init/Peano.vo newtheories/Init/Wf.vo
 newtheories/Logic/Hurkens.vo: newtheories/Logic/Hurkens.v
 newtheories/Logic/ProofIrrelevance.vo: newtheories/Logic/ProofIrrelevance.v newtheories/Logic/Hurkens.vo
 newtheories/Logic/Classical.vo: newtheories/Logic/Classical.v newtheories/Logic/Classical_Prop.vo newtheories/Logic/Classical_Pred_Type.vo
