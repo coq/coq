@@ -173,7 +173,7 @@ PROOFS=\
 PARSING=\
   parsing/coqast.cmo parsing/ast.cmo \
   parsing/termast.cmo parsing/extend.cmo parsing/esyntax.cmo \
-  parsing/pcoq.cmo parsing/egrammar.cmo \
+  parsing/pcoq.cmo parsing/egrammar.cmo parsing/g_xml.cmo \
   parsing/ppconstr.cmo translate/ppconstrnew.cmo parsing/printer.cmo \
   parsing/pptactic.cmo translate/pptacticnew.cmo parsing/tactic_printer.cmo \
   parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo
@@ -255,7 +255,7 @@ XMLCMO=\
   contrib/xml/cic2acic.cmo contrib/xml/acic2Xml.cmo \
   contrib/xml/proof2aproof.cmo \
   contrib/xml/xmlcommand.cmo contrib/xml/proofTree2Xml.cmo \
-	contrib/xml/xmlentries.cmo 	
+  contrib/xml/xmlentries.cmo 	contrib/xml/cic2Xml.cmo
 
 FOURIERCMO=\
   contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo \
@@ -1380,7 +1380,7 @@ GRAMMARSCMO=\
   parsing/g_prim.cmo parsing/g_tactic.cmo \
   parsing/g_ltac.cmo parsing/g_constr.cmo \
   parsing/g_primnew.cmo parsing/g_tacticnew.cmo \
-  parsing/g_ltacnew.cmo parsing/g_constrnew.cmo 
+  parsing/g_ltacnew.cmo parsing/g_constrnew.cmo
 
 GRAMMARCMO=$(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
 
@@ -1438,7 +1438,7 @@ clean::
 
 ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
 	   parsing/g_vernac.ml4 parsing/g_proofs.ml4 \
-	   parsing/g_cases.ml4 \
+	   parsing/g_cases.ml4 parsing/g_xml.ml4 \
 	   parsing/g_constr.ml4 parsing/g_module.ml4 \
 	   parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
 	   parsing/argextend.ml4 parsing/tacextend.ml4 \

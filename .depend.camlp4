@@ -27,6 +27,7 @@ parsing/g_minicoq.ml:
 parsing/g_vernac.ml: 
 parsing/g_proofs.ml: 
 parsing/g_cases.ml: 
+parsing/g_xml.ml: 
 parsing/g_constr.ml: 
 parsing/g_module.ml: 
 parsing/g_tactic.ml: 
