@@ -88,10 +88,3 @@ fi
 #    echo "Wrong version of required Objective Caml in coq.spec ($ocamlversionspec)"
 #    echo Aborting; exit 1
 #  fi
-
-camlp4version=`grep "You need Camlp4 .* or later" $CONFIGFILE | sed -e 's/.*Camlp4 \(.*\) or later.*/\1/'`
-echo -n The configure file seems to require Camlp4 version $camlp4version ...
-echo -n " is that OK? "
-read a
-if [ "$a" != 'y' -a "$a" != 'Y' ]; then echo Aborting; exit 1; fi
-echo Check list completed
