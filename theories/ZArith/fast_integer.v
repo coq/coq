@@ -42,6 +42,8 @@ Bind Scope Z_scope with Z.
 Arguments Scope POS [ Z_scope ].
 Arguments Scope NEG [ Z_scope ].
 
+Section fast_integers.
+
 Inductive relation : Set := 
   EGAL :relation | INFERIEUR : relation | SUPERIEUR : relation.
 
@@ -92,7 +94,7 @@ with add_carry [x,y:positive]:positive :=
 
 V8Infix "+" add : positive_scope.
 
-Open Scope positive_scope.
+(*Open Scope positive_scope.*)
 
 (** From positive to natural numbers *)
 Fixpoint positive_to_nat [x:positive]:nat -> nat :=
@@ -181,7 +183,7 @@ Intro; Unfold convert; Apply lt_le_trans with (S O); Auto with arith.
 Apply compare_positive_to_nat_O.
 Qed.
 
-Hints Local Resolve compare_convert_O.
+Hints Resolve compare_convert_O.
 
 (** Subtraction *)
 Fixpoint double_moins_un [x:positive]:positive :=
@@ -933,7 +935,7 @@ Proof.
 Induction x; Auto with arith.
 Qed.
 
-Hints Local Resolve Zero_left Zero_right.
+Hints Resolve Zero_left Zero_right.
 
 Theorem weak_assoc :
   (x,y:positive)(z:Z) (Zplus (POS x) (Zplus (POS y) z))=
@@ -1039,7 +1041,7 @@ Intros x y z';Case z'; [
       Rewrite add_sym; Trivial with arith ]]].
 Qed.
 
-Hints Local Resolve weak_assoc.
+Hints Resolve weak_assoc.
 
 Theorem Zplus_assoc :
   (x,y,z:Z) (Zplus x (Zplus y z))= (Zplus (Zplus x y) z).
@@ -1089,10 +1091,10 @@ V8Infix "*" times : positive_scope.
 
 (** Correctness of multiplication on positive *)
 Theorem times_convert :
-  (x,y:positive) (convert x*y) = (mult (convert x) (convert y)).
+  (x,y:positive) (convert (times x y)) = (mult (convert x) (convert y)).
 Proof.
 Intros x y; NewInduction x as [ x' H | x' H | ]; [
-  Change (xI x')*y with (add y (xO x'*y)); Rewrite convert_add;
+  Change (times (xI x') y) with (add y (xO (times x' y))); Rewrite convert_add;
   Unfold 2 3 convert; Simpl; Do 2 Rewrite ZL6; Rewrite H;
   Rewrite -> mult_plus_distr; Reflexivity
 | Unfold 1 2 convert; Simpl; Do 2 Rewrite ZL6;
@@ -1132,7 +1134,7 @@ Definition Zmult := [x,y:Z]
 
 V8Infix "*" Zmult : Z_scope.
 
-Open Scope Z_scope.
+(*Open Scope Z_scope.*)
 
 Theorem Zmult_sym : (x,y:Z) (Zmult x y) = (Zmult y x).
 Proof.
@@ -1185,7 +1187,7 @@ Proof.
 Induction x; Auto with arith.
 Qed.
 
-Hints Local Resolve Zero_mult_left Zero_mult_right.
+Hints Resolve Zero_mult_left Zero_mult_right.
 
 (* Multiplication and Opposite *)
 Theorem Zopp_Zmult:
@@ -1310,7 +1312,7 @@ Proof.
 Intros;Rewrite <- ZC4;Trivial with arith.
 Qed.
 
-Hints Local Resolve convert_compare_EGAL.
+Hints Resolve convert_compare_EGAL.
 
 Theorem weaken_Zcompare_Zplus_compatible : 
   ((x,y:Z) (z:positive) 
@@ -1323,7 +1325,7 @@ Try (Intros; Rewrite Zcompare_Zopp; Do 2 Rewrite Zopp_Zplus;
 Try (Intros; Simpl; Rewrite <- ZC4; Auto with arith).
 Qed.
 
-Hints Local Resolve ZC4.
+Hints Resolve ZC4.
 
 Theorem weak_Zcompare_Zplus_compatible : 
   (x,y:Z) (z:positive) 
@@ -1528,6 +1530,8 @@ Intros x y;Case x;Case y; [
   Simpl; Rewrite (ZC1 q p H); Trivial with arith].
 Qed.
 
+End fast_integers.
+
 V7only [
   Comments "Compatibility with the old version of times and times_convert".
   Syntactic Definition times1 :=
@@ -1535,3 +1539,10 @@ V7only [
   Syntactic Definition times1_convert :=
     [x,y:positive;_:positive->positive](times_convert x y).
 ].
+
+V8Infix "+" add   : positive_scope.
+V8Infix "*" times : positive_scope.
+V8Infix "+" Zplus : Z_scope.
+V8Infix "*" Zmult : Z_scope.
+V8Notation "- x" := (Zopp x) : Z_scope.
+V8Infix "?=" Zcompare (at level 50, no associativity) : Z_scope.
