@@ -113,8 +113,11 @@ open Proof_type
   the constants are loaded in the environment *)
 
 let constant dir s =
-  Declare.global_absolute_reference
-    (make_path ("Coq"::"ring"::dir) (id_of_string s) CCI)
+  let dir = "Coq"::"ring"::dir in
+  try 
+    Declare.global_reference_in_absolute_module dir (id_of_string s)
+  with Not_found ->
+    anomaly ("Quote: cannot find "^(string_of_qualid (make_qualid dir s)))
 
 let coq_Empty_vm = lazy (constant ["Quote"] "Empty_vm")
 let coq_Node_vm = lazy (constant ["Quote"] "Node_vm")

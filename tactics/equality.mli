@@ -16,22 +16,6 @@ open Tacticals
 open Tactics
 (*i*)
 
-type leibniz_eq = {
-  eq   : marked_term;
-  ind  : marked_term;
-  rrec : marked_term option;
-  rect : marked_term option;
-  congr: marked_term;
-  sym  : marked_term }
-
-val eq  : leibniz_eq
-val eqT : leibniz_eq
-val idT : leibniz_eq
-
-val eq_pattern  : unit -> constr_pattern
-val eqT_pattern : unit -> constr_pattern
-val idT_pattern : unit -> constr_pattern
-
 val find_eq_pattern : sorts -> sorts -> constr
 
 val general_rewrite_bindings : bool -> (constr * constr substitution) -> tactic
