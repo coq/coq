@@ -1414,11 +1414,12 @@ tactics/equality.cmo: proofs/clenv.cmi parsing/coqlib.cmi \
     proofs/logic.cmi library/nameops.cmi kernel/names.cmi \
     pretyping/pattern.cmi lib/pp.cmi proofs/proof_type.cmi \
     pretyping/rawterm.cmi pretyping/reductionops.cmi pretyping/retyping.cmi \
-    tactics/setoid_replace.cmi tactics/tacinterp.cmi proofs/tacmach.cmi \
-    pretyping/tacred.cmi tactics/tacticals.cmi tactics/tactics.cmi \
-    kernel/term.cmi pretyping/termops.cmi kernel/typeops.cmi \
-    pretyping/typing.cmi kernel/univ.cmi lib/util.cmi toplevel/vernacexpr.cmo \
-    toplevel/vernacinterp.cmi tactics/wcclausenv.cmi tactics/equality.cmi 
+    tactics/setoid_replace.cmi kernel/sign.cmi tactics/tacinterp.cmi \
+    proofs/tacmach.cmi pretyping/tacred.cmi tactics/tacticals.cmi \
+    tactics/tactics.cmi kernel/term.cmi pretyping/termops.cmi \
+    kernel/typeops.cmi pretyping/typing.cmi kernel/univ.cmi lib/util.cmi \
+    toplevel/vernacexpr.cmo toplevel/vernacinterp.cmi tactics/wcclausenv.cmi \
+    tactics/equality.cmi 
 tactics/equality.cmx: proofs/clenv.cmx parsing/coqlib.cmx \
     kernel/declarations.cmx kernel/environ.cmx proofs/evar_refiner.cmx \
     pretyping/evarutil.cmx tactics/hipattern.cmx pretyping/indrec.cmx \
@@ -1426,11 +1427,12 @@ tactics/equality.cmx: proofs/clenv.cmx parsing/coqlib.cmx \
     proofs/logic.cmx library/nameops.cmx kernel/names.cmx \
     pretyping/pattern.cmx lib/pp.cmx proofs/proof_type.cmx \
     pretyping/rawterm.cmx pretyping/reductionops.cmx pretyping/retyping.cmx \
-    tactics/setoid_replace.cmx tactics/tacinterp.cmx proofs/tacmach.cmx \
-    pretyping/tacred.cmx tactics/tacticals.cmx tactics/tactics.cmx \
-    kernel/term.cmx pretyping/termops.cmx kernel/typeops.cmx \
-    pretyping/typing.cmx kernel/univ.cmx lib/util.cmx toplevel/vernacexpr.cmx \
-    toplevel/vernacinterp.cmx tactics/wcclausenv.cmx tactics/equality.cmi 
+    tactics/setoid_replace.cmx kernel/sign.cmx tactics/tacinterp.cmx \
+    proofs/tacmach.cmx pretyping/tacred.cmx tactics/tacticals.cmx \
+    tactics/tactics.cmx kernel/term.cmx pretyping/termops.cmx \
+    kernel/typeops.cmx pretyping/typing.cmx kernel/univ.cmx lib/util.cmx \
+    toplevel/vernacexpr.cmx toplevel/vernacinterp.cmx tactics/wcclausenv.cmx \
+    tactics/equality.cmi 
 tactics/extraargs.cmo: parsing/extend.cmi parsing/genarg.cmi \
     toplevel/metasyntax.cmi parsing/pcoq.cmi lib/pp.cmi parsing/ppconstr.cmi \
     parsing/pptactic.cmi parsing/printer.cmi tactics/tacinterp.cmi \
