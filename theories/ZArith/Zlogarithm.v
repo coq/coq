@@ -176,7 +176,7 @@ Case p0; Intros; Auto with zarith.
 Auto.
 Save.
 
-(i*******************
+(*i******************
 Theorem log_near_correct: (p:positive)
   `| (two_p (log_near p)) - (POS p) | <= (POS p)-(two_p (log_inf p))`
   /\`| (two_p (log_near p)) - (POS p) | <= (two_p (log_sup p))-(POS p)`.
@@ -196,7 +196,7 @@ Unfold log_near; Fold log_near.
 Unfold log_inf; Fold log_inf.
 Repeat Rewrite E1.
 Split.
-***********************************i)
+**********************************i*)
 
 End Log_pos.
 
