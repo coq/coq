@@ -405,7 +405,7 @@ and fCOMMAND = function
    fNODE "syntax_macro" 3
 | CT_tactic_definition(x1, x2, x3) ->
    fID x1;
-   fID_LIST x2;
+   fID_UNIT_LIST x2;
    fTACTIC_COM x3;
    fNODE "tactic_definition" 3
 | CT_test_natural_feature(x1, x2) ->
@@ -457,6 +457,10 @@ and fCONSTR = function
    fID x1;
    fFORMULA x2;
    fNODE "constr" 2
+| CT_constr_coercion(x1, x2) ->
+   fID x1;
+   fFORMULA x2;
+   fNODE "constr_coercion" 2
 and fCONSTR_LIST = function
 | CT_constr_list l ->
    (List.iter fCONSTR l);
@@ -771,10 +775,14 @@ and fID_UNIT = function
 | CT_coerce_ID_to_ID_UNIT x -> fID x
 | CT_unit -> fNODE "unit" 0
 and fID_UNIT_LIST = function
-| CT_id_unit_list(x,l) ->
+| CT_id_unit_list l ->
+   (List.iter fID_UNIT l);
+   fNODE "id_unit_list" (List.length l)
+and fID_UNIT_NE_LIST = function
+| CT_id_unit_ne_list(x,l) ->
    fID_UNIT x;
    (List.iter fID_UNIT l);
-   fNODE "id_unit_list" (1 + (List.length l))
+   fNODE "id_unit_ne_list" (1 + (List.length l))
 and fIMPEXP = function
 | CT_export -> fNODE "export" 0
 | CT_import -> fNODE "import" 0
@@ -972,14 +980,24 @@ and fPROOF_SCRIPT = function
    (List.iter fCOMMAND l);
    fNODE "proof_script" (List.length l)
 and fRECCONSTR = function
-| CT_constr_coercion(x1, x2) ->
+| CT_defrecconstr(x1, x2, x3) ->
    fID_OPT x1;
    fFORMULA x2;
-   fNODE "constr_coercion" 2
+   fFORMULA_OPT x3;
+   fNODE "defrecconstr" 3
+| CT_defrecconstr_coercion(x1, x2, x3) ->
+   fID_OPT x1;
+   fFORMULA x2;
+   fFORMULA_OPT x3;
+   fNODE "defrecconstr_coercion" 3
 | CT_recconstr(x1, x2) ->
    fID_OPT x1;
    fFORMULA x2;
    fNODE "recconstr" 2
+| CT_recconstr_coercion(x1, x2) ->
+   fID_OPT x1;
+   fFORMULA x2;
+   fNODE "recconstr_coercion" 2
 and fRECCONSTR_LIST = function
 | CT_recconstr_list l ->
    (List.iter fRECCONSTR l);
@@ -987,7 +1005,7 @@ and fRECCONSTR_LIST = function
 and fREC_TACTIC_FUN = function
 | CT_rec_tactic_fun(x1, x2, x3) ->
    fID x1;
-   fID_UNIT_LIST x2;
+   fID_UNIT_NE_LIST x2;
    fTACTIC_COM x3;
    fNODE "rec_tactic_fun" 3
 and fREC_TACTIC_FUN_LIST = function
@@ -1205,11 +1223,12 @@ and fTACTIC_COM = function
 | CT_decompose_sum(x1) ->
    fFORMULA x1;
    fNODE "decompose_sum" 1
-| CT_depinversion(x1, x2, x3) ->
+| CT_depinversion(x1, x2, x3, x4) ->
    fINV_TYPE x1;
    fID_OR_INT x2;
-   fFORMULA_OPT x3;
-   fNODE "depinversion" 3
+   fINTRO_PATT_LIST x3;
+   fFORMULA_OPT x4;
+   fNODE "depinversion" 4
 | CT_deprewrite_lr(x1) ->
    fID x1;
    fNODE "deprewrite_lr" 1
@@ -1305,11 +1324,12 @@ and fTACTIC_COM = function
 | CT_intros_until(x1) ->
    fID_OR_INT x1;
    fNODE "intros_until" 1
-| CT_inversion(x1, x2, x3) ->
+| CT_inversion(x1, x2, x3, x4) ->
    fINV_TYPE x1;
    fID_OR_INT x2;
-   fID_LIST x3;
-   fNODE "inversion" 3
+   fINTRO_PATT_LIST x3;
+   fID_LIST x4;
+   fNODE "inversion" 4
 | CT_left(x1) ->
    fSPEC_LIST x1;
    fNODE "left" 1
@@ -1440,7 +1460,7 @@ and fTACTIC_COM = function
    (List.iter fTACTIC_COM l);
    fNODE "tacsolve" (1 + (List.length l))
 | CT_tactic_fun(x1, x2) ->
-   fID_UNIT_LIST x1;
+   fID_UNIT_NE_LIST x1;
    fTACTIC_COM x2;
    fNODE "tactic_fun" 2
 | CT_then(x,l) ->

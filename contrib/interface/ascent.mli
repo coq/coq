@@ -144,7 +144,7 @@ and ct_COMMAND =
   | CT_solve of ct_INT * ct_TACTIC_COM
   | CT_suspend
   | CT_syntax_macro of ct_ID * ct_FORMULA * ct_INT_OPT
-  | CT_tactic_definition of ct_ID * ct_ID_LIST * ct_TACTIC_COM
+  | CT_tactic_definition of ct_ID * ct_ID_UNIT_LIST * ct_TACTIC_COM
   | CT_test_natural_feature of ct_NATURAL_FEATURE * ct_ID
   | CT_theorem_struct of ct_THEOREM_GOAL * ct_PROOF_SCRIPT
   | CT_token of ct_STRING
@@ -164,6 +164,7 @@ and ct_COMMENT_S =
     CT_comment_s of ct_COMMENT list
 and ct_CONSTR =
     CT_constr of ct_ID * ct_FORMULA
+  | CT_constr_coercion of ct_ID * ct_FORMULA
 and ct_CONSTR_LIST =
     CT_constr_list of ct_CONSTR list
 and ct_CONTEXT_HYP_LIST =
@@ -315,7 +316,9 @@ and ct_ID_UNIT =
     CT_coerce_ID_to_ID_UNIT of ct_ID
   | CT_unit
 and ct_ID_UNIT_LIST =
-    CT_id_unit_list of ct_ID_UNIT * ct_ID_UNIT list
+    CT_id_unit_list of ct_ID_UNIT list
+and ct_ID_UNIT_NE_LIST =
+    CT_id_unit_ne_list of ct_ID_UNIT * ct_ID_UNIT list
 and ct_IMPEXP =
     CT_export
   | CT_import
@@ -423,12 +426,14 @@ and ct_PREMISE_PATTERN =
 and ct_PROOF_SCRIPT =
     CT_proof_script of ct_COMMAND list
 and ct_RECCONSTR =
-    CT_constr_coercion of ct_ID_OPT * ct_FORMULA
+    CT_defrecconstr of ct_ID_OPT * ct_FORMULA * ct_FORMULA_OPT
+  | CT_defrecconstr_coercion of ct_ID_OPT * ct_FORMULA * ct_FORMULA_OPT
   | CT_recconstr of ct_ID_OPT * ct_FORMULA
+  | CT_recconstr_coercion of ct_ID_OPT * ct_FORMULA
 and ct_RECCONSTR_LIST =
     CT_recconstr_list of ct_RECCONSTR list
 and ct_REC_TACTIC_FUN =
-    CT_rec_tactic_fun of ct_ID * ct_ID_UNIT_LIST * ct_TACTIC_COM
+    CT_rec_tactic_fun of ct_ID * ct_ID_UNIT_NE_LIST * ct_TACTIC_COM
 and ct_REC_TACTIC_FUN_LIST =
     CT_rec_tactic_fun_list of ct_REC_TACTIC_FUN * ct_REC_TACTIC_FUN list
 and ct_RED_COM =
@@ -521,7 +526,7 @@ and ct_TACTIC_COM =
   | CT_decompose_list of ct_ID_NE_LIST * ct_FORMULA
   | CT_decompose_record of ct_FORMULA
   | CT_decompose_sum of ct_FORMULA
-  | CT_depinversion of ct_INV_TYPE * ct_ID_OR_INT * ct_FORMULA_OPT
+  | CT_depinversion of ct_INV_TYPE * ct_ID_OR_INT * ct_INTRO_PATT_LIST * ct_FORMULA_OPT
   | CT_deprewrite_lr of ct_ID
   | CT_deprewrite_rl of ct_ID
   | CT_destruct of ct_ID_OR_INT
@@ -549,7 +554,7 @@ and ct_TACTIC_COM =
   | CT_intro_after of ct_ID_OPT * ct_ID
   | CT_intros of ct_INTRO_PATT_LIST
   | CT_intros_until of ct_ID_OR_INT
-  | CT_inversion of ct_INV_TYPE * ct_ID_OR_INT * ct_ID_LIST
+  | CT_inversion of ct_INV_TYPE * ct_ID_OR_INT * ct_INTRO_PATT_LIST * ct_ID_LIST
   | CT_left of ct_SPEC_LIST
   | CT_let_ltac of ct_LET_CLAUSES * ct_LET_VALUE
   | CT_lettac of ct_ID_OPT * ct_FORMULA * ct_CLAUSE
@@ -584,7 +589,7 @@ and ct_TACTIC_COM =
   | CT_symmetry of ct_CLAUSE
   | CT_tac_double of ct_ID_OR_INT * ct_ID_OR_INT
   | CT_tacsolve of ct_TACTIC_COM * ct_TACTIC_COM list
-  | CT_tactic_fun of ct_ID_UNIT_LIST * ct_TACTIC_COM
+  | CT_tactic_fun of ct_ID_UNIT_NE_LIST * ct_TACTIC_COM
   | CT_then of ct_TACTIC_COM * ct_TACTIC_COM list
   | CT_transitivity of ct_FORMULA
   | CT_trivial

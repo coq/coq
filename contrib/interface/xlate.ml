@@ -628,8 +628,7 @@ let xlate_context_pattern = function
 
 
 let xlate_match_context_hyps = function
-  | Hyp (na,b) -> CT_premise_pattern(xlate_id_opt na, xlate_context_pattern b)
-
+  | Hyp (na,b) -> CT_premise_pattern(xlate_id_opt na, xlate_context_pattern b);;
 
 let xlate_largs_to_id_unit largs =
   match List.map xlate_id_unit largs with
@@ -671,6 +670,13 @@ let xlate_lettac_clauses = function
 	  | Some [] ->
 	      CT_unfold_list((CT_coerce_ID_to_UNFOLD(CT_ident "Goal"))::res)
 	  | None -> CT_unfold_list res;;
+
+let xlate_intro_patt_list c =
+ CT_intro_patt_list
+   (List.map
+      (fun l -> 
+	 CT_conj_pattern (CT_intro_patt_list (List.map xlate_intro_pattern l)))
+      c);;
 
 let rec (xlate_tacarg:raw_tactic_arg -> ct_TACTIC_ARG) =
   function
@@ -750,11 +756,11 @@ and xlate_rec_tac = function
   | ((_,x),TacFun (argl,tac)) ->
       let fst, rest = xlate_largs_to_id_unit ((Some x)::argl) in
 	CT_rec_tactic_fun(xlate_ident x,
-			  CT_id_unit_list(fst, rest),
+			  CT_id_unit_ne_list(fst, rest),
 			  xlate_tactic tac)
   | ((_,x),tac) ->
       CT_rec_tactic_fun(xlate_ident x,
-			CT_id_unit_list (xlate_id_unit (Some x), []),
+			CT_id_unit_ne_list (xlate_id_unit (Some x), []),
 			xlate_tactic tac)
 
 and xlate_local_rec_tac = function 
@@ -763,14 +769,14 @@ and xlate_local_rec_tac = function
   | ((_,x),(argl,tac)) ->
       let fst, rest = xlate_largs_to_id_unit ((Some x)::argl) in
 	CT_rec_tactic_fun(xlate_ident x,
-			  CT_id_unit_list(fst, rest),
+			  CT_id_unit_ne_list(fst, rest),
 			  xlate_tactic tac)
 
 and xlate_tactic =
  function
    | TacFun (largs, t) ->
        let fst, rest =  xlate_largs_to_id_unit largs in
-       CT_tactic_fun (CT_id_unit_list(fst, rest), xlate_tactic t)
+       CT_tactic_fun (CT_id_unit_ne_list(fst, rest), xlate_tactic t)
    | TacThen (t1,t2) -> 
        (match xlate_tactic t1 with
             CT_then(a,l) -> CT_then(a,l@[xlate_tactic t2])
@@ -1072,20 +1078,18 @@ and xlate_tac =
        let idl' = List.map xlate_hyp idl in
        CT_clear (CT_id_ne_list (xlate_hyp id, idl'))
     | (*For translating tactics/Inv.v *)
-      TacInversion (NonDepInversion (k,idl,[]),quant_hyp) ->
+      TacInversion (NonDepInversion (k,idl,l),quant_hyp) ->
 	CT_inversion(compute_INV_TYPE k, xlate_quantified_hypothesis quant_hyp,
+		     xlate_intro_patt_list l,
 	             CT_id_list (List.map xlate_hyp idl))
-    | TacInversion (DepInversion (k,copt,[]),quant_hyp) ->
+    | TacInversion (DepInversion (k,copt,l),quant_hyp) ->
 	let id = xlate_quantified_hypothesis quant_hyp in
-	CT_depinversion (compute_INV_TYPE k, id, xlate_formula_opt copt)
+	CT_depinversion (compute_INV_TYPE k, id, 
+			 xlate_intro_patt_list l, xlate_formula_opt copt)
     | TacInversion (InversionUsing (c,idlist), id) ->
 	let id = xlate_quantified_hypothesis id in
 	  CT_use_inversion (id, xlate_formula c,
 	    CT_id_list (List.map xlate_hyp idlist))
-    | TacInversion (NonDepInversion (k,idl,names),quant_hyp) ->
-	xlate_error "TODO: Inversion with names"
-    | TacInversion (DepInversion (k,copt,names),quant_hyp) ->
-	xlate_error "TODO: Inversion with names"
     | TacExtend (_,"Omega", []) -> CT_omega
     | TacRename (id1, id2) -> CT_rename(xlate_hyp id1, xlate_hyp id2)
     | TacClearBody([]) -> assert false
@@ -1095,19 +1099,11 @@ and xlate_tac =
     | TacNewDestruct(a,b,(c,_)) ->
 	CT_new_destruct
 	  (xlate_int_or_constr a, xlate_using b, 
-	   (CT_intro_patt_list
-	      (List.map (fun l -> 
-			   CT_conj_pattern
-			     (CT_intro_patt_list
-				(List.map xlate_intro_pattern l))) c)))
+	   xlate_intro_patt_list c)
     | TacNewInduction(a,b,(c,_)) ->
 	CT_new_induction
 	  (xlate_int_or_constr a, xlate_using b,
-	   (CT_intro_patt_list
-	      (List.map (fun l -> 
-			   CT_conj_pattern
-			     (CT_intro_patt_list
-				(List.map xlate_intro_pattern l))) c)))
+	   xlate_intro_patt_list c)
     | TacInstantiate (a, b, cl) -> 
         CT_instantiate(CT_int a, xlate_formula b,
 		       xlate_clause cl)
@@ -1337,18 +1333,22 @@ let xlate_check =
 
 let build_constructors l =
  let f (coe,((_,id),c)) =
-   if coe then xlate_error "TODO: coercions in constructors"
+   if coe then CT_constr_coercion (xlate_ident id, xlate_formula c)
    else CT_constr (xlate_ident id, xlate_formula c) in
  CT_constr_list (List.map f l)
 
 let build_record_field_list l =
  let build_record_field (coe,d) = match d with
   | AssumExpr (id,c) ->
-      if coe then CT_constr_coercion (xlate_id_opt id, xlate_formula c)
+      if coe then CT_recconstr_coercion (xlate_id_opt id, xlate_formula c)
       else
 	CT_recconstr(xlate_id_opt id, xlate_formula c)
   | DefExpr (id,c,topt) ->
-      xlate_error "TODO: manifest fields in Record" in
+      if coe then
+ 	CT_defrecconstr_coercion(xlate_id_opt id, xlate_formula c,
+			      xlate_formula_opt topt)
+      else
+ 	CT_defrecconstr(xlate_id_opt id, xlate_formula c, xlate_formula_opt topt) in
  CT_recconstr_list (List.map build_record_field l);;
 
 let get_require_flags impexp spec =
@@ -1407,12 +1407,8 @@ let xlate_vernac =
  function
    | VernacDeclareTacticDefinition (false,[(_,id),TacFun (largs,tac)]) ->
        let fst, rest = xlate_largs_to_id_unit largs in
-       let extract = function CT_unit -> xlate_error "TODO: void parameter"
-	 | CT_coerce_ID_to_ID_UNIT x -> x in
-       let largs = List.map extract (fst::rest) in
        CT_tactic_definition(xlate_ident id,
-                           (* TODO, replace CT_id_list by CT_id_unit_list *)
-			    CT_id_list largs,
+			    CT_id_unit_list (fst::rest),
 			    xlate_tactic tac)
    | VernacDeclareTacticDefinition 
        (true,((id,TacFun (largs,tac))::_ as the_list)) ->
@@ -1423,7 +1419,7 @@ let xlate_vernac =
 	 | _ -> assert false in
        CT_rec_tactic_definition(CT_rec_tactic_fun_list(fst, others))
     | VernacDeclareTacticDefinition (false,[(_,id),tac]) ->
-       CT_tactic_definition(xlate_ident id, CT_id_list[], xlate_tactic tac)
+       CT_tactic_definition(xlate_ident id, CT_id_unit_list[], xlate_tactic tac)
     | VernacDeclareTacticDefinition (loc,_) -> xlate_error "Shouldn't occur"
     | VernacLoad (verbose,s) ->
       CT_load (
