@@ -15,7 +15,10 @@ open Pattern
 open Clenv
 open Auto
 
-let e_give_exact c gl = tclTHEN (unify (pf_type_of gl c)) (exact_no_check c) gl
+let e_give_exact c gl = let t1 = (pf_type_of gl c) and t2 = pf_concl gl in 
+  if occur_existential t1 or occur_existential t2 then 
+     tclTHEN (unify t1) (exact_no_check c) gl
+  else exact_no_check c gl
 
 let assumption id = e_give_exact (mkVar id)
         
