@@ -404,7 +404,7 @@ let print_val env {uj_val=trm;uj_type=typ} =
   print_typed_value_in_env env (trm,typ)
     
 let print_type env {uj_val=trm;uj_type=typ} =
-  print_typed_value_in_env env (trm, typed_app (nf_betaiota env Evd.empty) typ)
+  print_typed_value_in_env env (trm, type_app (nf_betaiota env Evd.empty) typ)
     
 let print_eval red_fun env {uj_val=trm;uj_type=typ} =
   let ntrm = red_fun env Evd.empty trm in

@@ -91,23 +91,12 @@ let prterm_env_at_top env = gentermpr_core true env
 let prterm_env env = gentermpr_core false env
 let prterm = prterm_env empty_env
 
-let prtype_env env typ = prterm_env env (incast_type typ)
+let prtype_env env typ = prterm_env env typ
 let prtype = prtype_env empty_env
 
 let prjudge_env env j =
-  (prterm_env env j.uj_val, prterm_env env (incast_type j.uj_type))
+  (prterm_env env j.uj_val, prterm_env env j.uj_type)
 let prjudge = prjudge_env empty_env
-
-(* Plus de "k"...
-let gentermpr k = gentermpr_core false
-let gentermpr_at_top k = gentermpr_core true
-
-let fprterm_env a = gentermpr FW a
-let fprterm = fprterm_env empty_env
-
-let fprtype_env env typ = fprterm_env env (incast_type typ)
-let fprtype = fprtype_env empty_env
-*)
 
 let fprterm_env a =
   warning "Fw printing not implemented, use CCI printing 1"; prterm_env a
