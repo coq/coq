@@ -1219,6 +1219,7 @@ install-coq-info: install-coq-manpages install-emacs install-latex
 
 MANPAGES=man/coq-tex.1 man/coqdep.1 man/gallina.1 \
 	man/coqc.1 man/coqtop.1 man/coqtop.byte.1 man/coqtop.opt.1 \
+	man/coqwc.1 man/coqdoc.1 \
 	man/coq_makefile.1 man/coqmktop.1 man/coq_vo2xml.1
 
 install-coq-manpages:
