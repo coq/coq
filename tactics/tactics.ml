@@ -455,7 +455,7 @@ let apply_with_bindings (c,lbind) gl =
   (* The actual type of the theorem. It will be matched against the
   goal. If this fails, then the head constant will be unfolded step by
   step. *)
-  let thm_ty0 = (w_type_of wc c) in
+  let thm_ty0 = nf_betaiota (w_type_of wc c) in
   let rec try_apply thm_ty =
     try
       let n = nb_prod thm_ty - nb_prod (pf_concl gl) in
