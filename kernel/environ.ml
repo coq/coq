@@ -328,7 +328,7 @@ let make_judge v tj =
     uj_type = tj }
 
 let j_val j = j.uj_val
-let j_type j = body_of_type j.uj_type
+let j_type j = j.uj_type
 
 type unsafe_type_judgment = { 
   utj_val : constr;

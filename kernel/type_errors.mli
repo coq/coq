@@ -42,7 +42,7 @@ type type_error =
   | NotAType of unsafe_judgment
   | BadAssumption of unsafe_judgment
   | ReferenceVariables of constr
-  | ElimArity of inductive * constr list * constr * unsafe_judgment
+  | ElimArity of inductive * types list * constr * unsafe_judgment
       * (constr * constr * string) option
   | CaseNotInductive of unsafe_judgment
   | WrongCaseInfo of inductive * case_info
@@ -70,7 +70,7 @@ val error_assumption : env -> unsafe_judgment -> 'a
 val error_reference_variables : env -> constr -> 'a
 
 val error_elim_arity : 
-  env -> inductive -> constr list -> constr 
+  env -> inductive -> types list -> constr 
     -> unsafe_judgment -> (constr * constr * string) option -> 'a
 
 val error_case_not_inductive : env -> unsafe_judgment -> 'a

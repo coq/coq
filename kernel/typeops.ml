@@ -48,11 +48,11 @@ let assumption_of_judgment env j
 (* Prop and Set *)
 
 let judge_of_prop =
-  { uj_val = mkProp;
+  { uj_val = body_of_type mkProp;
     uj_type = mkSort type_0 }
 
 let judge_of_set =
-  { uj_val = mkSet;
+  { uj_val = body_of_type mkSet;
     uj_type = mkSort type_0 }
 
 let judge_of_prop_contents = function
@@ -63,7 +63,7 @@ let judge_of_prop_contents = function
 
 let judge_of_type u =
   let uu = super u in
-  { uj_val = mkType u;
+  { uj_val = body_of_type (mkType u);
     uj_type = mkType uu }
 
 (*s Type of a de Bruijn index. *)

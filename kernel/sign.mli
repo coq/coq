@@ -59,22 +59,22 @@ val fold_rel_context_reverse :
 (*s Term constructors *)
 
 val it_mkNamedLambda_or_LetIn : constr -> named_context -> constr
-val it_mkNamedProd_or_LetIn : constr -> named_context -> constr
+val it_mkNamedProd_or_LetIn : types -> named_context -> types
 
 val it_mkLambda_or_LetIn : constr -> rel_context -> constr
-val it_mkProd_or_LetIn : constr -> rel_context -> constr
+val it_mkProd_or_LetIn : types -> rel_context -> types
 
 (*s Term destructors *)
 
 (* Destructs a term of the form $(x_1:T_1)..(x_n:T_n)s$ into the pair *)
 type arity = rel_context * sorts
-val destArity : constr -> arity
-val isArity : constr -> bool
+val destArity : types -> arity
+val isArity : types -> bool
 
 (* Transforms a product term $(x_1:T_1)..(x_n:T_n)T$ including letins
    into the pair $([(x_n,T_n);...;(x_1,T_1)],T)$, where $T$ is not a
    product nor a let. *)
-val decompose_prod_assum : constr -> rel_context * constr
+val decompose_prod_assum : types -> rel_context * types
 
 (* Transforms a lambda term $[x_1:T_1]..[x_n:T_n]T$ including letins
    into the pair $([(x_n,T_n);...;(x_1,T_1)],T)$, where $T$ is not a
@@ -84,7 +84,7 @@ val decompose_lam_assum : constr -> rel_context * constr
 (* Given a positive integer n, transforms a product term 
    $(x_1:T_1)..(x_n:T_n)T$
    into the pair $([(xn,Tn);...;(x1,T1)],T)$. *)
-val decompose_prod_n_assum : int -> constr -> rel_context * constr
+val decompose_prod_n_assum : int -> types -> rel_context * types
 
 (* Given a positive integer $n$, transforms a lambda term 
    $[x_1:T_1]..[x_n:T_n]T$ into the pair $([(x_n,T_n);...;(x_1,T_1)],T)$ *)

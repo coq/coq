@@ -40,7 +40,7 @@ type type_error =
   | NotAType of unsafe_judgment
   | BadAssumption of unsafe_judgment
   | ReferenceVariables of constr
-  | ElimArity of inductive * constr list * constr * unsafe_judgment
+  | ElimArity of inductive * types list * constr * unsafe_judgment
       * (constr * constr * string) option
   | CaseNotInductive of unsafe_judgment
   | WrongCaseInfo of inductive * case_info

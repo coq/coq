@@ -73,12 +73,12 @@ let lookup_mind_instance (sp,tyi) env =
 let ind_subst mispec =
   let ntypes = mispec.mis_mib.mind_ntypes in
   let make_Ik k = mkInd (mispec.mis_sp,ntypes-k-1) in 
- (list_tabulate make_Ik ntypes)
+  list_tabulate make_Ik ntypes
 
 (* Instantiate both section variables and inductives *)
-let constructor_instantiate mispec =
+let constructor_instantiate mispec c =
   let s = ind_subst mispec in
-  substl s
+  type_app (substl s) c
 
 (* Instantiate the parameters of the inductive type *)
 (* TODO: verify the arg of LetIn correspond to the value in the
@@ -96,7 +96,7 @@ let instantiate_params t args sign =
       sign
       (args,[],t) in
   if rem_args <> [] then fail();
-  substl subs ty
+  type_app (substl subs) ty
 
 let full_inductive_instantiate (mispec,params) t =
   instantiate_params t params mispec.mis_mip.mind_params_ctxt
@@ -496,7 +496,7 @@ let rec check_subterm_rec_meta env vectn k def =
        | Lambda (x,a,b) -> 
 	   if noccur_with_meta n nfi a then
 	     let env' = push_rel (x, None, a) env in
-             if n = k+1 then (env', lift 1 a, b)
+             if n = k+1 then (env', type_app (lift 1) a, b)
 	     else check_occur env' (n+1) b
            else 
 	     anomaly "check_subterm_rec_meta: Bad occurrence of recursive call"
@@ -696,7 +696,7 @@ let anomaly_ill_typed () =
 
 let check_guard_rec_meta env nbfix def deftype = 
   let rec codomain_is_coind env c =
-    let b = whd_betadeltaiota env (strip_outer_cast c) in
+    let b = whd_betadeltaiota env c in
     match kind_of_term b with
       | Prod (x,a,b) ->
 	  codomain_is_coind (push_rel (x, None, a) env) b 

@@ -75,15 +75,14 @@ let push_named_to_rel_context hyps ctxt =
   let rec push = function
     | (id,b,t) :: l ->
 	let s, hyps = push l in
-	let d = (Name id, option_app (subst_vars s) b, subst_vars s t) in
+	let d = (Name id, option_app (subst_vars s) b, type_app (subst_vars s) t) in
 	id::s, d::hyps
     | [] -> [],[] in
   let s, hyps = push hyps in
   let rec subst = function
-    | (na,b,t) :: l ->
+    | d :: l ->
 	let n, ctxt = subst l in
-	let d = (na, option_app (substn_vars n s) b, substn_vars n s t) in
-	(n+1), d::ctxt
+	(n+1), (map_rel_declaration (substn_vars n s) d)::ctxt
     | [] -> 1, hyps in
   snd (subst ctxt)
 
@@ -116,7 +115,7 @@ let destArity =
     | Sort s          -> l,s
     | _               -> anomaly "destArity: not an arity"
   in 
-  prodec_rec [] 
+  prodec_rec []
 
 let rec isArity c =
   match kind_of_term c with
@@ -156,14 +155,14 @@ let decompose_prod_n_assum n =
   if n < 0 then
     error "decompose_prod_n_assum: integer parameter must be positive";
   let rec prodec_rec l n c = 
-    if n=0 then l,c 
+    if n=0 then l,c
     else match kind_of_term c with 
     | Prod (x,t,c)    -> prodec_rec (add_rel_decl (x,None,t) l) (n-1) c
     | LetIn (x,b,t,c) -> prodec_rec (add_rel_decl (x,Some b,t) l) (n-1) c
     | Cast (c,_)      -> prodec_rec l n c
     | c -> error "decompose_prod_n_assum: not enough assumptions"
   in 
-  prodec_rec empty_rel_context n 
+  prodec_rec empty_rel_context n
 
 (* Given a positive integer n, transforms a lambda term [x1:T1]..[xn:Tn]T 
    into the pair ([(xn,Tn);...;(x1,T1)],T) *)

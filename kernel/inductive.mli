@@ -26,9 +26,9 @@ exception Induc
    only a coinductive type.
    They raise [Induc] if not convertible to a recursive type. *)
 
-val find_rectype     : env -> constr -> inductive * constr list
-val find_inductive   : env -> constr -> inductive * constr list
-val find_coinductive : env -> constr -> inductive * constr list
+val find_rectype     : env -> types -> inductive * constr list
+val find_inductive   : env -> types -> inductive * constr list
+val find_coinductive : env -> types -> inductive * constr list
 
 (*s Fetching information in the environment about an inductive type.
     Raises Induc if the inductive type is not found. *)
