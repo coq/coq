@@ -124,7 +124,7 @@ let mimick_evar hdc nargs sp wc =
    Attention : pas d'unification entre les différences instances d'une
    même meta ou evar, il peut rester des doublons *)
 
-let unify_0 cv_pb mc wc m n =
+let unify_0 cv_pb wc m n =
   let env = w_env wc
   and sigma = w_Underlying wc in
   let rec unirec_rec pb ((metasubst,evarsubst) as substn) m n =
@@ -208,9 +208,9 @@ let unify_0 cv_pb mc wc m n =
 
     in
     if (not(occur_meta m)) & is_fconv cv_pb env sigma m n then 
-      (mc,[])
+      ([],[])
     else 
-      unirec_rec cv_pb (mc,[]) m n
+      unirec_rec cv_pb ([],[]) m n
 
 
 (* Unification
@@ -262,8 +262,8 @@ let unify_0 cv_pb mc wc m n =
  * close it off.  But this might not always work,
  * since other metavars might also need to be resolved. *)
 
-let rec w_Unify cv_pb m n mc wc =
-  let (mc',ec') = unify_0 cv_pb mc wc m n in 
+let rec w_Unify cv_pb m n wc =
+  let (mc',ec') = unify_0 cv_pb wc m n in 
   w_resrec (List.rev mc') (List.rev ec') wc
 
 and w_resrec metas evars wc =
@@ -280,8 +280,8 @@ and w_resrec metas evars wc =
 
 	| Evar (evn,_) ->
 	    if w_defined_evar wc evn then
-	      let (wc',metas') = w_Unify CONV rhs lhs metas wc in 
-	      w_resrec metas' t wc'
+	      let (wc',metas') = w_Unify CONV rhs lhs wc in 
+	      w_resrec (metas@metas') t wc'
 	    else
 	      (try 
 		 w_resrec metas t (w_Define evn rhs wc)
@@ -302,7 +302,7 @@ and w_resrec metas evars wc =
 (* let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc)) *)
 let unifyTerms m n gls = 
   tclIDTAC {it = gls.it; 
-	    sigma = (get_gc (fst (w_Unify CONV m n [] (Refiner.project_with_focus gls))))}
+	    sigma = (get_gc (fst (w_Unify CONV m n (Refiner.project_with_focus gls))))}
 
 let unify m gls =
   let n = pf_concl gls in unifyTerms m n gls
@@ -608,7 +608,7 @@ let clenv_merge with_types =
 
 	  | Evar (evn,_) ->
     	      if w_defined_evar clenv.hook evn then
-		let (metas',evars') = unify_0 CONV [] clenv.hook rhs lhs in
+		let (metas',evars') = unify_0 CONV clenv.hook rhs lhs in
 		clenv_resrec (List.rev metas'@metas) (List.rev evars'@t) clenv
     	      else begin
 		let rhs' = 
@@ -633,7 +633,7 @@ let clenv_merge with_types =
       | ([], (mv,n)::t) ->
     	  if clenv_defined clenv mv then
             let (metas',evars') =
-              unify_0 CONV [] clenv.hook (clenv_value clenv mv).rebus n in
+              unify_0 CONV clenv.hook (clenv_value clenv mv).rebus n in
             clenv_resrec (List.rev metas'@t) (List.rev evars') clenv
     	  else
 	    let mc,ec =
@@ -642,7 +642,7 @@ let clenv_merge with_types =
 		(try 
 		let nty = clenv_type_of clenv 
 			    (clenv_instance clenv (mk_freelisted n)) in
-		unify_0 CUMUL [] clenv.hook nty mvty
+		unify_0 CUMUL clenv.hook nty mvty
 		with e when Logic.catchable_exception e -> ([],[]))
 	      else ([],[]) in
 	    clenv_resrec (List.rev mc@t) (List.rev ec)
@@ -661,7 +661,7 @@ let clenv_merge with_types =
    types of metavars are unifiable with the types of their instances    *)
 
 let clenv_unify_core_0 with_types cv_pb m n clenv =
-  let (mc,ec) = unify_0 cv_pb [] clenv.hook m n in 
+  let (mc,ec) = unify_0 cv_pb clenv.hook m n in 
   clenv_merge with_types (List.rev mc) (List.rev ec) clenv
 
 let clenv_unify_0 = clenv_unify_core_0 false
@@ -681,7 +681,10 @@ let iter_fail f a =
       with ex when catchable_exception ex -> ffail (i+1)
   in ffail 0
 
-let constrain_clenv_to_subterm clause (op,cl) =
+(* Tries to find an instance of term [cl] in term [op].
+   Unifies [cl] to every subterm of [op] until it finds a match.
+   Fails if no match is found *)
+let unify_to_subterm clause (op,cl) =
   let rec matchrec cl =
     let cl = strip_outer_cast cl in
     (try 
@@ -739,13 +742,13 @@ let constrain_clenv_to_subterm clause (op,cl) =
 
 (* Possibly gives K-terms in case the operator does not contain 
    a meta : BUG ?? *)
-let constrain_clenv_using_subterm_list allow_K clause oplist t = 
+let unify_to_subterm_list allow_K clause oplist t = 
   List.fold_right 
     (fun op (clause,l) -> 
        if occur_meta op then 
          let (clause',cl) =
            (try 
-	      constrain_clenv_to_subterm clause (strip_outer_cast op,t)
+	      unify_to_subterm clause (strip_outer_cast op,t)
             with e when catchable_exception e ->
               if allow_K then (clause,op) else raise e)
          in 
@@ -758,12 +761,10 @@ let constrain_clenv_using_subterm_list allow_K clause oplist t =
 let secondOrderAbstraction allow_K typ (p, oplist) clause =
   let env = w_env clause.hook in
   let sigma = w_Underlying clause.hook in
-  let (clause',cllist) = 
-    constrain_clenv_using_subterm_list allow_K clause oplist typ in
+  let (clause',cllist) = unify_to_subterm_list allow_K clause oplist typ in
   let typp = clenv_instance_type clause' p in 
-  clenv_unify_0 CONV (mkMeta p)
-    (abstract_list_all env sigma typp typ cllist) 
-    clause'
+  let pred = abstract_list_all env sigma typp typ cllist in
+  clenv_unify_0 CONV (mkMeta p) pred clause'
 
 let clenv_unify2 allow_K cv_pb ty1 ty2 clause =
   let c1, oplist1 = whd_stack ty1 in

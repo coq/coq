@@ -57,7 +57,7 @@ type wc = named_context sigma (* for a better reading of the following *)
 
 val unify : constr -> tactic
 val unify_0 : 
-  Reductionops.conv_pb -> (int * constr) list -> wc -> constr -> constr 
+  Reductionops.conv_pb -> wc -> constr -> constr 
     -> (int * constr) list * (constr * constr) list
 
 val collect_metas : constr -> int list
@@ -113,12 +113,12 @@ val make_clenv_binding :
 (* Exported for program.ml only *)
 val clenv_add_sign : 
   (identifier * types) -> wc clausenv -> wc clausenv
-val constrain_clenv_to_subterm : 
+val unify_to_subterm : 
   wc clausenv -> constr * constr -> wc clausenv * constr
+val unify_to_subterm_list : 
+  bool -> wc clausenv -> constr list -> constr -> wc clausenv * constr list
 val clenv_constrain_dep_args_of : 
   int -> constr list -> wc clausenv -> wc clausenv
-val constrain_clenv_using_subterm_list : 
-  bool -> wc clausenv -> constr list -> constr -> wc clausenv * constr list
 val clenv_typed_unify :
   Reductionops.conv_pb -> constr -> constr -> wc clausenv -> wc clausenv
 
