@@ -35,7 +35,6 @@ type env = identifier list * Idset.t
 val rename_vars: Idset.t -> identifier list -> env
 val push_vars : identifier list -> env -> identifier list * env
 val get_db_name : int -> env -> identifier
-val collect_lambda : ml_ast -> identifier list * ml_ast
 
 val keywords : Idset.t
 

@@ -91,16 +91,6 @@ let push_vars ids (db,avoid) =
 
 let get_db_name n (db,_) = List.nth db (pred n)
 
-(*s [collect_lambda MLlam(id1,...MLlam(idn,t)...)] returns
-    the list [id1;...;idn] and the term [t]. *)
-
-let collect_lambda = 
-  let rec collect acc = function
-    | MLlam(id,t) -> collect (id::acc) t
-    | x           -> acc,x
-  in 
-  collect []
-
 (*s Ocaml renaming issues. *)
 
 let keywords =     
@@ -334,9 +324,10 @@ let warning_coinductive r =
 
 let pp_decl = function
   | Dtype ([], _) -> 
-      [< >]
+      if P.toplevel then hOV 0 [< 'sTR " prop (* Logic inductive *)"; 'fNL >]
+      else [< >] 
   | Dtype ((_,r,_)::_ as i, cofix) -> 
-      if cofix && P.cofix_warning then if_verbose warning_coinductive r; 
+      if cofix && (not P.toplevel) then if_verbose warning_coinductive r; 
       hOV 0 (pp_inductive i)
   | Dabbrev (r, l, t) ->
       hOV 0 [< 'sTR "type"; 'sPC; pp_parameters l; 

@@ -51,7 +51,7 @@ let cache r f =
 (*s Renaming issues at toplevel *)
 
 module ToplevelParams = struct
-  let cofix_warning = false
+  let toplevel = true
   let globals () = Idset.empty
   let rename_global r = Names.id_of_string (Global.string_of_global r)
   let pp_type_global = Printer.pr_global
@@ -62,7 +62,7 @@ end
 
 module MonoParams = struct
 
-  let cofix_warning = true
+  let toplevel = false
 
   let globals () = !global_ids
 		     
@@ -98,7 +98,7 @@ end
 
 module ModularParams = struct
 
-  let cofix_warning = true
+  let toplevel = false
 
   let globals () = !global_ids 
 
@@ -172,7 +172,7 @@ let extract_to_file f prm decls =
   in
   let cout = open_out f in
   let ft = Pp_control.with_output_to cout in
-  pP_with ft (hV 0 (preamble prm));
+  if decls <> [] then pP_with ft (hV 0 (preamble prm));
   begin 
     try
       List.iter (fun d -> mSGNL_with ft (pp_decl d)) decls

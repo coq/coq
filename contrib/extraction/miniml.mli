@@ -66,7 +66,7 @@ type extraction_params =
     to_appear : global_reference list }
 
 module type Mlpp_param = sig
-  val cofix_warning : bool
+  val toplevel : bool
   val globals : unit -> Idset.t
   val rename_global : global_reference -> identifier
   val pp_type_global : global_reference -> std_ppcmds

@@ -320,6 +320,36 @@ let normalize a =
 	ast_map simplify a 
   in simplify (merge_app a)
 
+(*s [collect_lambda MLlam(id1,...MLlam(idn,t)...)] returns
+    the list [id1;...;idn] and the term [t]. *)
+
+let collect_lambda = 
+  let rec collect acc = function
+    | MLlam(id,t) -> collect (id::acc) t
+    | x           -> acc,x
+  in 
+  collect []
+
+
+
+let test_eta l =
+  let rec test n = function 
+    | [] -> true
+    | a :: q -> a = (MLrel n) || (test (succ n) q)
+  in test 1 l 
+
+let optimize_fix a = 
+  if not (optim()) then a else
+    let lams,b = collect_lambda a in 
+    (match a with 
+      | MLfix(_,[|_|],[|c|]) -> a (* TODO *)
+      | MLapp(b,ids) -> 
+	  (match b with 
+	     | MLfix(_,[|_|],[|_|]) when (test_eta ids)-> b
+	     | MLfix(_,[|_|],[|_|]) -> a (* TODO *)
+	     | _ -> a)
+      | _ -> a)
+
 let normalize_decl = function
  | Dglob (id, a) -> Dglob (id, normalize a)
  | d -> d
@@ -494,14 +524,15 @@ let strict_language = function
 let rec optimize prm = function
   | [] -> 
       []
-  | (Dtype _ | Dabbrev _ | Dcustom _) as d :: l -> 
-      d :: (optimize prm l)
-  | Dglob (r, MLprop) as d :: l ->
+  | ( Dabbrev (r,_,Tarity) |
+	Dabbrev(r,_,Tprop) | 
+	  Dglob(r,MLarity) | 
+	    Dglob(r,MLprop) ) as d :: l ->
       if List.mem r prm.to_appear then
 	d :: (optimize prm l) 
       else optimize prm l
   | Dglob (r,t) :: l ->
-      let t = normalize t in
+      let t = optimize_fix (normalize t) in
       let b = expand (strict_language prm.lang) r t in
       let l = if b then 
 	begin
@@ -513,3 +544,7 @@ let rec optimize prm = function
 	Dglob (r,t) :: (optimize prm l)
       else
 	optimize prm l
+  | (Dtype _ | Dabbrev _ | Dcustom _) as d :: l -> 
+      d :: (optimize prm l)
+
+
