@@ -1,3 +1,9 @@
+coq (7.2-1) unstable; urgency=low
+  * New upstream version.
+
+ -- Judicaël Courant <Judicael.Courant@lri.fr>  Fri, 21 Dec 2001 14:10:31 +0200
+
+
 coq (7.1-2) unstable; urgency=low
 
   * Fixed policy problem (conf files).
