@@ -30,10 +30,12 @@ let load_rcfile() =
         Vernac.load_vernac false (!rcfile^"."^Coq_config.version)
       else if file_readable_p !rcfile then
         Vernac.load_vernac false !rcfile
-      else 
+      else ()
+(*
 	if Options.is_verbose() then 
 	  mSGNL [< 'sTR ("No .coqrc or .coqrc."^Coq_config.version^
 			 " found. Skipping rcfile loading.") >]
+*)
     with e ->
       (mSGNL [< 'sTR"Load of rcfile failed." >];
        raise e)
