@@ -238,11 +238,14 @@ let rec next_token = parser bp
   | [< '' ' | '\n' | '\r'| '\t'; s >] -> next_token s
   | [< ''$'; len = ident (store 0 '$') >] ep -> 
       (("METAIDENT", get_buff len), (bp,ep))
-  | [< ''.'; t = parser
+  | [< ''.' as c; t = parser
 	 | [< ' ('_' | 'a'..'z' | 'A'..'Z' | '\192'..'\214' 
 		| '\216'..'\246' | '\248'..'\255' as c);
 	      len = ident (store 0 c) >] -> ("FIELD", get_buff len)
+(*
 	 | [< >] -> ("", ".") >] ep -> (t, (bp,ep))
+*)
+	 | [< (t,_) = process_chars bp c >] -> t >] ep -> (t, (bp,ep))
   | [< ' ('_' | 'a'..'z' | 'A'..'Z' | '\192'..'\214' 
          | '\216'..'\246' | '\248'..'\255' as c);
        len = ident (store 0 c) >] ep ->
