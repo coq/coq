@@ -255,7 +255,7 @@ let rec red_elim_const env sigma cst largs =
   match constant_eval cst with
     | EliminationCases n when stack_args_size largs >= n ->
 	let c = constant_value env cst in
-	let c', lrest = whd_betaetalet_state (c,largs) in
+	let c', lrest = whd_betadeltaeta_state env sigma (c,largs) in
         (special_red_case env (construct_const env sigma) (destCase c'),
 	 lrest)
     | EliminationFix (min,(cstgoal,_,_,_ as infos))
