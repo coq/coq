@@ -239,19 +239,19 @@ let construct_operator env sp id =
 let global_operator sp id = construct_operator (Global.env()) sp id
 
 let construct_sp_reference env sp id =
-  try
-    let (oper,hyps) = construct_operator env sp id in
-    let hyps' = Global.var_context () in
-    if not (hyps_inclusion env Evd.empty hyps hyps') then
-      error_reference_variables CCI env id;
-    let ids = ids_of_sign hyps in
-    DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids))
-  with Not_found -> 
-    VAR (let _ = Environ.lookup_var id env in id)
+  let (oper,hyps) = construct_operator env sp id in
+  let hyps' = Global.var_context () in
+  if not (hyps_inclusion env Evd.empty hyps hyps') then
+    error_reference_variables CCI env id;
+  let ids = ids_of_sign hyps in
+  DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids))
 
 let construct_reference env kind id =
-  let sp = Nametab.sp_of_id kind id in
-  construct_sp_reference env sp id
+  try
+    let sp = Nametab.sp_of_id kind id in
+    construct_sp_reference env sp id
+  with Not_found -> 
+    VAR (let _ = Environ.lookup_var id env in id)
 
 let global_sp_reference sp id = 
   construct_sp_reference (Global.env()) sp id
