@@ -56,6 +56,11 @@ Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3).
 
 %TODO quote the identifier when not in front, not a keyword, as in "x 'U' y" ?
 
+A notation binds a syntactic expression to a term. Unless the parser
+and pretty-printer of {\Coq} already know how to deal with the
+syntactic expression (see \ref{ReservedNotation}), explicit precedences and
+associativity rules have to be given.
+
 \subsection{Precedences and associativity}
 \index{Precedences}
 \index{Associativity}
@@ -311,24 +316,21 @@ Sometimes, a notation is expected only for the parser.
 To do so, the option {\em only parsing} is allowed in the list of modifiers of
 \texttt{Notation}.
 
-\subsection{The \texttt{Infix} command}
+\subsection{The \texttt{Infix} command
+\comindex{Infix}}
 
 The \texttt{Infix} command is a shortening for declaring notations of
 infix symbols. Its syntax is 
 
-\medskip
-
-\noindent\texttt{Infix} "{\symbolentry}" {\qualid} {\tt (} \nelist{\em modifier}{,} {\tt )}.
-
-\medskip
+\begin{quote}
+\noindent\texttt{Infix "{\symbolentry}" :=} {\qualid} {\tt (} \nelist{\em modifier}{,} {\tt )}.
+\end{quote}
 
 and it is equivalent to
 
-\medskip
-
-\noindent\texttt{Notation "x {\symbolentry} y" := {\qualid} x y  ( \nelist{\em modifier}{,} )}.
-
-\medskip
+\begin{quote}
+\noindent\texttt{Notation "x {\symbolentry} y" := ({\qualid} x y)  (} \nelist{\em modifier}{,} {\tt )}.
+\end{quote}
 
 where {\tt x} and {\tt y} are fresh names distinct from {\qualid}. Here is an example.
 
@@ -336,7 +338,9 @@ where {\tt x} and {\tt y} are fresh names distinct from {\qualid}. Here is an ex
 Infix "/\" := and (at level 80, right associativity).
 \end{coq_example*}
 
-\subsection{Reserving notations}
+\subsection{Reserving notations
+\label{ReservedNotation}
+\comindex{ReservedNotation}}
 
 A given notation may be used in different contexts. {\Coq} expects all
 uses of the notation to be defined at the same precedence and with the
@@ -355,7 +359,10 @@ inductive type or a recursive constant and a notation for it.
 \Rem The notations mentioned on Figure~\ref{init-notations} are
 reserved. Hence their precedence and associativity cannot be changed.
 
-\subsection{Simultaneous definition of terms and notations}
+\subsection{Simultaneous definition of terms and notations
+\comindex{Fixpoint {\ldots} where {\ldots}}
+\comindex{CoFixpoint {\ldots} where {\ldots}}
+\comindex{Inductive {\ldots} where {\ldots}}}
 
 Thanks to reserved notations, the inductive, coinductive, recursive
 and corecursive definitions can benefit of customized notations. To do
@@ -392,7 +399,9 @@ Fixpoint plus (n m:nat) {struct n} : nat :=
 where "n + m" := (plus n m).
 \end{coq_example*}
 
-\subsection{Displaying informations about notations}
+\subsection{Displaying informations about notations
+\comindex{Set Printing Notation}
+\comindex{Unset Printing Notation}}
 
 To deactivate the printing of all notations, use the command
 \begin{quote}
