@@ -805,7 +805,7 @@ let raw_polynom th op lc gl =
                                      (unbox th.th_setoid_th);
 				     c'''i; ci; c'i_eq_c''i |]))))
 	      (tclTHEN 
-		 (Setoid_replace.setoid_replace ci c'''i None)
+		 (Setoid_replace.setoid_replace ci c'''i)
 		 (tclTHEN 
 		    (tclTRY (h_exact c'i_eq_c''i))
 		    tac)))
