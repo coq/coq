@@ -31,6 +31,7 @@ let thm_token = G_proofs.thm_token
 (* compilation on PowerPC and Sun architectures *)
 
 let filter_com (b,e) =
+  let (b,e) = unloc (b,e) in
   Pp.comments := List.filter (fun ((b',e'),s) -> b'<b || e'>e) !Pp.comments 
 
 if !Options.v7 then

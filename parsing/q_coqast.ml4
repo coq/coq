@@ -8,11 +8,10 @@
 
 (* $Id$ *)
 
+open Util
 open Names
 open Libnames
 open Q_util
-
-let dummy_loc = (0,0)
 
 let is_meta s = String.length s > 0 && s.[0] == '$'
 
@@ -22,7 +21,8 @@ let purge_str s =
 
 let anti loc x =
   let e =
-    let loc = (1, snd loc - fst loc) in <:expr< $lid:purge_str x$ >>
+    let loc = unloc loc in
+    let loc = make_loc (1, snd loc - fst loc) in <:expr< $lid:purge_str x$ >>
   in
   <:expr< $anti:e$ >>
 
@@ -110,7 +110,7 @@ and expr_list_of_var_list sl =
 (* We don't give location for tactic quotation! *)
 let loc = dummy_loc
 
-let dloc = <:expr< (0,0) >>
+let dloc = <:expr< Util.dummy_loc >>
 
 let mlexpr_of_ident id =
   <:expr< Names.id_of_string $str:Names.string_of_id id$ >>

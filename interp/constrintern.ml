@@ -155,10 +155,11 @@ let add_glob loc ref =
   let sp = Nametab.sp_of_global ref in
   let id = let _,id = repr_path sp in string_of_id id in
   let dp = string_of_dirpath (Lib.library_part ref) in
-  dump_string (Printf.sprintf "R%d %s.%s\n" (fst loc) dp id)
+  dump_string (Printf.sprintf "R%d %s.%s\n" (fst (unloc loc)) dp id)
 
 let loc_of_notation f loc args ntn =
-  if args=[] or ntn.[0] <> '_' then fst loc else snd (f (List.hd args))
+  if args=[] or ntn.[0] <> '_' then fst (unloc loc)
+  else snd (unloc (f (List.hd args)))
 
 let ntn_loc = loc_of_notation constr_loc
 let patntn_loc = loc_of_notation cases_pattern_loc
@@ -166,7 +167,8 @@ let patntn_loc = loc_of_notation cases_pattern_loc
 let dump_notation_location =
   fun pos ntn ((path,df),sc) ->
     let rec next growing =
-      let (bp,_ as loc) = Lexer.location_function !token_number in
+      let loc = Lexer.location_function !token_number in
+      let (bp,_) = unloc loc in
       if growing then if bp >= pos then loc else (incr token_number;next true)
       else if bp = pos then loc
       else if bp > pos then (decr token_number;next false)
@@ -175,7 +177,7 @@ let dump_notation_location =
     last_pos := pos;
     let path = string_of_dirpath path in
     let sc = match sc with Some sc -> " "^sc | None -> "" in
-    dump_string (Printf.sprintf "R%d %s \"%s\"%s\n" (fst loc) path df sc)
+    dump_string (Printf.sprintf "R%d %s \"%s\"%s\n" (fst (unloc loc)) path df sc)
 
 (**********************************************************************)
 (* Contracting "{ _ }" in notations *)

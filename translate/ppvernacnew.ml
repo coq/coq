@@ -32,7 +32,8 @@ let pr_spc_type = pr_sep_com spc pr_type
 
 let pr_lident (b,_ as loc,id) =
   if loc <> dummy_loc then
-    pr_located pr_id ((b,b+String.length(string_of_id id)),id)
+    let (b,_) = unloc loc in
+    pr_located pr_id (make_loc (b,b+String.length(string_of_id id)),id)
   else pr_id id
 
 let pr_lname = function
@@ -313,7 +314,7 @@ let pr_onescheme (id,dep,ind,s) =
 
 let begin_of_inductive = function
     [] -> 0
-  | (_,(((b,_),_),_))::_ -> b
+  | (_,((loc,_),_))::_ -> fst (unloc loc)
 
 let pr_class_rawexpr = function
   | FunClass -> str"Funclass"
