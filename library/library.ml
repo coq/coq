@@ -172,16 +172,28 @@ let load_module s = function
   | Some f -> let _ = load_module_from s f in ()
 
 
-(*s [require_module] loads and opens a module. *)
+(*s [require_module] loads and opens a module. This is a synchronized
+    operation. *)
 
-let require_module spec name fileopt export =
-  let file = match fileopt with
-    | None -> name
-    | Some f -> f in
+let cache_require (_,(name,file,export)) =
   let m = load_module_from name file in
   open_module name;
   if export then m.module_exported <- true
 
+let (in_require, _) =
+  declare_object
+    ("REQUIRE",
+     { cache_function = cache_require;
+       load_function = (fun _ -> ());
+       open_function = (fun _ -> ());
+       export_function = (fun _ -> None) })
+  
+let require_module spec name fileopt export =
+  let file = match fileopt with
+    | None -> name
+    | Some f -> f 
+  in
+  add_anonymous_leaf (in_require (name,file,export))
 
 (*s [save_module s] saves the module [m] to the disk. *)
 
