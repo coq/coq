@@ -413,12 +413,12 @@ install: install-$(BEST) install-binaries install-library install-manpages
 install-byte:
 	$(MKDIR) $(BINDIR)
 	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BINDIR)
-	cd $(BINDIR); ln -s coqtop.byte coqtop
+	cd $(BINDIR); ln -sf coqtop.byte coqtop
 
 install-opt:
 	$(MKDIR) $(BINDIR)
 	cp $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(COQTOPOPT) $(BINDIR)
-	cd $(BINDIR); ln -s coqtop.opt coqtop
+	cd $(BINDIR); ln -sf coqtop.opt coqtop
 
 install-binaries:
 	$(MKDIR) $(BINDIR)
