@@ -109,6 +109,7 @@ parsing/printer.cmi: kernel/environ.cmi library/libnames.cmi kernel/names.cmi \
     library/nametab.cmi pretyping/pattern.cmi lib/pp.cmi \
     pretyping/rawterm.cmi kernel/sign.cmi kernel/term.cmi \
     pretyping/termops.cmi 
+parsing/printmod.cmi: kernel/names.cmi lib/pp.cmi 
 parsing/search.cmi: kernel/environ.cmi library/libnames.cmi kernel/names.cmi \
     library/nametab.cmi pretyping/pattern.cmi lib/pp.cmi kernel/term.cmi 
 parsing/termast.cmi: parsing/coqast.cmi kernel/environ.cmi \
@@ -840,18 +841,18 @@ parsing/prettyp.cmo: pretyping/classops.cmi kernel/declarations.cmi \
     pretyping/inductiveops.cmi pretyping/instantiate.cmi library/lib.cmi \
     library/libnames.cmi library/libobject.cmi library/nameops.cmi \
     kernel/names.cmi library/nametab.cmi lib/pp.cmi parsing/printer.cmi \
-    kernel/reduction.cmi kernel/safe_typing.cmi kernel/sign.cmi \
-    pretyping/syntax_def.cmi kernel/term.cmi pretyping/termops.cmi \
-    lib/util.cmi parsing/prettyp.cmi 
+    parsing/printmod.cmi kernel/reduction.cmi kernel/safe_typing.cmi \
+    kernel/sign.cmi pretyping/syntax_def.cmi kernel/term.cmi \
+    pretyping/termops.cmi lib/util.cmi parsing/prettyp.cmi 
 parsing/prettyp.cmx: pretyping/classops.cmx kernel/declarations.cmx \
     library/declare.cmx kernel/environ.cmx pretyping/evd.cmx \
     library/global.cmx library/impargs.cmx kernel/inductive.cmx \
     pretyping/inductiveops.cmx pretyping/instantiate.cmx library/lib.cmx \
     library/libnames.cmx library/libobject.cmx library/nameops.cmx \
     kernel/names.cmx library/nametab.cmx lib/pp.cmx parsing/printer.cmx \
-    kernel/reduction.cmx kernel/safe_typing.cmx kernel/sign.cmx \
-    pretyping/syntax_def.cmx kernel/term.cmx pretyping/termops.cmx \
-    lib/util.cmx parsing/prettyp.cmi 
+    parsing/printmod.cmx kernel/reduction.cmx kernel/safe_typing.cmx \
+    kernel/sign.cmx pretyping/syntax_def.cmx kernel/term.cmx \
+    pretyping/termops.cmx lib/util.cmx parsing/prettyp.cmi 
 parsing/printer.cmo: parsing/ast.cmi parsing/coqast.cmi library/declare.cmi \
     kernel/environ.cmi parsing/extend.cmi library/global.cmi \
     library/libnames.cmi library/nameops.cmi kernel/names.cmi \
@@ -864,6 +865,12 @@ parsing/printer.cmx: parsing/ast.cmx parsing/coqast.cmx library/declare.cmx \
     library/nametab.cmx lib/options.cmx pretyping/pattern.cmx lib/pp.cmx \
     parsing/ppconstr.cmx kernel/sign.cmx kernel/term.cmx parsing/termast.cmx \
     pretyping/termops.cmx lib/util.cmx parsing/printer.cmi 
+parsing/printmod.cmo: kernel/declarations.cmi kernel/environ.cmi \
+    library/global.cmi kernel/names.cmi lib/pp.cmi lib/util.cmi \
+    parsing/printmod.cmi 
+parsing/printmod.cmx: kernel/declarations.cmx kernel/environ.cmx \
+    library/global.cmx kernel/names.cmx lib/pp.cmx lib/util.cmx \
+    parsing/printmod.cmi 
 parsing/q_coqast.cmo: parsing/coqast.cmi parsing/genarg.cmi \
     library/libnames.cmi kernel/names.cmi parsing/pcoq.cmi parsing/q_util.cmi \
     pretyping/rawterm.cmi proofs/tacexpr.cmo 

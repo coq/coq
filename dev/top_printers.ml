@@ -43,8 +43,8 @@ let pptype = (fun x -> pp(prtype x))
 let prid id = pp (pr_id id)
 let prlab l = pp (pr_lab l)
 
-let prmsid msid = pp (str (string_of_msid msid))
-let prmbid mbid = pp (str (string_of_mbid mbid))
+let prmsid msid = pp (str (debug_string_of_msid msid))
+let prmbid mbid = pp (str (debug_string_of_mbid mbid))
 
 let prdir dir = pp (pr_dirpath dir)
 

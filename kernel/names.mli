@@ -48,13 +48,14 @@ type mod_self_id
 (* The first argument is a file name - to prevent conflict between 
    different files *)
 val make_msid : dir_path -> string -> mod_self_id
-val string_of_msid : mod_self_id -> string
+val debug_string_of_msid : mod_self_id -> string
 
 (*s Unique names for bound modules *)
 type mod_bound_id
 
 val make_mbid : dir_path -> string -> mod_bound_id
-val string_of_mbid : mod_bound_id -> string
+val id_of_mbid : mod_bound_id -> identifier
+val debug_string_of_mbid : mod_bound_id -> string
 
 (*s Names of structure elements *)
 type label

@@ -56,6 +56,9 @@ val id_of_global : Sign.named_context option -> global_reference -> identifier
 (* Printing of global references using names as short as possible *)
 val pr_global_env : Sign.named_context option -> global_reference -> std_ppcmds
 
+val shortest_qualid_of_module : module_path -> qualid
+val shortest_qualid_of_modtype : kernel_name -> qualid
+
 exception GlobalizationError of qualid
 exception GlobalizationConstantError of qualid
 

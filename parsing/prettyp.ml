@@ -25,6 +25,7 @@ open Declare
 open Impargs
 open Libobject
 open Printer
+open Printmod
 open Libnames
 open Nametab
 
@@ -262,7 +263,7 @@ let print_mutual sp =
 let print_section_variable sp =
   let (d,_) = get_variable sp in
   let l = implicits_of_var sp in
-  (print_named_decl d ++ print_impl_args l ++ fnl ())
+  (print_named_decl d ++ print_impl_args l)
 
 let print_body = function
   | Some c  -> prterm c
@@ -288,34 +289,34 @@ let print_constant with_values sep sp =
 			 print_typed_body (val_0,typ) 
 		       else 
 			 (prtype typ ++ fnl ()))) ++ 
-	     print_impl_args impls ++ fnl ())
+	     print_impl_args impls)
 
-let print_inductive sp = (print_mutual sp ++ fnl ())
+let print_inductive sp = (print_mutual sp)
 
 let print_syntactic_def sep kn =
   let l = label kn in
   let c = Syntax_def.search_syntactic_definition kn in 
   (str" Syntactic Definition " ++ pr_lab l ++ str sep ++ pr_rawterm c ++ fnl ())
-
-let print_module with_values kn = 
+(*let print_module with_values kn = 
   str "Module " ++ pr_id (id_of_label (label kn)) ++ fnl () ++ fnl ()
 
 let print_modtype kn =
   str "Module Type " ++ pr_id (id_of_label (label kn)) ++ fnl () ++ fnl ()
-
+*)
 let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
   let tag = object_tag lobj in
   match (oname,tag) with
     | (_,"VARIABLE") ->
-	print_section_variable (basename sp)
+	print_section_variable (basename sp) ++ fnl ()
     | (_,("CONSTANT"|"PARAMETER")) ->
-	print_constant with_values sep kn
+	print_constant with_values sep kn ++ fnl ()
     | (_,"INDUCTIVE") ->
-	print_inductive kn
+	print_inductive kn ++ fnl ()
     | (_,"MODULE") ->
-	print_module with_values kn
+	let (mp,_,l) = repr_kn kn in 
+	  print_module with_values (MPdot (mp,l)) ++ fnl ()
     | (_,"MODULE TYPE") ->
-	print_modtype kn
+	print_modtype kn ++ fnl ()
     | (_,"AUTOHINT") -> 
 (*	(str" Hint Marker" ++ fnl ())*)
 	(mt ())
@@ -323,7 +324,7 @@ let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
 (*	(str" Grammar Marker" ++ fnl ())*)
 	(mt ())
     | (_,"SYNTAXCONSTANT") -> 
-	print_syntactic_def sep kn
+	print_syntactic_def sep kn ++ fnl ()
     | (_,"PPSYNTAX") -> 
 (*	(str" Syntax Marker" ++ fnl ())*)
 	(mt ())

@@ -46,8 +46,15 @@ module Globtab = Map.Make(struct type t=extended_global_reference
 				 let compare = compare end)
 
 type globtab = section_path Globtab.t
-
 let the_globtab = ref (Globtab.empty : globtab)
+
+
+type mprewtab = dir_path MPmap.t
+let the_modrewtab = ref (MPmap.empty : mprewtab)
+
+
+type knrewtab = section_path KNmap.t
+let the_modtyperewtab = ref (KNmap.empty : knrewtab)
 
 
 let sp_of_global ctx_opt ref = 
@@ -194,7 +201,9 @@ let push_syntactic_definition visibility sp kn =
 
 let push = push_cci
 
-let push_modtype vis sp kn = push_idtree the_modtypetab vis sp (kn,sp)
+let push_modtype vis sp kn = 
+  push_idtree the_modtypetab vis sp (kn,sp);
+  the_modtyperewtab := KNmap.add kn sp !the_modtyperewtab
 
 
 (* This is for dischargeable non-cci objects (removed at the end of the
@@ -208,8 +217,11 @@ let push_object visibility sp =
 let push_tactic = push_object
 
 (* This is to remember absolute Section/Module names and to avoid redundancy *)
-let push_dir = push_modidtree the_dirtab
-
+let push_dir vis dir dir_ref = 
+  push_modidtree the_dirtab vis dir dir_ref;
+  match dir_ref with
+      DirModule (_,(mp,_)) -> the_modrewtab := MPmap.add mp dir !the_modrewtab
+    | _ -> ()
 
 (* As before we start with generic functions *)
 
@@ -346,17 +358,30 @@ let exists_modtype sp =
 
 (* For a sp Coq.A.B.x, try to find the shortest among x, B.x, A.B.x
    and Coq.A.B.x is a qualid that denotes the same object. *)
-let shortest_qualid_of_global env ref =  
-  let sp = sp_of_global env ref in
-  let (pth,id) = repr_path sp in
+let shortest_qualid locate ref dir_path id =  
   let rec find_visible dir qdir =
     let qid = make_qualid qdir id in
     if (try locate qid = ref with Not_found -> false) then qid
     else match dir with
-      | [] -> qualid_of_sp sp
+      | [] -> make_qualid dir_path id
       | a::l -> find_visible l (add_dirpath_prefix a qdir)
   in
-  find_visible (repr_dirpath pth) (make_dirpath [])
+  find_visible (repr_dirpath dir_path) empty_dirpath
+
+let shortest_qualid_of_global env ref = 
+  let sp = sp_of_global env ref in
+  let (pth,id) = repr_path sp in
+    shortest_qualid locate ref pth id
+
+let shortest_qualid_of_module mp = 
+  let dir = MPmap.find mp !the_modrewtab in
+  let dir,id = split_dirpath dir in
+    shortest_qualid locate_module mp dir id
+
+let shortest_qualid_of_modtype kn =
+  let sp = KNmap.find kn !the_modtyperewtab in
+  let dir,id = repr_path sp in
+    shortest_qualid locate_modtype kn dir id
 
 let pr_global_env env ref =
   (* Il est important de laisser le let-in, car les streams s'évaluent
@@ -377,28 +402,35 @@ let global_inductive (loc,qid as locqid) =
 (********************************************************************)
 (* Registration of tables as a global table and rollback            *)
 
-type frozen = ccitab * dirtab * objtab * knsptab * globtab
+type frozen = ccitab * dirtab * objtab * knsptab 
+    * globtab * mprewtab * knrewtab
 
 let init () = 
   the_ccitab := Idmap.empty; 
   the_dirtab := ModIdmap.empty;
   the_objtab := Idmap.empty;
   the_modtypetab := Idmap.empty;
-  the_globtab := Globtab.empty
+  the_globtab := Globtab.empty;
+  the_modrewtab := MPmap.empty;
+  the_modtyperewtab := KNmap.empty
 
 let freeze () =
   !the_ccitab, 
   !the_dirtab,
   !the_objtab,
   !the_modtypetab,
-  !the_globtab
+  !the_globtab,
+  !the_modrewtab,
+  !the_modtyperewtab
 
-let unfreeze (mc,md,mo,mt,gt) =
+let unfreeze (mc,md,mo,mt,gt,mrt,mtrt) =
   the_ccitab := mc;
   the_dirtab := md;
   the_objtab := mo;
   the_modtypetab := mt;
-  the_globtab := gt
+  the_globtab := gt;
+  the_modrewtab := mrt;
+  the_modtyperewtab := mtrt
 
 let _ = 
   Summary.declare_summary "names"

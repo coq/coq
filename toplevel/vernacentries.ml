@@ -173,6 +173,21 @@ let print_modules () =
   str"Loaded and not imported modules: " ++
   pr_vertical_list pr_dirpath only_loaded
 
+
+let print_module (loc,qid) =
+  try
+    let mp = Nametab.locate_module qid in
+      msgnl (Printmod.print_module true mp)
+  with
+      Not_found -> msgnl (str"Unknown Module " ++ pr_qualid qid)
+
+let print_modtype (loc,qid) = 
+  try
+    let kn = Nametab.locate_modtype qid in
+      msgnl (Printmod.print_modtype kn)
+  with
+      Not_found -> msgnl (str"Unknown Module Type " ++ pr_qualid qid)
+
 let dump_universes s =
   let output = open_out s in
   try
@@ -792,6 +807,8 @@ let vernac_print = function
   | PrintGrammar (uni,ent) -> Metasyntax.print_grammar uni ent
   | PrintLoadPath -> (* For compatibility ? *) print_loadpath ()
   | PrintModules -> msg (print_modules ())
+  | PrintModule qid -> print_module qid
+  | PrintModuleType qid -> print_modtype qid
   | PrintMLLoadPath -> Mltop.print_ml_path ()
   | PrintMLModules -> Mltop.print_ml_modules ()
   | PrintName qid -> 

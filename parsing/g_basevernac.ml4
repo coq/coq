@@ -79,6 +79,10 @@ GEXTEND Gram
       | IDENT "Print"; p = printable -> VernacPrint p
       | IDENT "Print"; qid = qualid -> VernacPrint (PrintName qid)
       | IDENT "Print" -> VernacPrint PrintLocalContext 
+      | IDENT "Print"; IDENT "Module"; "Type"; qid = qualid -> 
+	  VernacPrint (PrintModuleType qid)
+      | IDENT "Print"; IDENT "Module"; qid = qualid -> 
+	  VernacPrint (PrintModule qid)
       | IDENT "Inspect"; n = natural -> VernacPrint (PrintInspect n)
 
       (* Searching the environment *)

@@ -39,6 +39,8 @@ type printable =
   | PrintGrammar of string * string
   | PrintLoadPath
   | PrintModules
+  | PrintModule of qualid located
+  | PrintModuleType of qualid located
   | PrintMLLoadPath
   | PrintMLModules
   | PrintName of qualid located

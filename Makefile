@@ -109,7 +109,8 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo \
         parsing/termast.cmo parsing/astterm.cmo parsing/astmod.cmo \
 	parsing/extend.cmo parsing/esyntax.cmo \
         parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
-	parsing/coqlib.cmo parsing/prettyp.cmo parsing/search.cmo
+	parsing/coqlib.cmo parsing/printmod.cmo parsing/prettyp.cmo \
+	parsing/search.cmo
 
 HIGHPARSING= parsing/g_prim.cmo parsing/g_basevernac.cmo \
 	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
