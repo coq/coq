@@ -602,7 +602,7 @@ Rewrite H.
 Rewrite varlist_merge_ok.
 Repeat Rewrite (SR_distr_right T). 
 Repeat Rewrite <- (SR_mult_assoc T).
-Repeat Rewrite <- (SR_pus_assoc T).
+Repeat Rewrite <- (SR_plus_assoc T).
 Rewrite (SR_mult_permute T  a (interp_vl l) (interp_vl v)).
 Reflexivity.
 
@@ -614,7 +614,7 @@ Rewrite H.
 Rewrite varlist_merge_ok.
 Repeat Rewrite (SR_distr_right T). 
 Repeat Rewrite <- (SR_mult_assoc T).
-Repeat Rewrite <- (SR_pus_assoc T).
+Repeat Rewrite <- (SR_plus_assoc T).
 Reflexivity.
 Save.
 
@@ -632,7 +632,7 @@ Rewrite H.
 Rewrite varlist_merge_ok.
 Repeat Rewrite (SR_distr_right T). 
 Repeat Rewrite <- (SR_mult_assoc T).
-Repeat Rewrite <- (SR_pus_assoc T).
+Repeat Rewrite <- (SR_plus_assoc T).
 Rewrite (SR_mult_permute T  a (interp_vl l) (interp_vl v)).
 Reflexivity.
 
@@ -644,7 +644,7 @@ Rewrite H.
 Rewrite varlist_merge_ok.
 Repeat Rewrite (SR_distr_right T). 
 Repeat Rewrite <- (SR_mult_assoc T).
-Repeat Rewrite <- (SR_pus_assoc T).
+Repeat Rewrite <- (SR_plus_assoc T).
 Rewrite (SR_mult_permute T c (interp_vl l) (interp_vl v)).
 Reflexivity.
 Save.
