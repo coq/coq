@@ -125,9 +125,10 @@ parsing/ppconstr.cmi: parsing/coqast.cmi kernel/environ.cmi \
     parsing/extend.cmi library/libnames.cmi kernel/names.cmi parsing/pcoq.cmi \
     lib/pp.cmi pretyping/rawterm.cmi proofs/tacexpr.cmo kernel/term.cmi \
     interp/topconstr.cmi lib/util.cmi 
-parsing/pptactic.cmi: parsing/egrammar.cmi interp/genarg.cmi lib/pp.cmi \
-    pretyping/pretyping.cmi proofs/proof_type.cmi pretyping/rawterm.cmi \
-    proofs/tacexpr.cmo kernel/term.cmi interp/topconstr.cmi lib/util.cmi 
+parsing/pptactic.cmi: parsing/egrammar.cmi interp/genarg.cmi \
+    library/libnames.cmi lib/pp.cmi pretyping/pretyping.cmi \
+    proofs/proof_type.cmi pretyping/rawterm.cmi proofs/tacexpr.cmo \
+    kernel/term.cmi interp/topconstr.cmi lib/util.cmi 
 parsing/prettyp.cmi: pretyping/classops.cmi kernel/environ.cmi \
     library/impargs.cmi library/lib.cmi library/libnames.cmi kernel/names.cmi \
     library/nametab.cmi lib/pp.cmi pretyping/reductionops.cmi \
