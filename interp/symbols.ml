@@ -39,7 +39,6 @@ open Ppextend
 (**********************************************************************)
 (* Scope of symbols *)
 
-type scopes = scope_name list
 type level = precedence * tolerability list
 type delimiters = string
 
@@ -67,15 +66,6 @@ let init_scope_map () =
   scope_map := Stringmap.add type_scope empty_scope !scope_map
 
 (**********************************************************************)
-(* The global stack of scopes                                         *)
-
-let scope_stack = ref [default_scope;type_scope]
-
-let current_scopes () = !scope_stack
-
-(* TODO: push nat_scope, z_scope, ... in scopes summary *)
-
-(**********************************************************************)
 (* Operations on scopes *)
 
 let declare_scope scope =
@@ -89,6 +79,47 @@ let find_scope scope =
   with Not_found -> error ("Scope "^scope^" is not declared")
 
 let check_scope sc = let _ = find_scope sc in ()
+
+(**********************************************************************)
+(* The global stack of scopes                                         *)
+
+type scope_elem = Scope of scope_name | SingleNotation of string
+type scopes = scope_elem list
+
+let scope_stack = ref [Scope default_scope; Scope type_scope]
+
+let current_scopes () = !scope_stack
+
+(* TODO: push nat_scope, z_scope, ... in scopes summary *)
+
+(* Exportation of scopes *)
+let cache_scope (_,(local,op,sc)) =
+  (match sc with Scope sc -> check_scope sc | _ -> ());
+  scope_stack := if op then sc :: !scope_stack else list_except sc !scope_stack
+
+let subst_scope (_,subst,sc) = sc
+
+open Libobject
+
+let classify_scope (_,(local,_,_ as o)) =
+  if local then Dispose else Substitute o
+
+let export_scope (local,_,_ as x) = if local then None else Some x
+
+let (inScope,outScope) = 
+  declare_object {(default_object "SCOPE") with
+      cache_function = cache_scope;
+      open_function = (fun i o -> if i=1 then cache_scope o);
+      subst_function = subst_scope;
+      classify_function = classify_scope;
+      export_function = export_scope }
+
+let open_close_scope (local,opening,sc) =
+  Lib.add_anonymous_leaf (inScope (local,opening,Scope sc))
+
+let empty_scope_stack = []
+
+let push_scope sc scopes = Scope sc :: scopes
 
 (**********************************************************************)
 (* Delimiters *)
@@ -119,7 +150,7 @@ let find_delimiters_scope loc key =
 (* Uninterpretation tables *)
 
 type interp_rule =
-  | NotationRule of scope_name * notation
+  | NotationRule of scope_name option * notation
   | SynDefRule of kernel_name
 
 (* We define keys for rawterm and aconstr to split the syntax entries
@@ -179,23 +210,27 @@ let check_required_module loc sc d =
     str ("Cannot interpret numbers in "^sc^" without requiring first module "
     ^(list_last d)))
 
-let lookup_numeral_interpreter loc sc =
-  let (dir,interpreter) = Hashtbl.find numeral_interpreter_tab sc in
-  check_required_module loc sc dir;
-  interpreter
+let lookup_numeral_interpreter loc = function
+  | Scope sc ->
+      let (dir,interpreter) = Hashtbl.find numeral_interpreter_tab sc in
+      check_required_module loc sc dir;
+      interpreter
+  | SingleNotation _ -> raise Not_found
 
 (* Look if some notation or numeral printer in [scope] can be used in
    the scope stack [scopes], and if yes, using delimiters or not *)
 
-let find_with_delimiters scope =
-  match (Stringmap.find scope !scope_map).delimiters with
-    | Some key -> Some (Some scope, Some key)
-    | None -> None
+let find_with_delimiters = function
+  | None -> None
+  | Some scope ->
+      match (Stringmap.find scope !scope_map).delimiters with
+	| Some key -> Some (Some scope, Some key)
+	| None -> None
 
-let rec find_without_delimiters find ntn_scope = function
-  | scope :: scopes -> 
+let rec find_without_delimiters find (ntn_scope,ntn) = function
+  | Scope scope :: scopes -> 
       (* Is the expected ntn/numpr attached to the most recently open scope? *)
-      if scope = ntn_scope then
+      if Some scope = ntn_scope then
 	Some (None,None)
       else
 	(* If the most recently open scope has a notation/numeral printer
@@ -203,7 +238,12 @@ let rec find_without_delimiters find ntn_scope = function
 	if find scope then
 	  find_with_delimiters ntn_scope
 	else
-	  find_without_delimiters find ntn_scope scopes
+	  find_without_delimiters find (ntn_scope,ntn) scopes
+  | SingleNotation ntn' :: scopes ->
+      if ntn_scope = None & ntn = Some ntn' then 
+	Some (None,None)
+      else
+	find_without_delimiters find (ntn_scope,ntn) scopes
   | [] ->
       (* Can we switch to [scope]? Yes if it has defined delimiters *)
       find_with_delimiters ntn_scope
@@ -220,21 +260,27 @@ let level_of_notation ntn =
 
 (* The mapping between notations and their interpretation *)
 
-let declare_notation_interpretation ntn scope pat df pp8only =
+let declare_notation_interpretation ntn scopt pat df pp8only =
+  let scope = match scopt with Some s -> s | None -> default_scope in
   let sc = find_scope scope in
   if Stringmap.mem ntn sc.notations && Options.is_verbose () then
-    warning ("Notation "^ntn^" is already used in scope "^scope);
+    warning ("Notation "^ntn^" is already used"^
+    (if scopt = None then "" else " in scope "^scope));
   let sc = { sc with notations = Stringmap.add ntn (pat,df,pp8only) sc.notations } in
-  scope_map := Stringmap.add scope sc !scope_map
+  scope_map := Stringmap.add scope sc !scope_map;
+  if scopt = None then scope_stack := SingleNotation ntn :: !scope_stack
 
 let declare_uninterpretation rule (metas,c as pat) =
   let (key,n) = aconstr_key c in
   notations_key_table := Gmapl.add key (rule,pat,n) !notations_key_table
 
 let rec find_interpretation f = function
-  | scope::scopes ->
+  | sce :: scopes ->
+      let scope = match sce with
+	| Scope s -> s 
+	| SingleNotation _ -> default_scope in
       (try f (find_scope scope)
-       with Not_found -> find_interpretation f scopes)
+      with Not_found -> find_interpretation f scopes)
   | [] -> raise Not_found
 
 let rec interp_notation ntn scopes =
@@ -242,7 +288,7 @@ let rec interp_notation ntn scopes =
     let (pat,_,pp8only) = Stringmap.find ntn scope.notations in
     if pp8only then raise Not_found;
     pat in
-  try find_interpretation f (scopes @ !scope_stack)
+  try find_interpretation f (List.fold_right push_scope scopes !scope_stack)
   with Not_found -> error ("Unknown interpretation for notation "^ntn)
 
 let uninterp_notations c =
@@ -251,7 +297,7 @@ let uninterp_notations c =
 let availability_of_notation (ntn_scope,ntn) scopes =
   let f scope =
     Stringmap.mem ntn (Stringmap.find scope !scope_map).notations in
-  find_without_delimiters f ntn_scope scopes
+  find_without_delimiters f (ntn_scope,Some ntn) scopes
 
 let rec interp_numeral_gen loc f n = function
   | scope :: scopes ->
@@ -262,13 +308,14 @@ let rec interp_numeral_gen loc f n = function
       str "No interpretation for numeral " ++ pr_bigint n)
 
 let interp_numeral loc n scopes =
-  interp_numeral_gen loc (fun x -> fst x loc n) n (scopes@ !scope_stack)
+  interp_numeral_gen loc (fun x -> fst x loc n) n
+    (List.fold_right push_scope scopes !scope_stack)
 
 let interp_numeral_as_pattern loc n name scopes =
   let f x = match snd x with
     | None -> raise Not_found
     | Some g -> g loc n name in
-  interp_numeral_gen loc f n (scopes@ !scope_stack)
+  interp_numeral_gen loc f n (List.fold_right push_scope scopes !scope_stack)
 
 let uninterp_numeral c =
   try 
@@ -290,39 +337,17 @@ let uninterp_cases_numeral c =
 
 let availability_of_numeral printer_scope scopes =
   let f scope = Hashtbl.mem numeral_interpreter_tab scope in
-  option_app snd (find_without_delimiters f printer_scope scopes)
+  option_app snd (find_without_delimiters f (Some printer_scope,None) scopes)
 
 (* Miscellaneous *)
 
-let exists_notation_in_scope scope ntn r =
+let exists_notation_in_scope scopt ntn r =
+  let scope = match scopt with Some s -> s | None -> default_scope in
   try
     let sc = Stringmap.find scope !scope_map in
     let (r',_,pp8only) = Stringmap.find ntn sc.notations in
     r' = r, pp8only
   with Not_found -> false, false
-
-(* Exportation of scopes *)
-let cache_scope (_,(local,sc)) =
-  check_scope sc;
-  scope_stack := sc :: !scope_stack
-
-let subst_scope (_,subst,sc) = sc
-
-open Libobject
-
-let classify_scope (_,(local,_ as o)) = if local then Dispose else Substitute o
-
-let export_scope (local,_ as x) = if local then None else Some x
-
-let (inScope,outScope) = 
-  declare_object {(default_object "SCOPE") with
-      cache_function = cache_scope;
-      open_function = (fun i o -> if i=1 then cache_scope o);
-      subst_function = subst_scope;
-      classify_function = classify_scope;
-      export_function = export_scope }
-
-let open_scope sc = Lib.add_anonymous_leaf (inScope sc)
 
 (* Special scopes associated to arguments of a global reference *)
 
@@ -459,7 +484,8 @@ let pr_scopes prraw =
    !scope_map (mt ())
 
 let rec find_default ntn = function
-  | scope::_ when Stringmap.mem ntn (find_scope scope).notations -> scope
+  | Scope scope::_ when Stringmap.mem ntn (find_scope scope).notations -> scope
+  | SingleNotation ntn'::_ when ntn = ntn' -> default_scope
   | _::scopes -> find_default ntn scopes
   | [] -> raise Not_found
 
@@ -498,16 +524,19 @@ let locate_notation prraw ntn =
   if ntns = [] then
     str "Unknown notation"
   else
+    t (str "Notation                               " ++
+    tab () ++ str "Scope     " ++ tab () ++ fnl () ++ 
     prlist (fun (ntn,l) ->
       let scope = find_default ntn !scope_stack in
       prlist 
 	(fun (sc,r,df) ->
 	  hov 0 (
-	    pr_notation_info prraw df r ++ brk (1,2) ++
-	    str ": " ++ str sc ++ 
-	    (if sc = scope then str " (default interpretation)" else mt ()) ++
+	    pr_notation_info prraw df r ++ tbrk (1,2) ++
+	    (if sc = default_scope then mt () else (str ": " ++ str sc)) ++ 
+	    tbrk (1,2) ++
+	    (if sc = scope then str "(default interpretation)" else mt ()) ++
 	    fnl ()))
-	l) ntns
+	l) ntns)
 
 (**********************************************************************)
 (* Mapping notations to concrete syntax *)

@@ -30,16 +30,23 @@ open Ppextend
 type level = precedence * tolerability list
 type delimiters = string
 type scope
-type scopes = scope_name list
+type scopes (* = scope_name list*)
 
+(*
 val default_scope : scope_name
+*)
 val type_scope : scope_name
 val declare_scope : scope_name -> unit
 
 (* Open scope *)
 
 val current_scopes : unit -> scopes
-val open_scope : bool * scope_name -> unit
+val open_close_scope : 
+  (* locality *) bool * (* open *) bool * scope_name -> unit
+
+(* Extend a list of scopes *)
+val empty_scope_stack : scopes
+val push_scope : scope_name -> scopes -> scopes
 
 (* Declare delimiters for printing *)
 
@@ -66,8 +73,9 @@ val declare_numeral_interpreter : scope_name -> required_module ->
   num_interpreter -> num_uninterpreter -> unit
 
 (* Returns the term/cases_pattern bound to a numeral in a given scope context*)
-val interp_numeral : loc -> bigint -> scopes -> rawconstr
-val interp_numeral_as_pattern : loc -> bigint -> name -> scopes ->cases_pattern
+val interp_numeral : loc -> bigint -> scope_name list -> rawconstr
+val interp_numeral_as_pattern : loc -> bigint -> name -> scope_name list ->
+  cases_pattern
 
 (* Returns the numeral bound to a term/cases_pattern; raises No_match if no *)
 (* such numeral *)
@@ -80,15 +88,15 @@ val availability_of_numeral : scope_name -> scopes -> delimiters option option
 
 (* Binds a notation in a given scope to an interpretation *)
 type interp_rule =
-  | NotationRule of scope_name * notation
+  | NotationRule of scope_name option * notation
   | SynDefRule of kernel_name
-val declare_notation_interpretation : notation -> scope_name ->
+val declare_notation_interpretation : notation -> scope_name option ->
       interpretation -> string -> bool -> unit
 
 val declare_uninterpretation : interp_rule -> interpretation -> unit
 
 (* Returns the interpretation bound to a notation *)
-val interp_notation : notation -> scopes -> interpretation
+val interp_notation : notation -> scope_name list -> interpretation
 
 (* Returns the possible notations for a given term *)
 val uninterp_notations : rawconstr ->
@@ -98,7 +106,7 @@ val uninterp_notations : rawconstr ->
 (* context [scopes] if available, the result is not None; the first *)
 (* argument is itself not None if a delimiters is needed; the second *)
 (* argument is a numeral printer if the *)
-val availability_of_notation : scope_name * notation -> scopes -> 
+val availability_of_notation : scope_name option * notation -> scopes -> 
   (scope_name option * delimiters option) option
 
 (*s Declare and test the level of a (possibly uninterpreted) notation *)
@@ -109,7 +117,7 @@ val level_of_notation : notation -> level option * level (* [Not_found] if no le
 (*s** Miscellaneous *)
 
 (* Checks for already existing notations *)
-val exists_notation_in_scope : scope_name -> notation ->
+val exists_notation_in_scope : scope_name option -> notation ->
       interpretation -> bool * bool
 
 (* Declares and looks for scopes associated to arguments of a global ref *)
