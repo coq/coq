@@ -12,13 +12,6 @@ open Typeops
 
 type metamap = (int * constr) list
 
-let rec is_dep_case env sigma (pt,ar) =
-  match whd_betadeltaiota env sigma pt,whd_betadeltaiota env sigma ar with
-      DOP2(Prod,_,DLAM(_,t1)),DOP2(Prod,_,DLAM(_,t2)) ->
-	is_dep_case env sigma (t1,t2) 
-    | DOP2(Prod,_,DLAM(_,_)),ki -> true
-    | k,ki   -> false
-
 let outsort env sigma t =
   match whd_betadeltaiota env sigma t with
       DOP0(Sort s) -> s
@@ -60,12 +53,13 @@ let rec type_of env cstr=
     | IsMutConstruct cstr -> 
         let (typ,kind) = destCast (type_of_constructor env sigma cstr) in typ
     | IsMutCase (_,p,c,lf) ->
-        let {realargs=args;arity=arity;nparams=n} =
+        let {realargs=args;make_arity=make_arity;params=params;mind=mind} =
           try try_mutind_of env sigma (type_of env c)
           with Induc -> anomaly "type_of: Bad inductive" in
-        let (_,ar) = decomp_n_prod env sigma n arity in
+	let (aritysign,_) = make_arity mind params in
+	let (psign,_) = splay_prod env sigma (type_of env p) in
         let al =
-          if is_dep_case env sigma (type_of env p,ar) 
+	  if List.length psign > List.length aritysign
 	  then args@[c] else args in
         whd_betadeltaiota env sigma (applist (p,al))
     | IsLambda (name,c1,c2) ->
