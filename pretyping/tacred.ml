@@ -329,7 +329,7 @@ let make_elim_fun (names,(nbfix,lv,n)) largs =
 	   mkLambda (Name(id_of_string"x"),
 		     substl (rev_firstn_liftn (n-k) (-i) la') a,
 		     c))
-	0 (applistc (mkEvalRef ref) la') lv)
+	1 (applistc (mkEvalRef ref) la') (List.rev lv))
 
 (* [f] is convertible to [Fix(recindices,bodynum),bodyvect)] make 
    the reduction using this extra information *)
