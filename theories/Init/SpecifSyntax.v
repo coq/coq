@@ -8,8 +8,8 @@
 
 (* $Id$ *)
 
-Require Export LogicSyntax.
-Require Export Specif.
+Require LogicSyntax.
+Require Specif.
 
 (* Parsing of things in Specif.v *)
 

@@ -13,8 +13,8 @@
     - well-founded induction
    from a well-founded ordering on a given set *)
 
-Require Export Logic.
-Require Export LogicSyntax.
+Require Logic.
+Require LogicSyntax.
 
 (* Well-founded induction principle on Prop *)
 

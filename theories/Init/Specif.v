@@ -12,9 +12,9 @@
 (* Basic specifications : Sets containing logical information *)
 (**************************************************************)
 
-Require Export Logic.
-Require LogicSyntax.
 Require Datatypes.
+Require Logic.
+Require LogicSyntax.
 
 Section Subsets.
 

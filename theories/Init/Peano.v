@@ -21,9 +21,9 @@
    including Peano's axioms of arithmetic (in Coq, these are in fact provable)
    Case analysis on [nat] and induction on [nat * nat] are provided too *)
 
-Require Export Logic.
-Require Export LogicSyntax.
-Require Export Datatypes.
+Require Logic.
+Require LogicSyntax.
+Require Datatypes.
 
 Definition eq_S := (f_equal nat nat S).
 
