@@ -1,7 +1,7 @@
 theories/Zarith/zarith_aux.vo: theories/Zarith/zarith_aux.v theories/Arith/Arith.vo theories/Zarith/fast_integer.vo
 theories/Zarith/fast_integer.vo: theories/Zarith/fast_integer.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Mult.vo theories/Arith/Minus.vo
 theories/Zarith/auxiliary.vo: theories/Zarith/auxiliary.v tactics/Equality.vo theories/Arith/Arith.vo theories/Zarith/fast_integer.vo theories/Zarith/zarith_aux.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo
-theories/Zarith/Zsyntax.vo: theories/Zarith/Zsyntax.v theories/Zarith/fast_integer.vo theories/Zarith/zarith_aux.vo
+theories/Zarith/Zsyntax.vo: theories/Zarith/Zsyntax.v theories/Zarith/fast_integer.vo theories/Zarith/zarith_aux.vo theories/Zarith/g_zsyntax.cmo
 theories/Zarith/Zmisc.vo: theories/Zarith/Zmisc.v theories/Zarith/fast_integer.vo theories/Zarith/zarith_aux.vo theories/Zarith/auxiliary.vo theories/Zarith/Zsyntax.vo theories/Bool/Bool.vo
 theories/Zarith/ZArith_dec.vo: theories/Zarith/ZArith_dec.v theories/Bool/Sumbool.vo theories/Zarith/fast_integer.vo theories/Zarith/zarith_aux.vo theories/Zarith/auxiliary.vo theories/Zarith/Zsyntax.vo
 theories/Zarith/ZArith.vo: theories/Zarith/ZArith.v theories/Zarith/fast_integer.vo theories/Zarith/zarith_aux.vo theories/Zarith/auxiliary.vo theories/Zarith/Zsyntax.vo theories/Zarith/ZArith_dec.vo theories/Zarith/Zmisc.vo theories/Zarith/Wf_Z.vo
@@ -50,9 +50,10 @@ theories/Arith/Between.vo: theories/Arith/Between.v theories/Arith/Le.vo theorie
 theories/Arith/Arith.vo: theories/Arith/Arith.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Gt.vo theories/Arith/Minus.vo theories/Arith/Mult.vo theories/Arith/Between.vo theories/Arith/g_natsyntax.cmo
 test-suite/bench/lists_100.vo: test-suite/bench/lists_100.v
 test-suite/bench/lists-100.vo: test-suite/bench/lists-100.v
+tactics/Tauto.vo: tactics/Tauto.v
 tactics/Equality.vo: tactics/Equality.v
 syntax/PPTactic.vo: syntax/PPTactic.v
 syntax/PPConstr.vo: syntax/PPConstr.v
 syntax/PPCases.vo: syntax/PPCases.v
 syntax/MakeBare.vo: syntax/MakeBare.v
-states/MakeInitial.vo: states/MakeInitial.v theories/Init/Prelude.vo theories/Init/Logic_Type.vo theories/Init/Logic_TypeSyntax.vo tactics/Equality.vo
+states/MakeInitial.vo: states/MakeInitial.v theories/Init/Prelude.vo theories/Init/Logic_Type.vo theories/Init/Logic_TypeSyntax.vo tactics/Equality.vo tactics/Tauto.vo

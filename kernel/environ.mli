@@ -54,6 +54,7 @@ val id_of_name_using_hdchar : env -> constr -> name -> identifier
 val named_hd : env -> constr -> name -> name
 val prod_name : env -> name * constr * constr -> constr
 val lambda_create : env -> constr * constr -> constr
+val lambda_name : env -> name * constr * constr -> constr
 
 val translucent_abst : env -> constr -> bool
 val evaluable_abst : env -> constr -> bool

@@ -108,7 +108,8 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo \
          toplevel/usage.cmo toplevel/coqinit.cmo toplevel/coqtop.cmo
 
-HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo
+HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
+            tactics/tauto.cmo
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -199,12 +200,12 @@ INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq
 	$(COQC) -q -I theories/Init -is states/barestate.coq $<
 
-TACTICSVO=tactics/Equality.vo
+TACTICSVO=tactics/Equality.vo tactics/Tauto.vo
 
 tactics/%.vo: tactics/%.v states/barestate.coq
 	$(COQC) -q -I tactics -is states/barestate.coq $<
 
-states/initial.coq: states/barestate.coq $(INITVO) $(TACTICSVO)
+states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO)
 	./coqtop.byte -q -batch -silent -is states/barestate.coq -I tactics -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 clean::
@@ -234,7 +235,11 @@ ZARITHVO=theories/Zarith/Wf_Z.vo        theories/Zarith/Zsyntax.vo \
 	 theories/Zarith/ZArith_dec.vo  theories/Zarith/fast_integer.vo \
 	 theories/Zarith/Zmisc.vo       theories/Zarith/zarith_aux.vo
 
-theories: $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO)
+THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO)
+
+$(THEORIESVO): states/initial.coq
+
+theories: $(THEORIESVO)
 
 init: $(INITVO)
 logic: $(LOGICVO)
