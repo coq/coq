@@ -31,6 +31,9 @@ type strength =
   | DischargeAt of dir_path * int
   | NeverDischarge
 
+val is_less_persistent_strength : strength * strength -> bool
+val strength_min : strength * strength -> strength
+
 type section_variable_entry =
   | SectionLocalDef of constr * types option
   | SectionLocalAssum of types

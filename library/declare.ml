@@ -62,6 +62,16 @@ let make_strength_2 () =
   if depth > 2 then DischargeAt (extract_dirpath_prefix 2 cwd, depth-2)
   else NeverDischarge
 
+let is_less_persistent_strength = function
+  | (NeverDischarge,_) -> false
+  | (NotDeclare,_) -> false
+  | (_,NeverDischarge) -> true
+  | (_,NotDeclare) -> true
+  | (DischargeAt (sp1,_),DischargeAt (sp2,_)) ->
+      is_dirpath_prefix_of sp1 sp2
+
+let strength_min (stre1,stre2) =
+  if is_less_persistent_strength (stre1,stre2) then stre1 else stre2
 
 (* Section variables. *)
 
