@@ -1,15 +1,16 @@
-INSTALLATION PROCEDURE FOR THE COQ V7.3 SYSTEM UNDER MACOS X
+INSTALLATION PROCEDURE FOR THE COQ V8.0 SYSTEM UNDER MACOS X
 ------------------------------------------------------------
 
-1) Download archive coq-7.3-macosx.dmg.
+1) Download archive coq-8.0-macosx.dmg.
 
-2) Double-click on its icon; it mounts a disk volume named "Coq V7.3".
+2) Double-click on its icon; it mounts a disk volume named "Coq V8.0".
 
-3) Open volume "Coq 7.3" and double-click on coq-7.3.pkg to launch the
+3) Open volume "Coq 8.0" and double-click on coq-8.0.pkg to launch the
    installer (you'll need administrator permissions).
 
-4) Coq installs in /usr/local/bin and can be used from a Terminal window: the
-   interactive toplevel is named coqtop and the compiler is coqc.
+4) Coq installs in /usr/local/bin, which should be in your PATH, and
+   can be used from a Terminal window: the interactive toplevel is
+   named coqtop and the compiler is coqc.
 
 If you have any trouble with this installation, please contact:
 coq-bugs@pauillac.inria.fr.

@@ -37,6 +37,7 @@ Tools
 Bug fixes
 
 - Fix a bug with 'Notation "'id'" := c.'
+- Fix a Notation bug when variable names clash with global names
 - Translator printing bug of reals fixed
 - Fix bugs in induction/destruct in case the type of the eliminated object 
   has parameters
@@ -52,6 +53,7 @@ Bug fixes
 - Fix "Tactic Notation" translation bugs and improve file location of errors
 - Fix an "omega" bug (may cause "auto with zarith" to succeed more often)
 - Fix ltac "context" bug on right-hand-side of match clauses
+- Fix "abstract" tactical bug within sections
 
 Changes from V8.0beta old syntax to V8.0beta
 ============================================
