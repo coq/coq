@@ -274,23 +274,11 @@ let context_of_global_reference = function
   | IndRef (sp,_) -> (Global.lookup_mind sp).mind_hyps
   | ConstructRef ((sp,_),_) -> (Global.lookup_mind sp).mind_hyps
 
-let type_of_global r =
-  match r with
-  | VarRef id ->
-      let (_,_,ty) = lookup_named id (Global.env ()) in
-      ty
-  | ConstRef sp ->
-      Environ.constant_type (Global.env ()) sp
-  | IndRef sp -> 
-      Inductive.type_of_inductive (Global.env ()) sp
-  | ConstructRef sp ->
-      Inductive.type_of_constructor (Global.env ()) sp
-
 let check_range n i =
   if i<1 or i>n then error ("Bad argument number: "^(string_of_int i))
 
 let declare_manual_implicits r l =
-  let t = type_of_global r in
+  let t = Global.type_of_global r in
   let n = List.length (fst (dest_prod (Global.env()) t)) in
   if not (list_distinct l) then error ("Some numbers occur several time");
   List.iter (check_range n) l;

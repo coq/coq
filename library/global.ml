@@ -68,4 +68,12 @@ let import cenv = global_env := import cenv !global_env
 let env_of_context hyps = 
   reset_with_named_context hyps (env())
 
+open Nametab
 
+let type_of_reference env = function
+  | VarRef id -> let (_,_,t) = Environ.lookup_named id env in t
+  | ConstRef c -> Environ.constant_type env c
+  | IndRef ind -> Inductive.type_of_inductive env ind
+  | ConstructRef cstr -> Inductive.type_of_constructor env cstr
+
+let type_of_global t = type_of_reference (env ()) t

@@ -52,4 +52,5 @@ val import : Environ.compiled_env -> unit
 (*s Function to get an environment from the constants part of the global
     environment and a given context. *)
 
+val type_of_global : Nametab.global_reference -> types
 val env_of_context : Sign.named_context -> Environ.env
