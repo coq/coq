@@ -655,7 +655,7 @@ and fGRAMMAR = function
 | CT_grammar_none -> fNODE "grammar_none" 0
 and fHINT_EXPRESSION = function
 | CT_constructors(x1) ->
-   fID x1;
+   fID_LIST x1;
    fNODE "constructors" 1
 | CT_extern(x1, x2, x3) ->
    fINT x1;

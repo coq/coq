@@ -15,7 +15,7 @@ Require EqParams.
 Require EqAxioms.
 
 Definition neq : N -> N -> Prop := [x,y] ~(x=y).
-Infix 6 "<>" neq V8only 50.
+Infix 6 "<>" neq V8only 70.
 
 (* Proofs of axioms *)
 Lemma eq_not_neq : (x,y:N)x=y->~(x<>y).

@@ -240,18 +240,18 @@ Infix NONA 5 ">"  Zgt  : Z_scope.
 Infix NONA 5 "?=" Zcompare : Z_scope.
 Notation "x <= y <= z" := (Zle x y)/\(Zle y z)
   (at level 5, y at level 4):Z_scope
-  V8only (at level 50, y at next level).
+  V8only (at level 70, y at next level).
 Notation "x <= y < z"  := (Zle x y)/\(Zlt y z)
   (at level 5, y at level 4):Z_scope
-  V8only (at level 50, y at next level).
+  V8only (at level 70, y at next level).
 Notation  "x < y < z"  := (Zlt x y)/\(Zlt y z)
   (at level 5, y at level 4):Z_scope
-  V8only (at level 50, y at next level).
+  V8only (at level 70, y at next level).
 Notation  "x < y <= z" := (Zlt x y)/\(Zle y z)
   (at level 5, y at level 4):Z_scope
-  V8only (at level 50, y at next level).
+  V8only (at level 70, y at next level).
 Notation  "x = y = z" := x=y/\y=z : Z_scope
-  V8only (at level 50, y at next level).
+  V8only (at level 70, y at next level).
 
 (* Now a polymorphic notation
 Notation "x <> y" := ~(eq Z x y) (at level 5, no associativity) : Z_scope.

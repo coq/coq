@@ -1537,7 +1537,7 @@ Definition Zcompare := [x,y:Z]
   | (NEG x') (NEG y') => (Op (compare x' y' EGAL))
   end.
 
-V8Infix "?=" Zcompare (at level 50, no associativity) : Z_scope.
+V8Infix "?=" Zcompare (at level 70, no associativity) : Z_scope.
 
 Open Local Scope Z_scope.
 

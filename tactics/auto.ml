@@ -434,14 +434,16 @@ let forward_intern_tac =
 
 let set_extern_intern_tac f = forward_intern_tac := f
 
-let add_hints local dbnames h =
-  let dbnames = if dbnames = [] then ["core"] else dbnames in match h with
+let add_hints local dbnames0 h =
+  let dbnames = if dbnames0 = [] then ["core"] else dbnames0 in
+  match h with
   | HintsResolve lhints ->	
       let env = Global.env() and sigma = Evd.empty in
       let f (n,c) =
 	let c = Constrintern.interp_constr sigma env c in
 	let n = match n with
-	  | None -> id_of_global (reference_of_constr c)
+	  | None -> (*id_of_global (reference_of_constr c)*)
+              id_of_string "<anonymous hint>"
 	  | Some n -> n in
 	(n,c) in
       add_resolves env sigma (List.map f lhints) local dbnames
@@ -450,7 +452,8 @@ let add_hints local dbnames h =
       let f (n,c) = 
 	let c = Constrintern.interp_constr sigma env c in
 	let n = match n with
-	  | None -> id_of_global (reference_of_constr c)
+	  | None -> (*id_of_global (reference_of_constr c)*)
+              id_of_string "<anonymous hint>"
 	  | Some n -> n in
 	(n,c) in
       add_trivials env sigma (List.map f lhints) local dbnames
@@ -462,17 +465,28 @@ let add_hints local dbnames h =
 	  | Some n -> n in
 	(n,r) in
       add_unfolds (List.map f lhints) local dbnames
-  | HintsConstructors (hintname, qid) ->
-      let env = Global.env() and sigma = Evd.empty in
-      let isp = global_inductive qid in
-      let consnames = (snd (Global.lookup_inductive isp)).mind_consnames in
-      let lcons = list_tabulate (fun i -> mkConstruct (isp,i+1)) (Array.length consnames) in
-      let lcons = List.map2 (fun id c -> (id,c)) (Array.to_list consnames) lcons in
-      add_resolves env sigma lcons local dbnames
+  | HintsConstructors (hintname, lqid) ->
+      let add_one qid =
+        let env = Global.env() and sigma = Evd.empty in
+        let isp = global_inductive qid in
+        let consnames = (snd (Global.lookup_inductive isp)).mind_consnames in
+        let lcons = list_tabulate
+          (fun i -> mkConstruct (isp,i+1)) (Array.length consnames) in
+        let lcons = List.map2
+          (fun id c -> (id,c)) (Array.to_list consnames) lcons in
+        add_resolves env sigma lcons local dbnames in
+      List.iter add_one lqid
   | HintsExtern (hintname, pri, patcom, tacexp) ->
+      let hintname = match hintname with
+          Some h -> h
+        | _ -> id_of_string "<anonymous hint>" in
       let pat =	Constrintern.interp_constrpattern Evd.empty (Global.env()) patcom in
       let tacexp = !forward_intern_tac (fst pat) tacexp in
       add_externs hintname pri pat tacexp local dbnames
+  | HintsDestruct(na,pri,loc,pat,code) ->
+      if dbnames0<>[] then
+        warn (str"Database selection not implemented for destruct hints");
+      Dhyp.add_destructor_hint local na loc pat pri code
 
 (**************************************************************************)
 (*                    Functions for printing the hints                    *)

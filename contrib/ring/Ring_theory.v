@@ -25,8 +25,8 @@ Variable Azero : A.
   is a good choice. The proof of A_eq_prop is in this case easy. *)
 Variable Aeq : A -> A -> bool.
 
-Infix 4 "+" Aplus V8only 40 (left associativity).
-Infix 4 "*" Amult V8only 30 (left associativity).
+Infix 4 "+" Aplus V8only 50 (left associativity).
+Infix 4 "*" Amult V8only 40 (left associativity).
 Notation "0" := Azero.
 Notation "1" := Aone.
 
@@ -146,16 +146,16 @@ Variable Azero : A.
 Variable Aopp : A -> A.
 Variable Aeq : A -> A -> bool.
 
-Infix 4 "+" Aplus V8only 40 (left associativity).
-Infix 4 "*" Amult V8only 30 (left associativity).
+Infix 4 "+" Aplus V8only 50 (left associativity).
+Infix 4 "*" Amult V8only 40 (left associativity).
 Notation "0" := Azero.
 Notation "1" := Aone.
 Notation "- 0" := (Aopp Azero) (at level 0)
-  V8only (at level 40, left associativity).
+  V8only (at level 50, left associativity).
 Notation "- 1" := (Aopp Aone) (at level 0)
-  V8only (at level 40, left associativity).
+  V8only (at level 50, left associativity).
 Notation "- x" := (Aopp x) (at level 0)
-  V8only (at level 40, left associativity).
+  V8only (at level 50, left associativity).
 
 Record Ring_Theory : Prop :=
 { Th_plus_sym  : (n,m:A) n + m == m + n;

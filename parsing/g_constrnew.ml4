@@ -174,7 +174,8 @@ GEXTEND Gram
     | "100" RIGHTA
       [ c1 = operconstr; ":"; c2 = binder_constr -> CCast(loc,c1,c2)
       | c1 = operconstr; ":"; c2 = operconstr    -> CCast(loc,c1,c2) ]
-    | "80" RIGHTA
+    | "99" RIGHTA [ ]
+    | "90" RIGHTA
       [ c1 = operconstr; "->"; c2 = binder_constr -> CArrow(loc,c1,c2)
       | c1 = operconstr; "->"; c2 = operconstr    -> CArrow(loc,c1,c2) ]
     | "10" LEFTA

@@ -220,7 +220,10 @@ END
 (* Grammar extensions *)
 
 (* automatic translation of levels *)
-let adapt_level n = n*10
+let adapt_level n =
+  if n >= 10 then n*10 else
+    [| 0; 20; 30; 40; 50; 70; 80; 85; 90; 95; 100|].(n)
+
 let map_modl = function
   | SetItemLevel(ids,NumLevel n) -> SetItemLevel(ids,NumLevel (adapt_level n))
   | SetLevel n -> SetLevel(adapt_level n)

@@ -98,8 +98,10 @@ type hints =
   | HintsResolve of (identifier option * constr_expr) list
   | HintsImmediate of (identifier option * constr_expr) list
   | HintsUnfold of (identifier option * reference) list
-  | HintsConstructors of identifier * reference
-  | HintsExtern of identifier * int * raw_constr_expr * raw_tactic_expr
+  | HintsConstructors of identifier option * reference list
+  | HintsExtern of identifier option * int * raw_constr_expr * raw_tactic_expr
+  | HintsDestruct of identifier *
+      int * (bool,unit) location * constr_expr * raw_tactic_expr
 
 type search_restriction =
   | SearchInside of reference list
@@ -235,8 +237,6 @@ type vernac_expr =
   | VernacDeclareTacticDefinition of
       rec_flag * (identifier located * raw_tactic_expr) list
   | VernacHints of locality_flag * string list * hints
-  | VernacHintDestruct of locality_flag *
-      identifier * (bool,unit) location * constr_expr * int * raw_tactic_expr
   | VernacSyntacticDefinition of identifier * constr_expr * int option
   | VernacDeclareImplicits of reference * explicitation list option
   | VernacReserve of identifier list * constr_expr

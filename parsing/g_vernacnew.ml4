@@ -499,7 +499,7 @@ GEXTEND Gram
 	  VernacRemoveLoadPath dir
 
       (* Type-Checking (pas dans le refman) *)
-      | "Type"; c = constr -> VernacGlobalCheck c
+      | "Type"; c = lconstr -> VernacGlobalCheck c
 
       (* Printing (careful factorization of entries) *)
       | IDENT "Print"; p = printable -> VernacPrint p
@@ -574,9 +574,9 @@ GEXTEND Gram
 	  VernacRemoveOption (PrimaryTable table, v) ] ]
   ;
   check_command: (* TODO: rapprocher Eval et Check *)
-    [ [ IDENT "Eval"; r = Tactic.red_expr; "in"; c = constr ->
+    [ [ IDENT "Eval"; r = Tactic.red_expr; "in"; c = lconstr ->
           fun g -> VernacCheckMayEval (Some r, g, c)
-      | IDENT "Check"; c = constr ->
+      | IDENT "Check"; c = lconstr ->
 	  fun g -> VernacCheckMayEval (None, g, c) ] ]
   ;
   printable:

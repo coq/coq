@@ -255,7 +255,7 @@ and ct_FORMULA_OR_INT =
 and ct_GRAMMAR =
     CT_grammar_none
 and ct_HINT_EXPRESSION =
-    CT_constructors of ct_ID
+    CT_constructors of ct_ID_LIST
   | CT_extern of ct_INT * ct_FORMULA * ct_TACTIC_COM
   | CT_immediate of ct_FORMULA
   | CT_resolve of ct_FORMULA

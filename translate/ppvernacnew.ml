@@ -213,58 +213,34 @@ let pr_opt_hintbases l = match l with
   | _ as z -> str":" ++ spc() ++ prlist_with_sep sep str z
 
 let pr_hints local db h pr_c = 
-  let db_name = function
-    | [] -> (false , mt())
-    | c1::c2 -> match c1 with
-      |	None,_ -> (false , mt())
-      |	Some name,_ -> (true , pr_id name) in
   let opth = pr_opt_hintbases db  in
   let pr_aux = function
     | CAppExpl (_,(_,qid),[]) -> pr_reference qid
     | _ -> mt () in
-  match h with
+  let pph =
+    match h with
     | HintsResolve l ->
-        let (f,dbn) = db_name l in
-        if f then
-          hov 1 (str"Hint " ++ pr_locality local ++ dbn ++ spc() ++ opth ++
-                 str" :=" ++ spc() ++ str"Resolve" ++ spc() ++
-                 prlist_with_sep sep pr_c (List.map (fun (_,y) -> y) l))
-        else hov 1
-          (str"Hints " ++ pr_locality local ++ str "Resolve " ++
-          prlist_with_sep sep pr_aux
-            (List.map (fun (_,y) -> y) l) ++ spc() ++ opth)
+        str "Resolve " ++
+        prlist_with_sep sep pr_c (List.map snd l)
     | HintsImmediate l ->
-        let (f,dbn) = db_name l in
-        if f then
-          hov 1 (str"Hint " ++ pr_locality local ++ dbn ++ spc() ++ opth ++
-                 str" :=" ++ spc() ++ str"Immediate" ++ spc() ++
-                 prlist_with_sep sep pr_c (List.map (fun (_,y) -> y) l))
-        else hov 1
-          (str"Hints " ++ pr_locality local ++ str "Immediate " ++
-           prlist_with_sep sep pr_aux
-            (List.map (fun (_,y) -> y) l) ++ spc() ++ opth)
+        str"Immediate" ++ spc() ++
+        prlist_with_sep sep pr_c (List.map snd l)
     | HintsUnfold l ->
-        let (f,dbn) = db_name l in
-        if f then
-          hov 1 (str"Hint" ++ spc() ++ pr_locality local ++ 
-	         dbn ++ spc() ++ opth ++
-                 str" :=" ++ spc() ++ str"Unfold" ++ spc() ++
-                 prlist_with_sep sep pr_reference
-                   (List.map snd l))
-        else hov 1
-          (str"Hints " ++ pr_locality local ++ str "Unfold " ++
-	    prlist_with_sep sep pr_reference
-            (List.map snd l) ++ spc() ++ opth)
+        str "Unfold " ++
+	prlist_with_sep sep pr_reference (List.map snd l)
     | HintsConstructors (n,c) ->
-        hov 1 (str"Hint " ++ pr_locality local ++ 
-	       pr_id n ++ spc() ++ opth ++ str" :=" ++
-               spc() ++ str"Constructors" ++ spc() ++ pr_reference c) 
+        str"Constructors" ++ spc() ++
+        prlist_with_sep spc pr_reference c
     | HintsExtern (name,n,c,tac) ->
-        hov 1 (str"Hint " ++ pr_locality local ++ 
-	       pr_id name ++ spc() ++ opth ++ str" :=" ++
-               spc() ++ str"Extern " ++ int n ++ spc() ++ pr_c c ++
-               spc() ++ pr_raw_tactic tac)
- 
+        str "Extern" ++ spc() ++ int n ++ spc() ++ pr_c c ++ str" =>" ++
+        spc() ++ pr_raw_tactic tac
+    | HintsDestruct(name,i,loc,c,tac) ->
+        str "Destruct " ++ pr_id name ++ str" :=" ++ spc() ++
+        hov 0 (int i ++ spc() ++ pr_destruct_location loc ++ spc() ++
+               pr_c c ++ str " :=") ++ spc() ++
+        pr_raw_tactic tac in
+  hov 2 (str"Hint "++pr_locality local ++ pph ++ opth)
+
 let pr_with_declaration pr_c = function
   | CWith_Definition (id,c) ->
       let p = pr_c c in
@@ -966,11 +942,6 @@ let rec pr_vernac = function
 	    (* Rec by default *) str "Ltac ") ++
         prlist_with_sep (fun () -> fnl() ++ str"with ") pr_tac_body l)
   | VernacHints (local,dbnames,h) -> pr_hints local dbnames h pr_constr
-  | VernacHintDestruct (local,id,loc,c,i,tac) ->
-      hov 2 (str"HintDestruct " ++ pr_locality local ++ 
-      pr_destruct_location loc ++ spc() ++
-      pr_id id ++ pr_constrarg c ++ pr_intarg i ++ spc() ++
-      str"[" ++ pr_raw_tactic tac ++ str"]")
   | VernacSyntacticDefinition (id,c,None) ->
       hov 2 (str"Syntactic Definition " ++ pr_id id ++ str" :=" ++
              pr_lconstrarg c)

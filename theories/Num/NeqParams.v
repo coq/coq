@@ -15,7 +15,7 @@ Require Export Params.
 
 Parameter neq : N -> N -> Prop.
 
-Infix 6 "<>" neq V8only 50.
+Infix 6 "<>" neq V8only 70.
 
 
 

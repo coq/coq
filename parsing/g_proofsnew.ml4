@@ -85,21 +85,8 @@ GEXTEND Gram
       | IDENT "Go"; IDENT "next" -> VernacGo GoNext
       | IDENT "Guarded" -> VernacCheckGuard
 (* Hints for Auto and EAuto *)
-
-      | IDENT "HintDestruct"; 
-	  local = locality;
-          dloc = destruct_location;
-          id  = base_ident;
-          hyptyp = Constr.constr_pattern;
-          pri = natural;
-          "["; tac = tactic; "]" -> 
-	    VernacHintDestruct (local,id,dloc,hyptyp,pri,tac)
-
-      | IDENT "Hint"; local = locality; hintname = base_ident; 
-	  dbnames = opt_hintbases; ":="; h = hint ->
-            VernacHints (local,dbnames, h hintname)
-	  
-      | IDENT "Hints"; local = locality; (dbnames,h) = hints ->
+      | IDENT "Hint"; local = locality; h = hint;
+        dbnames = opt_hintbases ->
 	  VernacHints (local,dbnames, h)
 	  
 
@@ -113,20 +100,24 @@ GEXTEND Gram
     [ [ IDENT "Local" -> true | -> false ] ]
   ;
   hint:
-    [ [ IDENT "Resolve"; c = Constr.constr -> fun name -> HintsResolve [Some name, c]
-      | IDENT "Immediate"; c = Constr.constr -> fun name -> HintsImmediate [Some name, c]
-      | IDENT "Unfold"; qid = global -> fun name -> HintsUnfold [Some name,qid]
-      | IDENT "Constructors"; c = global -> fun n -> HintsConstructors (n,c)
-      | IDENT "Extern"; n = natural; c = Constr.constr ; tac = tactic ->
-	  fun name -> HintsExtern (name,n,c,tac) ] ]
-  ;
-  hints:
-    [ [ IDENT "Resolve"; l = LIST1 global; dbnames = opt_hintbases ->
-         (dbnames, HintsResolve (List.map (fun qid -> (None, CRef qid)) l))
-      | IDENT "Immediate"; l = LIST1 global; dbnames = opt_hintbases ->
-        (dbnames, HintsImmediate (List.map (fun qid -> (None, CRef qid)) l))
-      | IDENT "Unfold"; l = LIST1 global; dbnames = opt_hintbases ->
-        (dbnames, HintsUnfold (List.map (fun qid -> (None,qid)) l)) ] ]
+    [ [ IDENT "Resolve"; lc = LIST1 Constr.constr ->
+          HintsResolve (List.map (fun c -> (None, c)) lc)
+      | IDENT "Immediate"; lc = LIST1 Constr.constr ->
+          HintsImmediate (List.map (fun c -> (None,c)) lc)
+      | IDENT "Unfold"; lqid = LIST1 global ->
+          HintsUnfold (List.map (fun g -> (None,g)) lqid)
+      | IDENT "Constructors"; lc = LIST1 global ->
+          HintsConstructors (None,lc)
+      | IDENT "Extern"; n = natural; c = Constr.constr_pattern ; "=>";
+          tac = tactic ->
+	  HintsExtern (None,n,c,tac)
+      | IDENT"Destruct"; 
+          id = base_ident; ":=";
+          pri = natural;
+          dloc = destruct_location;
+          hyptyp = Constr.constr_pattern;
+          "=>"; tac = tactic ->
+            HintsDestruct(id,pri,dloc,hyptyp,tac) ] ]
     ;
   constr_body:
     [ [ ":="; c = lconstr -> c

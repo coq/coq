@@ -20,7 +20,7 @@ Set Implicit Arguments.
 Inductive list : Set := nil : list | cons : A -> list -> list.
 
 Infix "::" cons (at level 7, right associativity) : list_scope
-  V8only (at level 45, right associativity).
+  V8only (at level 60, right associativity).
 
 Open Scope list_scope.
 
@@ -44,7 +44,7 @@ Fixpoint app [l:list] : list -> list
                  end.
 
 Infix RIGHTA 7 "^" app : list_scope
-  V8only RIGHTA 45 "++".
+  V8only RIGHTA 60 "++".
 
 Lemma app_nil_end : (l:list)l=(l^nil).
 Proof. 
@@ -635,8 +635,8 @@ V7only [Implicits nil [].].
 
 (** Exporting list notations *)
 
-V8Infix "::" cons (at level 45, right associativity) : list_scope.
+V8Infix "::" cons (at level 60, right associativity) : list_scope.
 
-Infix RIGHTA 7 "^" app : list_scope V8only RIGHTA 45 "++".
+Infix RIGHTA 7 "^" app : list_scope V8only RIGHTA 60 "++".
 
 Open Scope list_scope.

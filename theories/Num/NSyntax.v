@@ -10,12 +10,12 @@
 
 Require Export Params.
 
-Infix 6 "<" lt V8only 50.
-Infix 6 "<=" le V8only 50.
-Infix 6 ">" gt V8only 50.
-Infix 6 ">=" ge V8only 50.
+Infix 6 "<" lt V8only 70.
+Infix 6 "<=" le V8only 70.
+Infix 6 ">" gt V8only 70.
+Infix 6 ">=" ge V8only 70.
 
-(*i Infix 7 "+" plus V8only 40. i*)
+(*i Infix 7 "+" plus V8only 50. i*)
 
 Grammar constr lassoc_constr4 :=
   squash_sum

@@ -92,7 +92,7 @@ GEXTEND Gram
           hyptyp = Constr.constr_pattern;
           pri = natural;
           "["; tac = tactic; "]" -> 
-	    VernacHintDestruct (local,id,dloc,hyptyp,pri,tac)
+	    VernacHints(local,[],HintsDestruct (id,pri,dloc,hyptyp,tac))
 
       | IDENT "Hint"; local = locality; hintname = base_ident; 
 	  dbnames = opt_hintbases; ":="; h = hint
@@ -115,9 +115,10 @@ GEXTEND Gram
     [ [ IDENT "Resolve"; c = Constr.constr -> fun name -> HintsResolve [Some name, c]
       | IDENT "Immediate"; c = Constr.constr -> fun name -> HintsImmediate [Some name, c]
       | IDENT "Unfold"; qid = global -> fun name -> HintsUnfold [Some name,qid]
-      | IDENT "Constructors"; c = global -> fun n -> HintsConstructors (n,c)
+      | IDENT "Constructors"; c = global -> fun n ->
+          HintsConstructors (Some n,[c])
       | IDENT "Extern"; n = natural; c = Constr.constr ; tac = tactic ->
-	  fun name -> HintsExtern (name,n,c,tac) ] ]
+	  fun name -> HintsExtern (Some name,n,c,tac) ] ]
   ;
   hints:
     [ [ IDENT "Resolve"; l = LIST1 global; dbnames = opt_hintbases ->

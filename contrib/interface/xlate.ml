@@ -1366,13 +1366,13 @@ let xlate_vernac =
 	| HintsUnfold [Some id_name, q] -> (* = Old HintUnfold *)
 	    CT_hint(xlate_ident id_name, dblist,
               CT_unfold_hint (loc_qualid_to_ct_ID q))
-	| HintsConstructors (id_name, q) ->
+	| HintsConstructors (Some id_name, ql) ->
 	    CT_hint(xlate_ident id_name, dblist,
-              CT_constructors (loc_qualid_to_ct_ID q))
-	| HintsExtern (id_name, n, c, t) ->
+              CT_constructors (CT_id_list(List.map loc_qualid_to_ct_ID ql)))
+	| HintsExtern (Some id_name, n, c, t) ->
 	    CT_hint(xlate_ident id_name, dblist,
               CT_extern(CT_int n, xlate_formula c, xlate_tactic t))
-     | HintsResolve l -> (* = Old HintsResolve *)
+        | HintsResolve l -> (* = Old HintsResolve *)
 	 let l = List.map (function (None,CRef r) -> r | _ -> failwith "") l in
 	 let n1, names = match List.map tac_qualid_to_ct_ID l with
 	     n1 :: names -> n1, names
@@ -1380,7 +1380,7 @@ let xlate_vernac =
          CT_hints(CT_ident "Resolve",
                   CT_id_ne_list(n1, names),
 		  dblist)
-     | HintsImmediate l -> (* = Old HintsImmediate *)
+        | HintsImmediate l -> (* = Old HintsImmediate *)
 	 let l = List.map (function (None,CRef r) -> r | _ -> failwith "") l in
 	 let n1, names = match List.map tac_qualid_to_ct_ID l with
 	     n1 :: names -> n1, names
@@ -1388,7 +1388,7 @@ let xlate_vernac =
         CT_hints(CT_ident "Immediate", 
                  CT_id_ne_list(n1, names),
                  dblist)
-     | HintsUnfold l ->  (* = Old HintsUnfold *)
+        | HintsUnfold l ->  (* = Old HintsUnfold *)
 	 let l = List.map
 	   (function
 	       (None,ref) -> loc_qualid_to_ct_ID ref
@@ -1398,7 +1398,8 @@ let xlate_vernac =
 	   | _  -> failwith "" in
         CT_hints(CT_ident "Unfold", 
                  CT_id_ne_list(n1, names),
-                 dblist))
+                 dblist)
+        | _ -> xlate_error"TODO: Hint")
   | VernacEndProof (Proved (true,None)) ->
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Theorem"), ctv_ID_OPT_NONE)
   | VernacEndProof (Proved (false,None)) ->
@@ -1676,7 +1677,7 @@ let xlate_vernac =
   | (VernacGlobalCheck _|VernacPrintOption _|
      VernacMemOption (_, _)|VernacRemoveOption (_, _)|VernacAddOption (_, _)|
      VernacSetOption (_, _)|VernacUnsetOption _|
-     VernacHintDestruct (_, _, _, _, _, _)|VernacBack _|VernacRestoreState _|
+     VernacBack _|VernacRestoreState _|
      VernacWriteState _|VernacSolveExistential (_, _)|VernacCanonical _|
      VernacImport (_, _)|VernacExactProof _|VernacDistfix _|
      VernacTacticGrammar _|VernacVar _|VernacTime _|VernacProof _)

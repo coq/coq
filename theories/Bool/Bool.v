@@ -174,7 +174,7 @@ Definition negb := [b:bool]Cases b of
 
 Infix "||" orb  (at level 4, left associativity) : bool_scope.
 Infix "&&" andb (at level 3, no associativity) : bool_scope
-  V8only (at level 30, left associativity).
+  V8only (at level 40, left associativity).
 Notation "- b" := (negb b) : bool_scope V8only.
 
 Open Local Scope bool_scope.

@@ -24,17 +24,17 @@ Notation "'ALL' x : t | p" := (all ? [x:t]p) (at level 10, p at level 8)
 
 V7only [ Notation Ex  := (ex ?). ].
 Notation "'EX' x | p"      := (ex ? [x]p)    (at level 10, p at level 8)
-  V8only "'exists' x , p" (at level 200, x at level 80).
+  V8only "'exists' x , p" (at level 200, x at level 99).
 Notation "'EX' x : t | p"  := (ex ? [x:t]p)  (at level 10, p at level 8)
-  V8only "'exists' x : t , p" (at level 200, x at level 80).
+  V8only "'exists' x : t , p" (at level 200, x at level 99).
 
 V7only [ Notation Ex2 := (ex2 ?). ].
 Notation "'EX' x | p & q"       := (ex2 ? [x]p [x]q)
   (at level 10, p, q at level 8)
-  V8only "'exists2' x , p & q" (at level 200, x at level 80).
+  V8only "'exists2' x , p & q" (at level 200, x at level 99).
 Notation "'EX' x : t | p & q"   := (ex2 ? [x:t]p [x:t]q)
   (at level 10, p, q at level 8)
-  V8only "'exists2' x : t , p & q" (at level 200, x at level 80).
+  V8only "'exists2' x : t , p & q" (at level 200, x at level 99).
 
 V7only[
 (** Parsing only of things in [Logic.v] *)
