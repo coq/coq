@@ -24,6 +24,8 @@ open Proof_type
 open Logic
 open Refiner
 
+type wc = named_context sigma (* for a better reading of the following *)
+
 let rc_of_pfsigma sigma = rc_of_gc sigma.sigma sigma.it.goal
 let rc_of_glsigma sigma = rc_of_gc sigma.sigma sigma.it
 

@@ -53,8 +53,6 @@ type 'a clausenv = {
  * [hook] is the pointer to the current walking context, for
  *        integrating existential vars and metavars. *)
 
-type wc = named_context sigma (* for a better reading of the following *)
-
 val unify : constr -> tactic
 val unify_0 : 
   Reductionops.conv_pb -> wc -> constr -> constr 
@@ -99,16 +97,9 @@ val clenv_type_of : wc clausenv -> constr -> constr
 val clenv_unique_resolver : bool -> wc clausenv -> goal sigma -> wc clausenv
 
 val make_clenv_binding_apply :
-  named_context sigma ->
-  int ->
-  constr * constr ->
-  (bindOcc * types) list ->
-  named_context sigma clausenv
+  wc -> int -> constr * types -> constr substitution -> wc clausenv
 val make_clenv_binding :
-  named_context sigma ->
-  constr * constr ->
-  (bindOcc * types) list ->
-  named_context sigma clausenv
+  wc -> constr * types -> constr substitution -> wc clausenv
 
 (* Exported for program.ml only *)
 val clenv_add_sign : 

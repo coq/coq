@@ -82,8 +82,6 @@ type 'a clausenv = {
   env : clbinding Intmap.t;
   hook : 'a }
 
-type wc = named_context sigma
-
 let applyHead n c wc = 
   let rec apprec n c cty wc =
     if n = 0 then 
@@ -131,7 +129,6 @@ let unify_l2r x = List.rev x
 let unify_r2l x = x
 
 let sort_eqns = unify_r2l
-
 
 
 let unify_0 cv_pb wc m n =
@@ -186,7 +183,8 @@ let unify_0 cv_pb wc m n =
   if (not(occur_meta m)) & is_fconv cv_pb env sigma m n then 
     ([],[])
   else 
-    unirec_rec cv_pb ([],[]) m n
+    let (mc,ec) = unirec_rec cv_pb ([],[]) m n in
+    (sort_eqns mc, sort_eqns ec)
 
 
 (* Unification
@@ -802,7 +800,7 @@ let clenv_unify allow_K cv_pb ty1 ty2 clenv =
            with ex when catchable_exception ex -> 
              error "Cannot solve a second-order unification problem")
 
-     | _ -> clenv_typed_unify cv_pb ty1 ty2 clenv
+     | _ -> clenv_unify_0 cv_pb ty1 ty2 clenv
 
 
 (* [clenv_bchain mv clenv' clenv]
