@@ -51,6 +51,7 @@ type printable =
   | PrintHintGoal
   | PrintHintDbName of string
   | PrintHintDb
+  | PrintScopes
   | PrintScope of string
 
 type searchable =
@@ -160,6 +161,7 @@ type vernac_expr =
       scope_name option
   | VernacOpenScope of (locality_flag * scope_name)
   | VernacDelimiters of scope_name * string
+  | VernacBindScope of scope_name * class_rawexpr list
   | VernacArgumentsScope of reference * scope_name option list
   | VernacInfix of locality_flag *
       grammar_associativity * precedence * string * reference * bool *

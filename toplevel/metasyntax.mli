@@ -39,6 +39,7 @@ val translate_distfix : grammar_associativity -> string -> reference ->
   Gramext.g_assoc * string * constr_expr
 
 val add_delimiters : scope_name -> string -> unit
+val add_class_scope : scope_name -> Classops.cl_typ -> unit
 
 val add_notation : locality_flag -> constr_expr
   -> (string * syntax_modifier list) option

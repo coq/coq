@@ -50,6 +50,13 @@ type pcoq_hook = {
 let pcoq = ref None
 let set_pcoq_hook f = pcoq := Some f
 
+(* Misc *)
+
+let cl_of_qualid = function
+  | FunClass -> Classops.CL_FUN
+  | SortClass -> Classops.CL_SORT
+  | RefClass r -> Class.class_of_ref (Nametab.global r)
+
 (*******************)
 (* "Show" commands *)
 
@@ -299,6 +306,9 @@ let vernac_grammar = Metasyntax.add_grammar_obj
 let vernac_syntax_extension = Metasyntax.add_syntax_extension
 
 let vernac_delimiters = Metasyntax.add_delimiters
+
+let vernac_bind_scope sc cll = 
+  List.iter (fun cl -> Metasyntax.add_class_scope sc (cl_of_qualid cl)) cll
 
 let vernac_open_scope = Symbols.open_scope
 
@@ -584,11 +594,6 @@ let vernac_import export qidl =
 
 let vernac_canonical locqid =
   Recordobj.objdef_declare (Nametab.global locqid)
-
-let cl_of_qualid = function
-  | FunClass -> Classops.CL_FUN
-  | SortClass -> Classops.CL_SORT
-  | RefClass r -> Class.class_of_ref (Nametab.global r)
 
 let vernac_coercion stre ref qids qidt =
   let target = cl_of_qualid qidt in
@@ -904,7 +909,10 @@ let vernac_print = function
   | PrintHintGoal -> Auto.print_applicable_hint ()
   | PrintHintDbName s -> Auto.print_hint_db_by_name s
   | PrintHintDb -> Auto.print_searchtable ()
-  | PrintScope s -> pp (Symbols.pr_scope (Constrextern.without_symbols pr_rawterm) s)
+  | PrintScopes ->
+      pp (Symbols.pr_scopes (Constrextern.without_symbols pr_rawterm))
+  | PrintScope s ->
+      pp (Symbols.pr_scope (Constrextern.without_symbols pr_rawterm) s)
 
 let global_module r =
   let (loc,qid) = qualid_of_reference r in
@@ -1138,6 +1146,7 @@ let interp c = match c with
   | VernacGrammar (univ,al) -> vernac_grammar univ al
   | VernacSyntaxExtension (lcl,sl,l8) -> vernac_syntax_extension lcl sl l8
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
+  | VernacBindScope (sc,rl) -> vernac_bind_scope sc rl
   | VernacOpenScope sc -> vernac_open_scope sc
   | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope qid scl
   | VernacInfix (local,assoc,n,inf,qid,b,mv8,sc) ->

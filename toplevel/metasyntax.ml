@@ -922,23 +922,39 @@ let add_infix local assoc n inf pr onlyparse mv8 sc =
         Some(split ("x "^quote s8^" y"),(a8,n8,[],false)) in
   add_notation_in_scope local df a (assoc,n,[],onlyparse) mv8 sc (split df)
 
-(* Delimiters *)
-let load_delimiters _ (_,(scope,dlm)) =
+(* Delimiters and classes bound to scopes *)
+type scope_command = ScopeDelim of string | ScopeClasses of Classops.cl_typ
+
+let load_scope_command _ (_,(scope,dlm)) =
   Symbols.declare_scope scope
 
-let open_delimiters i (_,(scope,dlm)) =
-  if i=1 then Symbols.declare_delimiters scope dlm
+let open_scope_command i (_,(scope,o)) =
+  if i=1 then
+    match o with
+    | ScopeDelim dlm -> Symbols.declare_delimiters scope dlm
+    | ScopeClasses cl -> Symbols.declare_class_scope scope cl
 
-let cache_delimiters o =
-  load_delimiters 1 o;
-  open_delimiters 1 o
+let cache_scope_command o =
+  load_scope_command 1 o;
+  open_scope_command 1 o
 
-let (inDelim,outDelim) = 
+let subst_scope_command (_,subst,(scope,o as x)) = match o with
+  | ScopeClasses cl -> 
+      let cl' = Classops.subst_cl_typ subst cl in if cl'==cl then x else
+      scope, ScopeClasses cl'
+  | _ -> x
+
+let (inScopeCommand,outScopeCommand) = 
   declare_object {(default_object "DELIMITERS") with
-      cache_function = cache_delimiters;
-      open_function = open_delimiters;
-      load_function = load_delimiters;
+      cache_function = cache_scope_command;
+      open_function = open_scope_command;
+      load_function = load_scope_command;
+      subst_function = subst_scope_command;
+      classify_function = (fun (_,obj) -> Substitute obj);
       export_function = (fun x -> Some x) }
 
 let add_delimiters scope key =
-  Lib.add_anonymous_leaf (inDelim(scope,key))
+  Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeDelim key))
+
+let add_class_scope scope cl = 
+  Lib.add_anonymous_leaf (inScopeCommand(scope,ScopeClasses cl))

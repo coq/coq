@@ -1471,6 +1471,7 @@ let xlate_vernac =
 	| PrintTables -> xlate_error "TODO: Print Tables"
         | PrintModuleType _ -> xlate_error "TODO: Print Module Type"
         | PrintModule _ -> xlate_error "TODO: Print Module"
+        | PrintScopes -> xlate_error "TODO: Print Scopes"
         | PrintScope _ -> xlate_error "TODO: Print Scope")
   | VernacBeginSection id ->
       CT_coerce_SECTION_BEGIN_to_COMMAND (CT_section (xlate_ident id))
@@ -1617,6 +1618,8 @@ let xlate_vernac =
    | VernacArgumentsScope _ -> xlate_error "TODO: Arguments Scope"
 
    | VernacDelimiters _ -> xlate_error "TODO: Delimiters"
+
+   | VernacBindScope _ -> xlate_error "TODO: Bind Scope"
 
    | VernacNotation _ -> xlate_error "TODO: Notation"
 
