@@ -8,18 +8,18 @@ Require Export Specif.
 
 Grammar command command1 :=
   sig [ "{" lcommand($lc) ":" lcommand($c1) "|" lcommand($c2) "}" ]
-       -> [<<(sig $c1 [$lc:$c1]$c2)>>]
+       -> [<<(sig $c1 [$lc : $c1]$c2)>>]
 
 | sig2 [ "{" lcommand($lc) ":" lcommand($c1)
            "|" lcommand($c2) "&" lcommand($c3) "}" ]
-       -> [<<(sig2 $c1 [$lc:$c1]$c2 [$lc:$c1]$c3)>>]
+       -> [<<(sig2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3)>>]
 
 | sigS [ "{" lcommand($lc) ":" lcommand($c1) "&" lcommand($c2) "}" ]
-       -> [<<(sigS $c1 [$lc:$c1]$c2)>>]
+       -> [<<(sigS $c1 [$lc : $c1]$c2)>>]
 
 | sigS2 [ "{" lcommand($lc) ":" lcommand($c1)
              "&" lcommand($c2) "&" lcommand($c3) "}" ]
-       -> [<<(sigS2 $c1 [$lc:$c1]$c2 [$lc:$c1]$c3)>>]
+       -> [<<(sigS2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3)>>]
 
 | squash [ "{" lcommand($lc) "}" ] -> [(SQUASH $lc)].
 
