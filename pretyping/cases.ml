@@ -338,7 +338,9 @@ let occur_rawconstr id =
   let rec occur = function
     | RVar (loc,id') -> id = id'
     | RApp (loc,f,args) -> (occur f) or (List.exists occur args)
-    | RBinder (loc,bk,na,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
+    | RLambda (loc,na,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
+    | RProd (loc,na,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
+    | RLetIn (loc,na,b,c) -> (occur b) or ((na <> Name id) & (occur c))
     | RCases (loc,prinfo,tyopt,tml,pl) ->
 	(occur_option tyopt) or (List.exists occur tml)
 	or (List.exists occur_pattern pl)
@@ -543,8 +545,8 @@ let prepare_unif_pb typ cs =
     if noccur_between_without_evar 1 n p then lift (-n) p
     else (* TODO4-1 *)
       error "Inference of annotation not yet implemented in this case" in
-  let ci = applist
-	     (mkMutConstruct cs.cs_cstr, cs.cs_params@(rel_list (-n) n)) in
+  let args = extended_rel_list (-n) cs.cs_args in
+  let ci = applist (mkMutConstruct cs.cs_cstr, cs.cs_params@args) in
 
   (* This is the problem: finding P s.t. cs_args |- (P realargs ci) = p' *)
   (Array.map (lift (-n)) cs.cs_concl_realargs, ci, p')
@@ -821,7 +823,7 @@ let build_branch pb defaults eqns const_info =
     applist
       (mkMutConstruct const_info.cs_cstr, 
        (List.map (lift const_info.cs_nargs) const_info.cs_params)
-       @(rel_list 0 const_info.cs_nargs)) in
+       @(extended_rel_list 0 const_info.cs_args)) in
 
   (* We replace [(mkRel 1)] by its expansion [ci] *)
   let updated_old_tomatch =
@@ -913,8 +915,7 @@ let prepare_initial_alias lpat tomatchl rhs =
        match alias_of_pat pat with
 	 | Anonymous -> (pat::stripped_pats, rhs)
 	 | Name _ as na ->
-	     (unalias_pat pat::stripped_pats,
-	      RBinder (dummy_loc, BLetIn, na, tm, rhs)))
+	     (unalias_pat pat::stripped_pats, RLetIn (dummy_loc, na, tm, rhs)))
     lpat tomatchl ([], rhs)
 
 (* builds the matrix of equations testing that each eqn has n patterns
@@ -961,9 +962,8 @@ exception NotCoercible
 
 let inh_coerce_to_ind isevars env ty tyi =
   let (ntys,_) =
-    splay_prod env !isevars
-      (body_of_type (mis_nf_arity (Global.lookup_mind_specif tyi))) in
-  let (_,evarl) =
+    splay_prod env !isevars (mis_arity (Global.lookup_mind_specif tyi)) in
+   let (_,evarl) =
     List.fold_right
       (fun (na,ty) (env,evl) ->
 	 (push_rel_assum (na,ty) env,
@@ -1066,20 +1066,6 @@ let build_initial_predicate env sigma isdep pred tomatchl =
 	      PrLetIn ((realargs,cur),buildrec (n+nrealargs+1) predccl ltm)
   in buildrec 0 pred tomatchl
 
-let rec eta_expand0 env sigma n c t =
-  match kind_of_term (whd_betadeltaiota env sigma t) with
-    | IsProd (na,a,b) -> mkLambda (na,a,eta_expand0 env sigma (n+1) c b)
-    | _ -> applist (lift n c, rel_list 0 n)
-
-
-let rec eta_expand env sigma c t =
-  let c' = whd_betadeltaiota env sigma c in 
-  let t' = whd_betadeltaiota env sigma t in
-  match kind_of_term c', kind_of_term t' with
-   | IsLambda (na,ta,cb), IsProd (_,_,tb) ->
-       mkLambda (na,ta,eta_expand env sigma cb tb)
-   | _, _ -> eta_expand0 env sigma 0 c' t'
-
 (* determines wether the multiple case is dependent or not. For that
  * the predicate given by the user is eta-expanded. If the result
  * of expansion is pred, then :
@@ -1090,26 +1076,7 @@ let rec eta_expand env sigma c t =
  *        then case_dependent=true
  *        else error! (can not treat mixed dependent and non dependent case
  *)
-(*
-let case_dependent env sigma loc predj tomatchs =
-  let nb_dep_ity = function
-      (_,IsInd (_,IndType(_,realargs))) -> List.length realargs
-    | (c,NotInd t) ->
-	errorlabstrm "case_dependent" (error_case_not_inductive CCI env c t)
-  in
-  let etapred = eta_expand env sigma predj.uj_val (body_of_type predj.uj_type) in
-  let n = nb_lam etapred in
-  let _,sort = splay_prod env sigma (body_of_type predj.uj_type) in
-  let ndepv = List.map nb_dep_ity tomatchs in
-  let sum = List.fold_right (fun i j -> i+j)  ndepv 0 in
-  let depsum = sum + List.length tomatchs in
-  if n = sum then
-    (etapred,false)
-  else if n = depsum then
-    (etapred,true)
-  else
-    error_wrong_predicate_arity_loc loc CCI env etapred sum depsum
-*)
+
 let prepare_predicate typing_fun isevars env tomatchs = function
   | None -> None
   | Some pred ->

@@ -37,7 +37,9 @@ type rawconstr =
   | REvar of loc * existential_key
   | RMeta of loc * int
   | RApp of loc * rawconstr * rawconstr list
-  | RBinder of loc * binder_kind * name * rawconstr * rawconstr
+  | RLambda of loc * name * rawconstr * rawconstr
+  | RProd of loc * name * rawconstr * rawconstr
+  | RLetIn of loc * name * rawconstr * rawconstr
   | RCases of loc * Term.case_style * rawconstr option * rawconstr list * 
       (identifier list * cases_pattern list * rawconstr) list
   | ROldCase of loc * bool * rawconstr option * rawconstr * 
@@ -68,7 +70,9 @@ let loc_of_rawconstr = function
   | REvar (loc,_) -> loc
   | RMeta (loc,_) -> loc
   | RApp (loc,_,_) -> loc
-  | RBinder (loc,_,_,_,_) -> loc
+  | RLambda (loc,_,_,_) -> loc
+  | RProd (loc,_,_,_) -> loc
+  | RLetIn (loc,_,_,_) -> loc
   | RCases (loc,_,_,_,_) -> loc
   | ROldCase (loc,_,_,_,_) -> loc
   | RRec (loc,_,_,_,_) -> loc
@@ -83,7 +87,9 @@ let set_loc_of_rawconstr loc = function
   | REvar (_,a)      -> REvar (loc,a)
   | RMeta (_,a)     -> RMeta (loc,a) 
   | RApp (_,a,b)    -> RApp (loc,a,b)
-  | RBinder (_,a,b,c,d) -> RBinder (loc,a,b,c,d)
+  | RLambda (_,a,b,c) -> RLambda (loc,a,b,c)
+  | RProd (_,a,b,c)   -> RProd (loc,a,b,c)
+  | RLetIn (_,a,b,c)  -> RLetIn (loc,a,b,c)
   | RCases (_,a,b,c,d) -> RCases (loc,a,b,c,d) 
   | ROldCase (_,a,b,c,d) -> ROldCase (loc,a,b,c,d) 
   | RRec (_,a,b,c,d) -> RRec (loc,a,b,c,d) 

@@ -35,7 +35,9 @@ type rawconstr =
   | REvar of loc * existential_key
   | RMeta of loc * int
   | RApp of loc * rawconstr * rawconstr list
-  | RBinder of loc * binder_kind * name * rawconstr * rawconstr
+  | RLambda of loc * name * rawconstr * rawconstr
+  | RProd of loc * name * rawconstr * rawconstr
+  | RLetIn of loc * name * rawconstr * rawconstr
   | RCases of loc * Term.case_style * rawconstr option * rawconstr list * 
       (identifier list * cases_pattern list * rawconstr) list
   | ROldCase of loc * bool * rawconstr option * rawconstr * 

@@ -394,6 +394,8 @@ and detype_binder bk avoid env na ty c =
       match concrete_name avoid env na c with
 	| (Some id,l') -> (Name id), l'
 	| (None,l')    -> Anonymous, l' in
-  RBinder (dummy_loc,bk,
-	   na',detype [] env ty,
-	   detype avoid' (add_name na' env) c)
+  let r =  detype avoid' (add_name na' env) c in
+  match bk with
+    | BProd -> RProd (dummy_loc, na',detype [] env ty, r)
+    | BLambda -> RLambda (dummy_loc, na',detype [] env ty, r)
+    | BLetIn -> RLetIn (dummy_loc, na',detype [] env ty, r)

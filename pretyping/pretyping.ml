@@ -62,23 +62,27 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
       it_mkLambda_or_LetIn_name env
 	(lambda_create env
 	   (applist (mI,List.append (List.map (lift (nar+1)) params)
-                       (rel_list 0 nar)),
+                       (extended_rel_list 0 lnames)),
             mkMutCase (ci, lift (nar+2) p, mkRel 1, branches)))
         (lift_rel_context 1 lnames) 
     in
     if noccurn 1 deffix then 
       whd_beta (applist (pop deffix,realargs@[c]))
     else
+      let ind = applist (mI,(List.append 
+			     (List.map (lift nar) params)
+			     (extended_rel_list 0 lnames))) in
       let typPfix = 
 	it_mkProd_or_LetIn_name env
-	  (prod_create env
-	     (applist (mI,(List.append 
-			     (List.map (lift nar) params)
-			     (rel_list 0 nar))),
-	      (if dep then 
-		 whd_beta (applist (lift (nar+1) p, rel_list 0 (nar+1)))
-	       else 
-		 whd_beta (applist (lift (nar+1) p, rel_list 1 nar)))))
+	  (prod_create env 
+	     (ind,
+	      (if dep then
+		 let ext_lnames = (Anonymous,None,ind)::lnames in
+		 let args = extended_rel_list 0 ext_lnames in
+		 whd_beta (applist (lift (nar+1) p, args))
+	       else
+		 let args = extended_rel_list 1 lnames in
+		 whd_beta (applist (lift (nar+1) p, args)))))
           lnames 
       in
       let fix = mkFix (([|nar|],0),
@@ -318,7 +322,7 @@ let rec pretype tycon env isevars lvar lmeta = function
       *)
       inh_conv_coerce_to_tycon loc env isevars resj tycon
 
-  | RBinder(loc,BLambda,name,c1,c2)      ->
+  | RLambda(loc,name,c1,c2)      ->
       let (dom,rng) = split_tycon loc env isevars tycon in
       let dom_valcon = valcon_of_tycon dom in
       let j = pretype_type dom_valcon env isevars lvar lmeta c1 in
@@ -327,7 +331,7 @@ let rec pretype tycon env isevars lvar lmeta = function
       in 
       fst (abs_rel env !isevars name j.utj_val j')
 
-  | RBinder(loc,BProd,name,c1,c2)        ->
+  | RProd(loc,name,c1,c2)        ->
       let j = pretype_type empty_valcon env isevars lvar lmeta c1 in
       let var = (name,j.utj_val) in
       let env' = push_rel_assum var env in
@@ -337,7 +341,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 	with TypeError _ as e -> Stdpp.raise_with_loc loc e in
       inh_conv_coerce_to_tycon loc env isevars resj tycon
 	
-  | RBinder(loc,BLetIn,name,c1,c2)      ->
+  | RLetIn(loc,name,c1,c2)      ->
       let j = pretype empty_tycon env isevars lvar lmeta c1 in
       let var = (name,j.uj_val,j.uj_type) in
       let j' = pretype tycon (push_rel_def var env) isevars lvar lmeta c2 in

@@ -15,7 +15,9 @@ type constr_pattern =
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
   | PSoApp of int * constr_pattern list
-  | PBinder of binder_kind * name * constr_pattern * constr_pattern
+  | PLambda of name * constr_pattern * constr_pattern
+  | PProd of name * constr_pattern * constr_pattern
+  | PLetIn of name * constr_pattern * constr_pattern
   | PSort of rawsort
   | PMeta of int option
   | PCase of constr_pattern option * constr_pattern * constr_pattern array
@@ -25,7 +27,9 @@ type constr_pattern =
 let rec occur_meta_pattern = function
   | PApp (f,args) ->
       (occur_meta_pattern f) or (array_exists occur_meta_pattern args)
-  | PBinder(_,na,t,c)  -> (occur_meta_pattern t) or (occur_meta_pattern c)
+  | PLambda (na,t,c)  -> (occur_meta_pattern t) or (occur_meta_pattern c)
+  | PProd (na,t,c)  -> (occur_meta_pattern t) or (occur_meta_pattern c)
+  | PLetIn (na,t,c)  -> (occur_meta_pattern t) or (occur_meta_pattern c)
   | PCase(None,c,br)   ->
       (occur_meta_pattern c) or (array_exists occur_meta_pattern br)
   | PCase(Some p,c,br) ->
@@ -54,15 +58,16 @@ let label_of_ref = function
 
 let rec head_pattern_bound t =
   match t with
-    | PBinder ((BProd|BLetIn),_,_,b) -> head_pattern_bound b 
-    | PApp (c,args)         -> head_pattern_bound c
-    | PCase (p,c,br)        -> head_pattern_bound c
-    | PRef r                -> label_of_ref r
-    | PVar id               -> VarNode id
+    | PProd (_,_,b)  -> head_pattern_bound b 
+    | PLetIn (_,_,b) -> head_pattern_bound b 
+    | PApp (c,args)  -> head_pattern_bound c
+    | PCase (p,c,br) -> head_pattern_bound c
+    | PRef r         -> label_of_ref r
+    | PVar id        -> VarNode id
     | PEvar _ | PRel _ | PMeta _ | PSoApp _  | PSort _ | PFix _
 	-> raise BoundPattern
     (* Perhaps they were arguments, but we don't beta-reduce *)
-    | PBinder(BLambda,_,_,_) -> raise BoundPattern
+    | PLambda _ -> raise BoundPattern
     | PCoFix _ -> anomaly "head_pattern_bound: not a type"
 
 let head_of_constr_reference c = match kind_of_term c with
@@ -165,13 +170,13 @@ let matches_core convert pat c =
         (try array_fold_left2 (sorec stk) (sorec stk sigma c1 c2) arg1 arg2
          with Invalid_argument _ -> raise PatternMatchingFailure)
 
-      | PBinder(BProd,na1,c1,d1), IsProd(na2,c2,d2) ->
+      | PProd (na1,c1,d1), IsProd(na2,c2,d2) ->
 	  sorec ((na2,c2)::stk) (sorec stk sigma c1 c2) d1 d2
 
-      | PBinder(BLambda,na1,c1,d1), IsLambda(na2,c2,d2) ->
+      | PLambda (na1,c1,d1), IsLambda(na2,c2,d2) ->
 	  sorec ((na2,c2)::stk) (sorec stk sigma c1 c2) d1 d2
 
-      | PBinder(BLetIn,na1,c1,d1), IsLetIn(na2,c2,t2,d2) ->
+      | PLetIn (na1,c1,d1), IsLetIn(na2,c2,t2,d2) ->
 	  sorec ((na2,t2)::stk) (sorec stk sigma c1 c2) d1 d2
 
       | PRef (ConstRef _ as ref), _ when convert <> None ->
@@ -299,20 +304,13 @@ let rec pattern_of_constr t =
     | IsSort (Prop c) -> PSort (RProp c)
     | IsSort (Type _) -> PSort RType
     | IsCast (c,_)      -> pattern_of_constr c
-    | IsLetIn (na,c,_,b)   ->
-	PBinder (BLetIn,na,pattern_of_constr c,pattern_of_constr b)
-    | IsProd (na,c,b)   ->
-	PBinder (BProd,na,pattern_of_constr c,pattern_of_constr b)
-    | IsLambda (na,c,b) ->
-	PBinder (BLambda,na,pattern_of_constr c,pattern_of_constr b)
-    | IsApp (f,args)   ->
-	PApp (pattern_of_constr f, Array.map pattern_of_constr args)
-    | IsConst (sp,ctxt)         ->
-	pattern_of_ref (ConstRef sp) ctxt
-    | IsMutInd (sp,ctxt)        ->
-	pattern_of_ref (IndRef sp) ctxt
-    | IsMutConstruct (sp,ctxt) ->
-	pattern_of_ref (ConstructRef sp) ctxt
+    | IsLetIn (na,c,_,b) -> PLetIn (na,pattern_of_constr c,pattern_of_constr b)
+    | IsProd (na,c,b)   -> PProd (na,pattern_of_constr c,pattern_of_constr b)
+    | IsLambda (na,c,b) -> PLambda (na,pattern_of_constr c,pattern_of_constr b)
+    | IsApp (f,a) -> PApp (pattern_of_constr f,Array.map pattern_of_constr a)
+    | IsConst (sp,ctxt)         -> pattern_of_ref (ConstRef sp) ctxt
+    | IsMutInd (sp,ctxt)        -> pattern_of_ref (IndRef sp) ctxt
+    | IsMutConstruct (sp,ctxt) -> pattern_of_ref (ConstructRef sp) ctxt
     | IsEvar (n,ctxt) ->
 	if ctxt = [||] then PEvar n
 	else PApp (PEvar n, Array.map pattern_of_constr ctxt)
