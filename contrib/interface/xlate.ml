@@ -477,11 +477,11 @@ let xlate_hyp_location =
  function
   | AI (_,id), nums, (InHypTypeOnly,_) ->
       CT_intype(xlate_ident id, nums_to_int_list nums)
-  | AI (_,id), _, (InHyp,_) when !Options.v7 ->
+  | AI (_,id), nums, (InHypValueOnly,_) ->
+      CT_invalue(xlate_ident id, nums_to_int_list nums)
+  | AI (_,id), _, (InHyp,_) ->
       CT_coerce_UNFOLD_to_HYP_LOCATION 
 	(CT_coerce_ID_to_UNFOLD (xlate_ident id))
-  | AI (_,id), _, ((InHypValueOnly|InHyp),_) ->
-      xlate_error "TODO in v8: InHyp now means InHyp if variable but InHypValueOnly if a local definition"
   | MetaId _, _,_ -> 
       xlate_error "MetaId not supported in xlate_hyp_location (should occur only in quotations)"
 
@@ -601,20 +601,16 @@ let get_flag r =
   (* Rem: EVAR flag obsolète *)
   conv_flags, red_ids
 
-let ct_conj_pattern x y = CT_conj_pattern(x, y);;
-
-let ct_disj_pattern x y = CT_disj_pattern(x,y);;
-
-let rec xlate_intro_pattern b =
+let rec xlate_intro_pattern =
  function
   | IntroOrAndPattern [] -> assert false
   | IntroOrAndPattern (fp::ll) ->
-      (if b then ct_disj_pattern else ct_conj_pattern)
-      (CT_intro_patt_list(List.map (xlate_intro_pattern (not b)) fp))
-      (List.map 
-	 (fun l ->
-	    CT_intro_patt_list(List.map (xlate_intro_pattern (not b)) l))
-	 ll)
+      CT_disj_pattern
+      	(CT_intro_patt_list(List.map xlate_intro_pattern fp),
+	 List.map 
+	   (fun l ->
+	      CT_intro_patt_list(List.map xlate_intro_pattern l))
+	   ll)
   | IntroWildcard -> CT_coerce_ID_to_INTRO_PATT(CT_ident "_" )
   | IntroIdentifier c -> CT_coerce_ID_to_INTRO_PATT(xlate_ident c)
 
@@ -679,14 +675,14 @@ let xlate_lettac_clauses = function
 	  | None -> CT_unfold_list res;;
 
 let xlate_intro_patt_list = function
-    [] -> assert false
+    [] -> CT_coerce_ID_OPT_to_INTRO_PATT_OPT ctv_ID_OPT_NONE
   | (fp::ll) ->
       CT_coerce_INTRO_PATT_to_INTRO_PATT_OPT
 	(CT_disj_pattern
-    	   (CT_intro_patt_list(List.map (xlate_intro_pattern false) fp),
+    	   (CT_intro_patt_list(List.map xlate_intro_pattern fp),
 	    List.map
 	      (fun l -> 
-		 CT_intro_patt_list(List.map (xlate_intro_pattern false) l))
+		 CT_intro_patt_list(List.map xlate_intro_pattern l))
 	      ll));;
 
 let rec (xlate_tacarg:raw_tactic_arg -> ct_TACTIC_ARG) =
@@ -933,7 +929,7 @@ and xlate_tac =
     | TacMove (false, id1, id2) -> xlate_error "Non dep Move is only internal"
     | TacIntroPattern patt_list ->
 	CT_intros
-	  (CT_intro_patt_list (List.map (xlate_intro_pattern true) patt_list))
+	  (CT_intro_patt_list (List.map xlate_intro_pattern patt_list))
     | TacIntroMove (Some id, None) ->
      CT_intros (CT_intro_patt_list[CT_coerce_ID_to_INTRO_PATT(xlate_ident id)])
     | TacIntroMove (None, None) ->  CT_intro (CT_coerce_NONE_to_ID_OPT CT_none)
@@ -1013,7 +1009,7 @@ and xlate_tac =
 	CT_auto_with(xlate_int_opt nopt,
              CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STAR(
              CT_id_ne_list(CT_ident id1, List.map (fun x -> CT_ident x) idl)))
-    | TacExtend (_,"EAuto", [nopt; popt; idl]) ->
+    | TacExtend (_,"eauto", [nopt; popt; idl]) ->
 	let first_n =
 	  match out_gen (wit_opt rawwit_int_or_var) nopt with
 	    | Some (ArgVar(_, s)) -> xlate_id_to_id_or_int_opt s
@@ -1036,12 +1032,12 @@ and xlate_tac =
 			      (CT_id_ne_list
 				 (CT_ident a,
 				  List.map (fun x -> CT_ident x) l))))
-    | TacExtend (_,"Prolog", [cl; n]) ->
+    | TacExtend (_,"prolog", [cl; n]) ->
       let cl = List.map xlate_formula (out_gen (wit_list0 rawwit_constr) cl) in
       (match out_gen wit_int_or_var n with
 	| ArgVar _ -> xlate_error ""
 	| ArgArg n -> CT_prolog (CT_formula_list cl, CT_int  n))
-    | TacExtend (_,"EApply", [cbindl]) ->
+    | TacExtend (_,"eapply", [cbindl]) ->
      let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
      let c = xlate_formula c and bindl = xlate_bindings bindl in
      CT_eapply (c, bindl)
@@ -1136,11 +1132,11 @@ and xlate_tac =
 	(CT_coerce_TACTIC_COM_to_TACTIC_OPT(xlate_tactic tac))
     | TacAnyConstructor(None) -> 
 	CT_any_constructor(CT_coerce_NONE_to_TACTIC_OPT CT_none)
-    | TacExtend(_, "Ring", [arg]) -> 
+    | TacExtend(_, "ring", [args]) -> 
 	CT_ring
 	  (CT_formula_list
 	     (List.map xlate_formula
-		(out_gen (wit_list0 rawwit_constr) arg)))
+		(out_gen (wit_list0 rawwit_constr) args)))
     | TacExtend (_,id, l) ->
      CT_user_tac (CT_ident id, CT_targ_list (List.map coerce_genarg_to_TARG l))
     | TacAlias _ -> xlate_error "Alias not supported"
@@ -1399,9 +1395,9 @@ let cvt_vernac_binder = function
            List.map (fun id -> xlate_ident_opt (Some (snd id))) idl),
           xlate_formula c in
 	if b then
-	  CT_binder(l,t)
-	else
 	  CT_binder_coercion(l,t)
+	else
+	  CT_binder(l,t)
   | _, _ -> xlate_error "binder with no left part, rejected";;
 
 let cvt_vernac_binders = function

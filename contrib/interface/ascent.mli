@@ -365,7 +365,6 @@ and ct_INT =
     CT_int of int
 and ct_INTRO_PATT =
     CT_coerce_ID_to_INTRO_PATT of ct_ID
-  | CT_conj_pattern of ct_INTRO_PATT_LIST * ct_INTRO_PATT_LIST list
   | CT_disj_pattern of ct_INTRO_PATT_LIST * ct_INTRO_PATT_LIST list
 and ct_INTRO_PATT_LIST =
     CT_intro_patt_list of ct_INTRO_PATT list

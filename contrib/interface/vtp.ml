@@ -917,10 +917,6 @@ and fINT = function
    (f_atom_int x);
    print_string "\n"and fINTRO_PATT = function
 | CT_coerce_ID_to_INTRO_PATT x -> fID x
-| CT_conj_pattern(x,l) ->
-   fINTRO_PATT_LIST x;
-   (List.iter fINTRO_PATT_LIST l);
-   fNODE "conj_pattern" (1 + (List.length l))
 | CT_disj_pattern(x,l) ->
    fINTRO_PATT_LIST x;
    (List.iter fINTRO_PATT_LIST l);
