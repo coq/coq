@@ -1548,6 +1548,7 @@ let symmetry gl =
 	    (apply (pf_parse_const gl ("sym_"^hdcncls)) gl)
           with  _ ->
             let symc = match args with 
+	      | [t1; c1; t2; c2] -> mkApp (hdcncl, [| t2; c2; t1; c1 |])
               | [typ;c1;c2] -> mkApp (hdcncl, [| typ; c2; c1 |])
               | [c1;c2]     -> mkApp (hdcncl, [| c2; c1 |])
 	      | _ -> assert false 
@@ -1583,15 +1584,17 @@ let transitivity t gl =
 	  try 
 	    apply_list [(pf_parse_const gl ("trans_"^hdcncls));t] gl 
           with  _ -> 
-            let eq1 = match args with 
-              | [typ;c1;c2] -> mkApp (hdcncl, [| typ; c1; t |])
-	      | [c1;c2]     -> mkApp (hdcncl, [| c1; t|])
+            let eq1, eq2 = match args with 
+	      | [typ1;c1;typ2;c2] -> let typt = pf_type_of gl t in
+                  ( mkApp(hdcncl, [| typ1; c1; typt ;t |]),
+		    mkApp(hdcncl, [| typt; t; typ2; c2 |]) )
+              | [typ;c1;c2] ->
+		  ( mkApp (hdcncl, [| typ; c1; t |]),
+		    mkApp (hdcncl, [| typ; t; c2 |]) )
+	      | [c1;c2]     ->
+		  ( mkApp (hdcncl, [| c1; t|]),
+		    mkApp (hdcncl, [| t; c2 |]) )
 	      | _ -> assert false 
-	    in
-            let eq2 = match args with 
-              | [typ;c1;c2] -> mkApp (hdcncl, [| typ; t; c2 |])
-	      | [c1;c2]     -> mkApp (hdcncl, [| t; c2 |])
-	      |  _ -> assert false 
 	    in
             tclTHENFIRST (cut eq2)
 	      (tclTHENFIRST (cut eq1)

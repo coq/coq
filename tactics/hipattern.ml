@@ -136,6 +136,12 @@ let coq_refl_rel1_pattern =
 let coq_refl_rel2_pattern =
   PProd (x, PMeta None, PApp (PMeta None, [|PRel 1; PRel 1|]))
 
+let coq_refl_reljm_pattern =
+PProd
+    (name_A, PMeta None,
+    PProd (x, PRel 1, PApp (PMeta None, [|PRel 2; PRel 1; PRel 2;PRel 1|])))
+  
+
 let match_with_equation t =
   let (hdapp,args) = decompose_app t in
   match (kind_of_term hdapp) with
@@ -145,7 +151,8 @@ let match_with_equation t =
         let nconstr = Array.length mip.mind_consnames in
 	if nconstr = 1 &&
            (is_matching coq_refl_rel1_pattern constr_types.(0) ||
-            is_matching coq_refl_rel1_pattern constr_types.(0)) 
+            is_matching coq_refl_rel2_pattern constr_types.(0) ||
+            is_matching coq_refl_reljm_pattern constr_types.(0)) 
         then 
 	  Some (hdapp,args)
         else 
