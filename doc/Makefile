@@ -28,5 +28,5 @@ clean::
 	latex $< && latex $<
 
 .dvi.ps:
-	dvips $< -o
+	dvips $< -o $@
 
