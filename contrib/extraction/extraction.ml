@@ -815,7 +815,7 @@ and extract_inductive_declaration sp =
 		 :: acc )
 	[] mib.mind_packets 
     in
-    Dtype (List.rev l)
+    Dtype (List.rev l, not (mind_type_finite mib 0))
 
 (*s Extraction of a global reference i.e. a constant or an inductive. *)
 

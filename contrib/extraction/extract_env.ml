@@ -78,7 +78,7 @@ and visit_inductive eenv inds =
   List.iter visit_ind inds
 
 and visit_decl eenv = function
-  | Dtype inds ->
+  | Dtype (inds,_) ->
       visit_inductive eenv inds
   | Dabbrev (_,_,t) ->
       visit_type eenv t
@@ -191,9 +191,11 @@ let _ =
        | VARG_VARGLIST o :: VARG_STRING f :: vl ->
 	   let refs = refs_of_vargl vl in
 	   let prm = interp_options refs false o in
-	   (fun () -> Ocaml.extract_to_file f prm (decl_of_refs refs))
+	   (fun () -> 
+	      let decls = decl_of_refs refs in 
+	      let decls = optimize prm decls in
+	      Ocaml.extract_to_file f prm decls)
        | _ -> assert false)
-
 (*s Extraction of a module. The vernacular command is \verb!Extraction Module!
     [M]. We build the environment to extract by traversing the segment of
     module [M]. We just keep constants and inductives, and we remove
@@ -209,12 +211,13 @@ let extract_module m =
 	   | _ -> failwith "caught")
     | _ -> failwith "caught"
   in
-  let rl = Util.map_succeed get_reference seg in
-  let rl = 
-    let mlset = ml_extractions () in 
-    List.filter (fun r -> not (Refset.mem r mlset)) rl 
-  in
-  List.map extract_declaration rl
+  Util.map_succeed get_reference seg
+
+let decl_mem rl = function 
+  | Dglob (r,_) -> List.mem r rl 
+  | Dabbrev (r,_,_) -> List.mem r rl 
+  | Dtype((_,r,_)::_, _) -> List.mem r rl
+  | Dtype([],_) -> false
 
 let _ = 
   vinterp_add "ExtractionModule"
@@ -225,5 +228,8 @@ let _ =
 	      Ocaml.current_module := m;
 	      let f = (String.uncapitalize m) ^ ".ml" in
 	      let prm = interp_options [] true o in
-	      Ocaml.extract_to_file f prm (extract_module m))
+	      let rl = extract_module m in 
+	      let decls = optimize prm (decl_of_refs rl) in
+	      let decls = List.filter (decl_mem rl) decls in
+	      Ocaml.extract_to_file f prm decls)
        | _ -> assert false)

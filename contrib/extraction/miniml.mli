@@ -49,7 +49,7 @@ type ml_ast =
 (*s ML declarations. *)
 
 type ml_decl = 
-  | Dtype   of ml_ind list
+  | Dtype   of ml_ind list * bool
   | Dabbrev of global_reference * identifier list * ml_type
   | Dglob   of global_reference * ml_ast
 

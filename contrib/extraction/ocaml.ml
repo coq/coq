@@ -16,6 +16,7 @@ open Names
 open Term
 open Miniml
 open Mlutil
+open Options
 
 (*s Some utility functions. *)
 
@@ -332,10 +333,19 @@ let pp_inductive il =
 
 (*s Pretty-printing of a declaration. *)
 
+let warning_coinductive r = 
+  wARN (hOV 0 [< 'sTR "You are trying to extract the CoInductive definition"; 'sPC;
+		 Printer.pr_global r; 'sPC; 'sTR "in Ocaml."; 'sPC; 
+		 'sTR "This is in general NOT a good idea,"; 'sPC; 
+		 'sTR "since Ocaml is not lazy."; 'sPC;
+		 'sTR "You should consider using Haskell instead." >])
+
+
 let pp_decl = function
-  | Dtype [] -> 
+  | Dtype ([], _) -> 
       [< >]
-  | Dtype i -> 
+  | Dtype ((_,r,_)::_ as i, cofix) -> 
+      if cofix && P.cofix_warning then if_verbose warning_coinductive r; 
       hOV 0 (pp_inductive i)
   | Dabbrev (r, l, t) ->
       hOV 0 [< 'sTR "type"; 'sPC; pp_parameters l; 
@@ -447,7 +457,6 @@ let ocaml_preamble () =
      'sTR "let arity = ()"; 'fNL; 'fNL >]
 
 let extract_to_file f prm decls =
-  let decls = optimize prm decls in
   let pp_decl = if prm.modular then ModularPp.pp_decl else MonoPp.pp_decl in
   let cout = open_out f in
   let ft = Pp_control.with_output_to cout in
