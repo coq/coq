@@ -23,7 +23,7 @@ Require PolyListSyntax.
 (** Some operators to build relations *)
 
 Section Transitive_Closure.
-  Variable A: Set.
+  Variable A: Type.
   Variable R: (relation A).
 
   Inductive clos_trans : A->A->Prop :=
@@ -33,7 +33,7 @@ End Transitive_Closure.
 
 
 Section Reflexive_Transitive_Closure.
-  Variable A: Set.
+  Variable A: Type.
   Variable R: (relation A).
 
   Inductive clos_refl_trans: (relation A) :=
@@ -45,7 +45,7 @@ End Reflexive_Transitive_Closure.
 
 
 Section Reflexive_Symetric_Transitive_Closure.
-  Variable A: Set.
+  Variable A: Type.
   Variable R: (relation A).
 
   Inductive clos_refl_sym_trans: (relation A) :=
@@ -58,7 +58,7 @@ End Reflexive_Symetric_Transitive_Closure.
 
 
 Section Transposee.
-  Variable A: Set.
+  Variable A: Type.
   Variable R: (relation A).
 
   Definition transp := [x,y:A](R y x).
@@ -66,7 +66,7 @@ End Transposee.
 
 
 Section Union.
-  Variable A: Set.
+  Variable A: Type.
   Variable R1,R2: (relation A).
 
   Definition union := [x,y:A](R1 x y)\/(R2 x y).
