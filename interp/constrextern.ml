@@ -162,7 +162,9 @@ let explicitize loc inctx impl f args =
         let tail = exprec (q+1) (args,impl) in
         let visible =
           (!print_implicits & !print_implicits_explicit_args)
-          or not (is_inferable_implicit inctx n imp) in
+          or not (is_inferable_implicit inctx n imp)
+          or ((match a with CHole _ -> false | _ -> true)
+              & Options.do_translate()) in
         if visible then (a,Some q) :: tail else tail
     | a::args, _::impl -> (a,None) :: exprec (q+1) (args,impl)
     | args, [] -> List.map (fun a -> (a,None)) args (*In case of polymorphism*)
