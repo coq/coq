@@ -85,6 +85,7 @@ let reset_tab_label i = set_tab_label i (get_tab_label i)
 let to_do_on_page_switch = ref []
   
 module Vector = struct 
+  exception Found of int
   type 'a t = ('a option) array ref
   let create () = ref [||]
   let get t i = out_some (Array.get !t i)
@@ -92,6 +93,10 @@ module Vector = struct
   let remove t i = Array.set !t i None
   let append t e = t := Array.append !t [|Some e|]; (Array.length !t)-1
   let iter f t =  Array.iter (function | None -> () | Some x -> f x) !t
+  let find_or_fail f t = 
+    let test i = function | None -> () | Some e -> if f e then raise (Found i) in 
+    Array.iteri test t
+	
   let exists f t =
     let l = Array.length !t in
     let rec test i = 
@@ -1093,6 +1098,14 @@ let main files =
   (* File/Load Menu *)
   let load f =
     try
+      Vector.find_or_fail 
+	(function 
+	   | {analyzed_view=Some av} -> 
+	       (match av#filename with 
+		 | None -> false 
+		 | Some fn -> f=fn)
+	   | _ -> false) 
+	!input_views;
       let b = Buffer.create 1024 in
       with_file f ~f:(input_channel b);
       let s = try_convert (Buffer.contents b) in
@@ -1118,7 +1131,9 @@ let main files =
       set_current_view index;
       Highlight.highlight_all input_buffer;
       input_buffer#set_modified false
-    with e -> !flash_info "Load failed"
+    with       
+      | Vector.Found i -> !flash_info "File already opened"
+      | e -> !flash_info "Load failed"
   in
   let load_m = file_factory#add_item "_Open/Create" ~key:GdkKeysyms._O in
   let load_f () = 	  
@@ -1148,7 +1163,8 @@ let main files =
 	     !flash_info "Saved"
 	       
       )
-    with e -> !flash_info "Save failed"
+    with 
+      | e -> !flash_info "Save failed"
   in   
   ignore (save_m#connect#activate save_f);
 
@@ -1360,7 +1376,7 @@ let main files =
   )::!to_do_on_page_switch;
   
   (* Navigation Menu *)
-  let navigation_menu =  factory#add_submenu "Navigation" in
+  let navigation_menu =  factory#add_submenu "_Navigation" in
   let navigation_factory = 
     new GMenu.factory navigation_menu 
       ~accel_group 
@@ -1375,32 +1391,32 @@ let main files =
       activate_input (notebook ())#current_page
   in
   let do_or_activate f = do_if_not_computing (do_or_activate f) in
-  ignore (navigation_factory#add_item "Forward" 
+  ignore (navigation_factory#add_item "_Forward" 
 	    ~key:GdkKeysyms._Down 
 	    ~callback:(do_or_activate (fun a -> 
 					 a#process_next_phrase true true)));
-  ignore (navigation_factory#add_item "Backward"
+  ignore (navigation_factory#add_item "_Backward"
 	    ~key:GdkKeysyms._Up
 	    ~callback:(do_or_activate (fun a -> a#undo_last_step)));
-  ignore (navigation_factory#add_item "Forward to"
+  ignore (navigation_factory#add_item "_Forward to"
 	    ~key:GdkKeysyms._Right
 	    ~callback:(do_or_activate (fun a -> a#process_until_insert_or_error))
 	 );
-  ignore (navigation_factory#add_item "Backward to"
+  ignore (navigation_factory#add_item "_Backward to"
 	    ~key:GdkKeysyms._Left
 	    ~callback:(do_or_activate (fun a-> a#backtrack_to_insert))
 	 );
-  ignore (navigation_factory#add_item "Start"
+  ignore (navigation_factory#add_item "_Start"
 	    ~key:GdkKeysyms._Home
 	    ~callback:(do_or_activate (fun a -> a#reset_initial))
 	 );
-  ignore (navigation_factory#add_item "End"
+  ignore (navigation_factory#add_item "_End"
 	    ~key:GdkKeysyms._End
 	    ~callback:(do_or_activate (fun a -> a#process_until_end_or_error))
 	 );
 
   (* Tactics Menu *)
-  let tactics_menu =  factory#add_submenu "Tactics" in
+  let tactics_menu =  factory#add_submenu "T_actics" in
   let tactics_factory = 
     new GMenu.factory tactics_menu 
       ~accel_group 
@@ -1412,48 +1428,48 @@ let main files =
     if analyzed_view#is_active then ignore (f analyzed_view)
   in
   let do_if_active f = do_if_not_computing (do_if_active f) in
-  ignore (tactics_factory#add_item "Auto" 
+  ignore (tactics_factory#add_item "_Auto" 
 	    ~key:GdkKeysyms._a
 	    ~callback:(do_if_active (fun a -> a#insert_command "Progress Auto.\n" "Auto.\n"))
 	 );
-  ignore (tactics_factory#add_item "Auto with *"
+  ignore (tactics_factory#add_item "_Auto with *"
 	    ~key:GdkKeysyms._asterisk
 	    ~callback:(do_if_active (fun a -> a#insert_command 
 				       "Progress Auto with *.\n"
 				       "Auto with *.\n")));
-  ignore (tactics_factory#add_item "EAuto"
+  ignore (tactics_factory#add_item "_EAuto"
 	    ~key:GdkKeysyms._e
 	    ~callback:(do_if_active (fun a -> a#insert_command 
 				       "Progress EAuto.\n"
 				       "EAuto.\n"))
 	 );
-  ignore (tactics_factory#add_item "EAuto with *"
+  ignore (tactics_factory#add_item "_EAuto with *"
 	    ~key:GdkKeysyms._ampersand
 	    ~callback:(do_if_active (fun a -> a#insert_command 
 				       "Progress EAuto with *.\n" 
 				       "EAuto with *.\n"))
 	 );
-  ignore (tactics_factory#add_item "Intuition"
+  ignore (tactics_factory#add_item "_Intuition"
 	    ~key:GdkKeysyms._i
 	    ~callback:(do_if_active (fun a -> a#insert_command "Progress Intuition.\n" "Intuition.\n"))
 	 );
-  ignore (tactics_factory#add_item "Omega"
+  ignore (tactics_factory#add_item "_Omega"
 	    ~key:GdkKeysyms._o
 	    ~callback:(do_if_active (fun a -> a#insert_command "Omega.\n" "Omega.\n"))
 	 );
-  ignore (tactics_factory#add_item "Simpl"
+  ignore (tactics_factory#add_item "_Simpl"
 	    ~key:GdkKeysyms._s
 	    ~callback:(do_if_active (fun a -> a#insert_command "Progress Simpl.\n" "Simpl.\n" ))
 	 );
-  ignore (tactics_factory#add_item "Tauto"
+  ignore (tactics_factory#add_item "_Tauto"
 	    ~key:GdkKeysyms._p
 	    ~callback:(do_if_active (fun a -> a#insert_command "Tauto.\n" "Tauto.\n" ))
 	 );
-  ignore (tactics_factory#add_item "Trivial"
+  ignore (tactics_factory#add_item "_Trivial"
 	    ~key:GdkKeysyms._v
 	    ~callback:(do_if_active( fun a -> a#insert_command "Progress Trivial.\n"  "Trivial.\n" ))
 	 );
-  ignore (tactics_factory#add_item "<Proof Wizzard>"
+  ignore (tactics_factory#add_item "<Proof _Wizzard>"
 	    ~key:GdkKeysyms._dollar
 	    ~callback:(do_if_active (fun a -> a#insert_commands 
 				       ["Progress Trivial.\n","Trivial.\n";
@@ -1492,13 +1508,13 @@ let main files =
      19, 9, Some GdkKeysyms._L);
   add_complex_template 
     ("_Theorem __", "Theorem new_theorem : .\nProof.\n\nSave.\n", 
-     19, 11, Some GdkKeysyms._L);
+     19, 11, Some GdkKeysyms._T);
   add_complex_template 
     ("_Definition __", "Definition ident := .\n",
      6, 5, Some GdkKeysyms._D);
   add_complex_template 
     ("_Inductive __", "Inductive ident : :=\n  | : .\n",
-     14, 5, Some GdkKeysyms._N);
+     14, 5, Some GdkKeysyms._I);
   let add_simple_template (menu_text, text) =
     ignore (templates_factory#add_item menu_text
 	    ~callback:(fun () -> 
@@ -1508,9 +1524,9 @@ let main files =
   ignore (templates_factory#add_separator ());
   List.iter add_simple_template 
     [ "_Auto", "Auto ";
-      "Auto with _*", "Auto with * ";
+      "_Auto with *", "Auto with * ";
       "_EAuto", "EAuto ";
-      "EA_uto with *", "EAuto with * ";
+      "_EAuto with *", "EAuto with * ";
       "_Intuition", "Intuition ";
       "_Omega", "Omega ";
       "_Simpl", "Simpl ";
@@ -1523,7 +1539,7 @@ let main files =
     Coq_commands.commands;
   
   (* Commands Menu *)
-  let commands_menu =  factory#add_submenu "Commands" in
+  let commands_menu =  factory#add_submenu "_Commands" in
   let commands_factory = new GMenu.factory commands_menu ~accel_group in
 
   (* Command/Compile Menu *)
@@ -1542,7 +1558,7 @@ let main files =
 	    av#process_until_end_or_error
 	  end
   in
-  let compile_m = commands_factory#add_item "Compile" ~callback:compile_f in
+  let compile_m = commands_factory#add_item "_Compile" ~callback:compile_f in
 
   (* Command/Make Menu *)
   let make_f () =
@@ -1550,7 +1566,7 @@ let main files =
     let c = Sys.command current.cmd_make in
     !flash_info (current.cmd_make ^ if c = 0 then " succeeded" else " failed")
   in
-  let make_m = commands_factory#add_item "Make" ~callback:make_f in
+  let make_m = commands_factory#add_item "_Make" ~callback:make_f in
   
   (* Command/CoqMakefile Menu*)
   let coq_makefile_f () =
@@ -1558,7 +1574,7 @@ let main files =
     !flash_info 
       (current.cmd_coqmakefile ^ if c = 0 then " succeeded" else " failed")
   in
-  let _ = commands_factory#add_item "Make Makefile" ~callback:coq_makefile_f in
+  let _ = commands_factory#add_item "_Make Makefile" ~callback:coq_makefile_f in
 
   (* Configuration Menu *)
   let reset_revert_timer () =
@@ -1568,11 +1584,11 @@ let main files =
 	(GMain.Timeout.add ~ms:current.global_auto_revert_delay 
 	   ~callback:(fun () -> revert_f ();true))
   in
-  let configuration_menu = factory#add_submenu "Configuration" in
+  let configuration_menu = factory#add_submenu "Confi_guration" in
   let configuration_factory = new GMenu.factory configuration_menu ~accel_group
   in
   let edit_prefs_m =
-    configuration_factory#add_item "Edit preferences"
+    configuration_factory#add_item "Edit _preferences"
       ~callback:(fun () -> configure ();reset_revert_timer ())
   in
   (* let save_prefs_m =
@@ -1585,7 +1601,7 @@ let main files =
   *)
   font_selector := 
   Some (GWindow.font_selection_dialog 
-	  ~title:"Select font..."
+	  ~title:"_Select font..."
 	  ~modal:true ());
   let font_selector = out_some !font_selector in
   font_selector#selection#set_font_name default_monospace_font_name;
@@ -1598,16 +1614,16 @@ let main files =
 
   (* Help Menu *)
 
-  let help_menu = factory#add_submenu "Help" in
+  let help_menu = factory#add_submenu "_Help" in
   let help_factory = new GMenu.factory help_menu  
 		       ~accel_modi:[]
 		       ~accel_group in
-  let _ = help_factory#add_item "Browse Coq Manual" 
+  let _ = help_factory#add_item "Browse Coq _Manual" 
 	    ~callback:(fun () -> browse (current.doc_url ^ "main.html")) in
-  let _ = help_factory#add_item "Browse Coq Library" 
+  let _ = help_factory#add_item "Browse Coq _Library" 
 	    ~callback:(fun () -> browse current.library_url) in
   let _ = 
-    help_factory#add_item "Help for keyword" ~key:GdkKeysyms._F1
+    help_factory#add_item "Help for _keyword" ~key:GdkKeysyms._F1
       ~callback:(fun () ->
 		   let av = out_some ((get_current_view ()).analyzed_view) in 
 		   match GtkBase.Clipboard.wait_for_text (cb ()) with
@@ -1620,7 +1636,7 @@ let main files =
 			 browse_keyword t)
   in
   let _ = help_factory#add_separator () in
-  let about_m = help_factory#add_item "About" in
+  let about_m = help_factory#add_item "_About" in
 
   (* Statup preferences *)
   load_pref current;
