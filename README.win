@@ -1,0 +1,39 @@
+THE COQ V7 SYSTEM
+=================
+
+    This file contains remarks specific to the windows port of Coq.
+
+INSTALLATION.
+=============
+
+    See the file INSTALL.win for installation procedure.
+
+COMPILATION.
+============
+
+    If you want to install coq, you had better transfer the precompiled
+    distribution. If you really need to recompile under Windows, here
+    are some indications:
+
+    1- Install ocaml, camlp4 (must be compiled), Visual C++ (needed for the
+       -custom option of ocaml) and MASM (needed if you want to produce a
+       native version).
+
+    2- Install a complete set of Unix utilities (used by Makefiles). 
+       See: http://sources.redhat.com/cygwin/.
+
+    3- Compilation of camlp4 files must be done by hand in two steps (and not
+       only one as it is case in the Makefile).
+
+    4- Though not nescessary, you can find useful:
+         - Windows version of (X)Emacs: it is a powerful environment for
+           developpers with coloured syntax, modes for compilation and debug,
+           and many more. It is free. See: http://www.gnu.org/software.
+         - Windows cvs client (very useful if you have access to the Coq
+           archive).
+
+    If you are lost, you could find help at: coq@pauillac.inria.fr.
+
+    Good luck :-)
+
+    The Coq Team.
