@@ -223,7 +223,7 @@ INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/Logic_TypeSyntax.vo
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
-	$(COQC) -bindir bin -q -I theories/Init -is states/barestate.coq $<
+	$(COQC) -$(BEST) -bindir bin -q -I theories/Init -is states/barestate.coq $<
 
 init: $(INITVO)
 
@@ -231,7 +231,7 @@ TACTICSVO=tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo \
           tactics/EAuto.vo tactics/Refine.vo
 
 tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
-	$(COQC) -bindir bin -q -I tactics -is states/barestate.coq $<
+	$(COQC) -$(BEST) -bindir bin -q -I tactics -is states/barestate.coq $<
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO) $(BESTCOQTOP)
 	$(BESTCOQTOP) -q -batch -silent -is states/barestate.coq -I tactics -I theories/Init -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
