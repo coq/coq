@@ -244,7 +244,7 @@ proofs/proof_type.cmi: lib/util.cmi kernel/term.cmi proofs/tacexpr.cmo \
     kernel/environ.cmi 
 proofs/refiner.cmi: pretyping/termops.cmi kernel/term.cmi proofs/tacexpr.cmo \
     kernel/sign.cmi proofs/proof_type.cmi proofs/proof_trees.cmi lib/pp.cmi \
-    pretyping/evd.cmi 
+    pretyping/evd.cmi kernel/environ.cmi 
 proofs/tacmach.cmi: interp/topconstr.cmi pretyping/termops.cmi \
     kernel/term.cmi pretyping/tacred.cmi proofs/tacexpr.cmo kernel/sign.cmi \
     proofs/refiner.cmi kernel/reduction.cmi pretyping/rawterm.cmi \
@@ -1613,15 +1613,15 @@ proofs/logic.cmx: lib/util.cmx pretyping/typing.cmx kernel/typeops.cmx \
     pretyping/evd.cmx pretyping/evarutil.cmx kernel/environ.cmx \
     proofs/logic.cmi 
 proofs/pfedit.cmo: lib/util.cmi pretyping/typing.cmi kernel/term.cmi \
-    proofs/tacmach.cmi proofs/tacexpr.cmo kernel/sign.cmi \
-    kernel/safe_typing.cmi proofs/proof_type.cmi proofs/proof_trees.cmi \
+    proofs/tacexpr.cmo kernel/sign.cmi kernel/safe_typing.cmi \
+    proofs/refiner.cmi proofs/proof_type.cmi proofs/proof_trees.cmi \
     lib/pp.cmi kernel/names.cmi library/nameops.cmi library/lib.cmi \
     pretyping/evd.cmi proofs/evar_refiner.cmi kernel/environ.cmi \
     kernel/entries.cmi lib/edit.cmi kernel/declarations.cmi \
     library/decl_kinds.cmo proofs/pfedit.cmi 
 proofs/pfedit.cmx: lib/util.cmx pretyping/typing.cmx kernel/term.cmx \
-    proofs/tacmach.cmx proofs/tacexpr.cmx kernel/sign.cmx \
-    kernel/safe_typing.cmx proofs/proof_type.cmx proofs/proof_trees.cmx \
+    proofs/tacexpr.cmx kernel/sign.cmx kernel/safe_typing.cmx \
+    proofs/refiner.cmx proofs/proof_type.cmx proofs/proof_trees.cmx \
     lib/pp.cmx kernel/names.cmx library/nameops.cmx library/lib.cmx \
     pretyping/evd.cmx proofs/evar_refiner.cmx kernel/environ.cmx \
     kernel/entries.cmx lib/edit.cmx kernel/declarations.cmx \
@@ -1676,11 +1676,11 @@ proofs/tacmach.cmx: lib/util.cmx pretyping/typing.cmx pretyping/termops.cmx \
     proofs/proof_type.cmx proofs/proof_trees.cmx lib/pp.cmx kernel/names.cmx \
     library/nameops.cmx proofs/logic.cmx library/global.cmx pretyping/evd.cmx \
     kernel/environ.cmx interp/constrintern.cmx proofs/tacmach.cmi 
-proofs/tactic_debug.cmo: pretyping/termops.cmi proofs/tacmach.cmi \
-    proofs/tacexpr.cmo proofs/proof_trees.cmi lib/pp.cmi kernel/names.cmi \
+proofs/tactic_debug.cmo: pretyping/termops.cmi proofs/tacexpr.cmo \
+    proofs/refiner.cmi proofs/proof_trees.cmi lib/pp.cmi kernel/names.cmi \
     proofs/logic.cmi interp/constrextern.cmi proofs/tactic_debug.cmi 
-proofs/tactic_debug.cmx: pretyping/termops.cmx proofs/tacmach.cmx \
-    proofs/tacexpr.cmx proofs/proof_trees.cmx lib/pp.cmx kernel/names.cmx \
+proofs/tactic_debug.cmx: pretyping/termops.cmx proofs/tacexpr.cmx \
+    proofs/refiner.cmx proofs/proof_trees.cmx lib/pp.cmx kernel/names.cmx \
     proofs/logic.cmx interp/constrextern.cmx proofs/tactic_debug.cmi 
 scripts/coqc.cmo: toplevel/usage.cmi config/coq_config.cmi 
 scripts/coqc.cmx: toplevel/usage.cmx config/coq_config.cmx 
