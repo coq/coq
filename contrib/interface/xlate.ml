@@ -753,7 +753,7 @@ and xlate_red_tactic =
      CT_cbv (CT_conversion_flag_list conv_flags, red_ids)
   | Lazy flag_list ->
      let conv_flags, red_ids = get_flag flag_list in
-     CT_cbv (CT_conversion_flag_list conv_flags, red_ids)
+     CT_lazy (CT_conversion_flag_list conv_flags, red_ids)
   | Unfold unf_list ->
      let ct_unf_list = List.map xlate_one_unfold_block unf_list in
      (match ct_unf_list with
