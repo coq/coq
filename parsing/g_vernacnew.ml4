@@ -439,7 +439,7 @@ GEXTEND Gram
            pos = OPT [ "["; l = LIST0 natural; "]" -> l ] ->
 	  VernacDeclareImplicits (qid,pos)
 
-      | IDENT "Implicit"; ["Variable"; "Type" | IDENT "Variables"; "Type"];
+      | IDENT "Implicit"; ["Type" | "Types"];
 	   idl = LIST1 ident; ":"; c = lconstr -> VernacReserve (idl,c)
 
       (* For compatibility *)
@@ -685,15 +685,15 @@ GEXTEND Gram
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
          let (a,n,b) = Metasyntax.interp_infix_modifiers None None modl in
-         VernacInfix (local,a,n,op,p,b,None,sc)
+         VernacInfix (local,a,n,op,p,b,Some(a,n,op),sc)
      | IDENT "Notation"; local = locality; s = IDENT; ":="; c = constr;
 	   l = [ "("; IDENT "only"; IDENT "parsing"; ")" -> [SetOnlyParsing]
 	       | -> [] ] ->
-	 VernacNotation (local,c,Some("'"^s^"'",l),None,None)
+	 VernacNotation (local,c,Some("'"^s^"'",l),Some("'"^s^"'",l),None)
      | IDENT "Notation"; local = locality; s = STRING; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
-           VernacNotation (local,c,Some(s,modl),None,sc)
+           VernacNotation (local,c,Some(s,modl),Some(s,modl),sc)
 
      | IDENT "Tactic"; IDENT "Notation"; s = STRING; 
 	 pil = LIST0 production_item; ":="; t = Tactic.tactic -> 
@@ -719,7 +719,7 @@ GEXTEND Gram
          VernacSyntax (u,el)
 *)
 
-     | IDENT "Uninterpreted"; IDENT "Notation"; local = locality; s = STRING; 
+     | IDENT "Reserved"; IDENT "Notation"; local = locality; s = STRING; 
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
 	 -> VernacSyntaxExtension (local,Some(s,l),None)
 

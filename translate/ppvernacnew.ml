@@ -546,14 +546,14 @@ let rec pr_vernac = function
       |	Some sc -> str sc in 
     str"Arguments Scope" ++ spc() ++ pr_reference q ++ spc() ++ str"[" ++ prlist_with_sep sep pr_opt_scope scl ++ str"]"
   | VernacInfix (local,a,p,s,q,_,ov8,sn) -> (* A Verifier *)
-      let (a,p,s) = match ov8 with
-          Some mv8 -> mv8
-        | None -> (a,p,s) in
+      let mv8,s = match ov8 with
+        | Some (a,p,s) ->
+	    (match p with None -> [] | Some p -> [SetLevel p])@
+	    (match a with None -> [] | Some a -> [SetAssoc a]),s
+        | None -> [],s in
       hov 0 (hov 0 (str"Infix " ++ pr_locality local
       ++ qs s ++ spc() ++ pr_reference q) ++
-      pr_syntax_modifiers
-	((match p with None -> [] | Some p -> [SetLevel p])@
-	 (match a with None -> [] | Some a -> [SetAssoc a])) ++
+      pr_syntax_modifiers mv8 ++
       (match sn with
     | None -> mt()
     | Some sc -> spc() ++ str":" ++ spc() ++ str sc))
@@ -580,7 +580,7 @@ let rec pr_vernac = function
       let (s,l) = match mv8 with
           None -> out_some sl
         | Some ml -> ml in
-      str"Uninterpreted Notation" ++ spc() ++ pr_locality local ++ qs s ++
+      str"Reserved Notation" ++ spc() ++ pr_locality local ++ qs s ++
       pr_syntax_modifiers l
 
   (* Gallina *)
@@ -971,8 +971,8 @@ pr_vbinders bl ++ spc())
       hov 1 (str"Implicit Arguments" ++ spc() ++ pr_reference q ++ spc() ++
              str"[" ++ prlist_with_sep sep int l ++ str"]")
   | VernacReserve (idl,c) ->
-      hov 1 (str"Implicit Variable" ++
-        str (if List.length idl > 1 then "s " else " ") ++ str "Type " ++
+      hov 1 (str"Implicit Type" ++
+        str (if List.length idl > 1 then "s " else " ") ++
         prlist_with_sep spc pr_id idl ++ str " :" ++ spc () ++ pr_type c)
   | VernacSetOpacity (fl,l) ->
       hov 1 ((if fl then str"Opaque" else str"Transparent") ++
@@ -982,15 +982,20 @@ pr_vbinders bl ++ spc())
       str"Set Implicit Arguments" 
       ++
       (if !Options.translate_strict_impargs then
-	sep_end () ++ fnl () ++ str"Unset Strict Implicits"
+	sep_end () ++ fnl () ++ str"Unset Strict Implicit"
       else mt ())
   | VernacUnsetOption (Goptions.SecondaryTable ("Implicit","Arguments"))
   | VernacSetOption (Goptions.SecondaryTable ("Implicit","Arguments"),BoolValue false) -> 
       (if !Options.translate_strict_impargs then
-	str"Set Strict Implicits" ++ sep_end () ++ fnl ()
+	str"Set Strict Implicit" ++ sep_end () ++ fnl ()
       else mt ())
       ++
       str"Unset Implicit Arguments" 
+
+  | VernacSetOption (Goptions.SecondaryTable (a,"Implicits"),BoolValue true) ->
+      str("Set "^a^" Implicit")
+  | VernacUnsetOption (Goptions.SecondaryTable (a,"Implicits")) -> 
+      str("Unset "^a^" Implicit")
 
   | VernacUnsetOption na ->
       hov 1 (str"Unset" ++ spc() ++ pr_printoption na None)
