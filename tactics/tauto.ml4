@@ -98,8 +98,11 @@ let rec tauto_intuit t_reduce t_solver ist =
     Orelse
       (Match Reverse Context With
       | [id:(?1-> ?2)-> ?3|- ?] ->
-        Cut ?2-> ?3;[Intro;Cut ?1-> ?2;[Intro;Cut ?3;[Intro;Clear id|
-          Intros;Apply id;Assumption]|Clear id]|Intros;Apply id; (Assumption Orelse (Intro; Assumption))]; Solve [ $t_tauto_intuit ]
+	  Cut ?3;
+	    [Intro;Clear id
+	    |Cut ?1 -> ?2;
+	       [Exact id|Generalize [y:?2](id [x:?1]y);Intro;Clear id]
+	    ]; Solve [ $t_tauto_intuit ]
       | [|- (?1 ? ?)] ->
         $t_is_disj;Solve [Left;$t_tauto_intuit | Right;$t_tauto_intuit]
       )
