@@ -77,3 +77,58 @@ Intro H; Split; [
  | Exact (funct_choice_imp_description H)].
 Intros [H H0]; Exact (description_rel_choice_imp_funct_choice H0 H).
 Qed.
+
+(* We show that the guarded relational formulation of the axiom of Choice
+   comes from the non guarded formulation in presence either of the
+   independance of premises or proof-irrelevance *)
+
+Definition GuardedRelationalChoice :=
+ (A:Type;B:Type;P:A->Prop;R: A->B->Prop) 
+  ((x:A)(P x)->(EX y:B|(R x y)))
+   -> (EXT R':A->B->Prop | 
+        ((x:A)(P x)->(EX y:B|(R x y)/\(R' x y)/\ ((y':B) (R' x y') -> y=y')))).
+
+Definition ProofIrrelevance := (A:Prop)(a1,a2:A) a1==a2.
+
+Lemma rel_choice_and_proof_irrel_imp_guarded_rel_choice : 
+  RelationalChoice -> ProofIrrelevance -> GuardedRelationalChoice.
+Proof.
+Intros rel_choice proof_irrel.
+Red; Intros A B P R H.
+NewDestruct (rel_choice ? ? [x:(sigT ? P);y:B](R (projT1 ? ? x) y)) as [R' H0].
+Intros [x HPx].
+NewDestruct (H x HPx) as [y HRxy].
+Exists y; Exact HRxy.
+Pose R'':=[x:A;y:B](EXT H:(P x) | (R' (existT ? P x H) y)).
+Exists R''; Intros x HPx.
+NewDestruct (H0 (existT ? P x HPx)) as [y [HRxy [HR'xy Huniq]]].
+Exists y. Split.
+  Exact HRxy.
+  Split.
+    Red; Exists HPx; Exact HR'xy.
+    Intros y' HR''xy'.
+      Apply Huniq.
+      Unfold R'' in HR''xy'.
+      NewDestruct HR''xy' as [H'Px HR'xy'].
+      Rewrite proof_irrel with a1:=HPx a2:=H'Px.
+      Exact HR'xy'.
+.Qed.
+
+Definition IndependenceOfPremises :=
+ (A:Type)(P:A->Prop)(Q:Prop)(Q->(EXT x|(P x)))->(EXT x|Q->(P x)).
+
+Lemma rel_choice_indep_of_premises_imp_guarded_rel_choice :
+  RelationalChoice -> IndependenceOfPremises -> GuardedRelationalChoice.
+Proof.
+Intros RelCh IndPrem.
+Red; Intros A B P R H.
+NewDestruct (RelCh A B [x,y](P x)->(R x y)) as [R' H0].
+  Intro x. Apply IndPrem.
+    Apply H.
+  Exists R'.
+  Intros x HPx.
+    NewDestruct (H0 x) as [y [H1 H2]].
+    Exists y. Split. 
+      Apply (H1 HPx).
+      Exact H2.
+Qed.
