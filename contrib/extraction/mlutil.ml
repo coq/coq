@@ -710,7 +710,7 @@ let rec simpl o = function
       let br = Array.map (fun (n,l,t) -> (n,l,simpl o t)) br in 
       simpl_case o br (simpl o e) 
   | MLletin(id,c,e) when 
-      (id = dummy_name) || (is_atomic c) || (nb_occur_match e <= 1) -> 
+      (id = dummy_name) || (is_atomic c) || (o && (nb_occur_match e <= 1)) -> 
 	simpl o (ast_subst c e)
   | MLfix(i,ids,c) as t when o -> 
       let n = Array.length ids in 
