@@ -84,6 +84,7 @@ module Umap = Map.Make(struct
 type mod_self_id = uniq_ident
 let make_msid = make_uid
 let debug_string_of_msid = string_of_uid
+let id_of_msid (_,s,_) = s
 
 type mod_bound_id = uniq_ident
 let make_mbid = make_uid

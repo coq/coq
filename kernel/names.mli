@@ -48,6 +48,7 @@ type mod_self_id
 (* The first argument is a file name - to prevent conflict between 
    different files *)
 val make_msid : dir_path -> string -> mod_self_id
+val id_of_msid : mod_self_id -> identifier
 val debug_string_of_msid : mod_self_id -> string
 
 (*s Unique names for bound modules *)
