@@ -91,6 +91,31 @@ let list_assign l n e =
   in 
   assrec [] (l,n)
 
+let rec list_distinct = function
+  | h::t -> (not (List.mem h t)) && list_distinct t
+  | [] -> true
+
+let list_map_i f = 
+  let rec map_i_rec i = function
+    | [] -> [] 
+    | x::l -> let v = f i x in v :: map_i_rec (i+1) l
+  in 
+  map_i_rec
+
+let list_index x = 
+  let rec index_x n = function
+    | y::l -> if x = y then n else index_x (succ n) l
+    | [] -> failwith "index"
+  in 
+  index_x 1
+
+let list_fold_left_i f = 
+  let rec it_list_f i a = function
+    | [] -> a 
+    | b::l -> it_list_f (i+1) (f i a b) l
+ in 
+ it_list_f 
+
 (* Arrays *)
 
 let array_exists f v = 
@@ -131,6 +156,16 @@ let array_last v =
     | n -> v.(pred n)
 
 let array_cons e v = Array.append [|e|] v
+
+let array_fold_left2 f a v1 v2 =
+  let lv1 = Array.length v1 in
+  let rec fold a n = 
+    if n >= lv1 then a else fold (f a v1.(n) v2.(n)) (succ n)
+  in
+  if Array.length v2 <> lv1 then
+    invalid_arg "array_fold_left2"
+  else
+    fold a 0
 
 let array_fold_left_from n f a v = 
   let rec fold a n =

@@ -3,12 +3,14 @@
 
 open Names
 open Sign
+open Univ
 open Term
 
 type 'a unsafe_env = {
   context : context;
   sigma : 'a evar_map;
-  metamap : (int * constr) list
+  metamap : (int * constr) list;
+  constraints : universes
 }
   
 (* First character of a constr *)

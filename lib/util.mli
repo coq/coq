@@ -27,6 +27,10 @@ val subtract : 'a list -> 'a list -> 'a list
 val list_chop : int -> 'a list -> 'a list * 'a list
 val list_tabulate : (int -> 'a) -> int -> 'a list
 val list_assign : 'a list -> int -> 'a -> 'a list
+val list_distinct : 'a list -> bool
+val list_map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
+val list_index : 'a -> 'a list -> int
+val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
 
 (* Arrays *)
 
@@ -37,6 +41,8 @@ val array_hd : 'a array -> 'a
 val array_tl : 'a array -> 'a array
 val array_last : 'a array -> 'a
 val array_cons : 'a -> 'a array -> 'a array
+val array_fold_left2 : 
+  ('a -> 'b -> 'c -> 'a) -> 'a -> 'b array -> 'c array -> 'a
 val array_fold_left_from : int -> ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
 val array_fold_right_from : int -> ('a -> 'b -> 'b) -> 'a array -> 'b -> 'b
 val array_app_tl : 'a array -> 'a list -> 'a list

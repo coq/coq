@@ -33,57 +33,57 @@ val stack_reduction_of_reduction :
 (* Generic Optimized Reduction Functions using Closures *)
 
 (* 1. lazy strategy *)
-val clos_norm_flags : Closure.flags -> 'c unsafe_env -> 'a reduction_function
+val clos_norm_flags : Closure.flags -> 'a reduction_function
 (* Same as (strong whd_beta[delta][iota]), but much faster on big terms *) 
 val nf_beta : 'a reduction_function
 val nf_betaiota : 'a reduction_function
-val nf_betadeltaiota : 'c unsafe_env -> 'a reduction_function
+val nf_betadeltaiota : 'a reduction_function
 
 (* 2. call by value strategy *)
-val cbv_norm_flags : flags -> 'c unsafe_env -> 'a reduction_function
+val cbv_norm_flags : flags -> 'a reduction_function
 val cbv_beta : 'a reduction_function
 val cbv_betaiota : 'a reduction_function
-val cbv_betadeltaiota : 'c unsafe_env -> 'a reduction_function
+val cbv_betadeltaiota : 'a reduction_function
 
 (* 3. lazy strategy, weak head reduction *)
 val whd_beta : 'a reduction_function
 val whd_betaiota : 'a reduction_function
-val whd_betadeltaiota : 'c unsafe_env -> 'a reduction_function
+val whd_betadeltaiota : 'a reduction_function
 
 val whd_beta_stack : 'a stack_reduction_function
 val whd_betaiota_stack : 'a stack_reduction_function
-val whd_betadeltaiota_stack : 'c unsafe_env -> 'a stack_reduction_function
+val whd_betadeltaiota_stack : 'a stack_reduction_function
 
 
 (* Head normal forms *)
-val whd_const_stack : section_path list -> 'c unsafe_env -> 'a stack_reduction_function
-val whd_const : section_path list -> 'c unsafe_env -> 'a reduction_function
-val whd_delta_stack : 'c unsafe_env -> 'a stack_reduction_function
-val whd_delta : 'c unsafe_env -> 'a reduction_function
-val whd_betadelta_stack : 'c unsafe_env -> 'a stack_reduction_function
-val whd_betadelta : 'c unsafe_env -> 'a reduction_function
-val whd_betadeltat_stack : 'c unsafe_env -> 'a stack_reduction_function
-val whd_betadeltat : 'c unsafe_env -> 'a reduction_function
-val whd_betadeltatiota_stack : 'c unsafe_env -> 'a stack_reduction_function
-val whd_betadeltatiota : 'c unsafe_env -> 'a reduction_function
-val whd_betadeltaiotaeta_stack : 'c unsafe_env -> 'a stack_reduction_function
-val whd_betadeltaiotaeta : 'c unsafe_env -> 'a reduction_function
+val whd_const_stack : section_path list -> 'a stack_reduction_function
+val whd_const : section_path list -> 'a reduction_function
+val whd_delta_stack : 'a stack_reduction_function
+val whd_delta : 'a reduction_function
+val whd_betadelta_stack : 'a stack_reduction_function
+val whd_betadelta : 'a reduction_function
+val whd_betadeltat_stack : 'a stack_reduction_function
+val whd_betadeltat : 'a reduction_function
+val whd_betadeltatiota_stack : 'a stack_reduction_function
+val whd_betadeltatiota : 'a reduction_function
+val whd_betadeltaiotaeta_stack : 'a stack_reduction_function
+val whd_betadeltaiotaeta : 'a reduction_function
 
 val beta_applist : (constr * constr list) -> constr
 
 
 (* Special-Purpose Reduction Functions *)
-val whd_meta : (int * constr) list -> 'a reduction_function
-val plain_instance : (int * constr) list -> 'a reduction_function
-val instance : (int * constr) list -> 'a reduction_function
+val whd_meta : 'a reduction_function
+val plain_instance : 'a reduction_function
+val instance : 'a reduction_function
 
-val whd_ise : 'a unsafe_env -> 'a reduction_function
-val whd_ise1 : 'a unsafe_env -> 'a reduction_function
-val nf_ise1 : 'a unsafe_env -> 'a reduction_function
-val whd_ise1_metas : 'a unsafe_env -> 'a reduction_function
+val whd_ise : 'a reduction_function
+val whd_ise1 : 'a reduction_function
+val nf_ise1 : 'a reduction_function
+val whd_ise1_metas : 'a reduction_function
 
-val red_elim_const : 'c unsafe_env -> 'a stack_reduction_function
-val one_step_reduce : 'c unsafe_env -> constr -> constr
+val red_elim_const : 'a stack_reduction_function
+val one_step_reduce : 'a reduction_function
 
 val hnf_prod_app : 'c unsafe_env -> string -> constr -> constr -> constr
 val hnf_prod_appvect : 
@@ -98,12 +98,12 @@ val decomp_n_prod :
   'c unsafe_env -> int -> constr -> ((name * constr) list) * constr
 
 val is_info_arity : 'c unsafe_env -> constr -> bool
-val is_info_sort : constr -> bool
+val is_info_sort : 'c unsafe_env -> constr -> bool
 val is_logic_arity : 'c unsafe_env -> constr -> bool
 val is_type_arity : 'c unsafe_env -> constr -> bool
 val is_info_cast_type : 'c unsafe_env -> constr -> bool
 val contents_of_cast_type : 'c unsafe_env -> constr -> contents
-val poly_args : constr -> int list
+val poly_args : 'a unsafe_env -> constr -> int list
 val reduce_to_mind : 'c unsafe_env -> constr -> constr * constr * constr
 val reduce_to_ind  : 'c unsafe_env -> constr -> 
                                 section_path*constr*constr
@@ -122,24 +122,28 @@ type red_expr =
   | Change of constr
   | Pattern of (int list * constr * constr) list
 
-
-val nf : 'c unsafe_env -> 'a reduction_function
+val nf : 'a reduction_function
 val unfoldn : 
-  (int list * section_path) list -> 'c unsafe_env -> 'a reduction_function
-val fold_one_com : 'c unsafe_env -> constr -> 'a reduction_function
-val fold_commands : constr list -> 'c unsafe_env -> 'a reduction_function
+  (int list * section_path) list -> 'a reduction_function
+val fold_one_com : constr -> 'a reduction_function
+val fold_commands : constr list -> 'a reduction_function
 val subst_term_occ : int list -> constr -> constr -> constr
-val pattern_occs : (int list * constr * constr) list -> constr -> constr
-val hnf_constr : 'c unsafe_env -> constr -> constr
-val compute : 'c unsafe_env -> 'a reduction_function
-val reduction_of_redexp : red_expr -> 'c unsafe_env -> constr -> constr
-
+val pattern_occs : (int list * constr * constr) list -> 'a reduction_function
+val hnf_constr : 'a reduction_function
+val compute : 'a reduction_function
+val reduction_of_redexp : red_expr -> 'a reduction_function
 
 
 (* Conversion Functions (uses closures, lazy strategy) *)
 
+type conversion_result =
+  | Convertible of universes
+  | NotConvertible
+
 type 'a conversion_function = 
-    'a unsafe_env -> constr -> constr -> bool * universes
+    'a unsafe_env -> constr -> constr -> conversion_result
+
+val sort_cmp : conv_pb -> sorts -> sorts -> universes -> conversion_result
 
 val fconv : conv_pb -> 'a conversion_function
 (* fconv has 4 instances:

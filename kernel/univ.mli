@@ -12,3 +12,17 @@ val prop_univ_univ : universe
 val prop_univ_univ_univ : universe
 
 type universes
+
+val initial_universes : universes
+
+type constraint_result = 
+  | Consistent of universes
+  | Inconsistent
+
+type constraint_function = 
+    universe -> universe -> universes -> constraint_result
+
+val enforce_gt : constraint_function
+val enforce_geq : constraint_function
+val enforce_eq : constraint_function
+
