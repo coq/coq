@@ -5,6 +5,13 @@
 \usepackage{verbatim}
 \usepackage{palatino}
 \usepackage{url}
+% for coqide
+\ifx\pdftexversion\undefined   % si on est pas en pdflatex
+  \usepackage[dvips]{graphicx}
+\else
+  \usepackage[pdftex]{graphicx}
+\fi
+
 
 \makeatletter
 
@@ -51,6 +58,7 @@
 \part{Practical tools}
 \include{RefMan-com}% The coq commands (coqc coqtop)
 \include{RefMan-uti}% utilities (gallina, do_Makefile, etc)
+\include{RefMan-ide}% Coq IDE
 
 \include{AddRefMan-pre}%
 \include{Cases.v}%

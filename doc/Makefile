@@ -45,8 +45,8 @@ COQTEXFILES= Cases.v.tex Coercion.v.tex Extraction.v.tex Program.v.tex\
   Correctness.v.tex Setoid.v.tex
 
 REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
-  RefMan-pro.tex RefMan-com.tex RefMan-uti.tex RefMan-add.tex \
-  RefMan-modr.tex \
+  RefMan-pro.tex RefMan-com.tex RefMan-uti.tex RefMan-ide.tex \
+  coqide.eps RefMan-add.tex RefMan-modr.tex \
   $(REFMANCOQTEXFILES) 
 
 REFMAN=Reference-Manual
@@ -88,6 +88,11 @@ all-pdf: Tutorial.v.pdf Reference-Manual.pdf # Library.pdf Changes.v.pdf
 all-ps: Tutorial.v.ps Reference-Manual.ps # Library.ps Changes.v.ps
 
 all-html: Tutorial.v.html Reference-Manual.html # Library.html Changes.v.html
+
+
+#image coqide
+coqide.eps: coqide.png
+	pngtopnm coqide.png | pnmtops -noturn -rle > coqide.eps
 
 
 # dvips et dviselect existent sur loupiac
