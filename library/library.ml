@@ -585,6 +585,7 @@ let require_library_from_file spec idopt file export =
     end
     else
       add_anonymous_leaf (in_require ([modref],Some export));
+    if !Options.xml_export then !xml_require modref;
     add_frozen_state ()
 
 
@@ -593,12 +594,14 @@ let require_library_from_file spec idopt file export =
 let read_library qid =
   let modref = rec_intern_qualified_library qid in
   add_anonymous_leaf (in_require ([modref],None));
+  if !Options.xml_export then !xml_require modref;
   add_frozen_state ()
 
 let read_library_from_file f =
   let _, f = System.find_file_in_path (get_load_path ()) (f^".vo") in
   let modref = rec_intern_by_filename_only None f in
   add_anonymous_leaf (in_require ([modref],None));
+  if !Options.xml_export then !xml_require modref;
   add_frozen_state ()
 
 
