@@ -501,7 +501,7 @@ let internalise sigma env allow_soapp lvar c =
     | CLambdaN (loc,(nal,ty)::bll,c2) ->
 	iterate_lam loc env ty (CLambdaN (loc, bll, c2)) nal
     | CLetIn (loc,(_,na),c1,c2) ->
-	RLetIn (loc, na, intern env c1,
+	RLetIn (loc, na, intern (ids,impls,None,scopes) c1,
           intern (name_fold Idset.add na ids,impls,tmp_scope,scopes) c2)
     | CNotation (loc,"- _",[CNumeral(_,Bignat.POS p)]) ->
 	let scopes = option_cons tmp_scope scopes in

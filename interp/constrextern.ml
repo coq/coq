@@ -321,7 +321,7 @@ let rec extern_cases_pattern_in_scope scopes vars pat =
   try 
     if !print_no_symbol then raise No_match;
     let (sc,n) = Symbols.uninterp_cases_numeral pat in
-    match Symbols.availability_of_numeral sc (make_current_scope scopes) with
+    match Symbols.availability_of_numeral sc scopes with
     | None -> raise No_match
     | Some key ->
         let loc = pattern_loc pat in
@@ -459,20 +459,20 @@ let rec extern inctx scopes vars r =
                (Some ref,extern_reference loc vars ref)
 	       args
 	 | RVar (loc,id) -> (* useful for translation of inductive *)
-	     let args = List.map (extern true scopes vars) args in
+	     let args = List.map (sub_extern true scopes vars) args in
 	     extern_app loc inctx (get_temporary_implicits_out id)
 	       (None,Ident (loc,v7_to_v8_id id))
 	       args
 	 | _       -> 
-	     explicitize loc inctx [] (None,extern false scopes vars f)
-               (List.map (extern true scopes vars) args))
+	     explicitize loc inctx [] (None,sub_extern false scopes vars f)
+               (List.map (sub_extern true scopes vars) args))
 
   | RProd (loc,Anonymous,t,c) ->
       (* Anonymous product are never factorized *)
       CArrow (loc,extern_type scopes vars t, extern_type scopes vars c)
 
   | RLetIn (loc,na,t,c) ->
-      CLetIn (loc,(loc,na),extern false scopes vars t,
+      CLetIn (loc,(loc,na),sub_extern false scopes vars t,
               extern inctx scopes (add_vname vars na) c)
 
   | RProd (loc,na,t,c) ->
@@ -492,7 +492,7 @@ let rec extern inctx scopes vars r =
 	List.fold_right (name_fold Idset.add)
 	  (cases_predicate_names tml) vars in
       let tml = List.map (fun (tm,{contents=(na,x)}) ->
-	(extern false scopes vars tm,
+	(sub_extern false scopes vars tm,
 	(na,option_app (fun (loc,ind,nal) ->
 	  (loc,extern_reference loc vars (IndRef ind),nal)) x))) tml in
       let eqns = List.map (extern_eqn (typopt<>None) scopes vars) eqns in 
@@ -502,16 +502,15 @@ let rec extern inctx scopes vars r =
       extern false scopes vars x
 
   | ROrderedCase (loc,cs,typopt,tm,bv,_) ->
-      let bv = Array.to_list (Array.map (extern (typopt<>None) scopes vars) bv)
-      in
+      let bv = Array.map (sub_extern (typopt<>None) scopes vars) bv in
       COrderedCase
 	(loc,cs,option_app (extern_type scopes vars) typopt,
-         extern false scopes vars tm,bv)
+         sub_extern false scopes vars tm,Array.to_list bv)
 
   | RLetTuple (loc,nal,(na,typopt),tm,b) ->
       CLetTuple (loc,nal,
         (na,option_app (extern_type scopes (add_vname vars na)) typopt),
-        extern false scopes vars tm,
+        sub_extern false scopes vars tm,
         extern false scopes (List.fold_left add_vname vars nal) b)
 
   | RRec (loc,fk,idv,tyv,bv) ->
@@ -520,15 +519,15 @@ let rec extern inctx scopes vars r =
 	 | RFix (nv,n) ->
 	     let listdecl = 
 	       Array.mapi (fun i fi ->
-		 (fi,nv.(i),extern false scopes vars tyv.(i),
+		 (fi,nv.(i),extern_type scopes vars tyv.(i),
                   extern false scopes vars' bv.(i))) idv
 	     in 
 	     CFix (loc,(loc,idv.(n)),Array.to_list listdecl)
 	 | RCoFix n -> 
 	     let listdecl =
                Array.mapi (fun i fi ->
-		 (fi,extern false scopes vars tyv.(i),
-                  extern false scopes vars' bv.(i))) idv
+		 (fi,extern_type scopes vars tyv.(i),
+                  sub_extern false scopes vars' bv.(i))) idv
 	     in
 	     CCoFix (loc,(loc,idv.(n)),Array.to_list listdecl))
 
@@ -542,15 +541,17 @@ let rec extern inctx scopes vars r =
   | RHole (loc,e) -> CHole loc
 
   | RCast (loc,c,t) ->
-      CCast (loc,extern false scopes vars c,extern_type scopes vars t)
+      CCast (loc,sub_extern true scopes vars c,extern_type scopes vars t)
 
   | RDynamic (loc,d) -> CDynamic (loc,d)
 
 and extern_type (_,scopes) = extern true (Some Symbols.type_scope,scopes)
 
+and sub_extern inctx (_,scopes) = extern inctx (None,scopes)
+
 and factorize_prod scopes vars aty = function
   | RProd (loc,(Name id as na),ty,c)
-      when same aty (extern true scopes vars (anonymize_if_reserved na ty))
+      when same aty (extern_type scopes vars (anonymize_if_reserved na ty))
 	& not (occur_var_constr_expr id aty) (* avoid na in ty escapes scope *)
 	-> let (nal,c) = factorize_prod scopes (Idset.add id vars) aty c in
            ((loc,Name id)::nal,c)
@@ -558,7 +559,7 @@ and factorize_prod scopes vars aty = function
 
 and factorize_lambda inctx scopes vars aty = function
   | RLambda (loc,na,ty,c)
-      when same aty (extern inctx scopes vars (anonymize_if_reserved na ty))
+      when same aty (extern_type scopes vars (anonymize_if_reserved na ty))
 	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)
 	-> let (nal,c) =
 	     factorize_lambda inctx scopes (add_vname vars na) aty c in
@@ -566,7 +567,7 @@ and factorize_lambda inctx scopes vars aty = function
   | c -> ([],extern inctx scopes vars c)
 
 and extern_eqn inctx scopes vars (loc,ids,pl,c) =
-  (loc,List.map (extern_cases_pattern_in_scope scopes vars) pl,
+  (loc,List.map (extern_cases_pattern_in_scope (snd scopes) vars) pl,
    extern inctx scopes vars c)
 
 and extern_numeral loc scopes (sc,n) =
@@ -618,7 +619,7 @@ let extern_rawconstr vars c =
   extern false (None,Symbols.current_scopes()) vars c
 
 let extern_cases_pattern vars p = 
-  extern_cases_pattern_in_scope (None,Symbols.current_scopes()) vars p
+  extern_cases_pattern_in_scope (Symbols.current_scopes()) vars p
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
