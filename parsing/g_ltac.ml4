@@ -208,6 +208,7 @@ GEXTEND Gram
 	  ConstrMayEval (ConstrContext (id,c))
       | IDENT "Check"; c = Constr.constr ->
 	  ConstrMayEval (ConstrTypeOf c)
+      | IDENT "FreshId"; s = OPT STRING -> TacFreshId s
       | r = reference -> Reference r
       | ta = tactic_arg0 -> ta ] ]
   ;
@@ -218,6 +219,7 @@ GEXTEND Gram
 	  ConstrMayEval (ConstrContext (id,c))
       | IDENT "Check"; c = Constr.constr ->
 	  ConstrMayEval (ConstrTypeOf c)
+      | IDENT "FreshId"; s = OPT STRING -> TacFreshId s
       | r = reference; la = LIST1 tactic_arg0 -> TacCall (loc,r,la)
       | r = reference -> Reference r
       | ta = tactic_arg0 -> ta ] ]

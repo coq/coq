@@ -647,6 +647,7 @@ and pr_tacarg0 = function
   | ConstrMayEval (ConstrTerm c) -> str "'" ++ pr_constr c
   | ConstrMayEval c -> pr_may_eval pr_constr pr_cst c
   | Integer n -> int n
+  | TacFreshId sopt -> str "FreshId" ++ pr_opt qstring sopt
   | (TacCall _ | Tacexp _) as t -> str "(" ++ pr_tacarg1 t ++ str ")"
 
 and pr_tacarg1 = function

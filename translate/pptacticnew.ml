@@ -481,6 +481,7 @@ and pr_tacarg env = function
   | TacVoid -> str "()"
   | Reference r -> pr_ref r
   | ConstrMayEval (ConstrTerm c) -> pr_constr env c
+  | TacFreshId sopt -> str "FreshId" ++ pr_opt qstring sopt
   | (ConstrMayEval _|TacCall _|Tacexp _|Integer _) as a ->
       str "'" ++ pr_tac env (latom,E) (TacArg a)
 

@@ -45,6 +45,8 @@ Implicit arguments
   implicits (like constants and variables)
 - Set Implicit Arguments is strict by default in new syntax
 - Implicit Arguments flags are now synchronous with reset
+- New switch "Unset/Set Printing Implicits" to globally control
+  printing of implicits
 
 Grammar extensions
 
@@ -64,6 +66,7 @@ Library
 Tactic language
 
 - Fail tactic now accepts a failure message
+- New primitive tactic "FreshId" to generate new names
 
 Tactics
 

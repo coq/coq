@@ -119,6 +119,8 @@ GEXTEND Gram
 	  TacArg(ConstrMayEval (ConstrContext (id,c)))
       | IDENT "check"; c = Constr.lconstr ->
 	  TacArg(ConstrMayEval (ConstrTypeOf c))
+      | IDENT "freshid"; s = OPT STRING ->
+	  TacFreshId s
       | "'"; c = Constr.constr -> TacArg(ConstrMayEval(ConstrTerm c))
       | r = reference; la = LIST1 tactic_arg ->
           TacArg(TacCall (loc,r,la))

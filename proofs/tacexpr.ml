@@ -201,6 +201,7 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg =
   | Integer        of int
   | TacCall        of loc *
       'ref * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg list
+  | TacFreshId     of string option
   | Tacexp of 'tac
 
 type raw_tactic_expr =
