@@ -159,7 +159,7 @@ let strip_meta id = (* For Grammar v7 compatibility *)
   if s.[0]='$' then id_of_string (String.sub s 1 (String.length s - 1))
   else id
 
-let pretype_id loc env lvar id =
+let pretype_id loc env (lvar,unbndltacvars) id =
   let id = strip_meta id in (* May happen in tactics defined by Grammar *)
   try
     List.assoc id lvar
@@ -171,6 +171,12 @@ let pretype_id loc env lvar id =
   try
     let (_,_,typ) = lookup_named id env in
     { uj_val  = mkVar id; uj_type = typ }
+  with Not_found ->
+  try (* To build a nicer ltac error message *)
+    match List.assoc id unbndltacvars with
+      | None -> user_err_loc (loc,"",
+	  str (string_of_id id ^ " ist not bound to a term"))
+      | Some id0 -> Pretype_errors.error_var_not_found_loc loc id0
   with Not_found ->
     error_var_not_found_loc loc id
 
@@ -939,7 +945,7 @@ let ise_resolve_casted_gen fail_evar sigma env lvar typ c =
   (evars_of isevars, j)
 
 let ise_resolve_casted sigma env typ c =
-  ise_resolve_casted_gen true sigma env [] typ c
+  ise_resolve_casted_gen true sigma env ([],[]) typ c
 
 (* Raw calls to the unsafe inference machine: boolean says if we must fail
    on unresolved evars, or replace them by Metas; the unsafe_judgment list
@@ -960,25 +966,29 @@ let ise_infer_type_gen fail_evar sigma env lvar c =
 type var_map = (identifier * unsafe_judgment) list
 
 let understand_judgment sigma env c =
-  snd (ise_infer_gen true sigma env [] None c)
+  snd (ise_infer_gen true sigma env ([],[]) None c)
 
 let understand_type_judgment sigma env c =
-  snd (ise_infer_type_gen true sigma env [] c)
+  snd (ise_infer_type_gen true sigma env ([],[]) c)
 
 let understand sigma env c =
-  let _, c = ise_infer_gen true sigma env [] None c in
+  let _, c = ise_infer_gen true sigma env ([],[]) None c in
   c.uj_val
 
 let understand_type sigma env c =
-  let _,c = ise_infer_type_gen true sigma env [] c in
+  let _,c = ise_infer_type_gen true sigma env ([],[]) c in
   c.utj_val
 
-let understand_gen sigma env lvar ~expected_type:exptyp c =
+let understand_gen_ltac sigma env lvar ~expected_type:exptyp c =
   let _, c = ise_infer_gen true sigma env lvar exptyp c in
   c.uj_val
 
+let understand_gen sigma env lvar ~expected_type:exptyp c =
+  let _, c = ise_infer_gen true sigma env (lvar,[]) exptyp c in
+  c.uj_val
+
 let understand_gen_tcc sigma env lvar exptyp c =
-  let metamap, c = ise_infer_gen false sigma env lvar exptyp c in
+  let metamap, c = ise_infer_gen false sigma env (lvar,[]) exptyp c in
   metamap, c.uj_val
 
 let interp_sort = function

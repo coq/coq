@@ -38,6 +38,9 @@ val understand_gen :
   evar_map -> env -> var_map
     -> expected_type:(constr option) -> rawconstr -> constr
 
+val understand_gen_ltac :
+  evar_map -> env -> var_map * (identifier * identifier option) list
+    -> expected_type:(constr option) -> rawconstr -> constr
 
 (* Generic call to the interpreter from rawconstr to constr, turning
    unresolved holes into metas. Returns also the typing context of
@@ -68,11 +71,13 @@ val constr_out : Dyn.t -> constr
  * Unused outside, but useful for debugging
  *)
 val pretype : 
-  type_constraint -> env -> evar_defs -> var_map ->
+  type_constraint -> env -> evar_defs -> 
+    var_map * (identifier * identifier option) list ->
     rawconstr -> unsafe_judgment
 
 val pretype_type : 
-  val_constraint -> env -> evar_defs -> var_map ->
+  val_constraint -> env -> evar_defs ->
+    var_map * (identifier * identifier option) list ->
     rawconstr -> unsafe_type_judgment
 (*i*)
 
