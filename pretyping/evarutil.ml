@@ -220,7 +220,7 @@ let new_isevar isevars env typ k =
   let (sigma',evar) =
     new_isevar_sign env' !isevars typ' (Array.of_list newargs) in
   isevars := sigma';
-  (evar,typ')
+  evar
 
 
 

@@ -20,7 +20,7 @@ open Evarutil
 (* This was previously in Indrec but creates existential holes       *)
 
 let mkExistential isevars env =
-  let (c,_) = new_isevar isevars env (mkCast dummy_sort dummy_sort) CCI in c
+  new_isevar isevars env (mkCast dummy_sort dummy_sort) CCI
 
 let norec_branch_scheme env isevars typc =
   let rec crec typc = match whd_betadeltaiota env !isevars typc with 
@@ -789,7 +789,7 @@ let inh_coerce_to_ind isevars env ty tyi =
       (fun (na,ty) (env,evl) ->
 	 let s = get_sort_of env Evd.empty ty in
 	   (push_rel (na,(make_typed ty s)) env,
-	    fst (new_isevar isevars env (mkCast ty (mkSort s)) CCI)::evl))
+	    (new_isevar isevars env (mkCast ty (mkSort s)) CCI)::evl))
       ntys (env,[]) in
   let expected_typ = applist (mkMutInd tyi,evarl) in
      (* devrait être indifférent d'exiger leq ou pas puisque pour 

@@ -35,7 +35,7 @@ val ise_defined : 'a evar_defs -> constr -> bool
 val real_clean :
   'a evar_defs -> int -> (identifier * constr) list -> constr -> constr
 val new_isevar :
-  'a evar_defs -> env -> constr -> path_kind -> constr * constr
+  'a evar_defs -> env -> constr -> path_kind -> constr
 val evar_define : 'a evar_defs -> constr -> constr -> int list
 val solve_simple_eqn : (constr -> constr -> bool) -> 'a evar_defs ->
   (conv_pb * constr * constr) -> int list option

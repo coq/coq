@@ -324,7 +324,7 @@ and conv_record env isevars (c,bs,(xs,xs1),(us,us1),(ts,ts1),t) =
   let ks =
     List.fold_left
       (fun ks b ->
-	 let (k,_) = new_isevar isevars env (substl ks b) CCI in (k::ks))
+	 (new_isevar isevars env (substl ks b) CCI)::ks)
       [] bs
   in
   if (list_for_all2eq 
