@@ -400,7 +400,7 @@ let match_aconstr c (metas_scl,pat) =
 
 type notation = string
 
-type explicitation = int
+type explicitation = ExplByPos of int | ExplByName of identifier
 
 type proj_flag = int option (* [Some n] = proj of the n-th visible argument *)
 
@@ -421,7 +421,7 @@ type constr_expr =
   | CLetIn of loc * name located * constr_expr * constr_expr
   | CAppExpl of loc * (proj_flag * reference) * constr_expr list
   | CApp of loc * (proj_flag * constr_expr) * 
-      (constr_expr * explicitation option) list
+      (constr_expr * explicitation located option) list
   | CCases of loc * (constr_expr option * constr_expr option) *
       (constr_expr * (name * (loc * reference * name list) option)) list *
       (loc * cases_pattern_expr list * constr_expr) list

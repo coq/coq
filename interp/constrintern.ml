@@ -47,7 +47,7 @@ type internalisation_error =
   | UnboundFixName of bool * identifier
   | NonLinearPattern of identifier
   | BadPatternsNumber of int * int
-  | BadExplicitationNumber of int * int option
+  | BadExplicitationNumber of explicitation * int option
 
 exception InternalisationError of loc * internalisation_error
 
@@ -78,11 +78,19 @@ let explain_bad_patterns_number n1 n2 =
     ++ int n2
 
 let explain_bad_explicitation_number n po =
-  let s = match po with
-    | None -> "a regular argument"
-    | Some p -> string_of_int p in
-  str "Bad explicitation number: found " ++ int n ++ 
-  str" but was expecting " ++ str s
+  match n with
+  | ExplByPos n ->
+      let s = match po with
+	| None -> str "a regular argument"
+	| Some p -> int p in
+      str "Bad explicitation number: found " ++ int n ++ 
+      str" but was expecting " ++ s
+  | ExplByName id ->
+      let s = match po with
+	| None -> str "a regular argument"
+	| Some p -> (*pr_id (name_of_position p) in*) failwith "" in
+      str "Bad explicitation name: found " ++ pr_id id ++ 
+      str" but was expecting " ++ s
 
 let explain_internalisation_error = function
   | VariableCapture id -> explain_variable_capture id
@@ -394,7 +402,6 @@ let push_name_env (ids,impls,tmpsc,scopes as env) = function
 (**********************************************************************)
 (* Utilities for application                                          *)
 
-
 let check_projection isproj nargs r = 
   match (r,isproj) with
   | RRef (loc, ref), Some nth ->
@@ -412,6 +419,41 @@ let set_hole_implicit i = function
   | RRef (loc,r) -> (loc,ImplicitArg (r,i))
   | RVar (loc,id) -> (loc,ImplicitArg (VarRef id,i))
   | _ -> anomaly "Only refs have implicits"
+
+let exists_implicit_name id =
+  List.exists (fun imp -> is_status_implicit imp & id = name_of_implicit imp)
+
+let extract_explicit_arg imps args =
+  let rec aux = function
+  | [] -> [],[]
+  | (a,e)::l ->
+      let (eargs,rargs) = aux l in
+      match e with
+      | None -> (eargs,a::rargs)
+      | Some (loc,pos) ->
+	  let id = match pos with
+	  | ExplByName id ->
+	      if not (exists_implicit_name id imps) then
+		user_err_loc (loc,"",str "Wrong argument name: " ++ pr_id id);
+	      if List.mem_assoc id eargs then
+		user_err_loc (loc,"",str "Argument name " ++ pr_id id
+		++ str " occurs more than once");
+	      id
+	  | ExplByPos p ->
+	      let id =
+		try 
+		  let imp = List.nth imps (p-1) in
+		  if not (is_status_implicit imp) then failwith "imp";
+		  name_of_implicit imp
+		with Failure _ (* "nth" | "imp" *) ->
+		  user_err_loc (loc,"",str"Wrong argument position: " ++ int p)
+	      in
+	      if List.mem_assoc id eargs then
+		user_err_loc (loc,"",str"Argument at position " ++ int p ++
+		  str " is mentioned more than once");
+	      id in
+	  ((id,(loc,a))::eargs,rargs)
+  in aux args
 
 (**********************************************************************)
 (* Syntax extensions                                                  *)
@@ -628,39 +670,38 @@ let internalise sigma env allow_soapp lvar c =
     | [] -> intern env body
 
   and intern_impargs c env l subscopes args =
-    let rec aux n l subscopes args = 
+    let eargs, rargs = extract_explicit_arg l args in
+    let rec aux n impl subscopes eargs rargs =
       let (enva,subscopes') = apply_scope_env env subscopes in
-      match (l,args) with 
-      | (imp::l', (a,Some j)::args') ->
-	  if is_status_implicit imp & j>=n then
-	    if j=n then 
-	      (intern enva a)::(aux (n+1) l' subscopes' args')
-	    else 
-	      (RHole (set_hole_implicit n c))::(aux (n+1) l' subscopes' args)
-	  else 
-	    let e = if is_status_implicit imp then Some n else None in
-	    raise
-	      (InternalisationError(constr_loc a,BadExplicitationNumber (j,e)))
-      | (imp::l',(a,None)::args') -> 
-	  if is_status_implicit imp then 
-	    (RHole (set_hole_implicit n c))::(aux (n+1) l' subscopes' args)
-	  else 
-	    (intern enva a)::(aux (n+1) l' subscopes' args')
-      | ([],args) -> intern_tailargs env subscopes args
-      | (_::l',[]) ->
-          if List.for_all is_status_implicit l then
-            (RHole (set_hole_implicit n c))::(aux (n+1) l' subscopes args)
-          else []
-    in 
-    aux 1 l subscopes args
-
-  and intern_tailargs env subscopes = function
-    | (a,Some _)::args' ->
-	raise (InternalisationError (constr_loc a, WrongExplicitImplicit))
-    | (a,None)::args ->
-      let (enva,subscopes) = apply_scope_env env subscopes in
-      (intern enva a) :: (intern_tailargs env subscopes args)
-    | [] -> []
+      match (impl,rargs) with
+      | (imp::impl', rargs) when is_status_implicit imp ->
+	  begin try 
+	    let id = name_of_implicit imp in
+	    let (_,a) = List.assoc id eargs in
+	    let eargs' = List.remove_assoc id eargs in
+	    intern enva a :: aux (n+1) impl' subscopes' eargs' rargs
+	  with Not_found ->
+	  if rargs=[] & eargs=[] &
+	    not (List.for_all is_status_implicit impl') then
+	    (* Less regular arguments than expected: don't complete *)
+	    (* with implicit arguments *)
+	    []
+	  else
+	    RHole (set_hole_implicit n c) :: 
+	      aux (n+1) impl' subscopes' eargs rargs
+	  end
+      | (imp::impl', a::rargs') ->
+	  intern enva a :: aux (n+1) impl' subscopes' eargs rargs'
+      | (imp::impl', []) -> 
+	  if eargs <> [] then 
+	    (let (id,(loc,_)) = List.hd eargs in
+	    user_err_loc (loc,"",str "Not enough non implicit
+	    arguments to accept the argument bound to " ++ pr_id id));
+	  []
+      | ([], rargs) ->
+	  assert (eargs = []);
+	  intern_args env subscopes rargs
+    in aux 1 l subscopes eargs rargs
 
   and intern_args env subscopes = function
     | [] -> []

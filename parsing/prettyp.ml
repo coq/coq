@@ -47,7 +47,19 @@ let print_impl_args_by_pos = function
       prlist_with_sep (fun () -> str "; ") int l ++
       str"] are implicit" ++ fnl()
 
-let print_impl_args l = print_impl_args_by_pos (positions_of_implicits l)
+let print_impl_args_by_name = function
+  | []  -> mt ()
+  | [i] -> str"Argument " ++ pr_id (name_of_implicit i) ++ str" is implicit" ++
+      fnl()
+  | l   -> 
+      str"Arguments " ++ 
+      prlist_with_sep (fun () -> str ", ")
+        (fun imp -> pr_id (name_of_implicit imp)) l ++
+      str" are implicit" ++ fnl()
+
+let print_impl_args l = 
+  if !Options.v7 then print_impl_args_by_pos (positions_of_implicits l)
+  else print_impl_args_by_name (List.filter is_status_implicit l)
 
 let print_argument_scopes = function
   | [Some sc] -> str"Argument scope is [" ++ str sc ++ str"]" ++ fnl()
@@ -57,6 +69,10 @@ let print_argument_scopes = function
       prlist_with_sep spc (function Some sc -> str sc | None -> str "_") l ++
       str "]") ++ fnl()
   | _  -> mt()
+
+let print_name_infos ref =
+  print_impl_args (implicits_of_global ref) ++
+  print_argument_scopes (Symbols.find_arguments_scope ref)
 
 (* To be improved; the type should be used to provide the types in the
    abstractions. This should be done recursively inside prterm, so that
@@ -163,8 +179,7 @@ let print_mutual sp =
 let print_section_variable sp =
   let d = get_variable sp in
   print_named_decl d ++ 
-  print_impl_args (implicits_of_global (VarRef sp)) ++
-  print_argument_scopes (Symbols.find_arguments_scope (VarRef sp))
+  print_name_infos (VarRef sp)
 
 let print_body = function
   | Some lc  -> prterm (Declarations.force lc)
@@ -187,8 +202,7 @@ let print_constant with_values sep sp =
 	print_basename sp ++ str sep ++ cut () ++
 	(if with_values then print_typed_body (val_0,typ) else prtype typ) ++
 	fnl ()) ++ 
-  print_impl_args (implicits_of_global (ConstRef sp)) ++
-  print_argument_scopes (Symbols.find_arguments_scope (ConstRef sp))
+  print_name_infos (ConstRef sp)
 
 let print_inductive sp = (print_mutual sp)
 

@@ -19,6 +19,7 @@ open Inductive
 open Libobject
 open Lib
 open Nametab
+open Pp
 
 (*s Flags governing the computation of implicit arguments *)
 
@@ -122,7 +123,7 @@ let argument_less = function
   | Hyp _, Conclusion -> true
   | Conclusion, _ -> false
 
-let update pos rig st =
+let update pos rig (na,st) =
   let e =
   if rig then
     match st with
@@ -146,7 +147,7 @@ let update pos rig st =
       | Some (DepFlex fpos as x) ->
           if argument_less (pos,fpos) then DepFlex pos else x
       | Some Manual -> assert false
-  in Some e
+  in na, Some e
 
 (* modified is_rigid_reference with a truncated env *)
 let is_flexible_reference env bound depth f =
@@ -207,29 +208,41 @@ let add_free_rels_until strict bound env m pos acc =
 
 (* calcule la liste des arguments implicites *)
 
-let compute_implicits output env t =
-  let strict =
-    if output then !strict_implicit_args_out else !strict_implicit_args in
-  let rec aux env n t =
+let compute_implicits_gen strict contextual env t =
+  let rec aux env n names t =
     let t = whd_betadeltaiota env t in
     match kind_of_term t with
       | Prod (x,a,b) ->
 	  add_free_rels_until strict n env a (Hyp (n+1))
-            (aux (push_rel (x,None,a) env) (n+1) b)
+            (aux (push_rel (x,None,a) env) (n+1) (x::names) b)
       | _ -> 
-	  let v = Array.create n None in
-	  if (not output & !contextual_implicit_args) or
-	     (output & !contextual_implicit_args_out)
-	  then
-	    add_free_rels_until strict n env t Conclusion v
+	  let names = List.rev names in
+	  let v = Array.map (fun na -> na,None) (Array.of_list names) in
+	  if contextual then add_free_rels_until strict n env t Conclusion v
 	  else v
   in 
   match kind_of_term (whd_betadeltaiota env t) with 
     | Prod (x,a,b) ->
-	Array.to_list (aux (push_rel (x,None,a) env) 1 b)
+	let v = aux (push_rel (x,None,a) env) 1 [x] b in
+	Array.to_list v
     | _ -> []
 
-type implicit_status = implicit_explanation option (* None = Not implicit *)
+let compute_implicits output env t =
+  let strict =
+    (not output & !strict_implicit_args) or
+    (output & !strict_implicit_args_out) in 
+  let contextual =
+    (not output & !contextual_implicit_args) or
+    (output & !contextual_implicit_args_out) in
+  let l = compute_implicits_gen strict contextual env t in
+  List.map (function
+    | (Name id, Some imp) -> Some (id,imp)
+    | (Anonymous, Some _) -> anomaly "Unnamed implicit"
+    | _ -> None) l
+
+type implicit_status =
+    (* None = Not implicit *)
+    (identifier * implicit_explanation) option
 
 type implicits_list = implicit_status list
 
@@ -237,22 +250,26 @@ let is_status_implicit = function
   | None -> false
   | _ -> true
 
+let name_of_implicit = function
+  | None -> anomaly "Not an implicit argument"
+  | Some (id,_) -> id
+
 (* [in_ctx] means we now the expected type, [n] is the index of the argument *)
 let is_inferable_implicit in_ctx n = function
   | None -> false
-  | Some (DepRigid (Hyp p)) -> n >= p
-  | Some (DepFlex (Hyp p)) -> false
-  | Some (DepFlexAndRigid (_,Hyp q)) -> n >= q
-  | Some (DepRigid Conclusion) -> in_ctx
-  | Some (DepFlex Conclusion) -> false
-  | Some (DepFlexAndRigid (_,Conclusion)) -> false
-  | Some Manual -> true
+  | Some (_,DepRigid (Hyp p)) -> n >= p
+  | Some (_,DepFlex (Hyp p)) -> false
+  | Some (_,DepFlexAndRigid (_,Hyp q)) -> n >= q
+  | Some (_,DepRigid Conclusion) -> in_ctx
+  | Some (_,DepFlex Conclusion) -> false
+  | Some (_,DepFlexAndRigid (_,Conclusion)) -> false
+  | Some (_,Manual) -> true
 
 let positions_of_implicits =
   let rec aux n = function
       [] -> []
-    | Some _::l -> n :: aux (n+1) l
-    | None::l -> aux (n+1) l
+    | Some _ :: l -> n :: aux (n+1) l
+    | None :: l -> aux (n+1) l
   in aux 1
 
 type strict_flag = bool     (* true = strict *)
@@ -421,17 +438,28 @@ let implicits_of_global_out r =
 let check_range n i =
   if i<1 or i>n then error ("Bad argument number: "^(string_of_int i))
 
+
 let declare_manual_implicits r l =
   let t = Global.type_of_global r in
-  let n = List.length (fst (dest_prod (Global.env()) t)) in
+  let autoimps = compute_implicits_gen false true (Global.env()) t in
+  let n = List.length autoimps in
   if not (list_distinct l) then error ("Some numbers occur several time");
   List.iter (check_range n) l;
   let l = List.sort (-) l in
-  let rec aux k = function
-    | [] -> if k>n then [] else None :: aux (k+1) []
-    | p::l as l' ->
-        if k=p then Some Manual :: aux (k+1) l else None :: aux (k+1) l' in
-  let l = Impl_manual (aux 1 l) in
+  (* Compare with automatic implicits to recover printing data and names *)
+  let rec merge k = function
+    | [], [] -> []
+    | ((na,imp)::imps, p::l) when k=p ->
+	let id = match na with
+	  | Name id -> id
+	  | _ -> errorlabstrm ""
+	      (str "Cannot set implicit argument number " ++ int p ++
+	      str ": it has no name") in
+	let imp = match imp with None -> (id,Manual) | Some imp -> (id,imp) in
+	Some imp :: merge (k+1) (imps,l)
+    | _::imps, l' -> None :: merge (k+1) (imps,l')
+    | [], _ -> assert false in
+  let l = Impl_manual (merge 1 (autoimps,l)) in
   let (_,oimp_out) = implicits_of_global_gen r in
   let l = l, if !Options.v7_only then oimp_out else l in
   add_anonymous_leaf (in_implicits [r,l])

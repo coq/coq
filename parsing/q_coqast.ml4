@@ -183,6 +183,10 @@ let mlexpr_of_red_flags {
   Rawterm.rConst = $mlexpr_of_list mlexpr_of_reference l$
 } >>
 
+let mlexpr_of_explicitation = function
+  | Topconstr.ExplByName id -> <:expr< Topconstr.ExplByName $mlexpr_of_ident id$ >>
+  | Topconstr.ExplByPos n -> <:expr< Topconstr.ExplByPos $mlexpr_of_int n$ >>
+ 
 let rec mlexpr_of_constr = function
   | Topconstr.CRef (Libnames.Ident (loc,id)) when is_meta (string_of_id id) ->
       anti loc (string_of_id id)
@@ -195,7 +199,7 @@ let rec mlexpr_of_constr = function
   | Topconstr.CLambdaN (loc,l,a) -> <:expr< Topconstr.CLambdaN $dloc$ $mlexpr_of_list (mlexpr_of_pair (mlexpr_of_list (mlexpr_of_pair (fun _ -> dloc) mlexpr_of_name)) mlexpr_of_constr) l$ $mlexpr_of_constr a$ >>
   | Topconstr.CLetIn (loc,_,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Topconstr.CAppExpl (loc,a,l) -> <:expr< Topconstr.CAppExpl $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_reference a$ $mlexpr_of_list mlexpr_of_constr l$ >>
-  | Topconstr.CApp (loc,a,l) -> <:expr< Topconstr.CApp $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_constr a$ $mlexpr_of_list (mlexpr_of_pair mlexpr_of_constr (mlexpr_of_option mlexpr_of_int)) l$ >>
+  | Topconstr.CApp (loc,a,l) -> <:expr< Topconstr.CApp $dloc$ $mlexpr_of_pair (mlexpr_of_option mlexpr_of_int) mlexpr_of_constr a$ $mlexpr_of_list (mlexpr_of_pair mlexpr_of_constr (mlexpr_of_option (mlexpr_of_located mlexpr_of_explicitation))) l$ >>
   | Topconstr.CCases (loc,_,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Topconstr.COrderedCase (loc,_,_,_,_) -> failwith "mlexpr_of_constr: TODO"
   | Topconstr.CHole loc -> <:expr< Topconstr.CHole $dloc$ >>

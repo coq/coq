@@ -81,7 +81,8 @@ let pr_sort = function
 
 let pr_explicitation = function
   | None -> mt ()
-  | Some n -> int n ++ str "!"
+  | Some (_,ExplByPos n) -> int n ++ str "!"
+  | Some (_,ExplByName n) -> anomaly "Argument made explicit by name"
 
 let pr_expl_args pr (a,expl) =
   pr_explicitation expl ++ pr (lapp,L) a

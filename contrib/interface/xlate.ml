@@ -378,7 +378,10 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CFix _ -> assert false
 and xlate_formula_expl = function
     (a, None) -> xlate_formula a
-  | (a, i) -> CT_bang(xlate_int_opt i, xlate_formula a)
+  | (a, Some (_,ExplByPos i)) -> 
+      CT_bang(xlate_int_opt (Some i), xlate_formula a)
+  | (a, Some (_,ExplByName i)) ->
+      xlate_error "TODO: explicitation of implicit by name"
 and xlate_formula_expl_ne_list = function
     [] -> assert false
   | a::l -> CT_formula_ne_list(xlate_formula_expl a, List.map xlate_formula_expl l)

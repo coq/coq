@@ -217,7 +217,7 @@ GEXTEND Gram
   ;
   constr91:
     [ [ test_int_bang; n = INT; "!"; c = operconstr LEVEL "9" ->
-        (c, Some (int_of_string n))
+        (c, Some (loc,ExplByPos (int_of_string n)))
       | c = operconstr LEVEL "9" -> (c, None) ] ]
   ;
   (* annot and product_annot_tail are hacks to forbid concrete syntax *)

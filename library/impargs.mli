@@ -37,6 +37,8 @@ type implicits_list = implicit_status list
 
 val is_status_implicit : implicit_status -> bool
 val is_inferable_implicit : bool -> int -> implicit_status -> bool
+val name_of_implicit : implicit_status -> identifier
+
 val positions_of_implicits : implicits_list -> int list
 
 (* Computation of the positions of arguments automatically inferable

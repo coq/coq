@@ -132,10 +132,27 @@ let rec mkCLambdaN loc bll c =
   | [] -> c
   | LocalRawAssum ([],_) :: bll -> mkCLambdaN loc bll c
 
+(* Hack to parse "(n)" as nat without conflicts with the (useless) *)
+(* admissible notation "(n)" *)
+let test_lpar_id_coloneq =
+  Gram.Entry.of_parser "test_lpar_id_coloneq"
+    (fun strm ->
+      match Stream.npeek 1 strm with
+        | [("", "(")] ->
+            begin match Stream.npeek 2 strm with
+              | [_; ("IDENT", _)] ->
+		  begin match Stream.npeek 3 strm with
+		    | [_; _; ("", ":=")] -> ()
+		    | _ -> raise Stream.Failure
+		  end
+	      | _ -> raise Stream.Failure
+            end
+        | _ -> raise Stream.Failure)
+
 if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: binder_constr lconstr constr operconstr sort global
-  constr_pattern Constr.ident binder_let tuple_constr;
+  constr_pattern lconstr_pattern Constr.ident binder_let tuple_constr;
   Constr.ident:
     [ [ id = Prim.ident -> id
 
@@ -150,6 +167,9 @@ GEXTEND Gram
   ;
   constr_pattern:
     [ [ c = constr -> c ] ]
+  ;
+  lconstr_pattern:
+    [ [ c = lconstr -> c ] ]
   ;
   sort:
     [ [ "Set"  -> RProp Pos
@@ -218,7 +238,11 @@ GEXTEND Gram
       | c=fix_constr -> c ] ]
   ;
   appl_arg:
-    [ [ "@"; n=INT; ":="; c=constr -> (c,Some(int_of_string n))
+    [ [ _ = test_lpar_id_coloneq; "("; id = ident; ":="; c=lconstr; ")" ->
+	  (c,Some (loc,ExplByName id))
+(*
+      | "@"; n=INT; ":="; c=constr -> (c,Some(loc,ExplByPos (int_of_string n)))
+*)
       | c=constr -> (c,None) ] ]
   ;
   atomic_constr:

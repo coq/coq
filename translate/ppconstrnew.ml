@@ -87,12 +87,12 @@ let pr_sort = function
   | RProp Term.Pos -> str "Set"
   | RType u -> str "Type" ++ pr_opt pr_universe u
 
-let pr_explicitation = function
-  | None -> mt ()
-  | Some n -> str "@" ++ int n ++ str ":="
-
 let pr_expl_args pr (a,expl) =
-  pr_explicitation expl ++ pr (lapp,L) a
+  match expl with
+  | None -> pr (lapp,L) a
+  | Some (_,ExplByPos n) -> str "@" ++ int n ++ str ":=" ++ pr (lapp,L) a
+  | Some (_,ExplByName id) -> 
+      str "(" ++ pr_id id ++ str ":=" ++ pr (lapp,L) a ++ str ")"
 
 let pr_opt_type pr = function
   | CHole _ -> mt ()
