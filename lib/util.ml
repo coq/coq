@@ -159,6 +159,29 @@ let list_subset l1 l2 =
   in 
   look l1
 
+let list_splitby p = 
+  let rec splitby_loop x y = 
+    match y with 
+      | []      -> ([],[])
+      | (a::l)  -> if (p a) then (x,y) else (splitby_loop (x@[a]) l)
+  in 
+  splitby_loop []
+
+let list_firstn n l =
+  let rec aux acc = function
+    | (0, l) -> List.rev acc
+    | (n, (h::t)) -> aux (h::acc) (pred n, t)
+    | _ -> failwith "firstn"
+  in 
+  aux [] (n,l)
+
+let list_lastn n l =
+  let len = List.length l in
+  let rec aux m l =
+    if m = n then l else aux (m - 1) (List.tl l)
+  in
+  if len < n then failwith "lastn" else aux len l
+
 (* Arrays *)
 
 let array_exists f v = 
@@ -296,6 +319,8 @@ let intmap_in_dom x m =
 let intmap_to_list m = Intmap.fold (fun n v l -> (n,v)::l) m []
 
 let intmap_inv m b = Intmap.fold (fun n v l -> if v = b then n::l else l) m []
+
+let in_some x = Some x
 
 let out_some = function
   | Some x -> x

@@ -73,11 +73,13 @@ let pf_reduction_of_redexp gls re c =
   reduction_of_redexp re (pf_env gls) (project gls) c 
 
 let pf_reduce redfun gls c       = redfun (pf_env gls) (project gls) c 
+
 let pf_whd_betadeltaiota         = pf_reduce whd_betadeltaiota
 let pf_whd_betadeltaiota_stack   = pf_reduce whd_betadeltaiota_stack
 let pf_hnf_constr                = pf_reduce hnf_constr
 let pf_red_product               = pf_reduce red_product
 let pf_nf                        = pf_reduce nf
+let pf_nf_betaiota               = pf_reduce nf_betaiota
 let pf_compute                   = pf_reduce compute
 let pf_unfoldn ubinds            = pf_reduce (unfoldn ubinds)
 

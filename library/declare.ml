@@ -165,8 +165,8 @@ let global_operator sp id =
     let mib = Global.lookup_mind sp in
     mind_oper_of_id sp id mib
 
-let global_reference id =
-  let sp = Nametab.sp_of_id CCI id in
+let global_reference kind id =
+  let sp = Nametab.sp_of_id kind id in
   let oper = global_operator sp id in
   let hyps = get_globals (Global.context ()) in
   let ids =  ids_of_sign hyps in

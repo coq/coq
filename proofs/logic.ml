@@ -409,7 +409,7 @@ let extract_constr =
               | GLOBNAME (id,_) -> VAR id
               | RELNAME (n,_) -> Rel n)
          with Not_found -> 
-           (try global_reference str
+           (try global_reference CCI str
             with Not_found -> error ((string_of_id str)^" not declared")))
 	
     | (Rel _) as val_0 -> val_0

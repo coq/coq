@@ -47,6 +47,7 @@ let mis_nparams mis = mis.mis_mib.mind_nparams
 let mis_kelim mis = mis.mis_mip.mind_kelim
 let mis_recargs mis =
   Array.map (fun mip -> mip.mind_listrec) mis.mis_mib.mind_packets
+let mis_recarg mis = mis.mis_mip.mind_listrec
 
 let mind_nth_type_packet mib n = mib.mind_packets.(n)
 

@@ -55,7 +55,8 @@ PROOFS=proofs/typing_ev.cmo proofs/tacred.cmo \
        proofs/macros.cmo proofs/tacinterp.cmo # proofs/clenv.cmo
 
 TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
-        tactics/nbtermdn.cmo tactics/stock.cmo
+        tactics/nbtermdn.cmo tactics/stock.cmo tactics/tacticals.cmo \
+        tactics/pattern.cmo 
 
 PRETYPING=pretyping/astterm.cmo
 
@@ -109,7 +110,7 @@ LPLIB = lib/doc.tex $(LIB:.cmo=.mli)
 LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
 LPLIBRARY = library/doc.tex $(LIBRARY:.cmo=.mli)
 LPPROOFS = proofs/doc.tex $(PROOFS:.cmo=.mli)
-LPTACTICS = tactics/doc.tex $(TCATICS:.cmo=.mli)
+LPTACTICS = tactics/doc.tex $(TACTICS:.cmo=.mli)
 LPTOPLEVEL = toplevel/doc.tex $(TOPLEVEL:.cmo=.mli)
 LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL) $(LPLIBRARY) \
 	  $(LPPROOFS) $(LPTACTICS) $(LPTOPLEVEL)

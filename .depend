@@ -81,8 +81,15 @@ tactics/btermdn.cmi: kernel/generic.cmi kernel/term.cmi
 tactics/dn.cmi: lib/tlm.cmi 
 tactics/nbtermdn.cmi: tactics/btermdn.cmi kernel/generic.cmi kernel/term.cmi \
     tactics/termdn.cmi 
+tactics/pattern.cmi: kernel/evd.cmi kernel/names.cmi proofs/proof_trees.cmi \
+    kernel/sign.cmi tactics/stock.cmi kernel/term.cmi lib/util.cmi 
 tactics/stock.cmi: kernel/names.cmi 
+tactics/tacticals.cmi: proofs/clenv.cmi kernel/names.cmi tactics/pattern.cmi \
+    proofs/proof_trees.cmi kernel/reduction.cmi kernel/sign.cmi \
+    proofs/tacmach.cmi kernel/term.cmi tactics/wcclausenv.cmi 
 tactics/termdn.cmi: tactics/dn.cmi kernel/generic.cmi kernel/term.cmi 
+tactics/wcclausenv.cmi: proofs/clenv.cmi kernel/evd.cmi kernel/names.cmi \
+    proofs/proof_trees.cmi kernel/sign.cmi proofs/tacmach.cmi kernel/term.cmi 
 toplevel/errors.cmi: parsing/coqast.cmi lib/pp.cmi 
 toplevel/himsg.cmi: kernel/environ.cmi kernel/names.cmi lib/pp.cmi \
     kernel/sign.cmi kernel/term.cmi kernel/type_errors.cmi 
@@ -384,10 +391,30 @@ tactics/nbtermdn.cmo: tactics/btermdn.cmi kernel/generic.cmi lib/gmap.cmi \
 tactics/nbtermdn.cmx: tactics/btermdn.cmx kernel/generic.cmx lib/gmap.cmx \
     library/libobject.cmx library/library.cmx kernel/names.cmx \
     kernel/term.cmx tactics/termdn.cmx lib/util.cmx tactics/nbtermdn.cmi 
+tactics/pattern.cmo: parsing/astterm.cmi proofs/clenv.cmi kernel/evd.cmi \
+    kernel/generic.cmi kernel/names.cmi parsing/pcoq.cmi lib/pp.cmi \
+    proofs/proof_trees.cmi kernel/reduction.cmi kernel/sosub.cmi \
+    tactics/stock.cmi kernel/term.cmi tactics/pattern.cmi 
+tactics/pattern.cmx: parsing/astterm.cmi proofs/clenv.cmx kernel/evd.cmx \
+    kernel/generic.cmx kernel/names.cmx parsing/pcoq.cmi lib/pp.cmx \
+    proofs/proof_trees.cmx kernel/reduction.cmx kernel/sosub.cmx \
+    tactics/stock.cmx kernel/term.cmx tactics/pattern.cmi 
 tactics/stock.cmo: lib/bij.cmi lib/gmap.cmi lib/gmapl.cmi library/library.cmi \
     kernel/names.cmi lib/pp.cmi lib/util.cmi tactics/stock.cmi 
 tactics/stock.cmx: lib/bij.cmx lib/gmap.cmx lib/gmapl.cmx library/library.cmx \
     kernel/names.cmx lib/pp.cmx lib/util.cmx tactics/stock.cmi 
+tactics/tacticals.cmo: proofs/clenv.cmi library/declare.cmi \
+    kernel/environ.cmi kernel/generic.cmi library/global.cmi \
+    kernel/inductive.cmi kernel/names.cmi tactics/pattern.cmi lib/pp.cmi \
+    proofs/proof_trees.cmi kernel/reduction.cmi kernel/sign.cmi \
+    proofs/tacmach.cmi kernel/term.cmi lib/util.cmi tactics/wcclausenv.cmi \
+    tactics/tacticals.cmi 
+tactics/tacticals.cmx: proofs/clenv.cmx library/declare.cmx \
+    kernel/environ.cmx kernel/generic.cmx library/global.cmx \
+    kernel/inductive.cmx kernel/names.cmx tactics/pattern.cmx lib/pp.cmx \
+    proofs/proof_trees.cmx kernel/reduction.cmx kernel/sign.cmx \
+    proofs/tacmach.cmx kernel/term.cmx lib/util.cmx tactics/wcclausenv.cmi \
+    tactics/tacticals.cmi 
 tactics/termdn.cmo: tactics/dn.cmi kernel/generic.cmi kernel/term.cmi \
     lib/util.cmi tactics/termdn.cmi 
 tactics/termdn.cmx: tactics/dn.cmx kernel/generic.cmx kernel/term.cmx \

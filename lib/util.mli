@@ -47,6 +47,9 @@ val list_try_find_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b
 val list_uniquize : 'a list -> 'a list
 val list_distinct : 'a list -> bool
 val list_subset : 'a list -> 'a list -> bool
+val list_splitby : ('a -> bool) -> 'a list -> 'a list * 'a list
+val list_firstn : int -> 'a list -> 'a list
+val list_lastn : int -> 'a list -> 'a list
 
 (*s Arrays. *)
 
@@ -89,6 +92,7 @@ val intmap_in_dom : int -> 'a Intmap.t -> bool
 val intmap_to_list : 'a Intmap.t -> (int * 'a) list
 val intmap_inv : 'a Intmap.t -> 'a -> int list
 
+val in_some : 'a -> 'a option
 val out_some : 'a option -> 'a
 val option_app : ('a -> 'b) -> 'a option -> 'b option
 

@@ -5,7 +5,7 @@
 open Names
 (*i*)
 
-(* The pattern table for tactics. *)
+(* Module markers. *)
 
 type 'a stock
 

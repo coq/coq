@@ -54,6 +54,7 @@ val mis_nconstr : mind_specif -> int
 val mis_nparams : mind_specif -> int
 val mis_kelim : mind_specif -> sorts list
 val mis_recargs : mind_specif -> (recarg list) array array
+val mis_recarg : mind_specif -> (recarg list) array
 
 val mind_nth_type_packet : 
   mutual_inductive_body -> int -> mutual_inductive_packet

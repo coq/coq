@@ -34,6 +34,6 @@ val declare_mind : mutual_inductive_entry -> unit
   then constructs the corresponding term, associated to the current 
   environment of variables. *)
 
-val global_reference : identifier -> constr
+val global_reference : path_kind -> identifier -> constr
 
 val mind_path : constr -> section_path
