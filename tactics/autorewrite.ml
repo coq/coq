@@ -26,8 +26,6 @@ type rew_rule = constr * bool * tactic
 let rewtab =
   ref ((Hashtbl.create 53) : (string,rew_rule) Hashtbl.t)
 
-let lookup id = Hashtbl.find id !rewtab
-
 let _ = 
   let init () = rewtab := (Hashtbl.create 53) in
   let freeze () = !rewtab in
