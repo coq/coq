@@ -460,7 +460,7 @@ FIELDVO = contrib/field/Field_Compl.vo     contrib/field/Field_Theory.vo \
 
 XMLVO = contrib/xml/Xml.vo
 
-INTERFACEV0 = contrib/interface/Centaur.vo
+INTERFACEV0 = contrib/interface/Centaur.vo contrib/interface/vernacrc
 
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
 	$(COQC) -boot -byte  $(COQINCLUDES) $<
