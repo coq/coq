@@ -12,6 +12,30 @@ type identifier = {
 
 type name = Name of identifier | Anonymous
 
+let is_letter c =
+  (c >= Char.code 'a' && c <= Char.code 'z') or
+  (c >= Char.code 'A' && c <= Char.code 'Z') or
+  (c >= Char.code '\248' && c <= Char.code '\255') or
+  (c >= Char.code '\192' && c <= Char.code '\214') or
+  (c >= Char.code '\216' && c <= Char.code '\246')
+
+let is_digit c = 
+  (c >= Char.code '0' && c <= Char.code '9')
+
+let check_ident s =
+  let l = String.length s in
+  if l = 0 then error "The empty string is not an identifier"; 
+  let c = Char.code (String.get s 0) in
+  if not (is_letter c) then error "An identifier starts with a letter";
+  for i=1 to l-1 do
+    let c = Char.code (String.get s i) in
+    if not (is_letter c or is_digit c or c = Char.code '\'') then
+      error
+	("Character "^(String.sub s i 1)^" is not allowed in an identifier")
+  done
+
+let is_ident s = try check_ident s; true with _ -> false
+
 let code_of_0 = Char.code '0'
 let code_of_9 = Char.code '9'
 
@@ -140,7 +164,7 @@ let pr_qualid (l,s) = prlist_with_sep (fun () -> pr_str ".") pr_str (l@[s])
 type dir_path = string list
 
 (* The root of absolute names *)
-let coq_root = ["Coq"]
+let coq_root = []
 
 (*s Section paths are absolute names *)
 
@@ -183,13 +207,20 @@ let parse_sp s =
   let dirs,n = decoupe_dirs 0 in
   let id = String.sub s n (len-n) in
   dirs,id
-    
+
 let path_of_string s =
   try
     let sl,s = parse_sp s in
     make_path sl (id_of_string s) CCI
   with
     | Invalid_argument _ -> invalid_arg "path_of_string"
+
+let dirpath_of_string s =
+  try
+    let sl,s = parse_sp s in
+    sl @ [s]
+  with
+    | Invalid_argument _ -> invalid_arg "dirpath_of_string"
 
 let pr_sp sp = [< 'sTR (string_of_path sp) >]
 

@@ -25,6 +25,11 @@ val string_of_id : identifier -> string
 val id_of_string : string -> identifier
 val pr_id : identifier -> std_ppcmds
 
+(* These checks the validity of an identifier; [check_ident] fails
+   with error if invalid *)
+val check_ident : string -> unit
+val is_ident : string -> bool
+
 (* Identifiers sets and maps *)
 module Idset : Set.S with type elt = identifier
 module Idmap : Map.S with type key = identifier
@@ -82,6 +87,7 @@ val qualid_of_sp : section_path -> qualid
 val path_of_string : string -> section_path
 val string_of_path : section_path -> string
 val pr_sp : section_path -> std_ppcmds
+val dirpath_of_string : string -> dir_path
 
 (*i
 val string_of_path_mind : section_path -> identifier -> string
