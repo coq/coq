@@ -14,6 +14,7 @@ open Rawterm
 open Retyping
 open Pretype_errors
 open Evarutil
+open Evarconv
 
 (*********************************************************************)
 (* A) Typing old cases                                               *)
@@ -254,6 +255,26 @@ let substn_many_tomatch v depth = function
 
 let subst_tomatch (depth,c) = substn_many_tomatch [|make_substituend c|] depth
 
+
+(**********************************************************************)
+(* Dealing with regular and default patterns *)
+let is_regular eqn = eqn.tag = RegularPat
+
+let lower_pattern_status = function
+  | RegularPat -> DefaultPat 0
+  | DefaultPat n -> DefaultPat (n+1)
+
+let pattern_status defaults eqns =
+  if eqns <> [] then RegularPat
+  else
+    let min =
+      List.fold_right
+	(fun (_,eqn) n -> match eqn with
+	   | {tag = DefaultPat i} when i<n -> i
+	   | _ -> n)
+	defaults 0 in
+    DefaultPat min
+
 (**********************************************************************)
 (* Well-formedness tests *)
 (* Partial check on patterns *)
@@ -273,6 +294,14 @@ let check_all_variables typ mat =
        | PatVar (_,id) -> ()
        | PatCstr (loc,_,_,_) -> error_bad_pattern_loc loc CCI typ)
     mat
+
+let check_number_of_regular_eqns eqns =
+  let n =
+    List.fold_left(fun i eqn ->if is_regular eqn then i+1 else i) 0 eqns in
+  match n with
+    | 0 -> warning "Found several default clauses, kept the first one"
+    | 1 -> ()
+    | n -> errorlabstrm "build_leaf" [<'sTR "Some clauses are redondant" >]
 
 (**********************************************************************)
 (* Functions to deal with matrix factorization *)
@@ -305,7 +334,9 @@ let occur_in_rhs na rhs =
 
 let is_dep_patt eqn pat = occur_in_rhs (alias_of_pat pat) eqn.rhs
 
-let dependencies_in_rhs eqns =
+let dependencies_in_rhs nargs eqns =
+  if eqns = [] then list_tabulate (fun _ -> false) nargs (* Only "_" patts *)
+  else
   let deps = List.map (fun (tms,eqn) -> List.map (is_dep_patt eqn) tms) eqns in
   let columns = matrix_transpose deps in
   List.map (List.for_all ((=) true)) columns
@@ -389,7 +420,8 @@ let rec pop_next_tomatchs acc = function
 let expand_defaults pats current (name,eqn) =
   { eqn with
       patterns = pats @ eqn.patterns;
-      rhs = replace_name_in_rhs name current eqn.rhs }
+      rhs = replace_name_in_rhs name current eqn.rhs;
+      tag = lower_pattern_status eqn.tag }
 
 (************************************************************************)
 (* Some heuristics to get names for variables pushed in pb environment *)
@@ -451,19 +483,23 @@ let prepare_unif_pb typ cs =
   (* We may need to invert ci if its parameters occur in p *)
   let p' =
     if noccur_bet 1 n p then lift (-n) p
-    else failwith "TODO4-1" in
+    else 
+      (* Il faudrait que noccur_bet ne regarde pas la subst des Evar *)
+      if match p with DOPN(Evar _,_) -> true | _ -> false then lift (-n) p
+      else failwith "TODO4-1" in
   let ci = applist
 	     (mkMutConstruct cs.cs_cstr, cs.cs_params@(rel_list (-n) n)) in
 
   (* This is the problem: finding P s.t. cs_args |- (P realargs ci) = p' *)
   (Array.map (lift (-n)) cs.cs_concl_realargs, ci, p')
 
-let infer_predicate typs cstrs ind_data =
+let infer_predicate env isevars typs cstrs ind_data =
+  (* Il faudra substituer les isevars a un certain moment *)
   let eqns = array_map2 prepare_unif_pb typs cstrs in
 
   (* First strategy: no dependencies at all *)
   let (cclargs,_,typn) = eqns.(ind_data.nconstr -1) in
-  if array_for_all (fun (_,_,typ) -> eq_constr typn typ) eqns
+  if array_for_all (fun (_,_,typ) -> the_conv_x env isevars typn typ) eqns
   then
     let (sign,_) = ind_data.make_arity ind_data.mind ind_data.params in
     let pred = lam_it (lift (List.length sign) typn) sign in
@@ -551,11 +587,11 @@ let specialize_predicate_match tomatchs cs = function
 	(* Ne perd-on pas des cas en ne posant pas true à la place de dep ? *)
 	(fun ((na,t),_) p -> PrProd ((dep,na,t),p)) tomatchs pred''
 
-let find_predicate p typs cstrs current ind_data =
+let find_predicate env isevars p typs cstrs current ind_data =
   let (dep,pred) =
     match p with
       | Some p -> abstract_predicate ind_data p
-      | None -> infer_predicate typs cstrs ind_data in
+      | None -> infer_predicate env isevars typs cstrs ind_data in
   let typ = applist (pred, ind_data.realargs) in
   if dep then (pred, applist (typ, [current]), dummy_sort)
   else (pred, typ, dummy_sort)
@@ -586,42 +622,33 @@ let group_equations mind cstrs mat =
 	       brs.(i-1) <- (largs,rest) :: brs.(i-1)) () mat in
   (brs,!dflt)
 
-let pattern_status defaults eqns =
-  if eqns <> [] then RegularPat
-  else
-    let min =
-      List.fold_right
-	(fun (_,eqn) n -> match eqn with
-	   | {tag = DefaultPat i} when i<n -> i
-	   | _ -> n)
-	defaults 0 in
-    DefaultPat min
-
 (************************************************************************)
 (* Here start the pattern-matching compiling algorithm *)
 
 (* No more patterns: typing the right-hand-side of equations *)
 let build_leaf pb =
-  match pb.mat with 
-  | [] -> errorlabstrm "build_leaf" (mssg_may_need_inversion())
-  | _::_::_ -> errorlabstrm "build_leaf" [<'sTR "Some clauses are redondant" >]
-  | [row] ->
-      let rhs = row.rhs in
+  let rhs =
+    match pb.mat with 
+      | [] -> errorlabstrm "build_leaf" (mssg_may_need_inversion())
+      | (eqn::_::_ as eqns) ->
+	  check_number_of_regular_eqns eqns;
+	  assert (eqn.tag = RegularPat); eqn.rhs
+      | [eqn] -> eqn.rhs in
 (*
       if List.length rhs.user_ids <> List.length rhs.subst then 
 	anomaly "Some user pattern variable has not been substituted";
 *)
-      if rhs.private_ids <> [] then
-	anomaly "Some private pattern variable has not been substituted";
-      let tycon = match pb.pred with
-	| None -> empty_tycon
-	| Some (PrCcl typ) -> mk_tycon typ
-	| Some _ -> anomaly "not all parameters of pred have been consumed" in
-      let j = pb.typing_function tycon rhs.rhs_env rhs.it in
-      let subst = (*List.map (fun id -> (id,make_substituend (List.assoc id rhs.subst))) rhs.user_ids *)[] in
-      {uj_val = replace_vars subst j.uj_val;
-       uj_type = replace_vars subst j.uj_type;
-       uj_kind = j.uj_kind}
+  if rhs.private_ids <> [] then
+    anomaly "Some private pattern variable has not been substituted";
+  let tycon = match pb.pred with
+    | None -> empty_tycon
+    | Some (PrCcl typ) -> mk_tycon typ
+    | Some _ -> anomaly "not all parameters of pred have been consumed" in
+  let j = pb.typing_function tycon rhs.rhs_env rhs.it in
+  let subst = (*List.map (fun id -> (id,make_substituend (List.assoc id rhs.subst))) rhs.user_ids *)[] in
+  {uj_val = replace_vars subst j.uj_val;
+   uj_type = replace_vars subst j.uj_type;
+   uj_kind = j.uj_kind}
 
 (* Building the sub-problem when all patterns are variables *)
 let shift_problem pb =
@@ -647,7 +674,7 @@ let build_branch pb defaults current eqns const_info =
       (fun l (na,t) dep_in_rhs ->
 	 ((na,to_mutind pb.env !(pb.isevars) t),
 	  (find_dependencies t l dep_in_rhs))::l)
-      [] typs (dependencies_in_rhs eqns) in
+      [] typs (dependencies_in_rhs const_info.cs_nargs eqns) in
   let topushs = List.map (fun x -> ToPush x) tomatchs in
   (* The dependent term to subst in the types of the remaining UnPushed 
      terms is relative to the current context enriched by topushs *)
@@ -707,7 +734,8 @@ and match_current pb (n,tm) =
 	  let brvals = Array.map (fun j -> j.uj_val) brs in
 	  let brtyps = Array.map (fun j -> j.uj_type) brs in
 	  let (pred,typ,s) =
-	    find_predicate pb.pred brtyps cstrs current ind_data in
+	    find_predicate pb.env pb.isevars 
+	      pb.pred brtyps cstrs current ind_data in
 	  { uj_val = mkMutCaseA (ci_of_mind (mkMutInd ind_data.mind (*,tags*)))
 		       (*eta_reduce_if_rel*) pred current brvals;
 	    uj_type = typ;
@@ -741,7 +769,7 @@ substituer après par les initiaux *)
 (**************************************************************************)
 (* Preparation of the pattern-matching problem                            *)
 
-(* builds the matrix of equations testing that each row has n patterns
+(* builds the matrix of equations testing that each eqn has n patterns
  * and linearizing the _ patterns.
  * Syntactic correctness has already been done in astterm *)
 let matx_of_eqns env eqns =
@@ -794,7 +822,7 @@ let inh_coerce_to_ind isevars env ty tyi =
   let expected_typ = applist (mkMutInd tyi,evarl) in
      (* devrait être indifférent d'exiger leq ou pas puisque pour 
         un inductif cela doit être égal *)
-  if Evarconv.the_conv_x_leq env isevars expected_typ ty then ty
+  if the_conv_x_leq env isevars expected_typ ty then ty
   else raise NotCoercible
 
 
