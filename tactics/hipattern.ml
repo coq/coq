@@ -107,8 +107,8 @@ let match_with_unit_type t =
     | IsMutInd ind  -> 
         let constr_types = Global.mind_nf_lc ind in 
         let nconstr = Global.mind_nconstr ind in
-        let zero_args c = ((nb_prod c) - (Global.mind_nparams ind)) = 0 in  
-	if nconstr = 1 && (array_for_all zero_args constr_types) then 
+        let zero_args c =  nb_prod c = Global.mind_nparams ind in  
+	if nconstr = 1 && array_for_all zero_args constr_types then 
 	  Some hdapp
         else 
 	  None

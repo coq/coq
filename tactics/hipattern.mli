@@ -64,6 +64,8 @@ val match_with_empty_type  : constr matching_function
 val is_empty_type          : testing_function 
 
 val match_with_unit_type   : constr matching_function
+
+(* type with only one constructor and no arguments *)
 val is_unit_type           : testing_function 
 
 val match_with_equation    : (constr * constr list) matching_function
