@@ -199,7 +199,11 @@ let add_grammar_obj univ entryl =
 
 (* Tactic notations *)
 
-let add_tactic_grammar g = 
+let locate_tactic_body dir (s,p,e) = (s,p,(dir,e))
+
+let add_tactic_grammar g =
+  let dir = Lib.cwd () in
+  let g = List.map (locate_tactic_body dir) g in
   Lib.add_anonymous_leaf (inGrammar (Egrammar.TacticGrammar g))
 
 (* Printing grammar entries *)
@@ -899,6 +903,7 @@ let compute_syntax_data forv7 (df,modifiers) =
   let toks = split_notation_string df in
   let innerlevel = NumLevel (if forv7 then 10 else 200) in
   let (vars,symbols) = analyse_notation_tokens toks in
+  let ntn_for_interp = make_notation_key symbols in
   let symbols = remove_curly_brackets symbols in
   let notation = make_notation_key symbols in
   check_rule_reversibility symbols;
@@ -915,20 +920,20 @@ let compute_syntax_data forv7 (df,modifiers) =
   let typs = List.map (set_entry_type etyps) typs in
   let ppdata = (n,typs,symbols,fmt) in
   let prec = (n,List.map (assoc_of_type n) typs) in
-  ((onlyparse,vars,notation),prec,ppdata,(Lib.library_dp(),df))
+  ((onlyparse,vars,ntn_for_interp,notation),prec,ppdata,(Lib.library_dp(),df))
 
 let add_syntax_extension local mv mv8 =
   let data8 = option_app (compute_syntax_data false) mv8 in
   let data = option_app (compute_syntax_data !Options.v7) mv in
   let prec,gram_rule = match data with
   | None -> None, None
-  | Some ((_,_,notation),prec,(n,typs,symbols,_),_) -> 
+  | Some ((_,_,_,notation),prec,(n,typs,symbols,_),_) -> 
       Some prec, Some (make_grammar_rule n typs symbols notation None) in
   match data, data8 with
   | None, None -> (* Nothing to do: V8Notation while not translating *) () 
   | _, Some d | Some d, None ->
-    let ((_,_,ntn),ppprec,ppdata,_) = d in
-    let ntn' = match data with Some ((_,_,ntn),_,_,_) -> ntn | _ -> ntn in
+    let ((_,_,_,ntn),ppprec,ppdata,_) = d in
+    let ntn' = match data with Some ((_,_,_,ntn),_,_,_) -> ntn | _ -> ntn in
     let pp_rule = make_pp_rule ppdata in
     Lib.add_anonymous_leaf
       (inSyntaxExtension (local,(prec,ppprec),ntn',gram_rule,pp_rule))
@@ -1027,7 +1032,7 @@ let contract_notation ntn =
   aux ntn 0
 
 let add_notation_in_scope local df c mods omodv8 scope toks =
-  let ((onlyparse,vars,notation),prec,(n,typs,symbols,_ as ppdata),df') =
+  let ((onlyparse,vars,intnot,notation),prec,(n,typs,symbols,_ as ppdata),df')=
     compute_syntax_data !Options.v7 (df,mods) in
   (* Declare the parsing and printing rules if not already done *)
     (* For both v7 and translate: parsing is as described for v7 in v7 file *)
@@ -1038,25 +1043,25 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
     (* In short: parsing does not depend on omodv8 *)
     (* Printing depends on mv8 if defined, otherwise of mods (scaled by 10) *)
     (* if in v7, or of mods without scaling if in v8 *)
-  let ppnot,ppvars,ppprec,pp_rule =
+  let intnot,ntn,ppvars,ppprec,pp_rule =
     match omodv8 with
     | Some mv8 ->
-        let (_,vars8,ntn8),p,d,_ = compute_syntax_data false mv8 in
-        ntn8,vars8,p,make_pp_rule d
+        let (_,vars8,intnot8,ntn8),p,d,_ = compute_syntax_data false mv8 in
+        intnot8,ntn8,vars8,p,make_pp_rule d
     | _ -> 
 	(* means the rule already exists: recover it *)
 	try 
           let ntn = contract_notation notation in
 	  let _, oldprec8 = Symbols.level_of_notation ntn in
 	  let rule,_ = Symbols.find_notation_printing_rule ntn in
-	  notation,vars,oldprec8,rule
+	  notation,ntn,vars,oldprec8,rule
 	with Not_found -> error "No known parsing rule for this notation in V8"
   in
   let permut = mk_permut vars ppvars in
-  let gram_rule = make_grammar_rule n typs symbols ppnot permut in
+  let gram_rule = make_grammar_rule n typs symbols ntn permut in
   Lib.add_anonymous_leaf
     (inSyntaxExtension
-      (local,(Some prec,ppprec),ppnot,Some gram_rule,pp_rule));
+      (local,(Some prec,ppprec),ntn,Some gram_rule,pp_rule));
 
   (* Declare interpretation *)
   let a = interp_aconstr [] ppvars c in
@@ -1065,11 +1070,11 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
     if onlyparse then None
     else
       let r = interp_global_rawconstr_with_vars vars c in
-      Some (make_old_pp_rule n symbols typs r ppnot scope vars) in
+      Some (make_old_pp_rule n symbols typs r intnot scope vars) in
   let onlyparse = onlyparse or !Options.v7_only in
   let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
   Lib.add_anonymous_leaf
-    (inNotation(local,old_pp_rule,ppnot,scope,a,onlyparse,false,df'))
+    (inNotation(local,old_pp_rule,intnot,scope,a,onlyparse,false,df'))
 
 let level_rule (n,p) = if p = E then n else max (n-1) 0
 
@@ -1113,7 +1118,7 @@ let add_notation_interpretation df names c sc =
   add_notation_interpretation_core false symbs for_oldpp df a sc false false
 
 let add_notation_in_scope_v8only local df c mv8 scope toks =
-  let (_,vars,notation),prec,ppdata,df' = compute_syntax_data false (df,mv8) in
+  let (_,vars,intnot,notation),prec,ppdata,df' = compute_syntax_data false (df,mv8) in
   let pp_rule = make_pp_rule ppdata in
   Lib.add_anonymous_leaf
     (inSyntaxExtension(local,(None,prec),notation,None,pp_rule));
@@ -1121,7 +1126,7 @@ let add_notation_in_scope_v8only local df c mv8 scope toks =
   let onlyparse = false in
   let a = interp_aconstr [] vars c in
   Lib.add_anonymous_leaf
-    (inNotation(local,None,notation,scope,a,onlyparse,true,df'))
+    (inNotation(local,None,intnot,scope,a,onlyparse,true,df'))
 
 let add_notation_v8only local c (df,modifiers) sc =
   let toks = split_notation_string df in
