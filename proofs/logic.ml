@@ -341,16 +341,30 @@ let prim_refiner r sigma goal =
 			  "in coinductive types"))
 	in
      	List.iter check_is_coind (cl::lar);
-        let rec mk_sign sign = function 
+        let rec mk_env env = function 
           | (ar::lar'),(f::lf') ->
-	      if mem_sign sign f then 
+	      (try
+                (let _ = lookup_var f env in
+                error "name already used in the environment")
+              with
+              |	Not_found ->
+  	        let a = mk_assumption env sigma ar in
+	        mk_env (push_var (f,a) env) (lar',lf'))
+	  | ([],[]) -> List.map (mk_goal info env) (cl::lar)
+	  | _ -> error "not the right number of arguments"
+     	in 
+	mk_env env (cl::lar,lf)
+
+(*        let rec mk_sign sign = function 
+          | (ar::lar'),(f::lf') ->
+	      if (mem_sign sign f) then 
 		error "name already used in the environment";
 	      let a = mk_assumption env sigma ar in
 	      mk_sign (add_sign (f,a) sign) (lar',lf')
 	  | ([],[]) -> List.map (mk_goal info env) (cl::lar)
 	  | _ -> error "not the right number of arguments"
      	in 
-	mk_sign sign (cl::lar,lf)
+	mk_sign sign (cl::lar,lf)*)
 	  
     | { name = Refine; terms = [c] } ->
 	let c = new_meta_variables c in
