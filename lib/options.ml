@@ -23,8 +23,6 @@ let debug = ref false
 
 let print_emacs = ref false
 
-let emacs_str s = if !print_emacs then s else "" 
-
 let term_quality = ref false
 
 let xml_export = ref false
