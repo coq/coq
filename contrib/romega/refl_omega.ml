@@ -653,21 +653,22 @@ let mkNewMeta = Coq_omega.mkNewMeta
 let destructure_hyps gl =
   let rec loop evbd = function
     | [] -> (tclTHEN nat_inject coq_omega)
-    | (i,t)::lit ->
+    | (i,body,t)::lit ->
 	begin try match destructurate t with
           | Kapp(("Zle"|"Zge"|"Zgt"|"Zlt"|"Zne"),[t1;t2]) -> loop evbd lit
           | Kapp("or",[t1;t2]) ->
               (tclTHENS
                 (tclTHENSEQ [elim_id i; clear [i]; intros_using [i]])
-		([ loop evbd ((i,t1)::lit); loop evbd ((i,t2)::lit) ]))
+		[ loop evbd ((i,None,t1)::lit); 
+                  loop evbd ((i,None,t2)::lit) ])
           | Kapp("and",[t1;t2]) ->
               let i1 = id_of_string (string_of_id i ^ "_left") in
               let i2 = id_of_string (string_of_id i ^ "_right") in
               (tclTHENSEQ
-                [elim_id i;
-                 clear [i];
-                 intros_using [i1;i2];
-		 loop (i1::i2::evbd) ((i1,t1)::(i2,t2)::lit)])
+		 [elim_id i;
+                  clear [i];
+		  intros_using [i1;i2];
+		  loop (i1::i2::evbd) ((i1,None,t1)::(i2,None,t2)::lit)])
           | Kimp(t1,t2) ->
               if isprop (pf_type_of gl t1) & closed0 t2 then begin
 		(tclTHENSEQ
@@ -677,7 +678,7 @@ let destructure_hyps gl =
 					     mkVar i|])]; 
 		   clear [i];
 		   intros_using [i]; 
-		   loop evbd ((i,mk_or (mk_not t1) t2)::lit)])
+		   loop evbd ((i,None,mk_or (mk_not t1) t2)::lit)])
               end else loop evbd lit
           | Kapp("not",[t]) -> 
               begin match destructurate t with 
@@ -687,7 +688,8 @@ let destructure_hyps gl =
                                               [| t1; t2; mkVar i |])];
 		       clear [i]; 
 		       intros_using [i]; 
-                       loop evbd ((i,mk_and (mk_not t1) (mk_not t2)):: lit)])
+                       loop evbd 
+                         ((i,None,mk_and (mk_not t1) (mk_not t2)):: lit)])
 		| Kapp("and",[t1;t2]) -> 
                     (tclTHENSEQ
 		      [generalize_tac
@@ -695,7 +697,7 @@ let destructure_hyps gl =
 					   decidability gl t1;mkVar i|])];
 		       clear [i];
 		       intros_using [i];
-                       loop evbd ((i,mk_or (mk_not t1) (mk_not t2))::lit)])
+                       loop evbd ((i,None,mk_or (mk_not t1) (mk_not t2))::lit)])
 		| Kimp(t1,t2) ->
                     (tclTHENSEQ
 		      [generalize_tac 
@@ -703,7 +705,7 @@ let destructure_hyps gl =
 					   decidability gl t1;mkVar i |])];
 		       clear [i];
 		       intros_using [i];
-                       loop evbd ((i,mk_and t1 (mk_not t2)) :: lit)])
+                       loop evbd ((i,None,mk_and t1 (mk_not t2)) :: lit)])
 		| Kapp("not",[t]) ->
                     (tclTHENSEQ
                       [generalize_tac
@@ -711,7 +713,7 @@ let destructure_hyps gl =
 					    decidability gl t; mkVar i |])];
 		       clear [i]; 
 		       intros_using [i];
-                       loop evbd ((i,t)::lit)])
+                       loop evbd ((i,None,t)::lit)])
 		| Kapp("Zle", [t1;t2]) ->
                     (tclTHENSEQ
 		      [generalize_tac [mkApp (Lazy.force coq_not_Zle,
@@ -793,14 +795,14 @@ let destructure_hyps gl =
 			| Kapp("nat",_) -> 
                             (tclTHEN 
 			       (convert_hyp
-                                 (i,None,
-                                  mkApp (Lazy.force coq_neq, [| t1;t2|])))
+                                  (i,body,
+				  (mkApp (Lazy.force coq_neq, [| t1;t2|]))))
 			       (loop evbd lit))
 			| Kapp("Z",_) ->
                             (tclTHEN 
 			       (convert_hyp
-                                 (i,None, 
-				  mkApp (Lazy.force coq_Zne, [| t1;t2|])))
+                                  (i,body,
+				  (mkApp (Lazy.force coq_Zne, [| t1;t2|]))))
 			       (loop evbd lit))
 			| _ -> loop evbd lit
                     end
@@ -810,7 +812,7 @@ let destructure_hyps gl =
 	with e when catchable_exception e -> loop evbd lit
 	end 
   in
-  loop (pf_ids_of_hyps gl) (pf_hyps_types gl) gl
+  loop (pf_ids_of_hyps gl) (pf_hyps gl) gl
 
 let omega_solver gl =
   let concl = pf_concl gl in
