@@ -199,7 +199,7 @@ let memb_metavars m n =
 
 let eq_context ctxt1 ctxt2 = array_for_all2 eq_constr ctxt1 ctxt2
 
-let matches_core convert pat c = 
+let matches_core convert allow_partial_app pat c = 
   let rec sorec stk sigma p t =
     let cT = strip_outer_cast t in
     match p,kind_of_term cT with
@@ -238,7 +238,7 @@ let matches_core convert pat c =
 
       | PSort (RType _), Sort (Type _) -> sigma
 
-      | PApp (PMeta (Some n),args1), App (c2,args2) ->
+      | PApp (PMeta (Some n),args1), App (c2,args2) when allow_partial_app ->
           let p = Array.length args2 - Array.length args1 in
           if p>=0 then
             let args21, args22 = array_chop p args2 in
@@ -286,7 +286,9 @@ let matches_core convert pat c =
   in 
   Sort.list (fun (a,_) (b,_) -> a<b) (sorec [] [] pat c)
 
-let matches = matches_core None
+let matches = matches_core None false
+
+let pmatches = matches_core None true
 
 (* To skip to the next occurrence *)
 exception NextOccurrence of int
@@ -295,14 +297,6 @@ exception NextOccurrence of int
 let authorized_occ nocc mres =
   if nocc = 0 then mres
   else raise (NextOccurrence nocc)
-
-(* Tries matches according to the occurrence *)
-let rec try_matches nocc pat = function
-  | [] -> raise (NextOccurrence nocc)
-  | c::tl ->
-    (try authorized_occ nocc (matches pat c) with
-    | PatternMatchingFailure -> (try_matches nocc pat tl)
-    | NextOccurrence nocc -> (try_matches (nocc - 1) pat tl))
 
 (* Tries to match a subterm of [c] with [pat] *)
 let rec sub_match nocc pat c =
@@ -377,7 +371,7 @@ let is_matching pat n =
   try let _ = matches pat n in true
   with PatternMatchingFailure -> false
 
-let matches_conv env sigma = matches_core (Some (env,sigma))
+let matches_conv env sigma = matches_core (Some (env,sigma)) false
 
 let is_matching_conv env sigma pat n =
   try let _ = matches_conv env sigma pat n in true
