@@ -374,9 +374,9 @@ and detype_cofix tenv avoid env n (names,tys,bodies) =
 	 let id = next_name_away na avoid in 
 	 (id::avoid, add_name (Name id) env, id::l))
       (avoid, env, []) names in
-  let n = Array.length tys in
+  let ntys = Array.length tys in
   let v = array_map2
-    (fun c t -> share_names tenv 0 [] def_avoid def_env c (lift n t))
+    (fun c t -> share_names tenv 0 [] def_avoid def_env c (lift ntys t))
     bodies tys in
   RRec(dummy_loc,RCoFix n,Array.of_list (List.rev lfi),
        Array.map (fun (bl,_,_) -> bl) v,
