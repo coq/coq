@@ -547,9 +547,9 @@ let hnf_constr env sigma c =
            with Redelimination ->
              match reference_opt_value sigma env ref with
 	       | Some c ->
-		   (match kind_of_term c with 
-                      | CoFix _ -> app_stack (x,largs)
-		      | _ ->  redrec (c, largs))
+		   (match kind_of_term (snd (decompose_lam c)) with 
+                      | CoFix _ | Fix _ -> app_stack (x,largs)
+		      | _ -> redrec (c, largs))
 	       | None -> app_stack s)
       | _ -> app_stack s
   in 
