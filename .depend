@@ -527,8 +527,8 @@ interp/constrextern.cmx: lib/bignat.cmx pretyping/classops.cmx \
     interp/topconstr.cmx kernel/univ.cmx lib/util.cmx interp/constrextern.cmi 
 interp/constrintern.cmo: lib/bignat.cmi kernel/declarations.cmi \
     kernel/environ.cmi pretyping/evd.cmi library/global.cmi \
-    library/impargs.cmi parsing/lexer.cmi library/lib.cmi \
-    library/libnames.cmi library/nameops.cmi kernel/names.cmi \
+    library/impargs.cmi kernel/inductive.cmi parsing/lexer.cmi \
+    library/lib.cmi library/libnames.cmi library/nameops.cmi kernel/names.cmi \
     library/nametab.cmi lib/options.cmi pretyping/pattern.cmi lib/pp.cmi \
     pretyping/pretype_errors.cmi pretyping/pretyping.cmi \
     pretyping/rawterm.cmi pretyping/recordops.cmi interp/reserve.cmi \
@@ -537,8 +537,8 @@ interp/constrintern.cmo: lib/bignat.cmi kernel/declarations.cmi \
     interp/topconstr.cmi lib/util.cmi interp/constrintern.cmi 
 interp/constrintern.cmx: lib/bignat.cmx kernel/declarations.cmx \
     kernel/environ.cmx pretyping/evd.cmx library/global.cmx \
-    library/impargs.cmx parsing/lexer.cmx library/lib.cmx \
-    library/libnames.cmx library/nameops.cmx kernel/names.cmx \
+    library/impargs.cmx kernel/inductive.cmx parsing/lexer.cmx \
+    library/lib.cmx library/libnames.cmx library/nameops.cmx kernel/names.cmx \
     library/nametab.cmx lib/options.cmx pretyping/pattern.cmx lib/pp.cmx \
     pretyping/pretype_errors.cmx pretyping/pretyping.cmx \
     pretyping/rawterm.cmx pretyping/recordops.cmx interp/reserve.cmx \
