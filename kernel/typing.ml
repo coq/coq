@@ -79,20 +79,20 @@ let rec execute mf env cstr =
           error "General Fixpoints not allowed";
         let (larv,vdefv,cst) = execute_fix mf env lar lfi vdef in
         let fix = mkFix vn i larv lfi vdefv in
-        check_fix env Evd.empty Spset.empty fix;
+        check_fix env Evd.empty fix;
 	(make_judge fix larv.(i), cst)
 	  
     | IsCoFix (i,lar,lfi,vdef) ->
         let (larv,vdefv,cst) = execute_fix mf env lar lfi vdef in
         let cofix = mkCoFix i larv lfi vdefv in
-        check_cofix env Evd.empty Spset.empty cofix;
+        check_cofix env Evd.empty cofix;
 	(make_judge cofix larv.(i), cst)
 	  
     | IsSort (Prop c) -> 
-	(type_of_prop_or_set c, cst0)
+	(make_judge_of_prop_contents c, cst0)
 
     | IsSort (Type u) ->
-	type_of_type u
+	make_judge_of_type u
 	  
     | IsAppL (f,args) ->
 	let (j,cst1) = execute mf env f in

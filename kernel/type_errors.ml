@@ -28,6 +28,7 @@ type type_error =
       * typed_type array
   | NotInductive of constr
   | MLCase of string * constr * constr * constr * constr
+  | CantFindCaseType of constr
 
 exception TypeError of path_kind * context * type_error
 
@@ -41,7 +42,7 @@ let error_not_type k env c =
   raise (TypeError (k, context env, NotAType c))
 
 let error_assumption k env c =
-    raise (TypeError (k, context env, BadAssumption c))
+  raise (TypeError (k, context env, BadAssumption c))
 
 let error_reference_variables k env id =
   raise (TypeError (k, context env, ReferenceVariables id))

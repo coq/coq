@@ -32,6 +32,8 @@ val type_of_inductive : unsafe_env -> 'a evar_map -> constr -> typed_type
 
 val type_of_constructor : unsafe_env -> 'a evar_map -> constr -> constr
 
+val type_of_existential : unsafe_env -> 'a evar_map -> constr -> typed_type
+
 val type_of_case : unsafe_env -> 'a evar_map 
   -> unsafe_judgment -> unsafe_judgment 
     -> unsafe_judgment array -> unsafe_judgment
@@ -40,9 +42,9 @@ val type_case_branches :
   unsafe_env -> 'a evar_map -> constr -> constr -> constr -> constr 
     -> constr * constr array * constr 
 
-val type_of_prop_or_set : contents -> unsafe_judgment
+val make_judge_of_prop_contents : contents -> unsafe_judgment
 
-val type_of_type : universe -> unsafe_judgment * constraints
+val make_judge_of_type : universe -> unsafe_judgment * constraints
 
 val abs_rel : 
   unsafe_env -> 'a evar_map -> name -> typed_type -> unsafe_judgment 
@@ -60,8 +62,8 @@ val apply_rel_list :
   unsafe_env -> 'a evar_map -> bool -> unsafe_judgment list -> unsafe_judgment
     -> unsafe_judgment * constraints
 
-val check_fix : unsafe_env -> 'a evar_map -> Spset.t -> constr -> unit
-val check_cofix : unsafe_env -> 'a evar_map -> Spset.t -> constr -> unit
+val check_fix : unsafe_env -> 'a evar_map -> constr -> unit
+val check_cofix : unsafe_env -> 'a evar_map -> constr -> unit
 
 val type_fixpoint : unsafe_env -> 'a evar_map -> name list -> typed_type array 
     -> unsafe_judgment array -> constraints

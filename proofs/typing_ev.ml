@@ -60,20 +60,20 @@ let rec execute mf env sigma cstr =
           error "General Fixpoints not allowed";
         let larv,vdefv = execute_fix mf env sigma lar lfi vdef in
         let fix = mkFix vn i larv lfi vdefv in
-        check_fix env sigma Spset.empty fix;
+        check_fix env sigma fix;
 	make_judge fix larv.(i)
 	  
     | IsCoFix (i,lar,lfi,vdef) ->
         let (larv,vdefv) = execute_fix mf env sigma lar lfi vdef in
         let cofix = mkCoFix i larv lfi vdefv in
-        check_cofix env sigma Spset.empty cofix;
+        check_cofix env sigma cofix;
 	make_judge cofix larv.(i)
 	  
     | IsSort (Prop c) -> 
-	type_of_prop_or_set c
+	make_judge_of_prop_contents c
 
     | IsSort (Type u) ->
-	let (j,_) = type_of_type u in j
+	let (j,_) = make_judge_of_type u in j
 	  
     | IsAppL (f,args) ->
 	let j = execute mf env sigma f in

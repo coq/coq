@@ -1,5 +1,15 @@
+
+(* $Id$ *)
+
+(*i*)
 open Names
-open CoqAst
+open Sign
+open Type_errors
+(*i*)
+
+(* Untyped intermediate terms, after ASTs and before constr. *)
+
+type loc = int * int
 
 type indtype_id = section_path * int
 type constructor_id = indtype_id * int
@@ -39,7 +49,8 @@ type rawconstr =
   | RHole of loc option
   | RCast of loc * rawconstr * rawconstr
 
-(* - if PRec (_, names, arities, bodies) is in env then arities are
+
+(*i - if PRec (_, names, arities, bodies) is in env then arities are
    typed in env too and bodies are typed in env enriched by the
    arities incrementally lifted 
 
@@ -48,4 +59,4 @@ type rawconstr =
 
    - boolean in POldCase means it is recursive
    - option in PHole tell if the "?" was apparent or has been implicitely added
-*)
+i*)

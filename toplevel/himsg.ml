@@ -212,7 +212,14 @@ let explain_ml_case k ctx mes c ct br brt =
   hOV 0 [< 'sTR "In ML case expression on "; pc; 'wS 1; 'cUT ;
            'sTR "of type";  'wS 1; pct; 'wS 1; 'cUT; 
            'sTR "which is an inductive predicate."; 'fNL; expln >]
-
+(*
+let explain_cant_find_case_type loc k ctx c =
+  let pe = P.pr_term k ctx c in
+  Ast.user_err_loc
+    (loc,"pretype",
+     hOV 3 [<'sTR "Cannot infer type of whole Case expression on"; 
+	     'wS 1; pe >])
+*)
 let explain_type_error k ctx = function
   | UnboundRel n -> 
       explain_unbound_rel k ctx n

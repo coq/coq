@@ -110,7 +110,6 @@ open Names
 open Generic
 open Term
 open Reduction
-open Himsg
 open Proof_trees
 open Tacmach
 open Tactics

@@ -1,24 +1,44 @@
+(****************************************************************************)
+(*                 The Calculus of Inductive Constructions                  *)
+(*                                                                          *)
+(*                                Projet Coq                                *)
+(*                                                                          *)
+(*                     INRIA        LRI-CNRS        ENS-CNRS                *)
+(*              Rocquencourt         Orsay          Lyon                    *)
+(*                                                                          *)
+(*                                 Coq V6.3                                 *)
+(*                               July 1st 1999                              *)
+(*                                                                          *)
+(****************************************************************************)
+(*                               astterm.mli                                *)
+(****************************************************************************)
 
-(* $Id$ *)
-
-(*i*)
 open Names
 open Term
-open Environ
-(*i*)
+open Evd
+open Rawterm
 
-val dbize_op : 
-  Coqast.loc -> string -> Coqast.t list -> pseudo_constr list -> pseudo_constr
-val dbize    : unit assumptions -> Coqast.t -> pseudo_constr
+(*
+val dbize_op : CoqAst.loc -> string -> CoqAst.t list -> constr list -> constr
+val dbize    : unit assumptions -> CoqAst.t -> constr
 
-val absolutize_cci : unsafe_env -> pseudo_constr -> pseudo_constr
-val dbize_cci      : unsafe_env -> Coqast.t -> pseudo_constr
-val absolutize_fw  : unsafe_env -> pseudo_constr -> pseudo_constr
-val dbize_fw       : unsafe_env -> Coqast.t -> pseudo_constr
+val absolutize_cci : 'c evar_map -> unit assumptions -> constr -> constr
+*)
+val dbize_cci      : 'c evar_map -> unit assumptions -> CoqAst.t -> rawconstr
 
-val raw_pseudo_constr_of_com : unsafe_env -> Coqast.t -> pseudo_constr
-val raw_fpseudo_constr_of_com : unsafe_env -> Coqast.t -> pseudo_constr
-val raw_pseudo_constr_of_compattern : unsafe_env -> Coqast.t -> pseudo_constr
+(*
+val absolutize_fw  : 'c evar_map -> unit assumptions -> constr -> constr
+*)
+val dbize_fw       : 'c evar_map -> unit assumptions -> CoqAst.t -> rawconstr
 
-val globalize_command : Coqast.t -> Coqast.t
-val globalize_ast     : Coqast.t -> Coqast.t
+val raw_constr_of_com :
+  'c evar_map -> 'a assumptions -> CoqAst.t -> rawconstr
+val raw_fconstr_of_com :
+  'c evar_map -> 'a assumptions -> CoqAst.t -> rawconstr
+val raw_constr_of_compattern :
+  'c evar_map -> 'a assumptions -> CoqAst.t -> rawconstr
+
+val globalize_command : CoqAst.t -> CoqAst.t
+val globalize_ast     : CoqAst.t -> CoqAst.t
+
+(* $Id$ *)

@@ -30,6 +30,7 @@ type type_error =
       * typed_type array
   | NotInductive of constr
   | MLCase of string * constr * constr * constr * constr
+  | CantFindCaseType of constr
 
 exception TypeError of path_kind * context * type_error
 

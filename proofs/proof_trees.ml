@@ -8,6 +8,7 @@ open Sign
 open Evd
 open Stamps
 open Environ
+open Typing_ev
 
 type bindOcc = 
   | Dep of identifier
@@ -95,7 +96,8 @@ let lc_toList lc = Intset.elements lc
 (* Functions on goals *)
 
 let mk_goal ctxt env cl = 
-  { evar_env = env; evar_concl = cl; evar_body = Evar_empty; evar_info = ctxt }
+  let ty = execute_type env Evd.empty cl in
+  { evar_env = env; evar_concl = ty; evar_body = Evar_empty; evar_info = ctxt }
 
 (* Functions on the information associated with existential variables  *)
 

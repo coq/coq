@@ -53,7 +53,6 @@ val list_map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
 val list_sep_last : 'a list -> 'a * 'a list
 val list_try_find_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b
 val list_uniquize : 'a list -> 'a list
-val list_distinct : 'a list -> bool
 val list_subset : 'a list -> 'a list -> bool
 val list_splitby : ('a -> bool) -> 'a list -> 'a list * 'a list
 val list_firstn : int -> 'a list -> 'a list

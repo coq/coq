@@ -20,7 +20,7 @@ type evar_body =
   | Evar_defined of constr
 
 type 'a evar_info = {
-  evar_concl : constr;
+  evar_concl : typed_type;
   evar_env : unsafe_env;
   evar_body : evar_body;
   evar_info : 'a }

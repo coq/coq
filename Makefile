@@ -11,7 +11,7 @@ noargument:
 	@echo or make archclean
 
 LOCALINCLUDES=-I config -I lib -I kernel -I library \
-              -I proofs -I tactics -I parsing -I toplevel
+              -I proofs -I tactics -I pretyping -I parsing -I toplevel
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
 BYTEFLAGS=$(INCLUDES) $(CAMLDEBUG)
@@ -113,9 +113,10 @@ LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
 LPLIBRARY = library/doc.tex $(LIBRARY:.cmo=.mli)
 LPPROOFS = proofs/doc.tex $(PROOFS:.cmo=.mli)
 LPTACTICS = tactics/doc.tex $(TACTICS:.cmo=.mli)
+LPPRETYPING = pretyping/rawterm.mli $(PRETYPING:.cmo=.mli)
 LPTOPLEVEL = toplevel/doc.tex $(TOPLEVEL:.cmo=.mli)
 LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL) $(LPLIBRARY) \
-	  $(LPPROOFS) $(LPTACTICS) $(LPTOPLEVEL)
+	  $(LPPROOFS) $(LPTACTICS) $(LPPRETYPING) $(LPTOPLEVEL)
 
 doc/coq.tex: doc/preamble.tex $(LPFILES)
 	cat doc/preamble.tex > doc/coq.tex
