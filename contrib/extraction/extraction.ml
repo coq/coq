@@ -117,6 +117,10 @@ let s_of_tmltype = function
   | Tmltype (_,s,_) -> s 
   | _ -> assert false
 
+let mlterm_of_constr = function 
+  | Emltype _ -> MLarity
+  | Emlterm a -> a
+
 (* [list_of_ml_arrows] applied to the ML type [a->b->]\dots[z->t]
    returns the list [[a;b;...;z]]. It is used when making the ML types
    of inductive definitions. We also suppress [Prop] parts. *)
@@ -500,15 +504,14 @@ and extract_term_info_with_type env ctx c t =
 	    | Logic,NotArity -> MLlam (prop_name, d')
 	    | Info,NotArity -> MLlam (id_of_name n, d'))
      | IsLetIn (n, c1, t1, c2) ->
-	 let id = id_of_name n in
+	 let v = v_of_t env t1 in
 	 let env' = push_rel_def (n,c1,t1) env in
-	 let tag = v_of_t env t1 in
-	 (match tag with
+	 (match v with
 	    | (Info, NotArity) -> 
 		let c1' = extract_term_info_with_type env ctx c1 t1 in
 		let c2' = extract_term_info env' (true :: ctx) c2 in
 		(* If [c2] was of type an arity, [c] too would be so *)
-		MLletin (id,c1',c2')
+		MLletin (id_of_name n,c1',c2')
 	    | _ ->
 		extract_term_info env' (false :: ctx) c2)
      | IsRel n ->
@@ -519,8 +522,8 @@ and extract_term_info_with_type env ctx c t =
       	 extract_app env ctx f a 
      | IsMutConstruct (cp,_) ->
 	 abstract_constructor cp
-     | IsMutCase ((ni,(ip,cnames,_,_,_)),p,c,br) ->
-	 extract_case env ctx ni ip cnames p c br
+     | IsMutCase ((ni,(ip,_,_,_,_)),_,c,br) ->
+	 extract_case env ctx ni ip c br
      | IsFix ((_,i),recd) -> 
 	 extract_fix env ctx i recd
      | IsCoFix (i,recd) -> 
@@ -569,30 +572,25 @@ and abstract_constructor cp  =
 
 (* Extraction of a case *)
 
-and extract_case env ctx ni ip cnames p c br = 
-  let extract_branch_1 j b = 	  
-    let (rb,e) = decompose_lam_eta ni.(j) env b in
-    let lb = List.rev rb in
-    let env' = push_rels_assum rb env in
-    let ctx' = 
-      lbinders_fold (fun _ _ v a -> (v = default) :: a) ctx env lb in
-    (* Some pathological cases need an [extract_constr] here rather *)
-    (* than an [extract_term]. See exemples in [test_extraction.v] *)
-    let e' = match extract_constr env' ctx' e with
-      | Emltype _ -> MLarity
-      | Emlterm a -> a
-    in (lb,e')
-  in
-  let extract_branch_2 j b =
+and extract_case env ctx ni ip c br = 
+  (* [ni]: number of arguments without parameters in each branch *)
+  (* [br]: bodies of each branch (in functional form) *)
+  let extract_branch j b = 	  
     let cp = (ip,succ j) in
     let (s,_) = signature_of_constructor cp in
     assert (List.length s = ni.(j));
-    (* number of arguments, without parameters *)
-    let (lb, e') = extract_branch_1 j b in
+    let (rb,e) = decompose_lam_eta ni.(j) env b in
+    let lb = List.rev rb in
+    (* We suppose that [sign_of_lbinders env lb] gives back [s] *) 
+    (* So we trust [s] when making [ctx'] *)
+    let ctx' = List.fold_left (fun l v -> (v = default)::l) ctx s in 
+    (* Some pathological cases need an [extract_constr] here rather *)
+    (* than an [extract_term]. See exemples in [test_extraction.v] *)
+    let env' = push_rels_assum rb env in
+    let e' = mlterm_of_constr (extract_constr env' ctx' e) in
     let ids = 
       List.fold_right 
-	(fun (v,(n,_)) acc -> 
-	   if v = default then (id_of_name n :: acc) else acc)
+	(fun (v,(n,_)) a -> if v = default then (id_of_name n :: a) else a)
 	(List.combine s lb) []
     in
     (ConstructRef cp, ids, e')
@@ -602,17 +600,25 @@ and extract_case env ctx ni ip cnames p c br =
      | Rmlterm a -> 
 	 if (is_singleton_inductive ip) then 
 	   begin
-	     (* informative singleton case *)
+	     (* Informative singleton case: *)
+	     (* [match c with C i -> t] becomes [let i = c' in t'] *)
 	     assert (Array.length br = 1);
-	     let (_,ids,e') = extract_branch_2 0 br.(0) in
+	     let (_,ids,e') = extract_branch 0 br.(0) in
 	     assert (List.length ids = 1);
 	     MLletin (List.hd ids,a,e')
 	   end
 	 else
-	   MLcase (a, Array.mapi extract_branch_2 br)
-     | Rprop -> (* Logical singleton elimination *)
+	   (* Standard case: we apply [extract_branch]. *)
+	   MLcase (a, Array.mapi extract_branch br)
+     | Rprop -> 
+	 (* Logical singleton case: *)
+	 (* [match c with C i j k -> t] becomes [t'] *)
 	 assert (Array.length br = 1);
-	 snd (extract_branch_1 0 br.(0)))
+	 let (rb,e) = decompose_lam_eta ni.(0) env br.(0) in
+	 let env' = push_rels_assum rb env in 
+	 (* We know that all arguments are logic. *)
+	 let ctx' = iterate (fun l -> false :: l) ni.(0) ctx in 
+	 mlterm_of_constr (extract_constr env' ctx' e))
   
 (* Extraction of a (co)-fixpoint *)
 
@@ -624,17 +630,15 @@ and extract_fix env ctx i (fi,ti,ci as recd) =
   (* QUESTION: vaut-il mieux un combine ou un (tolist o map2) *)
   let env' = push_rels_assum (List.rev lb) env in
   let ctx' = 
-    lbinders_fold (fun _ _ v a -> (snd v = NotArity) :: a) ctx env lb in
-  let extract_fix_body c t =
-    match extract_constr_with_type env' ctx' c (lift n t) with
-      | Emltype _ -> MLarity
-      | Emlterm a -> a
+    (List.rev_map (fun (_,a) -> a = NotArity) (sign_of_lbinders env lb)) @ ctx
   in
+  let extract_fix_body c t = 
+    mlterm_of_constr (extract_constr_with_type env' ctx' c (lift n t)) in
   let ei = array_map2 extract_fix_body ci ti in
   MLfix (i, Array.map id_of_name fi, ei)
 
 (* Auxiliary function dealing with term application. 
-   Precondition: the head [f] is [Info] *)
+   Precondition: the head [f] is [Info]. *)
 
 and extract_app env ctx f args =
   let tyf = type_of env f in
@@ -648,11 +652,9 @@ and extract_app env ctx f args =
       (fun (v,a) args -> match v with
 	 | (_,Arity) -> args
 	 | (Logic,NotArity) -> MLprop :: args
-	 | (Info,NotArity) ->  
-	     (* We can't trust the tag [Vdefault], we use [extract_constr] *)
-	     match extract_constr env ctx a with 
-	       | Emltype _ -> MLarity :: args
-	       | Emlterm mla -> mla :: args)
+	 | (Info,NotArity) -> 
+	     (* We can't trust the tag [Vdefault], so we use [extract_constr] *)
+	     (mlterm_of_constr (extract_constr env ctx a)) :: args)
       (List.combine (list_firstn nargs sf) args)
       []
   in
@@ -711,9 +713,9 @@ and extract_constant sp =
     match cb.const_body with
       | None ->
           (match v_of_t env typ with
-             | (Info,_) -> axiom_message sp
-             | (Logic,Arity) -> Emltype (Miniml.Tarity,[],[])
-             | (Logic,NotArity) -> Emlterm MLprop)
+             | (Info,_) -> axiom_message sp (* We really need some code here *)
+             | (Logic,NotArity) -> Emlterm MLprop (* Axiom ? I don't mind! *)
+             | (Logic,Arity) -> Emltype (Miniml.Tarity,[],[]))  (* Idem *)
       | Some body ->
           let e = extract_constr_with_type env [] body typ in
           let e = eta_expanse e (extract_type env typ) in
@@ -729,6 +731,9 @@ and extract_inductive ((sp,_) as i) =
 and extract_constructor (((sp,_),_) as c) =
   extract_mib sp;
   lookup_constructor_extraction c
+
+(* Looking for informative singleton case, i.e. an inductive with one constructor
+   which has one informative argument. This dummy case will be simplified. *)
 
 and is_singleton_inductive (sp,_) = 
   let mib = Global.lookup_mind sp in 
@@ -750,7 +755,7 @@ and extract_mib sp =
   if not (Gmap.mem (sp,0) !inductive_extraction_table) then begin
     let mib = Global.lookup_mind sp in
     let genv = Global.env () in 
-    (* Everything concerning parameters: *)
+    (* Everything concerning parameters. We do it first, since they are common *)
     let mis = build_mis ((sp,0),[||]) mib in
     let nb = mis_nparams mis in
     let rb = mis_params_ctxt mis in 
@@ -758,46 +763,51 @@ and extract_mib sp =
     let lb = List.rev_map (fun (n,s,t)->(n,t)) rb in 
     let nbtokeep = 
       lbinders_fold 
-	(fun _ _ v a -> if snd v = NotArity then a+1 else a) 0 genv lb in
+	(fun _ _ (_,j) a -> if j = NotArity then a+1 else a) 0 genv lb in
     let vl = vl_of_lbinders genv lb in
     (* First pass: we store inductive signatures together with 
        an initial type var list. *)
     Array.iteri
       (fun i ib -> 
-	 let mis = build_mis ((sp,i),[||]) mib in 
+	 let ip = (sp,i) in 
+	 let mis = build_mis (ip,[||]) mib in 
 	 if (mis_sort mis) = (Prop Null) then 
-	   add_inductive_extraction (sp,i) Iprop
+	   add_inductive_extraction ip Iprop
 	 else
-	   add_inductive_extraction (sp,i) 
+	   add_inductive_extraction ip 
 	     (Iml (sign_of_arity genv ib.mind_nf_arity, 
 		   vl_of_arity genv ib.mind_nf_arity)))
       mib.mind_packets;
     (* Second pass: we extract constructors arities and we accumulate
-       type variables. *)
+       type variables. Thanks to on-the-fly renaming in [extract_type],
+       the [vl] list should be correct. *)
     let vl = 
       array_fold_left_i 
 	(fun i vl packet -> 
 	   let ip = (sp,i) in
 	   let mis = build_mis (ip,[||]) mib in
-	   if mis_sort mis = Prop Null then begin
-	     for j = 0 to mis_nconstr mis do
+	   if mis_sort mis = Prop Null then 
+	     begin
+	       for j = 0 to mis_nconstr mis do
 		 add_constructor_extraction (ip,succ j) Cprop
-	     done;
-	     vl
-	   end else begin
-	     array_fold_left_i
-	       (fun j vl _ -> 
-		  let t = mis_constructor_type (succ j) mis in
-		  let t = snd (decompose_prod_n nb t) in
-		  match extract_type_rec_info env t vl [] with
-		    | Tarity | Tprop -> assert false
-		    | Tmltype (mlt, s, v) -> 
-			let l = list_of_ml_arrows mlt in
-			let cp = (ip,succ j) in
+	       done;
+	       vl
+	     end 
+	   else 
+	     begin
+	       array_fold_left_i
+		 (fun j vl _ -> 
+		    let t = mis_constructor_type (succ j) mis in
+		    let t = snd (decompose_prod_n nb t) in
+		    match extract_type_rec_info env t vl [] with
+		      | Tarity | Tprop -> assert false
+		      | Tmltype (mlt, s, v) -> 
+			  let l = list_of_ml_arrows mlt in
+			  let cp = (ip,succ j) in
 			  add_constructor_extraction cp (Cml (l,s,nbtokeep));
-			v)
-	       vl packet.mind_nf_lc
-	   end) 
+			  v)
+		 vl packet.mind_nf_lc
+	     end) 
 	vl mib.mind_packets
     in
     (* Third pass: we update the type variables list in every tables *)
