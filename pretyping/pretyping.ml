@@ -895,8 +895,17 @@ and pretype_type valcon env isevars lvar = function
       if !compter then nbimpl:=!nbimpl+1;
       (match valcon with
 	 | Some v ->
+             let s =
+               let sigma = evars_of isevars in
+               let t = Retyping.get_type_of env sigma v in
+               match kind_of_term (whd_betadeltaiota env sigma t) with
+                 | Sort s -> s
+                 | Evar v when is_Type (existential_type sigma v) -> 
+                     define_evar_as_sort isevars v
+                 | _ -> anomaly "Found a type constraint which is not a type"
+             in
 	     { utj_val = v;
-	       utj_type = Retyping.get_sort_of env (evars_of isevars) v }
+	       utj_type = s }
 	 | None ->
 	     let s = new_Type_sort () in
 	     { utj_val = new_isevar isevars env loc (mkSort s);
