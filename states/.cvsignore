@@ -1,3 +1,4 @@
 barestate.coq
 initial.coq
 initialnew.coq
+*.v8
