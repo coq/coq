@@ -54,7 +54,7 @@ Qed.
 End B.
 
 (* From Nicolas Oury (bug #180): handling -> on Set (fixed Oct 2002) *)
-Lemma lem7: (A: Set) (i:Z) `i<= 0` -> (`i<= 0` -> A) -> `i<=0`.
+Lemma lem4: (A: Set) (i:Z) `i<= 0` -> (`i<= 0` -> A) -> `i<=0`.
 Intros.
 Omega.
 Qed.
