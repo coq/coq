@@ -94,6 +94,7 @@ let rec head c =
   let c = strip_outer_cast c in
   match kind_of_term c with
   | Prod (_,_,c) -> head c
+  | LetIn (_,_,_,c) -> head c
   | _              -> c
       
 let constr_to_section_path c = match kind_of_term c with
@@ -200,24 +201,39 @@ let gen_filtered_search filter_function display_function =
   gen_crible None
     (fun s a c -> if filter_function s a c then display_function s a c) 
 
-let raw_search_about filter_modules display_function ref =
-  let c = constr_of_reference ref in
+(** SearchAbout *)
+
+let name_of_reference ref = string_of_id (id_of_global ref)
+
+type 'a search_about_item =
+  | SearchRef of 'a
+  | SearchString of string
+
+let search_about_item (itemref,typ) = function
+  | SearchRef ref -> Termops.occur_term (constr_of_reference ref) typ
+  | SearchString s -> string_string_contains (name_of_reference itemref) s
+
+let raw_search_about filter_modules display_function l =
   let filter ref' env typ =
     filter_modules ref' env typ &&
-    Termops.occur_term c typ
+    List.for_all (search_about_item (ref',typ)) l
   in
   gen_filtered_search filter display_function
 
 let search_about ref inout = 
   raw_search_about (filter_by_module_from_list inout) plain_display ref
 
-let name_of_reference ref = string_of_id (id_of_global ref)
+(** SearchNamed *)
+
+let close_string s = 
+  if s.[String.length s - 1] = '*' then String.sub s 0 (String.length s - 1)
+  else s^"_"
 
 let occur_string_in_name name s =
   let l = String.length s + 1 in
   let l' = String.length name in
-  string_string_contains name ("_"^s^"_")
-  || l' >= l && String.sub name 0 l = (s^"_")
+  string_string_contains name (close_string ("_"^s))
+  || l' >= l && String.sub name 0 l = (close_string s)
   || l' >= l && String.sub name (l'-l) l = ("_"^s)
 
 let raw_search_named filter_modules display_function strings =
@@ -230,4 +246,3 @@ let raw_search_named filter_modules display_function strings =
 
 let search_named strings inout =
   raw_search_named (filter_by_module_from_list inout) plain_display strings
-

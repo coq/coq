@@ -550,12 +550,16 @@ let solve_hook n =
 
 let abort_hook s = output_results_nl (ctf_AbortedMessage !global_request_id s)
 
+let interp_search_about_item = function
+  | SearchRef qid -> SearchRef (Nametab.global qid)
+  | SearchString s as x -> x
+
 let pcoq_search s l =
   ctv_SEARCH_LIST:=[];
   begin match s with
-  | SearchAbout locqid -> 
+  | SearchAbout sl -> 
       raw_search_about (filter_by_module_from_list l) add_search
-	(Nametab.global locqid)
+	(List.map interp_search_about_item sl)
   | SearchPattern c ->
       let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
       raw_pattern_search (filter_by_module_from_list l) add_search pat

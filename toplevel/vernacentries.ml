@@ -880,6 +880,12 @@ let interp_search_restriction = function
   | SearchOutside l -> (List.map global_module l, true)
   | SearchInside l -> (List.map global_module l, false)
 
+open Search
+
+let interp_search_about_item = function
+  | SearchRef qid -> SearchRef (Nametab.global qid)
+  | SearchString s as x -> x
+
 let vernac_search s r =
   let r = interp_search_restriction r in
   if !pcoq <> None then (out_some !pcoq).search s r else
@@ -892,8 +898,8 @@ let vernac_search s r =
       Search.search_rewrite pat r
   | SearchHead locqid ->
       Search.search_by_head (Nametab.global locqid) r
-  | SearchAbout locqid ->
-      Search.search_about (Nametab.global locqid) r
+  | SearchAbout sl ->
+      Search.search_about (List.map interp_search_about_item sl) r
   | SearchNamed strings ->
       Search.search_named strings r
 

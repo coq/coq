@@ -519,8 +519,12 @@ GEXTEND Gram
 	  VernacSearch (SearchPattern c, l)
       | IDENT "SearchRewrite"; c = constr_pattern; l = in_or_out_modules ->
 	  VernacSearch (SearchRewrite c, l)
-      | IDENT "SearchAbout"; qid = global; l = in_or_out_modules -> 
-	  VernacSearch (SearchAbout qid, l)
+      | IDENT "SearchAbout"; 
+	  sl = [ "["; l = LIST1 [ r = global -> Search.SearchRef r
+                                  | s = STRING -> Search.SearchString s ]; "]" -> l 
+   		 | qid = global -> [Search.SearchRef qid] ];
+	  l = in_or_out_modules -> 
+	  VernacSearch (SearchAbout sl, l)
       | IDENT "SearchNamed"; sl = LIST1 string; l = in_or_out_modules -> 
 	  VernacSearch (SearchNamed sl, l)
 
