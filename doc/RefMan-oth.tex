@@ -544,6 +544,26 @@ over the name of a module or of an object inside a module.
 \item \ident: \errindex{no such entry}
 \end{ErrMsgs}
 
+\subsection{\tt Back.}
+\comindex{Back}
+
+This commands undoes all the effects of the last vernacular
+command. This does not include commands that only access to the
+environment like those described in the previous sections of this
+chapter (for instance {\tt Require} and {\tt Load} can be undone, but
+not {\tt Check} and {\tt Locate}). Commands read from a vernacular
+file are considered as a single command.
+
+\begin{Variants}
+\item {\tt Back $n$} \\
+  Undoes $n$ vernacular commands.
+\end{Variants}
+
+\begin{ErrMsgs}
+\item \errindex{Reached begin of command history} \\
+  Happens when there is vernacular command to undo.
+\end{ErrMsgs}
+
 \subsection{\tt Restore State \ident.}
 \comindex{Restore State}
   Restores the state contained in the file \str.
