@@ -12,14 +12,12 @@
 
 (** Notations for logical connectives *)
 
+Uninterpreted Notation "x <-> y" (at level 8, right associativity)
+  V8only (at level 95, no associativity).
 Uninterpreted Notation "x /\ y" (at level 6, right associativity) 
   V8only (at level 80, right associativity).
 Uninterpreted Notation "x \/ y" (at level 7, right associativity)
   V8only (at level 85, right associativity).
-
-Uninterpreted Notation "x <-> y" (at level 8, right associativity)
-  V8only (at level 95, no associativity).
-
 Uninterpreted Notation "~ x" (at level 5, right associativity)
   V8only (at level 75, right associativity).
 
@@ -49,14 +47,13 @@ Uninterpreted V8Notation "x < y <= z"  (at level 70, y at next level).
 
 (** Arithmetical notations (also used for type constructors) *)
 
+Uninterpreted Notation "x + y" (at level 4, left associativity).
+Uninterpreted V8Notation "x - y" (at level 50, left associativity).
 Uninterpreted Notation "x * y" (at level 3, right associativity)
   V8only (at level 40, left associativity).
 Uninterpreted V8Notation "x / y" (at level 40, left associativity).
-Uninterpreted Notation "x + y" (at level 4, left associativity).
-Uninterpreted V8Notation "x - y" (at level 50, left associativity).
-Uninterpreted V8Notation "- x" (at level 35, right associative).
+Uninterpreted V8Notation "- x" (at level 35, right associativity).
 Uninterpreted V8Notation "/ x" (at level 35, right associativity).
-
 Uninterpreted V8Notation "x ^ y" (at level 30, left associativity).
 
 (** Notations for pairs *)
