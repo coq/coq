@@ -40,3 +40,5 @@ Doc:
 - faut-il mieux spécifier la sémantique de Simpl (??)
 - vérifier si Print Table id est à jour
 - documenter @Definition and co
+- rectifier le paragraphe sur Coercions et pretty-printing
+  + Set Printing Coercions
