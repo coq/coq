@@ -67,9 +67,9 @@ let autorewrite tac_main lbas =
 let cache_hintrewrite (_,(rbase,lrl)) =
   let l = 
     try 
-      List.rev_append lrl (Stringmap.find rbase !rewtab) 
+      lrl @ Stringmap.find rbase !rewtab
     with
-      | Not_found -> List.rev lrl
+      | Not_found -> lrl
   in
     rewtab:=Stringmap.add rbase l !rewtab
 
