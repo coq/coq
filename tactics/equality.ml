@@ -1169,27 +1169,6 @@ let decomp_tuple_term env c t =
   in
   List.split (decomprec (mkRel 1) c t)
 
-(*
-let whd_const_state namelist env sigma = 
-  let rec whrec (x, l as s) =
-    match kind_of_term x with
-      | IsConst (sp,_) when List.mem sp namelist ->
-          if evaluable_constant env x then
-            whrec (constant_value env x, l)
-          else 
-	    error "whd_const_stack"
-      | IsCast (c,_) -> whrec (c, l)
-      | IsApp (f,cl) -> whrec (f, append_stack cl l)
-      | _ -> s
-  in 
-  whrec
-let whd_const_state namelist = whd_state (const namelist)
-let whd_const_stack namelist env sigma x =
-  whd_const_state namelist env sigma (x, empty_stack)
-let whd_const namelist env sigma c = 
-  app_stack (whd_const_stack namelist env sigma (c, empty_stack))
-*)
-
 let subst_tuple_term env sigma dep_pair b =
   let typ = get_type_of env sigma dep_pair in
   let e_list,proj_list = decomp_tuple_term env dep_pair typ in
