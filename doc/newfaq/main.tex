@@ -1,0 +1,81 @@
+
+\documentclass[a4paper]{faq}
+
+% yay les symboles
+\usepackage{stmaryrd}
+\usepackage{amssymb}
+
+% version et date
+\def\faqversion{0.1}
+
+% les macros d'amour
+\def\Coq{\textsc{Coq }}
+
+\begin{document}
+\bibliographystyle{plain}
+
+%%%%%%% Coq pour les nuls %%%%%%%
+
+\title{Coq for the Clueless\\
+  \large(\ifpdf\ref*{lastquestion}\else\protect\ref{lastquestion}\fi
+  \ Hints)
+}
+\author{Florent Kirchner \and Julien Narboux}
+\maketitle
+
+%%%%%%%
+
+\begin{abstract}
+This note intends to provide an easy way to get aquainted with the
+\Coq theorem prover. It tries to formulate appropriate answers
+to some of the questions any newcommers will face, and to give
+pointers to other references when possible.
+\end{abstract}
+
+%%%%%%%
+
+\begin{multicols}{2}
+\tableofcontents
+\end{multicols}
+
+%%%%%%%
+
+\newpage
+\section{Introduction}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+								     %
+    %%%%%%%%%%%%%%%%%%%						     %
+    %% Corpus operis %%						     %
+    %%%%%%%%%%%%%%%%%%%						     %
+								     %
+\section{Talking with the Rooster}				     %
+\label{core}							     %
+\input{core.tex}						     %
+								     %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Conclusion and Farewell.}
+\label{ccl}
+
+\Question[NoAns]{What if my question isn't answered here ?} 
+\label{lastquestion}
+
+Don't panic. You can try the \Coq manual~\cite{Coq:e} for a technical
+description of the prover. The Coq'Art~\cite{Coq:coqart} is the first
+book written on \Coq and provides a comprehensive review of the
+theorem prover as well as a number of example and exercises. Finally,
+the tutorial~\cite{Coq:Tutorial} provides a smooth introduction to
+theorem proving in \Coq.
+
+%%%%%%%
+\newpage
+\nocite{LaTeX:intro}
+\nocite{LaTeX:symb}
+\bibliography{fk}
+
+%%%%%%%
+
+\typeout{*** That makes \thequestion\space questions ***}
+\end{document}

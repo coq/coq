@@ -1,0 +1,883 @@
+% This is a LaTeX2e package for the UKTUG FAQ document.
+%
+% uses production LaTeX 2e commands
+\NeedsTeXFormat{LaTeX2e}[1994/06/01]% at least!
+\ProvidesPackage{faq}[2002/10/01 v2.3 English TeX FAQ macros]
+%
+% something affecting fonts: do we use only freely available fonts
+% (i.e., are we going to make the postscript of this publicly
+% available?); the config file could change this setting if
+% necessary.  things affected herein are the definition of \MP (for
+% metapost), which isn't currently doable with free fonts, and
+% suppression of boldface versions of the logo fonts.
+\newif\ifpublicversion  \publicversiontrue
+
+%
+% what fonts are we going to typeset in?
+\newif\ifusePSfont
+\InputIfFileExists{faqfont.cfg}% must set \ifusePSfont if necessary
+      {\typeout{FAQ -- loading font configuration file faqfont.cfg}}
+      {\RequirePackage{times}%
+        \usePSfonttrue
+        \usepackage[T1,OT1]{fontenc}%
+        \usepackage{textcomp}%
+        \DeclareRobustCommand{\$}{\char`\$}% otherwise tries to load tctt....
+        % use cmtt for typewriter rather than Cou-beastly-rier
+        \renewcommand{\ttdefault}{cmtt}%
+        \@ifundefined{Dings}{\RequirePackage{pifont}%
+          \def\Dings{\nopagebreak{\footnotesize
+              \dingline{167}}}%
+        }%
+        {}%
+      }
+
+%
+% switches (potentially) to be set according to status
+\newif\ifpdf
+\newif\ifsinglecolumn
+
+%
+% Status values
+\providecommand{\Status}{0}
+\ifcase\Status\relax
+  % 0: default case is do nothing
+%  \typeout{faq.sty: default output using \ifprivate private\else
+%    public\fi\space fonts}
+  \singlecolumnfalse
+  \pdffalse
+\or
+  % 1: pdf output using public fonts
+  \typeout{faq.sty: 1-col pdf output using public fonts}
+  \singlecolumntrue
+  \pdftrue
+  \let\multicols\@gobble
+  \let\endmulticols\relax
+\or
+  % 2: pdf output using public fonts, two columns
+  \typeout{faq.sty: 2-col pdf output using public fonts}
+  \singlecolumnfalse
+  \pdftrue
+\fi
+
+%
+% if we're doing pdf, set up hyperref package and backdoors that avoid
+% its sillier byproducts...
+\ifpdf
+  \pdfavoidoverfull=1
+  \let\@faq@@url\url
+  \urldef\DebianSocialContract\@faq@@url
+    {http://www.debian.org/social_contract#guidelines}
+  \RequirePackage[pdftex%
+             ,colorlinks%
+  ,pdftitle=The\ UK\ TUG\ FAQ%
+         ,linkcolor=blue%
+       ,pdfpagemode=None%
+     ,pdfstartview=FitBH%
+%        ,bookmarks=false%
+    ,bookmarksnumbered%
+                        ]{hyperref}
+  \usepackage{thumbpdf}
+  \pdfstringdefDisableCommands{%
+    \let\cs\psd@cs
+    \def\csx#1{\textbackslash#1}%
+    \let\acro\@firstofone
+    \let\ProgName\@firstofone
+    \let\Package\@firstofone
+    \def\meta#1{<#1>}%
+    %
+    \def\twee{2e}%
+    \def\AllTeX{(La)TeX}%
+    \def\WYSIWYG{WYSIWYG}%
+    \def\AMSTeX{AmSTeX}%
+    \def\BibTeX{BibTeX}%
+    \def\PiCTeX{PiCTeX}%
+    \def\CDROM{CD-ROM}%
+    \def\TeXXeT{TeXXeT}%
+    \def\MLTeX{ML-TeX}%
+    \def\MP{MetaPost}%
+    \def\NTS{NTS}%
+    \def\dots{...}%
+    \def\obracesymbol{\{}%
+    \def\cbracesymbol{\}}%
+  }%
+  \begingroup
+    \lccode`\~=`\|%
+  \lowercase{\endgroup
+    \def\psd@cs~#1~{\textbackslash#1}%
+  }%
+  % adding table of contents to bookmarks
+  \let\Orig@tableofcontents\tableofcontents
+  \def\tableofcontents{%
+    \pdfbookmark[1]{\contentsname}{contents}%
+    \Orig@tableofcontents
+  }%
+  % adding \subsection*{Finding the Files}
+  \AtBeginDocument{%
+    \let\Orig@subsection\subsection
+    \def\subsection{%
+      \@ifstar{\bookmark@subsectionstar}{\Orig@subsection}%
+    }%
+  }%
+  \def\bookmark@subsectionstar#1{%
+    \advance\Hy@linkcounter by 1\relax
+    \pdfbookmark[2]{#1}{subsectionstar.\the\Hy@linkcounter}%
+    \Orig@subsection*{#1}%
+  }%
+\fi
+
+%
+% general support
+%\RequirePackage{calc}
+%
+% code for handling logo font
+\RequirePackage{mflogo}
+\ifpublicversion
+  \renewcommand{\MP}{Meta\-Post}
+  \let\faq@@MF\MF
+  \def\faq@bx{bx}
+  \DeclareRobustCommand{\MF}{{%
+      \ifx\f@series\faq@bx
+        \expandafter\textmd%
+      \fi
+      {\faq@@MF}%
+    }%
+  }
+\fi
+%
+% get texnames package (as amended)
+\RequirePackage{texnames}
+%
+% ifthenelse for the undefined references
+\RequirePackage{ifthen}
+%
+% we define html only stuff using Eijkhout's package
+\RequirePackage{comment}
+\excludecomment{htmlversion}
+\ifpdf
+\includecomment{pdfversion}
+\excludecomment{dviversion}
+\includecomment{wideversion}
+\excludecomment{narrowversion}
+\else
+\excludecomment{pdfversion}
+\includecomment{dviversion}
+\includecomment{narrowversion}
+\excludecomment{wideversion}
+\fi
+%
+% but we also want a `short' version, like LaTeX2HTML's
+\let\htmlonly\@gobble
+%
+% the Baskerville and other logos and abbreviations
+\providecommand\BV{\emph{Baskerville}}
+\providecommand\DANTE{\acro{DANTE}\@}
+\providecommand\MSDOS{\acro{MS-DOS}\@}
+\providecommand\CDROM{\acro{CD-ROM}\@}
+\providecommand\TeXXeT{\TeX-{}-X\lower.5ex\hbox{E}\kern-.1667emT\@}
+\providecommand\MLTeX{ML-\TeX}
+%
+% provided for consistency's sake
+\newcommand\PS{PostScript}
+%
+\def\careof{\leavevmode\hbox{\raise.75ex\hbox{c}\kern-.15em
+                /\kern-.125em\smash{\lower.3ex\hbox{o}}}}
+%
+% \cs{SMC} \emph{isn't} small caps~--- Barbara Beeton says she thinks
+% of it as ``big small caps''.  She says (modulo capitalisation of
+% things\dots):
+% \begin{quote}
+%   For the things it's used for, regular small caps are not
+%   appropriate~--- they're too small.  Real small caps are
+%   appropriate for author names (and are so used in continental
+%   bibliographies), section headings, running heads, and, on
+%   occasion, words to which some emphasis is to be given.  \cs{SMC}
+%   was designed to be used for acronyms and all-caps abbreviations,
+%   which look terrible in small caps, but nearly as bad in all caps
+%   in the regular text size.  The principle of using ``one size
+%   smaller'' than the text size is similar to the design of caps in
+%   German~--- where they are smaller relative to lowercase than are
+%   caps in fonts intended for English, to improve the appearance of
+%   regular text in which caps are used at the heads of all nouns, not
+%   just at the beginnings of sentences.
+% \end{quote}
+%
+% We define this in terms of the memory of the size currently selected
+% that's maintained in \cs{@currsize}: if the user does something
+% silly re.~selecting fonts, we'll get the wrong results.  The
+% following code is adapted from |relsize.sty| by Donald Arseneau and
+% Matt Swift, from a 2.09 original by Bernie Cosell.  (Note that the
+% order of examination of \cs{@currsize} is to get the commonest cases
+% out of the way first.)
+%    \begin{macrocode}
+%<!latex2e>\def\SMC{\small}
+%<*latex2e>
+\DeclareRobustCommand\SMC{%
+  \ifx\@currsize\normalsize\small\else
+   \ifx\@currsize\small\footnotesize\else
+    \ifx\@currsize\footnotesize\scriptsize\else
+     \ifx\@currsize\large\normalsize\else
+      \ifx\@currsize\Large\large\else
+       \ifx\@currsize\LARGE\Large\else
+        \ifx\@currsize\scriptsize\tiny\else
+         \ifx\@currsize\tiny\tiny\else
+          \ifx\@currsize\huge\LARGE\else
+           \ifx\@currsize\Huge\huge\else
+            \small\SMC@unknown@warning
+ \fi\fi\fi\fi\fi\fi\fi\fi\fi\fi
+}
+\newcommand\SMC@unknown@warning{\PackageWarning{faq}{Unknown text font
+                                   size command -- using \string\small}}
+\DeclareRobustCommand\textSMC[1]{{\SMC #1}}
+%    \end{macrocode}
+%
+% The \cs{acro} command uses \cs{SMC} as it was originally intended.
+% Note that, since most of these things are uppercase-only names, it
+% fiddles with the spacefactor after inserting its text.
+%
+%    \begin{macrocode}
+\DeclareRobustCommand\acro[1]{\textSMC{#1}\@}
+%</latex2e>
+%<!latex>\def\acro#1{{\SMC #1}\spacefactor\@m}
+%<!latex2e>\def\acro#1{{\SMC #1}\@}
+%    \end{macrocode}
+%
+%\TUGboat (effectively) takes arguments {<empty>}vol(issue)
+\DeclareRobustCommand\TUGboat[1]{\expandafter\@TUGboat\ignorespaces}
+\def\@TUGboat#1(#2){\textsl{TUGboat} \textbf{#1}(#2)}
+%
+% The NTS and eTeX (and for consistency Eplain) logos
+\DeclareRobustCommand\NTS{$\mathcal{N}$\lower.5ex\hbox
+    {$\mathcal{T}$}$\mathcal{S}$\@}
+\DeclareRobustCommand\eTeX{{$\varepsilon$}-\TeX}
+\DeclareRobustCommand\Eplain{Eplain}
+\DeclareRobustCommand\PDFTeX{\acro{PDF}\TeX}
+\DeclareRobustCommand\PDFLaTeX{\acro{PDF}\LaTeX}
+\DeclareRobustCommand\CONTeXT{Con\TeX{}t}
+\DeclareRobustCommand\TeXsis{\TeX{}sis}
+\DeclareRobustCommand\YandY{\acro{Y}\&\acro{Y}}
+%
+% Other odds and ends (appear differently in TeX and http or plain
+% text
+%
+% wysiwyg gets capitalised at the beginning of a sentence.  not
+% entirely reliably...
+\DeclareRobustCommand\WYSIWYG{%
+  \ifvmode
+    \let\faq@tempa\MakeUppercase
+  \else
+    \ifnum\spacefactor>2000
+      \let\faq@tempa\MakeUppercase
+    \else
+      \let\faq@tempa\relax
+    \fi
+  \fi
+  \textsc{\faq@tempa wysiwyg}%
+}
+%
+% Command for doing `square one' :-}
+\newcommand\sqfbox[1]{\framebox{\makebox[\totalheight]{#1\/}}}
+%
+% an arrow used as a hyphen...
+\newcommand\arrowhyph{\ensuremath{\rightarrow}\penalty0\hskip0pt\relax}
+%
+% Here's a \fullline macro that works in lists and so on
+\newcommand\fullline[1]{\@tempdima\hsize\relax
+  \advance\@tempdima-\leftmargin\relax
+  \advance\@tempdima-\rightmargin\relax
+  \hb@xt@\@tempdima{#1}}
+%
+% for tidy expression of things with parentheses around them:
+\newcommand\parens[1]{(#1)}
+\newcommand\oparen{(}%)( [footling around to match brackety things in emacs]
+\newcommand\cparen{)}
+%
+% make the tex logo robust
+\edef\@tempa{\noexpand\DeclareRobustCommand\noexpand\TeX{\TeX}}
+\@tempa
+%
+% this piece of fantasy was let loose on an unsuspecting world by
+% christina thiele, but i bet she didn't write it ;-)
+\edef\diatop{\noexpand\protect\csname diatop \endcsname}
+\expandafter\def\csname diatop \endcsname[#1|#2]{%
+  \leavevmode
+  {%
+    \setbox1=\hbox{{#1{}}}\setbox2=\hbox{{#2{}}}%
+    \dimen0=\ifdim\wd1>\wd2\wd1\else\wd2\fi%
+    \dimen1=\ht2\advance\dimen1by-1ex%
+    \setbox1=\hbox to1\dimen0{\hss#1\hss}%
+    \rlap{\raise1\dimen1\box1}%
+    \hbox to1\dimen0{\hss#2\hss}%
+  }%
+}%
+%
+% for han the thanh (who knows whether i've actually got this right; i
+% can't use the T5 fonts, which aren't even really publicly available
+% yet)
+\DeclareRobustCommand{\The}{Th\diatop[\'|\^e]}
+%
+% 2e's LaTeX logo sets the A in scripstyle jammed up to the top of the T; it
+% also has the advantage that it's set in the same font as the
+% surrounding text.  However, the esteemed bbeeton says the logo looks
+% "squidge awful" in italic text (I agree; and the same is true of its
+% behaviour in slanted text)
+%
+% So here's a version that allows for the slant of the leading L
+\DeclareRobustCommand{\LaTeX}{L%
+        {\setbox0\hbox{T}%
+         \setbox\@tempboxa\hbox{$\m@th$%
+                                \csname S@\f@size\endcsname
+                                \fontsize\sf@size\z@
+                                \math@fontsfalse\selectfont
+                                A}%
+         \@tempdima\ht0
+         \advance\@tempdima-\ht\@tempboxa
+         \@tempdima\strip@pt\fontdimen1\font\@tempdima
+         \advance\@tempdima-.36em
+         \kern\@tempdima
+         \vbox to\ht0{\box\@tempboxa
+                      \vss}%
+        }%
+        \kern-.15em
+        \TeX}
+%
+% Ditto for \AllTeX (as used in TUGboat)
+\DeclareRobustCommand{\AllTeX}{(L%
+        {\setbox0\hbox{T}%
+         \setbox\@tempboxa\hbox{$\m@th$%
+                                \csname S@\f@size\endcsname
+                                \fontsize\sf@size\z@
+                                \math@fontsfalse\selectfont
+                                A}%
+         \@tempdima\ht0
+         \advance\@tempdima-\ht\@tempboxa
+         \@tempdima\strip@pt\fontdimen1\font\@tempdima
+         \advance\@tempdima-.36em
+         \kern\@tempdima
+         \vbox to\ht0{\box\@tempboxa
+                      \vss}%
+        }\kern-.075em)%
+        \kern-.075em\TeX}
+%
+% A similar game is used in defining an `all LaTeX' sort of thing:
+\DeclareRobustCommand\twee{2$_{\textstyle\varepsilon}$}
+%
+% it proves that, for Alan's stuff, the following needs to have been
+% done _before_ we define the macros
+\RequirePackage{shortvrb}
+\MakeShortVerb{\|}
+%
+% A command which sets some text in typewriter, with the hyphenchar
+% temporarily set to its first argument \FAQverb\HYPHEN{TEXT}.
+% NB: This requires no catcode hackery, so should work inside moving
+% arguments.  It will, however, produce spurious spaces after CSs, and
+% won't allow brace-unmatched input.  It also won't survive going into a
+% moving argument if \HYPHEN won't.
+%
+\let\FAQverbFamily\ttfamily
+\DeclareRobustCommand{\FAQverb}[2]{{%
+    \ifvmode\leavevmode\fi
+    \lefthyphenmin=256\setlanguage\language
+    \FAQverbFamily\hyphenchar\the\font`#1\relax
+    \def\@tempa{#2}%
+    \expandafter\@faq@strip\meaning\@tempa\@faq@strip
+    \hyphenchar\the\font\m@ne
+}\setlanguage\language}
+\def\@faq@strip#1->#2\@faq@strip{#2}
+%
+% Document markup:
+%
+% (new method, using url.sty -- old version using FAQverb stuff
+% deleted from comments 2000/03/24)
+\newcommand\Email{\begingroup \urlstyle{tt}\Url}     % email address
+\ifpdf
+\def\mailto|#1|{\href{mailto:#1}{\Email|#1|}}        % url to mail somewhere
+\else
+\newcommand\mailto{\begingroup \urlstyle{tt}\Url}    % mailable address
+\fi
+\let\Emaildot\Email                    % only needed for hysterical raisins
+\DeclareRobustCommand\FTP{\begingroup \urlstyle{tt}\Url} % FTP site address
+\DeclareRobustCommand\File{\begingroup \urlstyle{tt}\Url} % File name
+\DeclareRobustCommand\@ctan@path{\begingroup \urlstyle{tt}\Url} % CTAN path
+                                                     % (argument in braces)
+\ifpdf
+\newcommand\@CTAN[3]{\href{#1#2#3}{\@ctan@path{#2}}} % relay via hyperreference
+\else
+\newcommand\@CTAN[3]{\@ctan@path{#2}}                % text-only reference
+\fi
+\newcommand\Newsgroup{\begingroup \urlstyle{tt}\Url} % newsgroup
+\let\URL\url                                         % just a URL
+% url.sty defines \path, etc.  hyperref may redefine...
+\ifpdf
+  % hyperref has defined \href
+\else
+  \newcommand\href{\begingroup
+    \@makeother\\%
+    \@makeother\_%
+    \@makeother\%%
+    \@makeother\~%
+    \@makeother\#%
+    \@href
+  }
+  \newcommand\@href[1]{\endgroup\urldef\@faq@tempurl\url{#1}%
+    \@href@text
+  }
+  \newcommand\@href@text[1]{#1 (see \@faq@tempurl)}
+\fi
+
+\DeclareRobustCommand\ProgName{%
+  \begingroup
+  \def\UrlFont{\rmfamily\itshape}\Url@do
+  \Url
+}
+\let\Package\ProgName                                      % pro tem
+\let\Class\Package                                         % ...
+\let\FontName\Package                                      % ...
+
+% another little oddity (from doc.sty originally, iirc)
+\newcommand\meta[1]{\ensuremath{\langle}\emph{#1}\ensuremath{\rangle}}
+
+%
+% ISBN references
+\def\ISBN#1{\mbox{\acro{ISBN}}~#1}
+%
+% Alan's code for CTAN references (now hacked to be capable of urls
+% for use in pdf output):
+%
+% define a location for a package on CTAN
+% ignores a leading * (which has meaning for html version only)
+% #1 is the package name
+% #2 is the CTAN path to the thing
+% a package in a directory
+\ifpdf
+  \newcommand{\CTANdirectory}{\@ifstar\@sCTANdirectory\@CTANdirectory}
+\else
+  \newcommand{\CTANdirectory}{\@ifstar\@CTANdirectory\@CTANdirectory}
+\fi
+\newcommand{\@CTANdirectory}[2]{\@ifundefined{ctan-#1}{%
+  \expandafter\gdef\csname ctan-#1\endcsname{\@CTAN\LocalCTAN{#2}\CTANDirFmt}%
+}{%
+   \PackageWarningNoLine{faq}{Repeated definition of label: #1}%
+   \stepcounter{CTAN@replabs}%
+}}
+\ifpdf
+  \newcommand{\@sCTANdirectory}[2]{\@ifundefined{ctan-#1}{%
+    \expandafter\gdef\csname ctan-#1\endcsname{\@CTAN\LocalCTAN{#2}/}%
+  }{%
+     \PackageWarningNoLine{faq}{Repeated definition of label: #1}%
+     \stepcounter{CTAN@replabs}%
+  }}
+\fi
+%
+% a package in a single file (the same appearance, but the WWW -- and
+% ultimately the pdf -- versions are different).
+\ifpdf
+\newcommand{\CTANfile}[2]{\@ifundefined{ctan-#1}{%
+  \expandafter\gdef\csname ctan-#1\endcsname{\@CTAN\LocalCTAN{#2}{}}%
+}{%
+  \PackageWarningNoLine{faq}{Repeated definition of label: #1}%
+  \stepcounter{CTAN@replabs}%
+}}
+\else
+\let\CTANfile\CTANdirectory
+\fi
+%
+% Make reference to a CTAN package
+%
+% counters for the undefined references and repeated labels
+\newcounter{CTAN@unrefs}
+\newcounter{CTAN@replabs}%
+%
+% the command itself
+\DeclareRobustCommand{\CTANref}[1]{\@ifundefined{ctan-#1}{%
+    \PackageWarning{CTAN}{Undefined reference: #1}%
+    \stepcounter{CTAN@unrefs}%
+}{%
+%   \edef\@tempa{\noexpand\CTAN{\csname ctan-#1\endcsname}}\@tempa
+    \csname ctan-#1\endcsname
+}}
+%
+% hook for diagnosing undefined references at the end
+\AtEndDocument{\ifthenelse{\theCTAN@unrefs > 0}{%
+    \PackageWarningNoLine{ctan}{There were \arabic{CTAN@unrefs} undefined
+      references to CTAN}%
+    }%
+    {}%
+  \ifthenelse{\theCTAN@replabs > 0}{%
+    \PackageWarningNoLine{ctan}{There were \arabic{CTAN@replabs}
+      multiply defined references to CTAN}%
+    }%
+    {}%
+}
+%
+% a slight variation of description for lists of book titles
+\newcommand{\booklabel}[1]{\hspace\labelsep\normalfont\itshape #1}
+\newenvironment{booklist}{%
+  \begin{list}{}%
+    {%
+      \labelwidth\z@
+      \itemindent-\leftmargin
+      \let\makelabel\booklabel
+      \parskip \z@
+      \itemsep \z@
+    }%
+  }%
+  {\end{list}}
+%
+% proglist is the same as booklist if we're using italics for program
+% names, but will need hacking otherwise
+\newenvironment{proglist}{\begin{booklist}}{\end{booklist}}
+%
+% similarly for ctanrefs environment
+\newcommand{\ctanreference}[1]{\hspace\labelsep\normalfont\ttfamily\itshape#1%
+  \/\normalfont:}
+\newenvironment{ctanrefs}{%
+  \par\noindent\leavevmode
+  \begin{list}{}%
+    {%
+      \labelwidth\z@
+      \itemindent-\leftmargin
+      \let\makelabel\ctanreference
+      \topsep  4\p@
+      \parskip \z@
+      \itemsep \z@
+      \@rightskip=\z@\@plus1in\relax
+      \spaceskip=.3333em\relax
+      \xspaceskip=.5em\relax
+    }%
+  }%
+  {\end{list}}
+%
+% compact the itemize, enumerate and description environments
+\let\FAQ@@itemize\itemize
+\renewcommand\itemize{%
+  \topsep  0.25\topsep
+  \FAQ@@itemize
+  \parskip \z@
+  \itemsep \z@
+}
+\let\FAQ@@enumerate\enumerate
+\renewcommand\enumerate{%
+  \topsep  0.25\topsep
+  \FAQ@@enumerate
+  \parskip \z@
+  \itemsep \z@
+}
+\let\FAQ@@description\description
+\renewcommand\description{%
+  \topsep  0.25\topsep
+  \FAQ@@description
+  \parskip \z@
+  \itemsep \z@
+}
+%
+% and similarly close up verbatim's separation from what surrounds it
+\let\FAQ@@verbatim\verbatim
+\renewcommand\verbatim{%
+  \topsep  0.25\topsep
+  \FAQ@@verbatim
+}
+%
+% \raggedwithindent is useful when we've got an URL or something
+% overrunning the end of the line (and this line is terminated with
+% \\)
+%
+% Typical usage is within the argument of a \nothtml command
+\newcommand\raggedwithindent{%
+  \rightskip=\z@\@plus5em\relax
+  \spaceskip=.3333em\relax
+  \xspaceskip=.5em\relax
+  \hangindent=1pc\relax}
+%
+% the little bit(s) of code that's(re) going to be ignored when the
+% html is generated are enclosed by the following two commands
+\let\htmlignore\relax
+\let\endhtmlignore\relax
+%
+% or it's the argument to \nothtml
+\newcommand\nothtml[1]{#1}
+%
+% a trivium that appears differently in the two modes
+\newcommand\latexhtml[2]{#1}
+%
+% things needed for the benefit of texfaq2html's `sanitise_line'
+\let\textpercent\%
+\let\faq@@textbar\textbar
+\chardef\faq@vertbar`\|
+\renewcommand\textbar{\def\@tempa{cmtt}%
+  \ifx\@tempa\f@family
+    \faq@vertbar
+  \else
+    \faq@@textbar
+  \fi
+}
+%
+% redefine \cs{l@section} to  require space for itself at the bottom
+% of a column
+\renewcommand\l@section[2]{%
+  \ifnum \c@tocdepth >\z@
+    \addpenalty\@secpenalty
+    \addvspace{1.0em \@plus\p@}%
+% "needspace" element here (doesn't work)
+%   \vskip \z@ \@plus 3\baselineskip
+%   \penalty -\@highpenalty
+%   \vskip \z@ \@plus -3\baselineskip
+    \setlength\@tempdima{1.5em}%
+    \begingroup
+      \parindent \z@ \rightskip \@pnumwidth
+      \parfillskip -\@pnumwidth
+      \leavevmode \bfseries
+      \advance\leftskip\@tempdima
+      \hskip -\leftskip
+      #1\nobreak\hfil \nobreak\hb@xt@\@pnumwidth{\hss #2}\par
+    \endgroup
+  \fi
+}
+%
+% subsections: these are a curious half-breed between latex sections
+% and subsections -- as designed, i'm not intending there ever to be
+% more than 9 per section (hahaha)
+\renewcommand\subsection{\@startsection{subsection}%
+                                       \tw@
+                                       \z@
+                                       {-1.5ex \@plus-1ex \@minus-.3ex}%
+                                       {1ex \@plus.2ex}%
+                                       {\normalfont\large\bfseries
+                                        \raggedright}%
+                        }
+\renewcommand*\l@subsection[2]{%
+  \ifnum \c@tocdepth >\@ne
+    \addpenalty\@secpenalty
+    \addvspace{0.5em \@plus\p@}%
+% "needspace" element here (doesn't work)
+%   \vskip \z@ \@plus 3\baselineskip
+%   \penalty -\@highpenalty
+%   \vskip \z@ \@plus -3\baselineskip
+    \setlength\@tempdima{2.0em}%
+    \begingroup
+      \parindent \z@ \rightskip \@pnumwidth
+      \parfillskip -\@pnumwidth
+      \leavevmode \bfseries
+      \advance\leftskip\@tempdima
+      \hskip -\leftskip
+      #1\nobreak\hfil \nobreak\hb@xt@\@pnumwidth{\hss #2}\par
+    \endgroup
+  \fi}
+%
+%
+% the question structure
+% \Question[label name]{question asked}
+% if [label name] present, the named label is assigned with \Qlabel
+\newcounter{question}
+\newcommand\Question[2][]{%
+  \ifpdf
+    \def\annot@label{#1}%
+    \def\annot@question{#2}%
+  \fi
+  \qu@stion{#2}%
+  \def\reserved@a{#1}%
+  \ifx\reserved@a\@empty
+    \PackageWarning{faq}{Question "#2" has no label}%
+  \else
+    \Qlabel{#1}%
+%    \addtocontents{lab}{\protect\QuestionLabel{#1}{#2}{\thepage}}%
+  \fi
+}
+\newcommand\qu@stion{\@startsection{question}%
+                                   \thr@@
+                                   \z@
+                                   {-1.25ex \@plus -1ex \@minus -.2ex}%
+                                   {0.75ex \@plus .2ex}%
+                                   {%
+                                     \normalfont
+                                     \normalsize
+                                     \bfseries
+                                     \raggedright
+    \protected@edef\@svsec{\protect\annot@set\@svsec}%
+                                   }%
+}
+\newcommand*\questionmark[1]{}
+\newcommand*\l@question{\@dottedtocline{2}{2.0em}{2.3em}}
+%
+\long\def\@ReturnAfterFi#1\fi{\fi#1}%
+\ifpdf
+  \newcommand*\toclevel@question{3}%
+  \let\orig@section\section
+  \let\orig@subsection\subsection
+  \let\orig@subsubsection\subsubsection
+  \def\section{%
+    \def\toclevel@question{2}%
+    \orig@section
+  }
+  \def\subsection{%
+    \def\toclevel@question{3}%
+    \orig@subsection
+  }
+  \def\subsubsection{%
+    \def\toclevel@question{4}%
+    \orig@subsubsection
+  }
+  %
+  \def\annot@set{%
+    \ifx\annot@label\@empty
+    \else
+      \begingroup
+        \def\x##1-##2\@nil{\def\annot@label{##2}}%
+        \expandafter\x\annot@label\@nil
+        \def\x##1_##2\@nil{%
+          ##1%
+          \ifx\\##2\\%
+          \else
+            \noexpand\textunderscore
+            \@ReturnAfterFi{\x##2\@nil}%
+          \fi
+        }%
+        \edef\annot@label{\expandafter\x\annot@label_\@nil}%
+        \edef\NL{\string\n}%
+        \pdfstringdef\annot@text{%
+          http://www.tex.ac.uk/cgi-bin/texfaq2html?label=\annot@label\NL
+          \annot@question
+        }%
+        \rlap{%
+          \kern-10mm\relax
+          \settoheight{\dimen@}{X}%
+          \pdfannotlink
+            width 200mm
+            height \dimen@
+            depth 25mm
+            user {%
+              /Subtype/Text%
+              /T(Question \thequestion: \annot@label)%
+              /Contents(\annot@text)%
+            }%
+          \pdfendlink
+        }%
+      \endgroup
+    \fi
+  }%
+  \@ifundefined{pdfannotlink}{%
+    \let\pdfannotlink\pdfstartlink
+  }{}
+\else
+  \let\annot@set\relax
+\fi
+%
+% \QuestionLabel starts out as a null command (so that inputting a
+% .lab file at s.o.d has no effect), but it's then reset to
+% \@questionLabel in case the file is going to be read again later
+% (e.g., as an appendix), but we don't have a sensible definition of
+% _that_ yet, either...
+\newcommand{\labellist}{%
+  \newcommand{\QuestionLabel}[3]{}%
+%  \@starttoc{lab}%
+  \let\QuestionLabel\@questionLabel
+}
+\newcommand{\@questionLabel}[3]{}
+%
+% \afterquestion is used when the \Question command itself has to be
+% inside a group for some reason (e.g., to have it in \boldmath)
+\newcommand\afterquestion{%
+  \global\toks@\expandafter{\the\everypar}%
+  \edef\@tempa{%
+    \noexpand\@afterindentfalse
+    \noexpand\everypar{\the\toks@}%
+  }%
+  \expandafter\endgroup\@tempa
+}
+%
+% \cs{Destination} is used immediately after a \cs{Question} command
+% in the various add-* files to signify where the question is supposed
+% to go
+\newcommand\Destination[1]{\begin{center}
+    \itshape#1
+  \end{center}
+}
+%
+% we `number' our sections alphabetically
+\renewcommand{\thesection}{\Alph{section}}
+%
+% keywords for questions.  these get translated into comments in web
+% versions
+\newcommand\keywords{\begingroup
+  \@makeother\\%
+  \@makeother\^%
+  \@makeother\_%
+  \@makeother\%%
+  \expandafter\endgroup
+  \@gobble
+}
+%
+% \Qlabel and \Qref: define and refer to labels
+\ifpdf
+% hyperref version of \label doesn't get set until begin document
+  \AtBeginDocument{\let\Qlabel\label}
+\else
+  \let\Qlabel\label
+\fi
+\newcommand\Qref{\@ifstar\@QrefA\@QrefB}
+\newcommand\@QrefA[3][see question]{#2 (#1~\ref{#3})}
+\newcommand\@QrefB[3][see question]{#1~\ref{#3}}
+%
+% from doc package, then hacked about by yours truly
+\DeclareRobustCommand\csx[1]{\def\@tempa{#1}{\FAQverbFamily\char`\\%
+    \expandafter\@faq@strip\meaning\@tempa\@faq@strip}}
+\def\cs|#1|{\csx{#1}}
+%
+% fancier versions of the above
+%
+% \cmdinvoke\cs<argument sequence>
+% \cs typeset as above
+% <argument sequence> may consist of optional or mandatory arguments;
+%     so far only "one mandatory" and "one optional, one mandatory"
+%     are supported by texfaq2html
+%
+% the `arguments' are simply typesett \texttt, as yet -- if something
+% fancier is needed, there's a bunch of code needs rewriting here...
+\DeclareRobustCommand\cmdinvoke{\@ifstar
+  {\let\@tempa\emph\@scmdinvoke}%
+  {\let\@tempa\relax\@scmdinvoke}%
+}
+\def\@scmdinvoke#1{\texttt{\symbol{92}#1}%
+  \futurelet\@let@token\@cmdinvoke
+}
+\def\@cmdinvoke{\ifx\@let@token\bgroup
+    \expandafter\@cmdinvoke@lbrace
+  \else
+    \ifx\@let@token[% ]
+      \expandafter\expandafter\expandafter\@cmdinvoke@lbrack
+    \fi
+  \fi
+}
+\def\@cmdinvoke@lbrace#1{\penalty-150\hskip0pt\relax
+  \texttt{\symbol{123}\@tempa{#1}\symbol{125}}%
+  \futurelet\@let@token\@cmdinvoke
+}
+\def\@cmdinvoke@lbrack[#1]{\penalty-150\hskip0pt\relax
+  \texttt{[\@tempa{#1}]}%
+  \futurelet\@let@token\@cmdinvoke
+}
+
+% minuscule bit more structured markup...
+\def\environment#1{\texttt{#1}}
+\def\pkgoption#1{\texttt{#1}}
+
+%
+% symbols for the braces (which can confuse perl sumfink rotten
+\def\obracesymbol{\symbol{123}}
+\def\cbracesymbol{\symbol{125}}
+%
+% for comments during maintenance
+\def\Q#1{\footnote{{\ttfamily QUERY: #1}}}
+%\def\Q#1{\marginpar{{\ttfamily QUERY: #1}}}
+%
+% Checking structure (null for now)
+\newcommand\checked[2]{}
+%
+% for Alan's benefit
+\newbox\@footnoteenvbox
+\newenvironment{footnoteenv}
+  {\begin{lrbox}\@footnoteenvbox\reset@font\footnotesize\ignorespaces}
+  {\end{lrbox}%
+   \footnote{\unhbox\@footnoteenvbox}}
+%
+% end of package
+\endinput
