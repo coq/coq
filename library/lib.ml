@@ -526,7 +526,8 @@ let declare_initial_state () =
 
 let reset_initial () =
   match !initial_state with
-    | None -> init ()
+    | None -> 
+        error "Resetting to the initial state is possible only interactively"
     | Some sp -> 
   	begin match split_lib sp with
 	  | (_,[_,FrozenState fs as hd],before) ->
