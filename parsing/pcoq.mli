@@ -33,10 +33,10 @@ val object_of_typed_entry : typed_entry -> grammar_object Gram.Entry.e
 val weaken_entry : 'a Gram.Entry.e -> grammar_object Gram.Entry.e
 
 val get_constr_entry :
-  constr_entry -> grammar_object Gram.Entry.e * int option * bool
+  bool -> constr_entry -> grammar_object Gram.Entry.e * int option * bool
 
 val symbol_of_production : Gramext.g_assoc option -> constr_entry ->
-  constr_production_entry -> Token.t Gramext.g_symbol
+  bool -> constr_production_entry -> Token.t Gramext.g_symbol
 
 val grammar_extend :
   'a Gram.Entry.e -> Gramext.position option ->
@@ -142,6 +142,7 @@ module Constr :
     val binder : (name located list * constr_expr) Gram.Entry.e
     val binder_let : local_binder Gram.Entry.e
     val tuple_constr : constr_expr Gram.Entry.e
+    val tuple_pattern : cases_pattern_expr Gram.Entry.e
   end
 
 module Module : 

@@ -351,6 +351,7 @@ module Constr =
     let binder = Gram.Entry.create "constr:binder"
     let binder_let = Gram.Entry.create "constr:binder_let"
     let tuple_constr = gec_constr "tuple_constr"
+    let tuple_pattern = Gram.Entry.create "tuple_pattern"
   end
 
 module Module =
@@ -695,8 +696,11 @@ let adjust_level assoc from = function
 	| _ -> Some (Some (n,false))
 *)
 
-let compute_entry allow_create adjust = function
-  | ETConstr (n,q) -> weaken_entry Constr.operconstr, adjust (n,q), false
+let compute_entry allow_create adjust forpat = function
+  | ETConstr (n,q) ->
+      (if forpat then weaken_entry Constr.pattern
+       else weaken_entry Constr.operconstr),
+      (if forpat & !Options.v7 then None else adjust (n,q)), false
   | ETIdent -> weaken_entry Constr.ident, None, false
   | ETBigint -> weaken_entry Prim.bigint, None, false
   | ETReference -> weaken_entry Constr.global, None, false
@@ -711,31 +715,32 @@ let compute_entry allow_create adjust = function
       object_of_typed_entry e, None, true
 
 (* This computes the name of the level where to add a new rule *)
-let get_constr_entry en =
+let get_constr_entry forpat en =
   match en with
-      ETConstr(200,()) when not !Options.v7 ->
-        snd (get_entry (get_univ "constr") "binder_constr"),
+      ETConstr(200,()) when not !Options.v7 & not forpat ->
+	snd (get_entry (get_univ "constr") "binder_constr"),
         None,
         false
     | ETConstr(250,()) when not !Options.v7 ->
-        weaken_entry Constr.tuple_constr,
+        (if forpat then weaken_entry Constr.tuple_pattern
+	else weaken_entry Constr.tuple_constr),
 (*        snd (get_entry (get_univ "constr") "tuple_constr"),*)
         None,
         false
-    | _ -> compute_entry true (fun (n,()) -> Some n) en
+    | _ -> compute_entry true (fun (n,()) -> Some n) forpat en
 
 (* This computes the name to give to a production knowing the name and
    associativity of the level where it must be added *)
-let get_constr_production_entry ass from en =
+let get_constr_production_entry ass from forpat en =
   (* first 2 cases to help factorisation *)
   match en with
-    | ETConstr (NumLevel 10,q) when !Options.v7 ->
+    | ETConstr (NumLevel 10,q) when !Options.v7 & not forpat ->
         weaken_entry Constr.lconstr, None, false
 (*
     | ETConstr (8,q) when !Options.v7 ->
         weaken_entry Constr.constr, None, false
 *)
-    | _ -> compute_entry false (adjust_level ass from) en
+    | _ -> compute_entry false (adjust_level ass from) forpat en
 
 let constr_prod_level assoc cur lev =
   if !Options.v7 then
@@ -762,13 +767,13 @@ let is_binder_level from e =
       ETConstr(200,()), ETConstr(NumLevel 200,_) -> not !Options.v7
     | _ -> false
 
-let symbol_of_production assoc from typ =
+let symbol_of_production assoc from forpat typ =
   if is_binder_level from typ then
     let eobj = snd (get_entry (get_univ "constr") "operconstr") in
     Gramext.Snterml (Gram.Entry.obj eobj,"200")
   else if is_self from typ then Gramext.Sself
   else
-    match get_constr_production_entry assoc from typ with
+    match get_constr_production_entry assoc from forpat typ with
       | (eobj,None,_) -> Gramext.Snterm (Gram.Entry.obj eobj)
       | (eobj,Some None,_) -> Gramext.Snext
       | (eobj,Some (Some (lev,cur)),_) -> 
