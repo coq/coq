@@ -292,10 +292,15 @@ let rec decompose_last = function
   | a::tl -> let rl, b = decompose_last tl in (a::rl), b;;
 
 let rec make_fix_struct b = function
-    0, CProdN(_, [([na],_)], CProdN(_, _,_)) -> xlate_id_opt na
+    0, CProdN(_, [(na::tl,_)], CProdN(_, _,_)) -> xlate_id_opt na
   | 0, CProdN(_, [([na],_)], _) ->
       if b then xlate_id_opt na else ctv_ID_OPT_NONE
-  | n, CProdN(_, [([_],_)],body) -> make_fix_struct true ((n-1),body)
+  | n, CProdN(_, [(l,_)],body) -> 
+      let len = List.length l in
+	if len <= n then
+	  make_fix_struct true (n-len, body)
+	else
+	  xlate_id_opt(List.nth l n)
   | _, _ -> xlate_error "unexpected result of parsing for Fixpoint";;
 
 
