@@ -37,8 +37,8 @@ Executables and tools
 
 - Added option -top to change the name of the toplevel module "Top"
 - Coqdoc updated to new syntax and now part of Coq sources
-- XML exportation tool now exports the structure of vernacular files and
-  the proof scripts (cf chapter 13 in the reference manual)
+- XML exportation tool now exports the structure of vernacular files 
+  (cf chapter 13 in the reference manual)
 
 User contributions
 
