@@ -253,11 +253,13 @@ contrib/correctness/pwp.cmi: contrib/correctness/peffect.cmi \
     kernel/term.cmi 
 contrib/extraction/extraction.cmi: kernel/environ.cmi \
     contrib/extraction/miniml.cmi kernel/names.cmi kernel/term.cmi 
+contrib/extraction/haskell.cmi: contrib/extraction/miniml.cmi \
+    contrib/extraction/mlutil.cmi 
 contrib/extraction/miniml.cmi: kernel/names.cmi lib/pp.cmi kernel/term.cmi 
 contrib/extraction/mlutil.cmi: contrib/extraction/miniml.cmi kernel/names.cmi \
     kernel/term.cmi 
 contrib/extraction/ocaml.cmi: contrib/extraction/miniml.cmi \
-    contrib/extraction/mlutil.cmi 
+    contrib/extraction/mlutil.cmi kernel/names.cmi lib/pp.cmi 
 contrib/interface/dad.cmi: parsing/coqast.cmi proofs/proof_type.cmi \
     proofs/tacmach.cmi 
 contrib/interface/debug_tac.cmi: parsing/coqast.cmi proofs/proof_type.cmi \
@@ -1138,6 +1140,8 @@ tactics/wcclausenv.cmx: proofs/clenv.cmx kernel/environ.cmx \
     proofs/logic.cmx kernel/names.cmx lib/pp.cmx proofs/proof_trees.cmx \
     kernel/reduction.cmx kernel/sign.cmx proofs/tacmach.cmx kernel/term.cmx \
     lib/util.cmx tactics/wcclausenv.cmi 
+tools/coq_vo2xml.cmo: config/coq_config.cmi toplevel/usage.cmi 
+tools/coq_vo2xml.cmx: config/coq_config.cmx toplevel/usage.cmx 
 tools/coqdep.cmo: config/coq_config.cmi tools/coqdep_lexer.cmo 
 tools/coqdep.cmx: config/coq_config.cmx tools/coqdep_lexer.cmx 
 tools/coqdep_lexer.cmo: config/coq_config.cmi 
@@ -1392,14 +1396,16 @@ contrib/correctness/peffect.cmx: toplevel/himsg.cmx kernel/names.cmx \
     contrib/correctness/peffect.cmi 
 contrib/correctness/penv.cmo: toplevel/himsg.cmi library/lib.cmi \
     library/libobject.cmi library/library.cmi kernel/names.cmi \
-    contrib/correctness/past.cmi contrib/correctness/perror.cmi \
-    contrib/correctness/pmisc.cmi lib/pp.cmi contrib/correctness/ptype.cmi \
-    library/summary.cmi kernel/term.cmi contrib/correctness/penv.cmi 
+    lib/options.cmi contrib/correctness/past.cmi \
+    contrib/correctness/perror.cmi contrib/correctness/pmisc.cmi lib/pp.cmi \
+    contrib/correctness/ptype.cmi library/summary.cmi kernel/term.cmi \
+    contrib/correctness/penv.cmi 
 contrib/correctness/penv.cmx: toplevel/himsg.cmx library/lib.cmx \
     library/libobject.cmx library/library.cmx kernel/names.cmx \
-    contrib/correctness/past.cmi contrib/correctness/perror.cmx \
-    contrib/correctness/pmisc.cmx lib/pp.cmx contrib/correctness/ptype.cmi \
-    library/summary.cmx kernel/term.cmx contrib/correctness/penv.cmi 
+    lib/options.cmx contrib/correctness/past.cmi \
+    contrib/correctness/perror.cmx contrib/correctness/pmisc.cmx lib/pp.cmx \
+    contrib/correctness/ptype.cmi library/summary.cmx kernel/term.cmx \
+    contrib/correctness/penv.cmi 
 contrib/correctness/perror.cmo: library/declare.cmi kernel/evd.cmi \
     library/global.cmi toplevel/himsg.cmi kernel/names.cmi \
     contrib/correctness/past.cmi contrib/correctness/peffect.cmi lib/pp.cmi \
@@ -1604,6 +1610,16 @@ contrib/extraction/extraction.cmx: kernel/closure.cmx kernel/declarations.cmx \
     contrib/extraction/mlutil.cmx kernel/names.cmx lib/pp.cmx \
     kernel/reduction.cmx library/summary.cmx kernel/term.cmx \
     pretyping/typing.cmx lib/util.cmx contrib/extraction/extraction.cmi 
+contrib/extraction/haskell.cmo: kernel/environ.cmi library/global.cmi \
+    contrib/extraction/miniml.cmi contrib/extraction/mlutil.cmi \
+    kernel/names.cmi contrib/extraction/ocaml.cmi lib/options.cmi lib/pp.cmi \
+    lib/pp_control.cmi kernel/term.cmi lib/util.cmi \
+    contrib/extraction/haskell.cmi 
+contrib/extraction/haskell.cmx: kernel/environ.cmx library/global.cmx \
+    contrib/extraction/miniml.cmi contrib/extraction/mlutil.cmx \
+    kernel/names.cmx contrib/extraction/ocaml.cmx lib/options.cmx lib/pp.cmx \
+    lib/pp_control.cmx kernel/term.cmx lib/util.cmx \
+    contrib/extraction/haskell.cmi 
 contrib/extraction/mlutil.cmo: kernel/declarations.cmi library/global.cmi \
     library/lib.cmi library/libobject.cmi contrib/extraction/miniml.cmi \
     kernel/names.cmi library/nametab.cmi lib/options.cmi lib/pp.cmi \

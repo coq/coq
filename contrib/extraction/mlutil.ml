@@ -227,6 +227,7 @@ module Refset =
 
 type extraction_params = {
   modular : bool;       (* modular extraction *)
+  module_name : string; (* module name if [modular] *)
   optimization : bool;  (* we need optimization *)
   to_keep : Refset.t;   (* globals to keep *)
   to_expand : Refset.t; (* globals to expand *)

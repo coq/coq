@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-(*s Production of Ocaml syntax. *)
+(*s Production of Haskell syntax. *)
 
 open Pp
 open Util
@@ -17,52 +17,27 @@ open Term
 open Miniml
 open Mlutil
 open Options
-
-(*s Some utility functions. *)
-
-let string s = [< 'sTR s >]
-
-let open_par = function true -> string "(" | false -> [< >]
-
-let close_par = function true -> string ")" | false -> [< >]
+open Ocaml
 
 let rec collapse_type_app = function
   | (Tapp l1) :: l2 -> collapse_type_app (l1 @ l2)
   | l -> l
 
-let pp_tuple f = function
-  | [] -> [< >]
-  | [x] -> f x
-  | l -> [< 'sTR "(";
-      	    prlist_with_sep (fun () -> [< 'sTR ","; 'sPC >]) f l;
-	    'sTR ")" >]
-
-let pp_boxed_tuple f = function
-  | [] -> [< >]
-  | [x] -> f x
-  | l -> [< 'sTR "(";
-      	    hOV 0 [< prlist_with_sep (fun () -> [< 'sTR ","; 'sPC >]) f l;
-		     'sTR ")" >] >]
-
 let space_if = function true -> [< 'sTR " " >] | false -> [< >]
 
 let sec_space_if = function true -> [< 'sPC >] | false -> [< >]
 
-(*s Ocaml renaming issues. *)
+(*s Haskell renaming issues. *)
 
-let ocaml_keywords =     
+let haskell_keywords =     
   List.fold_right (fun s -> Idset.add (id_of_string s))
-  [ "and"; "as"; "assert"; "begin"; "class"; "constraint"; "do";
-    "done"; "downto"; "else"; "end"; "exception"; "external"; "false";
-    "for"; "fun"; "function"; "functor"; "if"; "in"; "include";
-    "inherit"; "initializer"; "lazy"; "let"; "match"; "method";
-    "module"; "mutable"; "new"; "object"; "of"; "open"; "or";
-    "parser"; "private"; "rec"; "sig"; "struct"; "then"; "to"; "true";
-    "try"; "type"; "val"; "virtual"; "when"; "while"; "with"; "mod";
-    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ] 
+  [ "case"; "class"; "data"; "default"; "deriving"; "do"; "else";
+    "if"; "import"; "in"; "infix"; "infixl"; "infixr"; "instance"; 
+    "let"; "module"; "newtype"; "of"; "then"; "type"; "where"; "_";
+    "as"; "qualified"; "hiding" ]
   Idset.empty
 
-let current_ids = ref ocaml_keywords
+let current_ids = ref haskell_keywords
 
 let rec rename_id id avoid = 
   if Idset.mem id avoid then rename_id (lift_ident id) avoid else id
@@ -77,6 +52,8 @@ let uppercase_id id = id_of_string (String.capitalize (string_of_id id))
 
 let rename_lower_global id = rename_global (lowercase_id id)
 let rename_upper_global id = rename_global (uppercase_id id)
+
+let pr_lower_id id = pr_id (lowercase_id id)
 
 (*s de Bruijn environments for programs *)
 
@@ -114,8 +91,8 @@ let collect_lambda =
 
 let abst = function
   | [] -> [< >]
-  | l  -> [< 'sTR "fun ";
-             prlist_with_sep (fun () -> [< 'sTR " " >]) pr_id l;
+  | l  -> [< 'sTR "\\ ";
+             prlist_with_sep (fun  ()-> [< 'sTR " " >]) pr_id l;
              'sTR " ->"; 'sPC >]
 
 let pr_binding = function
@@ -139,23 +116,25 @@ let pp_global = pp_reference P.pp_global
 let rec pp_type par t =
   let rec pp_rec par = function
     | Tvar id -> 
-	string ("'" ^ string_of_id id)
+	pr_id (lowercase_id id) (* TODO: possible clash with Haskell kw *)
     | Tapp l ->
 	(match collapse_type_app l with
 	   | [] -> assert false
 	   | [t] -> pp_rec par t
-	   | t::l -> [< pp_tuple (pp_rec false) l; 
-			sec_space_if (l <>[]); 
-			pp_rec false t >])
+	   | t::l -> 
+	       [< open_par par;
+		  pp_rec false t; 'sPC;
+		  prlist_with_sep (fun () -> [< 'sPC >]) (pp_type true) l; 
+		  close_par par >])
     | Tarr (t1,t2) ->
 	[< open_par par; pp_rec true t1; 'sPC; 'sTR "->"; 'sPC; 
 	   pp_rec false t2; close_par par >]
     | Tglob r -> 
 	pp_type_global r
     | Tprop ->
-	string "prop"
+	string "Prop"
     | Tarity ->
-	string "arity"
+	string "Arity"
   in 
   hOV 0 (pp_rec par t)
 
@@ -210,25 +189,26 @@ let rec pp_expr par env args =
 	   pp_expr true env [] a; close_par par >]
     | MLcons (r,args') ->
 	[< open_par par; pp_global r; 'sPC;
-	   pp_tuple (pp_expr true env []) args'; close_par par >]
+	   prlist_with_sep (fun () -> [< 'sPC >]) (pp_expr true env []) args';
+	   close_par par >]
     | MLcase (t, pv) ->
       	apply
       	  [< if args <> [] then [< 'sTR "(" >]  else open_par par;
-      	     v 0 [< 'sTR "match "; pp_expr false env [] t; 'sTR " with";
+      	     v 0 [< 'sTR "case "; pp_expr false env [] t; 'sTR " of";
 		    'fNL; 'sTR "  "; pp_pat env pv >];
 	     if args <> [] then [< 'sTR ")" >] else close_par par >]
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' (Some i) (Array.of_list (List.rev ids'),defs) args
     | MLexn id -> 
-	[< open_par par; 'sTR "failwith"; 'sPC; 
+	[< open_par par; 'sTR "error"; 'sPC; 
 	   'qS (string_of_id id); close_par par >]
     | MLprop ->
 	string "prop"
     | MLarity ->
 	string "arity"
     | MLcast (a,t) ->
-	[< open_par true; pp_expr false env args a; 'sPC; 'sTR ":"; 'sPC; 
+	[< open_par true; pp_expr false env args a; 'sPC; 'sTR "::"; 'sPC; 
 	   pp_type false t; close_par true >]
     | MLmagic a ->
 	[< open_par true; 'sTR "Obj.magic"; 'sPC; 
@@ -241,29 +221,31 @@ and pp_pat env pv =
     hOV 2 [< pp_global name;
 	     begin match ids with 
 	       | [] -> [< >]
-	       | _  -> [< 'sTR " "; pp_boxed_tuple pr_id (List.rev ids) >]
+	       | _  -> [< 'sTR " "; 
+			  prlist_with_sep 
+			    (fun () -> [< 'sPC >]) pr_id (List.rev ids) >]
 	     end;
 	     'sTR " ->"; 'sPC; pp_expr par env' [] t >]
   in 
   if pv = [||] then
-    [< 'sTR "_ -> assert false (* empty inductive *)" >]
+    [< 'sTR "_ -> error \"shouldn't happen\" -- empty inductive" >]
   else
-    [< prvect_with_sep (fun () -> [< 'fNL; 'sTR "| " >]) pp_one_pat pv >]
+    [< prvect_with_sep (fun () -> [< 'fNL; 'sTR "  " >]) pp_one_pat pv >]
 
 (*s names of the functions ([ids]) are already pushed in [env],
     and passed here just for convenience. *)
 
 and pp_fix par env in_p (ids,bl) args =
   [< open_par par; 
-     v 0 [< 'sTR "let rec " ;
+     v 0 [< 'sTR "let { " ;
 	    prvect_with_sep
-      	      (fun () -> [< 'fNL; 'sTR "and " >])
+      	      (fun () -> [< 'sTR "; "; 'fNL >])
 	      (fun (fi,ti) -> pp_function env (pr_id fi) ti)
 	      (array_map2 (fun id b -> (id,b)) ids bl);
-	    'fNL;
+	    'sTR " }";'fNL;
 	    match in_p with
 	      | Some j -> 
-      		  hOV 2 [< 'sTR "in "; pr_id (ids.(j));
+      		  hOV 2 [< 'sTR "in "; pr_id ids.(j);
 			   if args <> [] then
 			     [< 'sTR " "; 
 				prlist_with_sep (fun () -> [<'sTR " ">])
@@ -277,83 +259,64 @@ and pp_fix par env in_p (ids,bl) args =
 and pp_function env f t =
   let bl,t' = collect_lambda t in
   let bl,env' = push_vars bl env in
-  let is_function pv =
-    let ktl = array_map_to_list (fun (_,l,t0) -> (List.length l,t0)) pv in
-    not (List.exists (fun (k,t0) -> Mlutil.occurs (k+1) t0) ktl)
-  in
-  match t' with 
-    | MLcase(MLrel 1,pv) ->
-	if is_function pv then
-	  [< f; pr_binding (List.rev (List.tl bl)) ;
-       	     'sTR " = function"; 'fNL;
-	     v 0 [< 'sTR "  "; pp_pat env' pv >] >]
-	else
-          [< f; pr_binding (List.rev bl); 
-             'sTR " = match ";
-	     pr_id (List.hd bl); 'sTR " with"; 'fNL;
-	     v 0 [< 'sTR "  "; pp_pat env' pv >] >]
-	  
-    | _ -> [< f; pr_binding (List.rev bl);
-	      'sTR " ="; 'fNL; 'sTR "  ";
-	      hOV 2 (pp_expr false env' [] t') >]
+  [< f; pr_binding (List.rev bl);
+     'sTR " ="; 'fNL; 'sTR "  ";
+     hOV 2 (pp_expr false env' [] t') >]
 	
 let pp_ast a = hOV 0 (pp_expr false (empty_env ()) [] a)
 
 (*s Pretty-printing of inductive types declaration. *)
-
-let pp_parameters l = 
-  [< pp_tuple (fun id -> string ("'" ^ string_of_id id)) l; space_if (l<>[]) >]
 
 let pp_one_inductive (pl,name,cl) =
   let pp_constructor (id,l) =
     [< pp_global id;
        match l with
          | [] -> [< >] 
-	 | _  -> [< 'sTR " of " ;
+	 | _  -> [< 'sTR " " ;
       	       	    prlist_with_sep 
-		      (fun () -> [< 'sPC ; 'sTR "* " >]) (pp_type true) l >] >]
+		      (fun () -> [< 'sTR " " >]) (pp_type true) l >] >]
   in
-  [< pp_parameters pl; pp_type_global name; 'sTR " ="; 
+  [< 'sTR (if cl = [] then "type " else "data "); 
+     pp_type_global name; 'sTR " ";
+     prlist_with_sep (fun () -> [< 'sTR " " >]) pr_lower_id pl;
+     if pl = [] then [< >] else [< 'sTR " " >];
      if cl = [] then
-       [< 'sTR " unit (* empty inductive *)" >]
+       [< 'sTR "= () -- empty inductive" >]
      else
-       [< 'fNL;
-	  v 0 [< 'sTR "    ";
+       [< v 0 [< 'sTR "= ";
 		 prlist_with_sep (fun () -> [< 'fNL; 'sTR "  | " >])
-                   (fun c -> hOV 2 (pp_constructor c)) cl >] >] >]
+                   pp_constructor cl >] >] >]
 
 let pp_inductive il =
-  [< 'sTR "type ";
-     prlist_with_sep (fun () -> [< 'fNL; 'sTR "and " >]) pp_one_inductive il;
-     'fNL >]
+  [< prlist_with_sep (fun () -> [< 'fNL >]) pp_one_inductive il; 'fNL >]
 
 (*s Pretty-printing of a declaration. *)
-
-let warning_coinductive r = 
-  wARN (hOV 0 
-	  [< 'sTR "You are trying to extract the CoInductive definition"; 'sPC;
-	     Printer.pr_global r; 'sPC; 'sTR "in Ocaml."; 'sPC; 
-	     'sTR "This is in general NOT a good idea,"; 'sPC; 
-	     'sTR "since Ocaml is not lazy."; 'sPC;
-	     'sTR "You should consider using Haskell instead." >])
 
 let pp_decl = function
   | Dtype ([], _) -> 
       [< >]
-  | Dtype ((_,r,_)::_ as i, cofix) -> 
-      if cofix && P.cofix_warning then if_verbose warning_coinductive r; 
+  | Dtype (i, _) -> 
       hOV 0 (pp_inductive i)
   | Dabbrev (r, l, t) ->
-      hOV 0 [< 'sTR "type"; 'sPC; pp_parameters l; 
-	       pp_type_global r; 'sPC; 'sTR "="; 'sPC; 
-	       pp_type false  t; 'fNL >]
-  | Dglob (r, MLfix (_,[|_|],[|def|])) ->
-      let id = P.rename_global r in
-      let env' = ([id], !current_ids) in
-      [<  hOV 2 (pp_fix false env' None ([|id|],[|def|]) []) >]
+      hOV 0 [< 'sTR "type "; pp_type_global r; 'sPC; 
+	       prlist_with_sep (fun () -> [< 'sTR " " >]) pr_lower_id l;
+	       if l <> [] then [< 'sTR " " >] else [< >]; 'sTR "="; 'sPC;
+	       pp_type false t; 'fNL >]
+  | Dglob (r, MLfix (i,ids,defs)) ->
+      let env = empty_env () in
+      let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
+      [< prlist_with_sep (fun () -> [< 'fNL >])
+	   (fun (fi,ti) -> pp_function env' (pr_id fi) ti)
+	   (List.combine (List.rev ids') (Array.to_list defs));
+	 'fNL;
+	 let id = P.rename_global r in
+	 let idi = List.nth (List.rev ids') i in
+	 if id <> idi then
+	   [< 'fNL; pr_id id; 'sTR " = "; pr_id idi; 'fNL >]
+	 else
+	   [< >] >]
   | Dglob (r, a) ->
-      hOV 0 [< 'sTR "let "; 
-	       pp_function (empty_env ()) (pp_global r) a; 'fNL >]
+      hOV 0 [< pp_function (empty_env ()) (pp_global r) a; 'fNL >]
 
 let pp_type = pp_type false
 
@@ -373,7 +336,7 @@ let rename_type_global r =
   cache r
     (fun r -> 
        let id = Environ.id_of_global (Global.env()) r in
-       rename_lower_global id)
+       rename_upper_global id)
 
 let pp_type_global r = pr_id (rename_type_global r)
 
@@ -395,13 +358,11 @@ module MonoPp = Make(MonoParams)
 
 (*s Renaming issues in a modular extraction. *)
 
-let current_module = ref ""
-
 module ModularParams = struct
 
   let avoid = 
     Idset.add (id_of_string "prop")
-      (Idset.add (id_of_string "arity") ocaml_keywords)
+      (Idset.add (id_of_string "arity") haskell_keywords)
 
   let rename_lower id = 
     if Idset.mem id avoid || id <> lowercase_id id then 
@@ -428,7 +389,7 @@ module ModularParams = struct
 
   let rename_type_global r = 
     let id = Environ.id_of_global (Global.env()) r in 
-    id_of_global r (rename_lower id)
+    id_of_global r (rename_upper id)
 
   let rename_global r = 
     let id = Environ.id_of_global (Global.env()) r in 
@@ -446,17 +407,19 @@ module ModularPp = Make(ModularParams)
 
 (*s Extraction to a file. *)
 
-let ocaml_preamble () =
-  [< 'sTR "type prop = unit"; 'fNL;
-     'sTR "let prop = ()"; 'fNL; 'fNL;
-     'sTR "type arity = unit"; 'fNL;
-     'sTR "let arity = ()"; 'fNL; 'fNL >]
+let haskell_preamble prm =
+  let m = if prm.modular then String.capitalize prm.module_name else "Main" in
+  [< 'sTR "module "; 'sTR m; 'sTR " where"; 'fNL; 'fNL;
+     'sTR "type Prop = ()"; 'fNL;
+     'sTR "prop = ()"; 'fNL; 'fNL;
+     'sTR "type Arity = ()"; 'fNL;
+     'sTR "arity = ()"; 'fNL; 'fNL >]
 
 let extract_to_file f prm decls =
   let pp_decl = if prm.modular then ModularPp.pp_decl else MonoPp.pp_decl in
   let cout = open_out f in
   let ft = Pp_control.with_output_to cout in
-  pP_with ft (hV 0 (ocaml_preamble ()));
+  pP_with ft (hV 0 (haskell_preamble prm));
   begin 
     try
       List.iter (fun d -> mSGNL_with ft (pp_decl d)) decls

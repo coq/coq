@@ -134,6 +134,7 @@ USERTACCMO=$(USERTAC:.ml4=.cmo)
 USERTACCMX=$(USERTAC:.ml4=.cmx)
 
 EXTRACTIONCMO=contrib/extraction/mlutil.cmo contrib/extraction/ocaml.cmo \
+	      contrib/extraction/haskell.cmo \
 	      contrib/extraction/extraction.cmo \
 	      contrib/extraction/extract_env.cmo
 

@@ -167,15 +167,22 @@ let _ =
 
 (*s Extraction parameters. *)
 
-let interp_options keep modular = function
+let strict_language = function
+  | "ocaml" -> true
+  | "haskell" -> false
+  | _ -> assert false
+
+let interp_options lang keep modular m = function
   | [VARG_STRING "noopt"] ->
-      { optimization = false; modular = modular; 
+      { optimization = false; modular = modular; module_name = m;
 	to_keep = refs_set_of_list keep; to_expand = Refset.empty }
   | [VARG_STRING "nooption"] ->
-      { optimization = true; modular = modular;
+      { optimization = strict_language lang; 
+	modular = modular; module_name = m;
 	to_keep = refs_set_of_list keep; to_expand = Refset.empty }
   | VARG_STRING "expand" :: l ->
-      { optimization = true; modular = modular;
+      { optimization = strict_language lang; 
+	modular = modular; module_name = m;
 	to_keep = refs_set_of_list keep; 
 	to_expand = refs_set_of_list (refs_of_vargl l) }
   | _ -> 
@@ -185,17 +192,23 @@ let interp_options keep modular = function
     The vernacular command is \verb!Extraction "file"! [qualid1] ... [qualidn].
     We just call [extract_to_file] on the saturated environment. *)
 
+let extract_to_file = function
+  | "ocaml" -> Ocaml.extract_to_file 
+  | "haskell" -> Haskell.extract_to_file
+  | _ -> assert false
+
 let _ = 
   vinterp_add "ExtractionFile"
     (function 
-       | VARG_VARGLIST o :: VARG_STRING f :: vl ->
+       | VARG_STRING lang :: VARG_VARGLIST o :: VARG_STRING f :: vl ->
 	   let refs = refs_of_vargl vl in
-	   let prm = interp_options refs false o in
+	   let prm = interp_options lang refs false "" o in
 	   (fun () -> 
 	      let decls = decl_of_refs refs in 
 	      let decls = optimize prm decls in
-	      Ocaml.extract_to_file f prm decls)
+	      extract_to_file lang f prm decls)
        | _ -> assert false)
+
 (*s Extraction of a module. The vernacular command is \verb!Extraction Module!
     [M]. We build the environment to extract by traversing the segment of
     module [M]. We just keep constants and inductives, and we remove
@@ -216,20 +229,25 @@ let extract_module m =
 let decl_mem rl = function 
   | Dglob (r,_) -> List.mem r rl 
   | Dabbrev (r,_,_) -> List.mem r rl 
-  | Dtype((_,r,_)::_, _) -> List.mem r rl
-  | Dtype([],_) -> false
+  | Dtype ((_,r,_)::_, _) -> List.mem r rl
+  | Dtype ([],_) -> false
+
+let file_suffix = function
+  | "ocaml" -> ".ml"
+  | "haskell" -> ".hs"
+  | _ -> assert false
 
 let _ = 
   vinterp_add "ExtractionModule"
     (function 
-       | [VARG_VARGLIST o; VARG_IDENTIFIER m] ->
+       | [VARG_STRING lang; VARG_VARGLIST o; VARG_IDENTIFIER m] ->
 	   (fun () -> 
 	      let m = Names.string_of_id m in
 	      Ocaml.current_module := m;
-	      let f = (String.uncapitalize m) ^ ".ml" in
-	      let prm = interp_options [] true o in
+	      let f = (String.uncapitalize m) ^ (file_suffix lang) in
+	      let prm = interp_options lang [] true m o in
 	      let rl = extract_module m in 
 	      let decls = optimize prm (decl_of_refs rl) in
 	      let decls = List.filter (decl_mem rl) decls in
-	      Ocaml.extract_to_file f prm decls)
+	      extract_to_file lang f prm decls)
        | _ -> assert false)

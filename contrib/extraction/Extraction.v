@@ -7,17 +7,31 @@
 (***********************************************************************)
 
 Grammar vernac vernac : ast :=
+
+(* Extraction in the Coq toplevel *)
   extr_constr [ "Extraction" constrarg($c) "." ] -> 
               [ (Extraction $c) ]
 | extr_list   [ "Recursive" "Extraction" ne_qualidarg_list($l) "." ] ->
               [ (ExtractionRec ($LIST $l)) ]
-| extr_list   
+
+(* Monolithic extraction to a file *)
+| extr_file
      [ "Extraction" stringarg($f) options($o) ne_qualidarg_list($l) "." ] 
-  -> [ (ExtractionFile $o $f ($LIST $l)) ]
+  -> [ (ExtractionFile "ocaml" $o $f ($LIST $l)) ]
+| haskell_extr_file
+     [ "Haskell" "Extraction" stringarg($f) options($o) 
+       ne_qualidarg_list($l) "." ] 
+  -> [ (ExtractionFile "haskell" $o $f ($LIST $l)) ]
+
+(* Modular extraction (one Coq module = one ML module) *)
 | extr_module 
      [ "Extraction" "Module" options($o) identarg($m) "." ]
-  -> [ (ExtractionModule $o $m) ]
+  -> [ (ExtractionModule "ocaml" $o $m) ]
+| haskell_extr_module 
+     [ "Haskell" "Extraction" "Module" options($o) identarg($m) "." ]
+  -> [ (ExtractionModule "haskell" $o $m) ]
 
+(* Overriding of a Coq object by an ML one *)
 | extract_constant 
      [ "Extract" "Constant" qualidarg($x) "=>" idorstring($y) "." ]
   -> [ (EXTRACT_CONSTANT $x $y) ]
@@ -26,6 +40,7 @@ Grammar vernac vernac : ast :=
      [ "Extract" "Inductive" qualidarg($x) "=>" mindnames($y) "."]
   -> [ (EXTRACT_INDUCTIVE $x $y) ]
 
+(* Utility entries *)
 with mindnames : ast :=
   mlconstr [ idorstring($id) "[" idorstring_list($idl) "]" ]
         -> [(VERNACARGLIST $id ($LIST $idl))]
