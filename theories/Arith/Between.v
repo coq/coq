@@ -42,7 +42,7 @@ Lemma between_Sk_l : (k,l:nat)(between k l)->(le (S k) l)->(between (S k) l).
 Proof.
 NewInduction 1.
 Intros; Absurd (le (S k) k); Auto with arith.
-Induction H; Auto with arith.
+NewDestruct H; Auto with arith.
 Qed.
 Hints Resolve between_Sk_l : arith v62.
 

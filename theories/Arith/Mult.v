@@ -123,7 +123,7 @@ Hints Resolve mult_lt : arith.
 Lemma lt_mult_right :
   (m,n,p:nat) (lt m n) -> (lt (0) p) -> (lt (mult m p) (mult n p)).
 Intros m n p H H0.
-Induction p.
+NewInduction p.
 Elim (lt_n_n ? H0).
 Rewrite mult_sym.
 Replace (mult n (S p)) with (mult (S p) n); Auto with arith.
@@ -162,8 +162,8 @@ Fixpoint mult_acc [s,m,n:nat] : nat :=
 
 Lemma mult_acc_aux : (n,s,m:nat)(plus s (mult n m))= (mult_acc s m n).
 Proof.
-Induction n; Simpl;Auto.
-Intros p H s m; Rewrite <- plus_tail_plus; Rewrite <- H.
+NewInduction n as [|p IHp]; Simpl;Auto.
+Intros s m; Rewrite <- plus_tail_plus; Rewrite <- IHp.
 Rewrite <- plus_assoc_r; Apply (f_equal2 nat nat);Auto.
 Rewrite plus_sym;Auto.
 Qed.

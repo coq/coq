@@ -108,9 +108,9 @@ Fixpoint Length_l [l:(list A)] : nat -> nat
 
 (* A tail recursive version *)
 Lemma Length_l_pf : (l:(list A))(n:nat){m:nat|(plus n (length l))=m}.
-Induction l.
+NewInduction l as [|a m lrec].
 Intro n; Exists n; Simpl; Auto.
-Intros a m lrec n; Elim (lrec (S n)); Simpl; Intros.
+Intro n; Elim (lrec (S n)); Simpl; Intros.
 Exists x; Transitivity (S (plus n (length m))); Auto.
 (*
 Realizer Length_l.
@@ -194,16 +194,16 @@ Inductive fst_nth_spec : (list A)->nat->A->Prop :=
 Hints Resolve fst_nth_O fst_nth_S.
 
 Lemma fst_nth_nth : (l:(list A))(n:nat)(a:A)(fst_nth_spec l n a)->(nth_spec l n a).
-Induction 1; Auto.
+NewInduction 1; Auto.
 Qed.
 Hints Immediate fst_nth_nth.
 
 Lemma nth_lt_O : (l:(list A))(n:nat)(a:A)(nth_spec l n a)->(lt O n).
-Induction 1; Auto.
+NewInduction 1; Auto.
 Qed.
 
 Lemma nth_le_length : (l:(list A))(n:nat)(a:A)(nth_spec l n a)->(le n (length l)).
-  Induction 1; Simpl; Auto with arith.
+NewInduction 1; Simpl; Auto with arith.
 Qed.
 
 Fixpoint Nth_func [l:(list A)] : nat -> (Exc A) 
@@ -215,14 +215,13 @@ Fixpoint Nth_func [l:(list A)] : nat -> (Exc A)
 
 Lemma Nth : (l:(list A))(n:nat)
             {a:A|(nth_spec l n a)}+{(n=O)\/(lt (length l) n)}.
-Induction l.
+NewInduction l as [|a l IHl].
 Intro n; Case n; Simpl; Auto with arith.
-Intros; Case n; Simpl; Auto.
-Intro n0; Case n0.
+Intro n; NewDestruct n as [|[|n1]]; Simpl; Auto.
 Left; Exists a; Auto.
-Intro n1; Case (H (S n1)); Intro.
-Case s; Intros b p; Left; Exists b; Auto.
-Right; Case o; Intro.
+NewDestruct (IHl (S n1)) as [[b]|o].
+Left; Exists b; Auto.
+Right; NewDestruct o.
 Absurd (S n1)=O; Auto.
 Auto with arith.
 
@@ -252,14 +251,14 @@ Fixpoint index_p [a:A;l:(list A)] : nat -> (Exc nat) :=
 
 Lemma Index_p : (a:A)(l:(list A))(p:nat)
      {n:nat|(fst_nth_spec l (minus (S n) p) a)}+{(AllS [b:A]~a=b l)}.
-Induction l.
+NewInduction l as [|b m irec].
 Auto.
-Intros b m irec p.
-Case  (eqA_dec a b); Intro e.
+Intro p.
+NewDestruct (eqA_dec a b) as [e|e].
 Left; Exists p.
-Case e; Elim minus_Sn_m; Trivial; Elim minus_n_n; Auto with arith.
-Case (irec (S p)); Intro.
-Case s; Intros n H; Left; Exists n; Auto with arith.
+NewDestruct e; Elim minus_Sn_m; Trivial; Elim minus_n_n; Auto with arith.
+NewDestruct (irec (S p)) as [[n H]|].
+Left; Exists n; Auto with arith.
 Elim minus_Sn_m; Auto with arith.
 Apply lt_le_weak; Apply lt_O_minus_lt; Apply nth_lt_O with m a; Auto with arith.
 Auto.
@@ -298,7 +297,7 @@ Definition InR_inv :=
                end.
 
 Lemma InR_INV : (l:(list A))(InR l)->(InR_inv l).
-Induction 1; Simpl; Auto.
+NewInduction 1; Simpl; Auto.
 Qed.
 
 Lemma InR_cons_inv : (a:A)(l:(list A))(InR (cons a l))->((R a)\/(InR l)).
@@ -306,9 +305,9 @@ Intros a l H; Exact (InR_INV H).
 Qed.
 
 Lemma InR_or_app : (l,m:(list A))((InR l)\/(InR m))->(InR (app l m)).
-Induction 1.
-Induction 1; Simpl; Auto.
-Intro; Elim l; Simpl; Auto.
+Intros l m [|].
+NewInduction 1; Simpl; Auto.
+Intro. NewInduction l; Simpl; Auto.
 Qed.
 
 Lemma InR_app_or : (l,m:(list A))(InR (app l m))->((InR l)\/(InR m)).
@@ -325,11 +324,9 @@ Fixpoint find [l:(list A)] : (Exc A) :=
         end.
 
 Lemma Find : (l:(list A)){a:A | (In a l) & (R a)}+{(AllS P l)}.
-Induction l; Auto.
-Intros a m H.
-Case H.
-Intros (b,H1,H2); Left; Exists b; Auto.
-Intro; Case (RS_dec a); Intro.
+NewInduction l as [|a m [[b H1 H2]|H]]; Auto.
+Left; Exists b; Auto.
+NewDestruct (RS_dec a).
 Left; Exists a; Auto.
 Auto.
 (*
@@ -354,14 +351,11 @@ Fixpoint try_find [l:(list A)] : (Exc B) :=
    end.
 
 Lemma Try_find : (l:(list A)){c:B|(EX a:A |(In a l) & (T a c))}+{(AllS P l)}.
-Induction l.
+NewInduction l as [|a m [[b H1]|H]].
 Auto.
-Intros a m H.
-Case H.
-Intros (b,H1); Left; Exists b.
-Case H1; Intros a' H2 H3; Exists a'; Auto.
-Intro; Case (TS_dec a); Intro.
-Case s; Intros c H1; Left; Exists c.
+Left; Exists b; NewDestruct H1 as [a' H2 H3]; Exists a'; Auto.
+NewDestruct (TS_dec a) as [[c H1]|].
+Left; Exists c.
 Exists a; Auto.
 Auto.
 
@@ -389,14 +383,20 @@ Inductive AllS_assoc [P:A -> Prop]: (list A*B) -> Prop :=
 
 Hints Resolve allS_assoc_nil allS_assoc_cons.
 
+(* The specification seems too weak: it is enough to return b if the
+   list has at least an element (a,b); probably the intention is to have
+   the specification
+
+   (a:A)(l:(list A*B)){b:B|(In_spec (a,b) l)}+{(AllS_assoc [a':A]~(a=a') l)}.
+*)
+
 Lemma Assoc : (a:A)(l:(list A*B))(B+{(AllS_assoc [a':A]~(a=a') l)}).
-Induction l; Auto.
-Intros (a',b) m assrec.
-Case (eqA_dec a a'); Intro.
+NewInduction l as [|[a' b] m assrec]. Auto.
+NewDestruct (eqA_dec a a').
 Left; Exact b.
-Case assrec.
-Intro b'; Left; Exact b'.
-Auto.
+NewDestruct assrec as [b'|].
+Left; Exact b'.
+Right; Auto.
 (*
 Realizer assoc.
 Program_all.

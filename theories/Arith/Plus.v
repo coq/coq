@@ -176,6 +176,6 @@ Fixpoint plus_acc [q,n:nat] : nat :=
 Definition tail_plus := [n,m:nat](plus_acc m n).
 
 Lemma plus_tail_plus : (n,m:nat)(n+m)=(tail_plus n m).
-Induction n; Unfold tail_plus; Simpl; Auto.
-Intros p H m; Rewrite <- H; Simpl; Auto.
+Unfold tail_plus; NewInduction n as [|n IHn]; Simpl; Auto.
+Intro m; Rewrite <- IHn; Simpl; Auto.
 Qed.

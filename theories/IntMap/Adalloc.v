@@ -37,15 +37,15 @@ Section AdAlloc.
 
   Lemma nat_le_correct : (m,n:nat) (le m n) -> (nat_le m n)=true.
   Proof.
-    Induction m. Trivial.
-    Induction n0. Intro. Elim (le_Sn_O ? H0).
-    Intros. Simpl. Apply H. Apply le_S_n. Assumption.
+    NewInduction m as [|m IHm]. Trivial.
+    NewDestruct n. Intro H. Elim (le_Sn_O ? H).
+    Intros. Simpl. Apply IHm. Apply le_S_n. Assumption.
   Qed.
 
   Lemma nat_le_complete : (m,n:nat) (nat_le m n)=true -> (le m n).
   Proof.
-    Induction m. Trivial with arith.
-    Induction n0. Intro. Discriminate H0.
+    NewInduction m. Trivial with arith.
+    NewDestruct n. Intro H. Discriminate H.
     Auto with arith.
   Qed.
 
@@ -69,14 +69,14 @@ Section AdAlloc.
 
   Lemma ad_of_nat_of_ad : (a:ad) (ad_of_nat (nat_of_ad a))=a.
   Proof.
-    Induction a. Reflexivity.
-    Intro. Simpl. Elim (ZL4 p). Intros p' H. Rewrite H. Simpl. Rewrite <- bij1 in H.
+    NewDestruct a as [|p]. Reflexivity.
+    Simpl. Elim (ZL4 p). Intros n H. Rewrite H. Simpl. Rewrite <- bij1 in H.
     Rewrite convert_intro with 1:=H. Reflexivity.
   Qed.
 
   Lemma nat_of_ad_of_nat : (n:nat) (nat_of_ad (ad_of_nat n))=n.
   Proof.
-    Induction n. Trivial.
+    NewInduction n. Trivial.
     Intros. Simpl. Apply bij1.
   Qed.
 
@@ -203,12 +203,12 @@ Section AdAlloc.
 
   Lemma ad_alloc_opt_allocates_1 : (m:(Map A)) (MapGet A m (ad_alloc_opt m))=(NONE A).
   Proof.
-    Induction m. Reflexivity.
-    Simpl. Intros. Elim (sumbool_of_bool (ad_eq a ad_z)). Intro H. Rewrite H.
+    NewInduction m as [|a|m0 H m1 H0]. Reflexivity.
+    Simpl. Elim (sumbool_of_bool (ad_eq a ad_z)). Intro H. Rewrite H.
     Rewrite (ad_eq_complete ? ? H). Reflexivity.
     Intro H. Rewrite H. Rewrite H. Reflexivity.
-    Intros. Change (MapGet A (M2 A m0 m1)
-         (ad_min (ad_double (ad_alloc_opt m0)) (ad_double_plus_un (ad_alloc_opt m1))))=(NONE A).
+    Intros. Change (ad_alloc_opt (M2 A m0 m1)) with
+         (ad_min (ad_double (ad_alloc_opt m0)) (ad_double_plus_un (ad_alloc_opt m1))).
     Elim (ad_min_choice (ad_double (ad_alloc_opt m0)) (ad_double_plus_un (ad_alloc_opt m1))).
     Intro H1. Rewrite H1. Rewrite MapGet_M2_bit_0_0. Rewrite ad_double_div_2. Assumption.
     Apply ad_double_bit_0.
@@ -226,15 +226,15 @@ Section AdAlloc.
 
   Lemma nat_of_ad_double : (a:ad) (nat_of_ad (ad_double a))=(mult (2) (nat_of_ad a)).
   Proof.
-    Induction a. Trivial.
-    Exact convert_xO.
+    NewDestruct a as [|p]. Trivial.
+    Exact (convert_xO p).
   Qed.
 
   Lemma nat_of_ad_double_plus_un : (a:ad)
       (nat_of_ad (ad_double_plus_un a))=(S (mult (2) (nat_of_ad a))).
   Proof.
-    Induction a. Trivial.
-    Exact convert_xI.
+    NewDestruct a as [|p]. Trivial.
+    Exact (convert_xI p).
   Qed.
 
   Lemma ad_le_double_mono : (a,b:ad) (ad_le a b)=true -> 
@@ -306,8 +306,8 @@ Section AdAlloc.
   Lemma ad_alloc_opt_optimal_1 : (m:(Map A)) (a:ad) (ad_le (ad_alloc_opt m) a)=false ->
       {y:A | (MapGet A m a)=(SOME A y)}.
   Proof.
-    Induction m. Simpl. Unfold ad_le. Simpl. Intros. Discriminate H.
-    Simpl. Intros a y b H. Elim (sumbool_of_bool (ad_eq a ad_z)). Intro H0. Rewrite H0 in H.
+    NewInduction m as [|a y|m0 H m1 H0]. Simpl. Unfold ad_le. Simpl. Intros. Discriminate H.
+    Simpl. Intros b H. Elim (sumbool_of_bool (ad_eq a ad_z)). Intro H0. Rewrite H0 in H.
     Unfold ad_le in H. Cut ad_z=b. Intro. Split with y. Rewrite <- H1. Rewrite H0. Reflexivity.
     Rewrite <- (ad_of_nat_of_ad b).
     Rewrite <- (le_n_O_eq ? (le_S_n ? ? (nat_le_complete_conv ? ? H))). Reflexivity.

@@ -31,27 +31,29 @@ Definition ad_eq := [a,a':ad]
 
 Lemma ad_eq_correct : (a:ad) (ad_eq a a)=true.
 Proof.
-  Induction a; Trivial.
-  Induction p; Trivial.
+  NewDestruct a; Trivial.
+  NewInduction p; Trivial.
 Qed.
 
 Lemma ad_eq_complete : (a,a':ad) (ad_eq a a')=true -> a=a'.
 Proof.
-  Induction a. Induction a'; Trivial. Induction p. Intros. Discriminate H0.
-  Intros. Discriminate H0.
-  Intros. Discriminate H.
-  Induction a'. Intros. Discriminate H.
+  NewDestruct a. NewDestruct a'; Trivial. NewDestruct p.
+  Discriminate 1.
+  Discriminate 1.
+  Discriminate 1.
+  NewDestruct a'. Intros. Discriminate H.
   Unfold ad_eq. Intros. Cut p=p0. Intros. Rewrite H0. Reflexivity.
-  Generalize p0 H. Elim p. Induction p2. Intros. 
-  Rewrite (H0 p3). Reflexivity.
-  Exact H2.
-  Intros. Discriminate H2.
-  Intros. Discriminate H1.
-  Induction p2. Intros. Discriminate H2.
-  Intros. Rewrite (H0 p3 H2). Reflexivity.
-  Intros. Discriminate H1.
-  Induction p1. Intros. Discriminate H1.
-  Intros. Discriminate H1.
+  Generalize Dependent p0.
+  NewInduction p as [p IHp|p IHp|]. NewDestruct p0; Intro H.
+  Rewrite (IHp p0). Reflexivity.
+  Exact H.
+  Discriminate H.
+  Discriminate H.
+  NewDestruct p0; Intro H. Discriminate H.
+  Rewrite (IHp p0 H). Reflexivity.
+  Discriminate H.
+  NewDestruct p0; Intro H. Discriminate H.
+  Discriminate H.
   Trivial.
 Qed.
 
@@ -60,10 +62,10 @@ Proof.
   Intros. Cut (b,b':bool)(ad_eq a a')=b->(ad_eq a' a)=b'->b=b'.
   Intros. Apply H. Reflexivity.
   Reflexivity.
-  Induction b. Intros. Cut a=a'.
+  NewDestruct b. Intros. Cut a=a'.
   Intro. Rewrite H1 in H0. Rewrite (ad_eq_correct a') in H0. Exact H0.
   Apply ad_eq_complete. Exact H.
-  Induction b'. Intros. Cut a'=a.
+  NewDestruct b'. Intros. Cut a'=a.
   Intro. Rewrite H1 in H. Rewrite H1 in H0. Rewrite <- H. Exact H0.
   Apply ad_eq_complete. Exact H0.
   Trivial.
@@ -143,9 +145,9 @@ Qed.
 Lemma ad_div_bit_eq : (a,a':ad) (ad_bit_0 a)=(ad_bit_0 a') ->
     (ad_div_2 a)=(ad_div_2 a') -> a=a'.
 Proof.
-  Intros. Apply ad_faithful. Unfold eqf. Induction n.
+  Intros. Apply ad_faithful. Unfold eqf. NewDestruct n.
   Rewrite ad_bit_0_correct. Rewrite ad_bit_0_correct. Assumption.
-  Intros. Rewrite <- ad_div_2_correct. Rewrite <- ad_div_2_correct.
+  Rewrite <- ad_div_2_correct. Rewrite <- ad_div_2_correct.
   Rewrite H0. Reflexivity.
 Qed.
 

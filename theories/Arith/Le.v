@@ -62,9 +62,9 @@ Hints Immediate le_S_n : arith v62.
 
 Lemma le_pred : (n,m:nat)(le n m)->(le (pred n) (pred m)).
 Proof.
-Induction n. Simpl. Auto with arith.
-Intros n0 Hn0. Induction m. Simpl. Intro H. Inversion H.
-Intros n1 H H0. Simpl. Auto with arith.
+NewInduction n as [|n IHn]. Simpl. Auto with arith.
+NewDestruct m as [|m]. Simpl. Intro H. Inversion H.
+Simpl. Auto with arith.
 Qed.
 
 (** Negative properties *)

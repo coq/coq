@@ -69,28 +69,28 @@ Qed.
 
 Lemma ad_xor_neutral_right : (a:ad) (ad_xor a ad_z)=a.
 Proof.
-  Induction a; Trivial.
+  NewDestruct a; Trivial.
 Qed.
 
 Lemma ad_xor_comm : (a,a':ad) (ad_xor a a')=(ad_xor a' a).
 Proof.
   NewDestruct a; NewDestruct a'; Simpl; Auto.
-  Generalize p0; Clear p0; Induction p; Simpl; Auto.
+  Generalize p0; Clear p0; NewInduction p as [p Hrecp|p Hrecp|]; Simpl; Auto.
   NewDestruct p0; Simpl; Trivial; Intros.
   Rewrite Hrecp; Trivial.
   Rewrite Hrecp; Trivial.
   NewDestruct p0; Simpl; Trivial; Intros.
   Rewrite Hrecp; Trivial.
   Rewrite Hrecp; Trivial.
-  Induction p0; Simpl; Auto.
+  NewDestruct p0; Simpl; Auto.
 Qed.
 
 Lemma ad_xor_nilpotent : (a:ad) (ad_xor a a)=ad_z.
 Proof.
-  Induction a; Trivial.
-  Induction p; Trivial.
-  Simpl; Intros. Rewrite H; Reflexivity.
-  Simpl; Intros. Rewrite H; Reflexivity.
+  NewDestruct a; Trivial.
+  Simpl. NewInduction p as [p IHp|p IHp|]; Trivial.
+  Simpl. Rewrite IHp; Reflexivity.
+  Simpl. Rewrite IHp; Reflexivity.
 Qed.
 
 Fixpoint ad_bit_1 [p:positive] : nat -> bool :=
@@ -119,23 +119,23 @@ Definition eqf := [f,g:nat->bool] (n:nat) (f n)=(g n).
 
 Lemma ad_faithful_1 : (a:ad) (eqf (ad_bit ad_z) (ad_bit a)) -> ad_z=a.
 Proof.
-  Induction a. Trivial.
-  Induction p. Intros. Absurd ad_z=(ad_x p0). Discriminate.
-  Exact (H [n:nat](H0 (S n))).
-  Intros. Absurd ad_z=(ad_x p0). Discriminate.
-  Exact (H [n:nat](H0 (S n))).
-  Intros. Absurd false=true. Discriminate.
+  NewDestruct a. Trivial.
+  NewInduction p as [p IHp|p IHp|];Intro H. Absurd ad_z=(ad_x p). Discriminate.
+  Exact (IHp [n:nat](H (S n))).
+  Absurd ad_z=(ad_x p). Discriminate.
+  Exact (IHp [n:nat](H (S n))).
+  Absurd false=true. Discriminate.
   Exact (H O).
 Qed.
 
 Lemma ad_faithful_2 : (a:ad) (eqf (ad_bit (ad_x xH)) (ad_bit a)) -> (ad_x xH)=a.
 Proof.
-  Induction a. Intros. Absurd true=false. Discriminate.
+  NewDestruct a. Intros. Absurd true=false. Discriminate.
   Exact (H O).
-  Induction p. Intros. Absurd ad_z=(ad_x p0). Discriminate.
-  Exact (ad_faithful_1 (ad_x p0) [n:nat](H0 (S n))).
+  NewDestruct p. Intro H. Absurd ad_z=(ad_x p). Discriminate.
+  Exact (ad_faithful_1 (ad_x p) [n:nat](H (S n))).
   Intros. Absurd true=false. Discriminate.
-  Exact (H0 O).
+  Exact (H O).
   Trivial.
 Qed.
 
@@ -145,10 +145,10 @@ Lemma ad_faithful_3 :
         (eqf (ad_bit (ad_x (xO p))) (ad_bit a)) ->
           (ad_x (xO p))=a.
 Proof.
-  Induction a. Intros. Cut (eqf (ad_bit ad_z) (ad_bit (ad_x (xO p)))).
+  NewDestruct a. Intros. Cut (eqf (ad_bit ad_z) (ad_bit (ad_x (xO p)))).
   Intro. Rewrite (ad_faithful_1 (ad_x (xO p)) H1). Reflexivity.
   Unfold eqf. Intro. Unfold eqf in H0. Rewrite H0. Reflexivity.
-  Intro. Case p. Intros. Absurd false=true. Discriminate.
+  Case p. Intros. Absurd false=true. Discriminate.
   Exact (H0 O).
   Intros. Rewrite (H p0 [n:nat](H0 (S n))). Reflexivity.
   Intros. Absurd false=true. Discriminate.
@@ -161,10 +161,10 @@ Lemma ad_faithful_4 :
         (eqf (ad_bit (ad_x (xI p))) (ad_bit a)) ->
           (ad_x (xI p))=a.
 Proof.
-  Induction a. Intros. Cut (eqf (ad_bit ad_z) (ad_bit (ad_x (xI p)))).
+  NewDestruct a. Intros. Cut (eqf (ad_bit ad_z) (ad_bit (ad_x (xI p)))).
   Intro. Rewrite (ad_faithful_1 (ad_x (xI p)) H1). Reflexivity.
   Unfold eqf. Intro. Unfold eqf in H0. Rewrite H0. Reflexivity.
-  Intro. Case p. Intros. Rewrite (H p0 [n:nat](H0 (S n))). Reflexivity.
+  Case p. Intros. Rewrite (H p0 [n:nat](H0 (S n))). Reflexivity.
   Intros. Absurd true=false. Discriminate.
   Exact (H0 O).
   Intros. Absurd ad_z=(ad_x p0). Discriminate.
@@ -175,13 +175,13 @@ Qed.
 
 Lemma ad_faithful : (a,a':ad) (eqf (ad_bit a) (ad_bit a')) -> a=a'.
 Proof.
-  Induction a. Exact ad_faithful_1.
-  Induction p. Intros. Apply ad_faithful_4. Intros. Cut (ad_x p0)=(ad_x p').
-  Intro. Inversion H2. Reflexivity.
-  Exact (H (ad_x p') H1).
+  NewDestruct a. Exact ad_faithful_1.
+  NewInduction p. Intros a' H. Apply ad_faithful_4. Intros. Cut (ad_x p)=(ad_x p').
+  Intro. Inversion H1. Reflexivity.
+  Exact (IHp (ad_x p') H0).
   Assumption.
-  Intros. Apply ad_faithful_3. Intros. Cut (ad_x p0)=(ad_x p'). Intro. Inversion H2. Reflexivity.
-  Exact (H (ad_x p') H1).
+  Intros. Apply ad_faithful_3. Intros. Cut (ad_x p)=(ad_x p'). Intro. Inversion H1. Reflexivity.
+  Exact (IHp (ad_x p') H0).
   Assumption.
   Exact ad_faithful_2.
 Qed.
@@ -223,8 +223,8 @@ Qed.
 Lemma ad_xor_sem_5 :
     (a,a':ad) (ad_bit (ad_xor a a') O)=(adf_xor (ad_bit a) (ad_bit a') O).
 Proof.
-  Induction a. Intro. Change (ad_bit a' O)=(xorb false (ad_bit a' O)). Rewrite false_xorb. Trivial.
-  Intro. Case p. Exact ad_xor_sem_4.
+  NewDestruct a. Intro. Change (ad_bit a' O)=(xorb false (ad_bit a' O)). Rewrite false_xorb. Trivial.
+  Case p. Exact ad_xor_sem_4.
   Intros. Change (ad_bit (ad_xor (ad_x (xO p0)) a') O)=(xorb false (ad_bit a' O)).
   Rewrite false_xorb. Apply ad_xor_sem_3. Exact ad_xor_sem_2.
 Qed.
@@ -345,12 +345,12 @@ Definition ad_div_2 := [a:ad]
 
 Lemma ad_double_div_2 : (a:ad) (ad_div_2 (ad_double a))=a.
 Proof.
-  Induction a; Trivial.
+  NewDestruct a; Trivial.
 Qed.
 
 Lemma ad_double_plus_un_div_2 : (a:ad) (ad_div_2 (ad_double_plus_un a))=a.
 Proof.
-  Induction a; Trivial.
+  NewDestruct a; Trivial.
 Qed.
 
 Lemma ad_double_inj : (a0,a1:ad) (ad_double a0)=(ad_double a1) -> a0=a1.
@@ -373,40 +373,40 @@ Definition ad_bit_0 := [a:ad]
 
 Lemma ad_double_bit_0 : (a:ad) (ad_bit_0 (ad_double a))=false.
 Proof.
-  Induction a; Trivial.
+  NewDestruct a; Trivial.
 Qed.
 
 Lemma ad_double_plus_un_bit_0 : (a:ad) (ad_bit_0 (ad_double_plus_un a))=true.
 Proof.
-  Induction a; Trivial.
+  NewDestruct a; Trivial.
 Qed.
 
 Lemma ad_div_2_double : (a:ad) (ad_bit_0 a)=false -> (ad_double (ad_div_2 a))=a.
 Proof.
-  Induction a. Trivial. Induction p. Intros. Discriminate H0.
+  NewDestruct a. Trivial. NewDestruct p. Intro H. Discriminate H.
   Intros. Reflexivity.
-  Intro. Discriminate H.
+  Intro H. Discriminate H.
 Qed.
 
 Lemma ad_div_2_double_plus_un :
     (a:ad) (ad_bit_0 a)=true -> (ad_double_plus_un (ad_div_2 a))=a.
 Proof.
-  Induction a. Intro. Discriminate H.
-  Induction p. Intros. Reflexivity.
-  Intros. Discriminate H0.
+  NewDestruct a. Intro. Discriminate H.
+  NewDestruct p. Intros. Reflexivity.
+  Intro H. Discriminate H.
   Intro. Reflexivity.
 Qed.
 
 Lemma ad_bit_0_correct : (a:ad) (ad_bit a O)=(ad_bit_0 a).
 Proof.
-  Induction a; Trivial.
-  Induction p; Trivial.
+  NewDestruct a; Trivial.
+  NewDestruct p; Trivial.
 Qed.
 
 Lemma ad_div_2_correct : (a:ad) (n:nat) (ad_bit (ad_div_2 a) n)=(ad_bit a (S n)).
 Proof.
-  Induction a; Trivial.
-  Induction p; Trivial.
+  NewDestruct a; Trivial.
+  NewDestruct p; Trivial.
 Qed.
 
 Lemma ad_xor_bit_0 :
