@@ -186,8 +186,6 @@ let compile verbosely f =
     load_vernac verbosely longf;
     let mid = Lib.end_module m in
     assert (mid = ldir);
-    Library.save_module_to ldir (f^".vo")
+    Library.save_module_to ldir (longf^"o")
   with e ->
     raise_with_file f e
-
-
