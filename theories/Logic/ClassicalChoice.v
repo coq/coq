@@ -23,10 +23,11 @@ Require Import ChoiceFacts.
 
 Theorem choice :
  forall (A B:Type) (R:A -> B -> Prop),
-   (forall x:A,  exists y : B, R x y) ->
+   (forall x:A, exists y : B, R x y) ->
     exists f : A -> B, (forall x:A, R x (f x)).
 Proof.
+intros A B.
 apply description_rel_choice_imp_funct_choice.
-exact description.
-exact relational_choice.
+exact (description A B).
+exact (relational_choice A B).
 Qed.
