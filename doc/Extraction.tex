@@ -120,6 +120,9 @@ The syntax is the following:
 \item{\tt Extract Constant \qualid\ => \str.} ~\par
   Give an ML extraction for the given constant.
   The \str\ may be an identifier or a quoted string.
+\item{\tt Extract Inlined Constant \qualid\ => \str.} ~\par
+  Same as the previous one, except that the given ML terms will
+  be inlined everywhere instead of being declared via a let.
 \item{\tt Extract Inductive \qualid\ => \str\ [ \str\ \dots \str\ ].} ~\par
   Give an ML extraction for the given inductive type. You must specify
   extractions for the type itself (first \str) and all its
@@ -128,10 +131,10 @@ The syntax is the following:
 \end{description}
 
 \begin{Remarks}
-\item 
-  The given ML terms are always inlined; thus, it may be
-  useful to introduce definitions in a separate ML module and then to
-  use the corresponding qualified names.
+%\item 
+%  The given ML terms are always inlined; thus, it may be
+%  useful to introduce definitions in a separate ML module and then to
+%  use the corresponding qualified names.
 \item
   The extraction of a module depending on axioms from another module
   will not fail. It is the responsability of the ``extractor'' of that
