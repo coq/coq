@@ -416,8 +416,8 @@ let inductive_of_fix env recarg body =
    - [Some lc] if [c] is a strict subterm of the rec. arg. (or a Meta) 
    - [None] otherwise
 *)
-let rec subterm_specif renv c ind = 
-  let f,l = decompose_app (whd_betadeltaiota renv.env c) in
+let rec subterm_specif renv t ind = 
+  let f,l = decompose_app (whd_betadeltaiota renv.env t) in
   match kind_of_term f with 
     | Rel k -> subterm_var k renv
 
