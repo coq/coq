@@ -1,29 +1,29 @@
-\achapter{\texttt{Omega}: a solver of quantifier-free problems in
+\achapter{Omega: a solver of quantifier-free problems in
 Presburger Arithmetic}
 \aauthor{Pierre Crégut}
 \label{OmegaChapter}
 
-\asection{Description of {\tt Omega}}
-\tacindex{Omega}
+\asection{Description of {\tt omega}}
+\tacindex{omega}
 \label{description}
 
-{\tt Omega}~solves a goal in Presburger arithmetic, ie a universally
+{\tt omega} solves a goal in Presburger arithmetic, i.e. a universally
 quantified formula made of equations and inequations. Equations may
 be specified either on the type \verb=nat= of natural numbers or on
 the type \verb=Z= of binary-encoded integer numbers. Formulas on
 \verb=nat= are automatically injected into \verb=Z=.  The procedure
 may use any hypothesis of the current proof session to solve the goal.
 
-Multiplication is handled by {\tt Omega}~but only goals where at
+Multiplication is handled by {\tt omega} but only goals where at
 least one of the two multiplicands of products is a constant are
 solvable. This is the restriction meaned by ``Presburger arithmetic''.
 
 If the tactic cannot solve the goal, it fails with an error message.
 In any case, the computation eventually stops.
 
-\asubsection{Arithmetical goals recognized by {\tt Omega}}
+\asubsection{Arithmetical goals recognized by {\tt omega}}
 
-{\tt Omega}~applied only to quantifier-free formulas built from the
+{\tt omega} applied only to quantifier-free formulas built from the
 connectors
 
 \begin{quote}
@@ -42,13 +42,13 @@ on atomic formulas. Atomic formulas are built from the predicates
 \verb!=, <, <=, >, >=!
 \end{quote}
 
- on \verb=Z=. In expressions of type \verb=nat=, {\tt Omega}~recognizes 
+ on \verb=Z=. In expressions of type \verb=nat=, {\tt omega} recognizes 
 
 \begin{quote}
 \verb!plus, minus, mult, pred, S, O!
 \end{quote}
 
-and in expressions of type \verb=Z=, {\tt Omega}~recognizes 
+and in expressions of type \verb=Z=, {\tt omega} recognizes 
 
 \begin{quote}
 \verb!+, -, *, Zsucc!, and constants.
@@ -58,36 +58,39 @@ All expressions of type \verb=nat= or \verb=Z= not built on these
 operators are considered abstractly as if they
 were arbitrary variables of type \verb=nat= or \verb=Z=.
 
-\asubsection{Messages from {\tt Omega}}
+\asubsection{Messages from {\tt omega}}
 \label{errors}
 
-When {\tt Omega}~does not solve the goal, one of the following errors
+When {\tt omega} does not solve the goal, one of the following errors
 is generated:
 
 \begin{ErrMsgs}
-\item \errindex{Omega can't solve this system}\\
+
+\item \errindex{omega can't solve this system}
+
   This may happen if your goal is not quantifier-free (if it is
-  universally quantified, try {\tt Intros} first; if it contains
-  existentials quantifiers too, {\tt Omega}\ is not strong enough to solve your
+  universally quantified, try {\tt intros} first; if it contains
+  existentials quantifiers too, {\tt omega} is not strong enough to solve your
   goal). This may happen also if your goal contains arithmetical
-  operators unknown from {\tt Omega}. Finally, your goal may be really
-  wrong !
+  operators unknown from {\tt omega}. Finally, your goal may be really
+  wrong!
 
-\item \errindex{Omega: Not a quantifier-free goal}\\
-  If your goal is universally quantified, you should first apply {\tt
-    Intro} as many time as needed.
-
-\item \errindex{Omega: Unrecognized predicate or connective:{\rm\sl ident}}
-
-\item \errindex{Omega: Unrecognized atomic proposition:{\rm\sl prop}}
+\item \errindex{omega: Not a quantifier-free goal}
   
-\item \errindex{Omega: Can't solve a goal with proposition variables}
+  If your goal is universally quantified, you should first apply {\tt
+    intro} as many time as needed.
 
-\item \errindex{Omega: Unrecognized proposition}
+\item \errindex{omega: Unrecognized predicate or connective: {\sl ident}}
 
-\item \errindex{Omega: Can't solve a goal with non-linear products}
+\item \errindex{omega: Unrecognized atomic proposition: {\sl prop}}
+  
+\item \errindex{omega: Can't solve a goal with proposition variables}
 
-\item \errindex{Omega: Can't solve a goal with equality on {\rm\sl type}}
+\item \errindex{omega: Unrecognized proposition}
+
+\item \errindex{omega: Can't solve a goal with non-linear products}
+
+\item \errindex{omega: Can't solve a goal with equality on {\sl type}}
 
 \end{ErrMsgs}
 
@@ -103,25 +106,24 @@ is generated:
 %      procedure (see \ref{technical}).
 % \end{itemize}
 
-% \comindex{Set Omega Time}
-% \comindex{UnSet Omega Time}
-% \comindex{Switch Omega Time}
-% \comindex{Set Omega System}
-% \comindex{UnSet Omega System}
-% \comindex{Switch Omega System}
-% \comindex{Set Omega Action}
-% \comindex{UnSet Omega Action}
-% \comindex{Switch Omega Action}
+% \comindex{Set omega Time}
+% \comindex{UnSet omega Time}
+% \comindex{Switch omega Time}
+% \comindex{Set omega System}
+% \comindex{UnSet omega System}
+% \comindex{Switch omega System}
+% \comindex{Set omega Action}
+% \comindex{UnSet omega Action}
+% \comindex{Switch omega Action}
 
- Use {\tt Set Omega {\rm\sl flag}} to set the flag
- {\rm\sl flag}. Use {\tt Unset Omega {\rm\sl flag}} to unset it and
-{\tt Switch Omega {\rm\sl flag}} to toggle it.
+% Use {\tt Set omega {\rm\sl flag}} to set the flag
+% {\rm\sl flag}. Use {\tt Unset omega {\rm\sl flag}} to unset it and
+% {\tt Switch omega {\rm\sl flag}} to toggle it.
 
-\section{Using {\tt Omega}}
+\section{Using {\tt omega}}
 
-The tactic {\tt Omega}~does not belong to the core system. It should be
+The {\tt omega} tactic does not belong to the core system. It should be
 loaded by
-
 \begin{coq_example*}
 Require Import Omega.
 Open Scope Z_scope.
@@ -167,7 +169,7 @@ intro; omega.
 
 \asubsection{Overview of the {\it OMEGA} decision procedure}
 
-The {\it OMEGA} decision procedure involved in the {\tt Omega}~tactic uses
+The {\it OMEGA} decision procedure involved in the {\tt omega} tactic uses
 a small subset of the decision procedure presented in
 
 \begin{quote}
@@ -176,8 +178,7 @@ algorithm for dependence analysis", William Pugh, Communication of the
 ACM , 1992, p 102-114.
 \end{quote}
 
-Here is an overview.
-The reader is refered to the original paper for more information.
+Here is an overview, look at the original paper for more information.
 
 \begin{itemize}
 
@@ -187,13 +188,13 @@ The reader is refered to the original paper for more information.
      equal to one.
 \item Note that each inequation defines a half space in the space of real value
      of the variables.
-\item Inequations are solved by projecting on the hyperspace defined by 
-     cancelling one of the variable. 
-     They are partitioned according to the sign of
-     the coefficient of the eliminated variable. Pairs of inequations from
-     different classes define a new edge in the projection.
-\item Redundant inequations are eliminated or merged in new equations that can
-     be eliminated by the Banerjee test.
+   \item Inequations are solved by projecting on the hyperspace
+     defined by cancelling one of the variable.  They are partitioned
+     according to the sign of the coefficient of the eliminated
+     variable. Pairs of inequations from different classes define a
+     new edge in the projection.
+   \item Redundant inequations are eliminated or merged in new
+     equations that can be eliminated by the Banerjee test.
 \item The last two steps are iterated until a contradiction is reached
      (success) or there is no more variable to eliminate (failure).
 
@@ -211,10 +212,10 @@ decision procedure is only partial.
 
 \item Much too slow.
 
-\item Certainely other bugs! You can report them to
+\item Certainly other bugs! You can report them to
 
 \begin{quote}
-  \verb=Pierre.Cregut@cnet.francetelecom.fr= 
+  \url{Pierre.Cregut@cnet.francetelecom.fr}
 \end{quote}
 
 \end{itemize}

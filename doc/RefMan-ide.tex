@@ -6,7 +6,7 @@ The \Coq{} Integrated Development Environment is a graphical tool, to
 be used as a user-friendly replacement to \texttt{coqtop}. Its main
 purpose is to allow the user to navigate forward and backward into a
 \Coq{} vernacular file, executing corresponding commands or undoing
-them respectively. CREDITS ? Proof general, lablgtk, ...
+them respectively. % CREDITS ? Proof general, lablgtk, ...
 
 \coqide{} is run by typing the command \verb|coqide| on the command
 line. Without argument, the main screen is displayed with an ``unnamed
@@ -26,7 +26,7 @@ obviously no meaning for \coqide{} being ignored.
 \fi
 %END LATEX
 \end{center}
-\caption{Coqide main screen}
+\caption{\coqide{} main screen}
 \label{fig:coqide}
 \end{figure}
 
@@ -39,7 +39,7 @@ prove are displayed. The lower right window is the \emph{message window},
 where various messages resulting from commands are displayed. At the
 bottom is the status bar.
 
-\section{Managing files and buffers}
+\section{Managing files and buffers, basic edition}
 
 In the script window, you may open arbitrarily many buffers to
 edit. The \emph{File} menu allows you to open files or create some,
@@ -47,6 +47,13 @@ save them, print or export them into various formats. Among all these
 buffers, there is always one which is the current \emph{running
   buffer}, whose name is displayed on a green background, which is the
 one where Coq commands are currently executed. 
+
+Buffers may be edited as in any text editor, and classical basic
+editing commands (Copy/Paste, \ldots) are available in the \emph{Edit}
+menu. \coqide{} offers only basic editing commands, so if you need
+more complex editing commands, you may launch your favorite text
+editor on the current buffer, using the \emph{Edit/External Editor}
+menu. 
 
 \section{Interactive navigation into \Coq{} scripts}
 
@@ -61,8 +68,8 @@ location of the error is emphasized by a red underline.
 On Figure~\ref{fig:coqide}, the running buffer is \verb|Fermat.v|, all
 commands until the \verb|Theorem| have been already executed, and the
 user tried to go forward executing \verb|Induction n|. That command
-failed because no such tactic exist (you remember that tactics in V8.0
-are lowercase, right ?), and the wrong word is underlined.
+failed because no such tactic exist (tactics are now in
+lowercase\ldots), and the wrong word is underlined. 
 
 Notice that the green part of the running buffer is not editable. If
 you ever want to modify something you have to go backward using the up
@@ -75,9 +82,9 @@ one to go back to the beginning. If you try to go to the end, or in
 general to run several commands using the \textsf{goto} button, the
   execution will stop whenever an error is found.
 
-If you ever try to execute a long-running command, such as an
-\verb|intuition eauto with *|, and would like to abort it before its
-end, you may use the interrupt button, the red cross-like.
+If you ever try to execute a command which happens to run during a
+long time, and would like to abort it before its
+termination, you may use the interrupt button (the white cross on a red circle).
  
 Finally, notice that these navigation buttons are also available in
 the menu, where their keyboard shortcuts are given.
@@ -87,11 +94,11 @@ the menu, where their keyboard shortcuts are given.
 
 The menu \texttt{Try Tactics} provides some features for automatically
 trying to solve the current goal using simple tactics. If such a
-tactics succeeds in solving the goal, then its text is automatically
+tactic succeeds in solving the goal, then its text is automatically
 inserted into the script. There is finally a combination of these
 tactics, called the \emph{proof wizard} which will try each of them in
-turn. This wizard is also available as a tool button, with a light
-bulb shape.  The set of tactics tried by the wizard is customizable in
+turn. This wizard is also available as a tool button (the light
+bulb).  The set of tactics tried by the wizard is customizable in
 the preferences.
 
 These tactics are general ones, in particular they do not refer to
@@ -104,8 +111,8 @@ preferences if undesirable.
 \section{Vernacular commands, templates}
 
 The \texttt{Templates} menu allows to use shortcuts to insert
-vernacular commands. This is a nice menu to use if you are not sure of
-the spelling of the command you want.
+vernacular commands. This is a nice way to proceed if you are not sure
+of the spelling of the command you want.
 
 Moreover, this menu offers some \emph{templates} which will automatic
 insert a complex command like Fixpoint with a convenient shape for its
@@ -124,7 +131,7 @@ arguments.
 \fi
 %END LATEX
 \end{center}
-\caption{Coqide main screen}
+\caption{\coqide{}: the query window}
 \label{fig:querywindow}
 \end{figure}
 
@@ -139,7 +146,7 @@ demand, either by using the \texttt{Window} menu, or directly using
 shortcuts given in the \texttt{Queries} menu. Indeed, with \coqide{}
 the simplest way to perform a \texttt{SearchAbout} on some identifier
 is to select it using the mouse, and pressing \verb|F2|. This will
-both make appear the query window ans run the \texttt{SearchAbout} in
+both make appear the query window and run the \texttt{SearchAbout} in
 it, displaying the result. Shortcuts \verb|F3| and \verb|F4| are for
 \verb|Check| and \verb|Print| respectively.
 Figure~\ref{fig:querywindow} displays the query window after selection
@@ -148,11 +155,13 @@ print its definition.
 
 \section{Compilation}
 
-The \verb|Compile| menu offers direct commands to compile the current
-buffer, compile a set of files using \verb|make|, and creating a
-\verb|makefile| using \verb|coq_makefile|.
-
-TODO: \verb|Next error| !
+The \verb|Compile| menu offers direct commands to:
+\begin{itemize}
+\item compile the current buffer
+\item run a compilation using \verb|make|
+\item go to the last compilation error
+\item create a \verb|makefile| using \verb|coq_makefile|.
+\end{itemize}
 
 \section{Customizations}
 
@@ -160,7 +169,7 @@ You may customize your environment using menu
 \texttt{Edit/Preferences}. A new window will be displayed, with
 several customization sections presented as a notebook. 
 
-The first section is the select the text font used for scripts, goal
+The first section is for selecting the text font used for scripts, goal
 and message windows. 
 
 The second section is devoted to file management: you may
@@ -183,6 +192,24 @@ The last section is for miscellaneous boolean settings, such as the
 ``contextual menu on goals'' feature presented in
 Section~\ref{sec:trytactics}. 
 
+Notice that these settings are saved in the file \verb|.coqiderc| of
+your home directory. 
+
+A gtk2 accelerator keymap is saved under the name \verb|.coqide.keys|.
+This file should not be edited manually: to modify a given menu
+shortcut, go to the corresponding menu item without releasing the
+mouse button, press the key you want for the new shortcut, and release
+the mouse button afterwards.
+
+For experts: it is also possible to set up a specific gtk resource
+file, under the name \verb|.coqide-gtk2rc|, following the gtk2
+resources syntax
+\url{http://developer.gnome.org/doc/API/2.0/gtk/gtk-Resource-Files.html}.
+Such a default resource file exists in the \Coq{} library, you may
+copy this file into your home directory, and edit it using any text
+editor, \coqide{} itself for example.
+
+  
 % $Id$ 
 
 %%% Local Variables: 

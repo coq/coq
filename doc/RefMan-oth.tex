@@ -23,7 +23,7 @@ global constant.
 \comindex{About}\\ 
 This displays various informations about the object denoted by {\qualid}:
 its kind (module, constant, assumption, inductive,
-constructor, abbreviation, ...), long name, type, implicit
+constructor, abbreviation\ldots), long name, type, implicit
 arguments and argument scopes.
 
 %\item {\tt Print Proof {\qualid}.}\comindex{Print Proof}\\
@@ -79,9 +79,9 @@ displayed in Objective Caml syntax, where global identifiers are still
 displayed as in \Coq\ terms.
 
 \begin{Variants}
-\item \texttt{Recursive Extraction {\qualid$_1$} ... {\qualid$_n$}.}\\
+\item \texttt{Recursive Extraction {\qualid$_1$} \ldots{} {\qualid$_n$}.}\\
   Recursively extracts all the material needed for the extraction of 
-  globals {\qualid$_1$} ... {\qualid$_n$}.
+  globals {\qualid$_1$} \ldots{} {\qualid$_n$}.
 \end{Variants}
 
 \SeeAlso chapter~\ref{Extraction}.
@@ -154,14 +154,15 @@ environment}\\
 
 \begin{Variants}
 \item
-{\tt Search {\qualid} inside {\module$_1$}...{\module$_n$}.}
+{\tt Search {\qualid} inside {\module$_1$} \ldots{} {\module$_n$}.}
 
-This restricts the search to constructions defined in modules {\module$_1$}...{\module$_n$}.
+This restricts the search to constructions defined in modules
+{\module$_1$} \ldots{} {\module$_n$}.
 
-\item {\tt Search {\qualid} outside {\module$_1$}...{\module$_n$}.}
+\item {\tt Search {\qualid} outside {\module$_1$} \ldots{} {\module$_n$}.}
 
 This restricts the search to constructions not defined in modules
-{\module$_1$}...{\module$_n$}.
+{\module$_1$} \ldots{} {\module$_n$}.
 
 \begin{ErrMsgs}
 \item \errindex{Module/section \module{} not found}
@@ -202,13 +203,14 @@ SearchAbout [ Zmult Zplus "distr" ].
   inside {\module$_1$} \ldots{} {\module$_n$}.}
 
 This restricts the search to constructions defined in modules
-{\module$_1$}...{\module$_n$}.
+{\module$_1$} \ldots{} {\module$_n$}.
 
-\item {\tt SearchAbout {\term} outside {\module$_1$}...{\module$_n$}.}\\
-{\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{} ] outside {\module$_1$}...{\module$_n$}.}
+\item {\tt SearchAbout {\term} outside {\module$_1$} \ldots{} {\module$_n$}.}\\
+{\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{} ]
+  outside {\module$_1$} \ldots{} {\module$_n$}.}
 
 This restricts the search to constructions not defined in modules
-{\module$_1$}...{\module$_n$}.
+{\module$_1$} \ldots{} {\module$_n$}.
 
 \end{Variants}
 
@@ -234,15 +236,16 @@ SearchPattern (?X1 + _ = _ + ?X1).
 
 \begin{Variants}
 \item {\tt SearchPattern {\term} inside
-{\module$_1$}...{\module$_n$}.}\comindex{SearchPattern ... inside
-...}
+{\module$_1$} \ldots{} {\module$_n$}.}\comindex{SearchPattern \ldots{} inside
+\ldots{}}
 
-This restricts the search to constructions defined in modules {\module$_1$}...{\module$_n$}.
+This restricts the search to constructions defined in modules
+{\module$_1$} \ldots{} {\module$_n$}.
 
-\item {\tt SearchPattern {\term} outside {\module$_1$}...{\module$_n$}.}\comindex{SearchPattern ... outside ...}
+\item {\tt SearchPattern {\term} outside {\module$_1$} \ldots{} {\module$_n$}.}\comindex{SearchPattern \ldots{} outside \ldots{}}
 
 This restricts the search to constructions not defined in modules
-{\module$_1$}...{\module$_n$}.
+{\module$_1$} \ldots{} {\module$_n$}.
 
 \end{Variants}
 
@@ -259,14 +262,15 @@ SearchRewrite (_ + _ + _).
 
 \begin{Variants}
 \item {\tt SearchRewrite {\term} inside
-{\module$_1$}...{\module$_n$}.}
+{\module$_1$} \ldots{} {\module$_n$}.}
 
-This restricts the search to constructions defined in modules {\module$_1$}...{\module$_n$}.
+This restricts the search to constructions defined in modules
+{\module$_1$} \ldots{} {\module$_n$}.
 
-\item {\tt SearchRewrite {\term} outside {\module$_1$}...{\module$_n$}.}
+\item {\tt SearchRewrite {\term} outside {\module$_1$} \ldots{} {\module$_n$}.}
 
 This restricts the search to constructions not defined in modules
-{\module$_1$}...{\module$_n$}.
+{\module$_1$} \ldots{} {\module$_n$}.
 
 \end{Variants}
 

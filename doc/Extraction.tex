@@ -538,19 +538,23 @@ let treesort leA_dec eqA_dec l =
 \end{verbatim}
 
 Let's test it: 
-
+% Format.set_margin 72;;
 \begin{verbatim}
 # #use "heapsort.ml";;
 type sumbool = Left | Right
 type nat = O | S of nat
 type 'a tree = Tree_Leaf | Tree_Node of 'a * 'a tree * 'a tree
 type 'a list = Nil | Cons of 'a * 'a list
-val merge : ('a -> 'a -> sumbool) -> 'b -> 'a list -> 'a list -> 'a list =
-  <fun>
-val heap_to_list : ('a -> 'a -> sumbool) -> 'b -> 'a tree -> 'a list = <fun>
-val insert : ('a -> 'a -> sumbool) -> 'b -> 'a tree -> 'a -> 'a tree = <fun>
-val list_to_heap : ('a -> 'a -> sumbool) -> 'b -> 'a list -> 'a tree = <fun>
-val treesort : ('a -> 'a -> sumbool) -> 'b -> 'a list -> 'a list = <fun>
+val merge : 
+  ('a -> 'a -> sumbool) -> 'b -> 'a list -> 'a list -> 'a list = <fun>
+val heap_to_list : 
+  ('a -> 'a -> sumbool) -> 'b -> 'a tree -> 'a list = <fun>
+val insert : 
+  ('a -> 'a -> sumbool) -> 'b -> 'a tree -> 'a -> 'a tree = <fun>
+val list_to_heap : 
+  ('a -> 'a -> sumbool) -> 'b -> 'a list -> 'a tree = <fun>
+val treesort : 
+  ('a -> 'a -> sumbool) -> 'b -> 'a list -> 'a list = <fun>
 \end{verbatim}
 
 One can remark that the argument of {\tt treesort} corresponding to 
@@ -566,9 +570,9 @@ val leAdec : 'a -> 'a -> sumbool = <fun>
 # let rec listn = function 0 -> Nil
                          | n -> Cons(Random.int 10000,listn (n-1));;
 val listn : int -> int list = <fun>
-# treesort leAdec () (listn 10);;
-- : int list = Cons (136, Cons (760, Cons (1512, Cons (2776, Cons (3064, 
-Cons (4536, Cons (5768, Cons (7560, Cons (8856, Cons (8952, Nil))))))))))
+# treesort leAdec () (listn 9);;
+- : int list = Cons (160, Cons (883, Cons (1874, Cons (3275, Cons 
+  (5392, Cons (7320, Cons (8512, Cons (9632, Cons (9876, Nil)))))))))
 \end{verbatim}
 
 Some tests on longer lists (10000 elements) show that the program is

@@ -212,10 +212,10 @@ chapter \ref{Cic}. Extensions of this syntax are given in chapter
 \ref{Gallina-extension}. How to customize the syntax is described in
 chapter \ref{Addoc-syntax}.
 
+\begin{figure}[htbp]
 \begin{center}
-\begin{figure}[htb]
-\begin{tabular}{|lcl@{~~~~~}r|}
-\hline
+\fbox{\begin{minipage}{0.95\textwidth}
+\begin{tabular}{lcl@{~~~~~}r}
 {\term} & ::= &
          {\tt forall} {\binderlist} {\tt ,} {\term}  &(\ref{products})\\
  & $|$ & {\tt fun} {\binderlist} {\tt =>} {\term} &(\ref{abstractions})\\
@@ -270,19 +270,20 @@ chapter \ref{Addoc-syntax}.
 {\sort} & ::= & {\tt Prop} ~$|$~ {\tt Set} ~$|$~ {\tt Type} &\\
 \hline
 \end{tabular}
+\end{minipage}}
+\end{center}
 \caption{Syntax of terms}
 \label{term-syntax}
 \index{term@{\term}}
 \index{sort@{\sort}}
 \end{figure}
-\end{center}
 
 
 
-\begin{center}
 \begin{figure}[htb]
-\begin{tabular}{|lcl|}
-\hline
+\begin{center}
+\fbox{\begin{minipage}{0.95\textwidth}
+\begin{tabular}{lcl}
 {\idparams} & ::= &  {\ident} \sequence{\binderlet}{} {\typecstr} \\
 &&\\
 {\fixpointbodies} & ::= &
@@ -316,13 +317,14 @@ chapter \ref{Addoc-syntax}.
  & $|$ & {\qualid}                              \\
  & $|$ & {\tt \_}                                  \\
  & $|$ & {\num}                                 \\
- & $|$ & {\tt (} \nelist{\pattern}{,} {\tt )}     \\
-\hline
+ & $|$ & {\tt (} \nelist{\pattern}{,} {\tt )}     
 \end{tabular}
+\end{minipage}}
+\end{center}
 \caption{Syntax of terms (continued)}
 \label{term-syntax-aux}
 \end{figure}
-\end{center}
+
 
 %%%%%%%
 
@@ -407,6 +409,11 @@ The last kind of binders is the ``binder list''. It is either a list
 of let-binders (the first one not being a variable with value), or
 {\ident$_1$}\ldots{\ident$_n$}\,{\tt :}\,{\type} if all variables
 share the same type.
+
+{\Coq} terms are typed. {\Coq} types are recognized by the same
+syntactic class as {\term}. We denote by {\type} the semantic subclass
+of types inside the syntactic class {\term}.
+\index{type@{\type}}
 
 \subsection{Abstractions}
 \label{abstractions}
@@ -560,14 +567,10 @@ definition have a special syntax: ``{\tt let fix}~$f$~{\ldots}~{\tt
 \section{The Vernacular}
 \label{Vernacular}
 
-Figure \ref{sentences-syntax} describes {\em The Vernacular} which is the
-language of commands of \gallina.  A sentence of the vernacular
-language, like in many natural languages, begins with a capital letter
-and ends with a dot.
-\begin{figure}
-\label{sentences-syntax}
-\begin{tabular}{|lcl|}
-\hline
+\begin{figure}[tbp]
+\begin{center}
+\fbox{\begin{minipage}{0.95\textwidth}
+\begin{tabular}{lcl}
 {\sentence} & ::= & {\declaration} \\
             & $|$ & {\definition} \\
             & $|$ & {\inductive} \\
@@ -611,13 +614,13 @@ and ends with a dot.
 &&\\
 {\proof} & ::= & {\tt Proof} {\tt .} {\dots} {\tt Qed} {\tt .}\\
    & $|$ & {\tt Proof} {\tt .} {\dots} {\tt Defined} {\tt .}\\
-   & $|$ & {\tt Proof} {\tt .} {\dots} {\tt Admitted} {\tt .}\\
-\hline
+   & $|$ & {\tt Proof} {\tt .} {\dots} {\tt Admitted} {\tt .}
 \end{tabular}
+\end{minipage}}
+\end{center}
 \caption{Syntax of sentences}
+\label{sentences-syntax}
 \end{figure}
-The different kinds of command are described hereafter. They all suppose
-that the terms occurring in the sentences are well-typed.
 
 %%
 %% Axioms and Parameters

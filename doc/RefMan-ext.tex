@@ -14,20 +14,21 @@ macro is more general than the usual record types, since it allows
 also for ``manifest'' expressions. In this sense, the \verb+Record+
 construction allows to define ``signatures''.
 
-\begin{figure}
-\begin{tabular}{|lcl|}
-\hline
+\begin{figure}[h]
+\begin{center}
+\fbox{\begin{minipage}{0.95\textwidth}
+\begin{tabular}{lcl}
 {\sentence} & ++= & {\record}\\
   & & \\
-{\record} & ::= &  {\tt Record} {\ident} \sequence{\binderlet}{} {\tt :} {\sort}
-    \verb.:=. \zeroone{\ident} \verb!{! 
-    \zeroone{\nelist{\field}{;}}
-    \verb!}! \verb:.:\\
+{\record} & ::= &  {\tt Record} {\ident} \sequence{\binderlet}{} :
+  {\sort} := \zeroone{\ident} \{ \zeroone{\nelist{\field}{;}} 
+    \} . \\
   & & \\
-{\field} & ::= & {\name} \verb.:. {\type} \\
- & $|$ & {\name} {\typecstr} \verb.:=. {\term} \\
-\hline
+{\field} & ::= & {\name} : {\type} \\
+ & $|$ & {\name} {\typecstr} := {\term}
 \end{tabular}
+\end{minipage}}
+\end{center}
 \caption{Syntax for the definition of {\tt Record}}
 \label{record-syntax}
 \end{figure}
@@ -79,18 +80,24 @@ Record Rat : Set := mkRat
 Remark here that the field
 \verb+Rat_cond+ depends on the field \verb+bottom+. 
 
-Let us now see the work done by the {\tt Record} macro.  First the
-macro generates an inductive definition with just one constructor:
+Let us now see the work done by the {\tt Record} macro.
+First the macro generates an inductive definition
+with just one constructor:
 
 \medskip
 \noindent
+{\tt Inductive {\ident} {\binderlet} : {\sort} := \\
+\mbox{}\hspace{0.4cm} {\ident$_0$} : forall ({\ident$_1$}:{\term$_1$}) .. 
+({\ident$_n$}:{\term$_n$}), {\ident} {\rm\sl params}.}
+\medskip
+
+Let us now see the work done by the {\tt Record} macro.  First the
+macro generates an inductive definition with just one constructor:
 \begin{tabular}{l}
 {\tt Inductive {\ident} {\params} :{\sort} :=} \\
 ~~~~{\tt
   {\ident$_0$} ({\ident$_1$}:{\term$_1$}) .. ({\ident$_n$}:{\term$_n$}).}
 \end{tabular}
-\medskip
-
 
 To build an object of type {\ident}, one should provide the
 constructor {\ident$_0$} with $n$ terms filling the fields of

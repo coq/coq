@@ -79,13 +79,6 @@
 \nocite{*}
 \bibliographystyle{plain}
 \bibliography{biblio}
-%BEGIN LATEX
-\RefManCutCommand{psselect -q -p-$ENDREFMAN,$BEGINBIBLIO- Reference-Manual.ps Reference-Manual-base.ps}
-\RefManCutCommand{psselect -q -p$BEGINADDENDUM-$ENDADDENDUM Reference-Manual.ps Reference-Manual-addendum.ps}
-\RefManCutCommand{dviselect -i Reference-Manual.dvi -o Reference-Manual-base.dvi 1-$ENDREFMAN $BEGINBIBLIO-}
-\RefManCutCommand{dviselect -i Reference-Manual.dvi -o Reference-Manual-addendum.dvi $BEGINADDENDUM-$ENDADDENDUM}
-\RefManCutClose
-%END LATEX
 
 \printindex
 
@@ -94,6 +87,17 @@
 \printindex[command]
 
 \printindex[error]
+
+\listoffigures
+%\listoftables
+
+%BEGIN LATEX
+\RefManCutCommand{psselect -q -p-$ENDREFMAN,$BEGINBIBLIO- Reference-Manual.ps Reference-Manual-base.ps}
+\RefManCutCommand{psselect -q -p$BEGINADDENDUM-$ENDADDENDUM Reference-Manual.ps Reference-Manual-addendum.ps}
+\RefManCutCommand{dviselect -i Reference-Manual.dvi -o Reference-Manual-base.dvi 1-$ENDREFMAN $BEGINBIBLIO-}
+\RefManCutCommand{dviselect -i Reference-Manual.dvi -o Reference-Manual-addendum.dvi $BEGINADDENDUM-$ENDADDENDUM}
+\RefManCutClose
+%END LATEX
 
 \end{document}
 

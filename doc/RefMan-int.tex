@@ -11,17 +11,16 @@ the advanced user.
 %The system \Coq\ is designed to develop mathematical proofs. It can be
 %used by mathematicians to develop mathematical theories and by
 %computer scientists to write formal specifications,
-The system \Coq\ is designed to develop mathematical proofs, and
-especially to write formal specifications,
-programs and to verify that programs are correct with respect to their
-specification. It provides a specification language named \gallina. Terms of
-\gallina\ can represent programs as well as properties of these
-programs and proofs of these properties. Using the so-called
-\textit{Curry-Howard isomorphism}, programs, properties and proofs are
-formalized in the same 
-language called \textit{Calculus of Inductive Constructions}, that is
-a $\lambda$-calculus with a rich type system.
-All logical judgments in \Coq\ are typing judgments. The very heart of the Coq
+The \Coq{} system is designed to develop mathematical proofs, and
+especially to write formal specifications, programs and to verify that
+programs are correct with respect to their specification. It provides
+a specification language named \gallina. Terms of \gallina\ can
+represent programs as well as properties of these programs and proofs
+of these properties. Using the so-called \textit{Curry-Howard
+  isomorphism}, programs, properties and proofs are formalized in the
+same language called \textit{Calculus of Inductive Constructions},
+that is a $\lambda$-calculus with a rich type system.  All logical
+judgments in \Coq\ are typing judgments. The very heart of the Coq
 system is the type-checking algorithm that checks the correctness of
 proofs, in other words that checks that a program complies to its
 specification. \Coq\ also provides an interactive proof assistant to
@@ -32,12 +31,7 @@ interpretation of a command language called \textit{the vernacular}.
 
 \Coq\ has an interactive mode in which commands are interpreted as the
 user types them in from the keyboard and a compiled mode where
-commands are processed from a file.  Other modes of interaction with
-\Coq\ are possible, through an emacs shell window, an emacs generic
-user-interface for proof assistant (ProofGeneral~\cite{ProofGeneral}) 
-or through a customized interface (PCoq~\cite{Pcoq}). 
-These facilities are not documented here.
-There is also a \Coq{} Integrated Development Environment described in chapter~\ref{Addoc-coqide}
+commands are processed from a file.  
 
 \begin{itemize}
 \item The interactive mode may be used as a debugging mode in which
@@ -54,6 +48,13 @@ There is also a \Coq{} Integrated Development Environment described in chapter~\
 \end{itemize}
 These two modes are documented in chapter \ref{Addoc-coqc}.
 
+Other modes of interaction with \Coq{} are possible: through an emacs
+shell window, an emacs generic user-interface for proof assistant
+(ProofGeneral~\cite{ProofGeneral}) or through a customized interface
+(PCoq~\cite{Pcoq}).  These facilities are not documented here.  There
+is also a \Coq{} Integrated Development Environment described in
+Chapter~\ref{Addoc-coqide}.
+
 \section*{How to read this book}
 
 This is a Reference Manual, not a User Manual, then it is not made for a
@@ -67,7 +68,7 @@ below.
   theorems and proofs in the Calculus of Inductive
   Constructions. Chapter~\ref{Theories} describes the standard library
   of \Coq. Chapter~\ref{Cic} is a mathematical description of the
-  formalism. Chapter~\ref{Mod} describes the module system.
+  formalism. Chapter~\ref{chapter:Modules} describes the module system.
 
 \item The second part describes the proof engine. It is divided in
   five chapters. Chapter~\ref{Vernacular-commands} presents all
@@ -101,7 +102,8 @@ corresponds to the Chapter~\ref{Addoc-syntax}.
 \end{itemize}
 
 At the end of the document, after the global index, the user can find
-a tactic index and a vernacular command index.
+a tactic index and a vernacular command index, and an index of error
+messages. 
 
 \section*{List of additional documentation}
 

@@ -358,7 +358,8 @@ We give an example of coercion between classes with parameters.
 
 %\begin{\small}
 \begin{coq_example}
-Parameters (C : nat -> Set) (D : nat -> bool -> Set) (E : bool -> Set).
+Parameters
+   (C : nat -> Set) (D : nat -> bool -> Set) (E : bool -> Set).
 Parameter f : forall n:nat, C n -> D (S n) true.
 Coercion f : C >-> D.
 Parameter g : forall (n:nat) (b:bool), D n b -> E b.

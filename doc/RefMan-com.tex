@@ -94,121 +94,151 @@ The following command-line options are recognized by the commands {\tt
   coqc} and {\tt coqtop}:
 
 \begin{description}
-\item[{\tt -byte}]\ \\
+\item[{\tt -byte}]\ 
+
   Run the byte-code version of \Coq{}.
 
-\item[{\tt -opt}]\ \\
+\item[{\tt -opt}]\ 
+
   Run the native-code version of \Coq{}.
 
-\item[{\tt -I} {\em directory}, {\tt -include} {\em directory}]\ \\
+\item[{\tt -I} {\em directory}, {\tt -include} {\em directory}]\ 
+
   Add {\em directory} to the searched directories when looking for a
   file.
 
-\item[{\tt -R} {\em directory} {\dirpath}]\ \\
+\item[{\tt -R} {\em directory} {\dirpath}]\ 
+
   This maps the subdirectory structure of physical {\em directory} to
   logical {\dirpath} and adds {\em directory} and its subdirectories
   to the searched directories when looking for a file.
 
-\item[{\tt -is} {\em file}, {\tt -inputstate} {\em file}]\ \\
+\item[{\tt -is} {\em file}, {\tt -inputstate} {\em file}]\ 
+
   Cause \Coq~to use the state put in the file {\em file} as its input
   state. The default state is {\em initial.coq}.
   Mainly useful to build the standard input state.
 
-\item[{\tt -nois}]\ \\
+\item[{\tt -nois}]\ 
+
   Cause \Coq~to begin with an empty state. Mainly useful to build the
   standard input state.
 
-\item[{\tt -notactics}]\ \\
+\item[{\tt -notactics}]\ 
+
   Forbid the dynamic loading of tactics.
 
-\item[{\tt -init-file} {\em file}]\ \\
+\item[{\tt -init-file} {\em file}]\ 
+
   Take {\em file} as the resource file.
 
-\item[{\tt -q}]\ \\
+\item[{\tt -q}]\ 
+
   Cause \Coq~not to load the resource file.
 
-\item[{\tt -user} {\em username}]\ \\
+\item[{\tt -user} {\em username}]\ 
+
   Take resource file of user {\em username} (that is 
   \verb+~+{\em username}{\tt /.coqrc.7.0}) instead of yours.
 
-\item[{\tt -load-ml-source} {\em file}]\ \\
+\item[{\tt -load-ml-source} {\em file}]\ 
+
   Load the Caml source file {\em file}.
 
-\item[{\tt -load-ml-object} {\em file}]\ \\
+\item[{\tt -load-ml-object} {\em file}]\ 
+
   Load the Caml object file {\em file}.
 
-\item[{\tt -load-vernac-source} {\em file}]\ \\
+\item[{\tt -load-vernac-source} {\em file}]\ 
+
   Load \Coq~file {\em file}{\tt .v}
 
-\item[{\tt -load-vernac-object} {\em file}]\ \\
+\item[{\tt -load-vernac-object} {\em file}]\ 
+
   Load \Coq~compiled file {\em file}{\tt .vo}
 
 %\item[{\tt -preload} {\em file}]\ \\
 %Add {\em file}{\tt .vo} to the files to be loaded and opened
 %before making the initial state.
 %
-\item[{\tt -require} {\em file}]\ \\
+\item[{\tt -require} {\em file}]\ 
+
   Load \Coq~compiled file {\em file}{\tt .vo} and import it ({\tt
     Require} {\em file}).
 
-\item[{\tt -compile} {\em file}]\ \\
+\item[{\tt -compile} {\em file}]\ 
+
   This compiles file {\em file}{\tt .v} into {\em file}{\tt .vo}.
   This option implies options {\tt -batch} and {\tt -silent}. It is
   only available for {\tt coqtop}.
 
-%\item[{\tt -compile-verbose} {\em file}]\ \\
+%\item[{\tt -compile-verbose} {\em file}]\ 
+@
 %  This compiles file {\em file}{\tt .v} into {\em file}{\tt .vo} with
 %  a copy of the contents of the file on standard input.
 %  This option implies options {\tt -batch} and {\tt -silent}. It is
 %  only available for {\tt coqtop}.
 
-\item[{\tt -batch}]\ \\
+\item[{\tt -batch}]\ 
+
   Batch mode : exit just after arguments parsing. This option is only
   used by {\tt coqc}.
 
-\item[{\tt -debug}]\ \\
+\item[{\tt -debug}]\ 
+
   Switch on the debug flag.
 
-\item[{\tt -emacs}]\ \\
+\item[{\tt -emacs}]\ 
+
   Tells \Coq\ it is executed under Emacs.
 
-\item[{\tt -db}]\ \\
+\item[{\tt -db}]\ 
+
   Launch \Coq\ under the Objective Caml debugger (provided that \Coq\
   has been compiled for debugging; see next chapter).
 
-\item[{\tt -impredicative-set}]\ \\
+\item[{\tt -impredicative-set}]\ 
+
   Change the logical theory of {\Coq} by declaring the sort {\tt Set}
   impredicative; warning: this is known to be inconsistent with
   some standard axioms of classical mathematics such as the functional
-  axiom of choice or the principle of description\\
+  axiom of choice or the principle of description
 
-\item[{\tt -dont-load-proofs}]\ \\
+\item[{\tt -dont-load-proofs}]\ 
+
   This avoids loading in memory the proofs of opaque theorems
   resulting in a smaller memory requirement and faster compilation;
   warning: this invalidates some features such as the extraction tool.
 
-\item[{\tt -image} {\em file}]\ \\
+\item[{\tt -image} {\em file}]\ 
+
   This option sets the binary image to be used to be {\em file}
   instead of the standard one. Not of general use.
 
-\item[{\tt -bindir} {\em directory}]\ \\
+\item[{\tt -bindir} {\em directory}]\ 
+
   Set the directory containing \Coq\ binaries.
   It is equivalent to do \texttt{export COQBIN=}{\em directory}
   before lauching \Coq.
 
-\item[{\tt -libdir} {\em file}]\ \\
+\item[{\tt -libdir} {\em file}]\ 
+
   Set the directory containing \Coq\ libraries.
   It is equivalent to do \texttt{export COQLIB=}{\em directory}
   before lauching \Coq.
 
-\item[{\tt -where}]\ \\
+\item[{\tt -where}]\ 
+
   Print the \Coq's standard library location and exit.
 
-\item[{\tt -v}]\ \\
+\item[{\tt -v}]\ 
+
   Print the \Coq's version and exit.
 
-\item[{\tt -h}, {\tt --help}]\ \\
+\item[{\tt -h}, {\tt --help}]\ 
+
   Print a short usage and exit.
+
 \end{description}
 
 % {\tt coqtop} owns an additional option:

@@ -23,7 +23,8 @@
 
 \def\NT#1{\langle\textit{#1}\rangle}
 \def\NTL#1#2{\langle\textit{#1}\rangle_{#2}}
-\def\TERM#1{\textsf{\bf #1}}
+%\def\TERM#1{\textsf{\bf #1}}
+\def\TERM#1{\texttt{#1}}
 \newenvironment{transbox}
   {\begin{center}\tt\begin{tabular}{l|ll} \hfil\textrm{V7} & \hfil\textrm{V8} \\ \hline}
   {\end{tabular}\end{center}}
@@ -79,8 +80,8 @@ the eager user who wants to start with the new syntax quickly.
 
 The toplevel has an option {\tt -translate} which allows to
 interactively translate commands. This toplevel translator accepts a
-command, prints the translation on standard output (after a \verb+New
-syntax:+ balise), executes the command, and waits for another
+command, prints the translation on standard output (after a %
+\verb+New syntax:+ balise), executes the command, and waits for another
 command. The only requirements is that they should be syntactically
 correct, but they do not have to be well-typed.
 
@@ -103,6 +104,7 @@ syntax that changed and how they were translated. All the examples
 below can be tested by entering the V7 commands in the toplevel
 translator.
 
+
 %%
 
 \subsection{Changes in lexical conventions w.r.t. V7}
@@ -113,7 +115,7 @@ The lexical conventions changed: \TERM{_} is not a regular identifier
 anymore. It is used in terms as a placeholder for subterms to be inferred
 at type-checking, and in patterns as a non-binding variable.
 
-Furthermore, only letters (unicode letters), digits, single quotes and
+Furthermore, only letters (Unicode letters), digits, single quotes and
 _ are allowed after the first character.
 
 \subsubsection{Quoted string}
@@ -121,7 +123,7 @@ _ are allowed after the first character.
 Quoted strings are used typically to give a filename (which may not
 be a regular identifier). As before they are written between double
 quotes ("). Unlike for V7, there is no escape character: characters
-are written normaly but the double quote which is doubled.
+are written normally except the double quote which is doubled.
 
 \begin{transbox}
 \TRANS{"abcd$\backslash\backslash$efg"}{"abcd$\backslash$efg"}
@@ -171,7 +173,7 @@ to be used when notations of several scopes appear in the same
 expression.
 
 In examples below, scope changes are not needed if the appropriate scope
-has been opened. Scope nat_scope is opened in the initial state of Coq.
+has been opened. Scope \verb|nat_scope| is opened in the initial state of Coq.
 \begin{transbox}
 \TRANSCOM{`0+x=x+0`}{0+x=x+0}{\textrm{Z_scope}}
 \TRANSCOM{``0 + [if b then ``1`` else ``2``]``}{0 + if b then 1 else 2}{\textrm{R_scope}}
@@ -182,23 +184,21 @@ Below is a table that tells which notation is available in which
 scope. The relative precedences and associativity of operators is the
 same as in usual mathematics. See the reference manual for more
 details. However, it is important to remember that unlike V7, the type
-operators for product and sum are left associative, in order not to
+operators for product and sum are left-associative, in order not to
 clash with arithmetic operators.
 
 \begin{center}
 \begin{tabular}{l|l}
 scope & notations \\
 \hline
-nat_scope & $+ ~- ~* ~< ~\leq ~> ~\geq$ \\
-Z_scope & $+ ~- ~* ~/ ~\TERM{mod} ~< ~\leq ~> ~\geq ~?=$ \\
-R_scope & $+ ~- ~* ~/ ~< ~\leq ~> ~\geq$ \\
-type_scope & $* ~+$ \\
-bool_scope & $\TERM{\&\&} ~\TERM{$||$} ~\TERM{-}$ \\
-list_scope & $\TERM{::} ~\TERM{++}$
+nat_scope & \texttt{+ - * < <= > >=} \\
+Z_scope & \texttt{+ - * / mod < <= > >= ?=} \\
+R_scope & \texttt{+ - * / < <= > >=} \\
+type_scope & \texttt{* +} \\
+bool_scope & \texttt{\&\& || -} \\
+list_scope & \texttt{:: ++}
 \end{tabular}
 \end{center}
-(Note: $\leq$ stands for \TERM{$<=$})
-
 
 
 \subsubsection{Notation for implicit arguments}
@@ -206,7 +206,7 @@ list_scope & $\TERM{::} ~\TERM{++}$
 The explicitation of arguments is closer to the \emph{bindings}
 notation in tactics. Argument positions follow the argument names of
 the head constant. The example below assumes \verb+f+ is a function
-with 2 dependent arguments named \verb+x+ and \verb+y+, and a third
+with two dependent arguments named \verb+x+ and \verb+y+, and a third
 non-dependent argument.
 \begin{transbox}
 \TRANS{f 1!t1 2!t2 3!t3}{f (x:=t1) (y:=t2) (1:=t3)}
@@ -226,14 +226,14 @@ written {\tt _}
 \subsubsection{Universal quantification}
 
 The universal quantification and dependent product types are now
-materialized with the \TERM{forall} keyword before the binders and a
+introduced by the \texttt{forall} keyword before the binders and a
 comma after the binders.
 
 The syntax of binders also changed significantly. A binder can simply be
 a name when its type can be inferred. In other cases, the name and the type
 of the variable are put between parentheses. When several consecutive
 variables have the same type, they can be grouped. Finally, if all variables
-have the same type parentheses can be omitted.
+have the same type, parentheses can be omitted.
 
 \begin{transbox}
 \TRANS{(x:A)B}{forall (x:~A), B ~~\textrm{or}~~ forall x:~A, B}
@@ -246,8 +246,8 @@ have the same type parentheses can be omitted.
 \subsubsection{Abstraction}
 
 The notation for $\lambda$-abstraction follows that of universal
-quantification. The binders are surrounded by keyword \TERM{fun}
-and $\Rightarrow$ (\verb+=>+ in ascii).
+quantification. The binders are surrounded by keyword \texttt{fun}
+and \verb+=>+.
 
 \begin{transbox}
 \TRANS{[x,y:nat; z](f a b c)}{fun (x y:nat) z => f a b c}
@@ -301,7 +301,7 @@ dependent case analysis.
 
 \subsubsection{Fixpoints and cofixpoints}
 
-An easier syntax for non-mutual fixpoints is provided, making it very close
+An simpler syntax for non-mutual fixpoints is provided, making it very close
 to the usual notation for non-recursive functions. The decreasing argument
 is now indicated by an annotation between curly braces, regardless of the
 binders grouping. The annotation can be omitted if the binders introduce only
@@ -389,8 +389,8 @@ Ltac by default.
 
 \subsubsection{Occurrences}
 
-To avoid ambiguity between a numeric literal and the optionnal
-occurence numbers of this term, the occurence numbers are put after
+To avoid ambiguity between a numeric literal and the optional
+occurrence numbers of this term, the occurrence numbers are put after
 the term itself and after keyword \TERM{as}.
 \begin{transbox}
 \TRANS{Pattern 1 2 (f x) 3 4 d y z}{pattern f x at 1 2, d at 3 4, y, z}
@@ -605,7 +605,7 @@ try and make the translation.
 \subsubsection{The general case}
 
 The preferred way is to use script {\tt translate-v8} if your development
-is compiled by a Makfile with the following constraints:
+is compiled by a Makefile with the following constraints:
 \begin{itemize}
 \item compilation is achievd by invoke make without specifying a target
 \item options are passed to Coq with make variable COQFLAGS that
@@ -683,6 +683,8 @@ If the choices made by translation or in the following cases:
 the user should change his development prior to translation.
 
 
+\subsubsection{Syntax extensions}
+
 \subsubsection{{\tt Case} and {\tt Match}}
 
 These very low-level case analysis are no longer supported. The
@@ -693,20 +695,19 @@ to determine the context in which terms appearing in tactics
 live.}. If this happens, it is preferable to transform it manually
 before translation.
 
-
 \subsubsection{Syntax extensions with {\tt Grammar} and {\tt Syntax}}
 
 
 {\tt Grammar} and {\tt Syntax} are no longer supported. They
 should be replaced by an equivalent {\tt Notation} command and be
-processed as decribed above. Before attempting translation, users
+processed as described above. Before attempting translation, users
 should verify that compilation with option {\tt -v7} succeeds.
 
 In the cases where {\tt Grammar} and {\tt Syntax} cannot be emulated
 by {\tt Notation}, users have to change manually they development as
 they wish to avoid the use of {\tt Grammar}. If this is not done, the
 translator will simply expand the notations and the output of the
-translator will use the reuglar Coq syntax.
+translator will use the regular Coq syntax.
 
 \subsubsection{Syntax extensions with {\tt Notation} and {\tt Infix}}
 
@@ -891,5 +892,6 @@ In the case you want to adopt the new semantics of {\tt Set Implicit
 Warning: changing the number of implicit arguments can break the
 notations.  Then use the {\tt V8only} modifier of {\tt Notation}.
 
+>>>>>>> 1.4
 
 \end{document}

@@ -173,7 +173,7 @@ The elimination of a stream introduced by a \verb!CoFixpoint! definition
 is done lazily, i.e. its definition can be expanded only when it occurs 
 at the head of an application which is the argument of a case expression. 
 Isolately it is considered as a canonical expression which 
-is completely evaluated. We can test this using the command \verb!Compute! 
+is completely evaluated. We can test this using the command \verb!compute! 
 to calculate the normal forms of some terms~:
 \begin{coq_example}
 Eval compute in (from 0).

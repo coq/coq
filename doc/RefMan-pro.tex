@@ -81,17 +81,29 @@ memory overflow.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Defined.}\comindex{Defined} \label{Defined} \\
+
+\item {\tt Defined.}
+\comindex{Defined} 
+\label{Defined} 
+
   Defines the proved term as a transparent constant.
-\item {\tt Save.}\comindex{Save}\\
+
+\item {\tt Save.}
+\comindex{Save}
+
   Is equivalent to {\tt Qed}.
-\item {\tt Save {\ident}.}\\ Forces the name of the original goal to
-be {\ident}.  This command (and the following ones) can only be used
-if the original goal has been opened using the {\tt Goal} command.
+
+\item {\tt Save {\ident}.}
+  
+  Forces the name of the original goal to be {\ident}.  This command
+  (and the following ones) can only be used if the original goal has
+  been opened using the {\tt Goal} command.
+
 \item {\tt Save Theorem {\ident}.} \\
  {\tt Save Lemma {\ident}.} \\
  {\tt Save Remark {\ident}.}\\
- {\tt Save Fact {\ident}.}\\
+ {\tt Save Fact {\ident}.}
+
   Are equivalent to {\tt Save {\ident}.} 
 \end{Variants}
 
@@ -99,36 +111,53 @@ if the original goal has been opened using the {\tt Goal} command.
 This command is available in interactive editing proof mode to give up
 the current proof and declare the initial goal as an axiom.
 
-\subsection{\tt Theorem {\ident} : {\form}.}\comindex{Theorem}\label{Theorem}
+\subsection{\tt Theorem {\ident} : {\form}.}
+\comindex{Theorem}
+\label{Theorem}
+
 This command switches to interactive editing proof mode and declares
 {\ident} as being the name of the original goal {\form}. When declared
 as a {\tt Theorem}, the name {\ident} is known at all section levels:
 {\tt Theorem} is a {\sl global} lemma.
 
 %\ErrMsg (see section \ref{Goal})
+
 \begin{ErrMsgs}
+
 \item \errindex{the term \form\ has type \ldots{} which should be Set,
     Prop or Type}
-\item \ident\ \errindex{already exists}\\ 
+
+\item \errindexbis{\ident already exists}{already exists}
+ 
   The name you provided already defined. You have then to choose
   another name.
+
 \end{ErrMsgs}
 
 
 \begin{Variants}
-\item {\tt Lemma {\ident} : {\form}.}\comindex{Lemma}\\
+
+\item {\tt Lemma {\ident} : {\form}.}
+\comindex{Lemma}
+
   It is equivalent to {\tt Theorem {\ident} : {\form}.}
+
 \item {\tt Remark {\ident} : {\form}.}\comindex{Remark}\\
-  {\tt Fact {\ident} : {\form}.}\comindex{Fact}\\
+  {\tt Fact {\ident} : {\form}.}\comindex{Fact}
+
   Used to have a different meaning, but are now equivalent to {\tt
   Theorem {\ident} : {\form}.} They are kept for compatibility.
+
 \item {\tt Definition {\ident} : {\form}.}
-\comindex{Definition}\\
+\comindex{Definition}
+
   Analogous to {\tt Theorem}, intended to be used in conjunction with
   {\tt Defined} (see \ref{Defined}) in order to define a
   transparent constant.
+
 \item {\tt Local {\ident} : {\form}.}
-\comindex{Local}\\
+\comindex{Local}
+
   Analogous to {\tt Definition} except that the definition is turned
   into a local definition on objects depending on it after closing the
   current section.
@@ -140,38 +169,55 @@ This command applies in proof editing mode. It is equivalent to {\tt
 one gulp, as a proof term (see section \ref{exact}).
 
 \begin{Variants}
-\item{\tt Proof.}\\
-Is a noop which is useful to delimit the sequence of
-tactic commands which start a proof, after a {\tt Theorem} command.
-It is a good practice to use {\tt Proof.} as an opening parenthesis,
-closed in the script with a closing {\tt Qed.}
-\item{\tt Proof with {\tac}.}\\
-This command may be used to start a proof. It defines a default tactic to be used each time a tactic command is ended by ``\verb#...#''. In this case the tactic command typed by the user is equivalent to \emph{command};{\tac}.  
+
+\item{\tt Proof.}
+  
+  Is a noop which is useful to delimit the sequence of tactic commands
+  which start a proof, after a {\tt Theorem} command.  It is a good
+  practice to use {\tt Proof.} as an opening parenthesis, closed in
+  the script with a closing {\tt Qed.}
+
+\item{\tt Proof with {\tac}.}
+  
+  This command may be used to start a proof. It defines a default
+  tactic to be used each time a tactic command is ended by
+  ``\verb#...#''. In this case the tactic command typed by the user is
+  equivalent to \emph{command};{\tac}.
 
 \end{Variants}
 
-\subsection{\tt Abort.}\comindex{Abort}
+\subsection{\tt Abort.}
+\comindex{Abort}
+
 This command cancels the current proof development, switching back to
 the previous proof development, or to the \Coq\ toplevel if no other
 proof was edited.
 
 \begin{ErrMsgs}
-\item \errindex{No focused proof}\texttt{ (No proof-editing in progress)}
+\item \errindex{No focused proof (No proof-editing in progress)}
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Abort {\ident}.}\\
+
+\item {\tt Abort {\ident}.}
+
   Aborts the editing of the proof named {\ident}.
-\item {\tt Abort All.}\\
+
+\item {\tt Abort All.}
+
   Aborts all current goals, switching back to the \Coq\ toplevel.
+
 \end{Variants}
 
-\subsection{\tt Suspend.}\comindex{Suspend}
+\subsection{\tt Suspend.}
+\comindex{Suspend}
+
 This command applies in proof editing mode. It switches back to the
 \Coq\ toplevel, but without canceling the current proofs.
 
 \subsection{\tt Resume.}
 \comindex{Resume}\label{Resume}
+
 This commands switches back to the editing of the last edited proof.
 
 \begin{ErrMsgs}
@@ -179,9 +225,12 @@ This commands switches back to the editing of the last edited proof.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Resume {\ident}.}\\
+
+\item {\tt Resume {\ident}.}
+
   Restarts the editing of the proof named {\ident}. This can be used
   to navigate between currently edited proofs.
+
 \end{Variants}
 
 \begin{ErrMsgs}
@@ -190,7 +239,9 @@ This commands switches back to the editing of the last edited proof.
 
 \section{Navigation in the proof tree}
 
-\subsection{\tt Undo.}\comindex{Undo}
+\subsection{\tt Undo.}
+\comindex{Undo}
+
 This command cancels the effect of the last tactic command.  Thus, it
 backtracks one step.
 
@@ -200,17 +251,24 @@ backtracks one step.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Undo {\num}.}\\
+
+\item {\tt Undo {\num}.}
+
   Repeats {\tt Undo} {\num} times.
+
 \end{Variants}
 
-\subsection{\tt Set Undo {\num}.}\comindex{Set Undo}
+\subsection{\tt Set Undo {\num}.}
+\comindex{Set Undo}
+
 This command changes the maximum number of {\tt Undo}'s that will be
 possible when doing a proof. It only affects proofs started after
 this command, such that if you want to change the current undo limit
 inside a proof, you should first restart this proof.
 
-\subsection{\tt Unset Undo.}\comindex{Unset Undo}
+\subsection{\tt Unset Undo.}
+\comindex{Unset Undo}
+
 This command resets the default number of possible {\tt Undo} commands
 (which is currently 12).
 

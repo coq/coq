@@ -1,18 +1,18 @@
-\achapter{The \texttt{Setoid\_replace} tactic}
+\achapter{The \texttt{setoid\_replace} tactic}
 \aauthor{Cl\'ement Renard}
-\label{Setoid_replace}
-\tacindex{Setoid\_replace}
+\label{setoid_replace}
+\tacindex{setoid\_replace}
 
-This chapter presents  the \texttt{Setoid\_replace} tactic.
+This chapter presents  the \texttt{setoid\_replace} tactic.
 
-\asection{Description of \texttt{Setoid\_replace}}
+\asection{Description of \texttt{setoid\_replace}}
 
 Working on user-defined structures in \Coq\ is not very easy if
 Leibniz equality does not denote the intended equality. For example
 using lists to denote finite sets drive to difficulties since two
 non convertible terms can denote the same set.
 
-We present here a \Coq\ module, {\tt Setoid\_replace}, which allow to
+We present here a \Coq\ module, {\tt setoid\_replace}, which allow to
 structure and automate some parts of the work. In particular, if
 everything has been registered a simple
 tactic can do replacement just as if the two terms were equal.
@@ -20,17 +20,11 @@ tactic can do replacement just as if the two terms were equal.
 \asection{Adding new setoid or morphisms}
 
 Under the toplevel
-load the \texttt{Setoid\_replace} files with the command:
+load the \texttt{setoid\_replace} files with the command:
 
-\begin{coq_eval}
+\begin{coq_example*}
   Require Setoid.
-\end{coq_eval}
-
-\begin{quotation}
-\begin{verbatim}
-Require Setoid.
-\end{verbatim}
-\end{quotation}
+\end{coq_example*}
 
 A setoid is just a type \verb+A+ and an equivalence relation on \verb+A+.
 
@@ -96,7 +90,7 @@ And when you load a compiled file, all the \texttt{Add Setoid}
 commands of this file that are not inside a section will be loaded.
 
 \Warning Only the setoid on \texttt{Prop} is loaded by default with the
-\texttt{Setoid\_replace} module. The equivalence relation used is
+\texttt{setoid\_replace} module. The equivalence relation used is
 \texttt{iff} {\it i.e.} the logical equivalence.
 
 \asection{Adding new morphisms}
@@ -129,28 +123,28 @@ The compatibility lemma genereted depends on the setoids already
 declared.
 
 \asection{The tactic itself}
-\tacindex{Setoid\_replace}
-\tacindex{Setoid\_rewrite}
+\tacindex{setoid\_replace}
+\tacindex{setoid\_rewrite}
 
 After having registered all the setoids and morphisms you need, you can
-use the tactic called \texttt{Setoid\_replace}. The syntax is
+use the tactic called \texttt{setoid\_replace}. The syntax is
 
 \begin{quotation}
-\texttt{Setoid\_replace} $ term_1$ with $term_2$
+\texttt{setoid\_replace} $ term_1$ with $term_2$
 \end{quotation}
 
 The effect is similar to the one of \texttt{Replace}.
 
-You also have a tactic called \texttt{Setoid\_rewrite} which is the
+You also have a tactic called \texttt{setoid\_rewrite} which is the
 equivalent of \texttt{Rewrite} for setoids. The syntax is 
 
 \begin{quotation}
-\texttt{Setoid\_rewrite} \term
+\texttt{setoid\_rewrite} \term
 \end{quotation}
 
 \begin{Variants}
- \item \texttt{Setoid\_rewrite ->} \term
- \item \texttt{Setoid\_rewrite <-} \term
+ \item \texttt{setoid\_rewrite ->} \term
+ \item \texttt{setoid\_rewrite <-} \term
 \end{Variants}
 
 The arrow tells the systems in which direction the rewriting has to be

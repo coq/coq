@@ -93,13 +93,12 @@ constructions). They are equipped with an appealing syntax enriching the
 extension is shown on figure \ref{formulas-syntax}.
 
 \begin{figure}
-\label{formulas-syntax}
 \begin{center}
-\begin{tabular}{|lclr|}
-\hline
+\fbox{\begin{minipage}{0.95\textwidth}
+\begin{tabular}{rclr}
 {\form} & ::= & {\tt True} & ({\tt True})\\
   & $|$ & {\tt False} & ({\tt False})\\
-  & $|$ & {\verb|~|} {\form} & ({\tt not})\\
+  & $|$ & {\tt\char'176} {\form} & ({\tt not})\\
   & $|$ & {\form} {\tt /$\backslash$} {\form} & ({\tt and})\\
   & $|$ & {\form} {\tt $\backslash$/} {\form} & ({\tt or})\\
   & $|$ & {\form} {\tt ->} {\form} & (\em{primitive implication})\\
@@ -111,21 +110,28 @@ extension is shown on figure \ref{formulas-syntax}.
   & $|$ & {\tt exists2} {\ident} \zeroone{{\tt :} {\specif}} {\tt
   ,} {\form}  {\tt \&} {\form} & ({\tt ex2})\\
   & $|$ & {\term} {\tt =} {\term} & ({\tt eq})\\
-  & $|$ & {\term} {\tt =} {\term} {\tt :>} {\specif} & ({\tt eq})\\
-\hline
+  & $|$ & {\term} {\tt =} {\term} {\tt :>} {\specif} & ({\tt eq})
 \end{tabular}
+\end{minipage}}
 \end{center}
+\caption{Syntax of formulas}
+\label{formulas-syntax}
+\end{figure}
 
-\medskip
+The basic library of {\Coq} comes with the definitions of standard
+(intuitionistic) logical connectives (they are defined as inductive
+constructions). They are equipped with an appealing syntax enriching the
+(subclass {\form}) of the syntactic class {\term}. The syntax
+extension
+\footnote{This syntax is defined in module {\tt LogicSyntax}}
+ is shown on figure \ref{formulas-syntax}.
 
-\Rem The implication is not defined but primitive
+\Rem Implication is not defined but primitive
 (it is a non-dependent product of a proposition over another proposition).
 There is also a primitive universal quantification (it is a
 dependent product over a proposition). The primitive universal
 quantification allows both first-order and higher-order
 quantification. 
-\caption{Syntax of formulas}
-\end{figure}
 
 \subsubsection{Propositional Connectives} \label{Connectives}
 \index{Connectives}
@@ -297,11 +303,9 @@ Abort.
 \subsection{Datatypes} \label{Datatypes}
 
 In the basic library, we find the definition\footnote{They are in {\tt
-Datatypes.v}} 
-of the basic data-types of programming, 
-again defined as inductive constructions over the sort
-\verb:Set:. Some of them come with a special syntax shown on figure
-\ref{specif-syntax}.
+    Datatypes.v}} of the basic data-types of programming, again
+defined as inductive constructions over the sort \verb:Set:. Some of
+them come with a special syntax shown on Figure~\ref{specif-syntax}.
 
 \subsubsection{Programming} \label{Programming}
 \index{Programming}
@@ -371,7 +375,7 @@ End projections.
 The following notions\footnote{They are defined in module {\tt
 Specif.v}} allows to build new datatypes and specifications. 
 They are available with the syntax shown on
-figure \ref{specif-syntax}\footnote{This syntax can be found in the module
+Figure~\ref{specif-syntax}\footnote{This syntax can be found in the module
 {\tt SpecifSyntax.v}}.
 
 For instance, given \verb|A:Set| and \verb|P:A->Prop|, the construct
@@ -454,10 +458,9 @@ Inductive sumor (A:Set) (B:Prop) : Set := inleft (_:A) | inright (_:B).
 \end{coq_example*}
 
 \begin{figure}
-\label{specif-syntax}
 \begin{center}
-\begin{tabular}{|lclr|}
-\hline
+\fbox{\begin{minipage}{0.95\textwidth}
+\begin{tabular}{rclr}
 {\specif} & ::= & {\specif} {\tt *} {\specif} & ({\tt prod})\\
   & $|$ & {\specif} {\tt +} {\specif} & ({\tt sum})\\
   & $|$ & {\specif} {\tt + \{} {\specif} {\tt \}} & ({\tt sumor})\\
@@ -472,11 +475,12 @@ Inductive sumor (A:Set) (B:Prop) : Set := inleft (_:A) | inright (_:B).
   & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt \&} {\specif} {\tt
     \&} {\specif} {\tt \}} & ({\tt sigS2})\\
   &  & & \\
-{\term} & ::= & {\tt (} {\term} {\tt ,} {\term} {\tt )} & ({\tt pair})\\
-\hline
+{\term} & ::= & {\tt (} {\term} {\tt ,} {\term} {\tt )} & ({\tt pair})
 \end{tabular}
-\caption{Syntax of datatypes and specifications}
+\end{minipage}}
 \end{center}
+\caption{Syntax of datatypes and specifications}
+\label{specif-syntax}
 \end{figure}
 
 We may define variants of the axiom of choice, like in Martin-Löf's
@@ -965,12 +969,13 @@ Check 2 + 3.
 
 \subsubsection{Some tactics}
 
-In addition to the Ring, Field and Fourier tactics (see chapter \ref{Tactics})
-there are:
-
-{\tt DiscrR} prove that a real integer constante c1 is non equal to
-another real integer constante c2.
-\tacindex{DiscrR}
+In addition to the \verb|ring|, \verb|field| and \verb|fourier|
+tactics (see Chapter~\ref{Tactics}) there are:
+\begin{itemize}
+\item {\tt discrR} \tacindex{discrR}
+  
+  Proves that a real integer constant $c_1$ is different from another
+  real integer constant $c_2$.  
 
 \begin{coq_example*}
 Require Import DiscrR.
@@ -985,9 +990,9 @@ discrR.
 Abort.
 \end{coq_eval}
 
-{\tt SplitAbsolu} allows us to unfold {\tt Rabsolu} contants and split 
+\item {\tt split\_Rabs} allows to unfold {\tt Rabs} constant and splits 
 corresponding conjonctions.
-\tacindex{SplitAbsolu}
+\tacindex{split\_Rabs}
 
 \begin{coq_example*}
 Require Import SplitAbsolu.
@@ -1002,10 +1007,10 @@ intro; split_Rabs.
 Abort.
 \end{coq_eval}
 
-{\tt SplitRmult} allows us to split a condition that a product is non equal to 
-zero into subgoals corresponding to the condition on each subterm of the 
-product.
-\tacindex{SplitRmult}
+\item {\tt split\_Rmult} allows to split a condition that a product is
+  non null into subgoals corresponding to the condition on each
+  operand of the product. 
+\tacindex{split\_Rmult}
 
 \begin{coq_example*}
 Require Import SplitRmult.
@@ -1016,8 +1021,10 @@ Goal forall x y z:R, x * y * z <> 0.
 intros; split_Rmult.
 \end{coq_example}
 
+\end{itemize}
+
 All this tactics has been written with the tactic language Ltac
-described in chapter~\ref{TacticLanguage}.  More details are available
+described in Chapter~\ref{TacticLanguage}.  More details are available
 in document \url{http://coq.inria.fr/~desmettr/Reals.ps}.
 
 \begin{coq_eval}

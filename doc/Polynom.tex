@@ -3,11 +3,11 @@
 \label{ring}
 \tacindex{ring}
 
-This chapter presents  the \texttt{Ring} tactic.
+This chapter presents  the \texttt{ring} tactic.
 
 \asection{What does this tactic?}
 
-\texttt{Ring} does associative-commutative rewriting in ring and semi-ring
+\texttt{ring} does associative-commutative rewriting in ring and semi-ring
 structures. Assume you have two binary functions $\oplus$ and $\otimes$
 that are associative and commutative, with $\oplus$ distributive on
 $\otimes$, and two constants 0 and 1 that are unities for $\oplus$ and
@@ -24,9 +24,9 @@ different, i.e. each monomial in the sum is strictly less than the
 following monomial according to the lexicographic order. It is an easy
 theorem to show that every polynomial is equivalent (modulo the ring
 properties) to exactly one canonical sum. This canonical sum is called
-the \textit{normal form} of the polynomial. So what does \texttt{Ring}? It
+the \textit{normal form} of the polynomial. So what does \texttt{ring}? It
 normalizes polynomials over any ring or semi-ring structure. The basic
-utility of \texttt{Ring} is to simplify ring expressions, so that the user
+use of \texttt{ring} is to simplify ring expressions, so that the user
 does not have to deal manually with the theorems of associativity and
 commutativity.
 
@@ -91,7 +91,7 @@ this paragraph and use the tactic according to your intuition.
 \asection{Concrete usage in \Coq}
 
 Under a session launched by \texttt{coqtop} or \texttt{coqtop -full},
-load the \texttt{Ring} files with the command:
+load the \texttt{ring} files with the command:
 
 \begin{quotation}
 \begin{verbatim}
@@ -103,23 +103,23 @@ It does not work under \texttt{coqtop -opt} because the compiled ML
 objects used by the tactic are not linked in this binary image, and
 dynamic loading of native code is not possible in \ocaml.
 
-In order to use \texttt{Ring} on naturals, load \texttt{ArithRing}
+In order to use \texttt{ring} on naturals, load \texttt{ArithRing}
 instead; for binary integers, load the module \texttt{ZArithRing}.
 
 Then, to normalize the terms $term_1$, \dots, $term_n$ in
 the current subgoal, use the tactic:
 
 \begin{quotation}
-\texttt{Ring} $term_1$ \dots{} $term_n$
+\texttt{ring} $term_1$ \dots{} $term_n$
 \end{quotation}
-\tacindex{Ring}
+\tacindex{ring}
 
 Then the tactic guesses the type of given terms, the ring theory to
 use, the variables map, and replace each term with its normal form.
 The variables map is common to all terms
 
-\Warning \texttt{Ring $term_1$; Ring $term_2$} is not equivalent to 
-\texttt{Ring $term_1$ $term_2$}. In the latter case the variables map
+\Warning \texttt{ring $term_1$; ring $term_2$} is not equivalent to 
+\texttt{ring $term_1$ $term_2$}. In the latter case the variables map
 is shared between the two terms, and common subterm $t$ of $term_1$
 and $term_2$ will have the same associated variable number.
 
@@ -135,7 +135,7 @@ and $term_2$ will have the same associated variable number.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item \texttt{Ring}
+\item \texttt{ring}
 
   That works if the current goal is an equality between two
   polynomials. It will normalize both sides of the
@@ -150,7 +150,7 @@ and $term_2$ will have the same associated variable number.
 \asection{Add a ring structure}
 
 It can be done in the \Coq toplevel (No ML file to edit and to link
-with \Coq). First, \texttt{Ring} can handle two kinds of structure:
+with \Coq). First, \texttt{ring} can handle two kinds of structure:
 rings and semi-rings. Semi-rings are like rings without an opposite to
 addition. Their precise specification (in \gallina) can be found in
 the file
@@ -303,8 +303,8 @@ This allows automatic detection of the theory used to achieve the
 normalization. On popular demand, we can change that and allow several
 ring structures on the same set.
 
-The table of theories of \texttt{Ring} is compatible with the \Coq\ 
-sectioning mechanism. If you declare a Ring inside a section, the
+The table of ring theories is compatible with the \Coq\ 
+sectioning mechanism. If you declare a ring inside a section, the
 declaration will be thrown away when closing the section.
 And when you load a compiled file, all the \texttt{Add Ring}
 commands of this file that are not inside a section will be loaded.
@@ -321,15 +321,14 @@ load the module \texttt{ZArithRing}.
 
 \asection{How does it work?}
 
-The code of \texttt{Ring} a good  example of tactic written using
-\textit{reflection} (or \textit{internalization}, it is 
-synonymous). What is reflection? Basically,  it is writing \Coq\ tactics
-in \Coq, rather than in \ocaml. From the philosophical point of view,
-it is using the ability of the Calculus of Constructions to speak and
-reason about itself.
-For the \texttt{Ring} tactic we used 
-\Coq\ as a programming language and also as a proof environment to build a
-tactic and to prove it correctness.
+The code of \texttt{ring} is a good example of tactic written using
+\textit{reflection} (or \textit{internalization}, it is synonymous).
+What is reflection? Basically, it is writing \Coq{} tactics in \Coq,
+rather than in \ocaml. From the philosophical point of view, it is
+using the ability of the Calculus of Constructions to speak and reason
+about itself.  For the \texttt{ring} tactic we used \Coq\ as a
+programming language and also as a proof environment to build a tactic
+and to prove it correctness.
 
 The interested reader is strongly advised to have a look at the file
 \texttt{Ring\_normalize.v}. Here a type for polynomials is defined: 
@@ -366,9 +365,9 @@ its correctness w.r.t interpretation, that is:
 \begin{small}
 \begin{flushleft}
 \begin{verbatim}
-Theorem polynomial_simplify_correct : (v:(varmap A))(p:polynomial)
+Theorem polynomial_simplify_correct : forall (v:(varmap A))(p:polynomial)
   (interp v (polynomial_simplify p))
-  ==(interp v p).
+  =(interp v p).
 \end{verbatim}
 \end{flushleft}
 \end{small}
@@ -405,7 +404,7 @@ $\beta\delta\iota$ simplification extended with AC rewriting rules.
 Basically, the proof is only the application of the main
 correctness theorem to well-chosen arguments.
 
-\asection{History of \texttt{Ring}}
+\asection{History of \texttt{ring}}
 
 First Samuel Boutin designed the tactic \texttt{ACDSimpl}. 
 This tactic did lot of rewriting. But the proofs
@@ -439,7 +438,7 @@ reasoning (see \ref{DiscussReflection}). He also wrote a
 few ML code for the \texttt{Add Ring} command, that allow to register
 new rings dynamically.
 
-Proofs terms generated by \texttt{Ring} are quite small, they are
+Proofs terms generated by \texttt{ring} are quite small, they are
 linear in the number of $\oplus$ and $\otimes$ operations in the
 normalized terms. Type-checking those terms requires some time because it
 makes a large use of the conversion rule, but
@@ -449,7 +448,7 @@ memory requirements are much smaller.
 \label{DiscussReflection}
 
 Efficiency is not the only motivation to use reflection
-here. \texttt{Ring} also deals with constants, it rewrites for example the
+here. \texttt{ring} also deals with constants, it rewrites for example the
 expression $34 + 2*x -x + 12$ to the expected result $x + 46$. For the
 tactic \texttt{ACDSimpl}, the only constants were 0 and 1. So the
 expression $34 + 2*(x - 1) + 12$ is interpreted as 
@@ -461,12 +460,12 @@ result. Here rewriting is not sufficient: you have to do some kind of
 reduction (some kind of \textit{computation}) to achieve the
 normalization.
 
-The tactic \texttt{Ring} is not only faster than a classical one:
+The tactic \texttt{ring} is not only faster than a classical one:
 using reflection, we get for free integration of computation and
 reasoning that would be very complex to implement in the classic fashion.
 
 Is it the ultimate way to write tactics? 
-The answer is: yes and no. The \texttt{Ring} tactic
+The answer is: yes and no. The \texttt{ring} tactic
 uses intensively the conversion
 rule of \CIC, that is replaces proof by computation the most as it is
 possible. It can be useful in all situations where a classical tactic
