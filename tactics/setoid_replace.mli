@@ -13,6 +13,10 @@ open Proof_type
 open Topconstr
 
 
+type morphism_argument = bool option * constr_expr
+
+val pr_morphism_argument : morphism_argument -> Pp.std_ppcmds
+
 val register_replace : (constr -> constr -> tactic) -> unit
 
 val print_setoids : unit -> unit
@@ -34,4 +38,4 @@ val add_setoid : constr_expr -> constr_expr -> constr_expr -> unit
 
 val new_named_morphism :
  Names.identifier -> constr_expr ->
-  ((bool option * constr_expr) list * constr_expr) option -> unit
+  (morphism_argument list * constr_expr) option -> unit

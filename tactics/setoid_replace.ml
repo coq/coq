@@ -211,12 +211,16 @@ let prrelation_class =
        str "[[ Error: setoid on equality " ++ prterm eq ++ str " not found! ]]")
   | Leibniz ty -> prterm ty
 
-let prargument_class (variance,rel) =
- prrelation_class rel ++
+let prmorphism_argument_gen prrelation (variance,rel) =
+ prrelation rel ++
   match variance with
-     None -> str " -> "
-   | Some true -> str " +-> "
+     None -> str " ==> "
+   | Some true -> str " ++> "
    | Some false -> str " --> "
+
+let prargument_class = prmorphism_argument_gen prrelation_class
+
+let pr_morphism_argument = prmorphism_argument_gen Ppconstrnew.pr_constr
 
 let prmorphism k m =
   prterm k ++ str ": " ++
@@ -239,6 +243,14 @@ let default_relation_for_carrier a =
          str ". The setoid " ++ prrelation relation ++
          str " is randomly chosen.") ;
      Relation relation
+
+let find_relation_class rel =
+ try Relation (relation_table_find rel)
+ with
+  Not_found ->
+   match kind_of_term (Reduction.whd_betadeltaiota (Global.env ()) rel) with
+    | App (eq,[|ty|]) when eq_constr eq (Lazy.force coq_eq) -> Leibniz ty
+    | _ -> raise Not_found
 
 let relation_morphism_of_constr_morphism =
  let relation_relation_class_of_constr_relation_class =
@@ -600,29 +612,31 @@ let new_morphism m signature id hook =
            List.map (fun ty -> None,default_relation_for_carrier ty) args_ty,
            default_relation_for_carrier output
         | Some (args,output) ->
-           let relation_table_find t =
-            try relation_table_find t
+           let find_relation_class t =
+            try find_relation_class t
             with Not_found ->
              errorlabstrm "Add Morphism"
               (str "Not a valid signature: " ++ prterm t ++
-               str " is not a registered relation")
+               str " is neither a registered relation nor the Leibniz " ++
+               str " equality partially applied to a type.")
            in
-           let relation_table_find_v (variance,t) =
-            let relation = relation_table_find t in
-             match relation.rel_sym,variance with
-                Some _, None
-              | None, Some _ -> variance,Relation relation
-              | None,None ->
+           let find_relation_class_v (variance,t) =
+            let relation = find_relation_class t in
+             match find_relation_class t, variance with
+                Leibniz _, None
+              | Relation {rel_sym = Some _}, None
+              | Relation {rel_sym = None}, Some _ -> variance,relation
+              | Relation {rel_sym = None},None ->
                  errorlabstrm "Add Morphism"
                   (str "You must specify the variance in each argument " ++
                    str "whose relation is asymmetric.")
-              | Some _, Some _ ->
+              | Leibniz _, Some _
+              | Relation {rel_sym = Some _}, Some _ ->
                  errorlabstrm "Add Morphism"
                   (str "You cannot specify the variance of an argument " ++
-                   str "whose relation is asymmetric.")
+                   str "whose relation is symmetric.")
            in
-            List.map relation_table_find_v args,
-            Relation (relation_table_find output)
+            List.map find_relation_class_v args, find_relation_class output
       in
       let argsconstr,outputconstr,lem =
        gen_compat_lemma_statement output args m
@@ -684,6 +698,8 @@ let morphism_hook stre ref =
   then 
     add_morphism (Some (pf_id,argsconstr,outputconstr)) mor_id
      (m,args,output); no_more_edited pf_id
+
+type morphism_argument = bool option * Topconstr.constr_expr
 
 let new_named_morphism id m sign =
  let sign =

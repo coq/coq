@@ -173,10 +173,12 @@ TACTIC EXTEND SetoidRewrite
   [ "Setoid_rewrite" orient(b) constr(c) ] -> [ general_s_rewrite b c ]
 END
 
-VERNAC COMMAND EXTEND AddSetoid
+VERNAC COMMAND EXTEND AddSetoid1
   [ "Add" "Setoid" constr(a) constr(aeq) constr(t) ] -> [ add_setoid a aeq t ]
 | [ "Add" "Morphism" constr(m) ":" ident(s) ] ->
    [ new_named_morphism s m None ]
+| [ "Add" "Morphism" constr(m) "@" ne_morphism_argument_list(l) "@" constr(out) "as" ident(s) ] ->
+    [ new_named_morphism s m (Some (l,out))]
 END
 
 VERNAC COMMAND EXTEND AddRelation1

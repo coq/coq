@@ -19,6 +19,13 @@ val rawwit_orient : bool raw_abstract_argument_type
 val wit_orient : bool closed_abstract_argument_type
 val orient : bool Pcoq.Gram.Entry.e
 
+val rawwit_morphism_argument :
+ Setoid_replace.morphism_argument raw_abstract_argument_type
+val wit_morphism_argument :
+ Setoid_replace.morphism_argument closed_abstract_argument_type
+val morphism_argument :
+ Setoid_replace.morphism_argument Pcoq.Gram.Entry.e
+
 val rawwit_raw : constr_expr raw_abstract_argument_type
 val wit_raw : rawconstr closed_abstract_argument_type
 val raw : constr_expr Pcoq.Gram.Entry.e
