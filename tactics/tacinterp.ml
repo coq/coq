@@ -552,8 +552,7 @@ let intern_redexp ist = function
   | Lazy f -> Lazy (intern_flag ist f)
   | Pattern l -> Pattern (List.map (intern_constr_occurrence ist) l)
   | Simpl o -> Simpl (option_app (intern_constr_occurrence ist) o)
-  | (Red _ | Hnf as r) -> r
-  | ExtraRedExpr (s,c) -> ExtraRedExpr (s, intern_constr ist c)
+  | (Red _ | Hnf | ExtraRedExpr _ as r) -> r
 
 let intern_inversion_strength lf ist = function
   | NonDepInversion (k,idl,ids) ->
@@ -1246,8 +1245,7 @@ let redexp_interp ist sigma env = function
   | Lazy f -> Lazy (interp_flag ist env f)
   | Pattern l -> Pattern (List.map (interp_pattern ist sigma env) l)
   | Simpl o -> Simpl (option_app (interp_pattern ist sigma env) o)
-  | (Red _ |  Hnf as r) -> r
-  | ExtraRedExpr (s,c) -> ExtraRedExpr (s,interp_constr ist sigma env c)
+  | (Red _ | Hnf | ExtraRedExpr _ as r) -> r
 
 let pf_redexp_interp ist gl = redexp_interp ist (project gl) (pf_env gl)
 
@@ -1944,8 +1942,7 @@ let subst_redexp subst = function
   | Lazy f -> Lazy (subst_flag subst f)
   | Pattern l -> Pattern (List.map (subst_constr_occurrence subst) l)
   | Simpl o -> Simpl (option_app (subst_constr_occurrence subst) o)
-  | (Red _ | Hnf as r) -> r
-  | ExtraRedExpr (s,c) -> ExtraRedExpr (s, subst_rawconstr subst c)
+  | (Red _ | Hnf | ExtraRedExpr _ as r) -> r
 
 let subst_raw_may_eval subst = function
   | ConstrEval (r,c) -> ConstrEval (subst_redexp subst r,subst_rawconstr subst c)
