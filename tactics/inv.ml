@@ -421,10 +421,6 @@ let not_found_message ids =
       'sPC ; prlist (fun id -> [<'sTR (string_of_id id) ; 'sPC >]) ids;
       'sTR" ] were not found in the current environment" >]
 
-let no_generalisation() =
-  errorlabstrm "Inv"
-    [< 'sTR "Cannot find a well typed generalisation of the goal">]
-    
 let dep_prop_prop_message id =
   errorlabstrm "Inv"
     [< 'sTR "Inversion on "; print_id id ;
@@ -435,13 +431,12 @@ let not_inductive_here id =
     [< 'sTR "Cannot recognize an inductive predicate in "; print_id id ;
        'sTR ". If there is one, may be the structure of the arity or of the type of constructors is hidden by constant definitions." >]
 
+(* Noms d'errreurs obsolètes ?? *)
 let wrap_inv_error id = function
-  | UserError ("abstract_list_all",_) -> no_generalisation ()
   | UserError ("Case analysis",s) -> errorlabstrm "Inv needs Nodep Prop Set" s
   | UserError("mind_specif_of_mind",_)  -> not_inductive_here id
   | UserError (a,b)  -> errorlabstrm "Inv" b
-  | Invalid_argument "it_list2" -> dep_prop_prop_message id
-  | Invalid_argument("mind_specif_of_mind")  -> not_inductive_here id
+  | Invalid_argument (*"it_list2"*) "List.fold_left2" -> dep_prop_prop_message id
   | Not_found  ->  errorlabstrm "Inv" (not_found_message [id]) 
   | e -> raise e
 
