@@ -1386,10 +1386,9 @@ and vcontext_interp ist = function
   | (VContext (ist',lr,lmr)) as v ->
     (match ist.goalopt with
     | None -> v
-    | Some g ->
-        match_context_interp ist lr lmr g)
-(* The closure system does not work yet. It must be better studied. *)
-(* (* Relaunch *) match_context_interp ist' lr lmr g)*)
+    | Some g as go -> 
+        let ist = { ist' with goalopt = go; env = pf_env g; evc = project g }
+        in match_context_interp ist lr lmr g)
   | v -> v
 
 (* Tries to match the hypotheses in a Match Context *)
