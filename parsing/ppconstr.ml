@@ -277,16 +277,16 @@ let rec pr inherited a =
       hov 0 (
 	pr_opt (pr_annotation pr) po ++
 	hv 0 (
-	  str "if" ++ pr ltop c ++ spc () ++
+	  str "if " ++ pr ltop c ++ spc () ++
 	  hov 0 (str "then" ++ brk (1,1) ++ pr ltop b1) ++ spc () ++
 	  hov 0 (str "else" ++ brk (1,1) ++ pr ltop b2))), lif
-  | COrderedCase (_,LetStyle,po,c,[CLambdaN(_,[_,_ as bd],b)]) ->
+  | COrderedCase (_,LetStyle,po,c,[CLambdaN(_,[_,CHole _ as bd],b)]) ->
       hov 0 (
 	pr_opt (pr_annotation pr) po ++
 	hv 0 (
           str "let" ++ brk (1,1) ++
 	  hov 0 (str "(" ++ pr_binder pr bd ++ str ")") ++
-	  str " =" ++ brk (1,1) ++
+	  str " =" ++ brk (1,2) ++
 	  pr ltop c ++ spc () ++
 	  str "in " ++ pr ltop b)), lletin
   | COrderedCase (_,(MatchStyle|RegularStyle as style),po,c,bl) ->
@@ -391,10 +391,10 @@ let gentermpr gt =
   with s -> wrap_exception s
 
 (* [at_top] means ids of env must be avoided in bound variables *)
-(*
+
 let gentermpr_core at_top env t =
   gentermpr (Termast.ast_of_constr at_top env t)
-*)
+(*
 let gentermpr_core at_top env t =
   pr_constr (Constrextern.extern_constr at_top env t)
-
+*)
