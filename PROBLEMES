@@ -14,6 +14,18 @@ l'application de la tactique, ils ne peuvent pas contenir des variables
 qui seront introduites dans la tactique ....
 MUTUAL-EXCLUSION/binary/version1/Soundness.v
 
+--> Il y a aussi une anomalie :
+fntf1 < (SolveCycleNode1 H '(not_true_is_false (hd o))).
+Toplevel input, characters 0-47
+> (SolveCycleNode1 H '(not_true_is_false (hd o))).
+
+> ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Anomaly: Illegal application: (APP SolveCycleNode1 H
+                                 (COMMAND
+                                    (APPLIST (QUALID not_true_is_false)
+                                       (APPLIST (QUALID hd) (QUALID o))))).
+
+
 l'entree numarg de g_tactic.ml4 accepte aussi des id... (pour les
 binding je pense) d'ou des erreurs de syntaxe ...  pure_numarg est
 plus sûr 
@@ -97,13 +109,12 @@ s1  := s : skel
 The term (default_can s1) has type (Can s1)
  while it is expected to have type (Can (PROD _ s1))
 
+Rocq/ALGEBRA/RELATIONS/Relations.v
+--> Un problème de Coercion au discharge
 
 Rocq/ARITH/Chinese
 File "./Zdiv.v", line 34, characters 0-944
-Error: Unable to infer a Cases predicate
-Either there is a type incompatiblity or the problem involves dependencies
-
---> PROBLEME RESOLU MAIS LE MESSAGE D'ERREUR RESTE PAS TRES CLAIR
+--> Un Refine mal typé et des Realizer
 
 Rocq/PARADOXES
 File "./Reynolds1.v", line 105, characters 0-429
