@@ -33,6 +33,7 @@ type type_error =
   | CantFindCaseType of constr
   | OccurCheck of int * constr
   | NotClean of int * constr
+  | VarNotFound of identifier
   (* Pattern-matching errors *)
   | BadConstructor of constructor_path * inductive_path
   | WrongNumargConstructor of constructor_path * int

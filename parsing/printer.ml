@@ -93,6 +93,13 @@ let rec gencompr k gt =
   in 
   gpr gt
 
+let print_if_exception = function
+    Anomaly (s1,s2) ->
+      warning ("Anomaly ("^s1^")");pP s2;
+      [< 'sTR"<PP error: non-printable term>" >]
+  | Failure _ | UserError _ | Not_found ->
+      [< 'sTR"<PP error: non-printable term>" >]
+  | s -> raise s
 
 (* [at_top] means ids of env must be avoided in bound variables *)
 let gentermpr_core at_top k env t =
@@ -105,8 +112,7 @@ let gentermpr_core at_top k env t =
 	Termast.bdize_no_casts at_top uenv t
     in 
     gencompr k ogt
-  with Failure _ | Anomaly _ | UserError _ | Not_found ->
-    [< 'sTR"<PP error: non-printable term>" >]
+  with s -> print_if_exception s
 
 let term0_at_top a = gentermpr_core true CCI a
 let gentermpr a = gentermpr_core false a
@@ -135,17 +141,14 @@ let fprtype = fprtype_env (gLOB nil_sign)
 let genpatternpr k t =
   try 
     gencompr k (Termast.ast_of_pattern t)
-  with Failure _ | Anomaly _ | UserError _ | Not_found ->
-       [< 'sTR"<PP error: non-printable term>" >];;
+  with s -> print_if_exception s
 
 let prpattern = genpatternpr CCI
 
 let genrawtermpr k env t =
-  let uenv = unitize_env env in
-    try 
-      gencompr k (Termast.ast_of_rawconstr uenv t)
-    with Failure _ | Anomaly _ | UserError _ | Not_found ->
-      [< 'sTR"<PP error: non-printable term>" >];;
+  try 
+    gencompr k (Termast.ast_of_rawconstr t)
+  with s -> print_if_exception s
 
 let prrawterm = genrawtermpr CCI (gLOB nil_sign)
 

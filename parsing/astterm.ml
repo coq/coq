@@ -17,6 +17,7 @@ open Pretyping
 open Evarutil
 open Ast
 open Coqast
+open Pretype_errors
 
 (* when an head ident is not a constructor in pattern *)
 let mssg_hd_is_not_constructor s =
@@ -127,20 +128,12 @@ let ref_from_constr = function
   | VAR id -> RVar id  (* utilisé dans trad pour coe_value (tmp) *)
   | _ -> anomaly "Not a reference"
 
-let error_var_not_found str loc s = 
-  Util.user_err_loc 
-    (loc,str,
-     [< 'sTR "The variable"; 'sPC; 'sTR s;
-	'sPC ; 'sTR "was not found"; 
-	'sPC ; 'sTR "in the current"; 'sPC ; 'sTR "environment" >])
-
 let dbize_ref k sigma env loc s =
   let id = ident_of_nvar loc s in
   try 
     match lookup_id id env with
-      | RELNAME(n,_) -> RRel (loc,n),[]
-      | _ -> 
-	  RRef(loc,RVar id), (try implicits_of_var k id with _ -> [])
+      | RELNAME(n,_) -> RRef (loc,RVar id),[]
+      | _ -> RRef(loc,RVar id), (try implicits_of_var k id with _ -> [])
   with Not_found ->
     try 
       let c,il = match k with
@@ -152,7 +145,7 @@ let dbize_ref k sigma env loc s =
       try 
 	(Syntax_def.search_syntactic_definition id, [])
       with Not_found -> 
-	error_var_not_found "dbize_ref" loc s
+	error_var_not_found_loc loc CCI id
 	  
 let mkLambdaC (x,a,b) = ope("LAMBDA",[a;slam(Some (string_of_id x),b)])
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
@@ -209,9 +202,14 @@ let error_fixname_unbound str is_cofix loc name =
        [< 'sTR "The name"; 'sPC ; 'sTR name ; 
 	  'sPC ; 'sTR "is not bound in the corresponding"; 'sPC ;
 	  'sTR ((if is_cofix then "co" else "")^"fixpoint definition") >])
-
+(*
 let rec collapse_env n env = if n=0 then env else
   add_rel (Anonymous,()) (collapse_env (n-1) (snd (uncons_rel_env env)))
+*)
+
+let check_capture s ty = function
+  | Slam _ when occur_var_ast s ty -> error "Capturing variable"
+  | _ -> ()
 
 let dbize k sigma =
   let rec dbrec env = function
@@ -313,6 +311,7 @@ let dbize k sigma =
     | Node(loc,"EQN",rhs::lhs) ->
 	let (idsl,pl) = List.split (List.map (dbize_pattern env) lhs) in
 	let ids = List.flatten idsl in
+	(* Linearity implies the order in ids is irrelevant *)
 	check_linearity loc ids;
 	check_uppercase loc ids;
 	check_number_of_pattern loc n pl;
@@ -324,11 +323,10 @@ let dbize k sigma =
   and iterated_binder oper n ty env = function
     | Slam(loc,ona,body) ->
 	let na = match ona with 
-	  | Some s -> Name (id_of_string s) 
+	  | Some s -> check_capture s ty body; Name (id_of_string s) 
 	  | _ -> Anonymous
-	in 
-	RBinder(loc, oper, na, 
-		dbrec (collapse_env n env) ty, (* To avoid capture *)
+	in
+	RBinder(loc, oper, na, dbrec env ty,
 		(iterated_binder oper n ty (add_rel (na,()) env) body))
     | body -> dbrec env body
 	  

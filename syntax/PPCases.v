@@ -31,10 +31,8 @@ Syntax constr
       -> [ "| " $eqn ]
 
   | tomatch [(TOMATCH ($LIST $lc))] -> [(NECOMMANDLIST2 ($LIST $lc)):E]
-  ;
+  | pattconstruct [(PATTCONSTRUCT ($LIST $T))] -> [(APPLIST ($LIST $T))]
 
-  level 10:
-    pattconstruct [(PATTCONSTRUCT ($LIST $T))] -> [(APPLIST ($LIST $T))]
   ;
 
   level 8:
@@ -58,7 +56,8 @@ Syntax constr
 
   (* "level" indifférent pour ce qui suit *)
   | let_binder_var [(LETBINDER ($VAR $id))] -> [ $id ]
-  | let_binder_app [(LETBINDER (APPLIST $toforget ($VAR $id) ($LIST $vars)))]
+  | let_binder_app 
+	[(LETBINDER (PATTCONSTRUCT $toforget ($VAR $id) ($LIST $vars)))]
       -> [ "(" $id (LETBINDERTAIL ($LIST $vars)) ")" ]
  
   | let_binder_tail_nil  [(LETBINDERTAIL)] -> [ ]

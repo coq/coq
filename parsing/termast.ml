@@ -32,6 +32,14 @@ let ids_of_ctxt cl =
 
 let ast_of_ident id = nvar (string_of_id id)
 
+let ast_of_name = function 
+  | Name id -> nvar (string_of_id id)
+  | Anonymous -> nvar "_"
+
+let stringopt_of_name = function 
+  | Name id -> Some (string_of_id id)
+  | Anonymous -> None
+
 let ast_of_constructor (((sp,tyi),n),ids) =
   ope("MUTCONSTRUCT",
       (path_section dummy_loc sp)::(num tyi)::(num n)
@@ -684,119 +692,131 @@ variables of a goal.
 
 exception StillDLAM
 
-let rec detype t = 
+let rec detype avoid env t =
   match collapse_appl t with
     (* Not well-formed constructions *)
     | DLAM _ | DLAMV _ -> raise StillDLAM
     (* Well-formed constructions *)
     | regular_constr -> 
-  	(match kind_of_term regular_constr with
-	   | IsRel n -> RRel (dummy_loc,n)
-	   | IsMeta n -> RRef (dummy_loc,RMeta n)
-	   | IsVar id -> RRef (dummy_loc,RVar id)
-	   | IsXtra s -> anomaly "bdize: Xtra should no longer occur in constr"
-	     (*       ope("XTRA",((str s):: pl@(List.map detype cl)))*)
-	   | IsSort (Prop c) -> RSort (dummy_loc,RProp c)
-	   | IsSort (Type _) -> RSort (dummy_loc,RType)
-	   | IsCast (c1,c2) -> RCast(dummy_loc,detype c1,detype c2)
-	   | IsProd (na,ty,c) -> 
-	       RBinder (dummy_loc,BProd,na,detype ty,detype c)
-	   | IsLambda (na,ty,c) -> 
-	       RBinder (dummy_loc,BLambda,na,detype ty,detype c)
-	   | IsAppL (f,args) -> RApp (dummy_loc,detype f,List.map detype args)
-	   | IsConst (sp,cl) -> RRef (dummy_loc,RConst (sp,ids_of_ctxt cl))
-	   | IsEvar (ev,cl) -> RRef (dummy_loc,REVar (ev,ids_of_ctxt cl))
-	   | IsAbst (sp,cl) -> 
-	       anomaly "bdize: Abst should no longer occur in constr"
-	   | IsMutInd (sp,tyi,cl) ->
-	       RRef (dummy_loc,RInd ((sp,tyi),ids_of_ctxt cl))
-	   | IsMutConstruct (sp,tyi,n,cl) -> 
-	       RRef (dummy_loc,RConstruct (((sp,tyi),n),ids_of_ctxt cl))
-	   | IsMutCase (annot,p,c,bl) ->
-	       let synth_type = synthetize_type () in
-	       let tomatch = detype c in
-	       begin match annot with
-		 | None -> (* Pas d'annotation --> affichage avec vieux Case *)
-		     warning "Printing in old Case syntax";
-		     ROldCase (dummy_loc,false,Some (detype p),
-			       tomatch,Array.map detype bl)
-		 | Some indsp ->
-		     let (mib,mip as lmis) = mind_specif_of_mind_light indsp in
-		     let lc = lc_of_lmis lmis in
-		     let lcparams = Array.map get_params lc in
-		     let k = (nb_prod mip.mind_arity.body) - 
-			     mib.mind_nparams in
-		     let pred = 
-		       if synth_type & computable p k & lcparams <> [||] then
-			 None
-		       else 
-			 Some (detype p) 
-		     in
-		     let constructs = 
-		       Array.init
-			 (Array.length mip.mind_consnames)
-			 (fun i -> ((indsp,i+1),[] (* on triche *))) in
-		     let eqnv = array_map3 bdize_eqn constructs lcparams bl in
-		     let eqnl = Array.to_list eqnv in
-		     let tag =
-		       if PrintingLet.active indsp then 
-			 PrintLet 
-		       else if PrintingIf.active indsp then 
-			 PrintIf 
-		       else 
-			 PrintCases
-		     in 
-		     RCases (dummy_loc,tag,pred,[tomatch],eqnl)
-	       end
-	       
-	   | IsFix (nv,n,cl,lfn,vt) ->
-	       let l = 
-		 Array.of_list 
-		   (List.map
-		      (function Name id -> id | Anonymous -> anomaly"detype")
-		      lfn) 
-	       in
-	       RRec(dummy_loc,RFix (nv,n),l,Array.map detype cl,
-		    Array.map detype vt)
-	   | IsCoFix (n,cl,lfn,vt) ->
-	       let l = 
-		 Array.of_list 
-		   (List.map
-		      (function Name id -> id | Anonymous -> anomaly"detype")
-		      lfn) 
-	       in
-	       RRec(dummy_loc,RCofix n,l,Array.map detype cl,
-		    Array.map detype vt))
+    (match kind_of_term regular_constr with
+    | IsRel n ->
+      (try match fst (lookup_rel n env) with
+	 | Name id   -> RRef (dummy_loc, RVar id)
+	 | Anonymous -> anomaly "detype: index to an anonymous variable"
+       with Not_found ->
+	 let s = "[REL "^(string_of_int (n - List.length (get_rels env)))^"]"
+	 in RRef (dummy_loc, RVar (id_of_string s)))
+    | IsMeta n -> RRef (dummy_loc,RMeta n)
+    | IsVar id -> RRef (dummy_loc,RVar id)
+    | IsXtra s -> anomaly "bdize: Xtra should no longer occur in constr"
+	(*       ope("XTRA",((str s):: pl@(List.map detype cl)))*)
+    | IsSort (Prop c) -> RSort (dummy_loc,RProp c)
+    | IsSort (Type _) -> RSort (dummy_loc,RType)
+    | IsCast (c1,c2) ->
+	RCast(dummy_loc,detype avoid env c1,detype avoid env c2)
+    | IsProd (na,ty,c) -> detype_binder BProd avoid env na ty c
+    | IsLambda (na,ty,c) -> detype_binder BLambda avoid env na ty c
+    | IsAppL (f,args) ->
+	RApp (dummy_loc,detype avoid env f,List.map (detype avoid env) args)
+    | IsConst (sp,cl) -> RRef (dummy_loc,RConst (sp,ids_of_ctxt cl))
+    | IsEvar (ev,cl) -> RRef (dummy_loc,REVar (ev,ids_of_ctxt cl))
+    | IsAbst (sp,cl) -> 
+	anomaly "bdize: Abst should no longer occur in constr"
+    | IsMutInd (sp,tyi,cl) ->
+	RRef (dummy_loc,RInd ((sp,tyi),ids_of_ctxt cl))
+    | IsMutConstruct (sp,tyi,n,cl) -> 
+	RRef (dummy_loc,RConstruct (((sp,tyi),n),ids_of_ctxt cl))
+    | IsMutCase (annot,p,c,bl) ->
+	let synth_type = synthetize_type () in
+	let tomatch = detype avoid env c in
+	begin match annot with
+	  | None -> (* Pas d'annotation --> affichage avec vieux Case *)
+	      warning "Printing in old Case syntax";
+	      ROldCase (dummy_loc,false,Some (detype avoid env p),
+			tomatch,Array.map (detype avoid env) bl)
+	  | Some indsp ->
+	      let (mib,mip as lmis) = mind_specif_of_mind_light indsp in
+	      let lc = lc_of_lmis lmis in
+	      let lcparams = Array.map get_params lc in
+	      let k = (nb_prod mip.mind_arity.body) - 
+		      mib.mind_nparams in
+	      let pred = 
+		if synth_type & computable p k & lcparams <> [||] then
+		  None
+		else 
+		  Some (detype avoid env p) 
+	      in
+	      let constructs = 
+		Array.init
+		  (Array.length mip.mind_consnames)
+		  (fun i -> ((indsp,i+1),[] (* on triche *))) in
+	      let eqnv =
+		array_map3 (detype_eqn avoid env) constructs lcparams bl in
+	      let eqnl = Array.to_list eqnv in
+	      let tag =
+		if PrintingLet.active indsp then 
+		  PrintLet 
+		else if PrintingIf.active indsp then 
+		  PrintIf 
+		else 
+		  PrintCases
+	      in 
+	      RCases (dummy_loc,tag,pred,[tomatch],eqnl)
+	end
 	
-and bdize_eqn constr_id construct_params branch =
-  let avoid = global_vars_and_consts branch in
-  let make_pat x avoid b =
+    | IsFix (nv,n,cl,lfn,vt) -> detype_fix (RFix (nv,n)) avoid env cl lfn vt
+    | IsCoFix (n,cl,lfn,vt)  -> detype_fix (RCofix n) avoid env cl lfn vt)
+
+and detype_fix fk avoid env cl lfn vt =
+  let lfi = List.map (fun id -> next_name_away id avoid) lfn in
+  let def_avoid = lfi@avoid in
+  let def_env =
+    List.fold_left (fun env id -> add_rel (Name id,()) env) env lfi in
+  RRec(dummy_loc,fk,Array.of_list lfi,Array.map (detype avoid env) cl,
+       Array.map (detype def_avoid def_env) vt)
+
+
+and detype_eqn avoid env constr_id construct_params branch =
+  let make_pat x avoid env b ids =
     if not (force_wildcard ()) or (dependent (Rel 1) b) then
-      let id = next_name_away x avoid in
-      (PatVar (dummy_loc,Name id)),id::avoid,id
+      let id = next_name_away_with_default "x" x avoid in
+      PatVar (dummy_loc,Name id),id::avoid,(add_rel (Name id,()) env),id::ids
     else 
-      PatVar (dummy_loc,Anonymous),avoid,id_of_string "_" 
+      PatVar (dummy_loc,Anonymous),avoid,(add_rel (Anonymous,()) env),ids
   in
-  let rec buildrec idl patlist avoid = function
+  let rec buildrec ids patlist avoid env = function
     | _::l, DOP2(Lambda,_,DLAM(x,b)) -> 
-	let pat,new_avoid,id = make_pat x avoid b in
-        buildrec (id::idl) (pat::patlist) new_avoid (l,b)
-	  
+	let pat,new_avoid,new_env,new_ids = make_pat x avoid env b ids in
+        buildrec new_ids (pat::patlist) new_avoid new_env (l,b)
+
     | l   , DOP2(Cast,b,_) ->    (* Oui, il y a parfois des cast *)
-	buildrec idl patlist avoid (l,b)
+	buildrec ids patlist avoid env (l,b)
 	  
     | x::l, b -> (* eta-expansion : n'arrivera plus lorsque tous les
                    termes seront construits à partir de la syntaxe Cases *)
 	(* nommage de la nouvelle variable *)
 	let new_b = DOPN(AppL,[|lift 1 b; Rel 1|]) in
-        let pat,new_avoid,id = make_pat x avoid new_b in
-	buildrec (id::idl) (pat::patlist) new_avoid (l,new_b)
+        let pat,new_avoid,new_env,new_ids = make_pat x avoid env new_b ids in
+	buildrec new_ids (pat::patlist) new_avoid new_env (l,new_b)
 	  
     | []  , rhs	-> 
-	(idl, [PatCstr(dummy_loc, constr_id, List.rev patlist)], detype rhs)
+	(ids, [PatCstr(dummy_loc, constr_id, List.rev patlist)],
+	 detype avoid env rhs)
   in 
-  buildrec [] [] avoid (construct_params,branch)
+  buildrec [] [] avoid env (construct_params,branch)
 
+and detype_binder bk avoid env na ty c =
+  let na',avoid' = match concrete_name avoid env na c with
+    | (Some id,l') -> (Name id), l'
+    | (None,l')    -> Anonymous, l' in
+  RBinder (dummy_loc,bk,
+	   na',detype [] env ty,
+	   detype avoid' (add_rel (na',()) env) c)
+
+let ast_dependent na aty =
+  match na with
+    | Name id -> occur_var_ast (string_of_id id) aty
+    | Anonymous -> false
 
 let implicit_of_ref = function
   | RConstruct (cstrid,_) -> constructor_implicits_list cstrid
@@ -826,27 +846,19 @@ let ast_of_app impl f args =
     (* On laisse les implicites, à charge du PP de ne pas les imprimer *)
     ope("APPLISTEXPL",f::(Array.to_list al1))
 
-let rec ast_of_raw avoid env = function
+let rec ast_of_raw = function
   | RRef (_,ref) -> ast_of_ref ref
-  | RRel (_,n) ->
-      (try match fst (lookup_rel n env) with
-	 | Name id   -> ast_of_ident id
-	 | Anonymous -> 
-	     anomaly "ast_of_raw: index to an anonymous variable"
-       with Not_found ->
-	 ope("REL",[num (n - List.length (get_rels env))]))
   | RApp (_,f,args) ->
-      let astf = ast_of_raw avoid env  f in
-      let astargs = List.map (ast_of_raw avoid env ) args in
+      let astf = ast_of_raw f in
+      let astargs = List.map ast_of_raw args in
       (match f with 
 	 | RRef (_,ref) -> ast_of_app (implicit_of_ref ref) astf astargs
 	 | _           -> ast_of_app [] astf astargs)
   | RBinder (_,BProd,Anonymous,t,c) ->
       (* Anonymous product are never factorized *)
-      ope("PROD",[ast_of_raw avoid env t;
-		  slam(None,ast_of_raw avoid (add_rel (Anonymous,()) env) c)])
+      ope("PROD",[ast_of_raw t; slam(None,ast_of_raw c)])
   | RBinder (_,bk,na,t,c) ->
-      let (n,a) = factorize_binder 1 avoid env bk na t c in
+      let (n,a) = factorize_binder 1 bk na (ast_of_raw t) c in
       let tag = match bk with
 	  (* LAMBDA et LAMBDALIST se comportent pareil *)
 	| BLambda -> if n=1 then "LAMBDA" else "LAMBDALIST"
@@ -855,56 +867,43 @@ let rec ast_of_raw avoid env = function
 	  (* constructeur ARROW serait-il plus justifié ? *) 
 	| BProd -> if n=1 then "PROD" else "PRODLIST" 
       in
-      ope(tag,[ast_of_raw [] env t;a])
+      ope(tag,[ast_of_raw t;a])
 
   | RCases (_,printinfo,typopt,tml,eqns) ->
-      let pred = ast_of_rawopt avoid env typopt in
+      let pred = ast_of_rawopt typopt in
       let tag = match printinfo with
 	| PrintIf -> "FORCEIF"
 	| PrintLet -> "FORCELET"
 	| PrintCases -> "MULTCASE" 
       in
-      let asttomatch = ope("TOMATCH", List.map (ast_of_raw avoid env) tml) in
-      let asteqns = List.map (ast_of_eqn avoid env) eqns in 
+      let asttomatch = ope("TOMATCH", List.map ast_of_raw tml) in
+      let asteqns = List.map ast_of_eqn eqns in 
       ope(tag,pred::asttomatch::asteqns)
 	
   | ROldCase (_,isrec,typopt,tm,bv) ->
       warning "Old Case syntax";
-      ope("MUTCASE",(ast_of_rawopt avoid env typopt)
-	    ::(ast_of_raw avoid env tm)
-	    ::(Array.to_list (Array.map (ast_of_raw avoid env) bv)))
+      ope("MUTCASE",(ast_of_rawopt typopt)
+	    ::(ast_of_raw tm)
+	    ::(Array.to_list (Array.map ast_of_raw bv)))
   | RRec (_,fk,idv,tyv,bv) ->
-      let lfi = Array.map (fun id -> next_ident_away id avoid) idv in
-      let alfi = Array.map ast_of_ident lfi in
-      let def_avoid = (Array.to_list lfi)@avoid in
-      let def_env =
-	List.fold_left (fun env id -> add_rel (Name id,()) env) env 
-	  (Array.to_list lfi) in
-      (match fk with 
+      let alfi = Array.map ast_of_ident idv in
+      (match fk with
 	 | RFix (nv,n) ->
-             let rec split_lambda binds avoid env = function
-	       | (0, t) -> (binds,ast_of_raw avoid env t)
+             let rec split_lambda binds = function
+	       | (0, t) -> (binds,ast_of_raw t)
 	       | (n, RBinder(_,BLambda,na,t,b)) ->
-		   let ast = ast_of_raw avoid env t in
-		   let id = next_name_away na avoid in
-		   let bind = ope("BINDER",[ast;ast_of_ident id]) in
-		   split_lambda (bind::binds) (id::avoid)
-		     (add_rel (na,()) env) (n-1,b)
-	       | _ -> anomaly "ast_of_rawconst: ill-formed fixpoint body" 
-	     in
-	     let rec split_product avoid env = function
-	       | (0, t) -> ast_of_raw avoid env t
-	       | (n, RBinder(_,BProd,na,t,b)) ->
-		   let id = next_name_away na avoid in
-		   split_product (id::avoid) (add_rel (na,()) env) (n-1,b)
-	       | _ -> anomaly "ast_of_rawconst: ill-formed fixpoint type" 
-	     in
+		   let bind = ope("BINDER",[ast_of_raw t;ast_of_name na]) in
+		   split_lambda (bind::binds) (n-1,b)
+	       | _ -> anomaly "ast_of_rawconst: ill-formed fixpoint body" in
+	     let rec split_product = function
+	       | (0, t) -> ast_of_raw t
+	       | (n, RBinder(_,BProd,na,t,b)) -> split_product (n-1,b)
+	       | _ -> anomaly "ast_of_rawconst: ill-formed fixpoint type" in
 	     let listdecl = 
 	       Array.mapi
 		 (fun i fi ->
-		    let (lparams,astdef) =
-		      split_lambda [] avoid def_env (nv.(i)+1,bv.(i)) in
-		    let asttyp = split_product avoid env (nv.(i)+1,tyv.(i)) in
+		    let (lparams,astdef) = split_lambda [] (nv.(i)+1,bv.(i)) in
+		    let asttyp = split_product (nv.(i)+1,tyv.(i)) in
 		    ope("FDECL",
 		       	[fi; ope ("BINDERS",List.rev lparams); 
 			 asttyp; astdef]))
@@ -914,10 +913,8 @@ let rec ast_of_raw avoid env = function
 	 | RCofix n -> 
 	     let listdecl =
                Array.mapi 
-		 (fun i fi -> ope("CFDECL",
-				  [fi;
-				   ast_of_raw avoid env tyv.(i);
-				   ast_of_raw def_avoid def_env bv.(i)]))
+		 (fun i fi ->
+		    ope("CFDECL",[fi; ast_of_raw tyv.(i); ast_of_raw bv.(i)]))
 		 alfi
 	     in 
 	     ope("COFIX", alfi.(n)::(Array.to_list listdecl)))
@@ -928,46 +925,32 @@ let rec ast_of_raw avoid env = function
 	 | RProp Pos -> ope("SET",[])
 	 | RType -> ope("TYPE",[]))
   | RHole _ -> ope("ISEVAR",[])
-  | RCast (_,c,t) ->
-      ope("CAST",[ast_of_raw avoid env c;ast_of_raw avoid env t])
+  | RCast (_,c,t) -> ope("CAST",[ast_of_raw c;ast_of_raw t])
 	
-and ast_of_eqn avoid env (idl,pl,c) =
-  let new_env = 
-    List.fold_left (fun env id -> add_rel (Name id,()) env) env idl in
-  let rhs = ast_of_raw avoid new_env c in
-  ope("EQN", rhs::(List.map ast_of_pattern pl))
+and ast_of_eqn (idl,pl,c) =
+  ope("EQN", (ast_of_raw c)::(List.map ast_of_pattern pl))
 
-and ast_of_rawopt avoid env  = function
+and ast_of_rawopt = function
   | None -> (str "SYNTH")
-  | Some p -> ast_of_raw avoid env  p
-	
-and factorize_binder n avoid env  oper na ty c =
-  let (env2, avoid2,na2) =
-    match weak_concrete_name avoid env na c with
-      | (Some id,l') -> add_rel (Name id,()) env, l', Some (string_of_id id) 
-      | (None,l')    -> add_rel (Anonymous,()) env, l', None
-  in
-  let (p,body) = match c with
-      RBinder(_,oper',na',ty',c')
-	when (oper = oper')
-	  & (ast_of_raw avoid env ty) 
-	  = (ast_of_raw avoid (add_rel (na,()) env) ty')
-	    & not (na' = Anonymous & oper = BProd)
-	    -> factorize_binder (n+1) avoid2 env2 oper na' ty' c'
-    | _ -> (n,ast_of_raw avoid2 env2 c)
-  in 
-  (p,slam(na2, body))
-       
-(* A brancher sur le vrai concrete_name *)
-and weak_concrete_name avoid env na c =
-  match na with
-    | Anonymous -> (None,avoid)
-    | Name id -> (Some id,avoid)
+  | Some p -> ast_of_raw p
 
+and factorize_binder n oper na aty c =
+  let (p,body) = match c with
+    | RBinder(_,oper',na',ty',c')
+	when (oper = oper') & (aty = ast_of_raw ty')
+	  & not (ast_dependent na aty) (* To avoid na in ty' escapes scope *)
+	  & not (na' = Anonymous & oper = BProd)
+	  -> factorize_binder (n+1) oper na' aty c'
+    | _ -> (n,ast_of_raw c)
+  in
+  (p,slam(stringopt_of_name na, body))
+
+let ast_of_rawconstr = ast_of_raw
+       
 let bdize at_top env t =
   try
     let avoid = if at_top then ids_of_env env else [] in
-    ast_of_raw avoid env (detype t)
+    ast_of_raw (detype avoid env t)
   with StillDLAM -> 
     old_bdize_depcast WithoutCast at_top env t
 
@@ -987,4 +970,4 @@ let rec strong whdfun t =
 
 let bdize_no_casts at_top env t = bdize at_top env (strong strip_outer_cast t) 
 			   
-let ast_of_rawconstr = ast_of_raw []
+

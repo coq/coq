@@ -201,6 +201,11 @@ let explain_not_clean k ctx ev t =
      'sTR" with a term using variable "; var; 'sPC;
      'sTR"which is not in its scope." >]
 
+let explain_var_not_found k ctx id = 
+  [< 'sTR "The variable"; 'sPC; 'sTR (string_of_id id);
+     'sPC ; 'sTR "was not found"; 
+     'sPC ; 'sTR "in the current"; 'sPC ; 'sTR "environment" >]
+
 (* Pattern-matching errors *)
 let explain_bad_constructor k ctx cstr ind =
   let pi = pr_inductive ind in
@@ -268,6 +273,8 @@ let explain_type_error k ctx = function
       explain_occur_check k ctx n c
   | NotClean (n,c) ->
       explain_not_clean k ctx n c
+  | VarNotFound id ->
+      explain_var_not_found k ctx id
   (* Pattern-matching errors *)
   | BadConstructor (c,ind) ->
       explain_bad_constructor k ctx c ind

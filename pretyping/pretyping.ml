@@ -204,6 +204,22 @@ let evar_type_case isevars env ct pt lft p c =
   in check_branches_message isevars env (c,ct) (bty,lft); (mind,rslty)
 *)
 
+let pretype_var loc env id = 
+  try
+    match lookup_id id (context env) with
+      | RELNAME (n,{body=typ;typ=s}) ->
+	  { uj_val  = Rel n;
+	    uj_type = lift n typ;
+	    uj_kind = DOP0 (Sort s) }
+      | GLOBNAME (id,{body=typ;typ=s}) ->
+	  { uj_val  = VAR id;
+	    uj_type = typ;
+	    uj_kind = DOP0 (Sort s) }
+    with Not_found ->
+      error_var_not_found_loc loc CCI id
+
+(*************************************************************************)
+(* Main pretyping function                                               *)
 
 let trad_metamap = ref []
 let trad_nocheck = ref false
@@ -225,9 +241,7 @@ let pretype_ref loc isevars env = function
           uj_kind=failwith "should be casted"})
 	   (* hnf_constr !isevars (exemeta_hack metaty).uj_type}) *)
 
-| RVar id ->
-    let {body=typ;typ=s} = snd(lookup_glob id (context env)) in
-    {uj_val=VAR id; uj_type=typ; uj_kind = DOP0 (Sort s)}
+| RVar id -> pretype_var loc env id
 
 | RConst (sp,ids) ->
     let cstr = mkConst sp (ctxt_of_ids ids) in
@@ -278,8 +292,6 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 
 | RRef (loc,ref) -> 
     pretype_ref loc isevars env ref
-
-| RRel (loc,n) -> relative env n
 
 | RHole loc ->
   if !compter then nbimpl:=!nbimpl+1;

@@ -9,6 +9,9 @@ open Rawterm
 
 exception PretypeError of loc * path_kind * context * type_error
 
+let error_var_not_found_loc loc k s =
+  raise (PretypeError (loc,k, Global.context() (*bidon*), VarNotFound s))
+
 let error_cant_find_case_type_loc loc env expr =
   raise (PretypeError (loc,CCI,context env,CantFindCaseType expr))
 

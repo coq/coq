@@ -13,7 +13,7 @@ val print_implicits : bool ref
 (* Translation of pattern, rawterm and term into syntax trees for printing *)
 
 val ast_of_pattern : pattern -> Coqast.t
-val ast_of_rawconstr : unit assumptions -> rawconstr -> Coqast.t
+val ast_of_rawconstr : rawconstr -> Coqast.t
 val bdize : bool -> unit assumptions -> constr -> Coqast.t
 val bdize_no_casts : bool -> unit assumptions -> constr -> Coqast.t
 

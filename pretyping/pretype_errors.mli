@@ -15,6 +15,9 @@ open Rawterm
 
 exception PretypeError of loc * path_kind * context * type_error
 
+val error_var_not_found_loc :
+  loc -> path_kind -> identifier -> 'a
+
 val error_cant_find_case_type_loc : 
   loc -> env -> constr -> 'a
 

@@ -315,6 +315,12 @@ let alpha_eq_val = function
       & List.for_all2 (fun x y -> alpha_eq (x,y)) al1 al2
   | _ ->  false
 
+let rec occur_var_ast s = function
+  | Node(loc,op,args) -> List.exists (occur_var_ast s) args
+  | Nvar(_,s2) -> s = s2
+  | Slam(_,sopt,body) -> (Some s <> sopt) & occur_var_ast s body
+  | Id _ | Str _ | Num _ | Path _ -> false
+  | Dynamic _ -> (* Hum... what to do here *) false
 
 exception No_match of string
 
