@@ -568,6 +568,12 @@ let lift_fconstr_vect k v =
 let lift_fconstr_list k l =
   if k=0 then l else List.map (fun f -> lft_fconstr k f) l
 
+let clos_rel e i =
+  match expand_rel i e with
+    | Inl(n,mt) -> lift_fconstr n mt
+    | Inr(k,None) -> {norm=Norm; term= FRel k}
+    | Inr(k,Some p) ->
+        lift_fconstr (k-p) {norm=Norm;term=FFlex(FarRelKey p)}
 
 (* since the head may be reducible, we might introduce lifts of 0 *)
 let compact_stack head stk =
@@ -591,9 +597,74 @@ let zupdate m s =
     Zupdate(m)::s'
   else s
 
+(* Closure optimization: *)
+let rec compact_constr (lg, subs as s) c k =
+  match kind_of_term c with
+      Rel i ->
+        if i < k then c,s else
+          (try mkRel (k + lg - list_index (i-k+1) subs), (lg,subs)
+          with Not_found -> mkRel (k+lg), (lg+1, (i-k+1)::subs))
+    | (Sort _|Var _|Meta _|Ind _|Const _|Construct _) -> c,s
+    | Evar(ev,v) ->
+        let (v',s) = compact_vect s v k in
+        if v==v' then c,s else mkEvar(ev,v'),s
+    | Cast(a,b) ->
+        let (a',s) = compact_constr s a k in
+        let (b',s) = compact_constr s b k in
+        if a==a' && b==b' then c,s else mkCast(a',b'), s
+    | App(f,v) ->
+        let (f',s) = compact_constr s f k in
+        let (v',s) = compact_vect s v k in
+        if f==f' && v==v' then c,s else mkApp(f',v'), s
+    | Lambda(n,a,b) ->
+        let (a',s) = compact_constr s a k in
+        let (b',s) = compact_constr s b (k+1) in
+        if a==a' && b==b' then c,s else mkLambda(n,a',b'), s
+    | Prod(n,a,b) ->
+        let (a',s) = compact_constr s a k in
+        let (b',s) = compact_constr s b (k+1) in
+        if a==a' && b==b' then c,s else mkProd(n,a',b'), s
+    | LetIn(n,a,ty,b) ->
+        let (a',s) = compact_constr s a k in
+        let (ty',s) = compact_constr s ty k in
+        let (b',s) = compact_constr s b (k+1) in
+        if a==a' && ty==ty' && b==b' then c,s else mkLetIn(n,a',ty',b'), s
+    | Fix(fi,(na,ty,bd)) ->
+        let (ty',s) = compact_vect s ty k in
+        let (bd',s) = compact_vect s bd (k+Array.length ty) in
+        if ty==ty' && bd==bd' then c,s else mkFix(fi,(na,ty',bd')), s
+    | CoFix(i,(na,ty,bd)) ->
+        let (ty',s) = compact_vect s ty k in
+        let (bd',s) = compact_vect s bd (k+Array.length ty) in
+        if ty==ty' && bd==bd' then c,s else mkCoFix(i,(na,ty',bd')), s
+    | Case(ci,p,a,br) ->
+        let (p',s) = compact_constr s p k in
+        let (a',s) = compact_constr s a k in
+        let (br',s) = compact_vect s br k in
+        if p==p' && a==a' && br==br' then c,s else mkCase(ci,p',a',br'),s
+and compact_vect s v k = compact_v [] s v k (Array.length v - 1)
+and compact_v acc s v k i =
+  if i < 0 then
+    let v' = Array.of_list acc in
+    if array_for_all2 (==) v v' then v,s else v',s
+  else
+    let (a',s') = compact_constr s v.(i) k in
+    compact_v (a'::acc) s' v k (i-1)
+
+(* Computes the minimal environment of a closure.
+   Idea: if the subs is not identity, the term will have to be
+   reallocated entirely (to propagate the substitution). So,
+   computing the set of free variables does not change the
+   complexity. *)
+let optimise_closure env c =
+  if is_subs_id env then (env,c) else
+    let (c',(_,s)) = compact_constr (0,[]) c 1 in
+    let env' = List.fold_left
+      (fun subs i -> subs_cons (clos_rel env i, subs)) (ESID 0) s in
+    (env',c')
+
 let mk_lambda env t =
-(*  let (env,t) =
-    if is_subs_id env then (env,t) else mk_clos_opt env t in*)
+(*  let (env,t) = optimise_closure env t in*)
   let (rvars,t') = decompose_lam t in
   FLambda(List.length rvars, List.rev rvars, t', env)
 
@@ -603,13 +674,6 @@ let destFLambda clos_fun t =
     | FLambda(n,(na,ty)::tys,b,e) ->
         (na,clos_fun e ty,{norm=Cstr;term=FLambda(n-1,tys,b,subs_lift e)})
     | _ -> assert false
-
-let clos_rel e i =
-  match expand_rel i e with
-    | Inl(n,mt) -> lift_fconstr n mt
-    | Inr(k,None) -> {norm=Norm; term= FRel k}
-    | Inr(k,Some p) ->
-        lift_fconstr (k-p) {norm=Norm;term=FFlex(FarRelKey p)}
 
 (* Optimization: do not enclose variables in a closure.
    Makes variable access much faster *)

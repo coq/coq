@@ -202,5 +202,6 @@ val knr: clos_infos -> fconstr -> fconstr stack -> fconstr * fconstr stack
 val kl : clos_infos -> fconstr -> constr
 
 val to_constr : (lift -> fconstr -> constr) -> lift -> fconstr -> constr
+val optimise_closure : fconstr subs -> constr -> fconstr subs * constr
 
 (* End of cbn debug section i*)
