@@ -453,7 +453,7 @@ COQIDEFLAGS=-I +lablgtk2
 beforedepend:: ide/config_lexer.ml ide/find_phrase.ml ide/highlight.ml
 
 FULLIDELIB=$(FULLCOQLIB)/ide
-IDEFILES=ide/coq.gif ide/.coqiderc
+IDEFILES=ide/coq.png ide/.coqiderc
 
 ide: $(COQIDE) states
 
