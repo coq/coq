@@ -184,7 +184,7 @@ let reset_to sp =
     | _ -> assert false
   in
   let (after,_,_) = split_lib spf in
-  recache_context (List.rev after)
+  recache_context after
 
 let reset_name id =
   try
