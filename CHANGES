@@ -111,7 +111,8 @@ que les 3 primitives), on peut typer avec "constr", "tactic", ou
   Arguments" et non plus selon la valeur qu'elle avait au moment de la 
   définition dans la section.
 
-- SearchPattern / SearchRewrite (contrib de Yves Bertot)
+- SearchPattern / SearchRewrite (contrib from Yves Bertot); Search can
+  be restricted to some modules
 
 - Le point final des commandes doit être suivi d'un blanc (retour chariot, tabulation ou espace)
 
@@ -140,6 +141,9 @@ Tactiques
 
 - AutoRewrite ne s'occupe maintenant que du but principal et c'est les
   Hint Rewrite qui gèrent les sous-buts générés
+
+- Redondant or incompatible instantiations in Apply ... with now
+  correctly trapped
 
 Outils
 
