@@ -335,7 +335,7 @@ let apply_rel_list env sigma nocheck argjl funj =
 		   apply_rec (n+1) (subst1 hj.uj_val c2) cst' restjl
 		 with NotConvertible -> 
 		   error_cant_apply_bad_type CCI env sigma
-		     (n,body_of_type hj.uj_type,c1)
+		     (n,c1,body_of_type hj.uj_type)
 		     funj argjl)
 
           | _ ->
