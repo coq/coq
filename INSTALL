@@ -1,6 +1,7 @@
 
             INSTALLATION PROCEDURES FOR THE COQ V7 SYSTEM
             ---------------------------------------------
+                          (beta version)
 
 WHAT DO YOU NEED ?
 ==================
@@ -19,6 +20,7 @@ WHAT DO YOU NEED ?
    comes as a single compressed tar-file. You have probably already
    decompressed it if you are reading this document.
 
+   (beta version, tested and compiled only on i386 Linux)
 
 QUICK INSTALLATION PROCEDURE.
 =============================
@@ -51,9 +53,9 @@ INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 3- The uncompression and un-tarring of the distribution file gave birth 
    to a directory named "coq-7.xx". You can rename this directory and put 
    it wherever you want. Just keep in mind that you will need some spare
-   space during the compilation (about 20 Mb of disk space for the whole
-   system in bytecode, and 15 Mb more for native-code compilation). Once
-   installed, the binaries take about 14 Mb, and the library about 9 Mb.
+   space during the compilation (reckon on about 50 Mb of disk space
+   for the whole system in native-code compilation). Once installed, the
+   binaries take about 14 Mb, and the library about 9 Mb.
 
 4- First you need to configure the system. It is done automatically with
    the command:
@@ -247,5 +249,3 @@ MOVING BINARIES OR LIBRARY.
    the binaries directory) and -libdir (for the standard library directory) :
 
 	coqtop -bindir <new directory> -libdir <new directory>
-
-

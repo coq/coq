@@ -1,7 +1,7 @@
 
   The LogiCal team (ex-Coq team) is releasing a new version of Coq.
-Its name is V7.0beta. This new version is a transition version and is
-provided for users willing to experiment the new features which are:
+Its name is V7.0beta. This new version is provided for users willing
+to experiment the new features which are:
 
   - a primitive let-in construct
   - qualified names (such as Logic.f_equal)

@@ -1,6 +1,7 @@
 
             		THE COQ V7 SYSTEM
             		=================
+                          (beta version)
 
 INSTALLATION.
 =============
@@ -8,7 +9,7 @@ INSTALLATION.
    See the file INSTALL for installation procedure.
 
 
-DOCUMENTATION.
+DOCUMENTATION. (not available for beta version)
 ==============
 
    The documentation of Coq V7 is available by anonymous ftp (see below),
@@ -16,7 +17,7 @@ DOCUMENTATION.
    all together in the tar file all-docs.tar .
 
 
-CHANGES.
+CHANGES. (beta version: a document Changes.ps explains the differences)
 ========
 
    There is a file named CHANGES that explains the differences and the
@@ -39,7 +40,7 @@ THE COQ CLUB.
    discuss questions about the Coq system and related topics. The submission
    address is:
 
-	coq-club@margaux.inria.fr
+	coq-club@pauillac.inria.fr
 
    The topics to be discussed in the club should include:
 
@@ -56,7 +57,7 @@ THE COQ CLUB.
 
    To be added to, or removed from, the mailing list, please write to:
 
-	coq-club-request@margaux.inria.fr
+	coq-club-request@pauillac.inria.fr
 
    Please use also this address for any questions/suggestions about the
    Coq Club. It might sometimes take a few days before your messages get
