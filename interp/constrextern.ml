@@ -179,7 +179,10 @@ let rec skip_coercion dest_ref (f,args as app) =
     with Not_found -> app
 
 let extern_app loc impl f args =
-  if (!print_implicits & not !print_implicits_explicit_args) then 
+  if !print_implicits &
+    not !print_implicits_explicit_args &
+    List.exists is_status_implicit impl
+  then 
     CAppExpl (loc, f, args)
   else
     explicitize loc impl (CRef f) args
