@@ -391,7 +391,7 @@ contrib/extraction/ocaml.cmi: library/libnames.cmi \
 contrib/extraction/scheme.cmi: contrib/extraction/miniml.cmi kernel/names.cmi \
     lib/pp.cmi 
 contrib/extraction/table.cmi: kernel/environ.cmi library/libnames.cmi \
-    contrib/extraction/miniml.cmi kernel/names.cmi 
+    contrib/extraction/miniml.cmi kernel/names.cmi kernel/term.cmi 
 contrib/funind/tacinvutils.cmi: interp/coqlib.cmi tactics/equality.cmi \
     pretyping/evd.cmi pretyping/inductiveops.cmi kernel/names.cmi lib/pp.cmi \
     parsing/printer.cmi proofs/proof_type.cmi pretyping/reductionops.cmi \
