@@ -329,7 +329,8 @@ let rec pretype tycon env isevars lvar lmeta = function
       let j' = pretype tycon (push_rel var env) isevars lvar lmeta c2 in
       { uj_val = mkLetIn (name, j.uj_val, t, j'.uj_val) ;
 	uj_type = type_app (subst1 j.uj_val) j'.uj_type }
-      
+
+(* Special Case for let constructions to avoid exponential behavior *)      
   | ROldCase (loc,false,po,c,[| f |]) ->
       let cj = pretype empty_tycon env isevars lvar lmeta c in
       let (IndType (indf,realargs) as indt) = 
