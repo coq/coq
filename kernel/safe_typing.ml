@@ -273,12 +273,6 @@ let add_global_declaration sp env locals (body,typ,cst) op =
     | Some b ->
         Idset.union (global_vars_set env b) (global_vars_set env typ) in
   let hyps = keep_hyps env ids (named_context env) in
-  let body, typ =
-    if Options.immediate_discharge then
-      option_app (fun c -> it_mkNamedLambda_or_LetIn c hyps) body,
-      it_mkNamedProd_or_LetIn typ hyps
-    else
-      body,typ in
   let sp_hyps = List.map (fun (id,b,t) -> (List.assoc id locals, b, t)) hyps in
   let cb = {
     const_kind = kind_of_path sp;

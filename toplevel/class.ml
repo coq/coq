@@ -82,7 +82,7 @@ let rec arity_sort a = match kind_of_term a with
 (* try_add_class : Names.identifier ->
   Term.constr -> (cl_typ * int) option -> bool -> int * Libobject.strength *)
 
-let try_add_class v (cl,p) streopt check_exist = 
+let try_add_class (cl,p) streopt check_exist = 
   if check_exist & class_exists cl then
     errorlabstrm "try_add_new_class" 
       [< 'sTR (string_of_class cl) ; 'sTR " is already a class" >];
@@ -96,7 +96,7 @@ let try_add_class v (cl,p) streopt check_exist =
 (* try_add_new_class : Names.identifier -> unit *)
 
 let try_add_new_class ref stre =
-  let v = constr_of_reference Evd.empty (Global.env()) ref in
+  let v = constr_of_reference ref in
   let env = Global.env () in
   let t = Retyping.get_type_of env Evd.empty v in
   let p1 =
@@ -108,7 +108,7 @@ let try_add_new_class ref stre =
            'sTR " does not end with a sort" >] 
   in
   let cl = fst (constructor_at_head v) in
-  let _ = try_add_class v (cl,p1) (Some stre) true in () 
+  let _ = try_add_class (cl,p1) (Some stre) true in () 
 
 (* Coercions *)
 
@@ -173,7 +173,7 @@ let check_class v cl p =
       with Not_found -> raise (CoercionError (NotAClass cl))
     in
     check_fully_applied cl p p1;
-    try_add_class v (cl,p1) None false
+    try_add_class (cl,p1) None false
 
 (* check that the computed target is the provided one *)
 let check_target clt = function
@@ -294,7 +294,7 @@ let error_not_transparent source =
 let build_id_coercion idf_opt source =
   let env = Global.env () in
   let vs = match source with
-    | CL_CONST sp -> constr_of_reference Evd.empty env (ConstRef sp)
+    | CL_CONST sp -> mkConst sp
     | _ -> error_not_transparent source in
   let c = match Instantiate.constant_opt_value env (destConst vs) with
     | Some c -> c
@@ -349,7 +349,7 @@ lorque source est None alors target est None aussi.
 
 let add_new_coercion_core coef stre source target isid =
   let env = Global.env () in
-  let v = constr_of_reference Evd.empty env coef in
+  let v = constr_of_reference coef in
   let vj = Retyping.get_judgment_of env Evd.empty v in
   if coercion_exists coef then raise (CoercionError AlreadyExists);
   let lp = prods_of (vj.uj_type) in
@@ -408,7 +408,7 @@ type coercion_entry =
 let add_new_coercion (ref,stre,isid,cls,clt,n) =
   (* Un peu lourd, tout cela pour trouver l'instance *)
   let env = Global.env () in
-  let v = constr_of_reference Evd.empty env ref in
+  let v = constr_of_reference ref in
   let vj = Retyping.get_judgment_of env Evd.empty v in
   declare_coercion ref vj stre isid cls clt n
 
@@ -458,11 +458,6 @@ let process_class sec_sp ids_to_discard x =
           let newsp = Lib.make_path spid CCI in
 	  let hyps = (Global.lookup_constant sp).const_hyps in
 	  let n = count_extra_abstractions hyps ids_to_discard in
-(*
-          let v = global_reference CCI spid in
-          let t = Retyping.get_type_of env Evd.empty v in
-          let p = arity_sort t in
-*)
           (CL_CONST newsp,{cl_strength=stre;cl_param=p+n})
         else 
 	  x
@@ -472,11 +467,6 @@ let process_class sec_sp ids_to_discard x =
           let newsp = Lib.make_path spid CCI in 
 	  let hyps = (Global.lookup_mind sp).mind_hyps in
 	  let n = count_extra_abstractions hyps ids_to_discard in
-(*
-          let v = global_reference CCI spid in
-          let t = Retyping.get_type_of env Evd.empty v in
-          let p = arity_sort t in
-*)
           (CL_IND (newsp,i),{cl_strength=stre;cl_param=p+n})
         else 
 	  x

@@ -240,6 +240,16 @@ let absolute_reference sp =
 let locate_in_absolute_module dir id =
   absolute_reference (make_path dir id CCI)
 
+let global loc qid =
+  try match extended_locate qid with
+    | TrueGlobal ref -> ref
+    | SyntacticDef _ -> 
+        error
+          ("Unexpected reference to a syntactic definition: "
+           ^(string_of_qualid qid))
+  with Not_found ->
+    error_global_not_found_loc loc qid
+
 let exists_cci sp =
   try let _ = locate_cci (qualid_of_sp sp) in true
   with Not_found -> false

@@ -30,11 +30,6 @@ val show_node : unit -> unit
    in the context of the current goal, as for instance in pcoq *)
 val get_current_context_of_args : vernac_arg list -> Proof_type.enamed_declarations * Environ.env
 
-(* This function is used to transform a qualified identifier into a
-   global reference, with a nice error message in case of failure.
-   It is used in pcoq. *)
-val global : Coqast.loc -> Nametab.qualid -> global_reference;;
-
 (* this function is used to analyse the extra arguments in search commands.
    It is used in pcoq. *)
 val inside_outside : vernac_arg list -> dir_path list * bool;;

@@ -81,32 +81,31 @@ val variable_strength : variable -> strength
 val find_section_variable : identifier -> variable
 val last_section_hyps : dir_path -> identifier list
 
-(*s [global_reference k id] returns the object corresponding to
-    the name [id] in the global environment. It may be a constant, 
-    an inductive, a construtor or a variable. It is instanciated
-    on the current environment of variables. [Nametab.sp_of_id] is used
-    to find the corresponding object. 
-    [construct_reference] is a version which looks for variables in a 
-    given environment instead of looking in the current global environment. *)
+(*s Global references *)
 
 val context_of_global_reference : global_reference -> section_context
-val instantiate_inductive_section_params : constr -> inductive -> constr
-val implicit_section_args : global_reference -> section_path list
 val extract_instance : global_reference -> constr array -> constr array
 
-val constr_of_reference :
-  'a Evd.evar_map -> Environ.env -> global_reference -> constr
+(* Turn a global reference into a construction *)
+val constr_of_reference : global_reference -> constr
+
+(* Turn a construction denoting a global into a reference;
+   raise [Not_found] if not a global *)
+val reference_of_constr : constr -> global_reference
 
 val global_qualified_reference : Nametab.qualid -> constr
 val global_absolute_reference : section_path -> constr
 val global_reference_in_absolute_module : dir_path -> identifier -> constr
 
-val construct_qualified_reference : Environ.env -> Nametab.qualid -> constr
-val construct_absolute_reference : Environ.env -> section_path -> constr
+val construct_qualified_reference : Nametab.qualid -> constr
+val construct_absolute_reference : section_path -> constr
 
 (* This should eventually disappear *)
-val global_reference : path_kind -> identifier -> constr
-val construct_reference : Environ.env -> path_kind -> identifier -> constr
+(*  [construct_reference] returns the object corresponding to
+    the name [id] in the global environment. It looks also for variables in a 
+    given environment instead of looking in the current global environment. *)
+val global_reference : identifier -> constr
+val construct_reference : Environ.env -> identifier -> constr
 
 val is_global : identifier -> bool
 

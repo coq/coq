@@ -56,7 +56,7 @@ let global_constant dir s =
 
 let current_constant id =
   try
-    Declare.global_reference CCI id
+    Declare.global_reference id
   with Not_found ->
     anomaly ("Setoid: cannot find "^(string_of_id id))
 

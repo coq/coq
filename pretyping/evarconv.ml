@@ -310,7 +310,7 @@ and conv_record env isevars (c,bs,(xs,xs1),(us,us1),(ts,ts1),t) =
 and check_conv_record (t1,l1) (t2,l2) = 
   try
     let {o_DEF=c;o_TABS=bs;o_TPARAMS=xs;o_TCOMPS=us} = 
-      objdef_info (cte_of_constr t1,cte_of_constr t2) in
+      objdef_info (Declare.reference_of_constr t1, Declare.reference_of_constr t2) in
     let xs1,t,ts = 
       match list_chop (List.length xs) l1 with 
 	| xs1,t::ts -> xs1,t,ts

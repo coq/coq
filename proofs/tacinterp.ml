@@ -122,7 +122,7 @@ let constr_of_id id = function
     if mem_named_context id hyps then
       mkVar id
     else
-      let csr = Declare.global_reference CCI id in
+      let csr = global_qualified_reference (make_qualid [] id) in
       (match kind_of_term csr with
       | IsVar _ -> raise Not_found
       | _ -> csr)

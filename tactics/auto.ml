@@ -273,10 +273,6 @@ let add_resolves env sigma clist dbnames =
 	    )))
     dbnames
 
-let global qid =
-  try Nametab.locate qid
-  with Not_found -> Nametab.error_global_not_found_loc dummy_loc qid
-
 (* REM : in most cases hintname = id *)
 let make_unfold (hintname, ref) =
   (Pattern.label_of_ref ref,
@@ -340,7 +336,7 @@ let _ =
 	       (function VARG_IDENTIFIER i -> string_of_id i
 		  | _ -> bad_vernac_args "HintUnfold") l in
       	   fun () -> 
-	     let ref = global qid in
+	     let ref = Nametab.global dummy_loc qid in
 	     add_unfolds [(hintname, ref)] dbnames
        | _-> bad_vernac_args "HintUnfold")
     
@@ -381,13 +377,11 @@ let _ =
 	       let isp = destMutInd (Declare.global_qualified_reference qid) in
 	       let conspaths =
 		 mis_conspaths (Global.lookup_mind_specif isp) in
-	       let hyps = Declare.implicit_section_args (IndRef isp) in
-	       let section_args = List.map (fun sp -> mkVar (basename sp)) hyps in
 	       let lcons = 
 		 array_map_to_list
 		   (fun sp ->
 		      let c = Declare.global_absolute_reference sp in
-		      (basename sp, applist (c, section_args)))
+		      (basename sp, c))
 		   conspaths in
 	       let dbnames = if l = [] then ["core"] else 
 	      	 List.map (function VARG_IDENTIFIER i -> string_of_id i
@@ -422,13 +416,11 @@ let _ =
 	     List.map
 	       (function
 		  | VARG_QUALID qid -> 
-		      let ref = global qid in
+		      let ref = Nametab.global dummy_loc qid in
 		      let env = Global.env() in
-		      let c = Declare.constr_of_reference Evd.empty env ref in
-		      let hyps = Declare.implicit_section_args ref in
-		      let section_args = List.map (fun sp -> mkVar (basename sp)) hyps in
+		      let c = Declare.constr_of_reference ref in
 		      let _,i = Nametab.repr_qualid qid in
-		      (i, applist (c,section_args))
+		      (i, c)
 		  | _-> bad_vernac_args "HintsResolve") lh in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
@@ -445,7 +437,7 @@ let _ =
 	     List.map (function
 			 | VARG_QUALID qid ->
 			     let _,n = Nametab.repr_qualid qid in
-			     (n, global qid)
+			     (n, Nametab.global dummy_loc qid)
 		      	 | _ -> bad_vernac_args "HintsUnfold") lh in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function 
@@ -466,10 +458,8 @@ let _ =
 		      let _,n = Nametab.repr_qualid qid in
 		      let ref = Nametab.locate qid in
 		      let env = Global.env () in
-		      let c = Declare.constr_of_reference Evd.empty env ref in
-		      let hyps = Declare.implicit_section_args ref in
-		      let section_args = List.map (fun sp -> mkVar (basename sp)) hyps in
-		      (n, applist (c, section_args))
+		      let c = Declare.constr_of_reference ref in
+		      (n, c)
 		  | _ -> bad_vernac_args "HintsImmediate") lh in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function 
@@ -517,15 +507,10 @@ let fmt_hint_list_for_head c =
       [< 'sTR"For "; pr_ref_label c; 'sTR" -> "; 'fNL;
 	 hOV 0 (prlist fmt_hints_db valid_dbs) >]
 
-let fmt_hint_id id = 
-  try 
-    let c = Declare.global_reference CCI id in
-    fmt_hint_list_for_head (head_of_constr_reference c)
-  with Not_found -> 
-    [< pr_id id; 'sTR " not declared" >]
+let fmt_hint_ref ref = fmt_hint_list_for_head (label_of_ref ref)
 
 (* Print all hints associated to head id in any database *)
-let print_hint_id id =  pPNL(fmt_hint_id id)
+let print_hint_qid qid =  pPNL(fmt_hint_ref (Nametab.global dummy_loc qid))
 
 let fmt_hint_term cl = 
   try 
@@ -607,7 +592,7 @@ let _ =
 let _ = 
   vinterp_add "PrintHintId"
     (function 
-       | [(VARG_IDENTIFIER id)] -> fun () -> print_hint_id id
+       | [(VARG_QUALID qid)] -> fun () -> print_hint_qid qid
        | _ -> bad_vernac_args "PrintHintId")
 
 (**************************************************************************)
@@ -961,7 +946,7 @@ let interp_to_add gl = function
   | Qualid qid ->
       let _,id = Nametab.repr_qualid qid in
       (next_ident_away id (pf_ids_of_hyps gl), 
-       Declare.constr_of_reference Evd.empty (Global.env()) (global qid))
+       Declare.constr_of_reference (Nametab.global dummy_loc qid))
   | _ -> errorlabstrm "cvt_autoArgs" [< 'sTR "Qualid expected" >]
 
 let dyn_superauto l g = 

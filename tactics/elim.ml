@@ -100,7 +100,7 @@ let head_in gls indl t =
        
 let inductive_of_qualid gls qid =
   let c = 
-    try Declare.construct_qualified_reference (pf_env gls) qid
+    try Declare.construct_qualified_reference qid
     with Not_found -> Nametab.error_global_not_found qid
   in
   match kind_of_term c with

@@ -91,7 +91,7 @@ GEXTEND Gram
       | IDENT "Print" -> <:ast< (PRINT) >>
       | IDENT "Print"; IDENT "Hint"; "*" 
 	                    -> <:ast< (PrintHint) >>
-      | IDENT "Print"; IDENT "Hint"; s = identarg ->
+      | IDENT "Print"; IDENT "Hint"; s = qualidarg ->
           <:ast< (PrintHintId $s) >>
       | IDENT "Print"; IDENT "Hint" ->
           <:ast< (PrintHintGoal) >>
@@ -172,7 +172,8 @@ GEXTEND Gram
       | IDENT "Print"; IDENT "Graph" -> <:ast< (PrintGRAPH) >>
       | IDENT "Print"; IDENT "Classes" -> <:ast< (PrintCLASSES) >>
       | IDENT "Print"; IDENT "Coercions" -> <:ast< (PrintCOERCIONS) >>
-      | IDENT "Print"; IDENT "Coercion"; IDENT "Paths"; c = identarg; d = identarg ->
+      | IDENT "Print"; IDENT "Coercion"; IDENT "Paths";
+        c = qualidarg; d = qualidarg ->
           <:ast< (PrintPATH $c $d) >>
 
       | IDENT "SearchIsos"; com = constrarg ->

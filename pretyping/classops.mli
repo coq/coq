@@ -44,7 +44,6 @@ type coe_index
 (* This is the type of paths from a class to another *)
 type inheritance_path = coe_index list
 
-val cte_of_constr : constr -> global_reference
 val coe_of_reference : global_reference -> coe_typ
 
 (*s [declare_class] adds a class to the set of declared classes *)

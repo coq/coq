@@ -119,9 +119,9 @@ let is_unit_type t = op2bool (match_with_unit_type t)
 
 (* Checks if a given term is an application of an
    inductive binary relation R, so that R has only one constructor
-   stablishing its reflexivity.  *)
+   establishing its reflexivity.  *)
 
-let match_with_equation  t =
+let match_with_equation t =
   let (hdapp,args) = decomp_app t in
   match (kind_of_term hdapp) with
     | IsMutInd ind -> 

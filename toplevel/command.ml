@@ -308,7 +308,7 @@ let build_recursive lnameargsardef =
   let lrefrec = Array.mapi declare namerec in
   if_verbose pPNL (recursive_message lrefrec);
   (* The others are declared as normal definitions *)
-  let var_subst id = (id, global_reference CCI id) in
+  let var_subst id = (id, global_reference id) in
   let _ = 
     List.fold_left
       (fun subst (f,def) ->
@@ -370,7 +370,7 @@ let build_corecursive lnameardef =
   in 
   let lrefrec = Array.mapi declare namerec in
   if_verbose pPNL (corecursive_message lrefrec);
-  let var_subst id = (id, global_reference CCI id) in
+  let var_subst id = (id, global_reference id) in
   let _ = 
     List.fold_left
       (fun subst (f,def) ->
@@ -385,17 +385,12 @@ let build_corecursive lnameardef =
   in
   ()
 
-let inductive_of_ident id =
-  let c =
-    try global_reference CCI id
-    with Not_found ->
-      errorlabstrm "inductive_of_ident"
-	[< 'sTR ((string_of_id id) ^ " not found") >]
-  in
-  match kind_of_term (global_reference CCI id) with
-    | IsMutInd ind -> ind
-    | _ -> errorlabstrm "inductive_of_ident"
-	[< 'sTR (string_of_id id); 'sPC; 'sTR "is not an inductive type" >]
+let inductive_of_ident qid =
+  match Nametab.global dummy_loc qid with
+    | IndRef ind -> ind
+    | ref -> errorlabstrm "inductive_of_ident"
+	[< 'sTR (Global.string_of_global ref); 
+           'sPC; 'sTR "is not an inductive type">]
 
 let build_scheme lnamedepindsort = 
   let lrecnames = List.map (fun (f,_,_,_) -> f) lnamedepindsort

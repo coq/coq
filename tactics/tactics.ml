@@ -57,20 +57,13 @@ let get_pairs_from_bindings =
   in 
   List.map pair_from_binding
 
-let rec string_head_bound x = match kind_of_term x with
-  | IsConst cst -> string_of_id (basename cst)
+let string_of_inductive c = 
+  try match kind_of_term c with
   | IsMutInd ind_sp -> 
       let mispec = Global.lookup_mind_specif ind_sp in 
       string_of_id (mis_typename mispec)
-  | IsMutConstruct (ind_sp,i) ->
-       let mispec = Global.lookup_mind_specif ind_sp in 
-       string_of_id (mis_consnames mispec).(i-1)
-  | IsVar id -> string_of_id id
   | _ -> raise Bound
-
-let string_head c = 
-  try string_head_bound c with Bound -> error "Bound head variable"
-
+  with Bound -> error "Bound head variable"
 
 let rec head_constr_bound t l =
   let t = strip_outer_cast(collapse_appl t) in
@@ -1744,8 +1737,8 @@ let dyn_reflexivity = function
 let symmetry gl =
   match match_with_equation (pf_concl gl) with
     | None -> error "The conclusion is not a substitutive equation" 
-    | Some (hdcncl,args) -> 
-        let hdcncls = string_head hdcncl in
+    | Some (hdcncl,args) ->
+        let hdcncls = string_of_inductive hdcncl in
         begin 
 	  try 
 	    (apply (pf_parse_const gl ("sym_"^hdcncls)) gl)
@@ -1782,9 +1775,9 @@ let dyn_symmetry = function
 
 let transitivity t gl =
   match match_with_equation (pf_concl gl) with
-    | None -> error "The conlcusion is not a substitutive equation" 
+    | None -> error "The conclusion is not a substitutive equation" 
     | Some (hdcncl,args) -> 
-        let hdcncls = string_head hdcncl in
+        let hdcncls = string_of_inductive hdcncl in
         begin
 	  try 
 	    apply_list [(pf_parse_const gl ("trans_"^hdcncls));t] gl 
@@ -1846,7 +1839,7 @@ let abstract_subproof name tac gls =
     in   (* Faudrait un peu fonctionnaliser cela *)
     let sp = Declare.declare_constant na (ConstantEntry const,strength) in
     let newenv = Global.env() in
-    Declare.constr_of_reference Evd.empty newenv (ConstRef sp)
+    Declare.constr_of_reference (ConstRef sp)
   in
   exact_no_check 
     (applist (lemme,

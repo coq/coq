@@ -368,37 +368,6 @@ let context_of_global_reference = function
   | IndRef (sp,_) -> (Global.lookup_mind sp).mind_hyps
   | ConstructRef ((sp,_),_) -> (Global.lookup_mind sp).mind_hyps
 
-(*
-let global_sp_operator env sp id =
-  try
-
-  with Not_found -> 
-    let mib = 
-    mind_oper_of_id sp id mib, mib.mind_hyps
-*)
-
-let rec occur_section_variable sp = function
-  | (_,sp')::_ when sp = sp' -> true
-  | _::l -> occur_section_variable sp l
-  | [] -> false
-
-let rec quantify_extra_hyps c = function
-  | (sp,None,t)::hyps ->
-      mkNamedLambda (basename sp) t (quantify_extra_hyps c hyps)
-  (* Buggé car id n'apparaît pas dans les instances des constantes dans c *)
-  (* et id n'est donc pas substitué dans ces constantes *)
-  | (sp,Some b,t)::hyps ->
-      mkNamedLetIn (basename sp) b t (quantify_extra_hyps c hyps)
-  | [] -> c
-
-let find_common_hyps_then_abstract c hyps' hyps =
-  let rec find = function
-    | (sp,_,_) :: hyps when occur_section_variable sp hyps' -> find hyps
-    | hyps -> quantify_extra_hyps c hyps in
-  find (List.rev hyps)
-
-let section_variable_paths () = snd !vartab
-
 let find_section_variable id =
   let l =
     Spmap.fold
@@ -407,7 +376,14 @@ let find_section_variable id =
   match l with
     | [] -> raise Not_found
     | [sp] -> sp
-    | _ -> error "Arghh, you blasted me with several variables of same name"
+    | _ -> anomaly "Several section variables with same base name"
+
+let reference_of_constr c = match kind_of_term c with
+  | IsConst sp -> ConstRef sp
+  | IsMutInd ind_sp -> IndRef ind_sp
+  | IsMutConstruct cstr_cp -> ConstructRef cstr_cp
+  | IsVar id -> VarRef (find_section_variable id)
+  |  _ -> raise Not_found
 
 let last_section_hyps dir =
   List.fold_right
@@ -418,32 +394,7 @@ let rec find_var id = function
   | [] -> raise Not_found
   | sp::l -> if basename sp = id then sp else find_var id l
 
-let implicit_section_args ref =
-  if Options.immediate_discharge then
-    let hyps = context_of_global_reference ref in
-    let hyps0 = section_variable_paths () in
-    let rec keep acc = function
-      | (sp,None,_)::hyps ->
-	  let acc = if List.mem sp hyps0 then sp::acc else acc in
-	  keep acc hyps
-      | (_,Some _,_)::hyps -> keep acc hyps
-      | [] -> acc
-    in keep [] hyps
-  else []
-
-let section_hyps ref =
-  let hyps = context_of_global_reference ref in
-  let hyps0 = section_variable_paths () in
-  let rec keep acc = function
-    | (sp,b,_ as d)::hyps ->
-	let acc = if List.mem sp hyps0 then (sp,b=None)::acc else acc in
-	keep acc hyps
-    | [] -> acc
-  in keep [] hyps
-
 let extract_instance ref args =
-  if Options.immediate_discharge then args
-  else
   let hyps = context_of_global_reference ref in
   let hyps0 = current_section_context () in
   let na = Array.length args in
@@ -455,50 +406,37 @@ let extract_instance ref args =
     | [] -> Array.of_list acc
   in peel (na-1) [] hyps
 
-let constr_of_reference _ _ ref =
-if Options.immediate_discharge then
-  match ref with
-    | VarRef sp -> mkVar (basename sp)
-    | ConstRef sp -> mkConst sp
-    | ConstructRef sp -> mkMutConstruct sp
-    | IndRef sp -> mkMutInd sp
-else
-  let hyps = context_of_global_reference ref in
-  let hyps0 = current_section_context () in
-  let body = match ref with
-    | VarRef sp -> mkVar (basename sp)
-    | ConstRef sp -> mkConst sp
-    | ConstructRef sp -> mkMutConstruct sp
-    | IndRef sp -> mkMutInd sp
-  in
-  find_common_hyps_then_abstract body hyps0 hyps
+let constr_of_reference = function
+  | VarRef sp -> mkVar (basename sp)
+  | ConstRef sp -> mkConst sp
+  | ConstructRef sp -> mkMutConstruct sp
+  | IndRef sp -> mkMutInd sp
 
-let construct_absolute_reference env sp =
-  constr_of_reference Evd.empty env (Nametab.absolute_reference sp)
+let construct_absolute_reference sp =
+  constr_of_reference (Nametab.absolute_reference sp)
 
-let construct_qualified_reference env qid =
+let construct_qualified_reference qid =
   let ref = Nametab.locate qid in
-  constr_of_reference Evd.empty env ref
+  constr_of_reference ref
 
-let construct_reference env kind id =
+let construct_reference env id =
   try
     mkVar (let _ = Environ.lookup_named id env in id)
   with Not_found ->
-    let ref = Nametab.sp_of_id kind id in
-    constr_of_reference Evd.empty env ref
+    let ref = Nametab.sp_of_id CCI id in
+    constr_of_reference ref
 
 let global_qualified_reference qid =
-  construct_qualified_reference (Global.env()) qid
+  construct_qualified_reference qid
 
 let global_absolute_reference sp = 
-  construct_absolute_reference (Global.env()) sp
+  construct_absolute_reference sp
 
 let global_reference_in_absolute_module dir id = 
-  constr_of_reference Evd.empty (Global.env())
-    (Nametab.locate_in_absolute_module dir id)
+  constr_of_reference (Nametab.locate_in_absolute_module dir id)
 
-let global_reference kind id = 
-  construct_reference (Global.env()) kind id
+let global_reference id = 
+  construct_reference (Global.env()) id
 
 let dirpath_of_global = function
   | VarRef sp -> dirpath sp
@@ -513,7 +451,7 @@ let is_section_variable = function
 let is_global id =
   try 
     let osp = Nametab.locate (make_qualid [] id) in
-    (* Compatibilité V6.3: Les variables de section de sont pas globales
+    (* Compatibilité V6.3: Les variables de section ne sont pas globales
     not (is_section_variable osp) && *)
     list_prefix_of (dirpath_of_global osp) (Lib.cwd())
   with Not_found -> 
@@ -533,22 +471,7 @@ let path_of_inductive_path (sp,tyi) =
     let (pa,_,k) = repr_path sp in 
     Names.make_path pa (mip.mind_typename) k 
 
-(* Util *)
-let instantiate_inductive_section_params t ind =
-  if Options.immediate_discharge then 
-  let sign = section_hyps (IndRef ind) in
-  let rec inst s ctxt t =
-    let k = kind_of_term t in
-    match (ctxt,k) with
-    | (sp,true)::ctxt, IsLambda(_,_,t) ->
-	inst ((mkVar (basename sp))::s) ctxt t
-    | (sp,false)::ctxt, IsLetIn(_,_,_,t) -> 
-	inst ((mkVar (basename sp))::s) ctxt t
-    | [], _ -> substl s t
-    | _ -> anomaly"instantiate_params: term and ctxt mismatch"
-  in inst [] sign t
-  else t
-(* Eliminations. *)
+(*s Eliminations. *)
 
 let eliminations =
   [ (InProp,"_ind") ; (InSet,"_rec") ; (InType,"_rect") ]
@@ -563,9 +486,6 @@ let make_elimination_ident id s = add_suffix id (elimination_suffix s)
 let declare_one_elimination mispec =
   let mindstr = string_of_id (mis_typename mispec) in
   let declare na c =
-    (* Hack to get const_hyps right in the declaration *)
-    let c = instantiate_inductive_section_params c (mis_inductive mispec)
-    in
     let _ = declare_constant (id_of_string na)
       (ConstantEntry
         { const_entry_body = c;
@@ -607,9 +527,9 @@ let lookup_eliminator env ind_sp s =
   let id = add_suffix base (elimination_suffix s) in
   (* Try first to get an eliminator defined in the same section as the *)
   (* inductive type *)
-  try construct_absolute_reference env (Names.make_path dir id k)
+  try construct_absolute_reference (Names.make_path dir id k)
   with Not_found ->
   (* Then try to get a user-defined eliminator in some other places *)
   (* using short name (e.g. for "eq_rec") *)
-  construct_reference env (kind_of_path path) id
+  construct_reference env id
   

@@ -165,7 +165,7 @@ let pretype_id loc env lvar id =
 (* Main pretyping function                                               *)
 
 let pretype_ref isevars env lvar ref = 
-  let c = Declare.constr_of_reference (evars_of isevars) env ref in
+  let c = Declare.constr_of_reference ref in
   make_judge c (Retyping.get_type_of env Evd.empty c)
 
 (*

@@ -87,7 +87,7 @@ let declare_projections indsp coers fields =
   let paramdecls = 
     List.map (fun (na,b,t) -> match na with Name id -> (id,b,t) | _ -> assert false)
       paramdecls in
-  let r = constr_of_reference Evd.empty (Global.env()) (IndRef indsp) in
+  let r = mkMutInd indsp in
   let paramargs = List.rev (List.map (fun (id,_,_) -> mkVar id) paramdecls) in
   let rp = applist (r, paramargs) in
   let x = Environ.named_hd (Global.env()) r Anonymous in
@@ -117,7 +117,6 @@ let declare_projections indsp coers fields =
 	     it_mkNamedLambda_or_LetIn (mkLambda (x, rp, body)) paramdecls in
 	   let name = 
 	     try
-	       let proj = instantiate_inductive_section_params proj indsp in
 	       let cie = { const_entry_body = proj;
                            const_entry_type = None;
                            const_entry_opaque = false } in
@@ -132,8 +131,7 @@ let declare_projections indsp coers fields =
 	     | None -> (None::sp_projs, fi::ids_not_ok, subst)
 	     | Some sp ->
 		 let refi = ConstRef sp in
-		 let constr_fi =
-		   constr_of_reference Evd.empty (Global.env()) refi in
+		 let constr_fi = mkConst sp in
 		 if coe then begin
 		   let cl = Class.class_of_ref (IndRef indsp) in
 		   Class.try_add_new_coercion_with_source 

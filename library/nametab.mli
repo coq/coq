@@ -65,6 +65,10 @@ val constant_sp_of_id : identifier -> section_path
 
 val locate : qualid -> global_reference
 
+(* This function is used to transform a qualified identifier into a
+   global reference, with a nice error message in case of failure *)
+val global : loc -> qualid -> global_reference
+
 (* This locates also syntactic definitions *)
 val extended_locate : qualid -> extended_global_reference
 

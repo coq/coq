@@ -51,8 +51,7 @@ let reference dir s =
   with Not_found ->
     anomaly ("Coqlib: cannot find "^(string_of_qualid (make_qualid dir id)))
 
-let constant dir s =
-  Declare.constr_of_reference Evd.empty (Global.env()) (reference dir s)
+let constant dir s = Declare.constr_of_reference (reference dir s)
 
 type coq_sigma_data = {
   proj1 : constr;

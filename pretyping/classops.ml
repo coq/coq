@@ -21,19 +21,6 @@ open Rawterm
 
 (* usage qque peu general: utilise aussi dans record *)
 
-type cte_typ = 
-  | NAM_Section_Variable of variable
-  | NAM_Constant of constant
-  | NAM_Inductive of inductive
-  | NAM_Constructor of constructor
-
-let cte_of_constr c = match kind_of_term c with
-  | IsConst sp -> ConstRef sp
-  | IsMutInd ind_sp -> IndRef ind_sp
-  | IsMutConstruct cstr_cp -> ConstructRef cstr_cp
-  | IsVar id -> VarRef (Declare.find_section_variable id)
-  |  _ -> raise Not_found
-
 type cl_typ = 
   | CL_SORT 
   | CL_FUN

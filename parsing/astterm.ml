@@ -30,10 +30,6 @@ open Nametab
 (*Takes a list of variables which must not be globalized*)
 let from_list l = List.fold_right Idset.add l Idset.empty
 
-let rec adjust_implicits n = function
-  | p::l -> if p<=n then adjust_implicits n l else (p-n)::adjust_implicits n l
-  | [] -> []
-
 (* when an head ident is not a constructor in pattern *)
 let mssg_hd_is_not_constructor s =
   [< 'sTR "The symbol "; pr_id s; 'sTR " should be a constructor" >]
@@ -201,26 +197,20 @@ let ast_to_global loc c =
   match c with
     | ("CONST", [sp]) ->
 	let ref = ConstRef (ast_to_sp sp) in
-	let hyps = implicit_section_args ref in
-	let section_args = List.map (fun id -> RRef (loc, VarRef id)) hyps in
 	let imps = implicits_of_global ref in
-	RRef (loc, ref), section_args, adjust_implicits (List.length hyps) imps
+	RRef (loc, ref), imps
     | ("MUTIND", [sp;Num(_,tyi)]) -> 
 	let ref = IndRef (ast_to_sp sp, tyi) in
-	let hyps = implicit_section_args ref in
-	let section_args = List.map (fun id -> RRef (loc, VarRef id)) hyps in
 	let imps = implicits_of_global ref in
-	RRef (loc, ref), section_args, adjust_implicits (List.length hyps) imps
+	RRef (loc, ref), imps
     | ("MUTCONSTRUCT", [sp;Num(_,ti);Num(_,n)]) ->
 	let ref = ConstructRef ((ast_to_sp sp,ti),n) in
-	let hyps = implicit_section_args ref in
-	let section_args = List.map (fun id -> RRef (loc, VarRef id)) hyps in
 	let imps = implicits_of_global ref in
-	RRef (loc, ref), section_args, adjust_implicits (List.length hyps) imps
+	RRef (loc, ref), imps
     | ("EVAR", [(Num (_,ev))]) ->
-	REvar (loc, ev), [], []
+	REvar (loc, ev), []
     | ("SYNCONST", [sp]) ->
-	Syntax_def.search_syntactic_definition (ast_to_sp sp), [], []
+	Syntax_def.search_syntactic_definition (ast_to_sp sp), []
     | _ -> anomaly_loc (loc,"ast_to_global",
 			[< 'sTR "Bad ast for this global a reference">])
 
@@ -251,7 +241,7 @@ let ast_to_var (env,impls) (vars1,vars2) loc id =
 	let ref = VarRef (Lib.make_path id CCI) in
 	implicits_of_global ref
       with _ -> []
-  in RVar (loc, id), [], imps
+  in RVar (loc, id), imps
 
 (**********************************************************************)
 
@@ -271,12 +261,10 @@ let rawconstr_of_qualid env vars loc qid =
   (* Is it a global reference or a syntactic definition? *)
   try match Nametab.extended_locate qid with
   | TrueGlobal ref ->
-    let hyps = implicit_section_args ref in
-    let section_args = List.map (fun id -> RRef (loc, VarRef id)) hyps in
     let imps = implicits_of_global ref in
-    RRef (loc, ref), section_args, adjust_implicits (List.length hyps) imps
+    RRef (loc, ref), imps
   | SyntacticDef sp ->
-    set_loc_of_rawconstr loc (Syntax_def.search_syntactic_definition sp),[],[]
+    set_loc_of_rawconstr loc (Syntax_def.search_syntactic_definition sp), []
   with Not_found ->
     error_global_not_found_loc loc qid
 
@@ -366,12 +354,10 @@ let check_capture loc s ty = function
 let ast_to_rawconstr sigma env allow_soapp lvar =
   let rec dbrec (ids,impls as env) = function
     | Nvar(loc,s) ->
-	let f, hyps, _ = rawconstr_of_var env lvar loc s in
-	if hyps = [] then f else RApp (loc, f, hyps)
+	fst (rawconstr_of_var env lvar loc s)
 
     | Node(loc,"QUALID", l) ->
-	let f, hyps, _ = rawconstr_of_qualid env lvar loc (interp_qualid l) in
-	if hyps = [] then f else RApp (loc, f, hyps)
+        fst (rawconstr_of_qualid env lvar loc (interp_qualid l))
   
     | Node(loc,"FIX", (Nvar (locid,iddef))::ldecl) ->
 	let (lf,ln,lA,lt) = ast_to_fix ldecl in
@@ -416,7 +402,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	RApp (loc,dbrec env f,ast_to_args env args)
 
     | Node(loc,"APPLIST", f::args) ->
-	let (c, hyps, impargs) =
+	let (c, impargs) =
 	  match f with
 	    | Node(locs,"QUALID",p) ->
 		rawconstr_of_qualid env lvar locs (interp_qualid p)
@@ -424,9 +410,9 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 		   ("CONST"|"EVAR"|"MUTIND"|"MUTCONSTRUCT"|"SYNCONST" as key),
 		   l) ->
 		ast_to_global loc (key,l)
-	    | _ -> (dbrec env f, [], [])
+	    | _ -> (dbrec env f, [])
         in
-	  RApp (loc, c, hyps @ (ast_to_impargs env impargs args))
+	  RApp (loc, c, ast_to_impargs env impargs args)
 
     | Node(loc,"CASES", p:: Node(_,"TOMATCH",tms):: eqns) ->
 	let po = match p with 
@@ -456,8 +442,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	  
     (* This case mainly parses things build in a quotation *)
     | Node(loc,("CONST"|"EVAR"|"MUTIND"|"MUTCONSTRUCT"|"SYNCONST" as key),l) ->
-	let f, hyps, _ = ast_to_global loc (key,l) in
-	if hyps = [] then f else RApp (loc, f, hyps)	
+	fst (ast_to_global loc (key,l))
 
     | Node(loc,"CAST", [c1;c2]) ->	   
 	RCast (loc,dbrec env c1,dbrec env c2)

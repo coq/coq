@@ -38,5 +38,3 @@ val without_mes_ambig : ('a -> 'b) -> 'a -> 'b
 
 val add_unsafe : string -> unit
 val is_unsafe : string -> bool
-
-val immediate_discharge : bool

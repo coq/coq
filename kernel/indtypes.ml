@@ -338,11 +338,6 @@ let cci_inductive locals env env_ar kind finite inds cst =
       Idset.empty inds
   in
   let hyps = keep_hyps env ids (named_context env) in
-  let inds' =
-    if Options.immediate_discharge then
-      List.map (abstract_inductive ntypes hyps) inds
-    else
-      inds in
   let one_packet i (params,nparams,id,ar,cnames,issmall,isunit,lc) =
     let recargs = listrec_mconstr env_ar ntypes params nparams i lc in
     let isunit = isunit && ntypes = 1 && (not (is_recursive [0] recargs)) in
@@ -373,7 +368,7 @@ let cci_inductive locals env env_ar kind finite inds cst =
       mind_params_ctxt = params }
   in
   let sp_hyps = List.map (fun (id,b,t) -> (List.assoc id locals,b,t)) hyps in
-  let packets = Array.of_list (list_map_i one_packet 1 inds') in
+  let packets = Array.of_list (list_map_i one_packet 1 inds) in
   { mind_kind = kind;
     mind_ntypes = ntypes;
     mind_hyps = sp_hyps;

@@ -314,16 +314,12 @@ let close_section _ s =
   let newdir = dirpath sec_sp in
   let olddir = wd_of_sp sec_sp in
   let (ops,ids,_) = 
-    if Options.immediate_discharge then ([],[],([],[],[]))
-    else
-      List.fold_left 
-	(process_item oldenv newdir olddir) ([],[],([],[],[])) decls 
+    List.fold_left 
+      (process_item oldenv newdir olddir) ([],[],([],[],[])) decls 
   in
   let ids = last_section_hyps olddir in
   Global.pop_named_decls ids;
   Summary.unfreeze_lost_summaries fs;
   add_frozen_state ();
-  if Options.immediate_discharge then ()
-  else
-    catch_not_found (List.iter process_operation) (List.rev ops);
+  catch_not_found (List.iter process_operation) (List.rev ops);
   Nametab.push_section olddir

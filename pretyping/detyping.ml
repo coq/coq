@@ -99,12 +99,11 @@ let used_of = global_vars_and_consts
 (* Tools for printing of Cases                                              *)
 
 let encode_inductive ref =
-  let indsp =
-      match kind_of_term (constr_of_reference Evd.empty (Global.env()) ref)with
-        | IsMutInd indsp -> indsp
-	| _ -> errorlabstrm "indsp_of_id" 
-	    [< 'sTR ((Global.string_of_global ref)^
-                      " is not an inductive type") >] in
+  let indsp = match ref with
+    | IndRef indsp -> indsp
+    | _ -> errorlabstrm "indsp_of_id"
+        [< 'sTR ((Global.string_of_global ref)^" is not an inductive type") >]
+  in
   let mis = Global.lookup_mind_specif indsp in
   let constr_lengths = Array.map List.length (mis_recarg mis) in
   (indsp,constr_lengths)

@@ -70,8 +70,7 @@ let instance_from_section_context sign =
     | [] -> [] in
   Array.of_list (inst_rec sign)
 let instance_from_section_context x =
-  if Options.immediate_discharge then [||]
-  else instance_from_section_context x
+  instance_from_section_context x
 
 (*s Signatures of ordered optionally named variables, intended to be
    accessed by de Bruijn indices *)

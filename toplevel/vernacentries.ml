@@ -106,21 +106,6 @@ let show_top_evars () =
   let sigma = project gls in 
   mSG (pr_evars_int 1 (Evd.non_instantiated sigma))
 
-(* Locate commands *)
-let locate_qualid loc qid =
-  try Nametab.locate qid
-  with Not_found -> 
-  try
-    let _ = Syntax_def.locate_syntactic_definition qid in
-    error
-      ("Unexpected reference to a syntactic definition: "
-       ^(Nametab.string_of_qualid qid))
-  with Not_found ->
-    Nametab.error_global_not_found_loc loc qid
-
- (* Pour pcoq *)
-let global = locate_qualid
-
 let locate_file f =
   try
     let _,file =
@@ -514,7 +499,7 @@ let _ =
        | _  -> bad_vernac_args "IMPLICIT_ARGS_OFF")
 
 let coercion_of_qualid loc qid =
-  let ref = locate_qualid loc qid in
+  let ref = Nametab.global loc qid in
   let coe = Classops.coe_of_reference ref in
   if not (Classops.coercion_exists coe) then
     errorlabstrm "try_add_coercion" 
@@ -537,10 +522,10 @@ let _ =
 	   (fun () ->
 	      let imps = number_list l in
 	      Impargs.declare_manual_implicits
-		(locate_qualid dummy_loc qid) imps)
+		(Nametab.global dummy_loc qid) imps)
        | [VARG_STRING "Auto"; VARG_QUALID qid] -> 
 	   (fun () -> 
-	      Impargs.declare_implicits (locate_qualid dummy_loc qid))
+	      Impargs.declare_implicits (Nametab.global dummy_loc qid))
        | _  -> bad_vernac_args "IMPLICITS")
 
 let interp_definition_kind = function
@@ -597,7 +582,7 @@ let _ =
        List.iter 
 	 (function 
 	    | VARG_QUALID qid ->
-                (match locate_qualid dummy_loc qid with
+                (match Nametab.global dummy_loc qid with
                   | ConstRef sp -> Opaque.set_transparent_const sp
                   | VarRef sp -> Opaque.set_transparent_var (basename sp) 
                   | _ -> error
@@ -611,7 +596,7 @@ let _ =
        List.iter
 	 (function 
 	    | VARG_QUALID qid ->
-                (match locate_qualid dummy_loc qid with
+                (match Nametab.global dummy_loc qid with
                   | ConstRef sp -> Opaque.set_opaque_const sp
                   | VarRef sp -> Opaque.set_opaque_var (basename sp) 
                   | _ -> error
@@ -1024,7 +1009,7 @@ let _ =
     (function 
        | (VARG_QUALID qid) :: l ->
 	   (fun () ->
-	      let ref = locate_qualid dummy_loc qid in
+	      let ref = Nametab.global dummy_loc qid in
 	      Search.search_by_head ref (inside_outside l))
        | _ -> bad_vernac_args "SEARCH")
 
@@ -1221,7 +1206,7 @@ let _ =
 		  | (VARG_VARGLIST 
 		       [VARG_IDENTIFIER fid;
 			VARG_STRING depstr;
-			VARG_IDENTIFIER indid;
+			VARG_QUALID indid;
 			VARG_CONSTR sort]) ->
 		      let dep = match depstr with 
 			| "DEP" -> true
@@ -1296,7 +1281,7 @@ let _ =
 	       NeverDischarge 
 	   in
 	   fun () -> 
-	     let ref = locate_qualid dummy_loc qid in
+	     let ref = Nametab.global dummy_loc qid in
 	     Class.try_add_new_class ref stre;
              if_verbose message
                ((Nametab.string_of_qualid qid) ^ " is now a class")
@@ -1306,7 +1291,7 @@ let cl_of_qualid qid =
   match Nametab.repr_qualid qid with
     | [], id when string_of_id id = "FUNCLASS" -> Classops.CL_FUN
     | [], id when string_of_id id = "SORTCLASS" -> Classops.CL_SORT
-    | _ -> Class.class_of_ref (locate_qualid dummy_loc qid)	
+    | _ -> Class.class_of_ref (Nametab.global dummy_loc qid)	
 
 let _ =
   add "COERCION"
@@ -1328,7 +1313,7 @@ let _ =
 		   Class.try_add_new_identity_coercion id stre source target
 	       | _ -> bad_vernac_args "COERCION"
 	     else
-	       let ref = locate_qualid dummy_loc qid in
+	       let ref = Nametab.global dummy_loc qid in
 	       Class.try_add_new_coercion_with_target ref stre source target;
 	       if_verbose
 		 message
@@ -1356,8 +1341,10 @@ let _ =
 let _ =
   add "PrintPATH"
     (function 
-       | [VARG_IDENTIFIER ids;VARG_IDENTIFIER idt] -> 
-	   (fun () -> pPNL (Prettyp.print_path_between ids idt))
+       | [VARG_QUALID qids;VARG_QUALID qidt] -> 
+	   (fun () ->
+              pPNL (Prettyp.print_path_between
+                      (cl_of_qualid qids) (cl_of_qualid qidt)))
        | _ -> bad_vernac_args "PrintPATH")
 
 (* Meta-syntax commands *)
@@ -1509,7 +1496,7 @@ let _ =
 	      let key = 
 		SecondaryTable (string_of_id t,string_of_id f) in
 	      try 
-		(get_ident_table key)#add (locate_qualid dummy_loc v)
+		(get_ident_table key)#add (Nametab.global dummy_loc v)
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_STRING s] -> 
@@ -1524,7 +1511,7 @@ let _ =
 	   (fun () ->
 	      let key = PrimaryTable (string_of_id t) in
 	      try 
-		(get_ident_table key)#add (locate_qualid dummy_loc v)
+		(get_ident_table key)#add (Nametab.global dummy_loc v)
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_STRING s] ->
@@ -1558,7 +1545,7 @@ let _ =
 	      let key = 
 		SecondaryTable (string_of_id t,string_of_id f) in
 	      try 
-		(get_ident_table key)#remove (locate_qualid dummy_loc v)
+		(get_ident_table key)#remove (Nametab.global dummy_loc v)
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_STRING v] -> 
@@ -1573,7 +1560,7 @@ let _ =
 	   (fun () ->
 	      let key = PrimaryTable (string_of_id t) in
 	      try 
-		(get_ident_table key)#remove (locate_qualid dummy_loc v)
+		(get_ident_table key)#remove (Nametab.global dummy_loc v)
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_STRING v] -> 
@@ -1614,7 +1601,7 @@ let _ =
 	      let key = 
 		SecondaryTable (string_of_id t,string_of_id f) in
 	      try 
-		(get_ident_table key)#mem (locate_qualid dummy_loc v)
+		(get_ident_table key)#mem (Nametab.global dummy_loc v)
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER f; VARG_STRING v] -> 
@@ -1629,7 +1616,7 @@ let _ =
 	   (fun () ->
 	      let key = PrimaryTable (string_of_id t) in
 	      try 
-		(get_ident_table key)#mem (locate_qualid dummy_loc v)
+		(get_ident_table key)#mem (Nametab.global dummy_loc v)
 	      with Not_found -> 
 		error_undeclared_key key)
        | [VARG_IDENTIFIER t; VARG_IDENTIFIER v] -> 

@@ -49,7 +49,7 @@ val build_recursive :
 
 val build_corecursive :  (identifier * Coqast.t * Coqast.t) list -> unit
 
-val build_scheme : (identifier * bool * identifier * Coqast.t) list -> unit
+val build_scheme : (identifier * bool * Nametab.qualid * Coqast.t) list -> unit
 
 val start_proof_com : identifier option -> strength -> Coqast.t -> unit
 

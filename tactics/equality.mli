@@ -57,9 +57,6 @@ val conditional_rewrite_in :
 val abstract_replace : 
   constr * constr -> constr * constr -> constr -> constr -> bool -> tactic
 
-(* Only for internal use *)
-val unsafe_replace : constr -> constr -> tactic
-
 val replace   : constr -> constr -> tactic
 val h_replace : constr -> constr -> tactic
 

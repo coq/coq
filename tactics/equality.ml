@@ -56,7 +56,7 @@ let general_rewrite_bindings lft2rgt (c,l) gl =
 	then general_s_rewrite lft2rgt c gl
 	else error "The term provided does not end with an equation" 
     | Some (hdcncl,_) -> 
-        let hdcncls = string_head hdcncl in 
+        let hdcncls = string_of_inductive hdcncl in 
 	let suffix = Declare.elimination_suffix (elimination_sort_of_goal gl)in
         let elim =
 	  if lft2rgt then
@@ -115,20 +115,12 @@ let abstract_replace (eq,sym_eq) (eqt,sym_eqt) c2 c1 unsafe gl =
   else
     error "terms does not have convertible types"
 
-(* Only for internal use *)
-let unsafe_replace c2 c1 gl = 
-  let eq        = (pf_parse_const gl "eq")     in
-  let eqt       = (pf_parse_const gl "eqT")    in 
-  let sym_eq    = (pf_parse_const gl "sym_eq") in
-  let sym_eqt   = (pf_parse_const gl "sym_eqT") in
-  abstract_replace (eq,sym_eq) (eqt,sym_eqt) c2 c1 true gl
-
-let replace c2 c1 gl = 
-  let eq        = (pf_parse_const gl "eq")     in
-  let eqt       = (pf_parse_const gl "eqT")    in 
-  let sym_eq    = (pf_parse_const gl "sym_eq") in
-  let sym_eqt   = (pf_parse_const gl "sym_eqT") in
-  abstract_replace (eq,sym_eq) (eqt,sym_eqt) c2 c1 false gl
+let replace c2 c1 gl =
+  let eq = build_coq_eq_data.eq () in
+  let eq_sym = build_coq_eq_data.sym () in
+  let eqT = build_coq_eqT_data.eq () in
+  let eqT_sym = build_coq_eqT_data.sym () in
+  abstract_replace (eq,eq_sym) (eqT,eqT_sym) c2 c1 false gl
     
 let dyn_replace args gl = 
   match args with 

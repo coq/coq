@@ -214,7 +214,7 @@ GEXTEND Gram
       | ":" -> "" ] ]
   ;
   onescheme:
-    [ [ id = identarg; ":="; dep = dep; indid = identarg; IDENT "Sort";
+    [ [ id = identarg; ":="; dep = dep; indid = qualidarg; IDENT "Sort";
         s = sortarg ->
           <:ast< (VERNACARGLIST $id $dep $indid $s) >> ] ]
   ;

@@ -577,33 +577,23 @@ let print_coercions () =
   [< prlist_with_sep pr_spc
        (fun (_,(_,v)) -> [< print_coercion_value v >]) (coercions()) >]
   
-let cl_of_id id = 
-  match string_of_id id with
-    | "FUNCLASS" -> CL_FUN
-    | "SORTCLASS" -> CL_SORT
-    | _ -> let v = Declare.global_reference CCI id in
-	   let cl,_ = constructor_at_head v in 
-	   cl
-
-let index_cl_of_id id =
+let index_of_class cl =
   try 
-    let cl = cl_of_id id in
-    let i,_ = class_info cl in 
-    i
+    fst (class_info cl)
   with _ -> 
-    errorlabstrm "index_cl_of_id"
-      [< 'sTR(string_of_id id); 'sTR" is not a defined class" >]
+    errorlabstrm "index_of_class"
+      [< 'sTR(string_of_class cl); 'sTR" is not a defined class" >]
 
-let print_path_between ids idt = 
-  let i = (index_cl_of_id ids) in
-  let j = (index_cl_of_id idt) in
+let print_path_between cls clt = 
+  let i = index_of_class cls in
+  let j = index_of_class clt in
   let p = 
     try 
       lookup_path_between (i,j) 
     with _ -> 
       errorlabstrm "index_cl_of_id"
-        [< 'sTR"No path between ";'sTR(string_of_id ids); 
-	   'sTR" and ";'sTR(string_of_id ids) >]
+        [< 'sTR"No path between ";'sTR(string_of_class cls); 
+	   'sTR" and ";'sTR(string_of_class clt) >]
   in
   print_path ((i,j),p)
 

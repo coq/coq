@@ -161,7 +161,7 @@ let matches_core convert pat c =
 
       | PVar v1, IsVar v2 when v1 = v2 -> sigma
 
-      | PRef ref, _ when Declare.constr_of_reference Evd.empty (Global.env()) ref = cT -> sigma
+      | PRef ref, _ when Declare.constr_of_reference ref = cT -> sigma
 
       | PRel n1, IsRel n2 when n1 = n2 -> sigma
 
@@ -184,7 +184,7 @@ let matches_core convert pat c =
 
       | PRef (ConstRef _ as ref), _ when convert <> None ->
 	  let (env,evars) = out_some convert in
-	  let c = Declare.constr_of_reference Evd.empty env ref in
+	  let c = Declare.constr_of_reference ref in
 	  if is_conv env evars c cT then sigma
 	  else raise PatternMatchingFailure
 

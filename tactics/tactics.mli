@@ -29,12 +29,7 @@ open Tacticals
 val type_clenv_binding : walking_constraints ->
   constr * constr -> constr substitution  -> constr
 
-(*i
-(* [force_reference c] fails if [c] is not a reference *)
-val force_reference   : constr -> constr
-i*)
-
-val string_head       : constr -> string
+val string_of_inductive : constr -> string
 val head_constr       : constr -> constr list
 val head_constr_bound : constr -> constr list -> constr list
 val bad_tactic_args : string -> tactic_arg list -> 'a
