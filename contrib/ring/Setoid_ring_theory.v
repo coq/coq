@@ -11,7 +11,7 @@
 Require Export Bool.
 Require Export Setoid.
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Grammar ring formula : constr :=
   formula_expr [ expr($p) ] -> [$p]
@@ -430,7 +430,7 @@ End Theory_of_setoid_rings.
 
 Hints Resolve STh_mult_zero_left STh_plus_reg_left : core.
 
-Implicit Arguments Off.
+Unset Implicit Arguments.
 
 Definition Semi_Setoid_Ring_Theory_of :
   Setoid_Ring_Theory -> Semi_Setoid_Ring_Theory.

@@ -25,7 +25,7 @@
 
 ***********************************************************************)
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Section variables_map.
 
@@ -82,7 +82,7 @@ Save.
 
 End variables_map.
 
-Implicit Arguments Off.
+Unset Implicit Arguments.
 
 Declare ML Module "quote".
 

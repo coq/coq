@@ -21,7 +21,7 @@ Require Export Exchange.
 
 Require Omega.
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 (* We define "permut" as the smallest equivalence relation which contains
  * transpositions i.e. exchange of two elements.

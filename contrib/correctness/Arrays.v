@@ -29,7 +29,7 @@
 
 Require Export ProgInt.
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 
 (* The type of arrays *)

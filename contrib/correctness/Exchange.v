@@ -18,7 +18,7 @@
 Require ProgInt.
 Require Arrays.
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 (* Definition *)
 

@@ -16,7 +16,7 @@ Require ArrayPermut.
 Require ZArithRing.
 Require Omega.
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 (* Definition *)
 
