@@ -49,12 +49,12 @@ let rec abstract_rawconstr c = function
       List.fold_right (fun x b -> mkLambdaC([x],t,b)) idl
         (abstract_rawconstr c bl)
 
-let rec prod_rawconstr c = function
+let rec generalize_rawconstr c = function
   | [] -> c
-  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,prod_rawconstr c bl)
+  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,generalize_rawconstr c bl)
   | LocalRawAssum (idl,t)::bl ->
       List.fold_right (fun x b -> mkProdC([x],t,b)) idl
-        (prod_rawconstr c bl)
+        (generalize_rawconstr c bl)
 
 let rec destSubCast c = match kind_of_term c with
   | Lambda (x,t,c) -> 
@@ -103,12 +103,28 @@ let constant_entry_of_com (bl,com,comtypopt,opacity) =
 	  const_entry_type = Some typ;
           const_entry_opaque = opacity }
 
-let red_constant_entry ce = function
+let rec length_of_raw_binders = function
+  | [] -> 0
+  | LocalRawDef _::bl -> 1 + length_of_raw_binders bl
+  | LocalRawAssum (idl,_)::bl -> List.length idl + length_of_raw_binders bl
+
+let rec under_binders env f n c =
+  if n = 0 then f env Evd.empty c else
+    match kind_of_term c with
+      | Lambda (x,t,c) ->
+        mkLambda (x,t,under_binders (push_rel (x,None,t) env) f (n-1) c)
+      | LetIn (x,b,t,c) ->
+        mkLetIn (x,b,t,under_binders (push_rel (x,Some b,t) env) f (n-1) c)
+      | _ -> assert false
+
+let red_constant_entry bl ce = function
   | None -> ce
   | Some red ->
       let body = ce.const_entry_body in
       { ce with const_entry_body = 
-	  reduction_of_redexp red (Global.env()) Evd.empty body }
+      under_binders (Global.env()) (reduction_of_redexp red)
+        (length_of_raw_binders bl)
+        body }
 
 let declare_global_definition ident ce local =
   let (_,kn) = declare_constant ident (DefinitionEntry ce,IsDefinition) in
@@ -119,9 +135,7 @@ let declare_global_definition ident ce local =
 
 let declare_definition ident (local,_) bl red_option c typopt hook =
   let ce = constant_entry_of_com (bl,c,typopt,false) in
-  if bl<>[] && red_option <> None then 
-    error "Evaluation under a local context not supported";
-  let ce' = red_constant_entry ce red_option in
+  let ce' = red_constant_entry bl ce red_option in
   let r = match local with
     | Local when Lib.sections_are_opened () ->
         let c =
@@ -168,7 +182,7 @@ let declare_one_assumption is_coe (local,kind) c (_,ident) =
   if is_coe then Class.try_add_new_coercion r local
 
 let declare_assumption idl is_coe k bl c =
-  let c = prod_rawconstr c bl in
+  let c = generalize_rawconstr c bl in
   let c = interp_type Evd.empty (Global.env()) c in
   List.iter (declare_one_assumption is_coe k c) idl
 
@@ -458,7 +472,7 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)  =
   let (rec_sign,rec_impls,arityl) = 
     List.fold_left 
       (fun (env,impls,arl) ((recname,_,bl,arityc,_),_) -> 
-        let arityc = prod_rawconstr arityc bl in
+        let arityc = generalize_rawconstr arityc bl in
         let arity = interp_type sigma env0 arityc in
 	let impl = 
 	  if Impargs.is_implicit_args()
@@ -533,7 +547,7 @@ let build_corecursive lnameardef =
     try 
       List.fold_left 
         (fun (env,arl) (recname,bl,arityc,_) -> 
-           let arityc = prod_rawconstr arityc bl in
+           let arityc = generalize_rawconstr arityc bl in
            let arj = type_judgment_of_rawconstr Evd.empty env0 arityc in
 	   let arity = arj.utj_val in
            let _ = declare_variable recname
@@ -546,7 +560,7 @@ let build_corecursive lnameardef =
   let recdef =
     try 
       List.map (fun (_,bl,arityc,def) ->
-        let arityc = prod_rawconstr arityc bl in
+        let arityc = generalize_rawconstr arityc bl in
         let def = abstract_rawconstr def bl in
 	let arity = interp_constr sigma rec_sign arityc in
                   interp_casted_constr sigma rec_sign def arity)
@@ -609,13 +623,6 @@ let build_scheme lnamedepindsort =
   in 
   let lrecref = List.fold_right2 declare listdecl lrecnames [] in
   if_verbose ppnl (recursive_message (Array.of_list lrecref))
-
-let rec generalize_rawconstr c = function
-  | [] -> c
-  | LocalRawDef (id,b)::bl -> mkLetInC(id,b,generalize_rawconstr c bl)
-  | LocalRawAssum (idl,t)::bl ->
-      List.fold_right (fun x b -> mkProdC([x],t,b)) idl
-        (generalize_rawconstr c bl)
 
 let start_proof id kind c hook =
   let sign = Global.named_context () in
