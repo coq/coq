@@ -1,3 +1,9 @@
+coq (7.4-1) unstable; urgency=low
+
+  * New upstream version.
+
+ -- Judicael Courant <Judicael.Courant@lri.fr>  Fri, 31 Jan 2003 16:51:03 +0100
+
 coq (7.3.1-1) unstable; urgency=low
 
   * New bugfix upstream version.

@@ -20,10 +20,8 @@ bytecode version.
 
 For interactive use of coqtop, we suggest
 - either the Debian cle package
-- or the Proof-General (x)emacs mode, which unfortunately can not be
-distributed by Debian for copyright reasons. However, a Debian package
-might become available at proof general home page in the future
-(http://zermelo.dcs.ed.ac.uk/~proofgen)
+- or the Proof-General (x)emacs mode, provided in the proofgeneral-coq
+  Debian package.
 
 
 
