@@ -189,8 +189,8 @@ GEXTEND Gram
   ;
   gallina:
     (* Definition, Theorem, Variable, Axiom, ... *)
-    [ [ thm = thm_token; id = identref; ":"; c = constr ->
-         VernacStartTheoremProof (thm, id, ([], c), false, (fun _ _ -> ()))
+    [ [ thm = thm_token; id = identref; bl = binders_list; ":"; c = constr ->
+         VernacStartTheoremProof (thm, id, (bl, c), false, (fun _ _ -> ()))
       | (f,d) = def_token; id = identref; b = def_body -> 
           VernacDefinition (d, id, b, f)
       | stre = assumption_token; bl = ne_params_list -> 
