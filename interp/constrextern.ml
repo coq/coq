@@ -941,7 +941,7 @@ let is_new_name s =
   (String.length s >= 10 & String.sub s 0 10 = "uniqueness"))
 
 let v7_to_v8_dir fulldir dir =
-  if dir <> empty_dirpath then
+  if Options.do_translate () & dir <> empty_dirpath then
     let update s =
       let l = List.map string_of_id (repr_dirpath dir) in
       make_dirpath (List.map id_of_string (s :: List.tl l))
