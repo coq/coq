@@ -429,7 +429,7 @@ let (half_inv_tac, inv_tac, inv_clear_tac) =
     hide_tactic "Inv"
       (function
 	 | [ic; Identifier id] -> inv false (com_of_id ic) NoDep id
-	 | _ -> anomaly "Inv called with bad args")
+	 | l -> bad_tactic_args "Inv" l)
   in
   ((fun id -> gentac [hinv_kind; Identifier id]),
    (fun id -> gentac [inv_kind; Identifier id]),
@@ -441,7 +441,7 @@ let named_inv =
     hide_tactic "NamedInv"
       (function
 	 | [ic; Identifier id] -> inv true (com_of_id ic) NoDep id
-	 | _ -> anomaly "NamedInv called with bad args")
+	 | l -> bad_tactic_args "NamedInv" l)
   in 
   (fun ic id -> gentac [ic; Identifier id])
 
@@ -451,7 +451,7 @@ let (half_dinv_tac, dinv_tac, dinv_clear_tac) =
     hide_tactic "DInv"
       (function
 	 | [ic; Identifier id] -> inv false (com_of_id ic) (Dep None) id
-	 | _ -> anomaly "DInv called with bad args")
+	 | l -> bad_tactic_args "DInv" l)
   in
   ((fun id -> gentac [hinv_kind; Identifier id]),
    (fun id -> gentac [inv_kind; Identifier id]),
@@ -468,7 +468,7 @@ let (half_dinv_with, dinv_with, dinv_clear_with) =
 		 (Dep (Some (pf_interp_constr gls com))) id gls
 	 | [ic; Identifier id; Constr c] ->
              fun gls -> inv false (com_of_id ic) (Dep (Some c)) id gls
-	 | _ -> anomaly "DInvWith called with bad args")
+	 | l -> bad_tactic_args "DInvWith" l)
   in
   ((fun id c -> gentac [hinv_kind; Identifier id; Constr c]),
    (fun id c -> gentac [inv_kind; Identifier id; Constr c]),
@@ -500,14 +500,15 @@ let invIn_tac =
   let gentac =
     hide_tactic "InvIn"
       (function
-	 | (com::(Identifier id)::hl) ->
+	 | (com::(Identifier id)::hl as ll) ->
 	     let hl' =
-	       List.map (function
-			   | Identifier id -> id
-			   | _ -> anomaly "InvIn called with bas args") hl 
+	       List.map
+		 (function
+		    | Identifier id -> id
+		    | _ -> bad_tactic_args "InvIn" ll) hl 
 	     in
              invIn (com_of_id com) id hl'
-	 | _ -> anomaly "InvIn called with bad args")
+	 | ll -> bad_tactic_args "InvIn" ll)
   in 
   fun com id hl ->
     gentac

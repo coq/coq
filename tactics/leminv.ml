@@ -356,7 +356,7 @@ let useInversionLemma =
              fun gls -> lemInv id (pf_interp_constr gls com) gls
 	 | [Identifier id; Constr c] ->
              fun gls -> lemInv id c gls
-	 | _  -> anomaly "useInversionLemma")
+	 | l  -> bad_vernac_args "useInversionLemma" l)
   in 
   fun id c -> gentac [Identifier id;Constr c]
 
@@ -380,21 +380,21 @@ let useInversionLemmaIn =
   let gentac =
     hide_tactic "UseInversionLemmaIn"
       (function
-	 | ((Identifier id)::(Command com)::hl) ->
+	 | ((Identifier id)::(Command com)::hl as ll) ->
 	     fun gls ->
 	       lemInvIn id (pf_interp_constr gls com)
                  (List.map
 		    (function
 		       | (Identifier id) -> id
-		       | _ -> anomaly "UseInversionLemmaIn") hl) gls
-	 | ((Identifier id)::(Constr c)::hl) ->
+		       | _ -> bad_vernac_args "UseInversionLemmaIn" ll) hl) gls
+	 | ((Identifier id)::(Constr c)::hl as ll) ->
 	     fun gls ->
 	       lemInvIn id c
                  (List.map
 		    (function
 		       | (Identifier id) -> id
-		       | _ -> anomaly "UseInversionLemmaIn") hl) gls
-	 | _ -> anomaly "UseInversionLemmaIn")
+		       | _ -> bad_vernac_args "UseInversionLemmaIn" ll) hl) gls
+	 | ll -> bad_vernac_args "UseInversionLemmaIn" ll)
   in 
   fun id c hl ->
     gentac ((Identifier id)::(Constr c)
