@@ -9,10 +9,9 @@
 (*                              May 29th 2002                               *)
 (*                                                                          *)
 (****************************************************************************)
-(*                                Hurkens.v                                 *)
-(****************************************************************************)
-(** This section shows in the pure Calculus of Construction that
-    classical logic + dependent elimination of disjunction entails
+
+(** This is a proof in the pure Calculus of Construction that
+    classical logic in Prop + dependent elimination of disjunction entails
     proof-irrelevance.
 
     Since, dependent elimination is derivable in the Calculus of
@@ -25,10 +24,10 @@
       Calculus of Constructions", Proceedings of Logic in Computer Science
       (LICS'90), 1990.
 
-   Proof skeleton: classical logic + dependent elimination of
-   disjunction + discrimination of proofs implies the existence of a
-   retract from Prop into bool, hence inconsistency by encoding any
-   paradox of system U- (e.g. Hurkens' paradox).
+    Proof skeleton: classical logic + dependent elimination of
+    disjunction + discrimination of proofs implies the existence of a
+    retract from Prop into bool, hence inconsistency by encoding any
+    paradox of system U- (e.g. Hurkens' paradox).
 *)
 
 Require Hurkens.
