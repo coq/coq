@@ -77,6 +77,7 @@ let _ = Summary.declare_summary "VARIABLE"
 	  { Summary.freeze_function = (fun () -> !vartab);
 	    Summary.unfreeze_function = (fun ft -> vartab := ft);
 	    Summary.init_function = (fun () -> vartab := Idmap.empty);
+	    Summary.survive_module = false;
 	    Summary.survive_section = false }
 
 let cache_variable ((sp,_),(id,(p,d,mk))) =
@@ -128,6 +129,7 @@ let _ = Summary.declare_summary "CONSTANT"
 	  { Summary.freeze_function = (fun () -> !csttab);
 	    Summary.unfreeze_function = (fun ft -> csttab := ft);
 	    Summary.init_function = (fun () -> csttab := Spmap.empty);
+	    Summary.survive_module = false;
 	    Summary.survive_section = false }
 
 let cache_constant ((sp,kn),(cdt,kind)) =

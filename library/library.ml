@@ -165,6 +165,7 @@ let _ =
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init;
+      Summary.survive_module = false;
       Summary.survive_section = false }
 
 let find_library s =
@@ -222,9 +223,10 @@ let register_open_library export m =
 (************************************************************************)
 (*s Opening libraries *)
 
-(*s [open_library s] opens a library. The library [s] and all libraries needed by
-    [s] are assumed to be already loaded. When opening [s] we recursively open
-    all the libraries needed by [s] and tagged [exported]. *) 
+(*s [open_library s] opens a library. The library [s] and all
+  libraries needed by [s] are assumed to be already loaded. When
+  opening [s] we recursively open all the libraries needed by [s]
+  and tagged [exported]. *)
 
 let eq_lib_name m1 m2 = m1.library_name = m2.library_name
 
@@ -236,7 +238,7 @@ let open_library export explicit_libs m =
     or not (library_is_opened m.library_name)
   then begin
     register_open_library export m;
-    Declaremods.import_module (MPfile m.library_name)
+    Declaremods.really_import_module (MPfile m.library_name)
   end
   else
     if export then 
@@ -253,6 +255,34 @@ let open_libraries export modl =
          in remember_last_of_each subimport m)
       [] modl in
   List.iter (open_library export modl) to_open_list
+
+
+(**********************************************************************)
+(* import and export  -  synchronous operations*)
+
+let cache_import (_,(dir,export)) = 
+  open_libraries export [find_library dir]
+
+let open_import i (_,(dir,_) as obj) =
+  if i=1 then
+    (* even if the library is already imported, we re-import it *)
+    (* if not (library_is_opened dir) then *)
+      cache_import obj
+
+let subst_import (_,_,o) = o
+
+let export_import o = Some o
+
+let classify_import (_,(_,export as obj)) = 
+  if export then Substitute obj else Dispose
+
+
+let (in_import, out_import) =
+  declare_object {(default_object "IMPORT LIBRARY") with 
+       cache_function = cache_import;
+       open_function = open_import;
+       subst_function = subst_import;
+       classify_function = classify_import }
 
 
 (************************************************************************)
@@ -272,6 +302,7 @@ let _ =
       Summary.unfreeze_function = (fun cu -> compunit_cache := cu);
       Summary.init_function = 
 	(fun () -> compunit_cache := CompilingLibraryMap.empty);
+      Summary.survive_module = true;
       Summary.survive_section = true }
 
 (*s [load_library s] loads the library [s] from the disk, and [find_library s]
@@ -451,7 +482,7 @@ let rec_intern_library_from_file idopt f =
     which recursively loads its dependencies)
 
 
-  The [read_library] operation is very similar, but has does not "open"
+  The [read_library] operation is very similar, but does not "open"
     the library
 *)
 
@@ -493,12 +524,12 @@ let load_require  _ (_,(modl,_)) =
 let export_require (l,e) = Some (l,e)
 
 let (in_require, out_require) =
-  declare_object {(default_object "REQUIRE") with 
+  declare_object {(default_object "REQUIRE") with
        cache_function = cache_require;
        load_function = load_require;
        export_function = export_require;
        classify_function = (fun (_,o) -> Anticipate o) }
- 
+
 let require_library spec qidl export =
 (*
   if sections_are_opened () && Options.verbose () then
@@ -507,27 +538,30 @@ let require_library spec qidl export =
              "will be removed at the end of the section");
 *)
   let modrefl = List.map rec_intern_qualified_library qidl in
-  add_anonymous_leaf (in_require (modrefl,Some export));
-  add_frozen_state ()
+    if Lib.is_modtype () || Lib.is_module () then begin
+      add_anonymous_leaf (in_require (modrefl,None));
+      List.iter
+	(fun dir ->
+	   add_anonymous_leaf (in_import (dir, export)))
+	modrefl
+    end
+    else
+      add_anonymous_leaf (in_require (modrefl,Some export));
+    add_frozen_state ()
 
 let require_library_from_file spec idopt file export =
   let modref = rec_intern_library_from_file idopt file in
-  add_anonymous_leaf (in_require ([modref],Some export));
-  add_frozen_state ()
+    if Lib.is_modtype () || Lib.is_module () then begin
+      add_anonymous_leaf (in_require ([modref],None));
+      add_anonymous_leaf (in_import (modref, export))
+    end
+    else
+      add_anonymous_leaf (in_require ([modref],Some export));
+    add_frozen_state ()
 
-let export_library (loc,qid) =
-  try
-    match Nametab.locate_module qid with
-	MPfile dir -> 
-	  add_anonymous_leaf (in_require ([dir],Some true))
-      | mp ->
-	  export_module mp
-  with
-      Not_found ->
-	user_err_loc
-        (loc,"export_library",
-	 str ((string_of_qualid qid)^" is not a loaded library"))
-  
+
+(* read = require without opening *)
+
 let read_library qid =
   let modref = rec_intern_qualified_library qid in
   add_anonymous_leaf (in_require ([modref],None));
@@ -539,11 +573,33 @@ let read_library_from_file f =
   add_anonymous_leaf (in_require ([modref],None));
   add_frozen_state ()
 
-let reload_library (modrefl, export) =
-  add_anonymous_leaf (in_require (modrefl,export));
+
+(* called at end of section *)
+
+let reload_library modrefl =
+  add_anonymous_leaf (in_require modrefl);
   add_frozen_state ()
 
 
+
+(* the function called by Vernacentries.vernac_import *)
+
+let import_library export (loc,qid) =
+  try
+    match Nametab.locate_module qid with
+	MPfile dir -> 
+	  if Lib.is_modtype () || Lib.is_module () || not export then
+	    add_anonymous_leaf (in_import (dir, export))
+	  else
+	    add_anonymous_leaf (in_require ([dir], Some export))
+      | mp ->
+	  import_module export mp
+  with
+      Not_found ->
+	user_err_loc
+        (loc,"import_library",
+	 str ((string_of_qualid qid)^" is not a module"))
+  
 (***********************************************************************)
 (*s [save_library s] saves the library [m] to the disk. *)
 
@@ -563,7 +619,7 @@ let current_reexports () =
   List.map (fun m -> m.library_name) !libraries_exports_list
 
 let save_library_to s f =
-  let cenv, seg = Declaremods.export_library s in
+  let cenv, seg = Declaremods.end_library s in
   let md = { 
     md_name = s;
     md_compiled = cenv;
@@ -581,6 +637,7 @@ let save_library_to s f =
 
 (*s Pretty-printing of libraries state. *)
  
+(* this function is not used... *)
 let fmt_libraries_state () =
   let opened = opened_libraries ()
   and loaded = loaded_libraries () in

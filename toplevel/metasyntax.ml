@@ -86,6 +86,7 @@ let _ =
     { freeze_function = Esyntax.freeze;
       unfreeze_function = Esyntax.unfreeze;
       init_function = Esyntax.init;
+      survive_module = false;
       survive_section = false }
 
 (* Pretty-printing objects = syntax_entry *)
@@ -121,6 +122,7 @@ let _ =
     { freeze_function = Egrammar.freeze;
       unfreeze_function = Egrammar.unfreeze;
       init_function = Egrammar.init;
+      survive_module = false;
       survive_section = false }
 
 (* Tokens *)

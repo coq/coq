@@ -111,6 +111,7 @@ let _ =
     { Summary.freeze_function = (fun () -> !setoid_table);
       Summary.unfreeze_function = (fun t -> setoid_table := t);
       Summary.init_function = (fun () -> setoid_table := Gmap .empty);
+      Summary.survive_module = false;
       Summary.survive_section = false }
 
 (* Declare a new type of object in the environment : "setoid-theory". *)
@@ -163,6 +164,7 @@ let _ =
     { Summary.freeze_function = (fun () -> !morphism_table);
       Summary.unfreeze_function = (fun t -> morphism_table := t);
       Summary.init_function = (fun () -> morphism_table := Gmap .empty);
+      Summary.survive_module = false;
       Summary.survive_section = false }
 
 (* Declare a new type of object in the environment : "morphism-definition". *)

@@ -181,6 +181,7 @@ let _ =
     { Summary.freeze_function = (fun () -> !theories_map);
       Summary.unfreeze_function = (fun t -> theories_map := t);
       Summary.init_function = (fun () -> theories_map := Cmap.empty);
+      Summary.survive_module = false;
       Summary.survive_section = false }
 
 (* declare a new type of object in the environment, "tactic-ring-theory"

@@ -26,6 +26,7 @@ let _ = Summary.declare_summary
 	  { Summary.freeze_function = (fun () -> !syntax_table);
 	    Summary.unfreeze_function = (fun ft -> syntax_table := ft);
 	    Summary.init_function = (fun () -> syntax_table := KNmap.empty);
+	    Summary.survive_module = false;
 	    Summary.survive_section = false }
 
 let add_syntax_constant kn c =

@@ -528,11 +528,15 @@ let vernac_require import _ qidl =
     else
       raise e
       
-let vernac_import export qidl =
-  let qidl = List.map qualid_of_reference qidl in
-  if export then
-    List.iter Library.export_library qidl
-  else
+let vernac_import export refl =
+  let import_one ref = 
+    let qid = qualid_of_reference ref in
+      Library.import_library export qid
+  in
+    List.iter import_one refl;
+    Lib.add_frozen_state ()
+
+(*  else
     let import (loc,qid) = 
       try
 	let mp = Nametab.locate_module qid in
@@ -543,7 +547,7 @@ let vernac_import export qidl =
 	 str ((string_of_qualid qid)^" is not a module"))
     in
       List.iter import qidl;
-      Lib.add_frozen_state ()
+*)
 
 let vernac_canonical locqid =
   Recordobj.objdef_declare (Nametab.global locqid)

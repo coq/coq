@@ -15,17 +15,17 @@ type 'a summary_declaration = {
   freeze_function : unit -> 'a;
   unfreeze_function : 'a -> unit;
   init_function : unit -> unit;
+  survive_module : bool;    (* should be false is most cases *)
   survive_section : bool }
 
 val declare_summary : string -> 'a summary_declaration -> unit
-val declare_global_environment : 'a summary_declaration -> unit
 
 type frozen
 
 val freeze_summaries : unit -> frozen
 val unfreeze_summaries : frozen -> unit
-val unfreeze_lost_summaries : frozen -> unit
-val unfreeze_other_summaries : frozen -> unit
+val section_unfreeze_summaries : frozen -> unit
+val module_unfreeze_summaries : frozen -> unit
 val init_summaries : unit -> unit
 
 

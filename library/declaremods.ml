@@ -93,6 +93,7 @@ let _ = Summary.declare_summary "MODULE-INFO"
 				       modtab_substobjs := MPmap.empty;
 				       modtab_objects := MPmap.empty;
 				       openmod_info := ([],None,None));
+	    Summary.survive_module = false;
 	    Summary.survive_section = false }
 
 (* auxiliary functions to transform section_path and kernel_name given
@@ -300,6 +301,7 @@ let _ = Summary.declare_summary "MODTYPE-INFO"
 	    Summary.init_function = (fun () ->
 				       modtypetab := KNmap.empty;
 				       openmodtype_info := []);
+	    Summary.survive_module = false;
 	    Summary.survive_section = true }
 
 
@@ -519,7 +521,7 @@ let end_module id =
 
   (* must be called after get_modtype_substobjs, because of possible
      dependencies on functor arguments *)
-  Summary.unfreeze_other_summaries fs;
+  Summary.module_unfreeze_summaries fs;
 
   let substituted = subst_substobjs dir mp substobjs in
   let node = in_module (None,substobjs,substituted) in
@@ -544,6 +546,10 @@ let module_objects mp =
   let prefix,objects = MPmap.find mp !modtab_objects in
     segment_of_objects prefix objects
 
+
+
+(***********************************************************************)
+(* libraries *)
 
 type library_name = dir_path
 
@@ -587,7 +593,7 @@ let start_library dir =
   Lib.add_frozen_state ()
 
 
-let export_library dir = 
+let end_library dir = 
   let prefix, lib_stack = Lib.end_compilation dir in
   let cenv = Global.export dir in
   let msid = msid_of_prefix prefix in
@@ -595,38 +601,40 @@ let export_library dir =
     cenv,(msid,substitute,keep)
 
 
+(* implementation of Export M and Import M *)
 
-let do_open_export (_,(_,mp)) = 
-(* for non-substitutive exports: 
-  let mp = Nametab.locate_module (qualid_of_dirpath dir) in  *)
+
+let really_import_module mp = 
   let prefix,objects = MPmap.find mp !modtab_objects in
     open_objects 1 prefix objects
 
-let classify_export (_,(export,_ as obj)) = 
+
+let cache_import (_,(_,mp)) = 
+(* for non-substitutive exports: 
+  let mp = Nametab.locate_module (qualid_of_dirpath dir) in  *)
+  really_import_module mp
+
+let classify_import (_,(export,_ as obj)) = 
   if export then Substitute obj else Dispose
 
-let subst_export (_,subst,(export,mp as obj)) =
+let subst_import (_,subst,(export,mp as obj)) =
   let mp' = subst_mp subst mp in
     if mp'==mp then obj else
       (export,mp')
 
-let (in_export,out_export) = 
-  declare_object {(default_object "EXPORT MODULE") with
-    cache_function = do_open_export;
-    open_function = (fun i o -> if i=1 then do_open_export o);
-    subst_function = subst_export;
-    classify_function = classify_export }
-
-let export_module mp = 
-(* for non-substitutive exports: 
-  let dir = Nametab.dir_of_mp mp in *)
-  Lib.add_anonymous_leaf (in_export (true,mp))
+let (in_import,out_import) = 
+  declare_object {(default_object "IMPORT MODULE") with
+    cache_function = cache_import;
+    open_function = (fun i o -> if i=1 then cache_import o);
+    subst_function = subst_import;
+    classify_function = classify_import }
 
 
-let import_module mp =
-  let prefix,objects = MPmap.find mp !modtab_objects in
-    open_objects 1 prefix objects
+let import_module export mp = 
+  Lib.add_anonymous_leaf (in_import (export,mp))
 
+(************************************************************************)
+(* module types *)
 
 let start_modtype interp_modtype id args =
   let fs = Summary.freeze_summaries () in
@@ -654,7 +662,7 @@ let end_modtype id =
   let msid = msid_of_prefix prefix in
   let mbids = !openmodtype_info in
 
-  Summary.unfreeze_other_summaries fs;
+  Summary.module_unfreeze_summaries fs;
 
   let modtypeobjs = empty_subst, mbids, msid, substitute in
 

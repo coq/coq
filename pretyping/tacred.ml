@@ -45,6 +45,7 @@ let _ =
     { Summary.freeze_function = Conv_oracle.freeze;
       Summary.unfreeze_function = Conv_oracle.unfreeze;
       Summary.init_function = Conv_oracle.init;
+      Summary.survive_module = false;
       Summary.survive_section = false }
 
 let is_evaluable env ref =
@@ -141,6 +142,7 @@ let _ =
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init;
+      Summary.survive_module = false;
       Summary.survive_section = false }
 
 

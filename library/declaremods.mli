@@ -79,20 +79,22 @@ val register_library :
 
 val start_library : library_name -> unit
 
-val export_library :
+val end_library :
   library_name -> Safe_typing.compiled_library * library_objects
 
 
-(* [import_module mp] opens the module [mp] (in a Caml sense). 
-   It modifies Nametab and performs the "open_object" function 
-   for every object of the module. *)
+(* [really_import_module mp] opens the module [mp] (in a Caml sense).
+   It modifies Nametab and performs the "open_object" function for
+   every object of the module. *)
 
-val import_module : module_path -> unit
+val really_import_module : module_path -> unit
 
-(* [export_module mp] is similar, but is run when the module
-   containing it is imported *)
+(* [import_module export mp] is a synchronous version of
+   [really_import_module]. If [export] is [true], the module is also
+   opened every time the module containing it is. *)
 
-val export_module : module_path -> unit
+val import_module : bool -> module_path -> unit
+
 
 (*s [fold_all_segments] and [iter_all_segments] iterate over all
     segments, the modules' segments first and then the current

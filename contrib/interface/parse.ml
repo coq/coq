@@ -433,7 +433,7 @@ let load_syntax_action reqid module_name =
       (let qid = Libnames.make_short_qualid (Names.id_of_string module_name) in
       read_library (dummy_loc,qid);
       msg (str "opening... ");
-      Declaremods.import_module (Nametab.locate_module qid); 
+      Declaremods.import_module false (Nametab.locate_module qid); 
       msgnl (str "done" ++ fnl ());
       ())
  with

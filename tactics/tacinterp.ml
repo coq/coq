@@ -250,6 +250,7 @@ let _ =
     { Summary.freeze_function   = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function     = init;
+      Summary.survive_module = false;
       Summary.survive_section   = false }
 
 (* Interpretation of extra generic arguments *)

@@ -21,6 +21,7 @@ let _ =
     { Summary.freeze_function = (fun () -> !reserve_table);
       Summary.unfreeze_function = (fun r -> reserve_table := r);
       Summary.init_function = (fun () -> reserve_table := Idmap.empty);
+      Summary.survive_module = false;
       Summary.survive_section = false }
 
 let declare_reserved_type id t = 

@@ -60,6 +60,14 @@ newtheories/Init/Specif.vo: newtheories/Init/Specif.v newtheories/Init/Notations
 newtheories/Init/Logic_Type.vo: newtheories/Init/Logic_Type.v newtheories/Init/Notations.vo newtheories/Init/Logic.vo
 newtheories/Init/Wf.vo: newtheories/Init/Wf.v newtheories/Init/Notations.vo newtheories/Init/Logic.vo newtheories/Init/Datatypes.vo
 newtheories/Init/Prelude.vo: newtheories/Init/Prelude.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo newtheories/Init/Specif.vo newtheories/Init/Peano.vo newtheories/Init/Wf.vo
+newtheories/Init/Notations.vo: newtheories/Init/Notations.v
+newtheories/Init/Datatypes.vo: newtheories/Init/Datatypes.v newtheories/Init/Notations.vo
+newtheories/Init/Peano.vo: newtheories/Init/Peano.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo
+newtheories/Init/Logic.vo: newtheories/Init/Logic.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo
+newtheories/Init/Specif.vo: newtheories/Init/Specif.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo
+newtheories/Init/Logic_Type.vo: newtheories/Init/Logic_Type.v newtheories/Init/Notations.vo newtheories/Init/Logic.vo
+newtheories/Init/Wf.vo: newtheories/Init/Wf.v newtheories/Init/Notations.vo newtheories/Init/Logic.vo newtheories/Init/Datatypes.vo
+newtheories/Init/Prelude.vo: newtheories/Init/Prelude.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo newtheories/Init/Specif.vo newtheories/Init/Peano.vo newtheories/Init/Wf.vo
 newtheories/Logic/Hurkens.vo: newtheories/Logic/Hurkens.v
 newtheories/Logic/ProofIrrelevance.vo: newtheories/Logic/ProofIrrelevance.v newtheories/Logic/Hurkens.vo
 newtheories/Logic/Classical.vo: newtheories/Logic/Classical.v newtheories/Logic/Classical_Prop.vo newtheories/Logic/Classical_Pred_Set.vo
@@ -263,5 +271,4 @@ newcontrib/correctness/Sorted.vo: newcontrib/correctness/Sorted.v newcontrib/cor
 newcontrib/correctness/Tuples.vo: newcontrib/correctness/Tuples.v
 newcontrib/fourier/Fourier_util.vo: newcontrib/fourier/Fourier_util.v newtheories/Reals/Rbase.vo
 newcontrib/fourier/Fourier.vo: newcontrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/field/field.cmo newcontrib/fourier/Fourier_util.vo newcontrib/field/Field.vo newtheories/Reals/DiscrR.vo
-newcontrib/interface/Centaur.vo: newcontrib/interface/Centaur.v
 newcontrib/cc/CC.vo: newcontrib/cc/CC.v newtheories/Logic/Eqdep_dec.vo

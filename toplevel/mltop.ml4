@@ -249,6 +249,7 @@ let _ =
     { Summary.freeze_function = (fun () -> List.rev (get_loaded_modules()));
       Summary.unfreeze_function = (fun x -> unfreeze_ml_modules x);
       Summary.init_function = (fun () -> init_ml_modules ());
+      Summary.survive_module = false;
       Summary.survive_section = true }
 
 (* Same as restore_ml_modules, but verbosely *)

@@ -88,6 +88,7 @@ module MakeTable =
           { Summary.freeze_function = freeze;
             Summary.unfreeze_function = unfreeze;
             Summary.init_function = init;
+	    Summary.survive_module = false;
 	    Summary.survive_section = true }
 
     let (add_option,remove_option) =
@@ -250,6 +251,7 @@ let declare_option cast uncast
 	      {freeze_function = read;
 	       unfreeze_function = write;
 	       init_function = (fun () -> write default);
+	       survive_module = false;
 	       survive_section = true}
     in 
     fun v -> add_anonymous_leaf (decl_obj v)

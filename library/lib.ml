@@ -363,6 +363,18 @@ let is_modtype () =
     with
 	Not_found -> false
 
+(* Returns true if we are inside an opened module *)
+let is_module () = 
+  let opened_p = function
+    | _, OpenedModule _ -> true 
+    | _ -> false
+  in
+    try 
+      let _ = find_entry_p opened_p in true
+    with
+	Not_found -> false
+
+
 (* Returns the most recent OpenedThing node *)
 let what_is_opened () = find_entry_p is_something_opened
 

@@ -234,6 +234,7 @@ let _ = declare_summary "Extraction Lang"
 	  { freeze_function = (fun () -> !lang_ref);
 	    unfreeze_function = ((:=) lang_ref);
 	    init_function = (fun () -> lang_ref := Ocaml);
+	    survive_module = false;
 	    survive_section = true }  
 
 let extraction_language x = Lib.add_anonymous_leaf (extr_lang x)
@@ -269,6 +270,7 @@ let _ = declare_summary "Extraction Inline"
 	  { freeze_function = (fun () -> !inline_table);
 	    unfreeze_function = ((:=) inline_table);
 	    init_function = (fun () -> inline_table := empty_inline_table);
+	    survive_module = false;
 	    survive_section = true }
 
 (* Grammar entries. *)
@@ -340,6 +342,7 @@ let _ = declare_summary "ML extractions"
 	  { freeze_function = (fun () -> !customs);
 	    unfreeze_function = ((:=) customs);
 	    init_function = (fun () -> customs := Refmap.empty);
+	    survive_module = false;
 	    survive_section = true }
 
 (* Grammar entries. *)

@@ -323,6 +323,6 @@ let close_section _ s =
       (process_item oldenv olddir full_olddir newdir) ([],[],([],[],[])) decls 
   in
   let ids = last_section_hyps olddir in
-  Summary.unfreeze_lost_summaries fs;
+  Summary.section_unfreeze_summaries fs;
   catch_not_found (List.iter process_operation) (List.rev ops);
   Nametab.push_dir (Until 1) full_olddir (DirClosedSection full_olddir)

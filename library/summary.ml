@@ -15,6 +15,7 @@ type 'a summary_declaration = {
   freeze_function : unit -> 'a;
   unfreeze_function : 'a -> unit;
   init_function : unit -> unit;
+  survive_module : bool ;
   survive_section : bool }
 
 let summaries = 
@@ -29,6 +30,7 @@ let internal_declare_summary sumname sdecl =
     freeze_function = dyn_freeze;
     unfreeze_function = dyn_unfreeze;
     init_function = dyn_init;
+    survive_module = sdecl.survive_module;
     survive_section = sdecl.survive_section } 
   in
   if Hashtbl.mem summaries sumname then
@@ -39,11 +41,6 @@ let internal_declare_summary sumname sdecl =
 let declare_summary sumname decl = 
   internal_declare_summary (sumname^"-SUMMARY") decl
 
-let envsummary = "Global environment SUMMARY"
-
-let declare_global_environment sdecl = 
-  internal_declare_summary envsummary sdecl
-
 type frozen = Dyn.t Stringmap.t
 
 let freeze_summaries () =
@@ -53,30 +50,24 @@ let freeze_summaries () =
     summaries;
   !m
 
-let unfreeze_summaries fs =
-  Hashtbl.iter
-    (fun id decl -> 
-       try decl.unfreeze_function (Stringmap.find id fs)
-       with Not_found -> decl.init_function())
-    summaries
 
-let unfreeze_lost_summaries fs =
+let unfreeze_some_summaries p fs = 
   Hashtbl.iter
     (fun id decl -> 
        try 
-	 if not decl.survive_section then
+	 if p decl then
 	   decl.unfreeze_function (Stringmap.find id fs)
        with Not_found -> decl.init_function())
     summaries
 
-let unfreeze_other_summaries fs = 
-  Hashtbl.iter
-    (fun id decl -> 
-       try 
-	 if id <> envsummary then
-	   decl.unfreeze_function (Stringmap.find id fs)
-       with Not_found -> decl.init_function())
-    summaries
+let unfreeze_summaries = 
+  unfreeze_some_summaries (fun _ -> true)
+
+let section_unfreeze_summaries =
+  unfreeze_some_summaries (fun decl -> not decl.survive_section)
+
+let module_unfreeze_summaries =
+  unfreeze_some_summaries (fun decl -> not decl.survive_module)
 
 let init_summaries () =
   Hashtbl.iter (fun _ decl -> decl.init_function()) summaries

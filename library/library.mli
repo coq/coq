@@ -15,18 +15,21 @@ open Libnames
 open Libobject
 (*i*)
 
-(*s This module is the heart of the library. It provides low level functions to
-   load, open and save libraries. Modules are saved onto the disk with checksums
-   (obtained with the [Digest] module), which are checked at loading time to
-   prevent inconsistencies between files written at various dates. It also
-   provides a high level function [require] which corresponds to the 
-   vernacular command [Require]. *)
+(*s This module is the heart of the library. It provides low level
+  functions to load, open and save libraries. Libraries are saved
+  onto the disk with checksums (obtained with the [Digest] module),
+  which are checked at loading time to prevent inconsistencies
+  between files written at various dates. It also provides a high
+  level function [require] which corresponds to the vernacular
+  command [Require]. *)
 
 val read_library : qualid located -> unit
 
 val read_library_from_file : System.physical_path -> unit
 
-val export_library : qualid located -> unit
+(* [import_library true qid] = [export qid] *)
+ 
+val import_library : bool -> qualid located -> unit
 
 val library_is_loaded : dir_path -> bool
 val library_is_opened : dir_path -> bool

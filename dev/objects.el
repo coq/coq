@@ -1,3 +1,15 @@
+(defun add-survive-module nil
+  (interactive)
+  (query-replace-regexp 
+   "
+\\([ 	]*\\)\\(Summary\.\\)?survive_section"
+   "
+\\1\\2survive_module = false;
+\\1\\2survive_section")
+  )
+
+(global-set-key [f2] 'add-survive-module)
+
 ; functions to change old style object declaration to new style
 
 (defun repl-open nil
