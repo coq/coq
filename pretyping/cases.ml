@@ -145,7 +145,7 @@ let inductive_of_rawconstructor c =
 
 (* Environment management *)
 let push_rel_type sigma (na,t) env =
-  push_rel (na,make_typed t (get_sort_of env sigma t)) env
+  push_rel (na,get_assumption_of env sigma t) env
 
 let push_rels vars env =
   List.fold_right (fun nvar env -> push_rel_type Evd.empty nvar env) vars env
@@ -244,7 +244,7 @@ type 'a pattern_matching_problem =
       pred     : predicate_signature option;
       tomatch  : tomatch_stack;
       mat      : matrix;
-      typing_function: trad_constraint -> env -> rawconstr -> unsafe_judgment }
+      typing_function: type_constraint -> env -> rawconstr -> unsafe_judgment }
 
 (************************************************************************)
 (* Utils *)
@@ -627,7 +627,7 @@ let specialize_predicate_match tomatchs cs = function
       let argsi = Array.to_list cs.cs_concl_realargs in
       let copti = option_app (fun _ -> build_dependent_constructor cs) copt in
       let pred' = subst_predicate (argsi, copti) pred in
-      let pred'' = lift_predicate cs.cs_nargs pred' in
+      let pred'' = (*lift_predicate cs.cs_nargs *) pred' in
       let dep = (copt <> None) in
       List.fold_right
 	(* Ne perd-on pas des cas en ne posant pas true à la place de dep ? *)
@@ -860,9 +860,9 @@ let inh_coerce_to_ind isevars env ty tyi =
   let (_,evarl) =
     List.fold_right
       (fun (na,ty) (env,evl) ->
-	 let s = get_sort_of env Evd.empty ty in
-	   (push_rel (na,(make_typed ty s)) env,
-	    (new_isevar isevars env (mkCast ty (mkSort s)) CCI)::evl))
+	 let aty = get_assumption_of env Evd.empty ty in
+	   (push_rel (na,aty) env,
+	    (new_isevar isevars env (incast_type aty) CCI)::evl))
       ntys (env,[]) in
   let expected_typ = applist (mkMutInd tyi,evarl) in
      (* devrait être indifférent d'exiger leq ou pas puisque pour 
@@ -904,15 +904,15 @@ let coerce_to_indtype typing_fun isevars env matx tomatchl =
 (***********************************************************************)
 (* preparing the elimination predicate if any                          *)
 
-let build_expected_arity env sigma isdep tomatchl sort =
+let build_expected_arity env isevars isdep tomatchl =
   let cook n = function
     | _,IsInd (_,IndType(indf,_)) ->
 	let indf' = lift_inductive_family n indf in
-	(build_dependent_inductive indf', fst (get_arity env sigma indf'))
+	(build_dependent_inductive indf', fst (get_arity env !isevars indf'))
     | _,NotInd _ -> anomaly "Should have been catched in case_dependent"
   in
   let rec buildrec n = function
-    | [] -> sort
+    | [] -> dummy_sort
     | tm::ltm ->
 	let (ty1,aritysign) = cook n tm in
 	let rec follow n = function
@@ -976,27 +976,42 @@ let case_dependent env sigma loc predj tomatchs =
   let ndepv = List.map nb_dep_ity tomatchs in
   let sum = List.fold_right (fun i j -> i+j)  ndepv 0 in
   let depsum = sum + List.length tomatchs in
-  if n = sum then (false,build_expected_arity env sigma false tomatchs sort)
-  else if n = depsum
-  then (true,build_expected_arity env sigma true tomatchs sort)
-  else error_wrong_predicate_arity_loc loc CCI env etapred sum depsum
+  if n = sum then
+    (etapred,false)
+  else if n = depsum then
+    (etapred,true)
+  else
+    error_wrong_predicate_arity_loc loc CCI env etapred sum depsum
 
 let prepare_predicate typing_fun isevars env tomatchs = function
   | None -> None
   | Some pred ->
       let loc = loc_of_rawconstr pred in
-      (* First typing to know if it is dependent *)
-      let predj1 = typing_fun empty_tycon env pred in
-      let cdep,arity = case_dependent env !isevars loc predj1 tomatchs in
-      (* We got the expected arity of pred and relaunch pretype with it *)
-      let predj = typing_fun (mk_tycon arity) env pred in
-      let etapred = eta_expand env !isevars predj.uj_val (body_of_type predj.uj_type) in
+      let predj =
+	let isevars_copy = ref !isevars in
+        (* We first assume the predicate is non dependent *)
+        try
+	  let ndep_arity = build_expected_arity env isevars false tomatchs in
+	  typing_fun (mk_tycon ndep_arity) env pred
+	with TypeError _ | Stdpp.Exc_located (_,TypeError _) ->
+        isevars := !isevars_copy;
+        (* We then assume the predicate is dependent *)
+	try
+	  let dep_arity = build_expected_arity env isevars true tomatchs in
+	  typing_fun (mk_tycon dep_arity) env pred
+	with TypeError _ | Stdpp.Exc_located (_,TypeError _) ->
+        isevars := !isevars_copy;
+        (* Otherwise we attempt to type it without constraints, possibly *)
+        (* failing with an error message; it may also be well-typed *)
+	(* but fails to satisfy arity constraints in case_dependent *)
+        typing_fun empty_tycon env pred in
+      let etapred,cdep = case_dependent env !isevars loc predj tomatchs in
       Some (build_initial_predicate cdep etapred tomatchs)
 
 (**************************************************************************)
 (* Main entry of the matching compilation                                 *)
 
-let compile_cases loc (typing_fun,isevars) vtcon env (predopt, tomatchl, eqns)=
+let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
 
   (* We build the matrix of patterns and right-hand-side *)
   let matx = matx_of_eqns env eqns in
@@ -1022,8 +1037,8 @@ let compile_cases loc (typing_fun,isevars) vtcon env (predopt, tomatchl, eqns)=
   
   let j = compile pb in
   
-  match vtcon with
-    | (_,(_,Some p)) ->
-	let p = make_typed p (get_sort_of env !isevars p) in
+  match tycon with
+    | Some p ->
+	let p = get_assumption_of env !isevars p in
 	Coercion.inh_conv_coerce_to loc env isevars j p
-    | _ -> j
+    | None -> j
