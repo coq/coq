@@ -419,7 +419,7 @@ GEXTEND Gram
 		 let l = list_tabulate (fun _ -> (CHole (loc),None)) n in
 		 CApp (loc,c,l)
 	     | None -> c in
-	   VernacNotation ("'"^id^"'",c,[],None,None)
+	   VernacNotation (false,"'"^id^"'",c,[],None,None)
       | IDENT "Implicits"; qid = global; "["; l = LIST0 natural; "]" ->
 	  VernacDeclareImplicits (qid,Some l)
       | IDENT "Implicits"; qid = global -> VernacDeclareImplicits (qid,None)

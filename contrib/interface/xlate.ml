@@ -1606,7 +1606,7 @@ let xlate_vernac =
 
    | VernacSyntaxExtension _ -> xlate_error "Syntax Extension not implemented"
 
-   | VernacInfix (str_assoc, n, str, id, false, _, None) ->
+   | VernacInfix (false,str_assoc, n, str, id, false, _, None) ->
       CT_infix (
        (match str_assoc with
         | Some Gramext.LeftA -> CT_lefta
@@ -1614,7 +1614,7 @@ let xlate_vernac =
         | Some Gramext.NonA -> CT_nona
         | None -> CT_coerce_NONE_to_ASSOC CT_none),
        CT_int n, CT_string str, loc_qualid_to_ct_ID id)
-   | VernacInfix _ -> xlate_error "TODO: handle scopes"
+   | VernacInfix _ -> xlate_error "TODO: handle scopes and locality"
    | VernacGrammar _ -> xlate_error "GRAMMAR not implemented"
    | VernacCoercion (s, id1, id2, id3) ->
       let id_opt = CT_coerce_NONE_to_IDENTITY_OPT CT_none in
@@ -1664,7 +1664,7 @@ let xlate_vernac =
      VernacSetOption (_, _)|VernacUnsetOption _|
      VernacHintDestruct (_, _, _, _, _)|VernacBack _|VernacRestoreState _|
      VernacWriteState _|VernacSolveExistential (_, _)|VernacCanonical _|
-     VernacImport (_, _)|VernacExactProof _|VernacDistfix (_, _, _, _, _)|
+     VernacImport (_, _)|VernacExactProof _|VernacDistfix _|
      VernacTacticGrammar _|VernacVar _|VernacTime _|VernacProof _)
     -> xlate_error "TODO: vernac"
 

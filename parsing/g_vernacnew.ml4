@@ -411,6 +411,7 @@ GEXTEND Gram
 	  VernacCoercion (Global, qid, s, t)
 
       (* Implicit *)
+(* Obsolete
       | IDENT "Syntactic"; IDENT "Definition"; id = IDENT; ":="; c = lconstr;
          n = OPT [ "|"; n = natural -> n ] ->
 	   let c = match n with
@@ -418,7 +419,8 @@ GEXTEND Gram
 		 let l = list_tabulate (fun _ -> (CHole (loc),None)) n in
 		 CApp (loc,c,l)
 	     | None -> c in
-	   VernacNotation ("'"^id^"'",c,[],None,None)
+	   VernacNotation (false,"'"^id^"'",c,[],None,None)
+*)
       | IDENT "Implicits"; qid = global; "["; l = LIST0 natural; "]" ->
 	  VernacDeclareImplicits (qid,Some l)
       | IDENT "Implicits"; qid = global -> VernacDeclareImplicits (qid,None)
@@ -648,8 +650,8 @@ GEXTEND Gram
   GLOBAL: syntax;
 
   syntax:
-   [ [ IDENT "Open"; exp = [IDENT "Local" -> false | -> true]; IDENT "Scope"; 
-       sc = IDENT -> VernacOpenScope (exp,sc)
+   [ [ IDENT "Open"; local = locality; IDENT "Scope"; sc = IDENT -> 
+         VernacOpenScope (local,sc)
 
      | IDENT "Delimits"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
 	 VernacDelimiters (sc,key)
@@ -657,18 +659,18 @@ GEXTEND Gram
      | IDENT "Arguments"; IDENT "Scope"; qid = global;
          "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
 
-     | IDENT "Infix"; a = entry_prec; n = OPT natural; op = STRING; 
-         p = global;
+     | IDENT "Infix"; local = locality; a = entry_prec; n = OPT natural; 
+	 op = STRING; p = global;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
          let (a,n,b) = Metasyntax.interp_infix_modifiers a n modl in
-         VernacInfix (a,n,op,p,b,None,sc)
-     | IDENT "Notation"; s = IDENT; ":="; c = constr ->
-	 VernacNotation ("'"^s^"'",c,[],None,None)
-     | IDENT "Notation"; s = STRING; ":="; c = constr;
+         VernacInfix (local,a,n,op,p,b,None,sc)
+     | IDENT "Notation"; local = locality; s = IDENT; ":="; c = constr ->
+	 VernacNotation (local,"'"^s^"'",c,[],None,None)
+     | IDENT "Notation"; local = locality; s = STRING; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
-           VernacNotation (s,c,modl,None,sc)
+           VernacNotation (local,s,c,modl,None,sc)
 
      | IDENT "Grammar"; IDENT "tactic"; IDENT "simple_tactic";
         OPT [ ":"; IDENT "tactic" ]; ":=";
@@ -682,13 +684,16 @@ GEXTEND Gram
      | IDENT "Syntax"; u = univ; el = LIST1 syntax_entry SEP "," ->
          VernacSyntax (u,el)
 
-     | IDENT "Uninterpreted"; IDENT "Notation"; s = STRING; 
+     | IDENT "Uninterpreted"; IDENT "Notation"; local = locality; s = STRING; 
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
-	 -> VernacSyntaxExtension (s,l)
+	 -> VernacSyntaxExtension (local,s,l)
 
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
   ] ]
+  ;
+  locality:
+    [ [ IDENT "Local" -> true | -> false ] ]
   ;
   univ:
   [ [ univ = IDENT ->

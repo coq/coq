@@ -16,7 +16,8 @@ open Rawterm
 
 (* Syntactic definitions. *)
 
-val declare_syntactic_definition : identifier -> bool -> aconstr -> unit
+val declare_syntactic_definition : bool -> identifier -> bool -> aconstr
+  -> unit
 
 val search_syntactic_definition : loc -> kernel_name -> rawconstr
 
