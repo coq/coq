@@ -311,57 +311,67 @@ Christine Paulin
 \end{flushright}
 \newpage
 
-\section*{Credits: versions 7.0 and 7.1}
+\section*{Credits: versions 7}
 
-The version V7 is a new implementation started in September
-1999 by J-C. Filliâtre. This is a major revision with respect to the
-internal architecture of the system.
+The version V7 is a new implementation started in September 1999 by
+Jean-Christophe Filliâtre. This is a major revision with respect to
+the internal architecture of the system.  The \coq{} version 7.0 was
+distributed in march 2001, version 7.1 in september 2001 and version
+7.2 in january 2002.
 
-J-C. Filliâtre designed the architecture of the new system, he
+Jean-Christophe Filliâtre designed the architecture of the new system, he
 introduced a new representation for environments and wrote a new kernel
 for type-checking terms. His approach was to use functional
 data-structures in order to get more sharing, to prepare the addition
 of modules and also to get closer to a certified kernel.
 
-H. Herbelin introduced a new structure of terms with local
+Hugo Herbelin introduced a new structure of terms with local
 definitions. He introduced ``qualified'' names, wrote a new
 pattern-matching compilation algorithm and designed a more compact
 logical consistency check algorithm. He contributed to the
 simplification of Coq internal structures and the optimisation of the
-system.
+system. He added basic tactics for forward reasoning and coercions
+in patterns.
 
-D. Delahaye introduced a new language for tactics. General tactics
+David Delahaye introduced a new language for tactics. General tactics
 using pattern-matching on goals and context can directly be written
 from the Coq toplevel. He also provided primitives for the design
 of user-defined tactics in Caml.
 
-M. Mayero contributed the library on real numbers.
+Micaela Mayero contributed the library on real numbers.
+Olivier Desmettre extended this library with axiomatic
+trigonometric functions, square, square roots, finite sums, Chasles
+property and basic plane geometry.
 
-J.-C. Filliâtre and P. Letouzey redesigned a new extraction procedure
-from Coq terms to Caml programs. This new extraction procedure, unlike
-the one implemented in previous version of \Coq{} is able
-to handle all terms in the Calculus of Inductive Constructions, 
-even involving universes and strong elimination.
+Jean-Christophe Filliâtre and Pierre Letouzey redesigned a new
+extraction procedure from Coq terms to Caml programs. This new
+extraction procedure, unlike the one implemented in previous version
+of \Coq{} is able to handle all terms in the Calculus of Inductive
+Constructions, even involving universes and strong elimination. P.
+Letouzey adapted user contributions to extract ML programs when it was
+sensible.
 
-B. Barras improved the reduction strategy for lazy evaluation and took care of the logical consistency.
+Bruno Barras improved the reduction algorithms efficiency and
+the confidence level in the correctness of Coq critical type-checking
+algorithm.
 
-Y. Bertot designed  the \texttt{SearchPattern} and
+Yves Bertot designed  the \texttt{SearchPattern} and
 \texttt{SearchRewrite} tools and the support for the pcoq interface 
 (\url{http://www-sop.inria.fr/lemme/pcoq/}).
 
-M. Mayero and D. Delahaye introduced a decision tactic for commutative fields.
+Micaela Mayero and David Delahaye introduced a decision tactic for commutative fields.
 
-L. Pottier developed a tactic solving linear inequalities on real numbers.
+Loïc Pottier developed a tactic solving linear inequalities on real numbers.
 
 Pierre Crégut developed a new version based on reflexion of the Omega
 decision tactic.
 
-C. Sacerdoti Coen designed an XML output for the Coq
+Claudio Sacerdoti Coen designed an XML output for the Coq
 modules to be used in the Hypertextual Electronic Library of
 Mathematics (HELM cf \url{http://www.cs.unibo.it/helm}).
 
 A library for efficient representation of finite sets by binary trees
-contributed by J. Goubault was integrated in the basic theories.\\
+contributed by Jean Goubault was integrated in the basic theories.\\
 
 The development was coordinated by C. Paulin.
 
@@ -375,7 +385,7 @@ Y. Bertot, L. Pottier, L. Théry , P. Zimmerman from INRIA
 C. Alvarado, P. Crégut, J.-F. Monin from France Telecom R \& D.
 \begin{flushright}
 Orsay, Sep. 2001\\
-Christine Paulin
+Hugo Herbelin \& Christine Paulin
 \end{flushright}
 \newpage
 
