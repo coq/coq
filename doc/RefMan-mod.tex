@@ -138,11 +138,11 @@ only in module types.
 Let us define a simple module.
 \begin{coq_example}
 Module M.
-  Definition T:=nat.
-  Definition x:=O.
-  Definition y:bool.
-    Exact true.
-  Defined.
+Definition T := nat.
+Definition x := 0%N.
+Definition y : bool.
+  exact true.
+Defined.
 End M.
 \end{coq_example}
 
@@ -157,8 +157,8 @@ Print M.x.
 A simple module type:
 \begin{coq_example}
 Module Type SIG.
-  Parameter T:Set.
-  Parameter x:T.
+Parameter T : Set.
+Parameter x : T.
 End SIG.
 \end{coq_example}
 
@@ -173,7 +173,7 @@ precise specification: the \texttt{y} component is dropped as well
 as the body of \texttt{x}.
 
 \begin{coq_example}
-Module N  :  SIG with Definition T:=nat  :=  M.
+Module N : SIG with Definition T := nat := M.
 Print N.T.
 Print N.x.
 Print N.y.
@@ -189,8 +189,8 @@ one:
 
 \begin{coq_example*}
 Module Type SIG'.
-  Definition T:Set:=nat.
-  Parameter x:T.
+Definition T : Set := nat.
+Parameter x : T.
 End SIG'.
 Module N : SIG' := M.
 \end{coq_example*}
@@ -203,38 +203,38 @@ Print P.y.
 \end{coq_example}
 Now let us create a functor, i.e.\ a parametric module
 \begin{coq_example}
-Module Two[X,Y:SIG].
+Module Two (X Y: SIG).
 \end{coq_example}
 \begin{coq_example*}
-  Definition T:=X.T * Y.T.
-  Definition x:=(X.x, Y.x).
+Definition T := X.T * Y.T.
+Definition x := (X.x, Y.x).
 \end{coq_example*}
 \begin{coq_example}
 End Two.
 \end{coq_example}
 and apply it to our modules and do some computations
 \begin{coq_example}
-Module Q:=Two M N.
-Eval Compute in (plus (Fst Q.x) (Snd Q.x)).
+Module Q := Two M N.
+Eval compute in (fst Q.x + snd Q.x)%N.
 \end{coq_example}
 In the end, let us define a module type with two sub-modules, sharing
 some of the fields and give one of its possible implementations:
 \begin{coq_example}
 Module Type SIG2.
-  Declare Module M1:SIG.
-  Declare Module M2<:SIG.
-    Definition T:=M1.T.
-    Parameter x:T.
-  End M2.
+Declare Module M1 : SIG.
+Declare Module M2 <: SIG.
+Definition T := M1.T.
+Parameter x : T.
+End M2.
 End SIG2.
 \end{coq_example}
 \begin{coq_example*}
 Module Mod <: SIG2.
-  Module M1.
-    Definition T:=nat.
-    Definition x:=(1).
-  End M1.
-  Module M2:=M.
+Module M1.
+Definition T := nat.
+Definition x := 1%N.
+End M1.
+Module M2 := M.
 \end{coq_example*}
 \begin{coq_example}
 End Mod.

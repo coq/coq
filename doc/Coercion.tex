@@ -337,11 +337,11 @@ We first give an example of coercion between atomic inductive types
 
 %\begin{\small}
 \begin{coq_example}
-Definition bool_in_nat := [b:bool]if b then O else (S O).
+Definition bool_in_nat (b:bool) := if b then 0%N else 1%N.
 Coercion bool_in_nat : bool >-> nat.
-Check O=true.
+Check (0%N = true).
 Set Printing Coercions.
-Check O=true.
+Check (0%N = true).
 \end{coq_example}
 %\end{small}
 
@@ -357,13 +357,13 @@ We give an example of coercion between classes with parameters.
 
 %\begin{\small}
 \begin{coq_example}
-Parameters C:nat->Set; D:nat->bool->Set; E:bool->Set.
-Parameter f : (n:nat)(C n) -> (D (S n) true).
+Parameters (C : nat -> Set) (D : nat -> bool -> Set) (E : bool -> Set).
+Parameter f : forall n:nat, C n -> D (S n) true.
 Coercion f : C >-> D.
-Parameter g : (n:nat)(b:bool)(D n b) -> (E b).
+Parameter g : forall (n:nat) (b:bool), D n b -> E b.
 Coercion g : D >-> E.
-Parameter c : (C O).
-Parameter T : (E true) -> nat.
+Parameter c : C 0.
+Parameter T : E true -> nat.
 Check (T c).
 Set Printing Coercions.
 Check (T c).
@@ -378,10 +378,10 @@ We give now an example using identity coercions.
 
 %\begin{small}
 \begin{coq_example}
-Definition D' := [b:bool](D (S O) b).
+Definition D' (b:bool) := D 1 b.
 Identity Coercion IdD'D : D' >-> D.
 Print IdD'D.
-Parameter d' : (D' true).
+Parameter d' : D' true.
 Check (T d').
 Set Printing Coercions.
 Check (T d').
@@ -400,10 +400,10 @@ is given below:
 
 %\begin{small}
 \begin{coq_example}
-Parameters A,B:Set; h:A->B.
+Parameters (A B : Set) (h : A -> B).
 Coercion h : A >-> B.
-Parameter U : (A -> (E true)) -> nat.
-Parameter t : B -> (C O).
+Parameter U : (A -> E true) -> nat.
+Parameter t : B -> C 0.
 Check (U t).
 Set Printing Coercions.
 Check (U t).
@@ -419,8 +419,8 @@ previous example.
 
 %\begin{small}
 \begin{coq_example}
-Parameter U' : ((C O) -> B) -> nat.
-Parameter t' : (E true) -> A.
+Parameter U' : (C 0 -> B) -> nat.
+Parameter t' : E true -> A.
 Check (U' t').
 Set Printing Coercions.
 Check (U' t').
@@ -444,7 +444,7 @@ Unset Printing Coercions.
 \begin{coq_example}
 Parameter Graph : Type.
 Parameter Node : Graph -> Type.
-Coercion Node : Graph >-> SORTCLASS.
+Coercion Node : Graph >-> Sortclass.
 Parameter G : Graph.
 Parameter Arrows : G -> G -> Type.
 Check Arrows.
@@ -466,12 +466,12 @@ Unset Printing Coercions.
 %\begin{small}
 \begin{coq_example}
 Parameter bij : Set -> Set -> Set.
-Parameter ap : (A,B:Set)(bij A B) -> A -> B.
-Coercion ap : bij >-> FUNCLASS.
-Parameter b : (bij nat nat).
-Check (b O).
+Parameter ap : forall A B:Set, bij A B -> A -> B.
+Coercion ap : bij >-> Funclass.
+Parameter b : bij nat nat.
+Check (b 0%N).
 Set Printing Coercions.
-Check (b O).
+Check (b 0%N).
 \end{coq_example}
 %\end{small}
 

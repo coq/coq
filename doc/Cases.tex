@@ -81,26 +81,26 @@ maximum of two natural numbers. We can write it in primitive syntax
 by:
 
 \begin{coq_example}
-Fixpoint max [n,m:nat] : nat :=
-   Cases n of
-      O     => m
-   | (S n') => Cases m of
-                  O     => (S n')
-               | (S m') => (S (max n' m'))
-               end
-   end.
+Fixpoint max (n m:nat) {struct m} : nat :=
+  match n with
+  | O => m
+  | S n' => match m with
+            | O => S n'
+            | S m' => S (max n' m')
+            end
+  end.
 \end{coq_example}
 
 Using multiple patterns in the definition allows to write:
 
 \begin{coq_example}
 Reset max.
-Fixpoint max [n,m:nat] : nat :=
-   Cases n m of
-      O         _  => m   
-   | (S n') O      => (S n')
-   | (S n') (S m') => (S (max n' m')) 
-   end.
+Fixpoint max (n m:nat) {struct m} : nat :=
+  match n, m with
+  | O, _ => m
+  | S n', O => S n'
+  | S n', S m' => S (max n' m')
+  end.
 \end{coq_example}
 
 which will be compiled into the previous form.
@@ -111,7 +111,9 @@ there is at least one constructor in the column of patterns. E.g. the
 following example does not build a \texttt{Cases} expression.
 
 \begin{coq_example}
-Check [x:nat]<nat>Cases x of y => y end.
+Check (fun x:nat => match x return nat with
+                    | y => y
+                    end).
 \end{coq_example}
 
 We can also use ``\texttt{as} patterns'' to associate a name to a
@@ -119,23 +121,23 @@ sub-pattern:
 
 \begin{coq_example}
 Reset max.
-Fixpoint max [n:nat] : nat -> nat :=
-  [m:nat] Cases n m of
-             O     _         => m   
-          | ((S n') as p) O  => p
-          | (S n') (S m')    => (S (max n' m')) 
-         end.
+Fixpoint max (n m:nat) {struct n} : nat :=
+  match n, m with
+  | O, _ => m
+  | S n' as p, O => p
+  | S n', S m' => S (max n' m')
+  end.
 \end{coq_example}
 
 Here is now an example of nested patterns:
 
 \begin{coq_example}
-Fixpoint even [n:nat] : bool :=
-   Cases n of
-      O         => true
-   | (S O)      => false
-   | (S (S n')) => (even n')
-   end.
+Fixpoint even (n:nat) : bool :=
+  match n with
+  | O => true
+  | S O => false
+  | S (S n') => even n'
+  end.
 \end{coq_example}
 
 This is compiled into:
@@ -152,12 +154,12 @@ yields \texttt{true} if the first one is less or equal than the second
 one and \texttt{false} otherwise. We can write it as follows:
 
 \begin{coq_example}
-Fixpoint lef [n,m:nat] : bool :=
-         Cases n m of
-             O     x     => true 
-          |  x     O     => false 
-          | (S n) (S m)  => (lef n m)
-         end.
+Fixpoint lef (n m:nat) {struct m} : bool :=
+  match n, m with
+  | O, x => true
+  | x, O => false
+  | S n, S m => lef n m
+  end.
 \end{coq_example}
 
 Note that the first and the second multiple pattern superpose because
@@ -174,12 +176,12 @@ Another way to write  this function is:
 
 \begin{coq_example}
 Reset lef.
-Fixpoint lef [n,m:nat] : bool :=
-         Cases n m of
-             O     x    => true  
-          | (S n) (S m) => (lef n m)
-          |  _     _    => false
-         end.
+Fixpoint lef (n m:nat) {struct m} : bool :=
+  match n, m with
+  | O, x => true
+  | S n, S m => lef n m
+  | _, _ => false
+  end.
 \end{coq_example}
 
 
@@ -192,12 +194,19 @@ Terms with useless patterns are not accepted by the
 system. Here is an example:
 % Test failure
 \begin{coq_eval}
-(********** The following is not correct and should produce **********)
-(**************** Error: This clause is redundant ********************)
-(* Just to adjust the prompt: *) Set Printing Depth 50.
+Set Printing Depth 50.
 \end{coq_eval}
 \begin{coq_example}
-Check [x:nat]Cases x of O => true | (S _) => false | x => true end.
+Check
+  
+  (********** The following is not correct and should produce **********)
+  (**************** Error: This clause is redundant ********************)
+  (* Just to adjust the prompt: *) (fun x:nat =>
+                                      match x with
+                                      | O => true
+                                      | S _ => false
+                                      | x => true
+                                      end).
 \end{coq_example}
 
 \asection{About patterns of parametric types}
@@ -208,33 +217,38 @@ during expansion.
 Consider for example the polymorphic lists:
 
 \begin{coq_example}
-Inductive List [A:Set] :Set := 
-  nil:(List A) 
-| cons:A->(List A)->(List A).
+Inductive List (A:Set) : Set :=
+  | nil : List A
+  | cons : A -> List A -> List A.
 \end{coq_example}
 
 We can check the function {\em tail}:
 
 \begin{coq_example}
-Check [l:(List nat)]Cases l of 
-                             nil        => (nil nat)
-                          | (cons _ l') => l'
-                           end.
+Check
+  (fun l:List nat =>
+     match l with
+     | nil => nil nat
+     | cons _ l' => l'
+     end).
 \end{coq_example}
 
 
 When we use parameters in patterns there is an error message:
 % Test failure
 \begin{coq_eval}
-(********** The following is not correct and should produce **********)
-(******** Error: The constructor cons expects 2 arguments ************)
-(* Just to adjust the prompt: *) Set Printing Depth 50.
+Set Printing Depth 50.
 \end{coq_eval}
 \begin{coq_example}
-Check [l:(List nat)]Cases l of 
-                             (nil A)      => (nil nat)
-                          | (cons A _ l') => l'
-                           end.
+Check
+  
+  (********** The following is not correct and should produce **********)
+  (******** Error: The constructor cons expects 2 arguments ************)
+  (* Just to adjust the prompt: *) (fun l:List nat =>
+                                      match l with
+                                      | nil A => nil nat
+                                      | cons A _ l' => l'
+                                      end).
 \end{coq_example}
 
 
@@ -246,16 +260,16 @@ use the expansion strategy to destructure objects of dependent type.
 Consider the type \texttt{listn} of lists of a certain length:
 
 \begin{coq_example}
-Inductive listn : nat-> Set := 
-  niln : (listn O) 
-| consn : (n:nat)nat->(listn n) -> (listn (S n)).
+Inductive listn : nat -> Set :=
+  | niln : listn 0%N
+  | consn : forall n:nat, nat -> listn n -> listn (S n).
 \end{coq_example}
 
 \asubsection{Understanding dependencies in patterns}
 We can define the function \texttt{length} over \texttt{listn} by:
 
 \begin{coq_example}
-Definition length := [n:nat][l:(listn n)] n.
+Definition length (n:nat) (l:listn n) := n.
 \end{coq_example}
 
 Just for illustrating pattern matching, 
@@ -263,11 +277,11 @@ we can define it by case analysis:
 
 \begin{coq_example}
 Reset length.
-Definition length := [n:nat][l:(listn n)]
-                      Cases l of  
-                         niln         => O 
-                      | (consn n _ _) => (S n) 
-                      end.
+Definition length (n:nat) (l:listn n) :=
+  match l with
+  | niln => 0%N
+  | consn n _ _ => S n
+  end.
 \end{coq_example}
 
 We can understand the meaning of this definition using the
@@ -281,23 +295,23 @@ Now suppose we split the second pattern  of \texttt{length} into two
 cases so to give an
 alternative definition using nested patterns:
 \begin{coq_example}
-Definition length1:= [n:nat] [l:(listn n)]
-   Cases l of 
-        niln                   => O
-   | (consn n _ niln)          => (S n)
-   | (consn n _ (consn _ _ _)) => (S n)
+Definition length1 (n:nat) (l:listn n) :=
+  match l with
+  | niln => 0%N
+  | consn n _ niln => S n
+  | consn n _ (consn _ _ _) => S n
   end.
 \end{coq_example}
 
 It is obvious that \texttt{length1} is  another version of
 \texttt{length}. We can also give the following definition:
 \begin{coq_example}
-Definition length2:= [n:nat] [l:(listn n)]
- Cases l of 
-     niln                    => O
- | (consn n _ niln)          => (S O)
- | (consn n _ (consn m _ _)) => (S (S m))
- end.
+Definition length2 (n:nat) (l:listn n) :=
+  match l with
+  | niln => 0%N
+  | consn n _ niln => 1%N
+  | consn n _ (consn m _ _) => S (S m)
+  end.
 \end{coq_example}
 
 If we forget that \texttt{listn} is a dependent type and we read these
@@ -317,12 +331,12 @@ Thus, the following term \texttt{length3} corresponds to the function
 \texttt{length} but this time defined by case analysis on the dependencies instead of on the list:
 
 \begin{coq_example}
-Definition length3 := [n:nat] [l: (listn n)]
-                         Cases l of 
-                            niln              => O
-                         |  (consn O _ _)     => (S O)
-                         |  (consn (S n) _ _) => (S (S n))
-                         end.
+Definition length3 (n:nat) (l:listn n) :=
+  match l with
+  | niln => 0%N
+  | consn O _ _ => 1%N
+  | consn (S n) _ _ => S (S n)
+  end.
 \end{coq_example}
 
 When we have nested patterns of dependent types, the semantics of
@@ -358,13 +372,12 @@ is an example where the branches have different type
 and we need to provide the elimination predicate:
 
 \begin{coq_example}
-Fixpoint concat [n:nat; l:(listn n)]
- :  (m:nat) (listn m) -> (listn (plus n m))
- := [m:nat][l':(listn m)] 
-      <[n:nat](listn (plus n m))>Cases l  of 
-         niln          => l'
-      | (consn n' a y) => (consn (plus n' m) a (concat n' y m l'))
-      end.
+Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
+ listn (n + m) :=
+  match l in listn n return listn (n + m) with
+  | niln => l'
+  | consn n' a y => consn (n' + m) a (concat n' y m l')
+  end.
 \end{coq_example}
 
 Recall that a list of patterns is also a pattern. So, when
@@ -377,13 +390,12 @@ been:
 
 \begin{coq_example}
 Reset concat.
-Fixpoint concat [n:nat; l:(listn n)]
-     : (m:nat) (listn m) -> (listn (plus n m)) :=
-  [m:nat][l':(listn m)] 
-    <[n,_:nat](listn (plus n m))>Cases l l' of 
-          niln          x => x
-       | (consn n' a y) x => (consn (plus n' m) a (concat n' y m x))
-                  end.
+Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
+ listn (n + m) :=
+  match l in listn n, l' return listn (n + m) with
+  | niln, x => x
+  | consn n' a y, x => consn (n' + m) a (concat n' y m x)
+  end.
 \end{coq_example}
 
 Notice that this time, the predicate \texttt{[n,\_:nat](listn (plus n
@@ -401,21 +413,22 @@ correct Coq raises an error message. For example:
 % Test failure
 \begin{coq_eval}
 Reset concat.
-(********** The following is not correct and should produce **********)
-(**** Error: The elimination predicate [n:nat](listn (plus n m))  ****)
-(*** should be of arity nat->nat->Type (for non dependent case) or ***)
-(** (n:nat)(listn n)->(n0:nat)(listn n0)->Type (for dependent case) **)
-(* Just to adjust the prompt: *) Set Printing Depth 50.
+Set Printing Depth 50.
 \end{coq_eval}
 
 \begin{coq_example}
-Fixpoint concat [n:nat; l:(listn n)] 
-     : (m:nat) (listn m) -> (listn (plus n m)) := 
-  [m:nat][l':(listn m)] 
-   <[n:nat](listn (plus n m))>Cases l l' of 
-        | niln          x => x
-        | (consn n' a y) x => (consn (plus n' m) a (concat n' y m x))
-        end.
+Fixpoint concat
+ (n:
+  (********** The following is not correct and should produce **********)
+  (**** Error: The elimination predicate [n:nat](listn (plus n m))  ****)
+  (*** should be of arity nat->nat->Type (for non dependent case) or ***)
+  (** (n:nat)(listn n)->(n0:nat)(listn n0)->Type (for dependent case) **)
+  (* Just to adjust the prompt: *) nat) (l:listn n) (m:nat)
+ (l':listn m) {struct l} : listn (n + m) :=
+  match l, l' with
+  | niln, x => x
+  | consn n' a y, x => consn (n' + m) a (concat n' y m x)
+  end.
 \end{coq_example}
 
 \asection{Using pattern matching to write proofs}
@@ -430,11 +443,11 @@ the function \texttt{buildlist} that given a natural number
 $n$ builds a list of length $n$ containing zeros as follows:
 
 \begin{coq_example}
-Fixpoint buildlist [n:nat] : (listn n) :=
-    <[n:nat](listn n)>Cases n of 
-           O    => niln 
-       |  (S n) => (consn n O (buildlist n))
-       end.
+Fixpoint buildlist (n:nat) : listn n :=
+  match n return listn n with
+  | O => niln
+  | S n => consn n 0 (buildlist n)
+  end.
 \end{coq_example}
 
 We can also use multiple patterns whenever the elimination predicate has
@@ -444,25 +457,25 @@ Consider the following definition of the predicate less-equal
 \texttt{Le}:
 
 \begin{coq_example}
-Inductive LE : nat->nat->Prop :=
-  LEO: (n:nat)(LE O n)
-| LES: (n,m:nat)(LE n m) -> (LE (S n) (S m)).
+Inductive LE : nat -> nat -> Prop :=
+  | LEO : forall n:nat, LE 0%N n
+  | LES : forall n m:nat, LE n m -> LE (S n) (S m).
 \end{coq_example}
 
 We can use multiple patterns to write  the proof of the lemma
  \texttt{(n,m:nat) (LE n m)}\verb=\/=\texttt{(LE m n)}:
 
 \begin{coq_example}
-Fixpoint dec  [n:nat] : (m:nat)(LE n m) \/ (LE m n) :=
- [m:nat] <[n,m:nat](LE n m) \/ (LE m n)>Cases n m of
-           O   x =>  (or_introl ? (LE x O) (LEO x))
-         | x   O =>  (or_intror (LE x O) ? (LEO x))
-         | ((S n) as n') ((S m) as m') =>
-              Cases (dec n m) of
-                  (or_introl h) => (or_introl ? (LE m' n') (LES n m h))
-               |  (or_intror h) => (or_intror (LE n' m') ? (LES m n h))
-              end
-        end.
+Fixpoint dec (n m:nat) {struct n} : LE n m \/ LE m n :=
+  match n, m return LE n m \/ LE m n with
+  | O, x => or_introl (LE x 0) (LEO x)
+  | x, O => or_intror (LE x 0) (LEO x)
+  | S n as n', S m as m' =>
+      match dec n m with
+      | or_introl h => or_introl (LE m' n') (LES n m h)
+      | or_intror h => or_intror (LE n' m') (LES m n h)
+      end
+  end.
 \end{coq_example}
 In the example of \texttt{dec} the elimination predicate is binary
 because we destructure two arguments of \texttt{nat} which is a
@@ -494,32 +507,32 @@ Example.
 
 \begin{coq_eval}
 Reset Initial.
-Require Arith.
+Require Import Arith.
 \end{coq_eval}
 
 \begin{coq_example*}
 Inductive list : nat -> Set :=
-| nil : (list O)
-| cons : (n:nat)[m:=(mult (2) n)](list m)->(list (S (S m))).
+  | nil : list 0%N
+  | cons : forall n:nat, let m := (2 * n)%N in list m -> list (S (S m)).
 \end{coq_example*}
 
 In the next example, the local definition is not caught.
 
 \begin{coq_example}
-Fixpoint length [n; l:(list n)] : nat :=
-  Cases l of
-     nil => O
-  | (cons n l0) => (S (length (mult (2) n) l0))
+Fixpoint length n (l:list n) {struct l} : nat :=
+  match l with
+  | nil => 0%N
+  | cons n l0 => S (length (2 * n)%N l0)
   end.
 \end{coq_example}
 
 But in this example, it is.
 
 \begin{coq_example}
-Fixpoint length' [n; l:(list n)] : nat :=
-  Cases l of
-     nil => O
-  | (cons _ m l0) => (S (length' m l0))
+Fixpoint length' n (l:list n) {struct l} : nat :=
+  match l with
+  | nil => 0%N
+  | cons _ m l0 => S (length' m l0)
   end.
 \end{coq_example}
 
@@ -537,10 +550,13 @@ Example:
 
 \begin{coq_example}
 Inductive I : Set :=
-  C1 : nat -> I
-| C2 : I -> I.
+  | C1 : nat -> I
+  | C2 : I -> I.
 Coercion C1 : nat >-> I.
-Check [x]Cases x of (C2 O) => O | _ => O end.
+Check (fun x => match x with
+                | C2 O => 0%N
+                | _ => 0%N
+                end).
 \end{coq_example}
 
 

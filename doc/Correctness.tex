@@ -766,8 +766,8 @@ Here we choose to use the binary integers of \texttt{ZArith}.
 The exponentiation $X^n$ is defined, for $n \ge 0$, in the module 
 \texttt{Zpower}:
 \begin{coq_example*}
-Require ZArith.
-Require Zpower.
+Require Import ZArith.
+Require Import Zpower.
 \end{coq_example*}
 
 In particular, the module \texttt{ZArith} loads a module \texttt{Zmisc}
@@ -780,7 +780,7 @@ derived from the proof \texttt{Zeven\_odd\_dec},
 as explained in section~\ref{prog:booleans}:
 
 \begin{coq_eval}
-Require Ring.
+Require Import Ring.
 \end{coq_eval}
 
 
@@ -789,36 +789,34 @@ Require Ring.
 Then we come to the correctness proof. We first import the \Coq\
 module \texttt{Correctness}:
 \begin{coq_example*}
-Require Correctness.
+Require Import Correctness.
 \end{coq_example*}
 \begin{coq_eval}
-Definition Zsquare := [n:Z](Zmult n n).
-Definition Zdouble := [n:Z]`2*n`.
+Definition Zsquare (n:Z) := n * n.
+Definition Zdouble (n:Z) := 2 * n.
 \end{coq_eval}
 
 Then we introduce all the variables needed by the program:
 \begin{coq_example*}
 Parameter x : Z.
-Global Variable n,m,y : Z ref.
+Global Variable n, m, y :Z ref.
 \end{coq_example*}
 
 At last, we can give the annotated program:
 \begin{coq_example}
 Correctness i_exp
-  { `n >= 0` }
-  begin
-     m := x; y := 1;
-     while !n > 0 do
-       { invariant (Zpower x n@0)=(Zmult y (Zpower m n)) /\ `n >= 0`
-         variant n }
-       (if not (Zeven_odd_bool !n) then y := (Zmult !y !m))
-          { (Zpower x n@0) = (Zmult y (Zpower m (Zdouble (Zdiv2 n)))) };
-       m := (Zsquare !m);
-       n := (Zdiv2 !n)
-     done
-   end
-   { y=(Zpower x n@0) }
-.
+ {n >= 0}
+ begin
+ m := x;
+ y := 1;
+ while (!n>0) do
+   { invariant (Zpower x n@0 = y * Zpower m n /\ n >= 0) variant n }
+ (if (not (Zeven_odd_bool !n)) then y := (Zmult !y !m) else tt)
+ {Zpower x n@0 = y * Zpower m (Zdouble (Zdiv2 n))}; m := (Zsquare !m);
+ n := (Zdiv2 !n)
+ done
+ end
+ {y = Zpower x n@0}.
 \end{coq_example}
 
 The proof obligations require some lemmas involving \texttt{Zpower} and
@@ -865,19 +863,14 @@ Reset n.
 \end{coq_eval}
 \begin{coq_example}
 Correctness r_exp
-  let rec exp (x:Z) (n:Z) : Z { variant n } =
-    { `n >= 0` }
-    (if n = 0 then
-       1
-     else
-       let y = (exp x (Zdiv2 n)) in
-       (if (Zeven_odd_bool n) then
-          (Zmult y y)
-        else
-          (Zmult x (Zmult y y))) { result=(Zpower x n) }
-    ) 
-    { result=(Zpower x n) }
-.
+ let rec exp (x:Z)(n:Z) :Z { variant n } =
+ {n >= 0}
+ (if (n=0) then 1
+ else
+ let y = (exp x (Zdiv2 n)) in
+ (if (Zeven_odd_bool n) then (Zmult y y) else (Zmult x (Zmult y y)))
+ {result = Zpower x n})
+ {result = Zpower x n}.
 \end{coq_example}
 
 You can notice that the specification is simpler in the recursive case:

@@ -234,9 +234,9 @@ The syntax is the following:
 \Example
 Typical examples are the following:
 \begin{coq_example}
-Extract Inductive unit => unit [ "()" ].
-Extract Inductive bool => bool [ true false ].
-Extract Inductive sumbool => bool [ true false ].
+Extract Inductive unit => "unit" [ "()" ].
+Extract Inductive bool => "bool" [ "true" "false" ].
+Extract Inductive sumbool => "bool" [ "true" "false" ].
 \end{coq_example}
 
 
@@ -314,7 +314,9 @@ The file {\tt Euclid} contains the proof of Euclidean division
 (theorem {\tt eucl\_dev}). The natural numbers defined in the example
 files are unary integers defined by two constructors $O$ and $S$:
 \begin{coq_example*}
-Inductive nat : Set := O : nat | S : nat -> nat.
+Inductive nat : Set :=
+  | O : nat
+  | S : nat -> nat.
 \end{coq_example*}
 
 This module contains a theorem {\tt eucl\_dev}, and its extracted term
@@ -327,9 +329,9 @@ We can now extract this program to \ocaml:
 Reset Initial.
 \end{coq_eval}
 \begin{coq_example}
-Require Euclid.
-Extraction Inline Wf_nat.gt_wf_rec Wf_nat.lt_wf_rec. 
-Recursive Extraction eucl_dev.
+Require Import Euclid.
+Extraction Inline Wf_nat.gt_wf_rec Wf_nat.lt_wf_rec.
+Recursive Extraction  eucl_dev.
 \end{coq_example}
 
 The inlining of {\tt gt\_wf\_rec} and {\tt lt\_wf\_rec} is not
@@ -379,20 +381,20 @@ treesort}, whose type is shown below:
 
 \begin{coq_eval}
 Reset Initial.
-Require Relation_Definitions. 
-Require PolyList.
-Require Sorting. 
-Require Permutation.
+Require Import Relation_Definitions.
+Require Import PolyList.
+Require Import Sorting.
+Require Import Permutation.
 \end{coq_eval}
 \begin{coq_example}
-Require Heap.
-Check treesort.
+Require Import Heap.
+Check   treesort.
 \end{coq_example}
 
 Let's now extract this function: 
 
 \begin{coq_example}
-Extraction Inline Sorting.sort_rec is_heap_rec.
+Extraction Inline sort_rec is_heap_rec.
 Extraction NoInline list_to_heap.
 Extraction "heapsort" treesort.
 \end{coq_example}

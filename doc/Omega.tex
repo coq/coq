@@ -123,14 +123,14 @@ The tactic {\tt Omega}~does not belong to the core system. It should be
 loaded by
 
 \begin{coq_example*}
-Require Omega.
+Require Import Omega.
 \end{coq_example*}
 
 \example{}
 
 \begin{coq_example}
-Goal (m,n:Z) ~ `1+2*m = 2*n`.
-Intros; Omega.
+Goal forall m n:Z, 1 + 2 * m <> 2 * n.
+intros; omega.
 \end{coq_example}
 \begin{coq_eval}
 Abort.
@@ -139,8 +139,8 @@ Abort.
 \example{}
 
 \begin{coq_example}
-Goal (z:Z)`z>0` -> `2*z + 1 > z`.
-Intro; Omega.
+Goal forall z:Z, z > 0 -> 2 * z + 1 > z.
+intro; omega.
 \end{coq_example}
 
 % Other examples can be found in \verb+$COQLIB/theories/DEMOS/OMEGA+.
