@@ -5,7 +5,7 @@ open Pp
 open Util
 open Univ
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Inductive
 open Sign
@@ -217,6 +217,8 @@ let rec ast_of_raw = function
   | RBinder (_,BProd,Anonymous,t,c) ->
       (* Anonymous product are never factorized *)
       ope("PROD",[ast_of_raw t; slam(None,ast_of_raw c)])
+  | RBinder (_,BLetIn,na,t,c) ->
+      ope("LETIN",[ast_of_raw t; slam(stringopt_of_name na,ast_of_raw c)])
   | RBinder (_,bk,na,t,c) ->
       let (n,a) = factorize_binder 1 bk na (ast_of_raw t) c in
       let tag = match bk with
@@ -226,6 +228,7 @@ let rec ast_of_raw = function
 	  (* non dépendant, pour isoler l'implication; peut-être un *)
 	  (* constructeur ARROW serait-il plus justifié ? *) 
 	| BProd -> if n=1 then "PROD" else "PRODLIST" 
+	| BLetIn -> if n=1 then "LETIN" else "LETINLIST" 
       in
       ope(tag,[ast_of_raw t;a])
 
@@ -270,7 +273,7 @@ let rec ast_of_raw = function
 		 alfi
 	     in 
 	     ope("FIX", alfi.(n)::(Array.to_list listdecl))
-	 | RCofix n -> 
+	 | RCoFix n -> 
 	     let listdecl =
                Array.mapi 
 		 (fun i fi ->
@@ -345,9 +348,11 @@ let occur_id env id0 c =
     | DOPN(_,cl)         -> array_exists (occur n) cl
     | DOP1(_,c)          -> occur n c
     | DOP2(_,c1,c2)      -> (occur n c1) or (occur n c2)
-    | DOPL(_,cl)         -> List.exists (occur n) cl
     | DLAM(_,c)          -> occur (n+1) c
     | DLAMV(_,v)         -> array_exists (occur (n+1)) v
+    | CLam (_,t,c)   -> occur n (body_of_type t) or occur (n+1) c
+    | CPrd (_,t,c)   -> occur n (body_of_type t) or occur (n+1) c
+    | CLet (_,b,t,c) -> occur n b or occur n (body_of_type t) or occur (n+1) c
     | Rel p              ->
     	p>n &
     	(try lookup_name_of_rel (p-n) env = Name id0
@@ -366,33 +371,26 @@ let next_name_not_occuring name l env t =
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
 let concrete_name islam l env n c =
-  if n = Anonymous & not (dependent (Rel 1) c) then
+  if n = Anonymous & not (dependent (mkRel 1) c) then
     (None,l)
   else
     let fresh_id = next_name_not_occuring n l env c in
     let idopt =
-      if islam or dependent (Rel 1) c then (Some fresh_id) else None in
+      if islam or dependent (mkRel 1) c then (Some fresh_id) else None in
     (idopt, fresh_id::l)
 
     (* Returns the list of global variables and constants in a term *)
 let global_vars_and_consts t =
-  let rec collect acc = function
-    | VAR id             -> id::acc
-    | DOPN (Const sp,cl) -> (basename sp)::(Array.fold_left collect acc cl)
-    | DOPN (Abst sp,cl)  -> (basename sp)::(Array.fold_left collect acc cl)
-    | DOPN (MutInd ind_sp, cl) as t       -> 
-	(basename (path_of_inductive_path ind_sp))
-	::(Array.fold_left collect acc cl)
-    | DOPN (MutConstruct cstr_sp, cl) as t -> 
-	(basename (path_of_constructor_path cstr_sp))
-	::(Array.fold_left collect acc cl)
-    | DOPN(_,cl)         -> Array.fold_left collect acc cl
-    | DOP1(_,c)          -> collect acc c
-    | DOP2(_,c1,c2)      -> collect (collect acc c1) c2
-    | DOPL(_,cl)         -> List.fold_left collect acc cl
-    | DLAM(_,c)          -> collect acc c
-    | DLAMV(_,v)         -> Array.fold_left collect acc v
-    | _                  -> acc
+  let rec collect acc c =
+    let op, cl = splay_constr c in
+    let acc' = Array.fold_left collect acc cl in
+    match op with
+    | OpVar id -> id::acc'
+    | OpConst sp -> (basename sp)::acc'
+    | OpAbst sp  -> (basename sp)::acc'
+    | OpMutInd ind_sp -> (basename (path_of_inductive_path ind_sp))::acc'
+    | OpMutConstruct csp -> (basename (path_of_constructor_path csp))::acc'
+    | _ -> acc'
   in
   list_uniquize (collect [] t)
     
@@ -402,40 +400,6 @@ let used_of = global_vars_and_consts
 (* Tools for printing of Cases                                              *)
 (* These functions implement a light form of Termenv.mind_specif_of_mind    *)
 (* specially for handle Cases printing; they respect arities but not typing *)
-
-(*
-let mind_specif_of_mind_light (sp,tyi) =
-  let mib = Global.lookup_mind sp in
-  (mib,mind_nth_type_packet mib tyi)
-
-let rec remove_indtypes = function
-  | (1, DLAMV(_,cl)) -> cl
-  | (n, DLAM (_,c))  -> remove_indtypes (n-1, c)
-  | _                -> anomaly "remove_indtypes: bad list of constructors"
-
-let rec remove_params n t =
-  if n = 0 then 
-    t
-  else 
-    match t with
-      | DOP2(Prod,_,DLAM(_,c)) -> remove_params (n-1) c
-      | DOP2(Cast,c,_)         -> remove_params n c
-      | _ -> anomaly "remove_params : insufficiently quantified"
-
-let rec get_params = function
-  | DOP2(Prod,_,DLAM(x,c)) -> x::(get_params c)
-  | DOP2(Cast,c,_)         -> get_params c
-  | _                      -> []
-
-let lc_of_lmis (mib,mip) =
-  let lc = remove_indtypes (mib.mind_ntypes,mip.mind_lc) in
-  Array.map (remove_params mib.mind_nparams) lc
-
-let sp_of_spi ((sp,_) as spi) =
-  let (_,mip) = mind_specif_of_mind_light spi in
-  let (pa,_,k) = repr_path sp in 
-  make_path pa (mip.mind_typename) k
-*)	    
 
 let bdize_app c al =
   let impl =
@@ -471,13 +435,13 @@ let computable p k =
        sinon on perd la réciprocité de la synthèse (qui, lui,
        engendrera un prédicat non dépendant) *)
 
-  let rec striprec = function
-    | (0,DOP2(Lambda,_,DLAM(_,d))) -> false
-    | (0,d               )         -> noccur_between 1 k d
-    | (n,DOP2(Lambda,_,DLAM(_,d))) -> striprec (n-1,d)
-    |  _                           -> false
+  let rec striprec n c = match n,kind_of_term c with
+    | (0,IsLambda (_,_,d)) -> false
+    | (0,_)                -> noccur_between 1 k c
+    | (n,IsLambda (_,_,d)) -> striprec (n-1) d
+    |  _                   -> false
   in 
-  striprec (k,p)
+  striprec k p
 
 let ids_of_var cl =
   List.map
@@ -500,7 +464,7 @@ let old_bdize at_top env t =
            | (None,avoid') -> 
 	       slam(None,bdrec avoid' env (pop c)))
     | DLAMV(na,cl) ->
-	if not(array_exists (dependent (Rel 1)) cl) then
+	if not(array_exists (dependent (mkRel 1)) cl) then
 	  slam(None,ope("V$",array_map_to_list
 			  (fun c -> bdrec avoid env (pop c)) cl))
 	else
@@ -535,6 +499,9 @@ let old_bdize at_top env t =
 		 bdrec avoid env c1 
 	       else 
 		 ope("CAST",[bdrec avoid env c1;bdrec avoid env c2])
+	   | IsLetIn (na,b,_,c) ->
+	       ope("LETIN",[bdrec [] env b;
+			   slam(stringopt_of_name na,bdrec avoid env (pop c))])
 	   | IsProd (Anonymous,ty,c) ->
                     (* Anonymous product are never factorized *)
 	       ope("PROD",[bdrec [] env ty;
@@ -612,36 +579,38 @@ let old_bdize at_top env t =
 		   (fun env id -> add_name (Name id) env) env lfi in
 	       let def_avoid = lfi@avoid in
 	       let f = List.nth lfi n in
-	       let rec split_lambda binds env avoid = function
-		 | (0, t) -> (binds,bdrec avoid env t)
-		 | (n, DOP2(Cast,t,_)) -> split_lambda binds env avoid (n,t)
-		 | (n, DOP2(Lambda,t,DLAM(na,b))) ->
+	       let rec split_lambda binds env avoid n t =
+		 match (n,kind_of_term t) with
+		 | (0, _) -> (binds,bdrec avoid env t)
+		 | (n, IsCast (t,_)) -> split_lambda binds env avoid n t
+		 | (n, IsLambda (na,t,b)) ->
 		     let ast = bdrec avoid env t in
 		     let id = next_name_away na avoid in
 		     let ast_of_bind = 
 		       ope("BINDER",[ast;nvar (string_of_id id)]) in
 		     let new_env = add_name (Name id) env in
 		     split_lambda (ast_of_bind::binds) 
-		       new_env (id::avoid) (n-1,b)
+		       new_env (id::avoid) (n-1) b
 		 | _ -> error "split_lambda" 
 	       in
-	       let rec split_product env avoid = function
-		 | (0, t) -> bdrec avoid env t
-		 | (n, DOP2(Cast,t,_)) -> split_product env avoid (n,t)
-		 | (n, DOP2(Prod,t,DLAM(na,b))) ->
+	       let rec split_product env avoid n t =
+		 match (n,kind_of_term t) with
+		 | (0, _) -> bdrec avoid env t
+		 | (n, IsCast (t,_)) -> split_product env avoid n t
+		 | (n, IsProd (na,t,b)) ->
 		     let ast = bdrec avoid env t in
 		     let id = next_name_away na avoid in
 		     let new_env = add_name (Name id) env in
-		     split_product new_env (id::avoid) (n-1,b)
+		     split_product new_env (id::avoid) (n-1) b
 		 | _ -> error "split_product" 
 	       in
 	       let listdecl = 
 		 list_map_i
 		   (fun i fi ->
 		      let (lparams,ast_of_def) =
-			split_lambda [] def_env def_avoid (nv.(i)+1,vt.(i)) in
+			split_lambda [] def_env def_avoid (nv.(i)+1) vt.(i) in
 		      let ast_of_typ = 
-			split_product env avoid (nv.(i)+1,cl.(i)) in
+			split_product env avoid (nv.(i)+1) cl.(i) in
 		      ope("FDECL",
 			  [nvar (string_of_id fi); 
 			   ope ("BINDERS",List.rev lparams);
@@ -680,7 +649,7 @@ let old_bdize at_top env t =
 
       | n, DOP2(Lambda,_,DLAM(x,b))
 	-> let x'=
-          if not print_underscore or (dependent (Rel 1) b) then x 
+          if not print_underscore or (dependent (mkRel 1) b) then x 
           else Anonymous in
            let id = next_name_away x' avoid in
            let new_env = (add_name (Name id) env) in
@@ -769,6 +738,10 @@ let rec ast_of_pattern env = function
       ope("SOAPP",(ope ("META",[num n])):: 
 		  (List.map (ast_of_pattern env) args))
 
+  | PBinder (BLetIn,na,b,c) ->
+      let c' = ast_of_pattern (add_name na env) c in
+      ope("LETIN",[ast_of_pattern env b;slam(stringopt_of_name na,c')])
+		
   | PBinder (BProd,Anonymous,t,c) ->
       ope("PROD",[ast_of_pattern env t; slam(None,ast_of_pattern env c)])
   | PBinder (bk,na,t,c) ->
@@ -782,13 +755,9 @@ let rec ast_of_pattern env = function
 	  (* non dépendant, pour isoler l'implication; peut-être un *)
 	  (* constructeur ARROW serait-il plus justifié ? *) 
 	| BProd -> if n=1 then "PROD" else "PRODLIST" 
+	| BLetIn -> anomaly "Should be captured before"
       in
       ope(tag,[ast_of_pattern env t;a])
-
-  | PLet (id,a,t,c) ->
-      let c' = ast_of_pattern (add_name (Name id) env) c in
-      ope("LET",[ast_of_pattern env a; 	slam(Some (string_of_id id),c')])
-		
 
   | PCase (typopt,tm,bv) ->
       warning "Old Case syntax";

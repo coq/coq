@@ -3,7 +3,7 @@
 
 open Names
 open Util
-open Generic
+(*i open Generic i*)
 open Term
 
 (* Signatures *)
@@ -98,7 +98,7 @@ let map_rel_context = map
 let instantiate_sign sign args =
   let rec instrec = function
     | ((id,None,_) :: sign, c::args) -> (id,c) :: (instrec (sign,args))
-    | ((id,Some c,_) :: _, args)     -> (id,c) :: (instrec (sign,args))
+    | ((id,Some c,_) :: sign, args)     -> (id,c) :: (instrec (sign,args))
     | ([],[])                       -> []
     | ([],_) | (_,[]) ->
     anomaly "Signature and its instance do not match"
@@ -146,26 +146,24 @@ let empty_names_context = []
 (* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
 let decompose_prod_assum = 
-  let rec prodec_rec l = function
-    | DOP2(Prod,t,DLAM(x,c)) ->
-	prodec_rec (add_rel_decl (x,outcast_type t) l) c
-(*    | Letin,t,DLAM(x,c)) ->
-	prodec_rec (add_rel_def (x,c,outcast_type t) l) c*)
-    | DOP2(Cast,c,_)         -> prodec_rec l c
-    | c                      -> l,c
+  let rec prodec_rec l c =
+    match kind_of_term c with
+    | IsProd (x,t,c)  -> prodec_rec (add_rel_decl (x,outcast_type t) l) c
+    | IsLetIn (x,b,t,c) -> prodec_rec (add_rel_def (x,b,outcast_type t) l) c
+    | IsCast (c,_)    -> prodec_rec l c
+    | _               -> l,c
   in 
   prodec_rec empty_rel_context
 
 (* Transforms a lambda term [x1:T1]..[xn:Tn]T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a lambda *)
 let decompose_lam_assum = 
-  let rec lamdec_rec l = function
-    | DOP2(Lambda,t,DLAM(x,c)) ->
-	lamdec_rec (add_rel_decl (x,outcast_type t) l) c
-(*    | Letin,t,DLAM(x,c)) ->
-	lamdec_rec (add_rel_def (x,c,outcast_type t) l) c*)
-    | DOP2(Cast,c,_)         -> lamdec_rec l c
-    | c                      -> l,c
+  let rec lamdec_rec l c =
+    match kind_of_term c with
+    | IsLambda (x,t,c) -> lamdec_rec (add_rel_decl (x,outcast_type t) l) c
+    | IsLetIn (x,b,t,c) -> lamdec_rec (add_rel_def (x,b,outcast_type t) l) c
+    | IsCast (c,_)     -> lamdec_rec l c
+    | _                -> l,c
   in 
   lamdec_rec empty_rel_context
 
@@ -175,10 +173,12 @@ let decompose_prod_n_assum n =
   if n < 0 then error "decompose_prod_n: integer parameter must be positive";
   let rec prodec_rec l n c = 
     if n=0 then l,c 
-    else match c with 
-      | DOP2(Prod,t,DLAM(x,c)) -> prodec_rec (add_rel_decl (x,outcast_type t) l) (n-1) c
-      | DOP2(Cast,c,_)         -> prodec_rec l n c
-      | c -> error "decompose_prod_n: not enough products"
+    else match kind_of_term c with 
+    | IsProd (x,t,c) -> prodec_rec (add_rel_decl(x,outcast_type t) l) (n-1) c
+    | IsLetIn (x,b,t,c) ->
+	prodec_rec (add_rel_def (x,b,outcast_type t) l) (n-1) c
+    | IsCast (c,_)   -> prodec_rec l n c
+    | c -> error "decompose_prod_n: not enough products"
   in 
   prodec_rec empty_rel_context n 
 
@@ -188,10 +188,11 @@ let decompose_lam_n_assum n =
   if n < 0 then error "decompose_lam_n: integer parameter must be positive";
   let rec lamdec_rec l n c = 
     if n=0 then l,c 
-    else match c with 
-      | DOP2(Lambda,t,DLAM(x,c)) -> lamdec_rec (add_rel_decl (x,outcast_type t) l) (n-1) c
-      | DOP2(Cast,c,_)           -> lamdec_rec l n c
-      | c -> error "decompose_lam_n: not enough abstractions"
+    else match kind_of_term c with 
+    | IsLambda (x,t,c) -> lamdec_rec (add_rel_decl (x,outcast_type t) l) (n-1) c
+    | IsLetIn (x,b,t,c) ->
+	lamdec_rec (add_rel_def (x,b,outcast_type t) l) (n-1) c
+    | IsCast (c,_)     -> lamdec_rec l n c
+    | c -> error "decompose_lam_n: not enough abstractions"
   in 
   lamdec_rec empty_rel_context n 
-

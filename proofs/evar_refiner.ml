@@ -5,7 +5,7 @@ open Pp
 open Util
 open Stamps
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Environ
 open Evd
@@ -120,11 +120,8 @@ let w_hyps    wc    = var_context (get_env (ids_it wc))
 let w_ORELSE wt1 wt2 wc = 
   try wt1 wc with e when catchable_exception e -> wt2 wc
 
-let w_Declare sp c (wc : walking_constraints) =
-  begin match c with 
-    | DOP2(Cast,_,_) -> ()
-    | _ -> error "Cannot declare an un-casted evar"
-  end;
+let w_Declare sp (ty,s) (wc : walking_constraints) =
+  let c = mkCast (ty,s) in
   let _ = w_type_of wc c in
   let access  = get_focus (ids_it wc)
   and env = get_env (ids_it wc)in
@@ -134,20 +131,15 @@ let w_Declare sp c (wc : walking_constraints) =
 let w_Declare_At sp sp' c = w_Focusing sp (w_Declare sp' c)
 
 let evars_of sigma constr = 
-  let rec filtrec acc = function
-    | DOP0 oper        -> acc
-    | VAR _            -> acc
-    | DOP1(oper,c)     -> filtrec acc c
-    | DOP2(oper,c1,c2) -> filtrec (filtrec acc c1) c2
-    | DOPN(Evar ev,cl) ->
-	let newacc = (Array.fold_left filtrec acc cl) in
-	if Evd.in_dom (ts_it sigma).decls ev
-	then Intset.add ev newacc else newacc
-    | DOPN(oper,cl)    -> Array.fold_left filtrec acc cl
-    | DOPL(oper,cl)    -> List.fold_left filtrec acc cl
-    | DLAM(_,c)        -> filtrec acc c
-    | DLAMV(_,v)       -> Array.fold_left filtrec acc v
-    | _                -> acc
+  let rec filtrec acc c =
+    match splay_constr c with
+    | OpEvar ev, cl ->
+	if Evd.in_dom (ts_it sigma).decls ev then
+	  Intset.add ev (Array.fold_left filtrec acc cl)
+	else
+	  Array.fold_left filtrec acc cl
+    | _, cl ->
+	Array.fold_left filtrec acc cl
   in 
   filtrec Intset.empty constr
 
@@ -155,7 +147,7 @@ let w_Define sp c wc =
   let spdecl = Evd.map (w_Underlying wc) sp in
   let cty = 
     try 
-      ctxt_type_of (ids_it (w_Focus sp wc)) (DOP2(Cast,c,spdecl.evar_concl))
+      ctxt_type_of (ids_it (w_Focus sp wc)) (mkCast (c,spdecl.evar_concl))
     with Not_found -> 
       error "Instantiation contains unlegal variables"
   in 

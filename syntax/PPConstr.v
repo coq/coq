@@ -129,6 +129,7 @@ Syntax constr
   | lambdal_cons [(LAMLBOX $pbi $c (IDS ($LIST $ids)) [$id]$body)]
       -> [(LAMLBOX $pbi $c (IDS ($LIST $ids) $id) $body)]
 
+  | letin [<<[$x = $A] $B>>] -> [ [ <hov 0> "[" $x ":=" $A "]" [0 1] $B:E ] ]
 
   | pi [<<($x : $A)$B>>] -> [(PRODBOX (BINDERS) <<($x : $A)$B>>)]
   | prodlist  [(PRODLIST $c $b)]

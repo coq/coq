@@ -4,7 +4,7 @@
 open Util
 open Pp
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Inductive
 open Declarations
@@ -129,6 +129,7 @@ let constructor_at_head1 t =
       | IsAppL(f,args) -> 
 	  let t',_,l,c,_ = aux f in t',args,l,c,List.length args
       | IsProd (_,_,_) -> t',[],[],CL_FUN,0
+      | IsLetIn (_,_,_,c) -> aux c
       | IsSort _ -> t',[],[],CL_SORT,0
       |  _ -> raise Not_found
   in 
@@ -203,22 +204,14 @@ let get_target t ind =
     let v2,_,_,cl2,p2 = constructor_at_head1 t in cl2,p2,v2
 
 let prods_of t = 
-  let rec aux acc = function
-    | DOP2(Prod,c1,DLAM(_,c2)) -> aux (c1::acc) c2
-    | (DOP2(Cast,c,_)) -> aux acc c
-    | t -> t::acc
+  let rec aux acc d = match kind_of_term d with
+    | IsProd (_,c1,c2) -> aux (c1::acc) c2
+    | IsCast (c,_) -> aux acc c
+    | _ -> d::acc
   in 
   aux [] t
 
 (* coercion identite' *)
-
-let lams_of t = 
-  let rec aux acc = function
-    | DOP2(Lambda,c1,DLAM(x,c2)) -> aux ((x,c1)::acc) c2
-    | DOP2(Cast,c,_) -> aux acc c
-    | t -> acc,t
-  in 
-  aux [] t
 
 let build_id_coercion idf_opt ids =
   let env = Global.env () in
@@ -234,24 +227,22 @@ let build_id_coercion idf_opt ids =
           [< 'sTR(string_of_id ids); 
 	     'sTR" must be a transparent constant" >] 
   in
-  let lams,t = lams_of c in
-  let lams = List.rev lams in
+  let lams,t = Sign.decompose_lam_assum c in
   let llams = List.length lams in
+  let lams = List.rev lams in
   let val_f =
-    List.fold_right
-      (fun (x,t) u -> DOP2(Lambda,t,DLAM(x,u)))
-      lams
-      (DOP2(Lambda,(applistc vs (rel_list 0 llams)),
-	    DLAM(Name (id_of_string "x"),Rel 1))) 
+    it_mkLambda_or_LetIn
+      (mkLambda (Name (id_of_string "x"),
+		 applistc vs (rel_list 0 llams),
+		 Rel 1))
+       lams
   in
   let typ_f =
-    List.fold_right
-      (fun (x,t) c -> DOP2(Prod,t,DLAM(x,c)))
+    it_mkProd_wo_LetIn
+      (mkProd (Anonymous, applistc vs (rel_list 0 llams), lift 1 t))
       lams
-      (DOP2(Prod,(applistc vs (rel_list 0 llams)),
-	    DLAM(Anonymous,lift 1 t))) 
-  in 
-  let constr_f = DOP2(Cast,val_f,typ_f) in
+  in
+  let constr_f = mkCast (val_f, typ_f) in
   (* juste pour verification *)
   let _ = 
     try 

@@ -5,7 +5,7 @@ open Util
 open Pp
 open Names
 open Univ
-open Generic
+(*i open Generic i*)
 open Term
 open Sign
 open Environ
@@ -57,11 +57,15 @@ let new_isevar_sign env sigma typ instance =
    any type has type Type. May cause some trouble, but not so far... *)
 let dummy_sort = mkType dummy_univ
 
+let make_instance env =
+  fold_var_context
+    (fun env (id, b, _) l -> if b=None then mkVar id :: l else l)
+    env []
+
 (* Declaring any type to be in the sort Type shouldn't be harmful since
    cumulativity now includes Prop and Set in Type. *)
 let new_type_var env sigma =
-  let sign = var_context env in
-  let instance = List.map mkVar (ids_of_var_context sign) in
+  let instance = make_instance env in
   let (sigma',c) = new_isevar_sign env sigma dummy_sort instance in
   (sigma', c)
 
@@ -74,7 +78,7 @@ let split_evar_to_arrow sigma c =
   let nvar = next_ident_away (id_of_string "x") (ids_of_var_context hyps) in
   let newenv = push_var_decl (nvar,make_typed dom (Type dummy_univ)) evenv in
   let (sigma2,rng) = new_type_var newenv sigma1 in
-  let prod = mkProd (named_hd newenv dom Anonymous) dom (subst_var nvar rng) in
+  let prod = mkProd (named_hd newenv dom Anonymous, dom, subst_var nvar rng) in
   let sigma3 = Evd.define sigma2 ev prod in
   let dsp = num_of_evar dom in
   let rsp = num_of_evar rng in
@@ -109,7 +113,7 @@ let do_restrict_hyps sigma c =
   in
   let sign' = List.rev rsign in
   let env' = change_hyps (fun _ -> sign') env in
-  let instance = List.map mkVar (ids_of_var_context sign') in
+  let instance = make_instance env' in
   let (sigma',nc) = new_isevar_sign env' sigma evd.evar_concl instance in
   let sigma'' = Evd.define sigma' ev nc in
   (sigma'', nc)
@@ -188,14 +192,34 @@ let real_clean isevars sp args rhs =
     | DOP1(o,a) -> DOP1(o, subs k a)
     | DOP2(o,a,b) -> DOP2(o, subs k a, subs k b)
     | DOPN(o,v) -> restrict_hyps isevars (DOPN(o, Array.map (subs k) v))
-    | DOPL(o,l) -> DOPL(o, List.map (subs k) l)
     | DLAM(n,a) -> DLAM(n, subs (k+1) a)
-    | DLAMV(n,v) -> DLAMV(n, Array.map (subs (k+1)) v) in
+    | DLAMV(n,v) -> DLAMV(n, Array.map (subs (k+1)) v)
+    | CLam (n,t,c)   -> CLam (n, typed_app (subs k) t, subs (k+1) c)  
+    | CPrd (n,t,c)   -> CPrd (n, typed_app (subs k) t, subs (k+1) c)
+    | CLet (n,b,t,c) -> CLet (n, subs k b, typed_app (subs k) t, subs (k+1) c)
+  in
   let body = subs 0 rhs in
   (* if not (closed0 body) then error_not_clean CCI empty_env sp body; *)
   body
 
+let make_instance_with_rel env =
+  let n = rel_context_length (rel_context env) in
+  let vars = 
+    fold_var_context
+      (fun env (id,b,_) l -> if b=None then mkVar id :: l else l)
+      env [] in
+  snd (fold_rel_context
+    (fun env (_,b,_) (i,l) -> (i-1, if b=None then mkRel i :: l else l))
+    env (n+1,vars))
 
+let make_subst env args =
+  snd (fold_var_context
+    (fun env (id,b,c) (args,l as g) ->
+       match b, args with
+	 | None, a::rest -> (rest, (id,a)::l)
+	 | Some _, _ -> g
+	 | _ -> anomaly "Instance does not match its signature")
+    env (List.rev args,[]))
 
 (* [new_isevar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
@@ -203,9 +227,7 @@ let real_clean isevars sp args rhs =
 let new_isevar isevars env typ k =
   let subst,env' = push_rels_to_vars env in
   let typ' = substl subst typ in
-  let instance =
-    (List.rev (rel_list 0 (rel_context_length (rel_context env))))
-    @(List.map mkVar (ids_of_var_context (var_context env))) in
+  let instance = make_instance_with_rel env in
   let (sigma',evar) = new_isevar_sign env' !isevars typ' instance in
   isevars := sigma';
   evar
@@ -233,9 +255,8 @@ let evar_define isevars lhs rhs =
   let args = List.map (function (VAR _ | Rel _) as t -> t | _ -> mkImplicit)
       (Array.to_list argsv) in 
   let evd = ise_map isevars ev in
-  let hyps = var_context evd.evar_env in
   (* the substitution to invert *)
-  let worklist = List.combine (ids_of_var_context hyps) args in
+  let worklist = make_subst evd.evar_env args in
   let body = real_clean isevars ev worklist rhs in
   ise_define isevars ev body;
   [ev]
@@ -306,30 +327,21 @@ let rec solve_simple_eqn conv_algo isevars ((pbty,t1,t2) as pb) =
 
 
 let has_undefined_isevars isevars c =
-  let rec hasrec = function
-    | DOPN(Evar ev,cl) as k ->
-	if ise_in_dom isevars ev then 
-	  if ise_defined isevars k then 
-	    hasrec (existential_value !isevars (ev,cl))
-	  else 
-	    failwith "caught"
-	else 
-	  Array.iter hasrec cl
-    | DOP1(_,c) -> hasrec c
-    | DOP2(_,c1,c2) -> (hasrec c1; hasrec c2)
-    | DOPL(_,l) -> List.iter hasrec l
-    | DOPN(_,cl) -> Array.iter hasrec cl
-    | DLAM(_,c) -> hasrec c
-    | DLAMV(_,cl) -> Array.iter hasrec cl
-    | (VAR _|Rel _|DOP0 _) -> ()
+  let rec hasrec k = match splay_constr k with
+    | OpEvar ev, cl when ise_in_dom isevars ev ->
+	if ise_defined isevars k then 
+	  hasrec (existential_value !isevars (ev,cl))
+	else
+	  failwith "caught"
+    | _, cl -> Array.iter hasrec cl
   in 
   (try (hasrec c ; false) with Failure "caught" -> true)
 
 let head_is_exist isevars = 
-  let rec hrec = function
-    | DOPN(Evar _,_) as k -> ise_undefined isevars k
-    | DOPN(AppL,cl) -> hrec (array_hd cl)
-    | DOP2(Cast,c,_) -> hrec c
+  let rec hrec k = match kind_of_term k with
+    | IsEvar _     -> ise_undefined isevars k
+    | IsAppL (f,l) -> hrec f
+    | IsCast (c,_) -> hrec c
     | _ -> false
   in 
   hrec 
@@ -399,15 +411,17 @@ let mk_valcon c = Some c
 let split_tycon loc env isevars = function
   | None -> None,None
   | Some c ->
-      (match whd_betadeltaiota env !isevars c with
-         | DOP2(Prod,dom,DLAM(na,rng)) ->
-	    Some dom, Some rng
-	| t when ise_undefined isevars t ->
-	    let (sigma,dom,rng) = split_evar_to_arrow !isevars t in
-	    isevars := sigma;
-	    Some dom, Some rng
+      let t = whd_betadeltaiota env !isevars c in
+      match kind_of_term t with
+        | IsProd (na,dom,rng) -> Some dom, Some rng
 	| _ ->
-	    Stdpp.raise_with_loc loc (Type_errors.TypeError (CCI,env,Type_errors.NotProduct c)))
+	    if ise_undefined isevars t then
+	      let (sigma,dom,rng) = split_evar_to_arrow !isevars t in
+	      isevars := sigma;
+	      Some dom, Some rng
+	    else
+	      Stdpp.raise_with_loc loc
+		(Type_errors.TypeError (CCI,env,Type_errors.NotProduct c))
 
 let valcon_of_tycon x = x
 

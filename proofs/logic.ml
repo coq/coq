@@ -5,7 +5,7 @@ open Pp
 open Util
 open Names
 open Evd
-open Generic
+(*i open Generic i*)
 open Term
 open Sign
 open Environ
@@ -56,27 +56,25 @@ let conv_leq_goal env sigma arg ty conclty =
 
 let rec mk_refgoals sigma goal goalacc conclty trm =
   let env = goal.evar_env in
-  match trm with
-    | DOP0(Meta mv) ->
+  match kind_of_term trm with
+    | IsMeta mv ->
 	if occur_meta conclty then
           error "Cannot refine to conclusions with meta-variables";
 	let ctxt = out_some goal.evar_info in 
 	(mk_goal ctxt env (nf_betaiota env sigma conclty))::goalacc, conclty
 
-    | DOP2(Cast,t,ty) ->
+    | IsCast (t,ty) ->
 	let _ = type_of env sigma ty in
 	conv_leq_goal env sigma trm ty conclty;
 	mk_refgoals sigma goal goalacc ty t
 
-    | DOPN(AppL,cl) ->
-	let (acc',hdty) = mk_hdgoals sigma goal goalacc (array_hd cl) in
-	let (acc'',conclty') = 
-	  mk_arggoals sigma goal acc' hdty (array_list_of_tl cl) in
+    | IsAppL (f,l) ->
+	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
+	let (acc'',conclty') = mk_arggoals sigma goal acc' hdty l in
 	let _ = conv_leq_goal env sigma trm conclty' conclty in
         (acc'',conclty')
 
-    | DOPN(MutCase _,_) as mc -> 
-	let (_,p,c,lf) = destCase mc in
+    | IsMutCase (_,p,c,lf) ->
 	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
 	let acc'' = 
 	  array_fold_left2
@@ -86,10 +84,10 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 	let _ = conv_leq_goal env sigma trm conclty' conclty in 
 	(acc'',conclty')
 
-    | t -> 
-	if occur_meta t then raise (RefinerError (OccurMeta t));
-      	let t'ty = type_of env sigma t in
-	conv_leq_goal env sigma t t'ty conclty;
+    | _ -> 
+	if occur_meta trm then raise (RefinerError (OccurMeta trm));
+      	let t'ty = type_of env sigma trm in
+	conv_leq_goal env sigma trm t'ty conclty;
         (goalacc,t'ty)
 
 (* Same as mkREFGOALS but without knowing te type of the term. Therefore,
@@ -97,18 +95,17 @@ let rec mk_refgoals sigma goal goalacc conclty trm =
 
 and mk_hdgoals sigma goal goalacc trm =
   let env = goal.evar_env in
-  match trm with
-    | DOP2(Cast,DOP0(Meta mv),ty) ->
+  match kind_of_term trm with
+    | IsCast (c,ty) when isMeta c ->
 	let _ = type_of env sigma ty in
 	let ctxt = out_some goal.evar_info in  
 	(mk_goal ctxt env (nf_betaiota env sigma ty))::goalacc,ty
-	  
-    | DOPN(AppL,cl) ->
-	let (acc',hdty) = mk_hdgoals sigma goal goalacc (array_hd cl) in
-	mk_arggoals sigma goal acc' hdty (array_list_of_tl cl)
-	
-    | DOPN(MutCase _,_) as mc -> 
-	let (_,p,c,lf) = destCase mc in
+
+    | IsAppL (f,l) ->
+	let (acc',hdty) = mk_hdgoals sigma goal goalacc f in
+	mk_arggoals sigma goal acc' hdty l
+
+    | IsMutCase (_,p,c,lf) ->
 	let (acc',lbrty,conclty') = mk_casegoals sigma goal goalacc p c in
 	let acc'' = 
 	  array_fold_left2
@@ -117,17 +114,19 @@ and mk_hdgoals sigma goal goalacc trm =
 	in
 	(acc'',conclty')
 
-    | t -> goalacc, type_of env sigma t
+    | _ -> goalacc, type_of env sigma trm
 
 and mk_arggoals sigma goal goalacc funty = function
   | [] -> goalacc,funty
-  | harg::tlargs ->
-      let env = goal.evar_env in
-      (match whd_betadeltaiota env sigma funty with
-	 | DOP2(Prod,c1,DLAM(_,b)) ->
-	     let (acc',hargty) = mk_refgoals sigma goal goalacc c1 harg in
-	     mk_arggoals sigma goal acc' (subst1 harg b) tlargs
-	 | t -> raise (RefinerError (CannotApply (t,harg))))
+  | harg::tlargs as allargs ->
+      let t = whd_betadeltaiota goal.evar_env sigma funty in
+      match kind_of_term t with
+	| IsProd (_,c1,b) ->
+	    let (acc',hargty) = mk_refgoals sigma goal goalacc c1 harg in
+	    mk_arggoals sigma goal acc' (subst1 harg b) tlargs
+	| IsLetIn (_,c1,_,b) ->
+	    mk_arggoals sigma goal goalacc (subst1 c1 b) allargs
+	| _ -> raise (RefinerError (CannotApply (t,harg)))
 
 and mk_casegoals sigma goal goalacc p c =
   let env = goal.evar_env in
@@ -144,28 +143,24 @@ and mk_casegoals sigma goal goalacc p c =
 varaibles only in Application and Case *)
 
 let collect_meta_variables c = 
-  let rec collrec acc = function
-    | DOP0(Meta mv) -> mv::acc
-    | DOP2(Cast,c,_) -> collrec acc c
-    | DOPN(AppL,cl) -> Array.fold_left collrec acc cl
-    | DOPN(MutCase _,_) as mc -> 
-	let (_,p,c,lf) = destCase mc in
-	Array.fold_left collrec (collrec (collrec acc p) c) lf
+  let rec collrec acc c = match splay_constr c with
+    | OpMeta mv, _ -> mv::acc
+    | OpCast, [|c;_|] -> collrec acc c
+    | (OpAppL | OpMutCase _), cl -> Array.fold_left collrec acc cl
     | _ -> acc
   in 
   List.rev(collrec [] c)
 
 let new_meta_variables = 
-  let rec newrec = function
-    | DOP0(Meta _) -> DOP0(Meta (new_meta()))
-    | DOP2(Cast,c,t) -> DOP2(Cast, newrec c, t)
-    | DOPN(AppL,cl) -> DOPN(AppL, Array.map newrec cl)
-    | DOPN(MutCase _,_) as mc ->
-        let (ci,p,c,lf) = destCase mc in
-        mkMutCaseA ci (newrec p) (newrec c) (Array.map newrec lf)
-    | x -> x
+  let rec newrec x = match kind_of_term x with
+    | IsMeta _ -> mkMeta (new_meta())
+    | IsCast (c,t) -> mkCast (newrec c, t)
+    | IsAppL (f,cl) -> applist (newrec f, List.map newrec cl)
+    | IsMutCase (ci,p,c,lf) ->
+	mkMutCaseA ci (newrec p) (newrec c) (Array.map newrec lf)
+    | _ -> x
   in 
-  newrec
+ newrec
 
 let error_use_instantiate () =
   errorlabstrm "Logic.prim_refiner"
@@ -299,12 +294,19 @@ let prim_refiner r sigma goal =
     | { name = Intro; newids = [id] } ->
     	if !check && mem_var_context id sign then
 	  error "New variable is already declared";
-        (match strip_outer_cast cl with
-	   | DOP2(Prod,c1,DLAM(_,b)) ->
+        (match kind_of_term (strip_outer_cast cl) with
+	   | IsProd (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let a = get_assumption_of env sigma c1
 	       and v = VAR id in
 	       let sg = mk_goal info (push_var_decl (id,a) env) (subst1 v b) in
+	       [sg]
+	   | IsLetIn (_,c1,t1,b) ->
+	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
+	       let a = get_assumption_of env sigma t1
+	       and v = VAR id in
+	       let sg =
+		 mk_goal info (push_var_def (id,c1,a) env) (subst1 v b) in
 	       [sg]
 	   | _ ->
 	       if !check then error "Introduction needs a product"
@@ -313,12 +315,19 @@ let prim_refiner r sigma goal =
     | { name = Intro_after; newids = [id]; hypspecs = [whereid] } ->
     	if !check && mem_var_context id sign then
 	  error "New variable is already declared";
-        (match strip_outer_cast cl with
-	   | DOP2(Prod,c1,DLAM(_,b)) ->
+        (match kind_of_term (strip_outer_cast cl) with
+	   | IsProd (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let a = get_assumption_of env sigma c1
 	       and v = VAR id in
 	       let env' = insert_after_hyp env whereid (id,None,a) in
+	       let sg = mk_goal info env' (subst1 v b) in 
+	       [sg]
+	   | IsLetIn (_,c1,t1,b) ->
+	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
+	       let a = get_assumption_of env sigma t1
+	       and v = VAR id in
+	       let env' = insert_after_hyp env whereid (id,Some c1,a) in
 	       let sg = mk_goal info env' (subst1 v b) in 
 	       [sg]
 	   | _ ->
@@ -326,12 +335,19 @@ let prim_refiner r sigma goal =
 	       else anomaly "Intro_after: expects a product")
 	
     | { name = Intro_replacing; newids = []; hypspecs = [id] } ->
-	(match strip_outer_cast cl with
-           | DOP2(Prod,c1,DLAM(_,b)) ->
+	(match kind_of_term (strip_outer_cast cl) with
+           | IsProd (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
 	       let a = get_assumption_of env sigma c1
 	       and v = VAR id in
 	       let env' = replace_hyp env id (id,None,a) in
+	       let sg = mk_goal info env' (subst1 v b) in
+	       [sg]
+           | IsLetIn (_,c1,t1,b) ->
+	       if occur_meta c1 then error_use_instantiate();
+	       let a = get_assumption_of env sigma t1
+	       and v = VAR id in
+	       let env' = replace_hyp env id (id,Some c1,a) in
 	       let sg = mk_goal info env' (subst1 v b) in
 	       [sg]
 	   | _ ->
@@ -341,13 +357,13 @@ let prim_refiner r sigma goal =
     | { name = Fix; hypspecs = []; terms = []; 
 	newids = [f]; params = [Num(_,n)] } ->
      	let rec check_ind k cl = 
-          match whd_castapp cl with 
-            | DOP2(Prod,c1,DLAM(_,b)) -> 
+          match kind_of_term (whd_castapp cl) with 
+            | IsProd (_,c1,b) -> 
             	if k = 1 then 
-		  (try 
-		     let _ = find_minductype env sigma c1 in ()
-		   with Induc -> 
-		     error "cannot do a fixpoint on a non inductive type")
+		  try 
+		    let _ = find_minductype env sigma c1 in ()
+		  with Induc -> 
+		    error "cannot do a fixpoint on a non inductive type"
             	else 
 		  check_ind (k-1) b
             | _ -> error "not enough products"
@@ -361,13 +377,13 @@ let prim_refiner r sigma goal =
     
     | { name = Fix; hypspecs = []; terms = lar; newids = lf; params = ln } ->
      	let rec check_ind k cl = 
-          match whd_castapp cl with 
-            | DOP2(Prod,c1,DLAM(_,b)) -> 
+          match kind_of_term (whd_castapp cl) with 
+            | IsProd (_,c1,b) -> 
             	if k = 1 then 
-		  (try 
-		     fst (find_minductype env sigma c1)
-		   with Induc -> 
-		     error "cannot do a fixpoint on a non inductive type")
+		  try 
+		    fst (find_minductype env sigma c1)
+		  with Induc -> 
+		    error "cannot do a fixpoint on a non inductive type"
             	else 
 		  check_ind (k-1) b
             | _ -> error "not enough products"
@@ -392,14 +408,15 @@ let prim_refiner r sigma goal =
 
     | { name = Cofix; hypspecs = []; terms = lar; newids = lf; params = [] } ->
      	let rec check_is_coind cl = 
-          match (whd_betadeltaiota env sigma (whd_castapp cl)) with 
-            | DOP2(Prod,c1,DLAM(_,b)) -> check_is_coind  b
-            | b  -> 
-		(try 
-		   let _ = find_mcoinductype env sigma b in ()
-                 with Induc -> 
-		   error ("All methods must construct elements " ^
-			  "in coinductive types"))
+	  let b = whd_betadeltaiota env sigma (whd_castapp cl) in
+          match kind_of_term b with
+            | IsProd (_,c1,b) -> check_is_coind  b
+            | _ -> 
+		try 
+		  let _ = find_mcoinductype env sigma b in ()
+                with Induc -> 
+		  error ("All methods must construct elements " ^
+			  "in coinductive types")
 	in
      	List.iter check_is_coind (cl::lar);
         let rec mk_env env = function 
@@ -416,17 +433,6 @@ let prim_refiner r sigma goal =
      	in 
 	mk_env env (cl::lar,lf)
 
-(*        let rec mk_sign sign = function 
-          | (ar::lar'),(f::lf') ->
-	      if (mem_sign sign f) then 
-		error "name already used in the environment";
-	      let a = get_assumption_of env sigma ar in
-	      mk_sign (add_var_decl (f,a) sign) (lar',lf')
-	  | ([],[]) -> List.map (mk_goal info env) (cl::lar)
-	  | _ -> error "not the right number of arguments"
-     	in 
-	mk_sign sign (cl::lar,lf)*)
-	  
     | { name = Refine; terms = [c] } ->
 	let c = new_meta_variables c in
 	let (sgl,cl') = mk_refgoals sigma goal [] cl c in
@@ -436,7 +442,7 @@ let prim_refiner r sigma goal =
     | { name = Convert_concl; terms = [cl'] } ->
     	let cl'ty = type_of env sigma cl' in
 	if is_conv_leq env sigma cl' cl then
-          let sg = mk_goal info env (DOP2(Cast,cl',cl'ty)) in
+          let sg = mk_goal info env (mkCast (cl',cl'ty)) in
           [sg]
 	else 
 	  error "convert-concl rule passed non-converting term"
@@ -468,30 +474,31 @@ let prim_extractor subfun vl pft =
   let cl = pft.goal.evar_concl in
   match pft with
     | { ref = Some (Prim { name = Intro; newids = [id] }, [spf]) } ->
-	(match strip_outer_cast cl with
-	   | DOP2(Prod,ty,b) ->
+	(match kind_of_term (strip_outer_cast cl) with
+	   | IsProd (_,ty,_) ->
 	       let cty = subst_vars vl ty in
-	       DOP2(Lambda,cty, DLAM(Name id,subfun (id::vl) spf))
+	       mkLambda (Name id, cty, subfun (id::vl) spf)
 	   | _ -> error "incomplete proof!")
 	
     | { ref = Some (Prim { name = Intro_after; newids = [id]}, [spf]) } -> 
-	(match strip_outer_cast cl with
-	   | DOP2(Prod,ty,b) ->
+	(match kind_of_term (strip_outer_cast cl) with
+	   | IsProd (_,ty,_) ->
 	       let cty = subst_vars vl ty in
-	       DOP2(Lambda,cty, DLAM(Name id,subfun (id::vl) spf))
+	       mkLambda (Name id, cty, subfun (id::vl) spf)
 	   | _ -> error "incomplete proof!")
 	
     | {ref=Some(Prim{name=Intro_replacing;hypspecs=[id]},[spf]) } ->
-	(match strip_outer_cast cl with
-	   | DOP2(Prod,ty,b) ->
+	(match kind_of_term (strip_outer_cast cl) with
+	   | IsProd (_,ty,_) ->
 	       let cty = subst_vars vl ty in
-	       DOP2(Lambda,cty,DLAM(Name id,subfun (id::vl) spf))
+	       mkLambda (Name id, cty, subfun (id::vl) spf)
 	   | _ -> error "incomplete proof!")
 	
     | {ref=Some(Prim{name=Fix;newids=[f];params=[Num(_,n)]},[spf]) } -> 
 	let cty = subst_vars vl cl in 
 	let na = Name f in 
-	DOPN(Term.Fix([|n-1|],0),[| cty ; DLAMV(na,[|subfun (f::vl) spf|])|])
+	mkFix (([|n-1|],0),([|cty|], [na], [|subfun (f::vl) spf|]))
+
     | {ref=Some(Prim{name=Fix;newids=lf;terms=lar;params=ln},spfl) } ->
 	let lcty = List.map (subst_vars vl) (cl::lar) in 
 	let vn = 

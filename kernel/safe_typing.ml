@@ -5,7 +5,7 @@ open Pp
 open Util
 open Names
 open Univ
-open Generic
+(*i open Generic i*)
 open Term
 open Reduction
 open Sign
@@ -122,6 +122,16 @@ let rec execute mf env cstr =
 	let (j,cst3) = gen_rel env1 Evd.empty name varj j' in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
 	(j, cst)
+
+     | IsLetIn (name,c1,c2,c3) ->
+        let (j1,cst1) = execute mf env c1 in
+        let (j2,cst2) = execute mf env c2 in
+	let { uj_val = b; uj_type = t } = cast_rel env Evd.empty j1 j2 in
+        let (j3,cst3) = execute mf (push_rel_def (name,b,t) env) c3 in
+	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
+	({ uj_val = mkLetIn (name, j1.uj_val, j2.uj_val, j3.uj_val) ;
+	   uj_type = typed_app (subst1 j1.uj_val) j3.uj_type },
+	 cst)
 	  
     | IsCast (c,t) ->
         let (cj,cst1) = execute mf env c in

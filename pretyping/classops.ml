@@ -9,7 +9,7 @@ open Environ
 open Libobject
 open Declare
 open Term
-open Generic
+(*i open Generic i*)
 open Rawterm
 
 (* usage qque peu general: utilise aussi dans record *)
@@ -188,14 +188,15 @@ let _ =
 (* constructor_at_head : constr -> cl_typ * int *)
 
 let constructor_at_head t = 
-  let rec aux t' = match t' with
-    | VAR id -> CL_Var id,0
-    | DOPN(Const sp,_) -> CL_SP sp,0
-    | DOPN(MutInd ind_sp,_) -> CL_IND ind_sp,0
-    | DOP2(Prod,_,DLAM(_,c)) -> CL_FUN,0
-    | DOP0(Sort(_)) -> CL_SORT,0
-    | DOP2(Cast,c,_) -> aux (collapse_appl c)
-    | DOPN(AppL,cl) -> let c,_ = aux (array_hd cl) in c,Array.length(cl)-1
+  let rec aux t' = match kind_of_term t' with
+    | IsVar id -> CL_Var id,0
+    | IsConst (sp,_) -> CL_SP sp,0
+    | IsMutInd (ind_sp,_) -> CL_IND ind_sp,0
+    | IsProd (_,_,c) -> CL_FUN,0
+    | IsLetIn (_,_,_,c) -> aux c
+    | IsSort _ -> CL_SORT,0
+    | IsCast (c,_) -> aux (collapse_appl c)
+    | IsAppL (f,args) -> let c,_ = aux f in c, List.length args
     |  _ -> raise Not_found
   in 
   aux (collapse_appl t)
@@ -230,11 +231,11 @@ let fully_applied id p p1 =
   if p <> p1 then  errorlabstrm "fully_applied" 
     [< 'sTR"Wrong number of parameters for ";'sTR(string_of_id id) >]
 
-let rec arity_sort = function
-  | DOP0(Sort(Prop(_))) -> 0
-  | DOP0(Sort(Type(_))) -> 0
-  | DOP2(Prod,_,DLAM(_,c)) -> (arity_sort c) +1
-  | DOP2(Cast,c,_) -> arity_sort c
+let rec arity_sort a = match kind_of_term a with
+  | IsSort (Prop _ | Type _) -> 0
+  | IsProd (_,_,c) -> (arity_sort c) +1
+  | IsLetIn (_,_,_,c) -> arity_sort c    (* Utile ?? *)
+  | IsCast (c,_) -> arity_sort c
   | _ -> raise Not_found
 
 let stre_of_cl = function 

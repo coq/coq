@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Sign
 open Evd
 open Term
@@ -27,34 +27,37 @@ open Coercion
 open Inductive
 open Instantiate
 
+(*
 (* Pour le vieux "match" que Program utilise encore, vieille histoire ... *)
 
 (* Awful special reduction function which skips abstraction on Xtra in
    order to be safe for Program ... *)
 
 let stacklamxtra recfun = 
-  let rec lamrec sigma p_0 p_1 = match p_0,p_1 with 
-    | (stack, (DOP2(Lambda,DOP1(XTRA "COMMENT",_),DLAM(_,c)) as t)) ->
+  let rec lamrec sigma s t = match s,kind_of_term t with 
+    | (stack, IsLambda (_,DOP1(XTRA "COMMENT",_),_)) ->
         recfun stack (substl sigma t)
-    | ((h::t), (DOP2(Lambda,_,DLAM(_,c)))) -> lamrec (h::sigma) t c
-    | (stack, t) -> recfun stack (substl sigma t)
+    | ((h::t), IsLambda (_,_,c)) -> lamrec (h::sigma) t c
+    | (stack, _) -> recfun stack (substl sigma t)
   in 
   lamrec 
 
 let rec whrec x stack =
-  match x with   
-    | DOP2(Lambda,DOP1(XTRA "COMMENT",c),DLAM(name,t)) ->
+  match kind_of_term x with   
+    | IsLambda (name, DOP1(XTRA "COMMENT",c),t) ->
     	let t' = applist (whrec t (List.map (lift 1) stack)) in 
-	DOP2(Lambda,DOP1(XTRA "COMMENT",c),DLAM(name,t')),[]
-    | DOP2(Lambda,c1,DLAM(name,c2)) ->
+	mkLambda (name,DOP1(XTRA "COMMENT",c),t'),[]
+    | IsLambda (name,c1,c2) ->
     	(match stack with
-	   | [] -> (DOP2(Lambda,c1,DLAM(name,whd_betaxtra c2)),[])
+	   | [] -> mkLambda (name,c1,whd_betaxtra c2),[]
 	   | a1::rest -> stacklamxtra (fun l x -> whrec x l) [a1] rest c2)
-    | DOPN(AppL,cl) -> whrec (array_hd cl) (array_app_tl cl stack)
-    | DOP2(Cast,c,_) ->  whrec c stack
-    | x -> x,stack
+    | IsAppL (f,args) -> whrec f (args@stack)
+    | IsCast (c,_) ->  whrec c stack
+    | _ -> x,stack
 
 and whd_betaxtra x = applist(whrec x [])
+*)
+let whd_betaxtra = whd_beta
 
 let lift_context n l = 
   let k = List.length l in 
@@ -111,10 +114,8 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
 		 applist (whd_beta_stack (lift (nar+1) p) (rel_list 1 nar)))))
           lnames 
       in
-      let fix = DOPN(Fix([|nar|],0),
-		     [|typPfix;
-		       DLAMV(Name(id_of_string "F"),[|deffix|])|])
-      in 
+      let fix = mkFix (([|nar|],0),
+		       ([|typPfix|],[Name(id_of_string "F")],[|deffix|])) in
       applist (fix,realargs@[c])
   else
     let ci = make_default_case_info mispec in
@@ -217,31 +218,9 @@ let pretype_ref pretype loc isevars env lvar = function
     make_judge (mkConst cst) (type_of_constant env !isevars cst)
 
 | RAbst sp -> failwith "Pretype: abst doit disparaître"
-(*
-  if sp = let_path then
-      (match Array.to_list cl with
-       [m;DLAM(na,b)] ->
-       let mj = pretype empty_tycon isevars env m in
-	 (try 
-	    let mj = inh_ass_of_j isevars env mj in
-	    let mb = body_of_type mj in
-	    let bj =
-	     pretype empty_tycon (push_rel (na,mj) env) isevars b in
-	   {uj_val = DOPN(Abst sp,[|mb;DLAM(na,bj.uj_val)|]);
-            uj_type = sAPP (DLAM(na,bj.uj_type)) mb;
-            uj_kind = pop bj.uj_kind }
-	 with UserError _ -> 
-	   pretype vtcon isevars env (abst_value cstr)) 
-      | _ -> errorlabstrm "Trad.constr_of_com" [< 'sTR"Malformed ``let''" >])
-   else if evaluable_abst cstr then
-     pretype vtcon isevars env (abst_value cstr)
-   else error "Cannot typecheck an unevaluable abstraction"
-*)
+
 | REVar (sp,ctxt) -> error " Not able to type terms with dependent subgoals"
-(* Not able to type goal existential yet
-    let cstr = mkConst (sp,ctxt_of_ids ids) in
-    make_judge cstr (type_of_existential env !isevars cstr)
-*)
+
 | RInd (ind_sp,ctxt) ->
     let ind = (ind_sp,Array.map pretype ctxt) in
     make_judge (mkMutInd ind) (type_of_inductive env !isevars ind)
@@ -285,16 +264,6 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 
 | RHole loc ->
   if !compter then nbimpl:=!nbimpl+1;
-(* OLD
-  (match vtcon with
-    (true,(Some v, _)) ->
-      {uj_val=v.utj_val; uj_type=make_typed (mkSort v.utj_type) (Type Univ.dummy_univ)}
-  | (false,(None,Some ty)) ->
-      let c = new_isevar isevars env ty CCI in
-      {uj_val=c;uj_type=make_typed ty (Type Univ.dummy_univ)}
-  | (true,(None,None)) ->
-      let ty = mkCast dummy_sort dummy_sort in
-*)
   (match tycon with
   | Some ty ->
       let c = new_isevar isevars env ty CCI in
@@ -328,7 +297,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 	 let fix = (vni,(larav,List.rev lfi,Array.map j_val_only vdefj)) in
 	 check_fix env !isevars fix;
 	 make_judge (mkFix fix) lara.(i)
-     | RCofix i -> 
+     | RCoFix i -> 
 	 let cofix = (i,(larav,List.rev lfi,Array.map j_val_only vdefj)) in
 	 check_cofix env !isevars cofix;
 	 make_judge (mkCoFix cofix) lara.(i))
@@ -364,6 +333,13 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
     let j' = pretype empty_tycon (push_rel_decl var env) isevars lvar lmeta c2 in
     (try fst (gen_rel env !isevars name assum j')
      with TypeError _ as e -> Stdpp.raise_with_loc loc e)
+
+| RBinder(loc,BLetIn,name,c1,c2)      ->
+    let j = pretype empty_tycon env isevars lvar lmeta c1 in
+    let var = (name,j.uj_val,j.uj_type) in
+    let j' = pretype tycon (push_rel_def var env) isevars lvar lmeta c2 in
+    { uj_val = mkLetIn (name, j.uj_val, body_of_type j.uj_type, j'.uj_val) ;
+      uj_type = typed_app (subst1 j.uj_val) j'.uj_type }
 
 | ROldCase (loc,isrec,po,c,lf) ->
   let cj = pretype empty_tycon env isevars lvar lmeta c in
@@ -427,7 +403,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 	let ci = make_default_case_info mis in
 	mkMutCaseA ci pj.uj_val cj.uj_val (Array.map (fun j-> j.uj_val) lfj)
     in
-    let s = destSort (snd (splay_prod env !isevars evalPt)) in
+    let s = snd (splay_arity env !isevars evalPt) in
     {uj_val = v;
      uj_type = make_typed rsty s }
 

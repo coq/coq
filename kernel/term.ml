@@ -6,7 +6,6 @@
 open Util
 open Pp
 open Names
-open Generic
 open Univ
 
 (* Coq abstract syntax with deBruijn variables; 'a is the type of sorts *)
@@ -64,14 +63,34 @@ let print_sort = function
   | Prop Null -> [< 'sTR "Prop" >]
   | Type _ -> [< 'sTR "Type" >]
 
-type constr = sorts oper term
+(********************************************************************)
+(*           Generic syntax of terms with de Bruijn indexes         *)
+(********************************************************************)
+
+type constr =
+  | DOP0 of sorts oper                      (* atomic terms *)
+  | DOP1 of sorts oper * constr             (* operator of arity 1 *)
+  | DOP2 of sorts oper * constr * constr    (* operator of arity 2 *)
+  | DOPN of sorts oper * constr array       (* operator of variadic arity *)
+  | DLAM of name * constr                   (* deBruijn binder on one term *)
+  | DLAMV of name * constr array            (* deBruijn binder on many terms *)
+  | CLam of name * constr * constr
+  | CPrd of name * constr * constr
+  | CLet of name * constr * constr * constr
+  | VAR of identifier                       (* named variable *)
+  | Rel of int                              (* variable as deBruijn index *)
+
+and
+  (*
+    typed_type = sorts judge
+  *)
+  typed_type = constr
 
 type flat_arity = (name * constr) list * sorts
 
 type 'a judge = { body : constr; typ : 'a }
 
 (*
-type typed_type = sorts judge
 type typed_term = typed_type judge
 
 let make_typed t s = { body = t; typ = s }
@@ -91,7 +110,6 @@ let outcast_type = function
 let typed_combine f g t u = { f t.body u.body ; g t.typ u.typ}
 *)
 
-type typed_type = constr
 type typed_term = typed_type judge
 
 let make_typed t s = t
@@ -115,14 +133,280 @@ type rel_declaration = name * constr option * typed_type
 (****************************************************************************)
 
 (*********************)
+(*     Occurring     *)
+(*********************)
+
+exception FreeVar
+exception Occur
+
+(* (closedn n M) raises FreeVar if a variable of height greater than n
+   occurs in M, returns () otherwise *)
+
+let closedn = 
+  let rec closed_rec n = function
+    | Rel(m)        -> if m>n then raise FreeVar
+    | VAR _         -> ()
+    | DOPN(_,cl)    -> Array.iter (closed_rec n) cl
+    | DOP2(_,c1,c2) -> closed_rec n c1; closed_rec n c2
+    | DOP1(_,c)     -> closed_rec n c
+    | DLAM(_,c)     -> closed_rec (n+1) c
+    | DLAMV(_,v)    -> Array.iter (closed_rec (n+1)) v
+    | CLam (_,t,c)   -> closed_rec n t; closed_rec (n+1) c
+    | CPrd (_,t,c)   -> closed_rec n t; closed_rec (n+1) c
+    | CLet (_,b,t,c) -> closed_rec n b; closed_rec n t; closed_rec (n+1) c
+    | _             -> ()
+  in 
+  closed_rec
+
+(* [closed0 M] is true iff [M] is a (deBruijn) closed term *)
+
+let closed0 term =
+  try closedn 0 term; true with FreeVar -> false
+
+(* returns the list of free debruijn indices in a term *)
+
+let free_rels m = 
+  let rec frec depth acc = function
+    | Rel n         -> if n >= depth then Intset.add (n-depth+1) acc else acc
+    | DOPN(_,cl)    -> Array.fold_left (frec depth) acc cl
+    | DOP2(_,c1,c2) -> frec depth (frec depth acc c1) c2
+    | DOP1(_,c)     -> frec depth acc c
+    | DLAM(_,c)     -> frec (depth+1) acc c
+    | DLAMV(_,cl)   -> Array.fold_left (frec (depth+1)) acc cl
+    | CLam (_,t,c)   -> frec (depth+1) (frec depth acc t) c
+    | CPrd (_,t,c)   -> frec (depth+1) (frec depth acc t) c
+    | CLet (_,b,t,c) -> frec (depth+1) (frec depth (frec depth acc b) t) c
+    | VAR _         -> acc
+    | DOP0 _        -> acc
+  in 
+  frec 1 Intset.empty m
+
+(* (noccurn n M) returns true iff (Rel n) does NOT occur in term M  *)
+
+let noccurn n term = 
+  let rec occur_rec n = function
+    | Rel(m)        -> if m = n then raise Occur
+    | VAR _         -> ()
+    | DOPN(_,cl)    -> Array.iter (occur_rec n) cl
+    | DOP1(_,c)     -> occur_rec n c
+    | DOP2(_,c1,c2) -> occur_rec n c1; occur_rec n c2
+    | DLAM(_,c)     -> occur_rec (n+1) c
+    | DLAMV(_,v)    -> Array.iter (occur_rec (n+1)) v
+    | CLam (_,t,c)   -> occur_rec n t; occur_rec (n+1) c
+    | CPrd (_,t,c)   -> occur_rec n t; occur_rec (n+1) c
+    | CLet (_,b,t,c) -> occur_rec n b; occur_rec n t; occur_rec (n+1) c
+    | _             -> ()
+  in 
+  try occur_rec n term; true with Occur -> false
+
+(* (noccur_between n m M) returns true iff (Rel p) does NOT occur in term M 
+  for n <= p < n+m *)
+
+let noccur_between n m term = 
+  let rec occur_rec n = function
+    | Rel(p)        -> if n<=p && p<n+m then raise Occur
+    | VAR _         -> ()
+    | DOPN(_,cl)    -> Array.iter (occur_rec n) cl
+    | DOP1(_,c)     -> occur_rec n c
+    | DOP2(_,c1,c2) -> occur_rec n c1; occur_rec n c2
+    | DLAM(_,c)     -> occur_rec (n+1) c
+    | DLAMV(_,v)    -> Array.iter (occur_rec (n+1)) v
+    | CLam (_,t,c)   -> occur_rec n t; occur_rec (n+1) c
+    | CPrd (_,t,c)   -> occur_rec n t; occur_rec (n+1) c
+    | CLet (_,b,t,c) -> occur_rec n b; occur_rec n t; occur_rec (n+1) c
+    | _             -> ()
+  in 
+  try occur_rec n term; true with Occur -> false
+
+(* Checking function for terms containing existential variables.
+ The function [noccur_with_meta] considers the fact that
+ each existential variable (as well as each isevar)
+ in the term appears applied to its local context,
+ which may contain the CoFix variables. These occurrences of CoFix variables
+ are not considered *)
+
+let noccur_with_meta n m term = 
+  let rec occur_rec n = function
+    | Rel p -> if n<=p & p<n+m then raise Occur
+    | VAR _ -> ()
+    | DOPN(AppL,cl) ->
+	(match cl.(0) with
+           | DOP2 (Cast,DOP0 (Meta _),_) -> ()
+           | DOP0 (Meta _) -> ()
+	   | _ -> Array.iter (occur_rec n) cl)
+    | DOPN(Evar _, _) -> ()
+    | DOPN(op,cl) -> Array.iter (occur_rec n) cl
+    | DOP0(_) -> ()
+    | DOP1(_,c) -> occur_rec n c
+    | DOP2(_,c1,c2) -> occur_rec n c1; occur_rec n c2
+    | DLAM(_,c) -> occur_rec (n+1) c
+    | DLAMV(_,v) -> Array.iter (occur_rec (n+1)) v
+    | CLam (_,t,c)   -> occur_rec n t; occur_rec (n+1) c
+    | CPrd (_,t,c)   -> occur_rec n t; occur_rec (n+1) c
+    | CLet (_,b,t,c) -> occur_rec n b; occur_rec n t; occur_rec (n+1) c
+  in 
+  try (occur_rec n term; true) with Occur -> false
+
+
+(*********************)
+(*      Lifting      *)
+(*********************)
+
+(* Explicit lifts and basic operations *)
+type lift_spec =
+  | ELID
+  | ELSHFT of lift_spec * int (* ELSHFT(l,n) == lift of n, then apply lift l *)
+  | ELLFT of int * lift_spec  (* ELLFT(n,l)  == apply l to de Bruijn > n *)
+                            (*                 i.e under n binders *)
+
+(* compose a relocation of magnitude n *)
+let rec el_shft n = function
+  | ELSHFT(el,k) -> el_shft (k+n) el
+  | el -> if n = 0 then el else ELSHFT(el,n)
+
+
+(* cross n binders *)
+let rec el_liftn n = function
+  | ELID -> ELID
+  | ELLFT(k,el) -> el_liftn (n+k) el
+  | el -> if n=0 then el else ELLFT(n, el)
+
+let el_lift el = el_liftn 1 el
+
+(* relocation of de Bruijn n in an explicit lift *)
+let rec reloc_rel n = function
+  | ELID -> n
+  | ELLFT(k,el) ->
+      if n <= k then n else (reloc_rel (n-k) el) + k
+  | ELSHFT(el,k) -> (reloc_rel (n+k) el)
+
+
+(* The generic lifting function *)
+let rec exliftn el = function
+  | Rel i            -> Rel(reloc_rel i el)
+  | DOPN(oper,cl)    -> DOPN(oper, Array.map (exliftn el) cl)
+  | DOP1(oper,c)     -> DOP1(oper, exliftn el c)
+  | DOP2(oper,c1,c2) -> DOP2(oper, exliftn el c1, exliftn el c2)
+  | DLAM(na,c)       -> DLAM(na, exliftn (el_lift el) c)
+  | DLAMV(na,v)      -> DLAMV(na, Array.map (exliftn (el_lift el)) v)
+  | CLam (n,t,c)   -> CLam (n, exliftn el t, exliftn (el_lift el) c)  
+  | CPrd (n,t,c)   -> CPrd (n, exliftn el t, exliftn (el_lift el) c)
+  | CLet (n,b,t,c) -> CLet (n,exliftn el b,exliftn el t,exliftn (el_lift el) c)
+  | x                -> x
+
+(* Lifting the binding depth across k bindings *)
+
+let liftn k n = 
+  match el_liftn (pred n) (el_shft k ELID) with
+    | ELID -> (fun c -> c)
+    | el -> exliftn el
+ 
+let lift k = liftn k 1
+
+let pop t = lift (-1) t
+
+let lift_context n l = 
+  let k = List.length l in 
+  list_map_i (fun i (name,c) -> (name,liftn n (k-i) c)) 0 l
+
+(*********************)
+(*   Substituting    *)
+(*********************)
+
+(* (subst1 M c) substitutes M for Rel(1) in c 
+   we generalise it to (substl [M1,...,Mn] c) which substitutes in parallel
+   M1,...,Mn for respectively Rel(1),...,Rel(n) in c *)
+
+(* 1st : general case *)
+
+type info = Closed | Open | Unknown
+type 'a substituend = { mutable sinfo: info; sit: 'a }
+
+let rec lift_substituend depth s =
+  match s.sinfo with
+    | Closed -> s.sit
+    | Open -> lift depth s.sit
+    | Unknown ->
+        s.sinfo <- if closed0 s.sit then Closed else Open;
+        lift_substituend depth s
+
+let make_substituend c = { sinfo=Unknown; sit=c }
+
+let substn_many lamv n =
+  let lv = Array.length lamv in 
+  let rec substrec depth = function 
+    | Rel k as x     ->
+        if k<=depth then 
+	  x
+        else if k-depth <= lv then
+          lift_substituend depth lamv.(k-depth-1)
+        else 
+	  Rel (k-lv)
+    | VAR id           -> VAR id
+    | DOPN(oper,cl)    -> DOPN(oper,Array.map (substrec depth) cl)
+    | DOP1(oper,c)     -> DOP1(oper,substrec depth c)
+    | DOP2(oper,c1,c2) -> DOP2(oper,substrec depth c1,substrec depth c2)
+    | DLAM(na,c)       -> DLAM(na,substrec (depth+1) c)
+    | DLAMV(na,v)      -> DLAMV(na,Array.map (substrec (depth+1)) v)
+    | CLam (n,t,c)   -> CLam (n, substrec depth t, substrec (depth+1) c)  
+    | CPrd (n,t,c)   -> CPrd (n, substrec depth t, substrec (depth+1) c)
+    | CLet (n,b,t,c) -> CLet (n, substrec depth b, substrec depth t, 
+			      substrec (depth+1) c)
+    | x                -> x
+  in 
+  substrec n
+
+let substnl laml k =
+  substn_many (Array.map make_substituend (Array.of_list laml)) k
+let substl laml =
+  substn_many (Array.map make_substituend (Array.of_list laml)) 0
+let subst1 lam = substl [lam]
+
+(* (thin_val sigma) removes identity substitutions from sigma *)
+
+let rec thin_val = function
+  | [] -> []
+  | (((id,{sit=VAR id'}) as s)::tl) -> 
+      if id = id' then thin_val tl else s::(thin_val tl)
+  | h::tl -> h::(thin_val tl)
+
+(* (replace_vars sigma M) applies substitution sigma to term M *)
+let replace_vars var_alist = 
+  let var_alist =
+    List.map (fun (str,c) -> (str,make_substituend c)) var_alist in
+  let var_alist = thin_val var_alist in 
+  let rec substrec n = function
+    | (VAR(x) as c)    ->
+        (try lift_substituend n (List.assoc x var_alist)
+         with Not_found -> c)
+	
+    | DOPN(oper,cl)    -> DOPN(oper,Array.map (substrec n) cl)
+    | DOP1(oper,c)     -> DOP1(oper,substrec n c)
+    | DOP2(oper,c1,c2) -> DOP2(oper,substrec n c1,substrec n c2)
+    | DLAM(na,c)       -> DLAM(na,substrec (n+1) c)
+    | DLAMV(na,v)      -> DLAMV(na,Array.map (substrec (n+1)) v)
+    | CLam (na,t,c)     -> CLam (na, substrec n t, substrec (n+1) c)  
+    | CPrd (na,t,c)     -> CPrd (na, substrec n t, substrec (n+1) c)
+    | CLet (na,b,t,c)   -> CLet (na,substrec n b,substrec n t,substrec (n+1) c)
+    | x                -> x
+  in 
+  if var_alist = [] then (function x -> x) else substrec 0
+
+(* (subst_var str t) substitute (VAR str) by (Rel 1) in t *)
+let subst_var str = replace_vars [(str, Rel 1)]
+
+(* (subst_vars [id1;...;idn] t) substitute (VAR idj) by (Rel j) in t *)
+let subst_vars vars =
+  let _,subst =
+    List.fold_left (fun (n,l) var -> ((n+1),(var,Rel n)::l)) (1,[]) vars
+  in replace_vars (List.rev subst)
+
+(*********************)
 (* Term constructors *)
 (*********************)
 
 (* Constructs a DeBrujin index with number n *)
 let mkRel   n = (Rel n)
-
-(* Constructs an existential variable named "?" *)
-let mkExistential = (DOP0 (XTRA "ISEVAR"))
 
 (* Constructs an existential variable named "?n" *)
 let mkMeta  n =  DOP0 (Meta n)
@@ -155,30 +439,30 @@ let mkImplicit = DOP0 (Sort implicit_sort)
 
 (* Constructs the term t1::t2, i.e. the term t1 casted with the type t2 *)
 (* (that means t2 is declared as the type of t1) *)
-let mkCast t1 t2 =
+let mkCast (t1,t2) =
   match t1 with
     | DOP2(Cast,t,_) -> DOP2(Cast,t,t2)
     | _ -> (DOP2 (Cast,t1,t2))
 
 (* Constructs the product (x:t1)t2 *)
-let mkProd x t1 t2 = (DOP2 (Prod,t1,(DLAM (x,t2))))
-let mkNamedProd id typ c = mkProd (Name id) typ (subst_var id c)
-let mkProd_string   s t c = mkProd (Name (id_of_string s)) t c
+let mkProd (x,t1,t2) = CPrd (x,t1,t2)
+let mkNamedProd id typ c = mkProd (Name id, typ, subst_var id c)
+let mkProd_string   s t c = mkProd (Name (id_of_string s), t, c)
 
 (* Constructs the abstraction [x:t1]t2 *)
-let mkLambda x t1 t2 = (DOP2 (Lambda,t1,(DLAM (x,t2))))
-let mkNamedLambda id typ c = mkLambda (Name id) typ (subst_var id c)
-let mkLambda_string s t c = mkLambda (Name (id_of_string s)) t c
+let mkLambda (x,t1,t2) = CLam (x,t1,t2)
+let mkNamedLambda id typ c = mkLambda (Name id, typ, subst_var id c)
+let mkLambda_string s t c = mkLambda (Name (id_of_string s), t, c)
 
 (* Constructs [x=c_1:t]c_2 *)
-let mkLetIn x c1 t c2 = failwith "TODO"
-let mkNamedLetIn id c1 t c2 = mkLetIn (Name id) c1 t (subst_var id c2)
+let mkLetIn (x,c1,t,c2) = CLet (x,c1,t,c2)
+let mkNamedLetIn id c1 t c2 = mkLetIn (Name id, c1, t, subst_var id c2)
 
 (* Constructs either [(x:t)c] or [[x=b:t]c] *)
 let mkProd_or_LetIn (na,body,t) c =
   match body with
-    | None -> mkProd na t c
-    | Some b -> mkLetIn na b t c
+    | None -> mkProd (na, t, c)
+    | Some b -> mkLetIn (na, b, t, c)
 
 let mkNamedProd_or_LetIn (id,body,t) c =
   match body with
@@ -188,8 +472,8 @@ let mkNamedProd_or_LetIn (id,body,t) c =
 (* Constructs either [[x:t]c] or [[x=b:t]c] *)
 let mkLambda_or_LetIn (na,body,t) c =
   match body with
-    | None -> mkLambda na t c
-    | Some b -> mkLetIn na b t c
+    | None -> mkLambda (na, t, c)
+    | Some b -> mkLetIn (na, b, t, c)
 
 let mkNamedLambda_or_LetIn (id,body,t) c =
   match body with
@@ -199,7 +483,7 @@ let mkNamedLambda_or_LetIn (id,body,t) c =
 (* Constructs either [(x:t)c] or [c] where [x] is replaced by [b] *)
 let mkProd_wo_LetIn (na,body,t) c =
   match body with
-    | None -> mkProd na (body_of_type t) c
+    | None -> mkProd (na, body_of_type t, c)
     | Some b -> subst1 b c
 
 let mkNamedProd_wo_LetIn (id,body,t) c =
@@ -208,7 +492,7 @@ let mkNamedProd_wo_LetIn (id,body,t) c =
     | Some b -> subst1 b (subst_var id c)
 
 (* non-dependent product t1 -> t2 *)
-let mkArrow t1 t2 = mkProd Anonymous t1 t2
+let mkArrow t1 t2 = mkProd (Anonymous, t1, t2)
 
 (* If lt = [t1; ...; tn], constructs the application (t1 ... tn) *)
 let mkAppL a = DOPN (AppL, a)
@@ -234,7 +518,7 @@ let mkMutInd (ind_sp,l) = DOPN (MutInd ind_sp, l)
 let mkMutConstruct (cstr_sp,l) =  DOPN (MutConstruct cstr_sp,l)
 
 (* Constructs the term <p>Case c of c1 | c2 .. | cn end *)
-let mkMutCase ci p c ac = 
+let mkMutCase (ci, p, c, ac) = 
   DOPN (MutCase ci, Array.append [|p;c|] (Array.of_list ac))
 let mkMutCaseA ci p c ac = 
   DOPN (MutCase ci, Array.append [|p;c|] ac)
@@ -316,7 +600,6 @@ let destMeta = function
   | (DOP0 (Meta n)) -> n
   | _ -> invalid_arg "destMeta"
 
-let isMETA = function DOP0(Meta _) -> true | _ -> false
 
 (* Destructs a variable *)
 let destVar = function
@@ -416,9 +699,12 @@ let rec strip_all_casts t =
     | DOP1(oper,c) -> DOP1(oper,strip_all_casts c)
     | DOP2(oper,c1,c2) -> DOP2(oper,strip_all_casts c1,strip_all_casts c2)
     | DOPN(oper,cl) -> DOPN(oper,Array.map strip_all_casts cl)
-    | DOPL(oper,cl) -> DOPL(oper,List.map strip_all_casts cl)
     | DLAM(na,c) -> DLAM(na,strip_all_casts c)
     | DLAMV(na,c) -> DLAMV(na,Array.map (under_outer_cast strip_all_casts) c)
+    | CLam (n,t,c)   -> CLam (n, strip_all_casts t, strip_all_casts c)  
+    | CPrd (n,t,c)   -> CPrd (n, strip_all_casts t, strip_all_casts c)
+    | CLet (n,b,t,c) -> CLet (n, strip_all_casts b, strip_all_casts t,
+			      strip_all_casts c)
     | VAR _ as t -> t
     | Rel _ as t -> t
 
@@ -430,13 +716,13 @@ let isVar = function VAR _ -> true | _ -> false
 
 (* Destructs the product (x:t1)t2 *)
 let destProd = function 
-  | DOP2 (Prod, t1, (DLAM (x,t2))) -> (x,t1,t2) 
+  | CPrd (x,t1,t2) -> (x,t1,t2) 
   | _ -> invalid_arg "destProd"
 
 let rec hd_of_prod prod =
   match strip_outer_cast prod with
-    | DOP2(Prod,c,DLAM(n,t')) -> hd_of_prod t'
-    |  t -> t
+    | CPrd (n,c,t') -> hd_of_prod t'
+    | t -> t
 
 let hd_is_constructor t  =  
   let is_constructor =  function
@@ -449,8 +735,13 @@ let hd_is_constructor t  =
 
 (* Destructs the abstraction [x:t1]t2 *)
 let destLambda = function 
-  | DOP2 (Lambda, t1, (DLAM (x,t2))) -> (x,t1,t2) 
+  | CLam (x,t1,t2) -> (x,t1,t2) 
   | _ -> invalid_arg "destLambda"
+
+(* Destructs the let [x:=b:t1]t2 *)
+let destLetIn = function 
+  | CLet (x,b,t1,t2) -> (x,b,t1,t2) 
+  | _ -> invalid_arg "destProd"
 
 (* Destructs an application *)
 let destAppL = function 
@@ -460,8 +751,6 @@ let destAppL = function
 let destApplication =  function
   | (DOPN (AppL,a)) when Array.length a <> 0 -> (a.(0), array_tl a)
   | _ -> invalid_arg "destApplication"
-
-let isAppL = function DOPN(AppL,_) -> true | _ -> false
 
 let args_app  = function
   | DOPN(AppL,cl) -> if Array.length cl >1  then array_tl cl else [||]
@@ -573,9 +862,9 @@ let destCoFix = function
 
 (**********************************************************************)
 
-type binder_kind = BProd | BLambda
+type binder_kind = BProd | BLambda | BLetIn
 
-type fix_kind = RFix of (int array * int) | RCofix of int
+type fix_kind = RFix of (int array * int) | RCoFix of int
 
 type 'ctxt reference =
   | RConst of section_path * 'ctxt
@@ -596,6 +885,12 @@ type cofixpoint = int * (constr array * name list * constr array)
 (* Term analysis  *)
 (******************)
 
+type hnftype =
+  | HnfSort   of sorts
+  | HnfProd   of name * constr * constr
+  | HnfAtom   of constr
+  | HnfMutInd of inductive * constr array
+
 type kindOfTerm = 
   | IsRel          of int
   | IsMeta         of int
@@ -605,6 +900,7 @@ type kindOfTerm =
   | IsCast         of constr * constr
   | IsProd         of name * constr * constr
   | IsLambda       of name * constr * constr
+  | IsLetIn        of name * constr * constr * constr
   | IsAppL         of constr * constr list
   | IsAbst         of section_path * constr array
   | IsEvar         of existential
@@ -629,8 +925,9 @@ let kind_of_term c =
     | DOP0 (Sort s)                        -> IsSort s
     | DOP0 (XTRA s)                        -> IsXtra s
     | DOP2 (Cast, t1, t2)                  -> IsCast (t1,t2)
-    | DOP2 (Prod, t1, (DLAM (x,t2)))       -> IsProd (x,t1,t2) 
-    | DOP2 (Lambda, t1, (DLAM (x,t2)))     -> IsLambda (x,t1,t2)
+    | CPrd (x,t1,t2)                       -> IsProd (x,t1,t2) 
+    | CLam (x,t1,t2)                       -> IsLambda (x,t1,t2)
+    | CLet (x,b,t1,t2)                     -> IsLetIn (x,b,t1,t2)
     | DOPN (AppL,a) when Array.length a <> 0 -> 
 	IsAppL (a.(0), List.tl (Array.to_list a))
     | DOPN (Const sp, a)                   -> IsConst (sp,a)
@@ -648,26 +945,31 @@ let kind_of_term c =
       	IsCoFix (i,typedbodies)
     | _ -> errorlabstrm "Term.kind_of_term" [< 'sTR "ill-formed constr" >]
 
+let isMeta = function DOP0(Meta _) -> true | _ -> false
+let isConst = function DOPN(Const _,_) -> true | _ -> false
+let isMutConstruct = function DOPN(MutCase _,_) -> true | _ -> false
+let isAppL = function DOPN(AppL,_) -> true | _ -> false
+
 (***************************)
 (* Other term constructors *)
 (***************************)
 
-let abs_implicit c = mkLambda Anonymous mkImplicit c
-let lambda_implicit a = mkLambda (Name(id_of_string"y")) mkImplicit a
+let abs_implicit c = mkLambda (Anonymous, mkImplicit, c)
+let lambda_implicit a = mkLambda (Name(id_of_string"y"), mkImplicit, a)
 let lambda_implicit_lift n a = iterate lambda_implicit n (lift n a)
 
 
 (* prod_it b [xn:Tn;..;x1:T1] = (x1:T1)..(xn:Tn)b *)
-let prod_it = List.fold_left (fun c (n,t)  -> mkProd n t c)
+let prod_it = List.fold_left (fun c (n,t)  -> mkProd (n, t, c))
 
 (* lam_it b [xn:Tn;..;x1:T1] = [x1:T1]..[xn:Tn]b *)
-let lam_it = List.fold_left (fun c (n,t)  -> mkLambda n t c)
+let lam_it = List.fold_left (fun c (n,t)  -> mkLambda (n, t, c))
 
 (* prodn n [xn:Tn;..;x1:T1;Gamma] b = (x1:T1)..(xn:Tn)b *)
 let prodn n env b =
   let rec prodrec = function
     | (0, env, b)        -> b
-    | (n, ((v,t)::l), b) -> prodrec (n-1,  l, DOP2(Prod,t,DLAM(v,b)))
+    | (n, ((v,t)::l), b) -> prodrec (n-1,  l, CPrd (v,t,b))
     | _ -> assert false
   in 
   prodrec (n,env,b)
@@ -676,7 +978,7 @@ let prodn n env b =
 let lamn n env b =
   let rec lamrec = function
     | (0, env, b)        -> b
-    | (n, ((v,t)::l), b) -> lamrec (n-1,  l, DOP2(Lambda,t,DLAM(v,b)))
+    | (n, ((v,t)::l), b) -> lamrec (n-1,  l, CLam (v,t,b))
     | _ -> assert false
   in 
   lamrec (n,env,b)
@@ -712,8 +1014,7 @@ let rec to_lambda n prod =
     prod 
   else 
     match prod with 
-      | DOP2(Prod,ty,DLAM(na,bd)) -> 
-          DOP2(Lambda,ty,DLAM(na, to_lambda (n-1) bd))
+      | CPrd(na,ty,bd) -> CLam(na,ty,to_lambda (n-1) bd)
       | DOP2(Cast,c,_) -> to_lambda n c
       | _   -> errorlabstrm "to_lambda" [<>]                      
 
@@ -722,8 +1023,7 @@ let rec to_prod n lam =
     lam
   else   
     match lam with 
-      | DOP2(Lambda,ty,DLAM(na,bd)) -> 
-          DOP2(Prod,ty,DLAM(na, to_prod (n-1) bd))
+      | CLam(na,ty,bd) -> CPrd(na,ty,to_prod (n-1) bd)
       | DOP2(Cast,c,_) -> to_prod n c
       | _   -> errorlabstrm "to_prod" [<>]                      
 	    
@@ -733,7 +1033,7 @@ let rec to_prod n lam =
 
 let prod_app t n =
   match strip_outer_cast t with
-    | DOP2(Prod,_,DLAM(na,b)) -> subst1 n b
+    | CPrd (_,_,b) -> subst1 n b
     | _ ->
 	errorlabstrm "prod_app"
 	  [< 'sTR"Needed a product, but didn't find one" ; 'fNL >]
@@ -753,27 +1053,29 @@ let prod_applist t nL = List.fold_left prod_app t nL
 (* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
 let destArity = 
-  let rec prodec_rec l = function
-    | DOP2(Prod,t,DLAM(x,c)) -> prodec_rec ((x,t)::l) c
-    | DOP2(Cast,c,_)         -> prodec_rec l c
-    | DOP0(Sort s)           -> l,s
-    | _                      -> anomaly "decompose_arity: not an arity"
+  let rec prodec_rec l c =
+    match kind_of_term c with
+    | IsProd (x,t,c) -> prodec_rec ((x,t)::l) c
+    | IsCast (c,_)   -> prodec_rec l c
+    | IsSort s       -> l,s
+    | _              -> anomaly "decompose_arity: not an arity"
   in 
   prodec_rec [] 
 
-let rec isArity = function
-  | DOP2(Prod,_,DLAM(_,c)) -> isArity c
-  | DOP2(Cast,c,_)         -> isArity c
-  | DOP0(Sort _)           -> true
+let rec isArity c =
+  match kind_of_term c with
+  | IsProd (_,_,c) -> isArity c
+  | IsCast (c,_)   -> isArity c
+  | IsSort _       -> true
   | _ -> false
 
 (* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
 let decompose_prod = 
   let rec prodec_rec l = function
-    | DOP2(Prod,t,DLAM(x,c)) ->	prodec_rec ((x,t)::l) c
-    | DOP2(Cast,c,_)         -> prodec_rec l c
-    | c                      -> l,c
+    | CPrd(x,t,c)    -> prodec_rec ((x,t)::l) c
+    | DOP2(Cast,c,_) -> prodec_rec l c
+    | c              -> l,c
   in 
   prodec_rec []
 
@@ -781,9 +1083,9 @@ let decompose_prod =
    ([(xn,Tn);...;(x1,T1)],T), where T is not a lambda *)
 let decompose_lam = 
   let rec lamdec_rec l = function
-    | DOP2(Lambda,t,DLAM(x,c)) -> lamdec_rec ((x,t)::l) c
-    | DOP2(Cast,c,_)         -> lamdec_rec l c
-    | c                      -> l,c
+    | CLam (x,t,c)    -> lamdec_rec ((x,t)::l) c
+    | DOP2 (Cast,c,_) -> lamdec_rec l c
+    | c              -> l,c
   in 
   lamdec_rec []
 
@@ -794,8 +1096,8 @@ let decompose_prod_n n =
   let rec prodec_rec l n c = 
     if n=0 then l,c 
     else match c with 
-      | DOP2(Prod,t,DLAM(x,c)) -> prodec_rec ((x,t)::l) (n-1) c
-      | DOP2(Cast,c,_)         -> prodec_rec l n c
+      | CPrd (x,t,c)    -> prodec_rec ((x,t)::l) (n-1) c
+      | DOP2 (Cast,c,_) -> prodec_rec l n c
       | c -> error "decompose_prod_n: not enough products"
   in 
   prodec_rec [] n 
@@ -807,8 +1109,8 @@ let decompose_lam_n n =
   let rec lamdec_rec l n c = 
     if n=0 then l,c 
     else match c with 
-      | DOP2(Lambda,t,DLAM(x,c)) -> lamdec_rec ((x,t)::l) (n-1) c
-      | DOP2(Cast,c,_)           -> lamdec_rec l n c
+      | CLam (x,t,c) -> lamdec_rec ((x,t)::l) (n-1) c
+      | DOP2 (Cast,c,_)           -> lamdec_rec l n c
       | c -> error "decompose_lam_n: not enough abstractions"
   in 
   lamdec_rec [] n 
@@ -817,7 +1119,7 @@ let decompose_lam_n n =
  * gives n (casts are ignored) *)
 let nb_lam = 
   let rec nbrec n = function
-    | DOP2(Lambda,_,DLAM(_,c)) -> nbrec (n+1) c
+    | CLam (_,_,c) -> nbrec (n+1) c
     | DOP2(Cast,c,_) -> nbrec n c
     | _ -> n
   in 
@@ -826,145 +1128,13 @@ let nb_lam =
 (* similar to nb_lam, but gives the number of products instead *)
 let nb_prod = 
   let rec nbrec n = function
-    | DOP2(Prod,_,DLAM(_,c)) -> nbrec (n+1) c
+    | CPrd (_,_,c) -> nbrec (n+1) c
     | DOP2(Cast,c,_) -> nbrec n c
     | _ -> n
   in 
   nbrec 0
 
-(* Trop compliqué...
-(********************************************************************)
-(*   various utility functions for implementing terms with bindings *)
-(********************************************************************)
-
-let extract_lifted (n,x) = lift n x
-let insert_lifted x = (0,x)
-
-(* l is a list of pairs (n:nat,x:constr), env is a stack of (na:name,T:constr)
-   push_and_lift adds a component to env and lifts l one step *)
-let push_and_lift (na,t) env l =
-  ((na,t)::env, List.map (fun (n,x) -> (n+1,x)) l)
-
-
-(* if T is not (x1:A1)(x2:A2)....(xn:An)T' then (push_and_liftl n env T l)
-   raises an error else it gives ([x1,A1 ; x2,A2 ; ... ; xn,An]@env,T',l')
-   where l' is l lifted n steps *)
-let push_and_liftl n env t l = 
-  let rec pushrec n t (env,l) =
-    match (n,t) with
-      | (0, _) -> (env,t,l)
-      | (_, DOP2(Prod,t,DLAM(na,b))) -> 
-          pushrec (n-1) b (push_and_lift (na,t) env l)
-      | (_, DOP2(Cast,t,_)) -> pushrec n t (env,l)
-      | _ -> error "push_and_liftl"
-  in 
-  pushrec n t (env,l)
-
-(* if T is not (x1:A1)(x2:A2)....(xn:An)T' then (push_and_liftl n env T l)
-   raises an error else it gives ([x1,A1 ; x2,A2 ; ... ; xn,An]@env,T',l')
-   where l' is l lifted n steps *)
-let push_lam_and_liftl n env t l = 
-  let rec pushrec n t (env,l) =
-    match (n,t) with
-      | (0, _) -> (env,t,l)
-      | (_, DOP2(Lambda,t,DLAM(na,b))) -> 
-	  pushrec (n-1) b (push_and_lift (na,t) env l)
-      | (_, DOP2(Cast,t,_)) -> pushrec n t (env,l)
-      | _ -> error "push_lam_and_liftl"
-  in 
-  pushrec n t (env,l)
-
-(* l is a list of pairs (n:nat,x:constr), tlenv is a stack of
-(na:name,T:constr), B : constr, na : name
-(prod_and_pop ((na,T)::tlenv) B l) gives (tlenv, (na:T)B, l')
-where l' is l lifted down one step *)
-let prod_and_pop env b l =
-  match env with
-    | [] -> error "prod_and_pop"
-    | (na,t)::tlenv ->
-        (tlenv,DOP2(Prod,t,DLAM(na,b)),
-         List.map (function 
-                       (0,x) -> (0,lift (-1) x)
-                     | (n,x) -> (n-1,x)) l)
-
-(* recusively applies prod_and_pop :
-if env = [na1:T1 ; na2:T2 ; ... ; nan:Tn]@tlenv
-then
-(prod_and_popl n env T l) gives (tlenv,(nan:Tn)...(na1:Ta1)T,l') where
-l' is l lifted down n steps *)
-let prod_and_popl n env t l = 
-  let rec poprec = function
-    | (0, (env,b,l)) -> (env,b,l)
-    | (n, ([],_,_))  -> error "prod_and_popl"
-    | (n, (env,b,l)) -> poprec (n-1, prod_and_pop env b l)
-  in 
-  poprec (n,(env,t,l))
-
-(* similar to prod_and_pop, but gives [na:T]B intead of (na:T)B *)
-let lam_and_pop env b l =
-  match env with
-    | [] -> error "lam_and_pop"
-    | (na,t)::tlenv ->
-        (tlenv,DOP2(Lambda,t,DLAM(na,b)),
-         List.map (function
-                       (0,x) -> (0,lift (-1) x)
-                     | (n,x) -> (n-1,x)) l)
-
-(* similar to lamn_and_pop but generates new names whenever the name is 
- *  Anonymous *)
-let lam_and_pop_named env body l acc_ids =
-  match env with
-    | [] -> error "lam_and_pop"
-    | (na,t)::tlenv ->
- 	let id = match na with
-	  | Anonymous -> next_ident_away (id_of_string "a") acc_ids
-	  | Name id -> id
-	in
-	(tlenv,DOP2(Lambda,t,DLAM((Name id),body)),
-         List.map (function
-                     | (0,x) -> (0,lift (-1) x)
-                     | (n,x) -> (n-1,x)) l,
-         (id::acc_ids))
-
-(* similar to prod_and_popl but gives [nan:Tan]...[na1:Ta1]B instead of
- * (nan:Tan)...(na1:Ta1)B *)
-let lam_and_popl n env t l = 
-  let rec poprec = function
-    | (0, (env,b,l)) -> (env,b,l)
-    | (n, ([],_,_)) -> error "lam_and_popl"
-    | (n, (env,b,l)) -> poprec (n-1, lam_and_pop env b l)
-  in 
-  poprec (n,(env,t,l))
-
-(* similar to prod_and_popl but gives [nan:Tan]...[na1:Ta1]B instead of
- * but it generates names whenever nai=Anonymous *)
-
-let lam_and_popl_named  n env t l = 
-  let rec poprec = function
-    | (0, (env,b,l,_)) -> (env,b,l)
-    | (n, ([],_,_,_)) -> error "lam_and_popl"
-    | (n, (env,b,l,acc_ids)) -> poprec (n-1, lam_and_pop_named env b l acc_ids)
-  in 
-  poprec (n,(env,t,l,[]))
-
-(* [lambda_ize n T endpt]
- * will pop off the first [n] products in [T], then stick in [endpt],
- * properly lifted, and then push back the products, but as lambda-
- * abstractions *)
-let lambda_ize n t endpt =
-  let env = [] 
-  and carry = [insert_lifted endpt] in
-  let env, endpt = 
-    match push_and_liftl n env t carry with
-      | (env,_,[endpt]) ->   env, endpt
-      | _ -> anomaly "bud in Term.lamda_ize" 
-  in
-  let t = extract_lifted endpt in
-  match lam_and_popl n env t [] with
-    | (_,t,[]) -> t
-    | _ -> anomaly "bud in Term.lamda_ize"
-*)
-	  
+(* Misc *)
 let sort_hdchar = function
   | Prop(_) -> "P"
   | Type(_) -> "T"
@@ -1021,17 +1191,65 @@ let rec strip_head_cast = function
   | DOP2(Cast,c,t) -> strip_head_cast c
   | c -> c
 
+(* Returns the list of global variables in a term *)
+
+let global_varsl l constr = 
+  let rec filtrec acc = function
+    | VAR id           -> id::acc
+    | DOP1(oper,c)     -> filtrec acc c
+    | DOP2(oper,c1,c2) -> filtrec (filtrec acc c1) c2
+    | DOPN(oper,cl)    -> Array.fold_left filtrec acc cl
+    | DLAM(_,c)        -> filtrec acc c
+    | DLAMV(_,v)       -> Array.fold_left filtrec acc v
+    | CLam (_,t,c)     -> filtrec (filtrec acc t) c
+    | CPrd (_,t,c)     -> filtrec (filtrec acc t) c
+    | CLet (_,b,t,c)   -> filtrec (filtrec (filtrec acc b) t) c
+    | _                -> acc
+  in 
+  filtrec l constr
+
+let global_vars constr = global_varsl [] constr
+
+let global_vars_set constr = 
+  let rec filtrec acc = function
+    | VAR id           -> Idset.add id acc
+    | DOP1(oper,c)     -> filtrec acc c
+    | DOP2(oper,c1,c2) -> filtrec (filtrec acc c1) c2
+    | DOPN(oper,cl)    -> Array.fold_left filtrec acc cl
+    | DLAM(_,c)        -> filtrec acc c
+    | DLAMV(_,v)       -> Array.fold_left filtrec acc v
+    | CLam (_,t,c)     -> filtrec (filtrec acc t) c
+    | CPrd (_,t,c)     -> filtrec (filtrec acc t) c
+    | CLet (_,b,t,c)   -> filtrec (filtrec (filtrec acc b) t) c
+    | _                -> acc
+  in 
+  filtrec Idset.empty constr
+
+(* [Rel (n+m);...;Rel(n+1)] *)
+
+let rel_vect n m = Array.init m (fun i -> Rel(n+m-i))
+
+let rel_list n m = 
+  let rec reln l p = 
+    if p>m then l else reln (Rel(n+p)::l) (p+1)
+  in 
+  reln [] 1
+
+(* Rem: end of import from old module Generic *)
+
 (* Various occurs checks *)
 
 let occur_opern s = 
   let rec occur_rec = function
     | DOPN(oper,cl) -> s=oper or (array_exists occur_rec cl)
-    | DOPL(oper,cl) -> s=oper or (List.exists occur_rec cl)
     | VAR _         -> false
     | DOP1(_,c)     -> occur_rec c 
     | DOP2(_,c1,c2) -> (occur_rec c1) or (occur_rec c2)
     | DLAM(_,c)     -> occur_rec c
     | DLAMV(_,v)    -> array_exists occur_rec v
+    | CLam (_,t,c)   -> occur_rec t or occur_rec c
+    | CPrd (_,t,c)   -> occur_rec t or occur_rec c
+    | CLet (_,b,t,c) -> occur_rec b or occur_rec t or occur_rec c
     | _             -> false
   in 
   occur_rec 
@@ -1044,12 +1262,14 @@ let occur_evar ev = occur_opern (Evar ev)
 let occur_var s = 
   let rec occur_rec = function
     | DOPN(_,cl)    -> array_exists occur_rec cl
-    | DOPL(_,cl)    -> List.exists occur_rec cl
     | VAR id        -> s=id
     | DOP1(_,c)     -> occur_rec c 
     | DOP2(_,c1,c2) -> (occur_rec c1) or (occur_rec c2)
     | DLAM(_,c)     -> occur_rec c
     | DLAMV(_,v)    -> array_exists occur_rec v
+    | CLam (_,t,c)   -> occur_rec t or occur_rec c
+    | CPrd (_,t,c)   -> occur_rec t or occur_rec c
+    | CLet (_,b,t,c) -> occur_rec b or occur_rec t or occur_rec c
     | _             -> false
   in 
   occur_rec 
@@ -1068,7 +1288,6 @@ let occur_var s =
 
    - if no (sp,_) appears in sigma, then sp is not unfolded.
 
-   NOTE : the case of DOPL is not handled...
 *)
 let replace_consts const_alist =
   let rec substrec = function
@@ -1090,11 +1309,13 @@ let replace_consts const_alist =
     | DOP2(oper,c1,c2)  -> DOP2(oper,substrec c1,substrec c2)
     | DLAM(na,c)        -> DLAM(na,substrec c)
     | DLAMV(na,v)       -> DLAMV(na,Array.map substrec v)
+    | CLam (na,t,c)     -> CLam (na, substrec t, substrec c)  
+    | CPrd (na,t,c)     -> CPrd (na, substrec t, substrec c)
+    | CLet (na,b,t,c)   -> CLet (na, substrec b, substrec t, substrec c)
     | x                 -> x
   in 
   if const_alist = [] then function x -> x else substrec
 
-(* NOTE : the case of DOPL is not handled by whd_castapp_stack *)
 let whd_castapp_stack = 
   let rec whrec x stack = match x with
     | DOPN(AppL,cl)  -> whrec (array_hd cl) (array_app_tl cl stack)
@@ -1129,41 +1350,31 @@ let rec eq_constr_rec m n =
     | (DLAM(_,c1),DLAM(_,c2)) 	       -> eq_constr_rec c1 c2
     | (DLAMV(_,cl1),DLAMV(_,cl2))       -> 
       	array_for_all2 eq_constr_rec cl1 cl2
+    | CLam(_,t1,c1), CLam(_,t2,c2) -> eq_constr_rec t1 t2 & eq_constr_rec c1 c2
+    | CPrd(_,t1,c1), CPrd(_,t2,c2) -> eq_constr_rec t1 t2 & eq_constr_rec c1 c2
+    | CLet(_,b1,t1,c1), CLet (_,b2,t2,c2) -> 
+	eq_constr_rec b1 b2 & eq_constr_rec t1 t2 & eq_constr_rec c1 c2
     | _ -> false
 
 let eq_constr = eq_constr_rec
-
-let rec eq_constr_with_meta_rec m n=
-  (m == n) or
-  (m=n) or 
-  (match (strip_head_cast m,strip_head_cast n) with
-     | (Rel p1,Rel p2)                   -> p1=p2
-     | (DOPN(oper1,cl1),DOPN(oper2,cl2)) ->
-         oper1=oper2 & array_for_all2 eq_constr_rec cl1 cl2
-     | (DOP0 oper1,DOP0 oper2)           -> oper1=oper2
-     | (DOP1(i,c1),DOP1(j,c2))           -> (i=j) & eq_constr_rec c1 c2
-     | (DOP2(i,c1,c1'),DOP2(j,c2,c2'))   ->
-      	 (i=j) & eq_constr_rec c1 c2 & eq_constr_rec c1' c2'
-     | (DLAM(_,c1),DLAM(_,c2)) 	       -> eq_constr_rec c1 c2
-     | (DLAMV(_,cl1),DLAMV(_,cl2))       -> 
-      	 array_for_all2 eq_constr_rec cl1 cl2
-     | _ -> false)
 
 (* (dependent M N) is true iff M is eq_term with a subterm of N 
    M is appropriately lifted through abstractions of N *)
 
 let dependent =
   let rec deprec m t =
-    (eq_constr m t)
-    or (match t with
-	  | VAR _       -> false
-	  | DOP1(_,c)   -> deprec m c
-	  | DOP2(_,c,t) -> deprec m c or deprec m t
-	  | DOPN(_,cl)  -> array_exists (deprec m) cl
-	  | DOPL(_,cl)  -> List.exists (deprec m) cl
-	  | DLAM(_,c)   -> deprec (lift 1 m) c
-	  | DLAMV(_,v)  -> array_exists (deprec (lift 1 m)) v
-	  | _ -> false)
+    (eq_constr m t) or 
+    (match t with
+       | VAR _       -> false
+       | DOP1(_,c)   -> deprec m c
+       | DOP2(_,c,t) -> deprec m c or deprec m t
+       | DOPN(_,cl)  -> array_exists (deprec m) cl
+       | DLAM(_,c)   -> deprec (lift 1 m) c
+       | DLAMV(_,v)  -> array_exists (deprec (lift 1 m)) v
+       | CLam (_,t,c)   -> deprec m t or deprec (lift 1 m) c
+       | CPrd (_,t,c)   -> deprec m t or deprec (lift 1 m) c
+       | CLet (_,b,t,c) -> deprec m b or deprec m t or deprec (lift 1 m) c
+       | _ -> false)
   in 
   deprec
 
@@ -1173,7 +1384,7 @@ let dependent =
 
 let rec eta_reduce_head c =
   match c with
-    | DOP2(Lambda,c1,DLAM(_,c')) ->
+    | CLam (_,c1,c') ->
 	(match eta_reduce_head c' with
            | DOPN(AppL,cl) ->
                let lastn = (Array.length cl) - 1 in 
@@ -1185,7 +1396,7 @@ let rec eta_reduce_head c =
                           if lastn = 1 then cl.(0) 
 			  else DOPN(AppL,Array.sub cl 0 lastn)
                         in
-                        if (not ((dependent (Rel 1) c'))) 
+                        if (not ((dependent (mkRel 1) c'))) 
                         then lift (-1) c'
                         else c
                     | _     -> c)
@@ -1194,40 +1405,43 @@ let rec eta_reduce_head c =
 
 (* alpha-eta conversion : ignore print names and casts *)
 
-let rec eta_eq_constr t1 t2 =
-  let t1 = eta_reduce_head (strip_head_cast t1)
-  and t2 = eta_reduce_head (strip_head_cast t2) in
-  t1=t2 or match (t1,t2) with
-    | (DOP2(Cast,c1,_),c2) -> eta_eq_constr c1 c2
-    | (c1,DOP2(Cast,c2,_)) -> eta_eq_constr c1 c2
+let eta_eq_constr =
+  let rec aux t1 t2 =
+    let t1 = eta_reduce_head (strip_head_cast t1)
+    and t2 = eta_reduce_head (strip_head_cast t2) in
+    t1=t2 or match (t1,t2) with
+    | (DOP2(Cast,c1,_),c2) -> aux c1 c2
+    | (c1,DOP2(Cast,c2,_)) -> aux c1 c2
     | (Rel p1,Rel p2)                   -> p1=p2
-    | (DOPN(oper1,cl1),DOPN(oper2,cl2)) ->
-	oper1=oper2 & array_for_all2 eta_eq_constr cl1 cl2
-    | (DOP0 oper1,DOP0 oper2)                 -> oper1=oper2
-    | (DOP1(i,c1),DOP1(j,c2)) -> (i=j) & eta_eq_constr c1 c2
-    | (DOP2(i,c1,c1'),DOP2(j,c2,c2')) ->
-	(i=j) & eta_eq_constr c1 c2 & eta_eq_constr c1' c2'
-    | (DLAM(_,c1),DLAM(_,c2)) -> eta_eq_constr c1 c2
-    | (DLAMV(_,cl1),DLAMV(_,cl2)) -> array_for_all2 eta_eq_constr cl1 cl2
+    | (DOPN(op1,cl1),DOPN(op2,cl2)) -> op1=op2 & array_for_all2 aux cl1 cl2
+    | (DOP0 oper1,DOP0 oper2)           -> oper1=oper2
+    | (DOP1(i,c1),DOP1(j,c2)) -> (i=j) & aux c1 c2
+    | (DOP2(i,c1,c1'),DOP2(j,c2,c2')) -> (i=j) & aux c1 c2 & aux c1' c2'
+    | (DLAM(_,c1),DLAM(_,c2)) -> aux c1 c2
+    | (DLAMV(_,cl1),DLAMV(_,cl2)) -> array_for_all2 aux cl1 cl2
+    | CLam(_,t1,c1), CLam(_,t2,c2) -> aux t1 t2 & aux c1 c2
+    | CPrd(_,t1,c1), CPrd(_,t2,c2) -> aux t1 t2 & aux c1 c2
+    | CLet(_,b1,t1,c1), CLet (_,b2,t2,c2) -> aux b1 b2 & aux t1 t2 & aux c1 c2
     | _ -> false
+  in aux
 
 
-(* This renames bound variablew with fresh and distinct names *)
+(* This renames bound variables with fresh and distinct names *)
 (* in such a way that the printer doe not generate new names  *)
 (* and therefore that printed names are the intern names      *)
 (* In this way, tactics such as Induction works well          *)
 
-let rec rename_bound_var l = function
-  | DOP2(Prod,c1,DLAM(Name(s),c2))  ->
-      if dependent (Rel 1) c2 then
+let rec rename_bound_var l c =
+  match kind_of_term c with
+  | IsProd (Name s,c1,c2)  ->
+      if dependent (mkRel 1) c2 then
         let s' = next_ident_away s (global_vars c2@l) in
-        DOP2(Prod,c1,DLAM(Name(s'),rename_bound_var (s'::l) c2))
+        mkProd (Name s', c1, rename_bound_var (s'::l) c2)
       else 
-	DOP2(Prod,c1,DLAM(Name(s),rename_bound_var l c2))
-  | DOP2(Prod,c1,DLAM(Anonymous,c2)) ->
-      DOP2(Prod,c1,DLAM(Anonymous,rename_bound_var l c2))
-  | DOP2(Cast,c,t) -> DOP2(Cast,rename_bound_var l c,t)
-  |  x -> x
+	mkProd (Name s, c1, rename_bound_var l c2)
+  | IsProd (Anonymous,c1,c2) -> mkProd (Anonymous, c1, rename_bound_var l c2)
+  | IsCast (c,t) -> mkCast (rename_bound_var l c, t)
+  | x -> c
 
 (***************************)
 (*  substitution functions *)                         
@@ -1269,47 +1483,38 @@ let sort_increasing_snd =
    [subst_term c t] substitutes [(Rel 1)] for all occurrences of (closed)
    term [c] in a term [t] *)
 
-let subst_term c t = 
+let subst_term_gen eq_fun c t = 
   let rec substrec k c t =
     match prefix_application k c t with
       | Some x -> x
       | None ->
-	  (if eq_constr t c then Rel(k) else match t with
-	     | DOPN(Const sp,cl) -> t
-	     | DOPN(MutInd (x_0,x_1),cl) -> t
-	     | DOPN(MutConstruct (x_0,x_1),cl) -> t
-	     | DOPN(oper,tl)     -> DOPN(oper,Array.map (substrec k c) tl)
-	     | DOP1(i,t)         -> DOP1(i,substrec k c t)
-	     | DOP2(oper,c1,c2)  -> DOP2(oper,substrec k c c1,substrec k c c2)
-	     | DLAM(na,t)        -> DLAM(na,substrec (k+1) (lift 1 c) t)
-	     | DLAMV(na,v) -> DLAMV(na,Array.map (substrec (k+1) (lift 1 c)) v)
-	     | _ -> t)
+    (if eq_fun t c then Rel(k) else match t with
+       | DOPN(Const sp,cl) -> t
+       | DOPN(MutInd (x_0,x_1),cl) -> t
+       | DOPN(MutConstruct (x_0,x_1),cl) -> t
+       | DOPN(oper,tl)     -> DOPN(oper,Array.map (substrec k c) tl)
+       | DOP1(i,t)         -> DOP1(i,substrec k c t)
+       | DOP2(oper,c1,c2)  -> DOP2(oper,substrec k c c1,substrec k c c2)
+       | DLAM(na,t)        -> DLAM(na,substrec (k+1) (lift 1 c) t)
+       | DLAMV(na,v) -> DLAMV(na,Array.map (substrec (k+1) (lift 1 c)) v)
+       | CLam(na,t,c2) -> CLam(na,substrec k c t,substrec (k+1) (lift 1 c) c2) 
+       | CPrd(na,t,c2) -> CPrd(na,substrec k c t,substrec (k+1) (lift 1 c) c2) 
+       | CLet(na,b,t,c2) -> CLet(na,substrec k c b,substrec k c t,
+				substrec (k+1) (lift 1 c) c2)
+       | _ -> t)
   in 
   substrec 1 c t
 
-(* same as subst_term, but modulo eta *)
-
-let subst_term_eta_eq c t = 
-  let rec substrec k c t =
-    match prefix_application_eta k c t with
-      | Some x -> x
-      | None ->
-	  (if eta_eq_constr t c then Rel(k) else match t with
-	     | DOPN(Const sp,cl) -> t
-	     | DOPN(oper,tl)     -> DOPN(oper,Array.map (substrec k c) tl)
-	     | DOP1(i,t)         -> DOP1(i,substrec k c t)
-	     | DOP2(oper,c1,c2)  -> DOP2(oper,substrec k c c1,substrec k c c2)
-	     | DLAM(na,t)        -> DLAM(na,substrec (k+1) (lift 1 c) t)
-	     | DLAMV(na,v)-> DLAMV(na,Array.map (substrec (k+1) (lift 1 c)) v)
-	     | _ -> t)
-  in 
-  substrec 1 c t
+let subst_term = subst_term_gen eq_constr
+let subst_term_eta = subst_term_gen eta_eq_constr
 
 (* bl : (int,constr) Listmap.t = (int * constr) list *)
 (* c : constr *)
 (* for each binding (i,c_i) in bl, substitutes the metavar i by c_i in c *)
 (* Raises Not_found if c contains a meta that is not in the association list *)
 
+(* Bogué ? Pourquoi pas de lift en passant sous un lieur ?? *)
+(* Et puis meta doit fusionner avec Evar *)
 let rec subst_meta bl c = 
   match c with
     | DOP0(Meta(i)) -> List.assoc i bl
@@ -1317,6 +1522,10 @@ let rec subst_meta bl c =
     | DOP2(op,c'1, c'2) -> DOP2(op, subst_meta bl c'1, subst_meta bl c'2)
     | DOPN(op, c') -> DOPN(op, Array.map (subst_meta bl) c')
     | DLAM(x,c') -> DLAM(x, subst_meta bl c')
+    | CLam(na,t,c) -> CLam(na,subst_meta bl t,subst_meta bl c) 
+    | CPrd(na,t,c) -> CPrd(na,subst_meta bl t,subst_meta bl c) 
+    | CLet(na,b,t,c) -> CLet(na,subst_meta bl b,subst_meta bl t,
+			     subst_meta bl c)
     | _ -> c
 
 (* Substitute only a list of locations locs, the empty list is
@@ -1325,55 +1534,61 @@ let rec subst_meta bl c =
    that will not be substituted. *)
 
 let subst_term_occ_gen locs occ c t =
+  let pos = ref occ in
   let except = List.for_all (fun n -> n<0) locs in
-  let rec substcheck k occ c t =
-    if except or List.exists (function u -> u>=occ) locs then
-      substrec k occ c t
+  let rec substcheck k c t =
+    if except or List.exists (function u -> u >= !pos) locs then
+      substrec k c t
     else 
-      (occ,t)
-  and substrec k occ c t =
+      t
+  and substrec k c t =
     if eq_constr t c then
-      if except then 
-	if List.mem (-occ) locs then (occ+1,t) else (occ+1,Rel(k))
-      else 
-	if List.mem occ locs then (occ+1,Rel(k)) else  (occ+1,t)
-    else 
+      let r = 
+	if except then 
+	  if List.mem (- !pos) locs then t else (Rel k)
+	else 
+	  if List.mem !pos locs then (Rel k) else t
+      in incr pos; r
+    else
       match t with
-	| DOPN(Const sp,tl) -> occ,t
-	|  DOPN(MutConstruct _,tl) -> occ,t
-	|  DOPN(MutInd _,tl) -> occ,t
-	|  DOPN(i,cl) -> 
-	     let (occ',cl') =   
+	| DOPN((Const _ | MutConstruct _ | MutInd _), _) -> t
+	| DOPN(i,cl) -> 
+	    let cl' =
+	      Array.fold_left (fun lfd f -> substcheck k c f :: lfd) [] cl
+            in 
+	    DOPN(i,Array.of_list (List.rev cl'))
+	| DOP2(i,t1,t2) -> 
+	    let t1' = substrec k c t1 in
+            let t2' = substcheck k c t2 in
+            DOP2(i,t1',t2')
+	| DOP1(i,t) -> 
+	    DOP1(i,substrec k c t)
+	| DLAM(n,t) -> 
+            DLAM(n,substcheck (k+1) (lift 1 c) t)
+	| DLAMV(n,cl) -> 
+	     let cl' =   
                Array.fold_left 
-		 (fun (nocc',lfd) f ->
-		    let (nocc'',f') = substcheck k nocc' c f in
-                    (nocc'',f'::lfd)) 
-		 (occ,[]) cl
+		 (fun lfd f -> substcheck (k+1) (lift 1 c) f ::lfd)
+		 [] cl
              in 
-	     (occ',DOPN(i,Array.of_list (List.rev cl')))
-	|  DOP2(i,t1,t2) -> 
-	     let (nocc1,t1')=substrec k occ c t1 in
-             let (nocc2,t2')=substcheck k nocc1 c t2 in
-             nocc2,DOP2(i,t1',t2')
-	|  DOP1(i,t) -> 
-	     let (nocc,t')= substrec k occ c t in
-	     nocc,DOP1(i,t')
-	|  DLAM(n,t) -> 
-	     let (occ',t') = substcheck (k+1) occ (lift 1 c) t in
-             (occ',DLAM(n,t'))
-	|  DLAMV(n,cl) -> 
-	     let (occ',cl') =   
-               Array.fold_left 
-		 (fun (nocc',lfd) f ->
-		    let (nocc'',f') = 
-		      substcheck (k+1) nocc' (lift 1 c) f
-                    in (nocc'',f'::lfd)) 
-		 (occ,[]) cl
-             in 
-	     (occ',DLAMV(n,Array.of_list (List.rev cl') ))
-	|  _ -> occ,t
+	     DLAMV(n,Array.of_list (List.rev cl'))
+	| CLam(na,t,c2) ->
+	    let t' = substrec k c t in
+            let c2' = substcheck (k+1) (lift 1 c) c2 in
+	    CLam(na,t',c2')
+	| CPrd(na,t,c2) ->
+	    let t' = substrec k c t in
+            let c2' = substcheck (k+1) (lift 1 c) c2 in
+	    CPrd(na,t',c2')
+	| CLet(na,b,t,c2) ->
+	    let b' = substrec k c b in
+	    let t' = substrec k c t in
+            let c2' = substcheck (k+1) (lift 1 c) c2 in
+	    CLet(na,b',t',c2')
+	| DOP0 _ | VAR _ | Rel _ -> t
   in
-  substcheck 1 occ c t
+  let t' = substcheck 1 c t in
+  (!pos, t')
 
 let subst_term_occ locs c t = 
   if locs = [] then
@@ -1406,24 +1621,25 @@ let subst_term_occ_decl locs c (id,bodyopt,typ as d) =
 (***************************)
 
 let rec occur_meta = function
-  | DOP2(Prod,t,DLAM(_,c))   -> (occur_meta t) or (occur_meta c)
-  | DOP2(Lambda,t,DLAM(_,c)) -> (occur_meta t) or (occur_meta c)
+  | CPrd(_,t,c)      -> (occur_meta t) or (occur_meta c)
+  | CLam(_,t,c)      -> (occur_meta t) or (occur_meta c)
+  | CLet(_,b,t,c)    -> (occur_meta b) or (occur_meta t) or (occur_meta c)
   | DOPN(_,cl)        -> (array_exists occur_meta cl)
   | DOP2(Cast,c,t)    -> occur_meta c or occur_meta t
   | DOP0(Meta(_))     -> true
   | _                 -> false
 
-let rel_vect = (Generic.rel_vect : int -> int -> constr array)
-		 
 let occur_existential = 
   let rec occrec = function
     | DOPN(Evar _,_) -> true
     | DOPN(_,cl) -> array_exists occrec cl
-    | DOPL(_,cl) -> List.exists occrec cl
     | DOP2(_,c1,c2) -> occrec c1 or occrec c2
     | DOP1(_,c) -> occrec c
     | DLAM(_,c) -> occrec c
     | DLAMV(_,cl) -> array_exists occrec cl
+    | CPrd(_,t,c)   -> (occrec t) or (occrec c)
+    | CLam(_,t,c)   -> (occrec t) or (occrec c)
+    | CLet(_,b,t,c) -> (occrec b) or (occrec t) or (occrec c)
     | _ -> false
   in 
   occrec
@@ -1440,13 +1656,14 @@ let comp_term t1 t2 =
     | (DOPN(o1,v1), DOPN(o2,v2)) ->
         (o1==o2) & (Array.length v1 = Array.length v2)
         & array_for_all2 (==) v1 v2
-    | (DOPL(o1,l1), DOPL(o2,l2)) ->
-        (o1==o2) & (List.length l1 = List.length l2)
-        & List.for_all2 (==) l1 l2
     | (DLAM(x1,t1), DLAM(x2,t2)) -> x1==x2 & t1==t2
     | (DLAMV(x1,v1), DLAMV(x2,v2)) ->
         (x1==x2) & (Array.length v1 = Array.length v2)
         & array_for_all2 (==) v1 v2
+    | CLam(x1,t1,c1), CLam(x2,t2,c2) ->	(x1==x2) & (t1==t2) & (c1==c2)
+    | CPrd(x1,t1,c1), CPrd(x2,t2,c2) ->	(x1==x2) & (t1==t2) & (c1==c2)
+    | CLet(x1,b1,t1,c1), CLet (x2,b2,t2,c2) ->
+	(x1==x2) & (b1==b2) & (t1==t2) & (c1==c2)
     | (Rel i, Rel j) -> i=j
     | (VAR x, VAR y) -> x==y
     | _ -> false
@@ -1457,9 +1674,11 @@ let hash_term (sh_rec,(sh_op,sh_na,sh_id)) t =
     | DOP1(o,t) -> DOP1(sh_op o, sh_rec t)
     | DOP2(o,t1,t2) -> DOP2(sh_op o, sh_rec t1, sh_rec t2)
     | DOPN(o,v) -> DOPN(sh_op o, Array.map sh_rec v)
-    | DOPL(o,l) -> DOPL(sh_op o, List.map sh_rec l)
     | DLAM(n,t) -> DLAM(sh_na n, sh_rec t)
     | DLAMV(n,v) -> DLAMV(sh_na n, Array.map sh_rec v)
+    | CLam (n,t,c)   -> CLam (sh_na n, sh_rec t, sh_rec c)  
+    | CPrd (n,t,c)   -> CPrd (sh_na n, sh_rec t, sh_rec c)
+    | CLet (n,b,t,c) -> CLet (sh_na n, sh_rec b, sh_rec t, sh_rec c)
     | Rel i -> t
     | VAR x -> VAR (sh_id x) 
 
@@ -1568,204 +1787,138 @@ let is_hd_const=function
              Some (Const c,Array.of_list (List.tl (Array.to_list t)))
          |_ -> None)
   |_ -> None
-	 
-(*Gives the occurences number of t in u*)
-let rec nb_occ_term t u=
-  let one_step t=function
-    | DOP1(_,c) -> nb_occ_term t c
-    | DOP2(_,c0,c1) -> (nb_occ_term t c0)+(nb_occ_term t c1)
-    | DOPN(_,a) -> Array.fold_left (fun a x -> a+(nb_occ_term t x)) 0 a
-    | DOPL(_,l) -> List.fold_left (fun a x -> a+(nb_occ_term t x)) 0 l
-    | DLAM(_,c) -> nb_occ_term t c
-    | DLAMV(_,a) -> Array.fold_left (fun a x -> a+(nb_occ_term t x)) 0 a
-    | _ -> 0
-  in
-  if t=u then
-    1
-  else
-    one_step t u
 
-(*Alpha-conversion*)
-let bind_eq=function
-  | (Anonymous,Anonymous) -> true
-  | (Name _,Name _) -> true
-  | _ -> false
-	
-	(*Tells if two constrs are equal modulo unification*)
-let rec eq_mod_rel l_meta=function
-  | (t,DOP0(Meta n)) ->
-      if not(List.mem n (fst (List.split l_meta))) then
-	Some ([(n,t)]@l_meta)
-      else if (List.assoc n l_meta)=t then
-	Some l_meta
-      else
-	None
-  | DOP1(op0,c0), DOP1(op1,c1) ->
-      if op0=op1 then
-	eq_mod_rel l_meta (c0,c1)
-      else
-	None
-  | DOP2(op0,t0,c0), DOP2(op1,t1,c1) ->
-      if op0=op1 then
-	match (eq_mod_rel l_meta (t0,t1)) with
-          | None -> None
-          | Some l -> eq_mod_rel l (c0,c1)	
-      else
-	None
-  | DOPN(op0,t0), DOPN(op1,t1) ->
-      if (op0=op1) & ((Array.length t0)=(Array.length t1)) then
-	List.fold_left2
-          (fun a c1 c2 ->
-             match a with
-	       | None -> None
-               | Some l -> eq_mod_rel l (c1,c2)) (Some l_meta)
-          (Array.to_list t0) (Array.to_list t1)
-      else
-	None
-  | DLAM(n0,t0),DLAM(n1,t1) ->
-      if (bind_eq (n0,n1)) then
-	eq_mod_rel l_meta (t0,t1)
-      else
-	None
-  | (t,u) ->
-      if t=u then Some l_meta else None
-
-(*Substitutes a list of meta l in t*)
-let rec subst_with_lmeta l=function
-  | DOP0(Meta n) -> List.assoc n l
-  | DOP1(op,t) -> DOP1(op,subst_with_lmeta l t)
-  | DOP2(op,t0,t1) -> DOP2(op,subst_with_lmeta l t0,subst_with_lmeta l t1)
-  | DOPN(op,t) -> DOPN(op,Array.map (subst_with_lmeta l) t)
-  | DOPL(op,ld) -> DOPL(op,List.map (subst_with_lmeta l) ld)
-  | DLAM(n,t) -> DLAM(n,subst_with_lmeta l t)
-  | DLAMV(n,t) -> DLAMV(n,Array.map (subst_with_lmeta l) t)
-  | t -> t
-
-(*Carries out the following translation: DOPN(AppL,[|t|]) -> t and
-  DOPN(AppL,[|DOPN(AppL,t);...;t'|]) -> DOPN(AppL;[|t;...;t'|])*)
-let rec appl_elim=function
-  | DOPN(AppL,t) ->
-      if (Array.length t)=1 then
-	appl_elim t.(0)
-      else
-	(match t.(0) with
-           | DOPN(AppL,t') -> 
-	       appl_elim (DOPN(AppL,Array.append t' 
-				 (Array.of_list
-				    (List.tl (Array.to_list t)))))
-           |_ -> DOPN(AppL,Array.map appl_elim t))
-  | DOP1(op,t) -> DOP1(op,appl_elim t)
-  | DOP2(op,t0,t1) -> DOP2(op,appl_elim t0,appl_elim t1)
-  | DOPN(op,t) -> DOPN(op,Array.map appl_elim t)
-  | DOPL(op,ld) -> DOPL(op,List.map appl_elim ld)
-  | DLAM(n,t) -> DLAM(n,appl_elim t)
-  | DLAMV(n,t) -> DLAMV(n,Array.map appl_elim t)
-  | t -> t
-
-(*Gives Some(first instance of ceq in cref,occurence number for this
-  instance) or None if no instance of ceq can be found in cref*)
-let sub_term_with_unif cref ceq=
-  let rec find_match l_meta nb_occ op_ceq t_eq=function
-    | DOPN(AppL,t) as u ->
-	(match (t.(0)) with
-           | DOPN(op,t_op) ->
-               let t_args=Array.of_list (List.tl (Array.to_list t)) in
-               if op=op_ceq then
-                 match
-                   (List.fold_left2 
-                      (fun a c0 c1 ->
-                         match a with
-                           | None -> None
-                           | Some l -> eq_mod_rel l (c0,c1)) (Some l_meta)
-                      (Array.to_list t_args) (Array.to_list t_eq))
-                 with
-                   | None ->
-                       List.fold_left
-                         (fun (l_meta,nb_occ) x -> find_match l_meta nb_occ
-                              op_ceq t_eq x) (l_meta,nb_occ) (Array.to_list
-								t_args)
-                   | Some l -> (l,nb_occ+1)
-               else
-                 List.fold_left 
-		   (fun (l_meta,nb_occ) x -> find_match l_meta
-			nb_occ op_ceq t_eq x) 
-		   (l_meta,nb_occ) (Array.to_list t)
-           | VAR _ ->
-	       List.fold_left 
-		 (fun (l_meta,nb_occ) x -> find_match l_meta
-		      nb_occ op_ceq t_eq x) 
-		 (l_meta,nb_occ) (Array.to_list t)
-           |_ -> (l_meta,nb_occ))
-    | DOP2(_,t,DLAM(_,c)) ->
-	let (lt,nbt)=find_match l_meta nb_occ op_ceq t_eq t in
-        find_match lt nbt op_ceq t_eq c
-    | DOPN(_,t) -> 
-	List.fold_left 
-	  (fun (l_meta,nb_occ) x -> find_match l_meta nb_occ op_ceq t_eq x) 
-	  (l_meta,nb_occ) (Array.to_list t)
-    |_ -> (l_meta,nb_occ)
-  in
-  match (is_hd_const ceq) with
-    | None ->
-        if (occur_meta ceq) then
-          None
-        else
-          let nb_occ=nb_occ_term ceq cref in
-          if nb_occ=0 then
-            None
-          else
-            Some (ceq,nb_occ)
-    | Some (head,t_args) ->
-        let (l,nb)=find_match [] 0 head t_args cref in
-        if nb=0 then
-          None
-        else
-          Some ((subst_with_lmeta l ceq),nb)
+(* Abstract decomposition of constr to deal with generic functions *)
 
 type constr_operator =
   | OpMeta of int
   | OpSort of sorts
   | OpRel of int | OpVar of identifier
-  | OpCast | OpProd of name | OpLambda of name
+  | OpCast | OpProd of name | OpLambda of name | OpLetIn of name
   | OpAppL | OpConst of section_path | OpAbst of section_path
   | OpEvar of existential_key
   | OpMutInd of inductive_path
   | OpMutConstruct of constructor_path
   | OpMutCase of case_info
-  | OpRec of fix_kind
+  | OpRec of fix_kind * name list
 
 let splay_constr = function
-  | Rel n                            -> OpRel n, []
-  | VAR id                           -> OpVar id, [] 
-  | DOP0 (Meta n)                    -> OpMeta n, []
-  | DOP0 (Sort s)                    -> OpSort s, []
-  | DOP2 (Cast, t1, t2)              -> OpCast, [t1;t2]
-  | DOP2 (Prod, t1, (DLAM (x,t2)))   -> OpProd x, [t1;t2]
-  | DOP2 (Lambda, t1, (DLAM (x,t2))) -> OpLambda x, [t1;t2]
-  | DOPN (AppL,a)                 -> OpAppL, Array.to_list a
-  | DOPN (Const sp, a)            -> OpConst sp, Array.to_list a
-  | DOPN (Evar sp, a)             -> OpEvar sp, Array.to_list a
-  | DOPN (MutInd ind_sp, l)       -> OpMutInd ind_sp, Array.to_list l
-  | DOPN (MutConstruct cstr_sp,l) -> OpMutConstruct cstr_sp, Array.to_list l
-  | DOPN (MutCase ci,v)           -> OpMutCase ci, Array.to_list v
-  | DOPN ((Fix (f,i),a))          -> OpRec (RFix (f,i)), Array.to_list a
-  | DOPN ((CoFix i),a)            -> OpRec (RCofix i), Array.to_list a
+  | Rel n                         -> OpRel n, [||]
+  | VAR id                        -> OpVar id, [||] 
+  | DOP0 (Meta n)                 -> OpMeta n, [||]
+  | DOP0 (Sort s)                 -> OpSort s, [||]
+  | DOP2 (Cast, t1, t2)           -> OpCast, [|t1;t2|]
+  | CPrd (x, t1, t2)              -> OpProd x, [|t1;t2|]
+  | CLam (x, t1, t2)              -> OpLambda x, [|t1;t2|]
+  | CLet (x, b, t1, t2)           -> OpLetIn x, [|b;t1;t2|]
+  | DOPN (AppL,a)                 -> OpAppL, a
+  | DOPN (Const sp, a)            -> OpConst sp, a
+  | DOPN (Evar sp, a)             -> OpEvar sp, a
+  | DOPN (MutInd ind_sp, l)       -> OpMutInd ind_sp, l
+  | DOPN (MutConstruct cstr_sp,l) -> OpMutConstruct cstr_sp, l
+  | DOPN (MutCase ci,v)           -> OpMutCase ci, v
+  | DOPN ((Fix (f,i),a)) as c     ->
+      let (fi,(tl,lna,bl)) = destFix c in
+      OpRec (RFix fi,lna), Array.append tl bl
+  | DOPN ((CoFix i),a) as c       ->
+      let (fi,(tl,lna,bl)) = destCoFix c in
+      OpRec (RCoFix fi,lna), Array.append tl bl
   | _ -> errorlabstrm "Term.splay_term" [< 'sTR "ill-formed constr" >]
 
 let gather_constr = function
-  | OpRel n, []  -> Rel n
-  | OpVar id, [] -> VAR id
-  | OpMeta n, [] -> DOP0 (Meta n)
-  | OpSort s, [] -> DOP0 (Sort s)
-  | OpCast, [t1;t2]     -> DOP2 (Cast, t1, t2)
-  | OpProd x, [t1;t2]   -> DOP2 (Prod, t1, (DLAM (x,t2)))
-  | OpLambda x, [t1;t2] -> DOP2 (Lambda, t1, (DLAM (x,t2))) 
-  | OpAppL, a     -> DOPN (AppL,Array.of_list a)
-  | OpConst sp, a -> DOPN (Const sp,Array.of_list a)
-  | OpEvar sp, a  -> DOPN (Evar sp, Array.of_list a) 
-  | OpMutInd ind_sp, l        -> DOPN (MutInd ind_sp, Array.of_list l) 
-  | OpMutConstruct cstr_sp, l -> DOPN (MutConstruct cstr_sp,Array.of_list l)
-  | OpMutCase ci,  v    -> DOPN (MutCase ci,Array.of_list v)   
-  | OpRec (RFix (f,i)), a  -> DOPN ((Fix (f,i),Array.of_list a))
-  | OpRec (RCofix i), a -> DOPN ((CoFix i),Array.of_list a) 
+  | OpRel n, [||]  -> Rel n
+  | OpVar id, [||] -> VAR id
+  | OpMeta n, [||] -> DOP0 (Meta n)
+  | OpSort s, [||] -> DOP0 (Sort s)
+  | OpCast, [|t1;t2|]     -> DOP2 (Cast, t1, t2)
+  | OpProd x, [|t1;t2|]   -> mkProd (x, t1, t2)
+  | OpLambda x, [|t1;t2|] -> mkLambda (x, t1, t2)
+  | OpLetIn x, [|b;t1;t2|] -> mkLetIn (x, b, t1, t2)
+  | OpAppL, a     -> DOPN (AppL, a)
+  | OpConst sp, a -> DOPN (Const sp, a)
+  | OpEvar sp, a  -> DOPN (Evar sp, a) 
+  | OpMutInd ind_sp, l        -> DOPN (MutInd ind_sp, l) 
+  | OpMutConstruct cstr_sp, l -> DOPN (MutConstruct cstr_sp, l)
+  | OpMutCase ci,  v    -> DOPN (MutCase ci, v)   
+  | OpRec (RFix fi,lna), a  ->
+      let n = Array.length a / 2 in
+      mkFix (fi,(Array.sub a 0 n, lna, Array.sub a n n))
+  | OpRec (RCoFix i,lna), a ->
+      let n = Array.length a / 2 in
+      mkCoFix (i,(Array.sub a 0 n, lna, Array.sub a n n))
   | _ -> errorlabstrm "Term.gather_term" [< 'sTR "ill-formed constr" >]
+
+let rec mycombine l1 l3 =
+  match (l1, l3) with
+    ([], []) -> []
+  | (a1::l1, a3::l3) -> (a1, None, a3) :: mycombine l1 l3
+  | (_, _) -> invalid_arg "mycombine"
+
+let rec mysplit = function
+    [] -> ([], [])
+  | (x, _, z)::l -> let (rx, rz) = mysplit l in (x::rx, z::rz)
+
+let splay_constr_with_binders = function
+  | Rel n                         -> OpRel n, [], [||]
+  | VAR id                        -> OpVar id, [], [||] 
+  | DOP0 (Meta n)                 -> OpMeta n, [], [||]
+  | DOP0 (Sort s)                 -> OpSort s, [], [||]
+  | DOP2 (Cast, t1, t2)           -> OpCast, [], [|t1;t2|]
+  | CPrd (x, t1, t2)              -> OpProd x, [x,None,t1], [|t2|]
+  | CLam (x, t1, t2)              -> OpLambda x, [x,None,t1], [|t2|]
+  | CLet (x, b, t1, t2)           -> OpLetIn x, [x,Some b,t1], [|t2|]
+  | DOPN (AppL,a)                 -> OpAppL, [], a
+  | DOPN (Const sp, a)            -> OpConst sp, [], a
+  | DOPN (Evar sp, a)             -> OpEvar sp, [], a
+  | DOPN (MutInd ind_sp, l)       -> OpMutInd ind_sp, [], l
+  | DOPN (MutConstruct cstr_sp,l) -> OpMutConstruct cstr_sp, [], l
+  | DOPN (MutCase ci,v)           -> OpMutCase ci, [], v
+  | DOPN ((Fix (f,i),a)) as c     ->
+      let (fi,(tl,lna,bl)) = destFix c in
+      let n = Array.length bl in
+      let ctxt = mycombine
+		   (List.rev lna)
+		   (Array.to_list (Array.mapi lift tl)) in
+      OpRec (RFix fi,lna), ctxt, bl
+  | DOPN ((CoFix i),a) as c       ->
+      let (fi,(tl,lna,bl)) = destCoFix c in
+      let n = Array.length bl in
+      let ctxt = mycombine
+		   (List.rev lna)
+		   (Array.to_list (Array.mapi lift tl)) in
+      OpRec (RCoFix fi,lna), ctxt, bl
+  | _ -> errorlabstrm "Term.splay_term" [< 'sTR "ill-formed constr" >]
+
+let gather_constr_with_binders = function
+  | OpRel n, [], [||]  -> Rel n
+  | OpVar id, [], [||] -> VAR id
+  | OpMeta n, [], [||] -> DOP0 (Meta n)
+  | OpSort s, [], [||] -> DOP0 (Sort s)
+  | OpCast, [], [|t1;t2|]     -> DOP2 (Cast, t1, t2)
+  | OpProd _, [x,None,t1], [|t2|]   -> mkProd (x, t1, t2)
+  | OpLambda _, [x,None,t1], [|t2|] -> mkLambda (x, t1, t2)
+  | OpLetIn _, [x,Some b,t1], [|t2|] -> mkLetIn (x, b, t1, t2)
+  | OpAppL, [], a     -> DOPN (AppL, a)
+  | OpConst sp, [], a -> DOPN (Const sp, a)
+  | OpEvar sp, [], a  -> DOPN (Evar sp, a) 
+  | OpMutInd ind_sp, [], l        -> DOPN (MutInd ind_sp, l) 
+  | OpMutConstruct cstr_sp, [], l -> DOPN (MutConstruct cstr_sp, l)
+  | OpMutCase ci, [], v    -> DOPN (MutCase ci, v)   
+  | OpRec (RFix fi,lna), ctxt, bl  ->
+      let (lna, tl) = mysplit ctxt in
+      let tl = Array.mapi (fun i -> lift (-i)) (Array.of_list tl) in
+      mkFix (fi,(tl, List.rev lna, bl))
+  | OpRec (RCoFix i,lna), ctxt, bl ->
+      let (lna, tl) = mysplit ctxt in
+      let tl = Array.mapi (fun i -> lift (-i)) (Array.of_list tl) in
+      mkCoFix (i,(tl, List.rev lna, bl))
+  | _ -> errorlabstrm "Term.gather_term" [< 'sTR "ill-formed constr" >]
+
+let generic_fold_left f acc bl tl =
+  let acc =
+    List.fold_left 
+      (fun acc (_,bo,t) ->
+	 match bo with
+	   | None -> f acc t
+	   | Some b -> f (f acc b) t) acc bl in
+  Array.fold_left f acc tl

@@ -4,7 +4,7 @@
 (*i*)
 open Pp
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Evd
 open Environ
@@ -54,17 +54,29 @@ val betadeltaiota : flags
 
 val hnf_flags : flags
 
+(*s Explicit substitutions of type ['a]. [ESID] = identity. 
+  [CONS(t,S)] = $S.t$ i.e. parallel substitution. [SHIFT(n,S)] = 
+  $(\uparrow n~o~S)$ i.e. terms in S are relocated with n vars. 
+  [LIFT(n,S)] = $(\%n~S)$ stands for $((\uparrow n~o~S).n...1)$. *)
+type 'a subs =
+  | ESID
+  | CONS of 'a * 'a subs
+  | SHIFT of int * 'a subs
+  | LIFT of int * 'a subs
 
 (*s Call by value functions *)
 type cbv_value =
   | VAL of int * constr
   | LAM of name * constr * constr * cbv_value subs
-  | FIXP of sorts oper * constr array * cbv_value subs * cbv_value list
+  | FIXP of fixpoint * cbv_value subs * cbv_value list
+  | COFIXP of cofixpoint * cbv_value subs * cbv_value list
   | CONSTR of int * (section_path * int) * cbv_value array * cbv_value list
 
 val shift_value : int -> cbv_value -> cbv_value
-val contract_fixp : cbv_value subs -> constr -> cbv_value subs * constr
 
+(*i Private ??
+val contract_fixp : cbv_value subs -> fixpoint -> cbv_value subs * constr
+i*)
 
 type stack =
   | TOP
@@ -78,8 +90,10 @@ val strip_appl : cbv_value -> stack -> cbv_value * stack
 val red_allowed : flags -> stack -> red_kind -> bool
 val reduce_const_body :
   (cbv_value -> cbv_value) -> cbv_value -> stack -> cbv_value * stack
+(*i Private ??
 val fixp_reducible :
-  (cbv_value -> cbv_value) -> flags -> sorts oper -> stack -> bool
+  (cbv_value -> cbv_value) -> flags -> fixpoint -> stack -> bool
+i*)
 
 (* normalization of a constr: the two functions to know... *)
 type 'a cbv_infos
@@ -99,45 +113,49 @@ val cbv_norm_value : 'a cbv_infos -> cbv_value -> constr
 
 (*s Lazy reduction. *)
 
-type 'a freeze
+type freeze
 
-type 'a frterm =
+type frterm =
   | FRel of int
   | FVAR of identifier
-  | FOP0 of 'a
-  | FOP1 of 'a * 'a freeze
-  | FOP2 of 'a * 'a freeze * 'a freeze
-  | FOPN of 'a * 'a freeze array
-  | FOPL of 'a * 'a freeze list
-  | FLAM of name * 'a freeze * 'a term * 'a freeze subs
-  | FLAMV of name * 'a freeze array * 'a term array * 'a freeze subs
-  | FLIFT of int * 'a freeze
-  | FFROZEN of 'a term * 'a freeze subs
+  | FOP0 of sorts oper
+  | FOP1 of sorts oper * freeze
+  | FOP2 of sorts oper * freeze * freeze
+  | FOPN of sorts oper * freeze array
+  | FLAM of name * freeze * constr * freeze subs
+  | FLAMV of name * freeze array * constr array * freeze subs
+  | FLam of name * type_freeze * freeze * constr * freeze subs
+  | FPrd of name * type_freeze * freeze * constr * freeze subs
+  | FLet of name * freeze * type_freeze * freeze * constr * freeze subs
+  | FLIFT of int * freeze
+  | FFROZEN of constr * freeze subs
 
-val frterm_of : 'a freeze -> 'a frterm
-val is_val : 'a freeze -> bool
+and type_freeze = freeze
 
-val lift_frterm : int -> 'a freeze -> 'a freeze
-val lift_freeze : int -> 'a freeze -> 'a freeze
+val frterm_of : freeze -> frterm
+val is_val : freeze -> bool
 
-val freeze : 'a freeze subs -> 'a term -> 'a freeze
-val freeze_vect : 'a freeze subs -> 'a term array -> 'a freeze array
-val freeze_list : 'a freeze subs -> 'a term list -> 'a freeze list
+val lift_frterm : int -> freeze -> freeze
+val lift_freeze : int -> freeze -> freeze
 
-val traverse_term : 'a freeze subs -> 'a term -> 'a freeze
-val lift_term_of_freeze : lift_spec -> 'a freeze -> 'a term
+val freeze : freeze subs -> constr -> freeze
+val freeze_vect : freeze subs -> constr array -> freeze array
+val freeze_list : freeze subs -> constr list -> freeze list
+
+val traverse_term : freeze subs -> constr -> freeze
+val lift_term_of_freeze : lift_spec -> freeze -> constr
 
 (* Back to constr *)
-val fstrong : ('a freeze -> 'a freeze) -> lift_spec -> 'a freeze -> 'a term
-val term_of_freeze : 'a freeze -> 'a term
-val applist_of_freeze : 'a freeze array -> 'a term list
+val fstrong : (freeze -> freeze) -> lift_spec -> freeze -> constr
+val term_of_freeze : freeze -> constr
+val applist_of_freeze : freeze array -> constr list
 
 (* contract a substitution *)
-val contract_subst : int -> 'a freeze -> 'a freeze -> 'a freeze
+val contract_subst : int -> constr -> freeze subs -> freeze -> freeze
 
 
 (* Calculus of Constructions *)
-type fconstr = sorts oper freeze
+type fconstr = freeze
 val inject : constr -> fconstr
 
 val strip_frterm :
@@ -146,7 +164,7 @@ val strip_freeze : fconstr -> int * fconstr * fconstr array
 
 
 (* Auxiliary functions for (co)fixpoint reduction *)
-val contract_fix_vect : (fconstr -> fconstr) -> sorts oper frterm -> fconstr
+val contract_fix_vect : (fconstr -> fconstr) -> frterm -> fconstr
 val copy_case : case_info -> fconstr array -> fconstr -> fconstr
 
 

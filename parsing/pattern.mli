@@ -14,7 +14,6 @@ type constr_pattern =
   | PApp of constr_pattern * constr_pattern array
   | PSoApp of int * constr_pattern list
   | PBinder of binder_kind * name * constr_pattern * constr_pattern
-  | PLet of identifier * constr_pattern * constr_pattern * constr_pattern
   | PSort of Rawterm.rawsort
   | PMeta of int option
   | PCase of constr_pattern option * constr_pattern * constr_pattern array

@@ -14,7 +14,6 @@ open Reduction
 open Proof_type
 open Ast
 open Names
-open Generic
 open Term
 open Sign
 open Inductive
@@ -83,22 +82,29 @@ let resolve_with_bindings_tac  (c,lbind) gl =
   res_pf kONT clause gl
 
 let reduce_to_mind gl t = 
-  let rec elimrec t l = match whd_castapp_stack t [] with
-    | (DOPN(MutInd (x0,x1),_) as mind,_) -> (mind,prod_it t l)
-    | (DOPN(Const _,_),_) -> 
+  let rec elimrec t l =
+    let c, args = whd_castapp_stack t [] in
+    match kind_of_term c, args with
+    | (IsMutInd _,_) -> (c,Environ.it_mkProd_or_LetIn t l)
+    | (IsConst _,_) -> 
 	(try 
 	   let t' = pf_nf_betaiota gl (pf_one_step_reduce gl t) in elimrec t' l
          with e when catchable_exception e -> 
 	   errorlabstrm "tactics__reduce_to_mind"
              [< 'sTR"Not an inductive product" >])
-    | (DOPN(MutCase _,_),_) ->
+    | (IsMutCase _,_) ->
 	(try 
 	   let t' = pf_nf_betaiota gl (pf_one_step_reduce gl t) in elimrec t' l
          with e when catchable_exception e -> 
 	   errorlabstrm "tactics__reduce_to_mind"
              [< 'sTR"Not an inductive product" >])
-    | (DOP2(Cast,c,_),[]) -> elimrec c l
-    | (DOP2(Prod,ty,DLAM(n,t')),[]) -> elimrec t' ((n,ty)::l)
+    | (IsCast (c,_),[]) -> elimrec c l
+    | (IsProd (n,ty,t'),[]) -> 
+	let ty' = Retyping.get_assumption_of (Global.env()) Evd.empty ty in
+	elimrec t' ((n,None,ty')::l)
+    | (IsLetIn (n,b,ty,t'),[]) ->
+	let ty' = Retyping.get_assumption_of (Global.env()) Evd.empty ty in
+	elimrec t' ((n,Some b,ty')::l)
     | _ -> error "Not an inductive product"
   in 
   elimrec t []
@@ -115,7 +121,7 @@ let constructor_tac nconstropt i lbind gl =
            error "Not the expected number of constructors"
      | _ -> ());
   if i > nconstr then error "Not enough Constructors";
-  let c = DOPN(MutConstruct((x0,x1),i),args) in 
+  let c = mkMutConstruct (((x0,x1),i),args) in 
   let resolve_tac = resolve_with_bindings_tac (c,lbind) in
   (tclTHEN (tclTHEN (change_in_concl redcl) intros) resolve_tac) gl
 
@@ -149,16 +155,7 @@ let hide_constr,find_constr,clear_tables,dump_tables =
   (fun () -> l := []),
   (fun () -> !l)
 
-let get_applist =
-  let rec loop accu = function
-    | DOPN(AppL,cl) -> 
-	begin match Array.to_list cl with
-          | h :: l -> loop (l @ accu) h
-          | [] -> failwith "get_applist" end
-    | DOP2(Cast,c,t) -> loop accu c
-    | t -> t,accu 
-  in
-  loop []
+let get_applist c = whd_stack c []
 
 exception Destruct
 
@@ -175,14 +172,18 @@ type result =
   | Kimp of constr * constr
   | Kufo
 
-let destructurate t = 
-  match get_applist t with
-    | DOPN ((Const _ | MutConstruct _ | MutInd _) as c,_),args ->
-	Kapp (string_of_id (Global.id_of_global c),args)
-    | VAR id,[] -> Kvar(string_of_id id)
-    | DOP2(Prod,typ,DLAM(Anonymous,body)),[] -> Kimp(typ,body)
-    | DOP2(Prod,_,DLAM(Name _,_)),[] -> 
-	error "Omega: Not a quantifier-free goal"
+let destructurate t =
+  let c, args = get_applist t in
+  match kind_of_term c, args with
+    | IsConst (sp,_), args ->
+	Kapp (string_of_id (Global.id_of_global (Const sp)),args)
+    | IsMutConstruct (csp,_) , args ->
+	Kapp (string_of_id (Global.id_of_global (MutConstruct csp)),args)
+    | IsMutInd (isp,_), args ->
+	Kapp (string_of_id (Global.id_of_global (MutInd isp)),args)
+    | IsVar id,[] -> Kvar(string_of_id id)
+    | IsProd (Anonymous,typ,body), [] -> Kimp(typ,body)
+    | IsProd (Name _,_,_),[] -> error "Omega: Not a quantifier-free goal"
     | _ -> Kufo
 
 let recognize_number t =
@@ -425,58 +426,58 @@ type constr_path =
   | P_ARG
 
 let context operation path (t : constr) =
-  let rec loop i p0 p1 = 
-    match (p0,p1) with 
-      | (p, (DOP2(Cast,c,t))) -> DOP2(Cast,loop i p c,t)
-      | ([], t) -> operation i t
-      | (p, (DLAM(n,t))) -> DLAM(n,loop (i+1) p t)
-      | ((P_APP n :: p),  (DOPN(AppL,v) as t)) ->
+  let rec loop i p0 t = 
+    match (p0,kind_of_term t) with 
+      | (p, IsCast (c,t)) -> mkCast (loop i p c,t)
+      | ([], _) -> operation i t
+      | ((P_APP n :: p),  IsAppL _) ->
 	  let f,l = get_applist t in
 	  let v' = Array.of_list (f::l) in
-	  v'.(n) <- loop i p v'.(n); (DOPN(AppL,v'))
-      | ((P_BRANCH n :: p), (DOPN(MutCase _,_) as t)) ->
-	  let (_,_,_,v) = destCase t in
-	  v.(n) <- loop i p v.(n); (DOPN(AppL,v))
-      | ((P_ARITY :: p),  (DOPN(AppL,v))) ->
+	  v'.(n) <- loop i p v'.(n); (mkAppL v')
+      | ((P_BRANCH n :: p), IsMutCase (_,_,_,v)) ->
+	  v.(n) <- loop i p v.(n); (mkAppL v)  (* Not Mutcase ?? *)
+      | ((P_ARITY :: p),  IsAppL (f,l)) ->
+	  applist (loop i p f,l)
+      | ((P_ARG :: p),  IsAppL (f,a::l)) ->
+	  applist (f,(loop i p a)::l)
+      | (p, IsFix ((_,n as ln),(tys,lna,v))) ->
+	  let l = Array.length v in
 	  let v' = Array.copy v in
-	  v'.(0) <- loop i p v.(0); (DOPN(AppL,v'))
-      | ((P_ARG :: p),  (DOPN(AppL,v))) ->
-	  let v' = Array.copy v in
-	  v'.(1) <- loop i p v.(1); (DOPN(AppL,v'))
-      | (p, (DOPN(Fix(_,n) as f,v))) ->
-	  let v' = Array.copy v in
-	  let l = Array.length v - 1 in
-	  v'.(l) <- loop i (P_BRANCH n :: p) v.(l); (DOPN(f,v'))
-      | ((P_BRANCH n :: p), (DLAMV(name,v))) ->
-	  let v' = Array.copy v in
-	  v'.(n) <- loop (i+1) p v.(n); DLAMV(name,v')
-      | ((P_BODY :: p), (DOP2((Prod | Lambda) as k, t,c))) ->
-	  (DOP2(k,t,loop i p c)) 
-      | ((P_TYPE :: p), (DOP2((Prod | Lambda) as k, term,c))) ->
-	  (DOP2(k,loop i p term, c))
-      | (p, t) -> 
+	  v'.(n) <- loop (i+l) p v.(n); (mkFix (ln,(tys,lna,v')))
+      | ((P_BODY :: p), IsProd (n,t,c)) ->
+	  (mkProd (n,t,loop (i+1) p c))
+      | ((P_BODY :: p), IsLambda (n,t,c)) ->
+	  (mkLambda (n,t,loop (i+1) p c))
+      | ((P_BODY :: p), IsLetIn (n,b,t,c)) ->
+	  (mkLetIn (n,b,t,loop (i+1) p c))
+      | ((P_TYPE :: p), IsProd (n,t,c)) ->
+	  (mkProd (n,loop i p t,c))
+      | ((P_TYPE :: p), IsLambda (n,t,c)) ->
+	  (mkLambda (n,loop i p t,c))
+      | ((P_TYPE :: p), IsLetIn (n,b,t,c)) ->
+	  (mkLetIn (n,b,loop i p t,c))
+      | (p, _) -> 
 	  pPNL [<Printer.prterm t>];
 	  failwith ("abstract_path " ^ string_of_int(List.length p)) 
   in
   loop 1 path t
 
 let occurence path (t : constr) =
-  let rec loop p0 p1 = match (p0,p1) with
-    | (p, (DOP2(Cast,c,t))) -> loop p c
-    | ([], t) -> t
-    | (p, (DLAM(n,t))) -> loop p t
-    | ((P_APP n :: p),  (DOPN(AppL,v) as t)) ->
-	let f,l = get_applist t in loop p v.(n)
-    | ((P_BRANCH n :: p), (DOPN(MutCase _,_) as t)) ->
-	let (_,_,_,v) = destCase t in loop p v.(n)
-    | ((P_ARITY :: p),  (DOPN(AppL,v))) -> loop p v.(0)
-    | ((P_ARG :: p),  (DOPN(AppL,v))) -> loop p v.(1)
-    | (p, (DOPN(Fix(_,n) as f,v))) ->
-	let l = Array.length v - 1 in loop (P_BRANCH n :: p) v.(l)
-    | ((P_BRANCH n :: p), (DLAMV(name,v))) -> loop p v.(n)
-    | ((P_BODY :: p), (DOP2((Prod | Lambda) as k, t,c))) -> loop p c
-    | ((P_TYPE :: p), (DOP2((Prod | Lambda) as k, term,c))) -> loop p term
-    | (p, t) -> 
+  let rec loop p0 t = match (p0,kind_of_term t) with
+    | (p, IsCast (c,t)) -> loop p c
+    | ([], _) -> t
+    | ((P_APP n :: p),  IsAppL (f,l)) -> loop p (List.nth l (n-1))
+    | ((P_BRANCH n :: p), IsMutCase (_,_,_,v)) -> loop p v.(n)
+    | ((P_ARITY :: p),  IsAppL (f,_)) -> loop p f
+    | ((P_ARG :: p),  IsAppL (f,a::l)) -> loop p a
+    | (p, IsFix((_,n) ,(_,_,v))) -> loop p v.(n)
+    | ((P_BODY :: p), IsProd (n,t,c)) -> loop p c
+    | ((P_BODY :: p), IsLambda (n,t,c)) -> loop p c
+    | ((P_BODY :: p), IsLetIn (n,b,t,c)) -> loop p c
+    | ((P_TYPE :: p), IsProd (n,term,c)) -> loop p term
+    | ((P_TYPE :: p), IsLambda (n,term,c)) -> loop p term
+    | ((P_TYPE :: p), IsLetIn (n,b,term,c)) -> loop p term
+    | (p, _) -> 
 	pPNL [<Printer.prterm t>];
 	failwith ("occurence " ^ string_of_int(List.length p)) 
   in
@@ -485,7 +486,7 @@ let occurence path (t : constr) =
 let abstract_path typ path t =
   let term_occur = ref (Rel 0) in
   let abstract = context (fun i t -> term_occur:= t; Rel i) path t in
-  mkLambda (Name (id_of_string "x")) typ abstract, !term_occur
+  mkLambda (Name (id_of_string "x"), typ, abstract), !term_occur
 
 let focused_simpl path gl =
   let newc = context (fun i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
@@ -554,12 +555,14 @@ let clever_rewrite_base_poly typ p result theorem gl =
   let (abstracted,occ) = abstract_path typ (List.rev p) full in
   let t = 
     applist
-      ((mkLambda (Name (id_of_string "P")) 
-	  (mkArrow typ mkProp)
-          (mkLambda (Name (id_of_string "H")) 
-	     (applist (Rel 1,[result]))
-             (mkAppL [| Lazy.force coq_eq_ind_r; 
-			typ; result; Rel 2; Rel 1; occ; theorem |]))),
+      (mkLambda
+	 (Name (id_of_string "P"), 
+	  mkArrow typ mkProp,
+          mkLambda
+	    (Name (id_of_string "H"),
+	     applist (Rel 1,[result]),
+	     mkAppL [| Lazy.force coq_eq_ind_r; 
+		       typ; result; Rel 2; Rel 1; occ; theorem |])),
        [abstracted]) 
   in
   exact (applist(t,[mkNewMeta()])) gl
@@ -1206,8 +1209,10 @@ let replay_history tactic_normalisation =
 	  let theorem =
             mkAppL [| Lazy.force coq_ex;
 		      Lazy.force coq_Z;
-		      mkLambda (Name(id_of_string v)) (Lazy.force coq_Z) 
-			(mk_eq (Rel 1) eq1) |] 
+		      mkLambda
+			(Name(id_of_string v),
+			 Lazy.force coq_Z,
+			 mk_eq (Rel 1) eq1) |] 
 	  in
 	  let mm = mk_integer m in
 	  let p_initial = [P_APP 2;P_TYPE] in

@@ -4,7 +4,6 @@
 open Util
 open Pp
 open Term
-open Generic
 open Names
 open Environ
 open Instantiate
@@ -30,6 +29,9 @@ let stop() =
 
 (* sets of reduction kinds *)
 type red_kind = BETA | DELTA of sorts oper | IOTA
+
+(* Hack: we use oper (Const "$LOCAL VAR$") for local variables *)
+let local_const_oper = Const (make_path [] (id_of_string "$LOCAL VAR$") CCI)
 
 type reds = {
   r_beta : bool;
@@ -157,6 +159,58 @@ let infos_under infos =
     i_tab = infos.i_tab }
 
 
+(* explicit substitutions of type 'a *)
+type 'a subs =
+  | ESID                   (* ESID       =          identity *)
+  | CONS of 'a * 'a subs   (* CONS(t,S)  = (S.t)    parallel substitution *)
+  | SHIFT of int * 'a subs (* SHIFT(n,S) = (^n o S) terms in S are relocated *)
+                           (*                        with n vars *)
+  | LIFT of int * 'a subs  (* LIFT(n,S) = (%n S) stands for ((^n o S).n...1) *)
+
+(* operations of subs: collapses constructors when possible.
+ * Needn't be recursive if we always use these functions
+ *)
+
+let subs_cons(x,s) = CONS(x,s)
+
+let subs_liftn n = function
+  | ESID -> ESID         (* the identity lifted is still the identity *)
+                         (* (because (^1.1) --> id) *)
+  | LIFT (p,lenv) -> LIFT (p+n, lenv)
+  | lenv -> LIFT (n,lenv)
+
+let subs_lift a = subs_liftn 1 a
+
+let subs_shft = function
+  | (0, s)            -> s
+  | (n, SHIFT (k,s1)) -> SHIFT (k+n, s1)
+  | (n, s)            -> SHIFT (n,s)
+
+(* Expands de Bruijn k in the explicit substitution subs
+ * lams accumulates de shifts to perform when retrieving the i-th value
+ * the rules used are the following:
+ *
+ *    [id]k       --> k
+ *    [S.t]1      --> t
+ *    [S.t]k      --> [S](k-1)  if k > 1
+ *    [^n o S] k  --> [^n]([S]k)
+ *    [(%n S)] k  --> k         if k <= n
+ *    [(%n S)] k  --> [^n]([S](k-n))
+ *
+ * the result is (Inr k) when the variable is just relocated
+ *) 
+let rec exp_rel lams k subs =
+  match (k,subs) with
+    | (1, CONS (def,_)) -> Inl(lams,def)
+    | (_, CONS (_,l)) -> exp_rel lams (pred k) l
+    | (_, LIFT (n,_)) when k<=n -> Inr(lams+k)
+    | (_, LIFT (n,l)) -> exp_rel (n+lams) (k-n) l
+    | (_, SHIFT (n,s)) -> exp_rel (n+lams) k s
+    | (_, ESID) -> Inr(lams+k)
+
+let expand_rel k subs = exp_rel 0 k subs
+
+
 (**** Call by value reduction ****)
 
 (* The type of terms with closure. The meaning of the constructors and
@@ -185,7 +239,8 @@ let infos_under infos =
 type cbv_value =
   | VAL of int * constr
   | LAM of name * constr * constr * cbv_value subs
-  | FIXP of sorts oper * constr array * cbv_value subs * cbv_value list
+  | FIXP of fixpoint * cbv_value subs * cbv_value list
+  | COFIXP of cofixpoint * cbv_value subs * cbv_value list
   | CONSTR of int * (section_path * int) * cbv_value array * cbv_value list
 
 (* les vars pourraient etre des constr,
@@ -197,8 +252,10 @@ type cbv_value =
 let rec shift_value n = function
   | VAL (k,v) -> VAL ((k+n),v)
   | LAM (x,a,b,s) -> LAM (x,a,b,subs_shft (n,s))
-  | FIXP (op,bv,s,args) ->
-      FIXP (op,bv,subs_shft (n,s), List.map (shift_value n) args)
+  | FIXP (fix,s,args) ->
+      FIXP (fix,subs_shft (n,s), List.map (shift_value n) args)
+  | COFIXP (cofix,s,args) ->
+      COFIXP (cofix,subs_shft (n,s), List.map (shift_value n) args)
   | CONSTR (i,spi,vars,args) ->
       CONSTR (i, spi, Array.map (shift_value n) vars,
               List.map (shift_value n) args)
@@ -210,20 +267,23 @@ let rec shift_value n = function
  * (S, (fix Fi {F0 := T0 .. Fn-1 := Tn-1}))
  *    -> (S. [S]F0 . [S]F1 ... . [S]Fn-1, Ti)
  *)
-let contract_fixp env fix =
-  let (bnum, bodies, make_body) = match fix with
-    | DOPN(Fix(reci,i),bvect) ->
-        (i, array_last bvect, (fun j -> FIXP(Fix(reci,j), bvect, env, [])))
-    | DOPN(CoFix i,bvect) ->
-        (i, array_last bvect, (fun j -> FIXP(CoFix j, bvect, env, [])))
-    | _ -> anomaly "Closure.contract_fixp: not a (co)fixpoint" 
-  in
-  let rec subst_bodies_from_i i subs = function
-    | DLAM(_,t) -> subst_bodies_from_i (i+1) (subs_cons (make_body i, subs)) t
-    | DLAMV(_,bds) -> (subs_cons (make_body i, subs), bds.(bnum))
-    | _ -> anomaly "Closure.contract_fixp: malformed (co)fixpoint"
+let contract_fixp env ((reci,i),(_,_,bds as bodies)) =
+  let make_body j = FIXP(((reci,j),bodies), env, []) in
+  let n = Array.length bds in
+  let rec subst_bodies_from_i i subs =
+    if i=n then subs
+    else subst_bodies_from_i (i+1) (subs_cons (make_body i, subs))
   in       
-  subst_bodies_from_i 0 env bodies
+  subst_bodies_from_i 0 env, bds.(i)
+
+let contract_cofixp env (i,(_,_,bds as bodies)) =
+  let make_body j = COFIXP((j,bodies), env, []) in
+  let n = Array.length bds in
+  let rec subst_bodies_from_i i subs =
+    if i=n then subs
+    else subst_bodies_from_i (i+1) (subs_cons (make_body i, subs))
+  in       
+  subst_bodies_from_i 0 env, bds.(i)
 
 
 (* type of terms with a hole. This hole can appear only under AppL or Case.
@@ -274,12 +334,13 @@ let red_allowed flags stack rk =
  *)
 let strip_appl head stack =
   match head with
-    | FIXP (op,bv,env,app) -> (FIXP(op,bv,env,[]), stack_app app stack)
+    | FIXP (fix,env,app) -> (FIXP(fix,env,[]), stack_app app stack)
+    | COFIXP (cofix,env,app) -> (COFIXP(cofix,env,[]), stack_app app stack)
     | CONSTR (i,spi,vars,app) -> (CONSTR(i,spi,vars,[]), stack_app app stack)
     | _ -> (head, stack)
 
 
-(* Invariant: if the result of norm_head is CONSTR or FIXP, it last
+(* Invariant: if the result of norm_head is CONSTR or (CO)FIXP, it last
  * argument is [].
  * Because we must put all the applied terms in the stack.
  *)
@@ -298,12 +359,18 @@ let rec check_app_constr redfun = function
          | _ -> false)
   | (_::l, n) -> check_app_constr redfun (l,(pred n))
 	
-let fixp_reducible redfun flgs op stk =
+let fixp_reducible redfun flgs ((reci,i),_) stk =
   if red_allowed flgs stk IOTA then
-    match (op,stk) with               (* !!! for Acc_rec: reci.(i) = -2 *)
-      | (Fix (reci,i), APP(appl,_)) ->
-          (reci.(i) >= 0  &  check_app_constr redfun (appl, reci.(i)))
-      | (CoFix i, (CASE _ | APP(_,CASE _))) -> true
+    match stk with               (* !!! for Acc_rec: reci.(i) = -2 *)
+      | APP(appl,_) -> reci.(i) >=0 & check_app_constr redfun (appl, reci.(i))
+      | _ -> false
+  else 
+    false
+
+let cofixp_reducible redfun flgs _ stk =
+  if red_allowed flgs stk IOTA then
+    match stk with
+      | (CASE _ | APP(_,CASE _)) -> true
       | _ -> false
   else 
     false
@@ -318,65 +385,72 @@ let mindsp_nparams env sp =
  * constructor, a lambda or a fixp in the head. If not, it is a value
  * and is completely computed here. The head redexes are NOT reduced:
  * the function returns the pair of a cbv_value and its stack.  *
- * Invariant: if the result of norm_head is CONSTR or FIXP, it last
+ * Invariant: if the result of norm_head is CONSTR or (CO)FIXP, it last
  * argument is [].  Because we must put all the applied terms in the
  * stack. *)
 
 let rec norm_head info env t stack =
   (* no reduction under binders *)
-  match t with
+  match kind_of_term t with
   (* stack grows (remove casts) *)
-  | DOPN (AppL,appl) -> (* Applied terms are normalized immediately;
+  | IsAppL (head,args) -> (* Applied terms are normalized immediately;
                         they could be computed when getting out of the stack *)
-      (match Array.to_list appl with
-	 | head::args ->
-	     let nargs = List.map (cbv_stack_term info TOP env) args in
-               norm_head info env head (stack_app nargs stack)
-	 | [] -> anomaly "norm_head : malformed constr AppL [||]")
-  | DOPN (MutCase _,_) -> 
-      let (ci,p,c,v) = destCase t in
-      norm_head info env c (CASE(p,v,ci,env,stack))
-  | DOP2 (Cast,ct,c) -> norm_head info env ct stack
+      let nargs = List.map (cbv_stack_term info TOP env) args in
+      norm_head info env head (stack_app nargs stack)
+  | IsMutCase (ci,p,c,v) -> norm_head info env c (CASE(p,v,ci,env,stack))
+  | IsCast (ct,_) -> norm_head info env ct stack
 
   (* constants, axioms
    * the first pattern is CRUCIAL, n=0 happens very often:
    * when reducing closed terms, n is always 0 *)
-  | Rel i -> (match expand_rel i env with
+  | IsRel i -> (match expand_rel i env with
                 | Inl (0,v) ->
                     reduce_const_body (cbv_norm_more info) v stack
                 | Inl (n,v) ->
                     reduce_const_body
                       (cbv_norm_more info) (shift_value n v) stack
                 | Inr n -> (VAL(0, Rel n), stack))
-  | DOPN ((Const _ | Evar _ | Abst _) as op, vars)
-                  when red_allowed info.i_flags stack (DELTA op) ->
-      let normt = DOPN(op, Array.map (cbv_norm_term info env) vars) in
-      (match const_value_cache info normt with
-         | Some body -> reduce_const_body (cbv_norm_more info) body stack
-         | None -> (VAL(0,normt), stack))
+  | IsConst (sp,vars) ->
+      let normt = mkConst (sp,Array.map (cbv_norm_term info env) vars) in
+      if red_allowed info.i_flags stack (DELTA (Const sp)) then
+	match const_value_cache info normt with
+          | Some body -> reduce_const_body (cbv_norm_more info) body stack
+          | None -> (VAL(0,normt), stack)
+      else (VAL(0,normt), stack)
+  | IsLetIn (x, b, t, c) ->
+      if red_allowed info.i_flags stack (DELTA local_const_oper) then
+	let b = cbv_stack_term info TOP env b in 
+        norm_head info (subs_cons (b,env)) c stack
+      else
+	let normt =
+	  mkLetIn (x, cbv_norm_term info env b,
+		   cbv_norm_term info env t,
+		   cbv_norm_term info (subs_lift env) c) in
+	(VAL(0,normt), stack) (* Considérer une coupure commutative ? *)
+  | IsEvar (n,vars) -> 
+      let normt = mkEvar (n,Array.map (cbv_norm_term info env) vars) in
+      if red_allowed info.i_flags stack (DELTA (Evar n)) then
+	match const_value_cache info normt with
+          | Some body -> reduce_const_body (cbv_norm_more info) body stack
+          | None -> (VAL(0,normt), stack)
+      else (VAL(0,normt), stack)
 
   (* non-neutral cases *)
-  | DOP2 (Lambda,a,DLAM(x,b)) -> (LAM(x,a,b,env), stack)
-  | DOPN ((Fix _ | CoFix _) as op, v) -> (FIXP(op,v,env,[]), stack)
-  | DOPN (MutConstruct(spi,i),vars) ->
+  | IsLambda (x,a,b) -> (LAM(x,a,b,env), stack)
+  | IsFix fix -> (FIXP(fix,env,[]), stack)
+  | IsCoFix cofix -> (COFIXP(cofix,env,[]), stack)
+  | IsMutConstruct ((spi,i),vars) ->
       (CONSTR(i,spi, Array.map (cbv_stack_term info TOP env) vars,[]), stack)
 
   (* neutral cases *)
-  | (VAR _ | DOP0 _) -> (VAL(0, t), stack)
-  | DOP1 (op, nt) -> (VAL(0, DOP1(op, cbv_norm_term info env nt)), stack)
-  | DOP2 (op,a,b) ->
-      (VAL(0, DOP2(op, cbv_norm_term info env a, cbv_norm_term info env b)),
-       stack)
-  | DOPN (op,vars) ->
-      (VAL(0, DOPN(op, Array.map (cbv_norm_term info env) vars)), stack)
-  | DOPL (op,l) ->
-      (VAL(0, DOPL(op, List.map (cbv_norm_term info env) l)), stack)
-  | DLAM (x,t) ->
-      (VAL(0, DLAM(x, cbv_norm_term info (subs_lift env) t)), stack)
-  | DLAMV (x,ve) ->
-      (VAL(0, DLAMV(x, Array.map(cbv_norm_term info (subs_lift env)) ve)),
-       stack)
-
+  | (IsVar _ | IsSort _ | IsMeta _ | IsXtra _ ) -> (VAL(0, t), stack)
+  | IsMutInd (sp,vars) -> 
+      (VAL(0, mkMutInd (sp, Array.map (cbv_norm_term info env) vars)), stack)
+  | IsProd (x,t,c) -> 
+      (VAL(0, mkProd (x, cbv_norm_term info env t,
+		      cbv_norm_term info (subs_lift env) c)),
+	     stack)
+  | IsAbst (_,_) -> failwith "No longer implemented"
 
 (* cbv_stack_term performs weak reduction on constr t under the subs
  * env, with context stack, i.e. ([env]t stack).  First computes weak
@@ -392,12 +466,17 @@ and cbv_stack_term info stack env t =
         let subs = subs_cons (arg,env) in
           cbv_stack_term info (stack_app args stk) subs b
 
-    (* a Fix applied enough,
-       constructor guard satisfied or Cofix in a Case -> IOTA *)
-    | (FIXP(op,bv,env,_), stk)
-             when fixp_reducible (cbv_norm_more info) info.i_flags op stk ->
-               let (envf,redfix) = contract_fixp env (DOPN(op,bv)) in
-                 cbv_stack_term info stk envf redfix
+    (* a Fix applied enough -> IOTA *)
+    | (FIXP(fix,env,_), stk)
+        when fixp_reducible (cbv_norm_more info) info.i_flags fix stk ->
+        let (envf,redfix) = contract_fixp env fix in
+        cbv_stack_term info stk envf redfix
+
+    (* constructor guard satisfied or Cofix in a Case -> IOTA *)
+    | (COFIXP(cofix,env,_), stk)
+        when cofixp_reducible (cbv_norm_more info) info.i_flags cofix stk ->
+        let (envf,redfix) = contract_cofixp env cofix in
+        cbv_stack_term info stk envf redfix
 
     (* constructor in a Case -> IOTA
        (use red_under because we know there is a Case) *)
@@ -414,7 +493,8 @@ and cbv_stack_term info stack env t =
 
     (* may be reduced later by application *)  
     | (head, TOP) -> head
-    | (FIXP(op,bv,env,_), APP(appl,TOP)) -> FIXP(op,bv,env,appl) 
+    | (FIXP(fix,env,_), APP(appl,TOP)) -> FIXP(fix,env,appl) 
+    | (COFIXP(cofix,env,_), APP(appl,TOP)) -> COFIXP(cofix,env,appl) 
     | (CONSTR(n,spi,vars,_), APP(appl,TOP)) -> CONSTR(n,spi,vars,appl)
 
     (* definitely a value *)
@@ -452,18 +532,27 @@ and cbv_norm_term info env t =
 (* reduction of a cbv_value to a constr *)
 and cbv_norm_value info = function (* reduction under binders *)
   | VAL (n,v) -> lift n v
-  | LAM (x,a,b,env) -> DOP2(Lambda, cbv_norm_term info env a,
-                              DLAM(x,cbv_norm_term info (subs_lift env) b))
-  | FIXP (op,cl,env,args) ->
+  | LAM (x,a,b,env) ->
+      mkLambda (x, cbv_norm_term info env a,
+		cbv_norm_term info (subs_lift env) b)
+  | FIXP ((lij,(lty,lna,bds)),env,args) ->
       applistc
-        (DOPN(op, Array.map (cbv_norm_term info env) cl))
+        (mkFix (lij,
+		(Array.map (cbv_norm_term info env) lty, lna, 
+		 Array.map (cbv_norm_term info 
+			      (subs_liftn (Array.length lty) env)) bds)))
+        (List.map (cbv_norm_value info) args)
+  | COFIXP ((j,(lty,lna,bds)),env,args) ->
+      applistc
+        (mkCoFix (j,
+		  (Array.map (cbv_norm_term info env) lty, lna, 
+		   Array.map (cbv_norm_term info 
+				(subs_liftn (Array.length lty) env)) bds)))
         (List.map (cbv_norm_value info) args)
   | CONSTR (n,spi,vars,args) ->
       applistc
-        (DOPN (MutConstruct(spi,n), Array.map (cbv_norm_value info) vars))
+        (mkMutConstruct ((spi,n), Array.map (cbv_norm_value info) vars))
         (List.map (cbv_norm_value info) args)
-
-
 
 type 'a cbv_infos = (cbv_value, 'a) infos
 
@@ -499,22 +588,40 @@ let cbv_norm infos constr =
  * substitution applied to a constr
  *)
 
-type 'oper freeze = { 
+type freeze = { 
   mutable norm: bool; 
-  mutable term: 'oper frterm }
+  mutable term: frterm }
 
-and 'oper frterm =
+and frterm =
   | FRel of int
   | FVAR of identifier
-  | FOP0 of 'oper
-  | FOP1 of 'oper * 'oper freeze
-  | FOP2 of 'oper * 'oper freeze * 'oper freeze
-  | FOPN of 'oper * 'oper freeze array
-  | FOPL of 'oper * 'oper freeze list
-  | FLAM of name * 'oper freeze * 'oper term * 'oper freeze subs
-  | FLAMV of name * 'oper freeze array * 'oper term array * 'oper freeze subs
-  | FLIFT of int * 'oper freeze
-  | FFROZEN of 'oper term * 'oper freeze subs
+  | FOP0 of sorts oper
+  | FOP1 of sorts oper * freeze
+  | FOP2 of sorts oper * freeze * freeze
+  | FOPN of sorts oper * freeze array
+  | FLAM of name * freeze * constr * freeze subs
+  | FLAMV of name * freeze array * constr array * freeze subs
+  | FLam of name * type_freeze * freeze * constr * freeze subs
+  | FPrd of name * type_freeze * freeze * constr * freeze subs
+  | FLet of name * freeze * type_freeze * freeze * constr * freeze subs
+  | FLIFT of int * freeze
+  | FFROZEN of constr * freeze subs
+
+(* Cas où typed_type est casté en interne
+and type_freeze = freeze * sorts
+ *)
+(* Cas où typed_type n'est pas casté *)
+and type_freeze = freeze
+(**)
+
+(*
+let typed_map f t = f (body_of_type t), level_of_type t
+let typed_unmap f (t,s) = make_typed (f t) s
+*)
+(**)
+let typed_map f t = f (body_of_type t)
+let typed_unmap f t = make_typed_lazy (f t) (fun _ -> assert false)
+(**)
 
 let frterm_of v = v.term
 let is_val v = v.norm 
@@ -579,8 +686,6 @@ let rec traverse_term env t =
           term = FOP2 (op, traverse_term env a, traverse_term env b)}
     | DOPN (op,v) ->
         { norm = false; term = FOPN (op, Array.map (traverse_term env) v) }
-    | DOPL (op,l) ->
-        { norm = false; term = FOPL (op, List.map (traverse_term env) l) }
     | DLAM (x,a) ->
         { norm = false;
           term = FLAM (x, traverse_term (subs_lift env) a, a, env) }
@@ -588,9 +693,24 @@ let rec traverse_term env t =
         { norm = (ve=[||]);
           term = FLAMV (x, Array.map (traverse_term (subs_lift env)) ve,
                         ve, env) }
+    | CLam (n,t,c) ->
+        { norm = false;
+	  term = FLam (n, traverse_type env t, traverse_term (subs_lift env) c,
+		       c, env) }
+    | CPrd (n,t,c)   ->
+        { norm = false;
+	  term = FPrd (n, traverse_type env t, traverse_term (subs_lift env) c,
+		       c, env) }
+    | CLet (n,b,t,c) ->
+        { norm = false;
+	  term = FLet (n, traverse_term env b, traverse_type env t,
+		       traverse_term (subs_lift env) c,
+		       c, env) }
+
+and traverse_type env = typed_map (traverse_term env)
 
 (* Back to regular terms: remove all FFROZEN, keep casts (since this
- * fun is not dedicated to the Calulus of Constructions). 
+ * fun is not dedicated to the Calculus of Constructions). 
  *)
 let rec lift_term_of_freeze lfts v =
   match v.term with
@@ -601,10 +721,19 @@ let rec lift_term_of_freeze lfts v =
     | FOP2 (op,a,b) ->
         DOP2 (op, lift_term_of_freeze lfts a, lift_term_of_freeze lfts b)
     | FOPN (op,ve) -> DOPN (op, Array.map (lift_term_of_freeze lfts) ve)
-    | FOPL (op,l) -> DOPL (op, List.map (lift_term_of_freeze lfts) l)
     | FLAM (x,a,_,_) -> DLAM (x, lift_term_of_freeze (el_lift lfts) a)
     | FLAMV (x,ve,_,_) ->
         DLAMV (x, Array.map (lift_term_of_freeze (el_lift lfts)) ve)
+    | FLam (n,t,c,_,_)   ->
+	CLam (n, typed_unmap (lift_term_of_freeze lfts) t, 
+	      lift_term_of_freeze (el_lift lfts) c)
+    | FPrd (n,t,c,_,_)   ->
+	CPrd (n, typed_unmap (lift_term_of_freeze lfts) t, 
+	      lift_term_of_freeze (el_lift lfts) c)
+    | FLet (n,b,t,c,_,_) ->
+	CLet (n, lift_term_of_freeze lfts b,
+	      typed_unmap (lift_term_of_freeze lfts) t,
+	      lift_term_of_freeze (el_lift lfts) c)
     | FLIFT (k,a) -> lift_term_of_freeze (el_shft k lfts) a
     | FFROZEN (t,env) ->
         let unfv = freeze_assign v (traverse_term env t) in
@@ -629,30 +758,34 @@ let rec fstrong unfreeze_fun lfts v =
     | FOP2 (op,a,b) ->
         DOP2 (op, fstrong unfreeze_fun lfts a, fstrong unfreeze_fun lfts b)
     | FOPN (op,ve) -> DOPN (op, Array.map (fstrong unfreeze_fun lfts) ve)
-    | FOPL (op,l) -> DOPL (op, List.map (fstrong unfreeze_fun lfts) l)
     | FLAM (x,a,_,_) -> DLAM (x, fstrong unfreeze_fun (el_lift lfts) a)
     | FLAMV (x,ve,_,_) ->
         DLAMV (x, Array.map (fstrong unfreeze_fun (el_lift lfts)) ve)
+    | FLam (n,t,c,_,_)   ->
+	CLam (n, typed_unmap (fstrong unfreeze_fun lfts) t,
+	      fstrong unfreeze_fun (el_lift lfts) c)
+    | FPrd (n,t,c,_,_)   ->
+	CPrd (n, typed_unmap (fstrong unfreeze_fun lfts) t,
+	      fstrong unfreeze_fun (el_lift lfts) c)
+    | FLet (n,b,t,c,_,_) ->
+	CLet (n, fstrong unfreeze_fun lfts b,
+	      typed_unmap (fstrong unfreeze_fun lfts) t,
+	      fstrong unfreeze_fun (el_lift lfts) c)
     | FLIFT (k,a) -> fstrong unfreeze_fun (el_shft k lfts) a
     | FFROZEN _ -> anomaly "Closure.fstrong"
 
 
-(* Build a freeze, which represents the substitution of arg in fun_body.
+(* Build a freeze, which represents the substitution of arg in t
  * Used to constract a beta-redex:
- *           [^depth](FLAM(S,t)) arg -> [(^depth o S).arg]t
- * We also deal with FLIFT that would have been inserted between the
- * Lambda and FLAM operators. This never happens in practice.
+ *           [^depth](FLam(S,t)) arg -> [(^depth o S).arg]t
  *)
-let rec contract_subst depth fun_body arg =
-    match fun_body.term with
-        FLAM(_,_,t,subs) -> freeze (subs_cons (arg, subs_shft (depth,subs))) t
-      | FLIFT(k,fb) -> contract_subst (depth+k) fb arg
-      | _ -> anomaly "Closure.contract_subst: malformed function"
+let rec contract_subst depth t subs arg =
+  freeze (subs_cons (arg, subs_shft (depth,subs))) t
   
 
 (* Calculus of Constructions *)
 
-type fconstr = sorts oper freeze
+type fconstr = freeze
 
 let inject constr = freeze ESID constr
 
@@ -760,6 +893,7 @@ and whnf_frterm info ft =
                | None -> { norm = array_for_all is_val vars; term = ft.term })
 	  else 
 	    ft
+
       | FOPN (MutCase ci,cl) ->
 	  if red_under info.i_flags IOTA then
             let c = unfreeze (infos_under info) cl.(1) in
@@ -777,8 +911,11 @@ and whnf_frterm info ft =
           else 
 	    ft
 
-   | FRel _ | FVAR _ | FOP0 _ -> { norm = true; term = ft.term }
-   | _ -> ft
+      | FLet (na,b,_,_,t,subs) -> warning "Should be catch in whnf_term";
+	  contract_subst 0 t subs b
+
+      | FRel _ | FVAR _ | FOP0 _ -> { norm = true; term = ft.term }
+      | FOPN _ | FOP2 _ | FOP1 _ | FLam _ | FPrd _ | FLAM _ | FLAMV _ -> ft
 
 (* Weak head reduction: case of the application (head appl) *)
 and whnf_apply info head appl =
@@ -788,8 +925,8 @@ and whnf_apply info head appl =
   else
     let (lft_hd,whd,args) = strip_frterm 0 head [appl] in
     match whd.term with
-      | FOP2(Lambda,_,b) when red_under info.i_flags BETA ->
-          let vbody = contract_subst lft_hd (unfreeze info b) args.(0) in
+      | FLam (_,_,_,t,subs) when red_under info.i_flags BETA ->
+          let vbody = contract_subst lft_hd t subs args.(0) in
           whnf_apply info vbody (array_tl args)
       | (FOPN(Fix(reci,bnum), tb) as fx)
           when red_under info.i_flags IOTA
@@ -815,21 +952,30 @@ and whnf_term info env t =
     | DOP0 op -> {norm = true; term = FOP0 op }
     | DOP1 (op, nt) -> { norm = false; term = FOP1 (op, freeze env nt) }
     | DOP2 (Cast,ct,c) -> whnf_term info env ct    (* remove outer casts *)
-    | DOP2 (op,a,b) -> (* Lambda Prod *)
-      	{ norm = false; term = FOP2 (op, freeze env a, freeze env b) }
+    | DOP2 (_,_,_) -> assert false (* Lambda|Prod made explicit *)
     | DOPN ((AppL | Const _ | Evar _ | Abst _ | MutCase _) as op, ve) ->
       	whnf_frterm info { norm = false; term = FOPN (op, freeze_vect env ve) }
     | DOPN ((MutInd _ | MutConstruct _) as op,v) ->
       	{ norm = (v=[||]); term = FOPN (op, freeze_vect env v) }
     | DOPN (op,v) ->
       	{ norm = false; term = FOPN (op, freeze_vect env v) } (* Fix CoFix *)
-    | DOPL (op,l) -> { norm = false; term = FOPL (op, freeze_list env l) }
     | DLAM (x,a) ->
       	{ norm = false; term = FLAM (x, freeze (subs_lift env) a, a, env) }
     | DLAMV (x,ve) ->
       	{ norm = (ve=[||]);
           term = FLAMV (x, freeze_vect (subs_lift env) ve, ve, env) }
-      
+    | CLam (n,t,c) ->
+        { norm = false;
+	  term = FLam (n, typed_map (freeze env) t, freeze (subs_lift env) c,
+		       c, env) }
+    | CPrd (n,t,c)   ->
+        { norm = false;
+	  term = FPrd (n, typed_map (freeze env) t, freeze (subs_lift env) c,
+		       c, env) }
+
+    (* WHNF removes LetIn (see Paula Severi) *)
+    | CLet (n,b,t,c) ->	whnf_term info (subs_cons (freeze env b,env)) c
+
 (* parameterized norm *)
 let norm_val info v =
   if !stats then begin

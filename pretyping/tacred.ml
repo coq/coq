@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Inductive
 open Environ
@@ -48,8 +48,10 @@ let make_elim_fun f lv n largs =
     let fi = DOPN(Const(make_path (dirpath sp) id (kind_of_path sp)),args) in
     list_fold_left_i 
       (fun i c (k,a) -> 
-	 DOP2(Lambda,(substl (rev_firstn_liftn (n-k) (-i) la') a),
-              DLAM(Name(id_of_string"x"),c))) 0 (applistc fi la') lv
+	 mkLambda (Name(id_of_string"x"),
+		   substl (rev_firstn_liftn (n-k) (-i) la') a,
+		   c))
+      0 (applistc fi la') lv
 
 (* [f] is convertible to [DOPN(Fix(recindices,bodynum),bodyvect)] make 
    the reduction using this extra information *)
@@ -145,120 +147,124 @@ let rec red_elim_const env sigma k largs =
     | _ -> raise Redelimination
 
 and construct_const env sigma c stack = 
-  let rec hnfstack x stack =
-    match x with
-      | (DOPN(Const _,_)) as k  ->
+  let rec hnfstack (x, stack as s) =
+    match kind_of_term x with
+      | IsConst _  ->
           (try
-             let (c',lrest) = red_elim_const env sigma k stack in 
-	     hnfstack c' lrest
+	     hnfstack (red_elim_const env sigma x stack)
            with Redelimination ->
-             if evaluable_constant env k then 
-	       let cval = constant_value env k in
+             if evaluable_constant env x then 
+	       let cval = constant_value env x in
 	       (match cval with
-                  | DOPN (CoFix _,_) -> (k,stack)
-                  | _ -> hnfstack cval stack) 
+                  | DOPN (CoFix _,_) -> s
+                  | _ -> hnfstack (cval, stack))
              else 
 	       raise Redelimination)
+(*
       | (DOPN(Abst _,_) as a) ->
           if evaluable_abst env a then 
 	    hnfstack (abst_value env a) stack
           else 
 	    raise Redelimination
-      | DOP2(Cast,c,_) -> hnfstack c stack
-      | DOPN(AppL,cl) -> hnfstack (array_hd cl) (array_app_tl cl stack)
-      | DOP2(Lambda,_,DLAM(_,c)) ->
+*)
+      | IsCast (c,_) -> hnfstack (c, stack)
+      | IsAppL (f,cl) -> hnfstack (f, cl@stack)
+      | IsLambda (_,_,c) ->
           (match stack with 
              | [] -> assert false
              | c'::rest -> stacklam hnfstack [c'] c rest)
-      | DOPN(MutCase _,_) as c_0 ->
-          let (ci,p,c,lf) = destCase c_0 in
+      | IsMutCase (ci,p,c,lf) ->
           hnfstack 
-	    (special_red_case env (construct_const env sigma) p c ci lf) 
-	    stack
-      | DOPN(MutConstruct _,_) as c_0 -> c_0,stack
-      | DOPN(CoFix _,_) as c_0 -> c_0,stack
-      | DOPN(Fix (_) ,_) as fix -> 
-          let (reduced,(fix,stack')) = reduce_fix hnfstack fix stack in 
-	  if reduced then hnfstack fix stack' else raise Redelimination
+	    (special_red_case env (construct_const env sigma) p c ci lf, stack)
+      | IsMutConstruct _ -> s
+      | IsCoFix _ -> s
+      | IsFix fix -> 
+	  (match reduce_fix hnfstack fix stack with
+             | Reduced s' -> hnfstack s'
+	     | NotReducible -> raise Redelimination)
       | _ -> raise Redelimination
   in 
-  hnfstack c stack
+  hnfstack (c, stack)
 
 (* Hnf reduction tactic: *)
 
 let hnf_constr env sigma c = 
-  let rec redrec x largs =
-    match x with
-      | DOP2(Lambda,t,DLAM(n,c)) ->
+  let rec redrec (x, largs as s) =
+    match kind_of_term x with
+      | IsLambda (n,t,c) ->
           (match largs with
-             | []      -> applist(x,largs)
+             | []      -> applist s
              | a::rest -> stacklam redrec [a] c rest)
-      | DOPN(AppL,cl)   -> redrec (array_hd cl) (array_app_tl cl largs)
-      | DOPN(Const _,_) ->
+      | IsAppL (f,cl)   -> redrec (f, cl@largs)
+      | IsConst _ ->
           (try
              let (c',lrest) = red_elim_const env sigma x largs in 
-	     redrec c' lrest
+	     redrec (c', lrest)
            with Redelimination ->
              if evaluable_constant env x then
                let c = constant_value env x in
 	       (match c with 
                   | DOPN(CoFix _,_) -> applist(x,largs)
-		  | _ ->  redrec c largs)
+		  | _ ->  redrec (c, largs))
              else 
-	       applist(x,largs))
+	       applist s)
+(*
       | DOPN(Abst _,_) ->
           if evaluable_abst env x then 
 	    redrec (abst_value env x) largs
           else 
-	    applist(x,largs)
-      | DOP2(Cast,c,_) -> redrec c largs
-      | DOPN(MutCase _,_) ->
-          let (ci,p,c,lf) = destCase x in
+	    applist s
+*)
+      | IsCast (c,_) -> redrec (c, largs)
+      | IsMutCase (ci,p,c,lf) ->
           (try
              redrec 
 	       (special_red_case env (whd_betadeltaiota_stack env sigma) 
-		  p c ci lf) largs
+		  p c ci lf, largs)
            with Redelimination -> 
-	     applist(x,largs))
-      | (DOPN(Fix _,_)) ->
-          let (reduced,(fix,stack)) = 
-            reduce_fix (whd_betadeltaiota_stack env sigma) x largs
-          in 
-	  if reduced then redrec fix stack else applist(x,largs)
-      | _ -> applist(x,largs)
+	     applist s)
+      | IsFix fix ->
+	  (match reduce_fix
+	     (fun (c,l) -> whd_betadeltaiota_stack env sigma c l)
+	     fix largs
+	   with
+             | Reduced s' -> redrec s'
+	     | NotReducible -> applist s)
+      | _ -> applist s
   in 
-  redrec c []
+  redrec (c, [])
 
 (* Simpl reduction tactic: same as simplify, but also reduces
    elimination constants *)
 
 let whd_nf env sigma c = 
-  let rec nf_app c stack =
-    match c with
-      | DOP2(Lambda,c1,DLAM(name,c2))    ->
+  let rec nf_app (c, stack as s) =
+    match kind_of_term c with
+      | IsLambda (name,c1,c2)    ->
           (match stack with
              | [] -> (c,[])
              | a1::rest -> stacklam nf_app [a1] c2 rest)
-      | DOPN(AppL,cl) -> nf_app (array_hd cl) (array_app_tl cl stack)
-      | DOP2(Cast,c,_) -> nf_app c stack
-      | DOPN(Const _,_) ->
+      | IsAppL (f,cl) -> nf_app (f, cl@stack)
+      | IsCast (c,_) -> nf_app (c, stack)
+      | IsConst _ ->
           (try
-             let (c',lrest) = red_elim_const env sigma c stack in 
-	     nf_app c' lrest
+	     nf_app (red_elim_const env sigma c stack)
            with Redelimination -> 
-	     (c,stack))
-      | DOPN(MutCase _,_) ->
-          let (ci,p,d,lf) = destCase c in
+	     s)
+      | IsMutCase (ci,p,d,lf) ->
           (try
-             nf_app (special_red_case env nf_app p d ci lf) stack
+             nf_app
+	       (special_red_case env (fun c l -> nf_app (c,l)) p d ci lf,
+		stack)
            with Redelimination -> 
-	     (c,stack))
-      | DOPN(Fix _,_) ->
-          let (reduced,(fix,rest)) = reduce_fix nf_app c stack in 
-	  if reduced then nf_app fix rest else (fix,stack)
-      | _ -> (c,stack)
+	     s)
+      | IsFix fix ->
+	  (match reduce_fix nf_app fix stack with
+             | Reduced s' -> nf_app s'
+	     | NotReducible -> s)
+      | _ -> s
   in 
-  applist (nf_app c [])
+  applist (nf_app (c, []))
 
 let nf env sigma c = strong whd_nf env sigma c
 
@@ -286,65 +292,66 @@ let reduction_of_redexp = function
 
 (* Used in several tactics. *)
 
-let one_step_reduce env sigma = 
-  let rec redrec largs x =
-    match x with
-      | DOP2(Lambda,t,DLAM(n,c))  ->
+let one_step_reduce env sigma c = 
+  let rec redrec (x, largs as s) =
+    match kind_of_term x with
+      | IsLambda (n,t,c)  ->
           (match largs with
              | []      -> error "Not reducible 1"
              | a::rest -> applistc (subst1 a c) rest)
-      | DOPN(AppL,cl) -> redrec (array_app_tl cl largs) (array_hd cl)
-      | DOPN(Const _,_) ->
+      | IsAppL (f,cl) -> redrec (f, cl@largs)
+      | IsConst _ ->
           (try
              let (c',l) = red_elim_const env sigma x largs in applistc c' l
            with Redelimination ->
              if evaluable_constant env x then
                applistc (constant_value env x) largs
              else error "Not reductible 1")
+(*
       | DOPN(Abst _,_) ->
           if evaluable_abst env x then applistc (abst_value env x) largs
           else error "Not reducible 0"
-      | DOPN(MutCase _,_) ->
-          let (ci,p,c,lf) = destCase x in
+*)
+      | IsMutCase (ci,p,c,lf) ->
           (try
 	     applistc 
 	       (special_red_case env (whd_betadeltaiota_stack env sigma) 
 		  p c ci lf) largs 
            with Redelimination -> error "Not reducible 2")
-      | DOPN(Fix _,_) ->
-          let (reduced,(fix,stack)) = 
-	    reduce_fix (whd_betadeltaiota_stack env sigma) x largs
-          in 
-	  if reduced then applistc fix stack else error "Not reducible 3"
-      | DOP2(Cast,c,_) -> redrec largs c
+      | IsFix fix ->
+	  (match reduce_fix
+	     (fun (x,l) -> whd_betadeltaiota_stack env sigma x l)
+	     fix largs
+	   with
+             | Reduced s' -> applist s'
+	     | NotReducible -> error "Not reducible 3")
+      | IsCast (c,_) -> redrec (c,largs)
       | _ -> error "Not reducible 3"
   in 
-  redrec []
+  redrec (c, [])
 
 (* put t as t'=(x1:A1)..(xn:An)B with B an inductive definition of name name
    return name, B and t' *)
 
 let reduce_to_mind env sigma t = 
   let rec elimrec t l = 
-    match whd_castapp_stack t [] with
-      | (DOPN(MutInd mind,args),_) -> ((mind,args),t,prod_it t l)
-      | (DOPN(Const _,_),_) -> 
+    let c, _ = whd_castapp_stack t [] in
+    match kind_of_term c with
+      | IsMutInd (mind,args) -> ((mind,args),t,it_mkProd_or_LetIn t l)
+      | IsConst _ | IsMutCase _ ->
           (try 
 	     let t' = nf_betaiota env sigma (one_step_reduce env sigma t) in 
 	     elimrec t' l
            with UserError _ -> errorlabstrm "tactics__reduce_to_mind"
-               [< 'sTR"Not an inductive product : it is a constant." >])
-      | (DOPN(MutCase _,_),_) ->
-          (try 
-	     let t' = nf_betaiota env sigma (one_step_reduce env sigma t) in 
-	     elimrec t' l
-           with UserError _ -> errorlabstrm "tactics__reduce_to_mind"
-               [< 'sTR"Not an inductive product:"; 'sPC;
-		  'sTR"it is a case analysis term" >])
-      | (DOP2(Cast,c,_),[]) -> elimrec c l
-      | (DOP2(Prod,ty,DLAM(n,t')),[]) -> elimrec t' ((n,ty)::l)
+               [< 'sTR"Not an inductive product." >])
+      | IsProd (n,ty,t') ->
+	let ty' = Retyping.get_assumption_of (Global.env()) Evd.empty ty in
+	elimrec t' ((n,None,ty')::l)
+      | IsLetIn (n,b,ty,t') ->
+	  let ty' = Retyping.get_assumption_of (Global.env()) Evd.empty ty in
+	  elimrec t' ((n,Some b,ty')::l)
       | _ -> error "Not an inductive product"
- in 
+ in
  elimrec t []
 
 let reduce_to_ind env sigma t =

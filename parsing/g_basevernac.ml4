@@ -77,16 +77,19 @@ GEXTEND Gram
 	  <:ast< (LocateLibrary $id) >>
       | IDENT "Locate"; id = identarg; "." ->
 	  <:ast< (Locate $id) >>
-      | IDENT "Print"; IDENT "LoadPath"; "." -> <:ast< (PrintPath) >>
+
+       (* For compatibility (now turned into a table) *)
       | IDENT "AddPath"; dir = stringarg; "." -> <:ast< (ADDPATH $dir) >>
       | IDENT "DelPath"; dir = stringarg; "." -> <:ast< (DELPATH $dir) >>
+      | IDENT "Print"; IDENT "LoadPath"; "." -> <:ast< (PrintPath) >>
       | IDENT "AddRecPath"; dir = stringarg; "." ->
           <:ast< (RECADDPATH $dir) >>
+	  
       | IDENT "Print"; IDENT "Modules"; "." -> <:ast< (PrintModules) >>
       | IDENT "Print"; "Proof"; id = identarg; "." ->
           <:ast< (PrintOpaqueId $id) >>
-(* Pris en compte dans PrintOption ci-dessous 
-      | IDENT "Print"; id = identarg; "." -> <:ast< (PrintId $id) >> *)
+(* Pris en compte dans PrintOption ci-dessous (CADUC) *)
+      | IDENT "Print"; id = identarg; "." -> <:ast< (PrintId $id) >>
       | IDENT "Search"; id = identarg; "." -> <:ast< (SEARCH $id) >>
       | IDENT "Inspect"; n = numarg; "." -> <:ast< (INSPECT $n) >>
       (* TODO: rapprocher Eval et Check *)
@@ -110,7 +113,7 @@ GEXTEND Gram
       | IDENT "Print"; IDENT "Graph"; "." -> <:ast< (PrintGRAPH) >>
       | IDENT "Print"; IDENT "Classes"; "." -> <:ast< (PrintCLASSES) >>
       | IDENT "Print"; IDENT "Coercions"; "." -> <:ast< (PrintCOERCIONS) >>
-      | IDENT "Print"; IDENT "Path"; c = identarg; d = identarg; "." ->
+      | IDENT "Print"; IDENT "Coercion"; IDENT "Paths"; c = identarg; d = identarg; "." ->
           <:ast< (PrintPATH $c $d) >>
 
       | IDENT "Time"; v = vernac -> <:ast< (Time $v)>>
@@ -138,22 +141,35 @@ GEXTEND Gram
           <:ast< (SetTableField $table) >>
       | IDENT "Unset"; table = identarg; "." ->
           <:ast< (UnsetTableField $table) >>
-      | IDENT "Print"; table = identarg; field = identarg; "." ->
+      | IDENT "Print"; IDENT "Table";
+		      table = identarg; field = identarg; "." ->
           <:ast< (PrintOption $table $field) >>
       (* Le cas suivant inclut aussi le "Print id" standard *)
-      | IDENT "Print"; table = identarg; "." ->
+      | IDENT "Print"; IDENT "Table"; table = identarg; "." ->
           <:ast< (PrintOption $table) >>
       | IDENT "Add"; table = identarg; field = identarg; id = identarg; "."
         -> <:ast< (AddTableField $table $field $id) >>
+      | IDENT "Add"; table = identarg; field = identarg; id = stringarg; "."
+        -> <:ast< (AddTableField $table $field $id) >>
       | IDENT "Add"; table = identarg; id = identarg; "."
+        -> <:ast< (AddTableField $table $id) >>
+      | IDENT "Add"; table = identarg; id = stringarg; "."
         -> <:ast< (AddTableField $table $id) >>
       | IDENT "Test"; table = identarg; field = identarg; id = identarg; "."
         -> <:ast< (MemTableField $table $field $id) >>
+      | IDENT "Test"; table = identarg; field = identarg; id = stringarg; "."
+        -> <:ast< (MemTableField $table $field $id) >>
       | IDENT "Test"; table = identarg; id = identarg; "."
+        -> <:ast< (MemTableField $table $id) >>
+      | IDENT "Test"; table = identarg; id = stringarg; "."
         -> <:ast< (MemTableField $table $id) >>
       | IDENT "Remove"; table = identarg; field = identarg; id = identarg; "." ->
           <:ast< (RemoveTableField $table $field $id) >>
+      | IDENT "Remove"; table = identarg; field = identarg; id = stringarg; "." ->
+          <:ast< (RemoveTableField $table $field $id) >>
       | IDENT "Remove"; table = identarg; id = identarg; "." ->
+          <:ast< (RemoveTableField $table $id) >>
+      | IDENT "Remove"; table = identarg; id = stringarg; "." ->
           <:ast< (RemoveTableField $table $id) >> ] ]
   ;
   option_value:

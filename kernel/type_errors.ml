@@ -9,6 +9,24 @@ open Environ
 
 (* Type errors. *)
 
+type guard_error =
+  (* Fixpoints *)
+  | NotEnoughAbstractionInFixBody
+  | RecursionNotOnInductiveType
+  | RecursionOnIllegalTerm
+  | NotEnoughArgumentsForFixCall
+  (* CoFixpoints *)
+  | CodomainNotInductiveType of constr
+  | NestedRecursiveOccurrences
+  | UnguardedRecursiveCall of constr
+  | RecCallInTypeOfAbstraction of constr
+  | RecCallInNonRecArgOfConstructor of constr
+  | RecCallInTypeOfDef of constr
+  | RecCallInCaseFun of constr
+  | RecCallInCaseArg of constr
+  | RecCallInCasePred of constr
+  | NotGuardedForm
+
 type type_error =
   | UnboundRel of int
   | NotAType of unsafe_judgment
@@ -24,7 +42,7 @@ type type_error =
   | CantApplyBadType of (int * constr * constr)
       * unsafe_judgment * unsafe_judgment list
   | CantApplyNonFunctional of unsafe_judgment * unsafe_judgment list
-  | IllFormedRecBody of std_ppcmds * name list * int * constr array
+  | IllFormedRecBody of guard_error * name list * int * constr array
   | IllTypedRecBody of int * name list * unsafe_judgment array 
       * typed_type array
   | NotInductive of constr
@@ -82,8 +100,8 @@ let error_cant_apply_not_functional k env rator randl =
 let error_cant_apply_bad_type k env sigma t rator randl =
   raise(TypeError (k, env_ise sigma env, CantApplyBadType (t,rator,randl)))
 
-let error_ill_formed_rec_body k env str lna i vdefs =
-  raise (TypeError (k, env, IllFormedRecBody (str,lna,i,vdefs)))
+let error_ill_formed_rec_body k env why lna i vdefs =
+  raise (TypeError (k, env, IllFormedRecBody (why,lna,i,vdefs)))
 
 let error_ill_typed_rec_body k env i lna vdefj vargs =
   raise (TypeError (k, env, IllTypedRecBody (i,lna,vdefj,vargs)))

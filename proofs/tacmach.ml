@@ -4,7 +4,7 @@
 open Util
 open Stamps
 open Names
-open Generic
+(*i open Generic i*)
 open Sign
 open Term
 open Instantiate
@@ -104,7 +104,7 @@ let pf_reduce_to_ind            = pf_reduce reduce_to_ind
 let hnf_type_of gls = compose (pf_whd_betadeltaiota gls) (pf_type_of gls)
 
 let pf_check_type gls c1 c2 =
-  let casted = mkCast c1 c2 in pf_type_of gls casted
+  let casted = mkCast (c1, c2) in pf_type_of gls casted
 
 (************************************)
 (* Tactics handling a list of goals *)

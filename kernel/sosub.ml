@@ -3,9 +3,9 @@
 
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
-
+(*
 (* Given a term with variables in it, and second-order substitution,
    this function will apply the substitution.  The special
    operator "XTRA[$SOAPP]" is used to represent the second-order
@@ -100,15 +100,6 @@ let propagate_names =
             	 cllist (smap,[]) 
 	     in
              (smap',DOPN(op,Array.of_list cl'list))
-      	 | DOPL(op,cl) ->
-             let cllist = cl in
-             let (smap',cl'list) =
-               List.fold_right 
-		 (fun c (smap,acc) ->
-		    let (smap',c') = proprec smap c in (smap',c'::acc))
-            	 cllist (smap,[]) 
-	     in
-             (smap',DOPL(op,cl'list))
 	 | DLAM(na,c) ->
 	     let (lna', c') = proprec (na::smap) c in
 	     (List.tl lna', DLAM(List.hd lna', c'))
@@ -163,14 +154,6 @@ let rec soeval t=
           socontract args lam
         else 
 	  DOPN(op,cl')
-    | DOPL(op,cl) ->
-        let cl' = List.map soeval cl in
-        if is_soapp_operator t then
-	  let lam = List.hd cl'
-	  and args = List.tl cl' in
-          socontract args lam
-	else 
-	  DOPL(op,cl')
 	    
 let rec try_soeval t = 
   match t with
@@ -197,15 +180,6 @@ let rec try_soeval t =
            with (Failure _ | UserError _) -> DOPN(op,cl'))
         else 
 	  DOPN(op,cl')
-    | DOPL(op,cl) ->
-        let cl' = List.map try_soeval cl in
-        if is_soapp_operator t then
-	  let lam = List.hd cl'
-	  and args = List.tl cl' in
-          (try socontract args lam
-           with (Failure _ | UserError _) -> DOPL(op,cl'))
-        else 
-	  DOPL(op,cl')
 	    
 let soexecute t =
   let (_,t) = propagate_names [] t in 
@@ -217,3 +191,7 @@ let try_soexecute t =
     with (Failure _ | UserError _) -> ([],t)
   in 
   try_soeval t
+*)
+
+let soexecute a = failwith "No longer implemented"
+

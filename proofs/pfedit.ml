@@ -5,7 +5,7 @@ open Pp
 open Util
 open Names
 open Sign
-open Generic
+(*i open Generic i*)
 open Term
 open Declarations
 open Environ

@@ -5,7 +5,7 @@ open Util
 open Term
 open Inductive
 open Names
-open Generic
+(*i open Generic i*)
 open Reduction
 open Environ
 open Typeops
@@ -13,15 +13,15 @@ open Typeops
 type metamap = (int * constr) list
 
 let outsort env sigma t =
-  match whd_betadeltaiota env sigma t with
-      DOP0(Sort s) -> s
+  match kind_of_term (whd_betadeltaiota env sigma t) with
+    | IsSort s -> s
     | _ -> anomaly "Retyping: found a type of type which is not a sort"
 
 let rec subst_type env sigma typ = function
-    [] -> typ
+  | [] -> typ
   | h::rest ->
-      match whd_betadeltaiota env sigma typ with
-          DOP2(Prod,c1,DLAM(_,c2)) -> subst_type env sigma (subst1 h c2) rest
+      match kind_of_term (whd_betadeltaiota env sigma typ) with
+          IsProd (_,c1,c2) -> subst_type env sigma (subst1 h c2) rest
         | _ -> anomaly "Non-functional construction"
 
 (* Si ft est le type d'un terme f, lequel est appliqué à args, *)
@@ -31,16 +31,16 @@ let rec subst_type env sigma typ = function
 
 let sort_of_atomic_type env sigma ft args =
   let rec concl_of_arity ar =
-    match whd_betadeltaiota env sigma ar with
-      | DOP2 (Prod, _, DLAM (_, b)) -> concl_of_arity b
-      | DOP0 (Sort s) -> s
+    match kind_of_term (whd_betadeltaiota env sigma ar) with
+      | IsProd (_, _, b) -> concl_of_arity b
+      | IsSort s -> s
       | _ -> outsort env sigma (subst_type env sigma ft args)
   in concl_of_arity ft
 
 let typeur sigma metamap =
 let rec type_of env cstr=
   match kind_of_term cstr with
-      IsMeta n ->
+    | IsMeta n ->
           (try strip_outer_cast (List.assoc n metamap)
            with Not_found -> anomaly "type_of: this is not a well-typed term")
     | IsRel n -> lift n (body_of_type (snd (lookup_rel_type n env)))
@@ -65,14 +65,17 @@ let rec type_of env cstr=
         whd_betadeltaiota env sigma (applist (p,al))
     | IsLambda (name,c1,c2) ->
         let var = make_typed c1 (sort_of env c1) in
-          mkProd name c1 (type_of (push_rel_decl (name,var) env) c2)
+          mkProd (name, c1, type_of (push_rel_decl (name,var) env) c2)
+    | IsLetIn (name,b,c1,c2) ->
+        let var = make_typed c1 (sort_of env c1) in
+         subst1 b (type_of (push_rel_def (name,b,var) env) c2)
     | IsFix ((vn,i),(lar,lfi,vdef)) -> lar.(i)
     | IsCoFix (i,(lar,lfi,vdef)) -> lar.(i)
     | IsAppL(f,args)->
       strip_outer_cast (subst_type env sigma (type_of env f) args)
     | IsCast (c,t) -> t
     | IsSort _ | IsProd (_,_,_) | IsMutInd _ -> mkSort (sort_of env cstr)
-    | _ -> error "type_of: Unexpected constr"
+    | IsXtra _ -> error "type_of: Unexpected constr"
 
 and sort_of env t = 
   match kind_of_term t with

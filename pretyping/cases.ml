@@ -1,7 +1,7 @@
 
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Declarations
 open Inductive
@@ -22,7 +22,7 @@ open Evarconv
 (* This was previously in Indrec but creates existential holes       *)
 
 let mkExistential isevars env =
-  new_isevar isevars env (mkCast dummy_sort dummy_sort) CCI
+  new_isevar isevars env (mkCast (dummy_sort, dummy_sort)) CCI
 
 let norec_branch_scheme env isevars cstr =
   it_mkProd_or_LetIn (mkExistential isevars env) cstr.cs_args 
@@ -31,14 +31,16 @@ let rec_branch_scheme env isevars ((sp,j),_) recargs cstr =
   let rec crec (args,recargs) = 
     match args, recargs with 
       | (name,None,c)::rea,(ra::reca) -> 
-          DOP2(Prod,body_of_type c,DLAM(name,
-	       match ra with 
-		 | Mrec k when k=j -> 
-		     mkArrow (mkExistential isevars env)
-		       (crec (List.rev (lift_rel_context 1 (List.rev rea)),reca))
-                 | _ -> crec (rea,reca)))
-      | (name,Some d,c)::rea, reca -> failwith "TODO"
-(*	  mkLetIn (name,d,body_of_type c,crec (rea,reca))) *)
+	  let d =
+ 	    match ra with 
+	      | Mrec k when k=j -> 
+		  mkArrow (mkExistential isevars env)
+		    (crec (List.rev (lift_rel_context 1 (List.rev rea)),reca))
+              | _ -> crec (rea,reca) in
+          mkProd (name, body_of_type c, d)
+
+      | (name,Some d,c)::rea, reca -> 
+	  mkLetIn (name, d, body_of_type c, crec (rea,reca))
       | [],[] -> mkExistential isevars env
       | _ -> anomaly "rec_branch_scheme"
   in 
@@ -58,9 +60,9 @@ let branch_scheme env isevars isrec (IndFamily (mis,params) as indf) =
 
 let concl_n env sigma = 
   let rec decrec m c = if m = 0 then c else 
-    match whd_betadeltaiota env sigma c with
-      | DOP2(Prod,_,DLAM(n,c_0)) -> decrec (m-1) c_0
-      | _                        -> failwith "Typing.concl_n"
+    match kind_of_term (whd_betadeltaiota env sigma c) with
+      | IsProd (n,_,c_0) -> decrec (m-1) c_0
+      | _                -> failwith "Typing.concl_n"
   in 
   decrec
 
@@ -378,9 +380,9 @@ let dependencies_in_rhs nargs eqns =
    already dependent *)
 
 let rec is_dep_on_previous n t = function
-  | ((_,IsInd _),_)::_ when dependent (Rel n) t -> DepOnPrevious
+  | ((_,IsInd _),_)::_ when dependent (mkRel n) t -> DepOnPrevious
   | ((_,NotInd _),(DepOnPrevious,DepInRhs))::_ 
-      when dependent (Rel n) t -> DepOnPrevious
+      when dependent (mkRel n) t -> DepOnPrevious
   | _::rest -> is_dep_on_previous (n+1) t rest
   | [] -> NotDepOnPrevious
 
@@ -513,11 +515,13 @@ let noccur_between_without_evar n m term =
     | VAR _         -> ()
     | DOPN(Evar _,cl) -> ()
     | DOPN(_,cl)    -> Array.iter (occur_rec n) cl
-    | DOPL(_,cl)    -> List.iter (occur_rec n) cl
     | DOP1(_,c)     -> occur_rec n c
     | DOP2(_,c1,c2) -> occur_rec n c1; occur_rec n c2
     | DLAM(_,c)     -> occur_rec (n+1) c
     | DLAMV(_,v)    -> Array.iter (occur_rec (n+1)) v
+    | CLam (_,t,c)   -> occur_rec n (body_of_type t); occur_rec (n+1) c
+    | CPrd (_,t,c)   -> occur_rec n (body_of_type t); occur_rec (n+1) c
+    | CLet (_,b,t,c) -> occur_rec n b; occur_rec n (body_of_type t); occur_rec (n+1) c
     | _             -> ()
   in 
   try occur_rec n term; true with Occur -> false
@@ -645,7 +649,7 @@ let rec weaken_predicate n pred =
 
 let rec extract_predicate = function
   | PrProd ((_,na,t),pred) ->
-      mkProd na (type_of_tomatch_type t) (extract_predicate pred)
+      mkProd (na, type_of_tomatch_type t, extract_predicate pred)
   | PrLetIn ((args,Some c),pred) -> substl (c::(List.rev args)) (extract_predicate pred)
   | PrLetIn ((args,None),pred) -> substl (List.rev args) (extract_predicate pred)
   | PrCcl ccl -> ccl
@@ -962,9 +966,9 @@ let build_expected_arity env isevars isdep tomatchl =
     | tm::ltm ->
 	let (ty1,aritysign) = cook n tm in
 	let rec follow n = function
-	  | (na,ty2)::sign -> DOP2(Prod,ty2,DLAM(na,follow (n+1) sign))
+	  | (na,ty2)::sign -> mkProd (na, ty2, follow (n+1) sign)
 	  | _ ->
-	      if isdep then DOP2(Prod,ty1,DLAM(Anonymous,buildrec (n+1) ltm))
+	      if isdep then mkProd (Anonymous, ty1, buildrec (n+1) ltm)
 	      else buildrec n ltm
 	in follow n (List.rev aritysign)
   in buildrec 0 tomatchl
@@ -988,17 +992,18 @@ let build_initial_predicate isdep pred tomatchl =
   in buildrec 0 pred tomatchl
 
 let rec eta_expand0 env sigma n c t =
-  match whd_betadeltaiota env sigma t with
-      DOP2(Prod,a,DLAM(na,b)) ->
-	DOP2(Lambda,a,DLAM(na,eta_expand0 env sigma (n+1) c b))
-   | _ -> applist (lift n c, rel_list 0 n)
+  match kind_of_term (whd_betadeltaiota env sigma t) with
+    | IsProd (na,a,b) -> mkLambda (na,a,eta_expand0 env sigma (n+1) c b)
+    | _ -> applist (lift n c, rel_list 0 n)
 
 
 let rec eta_expand env sigma c t =
-  match whd_betadeltaiota env sigma c, whd_betadeltaiota env sigma t with
-   | (DOP2(Lambda,ta,DLAM(na,cb)), DOP2(Prod,_,DLAM(_,tb))) ->
-       DOP2(Lambda,ta,DLAM(na,eta_expand env sigma cb tb))
-   | (c, t) -> eta_expand0 env sigma 0 c t
+  let c' = whd_betadeltaiota env sigma c in 
+  let t' = whd_betadeltaiota env sigma t in
+  match kind_of_term c', kind_of_term t' with
+   | IsLambda (na,ta,cb), IsProd (_,_,tb) ->
+       mkLambda (na,ta,eta_expand env sigma cb tb)
+   | _, _ -> eta_expand0 env sigma 0 c' t'
 
 (* determines wether the multiple case is dependent or not. For that
  * the predicate given by the user is eta-expanded. If the result

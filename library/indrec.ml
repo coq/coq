@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Declarations
 open Inductive
@@ -15,8 +15,7 @@ open Typeops
 open Type_errors
 open Indtypes (* pour les erreurs *)
 
-let simple_prod (n,t,c) = mkProd n t c
-let make_prod_dep dep env = if dep then prod_name env else simple_prod
+let make_prod_dep dep env = if dep then prod_name env else mkProd
 
 (*******************************************)
 (* Building curryfied elimination          *)
@@ -94,9 +93,10 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
   let st = hnf_prod_appvect env sigma t vargs in
   let process_pos depK pk = 
     let rec prec i p = 
-      match whd_betadeltaiota_stack env sigma p [] with 
-	| (DOP2(Prod,t,DLAM(n,c))),[] -> make_prod env (n,t,prec (i+1) c)
-     	| (DOPN(MutInd _,_),largs) -> 
+      let p',largs = whd_betadeltaiota_stack env sigma p [] in
+      match kind_of_term p' with
+	| IsProd (n,t,c) -> assert (largs=[]); make_prod env (n,t,prec (i+1) c)
+     	| IsMutInd (_,_) -> 
 	    let (_,realargs) = list_chop nparams largs in 
 	    let base = applist (lift i pk,realargs) in       
             if depK then 
@@ -108,8 +108,10 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
     prec 0 
   in
   let rec process_constr i c recargs co = 
-    match whd_betadeltaiota_stack env sigma c [] with 
-      | (DOP2(Prod,t,DLAM(n,c_0)),[]) -> 
+    let c', largs = whd_betadeltaiota_stack env sigma c [] in
+    match kind_of_term c' with 
+      | IsProd (n,t,c_0) ->
+	  assert (largs = []);
           let (optionpos,rest) = 
 	    match recargs with 
 	      | [] -> None,[] 
@@ -129,7 +131,7 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
 		 make_prod_dep (dep or dep') env
                    (n,t,mkArrow t_0 (process_constr (i+2) (lift 1 c_0) rest
 				       (mkAppList (lift 2 co) [Rel 2]))))
-      | (DOPN(MutInd(_,tyi),_),largs) -> 
+      | IsMutInd ((_,tyi),_) -> 
       	  let nP = match depPvect.(tyi) with 
 	    | Some(_,p) -> lift (i+decP) p
 	    | _ -> assert false in
@@ -142,14 +144,15 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) co t recargs =
 
 let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs = 
   let process_pos fk  =
-    let rec prec i p = 
-      (match whd_betadeltaiota_stack env sigma p [] with 
-	 | (DOP2(Prod,t,DLAM(n,c))),[] -> lambda_name env (n,t,prec (i+1) c) 
-     	 | (DOPN(MutInd _,_),largs) -> 
-             let (_,realargs) = list_chop nparams largs
-             and arg = appvect (Rel (i+1),rel_vect 0 i) in 
-             applist(lift i fk,realargs@[arg])
-     	 | _ -> assert false) 
+    let rec prec i p =
+      let p',largs = whd_betadeltaiota_stack env sigma p [] in
+      match kind_of_term p' with
+	| IsProd (n,t,c) -> lambda_name env (n,t,prec (i+1) c)
+     	| IsMutInd _ -> 
+            let (_,realargs) = list_chop nparams largs
+            and arg = appvect (Rel (i+1),rel_vect 0 i) in 
+            applist(lift i fk,realargs@[arg])
+     	| _ -> assert false
     in
     prec 0 
   in
@@ -315,10 +318,10 @@ let make_case_gen env   = make_case_com None env
    [rec] by [s] *)
 
 let change_sort_arity sort = 
-  let rec drec = function 
-    | (DOP2(Cast,c,t)) -> drec c 
-    | (DOP2(Prod,t,DLAM(n,c))) -> DOP2(Prod,t,DLAM(n,drec c))
-    | (DOP0(Sort(_))) -> DOP0(Sort(sort))
+  let rec drec a = match kind_of_term a with
+    | IsCast (c,t) -> drec c 
+    | IsProd (n,t,c) -> mkProd (n, t, drec c)
+    | IsSort _ -> mkSort sort
     | _ -> assert false
   in 
   drec 
@@ -327,9 +330,9 @@ let instanciate_indrec_scheme sort =
   let rec drec npar elim =
     let (n,t,c) = destLambda (strip_outer_cast elim) in
     if npar = 0 then 
-      mkLambda n (change_sort_arity sort t) c
+      mkLambda (n, change_sort_arity sort t, c)
     else 
-      mkLambda n t (drec (npar-1) c) 
+      mkLambda (n, t, drec (npar-1) c) 
   in
   drec
 

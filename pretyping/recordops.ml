@@ -11,7 +11,7 @@ open Library
 open Classops
 (*
 open Pp_control
-open Generic
+(*i open Generic i*)
 open Initial
 *)
 

@@ -10,6 +10,7 @@ Changements d'organisation / modules :
   Avm,Mavm,Fmavm,Mhm  ->  utiliser plutôt Map (et freeze alors gratuit)
   Mhb                 ->  Bij
 
+  Generic est intégré à Term (et un petit peu à Closure)
 
 Changements dans les types de données :
 ---------------------------------------

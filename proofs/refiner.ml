@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Stamps
-open Generic
+(*i open Generic i*)
 open Term
 open Sign
 open Evd
@@ -271,7 +271,7 @@ let extract_open_proof sigma pf =
 	let ass = Retyping.get_assumption_of goal.evar_env sigma abs_concl in
 	let mv = new_meta() in
 	open_obligations := (mv,ass):: !open_obligations;
-	applist(DOP0(Meta mv),List.map (fun (n,_) -> Rel n) sorted_rels) 
+	applist (mkMeta mv, List.map (fun (n,_) -> mkRel n) sorted_rels) 
 	  
     | _ -> anomaly "Bug : a case has been forgotten in proof_extractor"
   in

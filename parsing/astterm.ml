@@ -5,7 +5,7 @@ open Pp
 open Util
 open Names
 open Sign
-open Generic
+(*i open Generic i*)
 open Term
 open Environ
 open Evd
@@ -278,17 +278,6 @@ let dbize k sigma env allow_soapp lvar =
   let rec dbrec env = function
     | Nvar(loc,s) -> fst (dbize_ref k sigma env loc s lvar)
 	  
-   (*
-   | Slam(_,ona,Node(_,"V$",l)) ->
-       let na =
-         (match ona with Some s -> Name (id_of_string s) | _ -> Anonymous)
-       in DLAMV(na,Array.of_list (List.map (dbrec (Idset.add na env)) l))
-
-   | Slam(_,ona,t) ->
-       let na =
-         (match ona with Some s -> Name (id_of_string s) | _ -> Anonymous)
-       in DLAM(na, dbrec (Idset.add na env) t)
-   *)
     | Node(loc,"FIX", (Nvar (locid,iddef))::ldecl) ->
 	let (lf,ln,lA,lt) = dbize_fix ldecl in
 	let n =
@@ -313,13 +302,17 @@ let dbize k sigma env allow_soapp lvar =
 	  List.fold_left (fun env fid -> Idset.add fid env) env lf in
 	let defl = Array.of_list (List.map (dbrec ext_env) lt) in
 	let arityl = Array.of_list (List.map (dbrec env) lA) in
-	RRec (loc,RCofix n, Array.of_list lf, arityl, defl)
+	RRec (loc,RCoFix n, Array.of_list lf, arityl, defl)
 	  
-    | Node(loc,("PROD"|"LAMBDA" as k), [c1;Slam(_,ona,c2)]) ->
+    | Node(loc,("PROD"|"LAMBDA"|"LETIN" as k), [c1;Slam(_,ona,c2)]) ->
 	let na,env' = match ona with
 	  | Some s -> let id = id_of_string s in Name id, Idset.add id env
 	  | _ -> Anonymous, env in
-	let kind = if k="PROD" then BProd else BLambda in
+	let kind = match k with
+	  | "PROD" -> BProd
+	  | "LAMBDA" -> BLambda
+	  | "LETIN" -> BLetIn
+	  | _ -> assert false in
 	RBinder(loc, kind, na, dbrec env c1, dbrec env' c2)
 
     | Node(_,"PRODLIST", [c1;(Slam _ as c2)]) -> 
@@ -401,12 +394,12 @@ let dbize k sigma env allow_soapp lvar =
     | Slam(loc,ona,body) ->
 	let na,env' = match ona with 
 	  | Some s ->
-	      check_capture s ty body;
+	      if n>0 then check_capture s ty body;
 	      let id = id_of_string s in Name id, Idset.add id env
 	  | _ -> Anonymous, env
 	in
 	RBinder(loc, oper, na, dbrec env ty,
-		(iterated_binder oper n ty env' body))
+		(iterated_binder oper (n+1) ty env' body))
     | body -> dbrec env body
 
   and dbize_args env l args =

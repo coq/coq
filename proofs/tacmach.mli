@@ -191,8 +191,8 @@ val walking_THEN        : 'a result_w_tactic -> ('a -> tactic) -> tactic
 val walking             : w_tactic -> tactic
 val w_Focusing_THEN     : int -> 'a result_w_tactic 
                           -> ('a -> w_tactic) -> w_tactic
-val w_Declare           : int -> constr -> w_tactic
-val w_Declare_At        : int -> int -> constr -> w_tactic
+val w_Declare           : int -> constr * constr -> w_tactic
+val w_Declare_At        : int -> int -> constr * constr -> w_tactic
 val w_Define            : int -> constr -> w_tactic
 val w_Underlying        : walking_constraints -> evar_declarations
 val w_env               : walking_constraints -> env

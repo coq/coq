@@ -84,8 +84,9 @@ GEXTEND Gram
         c = constr; "in"; c1 = constr ->
           <:ast< (CASE "NOREC" "SYNTH" $c (LAMBDALIST (ISEVAR)
                    ($SLAM $b $c1))) >>
-      | IDENT "let"; id1 = IDENT ; "="; c = constr; "in";
-        c1 = constr -> <:ast< (ABST #Core#let.cci $c [$id1]$c1) >>
+      | IDENT "let"; id1 = IDENT ; "="; c = constr; "in"; c1 = constr -> 
+	  <:ast< (LETIN $c [$id1]$c1) >>
+(* <:ast< (ABST #Core#let.cci $c [$id1]$c1) >>*)
       | IDENT "if"; c1 = constr; IDENT "then"; c2 = constr;
         IDENT "else"; c3 = constr ->
         <:ast< ( CASE "NOREC" "SYNTH" $c1 $c2 $c3) >>
@@ -141,11 +142,13 @@ GEXTEND Gram
     [ [ ","; idl = ne_ident_comma_list -> idl
       | -> [] ] ]
   ;
-  vardecls:
+  vardecls: (* This is interpreted by Pcoq.abstract_binder *)
     [ [ id = ident; idl = ident_comma_list_tail; c = type_option ->
           <:ast< (BINDER $c $id ($LIST $idl)) >>
+      | id = ident; ":="; c = constr ->
+	  <:ast< (LETIN $c $id) >>
       | id = ident; "="; c = constr ->
-	  <:ast< (ABST #Core#let.cci $c $id) >> ] ]
+	  <:ast< (LETIN $c $id) >> ] ]
   ;
   ne_vardecls_list:
     [ [ id = vardecls; ";"; idl = ne_vardecls_list -> id :: idl

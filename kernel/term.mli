@@ -2,10 +2,27 @@
 (* $Id$ *)
 
 (*i*)
+open Util
 open Pp
 open Names
-open Generic
+(*i open Generic i*)
 (*i*)
+
+(*s The sorts of CCI. *)
+
+type contents = Pos | Null
+
+type sorts =
+  | Prop of contents       (* Prop and Set *)
+  | Type of Univ.universe  (* Type *)
+
+val str_of_contents : contents -> string
+val contents_of_str : string -> contents
+
+val mk_Set  : sorts
+val mk_Prop : sorts
+
+val print_sort : sorts -> std_ppcmds
 
 (*s The operators of the Calculus of Inductive Constructions. 
   ['a] is the type of sorts. ([XTRA] is an extra slot, for putting in 
@@ -34,34 +51,32 @@ type 'a oper =
   | CoFix of int
   | XTRA of string
 
-(*s The sorts of CCI. *)
-
-type contents = Pos | Null
-
-val str_of_contents : contents -> string
-val contents_of_str : string -> contents
-
-type sorts =
-  | Prop of contents       (* Prop and Set *)
-  | Type of Univ.universe  (* Type *)
-
-val mk_Set  : sorts
-val mk_Prop : sorts
-
-val print_sort : sorts -> std_ppcmds
-
 (*s The type [constr] of the terms of CCI
-  is obtained by instanciating the generic terms (type [term], 
-  see \refsec{generic_terms}) on the above operators, themselves instanciated
+  is obtained by instanciating a generic notion of terms
+  on the above operators, themselves instanciated
   on the above sorts. *)
 
-type constr = sorts oper term
+(* [VAR] is used for named variables and [Rel] for variables as
+   de Bruijn indices. *)
+
+type constr =
+  | DOP0 of sorts oper
+  | DOP1 of sorts oper * constr
+  | DOP2 of sorts oper * constr * constr
+  | DOPN of sorts oper * constr array
+  | DLAM of name * constr
+  | DLAMV of name * constr array
+  | CLam of name * typed_type * constr
+  | CPrd of name * typed_type * constr
+  | CLet of name * constr * typed_type * constr
+  | VAR of identifier
+  | Rel of int
+
+and typed_type
 
 type flat_arity = (name * constr) list * sorts
 
-(*type 'a judge = { body : constr; typ : 'a }*)
-
-type typed_type
+(*s Functions about typed_type *)
 
 val make_typed : constr -> sorts -> typed_type
 val make_typed_lazy : constr -> (constr -> sorts) -> typed_type
@@ -81,9 +96,9 @@ type var_declaration = identifier * constr option * typed_type
 type rel_declaration = name * constr option * typed_type
 
 (**********************************************************************)
-type binder_kind = BProd | BLambda
+type binder_kind = BProd | BLambda | BLetIn
 
-type fix_kind = RFix of (int array * int) | RCofix of int
+type fix_kind = RFix of (int array * int) | RCoFix of int
 
 type 'ctxt reference =
   | RConst of section_path * 'ctxt
@@ -119,6 +134,7 @@ type kindOfTerm =
   | IsCast         of constr * constr
   | IsProd         of name * constr * constr
   | IsLambda       of name * constr * constr
+  | IsLetIn        of name * constr * constr * constr
   | IsAppL         of constr * constr list
   | IsAbst         of section_path * constr array
   | IsEvar         of existential
@@ -141,9 +157,6 @@ val kind_of_term : constr -> kindOfTerm
 
 (* Constructs a DeBrujin index *)
 val mkRel : int -> constr
-
-(* Constructs an existential variable named "?" *)
-val mkExistential : constr
 
 (* Constructs an existential variable named "?n" *)
 val mkMeta : int -> constr
@@ -172,15 +185,15 @@ val implicit_sort : sorts
 
 (* Constructs the term $t_1::t2$, i.e. the term $t_1$ casted with the 
    type $t_2$ (that means t2 is declared as the type of t1). *)
-val mkCast : constr -> constr -> constr
+val mkCast : constr * constr -> constr
 
 (* Constructs the product $(x:t_1)t_2$ *)
-val mkProd : name -> constr -> constr -> constr
+val mkProd : name * constr * constr -> constr
 val mkNamedProd : identifier -> constr -> constr -> constr
 val mkProd_string : string -> constr -> constr -> constr
 
 (* Constructs the product $(x:t_1)t_2$ *)
-val mkLetIn : name -> constr -> constr -> constr -> constr
+val mkLetIn : name * constr * constr * constr -> constr
 val mkNamedLetIn : identifier -> constr -> constr -> constr -> constr
 
 (* Constructs either [(x:t)c] or [[x=b:t]c] *)
@@ -199,7 +212,7 @@ val mkNamedProd_wo_LetIn : var_declaration -> constr -> constr
 val mkArrow : constr -> constr -> constr
 
 (* Constructs the abstraction $[x:t_1]t_2$ *)
-val mkLambda : name -> constr -> constr -> constr
+val mkLambda : name * constr * constr -> constr
 val mkNamedLambda : identifier -> constr -> constr -> constr
 
 (* [mkLambda_string s t c] constructs $[s:t]c$ *)
@@ -230,7 +243,7 @@ val mkMutInd : inductive -> constr
 val mkMutConstruct : constructor -> constr
 
 (* Constructs the term <p>Case c of c1 | c2 .. | cn end *)
-val mkMutCase : case_info -> constr -> constr -> constr list -> constr
+val mkMutCase : case_info * constr * constr * constr list -> constr
 val mkMutCaseA : case_info -> constr -> constr -> constr array -> constr
 
 (* If [recindxs = [|i1,...in|]]
@@ -238,7 +251,7 @@ val mkMutCaseA : case_info -> constr -> constr -> constr array -> constr
       [funnames = [f1,.....fn]]
       [bodies   = [b1,.....bn]]
    then [ mkFix ((recindxs,i),typarray, funnames, bodies) ]
-   constructs the $i$th function of the block  
+   constructs the $i$th function of the block (counting from 0)
 
     [Fixpoint f1 [ctx1] = b1
      with     f2 [ctx2] = b2
@@ -282,7 +295,7 @@ val destRel : constr -> int
 
 (* Destructs an existential variable *)
 val destMeta : constr -> int
-val isMETA : constr -> bool
+val isMeta : constr -> bool
 
 (* Destructs a variable *)
 val destVar : constr -> identifier
@@ -330,6 +343,9 @@ val hd_is_constructor : constr -> bool
 (* Destructs the abstraction $[x:t_1]t_2$ *)
 val destLambda : constr -> name * constr * constr
 
+(* Destructs the let $[x:=b:t_1]t_2$ *)
+val destLetIn : constr -> name * constr * constr * constr
+
 (* Destructs an application *)
 val destAppL : constr -> constr array
 val isAppL : constr -> bool
@@ -339,6 +355,7 @@ val destApplication : constr -> constr * constr array
 
 (* Destructs a constant *)
 val destConst : constr -> section_path * constr array
+val isConst : constr -> bool
 val path_of_const : constr -> section_path
 val args_of_const : constr -> constr array
 
@@ -358,6 +375,7 @@ val args_of_mind : constr -> constr array
 
 (* Destructs a constructor *)
 val destMutConstruct : constr -> constructor
+val isMutConstruct : constr -> bool
 val op_of_mconstr : constr -> constructor_path
 val args_of_mconstr : constr -> constr array
 
@@ -541,6 +559,88 @@ val le_kind_implicit : constr -> constr -> bool
 
 val sort_hdchar : sorts -> string
 
+(* Generic functions *)
+val free_rels : constr -> Intset.t
+
+(* [closed0 M] is true iff [M] is a (deBruijn) closed term *)
+val closed0 : constr -> bool
+
+(* [noccurn n M] returns true iff [Rel n] does NOT occur in term [M]  *)
+val noccurn : int -> constr -> bool
+
+(* [noccur_between n m M] returns true iff [Rel p] does NOT occur in term [M]
+  for n <= p < n+m *)
+val noccur_between : int -> int -> constr -> bool
+
+(* Checking function for terms containing existential- or
+   meta-variables.  The function [noccur_with_meta] considers only
+   meta-variable applied to some terms (intented to be its local
+   context) (for existential variables, it is necessarily the case) *)
+val noccur_with_meta : int -> int -> constr -> bool
+
+(* [liftn n k c] lifts by [n] indexes above [k] in [c] *)
+val liftn : int -> int -> constr -> constr
+
+(* [lift n c] lifts by [n] the positive indexes in [c] *)
+val lift : int -> constr -> constr
+
+(* [pop c] lifts by -1 the positive indexes in [c] *)
+val pop : constr -> constr
+
+(* [lift_context n ctxt] lifts terms in [ctxt] by [n] preserving
+   (i.e. not lifting) the internal references between terms of [ctxt];
+   more recent terms come first in [ctxt] *)
+val lift_context : int -> (name * constr) list -> (name * constr) list
+
+(* [substnl [a1;...;an] k c] substitutes in parallele [a1],...,[an]
+    for respectively [Rel(k+1)],...,[Rel(k+n)] in [c]; it relocates
+    accordingly indexes in [a1],...,[an] *)
+val substnl : constr list -> int -> constr -> constr
+val substl : constr list -> constr -> constr
+val subst1 : constr -> constr -> constr
+
+(* [global_vars c] returns the list of [id]'s occurring as [VAR id] in [c] *)
+val global_vars : constr -> identifier list
+
+val global_vars_set : constr -> Idset.t
+val replace_vars : (identifier * constr) list -> constr -> constr
+val subst_var : identifier -> constr -> constr
+
+(* [subst_vars [id1;...;idn] t] substitute [VAR idj] by [Rel j] in [t]
+   if two names are identical, the one of least indice is keeped *)
+val subst_vars : identifier list -> constr -> constr
+
+(* [rel_list n m] and [rel_vect n m] compute [[Rel (n+m);...;Rel(n+1)]] *)
+val rel_vect : int -> int -> constr array
+val rel_list : int -> int -> constr list
+
+(*i************************************************************************i*)
+(*i Pour Closure 
+(* Explicit substitutions of type ['a]. [ESID] = identity. 
+  [CONS(t,S)] = $S.t$ i.e. parallel substitution. [SHIFT(n,S)] = 
+  $(\uparrow n~o~S)$ i.e. terms in S are relocated with n vars. 
+  [LIFT(n,S)] = $(\%n~S)$ stands for $((\uparrow n~o~S).n...1)$. *)
+type 'a subs =
+  | ESID
+  | CONS of 'a * 'a subs
+  | SHIFT of int * 'a subs
+  | LIFT of int * 'a subs
+val subs_cons  : 'a * 'a subs -> 'a subs
+val subs_liftn  : int -> 'a subs -> 'a subs
+val subs_lift  : 'a subs -> 'a subs
+val subs_shft  : int * 'a subs -> 'a subs
+val expand_rel : int -> 'a subs -> (int * 'a, int) union
+i*)
+(*s Lifts. [ELSHFT(l,n)] == lift of [n], then apply [lift l].
+  [ELLFT(n,l)] == apply [l] to de Bruijn > [n] i.e under n binders. *)
+type lift_spec =
+  | ELID
+  | ELSHFT of lift_spec * int
+  | ELLFT of int * lift_spec
+val el_shft : int -> lift_spec -> lift_spec
+val el_lift : lift_spec -> lift_spec
+val reloc_rel: int -> lift_spec -> int
+(*i*)
 
 (*s Occur check functions. *)                         
 
@@ -550,7 +650,6 @@ val occur_meta : constr -> bool
 (*i val max_occur_meta : constr -> int i*)
 
 val occur_existential : constr -> bool
-val rel_vect : int -> int -> constr array
 
 (* [(occur_const (s:section_path) c)] returns [true] if constant [s] occurs 
    in c, [false] otherwise *)
@@ -562,7 +661,7 @@ val occur_evar : existential_key -> constr -> bool
 
 (* [(occur_var id c)] returns [true] if variable [id] occurs free
    in c, [false] otherwise *)
-val occur_var : identifier -> 'a term -> bool
+val occur_var : identifier -> constr -> bool
 
 (* [dependent M N] is true iff M is eq\_constr with a subterm of N 
    M is appropriately lifted through abstractions of N *)
@@ -579,7 +678,6 @@ val eta_eq_constr : constr -> constr -> bool
 
 (*s The following functions substitutes [what] by [Rel 1] in [where] *)
 val subst_term : what:constr -> where:constr -> constr
-val subst_term_eta_eq : what:constr -> where:constr -> constr
 val subst_term_occ : occs:int list -> what:constr -> where:constr -> constr
 val subst_term_occ_decl : occs:int list -> what:constr ->
       where:var_declaration -> var_declaration
@@ -598,16 +696,26 @@ type constr_operator =
   | OpMeta of int
   | OpSort of sorts
   | OpRel of int | OpVar of identifier
-  | OpCast | OpProd of name | OpLambda of name
+  | OpCast | OpProd of name | OpLambda of name | OpLetIn of name
   | OpAppL | OpConst of section_path | OpAbst of section_path
   | OpEvar of existential_key
   | OpMutInd of inductive_path
   | OpMutConstruct of constructor_path
   | OpMutCase of case_info
-  | OpRec of fix_kind
+  | OpRec of fix_kind * Names.name list
 
-val splay_constr : constr -> constr_operator * constr list
-val gather_constr : constr_operator * constr list -> constr
+val splay_constr : constr -> constr_operator * constr array
+val gather_constr : constr_operator * constr array -> constr
+
+val splay_constr_with_binders : constr ->
+      constr_operator * (name * constr option * constr) list * constr array
+val gather_constr_with_binders : 
+  constr_operator * (name * constr option * constr) list * constr array
+  -> constr
+
+val generic_fold_left :
+  ('a -> constr -> 'a) -> 'a -> (name * constr option * constr) list
+      -> constr array -> 'a
 
 (*s Hash-consing functions for constr. *)
 

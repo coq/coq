@@ -4,7 +4,7 @@
 open Util
 open Names
 open Univ
-open Generic
+(*i open Generic i*)
 open Term
 open Sign
 open Declarations

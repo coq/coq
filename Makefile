@@ -66,7 +66,7 @@ LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/bstack.cmo lib/edit.cmo lib/stamps.cmo lib/gset.cmo lib/gmap.cmo \
     lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo
 
-KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
+KERNEL=kernel/names.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/sign.cmo kernel/declarations.cmo \
        kernel/sosub.cmo kernel/abstraction.cmo \
        kernel/environ.cmo kernel/evd.cmo kernel/instantiate.cmo \
@@ -75,13 +75,14 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/safe_typing.cmo
 
 LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
-	library/global.cmo library/states.cmo library/library.cmo \
+	library/goptions.cmo \
+	library/global.cmo library/library.cmo library/states.cmo \
 	library/nametab.cmo library/impargs.cmo library/redinfo.cmo \
-        library/indrec.cmo library/declare.cmo library/goptions.cmo
+        library/indrec.cmo library/declare.cmo 
 
 PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
-	  pretyping/tacred.cmo pretyping/pretype_errors.cmo \
-          pretyping/retyping.cmo pretyping/typing.cmo \
+	  pretyping/retyping.cmo pretyping/tacred.cmo \
+	  pretyping/pretype_errors.cmo pretyping/typing.cmo \
 	  pretyping/classops.cmo pretyping/class.cmo pretyping/recordops.cmo \
 	  pretyping/evarutil.cmo pretyping/evarconv.cmo \
           pretyping/coercion.cmo pretyping/cases.cmo pretyping/pretyping.cmo \

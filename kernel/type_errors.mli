@@ -11,6 +11,26 @@ open Environ
 
 (* Type errors. \label{typeerrors} *)
 
+(*i Rem: NotEnoughAbstractionInFixBody should only occur with "/i" Fix
+    notation i*)
+type guard_error =
+  (* Fixpoints *)
+  | NotEnoughAbstractionInFixBody
+  | RecursionNotOnInductiveType
+  | RecursionOnIllegalTerm
+  | NotEnoughArgumentsForFixCall
+  (* CoFixpoints *)
+  | CodomainNotInductiveType of constr
+  | NestedRecursiveOccurrences
+  | UnguardedRecursiveCall of constr
+  | RecCallInTypeOfAbstraction of constr
+  | RecCallInNonRecArgOfConstructor of constr
+  | RecCallInTypeOfDef of constr
+  | RecCallInCaseFun of constr
+  | RecCallInCaseArg of constr
+  | RecCallInCasePred of constr
+  | NotGuardedForm
+
 type type_error =
   | UnboundRel of int
   | NotAType of unsafe_judgment
@@ -26,7 +46,7 @@ type type_error =
   | CantApplyBadType of (int * constr * constr)
       * unsafe_judgment * unsafe_judgment list
   | CantApplyNonFunctional of unsafe_judgment * unsafe_judgment list
-  | IllFormedRecBody of std_ppcmds * name list * int * constr array
+  | IllFormedRecBody of guard_error * name list * int * constr array
   | IllTypedRecBody of int * name list * unsafe_judgment array 
       * typed_type array
   | NotInductive of constr
@@ -80,8 +100,7 @@ val error_cant_apply_bad_type :
       unsafe_judgment -> unsafe_judgment list -> 'b
 
 val error_ill_formed_rec_body :
-  path_kind -> env -> std_ppcmds
-    -> name list -> int -> constr array -> 'b
+  path_kind -> env -> guard_error -> name list -> int -> constr array -> 'b
 
 val error_ill_typed_rec_body  :
   path_kind -> env -> int -> name list -> unsafe_judgment array 

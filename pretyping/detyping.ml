@@ -5,7 +5,7 @@ open Pp
 open Util
 open Univ
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Inductive
 open Sign
@@ -44,9 +44,11 @@ let occur_id env_names id0 c =
     | DOPN(_,cl)         -> array_exists (occur n) cl
     | DOP1(_,c)          -> occur n c
     | DOP2(_,c1,c2)      -> (occur n c1) or (occur n c2)
-    | DOPL(_,cl)         -> List.exists (occur n) cl
     | DLAM(_,c)          -> occur (n+1) c
     | DLAMV(_,v)         -> array_exists (occur (n+1)) v
+    | CLam (_,t,c)   -> occur n (body_of_type t) or occur (n+1) c
+    | CPrd (_,t,c)   -> occur n (body_of_type t) or occur (n+1) c
+    | CLet (_,b,t,c) -> occur n b or occur n (body_of_type t) or occur (n+1) c
     | Rel p              ->
     	p>n &
     	(try lookup_name_of_rel (p-n) env_names = Name id0
@@ -66,32 +68,25 @@ let next_name_not_occuring name l env_names t =
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
 let concrete_name l env_names n c =
-  if n = Anonymous & not (dependent (Rel 1) c) then
+  if n = Anonymous & not (dependent (mkRel 1) c) then
     (None,l)
   else
     let fresh_id = next_name_not_occuring n l env_names c in
-    let idopt = if dependent (Rel 1) c then (Some fresh_id) else None in
+    let idopt = if dependent (mkRel 1) c then (Some fresh_id) else None in
     (idopt, fresh_id::l)
 
     (* Returns the list of global variables and constants in a term *)
 let global_vars_and_consts t =
-  let rec collect acc = function
-    | VAR id             -> id::acc
-    | DOPN (Const sp,cl) -> (basename sp)::(Array.fold_left collect acc cl)
-    | DOPN (Abst sp,cl)  -> (basename sp)::(Array.fold_left collect acc cl)
-    | DOPN (MutInd ind_sp, cl) as t       -> 
-	(basename (path_of_inductive_path ind_sp))
-	::(Array.fold_left collect acc cl)
-    | DOPN (MutConstruct cstr_sp, cl) as t -> 
-	(basename (path_of_constructor_path cstr_sp))
-	::(Array.fold_left collect acc cl)
-    | DOPN(_,cl)         -> Array.fold_left collect acc cl
-    | DOP1(_,c)          -> collect acc c
-    | DOP2(_,c1,c2)      -> collect (collect acc c1) c2
-    | DOPL(_,cl)         -> List.fold_left collect acc cl
-    | DLAM(_,c)          -> collect acc c
-    | DLAMV(_,v)         -> Array.fold_left collect acc v
-    | _                  -> acc
+  let rec collect acc c =
+    let op, cl = splay_constr c in
+    let acc' = Array.fold_left collect acc cl in
+    match op with
+    | OpVar id -> id::acc'
+    | OpConst sp -> (basename sp)::acc'
+    | OpAbst sp  -> (basename sp)::acc'
+    | OpMutInd ind_sp -> (basename (path_of_inductive_path ind_sp))::acc'
+    | OpMutConstruct csp -> (basename (path_of_constructor_path csp))::acc'
+    | _ -> acc'
   in
   list_uniquize (collect [] t)
     
@@ -156,7 +151,7 @@ module PrintingCasesMake =
     let check (_,lc) =
       if not (Test.test lc) then 
 	errorlabstrm "check_encode" [< 'sTR Test.error_message >]
-    let decode (spi,_) = sp_of_spi spi
+    let printer (spi,_) = [< 'sTR(string_of_path (sp_of_spi spi)) >]
     let key = Goptions.SecondaryTable ("Printing",Test.field)
     let title = Test.title
     let member_message = Test.member_message
@@ -194,8 +189,8 @@ module PrintingCasesLet =
           ^ " are not printed using a `let' form"
   end)
 
-module PrintingIf  = Goptions.MakeTable(PrintingCasesIf)
-module PrintingLet = Goptions.MakeTable(PrintingCasesLet)
+module PrintingIf  = Goptions.MakeIdentTable(PrintingCasesIf)
+module PrintingLet = Goptions.MakeIdentTable(PrintingCasesLet)
 
 let force_let (lc,(indsp,_,_,_,_)) = PrintingLet.active (indsp,lc)
 let force_if (lc,(indsp,_,_,_,_)) = PrintingIf.active (indsp,lc)
@@ -244,10 +239,10 @@ let computable p k =
        sinon on perd la réciprocité de la synthèse (qui, lui,
        engendrera un prédicat non dépendant) *)
 
-  let rec striprec = function
-    | (0,DOP2(Lambda,_,DLAM(_,d))) -> false
-    | (0,d               )         -> noccur_between 1 k d
-    | (n,DOP2(Lambda,_,DLAM(_,d))) -> striprec (n-1,d)
+  let rec striprec (n,c) = match n, kind_of_term c with
+    | (0,IsLambda (_,_,d)) -> false
+    | (0,_)                -> noccur_between 1 k c
+    | (n,IsLambda (_,_,d)) -> striprec (n-1,d)
     |  _                           -> false
   in 
   striprec (k,p)
@@ -262,24 +257,24 @@ let ids_of_var cl =
 *)
 
 let lookup_name_as_renamed ctxt t s =
-  let rec lookup avoid env_names n = function
-      DOP2(Prod,t,DLAM(name,c')) ->
-       (match concrete_name avoid env_names name c' with
-          (Some id,avoid') -> 
-	    if id=s then (Some n) 
-	    else lookup avoid' (add_name (Name id) env_names) (n+1) c'
-	  | (None,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
-     | DOP2(Cast,c,_) -> lookup avoid env_names n c
-     | _ -> None
+  let rec lookup avoid env_names n c = match kind_of_term c with
+    | IsProd (name,t,c') ->
+	(match concrete_name avoid env_names name c' with
+             (Some id,avoid') -> 
+	       if id=s then (Some n) 
+	       else lookup avoid' (add_name (Name id) env_names) (n+1) c'
+	   | (None,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
+    | IsCast (c,_) -> lookup avoid env_names n c
+    | _ -> None
   in lookup (ids_of_var_context ctxt) empty_names_context 1 t
 
 let lookup_index_as_renamed t n =
-  let rec lookup n d = function
-      DOP2(Prod,_,DLAM(name,c')) -> 
+  let rec lookup n d c = match kind_of_term c with
+    | IsProd (name,_,c') ->
 	  (match concrete_name [] empty_names_context name c' with
           (Some _,_) -> lookup n (d+1) c'
         | (None  ,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
-    | DOP2(Cast,c,_) -> lookup n d c
+    | IsCast (c,_) -> lookup n d c
     | _ -> None
   in lookup n 1 t
 
@@ -310,6 +305,7 @@ let rec detype avoid env t =
 	RCast(dummy_loc,detype avoid env c1,detype avoid env c2)
     | IsProd (na,ty,c) -> detype_binder BProd avoid env na ty c
     | IsLambda (na,ty,c) -> detype_binder BLambda avoid env na ty c
+    | IsLetIn (na,b,_,c) -> detype_binder BLetIn avoid env na b c
     | IsAppL (f,args) ->
 	RApp (dummy_loc,detype avoid env f,List.map (detype avoid env) args)
     | IsConst (sp,cl) ->
@@ -356,7 +352,7 @@ let rec detype avoid env t =
 	end
 	
     | IsFix (nvn,(cl,lfn,vt)) -> detype_fix (RFix nvn) avoid env cl lfn vt
-    | IsCoFix (n,(cl,lfn,vt))  -> detype_fix (RCofix n) avoid env cl lfn vt)
+    | IsCoFix (n,(cl,lfn,vt))  -> detype_fix (RCoFix n) avoid env cl lfn vt)
 
 and detype_fix fk avoid env cl lfn vt =
   let lfi = List.map (fun id -> next_name_away id avoid) lfn in
@@ -369,34 +365,35 @@ and detype_fix fk avoid env cl lfn vt =
 
 and detype_eqn avoid env constr_id construct_nargs branch =
   let make_pat x avoid env b ids =
-    if not (force_wildcard ()) or (dependent (Rel 1) b) then
+    if not (force_wildcard ()) or (dependent (mkRel 1) b) then
       let id = next_name_away_with_default "x" x avoid in
       PatVar (dummy_loc,Name id),id::avoid,(add_name (Name id) env),id::ids
     else 
       PatVar (dummy_loc,Anonymous),avoid,(add_name Anonymous env),ids
   in
-  let rec buildrec ids patlist avoid env = function
-    | 0  , rhs	-> 
-	(ids, [PatCstr(dummy_loc, constr_id, List.rev patlist,Anonymous)],
-	 detype avoid env rhs)
+  let rec buildrec ids patlist avoid env n b =
+    if n=0 then
+      (ids, [PatCstr(dummy_loc, constr_id, List.rev patlist,Anonymous)],
+       detype avoid env b)
+    else
+      match kind_of_term b with
+	| IsLambda (x,_,b) -> 
+	    let pat,new_avoid,new_env,new_ids = make_pat x avoid env b ids in
+            buildrec new_ids (pat::patlist) new_avoid new_env (n-1) b
 
-    | n, DOP2(Lambda,_,DLAM(x,b)) -> 
-	let pat,new_avoid,new_env,new_ids = make_pat x avoid env b ids in
-        buildrec new_ids (pat::patlist) new_avoid new_env (n-1,b)
+	| IsCast (c,_) ->    (* Oui, il y a parfois des cast *)
+	    buildrec ids patlist avoid env n c
 
-    | n, DOP2(Cast,b,_) ->    (* Oui, il y a parfois des cast *)
-	buildrec ids patlist avoid env (n,b)
-	  
-    | n, b -> (* eta-expansion : n'arrivera plus lorsque tous les
-                   termes seront construits à partir de la syntaxe Cases *)
-	(* nommage de la nouvelle variable *)
-	let new_b = DOPN(AppL,[|lift 1 b; Rel 1|]) in
-        let pat,new_avoid,new_env,new_ids =
-	  make_pat Anonymous avoid env new_b ids in
-	buildrec new_ids (pat::patlist) new_avoid new_env (n-1,new_b)
+	| _ -> (* eta-expansion : n'arrivera plus lorsque tous les
+                  termes seront construits à partir de la syntaxe Cases *)
+            (* nommage de la nouvelle variable *)
+	    let new_b = applist (lift 1 b, [Rel 1]) in
+            let pat,new_avoid,new_env,new_ids =
+	      make_pat Anonymous avoid env new_b ids in
+	    buildrec new_ids (pat::patlist) new_avoid new_env (n-1) new_b
 	  
   in 
-  buildrec [] [] avoid env (construct_nargs,branch)
+  buildrec [] [] avoid env construct_nargs branch
 
 and detype_binder bk avoid env na ty c =
   let na',avoid' = match concrete_name avoid env na c with

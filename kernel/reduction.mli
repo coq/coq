@@ -3,7 +3,7 @@
 
 (*i*)
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Univ
 open Evd
@@ -35,10 +35,10 @@ val under_casts :
   'a contextual_reduction_function -> 'a contextual_reduction_function
 val strong : 'a reduction_function -> 'a reduction_function
 val local_strong : local_reduction_function -> local_reduction_function
-val strong_prodspine : 'a reduction_function -> 'a reduction_function
+val strong_prodspine : local_reduction_function -> local_reduction_function
 val stack_reduction_of_reduction : 
   'a reduction_function -> 'a stack_reduction_function
-val stacklam : (constr -> constr list -> 'a) -> constr list -> constr 
+val stacklam : (constr * constr list -> 'a) -> constr list -> constr 
   -> constr list -> 'a 
 
 (*s Generic Optimized Reduction Functions using Closures *)
@@ -110,15 +110,14 @@ val reducible_mind_case : constr -> bool
 val reduce_mind_case : constr miota_args -> constr
 
 val is_arity : env -> 'a evar_map -> constr -> bool
-val is_info_arity : env -> 'a evar_map -> constr -> bool
-val is_info_sort : env -> 'a evar_map -> constr -> bool
-val is_logic_arity : env -> 'a evar_map -> constr -> bool
-val is_type_arity : env -> 'a evar_map -> constr -> bool
 val is_info_type : env -> 'a evar_map -> unsafe_type_judgment -> bool
+val is_info_arity : env -> 'a evar_map -> constr -> bool
 (*i Pour l'extraction
+val is_type_arity : env -> 'a evar_map -> constr -> bool
 val is_info_cast_type : env -> 'a evar_map -> constr -> bool
 val contents_of_cast_type : env -> 'a evar_map -> constr -> contents
 i*)
+
 val poly_args : env -> 'a evar_map -> constr -> int list
 
 val whd_programs : 'a reduction_function
@@ -130,9 +129,12 @@ val fold_commands : constr list -> 'a reduction_function
 val pattern_occs : (int list * constr * constr) list -> 'a reduction_function
 val compute : 'a reduction_function
 
+(* [reduce_fix] contracts a fix redex if it is actually reducible *)
+type fix_reduction_result = NotReducible | Reduced of (constr * constr list)
+
 val fix_recarg : fixpoint -> 'a list -> (int * 'a) option
-val reduce_fix : (constr -> 'a list -> constr * constr list) -> constr ->
-  constr list -> bool * (constr * constr list)
+val reduce_fix : (constr * constr list -> constr * constr list) -> fixpoint ->
+  constr list -> fix_reduction_result
 
 (*s Conversion Functions (uses closures, lazy strategy) *)
 

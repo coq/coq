@@ -2,7 +2,7 @@
 (* $Id$ *)
 
 open Util
-open Generic
+(*i open Generic i*)
 open Term
 open Instantiate
 open Sign

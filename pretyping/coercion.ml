@@ -1,7 +1,7 @@
 (* $Id$ *)
 
 open Util
-open Generic
+(*i open Generic i*)
 open Names
 open Term
 open Reduction
@@ -30,8 +30,8 @@ let apply_coercion_args env argl funj =
               uj_type= typed_app (fun _ -> typ) funj.uj_type }
     | h::restl ->
       (* On devrait pouvoir s'arranger pour qu'on ait pas à faire hnf_constr *)
-  	match whd_betadeltaiota env Evd.empty typ with
-	  | DOP2(Prod,c1,DLAM(_,c2)) -> 
+  	match kind_of_term (whd_betadeltaiota env Evd.empty typ) with
+	  | IsProd (_,c1,c2) -> 
               (* Typage garanti par l'appel a app_coercion*)
 	      apply_rec (h::acc) (subst1 h c2) restl
 	  | _ -> anomaly "apply_coercion_args"
@@ -60,8 +60,9 @@ let apply_pcoercion env p hj typ_cl =
   with _ -> anomaly "apply_pcoercion"
 
 let inh_app_fun env isevars j = 
-  match whd_betadeltaiota env !isevars (body_of_type j.uj_type) with
-    | DOP2(Prod,_,DLAM(_,_)) -> j
+  let t = whd_betadeltaiota env !isevars (body_of_type j.uj_type) in
+  match kind_of_term t with
+    | IsProd (_,_,_) -> j
     | _ ->
        	(try
  	   let t,i1 = class_of1 env !isevars (body_of_type j.uj_type) in
@@ -116,13 +117,13 @@ let rec inh_conv_coerce_to_fail env isevars c1 hj =
       inh_coerce_to_fail env isevars c1 hj
     with NoCoercion ->  (* try ... with _ -> ... is BAD *)
       (*   (match (hnf_constr !isevars t,hnf_constr !isevars c1) with*)
-      (match (whd_betadeltaiota env !isevars t,
-	      whd_betadeltaiota env !isevars c1) with
-	 | (DOP2(Prod,t1,DLAM(_,t2)),DOP2(Prod,u1,DLAM(name,u2))) -> 
+      (match kind_of_term (whd_betadeltaiota env !isevars t),
+	     kind_of_term (whd_betadeltaiota env !isevars c1) with
+	 | IsProd (_,t1,t2), IsProd (name,u1,u2) -> 
  	     (* let v' = hnf_constr !isevars v in *)
              let v' = whd_betadeltaiota env !isevars v in
-             if (match v' with
-                   | DOP2(Lambda,v1,DLAM(_,v2)) ->
+             if (match kind_of_term v' with
+                   | IsLambda (_,v1,v2) ->
                        the_conv_x env isevars v1 u1 (* leq v1 u1? *)
                    | _  -> false)
              then 
@@ -162,7 +163,7 @@ let inh_conv_coerce_to loc env isevars cj tj =
       let at = nf_ise1 !isevars (body_of_type tj) in
       error_actual_type_loc loc env rcj.uj_val (body_of_type rcj.uj_type) at
   in
-  { uj_val = (* mkCast *) cj'.uj_val (* (body_of_type tj) *);
+  { uj_val = cj'.uj_val;
     uj_type = tj }
 
 let inh_apply_rel_list nocheck apploc env isevars argjl funj tycon =
@@ -179,8 +180,8 @@ let inh_apply_rel_list nocheck apploc env isevars argjl funj tycon =
 	   | None -> resj)
 
     | hj::restjl ->
-      	match whd_betadeltaiota env !isevars typ with
-          | DOP2(Prod,c1,DLAM(_,c2)) ->
+      	match kind_of_term (whd_betadeltaiota env !isevars typ) with
+          | IsProd (_,c1,c2) ->
               let hj' =
               	if nocheck then 
 		  hj 

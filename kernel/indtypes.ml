@@ -3,7 +3,7 @@
 
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Declarations
 open Inductive
@@ -92,14 +92,6 @@ let mind_extract_and_check_params mie =
 	List.iter (fun (_,c,_,_) -> check_params params (extract nparams c)) l;
 	params
 
-let decomp_all_DLAMV_name constr = 
-  let rec decomprec lna = function 
-    | DLAM(na,lc)  -> decomprec (na::lna) lc
-    | DLAMV(na,lc) -> (na::lna,lc)
-    | _ -> assert false
-  in 
-  decomprec [] constr
-
 let mind_check_lc params mie =
   let nparams = List.length params in
   let check_lc (_,_,_,lc) =
@@ -156,6 +148,7 @@ let failwith_non_pos_vect n ntypes v =
   anomaly "failwith_non_pos_vect: some k in [n;n+ntypes-1] should occur in v"
 
 let check_correct_par env nparams ntypes n l largs =
+  let largs = Array.of_list largs in
   if Array.length largs < nparams then 
     raise (IllFormedInd (LocalNotEnoughArgs l));
   let (lpar,largs') = array_chop nparams largs in
@@ -182,40 +175,40 @@ let decomp_par n c = snd (mind_extract_params n c)
 let listrec_mconstr env ntypes nparams i indlc =
   (* check the inductive types occur positively in [c] *)
   let rec check_pos n c = 
-    match whd_betadeltaiota env Evd.empty c with 
-      | DOP2(Prod,b,DLAM(na,d)) -> 
-          if not (noccur_between n ntypes b) then raise (IllFormedInd (LocalNonPos n));
+    let x,largs = whd_betadeltaiota_stack env Evd.empty c [] in
+    match kind_of_term x with
+      | IsProd (na,b,d) ->
+	  assert (largs = []);
+          if not (noccur_between n ntypes b) then
+	    raise (IllFormedInd (LocalNonPos n));
 	  check_pos (n+1) d
-      | x -> 
-	  let hd,largs = destApplication (ensure_appl x) in
-          match hd with
-            | Rel k ->
-                if k >= n && k<n+ntypes then begin
-		  check_correct_par env nparams ntypes n (k-n+1) largs;
-		  Mrec(n+ntypes-k-1)
-                end else if noccur_between n ntypes x then 
-		  if (n-nparams) <= k & k <= (n-1) 
-		  then Param(n-1-k)
-                  else Norec
-		else
-		  raise (IllFormedInd (LocalNonPos n))
-            | DOPN(MutInd ind_sp,a) -> 
-                if (noccur_between n ntypes x) then Norec
-                else Imbr(ind_sp,imbr_positive n (ind_sp,a) largs)
-            | err -> 
-		if noccur_between n ntypes x then Norec
-		else raise (IllFormedInd (LocalNonPos n))
+      | IsRel k ->
+          if k >= n && k<n+ntypes then begin
+	    check_correct_par env nparams ntypes n (k-n+1) largs;
+	    Mrec(n+ntypes-k-1)
+          end else if noccur_between n ntypes x then 
+	    if (n-nparams) <= k & k <= (n-1) 
+	    then Param(n-1-k)
+            else Norec
+	  else
+	    raise (IllFormedInd (LocalNonPos n))
+      | IsMutInd (ind_sp,a) -> 
+          if (noccur_between n ntypes x) then Norec
+          else Imbr(ind_sp,imbr_positive n (ind_sp,a) largs)
+      | err -> 
+	  if noccur_between n ntypes x then Norec
+	  else raise (IllFormedInd (LocalNonPos n))
 
   and imbr_positive n mi largs =
     let mispeci = lookup_mind_specif mi env in
     let auxnpar = mis_nparams mispeci in
-    let (lpar,auxlargs) = array_chop auxnpar largs in 
-    if not (array_for_all (noccur_between n ntypes) auxlargs) then
+    let (lpar,auxlargs) = list_chop auxnpar largs in 
+    if not (List.for_all (noccur_between n ntypes) auxlargs) then
       raise (IllFormedInd (LocalNonPos n));
     let auxlc = mis_lc mispeci 
     and auxntyp = mis_ntypes mispeci in 
     if auxntyp <> 1 then raise (IllFormedInd (LocalNonPos n));
-    let lrecargs = array_map_to_list (check_weak_pos n) lpar in
+    let lrecargs = List.map (check_weak_pos n) lpar in
     (* The abstract imbricated inductive type with parameters substituted *)
     let auxlcvect = abstract_mind_lc env auxntyp auxnpar auxlc in
     let newidx = n + auxntyp in
@@ -224,8 +217,8 @@ let listrec_mconstr env ntypes nparams i indlc =
       (* when substituted *) 
       Array.map 
 	(function c -> 
-	   let c' = hnf_prod_appvect env Evd.empty c 
-		      (Array.map (lift auxntyp) lpar) in 
+	   let c' = hnf_prod_applist env Evd.empty c 
+		      (List.map (lift auxntyp) lpar) in 
 	   check_construct false newidx c') 
 	auxlcvect
     in 
@@ -248,15 +241,16 @@ let listrec_mconstr env ntypes nparams i indlc =
   (* Since Lambda can no longer occur after a product or a MutInd,
      I have branched the remaining cases on check_pos. HH 28/1/00 *)
 
-  and check_weak_pos n c = 
-    match whd_betadeltaiota env Evd.empty c with 
+  and check_weak_pos n c =
+    let x = whd_betadeltaiota env Evd.empty c in
+    match kind_of_term x with 
       (* The extra case *)
-      | DOP2(Lambda,b,DLAM(na,d)) -> 
+      | IsLambda (na,b,d) -> 
           if noccur_between n ntypes b
           then check_weak_pos (n+1) d
           else raise (IllFormedInd (LocalNonPos n))
       (******************)
-      | x -> check_pos n x
+      | _ -> check_pos n x
   
   (* check the inductive types occur positively in the products of C, if
      check_head=true, also check the head corresponds to a constructor of
@@ -264,19 +258,20 @@ let listrec_mconstr env ntypes nparams i indlc =
 
   and check_construct check_head = 
     let rec check_constr_rec lrec n c = 
-      match whd_betadeltaiota env Evd.empty c with
-        | DOP2(Prod,b,DLAM(na,d)) -> 
+      let x,largs = whd_betadeltaiota_stack env Evd.empty c [] in
+      match kind_of_term x with
+        | IsProd (na,b,d) -> 
+	    assert (largs = []);
             let recarg = check_pos n b in 
 	    check_constr_rec (recarg::lrec) (n+1) d 
-	| x -> 
-            let hd,largs = destApplication (ensure_appl x) in
+	| hd ->
 	    if check_head then
-              match hd with
-		| Rel k when k = n+ntypes-i ->
-		    check_correct_par env nparams ntypes n (k-n+1) largs
-                | _ -> raise (IllFormedInd LocalNotConstructor)
+	      if hd = IsRel (n+ntypes-i) then
+		check_correct_par env nparams ntypes n (ntypes-i+1) largs
+	      else
+		raise (IllFormedInd LocalNotConstructor)
 	    else
-	      if not (array_for_all (noccur_between n ntypes) largs)
+	      if not (List.for_all (noccur_between n ntypes) largs)
               then raise (IllFormedInd (LocalNonPos n));
 	    List.rev lrec
     in check_constr_rec []

@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Declarations
 open Inductive
@@ -298,10 +298,12 @@ let print_full_context_typ () = print_context false (Lib.contents_after None)
    assume that the declaration of constructors and eliminations
    follows the definition of the inductive type *)
 
-let rec head_const c = match strip_outer_cast c with
-  | DOP2(Prod,_,DLAM(_,c)) -> head_const c
-  | DOPN(AppL,cl)    -> head_const (array_hd cl)
-  | def         -> def
+let rec head_const c = match kind_of_term c with
+  | IsProd (_,_,d) -> head_const d
+  | IsLetIn (_,_,_,d) -> head_const d
+  | IsAppL (f,_)   -> head_const f
+  | IsCast (d,_)   -> head_const d
+  | _            -> c
 
 let list_filter_vec f vec = 
   let rec frec n lf = 
@@ -488,11 +490,11 @@ let fprint_judge {uj_val=trm;uj_type=typ} =
   [< fprterm trm; 'sTR" : " ; fprterm (body_of_type typ) >]
 
 let unfold_head_fconst = 
-  let rec unfrec = function
-    | DOPN(Const _,_) as k -> constant_value (Global.env ()) k 
-    | DOP2(Lambda,t,DLAM(na,b)) -> DOP2(Lambda,t,DLAM(na,unfrec b))
-    | DOPN(AppL,v) -> DOPN(AppL,array_cons (unfrec (array_hd v)) (array_tl v))
-    | x -> x
+  let rec unfrec k = match kind_of_term k with
+    | IsConst _ -> constant_value (Global.env ()) k 
+    | IsLambda (na,t,b) -> mkLambda (na,t,unfrec b)
+    | IsAppL (f,v) -> applist (unfrec f,v)
+    | _ -> k
   in 
   unfrec
 

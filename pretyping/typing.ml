@@ -3,7 +3,7 @@
 
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Environ
 open Reduction
@@ -105,7 +105,15 @@ let rec execute mf env sigma cstr =
         let j' = execute mf env1 sigma c2 in
 	let (j,_) = gen_rel env1 sigma name varj j' in
 	j
-	  
+
+     | IsLetIn (name,c1,c2,c3) ->
+        let j1 = execute mf env sigma c1 in
+        let j2 = execute mf env sigma c2 in
+	let { uj_val = b; uj_type = t } = cast_rel env sigma j1 j2 in
+        let j3 = execute mf (push_rel_def (name,b,t) env) sigma c3 in
+	{ uj_val = mkLetIn (name, j1.uj_val, j2.uj_val, j3.uj_val) ;
+	  uj_type = typed_app (subst1 j1.uj_val) j3.uj_type }
+  
     | IsCast (c,t) ->
         let cj = execute mf env sigma c in
         let tj = execute mf env sigma t in

@@ -8,5 +8,7 @@ open Term
 (* Second-order substitutions. *)
 
 val soexecute : constr -> constr
+(*
 val try_soexecute : constr -> constr
+*)
 

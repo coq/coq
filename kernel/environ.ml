@@ -6,7 +6,7 @@ open Util
 open Names
 open Sign
 open Univ
-open Generic
+(*i open Generic i*)
 open Term
 open Declarations
 open Abstraction
@@ -229,32 +229,40 @@ let id_of_global env = function
       assert false
 
 let hdchar env c = 
-  let rec hdrec k = function
-    | DOP2((Prod|Lambda),_,DLAM(_,c))     -> hdrec (k+1) c
-    | DOP2(Cast,c,_)             -> hdrec k c
-    | DOPN(AppL,cl)              -> hdrec k (array_hd cl)
-    | DOPN(Const _,_) as x ->
-	let c = lowercase_first_char (basename (path_of_const x)) in
+  let rec hdrec k c =
+    match kind_of_term c with
+    | IsProd (_,_,c)       -> hdrec (k+1) c
+    | IsLambda (_,_,c)     -> hdrec (k+1) c
+    | IsLetIn (_,_,_,c)    -> hdrec (k+1) c
+    | IsCast (c,_)         -> hdrec k c
+    | IsAppL (f,l)         -> hdrec k f
+    | IsConst (sp,_)       ->
+	let c = lowercase_first_char (basename sp) in
 	if c = "?" then "y" else c
-    | DOPN(Abst _,_) as x ->
-	lowercase_first_char (basename (path_of_abst x))
-    | DOPN(MutInd (sp,i) as x,_) ->
+    | IsMutInd ((sp,i) as x,_) ->
 	if i=0 then 
 	  lowercase_first_char (basename sp)
 	else 
-	  let na = id_of_global env x in lowercase_first_char na
-    | DOPN(MutConstruct(sp,i) as x,_) ->
-	let na = id_of_global env x in String.lowercase(List.hd(explode_id na))
-    | VAR id  -> lowercase_first_char id
-    | DOP0(Sort s) -> sort_hdchar s
-    | Rel n ->
+	  let na = id_of_global env (MutInd x) in lowercase_first_char na
+    | IsMutConstruct ((sp,i) as x,_) ->
+	let na = id_of_global env (MutConstruct x) in
+	String.lowercase(List.hd(explode_id na))
+    | IsVar id  -> lowercase_first_char id
+    | IsSort s -> sort_hdchar s
+    | IsRel n ->
 	(if n<=k then "p" (* the initial term is flexible product/function *)
 	 else
 	   try match lookup_rel_type (n-k) env with
 	     | Name id,_ -> lowercase_first_char id
 	     | Anonymous,t -> hdrec 0 (lift (n-k) (body_of_type t))
 	   with Not_found -> "y")
-    | _ -> "y"
+    | IsFix ((_,i),(_,ln,_)) -> 
+	let id = match List.nth ln i with Name id -> id | _ -> assert false in
+	lowercase_first_char id
+    | IsCoFix (i,(_,ln,_)) -> 
+	let id = match List.nth ln i with Name id -> id | _ -> assert false in
+	lowercase_first_char id
+    | IsMeta _|IsXtra _|IsAbst (_, _)|IsEvar _|IsMutCase (_, _, _, _) -> "y"
   in 
   hdrec 0 c
 
@@ -266,14 +274,14 @@ let named_hd env a = function
   | Anonymous -> Name (id_of_string (hdchar env a)) 
   | x         -> x
 
-let prod_name   env (n,a,b) = mkProd (named_hd env a n) a b
-let lambda_name env (n,a,b) = mkLambda (named_hd env a n) a b
+let prod_name   env (n,a,b) = mkProd (named_hd env a n, a, b)
+let lambda_name env (n,a,b) = mkLambda (named_hd env a n, a, b)
 
 let it_prod_name   env = List.fold_left (fun c (n,t) ->prod_name env (n,t,c)) 
 let it_lambda_name env = List.fold_left (fun c (n,t) ->lambda_name env (n,t,c))
 
-let prod_create   env (a,b) = mkProd (named_hd env a Anonymous) a b
-let lambda_create env (a,b) =  mkLambda (named_hd env a Anonymous) a b
+let prod_create   env (a,b) = mkProd (named_hd env a Anonymous, a, b)
+let lambda_create env (a,b) =  mkLambda (named_hd env a Anonymous, a, b)
 
 let name_assumption env (na,c,t) =
   match c with
@@ -286,6 +294,7 @@ let lambda_assum_name env b d = mkLambda_or_LetIn (name_assumption env d) b
 let it_mkProd_or_LetIn_name   env = List.fold_left (prod_assum_name env)
 let it_mkLambda_or_LetIn_name env = List.fold_left (lambda_assum_name env)
 
+let it_mkProd_wo_LetIn   = List.fold_left (fun c d -> mkProd_wo_LetIn d c)
 let it_mkProd_or_LetIn   = List.fold_left (fun c d -> mkProd_or_LetIn d c)
 let it_mkLambda_or_LetIn = List.fold_left (fun c d -> mkLambda_or_LetIn d c)
 

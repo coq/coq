@@ -130,6 +130,7 @@ val it_prod_name : env -> constr -> (name * constr) list -> constr
 val it_mkLambda_or_LetIn_name : env -> constr -> rel_context -> constr
 val it_mkProd_or_LetIn_name : env -> constr -> rel_context -> constr
 
+val it_mkProd_wo_LetIn : constr -> rel_context -> constr
 val it_mkLambda_or_LetIn : constr -> rel_context -> constr
 val it_mkProd_or_LetIn : constr -> rel_context -> constr
 

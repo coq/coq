@@ -9,7 +9,7 @@ open Sign
 open Univ
 open Proof_trees
 open Environ
-open Generic
+(*i open Generic i*)
 open Printer
 open Refiner
 open Tacmach
@@ -84,13 +84,13 @@ let constr_display csr =
     | DOPN(a,b) ->
         "DOPN("^(oper_display a)^",[|"^(Array.fold_right (fun x i ->
         (term_display x)^(if not(i="") then (";"^i) else "")) b "")^"|])"
-    | DOPL(a,b) ->
-        "DOPL("^(oper_display a)^",[|"^(List.fold_right (fun x i ->
-        (term_display x)^(if not(i="") then (";"^i) else "")) b "")^"|]"
     | DLAM(a,b) -> "DLAM("^(name_display a)^","^(term_display b)^")"
     | DLAMV(a,b) ->
         "DLAMV("^(name_display a)^",[|"^(Array.fold_right (fun x i ->
         (term_display x)^(if not(i="") then (";"^i) else "")) b "")^"|]"
+    | CLam(a,b,c) -> "CLam("^(name_display a)^","^(term_display (body_of_type b))^","^(term_display c)^")"
+    | CPrd(a,b,c) -> "CPrd("^(name_display a)^","^(term_display (body_of_type b))^","^(term_display c)^")"
+    | CLet(a,b,c,d) -> "CLet("^(name_display a)^","^(term_display b)^","^(term_display (body_of_type c))^","^(term_display d)^")"
     | VAR a -> "VAR "^(string_of_id a)
     | Rel a -> "Rel "^(string_of_int a)
   and oper_display = function

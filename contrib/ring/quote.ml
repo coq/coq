@@ -99,7 +99,6 @@
 open Pp
 open Util
 open Names
-open Generic
 open Term
 open Instantiate
 open Pattern

@@ -3,7 +3,7 @@
 
 (*i*)
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 (*i*)
 

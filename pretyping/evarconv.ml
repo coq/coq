@@ -3,7 +3,7 @@
 
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Reduction
 open Instantiate
@@ -105,10 +105,10 @@ and evar_conv_x env isevars pbty term1 term2 =
     else 
       evar_eqappr_x env isevars pbty (t1,l1) (t2,l2)
 
-and evar_eqappr_x env isevars pbty appr1 appr2 =
+and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
   (* Evar must be undefined since we have whd_ised *)
-  match (appr1,appr2) with
-    | ((DOPN(Evar sp1,al1) as term1,l1), (DOPN(Evar sp2,al2) as term2,l2)) ->
+  match (kind_of_term term1, kind_of_term term2) with
+    | IsEvar (sp1,al1), IsEvar (sp2,al2) ->
 	let f1 () =
 	  if List.length l1 > List.length l2 then 
             let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
@@ -125,7 +125,7 @@ and evar_eqappr_x env isevars pbty appr1 appr2 =
 	in 
 	ise_try isevars [f1; f2]
 
-    | ((DOPN(Evar sp1,al1) as term1,l1), (DOPN(Const sp2,al2) as term2,l2)) ->
+    | IsEvar (sp1,al1), IsConst (sp2,al2) ->
 	let f1 () =
 	  (List.length l1 <= List.length l2) &
 	  let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
@@ -139,7 +139,7 @@ and evar_eqappr_x env isevars pbty appr1 appr2 =
 	in 
 	ise_try isevars [f1; f4]
 
-    | ((DOPN(Const sp1,al1) as term1,l1), (DOPN(Evar sp2,al2) as term2,l2)) ->
+    | IsConst (sp1,al1), IsEvar (sp2,al2) ->
 	let f1 () =
        	  (List.length l2 <= List.length l1) &
        	  let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
@@ -154,7 +154,7 @@ and evar_eqappr_x env isevars pbty appr1 appr2 =
 	in 
 	ise_try isevars [f1; f4]
 
-    | ((DOPN(Const sp1,al1) as term1,l1), (DOPN(Const sp2,al2) as term2,l2)) ->
+    | IsConst (sp1,al1), IsConst (sp2,al2) ->
 	let f2 () =
           (sp1 = sp2)
 	  & (array_for_all2 (evar_conv_x env isevars CONV) al1 al2)  
@@ -176,19 +176,19 @@ and evar_eqappr_x env isevars pbty appr1 appr2 =
 	in 
 	ise_try isevars [f2; f3; f4]
 
-    | ((DOPN(Evar _,_) as term1,l1),(t2,l2)) ->
+    | IsEvar (_,_), _ ->
        	(List.length l1 <= List.length l2) &
        	let (deb2,rest2) = list_chop (List.length l2-List.length l1) l2 in
-	solve_pb env isevars(pbty,term1,applist(t2,deb2))
+	solve_pb env isevars(pbty,term1,applist(term2,deb2))
         & list_for_all2eq (evar_conv_x env isevars CONV) l1 rest2
 
-    | ((t1,l1),(DOPN(Evar _,_) as t2,l2))  -> 
+    | _, IsEvar (_,_) ->
        	(List.length l2 <= List.length l1) &
        	let (deb1,rest1) = list_chop (List.length l1-List.length l2) l1 in
-	solve_pb env isevars(pbty,applist(t1,deb1),t2)
+	solve_pb env isevars(pbty,applist(term1,deb1),term2)
         & list_for_all2eq (evar_conv_x env isevars CONV) rest1 l2
 
-    | ((DOPN(Const _,_) as term1,l1),(t2,l2)) ->
+    | IsConst (_,_), _ ->
 	let f3 () =
 	  (try conv_record env isevars (check_conv_record appr1 appr2)
            with _ -> false)
@@ -199,18 +199,18 @@ and evar_eqappr_x env isevars pbty appr1 appr2 =
 	in 
 	ise_try isevars [f3; f4]
 	     
-    | ((t1,l1),(DOPN(Const _,_) as t2,l2))  -> 
+    | _ , IsConst (_,_) -> 
 	let f3 () = 
 	  (try (conv_record env isevars (check_conv_record appr2 appr1))
            with _ -> false)
 	and f4 () =
-          evaluable_constant env t2 &
+          evaluable_constant env term2 &
  	  evar_eqappr_x env isevars pbty
-            appr1 (evar_apprec env isevars l2 (constant_value env t2))
+            appr1 (evar_apprec env isevars l2 (constant_value env term2))
 	in 
 	ise_try isevars [f3; f4]
 
-    | ((DOPN(Abst _,_) as term1,l1),(DOPN(Abst _,_) as term2,l2)) ->
+    | IsAbst (_,_), IsAbst (_,_) ->
 	let f1 () =
           (term1=term2) &
  	  (List.length(l1) = List.length(l2)) &
@@ -226,75 +226,89 @@ and evar_eqappr_x env isevars pbty appr1 appr2 =
 	in 
 	ise_try isevars [f1; f2]
 
-    | ((DOPN(Abst _,_) as term1,l1),_) ->  
+    | IsAbst (_,_), _ ->  
         (evaluable_abst env term1)
 	& evar_eqappr_x env isevars pbty
           (evar_apprec env isevars l1 (abst_value env term1)) appr2
 	  
-    | (_,(DOPN(Abst _,_) as term2,l2))  -> 
+    | _, IsAbst (_,_)  -> 
         (evaluable_abst env term2)
 	& evar_eqappr_x env isevars pbty
  	  appr1 (evar_apprec env isevars l2 (abst_value env term2))
 
-    | ((Rel(n),l1),(Rel(m),l2)) ->
+    | IsRel n, IsRel m ->
 	n=m
 	  & (List.length(l1) = List.length(l2))
 	  & (List.for_all2 (evar_conv_x env isevars CONV) l1 l2)
 
-    | ((DOP2(Cast,c,_),l),_) -> evar_eqappr_x env isevars pbty (c,l) appr2
+    | IsCast (c1,_), _ -> evar_eqappr_x env isevars pbty (c1,l1) appr2
 
-    | (_,(DOP2(Cast,c,_),l)) -> evar_eqappr_x env isevars pbty appr1 (c,l)
+    | _, IsCast (c2,_) -> evar_eqappr_x env isevars pbty appr1 (c2,l2)
 
-    | ((VAR id1,l1),(VAR id2,l2)) ->
+    | IsVar id1, IsVar id2 ->
 	(id1=id2 & (List.length l1 = List.length l2)
 	     & (List.for_all2 (evar_conv_x env isevars CONV) l1 l2))
 
-    | ((DOP0(Meta(n)),l1),(DOP0(Meta(m)),l2)) ->
+    | IsMeta n, IsMeta m ->
 	(n=m & (List.length(l1) = List.length(l2))
 	   & (List.for_all2 (evar_conv_x env isevars CONV) l1 l2))
 
-    | ((DOP0(Sort s1),[]),(DOP0(Sort s2),[])) -> base_sort_cmp pbty s1 s2
+    | IsSort s1, IsSort s2 when l1=[] & l2=[] -> base_sort_cmp pbty s1 s2
 
-    | ((DOP2(Lambda,c1,DLAM(_,c2)),[]), (DOP2(Lambda,c'1,DLAM(_,c'2)),[])) -> 
-	evar_conv_x env isevars CONV c1 c'1
-	& evar_conv_x env isevars CONV c2 c'2
+    | IsLambda (_,c1,c'1), IsLambda (_,c2,c'2) when l1=[] & l2=[] -> 
+	evar_conv_x env isevars CONV c1 c2
+	& evar_conv_x env isevars CONV c'1 c'2
 
-    | ((DOP2(Prod,c1,DLAM(n,c2)),[]), (DOP2(Prod,c'1,DLAM(_,c'2)),[])) -> 
-        evar_conv_x env isevars CONV c1 c'1 
+    | IsLetIn (_,b1,_,c'1), IsLetIn (_,b2,_,c'2) ->
+	let f1 () =
+	  evar_conv_x env isevars CONV b1 b2
+	  & evar_conv_x env isevars pbty c'1 c'2
+	  & (List.length l1 = List.length l2)
+	  & (List.for_all2 (evar_conv_x env isevars CONV) l1 l2)
+	and f2 () =
+	  evar_eqappr_x env isevars pbty (subst1 b1 c'1,l1) (subst1 b2 c'2,l2)
+	in 
+	ise_try isevars [f1; f2]
+
+    | IsLetIn (_,b1,_,c'1), _ ->  (* On fait commuter les args avec le Let *)
+	evar_eqappr_x env isevars pbty (subst1 b1 c'1,l1) appr2
+
+    | _, IsLetIn (_,b2,_,c'2) ->
+	evar_eqappr_x env isevars pbty appr1 (subst1 b2 c'2,l2)
+
+    | IsProd (n,c1,c'1), IsProd (_,c2,c'2) when l1=[] & l2=[] -> 
+        evar_conv_x env isevars CONV c1 c2
         & 
 	(let d = Retyping.get_assumption_of env !isevars (nf_ise1 !isevars c1)
-	 in evar_conv_x (push_rel_decl (n,d) env) isevars pbty c2 c'2)
+	 in evar_conv_x (push_rel_decl (n,d) env) isevars pbty c'1 c'2)
 
-    | ((DOPN(MutInd _ as o1,cl1) as ind1,l'1),
-       (DOPN(MutInd _ as o2,cl2) as ind2,l'2)) ->
-	o1=o2
-	   & array_for_all2 (evar_conv_x env isevars CONV) cl1 cl2
-           & list_for_all2eq (evar_conv_x env isevars CONV) l'1 l'2
+    | IsMutInd (sp1,cl1), IsMutInd (sp2,cl2) ->
+	sp1=sp2
+	& array_for_all2 (evar_conv_x env isevars CONV) cl1 cl2
+        & list_for_all2eq (evar_conv_x env isevars CONV) l1 l2
              
-    | ((DOPN(MutConstruct _ as o1,cl1) as constr1,l1),
-       (DOPN(MutConstruct _ as o2,cl2) as constr2,l2)) ->
-	o1=o2
-           & array_for_all2 (evar_conv_x env isevars CONV) cl1 cl2
-           & list_for_all2eq (evar_conv_x env isevars CONV) l1 l2
+    | IsMutConstruct (sp1,cl1), IsMutConstruct (sp2,cl2) ->
+	sp1=sp2
+        & array_for_all2 (evar_conv_x env isevars CONV) cl1 cl2
+        & list_for_all2eq (evar_conv_x env isevars CONV) l1 l2
 
-    | ((DOPN(MutCase _,_) as constr1,l'1),
-       (DOPN(MutCase _,_) as constr2,l'2)) ->
-	let (_,p1,c1,cl1) = destCase constr1 in
-	let (_,p2,c2,cl2) = destCase constr2 in
+    | IsMutCase (_,p1,c1,cl1), IsMutCase (_,p2,c2,cl2) ->
 	evar_conv_x env isevars CONV p1 p2
 	& evar_conv_x env isevars CONV c1 c2
 	& (array_for_all2 (evar_conv_x env isevars CONV) cl1 cl2)
-	& (list_for_all2eq (evar_conv_x env isevars CONV) l'1 l'2)
+	& (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
 
-    | ((DOPN(Fix _ as o1,cl1),l1),(DOPN(Fix _ as o2,cl2),l2))   ->
-	o1=o2 & 
-	   (array_for_all2 (evar_conv_x env isevars CONV) cl1 cl2) &
-	   (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
+    | IsFix (li1,(tys1,_,bds1)), IsFix (li2,(tys2,_,bds2)) ->
+	li1=li2
+	& (array_for_all2 (evar_conv_x env isevars CONV) tys1 tys2)
+	& (array_for_all2 (evar_conv_x env isevars CONV) bds1 bds2)
+	& (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
 	     
-    | ((DOPN(CoFix(i1),cl1),l1),(DOPN(CoFix(i2),cl2),l2))   ->
-	i1=i2 & 
-	   (array_for_all2 (evar_conv_x env isevars CONV) cl1 cl2) &
-	   (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
+    | IsCoFix (i1,(tys1,_,bds1)), IsCoFix (i2,(tys2,_,bds2)) ->
+	i1=i2 
+	& (array_for_all2 (evar_conv_x env isevars CONV) tys1 tys2)
+	& (array_for_all2 (evar_conv_x env isevars CONV) bds1 bds2)
+	& (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
 
     (***
     | (DOP0(Implicit),[]),(DOP0(Implicit),[]) -> true
@@ -302,13 +316,16 @@ and evar_eqappr_x env isevars pbty appr1 appr2 =
      * But b (optional env) is not updated! *)
     ***)
 
-    | (DLAM(_,c1),[]),(DLAM(_,c2),[]) -> 
-	evar_conv_x env isevars pbty c1 c2
+    | (IsRel _ | IsVar _ | IsMeta _ | IsXtra _ | IsLambda _), _ -> false
+    | _, (IsRel _ | IsVar _ | IsMeta _ | IsXtra _ | IsLambda _) -> false
 
-    | (DLAMV(_,vc1),[]),(DLAMV(_,vc2),[]) ->
-	array_for_all2 (evar_conv_x env isevars pbty) vc1 vc2
+    | (IsMutInd _ | IsMutConstruct _ | IsSort _ | IsProd _), _ -> false
+    | _, (IsMutInd _ | IsMutConstruct _ | IsSort _ | IsProd _) -> false
 
-    | _ -> false
+    | (IsAppL _ | IsMutCase _ | IsFix _ | IsCoFix _), 
+      (IsAppL _ | IsMutCase _ | IsFix _ | IsCoFix _) -> false
+
+
 
 and conv_record env isevars (c,bs,(xs,xs1),(us,us1),(ts,ts1),t) = 
   let ks =

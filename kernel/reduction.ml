@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Names
-open Generic
+(*i open Generic i*)
 open Term
 open Univ
 open Evd
@@ -25,6 +25,17 @@ type 'a contextual_stack_reduction_function =
 type 'a stack_reduction_function = 'a contextual_stack_reduction_function
 type local_stack_reduction_function = 
     constr -> constr list -> constr * constr list
+
+type stack =
+  | EmptyStack
+  | ConsStack of constr array * int * stack
+
+let decomp_stack = function
+  | EmptyStack -> None
+  | ConsStack (v, n, s) ->
+      Some (v.(n), (if n+1 = Array.length v then s else ConsStack (v, n+1, s)))
+
+let append_stack v s = if Array.length v = 0 then s else ConsStack (v,0,s)
 
 (*************************************)
 (*** Reduction Functions Operators ***)
@@ -49,44 +60,66 @@ let stack_reduction_of_reduction red_fun env sigma x stack =
   whd_stack t []
 
 let strong whdfun env sigma = 
-  let rec strongrec t = match whdfun env sigma t with
+  let rec strongrec env t = match whdfun env sigma t with
     | DOP0 _ as t -> t
+    | DOP1(oper,c) -> DOP1(oper,strongrec env c)
+    | DOP2(oper,c1,c2) -> DOP2(oper,strongrec env c1,strongrec env c2)
     (* Cas ad hoc *)
-    | DOP1(oper,c) -> DOP1(oper,strongrec c)
-    (* Faut differencier sinon fait planter kind_of_term *)
-    | DOP2(Prod|Lambda as oper,c1,DLAM(na,c2)) ->
-	DOP2(oper,strongrec c1,DLAM(na,strongrec c2))
-    | DOP2(oper,c1,c2) -> DOP2(oper,strongrec c1,strongrec c2)
-    | DOPN(oper,cl) -> DOPN(oper,Array.map strongrec cl)
-    | DOPL(oper,cl) -> DOPL(oper,List.map strongrec cl)
-    | DLAM(na,c) -> DLAM(na,strongrec c)
-    | DLAMV(na,c) -> DLAMV(na,Array.map strongrec c)
+    | DOPN(Fix _ as oper,cl) ->
+	let cl' = Array.copy cl in
+	let l = Array.length cl -1 in
+	for i=0 to l-1 do cl'.(i) <- strongrec env cl.(i) done;
+	cl'.(l) <- strongrec_lam env cl.(l);
+	DOPN(oper, cl')	
+    | DOPN(oper,cl) -> DOPN(oper,Array.map (strongrec env) cl)
+    | CLam (n,t,c)   ->
+	CLam (n, typed_app (strongrec env) t, strongrec (push_rel_decl (n,t) env) c)  
+    | CPrd (n,t,c)   ->
+	CPrd (n, typed_app (strongrec env) t, strongrec (push_rel_decl (n,t) env) c)
+    | CLet (n,b,t,c) ->
+	CLet (n, strongrec env b, typed_app (strongrec env) t,
+	      strongrec (push_rel_def (n,b,t) env) c)
     | VAR _ as t -> t
     | Rel _ as t -> t
+    | DLAM _ | DLAMV _ -> assert false
+  and strongrec_lam env = function (* Gestion incorrecte de l'env des Fix *)
+    | DLAM(na,c) -> DLAM(na,strongrec_lam env c)
+    | DLAMV(na,c) -> DLAMV(na,Array.map (strongrec env) c)
+    | _ -> assert false
   in
-  strongrec
+  strongrec env
 
 let local_strong whdfun = 
   let rec strongrec t = match whdfun t with
     | DOP0 _ as t -> t
-    (* Cas ad hoc *)
     | DOP1(oper,c) -> DOP1(oper,strongrec c)
     | DOP2(oper,c1,c2) -> DOP2(oper,strongrec c1,strongrec c2)
+    (* Cas ad hoc *)
+    | DOPN(Fix _ as oper,cl) ->
+	let cl' = Array.copy cl in
+	let l = Array.length cl -1 in
+	for i=0 to l-1 do cl'.(i) <- strongrec cl.(i) done;
+	cl'.(l) <- strongrec_lam cl.(l);
+	DOPN(oper, cl')	
     | DOPN(oper,cl) -> DOPN(oper,Array.map strongrec cl)
-    | DOPL(oper,cl) -> DOPL(oper,List.map strongrec cl)
-    | DLAM(na,c) -> DLAM(na,strongrec c)
-    | DLAMV(na,c) -> DLAMV(na,Array.map strongrec c)
+    | CLam(n,t,c)   -> CLam (n, typed_app strongrec t, strongrec c)  
+    | CPrd(n,t,c)   -> CPrd (n, typed_app strongrec t, strongrec c)
+    | CLet(n,b,t,c) -> CLet (n, strongrec b,typed_app strongrec t, strongrec c)
     | VAR _ as t -> t
     | Rel _ as t -> t
+    | DLAM _ | DLAMV _ -> assert false
+  and strongrec_lam = function
+    | DLAM(na,c) -> DLAM(na,strongrec_lam c)
+    | DLAMV(na,c) -> DLAMV(na,Array.map strongrec c)
+    | _ -> assert false
   in
   strongrec
 
-let rec strong_prodspine redfun env sigma c = 
-  match redfun env sigma c with
-    | DOP2(Prod,a,DLAM(na,b)) ->
-        DOP2(Prod,a,DLAM(na,strong_prodspine redfun env sigma b))
-    | x -> x
-
+let rec strong_prodspine redfun c = 
+  let x = redfun c in
+  match kind_of_term x with
+    | IsProd (na,a,b) -> mkProd (na,a,strong_prodspine redfun b)
+    | _ -> x
 
 (****************************************************************************)
 (*                   Reduction Functions                                    *)
@@ -122,17 +155,14 @@ let whd_flags flgs env sigma t =
 (* Red reduction tactic: reduction to a product *)
 let red_product env sigma c = 
   let rec redrec x =
-    match x with
-      | DOPN(AppL,cl) -> 
-	  DOPN(AppL,Array.append [|redrec (array_hd cl)|] (array_tl cl))
-      | DOPN(Const _,_) when evaluable_constant env x -> 
-	  constant_value env x
-      | DOPN(Evar ev,args) when Evd.is_defined sigma ev -> 
+    match kind_of_term x with
+      | IsAppL (f,l) -> applist (redrec f, l)
+      | IsConst (_,_) when evaluable_constant env x -> constant_value env x
+      | IsEvar (ev,args) when Evd.is_defined sigma ev -> 
 	  existential_value sigma (ev,args)
-      | DOPN(Abst _,_) when evaluable_abst env x -> 
-	  abst_value env x 
-      | DOP2(Cast,c,_) -> redrec c
-      | DOP2(Prod,a,DLAM(x,b)) -> DOP2(Prod, a, DLAM(x, redrec b))  
+      | IsAbst (_,_) when evaluable_abst env x -> abst_value env x 
+      | IsCast (c,_) -> redrec c
+      | IsProd (x,a,b) -> mkProd (x, a, redrec b)
       | _ -> error "Term not reducible"
   in 
   nf_betaiota env sigma (redrec c)
@@ -141,33 +171,26 @@ let red_product env sigma c =
  * n is the number of the next occurence of name.
  * ol is the occurence list to find. *)
 let rec substlin env name n ol c =
-  match c with
-    | DOPN(Const sp,_) ->
-        if sp = name then
-          if List.hd ol = n then
-            if evaluable_constant env c then 
-	      (n+1, List.tl ol, constant_value env c)
-            else
-              errorlabstrm "substlin"
-                [< print_sp sp; 'sTR " is not a defined constant" >]
-          else 
-	    ((n+1),ol,c)
+  match kind_of_term c with
+    | IsConst (sp,_) when sp = name ->
+        if List.hd ol = n then
+          if evaluable_constant env c then 
+	    (n+1, List.tl ol, constant_value env c)
+          else
+            errorlabstrm "substlin"
+              [< print_sp sp; 'sTR " is not a defined constant" >]
         else 
-	  (n,ol,c)
+	  ((n+1),ol,c)
 
-    | DOPN(Abst _,_) ->
-        if path_of_abst c = name then
-          if List.hd ol = n then 
-	    (n+1, List.tl ol, abst_value env c)
-          else 
-	    (n+1,ol,c)
+    | IsAbst (_,_) when path_of_abst c = name ->
+        if List.hd ol = n then 
+	  (n+1, List.tl ol, abst_value env c)
         else 
-	  (n,ol,c)
+	  (n+1,ol,c)
 
     (* INEFFICIENT: OPTIMIZE *)
-    | DOPN(AppL,tl) ->
-        let c1 = array_hd tl and cl = array_tl tl in
-        Array.fold_left 
+    | IsAppL (c1,cl) ->
+        List.fold_left 
 	  (fun (n1,ol1,c1') c2 ->
 	     (match ol1 with 
                 | [] -> (n1,[],applist(c1',[c2]))
@@ -176,24 +199,31 @@ let rec substlin env name n ol c =
                     (n2,ol2,applist(c1',[c2']))))
           (substlin env name n ol c1) cl
 
-    | DOP2(Lambda,c1,DLAM(na,c2)) ->
+    | IsLambda (na,c1,c2) ->
         let (n1,ol1,c1') = substlin env name n ol c1 in
         (match ol1 with 
-           | [] -> (n1,[],DOP2(Lambda,c1',DLAM(na,c2)))
+           | [] -> (n1,[],mkLambda (na,c1',c2))
            | _  ->
                let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-               (n2,ol2,DOP2(Lambda,c1',DLAM(na,c2'))))
+               (n2,ol2,mkLambda (na,c1',c2')))
 
-    | DOP2(Prod,c1,DLAM(na,c2)) ->
+    | IsLetIn (na,c1,t,c2) ->
         let (n1,ol1,c1') = substlin env name n ol c1 in
         (match ol1 with 
-           | [] -> (n1,[],DOP2(Prod,c1',DLAM(na,c2)))
+           | [] -> (n1,[],mkLambda (na,c1',c2))
            | _  ->
                let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-               (n2,ol2,DOP2(Prod,c1',DLAM(na,c2'))))
+               (n2,ol2,mkLambda (na,c1',c2')))
+
+    | IsProd (na,c1,c2) ->
+        let (n1,ol1,c1') = substlin env name n ol c1 in
+        (match ol1 with 
+           | [] -> (n1,[],mkProd (na,c1',c2))
+           | _  ->
+               let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
+               (n2,ol2,mkProd (na,c1',c2')))
 	
-    | DOPN(MutCase _,_) -> 
-	let (ci,p,d,llf) = destCase c in
+    | IsMutCase (ci,p,d,llf) -> 
         let rec substlist nn oll = function
           | []     -> (nn,oll,[])
           | f::lfe ->
@@ -213,23 +243,26 @@ let rec substlin env name n ol c =
 		  | [] -> (n2,[],mkMutCaseA ci p' d' llf)
 		  | _  -> 
 	              let (n3,ol3,lf') = substlist n2 ol2 (Array.to_list llf)
-                      in (n3,ol3,mkMutCase ci p' d' lf')))
+                      in (n3,ol3,mkMutCase (ci, p', d', lf'))))
         
-    | DOP2(Cast,c1,c2)   ->
+    | IsCast (c1,c2)   ->
         let (n1,ol1,c1') = substlin env name n ol c1 in
         (match ol1 with 
-           | [] -> (n1,[],DOP2(Cast,c1',c2))
+           | [] -> (n1,[],mkCast (c1',c2))
            | _  ->
                let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-               (n2,ol2,DOP2(Cast,c1',c2')))
+               (n2,ol2,mkCast (c1',c2')))
 
-    | DOPN(Fix _,_) -> 
+    | IsFix _ -> 
         (warning "do not consider occurrences inside fixpoints"; (n,ol,c))
 	
-    | DOPN(CoFix _,_) -> 
+    | IsCoFix _ -> 
         (warning "do not consider occurrences inside cofixpoints"; (n,ol,c))
+
+    | (IsRel _|IsMeta _|IsVar _|IsXtra _|IsSort _
+      |IsAbst (_, _)|IsEvar _|IsConst _
+      |IsMutInd _|IsMutConstruct _) -> (n,ol,c)
 	
-    | _ -> (n,ol,c)
 	  
 let unfold env sigma name =
   let flag = 
@@ -275,9 +308,9 @@ let abstract_scheme env (locc,a,ta) t =
   let na = named_hd env ta Anonymous in
   if occur_meta ta then error "cannot find a type for the generalisation";
   if occur_meta a then 
-    DOP2(Lambda,ta,DLAM(na,t))
+    mkLambda (na,ta,t)
   else 
-    DOP2(Lambda, ta, DLAM(na,subst_term_occ locc a t))
+    mkLambda (na, ta,subst_term_occ locc a t)
 
 
 let pattern_occs loccs_trm_typ env sigma c =
@@ -293,26 +326,25 @@ let pattern_occs loccs_trm_typ env sigma c =
 
 let rec stacklam recfun env t stack =
   match (stack,t) with
-    | (h::stacktl, DOP2(Lambda,_,DLAM(_,c))) ->
-        stacklam recfun (h::env) c stacktl
-    | _ -> recfun (substl env t) stack
+    | h::stacktl, CLam (_,_,c) -> stacklam recfun (h::env) c stacktl
+    | _ -> recfun (substl env t, stack)
 
 
-let beta_applist (c,l) = stacklam (fun c l -> applist(c,l)) [] c l
+let beta_applist (c,l) = stacklam applist [] c l
 
 
-let whd_beta_stack = 
-  let rec whrec x stack = match x with
-    | DOP2(Lambda,c1,DLAM(name,c2)) ->
+let whd_beta_stack x stack = 
+  let rec whrec (x, stack as s) = match x with
+    | CLam (name,c1,c2) ->
 	(match stack with
            | [] -> (x,[])
 	   | a1::rest -> stacklam whrec [a1] c2 rest)
 	
-    | DOPN(AppL,cl) -> whrec (array_hd cl) (array_app_tl cl stack)
-    | DOP2(Cast,c,_) -> whrec c stack
-    | x -> (x,stack)
+    | DOPN(AppL,cl) -> whrec (array_hd cl, array_app_tl cl stack)
+    | DOP2(Cast,c,_) -> whrec (c, stack)
+    | x -> s
   in 
-  whrec
+  whrec (x, stack)
 
 let whd_beta x = applist (whd_beta_stack x [])
 
@@ -375,103 +407,105 @@ let whd_delta_stack env sigma =
 let whd_delta env sigma c = applist(whd_delta_stack env sigma c [])
 
 
-let whd_betadelta_stack env sigma = 
-  let rec whrec x l =
-    match x with
-      | DOPN(Const _,_) ->
+let whd_betadelta_stack env sigma x l = 
+  let rec whrec (x, l as s) =
+    match kind_of_term x with
+      | IsConst _ ->
           if evaluable_constant env x then 
-	    whrec (constant_value env x) l
+	    whrec (constant_value env x, l)
           else 
-	    (x,l)
-      | DOPN(Evar ev,args) ->
+	    s
+      | IsEvar (ev,args) ->
           if Evd.is_defined sigma ev then 
-	    whrec (existential_value sigma (ev,args)) l
+	    whrec (existential_value sigma (ev,args), l)
           else 
-	    (x,l)
+	    s
+(*
       | DOPN(Abst _,_) ->
           if evaluable_abst env x then 
 	    whrec (abst_value env x) l
           else 
 	    (x,l)
-      | DOP2(Cast,c,_) -> whrec c l
-      | DOPN(AppL,cl)  -> whrec (array_hd cl) (array_app_tl cl l)
-      | DOP2(Lambda,_,DLAM(_,c)) ->
+*)
+      | IsCast (c,_) -> whrec (c, l)
+      | IsAppL (f,cl)  -> whrec (f, cl@l)
+      | IsLambda (_,_,c) ->
           (match l with
-             | [] -> (x,l)
+             | [] -> s
              | (a::m) -> stacklam whrec [a] c m)
-      | x -> (x,l)
+      | x -> s
   in 
-  whrec
+  whrec (x, l)
 
 let whd_betadelta env sigma c = applist(whd_betadelta_stack env sigma c [])
 
 
-let whd_betaevar_stack env sigma = 
-  let rec whrec x l =
-    match x with
-      | DOPN(Evar ev,args) ->
+let whd_betaevar_stack env sigma x l = 
+  let rec whrec (x, l as s) =
+    match kind_of_term x with
+      | IsEvar (ev,args) ->
           if Evd.is_defined sigma ev then 
-	    whrec (existential_value sigma (ev,args)) l
+	    whrec (existential_value sigma (ev,args), l)
           else 
-	    (x,l)
+	    s
+(*
       | DOPN(Abst _,_) ->
           if translucent_abst env x then 
 	    whrec (abst_value env x) l
           else 
 	    (x,l)
-      | DOP2(Cast,c,_) -> whrec c l
-      | DOPN(AppL,cl) -> whrec (array_hd cl) (array_app_tl cl l)
-      | DOP2(Lambda,_,DLAM(_,c)) ->
+*)
+      | IsCast (c,_) -> whrec (c, l)
+      | IsAppL (f,cl)  -> whrec (f, cl@l)
+      | IsLambda (_,_,c) ->
           (match l with
              | [] -> (x,l)
              | (a::m) -> stacklam whrec [a] c m)
-      | DOPN(Const _,_) -> (x,l)
-      | x -> (x,l)
+      | x -> s
   in 
-  whrec
+  whrec (x, l)
        
 let whd_betaevar env sigma c = applist(whd_betaevar_stack env sigma c [])
 
-let whd_betadeltaeta_stack env sigma = 
-  let rec whrec x stack =
-    match x with
-      | DOPN(Const _,_) ->
-          if evaluable_constant env x then
-	    whrec (constant_value env x) stack
+let whd_betadeltaeta_stack env sigma x l = 
+  let rec whrec (x, l as s) =
+    match kind_of_term x with
+      | IsConst _ ->
+          if evaluable_constant env x then 
+	    whrec (constant_value env x, l)
           else 
-	    (x,stack)
-      | DOPN(Evar ev,args) ->
+	    s
+      | IsEvar (ev,args) ->
           if Evd.is_defined sigma ev then 
-	    whrec (existential_value sigma (ev,args)) stack
+	    whrec (existential_value sigma (ev,args), l)
           else 
-	    (x,stack)
+	    s
+(*
       | DOPN(Abst _,_) ->
-          if evaluable_abst env x then
-	    whrec (abst_value env x) stack
+          if evaluable_abst env x then 
+	    whrec (abst_value env x) l
           else 
-	    (x,stack)
-      | DOP2(Cast,c,_) -> whrec c stack
-      | DOPN(AppL,cl)    -> whrec (array_hd cl) (array_app_tl cl stack)
-      | DOP2(Lambda,_,DLAM(_,c)) ->
-          (match stack with
-             | [] -> 
-		 (match applist (whrec c []) with 
-                    | DOPN(AppL,cl) -> 
-                        (match whrec (array_last cl) [] with 
-                           | (Rel 1,[]) -> 
-			       let napp = (Array.length cl) -1 in
-                               if napp = 0 then (x,stack) else
-                                 let lc = Array.sub cl 0 napp in
-                                 let u = 
-				   if napp = 1 then lc.(0) else DOPN(AppL,lc) 
-                                 in 
-				 if noccurn 1 u then (pop u,[]) else (x,stack)
-                           | _ -> (x,stack))
-                    | _ -> (x,stack))
+	    (x,l)
+*)
+      | IsCast (c,_) -> whrec (c, l)
+      | IsAppL (f,cl)  -> whrec (f, cl@l)
+      | IsLambda (_,_,c) ->
+          (match l with
+             | [] ->
+                 (match applist (whrec (c, [])) with 
+                    | DOPN(AppL,cl) ->
+			let napp = (Array.length cl) -1 in
+                        (match whrec (array_last cl, []) with 
+                           | (Rel 1,[]) when napp > 0 ->
+                               let lc = Array.sub cl 0 napp in
+                               let u = if napp=1 then lc.(0) else DOPN(AppL,lc)
+                               in if noccurn 1 u then (pop u,[]) else s
+                           | _ -> s)
+                    | _ -> s)
              | (a::m) -> stacklam whrec [a] c m)
-      | x -> (x,stack)
+      | x -> s
   in 
-  whrec
+  whrec (x, l)
 
 let whd_betadeltaeta env sigma x = 
   applist(whd_betadeltaeta_stack env sigma x [])
@@ -540,185 +574,185 @@ let fix_recarg ((recindices,bodynum),_) stack =
   else 
     None
 
+type fix_reduction_result = NotReducible | Reduced of (constr * constr list)
+
 let reduce_fix whfun fix stack =
-  let dfix = destFix fix in
-  match fix_recarg dfix stack with
-    | None -> (false,(fix,stack))
+  match fix_recarg fix stack with
+    | None -> NotReducible
     | Some (recargnum,recarg) ->
-        let (recarg'hd,_ as recarg') = whfun recarg [] in
+        let (recarg'hd,_ as recarg') = whfun (recarg, []) in
         let stack' = list_assign stack recargnum (applist recarg') in
 	(match recarg'hd with
-           | DOPN(MutConstruct _,_) -> 
-	       (true,(contract_fix dfix,stack'))
-	   | _ -> (false,(fix,stack')))
+           | DOPN(MutConstruct _,_) -> Reduced (contract_fix fix, stack')
+	   | _ -> NotReducible)
 
 (* NB : Cette fonction alloue peu c'est l'appel 
      ``let (recarg'hd,_ as recarg') = whfun recarg [] in''
                                      --------------------
 qui coute cher dans whd_betadeltaiota *)
 
-let whd_betaiota_stack = 
-  let rec whrec x stack =
-    match x with
-      | DOP2(Cast,c,_) -> whrec c stack
-      | DOPN(AppL,cl)    -> whrec (array_hd cl) (array_app_tl cl stack)
-      | DOP2(Lambda,_,DLAM(_,c)) ->
+let whd_betaiota_stack x l = 
+  let rec whrec (x,stack as s) =
+    match kind_of_term x with
+      | IsCast (c,_)     -> whrec (c, stack)
+      | IsAppL (f,cl)    -> whrec (f, cl@stack)
+      | IsLambda (_,_,c) ->
           (match stack with
-             | [] -> (x,stack)
-             | (a::m) -> stacklam whrec [a] c m)
-      | DOPN(MutCase _,_) ->
-          let (ci,p,d,lf) = destCase x in
-          let (c,cargs) = whrec d [] in
+             | [] -> s
+             | a::m -> stacklam whrec [a] c m)
+      | IsMutCase (ci,p,d,lf) ->
+          let (c,cargs) = whrec (d, []) in
           if reducible_mind_case c then
             whrec (reduce_mind_case
-                     {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf}) stack
+                     {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf}, stack)
           else 
 	    (mkMutCaseA ci p (applist(c,cargs)) lf, stack)
             
-      | DOPN(Fix _,_) ->
-          let (reduced,(fix,stack)) = reduce_fix whrec x stack in
-          if reduced then whrec fix stack else (fix,stack)
-      | x -> (x,stack)
+      | IsFix fix ->
+	  (match reduce_fix whrec fix stack with
+             | Reduced s' -> whrec s'
+	     | NotReducible -> s)
+      | _ -> s
   in 
-  whrec    
+  whrec (x, l)
 
 let whd_betaiota x = applist (whd_betaiota_stack x [])
 
-let whd_betaiotaevar_stack env sigma = 
-  let rec whrec x stack =
-    match x with
-      | DOPN(Evar ev,args) ->
+let whd_betaiotaevar_stack env sigma x l = 
+  let rec whrec (x, stack as s) =
+    match kind_of_term x with
+      | IsEvar (ev,args) ->
           if Evd.is_defined sigma ev then 
-	    whrec (existential_value sigma (ev,args)) stack
+	    whrec (existential_value sigma (ev,args), stack)
           else 
-	    (x,stack)
+	    s
+(*
       | DOPN(Abst _,_) ->
           if translucent_abst env x then
 	    whrec (abst_value env x) stack
           else
 	    (x,stack)
-      | DOP2(Cast,c,_) -> whrec c stack
-      | DOPN(AppL,cl)    -> whrec (array_hd cl) (array_app_tl cl stack)
-      | DOP2(Lambda,_,DLAM(_,c)) ->
+*)
+      | IsCast (c,_) -> whrec (c, stack)
+      | IsAppL (f,cl)    -> whrec (f, cl@stack)
+      | IsLambda (_,_,c) ->
           (match stack with
-             | [] -> (x,stack)
+             | [] -> s
              | (a::m) -> stacklam whrec [a] c m)
-      | DOPN(MutCase _,_) ->
-          let (ci,p,d,lf) = destCase x in
-          let (c,cargs) = whrec d [] in
+      | IsMutCase (ci,p,d,lf) ->
+          let (c,cargs) = whrec (d, []) in
           if reducible_mind_case c then
 	    whrec (reduce_mind_case
-                     {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf}) stack
+                     {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf}, stack)
           else 
-	    (mkMutCaseA ci p (applist(c,cargs)) lf,stack)
-      | DOPN(Fix _,_) ->
-          let (reduced,(fix,stack)) = reduce_fix whrec x stack in
-          if reduced then whrec fix stack else (fix,stack)
-      | DOPN(Const _,_) -> (x,stack)
-      | x -> (x,stack)
+	    (mkMutCaseA ci p (applist(c,cargs)) lf, stack)
+      | IsFix fix ->
+	  (match reduce_fix whrec fix stack with
+             | Reduced s' -> whrec s'
+	     | NotReducible -> s)
+      | _ -> s
  in 
-  whrec   
+  whrec (x, l) 
 
 let whd_betaiotaevar env sigma x = 
   applist(whd_betaiotaevar_stack env sigma x [])
 
-let whd_betadeltaiota_stack env sigma =
-  let rec bdi_rec x stack =
-    match x with
-      | DOPN(Const _,_) ->
+let whd_betadeltaiota_stack env sigma x l =
+  let rec whrec (x, stack as s) =
+    match kind_of_term x with
+      | IsConst _ ->
           if evaluable_constant env x then
-	    bdi_rec (constant_value env x) stack
+	    whrec (constant_value env x, stack)
           else 
-	    (x,stack)
-      | DOPN(Evar ev,args) ->
+	    s
+      | IsEvar (ev,args) ->
           if Evd.is_defined sigma ev then 
-	    bdi_rec (existential_value sigma (ev,args)) stack
+	    whrec (existential_value sigma (ev,args), stack)
           else 
-	    (x,stack)
+	    s
+(*
       | DOPN(Abst _,_) ->
           if evaluable_abst env x then 
-	    bdi_rec (abst_value env x) stack 
+	    whrec (abst_value env x) stack 
 	  else 
 	    (x,stack)
-      | DOP2(Cast,c,_) -> bdi_rec c stack
-      | DOPN(AppL,cl) ->  bdi_rec (array_hd cl)  (array_app_tl cl stack)
-      | DOP2(Lambda,_,DLAM(_,c)) ->
+*)
+      | IsCast (c,_) -> whrec (c, stack)
+      | IsAppL (f,cl)    -> whrec (f, cl@stack)
+      | IsLambda (_,_,c) ->
           (match stack with
-             | [] -> (x,[])
-             | (a::m) -> stacklam bdi_rec [a] c m)
-      | DOPN(MutCase _,_) ->
-          let (ci,p,d,lf) = destCase x in
-          let (c,cargs) = bdi_rec d [] in
+             | [] -> s
+             | (a::m) -> stacklam whrec [a] c m)
+      | IsMutCase (ci,p,d,lf) ->
+          let (c,cargs) = whrec (d, []) in
           if reducible_mind_case c then
-            bdi_rec (reduce_mind_case
-		       {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf}) stack
+	    whrec (reduce_mind_case
+                     {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf}, stack)
           else 
-	    (mkMutCaseA ci p (applist(c,cargs)) lf,stack)
-      | DOPN(Fix _,_) -> 
-          let (reduced,(fix,stack)) = reduce_fix bdi_rec x stack in
-          if reduced then bdi_rec fix stack else (fix,stack)
-      | x -> (x,stack)
+	    (mkMutCaseA ci p (applist(c,cargs)) lf, stack)
+      | IsFix fix ->
+	  (match reduce_fix whrec fix stack with
+             | Reduced s' -> whrec s'
+	     | NotReducible -> s)
+      | _ -> s
   in
-  bdi_rec
+  whrec (x, l)
 
 let whd_betadeltaiota env sigma x = 
   applist(whd_betadeltaiota_stack env sigma x [])
 				
 				
-let whd_betadeltaiotaeta_stack env sigma = 
-  let rec whrec x stack =
-    match x with
-      | DOPN(Const _,_) ->
-          if evaluable_constant env x then 
-	    whrec (constant_value env x) stack
+let whd_betadeltaiotaeta_stack env sigma x l = 
+  let rec whrec (x, stack as s) =
+    match kind_of_term x with
+      | IsConst _ ->
+          if evaluable_constant env x then
+	    whrec (constant_value env x, stack)
           else 
-	    (x,stack)
-      | DOPN(Evar ev,args) ->
+	    s
+      | IsEvar (ev,args) ->
           if Evd.is_defined sigma ev then 
-	    whrec (existential_value sigma (ev,args)) stack
+	    whrec (existential_value sigma (ev,args), stack)
           else 
-	    (x,stack)
+	    s
+(*
       | DOPN(Abst _,_) ->
-          if evaluable_abst env x then
-	    whrec (abst_value env x) stack
-          else 
+          if evaluable_abst env x then 
+	    whrec (abst_value env x) stack 
+	  else 
 	    (x,stack)
-      | DOP2(Cast,c,_) -> whrec c stack
-      | DOPN(AppL,cl) -> whrec (array_hd cl) (array_app_tl cl stack)
-      | DOP2(Lambda,_,DLAM(_,c)) ->
+*)
+      | IsCast (c,_) -> whrec (c, stack)
+      | IsAppL (f,cl)    -> whrec (f, cl@stack)
+      | IsLambda (_,_,c) ->
           (match stack with
              | [] ->
-                 (match applist (whrec c []) with 
-                    | DOPN(AppL,cl) -> 
-                        (match whrec (array_last cl) [] with 
-                           | (Rel 1,[]) ->
-                               let napp = (Array.length cl) -1 in
-                               if napp = 0 then 
-				 (x,stack) 
-			       else
-                                 let lc = Array.sub cl 0 napp in
-                                 let u = 
-				   if napp = 1 then lc.(0) else DOPN(AppL,lc) 
-                                 in 
-				 if noccurn 1 u then (pop u,[]) else (x,stack)
-                           | _ -> (x,stack))
-                    | _ -> (x,stack))
+                 (match applist (whrec (c, [])) with 
+                    | DOPN(AppL,cl) ->
+			let napp = (Array.length cl) -1 in
+                        (match whrec (array_last cl, []) with 
+                           | (Rel 1,[]) when napp > 0 ->
+                               let lc = Array.sub cl 0 napp in
+                               let u = if napp=1 then lc.(0) else DOPN(AppL,lc)
+                               in if noccurn 1 u then (pop u,[]) else s
+                           | _ -> s)
+                    | _ -> s)
              | (a::m) -> stacklam whrec [a] c m)
 
-      | DOPN(MutCase _,_) ->
-          let (ci,p,d,lf) = destCase x in
-          let (c,cargs) = whrec d [] in
+      | IsMutCase (ci,p,d,lf) ->
+          let (c,cargs) = whrec (d, []) in
           if reducible_mind_case c then
 	    whrec (reduce_mind_case
-                     {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf}) stack
+                     {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf}, stack)
           else 
-	    (mkMutCaseA ci p (applist(c,cargs)) lf,stack)
-      | DOPN(Fix _,_) ->
-          let (reduced,(fix,stack)) = reduce_fix whrec x stack in
-          if reduced then whrec fix stack else (fix,stack)
-      | x -> (x,stack)
+	    (mkMutCaseA ci p (applist(c,cargs)) lf, stack)
+      | IsFix fix ->
+	  (match reduce_fix whrec fix stack with
+             | Reduced s' -> whrec s'
+	     | NotReducible -> s)
+      | _ -> s
   in 
-  whrec  
+  whrec (x, l)
 
 let whd_betadeltaiotaeta env sigma x = 
   applist(whd_betadeltaiotaeta_stack env sigma x [])
@@ -879,19 +913,21 @@ and eqappr cv_pb infos appr1 appr2 =
            | None -> fun _ -> raise NotConvertible)
 	
     (* other constructors *)
-    | (FOP2(Lambda,c1,c2), FOP2(Lambda,c'1,c'2)) ->
+    | (FLam (_,c1,c2,_,_), FLam (_,c'1,c'2,_,_)) ->
         bool_and_convert
 	  (Array.length v1 = 0 && Array.length v2 = 0)
           (convert_and
 	     (ccnv (pb_equal cv_pb) infos el1 el2 c1 c'1)
-             (ccnv (pb_equal cv_pb) infos el1 el2 c2 c'2))
+             (ccnv (pb_equal cv_pb) infos (el_lift el1) (el_lift el2) c2 c'2))
 
-    | (FOP2(Prod,c1,c2), FOP2(Prod,c'1,c'2)) ->
+    | (FLet _, _) | (_, FLet _) -> anomaly "Normally removed by fhnf"
+
+    | (FPrd (_,c1,c2,_,_), FPrd (_,c'1,c'2,_,_)) ->
 	bool_and_convert
           (Array.length v1 = 0 && Array.length v2 = 0)
 	  (convert_and
              (ccnv (pb_equal cv_pb) infos el1 el2 c1 c'1) (* Luo's system *)
-             (ccnv cv_pb infos el1 el2 c2 c'2))
+             (ccnv cv_pb infos (el_lift el1) (el_lift el2) c2 c'2))
 
     (* Inductive types:  MutInd MutConstruct MutCase Fix Cofix *)
 
@@ -926,8 +962,8 @@ and eqappr cv_pb infos appr1 appr2 =
 
 
 let fconv cv_pb env sigma t1 t2 =
-  let t1 = strong (fun _ _ -> strip_outer_cast) env sigma t1
-  and t2 = strong (fun _ _ -> strip_outer_cast) env sigma t2 in
+  let t1 = local_strong strip_outer_cast t1
+  and t2 = local_strong strip_outer_cast t2 in
   if eq_constr t1 t2 then 
     Constraint.empty
   else
@@ -972,9 +1008,11 @@ let plain_instance s c =
     | DOP1(oper,c)      -> DOP1(oper, irec c)
     | DOP2(oper,c1,c2)  -> DOP2(oper, irec c1, irec c2)
     | DOPN(oper,cl)     -> DOPN(oper, Array.map irec cl)
-    | DOPL(oper,cl)     -> DOPL(oper, List.map irec cl)
     | DLAM(x,c)         -> DLAM(x, irec c)
     | DLAMV(x,v)        -> DLAMV(x, Array.map irec v)
+    | CLam (n,t,c)      -> CLam (n, typed_app irec t, irec c)  
+    | CPrd (n,t,c)      -> CPrd (n, typed_app irec t, irec c)
+    | CLet (n,b,t,c)    -> CLet (n, irec b, typed_app irec t, irec c)
     | u                 -> u
   in 
   if s = [] then c else irec c
@@ -992,7 +1030,7 @@ let instance s c =
 
 let hnf_prod_app env sigma t n =
   match whd_betadeltaiota env sigma t with
-    | DOP2(Prod,_,DLAM(_,b)) -> subst1 n b
+    | CPrd (_,_,b) -> subst1 n b
     | _ -> anomaly "hnf_prod_app: Need a product"
 
 let hnf_prod_appvect env sigma t nl = 
@@ -1003,7 +1041,7 @@ let hnf_prod_applist env sigma t nl =
 				    
 let hnf_lam_app env sigma t n =
   match whd_betadeltaiota env sigma t with
-    | DOP2(Lambda,_,DLAM(_,b)) -> subst1 n b
+    | CLam (_,_,b) -> subst1 n b
     | _ -> anomaly "hnf_lam_app: Need an abstraction"
 
 let hnf_lam_appvect env sigma t nl = 
@@ -1015,7 +1053,7 @@ let hnf_lam_applist env sigma t nl =
 let splay_prod env sigma = 
   let rec decrec m c =
     match whd_betadeltaiota env sigma c with
-      | DOP2(Prod,a,DLAM(n,c_0)) -> decrec ((n,a)::m) c_0
+      | CPrd (n,a,c0) -> decrec ((n,body_of_type a)::m) c0
       | t -> m,t
   in 
   decrec []
@@ -1030,8 +1068,8 @@ let sort_of_arity env c = snd (splay_arity env Evd.empty c)
 let decomp_n_prod env sigma n = 
   let rec decrec m ln c = if m = 0 then (ln,c) else 
     match whd_betadeltaiota env sigma c with
-      | DOP2(Prod,a,DLAM(n,c0)) ->
-	  decrec (m-1) (Sign.add_rel_decl (n,outcast_type a) ln) c0
+      | CPrd (n,a,c0) ->
+	  decrec (m-1) (Sign.add_rel_decl (n,a) ln) c0
       | _                      -> error "decomp_n_prod: Not enough products"
   in 
   decrec n Sign.empty_rel_context
@@ -1053,7 +1091,7 @@ with bj=aj if j<>ik and bj=(Rel c) and Bic=Aic[xn..xic-1 <- an..aic-1]
 let compute_consteval env sigma c = 
   let rec srec n labs c =
     match whd_betadeltaeta_stack env sigma c [] with 
-      | (DOP2(Lambda,t,DLAM(_,g)),[])  -> srec (n+1) (t::labs) g
+      | CLam (_,t,g), []  -> srec (n+1) (t::labs) g
       | (DOPN(Fix((nv,i)),bodies),l)   -> 
           if List.length l > n then 
 	    raise Elimconst 
@@ -1083,22 +1121,23 @@ let compute_consteval env sigma c =
 (* One step of approximation *)
 
 let rec apprec env sigma c stack =
-  let (t,stack) = whd_betaiota_stack c stack in
-  match t with
-    | DOPN(MutCase _,_) ->
-        let (ci,p,d,lf) = destCase t in
+  let (t, stack as s) = whd_betaiota_stack c stack in
+  match kind_of_term t with
+    | IsMutCase (ci,p,d,lf) ->
         let (cr,crargs) = whd_betadeltaiota_stack env sigma d [] in
         let rslt = mkMutCaseA ci p (applist(cr,crargs)) lf in
         if reducible_mind_case cr then 
 	  apprec env sigma rslt stack
         else 
-	  (t,stack)
-    | DOPN(Fix _,_) ->
-        let (reduced,(fix,stack)) = 
-	  reduce_fix (whd_betadeltaiota_stack env sigma) t stack 
-	in
-        if reduced then apprec env sigma fix stack else (fix,stack)
-    | _ -> (t,stack)
+	  s
+    | IsFix fix ->
+	  (match reduce_fix 
+	     (fun (c,l) -> whd_betadeltaiota_stack env sigma c l)
+	     fix stack
+	   with
+             | Reduced (c,stack) -> apprec env sigma c stack
+	     | NotReducible -> s)
+    | _ -> s
 
 let hnf env sigma c = apprec env sigma c []
 
@@ -1108,36 +1147,31 @@ let hnf env sigma c = apprec env sigma c []
  * Used in Programs.
  * Added by JCF, 29/1/98. *)
 
-let whd_programs_stack env sigma = 
-  let rec whrec x stack =
-    match x with
-      | DOPN(AppL,cl)    ->
-	  if occur_meta cl.(1) then
-	    (x,stack)
-	  else
-	    whrec (array_hd cl) (array_app_tl cl stack)
-      | DOP2(Lambda,_,DLAM(_,c)) ->
+let whd_programs_stack env sigma x l = 
+  let rec whrec (x, stack as s) =
+    match kind_of_term x with
+      | IsAppL (f,[c]) -> if occur_meta c then s else whrec (f, c::stack)
+      | IsLambda (_,_,c) ->
           (match stack with
-             | [] -> (x,stack)
+             | [] -> s
              | (a::m) -> stacklam whrec [a] c m)
-      | DOPN(MutCase _,_) ->
-          let (ci,p,d,lf) = destCase x in
+      | IsMutCase (ci,p,d,lf) ->
 	  if occur_meta d then
-	    (x,stack)
+	    s
 	  else
-            let (c,cargs) = whrec d [] in
+            let (c,cargs) = whrec (d, []) in
             if reducible_mind_case c then
 	      whrec (reduce_mind_case
-		       {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf})
-		    stack
+		       {mP=p; mconstr=c; mcargs=cargs; mci=ci; mlf=lf}, stack)
 	    else
 	      (mkMutCaseA ci p (applist(c,cargs)) lf, stack)
-      | DOPN(Fix _,_) ->
-          let (reduced,(fix,stack)) = reduce_fix whrec x stack in
-          if reduced then whrec fix stack else (fix,stack)
-      | x -> (x,stack)
+      | IsFix fix ->
+	  (match reduce_fix whrec fix stack with
+             | Reduced s' -> whrec s'
+	     | NotReducible -> s)
+      | _ -> s
   in 
-  whrec    
+  whrec (x, l)
 
 let whd_programs env sigma x = applist (whd_programs_stack env sigma x [])
 
@@ -1145,37 +1179,34 @@ exception IsType
 
 let is_arity env sigma = 
   let rec srec c = 
-    match whd_betadeltaiota env sigma c with 
-      | DOP0(Sort _) -> true
-      | DOP2(Prod,_,DLAM(_,c')) -> srec c' 
-      | DOP2(Lambda,_,DLAM(_,c')) -> srec c' 
+    match kind_of_term (whd_betadeltaiota env sigma c) with 
+      | IsSort _ -> true
+      | IsProd (_,_,c') -> srec c' 
+      | IsLambda (_,_,c') -> srec c' 
       | _ -> false
   in 
   srec 
  
 let info_arity env sigma = 
   let rec srec c = 
-    match whd_betadeltaiota env sigma c with 
-      | DOP0(Sort(Prop Null)) -> false 
-      | DOP0(Sort(Prop Pos)) -> true 
-      | DOP2(Prod,_,DLAM(_,c')) -> srec c' 
-      | DOP2(Lambda,_,DLAM(_,c')) -> srec c' 
+    match kind_of_term (whd_betadeltaiota env sigma c) with 
+      | IsSort (Prop Null) -> false 
+      | IsSort (Prop Pos) -> true 
+      | IsProd (_,_,c') -> srec c' 
+      | IsLambda (_,_,c') -> srec c' 
       | _ -> raise IsType
   in 
   srec 
     
-let is_logic_arity env sigma c = 
-  try (not (info_arity env sigma c)) with IsType -> false
-
-let is_info_arity env sigma c = 
+let is_info_arity env sigma c =
   try (info_arity env sigma c) with IsType -> true
-   
+  
 let is_type_arity env sigma = 
   let rec srec c = 
-    match whd_betadeltaiota env sigma c with 
-      | DOP0(Sort(Type _)) -> true
-      | DOP2(Prod,_,DLAM(_,c')) -> srec c' 
-      | DOP2(Lambda,_,DLAM(_,c')) -> srec c' 
+    match kind_of_term (whd_betadeltaiota env sigma c) with 
+      | IsSort (Type _) -> true
+      | IsProd (_,_,c') -> srec c' 
+      | IsLambda (_,_,c') -> srec c' 
       | _ -> false
   in 
   srec 
@@ -1185,20 +1216,6 @@ let is_info_type env sigma t =
   (s = Prop Pos) ||
   (s <> Prop Null && 
    try info_arity env sigma t.utj_val with IsType -> true)
-
-(* Pour l'extraction 
-let is_info_cast_type env sigma c = 
-  match c with  
-    | DOP2(Cast,c,t) -> 
-	(try info_arity env sigma t 
-         with IsType -> try info_arity env sigma c with IsType -> true)
-    |  _ -> try info_arity env sigma c with IsType -> true
-	   
-let contents_of_cast_type env sigma c = 
-  if is_info_cast_type env sigma c then Pos else Null
-*)
-
-let is_info_sort = is_info_arity
 
 (* calcul des arguments implicites *)
 
@@ -1211,31 +1228,36 @@ let ord_add x l =
   in 
   aux l
     
-let add_free_rels_until depth m acc =
-  let rec frec depth loc acc = function
+let add_free_rels_until bound m acc =
+  let rec frec depth acc = function
     | Rel n -> 
-	if (n <= depth) & (n > loc) then (ord_add (depth-n+1) acc) else acc
-    | DOPN(_,cl)    -> Array.fold_left (frec depth loc) acc cl
-    | DOPL(_,cl)    -> List.fold_left (frec depth loc) acc cl
-    | DOP2(_,c1,c2) -> frec depth loc (frec depth loc acc c1) c2
-    | DOP1(_,c)     -> frec depth loc acc c
-    | DLAM(_,c)     -> frec (depth+1) (loc+1) acc c
-    | DLAMV(_,cl)   -> Array.fold_left (frec (depth+1) (loc+1)) acc cl
+	if (n < bound+depth) & (n >= depth) then
+	  Intset.add (bound+depth-n) acc
+	else
+	  acc
+    | DOPN(_,cl)    -> Array.fold_left (frec depth) acc cl
+    | DOP2(_,c1,c2) -> frec depth (frec depth acc c1) c2
+    | DOP1(_,c)     -> frec depth acc c
+    | DLAM(_,c)     -> frec (depth+1) acc c
+    | DLAMV(_,cl)   -> Array.fold_left (frec (depth+1)) acc cl
+    | CLam (_,t,c)   -> frec (depth+1) (frec depth acc (body_of_type t)) c
+    | CPrd (_,t,c)   -> frec (depth+1) (frec depth acc (body_of_type t)) c
+    | CLet (_,b,t,c) -> frec (depth+1) (frec depth (frec depth acc b) (body_of_type t)) c
     | VAR _         -> acc
     | DOP0 _        -> acc
   in 
-  frec depth 0 acc m 
+  frec 1 acc m 
 
 (* calcule la liste des arguments implicites *)
 
 let poly_args env sigma t =
-  let rec aux n t = match (whd_betadeltaiota env sigma t) with
-    | DOP2(Prod,a,DLAM(_,b)) -> add_free_rels_until n a (aux (n+1) b)
-    | DOP2(Cast,t',_) -> aux n t'
-    | _ -> []
+  let rec aux n t = match kind_of_term (whd_betadeltaiota env sigma t) with
+    | IsProd (_,a,b) -> add_free_rels_until n a (aux (n+1) b)
+    | IsCast (t',_) -> aux n t'
+    | _ -> Intset.empty
   in 
-  match (strip_outer_cast (whd_betadeltaiota env sigma t)) with 
-    | DOP2(Prod,a,DLAM(_,b)) -> aux 1 b
+  match kind_of_term (strip_outer_cast (whd_betadeltaiota env sigma t)) with 
+    | IsProd (_,a,b) -> Intset.elements (aux 1 b)
     | _ -> []
 
 
