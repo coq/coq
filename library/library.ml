@@ -288,10 +288,29 @@ let (in_import, out_import) =
 (************************************************************************)
 (*s Loading from disk to cache (preparation phase) *)
 
-let vo_magic_number = 0704 (* V7.4 *)
+let vo_magic_number7 = 0799 (* V8.0 old syntax *)
+let vo_magic_number8 = 0800 (* V8.0 new syntax *)
 
-let (raw_extern_library, raw_intern_library) =
-  System.raw_extern_intern vo_magic_number ".vo"
+let (raw_extern_library7, raw_intern_library7) =
+  System.raw_extern_intern vo_magic_number7 ".vo"
+
+let (raw_extern_library8, raw_intern_library8) =
+  System.raw_extern_intern vo_magic_number8 ".vo"
+
+let raw_intern_library a =
+  if !Options.v7 then
+    try raw_intern_library7 a
+    with System.Bad_magic_number fname ->
+      let _= raw_intern_library8 a in
+      error "Inconsistent compiled files: you probably want to use Coq in new syntax and remove the option -v7 or -translate"
+  else
+    try raw_intern_library8 a
+    with System.Bad_magic_number fname ->
+      let _= raw_intern_library7 a in
+      error "Inconsistent compiled files: you probably want to use Coq in old syntax by setting options -v7 or -translate"
+
+let raw_extern_library =
+  if !Options.v7 then raw_extern_library7 else raw_extern_library8
 
 (* cache for loaded libraries *)
 let compunit_cache = ref CompilingLibraryMap.empty
