@@ -13,3 +13,4 @@ Definition Psi00 : (nat -> Prop) := [n:nat] False.
 Definition Psi0 : (T O) := Psi00. 
 Lemma Inversion_RO : (l:nat)(R O Psi0 l) -> (Psi00 l).
 Inversion 1.
+Abort.
