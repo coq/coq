@@ -15,14 +15,12 @@ ADDPREF=COQINSTALLPREFIX=${COQPREF}
 TMAKE=timeout 5300 ${MAKE}
 MAKEQ=${MAKE} -q
 
-CONFIGUREOPTS=--prefix /usr --mandir /usr/share/man --emacslib /usr/share/emacs/site-lisp/coq
+CONFIGUREOPTS=--prefix /usr --mandir /usr/share/man --emacslib /usr/share/emacs/site-lisp/coq --reals all
 
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
 	./configure -opt ${CONFIGUREOPTS} || ./configure ${CONFIGUREOPTS}
-	# on powerpc, we refuse to use the ".opt" compilers
-	if [ `arch` = ppc ] ; then ./configure ${CONFIGUREOPTS} ; fi
 	touch configure-stamp
 
 build: configure-stamp build-stamp

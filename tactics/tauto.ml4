@@ -86,7 +86,11 @@ let simplif ist =
         | [id: (?1 ? ?) |- ?] ->
             $t_is_conj;Elim id;Do 2 Intro;Clear id
         | [id: (?1 ? ?) |- ?] -> $t_is_disj;Elim id;Intro;Clear id
-        | [id0: ?1-> ?2; id1: ?1|- ?] -> Generalize (id0 id1);Intro;Clear id0
+        | [id0: ?1-> ?2; id1: ?1|- ?] ->
+	    (* Generalize (id0 id1);Intro;Clear id0 does not work
+	       (see Marco Maggiesi's bug PR#301)
+	    so we instead use Assert and Exact. *)
+	    Assert ?2; [Exact (id0 id1) | Clear id0]
         | [id: ?1 -> ?2|- ?] ->
           $t_is_unit;Cut ?2;
 	    [Intro;Clear id

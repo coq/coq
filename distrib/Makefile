@@ -319,6 +319,7 @@ prep-deb: ${COQDEBORIG}.tar.gz ${COQPACKAGE}.tar.gz
 	cd deb_build ; tar xzf ../${COQPACKAGE}.tar.gz
 	cp -a debian deb_build/${COQPACKAGE}
 	rm -rf deb_build/${COQPACKAGE}/debian/CVS
+	date > prep-deb
 
 deb: prep-deb
 	cd deb_build/${COQPACKAGE} ; dpkg-buildpackage -rfakeroot -uc -us 2>&1 | tee ../../deb.log

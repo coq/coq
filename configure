@@ -207,7 +207,7 @@ case $reals_opt in
 	case $reals_ans in
 	    "N"|"n"|"No"|"NO"|"no")
 		    reals=basic;;
-		*) true;;
+		*) reals=all;;
 	esac;;
     yes) true;;
 esac

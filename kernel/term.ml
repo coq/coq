@@ -996,6 +996,9 @@ let prodn n env b =
   in 
   prodrec (n,env,b)
 
+(* compose_prod [xn:Tn;..;x1:T1] b = (x1:T1)..(xn:Tn)b *)
+let compose_prod l b = prodn (List.length l) l b
+
 (* lamn n [xn:Tn;..;x1:T1;Gamma] b = [x1:T1]..[xn:Tn]b *)
 let lamn n env b =
   let rec lamrec = function
@@ -1005,6 +1008,9 @@ let lamn n env b =
   in 
   lamrec (n,env,b)
 
+(* compose_lam [xn:Tn;..;x1:T1] b = [x1:T1]..[xn:Tn]b *)
+let compose_lam l b = lamn (List.length l) l b
+
 let applist (f,l) = mkApp (f, Array.of_list l)
 
 let applistc f l = mkApp (f, Array.of_list l)
@@ -1013,8 +1019,8 @@ let appvect = mkApp
 	    
 let appvectc f l = mkApp (f,l)
 		     
-(* to_lambda n (x1:T1)...(xn:Tn)(xn+1:Tn+1)...(xn+j:Tn+j)T =
- * [x1:T1]...[xn:Tn](xn+1:Tn+1)...(xn+j:Tn+j)T *)
+(* to_lambda n (x1:T1)...(xn:Tn)T =
+ * [x1:T1]...[xn:Tn]T *)
 let rec to_lambda n prod =
   if n = 0 then 
     prod 

@@ -80,7 +80,7 @@ val body_of_type : types -> constr
 
 (*s Term constructors. *)
 
-(* Constructs a DeBrujin index *)
+(* Constructs a DeBrujin index (DB indices begin at 1) *)
 val mkRel : int -> constr
 
 (* Constructs a Variable *)
@@ -325,7 +325,6 @@ val mkNamedProd_wo_LetIn : named_declaration -> types -> types
 val mkLambda_or_LetIn : rel_declaration -> constr -> constr
 val mkNamedLambda_or_LetIn : named_declaration -> constr -> constr
 
-
 (*s Other term constructors. *)
 
 val abs_implicit : constr -> constr
@@ -343,14 +342,28 @@ val appvectc : constr -> constr array -> constr
    where $l = [(x_n,T_n);\dots;(x_1,T_1);Gamma]$ *)
 val prodn : int -> (name * constr) list -> constr -> constr
 
+(* [compose_prod l b] = $(x_1:T_1)..(x_n:T_n)b$
+   where $l = [(x_n,T_n);\dots;(x_1,T_1)]$.
+   Inverse of [decompose_prod]. *)
+val compose_prod : (name * constr) list -> constr -> constr
+
 (* [lamn n l b] = $[x_1:T_1]..[x_n:T_n]b$
    where $l = [(x_n,T_n);\dots;(x_1,T_1);Gamma]$ *)
 val lamn : int -> (name * constr) list -> constr -> constr
 
+(* [compose_lam l b] = $[x_1:T_1]..[x_n:T_n]b$
+   where $l = [(x_n,T_n);\dots;(x_1,T_1)]$.
+   Inverse of [decompose_lam] *)
+val compose_lam : (name * constr) list -> constr -> constr
+
 (* [to_lambda n l] 
-   = $[x_1:T_1]...[x_n:T_n](x_{n+1}:T_{n+1})...(x_{n+j}:T_{n+j})T$
-   where $l = (x_1:T_1)...(x_n:T_n)(x_{n+1}:T_{n+1})...(x_{n+j}:T_{n+j})T$ *)
+   = $[x_1:T_1]...[x_n:T_n]T$
+   where $l = (x_1:T_1)...(x_n:T_n)T$ *)
 val to_lambda : int -> constr -> constr
+
+(* [to_prod n l] 
+   = $(x_1:T_1)...(x_n:T_n)T$
+   where $l = [x_1:T_1]...[x_n:T_n]T$ *)
 val to_prod : int -> constr -> constr
 
 (* pseudo-reduction rule *)
@@ -414,6 +427,9 @@ val noccur_between : int -> int -> constr -> bool
 val noccur_with_meta : int -> int -> constr -> bool
 
 (*s Relocation and substitution *)
+
+(* [exliftn el c] lifts [c] with lifting [el] *)
+val exliftn : Esubst.lift -> constr -> constr
 
 (* [liftn n k c] lifts by [n] indexes above [k] in [c] *)
 val liftn : int -> int -> constr -> constr
