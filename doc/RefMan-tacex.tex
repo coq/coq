@@ -43,8 +43,8 @@ Defined.
 
 % \texttt{Refine} is actually the only way for the user to do
 % a proof with the same structure as a {\tt Cases} definition. Actually,
-% the tactics \texttt{Case} (see \ref{Case}) and \texttt{Elim} (see
-% \ref{Elim}) only allow one step of elementary induction. 
+% the tactics \texttt{case} (see \ref{case}) and \texttt{Elim} (see
+% \ref{elim}) only allow one step of elementary induction. 
 
 % \begin{coq_example*}
 % Require Bool.
@@ -436,14 +436,14 @@ cases. Inversion tools can be classified in three groups:
 \begin{enumerate}
 \item tactics for inverting an instance without stocking the inversion
   lemma in the context; this includes the tactics
-  (\texttt{Dependent})  \texttt{Inversion} and
- (\texttt{Dependent}) \texttt{Inversion\_clear}.
+  (\texttt{dependent})  \texttt{inversion} and
+ (\texttt{dependent}) \texttt{inversion\_clear}.
 \item commands for generating and stocking in the context the inversion
   lemma corresponding to an instance; this includes \texttt{Derive}
   (\texttt{Dependent}) \texttt{Inversion} and \texttt{Derive}
   (\texttt{Dependent}) \texttt{Inversion\_clear}.
 \item tactics for inverting an instance using an already defined
-  inversion lemma; this includes the tactic \texttt{Inversion \ldots using}.
+  inversion lemma; this includes the tactic \texttt{inversion \ldots using}.
 \end{enumerate}
 
 As inversion proofs may be large in size, we recommend the user to
@@ -462,7 +462,7 @@ Reset Initial.
 
 \begin{coq_example*}
 Inductive Le : nat -> nat -> Set :=
-  | LeO : forall n:nat, Le 0%N n
+  | LeO : forall n:nat, Le 0 n
   | LeS : forall n m:nat, Le n m -> Le (S n) (S m).
 Variable P : nat -> nat -> Prop.
 Variable Q : forall n m:nat, Le n m -> Prop.
@@ -499,7 +499,7 @@ context.
 
 Sometimes it is
 interesting to have the equality \texttt{m=(S m0)} in the
-context to use it after. In that case we can use  \texttt{Inversion} that
+context to use it after. In that case we can use \texttt{inversion} that
 does not clear the equalities:
 
 \begin{coq_example*}
@@ -573,10 +573,10 @@ inversion H using leminv.
 Reset Initial.
 \end{coq_eval}
 
-\section{\tt AutoRewrite}
-\label{AutoRewrite-example}
+\section{\tt autorewrite}
+\label{autorewrite-example}
 
-Here are two examples of {\tt AutoRewrite} use. The first one ({\em Ackermann
+Here are two examples of {\tt autorewrite} use. The first one ({\em Ackermann
 function}) shows actually a quite basic use where there is no conditional
 rewriting. The second one ({\em Mac Carthy function}) involves conditional
 rewritings and shows how to deal with them using the optional tactic of the
@@ -599,7 +599,7 @@ Axiom Ack2 : forall n m:nat, Ack (S n) (S m) = Ack n (Ack (S n) m).
 \begin{coq_example}
 Hint Rewrite [ Ack0 Ack1 Ack2 ] in base0.
 Lemma ResAck0 : 
- Ack 3 2 = 29%N.
+ Ack 3 2 = 29.
 autorewrite [ base0 ] using try reflexivity.
 \end{coq_example}
 
@@ -619,17 +619,17 @@ Axiom g0 :
 Axiom
   g1 :
     forall n m:nat,
-      (n > 0)%N -> (m > 100)%N -> g n m = g (pred n) (m - 10).
+      (n > 0) -> (m > 100) -> g n m = g (pred n) (m - 10).
 Axiom
   g2 :
     forall n m:nat,
-      (n > 0)%N -> (m <= 100)%N -> g n m = g (S n) (m + 11).
+      (n > 0) -> (m <= 100) -> g n m = g (S n) (m + 11).
 \end{coq_example*}
 
 \begin{coq_example}
 Hint Rewrite [ g0 g1 g2 ] in base1 using omega.
 Lemma Resg0 : 
- g 1 110 = 100%N.
+ g 1 110 = 100.
 autorewrite [ base1 ] using reflexivity || simpl.
 \end{coq_example}
 
@@ -638,7 +638,7 @@ Abort.
 \end{coq_eval}
 
 \begin{coq_example}
-Lemma Resg1 : g 1 95 = 91%N.
+Lemma Resg1 : g 1 95 = 91.
 autorewrite [ base1 ] using reflexivity || simpl.
 \end{coq_example}
 
@@ -646,16 +646,16 @@ autorewrite [ base1 ] using reflexivity || simpl.
 Reset Initial.
 \end{coq_eval}
 
-\section{\tt Quote}
-\tacindex{Quote}
-\label{Quote-examples}
+\section{\tt quote}
+\tacindex{quote}
+\label{quote-examples}
 
-The tactic \texttt{Quote} allows to use Barendregt's so-called
+The tactic \texttt{quote} allows to use Barendregt's so-called
 2-level approach without writing any ML code. Suppose you have a
 language \texttt{L} of 
 'abstract terms' and a type \texttt{A} of 'concrete terms' 
 and a function \texttt{f : L -> A}. If \texttt{L} is a simple
-inductive datatype and \texttt{f} a simple fixpoint, \texttt{Quote f}
+inductive datatype and \texttt{f} a simple fixpoint, \texttt{quote f}
 will replace the head of current goal by a convertible term of the form 
 \texttt{(f t)}. \texttt{L} must have a constructor of type: \texttt{A
   -> L}. 
@@ -692,25 +692,21 @@ return the corresponding constructor (here \texttt{f\_const}) applied
 to the term. 
 
 \begin{ErrMsgs}
-\item \errindex{Quote: not a simple fixpoint} \\
-  Happens when \texttt{Quote} is not able to perform inversion properly.
+\item \errindex{quote: not a simple fixpoint} \\
+  Happens when \texttt{quote} is not able to perform inversion properly.
 \end{ErrMsgs}
 
 \subsection{Introducing variables map}
 
-The normal use of \texttt{Quote} is to make proofs by reflection: one
+The normal use of \texttt{quote} is to make proofs by reflection: one
 defines a function \texttt{simplify : formula -> formula} and proves a 
 theorem \texttt{simplify\_ok: (f:formula)(interp\_f (simplify f)) ->
   (interp\_f f)}. Then, one can simplify formulas by doing:
-
-\begin{quotation}
 \begin{verbatim}
-   Quote interp_f.
-   Apply simplify_ok.
-   Compute.
+   quote interp_f.
+   apply simplify_ok.
+   compute.
 \end{verbatim}
-\end{quotation}
-
 But there is a problem with leafs: in the example above one cannot
 write a function that implements, for example, the logical simplifications 
 $A \wedge A \ra A$ or $A \wedge \neg A \ra \texttt{False}$. This is
@@ -730,11 +726,11 @@ Inductive formula : Set :=
   | f_atom : index -> formula.
 \end{coq_example*}
 
-\texttt{index} is defined in module \texttt{Quote}. Equality on that
+\texttt{index} is defined in module \texttt{quote}. Equality on that
 type is decidable so we are able to simplify $A \wedge A$ into $A$ at
 the abstract level. 
 
-When there are variables, there are bindings, and \texttt{Quote}
+When there are variables, there are bindings, and \texttt{quote}
 provides also a type \texttt{(varmap A)} of bindings from
 \texttt{index} to any set \texttt{A}, and a function
 \texttt{varmap\_find} to search in such maps. The interpretation
@@ -752,7 +748,7 @@ Fixpoint interp_f (vm:
   end.
 \end{coq_example}
 
-\noindent\texttt{Quote} handles this second case properly:
+\noindent\texttt{quote} handles this second case properly:
 
 \begin{coq_example}
 Goal A /\ (B \/ A) /\ (A \/ ~ B).
@@ -765,8 +761,8 @@ convertible with the conclusion of current goal.
 \subsection{Combining variables and constants}
 
 One can have both variables and constants in abstracts terms; that is
-the case, for example, for the \texttt{Ring} tactic (chapter
-\ref{Ring}). Then one must provide to Quote a list of
+the case, for example, for the \texttt{ring} tactic (chapter
+\ref{ring}). Then one must provide to \texttt{quote} a list of
 \emph{constructors of constants}. For example, if the list is
 \texttt{[O S]} then closed natural numbers will be considered as
 constants and other terms as variables. 
@@ -812,7 +808,7 @@ is undecidable in general case, don't expect miracles from it!
 
 \SeeAlso comments of source file \texttt{tactics/contrib/polynom/quote.ml}
 
-\SeeAlso the tactic \texttt{Ring} (chapter \ref{Ring})
+\SeeAlso the tactic \texttt{ring} (chapter \ref{ring})
 
 
 %%% Local Variables: 

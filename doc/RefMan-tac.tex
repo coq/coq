@@ -120,7 +120,7 @@ convertible (see section \ref{conv-rules}).
 
 \subsection{\tt refine \term}
 \tacindex{refine}
-\label{Refine}
+\label{refine}
 \index{?@{\texttt{?}}}
 
 This tactic allows to give an exact proof but still with some
@@ -140,7 +140,7 @@ holes. The holes are noted ``\texttt{?}''.
 \end{ErrMsgs}
 
 This tactic is currently given as an experiment. An example of use is given
-in section~\ref{Refine-example}.
+in section~\ref{refine-example}.
 
 \section{Basics}
 \index{Typing rules}
@@ -339,7 +339,7 @@ instantiations of the premises of the type of {\term}.
   know that the conclusion of {\term} and the current goal are
   unifiable, you can help the {\tt apply} tactic by transforming your
   goal with the {\tt change} or {\tt pattern} tactics (see sections
-  \ref{Pattern}, \ref{Change}).
+  \ref{pattern}, \ref{change}).
 
 \item \errindex{Cannot refine to conclusions with meta-variables}
 
@@ -1787,7 +1787,7 @@ the instance with the tactic {\tt Inversion}.
   inverted the instance with the tactic \texttt{Dependent Inversion\_clear}.
 \end{Variants}
 
-\SeeAlso \ref{Inversion-examples} for examples
+\SeeAlso \ref{inversion-examples} for examples
 
 \subsection{\tt quote \ident}\tacindex{quote}
 \index{2-level approach}
@@ -1816,7 +1816,7 @@ datatype: see~\ref{quote-examples} for the full details.
 \label{Automatizing}
 
 \subsection{\tt auto}
-\tacindex{auto}
+\label{auto}\tacindex{auto}
 This tactic implements a Prolog-like resolution procedure to solve the
 current goal. It first tries to solve the goal using the {\tt
   assumption} tactic, then it reduces the goal to an atomic one using
