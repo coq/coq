@@ -9,6 +9,7 @@ DISCLAIMER: CoqIde is ongoing work. Eventhough it should never let you
  	    Do not hesitate to send suggestions/bug reports.
 
 REQUIREMENT:
+	- OCaml >= 3.06 with native thread support.
 	- make world must succeed.
 	- The graphical toolkit Gtk 2.x. See http://www.gtk.org.
 	  The official supported version is at least 2.2.x.
@@ -24,9 +25,18 @@ REQUIREMENT:
 	 should be enough.
 
 INSTALLATION
+ 0) For optimal performance, OCaml must support native threads (aka
+	pthreads). 
+	If this not the case, this means that Coq computations will be
+	slow and "make ide" will fail. Use "make bin/coqide.byte"
+	instead. To fix this problem, just recompile OCaml from source
+	and configure with : "./configure --with-pthreads". 
+	In case you install over an existing copy of OCaml, you
+	should better empty the OCaml installation directory.
+
  1) You need to install the OCaml stub library lablgtk2. See 
        		http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html
-	  No current The latest CVS version is needed.
+	  The latest CVS version is needed.
 	  Use this one :
 	http://www.lri.fr/~monate/download/lablgtk2-coqide.tgz
     If you are in a hurry just run :

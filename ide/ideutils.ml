@@ -60,7 +60,7 @@ let try_convert s =
 Please set your locale according to your file encoding.*)"
 
 let do_convert s = 
-  if Glib.Utf8.validate s then s else
+  if Glib.Utf8.validate s then (prerr_endline "Input is UTF-8";s) else
     try 
       (prerr_endline 
 	 "Coqide warning: input is not UTF-8 encoded. Trying to convert from locale.";
@@ -74,14 +74,14 @@ let try_export file_name s =
   try 
     let s = 
       if (fst (Glib.Convert.get_charset ())) then
-	s 
+	(prerr_endline "Charset is UTF-8" ;s) 
       else
 	(try Glib.Convert.locale_from_utf8 s 
 	 with _ -> 
-	   try 
+(*	   try 
 	     prerr_endline "Warning: exporting to ISO8859-1";
 	     Glib.Convert.convert s ~to_codeset:"UTF-8" ~from_codeset:"ISO-8859-1"
-	   with _ -> 
+	   with _ -> *)
 	     prerr_endline "Warning: exporting to utf8";s)
     in
     let oc = open_out file_name in

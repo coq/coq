@@ -1097,7 +1097,7 @@ Please restart and report NOW.";
 
   method undo_last_step =
     if Mutex.try_lock coq_may_stop then  
-      (!push_info "Undoing...";
+      (!push_info "Undoing last step...";
        (try
 	  let last_command = top () in
 	  let start = input_buffer#get_iter_at_mark last_command.start in
@@ -1147,7 +1147,7 @@ Please restart and report NOW.";
 		self#backtrack_to_no_lock start
 	  end;
 	with
-	  | Size 0 -> !flash_info "Nothing to Undo"
+	  | Size 0 -> (* !flash_info "Nothing to Undo"*)()
        );
        !pop_info ();
        Mutex.unlock coq_may_stop)
