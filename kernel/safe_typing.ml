@@ -262,13 +262,13 @@ let end_module l senv =
       params
   in
   let auto_tb = MTBsig (modinfo.msid, List.rev senv.revsign) in
-  let mtb, mod_user_type = 
+  let mtb, mod_user_type, cst = 
     match restype with
-      | None -> functorize_type auto_tb, None
+      | None -> functorize_type auto_tb, None, Constraint.empty
       | Some res_tb -> 
-	  let cnstrs = check_subtypes senv.env auto_tb res_tb in
+	  let cst = check_subtypes senv.env auto_tb res_tb in
 	  let mtb = functorize_type res_tb in
-	    mtb, Some (mtb, cnstrs)
+	    mtb, Some mtb, cst
   in
   let mexpr = 
     List.fold_right
@@ -280,9 +280,10 @@ let end_module l senv =
     { mod_expr = Some mexpr;
       mod_user_type = mod_user_type;
       mod_type = mtb;
-      mod_equiv = None }
+      mod_equiv = None;
+      mod_constraints = cst }
   in
-  let mspec = mtb , None in
+  let mspec = mtb, None, Constraint.empty in
   let mp = MPdot (oldsenv.modinfo.modpath, l) in
   let newenv = oldsenv.env in
   let newenv = 
@@ -438,7 +439,8 @@ let export senv dir =
     { mod_expr = Some (MEBstruct (modinfo.msid, List.rev senv.revstruct));
       mod_type = MTBsig (modinfo.msid, List.rev senv.revsign);
       mod_user_type = None;
-      mod_equiv = None }
+      mod_equiv = None;
+      mod_constraints = Constraint.empty }
   in
     modinfo.msid, (dir,mb,senv.imports)
 

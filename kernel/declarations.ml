@@ -148,7 +148,8 @@ and module_expr_body =
   | MEBapply of module_expr_body * module_expr_body
       * constraints
 
-and module_specification_body = module_type_body * module_path option
+and module_specification_body = 
+    module_type_body * module_path option * constraints
 
 and structure_elem_body = 
   | SEBconst of constant_body
@@ -160,6 +161,7 @@ and module_structure_body = (label * structure_elem_body) list
 
 and module_body = 
     { mod_expr : module_expr_body option;
-      mod_user_type : (module_type_body * constraints) option;
+      mod_user_type : module_type_body option;
       mod_type : module_type_body;
-      mod_equiv : module_path option }
+      mod_equiv : module_path option;
+      mod_constraints : constraints }

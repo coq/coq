@@ -89,21 +89,46 @@ let lookup_modtype binders qid =
   with
       Not_found -> Nametab.locate_modtype qid
 
-let transl_modtype binders = function 
-    | Node(loc,"MODTYPEQID",qid_ast) -> begin match qid_ast with 
-	| [Node (loc, "QUALID", astl)] -> 
-  	    let qid = interp_qualid astl in begin
+let transl_with_decl binders = function 
+  | Node(loc,"WITHMODULE",[id_ast;qid_ast]) ->
+      let id = match id_ast with
+	  Nvar(_,id) -> id
+	| _ -> anomaly "Identifier AST expected"
+      in
+      let qid = match qid_ast with
+	| Node (loc, "QUALID", astl) -> 
+  	    interp_qualid astl
+	| _ -> anomaly "QUALID expected"
+      in
+	With_Module (id,lookup_module binders qid)
+  | Node(loc,"WITHDEFINITION",[id_ast;cast]) ->
+      let id = match id_ast with
+	  Nvar(_,id) -> id
+	| _ -> anomaly "Identifier AST expected"
+      in
+      let c = interp_constr Evd.empty (Global.env()) cast in
+	With_Definition (id,c)
+  | _ -> anomaly "Unexpected AST"
+
+let rec transl_modtype binders = function 
+  | Node(loc,"MODTYPEQID",qid_ast) -> begin match qid_ast with 
+      | [Node (loc, "QUALID", astl)] -> 
+  	  let qid = interp_qualid astl in begin
 	      try 
 	        MTEident (lookup_modtype binders qid)
 	      with
 	        | Not_found -> 
-		Modops.error_not_a_modtype (*loc*) (string_of_qualid qid)
-	      end
-	| _ -> anomaly "QUALID expected"
-      end
-    | _ -> anomaly "TODO: transl_modtype: I can handle qualid module types only"  
-
+		    Modops.error_not_a_modtype (*loc*) (string_of_qualid qid)
+	    end
+      | _ -> anomaly "QUALID expected"
+    end
+  | Node(loc,"MODTYPEWITH",[mty_ast;decl_ast]) ->
+      let mty = transl_modtype binders mty_ast in
+      let decl = transl_with_decl binders decl_ast in
+	MTEwith(mty,decl)
+  | _ -> anomaly "TODO: transl_modtype: I can handle qualid module types only"
  
+
 let transl_binder binders (idl,mty_ast) =
   let mte = transl_modtype binders mty_ast in
   let add_one binders id = 

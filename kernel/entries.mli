@@ -78,10 +78,13 @@ and module_type_entry =
     MTEident of kernel_name
   | MTEfunsig of mod_bound_id * module_type_entry * module_type_entry
   | MTEsig of mod_self_id * module_signature_entry
+  | MTEwith of module_type_entry * with_declaration
 
 and module_signature_entry = (label * specification_entry) list
 
-
+and with_declaration = 
+    With_Module of identifier * module_path
+  | With_Definition of identifier * constr
 
 and module_expr = 
     MEident of module_path

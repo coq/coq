@@ -73,9 +73,18 @@ GEXTEND Gram
       ] ]
   ;
 
+  with_declaration:
+    [ [ "Definition"; id = ident; ":="; c = Constr.constr ->
+	  <:ast< (WITHDEFINITION $id $c) >>
+      | IDENT "Module"; id = ident; ":="; qid = qualid ->
+	  <:ast< (WITHMODULE $id $qid) >>
+      ] ]
+  ;
+  
   module_type:
     [ [ qid = qualid -> <:ast< (MODTYPEQID $qid) >>
 (* ... *)
-      ] ]
+      | mty = module_type; "with"; decl = with_declaration -> 
+	  <:ast< (MODTYPEWITH $mty $decl)>> ] ]
   ;
 END

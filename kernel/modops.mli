@@ -74,6 +74,8 @@ val error_no_such_label : label -> 'a
 
 val error_result_must_be_signature : module_type_body -> 'a
 
+val error_signature_expected : module_type_body -> 'a
+
 val error_no_module_to_end : unit -> 'a 
 
 val error_no_modtype_to_end : unit -> 'a
@@ -81,3 +83,7 @@ val error_no_modtype_to_end : unit -> 'a
 val error_not_a_modtype : string -> 'a 
 
 val error_not_a_module : string -> 'a 
+
+val error_not_a_constant : label -> 'a
+
+val error_with_incorrect : label -> 'a

@@ -24,6 +24,15 @@ let path_of_mexpr = function
   | MEident mb -> mb
   | _ -> raise Not_path
 
+let rec replace_first p k = function 
+  | [] -> [] 
+  | h::t when p h -> k::t
+  | h::t -> h::(replace_first p k t)
+
+let rec list_split_assoc k rev_before = function
+  | [] -> raise Not_found
+  | (k',b)::after when k=k' -> rev_before,b,after
+  | h::tail -> list_split_assoc k (h::rev_before) tail
 
 let rec list_fold_map2 f e = function 
   |  []  -> (e,[],[])
@@ -47,6 +56,70 @@ let rec translate_modtype env mte =
     | MTEsig (msid,sig_e) ->
 	let str_b,sig_b = translate_entry_list env msid false sig_e in
 	  MTBsig (msid,sig_b)
+    | MTEwith (mte, with_decl) ->
+	let mtb = translate_modtype env mte in
+	  merge_with env mtb with_decl
+
+and merge_with env mtb with_decl = 
+  let msid,sig_b = match (Modops.scrape_modtype env mtb) with 
+    | MTBsig(msid,sig_b) -> msid,sig_b 
+    | _ -> error_signature_expected mtb
+  in
+  let id = match with_decl with 
+    | With_Definition (id,_) | With_Module (id,_) -> id
+  in
+  let l = label_of_id id in
+    try
+      let rev_before,spec,after = list_split_assoc l [] sig_b in
+      let before = List.rev rev_before in
+      let env' = Modops.add_signature (MPself msid) before env in
+      let new_spec = match with_decl with
+	| With_Definition (id,c) -> 
+	    let cb = match spec with
+		SPBconst cb -> cb
+	      | _ -> error_not_a_constant l
+	    in 
+	      begin
+		match cb.const_body with
+		  | None -> 
+		      let (j,cst1) = Typeops.infer env' c in
+		      let cst2 = 
+			Reduction.conv_leq env' j.uj_type cb.const_type in
+		      let cst = 
+			Constraint.union 
+			  (Constraint.union cb.const_constraints cst1)
+			  cst2
+		      in
+			SPBconst {cb with 
+				    const_body = Some j.uj_val;
+				    const_constraints = cst}
+		  | Some b -> 
+		      let cst1 = Reduction.conv env' c b in 
+		      let cst = Constraint.union cb.const_constraints cst1 in
+			SPBconst {cb with 
+				    const_body = Some c;
+				    const_constraints = cst}
+	      end	
+	| With_Module (id, mp) ->
+	    let (oldmtb,oldequiv,oldcst) = match spec with
+		SPBmodule (mtb,equiv,cst) -> (mtb,equiv,cst)
+	      | _ -> error_not_a_module (string_of_label l)
+	    in
+	    let mtb = type_modpath env' mp in
+	    let cst = check_subtypes env' mtb oldmtb in
+	    let equiv = 
+ 	      match oldequiv with
+		| None -> Some mp
+		| Some mp' -> 
+		    check_modpath_equiv env' mp mp';
+		    Some mp
+	    in
+	      SPBmodule (mtb, equiv, Constraint.union oldcst cst)
+      in
+	MTBsig(msid,  before@(l,new_spec)::after)
+    with
+	Not_found -> error_no_such_label l
+      | Reduction.NotConvertible -> error_with_incorrect l
 
 and translate_entry_list env msid is_definition sig_e = 
   let mp = MPself msid in
@@ -61,7 +134,7 @@ and translate_entry_list env msid is_definition sig_e =
 	    add_mind kn mib env, (l, SEBmind mib), (l, SPBmind mib)
       | SPEmodule me ->
 	  let mb = translate_module env is_definition me in
-	  let mspec = mb.mod_type, mb.mod_equiv in
+	  let mspec = mb.mod_type, mb.mod_equiv, mb.mod_constraints in
 	  let mp' = MPdot (mp,l) in
 	    add_module mp' mb env, (l, SEBmodule mb), (l, SPBmodule mspec)
       | SPEmodtype mte ->
@@ -82,9 +155,10 @@ and translate_module env is_definition me =
     | None, Some mte -> 
 	let mtb = translate_modtype env mte in
 	{ mod_expr = None;
-	  mod_user_type = Some (mtb, Constraint.empty);
+	  mod_user_type = Some mtb;
 	  mod_type = mtb;
-	  mod_equiv = None }
+	  mod_equiv = None;
+	  mod_constraints = Constraint.empty }
     | Some mexpr, _ -> 
 	let meq_o = (* do we have a transparent module ? *)
 	  try       (* TODO: transparent field in module_entry *)
@@ -104,17 +178,18 @@ and translate_module env is_definition me =
 	    in
 	      MEBident mp, type_modpath env mp
 	in
-	let mtb,mod_user_type =
+	let mtb, mod_user_type, cst =
 	  match me.mod_entry_type with
-	    | None -> mtb1, None
+	    | None -> mtb1, None, Constraint.empty
 	    | Some mte -> 
 		let mtb2 = translate_modtype env mte in
-		  mtb2, Some (mtb2, check_subtypes env mtb1 mtb2)
+		  mtb2, Some mtb2, check_subtypes env mtb1 mtb2
 	in
 	  { mod_type = mtb;
 	    mod_user_type = mod_user_type;
 	    mod_expr = Some meb;
-	    mod_equiv = meq_o }
+	    mod_equiv = meq_o;
+	    mod_constraints = cst }
 
 (* translate_mexpr : env -> module_expr -> module_expr_body * module_type_body *)
 and translate_mexpr env mexpr = match mexpr with
@@ -180,12 +255,7 @@ and add_module_constraints env mb =
     | None -> env
     | Some meb -> add_module_expr_constraints env meb
   in
-  let env = match mb.mod_user_type with
-    | None -> env
-    | Some (mtb,cst) -> 
-	Environ.add_constraints cst (add_modtype_constraints env mtb)
-  in
-    env
+    Environ.add_constraints mb.mod_constraints env
 
 and add_modtype_constraints env = function
   | MTBident _ -> env
@@ -202,7 +272,8 @@ and add_modtype_constraints env = function
 and add_sig_elem_constraints env = function 
   | SPBconst cb -> Environ.add_constraints cb.const_constraints env
   | SPBmind mib -> Environ.add_constraints mib.mind_constraints env
-  | SPBmodule (mtb,_) -> add_modtype_constraints env mtb
+  | SPBmodule (mtb,_,cst) -> 
+      add_modtype_constraints (Environ.add_constraints cst env) mtb
   | SPBmodtype mtb -> add_modtype_constraints env mtb
 
 

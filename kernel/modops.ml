@@ -11,6 +11,7 @@
 (*i*)
 open Util
 open Names
+open Univ
 open Term
 open Declarations
 open Environ
@@ -41,6 +42,9 @@ let error_incompatible_labels l l' =
 let error_result_must_be_signature mtb = 
   error "The result module type must be a signature"
 
+let error_signature_expected mtb =
+  error "Signature expected"
+
 let error_no_module_to_end _ = 
   error "No open module to end"
 
@@ -53,25 +57,33 @@ let error_not_a_modtype s =
 let error_not_a_module s = 
   error ("\""^s^"\" is not a module")
 
+let error_not_a_constant l = 
+  error ("\""^(string_of_label l)^"\" is not a constant")
+
+let error_with_incorrect l =
+  error ("Incorrect constraint for label \""^(string_of_label l)^"\"")
 
 let rec scrape_modtype env = function
   | MTBident kn -> scrape_modtype env (lookup_modtype kn env)
   | mtb -> mtb
 
 
-let module_body_of_spec spec = 
-  { mod_type = fst spec;
-    mod_equiv = snd spec;
-    mod_expr = None;
-    mod_user_type = None}
+let module_body_of_spec (mty,mpo,cst) = 
+    { mod_type = mty;
+      mod_equiv = mpo;
+      mod_expr = None;
+      mod_user_type = None;
+      mod_constraints = cst}
 
 let module_body_of_type mtb = 
   { mod_type = mtb;
     mod_equiv = None;
     mod_expr = None;
-    mod_user_type = None}
+    mod_user_type = None;
+    mod_constraints = Constraint.empty}
 
-let module_spec_of_body mb = mb.mod_type, mb.mod_equiv
+
+let module_spec_of_body mb = mb.mod_type, mb.mod_equiv, mb.mod_constraints
 
 let destr_functor = function
   | MTBfunsig (arg_id,arg_t,body_t) -> (arg_id,arg_t,body_t)
@@ -114,11 +126,11 @@ and subst_signature sub sign =
   in
     List.map (fun (l,b) -> (l,subst_body b)) sign
 
-and subst_module sub (mtb,mpo as mb) =
+and subst_module sub (mtb,mpo,cst as mb) =
   let mtb' = subst_modtype sub mtb in
   let mpo' = option_smartmap (subst_mp sub) mpo in
     if mtb'==mtb && mpo'==mpo then mb else
-      (mtb',mpo')
+      (mtb',mpo',cst)
 
 let subst_signature_msid msid mp = 
   subst_signature (map_msid msid mp)
@@ -161,13 +173,13 @@ let rec strengthen_mtb env mp mtb = match scrape_modtype env mtb with
   | MTBident _ -> anomaly "scrape_modtype does not work!"
   | MTBfunsig _ -> mtb
   | MTBsig (msid,sign) -> MTBsig (msid,strengthen_sig env msid sign mp)
-and strengthen_mod env mp (mtb,mpo) = 
+and strengthen_mod env mp (mtb,mpo,cst) = 
   let mtb' = strengthen_mtb env mp mtb in
   let mpo' = match mpo with
     | Some _ -> mpo
     | None -> Some mp
   in
-    (mtb',mpo')
+    (mtb',mpo',cst)
 and strengthen_sig env msid sign mp = match sign with
   | [] -> []
   | (l,SPBconst cb) :: rest ->

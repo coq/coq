@@ -448,19 +448,19 @@ kernel/inductive.cmx: kernel/declarations.cmx kernel/environ.cmx \
     kernel/names.cmx kernel/reduction.cmx kernel/sign.cmx kernel/term.cmx \
     kernel/type_errors.cmx kernel/univ.cmx lib/util.cmx kernel/inductive.cmi 
 kernel/modops.cmo: kernel/declarations.cmi kernel/entries.cmi \
-    kernel/environ.cmi kernel/names.cmi kernel/term.cmi lib/util.cmi \
-    kernel/modops.cmi 
+    kernel/environ.cmi kernel/names.cmi kernel/term.cmi kernel/univ.cmi \
+    lib/util.cmi kernel/modops.cmi 
 kernel/modops.cmx: kernel/declarations.cmx kernel/entries.cmx \
-    kernel/environ.cmx kernel/names.cmx kernel/term.cmx lib/util.cmx \
-    kernel/modops.cmi 
+    kernel/environ.cmx kernel/names.cmx kernel/term.cmx kernel/univ.cmx \
+    lib/util.cmx kernel/modops.cmi 
 kernel/mod_typing.cmo: kernel/declarations.cmi kernel/entries.cmi \
     kernel/environ.cmi kernel/modops.cmi kernel/names.cmi \
-    kernel/subtyping.cmi kernel/term_typing.cmi kernel/univ.cmi lib/util.cmi \
-    kernel/mod_typing.cmi 
+    kernel/reduction.cmi kernel/subtyping.cmi kernel/term_typing.cmi \
+    kernel/typeops.cmi kernel/univ.cmi lib/util.cmi kernel/mod_typing.cmi 
 kernel/mod_typing.cmx: kernel/declarations.cmx kernel/entries.cmx \
     kernel/environ.cmx kernel/modops.cmx kernel/names.cmx \
-    kernel/subtyping.cmx kernel/term_typing.cmx kernel/univ.cmx lib/util.cmx \
-    kernel/mod_typing.cmi 
+    kernel/reduction.cmx kernel/subtyping.cmx kernel/term_typing.cmx \
+    kernel/typeops.cmx kernel/univ.cmx lib/util.cmx kernel/mod_typing.cmi 
 kernel/names.cmo: lib/hashcons.cmi lib/pp.cmi lib/predicate.cmi lib/util.cmi \
     kernel/names.cmi 
 kernel/names.cmx: lib/hashcons.cmx lib/pp.cmx lib/predicate.cmx lib/util.cmx \
@@ -674,11 +674,13 @@ parsing/ast.cmx: parsing/coqast.cmx lib/dyn.cmx parsing/genarg.cmx \
     library/libnames.cmx kernel/names.cmx lib/pp.cmx proofs/tacexpr.cmx \
     lib/util.cmx parsing/ast.cmi 
 parsing/astmod.cmo: parsing/astterm.cmi parsing/coqast.cmi kernel/entries.cmi \
-    library/lib.cmi library/libnames.cmi kernel/modops.cmi kernel/names.cmi \
-    library/nametab.cmi lib/pp.cmi lib/util.cmi parsing/astmod.cmi 
+    pretyping/evd.cmi library/global.cmi library/lib.cmi library/libnames.cmi \
+    kernel/modops.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
+    lib/util.cmi parsing/astmod.cmi 
 parsing/astmod.cmx: parsing/astterm.cmx parsing/coqast.cmx kernel/entries.cmx \
-    library/lib.cmx library/libnames.cmx kernel/modops.cmx kernel/names.cmx \
-    library/nametab.cmx lib/pp.cmx lib/util.cmx parsing/astmod.cmi 
+    pretyping/evd.cmx library/global.cmx library/lib.cmx library/libnames.cmx \
+    kernel/modops.cmx kernel/names.cmx library/nametab.cmx lib/pp.cmx \
+    lib/util.cmx parsing/astmod.cmi 
 parsing/astterm.cmo: parsing/ast.cmi parsing/coqast.cmi library/declare.cmi \
     lib/dyn.cmi kernel/environ.cmi pretyping/evarutil.cmi pretyping/evd.cmi \
     library/global.cmi library/impargs.cmi library/libnames.cmi \

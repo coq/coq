@@ -350,6 +350,20 @@ let (in_modtype,out_modtype) =
 
 
 
+let replace_module_object id (subst, mbids, msid, lib_stack) modobjs =
+  if mbids<>[] then 
+    error "Unexpected functor objects"
+  else
+    let rec replace_id = function 
+      | [] -> [] 
+      | (id',obj)::tail when id = id' ->
+	  if object_tag obj = "MODULE" then
+	    (id, in_module (None,modobjs,None))::tail
+	  else error "MODULE expected!"
+      | lobj::tail -> lobj::replace_id tail
+    in
+      (subst, mbids, msid, replace_id lib_stack)
+
 let abstract_substobjs mbids1 (subst, mbids2, msid, lib_stack) =
   (subst, mbids1@mbids2, msid, lib_stack)
 
@@ -359,8 +373,13 @@ let rec get_modtype_substobjs = function
   | MTEfunsig (mbid,_,mte) ->
       let (subst, mbids, msid, objs) = get_modtype_substobjs mte in
 	(subst, mbid::mbids, msid, objs)
-  | MTEsig (msid,_) -> (empty_subst, [], msid, [])
-        (* this is plainly wrong, but it is hard to do otherwise... *)
+  | MTEwith (mty, With_Definition _) -> get_modtype_substobjs mty
+  | MTEwith (mty, With_Module (id,mp)) -> 
+      let substobjs = get_modtype_substobjs mty in
+      let modobjs = MPmap.find mp !modtab_substobjs in
+	replace_module_object id substobjs modobjs
+  | MTEsig (msid,_) -> 
+      todo "Anonymous module types"; (empty_subst, [], msid, [])
 
 (* push names of bound modules (and their components) to Nametab *)
 (* add objects associated to them *)
@@ -428,6 +447,8 @@ let end_module id =
     | Some (MTEsig (msid,_)) ->
 	todo "Anonymous signatures not supported";
 	empty_subst, mbids, msid, []
+    | Some (MTEwith _ as mty) ->
+	abstract_substobjs mbids (get_modtype_substobjs mty)
     | Some (MTEfunsig _) -> 
 	anomaly "Funsig cannot be here..."
   in
