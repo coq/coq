@@ -23,6 +23,7 @@ open Tacexpr
 (* Tacticals i.e. functions from tactics to tactics. *)
 
 val tclIDTAC         : tactic
+val tclIDTAC_MESSAGE : string -> tactic
 val tclORELSE        : tactic -> tactic -> tactic
 val tclTHEN          : tactic -> tactic -> tactic
 val tclTHENSEQ       : tactic list -> tactic

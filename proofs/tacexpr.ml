@@ -194,7 +194,7 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr =
   | TacRepeat of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
   | TacProgress of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
   | TacAbstract of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr * identifier option
-  | TacId
+  | TacId of string
   | TacFail of int * string
   | TacInfo of ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr
 

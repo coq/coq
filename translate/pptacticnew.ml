@@ -678,7 +678,8 @@ let rec pr_tac env inherited tac =
       str "first" ++ spc () ++ pr_seq_body (pr_tac env ltop) tl, llet
   | TacSolve tl ->
       str "solve" ++ spc () ++ pr_seq_body (pr_tac env ltop) tl, llet
-  | TacId -> str "idtac", latom
+  | TacId "" -> str "idtac", latom
+  | TacId s -> str "idtac" ++ (qsnew s), latom
   | TacAtom (loc,t) ->
       pr_with_comments loc (hov 1 (pr_atom1 env t)), ltatom
   | TacArg(Tacexp e) -> pr_tac0 env e, latom

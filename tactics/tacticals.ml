@@ -36,6 +36,7 @@ open Tacexpr
 (*************************************************)
 
 let tclIDTAC         = tclIDTAC
+let tclIDTAC_MESSAGE = tclIDTAC_MESSAGE
 let tclORELSE        = tclORELSE
 let tclTHEN          = tclTHEN
 let tclTHENLIST      = tclTHENLIST

@@ -678,7 +678,7 @@ and intern_tactic_seq ist = function
   (* Traducteur v7->v8 *)
   | TacAtom (_,TacReduce (Unfold [_,Ident (_,id)],_))
       when string_of_id id = "INZ" & !Options.translate_syntax
-        -> ist.ltacvars, TacId
+        -> ist.ltacvars, (TacId "")
   (* Fin traducteur v7->v8 *)
 
   | TacAtom (loc,t) ->
@@ -703,8 +703,7 @@ and intern_tactic_seq ist = function
       ist.ltacvars, TacMatchContext(lr, intern_match_rule ist lmr)
   | TacMatch (c,lmr) ->
       ist.ltacvars, TacMatch (intern_tactic ist c,intern_match_rule ist lmr)
-  | TacId -> ist.ltacvars, TacId
-  | TacFail _ as x -> ist.ltacvars, x
+  | TacId _ | TacFail _ as x -> ist.ltacvars, x
   | TacProgress tac -> ist.ltacvars, TacProgress (intern_tactic ist tac)
   | TacAbstract (tac,s) -> ist.ltacvars, TacAbstract (intern_tactic ist tac,s)
   | TacThen (t1,t2) ->
@@ -1239,7 +1238,7 @@ and eval_tactic ist = function
   | TacLetIn (l,u) -> assert false
   | TacMatchContext _ -> assert false
   | TacMatch (c,lmr) -> assert false
-  | TacId -> tclIDTAC
+  | TacId s -> tclIDTAC_MESSAGE s
   | TacFail (n,s) -> tclFAIL n s
   | TacProgress tac -> tclPROGRESS (interp_tactic ist tac)
   | TacAbstract (tac,s) -> Tactics.tclABSTRACT s (interp_tactic ist tac)
@@ -1915,7 +1914,7 @@ and subst_tactic subst (t:glob_tactic_expr) = match t with
       TacMatchContext(lr, subst_match_rule subst lmr)
   | TacMatch (c,lmr) ->
       TacMatch (subst_tactic subst c,subst_match_rule subst lmr)
-  | TacId | TacFail _ as x -> x
+  | TacId _ | TacFail _ as x -> x
   | TacProgress tac -> TacProgress (subst_tactic subst tac:glob_tactic_expr)
   | TacAbstract (tac,s) -> TacAbstract (subst_tactic subst tac,s)
   | TacThen (t1,t2) ->

@@ -36,7 +36,7 @@ GEXTEND Gram
   ;
   command:
     [ [ IDENT "Goal"; c = Constr.constr -> VernacGoal c
-      | "Proof" -> VernacProof Tacexpr.TacId
+      | "Proof" -> VernacProof (Tacexpr.TacId "")
       | "Proof"; "with"; ta = tactic -> VernacProof ta
       | IDENT "Abort" -> VernacAbort None
       | IDENT "Abort"; IDENT "All" -> VernacAbortAll

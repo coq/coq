@@ -1040,7 +1040,7 @@ let rec pr_vernac = function
   | VernacExtend (s,c) -> pr_extend s c
   | VernacV7only _ -> mt()
   | VernacV8only com -> pr_vernac com
-  | VernacProof Tacexpr.TacId -> str "Proof"
+  | VernacProof Tacexpr.TacId _ -> str "Proof"
   | VernacProof te -> str "Proof with" ++ spc() ++ pr_raw_tactic te 
 
 and pr_extend s cl =

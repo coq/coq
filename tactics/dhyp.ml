@@ -293,7 +293,7 @@ let applyDestructor cls discard dd gls =
       | (Some id,HypLocation(discardable,_,_)) ->
           if discard & discardable then thin [id] else tclIDTAC
       | (None,ConclLocation _) -> tclIDTAC
-      | _ -> error "ApplyDestructor" 
+       | _ -> error "ApplyDestructor" 
   in
   tclTHEN (!forward_interp_tactic tac) discard_0 gls
 

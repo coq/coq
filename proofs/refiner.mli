@@ -64,8 +64,10 @@ val frontier_mapi :
 
 (*s Tacticals. *)
 
-(* [tclIDTAC] is the identity tactic *)
-val tclIDTAC         : tactic
+(* [tclIDTAC] is the identity tactic without message printing*)
+val tclIDTAC          : tactic
+val tclIDTAC_MESSAGE  : string -> tactic
+
 
 (* [tclTHEN tac1 tac2 gls] applies the tactic [tac1] to [gls] and applies
    [tac2] to every resulting subgoals *)

@@ -297,7 +297,7 @@ let central_intro = intro_gen
 
 let rec intros_using = function
     []      -> tclIDTAC
-  | str::l  -> tclTHEN (intro_using str) (intros_using l)
+   | str::l  -> tclTHEN (intro_using str) (intros_using l)
 
 let intros = tclREPEAT (intro_force false)
 
@@ -538,7 +538,7 @@ let cut_replacing id t =
 
 let cut_in_parallel l = 
   let rec prec = function
-    | [] -> tclIDTAC
+    | [] -> tclIDTAC 
     | h::t -> tclTHENFIRST (cut h) (prec t)
   in 
   prec (List.rev l)

@@ -565,7 +565,7 @@ and pr_tactic_seq_body tl =
 and pr0 = function
   | TacFirst tl -> str "First" ++ spc () ++ pr_tactic_seq_body tl
   | TacSolve tl -> str "Solve" ++ spc () ++ pr_tactic_seq_body tl
-  | TacId -> str "Idtac"
+  | TacId "" -> str "Idtac" 
   | TacFail (0,"") -> str "Fail"
   | TacAtom (_,t) -> pr_atom0 t
   | TacArg c -> pr_tacarg c
@@ -574,6 +574,7 @@ and pr0 = function
   (* Semi-closed atomic tactic expressions *)
 and pr1 = function
   | TacAtom (_,t) -> pr_atom1 t
+  | TacId s -> str "Idtac \"" ++ str s ++ str "\""	
   | TacFail (0,s) -> str "Fail \"" ++ str s ++ str "\""
   | TacFail (n,"") -> str "Fail " ++ int n
   | TacFail (n,s) -> str "Fail " ++ int n ++ str " \"" ++ str s ++ str "\""
@@ -619,7 +620,7 @@ and pr6 = function
   | TacDo _
   | TacRepeat _
   | TacProgress _
-  | TacId
+  | TacId _
   | TacFail _
   | TacInfo _) as t -> pr5 t
 

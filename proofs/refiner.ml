@@ -342,8 +342,16 @@ let idtac_valid = function
 (* [goal_goal_list : goal sigma -> goal list sigma] *)
 let goal_goal_list gls = {it=[gls.it];sigma=gls.sigma}
 
-(* the identity tactic *)
+(* identity tactic without any message *)
 let tclIDTAC gls = (goal_goal_list gls, idtac_valid)
+
+(* the message printing identity tactic *)
+let tclIDTAC_MESSAGE s gls = 
+  if s = "" then tclIDTAC gls
+  else 
+    begin
+      msgnl (str ("Idtac says : "^s)); tclIDTAC gls
+    end
 
 (* General failure tactic *)
 let tclFAIL_s s gls = errorlabstrm "Refiner.tclFAIL_s" (str s)
