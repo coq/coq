@@ -65,6 +65,17 @@ let r_printer std_pr p =
     | Some i -> [< 'sTR (string_of_int (i+1)) >]
     | None -> std_pr (replace_plus p)
 
+let r_printer_outside std_pr p =
+ let (_,ast1,astp,_) = get_r_sign dummy_loc in
+  match (int_of_r p) with
+    | Some i -> [< 'sTR "``"; 'sTR (string_of_int (i+1)); 'sTR "``" >]
+    | None -> std_pr (replace_plus p)
 
 let _ = Esyntax.Ppprim.add ("r_printer", r_printer)
+let _ = Esyntax.Ppprim.add ("r_printer_outside", r_printer_outside)
+
+
+
+
+
 

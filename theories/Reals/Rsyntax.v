@@ -98,12 +98,12 @@ Syntax constr
                                 [1 0] "< " (REXPR $n3) "``"]]
   | Rzero [ R0 ] -> ["``0``"]
   | Rone [ R1 ] -> ["``1``"]
-  | Rconst [(Rplus $r R1)] -> [$r:"r_printer"]
   ;
 
   level 7:
     Rplus [ (Rplus $n1 $n2) ]
       -> [ [<hov 0> "``"(REXPR $n1):E "+"  [0 0] (REXPR $n2):L "``"] ]
+   | Rconst [(Rplus $r R1)] -> [$r:"r_printer_outside"]
    | Rminus [ (Rminus $n1 $n2) ]
       -> [ [<hov 0> "``"(REXPR $n1):E "-" [0 0] (REXPR $n2):L "``"] ]
   ;
