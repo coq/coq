@@ -618,12 +618,17 @@ let contextually byheadalso (locs,c) f env sigma t =
     if locs <> [] & (not except) & (!pos > maxocc) then t
     else
     if eq_constr c t or (byheadalso & is_head c t) then
-      let r =
-	if except then 
-	  if List.mem (- !pos) locs then t else f env sigma t
-	else 
-	  if locs = [] or List.mem !pos locs then f env sigma t else t
-      in incr pos; r
+      let ok = 
+	if except then not (List.mem (- !pos) locs)
+	else (locs = [] or List.mem !pos locs) in
+      incr pos;
+      if ok then
+	f env sigma t
+      else if byheadalso then
+	(* find other occurrences of c in t; TODO: ensure left-to-right *)
+	map_constr (traverse envc) t
+      else
+	t
     else
       map_constr_with_binders_left_to_right
 	(fun d (env,c) -> (push_rel d env,lift 1 c))
