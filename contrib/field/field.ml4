@@ -122,7 +122,7 @@ let field g =
     <:tactic<
       Match Context With
       | [|- (eq ?1 ?2 ?3)] ->
-        Let t = (eqT ?1 ?2 ?3) In
+        Let t = '(eqT ?1 ?2 ?3) In
         Cut t;[Intro;
           (Match Context With
           | [id:t |- ?] -> Rewrite id;Reflexivity)|Field_Gen FT]
