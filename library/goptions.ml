@@ -238,7 +238,8 @@ open Lib
 
 let declare_option cast uncast 
   { optsync=sync; optname=name; optkey=key; optread=read; optwrite=write } =
-  check_key key; 
+  check_key key;
+  let default = read() in
   let write = if sync then 
     let (decl_obj,_) = 
       declare_object {(default_object (nickname key)) with
@@ -248,7 +249,7 @@ let declare_option cast uncast
     let _ = declare_summary (nickname key) 
 	      {freeze_function = read;
 	       unfreeze_function = write;
-	       init_function = (let default = read() in fun () -> write default);
+	       init_function = (fun () -> write default);
 	       survive_section = true}
     in 
     fun v -> add_anonymous_leaf (decl_obj v)
