@@ -6,14 +6,12 @@ Language
 - Slightly improved compilation of pattern-matching (slight source of
   incompatibilities)
 - Record's now accept anonymous fields "_" which does not build projections
-- Changes in the allowed elimination sorts for certain class of 
-inductive definitions :
-	An inductive definition without constructors of Sort Prop can 
-be eliminated on sorts Set and Type
-	A "singleton" inductive definition (one constructor with arguments 
-in the sort Prop like conjunction of two propositions or equality) 
-can be eliminated directly on sort Type (In V7.2, only the sorts Prop and 
-Set were allowed)
+- Changes in the allowed elimination sorts for certain class of inductive
+  definitions : an inductive definition without constructors
+  of Sort Prop can be eliminated on sorts Set and Type A "singleton"
+  inductive definition (one constructor with arguments in the sort Prop
+  like conjunction of two propositions or equality) can be eliminated
+  directly on sort Type (In V7.2, only the sorts Prop and Set were allowed)
 
 Tactics
 
@@ -24,12 +22,12 @@ Tactics
   better applies congruence laws of plus (slight source of incompatibilities).
 - Intuition does no longer unfold constants except "<->" and "~". It
   can be parameterized by a tactic. It also can introduce dependent
-  product if needed
+  product if needed (source of incompatibilities)
 - "Match Context" now matching more recent hypotheses first and failing only 
   on user errors and Fail tactic (possible source of incompatibilities)
 - Tactic Definition's without arguments now allowed in Coq states
-- Better simplification and discrimination made by Inversion (slight
-  source of incompatibilities)
+- Better simplification and discrimination made by Inversion (source
+  of incompatibilities)
 
 Bugs
 
@@ -48,7 +46,8 @@ Standard library
 - Some additions in [ZArith]: three files (Zcomplements.v, Zpower.v
   and Zlogarithms.v) moved from contrib/omega in order to be more
   visible, one Zsgn function, more induction principles (Wf_Z.v and
-  tail of Zcomplements.v), one more general Euclid theorem.
+  tail of Zcomplements.v), one more general Euclid theorem
+- Peano_dec.v and Compare_dec.v now part of Arith.v
 
 Tools
 
@@ -57,14 +56,16 @@ Tools
 
 User Contributions
 
-- Chinese has been rewritten using Z from ZArith as datatype. 
-  ZChinese is the new version, Chinese the obsolete one.   
+- CongruenceClosure (congruence closure decision procedure)
+- MapleMode (an interface to embed Maple simplification procedures in Coq)
+- Chinese has been rewritten using Z from ZArith as datatype
+  ZChinese is the new version, Chinese the obsolete one
 
 Incompatibilities
 
 - Ring: exceptional incompatibilities (1 above 650 in submitted user
   contribs, leading to a simplification)
-- Intuition: does not unfold any definition except "<->" and "~".
+- Intuition: does not unfold any definition except "<->" and "~"
 - Cases: removal of some extra Cases in configurations of the form
   "Cases ... of C _ => ... | _ D => ..."  (effects on 2 definitions of
   submitted user contributions necessitating the removal of now superfluous
@@ -76,6 +77,9 @@ Incompatibilities
   lead to less subgoals and/or hypotheses and different naming of hypotheses
 - Unification done by Apply/Elim has been changed and may exceptionally lead
   to incompatible instantiations
+- Peano_dec.v and Compare_dec.v parts of Arith.v make Auto more
+  powerful if these files were not already required (1 occurrence of
+  this in submitted user contribs)
 
 Changes from V7.1 to V7.2
 =========================
