@@ -15,3 +15,10 @@ parsing/g_tactic.ml: parsing/grammar.cma
 parsing/g_ltac.ml: parsing/grammar.cma
 parsing/extend.ml: parsing/grammar.cma
 toplevel/mltop.ml: 
+lib/pp.ml: 
+contrib/xml/xml.ml: 
+contrib/xml/xmlcommand.ml: 
+contrib/interface/dad.ml: 
+contrib/interface/line_parser.ml: 
+tools/coq_makefile.ml: 
+tools/coq-tex.ml: 

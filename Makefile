@@ -761,13 +761,7 @@ ML4FILES += toplevel/mltop.ml4
 clean::
 	rm -f toplevel/mltop.byteml toplevel/mltop.optml
 
-# files compiled with camlp4 because of streams syntax
-
-lib/pp.cmo: lib/pp.ml
-	$(OCAMLC) -pp camlp4o $(BYTEFLAGS) -c $<
-
-lib/pp.cmx: lib/pp.ml
-	$(OCAMLOPT) -pp camlp4o $(OPTFLAGS) -c $<
+# files compiled with -rectypes
 
 kernel/term.cmo: kernel/term.ml
 	$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
@@ -781,41 +775,59 @@ library/nametab.cmo: library/nametab.ml
 library/nametab.cmx: library/nametab.ml
 	$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
 
-contrib/xml/xml.cmo: contrib/xml/xml.ml
-	$(OCAMLC) -pp camlp4o $(BYTEFLAGS) -c $<
+# files compiled with camlp4 because of streams syntax
 
-contrib/xml/xml.cmx: contrib/xml/xml.ml
-	$(OCAMLOPT) -pp camlp4o $(OPTFLAGS) -c $<
+#lib/pp.cmo: lib/pp.ml
+#	$(OCAMLC) $(BYTEFLAGS) -c $<
 
-contrib/xml/xmlcommand.cmo: contrib/xml/xmlcommand.ml
-	$(OCAMLC) -pp camlp4o $(BYTEFLAGS) -c $<
+#lib/pp.cmx: lib/pp.ml
+#	$(OCAMLOPT_P4O) -c $<
 
-contrib/xml/xmlcommand.cmx: contrib/xml/xmlcommand.ml
-	$(OCAMLOPT) -pp camlp4o $(OPTFLAGS) -c $<
+#contrib/xml/xml.cmo: contrib/xml/xml.ml4
+#	$(OCAMLC_P4O) -c $<
 
-contrib/interface/dad.cmo: contrib/interface/dad.ml
-	$(OCAMLC) -pp camlp4o $(BYTEFLAGS) -c $<
+#contrib/xml/xml.cmx: contrib/xml/xml.ml4
+#	$(OCAMLOPT_P4O) -c $<
 
-contrib/interface/dad.cmx: contrib/interface/dad.ml
-	$(OCAMLOPT) -pp camlp4o $(OPTFLAGS) -c $<
+#contrib/xml/xmlcommand.cmo: contrib/xml/xmlcommand.ml4
+#	$(OCAMLC_P4O) -c $<
 
-contrib/interface/line_parser.cmo: contrib/interface/line_parser.ml
-	$(OCAMLC) -pp camlp4o $(BYTEFLAGS) -c $<
+#contrib/xml/xmlcommand.cmx: contrib/xml/xmlcommand.ml4
+#	$(OCAMLOPT_P4O) -c $<
 
-contrib/interface/line_parser.cmx: contrib/interface/line_parser.ml
-	$(OCAMLOPT) -pp camlp4o $(OPTFLAGS) -c $<
+#contrib/interface/dad.cmo: contrib/interface/dad.ml4
+#	$(OCAMLC_P4O) -c $<
 
-tools/coq_makefile.cmo: tools/coq_makefile.ml
-	$(OCAMLC) -pp camlp4o $(BYTEFLAGS) -c $<
+#contrib/interface/dad.cmx: contrib/interface/dad.ml4
+#	$(OCAMLOPT_P4O) -c $<
 
-tools/coq_makefile.cmx: tools/coq_makefile.ml
-	$(OCAMLOPT) -pp camlp4o $(OPTFLAGS) -c $<
+#contrib/interface/line_parser.cmo: contrib/interface/line_parser.ml4
+#	$(OCAMLC_P4O) -c $<
 
-tools/coq-tex.cmo: tools/coq-tex.ml
-	$(OCAMLC) -pp camlp4o $(BYTEFLAGS) -c $<
+#contrib/interface/line_parser.cmx: contrib/interface/line_parser.ml4
+#	$(OCAMLOPT_P4O) -c $<
 
-tools/coq-tex.cmx: tools/coq-tex.ml
-	$(OCAMLOPT) -pp camlp4o $(OPTFLAGS) -c $<
+#tools/coq_makefile.cmo: tools/coq_makefile.ml4
+#	$(OCAMLC_P4O) -c $<
+
+#tools/coq_makefile.cmx: tools/coq_makefile.ml4
+#	$(OCAMLOPT_P4O) -c $<
+
+#tools/coq-tex.cmo: tools/coq-tex.ml4
+#	$(OCAMLC_P4O) -c $<
+
+#tools/coq-tex.cmx: tools/coq-tex.ml4
+#	$(OCAMLOPT_P4O) -c $<
+
+ML4FILES += lib/pp.ml4 			\
+	 contrib/xml/xml.ml4		\
+	 contrib/xml/xmlcommand.ml4	\
+	 contrib/interface/dad.ml4	\
+	 contrib/interface/line_parser.ml4	\
+	 tools/coq_makefile.ml4		\
+	 tools/coq-tex.ml4
+
+
 
 ###########################################################################
 # Default rules
