@@ -58,5 +58,16 @@ type rawconstr =
    - option in PHole tell if the "?" was apparent or has been implicitely added
 i*)
 
-val dummy_loc : loc
-val loc_of_rawconstr : rawconstr -> loc
+let dummy_loc = (0,0)
+
+let loc_of_rawconstr = function
+  | RRef (loc,_) -> loc
+  | RApp (loc,_,_) -> loc
+  | RBinder (loc,_,_,_,_) -> loc
+  | RCases (loc,_,_,_,_) -> loc
+  | ROldCase (loc,_,_,_,_) -> loc
+  | RRec (loc,_,_,_,_) -> loc
+  | RSort (loc,_) -> loc
+  | RHole (Some loc) -> loc
+  | RHole (None) -> dummy_loc
+  | RCast (loc,_,_) -> loc
