@@ -502,7 +502,7 @@ let rec intern_cases_pattern scopes aliases tmp_scope = function
   | CPatNotation (loc, ntn, args) ->
       let ntn,args = contract_pat_notation ntn args in
       let scopes = option_cons tmp_scope scopes in
-      let ((ids,c),df) = Symbols.interp_notation ntn scopes in
+      let ((ids,c),df) = Symbols.interp_notation loc ntn scopes in
       if !dump then dump_notation_location (patntn_loc loc args ntn) ntn df;
       let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
       subst_cases_pattern loc aliases intern_cases_pattern subst scopes c
@@ -726,7 +726,7 @@ let internalise sigma env allow_soapp lvar c =
     | CNotation (loc,ntn,args) ->
         let ntn,args = contract_notation ntn args in
 	let scopes = option_cons tmp_scope scopes in
-	let ((ids,c),df) = Symbols.interp_notation ntn scopes in
+	let ((ids,c),df) = Symbols.interp_notation loc ntn scopes in
         if !dump then dump_notation_location (ntn_loc loc args ntn) ntn df;
 	let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
 	subst_rawconstr loc intern subst env c
