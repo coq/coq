@@ -960,8 +960,10 @@ let type_clenv_binding wc (c,t) lbind =
 
 let general_elim (c,lbindc) (elimc,lbindelimc) gl = 
   let (wc,kONT)  = startWalk gl in
-  let (_,_,t)    = reduce_to_ind (pf_env gl) (project gl) 
-		     (pf_type_of gl c)  in
+  let ct = pf_type_of gl c in
+  let t = try let (_,_,t)    = reduce_to_ind (pf_env gl) (project gl) ct in t 
+  with UserError _ -> ct
+  in
   let indclause  = make_clenv_binding wc (c,t) lbindc  in
   let elimt      = w_type_of wc elimc in
   let elimclause = make_clenv_binding wc (elimc,elimt) lbindelimc in 
