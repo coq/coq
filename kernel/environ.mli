@@ -140,6 +140,7 @@ val it_mkProd_or_LetIn : constr -> rel_context -> constr
 
 val it_mkNamedLambda_or_LetIn : constr -> named_context -> constr
 val it_mkNamedProd_or_LetIn : constr -> named_context -> constr
+val it_mkNamedProd_wo_LetIn : constr -> named_context -> constr
 
 (* [lambda_create env (t,c)] builds [[x:t]c] where [x] is a name built
    from [t]; [prod_create env (t,c)] builds [(x:t)c] where [x] is a

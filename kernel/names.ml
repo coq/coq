@@ -235,6 +235,10 @@ let next_name_away name l =
     | Name str  -> next_ident_away str l
     | Anonymous -> id_of_string "_"
 
+let out_name = function
+  | Name id -> id
+  | Anonymous -> anomaly "out_name: expects a defined name"
+
 (* Kinds *)
 
 type path_kind = CCI | FW | OBJ

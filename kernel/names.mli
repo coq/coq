@@ -41,6 +41,9 @@ val next_name_away : name -> identifier list -> identifier
 val next_name_away_with_default : 
   string -> name -> identifier list -> identifier
 
+(* [out_name na] raises an anomaly if [na] is [Anonymous] *)
+val out_name : name -> identifier
+
 (*s [path_kind] is currently degenerated, [FW] is not used *)
 type path_kind = CCI | FW | OBJ
 

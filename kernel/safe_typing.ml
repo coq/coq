@@ -297,36 +297,49 @@ let safe_infer_declaration env = function
       let (j,cst) = safe_infer env t in
       None, assumption_of_judgment env Evd.empty j, cst
 
-let add_global_declaration sp env (body,typ,cst) =
+type local_names = (identifier * variable_path) list
+
+let add_global_declaration sp env locals (body,typ,cst) =
   let env' = add_constraints cst env in
   let ids = match body with 
     | None -> global_vars_set typ
     | Some b -> Idset.union (global_vars_set b) (global_vars_set typ) in
+  let hyps = keep_hyps ids (named_context env) in
+  let body, typ =
+    if Options.immediate_discharge then
+      option_app (fun c -> it_mkNamedLambda_or_LetIn c hyps) body,
+      it_mkNamedProd_or_LetIn typ hyps
+    else
+      body,typ in
+  let sp_hyps = List.map (fun (id,b,t) -> (List.assoc id locals, b, t)) hyps in
   let cb = {
     const_kind = kind_of_path sp;
     const_body = body;
     const_type = typ;
-    const_hyps = keep_hyps ids (named_context env);
+    const_hyps = sp_hyps;
     const_constraints = cst;
     const_opaque = false } 
   in
   Environ.add_constant sp cb env'
 
-let add_parameter sp t env =
-  add_global_declaration sp env (safe_infer_declaration env (Assum t))
+let add_parameter sp t locals env =
+  add_global_declaration sp env locals (safe_infer_declaration env (Assum t))
 
-let add_constant_with_value sp body typ env =
+let add_constant_with_value sp body typ locals env =
   let body' =
     match typ with
       | None -> body
       | Some ty -> mkCast (body, ty) in
-  add_global_declaration sp env (safe_infer_declaration env (Def body'))
+  add_global_declaration sp env locals (safe_infer_declaration env (Def body'))
 
-let add_discharged_constant sp r env =
+let add_constant sp ce locals env =
+  add_constant_with_value sp ce.const_entry_body ce.const_entry_type locals env
+
+let add_discharged_constant sp r locals env =
   let (body,typ) = Cooking.cook_constant env r in
   match body with
     | None -> 
-	add_parameter sp typ env
+	add_parameter sp typ [] (* Bricolage avant poubelle *) env
     | Some c -> 
 	(* let c = hcons1_constr c in *)
 	let (jtyp,cst) = safe_infer env typ in
@@ -335,17 +348,19 @@ let add_discharged_constant sp r env =
 	  Idset.union (global_vars_set c) 
 	    (global_vars_set (body_of_type jtyp.uj_val))
 	in
-	let cb = { const_kind = kind_of_path sp;
-		   const_body = Some c;
-		   const_type = assumption_of_judgment env' Evd.empty jtyp;
-		   const_hyps = keep_hyps ids (named_context env);
-		   const_constraints = cst;
-		   const_opaque = false } 
+	let hyps = keep_hyps ids (named_context env) in
+	let sp_hyps =
+	  List.map (fun (id,b,t) -> (List.assoc id locals,b,t)) hyps in
+	let cb =
+	  { const_kind = kind_of_path sp;
+	    const_body = Some c;
+	    const_type = assumption_of_judgment env' Evd.empty jtyp;
+	    const_hyps = sp_hyps;
+	    const_constraints = cst;
+	    const_opaque = false } 
 	in
-	add_constant sp cb env'
+	Environ.add_constant sp cb env'
 
-let add_constant sp ce env =
-  add_constant_with_value sp ce.const_entry_body ce.const_entry_type env
 
 (* Insertion of inductive types. *)
 
@@ -427,7 +442,7 @@ let infer_constructor_packet env_ar params short_arity arsort vc =
   let issmall,isunit = small_unit constrsinfos (env_ar_par,short_arity) in
   (issmall,isunit,vc', cst)
 
-let add_mind sp mie env =
+let add_mind sp mie locals env =
   mind_check_wellformed env mie;
 
   (* We first type params and arity of each inductive definition *)
@@ -466,7 +481,8 @@ let add_mind sp mie env =
 	 in
 	 let nparams = ind.mind_entry_nparams in
 	 let consnames = ind.mind_entry_consnames in
-	 let ind' = (nparams,id,full_arity,consnames,issmall,isunit,lc') in
+	 let ind' = (params,nparams,id,full_arity,consnames,issmall,isunit,lc')
+	 in
 	 (ind'::inds, Constraint.union cst cst'))
       mie.mind_entry_inds
       params_arity_list
@@ -474,7 +490,7 @@ let add_mind sp mie env =
 
   (* Finally, we build the inductive packet and push it to env *)
   let kind = kind_of_path sp in
-  let mib = cci_inductive env env_arities kind mie.mind_entry_finite inds cst
+  let mib = cci_inductive locals env env_arities kind mie.mind_entry_finite inds cst
   in
   add_mind sp mib (add_constraints cst env)
     

@@ -48,12 +48,17 @@ type sticky = bool
 
 type variable_declaration = section_variable_entry * strength * sticky
 
-let vartab = ref (Spmap.empty : (identifier * variable_declaration) Spmap.t)
+let vartab =
+  ref ((Spmap.empty, []) :
+       (identifier * variable_declaration) Spmap.t * section_path list)
+
+let current_section_context () =
+  List.map (fun sp -> (basename sp, sp)) (snd !vartab)
 
 let _ = Summary.declare_summary "VARIABLE"
 	  { Summary.freeze_function = (fun () -> !vartab);
 	    Summary.unfreeze_function = (fun ft -> vartab := ft);
-	    Summary.init_function = (fun () -> vartab := Spmap.empty);
+	    Summary.init_function = (fun () -> vartab := (Spmap.empty, []));
 	    Summary.survive_section = false }
 
 let cache_variable (sp,(id,(d,_,_) as vd)) =
@@ -65,7 +70,7 @@ let cache_variable (sp,(id,(d,_,_) as vd)) =
     | SectionLocalDef c -> Global.push_named_def (id,c)
   end;
   Nametab.push_local sp (VarRef sp);
-  vartab := Spmap.add sp vd !vartab
+  vartab := let (m,l) = !vartab in (Spmap.add sp vd m, sp::l)
 
 let (in_variable, out_variable) =
   let od = {
@@ -87,7 +92,7 @@ let cache_parameter (sp,c) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_parameter"
       [< pr_id (basename sp); 'sTR " already exists" >];
-  Global.add_parameter sp c;
+  Global.add_parameter sp c (current_section_context ());
   Nametab.push sp (ConstRef sp)
 
 let load_parameter _ = ()
@@ -132,9 +137,10 @@ let cache_constant (sp,(cdt,stre,op)) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_constant"
       [< pr_id (basename sp); 'sTR " already exists" >] ;
+  let sc = current_section_context() in
   begin match cdt with 
-    | ConstantEntry ce -> Global.add_constant sp ce
-    | ConstantRecipe r -> Global.add_discharged_constant sp r
+    | ConstantEntry ce -> Global.add_constant sp ce sc
+    | ConstantRecipe r -> Global.add_discharged_constant sp r sc
   end;
   Nametab.push sp (ConstRef sp);
   if op then Global.set_opaque sp;
@@ -197,7 +203,7 @@ let check_exists_inductive (sp,_) =
 let cache_inductive (sp,mie) =
   let names = inductive_names sp mie in
   List.iter check_exists_inductive names;
-  Global.add_mind sp mie;
+  Global.add_mind sp mie (current_section_context ());
   List.iter (fun (sp, ref) -> Nametab.push sp ref) names
 
 let load_inductive _ = ()
@@ -236,12 +242,12 @@ let constant_or_parameter_strength sp =
   try constant_strength sp with Not_found -> NeverDischarge
 
 let get_variable sp = 
-  let (id,(_,str,sticky)) = Spmap.find sp !vartab in
+  let (id,(_,str,sticky)) = Spmap.find sp (fst !vartab) in
   let (c,ty) = Global.lookup_named id in
   ((id,c,ty),str,sticky)
 
 let variable_strength sp =
-  let _,(_,str,_) = Spmap.find sp !vartab in str
+  let _,(_,str,_) = Spmap.find sp (fst !vartab) in str
 
 (* Global references. *)
 
@@ -267,11 +273,11 @@ let mind_oper_of_id sp id mib =
 	   mip.mind_consnames)
     mib.mind_packets
 
-let context_of_global_reference env = function
-  | VarRef sp -> [] (* Hum !, pas correct *)
-  | ConstRef sp -> (Environ.lookup_constant sp env).const_hyps
-  | IndRef (sp,_) -> (Environ.lookup_mind sp env).mind_hyps
-  | ConstructRef ((sp,_),_) -> (Environ.lookup_mind sp env).mind_hyps
+let context_of_global_reference = function
+  | VarRef sp -> []
+  | ConstRef sp -> (Global.lookup_constant sp).const_hyps
+  | IndRef (sp,_) -> (Global.lookup_mind sp).mind_hyps
+  | ConstructRef ((sp,_),_) -> (Global.lookup_mind sp).mind_hyps
 
 (*
 let global_sp_operator env sp id =
@@ -282,87 +288,102 @@ let global_sp_operator env sp id =
     mind_oper_of_id sp id mib, mib.mind_hyps
 *)
 
-let occur_decl env (id,c,t) hyps =
-  try
-    let (c',t') = Sign.lookup_id id hyps in
-    let matching_bodies = match c,c' with
-      | None, _ -> true
-      | Some c, None -> false
-      | Some c, Some c' -> is_conv env Evd.empty c c' in
-    let matching_types = 
-      is_conv env Evd.empty (body_of_type t) (body_of_type t') in
-    matching_types & matching_bodies
-  with Not_found -> false
-
-(*
-let find_common_hyps_then_abstract c env hyps' hyps = 
-  snd (fold_named_context_both_sides
-	 (fun
-	    (env,c) (id,_,_ as d) hyps ->
-	      if occur_decl env d hyps' then 
-		(Environ.push_named_decl d env,c)
-	      else
-		let hyps'' = List.rev (d :: hyps) in
-		(env, Environ.it_mkNamedLambda_or_LetIn c hyps''))
-	 hyps
-	 (env,c))
-*)
+let rec occur_section_variable sp = function
+  | (_,sp')::_ when sp = sp' -> true
+  | _::l -> occur_section_variable sp l
+  | [] -> false
 
 let rec quantify_extra_hyps c = function
-  | (id,None,t)::hyps -> mkNamedLambda id t (quantify_extra_hyps c hyps)
+  | (sp,None,t)::hyps ->
+      mkNamedLambda (basename sp) t (quantify_extra_hyps c hyps)
   (* Buggé car id n'apparaît pas dans les instances des constantes dans c *)
   (* et id n'est donc pas substitué dans ces constantes *)
-  | (id,Some b,t)::hyps -> mkNamedLetIn id b t (quantify_extra_hyps c hyps)
+  | (sp,Some b,t)::hyps ->
+      mkNamedLetIn (basename sp) b t (quantify_extra_hyps c hyps)
   | [] -> c
 
-let rec find_common_hyps_then_abstract c env hyps' = function
-  | (id,_,_ as d) :: hyps when occur_decl env d hyps' ->
-      find_common_hyps_then_abstract c (Environ.push_named_decl d env) hyps' hyps
-  | hyps -> quantify_extra_hyps c hyps
+let find_common_hyps_then_abstract c hyps' hyps =
+  let rec find = function
+    | (sp,_,_) :: hyps when occur_section_variable sp hyps' -> find hyps
+    | hyps -> quantify_extra_hyps c hyps in
+  find (List.rev hyps)
 
-let find_common_hyps_then_abstract c env hyps' hyps =
-  find_common_hyps_then_abstract c env hyps' (List.rev hyps)
-
-let current_section_context () =
-  let current = Spmap.fold (fun _ (id,_) hyps -> id::hyps) !vartab [] in
-  List.fold_right
-    (fun (id,_,_ as d) hyps -> if List.mem id current then d::hyps else hyps)
-    (Global.named_context ()) []
+let section_variable_paths () = snd !vartab
 
 let find_section_variable id =
   let l =
     Spmap.fold
       (fun sp (id',_) hyps -> if id=id' then sp::hyps else hyps)
-      !vartab [] in
+      (fst !vartab) [] in
   match l with
     | [] -> raise Not_found
     | [sp] -> sp
     | _ -> error "Arghh, you blasted me with several variables of same name"
 
+let last_section_hyps dir =
+  List.fold_right
+    (fun sp hyps -> if dirpath sp = dir then basename sp :: hyps else hyps)
+    (snd !vartab) []
+
+let rec find_var id = function
+  | [] -> raise Not_found
+  | sp::l -> if basename sp = id then sp else find_var id l
+
+let implicit_section_args ref =
+  if Options.immediate_discharge then
+    let hyps = context_of_global_reference ref in
+    let hyps0 = section_variable_paths () in
+    let rec keep acc = function
+      | (sp,None,_)::hyps ->
+	  let acc = if List.mem sp hyps0 then sp::acc else acc in
+	  keep acc hyps
+      | (_,Some _,_)::hyps -> keep acc hyps
+      | [] -> acc
+    in keep [] hyps
+  else []
+
+let section_hyps ref =
+  let hyps = context_of_global_reference ref in
+  let hyps0 = section_variable_paths () in
+  let rec keep acc = function
+    | (sp,b,_ as d)::hyps ->
+	let acc = if List.mem sp hyps0 then (sp,b=None)::acc else acc in
+	keep acc hyps
+    | [] -> acc
+  in keep [] hyps
+
 let extract_instance ref args =
-  let hyps = context_of_global_reference (Global.env ()) ref in
+  if Options.immediate_discharge then args
+  else
+  let hyps = context_of_global_reference ref in
   let hyps0 = current_section_context () in
   let na = Array.length args in
   let rec peel n acc = function
-    | (_,None,_ as d)::hyps ->
-	if List.mem d hyps0 then peel (n-1) acc hyps
+    | (sp,None,_ as d)::hyps ->
+	if List.mem_assoc (basename sp) hyps0 then peel (n-1) acc hyps
 	else peel (n-1) (args.(n)::acc) hyps
     | (_,Some _,_)::hyps -> peel n acc hyps
     | [] -> Array.of_list acc
   in peel (na-1) [] hyps
 
-let constr_of_reference _ env ref =
-  let hyps = context_of_global_reference env ref in
+let constr_of_reference _ _ ref =
+if Options.immediate_discharge then
+  match ref with
+    | VarRef sp -> mkVar (basename sp)
+    | ConstRef sp -> mkConst (sp,[||])
+    | ConstructRef sp -> mkMutConstruct (sp,[||])
+    | IndRef sp -> mkMutInd (sp,[||])
+else
+  let hyps = context_of_global_reference ref in
   let hyps0 = current_section_context () in
-  let env0 = Environ.reset_context env in
-  let args = instance_from_named_context hyps in
+  let args = instance_from_section_context hyps in
   let body = match ref with
     | VarRef sp -> mkVar (basename sp)
     | ConstRef sp -> mkConst (sp,Array.of_list args)
     | ConstructRef sp -> mkMutConstruct (sp,Array.of_list args)
     | IndRef sp -> mkMutInd (sp,Array.of_list args)
   in
-  find_common_hyps_then_abstract body env0 hyps0 hyps
+  find_common_hyps_then_abstract body hyps0 hyps
 
 let construct_absolute_reference env sp =
   constr_of_reference Evd.empty env (Nametab.absolute_reference sp)
@@ -383,6 +404,10 @@ let global_qualified_reference qid =
 
 let global_absolute_reference sp = 
   construct_absolute_reference (Global.env()) sp
+
+let global_reference_in_absolute_module dir id = 
+  constr_of_reference Evd.empty (Global.env())
+    (Nametab.locate_in_absolute_module dir id)
 
 let global_reference kind id = 
   construct_reference (Global.env()) kind id
@@ -414,6 +439,21 @@ let path_of_inductive_path (sp,tyi) =
     let (pa,_,k) = repr_path sp in 
     Names.make_path pa (mip.mind_typename) k 
 
+(* Util *)
+let instantiate_inductive_section_params t ind =
+  if Options.immediate_discharge then 
+  let sign = section_hyps (IndRef ind) in
+  let rec inst s ctxt t =
+    let k = kind_of_term t in
+    match (ctxt,k) with
+    | (sp,true)::ctxt, IsLambda(_,_,t) ->
+	inst ((mkVar (basename sp))::s) ctxt t
+    | (sp,false)::ctxt, IsLetIn(_,_,_,t) -> 
+	inst ((mkVar (basename sp))::s) ctxt t
+    | [], _ -> substl s t
+    | _ -> anomaly"instantiate_params: term and ctxt mismatch"
+  in inst [] sign t
+  else t
 (* Eliminations. *)
 
 let eliminations = [ (prop,"_ind") ; (spec,"_rec") ; (types,"_rect") ]
@@ -426,6 +466,9 @@ let elimination_suffix = function
 let declare_one_elimination mispec =
   let mindstr = string_of_id (mis_typename mispec) in
   let declare na c =
+    (* Hack to get const_hyps right in the declaration *)
+    let c = instantiate_inductive_section_params c (fst (mis_inductive mispec))
+    in
     let _ = declare_constant (id_of_string na)
       (ConstantEntry { const_entry_body = c; const_entry_type = None }, 
        NeverDischarge,false) in
@@ -444,10 +487,12 @@ let declare_one_elimination mispec =
 
 let declare_eliminations sp =
   let mib = Global.lookup_mind sp in
+(*
   let ids = ids_of_named_context mib.mind_hyps in
   if not (list_subset ids (ids_of_named_context (Global.named_context ()))) then    error ("Declarations of elimination scheme outside the section "^
     "of the inductive definition is not implemented");
-  let ctxt = instance_from_named_context mib.mind_hyps in
+*)
+  let ctxt = instance_from_section_context mib.mind_hyps in
   for i = 0 to Array.length mib.mind_packets - 1 do
     if mind_type_finite mib i then
       let mispec = Global.lookup_mind_specif ((sp,i), Array.of_list ctxt) in 

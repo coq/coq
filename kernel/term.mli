@@ -474,9 +474,9 @@ val subst_var : identifier -> constr -> constr
    if two names are identical, the one of least indice is keeped *)
 val subst_vars : identifier list -> constr -> constr
 
-(* [rel_list n m] and [rel_vect n m] compute [[Rel (n+m);...;Rel(n+1)]] *)
-val rel_vect : int -> int -> constr array
-val rel_list : int -> int -> constr list
+(* [substn_vars n [id1;...;idn] t] substitute [VAR idj] by [Rel j+n-1] in [t]
+   if two names are identical, the one of least indice is keeped *)
+val substn_vars : int -> identifier list -> constr -> constr
 
 (*s Compact representation of implicit lifts. \\
    [ELSHFT(l,n)] == lift of [n], then apply [lift l].

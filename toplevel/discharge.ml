@@ -23,13 +23,15 @@ open Recordops
 let recalc_sp dir sp =
   let (_,spid,k) = repr_path sp in Names.make_path dir spid k
 
+let rec find_var id = function
+  | [] -> raise Not_found
+  | (sp,b,_)::l -> if basename sp = id then b=None else find_var id l
+
 let build_abstract_list hyps ids_to_discard =
   map_succeed 
     (fun id ->
        try
-	 match lookup_id_value id hyps with
-	   | None -> ABSTRACT
-	   | Some c -> failwith "caugth"
+	 if find_var id hyps then ABSTRACT else failwith "caugth"
        with Not_found -> failwith "caugth")
     ids_to_discard
 
@@ -110,7 +112,8 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
 	  Array.to_list lc))
       mib.mind_packets
   in
-  let hyps' = map_named_context (expmod_constr oldenv modlist) mib.mind_hyps in
+  let hyps = List.map (fun (sp,c,t) -> (basename sp,c,t)) mib.mind_hyps in
+  let hyps' = map_named_context (expmod_constr oldenv modlist) hyps in
   let (inds',modl) = abstract_inductive ids_to_discard hyps' inds in
   let lmodif_one_mind i = 
     let nbc = Array.length (mind_nth_type_packet mib i).mind_consnames in 
@@ -355,15 +358,21 @@ let close_section _ s =
   let newdir = dirpath sec_sp in
   let olddir = wd_of_sp sec_sp in
   let (ops,ids,_) = 
-    List.fold_left 
-      (process_item oldenv newdir olddir) ([],[],([],[],[])) decls 
-  in 
+    if Options.immediate_discharge then ([],[],([],[],[]))
+    else
+      List.fold_left 
+	(process_item oldenv newdir olddir) ([],[],([],[],[])) decls 
+  in
+  let ids = last_section_hyps olddir in
   Global.pop_named_decls ids;
   Summary.unfreeze_lost_summaries fs;
   let mc = segment_contents decls in
-  add_anonymous_leaf (in_end_section (sec_sp,mc)); 
-  List.iter process_operation (List.rev ops) 
+  add_anonymous_leaf (in_end_section (sec_sp,mc));
+  if Options.immediate_discharge then ()
+  else
+    List.iter process_operation (List.rev ops)
 
 let save_module_to s f =
   Library.save_module_to segment_contents s f
+
 

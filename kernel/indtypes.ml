@@ -132,16 +132,20 @@ let failwith_non_pos_vect n ntypes v =
   done;
   anomaly "failwith_non_pos_vect: some k in [n;n+ntypes-1] should occur in v"
 
-let check_correct_par env nparams ntypes n l largs =
+let check_correct_par env hyps nparams ntypes n l largs =
   let largs = Array.of_list largs in
   if Array.length largs < nparams then 
     raise (IllFormedInd (LocalNotEnoughArgs l));
   let (lpar,largs') = array_chop nparams largs in
-  for k = 0 to nparams - 1 do
-    match kind_of_term (whd_betadeltaiotaeta env Evd.empty lpar.(k)) with
-      | IsRel w when (n-k-1 = w) -> ()
-      | _ -> raise (IllFormedInd (LocalNonPar (k+1,l)))
-  done;
+  let nhyps = List.length hyps in
+  let rec check k index = function
+    | [] -> ()
+    | (_,Some _,_)::hyps -> check k (index+1) hyps
+    | _::hyps ->
+        match kind_of_term (whd_betadeltaiotaeta env Evd.empty lpar.(k)) with
+	  | IsRel w when w = index -> check (k-1) (index+1) hyps
+	  | _ -> raise (IllFormedInd (LocalNonPar (k+1,l)))
+  in check (nparams-1) (n-nhyps) hyps;
   if not (array_for_all (noccur_between n ntypes) largs') then 
     failwith_non_pos_vect n ntypes largs'
 
@@ -156,7 +160,8 @@ let abstract_mind_lc env ntyps npars lc =
     in 
     Array.map (compose (nf_beta env Evd.empty) (substl make_abs)) lc
 
-let listrec_mconstr env ntypes nparams i indlc =
+let listrec_mconstr env ntypes hyps nparams i indlc =
+  let nhyps = List.length hyps in
   (* check the inductive types occur positively in [c] *)
   let rec check_pos env n c = 
     let x,largs = whd_betadeltaiota_stack env Evd.empty c in
@@ -168,10 +173,10 @@ let listrec_mconstr env ntypes nparams i indlc =
 	  check_pos (push_rel_assum (na, b) env) (n+1) d
       | IsRel k ->
           if k >= n && k<n+ntypes then begin
-	    check_correct_par env nparams ntypes n (k-n+1) largs;
+	    check_correct_par env hyps nparams ntypes n (k-n+1) largs;
 	    Mrec(n+ntypes-k-1)
           end else if List.for_all (noccur_between n ntypes) largs then 
-	    if (n-nparams) <= k & k <= (n-1) 
+	    if (n-nhyps) <= k & k <= (n-1) 
 	    then Param(n-1-k)
             else Norec
 	  else
@@ -200,7 +205,7 @@ let listrec_mconstr env ntypes nparams i indlc =
     let auxlcvect = abstract_mind_lc env auxntyp auxnpar auxlc in
     let newidx = n + auxntyp in
 (* Extends the environment with a variable corresponding to the inductive def *)
-    let env' = push_rel_assum (Anonymous,mis_user_arity mispeci) env in
+    let env' = push_rel_assum (Anonymous,mis_arity mispeci) env in
     let _ = 
       (* fails if the inductive type occurs non positively *)
       (* when substituted *) 
@@ -270,7 +275,7 @@ let listrec_mconstr env ntypes nparams i indlc =
 	| hd ->
 	    if check_head then
 	      if hd = IsRel (n+ntypes-i) then
-		check_correct_par env nparams ntypes n (ntypes-i+1) largs
+		check_correct_par env hyps nparams ntypes n (ntypes-i+1) largs
 	      else
 		raise (IllFormedInd LocalNotConstructor)
 	    else
@@ -282,12 +287,12 @@ let listrec_mconstr env ntypes nparams i indlc =
   Array.map
     (fun c ->
        let c = body_of_type c in
-       let sign, rawc = mind_extract_params nparams c in
+       let sign, rawc = mind_extract_params nhyps c in
        let env' = push_rels sign env in
        try
-	 check_construct env' true (1+nparams) rawc
+	 check_construct env' true (1+nhyps) rawc
        with IllFormedInd err -> 
-	 explain_ind_err (ntypes-i+1) env nparams c err)
+	 explain_ind_err (ntypes-i+1) env nhyps c err)
     indlc
     
 let is_recursive listind =
@@ -299,10 +304,38 @@ let is_recursive listind =
   in 
   array_exists one_is_rec
 
-let cci_inductive env env_ar kind finite inds cst =
+let abstract_inductive ntypes hyps (par,np,id,arity,cnames,issmall,isunit,lc) =
+  let args = instance_from_named_context (List.rev hyps) in
+  let nhyps = List.length hyps in
+  let nparams = List.length args in (* nparams = nhyps - nb(letin) *)
+  let new_refs =
+    list_tabulate (fun k -> applist(mkRel (k+nhyps+1),args)) ntypes in
+  let abs_constructor b = it_mkNamedProd_or_LetIn (substl new_refs b) hyps in
+  let lc' = Array.map abs_constructor lc in
+  let arity' = it_mkNamedProd_or_LetIn arity hyps in
+  let par' = push_named_to_rel_context hyps par in
+  (par',np+nparams,id,arity',cnames,issmall,isunit,lc')
+
+let cci_inductive locals env env_ar kind finite inds cst =
   let ntypes = List.length inds in
-  let one_packet i (nparams,id,ar,cnames,issmall,isunit,lc) =
-    let recargs = listrec_mconstr env_ar ntypes nparams i lc in
+  let ids = 
+    List.fold_left 
+      (fun acc (_,_,_,ar,_,_,_,lc) -> 
+	 Idset.union (global_vars_set (body_of_type ar))
+	   (Array.fold_left
+	      (fun acc c -> Idset.union (global_vars_set (body_of_type c)) acc)
+	      acc
+	      lc))
+      Idset.empty inds
+  in
+  let hyps = keep_hyps ids (named_context env) in
+  let inds' =
+    if Options.immediate_discharge then
+      List.map (abstract_inductive ntypes hyps) inds
+    else
+      inds in
+  let one_packet i (params,nparams,id,ar,cnames,issmall,isunit,lc) =
+    let recargs = listrec_mconstr env_ar ntypes params nparams i lc in
     let isunit = isunit && ntypes = 1 && (not (is_recursive [0] recargs)) in
     let (ar_sign,ar_sort) = splay_arity env Evd.empty (body_of_type ar) in
     
@@ -327,22 +360,14 @@ let cci_inductive env env_ar kind finite inds cst =
       mind_kelim = kelim;
       mind_listrec = recargs;
       mind_finite = finite;
-      mind_nparams = nparams }
+      mind_nparams = nparams;
+      mind_params_ctxt = params }
   in
-  let ids = 
-    List.fold_left 
-      (fun acc (_,_,ar,_,_,_,lc) -> 
-	 Idset.union (global_vars_set (body_of_type ar))
-	   (Array.fold_left
-	      (fun acc c -> Idset.union (global_vars_set (body_of_type c)) acc)
-	      acc
-	      lc))
-      Idset.empty inds
-  in
-  let packets = Array.of_list (list_map_i one_packet 1 inds) in
+  let sp_hyps = List.map (fun (id,b,t) -> (List.assoc id locals,b,t)) hyps in
+  let packets = Array.of_list (list_map_i one_packet 1 inds') in
   { mind_kind = kind;
     mind_ntypes = ntypes;
-    mind_hyps = keep_hyps ids (named_context env);
+    mind_hyps = sp_hyps;
     mind_packets = packets;
     mind_constraints = cst;
     mind_singl = None }

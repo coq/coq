@@ -283,15 +283,27 @@ let name_assumption env (na,c,t) =
 let mkProd_or_LetIn_name env b d = mkProd_or_LetIn (name_assumption env d) b 
 let mkLambda_or_LetIn_name env b d = mkLambda_or_LetIn (name_assumption env d)b
 
-let it_mkProd_or_LetIn_name   env = List.fold_left (mkProd_or_LetIn_name env)
-let it_mkLambda_or_LetIn_name env = List.fold_left (mkLambda_or_LetIn_name env)
+let name_context env hyps =
+  snd
+    (List.fold_left
+       (fun (env,hyps) d -> 
+	  let d' = name_assumption env d in (push_rel d' env, d' :: hyps))
+       (env,[]) (List.rev hyps))
 
 let it_mkProd_wo_LetIn   = List.fold_left (fun c d -> mkProd_wo_LetIn d c)
 let it_mkProd_or_LetIn   = List.fold_left (fun c d -> mkProd_or_LetIn d c)
 let it_mkLambda_or_LetIn = List.fold_left (fun c d -> mkLambda_or_LetIn d c)
 
+let it_mkProd_or_LetIn_name env b hyps =
+  it_mkProd_or_LetIn b (name_context env hyps)
+
+let it_mkLambda_or_LetIn_name env b hyps =
+  it_mkLambda_or_LetIn b (name_context env hyps)
+
 let it_mkNamedProd_or_LetIn = it_named_context_quantifier mkNamedProd_or_LetIn
 let it_mkNamedLambda_or_LetIn = it_named_context_quantifier mkNamedLambda_or_LetIn
+
+let it_mkNamedProd_wo_LetIn = it_named_context_quantifier mkNamedProd_wo_LetIn
 
 let make_all_name_different env =
   let avoid = ref (ids_of_named_context (named_context env)) in

@@ -145,5 +145,6 @@ let cook_constant env r =
   let cb = lookup_constant r.d_from env in
   let typ = expmod_type env r.d_modlist cb.const_type in
   let body = option_app (expmod_constr env r.d_modlist) cb.const_body in
-  let hyps = map_named_context (expmod_constr env r.d_modlist) cb.const_hyps in
+  let hyps = List.map (fun (sp,c,t) -> (basename sp,c,t)) cb.const_hyps in
+  let hyps = map_named_context (expmod_constr env r.d_modlist) hyps in
   abstract_constant r.d_abstract hyps (body,typ)

@@ -31,15 +31,18 @@ val push_named_assum :
 val push_named_def :
   identifier * constr -> safe_environment -> safe_environment
 
+type local_names = (identifier * variable_path) list
+
 val add_parameter :
-  section_path -> constr -> safe_environment -> safe_environment
+  section_path -> constr -> local_names -> safe_environment -> safe_environment
 val add_constant : 
-  section_path -> constant_entry -> safe_environment -> safe_environment
+  section_path -> constant_entry -> local_names -> 
+    safe_environment -> safe_environment
 val add_discharged_constant : 
-  section_path -> Cooking.recipe -> safe_environment -> safe_environment
+  section_path -> Cooking.recipe -> local_names -> safe_environment -> safe_environment
 
 val add_mind : 
-  section_path -> mutual_inductive_entry -> safe_environment 
+  section_path -> mutual_inductive_entry -> local_names -> safe_environment 
     -> safe_environment
 val add_constraints : constraints -> safe_environment -> safe_environment
 

@@ -17,12 +17,21 @@ let is_id_inst inst =
   in
   List.for_all is_id inst
 
-let instantiate_constr sign c args =
+let instantiate sign c args =
   let inst = instantiate_named_context sign args in
   if is_id_inst inst then
     c
   else
     replace_vars inst c
+
+let instantiate_evar = instantiate
+
+let instantiate_constr sign c args =
+  if Options.immediate_discharge then
+    c
+  else
+    let sign = List.map (fun (sp,b,t) -> (basename sp,b,t)) sign in
+    instantiate sign c args
 
 let instantiate_type sign tty args =
   type_app (fun c -> instantiate_constr sign c args) tty
@@ -33,7 +42,7 @@ let instantiate_type sign tty args =
 let constant_type env sigma (sp,args) =
   let cb = lookup_constant sp env in
   (* TODO: check args *)
-  instantiate_type cb.const_hyps cb.const_type (Array.to_list args)
+(*  instantiate_type cb.const_hyps *) cb.const_type (*(Array.to_list args)*)
 
 type const_evaluation_result = NoBody | Opaque
 
@@ -60,7 +69,7 @@ let existential_type sigma (n,args) =
   let info = Evd.map sigma n in
   let hyps = info.evar_hyps in
   (* TODO: check args [this comment was in Typeops] *)
-  instantiate_constr hyps info.evar_concl (Array.to_list args)
+  instantiate_evar hyps info.evar_concl (Array.to_list args)
 
 exception NotInstantiatedEvar
 
@@ -69,7 +78,7 @@ let existential_value sigma (n,args) =
   let hyps = info.evar_hyps in
   match evar_body info with
     | Evar_defined c ->
-	instantiate_constr hyps c (Array.to_list args)
+	instantiate_evar hyps c (Array.to_list args)
     | Evar_empty ->
 	raise NotInstantiatedEvar
 

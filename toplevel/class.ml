@@ -8,6 +8,7 @@ open Term
 open Inductive
 open Declarations
 open Environ
+open Inductive
 open Lib
 open Classops
 open Declare
@@ -260,18 +261,16 @@ let build_id_coercion idf_opt source =
     | Some c -> c
     | None -> error_not_transparent source in
   let lams,t = Sign.decompose_lam_assum c in
-  let llams = List.length lams in
-  let lams = List.rev lams in
   let val_f =
     it_mkLambda_or_LetIn
       (mkLambda (Name (id_of_string "x"),
-		 applistc vs (rel_list 0 llams),
+		 applistc vs (extended_rel_list 0 lams),
 		 mkRel 1))
        lams
   in
   let typ_f =
     it_mkProd_wo_LetIn
-      (mkProd (Anonymous, applistc vs (rel_list 0 llams), lift 1 t))
+      (mkProd (Anonymous, applistc vs (extended_rel_list 0 lams), lift 1 t))
       lams
   in
   (* juste pour verification *)
@@ -387,7 +386,7 @@ let count_extra_abstractions hyps ids_to_discard =
     List.fold_left
       (fun (hyps,n as sofar) id -> 
 	 match hyps with
-	   | (hyp,None,_)::rest when id = hyp ->(rest, n+1)
+	   | (hyp,None,_)::rest when id = basename hyp ->(rest, n+1)
 	   | _ -> sofar)
       (hyps,0) ids_to_discard
   in n

@@ -42,17 +42,16 @@ val mis_typepath : inductive_instance -> section_path
 val mis_is_recursive_subset : int list -> inductive_instance -> bool
 val mis_is_recursive : inductive_instance -> bool
 val mis_consnames : inductive_instance -> identifier array
+val mis_conspaths : inductive_instance -> section_path array
 val mis_inductive : inductive_instance -> inductive
-val mis_nf_arity : inductive_instance -> types
-val mis_user_arity : inductive_instance -> types
+val mis_arity : inductive_instance -> types
 val mis_params_ctxt : inductive_instance -> rel_context
 val mis_sort : inductive_instance -> sorts
-val mis_type_mconstruct : int -> inductive_instance -> types
+val mis_constructor_type : int -> inductive_instance -> types
 val mis_finite : inductive_instance -> bool 
 
 (* The ccl of constructor is pre-normalised in the following functions *)
 val mis_nf_lc : inductive_instance -> constr array
-val mis_type_mconstructs : inductive_instance -> constr array * constr array
 
 (*s [inductive_family] = [inductive_instance] applied to global parameters *)
 type inductive_family = IndFamily of inductive_instance * constr list
@@ -117,6 +116,16 @@ val build_dependent_constructor : constructor_summary -> constr
    the constructor argument of a dependent predicate in a cases branch *)
 val build_dependent_inductive : inductive_family -> constr
 
+(*s [rel_list n m] and [rel_vect n m] compute [[Rel (n+m);...;Rel(n+1)]] *)
+(* (this is iota operator in C. Paulin habilitation thesis) *)
+val rel_vect : int -> int -> constr array
+val rel_list : int -> int -> constr list
+
+(*s [extended_rel_vect n hyps] and [extended_rel_list n hyps]
+    generalizes [rel_vect] when local definitions may occur in parameters *)
+val extended_rel_vect : int -> rel_context -> constr array
+val extended_rel_list : int -> rel_context -> constr list
+
 (* if the arity for some inductive family [indf] associated to [(I
    params)] is [(x1:A1)...(xn:An)sort'] then [make_arity env sigma dep
    indf k] builds [(x1:A1)...(xn:An)sort] which is the arity of an
@@ -157,6 +166,14 @@ val lookup_mind_specif : inductive -> env -> inductive_instance
 
 val find_rectype : env -> 'a evar_map -> constr -> inductive_type
 
+(* [get_constructors_types indf] returns the array of the types of
+   constructors of the inductive\_family [indf], i.e. the types are
+   instantiated by the parameters of the family (the type may be not
+   in canonical form -- e.g. cf sets library) *)
+
+val get_constructors_types : inductive_family -> types array
+val get_constructor_type : inductive_family -> int -> types
+
 (* [get_constructors indf] build an array of [constructor_summary]
    from some inductive type already analysed as an [inductive_family];
    global parameters are already instanciated in the constructor
@@ -165,16 +182,23 @@ val find_rectype : env -> 'a evar_map -> constr -> inductive_type
    are not renamed when [Anonymous] *)
 
 val get_constructors : inductive_family -> constructor_summary array
-
 val get_constructor : inductive_family -> int -> constructor_summary
 
-(* [get_arity indf] returns the product and the sort of the arity of
-   the inductive family described by [indf]; global parameters are
-   already instanciated; the products signature is relative to the
+(* [get_arity_type indf] returns the type of the arity of the
+   inductive family described by [indf]; global parameters are already
+   instanciated (but the type may be not in canonical form -- e.g. cf
+   sets library); the products signature is relative to the
    environment definition of [indf]; the names of the products of the
-   constructors types are not renamed when [Anonymous] *)
+   constructors types are not renamed when [Anonymous]; [get_arity
+   indf] does the same but normalises and decomposes it as an arity *)
 
+val get_arity_type : inductive_family -> types
 val get_arity : inductive_family -> arity
+
+(* [get_arity_type indf] returns the type of the arity of the inductive
+   family described by [indf]; global parameters are already instanciated *)
+
+
 
 (* Examples: assume
   

@@ -36,10 +36,21 @@ val instantiate_sign :
 val keep_hyps : Idset.t -> named_context -> named_context
 val instance_from_named_context : named_context -> constr list
 
+(*s Signatures of ordered section variables *)
+
+type section_declaration = variable_path * constr option * constr
+type section_context = section_declaration list
+
+val instance_from_section_context : section_context -> constr list
+
 (*s Signatures of ordered optionally named variables, intended to be
    accessed by de Bruijn indices *)
 
+(* In [rel_context], more recent declaration is on top *)
 type rel_context = rel_declaration list
+
+(* In [rev_rel_context], older declaration is on top *)
+type rev_rel_context = rel_declaration list
 
 val add_rel_decl : (name * constr option * types) -> rel_context -> rel_context
 val add_rel_assum : (name * types) -> rel_context -> rel_context
@@ -50,10 +61,13 @@ val lookup_rel_id : identifier -> rel_context -> int * types
 val empty_rel_context : rel_context
 val rel_context_length : rel_context -> int
 val lift_rel_context : int -> rel_context -> rel_context
+val lift_rev_rel_context : int -> rev_rel_context -> rev_rel_context
 val concat_rel_context : newer:rel_context -> older:rel_context -> rel_context
 val ids_of_rel_context : rel_context -> identifier list
 val assums_of_rel_context : rel_context -> (name * constr) list
 val map_rel_context : (constr -> constr) -> rel_context -> rel_context
+val push_named_to_rel_context : named_context -> rel_context -> rel_context
+val reverse_rel_context : rel_context -> rev_rel_context
 
 (*s This is used to translate names into de Bruijn indices and
    vice-versa without to care about typing information *)

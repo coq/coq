@@ -977,10 +977,12 @@ let replace_vars var_alist =
 let subst_var str = replace_vars [(str, mkRel 1)]
 
 (* (subst_vars [id1;...;idn] t) substitute (VAR idj) by (Rel j) in t *)
-let subst_vars vars =
+let substn_vars p vars =
   let _,subst =
-    List.fold_left (fun (n,l) var -> ((n+1),(var,mkRel n)::l)) (1,[]) vars
+    List.fold_left (fun (n,l) var -> ((n+1),(var,mkRel n)::l)) (p,[]) vars
   in replace_vars (List.rev subst)
+
+let subst_vars = substn_vars 1
 
 (*********************)
 (* Term constructors *)
@@ -1242,7 +1244,7 @@ let destArity =
     | IsLetIn (x,b,t,c) -> prodec_rec ((x,Some b,t)::l) c
     | IsCast (c,_)   -> prodec_rec l c
     | IsSort s       -> l,s
-    | _              -> anomaly "decompose_arity: not an arity"
+    | _              -> anomaly "destArity: not an arity"
   in 
   prodec_rec [] 
 
@@ -1386,16 +1388,6 @@ let global_vars_set constr =
     | _        -> fold_constr filtrec acc c
   in 
   filtrec Idset.empty constr
-
-(* [Rel (n+m);...;Rel(n+1)] *)
-
-let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
-
-let rel_list n m = 
-  let rec reln l p = 
-    if p>m then l else reln (mkRel(n+p)::l) (p+1)
-  in 
-  reln [] 1
 
 (* Rem: end of import from old module Generic *)
 

@@ -440,8 +440,11 @@ let save opacity id ({const_entry_body = pft; const_entry_type = tpo} as const)
   strength =
   begin match strength with
     | DischargeAt disch_sp when Lib.is_section_p disch_sp ->
+	(*
 	let c = constr_of_constr_entry const in
 	let _ = declare_variable id (SectionLocalDef c,strength,opacity) in ()
+	*)
+        let _ = declare_constant id (ConstantEntry const,strength,opacity)in ()
     | NeverDischarge | DischargeAt _ ->
         let _ = declare_constant id (ConstantEntry const,strength,opacity)in ()
     | NotDeclare -> apply_tac_not_declare id pft tpo

@@ -50,8 +50,24 @@ let fold_named_context_reverse = List.fold_left
 let fold_named_context_both_sides = list_fold_right_and_left
 let it_named_context_quantifier f = List.fold_left (fun c d -> f d c)
 
+(*s Signatures of ordered section variables *)
+
+type section_declaration = variable_path * constr option * constr
+type section_context = section_declaration list
+let rec instance_from_section_context = function
+  | (sp,None,_) :: sign -> 
+      mkVar (basename sp) :: instance_from_section_context sign
+  | _ :: sign -> instance_from_section_context sign
+  | [] -> []
+let instance_from_section_context x =
+  if Options.immediate_discharge then [] else instance_from_section_context x
+
+(*s Signatures of ordered optionally named variables, intended to be
+   accessed by de Bruijn indices *)
+
 type rel_declaration = name * constr option * types
 type rel_context = rel_declaration list
+type rev_rel_context = rel_declaration list
 
 let add_rel_decl = add
 let add_rel_assum = add_decl
@@ -87,6 +103,14 @@ let lift_rel_context n sign =
     | [] -> []
   in
   liftrec (rel_context_length sign) sign
+let lift_rev_rel_context n sign =
+  let rec liftrec k = function
+    | (na,c,t)::sign ->
+	(na,option_app (liftn n k) c,type_app (liftn n k) t)
+	::(liftrec (k+1) sign)
+    | [] -> []
+  in
+  liftrec 1 sign
 let concat_rel_context = (@)
 let ids_of_rel_context sign =
   List.fold_right
@@ -98,6 +122,22 @@ let assums_of_rel_context sign =
     (fun (na,c,t) l -> match c with Some _ -> l | None -> (na,body_of_type t)::l)
     sign []
 let map_rel_context = map
+let push_named_to_rel_context hyps ctxt =
+  let rec push = function
+    | (id,b,t) :: l ->
+	let s, hyps = push l in
+	let d = (Name id, option_app (subst_vars s) b, subst_vars s t) in
+	id::s, d::hyps
+    | [] -> [],[] in
+  let s, hyps = push hyps in
+  let rec subst = function
+    | (na,b,t) :: l ->
+	let n, ctxt = subst l in
+	let d = (na, option_app (substn_vars n s) b, substn_vars n s t) in
+	(n+1), d::ctxt
+    | [] -> 1, hyps in
+  snd (subst ctxt)
+let reverse_rel_context = List.rev
 
 let instantiate_sign sign args =
   let rec instrec = function

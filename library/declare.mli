@@ -72,6 +72,7 @@ val out_variable : Libobject.obj -> identifier * variable_declaration
 val get_variable : variable_path -> named_declaration * strength * sticky
 val variable_strength : variable_path -> strength
 val find_section_variable : identifier -> variable_path
+val last_section_hyps : dir_path -> identifier list
 
 (*s [global_reference k id] returns the object corresponding to
     the name [id] in the global environment. It may be a constant, 
@@ -81,6 +82,9 @@ val find_section_variable : identifier -> variable_path
     [construct_reference] is a version which looks for variables in a 
     given environment instead of looking in the current global environment. *)
 
+val context_of_global_reference : global_reference -> section_context
+val instantiate_inductive_section_params : constr -> inductive_path -> constr
+val implicit_section_args : global_reference -> section_path list
 val extract_instance : global_reference -> constr array -> constr array
 
 val constr_of_reference :
@@ -88,6 +92,7 @@ val constr_of_reference :
 
 val global_qualified_reference : qualid -> constr
 val global_absolute_reference : section_path -> constr
+val global_reference_in_absolute_module : dir_path -> identifier -> constr
 
 val construct_qualified_reference : Environ.env -> qualid -> constr
 val construct_absolute_reference : Environ.env -> section_path -> constr

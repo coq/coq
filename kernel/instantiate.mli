@@ -12,9 +12,9 @@ open Environ
 (* Instantiation of constants and inductives on their real arguments. *)
 
 val instantiate_constr : 
-  named_context -> constr -> constr list -> constr
+  section_context -> constr -> constr list -> constr
 val instantiate_type : 
-  named_context -> types -> constr list -> types
+  section_context -> types -> constr list -> types
 
 (*s [constant_value env c] raises [NotEvaluableConst Opaque] if
    [c] is opaque and [NotEvaluableConst NoBody] if it has no

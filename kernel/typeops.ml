@@ -78,21 +78,16 @@ let type_of_constant = Instantiate.constant_type
 
 (* Inductive types. *)
 
-let instantiate_arity = mis_user_arity
-
 let type_of_inductive env sigma i =
   (* TODO: check args *)
-  instantiate_arity (lookup_mind_specif i env)
+  mis_arity (lookup_mind_specif i env)
 
 (* Constructors. *)
 
-let type_mconstruct env sigma i mind =
-  mis_type_mconstruct i (lookup_mind_specif mind env)
-
 let type_of_constructor env sigma cstr =
-  type_mconstruct env sigma
-    (index_of_constructor cstr)
-    (inductive_of_constructor cstr)
+  mis_constructor_type
+    (index_of_constructor cstr) 
+    (lookup_mind_specif (inductive_of_constructor cstr) env)
 
 let type_of_existential env sigma ev =
   Instantiate.existential_type sigma ev

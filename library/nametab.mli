@@ -59,3 +59,7 @@ val push_library_root : string -> unit
    especially, constructor/inductive names are turned into internal
    references inside a block of mutual inductive *)
 val absolute_reference : section_path -> global_reference
+
+(* [locate_in_absolute_module dir id] finds [id] in module [dir] or in
+   one of its section/subsection *)
+val locate_in_absolute_module : dir_path -> identifier -> global_reference

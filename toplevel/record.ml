@@ -77,8 +77,13 @@ let warning_or_error coe err =
   pPNL (hOV 0 [< 'sTR"Warning: "; st >])
 
 (* We build projections *)
-let declare_projections structref coers paramdecls fields =
-  let r = constr_of_reference Evd.empty (Global.env()) structref in
+let declare_projections indsp coers fields =
+  let mispec = Global.lookup_mind_specif (indsp,[||]) in
+  let paramdecls = Inductive.mis_params_ctxt mispec in
+  let paramdecls = 
+    List.map (fun (na,b,t) -> match na with Name id -> (id,b,t) | _ -> assert false)
+      paramdecls in
+  let r = constr_of_reference Evd.empty (Global.env()) (IndRef indsp) in
   let paramargs = List.rev (List.map (fun (id,_,_) -> mkVar id) paramdecls) in
   let rp = applist (r, paramargs) in
   let x = Environ.named_hd (Global.env()) r Anonymous in
@@ -107,6 +112,7 @@ let declare_projections structref coers paramdecls fields =
 	     it_mkNamedLambda_or_LetIn (mkLambda (x, rp, body)) paramdecls in
 	   let name = 
 	     try
+	       let proj = instantiate_inductive_section_params proj indsp in
 	       let cie = { const_entry_body = proj; const_entry_type = None} in
 	       let sp =
 		 declare_constant fi (ConstantEntry cie,NeverDischarge,false)
@@ -122,7 +128,7 @@ let declare_projections structref coers paramdecls fields =
 		 let constr_fi =
 		   constr_of_reference Evd.empty (Global.env()) refi in
 		 if coe then begin
-		   let cl = Class.class_of_ref structref in
+		   let cl = Class.class_of_ref (IndRef indsp) in
 		   Class.try_add_new_coercion_with_source 
 		     refi NeverDischarge cl
 		 end;
@@ -163,13 +169,13 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
       mind_entry_typename = idstruc;
       mind_entry_arity = mkSort s;
       mind_entry_consnames = [idbuild];
-     mind_entry_lc = [type_constructor] } in
+      mind_entry_lc = [type_constructor] } in
   let mie =
     { mind_entry_finite = true;
       mind_entry_inds = [mie_ind] } in
   let sp = declare_mutual_with_eliminations mie in
   let rsp = (sp,0) in (* This is ind path of idstruc *)
-  let sp_projs = declare_projections (IndRef rsp) coers params fields in
+  let sp_projs = declare_projections rsp coers fields in
   let build = ConstructRef (rsp,1) in (* This is construct path of idbuild *)
   if is_coe then Class.try_add_new_coercion build NeverDischarge;
   Recordops.add_new_struc (rsp,idbuild,nparams,List.rev sp_projs)

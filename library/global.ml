@@ -35,11 +35,11 @@ let named_context () = named_context !global_env
 let push_named_def idc = global_env := push_named_def idc !global_env
 let push_named_assum idc = global_env := push_named_assum idc !global_env
 
-let add_parameter sp c = global_env := add_parameter sp c !global_env
-let add_constant sp ce = global_env := add_constant sp ce !global_env
-let add_discharged_constant sp r = 
-  global_env := add_discharged_constant sp r !global_env
-let add_mind sp mie = global_env := add_mind sp mie !global_env
+let add_parameter sp c l = global_env := add_parameter sp c l !global_env
+let add_constant sp ce l = global_env := add_constant sp ce l !global_env
+let add_discharged_constant sp r l = 
+  global_env := add_discharged_constant sp r l !global_env
+let add_mind sp mie l = global_env := add_mind sp mie l !global_env
 let add_constraints c = global_env := add_constraints c !global_env
 
 let pop_named_decls ids = global_env := pop_named_decls ids !global_env
@@ -87,8 +87,6 @@ let mind_is_recursive =
 
 let mind_nconstr = Util.compose Inductive.mis_nconstr lookup_mind_specif
 let mind_nparams = Util.compose Inductive.mis_nparams lookup_mind_specif
-let mind_nf_arity x =
-  body_of_type (Inductive.mis_user_arity (lookup_mind_specif x))
 let mind_nf_lc = Util.compose Inductive.mis_nf_lc lookup_mind_specif
 
 

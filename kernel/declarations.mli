@@ -17,7 +17,7 @@ type constant_body = {
   const_kind : path_kind;
   const_body : constr option;
   const_type : types;
-  const_hyps : named_context; (* New: younger hyp at top *)
+  const_hyps : section_context; (* New: younger hyp at top *)
   const_constraints : constraints;
   mutable const_opaque : bool }
 
@@ -61,12 +61,13 @@ type one_inductive_body = {
   mind_kelim : sorts list;
   mind_listrec : (recarg list) array;
   mind_finite : bool;
-  mind_nparams : int }
+  mind_nparams : int;
+  mind_params_ctxt : rel_context }
 
 type mutual_inductive_body = {
   mind_kind : path_kind;
   mind_ntypes : int;
-  mind_hyps : named_context;
+  mind_hyps : section_context;
   mind_packets : one_inductive_body array;
   mind_constraints : constraints;
   mind_singl : constr option }

@@ -37,13 +37,16 @@ let mis_typename mis = mis.mis_mip.mind_typename
 let mis_typepath mis =
   make_path (dirpath mis.mis_sp) mis.mis_mip.mind_typename CCI
 let mis_consnames mis = mis.mis_mip.mind_consnames
+let mis_conspaths mis =
+  let dir = dirpath mis.mis_sp in
+  Array.map (fun id -> make_path dir id CCI) mis.mis_mip.mind_consnames
 let mis_inductive mis = ((mis.mis_sp,mis.mis_tyi),mis.mis_args)
 let mis_finite mis = mis.mis_mip.mind_finite
 
 let mis_typed_nf_lc mis =
   let sign = mis.mis_mib.mind_hyps in
   let args = Array.to_list mis.mis_args in
-  Array.map (fun t -> Instantiate.instantiate_type sign t args)
+  Array.map (fun t -> (* Instantiate.instantiate_type sign*) t (*args*))
     mis.mis_mip.mind_nf_lc
 
 let mis_nf_lc mis = Array.map body_of_type (mis_typed_nf_lc mis)
@@ -51,25 +54,14 @@ let mis_nf_lc mis = Array.map body_of_type (mis_typed_nf_lc mis)
 let mis_user_lc mis = 
   let sign = mis.mis_mib.mind_hyps in
   let args = Array.to_list mis.mis_args in
-  Array.map (fun t -> Instantiate.instantiate_type sign t args)
+  Array.map (fun t -> (*Instantiate.instantiate_type sign*) t (*args*))
     (mind_user_lc mis.mis_mip)
 
 (* gives the vector of constructors and of 
    types of constructors of an inductive definition 
    correctly instanciated *)
 
-let mis_type_mconstructs mispec =
-  let specif = Array.map body_of_type (mis_user_lc mispec)
-  and ntypes = mis_ntypes mispec
-  and nconstr = mis_nconstr mispec in
-  let make_Ik k = mkMutInd ((mispec.mis_sp,ntypes-k-1),mispec.mis_args) 
-  and make_Ck k = mkMutConstruct
-		    (((mispec.mis_sp,mispec.mis_tyi),k+1),
-		       mispec.mis_args) in
-  (Array.init nconstr make_Ck, 
-   Array.map (substl (list_tabulate make_Ik ntypes)) specif)
-
-let mis_type_nf_mconstruct i mispec =
+let mis_nf_constructor_type i mispec =
   let specif = mis_nf_lc mispec
   and ntypes = mis_ntypes mispec
   and nconstr = mis_nconstr mispec in
@@ -77,15 +69,15 @@ let mis_type_nf_mconstruct i mispec =
   if i > nconstr then error "Not enough constructors in the type";
   substl (list_tabulate make_Ik ntypes) specif.(i-1)
 
-let mis_type_mconstruct i mispec = 
+let mis_constructor_type i mispec = 
   let specif = mis_user_lc mispec
   and ntypes = mis_ntypes mispec
   and nconstr = mis_nconstr mispec in
   let make_Ik k = mkMutInd ((mispec.mis_sp,ntypes-k-1),mispec.mis_args) in 
   if i > nconstr then error "Not enough constructors in the type";
-  type_app (substl (list_tabulate make_Ik ntypes)) specif.(i-1)
+  substl (list_tabulate make_Ik ntypes) specif.(i-1)
 
-let mis_user_arity mis =
+let mis_arity mis =
   let hyps = mis.mis_mib.mind_hyps 
   and largs = Array.to_list mis.mis_args in
   Instantiate.instantiate_type hyps (mind_user_arity mis.mis_mip) largs
@@ -95,11 +87,13 @@ let mis_nf_arity mis =
   and largs = Array.to_list mis.mis_args in
   Instantiate.instantiate_type hyps mis.mis_mip.mind_nf_arity largs
 
-let mis_params_ctxt mispec =
+let mis_params_ctxt mis = mis.mis_mip.mind_params_ctxt
+(*
   let paramsign,_ =
-    decompose_prod_n_assum mispec.mis_mip.mind_nparams
-      (body_of_type (mis_nf_arity mispec))
+    decompose_prod_n_assum mis.mis_mip.mind_nparams
+      (body_of_type (mis_nf_arity mis))
   in paramsign
+*)
 
 let mis_sort mispec = mispec.mis_mip.mind_sort
 
@@ -239,10 +233,33 @@ let lift_constructor n cs = {
   cs_concl_realargs = Array.map (liftn n (cs.cs_nargs+1)) cs.cs_concl_realargs
 }
 
-let get_constructor (IndFamily (mispec,params)) j =
+let instantiate_params t args sign =
+  let rec inst s t = function
+    | ((_,None,_)::ctxt,a::args) ->
+	(match kind_of_term t with
+	   | IsProd(_,_,t) -> inst (a::s) t (ctxt,args)
+	   | _ -> anomaly"instantiate_params: type, ctxt and args mismatch")
+    | ((_,(Some b),_)::ctxt,args) -> 
+	(match kind_of_term t with
+	   | IsLetIn(_,_,_,t) -> inst ((substl s b)::s) t (ctxt,args)
+	   | _ -> anomaly"instantiate_params: type, ctxt and args mismatch")
+    | [], [] -> substl s t
+    | _ -> anomaly"instantiate_params: type, ctxt and args mismatch"
+  in inst [] t (List.rev sign,args)
+
+let get_constructor_type (IndFamily (mispec,params)) j =
   assert (j <= mis_nconstr mispec);
-  let typi = mis_type_nf_mconstruct j mispec in
-  let (args,ccl) = decompose_prod_assum (prod_applist typi params) in
+  let typi = mis_constructor_type j mispec in
+  instantiate_params typi params (mis_params_ctxt mispec)
+
+let get_constructors_types (IndFamily (mispec,params) as indf) =
+  Array.init (mis_nconstr mispec) (fun j -> get_constructor_type indf (j+1))
+
+let get_constructor (IndFamily (mispec,params) as indf) j =
+  assert (j <= mis_nconstr mispec);
+  let typi = mis_nf_constructor_type j mispec in
+  let typi = instantiate_params typi params (mis_params_ctxt mispec) in
+  let (args,ccl) = decompose_prod_assum typi in
   let (_,allargs) = whd_stack ccl in
   let (_,vargs) = list_chop (mis_nparams mispec) allargs in
   { cs_cstr = ith_constructor_of_inductive (mis_inductive mispec) j;
@@ -254,8 +271,14 @@ let get_constructor (IndFamily (mispec,params)) j =
 let get_constructors (IndFamily (mispec,params) as indf) =
   Array.init (mis_nconstr mispec) (fun j -> get_constructor indf (j+1))
 
+let get_arity_type (IndFamily (mispec,params)) =
+  let arity = body_of_type (mis_arity mispec) in
+(*  instantiate_params arity params (mis_params_ctxt mispec) *)
+  prod_applist arity params
+
 let get_arity (IndFamily (mispec,params)) =
   let arity = body_of_type (mis_nf_arity mispec) in
+(*  instantiate_params arity params (mis_params_ctxt mispec) *)
   destArity (prod_applist arity params)
 
 (* Functions to build standard types related to inductive *)
@@ -299,3 +322,23 @@ let build_branch_type env dep p cs =
       cs.cs_args
   else
     it_mkProd_or_LetIn base cs.cs_args
+
+(* [Rel (n+m);...;Rel(n+1)] *)
+
+let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
+
+let rel_list n m = 
+  let rec reln l p = 
+    if p>m then l else reln (mkRel(n+p)::l) (p+1)
+  in 
+  reln [] 1
+
+let extended_rel_list n hyps =
+  let rec reln l p = function
+    | (_,None,_) :: hyps -> reln (mkRel (n+p) :: l) (p+1) hyps
+    | (_,Some _,_) :: hyps -> reln l (p+1) hyps
+    | [] -> l
+  in 
+  reln [] 1 hyps
+
+let extended_rel_vect n hyps = Array.of_list (extended_rel_list n hyps)

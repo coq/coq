@@ -42,8 +42,9 @@ val mind_check_wellformed : env -> mutual_inductive_entry -> unit
 (* [cci_inductive] checks positivity and builds an inductive body *)
 
 val cci_inductive : 
-  env -> env -> path_kind -> bool -> 
-   (int * identifier * types * identifier list * bool * bool * types array)
+  (identifier * variable_path) list -> env -> env -> path_kind -> bool -> 
+   (Sign.rel_context * int * identifier * types * 
+    identifier list * bool * bool * types array)
       list ->
       constraints ->
       	mutual_inductive_body

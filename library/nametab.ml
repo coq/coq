@@ -148,14 +148,33 @@ let constant_sp_of_id id =
     | ConstRef sp -> sp
     | _ -> raise Not_found
 
-let check_absoluteness sp =
-  match dirpath sp with
+let check_absoluteness dir =
+  match dir with
     | a::_ when List.mem a !roots -> ()
-    | _ -> anomaly ("Not an absolute path: "^(string_of_path sp))
+    | _ -> anomaly ("Not an absolute dirpath: "^(string_of_dirpath dir))
 
 let absolute_reference sp =
-  check_absoluteness sp;
+  check_absoluteness (dirpath sp);
   locate (qualid_of_sp sp)
+
+exception Found of global_reference
+let locate_in_module dir id =
+  let rec exists_in id (Closed (ccitab,_,modtab)) =
+    try raise (Found (Stringmap.find id ccitab))
+    with Not_found -> 
+      Stringmap.iter (fun _ (sp,mc) -> exists_in id mc) modtab
+  in
+  let rec search (Closed (ccitab,_,modtab) as mc) = function
+    | modid :: dir' -> search (snd (Stringmap.find modid modtab)) dir'
+    | [] -> 
+	try exists_in id mc; raise Not_found
+	with Found ref -> ref
+  in
+  search !persistent_nametab dir
+
+let locate_in_absolute_module dir id =
+  check_absoluteness dir;
+  locate_in_module dir (string_of_id id)
 
 (* These are entry points to make the contents of a module/section visible *)
 (* in the current env (does not affect the absolute name space `coq_root') *)
@@ -165,7 +184,13 @@ let open_module_contents qid =
 (*  Stringmap.iter (fun _ -> Libobject.open_object) objtab;*)
   Stringmap.iter push_mod_current modtab
 
-let open_section_contents = open_module_contents
+let conditional_push ref = push_cci_current ref (* TODO *)
+
+let open_section_contents qid =
+  let _, (Closed (ccitab,objtab,modtab)) = locate_module qid in
+  Stringmap.iter push_cci_current ccitab;
+(*  Stringmap.iter (fun _ -> Libobject.open_object) objtab;*)
+  Stringmap.iter push_mod_current modtab
 
 let rec rec_open_module_contents qid =
   let _, (Closed (ccitab,objtab,modtab)) = locate_module qid in

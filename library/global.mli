@@ -26,10 +26,11 @@ val named_context : unit -> named_context
 val push_named_assum : identifier * constr -> unit
 val push_named_def : identifier * constr -> unit
 
-val add_parameter : section_path -> constr -> unit
-val add_constant : section_path -> constant_entry -> unit
-val add_discharged_constant : section_path -> Cooking.recipe -> unit
-val add_mind : section_path -> mutual_inductive_entry -> unit
+val add_parameter : section_path -> constr -> local_names -> unit
+val add_constant : section_path -> constant_entry -> local_names -> unit
+val add_discharged_constant : section_path -> Cooking.recipe -> 
+  local_names -> unit
+val add_mind : section_path -> mutual_inductive_entry -> local_names -> unit
 val add_constraints : constraints -> unit
 
 val pop_named_decls : identifier list -> unit
@@ -61,6 +62,5 @@ val env_of_context : named_context -> env
 val mind_is_recursive : inductive -> bool
 val mind_nconstr : inductive -> int
 val mind_nparams : inductive -> int
-val mind_nf_arity : inductive -> constr
 val mind_nf_lc : inductive -> constr array
 
