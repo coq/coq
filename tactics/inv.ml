@@ -288,12 +288,12 @@ let generalizeRewriteIntros tac depids id gls =
   gls
 
 let rec tclMAP_i n tacfun = function
-  | [] -> 
-      if n>0 then tclDO n (tacfun None)
-      else tclIDTAC
+  | [] -> tclDO n (tacfun None)
   | a::l -> 
       if n=0 then error "Too much names"
       else tclTHEN (tacfun (Some a)) (tclMAP_i (n-1) tacfun l)
+
+let remember_first_eq id x = if !x = None then x := Some id
 
 (* invariant: ProjectAndApply is responsible for erasing the clause
    which it is given as input
@@ -305,16 +305,17 @@ let rec tclMAP_i n tacfun = function
 
 let projectAndApply thin id eqname names depids gls =
   let env = pf_env gls in
-  let clearer = if thin then clear else fun _ -> tclIDTAC in
-  let subst_hyp_LR id = tclTHEN (tclTRY(hypSubst_LR id None)) (clearer [id]) in
-  let subst_hyp_RL id = tclTHEN (tclTRY(hypSubst_RL id None)) (clearer [id]) in
+  let clearer id =
+    if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC) in
+  let subst_hyp_LR id = tclTHEN (tclTRY(hypSubst_LR id None)) (clearer id) in
+  let subst_hyp_RL id = tclTHEN (tclTRY(hypSubst_RL id None)) (clearer id) in
   let substHypIfVariable tac id gls =
-    eqname := Some id; (* remember where to re-intro hyps later *)
     let (t,t1,t2) = Hipattern.dest_nf_eq gls (pf_get_hyp_typ gls id) in
     match (kind_of_term t1, kind_of_term t2) with
       | Var id1, _ -> generalizeRewriteIntros (subst_hyp_LR id) depids id1 gls
       | _, Var id2 -> generalizeRewriteIntros (subst_hyp_RL id) depids id2 gls
-      | _ -> 
+      | _ ->
+	  
 	  tac id gls
   in
   let deq_trailer id neqns =
