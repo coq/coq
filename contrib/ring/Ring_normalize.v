@@ -457,6 +457,7 @@ Trivial.
 Elim (varlist_lt v v0); Simpl.
 Repeat Rewrite ics_aux_ok.
 Rewrite H; Simpl; Rewrite ics_aux_ok; EAuto.
+
 Rewrite ics_aux_ok; Rewrite H0; Repeat Rewrite ics_aux_ok; Simpl; EAuto.
 
 (* monom and varlist *)

@@ -58,7 +58,6 @@ Variable Aeq : A -> A -> bool.
 Record Semi_Ring_Theory : Prop :=
 { SR_plus_sym  : (n,m:A)[| n + m == m + n |];
   SR_plus_assoc : (n,m,p:A)[| n + (m + p) == (n + m) + p |];
-
   SR_mult_sym : (n,m:A)[| n*m == m*n |];
   SR_mult_assoc : (n,m,p:A)[| n*(m*p) == (n*m)*p |];
   SR_plus_zero_left :(n:A)[| 0 + n == n|];
@@ -81,8 +80,9 @@ Local mult_zero_left := (SR_mult_zero_left T).
 Local distr_left := (SR_distr_left T).
 Local plus_reg_left := (SR_plus_reg_left T).
 
-Hints Resolve  plus_sym  plus_assoc  mult_sym mult_assoc plus_zero_left
-  mult_one_left mult_zero_left distr_left plus_reg_left.
+Hints Resolve  plus_sym plus_assoc mult_sym mult_assoc
+  plus_zero_left mult_one_left mult_zero_left distr_left
+  plus_reg_left.
 
 (* Lemmas whose form is x=y are also provided in form y=x because Auto does
   not symmetry *) 
@@ -180,7 +180,7 @@ Record Ring_Theory : Prop :=
   Th_plus_zero_left :(n:A)[| 0 + n == n|];
   Th_mult_one_left : (n:A)[| 1*n == n |];
   Th_opp_def : (n:A) [| n + (-n) == 0 |];
-  Th_distr_left   : (n,m,p:A) [| (n + m)*p == n*p + m*p |];
+  Th_distr_left : (n,m,p:A) [| (n + m)*p == n*p + m*p |];
   Th_eq_prop : (x,y:A) (Is_true (Aeq x y)) -> x==y
 }.
 
@@ -195,8 +195,8 @@ Local mult_one_left := (Th_mult_one_left T).
 Local opp_def := (Th_opp_def T).
 Local distr_left := (Th_distr_left T).
 
-Hints Resolve plus_sym plus_assoc mult_sym mult_assoc plus_zero_left mult_one_left
-  opp_def distr_left.
+Hints Resolve plus_sym plus_assoc mult_sym mult_assoc
+  plus_zero_left mult_one_left opp_def distr_left.
 
 (* Lemmas whose form is x=y are also provided in form y=x because Auto does
   not symmetry *) 
@@ -285,7 +285,7 @@ Hints Resolve Th_opp_mult_left.
 Lemma Th_opp_mult_left2 : (x,y:A)[| (-x)*y == -(x*y)  |].
 Symmetry; EAuto. Save.
 
-Lemma Th_mult_zero_right : (n:A)[|  n*0 == 0|].
+Lemma Th_mult_zero_right : (n:A)[| n*0 == 0|].
 Intro; Elim mult_sym; EAuto.
 Save.
 
@@ -326,7 +326,7 @@ Apply (aux2 1![| x + y |]);
 | Auto ].
 Save.
 
-Lemma Th_plus_permute_opp: (n,m,p:A)[| (-m) + (n + p) == n + ((-m)+p) |].
+Lemma Th_plus_permute_opp: (n,m,p:A)[| (-m)+(n+p) == n+((-m)+p) |].
 EAuto. Save.
 
 Lemma Th_opp_opp : (n:A)[| -(-n) == n |].

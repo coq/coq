@@ -25,11 +25,11 @@ Syntax tactic level 0:
  
 Grammar vernac vernac : ast := 
   addring [ "Add" "Ring" 
-      	     constrarg($a) constrarg($aplus) constrarg($amult) constrarg($aone)
-      	     constrarg($azero) constrarg($aopp) constrarg($aeq) constrarg($t)
-      	     "[" ne_constrarg_list($l) "]" "." ] 
+     constrarg($a) constrarg($aplus) constrarg($amult) constrarg($aone)
+     constrarg($azero) constrarg($aopp) constrarg($aeq) constrarg($t)
+     "[" ne_constrarg_list($l) "]" "." ] 
   -> [(AddRing $a $aplus $amult $aone $azero $aopp $aeq $t
-      	 ($LIST $l))]
+     ($LIST $l))]
 
 | addsemiring [ "Add" "Semi" "Ring" 
       	       	 constrarg($a) constrarg($aplus) constrarg($amult) 
@@ -49,6 +49,18 @@ Grammar vernac vernac : ast :=
                  constrarg($aone) constrarg($azero) constrarg($aeq) 
                  constrarg($t) "." ] 
   -> [(AddAbstractSemiRing $a $aplus $amult $aone $azero $aeq $t )]
+| addsetoidring [ "Add" "Setoid" "Ring"
+      	    constrarg($a) constrarg($aequiv) constrarg($asetth) constrarg($aplus) constrarg($amult) 
+	    constrarg($aone) constrarg($azero) constrarg($aopp) constrarg($aeq) constrarg($pm)
+	    constrarg($mm) constrarg($om) constrarg($t) "[" ne_constrarg_list($l) "]" "." ] 
+  -> [(AddSetoidRing $a $aequiv $asetth $aplus $amult $aone $azero $aopp $aeq $pm $mm $om $t
+      	 ($LIST $l))]
+| addsetoidsemiring [ "Add" "Semi" "Setoid" "Ring" 
+      	  constrarg($a) constrarg($aequiv) constrarg($asetth) constrarg($aplus)
+	  constrarg($amult) constrarg($aone) constrarg($azero) constrarg($aeq) 
+          constrarg($pm) constrarg($mm) constrarg($t) "[" ne_constrarg_list($l) "]" "." ] 
+  -> [(AddSemiRing $a $aequiv $asetth $aplus $amult $aone $azero $aeq $pm $mm $t
+      	   ($LIST $l))]
 .
 
 (* As an example, we provide an instantation for bool. *)

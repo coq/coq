@@ -71,7 +71,7 @@ let add_field a aplus amult aone azero aopp aeq ainv aminus_o adiv_o rth
   ainv_l =
   begin
     (try
-       Ring.add_theory true true a aplus amult aone azero aopp aeq rth
+       Ring.add_theory true true false a None None None aplus amult aone azero (Some aopp) aeq rth
          Quote.ConstrSet.empty
      with | UserError("Add Semi Ring",_) -> ());
     let th = mkApp ((constant ["Field_Theory"] "Build_Field_Theory"),
