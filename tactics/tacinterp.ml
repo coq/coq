@@ -1279,12 +1279,22 @@ and interp_case_intro_pattern ist =
 
 (* Quantified named or numbered hypothesis or hypothesis in context *)
 (* (as in Inversion) *)
-let interp_quantified_hypothesis ist gl = function
+let interp_quantified_hypothesis ist = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id ->
       try match List.assoc id ist.lfun with
 	| VInteger n -> AnonHyp n
-(*	| VIdentifier id -> NamedHyp id   Why ?*)
+	| VIntroPattern (IntroIdentifier id) -> NamedHyp id
+	| _ -> raise Not_found
+      with Not_found -> NamedHyp id
+
+(* Quantified named or numbered hypothesis or hypothesis in context *)
+(* (as in Inversion) *)
+let interp_declared_or_quantified_hypothesis ist gl = function
+  | AnonHyp n -> AnonHyp n
+  | NamedHyp id ->
+      try match List.assoc id ist.lfun with
+	| VInteger n -> AnonHyp n
 	| v -> NamedHyp (variable_of_value (pf_env gl) v)
       with Not_found -> NamedHyp id
 
@@ -1297,7 +1307,7 @@ let interp_induction_arg ist gl = function
 	(pf_interp_constr ist gl (RVar (loc,id),Some (CRef (Ident (loc,id)))))
 
 let interp_binding ist gl (loc,b,c) =
-  (loc,interp_quantified_hypothesis ist gl b,pf_interp_constr ist gl c)
+  (loc,interp_quantified_hypothesis ist b,pf_interp_constr ist gl c)
 
 let interp_bindings ist gl = function
 | NoBindings -> NoBindings
@@ -1600,7 +1610,8 @@ and interp_genarg ist goal x =
       in_gen wit_constr_may_eval (interp_constr_may_eval ist goal (out_gen globwit_constr_may_eval x))
   | QuantHypArgType ->
       in_gen wit_quant_hyp
-        (interp_quantified_hypothesis ist goal (out_gen globwit_quant_hyp x))
+        (interp_declared_or_quantified_hypothesis ist goal
+          (out_gen globwit_quant_hyp x))
   | RedExprArgType ->
       in_gen wit_red_expr (pf_redexp_interp ist goal (out_gen globwit_red_expr x))
   | TacticArgType -> in_gen wit_tactic (out_gen globwit_tactic x)
@@ -1670,7 +1681,7 @@ and interp_atomic ist gl = function
   | TacIntroPattern l ->
       h_intro_patterns (List.map (interp_intro_pattern ist) l)
   | TacIntrosUntil hyp ->
-      h_intros_until (interp_quantified_hypothesis ist gl hyp)
+      h_intros_until (interp_quantified_hypothesis ist hyp)
   | TacIntroMove (ido,ido') ->
       h_intro_move (option_app (interp_ident ist) ido)
       (option_app (interp_hyp ist gl) ido')
@@ -1715,20 +1726,23 @@ and interp_atomic ist gl = function
 
   (* Derived basic tactics *)
   | TacSimpleInduction (h,ids) ->
-      h_simple_induction (interp_quantified_hypothesis ist gl h,ids)
+      let h =
+        if !Options.v7 then interp_declared_or_quantified_hypothesis ist gl h
+        else interp_quantified_hypothesis ist h in
+      h_simple_induction (h,ids)
   | TacNewInduction (c,cbo,(ids,ids')) ->
       h_new_induction (interp_induction_arg ist gl c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
         (option_app (interp_intro_pattern ist) ids,ids')
   | TacSimpleDestruct h ->
-      h_simple_destruct (interp_quantified_hypothesis ist gl h)
+      h_simple_destruct (interp_quantified_hypothesis ist h)
   | TacNewDestruct (c,cbo,(ids,ids')) -> 
       h_new_destruct (interp_induction_arg ist gl c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
         (option_app (interp_intro_pattern ist) ids,ids')
   | TacDoubleInduction (h1,h2) ->
-      let h1 = interp_quantified_hypothesis ist gl h1 in
-      let h2 = interp_quantified_hypothesis ist gl h2 in
+      let h1 = interp_quantified_hypothesis ist h1 in
+      let h2 = interp_quantified_hypothesis ist h2 in
       Elim.h_double_induction h1 h2
   | TacDecomposeAnd c -> Elim.h_decompose_and (pf_interp_constr ist gl c)
   | TacDecomposeOr c -> Elim.h_decompose_or (pf_interp_constr ist gl c)
@@ -1773,14 +1787,14 @@ and interp_atomic ist gl = function
   | TacInversion (DepInversion (k,c,ids),hyp) ->
       Inv.dinv k (option_app (pf_interp_constr ist gl) c)
         (option_app (interp_intro_pattern ist) ids)
-        (interp_quantified_hypothesis ist gl hyp)
+        (interp_declared_or_quantified_hypothesis ist gl hyp)
   | TacInversion (NonDepInversion (k,idl,ids),hyp) ->
       Inv.inv_clause k 
         (option_app (interp_intro_pattern ist) ids)
         (List.map (interp_hyp ist gl) idl)
-        (interp_quantified_hypothesis ist gl hyp)
+        (interp_declared_or_quantified_hypothesis ist gl hyp)
   | TacInversion (InversionUsing (c,idl),hyp) ->
-      Leminv.lemInv_clause (interp_quantified_hypothesis ist gl hyp)
+      Leminv.lemInv_clause (interp_declared_or_quantified_hypothesis ist gl hyp)
         (pf_interp_constr ist gl c)
         (List.map (interp_hyp ist gl) idl)
 
@@ -1847,6 +1861,8 @@ let hide_interp t ot gl =
 (* Substitution at module closing time *)
 
 let subst_quantified_hypothesis _ x = x
+
+let subst_declared_or_quantified_hypothesis _ x = x
 
 let subst_inductive subst (kn,i) = (subst_kn subst kn,i)
 
@@ -2096,7 +2112,8 @@ and subst_genarg subst (x:glob_generic_argument) =
       in_gen globwit_constr_may_eval (subst_raw_may_eval subst (out_gen globwit_constr_may_eval x))
   | QuantHypArgType ->
       in_gen globwit_quant_hyp
-        (subst_quantified_hypothesis subst (out_gen globwit_quant_hyp x))
+        (subst_declared_or_quantified_hypothesis subst 
+          (out_gen globwit_quant_hyp x))
   | RedExprArgType ->
       in_gen globwit_red_expr (subst_redexp subst (out_gen globwit_red_expr x))
   | TacticArgType ->
