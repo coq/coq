@@ -485,11 +485,12 @@ install-binaries:
 	$(MKDIR) $(FULLBINDIR)
 	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(FULLBINDIR)
 
-ALLVO=$(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO)
+LIBFILES=$(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO) \
+         $(EXTRACTIONCMO)
 
 install-library:
 	$(MKDIR) $(FULLCOQLIB)
-	for f in $(ALLVO); do \
+	for f in $(LIBFILES); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
 	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
