@@ -762,6 +762,7 @@ let extract_constant_spec env kn cb =
 	Sval (r, type_expunge env t)
 
 let extract_inductive env kn = 
+  let kn = long_kn kn in 
   let ind = extract_ind env kn in 
   add_recursors env kn; 
   let f l = List.filter (type_neq env Tdummy) l in 
