@@ -189,6 +189,9 @@ let is_constant sp =
 let constant_strength sp = 
   let (_,stre) = Spmap.find sp !csttab in stre
 
+let constant_or_parameter_strength sp =
+  try constant_strength sp with Not_found -> NeverDischarge
+
 let is_variable id = 
   let sp = Nametab.sp_of_id CCI id in Spmap.mem sp !vartab
   

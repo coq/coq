@@ -277,8 +277,8 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
 	  (Variable (id,expmod_a,stre,sticky) :: ops,
            ids_to_discard,work_alist)
 
-    | "CONSTANT" ->
-	let stre = constant_strength sp in
+    | "CONSTANT" | "PARAMETER" ->
+	let stre = constant_or_parameter_strength sp in
 	if stre = (DischargeAt sec_sp) then
 	  (ops, ids_to_discard, (Const sp, DO_REPLACE) :: work_alist)
 	else

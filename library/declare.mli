@@ -43,6 +43,7 @@ val make_strength_2 : unit -> strength
 
 val is_constant : section_path -> bool
 val constant_strength : section_path -> strength
+val constant_or_parameter_strength : section_path -> strength
 
 val is_variable : identifier -> bool
 val out_variable : 

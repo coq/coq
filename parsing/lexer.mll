@@ -137,6 +137,8 @@ rule token = parse
       { ("INT", Lexing.lexeme lexbuf) }
   | "(" | ")" | "[" | "]" | "{" | "}" | "." | "_" 
       { ("", Lexing.lexeme lexbuf) }
+  | "->"
+      { ("", "->") }
   | symbolchar+
       { ("", Lexing.lexeme lexbuf) }
   | '`' [^'`']* '`'
