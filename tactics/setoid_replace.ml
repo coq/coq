@@ -107,6 +107,8 @@ let coq_reflexive =
  lazy(gen_constant ["Relations"; "Relation_Definitions"] "reflexive")
 let coq_symmetric =
  lazy(gen_constant ["Relations"; "Relation_Definitions"] "symmetric")
+let coq_relation =
+ lazy(gen_constant ["Relations"; "Relation_Definitions"] "relation")
 
 let coq_Relation_Class = lazy(constant ["Setoid"] "Relation_Class")
 let coq_Argument_Class = lazy(constant ["Setoid"] "Argument_Class")
@@ -467,6 +469,15 @@ let print_setoids () =
 
 (************************** Adding a relation to the database *********************)
 
+let check_eq env a aeq =
+ let typ = mkApp (Lazy.force coq_relation, [| a |]) in
+ if
+  not
+   (is_conv env Evd.empty (Typing.type_of env Evd.empty aeq) typ)
+ then
+  errorlabstrm "Add Relation Class"
+   (prterm aeq ++ str " should have type (" ++ prterm typ ++ str ")")
+
 let check_refl env a aeq refl =
  if
   not
@@ -475,7 +486,6 @@ let check_refl env a aeq refl =
  then
   errorlabstrm "Add Relation Class"
    (str "Not a valid proof of reflexivity")
- else ()
 
 let check_sym env a aeq sym =
  if
@@ -488,6 +498,7 @@ let check_sym env a aeq sym =
 
 let int_add_relation a aeq refl sym =
  let env = Global.env () in
+  check_eq env a aeq ;
   option_iter (check_refl env a aeq) refl ;
   option_iter (check_sym env a aeq) sym ;
   Lib.add_anonymous_leaf 
