@@ -1224,14 +1224,6 @@ Intros x y;Split; [
        Trivial with arith Orelse (Intros H2;Discriminate H2)]))].
 Qed.
 
-Theorem le_minus: (i,h:nat) (le (minus i h) i).
-Proof.
-Intros i h;Pattern i h; Apply nat_double_ind; [
-  Auto with arith
-| Auto with arith
-| Intros m n H; Simpl; Apply le_trans with m:=m; Auto with arith ].
-Qed.
-
 Lemma ZL16: (p,q:positive)(lt (minus (convert p) (convert q)) (convert p)).
 Proof.
 Intros p q; Elim (ZL4 p);Elim (ZL4 q); Intros h H1 i H2; 
