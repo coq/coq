@@ -225,8 +225,8 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
   pretyping/indrec.cmo pretyping/pretyping.cmo \
   parsing/lexer.cmo parsing/coqast.cmo interp/genarg.cmo \
   proofs/tacexpr.cmo toplevel/vernacexpr.cmo \
-  interp/topconstr.cmo interp/syntax_def.cmo \
-  interp/ppextend.cmo interp/symbols.cmo \
+  interp/topconstr.cmo \
+  interp/ppextend.cmo interp/symbols.cmo interp/syntax_def.cmo \
   interp/constrintern.cmo interp/coqlib.cmo \
   parsing/pcoq.cmo parsing/ast.cmo \
   parsing/extend.cmo pretyping/detyping.cmo \
