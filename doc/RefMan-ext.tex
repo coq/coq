@@ -840,89 +840,17 @@ Check (id1 O).
 Coercions can be used to implicitly inject terms from one ``class'' in
 which they reside into another one. A {\em class} is either a sort
 (denoted by the keyword SORTCLASS), a product type (denoted by the
-keyword FUNCLASS) or an inductive type (denoted by its name).
+keyword FUNCLASS), or a type constructor (denoted by its name),
+e.g. an inductive type or any constant with a type of the form
+$(x_1:A_1)..(x_n:A_n)s$ where $s$ is a sort.
 
 Then the user is able to apply an
 object that is not a function, but can be coerced to a function, and
 more generally to consider that a term of type A is of type B provided
 that there is a declared coercion between A and B.
 
-\subsection{\tt Class {\ident}.}\comindex{Class}
-Declares the name {\ident} as a new class.
-
-\begin{Variant}
-\item {\tt Class Local {\ident}.} \\
-Declares the name {\ident} as a new local class to the current section.
-\end{Variant}
-
-\subsection{\tt Coercion {\ident} : {\ident$_1$} >-> {\ident$_2$}.}
-\comindex{Coercion}
-
-Declares the name {\ident} as a coercion between {\ident$_1$} and
-{\ident$_2$}. The classes {\ident$_1$} and {\ident$_2$} are first
-declared if necessary.
-
-\begin{Variants}
-\item {\tt Coercion Local {\ident} : {\ident$_1$} >-> {\ident$_2$}.}\comindex{Coercion Local}\\
-Declares the name {\ident} as a coercion local to the current section.
-
-\item {\tt Identity Coercion {\ident}:{\ident$_1$} >->
-    {\ident$_2$}.}\comindex{Identity Coercion}\\
-Coerce an inductive type to a subtype of it.
-
-\item {\tt Identity Coercion Local {\ident}:{\ident$_1$} >-> {\ident$_2$}.} \\
-Idem but locally to the current section.
-
-\item {\tt Coercion {\ident} := {\term}}\comindex{Coercion}\\
-  This defines {\ident} just like \texttt{Definition {\ident} :=
-    {\term}}, and then declares {\ident} as a coercion between it
-  source and its target.
-
-\item {\tt Coercion {\ident} := {\term} : {\type}}\\
-  This defines {\ident} just like 
-  \texttt{Definition {\ident} : {\type} := {\term}}, and then
-  declares {\ident} as a coercion between it source and its target. 
-
-\item {\tt Coercion Local {\ident} := {\term}}\comindex{Local Coercion}\\
-  This defines {\ident} just like \texttt{Local {\ident} :=
-    {\term}}, and then declares {\ident} as a coercion between it
-  source and its target.
-
-\end{Variants}
-
-\SeeAlso the technical chapter \ref{Coercions-full} on coercions.
-
-\subsection{Displaying available coercions}
-
-\subsubsection{\tt Print Classes.}\comindex{Print Classes}
-Print the list of declared classes in the current context.
-
-\subsubsection{\tt Print Coercions.}\comindex{Print Coercions}
-Print the list of declared coercions in the current context.
-
-\subsubsection{\tt Print Graph.}\comindex{Print Graph}
-Print the list of valid path coercions in the current context.
-
-\subsection{Activating the printing of coercions}
-
-\subsubsection{\tt Set Printing Coercions.}
-\comindex{Set Printing Coercions}
-\comindex{Unset Printing Coercions}
-
-This command forces all the coercions to be printed.
-To skip the printing of coercions, use
- {\tt Unset Printing Coercions}.
-By default, coercions are not printed.
-
-\subsubsection{\tt Set Printing Coercion {\qualid}.}
-\comindex{Set Printing Coercion}
-\comindex{Unset Printing Coercion}
-
-This command forces coercion denoted by {\qualid} to be printed.
-To skip the printing of coercion {\qualid}, use
- {\tt Unset Printing Coercion {\qualid}}.
-By default, a coercion is never printed.
-
+More details and examples, and a description of commands related to coercions are provided in chapter 
+\ref{Coercions-full}.
 
 %%% Local Variables: 
 %%% mode: latex

@@ -38,6 +38,20 @@ classes:
   type, i.e. of form $(x:A)B$.
 \end{itemize}
 
+Formally, the syntax of a classes is defined by
+
+\medskip
+\begin{center}
+\begin{tabular}{|lcl|}
+\hline
+{\class} & ::= & {\qualid} \\
+  & $|$ & {\tt SORTCLASS} \\
+  & $|$ & {\tt FUNCLASS} \\
+\hline
+\end{tabular}
+\end{center}
+\medskip
+
 \asection{Coercions}
 \index{Coercions!FUNCLASS}
 \index{Coercions!SORTCLASS}
@@ -52,7 +66,7 @@ conditions holds:
 \item $D$ is {\tt FUNCLASS}, then the type of $f$ must have the form
       $(x_1:A_1)..(x_n:A_n)(y:(C~x_1..x_n))(x:A)B$. 
 \item $D$ is {\tt SORTCLASS}, then the type of $f$ must have the form
-      $(x_1:A_1)..(x_n:A_n)(y:(C~x_1..x_n))s$. 
+      $(x_1:A_1)..(x_n:A_n)(y:(C~x_1..x_n))s$ with $s$ a sort. 
 \end{itemize}
 
 We then write $f:C \mbox{\texttt{>->}} D$. The restriction on the type
@@ -64,7 +78,7 @@ cannot be source classes.
 apply the coercion $f$ to it; the obtained term $(f~t_1..t_n~t)$ is
 then an object of $D$.
 
-\asubsection{Identity Coercions}
+\asection{Identity Coercions}
 \index{Coercions!identity}
 
   Identity coercions are special cases of coercions used to go around
@@ -96,56 +110,65 @@ substitution in $u_i$ of the variables $x_j$ by $t_j$.
 \asection{Inheritance Graph}
 \index{Coercions!inheritance graph}
 Coercions form an inheritance graph with classes as nodes.  We call
-{\em path coercion} an ordered list of coercions between two nodes of
+{\em coercion path} an ordered list of coercions between two nodes of
 the graph.  A class $C$ is said to be a subclass of $D$ if there is a
 coercion path in the graph from $C$ to $D$; we also say that $C$
 inherits from $D$. Our mechanism supports multiple inheritance since a
 class may inherit from several classes, contrary to simple inheritance
 where a class inherits from at most one class.  However there must be
 at most one path between two classes.  If this is not the case, only
-the oldest one is {\em valid} and the others are ignored. So the order
+the {\em oldest} one is valid and the others are ignored. So the order
 of declaration of coercions is important.
 
-We extend notations for coercions to path coercions. For instance
+We extend notations for coercions to coercion paths. For instance
 $[f_1;..;f_k]:C \mbox{\texttt{>->}} D$ is the coercion path composed
-by the coercions $f_1..f_k$.  The application of a path-coercion to a
+by the coercions $f_1..f_k$.  The application of a coercion path to a
 term consists of the successive application of its coercions.
 
-\asection{Commands}
+\asection{Declaration of Coercions}
 
-\asubsection{\tt Class {\ident}.}\comindex{Class}
-Declares the name {\ident} as a new class.
+%%%%% "Class" is useless, since classes are implicitely defined via coercions.
 
-\begin{ErrMsgs}
-\item {\ident} \errindex{not declared}
-\item {\ident} \errindex{is already a class}
-\item \errindex{Type of {\ident} does not end with a sort}
-\end{ErrMsgs}
+% \asubsection{\tt Class {\qualid}.}\comindex{Class}
+% Declares {\qualid} as a new class.
 
-\asubsection{\tt Class Local {\ident}.} 
-Declares the name {\ident} as a new local class to the current section.
+% \begin{ErrMsgs}
+% \item {\qualid} \errindex{not declared}
+% \item {\qualid} \errindex{is already a class}
+% \item \errindex{Type of {\qualid} does not end with a sort}
+% \end{ErrMsgs}
 
-\asubsection{\tt Coercion {\ident} : {\ident$_1$} >-> {\ident$_2$}.}
+% \begin{Variant}
+% \item {\tt Class Local {\qualid}.} \\
+% Declares the construction denoted by {\qualid} as a new local class to 
+% the current section.
+% \end{Variant}
+
+% END "Class" is useless
+
+\asubsection{\tt Coercion {\qualid} : {\class$_1$} >-> {\class$_2$}.}
 \comindex{Coercion}
 
-Declares the name {\ident} as a coercion between {\ident$_1$} and
-{\ident$_2$}. The classes {\ident$_1$} and {\ident$_2$} are first
-declared if necessary.
+Declares the construction denoted by {\qualid} as a coercion between
+{\class$_1$} and {\class$_2$}.
+
+% Useless information
+% The classes {\class$_1$} and {\class$_2$} are first declared if necessary.
    
 \begin{ErrMsgs}
-\item {\ident} \errindex{not declared}
-\item {\ident} \errindex{is already a coercion}
+\item {\qualid} \errindex{not declared}
+\item {\qualid} \errindex{is already a coercion}
 \item \errindex{FUNCLASS cannot be a source class}
 \item \errindex{SORTCLASS cannot be a source class}
 \item \errindex{Does not correspond to a coercion} \\
-   {\ident} is not a function.
-\item \errindex{We do not find the source class {\ident$_1$}}
-\item {\ident} \errindex{does not respect the inheritance uniform condition}
-\item \errindex{The target class does not correspond to {\ident$_2$}}
+   {\qualid} is not a function.
+\item \errindex{Cannot find the source class}
+\item {\qualid} \errindex{does not respect the inheritance uniform condition}
+\item \errindex{The target class does not correspond to {\class$_2$}}
 \end{ErrMsgs}
 
-  When the coercion {\ident} is added to the inheritance graph, non
-valid path coercions are ignored; they are signaled by a warning.
+When the coercion {\qualid} is added to the inheritance graph, non
+valid coercion paths are ignored; they are signaled by a warning.
 \\[0.3cm]
 \noindent {\bf Warning :}
 \begin{enumerate}
@@ -156,31 +179,51 @@ valid path coercions are ignored; they are signaled by a warning.
       \end{tabbing}
 \end{enumerate}
 
-\asubsection{\tt Coercion Local {\ident}:{\ident$_1$} >->
-{\ident$_2$}.}
+\begin{Variants}
+\item {\tt Coercion Local {\qualid} : {\class$_1$} >-> {\class$_2$}.}
+\comindex{Coercion Local}\\
+  Declares the construction denoted by {\qualid} as a coercion local to
+  the current section.
 
-Declares the name {\ident} as a local coercion to the current section.
+\item {\tt Coercion {\ident} := {\term}}\comindex{Coercion}\\
+  This defines {\ident} just like \texttt{Definition {\ident} :=
+    {\term}}, and then declares {\ident} as a coercion between it
+  source and its target.
 
+\item {\tt Coercion {\ident} := {\term} : {\type}}\\
+  This defines {\ident} just like 
+  \texttt{Definition {\ident} : {\type} := {\term}}, and then
+  declares {\ident} as a coercion between it source and its target. 
 
-\asubsection{\tt Identity Coercion {\ident}:{\ident$_1$} >-> {\ident$_2$}.} 
+\item {\tt Coercion Local {\ident} := {\term}}\comindex{Local Coercion}\\
+  This defines {\ident} just like \texttt{Local {\ident} :=
+    {\term}}, and then declares {\ident} as a coercion between it
+  source and its target.
+\end{Variants}
 
-We check that {\ident$_1$} is a constant with a value of the form
-$[x_1:T_1]..[x_n:T_n](\mbox{\ident}_2~t_1..t_m)$ where $m$ is the
-number of parameters of \ident$_2$.  Then we define an identity
+\asubsection{\tt Identity Coercion {\ident}:{\class$_1$} >-> {\class$_2$}.} 
+\comindex{Identity Coercion}
+
+We check that {\class$_1$} is a constant with a value of the form
+$[x_1:T_1]..[x_n:T_n](\mbox{\class}_2~t_1..t_m)$ where $m$ is the
+number of parameters of \class$_2$.  Then we define an identity
 function with the type
-$(x_1:T_1)..(x_n:T_n)(y:(\mbox{\ident}_1~x_1..x_n))
-({\mbox{\ident}_2}~t_1..t_m)$, and we declare it as an identity
-coercion between {\ident$_1$} and {\ident$_2$}.
+$(x_1:T_1)..(x_n:T_n)(y:(\mbox{\class}_1~x_1..x_n))
+({\mbox{\class}_2}~t_1..t_m)$, and we declare it as an identity
+coercion between {\class$_1$} and {\class$_2$}.
 
 \begin{ErrMsgs}
 \item \errindex{Clash with previous constant {\ident}}
-\item {\ident$_1$} \errindex{must be a transparent constant} 
+\item {\class$_1$} \errindex{must be a transparent constant} 
 \end{ErrMsgs}
 
-\asubsection
-{\tt Identity Coercion Local {\ident}:{\ident$_1$} >-> {\ident$_2$}.} 
+\begin{Variants}
+\item {\tt Identity Coercion Local {\ident}:{\ident$_1$} >-> {\ident$_2$}.} \\
+Idem but locally to the current section.
 
-Declares the name {\ident} as a local identity coercion to the current section.
+\end{Variants}
+
+\asection{Displaying Available Coercions}
 
 \asubsection{\tt Print Classes.} 
 \comindex{Print Classes}
@@ -192,134 +235,32 @@ Print the list of declared coercions in the current context.
 
 \asubsection{\tt Print Graph.} 
 \comindex{Print Graph}
-Print the list of valid path coercions in the current context.
+Print the list of valid coercion paths in the current context.
 
-\asection{Coercions and Pretty-Printing}
+\asubsection{\tt Print Coercion Paths {\class$_1$} {\class$_2$}.} 
+\comindex{Print Coercion Paths}
+Print the list of valid coercion paths from {\class$_1$} to {\class$_2$}.
 
-  To every declared coercion $f$, we automatically define an
-associated pretty-printing rule, also named $f$, to hide the coercion
-applications. Thus $(f~t_1..t_n~t)$ is printed as $t$ where $n$ is the
-number of parameters of the source class of $f$. The user can change
-this behavior just by overwriting the rule $f$ by a new one with the
-same name (see chapter~\ref{Addoc-syntax} for more details about
-pretty-printing rules). If $f$ is a coercion to {\tt FUNCLASS},
-another pretty-printing rule called $f1$ is also generated. This last
-rule prints $(f~t_1..t_n~t_{n+1}..t_m)$ as $(f~t_{n+1}..t_m)$.
+\asection{Activating the Printing of Coercions}
 
-  In the following examples, we changed the coercion pretty-printing
-rules to show the inserted coercions.
+\asubsection{\tt Set Printing Coercions.}
+\comindex{Set Printing Coercions}
+\comindex{Unset Printing Coercions}
 
+This command forces all the coercions to be printed.
+To skip the printing of coercions, use
+ {\tt Unset Printing Coercions}.
+By default, coercions are not printed.
+
+\asubsection{\tt Set Printing Coercion {\qualid}.}
+\comindex{Set Printing Coercion}
+\comindex{Unset Printing Coercion}
+
+This command forces coercion denoted by {\qualid} to be printed.
+To skip the printing of coercion {\qualid}, use
+ {\tt Unset Printing Coercion {\qualid}}.
+By default, a coercion is never printed.
  
-\asection{Inheritance Mechanism -- Examples}
-
-  There are three situations:
-
-\begin{itemize}
-\item $(f~a)$ is ill-typed where $f:(x:A)B$ and $a:A'$. If there is a
-      path coercion between $A'$ and $A$, $(f~a)$ is transformed into
-      $(f~a')$ where $a'$ is the result of the application of this
-      path coercion to $a$.
-
-%\begin{\small}
-\begin{coq_example}
-Parameters C:nat->Set; D:nat->bool->Set; E:bool->Set.
-Parameter f : (n:nat)(C n) -> (D (S n) true).
-Coercion f : C >-> D.
-Parameter g : (n:nat)(b:bool)(D n b) -> (E b).
-Coercion g : D >-> E.
-Parameter c : (C O).
-Parameter T : (E true) -> nat.
-Check (T c).
-\end{coq_example}
-%\end{small}
-
-We give now an example using identity coercions.
-
-%\begin{small}
-\begin{coq_example}
-Definition D' := [b:bool](D (S O) b).
-Identity Coercion IdD'D : D' >-> D.
-Print IdD'D.
-Parameter d' : (D' true).
-Check (T d').
-\end{coq_example}
-%\end{small}
-
-
-  In the case of functional arguments, we use the monotonic rule of
-sub-typing.  Approximatively, to coerce $t:(x:A)B$ towards $(x:A')B'$,
-one have to coerce $A'$ towards $A$ and $B$ towards $B'$. An example
-is given below:
-
-%\begin{small}
-\begin{coq_example}
-Parameters A,B:Set; h:A->B.
-Coercion h : A >-> B.
-Parameter U : (A -> (E true)) -> nat.
-Parameter t : B -> (C O).
-Check (U t).
-\end{coq_example}
-%\end{small}
-
-  Remark the changes in the result following the modification of the
-previous example.
-
-%\begin{small}
-\begin{coq_example}
-Parameter U' : ((C O) -> B) -> nat.
-Parameter t' : (E true) -> A.
-Check (U' t').
-\end{coq_example}
-%\end{small}
-
-\item An assumption $x:A$ when $A$ is not a type, is ill-typed.  It is
-      replaced by $x:A'$ where $A'$ is the result of the application
-      to $A$ of the path coercion between the class of $A$ and {\tt
-      SORTCLASS} if it exists.  This case occurs in the abstraction
-      $[x:A]t$, universal quantification $(x:A)B$, global variables
-      and parameters of (co-)inductive definitions and functions. In
-      $(x:A)B$, such a path coercion may be applied to $B$ also if
-      necessary.
-
-%\begin{small}
-\begin{coq_example}
-Parameter Graph : Type.
-Parameter Node : Graph -> Type.
-Coercion Node : Graph >-> SORTCLASS.
-Parameter G : Graph.
-Parameter Arrows : G -> G -> Type.
-Check Arrows.
-Parameter fg : G -> G.
-Check fg.
-\end{coq_example}
-%\end{small}
-
-
-\item $(f~a)$ is ill-typed because $f:A$ is not a function. The term
-      $f$ is replaced by the term obtained by applying to $f$ the path
-      coercion between $A$ and {\tt FUNCLASS} if it exists.
-
-%\begin{small}
-\begin{coq_example}
-Parameter bij : Set -> Set -> Set.
-Parameter ap : (A,B:Set)(bij A B) -> A -> B.
-Coercion ap : bij >-> FUNCLASS.
-Parameter b : (bij nat nat).
-Check (b O).
-\end{coq_example}
-%\end{small}
-
-Let us see the resulting graph of this session.
-
-%\begin{small}
-\begin{coq_example}
-Print Graph.
-\end{coq_example}
-%\end{small}
-
-\end{itemize}
-
-
 \asection{Classes as Records}
 \label{Coercions-and-records}
 \index{Coercions!and records}
@@ -329,7 +270,7 @@ classes as records) by extending the existing {\tt Record} macro
 
 \begin{center}
 \begin{tabular}{l}
-{\tt Record \zeroone{>}{\ident} [ {\params} ] : {\sort} := \zeroone{\ident$_0$} \verb+{+} \\
+{\tt Record \zeroone{>}~{\ident} [ {\params} ] : {\sort} := \zeroone{\ident$_0$} \verb+{+} \\
 ~~~~\begin{tabular}{l}
         {\tt \ident$_1$ $[$:$|$:>$]$ \term$_1$ ;} \\
         ... \\
@@ -345,8 +286,13 @@ types. The alternative {\tt $[$:$|$:>$]$} is ``{\tt :}'' or ``{\tt
 :>}''. If {\tt {\ident$_i$}:>{\term$_i$}}, then {\ident$_i$} is
 automatically declared as coercion from {\ident} to the class of
 {\term$_i$}.  Remark that {\ident$_i$} always verifies the uniform
-inheritance condition.  The keyword 
-{\tt Structure}\comindex{Structure} is a synonym of {\tt
+inheritance condition.  If the optional ``{\tt >}'' before {\ident} is
+present, then {\ident$_0$} (or the default name {\tt Build\_{\ident}}
+if {\ident$_0$} is omitted) is automatically declared as a coercion
+from the class of {\term$_n$} to {\ident} (this may fail if the
+uniform inheritance condition is not satisfied).
+
+\Rem The keyword {\tt Structure}\comindex{Structure} is a synonym of {\tt
 Record}.
 
 
@@ -363,25 +309,122 @@ are also forgotten.
 
 \asection{Examples}
 
-\begin{itemize}
-\item Coercion between inductive types
+  There are three situations:
 
+\begin{itemize}
+\item $(f~a)$ is ill-typed where $f:(x:A)B$ and $a:A'$. If there is a
+      coercion path between $A'$ and $A$, $(f~a)$ is transformed into
+      $(f~a')$ where $a'$ is the result of the application of this
+      coercion path to $a$.
+
+We first give an example of coercion between atomic inductive types
+
+%\begin{\small}
 \begin{coq_example}
 Definition bool_in_nat := [b:bool]if b then O else (S O).
 Coercion bool_in_nat : bool >-> nat.
 Check O=true.
+Set Printing Coercions.
+Check O=true.
 \end{coq_example}
+%\end{small}
 
-\Warning
-\item \verb|Check true=O.| fails. This is ``normal'' behaviour of
+\begin{coq_eval}
+Unset Printing Coercions.
+\end{coq_eval}
+
+\Warning ``\verb|Check true=O.|'' fails. This is ``normal'' behaviour of
 coercions. To validate \verb|true=O|, the coercion is searched from
 \verb=nat= to \verb=bool=. There is no one.
 
-\item Coercion to a sort
+We give an example of coercion between classes with parameters.
+
+%\begin{\small}
+\begin{coq_example}
+Parameters C:nat->Set; D:nat->bool->Set; E:bool->Set.
+Parameter f : (n:nat)(C n) -> (D (S n) true).
+Coercion f : C >-> D.
+Parameter g : (n:nat)(b:bool)(D n b) -> (E b).
+Coercion g : D >-> E.
+Parameter c : (C O).
+Parameter T : (E true) -> nat.
+Check (T c).
+Set Printing Coercions.
+Check (T c).
+\end{coq_example}
+%\end{small}
 
 \begin{coq_eval}
-Reset Graph.    
+Unset Printing Coercions.
 \end{coq_eval}
+
+We give now an example using identity coercions.
+
+%\begin{small}
+\begin{coq_example}
+Definition D' := [b:bool](D (S O) b).
+Identity Coercion IdD'D : D' >-> D.
+Print IdD'D.
+Parameter d' : (D' true).
+Check (T d').
+Set Printing Coercions.
+Check (T d').
+\end{coq_example}
+%\end{small}
+
+\begin{coq_eval}
+Unset Printing Coercions.
+\end{coq_eval}
+
+
+  In the case of functional arguments, we use the monotonic rule of
+sub-typing.  Approximatively, to coerce $t:(x:A)B$ towards $(x:A')B'$,
+one have to coerce $A'$ towards $A$ and $B$ towards $B'$. An example
+is given below:
+
+%\begin{small}
+\begin{coq_example}
+Parameters A,B:Set; h:A->B.
+Coercion h : A >-> B.
+Parameter U : (A -> (E true)) -> nat.
+Parameter t : B -> (C O).
+Check (U t).
+Set Printing Coercions.
+Check (U t).
+\end{coq_example}
+%\end{small}
+
+\begin{coq_eval}
+Unset Printing Coercions.
+\end{coq_eval}
+
+  Remark the changes in the result following the modification of the
+previous example.
+
+%\begin{small}
+\begin{coq_example}
+Parameter U' : ((C O) -> B) -> nat.
+Parameter t' : (E true) -> A.
+Check (U' t').
+Set Printing Coercions.
+Check (U' t').
+\end{coq_example}
+%\end{small}
+
+\begin{coq_eval}
+Unset Printing Coercions.
+\end{coq_eval}
+
+\item An assumption $x:A$ when $A$ is not a type, is ill-typed.  It is
+      replaced by $x:A'$ where $A'$ is the result of the application
+      to $A$ of the coercion path between the class of $A$ and {\tt
+      SORTCLASS} if it exists.  This case occurs in the abstraction
+      $[x:A]t$, universal quantification $(x:A)B$, global variables
+      and parameters of (co-)inductive definitions and functions. In
+      $(x:A)B$, such a coercion path may be applied to $B$ also if
+      necessary.
+
+%\begin{small}
 \begin{coq_example}
 Parameter Graph : Type.
 Parameter Node : Graph -> Type.
@@ -391,42 +434,42 @@ Parameter Arrows : G -> G -> Type.
 Check Arrows.
 Parameter fg : G -> G.
 Check fg.
+Set Printing Coercions.
+Check fg.
 \end{coq_example}
+%\end{small}
 
-\item Coercion to a function
+\begin{coq_eval}
+Unset Printing Coercions.
+\end{coq_eval}
 
+\item $(f~a)$ is ill-typed because $f:A$ is not a function. The term
+      $f$ is replaced by the term obtained by applying to $f$ the
+      coercion path between $A$ and {\tt FUNCLASS} if it exists.
+
+%\begin{small}
 \begin{coq_example}
 Parameter bij : Set -> Set -> Set.
 Parameter ap : (A,B:Set)(bij A B) -> A -> B.
 Coercion ap : bij >-> FUNCLASS.
 Parameter b : (bij nat nat).
 Check (b O).
+Set Printing Coercions.
+Check (b O).
 \end{coq_example}
+%\end{small}
 
-\item Transitivity of coercion
 \begin{coq_eval}
-Reset C.    
+Unset Printing Coercions.
 \end{coq_eval}
-\begin{coq_example}
-Parameters C : nat -> Set; D : nat -> bool -> Set; E : bool -> Set.
-Parameter f : (n:nat)(C n) -> (D (S n) true).
-Coercion f : C >-> D.
-Parameter g : (n:nat)(b:bool)(D n b) -> (E b).
-Coercion g : D >-> E.
-Parameter c : (C O).
-Parameter T : (E true) -> nat.
-Check (T c).
-\end{coq_example}
 
-\item Identity coercion
+Let us see the resulting graph of this session.
 
+%\begin{small}
 \begin{coq_example}
-Definition D' := [b:bool](D (S O) b).
-Identity Coercion IdD'D : D' >-> D.
-Print IdD'D.
-Parameter d' : (D' true).
-Check (T d').
+Print Graph.
 \end{coq_example}
+%\end{small}
 
 \end{itemize}
 
