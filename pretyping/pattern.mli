@@ -38,7 +38,6 @@ type constr_label =
   | IndNode of inductive_path
   | CstrNode of constructor_path
   | VarNode of identifier
-  | SectionVarNode of section_path
 
 val label_of_ref : global_reference -> constr_label
 

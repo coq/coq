@@ -50,10 +50,6 @@ type constr_label =
   | IndNode of inductive_path
   | CstrNode of constructor_path
   | VarNode of identifier
-  | SectionVarNode of section_path
-(*
-  | ... 
-*)
 
 exception BoundPattern;;
 
@@ -61,7 +57,7 @@ let label_of_ref = function
   | ConstRef sp     -> ConstNode sp
   | IndRef sp       -> IndNode sp
   | ConstructRef sp -> CstrNode sp
-  | VarRef sp       -> SectionVarNode sp
+  | VarRef sp       -> VarNode (basename sp)
 
 let rec head_pattern_bound t =
   match t with

@@ -124,7 +124,6 @@ let pr_ref_label = function (* On triche sur le contexte *)
   | IndNode sp -> pr_inductive (Global.env()) (sp,[||])
   | CstrNode sp -> pr_constructor (Global.env()) (sp,[||])
   | VarNode id -> pr_id id
-  | SectionVarNode sp -> pr_id (basename sp)
 
 let pr_cases_pattern t = gentermpr (Termast.ast_of_cases_pattern t)
 let pr_rawterm t = gentermpr (Termast.ast_of_rawconstr t)
