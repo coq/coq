@@ -1002,7 +1002,7 @@ let clenv_match_args s clause =
 	and c_typ = w_hnf_constr clause.hook (w_type_of clause.hook c) in
 	(* whd_betaiota was before in type_of - useful to reduce types like *)
 	(* (x:A)([x]P u) *)
-	let c_typ = whd_betaiota c_typ in
+	let c_typ = nf_betaiota c_typ in
         matchrec 
        	    (clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clause)) t
   in 
