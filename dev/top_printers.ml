@@ -17,6 +17,8 @@ open Term
 open Vernacinterp
 open Clenv
 
+let _ = Termast.print_evar_arguments := true
+
 let pP s = pP (hOV 0 s)
 
 let prast c = pP(print_ast c)
