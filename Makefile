@@ -39,7 +39,7 @@ noargument:
 
 LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
               -I proofs -I tactics -I pretyping \
-              -I interp -I toplevel -I parsing -I ide \
+              -I interp -I toplevel -I parsing -I ide -I translate \
               -I contrib/omega -I contrib/romega \
 	      -I contrib/ring -I contrib/xml \
 	      -I contrib/extraction -I contrib/correctness \
@@ -121,6 +121,9 @@ PARSING=\
   parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
   parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo
 
+TRANSLATE=\
+  translate/ppconstrnew.cmo translate/pptacticnew.cmo translate/ppvernacnew.cmo
+
 HIGHPARSING=\
   parsing/g_prim.cmo parsing/g_basevernac.cmo \
   parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
@@ -148,7 +151,7 @@ TACTICS=\
 TOPLEVEL=\
   toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
   toplevel/command.cmo toplevel/record.cmo toplevel/recordobj.cmo \
-  toplevel/discharge.cmo toplevel/vernacexpr.cmo \
+  toplevel/discharge.cmo toplevel/vernacexpr.cmo $(TRANSLATE) \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
   parsing/pcoq.cmo parsing/egrammar.cmo toplevel/metasyntax.cmo \
   toplevel/vernacentries.cmo toplevel/vernac.cmo \
@@ -226,7 +229,7 @@ PARSERREQUIRES=\
   pretyping/detyping.cmo parsing/termast.cmo interp/modintern.cmo \
   interp/constrextern.cmo parsing/egrammar.cmo parsing/esyntax.cmo \
   toplevel/metasyntax.cmo parsing/g_prim.cmo parsing/g_basevernac.cmo \
-  parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
+  parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo $(TRANSLATE) \
   pretyping/typing.cmo proofs/proof_trees.cmo \
   proofs/logic.cmo proofs/refiner.cmo proofs/evar_refiner.cmo \
   proofs/tacmach.cmo toplevel/himsg.cmo parsing/g_natsyntax.cmo \
@@ -354,7 +357,7 @@ CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
 CMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) \
-    $(PROOFS) $(TACTICS) $(INTERP) $(PARSING) $(TOPLEVEL) \
+    $(PROOFS) $(TACTICS) $(INTERP) $(PARSING) $(TRANSLATE) $(TOPLEVEL) \
     $(HIGHPARSING) $(HIGHTACTICS) $(CONTRIB)
 CMX=$(CMO:.cmo=.cmx)
 
@@ -468,6 +471,7 @@ pretyping: $(PRETYPING)
 highparsing: $(HIGHPARSING)
 toplevel: $(TOPLEVEL)
 hightactics: $(HIGHTACTICS)
+translate: $(TRANSLATE)
 
 # special binaries for debugging
 

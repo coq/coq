@@ -8,6 +8,7 @@
 
 (*i $Id$ i*)
 
+open Pp
 open Token
 
 (* Dictionaries: trees annotated with string options, each node being a map
@@ -195,20 +196,54 @@ let rec string bp len = parser
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_string
   | [< 'c; s >] -> string bp (store len c) s 
 
+let comments = ref None
+
+type commentar =
+  | InVernac
+  | InVernacEsc of string
+  | BeVernac of string
+  | InComment of string
+
+let current = ref (BeVernac "")
+
+let add_comment () = let reinit () = match ! current with
+  | InVernac -> ()
+  | InVernacEsc s -> current := InVernacEsc ""
+  | BeVernac s -> current := BeVernac ""
+  | InComment s -> current := InComment "" in
+match (!comments,!current) with
+  | None , InVernac -> ()
+  | None , BeVernac s | None , InComment s | None , InVernacEsc s -> reinit (); comments := Some [str s]
+  | Some _ , InVernac -> ()
+  | Some l , BeVernac s | Some l , InComment s | Some l , InVernacEsc s -> reinit (); comments := Some (str s::l)
+
+let add_comment_pp s = match !comments with
+  | None -> comments := Some [s]
+  | Some l -> comments := Some (s::l) 
+
+let add_string s = match !current with
+  | InVernac -> ()
+  | InVernacEsc t -> current := InVernacEsc (t^s)
+  | BeVernac t -> current := BeVernac (t^s)
+  | InComment t -> current := InComment (t^s)
+	
 let rec comment bp = parser
   | [< ''(';
        _ = (parser
-              | [< ''*'; _ = comment bp >] -> ()
-              | [< >] -> ()); 
+              | [< ''*'; s >] -> add_string "(*"; comment bp s
+              | [< >] -> add_string "(" ); 
        s >] -> comment bp s
   | [< ''*';
        _ = parser
-         | [< '')' >] -> ()
-         | [< s >] -> comment bp s >] -> ()
+         | [< '')' >] -> add_string "*)"; add_comment ()
+         | [< s >] -> add_string "*"; comment bp s >] -> ()
   | [< ''"'; _ = (parser bp [< _ = string bp 0 >] -> ()); s >] ->
       comment bp s
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_comment
-  | [< '_; s >] -> comment bp s 
+  | [< '_ as z; s >] -> 
+	(match z with
+	| '\n' | '\t' -> add_comment (); add_comment_pp (fnl ())
+	| _ -> add_string (String.make 1 z)); comment bp s 
 
 (* Parse a special token, using the [token_tree] *)
 
@@ -235,21 +270,28 @@ let process_chars bp c cs =
 (* Parse a token in a char stream *)
 
 let rec next_token = parser bp
-  | [< '' ' | '\n' | '\r'| '\t'; s >] -> next_token s
+  | [< ''\n'; s >] -> (match !current with
+	| BeVernac s -> current := InComment s
+	| InComment _ -> add_comment_pp (fnl ())
+	| _ -> ()); next_token s
+  | [< '' ' | '\t'; s >] -> (match !current with
+	| BeVernac _ |  InComment _ -> add_comment_pp (spc ())
+	| _ -> ()); next_token s
+  | [< ''\r'; s >] -> next_token s
   | [< ''$'; len = ident (store 0 '$') >] ep -> 
       (("METAIDENT", get_buff len), (bp,ep))
   | [< ''.' as c; t = parser
 	 | [< ' ('_' | 'a'..'z' | 'A'..'Z' | '\192'..'\214' 
 		| '\216'..'\246' | '\248'..'\255' as c);
-	      len = ident (store 0 c) >] -> ("FIELD", get_buff len)
+	      len = ident (store 0 c) >] -> current:=BeVernac ""; ("FIELD", get_buff len)
 (*
 	 | [< >] -> ("", ".") >] ep -> (t, (bp,ep))
 *)
-	 | [< (t,_) = process_chars bp c >] -> t >] ep -> (t, (bp,ep))
+	 | [< (t,_) = process_chars bp c >] -> t >] ep -> current:=BeVernac ""; (t, (bp,ep))
   | [< ' ('_' | 'a'..'z' | 'A'..'Z' | '\192'..'\214' 
          | '\216'..'\246' | '\248'..'\255' as c);
        len = ident (store 0 c) >] ep ->
-      let id = get_buff len in
+      let id = get_buff len in current:=InVernac; 
       (try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
   | [< ' ('0'..'9' as c); len = number (store 0 c) >] ep ->
       (("INT", get_buff len), (bp, ep))
@@ -257,7 +299,14 @@ let rec next_token = parser bp
       (("STRING", get_buff len), (bp, ep))
   | [< ' ('(' as c);
        t = parser
-         | [< ''*'; _ = comment bp; s >] -> next_token s
+         | [< ''*'; c; s >] -> (match !current with
+				| InVernac -> current := InVernacEsc "(*"
+				| _ -> current := InComment "(*"); 
+	comment bp c; 
+	(match !current with
+	| InVernacEsc _ -> add_comment_pp (fnl ()); current := InVernac
+	| _ -> ()); 
+	next_token s
          | [< t = process_chars bp c >] -> t >] -> t
   | [< 'c; t = process_chars bp c >] -> t
   | [< _ = Stream.empty >] -> (("EOI", ""), (bp, bp + 1))

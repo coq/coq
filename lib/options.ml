@@ -26,6 +26,12 @@ let xml_export = ref false
 
 let v7 = ref true
 
+(* Translate *)
+let translate = ref false
+let make_translate f = translate := f; ()
+let do_translate () = !translate
+let translate_file = ref false
+
 (* Silent / Verbose *)
 let silent = ref false
 let make_silent flag = silent := flag; ()

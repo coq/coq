@@ -11,12 +11,14 @@
 (* Parsing of vernacular. *)
 
 open Pp
+open Lexer
 open Util
 open Options
 open System
 open Coqast
 open Vernacexpr
 open Vernacinterp
+open Ppvernacnew
 
 (* The functions in this module may raise (unexplainable!) exceptions.
    Use the module Coqtoplevel, which catches these exceptions
@@ -97,6 +99,10 @@ let parse_phrase (po, verbch) =
 
 let just_parsing = ref false
 
+let pr_comments = function
+  | None -> mt()
+  | Some l -> h 0 (List.fold_left (++) (mt ()) (List.rev l))
+
 let rec vernac interpfun input =
   let (loc,com) = parse_phrase input in
   let rec interp = function
@@ -122,7 +128,13 @@ let rec vernac interpfun input =
 
   in 
   try
-    interp com
+    if do_translate () then
+      let _ = interp com in
+      if !translate_file then
+	msgnl (pr_comments !comments ++ pr_vernac com ++ sep_end) 
+      else
+	msgnl (hov 4 (str"New Syntax:" ++ fnl() ++ pr_comments !comments ++ pr_vernac com ++ sep_end)); comments := None
+    else interp com
   with e -> 
     raise (DuringCommandInterp (loc, e))
 
@@ -178,7 +190,10 @@ let compile verbosely f =
 *)
   let ldir,long_f_dot_v = Library.start_library f in
   if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
+  let chano = if Options.do_translate () then open_out (f^".v8") else stdout in
+  let _ = Format.set_formatter_out_channel chano in
   let _ = load_vernac verbosely long_f_dot_v in
+  let _ = close_out chano in
   if Pfedit.get_all_proof_names () <> [] then
     (message "Error: There are pending proofs"; exit 1);
   Library.save_library_to ldir (long_f_dot_v ^ "o")

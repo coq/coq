@@ -164,6 +164,9 @@ let parse_args () =
     | "-compile-verbose" :: f :: rem -> add_compile true f; parse rem
     | "-compile-verbose" :: []       -> usage ()
 
+    | "-translate" :: rem -> make_translate true; parse rem
+    | "-ftranslate" :: rem -> make_translate true; translate_file := true; parse rem
+
     | "-unsafe" :: f :: rem -> add_unsafe f; parse rem
     | "-unsafe" :: []       -> usage ()
 

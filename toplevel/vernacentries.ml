@@ -1131,7 +1131,7 @@ let interp c = match c with
   | VernacNotation (inf,c,pl,sc) -> vernac_notation inf c pl sc
 
   (* Gallina *)
-  | VernacDefinition (k,id,d,f) -> vernac_definition k id d f
+  | VernacDefinition (k,id,d,f,_) -> vernac_definition k id d f
   | VernacStartTheoremProof (k,id,t,top,f) ->
       vernac_start_proof k (Some id) t top f
   | VernacEndProof (opaq,idopt) -> vernac_end_proof opaq idopt

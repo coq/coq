@@ -8,6 +8,8 @@
 
 (*i $Id$ i*)
 
+open Pp
+
 type error =
   | Illegal_character
   | Unterminated_comment
@@ -32,3 +34,5 @@ type frozen_t
 val freeze : unit -> frozen_t
 val unfreeze : frozen_t -> unit
 val init : unit -> unit
+
+val comments : (std_ppcmds list option) ref

@@ -1468,11 +1468,11 @@ let xlate_vernac =
       xlate_error "TODO: VernacStartTheoremProof"
   | VernacSuspend -> CT_suspend
   | VernacResume idopt -> CT_resume (xlate_ident_opt (option_app snd idopt))
-  | VernacDefinition (k,s,ProveBody (bl,typ),_) ->
+  | VernacDefinition (k,s,ProveBody (bl,typ),_,_) ->
       if bl <> [] then xlate_error "TODO: Def bindings";
       CT_coerce_THEOREM_GOAL_to_COMMAND(
 	CT_theorem_goal (CT_coerce_DEFN_to_DEFN_OR_THM (xlate_defn k), xlate_ident s,xlate_formula typ))
-  | VernacDefinition (kind,s,DefineBody(bl,red_option,c,typ_opt),_) ->
+  | VernacDefinition (kind,s,DefineBody(bl,red_option,c,typ_opt),_,_) ->
       CT_definition
 	(xlate_defn kind, xlate_ident s, xlate_binder_list bl,
 	   cvt_optional_eval_for_definition c red_option,

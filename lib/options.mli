@@ -25,6 +25,11 @@ val xml_export : bool ref
 
 val v7 : bool ref
 
+val translate : bool ref
+val make_translate : bool -> unit
+val do_translate : unit -> bool
+val translate_file : bool ref
+
 val make_silent : bool -> unit
 val is_silent : unit -> bool
 val is_verbose : unit -> bool

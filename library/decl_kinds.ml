@@ -18,6 +18,13 @@ type theorem_kind =
   | Fact
   | Remark
 
+type definitionkind =
+  | LDefinition
+  | GDefinition
+  | LCoercion
+  | GCoercion
+  | SCanonical
+
 type locality_flag = (*bool (* local = true; global = false *)*)
   | Local
   | Global

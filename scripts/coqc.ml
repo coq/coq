@@ -108,6 +108,8 @@ let parse_args () =
 	keep := true ; parse (cfiles,args) rem
     | ("-verbose" | "--verbose") :: rem -> 
 	verbose := true ; parse (cfiles,args) rem
+    | "-translate" :: rem ->
+	parse (cfiles,"-ftranslate"::args) rem
     | "-boot" :: rem ->
 	bindir:= Filename.concat Coq_config.coqtop "bin";
 	parse (cfiles, "-boot"::args) rem

@@ -170,7 +170,7 @@ type vernac_expr =
 
   (* Gallina *)
   | VernacDefinition of definition_kind * identifier * definition_expr *
-      declaration_hook
+      declaration_hook * definitionkind
   | VernacStartTheoremProof of theorem_kind * identifier *
       (local_binder list * constr_expr) * bool * declaration_hook
   | VernacEndProof of opacity_flag * (identifier * theorem_kind option) option
