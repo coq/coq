@@ -232,7 +232,7 @@ Program_all.
 Simpl; Elim n; Auto with arith.
 (Elim o; Intro); [Absurd ((S p)=O); Auto with arith | Auto with arith].
 *)
-Save.
+Qed.
 
 Lemma Item : (l:(list A))(n:nat){a:A|(nth_spec l (S n) a)}+{(le (length l) n)}.
 Intros l n; Case (Nth l (S n)); Intro.
@@ -240,7 +240,7 @@ Case s; Intro a; Left; Exists a; Auto.
 Right; Case o; Intro.
 Absurd (S n)=O; Auto.
 Auto with arith.
-Save.
+Qed.
 
 Require Minus.
 Require DecBool.
@@ -263,7 +263,7 @@ Case s; Intros n H; Left; Exists n; Auto with arith.
 Elim minus_Sn_m; Auto with arith.
 Apply lt_le_weak; Apply lt_O_minus_lt; Apply nth_lt_O with m a; Auto with arith.
 Auto.
-Save.
+Qed.
 
 Lemma Index : (a:A)(l:(list A))
      {n:nat|(fst_nth_spec l n a)}+{(AllS [b:A]~a=b l)}.
@@ -281,7 +281,7 @@ Rewrite (minus_n_O n); Trivial.
 Realizer [a:A][l:(list A)](Index_p a l (S O)).
 Program_all.
 *)
-Save.
+Qed.
 
 Section Find_sec.
 Variable R,P : A -> Prop.
@@ -299,23 +299,23 @@ Definition InR_inv :=
 
 Lemma InR_INV : (l:(list A))(InR l)->(InR_inv l).
 Induction 1; Simpl; Auto.
-Save.
+Qed.
 
 Lemma InR_cons_inv : (a:A)(l:(list A))(InR (cons a l))->((R a)\/(InR l)).
 Intros a l H; Exact (InR_INV H).
-Save.
+Qed.
 
 Lemma InR_or_app : (l,m:(list A))((InR l)\/(InR m))->(InR (app l m)).
 Induction 1.
 Induction 1; Simpl; Auto.
 Intro; Elim l; Simpl; Auto.
-Save.
+Qed.
 
 Lemma InR_app_or : (l,m:(list A))(InR (app l m))->((InR l)\/(InR m)).
 Intros l m; Elim l; Simpl; Auto.
 Intros b l' Hrec IAc; Elim (InR_cons_inv IAc);Auto.
 Intros; Elim Hrec; Auto.
-Save.
+Qed.
 
 Hypothesis RS_dec : (a:A){(R a)}+{(P a)}.
 
@@ -336,7 +336,7 @@ Auto.
 Realizer find.
 Program_all.
 *)
-Save.
+Qed.
 
 Variable B : Set.
 Variable T : A -> B -> Prop.
@@ -370,7 +370,7 @@ Realizer try_find.
 Program_all.
 *)
 
-Save.
+Qed.
 
 End Find_sec.
 
@@ -401,7 +401,7 @@ Auto.
 Realizer assoc.
 Program_all.
 *)
-Save.
+Qed.
 
 End Assoc_sec.
 

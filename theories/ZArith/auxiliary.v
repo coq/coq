@@ -21,7 +21,7 @@ Definition neq := [x,y:nat] ~(x=y).
 Definition Zne := [x,y:Z] ~(x=y).
 Theorem add_un_Zs : (x:positive) (POS (add_un x)) = (Zs (POS x)).
 Intro; Rewrite -> ZL12; Unfold Zs; Simpl; Trivial with arith.
-Save.
+Qed.
 
 Theorem inj_S : (y:nat) (inject_nat (S y)) = (Zs (inject_nat y)).
 Induction y; [
@@ -29,12 +29,12 @@ Induction y; [
 | Intros n; Intros H;
   Change (POS (add_un (anti_convert n)))=(Zs (inject_nat (S n)));
   Rewrite add_un_Zs; Trivial with arith].
-Save.
+Qed.
  
 Theorem Zplus_S_n: (x,y:Z) (Zplus (Zs x) y) = (Zs (Zplus x y)).
 Intros x y; Unfold Zs; Rewrite (Zplus_sym (Zplus x y)); Rewrite Zplus_assoc;
 Rewrite (Zplus_sym (POS xH)); Trivial with arith.
-Save.
+Qed.
 
 Theorem inj_plus : 
   (x,y:nat) (inject_nat (plus x y)) = (Zplus (inject_nat x) (inject_nat y)).
@@ -46,7 +46,7 @@ Induction x; Induction y; [
 | Intros m H1; Change (inject_nat (S (plus n (S m))))=
                         (Zplus (inject_nat (S n)) (inject_nat (S m)));
   Rewrite inj_S; Rewrite H; Do 2 Rewrite inj_S; Rewrite Zplus_S_n; Trivial with arith].
-Save.
+Qed.
  
 Theorem inj_mult : 
   (x,y:nat) (inject_nat (mult x y)) = (Zmult (inject_nat x) (inject_nat y)).
@@ -55,7 +55,7 @@ Induction x; [
   Simpl; Trivial with arith
 | Intros n H y; Rewrite -> inj_S; Rewrite <- Zmult_Sm_n;
     Rewrite <- H;Rewrite <- inj_plus; Simpl; Rewrite plus_sym; Trivial with arith].
-Save.
+Qed.
 
 Theorem inj_neq:
   (x,y:nat) (neq x y) -> (Zne (inject_nat x) (inject_nat y)).
@@ -66,7 +66,7 @@ Case x; Case y; Intros; [
 | Discriminate H0
 | Discriminate H0
 | Simpl in H0; Injection H0; Do 2 Rewrite <- bij1; Intros E; Rewrite E; Auto with arith].
-Save. 
+Qed. 
 
 Theorem inj_le:
   (x,y:nat) (le x y) -> (Zle (inject_nat x) (inject_nat y)).
@@ -76,24 +76,24 @@ Intros x y; Intros H; Elim H; [
   Intros H1 H2; Rewrite H2; [ Discriminate | Trivial with arith]
 | Intros m H1 H2; Apply Zle_trans with (inject_nat m); 
     [Assumption | Rewrite inj_S; Apply Zle_n_Sn]].
-Save.
+Qed.
 
 Theorem inj_lt: (x,y:nat) (lt x y) -> (Zlt (inject_nat x) (inject_nat y)).
 Intros x y H; Apply Zgt_lt; Apply Zle_S_gt; Rewrite <- inj_S; Apply inj_le;
 Exact H.
-Save.
+Qed.
 
 Theorem inj_gt: (x,y:nat) (gt x y) -> (Zgt (inject_nat x) (inject_nat y)).
 Intros x y H; Apply Zlt_gt; Apply inj_lt; Exact H.
-Save.
+Qed.
 
 Theorem inj_ge: (x,y:nat) (ge x y) -> (Zge (inject_nat x) (inject_nat y)).
 Intros x y H; Apply Zle_ge; Apply inj_le; Apply H.
-Save.
+Qed.
 
 Theorem inj_eq: (x,y:nat) x=y -> (inject_nat x) = (inject_nat y).
 Intros x y H; Rewrite H; Trivial with arith.
-Save.
+Qed.
 
 Theorem intro_Z : 
   (x:nat) (EX y:Z | (inject_nat x)=y /\ 
@@ -102,7 +102,7 @@ Intros x; Exists (inject_nat x); Split; [
   Trivial with arith
 | Rewrite Zmult_sym; Rewrite Zmult_one; Rewrite Zero_right; 
   Unfold Zle ; Elim x; Intros;Simpl; Discriminate ].
-Save.
+Qed.
 
 Theorem inj_minus1 :
   (x,y:nat) (le y x) -> 
@@ -110,11 +110,11 @@ Theorem inj_minus1 :
 Intros x y H; Apply (Zsimpl_plus_l (inject_nat y)); Unfold Zminus ;
 Rewrite Zplus_permute; Rewrite Zplus_inverse_r; Rewrite <- inj_plus;
 Rewrite <- (le_plus_minus y x H);Rewrite Zero_right; Trivial with arith.
-Save.
+Qed.
  
 Theorem inj_minus2: (x,y:nat) (gt y x) -> (inject_nat (minus x y)) = ZERO.
 Intros x y H; Rewrite inj_minus_aux; [ Trivial with arith | Apply gt_not_le; Assumption].
-Save.
+Qed.
 
 Theorem dec_eq: (x,y:Z) (decidable (x=y)).
 Intros x y; Unfold decidable ; Elim (Zcompare_EGAL x y);
@@ -122,7 +122,7 @@ Intros H1 H2; Elim (Dcompare (Zcompare x y)); [
     Tauto
   | Intros H3; Right; Unfold not ; Intros H4;
     Elim H3; Rewrite (H2 H4); Intros H5; Discriminate H5].
-Save. 
+Qed. 
 
 Theorem dec_Zne: (x,y:Z) (decidable (Zne x y)).
 Intros x y; Unfold decidable Zne ; Elim (Zcompare_EGAL x y).
@@ -131,52 +131,52 @@ Intros H1 H2; Elim (Dcompare (Zcompare x y));
   | Left; Unfold not; Intro; Absurd (Zcompare x y)=EGAL; 
     [ Elim H; Intros HR; Rewrite HR; Discriminate 
     | Auto]].
-Save.
+Qed.
 
 Theorem dec_Zle: (x,y:Z) (decidable (Zle x y)).
 Intros x y; Unfold decidable Zle ; Elim (Zcompare x y); [
     Left; Discriminate
   | Left; Discriminate
   | Right; Unfold not ; Intros H; Apply H; Trivial with arith].
-Save.
+Qed.
 
 Theorem dec_Zgt: (x,y:Z) (decidable (Zgt x y)).
 Intros x y; Unfold decidable Zgt ; Elim (Zcompare x y);
   [ Right; Discriminate | Right; Discriminate | Auto with arith].
-Save.
+Qed.
 
 Theorem dec_Zge: (x,y:Z) (decidable (Zge x y)).
 Intros x y; Unfold decidable Zge ; Elim (Zcompare x y); [
   Left; Discriminate
 | Right; Unfold not ; Intros H; Apply H; Trivial with arith
 | Left; Discriminate]. 
-Save.
+Qed.
 
 Theorem dec_Zlt: (x,y:Z) (decidable (Zlt x y)).
 Intros x y; Unfold decidable Zlt ; Elim (Zcompare x y);
   [ Right; Discriminate | Auto with arith | Right; Discriminate].
-Save.
+Qed.
 Theorem dec_eq_nat:(x,y:nat)(decidable (x=y)).
 Intros x y; Unfold decidable; Elim (eq_nat_dec x y); Auto with arith.
-Save.
+Qed.
 
 Theorem not_Zge : (x,y:Z) ~(Zge x y) -> (Zlt x y).
 Unfold Zge Zlt ; Intros x y H; Apply dec_not_not;
   [ Exact (dec_Zlt x y) | Assumption].
-Save.
+Qed.
  
 Theorem not_Zlt : (x,y:Z) ~(Zlt x y) -> (Zge x y).
 Unfold Zlt Zge; Auto with arith.
-Save.
+Qed.
 
 Theorem not_Zle : (x,y:Z) ~(Zle x y) -> (Zgt x y).
 Unfold Zle Zgt ; Intros x y H; Apply dec_not_not;
   [ Exact (dec_Zgt x y) | Assumption].
- Save.
+ Qed.
  
 Theorem not_Zgt : (x,y:Z) ~(Zgt x y) -> (Zle x y).
 Unfold Zgt Zle; Auto with arith.
-Save.
+Qed.
 
 Theorem not_Zeq : (x,y:Z) ~ x=y -> (Zlt x y) \/ (Zlt y x).
 
@@ -184,130 +184,130 @@ Intros x y; Elim (Dcompare (Zcompare x y)); [
   Intros H1 H2; Absurd x=y; [ Assumption | Elim (Zcompare_EGAL x y); Auto with arith]
 | Unfold Zlt ; Intros H; Elim H; Intros H1; 
     [Auto with arith | Right; Elim (Zcompare_ANTISYM x y); Auto with arith]].
-Save. 
+Qed. 
 
 Lemma new_var: (x:Z) (EX y:Z |(x=y)).
 Intros x; Exists x; Trivial with arith. 
-Save.
+Qed.
 
 Theorem Zne_left : (x,y:Z) (Zne x y) -> (Zne (Zplus x (Zopp y)) ZERO).
 Intros x y; Unfold Zne; Unfold not; Intros H1 H2; Apply H1;
 Apply Zsimpl_plus_l with (Zopp y); Rewrite Zplus_inverse_l; Rewrite Zplus_sym;
 Trivial with arith.
-Save.
+Qed.
 
 Theorem Zegal_left : (x,y:Z) (x=y) -> (Zplus x (Zopp y)) = ZERO.
 Intros x y H;
 Apply (Zsimpl_plus_l y);Rewrite -> Zplus_permute;
 Rewrite -> Zplus_inverse_r;Do 2 Rewrite -> Zero_right;Assumption.
-Save.
+Qed.
 
 Theorem Zle_left : (x,y:Z) (Zle x y) -> (Zle ZERO (Zplus y (Zopp x))).
 Intros x y H; Replace ZERO with (Zplus x (Zopp x)).
 Apply Zle_reg_r; Trivial.
 Apply Zplus_inverse_r.
-Save.
+Qed.
 
 Theorem Zle_left_rev : (x,y:Z) (Zle ZERO (Zplus y (Zopp x))) 
 	-> (Zle x y).
 Intros x y H; Apply (Zsimpl_le_plus_r (Zopp x)).
 Rewrite Zplus_inverse_r; Trivial.
-Save.
+Qed.
 
 Theorem Zlt_left_rev : (x,y:Z) (Zlt ZERO (Zplus y (Zopp x))) 
 	-> (Zlt x y).
 Intros x y H; Apply Zsimpl_lt_plus_r with (Zopp x).
 Rewrite Zplus_inverse_r; Trivial.
-Save.
+Qed.
 
 Theorem Zlt_left :
   (x,y:Z) (Zlt x y) -> (Zle ZERO (Zplus (Zplus y (NEG xH)) (Zopp x))).
 Intros x y H; Apply Zle_left; Apply Zle_S_n; 
 Change (Zle (Zs x) (Zs (Zpred y))); Rewrite <- Zs_pred; Apply Zlt_le_S;
 Assumption.
-Save.
+Qed.
 
 Theorem Zlt_left_lt :
   (x,y:Z) (Zlt x y) -> (Zlt ZERO (Zplus y (Zopp x))).
 Intros x y H; Replace ZERO with (Zplus x (Zopp x)).
 Apply Zlt_reg_r; Trivial.
 Apply Zplus_inverse_r.
-Save.
+Qed.
 
 Theorem Zge_left : (x,y:Z) (Zge x y) -> (Zle ZERO (Zplus x (Zopp y))).
 Intros x y H; Apply Zle_left; Apply Zge_le; Assumption.
-Save.
+Qed.
 
 Theorem Zgt_left :
   (x,y:Z) (Zgt x y) -> (Zle ZERO (Zplus (Zplus x (NEG xH)) (Zopp y))).
 Intros x y H; Apply Zlt_left; Apply Zgt_lt; Assumption.
-Save.
+Qed.
 
 Theorem Zgt_left_gt :
   (x,y:Z) (Zgt x y) -> (Zgt (Zplus x (Zopp y)) ZERO).
 Intros x y H; Replace ZERO with (Zplus y (Zopp y)).
 Apply Zgt_reg_r; Trivial.
 Apply Zplus_inverse_r.
-Save.
+Qed.
 
 Theorem Zgt_left_rev : (x,y:Z) (Zgt (Zplus x (Zopp y)) ZERO) 
 	-> (Zgt x y).
 Intros x y H; Apply Zsimpl_gt_plus_r with (Zopp y).
 Rewrite Zplus_inverse_r; Trivial.
-Save.
+Qed.
 
 Theorem Zopp_one : (x:Z)(Zopp x)=(Zmult x (NEG xH)).
 Induction x; Intros; Rewrite Zmult_sym; Auto with arith.
-Save.
+Qed.
 
 Theorem Zopp_Zmult_r : (x,y:Z)(Zopp (Zmult x y)) = (Zmult x (Zopp y)).
 Intros x y; Rewrite Zmult_sym; Rewrite <- Zopp_Zmult; Apply Zmult_sym.
-Save.
+Qed.
 
 Theorem Zmult_Zopp_left :  (x,y:Z)(Zmult (Zopp x) y) = (Zmult x (Zopp y)).
 Intros; Rewrite Zopp_Zmult; Rewrite Zopp_Zmult_r; Trivial with arith.
-Save.
+Qed.
 
 Theorem Zopp_Zmult_l : (x,y:Z)(Zopp (Zmult x y)) = (Zmult (Zopp x) y).
 Intros x y; Symmetry; Apply Zopp_Zmult.
-Save.
+Qed.
 
 Theorem Zred_factor0 : (x:Z) x = (Zmult x (POS xH)).
 Intro x; Rewrite (Zmult_n_1 x); Trivial with arith.
-Save.
+Qed.
 
 Theorem Zred_factor1 : (x:Z) (Zplus x x) = (Zmult x (POS (xO xH))).
 Intros x; Pattern 1 2 x ; Rewrite <- (Zmult_n_1 x);
 Rewrite <- Zmult_plus_distr_r; Auto with arith.
-Save.
+Qed.
 
 Theorem Zred_factor2 :
   (x,y:Z) (Zplus x (Zmult x y)) = (Zmult x (Zplus (POS xH) y)).
 
 Intros x y; Pattern 1 x ; Rewrite <- (Zmult_n_1 x);
 Rewrite <- Zmult_plus_distr_r; Trivial with arith.
-Save.
+Qed.
 
 Theorem Zred_factor3 :
   (x,y:Z) (Zplus (Zmult x y) x) = (Zmult x (Zplus (POS xH) y)).
 
 Intros x y; Pattern 2 x ; Rewrite <- (Zmult_n_1 x);
 Rewrite <- Zmult_plus_distr_r; Rewrite Zplus_sym; Trivial with arith.
-Save.
+Qed.
 Theorem Zred_factor4 :
   (x,y,z:Z) (Zplus (Zmult x y) (Zmult x z)) = (Zmult x (Zplus y z)).
 Intros x y z; Symmetry; Apply Zmult_plus_distr_r.
-Save.
+Qed.
 
 Theorem Zred_factor5 : (x,y:Z) (Zplus (Zmult x ZERO) y) = y.
 
 Intros x y; Rewrite <- Zmult_n_O;Auto with arith.
-Save.
+Qed.
 
 Theorem Zred_factor6 : (x:Z) x = (Zplus x ZERO).
 
 Intro; Rewrite Zero_right; Trivial with arith.
-Save.
+Qed.
 
 Theorem Zcompare_Zplus_compatible2 :
   (r:relation)(x,y,z,t:Z)
@@ -332,12 +332,12 @@ Intros r x y z t; Case r; [
     Rewrite Zcompare_Zplus_compatible; Assumption
   | Do 2 Rewrite <- (Zplus_sym t);
     Rewrite Zcompare_Zplus_compatible; Assumption]].
-Save.
+Qed.
 
 Lemma add_x_x : (x:positive) (add x x) = (xO x).
 Intros p; Apply convert_intro; Simpl; Rewrite convert_add;
 Unfold 3 convert ; Simpl; Rewrite ZL6; Trivial with arith.
-Save.
+Qed.
 
 Theorem Zcompare_Zmult_compatible : 
    (x:positive)(y,z:Z)
@@ -357,7 +357,7 @@ Induction x; [
       Apply Zcompare_Zplus_compatible2; Apply H
     | Simpl; Rewrite (add_x_x p); Trivial with arith]
   | Intros y z; Do 2 Rewrite Zmult_one; Trivial with arith].
-Save.
+Qed.
 
 Theorem Zmult_eq:
   (x,y:Z) ~(x=ZERO) -> (Zmult y x) = ZERO -> y = ZERO.
@@ -374,12 +374,12 @@ Intros x y; Case x; [
   Rewrite -> Zero_mult_right; Rewrite -> Zmult_sym;
   Rewrite -> Zmult_Zopp_left; Simpl;
   Elim (Zcompare_EGAL (Zmult y (NEG p)) ZERO); Auto with arith].
-Save.
+Qed.
 
 Theorem Z_eq_mult:
   (x,y:Z)  y = ZERO -> (Zmult y x) = ZERO.
 Intros x y H; Rewrite H; Auto with arith.
-Save.
+Qed.
 
 Theorem Zmult_le:
   (x,y:Z) (Zgt x ZERO) -> (Zle ZERO (Zmult y x)) -> (Zle ZERO y).
@@ -390,7 +390,7 @@ Intros x y; Case x; [
   Pattern 1 ZERO ; Rewrite <- (Zero_mult_right (POS p));
   Rewrite  Zcompare_Zmult_compatible; Auto with arith
 | Intros p; Unfold Zgt ; Simpl; Intros H; Discriminate H].
-Save.
+Qed.
 
 Theorem Zle_ZERO_mult : 
 	 (x,y:Z) (Zle ZERO x) -> (Zle ZERO y) -> (Zle ZERO (Zmult x y)).
@@ -401,7 +401,7 @@ Intros p H1; Unfold Zle.
   Rewrite  Zcompare_Zmult_compatible; Trivial.
 Intros p H1 H2; Absurd (Zgt ZERO (NEG p)); Trivial.
 Unfold Zgt; Simpl; Auto with zarith.
-Save.
+Qed.
 
 Lemma Zgt_ZERO_mult: (a,b:Z) (Zgt a ZERO)->(Zgt b ZERO)
 	->(Zgt (Zmult a b) ZERO).
@@ -411,13 +411,13 @@ Intros p H1; Unfold Zgt;
 Pattern 2 ZERO ; Rewrite <- (Zero_mult_right (POS p)).
   Rewrite  Zcompare_Zmult_compatible; Trivial.
 Intros p H; Discriminate H.
-Save.
+Qed.
 
 Theorem Zle_mult:
   (x,y:Z) (Zgt x ZERO) -> (Zle ZERO y) -> (Zle ZERO (Zmult y x)).
 Intros x y H1 H2; Apply Zle_ZERO_mult; Trivial.
 Apply Zlt_le_weak; Apply Zgt_lt; Trivial.
-Save.
+Qed.
 
 Theorem Zmult_lt:
   (x,y:Z) (Zgt x ZERO) -> (Zlt ZERO (Zmult y x)) -> (Zlt ZERO y).
@@ -428,7 +428,7 @@ Intros x y; Case x; [
   Pattern 1 ZERO ; Rewrite <- (Zero_mult_right (POS p));
   Rewrite  Zcompare_Zmult_compatible; Auto with arith
 | Intros p; Unfold Zgt ; Simpl; Intros H; Discriminate H].
-Save.
+Qed.
 
 Theorem Zmult_gt:
   (x,y:Z) (Zgt x ZERO) -> (Zgt (Zmult x y) ZERO) -> (Zgt y ZERO).
@@ -439,7 +439,7 @@ Intros x y; Case x.
  Pattern 1 ZERO ; Rewrite <- (Zero_mult_right (POS p)).
  Rewrite  Zcompare_Zmult_compatible; Trivial.
 Intros p H; Discriminate H.
-Save.
+Qed.
 
 Theorem Zle_mult_approx:
   (x,y,z:Z) (Zgt x ZERO) -> (Zgt z ZERO) -> (Zle ZERO y) -> 
@@ -449,7 +449,7 @@ Intros x y z H1 H2 H3; Apply Zle_trans with m:=(Zmult y x) ; [
   Apply Zle_mult; Assumption
 | Pattern 1 (Zmult y x) ; Rewrite <- Zero_right; Apply Zle_reg_l;
   Apply Zlt_le_weak; Apply Zgt_lt; Assumption].
-Save.
+Qed.
 
 Lemma Zle_Zmult_pos_right : 
 	(a,b,c : Z) 
@@ -459,28 +459,28 @@ Rewrite Zopp_Zmult_l.
 Rewrite <- Zmult_plus_distr_l.
 Apply Zle_ZERO_mult; Trivial.
 Apply Zle_left; Trivial.
-Save.
+Qed.
 
 Lemma Zle_Zmult_pos_left : 
 	(a,b,c : Z) 
 	(Zle a b) -> (Zle ZERO c) -> (Zle (Zmult c a) (Zmult c b)).
 Intros a b c H1 H2; Rewrite (Zmult_sym c a);Rewrite (Zmult_sym c b).
 Apply  Zle_Zmult_pos_right; Trivial.
-Save.
+Qed.
 
 Lemma Zge_Zmult_pos_right : 
 	(a,b,c : Z) 
 	(Zge a b) -> (Zge c ZERO) -> (Zge (Zmult a c) (Zmult b c)).
 Intros a b c H1 H2; Apply Zle_ge.
 Apply Zle_Zmult_pos_right; Apply Zge_le; Trivial.
-Save.
+Qed.
 
 Lemma Zge_Zmult_pos_left : 
 	(a,b,c : Z) 
 	(Zge a b) -> (Zge c ZERO) -> (Zge (Zmult c a) (Zmult c b)).
 Intros a b c H1 H2; Apply Zle_ge.
 Apply Zle_Zmult_pos_left; Apply Zge_le; Trivial.
-Save.
+Qed.
 
 Lemma Zge_Zmult_pos_compat : 
 	(a,b,c,d : Z) 
@@ -491,7 +491,7 @@ Apply Zge_trans with (Zmult a d).
 Apply Zge_Zmult_pos_left; Trivial.
 Apply Zge_trans with c; Trivial. 
 Apply Zge_Zmult_pos_right; Trivial.
-Save.
+Qed.
 
 Lemma Zle_mult_simpl 
  : (a,b,c:Z) (Zgt c ZERO)->(Zle (Zmult a c) (Zmult b c))->(Zle a b).
@@ -500,14 +500,14 @@ Apply Zmult_le with c; Trivial.
 Rewrite Zmult_plus_distr_l.
 Rewrite <- Zopp_Zmult_l.
 Apply Zle_left; Trivial.
-Save.
+Qed.
 
 
 Lemma Zge_mult_simpl 
  : (a,b,c:Z) (Zgt c ZERO)->(Zge (Zmult a c) (Zmult b c))->(Zge a b).
 Intros a b c H1 H2; Apply Zle_ge; Apply Zle_mult_simpl with c; Trivial.
 Apply Zge_le; Trivial.
-Save.
+Qed.
 
 Lemma Zgt_mult_simpl 
  : (a,b,c:Z) (Zgt c ZERO)->(Zgt (Zmult a c) (Zmult b c))->(Zgt a b).
@@ -517,7 +517,7 @@ Rewrite Zmult_sym.
 Rewrite Zmult_plus_distr_l.
 Rewrite <- Zopp_Zmult_l.
 Apply Zgt_left_gt; Trivial.
-Save.
+Qed.
 
 Lemma Zgt_square_simpl: 
 (x, y : Z) (Zge x ZERO) -> (Zge y ZERO) 
@@ -543,15 +543,15 @@ Intros x y z H1 H2 H3; Apply Zlt_n_Sm_le; Apply (Zmult_lt x); [
   | Apply Zle_lt_trans with 1:=H3 ; Rewrite <- Zmult_Sm_n;
     Apply Zlt_reg_l; Apply Zgt_lt; Assumption].
 
-Save.
+Qed.
 
 Theorem OMEGA1 : (x,y:Z) (x=y) -> (Zle ZERO x) -> (Zle ZERO y).
 Intros x y H; Rewrite H; Auto with arith.
-Save.
+Qed.
 
 Theorem OMEGA2 : (x,y:Z) (Zle ZERO x) -> (Zle ZERO y) -> (Zle ZERO (Zplus x y)).
 Intros x y H1 H2;Rewrite <- (Zero_left ZERO); Apply Zle_plus_plus; Assumption.
-Save. 
+Qed. 
 
 Theorem OMEGA3 : 
   (x,y,k:Z)(Zgt k ZERO)-> (x=(Zmult y k)) -> (x=ZERO) -> (y=ZERO).
@@ -560,7 +560,7 @@ Intros x y k H1 H2 H3; Apply (Zmult_eq k); [
   Unfold not ; Intros H4; Absurd (Zgt k ZERO); [
     Rewrite H4; Unfold Zgt ; Simpl; Discriminate | Assumption]
   | Rewrite <- H2; Assumption].
-Save.
+Qed.
 
 Theorem OMEGA4 :
   (x,y,z:Z)(Zgt x ZERO) -> (Zgt y x) -> ~(Zplus (Zmult z y) x) = ZERO.
@@ -581,17 +581,17 @@ Unfold not ; Intros x y z H1 H2 H3; Cut (Zgt y ZERO); [
       | Assumption]]
     | Rewrite -> H3; Unfold Zle ; Simpl; Discriminate]
   | Apply Zgt_trans with x ; [ Assumption | Assumption]].
-Save.
+Qed.
 
 Theorem OMEGA5: (x,y,z:Z)(x=ZERO) -> (y=ZERO) -> (Zplus x (Zmult y z)) = ZERO.
 
 Intros x y z H1 H2; Rewrite H1; Rewrite H2; Simpl; Trivial with arith.
-Save.
+Qed.
 Theorem OMEGA6:
   (x,y,z:Z)(Zle ZERO x) -> (y=ZERO) -> (Zle ZERO (Zplus x (Zmult y z))).
 
 Intros x y z H1 H2; Rewrite H2; Simpl; Rewrite Zero_right; Assumption.
-Save.
+Qed.
 
 Theorem OMEGA7:
   (x,y,z,t:Z)(Zgt z ZERO) -> (Zgt t ZERO) -> (Zle ZERO x) -> (Zle ZERO y) -> 
@@ -599,7 +599,7 @@ Theorem OMEGA7:
 
 Intros x y z t H1 H2 H3 H4; Rewrite <- (Zero_left ZERO);
 Apply Zle_plus_plus; Apply Zle_mult; Assumption.
-Save.
+Qed.
 
 Theorem OMEGA8: 
   (x,y:Z) (Zle ZERO x) -> (Zle ZERO y) -> x = (Zopp y) -> x = ZERO.
@@ -610,14 +610,14 @@ Intros x y H1 H2 H3; Elim (Zle_lt_or_eq ZERO x H1); [
     Rewrite -> H3; Rewrite Zplus_inverse_r; Rewrite Zero_right; Assumption
   | Assumption]
 | Intros H4; Rewrite -> H4; Trivial with arith].
-Save.
+Qed.
 
 Theorem OMEGA9:(x,y,z,t:Z) y=ZERO -> x = z -> 
   (Zplus y (Zmult (Zplus (Zopp x) z) t)) = ZERO.
 
 Intros x y z t H1 H2; Rewrite H2; Rewrite Zplus_inverse_l; 
 Rewrite Zero_mult_left;  Rewrite Zero_right; Assumption.
-Save.
+Qed.
 Theorem OMEGA10:(v,c1,c2,l1,l2,k1,k2:Z)
   (Zplus (Zmult (Zplus (Zmult v c1) l1) k1) (Zmult (Zplus (Zmult v c2) l2) k2))
   = (Zplus (Zmult v (Zplus (Zmult c1 k1) (Zmult c2 k2)))
@@ -626,7 +626,7 @@ Theorem OMEGA10:(v,c1,c2,l1,l2,k1,k2:Z)
 Intros; Repeat (Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
 Repeat Rewrite Zmult_assoc; Repeat Elim Zplus_assoc; 
 Rewrite (Zplus_permute (Zmult l1 k1) (Zmult (Zmult v c2) k2)); Trivial with arith.
-Save.
+Qed.
 
 Theorem OMEGA11:(v1,c1,l1,l2,k1:Z)
   (Zplus (Zmult (Zplus (Zmult v1 c1) l1) k1) l2)
@@ -634,7 +634,7 @@ Theorem OMEGA11:(v1,c1,l1,l2,k1:Z)
 
 Intros; Repeat (Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
 Repeat Rewrite Zmult_assoc; Repeat Elim Zplus_assoc; Trivial with arith.
-Save.
+Qed.
 
 Theorem OMEGA12:(v2,c2,l1,l2,k2:Z)
   (Zplus l1 (Zmult (Zplus (Zmult v2 c2) l2) k2))
@@ -643,7 +643,7 @@ Theorem OMEGA12:(v2,c2,l1,l2,k2:Z)
 Intros; Repeat (Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
 Repeat Rewrite Zmult_assoc; Repeat Elim Zplus_assoc; Rewrite Zplus_permute;
 Trivial with arith.
-Save.
+Qed.
 
 Theorem OMEGA13:(v,l1,l2:Z)(x:positive)
   (Zplus (Zplus (Zmult v (POS x)) l1) (Zplus (Zmult v (NEG x)) l2))
@@ -653,7 +653,7 @@ Intros; Rewrite  Zplus_assoc; Rewrite (Zplus_sym (Zmult v (POS x)) l1);
 Rewrite (Zplus_assoc_r l1); Rewrite <- Zmult_plus_distr_r;
 Rewrite <- Zopp_NEG; Rewrite (Zplus_sym (Zopp (NEG x)) (NEG x));
 Rewrite Zplus_inverse_r; Rewrite  Zero_mult_right; Rewrite Zero_right; Trivial with arith.
-Save.
+Qed.
  
 Theorem OMEGA14:(v,l1,l2:Z)(x:positive)
   (Zplus (Zplus (Zmult v (NEG x)) l1) (Zplus (Zmult v (POS x)) l2))
@@ -663,7 +663,7 @@ Intros; Rewrite  Zplus_assoc; Rewrite (Zplus_sym (Zmult v (NEG x)) l1);
 Rewrite (Zplus_assoc_r l1); Rewrite <- Zmult_plus_distr_r;
 Rewrite <- Zopp_NEG; Rewrite  Zplus_inverse_r; Rewrite  Zero_mult_right;
 Rewrite Zero_right; Trivial with arith.
-Save.
+Qed.
 Theorem OMEGA15:(v,c1,c2,l1,l2,k2:Z)
   (Zplus (Zplus (Zmult v c1) l1) (Zmult (Zplus (Zmult v c2) l2) k2))
   = (Zplus (Zmult v (Zplus c1  (Zmult c2 k2)))
@@ -672,7 +672,7 @@ Theorem OMEGA15:(v,c1,c2,l1,l2,k2:Z)
 Intros; Repeat (Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
 Repeat Rewrite Zmult_assoc; Repeat Elim Zplus_assoc; 
 Rewrite (Zplus_permute l1 (Zmult (Zmult v c2) k2)); Trivial with arith.
-Save.
+Qed.
 
 Theorem OMEGA16:
   (v,c,l,k:Z)
@@ -680,7 +680,7 @@ Theorem OMEGA16:
 
 Intros; Repeat (Rewrite Zmult_plus_distr_l Orelse Rewrite Zmult_plus_distr_r);
 Repeat Rewrite Zmult_assoc; Repeat Elim Zplus_assoc; Trivial with arith.
-Save.
+Qed.
 
 Theorem OMEGA17: 
   (x,y,z:Z)(Zne x ZERO) -> (y=ZERO) -> (Zne (Zplus x (Zmult y z)) ZERO).
@@ -688,13 +688,13 @@ Theorem OMEGA17:
 Unfold Zne not; Intros x y z H1 H2 H3; Apply H1; 
 Apply Zsimpl_plus_l with (Zmult y z); Rewrite Zplus_sym; Rewrite H3; 
 Rewrite H2; Auto with arith.
-Save.
+Qed.
 
 Theorem OMEGA18:
   (x,y,k:Z) (x=(Zmult y k)) -> (Zne x ZERO) -> (Zne y ZERO).
 
 Unfold Zne not; Intros x y k H1 H2 H3; Apply H2; Rewrite H1; Rewrite H3; Auto with arith.
-Save.
+Qed.
 
 Theorem OMEGA19:
   (x:Z) (Zne x ZERO) -> 
@@ -707,14 +707,14 @@ Unfold Zne ; Intros x H; Elim (Zle_or_lt ZERO x); [
   | Intros H2; Absurd x=ZERO; Auto with arith]
 | Intros H1; Right; Rewrite <- Zopp_one; Rewrite Zplus_sym;
   Apply Zle_left; Apply Zle_S_n; Simpl; Apply Zlt_le_S; Auto with arith].
-Save.
+Qed.
 
 Theorem OMEGA20:
   (x,y,z:Z)(Zne x  ZERO) -> (y=ZERO) -> (Zne (Zplus x (Zmult y z)) ZERO).
 
 Unfold Zne not; Intros x y z H1 H2 H3; Apply H1; Rewrite H2 in H3;
 Simpl in H3; Rewrite Zero_right in H3; Trivial with arith.
-Save.
+Qed.
 
 Definition fast_Zplus_sym := 
 [x,y:Z][P:Z -> Prop][H: (P (Zplus y x))]

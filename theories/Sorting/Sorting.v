@@ -13,7 +13,7 @@ Require Multiset.
 Require Permutation.
 Require Relations.
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Section defs.
 
@@ -112,6 +112,6 @@ Qed.
 
 End defs.
 
-Implicit Arguments Off.
+Unset Implicit Arguments.
 Hint constr_sort : datatypes v62 := Constructors sort.
 Hint constr_lelistA : datatypes v62 := Constructors lelistA.

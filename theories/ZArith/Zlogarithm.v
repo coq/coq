@@ -66,7 +66,7 @@ Induction x; Intros; Simpl;
     Rewrite (POS_xO p); Omega ]
 | Unfold two_power_pos; Unfold shift_pos; Simpl; Omega 
 ].
-Save.
+Qed.
 
 Definition log_inf_correct1 :=
 	[p:positive](proj1 ? ? (log_inf_correct p)).
@@ -79,7 +79,7 @@ Hints Resolve log_inf_correct1 log_inf_correct2 : zarith.
 
 Lemma log_sup_correct1 : (p:positive)` 0 <= (log_sup p)`.
 Induction p; Intros; Simpl; Auto with zarith.
-Save.
+Qed.
 
 (** For every [p], either [p] is a power of two and [(log_inf p)=(log_sup p)]
     either [(log_sup p)=(log_inf p)+1] *)
@@ -103,7 +103,7 @@ Induction p; Intros;
     Rewrite (two_p_S (log_inf p0) (log_inf_correct1 p0));
     Rewrite POS_xO; Unfold Zs; Omega ]
 | Left; Auto ].
-Save.
+Qed.
 
 Theorem log_sup_correct2 : (x:positive)
   ` (two_p (Zpred (log_sup x))) < (POS x) <= (two_p (log_sup x))`.
@@ -116,17 +116,17 @@ Split ; [ Apply two_p_pred; Apply log_sup_correct1 | Apply Zle_n ].
 Intros (E1,E2); Rewrite E2.
 Rewrite <- (Zpred_Sn (log_inf x)).
 Generalize (log_inf_correct2 x); Omega.
-Save.
+Qed.
 
 Lemma log_inf_le_log_sup : 
 	(p:positive) `(log_inf p) <= (log_sup p)`.
 Induction p; Simpl; Intros; Omega.
-Save.
+Qed.
 
 Lemma log_sup_le_Slog_inf : 
 	(p:positive) `(log_sup p) <= (Zs (log_inf p))`.
 Induction p; Simpl; Intros; Omega.
-Save.
+Qed.
 
 (** Now it's possible to specify and build the [Log] rounded to the nearest *)
 
@@ -148,7 +148,7 @@ Generalize H0; Elim p1; Intros; Simpl;
 Intros; Apply Zle_le_S.
 Generalize H0; Elim p1; Intros; Simpl;
     [ Assumption | Assumption | Apply ZERO_le_POS ].
-Save.
+Qed.
 
 Theorem log_near_correct2: (p:positive)
   (log_near p)=(log_inf p)
@@ -172,7 +172,7 @@ Simpl.
 Repeat Rewrite Esup.
 Case p0; Intros; Auto with zarith.
 Auto.
-Save.
+Qed.
 
 (*i******************
 Theorem log_near_correct: (p:positive)
@@ -214,21 +214,21 @@ Induction x; Simpl;
 [ Apply Zle_n
 | Exact log_inf_correct1
 | Exact log_inf_correct1].
-Save.
+Qed.
 
 Lemma log_inf_shift_nat : 
   (n:nat)(log_inf (shift_nat n xH))=(inject_nat n).
 Induction n; Intros;
 [ Try Trivial
 | Rewrite -> inj_S; Rewrite <- H; Reflexivity].
-Save.
+Qed.
 
 Lemma log_sup_shift_nat : 
   (n:nat)(log_sup (shift_nat n xH))=(inject_nat n).
 Induction n; Intros;
 [ Try Trivial
 | Rewrite -> inj_S; Rewrite <- H; Reflexivity].
-Save.
+Qed.
 
 (** [Is_power p] means that p is a power of two *)
 Fixpoint Is_power[p:positive] : Prop :=
@@ -248,7 +248,7 @@ Split;
      Exists (S y0); Rewrite Hy0; Reflexivity
    | Intro; Exists O; Reflexivity]
 | Intros; Elim H; Intros; Rewrite -> H0; Elim x; Intros; Simpl; Trivial].
-Save.
+Qed.
 
 Lemma Is_power_or : (p:positive) (Is_power p)\/~(Is_power p).
 Induction p;
@@ -257,7 +257,7 @@ Induction p;
    [ Intros; Left; Simpl; Exact H0
    | Intros; Right; Simpl; Exact H0]
 | Left; Simpl; Trivial].
-Save.
+Qed.
 
 End divers.
 

@@ -45,7 +45,7 @@ NewDestruct x; Intros;
   [ Unfold Zle; Simpl; Do 2 (Unfold not); Auto with arith
   | Assumption]
 ].
-Save.
+Qed.
 
 Lemma ZL4_inf: (y:positive) { h:nat | (convert y)=(S h) }.
 Induction y; [
@@ -55,7 +55,7 @@ Induction y; [
 | Intros p H1;Elim H1;Intros x H2; Exists (plus x (S x)); Unfold convert;
   Simpl; Rewrite ZL0; Rewrite ZL2;Unfold convert in H2; Rewrite H2; Auto with arith
 | Exists O ;Auto with arith].
-Save.
+Qed.
 
 Lemma inject_nat_complete_inf :
   (x:Z)`0 <= x` -> { n:nat | (x=(inject_nat n)) }.
@@ -71,7 +71,7 @@ NewDestruct x; Intros;
   [ Unfold Zle; Simpl; Do 2 (Unfold not); Auto with arith
   | Assumption]
 ].
-Save.
+Qed.
 
 Lemma inject_nat_prop :
   (P:Z->Prop)((n:nat)(P (inject_nat n))) -> 
@@ -80,7 +80,7 @@ Intros.
 Specialize (inject_nat_complete x H0).
 Intros Hn; Elim Hn; Intros.
 Rewrite -> H1; Apply H.
-Save.
+Qed.
 
 Lemma inject_nat_set :
   (P:Z->Set)((n:nat)(P (inject_nat n))) -> 
@@ -89,14 +89,14 @@ Intros.
 Specialize (inject_nat_complete_inf x H0).
 Intros Hn; Elim Hn; Intros.
 Rewrite -> p; Apply H.
-Save.
+Qed.
 
 Lemma ZERO_le_inj :
   (n:nat) `0 <= (inject_nat n)`.
 Induction n; Simpl; Intros;
 [ Apply Zle_n
 | Unfold Zle; Simpl; Discriminate].
-Save.
+Qed.
 
 Lemma natlike_ind : (P:Z->Prop) (P `0`) ->
   ((x:Z)(`0 <= x` -> (P x) -> (P (Zs x)))) ->
@@ -107,7 +107,7 @@ Intros; Apply inject_nat_prop;
   | Intros; Rewrite -> (inj_S n0);
     Exact (H0 (inject_nat n0) (ZERO_le_inj n0) H2) ]
 | Assumption].
-Save.
+Qed.
 
 Lemma natlike_rec : (P:Z->Set) (P `0`) ->
   ((x:Z)(`0 <= x` -> (P x) -> (P (Zs x)))) ->
@@ -118,7 +118,7 @@ Intros; Apply inject_nat_set;
   | Intros; Rewrite -> (inj_S n0);
     Exact (H0 (inject_nat n0) (ZERO_le_inj n0) H2) ]
 | Assumption].
-Save.
+Qed.
 
 Lemma Z_lt_induction : 
   (P:Z->Prop)
@@ -148,7 +148,7 @@ Apply Zlt_le_trans with y. Intuition.
 Apply Zgt_S_le. Apply Zlt_gt. Intuition.
 
 Assumption.
-Save.
+Qed.
 
 Lemma Z_lt_rec : 
   (P:Z->Set)
@@ -178,4 +178,4 @@ Apply Zlt_le_trans with y. Intuition.
 Apply Zgt_S_le. Apply Zlt_gt. Intuition.
 
 Assumption.
-Save.
+Qed.

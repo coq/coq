@@ -31,7 +31,7 @@ Apply Build_preorder.
 Exact (rt_refl A R).
 
 Exact (rt_trans A R).
-Save.
+Qed.
 
 
 
@@ -42,7 +42,7 @@ Red.
 Induction 1; Auto with sets.
 Intros.
 Apply rt_trans with y0; Auto with sets.
-Save.
+Qed.
 
   Lemma  clos_refl_trans_ind_left: (A:Set)(R:A->A->Prop)(M:A)(P:A->Prop)
            (P M)
@@ -61,7 +61,7 @@ Apply H0; Auto with sets.
 Intros.
 Apply H5 with P0; Auto with sets.
 Apply rt_trans with y; Auto with sets.
-Save.
+Qed.
 
 
 End Clos_Refl_Trans.
@@ -75,7 +75,7 @@ Red.
 Induction 1; Auto with sets.
 Intros.
 Apply rst_trans with y0; Auto with sets.
-Save.
+Qed.
 
   Lemma clos_rst_is_equiv: (equivalence A (clos_refl_sym_trans A R)).
 Apply Build_equivalence.
@@ -84,7 +84,7 @@ Exact (rst_refl A R).
 Exact (rst_trans A R).
 
 Exact (rst_sym A R).
-Save.
+Qed.
 
   Lemma clos_rst_idempotent:
        (incl (clos_refl_sym_trans A (clos_refl_sym_trans A R))
@@ -93,7 +93,7 @@ Red.
 Induction 1; Auto with sets.
 Intros.
 Apply rst_trans with y0; Auto with sets.
-Save.
+Qed.
 
 End Clos_Refl_Sym_Trans.
 

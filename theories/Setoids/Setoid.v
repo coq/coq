@@ -25,7 +25,7 @@ End Setoid.
 
 Definition Prop_S : (Setoid_Theory Prop iff).
 Split; [Exact iff_refl | Exact iff_sym | Exact iff_trans].
-Save.
+Qed.
 
 Add Setoid Prop iff Prop_S.
 
@@ -43,7 +43,7 @@ Apply (H3 H2).
 Right.
 Inversion H0.
 Apply (H3 H2).
-Save.
+Qed.
 
 Add Morphism and : and_ext.
 Intros.
@@ -54,14 +54,14 @@ Apply (H4 H2).
 
 Inversion H0.
 Apply (H4 H3).
-Save.
+Qed.
 
 Add Morphism not : not_ext.
 Red ; Intros.
 Apply H0.
 Inversion H.
 Apply (H3 H1).
-Save.
+Qed.
 
 Definition fleche [A,B:Prop] := A -> B.
 
@@ -71,5 +71,5 @@ Intros.
 Inversion H0.
 Inversion H.
 Apply (H3 (H1 (H6 H2))).
-Save.
+Qed.
 

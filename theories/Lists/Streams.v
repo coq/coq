@@ -43,7 +43,7 @@ Qed.
 Lemma tl_nth_tl : (n:nat)(s:Stream)(tl (Str_nth_tl n s))=(Str_nth_tl n (tl s)).
 Proof.
   Induction n; Simpl; Auto.
-Save.
+Qed.
 Hints Resolve tl_nth_tl : datatypes v62.
 
 Lemma Str_nth_tl_plus 
@@ -51,12 +51,12 @@ Lemma Str_nth_tl_plus
 Induction n; Simpl; Intros; Auto with datatypes.
 Rewrite <- H.
 Rewrite tl_nth_tl; Trivial with datatypes.
-Save.
+Qed.
 
 Lemma Str_nth_plus 
   : (n,m:nat)(s:Stream)(Str_nth n (Str_nth_tl m s))=(Str_nth (plus n m) s).
 Intros; Unfold Str_nth; Rewrite Str_nth_tl_plus; Trivial with datatypes.
-Save.
+Qed.
 
 (** Extensional Equality between two streams  *)
 

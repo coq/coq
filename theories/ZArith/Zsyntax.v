@@ -157,7 +157,7 @@ Syntax constr
     Zappl_inside [ << (ZEXPR (APPLIST $h ($LIST $t))) >> ]
       -> [ [<hov 0> "("(ZEXPR $h):E [1 0] (ZAPPLINSIDETAIL ($LIST $t)):E ")"] ]
   | Zappl_inject_nat [ << (ZEXPR (APPLIST <<inject_nat>> $n)) >> ]
-      -> [ (APPLIST <<inject_nat>> $n) ]
+      -> [ [<hov 0> "(inject_nat" [1 1] $n ")"] ]
   | Zappl_inside_tail [ << (ZAPPLINSIDETAIL $h ($LIST $t)) >> ]
       -> [(ZEXPR $h):E [1 0] (ZAPPLINSIDETAIL ($LIST $t)):E] 
   | Zappl_inside_one [ << (ZAPPLINSIDETAIL $e) >> ] ->[(ZEXPR $e):E]

@@ -26,21 +26,21 @@ Proof.
 NewInduction n.
 Auto with arith.
 Elim IHn; Auto with arith.
-Save.
+Qed.
 
 Lemma even_odd_dec : (n:nat) { (even n) }+{ (odd n) }.
 Proof.
 NewInduction n.
 Auto with arith.
 Elim IHn; Auto with arith.
-Save.
+Qed.
 
 Lemma not_even_and_odd : (n:nat) (even n) -> (odd n) -> False.
 Proof.
 NewInduction n.
 Intros. Inversion H0.
 Intros. Inversion H. Inversion H0. Auto with arith.
-Save.
+Qed.
 
 Lemma even_plus_aux:
   (n,m:nat)

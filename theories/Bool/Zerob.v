@@ -16,18 +16,18 @@ Definition zerob : nat->bool
 
 Lemma zerob_true_intro : (n:nat)(n=O)->(zerob n)=true.
 NewDestruct n; [Trivial with bool | Inversion 1].
-Save.
+Qed.
 Hints Resolve zerob_true_intro : bool.
 
 Lemma zerob_true_elim : (n:nat)(zerob n)=true->(n=O).
 NewDestruct n; [Trivial with bool | Inversion 1].
-Save.
+Qed.
 
 Lemma zerob_false_intro : (n:nat)~(n=O)->(zerob n)=false.
 NewDestruct n; [NewDestruct 1; Auto with bool | Trivial with bool].
-Save.
+Qed.
 Hints Resolve zerob_false_intro : bool.
 
 Lemma zerob_false_elim : (n:nat)(zerob n)=false -> ~(n=O).
 NewDestruct n; [Intro H; Inversion H | Auto with bool].
-Save.
+Qed.

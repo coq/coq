@@ -37,7 +37,7 @@ Simpl.
 Elim plus_n_O; Auto with arith.
 Apply le_antisym; Auto with arith.
 Elim plus_n_Sm; Auto with arith.
-Save.
+Qed.
 
 Theorem div2 : (b:nat)(gt b O)->(a:nat)(diveucl a b).
 Realizer Fix div1 {div1/2: nat->nat->diveucl :=
@@ -56,4 +56,4 @@ Simpl.
 Elim plus_n_O; Auto with arith.
 Apply le_antisym; Auto with arith.
 Elim plus_n_Sm; Auto with arith.
-Save.
+Qed.

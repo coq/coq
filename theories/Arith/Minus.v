@@ -50,7 +50,7 @@ Hints Immediate plus_minus : arith v62.
 
 Lemma minus_plus : (n,m:nat)(minus (plus n m) n)=m.
 Symmetry; Auto with arith.
-Save.
+Qed.
 Hints Resolve minus_plus : arith v62.
 
 Lemma le_plus_minus : (n,m:nat)(le n m)->(m=(plus n (minus m n))).
@@ -93,7 +93,7 @@ Hints Immediate lt_O_minus_lt : arith v62.
 
 Theorem pred_of_minus : (x:nat)(pred x)=(minus x (S O)).
 NewInduction x; Auto with arith.
-Save.
+Qed.
 
 
 Theorem inj_minus_aux: (x,y:nat) ~(le y x) -> (minus x y) = O.
@@ -102,4 +102,4 @@ Intros y x; Pattern y x ; Apply nat_double_ind; [
 | Intros n H; Absurd (le O (S n)); [ Assumption | Apply le_O_n]
 | Simpl; Intros n m H1 H2; Apply H1;
   Unfold not ; Intros H3; Apply H2; Apply le_n_S; Assumption].
-Save.
+Qed.

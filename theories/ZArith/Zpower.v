@@ -31,7 +31,7 @@ Intros; Elim n;
 [ Simpl; Elim (Zpower_nat z m); Auto with zarith
 | Unfold Zpower_nat; Intros;  Simpl; Rewrite H;
   Apply Zmult_assoc].
-Save.
+Qed.
 
 (** [Zpower_pos z n] is the n-th power of [z] when [n] is an binary
     integer (type [positive]) and [z] a signed integer (type [Z]) *) 
@@ -46,7 +46,7 @@ Theorem Zpower_pos_nat :
   (z:Z)(p:positive)(Zpower_pos z p) = (Zpower_nat z (convert p)).
 
 Intros; Unfold Zpower_pos; Unfold Zpower_nat; Apply iter_convert.
-Save.
+Qed.
 
 (** Using the theorem [Zpower_pos_nat] and the lemma [Zpower_nat_is_exp] we
    deduce that the function [[n:positive](Zpower_pos z n)] is a morphism
@@ -62,7 +62,7 @@ Rewrite -> (Zpower_pos_nat z m).
 Rewrite -> (Zpower_pos_nat z (add n m)).
 Rewrite -> (convert_add n m).
 Apply Zpower_nat_is_exp.
-Save.
+Qed.
 
 Definition Zpower :=
   [x,y:Z]Cases y of
@@ -83,7 +83,7 @@ Simpl; Intros; Apply Zred_factor0.
 Simpl; Auto with zarith.
 Intros; Compute in H0; Absurd INFERIEUR=INFERIEUR; Auto with zarith.
 Intros; Compute in H0; Absurd INFERIEUR=INFERIEUR; Auto with zarith.
-Save.
+Qed.
 
 End section1.
 
@@ -119,14 +119,14 @@ Definition two_power_pos := [x:positive] (POS (shift_pos x xH)).
 Lemma two_power_nat_S : 
   (n:nat)` (two_power_nat (S n)) = 2*(two_power_nat n)`.
 Intro; Simpl; Apply refl_equal.
-Save.
+Qed.
 
 Lemma shift_nat_plus :
   (n,m:nat)(x:positive)
     (shift_nat (plus n m) x)=(shift_nat n (shift_nat m x)).
 
 Intros; Unfold shift_nat; Apply iter_nat_plus.
-Save.
+Qed.
 
 Theorem shift_nat_correct :
   (n:nat)(x:positive)(POS (shift_nat n x))=`(Zpower_nat 2 n)*(POS x)`.
@@ -137,7 +137,7 @@ Unfold shift_nat; Induction n;
 [ Rewrite <- Zmult_assoc; Rewrite <- (H x); Simpl; Reflexivity
 | Auto with zarith ]
 ].
-Save.
+Qed.
 
 Theorem two_power_nat_correct :
   (n:nat)(two_power_nat n)=(Zpower_nat `2` n).
@@ -146,7 +146,7 @@ Intro n.
 Unfold two_power_nat.
 Rewrite -> (shift_nat_correct n).
 Omega.
-Save.
+Qed.
   
 (** Second we show that [two_power_pos] and [two_power_nat] are the same *)
 Lemma shift_pos_nat : (p:positive)(x:positive)
@@ -155,7 +155,7 @@ Lemma shift_pos_nat : (p:positive)(x:positive)
 Unfold shift_pos.
 Unfold shift_nat.
 Intros; Apply iter_convert.
-Save.
+Qed.
 
 Lemma two_power_pos_nat : 
   (p:positive) (two_power_pos p)=(two_power_nat (convert p)).
@@ -163,7 +163,7 @@ Lemma two_power_pos_nat :
 Intro; Unfold two_power_pos; Unfold two_power_nat.
 Apply f_equal with f:=POS.
 Apply shift_pos_nat.
-Save.
+Qed.
 
 (** Then we deduce that [two_power_pos] is also correct *)
 
@@ -174,7 +174,7 @@ Intros.
 Rewrite -> (shift_pos_nat p x).
 Rewrite -> (Zpower_pos_nat `2` p).
 Apply shift_nat_correct.
-Save.
+Qed.
 
 Theorem two_power_pos_correct : 
   (x:positive) (two_power_pos x)=(Zpower_pos `2` x).
@@ -183,7 +183,7 @@ Intro.
 Rewrite -> two_power_pos_nat.
 Rewrite -> Zpower_pos_nat.
 Apply two_power_nat_correct.
-Save.
+Qed.
 
 (** Some consequences *)
 
@@ -195,7 +195,7 @@ Rewrite -> (two_power_pos_correct (add x y)).
 Rewrite -> (two_power_pos_correct x).
 Rewrite -> (two_power_pos_correct y).
 Apply Zpower_pos_is_exp.
-Save.
+Qed.
 
 (** The exponentiation [z -> 2^z] for [z] a signed integer. 
     For convenience, we assume that [2^z = 0] for all [z < 0]
@@ -231,7 +231,7 @@ Induction x;
     Absurd (SUPERIEUR=SUPERIEUR); Trivial with zarith
   ]
 ].
-Save.
+Qed.
 
 Lemma two_p_gt_ZERO : (x:Z) ` 0 <= x` -> ` (two_p x) > 0`.
 Induction x; Intros;
@@ -242,14 +242,14 @@ Induction x; Intros;
     Do 2 Unfold not; Auto with zarith
   | Assumption ]
 ].
-Save.
+Qed.
 
 Lemma two_p_S : (x:Z) ` 0 <= x` -> 
  `(two_p (Zs x)) = 2 * (two_p x)`.
 Intros; Unfold Zs. 
 Rewrite (two_p_is_exp x `1` H (ZERO_le_POS xH)).
 Apply Zmult_sym.
-Save.
+Qed.
 
 Lemma two_p_pred : 
   (x:Z)` 0 <= x` -> ` (two_p (Zpred x)) < (two_p x)`.
@@ -268,10 +268,10 @@ with P:=[x:Z]` (two_p (Zpred x)) < (two_p x)`;
     | Rewrite <- (Zs_pred x0); Rewrite <- (Zpred_Sn x0); Trivial with zarith]
   | Intro Hx0; Rewrite <- Hx0; Simpl; Unfold Zlt; Auto with zarith]
 | Assumption].
-Save. 
+Qed. 
 
 Lemma Zlt_lt_double : (x,y:Z) ` 0 <= x < y` -> ` x < 2*y`.
-Intros; Omega. Save. 
+Intros; Omega. Qed. 
 
 End Powers_of_2.
 
@@ -314,7 +314,7 @@ Elim (convert p); Simpl;
   Unfold 2 Zdiv_rest_aux;
   Elim (iter_nat n (Z*Z)*Z Zdiv_rest_aux ((x,`0`),`1`));
   NewDestruct a; Intros; Apply f_equal with f:=[z:Z]`2*z`; Assumption ]. 
-Save.
+Qed.
 
 Lemma Zdiv_rest_correct2 :
   (x:Z)(p:positive)
@@ -361,7 +361,7 @@ Intros; Apply iter_pos_invariant with
       | Omega ]
     | Omega ] ]
 | Omega].
-Save.
+Qed.
 
 Inductive Set Zdiv_rest_proofs[x:Z; p:positive] :=
   Zdiv_rest_proof : (q:Z)(r:Z) 
@@ -381,6 +381,6 @@ Elim H; Intros H1 H2; Clear H.
 Rewrite -> H0 in H1; Rewrite -> H0 in H2;
 Elim H2; Intros;
 Apply Zdiv_rest_proof with q:=a0 r:=b; Assumption.
-Save.
+Qed.
 
 End power_div_with_rest.

@@ -96,7 +96,7 @@ Section first_definitions.
     Elim Ha0.
     Auto with datatypes.
     Right; Simpl; Unfold not; Intros [Hc1 | Hc2 ]; Auto with datatypes.
-  Save.
+  Qed.
 
   Lemma set_mem_ind : 
     (B:Set)(P:B->Prop)(y,z:B)(a:A)(x:set)
@@ -108,7 +108,7 @@ Section first_definitions.
     Induction x; Simpl; Intros.
     Assumption.
     Elim (Aeq_dec a a0); Auto with datatypes.
-  Save.
+  Qed.
 
   Lemma set_mem_ind2 : 
     (B:Set)(P:B->Prop)(y,z:B)(a:A)(x:set)
@@ -123,7 +123,7 @@ Section first_definitions.
     Intro; Apply H; Intros; Auto.
     Apply H1; Red; Intro.
     Case H3; Auto.
-  Save.
+  Qed.
 
  
   Lemma set_mem_correct1 :
@@ -132,7 +132,7 @@ Section first_definitions.
     Induction x; Simpl.
     Discriminate.
     Intros a0 l; Elim (Aeq_dec a a0); Auto with datatypes.
-  Save.
+  Qed.
 
   Lemma set_mem_correct2 :
     (a:A)(x:set)(set_In a x) -> (set_mem a x)=true.
@@ -143,7 +143,7 @@ Section first_definitions.
     Intros H1 H2 [H3 | H4].
     Absurd a0=a; Auto with datatypes.
     Auto with datatypes.
-  Save.
+  Qed.
 
   Lemma set_mem_complete1 :
     (a:A)(x:set)(set_mem a x)=false -> ~(set_In a x).
@@ -153,7 +153,7 @@ Section first_definitions.
     Intros a0 l; Elim (Aeq_dec a a0).
     Intros; Discriminate H0.
     Unfold not; Intros; Elim H1; Auto with datatypes.
-  Save.
+  Qed.
 
   Lemma set_mem_complete2 :
     (a:A)(x:set)~(set_In a x) -> (set_mem a x)=false.
@@ -163,7 +163,7 @@ Section first_definitions.
     Intros a0 l; Elim (Aeq_dec a a0).
     Intros; Elim H0; Auto with datatypes.
     Tauto.
-  Save.
+  Qed.
 
   Lemma set_add_intro1 : (a,b:A)(x:set) 
     (set_In a x) -> (set_In a (set_add b x)).
@@ -174,7 +174,7 @@ Section first_definitions.
     Intros a0 l H [ Ha0a | Hal ].
     Elim (Aeq_dec b a0); Left; Assumption.
     Elim (Aeq_dec b a0); Right; [ Assumption | Auto with datatypes ].
-  Save.
+  Qed.
 
   Lemma set_add_intro2 : (a,b:A)(x:set) 
     a=b -> (set_In a (set_add b x)).
@@ -186,7 +186,7 @@ Section first_definitions.
     Elim (Aeq_dec b a0); 
     [ Rewrite Hab; Intro Hba0; Rewrite Hba0; Simpl; Auto with datatypes
     | Auto with datatypes ].
-  Save.
+  Qed.
 
   Hints Resolve set_add_intro1 set_add_intro2.
 
@@ -195,7 +195,7 @@ Section first_definitions.
   
   Proof.
     Intros a b x [H1 | H2] ; Auto with datatypes.
-  Save.
+  Qed.
  
   Lemma set_add_elim : (a,b:A)(x:set) 
     (set_In a (set_add b x)) -> a=b\/(set_In a x).
@@ -211,13 +211,13 @@ Section first_definitions.
     Trivial with datatypes.
     Tauto.
     Tauto.
-  Save.
+  Qed.
 
   Lemma set_add_elim2 :  (a,b:A)(x:set) 
     (set_In a (set_add b x)) -> ~(a=b) -> (set_In a x).
    Intros a b x H; Case (set_add_elim H); Intros; Trivial.
    Case H1; Trivial.
-   Save.
+   Qed.
 
   Hints Resolve set_add_intro set_add_elim set_add_elim2.
 
@@ -226,14 +226,14 @@ Section first_definitions.
     Induction x; Simpl.
     Discriminate.
     Intros; Elim  (Aeq_dec a a0); Intros; Discriminate.
-  Save.   
+  Qed.   
 
 
   Lemma set_union_intro1 : (a:A)(x,y:set)
     (set_In a x) -> (set_In a (set_union x y)).
   Proof.
     Induction y; Simpl; Auto with datatypes.
-  Save.
+  Qed.
 
   Lemma set_union_intro2 : (a:A)(x,y:set)
     (set_In a y) -> (set_In a (set_union x y)).
@@ -241,7 +241,7 @@ Section first_definitions.
     Induction y; Simpl.
     Tauto.
     Intros; Elim H0; Auto with datatypes.
-  Save.
+  Qed.
 
   Hints Resolve set_union_intro2 set_union_intro1.
 
@@ -249,7 +249,7 @@ Section first_definitions.
     (set_In a x)\/(set_In a y) -> (set_In a (set_union x y)).
   Proof.
     Intros; Elim H; Auto with datatypes.
-  Save.
+  Qed.
 
   Lemma set_union_elim : (a:A)(x,y:set)
     (set_In a (set_union x y)) -> (set_In a x)\/(set_In a y).
@@ -261,16 +261,16 @@ Section first_definitions.
     Intros [H1 | H1].
     Auto with datatypes.
     Tauto.
-  Save.
+  Qed.
 
   Lemma set_union_emptyL : (a:A)(x:set)(set_In a (set_union empty_set x)) -> (set_In a x).
     Intros a x H; Case (set_union_elim H); Auto Orelse Contradiction.
-  Save.
+  Qed.
 
 
   Lemma set_union_emptyR : (a:A)(x:set)(set_In a (set_union x empty_set)) -> (set_In a x).
     Intros a x H; Case (set_union_elim H); Auto Orelse Contradiction.
-  Save.
+  Qed.
 
 
   Lemma set_inter_intro :  (a:A)(x,y:set)
@@ -286,7 +286,7 @@ Section first_definitions.
     Auto with datatypes.
     Absurd (set_In a y); Auto with datatypes.
     Elim (set_mem a0 y); [ Right; Auto with datatypes | Auto with datatypes].     
-  Save.
+  Qed.
 
   Lemma set_inter_elim1 : (a:A)(x,y:set)
     (set_In a (set_inter x y)) -> (set_In a x).
@@ -298,7 +298,7 @@ Section first_definitions.
     Elim (set_mem a0 y); Simpl; Intros.
     Elim H0; EAuto with datatypes.
     EAuto with datatypes.
-  Save.
+  Qed.
 
   Lemma set_inter_elim2 : (a:A)(x,y:set)
     (set_In a (set_inter x y)) -> (set_In a y).
@@ -310,7 +310,7 @@ Section first_definitions.
     Elim (set_mem a0 y); Simpl; Intros.
     Elim H0; [ Intro Hr; Rewrite <- Hr; EAuto with datatypes  | EAuto with datatypes ] .
     EAuto with datatypes.
-  Save.
+  Qed.
 
   Hints Resolve set_inter_elim1 set_inter_elim2.
 
@@ -318,7 +318,7 @@ Section first_definitions.
     (set_In a (set_inter x y)) -> (set_In a x)/\(set_In a y).
   Proof.
     EAuto with datatypes.
-  Save. 
+  Qed. 
 
   Lemma set_diff_intro : (a:A)(x,y:set)
     (set_In a x) -> ~(set_In a y) -> (set_In a (set_diff x y)).
@@ -329,7 +329,7 @@ Section first_definitions.
     Rewrite Ha0a; Generalize (set_mem_complete2 Hay).
     Elim (set_mem a y); [ Intro Habs; Discriminate Habs | Auto with datatypes ].
     Elim (set_mem a0 y); Auto with datatypes.
-  Save.
+  Qed.
 
   Lemma set_diff_elim1 : (a:A)(x,y:set)
     (set_In a (set_diff x y)) -> (set_In a x).
@@ -340,7 +340,7 @@ Section first_definitions.
     EAuto with datatypes.
     Intro; Generalize (set_add_elim  H).
     Intros [H1 | H2]; EAuto with datatypes.
-  Save.
+  Qed.
 
   Lemma set_diff_elim2 : (a:A)(x,y:set)
     (set_In a (set_diff x y)) -> ~(set_In a y).
@@ -350,13 +350,13 @@ Section first_definitions.
   Apply set_mem_ind2; Auto.
   Intros H1 H2; Case (set_add_elim H2); Intros; Auto.
   Rewrite H; Trivial.
-  Save.
+  Qed.
 
   Lemma set_diff_trivial : (a:A)(x:set)~(set_In a (set_diff x x)).
   Red; Intros a x H.
   Apply (set_diff_elim2 H).
   Apply (set_diff_elim1 H).
-  Save.
+  Qed.
 
 Hints Resolve set_diff_intro set_diff_trivial.
 
@@ -384,4 +384,4 @@ Section other_definitions.
  
 End other_definitions.
 
-Implicit Arguments Off.
+Unset Implicit Arguments.

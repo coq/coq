@@ -198,7 +198,7 @@ Intro;Generalize (Rlt_antisym R0 (Rplus R1 R1) H7);Intro;ElimType False;
 Fourier.
 Apply Rabsolu_no_R0.
 DiscrR.
-Save.
+Qed.
 
 
 (*********)
@@ -212,7 +212,7 @@ Intros;Rewrite (eq_Rminus y y (refl_eqT R y));
 Absurd (Rlt R0 R0);Auto.
 Red;Intro;Apply (Rlt_antirefl R0 H1).
 Unfold Rgt in H0;Assumption.
-Save.
+Qed.
 
 (*********)
 Lemma Dx:(D:R->Prop)(x0:R)(D_in [x:R]x [x:R]R1 D x0).
@@ -228,7 +228,7 @@ Intros;Elim H0;Clear H0;Intros;Unfold D_x in H0;
 Absurd (Rlt R0 R0);Auto.
 Red;Intro;Apply (Rlt_antirefl R0 r).
 Unfold Rgt in H;Assumption.
-Save. 
+Qed. 
 
 (*********)
 Lemma Dadd:(D:R->Prop)(df,dg:R->R)(f,g:R->R)(x0:R)
@@ -252,7 +252,7 @@ Unfold D_in;Intros;Generalize (limit_plus
       (Rminus (Rplus (f x1) (g x1)) (Rplus (f x0) (g x0))).
 Intro;Rewrite H3 in H1;Assumption.
 Ring.
-Save.
+Qed.
 
 (*********)
 Lemma Dmult:(D:R->Prop)(df,dg:R->R)(f,g:R->R)(x0:R)
@@ -298,7 +298,7 @@ Ring.
 Unfold limit1_in;Unfold limit_in;Simpl;Intros;
  Split with eps;Split;Auto;Intros;Elim (R_dist_refl (g x0) (g x0));
  Intros a b;Rewrite (b (refl_eqT R (g x0)));Unfold Rgt in H;Assumption.
-Save.
+Qed.
 
 (*********)
 Lemma Dmult_const:(D:R->Prop)(f,df:R->R)(x0:R)(a:R)(D_in f df D x0)->
@@ -308,7 +308,7 @@ Intros;Generalize (Dmult D [_:R]R0 df [_:R]a f x0 (Dconst D a x0) H);
  Rewrite (Rmult_Ol (f x0)) in H0;
  Rewrite (let (H1,H2)=(Rplus_ne (Rmult a (df x0))) in H2) in H0;
  Assumption.
-Save.
+Qed.
 
 (*********)
 Lemma Dopp:(D:R->Prop)(f,df:R->R)(x0:R)(D_in f df D x0)->
@@ -322,7 +322,7 @@ Intros;Generalize (H2 x1 H3);Clear H2;Intro;Rewrite Ropp_mul1 in H2;
  Rewrite (let (H1,H2)=(Rmult_ne (f x1)) in H2) in H2; 
  Rewrite (let (H1,H2)=(Rmult_ne (f x0)) in H2) in H2;
  Rewrite (let (H1,H2)=(Rmult_ne (df x0)) in H2) in H2;Assumption.
-Save.
+Qed.
 
 (*********)
 Lemma Dminus:(D:R->Prop)(df,dg:R->R)(f,g:R->R)(x0:R)
@@ -330,7 +330,7 @@ Lemma Dminus:(D:R->Prop)(df,dg:R->R)(f,g:R->R)(x0:R)
   (D_in [x:R](Rminus (f x) (g x)) [x:R](Rminus (df x) (dg x)) D x0).
 Unfold Rminus;Intros;Generalize (Dopp D g dg x0 H0);Intro;
  Apply (Dadd D df [x:R](Ropp (dg x)) f [x:R](Ropp (g x)) x0);Assumption. 
-Save.
+Qed.
 
 (*********)
 Lemma Dx_pow_n:(n:nat)(D:R->Prop)(x0:R)
@@ -360,7 +360,7 @@ Rewrite cond in H2;Rewrite cond;Simpl in H2;Simpl;
 Cut ~(n0=O)->(S (minus n0 (1)))=n0;[Intro|Omega];
  Rewrite (H3 cond) in H2; Rewrite (Rmult_sym (pow x0 n0) (INR n0)) in H2;
  Rewrite (tech_pow_Rplus x0 n0 n0) in H2; Assumption.
-Save.
+Qed.
 
 (*********)
 Lemma Dcomp:(Df,Dg:R->Prop)(df,dg:R->R)(f,g:R->R)(x0:R)
@@ -428,7 +428,7 @@ Clear H5 H3 H4 H2;Unfold limit1_in;Unfold limit_in;Simpl;
  Split with x;Split;Auto;Intros;Unfold D_x Dgf in H4 H3;
  Elim H4;Clear H4;Intros;Elim H4;Clear H4;Intros;
  Exact (H3 x1 (conj (Df x1)/\~x0==x1 (Rlt (R_dist x1 x0) x) H4 H5)).
-Save.   
+Qed.   
 
 (*********)
 Lemma D_pow_n:(n:nat)(D:R->Prop)(x0:R)(expr,dexpr:R->R)
@@ -445,5 +445,5 @@ Intros n D x0 expr dexpr H;
 Cut ``((dexpr x0)*((INR n)*(pow (expr x0) (minus n (S O)))))==
             ((INR n)*(pow (expr x0) (minus n (S O)))*(dexpr x0))``;
  [Intro Rew;Rewrite <- Rew;Exact (H2 x1 H3)|Ring].
-Save.
+Qed.
 

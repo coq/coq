@@ -49,18 +49,18 @@ Definition Un_growing:Prop:=(n:nat)(Rle (Un n) (Un (S n))).
 (*********)
 Lemma EUn_noempty:(ExT [r:R] (EUn r)).
 Unfold EUn;Split with (Un O);Split with O;Trivial.
-Save.
+Qed.
 
 (*********)
 Lemma Un_in_EUn:(n:nat)(EUn (Un n)).
 Intro;Unfold EUn;Split with n;Trivial.
-Save.
+Qed.
 
 (*********)
 Lemma Un_bound_imp:(x:R)((n:nat)(Rle (Un n) x))->(is_upper_bound EUn x).
 Intros;Unfold is_upper_bound;Intros;Unfold EUn in H0;Elim H0;Clear H0;
  Intros;Generalize (H x1);Intro;Rewrite <- H0 in H1;Trivial.
-Save.
+Qed.
 
 (*********)
 Lemma growing_prop:(n,m:nat)Un_growing->(ge n m)->(Rge (Un n) (Un m)).
@@ -81,7 +81,7 @@ Unfold ge in H0;Generalize (H0 (S n0) H1 (lt_le_S n0 n1 y));Intro;
  Unfold Un_growing in H1;
  Apply (Rge_trans (Un (S n1)) (Un n1) (Un (S n0)) 
                   (Rle_sym1 (Un n1) (Un (S n1)) (H1 n1)) H3).
-Save.
+Qed.
 
 
 (* classical is needed: [not_all_not_ex] *)
@@ -123,7 +123,7 @@ Intro;Elim (H6 N);Intro;Unfold Rle.
 Left;Unfold Rgt in H7;Assumption.
 Right;Auto.
 Apply (H1 (Un n) (Un_in_EUn n)).
-Save.
+Qed.
 
 (*********)
 Lemma finite_greater:(N:nat)(ExT [M:R] (n:nat)(le n N)->(Rle (Un n) M)).
@@ -137,7 +137,7 @@ Rewrite <-H1;Rewrite <-H1 in H2;
     (eq_Rle (Un n) (Un n) (refl_eqT R (Un n))))).
 Apply (H2 (or_intror (Rle (Un n) (Un (S N))) (Rle (Un n) x) 
     (H n H3))).
-Save.
+Qed.
 
 (*********)
 Lemma cauchy_bound:Cauchy_crit->(bound EUn).
@@ -159,7 +159,7 @@ Unfold ge in H0;Generalize (H0 x2 (le_n x) y);Clear H0;Intro;
 Generalize (H2 x2 y);Clear H2 H0;Intro;Rewrite<-H in H0;
  Elim (Rmax_Rle x0 (Rplus (Un x) R1) x1);Intros;Clear H1;Apply H2;
  Left;Assumption.
-Save.
+Qed.
 
 End sequence.
 
@@ -271,7 +271,7 @@ Assumption.
 Apply Rabsolu_pos_lt.
 Apply Rinv_neq_R0.
 Assumption.
-Save.
+Qed.
 
 
 

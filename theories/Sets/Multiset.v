@@ -12,7 +12,7 @@
 
 Require Permut.
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Section multiset_defs.
 
@@ -179,7 +179,7 @@ i*)
 
 End multiset_defs.
 
-Implicit Arguments Off.
+Unset Implicit Arguments.
 
 Hints Unfold meq multiplicity : v62 datatypes.
 Hints Resolve munion_empty_right munion_comm munion_ass meq_left meq_right munion_empty_left : v62 datatypes.

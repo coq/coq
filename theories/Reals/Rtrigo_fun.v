@@ -105,7 +105,7 @@ Left;Unfold Rgt in H;
 Right;Rewrite H0;Rewrite Rinv_R1;Apply sym_eqT;Apply eq_Rminus;Auto.
 Elim (archimed (Rminus (Rinv eps) R1));Intros;Clear H1;
  Unfold Rgt in H0;Apply Rlt_le;Assumption.
-Save.
+Qed.
 
 
 

@@ -15,7 +15,7 @@ Require Wf_nat.
 (** Multiplication by a number >0 preserves [Zcompare]. It also perserves
     [Zle], [Zlt], [Zge], [Zgt] *)
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Lemma Zmult_zero : (x,y:Z)`x*y=0` -> `x=0` \/ `y=0`.
 NewDestruct x; NewDestruct y; Auto.
@@ -23,28 +23,28 @@ Simpl; Intros; Discriminate H.
 Simpl; Intros; Discriminate H.
 Simpl; Intros; Discriminate H.
 Simpl; Intros; Discriminate H.
-Save.
+Qed.
 
 Lemma Zeq_Zminus : (x,y:Z)x=y -> `x-y = 0`.
 Intros; Omega.
-Save.
+Qed.
 
 Lemma Zminus_Zeq : (x,y:Z)`x-y=0` -> x=y.
 Intros; Omega.
-Save.
+Qed.
 
 Lemma Zmult_Zminus_distr_l : (x,y,z:Z)`(x-y)*z = x*z - y*z`.
 Intros; Unfold Zminus.
 Rewrite <- Zopp_Zmult.
 Apply Zmult_plus_distr_l.
-Save.
+Qed.
 
 Lemma  Zmult_Zminus_distr_r : (x,y,z:Z)`z*(x-y) = z*x - z*y`.
 Intros; Rewrite (Zmult_sym z `x-y`).
 Rewrite (Zmult_sym  z x).
 Rewrite (Zmult_sym z y).
 Apply Zmult_Zminus_distr_l.
-Save.
+Qed.
 
 Lemma Zmult_reg_left : (x,y,z:Z)`z>0` -> `z*x=z*y` -> x=y.
 Intros.
@@ -55,23 +55,23 @@ Rewrite <- Zmult_Zminus_distr_r in H1.
 Elim (Zmult_zero H1).
 Omega.
 Trivial.
-Save.
+Qed.
 
 Lemma Zmult_reg_right : (x,y,z:Z)`z>0` -> `x*z=y*z` -> x=y.
 Intros x y z Hz.
 Rewrite (Zmult_sym x z).
 Rewrite (Zmult_sym y z).
 Intro; Apply Zmult_reg_left with z; Assumption.
-Save.
+Qed.
     
 Lemma Zgt0_le_pred : (y:Z) `y > 0` -> `0 <= (Zpred y)`.
 Intro; Unfold Zpred; Omega.
-Save.
+Qed.
 
 Lemma Zlt_Zplus : 
   (x1,x2,y1,y2:Z)`x1 < x2` -> `y1 < y2` -> `x1 + y1 < x2 + y2`.
 Intros; Omega.
-Save.
+Qed.
 
 Lemma Zlt_Zmult_right : (x,y,z:Z)`z>0` -> `x < y` -> `x*z < y*z`.
 
@@ -82,7 +82,7 @@ Apply natlike_ind with P:=[z:Z]`x*(Zs z) < y*(Zs z)`;
   Repeat Rewrite Zmult_n_1;
   Intro; Apply Zlt_Zplus; Assumption
 | Assumption ].
-Save.
+Qed.
 
 Lemma Zlt_Zmult_right2 : (x,y,z:Z)`z>0`  -> `x*z < y*z` -> `x < y`.
 Intros x y z H; Rewrite (Zs_pred z).
@@ -93,7 +93,7 @@ Intros x0 Hx0; Repeat Rewrite Zmult_plus_distr_r.
 Repeat Rewrite Zmult_n_1.
 Omega. (* Auto with zarith. *)
 Unfold Zpred; Omega.
-Save.
+Qed.
 
 Lemma Zle_Zmult_right : (x,y,z:Z)`z>0` -> `x <= y` -> `x*z <= y*z`.
 Intros x y z Hz Hxy.
@@ -102,7 +102,7 @@ Intros; Apply Zlt_le_weak.
 Apply Zlt_Zmult_right; Trivial.
 Intros; Apply Zle_refl.
 Rewrite H; Trivial.
-Save.
+Qed.
 
 Lemma Zle_Zmult_right2 :  (x,y,z:Z)`z>0` -> `x*z <= y*z` -> `x <= y`.
 Intros x y z Hz Hxy.
@@ -111,26 +111,26 @@ Intros; Apply Zlt_le_weak.
 Apply Zlt_Zmult_right2 with z; Trivial.
 Intros; Apply Zle_refl.
 Apply Zmult_reg_right with z; Trivial.
-Save.
+Qed.
 
 Lemma Zgt_Zmult_right : (x,y,z:Z)`z>0` -> `x > y` -> `x*z > y*z`.
 
 Intros; Apply Zlt_gt; Apply Zlt_Zmult_right; 
 [ Assumption | Apply Zgt_lt ; Assumption ].
-Save.
+Qed.
 
 Lemma Zlt_Zmult_left : (x,y,z:Z)`z>0` -> `x < y` -> `z*x < z*y`.
 
 Intros;
 Rewrite (Zmult_sym z x); Rewrite (Zmult_sym z y);
 Apply Zlt_Zmult_right; Assumption.
-Save.
+Qed.
 
 Lemma Zgt_Zmult_left : (x,y,z:Z)`z>0` -> `x > y` -> `z*x > z*y`.
 Intros;
 Rewrite (Zmult_sym z x); Rewrite (Zmult_sym z y);
 Apply Zgt_Zmult_right; Assumption.
-Save.
+Qed.
 
 Theorem Zcompare_Zmult_right : (x,y,z:Z)` z>0` -> `x ?= y`=`x*z ?= y*z`.
 
@@ -140,14 +140,14 @@ Intros; Apply Zcompare_egal_dec;
   Rewrite ((let (t1,t2)=(Zcompare_EGAL x y) in t1) Hxy); Trivial
 | Intros; Apply Zgt_Zmult_right; Trivial
 ].
-Save.
+Qed.
 
 Theorem  Zcompare_Zmult_left : (x,y,z:Z)`z>0` -> `x ?= y`=`z*x ?= z*y`.
 Intros;
 Rewrite (Zmult_sym z x);
 Rewrite (Zmult_sym z y);
 Apply Zcompare_Zmult_right; Assumption.
-Save.
+Qed.
 
 
 Lemma two_or_two_plus_one : (x:Z) { y:Z | `x = 2*y`}+{ y:Z | `x = 2*y+1`}. 
@@ -170,7 +170,7 @@ Omega.
 Left ; Split with (NEG p); Reflexivity.
 
 Right ; Split with `-1`; Reflexivity.
-Save.
+Qed.
 
 (** The biggest power of 2 that is stricly less than [a]
 
@@ -190,7 +190,7 @@ Lemma floor_gt0 : (x:positive) `(floor x) > 0`.
 Intro.
 Compute.
 Trivial.
-Save.
+Qed.
 
 Lemma floor_ok : (a:positive) 
   `(floor a) <=  (POS a) < 2*(floor a)`. 
@@ -211,7 +211,7 @@ Rewrite (POS_xO p).
 Omega.
 
 Simpl; Omega.
-Save.
+Qed.
 
 
 (** Two more induction principles over [Z]. *)

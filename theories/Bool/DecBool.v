@@ -17,11 +17,11 @@ Definition ifdec : (A,B:Prop)(C:Set)({A}+{B})->C->C->C
 Theorem ifdec_left : (A,B:Prop)(C:Set)(H:{A}+{B})~B->(x,y:C)(ifdec H x y)=x.
 Intros; Case H; Auto.
 Intro; Absurd B; Trivial.
-Save.
+Qed.
 
 Theorem ifdec_right : (A,B:Prop)(C:Set)(H:{A}+{B})~A->(x,y:C)(ifdec H x y)=y.
 Intros; Case H; Auto.
 Intro; Absurd A; Trivial.
-Save.
+Qed.
 
 Unset Implicit Arguments.

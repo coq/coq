@@ -100,7 +100,7 @@ Apply Acc_intro.
 Intros b ltfafb.
 Apply IHn.
 Apply lt_le_trans with (f a); Auto with arith.
-Save.
+Qed.
 
 End Well_founded_Nat.
 
@@ -120,7 +120,7 @@ Proof [p:nat][P:nat->Set][F:(n:nat)((m:nat)(lt m n)->(P m))->(P n)]
 Lemma lt_wf_ind : (p:nat)(P:nat->Prop)
               ((n:nat)((m:nat)(lt m n)->(P m))->(P n)) -> (P p).
 Intros; Elim (lt_wf p); Auto with arith.
-Save.
+Qed.
 
 Lemma gt_wf_rec : (p:nat)(P:nat->Set)
               ((n:nat)((m:nat)(gt n m)->(P m))->(P n)) -> (P p).
@@ -136,7 +136,7 @@ Lemma lt_wf_double_rec :
    -> (p,q:nat)(P p q).
 Intros P Hrec p; Pattern p; Apply lt_wf_rec.
 Intros; Pattern q; Apply lt_wf_rec; Auto with arith.
-Save.
+Qed.
 
 Lemma lt_wf_double_ind : 
   (P:nat->nat->Prop)
@@ -144,7 +144,7 @@ Lemma lt_wf_double_ind :
    -> (p,q:nat)(P p q).
 Intros P Hrec p; Pattern p; Apply lt_wf_ind.
 Intros; Pattern q; Apply lt_wf_ind; Auto with arith.
-Save.
+Qed.
 
 Hints Resolve lt_wf : arith.
 Hints Resolve well_founded_lt_compat : arith.

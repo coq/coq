@@ -19,29 +19,29 @@ Hints Resolve JMeq_refl.
 
 Lemma JMeq_sym : (A,B:Set)(x:A)(y:B)(JMeq x y)->(JMeq y x).
 NewDestruct 1; Trivial.
-Save.
+Qed.
 
 Hints Immediate JMeq_sym.
 
 Lemma JMeq_trans : (A,B,C:Set)(x:A)(y:B)(z:C)
 	(JMeq x y)->(JMeq y z)->(JMeq x z).
 NewDestruct 1; Trivial.
-Save.
+Qed.
 
 Axiom JMeq_eq : (A:Set)(x,y:A)(JMeq x y)->(x=y).
 
 Lemma JMeq_eq_ind : (A:Set)(x,y:A)(P:A->Prop)(P x)->(JMeq x y)->(P y).
 Intros A x y P H H'; Case JMeq_eq with 1:=H'; Trivial.
-Save.
+Qed.
 
 Lemma JMeq_eq_rec : (A:Set)(x,y:A)(P:A->Set)(P x)->(JMeq x y)->(P y).
 Intros A x y P H H'; Case JMeq_eq with 1:=H'; Trivial.
-Save.
+Qed.
 
 Lemma JMeq_eq_ind_r : (A:Set)(x,y:A)(P:A->Prop)(P y)->(JMeq x y)->(P x).
 Intros A x y P H H'; Case JMeq_eq with 1:=(JMeq_sym H'); Trivial.
-Save.
+Qed.
 
 Lemma JMeq_eq_rec_r : (A:Set)(x,y:A)(P:A->Set)(P y)->(JMeq x y)->(P x).
 Intros A x y P H H'; Case JMeq_eq with 1:=(JMeq_sym H'); Trivial.
-Save.
+Qed.

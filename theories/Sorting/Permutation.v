@@ -12,7 +12,7 @@ Require Relations.
 Require PolyList.
 Require Multiset.
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Section defs.
 
@@ -107,5 +107,5 @@ Qed.
 Hints Resolve permut_middle.
 
 End defs.
-Implicit Arguments Off.
+Unset Implicit Arguments.
 

@@ -53,22 +53,22 @@ Definition continuity_pt [f:R->R; x0:R] : Prop := (continue_in f no_cond x0).
 (**********)
 Lemma sum_continuous : (f1,f2:R->R; x0:R) (continuity_pt f1 x0) -> (continuity_pt f2 x0) -> (continuity_pt (plus_fct f1 f2) x0).
 Unfold continuity_pt plus_fct; Unfold continue_in; Intros; Apply limit_plus; Assumption.
-Save.
+Qed.
 
 (**********) 
 Lemma diff_continuous : (f1,f2:R->R; x0:R) (continuity_pt f1 x0) -> (continuity_pt f2 x0) -> (continuity_pt (minus_fct f1 f2) x0).
 Unfold continuity_pt minus_fct; Unfold continue_in; Intros; Apply limit_minus; Assumption.
-Save.
+Qed.
 
 (**********)
 Lemma prod_continuous : (f1,f2:R->R; x0:R) (continuity_pt f1 x0) -> (continuity_pt f2 x0) -> (continuity_pt (mult_fct f1 f2) x0).
 Unfold continuity_pt mult_fct; Unfold continue_in; Intros; Apply limit_mul; Assumption.
-Save.
+Qed.
   
 (**********)
 Lemma const_continuous : (f:R->R; x0:R) (constant f) -> (continuity_pt f x0).
 Unfold constant continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Intros; Exists ``1``; Split; [Apply Rlt_R0_R1 | Intros; Generalize (H x x0); Intro; Rewrite H2; Simpl; Rewrite R_dist_eq; Assumption].
-Save.
+Qed.
 
 (**********)
 Lemma scal_continuous : (f:R->R;a:R; x0:R) (continuity_pt f x0) -> (continuity_pt (mult_real_fct a f) x0).
@@ -77,62 +77,62 @@ Unfold limit1_in; Unfold limit_in; Intros; Exists ``1``; Split.
 Apply Rlt_R0_R1.
 Intros; Rewrite R_dist_eq; Assumption.
 Assumption.
-Save.
+Qed.
 
 (**********)
 Lemma opp_continuous : (f:R->R; x0:R) (continuity_pt f x0) -> (continuity_pt (opp_fct f) x0).
 Unfold continuity_pt opp_fct; Unfold continue_in; Intros; Apply limit_Ropp; Assumption.
-Save.
+Qed.
 
 (**********)
 Lemma inv_continuous : (f:R->R; x0:R) (continuity_pt f x0) -> ~``(f x0)==0`` ->
 (continuity_pt ([x:R] ``/(f x)``) x0).
 Unfold continuity_pt; Unfold continue_in; Intros; Apply limit_inv; Assumption.
-Save.
+Qed.
  
 Lemma div_eq_inv : (f1,f2:R->R) (div_fct f1 f2)==(mult_fct f1 ([x:R]``/(f2 x)``)).
 Intros; Unfold div_fct; Unfold mult_fct; Unfold Rdiv; Apply fct_eq; Intro x; Reflexivity.
-Save.
+Qed.
  
 (**********)
 Lemma div_continuous : (f1,f2:R->R; x0:R) (continuity_pt f1 x0) -> (continuity_pt f2 x0) -> ~``(f2 x0)==0`` -> (continuity_pt (div_fct f1 f2) x0).
 Intros; Rewrite -> (div_eq_inv f1 f2); Apply prod_continuous; [Assumption | Apply inv_continuous; Assumption].
-Save.
+Qed.
  
 (**********) 
 Definition continuity [f:R->R] : Prop := (x:R) (continuity_pt f x).
  
 Lemma sum_continuity : (f1,f2:R->R) (continuity f1)->(continuity f2)->(continuity (plus_fct f1 f2)).
 Unfold continuity; Intros; Apply (sum_continuous f1 f2 x (H x) (H0 x)).
-Save.
+Qed.
 
 Lemma diff_continuity : (f1,f2:R->R) (continuity f1)->(continuity f2)->(continuity (minus_fct f1 f2)).
 Unfold continuity; Intros; Apply (diff_continuous f1 f2 x (H x) (H0 x)).
-Save.
+Qed.
  
 Lemma prod_continuity : (f1,f2:R->R) (continuity f1)->(continuity f2)->(continuity (mult_fct f1 f2)).
 Unfold continuity; Intros; Apply (prod_continuous f1 f2 x (H x) (H0 x)).
-Save.
+Qed.
  
 Lemma const_continuity : (f:R->R) (constant f) -> (continuity f).
 Unfold continuity; Intros; Apply (const_continuous f x H).
-Save.
+Qed.
  
 Lemma scal_continuity : (f:R->R;a:R) (continuity f) -> (continuity (mult_real_fct a f)).
 Unfold continuity; Intros; Apply (scal_continuous f a x (H x)).
-Save.
+Qed.
   
 Lemma opp_continuity : (f:R->R) (continuity f)->(continuity (opp_fct f)).
 Unfold continuity; Intros; Apply (opp_continuous f x (H x)).
-Save.
+Qed.
  
 Lemma div_continuity : (f1,f2:R->R) (continuity f1)->(continuity f2)->((x:R) ~``(f2 x)==0``)->(continuity (div_fct f1 f2)).
 Unfold continuity; Intros; Apply (div_continuous f1 f2 x (H x) (H0 x) (H1 x)).
-Save.
+Qed.
  
 Lemma inv_continuity : (f:R->R) (continuity f)->((x:R) ~``(f x)==0``)->(continuity ([x:R] ``/(f x)``)).
 Unfold continuity; Intros; Apply (inv_continuous f x (H x) (H0 x)).
-Save.
+Qed.
  
 (*****************************************************)
 (**  Derivative's definition using Landau's kernel   *)
@@ -148,12 +148,12 @@ Axiom derive_pt_def : (f:R->R;x,l:R) ((eps:R) ``0<eps``->(EXT delta : posreal | 
 (**********)
 Lemma derive_pt_def_0 : (f:R->R;x,l:R) ((eps:R) ``0<eps``->(EXT delta : posreal | ((h:R) ~``h==0``->``(Rabsolu h)<delta`` -> ``(Rabsolu ((((f (x+h))-(f x))/h)-l))<eps``))) -> (derive_pt f x)==l.
 Intros; Elim (derive_pt_def f x l); Intros; Apply (H0 H).
-Save.
+Qed.
 
 (**********)
 Lemma derive_pt_def_1 : (f:R->R;x,l:R) (derive_pt f x)==l -> ((eps:R) ``0<eps``->(EXT delta : posreal | ((h:R) ~``h==0``->``(Rabsolu h)<delta`` -> ``(Rabsolu ((((f (x+h))-(f x))/h)-l))<eps``))).
 Intros; Elim (derive_pt_def f x l); Intros; Apply (H2 H eps H0).
-Save.
+Qed.
 
 (**********)
 Definition derive [f:R->R] := [x:R] (derive_pt f x).
@@ -173,12 +173,12 @@ cond_D2 : (derivable (derive d2)) }.
 (**********)
 Lemma derivable_derive : (f:R->R;x:R) (derivable_pt f x) -> (EXT l : R | (derive_pt f x)==l).
 Intros f x; Unfold derivable_pt; Intro H; Elim H; Intros l H0; Rewrite (derive_pt_def_0 f x l); [Exists l; Reflexivity | Assumption].
-Save.
+Qed.
 
 (**********)
 Lemma derive_derivable : (f:R->R;x,l:R) (derive_pt f x)==l -> (derivable_pt f x).
 Intros; Unfold derivable_pt; Generalize (derive_pt_def_1 f x l H); Intro H0; Exists l; Assumption.
-Save.
+Qed.
 
 (********************************************************************)
 (** Equivalence of this definition with the one using limit concept *)
@@ -196,7 +196,7 @@ Intro; Generalize (H2 ``x0-x`` H8 H5); Replace ``x+(x0-x)`` with x0.
 Intro; Assumption.
 Ring.
 Auto with real.
-Save.
+Qed.
 
 Definition fct_cte [a:R] : R->R := [x:R]a.
 
@@ -216,11 +216,11 @@ Generalize (H5 H1); Intro.
 Unfold continuity_pt.
 Apply (cont_deriv f (fct_cte l) no_cond x H6).
 Unfold fct_cte; Reflexivity.
-Save.
+Qed.
  
 Theorem derivable_continuous : (f:R->R) (derivable f) -> (continuity f).
 Unfold derivable continuity; Intros; Apply (derivable_continuous_pt f x (H x)).
-Save.
+Qed.
 
 (****************************************************************)
 (**                      Main rules                             *)
@@ -245,62 +245,62 @@ Unfold Rminus.
 Repeat Rewrite Ropp_distr1.
 Ring.
 Discriminate.  
-Save.
+Qed.
 
 Lemma sum_derivable_pt : (f1,f2:R->R;x:R) (derivable_pt f1 x)->(derivable_pt f2 x)->(derivable_pt (plus_fct f1 f2) x).
 Intros; Generalize (derivable_derive f1 x H); Intro; Generalize (derivable_derive f2 x H0); Intro; Elim H1; Clear H1; Intros l1 H1; Elim H2; Clear H2; Intros l2 H2; Apply (derive_derivable (plus_fct f1 f2) x ``l1+l2``); Rewrite <- H1; Rewrite <- H2; Apply deriv_sum; Assumption.
-Save.
+Qed.
 
 Lemma sum_derivable : (f1,f2:R->R) (derivable f1) -> (derivable f2) -> (derivable (plus_fct f1 f2)).
 Unfold derivable; Intros f1 f2 H1 H2 x; Apply sum_derivable_pt; [Exact (H1 x) | Exact (H2 x)].
-Save.
+Qed.
 
 Lemma sum_derivable_pt_var : (f1,f2:R->R;x:R) (derivable_pt f1 x) -> (derivable_pt f2 x) -> (derivable_pt ([y:R]``(f1 y)+(f2 y)``) x).
 Intros; Generalize (sum_derivable_pt f1 f2 x H H0); Unfold plus_fct; Intro; Assumption.
-Save.
+Qed.
 
 Lemma derive_sum : (f1,f2:R->R;x:R) (derivable_pt f1 x) -> (derivable_pt f2 x) -> (derive_pt ([y:R]``(f1 y)+(f2 y)``) x)==``(derive_pt f1 x)+(derive_pt f2 x)``.
 Intros; Generalize (deriv_sum f1 f2 x H H0); Unfold plus_fct; Intro; Assumption.
-Save.
+Qed.
 
 (* Opposite *)
 Lemma deriv_opposite : (f:R->R;x:R) (derivable_pt f x) -> ``(derive_pt (opp_fct f) x)==-(derive_pt f x)``.
 Intros; Generalize (derivable_derive f x H); Intro H0; Elim H0; Intros l H1; Rewrite H1; Unfold opp_fct; Apply derive_pt_def_0; Intros; Generalize (derive_pt_def_1 f x l H1); Intro H3; Elim (H3 eps H2); Intros delta H4; Exists delta; Intros; Replace ``( -(f (x+h))- -(f x))/h- -l`` with ``- (((f (x+h))-(f x))/h-l)``.
 Rewrite Rabsolu_Ropp; Apply (H4 h H5 H6).
 Unfold Rminus Rdiv; Rewrite Ropp_distr1; Repeat Rewrite Ropp_Ropp; Rewrite <- Ropp_mul1; Rewrite Ropp_distr1; Rewrite Ropp_Ropp; Reflexivity.
-Save.
+Qed.
 
 Lemma opposite_derivable_pt : (f:R->R;x:R) (derivable_pt f x) -> (derivable_pt (opp_fct f) x).
 Unfold opp_fct derivable_pt; Intros; Elim H; Intros; Exists ``-x0``; Intros; Elim (H0 eps H1); Intros; Exists x1; Intros; Generalize (H2 h H3 H4); Intro H5; Replace ``( -(f (x+h))- -(f x))/h- -x0`` with ``- (((f (x+h))-(f x))/h-x0)``.
 Rewrite Rabsolu_Ropp; Assumption.
 Unfold Rminus Rdiv; Rewrite Ropp_distr1; Repeat Rewrite Ropp_Ropp; Rewrite <- Ropp_mul1; Rewrite Ropp_distr1; Rewrite Ropp_Ropp; Reflexivity.
-Save.
+Qed.
 
 Lemma opposite_derivable : (f:R->R) (derivable f) -> (derivable (opp_fct f)).
 Unfold derivable; Intros f H1 x; Apply opposite_derivable_pt; Exact (H1 x).
-Save. 
+Qed. 
 
 (* Difference *)
 Lemma diff_plus_opp : (f1,f2:R->R) (minus_fct f1 f2)==(plus_fct f1 (opp_fct f2)).
 Intros; Unfold minus_fct plus_fct opp_fct; Apply fct_eq; Intro x; Ring.
-Save.
+Qed.
 
 Lemma deriv_diff : (f1,f2:R->R;x:R) (derivable_pt f1 x) -> (derivable_pt f2 x) -> ``(derive_pt (minus_fct f1 f2) x)==(derive_pt f1 x)-(derive_pt f2 x)``.
 Intros; Rewrite diff_plus_opp; Unfold Rminus; Rewrite <- (deriv_opposite f2 x H0); Apply deriv_sum; [Assumption | Apply opposite_derivable_pt; Assumption].
-Save.
+Qed.
 
 Lemma diff_derivable_pt : (f1,f2:R->R;x:R) (derivable_pt f1 x)->(derivable_pt f2 x)->(derivable_pt (minus_fct f1 f2) x).
 Intros; Rewrite (diff_plus_opp f1 f2); Apply sum_derivable_pt; [Assumption | Apply opposite_derivable_pt; Assumption].
-Save.
+Qed.
 
 Lemma diff_derivable : (f1,f2:R->R) (derivable f1) -> (derivable f2) -> (derivable (minus_fct f1 f2)).
 Unfold derivable; Intros f1 f2 H1 H2 x; Apply diff_derivable_pt; [ Exact (H1 x) | Exact (H2 x)].
-Save. 
+Qed. 
 
 Lemma derive_diff : (f1,f2:R->R;x:R) (derivable_pt f1 x)
 -> (derivable_pt f2 x) -> (derive_pt ([y:R]``(f1 y)-(f2 y)``) x)==``(derive_pt f1 x)-(derive_pt f2 x)``.
 Intros; Generalize (deriv_diff f1 f2 x H H0); Unfold minus_fct; Intro; Assumption.
-Save.
+Qed.
 
 (**********)
 Lemma deriv_scal : (f:R->R;a,x:R) (derivable_pt f x) -> ``(derive_pt (mult_real_fct a f) x)==a*(derive_pt f x)``.
@@ -319,7 +319,7 @@ Rewrite <- Rmult_assoc.
 Rewrite Rminus_distr.
 Reflexivity.
 Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply (Rabsolu_pos_lt a H1)].
-Save. 
+Qed. 
 
 Lemma scal_derivable_pt : (f:R->R;a:R; x:R) (derivable_pt f x) ->
 (derivable_pt (mult_real_fct a f) x).
@@ -338,19 +338,19 @@ Rewrite <- Rmult_assoc.
 Rewrite Rminus_distr.
 Reflexivity.
 Unfold Rdiv; Apply Rmult_lt_pos; [Assumption | Apply Rlt_Rinv; Apply (Rabsolu_pos_lt a H1)].
-Save.
+Qed.
 
 Lemma scal_derivable_pt_var : (f:R->R;a:R; x:R) (derivable_pt f x) -> (derivable_pt ([y:R]``a*(f y)``) x).
 Intros; Generalize (scal_derivable_pt f a x H); Unfold mult_real_fct; Intro; Assumption.
-Save.
+Qed.
 
 Lemma scal_derivable : (f:R->R;a:R) (derivable f) -> (derivable (mult_real_fct a f)).
 Unfold derivable; Intros f a H1 x; Apply scal_derivable_pt; Exact (H1 x).
-Save.
+Qed.
 
 Lemma derive_scal : (f:R->R;a,x:R) (derivable_pt f x) -> (derive_pt ([x:R]``a*(f x)``) x)==``a*(derive_pt f x)``.
 Intros; Generalize (deriv_scal f a x H); Unfold mult_real_fct; Intro; Assumption.
-Save.
+Qed.
 
 (* Multiplication *)
 Lemma deriv_prod : (f1,f2:R->R;x:R) (derivable_pt f1 x) -> (derivable_pt f2 x) -> ``(derive_pt (mult_fct f1 f2) x)==(derive_pt f1 x)*(f2 x)+(derive_pt f2 x)*(f1 x)``.
@@ -361,29 +361,29 @@ Generalize (H5 (mult_fct f1 f2) (plus_fct (mult_fct (fct_cte l1) f2) (mult_fct f
 Unfold plus_fct mult_fct fct_cte; Ring.
 Unfold fct_cte; Reflexivity.
 Unfold fct_cte; Reflexivity.
-Save.
+Qed.
 
 Lemma prod_derivable_pt : (f1,f2:R->R;x:R) (derivable_pt f1 x)->(derivable_pt f2 x)->(derivable_pt (mult_fct f1 f2) x).
 Intros; Generalize (deriv_prod f1 f2 x H H0); Intro; Apply (derive_derivable (mult_fct f1 f2) x ``(derive_pt f1 x)*(f2 x)+(derive_pt f2 x)*(f1 x)`` H1).
-Save.
+Qed.
 
 Lemma prod_derivable : (f1,f2:R->R) (derivable f1) -> (derivable f2) -> (derivable (mult_fct f1 f2)).
 Unfold derivable; Intros f1 f2 H1 H2 x; Apply prod_derivable_pt; [ Exact (H1 x) | Exact (H2 x)].
-Save.
+Qed.
 
 Lemma derive_prod : (f1,f2:R->R;x:R) (derivable_pt f1 x)
 -> (derivable_pt f2 x) -> (derive_pt ([x:R]``(f1 x)*(f2 x)``) x)==``(derive_pt f1 x)*(f2 x)+(derive_pt f2 x)*(f1 x)``.
 Intros; Generalize (deriv_prod f1 f2 x H H0); Unfold mult_fct; Intro; Assumption.
-Save.
+Qed.
 
 (**********)
 Lemma deriv_const : (a:R;x:R) (derive_pt ([x:R] a) x)==``0``.
 Intros; Apply derive_pt_def_0; Intros; Exists (mkposreal ``1`` Rlt_R0_R1); Intros; Replace ``a-a`` with ``0``; [Unfold Rdiv; Rewrite Rmult_Ol; Rewrite minus_R0; Rewrite Rabsolu_R0; Assumption | Ring].
-Save.
+Qed.
 
 Lemma const_derivable : (a:R) (derivable ([x:R] a)).
 Unfold derivable; Unfold derivable_pt; Intros; Exists ``0``; Intros; Exists (mkposreal ``1`` Rlt_R0_R1); Intros; Unfold Rminus; Rewrite Rplus_Ropp_r; Unfold Rdiv; Rewrite Rmult_Ol; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Assumption.
-Save.
+Qed.
  
 (**********)
 Lemma deriv_id : (x:R) (derive_pt ([y:R] y) x)==``1``.
@@ -393,7 +393,7 @@ Unfold Rminus; Rewrite Rplus_assoc; Rewrite (Rplus_sym x); Rewrite Rplus_assoc.
 Rewrite Rplus_Ropp_l; Rewrite Rplus_Or; Unfold Rdiv; Rewrite <- Rinv_r_sym.
 Symmetry; Apply Rplus_Ropp_r.
 Assumption.
-Save.
+Qed.
 
 Lemma diff_id : (derivable ([x:R] x)).
 Unfold derivable; Intro x; Unfold derivable_pt; Exists ``1``; Intros eps Heps; Exists (mkposreal eps Heps); Intros h H1 H2; Replace ``(x+h-x)/h-1`` with ``0``.
@@ -404,20 +404,20 @@ Unfold Rminus; Rewrite Rplus_assoc; Rewrite (Rplus_sym x); Rewrite Rplus_assoc.
 Rewrite Rplus_Ropp_l; Rewrite Rplus_Or; Unfold Rdiv; Rewrite <- Rinv_r_sym.
 Symmetry; Apply Rplus_Ropp_r.
 Assumption.
-Save.
+Qed.
 
 (**********)
 Lemma sum_fct_cte_derive_pt : (f:R->R;t,a:R) (derivable_pt f t) -> (derive_pt ([x:R]``(f x)+a``) t)==(derive_pt f t).
 Intros; Generalize (derivable_derive f t H); Intro; Elim H0; Intros l H1; Rewrite H1; Apply derive_pt_def_0; Intros; Generalize (derive_pt_def_1 f t l H1); Intros; Elim (H3 eps H2); Intros delta H4; Exists delta; Intros; Replace ``(f (t+h))+a-((f t)+a)`` with ``(f (t+h))-(f t)``; [Apply (H4 h H5 H6) | Ring].
-Save.
+Qed.
 
 Lemma sum_fct_cte_derivable_pt : (f:R->R;t,a:R) (derivable_pt f t)->(derivable_pt ([t:R]``(f t)+a``) t).
 Unfold derivable_pt; Intros; Elim H; Intros; Exists x; Intros; Elim (H0 eps H1); Intros; Exists x0; Intro h; Replace ``(f (t+h))+a-((f t)+a)`` with ``(f (t+h))-(f t)``; [Exact (H2 h) | Ring].
-Save. 
+Qed. 
 
 Lemma sum_fct_cte_derivable : (f:R->R;a:R) (derivable f)->(derivable ([t:R]``(f t)+a``)).
 Unfold derivable; Intros; Apply sum_fct_cte_derivable_pt; Apply (H x).
-Save.
+Qed.
 
 (**********)
 Lemma deriv_Rsqr : (x:R) (derive Rsqr x)==``2*x``.
@@ -430,7 +430,7 @@ Repeat Rewrite Rmult_1r; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r.
 Rewrite Rplus_Or; Reflexivity.
 Assumption.
 Unfold Rsqr; Reflexivity.
-Save.
+Qed.
 
 Lemma diff_Rsqr : (derivable Rsqr).
 Unfold derivable; Intro x; Unfold Rsqr; Unfold derivable_pt; Exists ``2*x``; Intros eps Heps; Exists (mkposreal eps Heps); Intros h H1 H2; Replace ``((x+h)*(x+h)-x*x)/h-2*x`` with ``h``.
@@ -442,26 +442,26 @@ Repeat Rewrite Rmult_1r; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r.
 Rewrite Rplus_Or; Reflexivity.
 Assumption.
 Unfold Rsqr; Reflexivity.
-Save.
+Qed.
 
 Lemma Rsqr_derivable_pt : (f:R->R;t:R) (derivable_pt f t) -> (derivable_pt ([x:R](Rsqr (f x))) t).
 Unfold Rsqr; Intros; Generalize (prod_derivable_pt f f t H H); Unfold mult_fct; Intro H0; Assumption.
-Save.
+Qed.
 
 Lemma Rsqr_derivable : (f:R->R) (derivable f)->(derivable ([x:R](Rsqr (f x)))).
 Unfold derivable; Intros; Apply (Rsqr_derivable_pt f x (H x)).
-Save.
+Qed.
 
 (* SQRT *)
 Axiom deriv_sqrt : (x:R) ``0<x`` -> (derive sqrt)==[y:R] ``1/(2*(sqrt y))``.
 
 Lemma eq_fct : (x:R;f1,f2:R->R) f1==f2 -> (f1 x)==(f2 x).
 Intros; Rewrite H; Reflexivity.
-Save.
+Qed.
 
 Lemma diff_sqrt : (x:R) ``0<x`` -> (derivable_pt sqrt x).
 Intros; Generalize (deriv_sqrt x H); Unfold derive; Intro; Generalize (eq_fct x ([x:R](derive_pt sqrt x)) ([y:R]``1/(2*(sqrt y))``) H0); Intro; Apply (derive_derivable sqrt x ``1/(2*(sqrt x))`` H1).
-Save.
+Qed.
 
 (* Composition *)
 
@@ -493,27 +493,27 @@ Assumption.
 Unfold mult_fct fct_cte; Rewrite Rmult_sym; Reflexivity.
 Unfold fct_cte; Reflexivity.
 Unfold fct_cte; Reflexivity.
-Save.
+Qed.
 
 Lemma composition_derivable : (f,g:R->R;x:R) (derivable_pt f x) -> (derivable_pt g (f x)) -> (derivable_pt (comp g f) x).
 Intros; Generalize (deriv_composition f g x H H0); Intro; Apply (derive_derivable (comp g f) x ``(derive_pt g (f x))*(derive_pt f x)`` H1).
-Save.
+Qed.
 
 Lemma derive_composition : (f,g:R->R;x:R) (derivable_pt f x) -> (derivable_pt g (f x)) -> (derive_pt ([x:R]``(g (f x))``) x)==``(derive_pt g (f x))*(derive_pt f x)``.
 Intros; Generalize (deriv_composition f g x H H0); Unfold comp; Intro; Assumption.
-Save.
+Qed.
 
 Lemma composition_derivable_var : (f,g:R->R;x:R) (derivable_pt f x) -> (derivable_pt g (f x)) -> (derivable_pt ([x:R](g (f x))) x).
 Intros; Generalize (composition_derivable f g x H H0); Unfold comp; Intro; Assumption.
-Save.
+Qed.
 
 Lemma diff_comp : (f,g:R->R) (derivable f)->(derivable g)->(derivable (comp g f)).
 Intros f g; Unfold derivable; Intros H1 H2 x; Apply (composition_derivable f g x (H1 x) (H2 (f x))).
-Save.
+Qed.
 
 Lemma Rsqr_derive : (f:R->R;t:R) (derivable_pt f t)->(derive_pt ([x:R](Rsqr (f x))) t)==(Rmult ``2`` (Rmult (derive_pt f t) (f t))).
 Intros; Generalize diff_Rsqr; Unfold derivable; Intro H0; Generalize (deriv_composition f Rsqr t H (H0 (f t))); Unfold comp; Intro H1; Rewrite H1; Generalize (deriv_Rsqr (f t)); Unfold derive; Intro H2; Rewrite H2; Rewrite Rmult_assoc; Rewrite <- (Rmult_sym (derive_pt f t)); Reflexivity.
-Save.
+Qed.
 
 (* SIN and COS *)
 Axiom deriv_sin : (derive sin)==cos.
@@ -522,7 +522,7 @@ Lemma diff_sin : (derivable sin).
 Unfold derivable; Intro; Generalize deriv_sin; Unfold derive; Intro; Generalize
 (eq_fct x ([x:R](derive_pt sin x)) cos H); Intro; Apply (derive_derivable sin x
 (cos x) H0).
-Save.
+Qed.
  
 Lemma diff_cos : (derivable cos).
 Unfold derivable; Intro; Cut ([x:R]``(sin (x+PI/2))``)==cos.
@@ -530,11 +530,11 @@ Intro; Rewrite <- H; Apply (composition_derivable_var ([x:R]``x+PI/2``) sin x).
 Apply (sum_fct_cte_derivable_pt ([x:R]x) x ``PI/2``); Apply diff_id.
 Apply diff_sin.
 Apply fct_eq; Intro; Symmetry; Rewrite Rplus_sym; Apply cos_sin.
-Save.
+Qed.
  
 Lemma derive_pt_sin : (x:R) (derive_pt sin x)==(cos x).
 Intro; Generalize deriv_sin; Unfold derive; Intro; Apply (eq_fct x [x:R](derive_pt sin x) cos H).
-Save.
+Qed.
 
 Lemma deriv_cos : (derive cos)==(opp_fct sin).
 Unfold opp_fct derive; Apply fct_eq; Intro; Cut ([x:R]``(sin (x+PI/2))``)==cos.
@@ -545,11 +545,11 @@ Apply diff_id.
 Apply (sum_fct_cte_derivable_pt ([x:R]x) x ``PI/2``); Apply diff_id.
 Apply diff_sin.
 Apply fct_eq; Intro; Symmetry; Rewrite Rplus_sym; Apply cos_sin.
-Save.
+Qed.
 
 Lemma derive_pt_cos : (x:R) (derive_pt cos x)==``-(sin x)``.
 Intro; Generalize deriv_cos; Unfold derive; Intro; Unfold opp_fct in H; Apply (eq_fct x [x:R](derive_pt cos x) [x:R]``-(sin x)`` H).
-Save.
+Qed.
 
 (************************************************************)
 (**             Local extremum's condition                  *)
@@ -727,15 +727,15 @@ Unfold Rdiv; Apply Rmult_lt_pos.
 Rewrite <- Ropp_O; Apply Rlt_Ropp; Assumption.
 Apply (Rlt_Rinv ``2`` Rgt_2_0).
 Unfold Rdiv; Apply Ropp_mul1.
-Save.
+Qed.
 
 Theorem deriv_minimum : (f:R->R;a,b,c:R) ``a<c``->``c<b``->(derivable_pt f c)->((x:R) ``a<x``->``x<b``->``(f c)<=(f x)``)->``(derive_pt f c)==0``.
 Intros; Generalize (opposite_derivable_pt f c H1); Intro; Rewrite <- (Ropp_Ropp (derive_pt f c)); Apply eq_RoppO; Rewrite <- (deriv_opposite f c H1); Apply (deriv_maximum (opp_fct f) a b c H H0 H3); Intros; Unfold opp_fct; Apply Rge_Ropp; Apply Rle_sym1; Apply (H2 x H4 H5).
-Save.
+Qed.
 
 Theorem deriv_constant2 : (f:R->R;a,b,c:R) ``a<c``->``c<b``->(derivable_pt f c)->((x:R) ``a<x``->``x<b``->``(f x)==(f c)``)->``(derive_pt f c)==0``.
 Intros; Apply (deriv_maximum f a b c H H0 H1); Intros; Right; Apply (H2 x H3 H4).
-Save.
+Qed.
 
 (**********)
 Lemma nonneg_derivative_0 : (f:R->R) (derivable f)->(increasing f) -> ((x:R) ``0<=(derive_pt f x)``).
@@ -789,7 +789,7 @@ Rewrite <- Rmult_assoc.
 Apply Rinv_r_simpl_m.
 Apply aze.
 Rewrite <- Ropp_O; Apply Rlt_Ropp; Unfold Rdiv; Generalize (Rlt_monotony_r ``/2`` l ``0`` (Rlt_Rinv ``2`` Rgt_2_0) H4); Rewrite Rmult_Ol; Intro; Assumption.
-Save.
+Qed.
 
 (**********)
 Axiom nonneg_derivative_1 : (f:R->R) (derivable f)->((x:R) ``0<=(derive_pt f x)``) -> (increasing f).
@@ -877,17 +877,17 @@ Apply aze.
 Unfold Rdiv; Apply Rmult_lt_pos.
 Assumption.
 Apply Rlt_Rinv; Apply Rgt_2_0.
-Save.
+Qed.
 
 (**********)
 Lemma increasing_decreasing_opp : (f:R->R) (increasing f) -> (decreasing (opp_fct f)).
 Unfold increasing decreasing opp_fct; Intros; Generalize (H x y H0); Intro; Apply Rge_Ropp; Apply Rle_sym1; Assumption.
-Save.
+Qed.
 
 (**********)
 Lemma opp_opp_fct : (f:R->R) (opp_fct (opp_fct f))==f.
 Intro; Unfold opp_fct; Apply fct_eq; Intro; Rewrite Ropp_Ropp; Reflexivity.
-Save.
+Qed.
 
 (**********)
 Lemma nonpos_derivative_1 : (f:R->R) (derivable f)->((x:R) ``(derive_pt f x)<=0``) -> (decreasing f).
@@ -897,7 +897,7 @@ Cut (x:R)``0<=(derive_pt (opp_fct f) x)``.
 Intros; Apply (nonneg_derivative_1 (opp_fct f) H2 H1).
 Intros; Rewrite (deriv_opposite f x (H x)); Rewrite <- Ropp_O; Apply Rge_Ropp; Apply Rle_sym1; Apply (H0 x).
 Apply (opposite_derivable f H).
-Save.
+Qed.
 
 (**********)
 Axiom positive_derivative : (f:R->R) (derivable f)->((x:R) ``0<(derive_pt f x)``)->(strict_increasing f).
@@ -905,7 +905,7 @@ Axiom positive_derivative : (f:R->R) (derivable f)->((x:R) ``0<(derive_pt f x)``
 (**********)
 Lemma strictincreasing_strictdecreasing_opp : (f:R->R) (strict_increasing f) -> (strict_decreasing (opp_fct f)).
 Unfold strict_increasing strict_decreasing opp_fct; Intros; Generalize (H x y H0); Intro; Apply Rlt_Ropp; Assumption.
-Save.
+Qed.
 
 (**********)
 Lemma negative_derivative : (f:R->R) (derivable f)->((x:R) ``(derive_pt f x)<0``)->(strict_decreasing f).
@@ -915,12 +915,12 @@ Cut (x:R)``0<(derive_pt (opp_fct f) x)``.
 Intros; Apply (positive_derivative (opp_fct f) H2 H1).
 Intros; Rewrite (deriv_opposite f x (H x)); Rewrite <- Ropp_O; Apply Rlt_Ropp; Apply (H0 x).
 Apply (opposite_derivable f H).
-Save.
+Qed.
 
 (**********)
 Lemma null_derivative_0 : (f:R->R) (constant f)->((x:R) ``(derive_pt f x)==0``). 
 Intros; Unfold constant in H; Apply derive_pt_def_0; Intros; Exists (mkposreal ``1`` Rlt_R0_R1); Intros; Rewrite (H x ``x+h``); Unfold Rminus; Unfold Rdiv; Rewrite Rplus_Ropp_r; Rewrite Rmult_Ol; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Assumption.
-Save.
+Qed.
 
 (**********)
 Lemma increasing_decreasing : (f:R->R) (increasing f) -> (decreasing f) -> (constant f).
@@ -929,7 +929,7 @@ Generalize (Rlt_le x y H1); Intro; Apply (Rle_antisym (f x) (f y) (H x y H2) (H0
 Elim H1; Intro.
 Rewrite H2; Reflexivity.
 Generalize (Rlt_le y x H2); Intro; Symmetry; Apply (Rle_antisym (f y) (f x) (H y x H3) (H0 y x H3)).
-Save.
+Qed.
 
 (**********)
 Lemma null_derivative_1 : (f:R->R) (derivable f)->((x:R) ``(derive_pt f x)==0``)->(constant f).
@@ -943,7 +943,7 @@ Apply increasing_decreasing; Assumption.
 Intro.
 Right; Symmetry; Apply (H0 x).
 Intro; Right; Apply (H0 x).
-Save.
+Qed.
 
 (**********)
 Axiom derive_increasing_interv_ax : (a,b:R;f:R->R) ``a<b``-> (((t:R) ``a<t<b`` -> ``0<(derive_pt f t)``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<(f y)``)) /\ (((t:R) ``a<t<b`` -> ``0<=(derive_pt f t)``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<=(f y)``)).
@@ -951,12 +951,12 @@ Axiom derive_increasing_interv_ax : (a,b:R;f:R->R) ``a<b``-> (((t:R) ``a<t<b`` -
 (**********)
 Lemma derive_increasing_interv : (a,b:R;f:R->R) ``a<b``-> ((t:R) ``a<t<b`` -> ``0<(derive_pt f t)``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<(f y)``).
 Intros; Generalize (derive_increasing_interv_ax a b f H); Intro; Elim H4; Intros H5 _; Apply (H5 H0 x y H1 H2 H3).
-Save.
+Qed.
 
 (**********)
 Lemma derive_increasing_interv_var : (a,b:R;f:R->R) ``a<b``-> ((t:R) ``a<t<b`` -> ``0<=(derive_pt f t)``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<=(f y)``).
 Intros; Generalize (derive_increasing_interv_ax a b f H); Intro; Elim H4; Intros _ H5; Apply (H5 H0 x y H1 H2 H3).
-Save.
+Qed.
 
 (**********)
 (**********)

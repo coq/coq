@@ -15,7 +15,7 @@ Require Decidable.
 
 Theorem zerop : (n:nat){n=O}+{lt O n}.
 NewDestruct n; Auto with arith.
-Save.
+Qed.
 
 Theorem lt_eq_lt_dec : (n,m:nat){(lt n m)}+{n=m}+{(lt m n)}.
 Proof.
@@ -61,42 +61,42 @@ Theorem dec_le:(x,y:nat)(decidable (le x y)).
 Intros x y; Unfold decidable ; Elim (le_gt_dec x y); [
   Auto with arith
 | Intro; Right; Apply gt_not_le; Assumption].
-Save.
+Qed.
 
 Theorem dec_lt:(x,y:nat)(decidable (lt x y)).
 Intros x y; Unfold lt; Apply dec_le.
-Save.
+Qed.
 
 Theorem dec_gt:(x,y:nat)(decidable (gt x y)).
 Intros x y; Unfold gt; Apply dec_lt.
-Save.
+Qed.
 
 Theorem dec_ge:(x,y:nat)(decidable (ge x y)).
 Intros x y; Unfold ge; Apply dec_le.
-Save.
+Qed.
 
 Theorem not_eq : (x,y:nat) ~ x=y -> (lt x y) \/ (lt y x).
 Intros x y H; Elim (lt_eq_lt_dec x y); [
   Intros H1; Elim H1; [ Auto with arith | Intros H2; Absurd x=y; Assumption]
 | Auto with arith].
-Save.
+Qed.
 
 
 Theorem not_le : (x,y:nat) ~(le x y) -> (gt x y).
 Intros x y H; Elim (le_gt_dec x y);
   [ Intros H1; Absurd (le x y); Assumption | Trivial with arith ].
-Save.
+Qed.
 
 Theorem not_gt : (x,y:nat) ~(gt x y) -> (le x y).
 Intros x y H; Elim (le_gt_dec x y);
   [ Trivial with arith | Intros H1; Absurd (gt x y); Assumption].
-Save.
+Qed.
 
 Theorem not_ge : (x,y:nat) ~(ge x y) -> (lt x y).
 Intros x y H; Exact (not_le y x H).
-Save.
+Qed.
 
 Theorem not_lt : (x,y:nat) ~(lt x y) -> (ge x y).
 Intros x y H; Exact (not_gt y x H). 
-Save.
+Qed.
 

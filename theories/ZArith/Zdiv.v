@@ -143,7 +143,7 @@ Case (Zgt_bool b `r+r`);
 Generalize (Zge_cases b `2`).
 Case (Zge_bool b `2`); (Intros; Split; [Ring | Omega ]).
 Omega.
-Save.
+Qed.
 
 
 
@@ -179,12 +179,12 @@ Generalize (NEG_lt_ZERO p1); Omega.
 
 Intros.
 Absurd `(NEG p)>0`; [ Generalize (NEG_lt_ZERO p); Omega | Omega ].
-Save.
+Qed.
 
 
 (** Existence theorems *)
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Theorem Zdiv_eucl_exist : (b:Z)`b > 0` -> (a:Z)
   { qr:Z*Z | let (q,r)=qr in `a=b*q+r` /\ `0 <= r < b` }.
@@ -192,7 +192,7 @@ Proof.
 Intros b Hb a.
 Exists (Zdiv_eucl a b).
 Exact (Z_div_mod a b Hb).
-Save.
+Qed.
 
 Theorem Zdiv_eucl_extended : (b:Z)`b <> 0` -> (a:Z)
   { qr:Z*Z | let (q,r)=qr in `a=b*q+r` /\ `0 <= r < |b|` }.
@@ -209,7 +209,7 @@ Elim Hqr;Intros.
 Split.
 Rewrite <- Zmult_Zopp_left;Assumption.
 Rewrite Zabs_non_eq;[Assumption|Omega].
-Save.
+Qed.
 
 
 (** Syntax *)
