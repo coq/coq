@@ -9,6 +9,7 @@
 (* $Id$ *)
 
 open Util
+open Stdpp
 open Names
 open Sign
 open Term
@@ -137,7 +138,7 @@ let error_not_clean env sigma ev c =
   raise (PretypeError (env_ise sigma env, NotClean (ev,c)))
 
 let error_unsolvable_implicit loc env sigma e =
-  raise (PretypeError (env_ise sigma env, UnsolvableImplicit e))
+  raise_with_loc loc (PretypeError (env_ise sigma env, UnsolvableImplicit e))
 
 (*s Ml Case errors *)
 
