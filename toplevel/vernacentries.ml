@@ -1475,7 +1475,7 @@ let _ =
        | [VARG_CONSTR c] ->
            (fun () -> (* by (tactic_com exact c) *)
               (* on experimente la synthese d'ise dans exact *)
-              by (dyn_exact [Command c]); 
+              by (dyn_exact_check [Command c]); 
               save_named true)
        |   _  -> assert false)
 
