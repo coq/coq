@@ -49,10 +49,11 @@ let double_type_of env sigma cstr expectedty =
         Util.error
          "DoubleTypeInference.double_type_of: found a non-instanciated goal"
  
-     | T.Evar ev ->
-        let ty = Instantiate.existential_type sigma ev in
+     | T.Evar ((n,l) as ev) ->
+        let ty = T.unshare (Instantiate.existential_type sigma ev) in
         let jty = execute env sigma ty None in
         let jty = assumption_of_judgment env sigma jty in
+        let _ = Array.map (function t -> execute env sigma t None) l in
          E.make_judge cstr jty
 	
      | T.Rel n -> 
@@ -191,7 +192,7 @@ let double_type_of env sigma cstr expectedty =
            {synthesized = synthesized' ; expected = Some expectedty'},
            expectedty'
       in
-(*CSC: da rimuovere *)
+(*CSC: debugging stuff to be removed *)
 if Acic.CicHash.mem subterms_to_types cstr then
  (Pp.ppnl (Pp.(++) (Pp.str "DUPLICATE INSERTION: ") (Printer.prterm cstr)) ; flush stdout ) ;
        Acic.CicHash.add subterms_to_types cstr types ;
