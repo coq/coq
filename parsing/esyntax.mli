@@ -11,7 +11,6 @@
 (*i*)
 open Pp
 open Extend
-open Vernacexpr
 open Symbols
 open Ppextend
 open Topconstr

@@ -16,7 +16,6 @@ open Coqast
 open Ast
 open Extend
 open Ppextend
-open Vernacexpr
 open Names
 open Nametab
 open Topconstr
