@@ -1,0 +1,671 @@
+%\documentstyle[11pt,../tools/coq-tex/coq,fullpage]{article}
+
+%\pagestyle{plain}
+
+%\begin{document}
+%\nocite{Augustsson85,wadler87,HuetLevy79,MaSi94,maranget94,Laville91,saidi94,dowek93,Leroy90,puel-suarez90}
+
+%\input{title}
+%\input{macros}
+%\coverpage{The Macro \verb+Cases+}{Cristina Cornes}
+%\pagestyle{plain}
+\chapter{The Macro {\tt Cases}}\label{Cases}\index{Cases@{\tt Cases}}
+
+\marginparwidth 0pt \oddsidemargin 0pt \evensidemargin 0pt \marginparsep 0pt
+\topmargin 0pt \textwidth 6.5in \textheight 8.5in
+
+
+\verb+Cases+ is an extension to the concrete syntax of Coq that allows
+to write case expressions using patterns in a syntax close to that of ML languages.  
+This construction is just a  macro that is
+expanded during parsing into a sequence of the primitive construction 
+ \verb+Case+.
+The current implementation contains two strategies, one for compiling
+non-dependent case and another one for dependent case.
+\section{Patterns}\label{implementation}
+A pattern is a term that indicates the {\em shape} of a value, i.e. a
+term where the variables can be seen as holes. When a value is 
+matched against a pattern (this is called {\em pattern matching}) 
+the pattern behaves as a filter, and associates a sub-term  of the value
+to each hole (i.e. to each variable pattern). 
+ 
+
+The syntax of patterns is presented in  figure \ref{grammar}\footnote{
+Notation:  \{$P$\}$^*$ denotes zero or more repetitions of $P$ and 
+ \{$P$\}$^+$ denotes  one or more repetitions of $P$. {\sl command} is the
+non-terminal corresponding to terms in Coq.}.
+Patterns are built up from constructors and variables. Any identifier
+that is not a constructor of an inductive or coinductive type is
+considered to be 
+a variable. Identifiers in patterns should be linear except for 
+the ``don't care''  pattern denoted by ``\verb+_+''.
+We can use patterns to build more complex patterns. 
+We call {\em simple pattern} a variable  or a pattern of the form
+$(c~\vec{x})$ where $c$ is a constructor symbol and $\vec{x}$ is a
+linear vector of  variables. If a pattern is
+not simple we call it {\em nested}.  
+
+
+A variable pattern matches any value, and the
+identifier is bound to that value. The pattern ``\verb+_+'' also matches
+any value, but it is not binding. Alias patterns written \verb+(+{\sl pattern} \verb+as+ {\sl
+identifier}\verb+)+ are also accepted. This pattern matches the same values as
+{\sl pattern} does   and
+{\sl identifier} is bound to the matched value.
+A list of patterns is also considered as a pattern and is called {\em
+multiple pattern}.
+
+\begin{figure}[t]
+\begin{center}
+\begin{sl}
+\begin{tabular}{|l|}\hline  \\
+\begin{tabular}{rcl}%\hline && \\
+simple\_pattern  & := &  pattern \verb+as+  identifier \\
+                  &$|$ &  pattern \verb+,+ pattern \\ 
+                  &$|$ &  pattern pattern\_list \\ && \\
+
+pattern  & := & identifier  $|$ \verb+(+ simple\_pattern \verb+)+ \\ &&\\
+
+
+equation & := &  \{pattern\}$^+$ ~\verb+=>+ ~term \\ && \\
+
+ne\_eqn\_list & := & \verb+|+$^{opt}$ equation~ \{\verb+|+ equation\}$^*$  \\ &&\\
+
+eqn\_list & := & \{~equation~ \{\verb+|+ equation\}$^*$~\}$^*$\\ &&\\
+
+
+term & := &  
+\verb+Cases+ \{term \}$^+$ \verb+of+ ne\_eqn\_list \verb+end+ \\
+&$|$ & \verb+<+term\verb+>+ \verb+Cases+ \{ term \}$^+$
+\verb+of+ eqn\_list \verb+end+ \\&& %\\ \hline
+\end{tabular} \\ \hline
+\end{tabular} 
+\end{sl} \end{center}
+\caption{Macro Cases syntax.}
+\label{grammar}
+\end{figure}
+
+
+Pattern matching  improves readability. Compare for example the term
+of the  function {\em is\_zero} of natural 
+numbers written with patterns and the one written in primitive
+concrete syntax (note that the first bar \verb+|+ is optional)~:
+
+\begin{center}
+\begin{small}
+\begin{tabular}{l}
+\verb+[n:nat] Cases n of | O => true | _ => false end+,\\ 
+\verb+[n:nat] Case  n of true [_:nat]false end+.
+\end{tabular}
+\end{small}
+\end{center}
+
+In Coq pattern matching is compiled into the primitive constructions,
+thus the expressiveness of the theory remains the same. Once the stage
+of parsing has finished patterns disappear. An easy way to see the
+result of the expansion is by printing the term with \texttt{Print} if
+the term is a constant, or
+using the command \texttt{Check}  that displays
+the term with its type :
+
+\begin{coq_example}
+Check [n:nat] Cases n of O => true | _ => false end.
+\end{coq_example}
+
+
+\verb+Cases+ accepts optionally an infix term enclosed between
+brackets \verb+<>+ that we
+call the {\em elimination predicate}. 
+This term is the same argument as the one expected by the primitive
+\verb+Case+. Given a pattern matching
+expression, if all the right hand sides of \verb+=>+ ({\em rhs} in
+short) have the same type, then this term
+can be sometimes synthesized, and so we can omit the \verb+<>+.
+Otherwise we have to
+provide the predicate between \verb+<>+ as for the primitive \verb+Case+.
+
+Let us illustrate through examples the different aspects of pattern matching.
+Consider for example the function that computes the maximum of two
+natural numbers.  We can write it in primitive syntax by:
+\begin{coq_example}
+Fixpoint max [n,m:nat] : nat :=
+        Case n of
+         (*  O   *) m
+         (* S n' *) [n':nat]Case m of
+                             (* O    *) (S n')
+                             (* S m' *) [m':nat](S (max n' m'))
+                            end
+        end.
+\end{coq_example}
+
+Using patterns in the definitions gives:
+
+\begin{coq_example}
+Reset max.
+Fixpoint max [n,m:nat] : nat :=
+          Cases n of 
+             O     => m
+          | (S n') => Cases m of
+                         O      => (S n')
+                       | (S m') => (S (max n' m'))
+                      end
+         end.
+\end{coq_example}
+
+Another way to write this definition is to use a multiple pattern to
+ match    \verb+n+ and \verb+m+:
+
+\begin{coq_example}
+Reset max.
+Fixpoint max [n,m:nat] : nat :=
+          Cases n m of
+             O         _  => m   
+          | (S n') O      => (S n')
+          | (S n') (S m') => (S (max n' m')) 
+         end.
+\end{coq_example}
+
+
+The strategy examines patterns 
+from left to right. A case expression is generated {\bf only}  when there is at least one constructor in the column of patterns.
+For example, 
+\begin{coq_example}
+Check [x:nat]<nat>Cases x of y => y end.
+\end{coq_example}
+
+
+
+We can also use ``\verb+as+ patterns'' to associate a name to a
+sub-pattern:
+
+\begin{coq_example}
+Reset max.
+Fixpoint max [n:nat] : nat -> nat :=
+  [m:nat] Cases n m of
+             O     _         => m   
+          | ((S n') as N) O  => N
+          | (S n') (S m')    => (S (max n' m')) 
+         end.
+\end{coq_example}
+
+
+In the previous examples patterns do not conflict with, but
+sometimes it is comfortable to write patterns that admits a non
+trivial superposition. Consider
+the boolean function $lef$ that given two natural numbers
+yields \verb+true+ if the first one is less or equal than the second
+one and \verb+false+ otherwise. We can write it as follows:
+
+\begin{coq_example}
+Fixpoint lef [n,m:nat] : bool :=
+         Cases n m of
+             O     x     => true 
+          |  x     O     => false 
+          | (S n) (S m)  => (lef n m)
+         end.
+\end{coq_example}
+
+Note that the first and the second  multiple pattern  superpose because the couple of
+values \verb+O O+ matches both. Thus, what is the result of the
+function on those values?
+To eliminate ambiguity we use the {\em textual priority rule}: we
+consider patterns ordered from top to bottom, then a value is matched
+by the  pattern at the $ith$ row if and only if is not matched by some
+pattern of a previous row. Thus in the example,
+\verb+O O+ is matched by the first pattern, and so \verb+(lef O O)+
+yields \verb+true+.
+
+Another way to write  this function is:
+
+\begin{coq_example}
+Reset lef.
+Fixpoint lef [n,m:nat] : bool :=
+         Cases n m of
+             O     x    => true  
+          | (S n) (S m) => (lef n m)
+          |  _     _    => false
+         end.
+\end{coq_example}
+
+
+Here the last pattern superposes with the first two. Because
+of the priority rule, the last pattern 
+will be used only for values that do not match neither the  first nor
+the second one.  
+
+Terms with useless patterns are accepted by the
+system. For example,
+\begin{coq_example}
+Check [x:nat]Cases x of O => true | (S _) => false | x => true end.
+\end{coq_example}
+
+is accepted even though the last pattern is never used.
+Beware,  the
+current implementation rises no warning message when there are unused
+patterns in a term.
+
+
+
+
+\subsection{About patterns of parametric types}
+When matching objects of a parametric type, constructors in patterns
+{\em do not expect} the parameter arguments. Their value is deduced
+during expansion.
+
+Consider for example the polymorphic lists:
+
+\begin{coq_example}
+Inductive List [A:Set] :Set := 
+  nil:(List A) 
+| cons:A->(List A)->(List A).
+\end{coq_example}
+
+We can check the function {\em tail}:
+
+\begin{coq_example}
+Check [l:(List nat)]Cases l of 
+                             nil        => (nil nat)
+                          | (cons _ l') => l'
+                           end.
+\end{coq_example}
+
+
+When we use parameters in patterns there is an error message:
+\begin{coq_example}
+Check [l:(List nat)]Cases l of 
+                             (nil nat)      => (nil nat)
+                          | (cons nat _ l') => l'
+                           end.
+\end{coq_example}
+
+
+
+\subsection{Matching objects of dependent types}
+The previous examples illustrate pattern matching on objects of
+non-dependent types, but we can also 
+use the macro to destructure objects of dependent type.
+Consider the type \verb+listn+ of lists of a certain length:
+
+\begin{coq_example}
+Inductive listn : nat-> Set := 
+  niln : (listn O) 
+| consn : (n:nat)nat->(listn n) -> (listn (S n)).
+\end{coq_example}
+
+\subsubsection{Understanding dependencies in patterns}
+We can define the function \verb+length+ over \verb+listn+ by :
+
+\begin{coq_example}
+Definition length := [n:nat][l:(listn n)] n.
+\end{coq_example}
+
+Just for illustrating pattern matching, 
+we can define it by case analysis:
+\begin{coq_example}
+Reset length.
+Definition length := [n:nat][l:(listn n)]
+                      Cases l of  
+                         niln         => O 
+                      | (consn n _ _) => (S n) 
+                      end.
+\end{coq_example}
+
+We can understand the meaning of this definition using the
+same notions of usual pattern matching.
+
+Now suppose we split the second pattern  of \verb+length+ into two 
+cases so to give an
+alternative definition using nested patterns:
+\begin{coq_example}
+Definition length1:= [n:nat] [l:(listn n)]
+   Cases l of 
+        niln                   => O
+   | (consn n _ niln)          => (S n)
+   | (consn n _ (consn _ _ _)) => (S n)
+  end.
+\end{coq_example}
+
+It is obvious that \verb+length1+ is  another version of
+\verb+length+. We can also give the following definition:
+\begin{coq_example}
+Definition length2:= [n:nat] [l:(listn n)]
+ Cases l of 
+     niln                    => O
+ | (consn n _ niln)          => (S O)
+ | (consn n _ (consn m _ _)) => (S (S m))
+ end.
+\end{coq_example}
+
+If we forget that \verb+listn+ is a dependent type and we read these
+definitions using the usual semantics of pattern matching,  we can conclude
+that \verb+length1+
+and \verb+length2+ are different functions.
+In fact, they are equivalent
+because the pattern \verb+niln+ implies that \verb+n+ can only match
+the value $0$ and analogously the pattern \verb+consn+ determines that \verb+n+ can
+only match  values of the form  $(S~v)$ where $v$ is the value matched by
+\verb+m+. 
+
+
+The converse is also true. If
+we destructure the  length  value with the pattern \verb+O+ then the list
+value should be $niln$. 
+Thus, the following term \verb+length3+ corresponds to the function
+\verb+length+ but this time defined by case analysis on the dependencies instead of on the list:
+
+\begin{coq_example}
+Definition length3 := [n:nat] [l: (listn n)]
+                         Cases l of 
+                            niln              => O
+                         |  (consn O _ _)     => (S O)
+                         |  (consn (S n) _ _) => (S (S n))
+                         end.
+\end{coq_example}
+
+When we have nested patterns of dependent types, the semantics of
+pattern matching becomes a little more difficult because
+the set of values that are matched by a sub-pattern may be conditioned by the
+values matched by another sub-pattern. Dependent nested patterns are
+somehow constrained patterns. 
+In the examples, the expansion of
+\verb+length1+ and \verb+length2+ yields exactly the same term
+ but the
+expansion of \verb+length3+ is completely different. \verb+length1+ and
+\verb+length2+ are expanded into two nested case analysis on
+\verb+listn+ while \verb+length3+ is expanded into a case analysis on
+\verb+listn+ containing a case analysis on natural numbers inside.
+
+
+In practice the user can think about the patterns as independent and
+it is the expansion algorithm that cares to relate them. \\
+
+
+\subsubsection{When the elimination predicate must be provided}
+The examples  given so far do not need an explicit elimination predicate
+between \verb+<>+ because all the rhs have the same type and the
+strategy succeeds to synthesize it.
+Unfortunately when dealing with dependent patterns it often happens
+that we need to write cases where the type of the rhs are 
+different  instances of the elimination  predicate.
+The function  \verb+concat+ for \verb+listn+
+is an example where the branches have different type
+and we need to provide the elimination predicate:
+
+\begin{coq_example}
+Fixpoint concat [n:nat; l:(listn n)] :(m:nat) (listn m) -> (listn (plus n m))
+ := [m:nat][l':(listn m)] 
+       <[n:nat](listn (plus n m))>Cases l  of 
+           niln          => l'
+        | (consn n' a y) => (consn (plus n' m) a (concat n' y m l'))
+        end.
+\end{coq_example}
+
+Recall that a list of patterns is also a pattern. So, when
+we destructure several terms at the same time and the branches have
+different type  we need to provide
+the elimination predicate for this multiple pattern.
+
+For example, an equivalent definition for \verb+concat+ (even though with a useless extra pattern) would have
+been:
+
+\begin{coq_example}
+Reset concat.
+Fixpoint concat [n:nat; l:(listn n)] : (m:nat) (listn m) -> (listn (plus n m)) 
+:= [m:nat][l':(listn m)] 
+    <[n,_:nat](listn (plus n m))>Cases l l' of 
+                     niln          x => x
+                  | (consn n' a y) x => (consn (plus n' m) a (concat n' y m x))
+                  end.
+\end{coq_example}
+
+Note that this time, the predicate \verb+[n,_:nat](listn (plus n m))+ is binary because we
+destructure both \verb+l+ and \verb+l'+ whose types have arity one.
+In general, if we destructure the terms $e_1\ldots e_n$
+the predicate will be of arity $m$ where $m$ is the sum of the
+number of dependencies of the type of $e_1, e_2,\ldots e_n$ (the $\lambda$-abstractions
+should correspond from left to right to each dependent argument of the
+type of $e_1\ldots e_n$).
+When the arity of the predicate (i.e. number of abstractions) is not
+correct Coq rises an error message. For example:
+
+\begin{coq_example}
+Fixpoint concat [n:nat; l:(listn n)] : (m:nat) (listn m) -> (listn (plus n m)) := 
+[m:nat][l':(listn m)] 
+     <[n:nat](listn (plus n m))>Cases l l' of 
+                     niln          x => x
+                  | (consn n' a y) x => (consn (plus n' m) a (concat n' y m x))
+                  end.
+\end{coq_example}
+
+
+\subsection{Using pattern matching to write proofs}
+In all the previous examples the  elimination predicate  does not depend on the object(s) matched. 
+The typical case where this is not possible is when we write a proof by
+induction or a function that yields an object of dependent type.
+
+For example, we can write 
+the function \verb+buildlist+ that given a natural number
+$n$ builds a list length $n$ containing zeros as follows:
+
+\begin{coq_example}
+Fixpoint buildlist [n:nat] : (listn n) :=
+    <[n:nat](listn n)>Cases n of 
+           O    => niln 
+       |  (S n) => (consn n O (buildlist n))
+       end.
+\end{coq_example}
+
+We can also use multiple patterns whenever the elimination predicate has
+the correct arity. 
+
+Consider the following definition of the predicate less-equal
+\verb+Le+:
+
+\begin{coq_example}
+Inductive Le : nat->nat->Prop :=
+  LeO: (n:nat)(Le O n)
+| LeS: (n,m:nat)(Le n m) -> (Le (S n) (S m)).
+\end{coq_example}
+
+We can use multiple patterns to write  the proof of the lemma
+ \verb+(n,m:nat) (Le n m)\/(Le m n)+:
+
+\begin{coq_example}
+Fixpoint dec  [n:nat] : (m:nat)(Le n m) \/ (Le m n) :=
+ [m:nat] <[n,m:nat](Le n m) \/ (Le m n)>Cases n m of
+           O   x =>  (or_introl ? (Le x O) (LeO x))
+         | x   O =>  (or_intror (Le x O) ? (LeO x))
+         | ((S n) as N) ((S m) as M) =>
+              Cases (dec n m) of
+                  (or_introl h) => (or_introl ? (Le M N) (LeS n m h))
+               |  (or_intror h) => (or_intror (Le N M) ? (LeS m n h))
+              end
+        end.
+\end{coq_example}
+In the example of \verb+dec+ the elimination predicate is binary
+because we destructure two arguments of \verb+nat+ that is a
+non-dependent type. Note the first \verb+Cases+ is dependent while the
+second  is not.
+
+In general, consider the terms $e_1\ldots e_n$,
+where  the type of $e_i$ is an instance of a family type
+$[\vec{d_i}:\vec{D_i}]T_i$  ($1\leq i
+\leq n$). Then to  write \verb+<+${\cal P}$\verb+>Cases+  $e_1\ldots
+e_n$ \verb+of+ \ldots \verb+end+, the 
+elimination predicate ${\cal P}$ should be of the form:
+$[\vec{d_1}:\vec{D_1}][x_1:T_1]\ldots [\vec{d_n}:\vec{D_n}][x_n:T_n]Q.$
+
+
+
+
+\section{Extending the syntax of pattern}
+The primitive syntax for patterns considers only those patterns containing
+symbols of constructors and variables. Nevertheless, we
+may define our own syntax for  constructors and may be interested in
+using this syntax to write patterns. 
+Because not  any term is a pattern, the fact of extending the terms
+syntax does not imply the extension of pattern syntax. Thus,  
+the grammar of patterns should be explicitly extended whenever we
+want to use a particular syntax for a constructor.
+The grammar rules for the macro  \verb+Cases+ (and thus for patterns)
+are defined in the file \verb+Multcase.v+ in the directory
+\verb+src/syntax+. To extend the grammar of patterns 
+we need to extend the non-terminals corresponding to patterns
+(we refer the reader to chapter of grammar extensions).
+
+ 
+We have already extended the pattern syntax so as to note
+the constructor \verb+pair+ of cartesian product  with "( , )" in patterns. 
+This allows for example, to write the first projection
+of pairs as follows:
+\begin{coq_example}
+Definition fst := [A,B:Set][H:A*B] Cases H of (x,y) => x end.
+\end{coq_example}
+The grammar presented in figure \ref{grammar} actually
+contains this extension. 
+
+\section{When does the expansion strategy fail?}\label{limitations}
+The strategy works very like in ML languages when treating
+patterns of non-dependent type.  
+But there are new cases of failure that are due to the presence of 
+dependencies. 
+
+The error messages of the current implementation may be
+sometimes confusing.
+When the tactic fails because patterns are somehow incorrect  then 
+error messages refer to the initial expression. But the strategy
+may succeed to build an expression whose sub-expressions are well typed but
+the whole expression is not. In this situation  the message makes 
+reference to the expanded expression.
+We encourage users, when they have patterns with the same outer constructor in different equations, to name the variable patterns in the same positions with the same name.
+E.g. to write {\small\verb+(cons n O x) => e1+} and  {\small\verb+(cons n \_ x) => e2+} instead of
+{\small\verb+(cons n O x) => e1+} and  {\small\verb+(cons n' \_ x') => e2+}. This helps to maintain certain name correspondence  between the generated expression and the original.
+
+
+Here is a summary of the error messages corresponding to each situation:
+\begin{itemize}
+\item  patterns are incorrect (because constructors are not
+applied to the correct number of the arguments, because they  are not linear or they are
+wrongly typed)
+\begin{itemize}
+\item \sverb{In pattern } {\sl term} \sverb{the constructor } {\sl ident}
+\sverb{expects } {\sl num} \sverb{arguments}
+
+\item \sverb{The variable } {\sl ident} \sverb{is bound several times in pattern } {\sl term}
+
+\item \sverb{Constructor pattern: } {\sl term}  \sverb{cannot match values of type } {\sl term}
+\end{itemize}
+
+\item the pattern matching is not exhaustive
+\begin{itemize}
+\item \sverb{This pattern-matching is not exhaustive} 
+\end{itemize}
+\item the elimination predicate provided to \verb+Cases+  has not the expected arity
+
+\begin{itemize}
+\item \sverb{The elimination predicate } {\sl term} \sverb{should be
+of arity } {\sl num} \sverb{(for non dependent case) or }  {\sl num} \sverb{(for dependent case)}
+\end{itemize}
+
+ \item  the whole expression is wrongly typed, or the synthesis of implicit arguments fails (for example to find
+the elimination predicate or to resolve implicit arguments in the rhs).
+
+
+There are {\em nested patterns  of dependent type}, the
+elimination predicate corresponds to non-dependent case and has the  form $[x_1:T_1]...[x_n:T_n]T$
+and {\bf some} $x_i$ occurs {\bf free} in
+$T$.  Then, the  strategy may fail to find out a correct elimination
+predicate during some step of compilation.
+In this situation we recommend the user to rewrite the nested
+dependent patterns into several \verb+Cases+ with  {\em simple patterns}.
+
+In all these cases we have the following error message:
+
+  \begin{itemize}
+  \item 
+  {\tt Expansion strategy failed to build a well typed case expression.
+  There is a branch that mismatches the expected type.
+  The risen type error on the result of expansion was:}
+  \end{itemize}
+
+\item because of nested patterns, it may happen that even  though all
+the rhs have  the same type, the strategy needs
+dependent elimination and so an elimination predicate must be
+provided. The system
+warns about this situation, trying to compile anyway with the
+non-dependent strategy. The risen message is:
+\begin{itemize}
+\item {\tt Warning: This pattern matching may need dependent elimination to be compiled.
+I will try, but if fails try again giving dependent elimination predicate.}
+\end{itemize}
+
+\item there are {\em nested patterns of dependent type} and the strategy
+builds a term that is well typed but recursive
+calls in fix point are reported as illegal:
+\begin{itemize}
+\item {\tt Error: Recursive call applied to an illegal term ...}
+\end{itemize}
+
+This is because the strategy generates a term that is correct
+w.r.t. to the initial term but which does  not pass the guard condition.
+In this situation we recommend the user to transform the nested  dependent
+patterns into {\em several \verb+Cases+ of simple patterns}.
+Let us explain this with an example.
+Consider the following defintion of a function that yields the last
+element of a list and \verb+O+ if it is empty:
+
+\begin{coq_example}
+Fixpoint last [n:nat; l:(listn n)] : nat :=
+Cases l of
+    (consn _ a niln) => a
+ |  (consn m _ x)    => (last m x)
+ |   niln            => O
+ end.
+\end{coq_example}
+
+It fails because of the priority between patterns, we know that this
+definition is equivalent to the following more explicit one (which
+fails too):
+
+\begin{coq_example*}
+Fixpoint last [n:nat; l:(listn n)] : nat :=
+Cases l of
+    (consn _ a niln)          => a
+ |  (consn n _ (consn m b x)) => (last n (consn m b x))
+ |   niln                     => O
+ end.
+\end{coq_example*}
+
+Note that the recursive call  \sverb{(last n (consn m b x)) } is not
+guarded. When treating with patterns of dependent types the strategy
+interprets the first definition of \texttt{last} as the second
+onefootnote{In languages of the ML family
+the first definition would be translated into a term where the
+variable \texttt{x} is shared in the expression.  When
+patterns are of non-dependent types, Coq compiles as in ML languages
+using sharing. When patterns are of dependent types the compilation
+reconstructs the term as in the second definition of \texttt{last} so to
+ensure the result of expansion is well typed.}.
+Thus it generates a
+term where the recursive call is rejected by the 
+guard condition.
+
+You can get rid of this problem by writing the definition with \emph{simple
+patterns}:
+
+\begin{coq_example}
+Fixpoint last [n:nat; l:(listn n)] : nat :=
+<[_:nat]nat>Cases l of
+    (consn m a x) => Cases x of
+                         niln => a
+                     |   _    => (last m x)
+                     end
+ |   niln         => O
+ end.
+\end{coq_example}
+
+
+\end{itemize}
+
+%\end{document}
+

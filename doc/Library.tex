@@ -1,0 +1,57 @@
+\documentclass[11pt]{article}
+
+\input{./title}
+\input{./macros}
+\input{./library/macros}
+
+\begin{document}
+ 
+\coverpage{The standard library}%
+{\ }
+
+\tableofcontents
+
+\newpage
+\section*{The \Coq\ standard library}
+
+This document is a short description of the \Coq\ standard library.
+This library comes with the system as a complement of the core library
+(the {\bf INIT} library ; see the Reference Manual for a description
+of this library). It provides a set of modules directly available
+through the \verb!Require! command.
+
+The standard library is composed of the following subdirectories:
+
+\medskip
+\begin{tabular}{lp{10cm}}
+  {\bf LOGIC}   & Classical logic and dependent equality \\
+  {\bf ARITH}   & Basic Peano arithmetic \\
+  {\bf ZARITH}  & Binary integers \\
+  {\bf BOOL}    &  Booleans (basic functions and results) \\
+  {\bf LISTS}   & Monomorphic and polymorphic lists (basic functions and
+            results), Streams (infinite sequences defined with co-inductive
+            types) \\
+  {\bf SETS}    & Sets (classical, constructive, finite, infinite, powerset,
+            etc.) \\
+ {\bf RELATIONS} & Relations (definitions and basic results). There is
+             a subdirectory about well-founded relations ({\bf WELLFOUNDED}) \\
+ {\bf SORTING}   & Axiomatizations of sorts \\
+ {\bf REALS}   & Axiomatization of Real Numbers (classical, basic functions 
+                 and results, integer part and fractional part, require ZARITH
+                 library)
+\end{tabular}
+\medskip
+
+Each of these subdirectories contains a set of modules, whose
+specifications ({\sf Gallina} files) have
+been roughly, and automatically, pasted in the following pages. There
+is also a version of this document in HTML format on the WWW, which
+you can access from the \Coq\ home page at
+\texttt{http://pauillac.inria.fr/coq/coq-eng.html}.
+
+
+\input{library/libdoc.tex}
+
+\end{document}
+
+% $Id$ 

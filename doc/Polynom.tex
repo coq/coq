@@ -1,0 +1,500 @@
+\achapter{The \texttt{Ring} tactic}
+\aauthor{Patrick Loiseleur and Samuel Boutin}
+\label{Ring}
+\tacindex{Ring}
+
+This chapter presents  the \texttt{Ring} tactic.
+
+\asection{What does this tactic?}
+
+\texttt{Ring} does associative-commutative rewriting in ring and semi-ring
+structures. Assume you have two binary functions $\oplus$ and $\otimes$
+that are associative and commutative, with $\oplus$ distributive on
+$\otimes$, and two constants 0 and 1 that are unities for $\oplus$ and
+$\otimes$. A \textit{polynomial} is an expression built on variables $V_0, V_1,
+\dots$ and constants by application of $\oplus$ and $\otimes$.
+
+Let an {\it ordered product} be a product of variables $V_{i_1} \otimes
+\ldots \otimes V_{i_n}$ verifying $i_1 \le i_2 \le \dots \le i_n$. Let a
+\textit{monomial} be the product of a constant (possibly equal to 1, in
+which case we omit it) and an ordered product.  We can order the
+monomials by the lexicographic order on products of variables. Let a
+\textit{canonical sum} be an ordered sum of monomials that are all
+different, i.e. each monomial in the sum is strictly less than the
+following monomial according to the lexicographic order. It is an easy
+theorem to show that every polynomial is equivalent (modulo the ring
+properties) to exactly one canonical sum. This canonical sum is called
+the \textit{normal form} of the polynomial. So what does \texttt{Ring}? It
+normalizes polynomials over any ring or semi-ring structure. The basic
+utility of \texttt{Ring} is to simplify ring expressions, so that the user
+does not have to deal manually with the theorems of associativity and
+commutativity.
+
+\begin{Examples}
+\item In the ring of integers, the normal form of 
+$x (3 + yx + 25(1 - z)) + zx$ is $28x + (-24)xz + xxy$.
+\item For the classical propositional calculus (or the boolean rings)
+  the normal form is what logicians call \textit{disjunctive normal
+    form}: every formula is equivalent to a disjunction of
+  conjunctions of atoms. (Here $\oplus$ is $\vee$, $\otimes$ is
+  $\wedge$, variables are atoms and the only constants are T and F)
+\end{Examples}
+
+\asection{The variables map}
+
+It is frequent to have an expression built with + and
+  $\times$, but rarely on variables only.
+Let us associate a number to each subterm of a ring
+expression in the \gallina\ language. For example in the ring
+\texttt{nat}, consider the expression:
+
+\begin{quotation}
+\begin{verbatim}
+(plus (mult (plus (f (5)) x) x)
+      (mult (if b then (4) else (f (3))) (2)))
+\end{verbatim}
+\end{quotation}
+
+\noindent As a ring expression, is has 3 subterms. Give each subterm a
+number in an arbitrary order:
+
+\begin{tabular}{ccl}
+0 & $\mapsto$ & \verb|if b then (4) else (f (3))| \\
+1 & $\mapsto$ & \verb|(f (5))| \\
+2 & $\mapsto$ & \verb|x| \\
+\end{tabular}
+
+\noindent Then normalize the ``abstract'' polynomial 
+
+$$((V_1 \otimes V_2) \oplus V_2) \oplus (V_0 \otimes 2) $$
+
+\noindent In our example the normal form is:
+
+$$(2 \otimes V_0) \oplus (V_1 \otimes V_2) \oplus (V_2 \otimes V_2)$$
+
+\noindent Then substitute the variables by their values in the variables map to
+get the concrete normal polynomial:
+
+\begin{quotation}
+\begin{verbatim}
+(plus (mult (2) (if b then (4) else (f (3)))) 
+      (plus (mult (f (5)) x) (mult x x))) 
+\end{verbatim}
+\end{quotation}
+
+\asection{Is it automatic?}
+
+Yes, building the variables map and doing the substitution after
+normalizing is automatically done by the tactic. So you can just forget
+this paragraph and use the tactic according to your intuition.
+
+\asection{Concrete usage in \Coq}
+
+Under a session launched by \texttt{coqtop} or \texttt{coqtop -full},
+load the \texttt{Ring} files with the command:
+
+\begin{quotation}
+\begin{verbatim}
+Require Ring.
+\end{verbatim}
+\end{quotation}
+
+It does not work under \texttt{coqtop -opt} because the compiled ML
+objects used by the tactic are not linked in this binary image, and
+dynamic loading of native code is not possible in \ocaml.
+
+In order to use \texttt{Ring} on naturals, load \texttt{ArithRing}
+instead; for binary integers, load the module \texttt{ZArithRing}.
+
+Then, to normalize the terms $term_1$, \dots, $term_n$ in
+the current subgoal, use the tactic:
+
+\begin{quotation}
+\texttt{Ring} $term_1$ \dots{} $term_n$
+\end{quotation}
+\tacindex{Ring}
+
+Then the tactic guesses the type of given terms, the ring theory to
+use, the variables map, and replace each term with its normal form.
+The variables map is common to all terms
+
+\Warning \texttt{Ring $term_1$; Ring $term_2$} is not equivalent to 
+\texttt{Ring $term_1$ $term_2$}. In the latter case the variables map
+is shared between the two terms, and common subterm $t$ of $term_1$
+and $term_2$ will have the same associated variable number.
+
+\begin{ErrMsgs}
+\item \errindex{All terms must have the same type}
+\item \errindex{Don't know what to do with this goal}
+\item \errindex{No Declared Ring Theory for \term.}\\
+  \texttt{Use Add [Semi] Ring to declare it}\\
+  That happens when all terms have the same type \term, but there is
+  no declared ring theory for this set. See below.
+\end{ErrMsgs}
+
+\begin{Variants}
+\item \texttt{Ring}\\
+  That works if the current goal is an equality between two
+  polynomials. It will normalize both sides of the
+  equality, solve it if the normal forms are equal and in other cases
+  try to simplify the equality using \texttt{congr\_eqT} and \texttt{refl\_equal}
+  to reduce $x + y = x + z$ to $y = z$ and $x * z = x * y$ to $y = z$.
+
+  \ErrMsg\errindex{This goal is not an equality}
+
+\end{Variants}
+
+\asection{Add a ring structure}
+
+It can be done in the \Coq toplevel (No ML file to edit and to link
+with \Coq). First, \texttt{Ring} can handle two kinds of structure:
+rings and semi-rings. Semi-rings are like rings without an opposite to
+addition. Their precise specification (in \gallina) can be found in
+the file
+
+\begin{quotation}
+\begin{verbatim}
+tactics/contrib/polynom/Ring_theory.v
+\end{verbatim}
+\end{quotation}
+
+The typical example of ring is \texttt{Z}, the typical
+example of semi-ring is \texttt{nat}.
+
+The specification of a
+ring is divided in two parts: first the record of constants
+($\oplus$, $\otimes$, 1, 0, $\ominus$) and then the theorems
+(associativity, commutativity, etc.).
+
+\begin{small}
+\begin{flushleft}
+\begin{verbatim}
+Section Theory_of_semi_rings.
+
+Variable A : Type.
+Variable Aplus : A -> A -> A.
+Variable Amult : A -> A -> A.
+Variable Aone : A.
+Variable Azero : A.
+(* There is also a "weakly decidable" equality on A. That means 
+  that if (A_eq x y)=true then x=y but x=y can arise when 
+  (A_eq x y)=false. On an abstract ring the function [x,y:A]false
+  is a good choice. The proof of A_eq_prop is in this case easy. *)
+Variable Aeq : A -> A -> bool.
+
+Record Semi_Ring_Theory : Prop :=
+{ SR_plus_sym  : (n,m:A)[| n + m == m + n |];
+  SR_plus_assoc : (n,m,p:A)[| n + (m + p) == (n + m) + p |];
+
+  SR_mult_sym : (n,m:A)[| n*m == m*n |];
+  SR_mult_assoc : (n,m,p:A)[| n*(m*p) == (n*m)*p |];
+  SR_plus_zero_left :(n:A)[| 0 + n == n|];
+  SR_mult_one_left : (n:A)[| 1*n == n |];
+  SR_mult_zero_left : (n:A)[| 0*n == 0 |];
+  SR_distr_left   : (n,m,p:A) [| (n + m)*p == n*p + m*p |];
+  SR_plus_reg_left : (n,m,p:A)[| n + m == n + p |] -> m==p;
+  SR_eq_prop : (x,y:A) (Is_true (Aeq x y)) -> x==y
+}.
+\end{verbatim}
+\end{flushleft}
+\end{small}
+
+\begin{small}
+\begin{flushleft}
+\begin{verbatim}
+Section Theory_of_rings.
+
+Variable A : Type.
+
+Variable Aplus : A -> A -> A.
+Variable Amult : A -> A -> A.
+Variable Aone : A.
+Variable Azero : A.
+Variable Aopp : A -> A.
+Variable Aeq : A -> A -> bool.
+
+
+Record Ring_Theory : Prop :=
+{ Th_plus_sym  : (n,m:A)[| n + m == m + n |];
+  Th_plus_assoc : (n,m,p:A)[| n + (m + p) == (n + m) + p |];
+  Th_mult_sym : (n,m:A)[| n*m == m*n |];
+  Th_mult_assoc : (n,m,p:A)[| n*(m*p) == (n*m)*p |];
+  Th_plus_zero_left :(n:A)[| 0 + n == n|];
+  Th_mult_one_left : (n:A)[| 1*n == n |];
+  Th_opp_def : (n:A) [| n + (-n) == 0 |];
+  Th_distr_left   : (n,m,p:A) [| (n + m)*p == n*p + m*p |];
+  Th_eq_prop : (x,y:A) (Is_true (Aeq x y)) -> x==y
+}.
+\end{verbatim}
+\end{flushleft}
+\end{small}
+
+To define a ring structure on A, you must provide an addition, a
+multiplication, an opposite function and two unities 0 and 1.
+
+You must then prove all theorems that make
+(A,Aplus,Amult,Aone,Azero,Aeq) 
+a ring structure, and pack them with the \verb|Build_Ring_Theory| 
+constructor.
+
+Finally to register a ring the syntax is:
+
+\comindex{Add Ring}
+\begin{quotation}
+  \texttt{Add Ring} \textit{A Aplus Amult Aone Azero Ainv Aeq T}
+  \texttt{[} \textit{c1 \dots cn} \texttt{].}
+\end{quotation}
+
+\noindent where \textit{A} is a term of type \texttt{Set}, 
+\textit{Aplus} is a term of type \texttt{A->A->A},
+\textit{Amult} is a term of type \texttt{A->A->A},
+\textit{Aone} is a term of type \texttt{A},
+\textit{Azero} is a term of type \texttt{A},
+\textit{Ainv} is a term of type \texttt{A->A},
+\textit{Aeq} is a term of type \texttt{A->bool},
+\textit{T} is a term of type 
+\texttt{(Ring\_Theory }\textit{A Aplus Amult Aone Azero Ainv
+  Aeq}\texttt{)}.
+The arguments \textit{c1 \dots cn}, 
+are the names of constructors which define closed terms: a
+subterm will be considered as a constant if it is either one of the
+terms \textit{c1 \dots cn} or the application of one of these terms to
+closed terms. For \texttt{nat}, the given constructors are \texttt{S}
+and \texttt{O}, and the closed terms are \texttt{O}, \texttt{(S O)},
+\texttt{(S (S O))}, \ldots
+
+\begin{Variants}
+\item \texttt{Add Semi Ring} \textit{A Aplus Amult Aone Azero Aeq T} 
+  \texttt{[} \textit{c1 \dots\ cn} \texttt{].}\comindex{Add Semi
+    Ring}\\
+  There are two differences with the \texttt{Add Ring} command: 
+  there is no inverse function and the term $T$ must be of type 
+  \texttt{(Semi\_Ring\_Theory }\textit{A Aplus Amult Aone Azero
+  Aeq}\texttt{)}.  
+
+\item \texttt{Add Abstract Ring} \textit{A Aplus Amult Aone Azero Ainv 
+    Aeq T}\texttt{.}\comindex{Add Abstract Ring}\\
+  This command should be used for when the operations of rings are not 
+  computable; for example the real numbers of
+  \texttt{theories/REALS/}. Here $0+1$ is not beta-reduced to $1$ but
+  you still may want to \textit{rewrite} it to $1$ using the ring
+  axioms. The argument \texttt{Aeq} is not used; a good choice for
+  that function is \verb+[x:A]false+.
+
+\item \texttt{Add Abstract Semi Ring} \textit{A Aplus Amult Aone Azero
+    Aeq T}\texttt{.}\comindex{Add Abstract Semi Ring}\\
+
+\end{Variants}
+
+\begin{ErrMsgs}
+\item \errindex{Not a valid (semi)ring theory}.\\ 
+  That happens when the typing condition does not hold.
+\end{ErrMsgs}
+
+Currently, the hypothesis is made than no more than one ring structure
+may be declared for a given type in \texttt{Set} or \texttt{Type}.
+This allows automatic detection of the theory used to achieve the
+normalization. On popular demand, we can change that and allow several
+ring structures on the same set.
+
+The table of theories of \texttt{Ring} is compatible with the \Coq\ 
+sectioning mechanism. If you declare a Ring inside a section, the
+declaration will be thrown away when closing the section.
+And when you load a compiled file, all the \texttt{Add Ring}
+commands of this file that are not inside a section will be loaded.
+
+The typical example of ring is \texttt{Z}, and the typical example of
+semi-ring is \texttt{nat}. Another ring structure is defined on the
+booleans. 
+
+\Warning Only the ring of booleans is loaded by default with the
+\texttt{Ring} module. To load the ring structure for \texttt{nat},
+load the module \texttt{ArithRing}, and for \texttt{Z},
+load the module \texttt{ZArithRing}.
+
+
+\asection{How does it work?}
+
+The code of \texttt{Ring} a good  example of tactic written using
+\textit{reflection} (or \textit{internalization}, it is 
+synonymous). What is reflection? Basically,  it is writing \Coq\ tactics
+in \Coq, rather than in \ocaml. From the philosophical point of view,
+it is using the ability of the Calculus of Constructions to speak and
+reason about itself.
+For the \texttt{Ring} tactic we used 
+\Coq\ as a programming language and also as a proof environment to build a
+tactic and to prove it correctness.
+
+The interested reader is strongly advised to have a look at the file
+\texttt{Ring\_normalize.v}. Here a type for polynomials is defined: 
+
+\begin{small}
+\begin{flushleft}
+\begin{verbatim}
+Inductive Type polynomial := 
+  Pvar : idx -> polynomial
+| Pconst : A -> polynomial
+| Pplus : polynomial -> polynomial -> polynomial
+| Pmult : polynomial -> polynomial -> polynomial
+| Popp : polynomial -> polynomial.
+\end{verbatim}
+\end{flushleft}
+\end{small}
+
+There is also a type to represent variables maps, and an
+interpretation function, that maps a variables map and a polynomial to an
+element of the concrete ring:
+
+\begin{small}
+\begin{flushleft}
+\begin{verbatim}
+Definition polynomial_simplify := [...]
+Definition interp : (varmap A) -> (polynomial A) -> A := [...]
+\end{verbatim}
+\end{flushleft}
+\end{small}
+
+A function to normalize polynomials is defined, and the big theorem is
+its correctness w.r.t interpretation, that is:
+
+\begin{small}
+\begin{flushleft}
+\begin{verbatim}
+Theorem polynomial_simplify_correct : (v:(varmap A))(p:polynomial)
+  (interp v (polynomial_simplify p))
+  ==(interp v p).
+\end{verbatim}
+\end{flushleft}
+\end{small}
+
+(The actual code is slightly more complex: for efficiency,
+there is a special datatype to represent normalized polynomials,
+i.e. ``canonical sums''. But the idea is still the same).
+
+So now, what is the scheme for a normalization proof? Let \texttt{p}
+be the polynomial expression that the user wants to normalize. First a
+little piece of ML code guesses the type of \texttt{p}, the ring
+theory \texttt{T} to use, an abstract polynomial \texttt{ap} and a
+variables map \texttt{v} such that \texttt{p} is
+$\beta\delta\iota$-equivalent to \verb|(interp v ap)|. Then we
+replace it by \verb|(interp v (polynomial_simplify ap))|, using the
+main correctness theorem and we reduce it to a concrete expression
+\texttt{p'}, which is the concrete normal form of
+\texttt{p}. This is summarized in this diagram:
+
+\medskip
+\begin{tabular}{rcl}
+\texttt{p} & $\rightarrow_{\beta\delta\iota}$  
+   & \texttt{(interp v ap)} \\
+ & & $=_{\mathrm{(by\ the\ main\ correctness\ theorem)}}$ \\
+\texttt{p'} 
+   & $\leftarrow_{\beta\delta\iota}$ 
+   & \texttt{(interp v (polynomial\_simplify ap))}
+\end{tabular}
+\medskip
+
+The user do not see the right part of the diagram. 
+From outside, the tactic behaves like a
+$\beta\delta\iota$ simplification extended with AC rewriting rules.
+Basically, the proof is only the application of the main
+correctness theorem to well-chosen arguments.
+
+\asection{History of \texttt{Ring}}
+
+First Samuel Boutin designed the tactic \texttt{ACDSimpl}. 
+This tactic did lot of rewriting. But the proofs
+terms generated by rewriting were too big for \Coq's type-checker.
+Let us see why:
+
+\begin{coq_eval}
+Require ZArith.
+\end{coq_eval}
+\begin{coq_example}
+Goal (x,y,z:Z)`x + 3 + y + y*z = x + 3 + y + z*y`.
+\end{coq_example}
+\begin{coq_example*}
+Intros; Rewrite (Zmult_sym y z); Reflexivity. 
+Save toto.
+\end{coq_example*}
+\begin{coq_example}
+Print toto.
+\end{coq_example}
+
+At each step of rewriting, the whole context is duplicated in the proof
+term. Then, a tactic that does hundreds of rewriting generates huge proof
+terms. Since \texttt{ACDSimpl} was too slow, Samuel Boutin rewrote it
+using reflection (see his article in TACS'97 \cite{Bou97}). Later, the
+stuff was rewritten by Patrick
+Loiseleur: the new tactic does not any more require \texttt{ACDSimpl}
+to compile and it makes use of $\beta\delta\iota$-reduction 
+not only to replace the rewriting steps, but also to achieve the
+interleaving of computation and 
+reasoning (see \ref{DiscussReflection}). He also wrote a
+few ML code for the \texttt{Add Ring} command, that allow to register
+new rings dynamically.
+
+Proofs terms generated by \texttt{Ring} are quite small, they are
+linear in the number of $\oplus$ and $\otimes$ operations in the
+normalized terms. Type-checking those terms requires some time because it
+makes a large use of the conversion rule, but
+memory requirements are much smaller. 
+
+\asection{Discussion}
+\label{DiscussReflection}
+
+Efficiency is not the only motivation to use reflection
+here. \texttt{Ring} also deals with constants, it rewrites for example the
+expression $34 + 2*x -x + 12$ to the expected result $x + 46$. For the
+tactic \texttt{ACDSimpl}, the only constants were 0 and 1. So the
+expression $34 + 2*(x - 1) + 12$ is interpreted as 
+$V_0 \oplus V_1 \otimes (V_2 \ominus 1) \oplus V_3$, 
+with the variables mapping 
+$\{V_0 \mt 34; V_1 \mt 2; V_2 \mt x; V_3 \mt 12 \}$. Then it is
+rewritten to $34 - x + 2*x + 12$, very far from the expected
+result. Here rewriting is not sufficient: you have to do some kind of
+reduction (some kind of \textit{computation}) to achieve the
+normalization.
+
+The tactic \texttt{Ring} is not only faster than a classical one:
+using reflection, we get for free integration of computation and
+reasoning that would be very complex to implement in the classic fashion.
+
+Is it the ultimate way to write tactics? 
+The answer is: yes and no. The \texttt{Ring} tactic
+uses intensively the conversion
+rule of \CIC, that is replaces proof by computation the most as it is
+possible. It can be useful in all situations where a classical tactic
+generates huge proof terms. Symbolic Processing and Tautologies are
+in that case. But there are also tactics like \texttt{Auto} or
+\texttt{Linear}: that do many complex computations, using side-effects
+and backtracking, and generate
+ a small proof term. Clearly, it would be a non-sense to
+replace them by tactics using reflection.
+
+Another argument against the reflection is that \Coq, as a
+programming language, has many nice features, like dependent types, 
+but is very far from the
+speed and the expressive power of \ocaml. Wait a minute! With \Coq\
+it is possible to extract ML code from \CIC\ terms, right? So, why not
+to link the extracted code with \Coq\ to inherit the benefits of the
+reflection and the speed of ML tactics? That is called \textit{total
+  reflection}, and is still an active research subject. With these
+technologies it will become possible to bootstrap the type-checker of
+\CIC, but there is still some work to achieve that goal.
+
+Another brilliant idea from Benjamin Werner: reflection could be used
+to couple a external tool (a rewriting program or a model checker)
+with \Coq. We define (in \Coq) a type of terms, a type of
+\emph{traces}, and prove a correction theorem that states that
+\emph{replaying traces} is safe w.r.t some interpretation. Then we let 
+the external tool do every computation (using side-effects,
+backtracking, exception, or others features that are not available in
+pure lambda calculus) to produce the trace: now we replay the trace in
+Coq{}, and apply the correction lemma. So internalization seems to be
+the best way to import \dots{} external proofs!
+
+ 
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

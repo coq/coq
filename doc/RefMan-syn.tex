@@ -1,0 +1,1716 @@
+\chapter{Syntax extensions}
+\label{Addoc-syntax}
+
+In this chapter, we introduce advanced commands to modify the way
+{\Coq} parses and prints objects, i.e. the translations between the
+concrete and internal representations of terms and commands. As in
+most compilers, there is an intermediate structure called {\em Abstract
+Syntax Tree} (AST). Parsing a term is done in two steps\footnote{
+  We omit the lexing step, which simply translates a character stream
+  into a token stream. If this translation fails, this is a
+  \emph{Lexical error}.
+}:
+\begin{enumerate}
+\item An AST is build from the input (a stream of tokens), following
+  grammar rules. This step consists in deciding whether the input
+  belongs to the language or not. If it is, the parser transforms the
+  expression into an AST. If not, this is a syntax error. An expression
+  belongs to the language if there exists a sequence of grammar rules
+  that recognizes it. This task is delegated to {\camlpppp}. See the
+  Reference Manual~\cite{ddr98} for details on the parsing
+  technology. The transformation to AST is performed by executing
+  successively the {\sl actions} bound to these rules.
+  
+\item The AST is translated into the internal representation of
+  commands and terms. At this point, we detect unbound variables and
+  determine the exact section-path of every global value. Then, the term
+  may be typed, computed,~\ldots
+\end{enumerate}
+The printing process is the reverse: commands or terms are first
+translated into AST's, and then the pretty-printer translates this AST
+into a printing orders stream, according to printing rules.
+
+In {\Coq}, only the translations between AST's and the concrete
+representation are extendable. One can modify the set of grammar and
+printing rules, but one cannot change the way AST's are interpreted in
+the internal level.
+
+In the following section, we describe the syntax of AST expressions,
+involved in both parsing and printing. The next two sections deal with
+extendable grammars and pretty-printers.
+
+\section{Abstract syntax trees (AST)}
+\index{AST}
+\index{Abstract syntax tree}
+
+\label{astsyntax}
+
+The AST expressions are conceptually divided into two classes:
+\emph{constructive expressions} (those that can be used in parsing
+rules) and \emph{destructive expressions} (those that can be used in
+pretty printing rules). In the following we give the concrete syntax
+of expressions and some examples of their usage.
+
+The BNF grammar {\sl ast} in Fig.~\ref{astexpr} defines the syntax
+of both constructive and destructive expressions. The lexical
+conventions are the same as in section~\ref{lexical}. Let us first
+describe the features common to constructive and destructive
+expressions.
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{|rclr|}
+\hline 
+{\sl ast} & ::= & {\sl meta} & (metavariable) \\
+& $|$ & {\ident} & (variable)\\
+& $|$ & {\integer} & (positive integer)\\
+& $|$ & {\sl string} & (quoted string) \\
+& $|$ & {\sl path} & (section-path) \\
+& $|$ & \verb+{+ {\ident} \verb+}+ & (identifier) \\
+& $|$ & \verb+[+ {\sl name} \verb+]+ {\sl ast} & (abstraction) \\
+& $|$ & \verb+(+ {\ident}~~\sequence{{\sl ast}}{} \verb+)+
+        & (application node)\\
+& $|$ & \verb+(+ {\sl special-tok}~~{\sl meta} \verb+)+
+        & (special-operator) \\
+& $|$ & \verb+'+ {\sl ast} & (quoted ast) \\
+& $|$ & {\sl quotation} & \\
+
+{\sl meta} & ::= & \verb+$+{\ident} & \\
+{\sl path} & ::= & \nelist{{\tt\#}{\ident}}{} \verb+.+ {\sl kind} & \\  
+{\sl kind} & ::= & \verb+cci+ $~|~$\verb+fw+ $~|~$ \verb+obj+ & \\
+{\sl name} & ::= & \verb+<>+ ~$|$~ {\ident} ~$\mid$~ {\sl meta} & \\
+
+{\sl special-tok} & ::= &
+  \verb+$LIST+~$|$~\verb+$VAR+~$|$~\verb+$NUM+~$|$~%
+  \verb+$STR+~$|$~\verb+$PATH+~$|$~\verb+$ID+ & \\
+
+{\sl quotation}& ::= &
+        \verb+<<+ ~{\sl meta-command}~ \verb+>>+ & \\
+& $|$ & \verb+<:command:<+ ~{\sl meta-command}~ \verb+>>+ & \\
+& $|$ & \verb+<:vernac:<+ ~{\sl meta-vernac}~ \verb+>>+ & \\
+& $|$ & \verb+<:tactic:<+ ~{\sl meta-tactic}~ \verb+>>+ & \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Syntax of AST expressions}\label{astexpr}
+\end{figure}
+
+\subsubsection{Atomic AST}
+
+An atomic AST can be either a variable, a natural number, a quoted
+string, a section path or an identifier. They are the basic components
+of an AST.
+
+\subsubsection{Metavariable}
+\index{Metavariable}
+
+As we will see later, metavariables may denote an AST or an AST list.
+So, we introduce two types of variables: \verb+Ast+ and
+\verb+List+. The type of variables is checked statically: an
+expression referring to undefined metavariables, or using metavariables
+with an inappropriate type, will be rejected.
+
+Metavariables are used to perform substitutions in constructive
+expressions: they are replaced by their value in a given
+environment. They are also involved in the pattern matching operation:
+metavariables in destructive patterns create new bindings in the
+environment.
+
+\subsubsection{Application node}
+
+Note that the AST syntax is rather general, since application nodes
+may be labelled by an arbitrary identifier (but not a metavariable),
+and operators have no fixed arity. This enables the extensibility of
+the system.
+
+Nevertheless there are some application nodes that have some special
+meaning for the system. They are build on \verb+(+{\sl
+special-tok}~{\sl meta}\verb+)+, and cannot be confused with regular
+nodes since {\sl special-tok} begins with a \verb+$+. There is a
+description of these nodes below.
+
+\subsubsection{Abstraction}
+
+The equality on AST's is the $\alpha$-conversion, i.e. two AST's are
+equal if only they are the same up to renaming of bound variables
+(thus, \verb+[x]x+ is equal to \verb+[y]y+). This makes the difference
+between variables and identifiers clear: the former may be bound by
+abstractions, whereas identifiers cannot be bound. To illustrate this,
+\verb+[x]{x}+ is equal to \verb+[y]{x}+, but not to \verb+[y]{y}+.
+
+The binding structure of AST is used to represent the binders in the
+terms of {\Coq}: the product \verb+(x:$A)$B+ is mapped to the AST
+\verb+(PROD $A [x]$B)+, whereas the non dependent product
+\verb+$A->$B+ is mapped to \verb+(PROD $A [<>]$B)+ (\verb+[<>]t+ is an
+anonymous abstraction).
+
+Metavariables can appear in abstractions. In that case, the value of
+the metavariable must be a variable (or a list of variables). If not,
+a run-time error is raised.
+
+\subsubsection{Quoted AST}
+\index{Quoted AST}
+
+The \verb+'+$t$ construction means that the AST $t$ should not be
+interpreted at all. The main effect is that metavariables occurring in
+it cannot be substituted or considered as binding in patterns.
+
+\subsubsection{Quotations}
+\index{Quotations}
+
+The non terminal symbols {\sl meta-command}, {\sl meta-vernac} and
+{\sl meta-tactic} stand, respectively, for the syntax of commands,
+vernacular phrases and tactics. The prefix {\sl meta-} is just to
+emphasize that the expression may refer to metavariables.
+
+Indeed, if the AST to generate corresponds to a term that already has
+a syntax, one can call a grammar to parse it and to return the AST
+result. For instance, \verb+<<(eq ? $f $g)>>+ denotes the AST which is
+the application (in the sense of CIC) of the constant {\tt eq} to
+three arguments. It is coded as an AST node labelled {\tt APPLIST}
+with four arguments.
+
+This term is parsable by \verb+command command+ grammar. This grammar
+is invoked on this term to generate an AST by putting the term between
+``\verb+<<+'' and ``\verb+>>+''.
+
+We can also invoke the initial grammars of several other predefined
+entries (see section~\ref{predefined-grammars} for a description of
+these grammars).
+
+\begin{itemize}
+\item \verb|<< t >>| parses {\tt t} with {\tt command command} grammar
+(terms of CIC).
+\item \verb|<:command:< t >>| parses {\tt t} with {\tt command command}
+  grammar (same as \verb|<< t >>|).
+\item \verb|<:vernac:< t >>| parses {\tt t} with {\tt vernac vernac}
+  grammar (vernacular commands).
+\item \verb|<:tactic:< t >>| parses {\tt t} with {\tt tactic tactic}
+  grammar (tactic expressions).
+\end{itemize}
+
+\Warning
+One cannot invoke other grammars than those described.
+
+\subsubsection{Special operators in constructive expressions}
+
+The expressions \verb+($LIST $x)+ injects the AST list variable
+{\tt\$x} in an AST position. For example, an application node is
+composed of an identifier followed by a list of AST's that are glued
+together. Each of these expressions must denote an AST. If we want to
+insert an AST list, one has to use the \verb+$LIST+ operator. Assume
+the variable \verb+$idl+ is bound to the list \verb+[x y z]+, the
+expression \verb+(Intros ($LIST $idl) a b c)+ will build the AST
+\verb+(Intros x y z a b c)+. Note that \verb+$LIST+ does not occur in
+the result.
+
+% Ameliorer le style!
+Since we know the type of variables, the \verb+$LIST+ is not really
+necessary. We enforce this annotation to stress on the fact that the
+variable will be substituted by an arbitrary number of AST's.
+
+The other special operators ({\tt\$VAR}, {\tt\$NUM}, {\tt\$STR},
+{\tt\$PATH} and {\tt\$ID}) are forbidden.
+
+\subsubsection{Special operators in destructive expressions (AST patterns)}
+\label{patternsyntax}
+\index{AST patterns}
+
+% pas encore implante (serait utile pour afficher les LAMBDALIST et
+% PRODLIST).
+%\item \verb+($SLAM $l body)+ is used to denote an abstraction where
+%  the elements of the list variable \verb+$l+ are the variables
+%  simultaneously abstracted in \verb+body+.
+%  The production to recognize a lambda abstraction of the form
+%  $[x_1,\ldots,x_n:T]body$ use the operator \verb+$SLAM+:
+
+A pattern is an AST expression, in which some metavariables can
+appear. In a given environment a pattern matches any AST which is
+equal (w.r.t $\alpha$-conversion) to the value of the pattern in an
+extension of the current environment. The result of the matching is
+precisely this extended environment. This definition allows
+non-linear patterns (i.e. patterns in which a variable occurs several
+times).
+
+For instance, the pattern \verb+(PAIR $x $x)+ matches any AST which is
+a node labelled {\tt PAIR} applied to two identical arguments, and
+binds this argument to {\tt\$x}. If {\tt\$x} was already bound, the
+arguments must also be equal to the current value of {\tt\$x}.
+
+The ``wildcard pattern'' \verb+$_+ is not a regular metavariable: it
+matches any term, but does not bind any variable. The pattern
+\verb+(PAIR $_ $_)+ matches any {\tt PAIR} node applied to two
+arguments.
+
+The {\tt\$LIST} operator still introduces list variables. Typically,
+when a metavariable appears as argument of an application, one has to
+say if it must match \emph{one} argument (binding an AST variable), or
+\emph{all} the arguments (binding a list variable). Let us consider
+the patterns \verb+(Intros $id)+ and \verb+(Intros ($LIST $idl))+. The
+former matches nodes with \emph{exactly} one argument, which is bound
+in the AST variable {\tt\$id}. On the other hand, the latter pattern
+matches any AST node labelled {\tt Intros}, and it binds the
+\emph{list} of its arguments to the list variable {\tt\$idl}. The
+{\tt\$LIST} pattern must be the last item of a list pattern, because
+it would make the pattern matching operation more complicated. The
+pattern \verb+(Intros ($LIST $idl) $lastid)+ is not accepted.
+
+The other special operators allows checking what kind of leaf we
+are destructing:
+\begin{itemize}
+\item{\tt\$VAR} matches only variables
+\item{\tt\$NUM} matches natural numbers
+\item{\tt\$STR} matches quoted strings
+\item{\tt\$PATH} matches section-paths
+\item{\tt\$ID} matches identifiers
+\end{itemize}
+\noindent For instance, the pattern \verb+(DO ($NUM $n) $tc)+ matches
+\verb+(DO 5 (Intro))+, and creates the bindings ({\tt\$n},5) and
+({\tt\$tc},\verb+(Intro)+). The pattern matching would fail on
+\verb+(DO "5" (Intro))+.
+
+\section{Extendable grammars}
+\label{Grammar}
+\index{Extendable Grammars}
+\comindex{Grammar}
+
+Grammar rules can be added with the {\tt Grammar} command. This
+command is just an interface towards {\camlpppp}, providing the
+semantic actions so that they build the expected AST. A simple grammar
+command has the following syntax: \index{Grammar@{\tt Grammar}}
+
+\begin{center}
+\texttt{Grammar}~\textsl{entry}~\textsl{nonterminal}~\texttt{:=}~%
+\textsl{rule-name}~\textsl{LMP}~\verb+->+~\textsl{action}~\texttt{.}
+\end{center}
+
+The components have the following meaning:
+\begin{itemize}
+\item a grammar name: defined by a parser entry and a non-terminal.
+  Non-terminals are packed in an \emph{entry} (also called
+  universe). One can have two non-terminals of the same name if they
+  are in different entries. A non-terminal can have the same name as
+  its entry.
+\item a rule (sometimes called production), formed by a name, a left
+  member of production and an action, which generalizes constructive
+  expressions.
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\begin{center}
+\begin{tabular}{|rcl|}
+\hline
+{\sl grammar} & ::= &
+  \verb+Grammar+~{\sl entry}~\nelist{{\sl gram-entry}}{with} \\
+{\sl entry}& ::= & {\ident} \\
+{\sl gram-entry} & ::= &
+  {\sl rule-name}~\zeroone{{\tt :}~{\sl entry-type}}~\verb+:=+~%
+%  [{\sl assoc}]~
+\sequence{{\sl production}}{|} \\
+{\sl rule-name} & ::= & {\ident} \\
+{\sl entry-type} & ::= & \verb+Ast+~$|$~\verb+List+ \\
+%{\sl assoc} & ::= & \verb+LEFTA+~$|$~\verb+RIGHTA+~$|$~\verb+NONA+ \\
+% parler de l'associativite ?
+% Cela n'a pas vraiment de sens si toutes les re`gles sont dans un
+% meme
+% niveau.
+{\sl production} & ::= &
+  {\sl rule-name}~\verb+[+~\sequence{{\sl prod-item}}{}~\verb+] ->+
+  ~{\sl action}\\
+{\sl rule-name} & ::= & {\sl ident} \\
+{\sl prod-item} & ::= & {\sl string} \\
+& | & \zeroone{{\sl entry}~{\tt :}}~{\sl entry-name}~%
+      \zeroone{{\tt (}~{\sl meta}~{\tt )}} \\
+{\sl action} & ::= &
+      \verb+[+~\sequence{{\sl ast}}{}~\verb+]+ \\
+& | & \verb+let+~{\sl pattern}~\verb+=+~{\sl action}~%
+      \verb+in+~{\sl action} \\
+& | & {\tt case}~{\sl action}~\zeroone{{\tt :}~{\sl entry-type}}~{\tt of}~%
+      \sequence{{\sl case}}{|}~{\tt esac} \\
+{\sl case} & ::= & \sequence{{\sl pattern}}{}~\verb+->+~{\sl action} \\
+{\sl pattern} & ::= & {\sl ast} \\
+\hline
+\end{tabular}
+\end{center}
+\caption{Syntax of the grammar extension command}\label{grammarsyntax}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The exact syntax of the {\tt Grammar} command is defined
+in Fig.~\ref{grammarsyntax}.
+It is possible to extend a grammar with several rules at once.
+$$
+\begin{array}{rcc}
+\verb+Grammar+~~entry~~nonterminal
+        & \verb+:=+ & production_1 \\
+        & \verb+|+  & \vdots    \\
+        & \verb+|+  & production_n \verb+.+ \\
+\end{array}
+$$
+Productions are entered in reverse order (i.e. $production_n$ before
+$production_1$), so that the first rules have priority over the last
+ones. The set of rules can be read as an usual pattern matching.
+
+\noindent Also, we can extend several grammars of a given universe at
+the same time. The order of non-terminals does not matter since they
+extend different grammars.
+$$
+\begin{array}{rcccc}
+\verb+Grammar+ & entry & nonterminal_1
+                         & \verb+:=+ & production_1^1 \\
+               &&        & \verb+|+  & \vdots    \\         
+               &&        & \verb+|+  & production_{n_1}^1  \\
+               & \verb+with+ & \vdots  && \\
+               & \verb+with+ & nonterminal_p
+                         & \verb+:=+ & production_1^p \\
+               &&        & \verb+|+  & \vdots    \\         
+               &&        & \verb+|+  & production_{n_p}^p \verb+.+ \\ 
+\end{array}
+$$
+
+
+\subsection{Grammar entries}
+\index{Grammar entries}
+\label{predefined-grammars}
+
+Let us describe the four predefined entries. Each of them (except {\tt
+prim}) possesses an initial grammar for starting the parsing process.
+
+\begin{itemize}
+\item \verb+prim+ : it is the entry of the primitive grammars. Most of
+  them cannot be defined by the extendable grammar mechanism. They are
+  encoded inside the system. The entry contains the following
+  non-terminals:
+
+\begin{itemize}
+\item \verb+var+ : variable grammar. Parses an identifier and builds
+an AST which is a variable.
+\item \verb+ident+ : identifier grammar. Parses an identifier and
+builds an AST which is an identifier such as \verb+{x}+.
+\item \verb+number+ : number grammar. Parses a positive integer.
+\item \verb+string+ : string grammar. Parses a quoted string.
+\item \verb+path+ : section path grammar.
+\item \verb+ast+ : AST grammar.
+\item \verb+astpat+ : AST pattern grammar.
+\item \verb+astact+ : action grammar.
+\end{itemize}
+
+The primitive grammars are used as the other grammars; for instance
+the variables of terms are parsed by \verb+prim:var($id)+.
+
+\item \verb+command+ : it is the term entry. It allows to have a
+  pretty syntax for terms. Its initial grammar is {\tt command
+  command}. This entry contains several non-terminals, among them {\tt
+  command0} to {\tt command10} which stratify the terms according to
+  priority levels (\verb+0+ to \verb+10+). These priority levels allow
+  us also to specify the order of associativity of operators.
+
+% Ce serait bien si on etait capables de donner une table avec les
+% niveaux de priorite de chaque operateur...
+
+\item \verb+vernac+ : it is the vernacular command entry, with {\tt
+  vernac vernac} as initial grammar. Thanks to it, the developers can
+  define the syntax of new commands they add to the system. As to
+  users, they can change the syntax of the predefined vernacular
+  commands.
+
+\item \verb+tactic+ : it is the tactic entry with {\tt tactics tactic}
+  as initial grammar. This entry allows to define the syntax of new
+  tactics. See chapter~\ref{WritingTactics} about user-defined tactics
+  for more details.
+
+\end{itemize}
+
+The user can define new entries and new non-terminals, using the
+grammar extension command. A grammar does not have to be explicitly
+defined. But the grammars in the left member of rules must all be
+defined, possibly by the current grammar command. It may be convenient
+to define an empty grammar, just so that it may be called by other
+grammars, and extend this empty grammar later.  Assume that the {\tt
+command command13} does not exist. The next command defines it with
+zero productions.
+
+\begin{coq_example*}
+Grammar command command13 := .
+\end{coq_example*}
+
+The grammars of new entries do not have an initial grammar. To use
+them, they must be called (directly or indirectly) by grammars of
+predefined entries. We give an example of a (direct) call of the
+grammar {\tt newentry nonterm} by {\tt command command}.  This
+following rule allows to use the syntax \verb+a&b+ for the conjunction
+\verb+a/\b+.
+
+\begin{coq_example}
+Grammar newentry nonterm := 
+  ampersand [ "&" command:command($c) ] -> [$c].
+Grammar command command := 
+  new_and [ command8($a) newentry:nonterm($b) ] -> [<<$a/\$b>>].
+\end{coq_example}
+
+
+\subsection{Left member of productions (LMP)}
+
+A LMP is composed of a combination of terminals (enclosed between
+double quotes) and grammar calls specifying the entry. It is enclosed
+between ``\verb+[+'' and ``\verb+]+''. The empty LMP, represented by
+\verb+[ ]+, corresponds to $\epsilon$ in formal language theory.
+
+A grammar call is done by \verb+entry:nonterminal($id)+ where:
+\begin{itemize}
+\item \verb+entry+ and \verb+nonterminal+ 
+  specifies the entry of the grammar, and the non-terminal.
+\item \verb+$id+ is a metavariable that will receive the AST or AST
+  list resulting from the call to the grammar.
+\end{itemize}
+
+The elements \verb+entry+ and \verb+$id+ are optional. The grammar
+entry can be omitted if it is the same as the entry of the
+non-terminal we are extending. Also, \verb+$id+ is omitted if we do
+not want to get back the AST result. Thus a grammar call can be
+reduced to a non-terminal.
+
+Each terminal must contain exactly one token. This token does not need
+to be already defined. If not, it will be automatically
+added. Nevertheless, any string cannot be a token (e.g. blanks should
+not appear in tokens since parsing would then depend on
+indentation). We introduce the notion of \emph{valid token}, as a
+sequence, without blanks, of characters taken from the following list:
+\begin{center}
+\verb"< > / \ - + = ; , | ! @ # % ^ & * ( ) ? : ~ $ _ ` ' a..z A..Z 0..9"
+\end{center}
+that do not start with a character from
+\begin{center}
+\verb!$ _ a..z A..Z ' 0..9!
+\end{center}
+
+When an LMP is used in the parsing process of an expression, it is
+analyzed from left to right. Every token met in the LMP should
+correspond to the current token of the expression. As for the grammars
+calls, they are performed in order to recognize parts of the initial
+expression.
+
+\Warning
+Unlike destructive expressions, if a variable appears several times in
+the LMP, the last binding hides the previous ones. Comparison can be
+performed only in the actions.
+
+
+\firstexample
+\example{Defining a syntax for inequality}
+
+The rule below allows us to use the syntax \verb+t1#t2+ for the term
+\verb+~t1=t2+. 
+
+\begin{coq_example}
+Grammar command command1 := 
+  not_eq [ command0($a) "#" command0($b) ] -> [<<~($a=$b)>>].
+\end{coq_example}
+
+The level $1$ of the grammar of terms is extended with one rule named
+\texttt{not\_eq}. When this rule is selected, its LMP calls the
+grammar \verb+command+ \verb+command0+. This grammar recognizes a term
+that it binds to the metavariable \verb+$a+. Then it meets the token
+``\verb+#+'' and finally it calls the grammar \verb+command+
+\verb+command0+. This grammar returns the recognized term in
+\verb+$b+. The action constructs the term \verb+~($a=$b)+. Note that
+we use the command quotation on the right-hand side.
+
+\Warning
+Metavariables are identifiers preceded by the ``\verb+$+'' symbol.
+They cannot be replaced by identifiers. For instance, if we enter a
+rule with identifiers and not metavariables, an error occurs:
+
+\begin{coq_example}
+Grammar command command1 := 
+  not_eq [ command0(a) "#" command0(b) ] -> [<<~(a=b)>>].
+\end{coq_example}
+
+For instance, let us give the statement of the symmetry of \verb+#+:
+
+\begin{coq_example}
+Goal (A:Set)(a,b:A) a#b -> b#a.
+\end{coq_example}
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+Conversely, one can force \verb+~a=b+ to be printed \verb=a#b= by
+giving pretty-printing rules. This is explained in section \ref{Syntax}.
+
+\example{Redefining vernac commands}
+
+Thanks to the following rule, ``{\tt |- term.}'' will have the same
+effect as ``{\tt Goal term.}''.
+
+\begin{coq_eval}
+Save State no_thesis.
+\end{coq_eval}
+
+\begin{coq_example}
+Grammar vernac vernac := 
+  thesis [ "|" "-" command:command($term) "." ]
+          -> [<:vernac:<Goal $term.>>].
+\end{coq_example}
+
+\noindent This rule allows putting blanks between the bar and the
+dash, as in
+
+\begin{coq_example}
+| - (A:Prop)A->A.
+\end{coq_example}
+
+\begin{coq_eval}
+Restore State no_thesis.
+\end{coq_eval}
+
+\noindent Assuming the previous rule has not been entered, we can
+forbid blanks with a rule that declares ``\verb+|-+'' as a single
+token:
+
+\begin{coq_example}
+Grammar vernac vernac := 
+  thesis [ "|-" command:command($term) "." ]
+          -> [<:vernac:<Goal $term.>>].
+| - (A:Prop)A->A.
+\end{coq_example}
+
+\noindent If both rules were entered, we would have three tokens
+\verb+|+, \verb+-+ and \verb+|-+. The lexical ambiguity on the string
+\verb+|-+ is solved according to the longest match rule (see lexical
+conventions page~\pageref{lexical}), i.e. \verb+|-+ would be one single
+token. To enforce the use of the first rule, a blank must be inserted
+between the bar and the dash.
+
+
+\Rem
+The vernac commands should always be terminated by a period. When a
+syntax error is detected, the top-level discards its input until it
+reaches a period token, and then resumes parsing.
+
+\example{Redefining tactics}
+
+We can give names to repetitive tactic sequences. Thus in this example
+``{\tt IntSp}'' will correspond to the tactic {\tt Intros} followed by
+{\tt Split}.
+
+\begin{coq_example}
+Grammar tactic simple_tactic :=
+  intros_split [ "IntSp" ] -> [<:tactic:<Intros; Split>>].
+\end{coq_example}
+
+Let us check that this works.
+
+\begin{coq_example}
+Goal (A,B:Prop)A/\B -> B/\A.
+IntSp.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+Note that the same result can be obtained in a simpler way with {\tt
+Tactic Definition} (see page~\pageref{TacticDefinition}). However,
+this macro can only define tactics which arguments are terms.
+
+
+\example{Priority, left and right associativity of operators}
+
+The disjunction has a higher priority than conjunction.  Thus
+\verb+A/\B\/C+ will be parsed as \verb+(A/\B)\/C+ and not as
+\verb+A/\(B\/C)+. The priority is done by putting the rule for the
+disjunction in a higher level than that of conjunction: conjunction is
+defined in the non-terminal {\tt command6} and disjunction in {\tt
+command7} (see file {\tt Logic.v} in the library). Notice that
+the character ``\verb+\+'' must be doubled (see lexical conventions
+for quoted strings on page~\pageref{lexical}).
+
+\begin{coq_example*}
+Grammar command command6 := 
+  and [ command5($c1) "/\\" command6($c2) ] -> [<<(and $c1 $c2)>>].
+Grammar command command7 :=
+  or  [ command6($c1) "\\/" command7($c2) ] -> [<<(or $c1 $c2)>>].
+\end{coq_example*}
+
+Thus conjunction and disjunction associate to the right since in both
+cases the priority of the right term (resp. {\tt command6} and {\tt
+command7}) is higher than the priority of the left term (resp. {\tt
+command5} and {\tt command6}). The left member of a conjunction cannot
+be itself a conjunction, unless you enclose it inside parenthesis.
+
+The left associativity is done by calling recursively the
+non-terminal. {\camlpppp} deals with this recursion by first trying
+the non-left-recursive rules. Here is an example taken from the
+standard library, defining a syntax for the addition on integers:
+
+\begin{coq_example*}
+Grammar znatural expr :=
+  expr_plus [ expr($p) "+" expr($c) ] -> [<<(Zplus $p $c)>>].
+\end{coq_example*}
+
+
+
+\subsection{Actions}
+\label{GramAction}
+\index{Grammar Actions}
+
+Every rule should generate an AST corresponding to the syntactic
+construction that it recognizes. This generation is done by an
+action. Thus every rule is associated to an action. The syntax has
+been defined in Fig.~\ref{grammarsyntax}. We give some examples.
+
+\subsubsection{Simple actions}
+
+A simple action is an AST enclosed between ``\verb+[+'' and
+``\verb+]+''. It simply builds the AST by interpreting it as a
+constructive expression in the environment defined by the LMP. This
+case has been illustrated in all the previous examples.  We will later
+see that grammars can also return AST lists.
+
+
+\subsubsection{Local definitions}
+
+When an action should generate a big term, we can use
+\texttt{let}~\textsl{pattern}~\texttt{=}~\textsl{action}$_1$~%
+\texttt{in}~\textsl{action}$_2$\index{let@{\tt let}} expressions to
+construct it progressively. The action \textsl{action}$_1$ is first
+computed, then it is matched against \textsl{pattern} which may bind
+metavariables, and the result is the evaluation of \textsl{action}$_2$
+in this new context.
+
+\example{}
+
+\noindent From the syntax \verb|t1*+t2|, we generate the term
+{\tt (plus (plus t1 t2) (mult t1 t2))}.
+
+\begin{coq_example}
+Grammar command command1 := 
+  mult_plus [ command0($a) "*" "+" command0($b) ]
+     -> let $p1=[<<(plus $a $b)>>] in
+        let $p2=[<<(mult $a $b)>>] in 
+          [<<(plus $p1 $p2)>>].
+\end{coq_example}
+
+Let us give an example with this syntax:
+
+\begin{coq_example}
+Goal (O*+O)=O.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\subsubsection{Conditional actions}
+
+We recall the syntax of conditional actions:
+
+\begin{center}
+\texttt{case}~\textsl{action}~\texttt{of}~%
+\textsl{pattern}$_1$~\verb+->+~\textsl{action}$_1$~%
+\texttt{|}~$\cdots$~\texttt{|}~%
+\textsl{pattern}$_n$~\verb+->+~\textsl{action}$_n$~%
+\texttt{esac}
+\end{center}\index{case@@{\tt case}}
+
+The action to execute is chosen according to the value of
+\textsl{action}. The matching is performed from left to right. The
+selected action is the one associated to the first pattern that
+matches the value of \textsl{action}. This matching operation will
+bind the metavariables appearing in the selected pattern. The pattern
+matching does need being exhaustive, and no warning is emitted. When the
+pattern matching fails a message reports in which grammar rule the
+failure happened.
+
+\example{Overloading the ``$+$'' operator}
+
+The internal representation of an expression such as {\tt A+B} depends
+on the shape of {\tt A} and {\tt B}:
+\begin{itemize}
+\item \verb/{P}+{Q}/ uses {\tt sumbool}
+\item otherwise,\verb/A+{Q}/ uses {\tt sumor}
+\item otherwise, \verb/A+B/ uses {\tt sum}.
+\end{itemize}
+The trick is to build a temporary AST: \verb/{A}/ generates the node
+\verb/(SQUASH A)/. When we parse \verb/A+B/, we remove the {\tt
+SQUASH} in {\tt A} and {\tt B}:
+
+\begin{coq_example*}
+Grammar command command1 :=
+  squash [ "{" lcommand($lc) "}" ] -> [(SQUASH $lc)].
+Grammar command lassoc_command4 :=
+  squash_sum
+  [ lassoc_command4($c1) "+" lassoc_command4($c2) ] ->
+      case [$c2] of
+        (SQUASH $T2) ->
+            case [$c1] of
+              (SQUASH $T1) -> [<<(sumbool $T1 $T2)>>]
+            | $_           -> [<<(sumor $c1 $T2)>>]
+            esac
+      | $_           -> [<<(sum $c1 $c2)>>]
+      esac.
+\end{coq_example*}
+
+\noindent The problem is that sometimes, the intermediate {\tt SQUASH}
+node cannot re-shaped, then we have a very specific error:
+
+\begin{coq_example}
+Check {True}.
+\end{coq_example}
+
+
+\example{Comparisons and non-linear patterns}
+
+The patterns may be non-linear: when an already bound metavariable
+appears in a pattern, the value yielded by the pattern matching must
+be equal, up to renaming of bound variables, to the current
+value. Note that this does not apply to the wildcard \verb+$_+. For
+example, we can compare two arguments:
+
+\begin{coq_example}
+Grammar command command10 := 
+  refl_equals [ command9($c1) "||" command9($c2) ] ->
+              case [$c1] of $c2 -> [<<(refl_equal ? $c2)>>] esac.
+Check ([x:nat]x || [y:nat]y).
+\end{coq_example}
+
+\noindent The metavariable \verb+$c1+ is bound to \verb+[x:nat]x+ and
+\verb+$c2+ to \verb+[y:nat]y+. Since these two values are equal, the
+pattern matching succeeds. It fails when the two terms are not equal:
+
+\begin{coq_example}
+Check ([x:nat]x || [z:bool]z).
+\end{coq_example}
+
+
+
+\subsection{Grammars of type {\tt List}}
+
+Assume we want to define an non-terminal {\tt ne\_identarg\_list} that
+parses an non-empty list of identifiers. If the grammars could only
+return AST's, we would have to define it this way:
+
+\begin{coq_example*}
+Grammar tactic my_ne_ident_list :=
+  ident_list_cons [ identarg($id) my_ne_ident_list($l) ] ->
+    case [$l] of
+      (IDENTS ($LIST $idl)) -> [(IDENTS $id ($LIST $idl))]
+    esac
+| ident_list_single [ identarg($id) ] -> [(IDENTS $id)].
+\end{coq_example*}
+
+But it would be inefficient: every time an identifier is read, we
+remove the ``boxing'' operator {\tt IDENTS}, and put it back once the
+identifier is inserted in the list.
+
+To avoid these awkward trick, we allow grammars to return AST
+lists. Hence grammars have a type ({\tt Ast} or {\tt List}), just like
+AST's do. Type-checking can be done statically.
+
+The simple actions can produce lists by putting a list of constructive
+expressions one beside the other. As usual, the {\tt\$LIST} operator
+allows to inject AST list variables.
+
+\begin{coq_example*}
+Grammar tactic ne_identarg_list : List :=
+  ne_idl_cons [ identarg($id) ne_identarg_list($idl) ]
+                  -> [ $id ($LIST $idl) ]
+| ne_idl_single [ identarg($id) ] -> [ $id ].
+\end{coq_example*}
+
+Note that the grammar type must be recalled in every extension
+command, or else the system could not discriminate between a single
+AST and an AST list with only one item. If omitted, the default type
+is {\tt Ast}. The following command fails because {\tt
+ne\_identarg\_list} is already defined with type {\tt List} but the
+{\tt Grammar} command header assumes its type is {\tt Ast}.
+
+\begin{coq_example}           
+Grammar tactic ne_identarg_list :=
+  list_two [ identarg($id1) identarg($id2) ] -> [ $id1 $id2 ]. 
+\end{coq_example}
+
+All rules of a same grammar must have the same type. For instance, the
+following rule is refused because the \verb+command command1+ grammar
+has been already defined with type {\tt Ast}, and cannot be extended
+with a rule returning AST lists.
+
+\begin{coq_example}           
+Grammar command command1 :=
+  carret_list [ command0($c1) "^" command0($c2)] -> [ $c1 $c2 ].
+\end{coq_example}
+
+
+\subsection{Limitations}
+
+The extendable grammar mechanism have four serious limitations. The
+first two are inherited from {\camlpppp}.
+\begin{itemize}
+\item Grammar rules are factorized syntactically: {\camlpppp} does not
+  try to expand non-terminals to detect further factorizations. The
+  user must perform the factorization himself.
+\item The grammar is not checked to be \emph{LL(1)}\index{LL(1)} when
+  adding a rule.  If it is not LL(1), the parsing may fail on an input
+  recognized by the grammar, because selecting the appropriate rule
+  may require looking several tokens ahead. {\camlpppp} always selects
+  the most recent rule (and all those that factorize with it)
+  accepting the current token.
+\item There is no command to remove a grammar rule. However there is a
+  trick to do it. It is sufficient to execute the ``{\tt Reset}''
+  command on a constant defined before the rule we want to remove.
+  Thus we retrieve the state before the definition of the constant,
+  then without the grammar rule. This trick does not apply to grammar
+  extensions done in {\ocaml}.
+\item Grammar rules defined inside a section are automatically removed
+  after the end of this section: they are available only inside it.
+\end{itemize}
+
+The command {\tt Print Grammar} prints the rules of a grammar. It is
+displayed by {\camlpppp}. So, the actions are not printed, and the
+recursive calls are printed \verb+SELF+\index{SELF@{\tt SELF}}. It is
+sometimes useful if the user wants to understand why parsing fails, or
+why a factorization was not done as expected.\index{Print Grammar@{\tt
+Print Grammar}}
+
+\begin{coq_example}
+Print Grammar command command8.
+\end{coq_example}
+
+\subsubsection{Getting round the lack of factorization}
+The first limitation may require a non-trivial work, and may lead to
+ugly grammars, hardly extendable. Sometimes, we can use a trick to
+avoid these troubles. The problem arises in the {\gallina} syntax, to
+make {\camlpppp} factorize the rules for application and product. The
+natural grammar would be:
+
+\begin{coq_example}
+Grammar command command0 :=
+  parenthesis [ "(" command10($c) ")" ] -> [$c]
+| product [ "(" prim:var($id) ":" command($c1) ")" command0($c2) ] ->
+            [(PROD $c1 [$id]$c2)]
+with command10 :=
+  application [ command91($c1) ne_command91_list($lc) ] ->
+               [(APPLIST $c1 ($LIST $lc))]
+| inject_com91 [ command91($c) ] -> [$c].
+Check (x:nat)nat.
+\end{coq_example}
+
+But the factorization does not work, thus the product rule is never
+selected since identifiers match the {\tt command10} grammar. The
+trick is to parse the ident as a {\tt command10} and check \emph{a
+posteriori} that the command is indeed an identifier:
+
+\begin{coq_example}
+Grammar command command0 :=
+  product [ "(" command10($c) ":" command($c1) ")" command0($c2) ] ->
+            [(PROD $c1 [$c]$c2)].
+Check (x:nat)nat.
+\end{coq_example}
+
+\noindent We could have checked it explicitly with a {\tt case} in
+the right-hand side of the rule, but the error message in the
+following example would not be as relevant:
+
+\begin{coq_example}
+Check (S O:nat)nat.
+\end{coq_example}
+
+\noindent This trick is not similar to the {\tt SQUASH} node in which
+we could not detect the error while parsing. Here, the error pops out
+when trying to build an abstraction of {\tt\$c2} over the value of
+{\tt\$c}. Since it is not bound to a variable, the right-hand side of
+the product grammar rule fails.
+ 
+\section{Writing your own pretty printing rules}
+\label{Syntax}
+\comindex{Syntax}
+
+There is a mechanism for extending the
+vernacular's printer by adding, in the interactive
+toplevel, new printing rules.  The printing rules are stored into a
+table and will be recovered at the moment of the printing by the
+vernacular's printer.
+
+The user can print new constants, tactics and vernacular phrases
+with his desired syntax.  The printing rules
+for new constants should be written {\em after} the definition of the
+constants. The rules should be
+outside a section if the user wants them to be exported.
+
+The printing rules corresponding to the heart of the system (primitive
+tactics, commands and the vernacular language) are defined,
+respectively, in the files {\tt PPTactic.v} and {\tt PPCommand.v}
+(in the directory {\tt src/syntax}). These files are automatically
+loaded in the initial state. The user is not expected to modify these
+files unless he dislikes the way primitive things are printed, in
+which case he will have to compile the system after doing the
+modifications.
+
+When the system fails to find a suitable printing rule, a tag
+\verb+#GENTERM+\index{GENTERM@{\tt\#GENTERM}} appears in the message.
+
+In the following we give some examples showing how to write the
+printing rules for the non-terminal and terminal symbols of a
+grammar. We will test them frequently by inspecting the error
+messages.  Then, we give the grammar of printing rules and a
+description of its semantics.
+
+
+\subsection{The Printing Rules}
+\subsubsection{The printing of non terminals}
+
+The printing is the inverse process of parsing. While a grammar rule
+maps an input stream of characters
+into an AST, a printing
+rule maps an AST into an output stream of printing orders. 
+So given a certain grammar rule, the printing rule 
+is generally obtained by inverting the grammar rule.
+
+Like grammar rules, it is possible to define several rules at the same
+time. The exact syntax for complex rules is described
+in~\ref{syntaxsyntax}. A simple printing rule is of the form:
+
+\begin{center}
+\verb+Syntax+ ~{\sl universe}
+~\verb+level+ ~{\sl precedence}~\verb+:+~{\sl name}
+~\verb+[+~{\sl pattern}~\verb+] -> [+~{\sl printing-orders}~\verb+].+
+\end{center}
+
+where :
+\begin{itemize}
+\item {\it universe} is an identifier denoting the universe of the AST to
+  be printed. There is a correspondence between the universe of the
+  grammar rule used to generate the AST and the one of the printing
+  rule:
+
+\begin{center}
+\begin{tabular}{|c|c|}\hline
+{\em Univ. Grammar}  & {\em Univ. Printing} \\ \hline 
+tactic   & tactic \\ \hline
+command  & constr \\ \hline 
+\end{tabular}
+\end{center}
+
+  The vernac universe has no equivalent in pretty-printing since
+  vernac phrases are never printed by the system. Error messages are
+  reported by re-displaying what the user entered.
+
+\item {\it precedence} is positive integer indicating the precedence
+  of the rule. In general the precedence for tactics is 0. The
+  universe of commands is implicitly stratified by the hierarchy of
+  the parsing rules. We have non terminals \textit{command0},
+  \textit{command1}, \ldots, \textit{command10}. 
+  The idea is that objects parsed with the non terminal
+  $command_i$ have precedence $i$. In most of the cases we fix the
+  precedence of the printing rules for commands to be the same number
+  of the non terminal with which it is parsed.
+
+  A precedence may also be a triple of integers. The triples are
+  ordered in lexicographic order, and the level $n$ is equal to {\tt
+  [$n~0~0$]}.
+
+\item {\it name} is the name of the
+  printing rule. A rule is identified by both its universe and name,
+  if there are two rules with both the same name and universe, then
+  the last one overrides the former.
+
+\item {\it pattern} is a pattern that matches the AST to be
+  printed. The syntax of patterns is very similar to the grammar for ASTs.
+  A description of their syntax is given in section
+  \ref{patternsyntax}.
+
+\item {\it printing-orders} is the sequence of orders indicating the
+  concrete layout of the printer.
+\end{itemize}
+
+\firstexample
+
+\example{Syntax for user-defined tactics.}
+
+The first usage of the \texttt{Syntax} command might be the printing
+order for a user-defined tactic: 
+
+\begin{coq_example*}
+Declare ML Module "eqdecide".
+Syntax tactic level 0:
+  ComparePP [(Compare $com1 $com2)]    -> 
+            ["Compare" [1 2] $com1 [1 2] $com2].
+\end{coq_example*}
+
+% meme pas vrai
+If such a printing rule is not given, a disgraceful \verb+#GENTERM+
+will appear when typing \texttt{Show Script} or \texttt{Save}. For
+a tactic macro defined by a \texttt{Tactic Definition} command, a
+printing rule is automatically generated so the user don't have to
+write one.
+
+\example{Defining the syntax for new constants.}
+
+Let's define the constant \verb+Xor+ in Coq:
+
+\begin{coq_example*}
+Definition Xor := [A,B:Prop] A/\~B \/ ~A/\B.
+\end{coq_example*}
+
+Given this definition, we want to use the syntax of \verb+A X B+
+to denote \verb+(Xor A B)+. To do that we give the grammar rule:
+
+\begin{coq_example}
+Grammar command  command7 :=
+  Xor [ command6($c1) "X" command7($c2) ] -> [<<(Xor $c1 $c2)>>].
+\end{coq_example}
+
+Note that the operator is associative to the right.  
+Now \verb+True X False+ is well parsed:
+
+\begin{coq_example}
+Goal True X False.
+\end{coq_example}
+
+To have it well printed we extend the printer:
+
+\begin{coq_example}
+Syntax constr level 7:
+  Pxor  [<<(Xor  $t1  $t2)>>] -> [ $t1:L  " X "  $t2:E ].
+\end{coq_example}
+
+and now we have the desired syntax:
+
+\begin{coq_example}
+Show.
+\end{coq_example}
+
+Let's comment the rule:
+\begin{itemize}
+\item \verb+constr+ is the universe of the printing rule.
+
+\item \verb+7+ is the rule's precedence and it is the same one than the
+  parsing production (command7).
+
+\item \verb+Pxor+ is the name of the printing rule.
+
+\item \verb+<<(Xor $t1 $t2)>>+ is the pattern of the AST to be
+  printed. Between \verb+<< >>+ we are allowed to use the syntax of
+  command instead of syntax of ASTs. 
+  Metavariables may occur in the pattern but preceded by
+  \verb+$+.
+
+\item \verb+$t1:L " X " $t2:E+ are the printing
+  orders, it tells to print the value of \verb+$t1+ then the symbol
+  \verb+X+ and then the value of \verb+$t2+.
+
+  The \verb+L+ in the little box \verb+$t1:L+ indicates not
+  to put parentheses around the value of \verb+$t1+ if its precedence
+  is {\bf less} than the rule's one. An \verb+E+ instead of the
+  \verb+L+ would mean not to put parentheses around the value of
+  \verb+$t1+ if its the precedence is {\bf less or equal} than the
+  rule's one.
+
+  The associativity of the operator can be expressed in the following
+  way:
+
+  \verb&$t1:L " X " $t2:E& associates the operator to the right.
+
+  \verb&$t1:E " X " $t2:L& associates to the left.
+
+  \verb&$t1:L " X " $t2:L& is non-associative.
+
+\end{itemize}
+
+Note that while grammar rules are related by the name of non-terminals
+(such as {\tt command6} and {\tt command7}) printing rules are
+isolated. The {\tt Pxor} rule tells how to print an {\tt Xor}
+expression but not how to print its subterms.  The printer looks up
+recursively the rules for the values of \verb+$t1+ and \verb+$t2+. The
+selection of the printing rules is strictly determined by the
+structure of the AST to be printed.
+
+This could have been defined with the {\tt Infix} command.
+
+
+\example{Forcing to parenthesize a new syntactic construction}
+
+You can force to parenthesize a new syntactic construction by fixing
+the precedence of its printing rule to a number greater than 9. For
+example a possible printing rule for the {\tt Xor} connector in the prefix
+notation would be:
+
+\begin{coq_example*}
+Syntax constr level 10:
+  ex_imp [<<(Xor $t1  $t2)>>] -> [ "X " $t1:L " " $t2:L ].
+\end{coq_example*}
+
+No explicit parentheses are contained in the rule, nevertheless, when
+using the connector, the parentheses are automatically written:
+
+\begin{coq_example}
+Show.
+\end{coq_example}
+
+A precedence higher than 9 ensures that the AST value will be
+parenthesized by default in either the empty context or if it occurs
+in a context where the instructions are of the form
+\verb+$t:L+ or \verb+$t:E+.
+
+
+\example{Dealing with list patterns in the syntax rules}
+
+The following productions extend the parser to recognize a
+tactic called \verb+MyIntros+ that receives a list of identifiers as
+argument as the primitive \verb+Intros+ tactic does:
+
+\begin{coq_example*}
+Grammar tactic simple_tactic := 
+  my_intros [ "MyIntros" ne_identarg_list($idl) ] -> 
+            [(MyIntrosWith ($LIST $idl))].
+\end{coq_example*}
+
+To define the printing rule for \verb+MyIntros+ it is necessary to
+define the printing rule for the non terminal \verb+ne_identarg_list+.
+In grammar productions the dependency between the non terminals is
+explicit. This is not the case for printing rules, where the
+dependency between the rules is determined by the structure of the
+pattern. So, the way to make explicit the relation between printing
+rules is by adding structure to the patterns.
+
+\begin{coq_example}
+Syntax tactic level 0:
+  myintroswith [(MyIntrosWith ($LIST $L))] ->
+   [ "MyIntros " (NEIDENTARGLIST ($LIST $L)) ].
+\end{coq_example}
+
+This rule says to print the string \verb+MyIntros+ and then to print
+the value of \\
+\verb+(NEIDENTARGLIST ($LIST $L))+.
+
+\begin{coq_example}
+Syntax tactic level 0:
+  ne_identarg_list_cons [(NEIDENTARGLIST $id ($LIST $l))]
+                            -> [ $id " " (NEIDENTARGLIST ($LIST $l)) ]
+| ne_identarg_list_single [(NEIDENTARGLIST $id)] -> [ $id ].
+\end{coq_example}
+
+
+The first rule says how to print a non-empty list, while the second
+one says how to print the list with exactly one element. Note that the
+pattern structure of the binding in the first rule ensures its use in
+a recursive way.
+
+Like the order of grammar productions, the order of printing rules
+\emph{does matter}. In case of two rules whose patterns superpose
+each other the {\bf last} rule is always chosen.  In the example, if
+the last two rules were written in the inverse order the printing will
+not work, because only the rule {\sl ne\_identarg\_list\_cons} would
+be recursively retrieved and there is no rule for the empty list.
+Other possibilities would have been to write a rule for the empty list
+instead of the {\sl ne\_identarg\_list\_single} rule,
+
+\begin{coq_example}
+Syntax tactic level 0:
+  ne_identarg_list_nil [(NEIDENTARGLIST)] -> [ ].
+\end{coq_example}
+
+This rule indicates to do nothing in case of the empty list.  In this
+case there is no superposition between patterns (no critical pairs)
+and the order is not relevant. But a useless space would be printed
+after the last identifier.
+
+\example{Defining constants with arbitrary number of arguments}
+
+Sometimes the constants we define may have an arbitrary number of
+arguments, the typical case are polymorphic functions. Let's consider
+for example the functional composition operator. The following rule
+extends the parser:
+
+\begin{coq_example*}
+Definition explicit_comp := [A,B,C:Set][f:A->B][g:B->C][a:A](g (f a)).
+Grammar command command6 :=
+  expl_comp [command5($c1) "o" command6($c2) ] ->
+            [<<(explicit_comp ? ? ? $c1 $c2)>>].
+\end{coq_example*}
+
+Our first idea is to write the printing rule just by ``inverting'' the
+production:
+
+\begin{coq_example} 
+Syntax constr level 6:
+  expl_comp [<<(explicit_comp ? ? ? $f $g)>>] -> [ $f:L "o" $g:L ].
+\end{coq_example}
+
+This rule is not correct: \verb+?+ is an ordinary AST (indeed, it is
+the AST \verb|(XTRA "ISEVAR")|), and does not behave as the
+``wildcard'' pattern \verb|$_|. Here is a correct version of this
+rule:
+
+\begin{coq_example*} 
+Syntax constr level 6:
+  expl_comp [<<(explicit_comp $_ $_ $_ $f $g)>>] -> [ $f:L "o" $g:L ].
+\end{coq_example*}
+
+Let's test the printing rule:
+
+\begin{coq_example}
+Definition Id := [A:Set][x:A]x.
+Check (Id nat) o (Id nat).
+Check ((Id nat)o(Id nat)  O).
+\end{coq_example}
+
+In the first case the rule was used, while in the second one the
+system failed to match the pattern of the rule with the AST of
+\verb+((Id nat)o(Id nat) O)+.
+Internally the AST of this term is the same as the AST of the
+term \verb+(explicit_comp nat nat nat (Id nat) (Id nat) O)+.
+When the system retrieves our rule it tries to match an application of
+six arguments with an application of five arguments (the AST of
+\verb+(explicit_comp $_ $_ $_ $f $g)+).  Then, the matching fails and
+the term is printed using the rule for application.
+
+Note that the idea of adding a new rule for \verb+explicit_comp+ for
+the case of six arguments does not solve the problem, because of the
+polymorphism, we can always build a term with one argument more.  The
+rules for application deal with the problem of having an arbitrary
+number of arguments by using list patterns. Let's see these rules:
+
+\begin{coq_example*}
+Syntax constr level 10:
+  app [(APPLIST $H ($LIST $T))] ->
+      [ [<hov 0>  $H:E (APPTAIL ($LIST $T)):E ] ]
+
+| apptailcons [(APPTAIL $H ($LIST $T))] ->
+      [ [1 1] $H:L (APPTAIL ($LIST $T)):E ]
+| apptailnil [(APPTAIL)] -> [ ].
+\end{coq_example*}
+
+The first rule prints the operator of the application, and the second
+prints the list of its arguments. Then, one solution to our problem is
+to specialize the first rule of the application to the cases where the
+operator is \verb+explicit_comp+ and the list pattern has {\bf at
+least} five arguments:
+
+\begin{coq_example*}
+Syntax constr level 10:
+  expl_comp 
+    [(APPLIST <<explicit_comp>> $_ $_ $_ $f $g ($LIST $l))]
+     -> [ [<hov 0> $f:L "o" $g:L (APPTAIL ($LIST $l)) ] ].
+\end{coq_example*}
+
+Now we can see that this rule works for any application of the
+operator:
+
+\begin{coq_example}
+Check ((Id nat) o (Id nat) O).
+Check ((Id nat->nat) o (Id nat->nat) [x:nat]x O).
+\end{coq_example}
+
+In the examples presented by now, the rules have no information about
+how to deal with indentation, break points and spaces, the printer
+will write everything in the same line without spaces. To indicate the
+concrete layout of the patterns, there's a simple language of printing
+instructions that will be described in the following section.
+
+
+\subsubsection{The printing of terminals}
+The user is not expected to write the printing rules for terminals,
+this is done automatically.  Primitive printing is done for
+identifiers, strings, paths, numbers. For example : 
+
+\begin{coq_example*}
+Grammar vernac vernac :=
+  mycd [ "MyCd" prim:string($dir) "." ] -> [(MYCD $dir)].
+Syntax vernac level 0:
+  mycd [(MYCD $dir)] -> [ "MyCd " $dir ].
+\end{coq_example*}
+
+There is no more need to encapsulate the \verb+$dir+ meta-variable
+with the \verb+$PRIM+ or the \verb+$STR+ operator as in the version
+6.1. However, the pattern \verb+(MYCD ($STR $dir))+ would be safer,
+because the rule would not be selected to print an ill-formed AST. The
+name of default primitive printer is the {\ocaml} function {\tt
+print\_token}. If the user wants a particular terminal to be printed
+by another printer, he may specify it in the right part of the
+rule. Example:
+
+% Pas encore possible! $num est un id, pas un entier.
+%Syntax tactic level 0 :
+%  do_pp [<<Do $num $tactic>>] 
+%    -> [ "Do " $num:"my_printer" [1 1] $tactic ].
+\begin{coq_example*}
+Syntax tactic level 0 :
+  do_pp [(DO ($NUM $num) $tactic)] 
+    -> [ "Do " $num:"my_printer" [1 1] $tactic ].
+\end{coq_example*}
+
+The printer \textit{my\_printer} must have been installed as shown
+below.
+
+\subsubsection{Primitive printers}
+
+Writing and installing primitive pretty-printers requires to have the
+sources of the system like writing tactics.
+
+A primitive pretty-printer is an \ocaml\ function of type
+\begin{verbatim}
+     Esyntax.std_printer -> CoqAst.t -> Pp.std_ppcmds
+\end{verbatim}
+The first
+argument is the global printer, it can be called for example by the
+specific printer to print subterms. The second argument is the AST to
+print, and the result is a stream of printing orders like :
+
+\begin{itemize}
+\item \verb+'sTR"+\textit{string}\verb+"+ to print the string
+  \textit{string}
+\item \verb+'bRK +\textit{num1 num2} that has the same semantics than
+  \verb+[+ \textit{num1 num2} \verb+]+ in the print rules.
+\item \verb+'sPC+ to leave a blank space
+\item \verb+'iNT+ $n$ to print the integer $n$ 
+\item \ldots
+\end{itemize}
+
+There is also commands to make boxes (\verb+h+ or \verb+hv+, described
+in file {\tt src/lib/util/pp.mli}). Once the printer is written, it
+must be registered by the command :
+\begin{verbatim}
+     Esyntax.Ppprim.add ("name",my_printer);;
+\end{verbatim}
+\noindent 
+Then, in the toplevel, after having loaded the right {\ocaml} module,
+it can be used in the right hand side of printing orders using the
+syntax \verb+$truc:"name"+.
+
+The real name and the registered name of a pretty-printer does not
+need to be the same. However, it can be nice and simple to give the
+same name.
+
+\subsection{Syntax for pretty printing rules}
+\label{syntaxsyntax}
+
+This section describes the syntax for printing rules.  The
+metalanguage conventions are the same as those specified for the
+definition of the {\sl pattern}'s syntax in section \ref{patternsyntax}.
+The grammar of printing rules is the following:
+
+\begin{center}
+\begin{tabular}{|rcl|} \hline
+{\sl printing-rule} & ::= &
+  \verb+Syntax+~{\ident}~~\nelist{{\sl level}}{;} \\
+{\sl level} & ::= & \verb+level+~{\sl precedence}~\verb+:+
+  ~\nelist{{\sl rule}}{|} \\
+{\sl precedence} & ::= &
+  {\integer} ~$|$~ \verb+[+~\integer~\integer~\integer~\verb+]+ \\
+{\sl rule} & ::= &
+  {\sl ident}~\verb+[+~{\sl pattern}~\verb+] -> [+%
+  ~\sequence{{\sl printing-order}}{}~\verb+]+ \\
+{\sl printing-order} & ::= & \verb+FNL+ \\
+  &$|$& {\sl string} \\
+  &$|$& \verb+[+~\integer~\integer~\verb+]+ \\
+  &$|$& \verb+[+~box~\sequence{{\sl printing-order}}{}~\verb+]+ \\
+  &$|$& {\sl ast}~\zeroone{{\tt :}~{\sl prim-printer}}~%
+        \zeroone{{\tt :}~{\sl paren-rel}}\\
+{\sl box} & ::= & \verb+<+~{\sl box-type}~\integer~\verb+>+\\
+{\sl box-type} & ::= & ~\verb+hov+~$|$~\verb+hv+~$|$~\verb+v+~$|$~\verb+h+\\
+{\sl paren-rel} & ::= & \verb+L+~$|$~\verb+E+ \\
+{\sl prim-printer} & ::= & {\sl string} \\
+{\sl pattern} & ::= & {\sl ast} \\ 
+\hline
+\end{tabular}
+\end{center}
+
+As already stated, the order of rules in a given level is relevant
+(the last ones override the previous ones).
+
+ 
+\subsubsection{Pretty grammar structures}
+The basic structure is the printing order sequence. Each order has a
+printing effect and they are sequentially executed. The orders can
+be:
+\begin{itemize}
+\item printing orders
+\item printing boxes
+\end{itemize}
+
+\paragraph{Printing orders}
+Printing orders can be of the form:
+\begin{itemize}
+\item \verb+"+{\sl string}\verb+"+ prints the {\sl string}.
+\item \verb+FNL+ force a new line.
+
+\item \texttt{\$t:}\textsl{paren-rel} or
+  \texttt{\$t:}\textsl{prim-printer}\texttt{:}\textsl{paren-rel}
+
+  {\sl ast} is used to build an AST in current context. The printer
+  looks up the adequate printing rule and applies recursively this
+  method.  The optional field {\it prim-printer} is a string with the
+  name primitive pretty-printer to call (The name is not the name of
+  the {\ocaml} function, but the name given to {\tt
+  Esyntax.Ppprim.add}).  Recursion of the printing is determined by
+  the pattern's structure.  {\it paren-rel} is the following:
+
+\begin{tabular}{cl}
+
+\verb+L+ &
+    if $t$ 's precedence is {\bf less} than the rule's one, then no
+    parentheses \\
+  & around $t$ are written. \\
+\verb+E+  &
+    if $t$ 's precedence is {\bf less or equal} than  the rule's one
+    then no parentheses \\
+ &  around $t$ are written. \\
+{\it none} & {\bf never} write parentheses around $t$.
+\\\\
+\end{tabular}
+\end{itemize}
+
+\paragraph{Printing boxes}
+The concept of formatting boxes is used to describe the concrete
+layout of patterns: a box may contain many objects which are orders or
+sub\-boxes sequences separated by break\-points; the box wraps around
+them an imaginary rectangle.
+\begin{enumerate}
+\item {\bf Box types}
+
+  The type of boxes specifies the way the components of the box will
+  be displayed and may be:
+\begin{itemize}
+\item \verb+h+ : to catenate objects horizontally.
+\item \verb+v+ : to catenate objects vertically.
+\item \verb+hv+ : to catenate objects as with an ``h box'' but an
+  automatic vertical folding is applied when the horizontal
+  composition does not fit into the width of the associated output
+  device.
+
+\item \verb+hov+ : to catenate objects horizontally but if the
+  horizontal composition does not fit, a vertical composition will be
+  applied, trying to catenate horizontally as many objects as possible.
+\end{itemize}
+
+The type of the box can be followed by a {\it n} offset value, which
+is the offset added to the current indentation when breaking lines
+inside the box.
+
+
+\item {\bf Boxes syntax}
+
+  A box is described by a sequence surrounded by \verb+[ ]+. The first
+  element of the sequence is the box type: this type surrounded by the
+  symbols \verb+< >+ is one of the words \verb+hov+, \verb+hv+,
+  \verb+v+, \verb+v+ followed by an offset. The default offset is 0
+  and the default box type is \verb+h+.
+
+\item {\bf Break\-points}
+
+  In order to specify where the pretty-printer is allowed to break,
+  one of the following break-points may be used:
+
+\begin{itemize}
+\item \verb+[0 0]+ is a simple break-point, if the line is not broken
+  here, no space is included (``Cut'').
+\item \verb+[1 0]+ if the line is not broken then a space is printed
+  (``Spc'').
+\item \verb+[i j]+ if the line is broken, the value $j$ is added to the
+  current indentation for the following line; otherwise $i$ blank spaces
+  are inserted (``Brk'').
+\end{itemize}
+
+\noindent {\bf Examples :}
+It is interesting to test printing rules on ``small'' and ``large''
+expressions in order to see how the break of lines and indentation are
+managed. Let's define two constants and make a \verb+Print+ of them to
+test the rules.  Here are some examples of rules for our constant
+\verb+Xor+:
+
+\begin{coq_example*} 
+Definition A := True X True.
+Definition B := True X True X True X True X True X True X True 
+                 X True X True X True X True X True X True.
+\end{coq_example*}
+\begin{coq_example*}
+Syntax constr level 6:
+  Pxor [<<(Xor $t1 $t2)>>] -> [ $t1:L " X " $t2:E ].
+\end{coq_example*}
+
+
+This rule prints everything in the same line exceeding the line's
+width.
+
+% Avec coq-tex, le bord de l'e'cran n'est pas mate'rialise'.
+%\begin{coq_example}
+%Print B.
+%\end{coq_example}
+
+\begin{small}
+\begin{flushleft}
+\verb!Coq < Print B.!\\
+\texttt{\textit{B~=~}}\\
+\texttt{\textit{True~X~True~X~True~X~True~X~True~X~True~X~True~X~True~X~True~X~True~X~Tru}}\\
+\texttt{\textit{e~X~True~X~True}}\\
+\texttt{\textit{~~~~~:~Prop}}\\
+\end{flushleft}
+\end{small}
+
+Let's add some break-points in order to force the printer to break the
+line before the operator:
+
+\begin{coq_example*}
+Syntax constr level 6:
+  Pxor [<<(Xor $t1 $t2)>>] -> [ $t1:L [0 1] " X " $t2:E ].
+\end{coq_example*}
+
+\begin{coq_example}
+Print B.
+\end{coq_example}
+
+The line was correctly broken but there is no indentation at all. To
+deal with indentation we use a printing box:
+
+\begin{coq_example*}
+Syntax constr level 6:
+  Pxor [<<(Xor $t1 $t2)>>] ->
+   [ [<hov 0> $t1:L [0 1] " X " $t2:E ] ].
+\end{coq_example*}
+
+With this rule the printing of A is correct, an the printing of B is
+indented.
+
+\begin{coq_example}
+Print B.
+\end{coq_example}
+
+If we had chosen the mode \verb+v+ instead of \verb+hov+ :
+
+\begin{coq_example*}
+Syntax constr level 6:
+  Pxor [<<(Xor $t1 $t2)>>] -> [ [<v 0> $t1:L [0 1] " X " $t2:E ] ].
+\end{coq_example*}
+
+We would have obtained a vertical presentation:
+
+\begin{coq_example}
+Print A.
+\end{coq_example}
+
+The difference between the presentation obtained with the \verb+hv+
+and \verb+hov+ type box is not evident at first glance. Just for
+clarification purposes let's compare the result of this silly rule
+using an \verb+hv+ and a \verb+hov+ box type:
+
+\begin{coq_example*}
+Syntax constr level 6:
+  Pxor [<<(Xor $t1 $t2)>>] ->
+   [ [<hv 0> "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+       [0 0] "----------------------------------------"
+       [0 0] "ZZZZZZZZZZZZZZZZ" ] ].
+\end{coq_example*}
+\begin{coq_example}
+Print A.
+\end{coq_example}
+\begin{coq_example*}
+Syntax constr level 6:
+  Pxor [<<(Xor $t1 $t2)>>] ->
+   [ [<hov 0> "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+       [0 0]  "----------------------------------------"
+       [0 0]  "ZZZZZZZZZZZZZZZZ" ] ].
+\end{coq_example*}
+\begin{coq_example}
+Print A.
+\end{coq_example}
+
+In the first case, as the three strings to be printed do not fit in
+the line's width, a vertical presentation is applied. In the second
+case, a vertical presentation is applied, but as the last two strings
+fit in the line's width, they are printed in the same line.
+
+
+\end{enumerate}
+
+\subsection{Debugging the printing rules}
+
+  By now, there is almost no semantic check of printing rules in the
+  system.  To find out where the problem is, there are two
+  possibilities: to analyze the rules looking for the most common
+  errors or to work in the toplevel tracing the ml code of the
+  printer.
+When the system can't find the proper rule to print an Ast, it prints
+\verb+#GENTERM+ \textit{ast}. If you added no printing rule,
+  it's probably a bug and you can send it to the \Coq\ team.
+
+\subsubsection{Most common errors}
+Here are some considerations that may help to get rid of simple
+errors:
+
+\begin{itemize}
+\item make sure that the rule you want to use is not defined in
+  previously closed section.
+\item make sure that {\bf all} non-terminals of your grammar have
+  their corresponding printing rules.
+
+\item make sure that the set of printing rules for a certain non
+  terminal covers all the space of AST values for that non terminal.
+
+\item the order of the rules is important. If there are two rules
+  whose patterns superpose (they have common instances) then it is
+  always the most recent rule that will be retrieved.
+\item if there are two rules with the same name and universe the last
+  one overrides the first one. The system always warns you about
+  redefinition of rules.
+\end{itemize}
+
+\subsubsection{Tracing the {\ocaml} code of the printer}
+Some of the conditions presented above are not easy to verify when
+dealing with many rules. In that case tracing the code helps to
+understand what is happening. The printers are in the file {\tt
+src/typing/printer}. There you will find the functions:
+
+\begin{itemize}
+\item {\tt gencompr} : the printer of commands
+\item {\tt gentacpr} : the printer of tactics
+\end{itemize}
+
+These printers are defined in terms of a general printer {\tt
+genprint} (this function is located in {\tt src/parsing/esyntax.ml})
+and by instantiating it with the adequate parameters. {\tt genprint}
+waits for: the universe to which this AST belongs ({\it tactic}, {\it
+constr}), a default printer, the precedence of the AST inherited from
+the caller rule and the AST to print. {\tt genprint} looks for a rule
+whose pattern matches the AST, and executes in order the printing
+orders associated to this rule. Subterms are printed by recursively
+calling the generic printer. If no rule matches the AST, the default
+printer is used.
+
+An AST of a universe may have subterms that belong to another
+universe. For instance, let $v$ be the AST of the tactic
+expression \verb+MyTactic O+. The function {\tt gentacpr} is called
+to print $v$.  This function instantiates the general printer {\tt
+genprint} with the universe {\it tactic}. Note that $v$ has a subterm
+$c$ corresponding to the AST of \verb+O+ ($c$ belongs to the universe
+{\it constr}).  {\tt genprint} will try recursively to print all
+subterms of $v$ as belonging to the same universe of $v$. If this is
+not possible, because the subterm belongs to another universe, then
+the default printer that was given as argument to {\tt genprint} is
+applied. The default printer is responsible for changing the universe
+in a proper way calling the suitable printer for $c$.
+
+\medskip\noindent {\bf Technical Remark.} In the file
+\verb+PPTactic.v+, there are some rules that do not arise from the
+inversion of a parsing rule. They are strongly related to the way the
+printing is implemented.
+
+\begin{coq_example*}
+Syntax tactic level 8:
+  constr [(COMMAND $c)] -> [ (PPUNI$COMMAND $c):E ].
+\end{coq_example*}
+
+As an AST of tactic may have subterms that are commands, these rules
+allow the printer of tactic to change the universe. The
+\verb+PPUNI$COMMAND+ is a special identifier used for this
+purpose. They are used in the code of the default printer that {\tt
+gentacpr} gives to {\tt genprint}.
+
+
+% $Id$ 
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

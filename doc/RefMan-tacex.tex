@@ -1,0 +1,668 @@
+\chapter{Detailed examples of tactics}
+\label{Tactics-examples}
+
+This chapter presents detailed examples of certain tactics, to
+illustrate their behavior.
+
+\section{\tt Refine}
+\tacindex{Refine}
+\label{Refine-example}
+
+This tactic applies to any goal. It behaves like {\tt Exact} with a
+big difference : the user can leave some holes (denoted by \texttt{?} or 
+{\tt (?::}{\it type}{\tt )}) in the term. 
+{\tt Refine} will generate as many
+subgoals as they are holes in the term. The type of holes must be
+either synthesized by the system or declared by an
+explicit cast like \verb|(?::nat->Prop)|. This low-level
+tactic can be useful to advanced users.
+
+\firstexample
+\example{}
+
+\begin{coq_example*}
+Require Refine.
+Inductive Option: Set := Fail : Option | Ok : bool->Option.
+\end{coq_example}
+\begin{coq_example}
+Definition get: (x:Option)~x=Fail->bool.
+Refine
+  [x:Option]<[x:Option]~x=Fail->bool>Cases x of
+        Fail   =>  ?
+      | (Ok b) =>  [_:?]b end.
+Intros;Absurd Fail=Fail;Trivial.
+\end{coq_example}
+\begin{coq_example*}
+Defined.
+\end{coq_example*}
+
+\example{Using Refine to build a poor-man's ``Cases'' tactic}
+\texttt{Refine} is actually the only way for the user to do
+a proof with the same structure as a {\tt Cases} definition. Actually,
+the tactics \texttt{Case} (see \ref{Case}) and \texttt{Elim} (see
+\ref{Elim}) only allow one step of elementary induction. 
+
+\begin{coq_example*}
+Require Bool.
+Require Arith.
+\end{coq_example*}
+%\begin{coq_eval}
+%Abort.
+%\end{coq_eval}
+\begin{coq_example}
+Definition one_two_or_five := [x:nat]
+  Cases x of
+    (1) => true
+  | (2) => true
+  | (5) => true
+  | _ => false
+  end.
+Goal (x:nat)(Is_true (one_two_or_five x)) -> x=(1)\/x=(2)\/x=(5).
+\end{coq_example}
+
+A traditional script would be the following:
+
+\begin{coq_example*}
+Destruct x.
+Tauto.
+Destruct n.
+Auto.
+Destruct n0.
+Auto.
+Destruct n1.
+Tauto.
+Destruct n2.
+Tauto.
+Destruct n3.
+Auto.
+Intros; Inversion H.
+\end{coq_example*}
+
+With the tactic \texttt{Refine}, it becomes quite shorter:
+
+\begin{coq_example*}
+Restart.
+Require Refine.
+\end{coq_example*}
+\begin{coq_example}
+Refine [x:nat]
+  <[y:nat](Is_true (one_two_or_five y))->(y=(1)\/y=(2)\/y=(5))>
+  Cases x of
+    (1) => [H]?
+  | (2) => [H]?
+  | (5) => [H]?
+  | _ => [H](False_ind ? H)
+  end; Auto.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\section{\tt EApply}
+\tacindex{EApply}
+\label{EApply-example}
+\Example
+Assume we have a relation on {\tt nat} which is transitive:
+
+\begin{coq_example*}
+Variable R:nat->nat->Prop.
+Hypothesis Rtrans : (x,y,z:nat)(R x y)->(R y z)->(R x z).
+Variables n,m,p:nat.
+Hypothesis Rnm:(R n m).
+Hypothesis Rmp:(R m p).
+\end{coq_example*}
+
+Consider the goal {\tt (R n p)} provable using the transitivity of
+{\tt R}:
+
+\begin{coq_example*}
+Goal (R n p).
+\end{coq_example*}
+
+The direct application of {\tt Rtrans} with {\tt Apply} fails because
+no value for {\tt y} in {\tt Rtrans} is found by {\tt Apply}:
+
+\begin{coq_example}
+Apply Rtrans.
+\end{coq_example}
+
+A solution is to rather apply {\tt (Rtrans n m p)}.
+
+\begin{coq_example}
+Apply (Rtrans n m p).
+\end{coq_example}
+
+\begin{coq_eval}
+  Undo.
+\end{coq_eval}
+
+More elegantly, {\tt Apply Rtrans with y:=m} allows to only mention
+the unknown {\tt m}:
+
+\begin{coq_example}
+Apply Rtrans with y:=m.
+\end{coq_example}
+
+\begin{coq_eval}
+  Undo.
+\end{coq_eval}
+
+Another solution is to mention the proof of {\tt (R x y)} in {\tt
+Rtrans}...
+
+\begin{coq_example}
+Apply Rtrans with 1:=Rnm.
+\end{coq_example}
+
+\begin{coq_eval}
+  Undo.
+\end{coq_eval}
+
+... or the proof of {\tt (R y z)}:
+
+\begin{coq_example}
+Apply Rtrans with 2:=Rmp.
+\end{coq_example}
+
+\begin{coq_eval}
+  Undo.
+\end{coq_eval}
+
+On the opposite, one can use {\tt EApply} which postpone the problem
+of finding {\tt m}. Then one can apply the hypotheses {\tt Rnm} and {\tt
+Rmp}. This instantiates the existential variable and completes the proof.
+
+\begin{coq_example}
+EApply Rtrans.
+Apply Rnm.
+Apply Rmp.
+\end{coq_example}
+
+\begin{coq_eval}
+  Reset R.
+\end{coq_eval}
+
+\section{{\tt Scheme}}
+\comindex{Scheme}
+\label{Scheme-examples}
+
+\firstexample
+\example{Induction scheme for \texttt{tree} and \texttt{forest}}
+
+The definition of principle of mutual induction for {\tt tree} and
+{\tt forest} over the sort {\tt Set} is defined by the command:
+
+\begin{coq_eval}
+Restore State Initial.
+Variables A,B:Set.
+Mutual Inductive tree : Set :=  node : A -> forest -> tree
+with forest : Set := leaf : B -> forest 
+                   | cons : tree -> forest -> forest.
+\end{coq_eval}
+
+\begin{coq_example*}
+Scheme tree_forest_rec := Induction for tree Sort Set 
+with forest_tree_rec := Induction for forest Sort Set.
+\end{coq_example*}
+
+You may now look at the type of {\tt tree\_forest\_rec}:
+
+\begin{coq_example}
+Check tree_forest_rec.
+\end{coq_example}
+
+This principle involves two different predicates for {\tt trees} and
+{\tt forests}; it also has three premises each one corresponding to a
+constructor of one of the inductive definitions.
+
+The principle {\tt tree\_forest\_rec} shares exactly the same
+premises, only the conclusion now refers to the property of forests.
+
+\begin{coq_example}
+Check forest_tree_rec.
+\end{coq_example}
+
+\example{Predicates {\tt odd} and {\tt even} on naturals}
+
+Let {\tt odd} and {\tt even} be inductively defined as:
+
+\begin{coq_eval}
+Restore State Initial.
+\end{coq_eval}
+
+\begin{coq_example*}
+Mutual Inductive odd : nat->Prop := 
+    oddS : (n:nat)(even n)->(odd (S n))
+with even : nat -> Prop := 
+    evenO : (even O) 
+  | evenS : (n:nat)(odd n)->(even (S n)).  
+\end{coq_example*}
+
+The following command generates a powerful elimination
+principle:
+
+\begin{coq_example*}
+Scheme odd_even := Minimality for odd Sort Prop
+with   even_odd := Minimality for even Sort Prop.
+\end{coq_example*}
+
+The type of {\tt odd\_even} for instance will be:
+
+\begin{coq_example}
+Check odd_even.
+\end{coq_example}
+
+The type of {\tt even\_odd} shares the same premises but the
+conclusion is {\tt (n:nat)(even n)->(Q n)}.
+
+
+\section{{\tt Inversion}}
+\tacindex{Inversion}
+\label{Inversion-examples}
+
+\subsection*{Generalities about inversion}
+
+When working with (co)inductive predicates, we are very often faced to
+some of these situations:
+\begin{itemize}
+\item we have an inconsistent instance of an inductive predicate in the
+  local context of hypotheses. Thus, the current goal can be trivially
+  proved by absurdity. 
+\item we have a hypothesis that is an instance of an inductive
+  predicate, and the instance has some variables whose constraints we
+  would like to derive.
+\end{itemize}
+
+The inversion tactics are very useful to simplify the work in these
+cases. Inversion tools can be classified in three groups:
+
+\begin{enumerate}
+\item tactics for inverting an instance without stocking the inversion
+  lemma in the context; this includes the tactics
+  (\texttt{Dependent})  \texttt{Inversion} and
+ (\texttt{Dependent}) \texttt{Inversion\_clear}.
+\item commands for generating and stocking in the context the inversion
+  lemma corresponding to an instance; this includes \texttt{Derive}
+  (\texttt{Dependent}) \texttt{Inversion} and \texttt{Derive}
+  (\texttt{Dependent}) \texttt{Inversion\_clear}.
+\item tactics for inverting an instance using an already defined
+  inversion lemma; this includes the tactic \texttt{Inversion \ldots using}.
+\end{enumerate}
+
+As inversion proofs may be large in size, we recommend the user to
+stock the lemmas whenever the same instance needs to be inverted
+several times.
+
+\firstexample
+\example{Non-dependent inversion}
+
+Let's consider the relation \texttt{Le} over natural numbers and the
+following variables:
+
+\begin{coq_eval}
+Restore State Initial.
+\end{coq_eval}
+
+\begin{coq_example*}
+Inductive Le : nat->nat->Set :=
+  LeO : (n:nat)(Le O n)  |  LeS : (n,m:nat) (Le n m)-> (Le (S n) (S m)).
+Variable P:nat->nat->Prop.
+Variable Q:(n,m:nat)(Le n m)->Prop.
+\end{coq_example*}
+
+For example, consider the goal:
+
+\begin{coq_eval}
+Lemma ex : (n,m:nat)(Le (S n) m)->(P n m).
+Intros.
+\end{coq_eval}
+
+\begin{coq_example}
+Show.
+\end{coq_example}
+
+To prove the goal we may need to reason by cases on \texttt{H} and to 
+ derive that \texttt{m}  is necessarily of
+the form $(S~m_0)$ for certain $m_0$ and that $(Le~n~m_0)$.  
+Deriving these conditions corresponds to prove that the
+only possible constructor of \texttt{(Le (S n) m)}  is
+\texttt{LeS} and that we can invert the 
+\texttt{->} in the type  of \texttt{LeS}.  
+This inversion is possible because \texttt{Le} is the smallest set closed by
+the constructors \texttt{LeO} and \texttt{LeS}.
+
+\begin{coq_example}
+Inversion_clear  H.
+\end{coq_example}
+
+Note that \texttt{m} has been substituted in the goal for \texttt{(S m0)}
+and that the hypothesis \texttt{(Le n m0)} has been added to the
+context.
+
+Sometimes it is
+interesting to have the equality \texttt{m=(S m0)} in the
+context to use it after. In that case we can use  \texttt{Inversion} that
+does not clear the equalities:
+
+\begin{coq_example*}
+Undo.
+\end{coq_example*}
+
+\begin{coq_example}
+Inversion H.
+\end{coq_example}
+
+\begin{coq_eval}
+Undo.
+\end{coq_eval}
+
+\example{Dependent Inversion}
+
+Let us consider the following goal:
+
+\begin{coq_eval}
+Lemma ex_dep : (n,m:nat)(H:(Le (S n) m))(Q (S n) m H).
+Intros.
+\end{coq_eval}
+
+\begin{coq_example}
+Show.
+\end{coq_example}
+
+As \texttt{H} occurs in the goal, we may want to reason by cases on its
+structure and so, we would like  inversion tactics to
+substitute \texttt{H} by the corresponding term in constructor form. 
+Neither \texttt{Inversion} nor  {\tt Inversion\_clear} make such a
+substitution. 
+To have such a behavior we use the dependent inversion tactics:
+
+\begin{coq_example}
+Dependent Inversion_clear H.
+\end{coq_example}
+
+Note that \texttt{H} has been substituted by \texttt{(LeS n m0 l)} and
+\texttt{m} by \texttt{(S m0)}.
+
+\example{using already defined inversion  lemmas}
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+For example, to generate the inversion lemma for the instance
+\texttt{(Le (S n) m)} and the sort \texttt{Prop} we do:
+
+\begin{coq_example*}
+Derive Inversion_clear leminv with (n,m:nat)(Le (S n) m) Sort Prop.
+\end{coq_example*}
+
+\begin{coq_example}
+Check leminv.
+\end{coq_example}
+
+Then we can use the proven inversion lemma:
+
+\begin{coq_example}
+Show.
+\end{coq_example}
+
+\begin{coq_example}
+Inversion H using leminv.
+\end{coq_example}
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+
+\section{\tt AutoRewrite}
+\label{AutoRewrite-example}
+
+\Example
+Here is a basic use of {\tt AutoRewrite} with the Ackermann function:
+
+\begin{coq_example*}
+Require Arith.
+
+Variable Ack:nat->nat->nat.
+
+Axiom Ack0:(m:nat)(Ack (0) m)=(S m).
+Axiom Ack1:(n:nat)(Ack (S n) (0))=(Ack n (1)).
+Axiom Ack2:(n,m:nat)(Ack (S n) (S m))=(Ack n (Ack (S n) m)).
+\end{coq_example*}
+
+\begin{coq_example}
+HintRewrite base0 [ Ack0 LR 
+                Ack1 LR
+                Ack2 LR].
+
+Lemma ResAck0:(Ack (2) (1))=(5).
+AutoRewrite [base0] Step=[Reflexivity].
+\end{coq_example}
+
+\begin{coq_eval}
+Reset Initial.  
+\end{coq_eval}
+
+\Example
+The Mac Carthy function shows a more complex case:
+
+\begin{coq_example*}
+Require Omega.
+
+Variable g:nat->nat->nat.
+
+Axiom g0:(m:nat)(g (0) m)=m.
+Axiom g1:
+  (n,m:nat)(gt n (0))->(gt m (100))->
+  (g n m)=(g (pred n) (minus m (10))).
+Axiom g2:
+  (n,m:nat)(gt n (0))->(le m (100))->(g n m)=(g (S n) (plus m (11))).
+\end{coq_example*}
+
+\begin{coq_example}
+HintRewrite base1 [ g0 LR g1 LR].
+HintRewrite base2 [g2 LR].
+
+Lemma Resg0:(g (1) (90))=(91).
+AutoRewrite [base1 base2] 
+  Step=[Simpl|Reflexivity] with All
+  Rest=[Omega] with Cond 
+  Depth=10.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\begin{coq_eval}
+Lemma maccarthy_90 : 
+  (g0:(m:nat)(g (0) m)=m)
+  (g1:(n,m:nat)(gt n (0))->(gt m (100))-> (g n m)=(g (pred n) (minus m (10))))
+  (g2:(n,m:nat)(gt n (0))->(le m (100))->(g n m)=(g (S n) (plus m (11))))
+  (g (1) (90))=(91).
+  Intros.
+\end{coq_eval}
+
+One can also give the full base definition instead of a name. This is
+useful to do rewritings with the hypotheses of current goal:
+
+\begin{coq_example}
+  Show.
+  AutoRewrite [[g0 LR g1 LR] [g2 LR]] 
+  Step=[Simpl|Reflexivity] with All
+  Rest=[Omega] with Cond 
+  Depth=10.
+\end{coq_example}
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\section{\tt Quote}
+\tacindex{Quote}
+\label{Quote-examples}
+
+The tactic \texttt{Quote} allows to use Barendregt's so-called
+2-level approach without writing any ML code. Suppose you have a
+language \texttt{L} of 
+'abstract terms' and a type \texttt{A} of 'concrete terms' 
+and a function \texttt{f : L -> A}. If \texttt{L} is a simple
+inductive datatype and \texttt{f} a simple fixpoint, \texttt{Quote f}
+will replace the head of current goal a convertible term with the form 
+\texttt{(f t)}. \texttt{L} must have a constructor of type: \texttt{A
+  -> L}. 
+
+Here is an example:
+
+\begin{coq_example}
+Require Quote.
+Parameters A,B,C:Prop.
+Inductive Type formula :=
+| f_and : formula -> formula -> formula (* binary constructor *)
+| f_or : formula -> formula -> formula  
+| f_not : formula -> formula            (* unary constructor *)
+| f_true : formula                      (* 0-ary constructor *)
+| f_const : Prop -> formula.            (* contructor for constants *)
+
+Fixpoint interp_f [f:formula] : Prop := 
+  Cases f of
+  | (f_and f1 f2) => (interp_f f1)/\(interp_f f2)
+  | (f_or f1 f2) => (interp_f f1)\/(interp_f f2)
+  | (f_not f1) => ~(interp_f f1)
+  | f_true => True
+  | (f_const c) => c
+  end.
+
+Goal A/\(A\/True)/\~B/\(A <-> A).
+Quote interp_f.
+\end{coq_example}
+
+The algorithm to perform this inversion is: try to match the
+term with right-hand sides expression of \texttt{f}. If there is a
+match, apply the corresponding left-hand side and call yourself
+recursively on sub-terms. If there is no match, we are at a leaf:
+return the corresponding constructor (here \texttt{f\_const}) applied
+to the term. 
+
+\begin{ErrMsgs}
+\item \errindex{Quote: not a simple fixpoint}
+  Happens when \texttt{Quote} is not able to perform inversion properly.
+\end{ErrMsgs}
+
+\subsection{Introducing variables map}
+
+The normal use of \texttt{Quote} is to make proofs by reflection: one
+defines a function \texttt{simplify : formula -> formula} and proves a 
+theorem \texttt{simplify\_ok: (f:formula)(interp\_f (simplify f)) ->
+  (interp\_f f)}. Then, one can simplify formulas by doing:
+
+\begin{quotation}
+\begin{verbatim}
+   Quote interp_f.
+   Apply simplify_ok.
+   Compute.
+\end{verbatim}
+\end{quotation}
+
+But there is a problem with leafs: in the example above one cannot
+write a function that implements, for example, the logical simplifications 
+$A \wedge A \ra A$ or $A \wedge \neg A \ra \texttt{False}$. This is
+because the \Prop{} is impredicative.
+
+It is better to use that type of formulas:
+
+\begin{coq_eval}
+Reset formula.
+\end{coq_eval}
+\begin{coq_example}
+Inductive Set formula :=
+| f_and : formula -> formula -> formula
+| f_or : formula -> formula -> formula  
+| f_not : formula -> formula           
+| f_true : formula                     
+| f_atom : index -> formula.            (* contructor for variables *)
+\end{coq_example*}
+
+\texttt{index} is defined in module \texttt{Quote}. Equality on that
+type is decidable so we are able to simplify $A \wedge A$ into $A$ at
+the abstract level. 
+
+When there are variables, there are bindings, and \texttt{Quote}
+provides also a type \texttt{(varmap A)} of bindings from
+\texttt{index} to any set \texttt{A}, and a function
+\texttt{varmap\_find} to search in such maps. The interpretation
+function has now another argument, a variables map:
+
+\begin{coq_example}
+ Fixpoint interp_f [vm:(varmap Prop); f:formula] : Prop := 
+  Cases f of
+  | (f_and f1 f2) => (interp_f vm f1)/\(interp_f vm f2)
+  | (f_or f1 f2) => (interp_f vm f1)\/(interp_f vm f2)
+  | (f_not f1) => ~(interp_f vm f1)
+  | f_true => True
+  | (f_atom i) => (varmap_find True i vm)
+  end.
+\end{coq_example}
+
+\noindent\texttt{Quote} handles this second case properly:
+
+\begin{coq_example}
+Goal A/\(B\/A)/\(A\/~B).
+Quote interp_f.
+\end{coq_example}
+
+It builds \texttt{vm} and \texttt{t} such that \texttt{(f vm t)} is
+convertible with the conclusion of current goal.
+
+\subsection{Combining variables and constants}
+
+One can have both variables and constants in abstracts terms; that is
+the case, for example, for the \texttt{Ring} tactic (chapter
+\ref{Ring}). Then one must provide to Quote a list of
+\emph{constructors of constants}. For example, if the list is
+\texttt{[O S]} then closed natural numbers will be considered as
+constants and other terms as variables. 
+
+Example: 
+
+\begin{coq_eval}
+Reset formula.
+\end{coq_eval}
+\begin{coq_example*}
+Inductive Type formula :=
+| f_and : formula -> formula -> formula
+| f_or : formula -> formula -> formula
+| f_not : formula -> formula
+| f_true : formula
+| f_const : Prop -> formula             (* constructor for constants *)
+| f_atom : index -> formula.            (* constructor for variables *)
+
+Fixpoint interp_f [vm:(varmap Prop); f:formula] : Prop := 
+  Cases f of
+  | (f_and f1 f2) => (interp_f vm f1)/\(interp_f vm f2)
+  | (f_or f1 f2) => (interp_f vm f1)\/(interp_f vm f2)
+  | (f_not f1) => ~(interp_f vm f1)
+  | f_true => True
+  | (f_const c) => c
+  | (f_atom i) => (varmap_find True i vm)
+  end.
+
+Goal A/\(A\/True)/\~B/\(C<->C).
+\end{coq_example*}
+
+\begin{coq_example}
+Quote interp_f [A B]. 
+Undo. Quote interp_f [B C iff]. 
+\end{coq_example}
+
+\Warning  This tactic is new and experimental. Since function inversion
+is undecidable in general case, don't expect miracles from it !
+
+\SeeAlso file \texttt{theories/DEMOS/DemoQuote.v}
+\SeeAlso comments of source file \texttt{tactics/contrib/polynom/quote.ml}
+\SeeAlso the tactic \texttt{Ring} (chapter \ref{Ring})
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

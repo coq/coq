@@ -1,0 +1,2172 @@
+\chapter{Tactics}
+\index{Tactics}
+\label{Tactics}
+
+A deduction rule is a link between some (unique) formula, that we call
+the {\em conclusion} and (several) formul{\ae} that we call the {\em
+premises}. Indeed, a deduction rule can be read in two ways. The first
+one has the shape: {\it ``if I know this and this then I can deduce
+this''}. For instance, if I have a proof of $A$ and a proof of $B$
+then I have a proof of $A \wedge B$. This is forward reasoning from
+premises to conclusion. The other way says: {\it ``to prove this I
+have to prove this and this''}. For instance, to prove $A \wedge B$, I
+have to prove $A$ and I have to prove $B$. This is backward reasoning
+which proceeds from conclusion to premises. We say that the conclusion
+is {\em the goal}\index{goal} to prove and premises are {\em the
+subgoals}\index{subgoal}.  The tactics implement {\em backward
+reasoning}. When applied to a goal, a tactic replaces this goal with
+the subgoals it generates. We say that a tactic reduces a goal to its
+subgoal(s).
+
+Each (sub)goal is denoted with a number. The current goal is numbered
+1. By default, a tactic is applied to the current goal, but one can
+address a particular goal in the list by writing {\sl n:\tac} which
+means {\it ``apply tactic {\tac} to goal number {\sl n}''}.
+We can show the list of subgoals by typing {\tt Show} (see section
+\ref{Show}).
+
+Since not every rule applies to a given statement, every tactic cannot be
+used to reduce any goal. In other words, before applying a tactic to a
+given goal, the system checks that some {\em preconditions} are
+satisfied. If it is not the case, the tactic raises an error message.
+
+Tactics are build from tacticals and atomic tactics.  There are, at
+least, three levels of atomic tactics. The simplest one implements
+basic rules of the logical framework. The second level is the one of
+{\em derived rules} which are built by combination of other
+tactics. The third one implements heuristics or decision procedures to
+build a complete proof of a goal.  
+%Here is a table of all existing atomic tactics in \Coq:
+%\index{atomic tactics}
+%\label{atomic-tactics-table}
+
+\section{Syntax of tactics and tacticals}
+\label{tactic-syntax}
+\index{tactic@{\tac}}
+
+A tactic is
+applied as an ordinary command. If the tactic does not
+address the first subgoal, the command may be preceded by the
+wished subgoal number. See figure~\ref{InvokeTactic} for the syntax of
+tactic invocation and tacticals.
+
+\medskip
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{|lcl|}
+\hline
+{\tac} & ::= & \atomictac\\
+  & $|$ & {\tt (} {\tac} {\tt )} \\
+  & $|$ & {\tac} {\tt Orelse} {\tac}\\
+  & $|$ & {\tt Repeat} \tac \\
+  & $|$ & {\tt Do} {\num} {\tac} \\
+  & $|$ & {\tt Info} \tac \\
+  & $|$ & {\tt Try} \tac \\
+  & $|$ & {\tt First [} {\tac}{\tt\ | \dots\ | }{\tac} {\tt ]} \\
+  & $|$ & {\tt Solve [} {\tac}{\tt\ | \dots\ | }{\tac} {\tt ]} \\
+  & $|$ & {\tt Abstract} {\tac} \\
+  & $|$ & {\tt Abstract} {\tac} {\tt using} {\ident}\\
+  & $|$ & {\tac} {\tt ;} {\tac}\\
+  & $|$ & {\tac} {\tt ;[} {\tac} \tt \verb=|=
+          \dots\ \verb=|= {\tac} {\tt ]} \\
+{\commandtac} & ::= & {\num} {\tt :} {\tac} {\tt .}\\
+ & $|$ & {\tac} {\tt .}\\
+\hline
+\end{tabular}
+\end{center}
+\caption{Invocation of tactics and tacticals}\label{InvokeTactic}
+\end{figure}
+
+\begin{Remarks}
+\item The infix tacticals {\tt Orelse} and ``\dots\ {\tt ;} \dots'' are
+associative. 
+The tactical {\tt Orelse} binds more than the prefix tacticals
+{\tt Try}, {\tt Repeat}, {\tt Do}, {\tt Info} and {\tt Abstract} which
+themselves bind more than  
+the postfix tactical ``{\tt \dots\ ;[ \dots\ ]}'' which 
+binds more than ``\dots\ {\tt ;} \dots''.
+
+\noindent For instance
+
+\noindent {\tt Try Repeat \tac$_1$ Orelse
+  \tac$_2$;\tac$_3$;[\tac$_{31}$|\dots|\tac$_{3n}$);\tac$_4$)}
+
+\noindent is understood as 
+
+\noindent {\tt (Try (Repeat (\tac$_1$ Orelse \tac$_2$)));
+  ((\tac$_3$;[\tac$_{31}$|\dots|\tac$_{3n}$]);\tac$_4$)}.
+
+\item An {\atomictac} is any of the tactics listed below.
+\end{Remarks}
+
+\section{Explicit proof as a term}
+
+\subsection{\tt Exact \term}
+\tacindex{Exact}
+\label{Exact}
+This tactic applies to any goal. It gives directly the exact proof
+term of the goal. Let {\T} be our goal, let {\tt p} be a term of type
+{\tt U} then {\tt Exact p} succeeds iff {\tt T} and {\tt U} are
+convertible (see section \ref{conv-rules}).
+
+\begin{ErrMsgs}
+\item \errindex{Not an exact proof}
+\end{ErrMsgs}
+
+
+\subsection{\tt Refine \term}
+\tacindex{Refine}
+\label{Refine}
+\index{?@{\texttt{?}}}
+
+\Rem You need first to require the module {\tt Refine} to use this tactic.
+
+\noindent
+This tactic allows to give an exact proof but still with some
+holes. The holes are noted ``\texttt{?}''.
+
+\begin{ErrMsgs}
+\item \errindex{invalid argument}: 
+  the tactic \texttt{Refine} doesn't know what to do
+  with the term you gave.
+\item \texttt{Refine passed ill-formed term}: the term you gave is not
+  a valid proof (not easy to debug in general).
+  This message may also occur in higher-level tactics, which call 
+  \texttt{Refine} internally.
+\item \errindex{There is an unknown subterm I cannot solve}: 
+  there is a hole in the term you gave
+  which type cannot be inferred. Put a cast around it.
+\end{ErrMsgs}
+
+This tactic is currently given as an experiment. An example of use is given
+in section \ref{Refine-example}.
+
+\section{Basics}
+\index{Typing rules}
+Tactics presented in this section implement the basic typing rules of
+{\sc Cic} given in chapter \ref{Cic}.
+
+\subsection{{\tt Assumption}}
+\tacindex{Assumption}
+This tactic applies to any goal. It implements the
+``Var''\index{Typing rules!Var} rule given in section
+\ref{Typed-terms}. It looks in the local context for an hypothesis
+which type is equal to the goal.  If it is the case, the subgoal is
+proved. Otherwise, it fails.
+
+\begin{ErrMsgs}
+\item  \errindex{No such assumption}
+\end{ErrMsgs}
+
+\subsection{\tt Clear {\ident}.}\tacindex{Clear}
+This tactic erases the hypothesis named {\ident} in the local context
+of the current goal. Then {\ident} is no more displayed and no more
+usable in the proof development.
+
+\begin{ErrMsgs}
+\item {\ident} \errindex{is not among the assumptions.}
+\end{ErrMsgs}
+
+\subsection{\tt Move {\ident$_1$} after {\ident$_2$}.}\tacindex{Move}
+This moves the hypothesis named {\ident$_1$} in the local context
+after the hypothesis named {\ident$_2$}.
+
+If {\ident$_1$} comes before {\ident$_2$} in the order of dependences,
+then all hypotheses between {\ident$_1$} and {\ident$_2$} which
+(possibly indirectly) depend on {\ident$_1$} are moved also.
+
+If {\ident$_1$} comes after {\ident$_2$} in the order of dependences,
+then all hypotheses between {\ident$_1$} and {\ident$_2$} which 
+(possibly indirectly)) occur in {\ident$_1$} are moved also.
+
+\begin{ErrMsgs}
+\item \errindex{Cannot move {\ident$_1$} after {\ident$_2$}:
+		   it occurs in {\ident$_2$}}
+\item \errindex{Cannot move {\ident$_1$} after {\ident$_2$}:
+		   it depends on {\ident$_2$}}
+\end{ErrMsgs}
+
+\subsection{\tt Intro}
+\tacindex{Intro}
+\label{Intro}
+This tactic applies to a goal which is a product. It implements the
+``Lam''\index{Typing rules!Lam} rule given in section
+\ref{Typed-terms}.  Actually, only one subgoal will be generated since the
+other one can be automatically checked.
+
+If the current goal is a dependent product {\tt (x:T)U} and
+{\tt x} is a name that does not exist in the current context, then
+{\tt Intro} puts {\tt x:T} in the local context. Otherwise, it puts
+{\tt x}{\it n}{\tt :T} where {\it n} is such that {\tt x}{\it n} is a
+fresh name. The new subgoal is {\tt U}. If the {\tt x} has been
+renamed {\tt x}{\it n} then it is replaced by {\tt x}{\it n} in {\tt
+U}.
+
+If the goal is a non dependent product T -> U, then it
+puts in the local context either {\tt H}{\it n}{\tt :T} 
+(if {\tt T} is {\tt Set} or {\tt Prop}) or {\tt X}{\it n}{\tt :T} (if
+the type of {\tt T} is {\tt Type}) or {\tt l}{\it n}{\tt :T} with {\it l}
+the first letter of the type of x. {\it n} is such that {\tt H}{\it
+  n} or {\tt X}{\it n} {\tt l}{\it n} or are fresh identifiers.
+In both cases the new subgoal is {\tt U}. 
+
+If the goal is not a product, the tactic {\tt Intro} applies the tactic
+{\tt Red} until the tactic {\tt Intro} can be applied or the goal is not
+reducible.
+
+\begin{ErrMsgs}
+\item \errindex{No product even after head-reduction}
+\end{ErrMsgs}
+
+\Warning: \texttt{{\ident}$_1$ is already used; changed to {\ident}$_2$}
+
+\begin{Variants}
+\item {\tt Intros}\tacindex{Intros}\\
+  Repeats {\tt Intro} until it meets the head-constant. It never reduces
+  head-constants and it never fails.
+
+\item {\tt Intro {\ident}}\\
+  Applies {\tt Intro} but forces {\ident} to be the name of the
+  introduced hypothesis.
+
+  \ErrMsg \errindex{name {\ident} is already bound }
+
+  \Rem {\tt Intro} doesn't check the whole current context. Actually,
+  identifiers declared or defined in required modules can be used as
+  {\ident} and, in this case, the old {\ident} of the module is no
+  more reachable.
+
+\item {\tt Intros \ident$_1$ \dots\ \ident$_n$} \\ 
+  Is equivalent to the composed tactic {\tt Intro \ident$_1$; \dots\ ; Intro
+    \ident$_n$}.\\
+More generally, the \texttt{Intros} tactic takes a pattern as argument
+  in order to introduce names for components of an inductive
+  definition, it will be explained in~\ref{Intros-pattern}.
+\item {\tt Intros until {\ident}}
+  \tacindex{Intros until}\\ 
+  Repeats {\tt Intro} until it meets a premise of the goal having form
+  {\tt (} {\ident}~{\tt :}~{\term} {\tt )}
+  and discharges the variable named {\ident} of
+  the current goal.
+
+  \ErrMsg \errindex{No such hypothesis in current goal}\\
+  
+\item {\tt Intros until {\num}}
+  \tacindex{Intros until}\\ 
+  Repeats {\tt Intro} until the {\num}-th non-dependant premise. For instance,
+  on the subgoal \verb+(x,y:nat)x=y->(z:nat)h=x->z=y+ the tactic
+  \texttt{Intros until 2} is equivalent to \texttt{Intros x y H z H0} (assuming
+  \texttt{x, y, H, z} and \texttt{H0} do not already occur in context).
+
+  \ErrMsg \errindex{No such hypothesis in current goal}\\
+  Happens when {\num} is 0 or is greater than the number of non-dependant
+  products of the goal.
+
+\item {\tt Intro after \ident}
+  \tacindex{Intro after}\\
+  Applies {\tt Intro} but puts the introduced
+  hypothesis after the hypothesis \ident{} in the hypotheses.
+
+\begin{ErrMsgs}
+\item \errindex{No product even after head-reduction}
+\item \errindex{No such hypothesis} : {\ident}
+\end{ErrMsgs}
+
+\item {\tt Intro \ident$_1$ after \ident$_2$}
+  \tacindex{Intro ... after}\\
+  Behaves as previously but \ident$_1$ is the name of the introduced
+  hypothesis.
+  It is equivalent to {\tt Intro \ident$_1$; Move \ident$_1$ after \ident$_2$}.
+
+\begin{ErrMsgs}
+\item \errindex{No product even after head-reduction}
+\item \errindex{No such hypothesis} : {\ident}
+\end{ErrMsgs}
+\end{Variants}
+
+\subsection{\tt Apply \term}
+\tacindex{Apply}\label{Apply}
+This tactic applies to any goal. 
+The argument {\term} is a term well-formed in the local context.
+The tactic {\tt Apply} tries to match the
+current goal against the conclusion of the type of {\term}. If it
+succeeds, then the tactic returns as many subgoals as the
+instantiations of the premises of the type of
+{\term}.
+
+\begin{ErrMsgs}
+\item \errindex{Impossible to unify \dots\ with \dots} \\
+  Since higher order unification is undecidable, the {\tt Apply}
+  tactic may fail when you think it should work.  In this case, if you
+  know that the conclusion of {\term} and the current goal are
+  unifiable, you can help the {\tt Apply} tactic by transforming your
+  goal with the {\tt Change} or {\tt Pattern} tactics (see sections
+  \ref{Pattern}, \ref{Change}).
+
+\item \errindex{Cannot refine to conclusions with meta-variables}\\
+  This occurs when some instantiations of premises of {\term} are not
+  deducible from the unification. This is the case, for instance, when
+  you want to apply a transitivity property. In this case, you have to
+  use one of the variants below:
+\end{ErrMsgs}
+
+\begin{Variants}
+\item{\tt Apply {\term} with {\term$_1$} \dots\ {\term$_n$}} 
+  \tacindex{Apply \dots\ with}\\
+  Provides {\tt Apply} with explicit instantiations for all dependent
+  premises of the type of {\term} which do not occur in the
+  conclusion and consequently cannot be found by unification. Notice
+  that {\term$_1$} \dots\ {\term$_n$} must be given according to the order
+  of these dependent premises of the type of {\term}.
+
+  \ErrMsg \errindex{Not the right number of missing arguments}
+
+\item{\tt Apply {\term} with {\vref$_1$} := {\term$_1$} \dots\ {\vref$_n$}
+    := {\term$_n$}} \\ 
+  This also provides {\tt Apply} with values for instantiating
+    premises. But variables are referred by names and non dependent
+    products by order (see syntax in the section~\ref{Binding-list}).
+
+\item{\tt EApply \term}\tacindex{EApply}\label{EApply}\\
+  The tactic {\tt EApply} behaves as {\tt Apply} but does not fail when
+  no instantiation are deducible for some variables in the premises.
+  Rather, it turns these variables into so-called existential variables
+  which are variables still to instantiate. An existential variable is
+  identified by a name of the form {\tt ?$n$} where $n$ is a number.
+  The instantiation is intended to be found later in the proof.
+
+  An example of use of {\tt EApply} is given in section
+  \ref{EApply-example}.
+
+\item{\tt LApply {\term}} \tacindex{LApply} \\
+
+  This tactic applies to any goal, say {\tt G}.  The argument {\term}
+  has to be well-formed in the current context, its type being
+  reducible to a non-dependent product {\tt A -> B} with {\tt B}
+  possibly containing products. Then it generates two subgoals {\tt
+  B->G} and {\tt A}. Applying {\tt LApply H} (where {\tt H} has type
+  {\tt A->B} and {\tt B} does not start with a product) does the same
+  as giving the sequence {\tt Cut B. 2:Apply H.} where {\tt Cut} is
+  described below.
+
+  \Warning Be careful, when {\term} contains more than one non
+  dependent product the tactic {\tt LApply} only takes into account the
+  first product.
+
+\end{Variants}
+
+\subsection{\tt Let {\ident} {\tt :=} {\term} {\tt in}
+  {\tt Goal}}\tacindex{Let}
+
+This replaces {\term} by {\ident} in the goal and add the
+equality {\ident {\tt =} \term} in the local context.
+
+\begin{Variants}
+\item {\tt Let {\ident$_0$} {\tt :=} {\term} {\tt in} {\ident$_1$}}
+
+This behaves the same but substitutes {\term} not in the goal but in
+the hypothesis named {\ident$_1$}.
+
+\item {\tt Let {\ident$_0$} {\tt :=} {\term} {\tt in} {\num$_1$} \dots\
+{\num$_n$} {\ident$_1$}}
+
+This notation allows to specify which occurrences of the hypothesis
+named {\ident$_1$} (or the goal if {\ident$_1$} is
+the word {\tt Goal}) should be substituted. The occurrences are numbered
+from left to right. A negative occurrence number means an occurrence
+which should not be substituted. 
+
+\item {\tt Let {\ident$_0$} {\tt :=} {\term} {\tt in} {\num$_1^1$} \dots\
+{\num$_{n_1}^1$} {\ident$_1$} \dots {\num$_1^m$} \dots\
+{\num$_{n_m}^m$} {\ident$_m$}}
+
+This is the general form. It substitutes {\term} at occurrences
+{\num$_1^i$} \dots\ {\num$_{n_i}^i$} of hypothesis {\ident$_i$}. One
+of the {\ident}'s may be the word {\tt Goal}.
+\end{Variants}
+
+\subsection{\tt Cut {\form}}\tacindex{Cut}
+This tactic applies to any goal. It implements the
+``App''\index{Typing rules!App} rule given in section
+\ref{Typed-terms}. {\tt Cut U} transforms the current goal \texttt{T} 
+into the two following subgoals: {\tt U -> T} and \texttt{U}.
+
+\begin{ErrMsgs}
+\item \errindex{Not a proposition or a type}\\
+  Arises when the argument {\form} is neither of type {\tt Prop}, {\tt
+    Set} nor {\tt Type}.
+\end{ErrMsgs}
+
+%
+% PAS CLAIR;
+% DEVRAIT AU MOINS FAIRE UN INTRO;
+% DEVRAIT ETRE REMPLACE PAR UN LET;
+% MESSAGE D'ERREUR STUPIDE
+% POURQUOI Specialize trans_equal ECHOUE ?
+%\begin{Variants}
+%\item {\tt Specialize \term} 
+%   \tacindex{Specialize} \\
+%   The argument {\tt t} should be a well-typed
+%   term of type {\tt T}.  This tactics is to make a cut of a
+%   proposition when you have already the proof of this proposition
+%   (for example it is a theorem applied to variables of local
+%   context). It is equivalent to {\tt Cut T. 2:Exact t}.
+%
+%\item {\tt Specialize {\term} with \vref$_1$ := {\term$_1$} \dots
+%    \vref$_n$ := \term$_n$}
+%  \tacindex{Specialize \dots\ with} \\ 
+%  It is to provide the tactic with some explicit values to instantiate
+%  premises of {\term} (see section \ref{Binding-list}).
+%  Some other premises are inferred using type information and
+%  unification. The resulting well-formed 
+%  term being {\tt (\term~\term'$_1$\dots\term'$_k$)}
+%  this tactic behaves as is used as 
+%  {\tt Specialize (\term~\term'$_1$\dots\term'$_k$)} \\ 
+%
+%  \ErrMsg {\tt Metavariable wasn't in the metamap} \\ 
+%  Arises when the information provided in the bindings list is not
+%  sufficient.
+%\item {\tt Specialize {\num} {\term} with \vref$_1$ := {\term$_1$} \dots\ 
+% \vref$_n$:= \term$_n$}\\ 
+%  The behavior is the same as before but only \num\ premises of 
+%  \term\ will be kept.
+%\end{Variants}
+
+\subsection{\tt Generalize \term}
+\tacindex{Generalize}\label{Generalize}
+This tactic applies to any goal. It generalizes the conclusion w.r.t. one
+subterm of it. For example:
+
+\begin{coq_eval}
+Goal (x,y:nat) (le O (plus (plus x y) y)).
+Intros.
+\end{coq_eval}
+\begin{coq_example}
+Show.
+Generalize (plus (plus x y) y).
+\end{coq_example}
+
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+If the goal is $G$ and $t$ is a subterm of type $T$
+in the goal, then {\tt Generalize} \textit{t} replaces the goal by {\tt
+(x:$T$)$G'$} where $G'$ is obtained from $G$ by replacing all
+occurrences of $t$ by {\tt x}. The name of the variable (here {\tt x})
+is chosen accordingly to $T$.
+
+\begin{Variants}
+\item {\tt Generalize \term$_1$ \dots\ \term$_n$} \\
+  Is equivalent to {\tt Generalize \term$_n$; \dots\ ; Generalize
+    \term$_1$}. Note that the sequence of \term$_i$'s are processed from 
+    $n$ to $1$.
+
+\item {\tt Generalize Dependent \term} \\
+\tacindex{Generalize Dependent}
+  This generalizes {\term} but
+  also {\em all} hypotheses which depend on {\term}.
+
+\end{Variants}
+
+\subsection{\tt Change \term}
+\tacindex{Change}\label{Change}
+This tactic applies to any goal. It implements the rule
+``Conv''\index{Typing rules!Conv} given in section \ref{Conv}.
+{\tt Change U} replaces the current goal \T\ with a \U\ providing
+that \U\ is well-formed and that \T\ and \U\ are
+convertible.
+
+\begin{ErrMsgs}
+\item \errindex{convert-concl rule passed non-converting term}
+\end{ErrMsgs}
+
+\begin{Variants}
+\item {\tt Change {\term} in {\ident}}\\ 
+  \tacindex{Change \dots\ in}
+  This applies the {\tt Change} tactic not to the goal but to the
+  hypothesis {\ident}.
+\end{Variants}
+
+\SeeAlso \ref{Conversion-tactics}
+
+\subsection{Bindings list}
+\index{Binding list}\label{Binding-list}
+\index[tactic]{Binding list}
+A bindings list is generally used after the keyword {\tt with} in
+tactics.  The general shape of a bindings list is {\tt \vref$_1$ :=
+  \term$_1$ \dots\ \vref$_n$ := \term$_n$} where {\vref} is either an
+{\ident} or a {\num}. It is used to provide a tactic with a list of
+values (\term$_1$, \dots, \term$_n$) that have to be substituted
+respectively to \vref$_1$, \dots, \vref$_n$. For all $i \in [1\dots\ n]$, if
+\vref$_i$ is \ident$_i$ then it references the dependent product {\tt
+  \ident$_i$:T} (for some type \T); if \vref$_i$ is \num$_i$ then it
+references the \num$_i$-th non dependent premise.
+
+A bindings list can also be a simple list of terms {\tt \term$_1$
+\term$_2$ \dots\term$_n$}. In that case the references to which these
+terms correspond are determined by the tactic. In case of {\tt Elim
+\term} (see section \ref{Elim}) the terms should correspond to all the dependent products in
+the type of \term\ while in the case of {\tt Apply \term} only the
+dependent products which are not bound in the conclusion of the type
+are given.
+
+
+\section{Negation and contradiction}
+
+\subsection{\tt Absurd \term}
+\tacindex{Absurd}\label{Absurd}
+
+This tactic applies to any goal. The argument {\term} is any
+proposition {\tt P} of type {\tt Prop}. This tactic applies {\tt
+False} elimination, that is it deduces the current goal from {\tt False},
+and generates as
+subgoals {\tt $\sim$P} and {\tt P}. It is very useful in proofs by
+cases, where some cases are impossible. In most cases, 
+\texttt{P} or $\sim$\texttt{P} is one of the hypotheses of the local
+context.
+
+\subsection{\tt Contradiction}
+\label{Contradiction}
+\tacindex{Contradiction}
+
+This tactic applies to any goal. The {\tt Contradiction} tactic
+attempts to find in the current context (after all {\tt Intros}) one
+which is equivalent to {\tt False}. It permits to prune irrelevant
+cases.  This tactic is a macro for the tactics sequence {\tt Intros;
+  ElimType False; Assumption}.
+
+\begin{ErrMsgs}
+\item \errindex{No such assumption}
+\end{ErrMsgs}
+
+
+\section{Conversion tactics}
+\index{Conversion tactics}
+\index[tactic]{Conversion tactics}
+\label{Conversion-tactics}
+
+This set of tactics implements different specialized usages of the
+tactic \texttt{Change}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%voir reduction__conv_x : histoires d'univers.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{{\tt Cbv} \flag$_1$ \dots\ \flag$_n$, {\tt Lazy} \flag$_1$
+\dots\ \flag$_n$ and {\tt Compute}}
+\tacindex{Cbv}\tacindex{Lazy}
+
+These parameterized reduction tactics apply to any goal and perform
+the normalization of the goal according to the specified flags. Since
+the reduction considered in \Coq\ include $\beta$ (reduction of
+functional application), $\delta$ (unfolding
+of transparent constants, see \ref{Transparent}) 
+and $\iota$ (reduction of {\tt Cases}, {\tt Fix} and {\tt
+CoFix} expressions), every flag is one of {\tt Beta}, {\tt Delta},
+{\tt Iota}, {\tt [\ident$_1$\ldots\ident$_k$]} and 
+{\tt -[\ident$_1$\ldots\ident$_k$]}. 
+The last two flags give the list of
+constants to unfold, or the list of constants not to unfold. These two
+flags can occur only after the {\tt Delta} flag. The goal may be
+normalized with two strategies: {\em lazy} ({\tt Lazy} tactic), or
+{\em call-by-value} ({\tt Cbv} tactic).
+
+The lazy strategy is a call-by-need strategy, with sharing of
+reductions: the arguments of a function call are partially evaluated
+only when necessary, but if an argument is used several times, it is
+computed only once. This reduction is efficient for reducing
+expressions with dead code. For instance, the proofs of a proposition
+$\exists_T ~x. P(x)$ reduce to a pair of a witness $t$, and a proof
+that $t$ verifies the predicate $P$. Most of the time, $t$ may be
+computed without computing the proof of $P(t)$, thanks to the lazy
+strategy.
+
+The call-by-value strategy is the one used in ML languages: the
+arguments of a function call are evaluated first, using a weak
+reduction (no reduction under the $\lambda$-abstractions). Despite the
+lazy strategy always performs fewer reductions than the call-by-value
+strategy, the latter should be preferred for evaluating purely
+computational expressions (i.e. with few dead code).
+
+\begin{Variants}
+\item {\tt Compute}\\
+  \tacindex{Compute}
+  This tactic is an alias for {\tt Cbv Beta Delta Iota}.
+\end{Variants}
+
+\begin{ErrMsgs}
+\item \errindex{Delta must be specified before}\\
+  A list of constants appeared before the {\tt Delta} flag.
+\end{ErrMsgs}
+
+
+\subsection{{\tt Red}}
+\tacindex{Red}
+This tactic applies to a goal which have form {\tt (x:T1)\dots(xk:Tk)(c
+  t1 \dots\ tn)} where {\tt c} is a constant.  If {\tt c} is transparent
+then it replaces {\tt c} with its definition (say {\tt t}) and then
+reduces {\tt (t t1 \dots\ tn)} according to $\beta\iota$-reduction rules.
+
+\begin{ErrMsgs}
+\item \errindex{Term not reducible}
+\end{ErrMsgs}
+
+\subsection{{\tt Hnf}}
+\tacindex{Hnf}
+This tactic applies to any goal. It replaces the current goal with its
+head normal form according to the $\beta\delta\iota$-reduction
+rules. {\tt Hnf} does not produce a real head normal form but either a
+product or an applicative term in head normal form or a variable.
+
+\Example
+The term \verb+(n:nat)(plus (S n) (S n))+ is not reduced by {\tt Hnf}.
+
+\Rem The $\delta$ rule will only be applied to transparent constants
+(i.e. which have not been frozen with an {\tt Opaque} command; see
+section \ref{Opaque}).
+
+\subsection{\tt Simpl}
+\tacindex{Simpl}
+This tactic applies to any goal. The
+tactic {\tt Simpl} first applies $\beta\iota$-reduction rule.
+Then it expands transparent constants and tries to reduce {\tt T'}
+according, once more, to 
+$\beta\iota$ rules. But when the $\iota$ rule is not applicable then
+possible $\delta$-reductions are not applied.  For instance trying to
+use {\tt Simpl} on {\tt (plus n O)=n} will change nothing.
+
+\subsection{\tt Unfold \ident}
+\tacindex{Unfold}\label{Unfold}
+This tactic applies to any goal. The argument {\ident} must be the
+name of a defined transparent constant (see section
+\ref{Simpl-definitions} and \ref{Transparent}). 
+The tactic {\tt Unfold} applies the
+$\delta$ rule to each occurrence of {\ident} in the current goal and
+then replaces it with its $\beta\iota$-normal form.
+
+\Warning If the constant is opaque, nothing will happen and no warning
+is printed.
+\begin{ErrMsgs}
+\item {\ident} \errindex{does not occur}
+\end{ErrMsgs}
+
+\begin{Variants}
+\item {\tt Unfold {\ident}$_1$ \dots\ \ident$_n$}\\ 
+  \tacindex{Unfold \dots\ in}
+  Replaces {\em simultaneously} {\ident}$_1$, \dots, {\ident}$_n$ with
+  their definitions and replaces the current goal with its
+  $\beta\iota$ normal form.
+\item {\tt Unfold \num$_1^1$ \dots\ \num$_i^1$ {\ident}$_1$ \dots\  \num$_1^n$
+    \dots\ \num$_j^n$ \ident$_n$}\\ 
+  The lists \num$_1^1$, \dots, \num$_i^1$ and \num$_1^n$, \dots, \num$_j^n$
+  are to specify the occurrences of {\ident}$_1$, \dots, \ident$_n$ to be
+  unfolded. Occurrences are located from left to right in the linear
+  notation of terms.\\ 
+  \ErrMsg {\tt bad occurrence numbers of {\ident}$_i$}
+\end{Variants}
+
+\subsection{{\tt Fold} \term}
+\tacindex{Fold}
+
+This tactic applies to any goal. \term\ is reduced using the {\tt Red}
+tactic. Every occurrence of the resulting term in the goal is then
+substituted for \term.
+
+\begin{Variants}
+\item {\tt Fold} \term$_1$ \dots\ \term$_n$ \\
+  Equivalent to {\tt Fold} \term$_1${\tt;}\ldots{\tt; Fold} \term$_n$.
+\end{Variants}
+
+\subsection{{\tt Pattern {\term}}}
+\tacindex{Pattern}\label{Pattern}
+This command applies to any goal. The argument {\term} must be a free
+subterm of the current goal.  The command {\tt Pattern} performs
+$\beta$-expansion (the inverse of $\bt$-reduction) 
+of the current goal (say \T) by
+\begin{enumerate}
+\item replacing all occurrences of {\term} in {\T} with a fresh variable
+\item abstracting this variable
+\item applying the abstracted goal to {\term}
+\end{enumerate}
+For instance, if the current goal {\T} is {\tt (P t)} when {\tt t} does not occur in
+{\tt P} then {\tt Pattern t} transforms it into {\tt ([x:A](P x) t)}. This
+command has to be used, for instance, when an {\tt Apply} command
+fails on matching.
+
+\begin{Variants}
+\item {\tt Pattern {\num$_1$} \dots\ {\num$_n$} {\term}}\\
+  Only the occurrences {\num$_1$} \dots\ {\num$_n$} of {\term} will be
+  considered for $\beta$-expansion. Occurrences are located from left
+  to right.
+\item {\tt Pattern {\num$_1^1$} \dots\ {\num$_{n_1}^1$} {\term$_1$} \dots
+    {\num$_1^m$} \dots\ {\num$_{n_m}^m$} {\term$_m$}}\\ 
+  Will process occurrences \num$_1^1$, \dots, \num$_i^1$ of \term$_1$,
+  \dots, \num$_1^m$, \dots, \num$_j^m$ of \term$_m$ starting from \term$_m$.
+  Starting from a goal {\tt (P t$_1$\dots\ t$_m$)} with the {\tt
+    t$_i$} which do not occur in $P$, the tactic {\tt Pattern
+    t$_1$\dots\ t$_m$} generates the equivalent goal {\tt
+    ([x$_1$:A$_1$]\dots\ [x$_m$:A$_m$](P x$_1$\dots\ x$_m$)
+    t$_1$\dots\ t$_m$)}.\\ 
+  If $t_i$ occurs in one of the generated types A$_j$ these
+  occurrences will also be considered and possibly abstracted.
+\end{Variants}
+
+\subsection{Conversion tactics applied to hypotheses}
+
+{\convtactic} {\tt in} \ident$_1$ \dots\ \ident$_n$ \\
+Applies the conversion tactic {\convtactic} to the
+hypotheses \ident$_1$, \ldots, \ident$_n$. The tactic {\convtactic} is
+any of the conversion tactics listed in this section. 
+
+\begin{ErrMsgs}
+\item \errindex{No such hypothesis} : {\ident}.
+\end{ErrMsgs}
+
+
+\section{Introductions}
+Introduction tactics address goals which are inductive constants.
+They are used when one guesses that the goal can be obtained with one
+of its constructors' type.
+
+\subsection{\tt Constructor \num}
+\label{Constructor}
+\tacindex{Constructor}
+This tactic applies to a goal such
+that the head of its conclusion is an inductive constant (say {\tt
+  I}).  The argument {\num} must be less or equal to the numbers of
+constructor(s) of {\tt I}. Let {\tt ci} be the {\tt i}-th constructor
+of {\tt I}, then {\tt Constructor i} is equivalent to {\tt Intros;
+  Apply ci}.
+
+\begin{ErrMsgs}
+\item \errindex{Not an inductive product}
+\item \errindex{Not enough Constructors}
+\end{ErrMsgs}
+
+\begin{Variants}
+\item \texttt{Constructor} This tries \texttt{Constructor 1} then
+  \texttt{Constructor 2}, \dots\ , then \texttt{Constructor} \textit{n}
+  where \textit{n} if the number of constructors of the head of the
+  goal.
+\item {\tt Constructor \num~with} {\bindinglist}
+  \tacindex{Constructor \dots\  with}\\ 
+  Let {\tt ci} be the {\tt i}-th constructor of {\tt I}, then {\tt
+    Constructor i with \bindinglist} is equivalent to {\tt Intros; Apply ci
+    with \bindinglist}.
+
+  \Warning the terms in the \bindinglist\ are checked
+  in the context where {\tt Constructor} is executed and not in the
+  context where {\tt Apply} is executed (the introductions are not
+  taken into account).
+\item {\tt Split}\tacindex{Split}\\
+  Applies if {\tt I} has only one constructor, typically in the case
+  of conjunction $A\wedge B$. It is equivalent to {\tt Constructor 1}.
+\item {\tt Exists {\bindinglist}}\tacindex{Exists} \\
+  Applies if {\tt I} has only one constructor, for instance in the
+  case of existential quantification $\exists x\cdot P(x)$. 
+  It is equivalent to {\tt Intros; Constructor 1 with \bindinglist}.
+\item {\tt Left}\tacindex{Left},  {\tt Right}\tacindex{Right}\\
+  Apply if {\tt I} has two constructors, for instance in the case of
+  disjunction $A\vee B$. They are respectively equivalent to {\tt
+    Constructor 1} and {\tt Constructor 2}.
+\item {\tt Left \bindinglist}, {\tt Right \bindinglist}, 
+      {\tt Split \bindinglist} \\
+  Are equivalent to the corresponding {\tt Constructor $i$ with \bindinglist}.
+\end{Variants}
+
+\section{Eliminations (Induction and Case Analysis)}
+Elimination tactics are useful to prove statements by induction or
+case analysis.
+Indeed, they make use of the elimination (or induction) principles
+generated with inductive definitions (see section
+\ref{Cic-inductive-definitions}).
+
+\subsection{\tt Elim \term}
+\tacindex{Elim}\label{Elim}
+This tactic applies to any goal. The type of the argument
+{\term} must be an inductive constant. Then according to the type of
+the goal, the tactic {\tt Elim} chooses the right destructor and
+applies it (as in the case of the {\tt Apply} tactic). For instance,
+assume that our proof context contains {\tt n:nat}, assume that our
+current goal is {\tt T} of type {\tt Prop}, then
+{\tt Elim n} is equivalent to {\tt Apply nat\_ind with n:=n}.
+
+\begin{ErrMsgs}
+\item \errindex{Not an inductive product}
+\item \errindex{Cannot refine to conclusions with meta-variables}\\ As {\tt
+    Elim} uses {\tt Apply}, see section \ref{Apply} and the variant
+  {\tt Elim \dots\ with \dots} below.
+\end{ErrMsgs}
+
+\begin{Variants}
+\item {\tt Elim \term} also works when the type of {\term} starts with
+   products and the head symbol is an inductive definition. In that
+  case the tactic tries both to find an object in the inductive
+  definition and to use this inductive definition for elimination.  In
+  case of non-dependent products in the type, subgoals are generated
+  corresponding to the hypotheses. In the case of dependent products,
+  the tactic will try to find an instance for which the elimination
+  lemma applies.
+
+\item {\tt Elim {\term} with \term$_1$ \dots\ \term$_n$}
+  \tacindex{Elim \dots\ with} \\ 
+  Allows the user to give explicitly the values for dependent
+  premises of the elimination schema. All arguments must be given.\\ 
+  \ErrMsg \errindex{Not the right number of dependent arguments}
+\item{\tt Elim {\term} with {\vref$_1$} := {\term$_1$} \dots\ {\vref$_n$}
+    := {\term$_n$}} \\ 
+  Provides also {\tt Elim} with values for instantiating premises by
+  associating explicitly variables (or non dependent products) with
+  their intended instance.
+\item{\tt Elim {\term$_1$} using {\term$_2$}}
+\tacindex{Elim \dots\ using} \\
+  Allows the user to give explicitly an elimination predicate
+  {\term$_2$} which is not the standard one for the underlying
+  inductive type of {\term$_1$}. Each of the {\term$_1$} and {\term$_2$} is
+  either a simple term or a term with a bindings list (see
+  \ref{Binding-list}). 
+\item {\tt ElimType \form}\tacindex{ElimType}\\
+  The argument {\form} must be inductively defined. {\tt ElimType I}
+  is equivalent to {\tt Cut I. Intro H{\rm\sl n}; Elim H{\rm\sl n}; 
+    Clear H{\rm\sl n}}
+  Therefore the hypothesis {\tt H{\rm\sl n}} will not appear in the
+  context(s) of the subgoal(s).\\ 
+  Conversely, if {\tt t} is a term of (inductive) type {\tt I} and
+  which does not occur in the goal then
+  {\tt Elim t} is equivalent to {\tt ElimType I; 2: Exact t.}
+
+  \ErrMsg \errindex{Impossible to unify \dots\ with \dots} \\ Arises when
+  {\form} needs to be applied to parameters.
+
+\item {\tt Induction \ident}\tacindex{Induction}\\
+  When {\ident} is a quantified variable of the goal, this is
+    equivalent to {\tt Intros until {\ident}; Pattern {\ident}; Elim
+    {\ident}}
+
+  Otherwise, it behaves as a ``user-friendly'' version of {\tt Elim
+  \ident}: it does not duplicate {\ident} after induction and it
+  automatically generalizes the hypotheses dependent on {\ident} or
+  dependent on some atomic arguments of the inductive type of {\ident}.
+
+\item {\tt Induction {\num}}\\ 
+  Is analogous to {\tt Induction {\ident}} but for the {\num}-th
+  non-dependent premise of the goal.
+\end{Variants}
+
+\subsection{\tt Case \term}\label{Case}\tacindex{Case}
+The tactic {\tt Case} is used to perform case
+analysis without recursion. The type of {\term} must be inductively defined. 
+
+\begin{Variants}
+\item {\tt Case {\term} with \term$_1$ \dots\ \term$_n$}
+  \tacindex{Case \dots\ with}\\ 
+  Analogous to {\tt Elim \dots\ with} above.
+\item {\tt Destruct \ident}\tacindex{Destruct}\\
+  Is equivalent to the tactical {\tt Intros Until \ident; Case \ident}.
+\item {\tt Destruct {\num}}\\
+  Is equivalent to {\tt Destruct {\ident}} but for the {\num}-th non
+  dependent premises of the goal.
+\end{Variants}
+
+\subsection{\tt Intros \pattern}\label{Intros-pattern}\tacindex{Intros}
+
+The tactic {\tt Intros} applied to a pattern performs both
+introduction of variables and case analysis in order to give names to
+components of an hypothesis.
+
+A pattern is either:
+\begin{itemize}
+\item a variable
+\item a list of patterns: $p_1~\ldots~p_n$
+\item a disjunction of patterns: {\tt [}$p_1$ {\tt |} {\ldots} {\tt
+|} $p_n$ {\tt ]}
+\item a conjunction of patterns: {\tt (} $p_1$ {\tt ,} {\ldots} {\tt
+,} $p_n$ {\tt )}
+\end{itemize}
+
+The behavior of \texttt{Intros} is defined inductively over the
+structure of the pattern given as argument:
+\begin{itemize}
+\item introduction on a variable behaves like described in~\ref{Intro}; 
+\item introduction over a
+list of patterns $p_1~\ldots~p_n$ is equivalent to the sequence of
+introductions over the patterns namely:
+\texttt{Intros $p_1$;\ldots; Intros $p_n$}, the goal should start with
+at least $n$ products;
+\item introduction over a
+disjunction of patterns $[p_1~|~~\ldots~|~p_n]$, it 
+introduces a new variable $X$, its type should be an inductive
+definition with $n$
+constructors, then it performs a case analysis over $X$ 
+(which generates $n$ subgoals), it 
+clears $X$ and performs on each generated subgoals the corresponding
+\texttt{Intros}~$p_i$ tactic;
+\item introduction over a 
+conjunction  of patterns $(p_1,\ldots,p_n)$, it
+introduces a new variable $X$, its type should be an inductive 
+definition with $1$
+constructor with (at least) $n$ arguments, then it performs a case 
+analysis over $X$ 
+(which generates $1$ subgoal with at least $n$ products), it 
+clears $X$ and performs an introduction over the list of patterns $p_1~\ldots~p_n$.
+\end{itemize}
+\begin{coq_example}
+Lemma intros_test : (A,B,C:Prop)(A\/(B/\C))->(A->C)->C.
+Intros A B C [a|(b,c)] f.
+Apply (f a).
+Proof c.
+\end{coq_example}
+
+%\subsection{\tt FixPoint \dots}\tacindex{Fixpoint}
+%Not yet documented.
+
+\subsection {\tt Double Induction \num$_1$ \num$_2$}
+\tacindex{Double Induction}
+This tactic applies to any goal. If the \num$_1$th and  \num$_2$th
+premises of the goal have an inductive type, then this tactic
+performs double induction on these premises.
+For instance, if the current goal is \verb+(n,m:nat)(P n m)+ then,
+{\tt Double Induction 1 2} yields the four cases with their respective
+inductive hypothesis. In particular the case for
+\verb+(P (S n) (S m))+
+with the inductive hypothesis about both \verb+n+ and \verb+m+.
+
+\subsection{\tt Decompose [ {\ident} \dots\ {\idents} ] \term}
+\label{Decompose}
+\tacindex{Decompose}
+This tactic allows to recursively decompose a
+complex proposition in order to obtain atomic ones.
+Example: 
+
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example}
+Lemma ex1: (A,B,C:Prop)(A/\B/\C \/ B/\C \/ C/\A) -> C.
+Intros A B C H; Decompose [and or] H; Assumption.
+\end{coq_example}
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
+
+\begin{Variants}
+  
+\item {\tt Decompose Sum \term}\tacindex{Decompose Sum}
+  This decomposes sum types (like \texttt{or}).
+\item {\tt Decompose Record \term}\tacindex{Decompose Record}
+  This decomposes record types (inductive types with one constructor,
+  like \texttt{and} and \texttt{exists} and those defined with the
+  \texttt{Record} macro, see p. \pageref{Record}).
+\end{Variants}
+
+\section{Equality}
+These tactics use the equality {\tt
+eq:(A:Set)A->A->Prop} defined in file {\tt Logic.v} and the equality
+{\tt eqT:(A:Type)A->A->Prop} defined in file {\tt
+Logic\_Type.v} (see section \ref{Equality}). They
+are simply written {\tt t=u} and {\tt t==u},
+respectively.  In the following, the notation {\tt
+t=u} will represent either one of these two
+equalities.
+
+\subsection{\tt Rewrite \term}
+\label{Rewrite}
+\tacindex{Rewrite}
+This tactic applies to any goal. The type of {\term}
+must have the form
+
+\texttt{(x$_1$:A$_1$) \dots\ (x$_n$:A$_n$)}\term$_1${\tt =}\term$_2$. 
+
+\noindent Then {\tt Rewrite \term} replaces every occurrence of 
+\term$_1$ by \term$_2$ in the goal. Some of the variables x$_1$ are
+solved by unification, and some of the types \texttt{A}$_1$, \dots,
+\texttt{A}$_n$ become new subgoals.
+
+\Rem In case the type of  
+\term$_1$ contains occurrences of variables bound in the
+type of \term, the tactic tries first to find a subterm of the goal
+which matches this term in order to find a closed instance \term$'_1$
+of \term$_1$, and then all instances of \term$'_1$ will be replaced.
+
+\begin{ErrMsgs}
+\item \errindex{No equality here}
+\item \errindex{Failed to progress}\\
+This happens if \term$_1$ does not occur in the goal.
+\end{ErrMsgs}
+
+\begin{Variants}
+\item {\tt Rewrite -> {\term}}\tacindex{Rewrite ->}\\
+  Is equivalent to {\tt Rewrite \term}
+
+\item {\tt Rewrite <- {\term}}\tacindex{Rewrite <-}\\
+  Uses the equality \term$_1${\tt=}\term$_2$ from right to left
+
+\item {\tt Rewrite {\term} in {\ident}}
+  \tacindex{Rewrite \dots\ in}\\
+  Analogous to  {\tt Rewrite {\term}} but rewriting is done in the
+  hypothesis named {\ident}.
+
+\item {\tt Rewrite -> {\term} in {\ident}}
+  \tacindex{Rewrite -> \dots\ in}\\
+  Behaves as {\tt Rewrite {\term} in {\ident}}.
+ 
+\item {\tt Rewrite <- {\term} in {\ident}}\\
+  \tacindex{Rewrite <- \dots\ in}
+  Uses the equality \term$_1${\tt=}\term$_2$ from right to left to
+  rewrite in the hypothesis named {\ident}.
+\end{Variants}
+
+
+\subsection{\tt CutRewrite -> \term$_1$ = \term$_2$}
+\label{CutRewrite}
+\tacindex{CutRewrite}
+
+This tactic acts like {\tt Replace {\term$_1$} with {\term$_2$}}
+(see below).
+
+\subsection{\tt Replace {\term$_1$} with {\term$_2$}}
+\tacindex{Replace \dots\ with}
+This tactic applies to any goal. It replaces all free occurrences of
+{\term$_1$} in the current goal with {\term$_2$} and generates the
+equality {\term$_2$}{\tt =}{\term$_1$} as a subgoal. It is equivalent
+to {\tt Cut \term$_1$=\term$_2$; Intro H{\sl n}; Rewrite H{\sl n}; 
+  Clear H{\sl n}}.
+
+%N'existe pas...
+%\begin{Variants}
+%  
+%\item {\tt Replace {\term$_1$} with {\term$_2$} in \ident}
+%  This replaces {\term$_1$} with {\term$_2$} in the hypothesis named
+%  \ident, and generates the subgoal {\term$_2$}{\tt =}{\term$_1$}. 
+%  \begin{ErrMsgs}
+%  \item \errindex{No such hypothesis}
+%  \end{ErrMsgs}
+%
+%\end{Variants}
+
+\subsection{\tt Reflexivity}
+\label{Reflexivity}
+\tacindex{Reflexivity}
+This tactic applies to a goal which has the form {\tt t=u}. It checks
+that {\tt t} and {\tt u} are convertible and then solves the goal.
+It is equivalent to {\tt Apply refl\_equal} (or {\tt Apply
+  refl\_equalT} for an equality in the \Type universe).
+
+\begin{ErrMsgs}
+\item \errindex{Not a predefined equality}
+\item \errindex{Impossible to unify \dots\ With ..}
+\end{ErrMsgs}
+
+\subsection{\tt Symmetry}\tacindex{Symmetry}
+This tactic applies to a goal which have form {\tt t=u}
+(resp. \texttt{t==u}) and changes it into {\tt u=t} (resp. \texttt{u==t}).
+
+\subsection{\tt Transitivity \term}\tacindex{Transitivity}
+This tactic applies to a goal which have form {\tt t=u}
+and transforms it into the two subgoals 
+{\tt t={\term}} and {\tt {\term}=u}.
+
+\section{Equality and inductive sets}
+We describe in this section some special purpose
+tactics dealing with equality and inductive sets or
+types.  These tactics use the equalities {\tt
+eq:(A:Set)A->A->Prop} defined in file {\tt Logic.v}
+and {\tt eqT:(A:Type)A->A->Prop} defined in file
+{\tt Logic\_Type.v} (see section \ref{Equality}).
+They are written {\tt t=u} and {\tt t==u},
+respectively. In the following, unless it is stated
+otherwise, the notation {\tt t=u} will represent
+either one of these two equalities.
+
+\subsection{\tt Decide Equality}
+\label{DecideEquality}
+\tacindex{Decide Equality}
+This tactic solves a goal of the form
+$(x,y:R)\{x=y\}+\{\verb|~|x=y\}$, where $R$ is an inductive type
+such that its constructors do not take proofs or functions as
+arguments, nor objects in dependent types.
+
+\begin{Variants}
+\item {\tt Decide Equality {\term}$_1$ {\term}$_2$ }.\\
+ Solves a goal of the form {\tt \{}\term$_1${\tt =}\term$_2${\tt
+\}+\{\verb|~|}\term$_1${\tt =}\term$_2${\tt \}}.
+\end{Variants}
+
+\subsection{\tt Compare \term$_1$ \term$_2$}
+\tacindex{Compare}
+This tactic compares two given objects \term$_1$ and \term$_2$ 
+of an inductive datatype. If $G$ is the current goal, it leaves the sub-goals
+\term$_1${\tt =}\term$_2$ {\tt ->} $G$ and \verb|~|\term$_1${\tt =}\term$_2$
+{\tt ->} $G$. The type
+of \term$_1$ and \term$_2$ must satisfy the same restrictions as in the tactic
+\texttt{Decide Equality}.
+
+\subsection {\tt Discriminate {\ident}}
+\label{Discriminate}
+\tacindex{Discriminate}
+This tactic proves any goal from an absurd
+hypothesis stating that two structurally different terms of an
+inductive set are equal. For example, from the hypothesis {\tt (S (S
+  O))=(S O)} we can derive by absurdity any proposition.  Let {\ident}
+be a hypothesis of type {\tt{\term$_1$} = {\term$_2$}} in the local
+context, {\term$_1$} and {\term$_2$} being elements of an inductive set.
+To build the proof, the tactic traverses the normal
+forms\footnote{Recall: opaque constants will not be expanded by
+  $\delta$ reductions} of {\term$_1$} and {\term$_2$} looking for a
+couple of subterms {\tt u} and {\tt w} ({\tt u} subterm of the normal
+form of {\term$_1$} and {\tt w} subterm of the normal form of
+{\term$_2$}), placed at the same positions and whose
+head symbols are two different constructors. If such a couple of subterms
+exists, then the proof of the current goal is completed,
+otherwise the tactic fails.
+
+\begin{ErrMsgs}
+\item {\ident} \errindex{Not a discriminable equality} 
+  occurs when the type of
+  the specified hypothesis is an equation but does not verify the
+  expected preconditions.
+\item {\ident }\errindex{Not an equation} occurs when the type of the specified
+  hypothesis is not an equation.
+\end{ErrMsgs}  
+
+
+\begin{Variants}
+\item {\tt Discriminate}\tacindex{Discriminate} \\
+  It applies to a goal of the form {\tt
+    \verb=~={\term$_1$}={\term$_2$}} and it is equivalent to: 
+  {\tt Unfold not; Intro {\ident}} ; {\tt Discriminate
+    {\ident}}.
+
+  \begin{ErrMsgs}
+  \item \errindex{goal does not satisfy the expected preconditions}.
+  \item \errindex{Not a discriminable equality}
+  \end{ErrMsgs}
+
+\item {\tt Simple Discriminate}
+  \tacindex{Simple Discriminate} \\
+  This tactic applies to a goal which has the form
+  \verb=~=\term$_1$=\term$_2$ where  {\term$_1$} and {\term$_2$} 
+  belong to an inductive set and $=$ denotes the equality \texttt{eq}.
+  This tactic  proves trivial disequalities such as
+  {\verb.~O=(S n).} It checks that the head symbols of the head normal
+  forms of {\term$_1$} and {\term$_2$} are not the same constructor.
+  When this is the case, the current goal is solved. 
+
+  \begin{ErrMsgs}
+  \item \errindex{Not a discriminable equality}
+  \end{ErrMsgs}
+
+\end{Variants}
+
+\subsection{\tt Injection {\ident}}
+\label{Injection}
+\tacindex{Injection}
+The {\tt Injection} tactic is based on the fact that constructors of
+inductive sets are injections. That means that if $c$ is a constructor
+of an inductive set, and if $(c~\vec{t_1})$ and $(c~\vec{t_2})$ are two
+terms that are equal then $~\vec{t_1}$ and $~\vec{t_2}$ are equal
+too.
+
+If {\ident} is an hypothesis of type {\tt {\term$_1$} = {\term$_2$}},
+then {\tt Injection} behaves as applying injection as deep as possible to
+derive the equality of all the subterms of {\term$_1$} and {\term$_2$}
+placed in the same positions. For example, from the hypothesis {\tt (S
+  (S n))=(S (S (S m))} we may derive {\tt n=(S m)}.  To use this
+tactic {\term$_1$} and {\term$_2$} should be elements of an inductive
+set and they should be neither explicitly equal, nor structurally
+different. We mean by this that, if {\tt n$_1$} and {\tt n$_2$} are
+their respective normal forms, then:
+\begin{itemize}
+\item {\tt n$_1$} and {\tt n$_2$} should not be syntactically equal,
+\item there must not exist any couple of subterms {\tt u} and {\tt w},
+  {\tt u} subterm of {\tt n$_1$} and {\tt w} subterm of {\tt n$_2$} ,
+  placed in the same positions and having different constructors as
+  head symbols.
+\end{itemize}
+If these conditions are satisfied, then, the tactic derives the
+equality of all the subterms of {\term$_1$} and {\term$_2$} placed in
+the same positions and puts them as antecedents of the current goal.
+
+\Example Consider the following goal:
+
+\begin{coq_example*}
+Inductive list : Set  := 
+        nil: list | cons: nat-> list -> list.
+Variable  P : list -> Prop.
+\end{coq_example*}
+\begin{coq_eval}
+Lemma ex: (l:list)(n:nat)(P nil)->(cons n l)=(cons O nil)->(P l).
+Intros l n H H0.
+\end{coq_eval}
+\begin{coq_example}
+Show.
+Injection H0.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+Beware that \texttt{Injection} yields always an equality in a sigma type
+whenever the injected object has a dependent type.
+
+\begin{ErrMsgs}
+\item {\ident} \errindex{is not a projectable equality} 
+  occurs when the type of
+  the hypothesis $id$ does not verify the preconditions.
+\item \errindex{Not an equation} occurs when the type of the
+  hypothesis $id$ is not an equation.
+\end{ErrMsgs}
+
+
+\begin{Variants}
+\item{\tt Injection}\tacindex{Injection} \\
+  If the current goal is of the form {\tt \verb=~={\term$_1$}={\term$_2$}}, 
+  the tactic computes the head normal form
+  of the goal and then behaves as the sequence: {\tt Unfold not; Intro
+    {\ident}; Injection {\ident}}. \\
+  
+  \ErrMsg \errindex{goal does not satisfy the expected preconditions}
+\end{Variants}
+
+\subsection{\tt Simplify\_eq {\ident}}
+\tacindex{Simplify\_eq}
+\label{Simplify-eq}
+Let {\ident} be the name of an hypothesis of type {\tt
+  {\term$_1$}={\term$_2$}} in the local context. If {\term$_1$} and
+{\term$_2$} are structurally different (in the sense described for the
+tactic {\tt Discriminate}), then the tactic {\tt Simplify\_eq} behaves as {\tt
+  Discriminate {\ident}} otherwise it behaves as {\tt Injection
+  {\ident}}.
+
+\begin{Variants}
+\item{\tt Simplify\_eq}
+If the current goal has form $\verb=~=t_1=t_2$, then this tactic does 
+\texttt{Hnf; Intro {\ident}; Simplify\_eq {\ident}}.
+\end{Variants}
+
+\subsection{\tt Dependent Rewrite -> {\ident}}
+\tacindex{Dependent Rewrite ->}
+\label{Dependent-Rewrite}
+This tactic applies to any goal.  If \ident\ has type 
+\verb+(existS A B a b)=(existS A B a' b')+ 
+in the local context (i.e. each term of the
+equality has a sigma type $\{ a:A~ \&~(B~a)\}$) this tactic rewrites
+\verb+a+ into \verb+a'+ and \verb+b+ into \verb+b'+ in the current
+goal. This tactic works even if $B$ is also a sigma type.  This kind
+of equalities between dependent pairs may be derived by the injection
+and inversion tactics.
+
+\begin{Variants}
+\item{\tt Dependent Rewrite <- {\ident}}
+\tacindex{Dependent Rewrite <-} \\
+Analogous to {\tt Dependent Rewrite ->} but uses the equality from
+right to left.
+\end{Variants}
+
+\section{Inversion}
+\label{Inversion}
+
+\subsection{\tt Inversion {\ident}}\tacindex{Inversion}
+
+Let the type of \ident~ in the local context be $(I~\vec{t})$,
+where $I$ is a (co)inductive predicate. Then,
+\texttt{Inversion} applied to \ident~ derives for each possible
+constructor $c_i$ of $(I~\vec{t})$, {\bf all} the necessary
+conditions that should hold for the instance $(I~\vec{t})$ to be
+proved by $c_i$.
+
+\begin{Variants}
+\item \texttt{Inversion\_clear} \ident\\
+  \tacindex{Inversion\_clear}
+  That does \texttt{Inversion} and then erases \ident~ from the
+  context.
+\item \texttt{Inversion } \ident~ \texttt{in} \ident$_1$ \dots\ \ident$_n$\\
+  \tacindex{Inversion \dots\ in}
+  Let \ident$_1$ \dots\ \ident$_n$, be identifiers in the local context. This
+  tactic behaves as generalizing \ident$_1$ \dots\ \ident$_n$, and
+  then performing \texttt{Inversion}.
+\item \texttt{Inversion\_clear} \ident~ \texttt{in} \ident$_1$ \ldots
+  \ident$_n$\\ 
+  \tacindex{Inversion\_clear \dots\ in}
+  Let \ident$_1$ \dots\ \ident$_n$, be identifiers in the local context. This
+  tactic behaves as generalizing \ident$_1$ \dots\ \ident$_n$, and
+  then performing {\tt Inversion\_clear}.
+\item \texttt{Dependent Inversion} \ident~\\
+  \tacindex{Dependent Inversion}
+  That must be used when \ident\ appears in the current goal. 
+  It acts like \texttt{Inversion} and then substitutes \ident\ for the
+  corresponding term in the goal.
+\item \texttt{Dependent Inversion\_clear} \ident~\\
+  \tacindex{Dependent Inversion\_clear}
+  Like \texttt{Dependant Inversion}, except that \ident~ is cleared
+  from the local context.
+\item \texttt{Dependent Inversion } \ident~ \texttt{ with } \term \\
+  \tacindex{Dependent Inversion \dots\ with}
+  This variant allow to give the good generalization of the goal. It
+  is useful when the system fails to generalize the goal automatically. If
+  \ident~ has type $(I~\vec{t})$ and $I$ has type
+  $(\vec{x}:\vec{T})s$,   then \term~  must be of type
+  $I:(\vec{x}:\vec{T})(I~\vec{x})\rightarrow s'$ where $s'$ is the
+  type of the goal.
+\item \texttt{Dependent Inversion\_clear } \ident~ \texttt{ with } \term\\
+  \tacindex{Dependent Inversion\_clear \dots\ with}
+  Like \texttt{Dependant Inversion \dots\ with} but clears \ident from
+  the local context.
+\item \texttt{Inversion} \ident \texttt{ using} \ident$'$ \\
+  \tacindex{Inversion \dots\ using}
+  Let \ident~ have type $(I~\vec{t})$ ($I$ an inductive
+  predicate) in the local context, and \ident$'$ be a (dependent) inversion
+  lemma. Then, this tactic refines the current goal with the specified
+  lemma.
+\item \texttt{Inversion} \ident~ \texttt{using} \ident$'$ 
+  \texttt{in} \ident$_1$\dots\ \ident$_n$\\
+  \tacindex{Inversion \dots\ using \dots\ in}
+  This tactic behaves as generalizing \ident$_1$\dots\ \ident$_n$,
+  then doing \texttt{Inversion}\ident~\texttt{using} \ident$'$.
+\item \texttt{Simple Inversion} \ident~\\
+  \tacindex{Simple Inversion}
+  It is a very primitive inversion tactic that derives all the necessary
+  equalities  but it does not simplify the  constraints as
+  \texttt{Inversion} do.
+\end{Variants}
+
+\SeeAlso \ref{Inversion-examples} for detailed examples
+
+\subsection{\tt Derive Inversion \ident~ with
+  $(\vec{x}:\vec{T})(I~\vec{t})$ Sort \sort}
+\label{Derive-Inversion}
+\comindex{Derive Inversion}
+\index[tactic]{Derive Inversion@{\tt Derive Inversion}}
+
+This command generates an inversion principle for the
+\texttt{Inversion \dots\ using} tactic.
+Let $I$ be an inductive predicate and $\vec{x}$ the variables
+occurring in $\vec{t}$. This command generates and stocks the
+inversion lemma for the sort \sort~ corresponding to the instance
+$(\vec{x}:\vec{T})(I~\vec{t})$ with the name \ident~ in the {\bf
+global} environment. When applied it is equivalent to have inverted
+the instance with the tactic {\tt Inversion}.
+
+\begin{Variants}
+\item \texttt{Derive Inversion\_clear} \ident~ \texttt{with}
+  \comindex{Derive Inversion\_clear}
+  $(\vec{x}:\vec{T})(I~\vec{t})$ \texttt{Sort} \sort~ \\ 
+  \index{Derive Inversion\_clear \dots\ with}
+  When applied it is equivalent to having
+  inverted the instance with the tactic \texttt{Inversion}
+  replaced by the tactic \texttt{Inversion\_clear}.
+\item \texttt{Derive Dependent Inversion} \ident~ \texttt{with}
+  $(\vec{x}:\vec{T})(I~\vec{t})$ \texttt{Sort} \sort~\\
+  \comindex{Derive Dependent Inversion}
+  When applied it is equivalent to having
+  inverted the instance with the tactic \texttt{Dependent Inversion}.
+\item \texttt{Derive Dependent Inversion\_clear} \ident~ \texttt{with}
+  $(\vec{x}:\vec{T})(I~\vec{t})$ \texttt{Sort} \sort~\\
+  \comindex{Derive Dependent Inversion\_clear}
+  When applied it is equivalent to having
+  inverted the instance with the tactic \texttt{Dependent Inversion\_clear}.
+\end{Variants}
+
+\SeeAlso \ref{Inversion-examples} for examples
+
+\subsection{\texttt{Quote} \ident}\tacindex{Quote}
+\index[default]2-level approach
+
+This kind of inversion has nothing to do with the tactic
+\texttt{Inversion} above. This tactic does \texttt{Change (\ident\
+  t)}, where \texttt{t} is a term build in order to ensure the
+convertibility. In other words, it does inversion of the function
+\ident. This function must be a fixpoint on a simple recursive
+datatype: see \ref{Quote-examples} for the full details.
+
+\begin{ErrMsgs}
+\item \errindex{Quote: not a simple fixpoint}\\
+  Happens when \texttt{Quote} is not able to perform inversion properly.
+\end{ErrMsgs}
+
+\begin{Variants}
+\item \texttt{Quote {\ident} [ \ident$_1$ \dots \ident$_n$ ]}\\
+  All terms that are build only with \ident$_1$ \dots \ident$_n$ will be
+  considered by \texttt{Quote} as constants rather than variables.
+\end{Variants}
+
+\SeeAlso file \texttt{theories/DEMOS/DemoQuote.v} in the distribution
+
+\section{Automatizing}
+\label{Automatizing}
+
+\subsection{\tt Auto}
+\tacindex{Auto}
+This tactic implements a Prolog-like resolution procedure to solve the
+current goal. It first tries to solve the goal using the {\tt
+  Assumption} tactic, then it reduces the goal to an atomic one using
+{\tt Intros} and introducing the newly generated hypotheses as hints.
+Then it looks at the list of tactics associated to the head symbol of
+the goal and tries to apply one of them (starting from the tactics
+with lower cost). This process is recursively applied to the generated
+subgoals. 
+
+By default, Auto only uses the hypotheses of the current goal and the
+hints of the database named "core". 
+
+\begin{Variants}
+\item  {\tt Auto \num}\\
+  Forces the search depth to be \num. The maximal search depth is 5 by default.
+\item {\tt Auto with \ident$_1$ \dots\ \ident$_n$}\\
+  Uses the hint databases $\ident_1$ \dots\ $\ident_n$ in addition to
+  the database "core". See section \ref{Hints-databases} for the list
+  of pre-defined databases and the way to create or extend a database.
+  This option can be combined with the previous one.
+\item {\tt Auto with *}\\
+  Uses all existing hint databases, minus the special database
+  "v62". See section \ref{Hints-databases}
+\item {\tt Trivial}\tacindex{Trivial}\\
+  This tactic is a restriction of {\tt Auto} that is not recursive and 
+  tries only hints which cost is 0. Typically it solves trivial
+  equalities like $X=X$.
+\item \texttt{Trivial with \ident$_1$ \dots\ \ident$_n$}\\
+\item \texttt{Trivial with *}\\
+\end{Variants}
+
+\Rem {\tt Auto} either solves completely the goal or else leave it
+intact. \texttt{Auto} and \texttt{Trivial} never fail.
+
+\SeeAlso section \ref{Hints-databases}
+
+\subsection{\tt EAuto}\tacindex{EAuto}\label{EAuto}
+
+This tactic generalizes {\tt Auto}. In contrast with 
+the latter, {\tt EAuto} uses unification of the goal
+against the hints rather than pattern-matching
+(in other words, it uses {\tt EApply} instead of
+{\tt Apply}).
+As a consequence, {\tt EAuto} can solve such a goal:
+
+\begin{coq_example}
+Hints Resolve ex_intro.
+Goal (P:nat->Prop)(P O)->(EX n | (P n)).
+EAuto.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+Note that {\tt ex\_intro} should be declared as an
+hint.
+
+\SeeAlso section \ref{Hints-databases}
+
+\subsection{\tt Prolog [ \term$_1$ \dots\ \term$_n$ ] \num}
+\tacindex{Prolog}\label{Prolog}
+This tactic, implemented by Chet Murthy, is based upon the concept of
+existential variables of Gilles Dowek, stating that resolution is a
+kind of unification. It tries to solve the current goal using the {\tt
+  Assumption} tactic, the {\tt Intro} tactic, and applying hypotheses
+of the local context and terms of the given list {\tt [ \term$_1$
+  \dots\ \term$_n$\ ]}.  It is more powerful than {\tt Auto} since it
+may apply to any theorem, even those of the form {\tt (x:A)(P x) -> Q}
+where {\tt x} does not appear free in {\tt Q}.  The maximal search
+depth is {\tt \num}.
+
+\begin{ErrMsgs}
+\item \errindex{Prolog failed}\\
+  The Prolog tactic was not able to prove the subgoal.
+\end{ErrMsgs}
+
+\subsection{\tt Tauto}\tacindex{Tauto}\label{Tauto}
+This tactic, due to César Mu\~noz \cite{Mun94}, implements a
+decision procedure for intuitionistic propositional calculus based on
+the contraction-free sequent calculi LJT* of R. Dyckhoff \cite{Dyc92}.
+Note tha
+ t {\tt Tauto} succeeds on any instance of an intuitionistic
+tautological proposition. For instance it succeeds on
+\verb!(x:nat)(P:nat->Prop)x=O\/(P x)->~x=O->(P x)!
+while {\tt Auto} fails.
+
+\subsection{\tt Intuition}
+\tacindex{Intuition}\label{Intuition}
+
+The tactic \verb1Intuition1 takes advantage of the search-tree builded
+by the decision procedure involved in the tactic {\tt Tauto}. It uses
+this information to generate a set of subgoals equivalent to the
+original one (but simpler than it) and applies the tactic 
+{\tt Auto  with *} to them \cite{Mun94}. At the end, {\tt Intuition}
+performs {\tt Intros}.
+
+For instance, the tactic {\tt Intuition} applied to the goal
+\begin{verbatim}
+((x:nat)(P x))/\B->((y:nat)(P y))/\(P O)\/B/\(P O)
+\end{verbatim}
+internally replaces it by the equivalent one:
+\begin{verbatim}
+((x:nat)(P x) -> B -> (P O))
+\end{verbatim}
+and then uses {\tt Auto with *} which completes the proof.
+
+\subsection{\tt Linear}\tacindex{Linear}\label{Linear}
+The tactic \texttt{Linear}, due to Jean-Christophe Filliâatre
+\cite{Fil94}, implements a decision procedure for {\em Direct
+  Predicate Calculus}, that is first-order Gentzen's Sequent Calculus
+without contraction rules \cite{KeWe84,BeKe92}.  Intuitively, a
+first-order goal is provable in Direct Predicate Calculus if it can be
+proved using each hypothesis at most once.
+
+Unlike the previous tactics, the \texttt{Linear} tactic does not belong
+to the initial state of the system, and it must be loaded explicitly
+with the command
+
+\begin{coq_example*}
+Require Linear.
+\end{coq_example*}
+
+For instance, assuming that \texttt{even} and \texttt{odd} are two
+predicates on natural numbers, and \texttt{a} of type \texttt{nat}, the
+tactic \texttt{Linear} solves the following goal
+
+\begin{coq_eval}
+Variables even,odd : nat -> Prop.
+Variable a:nat.
+\end{coq_eval}
+
+\begin{coq_example*}
+Lemma example : (even a) 
+              -> ((x:nat)((even x)->(odd (S x))))
+              -> (EX y | (odd y)).
+\end{coq_example*}
+
+You can find examples of the use of \texttt{Linear} in
+\texttt{theories/DEMOS/DemoLinear.v}.
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\begin{Variants}
+\item {\tt Linear with \ident$_1$ \dots\ \ident$_n$}\\
+  \tacindex{Linear with} 
+  Is equivalent to apply first {\tt Generalize \ident$_1$ \dots
+    \ident$_n$} (see section \ref{Generalize}) then the \texttt{Linear}
+  tactic.  So one can use axioms, lemmas or hypotheses of the local
+  context with \texttt{Linear} in this way.
+\end{Variants}
+
+\begin{ErrMsgs}
+\item \errindex{Not provable in Direct Predicate Calculus}
+\item \errindex{Found $n$ classical proof(s) but no intuitionistic one}\\ 
+  The decision procedure looks actually for classical proofs of the
+  goals, and then checks that they are intuitionistic.  In that case,
+  classical proofs have been found, which do not correspond to
+  intuitionistic ones.
+\end{ErrMsgs}
+
+\subsection{\tt Omega}
+\tacindex{Omega}
+\label{Omega}
+
+The tactic \texttt{Omega}, due to Pierre Crégut,
+is an automatic decision procedure for Prestburger
+arithmetic. It solves quantifier-free 
+formulae build with \verb|~|, \verb|\/|, \verb|/\|,
+\verb|->| on top of equations and inequations on
+both the type \texttt{nat} of natural numbers and \texttt{Z} of binary
+integers. This tactic must be loaded by the command \texttt{Require
+  Omega}. See the additional documentation about \texttt{Omega}.
+
+\subsection{\tt Ring \term$_1$ \dots\ \term$_n$}
+\tacindex{Ring}
+\comindex{Add Ring}
+\comindex{Add Semi Ring}
+
+This tactic, written by Samuel Boutin and Patrick Loiseleur, 
+does AC rewriting on every
+ring. The tactic must be loaded by \texttt{Require Ring} under
+\texttt{coqtop} or \texttt{coqtop -full}.
+The ring must be declared in the \texttt{Add Ring}
+command (see \ref{Ring}). The ring of booleans is predefined; if one
+wants to use the tactic on \texttt{nat} one must do \texttt{Require
+  ArithRing}; for \texttt{Z}, do \texttt{Require ZArithRing}.
+
+\term$_1$, \dots, \term$_n$ must be subterms of the goal
+conclusion. \texttt{Ring} normalize these terms
+w.r.t. associativity and commutativity and replace them by their
+normal form.
+
+\begin{Variants}
+\item \texttt{Ring} When the goal is an equality $t_1=t_2$, it
+  acts like \texttt{Ring} $t_1$ $t_2$ and then simplifies or solves
+  the equality.
+
+\item \texttt{NatRing} is a tactic macro for \texttt{Repeat Rewrite
+    S\_to\_plus\_one; Ring}. The theorem \texttt{S\_to\_plus\_one} is a
+  proof that \texttt{(n:nat)(S n)=(plus (S O) n)}.
+
+\end{Variants}
+
+\Example
+\begin{coq_example*}
+Require ZArithRing.
+Goal (a,b,c:Z)`(a+b+c)*(a+b+c) 
+               = a*a + b*b + c*c + 2*a*b + 2*a*c + 2*b*c`.
+\end{coq_example*}
+\begin{coq_example}
+Intros; Ring.
+\end{coq_example}
+\begin{coq_eval}
+Reset Initial.  
+\end{coq_eval}
+
+You can have a look at the files \texttt{Ring.v},
+\texttt{ArithRing.v}, \texttt{ZarithRing.v} to see examples of the
+\texttt{Add Ring} command.
+
+\SeeAlso \ref{Ring} for more detailed explanations about this tactic
+
+\subsection{\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]}
+\tacindex{AutoRewrite}
+
+This tactic carries out rewritings according the given rewriting
+rules.
+
+A \emph{rewriting rule} is, by definition, a list of terms which type is an
+equality, each term being followed by the keyword \texttt{LR} (for
+left-to-right) or \texttt{RL} (for right-to-left):
+
+\begin{tabular}{rcl}
+\rewrule & ::= & \texttt{[{\term} {\switch} {\dots} {\term} {\switch} ]}\\
+\switch & ::= & \texttt{LR}\\
+\switch & | & \texttt{RL} \\
+\end{tabular}
+
+\texttt{AutoRewrite} tries each rewriting of each rule, until 
+it succeeds; then the rewriting is processed and \texttt{AutoRewrite}
+tries again all rewritings from the first one. This tactic may not
+terminate and warnings are produced every 100 rewritings. 
+
+\begin{Variants}
+\item {\tt AutoRewrite [\ident$_1$\dots\ \ident$_n$]
+Step=[\tac$_1$|...|\tac$_m$]}\\
+Each time a rewriting rule is successful, it tries to solve with the tactics of
+{\tt Step}.
+
+\item {\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]
+Step=[\tac$_1$|...|\tac$_m$] with Solve}\\
+This is equivalent to the previous variant.
+
+\item{\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]
+Step=[\tac$_1$|...|\tac$_m$] with Use}\\
+Each time a rewriting rule is successful, it tries to apply a tactic of {\tt
+Step}.
+
+\item{\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]
+Step=[\tac$_1$|...|\tac$_m$] with All}\\
+Each time a rewriting rule is successful, it tries to solve with the tactics of
+{\tt Step}, if it fails, it tries to apply a tactic of {\tt Step}. In fact, it
+behaves like the {\tt Solve} switch first and the {\tt Use} switch next in case
+of failure.
+
+\item {\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]
+Rest=[\tac$_1$|...|\tac$_m$]}\\
+If subgoals are generated by a conditional rewriting, it tries to solve each of
+them with the tactics in {\tt Rest}.
+
+\item {\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]
+Rest=[\tac$_1$|...|\tac$_m$] with Solve}\\
+This is equivalent to the previous variant.
+
+\item {\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}]
+Rest=[\tac$_1$|...|\tac$_m$] with Cond}\\
+Each time subgoals are generated by a successful conditional rewriting, it
+tries to solve all of them, if it fails, it considers that the rewriting rule
+fails and takes the next one in the bases.
+
+\item {\tt AutoRewrite [{\rewrule} {\dots} {\rewrule}] Depth=\num}\\
+Produces a warning giving the number of rewritings carried out every {\num}
+rewritings.
+\end{Variants}
+
+The three options {\tt Step}, {\tt Solve} et {\tt Depth} can be combined.
+
+\subsection{\tt HintRewrite {\ident} {\rewrule}}\comindex{HintRewrite}
+
+This vernacular command makes an alias for a rewriting rule.
+Then, instead of \texttt{AutoRewrite [{\rewrule} \dots ]} you can
+type: \texttt{AutoRewrite [{\ident} \dots ]}
+
+This vernacular command is synchronous with the section mechanism (see
+\ref{Section}): when closing a section, all aliases created by
+\texttt{HintRewrite} in that section are lost. Conversely, when
+loading a module, all \texttt{HintRewrite} declarations at the global
+level of that module are loaded.
+
+\SeeAlso \ref{AutoRewrite-example} for examples showing the use of
+this tactic.
+
+\SeeAlso file \texttt{theories/DEMOS/DemoAutoRewrite.v}
+
+\section{Developing certified programs}
+\label{program}
+This section is devoted to powerful tools that \Coq~ provides to
+develop certified programs. We just mention below the main features of
+those tools and refer the reader to chapter \ref{Addoc-program} and
+references \cite{CPar93,CPar95} for more details and examples.
+
+\subsection{\tt Realizer \term}\tacindex{Realizer}
+This command associates the term {\term} to the current goal. The
+{\term}'s syntax is described in the chapter \ref{Addoc-program}.
+It is an extension of the basic syntax for \Coq's terms. The {\tt
+  Realizer} is used as a hint by the {\tt Program} tactic described
+below. The term {\term} intends to be the program extracted from the
+proof we want to develop.
+
+\SeeAlso chapter \ref{Addoc-program}, section \ref{Extraction}
+
+\subsection{\tt Program}\tacindex{Program}
+This tactic tries to make a one step inference according to the
+structure of the {\tt Realizer} associated to the current goal.
+
+\begin{Variants}
+\item {\tt Program\_all}\tacindex{Program\_all}\\
+  Is equivalent to {\tt Repeat (Program Orelse Auto with *)} (see section
+  \ref{Tacticals}).
+\end{Variants}
+
+\SeeAlso chapter \ref{Addoc-program}
+
+\section{The hints databases for Auto and EAuto}
+\index{Hints databases}\label{Hints-databases}
+The hints for Auto and EAuto have been reorganized since \Coq{}
+6.2.3. They are stored in several databases. Each databases maps head
+symbols to list of hints. One can use the command \texttt{Print Hint \ident}
+to display the hints associated to the head symbol \ident{}
+(see \ref{PrintHint}). Each hint has a name,
+a cost that is an nonnegative integer, and a pattern. The hint is
+tried by \texttt{Auto} if the conclusion of current goal matches its
+pattern, and after hints with a lower cost. The general command to add
+a hint to a database is:
+
+\comindex{Hint}
+\begin{quotation}
+  \texttt{Hint \textsl{name} : \textsl{database} := \textsl{hint\_definition}}
+\end{quotation}
+
+\noindent where {\sl hint\_definition} is one of the following expressions:
+
+\begin{itemize}
+\item \texttt{Resolve} {\term} \index[command]{Hints!Resolve}\\
+  This command adds {\tt Apply {\term}} to the hint list
+  with the head symbol of the type of \term. The cost of that hint is
+  the number of subgoals generated by {\tt Apply {\term}}.
+  
+  In case the inferred type of \term\ does not start with a product the
+  tactic added in the hint list is {\tt Exact {\term}}. In case this
+  type can be reduced to a type starting with a product, the tactic {\tt
+    Apply {\term}} is also stored in the hints list.
+  
+  If the inferred type of \term\ does contain a dependent
+  quantification on a predicate, it is added to the hint list of {\tt
+    EApply} instead of the hint list of {\tt Apply}. In this case, a
+  warning is printed since the hint is only used by the tactic {\tt
+    EAuto} (see \ref{EAuto}). A typical example of hint that is used
+  only by \texttt{EAuto} is a transitivity lemma.
+
+  \begin{ErrMsgs}
+  \item \errindex{Bound head variable} \\
+    The head symbol of the type of {\term} is a bound variable such
+    that this tactic cannot be associated to a constant.
+  \item \term\ \errindex{cannot be used as a hint} \\
+    The type of \term\ contains products over variables which do not
+    appear in the conclusion. A typical example is a transitivity axiom.
+    In that case the {\tt Apply} tactic fails, and thus is useless.
+  \end{ErrMsgs}
+
+\item \texttt{Immediate {\term}} \index[command]{Hints!Immediate}\\
+  
+  This command adds {\tt Apply {\term}; Trivial} to the hint list
+  associated with the head symbol of the type of \ident in the given
+  database. This tactic will fail if all the subgoals generated by
+  {\tt Apply {\term}} are 
+  not solved immediately by the {\tt Trivial} tactic which only tries
+  tactics with cost $0$.
+  
+  This command is useful for theorems such that the symmetry of equality
+  or $n+1=m+1 \rightarrow n=m$ that we may like to introduce with a
+  limited use in order to avoid useless proof-search.
+  
+  The cost of this tactic (which never generates subgoals) is always 1,
+  so that it is not used by {\tt Trivial} itself.
+
+  \begin{ErrMsgs}
+  \item \errindex{Bound head variable}\\
+  \item \term\ \errindex{cannot be used as a hint} \\
+  \end{ErrMsgs}
+
+\item \texttt{Constructors} {\ident}\index[command]{Hint!Constructors}\\
+  
+  If {\ident} is an inductive type, this command adds all its
+  constructors as hints of type \texttt{Resolve}. Then, when the
+  conclusion of current goal has the form \texttt{({\ident} \dots)},
+  \texttt{Auto} will try to apply each constructor.
+
+  \begin{ErrMsgs}
+    \item {\ident} \errindex{is not an inductive type}
+    \item {\ident} \errindex{not declared}
+  \end{ErrMsgs}
+
+\item \texttt{Unfold} {\ident}\index[command]{Hint!Unfold}\\
+  This adds the tactic {\tt Unfold {\ident}} to the hint list
+  that will only be used when the head constant of the goal is \ident.
+  Its cost is 4.
+
+\item \texttt{Extern \num\ \pattern\ }\textsl{tactic}\index[command]{Hints!Extern}\\
+  This hint type is to extend Auto with tactics other than
+  \texttt{Apply} and \texttt{Unfold}. For that, we must specify a
+  cost, a pattern and a tactic to execute. Here is an example:
+
+\begin{quotation}
+\begin{verbatim}
+Hint discr : core := Extern 4 ~(?=?) Discriminate.
+\end{verbatim}
+\end{quotation}
+
+  Now, when the head of the goal is a disequality, \texttt{Auto} will
+  try \texttt{Discriminate} if it does not succeed to solve the goal
+  with hints with a cost less than 4.
+
+  One can even use some sub-patterns of the pattern in the tactic
+  script. A sub-pattern is a question mark followed by a number like
+  \texttt{?1} or \texttt{?2}. Here is an example:
+
+\begin{coq_example*}
+Require EqDecide.
+Require PolyList.
+\end{coq_example*}
+\begin{coq_example}
+Hint eqdec1 : eqdec := Extern 5 {?1=?2}+{~ (?1=?2)} 
+                                Generalize ?1 ?2; Decide Equality.
+
+Goal (a,b:(list nat*nat)){a=b}+{~a=b}.
+Info Auto with eqdec.
+\end{coq_example}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\end{itemize}
+
+\Rem There is currently (in the \coqversion\ release) no way to do
+pattern-matching on hypotheses.
+
+\begin{Variants}
+\item \texttt{Hint \ident\ : \ident$_1$ \dots\ \ident$_n$ :=
+    \textsl{hint\_expression}}\\
+  This syntax allows to put the same hint in several databases.
+
+  \Rem The current implementation of \texttt{Auto} has no
+  optimization about hint duplication: 
+  if the same hint is present in two databases 
+  given as arguments to \texttt{Auto}, it will be tried twice. We
+  recommend to put the same hint in two different databases only if you
+  never use those databases together.
+
+\item\texttt{Hint \ident\ := \textsl{hint\_expression}}\\
+    If no database name is given, the hint is registered in the "core" 
+    database. 
+
+    \Rem We do not recommend to put hints in this database in your
+    developpements, except when the \texttt{Hint} command
+    is inside a section. In this case the hint will be thrown when
+    closing the section (see \ref{Hint-and-Section})
+    
+\end{Variants}
+
+There are shortcuts that allow to define several goal at once:
+
+\begin{itemize}
+\item \comindex{Hints Resolve}\texttt{Hints Resolve \ident$_1$ \dots\ \ident$_n$ : \ident.}\\
+  This command is a shortcut for the following ones:
+  \begin{quotation}
+   \noindent\texttt{Hint \ident$_1$ : \ident\ := Resolve \ident$_1$}\\
+   \dots\\
+   \texttt{Hint \ident$_1$ : \ident := Resolve \ident$_1$}
+  \end{quotation}
+  Notice that the hint name is the same that the theorem given as
+  hint.
+\item \comindex{Hints Immediate}\texttt{Hints Immediate \ident$_1$ \dots\ \ident$_n$ : \ident.}\\
+\item \comindex{Hints Unfold}\texttt{Hints Unfold \ident$_1$ \dots\ \ident$_n$ : \ident.}\\
+\end{itemize}
+
+%\begin{Warnings}
+%  \item \texttt{Overriding hint named \dots\ in database \dots}
+%\end{Warnings}
+
+\subsection{Hint databases defined in the \Coq\ standard library}
+
+Several hint databases are defined in the \Coq\ standard
+library. There is no systematic relation between the directories of the
+library and the databases.
+
+\begin{description}
+\item[core] This special database is automatically used by
+  \texttt{Auto}. It contains only basic lemmas about negation,
+  conjunction, and so on from. Most of the hints in this database come 
+  from the \texttt{INIT} and \texttt{LOGIC} directories.
+
+\item[arith] This databases contains all lemmas about Peano's
+  arithmetic proven in the directories \texttt{INIT} and
+  \texttt{ARITH}
+
+\item[zarith] contains lemmas about binary signed integers from the
+  directories \texttt{theories/ZARITH} and
+  \texttt{tactics/contrib/Omega}. It contains also a hint with a high
+  cost that calls Omega.
+
+\item[bool] contains lemmas about booleans, mostly from directory
+  \texttt{theories/BOOL}.
+
+\item[datatypes] is for lemmas about about lists, trees, streams and so on that 
+  are proven in \texttt{LISTS}, \texttt{TREES} subdirectories.
+
+\item[sets] contains lemmas about sets and relations from the 
+  directory \texttt{SETS} and \texttt{RELATIONS}.
+\end{description}
+
+There is also a special database called "v62". It contains all things that are
+currently hinted in the 6.2.x releases. It will not be extended later. It is
+not included in the hint databases list used in the "Auto with *" tactic.
+
+The only purpose of the database "v62" is to ensure compatibility for
+old developpements with further versions of Coq. 
+If you have a developpement that used to compile with 6.2.2 and that not
+compiles with 6.2.4, try to replace "Auto" with "Auto with v62" using the
+script documented below. This will ensure your developpement will compile
+will further releases of Coq.
+
+To write a new developpement, or to update a developpement not finished yet, 
+you are strongly advised NOT to use this database, but the pre-defined
+databases. Furthermore, you are advised not to put your own Hints in the
+"core" database, but use one or several databases specific to your
+developpement.
+
+\subsection{\tt Print Hint}
+\label{PrintHint}
+\comindex{Print Hint}
+\index[tactic]{Hints!\texttt{Print Hint}}
+This command displays all hints that apply to the current goal. It
+fails if no proof is being edited, while the two variants can be used at
+every moment.
+
+\begin{Variants}
+\item {\tt  Print Hint {\ident} }\\
+ This command displays only tactics associated with \ident\ in the
+ hints list. This is independent of the goal being edited, to this
+ command will not fail if no goal is being edited.
+
+\item {\tt Print Hint *}\\
+  This command displays all declared hints. 
+\end{Variants}
+
+
+\subsection{Hints and sections}
+\label{Hint-and-Section}
+
+Like grammar rules and structures for the \texttt{Ring} tactic, things 
+added by the \texttt{Hint} command will be erased when closing a
+section.
+
+Conversely, when the user does \texttt{Require A.}, all hints 
+of the module \texttt{A} that are not defined inside a section are
+loaded.
+
+\section{Tacticals}
+\index[tactic]{Tacticals}\index{Tacticals}\label{Tacticals}
+We describe in this section how to combine the tactics provided by the
+system to write synthetic proof scripts called {\em tacticals}. The
+tacticals are built using tactic operators we present below.
+
+\subsection{\tt Idtac}
+\tacindex{Idtac}
+\index{Tacticals!Idtac@{\tt Idtac}} The constant {\tt Idtac} is the
+identity tactic: it leaves any goal unchanged.
+
+\subsection{\tt Fail}
+\tacindex{Fail}
+\index{Tacticals!Fail@{\tt Fail}}
+
+The tactic {\tt Fail} is the always-failing tactic: it does not solve
+any goal. It is useful for defining other tacticals.
+
+\subsection{\tt Do {\num} {\tac}}
+\tacindex{Do}
+\index{Tacticals!Do@{\tt Do}}
+This tactic operator repeats {\num} times the tactic {\tac}. It fails
+when it is not possible to repeat {\num} times the tactic.
+
+\subsection{\tt \tac$_1$ {\tt Orelse} \tac$_2$}
+\tacindex{Orelse}
+\index{Tacticals!Orelse@{\tt Orelse}}
+The tactical \tac$_1$ {\tt Orelse} \tac$_2$ tries to apply \tac$_1$
+and, in case of a failure, applies \tac$_2$. It associates to the
+left.
+
+\subsection{\tt Repeat {\tac}}
+\index[tactic]{Repeat@{\tt Repeat}}
+\index{Tacticals!Repeat@{\tt Repeat}}
+
+This tactic operator repeats {\tac} as long as it does not fail.
+
+\subsection{\tt {\tac}$_1$ {\tt ;} \tac$_2$}
+\index{;@{\tt ;}}
+\index[tactic]{;@{\tt ;}}
+\index{Tacticals!yy@{\tt {\tac$_1$};\tac$_2$}}
+This tactic operator is a generalized composition for sequencing.  The
+tactical {\tac}$_1$ {\tt ;} \tac$_2$ first applies \tac$_1$ and
+then applies \tac$_2$ to any
+subgoal generated by \tac$_1$. {\tt ;} associates to the left.
+
+\subsection{\tt \tac$_0$; [ \tac$_1$ | \dots\ | \tac$_n$ ]}
+\index[tactic]{;[]@{\tt ;[\ldots$\mid$\ldots$\mid$\ldots]}}
+\index{;[]@{\tt ;[\ldots$\mid$\ldots$\mid$\ldots]}}
+\index{Tacticals!zz@{\tt {\tac$_0$};[{\tac$_1$}$\mid$\ldots$\mid$\tac$_n$]}}
+
+This tactic operator is a generalization of the precedent tactics
+operator. The tactical {\tt \tac$_0$ ; [ \tac$_1$ | \dots\ | \tac$_n$ ]}
+first applies \tac$_0$ and then
+applies \tac$_i$ to the i-th subgoal generated by \tac$_0$. It  fails if
+$n$ is not the exact number of remaining subgoals.
+
+\subsection{\tt Try {\tac}}
+\tacindex{Try}
+\index{Tacticals!Try@{\tt Try}}
+This tactic operator applies tactic \tac, and catches the possible
+failure of \tac. It never fails.
+
+\subsection{\tt First [ \tac$_0$ | \dots\ | \tac$_n$ ]}
+\tacindex{First}
+\index{Tacticals!First@{\tt First}}
+
+This tactic operator tries to apply the tactics \tac$_i$ with $i=0\ldots{}n$,
+starting from $i=0$, until one of them does not fail. It fails if all the
+tactics fail.
+
+\begin{ErrMsgs}
+\item \errindex{No applicable tactic.}
+\end{ErrMsgs}
+
+\subsection{\tt Solve [ \tac$_0$ | \dots\ | \tac$_n$ ]}
+\tacindex{Solve}
+\index{Tacticals!First@{\tt Solve}}
+
+This tactic operator tries to solve the current goal with the tactics \tac$_i$
+with $i=0\ldots{}n$, starting from $i=0$, until one of them solves. It fails if
+no tactic can solve.
+
+\begin{ErrMsgs}
+\item \errindex{Cannot solve the goal.}
+\end{ErrMsgs}
+
+\subsection{\tt Info {\tac}}
+\tacindex{Info}
+\index{Tacticals!Info@{\tt Info}}
+This is not really a tactical. For elementary tactics, this is
+equivalent to \tac. For complex tactic like \texttt{Auto}, it displays
+the operations performed by the tactic.
+
+\subsection{\tt Abstract {\tac}}
+\tacindex{Abstract}
+\index{Tacticals!Abstract@{\tt Abstract}}
+From outside, typing \texttt{Abstract \tac} is the same that
+typing \tac. Internally it saves an auxiliary lemma called 
+{\ident}\texttt{\_subproof}\textit{n} where {\ident} is the name of the
+current goal and \textit{n} is chosen so that this is a fresh name.
+
+This tactical is useful with tactics such \texttt{Omega} or
+\texttt{Discriminate} that generate big proof terms. With that tool
+the user can avoid the explosion at time of the \texttt{Save} command
+without having to cut ``by hand'' the proof in smaller lemmas.
+
+\begin{Variants}
+\item \texttt{Abstract {\tac} using {\ident}}.\\
+  Give explicitly the name of the auxiliary lemma.
+\end{Variants}
+
+\section{Generation of induction principles with {\tt Scheme}}
+\label{Scheme}
+\comindex{Scheme}
+
+The {\tt Scheme} command is a high-level tool for generating
+automatically (possibly mutual) induction principles for given types
+and sorts.  Its syntax follows the schema:
+
+\noindent
+{\tt Scheme {\ident$_1$} := Induction for \ident'$_1$ Sort {\sort$_1$} \\
+  with\\
+  \mbox{}\hspace{0.1cm} \dots\ \\
+        with {\ident$_m$} := Induction for {\ident'$_m$} Sort
+        {\sort$_m$}}\\
+
+\ident'$_1$ \dots\ \ident'$_m$ are different inductive type
+identifiers belonging to
+the same package of mutual inductive definitions. This command
+generates {\ident$_1$}\dots{} {\ident$_m$} to be mutually recursive
+definitions. Each term {\ident$_i$} proves a general principle 
+of mutual induction for objects in type {\term$_i$}. 
+
+
+\begin{Variants}
+\item {\tt Scheme {\ident$_1$} := Minimality for \ident'$_1$ Sort {\sort$_1$} \\
+    with\\
+    \mbox{}\hspace{0.1cm} \dots\ \\
+    with {\ident$_m$} := Minimality for {\ident'$_m$} Sort
+    {\sort$_m$}}\\
+  Same as before but defines a non-dependent elimination principle more
+  natural in case of inductively defined relations. 
+\end{Variants}
+
+\SeeAlso \ref{Scheme-examples}
+
+\section{Simple tactic macros}
+\index[tactic]{tactic macros}
+\index{tactic macros}
+\comindex{Tactic Definition}
+\label{TacticDefinition}
+
+A simple example has more value than a long explanation: 
+
+\begin{coq_example*}
+Tactic Definition Solve := [<:tactic:<Simpl; Intros; Auto>>].
+Tactic Definition ElimBoolRewrite [$b $H1 $H2] := 
+  [<:tactic:<Elim $b; 
+     [Intros; Rewrite $H1; EAuto | Intros; Rewrite $H2; EAuto ]>>].
+\end{coq_example*}
+
+Those tactic definitions are just macros, they behave like the
+syntactic definitions in the tactic world. The right side of the
+definition is an AST (see page~\pageref{astsyntax}), 
+but you can type a command if you
+enclose it between \verb|<< >>| or \verb|<:command:< >>|, and you can
+type a tactic script (the most frequent case) if you enclose it
+between \verb|<:tactic:< >>|.
+
+The tactics macros are synchronous with the \Coq\ section mechanism:
+a \texttt{Tactic Definition} is deleted from the current environment
+when you close the section (see also \ref{Section}) 
+where it was defined. If you want that a
+tactic macro defined in a module is usable in the modules that
+require it, you should put it outside of any section.
+
+This command is designed to be simple, so the user who wants to do
+complicate things with it should better read the chapter
+\ref{WritingTactics} about the user-defined tactics.
+
+
+% $Id$ 
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% TeX-master: "Reference-Manual"
+%%% End: 
+
+
+

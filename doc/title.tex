@@ -1,0 +1,77 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% File title.tex
+% Page formatting commands 
+% Macro \coverpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\setlength{\marginparwidth}{0pt}
+%\setlength{\oddsidemargin}{0pt}
+%\setlength{\evensidemargin}{0pt} 
+%\setlength{\marginparsep}{0pt}
+%\setlength{\topmargin}{0pt} 
+%\setlength{\textwidth}{16.9cm} 
+%\setlength{\textheight}{22cm}
+\usepackage{fullpage}
+
+\newcommand{\printingdate}{\today}
+\newcommand{\isdraft}{\Large\bf\today\\[20pt]}
+%\newcommand{\isdraft}{\vspace{20pt}}
+
+%To show the top for the toc in html
+\newcommand{\tophtml}{}
+
+\newcommand{\coverpage}[2]{
+\thispagestyle{empty}
+\begin{center}
+\begin{Huge}
+\begin{bf}
+The Coq Proof Assistant\\
+\vspace{12pt}
+    #1\\
+\end{bf}
+\end{Huge}
+\vspace{20pt}
+\isdraft
+{\Large \bf Version \coqversion}
+\footnote[1]{This research was partly supported by ESPRIT Basic Research
+Action ``Types'' and by the GDR ``Programmation'' co-financed by MRE-PRC and CNRS.}\\
+\vspace{120pt}
+{\bf #2}\\
+\vfill
+{\Large \bf Coq Project}\\
+\vspace{15pt}
+\end{center}
+
+\newpage
+\vspace*{520pt}
+\thispagestyle{empty}
+\begin{flushleft}
+{\large{V6.3.1,
+\printingdate}}\\[20pt]
+{\large{\copyright INRIA 1999}}\\
+\end{flushleft}
+\newpage}
+
+\newcommand{\shorttitle}[1]{
+\begin{center}
+\begin{huge}
+\begin{bf}
+The Coq Proof Assistant\\
+\vspace{10pt}
+    #1\\
+\end{bf}
+\end{huge}
+\end{center}
+\vspace{5pt}
+}
+
+% Local Variables: 
+% mode: LaTeX
+% TeX-master: ""
+% End: 
+
+% $Id$ 
+
+
+
+

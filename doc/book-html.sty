@@ -1,0 +1,133 @@
+\newcounter {part}
+\newcounter {chapter}
+\newcounter {section}[chapter]
+\newcounter {subsection}[section]
+\newcounter {subsubsection}[subsection]
+\newcounter {paragraph}[subsubsection]
+\newcounter {subparagraph}[paragraph]
+\renewcommand \thepart {\Roman{part}}
+\renewcommand \thesection {\thechapter.\arabic{section}}
+\renewcommand\thesubsection   {\thesection.\arabic{subsection}}
+\renewcommand\thesubsubsection{\thesubsection .\arabic{subsubsection}}
+\renewcommand\theparagraph    {\thesubsubsection.\arabic{paragraph}}
+\renewcommand\thesubparagraph {\theparagraph.\arabic{subparagraph}}
+\newcommand{\partname}{Part}
+\newcommand{\chaptername}{Chapter}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\appendix}{%
+\renewcommand{\chaptername}{Appendix}%
+\setcounter{chapter}{0}%
+\renewcommand{\thechapter}{\Alph{chapter}}%
+}
+\newcounter{figure}[chapter]
+\renewcommand{\thefigure}{\thechapter.\arabic{figure}}
+
+\newcommand{\part}[1]{%
+\@print{<!--CUT PART-->}
+\@open{H1}{ALIGN=center}
+\stepcounter{part}
+\partname:~\thepart\\
+#1
+\@close{H1}
+}
+\newcommand{\part*}[1]{%
+\@print{<!--CUT CHAPTER-->}
+\@open{H1}{ALIGN=center}
+#1
+\@close{H1}
+}
+
+\newcommand{\chapter}[1]{%
+\@print{<!--CUT CHAPTER-->}
+\@open{H1}{}
+\stepcounter{chapter}
+\chaptername~\thechapter: #1
+\@close{H1}
+}
+\newcommand{\chapter*}[1]{%
+\@print{<!--CUT CHAPTER-->}
+\@open{H1}{}
+#1
+\@close{H1}
+}
+
+\newcommand{\section}[1]{%
+\@print{<!--CUT SECTION-->}
+\@open{H2}{}
+\stepcounter{section}
+\thesection~#1
+\@close{H2}
+}
+\newcommand{\section*}[1]{%
+\@print{<!--CUT SECTION-->}
+\@open{H2}{}
+#1
+\@close{H2}
+}
+
+
+\newcommand{\subsection}[1]{%
+\@open{H3}{}
+\stepcounter{subsection}
+\thesubsection~#1
+\@close{H3}
+}
+\newcommand{\subsection*}[1]{%
+\@open{H3}{}
+#1
+\@close{H3}
+}
+
+
+\newcommand{\subsubsection}[1]{%
+\@open{H4}{}
+%  \stepcounter{subsubsection}
+%  \thesubsubsection~
+#1
+\@close{H4}
+}
+\newcommand{\subsubsection*}[1]{%
+\@open{H4}{}
+#1
+\@close{H4}
+}
+
+\newcommand{\paragraph}[1]{%
+\@open{H5}{}
+%  \stepcounter{paragraph}
+%  \theparagraph~
+#1
+\@close{H5}
+}
+\newcommand{\paragraph*}[1]{%
+\@open{H5}{}
+#1
+\@close{H5}
+}
+
+\renewenvironment{thebibliography}[1]{%
+\@print{
+<!--CUT BIBLIOGRAPHY-->
+}
+\@open{H1}{}
+\bibname\@close{H1}\@open{DL}{}}{%
+
+\@close{DL}
+}
+\renewcommand{\bibitem}[1]{\item[{\purple[\@bibref{#1}]\label{#1}}]}
+\renewcommand{\index}[2][default]{\@index[#1]{#2}}
+\renewcommand{\printindex}[1][default]{%
+\@print{
+<!--CUT INDEX-->
+}
+\@printindex[#1]
+}
+
+\renewcommand{\addtocontents}[2]{}
+
+\newcommand{\tophtml}{%
+\@print{
+<!--CUT TOP-->
+}}
+
+\newcommand{\atableofcontents}{}

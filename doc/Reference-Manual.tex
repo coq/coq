@@ -1,0 +1,84 @@
+\documentclass[11pt,a4paper]{book}
+\usepackage[T1]{fontenc}
+\usepackage[latin1]{inputenc}
+\usepackage{verbatim}
+\usepackage{palatino}
+
+\makeatletter
+
+%\includeonly{Polynom.v}
+
+\input{./macros.tex}% extension .tex pour htmlgen
+\input{./title.tex}% extension .tex pour htmlgen
+\input{./headers.tex}% extension .tex pour htmlgen
+
+\makeatother
+
+\begin{document}
+\tophtml{}
+\coverpage{Reference Manual}{Bruno~Barras, Samuel~Boutin,
+  Cristina~Cornes, Judicaël~Courant, Yann~Coscoy, David~Delahaye,
+  Daniel~de~Rauglaudre, Jean-Christophe~Filliâtre, Eduardo~Giménez,
+  Hugo~Herbelin, Gérard~Huet, Henri~Laulhère, César~Muñoz,
+  Chetan~Murthy, Catherine~Parent-Vigouroux, Patrick~Loiseleur,
+  Christine~Paulin-Mohring, Amokrane~Saïbi, Benjamin~Werner}
+
+%\defaultheaders
+\include{RefMan-int}% Introduction
+\include{RefMan-pre}% Credits
+
+\tableofcontents
+
+\part{The language}
+\defaultheaders
+\include{RefMan-gal.v}% Gallina
+\include{RefMan-ext.v}% Gallina extensions
+\include{RefMan-lib.v}% The coq library
+\include{RefMan-cic.v}% The Calculus of Constructions
+
+\part{The proof engine}
+\include{RefMan-oth}% Vernacular commands
+\include{RefMan-pro}% Proof handling
+\include{RefMan-tac.v}% Tactics and tacticals
+\include{RefMan-tacex.v}% Detailed Examples of tactics
+
+\part{User extensions}
+\include{RefMan-syn.v}% The Syntax and the Grammad commands
+\include{RefMan-tus.v}% Writing tactics
+
+\part{Practical tools}
+\include{RefMan-com}% The coq commands (coqc coqtop)
+\include{RefMan-uti}% utilities (gallina, do_Makefile, etc)
+
+\include{AddRefMan-pre}%
+\include{Cases.v}%
+\include{Coercion.v}%
+\include{Natural.v}%
+\include{Omega.v}%
+\include{Program.v}%
+\include{Programs.v}% = preuve de pgms imperatifs
+\include{Extraction.v}%
+\include{Polynom.v}%  = Ring
+
+\addtocontents{sh}{ENDADDENDUM=\thepage}
+
+\nocite{*}
+\bibliographystyle{plain}
+\bibliography{biblio}
+\addtocontents{sh}{psselect -q -p-$ENDREFMAN,$BEGINBIBLIO- Reference-Manual.ps Reference-Manual-base.ps}
+\addtocontents{sh}{psselect -q -p$BEGINADDENDUM-$ENDADDENDUM Reference-Manual.ps Reference-Manual-addendum.ps}
+\addtocontents{sh}{dviselect -i Reference-Manual.dvi -o Reference-Manual-base.dvi 1-$ENDREFMAN $BEGINBIBLIO-}
+\addtocontents{sh}{dviselect -i Reference-Manual.dvi -o Reference-Manual-addendum.dvi $BEGINADDENDUM-$ENDADDENDUM}
+
+\printindex
+
+\printindex[tactic]
+
+\printindex[command]
+
+\printindex[error]
+
+\end{document}
+
+
+% $Id$ 

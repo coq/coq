@@ -1,0 +1,747 @@
+\chapter{Extensions of {\sf Gallina}}
+\label{Gallina-extension}\index{Gallina}
+
+{\gallina} is the kernel language of {\Coq}. We describe here extensions of
+the Gallina's syntax.
+
+\section{Record types}\comindex{Record}
+\label{Record}
+
+The \verb+Record+ function is a macro allowing
+the definition of records as is done in many programming languages.
+Its syntax is described on figure \ref{record-syntax}.
+
+\begin{figure}
+\begin{tabular}{|lcl|}
+\hline
+{\sentence} & ::= & {\record}\\
+  & & \\
+{\record} & ::= &  {\tt Record} {\ident} {\tt [} {\params} {\tt ] :} {\sort}
+    \verb.:=. \zeroone{\ident} \verb!{! 
+    \zeroone{\nelist{\field}{;}}
+    \verb!}! \verb:.:\\
+  & & \\
+{\field} & ::= & {\ident} \verb.:. {\term} \\
+\hline
+\end{tabular}
+\caption{Syntax for the definition of {\tt Record}}
+\label{record-syntax}
+\end{figure}
+
+\noindent In the command
+``{\tt Record} {\ident} {\tt [} {\params} {\tt ]} \texttt{:} 
+   {\sort} := {\ident$_0$} \verb+{+
+ {\ident$_1$} \texttt{:} {\term$_1$}; 
+              \dots
+  {\ident$_n$} \texttt{:} {\term$_n$} \verb+}+.'', 
+the identifier {\ident} is the name of the defined record and {\sort}
+is its type. The identifier {\ident$_0$} is the name of its
+constructor. The identifiers {\ident$_1$}, .., {\ident$_n$} are the
+names of its fields and {\term$_1$}, .., {\term$_n$} their respective
+types.  Records can have parameters.
+
+\Example
+The set of rational numbers may be defined as:
+\begin{coq_eval}
+Restore State Initial.
+\end{coq_eval}
+\begin{coq_example}
+Record Rat : Set := mkRat {
+    top      : nat;
+    bottom   : nat;
+    Rat_cond : (gt bottom O) }.
+\end{coq_example}
+
+A field may depend on other fields appearing before it. 
+For instance in the above example, the field
+\verb+Rat_cond+ depends on the field \verb+bottom+. Thus the order of
+the fields is important.
+
+Let us now see the work done by the {\tt Record} macro.
+First the macro generates a inductive definition
+with just one constructor:
+
+\medskip
+\noindent
+{\tt Inductive {\ident} [ {\params} ] : {\sort} := \\
+\mbox{}\hspace{0.4cm} {\ident$_0$} : ({\ident$_1$}:{\term$_1$}) .. 
+({\ident$_n$}:{\term$_n$})({\ident} {\rm\sl params}).}
+\medskip
+
+To build an object of type {\ident}, one should provide the
+constructor {\ident$_0$} with $n$ terms filling the fields of
+the record.
+
+Let us define the rational $1/2$.
+
+\begin{coq_example*}
+Theorem two_is_positive : (gt (S (S O)) O).
+Repeat Constructor.
+Save.
+Definition half := (mkRat (S O) (S (S O)) two_is_positive).
+\end{coq_example*}
+\begin{coq_example}
+Check half.
+\end{coq_example}
+
+The macro generates also, when it is possible, the projection
+functions for destructuring an object of type {\ident}.
+These projection functions have the same name that the corresponding
+field. In our example:
+
+\begin{coq_example}
+Eval Compute in (top half).
+Eval Compute in (bottom half).
+Eval Compute in (Rat_cond half).
+\end{coq_example}
+\begin{coq_eval}
+Restore State Initial.
+\end{coq_eval}
+
+\begin{Warnings}
+\item {\tt Warning: {\ident$_i$} cannot be defined.}\\
+  It can happens that the definition of a projection is impossible.
+  This message is followed by an explanation of this impossibility.
+  There may be three reasons:
+   \begin{enumerate}
+   \item The name {\ident$_i$} already exists in the environment (see
+     section \ref{Axiom}).
+   \item The body of {\ident$_i$} uses a incorrect elimination for
+     {\ident} (see sections \ref{Fixpoint} and \ref{Caseexpr}).
+   \item {\tt The projections [ {\rm\sl idents} ] were not defined.}\\ 
+     The body of {\term$_i$} uses the projections {\rm\sl idents}
+     which are not defined for one of these three reasons listed here.
+   \end{enumerate}  
+\end{Warnings}     
+
+\begin{ErrMsgs}
+\item \errindex{A record cannot be recursive}\\
+  The record name {\ident} appears in the type of its fields.
+      
+  During the definition of the one-constructor inductive definition,
+  all the errors of inductive definitions, as described in section
+  \ref{gal_Inductive_Definitions}, may occur.
+\end{ErrMsgs}
+
+\begin{Variants}
+\item 
+\noindent
+{\tt Record {\ident} [ {\rm\sl params} ] : {\sort} := \verb+{+ \\
+\mbox{}\hspace{0.4cm}  {\ident$_1$} : {\term$_1$}; \\
+\mbox{}\hspace{0.4cm}  ... \\
+\mbox{}\hspace{0.4cm}  {\ident$_n$} : {\term$_n$} \verb+}+.}\\
+ 
+One can omit the constructor name in which case the system will use
+the name {\tt Build\_{\ident}}.
+\end{Variants}
+
+\section{Variants and extensions of {\tt Cases}}
+\label{ExtensionsOfCases}
+\index{Cases@{\tt Cases\ldots of\ldots end}}
+
+\subsection{ML-style pattern-matching}
+\index{ML-like patterns}
+\label{Mult-Cases}
+
+The basic version of \verb+Cases+ allows pattern-matching on simple
+patterns. As an extension, multiple and nested patterns are
+allowed, as in ML-like languages.
+
+The extension just acts as a macro that is expanded during parsing
+into a sequence of {\tt Cases} on simple patterns. Especially, a
+construction defined using the extended {\tt Cases} is printed under
+its expanded form.
+
+The syntax of the extended {\tt Cases} is presented in figure 
+\ref{ecases-grammar}.
+Note the annotation is mandatory when the sequence of equation is
+empty.
+
+\begin{figure}[t]
+\begin{tabular}{|rcl|}
+\hline
+{\nestedpattern}  & := & {\ident} \\
+ & $|$ & \_ \\
+ & $|$ & \texttt{(} {\ident} \nelist{\nestedpattern}{} \texttt{)} \\
+ & $|$ & \texttt{(} {\nestedpattern} \texttt{as}  {\ident} \texttt{)} \\
+ & $|$ & \texttt{(} {\nestedpattern} \texttt{,} {\nestedpattern} \texttt{)} \\
+ & $|$ & \texttt{(} {\nestedpattern} \texttt{)} \\
+ &&\\
+
+{\multpattern} & := &  \nelist{nested\_pattern}{} \\
+ && \\
+
+{\exteqn} & := &  {\multpattern} \texttt{=>} {\term} \\
+ && \\
+
+{\term} & := &  
+ \zeroone{\annotation} \texttt{Cases} \nelist{\term}{} \texttt{of} 
+\sequence{\exteqn}{$|$} \texttt{end} \\
+\hline
+\end{tabular}
+\caption{extended Cases syntax.}
+\label{ecases-grammar}
+\end{figure}
+
+\SeeAlso chapter \ref{Mult-Cases-full}.
+
+\subsection{Pattern-matching on boolean values: the {\tt if} expression}
+\index{if@{\tt if ... then ... else}}
+
+For inductive types isomorphic to the boolean types (i.e. two
+constructors without arguments), it is possible to use a {\tt if
+... then ... else} notation. This enriches the syntax of terms as follows:
+
+\medskip
+\begin{tabular}{rcl}
+term & := & \zeroone{\annotation} {\tt if} {\term} {\tt then} {\term} {\tt else} {\term}\\
+\end{tabular}
+\medskip
+
+For instance, the definition
+
+\begin{coq_example}
+Definition not := [b:bool] Cases b of true => false | false => true end.
+\end{coq_example}
+
+can be alternatively written
+
+\begin{coq_eval}
+Reset not.
+\end{coq_eval}
+\begin{coq_example}
+Definition not := [b:bool] if b then false else true.
+\end{coq_example}
+
+\subsection{Irrefutable patterns: the destructuring {\tt let}}
+\index{let in@{\tt let ... in}}
+\label{Letin}
+
+Terms in an inductive type having only one constructor, say {\tt foo}, have
+necessarily the form \texttt{(foo ...)}. In this case, the {\tt Cases}
+construction can be replaced by a {\tt let ... in ...} construction.
+This enriches the syntax of terms as follows:
+
+\medskip
+\begin{tabular}{rcl}
+ & $|$ & \zeroone{\annotation} {\tt let (} \nelist{\ident}{,} {\tt ) =}  {\term} {\tt in} {\term} \\
+\end{tabular}
+\medskip
+
+For instance, the definition
+
+\begin{coq_example}
+Definition fst := [A,B:Set][H:A*B] Cases H of (pair x y) => x end.
+\end{coq_example}
+
+can be alternatively written 
+
+\begin{coq_eval}
+Reset fst.
+\end{coq_eval}
+\begin{coq_example}
+Definition fst := [A,B:Set][p:A*B] let (x,_) = p in x.
+\end{coq_example}
+
+The pretty-printing of a definition by cases on a irrefutable pattern
+can either be done using {\tt Cases} or the {\tt let}
+construction (see section \ref{printing-options}).
+
+\subsection{Options for pretty-printing of {\tt Cases}}
+\label{printing-options}
+
+There are three options controlling the pretty-printing of {\tt Cases}
+expressions.
+
+\subsubsection{Printing of wildcard pattern}
+\comindex{Set Printing Wildcard}
+\comindex{Unset Printing Wildcard}
+\comindex{Print Printing Wildcard}
+
+Some variables in a pattern may not occur in the right-hand side of
+the pattern-matching clause.  There are options to control the
+display of these variables.
+
+\subsubsection{\tt Set Printing Wildcard.}
+ The variables having no occurrences
+in the right-hand side of the pattern-matching clause are just
+printed using the wildcard symbol ``{\tt \_}''.
+
+\subsubsection{\tt Unset Printing Wildcard.}
+The variables, even useless, are printed using their usual name. But some
+non dependent variables have no name. These ones are still printed
+using a ``{\tt \_}''.
+
+\subsubsection{\tt Print Printing Wildcard.}
+This tells if the wildcard
+printing mode is on or off. The default is to print wildcard for
+useless variables.
+
+\subsubsection{Printing of the elimination predicate}
+\comindex{Set Printing Synth}
+\comindex{Unset Printing Synth}
+\comindex{Print Printing Synth}
+
+In most of the cases, the type of the result of a matched term is
+mechanically synthesizable. Especially, if the result type does not
+depend of the matched term.
+
+\subsubsection{\tt Set Printing Synth.}
+The result type is not printed
+when it is easily synthesizable.
+
+\subsubsection{\tt Unset Printing Synth.}
+This forces the result type to be always printed (and then between
+angle brackets).
+
+\subsubsection{\tt Print Printing Synth.}
+This tells if the non-printing
+of synthesizable types is on or off. The default is to not print 
+synthesizable types.
+
+\subsubsection{Printing matching on irrefutable pattern}
+\comindex{Add Printing Let {\ident}}
+\comindex{Remove Printing Let {\ident}}
+\comindex{Test Printing Let {\ident}}
+\comindex{Print Printing Let}
+
+If an inductive type has just one constructor,
+pattern-matching can be written using {\tt let} ... {\tt =}
+... {\tt in}~...
+
+\subsubsection{\tt Add Printing Let {\ident}.}
+This adds {\ident} to the list
+of inductive types for which pattern-matching is written using a {\tt
+let} expression.
+
+\subsubsection{\tt Remove Printing Let {\ident}.}
+This removes {\ident} from this list.
+
+\subsubsection{\tt Test Printing Let {\ident}.}
+This tells if {\ident} belongs
+to the list.
+
+\subsubsection{\tt Print Printing Let.}
+This prints the list of inductive types
+for which pattern-matching is written using a {\tt
+let} expression.
+
+The table of inductive types for which pattern-matching is written
+using a {\tt let} expression is managed synchronously. This means that
+it is sensible to the command {\tt Reset}.
+
+
+\subsubsection{Printing matching on booleans}
+\comindex{Add Printing If {\ident}}
+\comindex{Remove Printing If {\ident}}
+\comindex{Test Printing If {\ident}}
+\comindex{Print Printing If}
+
+If an inductive type is isomorphic to the boolean type,
+pattern-matching can be written using {\tt if} ... {\tt then}
+... {\tt else} ...
+
+\subsubsection{\tt Add Printing If {\ident}.}
+This adds {\ident} to the list
+of inductive types for which pattern-matching is written using an {\tt
+if} expression.
+
+\subsubsection{\tt Remove Printing If {\ident}.}
+This removes {\ident} from this list.
+
+\subsubsection{\tt Test Printing If {\ident}.}
+This tells if {\ident} belongs
+to the list.
+
+\subsubsection{\tt Print Printing If.}
+This prints the list of inductive types
+for which pattern-matching is written using an {\tt
+if} expression.
+
+The table of inductive types for which pattern-matching is written
+using an {\tt if} expression is managed synchronously. This means that
+it is sensible to the command {\tt Reset}.
+
+\subsubsection{Example}
+
+This example emphasizes what the printing options offer.
+
+\begin{coq_example}
+Test Printing Let prod.
+Print fst.
+Remove Printing Let prod.
+Unset Printing Synth.
+Unset Printing Wildcard.
+Print snd.
+\end{coq_example}
+
+\subsection{Still not dead old notations}
+
+The following variant of {\tt Cases} is inherited from older version
+of {\Coq}. 
+
+\medskip
+\begin{tabular}{lcl}
+{\term} & ::= & {\annotation} {\tt Match} {\term} {\tt with} {\terms} {\tt end}\\
+\end{tabular}
+\medskip
+
+This syntax is a macro generating a combination of {\tt Cases} with {\tt
+Fix} implementing a combinator for primitive recursion equivalent to
+the {\tt Match} construction of \Coq\ V5.8. It is provided only for
+sake of compatibility with \Coq\ V5.8. It is recommended to avoid it.
+(see section~\ref{Matchexpr}).
+
+There is also a notation \texttt{Case} that is the
+ancestor of \texttt{Cases}. Again, it is still in the code for
+compatibility with old versions but the user should not use it.
+
+\section{Forced type}
+
+In some cases, one want to assign a particular type to a term. The
+syntax to force the type of a term is the following:
+
+\medskip
+\begin{tabular}{lcl}
+{\term} & ::= & {\tt (} {\term} {\tt ::} {\term} {\tt )}\\
+\end{tabular}
+\medskip
+
+It forces the first term to be of type the second term. The
+type must be compatible with
+the term. More precisely it must be either a type convertible to
+the automatically inferred type (see chapter \ref{Cic}) or a type
+coercible to it, (see \ref{Coercions}). When the type of a
+whole expression is forced, it is usually not necessary to give the types of
+the variables involved in the term.
+
+Example:
+
+\begin{coq_example}
+Definition ID := (X:Set) X -> X.
+Definition id := (([X][x]x) :: ID).
+Check id.
+\end{coq_example}
+
+\section{Local definitions}
+\index{let in@{\tt let ... in}}
+In addition to the destructuring {\tt let} (see section
+\ref{Letin}), there is a possibility to define local terms inside a
+bigger term.
+There are currently two equivalent syntaxes for that:
+
+\medskip
+\begin{tabular}{lcl}
+{\term} & ::= & {\tt let} {\ident} {\tt =} {\term} {\tt in} {\term}\\
+  & $|$ & {\tt [} {\ident} {\tt =} {\term} {\tt ]} {\term}
+\end{tabular}
+\medskip
+
+\section{Section mechanism}\index{Sections}\label{Section}
+The sectioning mechanism allows to organize a proof in structured
+sections. Then local declarations become available (see section
+\ref{Simpl-definitions}).
+
+\subsection{\tt Section {\ident}}\comindex{Section}
+This command is used to open a section named {\ident}.
+
+
+\begin{Variants}
+\comindex{Chapter}
+\item{\tt Chapter {\ident}}\\
+        Same as {\tt Section {\ident}}
+\end{Variants}
+
+\subsection{\tt End {\ident}}\comindex{End}
+This command closes the section named {\ident}. When a section is
+closed, all local declarations are discharged. This means that all
+global objects defined in the section are {\it closed} (in the sense
+of $\lambda$-calculus) with as many abstractions as there were local
+declarations in the section explicitly occurring in the term.  A local
+object in the section is not exported and its value will be
+substituted in the other definitions.
+
+Here is an example :
+\begin{coq_example}
+Section s1.
+Variables x,y : nat.
+Local y' := y.
+Definition x' := (S x).
+Print x'.
+End s1.
+Print x'.
+\end{coq_example}
+Note the difference between the value of {\tt x'} inside section {\tt
+  s1} and outside.
+
+\begin{ErrMsgs}
+\item \errindex{Section {\ident} does not exist (or is already closed)}
+\item \errindex{Section {\ident} is not the innermost section}
+\end{ErrMsgs}
+
+\begin{Remarks}
+\item Most commands, like {\tt Hint \ident} or {\tt Syntactic
+  Definition} which appear inside a section are cancelled when the
+section is closed.
+\item Usually, all identifiers must be distinct. 
+However, a name already used in a closed section (see \ref{Section})
+can be reused. In this case, the old name is no longer accessible.
+\item A module implicitly open a section. Be careful not to name a
+module with an identifier already used in the module (see \ref{compiled}).
+\end{Remarks}
+
+\section{Implicit arguments}\index{implicit arguments}
+
+The {\Coq} system allows to skip during a function application certain
+arguments that can be automatically inferred from the other
+arguments. Such arguments are called {\em implicit}. Typical implicit
+arguments are the type arguments in polymorphic functions.
+
+The user can force a subterm to be guessed by replacing it by
+{\tt ?}. If possible, the correct subterm will be automatically generated.
+
+\ErrMsg
+\begin{enumerate}
+\item \errindex{There is an unknown subterm I cannot solve} \\
+  {\Coq} was not able to deduce an instantiation of a ``?''.
+\end{enumerate}
+
+In addition, there are two ways to systematically avoid to write
+``{\tt ?}'' where a term can be automatically inferred.
+
+The first mode is automatic. Switching to this mode forces some
+easy-to-infer subterms to always be implicit.
+The command to use the second mode is  {\tt Syntactic
+Definition}.
+
+\subsection{Auto-detection of implicit arguments}
+\label{Auto-implicit}
+
+There is an automatic mode to declare as implicit some arguments of
+constants and variables which have a functional type. In this mode,
+to every declared object (even inductive types and theirs constructors) is
+associated the list of the positions of its implicit arguments. These
+implicit arguments correspond to the arguments which can be deduced
+from the following ones. Thus when one applies these functions to
+arguments, one can omit the implicit ones. They are then automatically
+replaced by symbols ``?'', to be inferred by the mechanism of
+synthesis of implicit arguments.
+
+\subsubsection{\tt Implicit Arguments {\switch}.}
+\comindex{Implicit Arguments}
+\label{Implicit Arguments}
+
+If {\switch} is {\tt On} then the command switches on the automatic
+mode. If {\switch} is {\tt Off} then the command switches off the
+automatic mode. The mode {\tt Off} is the default mode.
+
+The computation of implicit arguments takes account of the
+unfolding of constants.  For instance, the variable {\tt p} below has
+a type {\tt (Transitivity R)} which is reducible to {\tt (x,y:U)(R x
+y) -> (z:U)(R y z) -> (R x z)}. As the variables {\tt x}, {\tt y} and
+{\tt z} appear in the body of the type, they are said implicit; they
+correspond respectively to the positions {\tt 1}, {\tt 2} and {\tt 4}.
+
+\begin{coq_example*}
+Implicit Arguments On.
+Variable X : Type.
+Definition Relation := X -> X -> Prop.
+Definition Transitivity := [R:Relation]
+           (x,y:X)(R x y) -> (z:X)(R y z) -> (R x z).
+Variables R:Relation; p:(Transitivity R).
+\end{coq_example*}
+\begin{coq_example}
+Print p.
+\end{coq_example}
+\begin{coq_example*}
+Variables a,b,c:X;  r1:(R a b); r2:(R b c).
+\end{coq_example*}
+\begin{coq_example}
+Check (p r1 r2).
+\end{coq_example}
+
+\subsubsection{Explicit Applications}
+
+The mechanism of synthesis of implicit arguments is not complete, so
+we have sometimes to give explicitly certain implicit arguments of an
+application. The syntax is {\tt $i$!}{\term} where $i$ is the position
+of an implicit argument and {\term} is its corresponding explicit
+term. The number $i$ is called {\em explicitation number}.  We can
+also give all the arguments of an application, we have then to write
+{\tt (!{\ident}~{\term}$_1$..{\term}$_n$)}.
+
+\ErrMsg
+\begin{enumerate}
+\item \errindex{Bad explicitation number}
+\end{enumerate}
+
+\Example
+
+\begin{coq_example}
+Check (p r1 4!c).
+Check (!p a b r1 c r2).
+\end{coq_example}
+
+\subsubsection{Implicit Arguments and Pretty-Printing}
+
+The basic pretty-printing rules hide the implicit arguments of an
+application. However an implicit argument {\term} of an application
+which is not followed by any explicit argument is printed as follows
+$i!${\term} where $i$ is its position.
+
+\subsection{User-defined implicit arguments: {\tt Syntactic definition}}
+\comindex{Syntactic Definition}
+\label{Syntactic-Definition}
+
+The syntactic definitions define syntactic constants, i.e. give a name
+to a term possibly untyped but syntactically correct. Their syntax
+is:
+
+\begin{center}
+\verb+Syntactic Definition+ $name$ \verb+:=+ $term$ \verb+.+ \\
+\end{center}
+
+Syntactic definitions behave like macros: every occurrence of a
+syntactic constant in an expression is immediately replaced by its
+body.
+
+Let us extend our functional language with the definition of the
+identity function:
+
+\begin{coq_eval}
+Implicit Arguments Off.
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example}
+Definition explicit_id := [A:Set][a:A]a.
+\end{coq_example}
+
+\index{questionmark@{\texttt{?}}}
+We declare also a syntactic definition {\tt id}:
+
+\begin{coq_example}
+Syntactic Definition id := (explicit_id ?).
+\end{coq_example}
+
+The term {\tt (explicit\_id ?)} is untyped since the implicit
+arguments cannot be synthesized. There is no type check during this
+definition.  Let us see what happens when we use a syntactic constant
+in an expression like in the following example.
+
+\begin{coq_example}
+Check (id O).
+\end{coq_example}
+
+\noindent First the syntactic constant {\tt id} is replaced by its
+body {\tt (explicit\_id ?)} in the expression. Then the resulting
+expression is evaluated by the typechecker, which fills in
+``\verb+?+'' place-holders.
+
+The standard usage of syntactic definitions is to give names to terms
+applied to implicit arguments ``\verb+?+''. In this case, a special
+command is provided:
+
+\begin{center}
+\verb+Syntactic Definition+ $name$ \verb+:=+ $term$ \verb+|+ $n$ \verb+.+ \\
+\end{center}
+
+\noindent The body of the syntactic constant is $term$ applied to $n$
+place-holders ``\verb+?+''.
+
+We can define a new syntactic definition {\tt id1} for {\tt
+  explicit\_id} using this command. We changed the name of the
+syntactic constant in order to avoid a name conflict with {\tt id}.
+
+\begin{coq_example}
+Syntactic Definition id1 := explicit_id | 1.
+\end{coq_example}
+
+The new syntactic constant {\tt id1} has the same behavior as {\tt
+  id}:
+
+\begin{coq_example}
+Check (id1 O).
+\end{coq_example}
+
+
+\begin{Warnings}
+\item Syntactic constants defined inside a section are no longer
+  available after closing the section.
+\item You cannot see the body of a syntactic constant with a {\tt
+    Print} command.
+\end{Warnings}
+
+\section{Implicit Coercions}
+\label{Coercions}\index{Coercions}
+
+Coercions can be used to implicitly inject terms from one ``class'' in
+which they reside into another one. A {\em class} is either a sort
+(denoted by the keyword SORTCLASS), a product type (denoted by the
+keyword FUNCLASS) or an inductive type (denoted by its name).
+
+Then the user is able to apply an
+object that is not a function, but can be coerced to a function, and
+more generally to consider that a term of type A is of type B provided
+that there is a declared coercion between A and B.
+
+\subsection{\tt Class {\ident}.}\comindex{Class}
+Declares the name {\ident} as a new class.
+
+\begin{Variant}
+\item {\tt Class Local {\ident}.} \\
+Declares the name {\ident} as a new local class to the current section.
+\end{Variant}
+
+\subsection{\tt Coercion {\ident} : {\ident$_1$} >-> {\ident$_2$}.}
+\comindex{Coercion}
+
+Declares the name {\ident} as a coercion between {\ident$_1$} and
+{\ident$_2$}. The classes {\ident$_1$} and {\ident$_2$} are first
+declared if necessary.
+
+\begin{Variants}
+\item {\tt Coercion Local {\ident} : {\ident$_1$} >-> {\ident$_2$}.}\comindex{Coercion Local}\\
+Declares the name {\ident} as a coercion local to the current section.
+
+\item {\tt Identity Coercion {\ident}:{\ident$_1$} >->
+    {\ident$_2$}.}\comindex{Identity Coercion}\\
+Coerce an inductive type to a subtype of it.
+
+\item {\tt Identity Coercion Local {\ident}:{\ident$_1$} >-> {\ident$_2$}.} \\
+Idem but locally to the current section.
+
+\item {\tt Coercion {\ident} := {\term}}\comindex{Coercion}\\
+  This defines {\ident} just like \texttt{Definition {\ident} :=
+    {\term}}, and then declares {\ident} as a coercion between it
+  source and its target.
+
+\item {\tt Coercion {\ident} := {\term} : {\type}}\\
+  This defines {\ident} just like 
+  \texttt{Definition {\ident} : {\type} := {\term}}, and then
+  declares {\ident} as a coercion between it source and its target. 
+
+\item {\tt Coercion Local {\ident} := {\term}}\comindex{Local Coercion}\\
+  This defines {\ident} just like \texttt{Local {\ident} :=
+    {\term}}, and then declares {\ident} as a coercion between it
+  source and its target.
+
+\end{Variants}
+
+\subsection{Displaying available coercions}
+
+\subsubsection{\tt Print Classes.}\comindex{Print Classes}
+Print the list of declared classes in the current context.
+
+\subsubsection{\tt Print Coercions.}\comindex{Print Coercions}
+Print the list of declared coercions in the current context.
+
+\subsubsection{\tt Print Graph.}\comindex{Print Graph}
+Print the list of valid path coercions in the current context.
+
+\SeeAlso the technical chapter \ref{Coercions-full} on coercions.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% TeX-master: "Reference-Manual"
+%%% End: 

@@ -1,0 +1,334 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% MACROS FOR THE REFERENCE MANUAL OF COQ %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\coqversion}{6.3.1}
+
+% For commentaries (define \com as {} for the release manual)
+%\newcommand{\com}[1]{{\it(* #1 *)}}
+\newcommand{\com}[1]{}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+% Formatting commands %
+%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\ErrMsg}{\medskip \noindent {\bf Error message: }}
+\newcommand{\ErrMsgx}{\medskip \noindent {\bf Error messages: }}
+\newcommand{\variant}{\medskip \noindent {\bf Variant: }}
+\newcommand{\variants}{\medskip \noindent {\bf Variants: }}
+\newcommand{\SeeAlso}{\medskip \noindent {\bf See also: }}
+\newcommand{\Rem}{\medskip \noindent {\bf Remark: }}
+\newcommand{\Rems}{\medskip \noindent {\bf Remarks: }}
+\newcommand{\Example}{\medskip \noindent {\bf Example: }}
+\newcommand{\Warning}{\medskip \noindent {\bf Warning: }}
+\newcommand{\Warns}{\medskip \noindent {\bf Warnings: }}
+\newcounter{ex}
+\newcommand{\firstexample}{\setcounter{ex}{1}}
+\newcommand{\example}[1]{
+\medskip \noindent \textbf{Example \arabic{ex}: }\textit{#1}
+\addtocounter{ex}{1}}
+
+\newenvironment{Variant}{\variant\begin{enumerate}}{\end{enumerate}}
+\newenvironment{Variants}{\variants\begin{enumerate}}{\end{enumerate}}
+\newenvironment{ErrMsgs}{\ErrMsgx\begin{enumerate}}{\end{enumerate}}
+\newenvironment{Remarks}{\Rems\begin{enumerate}}{\end{enumerate}}
+\newenvironment{Warnings}{\Warns\begin{enumerate}}{\end{enumerate}}
+\newenvironment{Examples}{\medskip\noindent{\bf Examples:}
+\begin{enumerate}}{\end{enumerate}}
+
+\newcommand{\rr}{\raggedright}
+
+\newcommand{\tinyskip}{\rule{0mm}{4mm}}
+
+\newcommand{\bd}{\noindent\bf}
+\newcommand{\sbd}{\vspace{8pt}\noindent\bf}
+\newcommand{\sdoll}[1]{\begin{small}$ #1~ $\end{small}}
+\newcommand{\sdollnb}[1]{\begin{small}$ #1 $\end{small}}
+\newcommand{\kw}[1]{\textsf{#1}}
+\newcommand{\spec}[1]{\{\,#1\,\}}
+
+% Building regular expressions
+\newcommand{\zeroone}[1]{{\sl [}#1{\sl ]}}
+%\newcommand{\zeroonemany}[1]{$\{$#1$\}$*}
+%\newcommand{\onemany}[1]{$\{$#1$\}$+}
+\newcommand{\nelist}[2]{{#1} {\tt #2} {\ldots} {\tt #2} {#1}}
+\newcommand{\sequence}[2]{{\sl [}{#1} {\tt #2} {\ldots} {\tt #2} {#1}{\sl ]}}
+\newcommand{\nelistwithoutblank}[2]{#1{\tt #2}\ldots{\tt #2}#1}
+\newcommand{\sequencewithoutblank}[2]{$[$#1{\tt #2}\ldots{\tt #2}#1$]$}
+
+% Used for RefMan-gal
+\newcommand{\ml}[1]{\hbox{\tt{#1}}}
+\newcommand{\op}{\,|\,}
+
+%%%%%%%%%%%%%%%%%%%%%%%%
+% Trademarks and so on %
+%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\Coq}{{\sf Coq}}
+\newcommand{\ocaml}{{\sf Objective Caml}}
+\newcommand{\camlpppp}{{\sf Camlp4}}
+\newcommand{\emacs}{{\sf GNU Emacs}}
+\newcommand{\gallina}{\textsf{Gallina}}
+\newcommand{\CIC}{\mbox{\sc Cic}}
+\newcommand{\FW}{\mbox{$F_{\omega}$}}
+
+%%%%%%%%%%%%%%%%%%%
+% Name of tactics %
+%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\Natural}{\mbox{\tt Natural}}
+
+%%%%%%%%%%%%%%%%%
+% \rm\sl series %
+%%%%%%%%%%%%%%%%%
+
+\newcommand{\Fwterm}{\textrm{\textsl{Fwterm}}}
+\newcommand{\Index}{\textrm{\textsl{index}}}
+\newcommand{\abbrev}{\textrm{\textsl{abbreviation}}}
+\newcommand{\annotation}{\textrm{\textsl{annotation}}}
+\newcommand{\atomictac}{\textrm{\textsl{atomic\_tactic}}}
+\newcommand{\binders}{\textrm{\textsl{bindings}}}
+\newcommand{\binder}{\textrm{\textsl{binding}}}
+\newcommand{\bindinglist}{\textrm{\textsl{bindings\_list}}}
+\newcommand{\cast}{\textrm{\textsl{cast}}}
+\newcommand{\cofixpointbody}{\textrm{\textsl{cofix\_body}}}
+\newcommand{\coinductivebody}{\textrm{\textsl{coind\_body}}}
+\newcommand{\commandtac}{\textrm{\textsl{tactic\_invocation}}}
+\newcommand{\constructor}{\textrm{\textsl{constructor}}}
+\newcommand{\convtactic}{\textrm{\textsl{conv\_tactic}}}
+\newcommand{\declarationkeyword}{\textrm{\textsl{declaration\_keyword}}}
+\newcommand{\declaration}{\textrm{\textsl{declaration}}}
+\newcommand{\definition}{\textrm{\textsl{definition}}}
+\newcommand{\digit}{\textrm{\textsl{digit}}}
+\newcommand{\eqn}{\textrm{\textsl{equation}}}
+\newcommand{\exteqn}{\textrm{\textsl{ext\_eqn}}}
+\newcommand{\field}{\textrm{\textsl{field}}}
+\newcommand{\firstletter}{\textrm{\textsl{first\_letter}}}
+\newcommand{\fixpg}{\textrm{\textsl{fix\_pgm}}}
+\newcommand{\fixpointbody}{\textrm{\textsl{fix\_body}}}
+\newcommand{\fixpoint}{\textrm{\textsl{fixpoint}}}
+\newcommand{\flag}{\textrm{\textsl{flag}}}
+\newcommand{\form}{\textrm{\textsl{form}}}
+\newcommand{\gensymbol}{\textrm{\textsl{symbol}}}
+\newcommand{\idents}{\textrm{\textsl{idents}}}
+\newcommand{\ident}{\textrm{\textsl{ident}}}
+\newcommand{\inductivebody}{\textrm{\textsl{ind\_body}}}
+\newcommand{\inductive}{\textrm{\textsl{inductive}}}
+\newcommand{\integer}{\textrm{\textsl{integer}}}
+\newcommand{\multpattern}{\textrm{\textsl{mult\_pattern}}}
+\newcommand{\mutualcoinductive}{\textrm{\textsl{mutual\_coinductive}}}
+\newcommand{\mutualinductive}{\textrm{\textsl{mutual\_inductive}}}
+\newcommand{\nestedpattern}{\textrm{\textsl{nested\_pattern}}}
+\newcommand{\num}{\textrm{\textsl{num}}}
+\newcommand{\params}{\textrm{\textsl{params}}}
+\newcommand{\pattern}{\textrm{\textsl{pattern}}}
+\newcommand{\pat}{\textrm{\textsl{pat}}}
+\newcommand{\pgs}{\textrm{\textsl{pgms}}}
+\newcommand{\pg}{\textrm{\textsl{pgm}}}
+\newcommand{\proof}{\textrm{\textsl{proof}}}
+\newcommand{\record}{\textrm{\textsl{record}}}
+\newcommand{\rewrule}{\textrm{\textsl{rewriting\_rule}}}
+\newcommand{\sentence}{\textrm{\textsl{sentence}}}
+\newcommand{\simplepattern}{\textrm{\textsl{simple\_pattern}}}
+\newcommand{\sort}{\textrm{\textsl{sort}}}
+\newcommand{\specif}{\textrm{\textsl{specif}}}
+\newcommand{\statement}{\textrm{\textsl{statement}}}
+\newcommand{\str}{\textrm{\textsl{string}}}
+\newcommand{\subsequentletter}{\textrm{\textsl{subsequent\_letter}}}
+\newcommand{\switch}{\textrm{\textsl{switch}}}
+\newcommand{\tac}{\textrm{\textsl{tactic}}}
+\newcommand{\terms}{\textrm{\textsl{terms}}}
+\newcommand{\term}{\textrm{\textsl{term}}}
+\newcommand{\typedidents}{\textrm{\textsl{typed\_idents}}}
+\newcommand{\type}{\textrm{\textsl{type}}}
+\newcommand{\vref}{\textrm{\textsl{ref}}}
+\newcommand{\zarithformula}{\textrm{\textsl{zarith\_formula}}}
+\newcommand{\zarith}{\textrm{\textsl{zarith}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \mbox{\sf } series for roman text in maths formulas %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\alors}{\mbox{\textsf{then}}}
+\newcommand{\alter}{\mbox{\textsf{alter}}}
+\newcommand{\bool}{\mbox{\textsf{bool}}}
+\newcommand{\conc}{\mbox{\textsf{conc}}}
+\newcommand{\cons}{\mbox{\textsf{cons}}}
+\newcommand{\consf}{\mbox{\textsf{consf}}}
+\newcommand{\emptyf}{\mbox{\textsf{emptyf}}}
+\newcommand{\EqSt}{\mbox{\textsf{EqSt}}}
+\newcommand{\false}{\mbox{\textsf{false}}}
+\newcommand{\filter}{\mbox{\textsf{filter}}}
+\newcommand{\forest}{\mbox{\textsf{forest}}}
+\newcommand{\from}{\mbox{\textsf{from}}}
+\newcommand{\hd}{\mbox{\textsf{hd}}}
+\newcommand{\Length}{\mbox{\textsf{Length}}}
+\newcommand{\length}{\mbox{\textsf{length}}}
+\newcommand{\LengthA}{\mbox {\textsf{Length\_A}}}
+\newcommand{\List}{\mbox{\textsf{List}}}
+\newcommand{\ListA}{\mbox{\textsf{List\_A}}}
+\newcommand{\LNil}{\mbox{\textsf{Lnil}}}
+\newcommand{\LCons}{\mbox{\textsf{Lcons}}}
+\newcommand{\nat}{\mbox{\textsf{nat}}}
+\newcommand{\nO}{\mbox{\textsf{O}}}
+\newcommand{\nS}{\mbox{\textsf{S}}}
+\newcommand{\node}{\mbox{\textsf{node}}}
+\newcommand{\Nil}{\mbox{\textsf{nil}}}
+\newcommand{\Prop}{\mbox{\textsf{Prop}}}
+\newcommand{\Set}{\mbox{\textsf{Set}}}
+\newcommand{\si}{\mbox{\textsf{if}}}
+\newcommand{\sinon}{\mbox{\textsf{else}}}
+\newcommand{\Str}{\mbox{\textsf{Stream}}}
+\newcommand{\tl}{\mbox{\textsf{tl}}}
+\newcommand{\tree}{\mbox{\textsf{tree}}}
+\newcommand{\true}{\mbox{\textsf{true}}}
+\newcommand{\Type}{\mbox{\textsf{Type}}}
+\newcommand{\unfold}{\mbox{\textsf{unfold}}}
+\newcommand{\zeros}{\mbox{\textsf{zeros}}}
+
+%%%%%%%%%
+% Misc. %
+%%%%%%%%%
+\newcommand{\T}{\texttt{T}}
+\newcommand{\U}{\texttt{U}}
+\newcommand{\real}{\textsf{Real}}
+\newcommand{\Spec}{\textit{Spec}}
+\newcommand{\Data}{\textit{Data}}
+\newcommand{\In} {{\textbf{in }}}
+\newcommand{\AND} {{\textbf{and}}}
+\newcommand{\If}{{\textbf{if }}}
+\newcommand{\Else}{{\textbf{else }}}
+\newcommand{\Then} {{\textbf{then }}}
+\newcommand{\Let}{{\textbf{let }}}
+\newcommand{\Where}{{\textbf{where rec }}}
+\newcommand{\Function}{{\textbf{function }}}
+\newcommand{\Rec}{{\textbf{rec }}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Math commands and symbols %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\la}{\leftarrow}
+\newcommand{\ra}{\rightarrow}
+\newcommand{\Ra}{\Rightarrow}
+\newcommand{\rt}{\Rightarrow}
+\newcommand{\lla}{\longleftarrow}
+\newcommand{\lra}{\longrightarrow}
+\newcommand{\Llra}{\Longleftrightarrow}
+\newcommand{\mt}{\mapsto}
+\newcommand{\ov}{\overrightarrow}
+\newcommand{\wh}{\widehat}
+\newcommand{\up}{\uparrow}
+\newcommand{\dw}{\downarrow}
+\newcommand{\nr}{\nearrow}
+\newcommand{\se}{\searrow}
+\newcommand{\sw}{\swarrow}
+\newcommand{\nw}{\nwarrow}
+
+\newcommand{\vm}[1]{\vspace{#1em}}
+\newcommand{\vx}[1]{\vspace{#1ex}}
+\newcommand{\hm}[1]{\hspace{#1em}}
+\newcommand{\hx}[1]{\hspace{#1ex}}
+\newcommand{\sm}{\mbox{ }}
+\newcommand{\mx}{\mbox}
+
+\newcommand{\nq}{\neq}
+\newcommand{\eq}{\equiv}
+\newcommand{\fa}{\forall}
+\newcommand{\ex}{\exists}
+\newcommand{\impl}{\rightarrow}
+\newcommand{\Or}{\vee}
+\newcommand{\And}{\wedge}
+\newcommand{\ms}{\models}
+\newcommand{\bw}{\bigwedge}
+\newcommand{\ts}{\times}
+\newcommand{\cc}{\circ}
+\newcommand{\es}{\emptyset}
+\newcommand{\bs}{\backslash}
+\newcommand{\vd}{\vdash}
+\newcommand{\lan}{{\langle }}
+\newcommand{\ran}{{\rangle }}
+
+\newcommand{\al}{\alpha}
+\newcommand{\bt}{\beta}
+\newcommand{\io}{\iota}
+\newcommand{\lb}{\lambda}
+\newcommand{\sg}{\sigma}
+\newcommand{\sa}{\Sigma}
+\newcommand{\om}{\Omega}
+\newcommand{\tu}{\tau}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+% Custom maths commands %
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\sumbool}[2]{\{#1\}+\{#2\}}
+\newcommand{\myifthenelse}[3]{\kw{if} ~ #1 ~\kw{then} ~ #2 ~ \kw{else} ~ #3}
+\newcommand{\fun}[2]{\item[]{\tt {#1}}. \quad\\ #2}
+\newcommand{\WF}[2]{\mbox{${\cal W\!F}(#1)[#2]$}}
+\newcommand{\WFE}[1]{\WF{E}{#1}}
+\newcommand{\WT}[4]{\mbox{$#1[#2] \vdash #3 : #4$}}
+\newcommand{\WTE}[3]{\WT{E}{#1}{#2}{#3}}
+\newcommand{\WTEG}[2]{\WTE{\Gamma}{#1}{#2}}
+\newcommand{\CI}[2]{\mbox{$\{#1\}^{#2}$}}
+\newcommand{\CIP}[3]{\mbox{$\{#1\}_{#2}^{#3}$}}
+\newcommand{\CIPV}[1]{\CIP{#1}{I_1.. I_k}{P_1.. P_k}}
+\newcommand{\CIPI}[1]{\CIP{#1}{I}{P}}
+\newcommand{\CIF}[1]{\mbox{$\{#1\}_{f_1.. f_n}$}}
+\newcommand{\NInd}[3]{\mbox{{\sf Ind}$(#1)(\begin{array}[t]{l}#2:=#3
+                                              \,)\end{array}$}}
+\newcommand{\Ind}[4]{\mbox{{\sf Ind}$(#1)[#2](\begin{array}[t]{l}#3:=#4
+                                                 \,)\end{array}$}}
+\newcommand{\Def}[4]{\mbox{{\sf Def}$(#1)(#2:=#3:#4)$}}
+\newcommand{\Match}[3]{\mbox{$<\!#1\!>\!{\mbox{\tt Match}}~#2~{\mbox{\tt with}}~#3~{\mbox{\tt end}}$}}
+\newcommand{\Case}[3]{\mbox{$<\!#1\!>\!{\mbox{\tt Cases}}~#2~{\mbox{\tt of}}~#3~{\mbox{\tt end}}$}}
+\newcommand{\Fix}[2]{\mbox{\tt Fix}~#1\{#2\}}
+\newcommand{\CoFix}[2]{\mbox{\tt CoFix}~#1\{#2\}}
+\newcommand{\With}[2]{\mbox{\tt ~with~}}
+\newcommand{\subst}[3]{#1\{#2/#3\}}
+\newcommand{\substs}[4]{#1\{(#2/#3)_{#4}\}}
+\newcommand{\Sort}{\mbox{$\cal S$}}
+\newcommand{\convert}{=_{\beta\delta\iota}}
+\newcommand{\leconvert}{\leq_{\beta\delta\iota}}
+\newcommand{\NN}{\mbox{I\hspace{-7pt}N}}
+\newcommand{\inference}[1]{$${#1}$$}
+\newcommand{\compat}[2]{\mbox{$[#1|#2]$}}
+\newcommand{\tristackrel}[3]{\mathrel{\mathop{#2}\limits_{#3}^{#1}}}
+
+\newbox\tempa
+\newbox\tempb
+\newdimen\tempc
+\newcommand{\mud}[1]{\hfil $\displaystyle{\mathstrut #1}$\hfil}
+\newcommand{\rig}[1]{\hfil $\displaystyle{#1}$}
+\newcommand{\irulehelp}[3]{\setbox\tempa=\hbox{$\displaystyle{\mathstrut #2}$}%
+                        \setbox\tempb=\vbox{\halign{##\cr
+        \mud{#1}\cr
+        \noalign{\vskip\the\lineskip}
+        \noalign{\hrule height 0pt}
+        \rig{\vbox to 0pt{\vss\hbox to 0pt{${\; #3}$\hss}\vss}}\cr
+        \noalign{\hrule}
+        \noalign{\vskip\the\lineskip}
+        \mud{\copy\tempa}\cr}}
+                      \tempc=\wd\tempb
+                      \advance\tempc by \wd\tempa
+                      \divide\tempc by 2 }
+\newcommand{\irule}[3]{{\irulehelp{#1}{#2}{#3}
+                     \hbox to \wd\tempa{\hss \box\tempb \hss}}}
+
+\newcommand{\sverb}[1]{\tt #1}
+\newcommand{\mover}[2]{{#1\over #2}}
+\newcommand{\jd}[2]{#1 \vdash #2}
+\newcommand{\mathline}[1]{\[#1\]}
+\newcommand{\zrule}[2]{#2: #1}
+\newcommand{\orule}[3]{#3: {\mover{#1}{#2}}}
+\newcommand{\trule}[4]{#4: \mover{#1  \qquad #2} {#3}}
+\newcommand{\thrule}[5]{#5: {\mover{#1  \qquad #2 \qquad #3}{#4}}}
+
+
+% $Id$ 
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "Reference-Manual"
+%%% End: 

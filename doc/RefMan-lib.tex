@@ -1,0 +1,883 @@
+\chapter{The {\Coq} library}
+\index{Theories}\label{Theories}
+
+The \Coq\ library is structured into three parts:
+
+\begin{description}
+\item[The initial library:] it contains
+  elementary logical notions and datatypes. It constitutes the
+  basic state of the system directly available when running
+  \Coq;
+
+\item[The standard library:] general-purpose libraries containing
+  various developments of \Coq\ axiomatizations about sets, lists,
+  sorting, arithmetic, etc. This library comes with the system and its
+  modules are directly accessible through the \verb!Require! command
+  (see~\ref{Require});
+
+\item[User contributions:] Other specification and proof developments
+  coming from the \Coq\ users' community. These libraries are no
+  longer distributed with the system.  They are available by anonymous
+  FTP (see section \ref{Contributions}).
+\end{description}
+
+This chapter briefly reviews these libraries.
+
+\section{The basic library}
+\label{Prelude}
+
+This section lists the basic notions and results which are directly
+available in the standard \Coq\ system
+\footnote{These constructions are defined in the
+{\tt Prelude} module in directory {\tt theories/INIT} at the {\Coq}
+root directory; this includes the modules
+% {\tt Core} l'inexplicable let
+{\tt Logic},
+{\tt Datatypes},
+{\tt Specif},
+{\tt Peano},
+and {\tt Wf}
+plus the module {\tt Logic\_Type}}.
+
+\subsection{Logic} \label{Logic}
+
+The basic library of {\Coq} comes with the definitions of standard
+(intuitionistic) logical connectives (they are defined as inductive
+constructions). They are equipped with an appealing syntax enriching the
+(subclass {\form}) of the syntactic class {\term}. The syntax
+extension
+\footnote{This syntax is defined in module {\tt LogicSyntax}}
+ is shown on figure \ref{formulas-syntax}.
+
+\begin{figure}
+\label{formulas-syntax}
+\begin{center}
+\begin{tabular}{|lclr|}
+\hline
+{\form} & ::= & {\tt True} & ({\tt True})\\
+  & $|$ & {\tt False} & ({\tt False})\\
+  & $|$ & {\verb|~|} {\form} & ({\tt not})\\
+  & $|$ & {\form} {\tt /$\backslash$} {\form} & ({\tt and})\\
+  & $|$ & {\form} {\tt $\backslash$/} {\form} & ({\tt or})\\
+  & $|$ & {\form} {\tt ->} {\form} & (\em{primitive implication})\\
+  & $|$ & {\form} {\tt <->} {\form} & ({\tt iff})\\
+  & $|$ & {\tt (} {\ident} {\tt :} {\type} {\tt )}
+  {\form} & (\em{primitive for all})\\
+  & $|$ & {\tt ( ALL} {\ident} \zeroone{{\tt :} {\specif}} {\tt |}
+  {\form} {\tt )} & ({\tt all})\\
+  & $|$ & {\tt ( EX} {\ident} \zeroone{{\tt :} {\specif}} {\tt
+  |} {\form} {\tt )}  & ({\tt ex})\\
+  & $|$ & {\tt ( EX} {\ident} \zeroone{{\tt :} {\specif}} {\tt
+  |} {\form}  {\tt \&} {\form} {\tt )} & ({\tt ex2})\\
+  & $|$ & {\term} {\tt =} {\term} & ({\tt eq})\\
+\hline
+\end{tabular}
+\end{center}
+
+\medskip
+
+\noindent Remark: The implication is not defined but primitive
+(it is a non-dependent product of a proposition over another proposition).
+There is also a primitive universal quantification (it is a
+dependent product over a proposition). The primitive universal
+quantification allows both first-order and higher-order
+quantification. There is no need to
+use the notation {\tt ( ALL} {\ident} \zeroone{{\tt :} {\specif}} {\tt
+|} {\form} {\tt )} propositions), except to have a notation dual of
+the notation for first-order existential quantification.
+\caption{Syntax of formulas}
+\end{figure}
+
+\subsubsection{Propositional Connectives} \label{Connectives}
+\index{Connectives}
+
+First, we find propositional calculus connectives:
+\ttindex{True}
+\ttindex{I}
+\ttindex{False}
+\ttindex{not}
+\ttindex{and}
+\ttindex{conj}
+\ttindex{proj1}
+\ttindex{proj2}
+
+\begin{coq_example*}
+Inductive True : Prop := I : True. 
+Inductive False : Prop := . 
+Definition not := [A:Prop] A->False.
+Inductive and [A,B:Prop] : Prop := conj : A -> B -> A/\B.
+Section Projections.
+Variables A,B : Prop.
+Theorem proj1 : A/\B -> A.
+Theorem proj2 : A/\B -> B.
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+Abort.
+\end{coq_eval}
+\ttindex{or}
+\ttindex{or\_introl}
+\ttindex{or\_intror}
+\ttindex{iff}
+\ttindex{IF}
+\begin{coq_example*}
+End Projections.
+Inductive or [A,B:Prop] : Prop
+    := or_introl : A -> A\/B 
+     | or_intror : B -> A\/B.
+Definition iff := [P,Q:Prop] (P->Q) /\ (Q->P).
+Definition IF := [P,Q,R:Prop] (P/\Q) \/ (~P/\R).
+\end{coq_example*}
+
+\subsubsection{Quantifiers} \label{Quantifiers}
+\index{Quantifiers}
+
+Then we find first-order quantifiers:
+\ttindex{all}
+\ttindex{All}
+\ttindex{ex}
+\ttindex{Ex}
+\ttindex{EX}
+\ttindex{ex\_intro}
+\ttindex{ex2}
+\ttindex{Ex2}
+\ttindex{ex\_intro2}
+
+\begin{coq_example*}
+Definition all := [A:Set][P:A->Prop](x:A)(P x). 
+Inductive ex [A:Set;P:A->Prop] : Prop 
+    := ex_intro : (x:A)(P x)->(ex A P).
+Inductive ex2 [A:Set;P,Q:A->Prop] : Prop
+    := ex_intro2 : (x:A)(P x)->(Q x)->(ex2 A P Q).
+\end{coq_example*}
+
+The following abbreviations are allowed:
+\begin{center}
+  \begin{tabular}[h]{|l|r|}
+    \hline
+    \verb+(ALL x:A | P)+    & \verb+(all A [x:A]P)+ \\
+    \verb+(ALL x | P)+      & \verb+(all A [x:A]P)+ \\
+    \verb+(EX x:A | P)+     & \verb+(ex A [x:A]P)+ \\
+    \verb+(EX x | P)+       & \verb+(ex A [x:A]P)+ \\
+    \verb+(EX x:A | P & Q)+ & \verb+(ex2 A [x:A]P [x:A]Q)+ \\
+    \verb+(EX x | P & Q)+   & \verb+(ex2 A [x:A]P [x:A]Q)+ \\
+    \hline
+  \end{tabular}
+\end{center}
+
+The type annotation \texttt{:A} can be omitted when \texttt{A} can be
+synthesized by the system.
+
+\subsubsection{Equality} \label{Equality}
+\index{Equality}
+
+Then, we find equality, defined as an inductive relation. That is,
+given a \verb:Set: \verb:A: and an \verb:x: of type \verb:A:, the
+predicate \verb:(eq A x): is the smallest which contains \verb:x:.
+This definition, due to Christine Paulin-Mohring, is equivalent to
+define \verb:eq: as the smallest reflexive relation, and it is also
+equivalent to Leibniz' equality.
+
+\ttindex{eq}
+\ttindex{refl\_equal}
+
+\begin{coq_example*}
+Inductive eq [A:Set;x:A] : A->Prop
+    := refl_equal : (eq A x x).
+\end{coq_example*}
+
+\subsubsection{Lemmas} \label{PreludeLemmas}
+Finally, a few easy lemmas are provided.
+
+\ttindex{absurd}
+
+\begin{coq_example*}
+Theorem absurd : (A:Prop)(C:Prop) A -> ~A -> C.
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+\ttindex{sym\_equal}
+\ttindex{trans\_equal}
+\ttindex{f\_equal}
+\ttindex{sym\_not\_equal}
+\begin{coq_example*}
+Section equality.
+ Variable A,B : Set.
+ Variable f   : A->B.
+ Variable x,y,z : A.
+ Theorem sym_equal : x=y -> y=x.
+ Theorem trans_equal : x=y -> y=z -> x=z.
+ Theorem f_equal : x=y -> (f x)=(f y).
+ Theorem sym_not_equal : ~(x=y) -> ~(y=x).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+Abort.
+Abort.
+Abort.
+\end{coq_eval}
+\ttindex{eq\_ind\_r}
+\ttindex{eq\_rec\_r}
+\begin{coq_example*}
+End equality.
+Definition eq_ind_r : (A:Set)(x:A)(P:A->Prop)(P x)->(y:A)y=x->(P y).
+Definition eq_rec_r : (A:Set)(x:A)(P:A->Set)(P x)->(y:A)y=x->(P y).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+Abort.
+\end{coq_eval}
+\begin{coq_example*}
+Immediate sym_equal sym_not_equal.
+\end{coq_example*}
+
+\subsection{Datatypes} \label{Datatypes}
+
+In the basic library, we find the definition\footnote{They are in {\tt
+Datatypes.v}} 
+of the basic data-types of programming, 
+again defined as inductive constructions over the sort
+\verb:Set:. Some of them come with a special syntax shown on figure
+\ref{specif-syntax}.
+
+\subsubsection{Programming} \label{Programming}
+\index{Programming}
+\index{Datatypes}
+
+\ttindex{unit}
+\ttindex{tt}
+\ttindex{bool}
+\ttindex{true}
+\ttindex{false}
+\ttindex{nat}
+\ttindex{O}
+\ttindex{S}
+
+\begin{coq_example*}
+Inductive unit : Set := tt : unit.
+Inductive bool : Set := true : bool 
+                      | false : bool.
+Inductive nat : Set := O : nat 
+                     | S : nat->nat.
+\end{coq_example*}
+
+Note that zero is the letter \verb:O:, and {\sl not} the numeral
+\verb:0:.
+
+We then define the disjoint sum of \verb:A+B: of two sets \verb:A: and
+\verb:B:, and their product \verb:A*B:.
+\ttindex{sum}
+\ttindex{A+B}
+\ttindex{+}
+\ttindex{inl}
+\ttindex{inr}
+\ttindex{prod}
+\ttindex{A*B}
+\ttindex{*}
+\ttindex{pair}
+\ttindex{fst}
+\ttindex{snd}
+\ttindex{Fst}
+\ttindex{Snd}
+
+\begin{coq_example*}
+Inductive sum [A,B:Set] : Set
+    := inl : A -> A+B 
+     | inr : B -> A+B.
+Inductive prod [A,B:Set] : Set := pair : A -> B -> A*B.
+Section projections.
+   Variables A,B:Set.
+   Definition fst := [H:A*B] Cases H of (x,y) => x end.
+   Definition snd := [H:A*B] Cases H of (x,y) => y end.
+End projections.
+Syntactic Definition Fst := (fst ? ?).
+Syntactic Definition Snd := (snd ? ?).
+\end{coq_example*}
+
+\subsection{Specification}
+
+The following notions\footnote{They are defined in module {\tt
+Specif.v}} allows to build new datatypes and specifications. 
+They are available with the syntax shown on
+figure \ref{specif-syntax}\footnote{This syntax can be found in the module
+{\tt SpecifSyntax.v}}.
+
+For instance, given \verb|A:Set| and \verb|P:A->Prop|, the construct
+\verb+{x:A | (P x)}+ (in abstract syntax \verb+(sig A P)+) is a
+\verb:Set:. We may build elements of this set as \verb:(exist x p):
+whenever we have a witness \verb|x:A| with its justification
+\verb|p:(P x)|.
+
+From such a \verb:(exist x p): we may in turn extract its witness
+\verb|x:A| (using an elimination construct such as \verb:Cases:) but
+{\sl not} its justification, which stays hidden, like in an abstract
+data type. In technical terms, one says that \verb:sig: is a ``weak
+(dependent) sum''.  A variant \verb:sig2: with two predicates is also
+provided.
+
+\index{\{x:A "| (P x)\}}
+\index{"|}
+\ttindex{sig}
+\ttindex{exist}
+\ttindex{sig2}
+\ttindex{exist2}
+
+\begin{coq_example*}
+Inductive  sig [A:Set;P:A->Prop] : Set
+    := exist : (x:A)(P x) -> (sig A P).
+Inductive sig2 [A:Set;P,Q:A->Prop] : Set
+    := exist2 : (x:A)(P x) -> (Q x) -> (sig2 A P Q).
+\end{coq_example*}
+
+A ``strong (dependent) sum'' \verb+{x:A & (P x)}+ may be also defined,
+when the predicate \verb:P: is now defined as a \verb:Set:
+constructor.
+
+\ttindex{\{x:A \& (P x)\}}
+\ttindex{\&}
+\ttindex{sigS}
+\ttindex{existS}
+\ttindex{projS1}
+\ttindex{projS2}
+\ttindex{sigS2}
+\ttindex{existS2}
+
+\begin{coq_example*}
+Inductive sigS [A:Set;P:A->Set] : Set
+    := existS : (x:A)(P x) -> (sigS A P).
+Section projections.
+   Variable A:Set.
+   Variable P:A->Set.
+   Definition projS1 := [H:(sigS A P)] let (x,h) = H in x.
+   Definition projS2 := [H:(sigS A P)]<[H:(sigS A P)](P (projS1 H))>
+                            let (x,h) = H in h.
+End projections. 
+Inductive sigS2 [A:Set;P,Q:A->Set] : Set
+    := existS2 : (x:A)(P x) -> (Q x) -> (sigS2 A P Q).
+\end{coq_example*}
+
+A related non-dependent construct is the constructive sum
+\verb"{A}+{B}" of two propositions \verb:A: and \verb:B:.
+\label{sumbool}
+\ttindex{sumbool}
+\ttindex{left}
+\ttindex{right}
+\ttindex{\{A\}+\{B\}}
+
+\begin{coq_example*}
+Inductive sumbool [A,B:Prop] : Set
+    := left  : A -> ({A}+{B}) 
+     | right : B -> ({A}+{B}).
+\end{coq_example*}
+
+This \verb"sumbool" construct may be used as a kind of indexed boolean
+data type. An intermediate between \verb"sumbool" and \verb"sum" is
+the mixed \verb"sumor" which combines \verb"A:Set" and \verb"B:Prop"
+in the \verb"Set" \verb"A+{B}".
+\ttindex{sumor}
+\ttindex{inleft}
+\ttindex{inright}
+\ttindex{A+\{B\}}
+
+\begin{coq_example*}
+Inductive sumor [A:Set;B:Prop] : Set
+    := inleft  : A -> (A+{B}) 
+     | inright : B -> (A+{B}).
+\end{coq_example*}
+
+\begin{figure}
+\label{specif-syntax}
+\begin{center}
+\begin{tabular}{|lclr|}
+\hline
+{\specif} & ::= & {\specif} {\tt *} {\specif} & ({\tt prod})\\
+  & $|$ & {\specif} {\tt +} {\specif} & ({\tt sum})\\
+  & $|$ & {\specif} {\tt + \{} {\specif} {\tt \}} & ({\tt sumor})\\
+  & $|$ & {\tt \{} {\specif} {\tt \} + \{} {\specif} {\tt \}} &
+  ({\tt sumbool})\\  
+  & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt |} {\form} {\tt \}}
+  & ({\tt sig})\\
+  & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt |} {\form}  {\tt \&}
+  {\form} {\tt \}} & ({\tt sig2})\\
+  & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt \&} {\specif} {\tt
+    \}} & ({\tt sigS})\\
+  & $|$ & {\tt \{} {\ident} {\tt :} {\specif} {\tt \&} {\specif} {\tt
+    \&} {\specif} {\tt \}} & ({\tt sigS2})\\
+  &  & & \\
+{\term} & ::= & {\tt (} {\term} {\tt ,} {\term} {\tt )} & ({\tt pair})\\
+\hline
+\end{tabular}
+\caption{Syntax of datatypes and specifications}
+\end{center}
+\end{figure}
+
+We may define variants of the axiom of choice, like in Martin-Löf's
+Intuitionistic Type Theory.
+\ttindex{Choice}
+\ttindex{Choice2}
+\ttindex{bool\_choice}
+
+\begin{coq_example*}
+Lemma Choice : (S,S':Set)(R:S->S'->Prop)((x:S){y:S'|(R x y)})
+                       -> {f:S->S'|(z:S)(R z (f z))}.
+Lemma Choice2 : (S,S':Set)(R:S->S'->Set)((x:S){y:S' & (R x y)})
+                       -> {f:S->S' & (z:S)(R z (f z))}.
+Lemma bool_choice : (S:Set)(R1,R2:S->Prop)((x:S){(R1 x)}+{(R2 x)}) ->
+ {f:S->bool | (x:S)( ((f x)=true  /\ (R1 x)) 
+                  \/ ((f x)=false /\ (R2 x)))}.
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+Abort.
+Abort.
+\end{coq_eval}
+
+The next construct builds a sum between a data type \verb|A:Set| and
+an exceptional value encoding errors:
+
+\ttindex{Exc}
+\ttindex{value}
+\ttindex{error}
+
+\begin{coq_example*}
+Inductive Exc [A:Set] : Set := value : A->(Exc A) 
+                             | error : (Exc A).
+\end{coq_example*}
+
+
+This module ends with one axiom and theorems, 
+relating the sorts \verb:Set: and
+\verb:Prop: in a way which is consistent with the realizability
+interpretation.
+\ttindex{False\_rec}
+\ttindex{eq\_rec}
+\ttindex{Except}
+\ttindex{absurd\_set}
+\ttindex{and\_rec}
+
+\begin{coq_example*}
+Axiom False_rec : (P:Set)False->P.
+Definition except := False_rec.
+Syntactic Definition Except := (except ?).
+Theorem absurd_set : (A:Prop)(C:Set)A->(~A)->C.
+Theorem and_rec : (A,B:Prop)(C:Set)(A->B->C)->(A/\B)->C.
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+Abort.
+\end{coq_eval}
+
+\subsection{Basic Arithmetics}
+
+The basic library includes a few elementary properties of natural numbers,
+together with the definitions of predecessor, addition and
+multiplication\footnote{This is in module {\tt Peano.v}}.
+\ttindex{eq\_S}
+\ttindex{pred}
+\ttindex{pred\_Sn}
+\ttindex{eq\_add\_S}
+\ttindex{not\_eq\_S}
+\ttindex{IsSucc}
+\ttindex{O\_S}
+\ttindex{n\_Sn}
+\ttindex{plus}
+\ttindex{plus\_n\_O}
+\ttindex{plus\_n\_Sm}
+\ttindex{mult}
+\ttindex{mult\_n\_O}
+\ttindex{mult\_n\_Sm}
+
+\begin{coq_example*}
+Theorem eq_S : (n,m:nat) n=m -> (S n)=(S m).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+\begin{coq_example*}
+Definition pred : nat->nat 
+     := [n:nat](<nat>Cases n of O => O 
+                          | (S u) => u end).
+Theorem pred_Sn : (m:nat) m=(pred (S m)).
+Theorem eq_add_S : (n,m:nat) (S n)=(S m) -> n=m.
+Immediate eq_add_S.
+Theorem not_eq_S : (n,m:nat) ~(n=m) -> ~((S n)=(S m)).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+Abort.
+Abort.
+\end{coq_eval}
+\begin{coq_example*}
+Definition IsSucc : nat->Prop
+  := [n:nat](<Prop>Cases n of O => False
+                        | (S p) => True end).
+Theorem O_S : (n:nat) ~(O=(S n)).
+Theorem n_Sn : (n:nat) ~(n=(S n)).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+Abort.
+\end{coq_eval}
+\begin{coq_example*}
+Fixpoint plus [n:nat] : nat -> nat := 
+   [m:nat](<nat>Cases n of 
+       O => m 
+    | (S p) => (S (plus p m)) end).
+Lemma plus_n_O : (n:nat) n=(plus n O).
+Lemma plus_n_Sm : (n,m:nat) (S (plus n m))=(plus n (S m)).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+Abort.
+\end{coq_eval}
+\begin{coq_example*}
+Fixpoint mult [n:nat] : nat -> nat := 
+   [m:nat](<nat> Cases n of O => O 
+                         | (S p) => (plus m (mult p m)) end).
+Lemma mult_n_O : (n:nat) O=(mult n O).
+Lemma mult_n_Sm : (n,m:nat) (plus (mult n m) n)=(mult n (S m)).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+Abort.
+\end{coq_eval}
+
+Finally, it gives the definition of the usual orderings \verb:le:,
+\verb:lt:, \verb:ge:, and \verb:gt:.
+\ttindex{le}
+\ttindex{le\_n}
+\ttindex{le\_S}
+\ttindex{lt}
+\ttindex{ge}
+\ttindex{gt}
+
+\begin{coq_example*}
+Inductive le [n:nat] : nat -> Prop
+    := le_n : (le n n)
+     | le_S : (m:nat)(le n m)->(le n (S m)).
+Definition lt := [n,m:nat](le (S n) m).
+Definition ge := [n,m:nat](le m n).
+Definition gt := [n,m:nat](lt m n).
+\end{coq_example*}
+
+Properties of these relations are not initially known, but may be
+required by the user from modules \verb:Le: and \verb:Lt:.  Finally,
+\verb:Peano: gives some lemmas allowing pattern-matching, and a double
+induction principle.
+
+\ttindex{nat\_case}
+\ttindex{nat\_double\_ind}
+
+\begin{coq_example*}
+Theorem nat_case : (n:nat)(P:nat->Prop)(P O)->((m:nat)(P (S m)))->(P n).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+\begin{coq_example*}
+Theorem nat_double_ind : (R:nat->nat->Prop)
+     ((n:nat)(R O n)) -> ((n:nat)(R (S n) O))
+     -> ((n,m:nat)(R n m)->(R (S n) (S m)))
+     -> (n,m:nat)(R n m).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+\subsection{Well-founded recursion}
+
+The basic library contains the basics of well-founded recursion and 
+well-founded induction\footnote{This is defined in module {\tt Wf.v}}.
+\index{Well foundedness}
+\index{Recursion}
+\index{Well founded induction}
+\ttindex{Acc}
+\ttindex{Acc\_inv}
+\ttindex{Acc\_rec}
+\ttindex{well\_founded}
+
+\begin{coq_example*}
+Chapter Well_founded.
+Variable A : Set.
+Variable R : A -> A -> Prop.
+Inductive Acc : A -> Prop 
+   := Acc_intro : (x:A)((y:A)(R y x)->(Acc y))->(Acc x).
+Lemma Acc_inv : (x:A)(Acc x) -> (y:A)(R y x) -> (Acc y).
+\end{coq_example*}
+\begin{coq_eval}
+Destruct 1; Trivial.
+Defined.
+\end{coq_eval}
+\begin{coq_example*}
+Section AccRec.
+Variable P : A -> Set.
+Variable F : (x:A)((y:A)(R y x)->(Acc y))->((y:A)(R y x)->(P y))->(P x).
+Fixpoint Acc_rec [x:A;a:(Acc x)] : (P x)
+   := (F x (Acc_inv x a) [y:A][h:(R y x)](Acc_rec y (Acc_inv x a y h))).
+End AccRec.
+Definition well_founded := (a:A)(Acc a).
+Theorem well_founded_induction : 
+    well_founded ->
+        (P:A->Set)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+\begin{coq_example*}
+End Well_founded. 
+\end{coq_example*}
+\begin{coq_example*}
+  Section Wf_inductor.
+Variable A:Set.
+Variable R:A->A->Prop.
+Theorem well_founded_ind : 
+    (well_founded A R) ->
+        (P:A->Prop)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+\begin{coq_example*}
+End Wf_inductor.
+\end{coq_example*}
+
+
+\subsection{Accessing the {\Type} level}
+
+The basic library includes the definitions\footnote{This is in module
+{\tt Logic\_Type.v}} of logical quantifiers axiomatized at the
+\verb:Type: level. 
+
+\ttindex{allT}
+\ttindex{AllT}
+\ttindex{inst}
+\ttindex{gen}
+\ttindex{exT}
+\ttindex{ExT}
+\ttindex{EXT}
+\ttindex{exT\_intro}
+\ttindex{ExT2}
+\ttindex{exT2}
+\ttindex{EmptyT}
+\ttindex{UnitT}
+\ttindex{notT}
+
+\begin{coq_example*}
+Definition allT := [A:Type][P:A->Prop](x:A)(P x). 
+
+Section universal_quantification.
+Variable A : Type.
+Variable P : A->Prop.
+Theorem inst :  (x:A)(ALLT x | (P x))->(P x).
+Theorem gen : (B:Prop)(f:(y:A)B->(P y))B->(allT ? P).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+Abort.
+\end{coq_eval}
+\begin{coq_example*}
+End universal_quantification.
+Inductive  exT [A:Type;P:A->Prop] : Prop
+    := exT_intro : (x:A)(P x)->(exT A P).
+
+Inductive exT2 [A:Type;P,Q:A->Prop] : Prop
+    := exT_intro2 : (x:A)(P x)->(Q x)->(exT2 A P Q).
+\end{coq_example*}
+
+It defines also Leibniz equality \verb:x==y: when \verb:x: and
+\verb:y: belong to \verb+A:Type+.
+\ttindex{eqT}
+\ttindex{refl\_eqT}
+\ttindex{sum\_eqT}
+\ttindex{sym\_not\_eqT}
+\ttindex{trans\_eqT}
+\ttindex{congr\_eqT}
+\ttindex{eqT\_ind\_r}
+\ttindex{eqT\_rec\_r}
+
+\begin{coq_example*}
+Inductive eqT [A:Type;x:A] : A -> Prop
+                       := refl_eqT : (eqT A x x).
+Section Equality_is_a_congruence.
+Variables A,B : Type.
+Variable  f : A->B.
+ Variable x,y,z : A.
+ Lemma sym_eqT : (x==y) -> (y==x).
+ Lemma trans_eqT : (x==y) -> (y==z) -> (x==z).
+ Lemma congr_eqT : (x==y)->((f x)==(f y)).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+Abort.
+Abort.
+\end{coq_eval}
+\begin{coq_example*}
+End Equality_is_a_congruence.
+Immediate sym_eqT sym_not_eqT.
+Definition eqT_ind_r: (A:Type)(x:A)(P:A->Prop)(P x)->(y:A)y==x -> (P y).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+The figure \ref{formulas-syntax-type} presents the syntactic notations 
+corresponding to the main definitions
+\footnote{This syntax is defined in module {\tt Logic\_TypeSyntax}}
+
+\begin{figure}
+\label{formulas-syntax-type}
+\begin{center}
+\begin{tabular}{|lclr|}
+\hline
+{\form} & ::= & {\tt ( ALLT} {\ident} \zeroone{{\tt :} {\specif}} {\tt |}
+  {\form} {\tt )} & ({\tt allT})\\
+  & $|$ & {\tt ( EXT} {\ident} \zeroone{{\tt :} {\specif}} {\tt
+  |} {\form} {\tt )}  & ({\tt exT})\\
+  & $|$ & {\tt ( EXT} {\ident} \zeroone{{\tt :} {\specif}} {\tt
+  |} {\form}  {\tt \&} {\form} {\tt )} & ({\tt exT2})\\
+  & $|$ & {\term} {\tt ==} {\term} & ({\tt eqT})\\
+\hline
+\end{tabular}
+\end{center}
+\caption{Syntax of first-order formulas in the type universe}
+\end{figure}
+
+At the end, it defines datatypes at the {\Type} level.
+
+\begin{coq_example*}
+Inductive EmptyT: Type :=.
+Inductive UnitT : Type := IT : UnitT.
+Definition notT := [A:Type] A->EmptyT.
+
+Inductive identityT [A:Type; a:A] : A->Type :=
+     refl_identityT : (identityT A a a).
+\end{coq_example*}
+
+
+\section{The standard library}
+
+\subsection{Survey}
+
+The rest of the standard library is structured into the following 
+subdirectories:
+
+\begin{tabular}{lp{12cm}}
+  {\bf LOGIC}   & Classical logic and dependent equality \\
+  {\bf ARITH}   & Basic Peano arithmetic \\
+  {\bf ZARITH}  & Basic integer arithmetic \\
+  {\bf BOOL}    &  Booleans (basic functions and results) \\
+  {\bf LISTS}   & Monomorphic and polymorphic lists (basic functions and
+            results), Streams (infinite sequences defined with co-inductive
+            types) \\
+  {\bf SETS}    & Sets (classical, constructive, finite, infinite, power set,
+            etc.) \\
+ {\bf RELATIONS} & Relations (definitions and basic results). There is
+             a subdirectory about well-founded relations ({\bf WELLFOUNDED}) \\
+ {\bf SORTING} & Various sorting algorithms \\
+ {\bf REALS}   & Axiomatization of Real Numbers (classical, basic functions 
+                 and results, integer part and fractional part,
+                 requires the \textbf{ZARITH} library)
+\end{tabular}
+\medskip
+
+These directories belong to the initial load path of the system, and
+the modules they provide are compiled at installation time. So they
+are directly accessible with the command \verb!Require! (see
+chapter~\ref{Other-commands}). 
+
+The different modules of the \Coq\ standard library are described in the
+additional document \verb!Library.dvi!. They are also accessible on the WWW
+through the \Coq\ homepage
+\footnote{\texttt{http://coq.inria.fr}}.
+
+\subsection{Notations for integer arithmetics}
+\index{Arithmetical notations}
+
+On figure \ref{zarith-syntax} is described the syntax of expressions
+for integer arithmetics. It is provided by requiring the module {\tt ZArith}.
+
+\ttindex{+}
+\ttindex{*}
+\ttindex{-}
+
+The {\tt +} and {\tt -} binary operators bind less than the {\tt *} operator
+which binds less than the {\tt |}~...~{\tt |} and {\tt -} unary
+operators which bind less than the others constructions.
+All the binary operators are left associative. The {\tt [}~...~{\tt ]}
+allows to escape the {\zarith} grammar.
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{|lcl|}
+\hline
+{\form} & ::= & {\tt `} {\zarithformula} {\tt `}\\
+  & & \\
+{\term} & ::= & {\tt `} {\zarith} {\tt `}\\
+  & & \\
+{\zarithformula} & ::= & {\zarith} {\tt =} {\zarith} \\
+   & $|$ & {\zarith} {\tt <=} {\zarith} \\
+   & $|$ & {\zarith} {\tt <} {\zarith} \\
+   & $|$ & {\zarith} {\tt >=} {\zarith} \\
+   & $|$ & {\zarith} {\tt >} {\zarith}  \\
+   & $|$ & {\zarith} {\tt =} {\zarith} {\tt =} {\zarith} \\
+   & $|$ & {\zarith} {\tt <=} {\zarith} {\tt <=} {\zarith} \\
+   & $|$ & {\zarith} {\tt <=} {\zarith} {\tt <} {\zarith} \\
+   & $|$ & {\zarith} {\tt <} {\zarith} {\tt <=} {\zarith} \\
+   & $|$ & {\zarith} {\tt <} {\zarith} {\tt <} {\zarith} \\
+   & $|$ & {\zarith} {\tt <>} {\zarith} \\
+   & $|$ & {\zarith} {\tt ?} {\tt =} {\zarith} \\
+  & & \\
+{\zarith}  & ::= & {\zarith} {\tt +} {\zarith} \\
+   & $|$ & {\zarith} {\tt -} {\zarith} \\
+   & $|$ & {\zarith} {\tt *} {\zarith} \\
+   & $|$ & {\tt |} {\zarith} {\tt |} \\
+   & $|$ & {\tt -} {\zarith} \\
+   & $|$ & {\ident} \\
+   & $|$ & {\tt [} {\term} {\tt ]} \\
+   & $|$ & {\tt (} \nelist{\zarith}{} {\tt )} \\
+   & $|$ & {\tt (} \nelist{\zarith}{,} {\tt )} \\
+   & $|$ & {\integer} \\
+\hline
+\end{tabular}
+\end{center}
+\label{zarith-syntax}
+\caption{Syntax of expressions in integer arithmetics}
+\end{figure}
+
+\subsection{Notations for Peano's arithmetic (\texttt{nat})}
+\index{Peano's arithmetic notations}
+
+After having required the module \texttt{Arith}, the user can type the
+naturals using decimal notation. That is he can write \texttt{(3)}
+for \texttt{(S (S (S O)))}. The number must be between parentheses.
+This works also in the left hand side of a \texttt{Cases} expression
+(see for example section \ref{Refine-example}).
+
+\section{Users' contributions}
+\index{Contributions}
+\label{Contributions}
+
+Numerous users' contributions have been collected and are available on
+the WWW at the following address: \verb!pauillac.inria.fr/coq/contribs!.
+On this web page, you have a list of all contributions with
+informations (author, institution, quick description, etc.) and the
+possibility to download them one by one.
+There is a small search engine to look for keywords in all contributions.
+You will also find informations on how to submit a new contribution. 
+
+The users' contributions may also be obtained by anonymous FTP from site
+\verb:ftp.inria.fr:, in directory \verb:INRIA/coq/: and
+searchable on-line at 
+
+\begin{quotation}
+  \texttt{http://coq.inria.fr/contribs-eng.html}
+\end{quotation}
+
+% $Id$ 
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
