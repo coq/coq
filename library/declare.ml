@@ -510,6 +510,13 @@ let declare_eliminations sp =
 (* Look up function for the default elimination constant *)
 
 let lookup_eliminator env path s =
-  let s = (string_of_id (basename path))^(elimination_suffix s) in
-  construct_reference env (kind_of_path path) (id_of_string s)
+  let dir, base,k = repr_path path in
+  let id = id_of_string ((string_of_id base)^(elimination_suffix s)) in
+  (* Try first to get an eliminator defined in the same section as the *)
+  (* inductive type *)
+  try construct_absolute_reference env (Names.make_path dir id k)
+  with Not_found ->
+  (* Then try to get a user-defined eliminator in some other places *)
+  (* using short name (e.g. for "eq_rec") *)
+  construct_reference env (kind_of_path path) id
   
