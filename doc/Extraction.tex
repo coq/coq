@@ -1,16 +1,16 @@
-\achapter{Execution of extracted programs in Caml and Haskell}
-\label{CamlHaskellExtraction}
-\aauthor{Benjamin Werner and Jean-Christophe Filliâtre}
+\achapter{Execution of extracted programs in Objective Caml and Haskell}
+\label{Extraction}
+\aauthor{Jean-Christophe Filliâtre and Pierre Letouzey}
 \index{Extraction}
 
 It is possible to use \Coq\ to build certified and relatively
 efficient programs, extracting them from the proofs of their
-specifications. The extracted objects are terms of \FW, and can be 
+specifications. The extracted objects can be 
 obtained at the \Coq\ toplevel with the command {\tt Extraction}
-(see \ref{Extraction}).
+(see \ref{ExtractionTerm}).
 
 We present here a \Coq\ module, {\tt Extraction}, which translates the
-extracted terms to ML dialects, namely Caml Light, Objective Caml and
+extracted terms to ML dialects, namely Objective Caml and
 Haskell. In the following, we will not refer to a particular dialect
 when possible and ``ML'' will be used to refer to any of the target
 dialects.

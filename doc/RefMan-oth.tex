@@ -66,20 +66,20 @@ progress).
 
 \SeeAlso section~\ref{Conversion-tactics}.
 
-\subsection{\tt Extraction \ident.}
-\label{ExtractionIdent}
-\comindex{Extraction}
-This command displays the \FW-term extracted from {\ident}. The name
-{\ident} must refer to a defined constant or a theorem. The \FW-term
-is extracted from the term defining {\ident} when {\ident} is a
-defined constant, or from the proof-term when {\ident} is a
-theorem. The extraction is processed according to the distinction
+\subsection{\tt Extraction \term.}
+\label{ExtractionTerm}
+\comindex{Extraction} 
+This command displays the extracted term from
+{\term}. The extraction is processed according to the distinction
 between {\Set} and {\Prop}; that is to say, between logical and
-computational content (see section \ref{Sorts}).
+computational content (see section \ref{Sorts}). The extracted term is
+displayed in Objective Caml syntax, where global identifiers are still
+displayed as in \Coq\ terms.
 
-\begin{ErrMsgs}
-\item \errindex{Non informative term}
-\end{ErrMsgs}
+\begin{Variants}
+\item \texttt{Recursive Extraction {\term}.}\\
+  Recursively extracts all the material needed for the extraction of \term.
+\end{Variants}
 
 \SeeAlso chapter \ref{Extraction}
 
@@ -604,13 +604,13 @@ Objective Caml toplevel. The Objective Caml command:
 
 \begin{flushleft}
 \begin{verbatim}
-#use "include.ml";;
+#use "include";;
 \end{verbatim}
 \end{flushleft}
 
 \noindent add the right loadpaths and loads some toplevel printers for
 all abstract types of \Coq - section\_path, identfifiers, terms, judgements,
-\dots. You can also use the file \texttt{base\_include.ml} instead,
+\dots. You can also use the file \texttt{base\_include} instead,
 that loads only the pretty-printers for section\_paths and
 identfifiers. See section \ref{test-and-debug} more information on the
 usage of the toplevel. You can return back to \Coq{} with the command: 

@@ -12,7 +12,7 @@ There are two \Coq~commands:
 \bigskip
 
 The options are (basically) the same for the two commands, and
-roughly described below. You can also look at the \verb!man!  pages of
+roughly described below. You can also look at the \verb!man! pages of
 \verb!coqtop! and \verb!coqc! for more details.
 
 
@@ -24,23 +24,17 @@ ran by the command {\tt coqtop}.
 \index{byte-code}
 \index{native code}
 \label{binary-images}
-They are three different binary images of \Coq: the byte-code one,
-the native-code one and the full native-code one.  When invoking
-\verb!coqtop!, the byte-code version of the system is used.  The
-command \verb!coqtop -opt! runs a native-code version of the
-\Coq~system, and the command \verb!coqtop -full! a native-code version
-with the implementation code of all the tactics (that is with the code
-of the tactics \verb!Linear!, \verb!Ring! and \verb!Omega! which then
-can be required by \verb=Require=) and tools (\verb!Extraction! and
-\verb!Natural! which again become available through the command
-\verb=Require=).  Those toplevels are significantly faster than the
-byte-code one.  Notice that it is no longer possible to access the
-Caml toplevel, neither to load tactics.
+They are two different binary images of \Coq: the byte-code one and
+the native-code one (if Objective Caml provides a native-code compiler
+for your platform, which is supposed in the following).  When invoking
+\verb!coqtop! or \verb!coqc!, the native-code version of the system is
+used.  The command-line options \verb!-byte! and \verb!-opt! explicitly
+select the byte-code and the native-code versions, respectively.
 
-This byte-code toplevel is based on a Caml
+The byte-code toplevel is based on a Caml
 toplevel (to allow the dynamic link of tactics).  You can switch to
 the Caml toplevel with the command \verb!Drop.!, and come back to the
-\Coq~toplevel with the command \verb!Coqtoplevel.go();;!.
+\Coq~toplevel with the command \verb!Toplevel.loop();;!.
 
 % The command \verb!coqtop -searchisos! runs the search tool {\sf
 %   Coq\_SearchIsos} (see section~\ref{coqsearchisos},
@@ -51,8 +45,6 @@ the Caml toplevel with the command \verb!Drop.!, and come back to the
 The {\tt coqc} command takes a name {\em file} as argument.  Then it
 looks for a vernacular file named {\em file}{\tt .v}, and tries to
 compile it into a {\em file}{\tt .vo} file (See ~\ref{compiled}).
-With the \verb!-i! option, it compiles the specification module {\em
-file}{\tt .vi}. 
 
 \Warning The name {\em file} must be a regular {\Coq} identifier, as
 defined in the section \ref{lexical}. It
@@ -60,9 +52,9 @@ must only contain letters, digits or underscores
 (\_). Thus it can be \verb+/bar/foo/toto.v+ but not 
 \verb+/bar/foo/to-to+ . 
 
-Notice that the \verb!-opt! and \verb!-full! options are still
-available with \verb!coqc!  and allow you to compile \Coq\ files with
-an efficient version of the system.
+Notice that the \verb!-byte! and \verb!-opt! options are still
+available with \verb!coqc!  and allow you to select the byte-code or
+native-code versions of the system.
 
 
 \section{Resource file}
@@ -141,20 +133,19 @@ The following command-line options are recognized by the commands {\tt
   coqc} and {\tt coqtop}:
 
 \begin{description}
-\item[{\tt -opt}]\ \\
-  Run the native-code version of \Coq{} (or {\sf Coq\_SearchIsos} for {\tt
-coqtop}).
+\item[{\tt -byte}]\ \\
+  Run the byte-code version of \Coq{}.
 
-\item[{\tt -full}]\ \\
-  Run a native-code version of {\Coq} with all tactics.
+\item[{\tt -opt}]\ \\
+  Run the native-code version of \Coq{}.
 
 \item[{\tt -I} {\em directory}, {\tt -include} {\em directory}]\ \\
   Add {\em directory} to the searched directories when looking for a
   file.
 
-\item[{\tt -R} {\em directory}]\ \\
+\item[{\tt -R} {\em directory} {\em logical-path}]\ \\
   Add recursively {\em directory} to the searched directories when looking for
-  a file.
+  a file, and maps this root directory to the given {\em logical path}.
 
 \item[{\tt -is} {\em file}, {\tt -inputstate} {\em file}]\ \\
   Cause \Coq~to use the state put in the file {\em file} as its input
