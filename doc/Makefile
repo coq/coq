@@ -88,6 +88,7 @@ all-html: Tutorial.v.html Reference-Manual.html Library.html Changes.v.html
 
 # dvips et dviselect existent sur loupiac
 distrib:
+	make check-env
 	make clean-coq demos-programs
 	make clean-latex all-dvi all-ps all-pdf compress-latex
 	make clean-html all-html doc-html.tar.gz html-www
