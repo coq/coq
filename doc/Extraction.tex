@@ -4,8 +4,8 @@
 \index{Extraction}
 
 \begin{flushleft}
-  \em The status of extraction is experimental \\
-  Haskell extraction is not yet implemented
+  \em The status of extraction is experimental. \\
+  Haskell extraction is implemented, but not yet tested.
 \end{flushleft}
 
 It is possible to use \Coq\ to build certified and relatively
@@ -29,15 +29,6 @@ The current mechanism also differs from
 the one in previous versions of \Coq: there is no more
 an explicit toplevel for the language (formerly called {\sf Fml}). 
 
-
-%\section{Extraction facilities}
-%
-%(* TO DO *)
-%
-\begin{coq_eval}
-  Require Extraction.
-\end{coq_eval}
-
 \medskip
 In the first part of this document we describe the commands of the
 {\tt Extraction} module, and we give some examples in the second part.
@@ -47,57 +38,162 @@ In the first part of this document we describe the commands of the
 \comindex{Recursive Extraction}
 \comindex{Extraction Module}
 
-The \Coq\ commands to generate ML code are:
+There are many different extraction commands, that can be used for
+rapid preview (section \ref{extraction:com-top}), for generating 
+real Ocaml code (section \ref{extraction:com-ocaml}) or for generating
+real Haskell code (section \ref{extraction:com-haskell}).
+
+
+\asubsection{Preview within \Coq\ toplevel}\label{extraction:com-top}
+
+The next two commands are meant to be used for rapid preview of
+extraction. They both display extracted term(s) inside \Coq\, using 
+an Ocaml syntax. Globals are printed as in the \Coq\ toplevel 
+(thus without any renaming). As a consequence, note that the output 
+cannot be copy-pasted directly into an Ocaml toplevel. 
+
 \begin{description}
 \item {\tt Extraction \term.} ~\par
   Extracts one term in the \Coq\ toplevel.
-  Extracted terms are displayed with an \ocaml\ syntax, where globals
-  are printed as in the \Coq\ toplevel (thus without any renaming).
 
 \item {\tt Recursive Extraction  \qualid$_1$ \dots\ \qualid$_n$.} ~\par
   Recursive extraction of all the globals \qualid$_1$ \dots\
   \qualid$_n$ and all their dependencies in the \Coq\ toplevel.
+\end{description}
 
-\item {\tt Extraction "{\em file}"} {\em options} 
+\asubsection{Generating real Ocaml files}\label{extraction:com-ocaml}
+
+All following commands produce real Ocaml files. User can choose to produce
+one monolithic file or one file per \Coq\ module. 
+
+\begin{description}
+\item {\tt Extraction "{\em file}"}  
       \qualid$_1$ \dots\ \qualid$_n$. ~\par
   Recursive extraction of all the globals \qualid$_1$ \dots\
-  \qualid$_n$ and all their dependencies in file {\em file}.
-  Global and local identifiers are renamed accordingly to the target
+  \qualid$_n$ and all their dependencies in one monolithic file {\em file}.
+  Global and local identifiers are renamed accordingly to the Ocaml
   language to fullfill its syntactic conventions, keeping original
   names as much as possible.
 
-\item  {\tt Extraction Module} {\em options} \ident. ~\par
+\item  {\tt Extraction Module} \ident. ~\par
   Extraction of the \Coq\ module \ident\ to an ML module {\tt\ident.ml}.
-  Identifiers are here renamed using prefixes \verb!coq_! or
-  \verb!Coq_! to ensure a session-independent renaming.
+  In case of name clash, identifiers are here renamed using prefixes
+  \verb!coq_! 
+  or \verb!Coq_! to ensure a session-independent renaming.
+
+\item {\tt Recursive Extraction Module} \ident. ~\par
+  Extraction of the \Coq\ module \ident\ and all other modules \ident\
+  depends on. 
 \end{description}
+
 The list of globals \qualid$_i$ does not need to be
 exhaustive: it is automatically completed into a complete and minimal
-environment. Extraction will fail if it encounters an axiom.
+environment. Extraction will fail if it encounters an informative
+axiom not realized (see section \ref{extraction:axioms}).
 
-\paragraph{Optimizations.} 
+
+
+\asubsection{Generating real Haskell files}\label{extraction:com-haskell}
+
+The commands generating Haskell code are similar to those generating
+Ocaml. A prefix ``Haskell'' is just added, and syntactic conventions
+are Haskell's ones. 
+
+\begin{description}
+\item {\tt Haskell Extraction "{\em file}"}  
+      \qualid$_1$ \dots\ \qualid$_n$. ~\par
+\item  {\tt Haskell Extraction Module} \ident. ~\par
+\item {\tt Haskell Recursive Extraction Module} \ident. ~\par
+\end{description}
+
+\asection{Extraction options and optimizations}\label{extraction:com-options}
+
+
 Since Objective Caml is a strict language, the extracted
 code has to be optimized in order to be efficient (for instance, when
 using induction principles we do not want to compute all the recursive
-calls but only the needed ones). So an optimization routine will be
-called each time the user want to generate Caml programs. Essentially,
-it performs constants expansions and reductions.  Therefore some
-constants will not appear in the resulting Caml program (A warning is
-printed for each such constant). To avoid this, just put the constant
-name in the previous list \qualid$_1$ \dots\ \qualid$_n$ and it will not
-be expanded. Moreover, two options allow the user to control the
-expansion strategy:
+calls but only the needed ones). So the extraction mechanism provides
+an automatic optimization routine that will be
+called each time the user want to generate Ocaml programs. Essentially,
+it performs constants inlining and reductions.  Therefore some
+constants may not appear in resulting monolithic Ocaml program (A warning is
+printed for each such constant). In the case of modular extraction, 
+even if some inling is done, the inlined constant are nevertheless
+printed, to ensure session-independent programs. 
+
+Concerning Haskell, such optimizations are less useful because of
+lazyness. We still make some optimizations, for example in order to
+produce more readable code. 
+
+All these optimizations are controled by the following \Coq\ options: 
+
 \begin{description}
-  \item\texttt{[ noopt ]} ~\par
-    specifies not to do any optimization.
-  \item\texttt{[ expand \qualid$_1$ \dots\ \qualid$_n$ ]} ~\par
-    forces the expansion of the constants \qualid$_1$ \dots\ \qualid$_n$
-    (when it is possible).
+
+\item {\tt Set Extraction Optimize.}
+\item {\tt Unset Extraction Optimize.} ~\par
+
+Default is Set. This control all optimizations made on the ML terms 
+(mostly reduction of dummy beta/iota redexes, but also simplications on 
+Cases, etc). Put this option to Unset if you what a ML term as close as 
+possible to the Coq term.
+
+\item {\tt Set Extraction AutoInline.}
+\item {\tt Unset Extraction AutoInline}. ~\par
+
+Default is Set, so by default, the extraction mechanism feels free to 
+inline the bodies of some defined constants, according to some heuristics 
+like size of bodies, useness of some arguments, etc. Those heuristics are 
+not always perfect, you may want to disable this feature, do it by Unset. 
+
+\item {\tt Extraction Inline} \qualid$_1$ \dots\ \qualid$_n$. ~\par 
+\item {\tt Extraction NoInline} \qualid$_1$ \dots\ \qualid$_n$. ~\par
+
+In addition to the automatic inline feature, you can now tell precisely to 
+inline some more constants by the {\tt Extraction Inline} command. Conversely, 
+you can forbid the automatic inlining of some specific constants by
+the {\tt Extraction NoInline} command.
+Those two commands enable a precise control of what is inlined and what is not. 
+
+\item {\tt Print Extraction Inline}. ~\par
+
+Prints the current state of the table recording the custom inlinings 
+declared by the two previous commands. 
+
+\item {\tt Reset Extraction Inline}. ~\par
+
+Puts the table recording the custom inlinings back to empty. 
+
 \end{description}
-Note that no optimization is performed for a modular extraction.
 
 
-\asection{Realizing axioms}
+\paragraph{Inlining and printing of a constant declaration.}
+
+
+A user can explicitely asks a constant to be extracted by two means: 
+\begin{itemize}
+\item by mentioning it on the extraction command line
+\item by extracting the whole \Coq\ module of this constant.
+\end{itemize}
+In both cases, the declaration of this constant will be present in the
+produced file. 
+But this same constant may or may not be inlined in the following
+terms, depending on the automatic/custom inling mechanism.  
+
+
+
+For the constants non-explicitely required but needed for dependancy
+reasons, there are two cases: 
+\begin{itemize}
+\item If an inlining decision is taken, wether automatically or not, 
+all occurences of this constant are replaced by its extracted body, and
+this constant is not declared in the generated file.
+\item If no inlining decision is taken, the constant is normally
+  declared in the produced file. 
+\end{itemize}
+
+
+
+\asection{Realizing axioms}\label{extraction:axioms}
 \comindex{Link}
 
 It is possible to assume some axioms while developing a proof. Since
@@ -139,6 +235,10 @@ The syntax is the following:
   The extraction of a module depending on axioms from another module
   will not fail. It is the responsability of the ``extractor'' of that
   other module to realize the given axioms.
+\item 
+  Note that now, the {\tt Extract Inlined Constant} command is sugar
+  for an {\tt Extract Constant} followed by a {\tt Extraction Inline}. 
+  So be careful with {\tt Reset Extraction Inline}. 
 \end{Remarks}
 
 \Example
@@ -215,9 +315,36 @@ Extract Inductive sumbool => bool [ true false ].
 %   {\em coq@pauillac.inria.fr}}.
 
 
-% \asection{Some examples}
-% TODO
+\asection{Some examples}
 
+ A more pedagogical introduction to extraction should appear here in
+ the future. In the meanwhile you can have a look at the \Coq\
+ contributions. Several of them use extraction to produce certified 
+ programs. In particular the following ones have an automatic extraction
+ test (just run make in those directory): 
+
+ \begin{itemize}
+ \item Bordeaux/Additions
+ \item Bordeaux/EXCEPTIONS
+ \item Bordeaux/SearchTrees
+ \item Dyade/BDDS
+ \item Lyon/CIRCUITS
+ \item Lyon/FIRING-SQUAD
+ \item Marseille/CIRCUITS
+ \item Nancy/FOUnify
+ \item Rocq/ARITH/Chinese
+ \item Rocq/COC
+ \item Rocq/GRAPHS
+ \item Rocq/HIGMAN
+ \item Sophia-Antipolis/Stalmarck
+ \item Suresnes/BDD
+ \end{itemize}
+
+ Rocq/HIGMAN is a bit particular. The extracted code is normally not typable
+ in ML due to an heavy use of impredicativity. So we realize one
+ inductive type using an \verb|Obj.magic| that artificially gives it
+ the good type. After compilation this example runs nonetheless,
+ thanks to the (desired but not proved) correction of the extraction. 
 
 \section{Bugs}
 
@@ -225,6 +352,6 @@ Surely there are still bugs in the {\tt Extraction} module.  You can
 send your bug reports directly to the authors
 (\textsf{Pierre.Letouzey$@$lri.fr} and
 \textsf{Jean-Christophe.Filliatre$@$lri.fr}) or to the \Coq\ mailing
-list (at \textsf{coq$@$pauillac.inria.fr}).
+list (at \textsf{coq-bugs$@$pauillac.inria.fr}).
 
 % $Id$ 
