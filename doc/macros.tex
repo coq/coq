@@ -276,7 +276,7 @@
 \newcommand{\ex}{\exists}
 \newcommand{\impl}{\rightarrow}
 \newcommand{\Or}{\vee}
-\newcommand{\And}{\wedge}
+\renewcommand{\And}{\wedge}
 \newcommand{\ms}{\models}
 \newcommand{\bw}{\bigwedge}
 \newcommand{\ts}{\times}
@@ -403,6 +403,46 @@
 \renewcommand{\textfraction}{.05}
 \renewcommand{\floatpagefraction}{.8}
 
+
+% Macros Bruno pour description de la syntaxe
+
+\def\bfbar{\ensuremath{|\hskip -0.22em{}|\hskip -0.24em{}|}}
+\def\TERMbar{\bfbar}
+\def\TERMbarbar{\bfbar\bfbar}
+
+
+%% Macros pour les grammaires
+\def\GR#1{\text{\large(}#1\text{\large)}}
+\def\NT#1{\langle\textit{#1}\rangle}
+\def\NTL#1#2{\langle\textit{#1}\rangle_{#2}}
+\def\TERM#1{{\bf\textrm{\bf #1}}}
+%\def\TERM#1{{\bf\textsf{#1}}}
+\def\KWD#1{\TERM{#1}}
+\def\ETERM#1{\TERM{#1}}
+\def\CHAR#1{\TERM{#1}}
+
+\def\STAR#1{#1*}
+\def\STARGR#1{\GR{#1}*}
+\def\PLUS#1{#1+}
+\def\PLUSGR#1{\GR{#1}+}
+\def\OPT#1{#1?}
+\def\OPTGR#1{\GR{#1}?}
+%% Tableaux de definition de non-terminaux
+\newenvironment{cadre}
+        {\begin{array}{|c|}\hline\\}
+        {\\\\\hline\end{array}}
+\newenvironment{rulebox}
+        {$$\begin{cadre}\begin{array}{r@{~}c@{~}l@{}l@{}r}}
+        {\end{array}\end{cadre}$$}
+\def\DEFNT#1{\NT{#1} & ::= &}
+\def\EXTNT#1{\NT{#1} & ::= & ... \\&|&}
+\def\RNAME#1{(\textsc{#1})}
+\def\SEPDEF{\\\\}
+\def\nlsep{\\&|&}
+\def\nlcont{\\&&}
+\newenvironment{rules}
+        {\begin{center}\begin{rulebox}}
+        {\end{rulebox}\end{center}}
 
 % $Id$ 
 

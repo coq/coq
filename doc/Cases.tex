@@ -28,36 +28,54 @@ may occur an arbitrary number of times in a pattern. Alias patterns
 written \texttt{(}{\sl pattern} \texttt{as} {\sl identifier}\texttt{)} are
 also accepted. This pattern matches the same values as {\sl pattern}
 does and {\sl identifier} is bound to the matched value.  A list of
-patterns is also considered as a pattern and is called {\em multiple
+patterns separated with commas 
+is also considered as a pattern and is called {\em multiple
 pattern}.
 
 Notice also that the annotation is mandatory when the sequence of equation is
 empty.
 
 \begin{figure}[t]
-\begin{center}
-\fbox{\begin{minipage}{0.95\textwidth}
-\begin{tabular}{rcl}
-{\nestedpattern}  & := & {\ident} \\
- & $|$ & \_ \\
- & $|$ & \texttt{(} {\ident} \nelist{\nestedpattern}{} \texttt{)} \\
- & $|$ & \texttt{(} {\nestedpattern} \texttt{as}  {\ident} \texttt{)} \\
- & $|$ & \texttt{(} {\nestedpattern} \texttt{,} {\nestedpattern} \texttt{)} \\
- & $|$ & \texttt{(} {\nestedpattern} \texttt{)} \\
- &&\\
-
-{\multpattern} & := &  \nelist{nested\_pattern}{} \\
- && \\
-
-{\exteqn} & := &  {\multpattern} \texttt{=>} {\term} \\
- && \\
-
-{\term} & := &  
- \texttt{match} \nelist{\term}{} \texttt{with} 
- \sequence{\exteqn}{$|$} \texttt{end} \\
-\end{tabular}
-\end{minipage}}
-\end{center}
+\begin{rules}
+\DEFNT{match-expr}
+       \KWD{match}~\NT{case-items}~\OPT{\NT{case-type}}~\KWD{with}
+  ~\OPT{\TERMbar}~\OPT{\NT{branches}}~\KWD{end}        &&\RNAME{match}
+\SEPDEF
+\DEFNT{case-items}
+       \NT{case-item} ~\KWD{,} ~\NT{case-items}
+\nlsep \NT{case-item}
+\SEPDEF
+\DEFNT{case-item}
+       \NTL{constr}{100}~\OPTGR{\KWD{as}~\NT{name}}
+       ~\OPTGR{\KWD{in}~\NTL{constr}{100}}
+\SEPDEF
+\DEFNT{case-type}
+       \KWD{return}~\NTL{constr}{100}
+\SEPDEF
+\DEFNT{return-type}
+       \OPTGR{\KWD{as}~\NT{name}}~\NT{case-type}
+\SEPDEF
+\DEFNT{branches}
+       \NT{eqn}~\TERMbar~\NT{branches}
+\nlsep \NT{eqn}
+\SEPDEF
+\DEFNT{eqn}
+       \NT{pattern} ~\STARGR{\KWD{,}~\NT{pattern}}
+       ~\KWD{$\Rightarrow$}~\NT{constr}
+\SEPDEF
+\DEFNT{pattern}
+       \NT{reference}~\PLUS{\NT{pattern}}  & & \RNAME{constructor}
+\nlsep \NT{pattern}~\KWD{as}~\NT{ident}    & & \RNAME{alias}
+\nlsep \NT{pattern}~\KWD{\%}~\NT{ident}    & & \RNAME{scope-change}
+\nlsep \NT{reference}                      & & \RNAME{pattern-var}
+\nlsep \KWD{\_}                            & & \RNAME{hole}
+\nlsep \NT{int}                            &
+\nlsep \KWD{(}~\NT{tuple-pattern}~\KWD{)}
+\SEPDEF
+\DEFNT{tuple-pattern}
+       \NT{pattern}
+\nlsep \NT{tuple-pattern}~\KWD{,}~\NT{pattern} && \RNAME{pair}
+\end{rules}
 \caption{Extended match syntax}
 \label{cases-grammar}
 \end{figure}
@@ -73,7 +91,7 @@ The extended \texttt{match} still accepts an optional {\em elimination
 predicate} given after the keyword \texttt{return}.  Given a pattern
 matching expression, if all the right hand sides of \texttt{=>} ({\em
 rhs} in short) have the same type, then this type can be sometimes
-synthesized, and so we can omit the \texttt{<>}. Otherwise 
+synthesized, and so we can omit the \texttt{return} part. Otherwise 
 the predicate after \texttt{return} has to be provided, like for the basic
 \texttt{match}.
 
@@ -361,7 +379,7 @@ it is the expansion algorithm that cares to relate them. \\
 
 \asubsection{When the elimination predicate must be provided}
 The examples  given so far do not need an explicit elimination predicate
-between \texttt{<>} because all the rhs have the same type and the
+ because all the rhs have the same type and the
 strategy succeeds to synthesize it.
 Unfortunately when dealing with dependent patterns it often happens
 that we need to write cases where the type of the rhs are 
@@ -378,11 +396,28 @@ Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
   | consn n' a y => consn (n' + m) a (concat n' y m l')
   end.
 \end{coq_example}
+The elimination predicate is $\lb n:\texttt{nat} \mto \lb
+l:(\texttt{listn}~ n) \mto (\texttt{listn}~ (n+m))$.
+In general if $m$ has type $(I~q_1\ldots q_r~t_1\ldots t_s)$ where 
+$q_1\ldots q_r$ are parameters, the elimination predicate should be of
+the form~:
+$\lb y_1\mto\ldots\lb y_s\mto \lb x:(I~q_1\ldots q_r~y_1\ldots y_s)
+P$. 
+
+In the concrete syntax, it should be written~:
+\[ \kw{match}~m~\kw{as}~x~\kw{in}~(I~\_\ldots \_~y_1\ldots y_s)~\kw{return}~Q~\kw{with}~\ldots~\kw{end}\]
+
+The variables which appear in the \kw{in} and \kw{as} clause are new
+and bounded in the property $Q$ in the \kw{return} clause. The
+parameters of the inductive definitions should not be mentioned and
+are replaced by \kw{\_}.
 
 Recall that a list of patterns is also a pattern. So, when
 we destructure several terms at the same time and the branches have
 different type  we need to provide
-the elimination predicate for this multiple pattern.
+the elimination predicate for this multiple pattern. 
+It is done using the same scheme, each term may be associated to an
+\kw{as} and \kw{in} clause in order to introduce a dependent product.
 
 For example, an equivalent definition for \texttt{concat} (even though the matching on the second term is trivial) would have
 been:
@@ -397,15 +432,15 @@ Fixpoint concat (n:nat) (l:listn n) (m:nat) (l':listn m) {struct l} :
   end.
 \end{coq_example}
 
-Notice that this time, the predicate \texttt{[n,\_:nat](listn (plus n
-  m))}  is binary because we
-destructure both \texttt{l} and \texttt{l'} whose types have arity one.
-In general, if we destructure the terms $e_1\ldots e_n$
-the predicate will be of arity $m$ where $m$ is the sum of the
-number of dependencies of the type of $e_1, e_2,\ldots e_n$ 
-(the $\lambda$-abstractions
-should correspond from left to right to each dependent argument of the
-type of $e_1\ldots e_n$).
+% Notice that this time, the predicate \texttt{[n,\_:nat](listn (plus n
+%   m))}  is binary because we
+% destructure both \texttt{l} and \texttt{l'} whose types have arity one.
+% In general, if we destructure the terms $e_1\ldots e_n$
+% the predicate will be of arity $m$ where $m$ is the sum of the
+% number of dependencies of the type of $e_1, e_2,\ldots e_n$ 
+% (the $\lambda$-abstractions
+% should correspond from left to right to each dependent argument of the
+% type of $e_1\ldots e_n$).
 When the arity of the predicate (i.e. number of abstractions) is not
 correct Coq raises an error message. For example:
 
@@ -447,9 +482,7 @@ Fixpoint buildlist (n:nat) : listn n :=
   end.
 \end{coq_example}
 
-We can also use multiple patterns whenever the elimination predicate has
-the correct arity. 
-
+We can also use multiple patterns. 
 Consider the following definition of the predicate less-equal
 \texttt{Le}:
 
@@ -474,18 +507,17 @@ Fixpoint dec (n m:nat) {struct n} : LE n m \/ LE m n :=
       end
   end.
 \end{coq_example}
-In the example of \texttt{dec} the elimination predicate is binary
-because we destructure two arguments of \texttt{nat} which is a
-non-dependent type. Notice that the first \texttt{match} is dependent while 
+In the example of \texttt{dec},
+the first \texttt{match} is dependent while 
 the second is not.
 
-In general, consider the terms $e_1\ldots e_n$,
-where  the type of $e_i$ is an instance of a family type
-$[\vec{d_i}:\vec{D_i}]T_i$  ($1\leq i
-\leq n$). Then, in expression \texttt{<}${\cal P}$\texttt{>match}  $e_1\ldots
-e_n$ \texttt{of} \ldots \texttt{end}, the 
-elimination predicate ${\cal P}$ should be of the form:
-$[\vec{d_1}:\vec{D_1}][x_1:T_1]\ldots [\vec{d_n}:\vec{D_n}][x_n:T_n]Q.$
+% In general, consider the terms $e_1\ldots e_n$,
+% where  the type of $e_i$ is an instance of a family type
+% $\lb (\vec{d_i}:\vec{D_i}) \mto T_i$  ($1\leq i
+% \leq n$). Then, in expression \texttt{match}  $e_1,\ldots,
+% e_n$ \texttt{of} \ldots \texttt{end}, the 
+% elimination predicate ${\cal P}$ should be of the form:
+% $[\vec{d_1}:\vec{D_1}][x_1:T_1]\ldots [\vec{d_n}:\vec{D_n}][x_n:T_n]Q.$
 
 The user can also use \texttt{match} in combination with the tactic
 \texttt{refine} (see section \ref{refine}) to build incomplete proofs
