@@ -31,7 +31,8 @@ val declare_definition : identifier -> bool * strength ->
 
 val syntax_definition : identifier -> Coqast.t -> unit
 
-val declare_assumption : identifier -> strength -> Coqast.t -> global_reference
+val declare_assumption : identifier -> strength -> 
+  local_binder list -> Coqast.t -> global_reference
 
 val build_mutual : Vernacexpr.inductive_expr list -> bool -> unit
 

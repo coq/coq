@@ -22,6 +22,8 @@ clean-devel:
 coqtop:	bin/coqtop.byte
 	ln -sf bin/coqtop.byte coqtop
 
+quick: 
+	$(MAKE) states BEST=byte
 
 include Makefile
 

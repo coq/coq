@@ -297,10 +297,14 @@ let rec generalize_rawconstr c = function
 let vernac_definition kind id def hook =
   let (local,stre as k) = interp_definition kind in
   match def with
-  | ProveBody (bl,t) ->
-      let hook _ _ = () in
-      let t = generalize_rawconstr t bl in
-      start_proof_and_print (Some id) k t hook
+  | ProveBody (bl,t) ->   (* local binders, typ *)
+      if Lib.is_specification () then
+	let ref = declare_assumption id stre bl t in
+	hook stre ref
+      else
+	let hook _ _ = () in
+	let t = generalize_rawconstr t bl in
+	start_proof_and_print (Some id) k t hook
   | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
         | None -> None
@@ -314,10 +318,16 @@ let vernac_start_proof kind sopt t lettop hook =
   if not(refining ()) then
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
-	(str "Let declarations can only be used in proof editing mode")
-(*    else if s = None then
-      error "repeated Goal not permitted in refining mode"*);
-  start_proof_and_print sopt (false, interp_theorem kind) t hook
+	(str "Let declarations can only be used in proof editing mode");
+  let stre = interp_theorem kind in
+  match Lib.is_specification (), sopt with
+    | true, Some id ->
+	let ref = declare_assumption id stre [] t in
+	hook stre ref
+    | _ -> 
+	(* an explicit Goal command starts the refining mode 
+	   even in a specification *)
+	start_proof_and_print sopt (false, stre) t hook
 
 let vernac_end_proof is_opaque idopt =
   if_verbose show_script ();
@@ -338,7 +348,7 @@ let vernac_assumption kind l =
   let stre = interp_assumption kind in
   List.iter
     (fun (is_coe,(id,c)) ->
-      let r = declare_assumption id stre c in
+      let r = declare_assumption id stre [] c in
       if is_coe then Class.try_add_new_coercion r stre) l
 
 let vernac_inductive f indl = build_mutual indl f

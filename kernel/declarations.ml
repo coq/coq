@@ -91,7 +91,7 @@ let subst_const_body sub cb =
   { const_body = option_app (Term.subst_mps sub) cb.const_body;
     const_type = type_app (Term.subst_mps sub) cb.const_type;
     const_hyps = (assert (cb.const_hyps=[]); []);
-    const_constraints = (* TODO *) cb.const_constraints;
+    const_constraints = cb.const_constraints;
     const_opaque = cb.const_opaque}
   
 let subst_mind_packet sub mbp = 
@@ -103,9 +103,9 @@ let subst_mind_packet sub mbp =
     mind_user_lc = 
       array_smartmap (type_app (Term.subst_mps sub)) mbp.mind_user_lc;
     mind_user_arity = type_app (Term.subst_mps sub) mbp.mind_user_arity;
-    mind_sort = (* TODO *) mbp.mind_sort;
+    mind_sort = mbp.mind_sort;
     mind_nrealargs = mbp.mind_nrealargs;
-    mind_kelim = (* TODO *) mbp.mind_kelim;
+    mind_kelim = mbp.mind_kelim;
     mind_nparams = mbp.mind_nparams;
     mind_params_ctxt = 
       map_rel_context (Term.subst_mps sub) mbp.mind_params_ctxt;

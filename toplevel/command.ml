@@ -47,6 +47,13 @@ let rec abstract_rawconstr c = function
       List.fold_right (fun x b -> mkLambdaC(x,t,b)) idl
         (abstract_rawconstr c bl)
 
+let rec prod_rawconstr c = function
+  | [] -> c
+  | LocalRawDef (x,b)::bl -> mkLetInC(x,b,prod_rawconstr c bl)
+  | LocalRawAssum (idl,t)::bl ->
+      List.fold_right (fun x b -> mkProdC(x,t,b)) idl
+        (prod_rawconstr c bl)
+
 let rec destSubCast c = match kind_of_term c with
   | Lambda (x,t,c) -> 
       let (b,u) = destSubCast c in mkLambda (x,t,b), mkProd (x,t,u)
@@ -124,7 +131,8 @@ let syntax_definition ident c =
 let assumption_message id =
   if_verbose message ((string_of_id id) ^ " is assumed")
 
-let declare_assumption ident n c =
+let declare_assumption ident n bl c =
+  let c = prod_rawconstr c bl in
   let c = interp_type Evd.empty (Global.env()) c in
   match n with
     | NeverDischarge ->
