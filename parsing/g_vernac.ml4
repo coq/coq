@@ -20,9 +20,6 @@ open Vernac_
 open Prim
 open Decl_kinds
 
-(* Dans join_binders, s'il y a un "?", on perd l'info qu'il est partagé *)
-let join_binders (idl,c) = List.map (fun id -> (id,c)) idl
-
 open Genarg
 
 let evar_constr loc = CHole loc
@@ -94,7 +91,7 @@ GEXTEND Gram
 END
 
 let test_plurial_form = function
-  | [_] ->
+  | [_,([_],_)] ->
       Options.if_verbose warning
       "Keywords Variables/Hypotheses/Parameters expect more than one assumption"
   | _ -> ()
@@ -135,12 +132,12 @@ GEXTEND Gram
       | ":" -> false ] ]
   ;
   params:
-    [ [ idl = LIST1 identref SEP ","; coe = of_type_with_opt_coercion; c = constr
-      -> List.map (fun c -> (coe,c)) (join_binders (idl,c))
+    [ [ idl = LIST1 identref SEP ","; coe = of_type_with_opt_coercion; 
+        c = constr -> (coe,(idl,c))
     ] ]
   ;
   ne_params_list:
-    [ [ ll = LIST1 params SEP ";" -> List.flatten ll ] ]
+    [ [ ll = LIST1 params SEP ";" -> ll ] ]
   ;
   name_comma_list_tail:
     [ [ ","; nal = LIST1 name SEP "," -> nal | -> [] ] ]

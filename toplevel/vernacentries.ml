@@ -297,8 +297,7 @@ let vernac_exact_proof c =
   save_named true
 
 let vernac_assumption kind l =
-  List.iter (fun (is_coe,((_,id),c)) ->
-              declare_assumption id is_coe kind [] c) l
+  List.iter (fun (is_coe,(idl,c)) -> declare_assumption idl is_coe kind [] c) l
 
 let vernac_inductive f indl = build_mutual indl f
 

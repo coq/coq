@@ -1281,8 +1281,13 @@ let cvt_optional_eval_for_definition c1 optional_eval =
 	      xlate_formula c1))
 
 let cvt_vernac_binder = function
-  | ((_,id),c) ->
-     CT_binder(CT_id_opt_ne_list (xlate_ident_opt (Some id),[]),xlate_formula c)
+  | (id::idl,c) ->
+     CT_binder(
+       CT_id_opt_ne_list 
+         (xlate_ident_opt (Some (snd id)),
+          List.map (fun id -> xlate_ident_opt (Some (snd id))) idl),
+         xlate_formula c)
+  | ([],_) -> xlate_error "Empty list of vernac binder"
 
 let cvt_vernac_binders args =
   CT_binder_list(List.map cvt_vernac_binder args)

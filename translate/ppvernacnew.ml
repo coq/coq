@@ -360,10 +360,10 @@ let pr_params pr_c (xl,(c,t)) =
 
 let rec factorize = function
   | [] -> []
-  | (c,(x,t))::l ->
+  | (c,(idl,t))::l ->
       match factorize l with
-	| (xl,t')::l' when t' = (c,t) -> (x::xl,t')::l'
-	| l' -> ([x],(c,t))::l'
+	| (xl,t')::l' when t' = (c,t) -> (idl@xl,t')::l'
+	| l' -> (idl,(c,t))::l'
 
 let pr_ne_params_list pr_c l =
   match factorize l with

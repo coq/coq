@@ -136,9 +136,9 @@ type inductive_flag = bool (* true = Inductive;     false = CoInductive    *)
 type sort_expr = Rawterm.rawsort
 
 type decl_notation = (string * constr_expr * scope_name option) option
-type simple_binder = lident * constr_expr
+type simple_binder = lident list  * constr_expr
 type 'a with_coercion = coercion_flag * 'a
-type constructor_expr = simple_binder with_coercion
+type constructor_expr = (lident * constr_expr) with_coercion
 type inductive_expr =
      lident * decl_notation * local_binder list * constr_expr
     * constructor_expr list

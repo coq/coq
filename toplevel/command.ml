@@ -147,9 +147,7 @@ let syntax_definition ident c =
 let assumption_message id =
   if_verbose message ((string_of_id id) ^ " is assumed")
 
-let declare_assumption ident is_coe (local,kind) bl c =
-  let c = prod_rawconstr c bl in
-  let c = interp_type Evd.empty (Global.env()) c in
+let declare_one_assumption is_coe (local,kind) c (_,ident) =
   let r = match local with
     | Local when Lib.sections_are_opened () ->
         let r = 
@@ -169,6 +167,11 @@ let declare_assumption ident is_coe (local,kind) bl c =
           str" because it is at a global level");
         ConstRef kn in
   if is_coe then Class.try_add_new_coercion r local
+
+let declare_assumption idl is_coe k bl c =
+  let c = prod_rawconstr c bl in
+  let c = interp_type Evd.empty (Global.env()) c in
+  List.iter (declare_one_assumption is_coe k c) idl
 
 (* 3a| Elimination schemes for mutual inductive definitions *)
 

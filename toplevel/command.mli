@@ -35,8 +35,8 @@ val declare_definition : identifier -> definition_kind ->
 
 val syntax_definition : identifier -> constr_expr -> unit
 
-val declare_assumption : identifier -> coercion_flag -> assumption_kind -> 
-  local_binder list -> constr_expr -> unit
+val declare_assumption : identifier located list ->
+  coercion_flag -> assumption_kind -> local_binder list -> constr_expr -> unit
 
 val build_mutual : inductive_expr list -> bool -> unit
 

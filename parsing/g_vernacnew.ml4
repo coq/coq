@@ -86,10 +86,6 @@ let no_coercion loc (c,x) =
     (loc,"no_coercion",Pp.str"no coercion allowed here");
   x
 
-let flatten_assum l =
-  List.flatten
-    (List.map (fun (oc,(idl,t)) -> List.map (fun id -> (oc,(id,t))) idl) l)
-
 (* Gallina declarations *)
 if not !Options.v7 then
 GEXTEND Gram
@@ -104,11 +100,10 @@ GEXTEND Gram
       | (f,d) = def_token; id = identref; b = def_body -> 
           VernacDefinition (d, id, b, f)
       | stre = assumption_token; bl = assum_list -> 
-	  VernacAssumption (stre, flatten_assum bl)
+	  VernacAssumption (stre, bl)
       | stre = assumptions_token; bl = assum_list ->
-	  let l = flatten_assum bl in
-	  test_plurial_form l;
-	  VernacAssumption (stre, l)
+	  test_plurial_form bl;
+	  VernacAssumption (stre, bl)
       (* Gallina inductive declarations *)
       | f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
