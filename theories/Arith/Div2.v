@@ -113,11 +113,18 @@ Intros. Decompose [and] H. Unfold iff in H0 H1.
 Decompose [and] H0. Decompose [and] H1. Clear H H0 H1.
 Split; Split.
 Intro H. Inversion H. Inversion H1.
+Simpl. Rewrite (double_S (div2 n0)). Auto with arith.
+Simpl. Rewrite (double_S (div2 n0)). Intro H. Injection H. Auto with arith.
+Intro H. Inversion H. Inversion H1.
+Simpl. Rewrite (double_S (div2 n0)). Auto with arith.
+Simpl. Rewrite (double_S (div2 n0)). Intro H. Injection H. Auto with arith.
+(*
 Simpl. Rewrite <- plus_n_Sm. Auto with arith.
 Simpl. Rewrite <- plus_n_Sm. Intro H. Injection H. Auto with arith.
 Intro H. Inversion H. Inversion H1.
 Simpl. Rewrite <- plus_n_Sm. Auto with arith.
 Simpl. Rewrite <- plus_n_Sm. Intro H. Injection H. Auto with arith.
+*)
 Qed.
 
 
