@@ -43,8 +43,8 @@ type constr_pattern =
   | PLetIn of name * constr_pattern * constr_pattern
   | PSort of rawsort
   | PMeta of patvar option
-  | PCase of case_style * constr_pattern option * constr_pattern * 
-      constr_pattern array
+  | PCase of (inductive option * case_style)
+      * constr_pattern option * constr_pattern * constr_pattern array
   | PFix of fixpoint
   | PCoFix of cofixpoint
 
@@ -180,7 +180,7 @@ let rec pattern_of_constr t =
 	if ctxt = [||] then PEvar n
 	else PApp (PEvar n, Array.map pattern_of_constr ctxt)
     | Case (ci,p,a,br) ->
-	PCase (ci.ci_pp_info.style,
+	PCase ((Some ci.ci_ind,ci.ci_pp_info.style),
 	       Some (pattern_of_constr p),pattern_of_constr a,
 	       Array.map pattern_of_constr br)
     | Fix f -> PFix f
@@ -196,8 +196,8 @@ let rec inst lvar = function
   | PLambda (n,a,b) -> PLambda (n,inst lvar a,inst lvar b)
   | PProd (n,a,b) -> PProd (n,inst lvar a,inst lvar b)
   | PLetIn (n,a,b) -> PLetIn (n,inst lvar a,inst lvar b)
-  | PCase (c,po,p,pl) ->
-      PCase (c,option_app (inst lvar) po,inst lvar p,Array.map (inst lvar) pl)
+  | PCase (ci,po,p,pl) ->
+      PCase (ci,option_app (inst lvar) po,inst lvar p,Array.map (inst lvar) pl)
   (* Non recursive *)
   | (PEvar _ | PRel _ | PRef _  | PSort _  | PMeta _ as x) -> x 
   (* Bound to terms *)
@@ -238,19 +238,23 @@ let rec pat_of_raw metas vars = function
         Pp.warning "Cast not taken into account in constr pattern";
       pat_of_raw metas vars c
   | ROrderedCase (_,st,po,c,br) ->
-      PCase (st,option_app (pat_of_raw metas vars) po,
+      PCase ((None,st),option_app (pat_of_raw metas vars) po,
              pat_of_raw metas vars c,
              Array.map (pat_of_raw metas vars) br)
-  | RCases (loc,po,[c],br) ->
-      PCase (Term.RegularStyle,option_app (pat_of_raw metas vars) po,
+  | RCases (loc,po,[c],brs) ->
+      let sp =
+	match brs with
+	  | (_,_,[PatCstr(_,(ind,_),_,_)],_)::_ -> Some ind
+	  | _ -> None in
+      PCase ((sp,Term.RegularStyle),option_app (pat_of_raw metas vars) po,
              pat_of_raw metas vars c,
-             Array.init (List.length br)
-               (pat_of_raw_branch loc metas vars br))
+             Array.init (List.length brs)
+	       (pat_of_raw_branch loc metas vars sp brs))
   | r ->
       let loc = loc_of_rawconstr r in
       user_err_loc (loc,"pattern_of_rawconstr", Pp.str "Not supported pattern")
 
-and pat_of_raw_branch loc metas vars brs i =
+and pat_of_raw_branch loc metas vars ind brs i =
   let bri = List.filter
     (function
         (_,_,[PatCstr(_,c,lv,_)],_) -> snd c = i+1
@@ -258,7 +262,10 @@ and pat_of_raw_branch loc metas vars brs i =
           user_err_loc (loc,"pattern_of_rawconstr",
                         Pp.str "Not supported pattern")) brs in
   match bri with
-      [(_,_,[PatCstr(_,_,lv,_)],br)] ->
+      [(_,_,[PatCstr(_,(indsp,_),lv,_)],br)] ->
+	if ind <> None & ind <> Some indsp then
+          user_err_loc (loc,"pattern_of_rawconstr",
+            Pp.str "All constructors must be in the same inductive type");
         let lna =
           List.map
             (function PatVar(_,na) -> na

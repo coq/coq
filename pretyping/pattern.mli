@@ -42,8 +42,8 @@ type constr_pattern =
   | PLetIn of name * constr_pattern * constr_pattern
   | PSort of rawsort
   | PMeta of patvar option
-  | PCase of case_style * constr_pattern option * constr_pattern * 
-      constr_pattern array
+  | PCase of (inductive option * case_style)
+      * constr_pattern option * constr_pattern * constr_pattern array
   | PFix of fixpoint
   | PCoFix of cofixpoint
 
