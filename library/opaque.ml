@@ -10,6 +10,7 @@
 
 (*i*)
 open Util
+open Pp
 open Names
 open Closure
 open Summary
@@ -49,8 +50,10 @@ let set_transparent_const sp =
   let (ids,sps) = !tr_state in
   let cb = Global.lookup_constant sp in
   if cb.const_body <> None & cb.const_opaque then
-    let s = string_of_path sp in
-    error ("Cannot make "^s^" transparent because it was declared opaque.");
+    errorlabstrm "set_transparent_const"
+      [< 'sTR "Cannot make"; 'sPC; 
+	 Nametab.pr_global_env (Global.env()) (Nametab.ConstRef sp);
+	 'sPC; 'sTR "transparent because it was declared opaque." >];
   tr_state := (ids, Sppred.add sp sps)
 
 let set_opaque_var id =

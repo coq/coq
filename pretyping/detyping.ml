@@ -31,9 +31,9 @@ let encode_inductive ref =
   let indsp = match ref with
     | IndRef indsp -> indsp
     | _ ->
-        let id = basename (Nametab.sp_of_global (Global.env()) ref) in
         errorlabstrm "indsp_of_id"
-          [< pr_id id; 'sTR" is not an inductive type" >] in
+          [< pr_global_env (Global.env()) ref;
+	     'sTR" is not an inductive type" >] in
   let (mib,mip) = Global.lookup_inductive indsp in
   let constr_lengths = Array.map List.length mip.mind_listrec in
   (indsp,constr_lengths)
@@ -83,7 +83,7 @@ module PrintingCasesIf =
     let field = "If"
     let title = "Types leading to pretty-printing of Cases using a `if' form: "
     let member_message ref b =
-      let s = string_of_id (basename (sp_of_global (Global.env()) ref)) in
+      let s = string_of_qualid(shortest_qualid_of_global (Global.env()) ref) in
       if b then
         "Cases on elements of " ^ s ^ " are printed using a `if' form"
       else
@@ -98,7 +98,7 @@ module PrintingCasesLet =
     let title = 
       "Types leading to a pretty-printing of Cases using a `let' form:"
     let member_message ref b =
-      let s = string_of_id (basename (sp_of_global (Global.env()) ref)) in
+      let s = string_of_qualid(shortest_qualid_of_global (Global.env()) ref) in
       if b then
         "Cases on elements of " ^ s ^ " are printed using a `let' form"
       else

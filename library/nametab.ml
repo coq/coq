@@ -280,7 +280,7 @@ let exists_section dir =
 
 (* For a sp Coq.A.B.x, try to find the shortest among x, B.x, A.B.x
    and Coq.A.B.x is a qualid that denotes the same object. *)
-let qualid_of_global env ref =  
+let shortest_qualid_of_global env ref =  
   let sp = sp_of_global env ref in
   let (pth,id) = repr_path sp in
   let rec find_visible dir qdir =
@@ -291,6 +291,13 @@ let qualid_of_global env ref =
       | a::l -> find_visible l (add_dirpath_prefix a qdir)
   in
   find_visible (repr_dirpath pth) (make_dirpath [])
+
+let pr_global_env env ref =
+  (* Il est important de laisser le let-in, car les streams s'évaluent
+  paresseusement : il faut forcer l'évaluation pour capturer
+  l'éventuelle levée d'une exception (le cas échoit dans le debugger) *)
+  let s = string_of_qualid (shortest_qualid_of_global env ref) in
+  [< 'sTR s >]
 
 (********************************************************************)
 

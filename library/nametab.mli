@@ -46,7 +46,10 @@ val pr_qualid : qualid -> std_ppcmds
 val qualid_of_sp : section_path -> qualid
 
 (* Turns an absolute name into a qualified name denoting the same name *)
-val qualid_of_global : Environ.env -> global_reference -> qualid
+val shortest_qualid_of_global : Environ.env -> global_reference -> qualid
+
+(* Printing of global references using names as short as possible *)
+val pr_global_env : Environ.env -> global_reference -> std_ppcmds
 
 exception GlobalizationError of qualid
 exception GlobalizationConstantError of qualid

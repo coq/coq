@@ -302,7 +302,7 @@ let msg_option_value (name,v) =
     | BoolValue false -> [< 'sTR "false" >]
     | IntValue n      -> [< 'iNT n >]
     | StringValue s   -> [< 'sTR s >]
-    | IdentValue id    -> pr_sp(Nametab.sp_of_global (Global.env())id)
+    | IdentValue r    -> pr_global_env (Global.env()) r
 
 let print_option_value key =
   let (name,(_,read,_)) = get_option key in
