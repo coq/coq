@@ -142,9 +142,14 @@ let traite_fichier_ML md ext =
     (!a_faire, !a_faire_opt)
   with Sys_error _ -> ("","")
 
-let canonize f =
-  let n = String.length f in
-  if n > 1 && String.sub f 0 2 = "./" then String.sub f 2 (n - 2) else f
+let cut_prefix p s =
+  let lp = String.length p in
+  let ls = String.length s in
+  if ls >= lp && String.sub s 0 lp = p then String.sub s lp (ls - lp) else s
+
+let canonize f = match Sys.os_type with
+  | "Win32" -> cut_prefix ".\\" f
+  | _ -> cut_prefix "./" f
 
 let sort () = 
   let seen = Hashtbl.create 97 in
@@ -184,7 +189,7 @@ let traite_fichier_Coq verbose f =
 	        addQueue deja_vu_v str;
                 try
                   let file_str = safe_assoc verbose f str in
-                  printf " %s%s" file_str
+                  printf " %s%s" (canonize file_str)
                     (if spec then !suffixe_spec else !suffixe)
                 with Not_found -> 
 		  if verbose && not (List.mem_assoc str !coqlibKnown) then
@@ -196,7 +201,7 @@ let traite_fichier_Coq verbose f =
 	        addQueue deja_vu_v [str];
                 try
                   let file_str = List.assoc [str] !vKnown in
-                  printf " %s%s" file_str
+                  printf " %s%s" (canonize file_str)
                     (if spec then !suffixe_spec else !suffixe)
                 with Not_found -> 
                   begin try  let _ = List.assoc [str] !coqlibKnown in ()
@@ -219,7 +224,7 @@ let traite_fichier_Coq verbose f =
 	        addQueue deja_vu_v [str];
                 try
                   let file_str = List.assoc [str] !vKnown in
-                  printf " %s.v" file_str
+                  printf " %s.v" (canonize file_str)
                 with Not_found -> ()
        	      end
       done
