@@ -148,12 +148,13 @@ let constant_sp_of_id id =
     | ConstRef sp -> sp
     | _ -> raise Not_found
 
-let check_absoluteness = function
-  | a::_ when List.mem a !roots -> ()
-  | l -> anomaly ("Not an absolute path: "^(string_of_dirpath l))
+let check_absoluteness sp =
+  match dirpath sp with
+    | a::_ when List.mem a !roots -> ()
+    | _ -> anomaly ("Not an absolute path: "^(string_of_path sp))
 
 let absolute_reference sp =
-  check_absoluteness (dirpath sp);
+  check_absoluteness sp;
   locate (qualid_of_sp sp)
 
 (* These are entry points to make the contents of a module/section visible *)
@@ -185,11 +186,14 @@ let exists_module sp =
 (********************************************************************)
 (* Registration of persistent tables as a global table and rollback *)
 
-type frozen = module_contents * dir_path list
+(* Warning: We do not register roots, because otherwise option -R is
+   overwritten by the next input state *)
 
-let init () = persistent_nametab := empty; roots := []
-let freeze () = !persistent_nametab, !roots
-let unfreeze (mc,r) = persistent_nametab := mc; roots := r
+type frozen = module_contents
+
+let init () = persistent_nametab := empty
+let freeze () = !persistent_nametab
+let unfreeze mc = persistent_nametab := mc
 
 let _ = 
   Summary.declare_summary "persistent-names"
