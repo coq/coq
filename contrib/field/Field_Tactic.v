@@ -221,7 +221,7 @@ Tactic Definition InverseTestAux FT trm :=
   And AinvT  = Eval Cbv Beta Delta [Ainv] Iota in (Ainv FT) In
   Match trm With
   | [(AinvT ?)] -> Fail 1
-  | [(AoppT ?1)] -> StrongFail (InverseTestAux FT ?1)
+  | [(AoppT ?1)] -> StrongFail ((InverseTestAux FT ?1);Idtac)
   | [(AplusT ?1 ?2)] ->
     StrongFail ((InverseTestAux FT ?1);(InverseTestAux FT ?2))
   | [(AmultT ?1 ?2)] ->
