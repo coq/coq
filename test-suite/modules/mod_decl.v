@@ -49,7 +49,7 @@ Module Type T.
   
   Declare Module M5<:SIG:=M0.
 
-  Declare Module M6:=F M0.
+  Declare Module M6:=F M0. (* error *)
 
   Module M7.
 End T.
