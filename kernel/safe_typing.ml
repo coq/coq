@@ -50,8 +50,7 @@ let rec execute env cstr cu =
 	(judge_of_prop_contents c, cu)
 
     | IsSort (Type u) ->
-	let inst_u = if u == dummy_univ then new_univ() else u in
-	univ_combinator cu (judge_of_type inst_u)
+	univ_combinator cu (judge_of_type u)
 
     | IsApp (f,args) ->
 	let (j,cu1) = execute env f cu in
