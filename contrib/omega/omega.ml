@@ -520,9 +520,11 @@ let rec depend relie_on accu = function
 	      depend (e1.id::e2.id::relie_on) (act::accu) l
             else 
 	      depend relie_on accu l
-	| STATE (e,_,_,_,_) ->
-            if List.mem e.id relie_on then depend relie_on (act::accu) l
-            else depend relie_on accu l
+	| STATE (e,_,o,_,_) ->
+            if List.mem e.id relie_on then
+	      depend (o.id::relie_on) (act::accu) l
+            else
+	      depend relie_on accu l
 	| HYP e ->   
             if List.mem e.id relie_on then depend relie_on (act::accu) l
             else depend relie_on accu l
