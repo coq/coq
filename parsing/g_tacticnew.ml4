@@ -78,7 +78,7 @@ open Tactic
 let mk_fix_tac (loc,id,bl,ann,ty) =
   let n =
     match bl,ann with
-        [([_],_)], None -> 0
+        [([_],_)], None -> 1
       | _, Some x ->
           let ids = List.map snd (List.flatten (List.map fst bl)) in
           (try list_index (snd x) ids
