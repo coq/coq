@@ -745,7 +745,7 @@ Qed.
 Definition image_dir [f:R->R;D:R->Prop] : R->Prop := [x:R](EXT y:R | x==(f y)/\(D y)).
 
 (* L'image d'un compact par une application continue est un compact *)
-Lemma continuity_compact : (f:R->R;X:R->Prop) (continuity f) -> (compact X) -> (compact (image_dir f X)).
+Lemma continuity_compact : (f:R->R;X:R->Prop) ((x:R)(continuity_pt f x)) -> (compact X) -> (compact (image_dir f X)).
 Unfold compact; Intros; Unfold recouvrement_ouvert in H1.
 Elim H1; Clear H1; Intros.
 Pose D := (ind f1).
@@ -763,30 +763,187 @@ Unfold recouvrement_ouvert; Split.
 Unfold recouvrement; Intros; Simpl; Unfold recouvrement in H1; Unfold image_dir in H1; Unfold g; Unfold image_rec; Apply H1.
 Exists x; Split; [Reflexivity | Apply H4].
 Unfold famille_ouvert; Unfold famille_ouvert in H2; Intro; Simpl; Unfold g; Cut ([y:R](image_rec f0 (f1 x) y))==(image_rec f0 (f1 x)).
-Intro; Rewrite H4; Apply (continuity_P2 f0 (f1 x) H (H2 x)).
+Intro; Rewrite H4.
+Apply (continuity_P2 f0 (f1 x) H (H2 x)).
 Reflexivity.
 Intros; Apply (cond_fam f1); Unfold g in H3; Unfold image_rec in H3; Elim H3; Intros; Exists (f0 x0); Apply H4.
 Qed.
 
+Lemma Rlt_minus : (a,b:R) ``a<b`` -> ``0<b-a``.
+Intros; Apply Rlt_anti_compatibility with a; Rewrite Rplus_Or; Replace ``a+(b-a)`` with b; [Assumption | Ring].
+Qed.
+
+Lemma prolongement_C0 : (f:R->R;a,b:R) ``a<=b`` -> ((c:R)``a<=c<=b``->(continuity_pt f c)) -> (EXT g:R->R | (continuity g)/\((c:R)``a<=c<=b``->(g c)==(f c))).
+Intros; Elim H; Intro.
+Pose h := [x:R](Cases (total_order_Rle x a) of
+  (leftT _) => (f0 a)
+| (rightT _) => (Cases (total_order_Rle x b) of
+       (leftT _) => (f0 x)
+     | (rightT _) => (f0 b) end) end).
+Assert H2 : ``0<b-a``.
+Apply Rlt_minus; Assumption.
+Exists h; Split.
+Unfold continuity; Intro; Case (total_order x a); Intro.
+Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Exists ``a-x``; Split.
+Change ``0<a-x``; Apply Rlt_minus; Assumption.
+Intros; Elim H5; Clear H5; Intros _ H5; Unfold h.
+Case (total_order_Rle x a); Intro.
+Case (total_order_Rle x0 a); Intro.
+Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Assumption.
+Elim n; Left; Apply Rlt_anti_compatibility with ``-x``; Do 2 Rewrite (Rplus_sym ``-x``); Apply Rle_lt_trans with ``(Rabsolu (x0-x))``.
+Apply Rle_Rabsolu.
+Assumption.
+Elim n; Left; Assumption.
+Elim H3; Intro.
+Assert H5 : ``a<=a<=b``.
+Split; [Right; Reflexivity | Left; Assumption].
+Assert H6 := (H0 ? H5); Unfold continuity_pt in H6; Unfold continue_in in H6; Unfold limit1_in in H6; Unfold limit_in in H6; Simpl in H6; Unfold R_dist in H6; Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Elim (H6 ? H7); Intros; Exists (Rmin x0 ``b-a``); Split.
+Unfold Rmin; Case (total_order_Rle x0 ``b-a``); Intro.
+Elim H8; Intros; Assumption.
+Change ``0<b-a``; Apply Rlt_minus; Assumption.
+Intros; Elim H9; Clear H9; Intros _ H9; Cut ``x1<b``.
+Intro; Unfold h; Case (total_order_Rle x a); Intro.
+Case (total_order_Rle x1 a); Intro.
+Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Assumption.
+Case (total_order_Rle x1 b); Intro.
+Elim H8; Intros; Apply H12; Split.
+Unfold D_x no_cond; Split.
+Trivial.
+Red; Intro; Elim n; Right; Symmetry; Assumption.
+Apply Rlt_le_trans with (Rmin x0 ``b-a``).
+Rewrite H4 in H9; Apply H9.
+Apply Rmin_l.
+Elim n0; Left; Assumption.
+Elim n; Right; Assumption.
+Apply Rlt_anti_compatibility with ``-a``; Do 2 Rewrite (Rplus_sym ``-a``); Rewrite H4 in H9; Apply Rle_lt_trans with ``(Rabsolu (x1-a))``.
+Apply Rle_Rabsolu.
+Apply Rlt_le_trans with ``(Rmin x0 (b-a))``.
+Assumption.
+Apply Rmin_r.
+Case (total_order x b); Intro.
+Assert H6 : ``a<=x<=b``.
+Split; Left; Assumption.
+Assert H7 := (H0 ? H6); Unfold continuity_pt in H7; Unfold continue_in in H7; Unfold limit1_in in H7; Unfold limit_in in H7; Simpl in H7; Unfold R_dist in H7; Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Elim (H7 ? H8); Intros; Elim H9; Clear H9; Intros.
+Assert H11 : ``0<x-a``.
+Apply Rlt_minus; Assumption.
+Assert H12 : ``0<b-x``.
+Apply Rlt_minus; Assumption.
+Exists (Rmin x0 (Rmin ``x-a`` ``b-x``)); Split.
+Unfold Rmin; Case (total_order_Rle ``x-a`` ``b-x``); Intro.
+Case (total_order_Rle x0 ``x-a``); Intro.
+Assumption.
+Assumption.
+Case (total_order_Rle x0 ``b-x``); Intro.
+Assumption.
+Assumption.
+Intros; Elim H13; Clear H13; Intros; Cut ``a<x1<b``.
+Intro; Elim H15; Clear H15; Intros; Unfold h; Case (total_order_Rle x a); Intro.
+Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? r H4)).
+Case (total_order_Rle x b); Intro.
+Case (total_order_Rle x1 a); Intro.
+Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? r0 H15)).
+Case (total_order_Rle x1 b); Intro.
+Apply H10; Split.
+Assumption.
+Apply Rlt_le_trans with ``(Rmin x0 (Rmin (x-a) (b-x)))``.
+Assumption.
+Apply Rmin_l.
+Elim n1; Left; Assumption.
+Elim n0; Left; Assumption.
+Split.
+Apply Ropp_Rlt; Apply Rlt_anti_compatibility with x; Apply Rle_lt_trans with ``(Rabsolu (x1-x))``.
+Rewrite <- Rabsolu_Ropp; Rewrite Ropp_distr2; Apply Rle_Rabsolu.
+Apply Rlt_le_trans with ``(Rmin x0 (Rmin (x-a) (b-x)))``.
+Assumption.
+Apply Rle_trans with ``(Rmin (x-a) (b-x))``.
+Apply Rmin_r.
+Apply Rmin_l.
+Apply Rlt_anti_compatibility with ``-x``; Do 2 Rewrite (Rplus_sym ``-x``); Apply Rle_lt_trans with ``(Rabsolu (x1-x))``.
+Apply Rle_Rabsolu.
+Apply Rlt_le_trans with ``(Rmin x0 (Rmin (x-a) (b-x)))``.
+Assumption.
+Apply Rle_trans with ``(Rmin (x-a) (b-x))``; Apply Rmin_r.
+Elim H5; Intro.
+Assert H7 : ``a<=b<=b``.
+Split; [Left; Assumption | Right; Reflexivity].
+Assert H8 := (H0 ? H7); Unfold continuity_pt in H8; Unfold continue_in in H8; Unfold limit1_in in H8; Unfold limit_in in H8; Simpl in H8; Unfold R_dist in H8; Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Elim (H8 ? H9); Intros; Exists (Rmin x0 ``b-a``); Split.
+Unfold Rmin; Case (total_order_Rle x0 ``b-a``); Intro.
+Elim H10; Intros; Assumption.
+Change ``0<b-a``; Apply Rlt_minus; Assumption.
+Intros; Elim H11; Clear H11; Intros _ H11; Cut ``a<x1``.
+Intro; Unfold h; Case (total_order_Rle x a); Intro.
+Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? r H4)).
+Case (total_order_Rle x1 a); Intro.
+Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? r H12)).
+Case (total_order_Rle x b); Intro.
+Case (total_order_Rle x1 b); Intro.
+Rewrite H6; Elim H10; Intros; Elim r0; Intro.
+Apply H14; Split.
+Unfold D_x no_cond; Split.
+Trivial.
+Red; Intro; Rewrite <- H16 in H15; Elim (Rlt_antirefl ? H15).
+Rewrite H6 in H11; Apply Rlt_le_trans with ``(Rmin x0 (b-a))``.
+Apply H11.
+Apply Rmin_l.
+Rewrite H15; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Assumption.
+Rewrite H6; Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Assumption.
+Elim n1; Right; Assumption.
+Rewrite H6 in H11; Apply Ropp_Rlt; Apply Rlt_anti_compatibility with b; Apply Rle_lt_trans with ``(Rabsolu (x1-b))``.
+Rewrite <- Rabsolu_Ropp; Rewrite Ropp_distr2; Apply Rle_Rabsolu.
+Apply Rlt_le_trans with ``(Rmin x0 (b-a))``.
+Assumption.
+Apply Rmin_r.
+Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Exists ``x-b``; Split.
+Change ``0<x-b``; Apply Rlt_minus; Assumption.
+Intros; Elim H8; Clear H8; Intros.
+Assert H10 : ``b<x0``.
+Apply Ropp_Rlt; Apply Rlt_anti_compatibility with x; Apply Rle_lt_trans with ``(Rabsolu (x0-x))``.
+Rewrite <- Rabsolu_Ropp; Rewrite Ropp_distr2; Apply Rle_Rabsolu.
+Assumption.
+Unfold h; Case (total_order_Rle x a); Intro.
+Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? r H4)).
+Case (total_order_Rle x b); Intro.
+Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? r H6)).
+Case (total_order_Rle x0 a); Intro.
+Elim (Rlt_antirefl ? (Rlt_trans ? ? ? H1 (Rlt_le_trans ? ? ? H10 r))).
+Case (total_order_Rle x0 b); Intro.
+Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? r H10)).
+Unfold Rminus; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Assumption.
+Intros; Elim H3; Intros; Unfold h; Case (total_order_Rle c a); Intro.
+Elim r; Intro.
+Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H4 H6)).
+Rewrite H6; Reflexivity.
+Case (total_order_Rle c b); Intro.
+Reflexivity.
+Elim n0; Assumption.
+Exists [_:R](f0 a); Split.
+Apply derivable_continuous; Apply (derivable_const (f0 a)).
+Intros; Elim H2; Intros; Rewrite H1 in H3; Cut b==c.
+Intro; Rewrite <- H5; Rewrite H1; Reflexivity.
+Apply Rle_antisym; Assumption.
+Qed.
+
 (* f continue sur [a,b] est majorée et atteint sa borne supérieure *)
-Lemma continuity_ab_maj : (f:R->R;a,b:R) ``a<=b`` -> (continuity f) -> (EXT Mx : R |  ((c:R)``a<=c<=b``->``(f c)<=(f Mx)``)/\``a<=Mx<=b``).
-Intros.
+Lemma continuity_ab_maj : (f:R->R;a,b:R) ``a<=b`` -> ((c:R)``a<=c<=b``->(continuity_pt f c)) -> (EXT Mx : R |  ((c:R)``a<=c<=b``->``(f c)<=(f Mx)``)/\``a<=Mx<=b``).
+Intros; Cut (EXT g:R->R | (continuity g)/\((c:R)``a<=c<=b``->(g c)==(f0 c))).
+Intro HypProl.
+Elim HypProl; Intros g Hcont_eq.
+Elim Hcont_eq; Clear Hcont_eq; Intros Hcont Heq.
 Assert H1 := (compact_P3 a b).
-Assert H2 := (continuity_compact f0 [c:R]``a<=c<=b`` H0 H1).
+Assert H2 := (continuity_compact g [c:R]``a<=c<=b`` Hcont H1).
 Assert H3 := (compact_P2 ? H2).
 Assert H4 := (compact_P1 ? H2).
-Cut (bound (image_dir f0 [c:R]``a <= c <= b``)).
-Cut (ExT [x:R] ((image_dir f0 [c:R]``a <= c <= b``) x)).
+Cut (bound (image_dir g [c:R]``a <= c <= b``)).
+Cut (ExT [x:R] ((image_dir g [c:R]``a <= c <= b``) x)).
 Intros; Assert H7 := (complet ? H6 H5).
-Elim H7; Clear H7; Intros M H7; Cut (image_dir f0 [c:R]``a <= c <= b`` M).
+Elim H7; Clear H7; Intros M H7; Cut (image_dir g [c:R]``a <= c <= b`` M).
 Intro; Unfold image_dir in H8; Elim H8; Clear H8; Intros Mxx H8; Elim H8; Clear H8; Intros; Exists Mxx; Split.
-Intros; Rewrite <- H8; Unfold is_lub in H7; Elim H7; Clear H7; Intros H7 _; Unfold is_upper_bound in H7; Apply H7; Unfold image_dir; Exists c; Split; [Reflexivity | Apply H10].
+Intros; Rewrite <- (Heq c H10); Rewrite <- (Heq Mxx H9); Intros; Rewrite <- H8; Unfold is_lub in H7; Elim H7; Clear H7; Intros H7 _; Unfold is_upper_bound in H7; Apply H7; Unfold image_dir; Exists c; Split; [Reflexivity | Apply H10].
 Apply H9.
-Elim (classic (image_dir f0 [c:R]``a <= c <= b`` M)); Intro.
+Elim (classic (image_dir g [c:R]``a <= c <= b`` M)); Intro.
 Assumption.
-Cut (EXT eps:posreal | (y:R)~(intersection_domaine (Disque M eps) (image_dir f0 [c:R]``a <= c <= b``) y)).
-Intro; Elim H9; Clear H9; Intros eps H9.
-Unfold is_lub in H7; Elim H7; Clear H7; Intros; Cut (is_upper_bound (image_dir f0 [c:R]``a <= c <= b``) ``M-eps``).
+Cut (EXT eps:posreal | (y:R)~(intersection_domaine (Disque M eps) (image_dir g [c:R]``a <= c <= b``) y)).
+Intro; Elim H9; Clear H9; Intros eps H9; Unfold is_lub in H7; Elim H7; Clear H7; Intros; Cut (is_upper_bound (image_dir g [c:R]``a <= c <= b``) ``M-eps``).
 Intro; Assert H12 := (H10 ? H11); Cut ``M-eps<M``.
 Intro; Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H12 H13)).
 Pattern 2 M; Rewrite <- Rplus_Or; Unfold Rminus; Apply Rlt_compatibility; Apply Ropp_Rlt; Rewrite Ropp_O; Rewrite Ropp_Ropp; Apply (cond_pos eps).
@@ -803,41 +960,45 @@ Ring.
 Apply Rge_minus; Apply Rle_sym1; Apply H12.
 Apply H11.
 Apply H7; Apply H11.
-Cut (EXT V:R->Prop | (voisinage V M)/\((y:R)~(intersection_domaine V (image_dir f0 [c:R]``a <= c <= b``) y))).
+Cut (EXT V:R->Prop | (voisinage V M)/\((y:R)~(intersection_domaine V (image_dir g [c:R]``a <= c <= b``) y))).
 Intro; Elim H9; Intros V H10; Elim H10; Clear H10; Intros.
 Unfold voisinage in H10; Elim H10; Intros del H12; Exists del; Intros; Red; Intro; Elim (H11 y).
 Unfold intersection_domaine; Unfold intersection_domaine in H13; Elim H13; Clear H13; Intros; Split.
 Apply (H12 ? H13).
 Apply H14.
-Cut ~(point_adherent (image_dir f0 [c:R]``a <= c <= b``) M).
+Cut ~(point_adherent (image_dir g [c:R]``a <= c <= b``) M).
 Intro; Unfold point_adherent in H9.
 Assert H10 := (not_all_ex_not ? [V:R->Prop](voisinage V M)
             ->(EXT y:R |
                    (intersection_domaine V
-                     (image_dir f0 [c:R]``a <= c <= b``) y)) H9).
+                     (image_dir g [c:R]``a <= c <= b``) y)) H9).
 Elim H10; Intros V0 H11; Exists V0; Assert H12 := (imply_to_and ? ? H11); Elim H12; Clear H12; Intros.
 Split.
 Apply H12.
 Apply (not_ex_all_not ? ? H13).
-Red; Intro; Cut (adherence (image_dir f0 [c:R]``a <= c <= b``) M).
-Intro; Elim (ferme_P1 (image_dir f0 [c:R]``a <= c <= b``)); Intros H11 _; Assert H12 := (H11 H3).
+Red; Intro; Cut (adherence (image_dir g [c:R]``a <= c <= b``) M).
+Intro; Elim (ferme_P1 (image_dir g [c:R]``a <= c <= b``)); Intros H11 _; Assert H12 := (H11 H3).
 Elim H8.
 Unfold eq_Dom in H12; Elim H12; Clear H12; Intros.
 Apply (H13 ? H10).
 Apply H9.
-Exists (f0 a); Unfold image_dir; Exists a; Split.
+Exists (g a); Unfold image_dir; Exists a; Split.
 Reflexivity.
 Split; [Right; Reflexivity | Apply H].
 Unfold bound; Unfold bornee in H4; Elim H4; Clear H4; Intros m H4; Elim H4; Clear H4; Intros M H4; Exists M; Unfold is_upper_bound; Intros; Elim (H4 ? H5); Intros _ H6; Apply H6.
+Apply prolongement_C0; Assumption.
 Qed.
 
 (* f continue sur [a,b] est minorée et atteint sa borne inférieure *)
-Lemma continuity_ab_min : (f:(R->R); a,b:R) ``a <= b``->(continuity f)->(EXT mx:R | ((c:R)``a <= c <= b``->``(f mx) <= (f c)``)/\``a <= mx <= b``).
-Intros; Cut (continuity (opp_fct f0)).
+Lemma continuity_ab_min : (f:(R->R); a,b:R) ``a <= b``->((c:R)``a<=c<=b``->(continuity_pt f c))->(EXT mx:R | ((c:R)``a <= c <= b``->``(f mx) <= (f c)``)/\``a <= mx <= b``).
+Intros.
+Cut ((c:R)``a<=c<=b``->(continuity_pt (opp_fct f0) c)).
 Intro; Assert H2 := (continuity_ab_maj (opp_fct f0) a b H H1); Elim H2; Intros x0 H3; Exists x0; Intros; Split.
 Intros; Rewrite <- (Ropp_Ropp (f0 x0)); Rewrite <- (Ropp_Ropp (f0 c)); Apply Rle_Ropp1; Elim H3; Intros; Unfold opp_fct in H5; Apply H5; Apply H4.
 Elim H3; Intros; Assumption.
-Apply (continuity_opp ? H0).
+Intros.
+Assert H2 := (H0 ? H1).
+Apply (continuity_pt_opp ? ? H2).
 Qed.
 
 
