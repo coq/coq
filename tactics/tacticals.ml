@@ -67,7 +67,7 @@ let tclTRY_sign (tac:constr->tactic) sign gl =
     | [s]     -> tac (VAR(s)) (* added in order to get useful error messages *)
     | (s::sl) -> tclORELSE (tac (VAR(s))) (arec sl) 
   in 
-  arec (fst sign) gl
+  arec (ids_of_sign sign) gl
 
 let tclTRY_HYPS (tac:constr->tactic) gl = 
   tclTRY_sign tac (pf_untyped_hyps gl) gl

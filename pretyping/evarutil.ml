@@ -201,23 +201,22 @@ let real_clean isevars sp args rhs =
 (* [new_isevar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 
+let append_rels_to_vars ctxt =
+  dbenv_it
+    (fun na t (subst,sign) ->
+       let na = if na = Anonymous then Name(id_of_string"_") else na in
+       let id = next_name_away na (ids_of_sign sign) in
+       ((VAR id)::subst, add_sign (id,typed_app (substl subst) t) sign))
+    ctxt ([],get_globals ctxt)
+
 let new_isevar isevars env typ k =
-  let (ENVIRON(sign,dbenv)) = context env in
-  let t =
-    List.fold_left (fun b (na,d)-> mkLambda na (incast_type d) b) typ dbenv in
-  let rec aux sign = function
-    | (0, t) -> (sign,t)
-    | (n, DOP2(Lambda,d,(DLAM(na,b)))) ->
-	let na = if na = Anonymous then Name(id_of_string"_") else na in
-       	let id = next_name_away na (ids_of_sign sign) in
-       	aux (add_sign (id,(outcast_type d)) sign) (n-1, subst1 (VAR id) b)
-    | (_, _) -> anomaly "Trad.new_isevar" 
-  in
-  let (sign',typ') = aux sign (List.length dbenv, t) in
-  let env' = change_hyps (fun _ -> sign') env in
+  let ctxt = context env in
+  let subst,sign = append_rels_to_vars ctxt in
+  let typ' = substl subst typ in
+  let env' = change_hyps (fun _ -> sign) env in
   let newargs =
-    (List.rev(rel_list 0 (List.length dbenv)))
-    @(List.map (fun id -> VAR id) (ids_of_sign sign)) in
+    (List.rev(rel_list 0 (number_of_rels ctxt)))
+    @(List.map (fun id -> VAR id) (ids_of_sign (get_globals ctxt))) in
   let (sigma',evar) =
     new_isevar_sign env' !isevars typ' (Array.of_list newargs) in
   isevars := sigma';

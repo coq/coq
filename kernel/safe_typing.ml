@@ -439,11 +439,11 @@ let pop_vars idl env =
     if n = 0 then
       sign
     else
-      match sign with
-	| (id::ids,_::tys) ->
+      if isnull_sign sign then anomaly "pop_vars"
+      else
+	let (id,_) = hd_sign sign in 
 	    if not (List.mem id idl) then anomaly "pop_vars";
-	    remove (pred n) (ids,tys) 
-	| _ -> anomaly "pop_vars"
+	    remove (pred n) (tl_sign sign)
   in
   change_hyps (remove (List.length idl)) env
 

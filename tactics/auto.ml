@@ -590,8 +590,10 @@ let unify_resolve (c,clenv) gls =
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_untyped_hyps <some goal> *)
 
-let make_local_hint_db (lid, ltyp) = 
-  let hintlist = list_map_append2 make_resolve_hyp lid ltyp in
+let make_local_hint_db sign = 
+  let hintlist =
+    list_map_append2 make_resolve_hyp
+      (ids_of_sign sign) (vals_of_sign sign) in
   Hint_db.add_list hintlist Hint_db.empty
 
 
@@ -711,19 +713,19 @@ let decomp_empty_term c gls =
 (* n is the max depth of search *)
 (* local_db contains the local Hypotheses *)
 
-let rec search_gen decomp n db_list local_db add_sign goal =
+let rec search_gen decomp n db_list local_db extra_sign goal =
   if n=0 then error "BOUND 2";
   let decomp_tacs = match decomp with 
     | 0 -> [] 
     | p -> 
-	(tclTRY_sign decomp_empty_term add_sign)
+	(tclTRY_sign decomp_empty_term extra_sign)
 	::
 	(List.map 
 	   (fun id -> tclTHEN (decomp_unary_term (VAR id)) 
 		(tclTHEN 
 		   (clear_one id)
 		   (search_gen decomp p db_list local_db nil_sign)))
-	   (fst (pf_untyped_hyps goal))) 
+	   (ids_of_sign (pf_hyps goal))) 
   in
   let intro_tac = 
     tclTHEN intro 
@@ -736,7 +738,8 @@ let rec search_gen decomp n db_list local_db add_sign goal =
 	   with Failure _ -> [] 
 	 in
          search_gen decomp n db_list
-	   (Hint_db.add_list hintl local_db) ([hid],[htyp]) g') 
+	   (Hint_db.add_list hintl local_db)
+	   (add_sign (hid,htyp) nil_sign) g') 
   in
   let rec_tacs = 
     List.map 
@@ -854,7 +857,7 @@ let compileAutoArg contac = function
                       contac) 
                  else 
 		   tclFAIL)
-	      (fst ctx) (snd ctx)) g)
+	      (ids_of_sign ctx) (vals_of_sign ctx)) g)
   | UsingTDB ->  
       (tclTHEN  
          (Tacticals.tryAllClauses 
@@ -887,10 +890,11 @@ let rec super_search n db_list local_db argl goal =
          (super_search (n-1) db_list local_db argl) argl))) goal
 
 let search_superauto n ids argl g = 
-  let sigma = 
-    ids,
-    (List.map (fun id -> pf_type_of g (pf_global g id)) ids) in   
-  let hyps = (concat_sign (pf_untyped_hyps g) sigma) in
+  let sigma =
+    List.fold_right
+      (fun id -> add_sign (id,pf_type_of g (pf_global g id)))
+      ids nil_sign in
+  let hyps = concat_sign (pf_untyped_hyps g) sigma in
   super_search n [Stringmap.find "core" !searchtable] (make_local_hint_db hyps)
     argl g
 

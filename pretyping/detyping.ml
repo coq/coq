@@ -311,7 +311,7 @@ let rec detype avoid env t =
 	 | Name id   -> RRef (dummy_loc, RVar id)
 	 | Anonymous -> anomaly "detype: index to an anonymous variable"
        with Not_found ->
-	 let s = "[REL "^(string_of_int (n - List.length (get_rels env)))^"]"
+	 let s = "[REL "^(string_of_int (number_of_rels env - n))^"]"
 	 in RRef (dummy_loc, RVar (id_of_string s)))
     | IsMeta n -> RRef (dummy_loc,RMeta n)
     | IsVar id -> RRef (dummy_loc,RVar id)

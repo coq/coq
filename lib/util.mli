@@ -127,6 +127,9 @@ val in_some : 'a -> 'a option
 val out_some : 'a option -> 'a
 val option_app : ('a -> 'b) -> 'a option -> 'b option
 
+(* In [map_succeed f l] an element [a] is removed if [f a] raises *)
+(* [Failure _] otherwise behaves as [List.map f l] *)
+
 val map_succeed : ('a -> 'b) -> 'a list -> 'b list
 
 (*s Pretty-printing. *)

@@ -729,12 +729,12 @@ let dyn_exact cc gl = match cc with
 
 let (assumption:tactic) = fun gl ->
   let concl =  pf_concl gl in 
-  let rec arec = function
-    | ([],[])          -> error "No such assumption"
-    | (s::sl,a::al) -> if pf_conv_x_leq gl a concl then 
-        refine (VAR(s)) gl else arec (sl,al)
-    | _ -> assert false
-  in 
+  let rec arec sign =
+    if isnull_sign sign then error "No such assumption";
+    let (s,a) = hd_sign sign in
+    if pf_conv_x_leq gl a concl then refine (VAR(s)) gl
+    else arec (tl_sign sign)
+  in
   arec (pf_untyped_hyps gl)
 
 let dyn_assumption = function

@@ -33,7 +33,7 @@ type env = {
   env_universes : universes }
 
 let empty_env = { 
-  env_context = ENVIRON (([],[]),[]);
+  env_context = ENVIRON (nil_sign,nil_dbsign);
   env_globals = {
     env_constants = Spmap.empty;
     env_inductives = Spmap.empty;
@@ -61,12 +61,8 @@ let change_hyps f env =
  * if env = ENVIRON(sign,[na_h:Th]...[na_j:Tj]...[na_1:T1])
  * then it yields ENVIRON(sign,[na_h:Th]...[Name id:Tj]...[na_1:T1])
  *)
-let change_name_rel env j id =
-  let ENVIRON(sign,db) = context env in
-  (match list_chop (j-1) db with
-       db1,((_,ty)::db2) ->
-	 {env with env_context = ENVIRON(sign,db1@(Name id,ty)::db2)}
-     | _ -> assert false)
+let change_name_rel env j id = 
+  { env with env_context = change_name_env (context env) j id }
 (****)
 
 let push_rel idrel env =

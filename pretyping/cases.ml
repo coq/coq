@@ -75,16 +75,6 @@ let rec map_append_vect f v =
 
 
 
-(* behaves as lam_and_popl but receives an environment instead of a 
- *  dbenvironment
- *)
-let elam_and_popl n env body =
-  let ENVIRON(sign,dbenv)=env  in
-  let ndbenv,a,l = lam_and_popl n dbenv body []
-  in ENVIRON(sign,ndbenv),a
-
-
-
 (* behaves as lam_and_popl_named but receives an environment instead of a 
  *  dbenvironment
  *)

@@ -53,6 +53,7 @@ let list_of_sign (ids,tys) =
   try List.combine ids tys
   with _ -> anomaly "Corrupted signature"
 
+
 let make_sign = List.split
 let do_sign f (ids,tys) = List.iter2 f ids tys
 
@@ -163,6 +164,9 @@ let dbindv sign cl =
   and sign' = tl_sign sign in
   (ty,DLAMV(Name id,Array.map (subst_var id) cl))
 
+(* de Bruijn environments *)
+
+let nil_dbsign = []
 
 (* Signatures + de Bruijn environments *)
 
@@ -219,6 +223,13 @@ let map_var_env f (ENVIRON((dom,rang),r)) =
   ENVIRON (List.fold_right2 
 	     (fun na x (doml,rangl) -> (na::doml,(f x)::rangl))
       	     dom rang ([],[]),r)
+
+let number_of_rels (ENVIRON(_,db)) = List.length db
+
+let change_name_env (ENVIRON(sign,db)) j id =
+  match list_chop (j-1) db with
+    | db1,((_,ty)::db2) -> ENVIRON(sign,db1@(Name id,ty)::db2)
+    | _ -> raise Not_found
 
 let unitize_env env = map_rel_env (fun _ -> ()) env
 

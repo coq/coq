@@ -155,10 +155,9 @@ let new_meta_variables =
 let mk_assumption env sigma c = execute_type env sigma c
 				   
 let sign_before id = 
-  let rec aux = function
-    | [],[] -> error "no such hypothesis"
-    | sign -> 
-	if fst(hd_sign sign) = id then tl_sign sign else aux (tl_sign sign)
+  let rec aux sign =
+    if isnull_sign sign then error "no such hypothesis";
+    if fst (hd_sign sign) = id then tl_sign sign else aux (tl_sign sign)
   in 
   aux
 
@@ -373,18 +372,17 @@ let prim_refiner r sigma goal =
 	  error "convert-hyp rule passed non-converting term"
 	    
     | { name = Thin; hypspecs = ids } ->
-     	let rec remove_pair s = function
-          | ([],[]) -> 
-	      error ((string_of_id s) ^ " is not among the assumptions.")
-	  | sign -> 
-	      let (s',ty),tlsign = uncons_sign sign in
-	      if s = s' then 
-		tlsign
-              else if occur_var s ty.body then 
-		error ((string_of_id s) ^ " is used in the hypothesis " 
-		       ^ (string_of_id s'))
-              else 
-		add_sign (s',ty) (remove_pair s tlsign)
+     	let rec remove_pair s sign =
+	  if isnull_sign sign then
+	    error ((string_of_id s) ^ " is not among the assumptions.");
+	  let (s',ty),tlsign = uncons_sign sign in
+	  if s = s' then 
+	    tlsign
+          else if occur_var s ty.body then 
+	    error ((string_of_id s) ^ " is used in the hypothesis " 
+		   ^ (string_of_id s'))
+          else 
+	    add_sign (s',ty) (remove_pair s tlsign)
 	in
 	let clear_aux sign s =
           if occur_var s cl then

@@ -95,7 +95,8 @@ let print_env pk =
   prec (gLOB nil_sign)
 
 let assumptions_for_print lna =
-  ENVIRON(([],[]),List.map (fun na -> (na,())) lna)
+  List.fold_right (fun na env -> add_rel (na,()) env) lna
+    (ENVIRON(nil_sign,nil_dbsign))
 
 let print_constructors_with_sep pk fsep mip = 
   let pterm,pterminenv =

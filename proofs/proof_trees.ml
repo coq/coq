@@ -313,8 +313,8 @@ let pr_seq evd =
     | Some i -> i 
     | None -> anomaly "pr_seq : info = None"
   in
-  let (x,y) as hyps = var_context env in
-  let sign = List.rev(List.combine x y) in
+  let hyps = var_context env in
+  let sign = List.rev (list_of_sign hyps) in
   let pc = pr_ctxt info in
   let pdcl =
     prlist_with_sep pr_spc

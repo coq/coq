@@ -51,25 +51,22 @@ let relative env n =
 
 (* Checks if a context of variable is included in another one. *)
 
-let hyps_inclusion env sigma (idl1,tyl1) (idl2,tyl2) =
-  let rec aux = function
-    | ([], [], _, _) -> true
-    | (_, _, [], []) -> false
-    | ((id1::idl1), (ty1::tyl1), idl2, tyl2) ->
-        let rec search = function
-          | ([], []) -> false
-          | ((id2::idl2), (ty2::tyl2)) ->
-              if id1 = id2 then
-		(is_conv env sigma (body_of_type ty1) (body_of_type ty2))
-		& aux (idl1,tyl1,idl2,tyl2)
-              else 
-		search (idl2,tyl2)
-          | (_, _) -> invalid_arg "hyps_inclusion"
-        in 
-	search (idl2,tyl2)
-    | (_, _, _, _) -> invalid_arg "hyps_inclusion"
-  in
-  aux (idl1,tyl1,idl2,tyl2) 
+let rec hyps_inclusion env sigma sign1 sign2 =
+  if isnull_sign sign1 then true
+  else
+    let (id1,ty1) = hd_sign sign1 in
+    let rec search sign2 =
+      if isnull_sign sign2 then false
+      else
+	let (id2,ty2) = hd_sign sign2 in
+        if id1 = id2 then
+	  (is_conv env sigma (body_of_type ty1) (body_of_type ty2))
+	  &
+	  hyps_inclusion env sigma (tl_sign sign1) (tl_sign sign2)
+        else 
+	  search (tl_sign sign2)
+    in 
+    search sign2
 
 (* Checks if the given context of variables [hyps] is included in the
    current context of [env]. *)

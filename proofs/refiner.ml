@@ -260,8 +260,7 @@ let extract_open_proof sign pf =
     | {ref=Some(Local_constraints lc,[pf])} -> (proof_extractor vl) pf
 	  
     | {ref=None;goal=goal} ->
-	let rel_env = get_rels vl in
-	let n_rels = List.length rel_env in
+	let n_rels = number_of_rels vl in
 	let visible_rels =
           map_succeed
             (fun id ->
@@ -811,14 +810,13 @@ let pr_rule = function
   | Context ctxt -> pr_ctxt ctxt
   | Local_constraints lc -> [< 'sTR"Local constraint change" >]
 
-let thin_sign osign (x,y) =
-  let com_nsign = List.combine x y in 
-  List.split
-    (map_succeed (fun (id,ty) ->
-                    if (not (mem_sign osign id))
-                      or (id,ty) <> (lookup_sign id osign) then
-                        (id,ty)
-                    else failwith "caught") com_nsign)
+let thin_sign osign sign =
+  sign_it
+    (fun id ty nsign ->
+       if (not (mem_sign osign id))
+         or (id,ty) <> (lookup_sign id osign)  (* Hum, egalité sur les types *)
+       then add_sign (id,ty) nsign
+       else nsign) sign nil_sign
 
 let rec print_proof sigma osign pf =
   let {evar_env=env; evar_concl=cl; 

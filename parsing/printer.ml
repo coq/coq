@@ -176,7 +176,7 @@ let pr_env k env =
   [< sign_env; db_env >]
 
 let pr_ne_env header k = function
-  | ENVIRON (([],[]),[]) -> [< >]
+  | ENVIRON (sign,_) as env when isnull_sign sign & isnull_rel_env env -> [< >]
   | env -> let penv = pr_env k env in [< header; penv >]
 
 let pr_env_limit n env =
