@@ -80,7 +80,7 @@ let split_evar_to_arrow sigma c =
   let dsp = num_of_evar (body_of_type dom) in
   let rsp = num_of_evar (body_of_type rng) in
   (sigma3,
-   mkCast (mkEvar dsp args) dummy_sort,
+   make_typed (mkEvar dsp args) (Type dummy_univ),
    mkCast (mkEvar rsp (array_cons (mkRel 1) args)) dummy_sort)
 
 
@@ -376,7 +376,7 @@ let status_changed lev (pbty,t1,t2) =
 
 (* Operations on value/type constraints used in trad and progmach *)
 
-type trad_constraint = bool * (constr option * constr option)
+type trad_constraint = bool * (typed_type option * constr option)
 
 (* Basically, we have the following kind of constraints (in increasing
  * strength order):
@@ -412,7 +412,12 @@ let prod_dom_tycon_unif env isevars = function
   | None -> None
   | Some c ->
       (match whd_betadeltaiota env !isevars c with
-         | DOP2(Prod,c1,_) -> Some c1
+         | DOP2(Prod,c1,_) ->
+	     let t =
+	       match c1 with 
+		 | DOP2 (Cast,cc1,DOP0 (Sort s)) -> make_typed cc1 s
+		 | _  -> make_typed c1 (Retyping.get_sort_of env !isevars c1)
+	     in Some t
 	 | t ->
 	     if (ise_undefined isevars t) then begin
 	       let (sigma,dom,_) = split_evar_to_arrow !isevars t in
@@ -425,7 +430,7 @@ let prod_dom_tycon_unif env isevars = function
  * first argument. *) 
 
 let app_dom_tycon env isevars (_,(_,tyc)) =
-  (false,(None, prod_dom_tycon_unif env isevars tyc))
+  (false,(None, option_app incast_type (prod_dom_tycon_unif env isevars tyc)))
 
 
 (* Given a constraint on a term, returns the constraint corresponding to this

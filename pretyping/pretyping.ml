@@ -295,7 +295,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
   if !compter then nbimpl:=!nbimpl+1;
   (match vtcon with
     (true,(Some v, _)) ->
-      let (valc,typc) = destCast v in
+      let (valc,typc) = (body_of_type v,mkSort (level_of_type v)) in
       {uj_val=valc; uj_type=typc; uj_kind=dummy_sort}
   | (false,(None,Some ty)) ->
       let (c,ty) = new_isevar isevars env ty CCI in
