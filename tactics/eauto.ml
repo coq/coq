@@ -231,8 +231,10 @@ module SearchProblem = struct
   let rec list_addn n x l = 
     if n = 0 then l else x :: (list_addn (pred n) x l)
 
+  (* Ordering of states is lexicographic on depth (greatest first) then
+     number of remaining goals. *)
   let compare s s' =
-    let d = s.depth - s'.depth in
+    let d = s'.depth - s.depth in
     let nbgoals s = List.length (sig_it (fst s.tacres)) in
     if d <> 0 then d else nbgoals s - nbgoals s'
 
