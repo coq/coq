@@ -1000,26 +1000,39 @@ cleanconfig::
 
 alldepend: depend dependcoq 
 
-dependcoq: beforedepend
-	$(COQDEP) $(COQINCLUDES) $(ALLVO:.vo=.v) > .depend.coq
+dependcoq:: beforedepend
+	$(COQDEP) -R theories Coq -R contrib Coq $(COQINCLUDES) $(ALLVO:.vo=.v) > .depend.coq
+
+# Build dependencies ignoring failures in building ml files from ml4 files
+# This is useful to rebuild dependencies when they are strongly corrupted:
+# by making scratchdependml, one gets dependencies OK for .ml files and
+# .ml4 files not using fancy parsers. This is sufficient to get beforedepend
+# and depend targets successfully built
+scratchdepend:: dependp4
+	-$(MAKE) -k -f Makefile.dep $(ML4FILESML)
+	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
+	$(MAKE) depend
 
 # Computing the dependencies in camlp4 files is tricky.
 # We proceed in several steps:
 
 ML4FILESML = $(ML4FILES:.ml4=.ml)
 
-ml4filesml:
-	$(MAKE) -f Makefile.dep $(ML4FILESML)
-
-depend: beforedepend
-# 1. We express dependencies of the .ml files w.r.t their grammars
+# Expresses dependencies of the .ml4 files w.r.t their grammars
+dependp4::
 	rm -f .depend.camlp4
 	for f in $(ML4FILES); do \
 	  printf "%s" `dirname $$f`/`basename $$f .ml4`".ml: " >> .depend.camlp4; \
 	  echo `$(CAMLP4DEPS) $$f` >> .depend.camlp4; \
 	done
-# 2. Then we are able to produce the .ml files using Makefile.dep
+
+# Produce the .ml files using Makefile.dep
+ml4filesml:: .depend.camlp4
 	$(MAKE) -f Makefile.dep $(ML4FILESML)
+
+depend: beforedepend dependp4 ml4filesml
+# 1. We express dependencies of the .ml files w.r.t their grammars
+# 2. Then we are able to produce the .ml files using Makefile.dep
 # 3. We compute the dependencies inside the .ml files using ocamldep
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
 # 4. We express dependencies of .cmo and .cmx files w.r.t their grammars

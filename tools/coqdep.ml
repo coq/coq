@@ -32,16 +32,6 @@ let suffixe_spec = ref ".vi"
 
 type dir = string option
 
-(* Mapping from logical path to directory name *)
-let rec_path = ref ([] : (string * string) list)
-
-let path_to_file = function
-  | [f] -> f
-  | lpath::relpath as l ->
-      (try String.concat "/" (List.assoc lpath !rec_path :: relpath)
-      with Not_found -> String.concat "/" l)
-  | _ -> assert false
-
 (* Files specified on the command line *)
 let mlAccu  = ref ([] : (string * string * dir) list) 
 and mliAccu = ref ([] : (string * string * dir) list) 
@@ -69,6 +59,12 @@ and coqlibKnown = ref ([] : (string list * string) list)
 
 let clash_v = ref ([]: (string list * string list) list)
 
+
+let warning_module_notfound f s =
+  eprintf "*** Warning : in file %s, mdule " f;
+  eprintf "%s.v is required and has not been found in loadpath !\n"
+    (String.concat "." s);
+  flush stderr
 
 let warning_notfound f s =
   eprintf "*** Warning : in file %s, the file " f;
@@ -185,7 +181,7 @@ let traite_fichier_Coq verbose f =
                     (if spec then !suffixe_spec else !suffixe)
                 with Not_found -> 
 		  if verbose && not (List.mem_assoc str !coqlibKnown) then
-                    warning_notfound f (path_to_file str)
+                    warning_module_notfound f str
        	      end
 	  | RequireString (spec,s) -> 
 	      let str = Filename.basename s in
@@ -491,7 +487,6 @@ let coqdep () =
         | _ -> ()
   in
   let add_rec_directory dir_name log_name =
-    addQueue rec_path (log_name, dir_name);
     List.iter add_directory (all_subdirs dir_name log_name)
   in
   let rec parse = function
