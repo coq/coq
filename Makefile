@@ -191,6 +191,7 @@ INTERFACE=\
   contrib/interface/name_to_ast.cmo contrib/interface/debug_tac.cmo \
   contrib/interface/showproof_ct.cmo contrib/interface/showproof.cmo \
   contrib/interface/blast.cmo contrib/interface/centaur.cmo
+INTERFACECMX=$(INTERFACE:.cmo=.cmx)
 
 ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
 
@@ -335,7 +336,7 @@ COQTOPBYTE=bin/coqtop.byte$(EXE)
 COQTOPOPT=bin/coqtop.opt$(EXE)
 BESTCOQTOP=bin/coqtop.$(BEST)$(EXE)
 COQTOP=bin/coqtop$(EXE)
-COQINTERFACE=bin/coq-interface$(EXE) bin/parser$(EXE)
+COQINTERFACE=bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE) bin/parser$(EXE)
 
 COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
              $(COQINTERFACE) 
@@ -411,6 +412,9 @@ hightactics: $(HIGHTACTICS)
 # special binaries for debugging
 
 bin/coq-interface$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
+	$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
+
+bin/coq-interface.opt$(EXE): $(COQMKTOP) $(CMX) $(USERTACCMX) $(INTERFACECMX)
 	$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
 
 bin/parser$(EXE): contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
