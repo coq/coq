@@ -683,6 +683,8 @@ zarith: $(ZARITHVO)
 lists: $(LISTSVO)
 sets: $(SETSVO)
 fsets: $(FSETSVO)
+install-fsets: $(FSETSVO)
+	cp --parents $(FSETSVO) $(FULLCOQLIB)/theories/FSets
 intmap: $(INTMAPVO)
 relations: $(RELATIONSVO)
 wellfounded: $(WELLFOUNDEDVO)
