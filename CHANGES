@@ -1,12 +1,9 @@
-TODO: classer les changements intervenus entre la V7.0 beta et la V7.0 ?
-et ceux intervenus entre la V6.3.1 et la V7.0beta ? Ou laisser des
-listes séparées ?
-
-Changes from V7.0 to V7.1
--------------------------
+Changes from V6.3.1 and V7.0 to V7.1
+------------------------------------
 
 Notes:
-- items followed by (*) are sources of incompatibilities
+- items followed by (**) are important sources of incompatibilities
+- items followed by (*) may exceptionally be sources of incompatibilities
 - items followed by (+) have been introduced in version 7.0
 
 
@@ -16,18 +13,28 @@ Language
 - New reduction flags Zeta and Evar in Eval Compute, for inlining of
   local definitions and instantiation of existential variables
 - Delta reduction flag does not perform Zeta and Evar reduction any more (*)
-- new visibility discipline for Remark, Fact and Local: Remark's and
+- New visibility discipline for Remark, Fact and Local: Remark's and
   Fact's now survive at the end of section, but are only accessible using a
   qualified names as soon as their strength expires; Local's disappear and
   are moved into local definitions for each construction persistent at
   section closing
+- Constants declared as opaque (using Qed) can no longer become
+  transparent (a constant intended to be alternatively opaque and
+  transparent must be declared as transparent (using Defined));
+  a risk exists (until next Coq versin) that Simpl reduces opaque constants (*)
 - Local definitions allowed in Record (aka record à la Randy Pollack)
-
-- known Coercion bugs fixed
+- The names of variables for Record projections _and_ for induction principles
+  (e.g. sum_ind) is now based on the first letter of their type (main
+  source of incompatibility) (**)(+)
+- Most typing errors have now a precise location in the source (+)
+- Cases no longer infers aliases by looking at dependencies (*)(+)
+- Slightly different mechanism to solve "?" (*)(+)
+- More arguments may be considered implicits at section closing (*)(+)
+- A redundant clause in Cases is now an error (*)
+- Known Coercion bugs fixed
 - Cases predicate inference bug fixed
-- known dependent Cases predicate bugs fixed
-- bug with identifiers ended by a number greater than 2^30 fixed (+)
-
+- Known dependent Cases predicate bugs fixed
+- Bug with identifiers ended by a number greater than 2^30 fixed (+)
 
 Language : long names
 
@@ -50,7 +57,8 @@ Language : long names
   allowing more constructions to be referred just by their base name
 
 
-Tactics
+
+New tactics
 
 - New set of tactics to deal with types equipped with specific
   equalities (aka Setoïds, e.g. nat equipped with eq_nat) [by C. Renard]
@@ -60,28 +68,57 @@ Tactics
   restrictions in the reference manual)
 - New tactic ROmega: an experimental alternative (based on reflexion) to Omega
   [by P. Crégut]
+- New tactic language Ltac (see reference manual) (+)
+- New versions of Tauto and Intuition, fully rewritten in the new Ltac
+  language; they run faster and produce more compact proofs; Tauto is
+  fully compatible but, in exchange of a better uniformity, Intuition
+  is slightly weaker (then used Tauto instead) (**)(+)
+- New tactic Field to decide equalities on commutative fields (as a
+  special case, it works on real numbers) (+)
+- New tactic Fourier to solve linear inequalities on reals numbers
+  [by L. Pottier] (+)
+- New tactics dedicated to real numbers: DiscrR, SplitRmult, SplitAbsolu (+)
+
+
+Changes in tactics
 
 - Reduction tactics in local definitions apply only to the body
 - New syntax of the form "Compute in Type of H." to require a reduction on
   the types of local definitions
 - Inversion, Injection, Discriminate, ... apply also on the
   quantified premises of a goal (using the "Intros until" syntax)
-- Decompose removes temporary hypotheses (*)
+- Decompose has been fixed but hypotheses may get different names (*)(+)
 - Tauto now manages uniformly hypotheses and conclusions of the form
   "t=t" which all are considered equivalent to "True". Especially,
   Tauto now solves goals of the form "H : ~ t = t |- A".
+- The "Let" tactic has been renamed "LetTac" and is now based on the
+  primitive "let-in" (+)
+- Elim can no longer be used with an elimination schema different from
+  the one defined at definition time of the inductive type. To overload
+  an elimination schema, use "Elim <hyp> with <name of the new schema>" (*)(+)
+- Simpl no longer unfolds the recursive calls of a mutually defined 
+  fixpoint (*)(+)
+- Intro now fails if the hypothesis name already exists (*)(+)
+- "Require Prolog" is no longer needed (i.e. it is available by default) (*)(+)
+- Unfold now fails on a non unfoldable identifier (*)(+)
+- Unfold also applies on definitions of the local context
+- AutoRewrite now deals only with the main goal and it is the purpose of
+  Hint Rewrite to deal with generated subgoals (+)
+- Redundant or incompatible instantiations in Apply ... with ... are now
+  correctly managed (+)
 
 
 Efficiency
 
 - Excessive memory uses specific to V7.0 fixed
-- Excessive size of .vo files fixed
+- Sizes of .vo files vary a lot compared to V6.3 (from -30% to +300%
+  depending on the developments)
 
 
 Parsing and grammar extension
 
 - Only identifiers starting with "_" or a letter, and followed by letters,
-  digits, "_" or "'" are allowed (e.g. "$" and "@" are no longer allowed)
+  digits, "_" or "'" are allowed (e.g. "$" and "@" are no longer allowed) (*)
 - Un lieur multiple comme (a:A)(a,b:(P a))(Q a), n'est plus compris comme
   (a:A)(a0:(P a))(b:(P a))(Q a0), mais comme 
   (a:A)(a0:(P a))(b:(P a0))(Q a0)  (*)(+)
@@ -103,20 +140,71 @@ Parsing and grammar extension
   syntax rule, by using <<...>> in the patterns (expression inside
   these angle brackets are parsed as "ast"); for grammars other than
   vernac, tactic or constr, you may explicitly type the action with
-  tags ": constr", ": tactic", or ":vernac" (+)
+  tags ": constr", ": tactic", or ":vernac" (**)(+)
 - Interpretation of names in Grammar rule is now based on long names,
-  which allows to avoid problems (or sometimes tricks) related to
+  which allows to avoid problems (or sometimes tricks;) related to
   overloaded names (+)
 - A dedicated syntax has been introduced for Reals (e.g ``3+1/x``) (+)
+- Pretty-printing of Infix notations fixed. (+)
 
 
+New commands
 
-Commands
+- New command to manually set implicits arguments (+)
+  - "Implicits ident." to activate the implicit arguments mode just for ident
+  - "Implicits ident [num1 num2 ...]." to explicitly give which
+    arguments have to be considered as implicit
+- New SearchPattern/SearchRewrite (by Yves Bertot) (+)
+- New command "Debug on"/"Debug off" to activate/deactivate the tactic
+  language debuger (+)
+- New command to map physical paths to logical paths (+)
+  - Add LoadPath physical_dir as logical_dir
+  - Add Rec LoadPath physical_dir as logical_dir
+
+
+Changes in existing commands
 
 - Generalization of the usage of qualified identifiers in tactics
   and commands about globals, e.g. Decompose, Eval Delta; 
   Hints Unfold, Transparent, Require
-- Require synchronous with Reset; Require's scope stops at Section ending
+- Require synchronous with Reset; Require's scope stops at Section ending (*)
+- For a module indirectly loaded by a "Require" but not exported,
+  the command "Import module" turns the constructions defined in the
+  module accessible by their short name, and activates the Grammar,
+  Syntax, Hint, ... declared in the module (+)
+- The scope of the "Search" command can be restricted to some modules (+)
+- Final dot in command (full stop) must be followed by a space
+  (newline, tablation or whitespace) (+)
+- Slight restriction of the syntax for Cbv Delta: if present, option [-myconst]
+  must immediately follow the Delta keyword (*)(+)
+- SearchIsos currently not suppported
+- Add ML Path is now implied by Add LoadPath (+)
+- New names for the following commands (+)
+
+  AddPath -> Add LoadPath
+  Print LoadPath -> Print LoadPath
+  DelPath -> Remove LoadPath
+  AddRecPath -> Add Rec LoadPath
+  Print Path -> Print Coercion Paths
+
+  Implicit Arguments On -> Set Implicit Arguments
+  Implicit Arguments Off -> Unset Implicit Arguments
+
+  Begin Silent -> Set Silent
+  End Silent -> Unset Silent.
+
+
+Tools
+
+- coqtop (+)
+  - Two executables: coqtop.byte and coqtop.opt (if supported by the platform)
+  - coqtop is a link to the more efficient executable (coqtop.opt if present)
+  - option -full is obsolete (+)
+- do_Makefile renamed into coq_makefile (+)
+- New option -R to coqtop and coqc to map a physical directory to a logical
+  one (+)
+- coqc no longer needs to create a temporary file
+- No more warning if no initialization file .coqrc exists
 
 
 Extraction
@@ -146,8 +234,10 @@ New user contributions
   Daniel Luna,Montevideo)
 - Specification and verification of the Railroad Crossing Problem
   in CTL and TCTL [RailroadCrossing] (Carlos Daniel Luna,Montevideo)
-- P-automaton and the ABR algorithm [PAutomata] (Christine Paulin,
-  Emmanuel Freund, Orsay)
+- P-automaton and the ABR algorithm [PAutomata]
+  (Christine Paulin, Emmanuel Freund, Orsay)
+- Semantics of a subset of the C language [MiniC] 
+  (Eduardo Giménez, Emmanuel Ledinot, Suresnes) 
 - Correctness proofs of the following imperative algorithms:
   Bresenham line drawing algorithm [Bresenham], Marché's minimal edition
   distance algorithm [Diff] (Jean-Christophe Filliâtre, Orsay)
@@ -158,196 +248,17 @@ New user contributions
 
 
 
-Changes from V6.3.1 to V7.0
----------------------------
 
-To report:
 
-Langage
 
-- On peut (et il est conseillé) associer à un répertoire physique un
-  nom logique dans la structure des noms de Coq. Les définitions de la
-  bibliothèque standard sont associées au préfixe logique `Coq'. Pour
-  associer un répertoire physique à un nom logique, il faut utiliser
-  l'option -R de coqtop et coqc (cf Outils). Par défaut, le nom logique
-  "Scratch" est utilisé pour toute définition globale non associée à un
-  module non associé à un nom logique.
 
-- Le nom long des définitions globales est accessible pour
-  l'utilisateur par la notation pointée (style Coq.Arith.Plus.plus_assoc_l).
-  La syntaxe du "." final change (cf Vernac). Le nommage des définitions
-  globales change (cf Métathéorie).
 
 
 
-Extensions de syntaxe avec Grammar et Syntax
 
-- Le non affichage des Infix est corrigé.
 
 
 
-Syntaxe des constructions
-
-- Cases engendre parfois des noms differents (source théorique
-  d'incompatibilité mais insensible dans la pratique)
-
-- Les alias de motifs ayant un type dépendant ne sont pour l'instant
-  pas traités
-
-- Davantage d'inférence automatique de "?".
-
-- Davantage d'arguments implicites engendrés par le discharge.
-
-- Les cas des Cases ne se lisent plus de manière séquentielle, sauf en
-  cas de clauses par défaut redondantes auquel cas la première est prise
-  avec un avertissement.
-
-
-Commandes
-
-- Changement de nom de certaines commandes
-
-  AddPath -> Add LoadPath;
-  Print LoadPath -> Print LoadPath;
-  DelPath -> Remove LoadPath;
-  AddRecPath -> Add Rec LoadPath
-  Print Path -> Print Coercion Paths.
-
-  Implicit Arguments On -> Set Implicit Arguments
-  Implicit Arguments Off -> Unset Implicit Arguments
-
-  Nouveau: Test Implicit Arguments
-
-- End Silent était interprété comme une fin de section 
-  Begin Silent -> Set Silent
-  End Silent -> Unset Silent.
-
-- Commandes pour associer des chemins physiques à des chemins logiques
-
-  Add LoadPath physical_dir as logical_dir
-  Add Rec LoadPath physical_dir as logical_dir
-
-- Import module (re-)rend visible toutes les définitions et théorèmes
-  définis dans module.
-
-- Déclaration manuelle des implicites avec
-
-  "Implicits ident." pour activer les arguments implicites pour ident
-  indépendamment de l'état courant du mode implicite.
-
-  "Implicits ident [ num num ... num ]." pour donner explicitement
-  quels arguments doivent être implicites.
-
-- SearchPattern / SearchRewrite (contribution de Yves Bertot); Search
-  peut lui aussi être restreint à une recherche dans ou à l'extérieur de
-  modules.
-
-- SearchIsos n'a pas encore été porté.
-
-- Le point final des commandes doit être suivi d'un blanc (retour
-  chariot, tabulation ou espace)
-
-- Légère restriction de la syntaxe de Cbv Delta : l'option [-myconst]
-  de Cbv doit immédiatement suivre Delta
-
-- Nouveau: Debug On/Off positionne/débranche le débogueur de tactiques
-  (encore très expérimental).
-
-- Fact se comporte différemment
-
-Tactiques
-
-- Langage de tactiques Ltac: nouvelle couche de métalangage pour traiter de
-  petites automatisations. C'est essentiellement un petit noyau fonctionnel
-  muni d'opérateurs de filtrage élaborés (sur les termes, les contextes de
-  preuves et réalisant du backtracking). Pour plus détails, consulter le
-  manuel de référence (chapitre 10).
-
-- Tactique Let renommé en LetTac et utilise le let-in primitif;
-  Induction renommé en OldInduction et nouveau Induction plus
-  "convivial".
-
-- Elim avec un schéma d'élimination différent de celui créé à la
-  définition d'un inductif n'est plus possible. Il faut utiliser Elim
-  <hyp> with <nom du schéma d'élimination>.
-
-- Decompose
-  - Numérotation dans l'ordre des hypothèses créées
-  - Correction de bugs (quand le type ne commence pas par un inductif)
-    et refus d'agir sous les ->.
-
-- Simpl ne déplie plus les appels récursifs d'un Fix mutuel réduit. 
-  Rem: c'est une source d'incompatibilité.
-
-- Intro échoue si le nom d'hypothèse existe au lieu de mettre un avertissement
-
-- Plus de "Require Prolog" (intégré par défaut)
-
-- Unfold échoue si on lui donne en argument une définition non dépliable
-
-- Tauto et Intuition ont été intégralement réécrites en utilisant le nouveau
-  langage de tactiques Ltac. Les conséquences sont un gain considérable en
-  compacité et en performances. Tauto est totalement conservatif. Intuition
-  perd légèrement en puissance mais gagne une sémantique plus claire.
-
-- AutoRewrite ne s'occupe maintenant que du but principal et c'est les
-  Hint Rewrite qui gèrent les sous-buts générés.
-
-- Les instantiations redondantes ou incompatibles de Apply ... with ...
-  sont maintenant correctement traitées.
-
-- Nouveau: tactique Field pour décider des égalités sur les corps commutatifs.
-  La tactique a été instantiée pour les nombres réels et peut donc être
-  utilisée pour résoudre des égalités sur les réels.
-
-- Nouveau: tactique Fourier qui résoud les inégalités linéaires sur les
-  nombres réels.
-
-- Nouveau: diverses tactiques pour les nombres réels: DiscrR, SplitRmult, 
-  SplitAbsolu.
-
-Outils
-
-- Deux binaires maximum : coqtop.byte et coqtop.opt si plateforme native; 
-  coqtop est un lien vers le plus efficace possible (coqtop.opt s'il existe,
-  coqtop.byte sinon); -full maintenant obsolete
-
-- do_Makefile s'appelle maintenant coq_makefile
-
-- Utilisation de l'option -R de coqtop et coqc pour associer un
-  répertoire physique à un répertoire logique (cf Métathéorie) 
-
-- La plupart des erreurs de typage sont maintenant localisée dans le
-  source (à l'exception des erreurs d'univers et de garde).
-
-
-Développeurs
-
-- Beaucoup de modification dans le sens de la simplification et de la
-  documentation (mais cela reste une version de transition)
-
-
-
-Différences V7.0beta / V7.0
-
-   - localisation des erreurs avec Syntactif Definition
-   - clauses par défaut de Cases non lues séquentiellement et
-     détection des cas non utilisés
-- Ajout d'une option Set/Unset/Test Printing Coercions
-- Possibilité de déplier des définitions locales à un but
-- Suppression avertissement si pas de .coqrc
-- Add ML Path est fait automatiquement par Add LoadPath
-- Nouveau mécanisme de nommage des schémas d'élimination (incompatibilités...)
-
-Différences oubliées dans la V7.0beta :
-
-- Les noms de variables des projections de Record sont maintenant basés sur
-  l'initiale de leur type.
-
-- Du fait des noms qualifiés, les variables de buts n'évitent plus les
-  globaux de même nom de base
-- Unfold ne peut s'appliquer qu'à des constantes dépliables (en
-  particulier pas à des Syntactic Definition, ni des types inductifs)
 
 
 
