@@ -3,6 +3,8 @@
 sinclude config.distrib
 LOCALARCH=`uname -m`
 ARCH=`uname -m | sed -e 's/i.86/i386/'`
+#Pour MacOS X
+#ARCH=`uname -m | sed -e 's/Power Macintosh/MacOS-X/'`
 SYSTEM=`uname -s`
 
 ARCHBUILDROOT=$(DISTRIBDIR)/${ARCH}
@@ -204,6 +206,10 @@ contrib-tar-gz:
 	- rm -rf contrib-${VERSION}
 	@echo -n Exporting a fresh copy of the contribs...
 	cvs export -d contrib-${VERSION} -r $(DASHEDVERSION) contrib
+	@echo -n Removing the maintenance files ...
+	@rm -rf contrib-${VERSION}/*/*/bench.log
+	@rm -rf contrib-${VERSION}/Lyon/PROGRAMS
+	@find contrib-${VERSION} -name ".cvsignore" -exec rm {} \;
 	@echo done
 	- rm contrib-${VERSION}.tar.gz
 	@echo -n Building the tar.gz contrib package

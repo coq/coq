@@ -75,15 +75,16 @@ frais (obtenu par cvs export) de l'archive avec
      make tar-gz
 
   En particulier, les fichiers à ne pas distribuer (dont le répertoire
-distrib, le TODO, etc) sont retirés. Cette commande fait dérouler une
-check-list. Si on l'interrompt ou qu'elle échoue, le tar-gz reste créé
-et c'est à la charge de l'utilisateur de s'assurer que les paramètres
-sont corrects.
+distrib, le TODO, etc) sont retirés (rebrancher aussi dans le Makefile
+le répertoire theories/Num quand il sera opérationnel). Cette commande
+fait dérouler une check-list. Si on l'interrompt ou qu'elle échoue, le
+tar-gz reste créé et c'est à la charge de l'utilisateur de s'assurer
+que les paramètres sont corrects.
 
   Pour l'installation sous ftp voir A7.
 
 
-A5) CREATION DES PACKAGES BINAIRES (ad libitum)
+ tag -F V6-2-5 nom_du_fichierqq5) CREATION DES PACKAGES BINAIRES (ad libitum)
    (prévoir pour chaque package près de 100Mo dispo sur la partition)
 
 A5a) Création d'un package binaire tar.gz 
@@ -205,7 +206,13 @@ A9) DIFFUSION
 (**************************************************************************)
 B) LES CONTRIBS
 
-B1) PRÉPARATION
+B1) PRÉPARATION 
+
+  Cette phase de vérification est actuellement remplacée par le test
+nocturne coqbench de J.-C. qui permet de savoir ce qui ne passe pas et
+pourquoi.
+
+  Ancienne méthode de vérification :
 
   - se placer dans une version à jour des contribs (si pas déjà fait,
 le faire avec un "cvs checkout contrib" quelque part en dehors de
@@ -224,7 +231,7 @@ B2) POSE DU TAG
   pour poser le tag V6-2-5
   (ceci est équivalent à "cvs rtag -F V6-2-5 contrib")
 
-B3) CRÉATION DU PACKAGE
+B4) SUPPRESSION DES FICHIERS INUTILES ET CRÉATION DU PACKAGE
 
   Dans le répertoire distrib, faire
 
@@ -232,7 +239,12 @@ B3) CRÉATION DU PACKAGE
 
   pour créer contrib-6.2.5.tar.gz
 
-B4) INSTALLATION SOUS FTP
+  Attention, le répertoire PROGRAMS est actuellement retiré (le
+réactiver dans le Makefile si besoin est). Les fichiers bench.log
+sont aussi retirés.
+
+
+B5) INSTALLATION SOUS FTP
 
   Dans le répertoire distrib, faire
 
