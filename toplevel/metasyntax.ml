@@ -606,6 +606,41 @@ let make_hunks etyps symbols from =
 
   in make NoBreak symbols
 
+let error_format () = error "The format does not match the notation"
+
+let rec split_format_at_ldots hd = function
+  | UnpTerminal s :: fmt when id_of_string s = ldots_var -> List.rev hd, fmt
+  | u :: fmt -> 
+      check_no_ldots_in_box u;
+      split_format_at_ldots (u::hd) fmt
+  | [] -> raise Exit
+
+and check_no_ldots_in_box = function
+  | UnpBox (_,fmt) ->
+      (try 
+        let _ = split_format_at_ldots [] fmt in
+        error ("The special symbol \"..\" must occur at the same formatting depth than the variables of which it is the ellipse")
+      with Exit -> ())
+  | _ -> ()
+
+let skip_var_in_recursive_format = function
+  | UnpTerminal _ :: sl (* skip first var *) ->
+      (* To do, though not so important: check that the names match
+         the names in the notation *)
+      sl
+  | _ -> error_format ()
+
+let read_recursive_format sl fmt =
+  let get_head fmt =
+    let sl = skip_var_in_recursive_format fmt in
+    try split_format_at_ldots [] sl with Exit -> error_format () in
+  let rec get_tail = function
+    | a :: sepfmt, b :: fmt when a = b -> get_tail (sepfmt, fmt)
+    | [], tail -> skip_var_in_recursive_format tail
+    | _ -> error "The format is not the same on the right and left hand side of the special token \"..\"" in
+  let slfmt, fmt = get_head fmt in
+  slfmt, get_tail (slfmt, fmt)
+
 let hunks_of_format (from,(vars,typs) as vt) symfmt = 
   let rec aux = function
   | symbs, (UnpTerminal s' as u) :: fmt
@@ -624,12 +659,20 @@ let hunks_of_format (from,(vars,typs) as vt) symfmt =
       symbs', UnpBox (a,b') :: l
   | symbs, (UnpCut _ as u) :: fmt ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
+  | SProdList (m,sl) :: symbs, fmt ->
+      let i = list_index m vars in
+      let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
+      let slfmt,fmt = read_recursive_format sl fmt in
+      let sl, slfmt = aux (sl,slfmt) in
+      if sl <> [] then error_format ();
+      let symbs, l = aux (symbs,fmt) in
+      symbs, UnpListMetaVar (i,prec,slfmt) :: l
   | symbs, [] -> symbs, []
-  | _, _ -> error "The format does not match the notation"
+  | _, _ -> error_format ()
   in
   match aux symfmt with
   | [], l -> l
-  | _ -> error "The format does not match the notation"
+  | _ -> error_format ()
 
 let string_of_prec (n,p) =
   (string_of_int n)^(match p with E -> "E" | L -> "L" | _ -> "")

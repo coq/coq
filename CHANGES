@@ -1,6 +1,10 @@
 Changes from V8.0pl1 to V8.0pl2
 ===============================
 
+Notations
+
+- "format" option now aware of recursive notations
+
 Bug fixes
 
 - "fail n" for n<>0 now works (notice that each "match term with"
