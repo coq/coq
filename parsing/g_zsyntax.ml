@@ -216,7 +216,7 @@ let uninterp_positive p =
 (***********************************************************************)
 
 let _ = Symbols.declare_numeral_interpreter "positive_scope"
-  ["Coq";"ZArith";"Zsyntax"]
+  ["Coq";"ZArith";"fast_integer_module"]
   (interp_positive,Some pat_interp_positive)
   ([RRef (dummy_loc, glob_xI); 
     RRef (dummy_loc, glob_xO); 
@@ -280,7 +280,7 @@ let uninterp_z p =
 (* Declaring interpreters and uninterpreters for Z *)
 
 let _ = Symbols.declare_numeral_interpreter "Z_scope"
-  ["Coq";"ZArith";"Zsyntax"]
+  ["Coq";"ZArith";"fast_integer"]
   (z_of_int,Some pat_z_of_int)
   ([RRef (dummy_loc, glob_ZERO); 
     RRef (dummy_loc, glob_POS); 

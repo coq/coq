@@ -219,7 +219,7 @@ let uninterp_r p =
     None
 
 let _ = Symbols.declare_numeral_interpreter "R_scope"
-  ["Coq";"Reals";"Rsyntax"]
+  ["Coq";"Reals";"Rdefinitions"]
   (r_of_int2,None)
   ([RRef(dummy_loc,glob_Ropp);RRef(dummy_loc,glob_R0);
     RRef(dummy_loc,glob_Rplus);RRef(dummy_loc,glob_Rmult);RRef(dummy_loc,glob_R1)],
