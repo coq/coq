@@ -45,11 +45,6 @@ let constr_level = function
   | 8,assoc -> assert (assoc <> Gramext.LeftA); "top"
   | n,assoc -> (string_of_int n)^(assoc_level assoc)
 
-let constr_prod_level = function
-  | 8 -> "top"
-  | 4 -> "4L"
-  | n -> string_of_int n
-
 let default_levels = [8,Gramext.RightA; 1,Gramext.RightA; 0,Gramext.RightA]
 let level_stack = ref [default_levels]
 
@@ -191,11 +186,7 @@ let rec build_prod_item univ assoc = function
   | ProdList0 s -> Gramext.Slist0 (build_prod_item univ assoc s)
   | ProdList1 s -> Gramext.Slist1 (build_prod_item univ assoc s)
   | ProdOpt s   -> Gramext.Sopt   (build_prod_item univ assoc s)
-  | ProdPrimitive typ ->
-      match get_constr_production_entry assoc typ with
-	| (eobj,None) -> Gramext.Snterm (Gram.Entry.obj eobj)
-	| (eobj,Some lev) -> 
-	    Gramext.Snterml (Gram.Entry.obj eobj,constr_prod_level lev)
+  | ProdPrimitive typ -> symbol_of_production assoc typ
 
 let symbol_of_prod_item univ assoc = function
   | Term tok -> (Gramext.Stoken tok, None)

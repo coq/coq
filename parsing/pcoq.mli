@@ -35,8 +35,8 @@ val weaken_entry : 'a Gram.Entry.e -> grammar_object Gram.Entry.e
 val get_constr_entry :
   constr_entry -> grammar_object Gram.Entry.e * int option
 
-val get_constr_production_entry : Gramext.g_assoc option -> 
-  constr_production_entry -> grammar_object Gram.Entry.e * int option
+val symbol_of_production : Gramext.g_assoc option -> 
+  constr_production_entry -> Token.t Gramext.g_symbol
 
 val grammar_extend :
   'a Gram.Entry.e -> Gramext.position option ->

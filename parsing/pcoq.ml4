@@ -510,15 +510,16 @@ let coq_assoc = function
 
 let adjust_level assoc = function
   (* If no associativity constraints, adopt the current one *)
+  | (n,BorderProd (false,Some Gramext.NonA)) -> Some None
   | (n,BorderProd (_,Some Gramext.NonA)) -> None
   (* Otherwise, deal with the current one *)
   | (n,BorderProd (_,a)) when coq_assoc a = camlp4_assoc assoc -> None
   | (n,BorderProd (left,a)) ->
       let a = coq_assoc a in
       if (left & a = Gramext.LeftA) or ((not left) & a = Gramext.RightA)
-      then Some n else Some (n-1)
+      then Some (Some n) else Some (Some (n-1))
   | (8,InternalProd) -> None
-  | (n,InternalProd) -> Some n
+  | (n,InternalProd) -> Some (Some n)
 
 let compute_entry allow_create adjust = function
   | ETConstr (10,_) -> weaken_entry Constr.lconstr, None
@@ -537,3 +538,15 @@ let compute_entry allow_create adjust = function
 
 let get_constr_entry = compute_entry true (fun (n,()) -> Some n)
 let get_constr_production_entry ass = compute_entry false (adjust_level ass)
+
+let constr_prod_level = function
+  | 8 -> "top"
+  | 4 -> "4L"
+  | n -> string_of_int n
+
+let symbol_of_production assoc typ =
+  match get_constr_production_entry assoc typ with
+    | (eobj,None) -> Gramext.Snterm (Gram.Entry.obj eobj)
+    | (eobj,Some None) -> Gramext.Snext
+    | (eobj,Some (Some lev)) -> 
+        Gramext.Snterml (Gram.Entry.obj eobj,constr_prod_level lev)
