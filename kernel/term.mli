@@ -75,7 +75,7 @@ type kindOfTerm =
   | IsCast         of constr * constr
   | IsProd         of name * constr * constr
   | IsLambda       of name * constr * constr
-  | IsAppL         of constr array
+  | IsAppL         of constr * constr list
   | IsConst        of section_path * constr array
   | IsAbst         of section_path * constr array
   | IsEvar         of int * constr array
@@ -146,7 +146,7 @@ val mkNamedLambda : identifier -> constr -> constr -> constr
 (* If $a = [| t_1; \dots; t_n |]$, constructs the application 
    $(t_1~\dots~t_n)$. *)
 val mkAppL : constr array -> constr
-val mkAppList : constr list  -> constr
+val mkAppList : constr -> constr list  -> constr
 
 (* Constructs a constant *) 
 (* The array of terms correspond to the variables introduced in the section *)

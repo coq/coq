@@ -131,8 +131,8 @@ let mkLambda x t1 t2 = (DOP2 (Lambda,t1,(DLAM (x,t2))))
 let mkNamedLambda name typ c = mkLambda (Name name) typ (subst_var name c)
 
 (* If lt = [t1; ...; tn], constructs the application (t1 ... tn) *)
-let mkAppL a    = DOPN (AppL, a)
-let mkAppList l   = DOPN (AppL, Array.of_list l)
+let mkAppL a = DOPN (AppL, a)
+let mkAppList a l = DOPN (AppL, Array.of_list (a::l))
 
 (* Constructs a constant *) 
 (* The array of terms correspond to the variables introduced in the section *)
@@ -482,7 +482,7 @@ type kindOfTerm =
   | IsCast         of constr * constr
   | IsProd         of name * constr * constr
   | IsLambda       of name * constr * constr
-  | IsAppL         of constr array
+  | IsAppL         of constr * constr list
   | IsConst        of section_path * constr array 
   | IsAbst         of section_path * constr array
   | IsEvar         of int * constr array
@@ -509,9 +509,10 @@ let kind_of_term c =
     | DOP2 (Cast, t1, t2)                  -> IsCast (t1,t2)
     | DOP2 (Prod, t1, (DLAM (x,t2)))       -> IsProd (x,t1,t2) 
     | DOP2 (Lambda, t1, (DLAM (x,t2)))     -> IsLambda (x,t1,t2)
-    | DOPN (AppL,a)                        -> IsAppL a
+    | DOPN (AppL,a) when Array.length a <> 0 -> 
+	IsAppL (a.(0), List.tl (Array.to_list a))
     | DOPN (Const sp, a)                   -> IsConst (sp,a)
-    | DOPN (Evar sp, a)                   -> IsEvar (sp,a)
+    | DOPN (Evar sp, a)                    -> IsEvar (sp,a)
     | DOPN (Abst sp, a)                    -> IsAbst (sp, a)
     | DOPN (MutInd (sp,i), l)              -> IsMutInd (sp,i,l)
     | DOPN (MutConstruct ((sp,i), j),l)    -> IsMutConstruct (sp,i,j,l)

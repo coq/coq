@@ -10,8 +10,8 @@ open Environ
 
 (* The type of mappings for existential variables.
    The keys are integers and the associated information is a record
-   containing the type of the evar ([concl]), the signature under which 
-   it was introduced ([hyps]) and its definition ([body]). 
+   containing the type of the evar ([evar_concl]), the environment under which 
+   it was introduced ([evar_env]) and its definition ([evar_body]). 
    [evar_info] is used to add any other kind of information. *)
 
 type evar = int

@@ -278,7 +278,16 @@ type ('a,'b) union = Inl of 'a | Inr of 'b
 
 module Intset = Set.Make(struct type t = int let compare = compare end)
 
+let intset_exists p s = Intset.fold (fun x b -> (p x) || b) s false
+
 module Intmap = Map.Make(struct type t = int let compare = compare end)
+
+let intmap_in_dom x m =
+  try let _ = Intmap.find x m in true with Not_found -> false
+
+let intmap_to_list m = Intmap.fold (fun n v l -> (n,v)::l) m []
+
+let intmap_inv m b = Intmap.fold (fun n v l -> if v = b then n::l else l) m []
 
 let out_some = function
   | Some x -> x

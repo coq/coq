@@ -1,12 +1,14 @@
 
 (* $Id$ *)
 
+open Pp
 open Util
 open Names
 open Generic
 open Term
 open Sign
 open Instantiate
+open Environ
 open Evd
 open Proof_trees
 open Logic
@@ -271,23 +273,6 @@ let unifyTerms m n = walking (fun wc -> fst (w_Unify m n [] wc))
 let unify m gls =
   let n = pf_concl gls in unifyTerms m n gls
 
-let pr_clenv clenv =
-  let pr_name mv =
-    try 
-      let id = Intmap.find clenv.namenv mv in
-      [< 'sTR"[" ; print_id id ; 'sTR"]" >]
-    with Not_found -> 
-      [< >]
-  in
-  let pr_meta_binding = function
-    | (mv,CLTYP b) ->
-      	hOV 0 [< 'iNT mv ; pr_name mv ; 'sTR " : " ; pTERM b.rebus ; 'fNL >]
-    | (mv,CLVAL(b,_)) ->
-      	hOV 0 [< 'iNT mv ; pr_name mv ; 'sTR " := " ; pTERM b.rebus ; 'fNL >]
-  in
-  [< 'sTR"TEMPL: " ; pTERM clenv.templval.rebus ;
-     'sTR" : " ; pTERM clenv.templtyp.rebus ; 'fNL ;
-     (prlist pr_meta_binding (Intavm.toList clenv.env)) >]
 
 (* collects all metavar occurences, in left-to-right order, preserving
  * repetitions and all. *)
@@ -298,9 +283,9 @@ let collect_metas c =
       | DOP0(Meta mv)    -> mv::acc
       | DOP1(oper,c)     -> collrec c acc
       | DOP2(oper,c1,c2) -> collrec c1 (collrec c2 acc)
-      | DOPN(oper,cl)    -> vect_it collrec cl acc
+      | DOPN(oper,cl)    -> Array.fold_right collrec cl acc
       | DLAM(_,c)        -> collrec c acc
-      | DLAMV(_,v)       -> vect_it collrec v acc
+      | DLAMV(_,v)       -> Array.fold_right collrec v acc
       | _                -> acc
   in 
   collrec c []
@@ -308,15 +293,15 @@ let collect_metas c =
 let metavars_of c =  
   let rec collrec c acc =
     match c with
-      | DOP0(Meta mv)    -> Intavs.add acc mv
+      | DOP0(Meta mv)    -> Intset.add mv acc
       | DOP1(oper,c)     -> collrec c acc
       | DOP2(oper,c1,c2) -> collrec c1 (collrec c2 acc)
-      | DOPN(oper,cl)    -> vect_it collrec cl acc
+      | DOPN(oper,cl)    -> Array.fold_right collrec cl acc
       | DLAM(_,c)        -> collrec c acc
-      | DLAMV(_,v)       -> vect_it collrec v acc
+      | DLAMV(_,v)       -> Array.fold_right collrec v acc
       | _                -> acc
   in 
-  collrec c (Intavs.mt)
+  collrec c Intset.empty
 
 let mk_freelisted c =
   { rebus = c; freemetas = metavars_of c }
@@ -328,10 +313,10 @@ let mk_freelisted c =
 let mentions clenv mv0 = 
   let rec menrec mv1 =
     try
-      (match Intavm.map clenv.env mv1 with
-	 | CLVAL (b,_) -> 
-	     Intavs.memb b.freemetas mv0 or Intavs.exists menrec b.freemetas
-	 | CLTYP _ -> false)
+      (match Intmap.find mv1 clenv.env with
+	 | Clval (b,_) -> 
+	     Intset.mem mv0 b.freemetas || intset_exists menrec b.freemetas
+	 | Cltyp _ -> false)
     with Not_found -> 
       false
   in 
@@ -343,12 +328,12 @@ let mentions clenv mv0 =
  * a clause which one wants to backchain thru. *)
 
 let mk_clenv wc cty =
-  let mv = newMETA() in
+  let mv = new_meta () in
   let cty_fls = mk_freelisted cty in 
   { templval = mk_freelisted(DOP0(Meta mv));
     templtyp = cty_fls;
-    namenv = Intavm.create ();
-    env =  Intavm.add (Intavm.create ()) (mv,CLTYP cty_fls);
+    namenv = Intmap.empty;
+    env =  Intmap.add mv (Cltyp cty_fls) Intmap.empty ;
     hook = wc }
   
 let clenv_environments bound c =
@@ -357,27 +342,28 @@ let clenv_environments bound c =
       | (0, hd) -> (ne,e,List.rev metas,hd)
       | (n, (DOP2(Cast,c,_))) -> clrec (ne,e,metas) n c
       | (n, (DOP2(Prod,c1,DLAM(na,c2)))) ->
-	  let mv = newMETA() in
+	  let mv = new_meta () in
 	  let dep = dependent (Rel 1) c2 in
 	  let ne' =
 	    if dep then
-              (match na with
-		 | Anonymous -> ne
-		 | Name id ->
-		     if Intavm.in_dom ne mv then
-		       (warning ("Cannot put metavar "^(string_of_int mv)^
-				 " in name-environment twice");
-			ne)
-		     else Intavm.add ne (mv,id))
+              match na with
+		| Anonymous -> ne
+		| Name id ->
+		    if intmap_in_dom mv ne then begin
+		      warning ("Cannot put metavar "^(string_of_int mv)^
+			       " in name-environment twice");
+		      ne
+		    end else 
+		      Intmap.add mv id ne
             else 
 	      ne 
 	  in
-	  let e' = Intavm.add e (mv,CLTYP (mk_freelisted c1)) in 
+	  let e' = Intmap.add mv (Cltyp (mk_freelisted c1)) e in 
 	  clrec (ne',e',DOP0(Meta mv)::metas) (n-1)
 	    (if dep then (subst1 (DOP0(Meta mv)) c2) else c2)
       | (n, hd) -> (ne,e,List.rev metas,hd)
   in 
-  clrec (Intavm.create(),Intavm.create(),[]) bound c
+  clrec (Intmap.empty,Intmap.empty,[]) bound c
 
 let mk_clenv_from wc (c,cty) =
   let (namenv,env,args,concl) = clenv_environments (-1) cty in
@@ -420,16 +406,16 @@ let mk_clenv_printable_type_of = mk_clenv_type_of
 				   
 let clenv_assign mv rhs clenv =
   let rhs_fls = mk_freelisted rhs in 
-  if Intavs.exists (mentions clenv mv) rhs_fls.freemetas then
+  if intset_exists (mentions clenv mv) rhs_fls.freemetas then
     error "clenv__assign: circularity in unification";
   try
-    (match Intavm.map clenv.env mv with
-       | CLVAL _ -> anomaly "clenv_assign: metavar already assigned"
-       | CLTYP bty -> 
+    (match Intmap.find mv clenv.env with
+       | Clval _ -> anomaly "clenv_assign: metavar already assigned"
+       | Cltyp bty -> 
 	   { templval = clenv.templval;
 	     templtyp = clenv.templtyp;
 	     namenv = clenv.namenv;
-	     env = Intavm.remap clenv.env mv (CLVAL(rhs_fls,bty));
+	     env = Intmap.add mv (Clval (rhs_fls,bty)) clenv.env;
 	     hook = clenv.hook })
   with Not_found -> 
     error "clenv_assign"
@@ -437,11 +423,12 @@ let clenv_assign mv rhs clenv =
 let clenv_val_of clenv mv = 
   let rec valrec mv =
     try
-      (match Intavm.map clenv.env mv with
-	 | CLTYP _ -> DOP0(Meta mv)
-	 | CLVAL(b,_) ->
+      (match Intmap.find mv clenv.env with
+	 | Cltyp _ -> DOP0(Meta mv)
+	 | Clval(b,_) ->
 	     instance (List.map (fun mv' -> (mv',valrec mv')) 
-			 (Intavs.toList b.freemetas)) b.rebus)
+			 (Intset.elements b.freemetas)) 
+	       (w_env clenv.hook) (w_Underlying clenv.hook) b.rebus)
     with Not_found -> 
       DOP0(Meta mv)
   in 
@@ -449,9 +436,10 @@ let clenv_val_of clenv mv =
 
 let clenv_instance clenv b =
   let c_sigma =
-    List.map (fun mv -> (mv,clenv_val_of clenv mv)) (Intavs.toList b.freemetas)
+    List.map 
+      (fun mv -> (mv,clenv_val_of clenv mv)) (Intset.elements b.freemetas)
   in 
-  instance c_sigma b.rebus
+  instance c_sigma (w_env clenv.hook) (w_Underlying clenv.hook) b.rebus
     
 let clenv_instance_term clenv c =
   clenv_instance clenv (mk_freelisted c)
@@ -464,35 +452,35 @@ let clenv_instance_term clenv c =
  * fail in this case... *)
 
 let clenv_cast_meta clenv = 
- let rec crec u =
-   match u with
-     | DOPN((AppL|MutCase _),_)  -> crec_hd u
-     | DOP2(Cast,DOP0(Meta _),_) -> u
-     | DOPN(c,cl)                -> DOPN(c,Array.map crec cl)
-     | DOPL(c,cl)                -> DOPL(c,List.map crec cl)
-     | DOP1(c,t)                 -> DOP1(c,crec t)
-     | DOP2(c,t1,t2)             -> DOP2(c,crec t1,crec t2)
-     | DLAM(n,c)                 -> DLAM(n,crec c)
-     | DLAMV(n,cl)               -> DLAMV(n,Array.map crec cl)
-     | x                         -> x
-	   
- and crec_hd u =
-   match kind_of_term (strip_outer_cast u) with
-     | IsMeta mv ->
-	 (try 
-	    match Intavm.map clenv.env mv with
-              | CLTYP b ->
-		  let b' = clenv_instance clenv b in 
-		  if occur_meta b' then u else mkCast u b'
-	      | CLVAL(_) -> u
-	  with Not_found -> 
-	    u)
-     | IsAppL(f,args) -> mkAppList (crec_hd f) (List.map crec args)
-     | IsMutCase(ci,p,c,br) ->
-	 mkMutCaseA ci (crec_hd p) (crec_hd c) (Array.map crec br)
-     | _ -> u
- in 
- crec
+  let rec crec u =
+    match u with
+      | DOPN((AppL|MutCase _),_)  -> crec_hd u
+      | DOP2(Cast,DOP0(Meta _),_) -> u
+      | DOPN(c,cl)                -> DOPN(c,Array.map crec cl)
+      | DOPL(c,cl)                -> DOPL(c,List.map crec cl)
+      | DOP1(c,t)                 -> DOP1(c,crec t)
+      | DOP2(c,t1,t2)             -> DOP2(c,crec t1,crec t2)
+      | DLAM(n,c)                 -> DLAM(n,crec c)
+      | DLAMV(n,cl)               -> DLAMV(n,Array.map crec cl)
+      | x                         -> x
+	    
+  and crec_hd u =
+    match kind_of_term (strip_outer_cast u) with
+      | IsMeta mv ->
+	  (try 
+	     match Intmap.find mv clenv.env with
+               | Cltyp b ->
+		   let b' = clenv_instance clenv b in 
+		   if occur_meta b' then u else mkCast u b'
+	       | Clval(_) -> u
+	   with Not_found -> 
+	     u)
+      | IsAppL(f,args) -> mkAppList (crec_hd f) (List.map crec args)
+      | IsMutCase(ci,p,c,br) ->
+	  mkMutCaseA ci (crec_hd p) (crec_hd c) (Array.map crec br)
+      | _ -> u
+  in 
+  crec
 
 
 (* [clenv_pose (na,mv,cty) clenv]
@@ -504,26 +492,26 @@ let clenv_cast_meta clenv =
 let clenv_pose (na,mv,cty) clenv =
   { templval = clenv.templval;
     templtyp = clenv.templtyp;
-    env = Intavm.add clenv.env (mv,CLTYP (mk_freelisted cty));
+    env = Intmap.add mv (Cltyp (mk_freelisted cty)) clenv.env;
     namenv = (match na with
 		| Anonymous -> clenv.namenv
-		| Name id -> Intavm.add clenv.namenv (mv,id));
+		| Name id -> Intmap.add mv id clenv.namenv);
     hook = clenv.hook }
 
 let clenv_defined clenv mv =
-  match Intavm.map clenv.env mv with
-    | CLVAL _ -> true
-    | CLTYP _ -> false
+  match Intmap.find mv clenv.env with
+    | Clval _ -> true
+    | Cltyp _ -> false
 
 let clenv_value clenv mv =
-  match Intavm.map clenv.env mv with
-    | CLVAL(b,_) -> b
-    | CLTYP _ -> failwith "clenv_value"
+  match Intmap.find mv clenv.env with
+    | Clval(b,_) -> b
+    | Cltyp _ -> failwith "clenv_value"
 	  
 let clenv_type clenv mv =
-  match Intavm.map clenv.env mv with
-    | CLTYP b -> b
-    | CLVAL(_,b) -> b
+  match Intmap.find mv clenv.env with
+    | Cltyp b -> b
+    | Clval(_,b) -> b
 	  
 let clenv_template clenv = clenv.templval
 
@@ -616,14 +604,15 @@ let clenv_bchain mv subclenv clenv =
 	List.fold_left (fun ne (mv,id) ->
 			  if clenv_defined subclenv mv then 
 			    ne
-			  else if (Intavm.in_dom ne mv) then
-			    (warning ("Cannot put metavar "^(string_of_int mv)^
-				      " in name-environment twice");
-			     ne)
-			  else 
-			    Intavm.add ne (mv,id))
-          clenv.namenv (Intavm.toList subclenv.namenv);
-      env = List.fold_left Intavm.add clenv.env (Intavm.toList subclenv.env);
+			  else if intmap_in_dom mv ne then begin
+			    warning ("Cannot put metavar "^(string_of_int mv)^
+				     " in name-environment twice");
+			    ne
+			  end else 
+			    Intmap.add mv id ne)
+          clenv.namenv (intmap_to_list subclenv.namenv);
+      env = List.fold_left (fun m (n,v) -> Intmap.add n v m) 
+	       clenv.env (intmap_to_list subclenv.env);
       hook = clenv.hook } 
   in
   (* unify the type of the template of [subclenv] with the type of [mv] *)
@@ -723,9 +712,9 @@ let constrain_clenv_using_subterm_list allow_K clause oplist t =
  * the metavar mv.  The list is unordered. *)
 
 let clenv_metavars clenv mv =
-  match Intavm.map clenv.env mv with
-    | CLVAL(_,b) -> b.freemetas
-    | CLTYP b -> b.freemetas
+  match Intmap.find mv clenv.env with
+    | Clval(_,b) -> b.freemetas
+    | Cltyp b -> b.freemetas
 
 let clenv_template_metavars clenv = clenv.templval.freemetas
 
@@ -739,14 +728,14 @@ let clenv_template_metavars clenv = clenv.templval.freemetas
 let dependent_metas clenv mvs conclmetas =
   List.fold_right
     (fun mv deps ->
-       Intavs.union deps (clenv_metavars clenv mv))
+       Intset.union deps (clenv_metavars clenv mv))
     mvs conclmetas
 
 let clenv_dependent clenv (cval,ctyp) =
   let mvs = collect_metas (clenv_instance clenv cval) in
   let ctyp_mvs = metavars_of (clenv_instance clenv ctyp) in
   let deps = dependent_metas clenv mvs ctyp_mvs in
-  filter (Intavs.memb deps) mvs
+  List.filter (fun mv -> Intset.mem mv deps) mvs
 
 
 (* [clenv_independent clenv (cval,ctyp)]
@@ -759,7 +748,7 @@ let clenv_independent clenv (cval,ctyp) =
   let mvs = collect_metas (clenv_instance clenv cval) in
   let ctyp_mvs = metavars_of (clenv_instance clenv ctyp) in
   let deps = dependent_metas clenv mvs ctyp_mvs in
-  filter (fun mv -> (not((Intavs.memb deps mv)))) mvs
+  List.filter (fun mv -> not (Intset.mem mv deps)) mvs
 
 
 (* [clenv_missing clenv (cval,ctyp)]
@@ -770,8 +759,8 @@ let clenv_missing clenv (cval,ctyp) =
   let mvs = collect_metas (clenv_instance clenv cval) in
   let ctyp_mvs = metavars_of (clenv_instance clenv ctyp) in
   let deps = dependent_metas clenv mvs ctyp_mvs in
-  filter 
-    (fun n -> Intavs.memb deps n & (not((Intavs.memb ctyp_mvs n))))
+  List.filter 
+    (fun n -> Intset.mem n deps && not (Intset.mem n ctyp_mvs))
     mvs
 
 let clenv_constrain_missing_args mlist clause =
@@ -814,7 +803,7 @@ let clenv_constrain_dep_args_of mv mlist clause =
 	     "of dependent arguments")
 
 let clenv_lookup_name clenv id =
-  match Intavm.inv clenv.namenv id with
+  match intmap_inv clenv.namenv id with
     | []  -> 
 	errorlabstrm "clenv_lookup_name"
           [< 'sTR"No such bound variable "; print_id id >]
@@ -861,14 +850,14 @@ let clenv_match_args s clause =
  * For each dependent evar in the clause-env which does not have a value,
  * pose a value for it by constructing a fresh evar.  We do this in
  * left-to-right order, so that every evar's type is always closed w.r.t.
- * metas.
- *)
+ * metas. *)
+
 let clenv_pose_dependent_evars clenv =
   let dep_mvs = clenv_dependent clenv (clenv_template clenv,
                                        clenv_template_type clenv) in 
   List.fold_left
     (fun clenv mv ->
-       let evar = new_evar_in_sign (w_hyps clenv.hook) in
+       let evar = new_evar_in_sign (w_env clenv.hook) in
        let (evar_sp,_) = destConst evar in
        let tY = clenv_instance_type clenv mv in
        let tYty = w_type_of clenv.hook tY in
@@ -889,9 +878,9 @@ let clenv_type_of ce c =
   let metamap =
     List.map 
       (function
-	 | (n,CLVAL(_,typ)) -> (n,typ.rebus)
-         | (n,CLTYP typ)    -> (n,typ.rebus))
-      (Intavm.toList ce.env)
+	 | (n,Clval(_,typ)) -> (n,typ.rebus)
+         | (n,Cltyp typ)    -> (n,typ.rebus))
+      (intmap_to_list ce.env)
   in
   (Trad.ise_resolve true (w_Underlying ce.hook) metamap
      (gLOB(w_hyps ce.hook)) c)._TYPE

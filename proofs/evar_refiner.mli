@@ -11,6 +11,8 @@ open Proof_trees
 open Refiner
 (*i*)
 
+(* Refinement of existential variables. *)
+
 val rc_of_pfsigma : proof_tree sigma -> readable_constraints
 val rc_of_glsigma : goal sigma -> readable_constraints
 

@@ -75,13 +75,9 @@ let rec execute mf env sigma cstr =
     | IsSort (Type u) ->
 	let (j,_) = type_of_type u in j
 	  
-    | IsAppL a ->
-	let la = Array.length a in
-	if la = 0 then error_cant_execute CCI env cstr;
-	let hd = a.(0)
-	and tl = Array.to_list (Array.sub a 1 (la - 1)) in
-	let j = execute mf env sigma hd in
-        let jl = execute_list mf env sigma tl in
+    | IsAppL (f,args) ->
+	let j = execute mf env sigma f in
+        let jl = execute_list mf env sigma args in
 	let (j,_) = apply_rel_list env sigma mf.nocheck jl j in
 	j
 	    

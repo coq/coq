@@ -78,7 +78,14 @@ val repeat : int -> ('a -> unit) -> 'a -> unit
 type ('a,'b) union = Inl of 'a | Inr of 'b
 
 module Intset : Set.S with type elt = int
+
+val intset_exists : (int -> bool) -> Intset.t -> bool
+
 module Intmap : Map.S with type key = int
+
+val intmap_in_dom : int -> 'a Intmap.t -> bool
+val intmap_to_list : 'a Intmap.t -> (int * 'a) list
+val intmap_inv : 'a Intmap.t -> 'a -> int list
 
 val out_some : 'a option -> 'a
 val option_app : ('a -> 'b) -> 'a option -> 'b option

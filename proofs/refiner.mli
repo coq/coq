@@ -7,6 +7,8 @@ open Sign
 open Proof_trees
 (*i*)
 
+(* The refiner (handles primitive rules and high-level tactics). *)
+
 type 'a sigma = { 
   it : 'a ; 
   sigma : global_constraints }

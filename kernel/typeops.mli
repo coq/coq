@@ -10,7 +10,7 @@ open Environ
 (*i*)
 
 
-(* Base operations of the typing machine. *)
+(* Basic operations of the typing machine. *)
 
 val make_judge : constr -> typed_type -> unsafe_judgment
 

@@ -69,13 +69,13 @@ type prim_rule = {
 
 type local_constraints = Intset.t
 
-(* [ref] = [None] if the goal has still to be proved, 
-   and [Some (r,l)] if the rule [r] was applied to the goal
-   and gave [l] as subproofs to be completed. 
-
-   [subproof] = [(Some p)] if [ref = (Some(Tactic t,l))]; 
-   [p] is then the proof that the goal can be proven if the goals
-   in [l] are solved *)
+(*s Proof trees. 
+  [ref] = [None] if the goal has still to be proved, 
+  and [Some (r,l)] if the rule [r] was applied to the goal
+  and gave [l] as subproofs to be completed. 
+  [subproof] = [(Some p)] if [ref = (Some(Tactic t,l))]; 
+  [p] is then the proof that the goal can be proven if the goals
+  in [l] are solved. *)
 
 type proof_tree = {
   status : pf_status;
@@ -120,13 +120,13 @@ val is_leaf_proof     : proof_tree -> bool
 val is_tactic_proof   : proof_tree -> bool
 
 
-(* A global constraint is a mappings of existential variables
-   with some extra information for the program and mimick tactics. *)
+(*s A global constraint is a mappings of existential variables with
+    some extra information for the program and mimick tactics. *)
 
 type global_constraints = evar_declarations timestamped
 
-(* A readable constraint is a global constraint plus a focus set
-   of existential variables and a signature. *)
+(*s A readable constraint is a global constraint plus a focus set
+    of existential variables and a signature. *)
 
 type evar_recordty = {
   focus : local_constraints;

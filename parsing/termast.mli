@@ -6,6 +6,8 @@ open Term
 open Names
 (*i*)
 
+(* Translation of terms into syntax trees. Used for pretty-printing. *)
+
 val print_implicits : bool ref
 
 val bdize : bool -> unit assumptions -> constr -> Coqast.t

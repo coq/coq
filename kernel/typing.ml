@@ -94,13 +94,9 @@ let rec execute mf env cstr =
     | IsSort (Type u) ->
 	type_of_type u
 	  
-    | IsAppL a ->
-	let la = Array.length a in
-	if la = 0 then error_cant_execute CCI env cstr;
-	let hd = a.(0)
-	and tl = Array.to_list (Array.sub a 1 (la - 1)) in
-	let (j,cst1) = execute mf env hd in
-        let (jl,cst2) = execute_list mf env tl in
+    | IsAppL (f,args) ->
+	let (j,cst1) = execute mf env f in
+        let (jl,cst2) = execute_list mf env args in
 	let (j,cst3) = apply_rel_list env Evd.empty mf.nocheck jl j in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
 	(j, cst)
