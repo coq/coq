@@ -84,7 +84,7 @@ Syntax constr
 (* Things parsed in command8 *)
   level 8:
     lambda [(LAMBDA $Dom [$x]$Body)]
-     -> [(LAMBOX (BINDERS (BINDER $Dom $x)) $body)]
+     -> [(LAMBOX (BINDERS (BINDER $Dom $x)) $Body)]
   | lambda_anon [(LAMBDA $Dom [<>]$Body)]
      -> [(LAMBOX (BINDERS (BINDER $Dom _)) $Body)]
   | lambdalist  [(LAMBDALIST $c [$x]$body)]
