@@ -149,15 +149,6 @@ let explicitize =
     | [] -> List.rev lastimplargs
   in exprec 1 []
 
-(*
-let implicit_of_ref = function
-  | ConstructRef sp -> constructor_implicits_list sp
-  | IndRef sp -> inductive_implicits_list sp
-  | ConstRef sp -> constant_implicits_list sp
-  | VarRef sp -> (try implicits_of_var sp with _ -> [])
-  | _ -> []
-*)
-
 let rec skip_coercion dest_ref (f,args as app) =
   if !print_coercions then app
   else
@@ -205,7 +196,14 @@ let rec ast_of_raw = function
       let astargs = List.map ast_of_raw args in
       (match f with 
 	 | RRef (_,ref) -> ast_of_app (implicits_of_global ref) astf astargs
-	 | _           -> ast_of_app [] astf astargs)
+	 | RVar (_,id) ->
+	     let imp =
+	       try 
+		 let ref = Nametab.locate (make_qualid [] (string_of_id id)) in
+		 implicits_of_global ref
+	       with Not_found -> [] in
+	     ast_of_app imp astf astargs
+	 | _       -> ast_of_app [] astf astargs)
   | RBinder (_,BProd,Anonymous,t,c) ->
       (* Anonymous product are never factorized *)
       ope("PROD",[ast_of_raw t; slam(None,ast_of_raw c)])
