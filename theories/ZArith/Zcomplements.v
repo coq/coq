@@ -48,8 +48,6 @@ Left ; Split with (NEG p); Reflexivity.
 Right ; Split with `-1`; Reflexivity.
 Qed.
 
-V7only [Unset Implicit Arguments.].
-
 (**********************************************************************)
 (** The biggest power of 2 that is stricly less than [a]
 
