@@ -89,7 +89,7 @@ type constr_expr =
   | CApp of loc * (proj_flag * constr_expr) * 
         (constr_expr * explicitation located option) list
   | CCases of loc * (constr_expr option * constr_expr option) *
-      (constr_expr * (name * constr_expr option)) list *
+      (constr_expr * (name option * constr_expr option)) list *
       (loc * cases_pattern_expr list * constr_expr) list
   | COrderedCase of loc * case_style * constr_expr option * constr_expr
       * constr_expr list

@@ -1093,20 +1093,27 @@ let rec extern inctx scopes vars r =
 
   | RCases (loc,(typopt,rtntypopt),tml,eqns) ->
       let pred = option_app (extern_type scopes vars) typopt in
-      let rtntypopt = option_app (extern_type scopes vars) !rtntypopt in
       let vars' = 
 	List.fold_right (name_fold Idset.add)
 	  (cases_predicate_names tml) vars in
+      let rtntypopt' = option_app (extern_type scopes vars') !rtntypopt in
       let tml = List.map (fun (tm,{contents=(na,x)}) ->
+        let na' = match na,tm with
+            Anonymous, RVar (_,id) when 
+              !rtntypopt<>None & occur_rawconstr id (out_some !rtntypopt)
+              -> Some Anonymous
+          | Anonymous, _ -> None
+          | Name id, RVar (_,id') when id=id' -> None
+          | Name _, _ -> Some na in
 	(sub_extern false scopes vars tm,
-	(na,option_app (fun (loc,ind,nal) ->
+	(na',option_app (fun (loc,ind,nal) ->
 	  let args = List.map (function
 	    | Anonymous -> RHole (dummy_loc,InternalHole) 
 	    | Name id -> RVar (dummy_loc,id)) nal in
 	  let t = RApp (dummy_loc,RRef (dummy_loc,IndRef ind),args) in
 	  (extern_type scopes vars t)) x))) tml in
       let eqns = List.map (extern_eqn (typopt<>None) scopes vars) eqns in 
-      CCases (loc,(pred,rtntypopt),tml,eqns)
+      CCases (loc,(pred,rtntypopt'),tml,eqns)
 
   | ROrderedCase (loc,cs,typopt,tm,bv,{contents = Some x}) ->
       extern false scopes vars x

@@ -351,12 +351,17 @@ let tm_clash = function
 
 let pr_case_item pr (tm,(na,indnalopt)) =
   hov 0 (pr (lcast,E) tm ++
+(*
   (match na with
     | Name id when not (is_var id tm) -> spc () ++ str "as " ++  pr_id id
     | Anonymous when tm_clash (tm,indnalopt) <> None ->
 	(* hide [tm] name to avoid conflicts *)
 	spc () ++ str "as _" (* ++ pr_id (out_some (tm_clash (tm,indnalopt)))*)
     | _ -> mt ()) ++
+*)
+  (match na with (* Decision of printing "_" or not moved to constrextern.ml *)
+    | Some na -> spc () ++ str "as " ++  pr_name na
+    | None -> mt ()) ++
   (match indnalopt with
     | None -> mt ()
 (*

@@ -743,8 +743,9 @@ let internalise sigma env allow_soapp lvar c =
     | None -> 
 	ids, None in
     let na = match tm, na with
-      | RVar (_,id), Anonymous when Idset.mem id vars -> Name id
-      | _ -> na in
+      | RVar (_,id), None when Idset.mem id vars & not !Options.v7 -> Name id
+      | _, None -> Anonymous
+      | _, Some na -> na in
     (na,typ), name_fold Idset.add na ids
 
   and iterate_prod loc2 env ty body = function

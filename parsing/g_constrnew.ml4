@@ -257,10 +257,7 @@ GEXTEND Gram
         br=branches; "end" -> mk_match (loc,ci,ty,br) ] ]
   ;
   case_item:
-    [ [ c=operconstr LEVEL "100"; p=pred_pattern -> 
-        match p with
-        | (None,indp) -> (c,(Anonymous,indp))
-        | (Some na,indp) -> (c,(na,indp)) ] ]
+    [ [ c=operconstr LEVEL "100"; p=pred_pattern -> (c,p) ] ]
   ;
   pred_pattern:
     [ [ ona = OPT ["as"; id=name -> snd id];
