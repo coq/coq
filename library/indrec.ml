@@ -38,14 +38,9 @@ let it_lambda_name env =
 
 (* (lc is the list of the constructors of ind) *)
 
-let mis_make_case_com depopt env sigma mispec kinds =
-  let sp = mispec.mis_sp in
-  let tyi = mispec.mis_tyi in 
-  let cl = mispec.mis_args in 
+let mis_make_case_com depopt env sigma mispec kind =
   let nparams = mis_nparams mispec in
-  let mip = mispec.mis_mip in
-  let mind = DOPN(MutInd(sp,tyi),cl) in
-  let kelim = mis_kelim mispec in
+  let mind = mkMutInd ((mispec.mis_sp,mispec.mis_tyi),mispec.mis_args) in
   let t = mis_arity mispec in
   let (lc,lct) = mis_type_mconstructs mispec in
   let lnames,sort = splay_prod env sigma t in
@@ -54,21 +49,22 @@ let mis_make_case_com depopt env sigma mispec kinds =
     | None -> (sort<>DOP0(Sort(Prop Null)))
     | Some d -> d
   in
-  if not (List.exists (base_sort_cmp CONV kinds) kelim) then begin
+  if not (List.exists (base_sort_cmp CONV kind) (mis_kelim mispec)) then begin
     errorlabstrm "Case analysis"
       [< 'sTR (if dep then "Dependent" else "Non Dependent");
-	 'sTR " case analysis on sort: "; print_sort kinds; 'fNL;
-         'sTR "is not allowed for inductive definition: "; print_sp sp >]
+	 'sTR " case analysis on sort: "; print_sort kind; 'fNL;
+         'sTR "is not allowed for inductive definition: ";
+	 print_sp mispec.mis_sp >]
   end;
   let lnamesar,lnamespar = list_chop (List.length lnames - nparams) lnames in
   let lgar = List.length lnamesar in
   let ar = hnf_prod_appvect env sigma "make_case_dep" t (rel_vect 0 nparams) in
   let typP = 
     if dep then 
-      make_arity_dep env sigma (DOP0(Sort kinds)) ar 
+      make_arity_dep env sigma (DOP0(Sort kind)) ar 
        	(appvect (mind,rel_vect 0 nparams))
     else 
-      make_arity_nodep env sigma (DOP0(Sort kinds)) ar 
+      make_arity_nodep env sigma (DOP0(Sort kind)) ar 
   in 
   let rec add_branch k = 
     if k = nconstr then 
@@ -77,12 +73,9 @@ let mis_make_case_com depopt env sigma mispec kinds =
            (appvect (mind,
                      (Array.append (rel_vect (nconstr+lgar+1) nparams)
                        	(rel_vect 0 lgar))),
-            mkMutCaseA (ci_of_mind mind)
-              (Rel (nconstr+lgar+2))
+            mkMutCaseA (make_default_case_info mispec)
+	      (Rel (nconstr+lgar+2))
               (Rel 1)
-	   (* (appvect (mind,
-              (Array.append (rel_vect (nconstr+lgar+2) nparams)
-              (rel_vect 1 lgar)))) *)
               (rel_vect (lgar+1) nconstr)))
        	(lift_context (nconstr+1) lnamesar)
     else 
@@ -97,9 +90,9 @@ let mis_make_case_com depopt env sigma mispec kinds =
   in 
   it_lambda_name env (make_lambda_string "P" typP (add_branch 0)) lnamespar
     
-let make_case_com depopt env sigma ity kinds =
+let make_case_com depopt env sigma ity kind =
   let mispec = lookup_mind_specif ity env in 
-  mis_make_case_com depopt env sigma mispec kinds
+  mis_make_case_com depopt env sigma mispec kind
 
 let make_case_dep sigma   = make_case_com (Some true) sigma
 let make_case_nodep sigma = make_case_com (Some false) sigma 
@@ -227,8 +220,7 @@ let mis_make_indrec env sigma listdepkind mispec =
   let recargsvec = mis_recargs mispec in
   let ntypes = mis_ntypes mispec in
   let mind_arity = mis_arity mispec in 
-  let (lnames, ckind) = splay_prod env sigma mind_arity in
-  let kind = destSort ckind in
+  let (lnames, kind) = splay_arity env sigma mind_arity in
   let lnamespar = list_lastn nparams lnames in
   let listdepkind = 
     if listdepkind = [] then 
@@ -248,10 +240,10 @@ let mis_make_indrec env sigma listdepkind mispec =
     in 
     assign nrec listdepkind  
   in 
-  let make_one_rec p = 
-    let makefix nbconstruct = 
-      let rec mrec i ln ltyp ldef = function 
-	| (mispeci,dep,_)::rest -> 
+  let make_one_rec p =
+    let makefix nbconstruct =
+      let rec mrec i ln ltyp ldef = function
+	| (mispeci,dep,_)::rest ->
 	    let tyi = mispeci.mis_tyi in
 	    let mind = DOPN(MutInd (mispeci.mis_sp,tyi),mispeci.mis_args) in
 	    let (_,lct) = mis_type_mconstructs mispeci in
@@ -278,7 +270,7 @@ let mis_make_indrec env sigma listdepkind mispec =
 		(lambda_create env
 		   (appvect (mind,(Array.append (rel_vect decf nparams)
 				     (rel_vect 0 nar))),
-		    mkMutCaseA (ci_of_mind mind)
+		    mkMutCaseA (make_default_case_info mispec)
                       (Rel (decf-nrec+j+1)) (Rel 1) branches))
 		(lift_context nrec lnames)
 	    in

@@ -14,8 +14,6 @@ open Environ
 
 val mind_check_arities : env -> mutual_inductive_entry -> unit
 
-val sort_of_arity : env -> constr -> sorts
-
 val cci_inductive : 
   env -> env -> path_kind -> int -> bool -> 
     (identifier * typed_type * identifier list * bool * bool * constr) list ->

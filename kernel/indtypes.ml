@@ -23,15 +23,6 @@ let mind_check_arities env mie =
   in
   List.iter (fun (id,ar,_,_) -> check_arity id ar) mie.mind_entry_inds
 
-let sort_of_arity env c =
-  let rec sort_of ar =
-    match whd_betadeltaiota env Evd.empty ar with
-      | DOP0 (Sort s) -> s
-      | DOP2 (Prod, _, DLAM (_, c)) -> sort_of c
-      | _ -> error "not an arity"
-  in
-  sort_of c
-
 let allowed_sorts issmall isunit = function
   | Type _ -> 
       [prop;spec;types]
@@ -224,10 +215,12 @@ let cci_inductive env env_ar kind nparams finite inds cst =
   let one_packet i (id,ar,cnames,issmall,isunit,lc) =
     let recargs = listrec_mconstr env_ar ntypes nparams i lc in
     let isunit = isunit && ntypes = 1 && (not (is_recursive [0] recargs)) in
-    let kelim = allowed_sorts issmall isunit (sort_of_arity env ar.body) in
+    let (ar_sign,ar_sort) = splay_arity env Evd.empty ar.body in
+    let kelim = allowed_sorts issmall isunit ar_sort in
     { mind_consnames = Array.of_list cnames;
       mind_typename = id;
       mind_lc = lc;
+      mind_nrealargs = List.length ar_sign - nparams;
       mind_arity  = ar;
       mind_kelim = kelim;
       mind_listrec = recargs;

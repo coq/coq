@@ -36,23 +36,23 @@ val transform_rec : env -> 'c evar_map -> (constr array)
   -> (constr * constr) -> constr
 i*)
 
+(*
 val is_mutind : env -> 'a evar_map -> constr -> bool 
-
-(* In [inductive * constr list * constr list], the second argument is
-   the list of global parameters and the third the list of real args *)
-
+*)
+(* Inutilisé
 val pred_case_ml : env -> 'c evar_map -> bool ->
   constr * (inductive * constr list * constr list)
   ->  constr array -> int * constr  ->constr
+*)
 
+(* In [inductive * constr list * constr list], the second argument is
+   the list of global parameters and the third the list of real args *)
 val pred_case_ml_onebranch : env ->'c evar_map -> bool ->
   constr * (inductive * constr list * constr list)
   -> int * constr * constr -> constr 
 
+(* Obsolète ?
 val make_case_ml :
   bool -> constr -> constr -> case_info -> constr array -> constr
+*)
 
-
-(*s Auxiliary functions. TODO: les déplacer ailleurs. *)
-
-val prod_create : env -> constr * constr -> constr

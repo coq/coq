@@ -30,13 +30,11 @@ type reference =
   | REVar of int * identifier list
   | RMeta of int
 
-type cases_style = PrintLet | PrintIf | PrintCases
-
 type rawconstr = 
   | RRef of loc * reference
   | RApp of loc * rawconstr * rawconstr list
   | RBinder of loc * binder_kind * name * rawconstr * rawconstr
-  | RCases of loc * cases_style * rawconstr option * rawconstr list * 
+  | RCases of loc * Term.case_style * rawconstr option * rawconstr list * 
       (identifier list * pattern list * rawconstr) list
   | ROldCase of loc * bool * rawconstr option * rawconstr * 
       rawconstr array
