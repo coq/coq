@@ -171,7 +171,7 @@ GEXTEND Gram
     | "90" RIGHTA
       [ c1 = operconstr; "->"; c2 = binder_constr -> CArrow(loc,c1,c2)
       | c1 = operconstr; "->"; c2 = SELF -> CArrow(loc,c1,c2)]
-    | "10"
+    | "10" LEFTA
       [ f=operconstr; args=LIST1 appl_arg -> CApp(loc,(None,f),args)
       | "@"; f=global; args=LIST0 NEXT -> CAppExpl(loc,(None,f),args) ]
     | "9" [ ]
@@ -282,9 +282,6 @@ GEXTEND Gram
   ;
   pattern:
     [ "250" LEFTA [ ]
-    | "200" RIGHTA [ ]
-    | "99" RIGHTA [ ]
-    | "90" RIGHTA [ ]
     | "10" LEFTA
       [ p = pattern ; lp = LIST1 (pattern LEVEL "0") ->
         (match p with
@@ -296,8 +293,6 @@ GEXTEND Gram
 	  CPatAlias (loc, p, id)
       | c = pattern; "%"; key=IDENT -> 
           CPatDelimiters (loc,key,c) ]
-    | "9" []
-    | "1" []
     | "0"
       [ r = Prim.reference -> CPatAtom (loc,Some r)
       | "_" -> CPatAtom (loc,None)
