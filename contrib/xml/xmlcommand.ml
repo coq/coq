@@ -19,7 +19,7 @@
 
 (* CONFIGURATION PARAMETERS *)
 
-let verbose = ref false;;
+let verbose = ref true;;
 
 (* HOOKS *)
 let print_proof_tree, set_print_proof_tree =
@@ -337,7 +337,7 @@ let mk_variable_obj id body typ =
 
 (* Unsharing is not performed on the body, that must be already unshared. *)
 (* The evar map and the type, instead, are unshared by this function.     *)
-let mk_current_proof_obj id bo ty evar_map env =
+let mk_current_proof_obj is_a_variable id bo ty evar_map env =
  let unshared_ty = Unshare.unshare (Term.body_of_type ty) in
  let metasenv =
   List.map
@@ -376,7 +376,10 @@ let mk_current_proof_obj id bo ty evar_map env =
     (* Variables are the identifiers of the variables in scope *)
     let variables = search_variables () in
     let params = filter_params variables hyps in
-     Acic.Constant (id',Some bo,unshared_ty,params)
+     if is_a_variable then
+      Acic.Variable (id',Some bo,unshared_ty,params)
+     else
+      Acic.Constant (id',Some bo,unshared_ty,params)
    else
     Acic.CurrentProof (id',metasenv,bo,unshared_ty)
 ;;
@@ -438,10 +441,10 @@ let kind_of_theorem = function
   | Decl_kinds.Fact -> "Fact"
   | Decl_kinds.Remark -> "Remark"
 
-let kind_of_goal = function
+let kind_of_global_goal = function
   | Decl_kinds.IsGlobal Decl_kinds.DefinitionBody -> "DEFINITION","Definition"
   | Decl_kinds.IsGlobal (Decl_kinds.Proof k) -> "THEOREM",kind_of_theorem k
-  | Decl_kinds.IsLocal -> "VARIABLE","Hypothesis"
+  | Decl_kinds.IsLocal -> assert false
 
 let kind_of_inductive isrecord kn =
  "DEFINITION",
@@ -559,9 +562,22 @@ let show_pftreestate internal fn (kind,pftst) id =
   Proof2aproof.extract_open_pftreestate pftst in
  let kn = Lib.make_kn id in
  let env = Global.env () in
- let obj = mk_current_proof_obj id val0 typ evar_map env in
- let uri = Cic2acic.uri_of_declaration id Cic2acic.Constant in
-  if not internal then print_object_kind uri (kind_of_goal kind);
+ let obj =
+  mk_current_proof_obj (kind = Decl_kinds.IsLocal) id val0 typ evar_map env in
+ let uri =
+  match kind with
+     Decl_kinds.IsLocal ->
+      let uri =
+       "cic:/" ^ String.concat "/"
+        (Cic2acic.token_list_of_path (Lib.cwd ()) id Cic2acic.Variable) in
+      let kind_of_var = "VARIABLE","Hypothesis" in
+       if not internal then print_object_kind uri kind_of_var;
+      uri
+   | Decl_kinds.IsGlobal _ ->
+      let uri = Cic2acic.uri_of_declaration id Cic2acic.Constant in
+       if not internal then print_object_kind uri (kind_of_global_goal kind);
+       uri
+ in
   print_object uri obj evar_map
    (Some (Tacmach.evc_of_pftreestate pftst,unshared_pf,proof_tree_to_constr,
     proof_tree_to_flattened_proof_tree)) fn
