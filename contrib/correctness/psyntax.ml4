@@ -372,7 +372,7 @@ GEXTEND Gram
       ] ]
     ;
   ast6:
-    [ [ "-"; x = prog6 -> un_op "Zinv" loc x
+    [ [ "-"; x = prog6 -> un_op "Zopp" loc x
       | x = ast7 -> without_effect loc x
       ] ]
     ;
