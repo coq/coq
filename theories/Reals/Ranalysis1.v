@@ -12,7 +12,8 @@ Require Rbase.
 Require Rfunctions.
 Require Export Rlimit.
 Require Export Rderiv.
-Import R_scope.
+V7only [Import R_scope.].
+Implicit Variable Type f:R->R.
 
 (****************************************************)
 (**           Basic operations on functions         *)
@@ -26,6 +27,19 @@ Definition div_fct [f1,f2:R->R] : R->R := [x:R] ``(f1 x)/(f2 x)``.
 Definition div_real_fct [a:R;f:R->R] : R->R := [x:R] ``a/(f x)``.
 Definition comp [f1,f2:R->R] : R->R := [x:R] ``(f1 (f2 x))``.
 Definition inv_fct [f:R->R] : R->R := [x:R]``/(f x)``.
+
+Infix "+" plus_fct (at level 4, left associativity) : Rfun_scope.
+Notation "- x" := (opp_fct x) (at level 0) : Rfun_scope
+  V8only (at level 40).
+Infix "*" mult_fct (at level 3, left associativity) : Rfun_scope.
+Infix "-" minus_fct (at level 4, left associativity) : Rfun_scope.
+Infix "/" div_fct (at level 3, left associativity) : Rfun_scope.
+Notation "f1 'o' f2" := (comp f1 f2) (at level 2, right associativity)
+  : Rfun_scope.
+Notation "/ x" := (inv_fct x) (at level 0): Rfun_scope
+  V8only (at level 30, left associativity).
+
+Delimits Scope Rfun_scope with F.
 
 Definition fct_cte [a:R] : R->R := [x:R]a.
 Definition id := [x:R]x.
@@ -53,6 +67,8 @@ Definition constant_D_eq [f:R->R;D:R->Prop;c:R] : Prop := (x:R) (D x) -> (f x)==
 Definition continuity_pt [f:R->R; x0:R] : Prop := (continue_in f no_cond x0).
 Definition continuity [f:R->R] : Prop := (x:R) (continuity_pt f x).
 
+Arguments Scope continuity_pt [Rfun_scope R_scope].
+Arguments Scope continuity [Rfun_scope].
 
 (**********)
 Lemma continuity_pt_plus : (f1,f2:R->R; x0:R) (continuity_pt f1 x0) -> (continuity_pt f2 x0) -> (continuity_pt (plus_fct f1 f2) x0).
@@ -180,6 +196,13 @@ Definition derivable [f:R->R] := (x:R)(derivable_pt f x).
 
 Definition derive_pt [f:R->R;x:R;pr:(derivable_pt f x)] := (projT1 ? ? pr).
 Definition derive [f:R->R;pr:(derivable f)] := [x:R](derive_pt f x (pr x)).
+
+Arguments Scope derivable_pt_lim [Rfun_scope R_scope].
+Arguments Scope derivable_pt_abs [Rfun_scope R_scope R_scope].
+Arguments Scope derivable_pt [Rfun_scope R_scope].
+Arguments Scope derivable [Rfun_scope].
+Arguments Scope derive_pt [Rfun_scope R_scope _].
+Arguments Scope derive [Rfun_scope _].
 
 Definition antiderivative [f,g:R->R;a,b:R] : Prop := ((x:R)``a<=x<=b``->(EXT pr : (derivable_pt g x) | (f x)==(derive_pt g x pr)))/\``a<=b``.
 (************************************)
