@@ -2380,11 +2380,11 @@ contrib/extraction/haskell.cmx: library/libnames.cmx \
     contrib/extraction/haskell.cmi 
 contrib/extraction/mlutil.cmo: library/libnames.cmi \
     contrib/extraction/miniml.cmi kernel/names.cmi library/nametab.cmi \
-    lib/pp.cmi contrib/extraction/table.cmi lib/util.cmi \
+    lib/pp.cmi parsing/printer.cmi contrib/extraction/table.cmi lib/util.cmi \
     contrib/extraction/mlutil.cmi 
 contrib/extraction/mlutil.cmx: library/libnames.cmx \
     contrib/extraction/miniml.cmi kernel/names.cmx library/nametab.cmx \
-    lib/pp.cmx contrib/extraction/table.cmx lib/util.cmx \
+    lib/pp.cmx parsing/printer.cmx contrib/extraction/table.cmx lib/util.cmx \
     contrib/extraction/mlutil.cmi 
 contrib/extraction/ocaml.cmo: library/libnames.cmi \
     contrib/extraction/miniml.cmi contrib/extraction/mlutil.cmi \
