@@ -228,10 +228,10 @@ chapter \ref{Addoc-syntax}.
  & $|$ & {\tt let fix} {\fixpointbody} {\tt in} {\term} &(\ref{fixpoints})\\
  & $|$ & {\tt let cofix} {\cofixpointbody}
          {\tt in} {\term} &(\ref{fixpoints})\\
- & $|$ & {\tt let} {\tt (} \sequence{\name}{,} {\tt )} {\ifitem}
+ & $|$ & {\tt let} {\tt (} \sequence{\name}{,} {\tt )} \zeroone{\ifitem}
          {\tt :=} {\term}
          {\tt in} {\term}  &(\ref{caseanalysis}, \ref{Mult-match})\\
- & $|$ & {\tt if} {\term} {\ifitem} {\tt then} {\term}
+ & $|$ & {\tt if} {\term} \zeroone{\ifitem} {\tt then} {\term}
          {\tt else} {\term} &(\ref{caseanalysis}, \ref{Mult-match})\\
  & $|$ & {\term} {\tt :} {\term} &(\ref{typecast})\\
  & $|$ & {\term} {\tt ->} {\term} &(\ref{products})\\
@@ -304,7 +304,7 @@ chapter \ref{Addoc-syntax}.
 {\caseitem} & ::= & {\term} \zeroone{{\tt as} \name}
      \zeroone{{\tt in} \term} \\
 &&\\
-{\ifitem} & ::= & {\term} \zeroone{\zeroone{{\tt as} {\name}} {\returntype}} \\
+{\ifitem} & ::= & \zeroone{{\tt as} {\name}} {\returntype} \\
 &&\\
 {\returntype} & ::= & {\tt return} {\term} \\
 &&\\
