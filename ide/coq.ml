@@ -244,7 +244,7 @@ let reset_to id =
   Vernacentries.abort_refine Lib.reset_name (Util.dummy_loc,id)
 let reset_to_mod id = 
   prerr_endline ("Reset called to Mod/Sect with "^(string_of_id id)); 
-  Lib.reset_mod (Util.dummy_loc,id)
+  Vernacentries.abort_refine Lib.reset_mod (Util.dummy_loc,id)
 
 
 let hyp_menu (env, sigma, ((coqident,ident),_,ast),(s,pr_ast)) =

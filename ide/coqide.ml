@@ -457,7 +457,7 @@ let update_on_end_of_proof id =
 	r := true; raise Exit end
       else begin
 	prerr_endline "Toggling Changing Reset id"; 
-	r:=false
+	r := false
       end
   | { ast = _, (VernacAbort _ | VernacAbortAll) } -> raise Exit
   | _ -> ()
