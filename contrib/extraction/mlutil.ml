@@ -117,9 +117,9 @@ let rec mgu = function
 
 let needs_magic p = try mgu p; false with Impossible -> true
 
-let put_magic_if b a = if b then MLmagic a else a
+let put_magic_if b a = if b && lang () <> Scheme then MLmagic a else a
 
-let put_magic p a = if needs_magic p then MLmagic a else a
+let put_magic p a = if needs_magic p && lang () <> Scheme then MLmagic a else a
 
 
 (*S ML type env. *)
@@ -744,10 +744,15 @@ let rec simpl o = function
   | MLcase (i,e,br) ->
       let br = Array.map (fun (n,l,t) -> (n,l,simpl o t)) br in 
       simpl_case o i br (simpl o e) 
-  | MLletin(id,c,e) when 
-      (id = dummy_name) || (is_atomic c) || (is_atomic e) ||
-      (let n = nb_occur_match e in n = 0 || (n=1 && o.opt_lin_let)) -> 
+  | MLletin(id,c,e) -> 
+      let e = (simpl o e) in 
+      if 
+	(id = dummy_name) || (is_atomic c) || (is_atomic e) ||
+	(let n = nb_occur_match e in n = 0 || (n=1 && o.opt_lin_let))
+      then 
 	simpl o (ast_subst c e)
+      else 
+	MLletin(id, simpl o c, e)
   | MLfix(i,ids,c) -> 
       let n = Array.length ids in 
       if ast_occurs_itvl 1 n c.(i) then 

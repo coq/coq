@@ -244,7 +244,7 @@ let rec pp_ind first kn i ind =
 
 (*s Pretty-printing of a declaration. *)
 
-
+let pp_string_parameters ids = prlist (fun id -> str id ++ str " ")
 
 let pp_decl mpl = 
   local_mpl := mpl;
@@ -256,16 +256,16 @@ let pp_decl mpl =
       if is_inline_custom r then mt () 
       else 
 	let l = rename_tvars keywords l in 
-	let ids, def = try 
-	  let ids,s = find_type_custom r in 
-	  pp_string_parameters ids, str "=" ++ spc () ++ str s
-	with not_found -> 
-	  pp_string_parameters (List.map string_of_id l), 
-	  if t = Taxiom then str "= () -- AXIOM TO BE REALIZED\n"
-	  else str "=" ++ spc () ++ pp_type false l t
+	let st = 
+	  try 
+	    let ids,s = find_type_custom r in 
+	    prlist (fun id -> str (id^" ")) ids ++ str "=" ++ spc () ++ str s
+	  with not_found -> 
+	    prlist (fun id -> pr_id id ++ str " ") l ++
+	    if t = Taxiom then str "= () -- AXIOM TO BE REALIZED\n"
+	    else str "=" ++ spc () ++ pp_type false l t
 	in 
-	hov 2 (str "type " ++ pp_global r ++ spc () ++ ids ++ def)
-	++ fnl () ++ fnl ()
+	hov 2 (str "type " ++ pp_global r ++ spc () ++ st) ++ fnl () ++ fnl ()
   | Dfix (rv, defs,_) ->
       let ppv = Array.map pp_global rv in 
       prlist_with_sep (fun () -> fnl () ++ fnl ())
