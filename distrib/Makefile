@@ -400,15 +400,13 @@ contrib-tar-gz:
 	@echo done
 
 
-patch:
-	@echo ******** ATTENTION, plante sur pc-linux, essayez pauillac ******
-	$(CP) $(FTPDIR)/V$(PREVIOUSVERSION)/coq-$(PREVIOUSVERSION).tar.gz .
+patch: $(COQPACKAGE)
+	scp pauillac.inria.fr:$(FTPDIR)/V$(PREVIOUSVERSION)/coq-$(PREVIOUSVERSION).tar.gz .
 	rm -rf coq-$(PREVIOUSVERSION)
-	gunzip -c coq-$(PREVIOUSVERSION).tar.gz | tar x
-	rm -rf $(COQPACKAGE)
-	gunzip -c $(TARGZ) | tar x
-	diff -rc coq-$(PREVIOUSVERSION) $(COQPACKAGE) > patch-$(VERSION)-$(PREVIOUSVERSION)
-	gzip --best patch-$(VERSION)-$(PREVIOUSVERSION)
+	gunzip -c coq-$(PREVIOUSVERSION).tar.gz | tar xf -
+	(diff -rc coq-$(PREVIOUSVERSION) $(COQPACKAGE)\
+	 > patch-$(VERSION)-$(PREVIOUSVERSION);\
+	 gzip --best patch-$(VERSION)-$(PREVIOUSVERSION))
 
 ###################################################################
 # Installation in the ftp repository
