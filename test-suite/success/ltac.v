@@ -42,3 +42,16 @@ Z. (* Apply H0 *)
 Y. (* Apply H *)
 Exact I.
 Qed.
+
+(* Check backtracking *)
+Lemma back1 : (0)=(1)->(0)=(0)->(1)=(1)->(0)=(0).
+Intros; Match Context With [_:(O)=?1;_:(1)=(1)|-? ] -> Exact (refl_equal ? ?1).
+Qed.
+
+Lemma back2 : (0)=(0)->(0)=(1)->(1)=(1)->(0)=(0).
+Intros; Match Context With [_:(O)=?1;_:(1)=(1)|-? ] -> Exact (refl_equal ? ?1).
+Qed.
+
+Lemma back3 : (0)=(0)->(1)=(1)->(0)=(1)->(0)=(0).
+Intros; Match Context With [_:(O)=?1;_:(1)=(1)|-? ] -> Exact (refl_equal ? ?1).
+Qed.
