@@ -189,6 +189,7 @@ let coerce_iVARG_to_FORMULA =
  function
     | Varg_constr x -> x
     | Varg_sorttype x -> CT_coerce_SORT_TYPE_to_FORMULA x
+    | Varg_ident id -> CT_coerce_ID_to_FORMULA id
     | _ -> xlate_error "coerce_iVARG_to_FORMULA: unexpected argument";;
 
 let coerce_iVARG_to_ID =
@@ -1287,8 +1288,8 @@ and xlate_tac =
      CT_reduce (id, l)
     | "Apply", ((Targ_command c) :: (bindl :: [])) ->
      CT_apply (c, strip_targ_spec_list bindl)
-    | "Constructor", ((Targ_int n) :: bindl) ->
-     CT_constructor (n, filter_binding_or_command_list bindl)
+    | "Constructor", ((Targ_int n) :: (bindl :: [])) ->
+     CT_constructor (n, strip_targ_spec_list bindl)
     | "Specialize",
         ((Targ_int n) :: ((Targ_command c) :: ((Targ_spec_list sl) :: []))) ->
      CT_specialize (CT_coerce_INT_to_INT_OPT n, c, sl)
@@ -1466,11 +1467,12 @@ let build_constructors l =
 let build_record_field_list l =
  let build_record_field =
   function
-     | Varg_varglist ((Varg_string (CT_string "")) ::
-                       ((Varg_ident id) :: (c :: []))) ->
+     | Varg_varglist ((Varg_string (CT_string "")) ::((Varg_string assum) ::
+                       ((Varg_ident id) :: (c :: [])))) ->
       CT_coerce_CONSTR_to_RECCONSTR (CT_constr (id, coerce_iVARG_to_FORMULA c))
-     | Varg_varglist ((Varg_string (CT_string "COERCION")) ::
-                       ((Varg_ident id) :: (c :: []))) ->
+     | Varg_varglist ((Varg_string (CT_string "COERCION")) 
+                       ::((Varg_string assum) ::
+                       ((Varg_ident id) :: (c :: [])))) ->
       CT_constr_coercion (id, coerce_iVARG_to_FORMULA c)
      | _ -> xlate_error "unexpected field in build_record_field_list" in
  CT_recconstr_list (List.map build_record_field l);;
@@ -1544,6 +1546,8 @@ let rec cvt_varg =
      | "Pos" -> Varg_sorttype (CT_sortc "Set")
      | "Null" -> Varg_sorttype (CT_sortc "Prop")
      | _ -> xlate_error "cvt_varg : PROP : Failed match ")
+    | Node (_, "CONSTR", ((Node (_, "PROP", [])) :: [])) ->
+     Varg_sorttype (CT_sortc "Prop")
     | Node (_, "CONSTR", ((Node (_, "TYPE", [])) :: [])) ->
      Varg_sorttype (CT_sortc "Type")
     | Node (_, "CONSTR", [c]) -> Varg_constr (xlate_formula c)
@@ -1709,10 +1713,18 @@ and xlate_vernac =
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Theorem"), ctv_ID_OPT_NONE)
      | "DefinedNamed", [] ->
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Definition"), ctv_ID_OPT_NONE)
-     | "SaveAnonymousThm", ((Varg_ident s) :: []) ->
+     | "SaveAnonymous", [Varg_string (CT_string kind); Varg_ident s] ->
+	let kind_string = 
+	  match kind with
+	      "THEOREM" -> "Theorem"
+	    | "LEMMA" -> "Lemma"
+	    | "FACT" -> "Fact"
+	    | "REMARK" -> "Remark"
+	    | "DECL" -> "Decl"
+	    | _ -> assert false in
+      CT_save (CT_coerce_THM_to_THM_OPT (CT_thm kind_string), ctf_ID_OPT_SOME s)
+     | "SaveAnonymous", [Varg_ident s] ->
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Theorem"), ctf_ID_OPT_SOME s)
-     | "SaveAnonymousRmk", ((Varg_ident s) :: []) ->
-      CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Remark"), ctf_ID_OPT_SOME s)
      | "TRANSPARENT", (id :: idl) ->
             CT_transparent(CT_id_ne_list(strip_varg_ident id,
                    List.map strip_varg_ident idl))
@@ -1784,6 +1796,20 @@ and xlate_vernac =
       CT_variable (xlate_var kind, b)
      | "Check", ((Varg_string (CT_string kind)) :: (c :: [])) ->
       CT_check (coerce_iVARG_to_FORMULA c)
+     | "SearchPattern",Varg_constr c::l ->
+          (match l with
+	     | [] -> CT_search_pattern(c, 
+                            CT_coerce_NONE_to_IN_OR_OUT_MODULES CT_none)
+	     | (Varg_string (CT_string x))::(Varg_ident m1)::l1 ->
+		 let l2 = CT_id_ne_list(m1, List.map coerce_iVARG_to_ID l1) in
+                 let modifier = 
+		   (match x with
+		      | "inside" -> CT_in_modules l2
+		      | "outside" -> CT_out_modules l2
+		      | _ -> xlate_error "bad extra argument for Search") in
+		   CT_search_pattern(c, modifier)
+	     | _ -> xlate_error "bad argument list for SearchPattern")
+
      | "SEARCH", (Varg_ident id):: l -> 
           (match l with
 	     | [] -> CT_search(id, CT_coerce_NONE_to_IN_OR_OUT_MODULES CT_none)
@@ -1801,7 +1827,7 @@ and xlate_vernac =
        "RECORD",
          ((Varg_string coercion_or_not) :: ((Varg_ident s) ::
            ((Varg_binderlist binders) ::
-             ((Varg_sorttype c) ::
+             (c1 ::
                ((Varg_varglist rec_constructor_or_none) ::
                  ((Varg_varglist field_list) :: [])))))) ->
       let record_constructor =
@@ -1813,7 +1839,11 @@ and xlate_vernac =
        ((match coercion_or_not with CT_string "" ->
           CT_coerce_NONE_to_COERCION_OPT(CT_none)
         | _ -> CT_coercion_atm),
-        s, binders, c, record_constructor,
+        s, binders, 
+        (match c1 with (Varg_sorttype c) -> c
+        |(Varg_constr (CT_coerce_SORT_TYPE_to_FORMULA c)) -> c
+        | _ -> assert false),
+         record_constructor,
          build_record_field_list field_list)
      | (*Inversions from tactics/Inv.v *)
        "MakeSemiInversionLemmaFromHyp",
@@ -1963,19 +1993,19 @@ and xlate_vernac =
      | "SETHYPSLIMIT", ((Varg_int n) :: []) -> CT_sethyp n
      | "UNSETHYPSLIMIT", [] -> CT_unsethyp
      | "COERCION",
-         ((Varg_string s) ::
+         ((Varg_string (CT_string s)) ::
            ((Varg_string (CT_string str)) ::
              ((Varg_ident id1) :: ((Varg_ident id2) :: ((Varg_ident id3) :: []))))) ->
       let id_opt =
        match str with
        | "IDENTITY" -> CT_identity
        | "" -> CT_coerce_NONE_to_IDENTITY_OPT CT_none
-       | _ -> xlate_error "unknown flag for a coercion" in
+       | _ -> xlate_error "unknown flag for a coercion1" in
       let local_opt =
-       match str with
+       match s with
        | "LOCAL" -> CT_local
        | "" -> CT_coerce_NONE_to_LOCAL_OPT CT_none
-       | _ -> xlate_error "unknown flag for a coercion" in
+       | _ -> xlate_error "unknown flag for a coercion2" in
       CT_coercion (local_opt, id_opt, id1, id2, id3)
      | "CLASS", (_ :: ((Varg_ident id1) :: [])) -> CT_class id1
      | "PrintGRAPH", [] -> CT_print_graph

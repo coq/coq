@@ -223,10 +223,9 @@ let parse_string_action reqid phylum char_stream string_list =
 
 
 let quiet_parse_string_action char_stream =
- try 
-   let _ = 
-     Gram.Entry.parse Pcoq.Vernac_.vernac_eoi (Gram.parsable char_stream) in
-   ()
+ try let _ = 
+         Gram.Entry.parse Pcoq.Vernac_.vernac_eoi (Gram.parsable char_stream) in
+     ()
  with
  | _ -> flush_until_end_of_stream char_stream; ();;
 

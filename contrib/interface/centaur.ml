@@ -38,9 +38,11 @@ open Debug_tac;;
 open Search;;
 open Astterm;;
 open Nametab;;
+open Showproof;;
+open Showproof_ct;;
 
 
-let text_proof_flag = ref false;;
+let text_proof_flag = ref "en";;
 
 let current_proof_name = ref "";;
 
@@ -150,6 +152,7 @@ type vtp_tree =
   | P_pl of ct_PREMISES_LIST
   | P_cl of ct_COMMAND_LIST
   | P_t of ct_TACTIC_COM
+  | P_text of ct_TEXT
   | P_ids of ct_ID_LIST;;
 
 let print_tree t = 
@@ -160,6 +163,7 @@ let print_tree t =
   | P_pl x -> fPREMISES_LIST x
   | P_cl x -> fCOMMAND_LIST x
   | P_t x -> fTACTIC_COM x
+  | P_text x -> fTEXT x
   | P_ids x -> fID_LIST x);
   print_string "e\nblabla\n";;
 
@@ -201,23 +205,24 @@ let print_past_goal index =
      output_results  (ctf_PathGoalMessage ())
        (Some (P_r (translate_goal pf.goal)))
  with
- | Invalid_argument s -> error "No focused proof (No proof-editing in progress)"
+   | Invalid_argument s ->
+      ((try traverse_to [] with _ -> ());
+       error "No focused proof (No proof-editing in progress)")
+   | e -> (try traverse_to [] with _ -> ()); raise e
 ;;
 
 let show_nth n =
   try
     let pf = proof_of_pftreestate (get_pftreestate()) in
-    if (!text_proof_flag) then
-      errorlabstrm "debug" [< 'sTR "text printing unplugged" >]
-(*
+    if (!text_proof_flag<>"off") then
+(*      errorlabstrm "debug" [< 'sTR "text printing unplugged" >]*)
        (if n=0
 	   then output_results (ctf_TextMessage !global_request_id)
-                               (Some (P_t (show_proof [])))
+                               (Some (P_text (show_proof !text_proof_flag [])))
            else			       
 	   let path = History.get_nth_open_path !current_proof_name n in
 	   output_results (ctf_TextMessage !global_request_id)
-                          (Some (P_t (show_proof path))))
-*)
+                          (Some (P_text (show_proof !text_proof_flag path))))
     else
       output_results (ctf_GoalReqIdMessage !global_request_id)
       (let goal = List.nth (fst (frontier pf))
@@ -445,8 +450,9 @@ let command_changes = [
    (function
      |  [VARG_AST (Id(_,x))] ->
 	 (match x with
-	   "on" -> (function () -> text_proof_flag := true)
-	 | "off" -> (function () -> text_proof_flag := false)
+	   "fr" -> (function () -> text_proof_flag := "fr")
+	 | "en" -> (function () -> text_proof_flag := "en")
+	 | "off" -> (function () -> text_proof_flag := "off")
 	 | s -> errorlabstrm "TEXT_MODE" (make_error_stream 
 					    ("Unexpected flag " ^ s)))
      | _ -> errorlabstrm "TEXT_MODE" 
@@ -565,58 +571,6 @@ let command_changes = [
 	       errorlabstrm "End Silent"
 		 [< 'sTR "not available in Centaur mode" >])
      | _ -> errorlabstrm "EndSilent" (make_error_stream "EndSilent")));
-  
-  ("SaveNamed", 
-   (function
-     | [] ->
-	 (function () -> traverse_to []; save_named false)
-     | _ -> errorlabstrm "SaveNamed" (make_error_stream "SaveNamed")));
-  
-  ("DefinedNamed", 
-   (function
-     | [] ->
-	 (function () -> traverse_to []; save_named false)
-     | _ -> errorlabstrm "DefinedNamed" (make_error_stream "DefinedNamed")));
-  
-  ("DefinedAnonymous", 
-   (function
-     | (VARG_IDENTIFIER id) :: [] ->
-	 (function () ->
-	   traverse_to [];
-	   save_anonymous_thm true (string_of_id id))
-     | _ ->
-	 errorlabstrm "DefinedAnonymous"
-	   (make_error_stream "DefinedAnonymous")));
-  
-    ("SaveAnonymous", 
-   (function
-     | (VARG_IDENTIFIER id) :: [] ->
-	 (function () ->
-	   traverse_to [];
-	   save_anonymous_thm true (string_of_id id))
-     | _ ->
-	 errorlabstrm "SaveAnonymous"
-	   (make_error_stream "SaveAnonymous")));
-  
-  ("SaveAnonymousThm", 
-   (function
-     | (VARG_IDENTIFIER id) :: [] ->
-	 (function () ->
-	   traverse_to [];
-	   save_anonymous_thm true (string_of_id id))
-     | _ ->
-	 errorlabstrm "SaveAnonymousThm"
-	   (make_error_stream "SaveAnonymousThm")));
-  
-  ("SaveAnonymousRmk", 
-   (function
-     | (VARG_IDENTIFIER id) :: [] ->
-	 (function
-	     () -> traverse_to [];
-	       save_anonymous_remark true (string_of_id id))
-     | _ ->
-	 errorlabstrm "SaveAnonymousRmk"
-	   (make_error_stream "SaveAnonymousRmk")));
   
   ("ABORT", 
    (function

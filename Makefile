@@ -158,6 +158,7 @@ INTERFACE=contrib/interface/vtp.cmo contrib/interface/xlate.cmo \
 	contrib/interface/dad.cmo \
 	contrib/interface/history.cmo \
 	contrib/interface/name_to_ast.cmo contrib/interface/debug_tac.cmo \
+	contrib/interface/showproof_ct.cmo contrib/interface/showproof.cmo \
 	contrib/interface/centaur.cmo
 
 PARSERREQUIRES=lib/pp_control.cmo lib/pp.cmo \
@@ -219,6 +220,7 @@ COQC=bin/coqc
 COQTOPBYTE=bin/coqtop.byte
 COQTOPOPT=bin/coqtop.opt
 BESTCOQTOP=bin/coqtop.$(BEST)
+COQINTERFACE=bin/coq-interface bin/parser
 
 COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) 
 
@@ -282,7 +284,7 @@ toplevel: $(TOPLEVEL)
 bin/coq-interface: $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
 	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@ $(INTERFACE)
 
-bin/parser: contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo
+bin/parser: contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
 	$(OCAMLC) -cclib -lunix -custom $(INCLUDES) -o $@ $(CMA) \
 	$(PARSERREQUIRES) \
 	line_parser.cmo vtp.cmo xlate.cmo parse.cmo

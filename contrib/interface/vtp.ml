@@ -336,6 +336,14 @@ and fCOMMAND = function
    fID x1;
    fIN_OR_OUT_MODULES x2;
    fNODE "search" 2
+| CT_search_pattern(x1, x2) ->
+   fFORMULA x1;
+   fIN_OR_OUT_MODULES x2;
+   fNODE "search_pattern" 2
+| CT_search_rewrite(x1, x2) ->
+   fFORMULA x1;
+   fIN_OR_OUT_MODULES x2;
+   fNODE "search_rewrite" 2
 | CT_section_end(x1) ->
    fID x1;
    fNODE "section_end" 1
@@ -1216,6 +1224,26 @@ and fTARG_LIST = function
 | CT_targ_list l ->
    (List.iter fTARG l);
    fNODE "targ_list" (List.length l)
+and fTEXT = function
+| CT_coerce_ID_to_TEXT x -> fID x
+| CT_text_formula(x1) ->
+   fFORMULA x1;
+   fNODE "text_formula" 1
+| CT_text_h l ->
+   (List.iter fTEXT l);
+   fNODE "text_h" (List.length l)
+| CT_text_hv l ->
+   (List.iter fTEXT l);
+   fNODE "text_hv" (List.length l)
+| CT_text_op l ->
+   (List.iter fTEXT l);
+   fNODE "text_op" (List.length l)
+| CT_text_path(x1) ->
+   fSIGNED_INT_LIST x1;
+   fNODE "text_path" 1
+| CT_text_v l ->
+   (List.iter fTEXT l);
+   fNODE "text_v" (List.length l)
 and fTHEOREM_GOAL = function
 | CT_goal(x1) ->
    fFORMULA x1;

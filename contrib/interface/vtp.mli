@@ -12,3 +12,4 @@ val fRULE : ct_RULE -> unit;;
 val fSIGNED_INT_LIST : ct_SIGNED_INT_LIST -> unit;;
 val fPREMISES_LIST : ct_PREMISES_LIST -> unit;;
 val fID_LIST : ct_ID_LIST -> unit;;
+val fTEXT : ct_TEXT -> unit;;

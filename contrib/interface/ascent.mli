@@ -118,6 +118,8 @@ and ct_COMMAND =
   | CT_resume of ct_ID_OPT
   | CT_save of ct_THM_OPT * ct_ID_OPT
   | CT_search of ct_ID * ct_IN_OR_OUT_MODULES
+  | CT_search_pattern of ct_FORMULA * ct_IN_OR_OUT_MODULES
+  | CT_search_rewrite of ct_FORMULA * ct_IN_OR_OUT_MODULES
   | CT_section_end of ct_ID
   | CT_section_struct of ct_SECTION_BEGIN * ct_SECTION_BODY * ct_COMMAND
   | CT_set_natural of ct_ID
@@ -507,6 +509,14 @@ and ct_TARG =
   | CT_coerce_UNFOLD_NE_LIST_to_TARG of ct_UNFOLD_NE_LIST
 and ct_TARG_LIST =
     CT_targ_list of ct_TARG list
+and ct_TEXT =
+    CT_coerce_ID_to_TEXT of ct_ID
+  | CT_text_formula of ct_FORMULA
+  | CT_text_h of ct_TEXT list
+  | CT_text_hv of ct_TEXT list
+  | CT_text_op of ct_TEXT list
+  | CT_text_path of ct_SIGNED_INT_LIST
+  | CT_text_v of ct_TEXT list
 and ct_THEOREM_GOAL =
     CT_goal of ct_FORMULA
   | CT_theorem_goal of ct_DEFN_OR_THM * ct_ID * ct_FORMULA
