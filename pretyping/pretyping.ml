@@ -347,8 +347,8 @@ let rec pretype tycon env isevars lvar lmeta = function
 		  let fj =
 		    pretype (mk_tycon expti) env isevars lvar lmeta lf.(i) in
 		  let pred = 
-		    Cases.pred_case_ml_onebranch
-                      loc env (evars_of isevars) isrec indt (i,fj) in
+		    Cases.pred_case_ml
+                      env (evars_of isevars) isrec indt (i,fj.uj_type) in
 		  if has_undefined_isevars isevars pred then findtype (i+1)
 		  else 
 		    let pty =
@@ -356,7 +356,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 		    let pj = { uj_val = pred; uj_type = pty } in
                     let _ = option_app (the_conv_x_leq env isevars pred) tycon
                     in pj
-		with UserError _ -> findtype (i+1) in
+		with Cases.NotInferable _ -> findtype (i+1) in
 	    findtype 0 in
       let pj = j_nf_evar (evars_of isevars) pj in
 
