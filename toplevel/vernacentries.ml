@@ -536,10 +536,19 @@ let vernac_import export refl =
 let vernac_canonical locqid =
   Recordobj.objdef_declare (Nametab.global locqid)
 
+let locate_reference ref =
+  let (loc,qid) = qualid_of_reference ref in
+  match Nametab.extended_locate qid with
+    | TrueGlobal ref -> ref
+    | SyntacticDef kn -> 
+	match Syntax_def.search_syntactic_definition loc kn with
+	  | Rawterm.RRef (_,ref) -> ref
+	  | _ -> error_global_not_found_loc loc qid
+
 let vernac_coercion stre ref qids qidt =
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
-  let ref' = Nametab.global ref in
+  let ref' = locate_reference ref in
   Class.try_add_new_coercion_with_target ref' stre source target;
   if_verbose message ((string_of_reference ref) ^ " is now a coercion")
 

@@ -353,9 +353,23 @@ let intern_inductive ist = function
   | Ident (loc,id) when find_var id ist -> ArgVar (loc,id)
   | r -> ArgArg (Nametab.global_inductive r)
 
+exception NotSyntacticRef
+
+let locate_reference qid =
+  match Nametab.extended_locate qid with
+    | TrueGlobal ref -> ref
+    | SyntacticDef kn -> 
+	match Syntax_def.search_syntactic_definition loc kn with
+	  | Rawterm.RRef (_,ref) -> ref
+	  | _ -> raise NotSyntacticRef
+
 let intern_global_reference ist = function
   | Ident (loc,id) as r when find_var id ist -> ArgVar (loc,id)
-  | r -> ArgArg (loc,Nametab.global r)
+  | r -> 
+      let loc,qid = qualid_of_reference r in
+      try ArgArg (loc,locate_reference qid)
+      with _ -> 
+	error_global_not_found_loc loc qid
 
 let intern_tac_ref ist = function
   | Ident (loc,id) when find_ltacvar id ist -> ArgVar (loc,id)
@@ -377,8 +391,8 @@ let intern_constr_reference strict ist = function
   | Ident (_,id) when (not strict & find_hyp id ist) or find_ctxvar id ist ->
       RVar (loc,id), None
   | r ->
-      let _,qid = qualid_of_reference r in
-      RRef (loc,Nametab.locate qid), if strict then None else Some (CRef r)
+      let loc,qid = qualid_of_reference r in
+      RRef (loc,locate_reference qid), if strict then None else Some (CRef r)
 
 let intern_reference strict ist r =
   try Reference (intern_tac_ref ist r)
@@ -458,13 +472,7 @@ let intern_evaluable ist = function
   | r ->
       let loc,qid = qualid_of_reference r in
       try
-	let ref = match Nametab.extended_locate qid with
-	  | TrueGlobal ref -> ref
-	  | SyntacticDef kn -> 
-	      match Syntax_def.search_syntactic_definition loc kn with
-		| RRef (_,ref) -> ref
-		| _ -> error_not_evaluable (pr_reference r) in
-	let e = match ref with
+	let e = match locate_reference qid with
 	  | ConstRef c -> EvalConstRef c
 	  | VarRef c -> EvalVarRef c
 	  | _ -> error_not_evaluable (pr_reference r) in
@@ -472,7 +480,9 @@ let intern_evaluable ist = function
 	  | Ident (loc,id) when not !strict_check -> Some (loc,id)
 	  | _ -> None in
         ArgArg (e,short_name)
-      with Not_found ->
+      with
+	| NotSyntacticRef -> error_not_evaluable (pr_reference r)
+	| Not_found ->
 	match r with 
 	  | Ident (loc,id) when not !strict_check ->
 	      ArgArg (EvalVarRef id, Some (loc,id))
