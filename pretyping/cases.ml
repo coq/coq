@@ -183,9 +183,7 @@ let make_anonymous_patvars =
   list_tabulate (fun _ -> PatVar (dummy_loc,Anonymous)) 
 
 (* Environment management *)
-let push_rels vars env = List.fold_right push_rel_assum vars env
-
-let push_rel_defs vars env = List.fold_right push_rel_def vars env
+let push_rels vars env = List.fold_right push_rel vars env
 
 (**********************************************************************)
 (* Structures used in compiling pattern-matching *)
@@ -209,7 +207,7 @@ type rhs =
       private_ids: identifier list;
       user_ids   : identifier list;
       subst      : (identifier * constr) list;
-      rhs_lifts  : int list; (* Lifts to adjust rhs_env wrt pb.pb_env *)
+      rhs_lift   : int;
       it         : rawconstr }
 
 type equation =
@@ -306,10 +304,6 @@ let complete_history = rawpattern_of_partial_history []
    to this [n] arguments *)
 
 let history_continuation n arg cont =
-(*
-  if n=0 then contract_history (ci, PatCstr (dummy_loc,pci,[],Anonymous)) cont
-  else 
-*)
   Continuation (n, MakeConstruct (arg, cont))
 
 (* A pattern-matching problem has the following form:
@@ -379,12 +373,13 @@ let unalias_pat = function
   | PatCstr(a,b,c,name) as p ->
       if name = Anonymous then p else PatCstr (a,b,c,Anonymous)
 
-let remove_current_pattern eqn =
+let remove_current_pattern dep eqn =
   match eqn.patterns with
-    | pat::pats -> 
+    | pat::pats ->
+	let name = if dep then alias_of_pat pat else Anonymous in
 	{ eqn with
 	    patterns = pats;
-	    alias_stack = (* (alias_of_pat pat) *) Anonymous :: eqn.alias_stack }
+	    alias_stack = name :: eqn.alias_stack }
     | [] -> anomaly "Empty list of patterns"
 
 let liftn_tomatch_type n depth = function
@@ -456,13 +451,7 @@ let check_all_variables typ mat =
 
 let check_number_of_regular_eqns pb eqns =
   match List.filter is_regular eqns with
-    | [] ->
-	let tms = match pb.history with
-	  | Result (_,tms) -> tms 
-	  | _ -> assert false in
-	raise_pattern_matching_error
-	  ((List.hd eqns).eqn_loc, pb.env, RedundantClause tms)
-(*	(*warning "Found several default clauses, kept the first one"*) ()  *)
+    | [] -> (*warning "Found several default clauses, kept the first one"*) ()
     | [_] -> ()
     | _::eqn::_ ->
 	let tms = match pb.history with
@@ -651,34 +640,14 @@ let get_names env sign eqns =
 (************************************************************************)
 (* Recovering names for variables pushed to the rhs' environment *)
 
-let rec recover_pat_names = function
-  | (_,t)::sign,p::pats -> (alias_of_pat p,t)::(recover_pat_names (sign,pats))
-  | [],_ -> []
-  | _,[] -> anomaly "Cases.recover_pat_names: Not enough patterns"
-
-let rec adjust_rel k n = function
-  | p::subst -> if n=1 then k+p+1 else adjust_rel (k+p+1) (n-1) subst
-  | [] -> k+n
-
-let rec adjust_rels subst c = 
-  match kind_of_term c with
-    | IsRel n -> mkRel (adjust_rel 0 n subst)
-    | _ -> map_constr_with_binders (fun s -> 0::s) adjust_rels subst c
-
-let adjust_context subst sign =
-  snd
-    (List.fold_right
-       (fun (na,c) (subst,sign) -> (0::subst,(na,adjust_rels subst c)::sign))
-       sign (subst,[]))
+let recover_alias_names get_name = List.map2 (fun x (_,c,t) ->(get_name x,c,t))
 
 let push_rels_eqn sign eqn =
   let pats = List.rev (fst (list_chop (List.length sign) eqn.patterns)) in
-  let sign = recover_pat_names (sign, pats) in
-  let sign = adjust_context eqn.rhs.rhs_lifts sign in
+  let sign = recover_alias_names alias_of_pat pats sign in
   {eqn with
      rhs =
      {eqn.rhs with
-	rhs_lifts = List.fold_right (fun _ s -> 0::s) sign eqn.rhs.rhs_lifts;
 	rhs_env = push_rels sign eqn.rhs.rhs_env} }
 
 let prepend_pattern tms eqn = {eqn with patterns = tms@eqn.patterns }
@@ -688,26 +657,50 @@ let substitute_rhs current pb =
   if !substitute_alias then { pb with subst = current::pb.subst } else pb
 *)
 
-let insert_aliases sigma pats rhs names =
-  let rec insert sign n = function
-    | _::pats, Anonymous::names -> insert sign n (pats,names)
-    | pat::pats, na::names ->
-	let pat = adjust_rels (n::rhs.rhs_lifts) pat in
-	let t = Retyping.get_type_of rhs.rhs_env sigma pat in
-	insert ((na,pat,t)::sign) (n+1) (pats,names)
-    | [], names ->
-	names,
-	{rhs with
-	   rhs_env = push_rel_defs sign rhs.rhs_env;
-	   rhs_lifts = n::rhs.rhs_lifts }
-    | _ -> anomaly "Inconsistent alias and name lists"
-  in insert [] 0 (pats, names)
-
 let pop_pattern eqn = { eqn with patterns = List.tl eqn.patterns }
 
-let push_aliases sigma aliases eqn =
-  let names, rhs = insert_aliases sigma aliases eqn.rhs eqn.alias_stack in
-  { eqn with alias_stack = names; rhs = rhs }
+let build_aliases_context env sigma names allpats pats =
+  (* pats is the list of name to push as an alias *)
+  (* cuts in sign need to be done in allpats *)
+  let rec insert sign n newallpats oldallpats = function
+    | _::pats, Anonymous::names ->
+	insert sign n newallpats (List.map List.tl oldallpats) (pats,names)
+    | pat::pats, na::names ->
+	let t = Retyping.get_type_of env sigma pat in
+	let newallpats =
+	  List.map2 (fun l1 l2 -> List.hd l2::l1) newallpats oldallpats in
+	let oldallpats = List.map List.tl oldallpats in
+	insert ((na,Some pat,t)::sign) (n+1) 
+	    newallpats oldallpats (pats,names)
+    | [], [] -> newallpats, sign
+    | _ -> anomaly "Inconsistent alias and name lists"
+  in insert [] 0 (List.map (fun _ -> []) allpats) allpats (pats, names)
+
+let insert_aliases sign eqnnames alias_rest eqn =
+  let thissign = recover_alias_names (fun x -> x) eqnnames sign in
+  let thissign = List.filter (fun (na,c,t) -> na <> Anonymous) thissign in
+  { eqn with
+      alias_stack = alias_rest;
+      rhs = {eqn.rhs with rhs_env = push_rels thissign eqn.rhs.rhs_env } }
+
+let push_aliases env sigma aliases eqns =
+  let n = List.length aliases in
+  if n = 0 then (* optimisation *) [], eqns
+  else
+  (* Là, y a une faiblesse, si un alias est utilisé dans un cas par *)
+  (* défaut présent mais inutile, ce qui est le cas général, l'alias *)
+  (* est introduit même s'il n'est pas utilisé dans les cas réguliers *)
+  let names1 = list_tabulate (fun _ -> Anonymous) n in
+  let myeqnsnames = List.map (fun eqn -> list_chop n eqn.alias_stack) eqns in
+  let eqnsnames, alias_rests = List.split myeqnsnames in
+  (* names2 takes the meet of all needed aliases *)
+  let names2 = 
+    List.fold_right (merge_names (fun x -> x)) eqnsnames names1 in
+  (* Only needed aliases are kept by build_aliases_context *)
+  let eqnsnames, sign =
+    build_aliases_context env sigma names2 eqnsnames aliases in
+  let eqns = list_map3 (insert_aliases sign) eqnsnames alias_rests eqns in
+  sign, eqns
 
 (**********************************************************************)
 (* Functions to deal with elimination predicate *)
@@ -946,17 +939,22 @@ let group_equations mind cstrs mat =
   let _ =
     List.fold_right (* To be sure it's from bottom to top *)
       (fun eqn () ->
-	 let rest = remove_current_pattern eqn in
 	 match current_pattern eqn with
 	   | PatVar (_,name) -> 
+	       (* This is a default clause that we expand *)
 	       for i=1 to Array.length cstrs do
 		 let args = make_anonymous_patvars cstrs.(i-1).cs_nargs in
+		 let dep = Array.length cstrs.(i-1).cs_concl_realargs <> 0 in
+		 let rest = remove_current_pattern dep eqn in
 		 let rest = {rest with tag = lower_pattern_status rest.tag} in
 		 brs.(i-1) <- (args, rest) :: brs.(i-1)
 	       done
 	   | PatCstr(loc,((ind_sp,i),ids as cstr),largs,alias) ->
+	       (* This is a regular clause *)
 	       check_constructor loc (cstr,largs) mind cstrs;
 	       only_default := false;
+	       let dep = Array.length cstrs.(i-1).cs_concl_realargs <> 0 in
+	       let rest = remove_current_pattern dep eqn in
 	       brs.(i-1) <- (largs,rest) :: brs.(i-1)) mat () in
   (brs,!only_default)
 
@@ -974,11 +972,11 @@ let build_leaf pb =
 
 (* Building the sub-problem when all patterns are variables *)
 let shift_problem current pb =
-  (* rhs have alr. the right env: we just have to pop a pattern & cook pred *)
   let h = feed_history (current, PatVar (dummy_loc, Anonymous)) pb.history in
   let aliases, history = simplify_history h in
   let mat = List.map pop_pattern pb.mat in
-  let mat = List.map (push_aliases !(pb.isevars) aliases) mat in
+  let sign, mat = push_aliases pb.env !(pb.isevars) aliases mat in
+  sign,
   {pb with
      pred = option_app specialize_predicate_var pb.pred;
      history = history;
@@ -1024,16 +1022,19 @@ let build_branch pb eqns const_info =
 
   (* A constant constructor may lead to aliases to push *)
   let aliases, history = simplify_history history in
-  let mat = List.map (push_aliases !(pb.isevars) aliases) submat in
+  let sign, mat = push_aliases pb.env !(pb.isevars) aliases submat in
 
   (* We replace [(mkRel 1)] by its expansion [ci] *)
   let updated_old_tomatch =
     lift_subst_tomatch const_info.cs_nargs (1,ci) pb.tomatch in
+
+  sign,
   { pb with
       tomatch = topushs@updated_old_tomatch;
       mat = mat;
       history = history;
-      pred = option_app (specialize_predicate_match tomatchs const_info) pb.pred }
+      pred =
+        option_app (specialize_predicate_match tomatchs const_info) pb.pred }
 
 (**********************************************************************
  INVARIANT:
@@ -1062,19 +1063,17 @@ and match_current pb (n,tm) =
   match typ with
     | NotInd typ ->
 	check_all_variables typ pb.mat;
-	let pb = shift_problem current pb in
-	compile pb
+	compile_with_aliases (shift_problem current pb)
     | IsInd (_,(IndType(indf,realargs) as indt)) ->
 	let mis,_ = dest_ind_family indf in
 	let cstrs = get_constructors indf in
 	let eqns,onlydflt = group_equations (mis_inductive mis) cstrs pb.mat in
 	if cstrs <> [||] & onlydflt then
-	  let pb = shift_problem current pb in
-	  compile pb
+	  compile_with_aliases (shift_problem current pb)
 	else
           let constraints = Array.map (solve_constraints indt) cstrs in
 	  let pbs = array_map2 (build_branch pb) eqns cstrs in
-	  let brs = Array.map compile pbs in
+	  let brs = Array.map compile_with_aliases pbs in
 	  let brvals = Array.map (fun (_,j) -> j.uj_val) brs in
 	  let brtyps = Array.map (fun (_,j) -> body_of_type j.uj_type) brs in
 	  let tags = Array.map fst brs in
@@ -1091,7 +1090,8 @@ and compile_further pb firstnext rest =
   let nexts,future = pop_next_tomatchs [firstnext] rest in
   (* the next pattern to match is at the end of [nexts], it has ref (mkRel n)
      where n is the length of nexts *)
-  let sign = List.map (fun ((na,t),_) -> (na,type_of_tomatch_type t)) nexts in
+  let sign =
+    List.map (fun ((na,t),_) -> (na,None,type_of_tomatch_type t)) nexts in
   let currents =
     list_map_i
       (fun i ((na,t),(_,rhsdep)) ->
@@ -1105,9 +1105,15 @@ and compile_further pb firstnext rest =
 		mat = List.map (push_rels_eqn sign) pb.mat } in
   let tag, j = compile pb' in
   tag,
-  { uj_val = lam_it j.uj_val sign;
+  { uj_val = it_mkLambda_or_LetIn j.uj_val sign;
     uj_type = (* Pas d'univers ici: imprédicatif si Prop/Set, dummy si Type *)
-      type_app (fun t -> prod_it t sign) j.uj_type }
+      type_app (fun t -> it_mkProd_wo_LetIn t sign) j.uj_type }
+
+and compile_with_aliases (sign,pb) =
+  let patstat,j = compile pb in
+  patstat,
+  { uj_val = it_mkLambda_or_LetIn j.uj_val sign;
+    uj_type = it_mkProd_wo_LetIn j.uj_type sign }
 
 (* pour les alias des initiaux, enrichir les env de ce qu'il faut et
 substituer après par les initiaux *)
@@ -1137,7 +1143,7 @@ let matx_of_eqns env tomatchl eqns =
 	private_ids = [];
 	user_ids = ids;
 	subst = [];
-	rhs_lifts = [];
+	rhs_lift = 0;
 	it = initial_rhs } in
     { dependencies = [];
       patterns = initial_lpat;
