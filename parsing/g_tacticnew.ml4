@@ -129,10 +129,10 @@ GEXTEND Gram
       | n = natural -> AnonHyp n ] ]
   ;
   conversion:
-    [ [ nl = LIST1 integer; c1 = constr; "with"; c2 = constr ->
-         (Some (nl,c1), c2)
-      |	c1 = constr; "with"; c2 = constr -> (Some ([],c1), c2)
-      | c = constr -> (None, c) ] ]
+    [ [ c = constr -> (None, c)
+      | c1 = constr; "with"; c2 = constr -> (Some ([],c1), c2)
+      | c1 = constr; IDENT "at"; nl = LIST1 integer; "with"; c2 = constr ->
+	  (Some (nl,c1), c2) ] ]
   ;
   pattern_occ:
     [ [ nl = LIST0 integer; c = [c=constr->c | g=global->Topconstr.CRef g]-> (nl,c) ] ]
@@ -335,7 +335,8 @@ GEXTEND Gram
 
       (* Equivalence relations *)
       | IDENT "reflexivity" -> TacReflexivity
-      | IDENT "symmetry" -> TacSymmetry
+      | IDENT "symmetry"; ido = OPT [ "in"; id = id_or_ltac_ref -> id ] -> 
+	  TacSymmetry ido
       | IDENT "transitivity"; c = lconstr -> TacTransitivity c
 
       (* Conversion *)

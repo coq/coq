@@ -198,7 +198,7 @@ let rec pr_atom0 env = function
   | TacAutoTDB None -> str "autotdb"
   | TacDestructConcl -> str "dconcl"
   | TacReflexivity -> str "reflexivity"
-  | TacSymmetry -> str "symmetry"
+  | TacSymmetry None -> str "symmetry"
   | t -> str "(" ++ pr_atom1 env t ++ str ")"
 
   (* Main tactic printer *)
@@ -351,12 +351,17 @@ and pr_atom1 env = function
       (match occ with
           None -> mt()
         | Some(ocl,c1) ->
-            hov 1 (prlist (fun i -> int i ++ spc()) ocl ++
-                   pr_constr env c1) ++ spc() ++ str "with ") ++
+            hov 1 (pr_constr env c1 ++ spc() ++
+	    if ocl <> [] then
+	      str "at " ++ prlist (fun i -> int i ++ spc()) ocl
+	    else
+	      mt ()) ++
+	    spc() ++ str "with ") ++
       pr_constr env c ++ pr_clause pr_ident h)
 
   (* Equivalence relations *)
-  | (TacReflexivity | TacSymmetry) as x -> pr_atom0 env x
+  | (TacReflexivity | TacSymmetry None) as x -> pr_atom0 env x
+  | TacSymmetry (Some id) -> str "symmetry " ++ pr_ident id
   | TacTransitivity c -> str "transitivity" ++ pr_lconstrarg env c in
 
 let ltop = (5,E) in
