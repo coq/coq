@@ -311,7 +311,7 @@ let _ =
     { Summary.freeze_function = (fun () -> !relation_table);
       Summary.unfreeze_function = (fun t -> relation_table := t);
       Summary.init_function = (fun () -> relation_table := Gmap .empty);
-      Summary.survive_module = true;
+      Summary.survive_module = false;
       Summary.survive_section = false }
 
 (* Declare a new type of object in the environment : "relation-theory". *)
@@ -424,7 +424,7 @@ let _ =
     { Summary.freeze_function = (fun () -> !morphism_table);
       Summary.unfreeze_function = (fun t -> morphism_table := t);
       Summary.init_function = (fun () -> morphism_table := Gmap .empty);
-      Summary.survive_module = true;
+      Summary.survive_module = false;
       Summary.survive_section = false }
 
 (* Declare a new type of object in the environment : "morphism-definition". *)
@@ -635,6 +635,41 @@ let check_if_signature_is_well_typed c typ args output =
     (str "The signature provided is for a function of type " ++ prterm typ' ++
      str ". The function " ++ prterm c ++ str " has type " ++ prterm typ)
 
+let morphism_theory_id_of_morphism_proof_id id =
+ id_of_string (string_of_id id ^ "_morphism_theory")
+
+let add_morphism lemma_infos mor_name (m,args,output) =
+ let env = Global.env() in
+ begin
+  match lemma_infos with
+     None -> () (* the Morphism_Theory object has alrady been created *)
+   | Some (lem_name,argsconstr,outputconstr) ->
+      (* only the compatibility has been proved; we need to declare the
+         Morphism_Theory object *)
+     let mext = current_constant lem_name in
+     ignore (
+      Declare.declare_internal_constant mor_name
+       (DefinitionEntry
+         {const_entry_body =
+           mkApp ((Lazy.force coq_Build_Morphism_Theory),
+            [| argsconstr; outputconstr; m ; mext |]);
+          const_entry_type = None;
+          const_entry_opaque = false},
+           IsDefinition))
+  end ;
+  let mmor = current_constant mor_name in
+  let args_constr =
+   List.map
+    (fun (variance,arg) ->
+      variance, constr_relation_class_of_relation_relation_class arg) args in
+  let output_constr = constr_relation_class_of_relation_relation_class output in
+   Lib.add_anonymous_leaf
+    (morphism_to_obj (m, 
+      { args = args_constr;
+        output = output_constr;
+        lem = mmor }));
+   Options.if_verbose ppnl (prterm m ++ str " is registered as a morphism")   
+
 let new_morphism m signature id hook =
  if Nametab.exists_cci (Lib.make_path id) or is_section_variable id then
   errorlabstrm "New Morphism" (pr_id id ++ str " already exists")
@@ -690,63 +725,46 @@ let new_morphism m signature id hook =
       let argsconstr,outputconstr,lem =
        gen_compat_lemma_statement output args m
       in
-       new_edited id (m,args,argsconstr,output,outputconstr);
-       Pfedit.start_proof id (IsGlobal (Proof Lemma)) 
-        (Declare.clear_proofs (Global.named_context ()))
-        lem hook;
-       (* "unfold make_compatibility_goal" *)
-       Pfedit.by
-        (Tactics.unfold_constr
-         (Lazy.force coq_make_compatibility_goal_ref)) ;
-       (* "unfold make_compatibility_goal_aux" *)
-       Pfedit.by
-        (Tactics.unfold_constr
-         (Lazy.force coq_make_compatibility_goal_aux_ref)) ;
-       (* "simpl" *)
-       Pfedit.by Tactics.simpl_in_concl ;
-       Options.if_verbose msg (Printer.pr_open_subgoals ());
+       if Lib.is_modtype () then
+        begin
+         ignore
+          (Declare.declare_internal_constant id
+           (ParameterEntry lem, IsAssumption Logical)) ;
+         let mor_name = morphism_theory_id_of_morphism_proof_id id in
+         let lemma_infos = Some (id,argsconstr,outputconstr) in
+          add_morphism lemma_infos mor_name (m,args,output)
+        end
+       else
+        begin
+         new_edited id (m,args,argsconstr,output,outputconstr);
+         Pfedit.start_proof id (IsGlobal (Proof Lemma)) 
+          (Declare.clear_proofs (Global.named_context ()))
+          lem hook;
+         (* "unfold make_compatibility_goal" *)
+         Pfedit.by
+          (Tactics.unfold_constr
+           (Lazy.force coq_make_compatibility_goal_ref)) ;
+         (* "unfold make_compatibility_goal_aux" *)
+         Pfedit.by
+          (Tactics.unfold_constr
+           (Lazy.force coq_make_compatibility_goal_aux_ref)) ;
+         (* "simpl" *)
+         Pfedit.by Tactics.simpl_in_concl ;
+         Options.if_verbose msg (Printer.pr_open_subgoals ());
+        end
      end
 
-let add_morphism lemma_infos mor_name (m,args,output) =
- let env = Global.env() in
- begin
-  match lemma_infos with
-     None -> () (* the Morphism_Theory object has alrady been created *)
-   | Some (lem_name,argsconstr,outputconstr) ->
-      (* only the compatibility has been proved; we need to declare the
-         Morphism_Theory object *)
-     let mext = current_constant lem_name in
-     ignore (
-      Declare.declare_constant mor_name
-       (DefinitionEntry
-         {const_entry_body =
-           mkApp ((Lazy.force coq_Build_Morphism_Theory),
-            [| argsconstr; outputconstr; m ; mext |]);
-          const_entry_type = None;
-          const_entry_opaque = false},
-           IsDefinition))
-  end ;
-  let mmor = current_constant mor_name in
-  let args_constr =
-   List.map
-    (fun (variance,arg) ->
-      variance, constr_relation_class_of_relation_relation_class arg) args in
-  let output_constr = constr_relation_class_of_relation_relation_class output in
-   Lib.add_anonymous_leaf
-    (morphism_to_obj (m, 
-      { args = args_constr;
-        output = output_constr;
-        lem = mmor }));
-   Options.if_verbose ppnl (prterm m ++ str " is registered as a morphism")   
-
-let morphism_hook stre ref =
+let morphism_hook _ ref =
   let pf_id = id_of_global ref in
-  let mor_id = id_of_string (string_of_id pf_id ^ "_morphism_theory") in
+  let mor_id = morphism_theory_id_of_morphism_proof_id pf_id in
   let (m,args,argsconstr,output,outputconstr) = what_edited pf_id in
   if (is_edited pf_id)
   then 
+   begin
     add_morphism (Some (pf_id,argsconstr,outputconstr)) mor_id
-     (m,args,output); no_more_edited pf_id
+     (m,args,output) ;
+    no_more_edited pf_id
+   end
 
 type morphism_signature =
  (bool option * Topconstr.constr_expr) list * Topconstr.constr_expr
@@ -764,15 +782,8 @@ let new_named_morphism id m sign =
 
 (************************ Add Setoid ******************************************)
 
-(*CSC: I do not like this. I would prefer more self-describing constant names *)
-let gen_morphism_name =
-  let i = ref 0 in
-    function () -> 
-      incr i;
-      make_ident "morphism_of_setoid_equality" (Some !i)
-
 (* The vernac command "Add Setoid" *)
-let add_setoid a aeq th =
+let add_setoid id a aeq th =
  let a = constr_of a in
  let aeq = constr_of aeq in
  let th = constr_of th in
@@ -784,9 +795,9 @@ let add_setoid a aeq th =
     let refl = mkApp ((Lazy.force coq_seq_refl), [| a; aeq; th |]) in
     let sym = mkApp ((Lazy.force coq_seq_sym), [| a; aeq; th |]) in
     int_add_relation a aeq (Some refl) (Some sym) ;
-    let mor_name = gen_morphism_name () in
+    let mor_name = id_of_string (string_of_id id ^ "_morphism") in
     let _ =
-     Declare.declare_constant mor_name
+     Declare.declare_internal_constant mor_name
       (DefinitionEntry
         {const_entry_body =
           mkApp
@@ -1139,7 +1150,7 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
   match res' with
      [] when res = [] ->
       errorlabstrm "Setoid_rewrite"
-       (str "Either the term " ++ prterm in_c ++ str " that must be " ++
+       (str "Either the term " ++ prterm t ++ str " that must be " ++
         str "rewritten occurs in a covariant position or the goal is not " ++
         str "made of morphism applications only. You can replace only " ++
         str "occurrences that are in a contravariant position and such that " ++
