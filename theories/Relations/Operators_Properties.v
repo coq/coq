@@ -39,9 +39,9 @@ Lemma clos_rt_idempotent:
        (incl (clos_refl_trans A (clos_refl_trans A R))
                      (clos_refl_trans A R)).
 Red.
-Induction 1; Auto with sets.
+NewInduction 1; Auto with sets.
 Intros.
-Apply rt_trans with y0; Auto with sets.
+Apply rt_trans with y; Auto with sets.
 Qed.
 
   Lemma  clos_refl_trans_ind_left: (A:Set)(R:A->A->Prop)(M:A)(P:A->Prop)
@@ -72,9 +72,8 @@ Section Clos_Refl_Sym_Trans.
   Lemma clos_rt_clos_rst: (inclusion A (clos_refl_trans A R)
 				        (clos_refl_sym_trans A R)).
 Red.
-Induction 1; Auto with sets.
-Intros.
-Apply rst_trans with y0; Auto with sets.
+NewInduction 1; Auto with sets.
+Apply rst_trans with y; Auto with sets.
 Qed.
 
   Lemma clos_rst_is_equiv: (equivalence A (clos_refl_sym_trans A R)).
@@ -90,9 +89,8 @@ Qed.
        (incl (clos_refl_sym_trans A (clos_refl_sym_trans A R))
                      (clos_refl_sym_trans A R)).
 Red.
-Induction 1; Auto with sets.
-Intros.
-Apply rst_trans with y0; Auto with sets.
+NewInduction 1; Auto with sets.
+Apply rst_trans with y; Auto with sets.
 Qed.
 
 End Clos_Refl_Sym_Trans.

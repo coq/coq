@@ -42,15 +42,15 @@ Variable U: Type.
 Lemma finite_cardinal :
  (X: (Ensemble U)) (Finite U X) -> (EX n:nat |(cardinal U X n)).
 Proof.
-Induction 1.
+NewInduction 1 as [|A _ [n H]].
 Exists O; Auto with sets.
-Induction 2; Intros n H3; Exists (S n); Auto with sets.
+Exists (S n); Auto with sets.
 Qed.
 
 Lemma cardinal_finite:
   (X: (Ensemble U)) (n: nat) (cardinal U X n) -> (Finite U X).
 Proof.
-Induction 1; Auto with sets.
+NewInduction 1; Auto with sets.
 Qed.
 
 Theorem Add_preserves_Finite:
@@ -89,7 +89,7 @@ Intros A H'; Elim H'; Auto with sets.
 Intros X H'0.
 Rewrite (less_than_empty U X H'0); Auto with sets.
 Intros; Elim Included_Add with U X A0 x; Auto with sets.
-Induction 1; Intro A'; Induction 1; Intros H5 H6.
+NewDestruct 1 as [A' [H5 H6]].
 Rewrite H5; Auto with sets.
 Qed.
 
@@ -110,8 +110,8 @@ Hints Resolve cardinalO_empty.
 Lemma inh_card_gt_O:
   (X: (Ensemble U)) (Inhabited U X) -> (n: nat) (cardinal U X n) -> (gt n O).
 Proof.
-Induction 1.
-Intros x H' n H'0.
+NewInduction 1 as [x H'].
+Intros n H'0.
 Elim (gt_O_eq n); Auto with sets.
 Intro H'1; Generalize H'; Generalize H'0.
 Rewrite <- H'1; Intro H'2.
