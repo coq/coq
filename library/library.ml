@@ -20,8 +20,11 @@ let add_load_path_entry lpe = load_path := lpe :: !load_path
 let add_path dir coq_dirpath = 
   if coq_dirpath = [] then anomaly "add_path: empty path in library";
   Nametab.push_library_root (List.hd coq_dirpath);
-  add_load_path_entry
-    { directory = dir; root_dir = dir; relative_subdir = coq_dirpath }
+  if (Unix.stat dir).Unix.st_kind = Unix.S_DIR then
+   add_load_path_entry
+     { directory = dir; coq_dirpath = coq_dirpath }
+  else
+   error (dir ^ " is not an existant directory")
 
 let remove_path dir =
   load_path := List.filter (fun lpe -> lpe.directory <> dir) !load_path
@@ -164,7 +167,7 @@ let rec load_module_from s f =
     List.iter (load_mandatory_module s) m.module_deps;
     Global.import m.module_compiled_env;
     load_objects m.module_declarations;
-    let sp = Names.make_path lpe.relative_subdir (id_of_string s) CCI in
+    let sp = Names.make_path lpe.coq_dirpath (id_of_string s) CCI in
     Nametab.push_module sp m.module_nametab;
     modules_table := Stringmap.add s m !modules_table;
     m
