@@ -1,20 +1,14 @@
-(****************************************************************************)
-(*                 The Calculus of Inductive Constructions                  *)
-(*                                                                          *)
-(*                                Projet Coq                                *)
-(*                                                                          *)
-(*                     INRIA        LRI-CNRS        ENS-CNRS                *)
-(*              Rocquencourt         Orsay          Lyon                    *)
-(*                                                                          *)
-(*                                 Coq V6.3                                 *)
-(*                               July 1st 1999                              *)
-(*                                                                          *)
-(****************************************************************************)
-(* Certification of Imperative Programs                                     *)
-(* Jean-Christophe Filliâtre                                                *)
-(****************************************************************************)
-(*                                 Handbook.v                               *)
-(****************************************************************************)
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(* Certification of Imperative Programs / Jean-Christophe Filliâtre *)
+
+(* $Id$ *)
 
 (* This file contains proofs of programs taken from the
  * "Handbook of Theoretical Computer Science", volume B,

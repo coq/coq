@@ -161,11 +161,11 @@ Correctness i_exp
     { result=(power x n) }
 .
 Proof.
-stop.
 Rewrite (odd_double e0 Test1) in Inv. Rewrite Inv. Simpl. Auto with arith.
 
 Rewrite (even_double e0 Test1) in Inv. Rewrite Inv. Reflexivity.
 
+Split.
 Exact (lt_div2 e0 Test2).
 
 Rewrite Q. Unfold double. Unfold square.

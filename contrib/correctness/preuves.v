@@ -37,6 +37,13 @@ Save.
 Global Variable i : Z ref.
 Debug on.
 Correctness if0 { `0 <= i` } (if !i>0 then i:=!i-1 else tt) { `0 <= i` }.
+
+(**********************************************************************)
+
+Global Variable i : Z ref.
+Debug on.
+Correctness assert0 { `0 <= i` } begin assert { `i=2` }; i:=!i-1 end { `i=1` }.
+
 (**********************************************************************)
 
 Correctness echange

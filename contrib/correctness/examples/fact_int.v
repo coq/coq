@@ -1,20 +1,14 @@
-(****************************************************************************)
-(*                 The Calculus of Inductive Constructions                  *)
-(*                                                                          *)
-(*                                Projet Coq                                *)
-(*                                                                          *)
-(*                     INRIA        LRI-CNRS        ENS-CNRS                *)
-(*              Rocquencourt         Orsay          Lyon                    *)
-(*                                                                          *)
-(*                                 Coq V6.3                                 *)
-(*                               July 1st 1999                              *)
-(*                                                                          *)
-(****************************************************************************)
-(* Certification of Imperative Programs                                     *)
-(* Jean-Christophe Filliâtre                                                *)
-(****************************************************************************)
-(*                                fact_int.v                                *)
-(****************************************************************************)
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(* Certification of Imperative Programs / Jean-Christophe Filliâtre *)
+
+(* $Id$ *)
 
 (* Proof of an imperative program computing the factorial (over type Z) *)
 
@@ -179,6 +173,7 @@ Correctness factorielle
   end
   { (fact x@0 y) }.
 Proof.
+Split.
 (* decreasing *)
 Unfold Zwf. Unfold Zpred. Omega.
 (* preservation of the invariant *)
@@ -198,6 +193,3 @@ Decompose [and] Inv.
 Rewrite H0 in H2.
 Exact (invariant_0 x y1 H2).
 Save.
-
-
-(* $Id$ *)
