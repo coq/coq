@@ -371,7 +371,6 @@ End Theory_of_rings.
 
 Implicit Arguments Off.
 
-(***TODO
 Definition Semi_Ring_Theory_of :
   (A:Type)(Aplus : A -> A -> A)(Amult : A -> A -> A)(Aone : A)
   (Azero : A)(Aopp : A -> A)(Aeq : A -> A -> bool)
@@ -379,19 +378,12 @@ Definition Semi_Ring_Theory_of :
     ->(Semi_Ring_Theory Aplus Amult Aone Azero Aeq).
 Destruct 1.
 Split; Intros; Simpl; EAuto.
-EApply (Th_mult_zero_left (Build_Ring_Theory Th_plus_sym0 Th_plus_assoc0
-  Th_mult_sym0 Th_mult_assoc0 Th_plus_zero_left0 Th_mult_one_left0
-  Th_opp_def0 Th_distr_left0 Th_eq_prop0)).
-EApply (Th_plus_reg_left (Build_Ring_Theory Th_plus_sym0 Th_plus_assoc0
-  Th_mult_sym0 Th_mult_assoc0 Th_plus_zero_left0 Th_mult_one_left0
-  Th_opp_def0 Th_distr_left0 Th_eq_prop0)) with n:=n.
-Assumption.
 Defined.
 
 (* Every ring can be viewed as a semi-ring : this property will be used
   in Abstract_polynom. *)
 Coercion Semi_Ring_Theory_of : Ring_Theory >-> Semi_Ring_Theory.
-***)
+
 
 Section product_ring.
 
