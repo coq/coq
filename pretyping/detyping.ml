@@ -301,7 +301,7 @@ let rec detype avoid env t =
        with Not_found ->
 	 let s = "[REL "^(string_of_int (number_of_rels env - n))^"]"
 	 in RRef (dummy_loc, RVar (id_of_string s)))
-    | IsMeta n -> RRef (dummy_loc,RMeta n)
+    | IsMeta n -> RMeta (dummy_loc, n)
     | IsVar id -> RRef (dummy_loc,RVar id)
     | IsXtra s -> warning "bdize: Xtra should no longer occur in constr";
 	RRef(dummy_loc,RVar (id_of_string ("XTRA"^s)))

@@ -234,23 +234,6 @@ let trad_metamap = ref []
 let trad_nocheck = ref false
 
 let pretype_ref loc isevars env = function
-| RMeta n ->
-    let metaty =
-      try List.assoc n !trad_metamap
-      with Not_found ->
-	(* Tester si la référence est castée *)
-	user_err_loc 
-	  (loc,"pretype",
-	   [< 'sTR "Metavariable "; 'iNT n; 'sTR" is unbound" >])
-	  in
-    (match kind_of_term metaty with
-      IsCast (typ,kind) -> {uj_val=DOP0 (Meta n); uj_type=typ; uj_kind=kind}
-    | _ ->
-        {uj_val=DOP0 (Meta n);
-          uj_type=metaty;
-          uj_kind=failwith "should be casted"})
-	   (* hnf_constr !isevars (exemeta_hack metaty).uj_type}) *)
-
 | RVar id -> pretype_var loc env id
 
 | RConst (sp,ctxt) ->
@@ -299,9 +282,25 @@ let pretype_ref loc isevars env = function
 let rec pretype vtcon env isevars cstr =
 match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 
-
 | RRef (loc,ref) -> 
     pretype_ref loc isevars env ref
+
+| RMeta (loc,n) ->
+    let metaty =
+      try List.assoc n !trad_metamap
+      with Not_found ->
+	(* Tester si la référence est castée *)
+	user_err_loc 
+	  (loc,"pretype",
+	   [< 'sTR "Metavariable "; 'iNT n; 'sTR" is unbound" >])
+	  in
+    (match kind_of_term metaty with
+      IsCast (typ,kind) -> {uj_val=DOP0 (Meta n); uj_type=typ; uj_kind=kind}
+    | _ ->
+        {uj_val=DOP0 (Meta n);
+          uj_type=metaty;
+          uj_kind=failwith "should be casted"})
+	   (* hnf_constr !isevars (exemeta_hack metaty).uj_type}) *)
 
 | RHole loc ->
   if !compter then nbimpl:=!nbimpl+1;

@@ -85,7 +85,6 @@ type 'ctxt reference =
   | RAbst of section_path
   | RVar of identifier
   | REVar of int * 'ctxt
-  | RMeta of int
 
 (*s Functions for dealing with constr terms.
   The following functions are intended to simplify and to uniform the 

@@ -24,6 +24,7 @@ type rawsort = RProp of Term.contents | RType
 (*i Pas beau ce constr dans rawconstr, mais mal compris ce ctxt des ref i*)
 type rawconstr = 
   | RRef of loc * constr array reference
+  | RMeta of loc * int
   | RApp of loc * rawconstr * rawconstr list
   | RBinder of loc * binder_kind * name * rawconstr * rawconstr
   | RCases of loc * Term.case_style * rawconstr option * rawconstr list * 
@@ -52,6 +53,7 @@ let dummy_loc = (0,0)
 
 let loc_of_rawconstr = function
   | RRef (loc,_) -> loc
+  | RMeta (loc,_) -> loc
   | RApp (loc,_,_) -> loc
   | RBinder (loc,_,_,_,_) -> loc
   | RCases (loc,_,_,_,_) -> loc

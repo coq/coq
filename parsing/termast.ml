@@ -133,7 +133,6 @@ let ast_of_ref = function
   | RConstruct (cstr,ctxt) -> ast_of_constructor_ref (cstr,ids_of_ctxt ctxt)
   | RVar id -> ast_of_ident id
   | REVar (ev,ctxt) -> ast_of_existential_ref (ev,ids_of_ctxt ctxt)
-  | RMeta n -> ope("META",[num n])
 
 (**********************************************************************)
 (* conversion of patterns                                             *)
@@ -216,6 +215,7 @@ let ast_of_app impl f args =
 
 let rec ast_of_raw = function
   | RRef (_,ref) -> ast_of_ref ref
+  | RMeta (_,n) -> ope("META",[num n])
   | RApp (_,f,args) ->
       let (f,args) =
 	skip_coercion (function RRef(_,r) -> Some r | _ -> None) (f,args) in

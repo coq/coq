@@ -560,7 +560,6 @@ type 'ctxt reference =
   | RAbst of section_path
   | RVar of identifier
   | REVar of int * 'ctxt
-  | RMeta of int
 
 type existential = int * constr array
 type constant = section_path * constr array

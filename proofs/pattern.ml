@@ -58,7 +58,7 @@ let label_of_ref = function
   | RConstruct (sp,_) -> CstrNode sp
   | RVar id           -> VarNode id
   | RAbst _           -> error "Obsolète"
-  | REVar _ | RMeta _ -> raise BoundPattern
+  | REVar _           -> raise BoundPattern
 
 let rec head_pattern_bound t =
   match t with

@@ -330,7 +330,7 @@ let dbize k allow_soapp sigma =
 		  Array.of_list (List.map (dbrec env) cl))
 
     | Node(loc,"ISEVAR",[]) -> RHole (Some loc)
-    | Node(loc,"META",[Num(_,n)]) -> RRef (loc,RMeta n)
+    | Node(loc,"META",[Num(_,n)]) -> RMeta (loc, n)
 
     | Node(loc,"PROP", []) -> RSort(loc,RProp Null)
     | Node(loc,"SET", [])  -> RSort(loc,RProp Pos)
@@ -346,7 +346,7 @@ let dbize k allow_soapp sigma =
     | Node(loc,"SOAPP", Num(locn,n)::args) when allow_soapp ->
 	(* Hack special pour l'interprétation des constr_pattern *)
 	if n<0 then error "Metavariable numbers must be positive" else
-	RApp (loc,RRef (locn,RMeta (-n)),List.map (dbrec env) args)
+	RApp (loc,RMeta (locn,-n),List.map (dbrec env) args)
 
     | Node(loc,opn,tl) -> 
 	anomaly ("dbize found operator "^opn^" with "^
@@ -576,7 +576,6 @@ let rec pat_of_ref metas vars = function
   | RInd (ip,ctxt) -> RInd (ip, ctxt)
   | RConstruct(cp,ctxt) ->RConstruct(cp, ctxt)
   | REVar (n,ctxt) -> REVar (n, ctxt)
-  | RMeta n -> metas := n::!metas; RMeta n
   | RAbst _ -> error "pattern_of_rawconstr: not implemented"
   | RVar _ -> assert false (* Capturé dans pattern_of_raw *)
 
@@ -584,13 +583,15 @@ and pat_of_raw metas vars = function
   | RRef (_,RVar id) -> 
       (try PRel (list_index (Name id) vars)
        with Not_found -> PRef (RVar id))
+  | RMeta (_,n) ->
+      metas := n::!metas; PMeta (Some n)
   | RRef (_,r) ->
       PRef (pat_of_ref metas vars r)
   | RApp (_,c,cl) -> 
       PApp (pat_of_raw metas vars c,
 	    Array.of_list (List.map (pat_of_raw metas vars) cl))
   (* Petit hack pour ne pas réécrire une interprétation complète des patterns*)
-  | RApp (_,RRef (_,RMeta n),cl) when n<0 ->
+  | RApp (_,RMeta (_,n),cl) when n<0 ->
       PSoApp (-n, List.map (pat_of_raw metas vars) cl)
   | RBinder (_,bk,na,c1,c2) ->
       PBinder (bk, na, pat_of_raw metas vars c1,
