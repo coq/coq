@@ -306,7 +306,7 @@ GEXTEND Gram
 	  let indl' = List.map (fun (id,ar,c) -> (id,bl,ar,c)) indl in
 	  VernacInductive (f,indl')
       | record_token; oc = opt_coercion; name = base_ident; ps = indpar; ":";
-	s = sort; ":="; c = rec_constructor; "{"; fs = fields; "}" ->
+	s = constr; ":="; c = rec_constructor; "{"; fs = fields; "}" ->
 	  VernacRecord ((oc,name),ps,s,c,fs)
     ] ]
   ;
