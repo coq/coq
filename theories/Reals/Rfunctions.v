@@ -25,6 +25,8 @@ Require Export SplitRmult.
 Require Export ArithProp.
 Require Omega.
 Require Zpower.
+V7only [Import nat_scope.].
+Open Local Scope nat_scope.
 V7only [Import R_scope.].
 Open Local Scope R_scope.
 
