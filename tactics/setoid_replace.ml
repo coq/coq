@@ -1592,6 +1592,25 @@ let apply_coq_setoid_rewrite hole_relation prop_relation c1 c2 (direction,h)
       syntactic_but_representation_of_marked_but hole_relation hole_direction
        cic_prop_relation precise_prop_relation m ; hyp |])
 
+let check_evar_map_of_evars_defs evd =
+ let metas = Evd.meta_list evd in
+ let check_freemetas_is_empty rebus =
+  Evd.Metaset.iter
+   (fun m ->
+     if Evd.meta_defined evd m then () else
+      raise (Logic.RefinerError (Logic.OccurMetaGoal rebus)))
+ in
+  List.iter
+   (fun (_,binding) ->
+     match binding with
+        Evd.Cltyp (_,{Evd.rebus=rebus; Evd.freemetas=freemetas}) ->
+         check_freemetas_is_empty rebus freemetas
+      | Evd.Clval (_,{Evd.rebus=rebus1; Evd.freemetas=freemetas1},
+                 {Evd.rebus=rebus2; Evd.freemetas=freemetas2}) ->
+         check_freemetas_is_empty rebus1 freemetas1 ;
+         check_freemetas_is_empty rebus2 freemetas2
+   ) metas
+
 let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
  let but = pf_concl gl in
  let (sigma,hyp,c1,c2) =
@@ -1609,6 +1628,7 @@ let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
    in
    let cl' = {cl with env = env' } in
    let c2 = Clenv.clenv_nf_meta cl' c2 in
+    check_evar_map_of_evars_defs env' ;
     env',(input_direction,Clenv.clenv_value cl'), c1, c2
  in
   try
