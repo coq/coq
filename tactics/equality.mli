@@ -71,10 +71,10 @@ val discrHyp     : identifier -> tactic
 val discrEverywhere     : tactic
 val discr_tac    : identifier option -> tactic
 val inj          : identifier -> tactic
-val injClause    : clause -> tactic
+val injClause    : quantified_hypothesis option -> tactic
 
-val dEq : clause -> tactic
-val dEqThen : (int -> tactic) -> clause -> tactic
+val dEq : quantified_hypothesis option -> tactic
+val dEqThen : (int -> tactic) -> quantified_hypothesis option -> tactic
 
 val make_iterated_tuple : 
   env -> evar_map -> (constr * constr) -> (constr * constr) 

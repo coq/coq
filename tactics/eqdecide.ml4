@@ -111,7 +111,7 @@ let diseqCase =
   (tclTHEN  red_in_concl
   (tclTHEN  (intro_using absurd)
   (tclTHEN  (h_simplest_apply (mkVar diseq))
-  (tclTHEN  (Extratactics.h_injHyp absurd)
+  (tclTHEN  (Extratactics.h_injHyp (Rawterm.NamedHyp absurd))
             full_trivial))))))
 
 let solveArg a1 a2 tac  g = 

@@ -39,7 +39,7 @@ TACTIC EXTEND ReplaceIn
 END
 
 TACTIC EXTEND DEq
-  [ "Simplify_eq" ident_opt(h) ] -> [ dEq h ]
+  [ "Simplify_eq" quantified_hypothesis_opt(h) ] -> [ dEq h ]
 END
 
 TACTIC EXTEND Discriminate
@@ -49,7 +49,7 @@ END
 let h_discrHyp id = h_discriminate (Some id)
 
 TACTIC EXTEND Injection
-  [ "Injection" ident_opt(h) ] -> [ injClause h ]
+  [ "Injection" quantified_hypothesis_opt(h) ] -> [ injClause h ]
 END
 
 let h_injHyp id = h_injection (Some id)

@@ -802,7 +802,7 @@ let inj id gls =
 	    
 let injClause = function
   | None -> onNegatedEquality inj
-  | Some id -> inj id
+  | Some id -> try_intros_until inj id
 
 let injConcl gls  = injClause None gls
 let injHyp id gls = injClause (Some id) gls
@@ -865,7 +865,7 @@ let decompEq = decompEqThen (fun x -> tclIDTAC)
 
 let dEqThen ntac = function
   | None -> onNegatedEquality (decompEqThen ntac)
-  | Some id -> decompEqThen ntac id
+  | Some id -> try_intros_until (decompEqThen ntac) id
 
 let dEq = dEqThen (fun x -> tclIDTAC)
 
