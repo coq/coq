@@ -245,7 +245,7 @@ let correctness s p opttac =
   deb_mess (str"Pred.red_cci: Reduction..." ++ fnl ());
   let oc = reduce_open_constr oc in
   deb_mess (str"AFTER REDUCTION:" ++ fnl ());
-  deb_mess (Printer.prterm_env (Global.env()) (snd oc));
+  deb_print (Printer.prterm_env (Global.env())) (snd oc);
   let tac = (tclTHEN (Extratactics.refine_tac oc) automatic) in
   let tac = match opttac with 
     | None -> tac
