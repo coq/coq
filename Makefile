@@ -40,7 +40,9 @@ noargument:
 LOCALINCLUDES= -I config -I tools -I scripts -I lib -I kernel -I library \
                -I proofs -I tactics -I pretyping -I parsing -I toplevel  \
                -I contrib/omega -I contrib/ring -I contrib/xml \
-	       -I contrib/extraction -I contrib/correctness
+	       -I contrib/extraction -I contrib/correctness \
+               -I contrib/interface
+
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
 BYTEFLAGS=-rectypes $(INCLUDES) $(CAMLDEBUG)
@@ -151,6 +153,14 @@ CORRECTNESS=contrib/correctness/pmisc.cmo				\
 	contrib/correctness/pwp.cmo contrib/correctness/pmlize.cmo	\
 	contrib/correctness/ptactic.cmo	contrib/correctness/psyntax.cmo
 
+INTERFACE=contrib/interface/vtp.cmo contrib/interface/xlate.cmo \
+	contrib/interface/paths.cmo contrib/interface/translate.cmo \
+	contrib/interface/pbp.cmo \
+	contrib/interface/dad.cmo \
+	contrib/interface/history.cmo \
+	contrib/interface/name_to_ast.cmo contrib/interface/debug_tac.cmo \
+	contrib/interface/centaur.cmo
+
 ML4FILES += contrib/correctness/psyntax.ml4
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
@@ -237,6 +247,9 @@ toplevel: $(TOPLEVEL)
 
 bin/coq-extraction: $(COQMKTOP) $(CMO) $(USERTACCMO) $(EXTRACTIONCMO)
 	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@ $(EXTRACTIONCMO)
+
+bin/coq-interface: $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
+	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@ $(INTERFACE)
 
 ###########################################################################
 # tests
