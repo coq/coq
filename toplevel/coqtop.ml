@@ -105,8 +105,10 @@ let add_compile verbose s =
   Options.make_silent true; 
   compile_list := (verbose,s) :: !compile_list
 let compile_files () =
+  let init_state = States.freeze() in
   List.iter
     (fun (v,f) ->
+      States.unfreeze init_state;
       if Options.do_translate () then
 	with_option translate_file (Vernac.compile v) f
       else
