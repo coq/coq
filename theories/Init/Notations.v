@@ -94,3 +94,5 @@ Uninterpreted Notation "{ x : A  &  P }" (at level 1)
   V8only (at level 10, x at level 80).
 Uninterpreted Notation "{ x : A  &  P  &  Q }" (at level 1)
   V8only (at level 10, x at level 80).
+
+Delimits Scope type_scope with T.
