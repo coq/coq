@@ -1,0 +1,50 @@
+#!/bin/bash
+# This scripts checks that the new grammar of Coq as defined in syntax-v8.tex
+# is consistent in the sense that all invoked non-terminals are defined
+
+defined-nt() {
+  grep "\\DEFNT{.*}" syntax-v8.tex | sed -e "s|.*DEFNT{\([^}]*\)}.*|\1|"|\
+    sort | sort -u
+}
+
+used-nt() {
+  cat syntax-v8.tex | tr \\\\ \\n | grep "^NT{.*}" |\
+    sed -e "s|^NT{\([^}]*\)}.*|\1|" | egrep -v ^\#1\|non-terminal | sort -u
+}
+
+used-term() {
+  cat syntax-v8.tex | tr \\\\ \\n | grep "^TERM{.*}" |\
+    sed -e "s|^TERM{\([^}]*\)}.*|\1|" -e "s|\\$||g" | egrep -v ^\#1\|terminal | sort -u
+}
+
+used-kwd() {
+  cat syntax-v8.tex | tr \\\\ \\n | grep "^KWD{.*}" |\
+    sed -e "s|^KWD{\([^}]*\)}.*|\1|" -e "s|\\$||g" | egrep -v ^\#1 | sort -u
+}
+
+defined-nt > def
+used-nt > use
+used-term > use-t
+used-kwd > use-k
+diff def use > df
+
+###############################
+echo
+if grep ^\> df > /dev/null 2>&1 ; then
+  echo Undefined non-terminals:
+  echo ========================
+  echo
+  grep ^\> df | sed -e "s|^> ||"
+  echo
+fi
+if grep ^\< df > /dev/null 2>&1 ; then
+  echo Unused non-terminals:
+  echo =====================
+  echo
+  grep ^\< df | sed -e "s|^< ||"
+  echo
+fi
+#echo Used terminals:
+#echo ===============
+#echo
+#cat use-t
