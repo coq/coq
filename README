@@ -1,6 +1,6 @@
 
-            		THE COQ V7.0 SYSTEM
-            		=================
+            		THE COQ V7.1 SYSTEM
+            		===================
 
 INSTALLATION.
 =============
@@ -8,15 +8,15 @@ INSTALLATION.
    See the file INSTALL for installation procedure.
 
 
-DOCUMENTATION. (not available for beta version)
+DOCUMENTATION.
 ==============
 
-   The documentation of Coq V7.0 is available by anonymous ftp (see below),
+   The documentation of Coq V7.1 is available by anonymous ftp (see below),
    in a directory doc/. The documents are available separately or
    all together in the tar file all-docs.tar .
 
 
-CHANGES. (beta version: a document Changes.ps explains the differences)
+CHANGES.
 ========
 
    There is a file named CHANGES that explains the differences and the

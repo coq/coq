@@ -30,7 +30,7 @@ done by adding the following line to your AUTOEXEC.BAT:
 	set PATH=%PATH%;C:\coq\bin
 
     You may also want to specify where Coq has to look for your configuration
-file (.coqrc or .coqrc.6.3.1), e.g.:
+file .coqrc (not mandatory), e.g.:
 
 	set HOME=C:\My_Documents\Coq
 
@@ -50,7 +50,7 @@ adding the following lines to your AUTOEXEC.BAT:
 	set COQLIB=D:\My_Dir\coq\lib
 
     You may also want to specify where Coq has to look for your configuration
-file (.coqrc or .coqrc.6.3.1), e.g.:
+file .coqrc (not mandatory), e.g.:
 
 	set HOME=C:\My_Documents\Coq
 

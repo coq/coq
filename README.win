@@ -15,9 +15,10 @@ COMPILATION.
     distribution. If you really need to recompile under Windows, here
     are some indications:
 
-    1- Install ocaml, camlp4 (must be compiled), Visual C++ (needed for the
-       -custom option of ocaml) and MASM (needed if you want to produce a
-       native version).
+    1- Install ocaml version 3.01 or later and camlp4 with same
+       version number as ocaml (must be compiled), Visual C++ (needed
+       for the -custom option of ocaml) and MASM (needed if you want
+       to produce a native version).
 
     2- Install a complete set of Unix utilities (used by Makefiles). 
        See: http://sources.redhat.com/cygwin/.

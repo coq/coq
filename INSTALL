@@ -1,12 +1,12 @@
 
-            INSTALLATION PROCEDURES FOR THE COQ V7.0 SYSTEM
-            ---------------------------------------------
+            INSTALLATION PROCEDURES FOR THE COQ V7.1 SYSTEM
+            -----------------------------------------------
 
 WHAT DO YOU NEED ?
 ==================
 
    Coq is designed to work on computers equipped with the Unix operating 
-   system. In order to compile Coq V7.0 you need:
+   system. In order to compile Coq V7.1 you need:
 
      - Objective Caml version 3.01 or later
        (available at http://caml.inria.fr/)
@@ -19,7 +19,6 @@ WHAT DO YOU NEED ?
    comes as a single compressed tar-file. You have probably already
    decompressed it if you are reading this document.
 
-   (beta version, tested and compiled only on i386 Linux)
 
 QUICK INSTALLATION PROCEDURE.
 =============================
@@ -33,7 +32,7 @@ QUICK INSTALLATION PROCEDURE.
 INSTALLATION PROCEDURE IN DETAILS (NORMAL USERS).
 =================================================
 
-1- Check that you have the Objective Caml compiler version 3.00 (or later)
+1- Check that you have the Objective Caml compiler version 3.01 (or later)
    installed on your computer and that "ocamlmktop" and "ocamlc" (or
    its native code version "ocamlc.opt") lie in a directory which is present
    in your $PATH environment variable. 
