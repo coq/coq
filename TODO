@@ -10,6 +10,7 @@ Environnement:
 - Que les Infix soit chargés lors d'un Require
 - Problème de compatibilité du mode implicite au discharge (avant, dépendait
   de l'état du mode à la création, maintenant, à la fermeture de la section)
+- ajouter "parsing" aux chemins par défaut (pour g_{nat,z}syntax.cmo)
 
 Tactiques
 
@@ -19,3 +20,7 @@ Tactiques
 Noyau:
 
 - Intégrer Let dans whd_* et les fonctions de tacred
+
+Theories:
+
+- remplacer Realizer par Refine ou autre chose dans TheoryList.v

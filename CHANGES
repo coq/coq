@@ -44,7 +44,6 @@ AstList), ou, si c'est dans une règle Syntax, utiliser la quotation
 
 - Bug affichage Infix corrigé
 
-
 Tactiques
 
 - Langage de tactique
@@ -61,4 +60,14 @@ Tactiques
   en général plus son nom (sauf dans les cas "simples"). Rem : c'est une
   source d'incompatibilité.
 
+Utilisation générale
 
+- La plupart des erreurs de typage sont maintenant localisée dans le
+  source (à l'exception des erreurs d'univers et de garde).
+
+- Rapidité accrue
+
+Développeurs
+
+- Beaucoup de modification dans le sens de la simplification et de la
+  documentation (mais cela reste une version de transition)
