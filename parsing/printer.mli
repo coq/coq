@@ -25,12 +25,13 @@ val fprtype_env     : 'a assumptions -> typed_type -> std_ppcmds
 val fprtype         : typed_type -> std_ppcmds
 
 val prrawterm       : Rawterm.rawconstr -> std_ppcmds
-val prpattern       : Rawterm.pattern -> std_ppcmds
+val prpattern       : Rawterm.cases_pattern -> std_ppcmds
 
 val pr_constant     : constant -> std_ppcmds
 val pr_existential  : existential -> std_ppcmds
 val pr_constructor  : constructor -> std_ppcmds
 val pr_inductive    : inductive -> std_ppcmds
+val pr_ref_label    : Rawterm.constr_label -> std_ppcmds
 
 val pr_ne_env       : std_ppcmds -> path_kind -> context -> std_ppcmds
 

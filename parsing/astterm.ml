@@ -90,7 +90,22 @@ let ident_of_nvar loc s =
     user_err_loc (loc,"ident_of_nvar", [< 'sTR "Unexpected wildcard" >])
   else (id_of_string s)
 
-let ids_of_ctxt = array_map_to_list (function VAR id -> id | _ -> assert false)
+let rctxt_of_ctxt =
+  Array.map
+    (function
+       | VAR id -> RRef (dummy_loc,RVar id)
+       | _ ->
+     error "Astterm: arbitrary substitution of references not yet implemented")
+
+let ids_of_ctxt ctxt =
+  Array.to_list
+    (Array.map
+       (function
+	  | VAR id -> id
+	  | _ ->
+      error
+	"Astterm: arbitrary substitution of references not yet implemented")
+    ctxt)
 
 let maybe_constructor env s =
   try 
@@ -100,11 +115,14 @@ let maybe_constructor env s =
   with Not_found -> 
     None
 
-let dbize_ctxt = 
-  List.map 
-    (function
-       | Nvar (loc,s) -> ident_of_nvar loc s
-       | _ -> anomaly "Bad ast for local ctxt of a global reference")
+let dbize_ctxt ctxt =
+  let l =
+    List.map
+      (function
+	 | Nvar (loc,s) -> RRef (dummy_loc,RVar (ident_of_nvar loc s))
+	 | _ -> anomaly "Bad ast for local ctxt of a global reference") ctxt
+  in
+  Array.of_list l
 
 let dbize_global loc = function
   | ("CONST", sp::ctxt) -> 
@@ -121,10 +139,10 @@ let dbize_global loc = function
 		      [< 'sTR "Bad ast for this global a reference">])
 
 let ref_from_constr = function
-  | DOPN (Const sp,ctxt) -> RConst (sp,ids_of_ctxt ctxt)
-  | DOPN (Evar ev,ctxt) -> REVar (ev,ids_of_ctxt ctxt) 
-  | DOPN (MutConstruct (spi,j),ctxt) -> RConstruct ((spi,j),ids_of_ctxt ctxt)
-  | DOPN (MutInd (sp,i),ctxt) -> RInd ((sp,i),ids_of_ctxt ctxt)
+  | DOPN (Const sp,ctxt) -> RConst (sp,rctxt_of_ctxt ctxt)
+  | DOPN (Evar ev,ctxt) -> REVar (ev,rctxt_of_ctxt ctxt) 
+  | DOPN (MutConstruct (spi,j),ctxt) -> RConstruct ((spi,j),rctxt_of_ctxt ctxt)
+  | DOPN (MutInd (sp,i),ctxt) -> RInd ((sp,i),rctxt_of_ctxt ctxt)
   | VAR id -> RVar id  (* utilisé dans trad pour coe_value (tmp) *)
   | _ -> anomaly "Not a reference"
 
@@ -373,18 +391,10 @@ let dbize k sigma =
   in 
   dbrec
 
-let dbize_cci sigma env com = dbize CCI sigma env com
-let dbize_fw  sigma env com = dbize FW sigma env com
-
 (* constr_of_com takes an environment of typing assumptions,
  * and translates a command to a constr. *)
 
-let interp_rawconstr sigma env com = dbize_cci sigma (unitize_env (context env)) com
-
-let raw_fconstr_of_com sigma env com = dbize_fw sigma (unitize_env (context env)) com
-let raw_constr_of_compattern sigma env com = 
-  dbize_cci sigma (unitize_env env) com
-
+let interp_rawconstr sigma env com = dbize CCI sigma (unitize_env (context env)) com
 
 (* Globalization of AST quotations (mainly used in command quotations
    to get statically bound idents in grammar or pretty-printing rules) *)
@@ -496,6 +506,12 @@ let typed_type_of_com sigma env com =
 let interp_casted_constr sigma env com typ = 
   ise_resolve_casted sigma env typ (interp_rawconstr sigma env com)
 
+(*
+let dbize_fw  sigma env com = dbize FW sigma env com
+
+let raw_fconstr_of_com sigma env com = dbize_fw sigma (unitize_env (context env)) com
+let raw_constr_of_compattern sigma env com = 
+  dbize_cci sigma (unitize_env env) com
 
 let fconstr_of_com1 is_ass sigma env com = 
   let c = raw_fconstr_of_com sigma env com in
@@ -507,7 +523,7 @@ let fconstr_of_com1 is_ass sigma env com =
 let fconstr_of_com sigma hyps com =
   fconstr_of_com1 false sigma hyps com 
 
-
+*)
 (* Typing with Trad, and re-checking with Mach *)
 (* Should be done in two passes by library commands ...
 let fconstruct_type sigma sign com =
@@ -544,47 +560,51 @@ let fconstruct_with_univ sigma sign com =
 let ctxt_of_ids ids =
   Array.of_list (List.map (function id -> VAR id) ids)
 
-let constr_of_ref vars = function
-  | RConst (sp,ids) -> DOPN (Const sp, ctxt_of_ids ids)
-  | RInd (ip,ids) -> DOPN (MutInd ip, ctxt_of_ids ids)
-  | RConstruct (cp,ids) -> DOPN (MutConstruct cp, ctxt_of_ids ids)
-  | RAbst sp -> DOPN (Abst sp, [||])
-  | RVar id -> 
-      (try Rel (list_index (Name id) vars) with Not_found -> VAR id)
-  | REVar (n,ids) -> DOPN (Evar n, ctxt_of_ids ids)
-  | RMeta n -> DOP0 (Meta n)
+let rec pat_of_ref metas vars = function
+  | RConst (sp,ctxt) -> RConst (sp, Array.map (pat_of_raw metas vars) ctxt)
+  | RInd (ip,ctxt) -> RInd (ip, Array.map (pat_of_raw metas vars) ctxt)
+  | RConstruct(cp,ctxt) ->RConstruct(cp,Array.map (pat_of_raw metas vars) ctxt)
+  | REVar (n,ctxt) -> REVar (n,Array.map (pat_of_raw metas vars) ctxt)
+  | RMeta n -> RMeta n
+  | RAbst _ -> error "pattern_of_rawconstr: not implemented"
+  | RVar _ -> assert false (* Capturé dans pattern_of_raw *)
 
-let constr_of_rawconstr c = 
-  let rec glob vars = function
-    | RRef (_,r) -> 
-	constr_of_ref vars r
-    | RApp (_,c,cl) -> 
-	let l = List.map (glob vars) (c::cl) in
-	DOPN (AppL, Array.of_list l)
-    | RBinder (_,BProd,na,c1,c2) ->
-	DOP2 (Prod, glob vars c1, DLAM (na, glob (na::vars) c2))
-    | RBinder (_,BLambda,na,c1,c2) ->
-	DOP2 (Lambda, glob vars c1, DLAM (na, glob (na::vars) c2))
-    | RSort (_,RProp c) ->
-	DOP0 (Sort (Prop c))
-    | RSort (_,RType) ->
-	DOP0 (Sort (Type (Univ.dummy_univ)))
-    | RHole _ -> 
-	DOP0 (Meta (new_meta()))
-    | RCast (_,c1,c2) ->
-	DOP2 (Cast, glob vars c1, glob vars c2)
-    | _ ->
-	error "constr_of_rawconstr: not implemented"
-  in
-  glob [] c
+and pat_of_raw metas vars = function
+  | RRef (_,RVar id) -> 
+      (try PRel (list_index (Name id) vars)
+       with Not_found -> PRef (RVar id))
+  | RRef (_,r) ->
+      PRef (pat_of_ref metas vars r)
+  | RApp (_,c,cl) -> 
+      PApp (pat_of_raw metas vars c,
+	    Array.of_list (List.map (pat_of_raw metas vars) cl))
+  | RBinder (_,bk,na,c1,c2) ->
+      PBinder (bk, na, pat_of_raw metas vars c1,
+	       pat_of_raw metas (na::vars) c2)
+  | RSort (_,s) ->
+      PSort s
+  | RHole _ -> error "Place-holders must be numbered in patterns"
+(*
+      let n = new_meta () in
+      metas := n::!metas;
+      PMeta n *)
+  | RCast (_,c,t) ->
+      warning "Cast not taken into account in constr pattern";
+      pat_of_raw metas vars c
+  | _ ->
+      error "pattern_of_rawconstr: not implemented"
 
-let constr_of_com_pattern sigma env com = 
+let pattern_of_rawconstr c =
+  let metas = ref [] in
+  let p = pat_of_raw metas [] c in
+  (!metas,p)
+
+let interp_constrpattern sigma env com = 
   let c = interp_rawconstr sigma env com in
   try 
-    constr_of_rawconstr c
+    pattern_of_rawconstr c
   with e -> 
     Stdpp.raise_with_loc (Ast.loc com) e
-
 
 (* Translation of reduction expression: we need trad because of Fold
  * Moreover, reduction expressions are used both in tactics and in

@@ -97,6 +97,13 @@ let pr_existential ev = gencompr CCI (ast_of_existential ev)
 let pr_inductive ind = gencompr CCI (ast_of_inductive ind)
 let pr_constructor cstr = gencompr CCI (ast_of_constructor cstr)
 
+open Rawterm
+let pr_ref_label = function (* On triche sur le contexte *)
+  | ConstNode sp -> pr_constant (sp,[||])
+  | IndNode sp -> pr_inductive (sp,[||])
+  | CstrNode sp -> pr_constructor (sp,[||])
+  | VarNode id -> print_id id
+
 (* For compatibility *)
 let term0 = prterm_env
 let fterm0 = fprterm_env

@@ -10,7 +10,7 @@ open Rawterm
 
 (* Translation of pattern, rawterm and term into syntax trees for printing *)
 
-val ast_of_pattern : pattern -> Coqast.t
+val ast_of_pattern : cases_pattern -> Coqast.t
 val ast_of_rawconstr : rawconstr -> Coqast.t
 val bdize : bool -> unit assumptions -> constr -> Coqast.t
 

@@ -19,7 +19,9 @@ val interp_type          : 'a evar_map -> env -> Coqast.t -> constr
 val typed_type_of_com    : 'a evar_map -> env -> Coqast.t -> typed_type
 val judgment_of_com      : 'a evar_map -> env -> Coqast.t -> unsafe_judgment
 
-val constr_of_com_pattern : 'a evar_map -> env -> Coqast.t -> constr
+val interp_constrpattern : 
+  'a evar_map -> env -> Coqast.t -> int list * constr_pattern
+
 val redexp_of_ast : 
   'a evar_map -> env -> string * Coqast.t list -> Tacred.red_expr
 
