@@ -7,7 +7,7 @@ open Libobject
 open Summary
 (*i*)
 
-(* This module provides a general mechanism to keep a trace of all operations
+(*s This module provides a general mechanism to keep a trace of all operations
    and to backtrack (undo) those operations. It provides also the section
    mechanism (at a low level; discharge is not known at this step). *)
 
@@ -28,6 +28,11 @@ and library_segment = library_entry list
 
 val add_leaf : identifier -> path_kind -> obj -> section_path
 val add_anonymous_leaf : obj -> unit
+
+
+(*s The function [contents_after] returns the current library segment, 
+    starting from a given section path. If not given, the entire segment
+    is returned. *)
 
 val contents_after : section_path option -> library_segment
 

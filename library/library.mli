@@ -1,7 +1,7 @@
 
 (* $Id$ *)
 
-(* This module is the heart of the library. It provides low level functions to
+(*s This module is the heart of the library. It provides low level functions to
    load, open and save modules. Modules are saved onto the disk with checksums
    (obtained with the [Digest] module), which are checked at loading time to
    prevent inconsistencies between files written at various dates. It also
@@ -31,6 +31,14 @@ val require_module : bool option -> string -> string option -> bool -> unit
   in the file [f]. *)
 
 val save_module_to : string -> string -> unit
+
+(*s [module_segment m] returns the segment of the loaded module
+    [m]; if not given, the segment of the current module is returned
+    (which is then the same as [Lib.contents_after None]). 
+    [module_filename] returns the full filename of a loaded module. *)
+
+val module_segment : string option -> Lib.library_segment
+val module_filename : string -> string
 
 (*s Global load path *)
 val get_load_path : unit -> string list
