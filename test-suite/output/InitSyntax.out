@@ -1,4 +1,4 @@
-Inductive sig2 [A : Set; P : A->Prop; Q : A->Prop]  : Set :=
+Inductive sig2 [A : Set; P : A->Prop; Q : A->Prop] : Set :=
       exist2 : (x:A)(P x)->(Q x)->(sig2 A P Q)
 (EX x:nat|x=x)
      : Prop
