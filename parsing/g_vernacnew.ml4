@@ -28,7 +28,7 @@ open Vernac_
 open Module
 
 
-let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:" ]
+let vernac_kw = [ ";"; ","; ">->"; ":<"; "<:"; "..." ]
 let _ = 
   if not !Options.v7 then
     List.iter (fun s -> Lexer.add_token ("",s)) vernac_kw
@@ -59,21 +59,17 @@ GEXTEND Gram
   ;
   vernac: LAST
     [ [ gln = OPT[n=natural; ":" -> n];
-        tac = subgoal_command; "." -> tac gln ] ]
+        tac = subgoal_command -> tac gln ] ]
   ;
   subgoal_command:
-    [ [ c = check_command -> c
-      | d = use_default_tac; tac = Tactic.tactic ->
+    [ [ c = check_command; "." -> c
+      | tac = Tactic.tactic; use_dft_tac = [ "." -> false | "..." -> true ] ->
           (fun g ->
             let g = match g with Some gl -> gl | _ -> 1 in
-            VernacSolve(g,tac,d)) ] ]
+            VernacSolve(g,tac,use_dft_tac)) ] ]
   ;
   located_vernac:
     [ [ v = vernac -> loc, v ] ]
-  ;
-  use_default_tac:
-    [ [ "!!" -> false 
-      | -> true ] ]
   ;
 END
 

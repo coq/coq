@@ -898,8 +898,9 @@ pr_vbinders bl ++ spc())
   | VernacSolve (i,tac,deftac) ->
       (if i = 1 then mt() else int i ++ str ": ") ++
 (*      str "By " ++*)
-      (if deftac then mt() else str "!! ") ++
       Options.with_option Options.translate_syntax (pr_raw_tactic_goal i) tac
+      ++ (if deftac & Pfedit.get_end_tac() <> None then str ".." else mt ())
+
   | VernacSolveExistential (i,c) ->
       str"Existential " ++ int i ++ pr_lconstrarg c
 
