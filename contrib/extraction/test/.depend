@@ -1,3 +1,7 @@
+theories/Arith/bool_nat.cmo: theories/Arith/compare_dec.cmo \
+    theories/Arith/peano_dec.cmo theories/Bool/sumbool.cmo 
+theories/Arith/bool_nat.cmx: theories/Arith/compare_dec.cmx \
+    theories/Arith/peano_dec.cmx theories/Bool/sumbool.cmx 
 theories/Arith/compare_dec.cmo: theories/Init/datatypes.cmo \
     theories/Init/specif.cmo 
 theories/Arith/compare_dec.cmx: theories/Init/datatypes.cmx \
@@ -158,68 +162,6 @@ theories/Lists/theoryList.cmo: theories/Init/datatypes.cmo \
     theories/Lists/polyList.cmo theories/Init/specif.cmo 
 theories/Lists/theoryList.cmx: theories/Init/datatypes.cmx \
     theories/Lists/polyList.cmx theories/Init/specif.cmx 
-theories/Reals/addReals.cmo: theories/ZArith/fast_integer.cmo \
-    theories/Reals/typeSyntax.cmo 
-theories/Reals/addReals.cmx: theories/ZArith/fast_integer.cmx \
-    theories/Reals/typeSyntax.cmx 
-theories/Reals/ranalysis.cmo: theories/Reals/rdefinitions.cmo 
-theories/Reals/ranalysis.cmx: theories/Reals/rdefinitions.cmx 
-theories/Reals/raxioms.cmo: theories/Init/datatypes.cmo \
-    theories/ZArith/fast_integer.cmo theories/Reals/rdefinitions.cmo 
-theories/Reals/raxioms.cmx: theories/Init/datatypes.cmx \
-    theories/ZArith/fast_integer.cmx theories/Reals/rdefinitions.cmx 
-theories/Reals/rbase.cmo: theories/Reals/addReals.cmo \
-    theories/Init/datatypes.cmo theories/Reals/raxioms.cmo \
-    theories/Reals/rdefinitions.cmo theories/Reals/typeSyntax.cmo \
-    theories/ZArith/zarith_aux.cmo 
-theories/Reals/rbase.cmx: theories/Reals/addReals.cmx \
-    theories/Init/datatypes.cmx theories/Reals/raxioms.cmx \
-    theories/Reals/rdefinitions.cmx theories/Reals/typeSyntax.cmx \
-    theories/ZArith/zarith_aux.cmx 
-theories/Reals/rbasic_fun.cmo: theories/Reals/rbase.cmo \
-    theories/Reals/rdefinitions.cmo theories/Reals/typeSyntax.cmo 
-theories/Reals/rbasic_fun.cmx: theories/Reals/rbase.cmx \
-    theories/Reals/rdefinitions.cmx theories/Reals/typeSyntax.cmx 
-theories/Reals/rfunctions.cmo: theories/Init/datatypes.cmo \
-    theories/ZArith/fast_integer.cmo theories/Arith/minus.cmo \
-    theories/Init/peano.cmo theories/Reals/rdefinitions.cmo 
-theories/Reals/rfunctions.cmx: theories/Init/datatypes.cmx \
-    theories/ZArith/fast_integer.cmx theories/Arith/minus.cmx \
-    theories/Init/peano.cmx theories/Reals/rdefinitions.cmx 
-theories/Reals/rgeom.cmo: theories/Reals/r_sqr.cmo theories/Reals/rbase.cmo \
-    theories/Reals/rdefinitions.cmo theories/Reals/rtrigo.cmo 
-theories/Reals/rgeom.cmx: theories/Reals/r_sqr.cmx theories/Reals/rbase.cmx \
-    theories/Reals/rdefinitions.cmx theories/Reals/rtrigo.cmx 
-theories/Reals/r_Ifp.cmo: theories/Reals/addReals.cmo \
-    theories/ZArith/fast_integer.cmo theories/Reals/raxioms.cmo \
-    theories/Reals/rdefinitions.cmo theories/ZArith/zarith_aux.cmo 
-theories/Reals/r_Ifp.cmx: theories/Reals/addReals.cmx \
-    theories/ZArith/fast_integer.cmx theories/Reals/raxioms.cmx \
-    theories/Reals/rdefinitions.cmx theories/ZArith/zarith_aux.cmx 
-theories/Reals/rlimit.cmo: theories/Reals/rbasic_fun.cmo \
-    theories/Reals/rdefinitions.cmo 
-theories/Reals/rlimit.cmx: theories/Reals/rbasic_fun.cmx \
-    theories/Reals/rdefinitions.cmx 
-theories/Reals/rseries.cmo: theories/Init/datatypes.cmo \
-    theories/Reals/rbasic_fun.cmo 
-theories/Reals/rseries.cmx: theories/Init/datatypes.cmx \
-    theories/Reals/rbasic_fun.cmx 
-theories/Reals/rsigma.cmo: theories/Init/datatypes.cmo \
-    theories/Reals/rdefinitions.cmo 
-theories/Reals/rsigma.cmx: theories/Init/datatypes.cmx \
-    theories/Reals/rdefinitions.cmx 
-theories/Reals/r_sqr.cmo: theories/Reals/rbase.cmo \
-    theories/Reals/rdefinitions.cmo 
-theories/Reals/r_sqr.cmx: theories/Reals/rbase.cmx \
-    theories/Reals/rdefinitions.cmx 
-theories/Reals/rtrigo.cmo: theories/Init/datatypes.cmo \
-    theories/Init/peano.cmo theories/Reals/raxioms.cmo \
-    theories/Reals/rdefinitions.cmo theories/Reals/rfunctions.cmo \
-    theories/Reals/rsigma.cmo 
-theories/Reals/rtrigo.cmx: theories/Init/datatypes.cmx \
-    theories/Init/peano.cmx theories/Reals/raxioms.cmx \
-    theories/Reals/rdefinitions.cmx theories/Reals/rfunctions.cmx \
-    theories/Reals/rsigma.cmx 
 theories/Relations/relation_Operators.cmo: theories/Lists/polyList.cmo \
     theories/Init/specif.cmo 
 theories/Relations/relation_Operators.cmx: theories/Lists/polyList.cmx \
@@ -232,6 +174,10 @@ theories/Sets/multiset.cmo: theories/Init/datatypes.cmo \
     theories/Init/peano.cmo theories/Init/specif.cmo 
 theories/Sets/multiset.cmx: theories/Init/datatypes.cmx \
     theories/Init/peano.cmx theories/Init/specif.cmx 
+theories/Sets/partial_Order.cmo: theories/Sets/ensembles.cmo \
+    theories/Sets/relations_1.cmo 
+theories/Sets/partial_Order.cmx: theories/Sets/ensembles.cmx \
+    theories/Sets/relations_1.cmx 
 theories/Sets/powerset.cmo: theories/Sets/partial_Order.cmo 
 theories/Sets/powerset.cmx: theories/Sets/partial_Order.cmx 
 theories/Sets/uniset.cmo: theories/Init/datatypes.cmo \
@@ -274,14 +220,24 @@ theories/ZArith/zArith_dec.cmo: theories/ZArith/fast_integer.cmo \
     theories/Init/specif.cmo theories/Bool/sumbool.cmo 
 theories/ZArith/zArith_dec.cmx: theories/ZArith/fast_integer.cmx \
     theories/Init/specif.cmx theories/Bool/sumbool.cmx 
+theories/ZArith/zbool.cmo: theories/Bool/sumbool.cmo \
+    theories/ZArith/zArith_dec.cmo theories/ZArith/zmisc.cmo 
+theories/ZArith/zbool.cmx: theories/Bool/sumbool.cmx \
+    theories/ZArith/zArith_dec.cmx theories/ZArith/zmisc.cmx 
 theories/ZArith/zcomplements.cmo: theories/Init/datatypes.cmo \
     theories/ZArith/fast_integer.cmo theories/Init/specif.cmo \
-    theories/ZArith/wf_Z.cmo theories/ZArith/zArith_dec.cmo \
-    theories/ZArith/zarith_aux.cmo 
+    theories/ZArith/wf_Z.cmo theories/ZArith/zarith_aux.cmo 
 theories/ZArith/zcomplements.cmx: theories/Init/datatypes.cmx \
     theories/ZArith/fast_integer.cmx theories/Init/specif.cmx \
-    theories/ZArith/wf_Z.cmx theories/ZArith/zArith_dec.cmx \
-    theories/ZArith/zarith_aux.cmx 
+    theories/ZArith/wf_Z.cmx theories/ZArith/zarith_aux.cmx 
+theories/ZArith/zdiv.cmo: theories/Init/datatypes.cmo \
+    theories/ZArith/fast_integer.cmo theories/Init/specif.cmo \
+    theories/ZArith/zArith_dec.cmo theories/ZArith/zarith_aux.cmo \
+    theories/ZArith/zmisc.cmo 
+theories/ZArith/zdiv.cmx: theories/Init/datatypes.cmx \
+    theories/ZArith/fast_integer.cmx theories/Init/specif.cmx \
+    theories/ZArith/zArith_dec.cmx theories/ZArith/zarith_aux.cmx \
+    theories/ZArith/zmisc.cmx 
 theories/ZArith/zlogarithm.cmo: theories/ZArith/fast_integer.cmo \
     theories/ZArith/zarith_aux.cmo 
 theories/ZArith/zlogarithm.cmx: theories/ZArith/fast_integer.cmx \
@@ -296,3 +252,9 @@ theories/ZArith/zpower.cmo: theories/Init/datatypes.cmo \
 theories/ZArith/zpower.cmx: theories/Init/datatypes.cmx \
     theories/ZArith/fast_integer.cmx theories/ZArith/zarith_aux.cmx \
     theories/ZArith/zmisc.cmx 
+theories/ZArith/zsqrt.cmo: theories/ZArith/fast_integer.cmo \
+    theories/Init/specif.cmo theories/ZArith/zArith_dec.cmo \
+    theories/ZArith/zarith_aux.cmo 
+theories/ZArith/zsqrt.cmx: theories/ZArith/fast_integer.cmx \
+    theories/Init/specif.cmx theories/ZArith/zArith_dec.cmx \
+    theories/ZArith/zarith_aux.cmx 
