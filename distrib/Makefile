@@ -62,7 +62,8 @@ tar-gz:
 	@echo -n Removing the maintenance files and doc...
 	@rm -rf ${COQPACKAGE}/doc
 	@rm -rf ${COQPACKAGE}/distrib
-	@rm -rf ${COQPACKAGE}/{KNOWN-BUGS,TODO,ANNONCE}
+#	@rm -rf ${COQPACKAGE}/KNOWN-BUGS
+	@rm -rf ${COQPACKAGE}/{TODO,ANNONCE,PROBLEMES}
 	@find ${COQPACKAGE} -name ".cvsignore" -exec rm {} \;
 	@echo done
 	@echo -n Building the tar.gz source package

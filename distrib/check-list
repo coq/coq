@@ -33,7 +33,7 @@ fi
 
 echo "Please answer y or n to questions"
 
-if grep $version $COQPACKAGE/src/meta/library.ml > /dev/null; then
+if grep $version $COQPACKAGE/library/library.ml > /dev/null; then
   echo "Found a reference to $version in library.ml..."
   echo "   ... I guess the magic numbers have been changed"
 else
