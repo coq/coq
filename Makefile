@@ -185,6 +185,9 @@ COQCCMO=$(CONFIG) toplevel/usage.cmo scripts/coqc.cmo
 $(COQC): $(COQCCMO) $(COQTOPBYTE) $(BESTCOQTOP)
 	$(OCAMLC) $(BYTEFLAGS) -o $@ -custom unix.cma $(COQCCMO) $(OSDEPLIBS)
 
+clean::
+	rm -f scripts/tolink.ml
+
 archclean::
 	rm -f $(COQTOPBYTE) $(COQTOPOPT) $(BESTCOQTOP) $(COQC) $(COQMKTOP)
 
