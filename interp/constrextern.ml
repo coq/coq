@@ -476,8 +476,7 @@ let stdlib = function
   | Some r -> 
       let dir,id = repr_path (sp_of_global r) in
       (is_coq_root (Lib.library_dp()) or is_coq_root dir)
-      && not (List.mem (string_of_id id) 
-        ["Zlength";"Zlength_correct";"eq_ind"])
+      && not (List.mem (string_of_id id) ["Zlength"])
   | None -> false
 
 let explicit_code imp q =
@@ -487,8 +486,8 @@ let explicit_code imp q =
 
 let is_hole = function CHole _ -> true | _ -> false
 
-let is_middle_hole a args =
-  is_hole a && not (List.for_all is_hole args)
+let is_significant_implicit a impl tail =
+  not (is_hole a) or (tail = [] & not (List.for_all is_status_implicit impl))
 
 (* Implicit args indexes are in ascending order *)
 (* inctx is useful only if there is a last argument to be deduced from ctxt *)
@@ -499,7 +498,7 @@ let explicitize loc inctx impl (cf,f) args =
         let tail = exprec (q+1) (args,impl) in
         let visible =
           (!print_implicits & !print_implicits_explicit_args) or 
-	  (not (is_middle_hole a args) &
+	  (is_significant_implicit a impl tail &
 	  (not (is_inferable_implicit inctx n imp) or
 	    (Options.do_translate() & not (stdlib cf))))
 	in
@@ -531,7 +530,7 @@ let rec skip_coercion dest_ref (f,args as app) =
 	    (match Classops.hide_coercion r with
 	       | Some n ->
 		   if n >= List.length args then app
-		   else (* We skip a coercion *)
+		   else (* We skip a coercion *) 
 		     let fargs = list_skipn n args in
 	       	     skip_coercion dest_ref (List.hd fargs,List.tl fargs)
 	       | None -> app)
