@@ -285,7 +285,7 @@ Section power_div_with_rest.
 Definition Zdiv_rest_aux :=
   [qrd:(Z*Z)*Z] 
   let (qr,d)=qrd in let (q,r)=qr in
-  (<Z*Z>Cases q of
+  (Cases q of
      ZERO => ` (0, r)`
    | (POS xH) => ` (0, d + r)`
    | (POS (xI n)) => ` ((POS n), d + r)`
