@@ -235,8 +235,8 @@ type matrix = equation list
 
 (* 1st argument of IsInd is the original ind before extracting the summary *)
 type tomatch_type =
-  | IsInd of constr * inductive_type
-  | NotInd of constr
+  | IsInd of types * inductive_type
+  | NotInd of constr option * types
 
 type dependency_in_rhs = DepInRhs | NotDepInRhs
 type dependency_on_previous = DepOnPrevious | NotDepOnPrevious
@@ -399,17 +399,22 @@ type 'a pattern_matching_problem =
 (************************************************************************)
 (* Utils *)
 
-let to_mutind env sigma t =
-  try IsInd (t,find_rectype env sigma t)
-  with Induc -> NotInd t
+let to_mutind env sigma c t =
+  match c with
+    | Some body -> NotInd (c,t)
+    | None ->
+        try IsInd (t,find_rectype env sigma t)
+        with Induc -> NotInd (c,t)
 
-let type_of_tomatch_type = function
-    IsInd (t,ind) -> t
-  | NotInd t -> t
+let mkDeclTomatch na = function
+  | IsInd (t,_) -> (na,None,t)
+  | NotInd (c,t) -> (na,c,t)
+
+let mkProdTomatch na t c = mkProd_or_LetIn (mkDeclTomatch na t) c
 
 let liftn_tomatch_type n depth = function
   | IsInd (t,ind) -> IsInd (liftn n depth t,liftn_inductive_type n depth ind)
-  | NotInd t -> NotInd (liftn n depth t)
+  | NotInd (c,t) -> NotInd (option_app (liftn n depth) c, liftn n depth t)
 
 let lift_tomatch_type n = liftn_tomatch_type n 1
 
@@ -418,7 +423,7 @@ let lift_tomatch n ((current,typ),info) =
 
 let substnl_tomatch v depth = function
   | IsInd (t,indt) -> IsInd (substnl v depth t,substnl_ind_type v depth indt)
-  | NotInd t -> NotInd (substnl v depth t)
+  | NotInd (c,t) -> NotInd (option_app (substnl v depth) c, substnl v depth t)
 
 let subst_tomatch (depth,c) = substnl_tomatch [c] depth
 
@@ -659,10 +664,11 @@ let get_names env sign eqns =
       (fun (l,avoid) d na ->
 	 let na =
 	   merge_name
-	     (fun (na,t) -> Name (next_name_away (named_hd env t na) avoid))
+	     (fun (na,_,t) -> Name (next_name_away (named_hd env t na) avoid))
 	     d na 
 	 in
-      (na::l,(out_name na)::avoid)) ([],allvars) (List.rev sign) names2 in
+         (na::l,(out_name na)::avoid))
+      ([],allvars) (List.rev sign) names2 in
   names4
 
 (************************************************************************)
@@ -737,7 +743,7 @@ let noccur_between_without_evar n m term =
 
 (* Infering the predicate *)
 let prepare_unif_pb typ cs =
-  let n = cs.cs_nargs in
+  let n = List.length (assums_of_rel_context cs.cs_args) in
   let (sign,p) = decompose_prod_n n typ in
 
   (* We may need to invert ci if its parameters occur in p *)
@@ -824,7 +830,7 @@ let rec unify_clauses k pv =
 *)
 
 let abstract_conclusion typ cs =
-  let n = cs.cs_nargs in
+  let n = List.length (assums_of_rel_context cs.cs_args) in
   let (sign,p) = decompose_prod_n n typ in
   lam_it p sign
 
@@ -916,8 +922,7 @@ let specialize_predicate_var = function
   | PrLetIn (tm,pred) -> subst_predicate tm pred
 
 let rec extract_predicate = function
-  | PrProd ((_,na,t),pred) ->
-      mkProd (na, type_of_tomatch_type t, extract_predicate pred)
+  | PrProd ((_,na,t),pred) -> mkProdTomatch na t (extract_predicate pred)
   | PrNotInd (Some c,pred) -> substl [c] (extract_predicate pred)
   | PrNotInd (None,pred) -> extract_predicate pred
   | PrLetIn ((args,Some c),pred) -> substl (c::(List.rev args)) (extract_predicate pred)
@@ -969,9 +974,9 @@ let weaken_predicate q pred =
 	  let pred = liftn_predicate (nletargs-1) (p+1) pred in 
 	  (* The current lift to refer to the y1...yn is now k+nletargs *)
 	  PrLetIn ((realargs, copt), weakrec (n-1) (nletargs+k) pred)
-      | PrProd ((dep,_,NotInd t),pred) ->
+      | PrProd ((dep,_,NotInd _),pred) ->
 	  (* Does copt occur in pred ? Does it need to be remembered ? *)
-	  let copt, p = if dep then Some (mkRel (q+k)), 1 else None, 0 in
+	  let copt, p = if dep then Some (mkRel (n+k)), 1 else None, 0 in
           (* PrNotInd is a binding iff copt <> None *)
 	  PrNotInd (copt, weakrec (n-1) (k+p) pred)
   in weakrec q 0 (lift_predicate q pred)
@@ -1087,18 +1092,18 @@ let build_branch current pb eqns const_info =
       pb.history in
 
   (* We find matching clauses *)
-  let cs_args = assums_of_rel_context const_info.cs_args in
+  let cs_args = (*assums_of_rel_context*) const_info.cs_args in
   let names = get_names pb.env cs_args eqns in
   let submat = List.map (fun (tms,eqn) -> prepend_pattern tms eqn) eqns in
   if submat = [] then
     raise_pattern_matching_error
       (dummy_loc, pb.env, NonExhaustive (complete_history history));
-  let typs = List.map2 (fun (_,t) na -> (na,t)) cs_args names in
+  let typs = List.map2 (fun (_,c,t) na -> (na,c,t)) cs_args names in
   let _,typs' =
     List.fold_right
-      (fun (na,t) (env,typs) ->
- 	 (push_rel_assum (na,t) env,
-	  ((na,to_mutind env (evars_of (pb.isevars)) t),t)::typs))
+      (fun (na,c,t as d) (env,typs) ->
+ 	 (push_rel d env,
+          ((na,to_mutind env (evars_of (pb.isevars)) c t),t)::typs))
       typs (pb.env,[]) in
   let tomatchs =
     List.fold_left2
@@ -1148,7 +1153,7 @@ let rec compile pb =
 and match_current pb (n,tm) =
   let ((current,typ),info) = lift_tomatch n tm in
   match typ with
-    | NotInd typ ->
+    | NotInd (_,typ) ->
 	check_all_variables typ pb.mat;
 	compile_aliases (shift_problem current pb)
     | IsInd (_,(IndType(indf,realargs) as indt)) ->
@@ -1178,8 +1183,7 @@ and compile_further pb firstnext rest =
   let nexts,future = pop_next_tomatchs [firstnext] rest in
   (* the next pattern to match is at the end of [nexts], it has ref (mkRel n)
      where n is the length of nexts *)
-  let sign =
-    List.map (fun ((na,t),_) -> (na,None,type_of_tomatch_type t)) nexts in
+  let sign = List.map (fun ((na,t),_) -> mkDeclTomatch na t) nexts in
   let currents =
     list_map_i
       (fun i ((na,t),(_,rhsdep)) ->
@@ -1361,7 +1365,7 @@ let coerce_row typing_fun isevars env cstropt tomatch =
 		 (loc_of_rawconstr tomatch) CCI env (evars_of isevars) j)
       | None -> 
 	  try IsInd (typ,find_rectype env (evars_of isevars) typ)
-	  with Induc -> NotInd typ
+	  with Induc -> NotInd (None,typ)
   in (j.uj_val,t)
 
 let coerce_to_indtype typing_fun isevars env matx tomatchl =
@@ -1409,7 +1413,7 @@ let build_initial_predicate env sigma isdep pred tomatchl =
   let decomp_lam_force p =
     match kind_of_term p with
       | IsLambda (_,_,c) -> c
-      | _ -> (* eta-expansion *) applist (lift 1 pred, [mkRel 1]) in
+      | _ -> (* eta-expansion *) applist (lift 1 p, [mkRel 1]) in
   let rec strip_and_adjust nargs pred =
     if nargs = 0 then
       if isdep then
