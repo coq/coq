@@ -1194,17 +1194,3 @@ let nf_ise1 sigma = strong (fun _ -> whd_ise1) empty_env sigma
 
 (* A form of [whd_ise1] with type "reduction_function" *)
 let whd_evar env = whd_ise1
-
-(* Same as whd_ise1, but replaces the remaining ISEVAR by Metavariables
- * Similarly we have is_fmachine1_metas and is_resolve1_metas *)
-
-let rec whd_ise1_metas sigma t = 
-  let t' = strip_outer_cast t in
-  match kind_of_term t' with
-  | IsEvar (ev,args as k) when Evd.in_dom sigma ev ->
-      if Evd.is_defined sigma ev then
-      	whd_ise1_metas sigma (existential_value sigma k)
-      else 
-	mkCast (mkMeta (new_meta()), existential_type sigma k)
-  | _ -> t'
-
