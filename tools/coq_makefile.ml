@@ -109,7 +109,8 @@ let standard sds =
   print "\t$(COQBIN)coq_makefile -f Make -o Makefile\n";
   print "\n";
   print "clean:\n";
-  print "\trm -f *.cmo *.cmi *.cmx *.o *.vo *.vi *~\n";
+  print "\trm -f *.cmo *.cmi *.cmx *.o *.vo *.vi *.g *~\n";
+  print "\trm -f all.ps all-gal.ps $(HTMLFILES) $(GHTMLFILES)\n";
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) clean)\n")
     sds;
