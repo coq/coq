@@ -51,6 +51,10 @@ Syntax constr
   | instantiation_one [ << (CONTEXT $a) >> ] -> [ $a ]
   | instantiation_many [ << (CONTEXT $a $b ($LIST $l)) >> ] ->
 	 [ (CONTEXT $b ($LIST $l)) ";" $a ]
+  | qualid [ << (QUALID $id ($LIST $l)) >> ] -> [ $id (FIELDS ($LIST $l)) ]
+  | fieldsnil [ << (FIELDS) >> ] -> [ ]
+  | fieldscons [ << (FIELDS $id ($LIST $l)) >> ] ->
+	 [ "." $id (FIELDS ($LIST $l)) ]
   ;
 
 (* Things parsed in command1 *)
