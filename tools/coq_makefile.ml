@@ -171,15 +171,9 @@ let variables l =
   -I $(COQTOP)/proofs -I $(COQTOP)/syntax -I $(COQTOP)/tactics \\
   -I $(COQTOP)/toplevel -I $(CAMLP4LIB)\n";
   print "ZFLAGS=$(OCAMLLIBS) $(COQSRC)\n";
-  if !opt="-opt" then
-    print "COQFLAGS=-q $(OPT) $(COQLIBS)\n"
-  else begin
-    print "OPTCOQ=";
-    print "$(OPT:-opt="; print !opt; print ")\n";
-    print "COQFLAGS=-q $(OPTCOQ) $(COQLIBS)\n"
-  end;
+  print "OPT="; if !opt = "-byte" then print "-byte"; print "\n";
+  print "COQFLAGS=-q $(OPT) $(COQLIBS)\n";
   print "COQC=$(COQBIN)coqc\n";
-  print "COQFULL=$(COQBIN)coqc $(FULLOPT) -q $(COQLIBS)\n";
   print "GALLINA=gallina\n";
   print "COQ2HTML=coq2html\n";
   print "COQ2LATEX=coq2latex\n";
