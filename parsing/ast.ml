@@ -168,6 +168,7 @@ let check_cast loc a k =
 let rec coerce_to_var v = function
   | Nvar(_,id) -> id
   | Node(_,"QUALID",[Nvar(_,id)]) -> id
+  | Node(_,"QUALIDARG",[Nvar(_,id)]) -> id
   | ast -> user_err_loc
         (loc ast,"Ast.coerce_to_var",
          [< 'sTR"This expression should be a simple identifier" >])
