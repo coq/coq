@@ -151,6 +151,7 @@ val matrix_transpose : 'a list list -> 'a list list
 
 (*s Functions. *)
 
+val identity : 'a -> 'a
 val compose : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
 val iterate : ('a -> 'a) -> int -> 'a -> 'a
 val repeat : int -> ('a -> unit) -> 'a -> unit

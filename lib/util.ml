@@ -513,6 +513,8 @@ let matrix_transpose mat =
 
 (* Functions *)
 
+let identity x = x
+
 let compose f g x = f (g x)
 
 let iterate f = 
