@@ -179,10 +179,10 @@ let declare_tactic loc s cl =
       try
        Refiner.add_tactic $se'$ (fun [ $list:make_clauses s' cl'$ ])
       with e -> Pp.pp (Cerrors.explain_exn e);
-      Egrammar.extend_tactic_grammar $se'$ $gl'$;
+      if Options.v7.val then Egrammar.extend_tactic_grammar $se'$ $gl$
+      else Egrammar.extend_tactic_grammar $se'$ $gl'$;
       let pp' = fun [ $list:pl'$ ] in
       Pptactic.declare_extra_tactic_pprule True $se'$ pp';
-      Egrammar.extend_tactic_grammar $se'$ $gl$;
       let pp = fun [ $list:pl$ ] in
       Pptactic.declare_extra_tactic_pprule False $se'$ pp;
     end
