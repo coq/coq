@@ -22,6 +22,8 @@ Fixpoint fact [n:nat]:nat:=
     |(S n) => (mult (S n) (fact n))
   end.
 
+Arguments Scope fact [ nat_scope ].
+
 Lemma lt_O_fact : (n:nat)(lt O (fact n)).
 Proof.
 Induction n; Unfold lt; Simpl; Auto with arith.
