@@ -20,6 +20,7 @@ open Instantiate
 open Miniml
 open Mlutil
 open Closure
+open Summary
 
 (*s Extraction results. *)
 
@@ -279,6 +280,21 @@ let lookup_constructor_extraction i = Gmap.find i !constructor_extraction_table
 let constant_table = 
   ref (Gmap.empty : (section_path, extraction_result) Gmap.t)
 
+(* Tables synchronization. *)
+
+let freeze () =
+  !inductive_extraction_table, !constructor_extraction_table, !constant_table
+
+let unfreeze (it,cst,ct) =
+  inductive_extraction_table := it;
+  constructor_extraction_table := cst;
+  constant_table := ct
+
+let _ = declare_summary "Extraction tables"
+	  { freeze_function = freeze;
+	    unfreeze_function = unfreeze;
+	    init_function = (fun () -> ());
+	    survive_section = true }
 
 (*s Extraction of a type. *)
 
@@ -338,10 +354,10 @@ and extract_type_rec_info env vl c args =
 	if is_arity env Evd.empty cty then
 	  (match extract_constant sp with 
 	     | Emltype (Miniml.Tarity,_,_) -> Tarity
-	       | Emltype (Miniml.Tprop,_,_) -> Tprop
-	       | Emltype (mlt, sc, vlc) ->  
-		   extract_type_app env vl (ConstRef sp,sc,vlc) args 
-	       | Emlterm _ -> assert false) 
+	     | Emltype (Miniml.Tprop,_,_) -> Tprop
+	     | Emltype (mlt, sc, vlc) ->  
+		 extract_type_app env vl (ConstRef sp,sc,vlc) args 
+	     | Emlterm _ -> assert false) 
 	else begin
 	  (* We can't keep as ML type abbreviation a CIC constant 
 	     which type is not an arity: we reduce this constant. *)

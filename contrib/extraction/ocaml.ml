@@ -163,6 +163,11 @@ let rec pp_type par t =
     de Bruijn variables. [args] is the list of collected arguments
     (already pretty-printed). *)
 
+let expr_needs_par = function
+  | MLlam _  -> true
+  | MLcase _ -> true
+  | _        -> false 
+
 let rec pp_expr par env args = 
   let apply st = match args with
     | [] -> st
@@ -186,10 +191,15 @@ let rec pp_expr par env args =
           apply [< 'sTR "("; st; 'sTR ")" >]
     | MLletin (id,a1,a2) ->
 	let id',env' = push_vars [id] env in
-	hOV 0 [< hOV 2 [< 'sTR "let "; pr_id (List.hd id'); 'sTR " ="; 'sPC;
-			  pp_expr false env [] a1; 'sPC; 'sTR "in" >];
-		 'sPC;
-		 pp_expr false env' [] a2 >] 
+	let par' = par || args <> [] in
+	let par2 = not par' && expr_needs_par a2 in
+	apply 
+	  (hOV 0 [< open_par par';
+		    hOV 2 [< 'sTR "let "; pr_id (List.hd id'); 'sTR " ="; 'sPC;
+			     pp_expr false env [] a1; 'sPC; 'sTR "in" >];
+		    'sPC;
+		    pp_expr par2 env' [] a2;
+		    close_par par' >])
     | MLglob r -> 
 	apply (pp_global r)
     | MLcons (r,_,[]) ->
@@ -226,11 +236,7 @@ let rec pp_expr par env args =
 and pp_pat env pv = 
   let pp_one_pat (name,ids,t) =
     let ids,env' = push_vars (List.rev ids) env in
-    let par = match t with
-      | MLlam _  -> true
-      | MLcase _ -> true
-      | _        -> false 
-    in
+    let par = expr_needs_par t in
     hOV 2 [< pp_global name;
 	     begin match ids with 
 	       | [] -> [< >]
