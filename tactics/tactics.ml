@@ -1143,32 +1143,39 @@ let induct_discharge old_style mind statuslists cname destopt avoid ra gl =
   let (lstatus,rstatus) = statuslists in
   let tophyp = ref None in
   let n = List.fold_left (fun n b -> if b then n+1 else n) 0 ra in
-  let recvarname =
-(*    if n=1 then *)
-      cname
-(*    else (* To force renumbering if there is only one *)
-      make_ident (string_of_id cname) (Some 1)*)
-  in
-  let indhyp = if old_style then "Hrec" else "IH" in
-  let hyprecname =
-    add_prefix indhyp 
-      (if old_style || atompart_of_id cname <> "H" then cname
-       else (snd (Global.lookup_inductive mind)).mind_typename)
-  in
-  let avoid =
-    if n=1
-      or old_style (* for compatibility *)
-      or n=0
-(*            & atompart_of_id cname <> "H" (* for compatibility *)*)
-    then avoid (* Rem: n=0 if Desctruct *)
-    else (* Forbid to use cname, cname0, hyprecname and hyprecname0 *)
+  let recvarname, hyprecname, avoid =
+    if old_style (* = V6.3 version of Induction on hypotheses *)
+    then
+      let recvarname =
+        if n=1 then 
+          cname
+        else (* To force renumbering if there is only one *)
+          make_ident (string_of_id cname) (Some 1) in
+      recvarname, add_prefix "Hrec" recvarname, avoid
+    else
+      let hyprecname =
+        add_prefix "IH"
+          (if atompart_of_id cname <> "H" 
+           then cname
+           else (snd (Global.lookup_inductive mind)).mind_typename) in
       let avoid =
-        (make_ident (string_of_id cname) (Some 0)) :: (* here for compat *)
-        (make_ident (string_of_id hyprecname) None) ::
-        (make_ident (string_of_id hyprecname) (Some 0)) :: avoid in
-      if atompart_of_id cname <> "H" then
-        (make_ident (string_of_id cname) None) :: avoid 
-      else avoid in
+        if n=1 (* Only one recursive argument *)
+          or 
+          (* Rem: no recursive argument (especially if Destruct) *)
+          n=0 (* & atompart_of_id cname <> "H" (* for 7.1 compatibility *)*)
+        then avoid
+        else
+          (* Forbid to use cname, cname0, hyprecname and hyprecname0 *)
+          (* in order to get names such as f1, f2, ... *)
+          let avoid =
+            (make_ident (string_of_id cname) (Some 0)) ::(*here for 7.1 cmpat*)
+            (make_ident (string_of_id hyprecname) None) ::
+            (make_ident (string_of_id hyprecname) (Some 0)) :: avoid in
+          if atompart_of_id cname <> "H" then
+            (make_ident (string_of_id cname) None) :: avoid 
+          else avoid in
+      cname, hyprecname, avoid
+  in
   let rec peel_tac = function
     | true :: ra' ->
 		 (* For lstatus but _buggy_: if intro_gen renames
