@@ -58,6 +58,4 @@ val iter_all_segments : bool -> (section_path -> obj -> unit) -> unit
 (*s Global load path *)
 val get_load_path : unit -> System.load_path
 val add_load_path_entry : System.load_path_entry -> unit
-val add_path : unix_path:string -> coq_root:dir_path -> unit
-val rec_add_path : unix_path:string -> coq_root:dir_path -> unit
 val remove_path : string -> unit

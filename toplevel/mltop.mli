@@ -35,7 +35,12 @@ val dir_ml_load : string -> unit
 val dir_ml_use : string -> unit
 
 (*Adds a path to the ML paths*)
-val dir_ml_dir : string -> unit
+val add_ml_dir : string -> unit
+val add_rec_ml_dir : string -> unit
+
+(*Adds a path to the Coq and ML paths*)
+val add_path : unix_path:string -> coq_root:Names.dir_path -> unit
+val add_rec_path : unix_path:string -> coq_root:Names.dir_path -> unit
 
 val add_init_with_state : (unit -> unit) -> unit
 val init_with_state : unit -> unit

@@ -15,7 +15,7 @@ open Vernacinterp
    \item [dir_ml_load name]: Loads the ML module fname from the current ML 
      path. 
    \item [dir_ml_use]: Directive #use of Ocaml toplevel
-   \item [dir_ml_dir]: Directive #directory of Ocaml toplevel
+   \item [add_ml_dir]: Directive #directory of Ocaml toplevel
    \end{itemize}
  
    How to build an ML module interface with these functions.
@@ -117,15 +117,41 @@ let dir_ml_use s =
     | _ -> warning "Cannot access the ML compiler"
 
 (* Adds a path to the ML paths *)
-let dir_ml_dir s =
+let add_ml_dir s =
   match !load with
     | WithTop t -> t.add_dir s; keep_copy_mlpath s
     | WithoutTop -> keep_copy_mlpath s
     | _ -> ()
 
 (* For Rec Add ML Path *)
-let rdir_ml_dir dir = 
-  List.iter (fun lpe -> dir_ml_dir lpe.directory) (all_subdirs dir None)
+let add_rec_ml_dir dir = 
+  List.iter (fun lpe -> add_ml_dir lpe.directory) (all_subdirs dir None)
+
+(* Adding files to Coq and ML loadpath *)
+
+let add_path dir coq_dirpath =
+  if coq_dirpath = [] then anomaly "add_path: empty path in library";
+  if exists_dir dir then
+    begin
+      add_ml_dir dir;
+      Library.add_load_path_entry
+	{ directory = dir; coq_dirpath = coq_dirpath };
+      Nametab.push_library_root (List.hd coq_dirpath)
+    end
+  else
+    wARNING [< 'sTR ("Cannot open " ^ dir) >]
+
+let add_rec_path dir coq_dirpath =
+  if coq_dirpath = [] then anomaly "add_path: empty path in library";
+  let dirs = all_subdirs dir (Some coq_dirpath) in
+  if dirs <> [] then
+    begin
+      List.iter (fun lpe -> add_ml_dir lpe.directory) dirs;
+      List.iter Library.add_load_path_entry dirs;
+      Nametab.push_library_root (List.hd coq_dirpath)
+    end
+    else
+      wARNING [< 'sTR ("Cannot open " ^ dir) >]
 
 (* convertit un nom quelconque en nom de fichier ou de module *) 
 let mod_of_name name =
@@ -240,41 +266,9 @@ let print_ml_path () =
   pPNL [< 'sTR"ML Load Path:"; 'fNL; 'sTR"  ";
           hV 0 (prlist_with_sep pr_fnl (fun e -> [< 'sTR e.directory >]) l) >]
 
-let _ = vinterp_add "DeclareMLModule"
-	  (fun l ->
-	     let sl = 
-	       List.map 
-		 (function 
-		    | (VARG_STRING s) -> s 
-		    | _ -> anomaly "DeclareMLModule : not a string") l
-	     in
-    	     fun () -> declare_ml_modules sl)
-	  
-let _ = vinterp_add "AddMLPath"
-	  (function 
-	     | [VARG_STRING s] ->
-		 (fun () -> dir_ml_dir (glob s))
-	     | _ -> anomaly "AddMLPath : not a string")
-
-let _ = vinterp_add "RecAddMLPath"
-	  (function 
-	     | [VARG_STRING s] ->
-		 (fun () -> rdir_ml_dir (glob s))
-	     | _ -> anomaly "RecAddMLPath : not a string")
-
-let _ = vinterp_add "PrintMLPath"
-	  (function 
-	     | [] -> (fun () -> print_ml_path ())
-	     | _ -> anomaly "PrintMLPath : does not expect any argument")
-
 	  (* Printing of loaded ML modules *)
 	  
 let print_ml_modules () =
   let l = get_loaded_modules () in
   pP [< 'sTR"Loaded ML Modules : " ;
         hOV 0 (prlist_with_sep pr_fnl (fun s -> [< 'sTR s >]) l); 'fNL >]
-
-let _ = vinterp_add "PrintMLModules"
-	  (function 
-	     | [] -> (fun () -> print_ml_modules ())
-	     | _ -> anomaly "PrintMLModules : does not expect an argument")

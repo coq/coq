@@ -32,6 +32,7 @@ open Tacinterp
 open Tactic_debug
 open Command
 open Goptions
+open Mltop
 
 (* Dans join_binders, s'il y a un "?", on perd l'info qu'il est partagé *)
 let join_binders binders = 
@@ -197,10 +198,10 @@ let _ =
 	   let alias = Filename.basename dir in
 	   if alias = "" then
 	     error ("Cannot map "^dir^" to a root of Coq library");
-	   (fun () -> rec_add_path dir [alias])
+	   (fun () -> add_rec_path dir [alias])
        | [VARG_STRING dir ; VARG_QUALID alias] ->
            let aliasdir,aliasname = repr_qualid alias in
-	    (fun () -> rec_add_path dir (aliasdir@[aliasname]))
+	    (fun () -> add_rec_path dir (aliasdir@[aliasname]))
        | _ -> bad_vernac_args "RECADDPATH")
 
 (* For compatibility *)
@@ -562,7 +563,7 @@ let _ =
   add "SaveNamed"
     (function 
        | [] -> 
-	   (fun () -> if not(is_silent()) then show_script(); save_named true)
+	   (fun () -> if not(is_silent()) then show_script(); save_named false)
        | _ -> bad_vernac_args "SaveNamed")
 
 let _ =
@@ -1738,3 +1739,37 @@ let _ =
 	  if subtree_solved () then 
 	    (reset_top_of_tree (); print_subgoals()) 
        ))
+
+(* Coq syntax for ML commands *)
+
+let _ = vinterp_add "DeclareMLModule"
+	  (fun l ->
+	     let sl = 
+	       List.map 
+		 (function 
+		    | (VARG_STRING s) -> s 
+		    | _ -> anomaly "DeclareMLModule : not a string") l
+	     in
+    	     fun () -> declare_ml_modules sl)
+	  
+let _ = vinterp_add "AddMLPath"
+	  (function 
+	     | [VARG_STRING s] ->
+		 (fun () -> add_ml_dir (glob s))
+	     | _ -> anomaly "AddMLPath : not a string")
+
+let _ = vinterp_add "RecAddMLPath"
+	  (function 
+	     | [VARG_STRING s] ->
+		 (fun () -> add_rec_ml_dir (glob s))
+	     | _ -> anomaly "RecAddMLPath : not a string")
+
+let _ = vinterp_add "PrintMLPath"
+	  (function 
+	     | [] -> (fun () -> print_ml_path ())
+	     | _ -> anomaly "PrintMLPath : does not expect any argument")
+
+let _ = vinterp_add "PrintMLModules"
+	  (function 
+	     | [] -> (fun () -> print_ml_modules ())
+	     | _ -> anomaly "PrintMLModules : does not expect an argument")
