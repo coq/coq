@@ -27,7 +27,9 @@ let process_pending () =
 let debug = Options.debug
 
 let prerr_endline s =
-  if !debug then (prerr_endline s;flush stderr) else ()
+  if !debug then (prerr_endline s;flush stderr)
+let prerr_string s =
+  if !debug then (prerr_string s;flush stderr)
 
 let print_id id =
   prerr_endline ("GOT sig id :"^(string_of_int (Obj.magic id)))

@@ -95,7 +95,7 @@ module Vector = struct
   let exists f t =
     let l = Array.length !t in
     let rec test i = 
-      i < l && (!t.(i) = None || f (out_some !t.(i)) || test (i+1)) 
+      i < l && ((!t.(i) <> None && f (out_some !t.(i))) || test (i+1)) 
     in 
     test 0
 end
@@ -1199,7 +1199,9 @@ let main files =
   in
   let has_something_to_save () = 
     Vector.exists
-      (fun {view=view} -> view#buffer#modified)
+      (function 
+	 | {view=view} -> view#buffer#modified        
+	 )
       input_views
   in
   ignore (saveall_m#connect#activate saveall_f);

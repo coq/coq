@@ -1,0 +1,55 @@
+			CoqIde Installation procedure.
+
+CoqIde is a graphical interface to perform interactive proofs.
+You should be able to do everything you do in coqtop inside CoqIde 
+excepted dropping to the ml toplevel.
+
+DISCLAIMER: CoqIde is ongoing work. Eventhough it should never let you
+	    loose a proof, you may encounter unexpected bugs.
+ 	    Do not hesitate to send suggestions/bug reports.
+
+REQUIREMENT:
+	- make world must succeed.
+	- The graphical toolkit Gtk 2.x. See http://www.gtk.org.
+	  The official supported version is at least 2.2.x.
+	  You may still compile CoqIde with older 2.0.x versions and 
+          use all features.
+	  Run 
+		"pkg-config --modversion gtk+-2.0"
+	  to check your version.
+	 All recent distributions have precompiled packages.
+	 Do not forget to install the developement headers packages.
+	 As for Debian/woody, 
+		apt-get install libgtk2.0-dev 
+	 should be enough.
+
+INSTALLATION
+ 1) You need to install the OCaml stub library lablgtk2. See 
+       		http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html
+	  The official snapshot are not yet ready for CoqIde.
+	  Use this one :
+		http://www.lix.polytechnique.fr/~monate/download/lablgtk2.tgz
+    If you are in a hurry just run :
+    
+    cd /tmp && \
+    wget http://www.lix.polytechnique.fr/~monate/download/lablgtk2.tgz && \
+    tar zxvf lablgtk2.tgz && \
+    cd lablgtk2 && \
+    make configure && \
+    make all opt && \
+    make install
+
+   You must have write access to the OCaml standard library path.
+   If this fails read lablgtk2/README.
+
+2) Go into your Coq source directory and then : 
+
+   make ide
+
+3) You may now run bin/coqide.opt or bin/coqide.byte.
+
+NOTES
+Font configuration is not saved.
+If you want to change the defaults fonts, just copy the
+.coqiderc file located in the ide subdir of the Coq library to
+your home directory and edit it by hand.

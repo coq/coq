@@ -93,7 +93,7 @@ let print_toplevel_error exc =
 let process_exn e = let s,loc=print_toplevel_error e in (msgnl s,loc)
 
 let interp_last last = 
-  prerr_string "*"; flush stderr;
+  prerr_string "*";
   try
     vernac_com (States.with_heavy_rollback Vernacentries.interp) last
   with e ->

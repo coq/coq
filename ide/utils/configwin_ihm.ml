@@ -15,6 +15,7 @@ open Configwin_types
 
 module O = Uoptions
 
+
 (** The file where the html config is. *)
 let file_html_config = Filename.concat Configwin_messages.home ".configwin_html"
   
@@ -36,6 +37,7 @@ let html_config_file_and_option () =
   in
   O.load ini ;
   (ini, bindings)
+
 
 (** This variable contains the last directory where the user selected a file.*)
 let last_dir = ref "";;
