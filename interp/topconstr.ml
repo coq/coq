@@ -48,8 +48,8 @@ type aconstr =
   | ACast of aconstr * aconstr
   
 let name_app f e = function
-  | Name id -> let (id, e) = f id e in (Name id, e)
-  | Anonymous -> Anonymous, e
+  | Name id -> let (id, e) = f id e in (e, Name id)
+  | Anonymous -> e,Anonymous
 
 let rec subst_rawvars l = function
   | RVar (_,id) as r -> (try List.assoc id l with Not_found -> r)
@@ -67,11 +67,11 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
       let outerl = (ldots_var,inner)::(if swap then [x,RVar(loc,y)] else []) in
       subst_rawvars outerl it
   | ALambda (na,ty,c) ->
-      let na,e = name_app g e na in RLambda (loc,na,f e ty,f e c)
+      let e,na = name_app g e na in RLambda (loc,na,f e ty,f e c)
   | AProd (na,ty,c) ->
-      let na,e = name_app g e na in RProd (loc,na,f e ty,f e c)
+      let e,na = name_app g e na in RProd (loc,na,f e ty,f e c)
   | ALetIn (na,b,c) ->
-      let na,e = name_app g e na in RLetIn (loc,na,f e b,f e c)
+      let e,na = name_app g e na in RLetIn (loc,na,f e b,f e c)
   | ACases (tyopt,rtntypopt,tml,eqnl) ->
       let cases_predicate_names tml =
 	List.flatten (List.map (function
@@ -79,7 +79,7 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
 	  | (tm,(na,Some (_,nal))) -> na::nal) tml) in
       (* TODO: apply g to na (in fact not used) *)
       let e' = List.fold_right
-	(fun na e -> snd (name_app g e na)) (cases_predicate_names tml) e in
+	(fun na e -> fst (name_app g e na)) (cases_predicate_names tml) e in
       let fold id (idl,e) = let (id,e) = g id e in (id::idl,e) in
       let eqnl = List.map (fun (idl,pat,rhs) ->
         let (idl,e) = List.fold_right fold idl ([],e) in (loc,idl,pat,f e rhs)) eqnl in
@@ -89,8 +89,11 @@ let rawconstr_of_aconstr_with_binders loc g f e = function
   | AOrderedCase (b,tyopt,tm,bv) ->
       ROrderedCase (loc,b,option_app (f e) tyopt,f e tm,Array.map (f e) bv,ref None)
   | ALetTuple (nal,(na,po),b,c) ->
+      let e,nal = list_fold_map (name_app g) e nal in 
+      let e,na = name_app g e na in
       RLetTuple (loc,nal,(na,option_app (f e) po),f e b,f e c)
   | AIf (c,(na,po),b1,b2) ->
+      let e,na = name_app g e na in
       RIf (loc,f e c,(na,option_app (f e) po),f e b1,f e b2)
   | ACast (c,t) -> RCast (loc,f e c,f e t)
   | ASort x -> RSort (loc,x)
@@ -271,8 +274,11 @@ let aconstr_and_vars_of_rawconstr a =
   | ROrderedCase (_,b,tyopt,tm,bv,_) ->
       AOrderedCase (b,option_app aux tyopt,aux tm, Array.map aux bv)
   | RLetTuple (loc,nal,(na,po),b,c) ->
+      add_name bound_binders na;
+      List.iter (add_name bound_binders) nal;
       ALetTuple (nal,(na,option_app aux po),aux b,aux c)
   | RIf (loc,c,(na,po),b1,b2) ->
+      add_name bound_binders na;
       AIf (aux c,(na,option_app aux po),aux b1,aux b2)
   | RCast (_,c,t) -> ACast (aux c,aux t)
   | RSort (_,s) -> ASort s
@@ -358,6 +364,18 @@ let bind_env sigma var v =
     (* TODO: handle the case of multiple occs in different scopes *)
     (var,v)::sigma
 
+let match_opt f sigma t1 t2 = match (t1,t2) with
+  | None, None -> sigma
+  | Some t1, Some t2 -> f sigma t1 t2
+  | _ -> raise No_match
+
+let match_names metas (alp,sigma) na1 na2 = match (na1,na2) with
+  | (Name id1,Name id2) when List.mem id2 metas ->
+      alp, bind_env sigma id2 (RVar (dummy_loc,id1))
+  | (Name id1,Name id2) -> (id1,id2)::alp,sigma
+  | (Anonymous,Anonymous) -> alp,sigma
+  | _ -> raise No_match
+
 let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
   | r1, AVar id2 when List.mem id2 metas -> bind_env sigma id2 r1
   | RVar (_,id1), AVar id2 when alpha_var id1 id2 alp -> sigma
@@ -369,11 +387,11 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
       when List.length l1 = List.length l2 ->
       match_alist alp metas sigma (f1::l1) (f2::l2) x iter termin lassoc
   | RLambda (_,na1,t1,b1), ALambda (na2,t2,b2) ->
-     match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
+     match_binders alp metas na1 na2 (match_ alp metas sigma t1 t2) b1 b2
   | RProd (_,na1,t1,b1), AProd (na2,t2,b2) ->
-     match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
+     match_binders alp metas na1 na2 (match_ alp metas sigma t1 t2) b1 b2
   | RLetIn (_,na1,t1,b1), ALetIn (na2,t2,b2) ->
-     match_binders alp metas (match_ alp metas sigma t1 t2) b1 b2 na1 na2
+     match_binders alp metas na1 na2 (match_ alp metas sigma t1 t2) b1 b2
   | RCases (_,(po1,rtno1),tml1,eqnl1), ACases (po2,rtno2,tml2,eqnl2) 
       when List.length tml1 = List.length tml2 ->
      let sigma = option_fold_left2 (match_ alp metas) sigma po1 po2 in
@@ -385,6 +403,16 @@ let rec match_ alp metas sigma a1 a2 = match (a1,a2) with
       when Array.length bl1 = Array.length bl2 ->
      let sigma = option_fold_left2 (match_ alp metas) sigma po1 po2 in
      array_fold_left2 (match_ alp metas) (match_ alp metas sigma c1 c2) bl1 bl2
+  | RIf (_,a1,(na1,to1),b1,c1), AIf (a2,(na2,to2),b2,c2) ->
+      let sigma = match_opt (match_binders alp metas na1 na2) sigma to1 to2 in
+      List.fold_left2 (match_ alp metas) sigma [a1;b1;c1] [a2;b2;c2]
+  | RLetTuple (_,nal1,(na1,to1),b1,c1), ALetTuple (nal2,(na2,to2),b2,c2) 
+      when List.length nal1 = List.length nal2 ->
+      let sigma = match_opt (match_binders alp metas na1 na2) sigma to1 to2 in
+      let sigma = match_ alp metas sigma b1 b2 in
+      let (alp,sigma) =
+	List.fold_left2 (match_names metas) (alp,sigma) nal1 nal2 in
+      match_ alp metas sigma c1 c2
   | RCast(_,c1,t1), ACast(c2,t2) ->
       match_ alp metas (match_ alp metas sigma c1 c2) t1 t2
   | RSort (_,s1), ASort s2 when s1 = s2 -> sigma
@@ -415,13 +443,9 @@ and match_alist alp metas sigma l1 l2 x iter termin lassoc =
   let tl,sigma = match_alist_tail alp metas sigma [t1] rest in
   (x,encode_list_value (if lassoc then List.rev tl else tl))::sigma
 
-and match_binders alp metas sigma b1 b2 na1 na2 = match (na1,na2) with
-  | (Name id1,Name id2) when List.mem id2 metas ->
-      let sigma = bind_env sigma id2 (RVar (dummy_loc,id1)) in 
-      match_ alp metas sigma b1 b2
-  | (Name id1,Name id2) -> match_ ((id1,id2)::alp) metas sigma b1 b2
-  | (Anonymous,Anonymous) -> match_  alp metas sigma b1 b2
-  | _ -> raise No_match
+and match_binders alp metas na1 na2 sigma b1 b2 =
+  let (alp,sigma) = match_names metas (alp,sigma) na1 na2 in
+  match_ alp metas sigma b1 b2
 
 and match_equations alp metas sigma (_,idl1,pat1,rhs1) (idl2,pat2,rhs2) =
   if idl1 = idl2 & pat1 = pat2 (* Useful to reason up to alpha ?? *) then
