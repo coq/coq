@@ -348,10 +348,10 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
        let l', last = decompose_last l in
 	 CT_proj(xlate_formula last,
 		 CT_formula_ne_list
-		   (CT_bang(xlate_int_opt None, varc (xlate_reference r)),
+		   (CT_bang(varc (xlate_reference r)),
 		    List.map xlate_formula l'))
    | CAppExpl(_, (None, r), l) -> 
-       CT_appc(CT_bang(xlate_int_opt None, varc (xlate_reference r)),
+       CT_appc(CT_bang(varc (xlate_reference r)),
 	       xlate_formula_ne_list l)
    | CApp(_, (Some n,f), l) -> 
        let l', last = decompose_last l in
@@ -407,8 +407,11 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 	 (CT_typed_formula(xlate_formula e, xlate_formula t))
    | CPatVar (_, (_,i)) when is_int_meta i ->
        CT_coerce_ID_to_FORMULA(CT_metac (CT_int (int_of_meta i)))
-   | CPatVar (_, _) -> xlate_error "TODO: meta as ident"
-   | CEvar (_, _) -> xlate_error "TODO: evars"
+   | CPatVar (_, (false, s)) ->
+       CT_coerce_ID_to_FORMULA(CT_metaid (string_of_id s))
+   | CPatVar (_, (true, s)) ->
+       xlate_error "Second order variable not supported"
+   | CEvar (_, _) -> xlate_error "CEvar not supported"
    | CCoFix (_, (_, id), lm::lmi) -> 
      let strip_mutcorec (fid, arf, ardef) =
 	CT_cofix_rec (xlate_ident fid, xlate_formula arf, xlate_formula ardef) in
@@ -445,9 +448,9 @@ and xlate_matched_formula = function
 and xlate_formula_expl = function
     (a, None) -> xlate_formula a
   | (a, Some (_,ExplByPos i)) -> 
-      CT_bang(xlate_int_opt (Some i), xlate_formula a)
+      xlate_error "explicitation of implicit by rank not supported"
   | (a, Some (_,ExplByName i)) ->
-      xlate_error "TODO: explicitation of implicit by name"
+      CT_labelled_arg(CT_ident (string_of_id i), xlate_formula a)
 and xlate_formula_expl_ne_list = function
     [] -> assert false
   | a::l -> CT_formula_ne_list(xlate_formula_expl a, List.map xlate_formula_expl l)
@@ -859,6 +862,9 @@ and xlate_tactic =
 
 and xlate_tac =
   function
+    | TacExtend (_, "refine", [c]) ->
+       CT_refine
+	 (xlate_formula (out_gen rawwit_casted_open_constr c))
     | TacExtend (_,"Absurd",[c]) ->
        CT_absurd (xlate_formula (out_gen rawwit_constr c))
     | TacChange (None, f, b) -> CT_change (xlate_formula f, xlate_clause b)
@@ -908,7 +914,6 @@ and xlate_tac =
     | TacMove (true, id1, id2) ->
 	CT_move_after(xlate_hyp id1, xlate_hyp id2)
     | TacMove (false, id1, id2) -> xlate_error "Non dep Move is only internal"
-    | TacIntroPattern [] -> CT_intros (CT_intro_patt_list [])
     | TacIntroPattern patt_list ->
 	CT_intros (CT_intro_patt_list (List.map xlate_intro_pattern patt_list))
     | TacIntroMove (Some id, None) ->
@@ -1094,12 +1099,15 @@ and xlate_tac =
 	     (List.map (fun l -> CT_id_list(List.map xlate_newind_names l)) c))
     | TacNewInduction(a,b,(c,_)) ->
 	CT_new_induction
-	  (xlate_int_or_constr a, xlate_using b, 
-	   CT_id_list_list
-	     (List.map (fun l -> CT_id_list(List.map xlate_newind_names l)) c))
-    | TacInstantiate (a, b, _) -> 
-	xlate_error "TODO: Instantiate ... <clause>"
-
+	  (xlate_int_or_constr a, xlate_using b,
+	   (CT_intro_patt_list
+	      (List.map (fun l -> 
+			   CT_conj_pattern
+			     (CT_intro_patt_list
+				(List.map xlate_intro_pattern l))) c)))
+    | TacInstantiate (a, b, cl) -> 
+        CT_instantiate(CT_int a, xlate_formula b,
+		       xlate_clause cl)
     | TacLetTac (na, c, cl) ->
         CT_lettac(xlate_id_opt ((0,0),na), xlate_formula c, 
 		  (* TODO LATER: This should be shared with Unfold,
@@ -1124,7 +1132,7 @@ and xlate_tac =
 		(out_gen (wit_list0 rawwit_constr) arg)))
     | TacExtend (_,id, l) ->
      CT_user_tac (CT_ident id, CT_targ_list (List.map coerce_genarg_to_TARG l))
-    | TacAlias _ -> xlate_error "TODO LATER: aliases"
+    | TacAlias _ -> xlate_error "Alias not supported"
 
 and coerce_genarg_to_TARG x =
  match Genarg.genarg_tag x with
@@ -1190,19 +1198,23 @@ and coerce_genarg_to_TARG x =
 and xlate_context_rule =
   function
     | Pat (hyps, concl_pat, tactic) ->
-	CT_context_rule(
-          CT_context_hyp_list (List.map xlate_match_context_hyps hyps),
-	  xlate_context_pattern concl_pat, xlate_tactic tactic)
-    | All te ->
-	xlate_error "TODO: wildcard match_context_rule"
+	CT_context_rule
+	  (CT_context_hyp_list (List.map xlate_match_context_hyps hyps),
+	   xlate_context_pattern concl_pat, xlate_tactic tactic)
+    | All tactic ->
+        CT_def_context_rule (xlate_tactic tactic)
 and formula_to_def_body =
   function
     | ConstrEval (red, f) ->
         CT_coerce_EVAL_CMD_to_DEF_BODY(
 	CT_eval(CT_coerce_NONE_to_INT_OPT CT_none,
                 xlate_red_tactic red, xlate_formula f))
-    | ConstrContext _ -> xlate_error "TODO: Inst"
-    | ConstrTypeOf _ -> xlate_error "TODO: Check"
+    | ConstrContext((_, id), f) ->
+       	CT_coerce_CONTEXT_PATTERN_to_DEF_BODY
+	  (CT_context
+	     (CT_coerce_ID_to_ID_OPT (CT_ident (string_of_id id)),
+	      xlate_formula f))
+    | ConstrTypeOf f -> CT_type_of (xlate_formula f)
     | ConstrTerm c -> ct_coerce_FORMULA_to_DEF_BODY(xlate_formula c)
 
 and mk_let_value = function 

@@ -477,6 +477,9 @@ and fCONTEXT_RULE = function
    fCONTEXT_PATTERN x2;
    fTACTIC_COM x3;
    fNODE "context_rule" 3
+| CT_def_context_rule(x1) ->
+   fTACTIC_COM x1;
+   fNODE "def_context_rule" 1
 and fCONVERSION_FLAG = function
 | CT_beta -> fNODE "beta" 0
 | CT_delta -> fNODE "delta" 0
@@ -511,6 +514,9 @@ and fDEFN = function
 and fDEF_BODY = function
 | CT_coerce_CONTEXT_PATTERN_to_DEF_BODY x -> fCONTEXT_PATTERN x
 | CT_coerce_EVAL_CMD_to_DEF_BODY x -> fEVAL_CMD x
+| CT_type_of(x1) ->
+   fFORMULA x1;
+   fNODE "type_of" 1
 and fDEF_BODY_OPT = function
 | CT_coerce_DEF_BODY_to_DEF_BODY_OPT x -> fDEF_BODY x
 | CT_coerce_FORMULA_OPT_to_DEF_BODY_OPT x -> fFORMULA_OPT x
@@ -585,10 +591,9 @@ and fFORMULA = function
    fFORMULA x1;
    fFORMULA x2;
    fNODE "arrowc" 2
-| CT_bang(x1, x2) ->
-   fINT_OPT x1;
-   fFORMULA x2;
-   fNODE "bang" 2
+| CT_bang(x1) ->
+   fFORMULA x1;
+   fNODE "bang" 1
 | CT_cases(x1, x2, x3) ->
    fMATCHED_FORMULA_NE_LIST x1;
    fFORMULA_OPT x2;
@@ -622,6 +627,10 @@ and fFORMULA = function
    fFORMULA x3;
    fFORMULA x4;
    fNODE "inductive_let" 4
+| CT_labelled_arg(x1, x2) ->
+   fID x1;
+   fFORMULA x2;
+   fNODE "labelled_arg" 2
 | CT_lambdac(x1, x2) ->
    fBINDER_NE_LIST x1;
    fFORMULA x2;
@@ -1267,10 +1276,11 @@ and fTACTIC_COM = function
 | CT_injection_eq(x1) ->
    fID_OR_INT_OPT x1;
    fNODE "injection_eq" 1
-| CT_instantiate(x1, x2) ->
+| CT_instantiate(x1, x2, x3) ->
    fINT x1;
    fFORMULA x2;
-   fNODE "instantiate" 2
+   fCLAUSE x3;
+   fNODE "instantiate" 3
 | CT_intro(x1) ->
    fID_OPT x1;
    fNODE "intro" 1
@@ -1325,7 +1335,7 @@ and fTACTIC_COM = function
 | CT_new_induction(x1, x2, x3) ->
    fFORMULA_OR_INT x1;
    fUSING x2;
-   fID_LIST_LIST x3;
+   fINTRO_PATT_LIST x3;
    fNODE "new_induction" 3
 | CT_omega -> fNODE "omega" 0
 | CT_orelse(x1, x2) ->
@@ -1355,6 +1365,9 @@ and fTACTIC_COM = function
    fRED_COM x1;
    fCLAUSE x2;
    fNODE "reduce" 2
+| CT_refine(x1) ->
+   fFORMULA x1;
+   fNODE "refine" 1
 | CT_reflexivity -> fNODE "reflexivity" 0
 | CT_rename(x1, x2) ->
    fID x1;
