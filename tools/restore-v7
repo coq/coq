@@ -1,0 +1,9 @@
+#!/bin/sh
+
+echo Restoring v7 files from directory v7
+for i in v7/*.v v7/*/*.v v7/*/*/*.v v7/*/*/*/*.v v7/*/*/*/*/*.v v7/*/*/*/*/*/*.v; do
+  if expr $i : '.*\*\.v' > /dev/null ; then continue ; fi
+  j=`echo $i | sed -e "s@^v7/@@"`
+  echo Restoring $i from v7
+  cp -f $i $j
+done
