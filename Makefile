@@ -41,7 +41,7 @@ LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
               -I proofs -I tactics -I pretyping -I parsing -I toplevel  \
               -I contrib/omega -I contrib/ring -I contrib/xml \
 	      -I contrib/extraction -I contrib/correctness \
-              -I contrib/interface -I contrib/fourier
+              -I contrib/interface -I contrib/fourier -I contrib/setoid
 
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
@@ -195,7 +195,8 @@ PARSERREQUIRES=lib/pp_control.cmo lib/pp.cmo \
 ML4FILES += contrib/correctness/psyntax.ml4 contrib/field/field.ml4
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
-        contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/field/field.cmo \
+        contrib/setoid/setoid_replace.cmo contrib/ring/quote.cmo \
+	contrib/ring/ring.cmo contrib/field/field.cmo \
 	contrib/xml/xml.cmo \
 	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo \
 	contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo \
@@ -473,6 +474,8 @@ FIELDVO = contrib/field/Field_Compl.vo     contrib/field/Field_Theory.vo \
 
 XMLVO = contrib/xml/Xml.vo
 
+SETOIDVO = contrib/setoid/Setoid_replace.vo
+
 INTERFACEV0 = contrib/interface/Centaur.vo contrib/interface/vernacrc
 
 FOURIERVO = contrib/fourier/Fourier_util.vo    contrib/fourier/Fourier.vo
@@ -483,13 +486,14 @@ contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
 	$(COQC) -boot -byte  $(COQINCLUDES) $<
 
-CONTRIBVO = $(OMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) $(CORRECTNESSVO)\
+CONTRIBVO = $(OMEGAVO) $(SETOIDVO) $(RINGVO) $(FIELDVO) $(XMLVO) $(CORRECTNESSVO)\
             $(INTERFACEV0) $(FOURIERVO)
 
 $(CONTRIBVO): states/initial.coq
 
 contrib: $(CONTRIBVO)
 omega: $(OMEGAVO)
+setoid: $(SETOIDVO)
 ring: $(RINGVO)
 # xml_ instead of xml to avoid conflict with "make xml"
 xml_: $(XMLVO)
@@ -649,7 +653,8 @@ LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL) $(LPLIBRARY) \
 	  $(LPPRETYPING) $(LPPROOFS) $(LPTACTICS) $(LPTOPLEVEL)
 
 doc/coq.tex: $(LPFILES)
-	ocamlweb -p "\usepackage{epsfig}" $(LPFILES) -o doc/coq.tex
+#	ocamlweb -p "\usepackage{epsfig}" $(LPFILES) -o doc/coq.tex
+	ocamlweb $(LPFILES) -o doc/coq.tex
 
 clean::
 	rm -f doc/coq.tex
