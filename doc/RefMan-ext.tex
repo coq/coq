@@ -834,6 +834,68 @@ Check (id1 O).
     Print} command.
 \end{Warnings}
 
+\subsection{Canonical structures}
+
+A canonical structure is an instance of a record/structure type that
+can be used to solve equations involving implicit arguments. Assume
+that {\qualid} denotes an object $(Build\_struc~ c_1~ \ldots~ c_n)$ in the
+structure {\em struct} of which the fields are $x_1$, ...,
+$x_n$. Assume that {\qualid} is declared as a canonical structure
+using the command
+
+\bigskip
+{\tt Canonical Structure {\qualid}.}
+\comindex{Canonical Structure}
+\bigskip
+
+Then, each time an equation of the form $(x_i~
+?)=_{\beta\delta\iota\zeta}c_i$ has to be solved during the
+type-checking process, {\qualid} is used as a solution. Otherwise
+said, {\qualid} is canonically used to equip the field $c_i$ into a
+complete structure built on $c_i$.
+
+Canonical structures are particularly useful when mixed with
+coercions and implicit arguments. Here is an example.
+
+\begin{coq_example*}
+Require Relations.
+Require EqNat.
+Set Implicit Arguments.
+Structure Setoid : Type :=
+ {Carrier   :> Set;
+  Equal     : (relation Carrier);
+  Prf_equiv : (equivalence Carrier Equal)}.
+Definition is_law := [A,B:Setoid][f:A->B]
+  (x,y:A) (Equal x y) -> (Equal (f x) (f y)).
+Axiom eq_nat_equiv : (equivalence nat eq_nat).
+Definition nat_setoid : Setoid := (Build_Setoid eq_nat_equiv).
+Canonical Structure nat_setoid.
+\end{coq_example*}
+
+Thanks to \texttt{nat\_setoid} declared as canonical, the implicit
+arguments {\tt A} and {\tt B} can be synthesized in the next statement.
+
+\begin{coq_example}
+Lemma is_law_S : (is_law S).
+\end{coq_example}
+
+\Rem If a same field occurs in several canonical structure, then
+only the structure declared first as canonical is considered.
+
+\begin{Variants}
+\item {\tt Canonical Structure {\ident} := {\term} : {\type}.}\\
+ {\tt Canonical Structure {\ident} := {\term}.}\\
+ {\tt Canonical Structure {\ident} : {\type} := {\term}.}\\
+
+These are equivalent to a regular definition of {\ident} followed by
+the declaration 
+
+{\tt Canonical Structure {\ident}}.
+\end{Variants}
+
+\SeeAlso more examples in user contribution \texttt{category}
+(\texttt{Rocq/ALGEBRA}).
+
 \section{Implicit Coercions}
 \label{Coercions}\index{Coercions}
 
