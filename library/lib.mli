@@ -13,7 +13,7 @@ open Summary
 
 type node = 
   | Leaf of obj
-  | Module of string
+  | Module of dir_path
   | OpenedSection of string * Summary.frozen
   | ClosedSection of bool * string * library_segment
   | FrozenState of Summary.frozen
@@ -47,7 +47,7 @@ val make_path : identifier -> path_kind -> section_path
 val cwd : unit -> dir_path
 val is_section_p : dir_path -> bool
 
-val start_module : string -> unit
+val start_module : dir_path -> unit
 val export_module : unit -> library_segment
 
 

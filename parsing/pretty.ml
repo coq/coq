@@ -253,8 +253,8 @@ let rec print_library_entry with_values ent =
     | (sp,Lib.ClosedSection _) -> 
         [< 'sTR(" >>>>>>> Closed Section " ^ (string_of_id (basename sp)));
 	   'fNL >]
-    | (_,Lib.Module str) ->
-	[< 'sTR(" >>>>>>> Module " ^ str); 'fNL >]
+    | (_,Lib.Module dir) ->
+	[< 'sTR(" >>>>>>> Module " ^ (string_of_dirpath dir)); 'fNL >]
     | (_,Lib.FrozenState _) ->
 	[< >]
 	

@@ -670,7 +670,8 @@ let existS_pattern = put_pat mmk "(existS ?1 ?2 ?3 ?4)"
 let existT_pattern = put_pat mmk "(existT ?1 ?2 ?3 ?4)"
 
 let constant dir s =
-  Declare.global_absolute_reference (make_path dir (id_of_string s) CCI)
+  Declare.global_absolute_reference
+    (make_path ("Init"::dir) (id_of_string s) CCI)
 
 let build_sigma_set () =
   { proj1 = constant ["Specif"] "projS1";

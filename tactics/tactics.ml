@@ -1527,8 +1527,8 @@ let contradiction_on_hyp id gl =
 let constant dir s = 
   Declare.global_absolute_reference (make_path dir (id_of_string s) CCI)
 
-let coq_False = lazy (constant ["Logic"] "False")
-let coq_not = lazy (constant ["Logic"] "not")
+let coq_False = lazy (constant ["Init";"Logic"] "False")
+let coq_not = lazy (constant ["Init";"Logic"] "not")
 
 (* Absurd *)
 let absurd c gls =

@@ -16,7 +16,7 @@ val prop_univ : universe
 val prop_univ_univ : universe
 val prop_univ_univ_univ : universe
 
-val set_module : string -> unit
+val set_module : dir_path -> unit
 
 val new_univ : unit -> universe
 

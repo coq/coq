@@ -30,7 +30,7 @@ val invalid_arg_loc : loc * string -> 'a
 val explode : string -> string list
 val implode : string list -> string
 
-val parse_section_path : string -> string list * string * string
+val parse_loadpath : string -> string list
 
 module Stringset : Set.S with type elt = string
 

@@ -847,7 +847,7 @@ and print_node n id sp bprintleaf dn =
        end ;
       print_if_verbose "/ClosedDir\n"
    | L.Module s ->
-      print_if_verbose ("Module " ^ s ^ "\n")
+      print_if_verbose ("Module " ^ (Names.string_of_dirpath s) ^ "\n")
    | L.FrozenState _ ->
       print_if_verbose ("FrozenState\n")
 ;;

@@ -167,11 +167,27 @@ let string_of_path sp =
   String.concat ""
     (List.flatten (List.map (fun s -> [s;"."]) (coq_root@sl))
      @ [ string_of_id id ])
+
+let parse_sp s =
+  let len = String.length s in
+  let rec decoupe_dirs n =
+    try
+      let pos = String.index_from s n '.' in
+      let dir = String.sub s n (pos-n) in
+      let dirs,n' = decoupe_dirs (succ pos) in
+      dir::dirs,n'
+    with
+      | Not_found -> [],n
+  in
+  if len = 0 then invalid_arg "parse_section_path";
+  let dirs,n = decoupe_dirs 0 in
+  let id = String.sub s n (len-n) in
+  dirs,id
     
 let path_of_string s =
   try
-    let (sl,s,k) = parse_section_path s in
-    make_path sl (id_of_string s) (kind_of_string k)
+    let sl,s = parse_sp s in
+    make_path sl (id_of_string s) CCI
   with
     | Invalid_argument _ -> invalid_arg "path_of_string"
 

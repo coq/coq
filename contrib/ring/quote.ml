@@ -113,7 +113,8 @@ open Proof_type
   the constants are loaded in the environment *)
 
 let constant dir s =
-  Declare.global_absolute_reference (make_path dir (id_of_string s) CCI)
+  Declare.global_absolute_reference
+    (make_path ("ring"::dir) (id_of_string s) CCI)
 
 let coq_Empty_vm = lazy (constant ["Quote"] "Empty_vm")
 let coq_Node_vm = lazy (constant ["Quote"] "Node_vm")

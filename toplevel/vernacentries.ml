@@ -283,7 +283,10 @@ let _ =
   add "BeginModule"
     (function 
        | [VARG_IDENTIFIER id] ->
-	   fun () -> Lib.start_module (string_of_id id)
+	   let s = string_of_id id in
+	   let {relative_subdir = dir},_ = 
+	     System.find_file_in_path (Library.get_load_path ()) (s^".v") in
+	   fun () -> Lib.start_module ((parse_loadpath dir)@[s])
        | _ -> bad_vernac_args "BeginModule")
 
 let _ =

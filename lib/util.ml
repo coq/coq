@@ -32,28 +32,26 @@ let explode s =
 
 let implode sl = String.concat "" sl
 
-let parse_section_path s =
+let check_is_ident s =
+  let len = String.length s in
+  if len = 0 then invalid_arg "parse_loadpath: is not a valid name";
+  (* TODO... *)
+  ()
+
+let parse_loadpath s =
   let len = String.length s in
   let rec decoupe_dirs n =
-    try
-      let pos = String.index_from s n '#' in
+    try  
+      let pos = String.index_from s n '/' in
+      if pos = n then
+	invalid_arg "parse_loadpath: find an empty dir in loadpath";
       let dir = String.sub s n (pos-n) in
-      let dirs,n' = decoupe_dirs (succ pos) in
-      dir::dirs,n'
+      check_is_ident dir;
+      dir :: (decoupe_dirs (succ pos))
     with
-      | Not_found -> [],n
+      | Not_found -> [String.sub s n (len-n)]
   in
-  let decoupe_kind n =
-    try
-      let pos = String.index_from s n '.' in
-      String.sub s n (pos-n), String.sub s (succ pos) (pred (len-pos))
-    with
-      | Not_found -> invalid_arg "parse_section_path"
-  in
-  if len = 0 || String.get s 0 <> '#' then invalid_arg "parse_section_path";
-  let dirs,n = decoupe_dirs 1 in
-  let id,k = decoupe_kind n in
-  dirs,id,k
+  if len = 0 then [] else decoupe_dirs 0
 
 module Stringset = Set.Make(struct type t = string let compare = compare end)
 

@@ -26,7 +26,8 @@ let mt_evd = Evd.empty
 let constr_of com = Astterm.interp_constr mt_evd (Global.env()) com
 
 let constant dir s =
-  Declare.global_absolute_reference (make_path dir (id_of_string s) CCI)
+  Declare.global_absolute_reference
+    (make_path ("ring"::dir) (id_of_string s) CCI)
 
 (* Ring_theory *)
 
@@ -84,10 +85,14 @@ let coq_aspolynomial_normalize_ok =
 let coq_apolynomial_normalize_ok = 
   lazy (constant ["Ring_abstract"] "apolynomial_normalize_ok")
 
+let logic_constant dir s =
+  Declare.global_absolute_reference
+    (make_path ("Init"::dir) (id_of_string s) CCI)
+
 (* Logic *)
-let coq_f_equal2 = lazy (constant ["Logic"] "f_equal2")
-let coq_eq = lazy (constant ["Logic"] "eq")
-let coq_eqT = lazy (constant ["Logic_Type"] "eqT")
+let coq_f_equal2 = lazy (logic_constant ["Logic"] "f_equal2")
+let coq_eq = lazy (logic_constant ["Logic"] "eq")
+let coq_eqT = lazy (logic_constant ["Logic_Type"] "eqT")
 
 (*********** Useful types and functions ************)
 

@@ -212,7 +212,8 @@ let recognize_number t =
  This is the right way to access to Coq constants in tactics ML code *)
 
 let constant dir s =
-  Declare.global_absolute_reference (make_path dir (id_of_string s) CCI)
+  Declare.global_absolute_reference
+    (make_path ("Zarith"::dir) (id_of_string s) CCI)
 
 (* fast_integer *)
 let coq_xH = lazy (constant ["fast_integer"] "xH")
@@ -337,36 +338,39 @@ let coq_imp_simp = lazy (constant ["auxiliary"] "imp_simp")
 let coq_neq = lazy (constant ["auxiliary"] "neq")
 let coq_Zne = lazy (constant ["auxiliary"] "Zne")
 
-(* Compare_dec *)
-let coq_le_gt_dec = lazy (constant ["Compare_dec"] "le_gt_dec")
+let constant dir s =
+  Declare.global_absolute_reference (make_path dir (id_of_string s) CCI)
 
 (* Peano *)
-let coq_le = lazy (constant ["Peano"] "le")
-let coq_gt = lazy (constant ["Peano"] "gt")
+let coq_le = lazy (constant ["Init";"Peano"] "le")
+let coq_gt = lazy (constant ["Init";"Peano"] "gt")
 
 (* Datatypes *)
-let coq_nat = lazy (constant ["Datatypes"] "nat")
-let coq_S = lazy (constant ["Datatypes"] "S")
-let coq_O = lazy (constant ["Datatypes"] "O")
+let coq_nat = lazy (constant ["Init";"Datatypes"] "nat")
+let coq_S = lazy (constant ["Init";"Datatypes"] "S")
+let coq_O = lazy (constant ["Init";"Datatypes"] "O")
 
 (* Minus *)
-let coq_minus = lazy (constant ["Minus"] "minus")
+let coq_minus = lazy (constant ["Arith";"Minus"] "minus")
+
+(* Compare_dec *)
+let coq_le_gt_dec = lazy (constant ["Arith";"Compare_dec"] "le_gt_dec")
 
 (* Logic *)
-let coq_eq = lazy (constant ["Logic"] "eq")
-let coq_and = lazy (constant ["Logic"] "and")
-let coq_not = lazy (constant ["Logic"] "not")
-let coq_or = lazy (constant ["Logic"] "or")
-let coq_ex = lazy (constant ["Logic"] "ex")
+let coq_eq = lazy (constant ["Init";"Logic"] "eq")
+let coq_and = lazy (constant ["Init";"Logic"] "and")
+let coq_not = lazy (constant ["Init";"Logic"] "not")
+let coq_or = lazy (constant ["Init";"Logic"] "or")
+let coq_ex = lazy (constant ["Init";"Logic"] "ex")
 
 (* Section paths for unfold *)
-let sp_Zs = path_of_string "#zarith_aux#Zs.cci"
-let sp_Zminus = path_of_string "#zarith_aux#Zminus.cci"
-let sp_Zle = path_of_string "#zarith_aux#Zle.cci"
-let sp_Zgt = path_of_string "#zarith_aux#Zgt.cci"
-let sp_Zge = path_of_string "#zarith_aux#Zge.cci"
-let sp_Zlt = path_of_string "#zarith_aux#Zlt.cci"
-let sp_not = path_of_string "#Logic#not.cci"
+let sp_Zs = path_of_string "Zarith.zarith_aux.Zs"
+let sp_Zminus = path_of_string "Zarith.zarith_aux.Zminus"
+let sp_Zle = path_of_string "Zarith.zarith_aux.Zle"
+let sp_Zgt = path_of_string "Zarith.zarith_aux.Zgt"
+let sp_Zge = path_of_string "Zarith.zarith_aux.Zge"
+let sp_Zlt = path_of_string "Zarith.zarith_aux.Zlt"
+let sp_not = path_of_string "Init.Logic.not"
 
 let mk_var v = mkVar (id_of_string v)
 let mk_plus t1 t2 = mkApp (Lazy.force coq_Zplus, [| t1; t2 |])

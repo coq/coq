@@ -8,7 +8,7 @@ open Summary
 
 type node = 
   | Leaf of obj
-  | Module of string
+  | Module of dir_path
   | OpenedSection of string * Summary.frozen
   (* bool is to tell if the section must be opened automatically *)
   | ClosedSection of bool * string * library_segment
@@ -36,7 +36,7 @@ let recalc_path_prefix () =
     | (sp, OpenedSection _) :: _ ->
 	let (pl,id,_) = repr_path sp in pl@[string_of_id id]
     | _::l -> recalc l
-    | [] -> (match !module_name with Some m -> [m] | None -> [])
+    | [] -> (match !module_name with Some m -> m | None -> [])
   in
   path_prefix := recalc !lib_stk
 
@@ -120,7 +120,7 @@ let start_module s =
   module_name := Some s;
   Univ.set_module s;
   let _ = add_anonymous_entry (Module s) in
-  path_prefix := [s]
+  path_prefix := s
 
 let is_opened_section = function (_,OpenedSection _) -> true | _ -> false
 
@@ -198,7 +198,7 @@ let is_section_p sp = dirpath_prefix_of sp !path_prefix
 
 (* State and initialization. *)
 
-type frozen = string option * library_segment
+type frozen = dir_path option * library_segment
 
 let freeze () = (!module_name, !lib_stk)
 

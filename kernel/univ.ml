@@ -16,7 +16,7 @@
 open Pp
 open Util
 
-type universe = { u_mod : string; u_num : int }
+type universe = { u_mod : Names.dir_path; u_num : int }
 
 let universe_ord x y =
   let c = x.u_num - y.u_num in
@@ -27,12 +27,13 @@ module UniverseOrdered = struct
   let compare = universe_ord
 end
 
-let pr_uni u = [< 'sTR u.u_mod ; 'sTR"." ; 'iNT u.u_num >]
+let pr_uni u =
+  [< 'sTR (Names.string_of_dirpath u.u_mod) ; 'sTR"." ; 'iNT u.u_num >]
 
-let dummy_univ = { u_mod = "dummy univ"; u_num = 0 } (* for prover terms *)
-let implicit_univ = { u_mod = "implicit univ"; u_num = 0 }
+let dummy_univ = { u_mod = ["dummy univ"]; u_num = 0 } (* for prover terms *)
+let implicit_univ = { u_mod = ["implicit univ"]; u_num = 0 }
 
-let current_module = ref ""
+let current_module = ref []
 
 let set_module m = current_module := m
 
@@ -68,7 +69,7 @@ let declare_univ u g =
 (* The universes of Prop and Set: Type_0, Type_1 and Type_2, and the
    resulting graph. *)
 let (initial_universes,prop_univ,prop_univ_univ,prop_univ_univ_univ) =
-  let prop_sp = "prop_univ" in
+  let prop_sp = ["prop_univ"] in
   let u = { u_mod = prop_sp; u_num = 0 } in
   let su = { u_mod = prop_sp; u_num = 1 } in
   let ssu = { u_mod = prop_sp; u_num = 2 } in
