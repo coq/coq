@@ -889,8 +889,6 @@ and eqappr cv_pb infos appr1 appr2 =
 
 
 let fconv cv_pb env sigma t1 t2 =
-  let t1 = local_strong strip_outer_cast t1
-  and t2 = local_strong strip_outer_cast t2 in
   if eq_constr t1 t2 then 
     Constraint.empty
   else
@@ -1154,7 +1152,7 @@ let rec whd_ise sigma c =
           whd_ise sigma (existential_value sigma (ev,args))
 	else raise (Uninstantiated_evar ev)
   | IsCast (c,_) -> whd_ise sigma c
-  | IsSort (Type _) -> mkSort (Type dummy_univ)
+(*  | IsSort (Type _) -> mkSort (Type dummy_univ)*)
   | _ -> c
 
 
