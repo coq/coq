@@ -57,6 +57,9 @@ let print_universes = ref false
 (* This suppresses printing of numeral and symbols *)
 let print_no_symbol = ref false
 
+(* This governs printing of projections using the dot notation symbols *)
+let print_projections = ref false
+
 let print_meta_as_hole = ref false
 
 let with_arguments f = Options.with_option print_arguments f
@@ -465,12 +468,12 @@ let occur_name na aty =
     | Anonymous -> false
 
 let is_projection nargs = function
-  | Some r ->
+  | Some r when !print_projections ->
       (try 
 	let n = Recordops.find_projection_nparams r + 1 in
 	if n <= nargs then Some n else None
       with Not_found -> None)
-  | None -> None
+  | _ -> None
 
 let stdlib = function
   | Some r -> 

@@ -722,6 +722,14 @@ let _ =
 let _ =
   declare_bool_option 
     { optsync  = true;
+      optname  = "projection printing using dot notation";
+      optkey   = (SecondaryTable ("Printing","Projections"));
+      optread  = (fun () -> !Constrextern.print_projections);
+      optwrite = (fun b ->  Constrextern.print_projections := b) }
+
+let _ =
+  declare_bool_option 
+    { optsync  = true;
       optname  = "symbols printing";
       optkey   = (SecondaryTable ("Printing",if !Options.v7 then "Symbols" else "Notations"));
       optread  = (fun () -> not !Constrextern.print_no_symbol);
