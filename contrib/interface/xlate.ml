@@ -286,6 +286,10 @@ let xlate_id_opt_ne_list = function
   | a::l -> CT_id_opt_ne_list(xlate_id_opt a, List.map xlate_id_opt l);;
 
 
+let rec decompose_last = function
+    [] -> assert false
+  | [a] -> [], a
+  | a::tl -> let rl, b = decompose_last tl in (a::rl), b;;
 
 let rec xlate_binder = function
     (l,t) -> CT_binder(xlate_id_opt_ne_list l, xlate_formula t)
@@ -332,23 +336,40 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | CLambdaN(_,ll,b)-> CT_lambdac(xlate_binder_ne_list ll, xlate_formula b)
    | CLetIn(_, v, a, b) -> 
        CT_letin(CT_def(xlate_id_opt v, xlate_formula a), xlate_formula b)
-   | CAppExpl(_, (_, r), l) -> (* TODO: proj notation *)
+   | CAppExpl(_, (Some n, r), l) -> 
+       let l', last = decompose_last l in
+	 CT_proj(xlate_formula last,
+		 CT_formula_ne_list
+		   (CT_bang(xlate_int_opt None, varc (xlate_reference r)),
+		    List.map xlate_formula l'))
+   | CAppExpl(_, (None, r), l) -> 
        CT_appc(CT_bang(xlate_int_opt None, varc (xlate_reference r)),
 	       xlate_formula_ne_list l)
-   | CApp(_, (_,f), l) -> (* TODO: proj notation *)
+   | CApp(_, (Some n,f), l) -> 
+       let l', last = decompose_last l in
+       CT_proj(xlate_formula_expl last, 
+	       CT_formula_ne_list
+		 (xlate_formula f, List.map xlate_formula_expl l'))
+   | CApp(_, (_,f), l) -> 
        CT_appc(xlate_formula f, xlate_formula_expl_ne_list l)
    | CCases (_, _, [], _) -> assert false
-   | CCases (_, (Some _, _), _, _) -> xlate_error "TODO: Cases with Some"
-   | CCases (_,(None, None), tm::tml, eqns)->
+   | CCases (_, (Some _, _), _, _) -> xlate_error "NOT parsed: Cases with Some"
+   | CCases (_,(None, ret_type), tm::tml, eqns)->
        CT_cases(CT_matched_formula_ne_list(xlate_matched_formula tm,
 					   List.map xlate_matched_formula tml),
-		ctv_FORMULA_OPT_NONE,
+		xlate_formula_opt ret_type,
                 CT_eqn_list (List.map (fun x -> translate_one_equation x) eqns))
-   | CCases (_,(po,Some _),tml,eqns)-> xlate_error "TODO"
    | COrderedCase (_,Term.IfStyle,po,c,[b1;b2]) -> 
 		   CT_if(xlate_formula_opt po,
                    xlate_formula c,xlate_formula b1,xlate_formula b2)		
-   | CLetTuple (_,l, (na,po), c, b) -> xlate_error "LetTuple: TODO"
+   | CLetTuple (_,a::l, (na,po), c, b) -> 
+      CT_let_tuple(CT_id_opt_ne_list(xlate_id_opt_aux a,
+				     List.map xlate_id_opt_aux l),
+		   xlate_id_opt_aux na,
+		   xlate_formula_opt po,
+		   xlate_formula c,
+		   xlate_formula b)
+   | CLetTuple (_, [], _, _, _) -> xlate_error "NOT parsed: Let with ()"
    | CIf (_,c, (na,None), b1, b2) ->
 		   CT_if(ctv_FORMULA_OPT_NONE,
                    xlate_formula c,xlate_formula b1,xlate_formula b2)
@@ -840,17 +861,17 @@ and xlate_tac =
 			 xlate_formula c),
 	  xlate_formula f,
 	  xlate_clause b)
-    | TacExtend (_,"Contradiction",[]) -> CT_contradiction
+    | TacExtend (_,"contradiction",[]) -> CT_contradiction
     | TacDoubleInduction (n1, n2) ->
 	CT_tac_double (xlate_quantified_hypothesis n1, xlate_quantified_hypothesis n2)
-    | TacExtend (_,"Discriminate", [idopt]) ->
+    | TacExtend (_,"discriminate", [idopt]) ->
      CT_discriminate_eq
          (xlate_quantified_hypothesis_opt
 	    (out_gen (wit_opt rawwit_quant_hyp) idopt))
     | TacExtend (_,"DEq", [idopt]) ->
      CT_simplify_eq
          (xlate_ident_opt (out_gen (wit_opt rawwit_ident) idopt))
-    | TacExtend (_,"Injection", [idopt]) ->
+    | TacExtend (_,"injection", [idopt]) ->
      CT_injection_eq
          (xlate_quantified_hypothesis_opt
 	    (out_gen (wit_opt rawwit_quant_hyp) idopt))
@@ -889,18 +910,17 @@ and xlate_tac =
     | TacRight bindl -> CT_right (xlate_bindings bindl)
     | TacSplit (false,bindl) -> CT_split (xlate_bindings bindl)
     | TacSplit (true,bindl) -> CT_exists (xlate_bindings bindl)
-    | TacExtend (_,"Replace", [c1; c2]) ->
+    | TacExtend (_,"replace", [c1; c2]) ->
      let c1 = xlate_formula (out_gen rawwit_constr c1) in
      let c2 = xlate_formula (out_gen rawwit_constr c2) in
      CT_replace_with (c1, c2)
-    |
-      TacExtend (_,"Rewrite", [b; cbindl]) ->
+    | TacExtend (_,"rewrite", [b; cbindl]) ->
      let b = out_gen Extraargs.rawwit_orient b in
      let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
      let c = xlate_formula c and bindl = xlate_bindings bindl in
      if b then CT_rewrite_lr (c, bindl, ctv_ID_OPT_NONE)
      else CT_rewrite_rl (c, bindl, ctv_ID_OPT_NONE)
-    | TacExtend (_,"RewriteIn", [b; cbindl; id]) ->
+    | TacExtend (_,"rewritein", [b; cbindl; id]) ->
      let b = out_gen Extraargs.rawwit_orient b in
      let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
      let c = xlate_formula c and bindl = xlate_bindings bindl in
