@@ -529,6 +529,8 @@ let rec merge_entry_types etyps' = function
 let set_entry_type etyps (x,typ) =
   let typ = try 
     match List.assoc x etyps, typ with
+      | _, (_,BorderProd (true,_)) ->
+	  error "The level of the leftmost non-terminal cannot be changed"
       | ETConstr (n,()), (_,BorderProd (left,_)) ->
           ETConstr (n,BorderProd (left,None))
       | ETConstr (n,()), (_,InternalProd) -> ETConstr (n,InternalProd)
