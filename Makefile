@@ -133,8 +133,9 @@ LIBRARY=\
 PRETYPING=\
   pretyping/termops.cmo pretyping/evd.cmo \
   pretyping/reductionops.cmo pretyping/inductiveops.cmo \
-  pretyping/retyping.cmo pretyping/cbv.cmo pretyping/tacred.cmo \
+  pretyping/retyping.cmo pretyping/cbv.cmo \
   pretyping/pretype_errors.cmo pretyping/recordops.cmo pretyping/typing.cmo \
+  pretyping/tacred.cmo \
   pretyping/evarutil.cmo pretyping/unification.cmo pretyping/evarconv.cmo \
   pretyping/classops.cmo pretyping/coercion.cmo pretyping/clenv.cmo \
   pretyping/rawterm.cmo pretyping/pattern.cmo \
