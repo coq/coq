@@ -932,7 +932,7 @@ let injClause cls gls =
         with
 	  | Not_found ->
 	      errorlabstrm "InjClause" (not_found_message id)
-          | UserError("refiner__FAIL",_) -> 
+          | UserError("refiner__fail",_) -> 
               errorlabstrm "InjClause" 
 		[< 'sTR (string_of_id id); 'sTR" Not a projectable equality" >]
 

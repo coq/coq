@@ -1,3 +1,7 @@
+AddPath "/toto".
+Anomaly: Uncaught exception Unix.Unix_error(20, "stat", "/toto").
+Please report.
+
 
 Declaration de Local a l'interieur d'un but ...
 Certains Clear deviennent impossible car la variable apparait dans 
@@ -93,11 +97,8 @@ Error: Attempt to save an incomplete proof
 Rocq/DEMOS/Demo_AutoRewrite
 Anomaly: Invalid argument "output_value: functional value".
 
-
 Montevideo/CtlTctl OK
-Montevideo/RailroadCrossing
-File "./railroad_crossing.v", line 613, characters 2-20
-Anomaly: useInversionLemma. Please report.
+Montevideo/RailroadCrossing OK
 
 Nijmegen OK
 Utrecht/Ramsey OK

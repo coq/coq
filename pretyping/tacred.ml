@@ -314,6 +314,7 @@ and construct_const env sigma =
              | None -> assert false
              | Some (c',rest) -> 
 		   stacklam hnfstack [c'] c rest)
+      | IsLetIn (n,b,t,c) -> stacklam hnfstack [b] c stack
       | IsMutCase (ci,p,c,lf) ->
           hnfstack 
 	    (special_red_case env (construct_const env sigma) (ci,p,c,lf), stack)
