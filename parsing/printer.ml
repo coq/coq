@@ -133,6 +133,7 @@ let prtype t = prtype_env (Global.env()) t
 let prjudge j = prjudge_env (Global.env()) j
 
 let _ = Termops.set_print_constr prterm_env
+
 (*let _ = Tactic_debug.set_pattern_printer pr_pattern_env*)
 
 let pr_constant env cst = prterm_env env (mkConst cst)
@@ -419,6 +420,12 @@ let pr_prim_rule_v7 = function
   | Rename (id1,id2) ->
       (str "Rename " ++ pr_id id1 ++ str " into " ++ pr_id id2)
 
+let print_constr8 t =
+  Ppconstrnew.pr_constr (Constrextern.extern_constr false (Global.env()) t)
+
+let print_lconstr8 t =
+  Ppconstrnew.pr_lconstr (Constrextern.extern_constr false (Global.env()) t)
+
 let pr_prim_rule_v8 = function
   | Intro id -> 
       str"intro " ++ pr_id id
@@ -428,9 +435,9 @@ let pr_prim_rule_v8 = function
 	
   | Cut (b,id,t) ->
       if b then
-        (str"assert " ++ print_constr t)
+        (str"assert " ++ print_constr8 t)
       else
-        (str"cut " ++ print_constr t ++ str ";[intro " ++ pr_id id ++ str "|idtac]")
+        (str"cut " ++ print_constr8 t ++ str ";[intro " ++ pr_id id ++ str "|idtac]")
 	
   | FixRule (f,n,[]) ->
       (str"fix " ++ pr_id f ++ str"/" ++ int n)
@@ -438,7 +445,7 @@ let pr_prim_rule_v8 = function
   | FixRule (f,n,others) -> 
       let rec print_mut = function
 	| (f,n,ar)::oth -> 
-           pr_id f ++ str"/" ++ int n ++ str" : " ++ print_constr ar ++ print_mut oth
+           pr_id f ++ str"/" ++ int n ++ str" : " ++ print_lconstr8 ar ++ print_mut oth
         | [] -> mt () in
       (str"fix " ++ pr_id f ++ str"/" ++ int n ++
          str" with " ++ print_mut others)
@@ -449,22 +456,22 @@ let pr_prim_rule_v8 = function
   | Cofix (f,others) ->
       let rec print_mut = function
 	| (f,ar)::oth ->
-	  (pr_id f ++ str" : " ++ print_constr ar ++ print_mut oth)
+	  (pr_id f ++ str" : " ++ print_lconstr8 ar ++ print_mut oth)
         | [] -> mt () in
       (str"cofix " ++ pr_id f ++  str" with " ++ print_mut others)
 
   | Refine c -> 
       str(if occur_meta c then "refine " else "exact ") ++
-      Constrextern.with_meta_as_hole print_constr c
+      Constrextern.with_meta_as_hole print_constr8 c
       
   | Convert_concl c ->
-      (str"change "  ++ print_constr c)
+      (str"change "  ++ print_constr8 c)
       
   | Convert_hyp (id,None,t) ->
-      (str"change "  ++ print_constr t  ++ spc ()  ++ str"in "  ++ pr_id id)
+      (str"change "  ++ print_constr8 t  ++ spc ()  ++ str"in "  ++ pr_id id)
 
   | Convert_hyp (id,Some c,t) ->
-      (str"change "  ++ print_constr c  ++ spc ()  ++ str"in "
+      (str"change "  ++ print_constr8 c  ++ spc ()  ++ str"in "
        ++ pr_id id ++ str" (type of "  ++ pr_id id ++ str ")")
       
   | Thin ids ->
