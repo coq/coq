@@ -79,8 +79,8 @@ let simplif () =
           $t_is_conj;Cut ?2-> ?3-> ?4;[Intro;Clear id|Intros;Apply id;
             Try Split;Assumption]
         | [id: (?1 ?2 ?3) -> ?4|- ?] ->
-          $t_is_disj;Cut ?3-> ?4;[Cut ?2-> ?4;[Intros;Clear id|Intro;Apply id;
-            Left;Assumption]|Intro;Apply id;Right;Assumption]
+          $t_is_disj;Cut ?3-> ?4;[Cut ?2-> ?4;[Intros;Clear id|Intros;Apply id;
+            Try Left;Assumption]|Intros;Apply id;Try Right;Assumption]
         | [id0: ?1-> ?2; id1: ?1|- ?] -> Generalize (id0 id1);Intro;Clear id0
         | [id: ?1 -> ?2|- ?] ->
           $t_is_unit;Cut ?2;[Intro;Clear id|Intros;Apply (id I);Assumption]
@@ -97,7 +97,7 @@ let rec tauto_main () =
       (Match Context With
       | [id:(?1-> ?2)-> ?3|- ?] ->
         Cut ?2-> ?3;[Intro;Cut ?1-> ?2;[Intro;Cut ?3;[Intro;Clear id|
-          Intros;Apply id;Assumption]|Clear id]|Intros;Apply id;Intro;
+          Intros;Apply id;Assumption]|Clear id]|Intros;Apply id;Try Intro;
           Assumption];$t_tauto_main
       | [|- (?1 ? ?)] ->
         $t_is_disj;(Left;$t_tauto_main) Orelse (Right;$t_tauto_main))

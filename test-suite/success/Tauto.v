@@ -172,6 +172,13 @@ Proof.
   Tauto.
 Save.
 
+(* A bug from CNF form *)
+Lemma old_bug3:
+  ((~A\/B)/\(~B\/B)/\(~A\/~B)/\(~B\/~B)->False)->~((A->B)->B)->False.
+Proof.
+  Tauto.
+Save.
+
 (*  A private club has the following rules :
  *
  *  . rule 1 : Every non-scottish member wears red socks
