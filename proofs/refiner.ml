@@ -856,8 +856,15 @@ open Pp
 
 let pr_tactic = function
   | Tacexpr.TacArg (Tacexpr.Tacexp t) ->
-      Pptactic.pr_glob_tactic t (*top tactic from tacinterp*)
-  | t -> Pptactic.pr_tactic t
+      if !Options.v7 then
+	Pptactic.pr_glob_tactic t (*top tactic from tacinterp*)
+      else
+	Pptacticnew.pr_glob_tactic (Global.env()) t
+  | t -> 
+      if !Options.v7 then
+	Pptactic.pr_tactic t
+      else
+	Pptacticnew.pr_tactic (Global.env()) t
 
 let pr_rule = function
   | Prim r -> pr_prim_rule r

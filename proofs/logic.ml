@@ -661,7 +661,7 @@ open Printer
 
 let prterm x = prterm_env (Global.env()) x
 
-let pr_prim_rule = function
+let pr_prim_rule_v7 = function
   | Intro id -> 
       str"Intro " ++ pr_id id
 	
@@ -721,3 +721,67 @@ let pr_prim_rule = function
 
   | Rename (id1,id2) ->
       (str "Rename " ++ pr_id id1 ++ str " into " ++ pr_id id2)
+
+let pr_prim_rule_v8 = function
+  | Intro id -> 
+      str"intro " ++ pr_id id
+	
+  | Intro_replacing id -> 
+      (str"intro replacing "  ++ pr_id id)
+	
+  | Cut (b,id,t) ->
+      if b then
+        (str"assert " ++ prterm t)
+      else
+        (str"cut " ++ prterm t ++ str ";[intro " ++ pr_id id ++ str "|idtac]")
+	
+  | FixRule (f,n,[]) ->
+      (str"fix " ++ pr_id f ++ str"/" ++ int n)
+      
+  | FixRule (f,n,others) -> 
+      let rec print_mut = function
+	| (f,n,ar)::oth -> 
+           pr_id f ++ str"/" ++ int n ++ str" : " ++ prterm ar ++ print_mut oth
+        | [] -> mt () in
+      (str"fix " ++ pr_id f ++ str"/" ++ int n ++
+         str" with " ++ print_mut others)
+
+  | Cofix (f,[]) ->
+      (str"cofix " ++ pr_id f)
+
+  | Cofix (f,others) ->
+      let rec print_mut = function
+	| (f,ar)::oth ->
+	  (pr_id f ++ str" : " ++ prterm ar ++ print_mut oth)
+        | [] -> mt () in
+      (str"cofix " ++ pr_id f ++  str" with " ++ print_mut others)
+
+  | Refine c -> 
+      str(if occur_meta c then "refine " else "exact ") ++
+      Constrextern.with_meta_as_hole prterm c
+      
+  | Convert_concl c ->
+      (str"change "  ++ prterm c)
+      
+  | Convert_hyp (id,None,t) ->
+      (str"change "  ++ prterm t  ++ spc ()  ++ str"in "  ++ pr_id id)
+
+  | Convert_hyp (id,Some c,t) ->
+      (str"change "  ++ prterm c  ++ spc ()  ++ str"in "
+       ++ pr_id id ++ str" (type of "  ++ pr_id id ++ str ")")
+      
+  | Thin ids ->
+      (str"clear "  ++ prlist_with_sep pr_spc pr_id ids)
+      
+  | ThinBody ids ->
+      (str"clearbody "  ++ prlist_with_sep pr_spc pr_id ids)
+      
+  | Move (withdep,id1,id2) ->
+      (str (if withdep then "dependent " else "") ++
+	 str"move "  ++ pr_id id1 ++ str " after " ++ pr_id id2)
+
+  | Rename (id1,id2) ->
+      (str "rename " ++ pr_id id1 ++ str " into " ++ pr_id id2)
+
+let pr_prim_rule t =
+  if! Options.v7 then pr_prim_rule_v7 t else pr_prim_rule_v8 t
