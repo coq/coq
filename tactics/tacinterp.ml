@@ -345,6 +345,10 @@ let intern_hyp ist (loc,id as locid) =
 
 let intern_hyp_or_metaid ist id = intern_hyp ist (skip_metaid id)
 
+let intern_int_or_var ist = function
+  | ArgVar locid as x -> ArgVar (intern_hyp ist locid)
+  | ArgArg n as x -> x
+
 let intern_inductive ist = function
   | Ident (loc,id) when find_var id ist -> ArgVar (loc,id)
   | r -> ArgArg (Nametab.global_inductive r)
@@ -742,10 +746,8 @@ and intern_genarg ist x =
   | BoolArgType -> in_gen globwit_bool (out_gen rawwit_bool x)
   | IntArgType -> in_gen globwit_int (out_gen rawwit_int x)
   | IntOrVarArgType ->
-      let f = function
-	| ArgVar id -> ArgVar (intern_hyp ist id)
-	| ArgArg n as x -> x in
-      in_gen globwit_int_or_var (f (out_gen rawwit_int_or_var x))
+      in_gen globwit_int_or_var
+        (intern_int_or_var ist (out_gen rawwit_int_or_var x))
   | StringArgType ->
       in_gen globwit_string (out_gen rawwit_string x)
   | PreIdentArgType ->
@@ -929,9 +931,13 @@ let eval_ident ist id =
 
 let eval_integer lfun (loc,id) =
   try match List.assoc id lfun with
-  | VInteger n -> ArgArg n
+  | VInteger n -> n
   | _ -> user_err_loc(loc,"eval_integer",str "should be bound to an integer")
   with Not_found -> user_err_loc (loc,"eval_integer",str "Unbound variable")
+
+let interp_int_or_var ist = function
+  | ArgVar locid -> eval_integer ist.lfun locid
+  | ArgArg n -> n
 
 let constr_of_value env = function
   | VConstr csr -> csr
@@ -1464,10 +1470,8 @@ and interp_genarg ist goal x =
   | BoolArgType -> in_gen wit_bool (out_gen globwit_bool x)
   | IntArgType -> in_gen wit_int (out_gen globwit_int x)
   | IntOrVarArgType ->
-      let f = function
-	| ArgVar locid -> eval_integer ist.lfun locid
-	| ArgArg n as x -> x in
-      in_gen wit_int_or_var (f (out_gen globwit_int_or_var x))
+      in_gen wit_int_or_var
+        (ArgArg (interp_int_or_var ist (out_gen globwit_int_or_var x)))
   | StringArgType ->
       in_gen wit_string (out_gen globwit_string x)
   | PreIdentArgType ->
@@ -1652,7 +1656,12 @@ and interp_atomic ist gl = function
   | TacExtend (loc,opn,l) ->
       fun gl -> vernac_tactic (opn,List.map (interp_genarg ist gl) l) gl
   | TacAlias (loc,_,l,body) -> fun gl ->
-    let f x = match genarg_tag x with
+    let rec f x = match genarg_tag x with
+    | IntArgType -> VInteger (out_gen globwit_int x)
+    | StringArgType | BoolArgType | PreIdentArgType
+	-> error "This generic type is not supported in alias"
+    | IntOrVarArgType -> 
+	VInteger (interp_int_or_var ist (out_gen globwit_int_or_var x))
     | IdentArgType -> 
 	let id = out_gen globwit_ident x in
 	(try VConstr (mkVar (eval_variable ist gl (dummy_loc,id)))
@@ -1660,12 +1669,19 @@ and interp_atomic ist gl = function
     | RefArgType -> 
         VConstr (constr_of_reference 
           (pf_interp_reference ist gl (out_gen globwit_ref x)))
+    | SortArgType ->
+	VConstr (mkSort (Pretyping.interp_sort (out_gen globwit_sort x)))
     | ConstrArgType ->
         VConstr (pf_interp_constr ist gl (out_gen globwit_constr x))
     | ConstrMayEvalArgType ->
-      VConstr
-        (interp_constr_may_eval ist gl (out_gen globwit_constr_may_eval x))
-    | _ -> failwith "This generic type is not supported in alias"
+	VConstr
+          (interp_constr_may_eval ist gl (out_gen globwit_constr_may_eval x))
+    | QuantHypArgType | RedExprArgType 
+    | TacticArgType -> 
+	val_interp ist gl (out_gen globwit_tactic x)
+    | CastedOpenConstrArgType | ConstrWithBindingsArgType | ExtraArgType _
+    | List0ArgType _ | List1ArgType _ | OptArgType _ | PairArgType _ 
+	-> error "This generic type is not supported in alias"
     in
     let lfun = (List.map (fun (x,c) -> (x,f c)) l)@ist.lfun in
     let v = locate_tactic_call loc (val_interp { ist with lfun=lfun } gl body)
