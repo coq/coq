@@ -1175,8 +1175,11 @@ let eq_rhs eq =
 let subst_one x gl = 
   let hyps = pf_hyps gl in
   let (_,xval,_) = Sign.lookup_named x hyps in
+  (* If x has a body, simply replace x with body and clear x *)
   if xval <> None then tclTHEN (unfold_body x) (clear [x]) gl else
+  (* x is a variable: *)
   let varx = mkVar x in
+  (* Find a non-recursive definition for x *)
   let (hyp,rhs) = 
     try
       let test (_,_,c as d) _ = if is_eq_x varx c then raise (FoundHyp d) in
@@ -1184,32 +1187,38 @@ let subst_one x gl =
       errorlabstrm "Subst"
         (str "cannot find any non-recursive equality over " ++ pr_id x)
     with FoundHyp (id,_,c) -> (id, eq_rhs c) in
+  (* The set of hypotheses using x *)
   let depdecls = 
     let test (id,_,c as dcl) = 
       if id <> hyp && occur_var_in_decl (pf_env gl) x dcl then dcl
       else failwith "caught" in
     List.rev (map_succeed test hyps) in
   let dephyps = List.map (fun (id,_,_) -> id) depdecls in
+  (* Decides if x appears in conclusion *)
+  let depconcl = occur_var (pf_env gl) x (pf_concl gl) in
+  (* The set of non-defined hypothesis: they must be abstracted,
+     rewritten and reintroduced *)
   let abshyps =
     map_succeed
       (fun (id,v,_) -> if v=None then mkVar id else failwith "caught")
       depdecls in
+  (* a tactic that either introduce an abstracted and rewritten hyp,
+     or introduce a definition where x was replaced *)
   let introtac = function
       (id,None,_) -> intro_using id
     | (id,Some hval,htyp) ->
         forward true (Name id) (mkCast(replace_term varx rhs hval,
                                        replace_term varx rhs htyp)) in
+  let need_rewrite = dephyps <> [] || depconcl in
   tclTHENLIST 
-    ((if depdecls <> [] then
-        if abshyps <> [] then
-          [generalize abshyps;
-           rewriteLR (mkVar hyp);
-           thin dephyps;
-           tclMAP introtac depdecls]
-        else
-          [thin dephyps;
-           tclMAP introtac depdecls]
-      else []) @
+    ((if need_rewrite then
+      [generalize abshyps;
+       rewriteLR (mkVar hyp);
+       thin dephyps;
+       tclMAP introtac depdecls]
+    else
+      [thin dephyps;
+       tclMAP introtac depdecls]) @
      [tclTRY (clear [x;hyp])]) gl
 
 let subst = tclMAP subst_one
