@@ -140,8 +140,8 @@ win: ${COQPACKAGE}.tar.gz
 	rm -rf ${COQPACKAGE} || true;\
 	gunzip -c $(DISTRIBDIR)/${COQPACKAGE}.tar.gz | tar xf -;\
 	cd ${COQPACKAGE};\
-	./configure -bindir /coq/bin -libdir /coq/lib -mandir /coq/man -emacslib /coq/emacs;\
-	make world check;\
+	./configure -bindir /coq/bin -libdir /coq/lib -mandir /coq/man -emacslib /coq/emacs -reals all;\
+	make world;\
 	rm -rf ${ARCHBUILDROOT}/buildroot/* || true;\
 	make -e COQINSTALLPREFIX=${ARCHBUILDROOT}/buildroot/ install;\
 	cd ${ARCHBUILDROOT}/buildroot;\
