@@ -69,6 +69,7 @@ let make_typed t s = { body = t; typ = s }
 let typed_app f tt = { body = f tt.body; typ = tt.typ }
 
 let body_of_type ty = ty.body
+let level_of_type t = (t.typ : sorts)
 
 let incast_type tty = DOP2 (Cast, tty.body, (DOP0 (Sort tty.typ)))
 

@@ -198,6 +198,10 @@ let append_to_path sp str =
   let (sp,id,k) = repr_path sp in
   make_path sp (id_of_string ((string_of_id id)^str)) k
 
+let sp_of_wd = function
+  | bn::dp -> make_path dp (id_of_string bn) OBJ
+  | _      -> invalid_arg "Names.sp_of_wd"
+
 let sp_ord sp1 sp2 =
   let (p1,id1,k) = repr_path sp1
   and (p2,id2,k') = repr_path sp2 in

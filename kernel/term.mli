@@ -59,6 +59,7 @@ val make_typed : constr -> sorts -> typed_type
 val typed_app : (constr -> constr) -> typed_type -> typed_type
 
 val body_of_type : typed_type -> constr
+val level_of_type : typed_type -> sorts
 
 val incast_type : typed_type -> constr
 

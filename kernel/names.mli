@@ -49,6 +49,8 @@ val dirpath : section_path -> string list
 val basename : section_path -> identifier
 val kind_of_path : section_path -> path_kind
 
+val sp_of_wd : string list -> section_path
+
 val path_of_string : string -> section_path
 val string_of_path : section_path -> string
 val string_of_path_mind : section_path -> identifier -> string
