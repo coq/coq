@@ -217,8 +217,23 @@ let rec compute_metamap env c = match kind_of_term c with
       else
       	TH (c,[],[])
 
-  (* Autres cas. *)
-  | IsCoFix _ -> invalid_arg "Tcc.compute_metamap"
+  (* Cofix. *)
+  | IsCoFix (i,(fi,ai,v)) ->
+      let vi = Array.map (fresh env) fi in
+      let fi' = Array.map (fun id -> Name id) vi in
+      let env' = push_named_rec_types (fi',ai,v) env in
+      let a = Array.map
+		(compute_metamap env')
+		(Array.map (substl (List.map mkVar (Array.to_list vi))) v) 
+      in
+      begin
+	try
+	  let v',mm,sgp = replace_in_array env' a in
+	  let cofix = mkCoFix (i,(fi',ai,v')) in
+	  TH (cofix,mm,sgp)
+	with NoMeta ->
+	  TH (c,[],[])
+      end
 
 
 (*  tcc_aux : term_with_holes -> tactic
@@ -263,6 +278,22 @@ let rec tcc_aux (TH (c,mm,sgp) as th) gl =
 	tclTHENS
 	  (mutual_fix ids (List.map succ (Array.to_list ni))
              (List.tl (Array.to_list ai)))
+	  (List.map (function
+		       | None -> tclIDTAC 
+		       | Some th -> tcc_aux th) sgp)
+	  gl
+
+    (* cofix => tactique CoFix *)
+    | IsCoFix (_,(fi,ai,_)) , _ ->
+	let ids =
+	  Array.to_list
+            (Array.map
+              (function Name id -> id
+                | _ -> error "recursive functions must have names !")
+              fi) 
+	in
+	tclTHENS
+	  (mutual_cofix ids (List.tl (Array.to_list ai)))
 	  (List.map (function
 		       | None -> tclIDTAC 
 		       | Some th -> tcc_aux th) sgp)
