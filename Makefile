@@ -216,9 +216,11 @@ COQC=bin/coqc$(EXE)
 COQTOPBYTE=bin/coqtop.byte$(EXE)
 COQTOPOPT=bin/coqtop.opt$(EXE)
 BESTCOQTOP=bin/coqtop.$(BEST)$(EXE)
+COQTOP=bin/coqtop$(EXE)
 COQINTERFACE=bin/coq-interface$(EXE) bin/parser
 
-COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQINTERFACE) 
+COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
+             $(COQINTERFACE) 
 
 world: $(COQBINARIES) states theories contrib tools
 
@@ -228,6 +230,9 @@ $(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
 
 $(COQTOPBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO)
 	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@
+
+$(COQTOP):
+	cd bin; ln -sf coqtop.$(BEST)$(EXE) coqtop$(EXE)
 
 # coqmktop 
 
