@@ -564,7 +564,7 @@ and factorize_lambda inctx scopes vars aty = function
 	-> let (nal,c) =
 	     factorize_lambda inctx scopes (add_vname vars na) aty c in
            ((loc,na)::nal,c)
-  | c -> ([],extern inctx scopes vars c)
+  | c -> ([],sub_extern inctx scopes vars c)
 
 and extern_eqn inctx scopes vars (loc,ids,pl,c) =
   (loc,List.map (extern_cases_pattern_in_scope (snd scopes) vars) pl,

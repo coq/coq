@@ -454,6 +454,9 @@ let rec subst_rawconstr loc interp subst (ids,impls,_,scopes as env) = function
 let set_type_scope (ids,impls,tmp_scope,scopes) =
   (ids,impls,Some Symbols.type_scope,scopes)
 
+let reset_tmp_scope (ids,impls,tmp_scope,scopes) =
+  (ids,impls,None,scopes)
+
 (**********************************************************************)
 (* Main loop                                                          *)
 
@@ -499,10 +502,10 @@ let internalise sigma env allow_soapp lvar c =
     | CLambdaN (loc,[],c2) ->
         intern env c2
     | CLambdaN (loc,(nal,ty)::bll,c2) ->
-	iterate_lam loc env ty (CLambdaN (loc, bll, c2)) nal
+	iterate_lam loc (reset_tmp_scope env) ty (CLambdaN (loc, bll, c2)) nal
     | CLetIn (loc,(_,na),c1,c2) ->
-	RLetIn (loc, na, intern (ids,impls,None,scopes) c1,
-          intern (name_fold Idset.add na ids,impls,tmp_scope,scopes) c2)
+	RLetIn (loc, na, intern (reset_tmp_scope env) c1,
+          intern (push_name_env env na) c2)
     | CNotation (loc,"- _",[CNumeral(_,Bignat.POS p)]) ->
 	let scopes = option_cons tmp_scope scopes in
         Symbols.interp_numeral loc (Bignat.NEG p) scopes
@@ -597,20 +600,18 @@ let internalise sigma env allow_soapp lvar c =
 	let env_ids = List.fold_right Idset.add eqn_ids ids in
 	(loc, eqn_ids,pl,intern (env_ids,impls,tmp_scope,scopes) rhs)
 
-  and iterate_prod loc2 (ids,impls,tmpsc,scopes as env) ty body = function
+  and iterate_prod loc2 env ty body = function
     | (loc1,na)::nal ->
 	if nal <> [] then check_capture loc1 ty na;
-	let ids' = name_fold Idset.add na ids in
-	let body = iterate_prod loc2 (ids',impls,tmpsc,scopes) ty body nal in
+	let body = iterate_prod loc2 (push_name_env env na) ty body nal in
 	let ty = locate_if_isevar loc1 na (intern_type env ty) in
 	RProd (join_loc loc1 loc2, na, ty, body)
     | [] -> intern env body
 
-  and iterate_lam loc2 (ids,impls,tmpsc,scopes as env) ty body = function
+  and iterate_lam loc2 env ty body = function
     | (loc1,na)::nal ->
 	if nal <> [] then check_capture loc1 ty na;
-	let ids' = name_fold Idset.add na ids in
-	let body = iterate_lam loc2 (ids',impls,tmpsc,scopes) ty body nal in
+	let body = iterate_lam loc2 (push_name_env env na) ty body nal in
 	let ty = locate_if_isevar loc1 na (intern_type env ty) in
 	RLambda (join_loc loc1 loc2, na, ty, body)
     | [] -> intern env body
