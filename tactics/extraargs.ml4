@@ -28,20 +28,4 @@ ARGUMENT EXTEND orient TYPED AS bool PRINTED BY pr_orient
 | [ "<-" ] -> [ false ]
 | [ ] -> [ true ]
 END
- 
-(* with_constr *)
 
-open Tacinterp
-
-let pr_with_constr_gen prc _prtac = function 
-  | None -> Pp.mt ()
-  | Some c -> Pp.str " with" ++ prc c
-
-ARGUMENT EXTEND with_constr
-  TYPED AS constr_opt 
-  PRINTED BY pr_with_constr_gen 
-  INTERPRETED BY interp_genarg
-  GLOBALIZED BY intern_genarg
-| [ "with" constr(c) ] -> [ Some c ]
-| [ ] -> [ None ]
-END
