@@ -43,13 +43,14 @@ val extern_constr : bool -> env -> constr -> constr_expr
 val extern_constr_in_scope : bool -> scope_name -> env -> constr -> constr_expr
 val extern_reference : loc -> Idset.t -> global_reference -> reference
 
-(* For debugging *)
+(* Printing options *)
 val print_implicits : bool ref
 val print_arguments : bool ref
 val print_evar_arguments : bool ref
 val print_coercions : bool ref
 val print_universes : bool ref
 val print_no_symbol : bool ref
+val print_projections : bool ref
 
 (* This governs printing of implicit arguments. If [with_implicits] is
    on and not [with_arguments] then implicit args are printed prefixed
