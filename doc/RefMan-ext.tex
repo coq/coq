@@ -409,26 +409,26 @@ Unset Printing Wildcard.
 Print snd.
 \end{coq_example}
 
-\subsection{Still not dead old notations}
+% \subsection{Still not dead old notations}
 
-The following variant of {\tt Cases} is inherited from older version
-of {\Coq}. 
+% The following variant of {\tt Cases} is inherited from older version
+% of {\Coq}. 
 
-\medskip
-\begin{tabular}{lcl}
-{\term} & ::= & {\annotation} {\tt Match} {\term} {\tt with} {\terms} {\tt end}\\
-\end{tabular}
-\medskip
+% \medskip
+% \begin{tabular}{lcl}
+% {\term} & ::= & {\annotation} {\tt Match} {\term} {\tt with} {\terms} {\tt end}\\
+% \end{tabular}
+% \medskip
 
-This syntax is a macro generating a combination of {\tt Cases} with {\tt
-Fix} implementing a combinator for primitive recursion equivalent to
-the {\tt Match} construction of \Coq\ V5.8. It is provided only for
-sake of compatibility with \Coq\ V5.8. It is recommended to avoid it.
-(see section~\ref{Matchexpr}).
+% This syntax is a macro generating a combination of {\tt Cases} with {\tt
+% Fix} implementing a combinator for primitive recursion equivalent to
+% the {\tt Match} construction of \Coq\ V5.8. It is provided only for
+% sake of compatibility with \Coq\ V5.8. It is recommended to avoid it.
+% (see section~\ref{Matchexpr}).
 
-There is also a notation \texttt{Case} that is the
-ancestor of \texttt{Cases}. Again, it is still in the code for
-compatibility with old versions but the user should not use it.
+% There is also a notation \texttt{Case} that is the
+% ancestor of \texttt{Cases}. Again, it is still in the code for
+% compatibility with old versions but the user should not use it.
 
 \section{Forced type}
 
