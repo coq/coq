@@ -86,7 +86,7 @@ let standard sds =
   if !some_file then print "include .depend\n\n";
   print ".depend depend:\n";
   if !some_file then begin
-    print "\trm .depend\n";
+    print "\trm -f .depend\n";
     print "\t$(COQDEP) -i $(COQLIBS) *.v *.ml *.mli >.depend\n";
     print "\t$(COQDEP) $(COQLIBS) -suffix .html *.v >>.depend\n";
   end;
