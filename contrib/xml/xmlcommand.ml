@@ -65,60 +65,13 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
     | _                 -> false  (* uninteresting thing that won't be printed*)
 ;;
 
-(*V7*)
-exception Not_match
-let trim_wrong_uri_prefix pref {System.relative_subdir=rs ; System.directory=d} =
-(*
- let map =
-  [(".","/prove");
-   ("/home/pauillac/coq3/sacerdot/V7/theories/Arith","/coq/Arith");
-   ("/home/pauillac/coq3/sacerdot/V7/theories/Bool","/coq/Bool");
-   ("/home/pauillac/coq3/sacerdot/V7/theories/Init","/coq/Init");
-   ("/home/pauillac/coq3/sacerdot/V7/theories/Lists","/coq/Lists");
-   ("/home/pauillac/coq3/sacerdot/V7/theories/Logic","/coq/Logic");
-   ("/home/pauillac/coq3/sacerdot/V7/theories/Reals","/coq/Reals");
-   ("/home/pauillac/coq3/sacerdot/V7/theories/Relations","/coq/Relations");
-   ("/home/pauillac/coq3/sacerdot/V7/theories/Sets","/coq/Sets");
-   ("/home/pauillac/coq3/sacerdot/V7/theories/Zarith","/coq/Zarith");
-   ("/home/pauillac/coq3/sacerdot/V7/contrib/ring","/coq/contrib/ring");
-   ("/home/pauillac/coq3/sacerdot/V7/contrib/omega","/coq/contrib/omega")
-  ] in
- let try_trim (inp,out) =
-  for i = 0 to String.length inp - 1 do
-   if inp.[i] <> pref.[i] then raise Not_match
-  done ;
-  out
- in
- let rec trim =
-  function
-     [] -> assert false (*V7 WHAT NOW? *)
-   | he::tl ->
-      try
-       try_trim he
-      with
-       _ -> trim tl
- in
-  trim map
-*)
-  "/" ^ rs
-;;
-
 
 (* uri_of_path sp is a broken (wrong) uri pointing to the object whose        *)
 (* section path is sp                                                         *)
 let uri_of_path sp tag =
  let module N = Names in
   let ext_of_sp sp = ext_of_tag tag in
-   let (sl,id,_) = N.repr_path sp in
-    let module_path =
-     match sl with
-        []             -> assert false (*V7 WHAT NOW? *)
-      | module_name::_ ->
-	  let (prefix,file) = Library.module_filename module_name in
-          trim_wrong_uri_prefix file prefix
-   in
-    "cic:" ^ module_path ^ "/" ^ (String.concat "/" sl) ^ "/" ^
-     (N.string_of_id id) ^ "." ^ (ext_of_sp sp)
+   "cic:/Coq/" ^ (String.concat "/" (N.wd_of_sp sp)) ^ "." ^ (ext_of_sp sp)
 ;;
 
 let string_of_sort =
@@ -285,15 +238,14 @@ let print_term inner_types l env csr =
              ["value",(string_of_int n) ;
               "binder",(N.string_of_id id) ;
               "id", next_id]
-        | N.Anonymous ->
-(*V7Local assert false*)
-X.xml_empty "REL" ["binder","BUG"]
-     )
+        | N.Anonymous -> assert false
+      )
    | T.IsVar id ->
       let depth =
        match get_depth_of_var (N.string_of_id id) with
           None -> "?" (* when printing via Show XML Proof or Print XML id *)
                       (* no infos about variables uri are known           *)
+(*V7 posso usare nametab, forse*)
         | Some n -> string_of_int n
       in
        X.xml_empty "VAR"
@@ -694,14 +646,15 @@ let mkfilename dn sp ext =
  in
  let rec join_dirs cwd =
    function
-      [] -> ""
+      []  -> assert false
+    | [he] -> "/" ^ he
     | he::tail ->
        let newcwd = cwd ^ "/" ^ he in
         (try
           Unix.mkdir newcwd 0o775
          with _ -> () (* Let's ignore the errors on mkdir *)
         ) ;
-        he ^ "/" ^ join_dirs newcwd tail
+        "/" ^ he ^ join_dirs newcwd tail
  in
   let module L = Library in
   let module S = System in
@@ -709,16 +662,8 @@ let mkfilename dn sp ext =
    match dn with
       None         -> None
     | Some basedir ->
-       match N.repr_path sp with
-          (module_name::_ as dirs, filename, _) ->
-           let dirs = 
-             (dir_list_of_dirpath
-              (fst (L.module_filename module_name)).S.relative_subdir
-             ) @ dirs
-           in
-            Some (basedir ^ "/" ^ join_dirs basedir dirs ^
-                  N.string_of_id filename ^ "." ^ ext ^ ".xml")
-        | _ -> assert false
+       Some (basedir ^ join_dirs basedir ("Coq"::(N.wd_of_sp sp)) ^
+        "." ^ ext ^ ".xml")
 ;;
 
 (* print_object leaf_object id section_path directory_name formal_vars      *)
