@@ -433,10 +433,23 @@ let set_hole_implicit i = function
   | RVar (loc,id) -> (loc,ImplicitArg (VarRef id,i))
   | _ -> anomaly "Only refs have implicits"
 
+(*
+let check_only_implicits t imp =
+  let rec aux env n t =
+    match kind_of_term (whd_betadeltaiota env t) with
+      | Prod (x,a,b) -> (aux (push_rel (x,None,a) env) (n+1) b)
+      | _ -> n
+  in 
+  let env = Global.env () in
+  imp = interval 1 (aux env 0 (get_type_of env Evd.empty t))
+*)
+
 let build_expression loc1 loc2 (ref,impls) args =
   let rec add_args n = function
-    | true::impls,args -> (RHole (set_hole_implicit n (RRef (loc2,ref))))::add_args (n+1) (impls,args)
-    | false::impls,a::args -> a::add_args (n+1) (impls,args)
+    | imp::impls,args when is_status_implicit imp ->
+        (RHole (set_hole_implicit n (RRef (loc2,ref))))
+        ::add_args (n+1) (impls,args)
+    | _::impls,a::args -> a::add_args (n+1) (impls,args)
     | [], args -> args
     | _ -> anomalylabstrm "astterm"
       (str "Incorrect signature " ++ pr_global_env None ref ++ str " as an infix") in
@@ -448,7 +461,12 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	rawconstr_of_var env lvar loc s
 
     | Node(loc,"QUALID", l) ->
-        rawconstr_of_qualid env lvar loc (interp_qualid l)
+        let (c,imp,subscopes) =
+          rawconstr_of_qualid_gen env lvar loc (interp_qualid l)
+        in
+        (match ast_to_impargs c env imp subscopes [] with
+            [] -> c
+          | l -> RApp (loc, c, l))
   
     | Node(loc,"FIX", (Nvar (locid,iddef))::ldecl) ->
 	let (lf,ln,lA,lt) = ast_to_fix ldecl in
@@ -614,26 +632,29 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
     let rec aux n l subscopes args =
       let (enva,subscopes') = apply_scope_env env subscopes in
       match (l,args) with 
-      | (i::l',Node(loc, "EXPL", [Num(_,j);a])::args') ->
-	  if i=n & j>=i then
-	    if j=i then
+      | (imp::l',Node(loc, "EXPL", [Num(_,j);a])::args') ->
+	  if is_status_implicit imp & j>=n then
+	    if j=n then
 	      (dbrec enva a)::(aux (n+1) l' subscopes' args')
 	    else 
-	      (RHole (set_hole_implicit i c))::(aux (n+1) l' subscopes' args)
+	      (RHole (set_hole_implicit n c))::(aux (n+1) l' subscopes' args)
 	  else 
-	    if i<>n then
+	    if not (is_status_implicit imp) then
 	      error ("Bad explicitation number: found "^
 		   (string_of_int j)^" but was expecting a regular argument")
 	    else
 	      error ("Bad explicitation number: found "^
-		   (string_of_int j)^" but was expecting "^(string_of_int i))
-      | (i::l',a::args') -> 
-	  if i=n then 
-	    (RHole (set_hole_implicit i c))::(aux (n+1) l' subscopes' args)
+		   (string_of_int j)^" but was expecting "^(string_of_int n))
+      | (imp::l',a::args') -> 
+	  if is_status_implicit imp then 
+	    (RHole (set_hole_implicit n c))::(aux (n+1) l' subscopes' args)
 	  else 
-	    (dbrec enva a)::(aux (n+1) l subscopes' args')
+	    (dbrec enva a)::(aux (n+1) l' subscopes' args')
       | ([],args) -> ast_to_args env subscopes args
-      | (_,[]) -> []
+      | (_::l',[]) ->
+          if List.for_all is_status_implicit l then
+            (RHole (set_hole_implicit n c))::(aux (n+1) l' subscopes args)
+          else []
     in 
     aux 1 l subscopes args
 

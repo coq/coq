@@ -25,7 +25,7 @@ open Nametab
 val assumptions_for_print : name list -> Termops.names_context
 
 val print_closed_sections : bool ref
-val print_impl_args : int list -> std_ppcmds
+val print_impl_args : Impargs.implicits_list -> std_ppcmds
 val print_context : bool -> Lib.library_segment -> std_ppcmds
 val print_library_entry : bool -> (object_name * Lib.node) -> std_ppcmds
 val print_full_context : unit -> std_ppcmds

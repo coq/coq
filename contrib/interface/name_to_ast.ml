@@ -42,7 +42,7 @@ let convert_env =
 
 (* This function is directly inspired by print_impl_args in pretty.ml *)
 
-let impl_args_to_string = function
+let impl_args_to_string_by_pos = function
     [] -> None
   | [i] -> Some(" position " ^ (string_of_int i) ^ " is implicit.")
   | l -> Some (" positions " ^
@@ -51,6 +51,9 @@ let impl_args_to_string = function
                      " are implicit."));;
 
 (* This function is directly inspired by implicit_args_id in pretty.ml *)
+
+let impl_args_to_string l = 
+  impl_args_to_string_by_pos (positions_of_implicits l)
 
 let implicit_args_id_to_ast_list id l ast_list = 
     (match impl_args_to_string l with

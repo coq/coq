@@ -20,41 +20,144 @@ open Libobject
 open Lib
 open Nametab
 
-(* calcul des arguments implicites *)
+(*s Calcul arguments implicites *)
 
-(* la seconde liste est ordonne'e *)
+(* We remember various information about why an argument is (automatically)
+   inferable as implicit
 
-let ord_add x l =
-  let rec aux l = match l with 
-    | []    -> [x]
-    | y::l' -> if y > x then x::l else if x = y then l else y::(aux l')
-  in 
-  aux l
-    
-let add_free_rels_until bound m acc =
-  let rec frec depth acc c = match kind_of_term c with
+- [DepRigid] means that the implicit argument can be found by
+  unification along a rigid path (we do not print the arguments of
+  this kind if there is enough arguments to infer them)
+
+- [DepFlex] means that the implicit argument can be found by unification
+  along a collapsable path only (e.g. as x in (P x) where P is another
+  argument) (we do (defensively) print the arguments of this kind)
+
+- [DepFlexAndRigid] means that the least argument from which the
+  implicit argument can be inferred is following a collapsable path
+  but there is a greater argument from where the implicit argument is
+  inferable following a rigid path (useful to know how to print a
+  partial application)
+
+  We also consider arguments inferable from the conclusion but it is
+  operational only if [conclusion_matters] is true.
+*)
+
+type argument_position =
+  | Conclusion
+  | Hyp of int
+
+type implicit_explanation =
+  | DepRigid of argument_position
+  | DepFlex of argument_position
+  | DepFlexAndRigid of (*flex*) argument_position * (*rig*) argument_position
+  | Manual
+
+(* Set this to true to have arguments inferable from conclusion only implicit*)
+let conclusion_matters = false
+
+let argument_less = function
+  | Hyp n, Hyp n' -> n<n'
+  | Hyp _, Conclusion -> true
+  | Conclusion, _ -> false
+
+let update pos rig st =
+  let e =
+  if rig then
+    match st with
+      | None -> DepRigid pos
+      | Some (DepRigid n as x) ->
+          if argument_less (pos,n) then DepRigid pos else x
+      | Some (DepFlexAndRigid (fpos,rpos) as x) ->
+          if argument_less (pos,fpos) or pos=fpos then DepRigid pos else
+          if argument_less (pos,rpos) then DepFlexAndRigid (fpos,pos) else x
+      | Some (DepFlex fpos as x) ->
+          if argument_less (pos,fpos) or pos=fpos then DepRigid pos
+          else DepFlexAndRigid (fpos,pos)
+      | Some Manual -> assert false
+  else
+    match st with
+      | None -> DepFlex pos
+      | Some (DepRigid rpos as x) ->
+          if argument_less (pos,rpos) then DepFlexAndRigid (pos,rpos) else x
+      | Some (DepFlexAndRigid (fpos,rpos) as x) ->
+          if argument_less (pos,fpos) then DepFlexAndRigid (pos,rpos) else x
+      | Some (DepFlex fpos as x) ->
+          if argument_less (pos,fpos) then DepFlex pos else x
+      | Some Manual -> assert false
+  in Some e
+
+(* modified is_rigid_reference with a truncated env *)
+let is_flexible_reference env bound depth f =
+  match kind_of_term f with
+    | Rel n when n >= bound+depth -> (* inductive type *) false
+    | Rel n when n >= depth -> (* previous argument *) true
+    | Rel n -> (* internal variable [TODO: deal local definitions] *) false
+    | Const kn ->
+        let cb = Environ.lookup_constant kn env in
+        cb.const_body <> None & not cb.const_opaque
+    | Var id ->
+        let (_,value,_) = Environ.lookup_named id env in value <> None
+    | Ind _ | Construct _ -> false
+    |  _ -> true
+
+(* Precondition: rels in env are for inductive types only *)
+let add_free_rels_until bound env m pos acc =
+  let rec frec rig depth c = match kind_of_term c with
     | Rel n when (n < bound+depth) & (n >= depth) ->
-	Intset.add (bound+depth-n) acc
-    | _ -> fold_constr_with_binders succ frec depth acc c
+        acc.(bound+depth-n-1) <- update pos rig (acc.(bound+depth-n-1))
+    | App (f,_) when rig & is_flexible_reference env bound depth f ->
+        iter_constr_with_binders succ (frec false) depth c
+    | Case _ ->
+        iter_constr_with_binders succ (frec false) depth c
+    | _ ->
+        iter_constr_with_binders succ (frec rig) depth c
   in 
-  frec 1 acc m 
+  frec true 1 m; acc
 
 (* calcule la liste des arguments implicites *)
 
 let compute_implicits env t =
   let rec aux env n t =
-    match kind_of_term (whd_betadeltaiota env t) with
+    let t = whd_betadeltaiota env t in
+    match kind_of_term t with
       | Prod (x,a,b) ->
-	  add_free_rels_until n a
-	    (aux (push_rel (x,None,a) env) (n+1) b)
-      | _ -> Intset.empty
+	  add_free_rels_until n env a (Hyp (n+1))
+            (aux (push_rel (x,None,a) env) (n+1) b)
+      | _ -> 
+          add_free_rels_until n env t Conclusion (Array.create n None)
   in 
   match kind_of_term (whd_betadeltaiota env t) with 
     | Prod (x,a,b) ->
-	Intset.elements (aux (push_rel (x,None,a) env) 1 b)
+	Array.to_list (aux (push_rel (x,None,a) env) 1 b)
     | _ -> []
 
-type implicits_list = int list
+type implicit_status = implicit_explanation option (* None = Not implicit *)
+
+type implicits_list = implicit_status list
+
+let is_status_implicit = function
+  | None -> false
+  | Some (DepRigid Conclusion) -> conclusion_matters
+  | Some (DepFlex Conclusion) -> conclusion_matters
+  | _ -> true
+
+let is_inferable_implicit n = function
+  | None -> false
+  | Some (DepRigid (Hyp p)) -> n >= p
+  | Some (DepFlex (Hyp p)) -> false
+  | Some (DepFlexAndRigid (_,Hyp q)) -> n >= q
+  | Some (DepRigid Conclusion) -> conclusion_matters
+  | Some (DepFlex Conclusion) -> false
+  | Some (DepFlexAndRigid (_,Conclusion)) -> false
+  | Some Manual -> true
+
+let positions_of_implicits =
+  let rec aux n = function
+      [] -> []
+    | Some _::l -> n :: aux (n+1) l
+    | None::l -> aux (n+1) l
+  in aux 1
 
 type implicits =
   | Impl_auto of implicits_list
@@ -301,15 +404,20 @@ let declare_manual_implicits r l =
   if not (list_distinct l) then error ("Some numbers occur several time");
   List.iter (check_range n) l;
   let l = List.sort (-) l in
+  let rec aux k = function
+    | [] -> if k>n then [] else None :: aux (k+1) []
+    | p::l as l' ->
+        if k=p then Some Manual :: aux (k+1) l else None :: aux (k+1) l'
+  in let l = Impl_manual (aux 1 l) in
   match r with
   | VarRef id -> 
-      add_anonymous_leaf (in_var_implicits (id,Impl_manual l))
+      add_anonymous_leaf (in_var_implicits (id,l))
   | ConstRef sp ->
-      add_anonymous_leaf (in_constant_implicits (sp,Impl_manual l))
+      add_anonymous_leaf (in_constant_implicits (sp,l))
   | IndRef indp ->
-      add_anonymous_leaf (in_inductive_implicits (indp,Impl_manual l))
+      add_anonymous_leaf (in_inductive_implicits (indp,l))
   | ConstructRef consp -> 
-      add_anonymous_leaf (in_constructor_implicits (consp,Impl_manual l))
+      add_anonymous_leaf (in_constructor_implicits (consp,l))
 
 (*s Tests if declared implicit *)
 

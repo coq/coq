@@ -194,11 +194,11 @@ GEXTEND Gram
           <:ast<(IMPLICITBINDINGS $c1 ($LIST $bl))>> ] ]
   ;
   constr10:
-    [ [ "!"; f = global; args = ne_constr9_list ->
+    [ [ "!"; f = global; args = LIST0 constr9 ->
           <:ast< (APPLISTEXPL $f ($LIST $args)) >>
       | "!"; f = global; "with"; b = binding_list ->
 	  <:ast< (APPLISTWITH $f $b) >>
-      | f = constr9; args = ne_constr91_list ->
+      | f = constr9; args = LIST1 constr91 ->
           <:ast< (APPLIST $f ($LIST $args)) >>
       | f = constr9 -> f ] ]
   ;
@@ -246,14 +246,6 @@ GEXTEND Gram
       | n = INT ->
 	  let n = Coqast.Str (loc,n) in <:ast< (NUMERAL $n) >>
       | c1 = constr9 -> c1 ] ]
-  ;
-  ne_constr91_list:
-    [ [ c1 = constr91; cl = ne_constr91_list -> c1::cl
-      | c1 = constr91 -> [c1] ] ]
-  ;
-  ne_constr9_list:
-    [ [ c1 = constr9; cl = ne_constr9_list -> c1::cl
-      | c1 = constr9 -> [c1] ] ]
   ;
   fixbinder:
     [ [ id = ident; "/"; recarg = Prim.natural; ":"; type_ = constr;

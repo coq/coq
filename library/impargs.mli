@@ -26,7 +26,12 @@ val with_implicits : bool -> ('a -> 'b) -> 'a -> 'b
 
 (*s An [implicits_list] is a list of positions telling which arguments
     of a reference can be automatically infered *)
-type implicits_list = int list
+type implicit_status
+type implicits_list = implicit_status list
+
+val is_status_implicit : implicit_status -> bool
+val is_inferable_implicit : int -> implicit_status -> bool
+val positions_of_implicits : implicits_list -> int list
 
 (* Computation of the positions of arguments automatically inferable
    for an object of the given type in the given env *)
@@ -40,7 +45,7 @@ val declare_mib_implicits : mutual_inductive -> unit
 val declare_implicits : global_reference -> unit
 
 (* Manual declaration of which arguments are expected implicit *)
-val declare_manual_implicits : global_reference -> implicits_list -> unit
+val declare_manual_implicits : global_reference -> int list -> unit
 
 (*s Access to already computed implicits. *)
 

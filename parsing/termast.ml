@@ -144,20 +144,19 @@ let decompose_binder = function
   | _ -> None
 
 (* Implicit args indexes are in ascending order *)
-let explicitize =
-  let rec exprec n lastimplargs impl = function
-    | a::args ->
-	(match impl with
-	   | i::l when i=n ->
-	       exprec (n+1) (ope("EXPL", [num i; a])::lastimplargs) l args
-	   | _ ->
-	       let tail = a::(exprec (n+1) [] impl args) in
-	       if (!print_implicits & !print_implicits_explicit_args) then
-		 List.rev_append lastimplargs tail
-	       else tail)
-    (* Tail impl args are always printed even if implicit printing is off *)
-    | [] -> List.rev lastimplargs
-  in exprec 1 []
+let explicitize impl args =
+  let n = List.length args in
+  let rec exprec q = function
+    | a::args, imp::impl when is_status_implicit imp ->
+        let tail = exprec (q+1) (args,impl) in
+        let visible =
+          (!print_implicits & !print_implicits_explicit_args)
+          or not (is_inferable_implicit n imp) in
+        if visible then ope("EXPL", [num q; a]) :: tail else tail
+    | a::args, _::impl -> a :: exprec (q+1) (args,impl)
+    | args, [] -> args  (* In case of polymorphism *)
+    | [], _ -> []
+  in exprec 1 (args,impl)
 
 let rec skip_coercion dest_ref (f,args as app) =
   if !print_coercions then app

@@ -181,18 +181,18 @@ Syntax constr
   | apptailcons [ << (APPTAIL $H ($LIST $T)) >> ]
 	 -> [ [1 1] $H:L  (APPTAIL ($LIST $T)):E ]
   | apptailnil [ << (APPTAIL) >> ] -> [ ]
-  | apptailcons1  [ << (APPTAIL (EXPL "!" $n $c1) ($LIST $T)) >> ]
-         -> [ [1 1] (EXPL $n $c1):L  (APPTAIL ($LIST $T)):E ]
-
-  ;
 
 (* Implicits *)
+  | apptailcons1  [ << (APPTAIL (EXPL $n $c1) ($LIST $T)) >> ]
+         -> [ [1 1] $n "!" $c1:E  (APPTAIL ($LIST $T)):E ]
+  ;
+(*
   level 8:
     arg_implicit [ << (EXPL ($NUM $n) $c1) >> ] -> [ $n "!" $c1:L ]
 (*  | arg_implicit1 [(EXPL "EX" ($NUM $n) $c1)] -> [ $n "!" $c1:L ]
   | fun_explicit [ << (EXPL $f) >> ] -> [ $f ]*)
   ;
-
+*)
 
   level 8:
   recterm [ << (MATCH $P $c ($LIST $BL)) >> ] ->

@@ -39,13 +39,15 @@ let print_typed_value_in_env env (trm,typ) =
 
 let print_typed_value x = print_typed_value_in_env (Global.env ()) x
 			  		  
-let print_impl_args = function
+let print_impl_args_by_pos = function
   | []  -> mt ()
   | [i] -> str"Position [" ++ int i ++ str"] is implicit"
   | l   -> 
       str"Positions [" ++ 
       prlist_with_sep (fun () -> str "; ") int l ++
       str"] are implicit"
+
+let print_impl_args l = print_impl_args_by_pos (positions_of_implicits l)
 
 (* To be improved; the type should be used to provide the types in the
    abstractions. This should be done recursively inside prterm, so that
@@ -72,11 +74,11 @@ let print_named_decl (id,c,typ) =
 let assumptions_for_print lna =
   List.fold_right (fun na env -> add_name na env) lna empty_names_context
 
-let implicit_args_id id l = 
-  if l = [] then 
-    (mt ())
-  else 
+let implicit_args_id id l =
+  if List.exists is_status_implicit l then 
     (str"For " ++ pr_id id ++ str": " ++ print_impl_args l ++ fnl ())
+  else 
+    (mt ())
 
 let implicit_args_msg sp mipv = 
   (prvecti

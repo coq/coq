@@ -1,10 +1,17 @@
 Changes from V7.3.1 to ????
 -------------------------
 
+TODO: unification 2eme ordre avec NewDestruct
+
 Symbolic notations
 
 - Introduction of a notion of scope gathering notations in a consistent set;
   set a notation sets has been developped for nat, Z and R
+- Declarations with only implicit arguments now handled (e.g. the
+  argument of nil can be set implicit; use !nil to refer to nil
+  without arguments)
+- New defensive strategy for printing or not implicit arguments to ensure
+  re-type-checkability of the printed term
 
 Library
 
