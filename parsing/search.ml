@@ -222,13 +222,16 @@ let gen_filtered_search filter_function display_function =
   gen_crible 
     (fun s a c -> if filter_function s a c then display_function s a c) 
 
-let search_about ref inout =
+let raw_search_about filter_modules display_function ref =
   let c = constr_of_reference ref in
-  let filter_modules = filter_by_module_from_list inout in
   let filter ref' env typ =
     filter_modules ref' env typ &&
     Termops.occur_term c typ
   in
-  gen_filtered_search filter plain_display
+  gen_filtered_search filter display_function
+
+let search_about ref inout = 
+  raw_search_about (filter_by_module_from_list inout) plain_display ref
+
 
 
