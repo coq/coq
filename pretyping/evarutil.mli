@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Names
 open Rawterm
 open Term
@@ -88,7 +89,7 @@ val empty_valcon : val_constraint
 val mk_valcon : constr -> val_constraint
 
 val split_tycon :
-  Rawterm.loc -> env ->  evar_defs -> type_constraint -> 
+  loc -> env ->  evar_defs -> type_constraint -> 
     name * type_constraint * type_constraint
 
 val valcon_of_tycon : type_constraint -> val_constraint

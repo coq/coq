@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Evd
 open Names
 open Term
@@ -35,11 +36,11 @@ val inh_coerce_to_sort :
 (* [inh_conv_coerce_to loc env isevars j t] coerces [j] to an object of type 
    [t]; i.e. it inserts a coercion into [j], if needed, in such a way [t] and
    [j.uj_type] are convertible; it fails if no coercion is applicable *)
-val inh_conv_coerce_to : Rawterm.loc -> 
+val inh_conv_coerce_to : loc -> 
   env -> evar_defs -> unsafe_judgment -> constr -> unsafe_judgment
 
 (* [inh_pattern_coerce_to loc env isevars pat ind1 ind2] coerces the Cases
    pattern [pat] typed in [ind1] into a pattern typed in [ind2];
    raises [Not_found] if no coercion found *)
 val inh_pattern_coerce_to :
-  Rawterm.loc  -> cases_pattern -> inductive -> inductive -> cases_pattern
+  loc  -> cases_pattern -> inductive -> inductive -> cases_pattern
