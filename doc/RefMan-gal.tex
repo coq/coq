@@ -380,6 +380,7 @@ abstraction when they can be synthetized by the system.
 assumptions. Obviously, this is expanded into unary abstractions
 separated by let-in's.
 
+
 \subsection{Products}
 \index{products}
 
@@ -416,7 +417,14 @@ associativity is to the left.
 binding of \term$_1$ to the variable $\ident$ in \term$_2$.
 
 \medskip
-Rem The expression {\tt [}{\ident}{\tt :=}{\term$_1$}{\tt :}{\type}{\tt ]}{\term$_2$} is equivalent to {\tt [}{\ident}{\tt :=(}{\term$_1$}{\tt ::}{\type}{\tt )]}{\term$_2$}.
+\Rem The expression {\tt [}{\ident}{\tt :=}{\term$_1$}{\tt
+:}{\type}{\tt ]}{\term$_2$} is equivalent to {\tt [}{\ident}{\tt
+:=(}{\term$_1$}{\tt ::}{\type}{\tt )]}{\term$_2$}.
+
+\Rem An alternative equivalent syntax for let-in is {\tt let} {\ident}
+{\tt =} {\term} {\tt in} {\term}.  For historical reasons, the syntax
+{\tt [} {\ident} {\tt =} {\term} {\tt ]} {\term} is also available but
+is not recommended.
 
 \subsection{Definition by case analysis}
 \index{Cases@{\tt Cases\ldots of\ldots end}}
