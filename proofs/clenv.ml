@@ -574,7 +574,7 @@ and w_resrec metas evars wc =
              	    | App (f,cl) when isConst f ->
 			let wc' = mimick_evar f (Array.length cl) evn wc in
 			w_resrec metas evars wc'
-		    | _ -> error "w_Unify"))
+		    | _ -> raise ex (* error "w_Unify" *)))
 	| _ -> anomaly "w_resrec"
 
 

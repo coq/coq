@@ -106,7 +106,7 @@ let w_Define sp c wc =
   let cty = 
     try 
       w_type_of (w_Focus sp wc) (mkCast (c,spdecl.evar_concl))
-    with Not_found -> 
+    with Not_found | (Type_errors.TypeError (_, Type_errors.UnboundVar _))-> 
       error "Instantiation contains unlegal variables"
   in 
   match spdecl.evar_body with
