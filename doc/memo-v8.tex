@@ -257,7 +257,7 @@ occurence numbers of this term, the occurence numbers are put after
 the term itself. This applies to tactic \TERM{pattern} and also
 \TERM{unfold}
 \begin{transbox}
-\TRANS{Pattern 1 2 (f x) 3 4 d}{pattern (f x) 1 2, d 3 4}
+\TRANS{Pattern 1 2 (f x) 3 4 d y z}{pattern (f x at 1 2) (d at 3 4) y z}
 \end{transbox}
 
 \section{Main changes in vernacular commands w.r.t. V7}

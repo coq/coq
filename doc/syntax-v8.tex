@@ -682,47 +682,50 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 
 \subsection{Other tactics}
 
-TODO
-
 \begin{rules}
 \EXTNT{simple-tactic}
-       \TERM{rewrite}
-\nlsep \TERM{replace}
-\nlsep \TERM{symplify_eq}
-\nlsep \TERM{discriminate}
-\nlsep \TERM{injection}
-\nlsep \TERM{conditional rewrite}
-\nlsep \TERM{dependent rewrite}
-\nlsep \TERM{absurd}
+       \TERM{rewrite} ~\NT{orient} ~\NT{constr-with-bindings}
+         ~\OPTGR{\KWD{in}~\NT{ident}}
+\nlsep \TERM{replace} ~\tacconstr ~\KWD{with} ~\tacconstr
+         ~\OPTGR{\KWD{in}~\NT{ident}}
+\nlsep \TERM{replace} ~\OPT{\NT{orient}} ~\tacconstr
+         ~\OPTGR{\KWD{in}~\NT{ident}}
+\nlsep \TERM{symplify_eq} ~\OPT{\NT{quantified-hyp}}
+\nlsep \TERM{discriminate} ~\OPT{\NT{quantified-hyp}}
+\nlsep \TERM{injection} ~\OPT{\NT{quantified-hyp}}
+\nlsep \TERM{conditional}~\NT{tactic}~\TERM{rewrite}~NT{orient}
+         ~\NT{constr-with-bindings}~\OPTGR{\KWD{in}~\NT{ident}
+\nlsep \TERM{dependent}~\TERM{rewrite}~\NT{orient}~\NT{ident}
+\nlsep \TERM{cutrewrite}~\NT{orient}~\tacconstr}
+         ~\OPTGR{\KWD{in}~\NT{ident}}
+\nlsep \TERM{absurd} ~\tacconstr
 \nlsep \TERM{contradiction}
-\nlsep \TERM{autorewrite}
-\nlsep \TERM{hint rewrite}
-\nlsep \TERM{refine}
-\nlsep \TERM{setoid_replace}
-\nlsep \TERM{setoid_rewrite}
-\nlsep \TERM{add setoid}
-\nlsep \TERM{add morphism}
-\nlsep \TERM{inversion}
-\nlsep \TERM{simple}~\TERM{inversion}
-\nlsep \TERM{derive}~\TERM{inversion_clear}
-\nlsep \TERM{derive}~\TERM{inversion}
-\nlsep \TERM{derive}~\TERM{dependent}~\TERM{inversion}
-\nlsep \TERM{derive}~\TERM{dependent}~\TERM{inversion_clear}
-\nlsep \TERM{subst}
+\nlsep \TERM{autorewrite}~\TERM{[}~\PLUS{\NT{ident}}~\TERM{]}
+         ~\OPTGR{\KWD{using}~\NT{tactic}}
+\nlsep \TERM{refine}~\tacconstr
+\nlsep \TERM{setoid_replace} ~\tacconstr ~\KWD{with} ~\tacconstr
+\nlsep \TERM{setoid_rewrite} ~\NT{orient} ~\tacconstr
+\nlsep \TERM{subst} ~\STAR{\NT{ident}}
 %% eqdecide.ml4
-\nlsep \TERM{decide}~\TERM{equality}
-\nlsep \TERM{compare}
+\nlsep \TERM{decide}~\TERM{equality} ~\OPTGR{\tacconstr~\tacconstr}
+\nlsep \TERM{compare}~\tacconstr~\tacconstr
 %% eauto
-\nlsep \TERM{eexact}
-\nlsep \TERM{eapply}
-\nlsep \TERM{prolog}
-\nlsep \TERM{eauto}
-\nlsep \TERM{eautod}
+\nlsep \TERM{eexact}~\tacconstr
+\nlsep \TERM{eapply}~\NT{constr-with-bindings}
+\nlsep \TERM{prolog}~\TERM{[}~\STAR{\tacconstr}~\TERM{]}
+         ~\NT{quantified-hyp}
+\nlsep \TERM{eauto}~\OPT{\NT{quantified-hyp}}~\OPT{\NT{quantified-hyp}}
+         ~\NT{hintbases}
+\nlsep \TERM{eautod}~\OPT{\NT{quantified-hyp}}~\OPT{\NT{quantified-hyp}}
+         ~\NT{hintbases}
 %% tauto
 \nlsep \TERM{tauto}
 \nlsep \TERM{simplif}
-\nlsep \TERM{intuition}
-\nlsep \TERM{linearintuition}
+\nlsep \TERM{intuition}~\OPT{\NTL{tactic}{0}}
+\nlsep \TERM{linearintuition}~\OPT{\NT{int}}
+\SEPDEF
+\DEFNT{orient}
+       \KWD{$\rightarrow$}~\mid~\KWD{$\leftarrow$}
 \end{rules}
 
 \section{Grammar of commands}
@@ -1021,6 +1024,21 @@ $$
        \TERM{Ltac}~\NT{ident}~\STAR{\NT{name}}~\KWD{:=}~\NT{tactic}
 \nlsep \TERM{Debug}~\TERM{On}
 \nlsep \TERM{Debug}~\TERM{Off}
+%% TODO: vernac
+\nlsep \TERM{add}~\TERM{setoid}~\tacconstr~\tacconstr~\tacconstr
+\nlsep \TERM{add}~\TERM{morphism}~\tacconstr~\KWD{:}~\NT{ident}
+\nlsep \TERM{derive}~\TERM{inversion_clear}
+         ~\OPT{\NT{int}}~\NT{ident}~\NT{ident}
+\nlsep \TERM{derive}~\TERM{inversion_clear}
+         ~\NT{ident}~\KWD{with}~\tacconstr~\OPTGR{\TERM{Sort}~\NT{sort}}
+\nlsep \TERM{derive}~\TERM{inversion}
+         ~\OPT{\NT{int}}~\NT{ident}~\NT{ident}
+\nlsep \TERM{derive}~\TERM{inversion}
+         ~\NT{ident}~\KWD{with}~\tacconstr~\OPTGR{\TERM{Sort}~\NT{sort}}
+\nlsep \TERM{derive}~\TERM{dependent}~\TERM{inversion_clear}
+         ~\NT{ident}~\KWD{with}~\tacconstr~\OPTGR{\TERM{Sort}~\NT{sort}}
+\nlsep \TERM{derive}~\TERM{dependent}~\TERM{inversion}
+         ~\NT{ident}~\KWD{with}~\tacconstr~\OPTGR{\TERM{Sort}~\NT{sort}}
 \end{rules}
 
 
@@ -1069,6 +1087,8 @@ $$
 \nlsep \TERM{Hint}~\TERM{Destruct}~\NT{destruct-loc}~\NT{int}
        ~\NT{ident}~\NT{constr}~\KWD{$\Rightarrow$}~\NT{tactic}
 \nlsep \TERM{Hint}~\NT{hint}~\OPT{\NT{hintbases}}
+%% TODO
+\nlsep \TERM{Hint}~\TERM{rewrite} ...
 %% PrintConstr not documented
 \end{rules}
 
@@ -1088,9 +1108,6 @@ $$
 \SEPDEF
 \DEFNT{hintbases}
        \KWD{:}~\PLUS{\NT{ident}}
-\SEPDEF
-\DEFNT{orient}
-       \KWD{$\rightarrow$}~\mid~\KWD{$\leftarrow$}
 \SEPDEF
 \DEFNT{destruct-loc}
        \TERM{Conclusion}
