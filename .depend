@@ -1136,15 +1136,15 @@ parsing/pcoq.cmx: parsing/ast.cmx parsing/coqast.cmx library/decl_kinds.cmx \
     interp/ppextend.cmx pretyping/rawterm.cmx proofs/tacexpr.cmx \
     interp/topconstr.cmx lib/util.cmx parsing/pcoq.cmi 
 parsing/ppconstr.cmo: parsing/ast.cmi lib/bignat.cmi interp/constrextern.cmi \
-    parsing/coqast.cmi interp/genarg.cmi library/libnames.cmi \
-    library/nameops.cmi kernel/names.cmi library/nametab.cmi \
-    pretyping/pattern.cmi lib/pp.cmi interp/ppextend.cmi \
+    parsing/coqast.cmi pretyping/evd.cmi interp/genarg.cmi \
+    library/libnames.cmi library/nameops.cmi kernel/names.cmi \
+    library/nametab.cmi pretyping/pattern.cmi lib/pp.cmi interp/ppextend.cmi \
     pretyping/rawterm.cmi interp/symbols.cmi kernel/term.cmi \
     interp/topconstr.cmi lib/util.cmi parsing/ppconstr.cmi 
 parsing/ppconstr.cmx: parsing/ast.cmx lib/bignat.cmx interp/constrextern.cmx \
-    parsing/coqast.cmx interp/genarg.cmx library/libnames.cmx \
-    library/nameops.cmx kernel/names.cmx library/nametab.cmx \
-    pretyping/pattern.cmx lib/pp.cmx interp/ppextend.cmx \
+    parsing/coqast.cmx pretyping/evd.cmx interp/genarg.cmx \
+    library/libnames.cmx library/nameops.cmx kernel/names.cmx \
+    library/nametab.cmx pretyping/pattern.cmx lib/pp.cmx interp/ppextend.cmx \
     pretyping/rawterm.cmx interp/symbols.cmx kernel/term.cmx \
     interp/topconstr.cmx lib/util.cmx parsing/ppconstr.cmi 
 parsing/pptactic.cmo: kernel/closure.cmi lib/dyn.cmi parsing/egrammar.cmi \
@@ -1706,21 +1706,21 @@ tactics/dn.cmx: lib/tlm.cmx tactics/dn.cmi
 tactics/eauto.cmo: tactics/auto.cmi toplevel/cerrors.cmi proofs/clenv.cmi \
     parsing/egrammar.cmi proofs/evar_refiner.cmi lib/explore.cmi \
     parsing/extend.cmi interp/genarg.cmi proofs/logic.cmi library/nameops.cmi \
-    kernel/names.cmi pretyping/pattern.cmi parsing/pcoq.cmi lib/pp.cmi \
-    parsing/pptactic.cmi proofs/proof_trees.cmi proofs/proof_type.cmi \
-    pretyping/rawterm.cmi kernel/reduction.cmi proofs/refiner.cmi \
-    kernel/sign.cmi tactics/tacinterp.cmi proofs/tacmach.cmi \
-    tactics/tacticals.cmi tactics/tactics.cmi kernel/term.cmi \
-    pretyping/termops.cmi lib/util.cmi 
+    kernel/names.cmi lib/options.cmi pretyping/pattern.cmi parsing/pcoq.cmi \
+    lib/pp.cmi parsing/pptactic.cmi proofs/proof_trees.cmi \
+    proofs/proof_type.cmi pretyping/rawterm.cmi kernel/reduction.cmi \
+    proofs/refiner.cmi kernel/sign.cmi tactics/tacinterp.cmi \
+    proofs/tacmach.cmi tactics/tacticals.cmi tactics/tactics.cmi \
+    kernel/term.cmi pretyping/termops.cmi lib/util.cmi 
 tactics/eauto.cmx: tactics/auto.cmx toplevel/cerrors.cmx proofs/clenv.cmx \
     parsing/egrammar.cmx proofs/evar_refiner.cmx lib/explore.cmx \
     parsing/extend.cmx interp/genarg.cmx proofs/logic.cmx library/nameops.cmx \
-    kernel/names.cmx pretyping/pattern.cmx parsing/pcoq.cmx lib/pp.cmx \
-    parsing/pptactic.cmx proofs/proof_trees.cmx proofs/proof_type.cmx \
-    pretyping/rawterm.cmx kernel/reduction.cmx proofs/refiner.cmx \
-    kernel/sign.cmx tactics/tacinterp.cmx proofs/tacmach.cmx \
-    tactics/tacticals.cmx tactics/tactics.cmx kernel/term.cmx \
-    pretyping/termops.cmx lib/util.cmx 
+    kernel/names.cmx lib/options.cmx pretyping/pattern.cmx parsing/pcoq.cmx \
+    lib/pp.cmx parsing/pptactic.cmx proofs/proof_trees.cmx \
+    proofs/proof_type.cmx pretyping/rawterm.cmx kernel/reduction.cmx \
+    proofs/refiner.cmx kernel/sign.cmx tactics/tacinterp.cmx \
+    proofs/tacmach.cmx tactics/tacticals.cmx tactics/tactics.cmx \
+    kernel/term.cmx pretyping/termops.cmx lib/util.cmx 
 tactics/elim.cmo: proofs/clenv.cmi kernel/environ.cmi tactics/hiddentac.cmi \
     tactics/hipattern.cmi pretyping/inductiveops.cmi library/libnames.cmi \
     kernel/names.cmi lib/pp.cmi parsing/printer.cmi proofs/proof_type.cmi \
@@ -1737,20 +1737,20 @@ tactics/eqdecide.cmo: tactics/auto.cmi toplevel/cerrors.cmi interp/coqlib.cmi \
     kernel/declarations.cmi parsing/egrammar.cmi tactics/equality.cmi \
     tactics/extratactics.cmi interp/genarg.cmi library/global.cmi \
     tactics/hiddentac.cmi tactics/hipattern.cmi pretyping/matching.cmi \
-    library/nameops.cmi kernel/names.cmi pretyping/pattern.cmi \
-    parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi proofs/proof_trees.cmi \
-    proofs/proof_type.cmi pretyping/rawterm.cmi proofs/refiner.cmi \
-    proofs/tacmach.cmi tactics/tacticals.cmi tactics/tactics.cmi \
-    kernel/term.cmi lib/util.cmi 
+    library/nameops.cmi kernel/names.cmi lib/options.cmi \
+    pretyping/pattern.cmi parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi \
+    proofs/proof_trees.cmi proofs/proof_type.cmi pretyping/rawterm.cmi \
+    proofs/refiner.cmi proofs/tacmach.cmi tactics/tacticals.cmi \
+    tactics/tactics.cmi kernel/term.cmi lib/util.cmi 
 tactics/eqdecide.cmx: tactics/auto.cmx toplevel/cerrors.cmx interp/coqlib.cmx \
     kernel/declarations.cmx parsing/egrammar.cmx tactics/equality.cmx \
     tactics/extratactics.cmx interp/genarg.cmx library/global.cmx \
     tactics/hiddentac.cmx tactics/hipattern.cmx pretyping/matching.cmx \
-    library/nameops.cmx kernel/names.cmx pretyping/pattern.cmx \
-    parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx proofs/proof_trees.cmx \
-    proofs/proof_type.cmx pretyping/rawterm.cmx proofs/refiner.cmx \
-    proofs/tacmach.cmx tactics/tacticals.cmx tactics/tactics.cmx \
-    kernel/term.cmx lib/util.cmx 
+    library/nameops.cmx kernel/names.cmx lib/options.cmx \
+    pretyping/pattern.cmx parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx \
+    proofs/proof_trees.cmx proofs/proof_type.cmx pretyping/rawterm.cmx \
+    proofs/refiner.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
+    tactics/tactics.cmx kernel/term.cmx lib/util.cmx 
 tactics/equality.cmo: proofs/clenv.cmi interp/coqlib.cmi \
     kernel/declarations.cmi kernel/environ.cmi proofs/evar_refiner.cmi \
     pretyping/evarconv.cmi pretyping/evarutil.cmi tactics/hipattern.cmi \
@@ -1787,18 +1787,18 @@ tactics/extratactics.cmo: tactics/autorewrite.cmi toplevel/cerrors.cmi \
     interp/constrintern.cmi tactics/contradiction.cmi parsing/egrammar.cmi \
     tactics/equality.cmi pretyping/evd.cmi tactics/extraargs.cmi \
     interp/genarg.cmi library/global.cmi tactics/inv.cmi tactics/leminv.cmi \
-    parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi pretyping/rawterm.cmi \
-    tactics/refine.cmi proofs/refiner.cmi tactics/setoid_replace.cmi \
-    proofs/tacexpr.cmo tactics/tacinterp.cmi kernel/term.cmi \
-    toplevel/vernacinterp.cmi tactics/extratactics.cmi 
+    lib/options.cmi parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi \
+    pretyping/rawterm.cmi tactics/refine.cmi proofs/refiner.cmi \
+    tactics/setoid_replace.cmi proofs/tacexpr.cmo tactics/tacinterp.cmi \
+    kernel/term.cmi toplevel/vernacinterp.cmi tactics/extratactics.cmi 
 tactics/extratactics.cmx: tactics/autorewrite.cmx toplevel/cerrors.cmx \
     interp/constrintern.cmx tactics/contradiction.cmx parsing/egrammar.cmx \
     tactics/equality.cmx pretyping/evd.cmx tactics/extraargs.cmx \
     interp/genarg.cmx library/global.cmx tactics/inv.cmx tactics/leminv.cmx \
-    parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx pretyping/rawterm.cmx \
-    tactics/refine.cmx proofs/refiner.cmx tactics/setoid_replace.cmx \
-    proofs/tacexpr.cmx tactics/tacinterp.cmx kernel/term.cmx \
-    toplevel/vernacinterp.cmx tactics/extratactics.cmi 
+    lib/options.cmx parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx \
+    pretyping/rawterm.cmx tactics/refine.cmx proofs/refiner.cmx \
+    tactics/setoid_replace.cmx proofs/tacexpr.cmx tactics/tacinterp.cmx \
+    kernel/term.cmx toplevel/vernacinterp.cmx tactics/extratactics.cmi 
 tactics/hiddentac.cmo: proofs/evar_refiner.cmi kernel/names.cmi \
     proofs/proof_type.cmi pretyping/rawterm.cmi proofs/refiner.cmi \
     proofs/tacexpr.cmo proofs/tacmach.cmi tactics/tactics.cmi kernel/term.cmi \
@@ -1977,18 +1977,18 @@ tactics/tactics.cmx: proofs/clenv.cmx interp/constrintern.cmx \
     pretyping/termops.cmx lib/util.cmx tactics/tactics.cmi 
 tactics/tauto.cmo: parsing/ast.cmi toplevel/cerrors.cmi parsing/coqast.cmi \
     parsing/egrammar.cmi interp/genarg.cmi tactics/hipattern.cmi \
-    library/libnames.cmi kernel/names.cmi pretyping/pattern.cmi \
-    parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi proofs/proof_type.cmi \
-    pretyping/rawterm.cmi proofs/refiner.cmi proofs/tacexpr.cmo \
-    tactics/tacinterp.cmi tactics/tacticals.cmi tactics/tactics.cmi \
-    interp/topconstr.cmi lib/util.cmi 
+    library/libnames.cmi kernel/names.cmi lib/options.cmi \
+    pretyping/pattern.cmi parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi \
+    proofs/proof_type.cmi pretyping/rawterm.cmi proofs/refiner.cmi \
+    proofs/tacexpr.cmo tactics/tacinterp.cmi tactics/tacticals.cmi \
+    tactics/tactics.cmi interp/topconstr.cmi lib/util.cmi 
 tactics/tauto.cmx: parsing/ast.cmx toplevel/cerrors.cmx parsing/coqast.cmx \
     parsing/egrammar.cmx interp/genarg.cmx tactics/hipattern.cmx \
-    library/libnames.cmx kernel/names.cmx pretyping/pattern.cmx \
-    parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx proofs/proof_type.cmx \
-    pretyping/rawterm.cmx proofs/refiner.cmx proofs/tacexpr.cmx \
-    tactics/tacinterp.cmx tactics/tacticals.cmx tactics/tactics.cmx \
-    interp/topconstr.cmx lib/util.cmx 
+    library/libnames.cmx kernel/names.cmx lib/options.cmx \
+    pretyping/pattern.cmx parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx \
+    proofs/proof_type.cmx pretyping/rawterm.cmx proofs/refiner.cmx \
+    proofs/tacexpr.cmx tactics/tacinterp.cmx tactics/tacticals.cmx \
+    tactics/tactics.cmx interp/topconstr.cmx lib/util.cmx 
 tactics/termdn.cmo: tactics/dn.cmi library/libnames.cmi library/nameops.cmi \
     kernel/names.cmi library/nametab.cmi pretyping/pattern.cmi \
     pretyping/rawterm.cmi kernel/term.cmi lib/util.cmi tactics/termdn.cmi 
@@ -2041,36 +2041,38 @@ toplevel/class.cmx: pretyping/classops.cmx library/decl_kinds.cmx \
     pretyping/retyping.cmx kernel/safe_typing.cmx kernel/sign.cmx \
     kernel/term.cmx pretyping/termops.cmx pretyping/typing.cmx lib/util.cmx \
     toplevel/class.cmi 
-toplevel/command.cmo: toplevel/class.cmi interp/constrintern.cmi \
-    library/decl_kinds.cmo kernel/declarations.cmi library/declare.cmi \
-    kernel/entries.cmi kernel/environ.cmi pretyping/evarutil.cmi \
-    pretyping/evd.cmi library/global.cmi library/impargs.cmi \
-    pretyping/indrec.cmi kernel/indtypes.cmi kernel/inductive.cmi \
-    library/lib.cmi library/libnames.cmi library/libobject.cmi \
-    library/library.cmi proofs/logic.cmi toplevel/metasyntax.cmi \
-    library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/options.cmi \
-    proofs/pfedit.cmi lib/pp.cmi pretyping/pretyping.cmi parsing/printer.cmi \
-    proofs/proof_type.cmi kernel/reduction.cmi pretyping/reductionops.cmi \
-    pretyping/retyping.cmi kernel/safe_typing.cmi library/states.cmi \
-    interp/symbols.cmi interp/syntax_def.cmi proofs/tacmach.cmi \
-    pretyping/tacred.cmi kernel/term.cmi pretyping/termops.cmi \
-    interp/topconstr.cmi kernel/typeops.cmi lib/util.cmi \
-    toplevel/vernacexpr.cmo toplevel/command.cmi 
-toplevel/command.cmx: toplevel/class.cmx interp/constrintern.cmx \
-    library/decl_kinds.cmx kernel/declarations.cmx library/declare.cmx \
-    kernel/entries.cmx kernel/environ.cmx pretyping/evarutil.cmx \
-    pretyping/evd.cmx library/global.cmx library/impargs.cmx \
-    pretyping/indrec.cmx kernel/indtypes.cmx kernel/inductive.cmx \
-    library/lib.cmx library/libnames.cmx library/libobject.cmx \
-    library/library.cmx proofs/logic.cmx toplevel/metasyntax.cmx \
-    library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/options.cmx \
-    proofs/pfedit.cmx lib/pp.cmx pretyping/pretyping.cmx parsing/printer.cmx \
-    proofs/proof_type.cmx kernel/reduction.cmx pretyping/reductionops.cmx \
-    pretyping/retyping.cmx kernel/safe_typing.cmx library/states.cmx \
-    interp/symbols.cmx interp/syntax_def.cmx proofs/tacmach.cmx \
-    pretyping/tacred.cmx kernel/term.cmx pretyping/termops.cmx \
-    interp/topconstr.cmx kernel/typeops.cmx lib/util.cmx \
-    toplevel/vernacexpr.cmx toplevel/command.cmi 
+toplevel/command.cmo: toplevel/class.cmi interp/constrextern.cmi \
+    interp/constrintern.cmi library/decl_kinds.cmo kernel/declarations.cmi \
+    library/declare.cmi kernel/entries.cmi kernel/environ.cmi \
+    pretyping/evarutil.cmi pretyping/evd.cmi library/global.cmi \
+    library/impargs.cmi pretyping/indrec.cmi kernel/indtypes.cmi \
+    kernel/inductive.cmi library/lib.cmi library/libnames.cmi \
+    library/libobject.cmi library/library.cmi proofs/logic.cmi \
+    toplevel/metasyntax.cmi library/nameops.cmi kernel/names.cmi \
+    library/nametab.cmi lib/options.cmi proofs/pfedit.cmi lib/pp.cmi \
+    pretyping/pretyping.cmi parsing/printer.cmi proofs/proof_type.cmi \
+    kernel/reduction.cmi pretyping/reductionops.cmi pretyping/retyping.cmi \
+    kernel/safe_typing.cmi library/states.cmi interp/symbols.cmi \
+    interp/syntax_def.cmi proofs/tacmach.cmi pretyping/tacred.cmi \
+    kernel/term.cmi pretyping/termops.cmi interp/topconstr.cmi \
+    kernel/typeops.cmi lib/util.cmi toplevel/vernacexpr.cmo \
+    toplevel/command.cmi 
+toplevel/command.cmx: toplevel/class.cmx interp/constrextern.cmx \
+    interp/constrintern.cmx library/decl_kinds.cmx kernel/declarations.cmx \
+    library/declare.cmx kernel/entries.cmx kernel/environ.cmx \
+    pretyping/evarutil.cmx pretyping/evd.cmx library/global.cmx \
+    library/impargs.cmx pretyping/indrec.cmx kernel/indtypes.cmx \
+    kernel/inductive.cmx library/lib.cmx library/libnames.cmx \
+    library/libobject.cmx library/library.cmx proofs/logic.cmx \
+    toplevel/metasyntax.cmx library/nameops.cmx kernel/names.cmx \
+    library/nametab.cmx lib/options.cmx proofs/pfedit.cmx lib/pp.cmx \
+    pretyping/pretyping.cmx parsing/printer.cmx proofs/proof_type.cmx \
+    kernel/reduction.cmx pretyping/reductionops.cmx pretyping/retyping.cmx \
+    kernel/safe_typing.cmx library/states.cmx interp/symbols.cmx \
+    interp/syntax_def.cmx proofs/tacmach.cmx pretyping/tacred.cmx \
+    kernel/term.cmx pretyping/termops.cmx interp/topconstr.cmx \
+    kernel/typeops.cmx lib/util.cmx toplevel/vernacexpr.cmx \
+    toplevel/command.cmi 
 toplevel/coqinit.cmo: config/coq_config.cmi toplevel/mltop.cmi \
     library/nameops.cmi kernel/names.cmi lib/options.cmi lib/pp.cmi \
     lib/system.cmi toplevel/toplevel.cmi toplevel/vernac.cmi \
@@ -2120,19 +2122,21 @@ toplevel/fhimsg.cmx: kernel/environ.cmx parsing/g_minicoq.cmx \
     kernel/names.cmx lib/pp.cmx kernel/reduction.cmx kernel/sign.cmx \
     kernel/term.cmx kernel/type_errors.cmx lib/util.cmx toplevel/fhimsg.cmi 
 toplevel/himsg.cmo: parsing/ast.cmi pretyping/cases.cmi kernel/environ.cmi \
-    library/global.cmi kernel/indtypes.cmi kernel/inductive.cmi \
-    proofs/logic.cmi library/nameops.cmi kernel/names.cmi library/nametab.cmi \
-    lib/options.cmi lib/pp.cmi pretyping/pretype_errors.cmi \
-    parsing/printer.cmi pretyping/rawterm.cmi kernel/reduction.cmi \
-    kernel/sign.cmi kernel/term.cmi pretyping/termops.cmi \
-    kernel/type_errors.cmi lib/util.cmi toplevel/himsg.cmi 
+    pretyping/evd.cmi library/global.cmi kernel/indtypes.cmi \
+    kernel/inductive.cmi proofs/logic.cmi library/nameops.cmi \
+    kernel/names.cmi library/nametab.cmi lib/options.cmi lib/pp.cmi \
+    pretyping/pretype_errors.cmi parsing/printer.cmi pretyping/rawterm.cmi \
+    kernel/reduction.cmi kernel/sign.cmi kernel/term.cmi \
+    pretyping/termops.cmi kernel/type_errors.cmi lib/util.cmi \
+    toplevel/himsg.cmi 
 toplevel/himsg.cmx: parsing/ast.cmx pretyping/cases.cmx kernel/environ.cmx \
-    library/global.cmx kernel/indtypes.cmx kernel/inductive.cmx \
-    proofs/logic.cmx library/nameops.cmx kernel/names.cmx library/nametab.cmx \
-    lib/options.cmx lib/pp.cmx pretyping/pretype_errors.cmx \
-    parsing/printer.cmx pretyping/rawterm.cmx kernel/reduction.cmx \
-    kernel/sign.cmx kernel/term.cmx pretyping/termops.cmx \
-    kernel/type_errors.cmx lib/util.cmx toplevel/himsg.cmi 
+    pretyping/evd.cmx library/global.cmx kernel/indtypes.cmx \
+    kernel/inductive.cmx proofs/logic.cmx library/nameops.cmx \
+    kernel/names.cmx library/nametab.cmx lib/options.cmx lib/pp.cmx \
+    pretyping/pretype_errors.cmx parsing/printer.cmx pretyping/rawterm.cmx \
+    kernel/reduction.cmx kernel/sign.cmx kernel/term.cmx \
+    pretyping/termops.cmx kernel/type_errors.cmx lib/util.cmx \
+    toplevel/himsg.cmi 
 toplevel/line_oriented_parser.cmo: toplevel/line_oriented_parser.cmi 
 toplevel/line_oriented_parser.cmx: toplevel/line_oriented_parser.cmi 
 toplevel/metasyntax.cmo: parsing/ast.cmi interp/constrextern.cmi \
@@ -2356,15 +2360,15 @@ contrib/cc/ccproof.cmx: contrib/cc/ccalgo.cmx kernel/names.cmx \
 contrib/cc/cctac.cmo: contrib/cc/ccalgo.cmi contrib/cc/ccproof.cmi \
     toplevel/cerrors.cmi interp/coqlib.cmi parsing/egrammar.cmi \
     pretyping/evd.cmi library/libnames.cmi library/library.cmi \
-    library/nameops.cmi kernel/names.cmi parsing/pcoq.cmi lib/pp.cmi \
-    parsing/pptactic.cmi proofs/proof_type.cmi proofs/refiner.cmi \
+    library/nameops.cmi kernel/names.cmi lib/options.cmi parsing/pcoq.cmi \
+    lib/pp.cmi parsing/pptactic.cmi proofs/proof_type.cmi proofs/refiner.cmi \
     tactics/tacinterp.cmi proofs/tacmach.cmi tactics/tacticals.cmi \
     tactics/tactics.cmi kernel/term.cmi lib/util.cmi 
 contrib/cc/cctac.cmx: contrib/cc/ccalgo.cmx contrib/cc/ccproof.cmx \
     toplevel/cerrors.cmx interp/coqlib.cmx parsing/egrammar.cmx \
     pretyping/evd.cmx library/libnames.cmx library/library.cmx \
-    library/nameops.cmx kernel/names.cmx parsing/pcoq.cmx lib/pp.cmx \
-    parsing/pptactic.cmx proofs/proof_type.cmx proofs/refiner.cmx \
+    library/nameops.cmx kernel/names.cmx lib/options.cmx parsing/pcoq.cmx \
+    lib/pp.cmx parsing/pptactic.cmx proofs/proof_type.cmx proofs/refiner.cmx \
     tactics/tacinterp.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
     tactics/tactics.cmx kernel/term.cmx lib/util.cmx 
 contrib/correctness/pcic.cmo: kernel/declarations.cmi library/declare.cmi \
@@ -2748,24 +2752,24 @@ contrib/field/field.cmo: toplevel/cerrors.cmi interp/constrintern.cmi \
     parsing/extend.cmi interp/genarg.cmi library/global.cmi lib/gmap.cmi \
     tactics/hipattern.cmi library/lib.cmi library/libnames.cmi \
     library/libobject.cmi library/library.cmi kernel/names.cmi \
-    parsing/pcoq.cmi lib/pp.cmi translate/ppconstrnew.cmi \
-    parsing/pptactic.cmi proofs/proof_type.cmi contrib/ring/quote.cmo \
-    pretyping/reductionops.cmi proofs/refiner.cmi contrib/ring/ring.cmo \
-    library/summary.cmi proofs/tacexpr.cmo tactics/tacinterp.cmi \
-    proofs/tacmach.cmi tactics/tacticals.cmi kernel/term.cmi \
-    interp/topconstr.cmi pretyping/typing.cmi lib/util.cmi \
+    lib/options.cmi parsing/pcoq.cmi lib/pp.cmi translate/ppconstrnew.cmi \
+    parsing/pptactic.cmi parsing/printer.cmi proofs/proof_type.cmi \
+    contrib/ring/quote.cmo pretyping/reductionops.cmi proofs/refiner.cmi \
+    contrib/ring/ring.cmo library/summary.cmi proofs/tacexpr.cmo \
+    tactics/tacinterp.cmi proofs/tacmach.cmi tactics/tacticals.cmi \
+    kernel/term.cmi interp/topconstr.cmi pretyping/typing.cmi lib/util.cmi \
     toplevel/vernacexpr.cmo toplevel/vernacinterp.cmi 
 contrib/field/field.cmx: toplevel/cerrors.cmx interp/constrintern.cmx \
     interp/coqlib.cmx parsing/egrammar.cmx pretyping/evd.cmx \
     parsing/extend.cmx interp/genarg.cmx library/global.cmx lib/gmap.cmx \
     tactics/hipattern.cmx library/lib.cmx library/libnames.cmx \
     library/libobject.cmx library/library.cmx kernel/names.cmx \
-    parsing/pcoq.cmx lib/pp.cmx translate/ppconstrnew.cmx \
-    parsing/pptactic.cmx proofs/proof_type.cmx contrib/ring/quote.cmx \
-    pretyping/reductionops.cmx proofs/refiner.cmx contrib/ring/ring.cmx \
-    library/summary.cmx proofs/tacexpr.cmx tactics/tacinterp.cmx \
-    proofs/tacmach.cmx tactics/tacticals.cmx kernel/term.cmx \
-    interp/topconstr.cmx pretyping/typing.cmx lib/util.cmx \
+    lib/options.cmx parsing/pcoq.cmx lib/pp.cmx translate/ppconstrnew.cmx \
+    parsing/pptactic.cmx parsing/printer.cmx proofs/proof_type.cmx \
+    contrib/ring/quote.cmx pretyping/reductionops.cmx proofs/refiner.cmx \
+    contrib/ring/ring.cmx library/summary.cmx proofs/tacexpr.cmx \
+    tactics/tacinterp.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
+    kernel/term.cmx interp/topconstr.cmx pretyping/typing.cmx lib/util.cmx \
     toplevel/vernacexpr.cmx toplevel/vernacinterp.cmx 
 contrib/first-order/formula.cmo: kernel/closure.cmi kernel/declarations.cmi \
     library/global.cmi tactics/hipattern.cmi pretyping/inductiveops.cmi \
@@ -2780,17 +2784,17 @@ contrib/first-order/formula.cmx: kernel/closure.cmx kernel/declarations.cmx \
 contrib/first-order/g_ground.cmo: tactics/auto.cmi toplevel/cerrors.cmi \
     parsing/egrammar.cmi contrib/first-order/formula.cmi interp/genarg.cmi \
     library/goptions.cmi contrib/first-order/ground.cmi library/libnames.cmi \
-    kernel/names.cmi parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi \
-    proofs/refiner.cmi contrib/first-order/sequent.cmi proofs/tacexpr.cmo \
-    tactics/tacinterp.cmi tactics/tacticals.cmi tactics/tactics.cmi \
-    kernel/term.cmi lib/util.cmi 
+    kernel/names.cmi lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
+    parsing/pptactic.cmi proofs/refiner.cmi contrib/first-order/sequent.cmi \
+    proofs/tacexpr.cmo tactics/tacinterp.cmi tactics/tacticals.cmi \
+    tactics/tactics.cmi kernel/term.cmi lib/util.cmi 
 contrib/first-order/g_ground.cmx: tactics/auto.cmx toplevel/cerrors.cmx \
     parsing/egrammar.cmx contrib/first-order/formula.cmx interp/genarg.cmx \
     library/goptions.cmx contrib/first-order/ground.cmx library/libnames.cmx \
-    kernel/names.cmx parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx \
-    proofs/refiner.cmx contrib/first-order/sequent.cmx proofs/tacexpr.cmx \
-    tactics/tacinterp.cmx tactics/tacticals.cmx tactics/tactics.cmx \
-    kernel/term.cmx lib/util.cmx 
+    kernel/names.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
+    parsing/pptactic.cmx proofs/refiner.cmx contrib/first-order/sequent.cmx \
+    proofs/tacexpr.cmx tactics/tacinterp.cmx tactics/tacticals.cmx \
+    tactics/tactics.cmx kernel/term.cmx lib/util.cmx 
 contrib/first-order/ground.cmo: pretyping/classops.cmi kernel/closure.cmi \
     contrib/first-order/formula.cmi lib/heap.cmi \
     contrib/first-order/instances.cmi library/libnames.cmi kernel/names.cmi \
@@ -2864,34 +2868,36 @@ contrib/fourier/fourierR.cmx: proofs/clenv.cmx tactics/contradiction.cmx \
     contrib/ring/ring.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
     tactics/tactics.cmx kernel/term.cmx toplevel/vernacexpr.cmx 
 contrib/fourier/g_fourier.cmo: toplevel/cerrors.cmi parsing/egrammar.cmi \
-    contrib/fourier/fourierR.cmo parsing/pcoq.cmi lib/pp.cmi \
+    contrib/fourier/fourierR.cmo lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
     parsing/pptactic.cmi proofs/refiner.cmi 
 contrib/fourier/g_fourier.cmx: toplevel/cerrors.cmx parsing/egrammar.cmx \
-    contrib/fourier/fourierR.cmx parsing/pcoq.cmx lib/pp.cmx \
+    contrib/fourier/fourierR.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
     parsing/pptactic.cmx proofs/refiner.cmx 
 contrib/funind/tacinv.cmo: toplevel/cerrors.cmi interp/constrintern.cmi \
     interp/coqlib.cmi library/decl_kinds.cmo library/declare.cmi \
     parsing/egrammar.cmi kernel/entries.cmi kernel/environ.cmi \
     tactics/equality.cmi pretyping/evd.cmi interp/genarg.cmi \
     library/global.cmi pretyping/inductiveops.cmi kernel/names.cmi \
-    parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi parsing/printer.cmi \
-    proofs/proof_type.cmi pretyping/reductionops.cmi tactics/refine.cmi \
-    proofs/refiner.cmi kernel/safe_typing.cmi tactics/setoid_replace.cmi \
-    tactics/tacinterp.cmi contrib/funind/tacinvutils.cmi proofs/tacmach.cmi \
-    pretyping/tacred.cmi tactics/tacticals.cmi tactics/tactics.cmi \
-    kernel/term.cmi pretyping/termops.cmi pretyping/typing.cmi lib/util.cmi \
+    lib/options.cmi parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi \
+    parsing/printer.cmi proofs/proof_type.cmi pretyping/reductionops.cmi \
+    tactics/refine.cmi proofs/refiner.cmi kernel/safe_typing.cmi \
+    tactics/setoid_replace.cmi tactics/tacinterp.cmi \
+    contrib/funind/tacinvutils.cmi proofs/tacmach.cmi pretyping/tacred.cmi \
+    tactics/tacticals.cmi tactics/tactics.cmi kernel/term.cmi \
+    pretyping/termops.cmi pretyping/typing.cmi lib/util.cmi \
     toplevel/vernacinterp.cmi 
 contrib/funind/tacinv.cmx: toplevel/cerrors.cmx interp/constrintern.cmx \
     interp/coqlib.cmx library/decl_kinds.cmx library/declare.cmx \
     parsing/egrammar.cmx kernel/entries.cmx kernel/environ.cmx \
     tactics/equality.cmx pretyping/evd.cmx interp/genarg.cmx \
     library/global.cmx pretyping/inductiveops.cmx kernel/names.cmx \
-    parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx parsing/printer.cmx \
-    proofs/proof_type.cmx pretyping/reductionops.cmx tactics/refine.cmx \
-    proofs/refiner.cmx kernel/safe_typing.cmx tactics/setoid_replace.cmx \
-    tactics/tacinterp.cmx contrib/funind/tacinvutils.cmx proofs/tacmach.cmx \
-    pretyping/tacred.cmx tactics/tacticals.cmx tactics/tactics.cmx \
-    kernel/term.cmx pretyping/termops.cmx pretyping/typing.cmx lib/util.cmx \
+    lib/options.cmx parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx \
+    parsing/printer.cmx proofs/proof_type.cmx pretyping/reductionops.cmx \
+    tactics/refine.cmx proofs/refiner.cmx kernel/safe_typing.cmx \
+    tactics/setoid_replace.cmx tactics/tacinterp.cmx \
+    contrib/funind/tacinvutils.cmx proofs/tacmach.cmx pretyping/tacred.cmx \
+    tactics/tacticals.cmx tactics/tactics.cmx kernel/term.cmx \
+    pretyping/termops.cmx pretyping/typing.cmx lib/util.cmx \
     toplevel/vernacinterp.cmx 
 contrib/funind/tacinvutils.cmo: interp/coqlib.cmi kernel/declarations.cmi \
     library/declare.cmi kernel/environ.cmi pretyping/evd.cmi \
@@ -2944,7 +2950,7 @@ contrib/interface/centaur.cmo: contrib/interface/ascent.cmi parsing/ast.cmi \
     contrib/interface/history.cmi library/lib.cmi library/libnames.cmi \
     library/libobject.cmi library/library.cmi \
     toplevel/line_oriented_parser.cmi contrib/interface/name_to_ast.cmi \
-    library/nameops.cmi kernel/names.cmi library/nametab.cmi \
+    library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/options.cmi \
     contrib/interface/pbp.cmi parsing/pcoq.cmi proofs/pfedit.cmi lib/pp.cmi \
     parsing/pptactic.cmi pretyping/pretyping.cmi proofs/proof_trees.cmi \
     proofs/proof_type.cmi toplevel/protectedtoplevel.cmi \
@@ -2965,7 +2971,7 @@ contrib/interface/centaur.cmx: contrib/interface/ascent.cmi parsing/ast.cmx \
     contrib/interface/history.cmx library/lib.cmx library/libnames.cmx \
     library/libobject.cmx library/library.cmx \
     toplevel/line_oriented_parser.cmx contrib/interface/name_to_ast.cmx \
-    library/nameops.cmx kernel/names.cmx library/nametab.cmx \
+    library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/options.cmx \
     contrib/interface/pbp.cmx parsing/pcoq.cmx proofs/pfedit.cmx lib/pp.cmx \
     parsing/pptactic.cmx pretyping/pretyping.cmx proofs/proof_trees.cmx \
     proofs/proof_type.cmx toplevel/protectedtoplevel.cmx \
@@ -3024,8 +3030,8 @@ contrib/interface/name_to_ast.cmo: parsing/ast.cmi pretyping/classops.cmi \
     library/lib.cmi library/libnames.cmi library/libobject.cmi \
     library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
     parsing/prettyp.cmi kernel/reduction.cmi kernel/sign.cmi kernel/term.cmi \
-    parsing/termast.cmi lib/util.cmi toplevel/vernacexpr.cmo \
-    contrib/interface/name_to_ast.cmi 
+    parsing/termast.cmi interp/topconstr.cmi lib/util.cmi \
+    toplevel/vernacexpr.cmo contrib/interface/name_to_ast.cmi 
 contrib/interface/name_to_ast.cmx: parsing/ast.cmx pretyping/classops.cmx \
     interp/constrextern.cmx parsing/coqast.cmx library/decl_kinds.cmx \
     kernel/declarations.cmx library/declare.cmx kernel/environ.cmx \
@@ -3033,8 +3039,8 @@ contrib/interface/name_to_ast.cmx: parsing/ast.cmx pretyping/classops.cmx \
     library/lib.cmx library/libnames.cmx library/libobject.cmx \
     library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/pp.cmx \
     parsing/prettyp.cmx kernel/reduction.cmx kernel/sign.cmx kernel/term.cmx \
-    parsing/termast.cmx lib/util.cmx toplevel/vernacexpr.cmx \
-    contrib/interface/name_to_ast.cmi 
+    parsing/termast.cmx interp/topconstr.cmx lib/util.cmx \
+    toplevel/vernacexpr.cmx contrib/interface/name_to_ast.cmi 
 contrib/interface/parse.cmo: contrib/interface/ascent.cmi \
     toplevel/cerrors.cmi config/coq_config.cmi library/declaremods.cmi \
     parsing/esyntax.cmi library/libnames.cmi library/libobject.cmi \
@@ -3153,20 +3159,20 @@ contrib/jprover/jprover.cmo: toplevel/cerrors.cmi proofs/clenv.cmi \
     parsing/egrammar.cmi interp/genarg.cmi library/global.cmi \
     tactics/hiddentac.cmi tactics/hipattern.cmi contrib/jprover/jall.cmi \
     contrib/jprover/jlogic.cmi contrib/jprover/jterm.cmi kernel/names.cmi \
-    pretyping/pattern.cmi parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi \
-    parsing/printer.cmi proofs/proof_type.cmi pretyping/rawterm.cmi \
-    kernel/reduction.cmi pretyping/reductionops.cmi proofs/refiner.cmi \
-    proofs/tacmach.cmi tactics/tacticals.cmi tactics/tactics.cmi \
-    kernel/term.cmi pretyping/termops.cmi lib/util.cmi 
+    lib/options.cmi pretyping/pattern.cmi parsing/pcoq.cmi lib/pp.cmi \
+    parsing/pptactic.cmi parsing/printer.cmi proofs/proof_type.cmi \
+    pretyping/rawterm.cmi kernel/reduction.cmi pretyping/reductionops.cmi \
+    proofs/refiner.cmi proofs/tacmach.cmi tactics/tacticals.cmi \
+    tactics/tactics.cmi kernel/term.cmi pretyping/termops.cmi lib/util.cmi 
 contrib/jprover/jprover.cmx: toplevel/cerrors.cmx proofs/clenv.cmx \
     parsing/egrammar.cmx interp/genarg.cmx library/global.cmx \
     tactics/hiddentac.cmx tactics/hipattern.cmx contrib/jprover/jall.cmx \
     contrib/jprover/jlogic.cmx contrib/jprover/jterm.cmx kernel/names.cmx \
-    pretyping/pattern.cmx parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx \
-    parsing/printer.cmx proofs/proof_type.cmx pretyping/rawterm.cmx \
-    kernel/reduction.cmx pretyping/reductionops.cmx proofs/refiner.cmx \
-    proofs/tacmach.cmx tactics/tacticals.cmx tactics/tactics.cmx \
-    kernel/term.cmx pretyping/termops.cmx lib/util.cmx 
+    lib/options.cmx pretyping/pattern.cmx parsing/pcoq.cmx lib/pp.cmx \
+    parsing/pptactic.cmx parsing/printer.cmx proofs/proof_type.cmx \
+    pretyping/rawterm.cmx kernel/reduction.cmx pretyping/reductionops.cmx \
+    proofs/refiner.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
+    tactics/tactics.cmx kernel/term.cmx pretyping/termops.cmx lib/util.cmx 
 contrib/jprover/jterm.cmo: contrib/jprover/opname.cmi \
     contrib/jprover/jterm.cmi 
 contrib/jprover/jterm.cmx: contrib/jprover/opname.cmx \
@@ -3190,15 +3196,15 @@ contrib/linear/ccidpc.cmx: proofs/clenv.cmx contrib/linear/dpctypes.cmx \
     tactics/tacinterp.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
     tactics/tactics.cmx kernel/term.cmx pretyping/termops.cmx lib/util.cmx 
 contrib/linear/dpc.cmo: contrib/linear/ccidpc.cmo toplevel/cerrors.cmi \
-    parsing/egrammar.cmi interp/genarg.cmi parsing/pcoq.cmi lib/pp.cmi \
-    parsing/pptactic.cmi proofs/proof_trees.cmi contrib/linear/prove.cmi \
-    proofs/refiner.cmi tactics/tacinterp.cmi proofs/tacmach.cmi \
-    tactics/tacticals.cmi tactics/tactics.cmi lib/util.cmi 
+    parsing/egrammar.cmi interp/genarg.cmi lib/options.cmi parsing/pcoq.cmi \
+    lib/pp.cmi parsing/pptactic.cmi proofs/proof_trees.cmi \
+    contrib/linear/prove.cmi proofs/refiner.cmi tactics/tacinterp.cmi \
+    proofs/tacmach.cmi tactics/tacticals.cmi tactics/tactics.cmi lib/util.cmi 
 contrib/linear/dpc.cmx: contrib/linear/ccidpc.cmx toplevel/cerrors.cmx \
-    parsing/egrammar.cmx interp/genarg.cmx parsing/pcoq.cmx lib/pp.cmx \
-    parsing/pptactic.cmx proofs/proof_trees.cmx contrib/linear/prove.cmx \
-    proofs/refiner.cmx tactics/tacinterp.cmx proofs/tacmach.cmx \
-    tactics/tacticals.cmx tactics/tactics.cmx lib/util.cmx 
+    parsing/egrammar.cmx interp/genarg.cmx lib/options.cmx parsing/pcoq.cmx \
+    lib/pp.cmx parsing/pptactic.cmx proofs/proof_trees.cmx \
+    contrib/linear/prove.cmx proofs/refiner.cmx tactics/tacinterp.cmx \
+    proofs/tacmach.cmx tactics/tacticals.cmx tactics/tactics.cmx lib/util.cmx 
 contrib/linear/dpctypes.cmo: kernel/names.cmi kernel/term.cmi \
     contrib/linear/dpctypes.cmi 
 contrib/linear/dpctypes.cmx: kernel/names.cmx kernel/term.cmx \
@@ -3254,27 +3260,27 @@ contrib/omega/coq_omega.cmx: parsing/ast.cmx proofs/clenv.cmx \
     kernel/sign.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
     tactics/tactics.cmx kernel/term.cmx pretyping/termops.cmx lib/util.cmx 
 contrib/omega/g_omega.cmo: toplevel/cerrors.cmi contrib/omega/coq_omega.cmo \
-    parsing/egrammar.cmi parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi \
-    proofs/refiner.cmi 
+    parsing/egrammar.cmi lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
+    parsing/pptactic.cmi proofs/refiner.cmi 
 contrib/omega/g_omega.cmx: toplevel/cerrors.cmx contrib/omega/coq_omega.cmx \
-    parsing/egrammar.cmx parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx \
-    proofs/refiner.cmx 
+    parsing/egrammar.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
+    parsing/pptactic.cmx proofs/refiner.cmx 
 contrib/omega/omega.cmo: library/nameops.cmi kernel/names.cmi lib/util.cmi 
 contrib/omega/omega.cmx: library/nameops.cmx kernel/names.cmx lib/util.cmx 
 contrib/ring/g_quote.cmo: toplevel/cerrors.cmi parsing/egrammar.cmi \
-    interp/genarg.cmi parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi \
-    contrib/ring/quote.cmo proofs/refiner.cmi 
+    interp/genarg.cmi lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
+    parsing/pptactic.cmi contrib/ring/quote.cmo proofs/refiner.cmi 
 contrib/ring/g_quote.cmx: toplevel/cerrors.cmx parsing/egrammar.cmx \
-    interp/genarg.cmx parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx \
-    contrib/ring/quote.cmx proofs/refiner.cmx 
+    interp/genarg.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
+    parsing/pptactic.cmx contrib/ring/quote.cmx proofs/refiner.cmx 
 contrib/ring/g_ring.cmo: toplevel/cerrors.cmi parsing/egrammar.cmi \
-    interp/genarg.cmi parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi \
-    contrib/ring/quote.cmo proofs/refiner.cmi contrib/ring/ring.cmo \
-    toplevel/vernacinterp.cmi 
+    interp/genarg.cmi lib/options.cmi parsing/pcoq.cmi lib/pp.cmi \
+    parsing/pptactic.cmi contrib/ring/quote.cmo proofs/refiner.cmi \
+    contrib/ring/ring.cmo toplevel/vernacinterp.cmi 
 contrib/ring/g_ring.cmx: toplevel/cerrors.cmx parsing/egrammar.cmx \
-    interp/genarg.cmx parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx \
-    contrib/ring/quote.cmx proofs/refiner.cmx contrib/ring/ring.cmx \
-    toplevel/vernacinterp.cmx 
+    interp/genarg.cmx lib/options.cmx parsing/pcoq.cmx lib/pp.cmx \
+    parsing/pptactic.cmx contrib/ring/quote.cmx proofs/refiner.cmx \
+    contrib/ring/ring.cmx toplevel/vernacinterp.cmx 
 contrib/ring/quote.cmo: interp/coqlib.cmi kernel/environ.cmi \
     library/global.cmi pretyping/instantiate.cmi library/library.cmi \
     pretyping/matching.cmi kernel/names.cmi pretyping/pattern.cmi lib/pp.cmi \
@@ -3314,11 +3320,11 @@ contrib/romega/const_omega.cmo: library/declare.cmi library/libnames.cmi \
 contrib/romega/const_omega.cmx: library/declare.cmx library/libnames.cmx \
     kernel/names.cmx library/nametab.cmx kernel/term.cmx lib/util.cmx 
 contrib/romega/g_romega.cmo: toplevel/cerrors.cmi parsing/egrammar.cmi \
-    parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi proofs/refiner.cmi \
-    contrib/romega/refl_omega.cmo 
+    lib/options.cmi parsing/pcoq.cmi lib/pp.cmi parsing/pptactic.cmi \
+    proofs/refiner.cmi contrib/romega/refl_omega.cmo 
 contrib/romega/g_romega.cmx: toplevel/cerrors.cmx parsing/egrammar.cmx \
-    parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx proofs/refiner.cmx \
-    contrib/romega/refl_omega.cmx 
+    lib/options.cmx parsing/pcoq.cmx lib/pp.cmx parsing/pptactic.cmx \
+    proofs/refiner.cmx contrib/romega/refl_omega.cmx 
 contrib/romega/refl_omega.cmo: parsing/ast.cmi tactics/auto.cmi \
     proofs/clenv.cmi contrib/romega/const_omega.cmo \
     contrib/omega/coq_omega.cmo kernel/environ.cmi kernel/inductive.cmi \
