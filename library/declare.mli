@@ -27,9 +27,15 @@ type section_variable_entry =
 type sticky = bool
 
 type variable_declaration = section_variable_entry * strength * sticky
+
 val declare_variable : identifier -> variable_declaration -> unit
 
-type constant_declaration = constant_entry * strength
+type constant_declaration_type =
+  | ConstantEntry  of constant_entry
+  | ConstantRecipe of Cooking.recipe
+
+type constant_declaration = constant_declaration_type * strength
+
 val declare_constant : identifier -> constant_declaration -> unit
 
 val declare_parameter : identifier -> constr -> unit

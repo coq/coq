@@ -144,6 +144,11 @@ val prod_create : env -> types * constr -> constr
 val defined_constant : env -> constant -> bool
 val evaluable_constant : env -> constant -> bool
 
+(*s Opaque / Transparent switching *)
+
+val set_opaque : env -> section_path -> unit
+val set_transparent : env -> section_path -> unit
+
 (*s Modules. *)
 
 type compiled_env

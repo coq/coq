@@ -270,6 +270,20 @@ let push_rels_with_univ vars env =
 
 (* Insertion of constants and parameters in environment. *)
 
+let add_parameter sp t env =
+  let (jt,cst) = safe_infer env t in
+  let env' = add_constraints cst env in
+  let ids = global_vars_set jt.uj_val in
+  let cb = {
+    const_kind = kind_of_path sp;
+    const_body = None;
+    const_type = assumption_of_judgment env' Evd.empty jt;
+    const_hyps = keep_hyps ids (named_context env);
+    const_constraints = cst;
+    const_opaque = false } 
+  in
+  Environ.add_constant sp cb env'
+
 let add_constant_with_value sp body typ env =
   let (jb,cst) = safe_infer env body in
   let env' = add_constraints cst env in
@@ -296,7 +310,7 @@ let add_constant_with_value sp body typ env =
   in
   let cb = { 
     const_kind = kind_of_path sp;
-    const_body = Some (ref (Cooked body));
+    const_body = Some body;
     const_type = ty;
     const_hyps = keep_hyps ids (named_context env);
     const_constraints = Constraint.union cst cst';
@@ -304,41 +318,29 @@ let add_constant_with_value sp body typ env =
   in
   add_constant sp cb env''
 
-let add_lazy_constant sp f t env =
-  let (jt,cst) = safe_infer env t in
-  let env' = add_constraints cst env in
-  let ids = global_vars_set jt.uj_val in
-  let cb = {
-    const_kind = kind_of_path sp;
-    const_body = Some (ref (Recipe f));
-    const_type = assumption_of_judgment env' Evd.empty jt;
-    const_hyps = keep_hyps ids (named_context env);
-    const_constraints = cst;
-    const_opaque = false } 
-  in
-  add_constant sp cb env'
+let add_discharged_constant sp r env =
+  let (body,typ) = Cooking.cook_constant env r in
+  match body with
+    | None -> 
+	add_parameter sp typ env
+    | Some c -> 
+	let (jtyp,cst) = safe_infer env typ in
+	let env' = add_constraints cst env in
+	let ids = 
+	  Idset.union (global_vars_set c) 
+	    (global_vars_set (body_of_type jtyp.uj_type))
+	in
+	let cb = { const_kind = kind_of_path sp;
+		   const_body = body;
+		   const_type = assumption_of_judgment env' Evd.empty jtyp;
+		   const_hyps = keep_hyps ids (named_context env);
+		   const_constraints = cst;
+		   const_opaque = false } 
+	in
+	add_constant sp cb env'
 
 let add_constant sp ce env =
-  match ce.const_entry_body with
-    | Cooked c -> add_constant_with_value sp c ce.const_entry_type env
-    | Recipe f -> 
-	(match ce.const_entry_type with
-	   | Some typ -> add_lazy_constant sp f typ env
-	   | None -> error "you cannot declare a lazy constant without type")
-
-let add_parameter sp t env =
-  let (jt,cst) = safe_infer env t in
-  let env' = add_constraints cst env in
-  let ids = global_vars_set jt.uj_val in
-  let cb = {
-    const_kind = kind_of_path sp;
-    const_body = None;
-    const_type = assumption_of_judgment env' Evd.empty jt;
-    const_hyps = keep_hyps ids (named_context env);
-    const_constraints = cst;
-    const_opaque = false } 
-  in
-  Environ.add_constant sp cb env'
+  add_constant_with_value sp ce.const_entry_body ce.const_entry_type env
 
 (* Insertion of inductive types. *)
 
@@ -461,6 +463,9 @@ let rec pop_named_decls idl env =
   match idl with 
     | [] -> env
     | id::l -> pop_named_decls l (Environ.pop_named_decl id env)
+
+let set_opaque = Environ.set_opaque
+let set_transparent = Environ.set_transparent
 
 let export = export
 let import = import

@@ -33,20 +33,22 @@ let named_context () = named_context !global_env
 let push_named_def idc = global_env := push_named_def idc !global_env
 let push_named_assum idc = global_env := push_named_assum idc !global_env
 
-let add_constant sp ce = global_env := add_constant sp ce !global_env
 let add_parameter sp c = global_env := add_parameter sp c !global_env
+let add_constant sp ce = global_env := add_constant sp ce !global_env
+let add_discharged_constant sp r = 
+  global_env := add_discharged_constant sp r !global_env
 let add_mind sp mie = global_env := add_mind sp mie !global_env
 let add_constraints c = global_env := add_constraints c !global_env
 
 let pop_named_decls ids = global_env := pop_named_decls ids !global_env
 
 let lookup_named id = lookup_named id !global_env
-(*
-let lookup_rel n = lookup_rel n !global_env
-*)
 let lookup_constant sp = lookup_constant sp !global_env
 let lookup_mind sp = lookup_mind sp !global_env
 let lookup_mind_specif c = lookup_mind_specif c !global_env
+
+let set_opaque sp = set_opaque !global_env sp
+let set_transparent sp = set_transparent !global_env sp
 
 let export s = export !global_env s
 let import cenv = global_env := import cenv !global_env

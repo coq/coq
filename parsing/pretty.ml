@@ -51,20 +51,6 @@ let pkprinters = function
   | CCI -> (prterm,prterm_env)
   | _ -> anomaly "pkprinters"
 			  		  
-let print_recipe = function
-  | Some { contents = Cooked c } -> prterm c
-  | Some { contents = Recipe _ } -> [< 'sTR"<recipe>" >]
-  | None -> [< 'sTR"<uncookable>" >]
-
-(*
-let fprint_recipe = function
-  | Some c -> fprterm c
-  | None -> [< 'sTR"<uncookable>" >]
-*)
-
-let print_typed_recipe (val_0,typ) =
-  [< print_recipe val_0; 'fNL; 'sTR "     : "; prtype typ; 'fNL >]
-
 let print_impl_args = function
   | []  -> [<>]
   | [i] -> [< 'sTR"Position ["; 'iNT i; 'sTR"] is implicit" >]
@@ -211,6 +197,13 @@ let print_section_variable sp =
   let l = implicits_of_var id in
   [< print_named_decl d; print_impl_args l; 'fNL >]
 
+let print_body = function
+  | Some c  -> prterm c
+  | None -> [< 'sTR"<no body>" >]
+
+let print_typed_body (val_0,typ) =
+  [< print_body val_0; 'fNL; 'sTR "     : "; prtype typ; 'fNL >]
+
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   if kind_of_path sp = CCI then
@@ -226,7 +219,7 @@ let print_constant with_values sep sp =
 		    [< 'sTR(print_basename (ccisp_of sp)) ; 
 		       'sTR sep; 'cUT ;
 		       if with_values then 
-			 print_typed_recipe (val_0,typ) 
+			 print_typed_body (val_0,typ) 
 		       else 
 			 [< prtype typ ; 'fNL >] >]); 
 	     print_impl_args (list_of_implicits l); 'fNL >]
@@ -483,7 +476,7 @@ let print_local_context () =
 		 Global.lookup_constant sp in
                [< print_last_const rest;
                   'sTR(print_basename sp) ;'sTR" = ";
-                  print_typed_recipe (val_0,typ) >]
+                  print_typed_body (val_0,typ) >]
            | "INDUCTIVE" -> 
                let mib = Global.lookup_mind sp in 
                [< print_last_const rest;print_mutual sp mib; 'fNL >]

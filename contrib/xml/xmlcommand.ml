@@ -543,7 +543,8 @@ let print id fn =
       begin
        match val0 with
           None -> print_axiom id typ [] hyps
-        | Some lcvr ->
+        | Some c -> print_definition id c typ [] hyps
+	(*i No more recipes inside constants
            match !lcvr with
               D.Cooked c -> print_definition id c typ [] hyps
             | D.Recipe _ ->
@@ -557,8 +558,9 @@ let print id fn =
                    Some {contents= D.Cooked c} ->
                     print_definition id c typ [] hyps
                  | _ -> Util.error "COOKING FAILED"
-                end
-          end
+                end 
+         i*)
+      end
     with
      Not_found ->
       try
@@ -656,10 +658,7 @@ let print_object o id sp dn fv =
           begin
            match val0 with
               None -> print_axiom id typ fv hyps
-            | Some lcvr ->
-               match !lcvr with
-                  D.Cooked c -> print_definition id c typ fv hyps
-                | D.Recipe _ -> Util.anomaly "trying to print a recipe"
+            | Some c -> print_definition id c typ fv hyps
           end
     | "INDUCTIVE" ->
          (*CSC: QUI CI SONO ANCHE LE VARIABILI, CREDO, CHIAMATE mind_hyps *)

@@ -310,6 +310,16 @@ let evaluable_constant env k =
   with Not_found -> 
     false
 
+(*s Opaque / Transparent switching *)
+
+let set_opaque env sp =
+  let cb = lookup_constant sp env in
+  cb.const_opaque <- true
+
+let set_transparent env sp =
+  let cb = lookup_constant sp env in
+  cb.const_opaque <- false
+
 (*s Modules (i.e. compiled environments). *)
 
 type compiled_env = {

@@ -140,9 +140,9 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
 	   let ok = 
 	     try
 	       let cie =
-		 { const_entry_body = Cooked proj;
+		 { const_entry_body = proj;
 		   const_entry_type = None } in
-	       (declare_constant fi (cie,NeverDischarge); true)
+	       (declare_constant fi (ConstantEntry cie,NeverDischarge); true)
              with Type_errors.TypeError (k,ctx,te) ->
                ((warning_or_error coe 
                    [<'sTR (string_of_id fi); 

@@ -110,24 +110,31 @@ let declare_parameter id c =
 
 (* Constants. *)
 
-type constant_declaration = constant_entry * strength
+type constant_declaration_type =
+  | ConstantEntry  of constant_entry
+  | ConstantRecipe of Cooking.recipe
 
-let csttab = ref (Spmap.empty : constant_declaration Spmap.t)
+type constant_declaration = constant_declaration_type * strength
+
+let csttab = ref (Spmap.empty : strength Spmap.t)
 
 let _ = Summary.declare_summary "CONSTANT"
 	  { Summary.freeze_function = (fun () -> !csttab);
 	    Summary.unfreeze_function = (fun ft -> csttab := ft);
 	    Summary.init_function = (fun () -> csttab := Spmap.empty) }
 
-let cache_constant (sp,((ce,_) as cd,imps)) =
-  Global.add_constant sp ce;
+let cache_constant (sp,((cdt,stre),imps)) =
+  begin match cdt with 
+    | ConstantEntry ce -> Global.add_constant sp ce
+    | ConstantRecipe r -> Global.add_discharged_constant sp r
+  end;
   Nametab.push (basename sp) sp;
   if imps then declare_constant_implicits sp;
-  csttab := Spmap.add sp cd !csttab
+  csttab := Spmap.add sp stre !csttab
 
-let load_constant (sp,((ce,_) as cd,imps)) =
+let load_constant (sp,((ce,stre),imps)) =
   if imps then declare_constant_implicits sp;
-  csttab := Spmap.add sp cd !csttab
+  csttab := Spmap.add sp stre !csttab
 
 let open_constant (sp,_) =
   Nametab.push (basename sp) sp
@@ -192,8 +199,7 @@ let declare_mind mie =
 let is_constant sp = 
   try let _ = Global.lookup_constant sp in true with Not_found -> false
 
-let constant_strength sp = 
-  let (_,stre) = Spmap.find sp !csttab in stre
+let constant_strength sp = Spmap.find sp !csttab
 
 let constant_or_parameter_strength sp =
   try constant_strength sp with Not_found -> NeverDischarge
@@ -359,7 +365,7 @@ let declare_eliminations sp i =
   let mindstr = string_of_id (mis_typename mispec) in
   let declare na c =
     declare_constant (id_of_string na)
-      ({ const_entry_body = Cooked c; const_entry_type = None }, 
+      (ConstantEntry { const_entry_body = c; const_entry_type = None }, 
        NeverDischarge);
     if Options.is_verbose() then pPNL [< 'sTR na; 'sTR " is defined" >]
   in

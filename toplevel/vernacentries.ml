@@ -459,13 +459,13 @@ let _ =
               save_anonymous_remark true (string_of_id id))
        | _ -> bad_vernac_args "SaveAnonymousRmk")
 
-(***
 let _ =
   add "TRANSPARENT"
     (fun id_list () ->
        List.iter 
 	 (function 
-	    | VARG_IDENTIFIER id -> set_transparent id
+	    | VARG_IDENTIFIER id -> 
+		let sp = Nametab.sp_of_id CCI id in Global.set_transparent sp
 	    |   _  -> bad_vernac_args "TRANSPARENT")
 	 id_list)
     
@@ -474,10 +474,10 @@ let _ =
     (fun id_list () ->
        List.iter
 	 (function 
-	    | VARG_IDENTIFIER id -> set_opaque id
+	    | VARG_IDENTIFIER id -> 
+		let sp = Nametab.sp_of_id CCI id in Global.set_opaque sp
 	    |   _  -> bad_vernac_args "OPAQUE")
 	 id_list)
-***)
 
 let _ =
   add "UNDO"

@@ -33,29 +33,26 @@ let constant_entry_of_com (com,comtypopt) =
   let env = Global.env() in
   match comtypopt with
       None -> 
-	{ const_entry_body = Cooked (interp_constr sigma env com);
+	{ const_entry_body = interp_constr sigma env com;
 	  const_entry_type = None }
     | Some comtyp ->
 	let typ = interp_type sigma env comtyp in
-	{ const_entry_body = Cooked (interp_casted_constr sigma env com typ);
+	{ const_entry_body = interp_casted_constr sigma env com typ;
 	  const_entry_type = Some typ }
 
 let red_constant_entry ce = function
   | None -> ce
   | Some red ->
-      let body = match ce.const_entry_body with
-	| Cooked c -> c
-	| Recipe _ -> assert false
-      in
+      let body = ce.const_entry_body in
       { const_entry_body = 
-	  Cooked (reduction_of_redexp red (Global.env()) Evd.empty body); 
+	  reduction_of_redexp red (Global.env()) Evd.empty body; 
 	const_entry_type = 
 	  ce.const_entry_type }
 
 let definition_body_red ident n com comtypeopt red_option = 
   let ce = constant_entry_of_com (com,comtypeopt) in
   let ce' = red_constant_entry ce red_option in
-  declare_constant ident (ce',n);
+  declare_constant ident (ConstantEntry ce',n);
   if is_verbose() then message ((string_of_id ident) ^ " is defined")
 
 let definition_body ident n com typ = definition_body_red ident n com typ None
@@ -237,13 +234,12 @@ let build_recursive lnameargsardef =
       | fi::lf ->
 	  let ce = 
 	    { const_entry_body =
-		Cooked 
-		  (mkFix ((Array.of_list nvrec,i),
-			  (varrec,List.map (fun id -> Name id) lnamerec,
-			   recvec)));
+		mkFix ((Array.of_list nvrec,i),
+		       (varrec,List.map (fun id -> Name id) lnamerec,
+			recvec));
 	      const_entry_type = None } 
 	  in
-	  declare_constant fi (ce, n);
+	  declare_constant fi (ConstantEntry ce, n);
           declare (i+1) lf
       | _ -> () 
     in 
@@ -256,9 +252,9 @@ let build_recursive lnameargsardef =
   let _ = 
     List.fold_left
       (fun subst (f,def) ->
-	 let ce = { const_entry_body = Cooked (replace_vars subst def);
+	 let ce = { const_entry_body = replace_vars subst def;
 		    const_entry_type = None } in
-	 declare_constant f (ce,n);
+	 declare_constant f (ConstantEntry ce,n);
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst lnamerec)
@@ -308,12 +304,11 @@ let build_corecursive lnameardef =
       | fi::lf ->
 	  let ce = 
 	    { const_entry_body =
-		Cooked 
-		  (mkCoFix (i, (varrec,List.map (fun id -> Name id) lnamerec,
-			      recvec)));
+		mkCoFix (i, (varrec,List.map (fun id -> Name id) lnamerec,
+			     recvec));
 	      const_entry_type = None } 
 	  in
-          declare_constant fi (ce,n);
+          declare_constant fi (ConstantEntry ce,n);
           declare (i+1) lf
       | _        -> () 
     in 
@@ -324,9 +319,9 @@ let build_corecursive lnameardef =
   let _ = 
     List.fold_left
       (fun subst (f,def) ->
-	 let ce = { const_entry_body = Cooked (replace_vars subst def);
+	 let ce = { const_entry_body = replace_vars subst def;
 		    const_entry_type = None } in
-	 declare_constant f (ce,n);
+	 declare_constant f (ConstantEntry ce,n);
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst lnamerec)
@@ -358,8 +353,8 @@ let build_scheme lnamedepindsort =
   let n = NeverDischarge in 
   let listdecl = Indrec.build_mutual_indrec env0 sigma lrecspec in 
   let rec declare decl fi =
-    let ce = { const_entry_body = Cooked decl; const_entry_type = None } 
-    in declare_constant fi (ce,n)
+    let ce = { const_entry_body = decl; const_entry_type = None } 
+    in declare_constant fi (ConstantEntry ce,n)
   in 
   List.iter2 declare listdecl lrecnames; 
   if is_verbose() then pPNL(recursive_message lrecnames)
@@ -377,7 +372,7 @@ let start_proof_com sopt stre com =
 
 let save_named opacity =
   let id,(const,strength) = Pfedit.cook_proof () in
-  declare_constant id (const,strength);
+  declare_constant id (ConstantEntry const,strength);
   Pfedit.delete_current_proof ();
   if Options.is_verbose() then message ((string_of_id id) ^ " is defined")
 
@@ -385,7 +380,7 @@ let save_anonymous opacity save_ident strength =
   let id,(const,_) = Pfedit.cook_proof () in
   if atompart_of_id id <> "Unnamed_thm" then
     message("Overriding name "^(string_of_id id)^" and using "^save_ident);
-  declare_constant (id_of_string save_ident) (const,strength);
+  declare_constant (id_of_string save_ident) (ConstantEntry const,strength);
   Pfedit.delete_current_proof ();
   if Options.is_verbose() then message (save_ident ^ " is defined")
 

@@ -92,7 +92,7 @@ let try_remove f =
   with _ -> mSGNL [< 'sTR"Warning: " ; 'sTR"Could not remove file " ;
                      'sTR f ; 'sTR" which is corrupted!" >]
 
-let marshal_out ch v = Marshal.to_channel ch v [Marshal.Closures]
+let marshal_out ch v = Marshal.to_channel ch v []
 let marshal_in ch = Marshal.from_channel ch
 
 exception Bad_magic_number of string

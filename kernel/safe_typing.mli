@@ -31,13 +31,13 @@ val push_named_assum :
 val push_named_def :
   identifier * constr -> safe_environment -> safe_environment
 
-val add_constant : 
-  section_path -> constant_entry -> safe_environment -> safe_environment
-val add_lazy_constant : 
-  section_path -> (unit -> constr) -> constr -> safe_environment 
-    -> safe_environment
 val add_parameter :
   section_path -> constr -> safe_environment -> safe_environment
+val add_constant : 
+  section_path -> constant_entry -> safe_environment -> safe_environment
+val add_discharged_constant : 
+  section_path -> Cooking.recipe -> safe_environment -> safe_environment
+
 val add_mind : 
   section_path -> mutual_inductive_entry -> safe_environment 
     -> safe_environment
@@ -46,12 +46,12 @@ val add_constraints : constraints -> safe_environment -> safe_environment
 val pop_named_decls : identifier list -> safe_environment -> safe_environment
 
 val lookup_named : identifier -> safe_environment -> constr option * types
-(*i
-val lookup_rel : int -> safe_environment -> name * types
-i*)
 val lookup_constant : section_path -> safe_environment -> constant_body
 val lookup_mind : section_path -> safe_environment -> mutual_inductive_body
 val lookup_mind_specif : inductive -> safe_environment -> inductive_instance
+
+val set_opaque : safe_environment -> section_path -> unit
+val set_transparent : safe_environment -> section_path -> unit
 
 val export : safe_environment -> string -> compiled_env
 val import : compiled_env -> safe_environment -> safe_environment

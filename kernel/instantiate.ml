@@ -41,15 +41,12 @@ exception NotEvaluableConst of const_evaluation_result
 
 let constant_value env (sp,args) =
   let cb = lookup_constant sp env in
-  if cb.const_opaque then raise (NotEvaluableConst Opaque) else
-  if not (is_defined cb) then raise (NotEvaluableConst NoBody) else
+  if cb.const_opaque then raise (NotEvaluableConst Opaque);
   match cb.const_body with
-    | Some v -> 
-	let body = cook_constant v in
+    | Some body -> 
         instantiate_constr cb.const_hyps body (Array.to_list args)
     | None ->
-	anomalylabstrm "termenv__constant_value"
-	  [< 'sTR "a defined constant with no body." >]
+	raise (NotEvaluableConst NoBody)
 
 let constant_opt_value env cst =
   try Some (constant_value env cst)

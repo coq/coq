@@ -69,7 +69,7 @@ KERNEL=kernel/names.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/environ.cmo kernel/evd.cmo kernel/instantiate.cmo \
        kernel/closure.cmo kernel/reduction.cmo kernel/inductive.cmo\
        kernel/type_errors.cmo kernel/typeops.cmo kernel/indtypes.cmo \
-       kernel/safe_typing.cmo
+       kernel/cooking.cmo kernel/safe_typing.cmo
 
 LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
 	library/goptions.cmo \
@@ -385,26 +385,35 @@ minicoq: $(MINICOQCMO)
 install: install-$(BEST) install-binaries install-library install-manpages
 
 install-byte:
+	$(MKDIR) $(BINDIR)
 	cp $(COQMKTOP) $(COQC) coqtop.byte $(BINDIR)
 	cd $(BINDIR); ln -s coqtop.byte coqtop
 
 install-opt:
+	$(MKDIR) $(BINDIR)
 	cp $(COQMKTOP) $(COQC) coqtop.byte coqtop.opt $(BINDIR)
 	cd $(BINDIR); ln -s coqtop.opt coqtop
 
 install-binaries:
+	$(MKDIR) $(BINDIR)
 	cp tools/coqdep tools/gallina tools/coq_makefile tools/coq-tex \
 	  $(BINDIR)
 
 ALLVO=$(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO)
 
 install-library:
-	cp $(ALLVO) $(COQLIB)
+	$(MKDIR) $(COQLIB)
+	for f in $(ALLVO); do \
+	  $(MKDIR) $(COQLIB)/`dirname $$f`; \
+	  cp $$f $(COQLIB)/`dirname $$f`; \
+        done
+	$(MKDIR) $(EMACSLIB)
 	cp tools/coq.el tools/coq.elc $(EMACSLIB)
 
 MANPAGES=tools/coq-tex.1 tools/coqdep.1 tools/gallina.1
 
 install-manpages:
+	$(MKDIR) $(MANDIR)/man1
 	cp $(MANPAGES) $(MANDIR)/man1
 
 ###########################################################################
