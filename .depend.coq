@@ -17,12 +17,12 @@ theories/Reals/SeqProp.vo: theories/Reals/SeqProp.v theories/Reals/Rbase.vo theo
 theories/Reals/Rcomplet.vo: theories/Reals/Rcomplet.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Arith/Max.vo
 theories/Reals/PartSum.vo: theories/Reals/PartSum.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/Rcomplet.vo theories/Arith/Max.vo
 theories/Reals/AltSeries.vo: theories/Reals/AltSeries.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Reals/PartSum.vo theories/Arith/Max.vo
-theories/Reals/Binome.vo: theories/Reals/Binome.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/PartSum.vo
+theories/Reals/Binomial.vo: theories/Reals/Binomial.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/PartSum.vo
 theories/Reals/Rsigma.vo: theories/Reals/Rsigma.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/PartSum.vo
-theories/Reals/Rprod.vo: theories/Reals/Rprod.v theories/Arith/Compare.vo theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/PartSum.vo theories/Reals/Binome.vo
+theories/Reals/Rprod.vo: theories/Reals/Rprod.v theories/Arith/Compare.vo theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/PartSum.vo theories/Reals/Binomial.vo
 theories/Reals/Cauchy_prod.vo: theories/Reals/Cauchy_prod.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/PartSum.vo
 theories/Reals/Alembert.vo: theories/Reals/Alembert.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Reals/PartSum.vo theories/Arith/Max.vo
-theories/Reals/SeqSeries.vo: theories/Reals/SeqSeries.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Reals/Rcomplet.vo theories/Reals/PartSum.vo theories/Reals/AltSeries.vo theories/Reals/Binome.vo theories/Reals/Rsigma.vo theories/Reals/Rprod.vo theories/Reals/Cauchy_prod.vo theories/Reals/Alembert.vo
+theories/Reals/SeqSeries.vo: theories/Reals/SeqSeries.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Reals/Rcomplet.vo theories/Reals/PartSum.vo theories/Reals/AltSeries.vo theories/Reals/Binomial.vo theories/Reals/Rsigma.vo theories/Reals/Rprod.vo theories/Reals/Cauchy_prod.vo theories/Reals/Alembert.vo
 theories/Reals/Rtrigo_fun.vo: theories/Reals/Rtrigo_fun.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo
 theories/Reals/Rtrigo_def.vo: theories/Reals/Rtrigo_def.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo_fun.vo theories/Arith/Max.vo
 theories/Reals/Rtrigo_alt.vo: theories/Reals/Rtrigo_alt.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo_def.vo
@@ -200,12 +200,12 @@ theories/Reals/SeqProp.vo: theories/Reals/SeqProp.v theories/Reals/Rbase.vo theo
 theories/Reals/Rcomplet.vo: theories/Reals/Rcomplet.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Arith/Max.vo
 theories/Reals/PartSum.vo: theories/Reals/PartSum.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/Rcomplet.vo theories/Arith/Max.vo
 theories/Reals/AltSeries.vo: theories/Reals/AltSeries.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Reals/PartSum.vo theories/Arith/Max.vo
-theories/Reals/Binome.vo: theories/Reals/Binome.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/PartSum.vo
+theories/Reals/Binomial.vo: theories/Reals/Binomial.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/PartSum.vo
 theories/Reals/Rsigma.vo: theories/Reals/Rsigma.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/PartSum.vo
-theories/Reals/Rprod.vo: theories/Reals/Rprod.v theories/Arith/Compare.vo theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/PartSum.vo theories/Reals/Binome.vo
+theories/Reals/Rprod.vo: theories/Reals/Rprod.v theories/Arith/Compare.vo theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/PartSum.vo theories/Reals/Binomial.vo
 theories/Reals/Cauchy_prod.vo: theories/Reals/Cauchy_prod.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/PartSum.vo
 theories/Reals/Alembert.vo: theories/Reals/Alembert.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Reals/PartSum.vo theories/Arith/Max.vo
-theories/Reals/SeqSeries.vo: theories/Reals/SeqSeries.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Reals/Rcomplet.vo theories/Reals/PartSum.vo theories/Reals/AltSeries.vo theories/Reals/Binome.vo theories/Reals/Rsigma.vo theories/Reals/Rprod.vo theories/Reals/Cauchy_prod.vo theories/Reals/Alembert.vo
+theories/Reals/SeqSeries.vo: theories/Reals/SeqSeries.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/Rseries.vo theories/Reals/SeqProp.vo theories/Reals/Rcomplet.vo theories/Reals/PartSum.vo theories/Reals/AltSeries.vo theories/Reals/Binomial.vo theories/Reals/Rsigma.vo theories/Reals/Rprod.vo theories/Reals/Cauchy_prod.vo theories/Reals/Alembert.vo
 theories/Reals/Rtrigo_fun.vo: theories/Reals/Rtrigo_fun.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo
 theories/Reals/Rtrigo_def.vo: theories/Reals/Rtrigo_def.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo_fun.vo theories/Arith/Max.vo
 theories/Reals/Rtrigo_alt.vo: theories/Reals/Rtrigo_alt.v theories/Reals/Rbase.vo theories/Reals/Rfunctions.vo theories/Reals/SeqSeries.vo theories/Reals/Rtrigo_def.vo
