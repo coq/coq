@@ -2,6 +2,7 @@
 
 (*i*)
 open Names
+open Sign
 open Univ
 open Term
 open Evd
@@ -87,3 +88,5 @@ val find_case_dep_nparams :
       constr -> bool * (int * constr list * constr list) 
 
 val type_inst_construct : env -> 'a evar_map -> int -> constr -> constr 
+
+val hyps_inclusion : env -> 'a evar_map -> var_context -> var_context -> bool

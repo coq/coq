@@ -74,13 +74,6 @@ let hyps_inclusion env sigma (idl1,tyl1) (idl2,tyl2) =
 (* Checks if the given context of variables [hyps] is included in the
    current context of [env]. *)
 
-let construct_reference id env sigma hyps =
-  let hyps' = var_context env in
-  if hyps_inclusion env sigma hyps hyps' then
-    Array.of_list (List.map (fun id -> VAR id) (ids_of_sign hyps))
-  else 
-    error_reference_variables CCI env id
-
 let check_hyps id env sigma hyps =
   let hyps' = var_context env in
   if not (hyps_inclusion env sigma hyps hyps') then

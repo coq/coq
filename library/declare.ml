@@ -10,6 +10,8 @@ open Sign
 open Constant
 open Inductive
 open Reduction
+open Type_errors
+open Typeops
 open Libobject
 open Lib
 open Impargs
@@ -233,8 +235,10 @@ let global_operator sp id = construct_operator (Global.env()) sp id
 let construct_reference env kind id =
   let sp = Nametab.sp_of_id kind id in
   try
-    let (oper,_) = construct_operator env sp id in
-    let hyps = Global.var_context () in
+    let (oper,hyps) = construct_operator env sp id in
+    let hyps' = Global.var_context () in
+    if not (hyps_inclusion env Evd.empty hyps hyps') then
+      error_reference_variables CCI env id;
     let ids = ids_of_sign hyps in
     DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids))
   with Not_found -> 
