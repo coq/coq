@@ -9,7 +9,7 @@ open Names
 open Ast
 
 let get_z_sign loc =
-  let ast_of_id id = Astterm.globalize_command (Nvar(loc,id)) in
+  let ast_of_id id = Astterm.globalize_constr (Nvar(loc,id)) in
   ((ast_of_id "xI", ast_of_id "xO", ast_of_id "xH"),
    (ast_of_id "ZERO", ast_of_id "POS", ast_of_id "NEG"),
    (ast_of_id "My_special_variable0", ast_of_id "My_special_variable1"))

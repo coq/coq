@@ -51,6 +51,9 @@ val force_entry_type : string * gram_universe -> string ->
 (* Quotations *)
 
 val define_quotation : bool -> string -> (Coqast.t Gram.Entry.e) -> unit
+val update_constr_parser : Coqast.t Gram.Entry.e -> unit
+val update_tactic_parser : Coqast.t Gram.Entry.e -> unit
+val update_vernac_parser : Coqast.t Gram.Entry.e -> unit
 
 (* The default parser for actions in grammar rules *)
 

@@ -425,6 +425,18 @@ let define_quotation default s e =
 
 let _ = define_quotation false "ast" ast in ()
 
+let constr_parser = ref Constr.constr
+let tactic_parser = ref Tactic.tactic
+let vernac_parser = ref Vernac.vernac
+
+let update_constr_parser p = constr_parser := p
+let update_tactic_parser p = tactic_parser := p
+let update_vernac_parser p = vernac_parser := p
+
+(**********************************************************************)
+(* The following is to dynamically set the parser in Grammar actions  *)
+(* and Syntax pattern, according to the universe of the rule defined  *)
+
 let default_action_parser_ref = ref ast
 
 let get_default_action_parser () = !default_action_parser_ref
@@ -432,9 +444,9 @@ let get_default_action_parser () = !default_action_parser_ref
 let set_default_action_parser f = (default_action_parser_ref := f)
 
 let set_default_action_parser_by_name = function
-  | "constr" -> set_default_action_parser Constr.constr
-  | "tactic" -> set_default_action_parser Tactic.tactic
-  | "vernac" -> set_default_action_parser Vernac.vernac
+  | "constr" -> set_default_action_parser constr_parser
+  | "tactic" -> set_default_action_parser tactic_parser
+  | "vernac" -> set_default_action_parser vernac_parser
   | _ -> set_default_action_parser ast
 
 let default_action_parser =
