@@ -91,16 +91,16 @@ let mimick_evar hdc nargs sp wc =
    Attention : pas d'unification entre les différences instances d'une
    même meta ou evar, il peut rester des doublons *)
 
-let unify_0 mc wc m n =
+let unify_0 cv_pb mc wc m n =
   let env = w_env wc
   and sigma = w_Underlying wc in
-  let rec unirec_rec ((metasubst,evarsubst) as substn) m n =
+  let rec unirec_rec pb ((metasubst,evarsubst) as substn) m n =
     let cM = Evarutil.whd_castappevar sigma m
     and cN = Evarutil.whd_castappevar sigma n in 
     try 
       match (kind_of_term cM,kind_of_term cN) with
-	| IsCast (c,_), _ -> unirec_rec substn c cN
-	| _, IsCast (c,_) -> unirec_rec substn cM c
+	| IsCast (c,_), _ -> unirec_rec pb substn c cN
+	| _, IsCast (c,_) -> unirec_rec pb substn cM c
 	| IsMeta k1, IsMeta k2 ->
 	    if k1 < k2 then (k1,cN)::metasubst,evarsubst
 	    else if k1 = k2 then substn
@@ -108,29 +108,30 @@ let unify_0 mc wc m n =
 	| IsMeta k, _    -> (k,cN)::metasubst,evarsubst
 	| _, IsMeta k    -> (k,cM)::metasubst,evarsubst
 	| IsLambda (_,t1,c1), IsLambda (_,t2,c2) ->
-	    unirec_rec (unirec_rec substn t1 t2) c1 c2
+	    unirec_rec CONV (unirec_rec CONV substn t1 t2) c1 c2
 	| IsProd (_,t1,c1), IsProd (_,t2,c2) ->
-	    unirec_rec (unirec_rec substn t1 t2) c1 c2
+	    unirec_rec pb (unirec_rec CONV substn t1 t2) c1 c2
 
 	| IsApp (f1,l1), IsApp (f2,l2) ->
 	    let len1 = Array.length l1
 	    and len2 = Array.length l2 in
 	    if len1 = len2 then
-              array_fold_left2 unirec_rec (unirec_rec substn f1 f2) l1 l2
+              array_fold_left2 (unirec_rec CONV)
+		(unirec_rec CONV substn f1 f2) l1 l2
 	    else if len1 < len2 then
               let extras,restl2 = array_chop (len2-len1) l2 in 
-	      array_fold_left2 unirec_rec 
-		(unirec_rec substn f1 (appvect (f2,extras)))
+	      array_fold_left2 (unirec_rec CONV)
+		(unirec_rec CONV substn f1 (appvect (f2,extras)))
                 l1 restl2
 	    else 
 	      let extras,restl1 = array_chop (len1-len2) l1 in 
-	      array_fold_left2 unirec_rec 
-		(unirec_rec substn (appvect (f1,extras)) f2)
+	      array_fold_left2 (unirec_rec CONV)
+		(unirec_rec CONV substn (appvect (f1,extras)) f2)
                 restl1 l2
 		
 	| IsMutCase (_,p1,c1,cl1), IsMutCase (_,p2,c2,cl2) ->
-            array_fold_left2 unirec_rec 
-	      (unirec_rec (unirec_rec substn p1 p2) c1 c2) cl1 cl2
+            array_fold_left2 (unirec_rec CONV)
+	      (unirec_rec CONV (unirec_rec CONV substn p1 p2) c1 c2) cl1 cl2
 		
 	| IsMutConstruct _, IsMutConstruct _ ->
 	    if is_conv env sigma cM cN then
@@ -161,21 +162,21 @@ let unify_0 mc wc m n =
 	    else 
 	      error_cannot_unify CCI (m,n)
 
-	| IsLetIn (_,b,_,c), _ -> unirec_rec substn (subst1 b c) cN
+	| IsLetIn (_,b,_,c), _ -> unirec_rec pb substn (subst1 b c) cN
 		
 	| _ -> error_cannot_unify CCI (m,n)
 	      
     with ex when catchable_exception ex ->
-      if (not(occur_meta cM)) & is_conv env sigma cM cN then 
+      if (not(occur_meta cM)) & is_fconv pb env sigma cM cN then 
 	substn
       else 
 	raise ex
 
     in
-    if (not(occur_meta m)) & is_conv env sigma m n then 
+    if (not(occur_meta m)) & is_fconv cv_pb env sigma m n then 
       (mc,[])
     else 
-      unirec_rec (mc,[]) m n
+      unirec_rec cv_pb (mc,[]) m n
 
 
 (* Unification
@@ -227,8 +228,8 @@ let unify_0 mc wc m n =
  * close it off.  But this might not always work,
  * since other metavars might also need to be resolved. *)
 
-let rec w_Unify m n mc wc =
-  let (mc',ec') = unify_0 mc wc m n in 
+let rec w_Unify cv_pb m n mc wc =
+  let (mc',ec') = unify_0 cv_pb mc wc m n in 
   w_resrec mc' ec' wc
 
 and w_resrec metas evars wc =
@@ -245,7 +246,7 @@ and w_resrec metas evars wc =
 
 	| IsEvar (evn,_) ->
 	    if w_defined_evar wc evn then
-	      let (wc',metas') = w_Unify rhs lhs metas wc in 
+	      let (wc',metas') = w_Unify CONV rhs lhs metas wc in 
 	      w_resrec metas' t wc'
 	    else
 	      (try 
@@ -264,7 +265,7 @@ and w_resrec metas evars wc =
    d'une même Meta sont compatibles. D'ailleurs le "fst" jette les metas
    provenant de w_Unify. (Utilisé seulement dans prolog.ml) *)
 
-let unifyTerms m n = walking (fun wc -> fst (w_Unify m n [] wc))
+let unifyTerms m n = walking (fun wc -> fst (w_Unify CONV m n [] wc))
 
 let unify m gls =
   let n = pf_concl gls in unifyTerms m n gls
@@ -570,7 +571,7 @@ let clenv_merge with_types =
 
 	  | IsEvar (evn,_) ->
     	      if w_defined_evar clenv.hook evn then
-		let (metas',evars') = unify_0 [] clenv.hook rhs lhs in
+		let (metas',evars') = unify_0 CONV [] clenv.hook rhs lhs in
 		clenv_resrec (metas'@metas) (evars'@t) clenv
     	      else begin
 		let rhs' = 
@@ -595,7 +596,7 @@ let clenv_merge with_types =
       | ([], (mv,n)::t) ->
     	  if clenv_defined clenv mv then
             let (metas',evars') =
-              unify_0 [] clenv.hook (clenv_value clenv mv).rebus n in
+              unify_0 CONV [] clenv.hook (clenv_value clenv mv).rebus n in
             clenv_resrec (metas'@t) evars' clenv
     	  else
 	    let mc,ec =
@@ -604,7 +605,7 @@ let clenv_merge with_types =
 		(try 
 		let nty = clenv_type_of clenv 
 			    (clenv_instance clenv (mk_freelisted n)) in
-		unify_0 [] clenv.hook mvty nty
+		unify_0 CUMUL [] clenv.hook nty mvty
 		with e when Logic.catchable_exception e -> ([],[]))
 	      else ([],[]) in
 	    clenv_resrec (mc@t) ec (clenv_assign mv n clenv)
@@ -621,8 +622,8 @@ let clenv_merge with_types =
    [clenv_typed_unify M N clenv] expects in addition that expected
    types of metavars are unifiable with the types of their instances    *)
 
-let clenv_unify_core with_types m n clenv =
-  let (mc,ec) = unify_0 [] clenv.hook m n in 
+let clenv_unify_core with_types cv_pb m n clenv =
+  let (mc,ec) = unify_0 cv_pb [] clenv.hook m n in 
   clenv_merge with_types mc ec clenv
     
 (* let clenv_unify = clenv_unify_core false *)
@@ -662,7 +663,7 @@ let clenv_bchain mv subclenv clenv =
   in
   (* unify the type of the template of [subclenv] with the type of [mv] *)
   let clenv'' =
-    clenv_unify (clenv_instance clenv' (clenv_template_type subclenv))
+    clenv_unify CUMUL (clenv_instance clenv' (clenv_template_type subclenv))
       (clenv_instance_type clenv' mv)
       clenv' 
   in
@@ -723,7 +724,7 @@ let constrain_clenv_to_subterm clause (op,cl) =
     let cl = strip_outer_cast cl in
     (try 
        if closed0 cl 
-       then clenv_unify op cl clause,cl
+       then clenv_unify CONV op cl clause,cl
        else error "Bound 1"
      with ex when catchable_exception ex ->
        (match kind_of_term cl with 
@@ -855,7 +856,7 @@ let clenv_constrain_missing_args mlist clause =
     let occlist = clenv_missing clause (clenv_template clause,
                                    	(clenv_template_type clause)) in 
     if List.length occlist = List.length mlist then
-      List.fold_left2 (fun clenv occ m -> clenv_unify (mkMeta occ) m clenv)
+      List.fold_left2 (fun clenv occ m -> clenv_unify CONV (mkMeta occ) m clenv)
         clause occlist mlist
     else 
       error ("Not the right number of missing arguments (expected "
@@ -868,7 +869,7 @@ let clenv_constrain_dep_args mlist clause =
     let occlist = clenv_dependent clause (clenv_template clause,
 					  (clenv_template_type clause)) in 
     if List.length occlist = List.length mlist then
-      List.fold_left2 (fun clenv occ m -> clenv_unify (mkMeta occ) m clenv)
+      List.fold_left2 (fun clenv occ m -> clenv_unify CONV (mkMeta occ) m clenv)
         clause occlist mlist
     else 
       error ("Not the right number of missing arguments (expected "
@@ -881,7 +882,7 @@ let clenv_constrain_dep_args_of mv mlist clause =
     let occlist = clenv_dependent clause (clenv_value clause mv,
                                           clenv_type clause mv) in 
     if List.length occlist = List.length mlist then
-      List.fold_left2 (fun clenv occ m -> clenv_unify (mkMeta occ) m clenv)
+      List.fold_left2 (fun clenv occ m -> clenv_unify CONV (mkMeta occ) m clenv)
         clause occlist mlist
     else 
       error ("clenv_constrain_dep_args_of: Not the right number " ^ 
@@ -926,7 +927,7 @@ let clenv_match_args s clause =
 	in
 	let k_typ = w_hnf_constr clause.hook (clenv_instance_type clause k)
 	and c_typ = w_hnf_constr clause.hook (w_type_of clause.hook c) in
-	matchrec (clenv_assign k c (clenv_unify k_typ c_typ clause)) t
+	matchrec (clenv_assign k c (clenv_unify CUMUL c_typ k_typ clause)) t
   in 
   matchrec clause s
 
@@ -968,10 +969,10 @@ let clenv_add_sign (id,sign) clenv =
    lambda-abstraction head, then we second-order unification. *)
 
 let clenv_fo_resolver clenv gls =
-  clenv_unify (clenv_instance_template_type clenv) (pf_concl gls) clenv
+  clenv_unify CUMUL (clenv_instance_template_type clenv) (pf_concl gls) clenv
 
 let clenv_typed_fo_resolver clenv gls =
-  clenv_typed_unify (clenv_instance_template_type clenv) (pf_concl gls) clenv
+  clenv_typed_unify CUMUL (clenv_instance_template_type clenv) (pf_concl gls) clenv
 
 (* if lname_typ is [xn,An;..;x1,A1] and l is a list of terms,
    gives [x1:A1]..[xn:An]c' such that c converts to ([x1:A1]..[xn:An]c' l) *)
@@ -999,7 +1000,7 @@ let secondOrderAbstraction allow_K gl p oplist clause =
   let (clause',cllist) = 
     constrain_clenv_using_subterm_list allow_K clause oplist (pf_concl gl) in
   let typp = clenv_instance_type clause' p in 
-  clenv_unify (mkMeta p)
+  clenv_unify CONV (mkMeta p)
     (abstract_list_all (pf_env gl) (project gl) typp (pf_concl gl) cllist) 
     clause'
 

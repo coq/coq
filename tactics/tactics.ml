@@ -1597,7 +1597,9 @@ let elim_scheme_type elim t gl =
   let clause = mk_clenv_type_of wc elim in 
   match kind_of_term (last_arg (clenv_template clause).rebus) with
     | IsMeta mv ->
-        let clause' = clenv_unify (clenv_instance_type clause mv) t clause in 
+        let clause' =
+	  (* t is inductive, then CUMUL or CONV is irrelevant *)
+	  clenv_unify CUMUL t (clenv_instance_type clause mv) clause in
 	elim_res_pf kONT clause' gl
     | _ -> anomaly "elim_scheme_type"
 

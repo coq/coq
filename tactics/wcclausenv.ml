@@ -93,7 +93,7 @@ let clenv_constrain_with_bindings bl clause =
 	  let sigma = Evd.empty in
 	  let k_typ = nf_betaiota (clenv_instance_type clause k) in
 	  let c_typ = nf_betaiota (w_type_of clause.hook c) in 
-	  matchrec (clenv_assign k c (clenv_unify k_typ c_typ clause)) t
+	  matchrec (clenv_assign k c (clenv_unify CUMUL c_typ k_typ clause)) t
     in 
     matchrec clause bl
 
