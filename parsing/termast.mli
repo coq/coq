@@ -26,7 +26,7 @@ val ast_of_constant     : env -> constant -> Coqast.t
 val ast_of_existential  : env -> existential -> Coqast.t
 val ast_of_constructor  : env -> constructor -> Coqast.t
 val ast_of_inductive    : env -> inductive -> Coqast.t
-val ast_of_ref          : ('a -> Coqast.t) -> global_reference -> Coqast.t
+val ast_of_ref          : global_reference -> Coqast.t
 val ast_of_qualid       : qualid -> Coqast.t
 
 (* For debugging *)

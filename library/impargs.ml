@@ -254,7 +254,6 @@ let declare_implicits = function
       let mib_imps = compute_mib_implicits sp in
       let imps = (snd mib_imps.(i)).(j-1) in
       add_anonymous_leaf (in_constructor_implicits (consp, imps))
-  | EvarRef _ -> assert false
 
 let declare_manual_implicits r l = match r with
   | VarRef sp -> 
@@ -265,8 +264,6 @@ let declare_manual_implicits r l = match r with
       add_anonymous_leaf (in_inductive_implicits (indp,Impl_manual l))
   | ConstructRef consp -> 
       add_anonymous_leaf (in_constructor_implicits (consp,Impl_manual l))
-  | EvarRef _ -> 
-      assert false
 
 (*s Tests if declared implicit *)
 
@@ -285,7 +282,6 @@ let implicits_of_global = function
   | ConstRef sp -> list_of_implicits (constant_implicits sp)
   | IndRef isp -> list_of_implicits (inductive_implicits isp)
   | ConstructRef csp ->	list_of_implicits (constructor_implicits csp)
-  | EvarRef _ -> []
 
 (*s Registration as global tables and rollback. *)
 

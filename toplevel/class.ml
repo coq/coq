@@ -60,7 +60,6 @@ let stre_of_coe = function
   | ConstRef sp -> constant_or_parameter_strength sp
   | VarRef sp -> variable_strength sp
   | IndRef _ | ConstructRef _ -> NeverDischarge 
-  | EvarRef _ -> anomaly "Not a persistent reference"
 
 (* verfications pour l'ajout d'une classe *)
 
@@ -197,9 +196,7 @@ let class_of_ref = function
       errorlabstrm "class_of_ref"
 	[< 'sTR "Constructors, such as "; Printer.pr_global c; 
 	   'sTR " cannot be used as class" >]
-  | EvarRef _ -> 
-      errorlabstrm "class_of_ref"
-	[< 'sTR "Existential variables cannot be used as class" >]
+
 (* 
 lp est la liste (inverse'e) des arguments de la coercion
 ids est le nom de la classe source
@@ -479,4 +476,3 @@ let process_coercion sec_sp (((coe,coeinfo),s,t) as x) =
           (((ConstructRef ((newsp,i),j)),coeinfo),s1,t1)
 	else
 	  ((coe,coeinfo),s1,t1)
-    | EvarRef _ -> anomaly "No Evar expected here as coercion"

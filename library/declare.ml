@@ -267,8 +267,7 @@ let mind_oper_of_id sp id mib =
 	   mip.mind_consnames)
     mib.mind_packets
 
-let context_of_global_reference sigma env = function
-  | EvarRef n -> (Evd.map sigma n).Evd.evar_hyps
+let context_of_global_reference env = function
   | VarRef sp -> [] (* Hum !, pas correct *)
   | ConstRef sp -> (Environ.lookup_constant sp env).const_hyps
   | IndRef (sp,_) -> (Environ.lookup_mind sp env).mind_hyps
@@ -341,7 +340,7 @@ let find_section_variable id =
     | _ -> error "Arghh, you blasted me with several variables of same name"
 
 let extract_instance ref args =
-  let hyps = context_of_global_reference Evd.empty (Global.env ()) ref in
+  let hyps = context_of_global_reference (Global.env ()) ref in
   let hyps0 = current_section_context () in
   let na = Array.length args in
   let rec peel n acc = function
@@ -352,13 +351,12 @@ let extract_instance ref args =
     | [] -> Array.of_list acc
   in peel (na-1) [] hyps
 
-let constr_of_reference sigma env ref =
-  let hyps = context_of_global_reference sigma env ref in
+let constr_of_reference _ env ref =
+  let hyps = context_of_global_reference env ref in
   let hyps0 = current_section_context () in
   let env0 = Environ.reset_context env in
   let args = instance_from_named_context hyps in
   let body = match ref with
-    | EvarRef n -> mkEvar (n,Array.of_list args)
     | VarRef sp -> mkVar (basename sp)
     | ConstRef sp -> mkConst (sp,Array.of_list args)
     | ConstructRef sp -> mkMutConstruct (sp,Array.of_list args)
@@ -390,7 +388,6 @@ let global_reference kind id =
   construct_reference (Global.env()) kind id
 
 let dirpath_of_global = function
-  | EvarRef n -> ["evar"]
   | VarRef sp -> dirpath sp
   | ConstRef sp -> dirpath sp
   | IndRef (sp,_) -> dirpath sp

@@ -74,35 +74,23 @@ let stringopt_of_name = function
   | Name id -> Some (string_of_id id)
   | Anonymous -> None
 
-let ast_of_constant_ref pr (sp,ids) =
-  let a = ope("CONST", [path_section dummy_loc sp]) in
-  if !print_arguments then ope("INSTANCE",a::(array_map_to_list pr ids))
-  else a
+let ast_of_constant_ref sp =
+  ope("CONST", [path_section dummy_loc sp])
 
-let ast_of_existential_ref pr  (ev,ids) =
-  let a = ope("EVAR", [num ev]) in
-  if !print_arguments or !print_evar_arguments then
-    ope("INSTANCE",a::(array_map_to_list pr ids))
-  else a
+let ast_of_existential_ref ev =
+  ope("EVAR", [num ev])
 
-let ast_of_constructor_ref pr  (((sp,tyi),n) as cstr_sp,ids) =
-  let a = ope("MUTCONSTRUCT",[path_section dummy_loc sp; num tyi; num n]) in
-  if !print_arguments then ope("INSTANCE",a::(array_map_to_list pr ids))
-  else a
+let ast_of_constructor_ref ((sp,tyi),n) =
+  ope("MUTCONSTRUCT",[path_section dummy_loc sp; num tyi; num n])
 
-let ast_of_inductive_ref pr  ((sp,tyi) as ind_sp,ids) =
-  let a = ope("MUTIND",	[path_section dummy_loc sp; num tyi]) in
-  if !print_arguments then ope("INSTANCE",a::(array_map_to_list pr ids))
-  else a
+let ast_of_inductive_ref (sp,tyi) =
+  ope("MUTIND", [path_section dummy_loc sp; num tyi])
 
-let ast_of_ref pr r =
-  (* TODO gérer le ctxt *)
-  let ctxt = [||] in match r with
-  | ConstRef sp -> ast_of_constant_ref pr (sp,ctxt)
-  | IndRef sp -> ast_of_inductive_ref pr (sp,ctxt)
-  | ConstructRef sp -> ast_of_constructor_ref pr (sp,ctxt)
+let ast_of_ref = function
+  | ConstRef sp -> ast_of_constant_ref sp
+  | IndRef sp -> ast_of_inductive_ref sp
+  | ConstructRef sp -> ast_of_constructor_ref sp
   | VarRef sp -> ast_of_ident (basename sp)
-  | EvarRef ev -> ast_of_existential_ref pr (ev,ctxt)
 
 let ast_of_qualid p =
   let dir, s = repr_qualid p in
@@ -112,21 +100,18 @@ let ast_of_qualid p =
 (**********************************************************************)
 (* conversion of patterns                                             *)
 
-let adapt (cstr_sp,ctxt) = (cstr_sp,Array.of_list ctxt)
-
 let rec ast_of_cases_pattern = function   (* loc is thrown away for printing *)
   | PatVar (loc,Name id) -> nvar (string_of_id id)
   | PatVar (loc,Anonymous) -> nvar "_"
-  | PatCstr(loc,cstr,args,Name id) ->
+  | PatCstr(loc,(cstrsp,_),args,Name id) ->
       let args = List.map ast_of_cases_pattern args in
       ope("PATTAS",
 	  [nvar (string_of_id id);
-	   ope("PATTCONSTRUCT",
-	       (ast_of_constructor_ref ast_of_ident (adapt cstr))::args)])
-  | PatCstr(loc,cstr,args,Anonymous) ->
+	   ope("PATTCONSTRUCT", (ast_of_constructor_ref cstrsp)::args)])
+  | PatCstr(loc,(cstrsp,_),args,Anonymous) ->
       ope("PATTCONSTRUCT",
-	  (ast_of_constructor_ref ast_of_ident (adapt cstr))::
-	  List.map ast_of_cases_pattern args)
+	  (ast_of_constructor_ref cstrsp)
+	  :: List.map ast_of_cases_pattern args)
 	
 let ast_dependent na aty =
   match na with
@@ -188,8 +173,9 @@ let ast_of_app impl f args =
 *)
 
 let rec ast_of_raw = function
-  | RRef (_,ref) -> ast_of_ref ast_of_raw ref
+  | RRef (_,ref) -> ast_of_ref ref
   | RVar (_,id) -> ast_of_ident id
+  | REvar (_,n) -> ast_of_existential_ref n
   | RMeta (_,n) -> ope("META",[num n])
   | RApp (_,f,args) ->
       let (f,args) =
@@ -197,8 +183,7 @@ let rec ast_of_raw = function
       let astf = ast_of_raw f in
       let astargs = List.map ast_of_raw args in
       (match f with 
-	 | RRef (_,(EvarRef _ as ref)) ->
-	     ast_of_ref ast_of_raw ref (* we drop args *)
+	 | REvar (_,ev) -> ast_of_existential_ref ev (* we drop args *)
 	 | RRef (_,ref) -> ast_of_app (implicits_of_global ref) astf astargs
 
 	 | RVar (_,id) ->
@@ -317,18 +302,36 @@ let ast_of_constr at_top env t =
   ast_of_raw 
     (Detyping.detype avoid (names_of_rel_context env) t')
 
-let ast_of_constant env    = ast_of_constant_ref (ast_of_constr false env)
+let ast_of_constant env (sp,ids) =
+  let a = ast_of_constant_ref sp in
+  if !print_arguments then
+    ope("INSTANCE",a::(array_map_to_list (ast_of_constr false env) ids))
+  else a
 
-let ast_of_existential env = ast_of_existential_ref (ast_of_constr false env)
+let ast_of_existential env (ev,ids) =
+  let a = ast_of_existential_ref ev in
+  if !print_arguments or !print_evar_arguments then
+    ope("INSTANCE",a::(array_map_to_list (ast_of_constr false env) ids))
+  else a
 
-let ast_of_inductive env   = ast_of_inductive_ref (ast_of_constr false env)
+let ast_of_constructor env (cstr_sp,ids) =
+  let a = ast_of_constructor_ref cstr_sp in
+  if !print_arguments then
+    ope("INSTANCE",a::(array_map_to_list (ast_of_constr false env) ids))
+  else a
 
-let ast_of_constructor env = ast_of_constructor_ref (ast_of_constr false env)
+let ast_of_inductive env (ind_sp,ids) =
+  let a = ast_of_inductive_ref ind_sp in
+  if !print_arguments then
+    ope("INSTANCE",a::(array_map_to_list (ast_of_constr false env) ids))
+  else a
 
 let rec ast_of_pattern env = function
-  | PRef ref -> ast_of_ref (fun c -> ast_of_raw (Detyping.detype [] env c)) ref
+  | PRef ref -> ast_of_ref ref
 
   | PVar id -> ast_of_ident id
+
+  | PEvar n -> ast_of_existential_ref n
 
   | PRel n ->
       (try match lookup_name_of_rel n env with

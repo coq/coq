@@ -24,8 +24,8 @@ let rec execute mf env sigma cstr =
     | IsMeta n ->
 	error "execute: found a non-instanciated goal"
 
-    | IsEvar _ ->
-	let ty = type_of_existential env sigma cstr in
+    | IsEvar ev ->
+	let ty = type_of_existential env sigma ev in
 	let jty = execute mf env sigma ty in
 	let jty = assumption_of_judgment env sigma jty in
 	{ uj_val = cstr; uj_type = jty }

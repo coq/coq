@@ -34,6 +34,7 @@ type 'ctxt reference =
 type rawconstr = 
   | RRef of loc * global_reference
   | RVar of loc * identifier
+  | REvar of loc * existential_key
   | RMeta of loc * int
   | RApp of loc * rawconstr * rawconstr list
   | RBinder of loc * binder_kind * name * rawconstr * rawconstr
@@ -64,6 +65,7 @@ let dummy_loc = (0,0)
 let loc_of_rawconstr = function
   | RRef (loc,_) -> loc
   | RVar (loc,_) -> loc
+  | REvar (loc,_) -> loc
   | RMeta (loc,_) -> loc
   | RApp (loc,_,_) -> loc
   | RBinder (loc,_,_,_,_) -> loc
@@ -78,6 +80,7 @@ let loc_of_rawconstr = function
 let set_loc_of_rawconstr loc = function
   | RRef (_,a)      -> RRef (loc,a)
   | RVar (_,a)      -> RVar (loc,a)
+  | REvar (_,a)      -> REvar (loc,a)
   | RMeta (_,a)     -> RMeta (loc,a) 
   | RApp (_,a,b)    -> RApp (loc,a,b)
   | RBinder (_,a,b,c,d) -> RBinder (loc,a,b,c,d)

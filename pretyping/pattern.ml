@@ -11,6 +11,7 @@ open Environ
 type constr_pattern =
   | PRef of global_reference
   | PVar of identifier
+  | PEvar of existential_key
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
   | PSoApp of int * constr_pattern list
@@ -31,7 +32,7 @@ let rec occur_meta_pattern = function
       (occur_meta_pattern p) or
       (occur_meta_pattern c) or (array_exists occur_meta_pattern br)
   | PMeta _ | PSoApp _ -> true
-  | PVar _ | PRef _ | PRel _ | PSort _ | PFix _ | PCoFix _ -> false
+  | PEvar _ | PVar _ | PRef _ | PRel _ | PSort _ | PFix _ | PCoFix _ -> false
 
 type constr_label =
   | ConstNode of section_path
@@ -50,7 +51,6 @@ let label_of_ref = function
   | IndRef sp       -> IndNode sp
   | ConstructRef sp -> CstrNode sp
   | VarRef sp       -> SectionVarNode sp
-  | EvarRef n          -> raise BoundPattern
 
 let rec head_pattern_bound t =
   match t with
@@ -59,7 +59,8 @@ let rec head_pattern_bound t =
     | PCase (p,c,br)        -> head_pattern_bound c
     | PRef r                -> label_of_ref r
     | PVar id               -> VarNode id
-    | PRel _ | PMeta _ | PSoApp _  | PSort _ | PFix _ -> raise BoundPattern
+    | PEvar _ | PRel _ | PMeta _ | PSoApp _  | PSort _ | PFix _
+	-> raise BoundPattern
     (* Perhaps they were arguments, but we don't beta-reduce *)
     | PBinder(BLambda,_,_,_) -> raise BoundPattern
     | PCoFix _ -> anomaly "head_pattern_bound: not a type"
@@ -313,7 +314,8 @@ let rec pattern_of_constr t =
     | IsMutConstruct (sp,ctxt) ->
 	pattern_of_ref (ConstructRef sp) ctxt
     | IsEvar (n,ctxt) ->
-	pattern_of_ref (EvarRef n) ctxt
+	if ctxt = [||] then PEvar n
+	else PApp (PEvar n, Array.map pattern_of_constr ctxt)
     | IsMutCase (ci,p,a,br) ->
 	PCase (Some (pattern_of_constr p),pattern_of_constr a,
 	       Array.map pattern_of_constr br)

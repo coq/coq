@@ -11,6 +11,7 @@ open Environ
 type constr_pattern =
   | PRef of global_reference
   | PVar of identifier
+  | PEvar of existential_key
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
   | PSoApp of int * constr_pattern list

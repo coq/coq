@@ -215,6 +215,15 @@ let rec pretype tycon env isevars lvar lmeta = function
 	(pretype_id loc env lvar id)
 	tycon
 
+  | REvar (loc, ev) ->
+      (* Ne faudrait-il pas s'assurer que hyps est bien un
+      sous-contexte du contexte courant, et qu'il n'y a pas de Rel "caché" *)
+      let hyps = (Evd.map !isevars ev).evar_hyps in
+      let args = instance_from_named_context hyps in
+      let c = mkEvar (ev, Array.of_list args) in
+      let j = (Retyping.get_judgment_of env !isevars c) in
+      inh_conv_coerce_to_tycon loc env isevars j tycon
+
   | RMeta (loc,n) ->
       let j =
 	try

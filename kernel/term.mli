@@ -39,7 +39,6 @@ type global_reference =
   | ConstRef of constant_path
   | IndRef of inductive_path
   | ConstructRef of constructor_path
-  | EvarRef of int
 
 (********************************************************************)
 (* The type of constructions *)
@@ -79,7 +78,7 @@ type arity = rel_declaration list * sorts
 
 (* [constr array] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
-type existential = int * constr array
+type existential = existential_key * constr array
 type constant = constant_path * constr array
 type constructor = constructor_path * constr array
 type inductive = inductive_path * constr array
@@ -314,8 +313,8 @@ val path_of_const : constr -> constant_path
 val args_of_const : constr -> constr array
 
 (* Destructs an existential variable *)
-val destEvar : constr -> int * constr array
-val num_of_evar : constr -> int
+val destEvar : constr -> existential_key * constr array
+val num_of_evar : constr -> existential_key
 
 (* Destructs a (co)inductive type *)
 val destMutInd : constr -> inductive

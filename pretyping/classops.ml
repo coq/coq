@@ -134,9 +134,7 @@ let coercion_exists coe =
   try let _ = coercion_info coe in true
   with Not_found -> false
 
-let coe_of_reference = function
-  | EvarRef _ -> raise Not_found
-  | x -> x
+let coe_of_reference x = x
 
 let hide_coercion coe =
   let _,coe_info = coercion_info coe in

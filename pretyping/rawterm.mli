@@ -32,6 +32,7 @@ type 'ctxt reference =
 type rawconstr = 
   | RRef of loc * global_reference
   | RVar of loc * identifier
+  | REvar of loc * existential_key
   | RMeta of loc * int
   | RApp of loc * rawconstr * rawconstr list
   | RBinder of loc * binder_kind * name * rawconstr * rawconstr

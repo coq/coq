@@ -298,7 +298,7 @@ let rec detype avoid env t =
     | IsConst (sp,cl) ->
 	detype_reference avoid env (ConstRef sp) cl
     | IsEvar (ev,cl) ->
-	let f = RRef (dummy_loc, EvarRef ev) in
+	let f = REvar (dummy_loc, ev) in
 	RApp (dummy_loc, f, List.map (detype avoid env) (Array.to_list cl))
     | IsMutInd (ind_sp,cl) ->
 	detype_reference avoid env (IndRef ind_sp) cl

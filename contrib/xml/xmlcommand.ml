@@ -726,8 +726,7 @@ let print sp fn =
         let hyps = string_list_of_named_context_list hyps in
          sp,Inductive,
           print_mutual_inductive packs [] hyps env inner_types
-    | T.ConstructRef _
-    | T.EvarRef _ ->
+    | T.ConstructRef _ ->
        Util.anomaly ("print: this should not happen")
   in
    Xml.pp pp_cmds fn ;

@@ -44,7 +44,6 @@ type global_reference =
   | ConstRef of constant_path
   | IndRef of inductive_path
   | ConstructRef of constructor_path
-  | EvarRef of int
 
 (********************************************************************)
 (*       Constructions as implemented                               *)

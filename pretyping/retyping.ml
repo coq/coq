@@ -49,7 +49,7 @@ let rec type_of env cstr=
        with Not_found ->
          anomaly ("type_of: variable "^(string_of_id id)^" unbound"))
     | IsConst c -> body_of_type (type_of_constant env sigma c)
-    | IsEvar _ -> type_of_existential env sigma cstr
+    | IsEvar ev -> type_of_existential env sigma ev
     | IsMutInd ind -> body_of_type (type_of_inductive env sigma ind)
     | IsMutConstruct cstr -> body_of_type (type_of_constructor env sigma cstr)
     | IsMutCase (_,p,c,lf) ->

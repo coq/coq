@@ -15,9 +15,9 @@ open Termast
 
 exception Non_closed_number
 
-let ast_O = ast_of_ref ast_of_rawconstr glob_O
-let ast_S = ast_of_ref ast_of_rawconstr glob_S
-let ast_myvar = ast_of_ref ast_of_rawconstr glob_My_special_variable_nat
+let ast_O = ast_of_ref glob_O
+let ast_S = ast_of_ref glob_S
+let ast_myvar = ast_of_ref glob_My_special_variable_nat
   
 (* For example, (nat_of_string "3") is <<(S (S (S O)))>> *)
 let nat_of_int n dloc =

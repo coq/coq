@@ -179,15 +179,14 @@ let ast_to_global loc c =
     | ("CONST", [sp]) ->
 	let ref = ConstRef (ast_to_sp sp) in
 	RRef (loc, ref), implicits_of_global ref
-    | ("EVAR", [(Num (_,ev))]) ->
-	let ref = EvarRef ev in
-	RRef (loc, ref), implicits_of_global ref
     | ("MUTIND", [sp;Num(_,tyi)]) -> 
 	let ref = IndRef (ast_to_sp sp, tyi) in
 	RRef (loc, ref), implicits_of_global ref
     | ("MUTCONSTRUCT", [sp;Num(_,ti);Num(_,n)]) ->
 	let ref = ConstructRef ((ast_to_sp sp,ti),n) in
 	RRef (loc, ref), implicits_of_global ref
+    | ("EVAR", [(Num (_,ev))]) ->
+	REvar (loc, ev), []
     | ("SYNCONST", [sp]) ->
 	Syntax_def.search_syntactic_definition (ast_to_sp sp), []
     | _ -> anomaly_loc (loc,"ast_to_global",

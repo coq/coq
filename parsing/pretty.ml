@@ -329,7 +329,6 @@ let print_name qid =
       | IndRef (sp,_) -> print_inductive sp
       | ConstructRef ((sp,_),_) -> print_inductive sp
       | VarRef sp -> print_section_variable sp
-      | EvarRef n -> [< 'sTR "?"; 'iNT n; 'fNL >]
   with Not_found -> 
   try  (* Var locale de but, pas var de section... donc pas d'implicits *)
     let dir,str = repr_qualid qid in 

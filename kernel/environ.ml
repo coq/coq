@@ -219,8 +219,6 @@ let sp_of_global env = function
       let mip = mind_nth_type_packet mib tyi in
       assert (i <= Array.length mip.mind_consnames && i > 0);
       make_path (dirpath sp) mip.mind_consnames.(i-1) CCI
-  | EvarRef n -> 
-      make_path [] (id_of_string ("?"^(string_of_int n))) CCI
 
 let id_of_global env ref = basename (sp_of_global env ref)
 
