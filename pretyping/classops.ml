@@ -187,8 +187,8 @@ let cache_class (_,x) = add_new_class x
 
 let (inClass,outClass) =
   declare_object ("CLASS",
-                  { load_function = (fun _ -> ());
-		    open_function = cache_class;
+                  { load_function = cache_class;
+		    open_function = (fun _ -> ());
                     cache_function = cache_class;
                     export_function = (function x -> Some x) })
 
@@ -314,7 +314,7 @@ let add_coercion_in_graph (ic,source,target) =
 	 end)
       old_inheritance_graph 
   end;
-  if (!ambig_paths <> []) && is_verbose () && is_mes_ambig() then 
+  if (!ambig_paths <> []) && is_verbose () then 
     ppnl (message_ambig !ambig_paths)
 
 type coercion = (coe_typ * coe_info_typ) * cl_typ * cl_typ
@@ -332,8 +332,8 @@ let cache_coercion (_,((coe,xf),cls,clt)) =
 
 let (inCoercion,outCoercion) =
   declare_object ("COERCION",
-                  { load_function = (fun _ -> ());
-		    open_function = cache_coercion;
+                  { load_function = cache_coercion;
+		    open_function = (fun _ -> ());
                     cache_function = cache_coercion;
                     export_function = (function x -> Some x) })
 
