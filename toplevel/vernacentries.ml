@@ -281,15 +281,33 @@ let interp_goal = function
   | StartTheoremProof x -> (false, interp_theorem x)
   | StartDefinitionBody x -> interp_definition x
 
-let vernac_definition kind id red_option c typ_opt hook = 
-  let red_option = match red_option with
-    | None -> None 
-    | Some r -> 
-	let (evc,env)= Command.get_current_context () in
-	Some (interp_redexp env evc r) in
-  let (local,stre as x) = interp_definition kind in
-  let ref = declare_definition red_option id x c typ_opt in
-  hook stre ref
+let start_proof_and_print idopt k t hook =
+  start_proof_com idopt k t hook;
+  print_subgoals ();
+  if !pcoq <> None then (out_some !pcoq).start_proof ()
+
+let rec generalize_rawconstr c = function
+  | [] -> c
+  | LocalRawDef (id,b)::bl -> Ast.mkLetInC(id,b,generalize_rawconstr c bl)
+  | LocalRawAssum (idl,t)::bl ->
+      List.fold_right (fun x b -> Ast.mkProdC(x,t,b)) idl
+        (generalize_rawconstr c bl)
+
+let vernac_definition kind id def hook =
+  let (local,stre as k) = interp_definition kind in
+  match def with
+  | ProveBody (bl,t) ->
+      let hook _ _ = () in
+      let t = generalize_rawconstr t bl in
+      start_proof_and_print (Some id) k t hook
+  | DefineBody (bl,red_option,c,typ_opt) ->
+      let red_option = match red_option with
+        | None -> None
+        | Some r -> 
+	    let (evc,env)= Command.get_current_context () in
+	    Some (interp_redexp env evc r) in
+      let ref = declare_definition id k bl red_option c typ_opt in
+      hook stre ref
 
 let vernac_start_proof kind sopt t lettop hook =
   if not(refining ()) then
@@ -298,9 +316,7 @@ let vernac_start_proof kind sopt t lettop hook =
 	(str "Let declarations can only be used in proof editing mode")
 (*    else if s = None then
       error "repeated Goal not permitted in refining mode"*);
-  start_proof_com sopt (interp_goal kind) t hook;
-  print_subgoals ();
-  if !pcoq <> None then (out_some !pcoq).start_proof ()
+  start_proof_and_print sopt (false, interp_theorem kind) t hook
 
 let vernac_end_proof is_opaque idopt =
   if_verbose show_script ();
@@ -879,8 +895,9 @@ let interp c = match c with
   | VernacDistfix (assoc,n,inf,qid) -> vernac_distfix assoc n inf qid
 
   (* Gallina *)
-  | VernacDefinition (k,id,red,t,otyp,f) -> vernac_definition k id red t otyp f
-  | VernacStartProof (k,id,t,top,f) -> vernac_start_proof k id t top f
+  | VernacDefinition (k,id,d,f) -> vernac_definition k id d f
+  | VernacStartTheoremProof (k,id,t,top,f) ->
+      vernac_start_proof k (Some id) t top f
   | VernacEndProof (opaq,idopt) -> vernac_end_proof opaq idopt
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,l) -> vernac_assumption stre l
@@ -942,7 +959,7 @@ let interp c = match c with
   | VernacNop -> ()
 
   (* Proof management *)
-(*  | VernacGoal c -> vernac_goal c*)
+  | VernacGoal t -> vernac_start_proof Theorem None t false (fun _ _ -> ())
   | VernacAbort id -> vernac_abort id
   | VernacAbortAll -> vernac_abort_all ()
   | VernacRestart -> vernac_restart ()

@@ -101,8 +101,7 @@ let rec vernac interpfun input =
   let (loc,com) = parse_phrase input in
   let rec interp = function
     | VernacLoad (verbosely, fname) ->
-        let _ = read_vernac_file verbosely (make_suffix fname ".v") in
-        ()
+        read_vernac_file verbosely (make_suffix fname ".v")
 
     | VernacList l -> List.iter (fun (_,v) -> interp v) l
 
@@ -132,11 +131,11 @@ and read_vernac_file verbosely s =
   try
     (* we go out of the following infinite loop when a End_of_input is
      * raised, which means that we raised the end of the file being loaded *)
-    while true do vernac interpfun input; pp_flush () done; fname
+    while true do vernac interpfun input; pp_flush () done
   with e ->   (* whatever the exception *)
     close_input in_chan input;    (* we must close the file first *)
     match real_error e with
-      | End_of_input -> fname
+      | End_of_input -> ()
       | _ -> raise_with_file fname e
 
 (* raw_do_vernac : char Stream.t -> unit
@@ -151,13 +150,13 @@ let raw_do_vernac po =
 (* Load a vernac file. Errors are annotated with file and location *)
 let load_vernac verb file =
   try 
-    let _ = read_vernac_file verb file in ()
+    read_vernac_file verb file
   with e -> 
     raise_with_file file e
 
 (* Compile a vernac file (f is assumed without .v suffix) *)
 let compile verbosely f =
-(*  try
+(*
     let s = Filename.basename f in
     let m = Names.id_of_string s in
     let _,longf = find_file_in_path (Library.get_load_path ()) (f^".v") in
@@ -171,10 +170,7 @@ let compile verbosely f =
     assert (mid = ldir);
     Library.save_module_to ldir (longf^"o")
 *)
-  try
-    let ldir,long_f_dot_v = Library.start_library f in
-    if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
-    let _ = load_vernac verbosely long_f_dot_v in
-    Library.save_library_to ldir (long_f_dot_v^"o")
-  with e ->
-    raise_with_file f e
+  let ldir,long_f_dot_v = Library.start_library f in
+  if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
+  let _ = load_vernac verbosely long_f_dot_v in
+  Library.save_library_to ldir (long_f_dot_v^"o")

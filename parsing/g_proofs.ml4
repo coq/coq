@@ -33,8 +33,7 @@ GEXTEND Gram
     | ":"; l = LIST1 IDENT -> l ] ]
   ;
   command:
-    [ [ IDENT "Goal"; c = Constr.constr -> 
-        VernacStartProof(StartTheoremProof Theorem,None,c,false,(fun _ _ ->()))
+    [ [ IDENT "Goal"; c = Constr.constr -> VernacGoal c
 (*VernacGoal c*)
 (*      | IDENT "Goal" -> VernacGoal None*)
       | "Proof" -> VernacNop

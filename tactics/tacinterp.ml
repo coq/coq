@@ -1103,8 +1103,8 @@ let rec val_interp ist ast =
     value_interp ist
 
 and eval_tactic ist = function
-  | TacAtom (loc,t) ->
-      (try interp_atomic ist t
+  | TacAtom (loc,t) -> fun gl ->
+      (try interp_atomic ist t gl
        with e -> Stdpp.raise_with_loc loc e)
   | TacFun (it,body) -> assert false
   | TacFunRec rc -> assert false

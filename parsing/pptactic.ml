@@ -369,7 +369,7 @@ and pr_atom1 = function
   | TacForward (true,na,c) ->
       hov 1 (str "Pose" ++ pr_name na ++ str ":=" ++ pr_constr c)
   | TacGeneralize l ->
-      hov 0 (str "Generalize" ++ brk (1,1) ++ prlist_with_sep spc pr_constr l)
+      hov 1 (str "Generalize" ++ spc () ++ prlist_with_sep spc pr_constr l)
   | TacGeneralizeDep c ->
       hov 1 (str "Generalize" ++ spc () ++ str "Dependent" ++ spc () ++
       pr_constr c)
@@ -417,18 +417,16 @@ and pr_atom1 = function
   | TacDestructHyp (false,(_,id)) -> hov 0 (str "DHyp" ++ spc () ++ pr_id id)
   | TacDestructConcl as x -> pr_atom0 x
   | TacSuperAuto (n,l,b1,b2) ->
-      hov 0 (str "SuperAuto" ++ pr_opt int n ++ pr_autoarg_adding l ++ 
+      hov 1 (str "SuperAuto" ++ pr_opt int n ++ pr_autoarg_adding l ++ 
              pr_autoarg_destructing b1 ++ pr_autoarg_usingTDB b2)
   | TacDAuto (n,p) ->
-      hov 0 (str "Auto" ++ pr_opt int n ++ str "Decomp" ++ pr_opt int p)
+      hov 1 (str "Auto" ++ pr_opt int n ++ str "Decomp" ++ pr_opt int p)
 
   (* Context management *)
   | TacClear l ->
-      hov 0
-        (str "Clear" ++ brk (1,1) ++ prlist_with_sep spc (pr_metanum pr_id) l)
+      hov 1 (str "Clear" ++ spc () ++ prlist_with_sep spc (pr_metanum pr_id) l)
   | TacClearBody l ->
-      hov 0
-        (str "Clear" ++ brk (1,1) ++ prlist_with_sep spc (pr_metanum pr_id) l)
+      hov 1 (str "Clear" ++ spc () ++ prlist_with_sep spc (pr_metanum pr_id) l)
   | TacMove (b,(_,id1),(_,id2)) ->
       (* Rem: only b = true is available for users *)
       assert b;

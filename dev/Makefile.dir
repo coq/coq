@@ -40,11 +40,6 @@ list:
 	   ls -l `basename $$i .ml`.cmo; \
 	done)
 
-conflicts:
-	cvs status | grep File | grep conflicts | less
-
-confl:	conflicts
-
 
 clean::  
 	rm -f *.cmi *.cmo *.cmx *.o
@@ -101,3 +96,6 @@ pretty:	depend.ps
 
 %.cmo:	*.ml *.mli
 	make -C $(TOPDIR) $(BASEDIR)/$@
+
+coqtop:	
+	make -C $(TOPDIR) bin/coqtop.byte

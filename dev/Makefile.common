@@ -43,3 +43,10 @@ put:	check_other
 	fi)
 
 sync:	get put
+
+
+conflicts:
+	cvs status | grep File | grep conflicts | less
+
+confl:	conflicts
+

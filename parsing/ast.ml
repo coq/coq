@@ -265,6 +265,11 @@ let abstract_binders_ast loc name a b =
 	List.fold_right (abstract_binder_ast loc name) l b
     | _ -> invalid_arg "Bad usage of $ABSTRACT macro"
 
+let mkCastC(a,b) = ope("CAST",[a;b])
+let mkLambdaC(x,a,b) = ope("LAMBDA",[a;slam(Some x,b)])
+let mkLetInC(x,a,b) = ope("LETIN",[a;slam(Some x,b)])
+let mkProdC (x,a,b) = ope("PROD",[a;slam(Some x,b)])
+
 (* Pattern-matching on ast *)
 
 let env_assoc_value loc v env =
