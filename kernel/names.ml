@@ -281,16 +281,49 @@ module Hdir = Hashcons.Make(
     type t = dir_path
     type u = identifier -> identifier
     let hash_sub hident d = List.map hident d
-    let equal d1 d2 = List.for_all2 (==) d1 d2
+    let rec equal d1 d2 = match (d1,d2) with
+      | [],[] -> true
+      | id1::d1,id2::d2 -> id1 == id2 & equal d1 d2
+      | _ -> false
+    let hash = Hashtbl.hash
+  end)
+
+module Huniqid = Hashcons.Make(
+  struct 
+    type t = uniq_ident
+    type u = (string -> string) * (dir_path -> dir_path)
+    let hash_sub (hstr,hdir) (n,s,dir) = (n,hstr s,hdir dir)
+    let equal (n1,s1,dir1) (n2,s2,dir2) = n1 = n2 & s1 = s2 & dir1 == dir2
+    let hash = Hashtbl.hash
+  end)
+
+module Hmod = Hashcons.Make(
+  struct 
+    type t = module_path
+    type u = (dir_path -> dir_path) * (uniq_ident -> uniq_ident) *
+	(string -> string)
+    let rec hash_sub (hdir,huniqid,hstr as hfuns) = function
+      | MPfile dir -> MPfile (hdir dir)
+      | MPbound m -> MPbound (huniqid m)
+      | MPself m -> MPself (huniqid m)
+      | MPdot (md,l) -> MPdot (hash_sub hfuns md, hstr l)
+    let rec equal d1 d2 = match (d1,d2) with
+      | MPfile dir1, MPfile dir2 -> dir1 == dir2
+      | MPbound m1, MPbound m2 -> m1 == m2
+      | MPself m1, MPself m2 -> m1 == m2
+      | MPdot (mod1,l1), MPdot (mod2,l2) -> equal mod1 mod2 & l1 = l2
+      | _ -> false
     let hash = Hashtbl.hash
   end)
 
 module Hkn = Hashcons.Make(
   struct 
     type t = kernel_name
-    type u = identifier -> identifier
-    let hash_sub hident kn = Util.todo "hash_cons"; kn
-    let equal kn1 kn2 = kn1==kn2
+    type u = (module_path -> module_path)
+	* (dir_path -> dir_path) * (string -> string)
+    let hash_sub (hmod,hdir,hstr) (md,dir,l) = (hmod md, hdir dir, hstr l)
+    let equal (mod1,dir1,l1) (mod2,dir2,l2) =
+      mod1 == mod2 && dir1 == dir2 && l1 == l2
     let hash = Hashtbl.hash
   end)
 
@@ -299,5 +332,7 @@ let hcons_names () =
   let hident = Hashcons.simple_hcons Hident.f hstring in
   let hname = Hashcons.simple_hcons Hname.f hident in
   let hdir = Hashcons.simple_hcons Hdir.f hident in
-  let hkn = Hashcons.simple_hcons Hkn.f hident in
+  let huniqid = Hashcons.simple_hcons Huniqid.f (hstring,hdir) in
+  let hmod = Hashcons.simple_hcons Hmod.f (hdir,huniqid,hstring) in
+  let hkn = Hashcons.simple_hcons Hkn.f (hmod,hdir,hstring) in
   (hkn,hdir,hname,hident,hstring)
