@@ -67,16 +67,9 @@ let check = ref false
 let without_check tac gl =
   let c = !check in
   check := false;
-  let r = tac gl in
-  check := c;
-  r
+  try let r = tac gl in check := c; r with e -> check := c; raise e
 
-let with_check tac gl =
-  let c = !check in
-  check := true;
-  let r = tac gl in
-  check := c;
-  r
+let with_check = Options.with_option check
    
 (************************************************************************)
 (************************************************************************)
