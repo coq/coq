@@ -1,0 +1,573 @@
+%!PS-Adobe-2.0
+%%Creator: dot version uwin98 (01-26-98)
+%%For: Gros nain
+%%Title: G
+%%Pages: (atend)
+%%BoundingBox: 36 36 577 193
+%%EndComments
+%%BeginProlog
+save
+/DotDict 200 dict def
+DotDict begin
+
+%%BeginResource: procset
+/coord-font-family /Times-Roman def
+/default-font-family /Times-Roman def
+/coordfont coord-font-family findfont 8 scalefont def
+
+/InvScaleFactor 1.0 def
+/set_scale {
+	dup 1 exch div /InvScaleFactor exch def
+	dup scale
+} bind def
+
+% styles
+/solid { } bind def
+/dashed { [9 InvScaleFactor mul dup ] 0 setdash } bind def
+/dotted { [1 InvScaleFactor mul 6 InvScaleFactor mul] 0 setdash } bind def
+/invis {/fill {newpath} def /stroke {newpath} def /show {pop newpath} def} bind def
+/bold { 2 setlinewidth } bind def
+/filled { } bind def
+/unfilled { } bind def
+/rounded { } bind def
+/diagonals { } bind def
+
+% hooks for setting color 
+/nodecolor { sethsbcolor } bind def
+/edgecolor { sethsbcolor } bind def
+/graphcolor { sethsbcolor } bind def
+/nopcolor {pop pop pop} bind def
+
+/beginpage {	% i j npages
+	/npages exch def
+	/j exch def
+	/i exch def
+	/str 10 string def
+	npages 1 gt {
+		gsave
+			coordfont setfont
+			0 0 moveto
+			(() show i str cvs show (,) show j str cvs show ()) show
+		grestore
+	} if
+} bind def
+
+/set_font {
+	findfont exch
+	scalefont setfont
+} def
+
+% draw aligned label in bounding box aligned to current point
+% alignfactor tells what fraction to place on the left.
+% -.5 is centered.
+/alignedtext {			% text labelwidth fontsz alignfactor
+	/alignfactor exch def
+	/fontsz exch def
+	/width exch def
+	/text exch def
+	gsave
+		% even if node or edge is dashed, don't paint text with dashes
+		[] 0 setdash
+		currentpoint newpath moveto
+		text stringwidth pop
+		alignfactor mul fontsz -.3 mul rmoveto
+		text show
+	grestore
+} def
+
+/boxprim {				% xcorner ycorner xsize ysize
+		4 2 roll
+		moveto
+		2 copy
+		exch 0 rlineto
+		0 exch rlineto
+		pop neg 0 rlineto
+		closepath
+} bind def
+
+/ellipse_path {
+	/ry exch def
+	/rx exch def
+	/y exch def
+	/x exch def
+	matrix currentmatrix
+	newpath
+	x y translate
+	rx ry scale
+	0 0 1 0 360 arc
+	setmatrix
+} bind def
+
+/endpage { showpage } bind def
+
+/layercolorseq
+	[	% layer color sequence - darkest to lightest
+		[0 0 0]
+		[.2 .8 .8]
+		[.4 .8 .8]
+		[.6 .8 .8]
+		[.8 .8 .8]
+	]
+def
+
+/setlayer {/maxlayer exch def /curlayer exch def
+	layercolorseq curlayer get
+	aload pop sethsbcolor
+	/nodecolor {nopcolor} def
+	/edgecolor {nopcolor} def
+	/graphcolor {nopcolor} def
+} bind def
+
+/onlayer { curlayer ne {invis} if } def
+
+/onlayers {
+	/myupper exch def
+	/mylower exch def
+	curlayer mylower lt
+	curlayer myupper gt
+	or
+	{invis} if
+} def
+
+/curlayer 0 def
+
+%%EndResource
+%%EndProlog
+%%BeginSetup
+14 default-font-family set_font
+% /arrowlength 10 def
+% /arrowwidth 5 def
+%%EndSetup
+%%Page: 1 1
+%%PageBoundingBox: 36 36 577 193
+gsave
+35 35 542 158 boxprim clip newpath
+36 36 translate
+0 0 1 beginpage
+0.6250 set_scale
+0 0 translate 0 rotate
+0.000 0.000 0.000 graphcolor
+14.00 /Times-Roman set_font
+
+%	Termdn
+gsave 10 dict begin
+701 233 32 18 ellipse_path
+stroke
+gsave 10 dict begin
+701 234 moveto (Termdn) 44 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Dn
+gsave 10 dict begin
+819 233 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+819 234 moveto (Dn) 17 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Termdn -> Dn
+newpath 734 233 moveto
+749 233 767 233 783 233 curveto
+stroke
+newpath 782 231 moveto
+792 233 lineto
+782 236 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Tactics
+gsave 10 dict begin
+593 110 30 18 ellipse_path
+stroke
+gsave 10 dict begin
+593 111 moveto (Tactics) 40 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Hipattern
+gsave 10 dict begin
+701 156 36 18 ellipse_path
+stroke
+gsave 10 dict begin
+701 157 moveto (Hipattern) 52 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Tactics -> Hipattern
+newpath 618 121 moveto
+631 127 649 134 664 140 curveto
+stroke
+newpath 665 138 moveto
+673 144 lineto
+663 142 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Tacticals
+gsave 10 dict begin
+701 102 35 18 ellipse_path
+stroke
+gsave 10 dict begin
+701 103 moveto (Tacticals) 50 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Tactics -> Tacticals
+newpath 623 108 moveto
+633 107 645 106 656 105 curveto
+stroke
+newpath 656 103 moveto
+666 104 lineto
+656 107 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Wcclausenv
+gsave 10 dict begin
+819 102 44 18 ellipse_path
+stroke
+gsave 10 dict begin
+819 103 moveto (Wcclausenv) 68 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Tacticals -> Wcclausenv
+newpath 737 102 moveto
+746 102 755 102 764 102 curveto
+stroke
+newpath 764 100 moveto
+774 102 lineto
+764 105 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Tacentries
+gsave 10 dict begin
+482 141 39 18 ellipse_path
+stroke
+gsave 10 dict begin
+482 142 moveto (Tacentries) 58 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Tacentries -> Tactics
+newpath 516 132 moveto
+529 128 543 124 556 120 curveto
+stroke
+newpath 555 118 moveto
+565 118 lineto
+556 123 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Refine
+gsave 10 dict begin
+482 87 29 18 ellipse_path
+stroke
+gsave 10 dict begin
+482 88 moveto (Refine) 37 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Refine -> Tactics
+newpath 510 93 moveto
+523 95 540 99 554 102 curveto
+stroke
+newpath 555 100 moveto
+564 104 lineto
+554 104 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Nbtermdn
+gsave 10 dict begin
+482 233 38 18 ellipse_path
+stroke
+gsave 10 dict begin
+482 234 moveto (Nbtermdn) 56 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Btermdn
+gsave 10 dict begin
+593 233 35 18 ellipse_path
+stroke
+gsave 10 dict begin
+593 234 moveto (Btermdn) 49 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Nbtermdn -> Btermdn
+newpath 521 233 moveto
+530 233 539 233 548 233 curveto
+stroke
+newpath 548 231 moveto
+558 233 lineto
+548 236 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Btermdn -> Termdn
+newpath 628 233 moveto
+638 233 649 233 659 233 curveto
+stroke
+newpath 658 231 moveto
+668 233 lineto
+658 236 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Leminv
+gsave 10 dict begin
+32 126 32 18 ellipse_path
+stroke
+gsave 10 dict begin
+32 127 moveto (Leminv) 43 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Inv
+gsave 10 dict begin
+144 126 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+144 127 moveto (Inv) 18 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Leminv -> Inv
+newpath 64 126 moveto
+78 126 94 126 108 126 curveto
+stroke
+newpath 107 124 moveto
+117 126 lineto
+107 129 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Auto
+gsave 10 dict begin
+258 180 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+258 181 moveto (Auto) 28 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Inv -> Auto
+newpath 166 137 moveto
+183 145 208 156 227 165 curveto
+stroke
+newpath 228 163 moveto
+236 169 lineto
+226 167 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Elim
+gsave 10 dict begin
+258 126 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+258 127 moveto (Elim) 27 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Inv -> Elim
+newpath 171 126 moveto
+186 126 205 126 222 126 curveto
+stroke
+newpath 221 124 moveto
+231 126 lineto
+221 129 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Equality
+gsave 10 dict begin
+258 62 34 18 ellipse_path
+stroke
+gsave 10 dict begin
+258 63 moveto (Equality) 47 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Inv -> Equality
+newpath 165 114 moveto
+183 104 207 91 227 80 curveto
+stroke
+newpath 225 78 moveto
+235 75 lineto
+228 82 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Hiddentac
+gsave 10 dict begin
+367 137 39 18 ellipse_path
+stroke
+gsave 10 dict begin
+367 138 moveto (Hiddentac) 57 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Auto -> Hiddentac
+newpath 281 171 moveto
+294 165 313 159 328 153 curveto
+stroke
+newpath 327 151 moveto
+337 149 lineto
+329 155 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Dhyp
+gsave 10 dict begin
+367 191 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+367 192 moveto (Dhyp) 31 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Auto -> Dhyp
+newpath 285 183 moveto
+299 185 316 186 330 187 curveto
+stroke
+newpath 330 185 moveto
+340 188 lineto
+330 189 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Elim -> Hiddentac
+newpath 285 129 moveto
+295 130 307 131 319 132 curveto
+stroke
+newpath 319 130 moveto
+329 133 lineto
+319 134 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Equality -> Tactics
+newpath 291 57 moveto
+347 48 461 36 522 57 curveto
+536 62 555 76 569 89 curveto
+stroke
+newpath 570 87 moveto
+576 95 lineto
+567 90 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Hiddentac -> Tacentries
+newpath 406 138 moveto
+415 139 423 139 432 139 curveto
+stroke
+newpath 432 137 moveto
+442 140 lineto
+432 141 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Eqdecide
+gsave 10 dict begin
+144 72 36 18 ellipse_path
+stroke
+gsave 10 dict begin
+144 73 moveto (Eqdecide) 51 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Eqdecide -> Auto
+newpath 171 84 moveto
+178 88 184 92 188 96 curveto
+205 113 210 139 224 156 curveto
+225 158 227 160 229 162 curveto
+stroke
+newpath 231 160 moveto
+238 168 lineto
+228 165 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Eqdecide -> Equality
+newpath 180 69 moveto
+191 68 203 67 214 66 curveto
+stroke
+newpath 214 64 moveto
+224 65 lineto
+214 68 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Eauto
+gsave 10 dict begin
+144 180 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+144 181 moveto (Eauto) 32 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Eauto -> Auto
+newpath 171 180 moveto
+186 180 205 180 222 180 curveto
+stroke
+newpath 221 178 moveto
+231 180 lineto
+221 183 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Dhyp -> Tactics
+newpath 394 190 moveto
+429 188 489 183 522 171 curveto
+538 166 558 148 573 133 curveto
+stroke
+newpath 571 132 moveto
+579 126 lineto
+574 135 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Dhyp -> Nbtermdn
+newpath 391 200 moveto
+406 205 426 212 442 219 curveto
+stroke
+newpath 442 216 moveto
+451 222 lineto
+441 221 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+
+%	Autorewrite
+gsave 10 dict begin
+144 18 44 18 ellipse_path
+stroke
+gsave 10 dict begin
+144 19 moveto (Autorewrite) 67 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Autorewrite -> Equality
+newpath 176 30 moveto
+190 36 207 42 222 48 curveto
+stroke
+newpath 222 45 moveto
+231 51 lineto
+221 50 lineto
+closepath
+gsave 0 setgray stroke grestore fill
+endpage
+grestore
+%%PageTrailer
+%%EndPage: 1
+%%Trailer
+%%Pages: 1
+end
+restore
+%%EOF

@@ -1,0 +1,177 @@
+(******************************************************************************)
+(*                                                                            *)
+(*                   PROJECT HELM (http://www.cs.unibo.it/helm)               *)
+(*                                                                            *)
+(*                     A module to print Coq objects in XML                   *)
+(*                                                                            *)
+(*                Claudio Sacerdoti Coen <sacerdot@cs.unibo.it>               *)
+(*                                 20/12/2000                                 *)
+(******************************************************************************)
+
+This module provides commands to export a piece of Coq library in XML format
+and it must be considered beta-software. Only the information relevant
+to proof-checking and proof-rendering is exported, i.e. only the CIC objects.
+
+This document is tructured in the following way:
+ 1. Inner-types
+ 2. New commands available
+ 3. URIs fixing
+ 4. Suggested usage
+ 5. How to exploit the XML files
+
+==========================
+1. Inner-types
+==========================
+
+In order to do proof-rendering (for example in natural language),
+some redundant typing information is required, i.e. the type of
+at least some of the subterms of the bodies and types. So, each
+one of the new commands described in section 2, print not only
+the object, but also another XML file in which you can find
+the type of all the subterms of the terms of the printed object
+which respect the following conditions:
+
+ 1. It's sort is Prop.
+ 2. It is not a cast or an atomic term, i.e. it's root is not a CAST, REL,
+    VAR, MUTCONSTR or CONST.
+ 3. If it's root is a LAMBDA, then the root's parent node is not a LAMBDA,
+    i.e. only the type of the outer LAMBDA of a block of nested LAMBDAs is
+    printed.
+
+The rationale for the 3rd condition is that the type of the inner LAMBDAs
+could be easily computed starting from the type of the outer LAMBDA; moreover,
+the types of the inner LAMBDAs requires a lot of disk/memory space: removing
+the 3rd condition leads to XML file that are two times as big as the ones
+exported appling the 3rd condition.
+
+In the rest of this file the types of the subterms satisfing all the
+three conditions are called "inner types".
+
+==========================
+2. New commands available:
+==========================
+
+The new commands are:
+
+ Print XML qualid.                 It prints in XML the object whose qualified
+                                   name is qualid. It prints also an XML file
+				   made of inner-types.
+                                   Only the most discharged available form of
+				   the term is printed.
+				   WARNING: relative URIs for variables
+				   are broken.
+
+ Print XML File "filename" qualid. It prints in XML the object whose qualified
+                                   name is qualid on the file whose name is
+				   filename. It prints also an XML file made
+				   of inner types.
+                                   Only the most discharged available form of
+				   the term is printed.
+				   WARNING: relative URIs for variables
+				   are broken.
+
+ Show XML Proof.                   It prints in XML the current proof in
+                                   progress. It prints also an XML file made
+				   of inner types.
+				   WARNING: relative URIs for variables
+				   are broken.
+
+ Show XML File "filename" Proof.   It prints in XML the current proof in
+                                   progress on the file whose name is filename.
+				   It prints also an XML file made of inner
+				   types.
+				   WARNING: relative URIs for variables
+				   are broken.
+
+ Print XML Module id.              It prints in XML all the objects defined
+                                   in the already required module whose name
+				   is id, each one with the corresponding
+				   inner types XML file.
+				   This command is completely working.
+
+ Print XML Module Disk "dir" id.   It prints in XML all the objects defined
+                                   in the already required module whose name
+				   is id, each one with the corresponding
+				   inner types XML file. The files are
+				   structured on the disk in a Unix
+				   hierarchy isomorphic to the tree of
+				   sections of Coq: each Unix directory
+				   corresponds to a Coq section. Coq's
+				   root section is exported to a root
+				   dir rooted in the "dir" directory.
+				   This command is completely working.
+
+ Print XML Section id.             It behaves as "Print XML Module", but
+                                   it works on a closed section instead
+				   of on an already required module.
+				   WARNING: this command could be deprecated
+				   in the final release.
+
+ Print XML Section Disk "dir" id.  It behaves as "Print XML Module Disk", but
+                                   it works on a closed section instead
+				   of on an already required module.
+				   WARNING: this command could be deprecated
+				   in the final release.
+
+ Print XML All.                    It prints what is the structure of the
+                                   current environment of Coq with an high
+				   level of verbosity.
+				   WARING: useful only for debugging
+
+ If xmlcommand.ml is compiled with the configuration parameter verbose
+ set to true, then the verbosity of all the previous commands will be
+ increased, except the one of Print XML All (that is always very verbose :-)
+
+===============
+3. URIs fixing
+===============
+
+ The previous new commands are all damaged because they produce xml files
+ in which all the URIs to other xml files are slightly broken. This will
+ be hopefully fixed in the final release of Coq.
+ So, to fix the uris, you must do the following operations:
+   1. export with the same root all the modules on which the module
+      you want to repair depends.
+   2. cd to the root and run "./mkindex.pl" to create the index.txt file
+      with the URIs of all the exported XML files.
+   3. copy index.txt to tmp.txt and remove in tmp.txt all the URIs of
+      the XML files that you have already repaired (perhaps none).
+   4. run "./fix_uri.pl index.txt tmp.txt"
+      The script will modify all the files whose URIs are in tmp.txt fixing
+      all the URIs belonging to index.txt. If an URI not belonging to index.txt
+      if found, then the script may fail.
+
+===================
+4. Suggested usage
+===================
+
+ 1. Compile to .vo all the .v files you are interested in paying attention
+    to mapping LoadPath to significative absolute names.
+ 2. Use "Print XML Module Disk" to export all the compiled modules to XML.
+ 3. Fix the URIs.
+
+ Example: let's imagine we have already exported all the standard library
+  of Coq in the "examples" directory and that now we want to export the
+  HIGMAN contribution in the Rocq directory of Coq's contrib. Following
+  the previous points, we do:
+
+  1. From the Unix prompt: "coqc -R HIGMAN Rocq.HIGMAN HIGMAN/Higman.v"
+  2. In Coq:
+      Require Export Xml.
+      Require Higman.
+      Print XML Module Disk "examples" Higman.
+  3. From the Unix prompt:
+      "cd examples ; mkindex.pl ; cp index.txt tmp.txt"
+     Then edit tmp.txt removing all the entries but the ones starting
+     with "cic:/Rocq/HIGMAN".
+      "fix_uri.pl index.txt tmp.txt"
+
+===============================
+5. How to exploit the XML files
+===============================
+
+ Once the information is exported to XML, it becomes quite easy
+ to do many interesting computations on it. If you are interested
+ in proof-rendering, see project HELM:
+
+                  http://www.cs.unibo.it/helm

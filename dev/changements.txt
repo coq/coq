@@ -1,0 +1,209 @@
+
+Changements d'organisation / modules :
+--------------------------------------
+
+  Std, More_util		-> lib/util.ml
+
+  Names				-> kernel/names.ml et kernel/sign.ml
+    (les parties noms et signatures ont été séparées)
+
+  Avm,Mavm,Fmavm,Mhm  ->  utiliser plutôt Map (et freeze alors gratuit)
+  Mhb                 ->  Bij
+
+  Generic est intégré à Term (et un petit peu à Closure)
+
+Changements dans les types de données :
+---------------------------------------
+  dans Generic: free_rels : constr -> int Listset.t
+                  devient : constr -> Intset.t
+
+  type_judgement ->  typed_type
+  environment    ->  context
+  context        ->  typed_type signature
+
+
+ATTENTION:
+----------
+
+  Il y a maintenant d'autres exceptions que UserError (TypeError,
+  RefinerError, etc.)
+
+  Il ne faut donc plus se contenter (pour rattraper) de faire
+  
+		try . .. with UserError _ -> ...
+
+  mais écrire à la place
+ 
+                try ... with e when Logic.catchable_exception e -> ...
+
+
+Changements dans les fonctions :
+--------------------------------
+
+	Vectops.
+	  it_vect          ->  Array.fold_left
+	  vect_it          ->  Array.fold_right
+	  exists_vect      ->  Util.array_exists
+	  for_all2eq_vect  ->  Util.array_for_all2
+	  tabulate_vect    ->  Array.init
+	  hd_vect          ->  Util.array_hd
+	  tl_vect          ->  Util.array_tl
+	  last_vect        ->  Util.array_last
+	  it_vect_from     ->  array_fold_left_from
+	  vect_it_from     ->  array_fold_right_from
+	  app_tl_vect	   ->  array_app_tl
+	  cons_vect	   ->  array_cons
+	  map_i_vect	   ->  Array.mapi
+	  map2_vect	   ->  array_map2
+	  list_of_tl_vect  ->  array_list_of_tl
+
+        Names
+          sign_it        -> fold_var_context (se fait sur env maintenant)
+	  it_sign        -> fold_var_context_reverse (sur env maintenant)
+
+        Generic
+	  noccur_bet     -> noccur_between
+          substn_many    -> substnl
+
+	Std 
+	  comp           ->  Util.compose
+	  rev_append	 ->  List.rev_append
+
+	Termenv
+	  mind_specif_of_mind  -> Global.lookup_mind_specif
+                ou Environ.lookup_mind_specif si on a un env sous la main
+	  mis_arity      ->  instantiate_arity
+	  mis_lc	 ->  instantiate_lc	
+
+	Ex-Environ	 
+	  mind_of_path      -> Global.lookup_mind
+
+	Printer
+	  gentermpr	->   gen_pr_term
+          term0	        ->   prterm_env	
+          pr_sign       ->   pr_var_context
+	  pr_context_opt -> pr_context_of
+          pr_ne_env      -> pr_ne_context_of
+
+	Typing, Machops
+	  type_of_type     ->  judge_of_type
+	  fcn_proposition  ->  judge_of_prop_contents
+	  safe_fmachine    ->  safe_infer
+
+	Reduction, Clenv
+          whd_betadeltat      -> whd_betaevar
+          whd_betadeltatiota  -> whd_betaiotaevar
+          find_mrectype       -> Inductive.find_mrectype
+          find_minductype     -> Inductive.find_inductive
+          find_mcoinductype   -> Inductive.find_coinductive
+
+        Astterm
+          constr_of_com_casted -> interp_casted_constr
+          constr_of_com_sort   -> interp_type
+          constr_of_com        -> interp_constr
+          rawconstr_of_com     -> interp_rawconstr
+          type_of_com          -> type_judgement_of_rawconstr
+	  judgement_of_com     -> judgement_of_rawconstr
+
+        Termast
+          bdize                -> ast_of_constr
+
+        Tacmach
+          pf_constr_of_com_sort -> pf_interp_type
+          pf_constr_of_com      -> pf_interp_constr
+	  pf_get_hyp            -> pf_get_hyp_typ
+          pf_hyps, pf_untyped_hyps -> pf_env (tout se fait sur env maintenant)
+
+        Pattern
+	  raw_sopattern_of_compattern -> Astterm.interp_constrpattern
+	  somatch               -> is_matching
+          dest_somatch          -> matches
+
+        Tacticals
+	  matches               -> gl_is_matching
+          dest_match            -> gl_matches
+	  suff                  -> utiliser sort_of_goal
+          lookup_eliminator     -> utiliser sort_of_goal pour le dernier arg
+
+        Divers
+          initial_sign     -> var_context
+
+        Sign
+          ids_of_sign      -> ids_of_var_context (or Environ.ids_of_context)
+          empty_sign       -> empty_var_context
+
+        Pfedit
+	  list_proofs      -> get_all_proof_names
+          get_proof        -> get_current_proof_name
+          abort_goal       -> abort_proof
+          abort_goals      -> abort_all_proofs
+          abort_cur_goal   -> abort_current_proof
+          get_evmap_sign   -> get_goal_context/get_current_goal_context
+          unset_undo       -> reset_undo
+
+        Proof_trees
+          mkGOAL           -> mk_goal
+
+        Declare
+  	  machine_constant ->   declare_constant (+ modifs)
+
+	ex-Trad, maintenant Pretyping
+          inh_cast_rel        -> Coercion.inh_conv_coerce_to
+          inh_conv_coerce_to  -> Coercion.inh_conv_coerce_to_fail
+	  ise_resolve1        -> understand, understand_type
+	  ise_resolve         -> understand_judgment, understand_type_judgment
+
+        ex-Tradevar, maintenant Evarutil
+          mt_tycon            -> empty_tycon
+
+        Recordops
+          struc_info          -> find_structure
+
+Changements dans les inductifs
+------------------------------
+Nouveaux types "constructor" et "inductive" dans Term
+La plupart des fonctions de typage des inductives prennent maintenant
+un inductive au lieu d'un oonstr comme argument. Les seules fonctions
+à traduire un constr en inductive sont les find_rectype and co.
+
+Changements dans les grammaires
+-------------------------------
+
+ . le lexer (parsing/lexer.mll) est maintenant un lexer ocamllex
+
+ . attention : LIDENT -> IDENT  (les identificateurs n'ont pas de
+                                 casse particulière dans Coq)
+
+ . Le mot "command" est remplacé par "constr" dans les noms de
+ fichiers, noms de modules et non-terminaux relatifs au parsing des
+ termes; aussi les changements suivants "COMMAND"/"CONSTR" dans
+ g_vernac.ml4, VARG_COMMAND/VARG_CONSTR dans vernac*.ml*
+
+ . Les constructeurs d'arguments de tactiques IDENTIFIER, CONSTR, ...n
+   passent en minuscule Identifier, Constr, ...
+ 
+ . Plusieurs parsers ont changé de format (ex: sortarg)
+
+Changements dans le pretty-printing
+-----------------------------------
+
+ . Découplage de la traduction de constr -> rawconstr (dans detyping)
+    et de rawconstr -> ast (dans termast)
+ . Déplacement des options d'affichage de printer vers termast
+ . Déplacement des réaiguillage d'univers du pp de printer vers esyntax
+
+	
+Changements divers
+------------------
+
+ . il n'y a plus de script coqtop => coqtop et coqtop.byte sont
+   directement le résultat du link du code
+   => debuggage et profiling directs
+
+ . il n'y a plus d'installation locale dans bin/$ARCH
+ 
+ . #use "include.ml"  =>  #use "include"
+   go()               =>  loop()
+
+ . il y a "make depend" et "make dependcamlp4" car ce dernier prend beaucoup
+   de temps

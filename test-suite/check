@@ -1,0 +1,55 @@
+#!/bin/sh
+
+# Automatic test of Coq
+
+command="../bin/coqtop.opt -q -batch -load-vernac-source"
+
+# on compte le nombre de tests et de succès
+nbtests=0
+nbtestsok=0
+
+# La fonction suivante teste le compilateur sur des fichiers qu'il doit
+# accepter
+test_succes() {
+    for f in $1/*.v; do 
+	nbtests=`expr $nbtests + 1`
+	printf "    "$f"..."
+	$command $f > /dev/null 2>&1
+	if [ $? = 0 ]; then 
+	    echo "Ok"
+	    nbtestsok=`expr $nbtestsok + 1`
+        else 
+	    echo "Error! (should be accepted)"
+        fi 
+    done
+}
+
+# La fonction suivante teste le compilateur sur des fichiers qu'il doit
+# refuser
+test_echec() {
+    for f in $1/*.v; do 
+	nbtests=`expr $nbtests + 1`
+	printf "    "$f"..."
+	$command $f > /dev/null 2>&1
+	if [ $? != 0 ]; then 
+	    echo "Ok"
+	    nbtestsok=`expr $nbtestsok + 1`
+        else 
+	    echo "Error! (should be rejected)"
+        fi 
+    done
+}
+
+# Programme principal
+
+echo "Success tests"
+test_succes success
+echo "Failure tests"
+test_echec failure
+
+pourcentage=`expr 100 \* $nbtestsok / $nbtests`
+echo
+echo "$nbtestsok tests passed over $nbtests, i.e. $pourcentage %"
+
+
+

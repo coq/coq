@@ -1,0 +1,13 @@
+This Coq module has been developed by Claudio Sacerdoti Coen
+<sacerdot@cs.unibo.it> as a member of project HELM, to provide XML files
+to be used in the project.
+Project HELM (for Hypertextual Electronic Library of Mathematics) is a
+project developed at the Department of Computer Science, University of Bologna;
+http://www.cs.unibo.it/helm
+
+The author is interested in any other possible usage of the module.
+So, if you plan to use the module in other projects/development, please
+send him an e-mail.
+
+The licensing policy applied to the module is the same as for the whole Coq
+distribution.

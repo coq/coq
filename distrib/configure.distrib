@@ -1,0 +1,88 @@
+#!/bin/sh
+
+####################################
+#
+#  Configuration script for releases
+# 
+####################################
+#
+#  Default values comes from ../configure which is probably consistent with the archive
+#
+
+VERSION=`grep "^VERSION=" ../configure | sed -e 's/^VERSION=\(.*\)/\1/'`
+VERSIONSI=`grep "^VERSIONSI=" ../configure | sed -e 's/^VERSIONSI=\(.*\)/\1/'`
+DATE=`grep "^DATE=" ../configure | sed -e 's/^DATE=\(.*\)/\1/'`
+RELEASENUM=1
+DISTRIBDIR=`pwd`
+
+echo Default values are taken from ../configure
+echo ------------------------------------------
+
+# Determine the release number
+echo -n "What is the version number of the current release [$VERSION]? "
+read ANSWER
+case $ANSWER in
+ "") true;;
+ *) VERSION=$ANSWER;
+esac
+
+DASHEDVERSION=V`echo $VERSION | sed -e 's/\./-/g'`
+MAJORVERSION=V`echo $VERSION | sed -e 's/^\([0-9]\.[0-9]\).*/\1/'`
+MAINNUMBER=`echo $VERSION | sed -e 's/\(.*\)\.[0-9]*$/\1/'`
+LASTNUMBER=`echo $VERSION | sed -e 's/.*\.\([0-9]*\)$/\1/'`
+if [ "$LASTNUMBER" = "0" ]; then
+        LASTNUMBER=`echo $MAINNUMBER | sed -e 's/.*\.\([0-9]*\)$/\1/g'`
+	MAINNUMBER=`echo $MAINNUMBER | sed -e 's/\(.*\)\.[0-9]*$/\1/'`
+fi
+if [ "$LASTNUMBER" = "0" ]; then
+        LASTNUMBER=`echo $MAINNUMBER | sed -e 's/.*\.\([0-9]*\)$/\1/g'`
+	MAINNUMBER=`echo $MAINNUMBER | sed -e 's/\(.*\)\.[0-9]*$/\1/'`
+fi
+PREVIOUSLASTNUMBER=`expr $LASTNUMBER - 1`
+PREVIOUSVERSION=$MAINNUMBER.$PREVIOUSLASTNUMBER
+
+# Determine the previous release number
+echo -n "What is the version number of the previous release "
+echo -n "(for the patch file) [$PREVIOUSVERSION]? "
+read ANSWER
+case $ANSWER in
+ "") true;;
+ *) PREVIOUSVERSION=$ANSWER;;
+esac
+
+
+# Determine the searchisos version number
+echo -n "What is the version number of the current SearchIsos release [$VERSIONSI]? "
+read ANSWER
+case $ANSWER in
+ "") true;;
+ *) VERSIONSI=$ANSWER;;
+esac
+
+# Determine the date of the release
+echo -n "What is the date of the current release [$DATE]? "
+read ANSWER
+case $ANSWER in
+ "") true;;
+ *) DATE=$ANSWER;;
+esac
+
+# Determine the rpm release number
+echo -n "What is the release number for the RPM packages [1]? "
+read ANSWER
+case $ANSWER in
+ "") true;;
+ *) RELEASENUM=$ANSWER;;
+esac
+
+echo VERSION=$VERSION > config.distrib
+echo VERSIONSI=$VERSIONSI >> config.distrib
+echo PREVIOUSVERSION=$PREVIOUSVERSION >> config.distrib
+echo DISTRIBDIR=$DISTRIBDIR >> config.distrib
+echo DASHEDVERSION=$DASHEDVERSION >> config.distrib
+echo MAJORVERSION=$MAJORVERSION >> config.distrib
+echo RELEASENUM=$RELEASENUM >> config.distrib
+chmod +x config.distrib
+
+# $Id$
+

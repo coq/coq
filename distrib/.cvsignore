@@ -1,0 +1,15 @@
+rpmbuildroot
+i386
+sun4
+alpha
+apx
+alpha
+ppc
+redhat
+rpmrc
+rpmmacros
+config.distrib
+coq-*
+contrib-*
+patch-*
+deb_build

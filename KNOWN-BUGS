@@ -1,0 +1,20 @@
+  THIS IS A LIST OF KNOWN BUGS OF COQ V7.0
+
+- Realizer and Program/Program_all are not available
+
+- Local definitions in Record/Structure are not allowed
+
+- Alias of pattern with dependent types are not supported
+
+- Tokens with both symbols and letters are not supported
+
+- No consistency check is done when requiring a module (that is, a
+  module can be compiled with logical name Mycontrib.Arith.Plus but
+  required with name HisContrib.Zarith.Plus).
+
+- The syntax "Specialize num ident" is temporarily not accepted
+  outside "Tactic Definition". Syntax "Specialize ident" is OK.
+
+- New Induction fails for mutual inductive elimination
+
+- Elim fails with eliminators not imported

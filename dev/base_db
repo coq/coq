@@ -1,0 +1,6 @@
+load_printer "gramlib.cma"
+load_printer "top_printers.cmo"
+install_printer Top_printers.prid
+install_printer Top_printers.prsp
+install_printer Top_printers.print_pure_constr
+

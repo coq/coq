@@ -1,0 +1,36 @@
+Différences V7.0beta / V7.0
+
+- Ajout de déclarations locales aux Record (record à la Randy).
+- Correction de bugs
+   - Identity Coercion
+   - Rel not in scope of ?
+   - implicits in inductive defs
+   - localisation des erreurs avec Syntactif Definition
+   - clauses par défaut de Cases non lues séquentiellement et
+     détection des cas non utilisés
+   - plusieurs bugs avec les prédicats de Cases lorsque dépendants
+- Prise en compte noms longs dans Hints, Coercions et Unfold
+- Rétablissement des @Definition and co
+- Rétablissement des token extensibles et mélangeant symboles et lettres
+- Ajout d'une option Set/Unset/Test Printing Coercions
+- Possibilité de déplier des définitions locales à un but
+- Suppression message .coqrc
+- Add ML Path est fait automatiquement par Add LoadPath
+- Nouveau mécanisme de nommage des schémas d'élimination (incompatibilités...)
+
+Différences oubliées dans la V7.0beta :
+
+- Du fait des noms qualifiés, les variables de buts n'évitent plus les
+  globaux de même nom de base
+- Unfold ne peut s'appliquer qu'à des constantes dépliables (en
+  particulier pas à des Syntactic Definition)
+
+----------------------------------------------------------------------
+English version of changes is available on
+
+  http:coq.inria.fr
+
+and
+
+  ftp://ftp.inria.fr/INRIA/coq/V7.0/Changes.ps
+

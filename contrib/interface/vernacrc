@@ -1,0 +1,16 @@
+# $Id$
+
+# This file is loaded initially by ./vernacparser.
+
+load_syntax_file 17 LogicSyntax
+load_syntax_file 36 SpecifSyntax
+load_syntax_file 18 Logic_TypeSyntax
+load_syntax_file 19 DatatypesSyntax
+load_syntax_file 21 Equality
+load_syntax_file 22 Inv
+load_syntax_file 26 Tauto
+load_syntax_file 34 Omega
+quiet_parse_string
+Goal a.
+&& END--OF--DATA
+print_version
