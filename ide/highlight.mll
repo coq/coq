@@ -21,12 +21,12 @@
   let is_keyword =
     let h = Hashtbl.create 97 in
     List.iter (fun s -> Hashtbl.add h s ())
-      [  "Add" ; "CoInductive" ; "Defined" ; 
+      [  "Add" ; "Defined" ; 
 	 "End" ; "Export" ; "Extraction" ; "Hint" ; "Hints" ;
 	 "Implicits" ; "Import" ; 
 	 "Infix" ; "Load" ; "match" ; "Module" ;
 	 "Proof" ; "Qed" ;
-	 "Record" ; "Require" ; "Save" ; "Scheme" ;
+	 "Require" ; "Save" ; "Scheme" ;
 	 "Section" ; "Unset" ;
 	 "Set" ; "Notation"
       ];
@@ -37,6 +37,9 @@
     List.iter (fun s -> Hashtbl.add h s ())
       [ "Lemma" ; "Axiom" ; "CoFixpoint" ; "Definition"  ;
 	"Fixpoint" ; "Hypothesis" ; 
+	"Hypotheses" ; "Axioms" ; "Parameters" ; "Subclass" ;
+	"Remark" ; "Fact" ; "Conjecture" ; "Let" ;
+	"CoInductive" ; "Record" ; "Structure" ;
 	"Inductive" ; "Parameter" ; "Theorem" ; 
 	"Variable" ; "Variables" 
       ];
