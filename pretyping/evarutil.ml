@@ -186,8 +186,8 @@ let make_evar_instance_with_rel env =
       (fun env (id,b,_) l -> (* if b=None then *) mkVar id :: l (*else l*))
       env ~init:[] in
   snd (fold_rel_context
-	 (fun env (na,b,_) (i,l) -> 
-	    (i-1, if na=Anonymous then l else mkRel i :: l))
+	 (fun env (_,b,_) (i,l) -> 
+	    (i-1, (*if b=None then *) mkRel i :: l (*else l*)))
 	 env ~init:(n,vars))
 
 let make_subst env args =
@@ -206,15 +206,14 @@ let push_rel_context_to_named_context env =
   let sign0 = named_context env in
   let (subst,_,sign) =
   Sign.fold_rel_context
-    (fun (na,c,t) (subst,avoid,sign as x) ->
-      if na = Anonymous then x
-      else
-        let id = next_name_away na avoid in
-        ((mkVar id)::subst,
-         id::avoid,
-	 add_named_decl (id,option_app (substl subst) c,
-                         type_app (substl subst) t)
-	   sign))
+    (fun (na,c,t) (subst,avoid,sign) ->
+       let na = if na = Anonymous then Name(id_of_string"_") else na in
+       let id = next_name_away na avoid in
+       ((mkVar id)::subst,
+        id::avoid,
+	add_named_decl (id,option_app (substl subst) c,
+                        type_app (substl subst) t)
+	  sign))
     (rel_context env) ~init:([],ids_of_named_context sign0,sign0)
   in (subst, sign)
 
