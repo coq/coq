@@ -37,5 +37,3 @@ val extract_constr : env -> constr -> extraction_result
 (*s ML declaration corresponding to a Coq reference. *)
 
 val extract_declaration : global_reference -> ml_decl
-
-val signature : env -> constr -> signature

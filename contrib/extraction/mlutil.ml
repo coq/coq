@@ -31,7 +31,7 @@ let prop_name = id_of_string "_"
 let no_prop_name = 
   List.map (fun i -> if i=prop_name then anonymous else i)
 
-(*s In an ML type, update the arguments to all inductive types [(sp,_)] *)		  
+(*s In an ML type, update the arguments to all inductive types [(sp,_)] *)  
 
 let rec update_args sp vl = function  
   | Tapp ( Tglob r :: l ) -> 
@@ -120,8 +120,8 @@ let rec test_eta_args_lift k n = function
   
 (*s Generic functions overs [ml_ast]. *)
 
-(* [ast_iter_rel f t] applies [f] on every [MLrel] in t. 
-   It takes care of the number of bingings crossed before reaching the [MLrel]. *)
+(* [ast_iter_rel f t] applies [f] on every [MLrel] in t. It takes care 
+   of the number of bingings crossed before reaching the [MLrel]. *)
 
 let ast_iter f = 
   let rec iter n = function
@@ -202,8 +202,8 @@ let ml_lift k t =
 
 let ml_pop t = ml_lift (-1) t
 
-(*s [permut_rels k k' c] translates [Rel 1 ... Rel k] to [Rel (k'+1) ... Rel (k'+k)]
-   and [Rel (k+1) ... Rel (k+k')] to [Rel 1 ... Rel k'] *)
+(*s [permut_rels k k' c] translates [Rel 1 ... Rel k] to [Rel (k'+1) ... 
+  Rel (k'+k)] and [Rel (k+1) ... Rel (k+k')] to [Rel 1 ... Rel k'] *)
 
 let permut_rels k k' = 
   let rec permut n = function
@@ -240,7 +240,8 @@ let rec merge_app = function
   | a -> ast_map merge_app a
 
 (*s [check_and_generalize (r0,l,c)] transforms any [MLcons(r0,l)] in [MLrel 1]
-  and raises [Impossible] if any variable in [l] occurs outside such a [MLcons] *)
+  and raises [Impossible] if any variable in [l] occurs outside such a 
+  [MLcons] *)
 
 let check_and_generalize (r0,l,c) = 
   let nargs = List.length l in 
@@ -297,7 +298,8 @@ let is_atomic = function
   | _ -> false
 
 let all_constr br = 
-  try Array.iter (function (_,_,MLcons _)-> () | _ -> raise Impossible) br; true
+  try 
+    Array.iter (function (_,_,MLcons _)-> () | _ -> raise Impossible) br; true
   with Impossible -> false
 
 let rec simplify o = function
@@ -305,9 +307,10 @@ let rec simplify o = function
       simplify o f
   | MLapp (f, a) -> 
       simplify_app o (List.map (simplify o) a) (simplify o f)
-  | MLcons (r,[t]) when is_singleton r -> simplify o t (* Informative singleton *) 
+  | MLcons (r,[t]) when is_singleton r -> simplify o t 
+	(* Informative singleton *) 
   | MLcase (e,[||]) ->
-      MLexn "Empty inductive"
+      MLexn "empty inductive"
   | MLcase (e,[|r,[i],c|]) when is_singleton r -> (* Informative singleton *)
       simplify o (MLletin (i,e,c))
   | MLcase (e,br) ->
@@ -331,7 +334,8 @@ and simplify_app o a = function
 	 | _ -> 
 	     let a' = List.map (ml_lift 1) (List.tl a) in
 	     simplify o (MLletin (id, List.hd a, MLapp (t, a'))))
-  | MLletin (id,e1,e2) -> (* Application of a letin: we push arguments inside *)
+  | MLletin (id,e1,e2) -> 
+      (* Application of a letin: we push arguments inside *)
       MLletin (id, e1, simplify o (MLapp (e2, List.map (ml_lift 1) a)))
   | MLcase (e,br) -> (* Application of a case: we push arguments inside *)
       let br' = 
@@ -398,7 +402,8 @@ let optimize_fix a =
 	     let m = List.length args in 
 	     (match a' with 
 		| MLfix(_,[|_|],[|_|]) when 
-		    (test_eta_args_lift 0 n args) && not (occurs_itvl 1 m a') -> a'
+		    (test_eta_args_lift 0 n args) && not (occurs_itvl 1 m a') 
+		    -> a'
 		| MLfix(_,[|f|],[|c|]) -> 
 		    let v = Array.make n 0 in 
 		    for i=0 to (n-1) do v.(i)<-i done;
@@ -407,15 +412,17 @@ let optimize_fix a =
 		      | _ -> raise Impossible
 		    in
 		    (try 
-		      list_iter_i aux args; 
-		      let args_f = 
-			List.rev_map (fun i -> MLrel (i+m+1)) (Array.to_list v) in
-		      let new_f = 
-			anonym_lams (MLapp (MLrel (n+m+1),args_f)) m in  
-		      let new_c = 
-			named_lams (normalize (MLapp ((ml_subst new_f c),args))) ids
-		      in MLfix(0,[|f|],[|new_c|])
-		    with Impossible -> a) 
+		       list_iter_i aux args; 
+		       let args_f = 
+			 List.rev_map 
+			   (fun i -> MLrel (i+m+1)) (Array.to_list v) in
+		       let new_f = 
+			 anonym_lams (MLapp (MLrel (n+m+1),args_f)) m in  
+		       let new_c = 
+			 named_lams 
+			   (normalize (MLapp ((ml_subst new_f c),args))) ids
+		       in MLfix(0,[|f|],[|new_c|])
+		     with Impossible -> a) 
 		| _ -> a)
 	 | _ -> a)
 
@@ -572,6 +579,11 @@ let warning_expansion r =
 (*i    'sTR (" of size "^ (string_of_int (ml_size t))); i*)
     'sPC; 'sTR "is expanded." >])
 
+let warning_expansion_must r = 
+  wARN (hOV 0 [< 'sTR "The constant"; 'sPC;
+		 Printer.pr_global r; 
+    'sPC; 'sTR "must be expanded." >])
+
 let print_ml_decl prm (r,_) = 
   not (to_inline r) || List.mem r prm.to_appear
 
@@ -593,6 +605,10 @@ let rec empty_ind = function
        | ids,r,[] -> Dabbrev (r,ids,Texn "empty inductive") :: l,l'
        | _ -> l,t::l')
 
+let is_exn = function 
+  | MLexn _ -> true
+  | _ -> false
+
 let rec optimize prm = function
   | [] -> 
       []
@@ -605,17 +621,24 @@ let rec optimize prm = function
       else optimize prm l
   | Dglob (r,t) :: l ->
       let t = normalize t in
-      let b = expand (strict_language prm.lang) r t in
+      let b = expand (strict_language prm.lang) r t
+      and b' = is_exn t in 
       let l = if b then 
 	begin
 	  if not (prm.toplevel) then if_verbose warning_expansion r;
 	  List.map (subst_glob_decl r t) l
 	end
+      else if b' then 
+	begin 
+	  if not (prm.toplevel) then if_verbose warning_expansion_must r;
+          List.map (subst_glob_decl r t) l
+	end
       else l in 
-      if (prm.mod_name <> None) || List.mem r prm.to_appear || not b then 
+      if not b' && 
+	(not b || prm.mod_name <> None || List.mem r prm.to_appear) then 
 	let t = optimize_fix t in
 	Dglob (r,t) :: (optimize prm l)
-      else
+      else 
 	optimize prm l
   | (Dtype ([],_) | Dabbrev _ | Dcustom _) as d :: l -> 
       d :: (optimize prm l)

@@ -138,10 +138,10 @@ let print_inline () =
   mSG 
     [< 'sTR "Extraction Inline:"; 'fNL; 
        Refset.fold
-	 (fun r p -> [< p; 'sTR  "   " ; Printer.pr_global r ; 'fNL >]) i' [<>];
+	 (fun r p -> [< p; 'sTR "   " ; Printer.pr_global r ; 'fNL >]) i' [<>];
        'sTR "Extraction NoInline:"; 'fNL; 
        Refset.fold
-	 (fun r p -> [< p; 'sTR  "   " ; Printer.pr_global r ; 'fNL >]) n [<>]
+	 (fun r p -> [< p; 'sTR "   " ; Printer.pr_global r ; 'fNL >]) n [<>]
     >]
 
 let _ = vinterp_add "PrintExtractionInline" (fun _ -> print_inline)

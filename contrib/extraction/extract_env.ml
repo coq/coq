@@ -96,7 +96,8 @@ and visit_ast m eenv a =
     | MLletin (_,a,b) -> visit a; visit b
     | MLcons (r,l) -> visit_reference m eenv r; List.iter visit l
     | MLcase (a,br) -> 
-	visit a; Array.iter (fun (r,_,a) -> visit_reference m eenv r; visit a) br
+	visit a; 
+	Array.iter (fun (r,_,a) -> visit_reference m eenv r; visit a) br
     | MLfix (_,_,l) -> Array.iter visit l
     | MLcast (a,t) -> visit a; visit_type m eenv t
     | MLmagic a -> visit a
@@ -152,7 +153,8 @@ let local_optimize refs =
   optimize prm (decl_of_refs refs)
 
 let print_user_extract r = 
-  mSGNL [< 'sTR "User defined extraction:"; 'sPC; 'sTR (find_ml_extraction r) ; 'fNL>]
+  mSGNL [< 'sTR "User defined extraction:"; 
+	   'sPC; 'sTR (find_ml_extraction r) ; 'fNL>]
 
 let decl_in_r r0 = function 
   | Dglob (r,_) -> r = r0
