@@ -1053,26 +1053,13 @@ let mark_occur gl t in_c input_relation input_direction =
            elim_duplicates identity (res_functions @ res_mors)
       | Prod (_, c1, c2) -> 
           if (dependent (mkRel 1) c2)
-          then [ToKeep (in_c,output_relation,output_direction)]
+          then
+           errorlabstrm "Setoid_replace"
+            (str "Cannot rewrite in the type of a variable bound " ++
+             str "in a dependent product.")
           else 
-           (*CSC: output_relation in the two lines below is a bug.
-             I should use the two arguments of the relation associated to
-             coq_impl. Indeed all the Prod case is a bit hackerish. *)
-           let c1m =
-            aux output_relation (opposite_direction output_direction) c1 in
-           let c2m =
-            aux output_relation output_direction c2
-           in
-            let a = cartesian_product [| c1m ; c2m |] in
-             List.fold_left
-              (fun res a ->
-                if get_mark a
-                then
-                 (* this can be optimized since c1 and c2 will be *)
-                 (* processed again                               *)
-                 (aux output_relation output_direction
-                  (mkApp ((Lazy.force coq_impl), [| c1 ; c2 |]))) @ res
-                else (ToKeep (in_c,output_relation,output_direction))::res) [] a
+           aux output_relation output_direction
+            (mkApp ((Lazy.force coq_impl), [| c1 ; c2 |]))
       | _ -> [ToKeep (in_c,output_relation,output_direction)]
  in
   let aux2 output_relation output_direction =
