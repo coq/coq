@@ -29,7 +29,7 @@
 Section Paradox.
 
 Variable bool : Prop.
-Variable p2b : Prop -> bool.     
+Variable p2b : Prop -> bool.
 Variable b2p : bool -> Prop.
 Hypothesis p2p1 : (A:Prop)(b2p (p2b A))->A.
 Hypothesis p2p2 : (A:Prop)A->(b2p (p2b A)).
