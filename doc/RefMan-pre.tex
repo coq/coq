@@ -418,21 +418,16 @@ Secondly, the concrete syntax of terms has been completely
 revised. The main motivations were
 
 \begin{itemize}
-\item a more uniform style: all constructions are now lowercase, with a
-  functional programming perfume (e.g. abstraction is now written {\tt
-  fun}), and more directly accessible to the novice (e.g. dependent
-  product is now written {\tt forall}).
+\item a more uniform, purified style: all constructions are now lowercase, 
+  with a functional programming perfume (e.g. abstraction is now
+  written {\tt fun}), and more directly accessible to the novice
+  (e.g. dependent product is now written {\tt forall} and allows
+  omission of types). Also, parentheses and are no longer mandatory
+  for function application.
 \item extensibility: some standard notations (e.g. ``<'' and ``>'') were
   incompatible with the previous syntax. Now all standard arithmetic
   notations (=, +, *, /, <, <=, ... and more) are directly part of the
   syntax.
-\item lighter expressions: the ``(id:t)u'' notation for products
-  was forbidding the omission of the types. This is now
-  possible. Also, parentheses are no longer mandatory for function
-  application. The choice here was to follow the long-standing style of
-  syntax found in typed functional programming (which is compatible
-  with polymorphism) rather than the mathematical style (which 
-  harmonizes badly with polymorphism).
 \end{itemize}
 
 Together with the revision of the concrete syntax, a new mechanism of
