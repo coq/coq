@@ -118,7 +118,7 @@ let pr_optc pr = function
   | None -> mt ()
   | Some x -> pr_sep_com spc pr x
 
-let pr_universe u = Univ.pr_uni
+let pr_universe = Univ.pr_uni
 
 let pr_sort = function
   | RProp Term.Null -> str "Prop"
