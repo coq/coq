@@ -213,7 +213,9 @@ let is_mimick_head f =
       (Const _|Var _|Rel _|Construct _|Ind _) -> true
     | _ -> false
 
-let mimick_evar env hdc nargs sp evd =
+let mimick_evar hdc nargs sp evd =
+  let ev = Evd.map (evars_of evd) sp in
+  let env = Global.env_of_context ev.evar_hyps in
   let (sigma',c) = applyHead env (evars_of evd) nargs hdc in
   evars_reset_evd sigma' evd;
   w_Define sp c evd
@@ -257,7 +259,7 @@ let w_merge env with_types metas evars (sigma,metamap) =
                         w_Define evn rhs' evd; 
 		        w_merge_rec metas t
 		      with ex when precatchable_exception ex ->
-                        mimick_evar env f (Array.length cl) evn evd;
+                        mimick_evar f (Array.length cl) evn evd;
 			w_merge_rec metas evars)
                   | _ ->
                       (* ensure tail recursion in non-mimickable case! *)
