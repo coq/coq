@@ -1,6 +1,11 @@
 Changes from V7.2 to ????
 =========================
 
+Language
+
+- Slightly improved compilation of pattern-matching (slight source of
+  incompatibilities)
+
 Tactics
 
 - New tactic "Rename x into y" for renaming hypotheses
@@ -39,10 +44,13 @@ User Contributions
 
 Incompatibilities
 
-- Ring: exceptional incompatibilities
-     (1 above 650 in submitted user contribs, leading to a simplification)
+- Ring: exceptional incompatibilities (1 above 650 in submitted user
+  contribs, leading to a simplification)
 - Intuition: does not unfold any definition except "<->" and "~".
-
+- Cases: removal of some extra Cases in configurations of the form
+  "Cases ... of C _ => ... | _ D => ..."  (effects on 2 definitions of
+  submitted user contributions necessitating the removal of now superflous
+  proof steps in 3 different proofs)
 
 Changes from V7.1 to V7.2
 =========================
