@@ -32,10 +32,10 @@ Uninterpreted Notation "x <> y  :> T"
 Uninterpreted Notation "x <> y"
   (at level 5, no associativity).
 
-Uninterpreted V8Notation "x <= y" (at level 5, no associativity).
-Uninterpreted V8Notation "x < y" (at level 5, no associativity).
-Uninterpreted V8Notation "x >= y" (at level 5, no associativity).
-Uninterpreted V8Notation "x > y" (at level 5, no associativity).
+Uninterpreted V8Notation "x <= y" (at level 50, no associativity).
+Uninterpreted V8Notation "x < y" (at level 50, no associativity).
+Uninterpreted V8Notation "x >= y" (at level 50, no associativity).
+Uninterpreted V8Notation "x > y" (at level 50, no associativity).
 
 (** Arithmetical notations (also used for type constructors) *)
 
