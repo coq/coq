@@ -296,11 +296,14 @@ CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
+# Beware that highparsingnew.cma should appear before hightactics.cma
+# respecting this order is useful for developers that want to load or link
+# the libraries directly
 CMO=$(CONFIG) lib/lib.cma kernel/kernel.cma library/library.cma \
     pretyping/pretyping.cma interp/interp.cma parsing/parsing.cma \
     proofs/proofs.cma tactics/tactics.cma toplevel/toplevel.cma \
-    parsing/highparsing.cma tactics/hightactics.cma \
-    contrib/contrib.cma parsing/highparsingnew.cma
+    parsing/highparsing.cma parsing/highparsingnew.cma tactics/hightactics.cma \
+    contrib/contrib.cma
 CMOCMXA=$(CMO:.cma=.cmxa)
 CMX=$(CMOCMXA:.cmo=.cmx)
 
