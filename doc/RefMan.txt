@@ -35,7 +35,7 @@ MANUEL DE REFERENCE
 \include{RefMan-com}% The coq commands (coqc coqtop)		HH
 %%ajouter nouvelles options -v7 -translate au document de passage
 \include{RefMan-uti}% utilities (gallina, do_Makefile, etc)	JCF
-%%ajouter coqide				       Benjamin M
+\include{RefMan-ide}%CoqIde					CM
 
 \include{AddRefMan-pre}%					CP
 
@@ -48,7 +48,7 @@ MANUEL DE REFERENCE
 %% A SUPPRIMER
 %% \include{Correctness.v}% = preuve de pgms imperatifs		
 \include{Extraction.v}%						Pierre L
-\include{Polynom.v}%  = Ring					JCF
+\include{Polynom.v}%  = Ring				        Julien N
 \include{Setoid.v}% Tactique pour les setoides			Clement
 \addtocontents{sh}{ENDADDENDUM=\thepage}
 
