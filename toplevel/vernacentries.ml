@@ -259,8 +259,8 @@ let _ =
 		try Sys.chdir (glob s)
 		with Sys_error str -> warning ("Cd failed: " ^ str)
 	      end;
-              print_endline (Sys.getcwd()))
-       | [] -> (fun () -> print_endline (Sys.getcwd()))
+              if_verbose print_endline (Sys.getcwd()))
+       | [] -> (fun () -> if_verbose print_endline (Sys.getcwd()))
        | _  -> bad_vernac_args "CD")
 
 (* Managing states *)
