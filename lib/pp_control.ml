@@ -19,16 +19,16 @@ type pp_global_params = {
 (* Default parameters of pretty-printing *)
 
 let dflt_gp = { 
-  margin     = 72;
-  max_indent = 62;
+  margin     = 78;
+  max_indent = 50;
   max_depth  = 50;
   ellipsis   = ".." }
 
 (* A deeper pretty-printer to print proof scripts *)
 
 let deep_gp = { 
-  margin     = 72;
-  max_indent = 62;
+  margin     = 78;
+  max_indent = 50;
   max_depth  = 10000;
   ellipsis   = "..." }
 
