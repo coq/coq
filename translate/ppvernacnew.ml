@@ -221,7 +221,7 @@ let pr_hints local db h pr_c pr_pat =
     | HintsDestruct(name,i,loc,c,tac) ->
         str "Destruct " ++ pr_id name ++ str" :=" ++ spc() ++
         hov 0 (int i ++ spc() ++ pr_destruct_location loc ++ spc() ++
-               pr_c c ++ str " :=") ++ spc() ++
+               pr_c c ++ str " =>") ++ spc() ++
         pr_raw_tactic tac in
   hov 2 (str"Hint "++pr_locality local ++ pph ++ opth)
 
