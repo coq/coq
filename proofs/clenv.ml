@@ -534,6 +534,11 @@ let applyHead n c wc =
   in 
   apprec n c (w_type_of wc c) wc
 
+let is_mimick_head f =
+  match kind_of_term f with
+      (Const _|Var _|Rel _|Construct _|Ind _) -> true
+    | _ -> false
+
 let rec mimick_evar hdc nargs sp wc =
   let evd = Evd.map wc.sigma sp in
   let wc' = extract_decl sp wc in
@@ -571,10 +576,10 @@ and w_resrec metas evars wc =
 		 w_resrec metas t (w_Define evn rhs wc)
                with ex when catchable_exception ex ->
 		 (match krhs with
-             	    | App (f,cl) when isConst f ->
+             	    | App (f,cl) when is_mimick_head f ->
 			let wc' = mimick_evar f (Array.length cl) evn wc in
 			w_resrec metas evars wc'
-		    | _ -> raise ex (* error "w_Unify" *)))
+		    | _ -> raise ex (*error "w_Unify" *)))
 	| _ -> anomaly "w_resrec"
 
 
@@ -624,7 +629,7 @@ let clenv_merge with_types metas evars clenv =
 		    (clenv_wtactic (w_Define evn rhs') clenv) 
 		with ex when catchable_exception ex ->
 		  (match krhs with
-		     | App (f,cl) when isConst f or isConstruct f ->
+		     | App (f,cl) when is_mimick_head f ->
 			 clenv_resrec metas evars 
 			   (clenv_wtactic
 			      (mimick_evar f (Array.length cl) evn)
