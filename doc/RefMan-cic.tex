@@ -857,8 +857,8 @@ which in general depends on $m$. For this, it is enough to prove the
 property for $m = (c_i~u_1\ldots  u_{p_i})$ for each constructor of $I$.
 
 This proof will be denoted by a generic term:
-\[\Case{P}{m}{(c_1~x_{11}~...~x_{1p_1}) \mbox{\tt =>} f_1 \ldots
-(c_n~x_{n1}~|~...~|~x_{np_n}) \mbox{\tt =>} f_n }\]
+\[\Case{P}{m}{(c_1~x_{11}~...~x_{1p_1}) \mbox{\tt =>} f_1 ~|~\ldots~|~
+(c_n~x_{n1}...x_{np_n}) \mbox{\tt =>} f_n }\]
 In this expression, if $m$ is a term built from a constructor
 $(c_i~u_1\ldots  u_{p_i})$ then the expression will behave as it is specified
 with $i$-th branch and will reduce to $f_i$ where the $x_{i1}$\ldots $x_{ip_i}$ are
@@ -1011,11 +1011,11 @@ $(a:A)(l:\ListA)(n:\nat)(\LengthA~l~n)\ra(P~(\cons~A~a~l)~(\nS~n))$.
 \paragraph{Typing rule.}
 
 Our very general destructor for inductive definition enjoys the
-following typing rule (we write {\Case{P}{c}{[x_{11}:T_{11}]\ldots[x_{1p_1}:T_{1p_1}]f_1\ldots  [x_{n1}:T_{n1}]\ldots[x_{np_n}:T_{np_n}f_n} for \Case{P}{m}{(c_1~x_{11}~...~x_{1p_1}) \mbox{\tt =>} f_1 \ldots
-(c_n~x_{n1}~|~...~|~x_{np_n}) \mbox{\tt =>} f_n }}):
+following typing rule (we write {\Case{P}{c}{[x_{11}:T_{11}]\ldots[x_{1p_1}:T_{1p_1}]g_1\ldots  [x_{n1}:T_{n1}]\ldots[x_{np_n}:T_{np_n}]g_n} for \Case{P}{c}{(c_1~x_{11}~...~x_{1p_1}) \mbox{\tt =>} g_1 ~|~\ldots~|~
+(c_n~x_{n1}...x_{np_n}) \mbox{\tt =>} g_n }}):
 
 \begin{description}
-\item[Case] \label{elimdep} \index{Typing rules!Case}
+\item[Cases] \label{elimdep} \index{Typing rules!Cases}
 \inference{
 \frac{\WTEG{c}{(I~q_1\ldots  q_r~t_1\ldots  t_s)}~~
   \WTEG{P}{B}~~\compat{(I~q_1\ldots  q_r)}{B}
