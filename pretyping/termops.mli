@@ -76,6 +76,9 @@ val subst_meta : (int * constr) list -> constr -> constr
 val whd_locals : env -> constr -> constr
 val nf_locals  : env -> constr -> constr
 
+(* [pop c] lifts by -1 the positive indexes in [c] *)
+val pop : constr -> constr
+
 (* substitution of an arbitrary large term. Uses equality modulo
    reduction of let *)
 val dependent : constr -> constr -> bool

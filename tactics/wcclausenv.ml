@@ -51,9 +51,7 @@ let clenv_constrain_with_bindings bl clause =
     clause 
   else 
     let all_mvs = collect_metas (clenv_template clause).rebus
-    and ind_mvs = clenv_independent clause
-		    (clenv_template clause,
-                     clenv_template_type clause) in
+    and ind_mvs = clenv_independent clause in
     let nb_indep = List.length ind_mvs in
     let rec matchrec clause = function
       | []       -> clause
@@ -95,7 +93,8 @@ let clenv_constrain_with_bindings bl clause =
 	  let sigma = Evd.empty in
 	  let k_typ = nf_betaiota (clenv_instance_type clause k) in
 	  let c_typ = nf_betaiota (w_type_of clause.hook c) in 
-	  matchrec (clenv_assign k c (clenv_unify CUMUL c_typ k_typ clause)) t
+	  matchrec
+            (clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clause)) t
     in 
     matchrec clause bl
 

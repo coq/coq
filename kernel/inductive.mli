@@ -43,9 +43,6 @@ val type_of_constructor  : env -> constructor -> types
 (* Return constructor types in normal form *)
 val arities_of_constructors : env -> inductive -> types array
 
-
-exception Arity of (constr * constr * Type_errors.arity_error) option
-
 (* [type_case_branches env (I,args) (p:A) c] computes useful types
    about the following Cases expression:
       <p>Cases (c :: (I args)) of b1..bn end

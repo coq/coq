@@ -81,16 +81,15 @@ val clenv_instance_type : wc clausenv -> int -> constr
 val clenv_instance_template : wc clausenv -> constr
 val clenv_instance_template_type : wc clausenv -> constr
 val clenv_unify : 
-  Reductionops.conv_pb -> constr -> constr -> wc clausenv -> wc clausenv
+  bool -> Reductionops.conv_pb -> constr -> constr ->
+  wc clausenv -> wc clausenv
 val clenv_fchain : int -> 'a clausenv -> wc clausenv -> wc clausenv
 val clenv_refine : (wc -> tactic) -> wc clausenv -> tactic
 val res_pf      : (wc -> tactic) -> wc clausenv -> tactic
 val res_pf_cast : (wc -> tactic) -> wc clausenv -> tactic
 val elim_res_pf : (wc -> tactic) -> wc clausenv -> tactic
-val clenv_independent : 
-  wc clausenv -> constr freelisted * constr freelisted -> int list
-val clenv_missing : 
-  'a clausenv -> constr freelisted * constr freelisted -> int list
+val clenv_independent : wc clausenv -> int list
+val clenv_missing : 'a clausenv -> int list
 val clenv_constrain_missing_args : constr list -> wc clausenv -> wc clausenv
 val clenv_constrain_dep_args : constr list -> wc clausenv -> wc clausenv
 val clenv_lookup_name : 'a clausenv -> identifier -> int

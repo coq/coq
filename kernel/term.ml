@@ -644,15 +644,14 @@ let map_rel_declaration = map_named_declaration
 (*     Occurring     *)
 (*********************)
 
-exception FreeVar
-exception Occur
+exception LocalOccur
 
 (* (closedn n M) raises FreeVar if a variable of height greater than n
    occurs in M, returns () otherwise *)
 
 let closedn = 
   let rec closed_rec n c = match kind_of_term c with
-    | Rel m -> if m>n then raise FreeVar
+    | Rel m -> if m>n then raise LocalOccur
     | _ -> iter_constr_with_binders succ closed_rec n c
   in 
   closed_rec
@@ -660,26 +659,26 @@ let closedn =
 (* [closed0 M] is true iff [M] is a (deBruijn) closed term *)
 
 let closed0 term =
-  try closedn 0 term; true with FreeVar -> false
+  try closedn 0 term; true with LocalOccur -> false
 
 (* (noccurn n M) returns true iff (Rel n) does NOT occur in term M  *)
 
 let noccurn n term = 
   let rec occur_rec n c = match kind_of_term c with
-    | Rel m -> if m = n then raise Occur
+    | Rel m -> if m = n then raise LocalOccur
     | _ -> iter_constr_with_binders succ occur_rec n c
   in 
-  try occur_rec n term; true with Occur -> false
+  try occur_rec n term; true with LocalOccur -> false
 
 (* (noccur_between n m M) returns true iff (Rel p) does NOT occur in term M 
   for n <= p < n+m *)
 
 let noccur_between n m term = 
   let rec occur_rec n c = match kind_of_term c with
-    | Rel(p) -> if n<=p && p<n+m then raise Occur
+    | Rel(p) -> if n<=p && p<n+m then raise LocalOccur
     | _        -> iter_constr_with_binders succ occur_rec n c
   in 
-  try occur_rec n term; true with Occur -> false
+  try occur_rec n term; true with LocalOccur -> false
 
 (* Checking function for terms containing existential variables.
  The function [noccur_with_meta] considers the fact that
@@ -690,7 +689,7 @@ let noccur_between n m term =
 
 let noccur_with_meta n m term = 
   let rec occur_rec n c = match kind_of_term c with
-    | Rel p -> if n<=p & p<n+m then raise Occur
+    | Rel p -> if n<=p & p<n+m then raise LocalOccur
     | App(f,cl) ->
 	(match kind_of_term f with
            | Cast (c,_) when isMeta c -> ()
@@ -699,7 +698,7 @@ let noccur_with_meta n m term =
     | Evar (_, _) -> ()
     | _ -> iter_constr_with_binders succ occur_rec n c
   in
-  try (occur_rec n term; true) with Occur -> false
+  try (occur_rec n term; true) with LocalOccur -> false
 
 
 (*********************)
@@ -719,8 +718,6 @@ let liftn k n =
     | el -> exliftn el
  
 let lift k = liftn k 1
-
-let pop t = lift (-1) t
 
 (*********************)
 (*   Substituting    *)

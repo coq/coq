@@ -121,7 +121,7 @@ type branch_assumptions = {
   indargs   : identifier list} (* the inductive arguments *)
 
 val elimination_sort_of_goal : goal sigma -> sorts_family
-(*i val suff              : goal sigma -> constr -> string i*)
+val elimination_sort_of_hyp  : identifier -> goal sigma -> sorts_family
 
 val general_elim_then_using :
   constr ->  (inductive -> bool list array) -> 

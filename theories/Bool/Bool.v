@@ -449,7 +449,7 @@ Qed.
 
 Lemma xorb_move_l_r_2 : (b,b',b'':bool) (xorb b b')=b'' -> b=(xorb b'' b').
 Proof.
-  Intros. Rewrite (xorb_comm b b') in H. Rewrite (xorb_move_l_r_1 b' b b'' H). Apply xorb_comm.
+  Intros. Rewrite xorb_comm in H. Rewrite (xorb_move_l_r_1 b' b b'' H). Apply xorb_comm.
 Qed.
 
 Lemma xorb_move_r_l_1 : (b,b',b'':bool) b=(xorb b' b'') -> (xorb b' b)=b''.

@@ -418,9 +418,6 @@ val liftn : int -> int -> constr -> constr
 (* [lift n c] lifts by [n] the positive indexes in [c] *)
 val lift : int -> constr -> constr
 
-(* [pop c] lifts by -1 the positive indexes in [c] *)
-val pop : constr -> constr
-
 (* [substnl [a1;...;an] k c] substitutes in parallel [a1],...,[an]
     for respectively [Rel(k+1)],...,[Rel(k+n)] in [c]; it relocates
     accordingly indexes in [a1],...,[an] *)

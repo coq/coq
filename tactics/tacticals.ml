@@ -289,6 +289,15 @@ let elimination_sort_of_goal gl =
 	   | Type _ -> InType)
     | _        -> anomaly "goal should be a type"
 
+let elimination_sort_of_hyp id gl = 
+  match kind_of_term (hnf_type_of gl (pf_get_hyp_typ gl id)) with 
+    | Sort s ->
+	(match s with
+	   | Prop Null -> InProp
+	   | Prop Pos -> InSet
+	   | Type _ -> InType)
+    | _        -> anomaly "goal should be a type"
+
 
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)

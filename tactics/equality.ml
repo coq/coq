@@ -94,6 +94,47 @@ let dyn_rewriteRL = function
   | [Constr c; Cbindings binds] -> 
       rewriteRL_bindings (c,binds)
   | _ -> assert false
+                 
+let v_rewriteLR = hide_tactic "RewriteLR" dyn_rewriteLR
+let h_rewriteLR_bindings (c,bl) = v_rewriteLR [(Constr c);(Cbindings bl)] 
+let h_rewriteLR c = h_rewriteLR_bindings (c,[])
+
+let v_rewriteRL = hide_tactic "RewriteRL" dyn_rewriteRL
+let h_rewriteRL_bindings (c,bl) = v_rewriteRL [(Constr c);(Cbindings bl)] 
+let h_rewriteRL c = h_rewriteRL_bindings (c,[])
+
+(*The Rewrite in tactic*)
+let general_rewrite_in lft2rgt id (c,l) gl =
+  let ctype = pf_type_of gl c in 
+  let env = pf_env gl in
+  let sigma = project gl in 
+  let _,t = splay_prod env sigma ctype in
+  match match_with_equation t with
+    | None -> (* Do not deal with setoids yet *) 
+        error "The term provided does not end with an equation" 
+    | Some (hdcncl,_) -> 
+        let hdcncls = string_of_inductive hdcncl in 
+	let suffix =
+          Indrec.elimination_suffix (elimination_sort_of_hyp id gl)in
+        let elim =
+	  if lft2rgt then
+            pf_global gl (id_of_string (hdcncls^suffix))
+          else
+	    pf_global gl (id_of_string (hdcncls^suffix^"_r"))
+        in 
+	general_elim_in id (c,l) (elim,[]) gl
+
+
+let dyn_rewrite_in lft2rgt = function
+  | [Identifier id;(Command com);(Bindings binds)] -> 
+      tactic_com_bind_list (general_rewrite_in lft2rgt id) (com,binds)
+  | [Identifier id;(Constr c);(Cbindings binds)] -> 
+      general_rewrite_in lft2rgt id (c,binds)
+  | _ -> assert false
+
+let rewriteLR_in_tac =  hide_tactic "RewriteLRin" (dyn_rewrite_in true)
+let rewriteRL_in_tac = hide_tactic "RewriteRLin" (dyn_rewrite_in false)
+
 
 (* Replacing tactics *)
 
@@ -133,14 +174,6 @@ let dyn_replace args gl =
     | [(Constr c1);(Constr c2)] -> 
        	replace c1 c2 gl
     | _ -> assert false
-                 
-let v_rewriteLR = hide_tactic "RewriteLR" dyn_rewriteLR
-let h_rewriteLR_bindings (c,bl) = v_rewriteLR [(Constr c);(Cbindings bl)] 
-let h_rewriteLR c = h_rewriteLR_bindings (c,[])
-
-let v_rewriteRL = hide_tactic "RewriteRL" dyn_rewriteRL
-let h_rewriteRL_bindings (c,bl) = v_rewriteRL [(Constr c);(Cbindings bl)] 
-let h_rewriteRL c = h_rewriteRL_bindings (c,[])
 
 let v_replace = hide_tactic "Replace" dyn_replace
 let h_replace c1 c2 = v_replace [(Constr c1);(Constr c2)]
@@ -373,12 +406,6 @@ let discriminable env sigma t1 t2 =
 
    the continuation then constructs the case-split.
  *)
-let push_rel_type sigma (na,c,t) env =
-  push_rel (na,c,t) env
-
-let push_rels vars env =
-  List.fold_right (fun nvar env -> push_rel_type Evd.empty nvar env) vars env
-
 let descend_then sigma env head dirn =
   let IndType (indf,_) as indt =
     try find_rectype env sigma (get_type_of env sigma head)
@@ -387,7 +414,7 @@ let descend_then sigma env head dirn =
   let (mib,mip) = lookup_mind_specif env ind in
   let cstr = get_constructors env indf in
   let dirn_nlams = cstr.(dirn-1).cs_nargs in
-  let dirn_env = push_rels cstr.(dirn-1).cs_args env in
+  let dirn_env = push_rel_context cstr.(dirn-1).cs_args env in
   (dirn_nlams,
    dirn_env,
    (fun dirnval (dfltval,resty) ->
@@ -1185,45 +1212,7 @@ let sub_term_with_unif cref ceq =
           None
         else
           Some ((plain_instance l ceq),nb)
-	    
-(*The Rewrite in tactic*)
-let general_rewrite_in lft2rgt id (c,lb) gls =
-  let typ_id = pf_get_hyp_typ gls id in
-  let (wc,_) = startWalk gls
-  and (_,t) = pf_reduce_to_quantified_ind gls (pf_type_of gls c) in
-  let ctype = type_clenv_binding wc (c,t) lb in
-  match (match_with_equation ctype) with
-    | None -> error "The term provided does not end with an equation" 
-    | Some (hdcncl,l) ->
-        let mbr_eq =
-          if lft2rgt then
-            List.hd (List.tl (List.rev l))
-          else
-            List.hd (List.rev l)
-        in
-        (match sub_term_with_unif typ_id mbr_eq with
-           | None ->
-               errorlabstrm "general_rewrite_in" 
-		 (str "Nothing to rewrite in: " ++ pr_id id)
-           | Some (l2,nb_occ) ->
-               (tclTHENSI
-		  (tclTHEN
-		     (tclTHEN (generalize [(pf_global gls id)])
-			(reduce (Pattern [(list_int nb_occ 1 [],l2,
-					   pf_type_of gls l2)]) []))
-		     (general_rewrite_bindings lft2rgt (c,lb))) 
-		  [(tclTHEN (clear [id]) (introduction id))]) gls)
-
-let dyn_rewrite_in lft2rgt = function
-  | [Identifier id;(Command com);(Bindings binds)] -> 
-      tactic_com_bind_list (general_rewrite_in lft2rgt id) (com,binds)
-  | [Identifier id;(Constr c);(Cbindings binds)] -> 
-      general_rewrite_in lft2rgt id (c,binds)
-  | _ -> assert false
-
-let rewriteLR_in_tac =  hide_tactic "RewriteLRin" (dyn_rewrite_in true)
-let rewriteRL_in_tac = hide_tactic "RewriteRLin" (dyn_rewrite_in false)
-			 
+	 
 let conditional_rewrite_in lft2rgt id tac (c,bl) = 
   tclTHEN_i (general_rewrite_in lft2rgt id (c,bl))
     (fun i -> if i=1 then tclIDTAC else tclCOMPLETE tac)
@@ -1243,26 +1232,6 @@ let v_conditional_rewriteLR_in =
 let v_conditional_rewriteRL_in = 
   hide_tactic "CondRewriteRLin" (dyn_conditional_rewrite_in false)
 
-(* Rewrite c in id. Rewrite -> c in id. Rewrite <- c in id. 
-   Does not work when c is a conditional equation *)
-
-let rewrite_in lR com id gls =
-  (try 
-     let _ = lookup_named id (pf_env gls) in () 
-   with Not_found -> 
-     errorlabstrm "rewrite_in" (str"No such hypothesis : " ++pr_id id));
-  let c = pf_interp_constr gls com in
-  let eqn = pf_type_of gls c in
-  try
-    let _ = find_eq_data_decompose eqn in
-    (try 
-       (tclTHENS 
-          ((if lR then substInHyp else revSubstInHyp) eqn id) 
-          ([tclIDTAC ; exact_no_check c])) gls
-     with UserError("SubstInHyp",_) -> tclIDTAC gls)
-  with UserError ("find_eq_data_decompose",_)->  
-    errorlabstrm "rewrite_in" (str"No equality here") 
-      
 let subst eqn cls gls =
   match cls with
     | None ->    substInConcl eqn gls

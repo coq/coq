@@ -331,6 +331,8 @@ let dependent m t =
   in 
   try deprec m t; false with Occur -> true
 
+let pop t = lift (-1) t
+
 (***************************)
 (*  substitution functions *)                         
 (***************************)

@@ -1077,7 +1077,7 @@ let last_arg c = match kind_of_term c with
   | App (f,cl) ->  array_last cl
   | _ -> anomaly "last_arg"
 	
-let elimination_clause_scheme kONT wc elimclause indclause gl = 
+let elimination_clause_scheme kONT elimclause indclause gl = 
   let indmv = 
     (match kind_of_term (last_arg (clenv_template elimclause).rebus) with
        | Meta mv -> mv
@@ -1108,7 +1108,7 @@ let general_elim (c,lbindc) (elimc,lbindelimc) gl =
   let indclause  = make_clenv_binding wc (c,t) lbindc  in
   let elimt      = w_type_of wc elimc in
   let elimclause = make_clenv_binding wc (elimc,elimt) lbindelimc in 
-  elimination_clause_scheme kONT wc elimclause indclause gl
+  elimination_clause_scheme kONT elimclause indclause gl
 
 (* Elimination tactic with bindings but using the default elimination 
  * constant associated with the type. *)
@@ -1124,6 +1124,43 @@ let default_elim (c,lbindc)  gl =
 (* The simplest elimination tactic, with no substitutions at all. *)
 
 let simplest_elim c = default_elim (c,[])
+
+(* Elimination in hypothesis *)
+
+let elimination_in_clause_scheme kONT id elimclause indclause =
+  let (hypmv,indmv) = 
+    match clenv_independent elimclause with
+        [k1;k2] -> (k1,k2)
+      | _  -> errorlabstrm "elimination_clause"
+          (str "The type of elimination clause is not well-formed") in
+  let elimclause'  = clenv_fchain indmv elimclause indclause in 
+  let hyp = mkVar id in
+  let hyp_typ = clenv_type_of elimclause' hyp in
+  let hypclause =
+    mk_clenv_from_n elimclause'.hook 0 (hyp, hyp_typ) in
+  let elimclause'' = clenv_fchain hypmv elimclause' hypclause in  
+  let new_hyp_prf  = clenv_instance_template elimclause'' in
+  let new_hyp_typ  = clenv_instance_template_type elimclause'' in
+  if eq_constr hyp_typ new_hyp_typ then
+    errorlabstrm "general_rewrite_in" 
+      (str "Nothing to rewrite in " ++ pr_id id);
+  tclTHEN
+    (kONT elimclause''.hook)
+    (tclTHENS
+      (cut new_hyp_typ)
+      [ (* Try to insert the new hyp at the same place *)
+        tclORELSE (intro_replacing id)
+          (tclTHEN (clear [id]) (introduction id));
+        refine new_hyp_prf])
+
+let general_elim_in id (c,lbindc) (elimc,lbindelimc) gl = 
+  let (wc,kONT)  = startWalk gl in
+  let ct = pf_type_of gl c in
+  let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
+  let indclause  = make_clenv_binding wc (c,t) lbindc  in
+  let elimt      = w_type_of wc elimc in
+  let elimclause = make_clenv_binding wc (elimc,elimt) lbindelimc in 
+  elimination_in_clause_scheme kONT id elimclause indclause gl
 
 (*
  * A "natural" induction tactic
@@ -1440,7 +1477,7 @@ let induction_tac varname typ (elimc,elimt) gl =
   let (wc,kONT)  = startWalk gl                    in
   let indclause  = make_clenv_binding wc (c,typ) []  in
   let elimclause = make_clenv_binding wc (mkCast (elimc,elimt),elimt) [] in
-  elimination_clause_scheme kONT wc elimclause indclause gl
+  elimination_clause_scheme kONT elimclause indclause gl
 
 let is_indhyp p n t =
   let c,_ = decompose_app t in 
@@ -1648,7 +1685,7 @@ let elim_scheme_type elim t gl =
     | Meta mv ->
         let clause' =
 	  (* t is inductive, then CUMUL or CONV is irrelevant *)
-	  clenv_unify CUMUL t (clenv_instance_type clause mv) clause in
+	  clenv_unify true CUMUL t (clenv_instance_type clause mv) clause in
 	elim_res_pf kONT clause' gl
     | _ -> anomaly "elim_scheme_type"
 

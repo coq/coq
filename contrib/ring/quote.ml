@@ -268,7 +268,7 @@ let compute_ivs gl f cs =
 
 	      (* The Cases predicate is a lambda; we assume no dependency *)
 	      let p = match kind_of_term p with
-		| Lambda (_,_,p) -> pop p
+		| Lambda (_,_,p) -> Termops.pop p
 		| _ -> p
 	      in
               

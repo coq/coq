@@ -188,6 +188,9 @@ val default_elim   : constr * constr substitution -> tactic
 val simplest_elim  : constr -> tactic
 val dyn_elim       : tactic_arg list -> tactic
 
+val general_elim_in : identifier -> constr * constr substitution ->
+                      constr * constr substitution -> tactic
+
 val old_induct       : identifier -> tactic
 val old_induct_nodep : int        -> tactic
 val dyn_old_induct : tactic_arg list -> tactic

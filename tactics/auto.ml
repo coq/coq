@@ -217,9 +217,7 @@ let make_apply_entry env sigma (eapply,verbose) name (c,cty) =
 	let pat = Pattern.pattern_of_constr c' in
         let hd = (try head_pattern_bound pat
                   with BoundPattern -> failwith "make_apply_entry") in
-        let nmiss = 
-	  List.length 
-            (clenv_missing ce (clenv_template ce,clenv_template_type ce)) 
+        let nmiss = List.length (clenv_missing ce) 
         in 
 	if eapply & (nmiss <> 0) then begin
           if verbose then 

@@ -162,6 +162,7 @@ let find_theory a =
     
 (* Add a Setoid to the database after a type verification. *)
 
+(* Proof of (a,b,c,d:A)(eq a b)->(eq c d)->(eq a c)->(eq b d) *)
 let eq_lem_proof env a eq sym trans = 
   lambda_create env
     (a, lambda_create env
@@ -178,6 +179,7 @@ let eq_lem_proof env a eq sym trans =
 					 [|(mkRel 7);(mkRel 5);(mkRel 4);(mkRel 1);(mkRel 2)|]))|]
 			      )))))))))
 
+(* Proof of (a,b,c,d:A)(eq a b)->(eq c d)->((eq a c)<->(eq b d)) *)
 let eq_lem2_proof env a eq sym trans = 
   lambda_create env
     (a, lambda_create env

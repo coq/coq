@@ -25,6 +25,27 @@ open Reductionops
 open Tacmach
 open Evar_refiner
 
+(* if lname_typ is [xn,An;..;x1,A1] and l is a list of terms,
+   gives [x1:A1]..[xn:An]c' such that c converts to ([x1:A1]..[xn:An]c' l) *)
+
+let abstract_scheme env c l lname_typ =
+  List.fold_left2 
+    (fun t (locc,a) (na,_,ta) ->
+       if occur_meta ta then error "cannot find a type for the generalisation"
+       else if occur_meta a then lambda_name env (na,ta,t)
+       else lambda_name env (na,ta,subst_term_occ env locc a t))
+    c
+    (List.rev l)
+    lname_typ
+
+let abstract_list_all env sigma typ c l =
+  let ctxt,_ = decomp_n_prod env sigma (List.length l) typ in
+  let p = abstract_scheme env c (List.map (function a -> [],a) l) ctxt in 
+  try 
+    if is_conv_leq env sigma (Typing.type_of env sigma p) typ then p
+    else error "abstract_list_all"
+  with UserError _ ->
+    raise (RefinerError (CannotGeneralize typ))
 
 (* Generator of metavariables *)
 let meta_ctr=ref 0;;
@@ -638,13 +659,12 @@ let clenv_merge with_types =
    [clenv_typed_unify M N clenv] expects in addition that expected
    types of metavars are unifiable with the types of their instances    *)
 
-let clenv_unify_core with_types cv_pb m n clenv =
+let clenv_unify_core_0 with_types cv_pb m n clenv =
   let (mc,ec) = unify_0 cv_pb [] clenv.hook m n in 
   clenv_merge with_types mc ec clenv
-    
-(* let clenv_unify = clenv_unify_core false *)
-let clenv_unify = clenv_unify_core false
-let clenv_typed_unify = clenv_unify_core true
+
+let clenv_unify_0 = clenv_unify_core_0 false
+let clenv_typed_unify = clenv_unify_core_0 true
 
 
 (* takes a substitution s, an open term op and a closed term cl
@@ -665,7 +685,7 @@ let constrain_clenv_to_subterm clause (op,cl) =
     let cl = strip_outer_cast cl in
     (try 
        if closed0 cl 
-       then clenv_unify CONV op cl clause,cl
+       then clenv_unify_0 CONV op cl clause,cl
        else error "Bound 1"
      with ex when catchable_exception ex ->
        (match kind_of_term cl with 
@@ -734,35 +754,13 @@ let constrain_clenv_using_subterm_list allow_K clause oplist t =
     oplist 
     (clause,[])
 
-(* if lname_typ is [xn,An;..;x1,A1] and l is a list of terms,
-   gives [x1:A1]..[xn:An]c' such that c converts to ([x1:A1]..[xn:An]c' l) *)
-
-let abstract_scheme env c l lname_typ =
-  List.fold_left2 
-    (fun t (locc,a) (na,_,ta) ->
-       if occur_meta ta then error "cannot find a type for the generalisation"
-       else if occur_meta a then lambda_name env (na,ta,t)
-       else lambda_name env (na,ta,subst_term_occ env locc a t))
-    c
-    (List.rev l)
-    lname_typ
-
-let abstract_list_all env sigma typ c l =
-  let ctxt,_ = decomp_n_prod env sigma (List.length l) typ in
-  let p = abstract_scheme env c (List.map (function a -> [],a) l) ctxt in 
-  try 
-    if is_conv_leq env sigma (Typing.type_of env sigma p) typ then p
-    else error "abstract_list_all"
-  with UserError _ ->
-    raise (RefinerError (CannotGeneralize typ))
-
 let secondOrderAbstraction allow_K typ (p, oplist) clause =
   let env = w_env clause.hook in
   let sigma = w_Underlying clause.hook in
   let (clause',cllist) = 
     constrain_clenv_using_subterm_list allow_K clause oplist typ in
   let typp = clenv_instance_type clause' p in 
-  clenv_unify CONV (mkMeta p)
+  clenv_unify_0 CONV (mkMeta p)
     (abstract_list_all env sigma typp typ cllist) 
     clause'
 
@@ -775,13 +773,13 @@ let clenv_unify2 allow_K cv_pb ty1 ty2 clause =
 	let clause' =
           secondOrderAbstraction allow_K ty2 (p1,oplist1) clause in 
         (* Resume first order unification *)
-	clenv_unify cv_pb (clenv_instance_term clause' ty1) ty2 clause'
+	clenv_unify_0 cv_pb (clenv_instance_term clause' ty1) ty2 clause'
     | _, Meta p2 ->
         (* Find the predicate *)
 	let clause' =
           secondOrderAbstraction allow_K ty1 (p2, oplist2) clause in 
         (* Resume first order unification *)
-	clenv_unify cv_pb ty1 (clenv_instance_term clause' ty2) clause'
+	clenv_unify_0 cv_pb ty1 (clenv_instance_term clause' ty2) clause'
     | _ -> error "clenv_unify2"
 
 
@@ -805,13 +803,13 @@ let clenv_unify2 allow_K cv_pb ty1 ty2 clause =
    Before, second-order was used if the type of Meta(1) and [x:A]t was
    convertible and first-order otherwise. But if failed if e.g. the type of
    Meta(1) had meta-variables in it. *)
-let clenv_unify_gen allow_K cv_pb ty1 ty2 clenv =
+let clenv_unify allow_K cv_pb ty1 ty2 clenv =
   let hd1,l1 = whd_stack ty1 in
   let hd2,l2 = whd_stack ty2 in
   match kind_of_term hd1, l1<>[], kind_of_term hd2, l2<>[] with
     | (Meta _, true, Lambda _, _ | Lambda _, _, Meta _, true) ->
 	(try 
-	   clenv_unify cv_pb ty1 ty2 clenv
+	   clenv_unify_0 cv_pb ty1 ty2 clenv
 	 with ex when catchable_exception ex -> 
 	   try 
 	     clenv_unify2 allow_K cv_pb ty1 ty2 clenv
@@ -827,7 +825,7 @@ let clenv_unify_gen allow_K cv_pb ty1 ty2 clenv =
            with ex when catchable_exception ex -> 
              error "Cannot solve a second-order unification problem")
 
-     | _ -> clenv_unify CONV ty1 ty2 clenv
+     | _ -> clenv_unify_0 CONV ty1 ty2 clenv
 
 
 (* [clenv_bchain mv clenv' clenv]
@@ -863,7 +861,7 @@ let clenv_bchain mv subclenv clenv =
   in
   (* unify the type of the template of [subclenv] with the type of [mv] *)
   let clenv'' =
-    clenv_unify_gen true CUMUL
+    clenv_unify true CUMUL
       (clenv_instance clenv' (clenv_template_type subclenv))
       (clenv_instance_type clenv' mv)
       clenv' 
@@ -931,33 +929,33 @@ let dependent_metas clenv mvs conclmetas =
        Intset.union deps (clenv_metavars clenv mv))
     mvs conclmetas
 
-let clenv_dependent clenv (cval,ctyp) =
-  let mvs = collect_metas (clenv_instance clenv cval) in
-  let ctyp_mvs = metavars_of (clenv_instance clenv ctyp) in
+let clenv_dependent clenv =
+  let mvs = collect_metas (clenv_instance_template clenv) in
+  let ctyp_mvs = metavars_of (clenv_instance_template_type clenv) in
   let deps = dependent_metas clenv mvs ctyp_mvs in
   List.filter (fun mv -> Intset.mem mv deps) mvs
 
 
-(* [clenv_independent clenv (cval,ctyp)]
+(* [clenv_independent clenv]
  * returns a list of metavariables which appear in the term cval,
  * and which are not dependent.  That is, they do not appear in
  * the types of other metavars which are in cval, nor in the type
  * of cval, ctyp. *)
 
-let clenv_independent clenv (cval,ctyp) =
-  let mvs = collect_metas (clenv_instance clenv cval) in
-  let ctyp_mvs = metavars_of (clenv_instance clenv ctyp) in
+let clenv_independent clenv =
+  let mvs = collect_metas (clenv_instance_template clenv) in
+  let ctyp_mvs = metavars_of (clenv_instance_template_type clenv) in
   let deps = dependent_metas clenv mvs ctyp_mvs in
   List.filter (fun mv -> not (Intset.mem mv deps)) mvs
 
 
-(* [clenv_missing clenv (cval,ctyp)]
+(* [clenv_missing clenv]
  * returns a list of the metavariables which appear in the term cval,
  * and which are dependent, and do NOT appear in ctyp. *)
 
-let clenv_missing clenv (cval,ctyp) =
-  let mvs = collect_metas (clenv_instance clenv cval) in
-  let ctyp_mvs = metavars_of (clenv_instance clenv ctyp) in
+let clenv_missing clenv =
+  let mvs = collect_metas (clenv_instance_template clenv) in
+  let ctyp_mvs = metavars_of (clenv_instance_template_type clenv) in
   let deps = dependent_metas clenv mvs ctyp_mvs in
   List.filter 
     (fun n -> Intset.mem n deps && not (Intset.mem n ctyp_mvs))
@@ -967,11 +965,10 @@ let clenv_constrain_missing_args mlist clause =
   if mlist = [] then 
     clause 
   else
-    let occlist = clenv_missing clause (clenv_template clause,
-                                   	(clenv_template_type clause)) in 
+    let occlist = clenv_missing clause in
     if List.length occlist = List.length mlist then
       List.fold_left2
-        (fun clenv occ m -> clenv_unify_gen true CONV (mkMeta occ) m clenv)
+        (fun clenv occ m -> clenv_unify true CONV (mkMeta occ) m clenv)
         clause occlist mlist
     else 
       error ("Not the right number of missing arguments (expected "
@@ -981,11 +978,10 @@ let clenv_constrain_dep_args mlist clause =
   if mlist = [] then 
     clause 
   else
-    let occlist = clenv_dependent clause (clenv_template clause,
-					  (clenv_template_type clause)) in 
+    let occlist = clenv_dependent clause in
     if List.length occlist = List.length mlist then
       List.fold_left2
-        (fun clenv occ m -> clenv_unify_gen true CONV (mkMeta occ) m clenv)
+        (fun clenv occ m -> clenv_unify true CONV (mkMeta occ) m clenv)
         clause occlist mlist
     else 
       error ("Not the right number of missing arguments (expected "
@@ -995,11 +991,10 @@ let clenv_constrain_dep_args_of mv mlist clause =
   if mlist = [] then 
     clause 
   else
-    let occlist = clenv_dependent clause (clenv_value clause mv,
-                                          clenv_type clause mv) in 
+    let occlist = clenv_dependent clause in
     if List.length occlist = List.length mlist then
       List.fold_left2
-        (fun clenv occ m -> clenv_unify_gen true CONV (mkMeta occ) m clenv)
+        (fun clenv occ m -> clenv_unify true CONV (mkMeta occ) m clenv)
         clause occlist mlist
     else 
       error ("clenv_constrain_dep_args_of: Not the right number " ^ 
@@ -1016,10 +1011,7 @@ let clenv_lookup_name clenv id =
 	 anomaly "clenv_lookup_name: a name occurs more than once in clause"
 
 let clenv_match_args s clause =
-  let mvs = clenv_independent clause
-	      (clenv_template clause,
-               clenv_template_type clause)
-  in 
+  let mvs = clenv_independent clause in 
   let rec matchrec clause = function
     | [] -> clause
     | (b,c)::t ->
@@ -1038,14 +1030,14 @@ let clenv_match_args s clause =
 		      str " occurs more than once in binding");
 		 (try 
 		    List.nth mvs (n-1)
-		  with Failure "nth" -> errorlabstrm "clenv_match_args"
-                      (str "No such binder"))
+		  with (Failure _|Invalid_argument _) ->
+                    errorlabstrm "clenv_match_args" (str "No such binder"))
 	     | Com -> anomaly "No free term in clenv_match_args")
 	in
 	let k_typ = w_hnf_constr clause.hook (clenv_instance_type clause k)
 	and c_typ = w_hnf_constr clause.hook (w_type_of clause.hook c) in
 	matchrec
-          (clenv_assign k c (clenv_unify_gen true CUMUL c_typ k_typ clause)) t
+          (clenv_assign k c (clenv_unify true CUMUL c_typ k_typ clause)) t
   in 
   matchrec clause s
 
@@ -1057,8 +1049,7 @@ let clenv_match_args s clause =
  * metas. *)
 
 let clenv_pose_dependent_evars clenv =
-  let dep_mvs = clenv_dependent clenv (clenv_template clenv,
-                                       clenv_template_type clenv) in 
+  let dep_mvs = clenv_dependent clenv in
   List.fold_left
     (fun clenv mv ->
        let evar = Evarutil.new_evar_in_sign (w_env clenv.hook) in
@@ -1079,7 +1070,7 @@ let clenv_add_sign (id,sign) clenv =
 (***************************)
 
 let clenv_unique_resolver allow_K clause gl =
-  clenv_unify_gen allow_K CUMUL
+  clenv_unify allow_K CUMUL
     (clenv_instance_template_type clause) (pf_concl gl) clause 
 
 let res_pf kONT clenv gls =
