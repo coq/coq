@@ -289,7 +289,7 @@ let rec interp_notation ntn scopes =
     if pp8only then raise Not_found;
     pat in
   try find_interpretation f (List.fold_right push_scope scopes !scope_stack)
-  with Not_found -> error ("Unknown interpretation for notation "^ntn)
+  with Not_found -> error ("Unknown interpretation for notation \""^ntn^"\"")
 
 let uninterp_notations c =
   Gmapl.find (rawconstr_key c) !notations_key_table
