@@ -1,0 +1,18 @@
+Distribution:
+
+- Faire fonctionner coqc/coqtop en non local
+
+Environnement:
+
+- Faire fonctionner Search
+- Faire fonctionner Abstract
+- Faire fonctionner Search
+
+Tactiques
+
+- Choisir la précédence de Try/Orelse
+- Éviter si possible les '(
+
+Noyau:
+
+- Intégrer Let dans whd_* et les fonctions de tacred
