@@ -244,7 +244,7 @@ GEXTEND Gram
 	let _ = set_default_action_parser_by_name univ in univ ] ]
   ;
   syntax:
-   [ [ "Token"; s = STRING; "." -> <:ast< (TOKEN ($STR $s)) >>
+   [ [ IDENT "Token"; s = STRING; "." -> <:ast< (TOKEN ($STR $s)) >>
 
      | "Grammar"; univ = univ;
        tl = LIST1 Prim.grammar_entry SEP "with"; "." ->
