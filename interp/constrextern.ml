@@ -1825,6 +1825,7 @@ let rec raw_of_pat tenv env = function
       let avoid = List.fold_right (name_fold (fun x l -> x::l)) env [] in
       let k = (snd (lookup_mind_specif (Global.env()) ind)).Declarations.mind_nrealargs in
       Detyping.detype_case false (raw_of_pat tenv env)(raw_of_eqn tenv env)
+	(fun _ _ -> false (* lazy: don't try to display pattern with "if" *))
 	tenv avoid ind cs typopt k tm bv
   | PCase _ -> error "Unsupported case-analysis while printing pattern"
   | PFix f -> Detyping.detype (false,tenv) [] env (mkFix f)

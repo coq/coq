@@ -193,13 +193,23 @@ let lookup_index_as_renamed env t n =
     | _ -> None
   in lookup n 1 t
 
-let rec dont_use_args nargs c =
-  nargs = 0 or
-  match c with
-    | RLambda (_,Anonymous,_,c) -> dont_use_args (nargs - 1) c
-    | _ -> false
+let is_nondep_branch c n =
+  try
+    let _,ccl = decompose_lam_n_assum n c in
+    noccur_between 1 n ccl
+  with _ -> (* Not eta-expanded or not reduced *)
+    false
 
-let detype_case computable detype detype_eqn tenv avoid indsp st p k c bl =
+let extract_nondep_branches test c b n =
+  let rec strip n r = if n=0 then r else
+    match r with
+      | RLambda (_,_,_,t) -> strip (n-1) t
+      | RLetIn (_,_,_,t) -> strip (n-1) t
+      | _ -> assert false in
+  if test c n then Some (strip n b) else None
+
+let detype_case computable detype detype_eqn testdep
+    tenv avoid indsp st p k c bl =
   let synth_type = synthetize_type () in
   let tomatch = detype c in
 
@@ -262,7 +272,7 @@ let detype_case computable detype detype_eqn tenv avoid indsp st p k c bl =
   if tag = RegularStyle then
     RCases (dummy_loc,(pred,ref newpred),[tomatch,ref (alias,aliastyp)],eqnl)
   else
-    let bl = Array.map detype bl in
+    let bl' = Array.map detype bl in
     if not !Options.v7 && tag = LetStyle && aliastyp = None then
       let rec decomp_lam_force n avoid l p =
 	if n = 0 then (List.rev l,p) else
@@ -279,12 +289,16 @@ let detype_case computable detype detype_eqn tenv avoid indsp st p k c bl =
                   match p with
                     | RApp (loc,p,l) -> RApp (loc,p,l@[a])
                     | _ -> (RApp (dummy_loc,p,[a]))) in
-      let (nal,d) = decomp_lam_force consnargsl.(0) avoid [] bl.(0) in
+      let (nal,d) = decomp_lam_force consnargsl.(0) avoid [] bl'.(0) in
       RLetTuple (dummy_loc,nal,(alias,newpred),tomatch,d)
-    else if not !Options.v7 && tag = IfStyle && aliastyp = None
-      && array_for_all2 dont_use_args consnargsl bl then
-      RIf (dummy_loc,tomatch,(alias,newpred),bl.(0),bl.(1))
     else
+    let nondepbrs =
+      array_map3 (extract_nondep_branches testdep) bl bl' consnargsl in
+    if not !Options.v7 && tag = IfStyle && aliastyp = None
+      && array_for_all ((<>) None) nondepbrs then
+      RIf (dummy_loc,tomatch,(alias,newpred),
+           out_some nondepbrs.(0),out_some nondepbrs.(1))
+    else if !Options.v7 then
       let rec remove_type avoid args c =
 	match c,args with
           | RLambda (loc,na,t,c), _::args ->
@@ -303,8 +317,11 @@ let detype_case computable detype detype_eqn tenv avoid indsp st p k c bl =
               let avoid = name_fold (fun x l -> x::l) na avoid in
               RLetIn (dummy_loc,na,h,remove_type avoid args c)
           | c, [] -> c in
-      let bl = array_map2 (remove_type avoid) consnargs bl in
-      ROrderedCase (dummy_loc,tag,pred,tomatch,bl,ref None)
+      let bl' = array_map2 (remove_type avoid) consnargs bl' in
+      ROrderedCase (dummy_loc,tag,pred,tomatch,bl',ref None)
+    else
+      RCases(dummy_loc,(pred,ref newpred),[tomatch,ref (alias,aliastyp)],eqnl)
+
 
 let rec detype tenv avoid env t =
   match kind_of_term (collapse_appl t) with
@@ -347,6 +364,7 @@ let rec detype tenv avoid env t =
 	let ind = annot.ci_ind in
 	let st = annot.ci_pp_info.style in
 	detype_case comp (detype tenv avoid env) (detype_eqn tenv avoid env)
+	  is_nondep_branch
 	  (snd tenv) avoid ind st (Some p) annot.ci_pp_info.ind_nargs c bl
     | Fix (nvn,recdef) -> detype_fix tenv avoid env nvn recdef
     | CoFix (n,recdef) -> detype_cofix tenv avoid env n recdef

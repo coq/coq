@@ -142,6 +142,7 @@ type ml_case_error =
 
 exception NotInferable of ml_case_error
 
+
 let pred_case_ml env sigma isrec (IndType (indf,realargs)) (i,ft) =
   let pred =
     let (ind,params) = dest_ind_family indf in

@@ -149,7 +149,7 @@ Hypothesis eqA_dec : forall a b:A, {a = b} + {a <> b}.
 Fixpoint mem (a:A) (l:list A) {struct l} : bool :=
   match l with
   | nil => false
-  | b :: m => if eqA_dec a b then fun H => true else fun H => mem a m
+  | b :: m => if eqA_dec a b then true else mem a m
   end.
 
 Hint Unfold In.

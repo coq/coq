@@ -628,73 +628,44 @@ let rec pretype tycon env isevars lvar = function
 	with Not_found ->
 	  let cloc = loc_of_rawconstr c in
 	  error_case_not_inductive_loc cloc env (evars_of isevars) cj in
+      let cstrs = get_constructors env indf in 
+      if Array.length cstrs <> 2 then
+        user_err_loc (loc,"",
+	  str "If is only for inductive types with two constructors");
+
       (* Make dependencies from arity signature impossible *)
       let arsgn,_ = get_arity env indf in
       let arsgn = List.map (fun (_,b,t) -> (Anonymous,b,t)) arsgn in
-      let psign = (na,None,build_dependent_inductive env indf)::arsgn in
       let nar = List.length arsgn in
-      let p = 
-	match po with
+      let psign = (na,None,build_dependent_inductive env indf)::arsgn in
+      let pred,p = match po with
 	| Some p ->
-            let env_p = push_rels psign env in
-            let pj = pretype_type empty_valcon env_p isevars lvar p in
+	    let env_p = push_rels psign env in
+            let pj = pretype_type empty_valcon env isevars lvar p in
             let ccl = nf_evar (evars_of isevars) pj.utj_val in
-	    it_mkLambda_or_LetIn ccl psign
-	| None ->
-            (* get type information from type of branches *)
-	    let expbr = Cases.branch_scheme env isevars false indf in
-	    try
-	      let fj = pretype (mk_tycon expbr.(0)) env isevars lvar b1 in
-	      let pred = 
-		Cases.pred_case_ml
-                  env (evars_of isevars) false indt (0,fj.uj_type) in
-	      if has_undefined_isevars isevars pred then 
-		raise Not_found
-	      else
-(*
-                let _ = option_app (the_conv_x_leq env isevars pred) tycon in
-*)
-                pred
-	    with Cases.NotInferable _ | Not_found ->
-	    try
-	      let fj = pretype (mk_tycon expbr.(1)) env isevars lvar b2 in
-	      let pred = 
-		Cases.pred_case_ml
-                  env (evars_of isevars) false indt (1,fj.uj_type) in
-	      if has_undefined_isevars isevars pred then 
-		raise Not_found
-	      else
-(*
-                let _ = option_app (the_conv_x_leq env isevars pred) tycon in
-*)
-                pred
-	    with Cases.NotInferable _ | Not_found ->
-            (* get type information from constraint *)
-            (* warning: if the constraint comes from an evar type, it *)
-            (* may be Type while Prop or Set would be expected *)
-	    match tycon with
-	      | Some pred ->
-		  let arsgn = make_arity_signature env true indf in
-                  let pred = lift (List.length arsgn) pred in
-  		  it_mkLambda_or_LetIn (nf_evar (evars_of isevars) pred) arsgn 
-	      | None ->
-                  let sigma = evars_of isevars in
-                  error_cant_find_case_type_loc loc env sigma cj.uj_val in
-      let (bty,rsty) =
-	Indrec.type_rec_branches false
-	  env (evars_of isevars) indt p cj.uj_val in
-      let _ = option_app (the_conv_x_leq env isevars rsty) tycon in
-      if Array.length bty <> 2 then
-        user_err_loc (loc,"",
-	  str "If is only for inductive types with two constructors");
-      let bj1 = pretype (mk_tycon bty.(0)) env isevars lvar b1 in
-      let bj2 = pretype (mk_tycon bty.(1)) env isevars lvar b2 in
+	    let pred = it_mkLambda_or_LetIn ccl psign in
+	    pred, lift (- nar) (beta_applist (pred,[cj.uj_val]))
+	| None -> 
+	    let p = match tycon with
+	    | Some ty -> ty
+	    | None -> new_isevar isevars env (loc,InternalHole) (new_Type ())
+	    in
+	    it_mkLambda_or_LetIn (lift (nar+1) p) psign, p in
+      let bj1 = pretype (Some p) env isevars lvar b1 in
+      let bj2 = pretype (Some p) env isevars lvar b2 in
+      let cargs1 = cstrs.(0).cs_args and cargs2 = cstrs.(1).cs_args in
+      let lb1 = lift (rel_context_length cargs1) bj1.uj_val in
+      let b1 = it_mkLambda_or_LetIn lb1 cargs1 in
+      let lb2 = lift (rel_context_length cargs2) bj2.uj_val in
+      let b2 = it_mkLambda_or_LetIn lb2 cargs2 in
+      let pred = nf_evar (evars_of isevars) pred in
+      let p = nf_evar (evars_of isevars) p in
       let v =
 	let mis,_ = dest_ind_family indf in
 	let ci = make_default_case_info env IfStyle mis in
-	mkCase (ci, p, cj.uj_val, [|bj1.uj_val;bj2.uj_val|])
+	mkCase (ci, pred, cj.uj_val, [|b1;b2|])
       in
-      { uj_val = v; uj_type = rsty }
+      { uj_val = v; uj_type = p }
 
   | ROrderedCase (loc,st,po,c,lf,x) ->
       let isrec = (st = MatchStyle) in
@@ -821,10 +792,25 @@ let rec pretype tycon env isevars lvar = function
                       let args = List.map (fun _ -> Anonymous) params @ nal in
 		      Some (dummy_loc,ind,args) in
                   (Some rtntyopt,(List.hd na,intyp)) in
-	    if st = IfStyle & snd indnalopt = None then
+	    let rawbranches =
+	      array_map3 (fun bj b cstr ->
+		let rec strip n r = if n=0 then r else
+		  match r with
+		    | RLambda (_,_,_,t) -> strip (n-1) t
+		    | RLetIn (_,_,_,t) -> strip (n-1) t
+		    | _ -> assert false in
+		let n = rel_context_length cstr.cs_args in
+		try
+		  let _,ccl = decompose_lam_n_assum n bj.uj_val in
+		  if noccur_between 1 n ccl then Some (strip n b) else None
+		with _ -> (* Not eta-expanded or not reduced *) None)
+		lfj lf (get_constructors env indf) in
+	    if st = IfStyle & snd indnalopt = None 
+	       & rawbranches.(0) <> None && rawbranches.(1) <> None then
 	      (* Translate into a "if ... then ... else" *)
 	      (* TODO: translate into a "if" even if po is dependent *)
-	      Some (RIf (loc,c,(fst indnalopt,rtntypopt),lf.(0),lf.(1)))
+	      Some (RIf (loc,c,(fst indnalopt,rtntypopt),
+	          out_some rawbranches.(0),out_some rawbranches.(1)))
 	    else
             let detype_eqn constr construct_nargs branch =
               let name_cons = function 
