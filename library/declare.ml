@@ -334,9 +334,10 @@ let extract_instance ref args =
   let hyps0 = current_section_context () in
   let na = Array.length args in
   let rec peel n acc = function
-    | d::hyps ->
+    | (_,None,_ as d)::hyps ->
 	if List.mem d hyps0 then peel (n-1) acc hyps
 	else peel (n-1) (args.(n)::acc) hyps
+    | (_,Some _,_)::hyps -> peel n acc hyps
     | [] -> Array.of_list acc
   in peel (na-1) [] hyps
 
