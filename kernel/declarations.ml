@@ -105,7 +105,6 @@ type mutual_inductive_body = {
   mind_hyps : section_context;
   mind_packets : one_inductive_body array;
   mind_constraints : constraints;
-  mind_singl : constr option;
   mind_equiv : kernel_name option
  }
 
@@ -141,7 +140,6 @@ let subst_mind sub mib =
     mind_hyps = (assert (mib.mind_hyps=[]); []) ;
     mind_packets = array_smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_constraints = mib.mind_constraints ;
-    mind_singl = option_app (Term.subst_mps sub) mib.mind_singl;
     mind_equiv = option_app (subst_kn sub) mib.mind_equiv;
 }
 

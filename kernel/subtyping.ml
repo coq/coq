@@ -132,11 +132,6 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
 	  in
 	    if kn1 <> kn2 then error ()
   end;
-  let cst = match mib1.mind_singl, mib2.mind_singl with
-    | None, None -> cst
-    | Some c1, Some c2 -> check_conv cst conv env c1 c2
-    | _ -> error ()
-  in
   (* we first check simple things *)
   let cst = 
     array_fold_left2 check_packet cst mib1.mind_packets mib2.mind_packets

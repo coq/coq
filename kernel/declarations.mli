@@ -81,7 +81,6 @@ type mutual_inductive_body = {
   mind_hyps : section_context;
   mind_packets : one_inductive_body array;
   mind_constraints : constraints;
-  mind_singl : constr option;
   mind_equiv : kernel_name option;
  }
 
