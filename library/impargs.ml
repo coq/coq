@@ -101,16 +101,16 @@ let inductive_implicits_list ind_sp =
 
 (* Variables. *)
 
-let var_table = ref Idmap.empty
+let var_table = ref Spmap.empty
 
-let declare_var_implicits id =
+let declare_var_implicits sp =
   let env = Global.env () in
-  let (_,ty) = lookup_named id env in
+  let (_,ty) = lookup_named (basename sp) env in
   let imps = auto_implicits env (body_of_type ty) in
-  var_table := Idmap.add id imps !var_table
+  var_table := Spmap.add sp imps !var_table
 
-let implicits_of_var id =
-  list_of_implicits (try Idmap.find id !var_table with Not_found -> No_impl)
+let implicits_of_var sp =
+  list_of_implicits (try Spmap.find sp !var_table with Not_found -> No_impl)
 
 (* Tests if declared implicit *)
 
@@ -120,20 +120,27 @@ let is_implicit_constant sp =
 let is_implicit_inductive_definition sp =
   try let _ = Spmap.find sp !inductives_table in true with Not_found -> false
 
-let is_implicit_var id =
-  try let _ = Idmap.find id !var_table in true with Not_found -> false
+let is_implicit_var sp =
+  try let _ = Spmap.find sp !var_table in true with Not_found -> false
 
-(* Registration as global tables and rollback. *)
+let implicits_of_global = function
+  | VarRef sp -> implicits_of_var sp
+  | ConstRef sp -> list_of_implicits (constant_implicits sp)
+  | IndRef isp -> list_of_implicits (inductive_implicits isp)
+  | ConstructRef csp ->	list_of_implicits (constructor_implicits csp)
+  | EvarRef _ -> []
+
+(* Registration as global tables and roolback. *)
 
 type frozen_t = bool
               * implicits Spmap.t 
               * (implicits * implicits array) array Spmap.t 
-              * implicits Idmap.t
+              * implicits Spmap.t
 
 let init () =
   constants_table := Spmap.empty;
   inductives_table := Spmap.empty;
-  var_table := Idmap.empty
+  var_table := Spmap.empty
 
 let freeze () =
   (!implicit_args, !constants_table, !inductives_table, !var_table)

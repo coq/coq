@@ -34,12 +34,14 @@ val constructor_implicits_list : constructor_path -> int list
 val inductive_implicits_list : inductive_path -> int list
 val constant_implicits_list : section_path -> int list
 
-val declare_var_implicits : identifier -> unit
-val implicits_of_var : identifier -> int list
+val declare_var_implicits : section_path -> unit
+val implicits_of_var : section_path -> int list
 
 val is_implicit_constant : section_path -> bool
 val is_implicit_inductive_definition : section_path -> bool
-val is_implicit_var : identifier -> bool
+val is_implicit_var : section_path -> bool
+
+val implicits_of_global : global_reference -> int list
 
 type frozen_t
 val freeze : unit -> frozen_t
