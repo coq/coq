@@ -86,13 +86,12 @@ holes. The holes are noted ``\texttt{\_}''.
   a valid proof (not easy to debug in general).
   This message may also occur in higher-level tactics, which call 
   \texttt{refine} internally.
-\item \errindex{There is an unknown subterm I cannot solve}: 
+\item \errindex{Cannot infer a term for this placeholder}
   there is a hole in the term you gave
   which type cannot be inferred. Put a cast around it.
 \end{ErrMsgs}
 
-This tactic is currently given as an experiment. An example of use is given
-in Section~\ref{refine-example}.
+An example of use is given in section~\ref{refine-example}.
 
 \section{Basics
 \index{Typing rules}}
@@ -137,7 +136,7 @@ usable in the proof development.
 \end{Variants}
 
 \begin{ErrMsgs}
-\item \errindex{No such assumption}
+\item \errindex{{\ident} not found}
 \item \errindexbis{{\ident} is used in the conclusion}{is used in the
     conclusion} 
 \item \errindexbis{{\ident} is used in the hypothesis {\ident'}}{is
@@ -160,7 +159,7 @@ then all hypotheses between {\ident$_1$} and {\ident$_2$} which
 
 \begin{ErrMsgs}
 
-\item \errindex{No such assumption: {\ident$_i$}}
+\item \errindex{{\ident$_i$} not found}
 
 \item \errindex{Cannot move {\ident$_1$} after {\ident$_2$}:
                    it occurs in {\ident$_2$}}
@@ -179,7 +178,7 @@ context\footnote{but it does not rename the hypothesis in the
 
 \begin{ErrMsgs}
 
-\item \errindex{No such assumption}
+\item \errindex{{\ident$_2$} not found}
 
 \item \errindexbis{{\ident$_2$} is already used}{is already used}
 
@@ -192,29 +191,28 @@ context\footnote{but it does not rename the hypothesis in the
 This tactic applies to a goal which is either a product or starts with
 a let binder. If the goal is a product, the tactic implements the
 ``Lam''\index{Typing rules!Lam} rule given in
-Section~\ref{Typed-terms}\footnote{Actually, only the second subgoal
-  will be generated since the other one can be automatically
-  checked.}.  If the goal starts with a let binder then the tactic
-implements a mix of the ``Let''\index{Typing rules!Let} and
-``Conv''\index{Typing rules!Conv}.
+Section~\ref{Typed-terms}\footnote{Actually, only the second subgoal will be
+generated since the other one can be automatically checked.}.  If the
+goal starts with a let binder then the tactic implements a mix of the
+``Let''\index{Typing rules!Let} and ``Conv''\index{Typing rules!Conv}.
 
-If the current goal is a dependent product {\tt forall (x:T), U} (resp {\tt
-let x:=t in U}) then {\tt intro} puts {\tt x:T} (resp {\tt x:=t}) in the
-local context.
+If the current goal is a dependent product {\tt forall $x$:$T$, $U$} (resp {\tt
+let $x$:=$t$ in $U$}) then {\tt intro} puts {\tt $x$:$T$} (resp {\tt $x$:=$t$})
+ in the local context.
 % Obsolete (quantified names already avoid hypotheses names):
 % Otherwise, it puts
 % {\tt x}{\it n}{\tt :T} where {\it n} is such that {\tt x}{\it n} is a
 %fresh name.
-The new subgoal is {\tt U}.
+The new subgoal is $U$.
 % If the {\tt x} has been renamed {\tt x}{\it n} then it is replaced 
 % by {\tt x}{\it n} in {\tt U}. 
 
-If the goal is a non dependent product T -> U, then it puts in the
-local context either {\tt H}{\it n}{\tt :T} (if {\tt T} is {\tt Set}
-or {\tt Prop}) or {\tt X}{\it n}{\tt :T} (if the type of {\tt T} is
-{\tt Type}) {\it n} is such that {\tt H}{\it n} or {\tt X}{\it n}
-{\tt l}{\it n} or are fresh identifiers.  In both cases the new
-subgoal is {\tt U}.
+If the goal is a non dependent product {\tt $T$ -> $U$}, then it puts
+in the local context either {\tt H}{\it n}{\tt :$T$} (if $T$ is of
+type {\tt Set} or {\tt Prop}) or {\tt X}{\it n}{\tt :$T$} (if the type
+of $T$ is {\tt Type}). The optional index {\it n} is such that {\tt
+H}{\it n} or {\tt X}{\it n} is a fresh identifier.
+In both cases the new subgoal is $U$.
 
 If the goal is neither a product nor starting with a let definition,
 the tactic {\tt intro} applies the tactic {\tt red} until the tactic
@@ -237,7 +235,7 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
   Applies {\tt intro} but forces {\ident} to be the name of the
   introduced hypothesis.
 
-  \ErrMsg \errindex{name {\ident} is already bound }
+  \ErrMsg \errindex{name {\ident} is already used}
 
   \Rem If a name used by {\tt intro} hides the base name of a global
   constant then the latter can still be referred to by a qualified name
@@ -306,20 +304,22 @@ the tactic {\tt intro} applies the tactic {\tt red} until the tactic
 This tactic applies to any goal.  The argument {\term} is a term
 well-formed in the local context.  The tactic {\tt apply} tries to
 match the current goal against the conclusion of the type of {\term}.
-If it succeeds, then the tactic returns as many subgoals as the
-instantiations of the premises of the type of {\term}.
+If it succeeds, then the tactic returns as many subgoals as the number
+of non dependent premises of the type of {\term}.  The tactic {\tt
+apply} relies on first-order pattern-matching with dependent
+types. See {\tt pattern} in section \ref{pattern} to transform a
+second-order pattern-matching problem into a first-order one.
 
 \begin{ErrMsgs}
 \item \errindex{Impossible to unify \dots\ with \dots} 
 
-  Since higher order unification is undecidable, the {\tt apply}
-  tactic may fail when you think it should work.  In this case, if you
-  know that the conclusion of {\term} and the current goal are
-  unifiable, you can help the {\tt apply} tactic by transforming your
-  goal with the {\tt change} or {\tt pattern} tactics (see
-  Sections~\ref{pattern},~\ref{change}). 
+  The {\tt apply}
+  tactic failed to match the conclusion of {\term} and the current goal.
+  You can help the {\tt apply} tactic by transforming your
+  goal with the {\tt change} or {\tt pattern} tactics (see 
+  sections~\ref{pattern},~\ref{change}).
 
-\item \errindex{Cannot refine to conclusions with meta-variables}
+\item \errindex{generated subgoal {\term'} has metavariables in it}
 
   This occurs when some instantiations of premises of {\term} are not
   deducible from the unification. This is the case, for instance, when
@@ -372,7 +372,7 @@ instantiations of the premises of the type of {\term}.
   as giving the sequence {\tt cut B. 2:apply H.} where {\tt cut} is
   described below.
 
-  \Warning Be careful, when {\term} contains more than one non
+  \Warning When {\term} contains more than one non
   dependent product the tactic {\tt lapply} only takes into account the
   first product.
 
@@ -381,6 +381,10 @@ instantiations of the premises of the type of {\term}.
 \subsection{{\tt set ( {\ident} {\tt :=} {\term} \tt )}
 \tacindex{set}
 \tacindex{pose}}
+
+\Warning V8 updating to do
+
+\medskip
 
 This replaces {\term} by {\ident} in the conclusion or in the
 hypotheses of the current goal and adds the new definition {\ident
@@ -548,7 +552,7 @@ to $T$.
 \item {\tt generalize dependent \term} \tacindex{generalize dependent}
   
   This generalizes {\term} but also {\em all} hypotheses which depend
-  on {\term}.
+  on {\term}. It clears the generalized hypotheses.
 
 \end{Variants}
 
@@ -557,8 +561,8 @@ to $T$.
 \label{change}}
 
 This tactic applies to any goal. It implements the rule
-``Conv''\index{Typing rules!Conv} given in Section~\ref{Conv}.  {\tt
-  change U} replaces the current goal \T\ with a \U\ providing that
+``Conv''\index{Typing rules!Conv} given in section~\ref{Conv}.  {\tt
+  change U} replaces the current goal \T\ with \U\ providing that
 \U\ is well-formed and that \T\ and \U\ are convertible.
 
 \begin{ErrMsgs}
@@ -612,9 +616,9 @@ product {\tt \ident$_i$:T} (for some type \T); if \vref$_i$ is
 A bindings list can also be a simple list of terms {\tt \term$_1$
   \term$_2$ \dots\term$_n$}. In that case the references to which
 these terms correspond are determined by the tactic. In case of {\tt
-  elim \term} (see Section~\ref{elim}) the terms should correspond to
+  elim} (see section~\ref{elim}) the terms should correspond to
 all the dependent products in the type of \term\ while in the case of
-{\tt apply \term} only the dependent products which are not bound in
+{\tt apply} only the dependent products which are not bound in
 the conclusion of the type are given.
 
 
@@ -674,18 +678,19 @@ definitions), every flag is one of {\tt beta}, {\tt delta}, {\tt
   iota}, {\tt zeta}, {\tt [\qualid$_1$\ldots\qualid$_k$]} and {\tt
   -[\qualid$_1$\ldots\qualid$_k$]}.  The last two flags give the list
 of constants to unfold, or the list of constants not to unfold. These
-two flags can occur only after the {\tt delta} flag.  For these
-tactics, the {\tt delta} flag does not apply to variables bound by a
-let-in construction of which the unfolding is controlled by the {\tt
+two flags can occur only after the {\tt delta} flag. 
+If alone (i.e. not
+followed by {\tt [\qualid$_1$\ldots\qualid$_k$]} or {\tt
+  -[\qualid$_1$\ldots\qualid$_k$]}), the {\tt delta} flag means that all constants must be unfolded.
+However, the {\tt delta} flag does not apply to variables bound by a
+let-in construction whose unfolding is controlled by the {\tt
   zeta} flag only.  In addition, there is a flag {\tt Evar} to perform
 instantiation of existential variables (``?'') when an instantiation
-actually exists.  The goal may be normalized with two strategies: {\em
-  lazy} ({\tt lazy} tactic), or {\em call-by-value} ({\tt cbv}
-tactic).
+actually exists. 
 
-Notice that, for these tactics, the {\tt delta} flag without rest
-should be understood as unfolding all The lazy strategy is a
-call-by-need strategy, with sharing of reductions: the arguments of a
+The goal may be normalized with two strategies: {\em lazy} ({\tt lazy}
+tactic), or {\em call-by-value} ({\tt cbv} tactic). The lazy strategy
+is a call-by-need strategy, with sharing of reductions: the arguments of a
 function call are partially evaluated only when necessary, but if an
 argument is used several times, it is computed only once. This
 reduction is efficient for reducing expressions with dead code. For
@@ -717,7 +722,7 @@ computational expressions (i.e. with few dead code).
 \subsection{{\tt red}
 \tacindex{red}}
 
-This tactic applies to a goal which have form {\tt
+This tactic applies to a goal which has the form {\tt
   forall (x:T1)\dots(xk:Tk), c t1 \dots\ tn} where {\tt c} is a constant.  If
 {\tt c} is transparent then it replaces {\tt c} with its definition
 (say {\tt t}) and then reduces {\tt (t t1 \dots\ tn)} according to
@@ -736,11 +741,10 @@ head normal form according to the $\beta\delta\iota$-reduction rules.
 product or an applicative term in head normal form or a variable.
 
 \Example
-The term \verb+forall (n:nat), (plus (S n) (S n))+ is not reduced by {\tt hnf}.
+The term \verb+forall n:nat, (plus (S n) (S n))+ is not reduced by {\tt hnf}.
 
-\Rem The $\delta$ rule will only be applied to transparent constants
-(i.e. which have not been frozen with an {\tt Opaque} command; see
-Section~\ref{Opaque}).
+\Rem The $\delta$ rule only applies to transparent constants
+(see section~\ref{Opaque} on transparency and opacity).
 
 \subsection{\tt simpl
 \tacindex{simpl}}
@@ -750,7 +754,7 @@ $\beta\iota$-reduction rule.  Then it expands transparent constants
 and tries to reduce {\tt T'} according, once more, to $\beta\iota$
 rules. But when the $\iota$ rule is not applicable then possible
 $\delta$-reductions are not applied.  For instance trying to use {\tt
-  simpl} on {\tt (plus n O)=n} will change nothing.
+  simpl} on {\tt (plus n O)=n} does change nothing.
 
 \tacindex{simpl \dots\ in}
 \begin{Variants}
@@ -790,35 +794,35 @@ with its $\beta\iota$-normal form.
 
 \begin{ErrMsgs}
 \item {\qualid} \errindex{does not denote an evaluable constant}
-is printed.
 
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt unfold {\qualid}$_1$ \dots\ \qualid$_n$}
+\item {\tt unfold {\qualid}$_1$, \dots, \qualid$_n$}
   \tacindex{unfold \dots\ in}
   
   Replaces {\em simultaneously} {\qualid}$_1$, \dots, {\qualid}$_n$
   with their definitions and replaces the current goal with its
   $\beta\iota$ normal form.
 
-\item {\tt unfold \num$_1^1$ \dots\ \num$_i^1$ {\qualid}$_1$ \dots\  \num$_1^n$
-    \dots\ \num$_j^n$ \qualid$_n$}
+\item {\tt unfold {\qualid}$_1$ at \num$_1^1$, \dots, \num$_i^1$,
+\dots,\ \qualid$_n$ at \num$_1^n$ \dots\ \num$_j^n$}
   
   The lists \num$_1^1$, \dots, \num$_i^1$ and \num$_1^n$, \dots,
-  \num$_j^n$ are to specify the occurrences of {\qualid}$_1$, \dots,
+  \num$_j^n$ specify the occurrences of {\qualid}$_1$, \dots,
   \qualid$_n$ to be unfolded. Occurrences are located from left to
-  right in the linear
-  notation of terms.
+  right.
 
-  \ErrMsg {\tt bad occurrence numbers of {\qualid}$_i$}
+  \ErrMsg {\tt bad occurrence number of {\qualid}$_i$}
+
+  \ErrMsg {\qualid}$_i$ {\tt does not occur}
 
 \end{Variants}
 
 \subsection{{\tt fold} \term
 \tacindex{fold}}
 
-This tactic applies to any goal. \term\ is reduced using the {\tt red}
+This tactic applies to any goal. The term \term\ is reduced using the {\tt red}
 tactic. Every occurrence of the resulting term in the goal is then
 substituted for \term.
 
@@ -841,30 +845,35 @@ $\beta$-expansion (the inverse of $\bt$-reduction) of the current goal
 \item abstracting this variable
 \item applying the abstracted goal to {\term}
 \end{enumerate}
-For instance, if the current goal {\T} is {\tt (P t)} when {\tt t} does not occur in
-{\tt P} then {\tt pattern t} transforms it into {\tt ([x:A](P x) t)}. This
-command has to be used, for instance, when an {\tt apply} command
-fails on matching.
+
+For instance, if the current goal $T$ is expressible has $\phi(t)$
+where the notation captures all the instances of $t$ in $\phi(t)$,
+then {\tt pattern $t$} transforms it into {\tt (fun x:$A$ => $\phi(${\tt
+x}$)$) $t$}.  This command can be used, for instance, when the tactic
+{\tt apply} fails on matching.
 
 \begin{Variants}
-\item {\tt pattern {\num$_1$} \dots\ {\num$_n$} {\term}}
+\item {\tt pattern {\term} at {\num$_1$} \dots\ {\num$_n$}}
   
   Only the occurrences {\num$_1$} \dots\ {\num$_n$} of {\term} will be
   considered for $\beta$-expansion. Occurrences are located from left
   to right.
 
-\item {\tt pattern {\num$_1^1$} \dots\ {\num$_{n_1}^1$} {\term$_1$} \dots
-    {\num$_1^m$} \dots\ {\num$_{n_m}^m$} {\term$_m$}}
+\item {\tt pattern {\term$_1$}, \dots, {\term$_m$}}
   
-  Will process occurrences \num$_1^1$, \dots, \num$_i^1$ of \term$_1$,
-  \dots, \num$_1^m$, \dots, \num$_j^m$ of \term$_m$ starting from
-  \term$_m$.  Starting from a goal {\tt (P t$_1$\dots\ t$_m$)} with
-  the {\tt t$_i$} which do not occur in $P$, the tactic {\tt pattern
-    t$_1$\dots\ t$_m$} generates the equivalent goal {\tt
-    ([x$_1$:A$_1$]\dots\ [x$_m$:A$_m$](P x$_1$\dots\ x$_m$)
-    t$_1$\dots\ t$_m$)}.\\
-  If $t_i$ occurs in one of the generated types A$_j$ these
-  occurrences will also be considered and possibly abstracted.
+  Starting from a goal $\phi(t_1 \dots\ t_m)$, the tactic
+   {\tt pattern $t_1$, \dots,\ $t_m$} generates the equivalent goal {\tt
+   (fun (x$_1$:$A_1$) \dots\ (x$_m$:$A_m$) => $\phi(${\tt x$_1$\dots\
+   x$_m$}$)$) $t_1$ \dots\ $t_m$}.\\ If $t_i$ occurs in one of the
+   generated types $A_j$ these occurrences will also be considered and
+   possibly abstracted.
+
+\item {\tt pattern {\term$_1$} at {\num$_1^1$} \dots\ {\num$_{n_1}^1$}, \dots,
+    {\term$_m$} at {\num$_1^m$} \dots\ {\num$_{n_m}^m$}}
+  
+  This behaves as above but processing only the occurrences \num$_1^1$,
+  \dots, \num$_i^1$ of \term$_1$, \dots, \num$_1^m$, \dots, \num$_j^m$
+  of \term$_m$ starting from \term$_m$.
 
 \end{Variants}
 
@@ -928,25 +937,26 @@ equivalent to {\tt intros; apply ci}.
 \item {\tt split}\tacindex{split}
 
   Applies if {\tt I} has only one constructor, typically in the case
-  of conjunction $A\land B$. It is equivalent to {\tt constructor 1}.
+  of conjunction $A\land B$. Then, it is equivalent to {\tt constructor 1}.
 
 \item {\tt exists {\bindinglist}}\tacindex{exists} 
 
   Applies if {\tt I} has only one constructor, for instance in the
   case of existential quantification $\exists x\cdot P(x)$. 
-  It is equivalent to {\tt intros; constructor 1 with \bindinglist}.
+  Then, it is equivalent to {\tt intros; constructor 1 with \bindinglist}.
 
 \item {\tt left}\tacindex{left},  {\tt right}\tacindex{right}
 
   Apply if {\tt I} has two constructors, for instance in the case of
-  disjunction $A\lor B$. They are respectively equivalent to {\tt
+  disjunction $A\lor B$. Then, they are respectively equivalent to {\tt
     constructor 1} and {\tt constructor 2}.
   
 \item {\tt left \bindinglist}, {\tt right \bindinglist}, {\tt split
     \bindinglist}
   
-  Are equivalent to the corresponding {\tt constructor $i$ with
-    \bindinglist}.
+  As soon as the inductive type has the right number of constructors,
+    these expressions are equivalent to the corresponding {\tt
+    constructor $i$ with \bindinglist}.
 
 \end{Variants}
 
@@ -989,6 +999,8 @@ last introduced hypothesis.
 ({\num})} (not very interesting anyway).
 
 \end{itemize}
+
+\Example
 
 \begin{coq_example}
 Lemma induction_test : forall n:nat, n = n -> n <= n.
@@ -1289,7 +1301,7 @@ non dependent} premises of the goal. More generally, any combination of an
 
 \end{Variant}
 
-\subsection{\tt decompose [ {\ident$_1$} \dots\ {\ident$_n$} ] \term
+\subsection{\tt decompose [ {\qualid$_1$} \dots\ {\qualid$_n$} ] \term
 \label{decompose}
 \tacindex{decompose}}
 
@@ -1452,8 +1464,7 @@ It is equivalent to {\tt apply refl\_equal}.
 \subsection{\tt symmetry
 \tacindex{symmetry}
 \tacindex{symmetry in}}
-
-This tactic applies to a goal which has form {\tt t=u} and changes it
+This tactic applies to a goal which has the form {\tt t=u} and changes it
 into {\tt u=t}.
 
 \variant {\tt symmetry in {\ident}}\\
@@ -1462,15 +1473,14 @@ the tactic changes it to {\tt u=t}.
 
 \subsection{\tt transitivity \term
 \tacindex{transitivity}}
-
-This tactic applies to a goal which have form {\tt t=u}
+This tactic applies to a goal which has the form {\tt t=u}
 and transforms it into the two subgoals 
 {\tt t={\term}} and {\tt {\term}=u}.
 
 \subsection{\tt subst {\ident}
 \tacindex{subst}}
 
-This tactic applies to a goal which have \ident\ in its context and
+This tactic applies to a goal which has \ident\ in its context and
 (at least) one hypothesis, say {\tt H}, of type {\tt
   \ident=t} or {\tt t=\ident}. Then it replaces 
 \ident\ by {\tt t} everywhere in the goal (in the hypotheses 
@@ -2183,6 +2193,11 @@ port of the {\em Jprover}\cite{SLKN01} semi-decision procedure for
 first-order intuitionistic logic implemented in {\em
   NuPRL}\cite{Kre02}.
 
+The tactic \texttt{jp}, due to Huang Guan-Shieng, is an {\it
+  experimental} port of the {\em Jprover}\cite{SLKN01} semi-decision 
+procedure for first-order intuitionistic logic implemented in {\em
+  NuPRL}\cite{Kre02}. 
+
 Search may optionnaly be bounded by a multiplicity parameter
 indicating how many (at most) copies of a formula may be used in 
 the proof process, its absence may lead to non-termination of the tactic.
@@ -2581,6 +2596,8 @@ is:
 \end{tabbing}
 where {\sl hint\_definition} is one of the following expressions:
 
+\noindent where {\sl hint\_definition} is one of the following expressions:
+
 \begin{itemize}
 \item \texttt{Resolve} {\term} 
   \comindex{Hint Resolve}
@@ -2888,6 +2905,8 @@ general principle of mutual induction for objects in type {\term$_i$}.
   Same as before but defines a non-dependent elimination principle more
   natural in case of inductively defined relations. 
 \end{Variants}
+
+\SeeAlso \ref{Scheme-examples}
 
 \SeeAlso Section~\ref{Scheme-examples}
 
