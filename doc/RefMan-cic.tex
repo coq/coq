@@ -1205,11 +1205,11 @@ The second operator for elimination is fixpoint definition.
 This fixpoint may involve several mutually recursive definitions.
 The basic concrete syntax for a recursive set of mutually recursive 
 declarations is (with $\Gamma_i$ contexts)~: 
-\[\kw{fix}~f_1 (\Gamma_1) :A_1:=t_1~\kw{with} \ldots \kw{with} f_n
+\[\kw{fix}~f_1 (\Gamma_1) :A_1:=t_1~\kw{with} \ldots \kw{with}~ f_n
 (\Gamma_n) :A_n:=t_n\]
 The terms are obtained by projections from this set of declarations
 and are written 
-\[\kw{fix}~f_1 (\Gamma_1) :A_1:=t_1~\kw{with} \ldots \kw{with} f_n
+\[\kw{fix}~f_1 (\Gamma_1) :A_1:=t_1~\kw{with} \ldots \kw{with}~ f_n
 (\Gamma_n) :A_n:=t_n~\kw{for}~f_i\]
 In the inference rules, we represent such a
 term by 
