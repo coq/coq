@@ -76,50 +76,6 @@ let stre_of_global = function
 
 (* Errors *)
 
-(******
-<<<<<<< class.ml
-=======
-let rec arity_sort a = match kind_of_term a with
-  | Sort (Prop _ | Type _) -> 0
-  | Prod (_,_,c) -> (arity_sort c) +1
-  | LetIn (_,_,_,c) -> arity_sort c    (* Utile ?? *)
-  | Cast (c,_) -> arity_sort c
-  | _ -> raise Not_found
-
-(* try_add_class : Names.identifier ->
-  Term.constr -> (cl_typ * int) option -> bool -> int * Libobject.strength *)
-
-let try_add_class (cl,p) streopt check_exist = 
-  if check_exist & class_exists cl then
-    errorlabstrm "try_add_new_class" 
-      [< 'sTR (string_of_class cl) ; 'sTR " is already a class" >];
-  let stre' = strength_of_cl cl in 
-  let stre = match streopt with
-    | Some stre -> stre_max (stre,stre')
-    | None -> stre'
-  in
-  declare_class (cl,stre,p)
-
-(* try_add_new_class : Names.identifier -> unit *)
-
-let try_add_new_class ref stre =
-  let v = constr_of_reference ref in
-  let env = Global.env () in
-  let t = Retyping.get_type_of env Evd.empty v in
-  let p1 =
-    try 
-      arity_sort t 
-    with Not_found -> 
-      errorlabstrm "try_add_class" 
-        [< 'sTR "Type of "; Printer.pr_global ref;
-           'sTR " does not end with a sort" >] 
-  in
-  let cl = fst (find_class_type v) in
-  let _ = try_add_class (cl,p1) (Some stre) true in () 
-
-(* Coercions *)
-
-******)
 type coercion_error_kind =
   | AlreadyExists
   | NotAFunction
