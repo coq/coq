@@ -2,10 +2,11 @@
 (* $Id$ *)
 
 (*** THIS IS A OLD CONTRIB. IT IS NO LONGER MAINTAINED *)
+
 Require Le.
 
 Parameter List_Dom:Set.
-Local A := List_Dom.
+Definition A := List_Dom.
 
 Inductive list : Set := nil : list | cons : A -> list -> list.
 

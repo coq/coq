@@ -3,6 +3,7 @@
 
 (* Concrete syntax of the mathematical vernacular MV V2.6 *)
 
+open Declarations
 open Pp
 open Util
 open Options
@@ -498,6 +499,24 @@ let _ =
        | _ -> bad_vernac_args "DefinedNamed")
 
 let _ =
+  add "DefinedAnonymous"
+    (function 
+       | [VARG_IDENTIFIER id] -> 
+	   (fun () -> 
+	      if not(is_silent()) then show_script();
+              save_anonymous false (string_of_id id))
+       | _ -> bad_vernac_args "DefinedAnonymous")
+
+let _ =
+  add "SaveAnonymous"
+    (function 
+       | [VARG_IDENTIFIER id] -> 
+	   (fun () -> 
+	      if not(is_silent()) then show_script();
+              save_anonymous true (string_of_id id))
+       | _ -> bad_vernac_args "SaveAnonymous")
+
+let _ =
   add "SaveAnonymousThm"
     (function 
        | [VARG_IDENTIFIER id] -> 
@@ -741,6 +760,7 @@ let _ =
              | "REMARK" -> make_strength_0 ()
              | "DEFINITION" -> NeverDischarge
              | "LET" -> make_strength_2 ()
+	     | "LETTOP" -> NotDeclare
              | "LOCAL" -> make_strength_0 ()
              | _       -> anomaly "Unexpected string"
            in 
@@ -769,6 +789,7 @@ let _ =
              | "REMARK" -> (make_strength_0(),true)
              | "DEFINITION" -> (NeverDischarge,false)
              | "LET" -> (make_strength_1(),false)
+	     | "LETTOP" -> (NeverDischarge,false)
              | "LOCAL" -> (make_strength_0(),false)
              | _       -> anomaly "Unexpected string" 
 	   in
@@ -780,10 +801,19 @@ let _ =
                      if not (is_silent()) then show_open_subgoals();
                      List.iter Vernacinterp.call calls;
                      if not (is_silent()) then show_script();
-                     save_named opacity)
+                     if not (kind = "LETTOP") then
+                       save_named opacity
+                     else
+                       let csr = interp_type Evd.empty (Global.env ()) com
+                       and (_,({const_entry_body = pft;
+                                const_entry_type = _},_)) = cook_proof () in
+                       let cutt = vernac_tactic ("Cut",[Constr csr])
+                       and exat = vernac_tactic ("Exact",[Constr pft]) in
+                       delete_proof s;
+                       by (tclTHENS cutt [introduction s;exat]))
 		  ()
               with e ->
-            	if is_unsafe "proof" then begin
+            	if (is_unsafe "proof") && not (kind = "LETTOP") then begin
                   mSGNL [< 'sTR "Warning: checking of theorem "; pr_id s;
                            'sPC; 'sTR "failed";
                            'sTR "... converting to Axiom" >];

@@ -33,15 +33,17 @@ GEXTEND Gram
     [ [ IDENT "Goal"; c = constrarg; "." -> <:ast< (GOAL $c) >>
       | IDENT "Goal"; "." -> <:ast< (GOAL) >>
       | "Proof"; "." -> <:ast< (GOAL) >>
+      |	IDENT "Begin"; "." -> <:ast< (GOAL) >>
       | IDENT "Abort"; "." -> <:ast< (ABORT) >>
       | "Qed"; "." -> <:ast< (SaveNamed) >>
       | IDENT "Save"; "." -> <:ast< (SaveNamed) >>
       | IDENT "Defined"; "." -> <:ast< (DefinedNamed) >>
+      |	IDENT "Defined"; id = identarg; "." -> <:ast< (DefinedAnonymous $id) >>
       | IDENT "Save"; IDENT "Remark"; id = identarg; "." ->
           <:ast< (SaveAnonymousRmk $id) >>
       | IDENT "Save"; IDENT "Theorem"; id = identarg; "." ->
           <:ast< (SaveAnonymousThm $id) >>
-      | IDENT "Save"; id = identarg; "." -> <:ast< (SaveAnonymousThm $id) >>
+      | IDENT "Save"; id = identarg; "." -> <:ast< (SaveAnonymous $id) >>
       | IDENT "Suspend"; "." -> <:ast< (SUSPEND) >>
       | IDENT "Resume"; "." -> <:ast< (RESUME) >>
       | IDENT "Resume"; id = identarg; "." -> <:ast< (RESUME $id) >>

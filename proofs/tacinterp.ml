@@ -3,6 +3,7 @@
 
 open Astterm
 open Closure
+open Declarations
 open Dyn
 open Libobject
 open Pattern
@@ -12,6 +13,7 @@ open Sign
 open Tacred
 open Util
 open Names
+open Pfedit
 open Proof_type
 open Tacmach
 open Tactic_debug
@@ -34,11 +36,22 @@ type value =
   | VVoid
   | VRec of value ref
 
+(* For tactic_of_value *)
+exception NotTactic
+
+(* Gives the tactic corresponding to the tactic value *)
+let tactic_of_value vle g =
+  match vle with
+  | VTactic tac -> (tac g)
+  | VFTactic (largs,f) -> (f largs g) 
+  | VRTactic res -> res
+  | _ -> raise NotTactic
+
 (* Gives the identifier corresponding to an Identifier tactic_arg *)
 let id_of_Identifier = function
   | Identifier id -> id
   | _ ->
-    anomalylabstrm "id_of_IDENTIFIER" [<'sTR "Not an IDENTIFIER tactic_arg">]
+    anomalylabstrm "id_of_Identifier" [<'sTR "Not an IDENTIFIER tactic_arg">]
 
 (* Gives the constr corresponding to a Constr tactic_arg *)
 let constr_of_Constr = function
@@ -55,15 +68,27 @@ let constr_of_Constr_context = function
 (* Transforms a named_context into a (string * constr) list *)
 let make_hyps = List.map (fun (id,_,typ) -> (string_of_id id,body_of_type typ))
 
-(*  let lid = List.map string_of_id (ids_of_named_context hyps)
-  and lhyp = List.map body_of_type (vals_of_sign hyps) in
-    List.rev (List.combine lid lhyp)*)
+(* Transforms an id into a constr if possible *)
+let constr_of_id id = function
+  | None -> raise Not_found
+  | Some goal ->
+    let hyps = pf_hyps goal in
+    if mem_named_context id hyps then
+      mkVar id
+    else
+      let csr = Declare.global_reference CCI id in
+      (match kind_of_term csr with
+      | IsVar _ -> raise Not_found
+      | _ -> csr)
 
 (* Extracted the constr list from lfun *)
 let rec constr_list goalopt = function
   | (str,VArg(Constr c))::tl -> (id_of_string str,c)::(constr_list goalopt tl)
   | (str,VArg(Identifier id))::tl ->
-    (match goalopt with
+    (try (id_of_string str,(constr_of_id id goalopt))::(constr_list goalopt tl)
+     with | Not_found -> (constr_list goalopt tl))
+
+(*    (match goalopt with
     | None -> constr_list goalopt tl
     | Some goal ->
       let hyps = pf_hyps goal in
@@ -76,7 +101,7 @@ let rec constr_list goalopt = function
            | IsVar _ -> constr_list goalopt tl
   	   | _ -> (id_of_string str,csr)::(constr_list goalopt tl))
          with
-	 | Not_found -> (constr_list goalopt tl)))
+	 | Not_found -> (constr_list goalopt tl)))*)
 
 (*      (try
          let csr = Declare.global_reference CCI id in
@@ -425,8 +450,10 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
     | Node(_,"REC",l) ->
       rec_interp (evc,env,lfun,lmatch,goalopt,debug) ast l
     | Node(_,"LET",[Node(_,"LETDECL",l);u]) ->
-      let addlfun=let_interp (evc,env,lfun,lmatch,goalopt,debug) ast l in
+      let addlfun=letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast l in
         val_interp (evc,env,(lfun@addlfun),lmatch,goalopt,debug) u
+    | Node(_,"LETCUT",[Node(_,"LETDECL",l)]) ->
+      VTactic (letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast l)
     | Node(_,"MATCHCONTEXT",lmr) ->
       match_context_interp (evc,env,lfun,lmatch,goalopt,debug) ast lmr
     | Node(_,"MATCH",lmr) ->
@@ -455,20 +482,18 @@ let rec val_interp (evc,env,lfun,lmatch,goalopt,debug) ast =
       val_interp (evc,env,lfun,lmatch,goalopt,debug)
         (Node(loc0,"APP",[Node(loc1,"PRIM-TACTIC",[Node(loc1,s,[])])]@l))
     | Node(_,"PRIM-TACTIC",[Node(loc,opn,[])]) ->
-      VFTactic ([],(interp_atomic loc opn))
+      VFTactic ([],(interp_atomic opn))
     | Node(_,"VOID",[]) -> VVoid
     | Nvar(_,s) ->
       (try (unrec (List.assoc s lfun))
        with | Not_found ->
          (try (lookup s)
           with | Not_found -> VArg (Identifier (id_of_string s))))
-
     | Node(_,"QUALID",[Nvar(_,s)]) ->
       (try (unrec (List.assoc s lfun))
        with | Not_found ->
          (try (lookup s)
           with | Not_found -> VArg (Identifier (id_of_string s))))
-
     | Str(_,s) -> VArg (Quoted_string s)
     | Num(_,n) -> VArg (Integer n)
     | Node(_,"COMMAND",[c]) ->
@@ -564,7 +589,7 @@ and rec_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
     anomaly_loc (Ast.loc ast, "Tacinterp.rec_interp",[<'sTR
       "Rec not well formed: "; print_ast ast>])
 
-(* Interprets the clauses of a let *)
+(* Interprets the clauses of a Let *)
 and let_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
   | [] -> []
   | Node(_,"LETCLAUSE",[Nvar(_,id);t])::tl ->
@@ -573,6 +598,112 @@ and let_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
   | _ ->
     anomaly_loc (Ast.loc ast, "Tacinterp.let_interp",[<'sTR
       "Let not well formed: "; print_ast ast>])
+
+(* Interprets the clauses of a LetCutIn *)
+and letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
+  | [] -> []
+  | Node(_,"LETCLAUSE",[Nvar(_,id);t])::tl ->
+    (id,val_interp (evc,env,lfun,lmatch,goalopt,debug) t)::
+      (letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl)
+  | Node(_,"LETCUTCLAUSE",[Nvar(_,s);com;tce])::tl ->
+    let id = id_of_string s
+    and typ =
+      constr_of_Constr (unvarg
+      (val_interp (evc,env,lfun,lmatch,goalopt,debug) com))
+    and tac = val_interp (evc,env,lfun,lmatch,goalopt,debug) tce in
+    (match tac with
+    | VArg (Constr csr) ->
+      (s,VArg (Constr (mkCast (csr,typ))))::
+      (letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl)
+    | VArg (Identifier id) ->
+      (try
+         (s,VArg (Constr (mkCast (constr_of_id id goalopt,typ))))::
+         (letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl)
+       with | Not_found ->
+         errorlabstrm "Tacinterp.letin_interp"
+         [< 'sTR "Term or tactic expected" >])
+    | _ ->
+      (try
+         let t = tactic_of_value tac in
+         let ndc =
+           (match goalopt with
+           | None -> Global.named_context ()
+           | Some g -> pf_hyps g) in
+         start_proof id Declare.NeverDischarge ndc typ;
+         by t;
+         let (_,({const_entry_body = pft; const_entry_type = _},_)) =
+           cook_proof () in
+         delete_proof id;
+         (s,VArg (Constr (mkCast (pft,typ))))::
+         (letin_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl)
+       with | NotTactic ->
+         delete_proof id;
+         errorlabstrm "Tacinterp.letin_interp"
+         [< 'sTR "Term or tactic expected" >]))
+  | _ ->
+    anomaly_loc (Ast.loc ast, "Tacinterp.letin_interp",
+    [<'sTR "LetIn not well formed: "; print_ast ast>])
+
+(* Interprets the clauses of a LetCut *)
+and letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
+  | [] -> tclIDTAC
+  | Node(_,"LETCUTCLAUSE",[Nvar(_,s);com;tce])::tl ->
+    let id = id_of_string s
+    and typ =
+      constr_of_Constr (unvarg
+      (val_interp (evc,env,lfun,lmatch,goalopt,debug) com))
+    and tac = val_interp (evc,env,lfun,lmatch,goalopt,debug) tce
+    and (ndc,ccl) =
+      match goalopt with
+      |	None -> 
+        errorlabstrm "Tacinterp.letcut_interp" [< 'sTR
+        "Do not use Let for toplevel definitions, use Lemma, ... instead" >]
+      |	Some g -> (pf_hyps g,pf_concl g) in
+    (match tac with
+    | VArg (Constr csr) ->
+      let cutt = interp_atomic "Cut" [Constr typ]
+      and exat = interp_atomic "Exact" [Constr csr] in
+      tclTHENS cutt [tclTHEN (introduction id)
+      (letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl);exat]
+
+(*      let lic = mkLetIn (Name id,csr,typ,ccl) in
+      let ntac = refine (mkCast (mkMeta (Environ.new_meta ()),lic)) in
+      tclTHEN ntac (tclTHEN (introduction id)
+      (letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl))*)
+
+    | VArg (Identifier ir) ->
+      (try
+         let cutt = interp_atomic "Cut" [Constr typ]
+         and exat = interp_atomic "Exact" [Constr (constr_of_id ir goalopt)] in
+         tclTHENS cutt [tclTHEN (introduction id)
+         (letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl);exat]
+       with | Not_found ->
+         errorlabstrm "Tacinterp.letin_interp"
+         [< 'sTR "Term or tactic expected" >])
+    | _ ->
+      (try
+         let t = tactic_of_value tac in
+         start_proof id Declare.NeverDischarge ndc typ;
+         by t;
+         let (_,({const_entry_body = pft; const_entry_type = _},_)) =
+           cook_proof () in
+         delete_proof id;
+         let cutt = interp_atomic "Cut" [Constr typ]
+         and exat = interp_atomic "Exact" [Constr pft] in
+         tclTHENS cutt [tclTHEN (introduction id)
+         (letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl);exat]
+
+(*         let lic = mkLetIn (Name id,pft,typ,ccl) in
+         let ntac = refine (mkCast (mkMeta (Environ.new_meta ()),lic)) in
+         tclTHEN ntac (tclTHEN (introduction id)
+         (letcut_interp (evc,env,lfun,lmatch,goalopt,debug) ast tl))*)
+       with | NotTactic ->
+         delete_proof id;
+         errorlabstrm "Tacinterp.letcut_interp"
+         [< 'sTR "Term or tactic expected" >]))
+  | _ ->
+    anomaly_loc (Ast.loc ast, "Tacinterp.letcut_interp",[<'sTR
+      "LetCut not well formed: "; print_ast ast>])
 
 (* Interprets the Match Context expressions *)
 and match_context_interp (evc,env,lfun,lmatch,goalopt,debug) ast lmr =
@@ -725,16 +856,21 @@ and match_interp (evc,env,lfun,lmatch,goalopt,debug) ast lmr =
 and tac_interp lfun lmatch debug ast g =
   let evc = project g
   and env = pf_env g in
-    match (val_interp (evc,env,lfun,lmatch,(Some g),debug) ast) with
+  try tactic_of_value (val_interp (evc,env,lfun,lmatch,(Some g),debug) ast) g
+  with | NotTactic ->
+    errorlabstrm "Tacinterp.tac_interp" [<'sTR
+    "Interpretation gives a non-tactic value">]
+
+(*    match (val_interp (evc,env,lfun,lmatch,(Some g),debug) ast) with
       | VTactic tac -> (tac g)
       | VFTactic (largs,f) -> (f largs g) 
       | VRTactic res -> res
       | _ ->
         errorlabstrm "Tacinterp.tac_interp" [<'sTR
-          "Interpretation gives a non-tactic value">]
+          "Interpretation gives a non-tactic value">]*)
 
 (* Interprets a primitive tactic *)
-and interp_atomic loc opn args = vernac_tactic(opn,args)
+and interp_atomic opn args = vernac_tactic(opn,args)
 
 (* Interprets sequences of tactics *)
 and interp_semi_list acc lfun lmatch debug = function

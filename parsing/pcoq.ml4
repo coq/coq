@@ -289,6 +289,7 @@ module Tactic =
     let input_fun = gec "input_fun"
     let lconstrarg = gec "lconstrarg"
     let let_clause = gec "let_clause"
+    let letcut_clause = gec "letcut_clause"
     let clausearg = gec "clausearg"
     let match_context_rule = gec "match_context_rule"
     let match_hyps = gec "match_hyps"
@@ -360,6 +361,7 @@ module Vernac =
     let ne_constrarg_list = gec_list "ne_constrarg_list"
     let tacarg = gec "tacarg"
     let sortarg = gec "sortarg"
+    let theorem_body = gec "theorem_body"
 
     let gallina = gec "gallina"
     let gallina_ext = gec "gallina_ext"

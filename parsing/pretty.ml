@@ -434,7 +434,8 @@ let inspect depth =
 
 open Classops
 
-let string_of_strength = function 
+let string_of_strength = function
+  | NotDeclare -> "(temp)"
   | NeverDischarge -> "(global)"
   | DischargeAt sp -> "(disch@"^(string_of_dirpath sp)
 

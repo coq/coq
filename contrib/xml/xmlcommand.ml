@@ -77,7 +77,8 @@ let could_have_namesakes o sp =      (* namesake = omonimo in italian *)
    match tag with
       "CONSTANT" ->
         (match D.constant_strength sp with
-            D.DischargeAt _  -> false (* a local definition *)
+          | D.DischargeAt _  -> false (* a local definition *)
+          | D.NotDeclare     -> false (* not a definition *)
           | D.NeverDischarge -> true  (* a non-local one    *)
         )
     | "PARAMETER"                 (* axioms and                               *)

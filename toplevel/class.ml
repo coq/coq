@@ -19,9 +19,15 @@ open Declare
 (* strength * strength -> bool *)
 
 let stre_gt = function
-  | (NeverDischarge,NeverDischarge) -> false
-  | (NeverDischarge,x) -> false
-  | (x,NeverDischarge) -> true
+(*  | (x,y) when (x = NeverDischarge || x = NotDeclare)
+            && (y = NeverDischarge || y = NotDeclare) -> false
+  | (x,_) when x = NeverDischarge || x = NotDeclare -> false
+  | (_,x) when x = NeverDischarge || x = NotDeclare -> true*)
+
+  | (NeverDischarge,_) -> false
+  | (NotDeclare,_) -> false
+  | (_,NeverDischarge) -> true
+  | (_,NotDeclare) -> true
   | (DischargeAt sp1,DischargeAt sp2) ->
       dirpath_prefix_of sp1 sp2 (* was sp_gt but don't understand why - HH *)
 

@@ -17,6 +17,7 @@ open Impargs
 open Indrec
 
 type strength = 
+  | NotDeclare
   | DischargeAt of dir_path
   | NeverDischarge
 

@@ -212,7 +212,19 @@ GEXTEND Gram
       | "()" -> <:ast< (VOID) >> ] ]
   ;
   let_clause:
-    [ [ id = identarg; "="; te=tactic_expr -> <:ast< (LETCLAUSE $id $te) >> ] ]
+    [ [ id = identarg; "="; te=tactic_expr -> <:ast< (LETCLAUSE $id $te) >>
+      | id = identarg; ":"; c = constrarg; ":="; "Proof" ->
+        (match c with
+        | Coqast.Node(_,"COMMAND",[csr]) ->
+          <:ast< (LETTOPCLAUSE $id (CONSTR $csr)) >>
+	| _ -> errorlabstrm "Gram.let_clause" [<'sTR "Not a COMMAND">])
+      | id = identarg; ":"; c = constrarg; ":="; te = tactic_expr ->
+        <:ast< (LETCUTCLAUSE $id $c $te) >> 
+      |	id = identarg; ":"; c = constrarg ->
+        (match c with
+        | Coqast.Node(_,"COMMAND",[csr]) ->
+          <:ast< (LETTOPCLAUSE $id (CONSTR $csr)) >>
+	| _ -> errorlabstrm "Gram.let_clause" [<'sTR "Not a COMMAND">]) ] ]
   ;
   rec_clause:
     [ [ name = identarg; it = LIST1 input_fun; "->"; body = tactic_expr ->
@@ -273,6 +285,17 @@ GEXTEND Gram
             <:ast< (REC (RECDECL $rc ($LIST $rcl)) $body) >>
       | IDENT "Let"; llc = LIST1 let_clause SEP IDENT "And"; IDENT "In";
           u = tactic_expr -> <:ast< (LET (LETDECL ($LIST $llc)) $u) >>
+      |	IDENT "Let"; llc = LIST1 let_clause SEP IDENT "And" ->
+        (match llc with
+	| [Coqast.Node(_,"LETTOPCLAUSE",[id;c])] ->
+          <:ast< (StartProof "LETTOP" $id $c) >>
+        | _ -> <:ast< (LETCUT (LETDECL ($LIST $llc))) >>)
+      |	IDENT "Let"; llc = LIST1 let_clause SEP IDENT "And";
+        tb = Vernac.theorem_body; "Qed" ->
+        (match llc with
+	| [Coqast.Node(_,"LETTOPCLAUSE",[id;c])] ->
+          <:ast< (TheoremProof "LETTOP" $id $c $tb) >>
+	| _ -> errorlabstrm "Gram.tactic_atom" [<'sTR "Not a LETTOPCLAUSE">])
       |	IDENT "Match"; IDENT "Context"; IDENT "With"; mrl = match_context_list
         -> <:ast< (MATCHCONTEXT ($LIST $mrl)) >>
       |	IDENT "Match"; com = constrarg; IDENT "With"; mrl = match_list ->
@@ -308,7 +331,7 @@ GEXTEND Gram
       | "?"; n = Prim.number -> <:ast< (COMMAND (META $n)) >>
       |	IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = Constr.constr ->
         <:ast< (COMMAND (EVAL $c (REDEXP $rtc))) >>
-      |	"'"; c = ident_or_constrarg -> c ] ]
+      |	"'"; c = constrarg -> c ] ]
   ;
   simple_tactic:
     [ [ IDENT "Fix"; n = pure_numarg -> <:ast< (Fix $n) >>

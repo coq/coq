@@ -22,7 +22,11 @@ GEXTEND Gram
       | "["; l = vernac_list_tail -> <:ast< (VernacList ($LIST $l)) >> ] ]
   ;
   vernac: LAST
-    [ [ tac = tacarg; "." -> <:ast< (SOLVE 1 (TACTIC $tac)) >> ] ]
+    [ [ tac = tacarg; "." ->
+        (match tac with
+	| Coqast.Node(_,kind,_)
+          when kind = "StartProof" || kind = "TheoremProof" -> tac
+	| _ -> <:ast< (SOLVE 1 (TACTIC $tac)) >>) ] ]
   ;
   vernac_list_tail:
     [ [ v = vernac; l = vernac_list_tail -> v :: l
@@ -52,7 +56,8 @@ GEXTEND Gram
     [ [ "Theorem" -> <:ast< "THEOREM" >>
       | IDENT "Lemma" -> <:ast< "LEMMA" >>
       | IDENT "Fact" -> <:ast< "FACT" >>
-      | IDENT "Remark" -> <:ast< "REMARK" >> ] ]
+      | IDENT "Remark" -> <:ast< "REMARK" >>
+      | IDENT "Decl" -> <:ast< "DECL" >> ] ]
   ;
   def_tok:
     [ [ "Definition" -> <:ast< "DEFINITION" >>
@@ -103,7 +108,6 @@ GEXTEND Gram
       | thm = thm_tok; id = identarg; ":"; c = constrarg; ":="; "Proof";
         tb = theorem_body; "Qed"; "." ->
           <:ast< (TheoremProof $thm $id $c $tb) >>
-
       | def = def_tok; s = identarg; bl = binders_list;
 	":"; t = Constr.constr; "." ->
           <:ast< (StartProof $def $s (CONSTR ($ABSTRACT "PRODLIST" $bl $t))) >>

@@ -17,6 +17,8 @@ open Ast
 open Library
 open Libobject
 open Astterm
+open Proof_type
+open Tacmach
 
 let mkCastC(c,t) = ope("CAST",[c;t])
 let mkLambdaC(x,a,b) = ope("LAMBDA",[a;slam(Some (string_of_id x),b)])
@@ -77,6 +79,9 @@ let definition_body_red red_option ident (local,n) com comtypeopt =
         end
 	else
 	  declare_global_definition ident ce' n true
+    | NotDeclare ->
+      anomalylabstrm "Command.definition_body_red"
+        [<'sTR "Strength NotDeclare not for Definition, only for Let" >]
 
 let definition_body = definition_body_red None
 
@@ -113,6 +118,9 @@ let hypothesis_def_var is_refining ident n c =
         end
 	else
 	  declare_global_assumption ident c
+    | NotDeclare ->
+      anomalylabstrm "Command.hypothesis_def_var"
+        [<'sTR "Strength NotDeclare not for Variable, only for Let" >]
 
 (* 3| Mutual Inductive definitions *)
 
@@ -413,33 +421,52 @@ let start_proof_com sopt stre com =
   in
   Pfedit.start_proof id stre sign (interp_type Evd.empty env com)
 
-let save_named opacity =
-  let id,(const,strength) = Pfedit.cook_proof () in
+let apply_tac_not_declare id pft = function
+  | None -> error "Type of Let missing"
+  | Some typ ->
+    let cutt = vernac_tactic ("Cut",[Constr typ])
+    and exat = vernac_tactic ("Exact",[Constr pft]) in
+    Pfedit.delete_current_proof ();
+    Pfedit.by (tclTHENS cutt [introduction id;exat])
+
+let save opacity id ({const_entry_body = pft; const_entry_type = tpo} as const)
+  strength =
   begin match strength with
     | DischargeAt disch_sp when Lib.is_section_p disch_sp ->
 	let c = constr_of_constr_entry const in
 	declare_variable id (SectionLocalDef c,strength,opacity)
-    | _ ->
-	declare_constant id (ConstantEntry const,strength,opacity)
+    | NeverDischarge | DischargeAt _ ->
+        declare_constant id (ConstantEntry const,strength,opacity)
+    | NotDeclare -> apply_tac_not_declare id pft tpo
   end;
-  Pfedit.delete_current_proof ();
-  if Options.is_verbose() then message ((string_of_id id) ^ " is defined")
+  if not (strength = NotDeclare) then
+  begin
+    Pfedit.delete_current_proof ();
+    if Options.is_verbose() then
+      message ((string_of_id id) ^ " is defined")
+  end
 
-let save_anonymous opacity save_ident strength =
-  let id,(const,_) = Pfedit.cook_proof () in
+let save_named opacity =
+  let id,(const,strength) = Pfedit.cook_proof () in
+  save opacity id const strength
+
+let save_anonymous_with_strength opacity save_ident id const strength =
   if atompart_of_id id <> "Unnamed_thm" then
     message("Overriding name "^(string_of_id id)^" and using "^save_ident);
-  declare_constant 
-    (id_of_string save_ident) (ConstantEntry const,strength,opacity);
-  Pfedit.delete_current_proof ();
-  if Options.is_verbose() then message (save_ident ^ " is defined")
+  save opacity (id_of_string save_ident) const strength
 
-let save_anonymous_thm opacity id =
-  save_anonymous opacity id NeverDischarge
+let save_anonymous opacity save_ident =
+  let id,(const,strength) = Pfedit.cook_proof () in
+  save_anonymous_with_strength opacity save_ident id const strength
 
-let save_anonymous_remark opacity id =
-  let path = try List.tl (List.tl (Lib.cwd())) with Failure _ -> [] in
-  save_anonymous opacity id (make_strength path)
+let save_anonymous_thm opacity save_ident =
+  let id,(const,_) = Pfedit.cook_proof () in
+  save_anonymous_with_strength opacity save_ident id const NeverDischarge
+
+let save_anonymous_remark opacity save_ident =
+  let id,(const,_) = Pfedit.cook_proof ()
+  and path = try List.tl (List.tl (Lib.cwd())) with Failure _ -> [] in
+  save_anonymous_with_strength opacity save_ident id const (make_strength path)
 
 let get_current_context () =
   try Pfedit.get_current_goal_context ()

@@ -16,7 +16,8 @@ open Inductive
    reset works properly --- and will fill some global tables such as 
    [Nametab] and [Impargs]. *)
 
-type strength = 
+type strength =
+  | NotDeclare
   | DischargeAt of dir_path
   | NeverDischarge
 

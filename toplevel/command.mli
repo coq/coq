@@ -51,6 +51,11 @@ fails if the proof is not completed *)
 
 val save_named : bool -> unit
 
+(* [save_anonymous b name] behaves as [save_named] but declares the theorem
+under the name [name] and respects the strength of the declaration *)
+
+val save_anonymous : bool -> string -> unit
+
 (* [save_anonymous_thm b name] behaves as [save_named] but declares the
 theorem under the name [name] and gives it the strength of a theorem *)
 
