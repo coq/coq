@@ -26,9 +26,6 @@ open Declare
 
 (*s Auxiliary functions dealing with modules. *)
 
-module Dirset =
-  Set.Make(struct type t = dir_path let compare = compare end)
-
 let module_of_id m = 
   try 
     locate_loaded_library (make_short_qualid m) 
@@ -79,22 +76,6 @@ let check_modules m =
 	 let m' = Idmap.find idm !map in clash_error sm m m'
        with Not_found -> map := Idmap.add idm m !map) m
     
-(*s [extract_module m] returns all the global reference declared 
-  in a module. This is done by traversing the segment of module [m]. 
-  We just keep constants and inductives. *)
-
-let extract_module m =
-  let seg = Declaremods.module_objects (MPfile m) in
-  let get_reference = function
-    | (_,kn), Leaf o ->
-	(match Libobject.object_tag o with
-	   | "CONSTANT" | "PARAMETER" -> ConstRef kn
-	   | "INDUCTIVE" -> IndRef (kn,0)
-	   | _ -> failwith "caught")
-    | _ -> failwith "caught"
-  in
-  Util.map_succeed get_reference seg
-
 (*s Recursive computation of the global references to extract. 
     We use a set of functions visiting the extracted objects in
     a depth-first way ([visit_type], [visit_ast] and [visit_decl]).
@@ -225,12 +206,13 @@ let extraction qid =
   else 
     let prm = 
       { modular = false; mod_name = id_of_string "Main"; to_appear = [r]} in 
-    set_globals ();
     let decls = optimize prm (decl_of_refs [r]) in 
     let d = list_last decls in
     let d = if (decl_in_r r d) then d 
-    else List.find (decl_in_r r) decls
-    in msgnl (pp_decl false d)
+    else List.find (decl_in_r r) decls in 
+    set_keywords ();
+    create_mono_renamings decls; 
+    msgnl (pp_decl () d)
 
 (*s Recursive extraction in the Coq toplevel. The vernacular command is
     \verb!Recursive Extraction! [qualid1] ... [qualidn]. We use [extract_env]

@@ -35,9 +35,8 @@ let preamble prm used_modules (mldummy,tdummy,tunknown) =
   let m = String.capitalize (string_of_id prm.mod_name)   in 
   str "module " ++ str m ++ str " where" ++ fnl () ++ fnl() ++ 
   str "import qualified Prelude" ++ fnl() ++
-  List.fold_right
-    (fun m s -> 
-       str "import qualified " ++ pr_id (uppercase_id m) ++ fnl() ++ s)
+  Idset.fold
+    (fun m s -> str "import qualified " ++ pr_id (uppercase_id m) ++ fnl() ++ s)
     used_modules (mt ()) ++ fnl()
   ++
   (if mldummy then 
@@ -57,9 +56,7 @@ let pr_lower_id id = pr_id (lowercase_id id)
 
 module Make = functor(P : Mlpp_param) -> struct
 
-let pp_global r = P.pp_global r false None
-let pp_global_up r = P.pp_global r true None
-
+let pp_global r = P.pp_global r
 let empty_env () = [], P.globals()
 
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
@@ -69,10 +66,10 @@ let rec pp_type par vl t =
   let rec pp_rec par = function
     | Tmeta _ | Tvar' _ -> assert false 
     | Tvar i -> (try pr_id (List.nth vl (pred i)) with _ -> (str "a" ++ int i))
-    | Tglob (r,[]) -> pp_global_up r	
+    | Tglob (r,[]) -> pp_global r	
     | Tglob (r,l) -> 
 	pp_par par 
-	  (pp_global_up r ++ spc () ++ prlist_with_sep spc (pp_type true vl) l)
+	  (pp_global r ++ spc () ++ prlist_with_sep spc (pp_type true vl) l)
     | Tarr (t1,t2) ->
 	pp_par par 
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
@@ -121,13 +118,13 @@ let rec pp_expr par env args =
     | MLglob r -> 
 	apply (pp_global r)
     | MLcons (r,[]) ->
-	assert (args=[]); pp_global_up r
+	assert (args=[]); pp_global r
     | MLcons (r,[a]) ->
 	assert (args=[]);
-	pp_par par (pp_global_up r ++ spc () ++ pp_expr true env [] a)
+	pp_par par (pp_global r ++ spc () ++ pp_expr true env [] a)
     | MLcons (r,args') ->
 	assert (args=[]);
-	pp_par par (pp_global_up r ++ spc () ++ 
+	pp_par par (pp_global r ++ spc () ++ 
 		    prlist_with_sep spc (pp_expr true env []) args')
     | MLcase (t, pv) ->
       	apply (pp_par par' 
@@ -148,7 +145,7 @@ and pp_pat env pv =
   let pp_one_pat (name,ids,t) =
     let ids,env' = push_vars (List.rev ids) env in
     let par = expr_needs_par t in
-    hov 2 (pp_global_up name ++
+    hov 2 (pp_global name ++
 	   (match ids with 
 	      | [] -> mt ()
 	      | _  -> (str " " ++ 
@@ -183,7 +180,7 @@ and pp_function env f t =
 let pp_one_inductive (pl,name,cl) =
   let pl = rename_tvars keywords pl in
   let pp_constructor (r,l) =
-    (pp_global_up r ++
+    (pp_global r ++
      match l with
        | [] -> (mt ()) 
        | _  -> (str " " ++
@@ -191,7 +188,7 @@ let pp_one_inductive (pl,name,cl) =
 		  (fun () -> (str " ")) (pp_type true (List.rev pl)) l))
   in
   (str (if cl = [] then "type " else "data ") ++ 
-   pp_global_up name ++ str " " ++
+   pp_global name ++ str " " ++
    prlist_with_sep (fun () -> (str " ")) pr_lower_id pl ++
    (if pl = [] then (mt ()) else (str " ")) ++
    if cl = [] then str "= () -- empty inductive"
@@ -212,7 +209,7 @@ let pp_decl = function
   | Dtype (r, l, t) ->
       let l = rename_tvars keywords l in
       let l' = List.rev l in 
-      hov 0 (str "type " ++ pp_global_up r ++ spc () ++ 
+      hov 0 (str "type " ++ pp_global r ++ spc () ++ 
 	       prlist_with_sep (fun () -> (str " ")) pr_id l ++
 	       (if l <> [] then (str " ") else (mt ())) ++ str "=" ++ spc () ++
 	       pp_type false l' t ++ fnl ())
@@ -226,7 +223,7 @@ let pp_decl = function
   | DcustomTerm (r,s) -> 
       hov 0  (pp_global r ++ str " =" ++ spc () ++ str s ++ fnl ())
   | DcustomType (r,s) -> 
-      hov 0  (str "type " ++ pp_global_up r ++ str " = " ++ str s ++ fnl ())
+      hov 0  (str "type " ++ pp_global r ++ str " = " ++ str s ++ fnl ())
 
 end
 

@@ -19,6 +19,7 @@ open Miniml
 open Table
 open Mlutil
 open Options
+open Libnames
 open Nametab
 open Ocaml
 
@@ -49,11 +50,7 @@ let pp_abst st = function
 
 module Make = functor(P : Mlpp_param) -> struct
 
-let pp_global r = P.pp_global r false None
-let pp_global_ctx r env = P.pp_global r false (Some (snd env))
-let pp_global_up r = P.pp_global r true None
-let pp_global_up_ctx r env = P.pp_global r true (Some (snd env))
-
+let pp_global r = P.pp_global r
 let empty_env () = [], P.globals()
 
 (*s Pretty-printing of expressions.  *)
@@ -82,12 +79,12 @@ let rec pp_expr env args =
 			 (pr_id (List.hd i) ++ spc () ++ pp_expr env [] a1)) 
 		    ++ spc () ++ hov 0 (pp_expr env' [] a2)))))
     | MLglob r -> 
-	apply (pp_global_ctx r env)
+	apply (pp_global r)
     | MLcons (r,args') ->
 	assert (args=[]);
 	let st = 
 	  str "`" ++ 
-	  paren (pp_global_up_ctx r env ++ 
+	  paren (pp_global r ++ 
 		 (if args' = [] then mt () else (spc () ++ str ",")) ++
 		 prlist_with_sep 
 		   (fun () -> spc () ++ str ",") 
@@ -125,7 +122,7 @@ and pp_one_pat env (r,ids,t) =
     if ids = [] then mt () 
     else (str " " ++ prlist_with_sep spc pp_arg (List.rev ids))
   in 
-  (pp_global_up_ctx r env ++ args), (pp_expr env' [] t)
+  (pp_global r ++ args), (pp_expr env' [] t)
   
 and pp_pat env pv = 
   prvect_with_sep fnl  

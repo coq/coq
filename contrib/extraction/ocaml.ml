@@ -22,8 +22,6 @@ open Options
 open Nametab
 open Libnames
 
-let current_module = ref None
-
 let cons_cofix = ref Refset.empty
 
 (*s Some utility functions. *)
@@ -125,11 +123,10 @@ let keywords =
   Idset.empty
 
 let preamble _ used_modules (mldummy,tdummy,tunknown) = 
-  List.fold_right
-    (fun m s -> str "open " ++ pr_id (uppercase_id m) ++ fnl () ++ s)
+  Idset.fold (fun m s -> str "open " ++ pr_id (uppercase_id m) ++ fnl() ++ s)
     used_modules (mt ())
   ++ 
-  (if used_modules = [] then mt () else fnl ())
+  (if Idset.is_empty used_modules then mt () else fnl ())
   ++
   (if tdummy || tunknown then str "type __ = Obj.t" ++ fnl() else mt()) 
   ++
@@ -145,15 +142,7 @@ let preamble _ used_modules (mldummy,tdummy,tunknown) =
 
 module Make = functor(P : Mlpp_param) -> struct
 
-let pp_global r = P.pp_global r false None
-
-let pp_global_ctx r env = P.pp_global r false (Some (snd env))
-let pp_global_ctx2 r = P.pp_global r false (Some (P.globals ()))
-
-let pp_global_up r = P.pp_global r true None
-let pp_global_up_ctx r env = P.pp_global r true (Some (snd env))
-
-
+let pp_global r = P.pp_global r
 let empty_env () = [], P.globals()
 
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
@@ -164,8 +153,8 @@ let rec pp_type par vl t =
     | Tmeta _ | Tvar' _ -> assert false
     | Tvar i -> (try pp_tvar (List.nth vl (pred i)) 
 		 with _ -> (str "'a" ++ int i))
-    | Tglob (r,[]) -> pp_global_ctx2 r
-    | Tglob (r,l) -> pp_tuple_light pp_rec l ++ spc () ++ pp_global_ctx2 r
+    | Tglob (r,[]) -> pp_global r
+    | Tglob (r,l) -> pp_tuple_light pp_rec l ++ spc () ++ pp_global r
     | Tarr (t1,t2) ->
 	pp_par par 
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
@@ -214,26 +203,24 @@ let rec pp_expr par env args =
 	      spc () ++ hov 0 pp_a2))
     | MLglob r when is_proj r && args <> [] ->
 	let record = List.hd args in 
-	pp_apply (record ++ str "." ++ pp_global_ctx2 r) par (List.tl args)
+	pp_apply (record ++ str "." ++ pp_global r) par (List.tl args)
     | MLglob r -> 
-	apply (pp_global_ctx r env )
+	apply (pp_global r)
     | MLcons (r,[]) ->
 	assert (args=[]);
-	let cons = pp_global_up_ctx r env in 
 	if Refset.mem r !cons_cofix then 
-	  pp_par par (str "lazy " ++ cons)
-	else cons 
+	  pp_par par (str "lazy " ++ pp_global r)
+	else pp_global r
     | MLcons (r,args') -> 
 	(try 
 	   let projs = find_proj (kn_of_r r, 0) in 
 	   pp_record (projs, List.map (pp_expr true env []) args')
 	 with Not_found ->
 	   assert (args=[]);
-	   let cons = pp_global_up_ctx r env
-	   and tuple = pp_tuple (pp_expr true env []) args' in 
+	   let tuple = pp_tuple (pp_expr true env []) args' in 
 	   if Refset.mem r !cons_cofix then 
-	     pp_par par (str "lazy (" ++ cons ++ spc () ++ tuple ++ str ")")
-	   else pp_par par (cons ++ spc () ++ tuple))
+	     pp_par par (str "lazy (" ++ pp_global r ++ spc() ++ tuple ++ str ")")
+	   else pp_par par (pp_global r ++ spc () ++ tuple))
     | MLcase (t, pv) ->
 	let r,_,_ = pv.(0) in 
 	let expr = if Refset.mem r !cons_cofix then 
@@ -276,8 +263,7 @@ let rec pp_expr par env args =
 and pp_record (projs, args) =
    str "{ " ++
    prlist_with_sep (fun () -> str ";" ++ spc ()) 
-     (fun (r,a) -> 
-	pp_global_ctx2 r ++ str " =" ++ spc () ++ a)
+     (fun (r,a) -> pp_global r ++ str " =" ++ spc () ++ a)
      (List.combine projs args) ++
    str " }"
 
@@ -291,7 +277,7 @@ and pp_one_pat env (r,ids,t) =
     let args = 
       if ids = [] then (mt ()) 
       else str " " ++ pp_boxed_tuple pr_id (List.rev ids) in 
-    pp_global_up_ctx r env ++ args, expr
+    pp_global r ++ args, expr
   
 and pp_pat env pv = 
   prvect_with_sep (fun () -> (fnl () ++ str "  | ")) 
@@ -359,7 +345,7 @@ let pp_parameters l =
 let pp_one_ind prefix (pl,name,cl) =
   let pl = rename_tvars keywords pl in
   let pp_constructor (r,l) =
-    (pp_global_up r ++
+    (pp_global r ++
      match l with
        | [] -> (mt ()) 
        | _  -> (str " of " ++

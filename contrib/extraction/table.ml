@@ -69,15 +69,6 @@ let _ = declare_bool_option
 	   optread = optim; 
 	   optwrite = (:=) optim_ref}
 
-
-(*s Set and Map over global reference *)
-
-module Refset = 
-  Set.Make(struct type t = global_reference let compare = compare end)
-
-module Refmap = 
-  Map.Make(struct type t = global_reference let compare = compare end)
-
 (*s Auxiliary functions *) 
 
 let is_constant r = match r with 

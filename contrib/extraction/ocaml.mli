@@ -14,10 +14,9 @@ open Pp
 open Miniml
 open Names
 open Term
+open Libnames
 open Nametab
-open Table
 
-val current_module : identifier option ref
 val cons_cofix : Refset.t ref
 
 val pp_par : bool -> std_ppcmds -> std_ppcmds
@@ -39,8 +38,7 @@ val get_db_name : int -> env -> identifier
 
 val keywords : Idset.t
 
-val preamble : 
-  extraction_params -> identifier list -> bool * bool * bool -> std_ppcmds
+val preamble : extraction_params -> Idset.t -> bool * bool * bool -> std_ppcmds
 
 (*s Production of Ocaml syntax. We export both a functor to be used for 
     extraction in the Coq toplevel and a function to extract some 

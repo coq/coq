@@ -16,13 +16,16 @@ open Libnames
 
 val long_module : global_reference -> dir_path
 
-val set_globals : unit -> unit
+val create_mono_renamings : ml_decl list -> unit
+val set_keywords : unit -> unit
 
 val pp_logical_ind : global_reference -> std_ppcmds
 
 val pp_singleton_ind : global_reference -> std_ppcmds
 
-val pp_decl : bool -> ml_decl -> std_ppcmds
+val pp_decl : unit -> ml_decl -> std_ppcmds
+
+val extract_module : dir_path -> global_reference list 
 
 val extract_to_file : 
   string option -> extraction_params -> ml_decl list -> unit
