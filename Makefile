@@ -41,7 +41,7 @@ OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
 CAMLP4IFDEF=camlp4o pa_ifdef.cmo -D$(OSTYPE)
 
-COQINCLUDES=
+COQINCLUDES=-I theories/Init
 
 ###########################################################################
 # Objects files 
@@ -382,7 +382,7 @@ toplevel/mltop.cmx: toplevel/mltop.ml4
 	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
 
 .v.vo:
-	$(COQC) $(COQCINCLUDES) $<
+	$(COQC) $(COQINCLUDES) $<
 
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile
