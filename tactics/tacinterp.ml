@@ -1742,10 +1742,10 @@ and interp_atomic ist gl = function
     | ConstrMayEvalArgType ->
 	VConstr
           (interp_constr_may_eval ist gl (out_gen globwit_constr_may_eval x))
-    | StringArgType | BoolArgType
-    | QuantHypArgType | RedExprArgType 
     | TacticArgType -> 
 	val_interp ist gl (out_gen globwit_tactic x)
+    | StringArgType | BoolArgType
+    | QuantHypArgType | RedExprArgType 
     | CastedOpenConstrArgType | ConstrWithBindingsArgType | BindingsArgType 
     | ExtraArgType _ | List0ArgType _ | List1ArgType _ | OptArgType _ | PairArgType _ 
 	-> error "This generic type is not supported in alias"
