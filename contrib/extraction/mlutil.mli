@@ -45,9 +45,7 @@ val sp_of_r : global_reference -> section_path
 
 val type_mem_sp : section_path -> ml_type -> bool
 
-val get_tvars : ml_type -> identifier list
-
-val update_args : section_path -> ml_type list -> ml_type -> ml_type
+(*TODO val get_tvars : ml_type -> identifier list *)
 
 (*s Utility functions over ML terms. [occurs n t] checks whether [Rel
     n] occurs (freely) in [t]. [ml_lift] is de Bruijn

@@ -92,38 +92,6 @@ let decl_get_modules ld =
   List.iter one_decl ld; 
   !m
 
-(*s Does [Tdummy] or [MLdummy] occur ? *)
-
-exception Found
-
-let ast_mem_dummy a = 
-  let rec get_rec = function 
-    | MLdummy -> raise Found
-    | a -> ast_iter get_rec a
-  in get_rec a
-
-let type_mem_dummy t = 
-  let rec get_rec = function 
-    | Tdummy -> raise Found
-    | Tapp l -> List.iter get_rec l
-    | Tarr (a,b) -> get_rec a; get_rec b 
-    | _ -> () 
-  in get_rec t
-
-let decl_mem_dummy ld = 
-  let one_decl = function 
-    | Dtype (l,_) -> 
-	List.iter (fun (_,_,l) -> 
-		     List.iter (fun (_,l) -> List.iter type_mem_dummy l) l) l
-    | Dabbrev (_,_,t) -> type_mem_dummy t 
-    | Dglob (_,a) -> ast_mem_dummy a
-    | Dfix(_,c) -> Array.iter ast_mem_dummy c
-    | _ -> ()
-  in 
-  try 
-    List.iter one_decl ld; false 
-  with Found -> true
-
 (*s Tables of global renamings *)
 
 let keywords = ref Idset.empty
@@ -263,7 +231,7 @@ let extract_to_file f prm decls =
   if not prm.modular then 
     List.iter (fun r -> pp_with ft (pp_singleton_ind r)) 
       (List.filter decl_is_singleton prm.to_appear); 
-  pp_with ft (preamble prm used_modules (decl_mem_dummy decls));
+  pp_with ft (preamble prm used_modules);
   begin 
     try
       List.iter (fun d -> msgnl_with ft (pp_decl d)) decls

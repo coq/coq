@@ -1,5 +1,2 @@
-module Unit where 
-
-type Unit = ()
+module Unit where
 unit = ()
-

@@ -140,7 +140,7 @@ and visit_type m eenv t =
     | Tglob r -> visit_reference m eenv r
     | Tapp l -> List.iter visit l
     | Tarr (t1,t2) -> visit t1; visit t2
-    | Tvar _ | Tdummy -> ()
+    | Tvar _ | Tdummy | Tunknown -> ()
   in
   visit t
     

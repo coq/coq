@@ -28,23 +28,18 @@ let keywords =
   [ "case"; "class"; "data"; "default"; "deriving"; "do"; "else";
     "if"; "import"; "in"; "infix"; "infixl"; "infixr"; "instance"; 
     "let"; "module"; "newtype"; "of"; "then"; "type"; "where"; "_";
-    "as"; "qualified"; "hiding" ; "dummy" ; "Dummy" ]
+    "as"; "qualified"; "hiding" ; "unit" ]
   Idset.empty
 
-let preamble prm used_modules used_dummy =
+let preamble prm used_modules =
   let m = String.capitalize (string_of_id prm.mod_name)   in 
   str "module " ++ str m ++ str " where" ++ fnl () ++ fnl() ++ 
+  str "import Unit" ++ fnl() ++ 
   str "import qualified Prelude" ++ fnl() ++
   Idset.fold 
     (fun m s -> 
        s ++ str "import qualified " ++ pr_id (uppercase_id m) ++ fnl())
-    used_modules (mt ())
-  ++ 
-  (if used_dummy then 
-     str "import qualified Unit" ++ fnl () ++ fnl () ++
-     str "type Dummy = Unit.Unit" ++ fnl () ++
-     str "dummy = Unit.unit" ++ fnl () ++ fnl ()
-   else fnl ())
+    used_modules (mt ()) ++ fnl()
 
 let pp_abst = function
   | [] -> (mt ())
@@ -68,9 +63,9 @@ let empty_env () = [], P.globals()
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
 
-let rec pp_type par ren t =
+let rec pp_type par vl t =
   let rec pp_rec par = function
-    | Tvar id -> pr_id (try Idmap.find id ren with _ -> id)
+    | Tvar i -> (try pr_id (List.nth vl (pred i)) with _ -> (str "a" ++ int i))
     | Tapp l ->
 	(match collapse_type_app l with
 	   | [] -> assert false
@@ -78,13 +73,14 @@ let rec pp_type par ren t =
 	   | t::l -> 
 	       (open_par par ++
 		  pp_rec false t ++ spc () ++
-		  prlist_with_sep (fun () -> (spc ())) (pp_type true ren) l ++ 
+		  prlist_with_sep (fun () -> (spc ())) (pp_type true vl) l ++ 
 		  close_par par))
     | Tarr (t1,t2) ->
 	(open_par par ++ pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ 
 	   pp_rec false t2 ++ close_par par)
     | Tglob r -> pp_type_global r
-    | Tdummy -> str "Dummy"
+    | Tdummy -> str "()"
+    | Tunknown -> str "()"
   in 
   hov 0 (pp_rec par t)
 
@@ -157,12 +153,10 @@ let rec pp_expr par env args =
 	(open_par par ++ str "Prelude.error" ++ spc () ++ 
 	 qs s ++ close_par par)
     | MLdummy ->
-	str "dummy" (* An [MLdummy] may be applied, but I don't really care. *)
+	str "unit" (* An [MLdummy] may be applied, but I don't really care. *)
     | MLcast (a,t) ->
-	let tvars = get_tvars t in 
-	let _,ren = rename_tvars keywords tvars in 
 	(open_par true ++ pp_expr false env args a ++ spc () ++ str "::" ++ 
-	 spc () ++ pp_type false ren t ++ close_par true)
+	 spc () ++ pp_type false [] t ++ close_par true)
     | MLmagic a ->
 	(open_par true ++ str "Obj.magic" ++ spc () ++ 
 	 pp_expr false env args a ++ close_par true)
@@ -218,14 +212,14 @@ let pp_ast a = hov 0 (pp_expr false (empty_env ()) [] a)
 (*s Pretty-printing of inductive types declaration. *)
 
 let pp_one_inductive (pl,name,cl) =
-  let pl,ren = rename_tvars keywords pl in
+  let pl = rename_tvars keywords pl in
   let pp_constructor (id,l) =
     (pp_global id ++
-       match l with
-         | [] -> (mt ()) 
-	 | _  -> (str " " ++
-      	       	    prlist_with_sep 
-		      (fun () -> (str " ")) (pp_type true ren) l))
+     match l with
+       | [] -> (mt ()) 
+       | _  -> (str " " ++
+      	       	prlist_with_sep 
+		  (fun () -> (str " ")) (pp_type true (List.rev pl)) l))
   in
   (str (if cl = [] then "type " else "data ") ++ 
    pp_type_global name ++ str " " ++
@@ -247,11 +241,12 @@ let pp_decl = function
   | Dtype (i, _) -> 
       hov 0 (pp_inductive i)
   | Dabbrev (r, l, t) ->
-      let l,ren = rename_tvars keywords l in
+      let l = rename_tvars keywords l in
+      let l' = List.rev l in 
       hov 0 (str "type " ++ pp_type_global r ++ spc () ++ 
 	       prlist_with_sep (fun () -> (str " ")) pr_id l ++
 	       (if l <> [] then (str " ") else (mt ())) ++ str "=" ++ spc () ++
-	       pp_type false ren t ++ fnl ())
+	       pp_type false l' t ++ fnl ())
   | Dfix (rv, defs) ->
       let ids = List.map rename_global (Array.to_list rv) in 
       let env = List.rev ids, P.globals() in
@@ -263,7 +258,7 @@ let pp_decl = function
   | Dcustom (r,s) -> 
       hov 0  (pp_global r ++ str " =" ++ spc () ++ str s ++ fnl ())
 
-let pp_type = pp_type false Idmap.empty
+let pp_type = pp_type false []
 
 end
 

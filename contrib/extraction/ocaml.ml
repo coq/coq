@@ -100,8 +100,7 @@ let rename_tvars avoid l =
 	let id = rename_id (lowercase_id id) avoid in 
 	let idl, avoid = rename (Idset.add id avoid) idl in 
 	(id :: idl, avoid) in
-  let l',_ = rename avoid l in 
-  l', List.fold_left2 (fun m i i' -> Idmap.add i i' m) Idmap.empty l l'
+  fst (rename avoid l)
 
 let push_vars ids (db,avoid) =
   let ids',avoid' = rename_vars avoid ids in
@@ -120,15 +119,10 @@ let keywords =
     "module"; "mutable"; "new"; "object"; "of"; "open"; "or";
     "parser"; "private"; "rec"; "sig"; "struct"; "then"; "to"; "true";
     "try"; "type"; "val"; "virtual"; "when"; "while"; "with"; "mod";
-    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "unit" ; "dummy" ] 
+    "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "unit" ] 
   Idset.empty
 
-let preamble _ used_modules used_dummy = 
-  (if used_dummy then 
-    str "type dummy = unit" ++ fnl () ++
-    str "let dummy = ()" ++ fnl () ++ fnl ()
-  else mt ())
-  ++
+let preamble _ used_modules = 
   Idset.fold (fun m s -> s ++ str "open " ++ pr_id (uppercase_id m) ++ fnl())
     used_modules (mt ())
   ++ 
@@ -148,9 +142,9 @@ let empty_env () = [], P.globals()
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
 
-let rec pp_type par ren t =
+let rec pp_type par vl t =
   let rec pp_rec par = function
-    | Tvar id -> pp_tvar (try Idmap.find id ren with _ -> id)
+    | Tvar i -> (try pp_tvar (List.nth vl (pred i)) with _ -> (str "'a" ++ int i))
     | Tapp l ->
 	(match collapse_type_app l with
 	   | [] -> assert false
@@ -162,7 +156,8 @@ let rec pp_type par ren t =
 	(open_par par ++ pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ 
 	   pp_rec false t2 ++ close_par par)
     | Tglob r -> pp_type_global r
-    | Tdummy -> str "dummy"
+    | Tdummy -> str "unit"
+    | Tunknown -> str "Obj.t"
   in 
   hov 0 (pp_rec par t)
 
@@ -253,7 +248,7 @@ let rec pp_expr par env args =
 	in apply
       	     (open_par par' ++
       	      v 0 (str "match " ++ expr ++ str " with" ++
-		   fnl () ++ str "| " ++ pp_pat env pv) ++
+		   fnl () ++ str "  | " ++ pp_pat env pv) ++
 	      close_par par')
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
@@ -263,12 +258,10 @@ let rec pp_expr par env args =
 	(open_par par ++ str "assert false" ++ spc () ++ 
 	 str ("(* "^s^" *)") ++ close_par par)
     | MLdummy ->
-	str "dummy" (* An [MLdummy] may be applied, but I don't really care. *)
+	str "()" (* An [MLdummy] may be applied, but I don't really care. *)
     | MLcast (a,t) ->
-	let tvars = get_tvars t in 
-	let _,ren = rename_tvars keywords tvars in 
 	(open_par true ++ pp_expr false env args a ++ spc () ++ str ":" ++ 
-	 spc () ++ pp_type false ren t ++ close_par true)
+	 spc () ++ pp_type false [] t ++ close_par true)
     | MLmagic a ->
 	(open_par true ++ str "Obj.magic" ++ spc () ++ 
 	 pp_expr false env args a ++ close_par true)
@@ -282,7 +275,7 @@ and pp_one_pat env (r,ids,t) =
   (pp_global r env ++ args), (pp_expr par env' [] t)
   
 and pp_pat env pv = 
-  prvect_with_sep (fun () -> (fnl () ++ str "| ")) 
+  prvect_with_sep (fun () -> (fnl () ++ str "  | ")) 
     (fun x -> let s1,s2 = pp_one_pat env x in 
      hov 2 (s1 ++ str " ->" ++ spc () ++ s2)) pv
 
@@ -324,12 +317,12 @@ and pp_function env f t =
 	if is_function pv then
 	  (f ++ pr_binding (List.rev (List.tl bl)) ++
        	     str " = function" ++ fnl () ++
-	     v 0 (str "| " ++ pp_pat env' pv))
+	     v 0 (str "  | " ++ pp_pat env' pv))
 	else
           (f ++ pr_binding (List.rev bl) ++ 
              str " = match " ++
 	     pr_id (List.hd bl) ++ str " with" ++ fnl () ++
-	     v 0 (str "| " ++ pp_pat env' pv))
+	     v 0 (str "  | " ++ pp_pat env' pv))
 	  
     | _ -> (f ++ pr_binding (List.rev bl) ++
 	      str " =" ++ fnl () ++ str "  " ++
@@ -343,20 +336,21 @@ let pp_parameters l =
   (pp_boxed_tuple pp_tvar l ++ space_if (l<>[]))
 
 let pp_one_ind prefix (pl,name,cl) =
-  let pl,ren = rename_tvars keywords pl in 
+  let pl = rename_tvars keywords pl in
   let pp_constructor (id,l) =
     (pp_global' id ++
-       match l with
-         | [] -> (mt ()) 
-	 | _  -> (str " of " ++
-      	       	    prlist_with_sep 
-		      (fun () -> (spc () ++ str "* ")) (pp_type true ren) l))
+     match l with
+       | [] -> (mt ()) 
+       | _  -> (str " of " ++
+      		prlist_with_sep 
+		  (fun () -> (spc () ++ str "* ")) 
+		  (pp_type true (List.rev pl)) l))
   in
   (pp_parameters pl ++ str prefix ++ pp_type_global name ++ str " =" ++ 
    if cl = [] then str " unit (* empty inductive *)" 
    else (fnl () ++
-	 v 0 (str "| " ++
-	      prlist_with_sep (fun () -> (fnl () ++ str "| "))
+	 v 0 (str "  | " ++
+	      prlist_with_sep (fun () -> (fnl () ++ str "  | "))
                 (fun c -> hov 2 (pp_constructor c)) cl)))
 
 let pp_ind il =
@@ -365,7 +359,7 @@ let pp_ind il =
    ++ fnl ())
 
 let pp_coind_preamble (pl,name,_) = 
-  let pl,_ = rename_tvars keywords pl in
+  let pl = rename_tvars keywords pl in
   (pp_parameters pl ++ pp_type_global name ++ str " = " ++ 
     pp_parameters pl ++ str "__" ++ pp_type_global name ++ str " Lazy.t")
 
@@ -390,10 +384,10 @@ let pp_decl = function
       end else 
 	hov 0 (pp_ind i)
   | Dabbrev (r, l, t) ->
-      let l,ren = rename_tvars keywords l in 
+      let l = rename_tvars keywords l in 
       hov 0 (str "type" ++ spc () ++ pp_parameters l ++ 
 	       pp_type_global r ++ spc () ++ str "=" ++ spc () ++ 
-	       pp_type false ren t ++ fnl ())
+	       pp_type false (List.rev l) t ++ fnl ())
   | Dfix (rv, defs) ->
       let ids = Array.map rename_global rv in 
       let env = List.rev (Array.to_list ids), P.globals() in
@@ -405,7 +399,7 @@ let pp_decl = function
       hov 0 (str "let " ++ pp_global' r ++ 
 	       str " =" ++ spc () ++ str s ++ fnl ())
 
-let pp_type = pp_type false Idmap.empty
+let pp_type = pp_type false []
 
 end
 

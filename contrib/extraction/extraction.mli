@@ -18,13 +18,7 @@ open Nametab
 
 (*s Result of an extraction. *)
 
-type info = Logic | Info
-
-type arity = Arity | NotArity
-
-type type_var = info * arity
-
-type signature = type_var list
+type signature = bool list
 
 type extraction_result =
   | Emltype of ml_type * signature * identifier list
@@ -46,5 +40,3 @@ val decl_is_logical_ind : global_reference -> bool
   a singleton inductive. *)
 
 val decl_is_singleton : global_reference -> bool
-
-val signature : env -> constr -> signature

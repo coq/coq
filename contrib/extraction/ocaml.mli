@@ -35,14 +35,13 @@ val uppercase_id : identifier -> identifier
 type env = identifier list * Idset.t
 
 val rename_vars: Idset.t -> identifier list -> env
-val rename_tvars: 
-  Idset.t -> identifier list -> identifier list * identifier Idmap.t
+val rename_tvars: Idset.t -> identifier list -> identifier list 
 val push_vars : identifier list -> env -> identifier list * env
 val get_db_name : int -> env -> identifier
 
 val keywords : Idset.t
 
-val preamble : extraction_params -> Idset.t -> bool -> std_ppcmds
+val preamble : extraction_params -> Idset.t -> std_ppcmds
 
 (*s Production of Ocaml syntax. We export both a functor to be used for 
     extraction in the Coq toplevel and a function to extract some 

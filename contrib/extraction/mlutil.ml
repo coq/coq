@@ -39,16 +39,6 @@ let id_of_name = function
 
 (*S Operations upon ML types. *)
 
-(*s Get all type variables from a ML type *)
-
-let get_tvars t = 
-  let rec get_rec s = function 
-  | Tvar i -> Idset.add i s
-  | Tapp l -> List.fold_left get_rec s l 
-  | Tarr (a,b) -> get_rec (get_rec s a) b
-  | a -> s
-  in Idset.elements (get_rec Idset.empty t)
-
 (*s Does a section path occur in a ML type ? *)
 
 let sp_of_r r = match r with 
@@ -63,18 +53,6 @@ let rec type_mem_sp sp = function
   | Tarr (a,b) -> (type_mem_sp sp a) || (type_mem_sp sp b)
   | _ -> false
 
-(*s In an ML type, update the arguments to all inductive types [(sp,_)] *)  
-
-let rec update_args sp vl = function  
-  | Tapp ( Tglob r :: l ) -> 
-      (match r with 
-	| IndRef (s,_) when s = sp -> Tapp ( Tglob r :: l @ vl )
-	| _ -> Tapp (Tglob r :: (List.map (update_args sp vl) l)))
-  | Tapp l -> Tapp (List.map (update_args sp vl) l) 
-  | Tarr (a,b)-> 
-      Tarr (update_args sp vl a, update_args sp vl b)
-  | a -> a
-  
 (*S Generic functions over ML ast terms. *)
 
 (*s [ast_iter_rel f t] applies [f] on every [MLrel] in t. It takes care 

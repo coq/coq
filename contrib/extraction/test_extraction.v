@@ -7,8 +7,9 @@
 (***********************************************************************)
 
 Extraction nat.
-(* type nat = 
-    O 
+(* 
+type nat = 
+  |  O 
   | S of nat 
 *)
 
@@ -19,8 +20,9 @@ Inductive c [x:nat] : nat -> Set :=
     refl : (c x x)                  
   | trans : (y,z:nat)(c x y)->(le y z)->(c x z).
 Extraction c.
-(* type c =
-    Refl
+(* 
+type c =
+  | Refl
   | Trans of nat * nat * c
 *)
 
@@ -28,7 +30,7 @@ Extraction [f:nat->nat][x:nat](f x).
 (* fun f x -> f x *)
 
 Extraction [f:nat->Set->nat][x:nat](f x nat).
-(* fun f x -> f x arity *)
+(* fun f x -> f x () *)
 
 Extraction [f:(nat->nat)->nat][x:nat][g:nat->nat](f g).
 (* fun f x g -> f g *)
@@ -45,13 +47,13 @@ Extraction ([X:Set][x:X]x nat).
 
 Definition d := [X:Type]X.
 Extraction d. (* type 'x d = 'x *)
-Extraction (d Set). (* arity d *)
+Extraction (d Set). (* unit d *)
 Extraction [x:(d Set)]O. (* fun _ -> O *)
 Extraction (d nat). (* nat d *)
 
 Extraction ([x:(d Type)]O Type).  (* O *)
 
-Extraction ([x:(d Type)]x).  (* 'x *)
+Extraction ([x:(d Type)]x).  (* 'a1 *)
 
 Extraction ([X:Type][x:X]x Set nat). (* nat *)
 
@@ -71,8 +73,9 @@ Inductive Finite [U:Type] : (Ensemble U) -> Set :=
       (A: (Ensemble U)) (Finite U A) -> 
       (x: U) ~ (A x) -> (Finite U (Add U A x)).
 Extraction Finite.
-(* type 'u finite =
-    Empty_is_finite
+(* 
+type 'u finite =
+  | Empty_is_finite
   | Union_is_finite of 'u finite * 'u
 *)
 
@@ -80,7 +83,8 @@ Extraction ([X:Type][x:X]O Type Type). (* O *)
 
 Extraction let n=O in let p=(S n) in (S p). (* S (S O) *)
 
-Extraction (x:(X:Type)X->X)(x Type Type). (* ('X -> 'X) -> 'x *)
+Extraction (x:(X:Type)X->X)(x Type Type). 
+(* (unit -> Obj.t -> Obj.t) -> Obj.t *)
 
 (** Mutual Inductive *)
 
@@ -91,10 +95,11 @@ with forest : Set :=
  | Cons : tree -> forest -> forest .
 
 Extraction tree.
-(* type tree =
-    Node of nat * forest
+(* 
+type tree =
+  | Node of nat * forest
 and forest =
-    Leaf of nat
+  | Leaf of nat
   | Cons of tree * forest
 *)
 
@@ -107,30 +112,31 @@ with forest_size [f:forest] : nat :=
          end.
 
 Extraction tree_size.
-(* let tree_size x =
-  let rec tree_size0 = function
-    Node (a, f) -> S (forest_size f)
-  and forest_size = function
-    Leaf b -> S O
-  | Cons (t, f') -> plus (tree_size0 t) (forest_size f')
-  in tree_size0 x 
+(* 
+let rec tree_size = function
+  | Node (a, f) -> S (forest_size f)
+and forest_size = function
+  | Leaf b -> S O
+  | Cons (t, f') -> plus (tree_size t) (forest_size f')
 *)
 
 Extraction Cases (left True True I) of (left x)=>(S O) | (right x)=>O end.
 (* S O *)
 
 Extraction sumbool_rect.
-(* let sumbool_rect f0 f = function
-  Left -> f0 prop
-| Right -> f prop
+(* 
+let sumbool_rect f0 f = function
+  |  Left -> f0 ()
+  | Right -> f ()
 *)
 
 Inductive predicate : Type := 
   | Atom : Prop -> predicate
   | EAnd  : predicate -> predicate -> predicate.
 Extraction predicate.
-(* type predicate =
-    Atom
+(* 
+type predicate =
+  | Atom
   | EAnd of predicate * predicate
 *)
 
@@ -138,14 +144,15 @@ Extraction predicate.
 
 Inductive titi : Set := tata : nat->nat->nat->nat->titi.
 Extraction (tata O).
-(* fun x1 x0 x -> Tata (O, x1, x0, x) *)
+(* fun x x0 x1 -> Tata (O, x, x0, x1) *)
 Extraction (tata O (S O)).
-(* fun x0 x -> Tata (O, (S O), x0, x) *)
+(* fun x x0 -> Tata (O, (S O), x, x0) *)
 
 Inductive eta : Set := eta_c : nat->Prop->nat->Prop->eta.
 Extraction eta_c.
-(* type eta =
-    Eta_c of nat * nat
+(* 
+type eta =
+  | Eta_c of nat * nat
 *)
 Extraction (eta_c O).
 (* fun _ x _ -> Eta_c (O, x) *)
@@ -185,8 +192,9 @@ with
 Extraction test0.
 (* test0 : logical inductive *)
 Extraction test1. 
-(* type test1 =
-    Ctest1
+(* 
+type test1 =
+  | Ctest1
 *)
 
 (** logical singleton *)
@@ -204,53 +212,57 @@ Extraction (nat_rec [n:nat]nat->nat [n:nat]O [n:nat][f:nat->nat]f O O).
 (* nat_rec (fun n -> O) (fun n f -> f) O O *)
 
 
-(** propagation of type parameters *)
+(** No more propagation of type parameters. Obj.t instead. *)
 
 Inductive tp1 : Set := 
   T : (C:Set)(c:C)tp2 -> tp1 with tp2 : Set  := T' : tp1->tp2.
 Extraction tp1.
-(* type 'c tp1 =
-    T of 'c * 'c tp2
-and 'c tp2 =
-    T' of 'c tp1
+(* 
+type tp1 =
+  | T of Obj.t * tp2
+and tp2 =
+  | T' of tp1
 *) 
 
 Inductive tp1bis : Set := 
   Tbis : tp2bis -> tp1bis 
 with tp2bis : Set  := T'bis : (C:Set)(c:C)tp1bis->tp2bis.
 Extraction tp1bis.
-(* type 'c tp1bis =
-    Tbis of 'c tp2bis
-and 'c tp2bis =
-    T'bis of 'c * 'c tp1bis
+(* 
+type tp1bis =
+  | Tbis of tp2bis
+and tp2bis =
+  | T'bis of Obj.t * tp1bis
 *)
 
 (** casts *)
 
 Extraction (True :: Type).
-(* arity *)
+(* unit *)
 
 (* examples needing Obj.magic *)
 (* hybrids *)
 
 Definition horibilis := [b:bool]<[b:bool]if b then Type else nat>if b then Set else O.
 Extraction horibilis.
-(* let horibilis = function
-  True -> arity
-| False -> O
+(* 
+let horibilis = function
+  | True -> ()
+  | False -> O
 *)
 
 Definition PropSet := [b:bool]if b then Prop else Set.
-Extraction PropSet. (* type 'flex propSet = 'flex *)
+Extraction PropSet. (* type propSet = Obj.t *)
 
 Definition natbool := [b:bool]if b then nat else bool.
-Extraction natbool. (* type 'flex natbool = 'flex *)
+Extraction natbool. (* type natbool = Obj.t *)
 
 Definition zerotrue := [b:bool]<natbool>if b then O else true.
 Extraction zerotrue. 
-(* let zerotrue = function
-  True -> O
-| False -> True
+(* 
+let zerotrue = function
+  | True -> O
+  | False -> True
 *)
 
 Definition natProp := [b:bool]<[_:bool]Type>if b then nat else Prop.
@@ -259,18 +271,20 @@ Definition natTrue := [b:bool]<[_:bool]Type>if b then nat else True.
 
 Definition zeroTrue := [b:bool]<natProp>if b then O else True.
 Extraction zeroTrue.
-(* let zeroTrue = function
-  True -> O
-| False -> arity
+(* 
+let zeroTrue = function
+  | True -> O
+  | False -> ()
 *)
 
 Definition natTrue2 := [b:bool]<[_:bool]Type>if b then nat else True.
 
 Definition zeroprop := [b:bool]<natTrue>if b then O else I.
 Extraction zeroprop.
-(* let zeroprop = function
-  True -> O
-| False -> prop
+(* 
+let zeroprop = function
+  | True -> O
+  | False -> ()
 *)
 
 (** instanciations Type -> Prop *)
@@ -290,7 +304,7 @@ Extraction
 (* still ok via optim beta -> let *)
 
 Extraction [i:(X:Type)X->X](pair ? ? (i nat O) (i bool true)).
-(* fun i -> Pair ((i O), (i True)) *)
+(* fun i -> Pair ((i () O), (i () True)) *)
 
 (* problem: fun f -> (f 0, f true) not legal in ocaml *)
 (* solution: fun f -> (f 0, Obj.magic f true) *)
@@ -322,25 +336,53 @@ Definition f_prop := (f (O=O) [_](refl_equal ? O) [_]true).
 Extraction NoInline f.
 Extraction f_prop.
 (* let f_prop =
-  f prop (fun _ -> True)
+  f () (fun _ -> True)
 *)
 
 Definition f_arity := (f Set [_:nat]nat [_:Set]true).
 Extraction f_arity.
 (* let f_arity =
-  f arity (fun _ -> True)
+  f () (fun _ -> True)
 *)
 
 Definition f_normal := (f nat [x]x [x](Cases x of O => true | _ => false end)).
 Extraction f_normal.
 (* let f_normal =
   f (fun x -> x) (fun x -> match x with
-                             O -> True
-                           | S n -> False)
+                             | O -> True
+                             | S n -> False)
 *)
 
 Inductive Truc : Set->Set :=
        chose  : (A:Set)(Truc A)
      | machin : (A:Set)A->(Truc bool)->(Truc A).
 Extraction Truc.
+(*
+type 'x truc =
+  | Chose
+  | Machin of 'x * bool truc
+*)
+
+(** False conversion of type: *)
+
+Require PolyList.
+
+Lemma oups : (H:(nat==(list nat)))nat -> nat.
+Intros.
+Generalize H0;Intros.
+Rewrite H in H1.
+Case H1.
+Exact H0.
+Intros.
+Exact n.
+Qed.
+Extraction oups.
+(* 
+let oups h0 = match h0 with
+  | Nil -> h0
+  | Cons0 (n, l) -> n
+*)
+
+
+
 
