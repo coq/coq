@@ -26,9 +26,9 @@ Definition allT := [A:Type][P:A->Prop](x:A)(P x).
 *)
 
 V7only [
-Syntactic Definition allT := all.
-Syntactic Definition inst := Logic.inst.
-Syntactic Definition gen := Logic.gen.
+Notation allT := all (only parsing).
+Notation inst := Logic.inst (only parsing).
+Notation gen := Logic.gen (only parsing).
 ].
 
 (*
@@ -64,9 +64,9 @@ Inductive  exT [A:Type;P:A->Prop] : Prop
 *)
 
 V7only [
-Syntactic Definition exT := ex.
-Syntactic Definition exT_intro := ex_intro.
-Syntactic Definition exT_ind  := ex_ind.
+Notation exT := ex (only parsing).
+Notation exT_intro := ex_intro (only parsing).
+Notation exT_ind  := ex_ind (only parsing).
 ].
 
 (*
@@ -75,9 +75,9 @@ Inductive exT2 [A:Type;P,Q:A->Prop] : Prop
 *)
 
 V7only [
-Syntactic Definition exT2 := ex2.
-Syntactic Definition exT_intro2 := ex_intro2.
-Syntactic Definition exT2_ind  := ex2_ind.
+Notation exT2 := ex2 (only parsing).
+Notation exT_intro2 := ex_intro2 (only parsing).
+Notation exT2_ind  := ex2_ind (only parsing).
 ].
 
 (*
@@ -94,11 +94,11 @@ Inductive eqT [A:Type;x:A] : A -> Prop
 Hints Resolve refl_eqT (* exT_intro2 exT_intro *) : core v62.
 *)
 V7only [
-Syntactic Definition eqT      := eq.
-Syntactic Definition refl_eqT := refl_equal.
-Syntactic Definition eqT_ind  := eq_ind.
-Syntactic Definition eqT_rect := eq_rect.
-Syntactic Definition eqT_rec  := eq_rec.
+Notation eqT      := eq (only parsing).
+Notation refl_eqT := refl_equal (only parsing).
+Notation eqT_ind  := eq_ind (only parsing).
+Notation eqT_rect := eq_rect (only parsing).
+Notation eqT_rec  := eq_rec (only parsing).
 ].
 
 (*
@@ -132,10 +132,10 @@ Section Equality_is_a_congruence.
 End Equality_is_a_congruence.
 *)
 V7only [
-Syntactic Definition sym_eqT  := sym_eq.
-Syntactic Definition trans_eqT  := trans_eq.
-Syntactic Definition congr_eqT  := f_equal.
-Syntactic Definition sym_not_eqT  := sym_not_eq.
+Notation sym_eqT  := sym_eq (only parsing).
+Notation trans_eqT  := trans_eq (only parsing).
+Notation congr_eqT  := f_equal (only parsing).
+Notation sym_not_eqT  := sym_not_eq (only parsing).
 ].
 
 (*
@@ -159,9 +159,9 @@ Defined.
 *)
 
 V7only [
-Syntactic Definition eqT_ind_r  := eq_ind_r.
-Syntactic Definition eqT_rec_r  := eq_rec_r.
-Syntactic Definition eqT_rect_r  := eq_rect_r.
+Notation eqT_ind_r  := eq_ind_r (only parsing).
+Notation eqT_rec_r  := eq_rec_r (only parsing).
+Notation eqT_rect_r  := eq_rect_r (only parsing).
 ].
 
 (** Some datatypes at the [Type] level *)
