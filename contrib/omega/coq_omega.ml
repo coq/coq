@@ -161,12 +161,15 @@ let get_applist = whd_stack
 exception Destruct
 
 let dest_const_apply t = 
-  let f,args = get_applist t in 
+  let f,args = get_applist t in
+  let ref = 
   match kind_of_term f with 
-    | IsConst (sp,_) -> 	Global.id_of_global (ConstRef sp),args
-    | IsMutConstruct (csp,_) -> Global.id_of_global (ConstructRef csp),args
-    | IsMutInd (isp,_)       -> Global.id_of_global (IndRef isp),args
-    | _ -> raise Destruct 
+    | IsConst (sp,_)         ->	ConstRef sp
+    | IsMutConstruct (csp,_) -> ConstructRef csp
+    | IsMutInd (isp,_)       -> IndRef isp
+    | _ -> raise Destruct
+  in
+  basename (Global.sp_of_global ref), args
 
 type result = 
   | Kvar of string
@@ -178,11 +181,12 @@ let destructurate t =
   let c, args = get_applist t in
   match kind_of_term c, args with
     | IsConst (sp,_), args ->
-	Kapp (string_of_id (Global.id_of_global (ConstRef sp)),args)
+	Kapp (string_of_id (basename (Global.sp_of_global (ConstRef sp))),args)
     | IsMutConstruct (csp,_) , args ->
-	Kapp (string_of_id (Global.id_of_global (ConstructRef csp)),args)
+	Kapp (string_of_id (basename (Global.sp_of_global (ConstructRef csp))),
+			    args)
     | IsMutInd (isp,_), args ->
-	Kapp (string_of_id (Global.id_of_global (IndRef isp)),args)
+	Kapp (string_of_id (basename (Global.sp_of_global (IndRef isp))),args)
     | IsVar id,[] -> Kvar(string_of_id id)
     | IsProd (Anonymous,typ,body), [] -> Kimp(typ,body)
     | IsProd (Name _,_,_),[] -> error "Omega: Not a quantifier-free goal"
