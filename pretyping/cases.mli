@@ -10,6 +10,11 @@ open Rawterm
 open Evarutil
 (*i*)
 
+(* Used for old cases in pretyping *)
+
+val branch_scheme : 
+  env -> 'a evar_defs -> bool -> int -> inductive * constr list -> constr
+
 (* Compilation of pattern-matching. *)
 
 val compile_multcase :

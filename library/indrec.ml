@@ -463,39 +463,6 @@ let count_rec_arg j =
     | (_::l) -> crec i l
   in 
   crec 0
-    
-let norec_branch_scheme env sigma typc =
-  let rec crec typc = match whd_betadeltaiota env sigma typc with 
-    | DOP2(Prod,c,DLAM(name,t)) -> DOP2(Prod,c,DLAM(name,crec t))
-    | _ -> mkExistential
-  in 
-  crec typc
-
-let rec_branch_scheme env sigma ((sp,j),_) typc recargs = 
-  let rec crec (typc,recargs) = 
-    match whd_betadeltaiota env sigma typc, recargs with 
-      | (DOP2(Prod,c,DLAM(name,t)),(ra::reca)) -> 
-          DOP2(Prod,c,
-	       match ra with 
-		 | Mrec k -> 
-                     if k=j then 
-		       DLAM(name,mkArrow mkExistential
-                              (crec (lift 1 t,reca)))
-                     else 
-		       DLAM(name,crec (t,reca))
-                 | _ -> DLAM(name,crec (t,reca)))
-      | (_,_) -> mkExistential
-  in 
-  crec (typc,recargs) 
-    
-let branch_scheme env sigma isrec i (mind,args as appmind) = 
-  let typc = type_inst_construct env sigma i appmind in 
-  if isrec then
-    let mispec = lookup_mind_specif mind env in 
-    let recarg = (mis_recarg mispec).(i-1) in
-    rec_branch_scheme env sigma mind typc recarg
-  else 
-    norec_branch_scheme env sigma typc
 
 (* if arity of mispec is (p_bar:P_bar)(a_bar:A_bar)s where p_bar are the
  * K parameters. Then then build_notdep builds the predicate

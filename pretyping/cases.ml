@@ -17,6 +17,47 @@ open Retyping
 open Evarutil
 open Pretype_errors
 
+(*********************************************************************)
+(* This was previously in Indrec but creates existential holes       *)
+
+let mkExistential isevars env =
+  let (c,_) = new_isevar isevars env (mkCast dummy_sort dummy_sort) CCI in c
+
+let norec_branch_scheme env isevars typc =
+  let rec crec typc = match whd_betadeltaiota env !isevars typc with 
+    | DOP2(Prod,c,DLAM(name,t)) -> DOP2(Prod,c,DLAM(name,crec t))
+    | _ -> mkExistential isevars env
+  in 
+  crec typc
+
+let rec_branch_scheme env isevars ((sp,j),_) typc recargs = 
+  let rec crec (typc,recargs) = 
+    match whd_betadeltaiota env !isevars typc, recargs with 
+      | (DOP2(Prod,c,DLAM(name,t)),(ra::reca)) -> 
+          DOP2(Prod,c,
+	       match ra with 
+		 | Mrec k -> 
+                     if k=j then 
+		       DLAM(name,mkArrow (mkExistential isevars env)
+                              (crec (lift 1 t,reca)))
+                     else 
+		       DLAM(name,crec (t,reca))
+                 | _ -> DLAM(name,crec (t,reca)))
+      | (_,_) -> mkExistential isevars env
+  in 
+  crec (typc,recargs) 
+    
+let branch_scheme env isevars isrec i (mind,args as appmind) = 
+  let typc = type_inst_construct env !isevars i appmind in 
+  if isrec then
+    let mispec = lookup_mind_specif mind env in 
+    let recarg = (mis_recarg mispec).(i-1) in
+    rec_branch_scheme env isevars mind typc recarg
+  else 
+    norec_branch_scheme env isevars typc
+
+(************************************************************************)
+
 exception CasesError of env * type_error
 
 (* == General purpose functions == *)
@@ -1018,21 +1059,21 @@ let apply_to_dep env sigma pred = function
 (* == Special functions to deal with mlcase on objects of dependent types == *)
 
 (* analogue strategy as Christine's MLCASE *)
-let find_implicit_pred sigma ith_branch_builder env (current,ind_data,_) =
+let find_implicit_pred isevars ith_branch_builder env (current,ind_data,_) =
   let {nconstr=nconstr;mind=mind;params=params;realargs=realargs} = ind_data in
   let isrec = false in 
   let rec findtype i = 
     if i > nconstr then raise (CasesError (env, CantFindCaseType current))
     else 
       try
- 	(let expti = Indrec.branch_scheme env sigma isrec i (mind,params) in
+ 	(let expti = branch_scheme env isevars isrec i (mind,params) in
        	let _,bri= ith_branch_builder i  in
        	let fi = bri.uj_type in 
-       	let efit = nf_ise1 sigma fi in 
+       	let efit = nf_ise1 !isevars fi in 
        	let pred =
-          Indrec.pred_case_ml_onebranch env sigma isrec 
+          Indrec.pred_case_ml_onebranch env !isevars isrec 
             (current,(mind,params,realargs)) (i,bri.uj_val,efit) in
- 	if has_ise sigma pred then error"isevar" else pred)
+ 	if has_ise !isevars pred then error"isevar" else pred)
       with UserError _ -> findtype (i+1)
   in findtype 1  
 
@@ -1454,7 +1495,7 @@ and match_current trad env (current,ind_data,info as cji) gd =
                      mat = gd.mat}
       in
       try (* we try to find out the predicate and recall match_current *)
-       (let ipred = find_implicit_pred !(trad.isevars)
+       (let ipred = find_implicit_pred trad.isevars
 		      (build_ith_branch  next_gd) 
                       env cji in
          (* we abstract with the rest of tomatch *)

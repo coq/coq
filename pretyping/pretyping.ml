@@ -393,7 +393,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 	    else
 	      try
 		let expti =
-		  Indrec.branch_scheme env !isevars isrec i (mind,params) in
+		  Cases.branch_scheme env isevars isrec i (mind,params) in
 		let fj = pretype (mk_tycon expti) env isevars lf.(i-1) in
 		let efjt = nf_ise1 !isevars fj.uj_type in 
 		let pred = 

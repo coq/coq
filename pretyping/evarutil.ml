@@ -167,8 +167,8 @@ let restrict_hyps isevars c =
     c
 
 let has_ise sigma t = 
-  try let _ = whd_ise sigma t in true
-  with UserError _ -> false
+  try let _ = whd_ise sigma t in false
+  with Uninstantiated_evar _ -> true
 
 (* We try to instanciate the evar assuming the body won't depend
  * on arguments that are not Rels or VARs, or appearing several times.

@@ -38,9 +38,6 @@ i*)
 
 val is_mutind : env -> 'a evar_map -> constr -> bool 
 
-val branch_scheme : 
-  env -> 'a evar_map -> bool -> int -> inductive * constr list -> constr
-
 (* In [inductive * constr list * constr list], the second argument is
    the list of global parameters and the third the list of real args *)
 
