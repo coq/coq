@@ -1,0 +1,27 @@
+INSTALLATION PROCEDURE FOR THE COQ V7.2 SYSTEM UNDER MACOS X
+------------------------------------------------------------
+
+1) Download compressed archive coq-7.2-Darwin-MacOS-X.tar.gz
+
+2) Open a Terminal window (e.g. from the dock)
+
+3) Move to the directory where the archive is
+   (probably in Desktop; then type the command "cd Desktop")
+
+4) Type the command
+
+   sudo -s tar -xzf -C / coq-7.2-Darwin-MacOS-X.tar.gz
+
+5) Type the command
+
+    rehash
+
+6) To launch Coq, just type
+
+    coqtop
+
+You're done
+
+
+If you have any trouble with this installation, please contact:
+coq-bugs@pauillac.inria.fr.
