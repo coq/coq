@@ -463,7 +463,10 @@ let save_named opacity =
 
 let check_anonymity id save_ident =
   if atompart_of_id id <> "Unnamed_thm" then
+    error "This command can only be used for unnamed theorem"
+(*
     message("Overriding name "^(string_of_id id)^" and using "^save_ident)
+*)
 
 let save_anonymous opacity save_ident =
   let id,(const,strength) = Pfedit.cook_proof () in
