@@ -419,28 +419,25 @@ let process_coercion sec_sp (((coe,coeinfo),s,t) as x) =
   let t1 = process_cl sec_sp t in
   let p = (snd (class_info s1)).cL_PARAM in
   match coe with 
-    | NAM_Var id -> ((coe,coeinfo),s1,t1),id,p
+    | NAM_Var id -> ((coe,coeinfo),s1,t1)
     | NAM_Constant sp -> 
 	if defined_in_sec sp sec_sp then
 	  let ((_,spid,spk)) = repr_path sp in
 	  let newsp = Lib.make_path spid CCI in
-	  ((NAM_Constant newsp,coeinfo),s1,t1),spid,p
+	  ((NAM_Constant newsp,coeinfo),s1,t1)
 	else
-	  ((coe,coeinfo),s1,t1),basename sp,p
+	  ((coe,coeinfo),s1,t1)
     | NAM_Inductive (sp,i) -> 
 	if defined_in_sec sp sec_sp then
 	  let ((_,spid,spk)) = repr_path sp in
 	  let newsp = Lib.make_path spid CCI in
-	  ((NAM_Inductive (newsp,i),coeinfo),s1,t1),spid,p
+	  ((NAM_Inductive (newsp,i),coeinfo),s1,t1)
 	else
-	  ((coe,coeinfo),s1,t1),basename sp,p
+	  ((coe,coeinfo),s1,t1)
     | NAM_Constructor ((sp,i),j) -> 
 	if defined_in_sec sp sec_sp then 
 	  let ((_,spid,spk)) = repr_path sp in
 	  let newsp = Lib.make_path spid CCI in
-	  let id = Global.id_of_global (ConstructRef ((newsp,i),j)) in
-          (((NAM_Constructor ((newsp,i),j)),coeinfo),s1,t1),id,p
+          (((NAM_Constructor ((newsp,i),j)),coeinfo),s1,t1)
 	else
-	  ((coe,coeinfo),s1,t1),
-	  Global.id_of_global (ConstructRef ((sp,i),j)),
-	  p
+	  ((coe,coeinfo),s1,t1)
