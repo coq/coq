@@ -115,7 +115,8 @@ let w_Underlying wc = (ts_it (ids_it wc)).decls
 let w_type_of wc c  = ctxt_type_of (ids_it wc) c
 let w_env     wc    = get_env (ids_it wc)
 let w_hyps    wc    = var_context (get_env (ids_it wc))
-let w_ORELSE wt1 wt2 wc = try wt1 wc with UserError _ -> wt2 wc
+let w_ORELSE wt1 wt2 wc = 
+  try wt1 wc with e when catchable_exception e -> wt2 wc
 
 let w_Declare sp c (wc:walking_constraints) =
   begin match c with 

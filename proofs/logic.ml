@@ -13,6 +13,7 @@ open Reduction
 open Typing
 open Proof_trees
 open Typeops
+open Type_errors
 open Coqast
 open Declare
 
@@ -26,6 +27,13 @@ type refiner_error =
   | BadTacticArgs of string * tactic_arg list
 
 exception RefinerError of refiner_error
+
+let catchable_exception = function
+  | Util.UserError _ | TypeError _ | RefinerError _
+  | Stdpp.Exc_located(_,(Util.UserError _ | TypeError _ | RefinerError _)) -> 
+      true
+  | _ -> 
+      false
 
 let error_cannot_unify k (m,n) =
   raise (RefinerError (CannotUnify (m,n)))

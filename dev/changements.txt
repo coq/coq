@@ -21,6 +21,21 @@ Changements dans les types de données :
   context        ->  typed_type signature
 
 
+ATTENTION:
+----------
+
+  Il y a maintenant d'autres exceptions que UserError (TypeError,
+  RefinerError, etc.)
+
+  Il ne faut donc plus se contenter (pour rattraper) de faire
+  
+		try . .. with UserError _ -> ...
+
+  mais écrire à la place
+ 
+                try ... with e when Logic.catchable_exception e -> ...
+
+
 Changements dans les fonctions :
 --------------------------------
 

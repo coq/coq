@@ -460,8 +460,7 @@ let tclNOTSAMEGOAL (tac:tactic) goal =
 let tclORELSE0 t1 t2 g =
   try 
     t1 g
-  with UserError _ | TypeError _ | RefinerError _
-     | Stdpp.Exc_located(_,(UserError _ | TypeError _ | RefinerError _)) -> 
+  with e when catchable_exception e -> 
     t2 g
 
 (* ORELSE t1 t2 tries to apply t1 and if it fails or does not progress, 
@@ -907,7 +906,7 @@ let tclINFO (tac:tactic) gls =
     mSGNL(hOV 0 [< 'sTR" == "; 
                    print_subscript 
                      ((compose ts_it sig_sig) gls) sign pf >])
-  with UserError _ -> 
+  with e when catchable_exception e -> 
     mSGNL(hOV 0 [< 'sTR "Info failed to apply validation" >])
   end;
   res

@@ -153,7 +153,7 @@ let unify_0 mc wc m n =
 		
 	| _ -> error_cannot_unify CCI (m,n)
 	      
-    with UserError _ as ex ->
+    with ex when catchable_exception ex ->
       if (not(occur_meta cM)) & w_conv_x wc cM cN then 
 	substn
       else 
@@ -250,7 +250,7 @@ and w_resrec metas evars wc =
 	else
           (try 
 	     w_resrec metas t (w_Define evn rhs wc)
-           with UserError _ ->
+           with ex when catchable_exception ex ->
              (match rhs with
              	| DOPN(AppL,cl) ->
 		    (match cl.(0) with
@@ -565,7 +565,7 @@ and clenv_resrec metas evars clenv =
     	else
           (try 
 	     clenv_resrec metas t (clenv_wtactic (w_Define evn rhs) clenv)
-           with UserError _ ->
+           with ex when catchable_exception ex ->
              (match rhs with
 		| DOPN(AppL,cl) ->
 		    (match cl.(0) with
@@ -675,18 +675,27 @@ let constrain_clenv_to_subterm clause = function
 	   if closed0 cl 
 	   then clenv_unify op cl clause,cl
            else error "Bound 1"
-	 with UserError _ ->
+	 with ex when catchable_exception ex ->
            (match telescope_appl cl with 
 	      | DOPN(AppL,tl) ->
 		  if Array.length tl = 2 then
                	    let c1 = tl.(0) and c2 = tl.(1) in
-		    (try matchrec c1 with UserError(_) -> matchrec c2)
+		    (try 
+		       matchrec c1 
+		     with ex when catchable_exception ex -> 
+		       matchrec c2)
 		  else 
 		    error "Match_subterm"
               | DOP2(Prod,t,DLAM(_,c)) ->
-		  (try matchrec t with UserError(_) -> matchrec c)
+		  (try 
+		     matchrec t 
+		   with ex when catchable_exception ex -> 
+		     matchrec c)
               | DOP2(Lambda,t,DLAM(_,c)) ->
-		  (try matchrec t with UserError(_) -> matchrec c)
+		  (try 
+		     matchrec t 
+		   with ex when catchable_exception ex -> 
+		     matchrec c)
               | _ -> error "Match_subterm")) 
       in 
       matchrec cl
@@ -700,7 +709,7 @@ let constrain_clenv_using_subterm_list allow_K clause oplist t =
          let (clause',cl) =
            (try 
 	      constrain_clenv_to_subterm clause (strip_outer_cast op,t)
-            with (UserError _ as e) ->
+            with e when catchable_exception e ->
               if allow_K then (clause,op) else raise e)
          in 
 	 (clause',cl::l)
@@ -919,7 +928,7 @@ and clenv_resrec metas evars clenv =
     	else
           (try 
 	     clenv_resrec metas t (clenv_wtactic (w_Define evn rhs) clenv)
-           with UserError _ ->
+           with ex when catchable_exception ex ->
              (match rhs with
 		| DOPN(AppL,cl) ->
 		    (match cl.(0) with
@@ -1023,19 +1032,19 @@ let clenv_unique_resolver allow_K clenv gls =
     | ((DOP0(Meta _) as pathd,_),(DOP2(Lambda,_,_) as glhd,_)) ->
 	(try 
 	   clenv_typed_fo_resolver clenv gls
-	 with UserError (t1,t2) -> 
+	 with ex when catchable_exception ex -> 
 	   try 
 	     clenv_so_resolver allow_K clenv gls
-	   with UserError (s1,s2) -> 
+	   with ex when catchable_exception ex -> 
 	     error "Cannot solve a second-order unification problem")
 
     | ((DOP0(Meta _),_),_) -> 
 	(try 
 	   clenv_so_resolver allow_K clenv gls
-         with UserError (t1,t2) -> 
+         with ex when catchable_exception ex -> 
            try 
 	     clenv_typed_fo_resolver clenv gls
-           with UserError (s1,s2) -> 
+           with ex when catchable_exception ex -> 
              error "Cannot solve a second-order unification problem")
 
     | _ -> clenv_fo_resolver clenv gls

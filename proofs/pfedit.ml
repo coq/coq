@@ -60,7 +60,7 @@ let get_evmap_sign og =
         try
           let pftree = get_pftreestate () in
           Some (nth_goal_of_pftreestate 1 pftree)
-        with UserError _ -> 
+        with e when Logic.catchable_exception e -> 
 	  None 
   in
   match og with

@@ -237,7 +237,7 @@ let make_resolve_hyp hname htyp =
     [make_apply_entry (true, Options.is_verbose()) hname (mkVar hname, htyp)]
   with 
     | Failure _ -> []
-    | UserError _ -> anomaly "make_resolve_hyp"
+    | e when Logic.catchable_exception e -> anomaly "make_resolve_hyp"
 
 let add_resolves clist dbnames =
   List.iter 

@@ -36,6 +36,8 @@ exception RefinerError of refiner_error
 
 val error_cannot_unify : path_kind -> constr * constr -> 'a
 
+val catchable_exception : exn -> bool
+
 
 (*s Pretty-printer. *)
 

@@ -1675,7 +1675,7 @@ let abstract_subproof name tac gls =
       by (tclCOMPLETE (tclTHEN (tclDO (sign_length sign) intro) 
 			 tac)); 
       save_named true
-    with UserError _ as e -> 
+    with e when catchable_exception e -> 
       (abort_cur_goal(); raise e)
   end;
   exact (applist ((Declare.construct_reference env' CCI na), 

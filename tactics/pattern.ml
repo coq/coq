@@ -178,7 +178,10 @@ let somatch metavars =
 
 let somatches n pat =
   let m = get_pat pat in 
-  try let _ = somatch None m n in true with UserError _ -> false
+  try 
+    let _ = somatch None m n in true 
+  with e when Logic.catchable_exception e -> 
+    false
 
 let dest_somatch n pat =
   let m = get_pat pat in

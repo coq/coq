@@ -121,7 +121,10 @@ let clause_type cls gl =
 let matches gls n pat =
   let m = get_pat pat in
   let (wc,_) = startWalk gls in 
-  try let _ = Clenv.unify_0 [] wc m n in true with UserError _ -> false
+  try 
+    let _ = Clenv.unify_0 [] wc m n in true 
+  with e when Logic.catchable_exception e -> 
+    false
 
 let dest_match gls n pat =
   let m       = get_pat pat in
