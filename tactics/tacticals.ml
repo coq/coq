@@ -258,6 +258,16 @@ type branch_assumptions = {
  * (previously) defined with the same name in Tactics.ml. 
  *  --Eduardo (11/8/97) *)
 
+(* This function reduces less than Tacred.reduce_to_quantified_ind (no
+   beta/iota reduction if not induced by a constant), but since it is called
+   with types coming from pf_type_of which betaiota reduces, it should
+   behaves the same.  Moreover, the env in the call to pf_one_step_reduce
+   is not synchronous with the local environment (HH 9/9/01)
+
+   Let's try to replace it by pf_reduce_to_quantified_ind
+
+let pf_one_step_reduce = pf_reduce one_step_reduce
+
 let reduce_to_ind_goal gl t = 
   let rec elimrec t =
     let c,args = decomp_app t in
@@ -275,6 +285,9 @@ let reduce_to_ind_goal gl t =
       | _ -> error "Not an inductive product"
   in 
   elimrec t
+*)
+
+let reduce_to_ind_goal = pf_reduce_to_quantified_ind
 
 let case_sign ity i = 
   let rec analrec acc = function 
@@ -311,7 +324,7 @@ let last_arg c = match kind_of_term c with
 
 let general_elim_then_using 
   elim elim_sign_fun tac predicate (indbindings,elimbindings) c gl =
-  let ((ity,_,_),t) = reduce_to_ind_goal gl (pf_type_of gl c) in
+  let (ity,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
   (* applying elimination_scheme just a little modified *)
   let (wc,kONT)  = startWalk gl in
   let indclause  = mk_clenv_from wc (c,t) in
@@ -360,8 +373,8 @@ let general_elim_then_using
 
 
 let elimination_then_using tac predicate (indbindings,elimbindings) c gl = 
-  let ((ity,path_name,_),t) = reduce_to_ind_goal gl (pf_type_of gl c) in
-  let elim = lookup_eliminator (pf_env gl) path_name (sort_of_goal gl) in
+  let (ind,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
+  let elim = lookup_eliminator (pf_env gl) ind (sort_of_goal gl) in
   general_elim_then_using
     elim elim_sign tac predicate (indbindings,elimbindings) c gl
 
@@ -371,7 +384,7 @@ let simple_elimination_then tac = elimination_then tac ([],[])
 
 let case_then_using tac predicate (indbindings,elimbindings) c gl =
   (* finding the case combinator *)
-  let ((ity,_,_),t) = reduce_to_ind_goal gl (pf_type_of gl c) in
+  let (ity,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
   let sigma = project gl in 
   let sort  = sort_of_goal gl  in
   let elim  = Indrec.make_case_gen (pf_env gl) sigma ity sort in  
@@ -380,7 +393,7 @@ let case_then_using tac predicate (indbindings,elimbindings) c gl =
 
 let case_nodep_then_using tac predicate (indbindings,elimbindings) c gl =
   (* finding the case combinator *)
-  let ((ity,_,_),t) = reduce_to_ind_goal gl (pf_type_of gl c) in
+  let (ity,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
   let sigma = project gl in 
   let sort  = sort_of_goal gl  in
   let elim  = Indrec.make_case_nodep (pf_env gl) sigma ity sort in  

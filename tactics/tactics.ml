@@ -770,13 +770,12 @@ let letin_tac with_eq name c occs gl =
 	error ("The variable "^(string_of_id x)^" is already declared") in
   let (depdecls,marks,ccl)= letin_abstract id c occs gl in 
   let t = pf_type_of gl c in
-  let heq = next_ident_away (id_of_string "Heq") used_ids in
   let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
   let args = instance_from_named_context depdecls in
   let newcl =
     if with_eq then
       mkNamedLetIn id c t tmpcl
-    else
+    else (* To fix : add c to args, or use LetIn and clear the body *)
       mkNamedProd id t tmpcl
   in
   let lastlhyp = if marks=[] then None else snd (List.hd marks) in
@@ -947,7 +946,7 @@ let dyn_move_dep = function
 
 let constructor_checking_bound  boundopt i lbind gl =
   let cl = pf_concl gl in 
-  let (mind,_,redcl) = reduce_to_mind (pf_env gl) (project gl) cl in 
+  let (mind,redcl) = pf_reduce_to_quantified_ind gl cl in 
   let nconstr = mis_nconstr (Global.lookup_mind_specif mind) 
   and sigma   = project gl in
   if i=0 then error "The constructors are numbered starting from 1";
@@ -966,7 +965,7 @@ let one_constructor i = (constructor_checking_bound None i)
 
 let any_constructor gl = 
   let cl = pf_concl gl in 
-  let (mind,_,redcl) = reduce_to_mind (pf_env gl) (project gl) cl in
+  let (mind,redcl) = pf_reduce_to_quantified_ind gl cl in
   let nconstr = mis_nconstr (Global.lookup_mind_specif mind)
   and sigma   = project gl in
   if nconstr = 0 then error "The type has no constructors";
@@ -1047,9 +1046,7 @@ let type_clenv_binding wc (c,t) lbind =
 let general_elim (c,lbindc) (elimc,lbindelimc) gl = 
   let (wc,kONT)  = startWalk gl in
   let ct = pf_type_of gl c in
-  let t = try let (_,_,t)    = reduce_to_ind (pf_env gl) (project gl) ct in t 
-  with UserError _ -> ct
-  in
+  let t = try snd (pf_reduce_to_quantified_ind gl ct) with UserError _ -> ct in
   let indclause  = make_clenv_binding wc (c,t) lbindc  in
   let elimt      = w_type_of wc elimc in
   let elimclause = make_clenv_binding wc (elimc,elimt) lbindelimc in 
@@ -1060,12 +1057,12 @@ let general_elim (c,lbindc) (elimc,lbindelimc) gl =
 
 let default_elim (c,lbindc)  gl = 
   let env = pf_env gl in
-  let (path,_,t) = reduce_to_ind env (project gl) (pf_type_of gl c) in
+  let (ind,t) = reduce_to_quantified_ind env (project gl) (pf_type_of gl c) in
   let s = sort_of_goal gl in
   let elimc =
-    try lookup_eliminator env path s 
+    try lookup_eliminator env ind s 
     with Not_found -> 
-      let dir, base,k = repr_path path in
+      let dir, base,k = repr_path (path_of_inductive_path (fst ind)) in
       let id = make_elimination_ident base s in
       errorlabstrm "default_elim"
 	[< 'sTR "Cannot find the elimination combinator :";
@@ -1183,16 +1180,19 @@ let induct_discharge old_style mind statuslists cname destopt avoid ra gl =
 
 let atomize_param_of_ind hyp0 gl =
   let tmptyp0 = pf_get_hyp_typ gl hyp0 in
-  let (mind,indtyp,typ0) = pf_reduce_to_mind gl tmptyp0 in
+  let (mind,typ0) = pf_reduce_to_quantified_ind gl tmptyp0 in
   let mis = Global.lookup_mind_specif mind in
   let nparams = mis_nparams mis in
+  let prods, indtyp = decompose_prod typ0 in
   let argl = snd (decomp_app indtyp) in
   let params = list_firstn nparams argl in
   (* le gl est important pour ne pas préévaluer *)
   let rec atomize_one i avoid gl =
     if i<>nparams then
       let tmphyp0 = pf_get_hyp_typ gl hyp0 in
-      let (_,indtyp,_) = pf_reduce_to_mind gl tmptyp0 in
+      (* If argl <> [], we expect typ0 not to be quantified, in order to
+         avoid bound parameters... then we call pf_reduce_to_atomic_ind *)
+      let (_,indtyp) = pf_reduce_to_atomic_ind gl tmptyp0 in
       let argl = snd (decomp_app indtyp) in
       let c = List.nth argl (i-1) in
       match kind_of_term c with
@@ -1419,11 +1419,10 @@ let induction_from_context isrec style hyp0 gl =
       [< 'sTR "Cannot generalize a global variable" >];
   let tmptyp0 =	pf_get_hyp_typ gl hyp0 in
   let env = pf_env gl in
-  let ((ind_sp,_) as mind,indtyp,typ0) = pf_reduce_to_mind gl tmptyp0 in
-  let indvars = find_atomic_param_of_ind mind indtyp in
-  let mindpath = Declare.path_of_inductive_path ind_sp in
+  let (mind,typ0) = pf_reduce_to_quantified_ind gl tmptyp0 in
+  let indvars = find_atomic_param_of_ind mind (snd (decompose_prod typ0)) in
   let elimc =
-    if isrec then lookup_eliminator env mindpath (sort_of_goal gl)
+    if isrec then lookup_eliminator env mind (sort_of_goal gl)
     else Indrec.make_case_gen env (project gl) mind (sort_of_goal gl)
   in
   let elimt = pf_type_of gl elimc in
@@ -1532,7 +1531,7 @@ let dyn_old_induct = function
 
 let general_case_analysis (c,lbindc) gl =
   let env = pf_env gl in
-  let (mind,_,_) = reduce_to_mind env (project gl) (pf_type_of gl c) in
+  let (mind,_) = pf_reduce_to_quantified_ind gl (pf_type_of gl c) in
   let sigma    = project gl in 
   let sort     = sort_of_goal gl in
   let elim     = Indrec.make_case_gen env sigma mind sort in 
@@ -1585,11 +1584,9 @@ let elim_scheme_type elim t gl =
     | _ -> anomaly "elim_scheme_type"
 
 let elim_type t gl =
-  let (path_name,tind,t) = reduce_to_ind (pf_env gl) (project gl) t in
-  let elimc = lookup_eliminator (pf_env gl) path_name (sort_of_goal gl) in
-  match kind_of_term t with 
-    | IsProd (_,_,_) -> error "Not an inductive definition"
-    | _              -> elim_scheme_type elimc tind gl
+  let (ind,t) = pf_reduce_to_atomic_ind gl t in
+  let elimc = lookup_eliminator (pf_env gl) ind (sort_of_goal gl) in
+  elim_scheme_type elimc t gl
 
 let dyn_elim_type = function
   | [Constr c]    -> elim_type c
@@ -1597,15 +1594,10 @@ let dyn_elim_type = function
   | l             -> bad_tactic_args "elim_type" l
 
 let case_type t gl =
+  let (ind,t) = pf_reduce_to_atomic_ind gl t in
   let env = pf_env gl in
-  let (mind,_,t) = reduce_to_mind env (project gl) t in  
-  match kind_of_term t with 
-    | IsProd (_,_,_) -> error "Not an inductive definition"
-    | _             -> 
-        let sigma = project gl in 
-        let sort  = sort_of_goal gl in
-        let elimc = Indrec.make_case_gen env sigma mind sort in 
-        elim_scheme_type elimc t gl
+  let elimc = Indrec.make_case_gen env (project gl) ind (sort_of_goal gl) in 
+  elim_scheme_type elimc t gl
 
 let dyn_case_type = function
   | [Constr c]    -> case_type c

@@ -90,11 +90,14 @@ let resolve_with_bindings_tac  (c,lbind) gl =
   let clause = make_clenv_binding_apply wc (c,t) lbind in 
   res_pf kONT clause gl
 
+(*
+let pf_one_step_reduce = pf_reduce Tacred.one_step_reduce
+
 let reduce_to_mind gl t = 
   let rec elimrec t l =
     let c, args = whd_stack t in
     match kind_of_term c, args with
-    | (IsMutInd _,_) -> (c,Environ.it_mkProd_or_LetIn t l)
+    | (IsMutInd ind,_) -> (ind,Environ.it_mkProd_or_LetIn t l)
     | (IsConst _,_) -> 
 	(try 
 	   let t' = pf_nf_betaiota gl (pf_one_step_reduce gl t) in elimrec t' l
@@ -117,12 +120,14 @@ let reduce_to_mind gl t =
     | _ -> error "Not an inductive product"
   in 
   elimrec t []
+*)
+
+let reduce_to_mind = pf_reduce_to_quantified_ind
 
 let constructor_tac nconstropt i lbind gl = 
   let cl = pf_concl gl in
   let (mind, redcl) = reduce_to_mind gl cl in
-  let ((x0,x1),args) as mindspec= destMutInd mind in
-  let nconstr = Global.mind_nconstr mindspec
+  let nconstr = Global.mind_nconstr mind
   and sigma = project gl in
   (match nconstropt with 
      | Some expnconstr -> 
@@ -130,7 +135,7 @@ let constructor_tac nconstropt i lbind gl =
            error "Not the expected number of constructors"
      | _ -> ());
   if i > nconstr then error "Not enough Constructors";
-  let c = mkMutConstruct (((x0,x1),i),args) in 
+  let c = mkMutConstruct (ith_constructor_of_inductive mind i) in 
   let resolve_tac = resolve_with_bindings_tac (c,lbind) in
   (tclTHEN (tclTHEN (change_in_concl redcl) intros) resolve_tac) gl
 

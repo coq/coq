@@ -698,12 +698,14 @@ let reduction_of_redexp = function
 
 (* Used in several tactics. *)
 
+exception NotStepReducible
+
 let one_step_reduce env sigma c = 
   let rec redrec (x, largs as s) =
     match kind_of_term x with
       | IsLambda (n,t,c)  ->
           (match decomp_stack largs with
-             | None      -> error "Not reducible 1"
+             | None      -> raise NotStepReducible
              | Some (a,rest) -> (subst1 a c, rest))
       | IsApp (f,cl) -> redrec (f, append_stack cl largs)
       | IsLetIn (_,f,_,cl) -> (subst1 f cl,largs)
@@ -711,11 +713,11 @@ let one_step_reduce env sigma c =
           (try
 	     (special_red_case env (whd_betadeltaiota_state env sigma)
 	       (ci,p,c,lf), largs)
-           with Redelimination -> error "Not reducible 2")
+           with Redelimination -> raise NotStepReducible)
       | IsFix fix ->
 	  (match reduce_fix (whd_betadeltaiota_state env sigma) fix largs with
              | Reduced s' -> s'
-	     | NotReducible -> error "Not reducible 3")
+	     | NotReducible -> raise NotStepReducible)
       | IsCast (c,_) -> redrec (c,largs)
       | _ when isEvalRef x ->
 	  let ref = destEvalRef x in
@@ -724,32 +726,35 @@ let one_step_reduce env sigma c =
            with Redelimination ->
 	     match reference_opt_value sigma env ref with
 	       | Some d -> d, largs
-	       | None -> error "Not reductible 1")
+	       | None -> raise NotStepReducible)
 
-      | _ -> error "Not reducible 3"
+      | _ -> raise NotStepReducible
   in 
   app_stack (redrec (c, empty_stack))
 
 (* put t as t'=(x1:A1)..(xn:An)B with B an inductive definition of name name
    return name, B and t' *)
 
-let reduce_to_mind env sigma t = 
+let reduce_to_ind_gen allow_product env sigma t = 
   let rec elimrec env t l = 
     let c, _ = whd_stack t in
     match kind_of_term c with
-      | IsMutInd (mind,args) -> ((mind,args),t,it_mkProd_or_LetIn t l)
+      | IsMutInd (mind,args) -> ((mind,args),it_mkProd_or_LetIn t l)
       | IsProd (n,ty,t') ->
-	  elimrec (push_rel_assum (n,t) env) t' ((n,None,ty)::l)
-      | _ -> 
+	  if allow_product then
+	    elimrec (push_rel_assum (n,t) env) t' ((n,None,ty)::l)
+	  else
+	     errorlabstrm "tactics__reduce_to_mind"
+	       [< 'sTR"Not an inductive definition" >]
+      | _ ->
           (try 
 	     let t' = nf_betaiota (one_step_reduce env sigma t) in 
 	     elimrec env t' l
-           with UserError _ -> errorlabstrm "tactics__reduce_to_mind"
-               [< 'sTR"Not an inductive product." >])
- in
- elimrec env t []
+           with NotStepReducible ->
+	     errorlabstrm "tactics__reduce_to_mind"
+               [< 'sTR"Not an inductive product" >])
+  in
+  elimrec env t []
 
-let reduce_to_ind env sigma t =
-  let ((ind_sp,_),redt,c) = reduce_to_mind env sigma t in 
-  (Declare.path_of_inductive_path ind_sp, redt, c)
-
+let reduce_to_quantified_ind x = reduce_to_ind_gen true x
+let reduce_to_atomic_ind x = reduce_to_ind_gen false x

@@ -1264,15 +1264,9 @@ let sub_term_with_unif cref ceq =
 	    
 (*The Rewrite in tactic*)
 let general_rewrite_in lft2rgt id (c,lb) gls =
-  let typ_id =
-    (try
-       let (_,ty) = lookup_named id (pf_env gls) in ty
-     with Not_found -> 
-       errorlabstrm "general_rewrite_in" 
-	 [< 'sTR"No such hypothesis : "; pr_id id >])
-  in
+  let typ_id = pf_get_hyp_typ gls id in
   let (wc,_) = startWalk gls
-  and (_,_,t) = reduce_to_ind (pf_env gls) (project gls) (pf_type_of gls c) in
+  and (_,t) = pf_reduce_to_quantified_ind gls (pf_type_of gls c) in
   let ctype = type_clenv_binding wc (c,t) lb in
   match (match_with_equation ctype) with
     | None -> error "The term provided does not end with an equation" 

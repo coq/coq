@@ -108,9 +108,8 @@ let pf_type_of                   = pf_reduce type_of
 let pf_conv_x                   = pf_reduce is_conv
 let pf_conv_x_leq               = pf_reduce is_conv_leq
 let pf_const_value              = pf_reduce (fun env _ -> constant_value env)
-let pf_one_step_reduce          = pf_reduce one_step_reduce
-let pf_reduce_to_mind           = pf_reduce reduce_to_mind
-let pf_reduce_to_ind            = pf_reduce reduce_to_ind
+let pf_reduce_to_quantified_ind = pf_reduce reduce_to_quantified_ind
+let pf_reduce_to_atomic_ind     = pf_reduce reduce_to_atomic_ind
 
 let hnf_type_of gls = compose (pf_whd_betadeltaiota gls) (pf_type_of gls)
 

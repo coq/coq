@@ -48,13 +48,15 @@ val cbv_norm_flags : Closure.flags -> 'a reduction_function
   val cbv_betadeltaiota : 'a reduction_function
   val compute : 'a reduction_function  (* = [cbv_betadeltaiota] *)
 
-val one_step_reduce : 'a reduction_function
+(* [reduce_to_atomic_ind env sigma t] puts [t] in the form [t'=(I args)]
+   with [I] an inductive definition;
+   returns [I] and [t'] or fails with a user error *)
+val reduce_to_atomic_ind : env -> 'a evar_map -> types -> inductive * types
 
-val reduce_to_mind : 
-  env -> 'a evar_map -> constr -> inductive * constr * constr
-
-val reduce_to_ind : 
-  env -> 'a evar_map -> constr -> section_path * constr * constr
+(* [reduce_to_quantified_ind env sigma t] puts [t] in the form
+   [t'=(x1:A1)..(xn:An)(I args)] with [I] an inductive definition;
+   returns [I] and [t'] or fails with a user error *)
+val reduce_to_quantified_ind : env -> 'a evar_map -> types -> inductive * types
 
 type red_expr =
   | Red of bool    (* raise Redelimination if true otherwise UserError *)
@@ -67,4 +69,3 @@ type red_expr =
   | Pattern of (int list * constr * constr) list
 
 val reduction_of_redexp : red_expr -> 'a reduction_function
-
