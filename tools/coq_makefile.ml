@@ -97,9 +97,9 @@ let standard sds =
     sds;
   print "\n";
   print "install:\n";
-  print "\t@if test -z $(TARGETDIR); then echo \"You must set TARGETDIR (for instance with 'make TARGETDIR=foobla install')\"; exit 1; fi\n";
-  if !some_vfile then print "\tcp -f *.vo $(TARGETDIR)\n";
-  if !some_mlfile then print "\tcp -f *.cmo $(TARGETDIR)\n";
+  print "\tmkdir -p `$(COQC) -where`/user-contrib\n";
+  if !some_vfile then print "\tcp -f *.vo `$(COQC) -where`/user-contrib\n";
+  if !some_mlfile then print "\tcp -f *.cmo `$(COQC) -where`/user-contrib\n";
   List.iter
     (fun x -> print "\t(cd "; print x; print " ; $(MAKE) install)\n")
     sds;
