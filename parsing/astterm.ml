@@ -428,14 +428,15 @@ let globalize_ast ast =
 
 
 (* Installation of the AST quotations. "command" is used by default. *)
-open Pcoq
-
 let _ = 
-  define_quotation true "command" (map_entry globalize_command Command.command)
+  Pcoq.define_quotation true "command" 
+    (Pcoq.map_entry globalize_command Pcoq.Command.command)
 let _ = 
-  define_quotation false "tactic" (map_entry globalize_ast Tactic.tactic)
+  Pcoq.define_quotation false "tactic" 
+    (Pcoq.map_entry globalize_ast Pcoq.Tactic.tactic)
 let _ = 
-  define_quotation false "vernac" (map_entry globalize_ast Vernac.vernac)
+  Pcoq.define_quotation false "vernac" 
+    (Pcoq.map_entry globalize_ast Pcoq.Vernac.vernac)
 
 
 (*********************************************************************)

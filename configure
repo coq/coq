@@ -8,7 +8,7 @@
 
 VERSION=7.00
 VERSIONSI=1.0
-DATE="August 1999"
+DATE="December 1999"
 
 # a local which command for sh
 which () {

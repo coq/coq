@@ -115,7 +115,7 @@ CMX=$(CMO:.cmo=.cmx)
 
 COQMKTOP=scripts/coqmktop
 
-world: minicoq coqtop.byte dev/db_printers.cmo
+world: minicoq coqtop.byte $(COQMKTOP) dev/db_printers.cmo
 
 coqtop: $(COQMKTOP) $(CMX)
 	$(COQMKTOP) -opt -notactics $(OPTFLAGS) -o coqtop

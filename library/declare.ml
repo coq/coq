@@ -25,11 +25,13 @@ let make_strength = function
 let make_strength_0 () = make_strength (Lib.cwd())
 
 let make_strength_1 () =
-  let path = try List.tl (List.tl (Lib.cwd())) with Failure _ -> [] in
+  let cwd = Lib.cwd() in
+  let path = try list_firstn (List.length cwd - 1) cwd with Failure _ -> [] in
   make_strength path
 
 let make_strength_2 () =
-  let path = try List.tl (Lib.cwd()) with Failure _ -> [] in
+  let cwd = Lib.cwd() in
+  let path = try list_firstn (List.length cwd - 2) cwd with Failure _ -> [] in
   make_strength path
 
 

@@ -91,33 +91,33 @@ let just_parsing = ref false
 let rec vernac interpfun input =
   let com = parse_phrase input in
   let rec interp com =
-    try
-      match com with
-	| Node (_,"LoadFile",[Str(_, verbosely); Str(_,fname)]) ->
-            let verbosely = verbosely = "Verbose" in
-            raw_load_vernac_file verbosely (make_suffix fname ".v")
-              
-	| Node (_,"CompileFile",[Str(_,verbosely); Str(_,only_spec);
-				 Str (_,mname); Str(_,fname)]) ->
-            let verbosely = verbosely = "Verbose" in
-            let only_spec = only_spec = "Specification" in
-            States.with_heavy_rollback (* to roll back in case of error *)
-              (raw_compile_module verbosely only_spec mname)
-              (make_suffix fname ".v")
-	      
-	| Node(_,"Time",l) ->
-	    let tstart = System.get_time() in
-            List.iter interp l;
-	    let tend = System.get_time() in
-            mSGNL [< 'sTR"Finished transaction in " ;
-                     System.fmt_time_difference tstart tend >]
-	      
-	| _ -> if not !just_parsing then interpfun com
-    with e -> 
-      raise (DuringCommandInterp (Ast.loc com, e))
+    match com with
+      | Node (_,"LoadFile",[Str(_, verbosely); Str(_,fname)]) ->
+          let verbosely = verbosely = "Verbose" in
+          raw_load_vernac_file verbosely (make_suffix fname ".v")
+            
+      | Node (_,"CompileFile",[Str(_,verbosely); Str(_,only_spec);
+			       Str (_,mname); Str(_,fname)]) ->
+          let verbosely = verbosely = "Verbose" in
+          let only_spec = only_spec = "Specification" in
+          States.with_heavy_rollback (* to roll back in case of error *)
+            (raw_compile_module verbosely only_spec mname)
+            (make_suffix fname ".v")
+	    
+      | Node(_,"Time",l) ->
+	  let tstart = System.get_time() in
+          List.iter interp l;
+	  let tend = System.get_time() in
+          mSGNL [< 'sTR"Finished transaction in " ;
+                   System.fmt_time_difference tstart tend >]
+	    
+      | _ -> if not !just_parsing then interpfun com
   in 
-  interp com
-     
+  try
+    interp com
+  with e -> 
+    raise (DuringCommandInterp (Ast.loc com, e))
+    
 and raw_load_vernac_file verbosely s =
   let _ = read_vernac_file verbosely s in ()
 
