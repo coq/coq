@@ -26,14 +26,13 @@
 \renewcommand{\bibname}{\protect\setheaders{Bibliography}%
 \protect\RefManCutCommand{BEGINBIBLIO=\thepage}%
 \protect\addcontentsline{toc}{chapter}{Bibliography}Bibliography}
-%ENDLATEX
+%END LATEX
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % For the Addendum table of contents
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\makeatletter
-
 \newcommand{\aauthor}[1]{{\LARGE \bf #1} \bigskip \bigskip \bigskip}
+\makeatletter
 %BEGIN LATEX
 \newcommand{\atableofcontents}{\section*{Contents}\@starttoc{atoc}}
 \newcommand{\achapter}[1]{

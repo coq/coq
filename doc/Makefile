@@ -150,7 +150,7 @@ coq.info: $(INPUTS) $(REFMANFILES) $(COQTEXFILES) biblio.bib
 	hevea -info ./book-html.sty ./coq-html.sty ./Reference-Manual.tex
 
 doc-html.tar.gz: all-html
-	- $(MKDIR) coq-docs-html
+	$(MKDIR) -p coq-docs-html
 	rm -rf coq-docs-html/*
 	cp Tutorial.v.html coq-docs-html/tutorial.html
 	cp Reference-Manual.html coqide-queries.png coqide.png coq-docs-html 
@@ -161,7 +161,7 @@ doc-html.tar.gz: all-html
 
 # Pour le site de Coq.
 html-www: all-html
-	- $(MKDIR) www
+	$(MKDIR) -p www
 	rm -rf www/*
 	cp Tutorial.v.html www/tutorial.html
 	cp coqide-queries.png coqide.png www

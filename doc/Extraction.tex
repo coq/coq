@@ -107,30 +107,34 @@ produce more readable code.
 All these optimizations are controled by the following \Coq\ options: 
 
 \begin{description}
-\comindex{Set Extraction Optimize}
-\comindex{Unset Extraction Optimize}
-\item {\tt Set Extraction Optimize.}
-\item {\tt Unset Extraction Optimize.} ~\par
+
+\item \comindex{Set Extraction Optimize}
+{\tt Set Extraction Optimize.}
+
+\item \comindex{Unset Extraction Optimize}
+{\tt Unset Extraction Optimize.}
 
 Default is Set. This control all optimizations made on the ML terms 
 (mostly reduction of dummy beta/iota redexes, but also simplications on 
 Cases, etc). Put this option to Unset if you want a ML term as close as 
 possible to the Coq term.
 
-\comindex{Set Extraction AutoInline}
-\comindex{Unset Extraction AutoInline}
-\item {\tt Set Extraction AutoInline.}
-\item {\tt Unset Extraction AutoInline.} ~\par
+\item \comindex{Set Extraction AutoInline}
+{\tt Set Extraction AutoInline.} 
+
+\item \comindex{Unset Extraction AutoInline}
+{\tt Unset Extraction AutoInline.} 
 
 Default is Set, so by default, the extraction mechanism feels free to 
 inline the bodies of some defined constants, according to some heuristics 
 like size of bodies, useness of some arguments, etc. Those heuristics are 
 not always perfect, you may want to disable this feature, do it by Unset. 
 
-\comindex{Extraction Inline}
-\comindex{Extraction NoInline}
-\item {\tt Extraction Inline} \qualid$_1$ \dots\ \qualid$_n$. ~\par 
-\item {\tt Extraction NoInline} \qualid$_1$ \dots\ \qualid$_n$. ~\par
+\item \comindex{Extraction Inline}
+{\tt Extraction Inline} \qualid$_1$ \dots\ \qualid$_n$. 
+
+\item \comindex{Extraction NoInline}
+{\tt Extraction NoInline} \qualid$_1$ \dots\ \qualid$_n$. 
 
 In addition to the automatic inline feature, you can now tell precisely to 
 inline some more constants by the {\tt Extraction Inline} command. Conversely, 
@@ -138,14 +142,14 @@ you can forbid the automatic inlining of some specific constants by
 the {\tt Extraction NoInline} command.
 Those two commands enable a precise control of what is inlined and what is not. 
 
-\comindex{Print Extraction Inline}
-\item {\tt Print Extraction Inline}. ~\par
+\item \comindex{Print Extraction Inline}
+{\tt Print Extraction Inline}. 
 
 Prints the current state of the table recording the custom inlinings 
 declared by the two previous commands. 
 
-\comindex{Reset Extraction Inline}
-\item {\tt Reset Extraction Inline}. ~\par
+\item \comindex{Reset Extraction Inline}
+{\tt Reset Extraction Inline}. 
 
 Puts the table recording the custom inlinings back to empty. 
 
