@@ -14,6 +14,8 @@ open Libnames
 
 val qflag : bool ref
 
+val red_flags: Closure.RedFlags.reds ref
+
 val (=?) : ('a -> 'a -> int) -> ('b -> 'b -> int) -> 
   'a -> 'a -> 'b -> 'b -> int
   
@@ -27,9 +29,6 @@ type counter = bool -> metavariable
 val construct_nhyps : inductive -> int array
 
 val ind_hyps : int -> inductive -> constr list -> Sign.rel_context array
-
-val match_with_evaluable : Proof_type.goal Tacmach.sigma ->
-  constr -> (evaluable_global_reference * constr) option
 
 type atoms = {positive:constr list;negative:constr list}
 

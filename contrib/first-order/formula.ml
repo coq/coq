@@ -20,6 +20,8 @@ open Libnames
 
 let qflag=ref true
 
+let red_flags=ref Closure.betaiotazeta
+
 let (=?) f g i1 i2 j1 j2=
   let c=f i1 i2 in
     if c=0 then g j1 j2 else c
@@ -63,18 +65,13 @@ let ind_hyps nevar ind largs=
       fst (Sign.decompose_prod_assum t2) in
     Array.init lp myhyps
 
-let match_with_evaluable gl t=
-  let env=pf_env gl in
-  let hd=       
-    match kind_of_term t with
-	App (head,_) -> head
-      | _ -> t in
-    match kind_of_term hd with
-	Const cst->
-	  if Environ.evaluable_constant cst env 
-	  then Some (EvalConstRef cst,t)
-	  else None
-      | _-> None
+let special_nf gl=
+  let infos=Closure.create_clos_infos !red_flags (pf_env gl) in
+    (fun t -> Closure.norm_val infos (Closure.inject t))
+
+let special_whd gl=
+  let infos=Closure.create_clos_infos !red_flags (pf_env gl) in
+    (fun t -> Closure.whd_val infos (Closure.inject t))
 
 type kind_of_formula=
     Arrow of constr*constr
@@ -86,8 +83,8 @@ type kind_of_formula=
   | Atom of constr
       
 let rec kind_of_formula gl term =
-  let normalize t=nf_betadeltaiota (pf_env gl) (Refiner.sig_sig gl) t in 
-  let cciterm=whd_betaiotazeta term in
+  let normalize=special_nf gl in
+  let cciterm=special_whd gl term in
     match match_with_imp_term cciterm with
 	Some (a,b)-> Arrow(a,(pop b))
       |_->
@@ -119,14 +116,7 @@ let rec kind_of_formula gl term =
 		| _ ->  
 		    match match_with_sigma_type cciterm with
 			Some (i,l)-> Exists((destInd i),l)
-		      |_-> 
-			 match match_with_evaluable gl cciterm with 
-			     Some (ec,t)->	  
-			       let nt=Tacred.unfoldn [[1],ec] 
-					(pf_env gl)
-					(Refiner.sig_sig gl) t in
-				 kind_of_formula gl nt
-			   | None ->Atom (normalize cciterm)
+		      |_-> Atom (normalize cciterm)
   
 type atoms = {positive:constr list;negative:constr list}
 
@@ -140,7 +130,7 @@ let build_atoms gl metagen side cciterm =
   let trivial =ref false
   and positive=ref []
   and negative=ref [] in
-  let normalize t=nf_betadeltaiota (pf_env gl) (Refiner.sig_sig gl) t in 
+  let normalize=special_nf gl in 
   let rec build_rec env polarity cciterm=
     match kind_of_formula gl cciterm with
 	False(_,_)->if not polarity then trivial:=true
@@ -225,7 +215,7 @@ type t={id:global_reference;
 	atoms:atoms}
     
 let build_formula side nam typ gl metagen=
-  let normalize t=nf_betadeltaiota (pf_env gl) (Refiner.sig_sig gl) t in
+  let normalize = special_nf gl in
     try 
       let m=meta_succ(metagen false) in
       let trivial,atoms=

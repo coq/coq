@@ -109,6 +109,8 @@ let mk_open_instance id gl m t=
   let var_id=
     if id==dummy_id then dummy_bvid else
       let typ=pf_type_of gl (constr_of_reference id) in
+	(* since we know we will get a product, 
+	   reduction is not too expensive *)
       let (nam,_,_)=destProd (whd_betadeltaiota env evmap typ) in
 	match nam with 
 	    Name id -> id

@@ -530,18 +530,26 @@ let rec tclFIRST = function
   | [] -> tclFAIL_s "No applicable tactic."
   |  t::rest -> tclORELSE0 t (tclFIRST rest)
 
-let ite_gen tcal tac_if continue tac_else=
+let ite_gen tcal tac_if continue tac_else gl=
   let success=ref false in
   let tac_if0 gl=
     let result=tac_if gl in
       success:=true;result in
-  let tac_else0 gl=
+  let tac_else0 e gl=
     if !success then 
-      tclFAIL_s "failure in THEN branch" gl 
+      raise e 
     else 
       tac_else gl in
-    tclORELSE0 (tcal tac_if0 continue)  (tac_else0)  
-    
+    try 
+      tcal tac_if0 continue gl
+    with
+      | e when catchable_exception e -> tac_else0 e gl
+      | (FailError (0,_) | Stdpp.Exc_located(_, FailError (0,_))) as e ->
+	  tac_else0 e gl
+      | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
+      | Stdpp.Exc_located (s,FailError (lvl,s')) ->
+	  raise (Stdpp.Exc_located (s,FailError (lvl - 1, s')))
+	
 (* Try the first tactic and, if it succeeds, continue with 
    the second one, and if it fails, use the third one *)
 
