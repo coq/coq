@@ -178,8 +178,10 @@ the result (look at \verb=inj_pair2= in \vfile{\LogicEqdep}{Eqdep}).
 elimination of reflexive equality proofs.
 
 \begin{coq_example*}
-Axiom Streicher_K: (U:Type)(x:U)(P:x=x->Prop)
-  (P (refl_equal ? x))->(p:x=x)(P p).
+Axiom
+  Streicher_K :
+    forall (U:Type) (x:U) (P:x = x -> Prop),
+      P (refl_equal x) -> forall p:x = x, P p.
 \end{coq_example*}
 
 In the general case, axiom $K$ is an independent statement of the
@@ -192,27 +194,34 @@ Axiom $K$ is equivalent to {\em Uniqueness of Identity Proofs} \cite{HofStr98}
 which states that
 
 \begin{coq_example*}
-Axiom UIP: (A:Set)(x,y:A)(p1,p2:x=y)p1==p2.
+Axiom UIP : forall (A:Set) (x y:A) (p1 p2:x = y), p1 = p2.
 \end{coq_example*}
 
 Axiom $K$ is also equivalent to {\em Uniqueness of Reflexive Identity Proofs} \cite{HofStr98}
 
 \begin{coq_example*}
-Axiom UIP_refl: (A:Set)(x:A)(p:x=x)p==(refl_equal A x).
+Axiom UIP_refl : forall (A:Set) (x:A) (p:x = x), p = refl_equal x.
 \end{coq_example*}
 
 Axiom $K$ is also equivalent to 
 
 \begin{coq_example*}
-Axiom eq_rec_eq : (A:Set)(a:A)(P:A->Set)(p:(P p))(h:a==a) p=(eq_rect A a P p a h).
+Axiom
+  eq_rec_eq :
+    forall (A:Set) (a:A) (P:A -> Set) (p:P p) (h:a = a),
+      p = eq_rect P p h.
 \end{coq_example*}
 
 It is also equivalent to the injectivity of dependent equality (dependent equality is itself equivalent to equality of dependent pairs).
 
 \begin{coq_example*}
-Inductive eq_dep [U:Set;P:U->Set;p:U;x:(P p)] : (q:U)(P q)->Prop :=
-   eq_dep_intro : (eq_dep U P p x p x).
-Axiom eq_dep_eq : (U:Set)(u:U)(P:U->Set)(p1,p2:(P u))(eq_dep U P u p1 u p2)->p1=p2.
+Inductive eq_dep (U:Set) (P:U -> Set) (p:U) (x:P p) :
+forall q:U, P q -> Prop :=
+    eq_dep_intro : eq_dep U P p x p x.
+Axiom
+  eq_dep_eq :
+    forall (U:Set) (u:U) (P:U -> Set) (p1 p2:P u),
+      eq_dep U P u p1 u p2 -> p1 = p2.
 \end{coq_example*}
 
 All of these statements can be found in file \vfile{\LogicEqdep}{Eqdep}.
@@ -227,14 +236,16 @@ nat} are discriminable. As discrimination property we take the
 property to have no more than 2 elements.
 
 \begin{coq_example*}
-Theorem nat_bool_discr : ~bool==nat.
+Theorem nat_bool_discr : bool <> nat.
 Proof.
-  Pose discr := [X:Set]~(a,b:X)~(x:X)~x=a->~x=b->False.
-  Intro Heq; Assert H : (discr bool).
-    Intro H; Apply (H true false); NewDestruct x; Auto.
-  Rewrite Heq in H; Apply H; Clear H.
-  NewDestruct a; NewDestruct b; Intro H0; EAuto.
-  NewDestruct n; [Apply (H0 (S (S O))); Discriminate | EAuto].
+  pose discr :=
+    fun X:Set =>
+      ~ (forall a b:X, ~ (forall x:X, x <> a -> x <> b -> False)).
+  intro Heq; assert H: discr bool.
+  intro H; apply (H true false); destruct x; auto.
+  rewrite Heq in H; apply H; clear H.
+  destruct a; destruct b; intro H0; eauto.
+  destruct n; [ apply (H0 2%N); discriminate | eauto ].
 Qed.
 \end{coq_example*}
 
@@ -245,24 +256,28 @@ predicate satisfied by the elements of the sets. As an example we show
 the following theorem.
 
 \begin{coq_example*}
-Theorem le_le: (m,n:nat){x:nat | (le x m)} = {x:nat | (le x n)} -> m = n.
-
-Inductive discr_int_n [n:nat;X:Set] : Prop :=
-  intro : (fst:X->nat)(snd:(x:X)(le (fst x) n))
-            ((x,y:X)(exist ? [z](le z n) (fst x) (snd x))=
-                (exist ? [z](le z n) (fst y) (snd y))->x=y)
-          -> (discr_int_n n X).
-
+Theorem le_le :
+  forall m n:nat,
+    {x : nat | (x <= m)%N} = {x : nat | (x <= n)%N} -> m = n.
+Inductive discr_int_n (n:nat) (X:Set) : Prop :=
+  intro :
+      forall (fst:X -> nat) (snd:forall x:X, (fst x <= n)%N),
+        (forall x y:X,
+           exist (fun z => (z <= n)%N) (fst x) (snd x) =
+           exist (fun z => (z <= n)%N) (fst y) (snd y) -> x = y) ->
+        discr_int_n n X.
 Proof.
-Intros.
-Assert Hdiscr : (discr_int_n m {x:nat | (le x m)}).
-Split with (proj1_sig nat [x:?](le x m)) (proj2_sig nat [x:?](le x m)).
-NewDestruct x; NewDestruct y.
-Exact [x]x.
-Rewrite H in Hdiscr.
-Elim Hdiscr.
-Assert H1:=(snd (exist nat [z](le z (S n)) (S n) (le_n (S n)))).
-(* ... *)
+intros.
+assert Hdiscr: discr_int_n m ({x : nat | (x <= m)%N}).
+split with
+ (proj1_sig (P:=(fun x => (x <= m)%N)))
+ (proj2_sig (P:=(fun x => (x <= m)%N))).
+destruct x; destruct y.
+exact (fun x => x).
+rewrite H in Hdiscr.
+elim Hdiscr.
+assert H1 :=
+ snd (A:=(exist (fun z => (z <= S n)%N) (S n) (le_n (S n)))).
 \end{coq_example*}
 
 \section{Axioms}
@@ -283,7 +298,8 @@ Let {\tt A}, {\tt B} be types. To deal with extensionality on
 own extensional equality on \verb=A->B=.
 
 \begin{coq_example*}
-  Definition ext_eq [f,g:A->B] := (x:A)(f x)=(g x).
+Definition ext_eq (f 
+                     g:A -> B) := forall x:A, f x = g x.
 \end{coq_example*}
 
 and to reason on \verb=A->B= as a setoid (see the Chapter on
@@ -319,8 +335,8 @@ if its constructors embed sets or propositions. As an example, here is
 a large inductive type:
 
 \begin{coq_example*}
-  Inductive sigST [P:Set->Set] : Set
-      := existST : (X:Set)(P X) -> (sigST P).
+Inductive sigST (P:Set -> Set) : Set :=
+  existST : forall X:Set, P X -> sigST P.
 \end{coq_example*}
 
    Large inductive definition have restricted elimination scheme to
@@ -337,9 +353,12 @@ Reset Initial.
 \end{coq_eval}
 
 \begin{coq_example*}
-  Inductive I : Set := intro : (k:Set)k -> I.
-  Lemma eq_jdef : (x,y:nat) (intro ? x)=(intro ? y) -> x=y.
-  Intros x y H; Injection H.
+Inductive I : Set :=
+  intro : forall k:Set, k -> I.
+Lemma eq_jdef : 
+   forall x y:nat, intro _ x = intro _ y -> x = y.
+Proof.
+   intros x y H; injection H.
 \end{coq_example*}
 
 \answer Injectivity of constructors is restricted to predicative types. If
@@ -389,13 +408,13 @@ mergesort} as an example).
 the arguments of the loop.
 
 \begin{coq_example*}
-Definition R [a,b:(list nat)] := (length a) < (length b).
+Definition R (a b:list nat) := (length a < length b)%N.
 \end{coq_example*}
 
 \item Prove that this order is well-founded (in fact that all elements in {\tt A} are accessible along {\tt R}).
 
 \begin{coq_example*}
-Lemma Rwf : (well_founded R).
+Lemma Rwf : well_founded (A:=R).
 \end{coq_example*}
 
 \item Define the step function (which needs proofs that recursive
@@ -416,7 +435,7 @@ Definition merge_step [l:(list nat)][f:(l':(list nat))(R l' l)->(list nat)] :=
 \item Define the recursive function by fixpoint on the step function.
 
 \begin{coq_example*}
-Definition merge := (fix (list nat) R Rwf [_](list nat) merge_step).
+Definition merge := Fix Rwf (fun _ => list nat) merge_step.
 \end{coq_example*}
 
 \end{itemize}
@@ -522,15 +541,15 @@ apply the elimination scheme using the \verb=using= option of
 \answer To reason by induction on pairs, just reason by induction on the first component then by case analysis on the second component. Here is an example:
 
 \begin{coq_eval}
-Require Arith.
+Require Import Arith.
 \end{coq_eval}
 
 \begin{coq_example}
-Infix "<" lt (at level 5, no associativity).
-Infix "<=" le (at level 5, no associativity).
-Lemma le_or_lt : (n,n0:nat) n0<n \/ n<=n0.
-NewInduction n; NewDestruct n0; Auto with arith.
-NewDestruct (IHn n0); Auto with arith.
+Infix "<" := lt (at level 50, no associativity).
+Infix "<=" := le (at level 50, no associativity).
+Lemma le_or_lt : forall n n0:nat, n0 < n \/ n <= n0.
+induction n; destruct n0; auto with arith.
+destruct (IHn n0); auto with arith.
 \end{coq_example}
 
 \question{How to define a function by double recursion?}
@@ -539,13 +558,13 @@ NewDestruct (IHn n0); Auto with arith.
 compilation algorithm to do the work for you. Here is an example:
 
 \begin{coq_example}
-Fixpoint minus [n:nat] : nat -> nat := 
-  [m:nat]Cases n m of
-            O    _     =>  O
-         | (S k) O     => (S k)
-         | (S k) (S l) => (minus k l)
-        end. 
-Print minus.
+Fixpoint minus (n m:nat) {struct n} : nat :=
+  match n, m with
+  | O, _ => 0%N
+  | S k, O => S k
+  | S k, S l => minus k l
+  end.
+Print  minus.
 \end{coq_example}
 
 
@@ -558,15 +577,19 @@ the simplest way?}
 Here is what it gives on e.g. the type of streams on naturals
 
 \begin{coq_example}
-  Set Implicit Arguments.
-  CoInductive Stream [A : Set]  : Set := Cons : A->(Stream A)->(Stream A).
-  CoFixpoint nats : nat -> (Stream nat) := [n](Cons n (nats (S n))).
-
-  Lemma Stream_unfold : (n:nat)(nats n)= (Cons n (nats (S n))).
-  Proof.
-    Intro; Change (nats n) = (Cases (nats n) of (Cons x s) => (Cons x s) end).
-    Case (nats n); Reflexivity.
-  Qed.
+Set Implicit Arguments.
+CoInductive Stream (A:Set) : Set :=
+  Cons : A -> Stream A -> Stream A.
+CoFixpoint nats (n:nat) : Stream nat := Cons n (nats (S n)).
+Lemma Stream_unfold : 
+   forall n:nat, nats n = Cons n (nats (S n)).
+Proof.
+  intro;
+  change (nats n = match nats n with
+                  | Cons x s => Cons x s
+                  end).
+  case (nats n); reflexivity.
+Qed.
 \end{coq_example}
 
 \section{Miscellaneous}
@@ -600,18 +623,14 @@ Reset Initial.
 \end{coq_eval}
 
 \begin{coq_example*}
-Inductive Def1 : Set
-   := c1 : Def1.
-
-Inductive DefProp : Def1 -> Set
-   := c2 : (d:Def1)(DefProp d).
-
-Inductive Comb : Set
-   := c3 : (d:Def1)(DefProp d) -> Comb.
-
-Lemma eq_comb
-   : (d1,d1':Def1; d2:(DefProp d1); d2':(DefProp d1')) d1=d1' ->
-     (c3 d1 d2)=(c3 d1' d2').
+Inductive Def1 : Set := c1 : Def1.
+Inductive DefProp : Def1 -> Set :=
+  c2 : forall d:Def1, DefProp d.
+Inductive Comb : Set :=
+  c3 : forall d:Def1, DefProp d -> Comb.
+Lemma eq_comb :
+  forall (d1 d1':Def1) (d2:DefProp d1) (d2':DefProp d1'),
+    d1 = d1' -> c3 d1 d2 = c3 d1' d2'.
 \end{coq_example*}
 
 \answer You need to derive the dependent elimination
@@ -623,33 +642,30 @@ Abort.
 
 \begin{coq_example*}
 Scheme DefProp_elim := Induction for DefProp Sort Prop.
-
-Lemma eq_comb
-   : (d1,d1':Def1)d1=d1'->(d2:(DefProp d1); d2':(DefProp d1'))
-     (c3 d1 d2)=(c3 d1' d2').
-Intros.
-NewDestruct H.
-NewDestruct d2 using DefProp_elim.
-NewDestruct d2' using DefProp_elim.
-Reflexivity.
+Lemma eq_comb :
+  forall d1 d1':Def1,
+    d1 = d1' ->
+    forall (d2:DefProp d1) (d2':DefProp d1'), c3 d1 d2 = c3 d1' d2'.
+intros.
+destruct H.
+destruct d2 using DefProp_elim.
+destruct d2' using DefProp_elim.
+reflexivity.
 Qed.
 \end{coq_example*}
 
 \question{And what if I want to prove the following?}
 
 \begin{coq_example*}
-Inductive natProp : nat -> Prop
-   := p0 : (natProp O)
-   |  pS : (n:nat)(natProp n) -> (natProp (S n)).
-
-Inductive package : Set
-   := pack : (n:nat)(natProp n) -> package.
-
-Lemma eq_pack
-   : (n,n':nat)
-     n=n' ->
-     (np:(natProp n); np':(natProp n'))
-     (pack n np)=(pack n' np').
+Inductive natProp : nat -> Prop :=
+  | p0 : natProp 0%N
+  | pS : forall n:nat, natProp n -> natProp (S n).
+Inductive package : Set :=
+  pack : forall n:nat, natProp n -> package.
+Lemma eq_pack :
+ forall n n':nat,
+   n = n' ->
+   forall (np:natProp n) (np':natProp n'), pack n np = pack n' np'.
 \end{coq_example*}
 
 \answer
@@ -659,29 +675,26 @@ Abort.
 \end{coq_eval}
 \begin{coq_example*}
 Scheme natProp_elim := Induction for natProp Sort Prop.
-
-Definition pack_S : package -> package. 
-NewDestruct 1.
-Apply (pack (S n)).
-Apply pS; Assumption.
+Definition pack_S : package -> package.
+destruct 1.
+apply (pack (S n)).
+apply pS; assumption.
 Defined.
-
-Lemma eq_pack
-   : (n,n':nat)
-     n=n' ->
-     (np:(natProp n); np':(natProp n'))
-     (pack n np)=(pack n' np').
-Intros n n' Heq np np'.
-Generalize Dependent n'.
-NewInduction np using natProp_elim.
-NewInduction np' using natProp_elim; Intros; Auto. 
-Discriminate Heq.
-NewInduction np' using natProp_elim; Intros; Auto. 
-Discriminate Heq.
-Change (pack_S (pack n  np))=(pack_S (pack n0 np')).
-Apply (f_equal package).
-Apply IHnp.
-Auto.
+Lemma eq_pack :
+  forall n n':nat,
+    n = n' ->
+    forall (np:natProp n) (np':natProp n'), pack n np = pack n' np'.
+intros n n' Heq np np'.
+generalize dependent n'.
+induction np using natProp_elim.
+induction np' using natProp_elim; intros; auto.
+ discriminate Heq.
+induction np' using natProp_elim; intros; auto.
+ discriminate Heq.
+change (pack_S (pack n np) = pack_S (pack n0 np')).
+apply (f_equal (A:=package)).
+apply IHnp.
+auto.
 Qed.
 \end{coq_example*}
 

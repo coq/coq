@@ -346,3 +346,13 @@ doc-www-install:
 	(cd $(WWWDOCDIR); rm -f node*.html main*.html toc.html \
 	 tutorial.html changes.html cover.html)
 	cp www/* $(WWWDOCDIR)
+
+# traducteur V7 -> V8
+tradv8: tradv8.ml4
+	ocamlopt.opt -o $@ str.cmxa unix.cmxa -pp "camlp4o -impl" -impl $^
+
+v8: tradv8
+	for f in `grep -l coq_exa *tex`; do \
+	  echo $$f; \
+	  ./tradv8 $$f; mv $$f $$f.save; mv $$f.v8 $$f; \
+	done
