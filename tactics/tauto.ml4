@@ -120,45 +120,23 @@ let unfold_not_iff = function
 
 let reduction_not_iff = Tacticals.onAllClauses (fun ido -> unfold_not_iff ido)
 
-(* Reduce until finding atoms in head normal form *)
-open Term
-open Termops
-open Environ
-
-let rec reduce env sigma c =
-  let c = Tacred.hnf_constr env sigma c in
-  match Term.kind_of_term c with
-    | Prod (na,t,u) (* when noccurn 1 u*) ->
-      mkProd (na,reduce env sigma t, reduce (push_rel (na,None,t) env) sigma u)
-    | _ -> c
-
-let reduction =
-  Tacticals.onAllClauses
-    (fun cl -> reduct_option reduce (option_app (fun id -> InHyp id) cl))
-
-let t_reduction = valueIn (VTactic reduction)
 let t_reduction_not_iff = valueIn (VTactic reduction_not_iff)
 
-(* As a simple heuristic, first we try to avoid reduction both in tauto and
-   intuition *)
 let tauto g =
   try
-(*      (tclORELSE *)
         (interp (tacticIn (tauto_main t_reduction_not_iff)))
-(*        (interp (tacticIn (tauto_main t_reduction)))) *)
     g
   with UserError _ -> errorlabstrm "tauto" [< str "Tauto failed" >]
 
 let intuition_gen tac =
   interp (tacticIn (tauto_intuit t_reduction_not_iff tac))
 
-let v_intuition args =
+let intuition args =
   match args with
     | [] -> intuition_gen <:tactic< Auto with * >>
     | [ Tac(_, t)] -> intuition_gen t
     | _ -> assert false
 
 let _ = hide_atomic_tactic "Tauto" tauto
-(* let _ = hide_atomic_tactic "Intuition" intuition*)
-let _ = hide_tactic "Intuition" v_intuition
+let _ = hide_tactic "Intuition" intuition
 
