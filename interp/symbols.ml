@@ -376,11 +376,61 @@ let split str =
   in
   loop 0 0
 
+(**********************************************************************)
+(* Mapping classes to scopes *)
+
+open Classops
+
+let class_scope_map = ref (Gmap.empty : (cl_typ,scope_name) Gmap.t)
+
+let _ = Gmap.add CL_SORT "type_scope" Gmap.empty
+
+let declare_class_scope sc cl =
+  class_scope_map := Gmap.add cl sc !class_scope_map
+
+let find_class_scope cl =
+  Gmap.find cl !class_scope_map
+
+open Term
+
+let find_class t =
+  let t, _ = decompose_app (Reductionops.whd_betaiotazeta t) in
+  match kind_of_term t with
+    | Var id -> CL_SECVAR id
+    | Const sp -> CL_CONST sp
+    | Ind ind_sp -> CL_IND ind_sp
+    | Prod (_,_,_) -> CL_FUN
+    | Sort _ -> CL_SORT
+    |  _ -> raise Not_found
+
+let rec compute_ref_arguments_scope t =
+  match kind_of_term (Reductionops.whd_betaiotazeta t) with
+    | Prod (_,t,u) ->
+	let sc =
+	  try Some (find_class_scope (find_class t)) with Not_found -> None in
+	sc :: compute_ref_arguments_scope u
+    | _ -> []
+
+let declare_ref_arguments_scope ref =
+  let t = Global.type_of_global ref in
+  declare_arguments_scope ref (compute_ref_arguments_scope t)
+
+(************)
 (* Printing *)
 
 let pr_delimiters_info = function
-  | None -> str "No delimiters"
+  | None -> str "No delimiter key"
   | Some key -> str "Delimiting key is " ++ str key
+
+let classes_of_scope sc =
+  Gmap.fold (fun cl sc' l -> if sc = sc' then cl::l else l) !class_scope_map []
+
+let pr_scope_classes sc =
+  let l = classes_of_scope sc in
+  if l = [] then mt()
+  else 
+    hov 0 (str ("Bound to class"^(if List.tl l=[] then "" else "es")) ++
+      spc() ++ prlist_with_sep spc pr_class l) ++ fnl()
 
 let rec rawconstr_of_aconstr () x =
   map_aconstr_with_binders_loc dummy_loc (fun id () -> (id,())) 
@@ -392,6 +442,7 @@ let pr_notation_info prraw ntn c =
 let pr_named_scope prraw scope sc =
   str "Scope " ++ str scope ++ fnl ()
   ++ pr_delimiters_info sc.delimiters ++ fnl ()
+  ++ pr_scope_classes scope
   ++ Stringmap.fold
        (fun ntn ((_,r),df) strm ->
 	 pr_notation_info prraw df r ++ fnl () ++ strm)
@@ -470,46 +521,6 @@ let declare_notation_printing_rule ntn unpl =
 let find_notation_printing_rule ntn =
   try Stringmap.find ntn !printing_rules
   with Not_found -> anomaly ("No printing rule found for "^ntn)
-
-(**********************************************************************)
-(* Mapping classes to scopes *)
-
-open Classops
-
-let class_scope_map = ref (Gmap.empty : (cl_typ,scope_name) Gmap.t)
-
-let declare_class_scope cl sc =
-  class_scope_map := Gmap.add cl sc !class_scope_map
-
-let find_class_scope cl =
-  Gmap.find cl !class_scope_map
-
-open Term
-
-let find_class t =
-  let t, _ = decompose_app (Reductionops.whd_betaiotazeta t) in
-  match kind_of_term t with
-    | Var id -> CL_SECVAR id
-    | Const sp -> CL_CONST sp
-    | Ind ind_sp -> CL_IND ind_sp
-    | Prod (_,_,_) -> CL_FUN
-    | Sort _ -> CL_SORT
-    |  _ -> raise Not_found
-
-let rec compute_ref_arguments_scope t =
-  match kind_of_term (Reductionops.whd_betaiotazeta t) with
-    | Prod (_,t,u) ->
-	let sc =
-	  try Some (find_class_scope (find_class t)) with Not_found -> None in
-	sc :: compute_ref_arguments_scope u
-    | _ -> []
-
-let declare_ref_arguments_scope ref =
-  let t = Global.type_of_global ref in
-(*
-  declare_arguments_scope ref (compute_ref_arguments_scope t)  
-*)
-  ()
 
 (**********************************************************************)
 (* Synchronisation with reset *)
