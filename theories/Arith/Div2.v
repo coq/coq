@@ -106,6 +106,13 @@ Proof.
 Intro. Unfold double. Simpl. Auto with arith.
 Qed.
 
+Lemma double_plus : (m,n:nat) (double (plus m n))=(plus (double m) (double n)).
+Proof.
+Intros m n. Unfold double.
+Do 2 Rewrite -> plus_assoc_r. Rewrite -> (plus_permute n).
+Reflexivity.
+Qed.
+
 Hints Resolve double_S : arith.
 
 Lemma even_odd_double : (n:nat) 
