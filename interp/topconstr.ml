@@ -163,9 +163,7 @@ type constr_expr =
   | CDelimiters of loc * scope_name * constr_expr
   | CDynamic of loc * Dyn.t
 
-and fixpoint_binder = name located list * constr_expr 
-
-and fixpoint_expr = identifier * fixpoint_binder list * constr_expr * constr_expr
+and fixpoint_expr = identifier * int * constr_expr * constr_expr
 
 and cofixpoint_expr = identifier * constr_expr * constr_expr
 
@@ -273,9 +271,7 @@ let map_constr_expr_with_binders f g e = function
   | COrderedCase (loc,s,po,a,bl) ->
       COrderedCase (loc,s,option_app (f e) po,f e a,List.map (f e) bl)
   | CFix (loc,id,dl) ->
-      let k (id,bl,t,d) = 
-	let (e,bl) = map_binders f g e bl in (id,bl,f e t,f e d) in
-      CFix (loc,id,List.map k dl)
+      CFix (loc,id,List.map (fun (id,n,t,d) -> (id,n,f e t,f e d)) dl)
   | CCoFix (loc,id,dl) ->
       CCoFix (loc,id,List.map (fun (id,t,d) -> (id,f e t,f e d)) dl)
 

@@ -17,28 +17,6 @@ open Libnames
 open Prim
 open Topconstr
 
-(* For the very old syntax of fixpoints *)
-let split_lambda = function
-  | CLambdaN (loc,[[na],t],c) -> (na,t,c)
-  | CLambdaN (loc,([na],t)::bl,c) -> (na,t,CLambdaN(loc,bl,c))
-  | CLambdaN (loc,(na::nal,t)::bl,c) -> (na,t,CLambdaN(loc,(nal,t)::bl,c))
-  | _ -> Util.error "ill-formed fixpoint body"
-
-let split_product = function
-  | CArrow (loc,t,c) -> ((loc,Anonymous),t,c)
-  | CProdN (loc,[[na],t],c) -> (na,t,c)
-  | CProdN (loc,([na],t)::bl,c) -> (na,t,CProdN(loc,bl,c))
-  | CProdN (loc,(na::nal,t)::bl,c) -> (na,t,CProdN(loc,(nal,t)::bl,c))
-  | _ -> Util.error "ill-formed fixpoint body"
-
-let rec split_fix n typ def =
-  if n = 0 then ([],typ,def)
-  else
-    let (na,_,def) = split_lambda def in
-    let (_,t,typ) = split_product typ in
-    let (bl,typ,def) = split_fix (n-1) typ def in
-    (([na],t)::bl,typ,def)
-
 let coerce_to_var = function
   | CRef (Ident (_,id)) -> id
   | ast -> Util.user_err_loc
@@ -272,12 +250,14 @@ GEXTEND Gram
   fixbinder:
     [ [ id = base_ident; "/"; recarg = natural; ":"; type_ = constr;
         ":="; def = constr ->
-	  Options.if_verbose Pp.warning 
-          "Checking of the fixpoint type not done for very-old-style fixpoint";
-	  let (bl, typ, def) = split_fix recarg type_ def in (id, bl, typ, def)
+          (id, recarg-1, type_, def)
       | id = base_ident; bl = ne_simple_binders_list; ":"; type_ = constr;
 	":="; def = constr ->
-	  (id, bl, type_, def) ] ]
+          let ni = List.length (List.flatten (List.map fst bl)) -1 in
+          let loc0 = fst (List.hd (fst (List.hd bl))) in
+          let loc1 = join_loc loc0 (constr_loc type_) in
+          let loc2 = join_loc loc0 (constr_loc def) in
+	  (id, ni, CProdN (loc1,bl,type_), CLambdaN (loc2,bl,def)) ] ]
   ;
   fixbinders:
     [ [ fbs = LIST1 fixbinder SEP "with" -> fbs ] ]

@@ -153,7 +153,29 @@ let pr_recursive_decl pr id b t c =
   brk (1,2) ++ str ": " ++ pr ltop t ++ str ":=" ++
   brk (1,2) ++ pr ltop c
 
-let pr_fixdecl pr (id,bl,t,c) =
+let split_lambda = function
+  | CLambdaN (loc,[[na],t],c) -> (na,t,c)
+  | CLambdaN (loc,([na],t)::bl,c) -> (na,t,CLambdaN(loc,bl,c))
+  | CLambdaN (loc,(na::nal,t)::bl,c) -> (na,t,CLambdaN(loc,(nal,t)::bl,c))
+  | _ -> anomaly "ill-formed fixpoint body"
+
+let split_product = function
+  | CArrow (loc,t,c) -> ((loc,Anonymous),t,c)
+  | CProdN (loc,[[na],t],c) -> (na,t,c)
+  | CProdN (loc,([na],t)::bl,c) -> (na,t,CProdN(loc,bl,c))
+  | CProdN (loc,(na::nal,t)::bl,c) -> (na,t,CProdN(loc,(nal,t)::bl,c))
+  | _ -> anomaly "ill-formed fixpoint body"
+
+let rec split_fix n typ def =
+  if n = 0 then ([],typ,def)
+  else
+    let (na,_,def) = split_lambda def in
+    let (_,t,typ) = split_product typ in
+    let (bl,typ,def) = split_fix (n-1) typ def in
+    (([na],t)::bl,typ,def)
+
+let pr_fixdecl pr (id,n,t,c) =
+  let (bl,t,c) = split_fix (n+1) t c in
   pr_recursive_decl pr id 
     (brk (1,2) ++ str "[" ++ pr_binders pr bl ++ str "]") t c
 

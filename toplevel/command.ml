@@ -311,18 +311,13 @@ let build_recursive lnameargsardef =
   let lrecnames = List.map (fun (f,_,_,_) -> f) lnameargsardef 
   and sigma = Evd.empty
   and env0 = Global.env()
-  and nv = Array.of_list 
-    (List.map
-      (fun (_,la,_,_) -> List.length (List.flatten (List.map fst la)) - 1)
-        lnameargsardef)
-  in
+  and nv = Array.of_list (List.map (fun (_,n,_,_) -> n) lnameargsardef) in
   let fs = States.freeze() in
   let (rec_sign,arityl) = 
     try 
       List.fold_left 
-        (fun (env,arl) (recname,lparams,arityc,_) -> 
-           let raw_arity = mkProdCit lparams arityc in
-           let arity = interp_type sigma env0 raw_arity in
+        (fun (env,arl) (recname,_,arityc,_) -> 
+           let arity = interp_type sigma env0 arityc in
            let _ = declare_variable recname
 	     (Lib.cwd(),SectionLocalAssum arity, IsAssumption Definitional) in
            (Environ.push_named (recname,None,arity) env, (arity::arl)))
@@ -333,8 +328,8 @@ let build_recursive lnameargsardef =
   let recdef =
     try 
       List.map2
-	(fun (_,lparams,_,def) arity ->
-           interp_casted_constr sigma rec_sign (mkLambdaCit lparams def) arity)
+	(fun (_,_,_,def) arity ->
+          interp_casted_constr sigma rec_sign def arity)
         lnameargsardef arityl
     with e ->
       States.unfreeze fs; raise e

@@ -196,22 +196,9 @@ let rec extern = function
   | RRec (_,fk,idv,tyv,bv) ->
       (match fk with
 	 | RFix (nv,n) ->
-             let rec split_lambda binds = function
-	       | (0, t) -> (List.rev binds,extern t)
-	       | (n, RLambda (_,na,t,b)) ->
-		   split_lambda (([loc,na],extern t)::binds) (n-1,b)
-	       | _ -> anomaly "extern: ill-formed fixpoint body" in
-	     let rec split_product = function
-	       | (0, t) -> extern t
-	       | (n, RProd (_,na,t,b)) -> split_product (n-1,b)
-	       | _ -> anomaly "extern: ill-formed fixpoint type" in
 	     let listdecl = 
 	       Array.mapi
-		 (fun i fi ->
-		    let (lparams,def) = split_lambda [] (nv.(i)+1,bv.(i)) in
-		    let typ = split_product (nv.(i)+1,tyv.(i)) in
-		    (fi, lparams, typ, def))
-		 idv
+		 (fun i fi -> (fi,nv.(i),extern tyv.(i),extern bv.(i))) idv
 	     in 
 	     CFix (loc,(loc,idv.(n)),Array.to_list listdecl)
 	 | RCoFix n -> 

@@ -293,12 +293,9 @@ let rec intern_cases_pattern scopes aliases = function
 
 let rec intern_fix = function
   | [] -> ([],[],[],[])
-  | (fi, bl, c, t)::rest->
-      let ni = List.length (List.flatten (List.map fst bl)) - 1 in
+  | (fi, n, c, t)::rest->
       let (lf,ln,lc,lt) = intern_fix rest in
-      (fi::lf, ni::ln, 
-       CProdN (dummy_loc, bl, c)::lc, 
-       CLambdaN (dummy_loc, bl, t)::lt)
+      (fi::lf, n::ln, c::lc, t::lt)
 
 let rec intern_cofix = function
   | [] -> ([],[],[])

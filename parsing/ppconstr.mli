@@ -18,6 +18,10 @@ open Extend
 open Coqast
 open Topconstr
 open Names
+open Util
+
+val split_fix : int -> constr_expr -> constr_expr -> 
+  (name located list * constr_expr) list * constr_expr * constr_expr
 
 val pr_global : global_reference -> std_ppcmds
 

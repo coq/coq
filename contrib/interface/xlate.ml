@@ -1602,7 +1602,7 @@ let cvt_fixpoint_binder = function
        xlate_constr c)
   | [],c -> xlate_error "Shouldn't occur"
 
-let cvt_fixpoint_binders args =
+let cvt_fixpoint_binders bl =
   CT_binder_list(List.map cvt_fixpoint_binder args)
 
 let xlate_vernac =
@@ -1872,11 +1872,14 @@ let xlate_vernac =
 	  (CT_co_ind co_or_ind, CT_ind_spec_list (List.map strip_mutind lmi))
    | VernacFixpoint [] -> xlate_error "mutual recursive"
    | VernacFixpoint (lm :: lmi) ->
-      let strip_mutrec (fid, bl, arf, ardef) =
+      let strip_mutrec (fid, n, arf, ardef) =
+        let arf = xlate_constr arf in
+        let ardef = xlate_constr ardef in
+        let (bl,arf,ardef) = split_fix n arf ardef in
 	match cvt_fixpoint_binders bl with
 	  | CT_binder_list (b :: bl) ->
 	      CT_fix_rec (xlate_ident fid, CT_binder_ne_list (b, bl),
-	        xlate_constr arf, xlate_constr ardef)
+                arf, ardef)
           | _ -> xlate_error "mutual recursive" in
         CT_fix_decl
 	  (CT_fix_rec_list (strip_mutrec lm, List.map strip_mutrec lmi))
