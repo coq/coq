@@ -303,6 +303,33 @@ NewDestruct a;
 ].
 Save.
 
+Definition Zdiv [a,b:Z] : Z :=
+  Cases (Z_gt_le_dec b `0`) of
+    (left bpos) => let (qr,_) = (Zdiv_eucl bpos a) in 
+                   let (q,_) = qr in q
+  | (right _) => `0` end.
+
+Definition Zmod [a,b:Z] : Z :=
+  Cases (Z_gt_le_dec b `0`) of
+    (left bpos) => let (qr,_) = (Zdiv_eucl bpos a) in 
+                   let (_,r) = qr in r
+  | (right _) => `0` end.
+
+Lemma Z_div_mod : (a,b:Z)`b > 0` -> `a = (Zdiv a b)*b + (Zmod a b)`.
+Proof.
+Intros; Unfold Zdiv Zmod; Case (Z_gt_le_dec b `0`); Simpl; Intros.
+Case (Zdiv_eucl z a); Simpl; Induction x; Intros. 
+Rewrite <- Zmult_sym; Tauto.
+Absurd `b > 0`; Omega.
+Save.
+
+Lemma Z_mod_bounds : (a,b:Z)`b > 0` -> `0 <= (Zmod a b) < b`.
+Proof.
+Intros; Unfold Zdiv Zmod; Case (Z_gt_le_dec b `0`); Simpl; Intros.
+Case (Zdiv_eucl z a); Simpl; Induction x; Intros; Omega. 
+Absurd `b > 0`; Omega.
+Save.
+
 Theorem Zdiv_eucl_extended : (b:Z)`b <> 0` -> (a:Z)
   { qr:Z*Z | let (q,r)=qr in `a=b*q+r` /\ `0 <= r < |b|` }.
 Proof.
