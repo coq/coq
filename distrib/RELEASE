@@ -310,11 +310,11 @@ C1) PRÉPARATION
 
   Mettre à jour les fichiers suivants :
 
-  - Tutorial.tex : numéro de version (2 fois) et date
+  - Tutorial.tex : numéro de version et date (1 fois)
   - title.tex    : numéro de version
-  - cover.html   : numéro de version et date (2 fois)
-  - README       : numéros de version (3 fois)
-  - macros.tex   : numéro de version
+  - cover.html   : numéro de version (2 fois)  et date
+  - README       : numéros de version (2 fois)
+  - Makefile     : numero de version
 
   Vérification que "CHANGES" est à jour par rapport à "Changes.tex"
 
