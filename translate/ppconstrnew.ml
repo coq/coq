@@ -129,7 +129,7 @@ let rec pr_patt inh p =
 let pr_eqn pr (_,pl,rhs) =
   spc() ++ hov 4
     (str "| " ++
-     hv 0 (prlist_with_sep sep_v (pr_patt ltop) pl ++ str " =>") ++
+     hov 0 (prlist_with_sep sep_v (pr_patt ltop) pl ++ str " =>") ++
      spc() ++ pr ltop rhs)
 
 
