@@ -418,7 +418,11 @@ let start_proof_com sopt stre com =
   let env = Global.env () in
   let sign = Global.named_context () in
   let id = match sopt with
-    | Some id -> id
+    | Some id ->
+        (* We check existence here: it's a bit late at Qed time *)
+        if Nametab.exists_cci (Lib.make_path id CCI) then
+          errorlabstrm "start_proof" [< pr_id id; 'sTR " already exists" >];
+        id
     | None ->
 	next_ident_away (id_of_string "Unnamed_thm")
 	  (Pfedit.get_all_proof_names ())
