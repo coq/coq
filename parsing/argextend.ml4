@@ -267,11 +267,14 @@ EXTEND
          declare_vernac_argument false loc s l ] ]
   ;
   argtype:
-    [ [ e = LIDENT -> fst (interp_entry_name loc e) 
-      | e1 = LIDENT; "*"; e2 = LIDENT ->
-          let e1 = fst (interp_entry_name loc e1) in
-          let e2 = fst (interp_entry_name loc e2) in
-          PairArgType (e1, e2) ] ]
+    [ "2" RIGHTA
+      [ e1 = argtype; "*"; e2 = NEXT -> PairArgType (e1, e2) ]
+    | "1"
+      [ e = argtype; LIDENT "list" -> List0ArgType e
+      | e = argtype; LIDENT "option" -> OptArgType e ]
+    | "0"
+      [ e = LIDENT -> fst (interp_entry_name loc e) 
+      | "("; e = argtype; ")" -> e ] ]
   ;
   argrule:
     [ [ "["; l = LIST0 genarg; "]"; "->"; "["; e = Pcaml.expr; "]" -> (l,e) ] ]
@@ -286,4 +289,3 @@ EXTEND
     ] ]
   ;
   END
-
