@@ -29,8 +29,9 @@ A1) VÉRIFICATIONS
   - Relecture des fichiers "README", "README.win", en particulier,
     vérification du numéro de version, des adresses internet et des
     coordonnées de Coq
-  - Relecture des fichiers "INSTALL", "INSTALL.win" en particulier numéro
-    de version de coq et numéros des versions de OCaml et Camlp4 demandées
+  - Relecture des fichiers "INSTALL", "INSTALL.win", "INSTALL.macosx",
+    en particulier numéro de version de coq et numéros des versions de
+    OCaml et Camlp4 demandées
   - Mise à jour/nettoyage du fichier CHANGES et du fichier ANNONCE
   - Mise à jour des fichiers .dep.ps dans le répertoire doc (faire make
     depend depuis ce répertoire)
@@ -87,8 +88,7 @@ que les paramètres sont corrects.
 
   Pour l'installation sous ftp voir A7.
 
-
- tag -F V6-2-5 nom_du_fichierqq5) CREATION DES PACKAGES BINAIRES (ad libitum)
+A5) CREATION DES PACKAGES BINAIRES (ad libitum)
    (prévoir pour chaque package près de 100Mo dispo sur la partition)
 
 A5a) Création d'un package binaire tar.gz 

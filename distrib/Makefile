@@ -71,6 +71,8 @@ tar-gz:
 	@rm -rf ${COQPACKAGE}/{TODO,ANNONCE,PROBLEMES}
 	@rm -rf ${COQPACKAGE}/theories/Num
 	@rm -rf ${COQPACKAGE}/doc/newsyntax.tex 
+	@rm -f ${COQPACKAGE}/make.result
+	@rm -rf ${COQPACKAGE}/test-suite/parser   # tests pcoq
 	@find ${COQPACKAGE} -name ".cvsignore" -exec rm {} \;
 	@echo done
 	@echo -n Building the tar.gz source package

@@ -80,7 +80,7 @@ versionspec2=`grep "^Source: " ./RH/coq.spec.tpl | sed -e 's!.*coq-\(.*\)\.tar\.
 if [ "$versionspec1" = "$version" -a "$versionspec2" = "$version" ];
 then echo "Version number in coq.spec seems OK ($versionspec1)";
 else
-  echo "Wrong version numbers in coq.spec ($versionspec1 and $versionspec2)"
+  echo "Wrong version numbers in coq.spec ($versionspec1 and $versionspec2 instead of $version)"
   echo Aborting; exit 1
 fi
 #  ocamlversionspec=`grep "^Requires: ocaml" ./coq.spec | sed -e 's/Requires: ocaml >= \(.*\)/\1/'`
