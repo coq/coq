@@ -77,7 +77,9 @@ let trim_wrong_uri_prefix pref =
    ("/home/pauillac/coq3/sacerdot/V7/theories/Reals","/coq/Reals");
    ("/home/pauillac/coq3/sacerdot/V7/theories/Relations","/coq/Relations");
    ("/home/pauillac/coq3/sacerdot/V7/theories/Sets","/coq/Sets");
-   ("/home/pauillac/coq3/sacerdot/V7/theories/Zarith","/coq/Zarith")
+   ("/home/pauillac/coq3/sacerdot/V7/theories/Zarith","/coq/Zarith");
+   ("/home/pauillac/coq3/sacerdot/V7/contrib/ring","/coq/contrib/ring");
+   ("/home/pauillac/coq3/sacerdot/V7/contrib/omega","/coq/contrib/omega")
   ] in
  let try_trim (inp,out) =
   for i = 0 to String.length inp - 1 do
@@ -178,7 +180,7 @@ let string_of_pvars pvars hyps =
   in
    aux 0 pvars
  in
-  string_of_vars_list (List.map (find_depth pvars) hyps)
+  string_of_vars_list (List.map (find_depth pvars) (List.rev hyps))
 ;;
 
 exception XmlCommandInternalError;;
@@ -544,22 +546,6 @@ let print id fn =
        match val0 with
           None -> print_axiom id typ [] hyps
         | Some c -> print_definition id c typ [] hyps
-	(*i No more recipes inside constants
-           match !lcvr with
-              D.Cooked c -> print_definition id c typ [] hyps
-            | D.Recipe _ ->
-               print_string " COOKING THE RECIPE\n" ;
-               ignore (D.cook_constant lcvr) ;
-               let {D.const_body=val0 ; D.const_type = typ} =
-                G.lookup_constant sp in
-               let typ = T.body_of_type typ in
-                begin
-                 match val0 with
-                   Some {contents= D.Cooked c} ->
-                    print_definition id c typ [] hyps
-                 | _ -> Util.error "COOKING FAILED"
-                end 
-         i*)
       end
     with
      Not_found ->
@@ -638,13 +624,12 @@ exception Uninteresting;;
 (* Note: it is printed only the uncooked available form of the object plus  *)
 (*       the list of parameters of the object deduced from it's most cooked *)
 (*       form                                                               *)
-let print_object o id sp dn fv =
+let print_object lobj id sp dn fv =
  let module D = Declarations in
  let module G = Global in
  let module N = Names in
  let module T = Term in
  let module X = Xml in
-  let lobj = o in
   let tag = Libobject.object_tag lobj in
   let pp_cmds () =
    match tag with
@@ -661,7 +646,6 @@ let print_object o id sp dn fv =
             | Some c -> print_definition id c typ fv hyps
           end
     | "INDUCTIVE" ->
-         (*CSC: QUI CI SONO ANCHE LE VARIABILI, CREDO, CHIAMATE mind_hyps *)
          let
           {D.mind_packets=packs ;
            D.mind_nparams=nparams ;
@@ -671,13 +655,14 @@ let print_object o id sp dn fv =
           let hyps = string_list_of_named_context_list hyps in
            print_mutual_inductive packs fv hyps nparams
     | "VARIABLE" ->
-(*V7 DON'T KNOW HOW TO DO IT
-        let (_,typ) = G.lookup_named id in
-*)
-         add_to_pvars (N.string_of_id id) ;
-(*
-         print_variable id (T.body_of_type typ)
-*) [<>]
+        let (_,(varentry,_,_)) = Declare.out_variable lobj in
+         let typ =
+          match varentry with
+             Declare.SectionLocalDef _ -> assert false
+           | Declare.SectionLocalDecl typ -> typ
+         in
+          add_to_pvars (N.string_of_id id) ;
+          print_variable id (T.body_of_type typ)
     | "CLASS"
     | "COERCION"
     | _ -> raise Uninteresting
