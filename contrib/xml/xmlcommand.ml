@@ -172,14 +172,13 @@ let search_variables () =
 
 let rec join_dirs cwd =
  function
-    []  -> assert false
-  | [he] -> cwd ^ "/" ^ he
+    []  -> cwd
   | he::tail ->
-     let newcwd = cwd ^ "/" ^ he in
       (try
-        Unix.mkdir newcwd 0o775
+        Unix.mkdir cwd 0o775
        with _ -> () (* Let's ignore the errors on mkdir *)
       ) ;
+     let newcwd = cwd ^ "/" ^ he in
       join_dirs newcwd tail
 ;;
 
@@ -869,9 +868,11 @@ let _ =
 let _ =
   Vernac.set_xml_start_library
    (function () ->
+     print_string "B";
      theory_channel :=
        Util.option_app (fun fn -> open_out (fn^".v"))
 	 (theory_filename xml_library_root);
+     print_string "C";
      theory_output_string "<?xml version=\"1.0\" encoding=\"latin1\"?>\n";
      theory_output_string "<html xmlns=\"http://www.w3.org/1999/xhtml\" xmlns:ht=\"http://www.cs.unibo.it/helm/namespaces/helm-theory\">\n";
      theory_output_string "<head>\n<style> A { text-decoration: none } </style>\n</head>\n")
@@ -892,7 +893,8 @@ let _ =
             Util.anomaly ("Error executing \"" ^ cmd ^ "\"")
           in
            command (coqdoc^options^" -d "^dir^" "^fn^".v");
-           command ("mv "^dir^"/.*.html "^fn^".xml ");
+           let dot = if fn.[0]='/' then "." else "" in
+           command ("mv "^dir^"/"^dot^"*.html "^fn^".xml ");
            (*command ("rm "^fn^".v");*)
            print_string("\nWriting on file \"" ^ fn ^ ".xml\" was succesful\n"))
        (theory_filename xml_library_root))
@@ -902,4 +904,17 @@ let _ =
   Lexer.set_xml_output_comment
     (fun s ->
       output_string (match !theory_channel with Some ch -> ch | _ -> stdout) s)
+;;
+
+let _ =
+  Lib.set_xml_open_section
+    (fun id ->
+      print_string "A";
+      let s = Names.string_of_id id in
+      theory_output_string ("<ht:SECTION name=\""^s^"\">"))
+;;
+
+let _ =
+  Lib.set_xml_close_section
+    (fun _ -> theory_output_string "</ht:SECTION>")
 ;;
