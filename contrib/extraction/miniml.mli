@@ -8,11 +8,11 @@
 
 (*i $Id$ i*)
 
+(*s Target language for extraction: a core ML called MiniML. *)
+
 open Pp
 open Names
 open Term
-
-(*s Target language for extraction: a core ML called MiniML. *)
 
 (*s ML type expressions. *)
 

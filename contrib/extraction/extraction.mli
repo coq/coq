@@ -8,6 +8,8 @@
 
 (*i $Id$ i*)
 
+(*s Extraction from Coq terms to Miniml. *)
+
 open Names
 open Term
 open Miniml
