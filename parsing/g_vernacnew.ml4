@@ -726,7 +726,6 @@ GEXTEND Gram
   syntax_extension_type:
     [ [ IDENT "ident" -> ETIdent | IDENT "global" -> ETReference
       | IDENT "bigint" -> ETBigint
-      | e=IDENT -> ETOther("constr",e)
     ] ]
   ;
   opt_scope:
