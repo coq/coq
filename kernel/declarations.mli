@@ -8,7 +8,7 @@ open Term
 open Sign
 (*i*)
 
-(*s Constants (internal representation). *)
+(*s Constants (internal representation) (Definition/Axiom) *)
 
 type lazy_constant_value =
   | Cooked of constr
