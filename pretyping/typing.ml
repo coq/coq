@@ -113,7 +113,7 @@ let rec execute mf env sigma cstr =
         let j1 = execute mf env sigma c1 in
         let j2 = execute mf env sigma c2 in
         let j2 = type_judgment env sigma j2 in
-        let _ = conv_leq env sigma j1.uj_type j2.utj_val in
+        let _ =  judge_of_cast env j1 j2 in
         let env1 = push_rel (name,Some j1.uj_val,j2.utj_val) env in
         let j3 = execute mf env1 sigma c3 in
         judge_of_letin env name j1 j2 j3

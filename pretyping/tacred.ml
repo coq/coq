@@ -208,7 +208,7 @@ let invert_name labs l na0 env sigma ref = function
 		| None -> None
 		| Some c -> 
 		    let labs',ccl = decompose_lam c in
-		    let _, l' = whd_betaetalet_stack ccl in
+		    let _, l' = whd_betalet_stack ccl in
 		    let labs' = List.map snd labs' in
 		    if labs' = labs & l = l' then Some ref else None
       else Some ref
@@ -220,7 +220,7 @@ let invert_name labs l na0 env sigma ref = function
 
 let compute_consteval_direct sigma env ref =
   let rec srec env n labs c =
-    let c',l = whd_betadeltaeta_stack env sigma c in
+    let c',l = whd_betadelta_stack env sigma c in
     match kind_of_term c' with
       | Lambda (id,t,g) when l=[] ->
 	  srec (push_rel (id,None,t) env) (n+1) (t::labs) g
@@ -236,7 +236,7 @@ let compute_consteval_direct sigma env ref =
 
 let compute_consteval_mutual_fix sigma env ref =
   let rec srec env minarg labs ref c =
-    let c',l = whd_betaetalet_stack c in
+    let c',l = whd_betalet_stack c in
     let nargs = List.length l in
     match kind_of_term c' with
       | Lambda (na,t,g) when l=[] ->
@@ -419,12 +419,12 @@ let rec red_elim_const env sigma ref largs =
   match reference_eval sigma env ref with
     | EliminationCases n when stack_args_size largs >= n ->
 	let c = reference_value sigma env ref in
-	let c', lrest = whd_betadeltaeta_state env sigma (c,largs) in
+	let c', lrest = whd_betadelta_state env sigma (c,largs) in
         (special_red_case sigma env (construct_const env sigma) (destCase c'),
 	 lrest)
     | EliminationFix (min,infos) when stack_args_size largs >=min ->
 	let c = reference_value sigma env ref in
-	let d, lrest = whd_betadeltaeta_state env sigma (c,largs) in
+	let d, lrest = whd_betadelta_state env sigma (c,largs) in
 	let f = make_elim_fun ([|Some ref|],infos) largs in
 	let co = construct_const env sigma in
 	(match reduce_fix_use_function f co (destFix d) lrest with
@@ -437,10 +437,10 @@ let rec red_elim_const env sigma ref largs =
 	  if ref = refgoal then
 	    (c,args)
 	  else
-	    let c', lrest = whd_betaetalet_state (c,args) in
+	    let c', lrest = whd_betalet_state (c,args) in
 	    descend (destEvalRef c') lrest in
 	let (_, midargs as s) = descend ref largs in
-	let d, lrest = whd_betadeltaeta_state env sigma s in
+	let d, lrest = whd_betadelta_state env sigma s in
 	let f = make_elim_fun refinfos midargs in
 	let co = construct_const env sigma in
 	(match reduce_fix_use_function f co (destFix d) lrest with
