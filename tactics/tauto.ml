@@ -1637,7 +1637,7 @@ let lterm = function
 (*--------------------- Interface con Coq  ---------------------------------*)
 (*-- Convierte una formula cci a una formula notacion Tauto --*)
 
-let (tAUTOFAIL:tactic) = fun _ -> errorlabstrm "TAUTOFAIL"
+let (tAUTOFAIL : tactic) = fun _ -> errorlabstrm "TAUTOFAIL"
                                           [< 'sTR "Tauto failed.">]
 
 let is_imp_term t =
