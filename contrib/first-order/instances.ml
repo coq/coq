@@ -105,7 +105,7 @@ let dummy_bvid=id_of_string "x"
 
 let mk_open_instance id gl m t=
   let env=pf_env gl in
-  let evmap=Refiner.sig_sig gl in
+  let evmap=Refiner.project gl in
   let var_id=
     if id==dummy_id then dummy_bvid else
       let typ=pf_type_of gl (constr_of_reference id) in
