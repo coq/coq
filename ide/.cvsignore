@@ -3,3 +3,6 @@ why_viewer
 .depend
 find_phrase.ml
 highlight.ml
+coqide
+Makefile
+test
