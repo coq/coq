@@ -45,7 +45,6 @@ Lyon/COINDUCTIVES : OK
 
 Rocq/GRAPHS
 /home/cpaulin/TYPES/V7/bin/coqc  -q  -I . lsort
-Warning: compute_metamap: MV(1506) sans type !
 Utilise NewInduction
 
 /home/cpaulin/TYPES/V7/bin/coqc  -q  -I . cgraph
@@ -70,9 +69,8 @@ Refine
 --> PROBLEME RESOLU MAIS LE MESSAGE D'ERREUR RESTE PAS TRES CLAIR
 
 Rocq/PARADOXES
-File "./BuraliForti.v", line 176, characters 0-26
-Anomaly: Uncaught exception Univ.UniverseInconsistency. Please report.
-A la fermeture de section, est-ce normal ? pourquoi une anomalie ?
+File "./Reynolds1.v", line 105, characters 0-429
+Error: checking of theorem per_F0 failed... aborting
 
 Rocq/CHECKER OK
 Rocq/COMPILER OK
