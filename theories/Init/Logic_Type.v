@@ -14,7 +14,7 @@ V7only [Unset Implicit Arguments.].
 (** This module defines quantification on the world [Type]
     ([Logic.v] was defining it on the world [Set]) *)
 
-Require Notations.
+Require Datatypes.
 Require Export Logic.
 
 V7only [
@@ -176,84 +176,102 @@ Defined.
 Notation eqT_ind_r  := eq_ind_r (only parsing).
 Notation eqT_rec_r  := eq_rec_r (only parsing).
 Notation eqT_rect_r  := eq_rect_r (only parsing).
-].
 
 (** Some datatypes at the [Type] level *)
-
+(*
 Inductive EmptyT: Type :=.
 Inductive UnitT : Type := IT : UnitT.
+*)
 
+Notation EmptyT := False (only parsing).
+Notation UnitT := unit (only parsing).
+Notation IT := tt.
+].
 Definition notT := [A:Type] A->EmptyT.
 
+V7only [
 (** Have you an idea of what means [identityT A a b]? No matter! *)
 
-Uninterpreted Notation "x === y :> A"
-  (at level 5, y at next level, no associativity).
-
-Inductive identityT [A:Type; a:A] : (b:A)Type as "a === b :> A" :=
+(*
+Inductive identityT [A:Type; a:A] : A -> Type :=
      refl_identityT : (identityT A a a).
+*)
 
-V7only [
+Notation identityT := identity (only parsing).
+Notation refl_identityT := refl_identity (only parsing).
+
 Notation "< A > x === y" := (!identityT A x y)
    (A annot, at level 1, x at level 0, only parsing).
-].
-Notation "x === y" := (identityT ? x y) (at level 5, no associativity).
 
+Notation "x === y" := (identityT ? x y)
+  (at level 5, no associativity) : type_scope.
+
+(*
 Hints Resolve refl_identityT : core v62.
-
-Section IdentityT_is_a_congruence.
+*)
+].
+Section identity_is_a_congruence.
 
  Variables A,B : Type.
  Variable  f : A->B.
 
  Variable x,y,z : A.
  
- Lemma sym_idT : (identityT ? x y) -> (identityT ? y x).
+ Lemma sym_id : (identityT ? x y) -> (identityT ? y x).
  Proof.
   NewDestruct 1; Trivial.
  Qed.
 
- Lemma trans_idT : (identityT ? x y) -> (identityT ? y z) -> (identityT ? x z).
+ Lemma trans_id : (identityT ? x y) -> (identityT ? y z) -> (identityT ? x z).
  Proof.
   NewDestruct 2; Trivial.
  Qed.
 
- Lemma congr_idT : (identityT ? x y)->(identityT ? (f x) (f y)).
+ Lemma congr_id : (identityT ? x y)->(identityT ? (f x) (f y)).
  Proof.
   NewDestruct 1; Trivial.
  Qed.
 
- Lemma sym_not_idT : (notT (identityT ? x y)) -> (notT (identityT ? y x)).
+ Lemma sym_not_id : (notT (identityT ? x y)) -> (notT (identityT ? y x)).
  Proof.
   Red; Intros H H'; Apply H; NewDestruct H'; Trivial.
  Qed.
 
-End IdentityT_is_a_congruence.
+End identity_is_a_congruence.
 
-Definition identityT_ind_r :
+Definition identity_ind_r :
      (A:Type)
         (a:A)
          (P:A->Prop)
           (P a)->(y:A)(identityT ? y a)->(P y).
- Intros A x P H y H0; Case sym_idT with 1:= H0; Trivial.
+ Intros A x P H y H0; Case sym_id with 1:= H0; Trivial.
 Defined.
 
-Definition identityT_rec_r :      
+Definition identity_rec_r :      
      (A:Type)
         (a:A)
          (P:A->Set)
           (P a)->(y:A)(identityT ? y a)->(P y).
- Intros A x P H y H0; Case sym_idT with 1:= H0; Trivial.
+ Intros A x P H y H0; Case sym_id with 1:= H0; Trivial.
 Defined.
 
-Definition identityT_rect_r :      
+Definition identity_rect_r :      
      (A:Type)
         (a:A)
          (P:A->Type)
           (P a)->(y:A)(identityT ? y a)->(P y).
- Intros A x P H y H0; Case sym_idT with 1:= H0; Trivial.
+ Intros A x P H y H0; Case sym_id with 1:= H0; Trivial.
 Defined.
 
+V7only [
+Notation sym_idT  := sym_id (only parsing).
+Notation trans_idT  := trans_id (only parsing).
+Notation congr_idT  := congr_id (only parsing).
+Notation sym_not_idT  := sym_not_id (only parsing).
+Notation identityT_ind_r := identityT_ind_r (only parsing).
+Notation identityT_rec_r  := identityT_rec_r (only parsing).
+Notation identityT_rect_r := identityT_rect_r (only parsing).
+].
 Inductive prodT [A,B:Type] : Type := pairT : A -> B -> (prodT A B).
 
 Section prodT_proj.
@@ -275,7 +293,7 @@ Definition prodT_curry : (A,B,C:Type)(A->B->C)->(prodT A B)->C :=
   | (pairT x y) => (f x y)
   end.
 
-Hints Immediate sym_idT sym_not_idT : core v62.
+Hints Immediate sym_id sym_not_id : core v62.
 
 V7only [
 Implicits fstT [1 2].
