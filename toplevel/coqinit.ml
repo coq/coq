@@ -84,6 +84,9 @@ let init_load_path () =
   List.iter 
     (fun (s,alias,reci) ->
        if reci then Mltop.add_rec_path s alias else Mltop.add_path s alias)
-    (List.rev !includes);
-  includes := []
+    (List.rev !includes)
 
+let init_library_roots () =
+  List.iter
+    (fun (_,alias,_) -> Nametab.push_library_root (List.hd alias)) !includes;
+  includes := []

@@ -198,10 +198,15 @@ let _ =
 	   let alias = Filename.basename dir in
 	   if alias = "" then
 	     error ("Cannot map "^dir^" to a root of Coq library");
-	   (fun () -> add_rec_path dir [alias])
+	   (fun () ->
+	      add_rec_path dir [alias];
+	      Nametab.push_library_root alias)
        | [VARG_STRING dir ; VARG_QUALID alias] ->
            let aliasdir,aliasname = repr_qualid alias in
-	    (fun () -> add_rec_path dir (aliasdir@[aliasname]))
+	    (fun () ->
+	       let alias = aliasdir@[aliasname] in
+	       add_rec_path dir alias;
+	       Nametab.push_library_root (List.hd alias))
        | _ -> bad_vernac_args "RECADDPATH")
 
 (* For compatibility *)

@@ -186,14 +186,11 @@ let exists_module sp =
 (********************************************************************)
 (* Registration of persistent tables as a global table and rollback *)
 
-(* Warning: We do not register roots, because otherwise option -R is
-   overwritten by the next input state *)
-
 type frozen = module_contents
 
-let init () = persistent_nametab := empty
-let freeze () = !persistent_nametab
-let unfreeze mc = persistent_nametab := mc
+let init () = persistent_nametab := empty; roots := []
+let freeze () = !persistent_nametab, !roots
+let unfreeze (mc,r) = persistent_nametab := mc; roots := r
 
 let _ = 
   Summary.declare_summary "persistent-names"

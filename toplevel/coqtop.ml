@@ -184,6 +184,7 @@ let start () =
       if is_verbose() then print_header ();
       init_load_path ();
       inputstate ();
+      init_library_roots ();
       load_vernac_obj ();
       require ();
       load_rcfile();
