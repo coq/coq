@@ -205,7 +205,8 @@ GEXTEND Gram
       | bll = binders; c = constr -> abstract_constr loc c bll
       (* Hack to parse syntax "(n)" as a natural number *)
       | "("; test_int_rparen; n = bigint; ")" ->
-          CDelimiters (loc,"N",CNumeral (loc,n))
+	  (* Delimiter "N" moved to "nat" in V7 *)
+          CDelimiters (loc,"nat",CNumeral (loc,n))
       | "("; lc1 = lconstr; ":"; c = constr; (bl,body) = product_tail ->
           let id = coerce_to_name lc1 in
 	  CProdN (loc, ([id], c)::bl, body)
@@ -239,7 +240,9 @@ GEXTEND Gram
       | n = bigint -> CNumeral (loc,n)
       | "!"; f = global -> CAppExpl (loc,(None,f),[])
       | "'"; test_ident_colon; key = IDENT; ":"; c = constr; "'" -> 
-          CDelimiters (loc,key,c) ] ]
+	  (* Delimiter "N" implicitly moved to "nat" in V7 *)
+	  let key = if key = "N" then "nat" else key in
+	  CDelimiters (loc,key,c) ] ]
   ;
   constr91:
     [ [ test_int_bang; n = INT; "!"; c = operconstr LEVEL "9" ->

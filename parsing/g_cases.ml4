@@ -28,7 +28,8 @@ GEXTEND Gram
       | IDENT "_" -> CPatAtom (loc,None)
       (* Hack to parse syntax "(n)" as a natural number *)
       | "("; G_constr.test_int_rparen; n = bigint; ")" ->
-          CPatDelimiters (loc,"N",CPatNumeral (loc,n))
+	  (* Delimiter "N" moved to "nat" in V7 *)
+          CPatDelimiters (loc,"nat",CPatNumeral (loc,n))
       | "("; p = compound_pattern; ")" -> p
       | n = bigint -> CPatNumeral (loc,n)
       | "'"; G_constr.test_ident_colon; key = IDENT; ":"; c = pattern; "'" -> 

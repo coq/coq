@@ -30,7 +30,7 @@ Add Printing If bool.
 Inductive nat : Set := O : nat 
                      | S : nat->nat.
 
-Delimits Scope nat_scope with N.
+Delimits Scope nat_scope with nat.
 Bind Scope nat_scope with nat.
 Arguments Scope S [ nat_scope ].
 
