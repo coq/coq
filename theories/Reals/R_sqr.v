@@ -245,7 +245,7 @@ Intros a b c d; Apply Rsqr_incr_0_var; [Rewrite Rsqr_times; Repeat Rewrite Rsqr_
 Save.
 
 (************************************************************)
-(* Resolution of a*X^2+b*X+c=0                              *)
+(* Resolution of [a*X^2+b*X+c=0]                            *)
 (************************************************************)
 
 Definition Delta [a:nonzeroreal;b,c:R] : R := ``(Rsqr b)-4*a*c``.
