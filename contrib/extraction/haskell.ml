@@ -75,11 +75,11 @@ let rec pp_type par t =
     | Tglob r -> 
 	pp_type_global r
     | Texn s -> 
-	(string ("() -- " ^ s) ++ fnl ())
+	(str ("() -- " ^ s) ++ fnl ())
     | Tprop ->
-	string "Prop"
+	str "Prop"
     | Tarity ->
-	string "Arity"
+	str "Arity"
   in 
   hov 0 (pp_rec par t)
 
@@ -148,9 +148,9 @@ let rec pp_expr par env args =
     | MLexn s -> 
 	(open_par par ++ str "error" ++ spc () ++ qs s ++ close_par par)
     | MLprop ->
-	string "prop"
+	str "prop"
     | MLarity ->
-	string "arity"
+	str "arity"
     | MLcast (a,t) ->
 	(open_par true ++ pp_expr false env args a ++ spc () ++ str "::" ++ spc () ++ 
 	   pp_type false t ++ close_par true)

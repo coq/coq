@@ -29,17 +29,15 @@ let rec collapse_type_app = function
   | (Tapp l1) :: l2 -> collapse_type_app (l1 @ l2)
   | l -> l
 
-let string s = (str s)
+let open_par = function true -> str "(" | false -> (mt ())
 
-let open_par = function true -> string "(" | false -> (mt ())
-
-let close_par = function true -> string ")" | false -> (mt ())
+let close_par = function true -> str ")" | false -> (mt ())
 
 let pp_tvar id = 
   let s = string_of_id id in 
   if String.length s < 2 || s.[1]<>'\'' 
-  then string ("'"^s)
-  else string ("' "^s)
+  then str ("'"^s)
+  else str ("' "^s)
 
 let pp_tuple f = function
   | [] -> (mt ())
@@ -149,11 +147,11 @@ let rec pp_type par t =
     | Tglob r -> 
 	pp_type_global r
     | Texn s -> 
-	string ("unit (* " ^ s ^ " *)")
+	str ("unit (* " ^ s ^ " *)")
     | Tprop ->
-	string "prop"
+	str "prop"
     | Tarity ->
-	string "arity"
+	str "arity"
   in 
   hov 0 (pp_rec par t)
 
@@ -227,9 +225,9 @@ let rec pp_expr par env args =
 	(open_par par ++ str "assert false" ++ spc () ++ 
 	   str ("(* "^s^" *)") ++ close_par par)
     | MLprop ->
-	string "prop"
+	str "prop"
     | MLarity ->
-	string "arity"
+	str "arity"
     | MLcast (a,t) ->
 	(open_par true ++ pp_expr false env args a ++ spc () ++ str ":" ++ spc () ++ 
 	   pp_type false t ++ close_par true)
@@ -240,14 +238,14 @@ let rec pp_expr par env args =
 and pp_one_pat s env (r,ids,t) = 
   let ids,env' = push_vars (List.rev ids) env in
   let par = expr_needs_par t in
-  (pp_global r ++ 
-     if ids = [] then (mt ()) 
-     else (str " " ++ pp_boxed_tuple pr_id (List.rev ids)) ++
-     s ++ spc () ++ pp_expr par env' [] t)
+  let args = 
+    if ids = [] then (mt ()) 
+    else str " " ++ pp_boxed_tuple pr_id (List.rev ids) in 
+  pp_global r ++ args ++ s ++ spc () ++ pp_expr par env' [] t
   
 and pp_pat env pv = 
-  (prvect_with_sep (fun () -> (fnl () ++ str "| ")) 
-       (fun x -> hov 2 (pp_one_pat (string " ->") env x)) pv)
+  prvect_with_sep (fun () -> (fnl () ++ str "| ")) 
+    (fun x -> hov 2 (pp_one_pat (str " ->") env x)) pv
 
 (*s names of the functions ([ids]) are already pushed in [env],
     and passed here just for convenience. *)

@@ -20,7 +20,6 @@ val current_module : identifier option ref
 
 val collapse_type_app : ml_type list -> ml_type list
 
-val string : string -> std_ppcmds
 val open_par : bool -> std_ppcmds
 val close_par : bool -> std_ppcmds
 val pp_abst : identifier list -> std_ppcmds

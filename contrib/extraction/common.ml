@@ -124,10 +124,10 @@ module MonoParams = struct
 	   | _ -> rename_global_id (lowercase_id id))
       
   let pp_type_global r = 
-    string (check_ml r (string_of_id (rename_type_global r)))
+    str (check_ml r (string_of_id (rename_type_global r)))
       
   let pp_global r = 
-    string (check_ml r (string_of_id (rename_global r)))
+    str (check_ml r (string_of_id (rename_global r)))
       
 end
 
@@ -168,11 +168,11 @@ module ModularParams = struct
 	   | _ -> rename_global_id r id (lowercase_id id) "coq_")
 
   let pp_type_global r = 
-    string 
+    str 
       (check_ml r ((module_option r)^(string_of_id (rename_type_global r))))
 
   let pp_global r = 
-    string 
+    str
       (check_ml r ((module_option r)^(string_of_id (rename_global r))))
 
 end
