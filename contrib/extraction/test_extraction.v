@@ -126,10 +126,49 @@ Extraction test0.
 Extraction eq.
 Extraction eq_rec.
 
-(* mutual fixpoints on many sorts ? *)
-
-  (* TODO *)
-
 (* example with more arguments that given by the type *)
 
 Extraction (nat_rec [n:nat]nat->nat [n:nat]O [n:nat][f:nat->nat]f O O).
+
+(* propagation of type parameters *)
+
+Inductive tp1 : Set := 
+  T : (C:Set)(c:C)tp2 -> tp1 with tp2 : Set  := T' : tp1->tp2.
+
+Inductive tp1bis : Set := 
+  Tbis : tp2bis -> tp1bis 
+with tp2bis : Set  := T'bis : (C:Set)(c:C)tp1bis->tp2bis.
+
+(* example needing Obj.magic *)
+
+(* hybrids *)
+
+Definition PropSet := [b:bool]if b then Prop else Set.
+Extraction PropSet.
+
+Definition natbool := [b:bool]if b then nat else bool.
+Extraction natbool.
+
+Definition zerotrue := 
+ [b:bool]<natbool> Cases b of true => O | false => true end.
+Extraction zerotrue.
+
+Definition natProp := [b:bool]<[b:bool]Type>if b then nat else Prop.
+
+Definition zeroTrue := 
+ [b:bool]<natProp> Cases b of true => O | false => True end.
+Extraction zeroTrue.
+
+Definition natTrue := [b:bool]<[b:bool]Type>if b then nat else True.
+
+Definition zeroprop := 
+ [b:bool]<natTrue> Cases b of true => O | false => I end.
+Extraction zeroprop.
+
+(* instanciations Type -> Prop *)
+
+(* Prop applied to Prop *)
+
+(* polymorphic f applied several times *)
+
+
