@@ -72,7 +72,7 @@ let int_of_nat p =
 let pr_S a = hov 0 (str "S" ++ brk (1,1) ++ a)
 
 let rec pr_external_S std_pr = function
-  | Node (l,"APPLIST", [b; a]) when b = ast_S ->
+  | Node (l,"APPLIST", [b; a]) when alpha_eq (b,ast_S) ->
       str"(" ++ pr_S (pr_external_S std_pr a) ++ str")"
   | p -> std_pr p
 
@@ -82,7 +82,7 @@ let rec pr_external_S std_pr = function
 let nat_printer std_pr p =
   match (int_of_nat p) with
     | Some i -> str "(" ++ str (string_of_int i) ++ str ")"
-    | None -> pr_S (pr_external_S std_pr p)
+    | None -> str "(" ++ pr_S (pr_external_S std_pr p) ++ str ")"
 
 let _ = Esyntax.Ppprim.add ("nat_printer", nat_printer)
 (*

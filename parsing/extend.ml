@@ -262,12 +262,11 @@ let rec subst_hunk subst_pat subst hunk = match hunk with
    highest precedence), and the child's one, follow the given
    relation. *)
 
-let compare_prec a1 a2 = a1-a2
-
 let tolerable_prec oparent_prec_reln child_prec =
   match oparent_prec_reln with
-    | Some (pprec, L) -> (compare_prec child_prec pprec) < 0
-    | Some (pprec, E) -> (compare_prec child_prec pprec) <= 0
+    | Some (pprec, L) -> child_prec < pprec
+    | Some (pprec, E) -> child_prec <= pprec
+    | Some (_, Prec level) -> child_prec <= level
     | _ -> true
 
 type 'pat syntax_entry = {
