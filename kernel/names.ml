@@ -55,7 +55,7 @@ let id_of_string s =
 let atompart_of_id id = id.atom
 let index_of_id id = snd (repr_ident id)
 
-let print_id id =
+let pr_id id =
   match repr_ident id with
     | ("",None)   -> [< 'sTR"[]" >]
     | ("",Some n) -> [< 'sTR"[" ; 'iNT n ; 'sTR"]" >]
@@ -134,7 +134,7 @@ let make_qualid p s = (p,s)
 let repr_qualid q = q
 
 let string_of_qualid (l,s) = String.concat "." (l@[s])
-let print_qualid (l,s) = prlist_with_sep (fun () -> pr_str ".") pr_str (l@[s])
+let pr_qualid (l,s) = prlist_with_sep (fun () -> pr_str ".") pr_str (l@[s])
 
 (*s Section paths *)
 
@@ -158,8 +158,8 @@ let string_of_dirpath sl = String.concat "#" (""::sl)
 let string_of_path sp =
   let (sl,id,k) = repr_path sp in
   String.concat ""
-    ((List.flatten (List.map (fun s -> ["#";s]) sl))
-     @ [ "#"; string_of_id id; "."; string_of_kind k ])
+    ("#"::(List.flatten (List.map (fun s -> [s;"."]) sl))
+     @ [ string_of_id id ])
     
 let path_of_string s =
   try
@@ -168,7 +168,7 @@ let path_of_string s =
   with
     | Invalid_argument _ -> invalid_arg "path_of_string"
 
-let print_sp sp = [< 'sTR (string_of_path sp) >]
+let pr_sp sp = [< 'sTR (string_of_path sp) >]
 
 let sp_of_wd = function
   | [] -> invalid_arg "Names.sp_of_wd"

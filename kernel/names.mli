@@ -23,7 +23,7 @@ val index_of_id : identifier -> int option
 (* Parsing and printing of identifiers *)
 val string_of_id : identifier -> string
 val id_of_string : string -> identifier
-val print_id : identifier -> std_ppcmds
+val pr_id : identifier -> std_ppcmds
 
 (* Identifiers sets and maps *)
 module Idset : Set.S with type elt = identifier
@@ -58,7 +58,7 @@ val make_qualid : string list -> string -> qualid
 val repr_qualid : qualid -> string list * string
 
 val string_of_qualid : qualid -> string
-val print_qualid : qualid -> std_ppcmds
+val pr_qualid : qualid -> std_ppcmds
 
 (*s Section paths *)
 type section_path
@@ -78,7 +78,7 @@ val wd_of_sp : section_path -> string list
 (* Parsing and printing of section path as ["#module#id#kind"] *)
 val path_of_string : string -> section_path
 val string_of_path : section_path -> string
-val print_sp : section_path -> std_ppcmds
+val pr_sp : section_path -> std_ppcmds
 
 (*i
 val string_of_path_mind : section_path -> identifier -> string

@@ -21,7 +21,7 @@ let section_path sl s =
   make_path (List.tl sl) (id_of_string (List.hd sl)) (kind_of_string s)
 
 let pr_global ref =
-  [< 'sTR (string_of_qualid (Nametab.qualid_of_global ref)) >]
+  [< 'sTR (string_of_qualid (Global.qualid_of_global ref)) >]
 
 let global_const_name sp =
   try pr_global (ConstRef sp)
