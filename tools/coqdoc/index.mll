@@ -197,7 +197,7 @@ rule traverse = parse
   | "Variable" 's'? space
       { current_type := Variable; index_idents lexbuf; traverse lexbuf }
 ***i*)
-  | "Require" (space+ "Export")? space+ ident
+  | "Require" (space+ ("Export"|"Import"))? space+ ident
       { ref_module (lexeme_start lexbuf) (lexeme lexbuf); traverse lexbuf }
   | begin_hide 
       { skip_hide lexbuf; traverse lexbuf }
