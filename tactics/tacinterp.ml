@@ -1535,11 +1535,12 @@ and interp_atomic ist gl = function
     | IdentArgType -> 
 	let id = out_gen rawwit_ident x in
 	(try VConstr (mkVar (eval_variable ist gl (dummy_loc,id)))
-	 with Not_found -> VIdentifier id)
+	 with _ -> VIdentifier id)
     | RefArgType -> VConstr (constr_of_reference (pf_reference_interp ist gl (out_gen rawwit_ref x)))
     | ConstrArgType -> VConstr (pf_constr_interp ist gl (out_gen rawwit_constr x))
     | ConstrMayEvalArgType ->
       VConstr (constr_interp_may_eval ist gl (out_gen rawwit_constr_may_eval x))
+    | TacticArgType -> val_interp ist gl (out_gen rawwit_tactic x)
     | _ -> failwith "This generic type is not supported in alias"
     in
     let lfun = (List.map (fun (x,c) -> (x,f c)) l)@ist.lfun in
