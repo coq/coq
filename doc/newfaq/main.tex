@@ -1564,6 +1564,15 @@ Notation "x $^²$" := (Rmult x x) (at level 20).
 because ``$^2$'' is an iso-latin character. If you really want this kind of notation you should use UTF-8.
 
 
+\Question{Why ``no associativity'' and  ``left associativity'' at the same level does not work ?}
+
+Because we relie on camlp4 for syntactical analysis and camlp4 does not really implement no associativity. By default, non associative operators are defined as right associative.
+
+
+
+\Question{How can I know the associativity associated with a level ?}
+
+You can do ``Print Grammar constr'', and decode the output from camlp4, good luck !
 
 \section{Modules}
 
@@ -1988,6 +1997,16 @@ Opaque definitions can not be unfolded but transparent ones can.
 
 Sometime you can use the {\abstracttac} tactic, which makes as if you had
 stated some local lemma, this speeds up the typing process.
+
+\Question{Why \texttt{Reset Initial.} does not work when using \texttt{coqc} ?}
+
+The initial state corresponds to the state of coqtop when the interactive
+session began. It does not make sense in files to compile.
+
+
+\Question{What can I do if I get ``(*No more subgoals but non-instantiated existential variables*)'' ?}
+
+
 
 \Question{What can I do if I get ``Cannot solve a second-order unification problem'' ?}
 
