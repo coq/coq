@@ -195,60 +195,92 @@ INTERFACECMX=$(INTERFACE:.cmo=.cmx)
 
 ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
 
-PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
+PARSERREQUIRES=\
+  config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
   lib/util.cmo lib/bignat.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
-  lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo \
-  lib/system.cmo lib/bstack.cmo lib/edit.cmo lib/options.cmo \
-  lib/rtree.cmo lib/gset.cmo lib/tlm.cmo \
-  kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
+  lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo lib/system.cmo \
+  lib/bstack.cmo lib/edit.cmo lib/options.cmo lib/rtree.cmo lib/gset.cmo \
+  lib/tlm.cmo kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
   kernel/term.cmo kernel/sign.cmo kernel/declarations.cmo \
-  kernel/environ.cmo \
-  kernel/closure.cmo kernel/conv_oracle.cmo kernel/reduction.cmo \
-  kernel/modops.cmo \
-  kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
-  kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
-  kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo \
-  library/nameops.cmo library/libnames.cmo \
-  library/libobject.cmo library/summary.cmo \
+  kernel/environ.cmo kernel/closure.cmo kernel/conv_oracle.cmo \
+  kernel/reduction.cmo kernel/modops.cmo kernel/type_errors.cmo \
+  kernel/inductive.cmo kernel/typeops.cmo kernel/indtypes.cmo \
+  kernel/cooking.cmo kernel/term_typing.cmo kernel/subtyping.cmo \
+  kernel/mod_typing.cmo kernel/safe_typing.cmo library/nameops.cmo \
+  library/libnames.cmo library/libobject.cmo library/summary.cmo \
   library/nametab.cmo library/lib.cmo library/global.cmo \
-  library/declaremods.cmo \
-  library/library.cmo lib/options.cmo library/impargs.cmo \
-  library/dischargedhypsmap.cmo library/goptions.cmo \
-  pretyping/evd.cmo pretyping/instantiate.cmo \
-  pretyping/termops.cmo pretyping/reductionops.cmo \
-  pretyping/inductiveops.cmo pretyping/retyping.cmo library/declare.cmo \
-  pretyping/cbv.cmo pretyping/tacred.cmo pretyping/classops.cmo \
-  pretyping/rawterm.cmo \
+  library/declaremods.cmo library/library.cmo library/impargs.cmo \
+  library/dischargedhypsmap.cmo library/goptions.cmo pretyping/evd.cmo \
+  pretyping/instantiate.cmo pretyping/termops.cmo \
+  pretyping/reductionops.cmo pretyping/inductiveops.cmo \
+  pretyping/retyping.cmo library/declare.cmo pretyping/cbv.cmo \
+  pretyping/tacred.cmo pretyping/classops.cmo pretyping/rawterm.cmo \
   pretyping/pattern.cmo pretyping/pretype_errors.cmo \
   pretyping/evarutil.cmo pretyping/recordops.cmo pretyping/evarconv.cmo \
-  pretyping/coercion.cmo pretyping/cases.cmo \
-  pretyping/indrec.cmo pretyping/pretyping.cmo \
-  parsing/lexer.cmo parsing/coqast.cmo interp/genarg.cmo \
-  proofs/tacexpr.cmo toplevel/vernacexpr.cmo \
-  interp/topconstr.cmo  \
-  interp/symbols.cmo interp/ppextend.cmo interp/syntax_def.cmo \
-  interp/constrintern.cmo interp/coqlib.cmo \
-  parsing/pcoq.cmo parsing/ast.cmo \
-  parsing/extend.cmo pretyping/detyping.cmo \
-  parsing/termast.cmo interp/modintern.cmo interp/constrextern.cmo\
-  parsing/egrammar.cmo parsing/esyntax.cmo toplevel/metasyntax.cmo \
-  parsing/g_prim.cmo parsing/g_basevernac.cmo \
+  pretyping/coercion.cmo pretyping/cases.cmo pretyping/indrec.cmo \
+  pretyping/pretyping.cmo parsing/lexer.cmo parsing/coqast.cmo \
+  interp/genarg.cmo proofs/tacexpr.cmo toplevel/vernacexpr.cmo \
+  interp/topconstr.cmo interp/symbols.cmo interp/ppextend.cmo \
+  interp/syntax_def.cmo interp/constrintern.cmo interp/coqlib.cmo \
+  parsing/pcoq.cmo parsing/ast.cmo parsing/extend.cmo \
+  pretyping/detyping.cmo parsing/termast.cmo interp/modintern.cmo \
+  interp/constrextern.cmo parsing/egrammar.cmo parsing/esyntax.cmo \
+  toplevel/metasyntax.cmo parsing/g_prim.cmo parsing/g_basevernac.cmo \
   parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
-  lib/stamps.cmo pretyping/typing.cmo \
-  proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
-  proofs/evar_refiner.cmo proofs/tacmach.cmo toplevel/himsg.cmo \
-  parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
-  toplevel/class.cmo toplevel/recordobj.cmo toplevel/cerrors.cmo \
-  parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
-  parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
-  proofs/tactic_debug.cmo \
+  lib/stamps.cmo pretyping/typing.cmo proofs/proof_trees.cmo \
+  proofs/logic.cmo proofs/refiner.cmo proofs/evar_refiner.cmo \
+  proofs/tacmach.cmo toplevel/himsg.cmo parsing/g_natsyntax.cmo \
+  parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo toplevel/class.cmo \
+  toplevel/recordobj.cmo toplevel/cerrors.cmo parsing/g_vernac.cmo \
+  parsing/g_proofs.cmo parsing/g_tactic.cmo parsing/g_ltac.cmo \
+  parsing/g_constr.cmo parsing/g_cases.cmo proofs/tactic_debug.cmo \
   proofs/pfedit.cmo proofs/clenv.cmo tactics/wcclausenv.cmo \
-  tactics/tacticals.cmo tactics/hipattern.cmo \
-  tactics/tactics.cmo tactics/hiddentac.cmo \
-  tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
-  tactics/nbtermdn.cmo tactics/dhyp.cmo tactics/elim.cmo \
-  tactics/auto.cmo tactics/tacinterp.cmo tactics/extraargs.cmo \
-  $(CMO) # Solution de facilité...
+  tactics/tacticals.cmo tactics/hipattern.cmo tactics/tactics.cmo \
+  tactics/hiddentac.cmo tactics/dn.cmo tactics/termdn.cmo \
+  tactics/btermdn.cmo tactics/nbtermdn.cmo tactics/dhyp.cmo \
+  tactics/elim.cmo tactics/auto.cmo tactics/tacinterp.cmo \
+  tactics/extraargs.cmo lib/bij.cmo lib/explore.cmo kernel/entries.cmo \
+  library/states.cmo library/decl_kinds.cmo proofs/proof_type.cmo \
+  parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo \
+  toplevel/command.cmo toplevel/record.cmo toplevel/discharge.cmo \
+  toplevel/vernacinterp.cmo toplevel/mltop.cmo \
+  toplevel/vernacentries.cmo toplevel/vernac.cmo \
+  toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
+  toplevel/toplevel.cmo toplevel/usage.cmo toplevel/coqinit.cmo \
+  toplevel/coqtop.cmo parsing/g_module.cmo tactics/setoid_replace.cmo \
+  tactics/equality.cmo tactics/contradiction.cmo tactics/inv.cmo \
+  tactics/leminv.cmo tactics/autorewrite.cmo tactics/refine.cmo \
+  tactics/extratactics.cmo tactics/eauto.cmo contrib/omega/omega.cmo \
+  contrib/omega/coq_omega.cmo contrib/omega/g_omega.cmo \
+  contrib/romega/const_omega.cmo contrib/romega/refl_omega.cmo \
+  contrib/romega/g_romega.cmo contrib/ring/quote.cmo \
+  contrib/ring/g_quote.cmo contrib/ring/ring.cmo contrib/ring/g_ring.cmo \
+  contrib/field/field.cmo contrib/fourier/fourier.cmo \
+  contrib/fourier/fourierR.cmo contrib/fourier/g_fourier.cmo \
+  contrib/extraction/table.cmo contrib/extraction/mlutil.cmo \
+  contrib/extraction/ocaml.cmo contrib/extraction/haskell.cmo \
+  contrib/extraction/scheme.cmo contrib/extraction/extraction.cmo \
+  contrib/extraction/common.cmo contrib/extraction/extract_env.cmo \
+  contrib/extraction/g_extraction.cmo contrib/jprover/opname.cmo \
+  contrib/jprover/jterm.cmo contrib/jprover/jlogic.cmo \
+  contrib/jprover/jtunify.cmo contrib/jprover/jall.cmo \
+  contrib/jprover/jprover.cmo contrib/xml/unshare.cmo \
+  contrib/xml/xml.cmo contrib/xml/acic.cmo \
+  contrib/xml/doubleTypeInference.cmo contrib/xml/cic2acic.cmo \
+  contrib/xml/acic2Xml.cmo contrib/xml/proof2aproof.cmo \
+  contrib/xml/proofTree2Xml.cmo contrib/xml/xmlcommand.cmo \
+  contrib/xml/xmlentries.cmo contrib/correctness/pmisc.cmo \
+  contrib/correctness/peffect.cmo contrib/correctness/prename.cmo \
+  contrib/correctness/perror.cmo contrib/correctness/penv.cmo \
+  contrib/correctness/putil.cmo contrib/correctness/pdb.cmo \
+  contrib/correctness/pcic.cmo contrib/correctness/pmonad.cmo \
+  contrib/correctness/pcicenv.cmo contrib/correctness/pred.cmo \
+  contrib/correctness/ptyping.cmo contrib/correctness/pwp.cmo \
+  contrib/correctness/pmlize.cmo contrib/correctness/ptactic.cmo \
+  contrib/correctness/psyntax.cmo contrib/cc/ccalgo.cmo \
+  contrib/cc/ccproof.cmo contrib/cc/cctac.cmo 
+
+PARSERREQUIRESCMX=$(PARSERREQUIRES:.cmo=.cmx)
 
 ML4FILES += contrib/correctness/psyntax.ml4 contrib/omega/g_omega.ml4 \
   contrib/romega/g_romega.ml4 contrib/ring/g_quote.ml4 \
@@ -415,15 +447,15 @@ bin/coq-interface$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
 	$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
 
 bin/coq-interface.opt$(EXE): $(COQMKTOP) $(CMX) $(USERTACCMX) $(INTERFACECMX)
-	$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
+	$(COQMKTOP) -opt $(OPTFLAGS) -o $@ $(INTERFACECMX)
 
-bin/parser$(EXE): contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
-	$(OCAMLC) -cclib -lunix -custom $(BYTEFLAGS) -o $@ $(CMA) \
-	$(PARSERREQUIRES) \
-	line_parser.cmo vtp.cmo xlate.cmo parse.cmo
+bin/parser$(EXE): contrib/interface/parse.cmx contrib/interface/line_parser.cmx $(PARSERREQUIRESCMX) contrib/interface/xlate.cmx contrib/interface/vtp.cmx
+	$(OCAMLOPT) -cclib -lunix $(OPTFLAGS) -o $@ $(CMXA) \
+	$(PARSERREQUIRESCMX) \
+	line_parser.cmx vtp.cmx xlate.cmx parse.cmx
 
 clean::
-	rm -f bin/parser$(EXE) bin/coq-interface$(EXE)
+	rm -f bin/parser$(EXE) bin/coq-interface$(EXE) bin/coq-interface.opt$(EXE)
 
 ###########################################################################
 # tests
