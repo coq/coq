@@ -442,7 +442,7 @@ let kind_of_theorem = function
   | Decl_kinds.Remark -> "Remark"
 
 let kind_of_global_goal = function
-  | Decl_kinds.IsGlobal Decl_kinds.DefinitionBody -> "DEFINITION","Definition"
+  | Decl_kinds.IsGlobal Decl_kinds.DefinitionBody -> "DEFINITION","InteractiveDefinition"
   | Decl_kinds.IsGlobal (Decl_kinds.Proof k) -> "THEOREM",kind_of_theorem k
   | Decl_kinds.IsLocal -> assert false
 
