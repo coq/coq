@@ -56,6 +56,7 @@ let safe_getenv_def var def =
     Sys.getenv var
   with Not_found ->
     warning ("Environnement variable "^var^" not found: using '"^def^"' .");
+    flush Pervasives.stdout;
     def
 
 let home = (safe_getenv_def "HOME" ".")
