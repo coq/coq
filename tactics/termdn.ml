@@ -35,9 +35,9 @@ let constr_pat_discr t =
     None
   else
     match decomp_pat t with
-      | PRef (RInd (ind_sp,_)), args -> Some(IndNode ind_sp,args)
-      | PRef (RConstruct (cstr_sp,_)), args -> Some(CstrNode cstr_sp,args)
-      | PRef (RVar id), args -> Some(VarNode id,args)
+      | PRef (IndRef sp), args -> Some(IndNode sp,args)
+      | PRef (ConstructRef sp), args -> Some(CstrNode sp,args)
+      | PRef (VarRef sp), args -> Some(VarNode (basename sp),args)
       | _ -> None
 
 let constr_val_discr t =
@@ -46,6 +46,7 @@ let constr_val_discr t =
     (* IsConst _,_) -> Some(TERM c,l) *)
     | IsMutInd (ind_sp,_) -> Some(IndNode ind_sp,l)
     | IsMutConstruct (cstr_sp,_) -> Some(CstrNode cstr_sp,l)
+    (* Ici, comment distinguer SectionVarNode de VarNode ?? *)
     | IsVar id -> Some(VarNode id,l)
     | _ -> None
 

@@ -9,7 +9,8 @@ open Environ
 (*i*)
 
 type constr_pattern =
-  | PRef of constr array Rawterm.reference
+  | PRef of global_reference
+  | PVar of identifier
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
   | PSoApp of int * constr_pattern list
@@ -25,6 +26,7 @@ type constr_label =
   | IndNode of inductive_path
   | CstrNode of constructor_path
   | VarNode of identifier
+  | SectionVarNode of section_path
 
 exception BoundPattern
 

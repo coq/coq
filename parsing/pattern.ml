@@ -6,9 +6,11 @@ open Names
 open Term
 open Reduction
 open Rawterm
+open Environ
 
 type constr_pattern =
-  | PRef of Term.constr array reference
+  | PRef of global_reference
+  | PVar of identifier
   | PRel of int
   | PApp of constr_pattern * constr_pattern array
   | PSoApp of int * constr_pattern list
@@ -27,16 +29,14 @@ let rec occur_meta_pattern = function
       (occur_meta_pattern p) or
       (occur_meta_pattern c) or (array_exists occur_meta_pattern br)
   | PMeta _ | PSoApp _ -> true
-  | PRel _ | PSort _   -> false
-
-  (* On suppose que les ctxt des cstes ne contient pas de meta *)
-  | PRef _             -> false
+  | PVar _ | PRef _ | PRel _ | PSort _   -> false
 
 type constr_label =
   | ConstNode of section_path
   | IndNode of inductive_path
   | CstrNode of constructor_path
   | VarNode of identifier
+  | SectionVarNode of section_path
 (*
   | ... 
 *)
@@ -44,11 +44,11 @@ type constr_label =
 exception BoundPattern;;
 
 let label_of_ref = function
-  | RConst (sp,_)     -> ConstNode sp
-  | RInd (sp,_)       -> IndNode sp
-  | RConstruct (sp,_) -> CstrNode sp
-  | RVar id           -> VarNode id
-  | REVar _           -> raise BoundPattern
+  | ConstRef sp     -> ConstNode sp
+  | IndRef sp       -> IndNode sp
+  | ConstructRef sp -> CstrNode sp
+  | VarRef sp       -> SectionVarNode sp
+  | EvarRef n          -> raise BoundPattern
 
 let rec head_pattern_bound t =
   match t with
@@ -56,6 +56,7 @@ let rec head_pattern_bound t =
     | PApp (c,args)         -> head_pattern_bound c
     | PCase (p,c,br)        -> head_pattern_bound c
     | PRef r                -> label_of_ref r
+    | PVar id               -> VarNode id
     | PRel _ | PMeta _ | PSoApp _  | PSort _ -> raise BoundPattern
     | PBinder(BLambda,_,_,_) -> anomaly "head_pattern_bound: not a type"
 
@@ -143,16 +144,11 @@ let matches_core convert pat c =
 
       | PMeta None, m -> sigma
 
-      | PRef (RVar v1), IsVar v2 when v1 = v2 -> sigma
+      | PRef (VarRef sp1), IsVar v2 when basename sp1 = v2 -> sigma
 
-      | PRef (RConst (sp1,ctxt1)), IsConst (sp2,ctxt2) 
-	  when sp1 = sp2 && eq_context ctxt1 ctxt2 -> sigma
+      | PVar v1, IsVar v2 when v1 = v2 -> sigma
 
-      | PRef (RInd (sp1,ctxt1)), IsMutInd (sp2,ctxt2) 
-	  when sp1 = sp2 && eq_context ctxt1 ctxt2 -> sigma
-
-      | PRef (RConstruct (sp1,ctxt1)), IsMutConstruct (sp2,ctxt2) 
-	  when sp1 = sp2 && eq_context ctxt1 ctxt2 -> sigma
+      | PRef ref, _ when Declare.constr_of_reference Evd.empty (Global.env()) ref = cT -> sigma
 
       | PRel n1, IsRel n2 when n1 = n2 -> sigma
 
@@ -173,12 +169,10 @@ let matches_core convert pat c =
       | PBinder(BLetIn,na1,c1,d1), IsLetIn(na2,c2,t2,d2) ->
 	  sorec ((na2,t2)::stk) (sorec stk sigma c1 c2) d1 d2
 
-      | PRef (RConst (sp1,ctxt1)), IsConst (sp2,ctxt2) 
-          when sp1 = sp2 && eq_context ctxt1 ctxt2 -> sigma
-
-      | PRef (RConst (sp1,ctxt1)), _ when convert <> None ->
+      | PRef (ConstRef _ as ref), _ when convert <> None ->
 	  let (env,evars) = out_some convert in
-	  if is_conv env evars (mkConst (sp1,ctxt1)) cT then sigma
+	  let c = Declare.constr_of_reference Evd.empty env ref in
+	  if is_conv env evars c cT then sigma
 	  else raise PatternMatchingFailure
 
       | PCase (_,a1,br1), IsMutCase (_,_,a2,br2) ->
@@ -295,7 +289,7 @@ let rec pattern_of_constr t =
   match kind_of_term t with
     | IsRel n  -> PRel n
     | IsMeta n -> PMeta (Some n)
-    | IsVar id -> PRef (RVar id)
+    | IsVar id -> PVar id
     | IsSort (Prop c) -> PSort (RProp c)
     | IsSort (Type _) -> PSort RType
     | IsCast (c,_)      -> pattern_of_constr c
@@ -307,17 +301,22 @@ let rec pattern_of_constr t =
 	PBinder (BLambda,na,pattern_of_constr c,pattern_of_constr b)
     | IsApp (f,args)   ->
 	PApp (pattern_of_constr f, Array.map pattern_of_constr args)
-    | IsConst (cst_sp,ctxt)         ->
-	PRef (RConst (cst_sp, ctxt))
-    | IsMutInd (ind_sp,ctxt)        ->
-	PRef (RInd (ind_sp, ctxt))
-    | IsMutConstruct (cstr_sp,ctxt) ->
-	PRef (RConstruct (cstr_sp, ctxt))
+    | IsConst (sp,ctxt)         ->
+	pattern_of_ref (ConstRef sp) ctxt
+    | IsMutInd (sp,ctxt)        ->
+	pattern_of_ref (IndRef sp) ctxt
+    | IsMutConstruct (sp,ctxt) ->
+	pattern_of_ref (ConstructRef sp) ctxt
     | IsEvar (n,ctxt) ->
-	PRef (REVar (n,ctxt))
+	pattern_of_ref (EvarRef n) ctxt
     | IsMutCase (ci,p,a,br) ->
 	PCase (Some (pattern_of_constr p),pattern_of_constr a,
 	       Array.map pattern_of_constr br)
     | IsFix _ | IsCoFix _ ->
 	error "pattern_of_constr: (co)fix currently not supported"
     | IsXtra _   -> anomaly "No longer supported"
+
+and pattern_of_ref ref inst =
+  let args = Declare.extract_instance ref inst in
+  let f = PRef ref in
+  if args = [||] then f else PApp (f, Array.map pattern_of_constr args)
