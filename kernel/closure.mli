@@ -27,7 +27,7 @@ val with_stats: 'a Lazy.t -> 'a
   Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of 
   a LetIn expression is Letin reduction *)
 
-type transparent_state = Idpred.t * KNpred.t
+
 
 val all_opaque      : transparent_state
 val all_transparent : transparent_state
@@ -82,13 +82,8 @@ val betadeltaiotanolet : reds
 
 val unfold_red : evaluable_global_reference -> reds
 
-(************************************************************************)
-
-type table_key =
-  | ConstKey of constant
-  | VarKey of identifier
-  | FarRelKey of int
-   (* FarRel: index in the [rel_context] part of {\em initial} environment *)
+(***********************************************************************)
+type table_key = id_key
 
 type 'a infos
 val ref_value_cache: 'a infos -> table_key -> 'a option

@@ -66,8 +66,10 @@ let native_suffix f =
     (Filename.chop_suffix f ".cmo") ^ ".cmx"
   else if Filename.check_suffix f ".cma" then 
     (Filename.chop_suffix f ".cma") ^ ".cmxa"
-  else 
-    failwith ("File "^f^" has not extension .cmo or .cma")
+  else  
+    if Filename.check_suffix f ".a" then f 
+    else
+      failwith ("File "^f^" has not extension .cmo, .cma or .a")
 
 (* Transforms a file name in the corresponding Caml module name. *)
 let rem_ext_regexpr = Str.regexp "\\(.*\\)\\.\\(cm..?\\|ml\\)"

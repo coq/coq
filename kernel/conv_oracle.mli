@@ -9,13 +9,13 @@
 (* $Id$ *)
 
 open Names
-open Closure
+
 
 (* Order on section paths for unfolding.
    If [oracle_order kn1 kn2] is true, then unfold kn1 first.
    Note: the oracle does not introduce incompleteness, it only
    tries to postpone unfolding of "opaque" constants. *)
-val oracle_order : table_key -> table_key -> bool
+val oracle_order : 'a tableKey -> 'a tableKey -> bool
 
 (* Changing the oracle *)
 val set_opaque_const      : kernel_name -> unit

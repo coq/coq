@@ -11,6 +11,7 @@
 open Util
 open Names
 open Term
+open Reduction
 open Reductionops
 open Closure
 open Environ

@@ -51,6 +51,9 @@ val cbv_norm_flags : Closure.RedFlags.reds ->  reduction_function
   val cbv_betadeltaiota :  reduction_function
   val compute :  reduction_function  (* = [cbv_betadeltaiota] *)
 
+(* Call by value strategy (uses virtual machine) *)
+val cbv_vm : reduction_function
+
 (* [reduce_to_atomic_ind env sigma t] puts [t] in the form [t'=(I args)]
    with [I] an inductive definition;
    returns [I] and [t'] or fails with a user error *)

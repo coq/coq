@@ -725,6 +725,7 @@ and xlate_red_tactic =
  function
   | Red true -> xlate_error ""
   | Red false -> CT_red
+  | CbvVm -> CT_cbvvm
   | Hnf -> CT_hnf
   | Simpl None -> CT_simpl ctv_PATTERN_OPT_NONE
   | Simpl (Some (l,c)) -> 
@@ -1018,6 +1019,7 @@ and xlate_tac =
     | TacTransitivity c -> CT_transitivity (xlate_formula c)
     | TacAssumption -> CT_assumption
     | TacExact c -> CT_exact (xlate_formula c)
+    | TacExactNoCheck c -> CT_exact_no_check (xlate_formula c)
     | TacDestructHyp (true, (_,id)) -> CT_cdhyp (xlate_ident id)
     | TacDestructHyp (false, (_,id)) -> CT_dhyp (xlate_ident id)
     | TacDestructConcl -> CT_dconcl
@@ -1345,8 +1347,9 @@ let xlate_thm x = CT_thm (match x with
 
 
 let xlate_defn x = CT_defn (match x with
- | (Local, Definition) -> "Local"
- | (Global, Definition) -> "Definition"
+ | (Local, Definition _) -> "Local"
+ | (Global, Definition true) -> "Boxed Definition"
+ | (Global, Definition false) -> "Definition"
  | (Global, SubClass) -> "SubClass"
  | (Global, Coercion) -> "Coercion"
  | (Local, SubClass) -> "Local SubClass"
@@ -1858,8 +1861,8 @@ let rec xlate_vernac =
 	     translate_opt_notation_decl notopt) in
         CT_mind_decl
 	  (CT_co_ind co_or_ind, CT_ind_spec_list (List.map strip_mutind lmi))
-   | VernacFixpoint [] -> xlate_error "mutual recursive"
-   | VernacFixpoint (lm :: lmi) ->
+   | VernacFixpoint ([],_) -> xlate_error "mutual recursive"
+   | VernacFixpoint ((lm :: lmi),boxed) ->
       let strip_mutrec ((fid, n, bl, arf, ardef), ntn) =
         let (struct_arg,bl,arf,ardef) =
          if bl = [] then
@@ -1876,8 +1879,8 @@ let rec xlate_vernac =
           | _ -> xlate_error "mutual recursive" in
         CT_fix_decl
 	  (CT_fix_rec_list (strip_mutrec lm, List.map strip_mutrec lmi))
-   | VernacCoFixpoint [] -> xlate_error "mutual corecursive"
-   | VernacCoFixpoint (lm :: lmi) ->
+   | VernacCoFixpoint ([],boxed) -> xlate_error "mutual corecursive"
+   | VernacCoFixpoint ((lm :: lmi),boxed) ->
       let strip_mutcorec (fid, bl, arf, ardef) =
 	CT_cofix_rec (xlate_ident fid, xlate_binder_list bl,
                       xlate_formula arf, xlate_formula ardef) in

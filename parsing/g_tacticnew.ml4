@@ -197,6 +197,7 @@ GEXTEND Gram
       | IDENT "cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
       | IDENT "lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)
       | IDENT "compute" -> compute
+      | IDENT "vm_compute" -> CbvVm
       | IDENT "unfold"; ul = LIST1 unfold_occ SEP "," -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl
       | IDENT "pattern"; pl = LIST1 pattern_occ SEP","-> Pattern pl ] ]
@@ -209,6 +210,7 @@ GEXTEND Gram
       | IDENT "cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
       | IDENT "lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)
       | IDENT "compute" -> compute
+      | IDENT "vm_compute" -> CbvVm
       | IDENT "unfold"; ul = LIST1 unfold_occ -> Unfold ul
       | IDENT "fold"; cl = LIST1 constr -> Fold cl
       | IDENT "pattern"; pl = LIST1 pattern_occ -> Pattern pl
@@ -278,6 +280,7 @@ GEXTEND Gram
 
       | IDENT "assumption" -> TacAssumption
       | IDENT "exact"; c = constr -> TacExact c
+      | IDENT "exact_no_check"; c = constr -> TacExactNoCheck c
 
       | IDENT "apply"; cl = constr_with_bindings -> TacApply cl
       | IDENT "elim"; cl = constr_with_bindings; el = OPT eliminator ->

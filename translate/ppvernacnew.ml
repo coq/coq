@@ -578,8 +578,10 @@ let rec pr_vernac = function
       let pr_def_token = function
         | Local, Coercion -> str"Coercion Local"
         | Global, Coercion -> str"Coercion"
-        | Local, Definition -> str"Let"
-        | Global, Definition -> str"Definition"
+        | Local, Definition _ -> str"Let"
+        | Global, Definition b ->
+	    if b then str"Boxed Definition"
+	    else str"Definition"
         | Local, SubClass -> str"Local SubClass"
         | Global, SubClass -> str"SubClass"
         | Global, CanonicalStructure -> str"Canonical Structure"
@@ -726,7 +728,7 @@ let rec pr_vernac = function
       (prlist (fun ind -> fnl() ++ hov 1 (pr_oneind "with" ind)) (List.tl l))
 
 
-  | VernacFixpoint recs ->
+  | VernacFixpoint (recs,b) ->
 
       (* Copie simplifiée de command.ml pour recalculer les implicites *)
       (* les notations, et le contexte d'evaluation *)
@@ -792,10 +794,11 @@ let rec pr_vernac = function
             ++ str" :=" ++ brk(1,1) ++ ppc ++ 
 	    pr_decl_notation pr_constr ntn
       in
-      hov 1 (str"Fixpoint" ++ spc() ++
+      let start = if b then "Boxed Fixpoint" else "Fixpoint" in
+      hov 1 (str start ++ spc() ++
         prlist_with_sep (fun _ -> fnl() ++ fnl() ++ str"with ") pr_onerec recs)
 
-  | VernacCoFixpoint corecs ->
+  | VernacCoFixpoint (corecs,b) ->
       let pr_onecorec (id,bl,c,def) =
         let (bl',def,c) =
               if Options.do_translate() then extract_def_binders def c
@@ -804,7 +807,8 @@ let rec pr_vernac = function
         pr_id id ++ spc() ++ pr_binders bl ++ spc() ++ str":" ++
         spc() ++ pr_type c ++
         str" :=" ++ brk(1,1) ++ pr_lconstr def in
-      hov 1 (str"CoFixpoint" ++ spc() ++
+      let start = if b then "Boxed CoFixpoint" else "CoFixpoint" in
+      hov 1 (str start ++ spc() ++
       prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onecorec corecs)  
   | VernacScheme l ->
       hov 2 (str"Scheme" ++ spc() ++

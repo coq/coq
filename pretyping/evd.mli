@@ -129,9 +129,7 @@ val evar_define : evar -> constr -> evar_defs -> evar_defs
 val evar_source : existential_key -> evar_defs -> loc * hole_kind
 
 (* Unification constraints *)
-type conv_pb = 
-  | CONV 
-  | CUMUL
+type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * constr * constr
 val add_conv_pb :  evar_constraint -> evar_defs -> evar_defs
 val get_conv_pbs : evar_defs -> (evar_constraint -> bool) -> 

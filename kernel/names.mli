@@ -103,6 +103,11 @@ val map_mbid : mod_bound_id -> module_path -> substitution
 *)
 val join : substitution -> substitution -> substitution
 
+type 'a substituted
+val from_val : 'a -> 'a substituted
+val force : (substitution -> 'a -> 'a) -> 'a substituted -> 'a
+val subst_substituted : substitution -> 'a substituted -> 'a substituted
+
 (*i debugging *)
 val debug_string_of_subst : substitution -> string
 val debug_pr_subst : substitution -> Pp.std_ppcmds
@@ -174,3 +179,19 @@ type evaluable_global_reference =
 val hcons_names : unit ->
   (kernel_name -> kernel_name) * (dir_path -> dir_path) *
   (name -> name) * (identifier -> identifier) * (string -> string)
+
+
+(******)
+
+type 'a tableKey =
+  | ConstKey of constant
+  | VarKey of identifier
+  | RelKey of 'a 
+
+type transparent_state = Idpred.t * KNpred.t
+
+type inv_rel_key = int (* index in the [rel_context] part of environment
+			  starting by the end, {\em inverse} 
+			  of de Bruijn indice *)
+
+type id_key = inv_rel_key tableKey

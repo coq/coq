@@ -227,7 +227,8 @@ let parse_args is_ide =
     | "-unsafe" :: []       -> usage ()
 
     | "-debug" :: rem -> set_debug (); parse rem
-
+    | "-unboxed-values" :: rem -> Vm.set_transp_values true; parse rem
+    | "-no-vm" :: rem -> Reduction.use_vm := false;parse rem
     | "-emacs" :: rem -> Options.print_emacs := true; parse rem
 	  
     | "-where" :: _ -> print_endline Coq_config.coqlib; exit 0

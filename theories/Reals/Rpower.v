@@ -195,13 +195,13 @@ apply Rinv_neq_0_compat; red in |- *; intro; rewrite H3 in H;
 Qed.
 
 (* Definition of log R+* -> R *)
-Definition Rln (y:posreal) : R :=
+Boxed Definition Rln (y:posreal) : R :=
   match ln_exists (pos y) (cond_pos y) with
   | existT a b => a
   end.
 
 (* Extension on R *)
-Definition ln (x:R) : R :=
+Boxed Definition ln (x:R) : R :=
   match Rlt_dec 0 x with
   | left a => Rln (mkposreal x a)
   | right a => 0
@@ -377,7 +377,7 @@ Qed.
 (*                        Definition of  Rpower                   *)
 (******************************************************************)
  
-Definition Rpower (x y:R) := exp (y * ln x).
+Boxed Definition Rpower (x y:R) := exp (y * ln x).
 
 Infix Local "^R" := Rpower (at level 30, right associativity) : R_scope.
 

@@ -198,10 +198,7 @@ type hole_kind =
   | InternalHole
   | TomatchTypeParameter of inductive * int
 
-type conv_pb = 
-  | CONV 
-  | CUMUL
-
+type conv_pb = Reduction.conv_pb
 type evar_constraint = conv_pb * constr * constr
 type evar_defs =
     { evars : evar_map;

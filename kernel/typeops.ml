@@ -20,6 +20,9 @@ open Reduction
 open Inductive
 open Type_errors
 
+let conv = vm_conv CONV
+let conv_leq = vm_conv CUMUL
+let conv_leq_vecti = vm_conv_leq_vecti
 
 (* This should be a type (a priori without intension to be an assumption) *)
 let type_judgment env j =

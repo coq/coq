@@ -815,7 +815,8 @@ let declareFunScheme f fname mutflist =
  let ce = { 
   const_entry_body = scheme;
   const_entry_type = None;
-  const_entry_opaque = false } in
+  const_entry_opaque = false;
+  const_entry_boxed = true } in
  let _= ignore (declare_constant fname (DefinitionEntry ce,IsDefinition)) in
  ()
 

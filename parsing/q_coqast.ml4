@@ -248,6 +248,7 @@ let mlexpr_of_red_expr = function
   | Rawterm.Pattern l ->
       let f = mlexpr_of_list mlexpr_of_occ_constr in
       <:expr< Rawterm.Pattern $f l$ >>
+  | Rawterm.CbvVm -> <:expr< Rawterm.CbvVm >>
   | Rawterm.ExtraRedExpr (s,c) ->
       let l = mlexpr_of_constr c in
       <:expr< Rawterm.ExtraRedExpr $mlexpr_of_string s$ $l$ >>
@@ -350,6 +351,8 @@ let rec mlexpr_of_atomic_tactic = function
       <:expr< Tacexpr.TacAssumption >>
   | Tacexpr.TacExact c ->
       <:expr< Tacexpr.TacExact $mlexpr_of_constr c$ >>
+  | Tacexpr.TacExactNoCheck c ->
+      <:expr< Tacexpr.TacExactNoCheck $mlexpr_of_constr c$ >>
   | Tacexpr.TacApply cb ->
       <:expr< Tacexpr.TacApply $mlexpr_of_constr_with_binding cb$ >>
   | Tacexpr.TacElim (cb,cbo) ->

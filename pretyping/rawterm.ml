@@ -350,6 +350,7 @@ type ('a,'b) red_expr_gen =
   | Fold of 'a list
   | Pattern of 'a occurrences list
   | ExtraRedExpr of string * 'a
+  | CbvVm
 
 type ('a,'b) may_eval =
   | ConstrTerm of 'a

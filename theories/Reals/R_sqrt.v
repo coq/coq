@@ -13,7 +13,7 @@ Require Import Rfunctions.
 Require Import Rsqrt_def. Open Local Scope R_scope.
 
 (* Here is a continuous extension of Rsqrt on R *)
-Definition sqrt (x:R) : R :=
+Boxed Definition sqrt (x:R) : R :=
   match Rcase_abs x with
   | left _ => 0
   | right a => Rsqrt (mknonnegreal x (Rge_le _ _ a))

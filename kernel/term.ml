@@ -1137,6 +1137,7 @@ let nb_prod =
 let rec eq_constr m n = 
   (m==n) or
   compare_constr eq_constr m n
+
 let eq_constr m n = eq_constr m n (* to avoid tracing a recursive fun *)
 
 (*******************)
@@ -1184,3 +1185,11 @@ let hcons_constr (hkn,hdir,hname,hident,hstr) =
   (hcci,htcci)
 
 let (hcons1_constr, hcons1_types) = hcons_constr (hcons_names())
+
+
+(*******)
+(* Type of abstract machine values *)
+type values
+
+
+

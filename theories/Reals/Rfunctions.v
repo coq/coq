@@ -63,7 +63,7 @@ Qed.
 (*          Power              *)
 (*******************************)
 (*********)
-Fixpoint pow (r:R) (n:nat) {struct n} : R :=
+Boxed Fixpoint pow (r:R) (n:nat) {struct n} : R :=
   match n with
   | O => 1
   | S n => r * pow r n
@@ -527,7 +527,7 @@ Qed.
 Ltac case_eq name :=
   generalize (refl_equal name); pattern name at -1 in |- *; case name.
 
-Definition powerRZ (x:R) (n:Z) :=
+Boxed Definition powerRZ (x:R) (n:Z) :=
   match n with
   | Z0 => 1
   | Zpos p => x ^ nat_of_P p
@@ -670,7 +670,7 @@ Definition decimal_exp (r:R) (z:Z) : R := (r * 10 ^Z z).
 (** Sum of n first naturals    *)
 (*******************************)
 (*********)
-Fixpoint sum_nat_f_O (f:nat -> nat) (n:nat) {struct n} : nat :=
+Boxed Fixpoint sum_nat_f_O (f:nat -> nat) (n:nat) {struct n} : nat :=
   match n with
   | O => f 0%nat
   | S n' => (sum_nat_f_O f n' + f (S n'))%nat
@@ -690,7 +690,7 @@ Definition sum_nat (s n:nat) : nat := sum_nat_f s n (fun x:nat => x).
 (**            Sum             *)
 (*******************************)
 (*********)
-Fixpoint sum_f_R0 (f:nat -> R) (N:nat) {struct N} : R :=
+Boxed Fixpoint sum_f_R0 (f:nat -> R) (N:nat) {struct N} : R :=
   match N with
   | O => f 0%nat
   | S i => sum_f_R0 f i + f (S i)

@@ -458,7 +458,7 @@ let solve_refl conv_algo env isevars ev argsv1 argsv2 =
   let (isevars',_,rsign) = 
     array_fold_left2
       (fun (isevars,sgn,rsgn) a1 a2 ->
-        let (isevars',b) = conv_algo env isevars CONV a1 a2 in
+        let (isevars',b) = conv_algo env isevars Reduction.CONV a1 a2 in
 	 if b then 
 	   (isevars',List.tl sgn, add_named_decl (List.hd sgn) rsgn)
 	 else 

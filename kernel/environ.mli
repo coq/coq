@@ -22,7 +22,9 @@ open Sign
 
 (* Environments have the following components:
    - a context for de Bruijn variables
+   - a context for de Bruijn variables vm values
    - a context for section variables and goal assumptions
+   - a context for section variables and goal assumptions vm values 
    - a context for global constants and axioms
    - a context for inductive definitions
    - a set of universe constraints
@@ -54,6 +56,18 @@ val push_rec_types   : rec_declaration -> env -> env
 val lookup_rel    : int -> env -> rel_declaration
 val evaluable_rel : int -> env -> bool
 
+(* Abstract machine rel values *)
+type 'a val_kind =   
+  | VKvalue of values
+  | VKaxiom of 'a
+  | VKdef of constr * env
+
+type relval
+
+val kind_of_rel : relval -> inv_rel_key val_kind
+val set_relval : relval -> values -> unit
+val lookup_relval : int -> env -> relval
+val nb_rel : env -> int
 (*s Recurrence on [rel_context] *)
 val fold_rel_context :
   (env -> rel_declaration -> 'a -> 'a) -> env -> init:'a -> 'a
@@ -67,6 +81,13 @@ val push_named : named_declaration -> env -> env
 val lookup_named    : variable -> env -> named_declaration
 val evaluable_named : variable -> env -> bool
 
+(* Abstract machine values of local vars referred by names *)
+type namedval
+
+val kind_of_named : namedval -> identifier val_kind
+val set_namedval : namedval -> values -> unit
+val lookup_namedval : identifier -> env -> namedval
+ 
 (*s Recurrence on [named_context]: older declarations processed first *)
 val fold_named_context :
   (env -> named_declaration -> 'a -> 'a) -> env -> init:'a -> 'a
@@ -87,6 +108,15 @@ val add_constant : constant -> constant_body -> env -> env
 
 (* Looks up in the context of global constant names *)
 (* raises [Not_found] if the required path is not found *)
+type constant_key 
+exception NotEvaluated
+exception AllReadyEvaluated
+
+val constant_key_pos : constant_key -> bool*int  
+val constant_key_body : constant_key -> constant_body
+val set_pos_constant : constant_key -> (bool*int) -> unit
+
+val lookup_constant_key : constant -> env -> constant_key
 val lookup_constant    : constant -> env -> constant_body
 val evaluable_constant : constant -> env -> bool
 

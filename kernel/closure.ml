@@ -16,7 +16,6 @@ open Declarations
 open Environ
 open Esubst
 
-
 let stats = ref false
 let share = ref true
 
@@ -51,8 +50,6 @@ let with_stats c =
     r
   end else
     Lazy.force c
-
-type transparent_state = Idpred.t * KNpred.t
 
 let all_opaque = (Idpred.empty, KNpred.empty)
 let all_transparent = (Idpred.full, KNpred.full)
@@ -326,11 +323,7 @@ fin obsolète **************)
  * instantiations (cbv or lazy) are.
  *)
 
-type table_key =
-  | ConstKey of constant
-  | VarKey of identifier
-  | FarRelKey of int
-   (* FarRel: index in the rel_context part of _initial_ environment *)
+type table_key = id_key
 
 type 'a infos = {
   i_flags : reds;
@@ -349,7 +342,7 @@ let ref_value_cache info ref =
   try
     let body =
       match ref with
-	| FarRelKey n ->
+	| RelKey n ->
 	    let (s,l) = info.i_rels in lift n (List.assoc (s-n) l)
 	| VarKey id -> List.assoc id info.i_vars
 	| ConstKey cst -> constant_value info.i_env cst
@@ -573,7 +566,7 @@ let clos_rel e i =
     | Inl(n,mt) -> lift_fconstr n mt
     | Inr(k,None) -> {norm=Norm; term= FRel k}
     | Inr(k,Some p) ->
-        lift_fconstr (k-p) {norm=Norm;term=FFlex(FarRelKey p)}
+        lift_fconstr (k-p) {norm=Norm;term=FFlex(RelKey p)}
 
 (* since the head may be reducible, we might introduce lifts of 0 *)
 let compact_stack head stk =
@@ -730,7 +723,7 @@ let mk_clos2 = mk_clos_deep mk_clos
 let rec to_constr constr_fun lfts v =
   match v.term with
     | FRel i -> mkRel (reloc_rel i lfts)
-    | FFlex (FarRelKey p) -> mkRel (reloc_rel p lfts)
+    | FFlex (RelKey p) -> mkRel (reloc_rel p lfts)
     | FFlex (VarKey x) -> mkVar x
     | FAtom c ->
         (match kind_of_term c with
@@ -1023,8 +1016,8 @@ let rec knr info m stk =
       (match ref_value_cache info (VarKey id) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
-  | FFlex(FarRelKey k) when red_set info.i_flags fDELTA ->
-      (match ref_value_cache info (FarRelKey k) with
+  | FFlex(RelKey k) when red_set info.i_flags fDELTA ->
+      (match ref_value_cache info (RelKey k) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
   | FConstruct(ind,c) when red_set info.i_flags fIOTA ->

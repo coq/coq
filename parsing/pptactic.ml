@@ -456,6 +456,7 @@ and pr_atom1 = function
       (str "Intro" ++ pr_opt pr_id ido1 ++ spc () ++ str "after " ++ pr_id id2)
   | TacAssumption as t -> pr_atom0 t
   | TacExact c -> hov 1 (str "Exact" ++ pr_arg pr_constr c)
+  | TacExactNoCheck c -> hov 1 (str "Exact_no_check" ++ pr_arg pr_constr c)
   | TacApply cb -> hov 1 (str "Apply" ++ spc () ++ pr_with_bindings cb)
   | TacElim (cb,cbo) ->
       hov 1 (str "Elim" ++ pr_arg pr_with_bindings cb ++ 

@@ -17,6 +17,7 @@ open Termops
 open Sign
 open Environ
 open Evd
+open Reduction
 open Reductionops
 open Rawterm
 open Pattern

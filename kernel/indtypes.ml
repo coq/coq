@@ -511,6 +511,19 @@ let build_inductive env env_ar record finite inds recargs cst =
     (* Elimination sorts *)
     let isunit = isunit && ntypes = 1 && (not (is_recursive recargs.(0))) in
     let kelim = allowed_sorts env issmall isunit ar_sort in
+    let nconst, nblock = ref 0, ref 0 in 
+    let transf num =
+      let arity = List.length (dest_subterms recarg).(num) in
+      if arity = 0 then 
+	let p  = (!nconst, 0) in
+	incr nconst; p
+      else 
+	let p = (!nblock + 1, arity) in
+	incr nblock; p
+     (* les tag des constructeur constant commence a 0,
+	les tag des constructeur non constant a 1 (0 => accumulator) *)
+    in 
+    let rtbl = Array.init (List.length cnames) transf in
     (* Build the inductive packet *)
     { mind_typename = id;
       mind_nparams = nparamargs;
@@ -523,7 +536,10 @@ let build_inductive env env_ar record finite inds recargs cst =
       mind_consnames = Array.of_list cnames;
       mind_user_lc = lc;
       mind_nf_lc = nf_lc;
-      mind_recargs = recarg;
+      mind_recargs = recarg;    
+      mind_nb_constant = !nconst;
+      mind_nb_args = !nblock;
+      mind_reloc_tbl = rtbl;
     } in
   let packets = array_map2 build_one_packet inds recargs in
   (* Build the mutual inductive *)

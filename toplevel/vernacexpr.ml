@@ -196,8 +196,8 @@ type vernac_expr =
   | VernacExactProof of constr_expr
   | VernacAssumption of assumption_kind * simple_binder with_coercion list
   | VernacInductive of inductive_flag * inductive_expr list
-  | VernacFixpoint of (fixpoint_expr * decl_notation) list
-  | VernacCoFixpoint of cofixpoint_expr list
+  | VernacFixpoint of (fixpoint_expr * decl_notation) list * bool
+  | VernacCoFixpoint of cofixpoint_expr list * bool
   | VernacScheme of (lident * bool * lreference * sort_expr) list
 
   (* Gallina extensions *)

@@ -13,7 +13,7 @@ Require Import Rfunctions.
 Require Import PartSum.
 Open Local Scope R_scope.
 
-Definition C (n p:nat) : R :=
+Boxed Definition C (n p:nat) : R :=
   INR (fact n) / (INR (fact p) * INR (fact (n - p))).
 
 Lemma pascal_step1 : forall n i:nat, (i <= n)%nat -> C n i = C n (n - i).

@@ -192,7 +192,8 @@ let cook_proof () =
   (ident,
    ({ const_entry_body = pfterm;
       const_entry_type = Some concl;
-      const_entry_opaque = true },
+      const_entry_opaque = true;
+      const_entry_boxed = false},
     strength, ts.top_hook))
 
 let current_proof_statement () = 

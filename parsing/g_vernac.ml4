@@ -109,8 +109,10 @@ GEXTEND Gram
       | IDENT "Remark" -> Remark ] ]
   ;
   def_token:
-    [ [ "Definition" -> (fun _ _ -> ()), (Global, Definition)
-      | IDENT "Local" -> (fun _ _ -> ()), (Local, Definition)
+    [ [ IDENT "Boxed";"Definition" ->
+	 (fun _ _ -> ()), (Global, Definition true)
+      | "Definition" -> (fun _ _ -> ()), (Global, Definition false)
+      | IDENT "Local" -> (fun _ _ -> ()), (Local, Definition true)
       | IDENT "SubClass"  -> Class.add_subclass_hook, (Global, SubClass)
       | IDENT "Local"; IDENT "SubClass"  ->
 	  Class.add_subclass_hook, (Local, SubClass) ] ] 
@@ -315,8 +317,12 @@ GEXTEND Gram
           VernacInductive (f,indl)
       | f = finite_token; indl = LIST1 oneind SEP "with" ->
           VernacInductive (f,indl)
-      | "Fixpoint"; recs = specifrec -> VernacFixpoint recs
-      | "CoFixpoint"; corecs = specifcorec -> VernacCoFixpoint corecs
+      | IDENT "Boxed"; "Fixpoint"; recs = specifrec ->
+	 VernacFixpoint (recs,true)
+      | "Fixpoint"; recs = specifrec -> VernacFixpoint (recs,false)
+      | IDENT "Boxed"; "CoFixpoint"; corecs = specifcorec -> 
+	 VernacCoFixpoint (corecs,true)
+      | "CoFixpoint"; corecs = specifcorec -> VernacCoFixpoint (corecs,false)
       | IDENT "Scheme"; l = schemes -> VernacScheme l
       | f = finite_token; s = csort; id = identref;
 	indpar = simple_binders_list; ":="; lc = constructor_list -> 

@@ -24,11 +24,11 @@ val translate_local_def : env -> constr * types option ->
 
 val translate_local_assum : env -> types ->
   types * Univ.constraints
-
-val translate_constant : env -> constant_entry -> constant_body
+ 
+val translate_constant : env -> constant -> constant_entry -> constant_body
 
 val translate_mind : 
   env -> mutual_inductive_entry -> mutual_inductive_body
 
 val translate_recipe : 
-  env -> Cooking.recipe -> constant_body
+  env -> constant -> Cooking.recipe -> constant_body

@@ -142,12 +142,12 @@ Record StepFun (a b:R) : Type := mkStepFun
 
 Definition subdivision (a b:R) (f:StepFun a b) : Rlist := projT1 (pre f).
 
-Definition subdivision_val (a b:R) (f:StepFun a b) : Rlist :=
+Boxed Definition subdivision_val (a b:R) (f:StepFun a b) : Rlist :=
   match projT2 (pre f) with
   | existT a b => a
   end.
 
-Fixpoint Int_SF (l k:Rlist) {struct l} : R :=
+Boxed Fixpoint Int_SF (l k:Rlist) {struct l} : R :=
   match l with
   | nil => 0
   | cons a l' =>
@@ -159,7 +159,7 @@ Fixpoint Int_SF (l k:Rlist) {struct l} : R :=
   end.
 
 (* Integral of step functions *)
-Definition RiemannInt_SF (a b:R) (f:StepFun a b) : R :=
+Boxed Definition RiemannInt_SF (a b:R) (f:StepFun a b) : R :=
   match Rle_dec a b with
   | left _ => Int_SF (subdivision_val f) (subdivision f)
   | right _ => - Int_SF (subdivision_val f) (subdivision f)

@@ -317,16 +317,15 @@ and convert_vect infos lft1 lft2 v1 v2 cuniv =
     fold 0 cuniv
   else raise NotConvertible
 
-
+let clos_fconv cv_pb env t1 t2 =
+  let infos = create_clos_infos betaiotazeta env in
+  ccnv cv_pb infos ELID ELID (inject t1) (inject t2) Constraint.empty
 
 let fconv cv_pb env t1 t2 =
-  if eq_constr t1 t2 then 
-    Constraint.empty
-  else
-    let infos = create_clos_infos betaiotazeta env in
-    ccnv cv_pb infos ELID ELID (inject t1) (inject t2)
-      Constraint.empty
+  if eq_constr t1 t2 then Constraint.empty
+  else clos_fconv cv_pb env t1 t2
 
+let conv_cmp = fconv
 let conv = fconv CONV
 let conv_leq = fconv CUMUL
 
@@ -335,6 +334,32 @@ let conv_leq_vecti env v1 v2 =
     (fun i c t1 t2 ->
       let c' =
         try conv_leq env t1 t2 
+        with NotConvertible -> raise (NotConvertibleVect i) in
+      Constraint.union c c')
+    Constraint.empty
+    v1
+    v2
+
+(* option for conversion *)
+let use_vm = ref true
+let vm_fconv = ref (fun _ _ _ _ -> error "VM not installed")
+let set_vm_conv_cmp f = vm_fconv := f
+
+let vm_conv cv_pb env t1 t2 =
+  if eq_constr t1 t2 then 
+    Constraint.empty
+  else if !use_vm then
+    try !vm_fconv cv_pb env t1 t2
+    with Not_found | Invalid_argument _ ->
+      (* If compilation fails, fall-back to closure conversion *)
+      clos_fconv cv_pb env t1 t2
+  else clos_fconv cv_pb env t1 t2
+
+let vm_conv_leq_vecti env v1 v2 =
+  array_fold_left2_i 
+    (fun i c t1 t2 ->
+      let c' =
+        try vm_conv CUMUL env t1 t2 
         with NotConvertible -> raise (NotConvertibleVect i) in
       Constraint.union c c')
     Constraint.empty

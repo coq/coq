@@ -461,7 +461,7 @@ assert (H5 := IZN _ H4); elim H5; clear H5; intros N H5;
        elim (Rlt_irrefl _ H7) ] ].
 Qed.
 
-Fixpoint SubEquiN (N:nat) (x y:R) (del:posreal) {struct N} : Rlist :=
+Boxed Fixpoint SubEquiN (N:nat) (x y:R) (del:posreal) {struct N} : Rlist :=
   match N with
   | O => cons y nil
   | S p => cons x (SubEquiN p (x + del) y del)

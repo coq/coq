@@ -487,6 +487,7 @@ and pr_atom1 env = function
        pr_lident id2)
   | TacAssumption as t -> pr_atom0 env t
   | TacExact c -> hov 1 (str "exact" ++ pr_constrarg env c)
+  | TacExactNoCheck c -> hov 1 (str "exact_no_check" ++ pr_constrarg env c)
   | TacApply cb -> hov 1 (str "apply" ++ spc () ++ pr_with_bindings env cb)
   | TacElim (cb,cbo) ->
       hov 1 (str "elim" ++ pr_arg (pr_with_bindings env) cb ++ 

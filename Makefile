@@ -63,7 +63,7 @@ else
 endif
 
 LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
-	      -I scripts -I lib -I kernel -I library \
+	      -I scripts -I lib -I kernel -I kernel/byterun -I library \
               -I proofs -I tactics -I pretyping \
               -I interp -I toplevel -I parsing -I ide/utils \
 	      -I ide -I translate \
@@ -73,7 +73,7 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
               -I contrib/interface -I contrib/fourier \
 	      -I contrib/jprover -I contrib/cc \
 	      -I contrib/funind -I contrib/first-order \
-              -I contrib/field
+              -I contrib/field 
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
@@ -90,14 +90,20 @@ CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 COQINCLUDES=          # coqtop includes itself the needed paths
 GLOB=           # is "-dump-glob file" when making the doc
 COQ_XML=	# is "-xml" when building XML library
-COQOPTS=$(GLOB) $(COQ_XML)
+VM=          # is "-no-vm" to not use the vm"
+UNBOXEDVALUES=  # is "-unboxed-values" to use unboxed values
+COQOPTS=$(GLOB) $(COQ_XML) $(VM) $(UNBOXEDVALUES)
 TRANSLATE=-translate -strict-implicit
+TIME=           # is "'time -p'" to get compilation time of .v 
 
-BOOTCOQTOP=$(BESTCOQTOP) -boot $(COQOPTS)
+BOOTCOQTOP= $(TIME) $(BESTCOQTOP) -boot $(COQOPTS)
+
 
 ###########################################################################
 # Objects files 
 ###########################################################################
+
+LIBCOQRUN=kernel/byterun/libcoqrun.a
 
 CLIBS=unix.cma
 
@@ -114,13 +120,21 @@ LIBREP=\
   lib/predicate.cmo lib/rtree.cmo lib/heap.cmo
 # Rem: Cygwin already uses variable LIB 
 
+BYTERUN=\
+  kernel/byterun/coq_fix_code.o kernel/byterun/coq_memory.o \
+  kernel/byterun/coq_values.o kernel/byterun/coq_interp.o 
+
 KERNEL=\
   kernel/names.cmo kernel/univ.cmo \
   kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
-  kernel/declarations.cmo kernel/environ.cmo kernel/closure.cmo \
-  kernel/conv_oracle.cmo kernel/reduction.cmo kernel/entries.cmo \
+  kernel/cbytecodes.cmo kernel/copcodes.cmo \
+  kernel/cemitcodes.cmo kernel/vm.cmo \
+  kernel/declarations.cmo kernel/environ.cmo  kernel/conv_oracle.cmo \
+  kernel/closure.cmo kernel/reduction.cmo kernel/type_errors.cmo\
+  kernel/entries.cmo \
+  kernel/cbytegen.cmo kernel/csymtable.cmo  \
   kernel/modops.cmo \
-  kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
+  kernel/inductive.cmo kernel/vconv.cmo kernel/typeops.cmo \
   kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
   kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo
 
@@ -304,6 +318,41 @@ OBJSCMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) $(INTERP) \
         $(HIGHPARSINGNEW) $(HIGHTACTICS) $(USERTACMO) $(CONTRIB)
 
 ###########################################################################
+# Compilation option for .c files 
+###########################################################################
+
+CINCLUDES= -I $(CAMLHLIB)
+CC=gcc
+AR=ar
+RANLIB=ranlib
+BYTECCCOMPOPTS=-fno-defer-pop -Wall -Wno-unused
+
+# libcoqrun.a 
+
+$(LIBCOQRUN): kernel/byterun/coq_jumptbl.h $(BYTERUN) 
+	$(AR) rc $(LIBCOQRUN) $(BYTERUN) 
+	$(RANLIB) $(LIBCOQRUN)
+
+#coq_jumptbl.h is required only if you have GCC 2.0 or later
+kernel/byterun/coq_jumptbl.h : kernel/byterun/coq_instruct.h
+	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&coq_lbl_\1/gp' \
+               -e '/^}/q' kernel/byterun/coq_instruct.h > \
+                          kernel/byterun/coq_jumptbl.h
+
+
+kernel/copcodes.ml: kernel/byterun/coq_instruct.h
+	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' \
+	kernel/byterun/coq_instruct.h | \
+	awk -f kernel/make-opcodes > kernel/copcodes.ml
+
+bytecompfile : kernel/byterun/coq_jumptbl.h kernel/copcodes.ml
+
+beforedepend:: bytecompfile
+
+clean ::
+	rm -f kernel/byterun/coq_jumptbl.h kernel/copcodes.ml
+
+###########################################################################
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)
 ###########################################################################
 
@@ -332,12 +381,12 @@ states7:: states7/initial.coq
 
 states:: states/initial.coq
 
-$(COQTOPOPT): $(COQMKTOP) $(LINKCMX) $(USERTACCMX)
+$(COQTOPOPT): $(COQMKTOP) $(LINKCMX) $(LIBCOQRUN) $(USERTACCMX)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -opt $(OPTFLAGS) -o $@
 	$(STRIP) $@
 
-$(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(USERTACCMO)
+$(COQTOPBYTE): $(COQMKTOP) $(LINKCMO) $(LIBCOQRUN) $(USERTACCMO)
 	$(SHOW)'COQMKTOP -o $@'	
 	$(HIDE)$(COQMKTOP) -top $(LOCALINCLUDES) $(CAMLDEBUG) -o $@
 
@@ -356,7 +405,7 @@ $(COQMKTOP): $(COQMKTOPCMO)
 
 scripts/tolink.ml: Makefile
 	$(SHOW)"ECHO... >" $@
-	$(HIDE)echo "let core_libs = \""$(LINKCMO)"\"" > $@
+	$(HIDE)echo "let core_libs = \""$(LIBCOQRUN) $(LINKCMO)"\"" > $@
 	$(HIDE)echo "let core_objs = \""$(OBJSCMO)"\"" >> $@
 	$(HIDE)echo "let ide = \""$(COQIDECMO)"\"" >> $@
 
@@ -381,6 +430,7 @@ archclean::
 
 lib: $(LIBREP)
 kernel: $(KERNEL)
+byterun: $(BYTERUN)
 library: $(LIBRARY)
 proofs: $(PROOFS)
 tactics: $(TACTICS)
@@ -644,7 +694,7 @@ INTERFACECMX=$(INTERFACE:.cmo=.cmx)
 
 ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
 
-PARSERREQUIRES=$(LINKCMO) # Solution de facilité...
+PARSERREQUIRES=$(LINKCMO) $(LIBCOQRUN) # Solution de facilité...
 PARSERREQUIRESCMX=$(LINKCMX)
 
 ifeq ($(BEST),opt)
@@ -676,7 +726,7 @@ bin/parser$(EXE): $(PARSERCMO)
 bin/parser.opt$(EXE): $(PARSERCMX)
 	$(SHOW)'OCAMLOPT -o $@'
 	$(HIDE)$(OCAMLOPT) -linkall -cclib -lunix $(OPTFLAGS) -o $@ \
-	  $(CMXA) $(PARSERCMX)
+	  $(LIBCOQRUN) $(CMXA) $(PARSERCMX)
 
 INTERFACEVO=
 
@@ -1027,9 +1077,13 @@ contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
 contrib7/extraction/%.vo: contrib7/extraction/%.v states/barestate.coq $(COQC)
 	$(BOOTCOQTOP) $(TRANSLATE) -is states7/barestate.coq -compile $*
 
-clean::
+cleantheories:
 	rm -f states/*.coq states7/*.coq
 	rm -f theories/*/*.vo theories7/*/*.vo
+
+clean :: cleantheories
+
+clean :: 
 	rm -f contrib/*/*.cm[io] contrib/*.cma contrib/*/*.vo contrib7/*/*.vo 
 
 archclean::
@@ -1297,7 +1351,17 @@ GRAMMARNEEDEDCMO=\
   lib/pp_control.cmo lib/pp.cmo lib/compat.cmo lib/util.cmo lib/bignat.cmo \
   lib/dyn.cmo lib/options.cmo lib/hashcons.cmo lib/predicate.cmo \
   lib/rtree.cmo \
-  $(KERNEL) \
+  kernel/names.cmo kernel/univ.cmo \
+  kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
+  kernel/cbytecodes.cmo kernel/copcodes.cmo kernel/cemitcodes.cmo \
+  kernel/declarations.cmo kernel/environ.cmo  kernel/conv_oracle.cmo \
+  kernel/closure.cmo kernel/reduction.cmo kernel/type_errors.cmo\
+  kernel/entries.cmo \
+  kernel/cbytegen.cmo \
+  kernel/modops.cmo \
+  kernel/inductive.cmo kernel/typeops.cmo \
+  kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
+  kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo \
   library/nameops.cmo library/libnames.cmo library/summary.cmo \
   library/nametab.cmo library/libobject.cmo library/lib.cmo \
   library/goptions.cmo library/decl_kinds.cmo library/global.cmo \
@@ -1439,7 +1503,10 @@ parsing/lexer.cmo: parsing/lexer.ml4
 # Default rules
 ###########################################################################
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .mly .ml4 .v .vo .el .elc
+.SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .mly .ml4 .v .vo .el .elc .h .c .o
+
+.c.o:
+	$(CC) -o $@ $(CFLAGS) $(CINCLUDES)  -c $<
 
 .ml.cmo:
 	$(SHOW)'OCAMLC    $<'
@@ -1489,7 +1556,9 @@ parsing/lexer.cmo: parsing/lexer.ml4
 archclean::
 	rm -f config/*.cmx* config/*.[soa]
 	rm -f lib/*.cmx* lib/*.[soa]
-	rm -f kernel/*.cmx* kernel/*.[soa]
+	rm -f kernel/*.cmx* kernel/*.[soa]	
+	rm -f kernel/byterun/*.o
+	rm -f kernel/byterun/libcoqrun.a
 	rm -f library/*.cmx* library/*.[soa]
 	rm -f proofs/*.cmx* proofs/*.[soa]
 	rm -f tactics/*.cmx* tactics/*.[soa]
@@ -1548,6 +1617,7 @@ dependcoq:: beforedepend
 # .ml4 files not using fancy parsers. This is sufficient to get beforedepend
 # and depend targets successfully built
 scratchdepend:: dependp4
+	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
 	-$(MAKE) -k -f Makefile.dep $(ML4FILESML)
 	$(OCAMLDEP) $(DEPFLAGS) */*.mli */*/*.mli */*.ml */*/*.ml > .depend
 	$(MAKE) depend
@@ -1582,9 +1652,13 @@ depend: beforedepend dependp4 ml4filesml
 	  printf "%s" `dirname $$f`/`basename $$f .ml4`".cmx: " >> .depend; \
 	  echo `$(CAMLP4DEPS) $$f` >> .depend; \
 	done
-# 5. Finally, we erase the generated .ml files
+# 5.  We express dependencies of .o files
+	gcc -MM $(CINCLUDES) kernel/byterun/*.c >> .depend
+	gcc -MM  $(CINCLUDES) kernel/byterun/*.c | sed -e 's/\.o/.d.o/' >> \
+                    .depend
+# 6. Finally, we erase the generated .ml files
 	rm -f $(ML4FILESML)
-# 6. Since .depend contains correct dependencies .depend.devel can be deleted
+# 7. Since .depend contains correct dependencies .depend.devel can be deleted
 # (see dev/Makefile.dir for details about this file)
 	if [ -e makefile ]; then >.depend.devel; else rm -f .depend.devel; fi
 

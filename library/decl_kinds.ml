@@ -23,7 +23,7 @@ type theorem_kind =
   | Remark
 
 type definition_object_kind =
-  | Definition
+  | Definition of bool
   | Coercion
   | SubClass
   | CanonicalStructure

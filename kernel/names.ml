@@ -203,8 +203,29 @@ let occur_uid uid sub =
 
 let occur_msid = occur_uid
 let occur_mbid = occur_uid
+    
+type 'a lazy_subst =
+  | LSval of 'a
+  | LSlazy of substitution * 'a
+	
+type 'a substituted = 'a lazy_subst ref
+      
+let from_val a = ref (LSval a)
+    
+let force fsubst r = 
+  match !r with
+  | LSval a -> a
+  | LSlazy(s,a) -> 
+      let a' = fsubst s a in
+      r := LSval a';
+      a' 
 
-
+let subst_substituted s r =
+  match !r with
+  | LSval a -> ref (LSlazy(s,a))
+  | LSlazy(s',a) ->
+      let s'' = join s' s in
+      ref (LSlazy(s'',a))
 
 (* Kernel names *)
 
@@ -353,3 +374,23 @@ let hcons_names () =
   let hmod = Hashcons.simple_hcons Hmod.f (hdir,huniqid,hstring) in
   let hkn = Hashcons.simple_hcons Hkn.f (hmod,hdir,hstring) in
   (hkn,hdir,hname,hident,hstring)
+
+
+(*******)
+
+type transparent_state = Idpred.t * KNpred.t
+
+type 'a tableKey =
+  | ConstKey of constant
+  | VarKey of identifier
+  | RelKey of 'a 
+
+
+type inv_rel_key = int (* index in the [rel_context] part of environment
+			  starting by the end, {\em inverse} 
+			  of de Bruijn indice *)
+
+type id_key = inv_rel_key tableKey
+
+
+

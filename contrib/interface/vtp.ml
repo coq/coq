@@ -1282,6 +1282,7 @@ and fRED_COM = function
    fPATTERN_NE_LIST x1;
    fNODE "pattern" 1
 | CT_red -> fNODE "red" 0
+| CT_cbvvm -> fNODE "vm_compute" 0
 | CT_simpl(x1) ->
    fPATTERN_OPT x1;
    fNODE "simpl" 1
@@ -1546,6 +1547,9 @@ and fTACTIC_COM = function
 | CT_exact(x1) ->
    fFORMULA x1;
    fNODE "exact" 1
+| CT_exact_no_check(x1) ->
+   fFORMULA x1;
+   fNODE "exact_no_check" 1
 | CT_exists(x1) ->
    fSPEC_LIST x1;
    fNODE "exists" 1

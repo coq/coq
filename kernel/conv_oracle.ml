@@ -9,7 +9,6 @@
 (* $Id$ *)
 
 open Names
-open Closure
 
 (* Opaque constants *)
 let cst_transp = ref KNpred.full
@@ -31,13 +30,13 @@ let is_opaque_var kn = not (Idpred.mem kn !var_transp)
 let is_opaque = function
   | ConstKey cst -> is_opaque_cst cst
   | VarKey id -> is_opaque_var id
-  | FarRelKey _ -> false
+  | RelKey _ -> false
 
 (* Unfold the first only if it is not opaque and the second is opaque *)
 let oracle_order k1 k2 = is_opaque k2 & not (is_opaque k1)
 
 (* summary operations *)
-
+type transparent_state = Idpred.t * KNpred.t
 let init() = (cst_transp := KNpred.full; var_transp := Idpred.full)
 let freeze () = (!var_transp, !cst_transp)
 let unfreeze (vo,co) = (cst_transp := co; var_transp := vo)

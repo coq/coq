@@ -184,10 +184,12 @@ let change_and_check cv_pb t env sigma c =
 (* Use cumulutavity only if changing the conclusion not a subterm *)
 let change_on_subterm cv_pb t = function
   | None -> change_and_check cv_pb t
-  | Some occl -> contextually false occl (change_and_check CONV t) 
+  | Some occl -> contextually false occl (change_and_check Reduction.CONV t) 
 
-let change_in_concl occl t = reduct_in_concl (change_on_subterm CUMUL t occl) 
-let change_in_hyp occl t   = reduct_in_hyp (change_on_subterm CONV t occl)
+let change_in_concl occl t =
+  reduct_in_concl (change_on_subterm Reduction.CUMUL t occl) 
+let change_in_hyp occl t   =
+  reduct_in_hyp (change_on_subterm Reduction.CONV t occl)
 
 let change_option occl t = function
     Some id -> change_in_hyp occl t id
@@ -1662,7 +1664,8 @@ let elim_scheme_type elim t gl =
     | Meta mv ->
         let clause' =
 	  (* t is inductive, then CUMUL or CONV is irrelevant *)
-	  clenv_unify true CUMUL t (clenv_meta_type clause mv) clause in
+	  clenv_unify true Reduction.CUMUL t
+            (clenv_meta_type clause mv) clause in
 	res_pf clause' ~allow_K:true gl
     | _ -> anomaly "elim_scheme_type"
 

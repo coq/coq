@@ -321,9 +321,8 @@ if [ "$best_compiler" = "opt" ] ; then
   esac
 fi
 
-# For coqmktop
+# For coqmktop & bytecode compiler
 
-#CAMLLIB=`"$CAMLC" -v | sed -n -e 's|.*directory:* *\(.*\)$|\1|p' `
 CAMLLIB=`"$CAMLC" -where`
 
 # Camlp4 (greatly simplified since merged with ocaml)

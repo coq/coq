@@ -184,7 +184,8 @@ let hcons_constant_declaration = function
       DefinitionEntry
        { const_entry_body = hcons1_constr ce.const_entry_body;
 	 const_entry_type = option_app hcons1_constr ce.const_entry_type;
-         const_entry_opaque = ce.const_entry_opaque }
+         const_entry_opaque = ce.const_entry_opaque; 
+         const_entry_boxed = ce.const_entry_boxed }
   | cd -> cd
 
 let declare_constant_common id discharged_hyps (cd,kind) =

@@ -32,7 +32,8 @@ type recipe = {
   d_modlist : work_list }
 
 val cook_constant :
-  env -> recipe -> constr_substituted option * constr * constraints * bool
+  env -> recipe -> 
+    constr_substituted option * constr * constraints * bool * bool
 
 (*s Utility functions used in module [Discharge]. *)
 

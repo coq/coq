@@ -169,4 +169,5 @@ let cook_constant env r =
       cb.const_hyps
       ~init:empty_named_context in
   let body,typ = abstract_constant r.d_abstract hyps (body,typ) in
-  (body, typ, cb.const_constraints, cb.const_opaque)
+  let boxed = Cemitcodes.is_boxed cb.const_body_code in
+  (body, typ, cb.const_constraints, cb.const_opaque, boxed)

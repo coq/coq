@@ -12,6 +12,7 @@
 open Names
 open Univ
 open Term
+open Cemitcodes
 open Sign
 (*i*)
 
@@ -27,11 +28,13 @@ val from_val : constr -> constr_substituted
 val force : constr_substituted -> constr
 
 type constant_body = {
-  const_hyps : section_context; (* New: younger hyp at top *)
-  const_body : constr_substituted option;
-  const_type : types;
-  const_constraints : constraints;
-  const_opaque : bool }
+    const_hyps : section_context; (* New: younger hyp at top *)
+    const_body : constr_substituted option;
+    const_type : types;  
+    const_body_code : to_patch_substituted;
+   (* const_type_code : to_patch;*)
+    const_constraints : constraints;
+    const_opaque : bool }
 
 val subst_const_body : substitution -> constant_body -> constant_body
 
@@ -62,29 +65,34 @@ val subst_wf_paths : substitution -> wf_paths -> wf_paths
    inductives *) 
 
 type one_inductive_body = {
-  mind_typename : identifier;
-  mind_nparams : int;
-  mind_params_ctxt : rel_context;
-  mind_nrealargs : int;
-  mind_nf_arity : types;
-  mind_user_arity : types;
-  mind_sort : sorts;
-  mind_kelim : sorts_family list;
-  mind_consnames : identifier array;
-  mind_nf_lc : types array; (* constrs and arity with pre-expanded ccl *)
-  mind_user_lc : types array;
-  mind_recargs : wf_paths;
- }
+    mind_typename : identifier;
+    mind_nparams : int;
+    mind_params_ctxt : rel_context;
+    mind_nrealargs : int;
+    mind_nf_arity : types;
+    mind_user_arity : types;
+    mind_sort : sorts;
+    mind_kelim : sorts_family list;
+    mind_consnames : identifier array;
+    mind_nf_lc : types array; (* constrs and arity with pre-expanded ccl *)
+    mind_user_lc : types array;
+    mind_recargs : wf_paths;
+    mind_nb_constant : int; (* number of constant constructor *)
+    mind_nb_args : int; (* number of no constant constructor *)
+    mind_reloc_tbl :  Cbytecodes.reloc_table; 
+  }
+
+
 
 type mutual_inductive_body = {
-  mind_record : bool;
-  mind_finite : bool;
-  mind_ntypes : int;
-  mind_hyps : section_context;
-  mind_packets : one_inductive_body array;
-  mind_constraints : constraints;
-  mind_equiv : kernel_name option;
- }
+    mind_record : bool; 
+    mind_finite : bool;
+    mind_ntypes : int;
+    mind_hyps : section_context;
+    mind_packets : one_inductive_body array;
+    mind_constraints : constraints;
+    mind_equiv : kernel_name option;
+  }
 
 
 val subst_mind : substitution -> mutual_inductive_body -> mutual_inductive_body

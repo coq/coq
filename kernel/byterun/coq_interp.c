@@ -1,0 +1,857 @@
+/***********************************************************************/
+/*                                                                     */
+/*                           Coq Compiler                              */
+/*                                                                     */
+/*        Benjamin Gregoire, projets Logical and Cristal               */
+/*                        INRIA Rocquencourt                           */
+/*                                                                     */
+/*                                                                     */
+/***********************************************************************/
+
+/* The bytecode interpreter */
+
+#include <stdio.h>
+#include "coq_gc.h"
+#include "coq_instruct.h"
+#include "coq_fix_code.h"
+#include "coq_memory.h"  
+#include "coq_values.h"
+
+
+/* Registers for the abstract machine:
+        pc         the code pointer
+        sp         the stack pointer (grows downward)
+        accu       the accumulator
+        env        heap-allocated environment
+        trapsp     pointer to the current trap frame
+        extra_args number of extra arguments provided by the caller
+
+sp is a local copy of the global variable extern_sp. */
+
+
+
+/* Instruction decoding */
+
+
+#ifdef THREADED_CODE
+#  define Instruct(name) coq_lbl_##name: 
+#  if defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
+#    define coq_Jumptbl_base ((char *) &&coq_lbl_ACC0)
+#  else
+#    define coq_Jumptbl_base ((char *) 0)
+#    define coq_jumptbl_base ((char *) 0)
+#  endif
+#  ifdef DEBUG
+#    define Next goto next_instr
+#  else
+#    ifdef __ia64__
+#      define Next goto *(void *)(coq_jumptbl_base + *((uint32 *) pc)++)
+#    else
+#      define Next goto *(void *)(coq_jumptbl_base + *pc++)
+#    endif
+#  endif
+#else 
+#  define Instruct(name) case name: print_instr(name);
+#  define Next break
+#endif 
+
+/* GC interface */
+#define Setup_for_gc { sp -= 2; sp[0] = accu; sp[1] = coq_env; coq_sp = sp; }
+#define Restore_after_gc { accu = sp[0]; coq_env = sp[1]; sp += 2; }
+
+
+/* Register optimization.
+   Some compilers underestimate the use of the local variables representing
+   the abstract machine registers, and don't put them in hardware registers,
+   which slows down the interpreter considerably.
+   For GCC, Xavier Leroy have hand-assigned hardware registers for 
+   several architectures.
+*/
+
+#if defined(__GNUC__) && !defined(DEBUG)
+#ifdef __mips__
+#define PC_REG asm("$16")
+#define SP_REG asm("$17")
+#define ACCU_REG asm("$18")
+#endif
+#ifdef __sparc__
+#define PC_REG asm("%l0")
+#define SP_REG asm("%l1")
+#define ACCU_REG asm("%l2")
+#endif
+#ifdef __alpha__
+#ifdef __CRAY__
+#define PC_REG asm("r9")
+#define SP_REG asm("r10")
+#define ACCU_REG asm("r11")
+#define JUMPTBL_BASE_REG asm("r12")
+#else
+#define PC_REG asm("$9")
+#define SP_REG asm("$10")
+#define ACCU_REG asm("$11")
+#define JUMPTBL_BASE_REG asm("$12")
+#endif
+#endif
+#ifdef __i386__
+#define PC_REG asm("%esi")
+#define SP_REG asm("%edi")
+#define ACCU_REG
+#endif
+#if defined(PPC) || defined(_POWER) || defined(_IBMR2)
+#define PC_REG asm("26")
+#define SP_REG asm("27")
+#define ACCU_REG asm("28")
+#endif
+#ifdef __hppa__
+#define PC_REG asm("%r18")
+#define SP_REG asm("%r17")
+#define ACCU_REG asm("%r16")
+#endif
+#ifdef __mc68000__
+#define PC_REG asm("a5")
+#define SP_REG asm("a4")
+#define ACCU_REG asm("d7")
+#endif
+#ifdef __arm__
+#define PC_REG asm("r9")
+#define SP_REG asm("r8")
+#define ACCU_REG asm("r7")
+#endif
+#ifdef __ia64__
+#define PC_REG asm("36")
+#define SP_REG asm("37")
+#define ACCU_REG asm("38")
+#define JUMPTBL_BASE_REG asm("39")
+#endif
+#endif
+
+/* The interpreter itself */
+
+value coq_interprete
+(code_t coq_pc, value coq_accu, value coq_env, long coq_extra_args)
+{
+  /*Declaration des variables */
+#ifdef PC_REG
+  register code_t pc PC_REG;
+  register value * sp SP_REG;
+  register value accu ACCU_REG;
+#else
+  register code_t pc;
+  register value * sp;
+  register value accu;
+#endif
+#if defined(THREADED_CODE) && defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
+#ifdef JUMPTBL_BASE_REG
+  register char * coq_jumptbl_base JUMPTBL_BASE_REG;
+#else
+  register char * coq_jumptbl_base;
+#endif
+#endif
+#ifdef THREADED_CODE
+  static void * coq_jumptable[] = {
+#    include "coq_jumptbl.h"
+  };
+#else 
+  opcode_t curr_instr;
+#endif
+  value * global_transp;
+
+  if (coq_pc == NULL) {           /* Interpreter is initializing */
+#ifdef THREADED_CODE
+    coq_instr_table = (char **) coq_jumptable;
+    coq_instr_base = coq_Jumptbl_base;
+#endif
+    return Val_unit;
+  }
+#if defined(THREADED_CODE) && defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
+  coq_jumptbl_base = coq_Jumptbl_base;
+#endif
+
+  /* Initialisation */
+  if (default_transp == BOXED) global_transp = &coq_global_boxed;
+  else global_transp = &coq_global_transp;
+  sp = coq_sp;
+  pc = coq_pc;
+  accu = coq_accu;
+#ifdef THREADED_CODE
+  goto *(void *)(coq_jumptbl_base + *pc++); /* Jump to the first instruction */
+#else
+  while(1) {
+    curr_instr = *pc++;
+    switch(curr_instr) {
+#endif
+/* Basic stack operations */
+      
+      Instruct(ACC0){
+	accu = sp[0]; Next;
+      }
+      Instruct(ACC1){
+	accu = sp[1]; Next;
+      }
+      Instruct(ACC2){
+	accu = sp[2]; Next;
+      }
+      Instruct(ACC3){
+	accu = sp[3]; Next;
+      }
+      Instruct(ACC4){
+	accu = sp[4]; Next;
+      }
+      Instruct(ACC5){
+	accu = sp[5]; Next;
+      }
+      Instruct(ACC6){
+	accu = sp[6]; Next;
+      }
+      Instruct(ACC7){
+        accu = sp[7]; Next;
+      }      
+      Instruct(PUSH){
+	*--sp = accu; Next;
+      }
+      Instruct(PUSHACC0) {
+        *--sp = accu; Next;
+      }
+      Instruct(PUSHACC1){
+        *--sp = accu; accu = sp[1]; Next;
+      }
+      Instruct(PUSHACC2){
+        *--sp = accu; accu = sp[2]; Next;
+      }
+      Instruct(PUSHACC3){
+	*--sp = accu; accu = sp[3]; Next;
+      }
+      Instruct(PUSHACC4){
+	*--sp = accu; accu = sp[4]; Next;
+      }
+      Instruct(PUSHACC5){
+	*--sp = accu; accu = sp[5]; Next;
+      }
+      Instruct(PUSHACC6){
+	*--sp = accu; accu = sp[6]; Next;
+      }
+      Instruct(PUSHACC7){
+	*--sp = accu; accu = sp[7]; Next;
+      }
+      Instruct(PUSHACC){
+	*--sp = accu;
+      }
+      /* Fallthrough */
+      
+      Instruct(ACC){
+	accu = sp[*pc++];
+        Next;
+      }
+      
+      Instruct(POP){
+	sp += *pc++;
+	Next;
+      }
+      /* Access in heap-allocated environment */
+      
+      Instruct(ENVACC1){
+	accu = Field(coq_env, 1); Next;
+      }
+      Instruct(ENVACC2){
+	accu = Field(coq_env, 2); Next;
+      }
+      Instruct(ENVACC3){
+	accu = Field(coq_env, 3); Next;
+      }
+      Instruct(ENVACC4){
+	accu = Field(coq_env, 4); Next;
+      }
+      Instruct(PUSHENVACC1){
+	*--sp = accu; accu = Field(coq_env, 1); Next;
+      }
+      Instruct(PUSHENVACC2){
+	*--sp = accu; accu = Field(coq_env, 2); Next;
+      }
+      Instruct(PUSHENVACC3){
+	*--sp = accu; accu = Field(coq_env, 3); Next;
+      }
+      Instruct(PUSHENVACC4){
+	*--sp = accu; accu = Field(coq_env, 4); Next;
+      }
+      Instruct(PUSHENVACC){
+	*--sp = accu;
+      }
+      /* Fallthrough */
+      Instruct(ENVACC){
+	accu = Field(coq_env, *pc++);
+        Next;
+      }
+      /* Function application */
+      
+      Instruct(PUSH_RETADDR) {
+	sp -= 3;
+	sp[0] = (value) (pc + *pc);
+	sp[1] = coq_env;
+	sp[2] = Val_long(coq_extra_args);
+	coq_extra_args = 0;
+	pc++;
+	Next;
+      }
+      Instruct(APPLY) {
+	coq_extra_args = *pc - 1;
+	pc = Code_val(accu);
+	coq_env = accu;
+	goto check_stacks;
+      }
+      Instruct(APPLY1) {
+	value arg1 = sp[0];
+	sp -= 3;
+	sp[0] = arg1;
+	sp[1] = (value)pc;
+	sp[2] = coq_env;
+	sp[3] = Val_long(coq_extra_args);
+	pc = Code_val(accu);
+	coq_env = accu;
+	coq_extra_args = 0;
+	goto check_stacks;
+      }
+      Instruct(APPLY2) {
+	value arg1 = sp[0];
+	value arg2 = sp[1];
+	sp -= 3;
+	sp[0] = arg1;
+	sp[1] = arg2;
+	sp[2] = (value)pc;
+	sp[3] = coq_env;
+	sp[4] = Val_long(coq_extra_args);
+	pc = Code_val(accu);
+	coq_env = accu;
+	coq_extra_args = 1;
+	goto check_stacks;
+      }
+      Instruct(APPLY3) {
+	value arg1 = sp[0];
+	value arg2 = sp[1];
+	value arg3 = sp[2];
+	sp -= 3;
+	sp[0] = arg1;
+	sp[1] = arg2;
+	sp[2] = arg3;
+	sp[3] = (value)pc;
+	sp[4] = coq_env;
+	sp[5] = Val_long(coq_extra_args);
+	pc = Code_val(accu);
+	coq_env = accu;
+	coq_extra_args = 2;
+	goto check_stacks;
+      }
+
+      Instruct(APPTERM) {
+	int nargs = *pc++;
+	int slotsize = *pc;
+	value * newsp;
+	int i;
+	/* Slide the nargs bottom words of the current frame to the top
+	   of the frame, and discard the remainder of the frame */
+	newsp = sp + slotsize - nargs;
+	for (i = nargs - 1; i >= 0; i--) newsp[i] = sp[i];
+	sp = newsp;
+	pc = Code_val(accu);
+	coq_env = accu;
+	coq_extra_args += nargs - 1;
+	goto check_stacks;
+      }
+      Instruct(APPTERM1) {
+	value arg1 = sp[0];
+	sp = sp + *pc - 1;
+	sp[0] = arg1;
+	pc = Code_val(accu);
+	coq_env = accu;
+	goto check_stacks;
+      }
+      Instruct(APPTERM2) {
+	value arg1 = sp[0];
+	value arg2 = sp[1];
+	sp = sp + *pc - 2;
+	sp[0] = arg1;
+	sp[1] = arg2;
+	pc = Code_val(accu);
+	coq_env = accu;
+	coq_extra_args += 1;
+	goto check_stacks;
+      }
+      Instruct(APPTERM3) {
+	value arg1 = sp[0];
+	value arg2 = sp[1];
+	value arg3 = sp[2];
+	sp = sp + *pc - 3;
+	sp[0] = arg1;
+	sp[1] = arg2;
+	sp[2] = arg3;
+	pc = Code_val(accu);
+	coq_env = accu;
+	coq_extra_args += 2;
+	goto check_stacks;
+      }
+      
+      Instruct(RETURN) {
+	sp += *pc++;
+	if (coq_extra_args > 0) {
+	  coq_extra_args--;
+	  pc = Code_val(accu);
+	  coq_env = accu;
+	} else {
+	  pc = (code_t)(sp[0]);
+	  coq_env = sp[1];
+	  coq_extra_args = Long_val(sp[2]);
+	  sp += 3;
+	}
+	Next;
+      }
+      
+      Instruct(RESTART) {
+	int num_args = Wosize_val(coq_env) - 2;
+	int i;
+	sp -= num_args;
+	for (i = 0; i < num_args; i++) sp[i] = Field(coq_env, i + 2);
+	coq_env = Field(coq_env, 1);
+	coq_extra_args += num_args;
+	Next;
+      }
+      
+      Instruct(GRAB) {
+	int required = *pc++;
+	if (coq_extra_args >= required) {
+	  coq_extra_args -= required;
+	} else {
+	  mlsize_t num_args, i;
+	  num_args = 1 + coq_extra_args; /* arg1 + extra args */
+          Alloc_small(accu, num_args + 2, Closure_tag); 
+	  Field(accu, 1) = coq_env;
+	  for (i = 0; i < num_args; i++) Field(accu, i + 2) = sp[i];
+	  Code_val(accu) = pc - 3; /* Point to the preceding RESTART instr. */
+	  sp += num_args;
+	  pc = (code_t)(sp[0]);
+	  coq_env = sp[1];
+	  coq_extra_args = Long_val(sp[2]);
+	  sp += 3;
+	}
+	Next;
+      }
+
+      Instruct(COGRAB){
+	int required = *pc++;
+	if(forcable == Val_true) {
+	  /* L'instruction précédante est FORCE */
+	  if (coq_extra_args > 0) coq_extra_args--;
+	  pc++;
+	} else { /* L'instruction précédante est APPLY */
+	  mlsize_t num_args, i;
+	  num_args = 1 + coq_extra_args; /* arg1 + extra args */
+	  Alloc_small(accu, num_args + 2, Closure_tag); 
+	  Field(accu, 1) = coq_env;
+	  for (i = 0; i < num_args; i++) Field(accu, i + 2) = sp[i];
+	  Code_val(accu) = pc - 3; /* Point to the preceding RESTART instr. */
+	  sp += num_args;
+	  pc = (code_t)(sp[0]);
+	  coq_env = sp[1];
+	  coq_extra_args = Long_val(sp[2]);
+	  sp += 3;
+	}
+	Next;
+      }
+      Instruct(GRABREC) { 
+	int rec_pos = *pc++; /* commence a zero */
+	if (rec_pos <= coq_extra_args && !Is_accu(sp[rec_pos])) {
+	  pc++;/* On saute le Restart */
+	} else {
+	  if (coq_extra_args < rec_pos) {
+	    mlsize_t num_args, i;
+	    num_args = 1 + coq_extra_args; /* arg1 + extra args */
+	    Alloc_small(accu, num_args + 2, Closure_tag); 
+	    Field(accu, 1) = coq_env;
+	    for (i = 0; i < num_args; i++) Field(accu, i + 2) = sp[i];
+	    Code_val(accu) = pc - 3; 
+	    sp += num_args;
+	    pc = (code_t)(sp[0]);
+	    coq_env = sp[1];
+	    coq_extra_args = Long_val(sp[2]);
+	    sp += 3;
+	  } else {
+	    /* L'argument recursif est un accumulateur */
+	    mlsize_t num_args, i;
+	    /* Construction du PF partiellement appliqué */ 
+	    Alloc_small(accu, rec_pos + 2, Closure_tag); 
+	    Field(accu, 1) = coq_env;
+	    for (i = 0; i < rec_pos; i++) Field(accu, i + 2) = sp[i];
+	    Code_val(accu) = pc;
+	    sp += rec_pos;
+	    *--sp = accu;
+	      /* Construction de l'atom */
+	    Alloc_small(accu, 2, ATOM_FIX_TAG);
+	    Field(accu,1) = sp[0];
+	    Field(accu,0)  = sp[1];
+	    sp++; sp[0] = accu;
+	      /* Construction de l'accumulateur */
+	    num_args = coq_extra_args - rec_pos;
+	    Alloc_small(accu, 2+num_args, Accu_tag);
+	    Code_val(accu) = accumulate;
+	    Field(accu,1) = sp[0]; sp++;
+	    for (i = 0; i < num_args;i++)Field(accu, i + 2) = sp[i];
+	    sp += num_args;
+	    pc = (code_t)(sp[0]);
+	    coq_env = sp[1];
+	    coq_extra_args = Long_val(sp[2]);
+	    sp += 3;
+	  }
+	}
+	Next;
+      }
+	
+      Instruct(CLOSURE) {
+	int nvars = *pc++;
+	int i;
+	if (nvars > 0) *--sp = accu;
+	Alloc_small(accu, 1 + nvars, Closure_tag);
+	Code_val(accu) = pc + *pc;
+	pc++;
+	for (i = 0; i < nvars; i++) Field(accu, i + 1) = sp[i];
+	sp += nvars;
+	Next;
+      }
+
+      Instruct(CLOSUREREC) {
+	int nfuncs = *pc++;
+	int nvars = *pc++;
+	int start = *pc++;
+	int i;
+	value * p;
+	if (nvars > 0) *--sp = accu;
+	/* construction du vecteur de type */
+	Alloc_small(accu, nfuncs, 0);
+	for(i = 0; i < nfuncs; i++) {
+	  Field(accu,i) = (value)(pc+pc[i]);
+	}
+	pc += nfuncs;
+	*--sp=accu;
+	Alloc_small(accu, nfuncs * 2 + nvars, Closure_tag);
+	Field(accu, nfuncs * 2 + nvars - 1) = *sp++;
+	/* On remplie la partie pour les variables libres */
+	p = &Field(accu, nfuncs * 2 - 1);
+	for (i = 0; i < nvars; i++) {
+	  *p++ = *sp++;
+	}
+	p = &Field(accu, 0);
+	*p = (value) (pc + pc[0]);
+	p++;
+	for (i = 1; i < nfuncs; i++) {
+	  *p = Make_header(i * 2, Infix_tag, Caml_white);
+	  p++;                                /* color irrelevant. */
+	  *p = (value) (pc + pc[i]);
+	  p++;
+	}
+	pc += nfuncs;
+	accu = accu + 2 * start * sizeof(value);
+	Next;
+      }
+     
+      Instruct(PUSHOFFSETCLOSURE) {
+	*--sp = accu;
+      } /* fallthrough */
+      Instruct(OFFSETCLOSURE) {
+	accu = coq_env + *pc++ * sizeof(value); Next;
+      }
+      Instruct(PUSHOFFSETCLOSUREM2) {
+	*--sp = accu;
+      } /* fallthrough */
+      Instruct(OFFSETCLOSUREM2) {
+	accu = coq_env - 2 * sizeof(value); Next;
+      }
+      Instruct(PUSHOFFSETCLOSURE0) {
+	*--sp = accu; 
+      }/* fallthrough */
+      Instruct(OFFSETCLOSURE0) {
+	accu = coq_env; Next;
+      }
+      Instruct(PUSHOFFSETCLOSURE2){
+	*--sp = accu; /* fallthrough */
+      }
+      Instruct(OFFSETCLOSURE2) {
+	accu = coq_env + 2 * sizeof(value); Next;
+      }
+
+/* Access to global variables */
+
+      Instruct(PUSHGETGLOBAL) {
+	*--sp = accu;
+      }
+      /* Fallthrough */
+      Instruct(GETGLOBAL){
+	accu = Field(coq_global_data, *pc);
+        pc++;
+        Next;
+      }    
+      Instruct(PUSHGETGLOBALBOXED) {
+	*--sp = accu;
+      }
+      /* Fallthrough */
+      Instruct(GETGLOBALBOXED){
+
+	accu = Field(*global_transp, *pc);
+        pc++;
+        Next;
+      }
+/* Allocation of blocks */
+
+      Instruct(MAKEBLOCK) {
+	mlsize_t wosize = *pc++;
+	tag_t tag = *pc++;
+	mlsize_t i;
+	value block;
+	Alloc_small(block, wosize, tag);
+	Field(block, 0) = accu;
+	for (i = 1; i < wosize; i++) Field(block, i) = *sp++;
+	accu = block;
+	Next;
+      }
+      Instruct(MAKEBLOCK1) {
+	
+	tag_t tag = *pc++;
+	value block;
+	Alloc_small(block, 1, tag);
+	Field(block, 0) = accu;
+	accu = block;
+	Next;
+      }
+      Instruct(MAKEBLOCK2) {
+	
+	tag_t tag = *pc++;
+	value block;
+	Alloc_small(block, 2, tag);
+	Field(block, 0) = accu;
+	Field(block, 1) = sp[0];
+	sp += 1;
+	accu = block;
+	Next;
+      }
+      Instruct(MAKEBLOCK3) {
+	tag_t tag = *pc++;
+	value block;
+	Alloc_small(block, 3, tag);
+	Field(block, 0) = accu;
+	Field(block, 1) = sp[0];
+	Field(block, 2) = sp[1];
+	sp += 2;
+	accu = block;
+	Next;
+      }
+
+  
+/* Access to components of blocks */
+        
+	
+/* Branches and conditional branches */
+      Instruct(FORCE) {
+	if (Is_block(accu) && Tag_val(accu) == Closure_tag) {
+	  /* On pousse l'addresse de retour et l'argument */
+	  sp -= 3;
+	  sp[0] = (value) (pc);
+	  sp[1] = coq_env;
+	  sp[2] = Val_long(coq_extra_args);
+	  /* On evalue le cofix */
+	  coq_extra_args = 0;
+	  pc = Code_val(accu);
+	  coq_env = accu;
+	  goto check_stacks;
+	}
+	Next;
+      }
+           
+    
+      Instruct(SWITCH) {
+	uint32 sizes = *pc++;
+	if (Is_block(accu)) {
+	  long index = Tag_val(accu);
+	  pc += pc[(sizes & 0xFFFF) + index];
+	} else {
+	  long index = Long_val(accu);
+	  pc += pc[index];
+	}
+	  Next;
+      }
+      Instruct(PUSHFIELD){
+	int i;
+	int size = *pc++;
+	sp -= size;
+	for(i=0;i<size;i++)sp[i] = Field(accu,i);
+	Next;
+      }
+	
+      Instruct(MAKESWITCHBLOCK) {
+	mlsize_t sz;
+	int i, annot;
+	code_t typlbl,swlbl;
+	typlbl = (code_t)pc + *pc; 
+	pc++;
+	swlbl = (code_t)pc + *pc; 
+	pc++;
+	annot = *pc++;
+	sz = *pc++;
+	*--sp = accu;
+	*--sp=Field(coq_global_data, annot);
+	/* On sauve la pile */
+	if (sz == 0) accu = Atom(0);
+	else {
+	  Alloc_small(accu, sz, Default_tag);
+	  if (Field(*sp, 2) == Val_true) {
+	    for (i = 0; i < sz; i++) Field(accu, i) = sp[i+2];
+	  }else{
+	    for (i = 0; i < sz; i++) Field(accu, i) = sp[i+5];
+	  }
+	}
+	*--sp = accu;
+	/* On cree le zipper switch */
+	Alloc_small(accu, 5, Default_tag);
+	Field(accu, 0) =  (value)typlbl; Field(accu, 1) = (value)swlbl; 
+	Field(accu, 2) = sp[1]; Field(accu, 3) = sp[0]; 
+	Field(accu, 4) = coq_env;
+	sp++;sp[0] = accu;
+	/* On cree l'atome */
+	Alloc_small(accu, 2, ATOM_SWITCH_TAG);
+	Field(accu, 0) = sp[1]; Field(accu, 1) = sp[0];
+	sp++;sp[0] = accu;
+	/* On cree l'accumulateur */
+	Alloc_small(accu, 2, Accu_tag);
+	Code_val(accu) = accumulate; 
+	Field(accu,1) = *sp++;
+	Next;
+      }
+
+      /* Stack checks */
+      
+    check_stacks:
+      if (sp < coq_stack_threshold) {
+	coq_sp = sp;
+	realloc_coq_stack(Coq_stack_threshold);
+	sp = coq_sp;
+      }
+      Next;
+      /* Fall through CHECK_SIGNALS */
+
+/* Integer constants */
+
+      Instruct(CONST0){
+	accu = Val_int(0); Next;}
+      Instruct(CONST1){
+	accu = Val_int(1); Next;}
+      Instruct(CONST2){
+	accu = Val_int(2); Next;}
+      Instruct(CONST3){
+	accu = Val_int(3); Next;}
+      
+      Instruct(PUSHCONST0){
+	*--sp = accu; accu = Val_int(0); Next;
+      }
+      Instruct(PUSHCONST1){
+	*--sp = accu; accu = Val_int(1); Next;
+      }
+      Instruct(PUSHCONST2){
+	*--sp = accu; accu = Val_int(2); Next;
+      }
+      Instruct(PUSHCONST3){
+	*--sp = accu; accu = Val_int(3); Next;
+      }
+
+      Instruct(PUSHCONSTINT){
+	*--sp = accu;
+      }
+      /* Fallthrough */
+      Instruct(CONSTINT) {
+	accu = Val_int(*pc);
+	pc++;
+	Next;
+      }
+
+/* Debugging and machine control */
+
+      Instruct(STOP){
+	coq_sp = sp;
+	return accu;
+      }
+      
+      Instruct(ACCUMULATE) {
+	mlsize_t i, size;
+	size = Wosize_val(coq_env);
+	Alloc_small(accu, size + coq_extra_args + 1, Accu_tag);
+	for(i = 0; i < size; i++) Field(accu, i) = Field(coq_env, i);
+	for(i = size; i <= coq_extra_args + size; i++) 
+	  Field(accu, i) = *sp++;
+	pc = (code_t)(sp[0]);
+	coq_env = sp[1];
+	coq_extra_args = Long_val(sp[2]);
+	sp += 3;
+	Next;
+      }
+      
+      Instruct(MAKEACCU) {
+	int i;
+	Alloc_small(accu, coq_extra_args + 3, Accu_tag);
+	Code_val(accu) = accumulate;
+	Field(accu,1) = Field(coq_atom_tbl, *pc);
+	for(i = 2; i < coq_extra_args + 3; i++) Field(accu, i) = *sp++;
+	pc = (code_t)(sp[0]);
+	coq_env = sp[1];
+	coq_extra_args = Long_val(sp[2]);
+	sp += 3;
+	Next;
+      }
+     
+      Instruct(MAKEPROD) {
+	*--sp=accu;
+	Alloc_small(accu,2,0);
+	Field(accu, 0) = sp[0];
+	Field(accu, 1) = sp[1];
+	sp += 2;
+	Next;
+      }
+      
+#ifndef THREADED_CODE
+    default:
+      /*fprintf(stderr, "%d\n", *pc);*/
+      failwith("Coq VM: Fatal error: bad opcode");
+    }
+  }
+#endif
+}
+
+value coq_push_ra(value tcode) { 
+  coq_sp -= 3;
+  coq_sp[0] = (value) tcode;
+  coq_sp[1] = Val_unit;
+  coq_sp[2] = Val_long(0);
+  return Val_unit;
+}
+
+value coq_push_val(value v) {
+  *--coq_sp = v;
+  return Val_unit;
+}
+
+value coq_push_arguments(value args) {
+  int nargs,i;
+  nargs = Wosize_val(args) - 2;
+  coq_sp -= nargs;
+  for(i = 0; i < nargs; i++) coq_sp[i] = Field(args, i+2);
+  return Val_unit;
+}
+
+value coq_push_vstack(value stk) {
+  int len,i;
+  len = Wosize_val(stk);
+  coq_sp -= len;
+  for(i = 0; i < len; i++) coq_sp[i] = Field(stk,i);
+  return Val_unit;
+}
+
+value  coq_interprete_ml(value tcode, value a, value e, value ea) {
+  return coq_interprete((code_t)tcode, a, e, Long_val(ea));
+}
+
+value coq_eval_tcode (value tcode, value e) {
+  return coq_interprete_ml(tcode, Val_unit, e, 0);
+}

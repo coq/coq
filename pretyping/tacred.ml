@@ -285,6 +285,17 @@ let reference_eval sigma env = function
        end)
   | ref -> compute_consteval sigma env ref
 
+let rev_firstn_liftn fn ln = 
+  let rec rfprec p res l = 
+    if p = 0 then 
+      res 
+    else
+      match l with
+        | [] -> invalid_arg "Reduction.rev_firstn_liftn"
+        | a::rest -> rfprec (p-1) ((lift ln a)::res) rest
+  in 
+  rfprec fn []
+
 (* If f is bound to EliminationFix (n',infos), then n' is the minimal
    number of args for starting the reduction and infos is
    (nbfix,[(yi1,Ti1);...;(yip,Tip)],n) indicating that f converts
@@ -292,7 +303,6 @@ let reference_eval sigma env = function
    yij = Rel(n+1-j)
 
    f is applied to largs and we need for recursive calls to build the function
-
       g := [xp:Tip',...,x1:Ti1'](f a1 ... an)
 
    s.t. (g u1 ... up) reduces to (Fix(..) u1 ... up)
@@ -790,6 +800,11 @@ let cbv_betadeltaiota env sigma =  cbv_norm_flags betadeltaiota env sigma
 
 let compute = cbv_betadeltaiota
 
+(* call by value reduction functions using virtual machine *)
+let cbv_vm env _ c =
+  let ctyp = (fst (Typeops.infer env c)).uj_type in
+  Vconv.cbv_vm env c ctyp
+
 (* Pattern *)
 
 (* gives [na:ta]c' such that c converts to ([na:ta]c' a), abstracting only
@@ -860,6 +875,7 @@ let reduction_of_redexp = function
   | ExtraRedExpr (s,c) ->
       (try Stringmap.find s !red_expr_tab
       with Not_found -> error("unknown user-defined reduction \""^s^"\""))
+  | CbvVm -> cbv_vm 
 (* Used in several tactics. *)
 
 exception NotStepReducible

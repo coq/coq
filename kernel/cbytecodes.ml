@@ -1,0 +1,64 @@
+open Names
+open Term
+
+type tag = int 
+
+type structured_constant =
+  | Const_sorts of sorts
+  | Const_ind of inductive
+  | Const_b0 of tag                
+  | Const_bn of tag * structured_constant array
+
+type reloc_table = (tag * int) array 
+
+type annot_switch = 
+   {ci : case_info; rtbl : reloc_table; tailcall : bool}
+ 
+module Label = 
+  struct
+    type t = int
+    let no = -1
+    let counter = ref no
+    let create () = incr counter; !counter
+    let reset_label_counter () = counter := no 
+  end
+
+
+type instruction =
+  | Klabel of Label.t
+  | Kacc of int
+  | Kenvacc of int
+  | Koffsetclosure of int
+  | Kpush
+  | Kpop of int
+  | Kpush_retaddr of Label.t
+  | Kapply of int                       (*  number of arguments *)
+  | Kappterm of int * int               (* number of arguments, slot size *)
+  | Kreturn of int                      (* slot size *)
+  | Kjump
+  | Krestart
+  | Kgrab of int                        (* number of arguments *)
+  | Kgrabrec of int                     (* rec arg *)
+  | Kcograb of int                      (* number of arguments *)
+  | Kclosure of Label.t * int           (* label, number of free variables *)
+  | Kclosurerec of int * int * Label.t array * Label.t array 
+                   (* nb fv, init, lbl types, lbl bodies *)
+  | Kgetglobal of constant
+  | Kconst of structured_constant
+  | Kmakeblock of int * tag             (* size, tag *)
+  | Kmakeprod 
+  | Kmakeswitchblock of Label.t * Label.t * annot_switch * int
+  | Kforce
+  | Kswitch of Label.t array * Label.t array (* consts,blocks *)
+  | Kpushfield of int 
+  | Kstop
+  | Ksequence of bytecodes * bytecodes
+
+and bytecodes = instruction list
+
+type fv_elem = FVnamed of identifier | FVrel of int
+
+type fv = fv_elem array
+
+
+

@@ -165,6 +165,7 @@ GEXTEND Gram
       | IDENT "Cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
       | IDENT "Lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)
       | IDENT "Compute" -> Cbv (make_red_flag [FBeta;FIota;FDeltaBut [];FZeta])
+      | IDENT "Vm_compute" -> CbvVm
       | IDENT "Unfold"; ul = LIST1 unfold_occ -> Unfold ul
       | IDENT "Fold"; cl = LIST1 constr -> Fold cl
       | IDENT "Pattern"; pl = LIST1 pattern_occ -> Pattern pl ] ]
@@ -180,6 +181,7 @@ GEXTEND Gram
       | IDENT "Unfold"; ul = LIST1 unfold_occ -> Unfold ul
       | IDENT "Fold"; cl = LIST1 constr -> Fold cl
       | IDENT "Pattern"; pl = LIST1 pattern_occ -> Pattern pl
+      | IDENT "Vm_compute" -> CbvVm   
       | s = IDENT; c = constr -> ExtraRedExpr (s,c) ] ]
   ;
   hypident:
@@ -250,7 +252,8 @@ GEXTEND Gram
 
       | IDENT "Assumption" -> TacAssumption
       | IDENT "Exact"; c = constr -> TacExact c
-
+      | IDENT "Exact_no_check"; c = constr -> TacExactNoCheck c
+      
       | IDENT "Apply"; cl = constr_with_bindings -> TacApply cl
       | IDENT "Elim"; cl = constr_with_bindings; el = OPT eliminator ->
           TacElim (cl,el)

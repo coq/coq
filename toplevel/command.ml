@@ -84,7 +84,7 @@ let rec adjust_conclusion a cs = function
 let definition_message id =
   if_verbose message ((string_of_id id) ^ " is defined")
 
-let constant_entry_of_com (bl,com,comtypopt,opacity) =
+let constant_entry_of_com (bl,com,comtypopt,opacity,boxed) =
   let sigma = Evd.empty in
   let env = Global.env() in
   match comtypopt with
@@ -93,7 +93,8 @@ let constant_entry_of_com (bl,com,comtypopt,opacity) =
 	let j = judgment_of_rawconstr sigma env b in
 	{ const_entry_body = j.uj_val;
 	  const_entry_type = Some (refresh_universes j.uj_type);
-          const_entry_opaque = opacity }
+          const_entry_opaque = opacity;
+	  const_entry_boxed = boxed }
     | Some comtyp ->
 	(* We use a cast to avoid troubles with evars in comtyp *)
 	(* that can only be resolved knowing com *)
@@ -101,7 +102,8 @@ let constant_entry_of_com (bl,com,comtypopt,opacity) =
 	let (body,typ) = destSubCast (interp_constr sigma env b) in
 	{ const_entry_body = body;
 	  const_entry_type = Some typ;
-          const_entry_opaque = opacity }
+          const_entry_opaque = opacity;
+	  const_entry_boxed = boxed }
 
 let red_constant_entry ce = function
   | None -> ce
@@ -117,8 +119,14 @@ let declare_global_definition ident ce local =
   definition_message ident;
   ConstRef kn
 
-let declare_definition ident (local,_) bl red_option c typopt hook =
-  let ce = constant_entry_of_com (bl,c,typopt,false) in
+let is_boxed_def dok = 
+  match dok with
+  | Definition b -> b
+  | _ -> false
+ 
+let declare_definition ident (local,dok) bl red_option c typopt hook =
+  let boxed = is_boxed_def dok in
+  let ce = constant_entry_of_com (bl,c,typopt,false,boxed) in
   if bl<>[] && red_option <> None then 
     error "Evaluation under a local context not supported";
   let ce' = red_constant_entry ce red_option in
@@ -189,7 +197,8 @@ let declare_one_elimination ind =
       (DefinitionEntry
         { const_entry_body = c;
           const_entry_type = t;
-          const_entry_opaque = false }, 
+          const_entry_opaque = false;
+	  const_entry_boxed = true }, 
        Decl_kinds.IsDefinition) in
     definition_message id;
     kn
@@ -451,7 +460,8 @@ let collect_non_rec env =
   in 
   searchrec [] 
 
-let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)  =
+let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)
+                                                                   boxed =
   let lrecnames = List.map (fun ((f,_,_,_,_),_) -> f) lnameargsardef 
   and sigma = Evd.empty
   and env0 = Global.env()
@@ -502,7 +512,8 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)  =
     let ce = 
       { const_entry_body = mkFix ((nvrec,i),recdecls);
         const_entry_type = Some arrec.(i);
-        const_entry_opaque = false } in
+        const_entry_opaque = false;
+        const_entry_boxed = boxed} in
     let (_,kn) = declare_constant fi (DefinitionEntry ce, IsDefinition) in
     (ConstRef kn)
   in 
@@ -516,7 +527,8 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)  =
       (fun subst (f,def,t) ->
 	 let ce = { const_entry_body = replace_vars subst def;
 		    const_entry_type = Some t;
-                    const_entry_opaque = false } in
+                    const_entry_opaque = false;
+		    const_entry_boxed = boxed } in
 	 let _ = declare_constant f (DefinitionEntry ce, IsDefinition) in
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
@@ -526,7 +538,7 @@ let build_recursive (lnameargsardef:(fixpoint_expr *decl_notation) list)  =
   List.iter (fun (df,c,scope) ->
     Metasyntax.add_notation_interpretation df [] c scope) notations
 
-let build_corecursive lnameardef = 
+let build_corecursive lnameardef boxed = 
   let lrecnames = List.map (fun (f,_,_,_) -> f) lnameardef
   and sigma = Evd.empty
   and env0 = Global.env() in
@@ -566,7 +578,8 @@ let build_corecursive lnameardef =
     let ce = 
       { const_entry_body = mkCoFix (i, recdecls);
         const_entry_type = Some (arrec.(i));
-        const_entry_opaque = false } 
+        const_entry_opaque = false;
+        const_entry_boxed = boxed } 
     in
     let _,kn = declare_constant fi (DefinitionEntry ce, IsDefinition) in
     (ConstRef kn)
@@ -579,7 +592,8 @@ let build_corecursive lnameardef =
       (fun subst (f,def,t) ->
 	 let ce = { const_entry_body = replace_vars subst def;
 		    const_entry_type = Some t;
-                    const_entry_opaque = false } in
+                    const_entry_opaque = false;
+		    const_entry_boxed = boxed } in
 	 let _ = declare_constant f (DefinitionEntry ce,IsDefinition) in
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
@@ -605,7 +619,8 @@ let build_scheme lnamedepindsort =
     let decltype = refresh_universes decltype in
     let ce = { const_entry_body = decl;
                const_entry_type = Some decltype;
-               const_entry_opaque = false } in
+               const_entry_opaque = false;
+	       const_entry_boxed = true } in
     let _,kn = declare_constant fi (DefinitionEntry ce, IsDefinition) in
     ConstRef kn :: lrecref
   in 

@@ -22,6 +22,7 @@ open Proof_type
 open Refiner
 open Proof_trees
 open Logic
+open Reduction
 open Reductionops
 open Tacmach
 open Evar_refiner

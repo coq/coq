@@ -53,13 +53,11 @@ let empty_rel_context = []
 
 let add_rel_decl d ctxt = d::ctxt
 
-let lookup_rel n sign =
-  let rec lookrec = function
-    | (1, decl :: _) -> decl
-    | (n, _ :: sign) -> lookrec (n-1,sign)
-    | (_, [])        -> raise Not_found
-  in 
-  lookrec (n,sign)
+let rec lookup_rel n sign =
+  match n, sign with
+  | 1, decl :: _ -> decl
+  | n, _ :: sign -> lookup_rel (n-1) sign
+  | _, []        -> raise Not_found
 
 let rel_context_length = List.length
 

@@ -28,6 +28,7 @@ let h_intro x        = h_intro_move (Some x) None
 let h_intros_until x = abstract_tactic (TacIntrosUntil x) (intros_until x)
 let h_assumption     = abstract_tactic TacAssumption assumption
 let h_exact c        = abstract_tactic (TacExact c) (exact_check c)
+let h_exact_no_check c = abstract_tactic (TacExactNoCheck c) (exact_no_check c)
 let h_apply cb       = abstract_tactic (TacApply cb) (apply_with_bindings cb)
 let h_elim cb cbo    = abstract_tactic (TacElim (cb,cbo)) (elim cb cbo)
 let h_elim_type c    = abstract_tactic (TacElimType c) (elim_type c)

@@ -145,7 +145,7 @@ and translate_entry_list env msid is_definition sig_e =
     let kn = make_kn mp empty_dirpath l in
     match e with
       | SPEconst ce ->
-	  let cb = translate_constant env ce in
+	  let cb = translate_constant env kn ce in
 	    begin match cb.const_hyps with
 	      |	(_::_) -> error_local_context (Some l)
 	      | [] ->

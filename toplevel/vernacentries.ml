@@ -751,6 +751,22 @@ let _ =
       optwrite = (fun b -> Options.raw_print := b) }
 
 let _ =
+  declare_bool_option 
+    { optsync  = false;
+      optname  = "use of virtual machine inside the kernel";
+      optkey   = (SecondaryTable ("Virtual","Machine"));
+      optread  = (fun () -> !Reduction.use_vm);
+      optwrite = (fun b -> Reduction.use_vm := b) }
+
+let _ =
+  declare_bool_option 
+    { optsync  = false;
+      optname  = "transparent values for virtual machine";
+      optkey   = (SecondaryTable ("Boxed","Values"));
+      optread  = Vm.transp_values;
+      optwrite = (fun b -> Vm.set_transp_values b) }
+
+let _ =
   declare_int_option
     { optsync=false;
       optkey=PrimaryTable("Undo");
@@ -1154,8 +1170,8 @@ let interp c = match c with
   | VernacExactProof c -> vernac_exact_proof c
   | VernacAssumption (stre,l) -> vernac_assumption stre l
   | VernacInductive (finite,l) -> vernac_inductive finite l
-  | VernacFixpoint l -> vernac_fixpoint l
-  | VernacCoFixpoint l -> vernac_cofixpoint l
+  | VernacFixpoint (l,b) -> vernac_fixpoint l b
+  | VernacCoFixpoint (l,b) -> vernac_cofixpoint l b
   | VernacScheme l -> vernac_scheme l
 
   (* Modules *)

@@ -15,6 +15,7 @@ open Names
 open Environ
 open Univ
 open Evd
+open Conv_oracle
 open Closure
 open Esubst
 
@@ -91,7 +92,7 @@ let contract_cofixp env (i,(_,_,bds as bodies)) =
   subst_bodies_from_i 0 env, bds.(i)
 
 let make_constr_ref n = function
-  | FarRelKey p -> mkRel (n+p)
+  | RelKey p -> mkRel (n+p)
   | VarKey id -> mkVar id
   | ConstKey cst -> mkConst cst
 
@@ -127,7 +128,7 @@ let stack_app appl stack =
 open RedFlags
 
 let red_set_ref flags = function
-  | FarRelKey _ -> red_set flags fDELTA
+  | RelKey _ -> red_set flags fDELTA
   | VarKey id -> red_set flags (fVAR id)
   | ConstKey sp -> red_set flags (fCONST sp)
 
@@ -195,7 +196,7 @@ let rec norm_head info env t stack =
         | Inl (0,v)      -> strip_appl v stack
         | Inl (n,v)      -> strip_appl (shift_value n v) stack
         | Inr (n,None)   -> (VAL(0, mkRel n), stack)
-        | Inr (n,Some p) -> norm_head_ref (n-p) info env stack (FarRelKey p))
+        | Inr (n,Some p) -> norm_head_ref (n-p) info env stack (RelKey p))
 
   | Var id -> norm_head_ref 0 info env stack (VarKey id)
 

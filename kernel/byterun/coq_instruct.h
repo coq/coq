@@ -1,0 +1,40 @@
+/***********************************************************************/
+/*                                                                     */
+/*                           Coq Compiler                              */
+/*                                                                     */
+/*        Benjamin Gregoire, projets Logical and Cristal               */
+/*                        INRIA Rocquencourt                           */
+/*                                                                     */
+/*                                                                     */
+/***********************************************************************/
+
+#ifndef _COQ_INSTRUCT_
+#define _COQ_INSTRUCT_
+
+enum instructions {
+  ACC0, ACC1, ACC2, ACC3, ACC4, ACC5, ACC6, ACC7, ACC,
+  PUSH, 
+  PUSHACC0, PUSHACC1, PUSHACC2, PUSHACC3, PUSHACC4,
+  PUSHACC5, PUSHACC6, PUSHACC7, PUSHACC, 
+  POP,
+  ENVACC1, ENVACC2, ENVACC3, ENVACC4, ENVACC,
+  PUSHENVACC1, PUSHENVACC2, PUSHENVACC3, PUSHENVACC4, PUSHENVACC,
+  PUSH_RETADDR,
+  APPLY, APPLY1, APPLY2, APPLY3,
+  APPTERM, APPTERM1, APPTERM2, APPTERM3,
+  RETURN, RESTART, GRAB, GRABREC, COGRAB, 
+  CLOSURE, CLOSUREREC, 
+  OFFSETCLOSUREM2, OFFSETCLOSURE0, OFFSETCLOSURE2, OFFSETCLOSURE,
+  PUSHOFFSETCLOSUREM2, PUSHOFFSETCLOSURE0, PUSHOFFSETCLOSURE2, 
+  PUSHOFFSETCLOSURE,
+  GETGLOBAL, PUSHGETGLOBAL,
+  GETGLOBALBOXED, PUSHGETGLOBALBOXED,
+  MAKEBLOCK, MAKEBLOCK1, MAKEBLOCK2, MAKEBLOCK3, 
+  MAKESWITCHBLOCK, MAKEACCU, MAKEPROD,
+  FORCE, SWITCH, PUSHFIELD,
+  CONST0, CONST1, CONST2, CONST3, CONSTINT,
+  PUSHCONST0, PUSHCONST1, PUSHCONST2, PUSHCONST3, PUSHCONSTINT,
+  ACCUMULATE, STOP
+};
+
+#endif /* _COQ_INSTRUCT_ */

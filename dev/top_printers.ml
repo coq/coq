@@ -295,3 +295,18 @@ let _ =
        | _ -> bad_vernac_args "PrintPureConstr")
 *)
 
+let ppfconstr c = ppterm (Closure.term_of_fconstr c)
+
+open Cbytecodes
+open Cemitcodes
+let ppripos (ri,pos) =
+  (match ri with
+  | Reloc_annot a -> 
+      let sp,i = a.ci.ci_ind in
+      print_string 
+	("annot : MutInd("^(string_of_kn sp)^","^(string_of_int i)^")\n")
+  | Reloc_const _ ->
+      print_string "structured constant\n"
+  | Reloc_getglobal kn ->
+      print_string ("getglob "^(string_of_kn kn)^"\n"));
+   print_flush ()

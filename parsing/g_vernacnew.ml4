@@ -96,21 +96,28 @@ GEXTEND Gram
     [ [ thm = thm_token; id = identref; bl = LIST0 binder_let; ":";
         c = lconstr ->
           VernacStartTheoremProof (thm, id, (bl, c), false, (fun _ _ -> ()))
-      | (f,d) = def_token; id = identref; b = def_body -> 
-          VernacDefinition (d, id, b, f)
       | stre = assumption_token; bl = assum_list -> 
 	  VernacAssumption (stre, bl)
       | stre = assumptions_token; bl = assum_list ->
 	  test_plurial_form bl;
 	  VernacAssumption (stre, bl)
+      | IDENT "Boxed";"Definition";id = identref; b = def_body -> 
+	  VernacDefinition ((Global,Definition true), id, b, (fun _ _ -> ()))
+      | (f,d) = def_token; id = identref; b = def_body -> 
+          VernacDefinition (d, id, b, f)
       (* Gallina inductive declarations *)
       | f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
           VernacInductive (f,indl)
+      | IDENT "Boxed";"Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
+          VernacFixpoint (recs,true)
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
-          VernacFixpoint recs
+          VernacFixpoint (recs,false)
+      | IDENT "Boxed"; "CoFixpoint"; 
+	   corecs = LIST1 corec_definition SEP "with" ->
+          VernacCoFixpoint (corecs,true)
       | "CoFixpoint"; corecs = LIST1 corec_definition SEP "with" ->
-          VernacCoFixpoint corecs
+          VernacCoFixpoint (corecs,false)
       | IDENT "Scheme"; l = LIST1 scheme SEP "with" -> VernacScheme l ] ]
   ;
   gallina_ext:
@@ -133,8 +140,8 @@ GEXTEND Gram
       | IDENT "Remark" -> Remark ] ]
   ;
   def_token:
-    [ [ "Definition" -> (fun _ _ -> ()), (Global, Definition)
-      | IDENT "Let" -> (fun _ _ -> ()), (Local, Definition)
+    [ [ "Definition" -> (fun _ _ -> ()), (Global, Definition false)
+      | IDENT "Let" -> (fun _ _ -> ()), (Local, Definition false)
       | IDENT "SubClass"  -> Class.add_subclass_hook, (Global, SubClass)
       | IDENT "Local"; IDENT "SubClass"  ->
           Class.add_subclass_hook, (Local, SubClass) ] ] 

@@ -21,33 +21,22 @@ open Sign
 
 (*s Constants (internal representation) (Definition/Axiom) *)
 
-type subst_internal = 
-  | Constr of constr 
-  | LazyConstr of substitution * constr
+type constr_substituted = constr substituted
 
-type constr_substituted = subst_internal ref
+let from_val = from_val
 
-let from_val c = ref (Constr c)
+let force = force subst_mps 
 
-let force cs = match !cs with
-    Constr c -> c
-  | LazyConstr (subst,c) -> 
-      let c' = subst_mps subst c in
-	cs := Constr c';
-	c'
-
-let subst_constr_subst subst cs = match !cs with
-    Constr c -> ref (LazyConstr (subst,c))
-  | LazyConstr (subst',c) -> 
-      let subst'' = join subst' subst in
-	ref (LazyConstr (subst'',c))
+let subst_constr_subst = subst_substituted
 
 type constant_body = {
-  const_hyps : section_context; (* New: younger hyp at top *)
-  const_body : constr_substituted option;
-  const_type : types;
-  const_constraints : constraints;
-  const_opaque : bool }
+    const_hyps : section_context; (* New: younger hyp at top *)
+    const_body : constr_substituted option;
+    const_type : types;  
+    const_body_code : Cemitcodes.to_patch_substituted;
+   (* const_type_code : Cemitcodes.to_patch; *)
+    const_constraints : constraints;
+    const_opaque : bool }
 
 (*s Inductive types (internal representation with redundant
     information). *)
@@ -89,38 +78,43 @@ let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
    inductives *) 
 
 type one_inductive_body = {
-  mind_typename : identifier;
-  mind_nparams : int;
-  mind_params_ctxt : rel_context;
-  mind_nrealargs : int;
-  mind_nf_arity : types;
-  mind_user_arity : types;
-  mind_sort : sorts;
-  mind_kelim : sorts_family list;
-  mind_consnames : identifier array;
-  mind_nf_lc : types array; (* constrs and arity with pre-expanded ccl *)
-  mind_user_lc : types array;
-  mind_recargs : wf_paths;
- }
+    mind_typename : identifier;
+    mind_nparams : int;
+    mind_params_ctxt : rel_context;
+    mind_nrealargs : int;
+    mind_nf_arity : types;
+    mind_user_arity : types;
+    mind_sort : sorts;
+    mind_kelim : sorts_family list;
+    mind_consnames : identifier array;
+    mind_nf_lc : types array; (* constrs and arity with pre-expanded ccl *)
+    mind_user_lc : types array;
+    mind_recargs : wf_paths;
+    mind_nb_constant : int; (* number of constant constructor *)
+    mind_nb_args : int; (* number of no constant constructor *)
+    mind_reloc_tbl :  Cbytecodes.reloc_table; 
+  }
 
 type mutual_inductive_body = {
-  mind_record : bool;
-  mind_finite : bool;
-  mind_ntypes : int;
-  mind_hyps : section_context;
-  mind_packets : one_inductive_body array;
-  mind_constraints : constraints;
-  mind_equiv : kernel_name option
- }
+    mind_record : bool;
+    mind_finite : bool;
+    mind_ntypes : int;
+    mind_hyps : section_context;
+    mind_packets : one_inductive_body array;
+    mind_constraints : constraints;
+    mind_equiv : kernel_name option
+  }
 
 (* TODO: should be changed to non-coping after Term.subst_mps *)
-let subst_const_body sub cb = 
-  { const_body = option_app (subst_constr_subst sub) cb.const_body;
-    const_type = type_app (Term.subst_mps sub) cb.const_type;
+let subst_const_body sub cb = {
     const_hyps = (assert (cb.const_hyps=[]); []);
+    const_body = option_app (subst_constr_subst sub) cb.const_body;
+    const_type = type_app (Term.subst_mps sub) cb.const_type;
+    const_body_code = Cemitcodes.subst_to_patch_subst sub cb.const_body_code;
+    (*const_type_code = Cemitcodes.subst_to_patch sub cb.const_type_code;*)
     const_constraints = cb.const_constraints;
-    const_opaque = cb.const_opaque}
-  
+    const_opaque = cb.const_opaque } 
+
 let subst_mind_packet sub mbp = 
   { mind_consnames = mbp.mind_consnames;
     mind_typename = mbp.mind_typename;
@@ -136,8 +130,11 @@ let subst_mind_packet sub mbp =
     mind_nparams = mbp.mind_nparams;
     mind_params_ctxt = 
       map_rel_context (Term.subst_mps sub) mbp.mind_params_ctxt;
-    mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*);
-}
+    mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*); 
+    mind_nb_constant = mbp.mind_nb_constant;
+    mind_nb_args = mbp.mind_nb_args;
+    mind_reloc_tbl = mbp.mind_reloc_tbl }
+
 
 let subst_mind sub mib = 
   { mind_record = mib.mind_record ; 
@@ -146,8 +143,7 @@ let subst_mind sub mib =
     mind_hyps = (assert (mib.mind_hyps=[]); []) ;
     mind_packets = array_smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_constraints = mib.mind_constraints ;
-    mind_equiv = option_app (subst_kn sub) mib.mind_equiv;
-}
+    mind_equiv = option_app (subst_kn sub) mib.mind_equiv }
 
 
 (*s Modules: signature component specifications, module types, and
@@ -170,7 +166,6 @@ and module_specification_body =
     { msb_modtype : module_type_body;
       msb_equiv : module_path option; 
       msb_constraints : constraints }
-
 
 type structure_elem_body = 
   | SEBconst of constant_body

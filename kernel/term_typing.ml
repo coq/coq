@@ -19,6 +19,8 @@ open Inductive
 open Environ
 open Entries
 open Type_errors
+open Cemitcodes
+open Cbytegen
 open Indtypes
 open Typeops
 
@@ -85,33 +87,38 @@ let infer_declaration env dcl =
   | DefinitionEntry c ->
       let (j,cst) = infer env c.const_entry_body in
       let (typ,cst) = constrain_type env j cst c.const_entry_type in
-      Some (Declarations.from_val j.uj_val), typ, cst, c.const_entry_opaque
+      Some (Declarations.from_val j.uj_val), typ, cst,
+        c.const_entry_opaque, c.const_entry_boxed
   | ParameterEntry t ->
       let (j,cst) = infer env t in
-      None, Typeops.assumption_of_judgment env j, cst, false
+      None, Typeops.assumption_of_judgment env j, cst, false, false
 
-let build_constant_declaration env (body,typ,cst,op) =
-  let ids = match body with 
+let build_constant_declaration env kn (body,typ,cst,op,boxed) =
+  let ids =
+    match body with 
     | None -> global_vars_set env typ
     | Some b ->
         Idset.union 
 	  (global_vars_set env (Declarations.force b)) 
-	  (global_vars_set env typ) 
+	  (global_vars_set env typ)
   in
+  let tps = from_val (compile_constant_body env kn body op boxed) in
   let hyps = keep_hyps env ids in
-    { const_body = body;
+    { const_hyps = hyps;
+      const_body = body;
       const_type = typ;
-      const_hyps = hyps;
+      const_body_code = tps;
+     (* const_type_code = to_patch env typ;*)
       const_constraints = cst;
       const_opaque = op }
 
 (*s Global and local constant declaration. *)
 
-let translate_constant env ce =
-  build_constant_declaration env (infer_declaration env ce)
+let translate_constant env kn ce =
+  build_constant_declaration env kn (infer_declaration env ce)
 
-let translate_recipe env r = 
-  build_constant_declaration env (Cooking.cook_constant env r)
+let translate_recipe env kn r = 
+  build_constant_declaration env kn (Cooking.cook_constant env r)
 
 (* Insertion of inductive types. *)
 

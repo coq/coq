@@ -25,7 +25,7 @@
 #install_printer  (* qualid *)  prqualid;;
 #install_printer  (* kernel_name *) prkn;;
 #install_printer  (* constr *)  print_pure_constr;;
-
+#install_printer  (* patch *) ppripos;;
 (* parsing of names *)
 
 let qid = Libnames.qualid_of_string;;

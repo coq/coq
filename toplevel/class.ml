@@ -269,7 +269,8 @@ let build_id_coercion idf_opt source =
     DefinitionEntry
       { const_entry_body = mkCast (val_f, typ_f);
 	const_entry_type = Some typ_f;
-        const_entry_opaque = false } in
+        const_entry_opaque = false;
+	const_entry_boxed = false} in
   let (_,kn) = declare_constant idf (constr_entry,Decl_kinds.IsDefinition) in
   ConstRef kn
 

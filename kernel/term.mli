@@ -523,3 +523,7 @@ val hcons_constr:
 
 val hcons1_constr : constr -> constr
 val hcons1_types : types -> types
+
+(**************************************)
+
+type values
