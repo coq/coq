@@ -220,6 +220,9 @@ GEXTEND Gram
 	  CProdN (loc, (id1::id2::idl, c)::bl, body)
       | "("; lc1 = lconstr; ")" -> lc1
       | c1 = annot; "->"; c2 = annot -> CArrow (loc, c1, c2)
+      | c1 = annot; "\\/"; c2 = annot -> CNotation (loc, "_ \\/ _", [c1;c2])
+      | c1 = annot; "/\\"; c2 = annot -> CNotation (loc, "_ /\\ _", [c1;c2])
+      | "~"; c = SELF -> CNotation (loc, "~ _", [c])
       | c1 = SELF; "=="; c2 = NEXT -> CNotation (loc, "_ == _", [c1;c2])
       | c1 = SELF; "="; c2 = NEXT -> CNotation (loc, "_ = _", [c1;c2])
       | c = constr LEVEL "4L" -> c
