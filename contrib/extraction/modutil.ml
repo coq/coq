@@ -107,7 +107,7 @@ let rec modfile_of_mp mp = match mp with
   | _ -> raise Not_found
 
 let rec fst_level_module_of_mp mp = match mp with 
-  | MPdot (mp, l) when is_toplevel mp -> mp,l 
+  | MPdot (mp, l) when at_toplevel mp -> mp,l 
   | MPdot (mp, l) -> fst_level_module_of_mp mp
   | _ -> raise Not_found
 

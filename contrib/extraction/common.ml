@@ -252,11 +252,16 @@ module StdParams = struct
 	with Not_found -> (* [mp] is othogonal with every element of [mp]. *)
 	  let base, l = labels_of_mp mp in 
 	  let short = string_of_ren (print_labels l) s in
-	  if not (at_toplevel mp) ||
-	    (!modular && 
-	     (l <> [] || (Refset.mem r !to_qualify) || (clash base l s mpl)))
-	  then (print_base_mp base)^"."^short
-	  else short
+	  if !modular then 
+	    if (at_toplevel mp) && 
+	      not (Refset.mem r !to_qualify) && 
+	      not (clash base [] s mpl) 
+	    then short
+	    else (print_base_mp base)^"."^short
+	  else 
+	    if (at_toplevel base) 
+	    then short 
+	    else (print_base_mp base)^"."^short 
     in 
     add_module_contents mp s; (* update the visible environment *)
     str final
@@ -273,11 +278,16 @@ module StdParams = struct
 i*)	
       str (string_of_modlist (print_labels l))
     with Not_found -> (* [mp] is othogonal with every element of [mp]. *)
-      let base_mp, l = labels_of_mp mp in 
+      let base, l = labels_of_mp mp in 
       let short = string_of_modlist (print_labels l) in
-      if not (at_toplevel mp) || !modular 
-      then str ((print_base_mp base_mp)^(if short = "" then "" else "."^short))
-      else str short
+      if !modular then 
+	if (at_toplevel mp) 
+	then str short
+	else str ((print_base_mp base)^(if short = "" then "" else "."^short))
+      else 
+	if (at_toplevel base) 
+	then str short
+	else str ((print_base_mp base)^(if short = "" then "" else "."^short))
 
   let pp_short_module id = str (rename_module id)
 end
