@@ -167,9 +167,10 @@ val default_elim   : constr * constr substitution -> tactic
 val simplest_elim  : constr -> tactic
 val dyn_elim       : tactic_arg list -> tactic
 
-val induct         : identifier -> tactic
-val induct_nodep   : int        -> tactic
-val dyn_induct     : tactic_arg list -> tactic
+val raw_induct       : identifier -> tactic
+val raw_induct_nodep : int        -> tactic
+val dyn_raw_induct : tactic_arg list -> tactic
+val dyn_new_induct : tactic_arg list -> tactic
 
 (*s Case analysis tactics. *)
 

@@ -1359,24 +1359,26 @@ let dyn_elim = function
   | l -> bad_tactic_args "elim" l
 	
 (* Induction tactics *)
+let raw_induct s = tclTHEN (intros_until s) (tclLAST_HYP simplest_elim)
+
+let raw_induct_nodep n = tclTHEN (intros_do n) (tclLAST_HYP simplest_elim)
+
+(* This is an hybrid of raw and new induction... seems source of confusion
 let induct s =
   tclORELSE (tclTHEN (intros_until s) (tclLAST_HYP simplest_elim))
     (induction_from_context s)
-
-let induct_nodep n = tclTHEN (intros_do n) (tclLAST_HYP simplest_elim)
-
-(* Pour le futur
-let dyn_induct = function
-  | [(Command c)] -> tactic_com new_induct x
-  | [(Constr x)]  -> new_induct x
-  | [(Integer n)] -> induct_nodep n
-  | l             -> bad_tactic_args "induct" l
 *)
 
-let dyn_induct = function 
-  | [Identifier x] -> induct x
-  | [Integer n]    -> induct_nodep n
-  | l              -> bad_tactic_args "induct" l
+let dyn_new_induct = function
+  | [(Command c)] -> tactic_com new_induct c
+  | [(Constr x)]  -> new_induct x
+  | [(Integer n)] -> error "Not implemented"
+  | l             -> bad_tactic_args "induct" l
+
+let dyn_raw_induct = function 
+  | [Identifier x] -> raw_induct x
+  | [Integer n]    -> raw_induct_nodep n
+  | l              -> bad_tactic_args "raw_induct" l
 
 (* Case analysis tactics *)
 

@@ -16,8 +16,7 @@ open Util
 GEXTEND Gram
 
   identarg:
-    [ [ id = IDENT -> <:ast< ($VAR $id) >> 
-      | id = METAIDENT -> <:ast< ($VAR $id) >> ] ]
+    [ [ id = Constr.ident -> id ] ]
   ;
   qualidarg:
     [ [ l = Constr.qualid -> <:ast< (QUALIDARG ($LIST l)) >> ] ]
@@ -311,6 +310,8 @@ GEXTEND Gram
           <:ast< (Cofix $id ($LIST $fd)) >>
       | IDENT "Induction"; s = identarg -> <:ast< (Induction $s) >>
       | IDENT "Induction"; n = numarg -> <:ast< (Induction $n) >>
+      | IDENT "NewInduction"; c = constrarg -> <:ast< (NewInduction $c) >>
+      | IDENT "NewInduction"; n = numarg -> <:ast< (NewInduction $n) >>
       | IDENT "Double"; IDENT "Induction"; i = numarg; j = numarg ->
           <:ast< (DoubleInd $i $j) >>
       | IDENT "Trivial" -> <:ast<(Trivial)>>
