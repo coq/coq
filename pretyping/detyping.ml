@@ -308,7 +308,7 @@ let rec detype tenv avoid env t =
 	 in RVar (dummy_loc, id_of_string s))
     | Meta n ->
 	(* Meta in constr are not user-parsable and are mapped to Evar *)
-	REvar (dummy_loc, n)
+	REvar (dummy_loc, n, None)
     | Var id ->
 	(try
 	  let _ = Global.lookup_named id in RRef (dummy_loc, VarRef id)
@@ -327,9 +327,8 @@ let rec detype tenv avoid env t =
               array_map_to_list (detype tenv avoid env) args)
     | Const sp -> RRef (dummy_loc, ConstRef sp)
     | Evar (ev,cl) ->
-	let f = REvar (dummy_loc, ev) in
-	RApp (dummy_loc, f,
-              List.map (detype tenv avoid env) (Array.to_list cl))
+        REvar (dummy_loc, ev, 
+               Some (List.map (detype tenv avoid env) (Array.to_list cl)))
     | Ind ind_sp ->
 	RRef (dummy_loc, IndRef ind_sp)
     | Construct cstr_sp ->
@@ -375,8 +374,13 @@ and detype_fix tenv avoid env (vn,_ as nvn) (names,tys,bodies) =
       (* Only if built with the f/n notation or w/o let-expansion in types *)
       | _, LetIn (_,b,_,t) ->
 	  share_names n l avoid env c (subst1 b t)
-      (* If built with the f/n notation or in an open proof: we renounce to *)
-      (* share names *)
+      (* If it is an open proof: we cheat and eta-expand *)
+      | _, Prod (na',t',c') ->
+          let t' = detype tenv avoid env t' in
+          let avoid = name_cons na' avoid and env = add_name na' env in
+          let appc = mkApp (lift 1 c,[|mkRel 1|]) in
+          share_names (n-1) ((na',None,t')::l) avoid env appc c'
+      (* If built with the f/n notation: we renounce to share names *)
       | _ -> share_names 0 l avoid env c t in
   let n = Array.length tys in
   let v = array_map3
