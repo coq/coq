@@ -129,9 +129,9 @@ Theorem dec_not_not : (P:Prop)(decidable P) -> (~P -> False) -> P.
 Unfold decidable; Tauto. Save.
 
 Theorem dec_True: (decidable True).
-Unfold decidable; Auto with arith.Save.
+Unfold decidable; Auto with arith. Save.
 Theorem dec_False: (decidable False).
-Unfold decidable not; Auto with arith.Save.
+Unfold decidable not; Auto with arith. Save.
 Theorem dec_or: (A,B:Prop)(decidable A) -> (decidable B) -> (decidable (A\/B)).
 Unfold decidable; Tauto. Save.
 Theorem dec_and: (A,B:Prop)(decidable A) -> (decidable B) ->(decidable (A/\B)).
