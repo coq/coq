@@ -167,7 +167,7 @@ Syntax constr
       	 -> [ (REXPR $n1):E "/" [0 0] (REXPR $n2):L ]
   ;
 
-  level 6:
+  level 5:
  Ropp_inside [<<(REXPR <<(Ropp $n1)>>)>>] -> [ "-" (REXPR $n1):E  ]
 |Rinv_inside [<<(REXPR <<(Rinv $n1)>>)>>] -> [ "1""/" (REXPR $n1):E  ]
   ;  
