@@ -236,11 +236,14 @@ let print_term inner_types l env csr =
   in
 
   let inner_type_display env term =
-   let type_of_term = R.get_type_of env (Evd.empty) term in
-   match R.get_sort_of env (Evd.empty) type_of_term with
-      T.Prop T.Null -> InnerProp type_of_term
-    | T.Prop _      -> InnerSet
-    | _             -> InnerType
+   let type_of_term =
+    Reduction.nf_betaiota env (Evd.empty)
+     (R.get_type_of env (Evd.empty) term)
+   in
+    match R.get_sort_of env (Evd.empty) type_of_term with
+       T.Prop T.Null -> InnerProp type_of_term
+     | T.Prop _      -> InnerSet
+     | _             -> InnerType
   in
 
 (*WHICH FORCE FUNCTION DEPENDS ON THE ORDERING YOU WANT
@@ -322,7 +325,11 @@ let print_term inner_types l env csr =
        X.xml_nempty "PROD" ["id", next_id]
 (force
         [< X.xml_nempty "source" [] (term_display idradix false l env t1) ;
-           X.xml_nempty "target" ["binder",(N.string_of_id nid')]
+           X.xml_nempty "target"
+            (if idradix = `T &&
+                T.noccurn 1 t2
+             then []
+             else ["binder",(N.string_of_id nid')])
             (term_display idradix false
              ((N.Name nid')::l)
              (E.push_rel_assum (N.Name nid', t1) env)
