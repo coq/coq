@@ -1,9 +1,10 @@
 
 (* $Id$ *)
 
-(*s States of the system. *)
-
-type state
+(*s States of the system. In that module, we provide functions to get
+  and set the state of the whole system. Internally, it is done by
+  freezing the states of both [Lib] and [Summary]. We provide functions 
+  to write and restore state to and from a given file. *)
 
 val intern_state : string -> unit
 val extern_state : string -> unit
