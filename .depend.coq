@@ -118,7 +118,7 @@ theories/NArith/BinNat.vo: theories/NArith/BinNat.v theories/NArith/BinPos.vo
 theories/NArith/NArith.vo: theories/NArith/NArith.v theories/NArith/BinPos.vo theories/NArith/BinNat.vo
 theories/ZArith/BinInt.vo: theories/ZArith/BinInt.v theories/NArith/BinPos.vo theories/NArith/Pnat.vo theories/NArith/BinNat.vo theories/Arith/Plus.vo theories/Arith/Mult.vo
 theories/ZArith/Wf_Z.vo: theories/ZArith/Wf_Z.v theories/ZArith/BinInt.vo theories/ZArith/Zcompare.vo theories/ZArith/Zorder.vo theories/ZArith/Znat.vo theories/ZArith/Zmisc.vo theories/Arith/Wf_nat.vo
-theories/ZArith/ZArith.vo: theories/ZArith/ZArith.v theories/ZArith/ZArith_base.vo theories/ZArith/Zcomplements.vo theories/ZArith/Zsqrt.vo theories/ZArith/Zpower.vo theories/ZArith/Zdiv.vo theories/ZArith/Zlogarithm.vo theories/ZArith/Zbool.vo
+theories/ZArith/ZArith.vo: theories/ZArith/ZArith.v theories/ZArith/ZArith_base.vo theories/ZArith/Zcomplements.vo theories/ZArith/Zsqrt.vo theories/ZArith/Zpower.vo theories/ZArith/Zdiv.vo theories/ZArith/Zlogarithm.vo
 theories/ZArith/ZArith_dec.vo: theories/ZArith/ZArith_dec.v theories/Bool/Sumbool.vo theories/ZArith/BinInt.vo theories/ZArith/Zorder.vo theories/ZArith/Zcompare.vo
 theories/ZArith/auxiliary.vo: theories/ZArith/auxiliary.v theories/Arith/Arith.vo theories/ZArith/BinInt.vo theories/ZArith/Zorder.vo theories/Logic/Decidable.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo
 theories/ZArith/Zmisc.vo: theories/ZArith/Zmisc.v theories/ZArith/BinInt.vo theories/ZArith/Zcompare.vo theories/ZArith/Zorder.vo theories/Bool/Bool.vo
