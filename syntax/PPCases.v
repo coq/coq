@@ -9,10 +9,10 @@
 (* $Id$ *)
 
 Syntax constr
-  level 0:
-    ne_command_listcons2 [ << (NECOMMANDLIST2 $c1 ($LIST $cl)) >> ]
-      -> [ $c1:L [1 0] (NECOMMANDLIST2 ($LIST $cl)) ]
-  | ne_command_listone2 [ << (NECOMMANDLIST2 $c1) >> ] -> [$c1:L]
+  level 8:
+    tomatch_cons [ << (TOMATCH $c1 ($LIST $cl)) >> ]
+      -> [ $c1:L [1 0] (TOMATCH ($LIST $cl)) ]
+  | tomatch_one [ << (TOMATCH $c1) >> ] -> [$c1:L]
   ;
 
   level 10:
@@ -36,8 +36,6 @@ Syntax constr
       -> [ "| " $eqn [1 0] (BAREQNLIST ($LIST $leqn)) ]
   | bar_eqnlist_one [ << (BAREQNLIST $eqn) >> ]
       -> [ "| " $eqn ]
-
-  | tomatch [ << (TOMATCH ($LIST $lc)) >> ] -> [(NECOMMANDLIST2 ($LIST $lc)):E]
   ;
 
   level 10:
