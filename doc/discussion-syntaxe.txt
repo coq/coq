@@ -313,7 +313,37 @@ Questions ouvertes :
   Suggestion de CP : on réécrit le but avec des _ à la place des occurrences
   souhaitées.
 
+IV) Vernac
 
-IV) Bibliothèque standard
+Mots-cles Variables/Hypotheses/Parameters ? Si oui, pourquoi pas Axioms ?
+
+Intégrer Eval In à Constr ? Oui, mais avec une syntax plus légère
+Ou alors standardiser
+Definition_kind id params := red_expr c : t.
+
+Intégrer "with_binding" à Constr !
+
+Faut-il séparer command/gallina/gallina_ext/syntax, sachant que si
+l'on sépare, alors il ne faut plus partager de premier mot-clé (ex:
+Add et Print seront réservé pour command) ?
+
+Virer theorem_body_line ?
+
+Virer le Mutual old syntax ! Et même implanter le future style de
+Christine avec paramètres engendrés automatiquement et propre à chaque inductif
+
+Scheme est-il Gallina ou pas ?
+Require est-il gallina_ext ou commande ? Et faut-il garder specif ?
+Utilite de RequireFrom ?
+
+Faire des qualid un token ?
+
+EVAL et CONTEXT dans constr: partout ou seulement en tete ?
+Supprimer Specialize, supprimer with c (sans nom)
+
+Ltac impose que "?" soit utilisable là où un identificateur ou un nom
+long est attendu (p.ex. dans Clear). Accepte-t-on le principe ?
+
+V) Bibliothèque standard
 
 Zcompare_EGAL -> Zcompare_EQUAL
