@@ -1603,7 +1603,7 @@ let cvt_fixpoint_binder = function
   | [],c -> xlate_error "Shouldn't occur"
 
 let cvt_fixpoint_binders bl =
-  CT_binder_list(List.map cvt_fixpoint_binder args)
+  CT_binder_list(List.map cvt_fixpoint_binder bl)
 
 let xlate_vernac =
  function
@@ -1873,9 +1873,9 @@ let xlate_vernac =
    | VernacFixpoint [] -> xlate_error "mutual recursive"
    | VernacFixpoint (lm :: lmi) ->
       let strip_mutrec (fid, n, arf, ardef) =
+        let (bl,arf,ardef) = Ppconstr.split_fix n arf ardef in
         let arf = xlate_constr arf in
         let ardef = xlate_constr ardef in
-        let (bl,arf,ardef) = split_fix n arf ardef in
 	match cvt_fixpoint_binders bl with
 	  | CT_binder_list (b :: bl) ->
 	      CT_fix_rec (xlate_ident fid, CT_binder_ne_list (b, bl),
