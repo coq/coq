@@ -154,8 +154,8 @@ CoFixpoint map : (Stream A)->(Stream B) :=
 End Map.
 
 Section Constant_Stream.
-Variables A : Set.
-Variable  a : A.
+Variable A : Set.
+Variable a : A.
 CoFixpoint const : (Stream A) := (Cons a const).
 End Constant_Stream.
 
