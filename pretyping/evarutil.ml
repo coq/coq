@@ -30,25 +30,6 @@ let rec filter_unique = function
       if List.mem x l then filter_unique (List.filter (fun y -> x<>y) l)
       else x::filter_unique l
 
-(*
-let distinct_id_list = 
-  let rec drec fresh = function
-      [] -> List.rev fresh 
-    | id::rest ->
- 	let id' = next_ident_away_from id fresh in drec (id'::fresh) rest
-  in drec []
-*)
-
-(*
-let filter_sign p sign x =
-  sign_it
-    (fun id ty (v,ids,sgn) ->
-      let (disc,v') = p v (id,ty) in
-      if disc then (v', id::ids, sgn) else (v', ids, add_sign (id,ty) sgn))
-    sign
-    (x,[],nil_sign)
-*)
-
 (* Expanding existential variables (pretyping.ml) *)
 (* 1- whd_ise fails if an existential is undefined *)
 
@@ -195,8 +176,7 @@ let do_restrict_hyps sigma ev args =
   in
   let sign' = List.rev rsign in
   let env' = reset_with_named_context sign' env in
-  let instance = make_evar_instance env' in
-  let (sigma',nc) = new_isevar_sign env' sigma evd.evar_concl instance in
+  let (sigma',nc) = new_isevar_sign env' sigma evd.evar_concl ncargs in
   let nc = refresh_universes nc in (* needed only if nc is an inferred type *)
   let sigma'' = Evd.define sigma' ev nc in
   (sigma'', nc)
