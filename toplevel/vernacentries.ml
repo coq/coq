@@ -231,7 +231,7 @@ let print_located_qualid (_,qid) =
     msgnl (pr_dirpath dir)
   with Not_found ->
   try
-    let (_,sp) = Nametab.full_name_modtype qid in
+    let sp = Nametab.full_name_modtype qid in
     msgnl (pr_sp sp)
   with Not_found ->
     msgnl (pr_qualid qid ++ str " is not a defined object")

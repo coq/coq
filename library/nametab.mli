@@ -76,9 +76,6 @@ val error_global_constant_not_found_loc : loc -> qualid -> 'a
 
 type visibility = Until of int | Exactly of int
 
-(* is the short name visible? tests for 1 *)
-val is_short_visible : visibility -> section_path -> bool
-
 val push : visibility -> section_path -> global_reference -> unit
 val push_syntactic_definition : 
   visibility -> section_path -> kernel_name -> unit
@@ -123,7 +120,7 @@ val exists_dir : dir_path -> bool
 val exists_section : dir_path -> bool (* deprecated *)
 val exists_module : dir_path -> bool (* deprecated *)
 
-val full_name_modtype : qualid -> kernel_name * section_path
+val full_name_modtype : qualid -> section_path
 
 (*s Roots of the space of absolute names *)
 
