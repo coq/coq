@@ -2125,16 +2125,18 @@ contrib/correctness/pextract.cmo: parsing/ast.cmi pretyping/evd.cmi \
     contrib/correctness/past.cmi contrib/correctness/pcicenv.cmi \
     contrib/correctness/penv.cmi lib/pp.cmi lib/pp_control.cmi \
     contrib/correctness/ptype.cmi contrib/correctness/putil.cmi \
-    kernel/reduction.cmi lib/system.cmi kernel/term.cmi lib/util.cmi \
-    toplevel/vernacinterp.cmi contrib/correctness/pextract.cmi 
+    kernel/reduction.cmi pretyping/reductionops.cmi lib/system.cmi \
+    kernel/term.cmi lib/util.cmi toplevel/vernacinterp.cmi \
+    contrib/correctness/pextract.cmi 
 contrib/correctness/pextract.cmx: parsing/ast.cmx pretyping/evd.cmx \
     toplevel/himsg.cmx library/library.cmx kernel/names.cmx \
     library/nametab.cmx contrib/extraction/ocaml.cmx \
     contrib/correctness/past.cmi contrib/correctness/pcicenv.cmx \
     contrib/correctness/penv.cmx lib/pp.cmx lib/pp_control.cmx \
     contrib/correctness/ptype.cmi contrib/correctness/putil.cmx \
-    kernel/reduction.cmx lib/system.cmx kernel/term.cmx lib/util.cmx \
-    toplevel/vernacinterp.cmx contrib/correctness/pextract.cmi 
+    kernel/reduction.cmx pretyping/reductionops.cmx lib/system.cmx \
+    kernel/term.cmx lib/util.cmx toplevel/vernacinterp.cmx \
+    contrib/correctness/pextract.cmi 
 contrib/correctness/pmisc.cmo: library/declare.cmi pretyping/evarutil.cmi \
     library/global.cmi library/libnames.cmi library/nameops.cmi \
     kernel/names.cmi lib/options.cmi lib/pp.cmi contrib/correctness/ptype.cmi \
@@ -2152,8 +2154,8 @@ contrib/correctness/pmlize.cmo: interp/coqlib.cmi pretyping/evd.cmi \
     contrib/correctness/pmisc.cmi contrib/correctness/pmonad.cmi \
     contrib/correctness/prename.cmi contrib/correctness/ptype.cmi \
     contrib/correctness/ptyping.cmi contrib/correctness/putil.cmi \
-    kernel/term.cmi parsing/termast.cmi pretyping/typing.cmi lib/util.cmi \
-    contrib/correctness/pmlize.cmi 
+    pretyping/reductionops.cmi kernel/term.cmi parsing/termast.cmi \
+    pretyping/typing.cmi lib/util.cmi contrib/correctness/pmlize.cmi 
 contrib/correctness/pmlize.cmx: interp/coqlib.cmx pretyping/evd.cmx \
     library/global.cmx kernel/names.cmx contrib/correctness/past.cmi \
     pretyping/pattern.cmx contrib/correctness/pcicenv.cmx \
@@ -2161,8 +2163,8 @@ contrib/correctness/pmlize.cmx: interp/coqlib.cmx pretyping/evd.cmx \
     contrib/correctness/pmisc.cmx contrib/correctness/pmonad.cmx \
     contrib/correctness/prename.cmx contrib/correctness/ptype.cmi \
     contrib/correctness/ptyping.cmx contrib/correctness/putil.cmx \
-    kernel/term.cmx parsing/termast.cmx pretyping/typing.cmx lib/util.cmx \
-    contrib/correctness/pmlize.cmi 
+    pretyping/reductionops.cmx kernel/term.cmx parsing/termast.cmx \
+    pretyping/typing.cmx lib/util.cmx contrib/correctness/pmlize.cmi 
 contrib/correctness/pmonad.cmo: kernel/names.cmi contrib/correctness/past.cmi \
     contrib/correctness/pcic.cmi contrib/correctness/peffect.cmi \
     contrib/correctness/penv.cmi contrib/correctness/pmisc.cmi \
