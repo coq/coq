@@ -151,7 +151,7 @@ let pr_production_item = function
 
 let pr_comment pr_c = function
   | CommentConstr c -> pr_c c
-  | CommentString s -> str s
+  | CommentString s -> qs s
   | CommentInt n -> int n
 
 let pr_in_out_modules = function
