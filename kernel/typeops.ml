@@ -540,7 +540,10 @@ let rec check_subterm_rec_meta env sigma vectn k def =
               (array_for_all (check_rec_call env n lst) typarray)
 	      &&
 	      (array_for_all
-		 (check_rec_call env (n+nbfix) (map_lift_fst_n nbfix lst))
+		 (check_rec_call
+		    (push_rec_types recdef env)
+		    (n+nbfix)
+		    (map_lift_fst_n nbfix lst))
 		 bodies)
             else 
               let theDecrArg  = List.nth l decrArg in
@@ -554,7 +557,10 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 		(array_for_all (check_rec_call env n lst) typarray)
 		&&
 		(array_for_all
-		   (check_rec_call env (n+nbfix) (map_lift_fst_n nbfix lst))
+		   (check_rec_call 
+		      (push_rec_types recdef env)
+		      (n+nbfix)
+		      (map_lift_fst_n nbfix lst))
 		   bodies)
               else 
                 let theBody = bodies.(i)   in
