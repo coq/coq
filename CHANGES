@@ -34,6 +34,13 @@ Modifications depuis la V7.0
   hypothèses du contexte, la stratégie de nommage est
   différente). Elim et Case restent nécessaires pour les cas où
   l'hypothèse d'élimination est un produit sur un type inductif.
+- Nouvelles contribs:
+   - CtlTctl et RailroadCrossing (Carlos Daniel Luna) [Montevideo],
+   - GRAPHS-BASICS (J. Duprat) [Lyon],
+   - FTA (Herman Geuvers et al) [Nijmegen], 
+   - Bresenham (JCF), Diff (JCF) et PAutomata (Paulin/Freund) [Orsay],
+   - Functions_in_ZFC (C. Simpson), Buchberger (L. Thery), Rsa
+     (L. Thery) et Stalmarck (L.Thery, P. Letouzey) [Sophia]
 
 
 Différences oubliées dans la V7.0beta :
