@@ -1,21 +1,10 @@
 
- o warning camlp4 
-	<W> Changing associativity of level "<top>"
-   à comprendre et supprimmer
-   (on peut faire Grammar.warning_verbose := False, mais il vaut mieux
-   comprendre)
-
  o options de la ligne de commande
      - reporter les options de l'ancien script coqtop sur le nouveau coqtop.ml
 
  o arguments implicites
      - les calculer une fois pour toutes à la déclaration (dans Declare)
        et stocker cette information dans le in_variable, in_constant, etc.
-
- o configure
-     - il faut tester la version du programme correspondant à $bytecamlc
-       qui peut être ocamlc ou ocamlc.opt, et non pas la version de "ocamlc"
-       seulement
 
  o Environnements compilés (type Environ.compiled_env)
      - pas de timestamp mais plutôt un checksum avec Digest (mais comment ?)
