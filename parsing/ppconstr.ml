@@ -103,7 +103,7 @@ let pr_notation pr s env =
   prlist (print_hunk pr env) unpl, level
 
 let pr_delimiters key strm =
-  let left = "`"^key^":" and right = "`" in
+  let left = "'"^key^":" and right = "'" in
   let lspace =
     if is_letter (left.[String.length left -1]) then str " " else mt () in
   let rspace =
@@ -386,6 +386,7 @@ let gentermpr gt =
   with s -> wrap_exception s
 
 (* [at_top] means ids of env must be avoided in bound variables *)
+
 let gentermpr_core at_top env t =
   gentermpr (Termast.ast_of_constr at_top env t)
 
@@ -393,5 +394,4 @@ let gentermpr_core at_top env t =
 let gentermpr_core at_top env t =
   pr_constr (Constrextern.extern_constr at_top env t)
 *)
-
 

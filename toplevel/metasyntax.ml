@@ -258,10 +258,9 @@ type symbol =
   | Break of int
 
 let prec_assoc = function
-  | Some(Gramext.RightA) -> (L,E)
-  | Some(Gramext.LeftA) -> (E,L)
-  | Some(Gramext.NonA) -> (L,L)
-  | None -> (L,L)   (* NONA by default *)
+  | Gramext.RightA -> (L,E)
+  | Gramext.LeftA -> (E,L)
+  | Gramext.NonA -> (L,L)
 
 let level_rule (n,p) = if p = E then n else max (n-1) 0
 
@@ -270,17 +269,23 @@ let meta_pattern m = Pmeta(m,Tany)
 
 open Symbols
 
-type white_status = NextMaybeLetter | NoSpace | AddBrk of int
+type white_status = Juxtapose | Separate of int
 
 let add_break l = function
-  | AddBrk n -> UNP_BRK (n,1) :: l
+  | Separate n -> UNP_BRK (n,1) :: l
   | _ -> l
 
 let precedence_of_entry_type = function
-  | ETConstr (n,BorderProd (left,a)) ->
+  | ETConstr (n,BorderProd (left,None)) -> (n,Prec n)
+  | ETConstr (n,BorderProd (left,Some a)) ->
       (n, let (lp,rp) = prec_assoc a in if left then lp else rp)
   | ETConstr (n,InternalProd) -> (n,E)
   | _ -> 0,E
+
+(* x = y |-> x brk = y (breaks before any symbol) *)
+(* x =S y |-> x spc =S spc y (protect from confusion; each side for symmetry)*)
+(* + { |-> + { may breaks reversibility without space but oth. not elegant *)
+(* x y |-> x spc y *)
 
 (* For old ast printer *)
 let make_hunks_ast symbols etyps from =
@@ -288,31 +293,26 @@ let make_hunks_ast symbols etyps from =
   List.fold_right
     (fun it (ws,l) -> match it with
       | NonTerminal m ->
-	  let (_,lp) = precedence_of_entry_type (List.assoc m etyps) in
+	  let (n,lp) = precedence_of_entry_type (List.assoc m etyps) in
 	  let u = PH (meta_pattern (string_of_id m), None, lp) in
 	  let l' = u :: (add_break l ws) in
-(*
-	  ((if from = 10 (* lconstr *) then AddBrk 1 else NextMaybeLetter), l')
-*)
-	  (AddBrk 1, l')
+	  (Separate 1, l')
       | Terminal s ->
-(*
-	  let l' = add_break l ws in
-*)
-	  let l' = l in
-	  if from = 10 (* lconstr *) then (AddBrk 1, RO s :: l')
-	  else
-	    let n = if is_letter (s.[0]) then 1 else 0 in
-	    let s = 
-	      if (ws = NextMaybeLetter or ws = AddBrk 1)
-		& is_letter (s.[String.length s -1])
-	      then s^" "
-	      else s
-	    in
-	    (AddBrk n, RO s :: l')
+	    let n,(s,l) =
+	      if
+		is_letter (s.[0]) or 
+		is_letter (s.[String.length s -1]) or
+		is_digit (s.[String.length s -1])
+	      then
+		(* We want spaces around both sides *)
+		Separate 1,
+		if ws = Separate 0 then s^" ",l else s,add_break l ws
+	      else
+		Juxtapose, (s,l) in
+	    (n, RO s :: l)
       | Break n ->
-	    (NoSpace, UNP_BRK (n,1) :: l))
-    symbols (NoSpace,[])
+	    (Juxtapose, UNP_BRK (n,1) :: l))
+    symbols (Juxtapose,[])
   in l
 
 let make_hunks etyps symbols =
@@ -325,21 +325,21 @@ let make_hunks etyps symbols =
 	  let prec = precedence_of_entry_type (List.nth typs (i-1)) in
 	  let u = UnpMetaVar (i ,prec) in
 	  let l' = match ws with
-	    | AddBrk n -> UnpCut (PpBrk(n,1)) :: u :: l
+	    | Separate n -> UnpCut (PpBrk(n,1)) :: u :: l
 	    | _ -> u :: l in
-	  (NextMaybeLetter, l')
+	  (Separate 1, l')
       | Terminal s ->
 	  let n = if is_letter (s.[0]) then 1 else 0 in
 	  let s = 
-	    if (ws = NextMaybeLetter or ws = AddBrk 1)
+	    if (ws = Separate 1)
 	      & is_letter (s.[String.length s -1])
 	    then s^" "
 	    else s
 	  in
-	  (AddBrk n, UnpTerminal s :: l)
+	  (Separate n, UnpTerminal s :: l)
       | Break n ->
-	    (NoSpace, UnpCut (PpBrk (n,1)) :: l))
-    symbols (NextMaybeLetter,[])
+	    (Juxtapose, UnpCut (PpBrk (n,1)) :: l))
+    symbols (Juxtapose,[])
   in l
 
 let string_of_prec (n,p) =
@@ -526,9 +526,7 @@ let set_entry_type etyps (x,typ) =
   let typ = try 
     match List.assoc x etyps, typ with
       | ETConstr (n,()), (_,BorderProd (left,_)) ->
-	  (* We set an associativity telling not to change the level *)
-	  let assoc = if left then Gramext.LeftA else Gramext.RightA in
-          ETConstr (n,BorderProd (left,Some assoc))
+          ETConstr (n,BorderProd (left,None))
       | ETConstr (n,()), (_,InternalProd) -> ETConstr (n,InternalProd)
       | (ETPattern | ETIdent | ETBigint | ETOther _ | ETReference as t), _ -> t
     with Not_found -> ETConstr typ
@@ -576,7 +574,7 @@ let open_notation i (_,(oldse,prec,ntn,scope,pat,onlyparse,df)) =
     if not b then
       Symbols.declare_notation_interpretation ntn scope pat prec df;
     if not b & not onlyparse then
-      Symbols.declare_uninterpretation (NotationRule (ntn,scope)) pat
+      Symbols.declare_uninterpretation (NotationRule (scope,ntn)) pat
   end
 
 let cache_notation o =

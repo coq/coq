@@ -46,6 +46,8 @@ val grammar_extend :
 
 val remove_grammars : int -> unit
 
+val camlp4_verbosity : bool -> ('a -> unit) -> 'a -> unit
+
 (* Parse a string *)
 
 val parse_string : 'a Gram.Entry.e -> string -> 'a

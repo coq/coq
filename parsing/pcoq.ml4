@@ -122,14 +122,17 @@ module Gram =
   end
 
 
+let camlp4_verbosity silent f x =
+  let a = !Gramext.warning_verbose in
+  Gramext.warning_verbose := silent;
+  f x;
+  Gramext.warning_verbose := a
+
 (* This extension command is used by the Grammar constr *)
 
 let grammar_extend te pos rls =
   camlp4_state := ByGrammar (Gramobj.weaken_entry te,pos,rls) :: !camlp4_state;
-  let a = !Gramext.warning_verbose in
-  Gramext.warning_verbose := Options.is_verbose ();
-  G.extend te pos rls;
-  Gramext.warning_verbose := a
+  camlp4_verbosity (Options.is_verbose ()) (G.extend te pos) rls
 
 (* n is the number of extended entries (not the number of Grammar commands!)
    to remove. *)
@@ -503,22 +506,20 @@ let camlp4_assoc = function
   | Some Gramext.NonA | Some Gramext.RightA -> Gramext.RightA 
   | None | Some Gramext.LeftA -> Gramext.LeftA
 
-(* Official Coq convention *)
-let coq_assoc = function
-  | None -> Gramext.LeftA
-  | Some a -> a
-
 let adjust_level assoc = function
-  (* If no associativity constraints, adopt the current one *)
+  (* If NonA on the right-hand side, set to NEXT *)
   | (n,BorderProd (false,Some Gramext.NonA)) -> Some None
-  | (n,BorderProd (_,Some Gramext.NonA)) -> None
-  (* Otherwise, deal with the current one *)
-  | (n,BorderProd (_,a)) when coq_assoc a = camlp4_assoc assoc -> None
-  | (n,BorderProd (left,a)) ->
-      let a = coq_assoc a in
+  (* If NonA on the left-hand side, adopt the current assoc ?? *)
+  | (n,BorderProd (true,Some Gramext.NonA)) -> None
+  (* Associativity is None means force the level *)
+  | (n,BorderProd (_,None)) -> Some (Some n)
+  (* If the expected assoc is the current one, SELF on both sides *)
+  | (n,BorderProd (_,Some a)) when a = camlp4_assoc assoc -> None
+  (* Otherwise, force the level, n or n-1, according to expected assoc *)
+  | (n,BorderProd (left,Some a)) ->
       if (left & a = Gramext.LeftA) or ((not left) & a = Gramext.RightA)
       then Some (Some n) else Some (Some (n-1))
-  | (8,InternalProd) -> None
+(*  | (8,InternalProd) -> None (* Or (Some 8) for factorization ? *)*)
   | (n,InternalProd) -> Some (Some n)
 
 let compute_entry allow_create adjust = function
