@@ -117,8 +117,6 @@ let transform_rec loc env sigma (p,c,lf) (indt,pt) =
       in 
       applist (fix,realargs@[c])
   else
-    let lnames,_ = splay_prod env sigma (mis_arity mispec) in 
-    let nar = List.length lnames in
     let ci = make_default_case_info mispec in
     mkMutCaseA ci p c lf
 
@@ -432,11 +430,11 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
       else
 	let mis,_ = dest_ind_family indf in
 	let ci = make_default_case_info mis in
-	mkMutCaseA ci pj.uj_val cj.uj_val (Array.map (fun j-> j.uj_val) lfj) in
-
-       {uj_val = v;
-       uj_type = rsty;
-       uj_kind = snd (splay_prod env !isevars evalPt)}
+	mkMutCaseA ci pj.uj_val cj.uj_val (Array.map (fun j-> j.uj_val) lfj)
+    in
+    {uj_val = v;
+     uj_type = rsty;
+     uj_kind = snd (splay_prod env !isevars evalPt)}
 
 | RCases (loc,prinfo,po,tml,eqns) ->
     Cases.compile_cases
