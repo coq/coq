@@ -102,12 +102,9 @@ First, we find propositional calculus connectives:
 \ttindex{proj2}
 
 \begin{coq_eval}
-(* We restate the grammar rule for /\ and \/ since *)
-(* it is only valid to parce Coq.Init.Logic.and *)
-Grammar constr constr6 :=
-  myand [ constr5($c1) "/\\" constr6($c2) ] -> [ (and $c1 $c2) ]
-with constr7 :=
-  myor [ constr6($c1) "\\/" constr7($c2) ] -> [ (or $c1 $c2) ].
+(********** Next parsing errors for /\ and \/ are harmless ***********)
+(******************* since output is not displayed *******************)
+(* Just to adjust the prompt: *) Set Printing Depth 50.
 \end{coq_eval}
 \begin{coq_example*}
 Inductive True : Prop := I : True. 
