@@ -10,7 +10,7 @@
 
 Section Relation_Definition.
 
-   Variable A: Set.
+   Variable A: Type.
    
    Definition relation :=  A -> A -> Prop.
 
