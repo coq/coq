@@ -417,14 +417,14 @@ let add_mind sp mie env =
   let env_arities = push_rels types_sign env in
   let env_params = push_rels params env_arities in
   let _,inds,cst =
-    List.fold_left 
-      (fun (i,inds,cst) ind -> 
+    List.fold_right
+      (fun ind (i,inds,cst) -> 
 	 let (ind',cst') = 
 	   type_one_inductive i env_arities env_params nparams ninds ind 
 	 in
 	 (succ i,ind'::inds, Constraint.union cst cst'))
-      (1,[],Constraint.empty) 
       mie.mind_entry_inds
+      (1,[],Constraint.empty) 
   in
   let kind = kind_of_path sp in
   let mib = 
