@@ -483,7 +483,8 @@ let check_evars fail_evar initial_sigma sigma c =
 		(str"There is an unknown subterm I cannot solve")
 	    else (* try to avoid duplication *)
               (if not (List.exists (fun (k',_) -> k=k') !metamap) then
-	        metamap := (k, existential_type sigma k) :: !metamap))
+	        metamap :=
+                (k, nf_evar sigma (existential_type sigma k)) :: !metamap))
       | _ -> iter_constr proc_rec c      
   in
   (proc_rec c; !metamap)
