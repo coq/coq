@@ -45,6 +45,14 @@ let constr_of_reference = function
   | ConstructRef sp -> mkConstruct sp
   | IndRef sp -> mkInd sp
 
+module RefOrdered =
+  struct
+    type t = global_reference
+    let compare = Pervasives.compare
+  end
+
+module Refmap = Map.Make(RefOrdered)
+
 (**********************************************)
 
 let pr_dirpath sl = (str (string_of_dirpath sl))

@@ -31,6 +31,8 @@ val constr_of_reference : global_reference -> constr
    raise [Not_found] if not a global *)
 val reference_of_constr : constr -> global_reference
 
+module Refmap : Map.S with type key = global_reference
+
 (*s Dirpaths *)
 val pr_dirpath : dir_path -> Pp.std_ppcmds
 
