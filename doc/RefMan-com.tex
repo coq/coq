@@ -176,6 +176,17 @@ The following command-line options are recognized by the commands {\tt
   Launch \Coq\ under the Objective Caml debugger (provided that \Coq\
   has been compiled for debugging; see next chapter).
 
+\item[{\tt -impredicative-set}]\ \\
+  Change the logical theory of {\Coq} by declaring the sort {\tt Set}
+  impredicative; warning: this is known to be inconsistent with
+  some standard axioms of classical mathematics such as the functional
+  axiom of choice or the principle of description\\
+
+\item[{\tt -dont-load-proofs}]\ \\
+  This avoids loading in memory the proofs of opaque theorems
+  resulting in a smaller memory requirement and faster compilation;
+  warning: this invalidates some features such as the extraction tool.
+
 \item[{\tt -image} {\em file}]\ \\
   This option sets the binary image to be used to be {\em file}
   instead of the standard one. Not of general use.
