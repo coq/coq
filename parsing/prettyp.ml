@@ -289,43 +289,20 @@ let print_leaf_entry with_values sep ((sp,kn as oname),lobj) =
   let tag = object_tag lobj in
   match (oname,tag) with
     | (_,"VARIABLE") ->
-	print_section_variable (basename sp) ++ fnl ()
+	Some (print_section_variable (basename sp))
     | (_,"CONSTANT") ->
-	print_constant with_values sep kn ++ fnl ()
+	Some (print_constant with_values sep kn)
     | (_,"INDUCTIVE") ->
-	print_inductive kn ++ fnl ()
+	Some (print_inductive kn)
     | (_,"MODULE") ->
 	let (mp,_,l) = repr_kn kn in 
-	  print_module with_values (MPdot (mp,l)) ++ fnl ()
+	Some (print_module with_values (MPdot (mp,l)))
     | (_,"MODULE TYPE") ->
-	print_modtype kn ++ fnl ()
-    | (_,"AUTOHINT") -> 
-(*	(str" Hint Marker" ++ fnl ())*)
-	(mt ())
-    | (_,"GRAMMAR") -> 
-(*	(str" Grammar Marker" ++ fnl ())*)
-	(mt ())
-    | (_,"SYNTAXCONSTANT") -> 
-	print_syntactic_def sep kn ++ fnl ()
-    | (_,"PPSYNTAX") -> 
-(*	(str" Syntax Marker" ++ fnl ())*)
-	(mt ())
-    | (_,"TOKEN") -> 
-(*	(str" Token Marker" ++ fnl ())*)
-	(mt ())
-    | (_,"CLASS") -> 
-(*	(str" Class Marker" ++ fnl ())*)
-	(mt ())
-    | (_,"COERCION") -> 
-(*	(str" Coercion Marker" ++ fnl ())*)
-	(mt ())
-    | (_,"REQUIRE") -> 
-(*	(str" Require Marker" ++ fnl ())*)
-	(mt ())
-    | (_,"END-SECTION") -> (mt ())
-    | (_,"STRUCTURE") -> (mt ())
-(* To deal with forgotten cases... *)
-    | (_,s) -> (mt ())
+	Some (print_modtype kn)
+    | (_,("AUTOHINT"|"GRAMMAR"|"SYNTAXCONSTANT"|"PPSYNTAX"|"TOKEN"|"CLASS"|
+	"COERCION"|"REQUIRE"|"END-SECTION"|"STRUCTURE")) -> None
+    (* To deal with forgotten cases... *)
+    | (_,s) -> None
 (*
     | (_,s) -> 
 	(str(string_of_path sp) ++ str" : " ++
@@ -337,30 +314,35 @@ let rec print_library_entry with_values ent =
   let pr_name (sp,_) = pr_id (basename sp) in
   match ent with
     | (oname,Lib.Leaf lobj) -> 
-	(print_leaf_entry with_values sep (oname,lobj))
+	print_leaf_entry with_values sep (oname,lobj)
     | (oname,Lib.OpenedSection (dir,_)) -> 
-        (str " >>>>>>> Section " ++ pr_name oname ++ fnl ())
+        Some (str " >>>>>>> Section " ++ pr_name oname)
     | (oname,Lib.ClosedSection _) -> 
-        (str " >>>>>>> Closed Section " ++ pr_name oname ++ fnl ())
+        Some (str " >>>>>>> Closed Section " ++ pr_name oname)
     | (_,Lib.CompilingLibrary (dir,_)) ->
-	(str " >>>>>>> Library " ++ pr_dirpath dir ++ fnl ())
+	Some (str " >>>>>>> Library " ++ pr_dirpath dir)
     | (oname,Lib.OpenedModule _) ->
-	(str " >>>>>>> Module " ++ pr_name oname ++ fnl ())
+	Some (str " >>>>>>> Module " ++ pr_name oname)
     | (oname,Lib.OpenedModtype _) ->
-	(str " >>>>>>> Module Type " ++ pr_name oname ++ fnl ())
+	Some (str " >>>>>>> Module Type " ++ pr_name oname)
     | (_,Lib.FrozenState _) ->
-	(mt ())
+	None
 	
-and print_context with_values = 
-  let rec prec = function
-    | h::rest -> (prec rest ++ print_library_entry with_values h)
-    | [] -> (mt ())
+let print_context with_values = 
+  let rec prec n = function
+    | h::rest when n = None or out_some n > 0 -> 
+	(match print_library_entry with_values h with
+	  | None -> prec n rest
+	  | Some pp -> prec (option_app ((+) (-1)) n) rest ++ pp ++ fnl ())
+    | _ -> mt ()
   in 
   prec
 
-let print_full_context () = print_context true (Lib.contents_after None)
+let print_full_context () = 
+  print_context true None (Lib.contents_after None)
 
-let print_full_context_typ () = print_context false (Lib.contents_after None)
+let print_full_context_typ () =
+  print_context false None (Lib.contents_after None)
 
 (* For printing an inductive definition with
    its constructors and elimination,
@@ -395,9 +377,11 @@ let read_sec_context r =
   let cxt = (Lib.contents_after None) in
   List.rev (get_cxt [] cxt)
 
-let print_sec_context sec = print_context true (read_sec_context sec)
+let print_sec_context sec = 
+  print_context true None (read_sec_context sec)
 
-let print_sec_context_typ sec = print_context false (read_sec_context sec)
+let print_sec_context_typ sec =
+  print_context false None (read_sec_context sec)
 
 let print_eval red_fun env {uj_val=trm;uj_type=typ} =
   let ntrm = red_fun env Evd.empty trm in
@@ -430,7 +414,9 @@ let print_name ref =
 	| Lib.Leaf obj -> (oname,obj)
 	| _ -> raise Not_found
     in
-    print_leaf_entry true " = " (oname,lobj)
+    match print_leaf_entry true " = " (oname,lobj) with
+      | None -> mt ()
+      | Some pp -> pp ++ fnl()
   with Not_found ->
     errorlabstrm
       "print_name" (pr_qualid qid ++ spc () ++ str "not a defined object")
@@ -522,14 +508,7 @@ let unfold_head_fconst =
 
 (* for debug *)
 let inspect depth = 
-  let rec inspectrec n res env = 
-    if n=0 or env=[] then 
-      res
-    else 
-      inspectrec (n-1) (List.hd env::res) (List.tl env)
-  in 
-  let items = List.rev (inspectrec depth [] (Lib.contents_after None)) in
-  print_context false items
+  print_context false (Some depth) (Lib.contents_after None)
 
 
 (*************************************************************************)
