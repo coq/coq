@@ -25,7 +25,7 @@ Intros; Rewrite <- Ropp_mul1; Ring.
 Qed.
 
 (* Here, we have the euclidian division *)
-(* This lemma is used in the proof of sin_eq_0 : (sin x)=0<->x=2kPI *)
+(* This lemma is used in the proof of sin_eq_0 : (sin x)=0<->x=kPI *)
 Lemma euclidian_division : (x,y:R) ``y<>0`` -> (EXT k:Z | (EXT r : R | ``x==(IZR k)*y+r``/\``0<=r<(Rabsolu y)``)).
 Intros.
 Pose k0 := Cases (case_Rabsolu y) of
