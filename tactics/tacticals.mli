@@ -17,6 +17,7 @@ open Proof_type
 open Clenv
 open Reduction
 open Pattern
+open Genarg
 open Tacexpr
 (*i*)
 

@@ -25,6 +25,7 @@ open Clenv
 open Pattern
 open Matching
 open Evar_refiner
+open Genarg
 open Tacexpr
 
 (******************************************)

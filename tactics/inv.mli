@@ -12,6 +12,7 @@
 open Names
 open Term
 open Tacmach
+open Genarg
 open Tacexpr
 open Rawterm
 (*i*)

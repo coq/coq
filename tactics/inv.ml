@@ -34,6 +34,7 @@ open Typing
 open Pattern
 open Matching
 open Rawterm
+open Genarg
 open Tacexpr
 
 let collect_meta_variables c = 

@@ -22,6 +22,7 @@ open Clenv
 open Tacred
 open Tacticals
 open Libnames
+open Genarg
 open Tacexpr
 open Nametab
 open Rawterm

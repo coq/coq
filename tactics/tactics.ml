@@ -36,6 +36,7 @@ open Tacticals
 open Hipattern
 open Coqlib
 open Nametab
+open Genarg
 open Tacexpr
 open Decl_kinds
 

@@ -14,6 +14,7 @@ open Tacmach
 
 open Rawterm
 open Refiner
+open Genarg
 open Tacexpr
 open Tactics
 open Util
