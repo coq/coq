@@ -29,6 +29,7 @@ kernel/typing.cmi: kernel/constant.cmi kernel/environ.cmi \
     kernel/inductive.cmi kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
     kernel/term.cmi kernel/typeops.cmi kernel/univ.cmi 
 kernel/univ.cmi: kernel/names.cmi lib/pp.cmi 
+lib/gmapl.cmi: lib/gmap.cmi 
 lib/pp.cmi: lib/pp_control.cmi 
 lib/util.cmi: lib/pp.cmi 
 library/declare.cmi: kernel/constant.cmi kernel/inductive.cmi \
@@ -39,6 +40,7 @@ library/global.cmi: kernel/constant.cmi kernel/environ.cmi \
 library/impargs.cmi: kernel/names.cmi 
 library/lib.cmi: library/libobject.cmi kernel/names.cmi library/summary.cmi 
 library/libobject.cmi: kernel/names.cmi 
+library/library.cmi: lib/pp.cmi 
 library/nametab.cmi: kernel/names.cmi 
 library/redinfo.cmi: kernel/names.cmi kernel/term.cmi 
 library/summary.cmi: kernel/names.cmi 
@@ -79,6 +81,7 @@ tactics/btermdn.cmi: kernel/generic.cmi kernel/term.cmi
 tactics/dn.cmi: lib/tlm.cmi 
 tactics/nbtermdn.cmi: tactics/btermdn.cmi kernel/generic.cmi kernel/term.cmi \
     tactics/termdn.cmi 
+tactics/stock.cmi: kernel/names.cmi 
 tactics/termdn.cmi: tactics/dn.cmi kernel/generic.cmi kernel/term.cmi 
 toplevel/errors.cmi: parsing/coqast.cmi lib/pp.cmi 
 toplevel/himsg.cmi: kernel/environ.cmi kernel/names.cmi lib/pp.cmi \
@@ -185,6 +188,8 @@ kernel/typing.cmx: kernel/constant.cmx kernel/environ.cmx kernel/evd.cmx \
     lib/util.cmx kernel/typing.cmi 
 kernel/univ.cmo: kernel/names.cmi lib/pp.cmi lib/util.cmi kernel/univ.cmi 
 kernel/univ.cmx: kernel/names.cmx lib/pp.cmx lib/util.cmx kernel/univ.cmi 
+lib/bij.cmo: lib/gmap.cmi lib/bij.cmi 
+lib/bij.cmx: lib/gmap.cmx lib/bij.cmi 
 lib/bstack.cmo: lib/util.cmi lib/bstack.cmi 
 lib/bstack.cmx: lib/util.cmx lib/bstack.cmi 
 lib/dyn.cmo: lib/util.cmi lib/dyn.cmi 
@@ -193,6 +198,8 @@ lib/edit.cmo: lib/bstack.cmi lib/pp.cmi lib/util.cmi lib/edit.cmi
 lib/edit.cmx: lib/bstack.cmx lib/pp.cmx lib/util.cmx lib/edit.cmi 
 lib/gmap.cmo: lib/gmap.cmi 
 lib/gmap.cmx: lib/gmap.cmi 
+lib/gmapl.cmo: lib/gmap.cmi lib/util.cmi lib/gmapl.cmi 
+lib/gmapl.cmx: lib/gmap.cmx lib/util.cmx lib/gmapl.cmi 
 lib/gset.cmo: lib/gset.cmi 
 lib/gset.cmx: lib/gset.cmi 
 lib/hashcons.cmo: lib/hashcons.cmi 
@@ -240,11 +247,11 @@ library/libobject.cmo: lib/dyn.cmi kernel/names.cmi lib/util.cmi \
 library/libobject.cmx: lib/dyn.cmx kernel/names.cmx lib/util.cmx \
     library/libobject.cmi 
 library/library.cmo: kernel/environ.cmi library/global.cmi library/lib.cmi \
-    library/libobject.cmi kernel/names.cmi lib/system.cmi lib/util.cmi \
-    library/library.cmi 
+    library/libobject.cmi kernel/names.cmi lib/pp.cmi lib/system.cmi \
+    lib/util.cmi library/library.cmi 
 library/library.cmx: kernel/environ.cmx library/global.cmx library/lib.cmx \
-    library/libobject.cmx kernel/names.cmx lib/system.cmx lib/util.cmx \
-    library/library.cmi 
+    library/libobject.cmx kernel/names.cmx lib/pp.cmx lib/system.cmx \
+    lib/util.cmx library/library.cmi 
 library/nametab.cmo: kernel/names.cmi library/summary.cmi library/nametab.cmi 
 library/nametab.cmx: kernel/names.cmx library/summary.cmx library/nametab.cmi 
 library/redinfo.cmo: kernel/constant.cmi kernel/evd.cmi kernel/generic.cmi \
@@ -377,6 +384,10 @@ tactics/nbtermdn.cmo: tactics/btermdn.cmi kernel/generic.cmi lib/gmap.cmi \
 tactics/nbtermdn.cmx: tactics/btermdn.cmx kernel/generic.cmx lib/gmap.cmx \
     library/libobject.cmx library/library.cmx kernel/names.cmx \
     kernel/term.cmx tactics/termdn.cmx lib/util.cmx tactics/nbtermdn.cmi 
+tactics/stock.cmo: lib/bij.cmi lib/gmap.cmi lib/gmapl.cmi library/library.cmi \
+    kernel/names.cmi lib/pp.cmi lib/util.cmi tactics/stock.cmi 
+tactics/stock.cmx: lib/bij.cmx lib/gmap.cmx lib/gmapl.cmx library/library.cmx \
+    kernel/names.cmx lib/pp.cmx lib/util.cmx tactics/stock.cmi 
 tactics/termdn.cmo: tactics/dn.cmi kernel/generic.cmi kernel/term.cmi \
     lib/util.cmi tactics/termdn.cmi 
 tactics/termdn.cmx: tactics/dn.cmx kernel/generic.cmx kernel/term.cmx \

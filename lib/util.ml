@@ -91,10 +91,6 @@ let list_assign l n e =
   in 
   assrec [] (l,n)
 
-let rec list_distinct = function
-  | h::t -> (not (List.mem h t)) && list_distinct t
-  | [] -> true
-
 let list_map_i f = 
   let rec map_i_rec i = function
     | [] -> [] 
@@ -153,6 +149,15 @@ let rec list_uniquize = function
 let rec list_distinct = function
   | h::t -> (not (List.mem h t)) && list_distinct t
   | _ -> true
+
+let list_subset l1 l2 =
+  let t2 = Hashtbl.create 151 in
+  List.iter (fun x -> Hashtbl.add t2 x ()) l2;
+  let rec look = function
+    | [] -> true
+    | x::ll -> try Hashtbl.find t2 x; look ll with Not_found -> false
+  in 
+  look l1
 
 (* Arrays *)
 

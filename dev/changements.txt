@@ -8,6 +8,7 @@ Changements d'organisation / modules :
     (les parties noms et signatures ont été séparées)
 
   Avm,Mavm,Fmavm,Mhm  ->  utiliser plutôt Map (et freeze alors gratuit)
+  Mhb                 ->  Bij
 
 
 Changements dans les types de données :

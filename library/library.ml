@@ -1,6 +1,7 @@
 
 (* $Id$ *)
 
+open Pp
 open Util
 open Names
 open Environ
@@ -42,6 +43,16 @@ let module_is_loaded s =
 
 let module_is_opened s =
   (find_module s).module_opened
+
+let loaded_modules () =
+  let l = ref [] in
+  Hashtbl.iter (fun s _ -> l := s :: !l) modules_table;
+  !l
+
+let opened_modules () =
+  let l = ref [] in
+  Hashtbl.iter (fun s m -> if m.module_opened then l := s :: !l) modules_table;
+  !l
 
 let vo_magic_number = 0700
 
@@ -149,3 +160,12 @@ let save_module_to s f =
   close_out ch
 
 
+(* Pretty-printing of modules state. *)
+
+let fmt_modules_state () =
+  let opened = opened_modules ()
+  and loaded = loaded_modules () in
+  [< 'sTR "Imported (open) Modules: " ;
+     prlist_with_sep pr_spc (fun s -> [< 'sTR s >]) opened ; 'fNL ;
+     'sTR "Loaded Modules: " ;
+     prlist_with_sep pr_spc (fun s -> [< 'sTR s >]) loaded ; 'fNL >]

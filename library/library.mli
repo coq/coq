@@ -14,6 +14,11 @@ val open_module : string -> unit
 val module_is_loaded : string -> bool
 val module_is_opened : string -> bool
 
+val loaded_modules : unit -> string list
+val opened_modules : unit -> string list
+
+val fmt_modules_state : unit -> Pp.std_ppcmds
+
 (*s Require. The command [require_module spec m file export] loads and opens
   a module [m]. [file] specifies the filename, if not [None]. [spec]
   specifies to look for a specification ([true]) or for an implementation
