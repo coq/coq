@@ -52,6 +52,12 @@ val liftn : int -> int -> 'a term -> 'a term
 val lift : int -> 'a term -> 'a term
 val pop : 'a term -> 'a term
 
+(* [lift_context n ctxt] lifts terms in [ctxt] by [n] preserving
+   (i.e. not lifting) the internal references between terms of [ctxt];
+   more recent terms come first in [ctxt] *)
+
+val lift_context : int -> (name * 'a term) list -> (name * 'a term) list
+
 (*s Explicit substitutions of type ['a]. [ESID] = identity. 
   [CONS(t,S)] = $S.t$ i.e. parallel substitution. [SHIFT(n,S)] = 
   $(\uparrow n~o~S)$ i.e. terms in S are relocated with n vars. 

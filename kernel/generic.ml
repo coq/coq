@@ -148,6 +148,9 @@ let liftn k n =
 let lift k = liftn k 1
 let lift1 c = exliftn (ELSHFT(ELID,1)) c
 
+let lift_context n l = 
+  let k = List.length l in 
+  list_map_i (fun i (name,c) -> (name,liftn n (k-i) c)) 0 l
 
 (* explicit substitutions of type 'a *)
 type 'a subs =
