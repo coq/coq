@@ -165,7 +165,7 @@ let make_inv_predicate (ity,args) c dflt_concl dep_option gls =
       | (ai,k)::restlist ->
 	  let ai = lift n ai in
 	  let k = k+n in
-          let tk = (Typeops.relative (change_sign env (sign,hyps)) k).uj_val in
+          let tk = (Typeops.relative (change_sign env (sign,hyps)) k).uj_type in
           let (lhs,eqnty,rhs) =
             if closed0 tk then 
 	      (Rel k,tk,ai)
@@ -224,16 +224,7 @@ let make_inv_predicate (ity,args) c dflt_concl dep_option gls =
    the equality, using Injection and Discriminate, and applying it to
    the concusion *)
 
-let introsReplacing ids gls = 
-  let rec introrec = function
-    | [] -> tclIDTAC
-    | id::tl ->
-	(tclTHEN (tclORELSE (intro_replacing id)
-		    (tclORELSE (intro_erasing id)
-                       (intro_using id)))
-           (introrec tl))
-  in 
-  introrec ids gls
+let introsReplacing = intros_replacing (* déplacé *)
 
 (* Computes the subset of hypothesis in the local context whose
    type depends on t (should be of the form (VAR id)), then

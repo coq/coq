@@ -111,7 +111,7 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo \
          toplevel/usage.cmo toplevel/coqinit.cmo toplevel/coqtop.cmo
 
 HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
-            tactics/tauto.cmo tactics/inv.cmo
+            tactics/tauto.cmo tactics/inv.cmo tactics/leminv.cmo
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo
 

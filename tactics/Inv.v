@@ -64,7 +64,7 @@ Grammar vernac vernac :=
 
 | der_inv_clr_with_srt [ "Derive" "Inversion_clear"  identarg($na) 
                          "with" constrarg($com) "Sort" sortarg($s) "." ]
-                        -> [(MakeInversionLemma $na $com (COMMAND $s))]
+                        -> [(MakeInversionLemma $na $com $s)]
 
 | der_inv_clr_with [ "Derive" "Inversion_clear"  identarg($na)
                      "with" constrarg($com) "." ]
@@ -72,7 +72,7 @@ Grammar vernac vernac :=
 
 | der_inv_with_srt [ "Derive" "Inversion" identarg($na)
                      "with" constrarg($com) "Sort" sortarg($s) "." ]
-                    -> [(MakeSemiInversionLemma $na $com (COMMAND $s))]
+                    -> [(MakeSemiInversionLemma $na $com $s)]
 
 | der_inv_with [ "Derive" "Inversion" identarg($na) "with" constrarg($com) "." ]
                 -> [(MakeSemiInversionLemma $na $com (COMMAND (PROP{Null})))]
@@ -86,9 +86,9 @@ Grammar vernac vernac :=
 
 | der_dep_inv_with_srt [ "Derive" "Dependent" "Inversion" identarg($na) 
                          "with" constrarg($com) "Sort" sortarg($s) "." ]
-                  -> [(MakeDependentSemiInversionLemma $na $com (COMMAND $s))]
+                  -> [(MakeDependentSemiInversionLemma $na $com $s)]
 
 | der_dep_inv_clr_with_srt
      [ "Derive" "Dependent" "Inversion_clear"  identarg($na) 
        "with" constrarg($com)  "Sort" sortarg($s)"." ]
-      -> [(MakeDependentInversionLemma $na $com (COMMAND $s))].
+      -> [(MakeDependentInversionLemma $na $com $s)].
