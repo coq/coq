@@ -313,6 +313,36 @@ let message_redundant_alias (id1,id2) =
   if_verbose warning 
    ("Alias variable "^(string_of_id id1)^" is merged with "^(string_of_id id2))
 
+(* Expanding notations *)
+
+let subst_cases_pattern loc aliases intern subst scopes a =
+  let rec aux aliases = function
+  | AVar id ->
+      begin
+	(* subst remembers the delimiters stack in the interpretation *)
+	(* of the notations *)
+	try 
+	  let (a,(scopt,subscopes)) = List.assoc id subst in
+	  intern (subscopes@scopes) ([],[]) scopt a
+	with Not_found -> 
+	  anomaly "Unbound pattern notation variable"
+	  (*
+	  (* Happens for local notation joint with inductive/fixpoint defs *)
+	  if aliases <> ([],[]) then
+	    anomaly "Pattern notation without constructors";
+	  [[id],[]], PatVar (loc,Name id)
+	  *)
+      end
+  | ARef (ConstructRef c) ->
+      [aliases], PatCstr (loc,c, [], alias_of aliases)
+  | AApp (ARef (ConstructRef (ind,_ as c)),args) ->
+      let nparams = (snd (Global.lookup_inductive ind)).Declarations.mind_nparams in
+      let _,args = list_chop nparams args in
+      let (idsl,pl) = List.split (List.map (aux ([],[])) args) in
+      aliases::List.flatten idsl, PatCstr (loc,c,pl,alias_of aliases)
+  | t -> user_err_loc (loc,"",str "Invalid notation for pattern")
+  in aux aliases a
+
 (* Differentiating between constructors and matching variables *)
 type pattern_qualid_kind =
   | ConstrPat of constructor
@@ -365,6 +395,11 @@ let rec intern_cases_pattern scopes aliases tmp_scope = function
 	List.split (List.map2 (intern_cases_pattern scopes ([],[])) argscs pl)
       in
       (aliases::(List.flatten idsl), PatCstr (loc,c,pl',alias_of aliases))
+  | CPatNotation (loc, ntn, args) ->
+      let scopes = option_cons tmp_scope scopes in
+      let (ids,c) = Symbols.interp_notation ntn scopes in
+      let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
+      subst_cases_pattern loc aliases intern_cases_pattern subst scopes c
   | CPatNumeral (loc, n) ->
       let scopes = option_cons tmp_scope scopes in
       ([aliases],
@@ -519,16 +554,8 @@ let rec subst_rawconstr loc interp subst (ids,_,scopes as env) = function
 	  (* Happens for local notation joint with inductive/fixpoint defs *)
 	  RVar (loc,id)
       end
-(*
-  | AApp (ARef ref,args) ->
-      let argscopes = find_arguments_scope ref in
-      let argsenv = adjust_scopes env argscopes args in
-      RApp (loc,RRef (loc,ref),
-        List.map2 (subst_rawconstr loc interp subst) argsenv args)
-	(* TODO: adjust type_scope for lambda, annotations, etc *)
-*)
   | t ->
-      map_aconstr_with_binders_loc loc (traverse_binder subst)
+      rawconstr_of_aconstr_with_binders loc (traverse_binder subst)
       (subst_rawconstr loc interp subst) (ids,None,scopes) t
 
 let set_type_scope (ids,tmp_scope,scopes) =

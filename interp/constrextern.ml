@@ -196,7 +196,7 @@ let translate_v7_string dir = function
   | "times_assoc" -> "Pmult_assoc"
   | "times_convert" -> "IPN_mult_morphism"
   | "true_sub" -> "Pminus"
-  | "times_x_1" -> "Pmult_1_right"
+  | "times_x_1" -> "Pmult_1_r"
   | "times_x_double" -> "Pmult_xO_permute_r"
   | "times_x_double_plus_one" -> "Pmult_xI_permute_r"
   | "true_sub_convert" -> "IPN_minus_morphism"
@@ -246,6 +246,7 @@ let translate_v7_string dir = function
   | "Zminus_Zplus_compatible" -> "Zminus_plus_simpl_r"
   | "Zle_plus_minus" -> "Zplus_minus"
   | "Zopp_Zplus" -> "Zplus_opp_distr"
+  | "Zplus_inverse_r" -> "Zplus_opp_r"
   | "Zmult_sym" -> "Zmult_comm"
   | "Zero_mult_left" -> "Zmult_0_l"
   | "Zero_mult_right" -> "Zmult_0_r"
@@ -341,6 +342,8 @@ let translate_v7_string dir = function
   | "Zsimpl_le_plus_r" -> "Zplus_le_reg_r"
   | "Zsimpl_lt_plus_l" -> "Zplus_lt_reg_l"
   | "Zsimpl_lt_plus_r" -> "Zplus_lt_reg_r"
+  | "Zlt_Zmult_left"  -> "Zmult_lt_compat_l"
+  | "Zlt_Zmult_right" -> "Zmult_lt_compat_r"
   (* IntMap *)
   | "convert_xH" -> "IPN_xH"
   | "convert_xO" -> "IPN_xO"
@@ -370,6 +373,7 @@ let translate_v7_string dir = function
   | "exists" -> "exists_between"
   | "IHexists" -> "IHexists_between"
   | "pred_Sn" -> "pred_S"
+  | "inj_minus_aux" -> "not_le_minus_0"
   | "gt_reg_l" -> "plus_gt_compat_l"
   | "le_reg_l" -> "plus_le_compat_l"
   | "le_reg_r" -> "plus_le_compat_r"
@@ -418,8 +422,39 @@ let translate_v7_string dir = function
   | "complet_weak" -> "completeness_weak"
   | "Rle_sym1" -> "Rle_ge"
   | "Rmin_sym" -> "Rmin_comm"
+  | "Rplus_sym" -> "Rplus_comm"
+  | "Rmult_sym" -> "Rmult_comm"
   | "Rsqr_times" -> "Rsqr_mult"
   | "sqrt_times" -> "sqrt_mult"
+  | "Rmult_1l" -> "Rmult_1_l"
+  | "Rplus_Ol" -> "Rplus_0_l"
+  | "Rplus_Ropp_r" -> "Rplus_opp_r"
+  | "Rmult_Rplus_distr_l" -> "Rmult_plus_distr_l"
+  | "Rlt_antisym" -> "Rlt_asym"
+  | "Rlt_compatibility" -> "Rplus_lt_compat_l"
+  | "Rgt_plus_plus_r" -> "Rplus_gt_compat_l"
+  | "Rgt_r_plus_plus" -> "Rplus_gt_reg_l"
+  | "Rge_plus_plus_r" -> "Rplus_ge_compat_l"
+  | "Rge_r_plus_plus" -> "Rplus_ge_reg_l"
+(* Si on en change un, il faut changer tous les autres R*_monotony *)
+  | "Rlt_monotony" -> "Rmult_lt_compat_l"
+  | "Rlt_monotony_r" -> "Rmult_lt_compat_r"
+  | "Rlt_monotony_contra" -> "Rmult_lt_reg_l"
+  | "Rlt_anti_monotony" -> "Rmult_lt_gt_compat_neg_l"
+  | "Rle_monotony" -> "Rmult_le_compat_l"
+  | "Rle_monotony_r" -> "Rmult_le_compat_r"
+  | "Rle_monotony_contra" -> "Rmult_le_reg_l"
+  | "Rle_anti_monotony1" -> "Rmult_le_compat_neg_l"
+  | "Rle_anti_monotony" -> "Rmult_le_ge_compat_neg_l"
+  | "Rle_Rmult_comp" -> "Rmult_le_compat"
+    (* Expliciter que la contrainte est r2>0 dans r1<r2 et non 0<r1 ce
+       qui est plus général mais différent de Rmult_le_compat *)
+  | "Rmult_lt" -> "Rmult_lt_compat"
+  | "Rlt_monotony_rev" -> "Rmult_lt_reg_l"
+  | "Rge_monotony" -> "Rmult_ge_compat_r"
+  | "Rmult_lt_0" -> "Rmult_lt_compat_ge" (* Un truc hybride *)
+
+  | "Rge_ge_eq" -> "Rge_antisym"
   | s when String.length s >= 7 & 
       let s' = String.sub s 0 7 in
       (s' = "unicite" or s' = "unicity") ->
@@ -543,20 +578,85 @@ and check_same_binder (nal1,e1) (nal2,e2) =
 let same c d = try check_same_type c d; true with _ -> false
 
 (**********************************************************************)
-(* conversion of terms and cases patterns                             *)
+(* mapping patterns to cases_pattern_expr                                *)
 
 let make_current_scopes (scopt,scopes) = 
   option_fold_right push_scope scopt scopes
 
+(*
+let rec cases_pattern_expr_of_constr_expr = function
+  | CRef r -> CPatAtom (dummy_loc,Some r)
+  | CHole loc -> CPatAtom (loc,None)
+  | CApp (loc,(proj,CRef c),l) when proj = None ->
+      let l,e = List.split l in
+      if not (List.for_all ((=) None) e) then
+	anomaly "Unexpected explicitation in pattern";
+      CPatCstr (loc,c,List.map cases_pattern_expr_of_constr_expr l)
+  | CNotation (loc,ntn,l) ->
+      CPatNotation (loc,ntn,List.map cases_pattern_expr_of_constr_expr l)
+  | CNumeral (loc,n) -> CPatNumeral (loc,n)
+  | CDelimiters (loc,s,e) -> 
+      CPatDelimiters (loc,s,cases_pattern_expr_of_constr_expr e)	
+  | _ -> anomaly "Constrextern: not a pattern"
+
+let rec rawconstr_of_cases_pattern = function
+  | PatVar (loc,Name id) -> RVar (loc,id)
+  | PatVar (loc,Anonymous) -> RHole (loc,InternalHole)
+  | PatCstr (loc,(ind,_ as c),args,_) -> 
+      let nparams = (snd (Global.lookup_inductive ind)).Declarations.mind_nparams in
+      let params = list_tabulate (fun _ -> RHole (loc,InternalHole)) nparams in
+      let args = params @ List.map rawconstr_of_cases_pattern args in
+      let f = RRef (loc,ConstructRef c) in
+      if args = [] then f else RApp (loc,f,args)
+*)
+
+let bind_env sigma var v =
+  try
+    let vvar = List.assoc var sigma in
+    if v=vvar then sigma else raise No_match
+  with Not_found ->
+    (* TODO: handle the case of multiple occs in different scopes *)
+    (var,v)::sigma
+
+let rec match_cases_pattern metas sigma a1 a2 = match (a1,a2) with
+  | r1, AVar id2 when List.mem id2 metas -> bind_env sigma id2 r1
+  | PatVar (_,Anonymous), AHole _ -> sigma
+  | a, AHole _ when not(Options.do_translate()) -> sigma
+  | PatCstr (loc,(ind,_ as r1),args1,Anonymous), _ ->
+      let nparams =
+	(snd (Global.lookup_inductive ind)).Declarations.mind_nparams in
+      let params1 = list_tabulate (fun _ -> PatVar (loc,Anonymous)) nparams in
+      (match params1@args1, a2 with
+	| [], ARef (ConstructRef r2) when r1 = r2 -> sigma
+	| l1, AApp (ARef (ConstructRef r2),l2) 
+	    when r1 = r2 & List.length l1 = List.length l2 ->
+	    List.fold_left2 (match_cases_pattern metas) sigma l1 l2
+	| _ -> raise No_match)
+  | _ -> raise No_match
+
+let match_aconstr_cases_pattern c (metas_scl,pat) =
+  let subst = match_cases_pattern (List.map fst metas_scl) [] c pat in
+  (* Reorder canonically the substitution *)
+  let find x subst =
+    try List.assoc x subst
+    with Not_found -> anomaly "match_aconstr_cases_pattern" in
+  List.map (fun (x,scl) -> (find x subst,scl)) metas_scl
+
+ (* Better to use extern_rawconstr composed with injection/retraction ?? *)
 let rec extern_cases_pattern_in_scope scopes vars pat =
   try 
     if !print_no_symbol then raise No_match;
     let (sc,n) = Symbols.uninterp_cases_numeral pat in
-    match Symbols.availability_of_numeral sc scopes with
+    match Symbols.availability_of_numeral sc (make_current_scopes scopes) with
     | None -> raise No_match
     | Some key ->
         let loc = pattern_loc pat in
         insert_pat_delimiters (CPatNumeral (loc,n)) key
+  with No_match ->
+  try 
+    if !print_no_symbol then raise No_match;
+    extern_symbol_pattern scopes vars pat
+      (Symbols.uninterp_cases_pattern_notations pat)
   with No_match ->
   match pat with
   | PatVar (loc,Name id) -> CPatAtom (loc,Some (Ident (loc,v7_to_v8_id id)))
@@ -569,6 +669,42 @@ let rec extern_cases_pattern_in_scope scopes vars pat =
 	| Name id -> CPatAlias (loc,p,v7_to_v8_id id)
 	| Anonymous -> p)
 	
+and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
+  | [] -> raise No_match
+  | (keyrule,pat,n as rule)::rules ->
+      try
+	(* Check the number of arguments expected by the notation *)
+	let loc = match t,n with
+	  | PatCstr (_,f,l,_), Some n when List.length l > n ->
+	      raise No_match
+	  | PatCstr (loc,_,_,_),_ -> loc
+	  | PatVar (loc,_),_ -> loc in
+	(* Try matching ... *)
+	let subst = match_aconstr_cases_pattern t pat in
+	(* Try availability of interpretation ... *)
+        match keyrule with
+          | NotationRule (sc,ntn) ->
+	      let scopes' = make_current_scopes (tmp_scope, scopes) in
+	      (match Symbols.availability_of_notation (sc,ntn) scopes' with
+                  (* Uninterpretation is not allowed in current context *)
+              | None -> raise No_match
+                  (* Uninterpretation is allowed in current context *)
+	      | Some (scopt,key) ->
+	          let scopes = make_current_scopes (scopt, scopes) in
+	          let l =
+		    List.map (fun (c,(scopt,scl)) ->
+		      extern_cases_pattern_in_scope 
+		        (scopt,List.fold_right push_scope scl scopes) vars c)
+                      subst in
+		  insert_pat_delimiters (CPatNotation (loc,ntn,l)) key)
+          | SynDefRule kn ->
+ 	      CPatAtom (loc,Some (Qualid (loc, shortest_qualid_of_syndef kn)))
+	with
+	    No_match -> extern_symbol_pattern allscopes vars t rules
+
+(**********************************************************************)
+(* Externalising applications *)
+
 let occur_name na aty =
   match na with
     | Name id -> occur_var_constr_expr id aty
@@ -591,6 +727,8 @@ let stdlib_but_length args = function
       let dir,id = repr_path (sp_of_global r) in
       (is_coq_root (Lib.library_dp()) or is_coq_root dir)
       && not (List.mem (string_of_id id) ["Zlength";"length"] && is_nil args)
+      && not (List.mem (string_of_id id) ["In"] && List.length args >= 2
+              && is_nil (List.tl args))
   | None -> false
 
 let explicit_code imp q =
@@ -677,6 +815,9 @@ let rec extern_args extern scopes env args subscopes =
 	  | [] -> (None,scopes), []
 	  | scopt::subscopes -> (scopt,scopes), subscopes in
 	extern argscopes env a :: extern_args extern scopes env args subscopes
+
+(**********************************************************************)
+(* mapping rawterms to constr_expr                                    *)
 
 let rec extern inctx scopes vars r =
   try 
@@ -835,7 +976,7 @@ and factorize_lambda inctx scopes vars aty = function
   | c -> ([],sub_extern inctx scopes vars c)
 
 and extern_eqn inctx scopes vars (loc,ids,pl,c) =
-  (loc,List.map (extern_cases_pattern_in_scope (snd scopes) vars) pl,
+  (loc,List.map (extern_cases_pattern_in_scope scopes vars) pl,
    extern inctx scopes vars c)
 
 and extern_numeral loc scopes (sc,n) =
@@ -890,7 +1031,7 @@ let extern_rawtype vars c =
   extern_type (None,Symbols.current_scopes()) vars c
 
 let extern_cases_pattern vars p = 
-  extern_cases_pattern_in_scope (Symbols.current_scopes()) vars p
+  extern_cases_pattern_in_scope (None,Symbols.current_scopes()) vars p
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
