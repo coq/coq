@@ -95,11 +95,26 @@ let typeur sigma metamap =
         anomaly "sort_of: Not a type (1)"
     | _ -> outsort env sigma (type_of env t)
 
-  in type_of, sort_of
+  and sort_family_of env t =
+    match kind_of_term t with
+    | IsCast (c,s) when isSort s -> family_of_sort (destSort s)
+    | IsSort (Prop c) -> InType
+    | IsSort (Type u) -> InType
+    | IsProd (name,t,c2) -> sort_family_of (push_rel_assum (name,t) env) c2
+    | IsApp(f,args) -> 
+       family_of_sort (sort_of_atomic_type env sigma (type_of env f) args)
+    | IsLambda _ | IsFix _ | IsMutConstruct _ ->
+        anomaly "sort_of: Not a type (1)"
+    | _ -> family_of_sort (outsort env sigma (type_of env t))
 
-let get_type_of env sigma c = fst (typeur sigma []) env c
-let get_sort_of env sigma t = snd (typeur sigma []) env t
-let get_type_of_with_meta env sigma metamap = fst (typeur sigma metamap) env
+  in type_of, sort_of, sort_family_of
+
+let get_type_of env sigma c = let f,_,_ = typeur sigma [] in f env c
+let get_sort_of env sigma t = let _,f,_ = typeur sigma [] in f env t
+let get_sort_family_of env sigma c = let _,_,f = typeur sigma [] in f env c
+
+let get_type_of_with_meta env sigma metamap = 
+  let f,_,_ = typeur sigma metamap in f env
 
 (* Makes an assumption from a constr *)
 let get_assumption_of env evc c = c
