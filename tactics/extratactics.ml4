@@ -244,8 +244,13 @@ END
 
 open Tacexpr
 
-TACTIC EXTEND Instantiate
+TACTIC EXTEND instantiate
   [ "Instantiate" "(" integer(i) ":=" raw(c) ")" hloc(hl) ] ->
+    [instantiate i c hl  ]
+END
+
+V7 TACTIC EXTEND instantiate
+  [ "Instantiate" integer(i) raw(c) hloc(hl) ] ->
     [ instantiate i c hl  ]
 END
 

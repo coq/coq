@@ -57,9 +57,7 @@ ARGUMENT EXTEND raw
      
      GLOB_TYPED AS rawconstr_and_expr
      GLOB_PRINTED BY pr_gen
-
- [ lconstr(c) ] -> [ c ]
-
+  [ lconstr(c) ] -> [ c ]
 END
 
 type 'id gen_place= ('id * hyp_location_flag,unit) location
@@ -99,6 +97,8 @@ ARGUMENT EXTEND hloc
     GLOB_TYPED AS loc_place
     GLOB_PRINTED BY pr_loc_place
   [ ] -> 
+    [ ConclLocation () ]
+  |  [ "in" "|-" "*" ] -> 
     [ ConclLocation () ]
 | [ "in" ident(id) ] ->
     [ HypLocation ((Util.dummy_loc,id),InHyp) ]
