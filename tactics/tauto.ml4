@@ -119,10 +119,11 @@ let rec tauto_intuit t_reduce t_solver ist =
       (Match Reverse Context With
       | [id:(?1-> ?2)-> ?3|- ?] ->
 	  Cut ?3;
-	    [Intro;Clear id
+	    [ Intro;Clear id;$t_tauto_intuit 
 	    | Cut ?1 -> ?2;
-	       [Exact id|Generalize [y:?2](id [x:?1]y);Intro;Clear id]
-	    ]; Solve [ $t_tauto_intuit ]
+		[ Exact id
+		| Generalize [y:?2](id [x:?1]y);Intro;Clear id;
+		  Solve [ $t_tauto_intuit ]]]
       | [|- (?1 ? ?)] ->
           $t_is_disj;Solve [Left;$t_tauto_intuit | Right;$t_tauto_intuit]
       )
@@ -133,15 +134,6 @@ let rec tauto_intuit t_reduce t_solver ist =
     Orelse
     $t_solver
    ) >>
-    
-    (*
-      let unfold_not_iff = function
-      | None -> interp <:tactic<Unfold not iff>>
-      | Some id -> let id = (dummy_loc,id) in interp <:tactic<Unfold not iff in $id>>
-      
-      let reduction_not_iff =
-      Tacticals.onAllClauses (fun ido -> unfold_not_iff ido)
-    *)
     
 let reduction_not_iff=interp
  <:tactic<Repeat (Match Context With 

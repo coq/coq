@@ -31,6 +31,12 @@ let myprint env rc t=
 	let ppstr=Printer.prterm_env env2 t in
 	Pp.msgnl ppstr
 
+let tacinj tac=valueIn (VTactic (tac))
+
+let tclATMOSTn n tac1 gl=
+  let result=tac1 gl in
+    if List.length (fst result).it <= n then result else (tclFAIL 0 gl)
+
 let tclTRY_REV_HYPS (tac : constr->tactic) gl = 
   tclTRY_sign tac (List.rev (Tacmach.pf_hyps gl)) gl
  
@@ -50,14 +56,11 @@ let isrec ind=
   let (mib,mip) = Global.lookup_inductive ind in
   Inductiveops.mis_is_recursive (ind,mib,mip)
 
-let unfold_not_iff = function
-  | None -> interp <:tactic<Try Progress Unfold not iff>>
-  | Some id -> let id = (dummy_loc,id) in
-	interp <:tactic<Try Progress Unfold not iff in $id>>
+let simplif=interp
+ <:tactic<Repeat (Match Context With 
+		 |[|- ?]->Progress Unfold not iff 
+		 |[H:?|- ?]->Progress Unfold not iff in H)>>
 
-let simplif =
-  onAllClauses (fun ido -> unfold_not_iff ido)
-  
 let rule_axiom=assumption
 		      
 let rule_rforall tac=tclTHEN intro tac
@@ -69,6 +72,13 @@ let rule_larrow=
   (interp <:tactic<(Match Reverse Context With 
 			    [f:?1->?2;x:?1|-?] ->
 			      Generalize (f x);Clear f;Intro)>>)
+
+let rule_simp_larrow tac=
+  let itac=tacinj tac in
+  (interp <:tactic<(Match Reverse Context With 
+			    [f:?1->?2|-?] ->
+			      Assert ?1;[Solve $itac|IdTac])>>)
+
 
 let rule_named_llarrow id gl=
     (try let nam=destVar id in
@@ -84,10 +94,13 @@ let rule_named_llarrow id gl=
       tclTHENS (cut tc)
 	[tclTHEN intro (clear [nam]);
 	 tclTHENS (cut cc) 
-	   [refine id; tclTHENLIST [generalize [d];intro;clear [nam]]]]
+	   [exact_check id; tclTHENLIST [generalize [d];intro;clear [nam]]]]
    with Invalid_argument _ -> tclFAIL 0) gl
 
-let rule_llarrow tac=tclTRY_REV_HYPS (fun id->tclTHEN (rule_named_llarrow id) tac)
+let rule_llarrow tac=
+  tclTRY_REV_HYPS 
+    (fun id->tclTHENS (rule_named_llarrow id) [tclIDTAC;tac])
+		       (* this rule always increases the number of goals*)
 
 let rule_rind tac gl=
   (let (hdapp,args)=decompose_app gl.it.Evd.evar_concl in
@@ -96,12 +109,15 @@ let rule_rind tac gl=
 	 any_constructor (Some tac)
      with Invalid_argument _ -> tclFAIL 0) gl 
   
-let rule_rind_rev gl=  
+let rule_rind_rev (* b *) gl=  
   (let (hdapp,args)=decompose_app gl.it.Evd.evar_concl in
      try let ind=destInd hdapp in
-       if isrec ind then tclFAIL 0 else
+       if (isrec ind)(* || (not b && (nhyps ind).(0)>1) *)then tclFAIL 0 else
 	 simplest_split
      with Invalid_argument _ -> tclFAIL 0) gl 
+  (* this rule increases the number of goals 
+if the unique constructor has several hyps.
+i.e if (nhyps ind).(0)>1 *)
 
 let rule_named_false id gl=
   (try let nam=destVar id in
@@ -112,20 +128,24 @@ let rule_named_false id gl=
 
 let rule_false=tclTRY_REV_HYPS rule_named_false
 
-let rule_named_lind id gl= 
+let rule_named_lind (*b*) id gl= 
   (try let nam=destVar id in
    let body=Tacmach.pf_get_hyp_typ gl nam in
    let (hdapp,args) = decompose_app body in
    let ind=destInd hdapp in
-     if isrec ind then tclFAIL 0 else 
+   (*let nconstr=
+    if b then 0 else 
+      Array.length (snd (Global.lookup_inductive ind)).mind_consnames in *)
+     if (isrec ind) (*|| (nconstr>1)*) then tclFAIL 0 else 
        let l=nhyps ind in
        let f n= tclDO n intro in
 	 tclTHENSV (tclTHEN (simplest_elim id) (clear [nam])) (Array.map f l)
    with Invalid_argument _ -> tclFAIL 0) gl
   
-let rule_lind=tclTRY_REV_HYPS rule_named_lind
+let rule_lind (* b *) =
+  tclTRY_REV_HYPS (rule_named_lind (* b *))
+(* number of goals increases if ind has several constructors *)
 
- 
 let rule_named_llind id gl= 
     (try let nam=destVar id in 
     let body=Tacmach.pf_get_hyp_typ gl nam in
@@ -160,11 +180,11 @@ let rule_named_llind id gl=
 
 let rule_llind=tclTRY_REV_HYPS rule_named_llind
 
-
-
 let default_stac = interp(<:tactic< Auto with * >>)
 
-let rec newtauto stac gl=
+let rec newtauto b stac gl=
+  let wrap tac=if b then tac else 
+    tclATMOSTn 1 (tclTHEN tac (tclSOLVE [stac])) in
     (tclTHEN simplif 
        (tclORELSE 
 	  (tclTHEN 
@@ -172,17 +192,17 @@ let rec newtauto stac gl=
 		rule_axiom;
 		rule_false;
 		rule_rarrow;
-		rule_lind; 
+		wrap rule_lind; 
 		rule_larrow;
 		rule_llind;
-		rule_rind_rev;
-		rule_llarrow (tclSOLVE [newtauto stac]);
-		rule_rind (tclSOLVE [newtauto stac]);
-		rule_rforall (tclSOLVE [newtauto stac])])
-		(tclPROGRESS (newtauto stac)))
+		wrap rule_rind_rev; 
+		rule_llarrow (tclSOLVE [newtauto b stac]);
+		rule_rind (tclSOLVE [newtauto b stac]);
+		rule_rforall (tclSOLVE [newtauto b stac]);
+		if b then tclFAIL 0 else (rule_simp_larrow stac)])
+		(tclPROGRESS (newtauto b stac)))
 		stac)) gl
-
-			   
+ 
 let q_elim tac=
   let vtac=Tacexpr.TacArg (valueIn (VTactic tac)) in	
   interp <:tactic<
@@ -196,7 +216,7 @@ let rec lfo n=
   if n=0 then (tclFAIL 0) else
     let p=if n<0 then n else (n-1) in
     let lfo_rec=q_elim (fun gl->lfo p gl) in
-      newtauto lfo_rec
+      newtauto true lfo_rec
 
 let lfo_wrap n gl= 
   try lfo n gl
@@ -205,12 +225,17 @@ let lfo_wrap n gl=
       errorlabstrm "NewLinearIntuition" [< str "NewLinearIntuition failed." >]
 
 TACTIC EXTEND NewIntuition
-      [ "NewIntuition" ] -> [ newtauto default_stac ]
-      |[ "NewIntuition" tactic(t)] -> [ newtauto (interp t) ]
+      [ "NewIntuition" ] -> [ newtauto true default_stac ]
+      |[ "NewIntuition" tactic(t)] -> [ newtauto true (interp t) ]
+END
+
+TACTIC EXTEND Intuition1
+      [ "Intuition1" ] -> [ newtauto false default_stac ]
+      |[ "Intuition1" tactic(t)] -> [ newtauto false (interp t) ]
 END
 
 TACTIC EXTEND NewTauto
-  [ "NewTauto" ] -> [ newtauto (tclFAIL 0) ]
+  [ "NewTauto" ] -> [ newtauto true (tclFAIL 0) ]
 END
 
 TACTIC EXTEND NewLinearIntuition
