@@ -283,7 +283,6 @@ let substnl_tomatch v depth = function
 
 let subst_tomatch (depth,c) = substnl_tomatch [c] depth
 
-
 (**********************************************************************)
 (* Dealing with regular and default patterns *)
 let is_regular eqn = eqn.tag = RegularPat
@@ -762,12 +761,16 @@ let build_branch pb defaults eqns const_info =
   let submat = List.map (fun (tms,eqn) -> prepend_pattern tms eqn) eqns in
   if submat = [] & submatdef = [] then error "Non exhaustive";
   let typs = List.map2 (fun (_,t) na -> (na,t)) cs_args (List.rev names) in
+  let _,typs' =
+    List.fold_right
+      (fun (na,t) (env,typs) ->
+ 	 (push_rel_decl (na,outcast_type t) env,
+	  ((na,to_mutind env !(pb.isevars) t),t)::typs))
+      typs (pb.env,[]) in
   let tomatchs =
     List.fold_left2
-      (fun l (na,t) dep_in_rhs ->
-	 ((na,to_mutind pb.env !(pb.isevars) t),
-	  (find_dependencies t l dep_in_rhs))::l)
-      [] typs (dependencies_in_rhs const_info.cs_nargs eqns) in
+      (fun l (d,t) dep_in_rhs -> (d,find_dependencies t l dep_in_rhs)::l)
+      [] typs' (dependencies_in_rhs const_info.cs_nargs eqns) in
   let topushs = List.map (fun x -> ToPush x) tomatchs in
   (* The dependent term to subst in the types of the remaining UnPushed 
      terms is relative to the current context enriched by topushs *)
