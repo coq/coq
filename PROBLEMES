@@ -24,12 +24,6 @@ Associativite Repeat Orelse changee
 	Repeat A Orelse B se lit (Repeat A) Orelse B 
 ce n'est pas malin car Repeat A n'echoue jamais
 
-les parentheses ne sont pas autorises autour de 
-motifs constants :
-> Check [n:nat]Cases n of (O) => true | _ => false end.
-Syntax error: 'as' or ',' or [ne_pattern_list] expected after
-[Constr.pattern] (in [compound_pattern])        ...CORRIGE
-
 CONTRIBS
 ---------
 BellLabs/lazyPCF : OK
@@ -88,10 +82,10 @@ Rocq/LAMBDA OK
 Rocq/SHUFFLE OK
 
 Rocq/SCHROEDER
-File "./Functions.v", line 95, characters 0-15
-Error: Bad inductive definition.
-A la fermeture de section
---> RESOLU Mais pb de "Remark" local à un thm pas pris en compte dans
+File "./Schroeder.v", line 351, characters 4-52
+Anomaly: type_of: variable h1 unbound. Please report.
+
+--> Pb de "Remark" local à un thm pas pris en compte dans
 l'environnement de la preuve de ce théorème
 
 Rocq/SUBST
