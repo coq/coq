@@ -223,8 +223,8 @@ let prrelation_class =
     Relation eq  ->
      (try prrelation (relation_table_find eq)
       with Not_found ->
-       (*CSC: still "setoid" in the error message *)
-       str "[[ Error: setoid on equality " ++ prterm eq ++ str " not found! ]]")
+       str "[[ Error: " ++ prterm eq ++
+        str " is not registered as a relation ]]")
   | Leibniz (Some ty) -> prterm ty
   | Leibniz None -> str "_"
 
@@ -257,10 +257,9 @@ let default_relation_for_carrier ?(filter=fun _ -> true) a =
   | relation::tl ->
      if tl <> [] then
       ppnl
-       (*CSC: still "setoid" in the error message *)
-       (str "Warning: There are several setoids whose carrier is \""++ prterm a ++
-         str "\". The setoid " ++ prrelation relation ++
-         str " is randomly chosen.") ;
+       (str "Warning: There are several relations on the carrier \"" ++
+         prterm a ++ str "\". The relation " ++ prrelation relation ++
+         str " is chosen.") ;
      Relation relation
 
 let find_relation_class rel =
@@ -345,9 +344,8 @@ let (relation_to_obj, obj_to_relation)=
           match th.rel_sym with
              None -> old_relation.rel_sym
            | Some t -> Some t} in
-        (*CSC: still "setoid" in the error message *)
         ppnl
-         (str "Warning: The setoid " ++ prrelation th' ++
+         (str "Warning: The relation " ++ prrelation th' ++
           str " is redeclared. The new declaration" ++
            (match th'.rel_refl with
               None -> str ""
@@ -479,13 +477,11 @@ let (morphism_to_obj, obj_to_morphism)=
 
 (************************** Printing relations and morphisms **********************)
 
-(*CSC: still "setoids" in the name *)
 let print_setoids () =
   Gmap.iter
    (fun k relation ->
      assert (k=relation.rel_aeq) ;
-     (*CSC: still "Setoid" in the error message *)
-     ppnl (str"Setoid " ++ prrelation relation ++ str";" ++
+     ppnl (str"Relation " ++ prrelation relation ++ str";" ++
       (match relation.rel_refl with
           None -> str ""
         | Some t -> str" reflexivity proved by " ++ prterm t) ++
@@ -1185,7 +1181,8 @@ let relation_class_that_matches_a_constr caller_name new_goals hypt =
   function
      []
    | [_] ->
-      errorlabstrm caller_name (prterm hypt ++ str " is not a setoid equality.")
+      errorlabstrm caller_name (prterm hypt ++
+       str " is not a registered relation.")
    | [_;_] -> []
    | he::tl -> he::(get_all_but_last_two tl) in
  let all_aeq_args = get_all_but_last_two hargs in
@@ -1207,10 +1204,9 @@ let relation_class_that_matches_a_constr caller_name new_goals hypt =
     | Relation rel,_ -> Relation (apply_to_relation (Array.of_list subst) rel)
   with Not_found ->
    if l = [] then
-    (*CSC: still "setoid" in the error message *)
     errorlabstrm caller_name
      (prterm (mkApp (aeq, Array.of_list all_aeq_args)) ++
-      str " is not a setoid equality.")
+      str " is not a registered relation.")
    else
     let last,others = Util.list_sep_last l in
     find_relation others (last::subst)
@@ -1760,7 +1756,6 @@ let general_s_rewrite_in id lft2rgt c ~new_goals gl =
       (general_s_rewrite (not lft2rgt) c ~new_goals)
       (exact_check (mkVar id))] gl
 
-(*CSC: still setoid in the name *)
 let setoid_replace relation c1 c2 ~new_goals gl =
  try
   let relation =
@@ -1773,7 +1768,7 @@ let setoid_replace relation c1 c2 ~new_goals gl =
         with
          Not_found ->
           errorlabstrm "Setoid_rewrite"
-           (prterm rel ++ str " is not a setoid equality."))
+           (prterm rel ++ str " is not a registered relation."))
     | None ->
        match default_relation_for_carrier (pf_type_of gl c1) with
           Relation sa -> sa
