@@ -629,7 +629,7 @@ let clenv_merge with_types metas evars clenv =
 			   (clenv_wtactic
 			      (mimick_evar f (Array.length cl) evn)
 			      clenv)
-           	     | _ -> raise ex(********* error  "w_Unify" *))
+           	     | _ -> error "w_Unify")
 	      end
 
 	  | _ -> anomaly "clenv_resrec"))

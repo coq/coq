@@ -436,11 +436,11 @@ tar-gz-ftp-install: prep-ftp-install
 
 src-rpm-ftp-install: prep-ftp-install
 	chmod g+w $(COQSRCRPM)
-	$(CP) $(COQSRCRPM) $(FTPVDIR)/
+	$(CP) *.src.rpm $(FTPVDIR)/
 
 arch-rpm-ftp-install: prep-ftp-install
 	chmod g+w $(COQRPM)
-	$(CP) $(COQRPM) $(FTPVDIR)/
+	$(CP) *.$(ARCH).rpm $(FTPVDIR)/
 
 arch-tar-gz-ftp-install: prep-ftp-install
 	chmod g+w $(ARCHTARGZ)
