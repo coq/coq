@@ -2,7 +2,7 @@
 This release is a major update on version 6.3.1 and a bug-fixes update
 on version 7.0.
 
-  The main features of Coq versions 7.0 and 7.1 on version 6.3.1 are
+  The main features of Coq versions 7.0 and 7.1 over version 6.3.1 are
 
   - a primitive let-in construct
   - qualified names
@@ -11,7 +11,7 @@ on version 7.0.
   - improved search facilities
   - export of theories to XML for publishing and rendering purposes
   - a deep restructuration of the code (safer, simpler and more efficient)
-  - 
+
 
   Compared to version 7.0, the new version provides with
 
