@@ -195,7 +195,7 @@ type discharge_operation =
       Dischargedhypsmap.discharged_hyps
   | Class of cl_typ * cl_info_typ
   | Struc of inductive * (unit -> struc_typ)
-  | Objdef of constant
+  | CanonStruc of constant
   | Coercion of coercion_entry
   | Require of library_reference
   | Constraints of Univ.constraints
@@ -275,10 +275,10 @@ let process_object oldenv olddir full_olddir newdir
 	    s_PROJ = List.map (option_app (fun kn -> recalc_con newdir kn)) info.s_PROJ } in
 	((Struc ((newkn,i),strobj))::ops, ids_to_discard, work_alist)
 
-    | "OBJDEF1" -> 
-	let kn = outObjDef1 lobj in
+    | "CANONICAL-STRUCTURE" -> 
+	let kn = outCanonicalStructure lobj in
 	let new_kn = recalc_con newdir kn in
-        ((Objdef new_kn)::ops, ids_to_discard, work_alist)
+        ((CanonStruc new_kn)::ops, ids_to_discard, work_alist)
 
     | "REQUIRE" -> 
 	let c = out_require lobj in
@@ -306,7 +306,7 @@ let process_operation = function
       Lib.add_anonymous_leaf (inClass (y1,y2))
   | Struc (newsp,strobj) ->
       Lib.add_anonymous_leaf (inStruc (newsp,strobj ()))
-  | Objdef newsp ->
+  | CanonStruc newsp ->
       begin try Recordobj.objdef_declare (ConstRef newsp) with _ -> () end
   | Coercion y -> add_new_coercion y
   | Require y -> reload_library y

@@ -68,9 +68,8 @@ let objdef_declare ref =
 	       try (ConstRef proji_sp, reference_of_constr c, args) :: l
                with Not_found -> l)
       [] lps in
-  add_anonymous_leaf (inObjDef1 sp);
-  List.iter
-    (fun (refi,c,argj) -> add_new_objdef ((refi,c),v,lt,params,argj))
-    comp
+  let comp' = List.map (fun (refi,c,argj) ->
+    (refi,c),{o_DEF=v; o_TABS=lt; o_TPARAMS=params; o_TCOMPS=argj}) comp in
+  add_canonical_structure (sp, comp')
 
 let add_object_hook _ = objdef_declare

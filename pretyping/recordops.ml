@@ -114,50 +114,36 @@ let subst_obj subst obj =
 let object_table =
   (ref [] : ((global_reference * global_reference) * obj_typ) list ref)
 
-let cache_object (_,x) = object_table := x :: (!object_table)
+let cache_canonical_structure (_,(cst,lo)) =
+  List.iter (fun (o,_ as x) ->
+    if not (List.mem_assoc o !object_table) then
+      object_table := x :: (!object_table)) lo
 
-let subst_object (_,subst,((r1,r2),o as obj)) = 
+let subst_object subst ((r1,r2),o as obj) = 
   let r1' = subst_global subst r1 in
   let r2' = subst_global subst r2 in
   let o' = subst_obj subst o in
-    if r1' == r1 && r2' == r2 && o' == o then obj else
-      (r1',r2'),o'
+  if r1' == r1 && r2' == r2 && o' == o then obj
+  else (r1',r2'),o'
 
-let (inObjDef,outObjDef) =
-  declare_object {(default_object "OBJDEF") with 
-		    open_function = (fun i o -> if i=1 then cache_object o);
-                    cache_function = cache_object;
-		    subst_function = subst_object;
-		    classify_function = (fun (_,x) -> Substitute x);
-                    export_function = (function x -> Some x) }
+let subst_canonical_structure (_,subst,(cst,lo as obj)) =
+  let cst' = subst_con subst cst in
+  let lo' = list_smartmap (subst_object subst) lo in
+  if cst' == cst & lo' == lo then obj else (cst',lo')
 
-let add_new_objdef (o,c,la,lp,l) =
-  try 
-    let _ = List.assoc o !object_table in ()
-  with Not_found -> 
-    Lib.add_anonymous_leaf
-      (inObjDef (o,{o_DEF=c;o_TABS=la;o_TPARAMS=lp;o_TCOMPS=l}))
+let (inCanonStruc,outCanonStruct) =
+  declare_object {(default_object "CANONICAL-STRUCTURE") with 
+    open_function = (fun i o -> if i=1 then cache_canonical_structure o);
+    cache_function = cache_canonical_structure;
+    subst_function = subst_canonical_structure;
+    classify_function = (fun (_,x) -> Substitute x);
+    export_function = (function x -> Some x) }
 
-let cache_objdef1 (_,sp) = ()
+let add_canonical_structure x = Lib.add_anonymous_leaf (inCanonStruc x)
 
-let (inObjDef10,outObjDef10) =
-  declare_object {(default_object "OBJDEF1") with 
-		    open_function = (fun i o -> if i=1 then cache_objdef1 o);
-                    cache_function = cache_objdef1;
-                    export_function = (function x -> Some x) }
+let outCanonicalStructure x = fst (outCanonStruct x)
 
-let outObjDef1 obj = constant_of_kn (outObjDef10 obj)
-
-let inObjDef1 con =
- (*CSC: Here I am cheating by violating the fact that "constant" is an ADT
-   and this is the only place in the whole Coq code. My feeling is that the
-   implementation of "Canonical Structure"s should be improved to avoid this
-   situation (that is avoided for all the other non-logical objects). *)
- let mp,sp,l = repr_con con in
- let kn = make_kn mp sp l in
-  inObjDef10 kn
-
-let objdef_info o = List.assoc o !object_table
+let canonical_structure_info o = List.assoc o !object_table
 
 let freeze () =
   !structure_table, !projection_table, !object_table

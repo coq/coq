@@ -39,13 +39,12 @@ type obj_typ = {
   o_TPARAMS : constr list; (* dans l'ordre *)
   o_TCOMPS : constr list } (* dans l'ordre *)
                
-val objdef_info : (global_reference * global_reference) -> obj_typ
-val add_new_objdef : 
-  (global_reference * global_reference) * Term.constr * Term.constr list *
-  Term.constr list * Term.constr list -> unit
-
+val canonical_structure_info : 
+  (global_reference * global_reference) -> obj_typ
+val add_canonical_structure : 
+  constant * ((global_reference * global_reference) * obj_typ) list -> unit
 
 val inStruc : inductive * struc_typ -> obj
 val outStruc : obj -> inductive * struc_typ
-val inObjDef1 : constant -> obj
-val outObjDef1 : obj -> constant
+
+val outCanonicalStructure : obj -> constant
