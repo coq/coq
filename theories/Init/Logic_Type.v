@@ -18,17 +18,20 @@ Require Export Logic.
 Require LogicSyntax.
 
 
+(*
 (** [allT A P], or simply [(ALLT x | P(x))], stands for [(x:A)(P x)]
    when [A] is of type [Type] *)
 
-(*
 Definition allT := [A:Type][P:A->Prop](x:A)(P x). 
 *)
 
 V7only [
 Syntactic Definition allT := all.
+Syntactic Definition inst := Logic.inst.
+Syntactic Definition gen := Logic.gen.
 ].
 
+(*
 Section universal_quantification.
 
 Variable A : Type.
@@ -45,7 +48,9 @@ Red; Auto.
 Qed.
 
 End universal_quantification.
+*)
 
+(*
 (** * Existential Quantification *)
 
 (** [exT A P], or simply [(EXT x | P(x))], stands for the existential 
@@ -54,7 +59,6 @@ End universal_quantification.
 (** [exT2 A P Q], or simply [(EXT x | P(x) & Q(x))], stands for the
     existential quantification on both [P] and [Q] when [A] is of
     type [Type] *)
-(*
 Inductive  exT [A:Type;P:A->Prop] : Prop
     := exT_intro : (x:A)(P x)->(exT A P).
 *)
@@ -76,6 +80,7 @@ Syntactic Definition exT_intro2 := ex_intro2.
 Syntactic Definition exT2_ind  := ex2_ind.
 ].
 
+(*
 (** Leibniz equality : [A:Type][x,y:A] (P:A->Prop)(P x)->(P y)
 
    [eqT A x y], or simply [x==y], is Leibniz' equality when [A] is of 
@@ -83,7 +88,6 @@ Syntactic Definition exT2_ind  := ex2_ind.
    symmetry, transitivity and stability by congruence *)
 
 
-(*
 Inductive eqT [A:Type;x:A] : A -> Prop
                        := refl_eqT : (eqT A x x).
 
@@ -107,22 +111,22 @@ Section Equality_is_a_congruence.
  
  Lemma sym_eqT : (eqT ? x y) -> (eqT ? y x).
  Proof.
-  Induction 1; Trivial.
+  NewDestruct 1; Trivial.
  Qed.
 
  Lemma trans_eqT : (eqT ? x y) -> (eqT ? y z) -> (eqT ? x z).
  Proof.
-  Induction 2; Trivial.
+  NewDestruct 2; Trivial.
  Qed.
 
  Lemma congr_eqT : (eqT ? x y)->(eqT ? (f x) (f y)).
  Proof.
-  Induction 1; Trivial.
+  NewDestruct 1; Trivial.
  Qed.
 
  Lemma sym_not_eqT : ~(eqT ? x y) -> ~(eqT ? y x).
  Proof.
-  Red; Intros H H'; Apply H; Elim H'; Trivial.
+  Red; Intros H H'; Apply H; NewDestruct H'; Trivial.
  Qed.
 
 End Equality_is_a_congruence.
@@ -183,22 +187,22 @@ Section IdentityT_is_a_congruence.
  
  Lemma sym_idT : (identityT ? x y) -> (identityT ? y x).
  Proof.
-  Induction 1; Trivial.
+  NewDestruct 1; Trivial.
  Qed.
 
  Lemma trans_idT : (identityT ? x y) -> (identityT ? y z) -> (identityT ? x z).
  Proof.
-  Induction 2; Trivial.
+  NewDestruct 2; Trivial.
  Qed.
 
  Lemma congr_idT : (identityT ? x y)->(identityT ? (f x) (f y)).
  Proof.
-  Induction 1; Trivial.
+  NewDestruct 1; Trivial.
  Qed.
 
  Lemma sym_not_idT : (notT (identityT ? x y)) -> (notT (identityT ? y x)).
  Proof.
-  Red; Intros H H'; Apply H; Elim H'; Trivial.
+  Red; Intros H H'; Apply H; NewDestruct H'; Trivial.
  Qed.
 
 End IdentityT_is_a_congruence.

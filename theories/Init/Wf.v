@@ -111,19 +111,19 @@ Scheme Acc_inv_dep := Induction for Acc Sort Prop.
 Lemma Fix_F_eq
   : (x:A)(r:(Acc x))
     (F x [y:A][p:(R y x)](Fix_F y (Acc_inv x r y p)))=(Fix_F x r).
-Intros x r; Elim r using  Acc_inv_dep; Auto.
+NewDestruct r using  Acc_inv_dep; Auto.
 Qed.
 
 Lemma Fix_F_inv : (x:A)(r,s:(Acc x))(Fix_F x r)=(Fix_F x s).
-Intro x; Elim (Rwf x); Intros.
-Case (Fix_F_eq x0 r); Case (Fix_F_eq x0 s); Intros.
+Intro x; NewInduction (Rwf x); Intros.
+Rewrite <- (Fix_F_eq x r); Rewrite <- (Fix_F_eq x s); Intros.
 Apply F_ext; Auto.
 Qed.
 
 
 Lemma Fix_eq : (x:A)(fix x)=(F x [y:A][p:(R y x)](fix y)).
-Intro; Unfold fix.
-Case (Fix_F_eq x).
+Intro x; Unfold fix.
+Rewrite <- (Fix_F_eq x).
 Apply F_ext; Intros.
 Apply Fix_F_inv.
 Qed.

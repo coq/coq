@@ -11,6 +11,7 @@
 Set Implicit Arguments.
 V7only [Unset Implicit Arguments.].
 
+Require Notations.
 Require Datatypes.
 
 (** [True] is the always true proposition *)
@@ -22,7 +23,15 @@ Inductive False : Prop := .
 (** [not A], written [~A], is the negation of [A] *)
 Definition not := [A:Prop]A->False.
 
+Notation "~ x" := (not x).
+
 Hints Unfold not : core.
+
+Inductive and [A,B:Prop] : Prop as "A /\ B" := conj : A -> B -> A /\ B.
+
+V7only[
+Notation "< P , Q > { p , q }" := (conj P Q p q) (P annot, at level 1).
+].
 
 Section Conjunction.
 
@@ -33,52 +42,47 @@ Section Conjunction.
 
       [proj1] and [proj2] are first and second projections of a conjunction *)
 
-  Inductive and [A,B:Prop] : Prop := conj : A -> B -> (and A B).
-
   Variables A,B : Prop.
 
   Theorem proj1 : (and A B) -> A.
   Proof.
-  Induction 1; Trivial.
+  NewDestruct 1; Trivial.
   Qed.
 
   Theorem proj2 : (and A B) -> B.
   Proof.
-  Induction 1; Trivial.
+  NewDestruct 1; Trivial.
   Qed.
 
 End Conjunction.
 
-Section Disjunction.
+(** [or A B], written [A \/ B], is the disjunction of [A] and [B] *)
 
-  (** [or A B], written [A \/ B], is the disjunction of [A] and [B] *)
+Inductive or [A,B:Prop] : Prop as "A \/ B":=
+     or_introl : A -> A \/ B 
+   | or_intror : B -> A \/ B.
 
-  Inductive or [A,B:Prop] : Prop :=
-       or_introl : A -> (or A B) 
-     | or_intror : B -> (or A B).
+(** [iff A B], written [A <-> B], expresses the equivalence of [A] and [B] *)
 
-End Disjunction.
+Definition iff := [A,B:Prop] (and (A->B) (B->A)).
+
+Notation "A <-> B" := (iff A B).
 
 Section Equivalence.
 
-  (** [iff A B], written [A <-> B], expresses the equivalence of [A] and [B] *)
-
-  Definition iff := [P,Q:Prop] (and (P->Q) (Q->P)).
-
-
-Theorem iff_refl : (a:Prop) (iff a a).
+Theorem iff_refl : (A:Prop) (iff A A).
   Proof.
     Split; Auto.
   Qed.
 
-Theorem iff_trans : (a,b,c:Prop) (iff a b) -> (iff b c) -> (iff a c).
+Theorem iff_trans : (A,B,C:Prop) (iff A B) -> (iff B C) -> (iff A C).
   Proof.
-    Intros a b c (H1,H2) (H3,H4); Split; Auto.
+    Intros A B C (H1,H2) (H3,H4); Split; Auto.
   Qed.
 
-Theorem iff_sym : (a,b:Prop) (iff a b) -> (iff b a).
+Theorem iff_sym : (A,B:Prop) (iff A B) -> (iff B A).
   Proof.
-    Intros a b (H1,H2); Split; Auto.
+    Intros A B (H1,H2); Split; Auto.
   Qed.
 
 End Equivalence.
@@ -86,6 +90,10 @@ End Equivalence.
 (** [(IF P Q R)], or more suggestively [(either P and_then Q or_else R)],
     denotes either [P] and [Q], or [~P] and [Q] *)
 Definition IF := [P,Q,R:Prop] (or (and P Q) (and (not P) R)).
+
+Notation "'IF' c1 'then' c2 'else' c3" := (IF c1 c2 c3)
+  (at level 1, c1, c2, c3 at level 8)
+  V8only (at level 200).
 
 Section First_order_quantifiers.
 
@@ -110,20 +118,37 @@ Section First_order_quantifiers.
 
   Definition all := [A:Type][P:A->Prop](x:A)(P x). 
 
+  Section universal_quantification.
+
+  Variable A : Type.
+  Variable P : A->Prop.
+
+  Theorem inst : (x:A)(all ? [x](P x))->(P x).
+  Proof.
+  Unfold all; Auto.
+  Qed.
+
+  Theorem gen : (B:Prop)(f:(y:A)B->(P y))B->(all A P).
+  Proof.
+  Red; Auto.
+  Qed.
+
+  End universal_quantification.
+
 End First_order_quantifiers.
 
-Section Equality.
+(** [(eq A x y)], or simply [x=y], expresses the (Leibniz') equality
+    of [x] and [y]. Both [x] and [y] must belong to the same type [A].
+    The definition is inductive and states the reflexivity of the equality.
+    The others properties (symmetry, transitivity, replacement of 
+    equals) are proved below *)
 
-  (** [(eq A x y)], or simply [x=y], expresses the (Leibniz') equality
-      of [x] and [y]. Both [x] and [y] must belong to the same type [A].
-      The definition is inductive and states the reflexivity of the equality.
-      The others properties (symmetry, transitivity, replacement of 
-      equals) are proved below *)
+Inductive eq [A:Type;x:A] : (y:A)Prop as "x = y :> A"
+       := refl_equal : x = x :> A.
 
-  Inductive eq [A:Type;x:A] : A->Prop
-         := refl_equal : (eq A x x).
-
-End Equality.
+Notation "x = y" := (eq ? x y).
+Notation "x <> y  :> T" := ~ (!eq T x y).
+Notation "x <> y" := ~ x=y.
 
 Hints Resolve I conj or_introl or_intror refl_equal : core v62.
 Hints Resolve ex_intro ex_intro2 : core v62.
@@ -133,7 +158,7 @@ Section Logic_lemmas.
   Theorem absurd : (A:Prop)(C:Prop) A -> (not A) -> C.
   Proof.
     Unfold not; Intros A C h1 h2.
-    Elim (h2 h1).
+    NewDestruct (h2 h1).
   Qed.
 
   Section equality.
@@ -142,26 +167,26 @@ Section Logic_lemmas.
     Variable x,y,z : A.
 
     Theorem sym_eq : (eq ? x y) -> (eq ? y x).
-      Proof.
-     Induction 1; Trivial.
+    Proof.
+     NewDestruct 1; Trivial.
     Defined.
     Opaque sym_eq.
 
     Theorem trans_eq : (eq ? x y) -> (eq ? y z) -> (eq ? x z).
     Proof.
-     Induction 2; Trivial.
+     NewDestruct 2; Trivial.
     Defined.
     Opaque trans_eq.
 
     Theorem f_equal : (eq ? x y) -> (eq ? (f x) (f y)).
     Proof.
-     Induction 1; Trivial.
+     NewDestruct 1; Trivial.
     Defined.
     Opaque f_equal.
 
     Theorem sym_not_eq : (not (eq ? x y)) -> (not (eq ? y x)).
     Proof.
-     Red; Intros h1 h2; Apply h1; Case h2; Trivial.
+     Red; Intros h1 h2; Apply h1; NewDestruct h2; Trivial.
     Qed.
 
     Definition sym_equal     := sym_eq.
@@ -176,34 +201,34 @@ Section Logic_lemmas.
    Intros.
    Cut (identity A x y).
    NewDestruct 1; Auto.
-   Elim H; Auto.
+   NewDestruct H; Auto.
   Qed.
 *)
 
   Definition eq_ind_r : (A:Type)(x:A)(P:A->Prop)(P x)->(y:A)(eq ? y x)->(P y).
-   Intros A x P H y H0; Elim sym_eq with 1:= H0; Trivial.
+   Intros A x P H y H0; Elim sym_eq with 1:= H0; Assumption.
   Defined.
 
   Definition eq_rec_r : (A:Type)(x:A)(P:A->Set)(P x)->(y:A)(eq ? y x)->(P y).
-    Intros A x P H y H0; Elim sym_eq with 1:= H0; Trivial.
+    Intros A x P H y H0; Elim sym_eq with 1:= H0; Assumption.
   Defined.
 
   Definition eq_rect_r : (A:Type)(x:A)(P:A->Type)(P x)->(y:A)(eq ? y x)->(P y).
-    Intros A x P H y H0; Elim sym_eq with 1:= H0; Trivial.
+    Intros A x P H y H0; Elim sym_eq with 1:= H0; Assumption.
   Defined.
 End Logic_lemmas.
 
 Theorem f_equal2 : (A1,A2,B:Type)(f:A1->A2->B)(x1,y1:A1)(x2,y2:A2)
   (eq ? x1 y1) -> (eq ? x2 y2) -> (eq ? (f x1 x2) (f y1 y2)).
 Proof.
-  Induction 1; Induction 1; Trivial.
+  NewDestruct 1; NewDestruct 1; Reflexivity.
 Qed.
 
 Theorem f_equal3 : (A1,A2,A3,B:Type)(f:A1->A2->A3->B)(x1,y1:A1)(x2,y2:A2)
   (x3,y3:A3)(eq ? x1 y1) -> (eq ? x2 y2) -> (eq ? x3 y3) 
    -> (eq ? (f x1 x2 x3) (f y1 y2 y3)).
 Proof.
-  Induction 1; Induction 1; Induction 1; Trivial.
+  NewDestruct 1; NewDestruct 1; NewDestruct 1; Reflexivity.
 Qed.
 
 Theorem f_equal4 : (A1,A2,A3,A4,B:Type)(f:A1->A2->A3->A4->B)
@@ -211,7 +236,7 @@ Theorem f_equal4 : (A1,A2,A3,A4,B:Type)(f:A1->A2->A3->A4->B)
   (eq ? x1 y1) -> (eq ? x2 y2) -> (eq ? x3 y3) -> (eq ? x4 y4)
    -> (eq ? (f x1 x2 x3 x4) (f y1 y2 y3 y4)).
 Proof.
-  Induction 1; Induction 1; Induction 1; Induction 1; Trivial.
+  NewDestruct 1; NewDestruct 1; NewDestruct 1; NewDestruct 1; Reflexivity.
 Qed.
 
 Theorem f_equal5 : (A1,A2,A3,A4,A5,B:Type)(f:A1->A2->A3->A4->A5->B)
@@ -219,7 +244,8 @@ Theorem f_equal5 : (A1,A2,A3,A4,A5,B:Type)(f:A1->A2->A3->A4->A5->B)
   (eq ? x1 y1) -> (eq ? x2 y2) -> (eq ? x3 y3) -> (eq ? x4 y4) -> (eq ? x5 y5)
     -> (eq ? (f x1 x2 x3 x4 x5) (f y1 y2 y3 y4 y5)).
 Proof.
-  Induction 1; Induction 1; Induction 1; Induction 1; Induction 1; Trivial.
+  NewDestruct 1; NewDestruct 1; NewDestruct 1; NewDestruct 1; NewDestruct 1;
+  Reflexivity.
 Qed.
 
 Hints Immediate sym_eq sym_not_eq : core v62.

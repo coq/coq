@@ -17,30 +17,38 @@ Require Datatypes.
 Require Logic.
 Require LogicSyntax.
 
-Section Subsets.
+(** Subsets *)
 
- (** [(sig A P)], or more suggestively [{x:A | (P x)}], denotes the subset 
-     of elements of the Set [A] which satisfy the predicate [P].
-     Similarly [(sig2 A P Q)], or [{x:A | (P x) & (Q x)}], denotes the subset 
-     of elements of the Set [A] which satisfy both [P] and [Q]. *)
+(** [(sig A P)], or more suggestively [{x:A | (P x)}], denotes the subset 
+    of elements of the Set [A] which satisfy the predicate [P].
+    Similarly [(sig2 A P Q)], or [{x:A | (P x) & (Q x)}], denotes the subset 
+    of elements of the Set [A] which satisfy both [P] and [Q]. *)
 
-  Inductive sig [A:Set;P:A->Prop] : Set
-      := exist : (x:A)(P x) -> (sig A P).
+Inductive sig [A:Set;P:A->Prop] : Set
+    := exist : (x:A)(P x) -> (sig A P).
 
-  Inductive sig2 [A:Set;P,Q:A->Prop] : Set
-      := exist2 : (x:A)(P x) -> (Q x) -> (sig2 A P Q).
+Inductive sig2 [A:Set;P,Q:A->Prop] : Set
+    := exist2 : (x:A)(P x) -> (Q x) -> (sig2 A P Q).
 
- (** [(sigS A P)], or more suggestively [{x:A & (P x)}], is a subtle variant
-     of subset where [P] is now of type [Set].
-     Similarly for [(sigS2 A P Q)], also written [{x:A & (P x) & (Q x)}]. *)
+(** [(sigS A P)], or more suggestively [{x:A & (P x)}], is a subtle variant
+    of subset where [P] is now of type [Set].
+    Similarly for [(sigS2 A P Q)], also written [{x:A & (P x) & (Q x)}]. *)
      
-  Inductive sigS [A:Set;P:A->Set] : Set
-      := existS : (x:A)(P x) -> (sigS A P).
+Inductive sigS [A:Set;P:A->Set] : Set
+    := existS : (x:A)(P x) -> (sigS A P).
 
-  Inductive sigS2 [A:Set;P,Q:A->Set] : Set
-      := existS2 : (x:A)(P x) -> (Q x) -> (sigS2 A P Q).
+Inductive sigS2 [A:Set;P,Q:A->Set] : Set
+    := existS2 : (x:A)(P x) -> (Q x) -> (sigS2 A P Q).
 
-End Subsets.
+Arguments Scope sig [type_scope type_scope].
+Arguments Scope sig2 [type_scope type_scope type_scope].
+Arguments Scope sigS [type_scope type_scope].
+Arguments Scope sigS2 [type_scope type_scope type_scope].
+
+Notation "{ x : A  |  P }" := (sig A [x:A]P).
+Notation "{ x : A  |  P  &  Q }" := (sig2 A [x:A]P [x:A]Q).
+Notation "{ x : A  &  P }" := (sigS A [x:A]P).
+Notation "{ x : A  &  P  &  Q }" := (sigS2 A [x:A]P [x:A]Q).
 
 Add Printing Let sig.
 Add Printing Let sig2.
@@ -86,20 +94,21 @@ Section Projections.
 End Projections.
 
 
-Section Extended_booleans.
+(** Extended_booleans *)
 
-  (** Syntax sumbool ["{_}+{_}"]. *)
-  Inductive sumbool [A,B:Prop] : Set
-      := left  : A -> (sumbool A B) 
-       | right : B -> (sumbool A B).
+Inductive sumbool [A,B:Prop] : Set as "{ A } + { B }"
+    := left  : A -> {A}+{B}
+     | right : B -> {A}+{B}.
 
+(*
   (** Syntax sumor ["_+{_}"]. *)
   Inductive sumor [A:Set;B:Prop] : Set
       := inleft  : A -> (sumor A B) 
        | inright : B -> (sumor A B).
-
-
-End Extended_booleans.
+*)
+Inductive sumor [A:Set;B:Prop] : Set as "A + { B }"
+    := inleft  : A -> A+{B}
+     | inright : B -> A+{B}.
 
 
 (** Choice *)
@@ -118,7 +127,7 @@ Section Choice_lemmas.
   Proof.
    Intro H.
    Exists [z:S]Cases (H z) of (exist y _) => y end.
-   Intro z; Elim (H z); Trivial.
+   Intro z; NewDestruct (H z); Trivial.
   Qed.
 
   Lemma Choice2 : ((x:S)(sigS ? [y:S'](R' x y))) ->
@@ -126,7 +135,7 @@ Section Choice_lemmas.
   Proof.
     Intro H.
     Exists [z:S]Cases (H z) of (existS y _) => y end.
-    Intro z; Elim (H z); Trivial.
+    Intro z; NewDestruct (H z); Trivial.
   Qed.
 
   Lemma bool_choice : 
@@ -136,7 +145,7 @@ Section Choice_lemmas.
   Proof.
     Intro H.
     Exists [z:S]Cases (H z) of (left _) => true | (right _) => false end.
-    Intro z; Elim (H z); Auto.
+    Intro z; NewDestruct (H z); Auto.
   Qed.
 
 End Choice_lemmas.

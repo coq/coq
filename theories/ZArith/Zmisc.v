@@ -546,7 +546,7 @@ Qed.
 
   Lemma Zgt_is_le_bool : (x,y:Z) (Zgt x y) <-> (Zle_bool y `x-1`)=true.
   Proof.
-    Intros. Apply iff_trans with b:=`y < x`. Split. Exact (Zgt_lt x y).
+    Intros. Apply iff_trans with `y < x`. Split. Exact (Zgt_lt x y).
     Exact (Zlt_gt y x).
     Exact (Zlt_is_le_bool y x).
   Qed.

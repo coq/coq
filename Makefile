@@ -513,7 +513,8 @@ states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
 #       theories/Init/LogicHints.vo       theories/Init/SpecifHints.vo \
 #       theories/Init/Logic_TypeHints.vo \
 
-INITVO=theories/Init/Datatypes.vo         theories/Init/DatatypesSyntax.vo \
+INITVO=theories/Init/Notations.vo \
+       theories/Init/Datatypes.vo         theories/Init/DatatypesSyntax.vo \
        theories/Init/Peano.vo             theories/Init/PeanoSyntax.vo   \
        theories/Init/Logic.vo             theories/Init/Specif.vo        \
        theories/Init/LogicSyntax.vo       theories/Init/SpecifSyntax.vo  \

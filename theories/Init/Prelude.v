@@ -8,6 +8,7 @@
 
 (*i $Id$ i*)
 
+Require Export Notations.
 Require Export Datatypes.
 Require Export DatatypesSyntax.
 Require Export Logic.

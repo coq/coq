@@ -306,7 +306,7 @@ Lemma Th_plus_opp_opp : (x,y:A) (-x) + (-y) == -(x+y).
 Intros.
 Apply (aux2 1! x + y);
 [ Elim plus_assoc;
-  Rewrite -> (Th_plus_permute y -x); Rewrite -> plus_assoc;
+  Rewrite -> (Th_plus_permute y (-x)); Rewrite -> plus_assoc;
   Rewrite -> opp_def;  Rewrite plus_zero_left; Auto
 | Auto ].
 Qed.
@@ -331,13 +331,13 @@ Lemma Th_mult_opp_opp2 : (x,y:A) x*y == (-x)*(-y).
 Symmetry; Apply Th_mult_opp_opp. Qed.
 
 Lemma Th_opp_zero : -0 == 0.
-Rewrite <- (plus_zero_left -0).
+Rewrite <- (plus_zero_left (-0)).
 Auto. Qed.
 
 Lemma Th_plus_reg_left : (n,m,p:A) n + m == n + p -> m==p.
 Intros; Generalize (congr_eqT ? ? [z] (-n)+z ? ? H).
 Repeat Rewrite plus_assoc.
-Rewrite (plus_sym -n n).
+Rewrite (plus_sym (-n) n).
 Rewrite opp_def.
 Repeat Rewrite Th_plus_zero_left; EAuto.
 Qed.
