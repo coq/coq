@@ -136,6 +136,8 @@ let rec pp_expr par env args =
 	   'qS (string_of_id id); close_par par >]
     | MLprop ->
 	string "Prop"
+    |MLarity ->
+	string "Arity"
     | MLcast (a,t) ->
 	[< open_par true; pp_expr false env args a; 'sPC; 'sTR ":"; 'sPC; 
 	   pp_type t; close_par true >]

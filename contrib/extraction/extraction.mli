@@ -4,6 +4,7 @@
 open Names
 open Term
 open Miniml
+open Environ
 
 (*s Result of an extraction. *)
 
@@ -18,7 +19,7 @@ type extraction_result =
 
 (*s Extraction functions. *)
 
-val extract_constr : constr -> extraction_result
+val extract_constr : env -> constr -> extraction_result
 
 (*s ML declaration corresponding to a Coq reference. *)
 

@@ -38,6 +38,7 @@ type ml_ast =
   | MLfix   of int * bool * (identifier list) * (ml_ast list)
   | MLexn   of identifier
   | MLprop
+  | MLarity
   | MLcast  of ml_ast * ml_type
   | MLmagic of ml_ast
 
