@@ -1,0 +1,8 @@
+
+# This Makefile is designed to make the .ml files corresponding to .ml4 files
+
+include Makefile
+include .depend.camlp4.2
+
+.ml4.ml:
+	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo `$(CAMLP4DEPS) $<` -impl $< > $@ || rm -f $@

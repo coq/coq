@@ -532,9 +532,9 @@ ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
 	   parsing/g_vernac.ml4 parsing/g_proofs.ml4 parsing/g_cases.ml4 \
 	   parsing/g_constr.ml4 parsing/g_tactic.ml4 parsing/extend.ml4    
 
-beforedepend:: $(GRAMMARCMO)
+# beforedepend:: $(GRAMMARCMO)
 
-beforedepend:: parsing/pcoq.ml parsing/extend.ml
+# beforedepend:: parsing/pcoq.ml parsing/extend.ml
 
 # toplevel/mltop.ml4 (ifdef Byte)
 
@@ -576,14 +576,11 @@ clean::
 .mll.ml:
 	ocamllex $<
 
-.ml4.cmo:
-	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
-
 .ml4.cmx:
 	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
-.ml4.ml:
-	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pr_o.cmo `$(CAMLP4DEPS) $<` -impl $< > $@ || rm -f $@
+.ml4.cmo:
+	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 .v.vo:
 	$(COQC) -q -$(BEST) -bindir bin $(COQINCLUDES) $<
@@ -643,13 +640,27 @@ depend: beforedepend
 dependcoq: beforedepend
 	$(COQDEP) $(COQINCLUDES) */*.v */*/*.v > .depend.coq
 
+# Dependency of camlp4 files: this is tricky.
+# We proceed in several steps:
 ML4FILESML = $(ML4FILES:.ml4=.ml)
-dependcamlp4: beforedepend $(ML4FILESML)
-	ocamldep $(DEPFLAGS) $(ML4FILESML) > .depend.camlp4
+dependcamlp4:
+# 1. We express dependencies of the .ml files w.r.t their grammars
+	rm -f .depend.camlp4.2
 	for f in $(ML4FILES); do \
-	  printf "%s" `dirname $$f`/`basename $$f .ml4`".ml: " >> .depend.camlp4; \
+	  printf "%s" `dirname $$f`/`basename $$f .ml4`".ml: " >> .depend.camlp4.2; \
+	  echo `$(CAMLP4DEPS) $$f` >> .depend.camlp4.2; \
+	done
+# 2. Then we are able to produce the .ml files using Makefile.dep
+	$(MAKE) -f Makefile.dep $(ML4FILESML)
+# 3. We compute the dependencies inside the .ml files using ocamldep
+	ocamldep $(DEPFLAGS) $(ML4FILESML) > .depend.camlp4
+# 4. We express dependencies of .cmo files w.r.t their grammars
+	for f in $(ML4FILES); do \
+	  printf "%s" `dirname $$f`/`basename $$f .ml4`".cmo: " >> .depend.camlp4; \
 	  echo `$(CAMLP4DEPS) $$f` >> .depend.camlp4; \
 	done
+# 5. Finally, we erase the generated .ml files
+	rm -f $(ML4FILESML)
 	rm -f toplevel/mltop.ml
 
 clean::

@@ -158,3 +158,7 @@ val prlist_with_sep :
    (unit -> 'a Stream.t) -> ('b -> 'a Stream.t) -> 'b list -> 'a Stream.t
 val prvect_with_sep :
    (unit -> 'a Stream.t) -> ('b -> 'a Stream.t) -> 'b array -> 'a Stream.t
+
+(*s Size of ocaml values. *)
+
+val size_b : 'a -> int
