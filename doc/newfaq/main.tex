@@ -126,7 +126,7 @@
   \large(\protect\ref{lastquestion}
   \ Hints)
 }
-\author{Hugo Herbelin \and Florent Kirchner \and Benjamin Monate \and Julien Narboux}
+\author{Pierre Castéran \and Hugo Herbelin \and Florent Kirchner \and Benjamin Monate \and Julien Narboux}
 \maketitle
 
 %%%%%%%
@@ -1614,6 +1614,163 @@ Fixpoint ack (n:nat) : nat -> nat :=
         end)
   end.
 \end{coq_example}
+
+
+\Question{Argh! I cannot write expressions like ``~{\tt if n <= p then p else n}~'', as in any programming language}
+\label{minmax}
+That's right, you can't.
+If you type for instance the following ``definition'':
+
+\begin{coq_example}
+Definition max (n p : nat) := if n <= p then p else n.
+\end{coq_example}
+{\em Coq} answers something like that:
+\begin{verbatim}
+\it  Toplevel input, characters 47-52
+ Definition max (n p:nat) := if n <= p then p else n.
+ Error: The term "n <= p" has type "Prop" which is not a (co-)inductive type
+\end{verbatim}
+
+As {\em Coq} says, the term ``~\texttt{n <= p}~'' is a proposition, i.e. a
+statement that belongs to the mathematical world. There are many ways to
+prove such a proposition, either by some computation, or using some already
+proven theoremas. For instance, proving $3-2 \leq 2^{45503}$ is very easy,
+using some theorems on arithmetical operations. If you compute both numbers
+before comparing them, you risk to use a lot of time and space.
+
+
+On the contrary, a function for computing the greatest of two natural numbers
+is an algorithm  which, called on two natural numbers
+$n$ and $p$, determines wether $n\leq p$ or $p < n$.
+Such a function is a \emph{decision  procedure} for the inequality of
+ \texttt{nat}.  The possibility of writing such a procedure comes 
+directly from de decidability of the order $\leq$ on natural numbers.
+
+
+When you write a piece of code like 
+``~\texttt{if n <= p then \dots{} else \dots}~''
+in a
+programming language like \emph{ML} or \emph{Java}, a call to such a 
+decision procedure is generated. The decision procedure is in general
+a primitive function, written in a low-level language, in the correctness
+of which you have to trust.
+
+The standard Library of the system \emph{Coq} contains a  
+(constructive) proof of decidability of the order $\leq$ on
+\texttt{nat} : the function \texttt{le\_lt\_dec} of 
+the module \texttt{Compare\_dec} of library \texttt{Arith}.
+
+The following code shows how to define correctly \texttt{min} and
+\texttt{max}, and prove some properties of these functions.
+
+\begin{coq_example}
+Require Import Compare_dec.
+
+Definition max (n p : nat) := if le_lt_dec n p then p else n.
+
+Definition min (n p : nat) := if le_lt_dec n p then n else p.
+
+Eval compute in (min 4 7).
+
+Theorem min_plus_max : forall n p, min n p + max n p  = n + p.
+Proof.
+ intros n p; 
+ unfold min, max; 
+ case (le_lt_dec n p);
+ simpl; auto with arith.
+Qed.
+
+Theorem max_equiv : forall n p, max n p = p <-> n <= p.
+Proof.
+ unfold max; intros n p; case (le_lt_dec n p);simpl; auto.
+ intuition auto with arith.
+ split. 
+ intro e; rewrite e; auto with arith.
+ intro H; absurd (p < p); eauto with arith.
+Qed.
+\end{coq_example}
+
+\subsubsection{I wrote my own decision procedure for $\leq$, which
+is much  faster than yours, but proving such theorems as
+ \texttt{max\_equiv} seems to be quite difficult}
+
+Your code is probably the following one:
+
+\begin{coq_example}
+Fixpoint my_le_lt_dec (n p :nat) \{struct n\}: bool  :=
+ match n, p with 0, _ => true
+               | S n', S p' => my_le_lt_dec n' p'
+               | _   , _    => false
+ end.
+
+Definition my_max (n p:nat) := if my_le_lt_dec n p then p else n.
+
+Definition my_min (n p:nat) := if my_le_lt_dec n p then n else p.
+\end{coq_example}
+
+
+For instance, the computation of \texttt{my\_max 567 321} is almost
+immediate, whereas one can't wait for  the result of 
+\texttt{max 56 32}, using \emph{Coq's} \texttt{le\_lt\_dec}.
+
+This is normal. Your definition is a simple recursive function which
+returns a boolean value. Coq's \texttt{le\_lt\_dec} is a \emph{certified
+function}, i.e. a complex object, able not only to tell wether $n\leq p$
+or $p<n$, but also of building a complete proof of the correct inequality.
+What make \texttt{le\_lt\_dec} inefficient for computing \texttt{min}
+and \texttt{max} is the building of a huge proof term.
+
+Nevertheless,  \texttt{le\_lt\_dec} is very useful. Its type 
+is a strong specification, using the
+\texttt{sumbool} type (look at the reference manual or chapter 9 of
+\cite{coqart}). Eliminations of the form
+``~\texttt{case (le\_lt\_dec n p)}~'' provide proofs of
+either $n \leq p$ or $p < n$, allowing to prove easily theorems as in
+question~\ref{minmax}. Unfortunately, this not the case of your
+\texttt{my\_le\_lt\_dec}, which returns a quite non-informative boolean
+value.
+
+
+\begin{coq_example}
+Check le_lt_dec.
+\end{coq_example}
+\begin{verbatim}
+\it le_lt_dec:
+  forall n p : nat, \{ n <= p \} + \{ p < n \}
+\end{verbatim}
+
+You should keep in mind that \texttt{le\_lt\_dec} is useful to build
+certified programs which need to compare natural numbers, and is not
+designed to compare quickly two numbers.
+
+Nevertheless, the \emph{extraction} of \texttt{le\_lt\_dec} towards 
+\emph{Ocaml} or \emph{Haskell}, is a reasonable program for comparing two
+natural numbers in Peano form in linear time.
+
+It is also possible to keep your boolean function as a decision procedure,
+but you have to establish yourself the relationship between \texttt{my\_le\_lt\_dec} and the propositions $n\leq p$ and $p<n$:
+
+\begin{coq_example}
+Theorem my_le_lt_dec_true : 
+    forall n p, my_le_lt_dec n p = true <-> n <= p.
+
+Theorem  my_le_lt_dec_false : 
+   forall n p, my_le_lt_dec n p = false <-> p < n.
+\end{coq_example}
+
+\paragraph{Homework}
+\begin{enumerate}
+\item Prove the theorems \texttt{my\_le\_lt\_dec\_true} and
+\texttt{my\_le\_lt\_dec\_false},
+\item Prove your own equivalents of \texttt{min\_plus\_max} and
+\texttt{max\_equiv} (using \texttt{my\_min} and \texttt{my\_max}),
+\item Prove that \texttt{min $(3-2)$ $(2^{1789})$} is equal to $1$,
+\item Analyse the inefficiency of \texttt{le\_lt\_dec}
+and propose a faster equivalent certified function,
+\item Look at modules \texttt{Arith.Min} and \texttt{Arith.Max} of
+the Standard Library,
+\item Consider integers (type \texttt{Z}) instead of natural numbers.
+\end{enumerate}
 
 
 \subsection{Co-inductive types}
