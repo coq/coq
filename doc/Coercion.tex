@@ -222,13 +222,13 @@ rules to show the inserted coercions.
 
 %\begin{\small}
 \begin{coq_example}
-Variables C:nat->Set; D:nat->bool->Set; E:bool->Set.
-Variable f : (n:nat)(C n) -> (D (S n) true).
+Parameters C:nat->Set; D:nat->bool->Set; E:bool->Set.
+Parameter f : (n:nat)(C n) -> (D (S n) true).
 Coercion f : C >-> D.
-Variable g : (n:nat)(b:bool)(D n b) -> (E b).
+Parameter g : (n:nat)(b:bool)(D n b) -> (E b).
 Coercion g : D >-> E.
-Variable c : (C O).
-Variable T : (E true) -> nat.
+Parameter c : (C O).
+Parameter T : (E true) -> nat.
 Check (T c).
 \end{coq_example}
 %\end{small}
@@ -240,7 +240,7 @@ We give now an example using identity coercions.
 Definition D' := [b:bool](D (S O) b).
 Identity Coercion IdD'D : D' >-> D.
 Print IdD'D.
-Variable d' : (D' true).
+Parameter d' : (D' true).
 Check (T d').
 \end{coq_example}
 %\end{small}
@@ -253,10 +253,10 @@ is given below:
 
 %\begin{small}
 \begin{coq_example}
-Variables A,B:Set; h:A->B.
+Parameters A,B:Set; h:A->B.
 Coercion h : A >-> B.
-Variable U : (A -> (E true)) -> nat.
-Variable t : B -> (C O).
+Parameter U : (A -> (E true)) -> nat.
+Parameter t : B -> (C O).
 Check (U t).
 \end{coq_example}
 %\end{small}
@@ -266,8 +266,8 @@ previous example.
 
 %\begin{small}
 \begin{coq_example}
-Variable U' : ((C O) -> B) -> nat.
-Variable t' : (E true) -> A.
+Parameter U' : ((C O) -> B) -> nat.
+Parameter t' : (E true) -> A.
 Check (U' t').
 \end{coq_example}
 %\end{small}
@@ -283,13 +283,13 @@ Check (U' t').
 
 %\begin{small}
 \begin{coq_example}
-Variable Graph : Type.
-Variable Node : Graph -> Type.
+Parameter Graph : Type.
+Parameter Node : Graph -> Type.
 Coercion Node : Graph >-> SORTCLASS.
-Variable G : Graph.
-Variable Arrows : G -> G -> Type.
+Parameter G : Graph.
+Parameter Arrows : G -> G -> Type.
 Check Arrows.
-Variable fg : G -> G.
+Parameter fg : G -> G.
 Check fg.
 \end{coq_example}
 %\end{small}
@@ -301,10 +301,10 @@ Check fg.
 
 %\begin{small}
 \begin{coq_example}
-Variable bij : Set -> Set -> Set.
-Variable ap : (A,B:Set)(bij A B) -> A -> B.
+Parameter bij : Set -> Set -> Set.
+Parameter ap : (A,B:Set)(bij A B) -> A -> B.
 Coercion ap : bij >-> FUNCLASS.
-Variable b : (bij nat nat).
+Parameter b : (bij nat nat).
 Check (b O).
 \end{coq_example}
 %\end{small}
@@ -382,23 +382,23 @@ coercions. To validate \verb|true=O|, the coercion is searched from
 Reset Graph.    
 \end{coq_eval}
 \begin{coq_example}
-Variable Graph : Type.
-Variable Node : Graph -> Type.
+Parameter Graph : Type.
+Parameter Node : Graph -> Type.
 Coercion Node : Graph >-> SORTCLASS.
-Variable G : Graph.
-Variable Arrows : G -> G -> Type.
+Parameter G : Graph.
+Parameter Arrows : G -> G -> Type.
 Check Arrows.
-Variable fg : G -> G.
+Parameter fg : G -> G.
 Check fg.
 \end{coq_example}
 
 \item Coercion to a function
 
 \begin{coq_example}
-Variable bij : Set -> Set -> Set.
-Variable ap : (A,B:Set)(bij A B) -> A -> B.
+Parameter bij : Set -> Set -> Set.
+Parameter ap : (A,B:Set)(bij A B) -> A -> B.
 Coercion ap : bij >-> FUNCLASS.
-Variable b : (bij nat nat).
+Parameter b : (bij nat nat).
 Check (b O).
 \end{coq_example}
 
@@ -407,13 +407,13 @@ Check (b O).
 Reset C.    
 \end{coq_eval}
 \begin{coq_example}
-Variables C : nat -> Set; D : nat -> bool -> Set; E : bool -> Set.
-Variable f : (n:nat)(C n) -> (D (S n) true).
+Parameters C : nat -> Set; D : nat -> bool -> Set; E : bool -> Set.
+Parameter f : (n:nat)(C n) -> (D (S n) true).
 Coercion f : C >-> D.
-Variable g : (n:nat)(b:bool)(D n b) -> (E b).
+Parameter g : (n:nat)(b:bool)(D n b) -> (E b).
 Coercion g : D >-> E.
-Variable c : (C O).
-Variable T : (E true) -> nat.
+Parameter c : (C O).
+Parameter T : (E true) -> nat.
 Check (T c).
 \end{coq_example}
 
@@ -423,7 +423,7 @@ Check (T c).
 Definition D' := [b:bool](D (S O) b).
 Identity Coercion IdD'D : D' >-> D.
 Print IdD'D.
-Variable d' : (D' true).
+Parameter d' : (D' true).
 Check (T d').
 \end{coq_example}
 
