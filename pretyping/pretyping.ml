@@ -171,35 +171,6 @@ let pretype_ref isevars env lvar ref =
   let c = Declare.constr_of_reference ref in
   make_judge c (Retyping.get_type_of env Evd.empty c)
 
-(*
-let pretype_ref _ isevars env lvar ref =
-...
-
-| RConst (sp,ctxt) ->
-    let cst = (sp,Array.map pretype ctxt) in
-    make_judge (mkConst cst) (type_of_constant env (evars_of isevars) cst)
-*)
-(* A traiter mais les tables globales nécessaires à cela pour l'instant
-| REVar (sp,ctxt) ->
-    let ev = (sp,Array.map pretype ctxt) in
-    let body = 
-      if Evd.is_defined (evars_of isevars) sp then
-	existential_value (evars_of isevars) ev
-      else
-	mkEvar ev
-    in
-    let typ = existential_type (evars_of isevars) ev in
-    make_judge body typ
-
-| RInd (ind_sp,ctxt) ->
-    let ind = (ind_sp,Array.map pretype ctxt) in
-    make_judge (mkInd ind) (type_of_inductive env (evars_of isevars) ind)
- 
-| RConstruct (cstr_sp,ctxt) ->
-    let cstr = (cstr_sp,Array.map pretype ctxt) in
-    let typ = type_of_constructor env (evars_of isevars) cstr in
-    { uj_val=mkConstruct cstr; uj_type=typ }
-*)
 let pretype_sort = function
   | RProp c -> judge_of_prop_contents c
   | RType _ -> judge_of_new_Type ()
