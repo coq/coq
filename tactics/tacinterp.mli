@@ -64,6 +64,7 @@ val get_debug : unit -> debug_info
 (* Adds a definition for tactics in the table *)
 val add_tacdef :
   bool -> (identifier Util.located * raw_tactic_expr) list -> unit
+val add_primitive_tactic : string -> glob_tactic_expr -> unit
 
 (* Adds an interpretation function for extra generic arguments *)
 type glob_sign = {

@@ -136,7 +136,7 @@ GEXTEND Gram
 	  ConstrMayEval (ConstrEval (rtc,c))
       | IDENT "context"; id = identref; "["; c = Constr.lconstr; "]" ->
 	  ConstrMayEval (ConstrContext (id,c))
-      | IDENT "type"; "of"; c = Constr.constr ->
+      | IDENT "type"; IDENT "of"; c = Constr.constr ->
 	  ConstrMayEval (ConstrTypeOf c)
       | IDENT "fresh"; s = OPT STRING ->
 	  TacFreshId s ] ]

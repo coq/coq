@@ -103,7 +103,9 @@ Lexical categories are:
 \SEPDEF
 \DEFNT{meta-ident}  \CHAR{?}\NT{ident}   
 \SEPDEF
-\DEFNT{int}         \PLUS{\NT{digit}}
+\DEFNT{num}         \PLUS{\NT{digit}}
+\SEPDEF
+\DEFNT{int}         \NT{num} \mid \CHAR{-}\NT{num}
 \SEPDEF
 \DEFNT{digit}       \CHAR{0}-\CHAR{9}
 \SEPDEF
@@ -186,26 +188,26 @@ conflict can appear, $\NTL{constr}{200}$ is also used as entry point.
 \nlsep \KWD{fun} ~\NT{binder-list} ~\KWD{$\Rightarrow$}~\NTL{constr}{200}
           &&\RNAME{lambda}
 \nlsep \NT{fix-expr}
-\nlsep \KWD{let}~\NT{ident}~\STAR{\NT{binder-let}}~\NT{type-cstr}
-       ~\KWD{:=}~\NTL{constr}{200}
+\nlsep \KWD{let}~\NT{ident-with-params} ~\KWD{:=}~\NTL{constr}{200}
        ~\KWD{in}~\NTL{constr}{200}  &&\RNAME{let}
 \nlsep \KWD{let}~\NT{single-fix} ~\KWD{in}~\NTL{constr}{200}
           &&\RNAME{rec-let}
 \nlsep \KWD{let}~\KWD{(}~\OPT{\NT{let-pattern}}~\KWD{)}~\OPT{\NT{return-type}}
        ~\KWD{:=}~\NTL{constr}{200}~\KWD{in}~\NTL{constr}{200}
           &&\RNAME{let-case}
-\nlsep \KWD{if}~\NT{constr}~\OPT{\NT{return-type}}
+\nlsep \KWD{if}~\NT{if-item}
        ~\KWD{then}~\NTL{constr}{200}~\KWD{else}~\NTL{constr}{200}
           &&\RNAME{if-case}
 \SEPDEF
 \DEFNT{appl-arg}
        \KWD{(}~\NT{ident}~\!\KWD{:=}~\NTL{constr}{200}~\KWD{)}  &&\RNAME{impl-arg}
+       \KWD{(}~\NT{num}~\!\KWD{:=}~\NTL{constr}{200}~\KWD{)}  &&\RNAME{impl-arg}
 \nlsep \NTL{constr}{9}
 \SEPDEF
 \DEFNT{atomic-constr}
        \NT{reference}     && \RNAME{variables}
 \nlsep \NT{sort}          && \RNAME{CIC-sort}
-\nlsep \NT{int}           && \RNAME{number}
+\nlsep \NT{num}           && \RNAME{number}
 \nlsep \KWD{_}            && \RNAME{hole}
 \nlsep \NT{meta-ident}    && \RNAME{meta/evar}
 \end{rules}
@@ -213,6 +215,9 @@ conflict can appear, $\NTL{constr}{200}$ is also used as entry point.
 
 
 \begin{rules}
+\DEFNT{ident-with-params}
+       \NT{ident}~\STAR{\NT{binder-let}}~\NT{type-cstr}
+\SEPDEF
 \DEFNT{binder-list}
        \NT{binder}~\STAR{\NT{binder-let}}
 \nlsep \PLUS{\NT{name}}~\KWD{:}~\NT{constr}
@@ -266,22 +271,22 @@ conflict can appear, $\NTL{constr}{200}$ is also used as entry point.
 
 \begin{rules}
 \DEFNT{match-expr}
-       \KWD{match}~\NT{case-items}~\OPT{\NT{case-type}}~\KWD{with}
+       \KWD{match}~\NT{match-items}~\OPT{\NT{return-type}}~\KWD{with}
   ~\OPT{\TERMbar}~\OPT{\NT{branches}}~\KWD{end}        &&\RNAME{match}
 \SEPDEF
-\DEFNT{case-items}
-       \NT{case-item} ~\KWD{,} ~\NT{case-items}
-\nlsep \NT{case-item}
+\DEFNT{match-items}
+       \NT{match-item} ~\KWD{,} ~\NT{match-items}
+\nlsep \NT{match-item}
 \SEPDEF
-\DEFNT{case-item}
+\DEFNT{match-item}
        \NTL{constr}{100}~\OPTGR{\KWD{as}~\NT{name}}
        ~\OPTGR{\KWD{in}~\NTL{constr}{100}}
 \SEPDEF
-\DEFNT{case-type}
+\DEFNT{return-type}
        \KWD{return}~\NTL{constr}{100}
 \SEPDEF
-\DEFNT{return-type}
-       \OPTGR{\KWD{as}~\NT{name}}~\NT{case-type}
+\DEFNT{if-item}
+       \NT{constr}~\OPTGR{\OPTGR{\KWD{as}~\NT{name}}~\NT{return-type}}
 \SEPDEF
 \DEFNT{branches}
        \NT{eqn}~\TERMbar~\NT{branches}
@@ -297,7 +302,7 @@ conflict can appear, $\NTL{constr}{200}$ is also used as entry point.
 \nlsep \NT{pattern}~\KWD{\%}~\NT{ident}    &1L & \RNAME{scope-change}
 \nlsep \NT{reference}                      &0  & \RNAME{pattern-var}
 \nlsep \KWD{_}                             &0  & \RNAME{hole}
-\nlsep \NT{int}                            &0
+\nlsep \NT{num}                            &0
 \nlsep \KWD{(}~\NT{tuple-pattern}~\KWD{)}
 \SEPDEF
 \DEFNT{tuple-pattern}
@@ -397,8 +402,8 @@ $$
 \nlsep \TERM{elimtype}~\tacconstr
 \nlsep \TERM{case}~\NT{constr-with-bindings}
 \nlsep \TERM{casetype}~\tacconstr
-\nlsep \KWD{fix}~\OPT{\NT{ident}}~\NT{int}
-\nlsep \KWD{fix}~\NT{ident}~\NT{int}~\KWD{with}~\PLUS{\NT{fix-spec}}
+\nlsep \KWD{fix}~\OPT{\NT{ident}}~\NT{num}
+\nlsep \KWD{fix}~\NT{ident}~\NT{num}~\KWD{with}~\PLUS{\NT{fix-spec}}
 \nlsep \KWD{cofix}~\OPT{\NT{ident}}
 \nlsep \KWD{cofix}~\NT{ident}~\PLUS{\NT{fix-spec}}
 %%
@@ -416,9 +421,9 @@ $$
 \nlsep \TERM{set}~
   \TERM{(}~\NT{ident}~\KWD{:=}~\taclconstr~\TERM{)}~\OPT{\NT{clause}}
 \nlsep \TERM{instantiate}~
-  \TERM{(}~\NT{int}~\TERM{:=}~\taclconstr~\TERM{)}~\OPT{\NT{clause}}
+  \TERM{(}~\NT{num}~\TERM{:=}~\taclconstr~\TERM{)}~\OPT{\NT{clause}}
 %%
-\nlsep \TERM{specialize}~\OPT{\NT{int}}~\NT{constr-with-bindings}
+\nlsep \TERM{specialize}~\OPT{\NT{num}}~\NT{constr-with-bindings}
 \nlsep \TERM{lapply}~\tacconstr
 %%
 \nlsep \TERM{simple}~\TERM{induction}~\NT{quantified-hyp}
@@ -439,14 +444,14 @@ $$
 \begin{rules}
 \EXTNT{simple-tactic}
        \TERM{trivial}~\OPT{\NT{hint-bases}}
-\nlsep \TERM{auto}~\OPT{\NT{int}}~\OPT{\NT{hint-bases}}
+\nlsep \TERM{auto}~\OPT{\NT{num}}~\OPT{\NT{hint-bases}}
 %%
-\nlsep \TERM{autotdb}~\OPT{\NT{int}}
-\nlsep \TERM{cdhyp}~\NT{ident}
-\nlsep \TERM{dhyp}~\NT{ident}
-\nlsep \TERM{dconcl}
-\nlsep \TERM{superauto}~\NT{auto-args}
-\nlsep \TERM{auto}~\OPT{\NT{int}}~\TERM{decomp}~\OPT{\NT{int}}
+%%\nlsep \TERM{autotdb}~\OPT{\NT{num}}
+%%\nlsep \TERM{cdhyp}~\NT{ident}
+%%\nlsep \TERM{dhyp}~\NT{ident}
+%%\nlsep \TERM{dconcl}
+%%\nlsep \TERM{superauto}~\NT{auto-args}
+\nlsep \TERM{auto}~\OPT{\NT{num}}~\TERM{decomp}~\OPT{\NT{num}}
 %%
 \nlsep \TERM{clear}~\PLUS{\NT{ident}}
 \nlsep \TERM{clearbody}~\PLUS{\NT{ident}}
@@ -457,7 +462,7 @@ $$
 \nlsep \TERM{right}~\OPT{\NT{with-binding-list}}
 \nlsep \TERM{split}~\OPT{\NT{with-binding-list}}
 \nlsep \TERM{exists}~\OPT{\NT{binding-list}}
-\nlsep \TERM{constructor}~\NT{int}~\OPT{\NT{with-binding-list}}
+\nlsep \TERM{constructor}~\NT{num}~\OPT{\NT{with-binding-list}}
 \nlsep \TERM{constructor}~\OPT{\NT{tactic}}
 %%
 \nlsep \TERM{reflexivity}
@@ -571,7 +576,7 @@ Conflicts exists between integers and constrs.
 \nlsep \KWD{with}~\PLUS{\NT{ident}}
 \SEPDEF
 \DEFNT{auto-args}
-       \OPT{\NT{int}}~\OPTGR{\TERM{adding}~\TERM{[}~\PLUS{\NT{reference}}
+       \OPT{\NT{num}}~\OPTGR{\TERM{adding}~\TERM{[}~\PLUS{\NT{reference}}
        ~\TERM{]}}~\OPT{\TERM{destructuring}}~\OPTGR{\TERM{using}~\TERM{tdb}}
 \end{rules}
 
@@ -610,7 +615,7 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \TERM{first}~\TERM{[} ~\NT{tactic-seq} ~\TERM{]}
 \nlsep \TERM{solve}~\TERM{[} ~\NT{tactic-seq} ~\TERM{]}
 \nlsep \TERM{idtac}
-\nlsep \TERM{fail} ~\OPT{\NT{int}} ~\OPT{\NT{string}}
+\nlsep \TERM{fail} ~\OPT{\NT{num}} ~\OPT{\NT{string}}
 \nlsep \TERM{constr}~\KWD{:}~\tacconstr
 \nlsep \NT{term-ltac}
 \nlsep \NT{reference}~\STAR{\NT{tactic-arg}}  &&\RNAME{call-tactic}
@@ -732,7 +737,7 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \TERM{tauto}
 \nlsep \TERM{simplif}
 \nlsep \TERM{intuition}~\OPT{\NTL{tactic}{0}}
-\nlsep \TERM{linearintuition}~\OPT{\NT{int}}
+\nlsep \TERM{linearintuition}~\OPT{\NT{num}}
 %% contrib/cc
 \nlsep \TERM{cc}
 %% contrib/field
@@ -741,14 +746,14 @@ has the keyword to be associated to \KWD{let} or to tactic \TERM{simpl} ?
 \nlsep \TERM{ground}~\OPT{\NTL{tactic}{0}}
 \nlsep \TERM{ground}~\OPT{\NTL{tactic}{0}}~\KWD{with}~\PLUS{\NT{reference}}
 \nlsep \TERM{ground}~\OPT{\NTL{tactic}{0}}~\KWD{using}~\PLUS{\NT{ident}}
-\nlsep \TERM{gtauto}
-\nlsep \TERM{gintuition}~\OPT{\NTL{tactic}{0}}
+%%\nlsep \TERM{gtauto}
+%%\nlsep \TERM{gintuition}~\OPT{\NTL{tactic}{0}}
 %% contrib/fourier
 \nlsep \TERM{fourierZ}
 %% contrib/funind
 \nlsep \TERM{functional}~\TERM{induction}~\tacconstr~\PLUS{\tacconstr}
 %% contrib/jprover
-\nlsep \TERM{jp}~\OPT{\NT{int}}
+\nlsep \TERM{jp}~\OPT{\NT{num}}
 %% contrib/omega
 \nlsep \TERM{omega}
 %% contrib/ring
@@ -786,7 +791,7 @@ $$
 \nlsep \NT{syntax}~\TERM{.}
 \nlsep \TERM{[}~\PLUS{\NT{vernac}}~\TERM{]}~\TERM{.}
 %%
-\nlsep \OPTGR{\NT{int}~\KWD{:}}~\NT{subgoal-command}~\TERM{.} ~~~&0
+\nlsep \OPTGR{\NT{num}~\KWD{:}}~\NT{subgoal-command}~\TERM{.} ~~~&0
 \SEPDEF
 \DEFNT{subgoal-command}
        \NT{check-command}
@@ -803,8 +808,8 @@ $$
 \nlsep \NT{assum-token}~\NT{assum-list}
 \nlsep \NT{finite-token}~\NT{inductive-definition}
       ~\STARGR{\KWD{with}~\NT{inductive-definition}}
-\nlsep \TERM{Fixpoint}~\NT{rec-definitions}
-\nlsep \TERM{CoFixpoint}~\NT{rec-definitions}
+\nlsep \TERM{Fixpoint}~\NT{fix-decl}~\STARGR{\KWD{with}~\NT{fix-decl}}
+\nlsep \TERM{CoFixpoint}~\NT{fix-decl}~\STARGR{\KWD{with}~\NT{fix-decl}}
 \nlsep \TERM{Scheme}~\NT{scheme}~\STARGR{\KWD{with}~\NT{scheme}}
 %% Extension: record
 \nlsep \NT{record-tok}~\OPT{\TERM{$>$}}~\NT{ident}~\STAR{\NT{binder-let}}
@@ -877,13 +882,6 @@ $$
 \SEPDEF
 \DEFNT{type-cstr-coe} \OPTGR{\NT{coerce-kwd}~\NT{constr}}
 \SEPDEF
-\DEFNT{rec-definitions}
-       \NT{rec-definition}~\STARGR{\KWD{with}~\NT{rec-definition}}
-\SEPDEF
-\DEFNT{rec-definition}
-       \NT{ident}~\STAR{\NT{binder-let}}~\OPT{\NT{annot}}~\NT{type-cstr}
-       ~\KWD{:=}~\NT{constr}
-\SEPDEF
 \DEFNT{scheme}
        \NT{ident}~\KWD{:=}~\NT{dep-scheme}~\KWD{for}~\NT{reference}
        ~\TERM{Sort}~\NT{sort}
@@ -954,7 +952,7 @@ $$
        ~\NT{class-rawexpr}~\TERM{$>->$}~\NT{class-rawexpr}
 \nlsep \TERM{Identity}~\TERM{Coercion}~\OPT{\TERM{Local}}~\NT{ident}~\KWD{:}
        ~\NT{class-rawexpr}~\TERM{$>->$}~\NT{class-rawexpr}
-\nlsep \TERM{Implicit}~\TERM{Arguments}~\NT{reference}~\TERM{[}~\STAR{\NT{int}}~\TERM{]}
+\nlsep \TERM{Implicit}~\TERM{Arguments}~\NT{reference}~\TERM{[}~\STAR{\NT{num}}~\TERM{]}
 \nlsep \TERM{Implicit}~\TERM{Arguments}~\NT{reference}
 \nlsep \TERM{Implicit}~\KWD{Type}~\PLUS{\NT{ident}}~\KWD{:}~\NT{constr}
 \SEPDEF
@@ -976,7 +974,7 @@ $$
 \nlsep \KWD{Type}~\NT{constr}
 \nlsep \TERM{Print}~\OPT{\NT{printable}}
 \nlsep \TERM{Print}~\NT{reference}
-\nlsep \TERM{Inspect}~\NT{int}
+\nlsep \TERM{Inspect}~\NT{num}
 \nlsep \TERM{About}~\NT{reference}
 %%
 \nlsep \TERM{Search}~\NT{reference}~\OPT{\NT{in-out-modules}}
@@ -1030,7 +1028,7 @@ $$
 \nlsep \TERM{Scopes}
 \nlsep \TERM{Scope}~\NT{ident}
 \nlsep \TERM{Visibility}~\OPT{\NT{ident}}
-\nlsep \TERM{Implicit}~\NT{qualid}
+\nlsep \TERM{Implicit}~\NT{reference}
 \SEPDEF
 \DEFNT{class-rawexpr}
        \TERM{Funclass}~\mid~\TERM{Sortclass}~\mid~\NT{reference}
@@ -1057,7 +1055,6 @@ $$
 \DEFNT{comment}
        \NT{constr}
 \nlsep \NT{string}
-\nlsep \NT{int}
 \end{rules}
 
 \subsection{Other commands}
@@ -1071,11 +1068,11 @@ $$
 \nlsep \TERM{Add}~\TERM{setoid}~\tacconstr~\tacconstr~\tacconstr
 \nlsep \TERM{Add}~\TERM{morphism}~\tacconstr~\KWD{:}~\NT{ident}
 \nlsep \TERM{Derive}~\TERM{inversion_clear}
-         ~\OPT{\NT{int}}~\NT{ident}~\NT{ident}
+         ~\OPT{\NT{num}}~\NT{ident}~\NT{ident}
 \nlsep \TERM{Derive}~\TERM{inversion_clear}
          ~\NT{ident}~\KWD{with}~\tacconstr~\OPTGR{\TERM{Sort}~\NT{sort}}
 \nlsep \TERM{Derive}~\TERM{inversion}
-         ~\OPT{\NT{int}}~\NT{ident}~\NT{ident}
+         ~\OPT{\NT{num}}~\NT{ident}~\NT{ident}
 \nlsep \TERM{Derive}~\TERM{inversion}
          ~\NT{ident}~\KWD{with}~\tacconstr~\OPTGR{\TERM{Sort}~\NT{sort}}
 \nlsep \TERM{Derive}~\TERM{dependent}~\TERM{inversion_clear}
@@ -1085,7 +1082,7 @@ $$
 %% Correctness: obsolete ?
 %\nlsep Correctness
 %\nlsep Global Variable
-%% extraction
+%% TODO: extraction
 \nlsep Extraction ...
 %% field
 \nlsep \TERM{Add}~\TERM{Field}~\tacconstr~\tacconstr~\tacconstr
@@ -1136,7 +1133,7 @@ $$
 \nlsep \TERM{Restore}~\TERM{State}~\NT{string}
 \nlsep \TERM{Reset}~\NT{ident}
 \nlsep \TERM{Reset}~\TERM{Initial}
-\nlsep \TERM{Back}~\OPT{\NT{int}}
+\nlsep \TERM{Back}~\OPT{\NT{num}}
 \end{rules}
 
 \subsection{Proof-editing commands}
@@ -1148,18 +1145,18 @@ $$
 \nlsep \TERM{Proof}~\KWD{with}~\NT{tactic}
 \nlsep \TERM{Abort}~\OPT{\TERM{All}}
 \nlsep \TERM{Abort}~\NT{ident}
-\nlsep \TERM{Existential}~\NT{int}~\NT{constr-body}
+\nlsep \TERM{Existential}~\NT{num}~\NT{constr-body}
 \nlsep \TERM{Qed}
 \nlsep \TERM{Save}~\OPTGR{\NT{thm-token}~\NT{ident}}
 \nlsep \TERM{Defined}~\OPT{\NT{ident}}
 \nlsep \TERM{Suspend}
 \nlsep \TERM{Resume}~\OPT{\NT{ident}}
 \nlsep \TERM{Restart}
-\nlsep \TERM{Undo}~\OPT{\NT{int}}
-\nlsep \TERM{Focus}~\OPT{\NT{int}}
+\nlsep \TERM{Undo}~\OPT{\NT{num}}
+\nlsep \TERM{Focus}~\OPT{\NT{num}}
 \nlsep \TERM{Unfocus}
-\nlsep \TERM{Show}~\OPT{\NT{int}}
-\nlsep \TERM{Show}~\TERM{Implicit}~\TERM{Arguments}~\OPT{\NT{int}}
+\nlsep \TERM{Show}~\OPT{\NT{num}}
+\nlsep \TERM{Show}~\TERM{Implicit}~\TERM{Arguments}~\OPT{\NT{num}}
 \nlsep \TERM{Show}~\TERM{Node}
 \nlsep \TERM{Show}~\TERM{Script}
 \nlsep \TERM{Show}~\TERM{Existentials}
@@ -1170,7 +1167,7 @@ $$
 \nlsep \TERM{Show}~\TERM{Intros}
 %% Correctness: obsolete ?
 %%\nlsep \TERM{Show}~\TERM{Programs}
-\nlsep \TERM{Explain}~\TERM{Proof}~\OPT{\TERM{Tree}}~\STAR{\NT{int}}
+\nlsep \TERM{Explain}~\TERM{Proof}~\OPT{\TERM{Tree}}~\STAR{\NT{num}}
 %% Go not documented
 \nlsep \TERM{Hint}~\OPT{\TERM{Local}}~\NT{hint}~\OPT{\NT{inbases}}
 %% PrintConstr not documented
@@ -1186,8 +1183,8 @@ $$
 \nlsep \TERM{Immediate}~\PLUS{\NTL{constr}{9}}
 \nlsep \TERM{Unfold}~\PLUS{\NT{reference}}
 \nlsep \TERM{Constructors}~\PLUS{\NT{reference}}
-\nlsep \TERM{Extern}~\NT{int}~\NT{constr}~\KWD{$\Rightarrow$}~\NT{tactic}
-\nlsep \TERM{Destruct}~\NT{ident}~\KWD{:=}~\NT{int}~\NT{destruct-loc}
+\nlsep \TERM{Extern}~\NT{num}~\NT{constr}~\KWD{$\Rightarrow$}~\NT{tactic}
+\nlsep \TERM{Destruct}~\NT{ident}~\KWD{:=}~\NT{num}~\NT{destruct-loc}
        ~\NT{constr}~\KWD{$\Rightarrow$}~\NT{tactic}
 \nlsep \TERM{Rewrite}~\NT{orient}~\PLUS{\NTL{constr}{9}}
        ~\OPTGR{\KWD{using}~\NT{tactic}}
@@ -1211,7 +1208,7 @@ $$
 \nlsep \TERM{Bind}~\TERM{Scope}~\NT{ident}~\KWD{with}~\PLUS{\NT{class-rawexpr}}
 \nlsep \TERM{Arguments}~\TERM{Scope}~\NT{reference}
        ~\TERM{[}~\PLUS{\NT{name}}~\TERM{]}
-\nlsep \TERM{Infix}~\OPT{\TERM{Local}} %%% ~\NT{prec}~\OPT{\NT{int}}
+\nlsep \TERM{Infix}~\OPT{\TERM{Local}} %%% ~\NT{prec}~\OPT{\NT{num}}
        ~\NT{string}~\KWD{:=}~\NT{reference}~\OPT{\NT{modifiers}}
        ~\OPT{\NT{in-scope}}
 \nlsep \TERM{Notation}~\OPT{\TERM{Local}}~\NT{ident}~\KWD{:=}~\NT{constr}
@@ -1227,9 +1224,9 @@ $$
 \nlsep \NT{modifier}~\KWD{,}~\NT{mod-list}
 \SEPDEF
 \DEFNT{modifier}
-       \NT{ident}~\KWD{at}~\NT{int}
-\nlsep \NT{ident}~\STARGR{\KWD{,}~\NT{ident}}~\KWD{at}~\NT{int}
-\nlsep \KWD{at}~\TERM{level}~\NT{int}
+       \NT{ident}~\KWD{at}~\NT{num}
+\nlsep \NT{ident}~\STARGR{\KWD{,}~\NT{ident}}~\KWD{at}~\NT{num}
+\nlsep \KWD{at}~\TERM{level}~\NT{num}
 \nlsep \TERM{left}~\TERM{associativity}
 \nlsep \TERM{right}~\TERM{associativity}
 \nlsep \TERM{no}~\TERM{associativity}

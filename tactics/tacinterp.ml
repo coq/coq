@@ -94,7 +94,7 @@ type interp_sign =
 
 let check_is_value = function
   | VRTactic _ -> (* These are goals produced by Match *)
-   error "Immediate Match producing tactics not allowed in local definitions"
+   error "Immediate match producing tactics not allowed in local definitions"
   | _ -> ()
 
 (* For tactic_of_value *)
@@ -104,8 +104,7 @@ exception NotTactic
 let constr_of_VConstr_context = function
   | VConstr_context c -> c
   | _ ->
-    anomalylabstrm "constr_of_VConstr_context" (str
-      "Not a Constr_context tactic_arg")
+    errorlabstrm "constr_of_VConstr_context" (str "not a context variable")
 
 (* Displays a value *)
 let pr_value env = function
@@ -237,10 +236,17 @@ let coerce_to_inductive = function
 	errorlabstrm "coerce_to_inductive"
           (str "Found an argument which should be an inductive type")
 
+
+(* Table of "pervasives" macros tactics (e.g. auto, simpl, etc.) *)
+let initmactab = ref Gmap.empty
+
+
 (* Summary and Object declaration *)
 let mactab = ref Gmap.empty
 
-let lookup r = Gmap.find r !mactab
+let lookup r =
+  try Gmap.find r !mactab
+  with Not_found -> Gmap.find r !initmactab
 
 let _ =
   let init () = mactab := Gmap.empty in
@@ -2075,9 +2081,9 @@ let (inMD,outMD) =
 (* Adds a definition for tactics in the table *)
 let make_absolute_name (loc,id) =
   let kn = Lib.make_kn id in
-  if Gmap.mem kn !mactab then
+  if Gmap.mem kn !mactab or Gmap.mem kn !initmactab then
     user_err_loc (loc,"Tacinterp.add_tacdef",
-      str "There is already an Ltac Definition named " ++ pr_id id);
+      str "There is already an Ltac named " ++ pr_id id);
   kn
 
 let make_empty_glob_sign () =
@@ -2098,6 +2104,12 @@ let add_tacdef isrec tacl =
   List.iter
     (fun (id,_) -> Options.if_verbose msgnl (pr_id id ++ str " is defined"))
     rfun
+
+let add_primitive_tactic s tac =
+  let kn = Lib.make_kn (id_of_string s) in
+(*  Nametab.push_tactic (Until 0) sp kn) defs;*)
+  initmactab := Gmap.add kn tac !initmactab
+
 
 (***************************************************************************)
 (* Other entry points *)

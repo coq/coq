@@ -192,17 +192,18 @@ let lfo_wrap n gl=
 TACTIC EXTEND Tauto
 | [ "Tauto" ] -> [ tauto ]
 END
-
+(* Obsolete sinve V8.0
 TACTIC EXTEND TSimplif
 | [ "Simplif" ] -> [ simplif_gen ]
 END
-
+*)
 TACTIC EXTEND Intuition
 | [ "Intuition" ] -> [ intuition_gen default_intuition_tac ]
 | [ "Intuition" tactic(t) ] -> [ intuition_gen (snd t) ]
 END
-
+(* Obsolete since V8.0
 TACTIC EXTEND LinearIntuition
 | [ "LinearIntuition" ] -> [ lfo_wrap (-1)]
 | [ "LinearIntuition" integer(n)] -> [ lfo_wrap n]
 END
+*)

@@ -165,7 +165,7 @@ Tactic language
 
 - Fail tactic now accepts a failure message
 - Idtac tactic now accepts a message
-- New primitive tactic "FreshId" (new syntax: "Fresh") to generate new names
+- New primitive tactic "FreshId" (new syntax: "fresh") to generate new names
 - Debugger prints levels of calls
 
 Tactics
@@ -195,6 +195,8 @@ Tactics
   immediate hint), resulting in shorter proofs
 - Instantiate now works in hyps (syntax : Instantiate in ...)
 - Some new tactics : EConstructor, ELeft, Eright, ESplit, EExists
+- Clear now fails when trying to remove a local definition used by
+  a constant appearing in the current goal
 
 Extraction (See details in contrib/extraction/CHANGES)
 

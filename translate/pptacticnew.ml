@@ -433,13 +433,18 @@ let rec pr_atom0 env = function
   | TacAnyConstructor None -> str "constructor"
   | TacTrivial (Some []) -> str "trivial"
   | TacAuto (None,Some []) -> str "auto"
-  | TacAutoTDB None -> str "autotdb"
-  | TacDestructConcl -> str "dconcl"
+(*  | TacAutoTDB None -> str "autotdb"
+  | TacDestructConcl -> str "dconcl"*)
   | TacReflexivity -> str "reflexivity"
   | t -> str "(" ++ pr_atom1 env t ++ str ")"
 
   (* Main tactic printer *)
 and pr_atom1 env = function
+  | TacAutoTDB _ | TacDestructHyp _ | TacDestructConcl
+  | TacSuperAuto _ | TacExtend (_,
+    ("GTauto"|"GIntuition"|"TSimplif"|
+     "LinearIntuition"),_) ->
+      errorlabstrm "Obsolete V8" (str "Tactic is not ported to V8.0")
   | TacExtend (loc,s,l) ->
       pr_with_comments loc
         (pr_extend (pr_constr env) (pr_lconstr env) (pr_tac env) s l)
@@ -556,7 +561,7 @@ and pr_atom1 env = function
   | TacTrivial db -> hov 0 (str "trivial" ++ pr_hintbases db)
   | TacAuto (None,Some []) as x -> pr_atom0 env x
   | TacAuto (n,db) -> hov 0 (str "auto" ++ pr_opt int n ++ pr_hintbases db)
-  | TacAutoTDB None as x -> pr_atom0 env x
+(*  | TacAutoTDB None as x -> pr_atom0 env x
   | TacAutoTDB (Some n) -> hov 0 (str "autotdb" ++ spc () ++ int n)
   | TacDestructHyp (true,id) ->
       hov 0 (str "cdhyp" ++ spc () ++ pr_located pr_id id)
@@ -565,7 +570,7 @@ and pr_atom1 env = function
   | TacDestructConcl as x -> pr_atom0 env x
   | TacSuperAuto (n,l,b1,b2) ->
       hov 1 (str "superauto" ++ pr_opt int n ++ pr_autoarg_adding l ++ 
-             pr_autoarg_destructing b1 ++ pr_autoarg_usingTDB b2)
+             pr_autoarg_destructing b1 ++ pr_autoarg_usingTDB b2)*)
   | TacDAuto (n,p) ->
       hov 1 (str "auto" ++ pr_opt int n ++ str "decomp" ++ pr_opt int p)
 
@@ -653,7 +658,7 @@ let rec pr_tac env inherited tac =
       str "abstract " ++ pr_tac env (labstract,L) t, labstract
   | TacAbstract (t,Some s) -> 
       hov 0
-       (str "abstract " ++ pr_tac env (labstract,L) t ++ spc () ++
+       (str "abstract (" ++ pr_tac env (labstract,L) t ++ str")" ++ spc () ++
         str "using " ++ pr_id s),
       labstract
   | TacLetRecIn (l,t) -> 

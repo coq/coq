@@ -134,7 +134,7 @@ GEXTEND Gram
     [ [ n = integer  -> Genarg.ArgArg n
       | id = identref -> Genarg.ArgVar id ] ]
   ;
-  autoarg_depth:
+(*  autoarg_depth:
   [ [ n = OPT natural -> n ] ]
   ;
   autoarg_adding:
@@ -144,12 +144,12 @@ GEXTEND Gram
   [ [ IDENT "destructing" -> true | -> false ] ]
   ;
   autoarg_usingTDB:
-  [ [ "using"; "tdb"  -> true | -> false ] ]
+  [ [ "using"; IDENT "tdb"  -> true | -> false ] ]
   ;
   autoargs:
   [ [ a0 = autoarg_depth; l = autoarg_adding; 
       a2 = autoarg_destructing; a3 = autoarg_usingTDB -> (a0,l,a2,a3) ] ]
-  ;
+  ;*)
   (* An identifier or a quotation meta-variable *)
   id_or_meta:
     [ [ id = identref -> AI id 
@@ -251,8 +251,10 @@ GEXTEND Gram
   ;
   hypident:
     [ [ id = id_or_meta -> id,(InHyp,ref None)
-      | "("; IDENT "type"; "of"; id = id_or_meta; ")" -> id,(InHypTypeOnly,ref None)
-      | "("; IDENT "value"; "of"; id = id_or_meta; ")" -> id,(InHypValueOnly,ref None)
+      | "("; IDENT "type"; IDENT "of"; id = id_or_meta; ")" ->
+          id,(InHypTypeOnly,ref None)
+      | "("; IDENT "value"; IDENT "of"; id = id_or_meta; ")" ->
+          id,(InHypValueOnly,ref None)
     ] ]
   ;
   hypident_occ:
@@ -371,11 +373,13 @@ GEXTEND Gram
       | IDENT "trivial"; db = hintbases -> TacTrivial db
       | IDENT "auto"; n = OPT natural; db = hintbases -> TacAuto (n, db)
 
+(* Obsolete since V8.0
       | IDENT "autotdb"; n = OPT natural -> TacAutoTDB n
       | IDENT "cdhyp"; id = identref -> TacDestructHyp (true,id)
       | IDENT "dhyp";  id = identref -> TacDestructHyp (false,id)
       | IDENT "dconcl"  -> TacDestructConcl
       | IDENT "superauto"; l = autoargs -> TacSuperAuto l
+*)
       | IDENT "auto"; n = OPT natural; IDENT "decomp"; p = OPT natural ->
 	  TacDAuto (n, p)
 

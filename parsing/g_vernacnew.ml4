@@ -110,7 +110,7 @@ GEXTEND Gram
 	  test_plurial_form l;
 	  VernacAssumption (stre, l)
       (* Gallina inductive declarations *)
-      | (* Non porté (?) : OPT[IDENT "Mutual"];*) f = finite_token;
+      | f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
           VernacInductive (f,indl)
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->

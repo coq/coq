@@ -90,6 +90,7 @@ TACTIC EXTEND Firstorder
       [ gen_ground_tac true (option_app eval_tactic t) Void ]
 END
 
+(* Obsolete since V8.0
 TACTIC EXTEND GTauto   
   [ "GTauto" ] ->
      [ gen_ground_tac false (Some fail_solver) Void ]   
@@ -99,4 +100,4 @@ TACTIC EXTEND GIntuition
   [ "GIntuition" tactic_opt(t) ] ->
      [ gen_ground_tac false (option_app eval_tactic t) Void ]
 END
-
+*)
