@@ -73,7 +73,7 @@ Definition Zpower :=
   | (NEG p) => `0`
   end.
 
-Infix "^" Zpower (at level 2, left associativity) : Z_scope V8only.
+V8Infix "^" Zpower : Z_scope.
 
 Hints Immediate Zpower_nat_is_exp : zarith.
 Hints Immediate Zpower_pos_is_exp : zarith.
@@ -93,7 +93,7 @@ End section1.
 
 (* Exporting notation "^" *)
 
-Infix "^" Zpower (at level 2, left associativity) : Z_scope V8only.
+V8Infix "^" Zpower : Z_scope.
 
 Hints Immediate Zpower_nat_is_exp : zarith.
 Hints Immediate Zpower_pos_is_exp : zarith.

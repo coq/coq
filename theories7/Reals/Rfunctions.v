@@ -70,7 +70,7 @@ Fixpoint pow [r:R;n:nat]:R:=
     |(S n) => (Rmult r (pow r n))
   end.
 
-Infix "^" pow (at level 2, left associativity) : R_scope V8only.
+V8Infix "^" pow : R_scope.
 
 Lemma pow_O: (x : R)  (pow x O) == R1.
 Proof.
