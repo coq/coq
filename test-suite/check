@@ -34,6 +34,7 @@ test_succes() {
             else
                 echo "V8 Error! (should be accepted)"
             fi
+            rm tmp8.v
         else 
 	    echo "V7 Error! (should be accepted)"
         fi 
