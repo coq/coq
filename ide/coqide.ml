@@ -567,6 +567,15 @@ let activate_input i =
   activate_function ();
   set_active_view i
 
+let warning msg = 
+  GToolbox.message_box ~title:"Warning"
+    ~icon:(let img = GMisc.image () in
+		img#set_stock `DIALOG_WARNING;
+		img#set_icon_size `DIALOG;
+		img#coerce)
+    msg
+
+
 class analyzed_view index =
   let {view = input_view_} as current_all_ =  get_input_view index in
   let proof_view_ = out_some !proof_view in
@@ -701,8 +710,10 @@ object(self)
 	    if try_export fn (input_buffer#get_text ()) then begin
 	      !flash_info ~delay:1000 "Autosaved"
 	    end
-	    else !flash_info "Autosave failed"
-	  with _ -> !flash_info "Autosave error"
+	    else warning 
+	      ("Autosave failed (check if " ^ fn ^ " is writable)")
+	  with _ -> 
+	    warning ("Autosave: unexpected error while writing "^fn)
     end	      
       
   method save_as f =
@@ -1718,7 +1729,6 @@ let search_next_error () =
   (f,l,b,e,
    String.sub !last_make msg_index (String.length !last_make - msg_index))
 
-
 let main files = 
   (* Statup preferences *)
   load_pref ();
@@ -1827,6 +1837,8 @@ let main files =
   (* File/Save Menu *)
   let save_m = file_factory#add_item "_Save" 
 		 ~key:GdkKeysyms._S in
+
+  
   let save_f () = 
     let current = get_current_view () in
     try
@@ -1838,18 +1850,18 @@ let main files =
 	   | Some f -> 
 	       if (out_some current.analyzed_view)#save_as f then begin
 		 set_current_tab_label (Filename.basename f);
-		 !flash_info "Saved"
+		 !flash_info ("File " ^ f ^ " saved")
 	       end
-	       else !flash_info "Save Failed"
+	       else warning ("Save Failed (check if " ^ f ^ " is writable)")
 	   end
        | Some f -> 
 	   if (out_some current.analyzed_view)#save f then 
-	     !flash_info "Saved"
-	   else !flash_info "Save Failed"
+	     !flash_info ("File " ^ f ^ " saved")
+	   else warning  ("Save Failed (check if " ^ f ^ " is writable)")
 	     
       )
     with 
-    | e -> !flash_info "Save failed"
+    | e -> warning "Save: unexpected error"
   in   
   ignore (save_m#connect#activate save_f);
 
