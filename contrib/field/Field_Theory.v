@@ -207,9 +207,8 @@ Fixpoint interp_ExprA [lvar:(listT (Sprod AT nat));e:ExprA] : AT :=
 (**** Associativity ****)
 
 Definition merge_mult :=
-  Fix merge_mult {merge_mult/1:ExprA->ExprA->ExprA:=
-  [e1,e2:ExprA]
-  Cases e1 of
+  Fix merge_mult {merge_mult [e1:ExprA] : ExprA -> ExprA :=
+  [e2:ExprA]Cases e1 of
   | (EAmult t1 t2) =>
     Cases t2 of
     | (EAmult t2 t3) => (EAmult t1 (EAmult t2 (merge_mult t3 e2)))
@@ -231,9 +230,8 @@ Fixpoint assoc_mult [e:ExprA] : ExprA :=
   end.
 
 Definition merge_plus :=
-  Fix merge_plus {merge_plus/1:ExprA->ExprA->ExprA:=
-  [e1,e2:ExprA]
-  Cases e1 of
+  Fix merge_plus {merge_plus [e1:ExprA]:ExprA->ExprA:=
+  [e2:ExprA]Cases e1 of
   | (EAplus t1 t2) =>
     Cases t2 of
     | (EAplus t2 t3) => (EAplus t1 (EAplus t2 (merge_plus t3 e2)))
@@ -401,9 +399,8 @@ Fixpoint distrib_EAopp [e:ExprA] : ExprA :=
   end.
 
 Definition distrib_mult_right :=
-  Fix distrib_mult_right {distrib_mult_right/1:ExprA->ExprA->ExprA:=
-  [e1,e2:ExprA]
-  Cases e1 of
+  Fix distrib_mult_right {distrib_mult_right [e1:ExprA]:ExprA->ExprA:=
+  [e2:ExprA]Cases e1 of
   | (EAplus t1 t2) =>
     (EAplus (distrib_mult_right t1 e2) (distrib_mult_right t2 e2))
   | _ => (EAmult e1 e2)
