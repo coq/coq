@@ -8,6 +8,7 @@ open Generic
 open Term
 open Declarations
 open Inductive
+open Environ
 open Reduction
 open Tacred
 open Declare
@@ -144,8 +145,9 @@ let build_mutual lparams lnamearconstrs finite =
     let (ind_env,arityl) =
       List.fold_left 
 	(fun (env,arl) (recname,arityc,_) -> 
-           let arity =
-	     typed_type_of_com Evd.empty env (mkProdCit lparams arityc) in
+           let raw_arity = mkProdCit lparams arityc in
+           let arj = type_judgment_of_rawconstr Evd.empty env raw_arity in
+	   let arity = Typeops.assumption_of_type_judgment arj in
 	   let env' = Environ.push_rel_decl (Name recname,arity) env in
 	   (env', (arity::arl)))
 	(env0,[]) lnamearconstrs 
@@ -218,8 +220,11 @@ let build_recursive lnameargsardef =
     try 
       List.fold_left 
         (fun (env,arl) (recname,lparams,arityc,_) -> 
-           let arity = typed_type_of_com Evd.empty env (mkProdCit lparams arityc) in
-           declare_variable recname (SectionLocalDecl (body_of_type arity),NeverDischarge,false);
+           let raw_arity = mkProdCit lparams arityc in
+           let arj = type_judgment_of_rawconstr Evd.empty env raw_arity in
+	   let arity = Typeops.assumption_of_type_judgment arj in
+           declare_variable recname
+	     (SectionLocalDecl arj.utj_val,NeverDischarge,false);
            (Environ.push_var_decl (recname,arity) env, (arity::arl)))
         (env0,[]) lnameargsardef
     with e ->
@@ -281,8 +286,10 @@ let build_corecursive lnameardef =
     try 
       List.fold_left 
         (fun (env,arl) (recname,arityc,_) -> 
-           let arity = typed_type_of_com Evd.empty env0 arityc in
-           declare_variable recname (SectionLocalDecl (body_of_type arity),NeverDischarge,false);
+           let arj = type_judgment_of_rawconstr Evd.empty env0 arityc in
+	   let arity = Typeops.assumption_of_type_judgment arj in
+           declare_variable recname
+	     (SectionLocalDecl arj.utj_val,NeverDischarge,false);
            (Environ.push_var_decl (recname,arity) env, (arity::arl)))
         (env0,[]) lnameardef
     with e -> 

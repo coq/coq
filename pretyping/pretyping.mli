@@ -14,16 +14,24 @@ open Evarutil
 (* Raw calls to the inference machine of Trad: boolean says if we must fail
    on unresolved evars, or replace them by Metas ; the [unsafe_judgment] list
    allows us to extend env with some bindings *)
-val ise_resolve : bool -> 'a evar_map -> (int * constr) list ->
+val ise_infer_gen : bool -> 'a evar_map -> (int * constr) list ->
   env -> (identifier * unsafe_judgment) list ->
   (int * unsafe_judgment) list -> rawconstr -> unsafe_judgment
 
-val ise_resolve_type : bool -> 'a evar_map -> (int * constr) list ->
-  env -> rawconstr -> typed_type
+(* Standard call to get an unsafe judgment from a rawconstr, resolving
+   implicit args *)
+val ise_infer : 'a evar_map -> env -> rawconstr -> unsafe_judgment
 
-(* Call [ise_resolve] with empty metamap and [fail_evar=true]. The boolean says
- * if we must coerce to a type *)
-val ise_resolve1 : bool -> 'a evar_map -> env -> rawconstr -> constr
+(* Standard call to get an unsafe type judgment from a rawconstr, resolving
+   implicit args *)
+val ise_infer_type : 'a evar_map -> env -> rawconstr -> unsafe_type_judgment
+
+(* Standard call to get a constr from a rawconstr, resolving implicit args *)
+val ise_resolve      : 'a evar_map -> env -> rawconstr -> constr
+
+(* Idem but the rawconstr is intended to be a type *)
+val ise_resolve_type : 'a evar_map -> env -> rawconstr -> constr
+
 val ise_resolve2 : 'a evar_map -> env -> (identifier * unsafe_judgment) list ->
   (int * unsafe_judgment) list -> rawconstr -> constr
 
@@ -35,7 +43,7 @@ val ise_resolve_casted : 'a evar_map -> env -> constr -> rawconstr -> constr
 (* progmach.ml tries to type ill-typed terms: does not perform the conversion
  * test in application.
  *)
-val ise_resolve_nocheck : 'a evar_map -> (int * constr) list ->
+val ise_infer_nocheck : 'a evar_map -> (int * constr) list ->
   env -> rawconstr -> unsafe_judgment
 
 (* Typing with Trad, and re-checking with Mach *)
@@ -64,8 +72,8 @@ val infconstruct_type_with_univ_sp :
 i*)
 
 (*i*)
-(* Internal of Trad...
- * Unused outside Trad, but useful for debugging
+(* Internal of Pretyping...
+ * Unused outside, but useful for debugging
  *)
 val pretype : 
   type_constraint -> env -> 'a evar_defs ->

@@ -167,11 +167,11 @@ let execute_type mf env constr =
    allowed (the flag [fix] is not set) and all verifications done (the
    flag [nocheck] is not set). *)
 
-let safe_machine env constr = 
+let safe_infer env constr = 
   let mf = { fix = false; nocheck = false } in
   execute mf env constr
 
-let safe_machine_type env constr = 
+let safe_infer_type env constr = 
   let mf = { fix = false; nocheck = false } in
   execute_type mf env constr
 
@@ -187,11 +187,11 @@ let fix_machine_type env constr =
 
 (* Fast machines without any verification. *)
 
-let unsafe_machine env constr = 
+let unsafe_infer env constr = 
   let mf = { fix = true; nocheck = true } in
   execute mf env constr
 
-let unsafe_machine_type env constr = 
+let unsafe_infer_type env constr = 
   let mf = { fix = true; nocheck = true } in
   execute_type mf env constr
 
@@ -199,30 +199,30 @@ let unsafe_machine_type env constr =
 (* ``Type of'' machines. *)
 
 let type_of env c = 
-  let (j,_) = safe_machine env c in nf_betaiota env Evd.empty (body_of_type j.uj_type)
+  let (j,_) = safe_infer env c in nf_betaiota env Evd.empty (body_of_type j.uj_type)
 
 (* obsolètes
 let type_of_type env c = 
-  let tt = safe_machine_type env c in DOP0 (Sort (level_of_type tt.typ)
+  let tt = safe_infer_type env c in DOP0 (Sort (level_of_type tt.typ)
 
 let unsafe_type_of env c = 
-  let (j,_) = unsafe_machine env c in nf_betaiota env Evd.empty j.uj_type
+  let (j,_) = unsafe_infer env c in nf_betaiota env Evd.empty j.uj_type
 
 let unsafe_type_of_type env c = 
-  let tt = unsafe_machine_type env c in DOP0 (Sort tt.typ)
+  let tt = unsafe_infer_type env c in DOP0 (Sort tt.typ)
 *)
 (* Typing of several terms. *)
 
-let safe_machine_l env cl =
+let safe_infer_l env cl =
   let type_one (cst,l) c =
-    let (j,cst') = safe_machine env c in
+    let (j,cst') = safe_infer env c in
     (Constraint.union cst cst', j::l)
   in
   List.fold_left type_one (Constraint.empty,[]) cl
 
-let safe_machine_v env cv =
+let safe_infer_v env cv =
   let type_one (cst,l) c =
-    let (j,cst') = safe_machine env c in
+    let (j,cst') = safe_infer env c in
     (Constraint.union cst cst', j::l)
   in
   let cst',l = Array.fold_left type_one (Constraint.empty,[]) cv in
@@ -250,7 +250,7 @@ let lookup_mind_specif = lookup_mind_specif
    being added to the environment. *)
 
 let push_rel_or_var_def push (id,c) env =
-  let (j,cst) = safe_machine env c in
+  let (j,cst) = safe_infer env c in
   let env' = add_constraints cst env in
   push (id,j.uj_val,j.uj_type) env'
 
@@ -259,7 +259,7 @@ let push_var_def nvar env = push_rel_or_var_def push_var_def nvar env
 let push_rel_def nrel env = push_rel_or_var_def push_rel_def nrel env
 
 let push_rel_or_var_decl push (id,c) env =
-  let (j,cst) = safe_machine_type env c in
+  let (j,cst) = safe_infer_type env c in
   let env' = add_constraints cst env in
   let var = assumption_of_type_judgment j in
   push (id,var) env'
@@ -274,14 +274,14 @@ let push_rels_with_univ vars env =
 (* Insertion of constants and parameters in environment. *)
 
 let add_constant_with_value sp body typ env =
-  let (jb,cst) = safe_machine env body in
+  let (jb,cst) = safe_infer env body in
   let env' = add_constraints cst env in
   let (env'',ty,cst') = 
     match typ with
       | None -> 
 	  env', typed_type_of_judgment env' Evd.empty jb, Constraint.empty
       | Some ty -> 
-	  let (jt,cst') = safe_machine env ty in
+	  let (jt,cst') = safe_infer env ty in
 	  let env'' = add_constraints cst' env' in
 	  try
 	    let cst'' = conv env'' Evd.empty (body_of_type jb.uj_type) jt.uj_val in
@@ -305,7 +305,7 @@ let add_constant_with_value sp body typ env =
   add_constant sp cb env''
 
 let add_lazy_constant sp f t env =
-  let (jt,cst) = safe_machine env t in
+  let (jt,cst) = safe_infer env t in
   let env' = add_constraints cst env in
   let ids = global_vars_set jt.uj_val in
   let cb = {
@@ -327,7 +327,7 @@ let add_constant sp ce env =
 	   | None -> error "you cannot declare a lazy constant without type")
 
 let add_parameter sp t env =
-  let (jt,cst) = safe_machine env t in
+  let (jt,cst) = safe_infer env t in
   let env' = add_constraints cst env in
   let ids = global_vars_set jt.uj_val in
   let cb = {
@@ -357,7 +357,7 @@ let max_universe (s1,cst1) (s2,cst2) g =
 let rec infos_and_sort env t =
   match kind_of_term t with
     | IsProd (name,c1,c2) ->
-        let (varj,_) = safe_machine_type env c1 in
+        let (varj,_) = safe_infer_type env c1 in
 	let var = assumption_of_type_judgment varj in
 	let env1 = Environ.push_rel_decl (name,var) env in
 	let s1 = varj.utj_type in
@@ -402,7 +402,7 @@ let type_one_constructor env_ar nparams arsort c =
     let env_par = push_rels params env_ar in
     infos_and_sort env_par dc in
   (* Constructors are typed-checked here *)
-  let (j,cst) = safe_machine_type env_ar c in
+  let (j,cst) = safe_infer_type env_ar c in
 
   (* If the arity is at some level Type arsort, then the sort of the
      constructor must be below arsort; here we consider constructors with the

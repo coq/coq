@@ -17,10 +17,11 @@ val interp_rawconstr     : 'a evar_map -> env -> Coqast.t -> rawconstr
 val interp_constr        : 'a evar_map -> env -> Coqast.t -> constr
 val interp_casted_constr : 'a evar_map -> env -> Coqast.t -> constr -> constr
 val interp_type          : 'a evar_map -> env -> Coqast.t -> constr
-val typed_type_of_com    : 'a evar_map -> env -> Coqast.t -> typed_type
-val judgment_of_com      : 'a evar_map -> env -> Coqast.t -> unsafe_judgment
-
 val interp_sort          : Coqast.t -> sorts
+
+val judgment_of_rawconstr : 'a evar_map -> env -> Coqast.t -> unsafe_judgment
+val type_judgment_of_rawconstr :
+  'a evar_map -> env -> Coqast.t -> unsafe_type_judgment
 
 (*Interprets a constr according to two lists of instantiations (variables and
   metas)*)

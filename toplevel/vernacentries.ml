@@ -813,7 +813,7 @@ let _ =
        | VARG_TACTIC_ARG (Redexp redexp) :: VARG_CONSTR c :: g ->
            let (evmap,sign) = get_current_context_of_args g in
            let redfun = print_eval (reduction_of_redexp redexp) sign in 
-	   fun () -> mSG (redfun (judgment_of_com evmap sign c))
+	   fun () -> mSG (redfun (judgment_of_rawconstr evmap sign c))
        | _ -> bad_vernac_args "Eval")
 
 let _ =
@@ -825,8 +825,7 @@ let _ =
 	     | "CHECK" -> print_val
              | "PRINTTYPE" -> print_type
              | _ -> anomaly "Unexpected string" 
-	   in
-	   (fun () -> mSG (prfun sign (judgment_of_com evmap sign c)))
+	   in (fun () -> mSG (prfun sign (judgment_of_rawconstr evmap sign c)))
        | _ -> bad_vernac_args "Check")
 
 (***

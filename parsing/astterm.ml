@@ -545,27 +545,21 @@ let _ =
 
 (* Endless^H^H^H^H^H^H^HShort list of alternative ways to call pretyping *)
 
-let interp_constr_gen is_ass sigma env com = 
-  let c = interp_rawconstr sigma env com in
-  try 
-    ise_resolve1 is_ass sigma env c
-  with e -> 
-    Stdpp.raise_with_loc (Ast.loc com) e
-
-let interp_constr sigma env c = interp_constr_gen false sigma env c
-let interp_type sigma env   c = interp_constr_gen true sigma env c
+let interp_constr sigma env c =
+  ise_resolve sigma env (interp_rawconstr sigma env c)
+let interp_type sigma env   c =
+  ise_resolve_type sigma env (interp_rawconstr sigma env c)
 let interp_sort = function
   | Node(loc,"PROP", []) -> Prop Null
   | Node(loc,"SET", [])  -> Prop Pos
   | Node(loc,"TYPE", []) -> Type Univ.dummy_univ
   | a -> user_err_loc (Ast.loc a,"interp_sort", [< 'sTR "Not a sort" >])
 
-let judgment_of_com sigma env com = 
-  let c = interp_rawconstr sigma env com in
-  try
-    ise_resolve false sigma [] env [] [] c
-  with e -> 
-    Stdpp.raise_with_loc (Ast.loc com) e
+let judgment_of_rawconstr sigma env c =
+  ise_infer sigma env (interp_rawconstr sigma env c)
+
+let type_judgment_of_rawconstr sigma env c =
+  ise_infer_type sigma env (interp_rawconstr sigma env c)
 
 (*To retype a list of key*constr with undefined key*)
 let retype_list sigma env lst=
@@ -580,13 +574,6 @@ let interp_constr1 sigma env lvar lmeta com =
   and rtype=fun lst -> retype_list sigma env lst in
   try
     ise_resolve2 sigma env (rtype lvar) (rtype lmeta) c
-  with e -> 
-    Stdpp.raise_with_loc (Ast.loc com) e
-
-let typed_type_of_com sigma env com =
-  let c = interp_rawconstr sigma env com in
-  try 
-    ise_resolve_type true sigma [] env c
   with e -> 
     Stdpp.raise_with_loc (Ast.loc com) e
 

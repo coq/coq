@@ -83,6 +83,7 @@ Changements dans les fonctions :
 	Typing, Machops
 	  type_of_type     ->  judge_of_type
 	  fcn_proposition  ->  judge_of_prop_contents
+	  safe_fmachine    ->  safe_infer
 
 	Reduction, Clenv
           whd_betadeltat      -> whd_betaevar
@@ -93,7 +94,8 @@ Changements dans les fonctions :
           constr_of_com_sort   -> interp_type
           constr_of_com        -> interp_constr
           rawconstr_of_com     -> interp_rawconstr
-          type_of_com          -> typed_type_of_com
+          type_of_com          -> type_judgement_of_rawconstr
+	  judgement_of_com     -> judgement_of_rawconstr
 
         Termast
           bdize                -> ast_of_constr
@@ -134,9 +136,11 @@ Changements dans les fonctions :
         Declare
   	  machine_constant ->   declare_constant (+ modifs)
 
-	ex-Trad
+	ex-Trad, maintenant Pretyping
           inh_cast_rel        -> Coercion.inh_conv_coerce_to
           inh_conv_coerce_to  -> Coercion.inh_conv_coerce_to_fail
+	  ise_resolve1        -> ise_resolve, ise_resolve_type
+	  ise_resolve         -> ise_infer, ise_infer_type
 
 Changements dans les inductifs
 ------------------------------

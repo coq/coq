@@ -61,21 +61,21 @@ val import : compiled_env -> safe_environment -> safe_environment
 val env_of_safe_env : safe_environment -> env
 
 
-(*s Typing judgments (only used in minicoq). *)
+(*s Typing judgments without modifying the global safe env - used in minicoq *)
 
 type judgment
 
 val j_val : judgment -> constr
 val j_type : judgment -> constr
 
-val safe_machine : safe_environment -> constr -> judgment * constraints
+val safe_infer : safe_environment -> constr -> judgment * constraints
 
 (*i For debug
 val fix_machine : safe_environment -> constr -> judgment * constraints
 val fix_machine_type : safe_environment -> constr -> typed_type * constraints
 
-val unsafe_machine : safe_environment -> constr -> judgment * constraints
-val unsafe_machine_type : safe_environment -> constr -> typed_type * constraints
+val unsafe_infer : safe_environment -> constr -> judgment * constraints
+val unsafe_infer_type : safe_environment -> constr -> typed_type * constraints
 
 val type_of : safe_environment -> constr -> constr
 
