@@ -183,7 +183,7 @@ let declare_projections indsp coers fields =
                     const_entry_type = Some projtyp;
                     const_entry_opaque = false } in
 		  let k = (DefinitionEntry cie,IsDefinition) in
-		  let sp = declare_constant fid k in
+		  let sp = declare_internal_constant fid k in
 		  Options.if_verbose message (string_of_id fid ^" is defined");
 		  sp
                 with Type_errors.TypeError (ctx,te) ->
