@@ -44,11 +44,43 @@ let nf_evar sigma ~preserve =
     aux
 ;;
 
+(* Unshares a proof-tree.                                                  *)
+(* Warning: statuses, goals, prim_rules and tactic_exprs are not unshared! *)
+let rec unshare_proof_tree =
+ let module PT = Proof_type in
+  function {PT.status = status ; PT.goal = goal ; PT.ref = ref} ->
+   let unshared_ref =
+    match ref with
+       None -> None
+     | Some (rule,pfs) ->
+        let unshared_rule =
+         match rule with
+            PT.Prim prim -> PT.Prim prim
+          | PT.Change_evars -> PT.Change_evars
+          | PT.Tactic (tactic_expr, pf) ->
+             PT.Tactic (tactic_expr, unshare_proof_tree pf)
+        in
+         Some (unshared_rule, List.map unshare_proof_tree pfs)
+   in
+    {PT.status = status ; PT.goal = goal ; PT.ref = unshared_ref}
+;;
+
+module ProofTreeHash =
+ Hashtbl.Make
+  (struct
+    type t = Proof_type.proof_tree
+    let equal = (==)
+    let hash = Hashtbl.hash
+   end)
+;;
+
+
 let extract_open_proof sigma pf =
  let module PT = Proof_type in
  let module L = Logic in
   let sigma = ref sigma in
-  let proof_tree_to_constr = Hashtbl.create 503 in
+  let proof_tree_to_constr = ProofTreeHash.create 503 in
+  let proof_tree_to_flattened_proof_tree = ProofTreeHash.create 503 in
   let unshared_constrs = ref S.empty in
   let rec proof_extractor vl node =
    let constr =
@@ -59,6 +91,7 @@ let extract_open_proof sigma pf =
      | {PT.ref=Some(PT.Tactic (_,hidden_proof),spfl)} ->
 	 let sgl,v = Refiner.frontier hidden_proof in
 	 let flat_proof = v spfl in
+         ProofTreeHash.add proof_tree_to_flattened_proof_tree node flat_proof ;
 	 proof_extractor vl flat_proof
 	  
      | {PT.ref=Some(PT.Change_evars,[pf])} -> (proof_extractor vl) pf
@@ -102,18 +135,20 @@ let extract_open_proof sigma pf =
        ~already_unshared:(function e -> S.mem e !unshared_constrs)
        evar_nf_constr
     in
-(*
-Pp.ppnl (Pp.(++) (Pp.str "Registro tattica che ha creato:") (Printer.prterm unsharedconstr)) ;
-*)
-     Hashtbl.add proof_tree_to_constr node unsharedconstr ;
+(*CSC: debugging stuff to be removed *)
+if ProofTreeHash.mem proof_tree_to_constr node then
+ Pp.ppnl (Pp.(++) (Pp.str "#DUPLICATE INSERTION: ") (Refiner.print_proof !sigma [] node)) ;
+     ProofTreeHash.add proof_tree_to_constr node unsharedconstr ;
      unshared_constrs := S.add unsharedconstr !unshared_constrs ;
      unsharedconstr
   in
-  let pfterm = proof_extractor [] pf in
-  (pfterm, !sigma, proof_tree_to_constr)
+  let unshared_pf = unshare_proof_tree pf in
+  let pfterm = proof_extractor [] unshared_pf in
+   (pfterm, !sigma, proof_tree_to_constr, proof_tree_to_flattened_proof_tree,
+    unshared_pf)
 ;;
 
 let extract_open_pftreestate pts =
   extract_open_proof (Refiner.evc_of_pftreestate pts)
-   (Refiner.proof_of_pftreestate pts)
+   (Tacmach.proof_of_pftreestate pts)
 ;;

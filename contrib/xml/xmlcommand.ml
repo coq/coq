@@ -211,10 +211,11 @@ let print_object uri obj sigma proof_tree_infos filename typesfilename prooftree
   pp xmltypes typesfilename ;
   match proof_tree_infos with
      None -> ()
-   | Some (proof_tree,proof_tree_to_constr) ->
+   | Some (proof_tree,proof_tree_to_constr,proof_tree_to_flattened_proof_tree)->
       let xmlprooftree =
        ProofTree2Xml.print_proof_tree
-        uri proof_tree proof_tree_to_constr constr_to_ids
+        uri proof_tree proof_tree_to_constr proof_tree_to_flattened_proof_tree
+        constr_to_ids
       in
        pp xmlprooftree prooftreefilename
 ;;
@@ -386,14 +387,16 @@ let show_pftreestate fn pftst id =
  let str = Names.string_of_id id in
  let pf = Tacmach.proof_of_pftreestate pftst in
  let typ = (Proof_trees.goal_of_proof pf).Evd.evar_concl in
- let val0,evar_map,proof_tree_to_constr =
+ let val0,evar_map,proof_tree_to_constr,proof_tree_to_flattened_proof_tree,
+     unshared_pf
+ =
   Proof2aproof.extract_open_pftreestate pftst in
  let sp = Lib.make_path id in
  let env = Global.env () in
  let obj = mk_current_proof_obj id val0 typ evar_map env in
   print_object (uri_of_path sp Constant) obj evar_map
-   (Some (pf,proof_tree_to_constr)) fn (types_filename_of_filename fn)
-    (prooftree_filename_of_filename fn)
+   (Some (unshared_pf,proof_tree_to_constr,proof_tree_to_flattened_proof_tree))
+   fn (types_filename_of_filename fn) (prooftree_filename_of_filename fn)
 ;;
 
 let show fn =

@@ -111,8 +111,9 @@ let fresh_id seed ids_to_terms constr_to_ids ids_to_father_ids =
    res
 ;;
 
-let acic_of_cic_context' seed ids_to_terms constr_to_ids ids_to_father_ids
- ids_to_inner_sorts ids_to_inner_types pvars env evar_map t expectedty
+let acic_of_cic_context' computeinnertypes seed ids_to_terms constr_to_ids
+ ids_to_father_ids ids_to_inner_sorts ids_to_inner_types pvars env evar_map t
+ expectedty
 =
  let module D = DoubleTypeInference in
  let module E = Environ in
@@ -360,7 +361,7 @@ print_endline "PASSATO" ; flush stdout ;
                ) (Array.mapi (fun j x -> (x,t.(j),b.(j)) ) f ) []
              )
         in
-         aux true None env t
+         aux computeinnertypes None env t
 ;;
 
 let acic_of_cic_context metasenv context t =
@@ -370,7 +371,7 @@ let acic_of_cic_context metasenv context t =
  let ids_to_inner_sorts = Hashtbl.create 503 in
  let ids_to_inner_types = Hashtbl.create 503 in
  let seed = ref 0 in
-   acic_of_cic_context' seed ids_to_terms constr_to_ids ids_to_father_ids
+   acic_of_cic_context' true seed ids_to_terms constr_to_ids ids_to_father_ids
     ids_to_inner_sorts ids_to_inner_types metasenv context t,
    ids_to_terms, ids_to_father_ids, ids_to_inner_sorts, ids_to_inner_types
 ;;
@@ -388,7 +389,7 @@ let acic_object_of_cic_object pvars sigma obj =
   let conjectures_seed = ref 0 in
   let seed = ref 0 in
   let acic_term_of_cic_term_context' =
-   acic_of_cic_context' seed ids_to_terms constr_to_ids ids_to_father_ids
+   acic_of_cic_context' true seed ids_to_terms constr_to_ids ids_to_father_ids
     ids_to_inner_sorts ids_to_inner_types pvars in
 (*CSC: is this the right env to use? I think so *)
   let env = (Safe_typing.env_of_safe_env (Global.safe_env ())) in
