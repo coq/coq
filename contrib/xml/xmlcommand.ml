@@ -544,7 +544,7 @@ let show_pftreestate fn (kind,pftst) id =
  let kn = Lib.make_kn id in
  let env = Global.env () in
  let obj = mk_current_proof_obj id val0 typ evar_map env in
- let uri = Cic2acic.uri_of_path (Lib.cwd()) id Cic2acic.Constant in
+ let uri = Cic2acic.uri_of_declaration id Cic2acic.Constant in
   print_object_kind uri (kind_of_goal kind);
   print_object uri obj evar_map
    (Some (Tacmach.evc_of_pftreestate pftst,unshared_pf,proof_tree_to_constr,
