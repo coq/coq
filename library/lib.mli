@@ -128,6 +128,7 @@ val close_section : export:bool -> identifier ->
 
 val reset_to : object_name -> unit
 val reset_name : identifier located -> unit
+val reset_mod : identifier located -> unit
 
 (* [back n] resets to the place corresponding to the $n$-th call of 
    [mark_end_of_command] (counting backwards) *)

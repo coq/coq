@@ -140,6 +140,13 @@ let find_entry_p p =
   in
   find !lib_stk
 
+let find_split_p p = 
+  let rec find = function
+    | [] -> raise Not_found
+    | ent::l -> if p ent then ent,l else find l
+  in
+  find !lib_stk
+
 let split_lib sp = 
   let rec collect after equal = function
     | ((sp',_) as hd)::before ->
@@ -431,6 +438,32 @@ let reset_name (loc,id) =
       user_err_loc (loc,"reset_name",pr_id id ++ str ": no such entry")
   in
   reset_to sp
+
+let is_mod_node = function 
+  | OpenedModule _ | OpenedModtype _ | OpenedSection _ 
+  | ClosedSection _ -> true | _ -> false
+
+(* Reset on a module or section name in order to bypass constants with 
+   the same name *) 
+
+let reset_mod (loc,id) =
+  let (ent,before) = 
+    try
+      find_split_p (fun (sp,node) -> 
+                    let (_,spi) = repr_path (fst sp) in id = spi 
+                    && is_mod_node node)
+    with Not_found ->
+      user_err_loc (loc,"reset_mod",pr_id id ++ str ": no such entry")
+  in
+  lib_stk := before;
+  recalc_path_prefix ();
+  let spf = match find_entry_p is_frozen_state with
+    | (sp, FrozenState f) -> unfreeze_summaries f; sp
+    | _ -> assert false
+  in
+  let (after,_,_) = split_lib spf in
+  recache_context after
+
 
 let point_obj =
   let (f,_) = declare_object {(default_object "DOT") with
