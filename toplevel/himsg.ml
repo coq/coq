@@ -359,7 +359,7 @@ let str_of_nth n =
 
 let error_bad_ind_parameters k lna c n v1 v2  =
   let env = assumptions_for_print lna in
-  let pc = gentermpr k env c in
+  let pc = gentermpr_at_top k env c in
   let pv1 = gentermpr k env v1 in
   let pv2 = gentermpr k env v2 in
   [< 'sTR ("The "^(str_of_nth n)^" argument of "); pv2; 'bRK(1,1);
