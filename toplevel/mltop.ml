@@ -222,7 +222,7 @@ let (inMLModule,outMLModule) =
                     specification_function = specification_ml_module_object })
 
 let declare_ml_modules l =
-  Lib.add_anonymous_leaf (inMLModule {mnames=l})
+  let _ = Lib.add_anonymous_leaf (inMLModule {mnames=l}) in ()
     
 let print_ml_path () =
   let l = !coq_mlpath_copy in

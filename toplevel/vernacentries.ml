@@ -4,12 +4,13 @@
 (* Concrete syntax of the mathematical vernacular MV V2.6 *)
 
 open Pp
+open Stamps
 open System
 open Names
 open Term
 open Reduction
-open Tacmach
 open Pfedit
+open Tacmach
 open Proof_trees
 open Library
 open Libobject
@@ -41,13 +42,13 @@ let show_script () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  mSGNL(Refiner.print_script true (ts_it evc) (initial_sign()) pf)
+  mSGNL(Refiner.print_script true (ts_it evc) (Global.var_context()) pf)
 
 let show_prooftree () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  mSG(Refiner.print_proof (ts_it evc) (initial_sign()) pf)
+  mSG(Refiner.print_proof (ts_it evc) (Global.var_context()) pf)
 
 let show_open_subgoals () =
   let pfts = get_pftreestate () in
