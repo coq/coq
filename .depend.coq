@@ -57,7 +57,7 @@ theories/Init/Datatypes.vo: theories/Init/Datatypes.v theories/Init/Notations.vo
 theories/Init/Peano.vo: theories/Init/Peano.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo
 theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Notations.vo theories/Init/Datatypes.vo
 theories/Init/Specif.vo: theories/Init/Specif.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo
-theories/Init/Logic_Type.vo: theories/Init/Logic_Type.v theories/Init/Notations.vo theories/Init/Logic.vo
+theories/Init/Logic_Type.vo: theories/Init/Logic_Type.v theories/Init/Datatypes.vo theories/Init/Logic.vo
 theories/Init/Wf.vo: theories/Init/Wf.v theories/Init/Notations.vo theories/Init/Logic.vo theories/Init/Datatypes.vo
 theories/Init/Prelude.vo: theories/Init/Prelude.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo theories/Init/Specif.vo theories/Init/Peano.vo theories/Init/Wf.vo
 theories/Init/Notations.vo: theories/Init/Notations.v
@@ -65,7 +65,7 @@ theories/Init/Datatypes.vo: theories/Init/Datatypes.v theories/Init/Notations.vo
 theories/Init/Peano.vo: theories/Init/Peano.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo
 theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Notations.vo theories/Init/Datatypes.vo
 theories/Init/Specif.vo: theories/Init/Specif.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo
-theories/Init/Logic_Type.vo: theories/Init/Logic_Type.v theories/Init/Notations.vo theories/Init/Logic.vo
+theories/Init/Logic_Type.vo: theories/Init/Logic_Type.v theories/Init/Datatypes.vo theories/Init/Logic.vo
 theories/Init/Wf.vo: theories/Init/Wf.v theories/Init/Notations.vo theories/Init/Logic.vo theories/Init/Datatypes.vo
 theories/Init/Prelude.vo: theories/Init/Prelude.v theories/Init/Notations.vo theories/Init/Datatypes.vo theories/Init/Logic.vo theories/Init/Specif.vo theories/Init/Peano.vo theories/Init/Wf.vo
 theories/Logic/Hurkens.vo: theories/Logic/Hurkens.v
