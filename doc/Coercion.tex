@@ -221,6 +221,22 @@ coercion between {\class$_1$} and {\class$_2$}.
 \item {\tt Identity Coercion Local {\ident}:{\ident$_1$} >-> {\ident$_2$}.} \\
 Idem but locally to the current section.
 
+\item {\tt SubClass {\ident} := {\type}.} \\
+\comindex{SubClass}
+ If {\type} is a class
+{\ident'} applied to some arguments then {\ident} is defined and an
+identity coercion of name {\tt Id\_{\ident}\_{\ident'}} is
+declared. Otherwise said, this is an abbreviation for 
+
+{\tt Definition {\ident} := {\type}.} 
+
+ followed by
+
+{\tt Identity Coercion Id\_{\ident}\_{\ident'}:{\ident} >-> {\ident'}}.
+
+\item {\tt Local SubClass {\ident} := {\type}.} \\
+Same as before but locally to the current section.
+
 \end{Variants}
 
 \asection{Displaying Available Coercions}
