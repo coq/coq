@@ -13,7 +13,7 @@
 
 Require Rbase.
 
-Tactic Definition SplitRMult :=
+Tactic Definition SplitRmult :=
   Match Context With
-  | [ |- ~(Rmult ?1 ?2)==R0 ] -> Apply mult_non_zero; Split;Try SplitRMult.
+  | [ |- ~(Rmult ?1 ?2)==R0 ] -> Apply mult_non_zero; Split;Try SplitRmult.
 
