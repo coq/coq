@@ -62,9 +62,10 @@ CAMLP4EXTENDFLAGS=-I . pa_extend.cmo pa_extend_m.cmo pa_ifdef.cmo q_MLast.cmo
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
-GLOB=   # is "-dump-glob file" when making the doc
+GLOB=           # is "-dump-glob file" when making the doc
 COQ_XML=	# is "-xml" when building XML library
-COQOPTS=$(COQINCLUDES) $(GLOB) $(COQ_XML)
+SYNTAX= 	# is "-translate" for new syntax
+COQOPTS=$(SYNTAX) $(GLOB) $(COQ_XML)
 
 BOOTCOQTOP=$(BESTCOQTOP) -boot $(COQOPTS)
 
@@ -139,8 +140,7 @@ HIGHPARSING=\
 
 HIGHPARSINGNEW=\
   parsing/g_primnew.cmo parsing/g_constrnew.cmo parsing/g_tacticnew.cmo \
-  parsing/g_ltacnew.cmo parsing/g_vernacnew.cmo parsing/g_proofsnew.cmo \
-  parsing/g_natsyntaxnew.cmo parsing/g_zsyntaxnew.cmo parsing/g_rsyntaxnew.cmo
+  parsing/g_ltacnew.cmo parsing/g_vernacnew.cmo parsing/g_proofsnew.cmo
 
 ARITHSYNTAX=\
   parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
@@ -309,7 +309,7 @@ CMXA=$(CMA:.cma=.cmxa)
 
 CMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) \
     $(INTERP) $(PARSING) $(PROOFS) $(TACTICS) $(TOPLEVEL) \
-    $(HIGHPARSING) $(HIGHTACTICS) $(CONTRIB)
+    $(HIGHPARSING) $(HIGHTACTICS) $(CONTRIB) $(HIGHPARSINGNEW)
 CMX=$(CMO:.cmo=.cmx)
 
 ###########################################################################
@@ -329,9 +329,17 @@ COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
 
 coqbinaries:: ${COQBINARIES}
 
-world: coqbinaries states theories contrib tools coqide
+world: coqbinaries coqlib8 tools coqide # coqlib7-clean coqlib7
+
+coqlib7-clean:
+	rm -f theories/*/*.vo contrib/*/*.vo
+
+coqlib7: states theories contrib
+   # TODO: compile in an other directory since
+   # theories and contrib contains the .vo for the translator
 
 coqlight: coqbinaries states theories-light tools
+
 
 $(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
 	$(COQMKTOP) -opt $(OPTFLAGS) -o $@
@@ -467,6 +475,7 @@ interp: $(INTERP)
 parsing: $(PARSING)
 pretyping: $(PRETYPING)
 highparsing: $(HIGHPARSING)
+highparsingnew: $(HIGHPARSINGNEW)
 toplevel: $(TOPLEVEL)
 hightactics: $(HIGHTACTICS)
 
@@ -511,8 +520,7 @@ states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
 #       theories/Init/Logic_TypeHints.vo \
 
 INITVO=theories/Init/Notations.vo \
-       theories/Init/Datatypes.vo         theories/Init/DatatypesSyntax.vo \
-       theories/Init/Peano.vo             theories/Init/PeanoSyntax.vo   \
+       theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/Logic.vo             theories/Init/Specif.vo        \
        theories/Init/LogicSyntax.vo       theories/Init/SpecifSyntax.vo  \
        theories/Init/Logic_Type.vo        theories/Init/Wf.vo            \
@@ -524,17 +532,10 @@ theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
 
 init: $(INITVO)
 
-EXTRACTIONVO=
-
-TACTICSVO=$(EXTRACTIONVO)
-
-tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
-	$(BOOTCOQTOP) -is states/barestate.coq -compile $*
-
 contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
 	$(BOOTCOQTOP) -is states/barestate.coq -compile $*
 
-states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO) $(BESTCOQTOP)
+states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(BESTCOQTOP)
 	$(BOOTCOQTOP) -batch -silent -is states/barestate.coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 clean::
@@ -705,7 +706,6 @@ glob.dump::
 
 clean::
 	rm -f theories/*/*.vo
-	rm -f tactics/*.vo
 
 
 ###########################################################################
@@ -855,7 +855,7 @@ archclean::
 
 .PHONY: xml
 xml: .xml_time_stamp
-.xml_time_stamp: $(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO)
+.xml_time_stamp: $(INITVO) $(THEORIESVO) $(CONTRIBVO)
 	$(RUNCOQVO2XML) -boot -byte $(COQINCLUDES) $(?:%.o=%)
 	touch .xml_time_stamp
 
@@ -900,13 +900,15 @@ install-ide-opt:
 	cp $(COQIDEBYTE) $(COQIDEOPT) $(FULLBINDIR)
 	cd $(FULLBINDIR); ln -sf coqide.opt$(EXE) coqide$(EXE)
 
-LIBFILES=$(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO)
+LIBFILES=$(INITVO) $(THEORIESVO) $(CONTRIBVO)
 LIBFILESLIGHT=$(INITVO) $(THEORIESLIGHTVO)
+
+NEWLIBFILES=$(NEWINITVO) $(NEWTHEORIESVO) $(NEWCONTRIBVO)
+NEWLIBFILESLIGHT=$(NEWINITVO) $(NEWTHEORIESLIGHTVO)
 
 install-library:
 	$(MKDIR) $(FULLCOQLIB)
-	$(MKDIR) $(FULLCOQLIB)/tactics
-	for f in $(LIBFILES); do \
+	for f in $(LIBFILES) $(NEWLIBFILES); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
 	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
@@ -919,7 +921,7 @@ install-library:
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
-	for f in $(LIBFILESLIGHT); do \
+	for f in $(LIBFILESLIGHT) ($NEWLIBFILESLIGHT); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
 	  cp $$f $(FULLCOQLIB)/`dirname $$f`; \
         done
@@ -1209,7 +1211,7 @@ cleanconfig::
 alldepend: depend dependcoq 
 
 dependcoq:: beforedepend
-	$(COQDEP) -R theories Coq -R contrib Coq $(COQINCLUDES) \
+	$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
 	 $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
 
 # Build dependencies ignoring failures in building ml files from ml4 files
@@ -1279,9 +1281,11 @@ devel:
 # Entries for new syntax
 ############################################################################
 
+coqlib8: translation movenew newworld
+
 # 1. Translate the old syntax files and build new syntax theories hierarchy
-translation::
-	@$(MAKE) COQ_XML="-translate -no-strict" world
+translation:: $(BESTCOQTOP)
+	@$(MAKE) SYNTAX="-translate -no-strict" coqlib7
 	@$(MAKE) movenew
 
 movenew::
@@ -1293,37 +1297,28 @@ movenew::
 	  mv -u -f $$i $$j ; \
 	done
 
-# 2. Build new syntax images and compile theories
-newworld:: $(BESTCOQTOPNEW) newinit newtheories newcontrib
+# 2. Compile theories
+newworld:: $(BESTCOQTOP) newinit newtheories newcontrib
 
-newinit:: $(INITVO:%.vo=new%.vo)
-newtheories:: $(THEORIESVO:%.vo=new%.vo)
-newcontrib:: $(CONTRIBVO:%.vo=new%.vo) $(CONTRIBCMO)
+NEWINITVO=$(INITVO:%.vo=new%.vo)
+NEWTHEORIESVO=$(THEORIESVO:%.vo=new%.vo)
+NEWCONTRIBVO=$(CONTRIBVO:%.vo=new%.vo)
 
+newinit:: $(NEWINITVO)
+newtheories:: $(NEWTHEORIESVO)
+newcontrib:: $(NEWCONTRIBVO) $(CONTRIBCMO)
 
-BESTCOQTOPNEW=bin/coqtopnew.$(BEST)$(EXE)
-
-NEWCMX=$(HIGHPARSINGNEW:.cmo=.cmx)
-NEWOPTS=-boot $(GLOB) -v8
-NEWCOQBARE=$(BESTCOQTOP) $(NEWOPTS) -nois
-NEWCOQ=$(BESTCOQTOP) $(NEWOPTS)
-
-bin/coqtopnew.opt$(EXE): $(COQMKTOP) $(CMX) $(USERTACCMX) $(NEWCMX)
-	$(COQMKTOP) -opt $(OPTFLAGS) $(NEWCMX) -o $@
-
-bin/coqtopnew.byte$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(HIGHPARSINGNEW)
-	$(COQMKTOP) -g -top $(OPTFLAGS) $(HIGHPARSINGNEW) -o $@
-
-newtheories/Init/%.vo: $(BESTCOQTOPNEW) newtheories/Init/%.v
-	$(NEWCOQBARE) -compile $*
+newtheories/Init/%.vo: $(BESTCOQTOP) newtheories/Init/%.v
+	$(BOOTCOQTOP) -v8 -nois -compile $*
 
 states/initialnew.coq: states/MakeInitialNew.v $(INITVO:%.vo=new%.vo)
-	$(NEWCOQBARE) -batch -silent -load-vernac-source states/MakeInitialNew.v -outputstate states/initialnew.coq
+	$(BOOTCOQTOP) -v8 -batch -silent -nois -load-vernac-source states/MakeInitialNew.v -outputstate states/initialnew.coq
+
 
 newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
-	$(NEWCOQ) -compile newcontrib/$*
+	$(BOOTCOQTOP) -v8 -compile newcontrib/$*
 newtheories/%.vo: newtheories/%.v states/initialnew.coq
-	$(NEWCOQ) -compile newtheories/$*
+	$(BOOTCOQTOP) -v8 -compile newtheories/$*
 
 # Dependencies
 .depend.newcoq: .depend.coq Makefile
