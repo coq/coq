@@ -386,6 +386,18 @@ let strength_of_global = function
   | VarRef id -> variable_strength id
   | IndRef _ | ConstructRef _ -> NeverDischarge 
 
-let library_part sp =
+let library_part ref =
+  let sp = Nametab.sp_of_global (Global.env ()) ref in
   let dir,_ = repr_path sp in
-  extract_dirpath_prefix (depth_of_strength (constant_strength sp)) dir
+  match strength_of_global ref with
+  | DischargeAt (dp,n) -> extract_dirpath_prefix n dp
+  | NeverDischarge ->
+      if is_dirpath_prefix_of dir (Lib.cwd ()) then
+	(* Theorem/Lemma not yet (fully) discharged *)
+	extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ())
+      else
+	(* Theorem/Lemma outside its outer section of definition *)
+	dir
+  | NotDeclare -> assert false
+
+

@@ -101,4 +101,4 @@ val is_global : identifier -> bool
 
 val strength_of_global : global_reference -> strength
 
-val library_part : section_path -> dir_path
+val library_part : global_reference -> dir_path
