@@ -72,24 +72,11 @@ let  rec mkevarmap_from_listex lex =
 			 evar_body = Evar_empty} in
 		  Evd.add (mkevarmap_from_listex lex') ex info
 
-
-
-(* tire de const\_omega.ml *)
-let constant dir s =
-  try
-    Declare.global_absolute_reference
-      (Libnames.make_path
-        (Names.make_dirpath (List.map Names.id_of_string (List.rev dir)))
-        (Names.id_of_string s))
-  with e -> print_endline (String.concat "." dir); print_endline s; 
-            raise e
-(* fin const\_omega.ml *)
-
 let mkEq typ c1 c2 = 
   mkApp (build_coq_eq(),[| typ; c1; c2|])
+
 let mkRefl typ c1 = 
-  mkApp ((constant ["Coq"; "Init"; "Logic"] "refl_equal"),
-         [| typ; c1|])
+  mkApp ((build_coq_eq_data()).refl, [| typ; c1|])
 
 let rec popn i c = if i<=0 then c else pop (popn (i-1) c)
 
@@ -191,18 +178,13 @@ let nth_dep_constructor indtype n =
   build_dependent_constructor cstr_sum,  cstr_sum.cs_nargs
 
 
-let coq_refl_equal = lazy(constant ["Coq"; "Init"; "Logic"] "refl_equal")
-
 let rec buildrefl_from_eqs eqs = 
   match eqs with 
     | []  ->  []
     | cstr::eqs' -> 
-        let eq,args = destApplication cstr in        
-        (mkApp (Lazy.force coq_refl_equal,
-          [| 
-          (Array.get args 0);
-          (Array.get args 2)|]))
-        ::(buildrefl_from_eqs eqs')
+        let eq,args = destApplication cstr in
+        (mkRefl (Array.get args 0) (Array.get args 2))
+	:: (buildrefl_from_eqs eqs')
 
 
 
