@@ -194,7 +194,8 @@ let rec extract_type env ctx c =
       | Some (Prop Null) ->
 	  Tprop (* [c] is of type an arity of sort $Prop$. *)
       | Some _ -> 
-	  (match kind_of_term (whd_betaiota c) with
+	  (match kind_of_term (whd_betaiota (whd_betaetalet c))
+	   with
 	    | IsSort (Prop Null) ->
 		assert (args = []); (* A sort can't be applied. *)
 		Tprop (* [c] is $Prop$. *)
@@ -229,13 +230,16 @@ let rec extract_type env ctx c =
 	    | IsApp (d, args') ->
 		(* We just accumulate the arguments. *)
 		extract_rec env ctx fl d (Array.to_list args' @ args)
-	    | IsRel n ->
-		(match List.nth ctx (pred n) with
-		   | (Tprop | Tmltype _), _ -> assert false 
- 		       (* If head symbol is a variable, it must be of 
-			  type an arity, and we already dealt with the
-			  case of an arity of sort $Prop$. *)
-		   | Tarity, id -> Tmltype (Tvar id, [], fl))
+	    | IsRel n -> 
+		(match lookup_rel_value n env with
+		   | Some t -> extract_rec env ctx fl t args  
+		   | None ->
+		       (match List.nth ctx (pred n) with
+			  | (Tprop | Tmltype _), _ -> assert false 
+ 			     (* If head symbol is a variable, it must be of 
+				type an arity, and we already dealt with the
+				case of an arity of sort $Prop$. *)
+			  | Tarity, id -> Tmltype (Tvar id, [], fl)))
 	    | IsConst (sp,a) ->
 		let cty = constant_type env Evd.empty (sp,a) in 
 		if is_arity env Evd.empty cty then
@@ -297,7 +301,10 @@ let rec extract_type env ctx c =
 
 (*s Extraction of a term. 
     Precondition: [c] has a type which is not an arity. 
-    This is normaly checked in [extract_constr] *)
+    This is normaly checked in [extract_constr].
+    Most [assert false] in this code is due to the fact that 
+    this function can't answer [Emltype] *)
+
 
 and extract_term c =
   let rec extract_rec env ctx c =
@@ -318,8 +325,7 @@ and extract_term c =
 	     | Tmltype _ -> match d' with
 		 | Emlterm a -> Emlterm (MLlam (id, a))
 		 | Eprop -> Eprop
-		 | Emltype _ -> assert false 
-		     (* [extract_term] can't answer [Emltype] *))
+		 | Emltype _ -> assert false (* Cf. rem. above *))
       | IsRel n ->
 	  (* TODO : magic or not *) 
 	  (match List.nth ctx (pred n) with
@@ -353,9 +359,15 @@ and extract_term c =
 	     | Some (Prop Null) -> 
 		 extract_rec env' ((Tprop,id)::ctx) c2
 	     | Some _ ->
-		 failwith "todo" (* extract_rec env' *)
-	     | _ ->
-		 failwith "todo")
+		 extract_rec env' ((Tarity,id)::ctx) c2
+	     | _ -> 
+		 let t1' = extract_type env ctx t1 in
+		 let c1' = extract_rec env ctx c1 in
+		 let c2' = extract_rec env' ((t1',id)::ctx) c2 in
+		 (match (c1',c2') with
+		    | (Emlterm a1,Emlterm a2) -> Emlterm (MLletin (id,a1,a2))
+		    | (_,Eprop) -> Eprop
+		    | _ -> assert false (* Cf. rem. above *)))
       | IsCast (c, _) ->
 	  extract_rec env ctx c
       | IsMutInd _ | IsProd _ | IsSort _ | IsVar _ 
