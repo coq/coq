@@ -54,7 +54,7 @@ let apply_coercion env p hj typ_cl =
               let argl = (class_args_of typ_cl)@[ja.uj_val] in
               let jres = apply_coercion_args env argl fv in
               (if b then 
-		 { uj_val=ja.uj_val; uj_type=jres.uj_type }
+		 { uj_val = ja.uj_val; uj_type = jres.uj_type }
                else 
 		 jres),
 	      jres.uj_type)
@@ -80,13 +80,7 @@ let inh_tosort_force env isevars j =
   with Not_found -> 
     j
 
-let inh_tosort env isevars j = 
-  let typ = whd_betadeltaiota env !isevars j.uj_type in
-  match kind_of_term typ with
-    | IsSort _ -> j  (* idem inh_app_fun *)
-    | _ -> inh_tosort_force env isevars j
-
-let inh_ass_of_j env isevars j =
+let inh_coerce_to_sort env isevars j =
   let typ = whd_betadeltaiota env !isevars j.uj_type in
   match kind_of_term typ with
     | IsSort s -> { utj_val = j.uj_val; utj_type = s }

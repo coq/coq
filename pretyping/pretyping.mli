@@ -61,5 +61,5 @@ val pretype :
 val pretype_type : 
   val_constraint -> env -> 'a evar_defs ->
     (identifier * unsafe_judgment) list -> (int * unsafe_judgment) list ->
-    rawconstr -> unsafe_judgment
+    rawconstr -> unsafe_type_judgment
 (*i*)

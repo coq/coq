@@ -13,15 +13,10 @@ open Evarutil
 
 val inh_app_fun :
   env -> 'a evar_defs -> unsafe_judgment -> unsafe_judgment
-val inh_tosort_force :
-  env -> 'a evar_defs -> unsafe_judgment -> unsafe_judgment
 
-(* [inh_tosort env sigma j] insert a coercion into [j], if needed, in
-   such a way [t] reduces to a sort; it fails if no coercion is applicable *)
-val inh_tosort :
-  env -> 'a evar_defs -> unsafe_judgment -> unsafe_judgment
-
-val inh_ass_of_j :
+(* [inh_coerce_to_sort env sigma j] insert a coercion into [j], if needed, in
+   such a way it gets as type a sort; it fails if no coercion is applicable *)
+val inh_coerce_to_sort :
   env -> 'a evar_defs -> unsafe_judgment -> unsafe_type_judgment
 
 (* [inh_conv_coerce_to loc env sigma j t] insert a coercion into [j],
