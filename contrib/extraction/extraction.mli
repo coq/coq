@@ -37,3 +37,7 @@ val extract_constr : env -> constr -> extraction_result
 (*s ML declaration corresponding to a Coq reference. *)
 
 val extract_declaration : global_reference -> ml_decl
+
+(*s Check whether a global reference corresponds to a logical inductive. *)
+
+val declaration_is_logical_ind : global_reference -> bool

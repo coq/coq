@@ -8,19 +8,22 @@
 
 (*i $Id$ i*)
 
+open Pp
 open Miniml
 open Mlutil
 open Names
 open Nametab
 
 module ToplevelPp : Mlpp
-
-val sp_of_r : global_reference -> section_path
+module OcamlMonoPp : Mlpp
+module HaskellMonoPp : Mlpp
 
 val is_long_module : dir_path -> global_reference -> bool
 
 val short_module : global_reference -> identifier
 
+val pp_logical_ind : global_reference -> std_ppcmds
+
 val extract_to_file : 
-  string -> extraction_params -> ml_decl list -> unit
+  string option -> extraction_params -> ml_decl list -> unit
 

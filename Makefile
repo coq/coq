@@ -210,8 +210,8 @@ EXTRACTIONCMO=contrib/extraction/table.cmo\
 	      contrib/extraction/mlutil.cmo\
 	      contrib/extraction/ocaml.cmo \
 	      contrib/extraction/haskell.cmo \
-              contrib/extraction/common.cmo \
 	      contrib/extraction/extraction.cmo \
+              contrib/extraction/common.cmo \
 	      contrib/extraction/extract_env.cmo
 
 CORRECTNESSCMO=contrib/correctness/pmisc.cmo				\

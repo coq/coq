@@ -30,6 +30,12 @@ val check_constant : global_reference -> global_reference
 
 val refs_of_vargl : vernac_arg list -> global_reference list
 
+(*s Target language. *)
+
+type lang = Ocaml | Haskell | Toplevel
+
+val lang : unit -> lang 
+
 (*s Table for custom inlining *) 
 
 val to_inline : global_reference -> bool

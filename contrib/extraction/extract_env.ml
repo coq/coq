@@ -138,7 +138,7 @@ and visit_type m eenv t =
     | Tglob r -> visit_reference m eenv r
     | Tapp l -> List.iter visit l
     | Tarr (t1,t2) -> visit t1; visit t2
-    | Tvar _ | Texn _ | Tprop | Tarity -> ()
+    | Tvar _ | Tprop | Tarity -> ()
   in
   visit t
     
@@ -165,12 +165,9 @@ and visit_inductive m eenv inds =
   List.iter visit_ind inds
 
 and visit_decl m eenv = function
-  | Dtype (inds,_) ->
-      visit_inductive m eenv inds
-  | Dabbrev (_,_,t) ->
-      visit_type m eenv t
-  | Dglob (_,a) ->
-      visit_ast m eenv a
+  | Dtype (inds,_) -> visit_inductive m eenv inds
+  | Dabbrev (_,_,t) -> visit_type m eenv t
+  | Dglob (_,a) -> visit_ast m eenv a
   | Dcustom _ -> ()
 	
 (*s Recursive extracted environment for a list of reference: we just
@@ -195,15 +192,7 @@ let modules_extract_env m =
     vernacular command is \verb!Extraction! [term]. Whenever [term] is
     a global, its definition is displayed. *)
 
-let refs_set_of_list l = List.fold_right Refset.add l Refset.empty 
-
 let decl_of_refs refs = List.map extract_declaration (extract_env refs)
-
-let local_optimize refs = 
-  let prm = 
-    { lang = Ocaml ; toplevel = true; modular = false;
-      mod_name = id_of_string ""; to_appear = refs} in
-  optimize prm (decl_of_refs refs)
 
 let print_user_extract r = 
   msgnl (str "User defined extraction:" ++ 
@@ -216,15 +205,35 @@ let decl_in_r r0 = function
   | Dtype ([],_) -> false
   | Dcustom (r,_) ->  r = r0 
 
+let pp_decl d = match lang () with 
+  | Ocaml -> OcamlMonoPp.pp_decl d
+  | Haskell -> HaskellMonoPp.pp_decl d
+  | Toplevel -> ToplevelPp.pp_decl d
+
+let pp_ast a = match lang () with 
+  | Ocaml -> OcamlMonoPp.pp_ast a
+  | Haskell -> HaskellMonoPp.pp_ast a
+  | Toplevel -> ToplevelPp.pp_ast a
+
+let pp_type t = match lang () with 
+  | Ocaml -> OcamlMonoPp.pp_type t
+  | Haskell -> HaskellMonoPp.pp_type t
+  | Toplevel -> ToplevelPp.pp_type t
+
 let extract_reference r =
   if is_ml_extraction r then
     print_user_extract r 
   else
-    let d = list_last (local_optimize [r]) in
-    msgnl (ToplevelPp.pp_decl 
-	     (if (decl_in_r r d) || d = Dtype([],true) || d = Dtype([],false) 
-	     then d 
-	     else List.find (decl_in_r r) (local_optimize [r])))
+    if declaration_is_logical_ind r then 
+      msgnl (pp_logical_ind r) 
+    else
+      let prm = 
+	{ modular = false; mod_name = id_of_string "Main"; to_appear = [r]} in
+      let decls = optimize prm (decl_of_refs [r]) in 
+      let d = list_last decls in
+      let d = if (decl_in_r r d) then d 
+      else List.find (decl_in_r r) decls
+      in msgnl (pp_decl d)
 
 let _ = 
   vinterp_add "Extraction"
@@ -240,59 +249,53 @@ let _ =
 		(* Otherwise, output the ML type or expression *)
 		| _ ->
 		    match extract_constr (Global.env()) c with
-		      | Emltype (t,_,_) -> msgnl (ToplevelPp.pp_type t)
-		      | Emlterm a -> msgnl (ToplevelPp.pp_ast (normalize a)))
+		      | Emltype (t,_,_) -> msgnl (pp_type t)
+		      | Emlterm a -> msgnl (pp_ast (normalize a)))
        | _ -> assert false)
 
 (*s Recursive extraction in the Coq toplevel. The vernacular command is
     \verb!Recursive Extraction! [qualid1] ... [qualidn]. We use [extract_env]
     to get the saturated environment to extract. *)
 
+let mono_extraction (f,m) vl = 
+  let refs = refs_of_vargl vl in
+  let prm = {modular=false; mod_name = m; to_appear= refs} in
+  let decls = decl_of_refs refs in 
+  let decls = add_ml_decls prm decls in 
+  let decls = optimize prm decls in
+  extract_to_file f prm decls
+
 let _ = 
   vinterp_add "ExtractionRec"
-    (fun vl () ->
-       let rl = refs_of_vargl vl in 
-       let ml_rl = List.filter is_ml_extraction rl in
-       let rl = List.filter (fun x -> not (is_ml_extraction x)) rl in 
-       let dl = local_optimize rl in
-       List.iter print_user_extract ml_rl ;
-       List.iter (fun d -> msgnl (ToplevelPp.pp_decl d)) dl)
+    (fun vl () -> mono_extraction (None,id_of_string "Main") vl)
 
 (*s Extraction to a file (necessarily recursive). 
     The vernacular command is \verb!Extraction "file"! [qualid1] ... [qualidn].
     We just call [extract_to_file] on the saturated environment. *)
 
-let lang_to_lang = function 
-  | "ocaml" -> Ocaml 
-  | "haskell" -> Haskell 
-  | _ -> assert false
-
-let lang_suffix = function 
+let lang_suffix () = match lang () with 
   | Ocaml -> "ml"
   | Haskell -> "hs"
+  | Toplevel -> assert false
 
-let filename f lang = 
-  let s = lang_suffix lang in 
-  if Filename.check_suffix f s then f,id_of_string (Filename.chop_suffix f s) 
-  else f^"."^s,id_of_string f
+let filename f = 
+  let s = lang_suffix () in 
+  if Filename.check_suffix f s then Some f,id_of_string (Filename.chop_suffix f s) 
+  else Some (f^"."^s),id_of_string f
+
+let lang_error () = 
+  errorlabstrm "extraction_language"
+    (str "Toplevel pseudo-ML language cannot be used outside Coq toplevel." 
+     ++ fnl () ++
+     str "You should use Extraction Language Ocaml or Haskell before.") 
 
 let _ = 
   vinterp_add "ExtractionFile"
     (function 
-       | VARG_STRING lang :: VARG_STRING f :: vl ->
+       | VARG_STRING f :: vl ->
 	   (fun () -> 
-	      let lang = lang_to_lang lang in 
-	      let f,m = filename f lang in 
-	      let refs = refs_of_vargl vl in
-	      let prm = {lang=lang;
-			 toplevel=false;
-			 modular=false; 
-			 mod_name = m;
-			 to_appear= refs} in 
-	      let decls = decl_of_refs refs in 
-	      let decls = add_ml_decls prm decls in 
-	      let decls = optimize prm decls in
-	      extract_to_file f prm decls)
+	      if lang () = Toplevel then lang_error () 
+	      else mono_extraction (filename f) vl) 
        | _ -> assert false)
 
 (*s Extraction of a module. The vernacular command is 
@@ -305,29 +308,27 @@ let decl_in_m m = function
   | Dtype ([],_) -> false
   | Dcustom (r,_) ->  is_long_module m r
 
-let module_file_name m = function
+let module_file_name m = match lang () with 
   | Ocaml -> (String.uncapitalize (string_of_id m)) ^ ".ml"
   | Haskell -> (String.capitalize (string_of_id m)) ^ ".hs"
+  | Toplevel -> assert false
 
 let _ = 
   vinterp_add "ExtractionModule"
     (function 
-       | [VARG_STRING lang; VARG_IDENTIFIER m] ->
+       | [VARG_IDENTIFIER m] ->
 	   (fun () -> 
-	      let lang = lang_to_lang lang in 
-	      let dir_m = module_of_id m in 
-	      let f = module_file_name m lang in
-	      let prm = {lang=lang;
-			 toplevel=false;
-			 modular=true;
-			 mod_name= m;
-			 to_appear= []} in 
-	      let rl = extract_module dir_m in 
-	      let decls = optimize prm (decl_of_refs rl) in
-	      let decls = add_ml_decls prm decls in 
-	      check_one_module dir_m decls; 
-	      let decls = List.filter (decl_in_m dir_m) decls in
-	      extract_to_file f prm decls)
+	      if lang () = Toplevel then lang_error () 
+	      else 
+		let dir_m = module_of_id m in 
+		let f = module_file_name m in
+		let prm = {modular=true; mod_name=m; to_appear=[]} in 
+		let rl = extract_module dir_m in 
+		let decls = optimize prm (decl_of_refs rl) in
+		let decls = add_ml_decls prm decls in 
+		check_one_module dir_m decls; 
+		let decls = List.filter (decl_in_m dir_m) decls in
+		extract_to_file (Some f) prm decls)
        | _ -> assert false)
 
 (*s Recursive Extraction of all the modules [M] depends on. 
@@ -336,30 +337,24 @@ let _ =
 let _ = 
   vinterp_add "RecursiveExtractionModule"
         (function 
-       | [VARG_STRING lang; VARG_IDENTIFIER m] ->
+       | [VARG_IDENTIFIER m] ->
 	   (fun () -> 
-	      let lang = lang_to_lang lang in 
-	      let dir_m = module_of_id m in 
-	      let modules,refs = 
-		modules_extract_env dir_m in
-	      check_modules modules; 
-	      let dummy_prm = {lang=lang;
-			      toplevel=false;
-			      modular=true;
-			      mod_name=m;
-			      to_appear= []} in
-	      let decls = optimize dummy_prm (decl_of_refs refs) in
-	      let decls = add_ml_decls dummy_prm decls in
-	      Dirset.iter 
-		(fun m ->
-		   let short_m = snd (split_dirpath m) in
-		   let f = module_file_name short_m lang in 
-		   let prm = {lang=lang;
-			      toplevel=false;
-			      modular=true;
-			      mod_name=short_m;
-			      to_appear= []} in 
-		   let decls = List.filter (decl_in_m m) decls in
-		   if decls <> [] then extract_to_file f prm decls)
-		modules)
+	      if lang () = Toplevel then lang_error () 
+	      else 
+		let dir_m = module_of_id m in 
+		let modules,refs = 
+		  modules_extract_env dir_m in
+		check_modules modules; 
+		let dummy_prm = {modular=true; mod_name=m; to_appear=[]} in
+		let decls = optimize dummy_prm (decl_of_refs refs) in
+		let decls = add_ml_decls dummy_prm decls in
+		Dirset.iter 
+		  (fun m ->
+		     let short_m = snd (split_dirpath m) in
+		     let f = module_file_name short_m in 
+		     let prm = {modular=true;mod_name=short_m;to_appear=[]} in 
+		     let decls = List.filter (decl_in_m m) decls in
+		     if decls <> [] then extract_to_file (Some f) prm decls)
+		  modules)
        | _ -> assert false)
+

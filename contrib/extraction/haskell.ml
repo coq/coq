@@ -87,7 +87,6 @@ let rec pp_type par ren t =
 	(open_par par ++ pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ 
 	   pp_rec false t2 ++ close_par par)
     | Tglob r -> pp_type_global r
-    | Texn s -> (str ("() -- " ^ s) ++ fnl ())
     | Tprop -> str "Prop"
     | Tarity -> str "Arity"
   in 
@@ -234,21 +233,22 @@ let pp_one_inductive (pl,name,cl) =
 		      (fun () -> (str " ")) (pp_type true ren) l))
   in
   (str (if cl = [] then "type " else "data ") ++ 
-     pp_type_global name ++ str " " ++
-     prlist_with_sep (fun () -> (str " ")) pr_lower_id pl ++
-     (if pl = [] then (mt ()) else (str " ")) ++
-     (v 0 (str "= " ++
-	       prlist_with_sep (fun () -> (fnl () ++ str "  | "))
-                 pp_constructor cl)))
-
+   pp_type_global name ++ str " " ++
+   prlist_with_sep (fun () -> (str " ")) pr_lower_id pl ++
+   (if pl = [] then (mt ()) else (str " ")) ++
+   if cl = [] then str "= () -- empty inductive"
+   else 
+      (v 0 (str "= " ++
+	    prlist_with_sep (fun () -> (fnl () ++ str "  | "))
+              pp_constructor cl)))
+  
 let pp_inductive il =
   (prlist_with_sep (fun () -> (fnl ())) pp_one_inductive il ++ fnl ())
 
 (*s Pretty-printing of a declaration. *)
 
 let pp_decl = function
-  | Dtype ([], _) -> 
-      (mt ())
+  | Dtype ([], _) -> mt ()
   | Dtype (i, _) -> 
       hov 0 (pp_inductive i)
   | Dabbrev (r, l, t) ->

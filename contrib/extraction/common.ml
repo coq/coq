@@ -14,6 +14,7 @@ open Nameops
 open Miniml
 open Table
 open Mlutil
+open Extraction
 open Ocaml
 open Nametab
 open Util
@@ -24,12 +25,6 @@ open Declare
 let current_module = ref (id_of_string "")
 
 let is_construct = function ConstructRef _ -> true | _ -> false 
-
-let sp_of_r r = match r with 
-    | ConstRef sp -> sp
-    | IndRef (sp,_) -> sp
-    | ConstructRef ((sp,_),_) -> sp
-    | _ -> assert false
 
 let qualid_of_dirpath d = 
   let dir,id = split_dirpath d in 
@@ -142,7 +137,6 @@ let cache r f =
 (*s Renaming issues at toplevel *)
 
 module ToplevelParams = struct
-  let toplevel = true
   let globals () = Idset.empty
   let rename_global r _ = Termops.id_of_global (Global.env()) r
   let pp_global r _ _ = Printer.pr_global r
@@ -151,8 +145,6 @@ end
 (*s Renaming issues for a monolithic extraction. *)
 
 module MonoParams = struct
-
-  let toplevel = false
 
   let globals () = !global_ids
 		     
@@ -178,8 +170,6 @@ end
 (*s Renaming issues in a modular extraction. *)
 
 module ModularParams = struct
-
-  let toplevel = false
 
   let globals () = !global_ids 
 
@@ -220,7 +210,6 @@ module ModularParams = struct
 
 end
 
-
 module ToplevelPp = Ocaml.Make(ToplevelParams)
 
 module OcamlMonoPp = Ocaml.Make(MonoParams)
@@ -229,19 +218,27 @@ module OcamlModularPp = Ocaml.Make(ModularParams)
 module HaskellMonoPp = Haskell.Make(MonoParams)
 module HaskellModularPp = Haskell.Make(ModularParams)
 
+let pp_comment s = match lang () with 
+  | Haskell -> str "-- " ++ s ++ fnl () 
+  | Ocaml | Toplevel -> str "(* " ++ s ++ str " *)" ++ fnl ()
+
+let pp_logical_ind r = 
+  pp_comment (Printer.pr_global r ++ str " : logical inductive")
 
 (*s Extraction to a file. *)
 
 let extract_to_file f prm decls =
-  let preamble,keyw = match prm.lang with 
+  let preamble,keyw = match lang () with 
     | Ocaml -> Ocaml.preamble,Ocaml.keywords
     | Haskell -> Haskell.preamble,Haskell.keywords
+    | _ -> assert false 
   in 
-  let pp_decl = match prm.lang,prm.modular with 
+  let pp_decl = match lang (),prm.modular with 
     | Ocaml, false -> OcamlMonoPp.pp_decl
     | Ocaml, _ -> OcamlModularPp.pp_decl
     | Haskell, false -> HaskellMonoPp.pp_decl    
     | Haskell, _ -> HaskellModularPp.pp_decl
+    | _ -> assert false 
   in
   let used_modules = if prm.modular then 
     Idset.remove prm.mod_name (decl_get_modules decls)
@@ -252,17 +249,22 @@ let extract_to_file f prm decls =
   Hashtbl.clear renamings;
   keywords := keyw;
   global_ids := keyw; 
-  let cout = open_out f in
+  let cout = match f with 
+    | None -> stdout
+    | Some f -> open_out f in
   let ft = Pp_control.with_output_to cout in
+  if not prm.modular then 
+    List.iter (fun r -> pp_with ft (pp_logical_ind r)) 
+      (List.filter declaration_is_logical_ind prm.to_appear); 
   pp_with ft (preamble prm used_modules (decl_print_prop decls));
   begin 
     try
       List.iter (fun d -> msgnl_with ft (pp_decl d)) decls
     with e ->
-      pp_flush_with ft (); close_out cout; raise e
+      pp_flush_with ft (); if f <> None then close_out cout; raise e
   end;
   pp_flush_with ft ();
-  close_out cout;  
+  if f <> None then close_out cout;  
 
 (*i 
   (* names resolution *)
@@ -276,3 +278,10 @@ let extract_to_file f prm decls =
   pp_flush_with ft ();
   close_out cout;
 i*)    
+
+
+
+
+
+
+

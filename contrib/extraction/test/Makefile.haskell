@@ -45,7 +45,7 @@ $(HS): hs2v
 	./extract.haskell $@
 
 clean: 
-	rm -f theories/*/*.*
+	rm -f theories/*/*.h* theories/*/*.o
 
 
 #

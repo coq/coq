@@ -158,7 +158,6 @@ let rec pp_type par ren t =
 	(open_par par ++ pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ 
 	   pp_rec false t2 ++ close_par par)
     | Tglob r -> pp_type_global r
-    | Texn s -> str ("unit (* " ^ s ^ " *)")
     | Tprop -> str "prop"
     | Tarity -> str "arity"
   in 
@@ -347,11 +346,13 @@ let pp_one_ind prefix (pl,name,cl) =
 		      (fun () -> (spc () ++ str "* ")) (pp_type true ren) l))
   in
   (pp_parameters pl ++ str prefix ++ pp_type_global name ++ str " =" ++ 
-     (fnl () ++
-	v 0 (str "    " ++
-	       prlist_with_sep (fun () -> (fnl () ++ str "  | "))
-                 (fun c -> hov 2 (pp_constructor c)) cl)))
-  
+   (* TODO: possible clash with Coq unit *)
+   if cl = [] then str " unit (* empty inductive *)" 
+   else (fnl () ++
+	 v 0 (str "    " ++
+	      prlist_with_sep (fun () -> (fnl () ++ str "  | "))
+                (fun c -> hov 2 (pp_constructor c)) cl)))
+
 let pp_ind il =
   (str "type " ++
    prlist_with_sep (fun () -> (fnl () ++ str "and ")) (pp_one_ind "") il
@@ -373,11 +374,9 @@ let pp_coind il =
 (*s Pretty-printing of a declaration. *)
 
 let pp_decl = function
-  | Dtype ([], _) -> 
-      if P.toplevel then hov 0 (str " prop (* Logic inductive *)" ++ fnl ())
-      else (mt ()) 
+  | Dtype ([], _) -> mt ()
   | Dtype (i, cofix) -> 
-      if cofix && (not P.toplevel) then begin
+      if cofix then begin
 	List.iter   
 	  (fun (_,_,l) -> 
 	     List.iter (fun (r,_) -> 

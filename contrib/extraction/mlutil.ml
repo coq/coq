@@ -39,6 +39,19 @@ let get_tvars t =
   | a -> s
   in Idset.elements (get_rec Idset.empty t)
 
+(*s Does a section path occur in a ML type ? *)
+
+let sp_of_r r = match r with 
+    | ConstRef sp -> sp
+    | IndRef (sp,_) -> sp
+    | ConstructRef ((sp,_),_) -> sp
+    | _ -> assert false
+
+let rec type_mem_sp sp = function 
+  | Tglob r when (sp_of_r r)=sp -> true
+  | Tapp l -> List.exists (type_mem_sp sp) l
+  | Tarr (a,b) -> (type_mem_sp sp a) || (type_mem_sp sp b)
+  | _ -> false
 
 (*s In an ML type, update the arguments to all inductive types [(sp,_)] *)  
 
@@ -51,25 +64,6 @@ let rec update_args sp vl = function
   | Tarr (a,b)-> 
       Tarr (update_args sp vl a, update_args sp vl b)
   | a -> a
-
-(*s Informative singleton optimization *)
-
-(* We simplify informative singleton inductive, i.e. an inductive with one 
-   constructor which has one informative argument. *) 
-
-let rec type_mem r0 = function 
-    | Tglob r when r=r0 -> true
-    | Tapp l -> List.exists (type_mem r0) l
-    | Tarr (a,b) -> (type_mem r0 a) || (type_mem r0 b)
-    | _ -> false
-
-let singletons = ref Refset.empty
-
-let is_singleton r = Refset.mem r !singletons 
-
-let add_singleton r = singletons:= Refset.add r !singletons
-
-let clear_singletons () = singletons:= Refset.empty
 
 (*s [collect_lams MLlam(id1,...MLlam(idn,t)...)] returns
     the list [idn;...;id1] and the term [t]. *)
@@ -309,7 +303,7 @@ let check_constant_case br =
     then raise Impossible
   done; cst
 
-(* TODO: il faudrait verifier si dans chaque branche on a _ et non pas 
+(* TODO: il faudrait verifier si dans chaque branche on a [_] et non pas 
    seulement dans la premiere (Coercion Prop < Type). *) 
 
 let rec permut_case_fun br acc = 
@@ -367,12 +361,6 @@ let rec simpl o = function
       simpl o f
   | MLapp (f, a) -> 
       simpl_app o (List.map (simpl o) a) (simpl o f)
-  | MLcons (r,[t]) when is_singleton r -> simpl o t 
-	(* Informative singleton *) 
-  | MLcase (e,[||]) ->
-      MLexn "absurd case"
-  | MLcase (e,[|r,[i],c|]) when is_singleton r -> (* Informative singleton *)
-      simpl o (MLletin (i,e,c))
   | MLcase (e,br) ->
       let br = Array.map (fun (n,l,t) -> (n,l,simpl o t)) br in 
       simpl_case o br (simpl o e) 
@@ -432,25 +420,6 @@ and simpl_case o br e =
 (*s Local [prop] elimination. *) 
 (* Try to eliminate as many [prop] as possible inside an [ml_ast]. *)
 
-(*i
-(* Index of the first [prop] lambda *) 
-
-let rec first_prop_rank = function 
-  | MLlam(id,_) when id=prop_name -> 1
-  | MLlam(_,t) -> succ (first_prop_rank t)
-  | _ -> raise Impossible
-
-(* Minimal number of args after [Rel p] *)
-
-let min_nb_args p m t = 
-  let rec minrec n m = function 
-    | MLrel i when i=n+p -> 0  
-    | MLapp(f,a) ->
-	let m = List.fold_left (minrec n) m a in 
-	if f=(MLrel (n+p)) then min (List.length a) m else m
-    | a -> ast_fold_lift minrec n m a 
-  in minrec 0 m t
-i*)
 (* Given the names of the variables, build a substitution array. *)
 
 let rels_to_kill ids =
@@ -504,8 +473,8 @@ let kill_prop_args t0 ids m t =
   in killrec 0 t 
 
 let kill_prop_aux c = 
-  let m = nb_lams c in 
   let ids,c = collect_lams c in 
+  let m = List.length ids in 
   let ids' = List.filter ((<>) prop_name) ids in 
   let diff = m - List.length ids' in
   if ids' = [] || diff = 0  then raise Impossible; 
@@ -552,8 +521,6 @@ and kill_prop_fix i fi c =
     c.(j) <- kill_prop (kill_prop_args (MLrel (n-i)) ids m c.(j)) 
   done;
   c,ids,m
-
-
 
 let normalize a = 
   if (optim()) then kill_prop (simpl true a) else simpl false a
@@ -730,7 +697,8 @@ let manual_expand_list =
   List.map (fun s -> path_of_string ("Coq.Init."^s))
     [ "Specif.sigS_rect" ; "Specif.sigS_rec" ; 
       "Datatypes.prod_rect" ; "Datatypes.prod_rec"; 
-      "Wf.Acc_rec" ; "Wf.well_founded_induction" ]
+      "Wf.Acc_rec" ; "Wf.Acc_rect" ; 
+      "Wf.well_founded_induction" ; "Wf.well_founded_induction_type" ]
 
 let manual_expand = function 
   | ConstRef sp -> List.mem sp manual_expand_list
@@ -743,12 +711,12 @@ let manual_expand = function
    we are free to act (AutoInline is set)
    \end{itemize} *)
 
-let expand strict_lang r t = 
+let expand r t = 
   (not (to_keep r)) (* The user DOES want to keep it *)
   &&
   ((to_inline r) (* The user DOES want to expand it *) 
   || 
-   (auto_inline () && strict_lang && 
+   (auto_inline () && lang () <> Haskell && 
     ((manual_expand r) ||  expansion_test t)))
 
 (*s Optimization *)
@@ -764,11 +732,6 @@ let subst_glob_decl r m = function
   | Dglob(r',t') -> Dglob(r', subst_glob_ast r m t')
   | d -> d
 
-let warning_expansion r = 
-  warn (hov 0 (str "The constant" ++ spc () ++
-		 Printer.pr_global r ++ 
-    spc () ++ str "is expanded."))
-
 let print_ml_decl prm (r,_) = 
   not (to_inline r) || List.mem r prm.to_appear
 
@@ -778,20 +741,7 @@ let add_ml_decls prm decls =
   let l = List.map (fun (r,s)-> Dcustom (r,s)) l in 
   (List.rev l @ decls)
 
-let strict_language = (=) Ocaml
-
-let rec empty_ind = function 
-  | [] -> [],[]
-  | t :: q -> let l,l' = empty_ind q in 
-    (match t with 
-       | ids,r,[] -> Dabbrev (r,ids,Texn "empty inductive") :: l,l'
-       | _ -> l,t::l')
-
-let global_kill_prop r0 ids m = function 
-  | Dglob(r,e) -> Dglob (r,kill_prop_args (MLglob r0) ids m e)
-  | d -> d
-
-let rec optim prm = function
+let rec optimize prm = function
   | [] -> 
       []
   | ( Dabbrev (r,_,Tarity) |
@@ -799,40 +749,19 @@ let rec optim prm = function
 	  Dglob(r,MLarity) | 
 	    Dglob(r,MLprop) ) as d :: l ->
       if List.mem r prm.to_appear then
-	d :: (optim prm l) 
-      else optim prm l
+	d :: (optimize prm l) 
+      else optimize prm l
   | Dglob (r,t) :: l ->
       let t = normalize t in
-      let t,l = 
-	try 
-	  let t,ids,m = kill_prop_aux t in 
-	  t,(List.map (global_kill_prop r ids m) l) 
-	    (* TODO: options & modularité? *)
-	with Impossible -> (t,l) in 
-      let b = expand (strict_language prm.lang) r t in
+      let b = expand r t in
       let l = if b then 
-	begin
-	  if not (prm.toplevel) then if_verbose warning_expansion r;
-	  List.map (subst_glob_decl r t) l
-	end
+	List.map (subst_glob_decl r t) l
       else l in 
       if (not b || prm.modular || List.mem r prm.to_appear) then 
  	  let t = optimize_fix t in
-	  Dglob (r,t) :: (optim prm l)
+	  Dglob (r,t) :: (optimize prm l)
       else 
-	optim prm l
-  | (Dtype ([],_) | Dabbrev _ | Dcustom _) as d :: l -> 
-      d :: (optim prm l)
-  | Dtype ([ids,r,[r0,[t0]]],false) :: l when not (type_mem r t0) ->
-      (* Detection of informative singleton. *)
-      add_singleton r0; 
-      Dabbrev (r, ids, t0) :: (optim prm l)
-  | Dtype(il,b) :: l -> 
-      (* Detection of empty inductives. *)
-      let l1,l2 = empty_ind il in 
-      if l2 = [] then l1 @ (optim prm l) 
-      else l1 @ (Dtype(l2,b) :: (optim prm l))
+	optimize prm l
+  | d :: l -> d :: (optimize prm l)
 
-
-let optimize prm l = clear_singletons(); optim prm l
 

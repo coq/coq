@@ -242,6 +242,47 @@ let decompose_lam_eta n env c =
     let e = applist (lift dif e, List.rev_map mkRel (interval 1 dif)) in
     (rb, e)
 
+(*s TODO commentaires *)
+
+let prop_abstract_1 f  = 
+  let rec abs rels i = function 
+    | [] -> f (List.rev_map (fun x -> MLrel (i-x)) rels)
+    | (_,Arity) :: l -> abs rels i l
+    | (Info,_) :: l -> MLlam (anonymous, abs (i :: rels) (succ i) l)
+    | (Logic,_) :: l -> MLlam (prop_name, abs rels (succ i) l)
+  in abs [] 1  
+  
+let prop_abstract_2 f = 
+  let rec abs rels i = function 
+    | [] -> f i (List.rev_map (function MLrel x -> MLrel (i-x) | a -> a) rels)
+    | (_,Arity) :: l -> abs rels i l
+    | (Info,_) :: l -> MLlam (anonymous, abs (MLrel i :: rels) (succ i) l)
+    | (Logic,_) :: l -> MLlam (prop_name, abs (MLprop :: rels) (succ i) l)
+  in abs [] 1 
+
+
+(*s Abstraction of an constant. *)
+
+let abstract_const sp s = 
+  if List.mem default s then 
+    prop_abstract_1 (fun a -> MLapp(MLglob (ConstRef sp), a)) s
+  else MLglob (ConstRef sp)
+
+(*s The opposite function. *)
+
+let eta_expanse_w_prop e s = 
+  let s = List.filter (function (_,NotArity) -> true | _ -> false) s in
+  let ids,e = collect_lams e in
+  let m = List.length ids in 
+  assert (m <= (List.length s)); 
+  let _,s = list_chop m s in 
+  let core = if s <> [] then 
+    prop_abstract_2 (fun i a -> MLapp (ml_lift (i-1) e,a)) s 
+  else e 
+  in let new_e = named_lams core ids in 
+  try 
+    let new_e,_,_ = kill_prop_aux new_e in new_e 
+  with Impossible -> new_e
 
 (*s Error message when extraction ends on an axiom. *)
 
@@ -283,15 +324,20 @@ let lookup_constructor_extraction i = Gmap.find i !constructor_extraction_table
 let constant_table = 
   ref (Gmap.empty : (section_path, extraction_result) Gmap.t)
 
+let signature_table = 
+  ref (Gmap.empty : (section_path, signature) Gmap.t)
+
 (* Tables synchronization. *)
 
 let freeze () =
-  !inductive_extraction_table, !constructor_extraction_table, !constant_table
+  !inductive_extraction_table, !constructor_extraction_table, 
+  !constant_table, !signature_table
 
-let unfreeze (it,cst,ct) =
+let unfreeze (it,cst,ct,st) =
   inductive_extraction_table := it;
   constructor_extraction_table := cst;
-  constant_table := ct
+  constant_table := ct;
+  signature_table := st
 
 let _ = declare_summary "Extraction tables"
 	  { freeze_function = freeze;
@@ -515,6 +561,14 @@ and signature_rec env c args =
     | Var _ -> section_message ()
     | _ -> assert false
 
+(*s signature of a section path *)
+
+and signature_of_sp sp typ = 
+  try 
+    Gmap.find sp !signature_table 
+  with Not_found -> 
+    let s = signature (Global.env()) typ in
+    signature_table := Gmap.add sp s !signature_table; s 
 
 (*s Extraction of a term. 
     Precondition: [c] has a type which is not an arity. 
@@ -570,11 +624,11 @@ and extract_term_info_wt env ctx c t =
      | Rel n ->
 	 MLrel (renum_db ctx n)
      | Const sp ->
-	 MLglob (ConstRef sp)
+	 abstract_const sp (signature_of_sp sp t)
      | App (f,a) ->
       	 extract_app env ctx f a 
      | Construct cp ->
-	 abstract_constructor cp
+	 abstract_constructor cp (signature_of_constructor cp)
      | Case ({ci_ind=ip},_,c,br) ->
 	 extract_case env ctx ip c br
      | Fix ((_,i),recd) -> 
@@ -586,9 +640,8 @@ and extract_term_info_wt env ctx c t =
      | Ind _ | Prod _ | Sort _ | Meta _ | Evar _ ->
 	 assert false 
      | Var _ -> section_message ()
-	 
 
-(* Abstraction of an inductive constructor: 
+(*s Abstraction of an inductive constructor: 
    \begin{itemize}
    \item In ML, contructor arguments are uncurryfied. 
    \item We managed to suppress logical parts inside inductive definitions,
@@ -601,22 +654,16 @@ and extract_term_info_wt env ctx c t =
    produces: 
 
    [fun ]$p_1 \ldots p_n ~ x_1 \ldots x_n $[-> C(]$x_{i_1},\ldots, x_{i_k}$[)].
-   This ML term will be reduced later on when applied, see [mlutil.ml]. *)
+   This ML term will be reduced later on when applied, see [mlutil.ml].
 
-and abstract_constructor cp  =
-  let s,n = signature_of_constructor cp in 
-  let rec abstract rels i = function
-    | [] -> 
-	let rels = List.rev_map (fun x -> MLrel (i-x)) rels in
-	MLcons (ConstructRef cp, rels)
-    | (Info,NotArity) :: l -> 
-	MLlam (id_of_name Anonymous, abstract (i :: rels) (succ i) l)
-    | (Logic,NotArity) :: l ->
-      MLlam (id_of_name Anonymous, abstract rels (succ i) l)
-    | (_,Arity) :: l -> 
-	abstract rels i l
-  in
-  anonym_lams (ml_lift n (abstract [] 1 s)) n
+   In the special case of a informative singleton inductive, [C] is identity *)
+
+and abstract_constructor cp (s,n) =
+  let f = if is_singleton_constructor cp then 
+    function [x] -> x | _ -> assert false
+  else
+    fun a -> MLcons (ConstructRef cp, a)
+  in anonym_lams (ml_lift n (prop_abstract_1 f s)) n
 
 (* Extraction of a case *)
 
@@ -644,24 +691,31 @@ and extract_case env ctx ip c br =
     in
     (ConstructRef cp, ids, e')
   in
-  (* [c] has an inductive type, not an arity type *)
-  (match extract_term env ctx c with
-     | Rmlterm a -> 
-	 MLcase (a, Array.mapi extract_branch br)
-     | Rprop -> 
-	 (* Logical singleton case: *)
-	 if Array.length br = 0 then 
-	   MLcase (MLprop, [||]) (* to be recognize later on as an empty case *)
-	 else begin 
-	   (* [match c with C i j k -> t] becomes [t'] *)
-	   assert (Array.length br = 1);
-	   let (rb,e) = decompose_lam_eta ni.(0) env br.(0) in
-	   let env' = push_rels_assum rb env in 
-	   (* We know that all arguments are logic. *)
-	   let ctx' = iterate (fun l -> false :: l) ni.(0) ctx in 
-	   extract_constr_to_term env' ctx' e
-	 end)
-
+  if br = [||] then 
+    MLexn "absurd case"
+  else 
+    (* [c] has an inductive type, not an arity type *)
+    match extract_term env ctx c with
+      | Rmlterm a when is_singleton_inductive ip -> 
+          (* Informative singleton case: *)
+          (* [match c with C i -> t] becomes [let i = c' in t'] *)
+          assert (Array.length br = 1);
+          let (_,ids,e') = extract_branch 0 br.(0) in
+          assert (List.length ids = 1);
+          MLletin (List.hd ids,a,e')
+      | Rmlterm a -> 
+          (* Standard case: we apply [extract_branch]. *)
+          MLcase (a, Array.mapi extract_branch br)
+      | Rprop -> 
+	  (* Logical singleton case: *)
+	  (* [match c with C i j k -> t] becomes [t'] *)
+	  assert (Array.length br = 1);
+	  let (rb,e) = decompose_lam_eta ni.(0) env br.(0) in
+	  let env' = push_rels_assum rb env in 
+	  (* We know that all arguments are logic. *)
+	  let ctx' = iterate (fun l -> false :: l) ni.(0) ctx in 
+	  extract_constr_to_term env' ctx' e
+	    
   
 (* Extraction of a (co)-fixpoint *)
 
@@ -772,24 +826,14 @@ and extract_constant sp =
              | (Logic,NotArity) -> Emlterm MLprop (* Axiom? I don't mind! *)
              | (Logic,Arity) -> Emltype (Miniml.Tarity,[],[]))  (* Idem *)
       | Some body ->
-          let e = extract_constr_wt env body typ in
-          let e = eta_expanse e typ in
-          constant_table := Gmap.add sp e !constant_table;
+	  let e = match extract_constr_wt env body typ with 
+	    | Emlterm MLprop as e -> e
+	    | Emlterm MLarity as e -> e
+	    | Emlterm a -> 
+		Emlterm (eta_expanse_w_prop a (signature_of_sp sp typ))
+	    | e -> e 
+	  in constant_table := Gmap.add sp e !constant_table;
           e
-
-(*s Eta-expansion to bypass ML type inference limitations (due to possible
-    polymorphic references, the ML type system does not generalize all
-    type variables that could be generalized). *)
-
-and eta_expanse ec typ = match ec with 
-  | Emlterm (MLlam _) -> ec
-  | Emlterm (MLfix _) -> ec 
-  | Emlterm a -> 
-      (match extract_type (Global.env()) typ with 
-	 | Tmltype (Tarr _, _) -> 
-	     Emlterm (MLlam (anonymous, MLapp (a, [MLrel 1])))
-	 | _ -> ec)
-  | _ -> ec 
 
 (*s Extraction of an inductive. *)
     
@@ -804,6 +848,22 @@ and extract_constructor (((sp,_),_) as c) =
 and signature_of_constructor cp = match extract_constructor cp with
   | Cprop -> assert false
   | Cml (_,s,n) -> (s,n)
+
+(* Looking for informative singleton case, i.e. an inductive with one 
+   constructor which has one informative argument. This dummy case will 
+   be simplified. *)
+ 
+and is_singleton_inductive ind = 
+  let (mib,mip) = Global.lookup_inductive ind in 
+  mib.mind_finite &&
+  (mib.mind_ntypes = 1) &&
+  (Array.length mip.mind_consnames = 1) && 
+  match extract_constructor (ind,1) with 
+    | Cml ([mlt],_,_)-> not (type_mem_sp (fst ind) mlt)
+    | _ -> false
+          
+and is_singleton_constructor ((sp,i),_) = 
+  is_singleton_inductive (sp,i) 
 
 and extract_mib sp =
   let ind = (sp,0) in
@@ -873,7 +933,7 @@ and extract_mib sp =
 	| Iprop -> ()
 	| Iml (s,l) -> add_inductive_extraction ip (Iml (s,vl@l));
     done;
-    (* Fourth pass: we update also in the constructors table *)
+    (* Fourth pass: we also update the constructors table *)
     for i = 0 to mib.mind_ntypes-1 do 
       let ip = (sp,i) in 
       for j = 1 to Array.length mib.mind_packets.(i).mind_consnames do
@@ -890,28 +950,40 @@ and extract_mib sp =
 
 and extract_inductive_declaration sp =
   extract_mib sp;
-  let mib = Global.lookup_mind sp in
-  let one_ind ip n = 
-    iterate_for (-n) (-1)
-      (fun j l -> 
-	 let cp = (ip,-j) in 
-	 match lookup_constructor_extraction cp with 
-	   | Cprop -> assert false
-	   | Cml (t,_,_) -> (ConstructRef cp, t)::l) []
-  in
-  let l = 
-    iterate_for (1 - mib.mind_ntypes) 0
-      (fun i acc -> 
-	 let ip = (sp,-i) in
-	 let nc = Array.length mib.mind_packets.(-i).mind_consnames in 
-	 match lookup_inductive_extraction ip with
-	   | Iprop -> acc
-	   | Iml (_,vl) -> 
-	       (List.rev vl, IndRef ip, one_ind ip nc) :: acc)
-      [] 
-  in
-  Dtype (l, not mib.mind_finite)
-
+  let ip = (sp,0) in 
+  if is_singleton_inductive ip then
+    let t = match lookup_constructor_extraction (ip,1) with 
+      | Cml ([t],_,_)-> t
+      | _ -> assert false
+    in
+    let vl = match lookup_inductive_extraction ip with 
+       | Iml (_,vl) -> vl
+       | _ -> assert false
+     in 
+    Dabbrev (IndRef ip,vl,t)
+  else
+    let mib = Global.lookup_mind sp in
+    let one_ind ip n = 
+      iterate_for (-n) (-1)
+	(fun j l -> 
+	   let cp = (ip,-j) in 
+	   match lookup_constructor_extraction cp with 
+	     | Cprop -> assert false
+	     | Cml (t,_,_) -> (ConstructRef cp, t)::l) []
+    in
+    let l = 
+      iterate_for (1 - mib.mind_ntypes) 0
+	(fun i acc -> 
+	   let ip = (sp,-i) in
+	   let nc = Array.length mib.mind_packets.(-i).mind_consnames in 
+	   match lookup_inductive_extraction ip with
+	     | Iprop -> acc
+	     | Iml (_,vl) -> 
+		 (List.rev vl, IndRef ip, one_ind ip nc) :: acc)
+	[] 
+    in
+    Dtype (l, not mib.mind_finite)
+      
 (*s Extraction of a global reference i.e. a constant or an inductive. *)
 
 let extract_declaration r = match r with
@@ -922,3 +994,10 @@ let extract_declaration r = match r with
   | IndRef (sp,_) -> extract_inductive_declaration sp
   | ConstructRef ((sp,_),_) -> extract_inductive_declaration sp
   | VarRef _ -> assert false
+
+(*s Check whether a global reference corresponds to a logical inductive. *)
+
+let declaration_is_logical_ind = function 
+  | IndRef ip -> extract_inductive ip = Iprop 
+  | ConstructRef cp -> extract_constructor cp  = Cprop
+  | _ -> false

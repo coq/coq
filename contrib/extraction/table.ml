@@ -82,6 +82,38 @@ let reference_of_varg = function
 
 let refs_of_vargl = List.map reference_of_varg
 
+(*s Target Language *)
+
+type lang = Ocaml | Haskell | Toplevel
+
+let lang_ref = ref Ocaml
+
+let lang () = !lang_ref
+
+let (extraction_language,_) = 
+  declare_object ("Extraction Lang", 
+		  {cache_function = (fun (_,l) -> lang_ref := l);
+		   load_function = (fun (_,l) -> lang_ref := l);
+		   open_function = (fun _ -> ());
+		   export_function = (fun x -> Some x) })
+
+let _ = declare_summary "Extraction Lang" 
+	  { freeze_function = (fun () -> !lang_ref);
+	    unfreeze_function = ((:=) lang_ref);
+	    init_function = (fun () -> lang_ref := Ocaml);
+	    survive_section = true }  
+
+let _ = 
+  vinterp_add "ExtractionLangOcaml" 
+     (fun _ () -> add_anonymous_leaf (extraction_language Ocaml))
+    
+let _ = 
+  vinterp_add "ExtractionLangHaskell" 
+     (fun _ () -> add_anonymous_leaf (extraction_language Haskell))
+
+let _ = 
+  vinterp_add "ExtractionLangToplevel" 
+     (fun _ () -> add_anonymous_leaf (extraction_language Toplevel))
 
 (*s Table for custom inlining *)
 
@@ -99,7 +131,6 @@ let add_inline_entries b l =
   inline_table := 
      (List.fold_right (f b) l i), 
      (List.fold_right (f (not b)) l k)
-
 
 (*s Registration of operations for rollback. *)
 
@@ -137,12 +168,13 @@ let print_inline () =
   let i'= Refset.filter is_constant i in 
   msg 
     (str "Extraction Inline:" ++ fnl () ++ 
-       Refset.fold
-	 (fun r p -> (p ++ str "   " ++ Printer.pr_global r ++ fnl ())) i' (mt ()) ++
-       str "Extraction NoInline:" ++ fnl () ++ 
-       Refset.fold
-	 (fun r p -> (p ++ str "   " ++ Printer.pr_global r ++ fnl ())) n (mt ())
-)
+     Refset.fold
+       (fun r p -> 
+	  (p ++ str "   " ++ Printer.pr_global r ++ fnl ())) i' (mt ()) ++
+     str "Extraction NoInline:" ++ fnl () ++ 
+     Refset.fold
+       (fun r p -> 
+	  (p ++ str "   " ++ Printer.pr_global r ++ fnl ())) n (mt ()))
 
 let _ = vinterp_add "PrintExtractionInline" (fun _ -> print_inline)
 

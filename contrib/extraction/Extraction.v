@@ -17,25 +17,27 @@ Grammar vernac vernac : ast :=
 (* Monolithic extraction to a file *)
 | extr_file
      [ "Extraction" stringarg($f) ne_qualidarg_list($l) "." ] 
-  -> [ (ExtractionFile "ocaml" $f ($LIST $l)) ]
-| haskell_extr_file
-     [ "Haskell" "Extraction" stringarg($f) ne_qualidarg_list($l) "." ] 
-  -> [ (ExtractionFile "haskell" $f ($LIST $l)) ]
+  -> [ (ExtractionFile $f ($LIST $l)) ]
 
 (* Modular extraction (one Coq module = one ML module) *)
 | extr_module 
      [ "Extraction" "Module" identarg($m) "." ]
-  -> [ (ExtractionModule "ocaml" $m) ]
-| haskell_extr_module 
-     [ "Haskell" "Extraction" "Module" identarg($m) "." ]
-  -> [ (ExtractionModule "haskell" $m) ]
+  -> [ (ExtractionModule $m) ]
 | rec_extr_module 
      [ "Recursive" "Extraction" "Module" identarg($m) "." ]
-  -> [ (RecursiveExtractionModule "ocaml" $m) ]
-| rec_haskell_extr_module 
-     [ "Haskell" "Recursive" "Extraction" "Module" identarg($m) "." ]
-  -> [ (RecursiveExtractionModule "haskell" $m) ]
+  -> [ (RecursiveExtractionModule $m) ]
 
+(* Target Language *)
+
+| extraction_ocaml 
+     [ "Extraction" "Language" "Ocaml" "." ] 
+  -> [ (ExtractionLangOcaml) ]
+| extraction_haskell 
+     [ "Extraction" "Language" "Haskell" "." ] 
+  -> [ (ExtractionLangHaskell) ]
+| extraction_toplevel
+     [ "Extraction" "Language" "Toplevel" "." ] 
+  -> [ (ExtractionLangToplevel) ]
 
 (* Custom inlining directives *)
 | inline_constant
@@ -53,7 +55,6 @@ Grammar vernac vernac : ast :=
 | reset_inline_constant 
      [ "Reset" "Extraction" "Inline" "."]
   -> [ (ResetExtractionInline) ]
-
 
 (* Overriding of a Coq object by an ML one *)
 | extract_constant 
@@ -82,3 +83,4 @@ with idorstring : ast :=
   ids_ident  [ identarg($id) ] -> [ $id ]
 | ids_string [ stringarg($s) ] -> [ $s ]
 .
+
