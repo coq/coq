@@ -66,6 +66,8 @@ let print_sort = function
 
 type constr = sorts oper term
 
+type flat_arity = (name * constr) list * sorts
+
 type 'a judge = { body : constr; typ : 'a }
 
 (*
@@ -730,6 +732,23 @@ let prod_applist t nL = List.fold_left prod_app t nL
 (*********************************)
 (* Other term destructors        *)
 (*********************************)
+
+(* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
+   ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
+let destArity = 
+  let rec prodec_rec l = function
+    | DOP2(Prod,t,DLAM(x,c)) -> prodec_rec ((x,t)::l) c
+    | DOP2(Cast,c,_)         -> prodec_rec l c
+    | DOP0(Sort s)           -> l,s
+    | _                      -> anomaly "decompose_arity: not an arity"
+  in 
+  prodec_rec [] 
+
+let rec isArity = function
+  | DOP2(Prod,_,DLAM(_,c)) -> isArity c
+  | DOP2(Cast,c,_)         -> isArity c
+  | DOP0(Sort _)           -> true
+  | _ -> false
 
 (* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)

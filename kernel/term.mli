@@ -57,6 +57,8 @@ val print_sort : sorts -> std_ppcmds
 
 type constr = sorts oper term
 
+type flat_arity = (name * constr) list * sorts
+
 type 'a judge = { body : constr; typ : 'a }
 
 type typed_type
@@ -253,6 +255,10 @@ val mkCoFixDlam : int -> constr array -> constr array -> constr
 (*s Term destructors. 
    Destructor operations are partial functions and
    raise [invalid_arg "dest*"] if the term has not the expected form. *)
+
+(* Destructs a term of the form $(x_1:T_1)..(x_n:T_n)s$ into the pair *)
+val destArity : constr -> flat_arity
+val isArity : constr -> bool
 
 (* Destructs a DeBrujin index *)
 val destRel : constr -> int
