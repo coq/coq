@@ -727,22 +727,20 @@ let unify_to_subterm clause (op,cl) =
 		 matchrec c)
           | _ -> error "Match_subterm")) 
   in 
-(*  if isMeta op then error "Match_subterm";*)
   try matchrec cl
   with ex when catchable_exception ex ->
     raise (RefinerError (NoOccurrenceFound op))
 
-(* Possibly gives K-terms in case the operator does not contain 
-   a meta : BUG ?? *)
 let unify_to_subterm_list allow_K clause oplist t = 
   List.fold_right 
     (fun op (clause,l) ->
       if isMeta op then
-	(clause,op::l)
+	if allow_K then (clause,op::l)
+	else error "Match_subterm"
       else if occur_meta op then
         let (clause',cl) =
           try 
-	    (* This is up to some delta ... *)
+	    (* This is up to delta for subterms w/o metas ... *)
 	    unify_to_subterm clause (strip_outer_cast op,t)
           with RefinerError (NoOccurrenceFound _) when allow_K -> (clause,op)
         in 
