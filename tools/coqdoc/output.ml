@@ -59,6 +59,7 @@ let page_title = ref ""
 let title = ref ""
 let externals = ref true
 let coqlib = ref "http://coq.inria.fr/library/"
+let raw_comments = ref false
 
 let charset = ref ""
 let inputenc = ref ""
@@ -87,10 +88,10 @@ let is_keyword =
     [ "Add"; "AddPath"; "Axiom"; "Chapter"; "CoFixpoint";
       "CoInductive"; "Defined"; "Definition"; 
       "End"; "Export"; "Fact"; "Fix"; "Fixpoint"; "Global"; "Grammar"; "Hint";
-      "Hints"; "Hypothesis"; "Hypotheses"; 
-      "Immediate"; "Implicits"; "Import"; "Inductive"; 
-      "Infix"; "Lemma"; "Load"; "Local"; 
-      "Match"; "Module"; "Module Type"; "Declare Module";
+      "Hypothesis"; "Hypotheses"; 
+      "Immediate"; "Implicit"; "Import"; "Inductive"; 
+      "Infix"; "Lemma"; "Let"; "Load"; "Local"; "Ltac"; 
+      "Module"; "Module Type"; "Declare Module";
       "Mutual"; "Parameter"; "Parameters"; "Print"; "Proof"; "Qed";
       "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme";
       "Section"; "Show"; "Syntactic"; "Syntax"; "Tactic"; "Theorem"; 
@@ -347,9 +348,9 @@ module Html = struct
 
   let indentation n = for i = 1 to n do printf "&nbsp;" done
 
-  let line_break () = printf "<br/>\n"
+  let line_break () = printf "<br>\n"
 
-  let empty_line_of_code () = printf "\n<br/>\n"
+  let empty_line_of_code () = printf "\n<br>\n"
 
   let char = function
     | '<' -> printf "&lt;"
@@ -440,14 +441,17 @@ module Html = struct
 
   let stop_item () = reach_item_level 0
 
-  let start_coq () = printf "<code>\n"
+  let start_coq () = if not !raw_comments then printf "<code>\n"
 
-  let end_coq () = printf "</code>\n"
+  let end_coq () = if not !raw_comments then printf "</code>\n"
 
   let start_doc () = 
-    printf "\n<table width=\"100%%\"><tr class=\"doc\"><td>\n"
+    if not !raw_comments then
+      printf "\n<table width=\"100%%\"><tr class=\"doc\"><td>\n"
 
-  let end_doc () = stop_item (); printf "\n</td></tr></table>\n"
+  let end_doc () =
+    stop_item (); 
+    if not !raw_comments then printf "\n</td></tr></table>\n"
 
   let start_code () = end_doc (); start_coq ()
 
@@ -457,7 +461,7 @@ module Html = struct
 
   let end_inline_coq () = printf "</code>"
 
-  let paragraph () = stop_item (); printf "\n<br/><br/>\n"
+  let paragraph () = stop_item (); printf "\n<br><br>\n"
 
   let section lev f =
     let lab = new_label () in
@@ -492,8 +496,8 @@ module Html = struct
       printf "<a name=\"%s_%c\"></a><h2>%c %s</h2>\n" idx c c cat;
       List.iter 
 	(fun (id,(text,link)) -> 
-	   printf "<a href=\"%s\">%s</a> %s<br/>\n" link id text) l;
-      printf "<br/><br/>"
+	   printf "<a href=\"%s\">%s</a> %s<br>\n" link id text) l;
+      printf "<br><br>"
     end
 		
   let all_letters i = List.iter (letter_index false i.idx_name) i.idx_entries
