@@ -677,7 +677,7 @@ use in a further session. This file can be given as the {\tt
  The state is saved in the current directory (see \pageref{Pwd}).
 \end{Variants}
 
-\section{Miscellaneous}
+\section{Quitting and debugging}
 
 \subsection{\tt Quit.}\comindex{Quit}
 This command permits to quit \Coq.
@@ -716,6 +716,13 @@ go();;
   environment variable \texttt{COQTOP} to the root of your copy of the sources (see section \ref{EnvVariables}).
 \end{Warnings}
 
+\subsection{\tt Time \textrm{\textsl{command}}.}\comindex{Time}
+\label{time}
+This command executes the vernac command \textrm{\textsl{command}}
+and display the time needed to execute it.
+
+\section{Controlling display}
+
 \subsection{\tt Set Silent.}
 \comindex{Begin Silent}
 \label{Begin-Silent}
@@ -725,10 +732,29 @@ This command turns off the normal displaying.
 \subsection{\tt Unset Silent.}\comindex{End Silent}
 This command turns the normal display on.
 
-\subsection{\tt Time \textrm{\textsl{command}}.}\comindex{Time}
-\label{time}
-This command executes the vernac command \textrm{\textsl{command}}
-and display the time needed to execute it.
+\subsection{\tt Set Printing Width {\integer}.}\comindex{Set Printing Width}
+This command sets which left-aligned part of the width of the screen
+is used for display. 
+
+\subsection{\tt Unset Printing Width.}\comindex{Unset Printing Width}
+This command resets the width of the screen used for display to its
+default value (which is 78 at the time of writing this documentation).
+
+\subsection{\tt Test Printing Width.}\comindex{Test Printing Width}
+This command displays the current screen width used for display.
+
+\subsection{\tt Set Printing Depth {\integer}.}\comindex{Set Printing Depth}
+This command sets the nesting depth of the formatter used for
+pretty-printing. Beyond this depth, display of subterms is replaced by
+dots. 
+
+\subsection{\tt Unset Printing Depth.}\comindex{Unset Printing Depth}
+This command resets the nesting depth of the formatter used for
+pretty-printing to its default value (at the
+time of writing this documentation, the default value is 50).
+
+\subsection{\tt Test Printing Depth.}\comindex{Test Printing Depth}
+This command displays the current nesting depth used for display.
 
 %\subsection{\tt Explain ...}
 %Not yet documented.
