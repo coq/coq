@@ -71,3 +71,5 @@ val string_of_univ : universe -> string
 (*s Dumping to a file *)
 
 val dump_universes : out_channel -> universes -> unit
+
+val hcons1_univ : universe -> universe

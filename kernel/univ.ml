@@ -426,3 +426,20 @@ let dump_universes output g =
   in
     UniverseMap.iter dump_arc g 
 
+module Huniv =
+  Hashcons.Make(
+    struct
+      type t = universe
+      type u = string -> string
+      let hash_sub hstr {u_mod=sp; u_num=n} = 
+	{u_mod=List.map hstr sp; u_num=n}
+      let equal {u_mod=sp1; u_num=n1} {u_mod=sp2; u_num=n2} =
+          (List.length sp1 = List.length sp2)
+              & List.for_all2 (==) sp1 sp2 & n1=n2
+      let hash = Hashtbl.hash
+    end)
+
+
+let hcons1_univ u =
+  let hstring = Hashcons.simple_hcons Hashcons.Hstring.f () in
+  Hashcons.simple_hcons Huniv.f hstring u

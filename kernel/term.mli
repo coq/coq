@@ -680,3 +680,4 @@ val hcons_constr:
     (types -> types)
 
 val hcons1_constr : constr -> constr
+val hcons1_types : types -> types

@@ -1733,11 +1733,27 @@ module Htype =
       let hash = Hashtbl.hash
     end)
 
-let hsort _ _ s = s
+module Hsorts =
+  Hashcons.Make(
+    struct
+      type t = sorts
+      type u = universe -> universe
+      let hash_sub huniv = function
+          Prop c -> Prop c
+        | Type u -> Type (huniv u)
+      let equal s1 s2 =
+        match (s1,s2) with
+            (Prop c1, Prop c2) -> c1=c2
+          | (Type u1, Type u2) -> u1 == u2
+          |_ -> false
+      let hash = Hashtbl.hash
+    end)
+
+let hsort = Hsorts.f
 
 let hcons_constr (hspcci,hspfw,hname,hident,hstr) =
-  let hsortscci = Hashcons.simple_hcons hsort hspcci in
-  let hsortsfw = Hashcons.simple_hcons hsort hspfw in
+  let hsortscci = Hashcons.simple_hcons hsort hcons1_univ in
+  let hsortsfw = Hashcons.simple_hcons hsort hcons1_univ in
   let hcci = hcons_term (hsortscci,hspcci,hname,hident) in
   let hfw = hcons_term (hsortsfw,hspfw,hname,hident) in
   let htcci = Hashcons.simple_hcons Htype.f (hcci,hsortscci) in
@@ -1747,6 +1763,11 @@ let hcons1_constr =
   let hnames = hcons_names () in
   let (hc,_,_) = hcons_constr hnames in
   hc
+
+let hcons1_types =
+  let hnames = hcons_names () in
+  let (_,_,ht) = hcons_constr hnames in
+  ht
 
 (* Abstract decomposition of constr to deal with generic functions *)
 
