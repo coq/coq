@@ -5,6 +5,7 @@ open Util
 open Names
 open Term
 open Reduction
+open Closure
 open Instantiate
 open Environ
 open Typing

@@ -82,7 +82,97 @@ type 'a subs =
   | SHIFT of int * 'a subs
   | LIFT of int * 'a subs
 
-(*s Call by value functions *)
+(*s A [stack] is a context of arguments, arguments are pushed by
+   [append_stack] one array at a time but popped with [decomp_stack]
+   one by one *)
+
+type 'a stack
+val empty_stack : 'a stack
+val append_stack : 'a array -> 'a stack -> 'a stack
+val decomp_stack : 'a stack -> ('a * 'a stack) option
+val list_of_stack : 'a stack -> 'a list
+val array_of_stack : 'a stack -> 'a array
+val stack_assign : 'a stack -> int -> 'a -> 'a stack
+val stack_args_size : 'a stack -> int
+val app_stack : constr * constr stack -> constr
+val stack_tail : int -> 'a stack -> 'a stack
+val stack_nth : 'a stack -> int -> 'a
+
+(***********************************************************************)
+(*s Call-by-value reduction *)
+
+(* Entry point for cbv normalization of a constr *)
+type 'a cbv_infos
+val create_cbv_infos : flags -> env -> 'a evar_map -> 'a cbv_infos
+val cbv_norm : 'a cbv_infos -> constr -> constr
+
+(*s Lazy reduction. *)
+
+(* [fconstr] is the type of frozen constr *)
+
+type fconstr
+
+(* [fconstr] can be accessed by using the function [frterm_of] and by
+   matching on type [frterm] *)
+
+type frterm =
+  | FRel of int
+  | FAtom of constr
+  | FCast of fconstr * fconstr
+  | FFlex of frreference
+  | FInd of inductive_path * fconstr array
+  | FConstruct of constructor_path * fconstr array
+  | FApp of fconstr * fconstr array
+  | FFix of (int array * int) * (fconstr array * name list * fconstr array)
+      * constr array * fconstr subs
+  | FCoFix of int * (fconstr array * name list * fconstr array)
+      * constr array * fconstr subs
+  | FCases of case_info * fconstr * fconstr * fconstr array
+  | FLambda of name * fconstr * fconstr * constr * fconstr subs
+  | FProd of name * fconstr * fconstr * constr * fconstr subs
+  | FLetIn of name * fconstr * fconstr * fconstr * constr * fconstr subs
+  | FLIFT of int * fconstr
+  | FFROZEN of constr * fconstr subs
+
+and frreference =
+  | FConst of section_path * fconstr array
+  | FEvar of (existential * fconstr subs)
+  | FVar of identifier
+  | FFarRel of int
+
+val frterm_of : fconstr -> frterm
+
+(* To lazy reduce a constr, create a ['a clos_infos] with
+   [create_cbv_infos], inject the term to reduce with [inject]; then use
+   a reduction function *)
+
+(* Global and local constant cache *)
+type 'a clos_infos
+val create_clos_infos : flags -> env -> 'a evar_map -> 'a clos_infos
+val clos_infos_env : 'a clos_infos -> env
+
+val inject : constr -> fconstr
+
+(* Reduction function *)
+
+(* [norm_val] is for strong normalization *)
+val norm_val : 'a clos_infos -> fconstr -> constr
+
+(* [whd_val] is for weak head normalization *)
+val whd_val : 'a clos_infos -> fconstr -> constr
+
+(* [fhnf] and [fnf_apply] are for weak head normalization but staying
+   in [fcontr] world to perform step by step weak head normalization *)
+
+val fhnf: 'a clos_infos -> fconstr -> int * fconstr * fconstr stack
+val fhnf_apply : 'a clos_infos ->
+  int -> fconstr -> fconstr stack -> int * fconstr * fconstr stack
+
+(* [search_frozen_value] unfolds references in a [fconstr] *)
+val search_frozen_value : 'a clos_infos -> frreference -> fconstr option
+
+
+(*i This is for cbv debug *)
 type cbv_value =
   | VAL of int * constr
   | LAM of name * constr * constr * cbv_value subs
@@ -92,75 +182,32 @@ type cbv_value =
 
 val shift_value : int -> cbv_value -> cbv_value
 
-(*i Private ??
-val contract_fixp : cbv_value subs -> fixpoint -> cbv_value subs * constr
-i*)
-
-type stack =
+type cbv_stack =
   | TOP
-  | APP of cbv_value list * stack
-  | CASE of constr * constr array * case_info * cbv_value subs * stack
+  | APP of cbv_value list * cbv_stack
+  | CASE of constr * constr array * case_info * cbv_value subs * cbv_stack
 
-val stack_app : cbv_value list -> stack -> stack
-val under_case_stack : stack -> bool
-val strip_appl : cbv_value -> stack -> cbv_value * stack
+val stack_app : cbv_value list -> cbv_stack -> cbv_stack
+val under_case_stack : cbv_stack -> bool
+val strip_appl : cbv_value -> cbv_stack -> cbv_value * cbv_stack
 
-val red_allowed : flags -> stack -> red_kind -> bool
+val red_allowed : flags -> cbv_stack -> red_kind -> bool
 val reduce_const_body :
-  (cbv_value -> cbv_value) -> cbv_value -> stack -> cbv_value * stack
-(*i Private ??
-val fixp_reducible :
-  (cbv_value -> cbv_value) -> flags -> fixpoint -> stack -> bool
-i*)
-
-(* normalization of a constr: the two functions to know... *)
-type 'a cbv_infos
-val create_cbv_infos : flags -> env -> 'a evar_map -> 'a cbv_infos
-val cbv_norm : 'a cbv_infos -> constr -> constr
+  (cbv_value -> cbv_value) -> cbv_value -> cbv_stack -> cbv_value * cbv_stack
 
 (* recursive functions... *)
 val cbv_stack_term : 'a cbv_infos ->
-  stack -> cbv_value subs -> constr -> cbv_value
+  cbv_stack -> cbv_value subs -> constr -> cbv_value
 val cbv_norm_term : 'a cbv_infos -> cbv_value subs -> constr -> constr
 val cbv_norm_more : 'a cbv_infos -> cbv_value subs -> cbv_value -> cbv_value
 val norm_head : 'a cbv_infos ->
-  cbv_value subs -> constr -> stack -> cbv_value * stack
-val apply_stack : 'a cbv_infos -> constr -> stack -> constr
+  cbv_value subs -> constr -> cbv_stack -> cbv_value * cbv_stack
+val apply_stack : 'a cbv_infos -> constr -> cbv_stack -> constr
 val cbv_norm_value : 'a cbv_infos -> cbv_value -> constr
+(* End of cbv debug section i*)
 
-
-(*s Lazy reduction. *)
-
-type freeze = { 
-  mutable norm: bool; 
-  mutable term: frterm }
-
-and frterm =
-  | FRel of int
-  | FAtom of constr
-  | FCast of freeze * freeze
-  | FFlex of frreference
-  | FInd of inductive_path * freeze array
-  | FConstruct of constructor_path * freeze array
-  | FApp of freeze * freeze array
-  | FFix of (int array * int) * (freeze array * name list * freeze array)
-      * constr array * freeze subs
-  | FCoFix of int * (freeze array * name list * freeze array)
-      * constr array * freeze subs
-  | FCases of case_info * freeze * freeze * freeze array
-  | FLambda of name * freeze * freeze * constr * freeze subs
-  | FProd of name * freeze * freeze * constr * freeze subs
-  | FLetIn of name * freeze * freeze * freeze * constr * freeze subs
-  | FLIFT of int * freeze
-  | FFROZEN of constr * freeze subs
-
-and frreference =
-  | FConst of section_path * freeze array
-  | FEvar of (existential * freeze subs)
-  | FVar of identifier
-  | FFarRel of int
-
-val frterm_of : freeze -> frterm
+(*i This is for lazy debug *)
+type freeze = fconstr
 val is_val : freeze -> bool
 
 val lift_frterm : int -> freeze -> freeze
@@ -181,44 +228,25 @@ val applist_of_freeze : freeze array -> constr list
 (* contract a substitution *)
 val contract_subst : int -> constr -> freeze subs -> freeze -> freeze
 
-(* Global and local constant cache *)
-type 'a clos_infos
-val create_clos_infos : flags -> env -> 'a evar_map -> 'a clos_infos
-val clos_infos_env : 'a clos_infos -> env
-
-(* Calculus of Constructions *)
-type fconstr = freeze
-
-val inject : constr -> fconstr
-
 val strip_frterm :
-  int -> fconstr -> fconstr array list -> int * fconstr * fconstr array
-val strip_freeze : fconstr -> int * fconstr * fconstr array
-
+  int -> fconstr -> fconstr stack -> int * fconstr * fconstr stack
+val strip_freeze : fconstr -> int * fconstr * fconstr stack
 
 (* Auxiliary functions for (co)fixpoint reduction *)
 val contract_fix_vect : frterm -> fconstr
 val copy_case : case_info -> fconstr -> fconstr -> fconstr array -> fconstr
 
-
 (* Iota analysis: reducible ? *)
 type case_status =
-  | CONSTRUCTOR of int * fconstr array
+  | CONSTRUCTOR of int * fconstr stack
   | COFIX of int * int * (fconstr array * name list * fconstr array) *
-      fconstr array * constr array * freeze subs
+      fconstr stack * constr array * freeze subs
   | IRREDUCTIBLE
-
-
-(* Reduction function *)
-val norm_val : 'a clos_infos -> fconstr -> constr
-val whd_val : 'a clos_infos -> fconstr -> constr
-val fhnf: 'a clos_infos -> fconstr -> int * fconstr * fconstr array
-val fhnf_apply : 'a clos_infos ->
-  int -> fconstr -> fconstr array -> int * fconstr * fconstr array
-val search_frozen_value : 'a clos_infos -> frreference -> fconstr option
 
 (* recursive functions... *)
 val unfreeze : 'a clos_infos -> fconstr -> fconstr
 val whnf_frterm : 'a clos_infos -> fconstr -> fconstr
 val whnf_term : 'a clos_infos -> fconstr subs -> constr -> fconstr
-val whnf_apply : 'a clos_infos -> fconstr -> fconstr array -> fconstr
+val whnf_apply : 'a clos_infos -> fconstr -> fconstr stack -> fconstr
+
+(* End of cbn debug section i*)

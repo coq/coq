@@ -412,10 +412,10 @@ let contract_cofixp env (i,(_,_,bds as bodies)) =
  *    (APP (l,(APP ...))) forbidden
  *)
 
-type stack =
+type cbv_stack =
   | TOP
-  | APP of cbv_value list * stack
-  | CASE of constr * constr array * case_info * cbv_value subs * stack
+  | APP of cbv_value list * cbv_stack
+  | CASE of constr * constr array * case_info * cbv_value subs * cbv_stack
 
 (* Adds an application list. Collapse APPs! *)
 let stack_app appl stack =
@@ -717,6 +717,83 @@ let cbv_norm infos constr =
 
 (**** End of call by value ****)
 
+(**********************************************************************)
+(* The type of (machine) stacks (= lambda-bar-calculus' contexts)     *) 
+
+type 'a stack =
+  | EmptyStack
+  | ConsStack of 'a array * int * 'a stack
+
+let empty_stack = EmptyStack
+
+let decomp_stack = function
+  | EmptyStack -> None
+  | ConsStack (v, n, s) ->
+      Some (v.(n), (if n+1 = Array.length v then s else ConsStack (v, n+1, s)))
+
+let append_stack v s = if Array.length v = 0 then s else ConsStack (v,0,s)
+
+let rec app_stack = function
+  | f, EmptyStack -> f
+  | f, ConsStack (v, n, s) -> 
+      let args = if n=0 then v else Array.sub v n (Array.length v - n) in
+      app_stack (appvect (f, args), s)
+
+let rec list_of_stack = function
+  | EmptyStack -> []
+  | ConsStack (v, n, s) ->
+      let args = if n=0 then v else  Array.sub v n (Array.length v - n) in
+      Array.fold_right (fun a l -> a::l) args (list_of_stack s)
+
+let array_of_stack s =
+  let rec stackrec = function
+  | EmptyStack -> []
+  | ConsStack (v, n, s) ->
+      let args = if n=0 then v else  Array.sub v n (Array.length v - n) in
+      args :: (stackrec s)
+  in Array.concat (stackrec s)
+
+let rec stack_assign s p c = match s with
+  | EmptyStack -> EmptyStack
+  | ConsStack (v, n, s) ->
+      let q = Array.length v - n in 
+      if p >= q then
+	ConsStack (v, n, stack_assign s (p-q) c)
+      else
+	let v' = Array.sub v n q in
+	v'.(p) <- c;
+	ConsStack (v', 0, s)
+
+let rec stack_tail p s =
+  if p = 0 then s else
+    match s with
+      | EmptyStack -> failwith "stack_shop"
+      | ConsStack (v, n, s) ->
+	  let q = Array.length v - n in
+	  if p >= q then stack_tail (p-q) s
+	  else ConsStack (v, n+p, s)
+
+let rec stack_nth s p = match s with
+  | EmptyStack -> raise Not_found
+  | ConsStack (v, n, s) ->
+      let q = Array.length v - n in
+      if p >= q then stack_nth s (p-q)
+      else v.(p+n)
+
+let rec stack_args_size = function
+  | EmptyStack -> 0
+  | ConsStack (v, n, s) -> Array.length v - n + stack_args_size s
+
+
+(* Version avec listes
+type stack = constr list
+
+let decomp_stack = function
+  | [] -> None
+  | v :: s -> Some (v,s)
+
+let append_stack v s = v@s
+*)
 
 (* Lazy reduction: the one used in kernel operations *)
 
@@ -999,11 +1076,12 @@ let rec strip_frterm n v stack =
   match v.term with
     | FLIFT (k,f) -> strip_frterm (k+n) f stack
     | FApp (f,args) ->
-        strip_frterm n f ((Array.map (lift_freeze n) args)::stack)
+        strip_frterm n f
+	  (append_stack (Array.map (lift_freeze n) args) stack)
     | FCast (f,_) -> (strip_frterm n f stack)
-    | _ -> (n, v, Array.concat stack)
+    | _ -> (n, v, stack)
 
-let strip_freeze v = strip_frterm 0 v []
+let strip_freeze v = strip_frterm 0 v empty_stack
 
 
 (* Same as contract_fixp, but producing a freeze *)
@@ -1038,9 +1116,9 @@ let copy_case ci p ft bl =
 
 (* Check if the case argument enables iota-reduction *)
 type case_status =
-  | CONSTRUCTOR of int * fconstr array
+  | CONSTRUCTOR of int * fconstr stack
   | COFIX of int * int * (fconstr array * name list * fconstr array) *
-      fconstr array * constr array * freeze subs
+      fconstr stack * constr array * freeze subs
   | IRREDUCTIBLE
 
 
@@ -1048,14 +1126,14 @@ let constr_or_cofix env v =
   let (lft_hd, head, appl) = strip_freeze v in
   match head.term with
     | FConstruct ((indsp,i),_) ->
-        let args = snd (array_chop (mindsp_nparams env indsp) appl) in
+        let args = stack_tail (mindsp_nparams env indsp) appl in
         CONSTRUCTOR (i, args)
     | FCoFix (bnum, def, bds, env) -> COFIX (lft_hd,bnum,def,appl, bds, env)
     | _ -> IRREDUCTIBLE
 
-let fix_reducible env unf_fun n appl =
-  if n < Array.length appl & n >= 0 (* e.g for Acc_rec: n = -2 *) then
-    let v = unf_fun appl.(n) in
+let fix_reducible env unf_fun n stack =
+  if n < stack_args_size stack & n >= 0 (* e.g for Acc_rec: n = -2 *) then
+    let v = unf_fun (stack_nth stack n) in
     match constr_or_cofix env v with
       | CONSTRUCTOR _ -> true
       | _ -> false
@@ -1083,7 +1161,7 @@ and whnf_frterm info ft =
 	  let uf = unfreeze info f in
           { norm = uf.norm; term = FLIFT(k, uf) }
       | FCast (f,_) -> whnf_frterm info f  (* remove outer casts *)
-      | FApp (f,appl) -> whnf_apply info f appl
+      | FApp (f,appl) -> whnf_apply info f (append_stack appl empty_stack)
       | FFlex (FConst (sp,vars)) ->
 	  let cst = (sp, Array.map term_of_freeze vars) in
 	  if red_under info.i_flags (CONST [sp]) then
@@ -1152,23 +1230,27 @@ and whnf_frterm info ft =
       | FFix _ | FCoFix _ | FInd _ | FConstruct _ | FLambda _ | FProd _ -> ft
 
 (* Weak head reduction: case of the application (head appl) *)
-and whnf_apply info head appl =
+and whnf_apply info head stack =
   let head = unfreeze info head in
-  if Array.length appl = 0 then 
+  if stack = empty_stack then 
     head
   else
-    let (lft_hd,whd,args) = strip_frterm 0 head [appl] in
+    let (lft_hd,whd,lstack) = strip_frterm 0 head stack in
     match whd.term with
       | FLambda (_,_,_,t,subs) when red_under info.i_flags BETA ->
-          let vbody = contract_subst lft_hd t subs args.(0) in
-          whnf_apply info vbody (array_tl args)
+	  (match decomp_stack lstack with
+	     | Some (c, stack') ->
+		 let vbody = contract_subst lft_hd t subs c in
+		 whnf_apply info vbody stack'
+	     | None -> assert false)
       | FFix ((reci,bnum), _, _, _) as fx
           when red_under info.i_flags IOTA
             & fix_reducible info.i_env 
-	        (unfreeze (infos_under info)) reci.(bnum) args ->
+	        (unfreeze (infos_under info)) reci.(bnum) lstack ->
           let fix = contract_fix_vect fx in
-          whnf_apply info (lift_freeze lft_hd fix) args
-      | _ -> 
+          whnf_apply info (lift_freeze lft_hd fix) lstack
+      | _ ->
+	  let appl = array_of_stack stack in
 	  { norm = (is_val head) & (array_for_all is_val appl);
             term = FApp (head, appl) }
 	    

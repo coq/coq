@@ -14,13 +14,8 @@ open Closure
 
 exception Elimconst
 
-(* The type of (machine) stacks (= lambda-bar-calculus' contexts) *) 
-type stack =
-  | EmptyStack
-  | ConsStack of constr array * int * stack
-
 (* The type of (machine) states (= lambda-bar-calculus' cuts) *) 
-type state = constr * stack
+type state = constr * constr stack
 
 type 'a contextual_reduction_function = env -> 'a evar_map -> constr -> constr
 type 'a reduction_function = 'a contextual_reduction_function
@@ -36,61 +31,6 @@ type 'a contextual_state_reduction_function =
 type 'a state_reduction_function = 'a contextual_state_reduction_function
 type local_state_reduction_function = state -> state
 
-let empty_stack = EmptyStack
-
-let decomp_stack = function
-  | EmptyStack -> None
-  | ConsStack (v, n, s) ->
-      Some (v.(n), (if n+1 = Array.length v then s else ConsStack (v, n+1, s)))
-
-let append_stack v s = if Array.length v = 0 then s else ConsStack (v,0,s)
-
-let rec app_stack = function
-  | f, EmptyStack -> f
-  | f, ConsStack (v, n, s) -> 
-      let args = if n=0 then v else Array.sub v n (Array.length v - n) in
-      app_stack (appvect (f, args), s)
-
-let rec list_of_stack = function
-  | EmptyStack -> []
-  | ConsStack (v, n, s) ->
-      let args = if n=0 then v else  Array.sub v n (Array.length v - n) in
-      Array.fold_right (fun a l -> a::l) args (list_of_stack s)
-
-let appterm_of_stack (f,s) = (f,list_of_stack s)
-
-let rec stack_assign s p c = match s with
-  | EmptyStack -> EmptyStack
-  | ConsStack (v, n, s) ->
-      let q = Array.length v - n in 
-      if p >= q then
-	ConsStack (v, n, stack_assign s (p-q) c)
-      else
-	let v' = Array.sub v n q in
-	v'.(p) <- c;
-	ConsStack (v', 0, s)
-
-let rec stack_nth s p = match s with
-  | EmptyStack -> raise Not_found
-  | ConsStack (v, n, s) ->
-      let q = Array.length v - n in
-      if p >= q then stack_nth s (p-q)
-      else v.(p+n)
-
-let rec stack_args_size = function
-  | EmptyStack -> 0
-  | ConsStack (v, n, s) -> Array.length v - n + stack_args_size s
-
-
-(* Version avec listes
-type stack = constr list
-
-let decomp_stack = function
-  | [] -> None
-  | v :: s -> Some (v,s)
-
-let append_stack v s = v@s
-*)
 (*************************************)
 (*** Reduction Functions Operators ***)
 (*************************************)
@@ -100,6 +40,8 @@ let rec whd_state (x, stack as s) =
     | IsApp (f,cl) -> whd_state (f, append_stack cl stack)
     | IsCast (c,_)  -> whd_state (c, stack)
     | _             -> s
+
+let appterm_of_stack (f,s) = (f,list_of_stack s)
 
 let whd_stack x = appterm_of_stack (whd_state (x, empty_stack))
 let whd_castapp_stack = whd_stack
@@ -204,7 +146,7 @@ let rec stacklam recfun env t stack =
     | _ -> recfun (substl env t, stack)
 
 let beta_applist (c,l) =
-  stacklam app_stack [] c (append_stack (Array.of_list l) EmptyStack)
+  stacklam app_stack [] c (append_stack (Array.of_list l) empty_stack)
 
 (* Iota reduction tools *)
 
@@ -734,6 +676,9 @@ let convert_forall2 f v1 v2 c =
   then array_fold_left2 (fun c x y -> f x y c) c v1 v2
   else raise NotConvertible
 
+let convert_stacks f v1 v2 c =
+  convert_forall2 f (array_of_stack v1) (array_of_stack v2) c
+
 (* Convertibility of sorts *)
 
 let sort_cmp pb s0 s1 =
@@ -771,15 +716,15 @@ and eqappr cv_pb infos appr1 appr2 =
 	(match kind_of_term a1, kind_of_term a2 with
 	   | (IsSort s1, IsSort s2) -> 
 	       bool_and_convert
-		 (Array.length v1 = 0 && Array.length v2 = 0)
+		 (stack_args_size v1 = 0 && stack_args_size v2 = 0)
 		 (sort_cmp cv_pb s1 s2)
 	   | (IsMeta n, IsMeta m) ->
                bool_and_convert (n=m) 
-		 (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2)
+		 (convert_stacks (ccnv (pb_equal cv_pb) infos lft1 lft2)
 		    v1 v2)
 	   | IsXtra s1, IsXtra s2 ->
                bool_and_convert (s1=s2)
-		 (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2)
+		 (convert_stacks (ccnv (pb_equal cv_pb) infos lft1 lft2)
 		    v1 v2)
 	   | _ -> fun _ -> raise NotConvertible)
 
@@ -787,14 +732,14 @@ and eqappr cv_pb infos appr1 appr2 =
     | (FRel n, FRel m) ->
         bool_and_convert 
           (reloc_rel n el1 = reloc_rel m el2)
-          (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
+          (convert_stacks (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
 
     (* 2 constants, 2 existentials or 2 local defined vars or 2 defined rels *)
     | (FFlex fl1, FFlex fl2) ->
 	convert_or
 	  (* try first intensional equality *)
 	  (bool_and_convert (fl1 = fl2)
-	     (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2))
+	     (convert_stacks (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2))
           (* else expand the second occurrence (arbitrary heuristic) *)
           (fun u ->
 	     match search_frozen_value infos fl2 with
@@ -820,7 +765,7 @@ and eqappr cv_pb infos appr1 appr2 =
     (* other constructors *)
     | (FLambda (_,c1,c2,_,_), FLambda (_,c'1,c'2,_,_)) ->
         bool_and_convert
-	  (Array.length v1 = 0 && Array.length v2 = 0)
+	  (stack_args_size v1 = 0 && stack_args_size v2 = 0)
           (convert_and
 	     (ccnv (pb_equal cv_pb) infos el1 el2 c1 c'1)
              (ccnv (pb_equal cv_pb) infos (el_lift el1) (el_lift el2) c2 c'2))
@@ -829,7 +774,7 @@ and eqappr cv_pb infos appr1 appr2 =
 
     | (FProd (_,c1,c2,_,_), FProd (_,c'1,c'2,_,_)) ->
 	bool_and_convert
-          (Array.length v1 = 0 && Array.length v2 = 0)
+          (stack_args_size v1 = 0 && stack_args_size v2 = 0)
 	  (convert_and
              (ccnv (pb_equal cv_pb) infos el1 el2 c1 c'1) (* Luo's system *)
              (ccnv cv_pb infos (el_lift el1) (el_lift el2) c2 c'2))
@@ -845,19 +790,19 @@ and eqappr cv_pb infos appr1 appr2 =
 	     (ccnv (pb_equal cv_pb) infos el1 el2 c1 c2)
 	     (convert_and
 		(convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) cl1 cl2)
-		(convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
+		(convert_stacks (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2)
 	     ))
 
      | (FInd (op1,cl1), FInd(op2,cl2)) ->
 	 bool_and_convert (op1 = op2)
 	   (convert_and
               (convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) cl1 cl2)
-              (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2))
+              (convert_stacks (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2))
      | (FConstruct (op1,cl1), FConstruct(op2,cl2)) ->
 	 bool_and_convert (op1 = op2)
 	   (convert_and
               (convert_forall2 (ccnv (pb_equal cv_pb) infos el1 el2) cl1 cl2)
-              (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2))
+              (convert_stacks (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2))
      | (FFix (op1,(tys1,_,cl1),_,_), FFix(op2,(tys2,_,cl2),_,_)) ->
 	 let n = Array.length cl1 in
 	 bool_and_convert (op1 = op2)
@@ -867,7 +812,7 @@ and eqappr cv_pb infos appr1 appr2 =
 		 (convert_forall2 (ccnv (pb_equal cv_pb) infos 
 				     (el_liftn n el1) (el_liftn n el2))
 		    cl1 cl2)
-		 (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2)
+		 (convert_stacks (ccnv (pb_equal cv_pb) infos lft1 lft2)
 		    v1 v2)))
      | (FCoFix (op1,(tys1,_,cl1),_,_), FCoFix(op2,(tys2,_,cl2),_,_)) ->
 	 let n = Array.length cl1 in
@@ -878,7 +823,7 @@ and eqappr cv_pb infos appr1 appr2 =
 		 (convert_forall2 (ccnv (pb_equal cv_pb) infos
 				     (el_liftn n el1) (el_liftn n el2))
 		    cl1 cl2)
-		 (convert_forall2 (ccnv (pb_equal cv_pb) infos lft1 lft2)
+		 (convert_stacks (ccnv (pb_equal cv_pb) infos lft1 lft2)
 		    v1 v2)))
 
      | _ -> (fun _ -> raise NotConvertible)

@@ -14,20 +14,7 @@ open Closure
 
 exception Elimconst
 
-(*s A [stack] is a context of arguments, arguments are pushed by
-   [append_stack] one array at a time but popped with [decomp_stack]
-   one by one *)
-
-type stack
-val empty_stack : stack
-val append_stack : constr array -> stack -> stack
-val decomp_stack : stack -> (constr * stack) option
-val list_of_stack : stack -> constr list
-val stack_assign : stack -> int -> constr -> stack
-val stack_args_size : stack -> int
-val app_stack : constr * stack -> constr
-
-type state = constr * stack
+type state = constr * constr stack
 
 type 'a contextual_reduction_function = env -> 'a evar_map -> constr -> constr
 type 'a reduction_function = 'a contextual_reduction_function
@@ -58,7 +45,7 @@ val strong_prodspine : local_reduction_function -> local_reduction_function
 val stack_reduction_of_reduction : 
   'a reduction_function -> 'a state_reduction_function
 i*)
-val stacklam : (state -> 'a) -> constr list -> constr -> stack -> 'a 
+val stacklam : (state -> 'a) -> constr list -> constr -> constr stack -> 'a 
 
 (*s Generic Optimized Reduction Function using Closures *)
 
@@ -148,9 +135,9 @@ val whd_programs : 'a reduction_function
 
 type fix_reduction_result = NotReducible | Reduced of state
 
-val fix_recarg : fixpoint -> stack -> (int * constr) option
+val fix_recarg : fixpoint -> constr stack -> (int * constr) option
 val reduce_fix : local_state_reduction_function -> fixpoint
-   -> stack -> fix_reduction_result
+   -> constr stack -> fix_reduction_result
 
 (*s Conversion Functions (uses closures, lazy strategy) *)
 

@@ -8,6 +8,7 @@ open Term
 open Inductive
 open Environ
 open Reduction
+open Closure
 open Instantiate
 
 (************************************************************************)
@@ -582,8 +583,6 @@ let rec substlin env name n ol c =
     | (IsRel _|IsMeta _|IsVar _|IsXtra _|IsSort _
       |IsEvar _|IsConst _|IsMutInd _|IsMutConstruct _) -> (n,ol,c)
 	
-open Closure
-	  
 let unfold env sigma name =
   clos_norm_flags (unfold_flags name) env sigma
 
