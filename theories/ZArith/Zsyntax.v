@@ -228,7 +228,7 @@ Delimits Scope Z_scope with Z.
 
 Infix "+" Zplus (at level 4) : Z_scope.
 Infix "-" Zminus (at level 4) : Z_scope.
-Infix "*" Zmult (at level 4) : Z_scope.
+Infix "*" Zmult (at level 3) : Z_scope.
 Distfix 0 "- _" Zopp : Z_scope.
 Infix "<=" Zle (at level 5, no associativity) : Z_scope.
 Infix "<"  Zlt (at level 5, no associativity) : Z_scope.
