@@ -567,6 +567,8 @@ wellfounded: $(WELLFOUNDEDVO)
 reals: $(REALSVO)
 sorting: $(SORTINGVO)
 
+noreal: logic arith bool zarith lists sets intmap relations wellfounded sorting
+
 # globalizations (for coqdoc)
 
 glob.dump::
