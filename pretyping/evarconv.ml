@@ -56,15 +56,16 @@ let rec evar_conv_x env isevars pbty term1 term2 =
   let term1 = whd_castappevar sigma term1 in
   let term2 = whd_castappevar sigma term2 in
 (*
- if eq_constr term1 term2 then 
+  if eq_constr term1 term2 then 
     true
-  else if (not(has_undefined_isevars isevars term1)) &
-    not(has_undefined_isevars isevars term2) 
-  then 
-    is_fconv pbty env (evars_of isevars) term1 term2
-  else
+  else 
 *)
-  (is_fconv pbty env sigma term1 term2) or
+  (* Maybe convertible but since reducing can erase evars which [evar_apprec]*)
+  (* could have found, we do it only if the terms are free of evar  *)
+  (not (has_undefined_isevars isevars term1) &
+   not (has_undefined_isevars isevars term2) &
+   is_fconv pbty env (evars_of isevars) term1 term2) 
+  or
   if ise_undefined isevars term1 then
     solve_simple_eqn evar_conv_x env isevars (pbty,destEvar term1,term2)
   else if ise_undefined isevars term2 then
