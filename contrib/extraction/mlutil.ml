@@ -43,21 +43,24 @@ let rec update_args sp vl = function
       Tarr (update_args sp vl a, update_args sp vl b)
   | a -> a
 
-(*s Does one particular section path occur in a type ? *)
+(*s Informative singleton optimization *)
 
-let sp_of_r r = match r with 
-    | ConstRef sp -> sp
-    | IndRef (sp,_) -> sp
-    | ConstructRef ((sp,_),_) -> sp
-    | _ -> assert false
+(* We simplify informative singleton inductive, i.e. an inductive with one 
+   constructor which has one informative argument. *) 
 
-let type_mem_sp sp t= 
-  let rec mem_sp = function 
-    | Tglob r when (sp_of_r r)=sp -> raise Found
-    | Tapp l -> List.iter mem_sp l
-    | Tarr (a,b) -> mem_sp a; mem_sp b
-    | _ -> ()
-  in try mem_sp t; false with Found -> true
+let rec type_mem r0 = function 
+    | Tglob r when r=r0 -> true
+    | Tapp l -> List.exists (type_mem r0) l
+    | Tarr (a,b) -> (type_mem r0 a) || (type_mem r0 b)
+    | _ -> false
+
+let singletons = ref Refset.empty
+
+let is_singleton r = Refset.mem r !singletons 
+
+let add_singleton r = singletons:= Refset.add r !singletons
+
+let clear_singletons () = singletons:= Refset.empty
 
 (*s [collect_lams MLlam(id1,...MLlam(idn,t)...)] returns
     the list [idn;...;id1] and the term [t]. *)
@@ -302,8 +305,11 @@ let rec simplify o = function
       simplify o f
   | MLapp (f, a) -> 
       simplify_app o (List.map (simplify o) a) (simplify o f)
+  | MLcons (r,[t]) when is_singleton r -> simplify o t (* Informative singleton *) 
   | MLcase (e,[||]) ->
       MLexn "Empty inductive"
+  | MLcase (e,[|r,[i],c|]) when is_singleton r -> (* Informative singleton *)
+      simplify o (MLletin (i,e,c))
   | MLcase (e,br) ->
       simplify_case o br (simplify o e) 
   | MLletin(_,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
@@ -389,11 +395,12 @@ let optimize_fix a =
 	     let new_c = named_lams (ml_subst new_f c) ids
 	     in MLfix(0,[|f|],[|new_c|])
 	 | MLapp(a',args) ->
+	     let m = List.length args in 
 	     (match a' with 
-		| MLfix(_,[|_|],[|_|]) when (test_eta_args_lift 0 n args)-> a'
+		| MLfix(_,[|_|],[|_|]) when 
+		    (test_eta_args_lift 0 n args) && not (occurs_itvl 1 m a') -> a'
 		| MLfix(_,[|f|],[|c|]) -> 
-		    let m = List.length args
-		    and v = Array.make n 0 in 
+		    let v = Array.make n 0 in 
 		    for i=0 to (n-1) do v.(i)<-i done;
 		    let aux i = function 
 			MLrel j when v.(j-1)>=0 -> v.(j-1)<-(-i-1)
@@ -594,7 +601,7 @@ let rec optimize prm = function
       let b = expand (strict_language prm.lang) r t in
       let l = if b then 
 	begin
-	  if prm.toplevel then if_verbose warning_expansion r;
+	  if not (prm.toplevel) then if_verbose warning_expansion r;
 	  List.map (subst_glob_decl r t) l
 	end
       else l in 
@@ -603,6 +610,10 @@ let rec optimize prm = function
 	Dglob (r,t) :: (optimize prm l)
       else
 	optimize prm l
+  | Dtype ([ids,r,[r0,[t0]]],false) :: l when not (type_mem r t0) ->
+      (* Detection of informative singleton. *)
+      add_singleton r0; 
+      Dabbrev (r, ids, t0) :: (optimize prm l)
   | (Dtype _ | Dabbrev _ | Dcustom _) as d :: l -> 
       d :: (optimize prm l)
 

@@ -21,6 +21,12 @@ open Nametab
 
 let current_module = ref None
 
+let sp_of_r r = match r with 
+    | ConstRef sp -> sp
+    | IndRef (sp,_) -> sp
+    | ConstructRef ((sp,_),_) -> sp
+    | _ -> assert false
+
 let module_of_r r = 
   snd (split_dirpath (dirpath (sp_of_r r)))
 
@@ -35,7 +41,6 @@ let check_ml r d =
       find_ml_extraction r 
     with Not_found -> d
   else d
-
 
 (*s tables of global renamings *)
 

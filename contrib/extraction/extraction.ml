@@ -557,21 +557,14 @@ and extract_term_info_with_type env ctx c t =
    produces: 
 
    [fun ]$p_1 \ldots p_n ~ x_1 \ldots x_n $[-> C(]$x_{i_1},\ldots, x_{i_k}$[)].
-   This ML term will be reduced later on when applied, see [mlutil.ml].
-
-   In the special case of a informative singleton inductive, [C] is identity *)
+   This ML term will be reduced later on when applied, see [mlutil.ml]. *)
 
 and abstract_constructor cp  =
   let s,n = signature_of_constructor cp in 
   let rec abstract rels i = function
     | [] -> 
 	let rels = List.rev_map (fun x -> MLrel (i-x)) rels in
-	if is_singleton_constructor cp then 
-	  match rels with 
-	    | [var]->var
-	    | _ -> assert false
-	else
-	  MLcons (ConstructRef cp, rels)
+	MLcons (ConstructRef cp, rels)
     | (Info,NotArity) :: l -> 
 	MLlam (id_of_name Anonymous, abstract (i :: rels) (succ i) l)
     | (Logic,NotArity) :: l ->
@@ -611,18 +604,7 @@ and extract_case env ctx ip c br =
   (* [c] has an inductive type, not an arity type *)
   (match extract_term env ctx c with
      | Rmlterm a -> 
-	 if is_singleton_inductive ip then 
-	   begin
-	     (* Informative singleton case: *)
-	     (* [match c with C i -> t] becomes [let i = c' in t'] *)
-	     assert (Array.length br = 1);
-	     let (_,ids,e') = extract_branch 0 br.(0) in
-	     assert (List.length ids = 1);
-	     MLletin (List.hd ids,a,e')
-	   end
-	 else
-	   (* Standard case: we apply [extract_branch]. *)
-	   MLcase (a, Array.mapi extract_branch br)
+	 MLcase (a, Array.mapi extract_branch br)
      | Rprop -> 
 	 (* Logical singleton case: *)
 	 (* [match c with C i j k -> t] becomes [t'] *)
@@ -756,21 +738,6 @@ and extract_constructor (((sp,_),_) as c) =
   extract_mib sp;
   lookup_constructor_extraction c
 
-(* Looking for informative singleton case, i.e. an inductive with one 
-   constructor which has one informative argument. This dummy case will 
-   be simplified. *)
-
-and is_singleton_inductive ind = 
-  let (mib,mip) = Global.lookup_inductive ind in 
-  (mib.mind_ntypes = 1) &&
-  (Array.length mip.mind_consnames = 1) && 
-  match extract_constructor (ind,1) with 
-    | Cml ([mlt],_,_)-> not (type_mem_sp (fst ind) mlt)
-    | _ -> false
-	  
-and is_singleton_constructor ((sp,i),_) = 
-  is_singleton_inductive (sp,i) 
-
 and signature_of_constructor cp = match extract_constructor cp with
   | Cprop -> assert false
   | Cml (_,s,n) -> (s,n)
@@ -859,39 +826,27 @@ and extract_mib sp =
 
 and extract_inductive_declaration sp =
   extract_mib sp;
-  let ip = (sp,0) in 
-  if is_singleton_inductive ip then
-    let t = match lookup_constructor_extraction (ip,1) with 
-      | Cml ([t],_,_)-> t
-      | _ -> assert false
-    in
-    let vl = match lookup_inductive_extraction ip with 
-      | Iml (_,vl) -> vl
-      | _ -> assert false
-    in 
-    Dabbrev (IndRef ip,vl,t)
-  else
-    let mib = Global.lookup_mind sp in
-    let one_ind ip n = 
-	iterate_for (-n) (-1)
-	   (fun j l -> 
-	      let cp = (ip,-j) in 
-	      match lookup_constructor_extraction cp with 
-		| Cprop -> assert false
-		| Cml (t,_,_) -> (ConstructRef cp, t)::l) []
-    in
-    let l = 
-      iterate_for (1 - mib.mind_ntypes) 0
-	(fun i acc -> 
-	   let ip = (sp,-i) in
-	   let nc = Array.length mib.mind_packets.(-i).mind_consnames in 
-	   match lookup_inductive_extraction ip with
-	     | Iprop -> acc
-	     | Iml (_,vl) -> 
-		 (List.rev vl, IndRef ip, one_ind ip nc) :: acc)
-	[] 
-    in
-    Dtype (l, not mib.mind_finite)
+  let mib = Global.lookup_mind sp in
+  let one_ind ip n = 
+    iterate_for (-n) (-1)
+      (fun j l -> 
+	 let cp = (ip,-j) in 
+	 match lookup_constructor_extraction cp with 
+	   | Cprop -> assert false
+	   | Cml (t,_,_) -> (ConstructRef cp, t)::l) []
+  in
+  let l = 
+    iterate_for (1 - mib.mind_ntypes) 0
+      (fun i acc -> 
+	 let ip = (sp,-i) in
+	 let nc = Array.length mib.mind_packets.(-i).mind_consnames in 
+	 match lookup_inductive_extraction ip with
+	   | Iprop -> acc
+	   | Iml (_,vl) -> 
+	       (List.rev vl, IndRef ip, one_ind ip nc) :: acc)
+      [] 
+  in
+  Dtype (l, not mib.mind_finite)
 
 (*s Extraction of a global reference i.e. a constant or an inductive. *)
 

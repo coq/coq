@@ -21,7 +21,9 @@ open Nametab
 open Vernacinterp
 open Common
 
-(*s [extract_module m] returns all the global reference declared in a module *)
+(*s [extract_module m] returns all the global reference declared 
+  in a module. This is done by traversing the segment of module [M]. 
+  We just keep constants and inductives. *)
 
 let extract_module m =
   let m = Nametab.locate_loaded_library (Nametab.make_short_qualid m) in
@@ -146,6 +148,7 @@ let local_optimize refs =
   let prm = 
     { lang = "ocaml" ; toplevel = true; 
       mod_name = None; to_appear = refs} in
+  clear_singletons ();
   optimize prm (decl_of_refs refs)
 
 let print_user_extract r = 
@@ -185,7 +188,7 @@ let _ =
        let rl = refs_of_vargl vl in 
        let ml_rl = List.filter is_ml_extraction rl in
        let rl = List.filter (fun x -> not (is_ml_extraction x)) rl in 
-       let dl = decl_of_refs rl in
+       let dl = local_optimize rl in
        List.iter print_user_extract ml_rl ;
        List.iter (fun d -> mSGNL (ToplevelPp.pp_decl d)) dl)
 
@@ -198,6 +201,7 @@ let _ =
     (function 
        | VARG_STRING lang :: VARG_STRING f :: vl ->
 	   (fun () -> 
+	      clear_singletons ();
 	      let refs = refs_of_vargl vl in
 	      let prm = {lang=lang;
 			 toplevel=false;
@@ -209,10 +213,8 @@ let _ =
 	      extract_to_file f prm decls)
        | _ -> assert false)
 
-(*s Extraction of a module. The vernacular command is \verb!Extraction Module!
-    [M]. We build the environment to extract by traversing the segment of
-    module [M]. We just keep constants and inductives, and we remove
-    those having an ML extraction. *)
+(*s Extraction of a module. The vernacular command is 
+  \verb!Extraction Module! [M]. *) 
 
 let decl_in_m m = function 
   | Dglob (r,_) -> m = module_of_r r
@@ -231,6 +233,7 @@ let _ =
     (function 
        | [VARG_STRING lang; VARG_IDENTIFIER m] ->
 	   (fun () -> 
+	      clear_singletons ();
 	      let f = (String.uncapitalize (string_of_id m))
 		       ^ (file_suffix lang) in
 	      let prm = {lang=lang;
@@ -244,12 +247,15 @@ let _ =
 	      extract_to_file f prm decls)
        | _ -> assert false)
 
+(*s Recusrive Extraction of all the modules [M] depends on. 
+  The vernacular command is \verb!Recursive Extraction Module! [M]. *) 
 
 let _ = 
   vinterp_add "RecursiveExtractionModule"
         (function 
        | [VARG_STRING lang; VARG_IDENTIFIER m] ->
 	   (fun () -> 
+	      clear_singletons ();
 	      let modules,refs = modules_extract_env m in 
 	      let dummy_prm = {lang=lang;
 			      toplevel=false;
