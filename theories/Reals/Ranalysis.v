@@ -367,7 +367,7 @@ Save.
 Lemma const_derivable : (a:R) (derivable ([x:R] a)).
 Unfold derivable; Unfold derivable_pt; Intros; Exists ``0``; Intros; Exists (mkposreal ``1`` Rlt_R0_R1); Intros; Unfold Rminus; Rewrite Rplus_Ropp_r; Unfold Rdiv; Rewrite Rmult_Ol; Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Assumption.
 Save.
-
+ 
 (**********)
 Lemma deriv_id : (x:R) (derive_pt ([y:R] y) x)==``1``.
 Intro x; Apply derive_pt_def_0; Intros; Exists (mkposreal ``1`` Rlt_R0_R1); Intros; Replace ``(x+h-x)/h-1`` with ``0``.
@@ -421,15 +421,32 @@ Intros; Generalize (deriv_sqrt x H); Unfold derive; Intro; Generalize (eq_fct x 
 Save.
 
 (* Composition *)
-Axiom prov : (f:R->R) (Dgf no_cond no_cond f)==no_cond.
 
 Lemma deriv_composition : (f,g:R->R;x:R) (derivable_pt f x) -> (derivable_pt g (f x)) -> ``(derive_pt (comp g f) x)==(derive_pt g (f x))*(derive_pt f x)``. 
-Intros; Generalize (derivable_derive f x H); Intro; Generalize (derivable_derive g (f x) H0); Intro; Elim H1; Clear H1; Intros l1 H1; Elim H2; Clear H2; Intros l2 H2.
+Intros; Generalize (derivable_derive f x H); Intro; Generalize
+(derivable_derive g (f x) H0); Intro; Elim H1; Clear H1; Intros l1 H1; Elim
+H2; Clear H2; Intros l2 H2.
 Cut l1==((fct_cte l1) x).
 Cut l2==((fct_cte l2) x).
-Intros; Rewrite H3 in H2; Rewrite H4 in H1; Rewrite H1; Rewrite H2; Generalize derive_pt_D_in; Intro; Elim (H5 f (fct_cte l1) x); Intros; Elim (H5 g (fct_cte l2) (f x)); Intros; Generalize (H9 H2); Intro; Generalize (H7 H1); Intro; Replace ``(fct_cte l2 x)*(fct_cte l1 x)`` with ``((mult_fct (fct_cte l1) (fct_cte l2)) x)``.
-Elim (H5 (comp g f) (mult_fct (fct_cte l1) (fct_cte l2)) x); Intros; Apply H12.
-Unfold comp mult_fct; Generalize (prov f); Intro; Rewrite <- H14; Apply (Dcomp no_cond no_cond (fct_cte l1) (fct_cte l2) f g x); Assumption.
+Intros; Rewrite H3 in H2; Rewrite H4 in H1; Rewrite H1; Rewrite H2;
+Generalize derive_pt_D_in; Intro; Elim (H5 f (fct_cte l1) x); Intros; Elim
+(H5 g (fct_cte l2) (f x)); Intros; Generalize (H9 H2); Intro; Generalize (H7
+H1); Intro; Replace ``(fct_cte l2 x)*(fct_cte l1 x)`` with ``((mult_fct
+(fct_cte l1) (fct_cte l2)) x)``.
+Elim (H5 (comp g f) (mult_fct (fct_cte l1) (fct_cte l2)) x); Intros; Apply
+H12.
+Generalize (Dcomp no_cond no_cond (fct_cte l1) (fct_cte l2) f g x); Unfold comp mult_fct no_cond D_in; Unfold Dgf; Intros.
+Cut (limit1_in [x0:R]``((g (f x0))-(g (f x)))/(x0-x)`` (D_x [_:R]True/\True x) ``(fct_cte l1 x)*(fct_cte l2 (f x))`` x) -> (limit1_in [x0:R]``((g (f x0))-(g (f x)))/(x0-x)`` (D_x [_:R]True x) ``(fct_cte l1 x)*(fct_cte l2 x)`` x).
+Intros; Apply H15; Apply H14.
+Assumption.
+Assumption.
+Unfold D_x limit1_in; Unfold limit_in; Intros; Elim (H15 eps H16); Intros; Exists x0; Elim H17; Intros; Split.
+Assumption.
+Intros; Apply H19; Elim H20; Intros; Elim H21; Intros; Split.
+Split.
+Split; Trivial.
+Assumption.
+Assumption.
 Unfold mult_fct fct_cte; Rewrite Rmult_sym; Reflexivity.
 Unfold fct_cte; Reflexivity.
 Unfold fct_cte; Reflexivity.
