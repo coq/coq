@@ -1321,13 +1321,12 @@ Please restart and report NOW.";
 	      begin
 		let i= self#get_insert#backward_word_start in
 		prerr_endline "active_kp_hf: Placing cursor";
-		input_buffer#place_cursor i;
-		self#process_until_insert_or_error
+		self#process_until_iter_or_error i
 	      end);
 	  true
       | l when List.mem `CONTROL l -> 
 	  let k = GdkEvent.Key.keyval k in
-	  if GdkKeysyms._m=k
+	  if GdkKeysyms._Break=k
 	  then break ();
 	  false
       | l -> false
@@ -2651,15 +2650,18 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
        (fun {view=view} -> view#misc#modify_font fd)
        input_views;
   );
-  (try 
-     let image = Filename.concat lib_ide "coq.png" in
-     let startup_image = GdkPixbuf.from_file image in
-     tv2#buffer#insert_pixbuf ~iter:tv2#buffer#start_iter 
-       ~pixbuf:startup_image;
-     tv2#buffer#insert ~iter:tv2#buffer#start_iter "\t\t";
-   with _ -> ());
-  tv2#buffer#insert "\nCoqIde: an experimental Gtk2 interface for Coq.\n";
-  tv2#buffer#insert ((Coq.version ()));
+  let about (b:GText.buffer) =
+    (try 
+       let image = Filename.concat lib_ide "coq.png" in
+       let startup_image = GdkPixbuf.from_file image in
+       b#insert_pixbuf ~iter:b#start_iter 
+	 ~pixbuf:startup_image;
+       b#insert ~iter:b#start_iter "\t\t";
+     with _ -> ());
+    b#insert "\nCoqIde: an experimental Gtk2 interface for Coq.\n\nVersion infomation\n--------\n";
+    b#insert ((Coq.version ()));
+    b#insert "\nAuthor: Benjamin Monate\nDo not hesitate to report bugs or missing features." in
+  about  tv2#buffer;
   w#add_accel_group accel_group;
   (* Remove default pango menu for textviews *)
   ignore (tv2#event#connect#button_press ~callback:
@@ -2689,7 +2691,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   tv2#misc#modify_font !current.text_font; 
   tv3#misc#modify_font !current.text_font;
   ignore (about_m#connect#activate 
-	    ~callback:(fun () -> tv3#buffer#set_text "by Benjamin Monate"));
+	    ~callback:(fun () -> about tv3#buffer));
   ignore (faq_m#connect#activate 
 	    ~callback:(fun () -> 
 			 load (Filename.concat lib_ide "FAQ")));
@@ -2742,9 +2744,10 @@ let start () =
   GtkData.AccelGroup.set_default_mod_mask 
     (Some [`CONTROL;`SHIFT;`MOD1;`MOD3;`MOD4]);
   cb_ := Some (GtkBase.Clipboard.get Gdk.Atom.primary);
-  Glib.Message.set_log_handler ~domain:"Gtk" ~levels:[`ERROR;`FLAG_FATAL;
-						      `WARNING;`CRITICAL]
-    (fun ~level msg -> failwith ("Coqide internal error: " ^ msg));
+  ignore (
+    Glib.Message.set_log_handler ~domain:"Gtk" ~levels:[`ERROR;`FLAG_FATAL;
+							`WARNING;`CRITICAL]
+	    (fun ~level msg -> failwith ("Coqide internal error: " ^ msg)));
   Command_windows.main ();
   Blaster_window.main 9;
   main files;
