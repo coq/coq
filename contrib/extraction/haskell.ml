@@ -250,9 +250,8 @@ let pp_decl mp =
 	let l = rename_tvars keywords l in
 	let l' = List.rev l in 
 	hov 2 (str "type " ++ pp_global r ++ spc () ++ 
-	       prlist_with_sep (fun () -> (str " ")) pr_id l ++
-	       (if l <> [] then (str " ") else (mt ())) ++ str "=" ++ spc () ++
-	       pp_type false l' t ++ fnl () ++ fnl ())
+	       prlist (fun id -> pr_id id ++ str " ") l ++
+	       str "=" ++ spc () ++ pp_type false l' t) ++ fnl () ++ fnl ()
   | Dfix (rv, defs,_) ->
       let ppv = Array.map pp_global rv in 
       prlist_with_sep (fun () -> fnl () ++ fnl ())
