@@ -264,7 +264,7 @@ let unify_0 cv_pb mc wc m n =
 
 let rec w_Unify cv_pb m n mc wc =
   let (mc',ec') = unify_0 cv_pb mc wc m n in 
-  w_resrec mc' ec' wc
+  w_resrec (List.rev mc') (List.rev ec') wc
 
 and w_resrec metas evars wc =
   match evars with
@@ -609,7 +609,7 @@ let clenv_merge with_types =
 	  | Evar (evn,_) ->
     	      if w_defined_evar clenv.hook evn then
 		let (metas',evars') = unify_0 CONV [] clenv.hook rhs lhs in
-		clenv_resrec (metas'@metas) (evars'@t) clenv
+		clenv_resrec (List.rev metas'@metas) (List.rev evars'@t) clenv
     	      else begin
 		let rhs' = 
 		  if occur_meta rhs then subst_meta metas rhs else rhs 
@@ -634,7 +634,7 @@ let clenv_merge with_types =
     	  if clenv_defined clenv mv then
             let (metas',evars') =
               unify_0 CONV [] clenv.hook (clenv_value clenv mv).rebus n in
-            clenv_resrec (metas'@t) evars' clenv
+            clenv_resrec (List.rev metas'@t) (List.rev evars') clenv
     	  else
 	    let mc,ec =
 	      let mvty = clenv_instance_type clenv mv in
@@ -645,7 +645,8 @@ let clenv_merge with_types =
 		unify_0 CUMUL [] clenv.hook nty mvty
 		with e when Logic.catchable_exception e -> ([],[]))
 	      else ([],[]) in
-	    clenv_resrec (mc@t) ec (clenv_assign mv n clenv)
+	    clenv_resrec (List.rev mc@t) (List.rev ec)
+              (clenv_assign mv n clenv)
 
   in clenv_resrec
 
@@ -661,7 +662,7 @@ let clenv_merge with_types =
 
 let clenv_unify_core_0 with_types cv_pb m n clenv =
   let (mc,ec) = unify_0 cv_pb [] clenv.hook m n in 
-  clenv_merge with_types mc ec clenv
+  clenv_merge with_types (List.rev mc) (List.rev ec) clenv
 
 let clenv_unify_0 = clenv_unify_core_0 false
 let clenv_typed_unify = clenv_unify_core_0 true
