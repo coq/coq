@@ -177,7 +177,20 @@ type pattern_qualid_kind =
   | ConstrPat of loc * constructor
   | VarPat of loc * identifier
 
-let maybe_constructor env = function
+let may_allow_variable loc allow_var l =
+  match maybe_variable l with
+    | Some s when allow_var -> 
+      (* Why a warning since there is no warning when writing [globname:T]... 
+	 warning ("Defined reference "^(string_of_qualid qid)
+	 ^" is here considered as a matching variable");
+      *)
+        VarPat (loc,s)
+    | _ -> 
+        user_err_loc (loc,"maybe_constructor",
+        str "This reference does not denote a constructor: " ++
+        str (string_of_qualid (interp_qualid l)))
+
+let maybe_constructor allow_var env = function
   | Node(loc,"QUALID",l) ->
       let qid = interp_qualid l in
       (try match extended_locate qid with
@@ -189,22 +202,23 @@ let maybe_constructor env = function
 	    | _ -> 
 		user_err_loc (loc,"maybe_constructor",
            str "This syntactic definition should be aliased to a constructor"))
-       | TrueGlobal (ConstructRef c as r) -> 
-	   if !dump then add_glob loc r; 
-	   ConstrPat (loc,c)
-       | _ -> 
-	   (match maybe_variable l with
-	    | Some s -> 
-(* Why a warning since there is no warning when writing [globname:T]... 
-		warning ("Defined reference "^(string_of_qualid qid)
-			 ^" is here considered as a matching variable");
-*)
-		VarPat (loc,s)
-	    | _ -> error ("This reference does not denote a constructor: "
-			  ^(string_of_qualid qid)))
+       | TrueGlobal r ->
+           let rec unf = function
+             | ConstRef cst ->
+                 (try
+                   unf
+                     (reference_of_constr (constant_value (Global.env()) cst))
+                 with
+                     NotEvaluableConst _ | Not_found ->
+                       may_allow_variable loc allow_var l)
+             | ConstructRef c -> 
+	         if !dump then add_glob loc r; 
+	         ConstrPat (loc,c)
+             | _ -> may_allow_variable loc allow_var l
+           in unf r
        with Not_found -> 
 	 match maybe_variable l with
-	   | Some s -> VarPat (loc,s)
+	   | Some s when allow_var -> VarPat (loc,s)
 	   | _ -> error ("Unknown qualified constructor: "
 			 ^(string_of_qualid qid)))
 
@@ -338,17 +352,19 @@ let rec ast_to_pattern env aliases = function
       ast_to_pattern env aliases' p
 
   | Node(_,"PATTCONSTRUCT", head::((_::_) as pl)) ->
-      (match maybe_constructor env head with
+      (match maybe_constructor false env head with
 	 | ConstrPat (loc,c) ->
 	     let (idsl,pl') =
 	       List.split (List.map (ast_to_pattern env ([],[])) pl) in
 	     (aliases::(List.flatten idsl),
 	      PatCstr (loc,c,pl',alias_of aliases))
 	 | VarPat (loc,s) ->
-	     user_err_loc (loc,"ast_to_pattern",mssg_hd_is_not_constructor s))
-
+(*
+	     user_err_loc (loc,"ast_to_pattern",mssg_hd_is_not_constructor s)
+*)
+              assert false)
   | ast ->
-      (match maybe_constructor env ast with
+      (match maybe_constructor true env ast with
 	 | ConstrPat (loc,c) -> ([aliases], PatCstr (loc,c,[],alias_of aliases))
 	 | VarPat (loc,s) ->
 	     let aliases = merge_aliases aliases (name_of_nvar s) in
