@@ -58,12 +58,6 @@ val put_pat            : module_mark -> string -> marked_pattern
 (*val get_pat            : marked_pattern -> constr*)
 
 
-(* [pattern_of_constr c] translates a term [c] with metavariables into
-   a pattern; currently, no destructor (Cases, Fix, Cofix) and no
-   existential variable are allowed in [c] *)
-
-val pattern_of_constr : constr -> Rawterm.constr_pattern
-
 (* [put_squel mmk s] declares an open term [s] to be parsed using the
    definitions in the modules associated to the key [mmk] *)
 
@@ -95,22 +89,17 @@ i*)
    contained in the arguments of the application, and in that case, we
    construct a [DLAM] with the names on the stack. *)
 
-(*i Devrait être une fonction de filtrage externe i*)
-val somatch      : int list option -> Rawterm.constr_pattern -> constr -> (int * constr) list
-
-
-exception PatternMatchingFailure
 
 (* [dest_somatch c pat] matches [c] against [pat] and returns the resulting
    assignment of metavariables; it raises [PatternMatchingFailure] if
    not matchable *)
-
+(*
 val dest_somatch : constr -> marked_pattern -> constr list
 
 (* [somatches c pat] just tells if [c] matches against [pat] *)
 
 val somatches    : constr -> marked_pattern -> bool
-
+*)
 
 (* [dest_somatch_conv env sigma] matches up to conversion in
    environment [(env,sgima)] when constants in pattern are concerned;
