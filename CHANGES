@@ -74,6 +74,10 @@ Tactiques
 
 Outils
 
+- deux binaires maximum : coqtop.byte et coqtop.opt si plateforme native; 
+  coqtop est un lien vers le plus efficace possible (coqtop.opt s'il existe,
+  coqtop.byte sinon); -full maintenant obsolete
+
 - do_Makefile s'appelle maintenant coq_makefile
 
 Utilisation générale
