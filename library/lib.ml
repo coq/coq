@@ -154,7 +154,8 @@ let close_section export f s =
   add_entry (make_path (id_of_string s) OBJ)
     (ClosedSection (export, s,after',contents));
   Nametab.push_module s contents;
-  if export then Nametab.open_module_contents s
+  if export then Nametab.open_module_contents s;
+  add_frozen_state ()
 
 (* The following function exports the whole library segment, that will be 
    saved as a module. Objects are presented in chronological order, and
