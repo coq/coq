@@ -25,20 +25,20 @@ let mkExistential isevars env =
   new_isevar isevars env (mkCast dummy_sort dummy_sort) CCI
 
 let norec_branch_scheme env isevars cstr =
-  prod_it (mkExistential isevars env) cstr.cs_args 
+  it_mkProd_or_LetIn (mkExistential isevars env) cstr.cs_args 
 
-let lift_args l = list_map_i (fun i (name,c) -> (name,liftn 1 i c)) 1 l
-
-let rec_branch_scheme env isevars ((sp,j),_) recargs cstr = 
+let rec_branch_scheme env isevars ((sp,j),_) recargs cstr =
   let rec crec (args,recargs) = 
     match args, recargs with 
-      | (name,c)::rea,(ra::reca) -> 
-          DOP2(Prod,c,DLAM(name,
+      | (name,None,c)::rea,(ra::reca) -> 
+          DOP2(Prod,body_of_type c,DLAM(name,
 	       match ra with 
 		 | Mrec k when k=j -> 
 		     mkArrow (mkExistential isevars env)
-		       (crec (lift_args rea,reca))
+		       (crec (List.rev (lift_rel_context 1 (List.rev rea)),reca))
                  | _ -> crec (rea,reca)))
+      | (name,Some d,c)::rea, reca -> failwith "TODO"
+(*	  mkLetIn (name,d,body_of_type c,crec (rea,reca))) *)
       | [],[] -> mkExistential isevars env
       | _ -> anomaly "rec_branch_scheme"
   in 
@@ -145,7 +145,7 @@ let inductive_of_rawconstructor c =
 
 (* Environment management *)
 let push_rel_type sigma (na,t) env =
-  push_rel (na,get_assumption_of env sigma t) env
+  push_rel_decl (na,get_assumption_of env sigma t) env
 
 let push_rels vars env =
   List.fold_right (fun nvar env -> push_rel_type Evd.empty nvar env) vars env
@@ -537,6 +537,39 @@ let prepare_unif_pb typ cs =
 
   (* This is the problem: finding P s.t. cs_args |- (P realargs ci) = p' *)
   (Array.map (lift (-n)) cs.cs_concl_realargs, ci, p')
+(*
+(* Infering the predicate *)
+let prepare_unif_pb typ cs =
+  let n = cs.cs_nargs in
+  let _,p = decompose_prod_n n typ in
+  let ci = build_dependent_constructor cs in
+  (* This is the problem: finding P s.t. cs_args |- (P realargs ci) = p *)
+  (n, cs.cs_concl_realargs, ci, p)
+
+let eq_operator_lift k (n,n') = function
+  | OpRel p, OpRel p' when p > k & p' > k ->
+      if p < k+n or p' < k+n' then false else p - n = p' - n'
+  | op, op' -> op = op'
+
+let rec transpose_args n =
+  if n=0 then []
+  else
+    (Array.map (fun l -> List.hd l) lv)::
+    (transpose_args (m-1) (Array.init (fun l -> List.tl l)))
+
+let shift_operator k = function OpLambda _ | OpProd _ -> k+1 | _ -> k
+
+let reloc_operator (k,n) = function OpRel p when p > k -> 
+let rec unify_clauses k pv =
+  let pv'= Array.map (fun (n,sign,_,p) -> n,splay_constr (whd_betaiotaevar (push_rels (List.rev sign) env) !isevars) p) pv in
+  let n1,op1 = let (n1,(op1,args1)) = pv'.(0) in n1,op1 in
+  if Array.for_all (fun (ni,(opi,_)) -> eq_operator_lift k (n1,ni) (op1,opi)) pv'
+  then
+    let argvl = transpose_args (List.length args1) pv' in
+    let k' = shift_operator k op1 in
+    let argl = List.map (unify_clauses k') argvl in
+    gather_constr (reloc_operator (k,n1) op1) argl
+*)
 
 let abstract_conclusion typ cs =
   let n = cs.cs_nargs in
@@ -545,18 +578,17 @@ let abstract_conclusion typ cs =
 
 let infer_predicate env isevars typs cstrs (IndFamily (mis,_) as indf) =
   (* Il faudra substituer les isevars a un certain moment *)
-  let eqns = array_map2 prepare_unif_pb typs cstrs in
-
-  (* First strategy: no dependencies at all *)
-  let (cclargs,_,typn) = eqns.(mis_nconstr mis -1) in
-  let (sign,_) = get_arity indf in
-  if array_for_all (fun (_,_,typ) -> the_conv_x env isevars typn typ) eqns
-  then
-    let pred = lam_it (lift (List.length sign) typn) sign in
-    (false,pred) (* true = dependent -- par défaut *)
+  if Array.length cstrs = 0 then
+    failwith "TODO4-3"
   else
-    if Array.length typs = 0 then
-      failwith "TODO4-3"
+    let eqns = array_map2 prepare_unif_pb typs cstrs in
+    (* First strategy: no dependencies at all *)
+    let (cclargs,_,typn) = eqns.(mis_nconstr mis -1) in
+    let (sign,_) = get_arity indf in
+    if array_for_all (fun (_,_,typ) -> the_conv_x env isevars typn typ) eqns
+    then
+      let pred = lam_it (lift (List.length sign) typn) sign in
+      (false,pred) (* true = dependent -- par défaut *)
     else
       let s = get_sort_of env !isevars typs.(0) in
       let predpred = lam_it (mkSort s) sign in
@@ -717,7 +749,8 @@ let shift_problem pb =
 
 (* Building the sub-pattern-matching problem for a given branch *)
 let build_branch pb defaults current eqns const_info =
-  let names = get_names pb.env const_info.cs_args eqns in
+  let cs_args = decls_of_rel_context const_info.cs_args in
+  let names = get_names pb.env cs_args eqns in
   let newpats =
   if !substitute_alias then
     List.map (fun na -> PatVar (dummy_loc,na)) names
@@ -726,7 +759,7 @@ let build_branch pb defaults current eqns const_info =
   let submatdef = List.map (expand_defaults newpats current) defaults in
   let submat = List.map (fun (tms,eqn) -> prepend_pattern tms eqn) eqns in
   if submat = [] & submatdef = [] then error "Non exhaustive";
-  let typs = List.map2 (fun (_,t) na -> (na,t)) const_info.cs_args (List.rev names) in
+  let typs = List.map2 (fun (_,t) na -> (na,t)) cs_args (List.rev names) in
   let tomatchs =
     List.fold_left2
       (fun l (na,t) dep_in_rhs ->
@@ -834,7 +867,7 @@ let matx_of_eqns env eqns =
   let build_eqn (ids,lpatt,rhs) =
     let rhs =
       { rhs_env = env;
-	other_ids = ids@(ids_of_sign (get_globals (context env)));
+	other_ids = ids@(ids_of_var_context (var_context env));
 	private_ids = [];
 	user_ids = ids;
 	subst = [];
@@ -874,7 +907,7 @@ let inh_coerce_to_ind isevars env ty tyi =
     List.fold_right
       (fun (na,ty) (env,evl) ->
 	 let aty = get_assumption_of env Evd.empty ty in
-	   (push_rel (na,aty) env,
+	   (push_rel_decl (na,aty) env,
 	    (new_isevar isevars env (incast_type aty) CCI)::evl))
       ntys (env,[]) in
   let expected_typ = applist (mkMutInd tyi,evarl) in

@@ -34,8 +34,11 @@ val apply_sig_tac :
 val pf_concl              : goal sigma -> constr
 val pf_env                : goal sigma -> env
 val pf_hyps               : goal sigma -> var_context
-val pf_untyped_hyps       : goal sigma -> constr signature
-val pf_nth_hyp            : goal sigma -> int -> identifier * constr
+(*val pf_untyped_hyps       : goal sigma -> (identifier * constr) list*)
+val pf_hyps_types         : goal sigma -> (identifier * constr) list
+val pf_nth_hyp_id         : goal sigma -> int -> identifier
+val pf_last_hyp           : goal sigma -> var_declaration
+val pf_ids_of_hyps        : goal sigma -> identifier list
 val pf_ctxt               : goal sigma -> ctxtty
 val pf_global             : goal sigma -> identifier -> constr
 val pf_parse_const        : goal sigma -> string -> constr
@@ -45,9 +48,9 @@ val pf_execute            : goal sigma -> constr -> unsafe_judgment
 val hnf_type_of           : goal sigma -> constr -> constr
 
 val pf_interp_constr      : goal sigma -> Coqast.t -> constr
-val pf_interp_type : goal sigma -> Coqast.t -> constr
+val pf_interp_type        : goal sigma -> Coqast.t -> constr
 
-val pf_get_hyp             : goal sigma -> identifier -> constr
+val pf_get_hyp_typ        : goal sigma -> identifier -> constr 
 
 val pf_reduction_of_redexp : goal sigma -> red_expr -> constr -> constr
 
@@ -88,7 +91,7 @@ type pftreestate
 val proof_of_pftreestate    : pftreestate -> proof_tree
 val cursor_of_pftreestate   : pftreestate -> int list
 val is_top_pftreestate      : pftreestate -> bool
-val evc_of_pftreestate      : pftreestate -> global_constraints
+val evc_of_pftreestate      : pftreestate -> evar_declarations
 val top_goal_of_pftreestate : pftreestate -> goal sigma
 val nth_goal_of_pftreestate : int -> pftreestate -> goal sigma
 val traverse                : int -> pftreestate -> pftreestate
@@ -96,6 +99,7 @@ val weak_undo_pftreestate   : pftreestate -> pftreestate
 val solve_nth_pftreestate   : int -> tactic -> pftreestate -> pftreestate
 val solve_pftreestate       : tactic -> pftreestate -> pftreestate
 val mk_pftreestate          : goal -> pftreestate
+val extract_open_pftreestate : pftreestate -> constr * (int * typed_type) list
 val extract_pftreestate     : pftreestate -> constr
 val first_unproven          : pftreestate -> pftreestate
 val last_unproven           : pftreestate -> pftreestate

@@ -42,7 +42,7 @@ type type_error =
   | WrongPredicateArity of constr * int * int
   | NeedsInversion of constr * constr
 
-exception TypeError of path_kind * context * type_error
+exception TypeError of path_kind * env * type_error
 
 val error_unbound_rel : path_kind -> env -> 'a Evd.evar_map -> int -> 'b
 

@@ -30,8 +30,12 @@ let universes () = universes !global_env
 let context () = context !global_env
 let var_context () = var_context !global_env
 
-let push_var idc = global_env := push_var idc !global_env
-let push_rel nac = global_env := push_rel nac !global_env
+let push_var_def idc = global_env := push_var_def idc !global_env
+let push_var_decl idc = global_env := push_var_decl idc !global_env
+(*
+let push_rel_def nac = global_env := push_rel nac !global_env
+let push_rel_decl nac = global_env := push_rel nac !global_env
+*)
 let add_constant sp ce = global_env := add_constant sp ce !global_env
 let add_parameter sp c = global_env := add_parameter sp c !global_env
 let add_mind sp mie = global_env := add_mind sp mie !global_env
@@ -40,7 +44,9 @@ let add_constraints c = global_env := add_constraints c !global_env
 let pop_vars ids = global_env := pop_vars ids !global_env
 
 let lookup_var id = lookup_var id !global_env
+(*
 let lookup_rel n = lookup_rel n !global_env
+*)
 let lookup_constant sp = lookup_constant sp !global_env
 let lookup_mind sp = lookup_mind sp !global_env
 let lookup_mind_specif c = lookup_mind_specif c !global_env

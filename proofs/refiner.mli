@@ -39,10 +39,6 @@ val frontier : transformation_tactic
 val list_pf : proof_tree -> goal list
 val unTAC : tactic -> goal sigma -> proof_tree sigma
 
-val extract_open_proof : 
-  typed_type signature -> proof_tree -> constr * (int * constr) list
-
-
 (*s Tacticals. *)
 
 (* [tclIDTAC] is the identity tactic *)
@@ -114,7 +110,7 @@ type pftreestate
 val proof_of_pftreestate : pftreestate -> proof_tree
 val cursor_of_pftreestate : pftreestate -> int list
 val is_top_pftreestate : pftreestate -> bool
-val evc_of_pftreestate : pftreestate -> global_constraints
+val evc_of_pftreestate : pftreestate -> evar_declarations
 val top_goal_of_pftreestate : pftreestate -> goal sigma
 val nth_goal_of_pftreestate : int -> pftreestate -> goal sigma
 
@@ -127,6 +123,7 @@ val solve_pftreestate : tactic -> pftreestate -> pftreestate
 val weak_undo_pftreestate : pftreestate -> pftreestate
 
 val mk_pftreestate : goal -> pftreestate
+val extract_open_pftreestate : pftreestate -> constr * (int * typed_type) list
 val extract_pftreestate : pftreestate -> constr
 val first_unproven : pftreestate -> pftreestate
 val last_unproven : pftreestate -> pftreestate

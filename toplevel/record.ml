@@ -72,14 +72,14 @@ let typecheck_params_and_field ps fs =
     List.fold_left
       (fun (env,newps) (id,t) -> 
          let tj = typed_type_of_com Evd.empty env t in
-         (Environ.push_var (id,tj) env,(id,body_of_type tj)::newps))
+         (Environ.push_var_decl (id,tj) env,(id,body_of_type tj)::newps))
       (env0,[]) ps
   in
   let env2,newfs =
     List.fold_left
       (fun (env,newfs) (id,t) -> 
          let tj = typed_type_of_com Evd.empty env t in
-         (Environ.push_var (id,tj) env,(id,body_of_type tj)::newfs)) (env1,[]) fs
+         (Environ.push_var_decl (id,tj) env,(id,body_of_type tj)::newfs)) (env1,[]) fs
   in
   List.rev(newps),List.rev(newfs)
 

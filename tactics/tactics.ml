@@ -11,6 +11,7 @@ open Term
 open Inductive
 open Reduction
 open Environ
+open Declare
 open Evd
 open Pfedit
 open Tacred
@@ -153,7 +154,7 @@ let reduct_in_concl redfun gl =
   convert_concl (pf_reduce redfun gl (pf_concl gl)) gl
     
 let reduct_in_hyp redfun id gl  = 
-  let ty = pf_get_hyp gl id in
+  let ty = pf_get_hyp_typ gl id in
   let redfun' = under_casts (fun _ _ -> pf_reduce redfun gl) in
   convert_hyp id (redfun' (pf_env gl) (project gl) ty) gl
     
@@ -261,7 +262,7 @@ let next_global_ident_away id avoid =
     next_global_ident_from (lift_ident id) avoid
 
 let fresh_id avoid id gl =
-  next_global_ident_away id (avoid@(ids_of_sign (pf_untyped_hyps gl)))
+  next_global_ident_away id (avoid@(pf_ids_of_hyps gl))
     
 let id_of_name_with_default s = function
   | Anonymous -> id_of_string s
@@ -407,23 +408,33 @@ let rec intros_move = function
       tclTHEN (central_intro (IMustBe hyp) destopt false)
 	(intros_move rest)
 
+let occur_var_in_decl id (c,t) = 
+  match c with
+    | None -> occur_var id (body_of_type t)
+    | Some body -> occur_var id body || occur_var id (body_of_type t)
+
+let dependent_in_decl a (c,t) =
+  match c with
+    | None -> dependent a (body_of_type t)
+    | Some body -> dependent a body || dependent a (body_of_type t)
+
 let move_to_rhyp rhyp gl =
-  let rec get_lhyp lastfixed deptyp = function
+  let rec get_lhyp lastfixed depdecls = function
     | [] ->
 	(match rhyp with
 	   | None -> lastfixed
       	   | Some h -> anomaly ("Hypothesis should occur: "^ (string_of_id h)))
-    | (hyp,typ) as ht :: rest ->
+    | (hyp,c,typ) as ht :: rest ->
 	if Some hyp = rhyp then 
 	  lastfixed
-	else if List.exists (occur_var hyp) deptyp then 
-	  get_lhyp lastfixed (typ::deptyp) rest
+	else if List.exists (occur_var_in_decl hyp) depdecls then 
+	  get_lhyp lastfixed ((c,typ)::depdecls) rest
         else 
-	  get_lhyp (Some hyp) deptyp rest
+	  get_lhyp (Some hyp) depdecls rest
   in
-  let sign = pf_untyped_hyps gl in
-  let (hyp,typ) = hd_sign sign in
-  match get_lhyp None [typ] (list_of_sign sign) with
+  let sign = pf_hyps gl in
+  let (hyp,c,typ) = List.hd sign in
+  match get_lhyp None [c,typ] sign with
     | None -> tclIDTAC gl
     | Some hypto -> move_hyp true hyp hypto gl
 
@@ -585,25 +596,30 @@ let generalize_goal gl c cl =
 	  prod_name (Global.env()) (Anonymous, t, cl')
 
 let generalize_dep c gl =
-  let sign = pf_untyped_hyps gl in
-  let init_ids = ids_of_sign (Global.var_context()) in
-  let rec seek ((hl,tl) as toquant) h t =
-    if List.exists (fun id -> occur_var id t) hl or dependent c t then 
-      (h::hl,t::tl)
+  let sign = pf_hyps gl in
+  let init_ids = ids_of_var_context (Global.var_context()) in
+  let rec seek toquant (h,body,t as d) =
+    if List.exists (fun (id,_,_) -> occur_var_in_decl id (body,t)) toquant
+      or dependent_in_decl c (body,t) then 
+      d::toquant
     else 
       toquant
   in
-  let (hl,tl) = it_sign seek ([],[]) sign in
-  let tothin = List.filter (fun id -> not (List.mem id init_ids)) hl in
+  let to_quantify = List.fold_left seek [] sign in
+  let qhyps = List.map (fun (id,_,_) -> id) to_quantify in
+  let tothin = List.filter (fun id -> not (List.mem id init_ids)) qhyps in
   let tothin' =
     match c with
-      | VAR id when mem_sign sign id & not (List.mem id init_ids) -> id::tothin
+      | VAR id when mem_var_context id sign & not (List.mem id init_ids)
+	  -> id::tothin
       | _ -> tothin
   in
-  let cl' = List.fold_right2 mkNamedProd hl tl (pf_concl gl) in
+  let cl' =
+    List.fold_left 
+      (fun c d -> mkNamedProd_or_LetIn d c) (pf_concl gl) to_quantify in
   let cl'' = generalize_goal gl c cl' in
   tclTHEN
-    (apply_type cl'' (c::(List.map (fun id -> VAR id) hl)))
+    (apply_type cl'' (c::(List.map (fun id -> VAR id) qhyps)))
     (thin (List.rev tothin'))
     gl
     
@@ -630,30 +646,42 @@ let quantify lconstr =
    tclIDTAC
 *)
 
-(* A dependent cut rule à la sequent calculus *) 
+(* A dependent cut rule à la sequent calculus
+   ------------------------------------------
+   Sera simplifiable le jour où il y aura un let in primitif dans constr
 
-(* Sera simplifiable le jour où il y aura un let in primitif dans constr *) 
+   [letin_tac b na c occ_ccl occ_hyps gl] transforms
+   [...x1:T1(c),...,x2:T2(c),... |- G(c)] into
+   [...x:T;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is false or
+   [...x:T;H:x=c;x1:T1(x),...,x2:T2(x),... |- G(x)] if [b] is true
 
-(* if [occhypl] is empty, [c] is substituted in every hyp where it occurs   *)
-(* if name = Anonymous, the name is build from the first letter of the type *)
+   [occ_hyps] and [occ_ccl] tells which occurrences of [c] have to be substd;
+   if [occ_hyps] is empty, [c] is substituted in every hyp where it occurs;
+   if name = Anonymous, the name is build from the first letter of the type;
 
-let letin_abstract id c occ_ccl occhypl gl =
-  let allhyp = occhypl=[] in
-  let hyps = pf_untyped_hyps gl in
-  let abstract ((dephyps,deptyps,marks,occl as accu),lhyp) hyp typ =
+   The tactic first quantify the goal over x1, x2,... then substitute then
+   re-intro x1, x2,... at their initial place ([marks] is internally
+   used to remember the place of x1, x2, ...: it is the list of hypotheses on
+   the left of each x1, ...).
+*)
+(*
+let letin_abstract id c occ_ccl occ_hyps gl =
+  let allhyp = occ_hyps=[] in
+  let hyps = pf_hyps gl in
+  let abstract ((depdecls,marks,occl as accu),lhyp) (hyp,bodyopt,typ as d) =
     try 
       let occ = if allhyp then [] else List.assoc hyp occl in
-      let newtyp = subst1 (VAR id) (subst_term_occ occ c typ) in
+      let newdecl = subst1 (VAR id) (subst_term_occ_decl occ c d) in
       let newoccl = list_except_assoc hyp occl in
-      if typ=newtyp then 
+      if d=newdecl then
 	(accu,Some hyp)
       else 
-	((hyp::dephyps,newtyp::deptyps,(hyp,lhyp)::marks,newoccl),lhyp)
+	((newdecl::depdecls,(hyp,lhyp)::marks,newoccl),lhyp)
     with Not_found -> 
       (accu,Some hyp) 
   in
-  let (dephyps,deptyps,marks,rest),_ =
-    it_sign abstract (([],[],[],occhypl),None) hyps in
+  let (depdecls,marks,rest),_ =
+    it_sign abstract (([],[],[],occ_hyps),None) hyps in
   if rest <> [] then begin
     let id = fst (List.hd rest) in
     if mem_sign hyps id
@@ -664,14 +692,14 @@ let letin_abstract id c occ_ccl occhypl gl =
     | None -> (pf_concl gl)
     | Some occ -> subst1 (VAR id) (subst_term_occ occ c (pf_concl gl)) 
   in
-  (dephyps,deptyps,marks,ccl)
+  (depdecls,marks,ccl)
 
-let letin_tac with_eq name c occ_ccl occhypl gl =
+let letin_tac with_eq name c occ_ccl occ_hyps gl =
   let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) name in
   let hyps = pf_untyped_hyps gl in
   let id = next_global_ident_away x (ids_of_sign hyps) in
   if mem_sign hyps id then error "New variable is already declared";
-  let (dephyps,deptyps,marks,ccl)= letin_abstract id c occ_ccl occhypl gl in 
+  let (depdecls,marks,ccl)= letin_abstract id c occ_ccl occ_hyps gl in 
   let t = pf_type_of gl c in
   let (eqc,reflc) =
     let sort = pf_type_of gl t in
@@ -682,8 +710,8 @@ let letin_tac with_eq name c occ_ccl occhypl gl =
     else error "Not possible with proofs yet" 
   in
   let heq = next_global_ident_away (id_of_string "Heq") (ids_of_sign hyps) in
-  let tmpcl = List.fold_right2 mkNamedProd dephyps deptyps ccl in
-  let tmpargs = List.map (fun id -> VAR id) dephyps in
+  let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
+  let tmpargs = List.map (fun (id,_,_) -> VAR id) depdecls in
   let newcl,args =
     if with_eq then
       let eq = applist (eqc,[t;VAR id;c]) in
@@ -706,7 +734,8 @@ let dyn_lettac args gl = match args with
   | [Identifier id; Constr c; Letpatterns (o,l)]    ->
       letin_tac true (Name id) c o l gl
   | l -> bad_tactic_args "letin" l
-
+*)
+let dyn_lettac a = failwith "TO REDO"
 
 (********************************************************************)
 (*               Exact tactics                                      *)
@@ -738,13 +767,13 @@ let dyn_exact cc gl = match cc with
 
 let (assumption : tactic) = fun gl ->
   let concl =  pf_concl gl in 
-  let rec arec sign =
-    if isnull_sign sign then error "No such assumption";
-    let (s,a) = hd_sign sign in
-    if pf_conv_x_leq gl a concl then refine (VAR(s)) gl
-    else arec (tl_sign sign)
+  let rec arec = function
+    | [] -> error "No such assumption"
+    | (id,c,t)::rest -> 
+	if pf_conv_x_leq gl (body_of_type t) concl then refine (VAR id) gl
+	else arec rest
   in
-  arec (pf_untyped_hyps gl)
+  arec (pf_hyps gl)
 
 let dyn_assumption = function
   | [] -> assumption
@@ -966,9 +995,7 @@ let general_elim (c,lbindc) (elimc,lbindelimc) gl =
 let default_elim (c,lbindc)  gl = 
   let (path_name,_,t) = reduce_to_ind (pf_env gl) (project gl) 
 			  (pf_type_of gl c) in
-  let elimc =
-    lookup_eliminator (pf_hyps gl) path_name (suff gl (pf_concl gl))
-  in  
+  let elimc = lookup_eliminator (pf_env gl) path_name (sort_of_goal gl) in  
   general_elim (c,lbindc) (elimc,[]) gl
 
 
@@ -1019,8 +1046,8 @@ let rec is_rec_arg indpath t =
 let induct_discharge indpath statuslists cname destopt avoid (_,t) =
   let (lstatus,rstatus) = statuslists in
   let tophyp = ref None in
-  let (l,_) = decompose_prod t in
-  let n = List.length (List.filter (fun (_,t') -> is_rec_arg indpath t') l) in
+  let (l,_) = decompose_prod_assum t in
+  let n = List.length (List.filter (fun (_,_,t') -> is_rec_arg indpath (body_of_type t')) l) in
   let recvarname =
     if n=1 then 
       cname
@@ -1057,14 +1084,9 @@ let induct_discharge indpath statuslists cname destopt avoid (_,t) =
      substitutions aussi sur l'argument voisin *)
 
 (* Marche pas... faut prendre en compte l'occurence précise... *)
-
+(*
 let atomize_param_of_ind hyp0 gl =
-  let tmptyp0 =
-    try 
-      (snd(lookup_sign hyp0 (pf_untyped_hyps gl)))
-    with Not_found -> 
-      error ("No such hypothesis : " ^ (string_of_id hyp0)) 
-  in
+  let tmptyp0 = pf_get_hyp_typ gl hyp0 in
   let (mind,indtyp,typ0) = pf_reduce_to_mind gl tmptyp0 in
   let mis = Global.lookup_mind_specif mind in
   let nparams = mis_nparams mis in
@@ -1073,7 +1095,7 @@ let atomize_param_of_ind hyp0 gl =
   (* le gl est important pour ne pas préévaluer *)
   let rec atomize_one i avoid gl =
     if i<>nparams then 
-      let tmptyp0 = pf_get_hyp gl hyp0 in
+      let tmptyp0 = pf_get_hyp_typ gl hyp0 in
       let (_,indtyp,_) = pf_reduce_to_mind gl tmptyp0 in
       match (destAppL (whd_castapp indtyp)).(i) with
 	| VAR id when not (List.exists (occur_var id) avoid) ->
@@ -1309,7 +1331,7 @@ let new_induct c gl =
 	tclTHEN
 	  (letin_tac true (Name id) c (Some []) [])
 	  (induction_with_atomization_of_ind_arg id) gl
-	  
+*)
 (***)
 
 (* The registered tactic, which calls the default elimination
@@ -1330,10 +1352,14 @@ let dyn_elim = function
   | l -> bad_tactic_args "elim" l
 	
 (* Induction tactics *)
-
+(*
 let induct s =
   tclORELSE (tclTHEN (intros_until s) (tclLAST_HYP simplest_elim))
     (induction_from_context s)
+*)
+let induct s =
+  tclTHEN (intros_until s) (tclLAST_HYP simplest_elim)
+
 
 let induct_nodep n = tclTHEN (intros_do n) (tclLAST_HYP simplest_elim)
 
@@ -1398,9 +1424,7 @@ let elim_scheme_type elim t gl =
 
 let elim_type t gl =
   let (path_name,tind,t) = reduce_to_ind (pf_env gl) (project gl) t in
-  let elimc =
-    lookup_eliminator (pf_hyps gl) path_name (suff gl (pf_concl gl))
-  in 
+  let elimc = lookup_eliminator (pf_env gl) path_name (sort_of_goal gl) in
   match t with 
     | DOP2(Prod,_,_) -> error "Not an inductive definition"
     | _              -> elim_scheme_type elimc tind gl
@@ -1442,7 +1466,7 @@ let dyn_case_type = function
  *)
 
 let andE id gl =
-  let t = pf_get_hyp gl id in
+  let t = pf_get_hyp_typ gl id in
   if is_conjunction (pf_hnf_constr gl t) then 
     (tclTHEN (simplest_elim (VAR id)) (tclDO 2 intro)) gl
   else 
@@ -1455,7 +1479,7 @@ let dAnd cls gl =
     | Some id -> andE id  gl
 
 let orE id gl =
-  let t = pf_get_hyp gl id in
+  let t = pf_get_hyp_typ gl id in
   if is_disjunction (pf_hnf_constr gl t) then 
     (tclTHEN (simplest_elim (VAR id)) intro) gl
   else 
@@ -1468,7 +1492,7 @@ let dorE b cls gl =
     |  None     -> (if b then right else left) [] gl
 
 let impE id gl =
-  let t = pf_get_hyp gl id in
+  let t = pf_get_hyp_typ gl id in
   if is_imp_term (pf_hnf_constr gl t) then 
     let (dom, _, rng) = destProd (pf_hnf_constr gl t) in 
     (tclTHENS (cut_intro rng) 
@@ -1490,7 +1514,7 @@ let dImp cls gl =
 (* Contradiction *)
 
 let contradiction_on_hyp id gl =
-  let hyp = pf_get_hyp gl id in
+  let hyp = pf_get_hyp_typ gl id in
   if is_empty_type hyp then
     simplest_elim (VAR id) gl
   else 
@@ -1503,10 +1527,10 @@ let absurd c gls =
      (tclTHEN (elim_type falseterm) (cut c)) 
      ([(tclTHENS
           (cut (applist(pf_global gls (id_of_string "not"),[c]))) 
-	  ([(tclTHEN (intros)
+	  ([(tclTHEN intros
 	       ((fun gl ->
-		   let (ida,_) = pf_nth_hyp gl 1
-                   and (idna,_) = pf_nth_hyp gl 2 in
+		   let ida = pf_nth_hyp_id gl 1
+                   and idna = pf_nth_hyp_id gl 2 in
                    exact (applist(VAR idna,[VAR ida])) gl)));
             tclIDTAC]));
        tclIDTAC])) gls
@@ -1626,32 +1650,33 @@ let dyn_transitivity = function
 let abstract_subproof name tac gls = 
   let env = Global.env() in
   let current_sign = Global.var_context()
-  and global_sign = pf_untyped_hyps gls in
-  let sign = Sign.sign_it 
-               (fun id typ s -> 
-		  if mem_sign current_sign id then s else add_sign (id,typ) s) 
-               global_sign nil_sign 
+  and global_sign = pf_hyps gls in
+  let sign = List.fold_right
+               (fun (id,_,_ as d) s -> 
+		  if mem_var_context id current_sign then s else add_var d s) 
+               global_sign empty_var_context
   in
   let na = next_global_ident_away name
-             (ids_of_sign global_sign)  in 
-  let concl = Sign.it_sign (fun t id typ -> mkNamedProd id typ t)
+             (ids_of_var_context global_sign) in
+  let concl = List.fold_left (fun t d -> mkNamedProd_or_LetIn d t)
                 (pf_concl gls) sign in
   let env' = change_hyps (fun _ -> current_sign) env in
   let lemme =
     start_proof na Declare.NeverDischarge env' concl;
     let _,(const,strength) =
       try
-	by (tclCOMPLETE (tclTHEN (tclDO (sign_length sign) intro) tac)); 
-	release_proof ()
+	by (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)); 
+	let r = cook_proof () in 
+	delete_current_proof (); r
       with e when catchable_exception e -> 
-	(abort_current_proof(); raise e)
+	(delete_current_proof(); raise e)
     in   (* Faudrait un peu fonctionnaliser cela *)
     Declare.declare_constant na (const,strength);
     let newenv = Global.env() in
     Declare.construct_reference newenv CCI na
   in
   exact (applist (lemme,
-		  List.map (fun id -> VAR id) (List.rev (ids_of_sign sign))))
+		  List.map (fun id -> VAR id) (List.rev (ids_of_var_context sign))))
     gls
 
 let tclABSTRACT name_op tac gls = 

@@ -5,7 +5,7 @@
 open Pp
 (*i*)
 
-(* Names. *)
+(*s Identifiers *)
 
 type identifier
 type name = Name of identifier | Anonymous
@@ -41,6 +41,7 @@ type path_kind = CCI | FW | OBJ
 val string_of_kind : path_kind -> string
 val kind_of_string : string -> path_kind
 
+(*s Section paths *)
 type section_path
 
 val make_path : string list -> identifier -> path_kind -> section_path
@@ -71,6 +72,7 @@ val sp_gt : section_path * section_path -> bool
 module Spset : Set.S with type elt = section_path
 module Spmap : Map.S with type key = section_path
 
+(*s Specific paths for declarations *)
 type inductive_path = section_path * int
 type constructor_path = inductive_path * int
 

@@ -147,7 +147,7 @@ let ctxt_access sigma sp =
 
 
 let pf_lookup_name_as_renamed hyps ccl s =
-  Detyping.lookup_name_as_renamed (gLOB hyps) ccl s
+  Detyping.lookup_name_as_renamed hyps ccl s
 
 let pf_lookup_index_as_renamed ccl n =
   Detyping.lookup_index_as_renamed ccl n
@@ -166,7 +166,7 @@ open Printer
   term_env *)
 
 let pf_lookup_name_as_renamed hyps ccl s =
-  Detyping.lookup_name_as_renamed (gLOB hyps) ccl s
+  Detyping.lookup_name_as_renamed hyps ccl s
 
 let pf_lookup_index_as_renamed ccl n =
   Detyping.lookup_index_as_renamed ccl n
@@ -174,16 +174,15 @@ let pf_lookup_index_as_renamed ccl n =
 let pr_idl idl = prlist_with_sep pr_spc print_id idl
 
 let pr_goal g =
-  let sign = context g.evar_env in
-  let penv = pr_env_opt sign in
-  let pc = prterm_env_at_top sign g.evar_concl in
+  let penv = pr_context_of g.evar_env in
+  let pc = prterm_env_at_top g.evar_env g.evar_concl in
   [< 'sTR"  "; hV 0 [< penv; 'fNL;
 		       'sTR (emacs_str (String.make 1 (Char.chr 253))) ;
                        'sTR "============================"; 'fNL ;
                        'sTR" " ; pc>]; 'fNL>]
 
 let pr_concl n g =
-  let pc = prterm_env_at_top (context g.evar_env) g.evar_concl in
+  let pc = prterm_env_at_top g.evar_env g.evar_concl in
   [< 'sTR (emacs_str (String.make 1 (Char.chr 253))) ;
      'sTR "subgoal ";'iNT n;'sTR " is:";'cUT;'sTR" " ; pc >]
 
@@ -233,16 +232,9 @@ let pr_seq evd =
     | Some i -> i 
     | None -> anomaly "pr_seq : info = None"
   in
-  let hyps = var_context env in
-  let sign = List.rev (list_of_sign hyps) in
   let pc = pr_ctxt info in
-  let pdcl =
-    prlist_with_sep pr_spc
-      (fun (id,ty) ->
-	 hOV 0 [< print_id id; 'sTR" : ";prterm (body_of_type ty) >])
-      sign 
-  in
-  let pcl = prterm_env_at_top (gLOB hyps) cl in
+  let pdcl = pr_var_context_of env in
+  let pcl = prterm_env_at_top env cl in
   hOV 0 [< pc; pdcl ; 'sPC ; hOV 0 [< 'sTR"|- " ; pcl >] >]
 
 let prgl gl =
@@ -252,13 +244,13 @@ let prgl gl =
 
 let pr_evgl gl =
   let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
-  let phyps = pr_idl (ids_of_sign (var_context gl.evar_env)) in
+  let phyps = pr_idl (ids_of_var_context (var_context gl.evar_env)) in
   let pc = prterm gl.evar_concl in
   hOV 0 [< 'sTR"[[" ; plc; 'sTR"] " ; phyps; 'sPC; 'sTR"|- " ; pc; 'sTR"]" >]
 
 let pr_evgl_sign gl = 
   let plc = pr_idl (List.map id_of_existential (lc_toList (get_lc gl))) in
-  let ps = pr_sign (var_context gl.evar_env) in
+  let ps = pr_var_context_of gl.evar_env in
   let pc = prterm gl.evar_concl in
   hOV 0 [< 'sTR"[[" ; plc ; 'sTR"] " ; ps; 'sPC; 'sTR"|- " ; pc; 'sTR"]" >]
 
@@ -352,7 +344,7 @@ let ast_of_cvt_arg = function
   | Integer n       -> num n 
   | Command c       -> ope ("COMMAND",[c])
   | Constr  c       -> 
-      ope ("COMMAND",[ast_of_constr false (assumptions_for_print []) c])
+      ope ("COMMAND",[ast_of_constr false (Global.env ()) c])
   | Clause idl      -> ope ("CLAUSE", List.map (compose nvar string_of_id) idl)
   | Bindings bl     -> ope ("BINDINGS", 
 			    List.map (ast_of_cvt_bind (fun x -> x)) bl)
@@ -360,7 +352,7 @@ let ast_of_cvt_arg = function
       ope ("BINDINGS", 
 	   List.map 
 	     (ast_of_cvt_bind
-		(ast_of_constr false (assumptions_for_print []))) bl)
+		(ast_of_constr false (Global.env ()))) bl)
   | Tacexp ast      -> ope ("TACTIC",[ast])
   | Tac tac -> failwith "TODO: ast_of_cvt_arg: Tac"
   | Redexp red -> failwith "TODO: ast_of_cvt_arg: Redexp"

@@ -22,10 +22,10 @@ open Clenv
 type wc = walking_constraints
 
 let pf_get_new_id id gls = 
-  next_ident_away id (ids_of_sign (pf_untyped_hyps gls))
+  next_ident_away id (pf_ids_of_hyps gls)
 
 let pf_get_new_ids ids gls =
-  let avoid = ids_of_sign (pf_untyped_hyps gls) in
+  let avoid = pf_ids_of_hyps gls in
   List.fold_right
     (fun id acc -> (next_ident_away id (acc@avoid))::acc)
     ids []
@@ -93,7 +93,7 @@ let clenv_constrain_with_bindings bl clause =
 let add_prod_rel sigma (t,env) =
   match t with
     | DOP2(Prod,c1,(DLAM(na,b))) ->
-        (b,push_rel (na,Typing.execute_type env sigma c1) env)
+        (b,push_rel_decl (na,Retyping.get_assumption_of env sigma c1) env)
     | _ -> failwith "add_prod_rel"
 
 let rec add_prods_rel sigma (t,env) =

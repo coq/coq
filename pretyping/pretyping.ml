@@ -189,21 +189,19 @@ let evar_type_case isevars env ct pt lft p c =
   in check_branches_message isevars env (c,ct) (bty,lft); (mind,rslty)
 *)
 
-let pretype_var loc env lvar id = 
+let pretype_id loc env lvar id = 
   try
     List.assoc id lvar
-  with
-    Not_found ->
-      (try
-         match lookup_id id (context env) with
-           | RELNAME (n,typ) ->
-	     { uj_val  = Rel n;
-	       uj_type = typed_app (lift n) typ }
-           | GLOBNAME (id,typ) ->
-	     { uj_val  = VAR id;
-	       uj_type = typ }
-      with Not_found ->
-        error_var_not_found_loc loc CCI id);;
+  with Not_found ->
+  try
+    let (n,typ) = lookup_rel_id id (rel_context env) in
+    { uj_val  = Rel n; uj_type = typed_app (lift n) typ }
+  with Not_found ->
+  try
+    let typ = lookup_id_type id (var_context env) in
+    { uj_val  = VAR id; uj_type = typ }
+  with Not_found ->
+    error_var_not_found_loc loc CCI id
 
 (*************************************************************************)
 (* Main pretyping function                                               *)
@@ -212,7 +210,7 @@ let trad_metamap = ref []
 let trad_nocheck = ref false
 
 let pretype_ref pretype loc isevars env lvar = function
-| RVar id -> pretype_var loc env lvar id
+| RVar id -> pretype_id loc env lvar id
 
 | RConst (sp,ctxt) ->
     let cst = (sp,Array.map pretype ctxt) in
@@ -287,6 +285,16 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 
 | RHole loc ->
   if !compter then nbimpl:=!nbimpl+1;
+(* OLD
+  (match vtcon with
+    (true,(Some v, _)) ->
+      {uj_val=v.utj_val; uj_type=make_typed (mkSort v.utj_type) (Type Univ.dummy_univ)}
+  | (false,(None,Some ty)) ->
+      let c = new_isevar isevars env ty CCI in
+      {uj_val=c;uj_type=make_typed ty (Type Univ.dummy_univ)}
+  | (true,(None,None)) ->
+      let ty = mkCast dummy_sort dummy_sort in
+*)
   (match tycon with
   | Some ty ->
       let c = new_isevar isevars env ty CCI in
@@ -305,7 +313,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
   let nbfix = Array.length lfi in
   let lfi = List.map (fun id -> Name id) (Array.to_list lfi) in
   let newenv =
-    array_fold_left2 (fun env id ar -> (push_rel (id,ar) env))
+    array_fold_left2 (fun env id ar -> (push_rel_decl (id,ar) env))
       env (Array.of_list (List.rev lfi)) (vect_lift_type lara) in
   let vdefj =
     Array.mapi 
@@ -345,7 +353,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
     let j = pretype_type dom_valcon env isevars lvar lmeta c1 in
     let assum = assumption_of_type_judgment (inh_ass_of_j env isevars j) in
     let var = (name,assum) in
-    let j' = pretype rng (push_rel var env) isevars lvar lmeta c2 
+    let j' = pretype rng (push_rel_decl var env) isevars lvar lmeta c2 
     in 
     fst (abs_rel env !isevars name assum j')
 
@@ -353,7 +361,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
     let j = pretype empty_tycon env isevars lvar lmeta c1 in
     let assum = inh_ass_of_j env isevars j in
     let var = (name,assumption_of_type_judgment assum) in
-    let j' = pretype empty_tycon (push_rel var env) isevars lvar lmeta c2 in
+    let j' = pretype empty_tycon (push_rel_decl var env) isevars lvar lmeta c2 in
     (try fst (gen_rel env !isevars name assum j')
      with TypeError _ as e -> Stdpp.raise_with_loc loc e)
 

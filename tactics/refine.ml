@@ -120,7 +120,7 @@ let replace_in_array env a =
     
 let fresh env n =
   let id = match n with Name x -> x | _ -> id_of_string "_" in
-  next_global_ident_away id (ids_of_sign (var_context env))
+  next_global_ident_away id (ids_of_var_context (var_context env))
 
 let rec compute_metamap env = function
   (* le terme est directement une preuve *)
@@ -140,8 +140,8 @@ let rec compute_metamap env = function
   | DOP2(Lambda,c1,DLAM(name,c2)) as c ->
       let v = fresh env name in
       (** let tj = ise_resolve_type true empty_evd [] (gLOB sign) c1 in **)
-      let tj = execute_type env Evd.empty c1 in
-      let env' = push_var (v,tj) env in
+      let tj = Retyping.get_assumption_of env Evd.empty c1 in
+      let env' = push_var_decl (v,tj) env in
       begin match compute_metamap env' (subst1 (VAR v) c2) with
 	(* terme de preuve complet *)
 	| TH (_,_,[]) -> TH (c,[],[])
@@ -167,7 +167,7 @@ let rec compute_metamap env = function
       let vi = List.rev (List.map (fresh env) fi) in
       let env' =
 	List.fold_left
-	  (fun env (v,ar) -> push_var (v,execute_type env Evd.empty ar) env)
+	  (fun env (v,ar) -> push_var_decl (v,Retyping.get_assumption_of env Evd.empty ar) env)
 	  env
 	  (List.combine vi (Array.to_list ai)) 
       in

@@ -48,13 +48,13 @@ let show_script () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  mSGNL(Refiner.print_script true (ts_it evc) (Global.var_context()) pf)
+  mSGNL(Refiner.print_script true evc (Global.var_context()) pf)
 
 let show_prooftree () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
   and evc = evc_of_pftreestate pts in
-  mSG(Refiner.print_proof (ts_it evc) (Global.var_context()) pf)
+  mSG(Refiner.print_proof evc (Global.var_context()) pf)
 
 let show_open_subgoals () =
   let pfts = get_pftreestate () in
@@ -83,7 +83,6 @@ let show_open_subgoals_focused () =
 let show_node () =
   let pts = get_pftreestate () in
   let pf = proof_of_pftreestate pts
-  and evc = evc_of_pftreestate pts
   and cursor = cursor_of_pftreestate pts in
   mSG [< prlist_with_sep pr_spc pr_int (List.rev cursor); 'fNL ;
          prgl pf.goal ; 'fNL ;
@@ -214,7 +213,7 @@ let _ =
 (* Managing states *)
 
 let abort_refine f x =
-  if Pfedit.refining() then abort_all_proofs ();
+  if Pfedit.refining() then delete_all_proofs ();
   f x
   (* used to be: error "Must save or abort current goal first" *)
 
@@ -352,10 +351,10 @@ let _ =
     (function 
        | [VARG_IDENTIFIER id] -> 
 	   (fun () -> 
-	      abort_proof id;
+	      delete_proof id;
 	      message ("Goal "^(string_of_id id)^" aborted"))
        | [] -> (fun () -> 
-		  abort_current_proof ();
+		  delete_current_proof ();
 		  message "Current goal aborted")
        | _  -> bad_vernac_args "ABORT")
 
@@ -364,7 +363,7 @@ let _ =
     (function 
        | [] -> (fun () ->
 		  if refining() then begin
-		    abort_all_proofs ();
+		    delete_all_proofs ();
 		    message "Current goals aborted"
 		  end else
 		    error "No proof-editing in progress")
@@ -529,15 +528,14 @@ let _ =
 	      let pts = get_pftreestate () in
 	      let pf = proof_of_pftreestate pts in
 	      let cursor = cursor_of_pftreestate pts in
-	      let evc = ts_it (evc_of_pftreestate pts) in
-	      let (pfterm,meta_types) = 
-		Refiner.extract_open_proof (var_context pf.goal.evar_env) pf in
+	      let evc = evc_of_pftreestate pts in
+	      let (pfterm,meta_types) = extract_open_pftreestate pts in
 	      mSGNL [< 'sTR"LOC: " ;
 		       prlist_with_sep pr_spc pr_int (List.rev cursor); 'fNL ;
 		       'sTR"Subgoals" ; 'fNL ;
 		       prlist
 			 (fun (mv,ty) -> 
-			    [< 'iNT mv ; 'sTR" -> " ; prterm ty ; 'fNL >])
+			    [< 'iNT mv ; 'sTR" -> " ; prtype ty ; 'fNL >])
 			 meta_types;
 		       'sTR"Proof: " ; prterm (nf_ise1 evc pfterm) >])
        | _ -> bad_vernac_args "ShowProof")
@@ -550,8 +548,7 @@ let _ =
 	      let pts = get_pftreestate () in
 	      let pf = proof_of_pftreestate pts 
 	      and cursor = cursor_of_pftreestate pts in
-	      let (pfterm,meta_types) = 
-		Refiner.extract_open_proof (var_context pf.goal.evar_env) pf in
+	      let (pfterm,_) = extract_open_pftreestate pts in
 	      let message = 
 		try 
 		  Typeops.control_only_guard pf.goal.evar_env 
@@ -590,7 +587,7 @@ let _ =
            | (n::l) -> aux (Tacmach.traverse n pts) l in 
          let pts = aux pts (l@[-1]) in
          let pf = proof_of_pftreestate pts in 
-	 mSG (Refiner.print_script true (ts_it evc) (Global.var_context()) pf))
+	 mSG (Refiner.print_script true evc (Global.var_context()) pf))
 
 let _ =
   add "ExplainProofTree"
@@ -607,7 +604,7 @@ let _ =
            | (n::l) -> aux (Tacmach.traverse n pts) l in 
          let pts = aux pts (l@[-1]) in
          let pf = proof_of_pftreestate pts in 
-	 mSG (Refiner.print_proof (ts_it evc) (Global.var_context()) pf))
+	 mSG (Refiner.print_proof evc (Global.var_context()) pf))
 
 let _ =
   add "ShowProofs"
@@ -719,7 +716,7 @@ let _ =
                   mSGNL [< 'sTR"Error: checking of theorem " ; print_id s ;
                            'sPC ; 'sTR"failed" ;
                            'sTR"... converting to Axiom" >];
-                  abort_proof s;
+                  delete_proof s;
                   parameter_def_var (string_of_id s) com
            	end else 
 		  errorlabstrm "vernacentries__TheoremProof"

@@ -27,6 +27,8 @@ corresponds various appropriated functions *)
 
 type inductive_instance (* ex-[mind_specif] *)
 
+val build_mis : inductive -> mutual_inductive_body -> inductive_instance
+
 val mis_index : inductive_instance -> int
 val mis_ntypes : inductive_instance -> int
 val mis_nconstr : inductive_instance -> int
@@ -43,7 +45,7 @@ val mis_consnames : inductive_instance -> identifier array
 val mis_typed_arity : inductive_instance -> typed_type
 val mis_inductive : inductive_instance -> inductive
 val mis_arity : inductive_instance -> constr
-val mis_params_ctxt : inductive_instance -> (name * constr) list
+val mis_params_ctxt : inductive_instance -> rel_context
 val mis_sort : inductive_instance -> sorts
 val mis_type_mconstruct : int -> inductive_instance -> typed_type
 
@@ -98,7 +100,7 @@ type constructor_summary = {
   cs_cstr : constructor;
   cs_params : constr list;
   cs_nargs : int;
-  cs_args : (name * constr) list;
+  cs_args : rel_context;
   cs_concl_realargs : constr array
 }
 
@@ -162,6 +164,8 @@ val find_rectype : env -> 'a evar_map -> constr -> inductive_type
    are not renamed when [Anonymous] *)
 
 val get_constructors : inductive_family -> constructor_summary array
+
+val get_constructor : inductive_family -> int -> constructor_summary
 
 (* [get_arity inf] returns the product and the sort of the
    arity of the inductive family described by [is]; global parameters are

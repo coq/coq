@@ -239,9 +239,10 @@ let make_resolves name eap (c,cty) =
   ents
 
 (* used to add an hypothesis to the local hint database *)
-let make_resolve_hyp hname htyp = 
+let make_resolve_hyp (hname,_,htyp) = 
   try
-    [make_apply_entry (true, Options.is_verbose()) hname (mkVar hname, htyp)]
+    [make_apply_entry (true, Options.is_verbose()) hname
+       (mkVar hname, body_of_type htyp)]
   with 
     | Failure _ -> []
     | e when Logic.catchable_exception e -> anomaly "make_resolve_hyp"
@@ -596,12 +597,10 @@ let unify_resolve (c,clenv) gls =
   h_simplest_apply c gls
 
 (* builds a hint database from a constr signature *)
-(* typically used with (lid, ltyp) = pf_untyped_hyps <some goal> *)
+(* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
 
 let make_local_hint_db sign = 
-  let hintlist =
-    list_map_append2 make_resolve_hyp
-      (ids_of_sign sign) (vals_of_sign sign) in
+  let hintlist = list_map_append make_resolve_hyp sign in
   Hint_db.add_list hintlist Hint_db.empty
 
 
@@ -617,8 +616,7 @@ let rec trivial_fail_db db_list local_db gl =
   let intro_tac = 
     tclTHEN intro 
       (fun g'->
-	 let (hn, htyp) = hd_sign (pf_untyped_hyps g') in
-	 let hintl = make_resolve_hyp hn htyp in
+	 let hintl = make_resolve_hyp (pf_last_hyp g') in
 	 trivial_fail_db db_list (Hint_db.add_list hintl local_db) g')
   in
   tclFIRST 
@@ -668,14 +666,13 @@ let trivial dbnames gl =
 	   error ("Trivial: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
-  tclTRY 
-    (trivial_fail_db db_list (make_local_hint_db (pf_untyped_hyps gl))) gl 
+  tclTRY (trivial_fail_db db_list (make_local_hint_db (pf_hyps gl))) gl 
     
 let full_trivial gl =
   let dbnames = stringmap_dom !searchtable in
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
-  tclTRY (trivial_fail_db db_list (make_local_hint_db (pf_untyped_hyps gl))) gl
+  tclTRY (trivial_fail_db db_list (make_local_hint_db (pf_hyps gl))) gl
 
 let dyn_trivial = function
   | []                  -> trivial []
@@ -733,28 +730,26 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 	   (fun id -> tclTHEN (decomp_unary_term (VAR id)) 
 		(tclTHEN 
 		   (clear_one id)
-		   (search_gen decomp p db_list local_db nil_sign)))
-	   (ids_of_sign (pf_hyps goal))) 
+		   (search_gen decomp p db_list local_db [])))
+	   (pf_ids_of_hyps goal)) 
   in
   let intro_tac = 
     tclTHEN intro 
       (fun g' -> 
-	 let (hid,htyp) = hd_sign (pf_untyped_hyps g') in
+	 let (hid,_,htyp as d) = pf_last_hyp g' in
 	 let hintl = 
 	   try 
 	     [make_apply_entry (true,Options.is_verbose()) 
-		hid (mkVar hid,htyp)]
+		hid (mkVar hid,body_of_type htyp)]
 	   with Failure _ -> [] 
 	 in
-         search_gen decomp n db_list
-	   (Hint_db.add_list hintl local_db)
-	   (add_sign (hid,htyp) nil_sign) g') 
+         search_gen decomp n db_list (Hint_db.add_list hintl local_db) [d] g') 
   in
   let rec_tacs = 
     List.map 
       (fun ntac -> 
 	 tclTHEN ntac
-	   (search_gen decomp (n-1) db_list local_db nil_sign))
+	   (search_gen decomp (n-1) db_list local_db empty_var_context))
       (possible_resolve db_list local_db (pf_concl goal))
   in 
   tclFIRST (assumption::(decomp_tacs@(intro_tac::rec_tacs))) goal
@@ -774,7 +769,7 @@ let auto n dbnames gl =
 	   error ("Auto: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
-  let hyps = (pf_untyped_hyps gl) in
+  let hyps = pf_hyps gl in
   tclTRY (search n db_list (make_local_hint_db hyps) hyps) gl
 
 let default_auto = auto !default_search_depth []
@@ -783,7 +778,7 @@ let full_auto n gl =
   let dbnames = stringmap_dom !searchtable in
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
-  let hyps = (pf_untyped_hyps gl) in
+  let hyps = pf_hyps gl in
   tclTRY (search n db_list (make_local_hint_db hyps) hyps) gl
   
 let default_full_auto gl = full_auto !default_search_depth gl
@@ -818,7 +813,7 @@ let h_auto = hide_tactic "Auto" dyn_auto
 let default_search_decomp = ref 1
 
 let destruct_auto des_opt n gl = 
-  let hyps = pf_untyped_hyps gl in
+  let hyps = pf_hyps gl in
   search_gen des_opt n [searchtable_map "core"] 
     (make_local_hint_db hyps) hyps gl
     
@@ -850,23 +845,23 @@ type autoArguments =
 
 let keepAfter tac1 tac2 = 
   (tclTHEN tac1 
-     (function g -> tac2 (make_sign [hd_sign (pf_untyped_hyps g)]) g))
+     (function g -> tac2 [pf_last_hyp g] g))
 
 let compileAutoArg contac = function
   | Destructing -> 
       (function g -> 
-         let ctx =(pf_untyped_hyps g) in  
+         let ctx = pf_hyps g in  
 	 tclFIRST 
-           (List.map2 
-              (fun id typ -> 
-                 if (Hipattern.is_conjunction (hd_of_prod typ)) then 
+           (List.map 
+              (fun (id,_,typ) -> 
+                 if (Hipattern.is_conjunction (hd_of_prod (body_of_type typ)))
+		 then 
 		   (tclTHEN
                       (tclTHEN (simplest_elim (mkVar id)) 
                          (clear_one id))
                       contac) 
                  else 
-		   tclFAIL 0)
-	      (ids_of_sign ctx) (vals_of_sign ctx)) g)
+		   tclFAIL 0) ctx) g)
   | UsingTDB ->  
       (tclTHEN  
          (Tacticals.tryAllClauses 
@@ -884,8 +879,9 @@ let rec super_search n db_list local_db argl goal =
      ::
      (tclTHEN intro 
         (fun g -> 
-	   let (hid,htyp) = hd_sign (pf_untyped_hyps g) in
-	   let hintl = make_resolves hid (true,false) (mkVar hid,htyp) in
+	   let (hid,_,htyp) = pf_last_hyp g in
+	   let hintl =
+	     make_resolves hid (true,false) (mkVar hid,body_of_type htyp) in
 	   super_search n db_list (Hint_db.add_list hintl local_db)
 	     argl g))
      ::
@@ -901,9 +897,11 @@ let rec super_search n db_list local_db argl goal =
 let search_superauto n ids argl g = 
   let sigma =
     List.fold_right
-      (fun id -> add_sign (id,pf_type_of g (pf_global g id)))
-      ids nil_sign in
-  let hyps = concat_sign (pf_untyped_hyps g) sigma in
+      (fun id -> add_var_decl
+	   (id,Retyping.get_assumption_of (pf_env g) (project g) 
+	      (pf_type_of g (pf_global g id))))
+      ids empty_var_context in
+  let hyps = List.append (pf_hyps g) sigma in
   super_search n [Stringmap.find "core" !searchtable] (make_local_hint_db hyps)
     argl g
 

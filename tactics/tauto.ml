@@ -23,17 +23,19 @@ open Proof_trees
 open Clenv
 open Pattern
 
+(* Faut-il comparer le corps des définitions de l'environnement ? *)
 let hlset_subset hls1 hls2 =
-  List.for_all (fun e -> List.exists (fun e' -> eq_constr e e') hls2) hls1
+  List.for_all
+    (fun (_,_,e) -> List.exists
+	 (fun (_,_,e') -> eq_constr (body_of_type e) (body_of_type e'))
+	 hls2)
+    hls1
 
 let hlset_eq hls1 hls2 =
   hlset_subset hls1 hls2 & hlset_subset hls2 hls1
   
 let eq_gls g1 g2 =
-    eq_constr (pf_concl g1) (pf_concl g2)
- &  (let hl1 = vals_of_sign (pf_untyped_hyps g1)
-     and hl2 = vals_of_sign (pf_untyped_hyps g2) in 
-     hlset_eq hl1 hl2)
+  eq_constr (pf_concl g1) (pf_concl g2) & hlset_eq (pf_hyps g1) (pf_hyps g2)
 
 let gls_memb bTS g = List.exists (eq_gls g) bTS
 
@@ -1715,14 +1717,13 @@ let rec lisvarprop = function
 (*-- Dado el ambiente COQ construye el lado izquierdo de un secuente
      (hipotesis) --*)
 let rec constr_lseq gls = function
-  | ([],[]) -> []
-  | (idx::idy,hx::hy) -> 
-      (match (pf_type_of gls hx) with
-         | DOP0 (Sort (Prop Null)) -> 
-             (TVar(string_of_id idx),tauto_of_cci_fmla gls hx)
-             :: constr_lseq gls (idy,hy)
-         |_-> constr_lseq gls (idy,hy))
-  | _ -> []
+  | [] -> []
+  | (idx,c,hx)::rest -> 
+      match Retyping.get_sort_of (pf_env gls) (project gls) (incast_type hx) with
+        | Prop Null -> 
+            (TVar(string_of_id idx),tauto_of_cci_fmla gls (body_of_type hx))
+            :: constr_lseq gls rest
+        |_-> constr_lseq gls rest
 
 (*-- Dado un estado COQ construye el lado derecho de un secuente
      (conclusion) --*)
@@ -1735,7 +1736,7 @@ let rec pos_lis x = function
   | a::r -> if (x=a) then 1 else 1 + (pos_lis x r) 
 
 (*-- Construye un termino constr dado una formula tauto --*)
-let rec cci_of_tauto_fml env = 
+let rec cci_of_tauto_fml () = 
   let cAnd = global_reference CCI (id_of_string "and") 
   and cOr =  global_reference CCI (id_of_string "or")  
   and cFalse = global_reference CCI (id_of_string "False") 
@@ -1743,13 +1744,13 @@ let rec cci_of_tauto_fml env =
   and cEq = global_reference CCI (id_of_string "eq") in
   function
     | FAnd(a,b) ->  applistc cAnd 
-                    [cci_of_tauto_fml env a;cci_of_tauto_fml env b]
+                    [cci_of_tauto_fml () a;cci_of_tauto_fml () b]
     | FOr(a,b)  ->  applistc cOr 
-                    [cci_of_tauto_fml env a; cci_of_tauto_fml env b]
+                    [cci_of_tauto_fml () a; cci_of_tauto_fml () b]
     | FEq(a,b,c)->  applistc cEq
-                    [cci_of_tauto_fml env a; cci_of_tauto_fml env b;
-                     cci_of_tauto_fml env c]
-    | FImp(a,b) ->  mkArrow (cci_of_tauto_fml env a) (cci_of_tauto_fml env b) 
+                    [cci_of_tauto_fml () a; cci_of_tauto_fml () b;
+                     cci_of_tauto_fml () c]
+    | FImp(a,b) ->  mkArrow (cci_of_tauto_fml () a) (cci_of_tauto_fml () b) 
     | FPred a   ->  a  
     | FFalse    ->  cFalse
     | FTrue     ->  cTrue
@@ -1761,10 +1762,11 @@ let rec cci_of_tauto_fml env =
 
 let search env id =
   try
-    (match lookup_id id (Environ.context env) with
-       | RELNAME (n,_) -> Rel n
-       | GLOBNAME _    -> VAR id)
+    Rel (fst (lookup_rel_id id (Environ.rel_context env)))
   with Not_found ->
+  if mem_var_context id (Environ.var_context env) then
+    VAR id
+  else
     global_reference CCI id
 
 (*-- Construye un termino constr de un termino tauto --*)
@@ -1786,37 +1788,37 @@ let cci_of_tauto_term env t =
                                    search env (id_of_string x))
                             with _ -> raise TacticFailure)
     | TZ(f,x)           -> applistc cFalse_ind
-          [cci_of_tauto_fml env f;ter_constr l x]
+          [cci_of_tauto_fml () f;ter_constr l x]
     | TSum(t1,t2)       -> ter_constr l t1 
     | TExi (x)          -> (try search env (id_of_string x) with
 				_ -> raise TacticFailure)
     | TApl(_,_,t1,t2)   -> applistc (ter_constr l t1) [ter_constr l t2]
     | TPar(f1,f2,t1,t2) -> applistc cconj
-          [cci_of_tauto_fml env f1;cci_of_tauto_fml env f2;
+          [cci_of_tauto_fml () f1;cci_of_tauto_fml () f2;
            ter_constr l t1;ter_constr l t2]
     | TInl(f1,f2,t)     -> applistc cor_introl
-          [cci_of_tauto_fml env f1;cci_of_tauto_fml env f2;
+          [cci_of_tauto_fml () f1;cci_of_tauto_fml () f2;
            ter_constr l t]
     | TInr(f1,f2,t)     -> applistc cor_intror
-          [cci_of_tauto_fml env f1;cci_of_tauto_fml env f2;
+          [cci_of_tauto_fml () f1;cci_of_tauto_fml () f2;
            ter_constr l t]
     | TFst(f1,f2,t)     -> applistc cproj1
-          [cci_of_tauto_fml env f1;cci_of_tauto_fml env f2;
+          [cci_of_tauto_fml () f1;cci_of_tauto_fml () f2;
            ter_constr l t]
     | TSnd(f1,f2,t)     -> applistc cproj2
-          [cci_of_tauto_fml env f1;cci_of_tauto_fml env f2;
+          [cci_of_tauto_fml () f1;cci_of_tauto_fml () f2;
            ter_constr l t]
     | TRefl(f1,f2)      -> applistc crefl
-          [cci_of_tauto_fml env f1;cci_of_tauto_fml env f2]
+          [cci_of_tauto_fml () f1;cci_of_tauto_fml () f2]
     | TSim(f1,f2,f3,t) -> applistc csim
-          [cci_of_tauto_fml env f1;cci_of_tauto_fml env f2;
-           cci_of_tauto_fml env f3;ter_constr l t]
+          [cci_of_tauto_fml () f1;cci_of_tauto_fml () f2;
+           cci_of_tauto_fml () f3;ter_constr l t]
     | TCase(lf,lt)      -> applistc cor_ind
-          ((List.map (cci_of_tauto_fml env) lf)@
+          ((List.map (cci_of_tauto_fml ()) lf)@
            (List.map (ter_constr l) lt))
     | TFun(n,f,t)       ->  
 	Environ.lambda_name env
-	  (Name(id_of_string n ), cci_of_tauto_fml env f,ter_constr (n::l) t)
+	  (Name(id_of_string n ), cci_of_tauto_fml () f,ter_constr (n::l) t)
     | TTrue             -> ci
     | TLis _            -> raise TacticFailure
     | TLister _         -> raise TacticFailure
@@ -1843,17 +1845,15 @@ let exacto tt gls =
     
 let subbuts l hyp = cut_in_parallelUsing
                       (lisvar l) 
-                      (List.map (cci_of_tauto_fml (gLOB hyp)) (lisfor l))
+                      (List.map (cci_of_tauto_fml ()) (lisfor l))
 
 let t_exacto = ref (TVar "#")
 
 let tautoOR ti gls =
-  let hyp = pf_untyped_hyps gls in
   let thyp = pf_hyps gls in
-  hipvar := ids_of_sign hyp; 
+  hipvar := ids_of_var_context thyp; 
   let but = pf_concl gls in
-  let seq = (constr_lseq gls (ids_of_sign hyp,vals_of_sign hyp),
-	     constr_rseq gls but) in 
+  let seq = (constr_lseq gls thyp, constr_rseq gls but) in 
   let vp = lisvarprop (ante seq) in
   match naive ti vp seq with
     | {arb=Nil} -> 

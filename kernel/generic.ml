@@ -304,10 +304,14 @@ let replace_vars var_alist =
   in 
   if var_alist = [] then (function x -> x) else substrec 0
 
-let subst_varn str n = replace_vars [(str, (Rel n))]
-
 (* (subst_var str t) substitute (VAR str) by (Rel 1) in t *)
-let subst_var str = subst_varn str 1
+let subst_var str = replace_vars [(str, Rel 1)]
+
+(* (subst_vars [id1;...;idn] t) substitute (VAR idj) by (Rel j) in t *)
+let subst_vars vars =
+  let _,subst =
+    List.fold_left (fun (n,l) var -> ((n+1),(var,Rel n)::l)) (1,[]) vars
+  in replace_vars (List.rev subst)
 
 (* [Rel (n+m);...;Rel(n+1)] *)
 

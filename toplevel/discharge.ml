@@ -26,8 +26,7 @@ let recalc_sp sp =
 
 let whd_all c = whd_betadeltaiota (Global.env()) Evd.empty c
 
-let generalize_type id var c =
-  typed_product_without_universes (Name id) var (typed_app (subst_var id) c)
+let generalize_type = generalize_without_universes
 
 type modification_action = ABSTRACT | ERASE
 
@@ -100,16 +99,16 @@ let under_dlams f =
   apprec 
 
 let abstract_inductive ids_to_abs hyps inds =
-  let abstract_one_var id ty inds =
+  let abstract_one_var d inds =
     let ntyp = List.length inds in 
     let new_refs = list_tabulate (fun k -> applist(Rel (k+2),[Rel 1])) ntyp in 
     let inds' =
       List.map
       	(function (tname,arity,cnames,lc) -> 
-	   let arity' = generalize_type id ty arity in
+	   let arity' = generalize_type d arity in
 	   let lc' =
 	     List.map
-	       (fun b -> generalize_type id ty (typed_app (substl new_refs) b))
+	       (fun b -> generalize_type d (typed_app (substl new_refs) b))
 	       lc
 	   in
            (tname,arity',cnames,lc'))
@@ -118,11 +117,13 @@ let abstract_inductive ids_to_abs hyps inds =
     (inds',ABSTRACT)
   in
   let abstract_once ((hyps,inds,modl) as sofar) id =
-    if isnull_sign hyps or id <> fst (hd_sign hyps) then 
-      sofar
-    else
-      let (inds',modif) = abstract_one_var id (snd (hd_sign hyps)) inds in 
-      (tl_sign hyps,inds',modif::modl)
+    match hyps with
+      | [] -> sofar
+      | (hyp,c,t as d)::rest ->
+	  if id <> hyp then sofar
+	  else
+	    let (inds',modif) = abstract_one_var d inds in 
+	    (rest, inds', modif::modl)
   in
   let (_,inds',revmodl) =
     List.fold_left abstract_once (hyps,inds,[]) ids_to_abs in
@@ -134,22 +135,20 @@ let abstract_inductive ids_to_abs hyps inds =
 
 let abstract_constant ids_to_abs hyps (body,typ) =
   let abstract_once ((hyps,body,typ,modl) as sofar) id =
-    if isnull_sign hyps or id <> fst(hd_sign hyps) then 
-      sofar
+    match hyps with
+      | [] -> sofar
+      | (hyp,c,t as decl)::rest ->
+    if hyp <> id then sofar
     else
-      let name = Name id in
-      let var = snd (hd_sign hyps) in
-      let cvar = incast_type var in
       let body' = match body with
 	| None -> None
 	| Some { contents = Cooked c } -> 
-	    Some (ref (Cooked (mkLambda name cvar (subst_var id c))))
+	    Some (ref (Cooked (mkNamedLambda_or_LetIn decl c)))
 	| Some { contents = Recipe f } ->
-	    Some (ref (Recipe 
-			 (fun () -> mkLambda name cvar (subst_var id (f())))))
+	    Some (ref (Recipe (fun () -> mkNamedLambda_or_LetIn decl (f()))))
       in
-      let typ' = generalize_type id var typ in
-      (tl_sign hyps,body',typ',ABSTRACT::modl)
+      let typ' = generalize_type decl typ in
+      (rest, body', typ', ABSTRACT::modl)
   in
   let (_,body',typ',revmodl) =
     List.fold_left abstract_once (hyps,body,typ,[]) ids_to_abs in
@@ -244,7 +243,7 @@ let process_constant osecsp nsecsp oldenv (ids_to_discard,modlist) cb =
   let body = 
     expmod_constant_value cb.const_opaque oldenv modlist cb.const_body in
   let typ = expmod_type oldenv modlist cb.const_type in
-  let hyps = map_sign_typ (expmod_type oldenv modlist) cb.const_hyps in
+  let hyps = map_var_context (expmod_constr oldenv modlist) cb.const_hyps in
   let (body',typ',modl) = abstract_constant ids_to_discard hyps (body,typ) in
   let mods = [ (Const osecsp, DO_ABSTRACT(Const nsecsp,modl)) ] in
   (body', body_of_type typ', mods)
@@ -267,7 +266,7 @@ let inductive_message inds =
 			 'sPC; 'sTR "are discharged.">]))
 
 type discharge_operation = 
-  | Variable of identifier * constr * strength * bool
+  | Variable of identifier * section_variable_entry * strength * bool
   | Parameter of identifier * constr
   | Constant of identifier * constant_entry * strength
   | Inductive of mutual_inductive_entry
@@ -280,13 +279,20 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
   let tag = object_tag lobj in 
   match tag with
     | "VARIABLE" ->
-	let (id,a,stre,sticky) = out_variable sp in
+	let ((id,c,t),stre,sticky) = out_variable sp in
 	if stre = (DischargeAt sec_sp) or ids_to_discard <> [] then
 	  (ops,id::ids_to_discard,work_alist)
 	else
-	  let expmod_a = expmod_constr oldenv work_alist (body_of_type a) in
-	  (Variable (id,expmod_a,stre,sticky) :: ops,
-           ids_to_discard,work_alist)
+	  let newdecl =
+	    match c with
+	      | None ->
+		  SectionLocalDecl
+		    (expmod_constr oldenv work_alist (body_of_type t))
+	      | Some body ->
+		  SectionLocalDef
+		    (expmod_constr oldenv work_alist body)
+	  in
+	  (Variable (id,newdecl,stre,sticky) :: ops, ids_to_discard,work_alist)
 
     | "CONSTANT" | "PARAMETER" ->
 	let stre = constant_or_parameter_strength sp in

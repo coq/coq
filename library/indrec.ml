@@ -70,7 +70,7 @@ let mis_make_case_com depopt env sigma mispec kind =
   in
   let indf = make_ind_family (mispec,rel_list 0 nparams) in
   let typP = make_arity env' dep indf kind in
-  it_lambda_name env (mkLambda_string "P" typP (add_branch 0)) lnamespar
+  it_mkLambda_or_LetIn_name env (mkLambda_string "P" typP (add_branch 0)) lnamespar
     
 (* check if the type depends recursively on one of the inductive scheme *)
 
@@ -154,32 +154,34 @@ let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs =
     prec 0 
   in
   (* ici, cstrprods est la liste des produits du constructeur instantié *)
-  let rec process_constr i cstrprods f recargs = 
-    match cstrprods with 
-      | (n,t)::cprest -> 
-          let (optionpos,rest) = 
-	    match recargs with 
-	      | [] -> (* Impossible?! *) None,[] 
-              | (Param(i)::rest) -> None,rest 
-              | (Norec::rest) -> None,rest 
-              | (Imbr _::rest) -> None,rest 
-              | (Mrec i::rest) -> fvect.(i),rest 
-	  in 
-          (match optionpos with 
-             | None -> 
-		 lambda_name env
-		   (n,t,process_constr (i+1) cprest 
-		      (applist(whd_beta_stack (lift 1 f) [(Rel 1)])) rest)
-             | Some(_,f_0) -> 
-		 let nF = lift (i+1+decF) f_0 in
-		 let arg = process_pos nF (lift 1 t) in 
-                 lambda_name env
-		   (n,t,process_constr (i+1) cprest 
-		      (applist(whd_beta_stack (lift 1 f) [(Rel 1); arg])) 
-		      rest))
-      | [] -> f
-  in 
-  process_constr 0 (List.rev cstr.cs_args) f recargs 
+  let rec process_constr i f = function
+    | (n,None,t)::cprest, recarg::rest -> 
+        let optionpos = 
+	  match recarg with 
+            | Param i -> None
+            | Norec   -> None
+            | Imbr _  -> None
+            | Mrec i  -> fvect.(i)
+	in 
+        (match optionpos with 
+           | None -> 
+	       lambda_name env
+		 (n,incast_type t,process_constr (i+1)
+		    (applist(whd_beta_stack (lift 1 f) [(Rel 1)]))
+		    (cprest,rest))
+           | Some(_,f_0) -> 
+	       let nF = lift (i+1+decF) f_0 in
+	       let arg = process_pos nF (lift 1 (body_of_type t)) in 
+               lambda_name env
+		 (n,incast_type t,process_constr (i+1)
+		    (applist(whd_beta_stack (lift 1 f) [(Rel 1); arg])) 
+		    (cprest,rest)))
+    | (n,Some c,t)::cprest, rest -> failwith "TODO"
+    | [],[] -> f
+    | _,[] | [],_ -> anomaly "process_constr"
+
+  in
+  process_constr 0 f (List.rev cstr.cs_args, recargs)
 
 (* Main function *)
 let mis_make_indrec env sigma listdepkind mispec =
@@ -290,7 +292,7 @@ let mis_make_indrec env sigma listdepkind mispec =
     if mis_is_recursive_subset
       (List.map (fun (mispec,_,_) -> mis_index mispec) listdepkind) mispeci
     then 
-      it_lambda_name env (put_arity 0 listdepkind) lnamespar
+      it_mkLambda_or_LetIn_name env (put_arity 0 listdepkind) lnamespar
     else 
       mis_make_case_com (Some dep) env sigma mispeci kind 
   in 

@@ -37,12 +37,11 @@ let type_judgment env sigma j =
 
 let assumption_of_type_judgment j = make_typed j.utj_val j.utj_type
 
-
 (* Type of a de Bruijn index. *)
 	  
 let relative env sigma n = 
   try
-    let (_,typ) = lookup_rel n env in
+    let (_,typ) = lookup_rel_type n env in
     { uj_val  = Rel n;
       uj_type = typed_app (lift n) typ }
   with Not_found -> 
@@ -51,13 +50,13 @@ let relative env sigma n =
 (* Management of context of variables. *)
 
 (* Checks if a context of variable is included in another one. *)
-
+(*
 let rec hyps_inclusion env sigma sign1 sign2 =
-  if isnull_sign sign1 then true
+  if sign1 = empty_var_context then true
   else
     let (id1,ty1) = hd_sign sign1 in
     let rec search sign2 =
-      if isnull_sign sign2 then false
+      if sign2 = empty_var_context then false
       else
 	let (id2,ty2) = hd_sign sign2 in
         if id1 = id2 then
@@ -68,15 +67,16 @@ let rec hyps_inclusion env sigma sign1 sign2 =
 	  search (tl_sign sign2)
     in 
     search sign2
+*)
 
 (* Checks if the given context of variables [hyps] is included in the
    current context of [env]. *)
-
+(*
 let check_hyps id env sigma hyps =
   let hyps' = var_context env in
   if not (hyps_inclusion env sigma hyps hyps') then
     error_reference_variables CCI env id
-
+*)
 (* Instantiation of terms on real arguments. *)
 
 let type_of_constant = Instantiate.constant_type
@@ -263,8 +263,11 @@ let sort_of_product_without_univ domsort rangsort =
            | Prop _ -> rangsort
            | Type u1 -> Type dummy_univ)
 
-let typed_product_without_universes name var c =
-  typed_combine (mkProd name) sort_of_product_without_univ var c
+let generalize_without_universes (_,_,var as d) c =
+  typed_combine
+    (fun _ c -> mkNamedProd_or_LetIn d c)
+    sort_of_product_without_univ
+    var c
 
 let typed_product env name var c =
   (* Gros hack ! *)
@@ -443,12 +446,11 @@ let is_subterm_specif env sigma lcx mind_recvec =
 	     stl.(0)
 	       
       | (DOPN(Fix(_),la) as mc,l) ->
-          let (recindxs,i,typarray,funnames,bodies) = destUntypedFix mc in
+          let ((recindxs,i),(typarray,funnames,bodies)) = destFix mc in
           let nbfix   = List.length funnames in
           let decrArg = recindxs.(i) in 
           let theBody = bodies.(i)   in
-          let (gamma,strippedBody) = decompose_lam_n (decrArg+1) theBody in
-          let absTypes = List.map snd gamma in 
+          let (_,strippedBody) = decompose_lam_n (decrArg+1) theBody in
           let nbOfAbst = nbfix+decrArg+1 in
           let newlst = 
             if List.length l < (decrArg+1) then
@@ -563,7 +565,7 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 
 	| (DOPN(Fix(_),la) as mc,l) ->
             (List.for_all (check_rec_call n lst) l) &&
-            let (recindxs,i,typarray,funnames,bodies) = destUntypedFix mc in
+            let ((recindxs,i),(typarray,funnames,bodies)) = destFix mc in
             let nbfix = List.length funnames in
             let decrArg = recindxs.(i) in
             if (List.length l < (decrArg+1)) then
@@ -831,18 +833,4 @@ let control_only_guard env sigma =
   in 
   control_rec 
 
-(* [keep_hyps sign ids] keeps the part of the signature [sign] which 
-   contains the variables of the set [ids], and recursively the variables 
-   contained in the types of the needed variables. *)
-
-let keep_hyps sign needed =
-  rev_sign
-    (fst (it_sign 
-	    (fun ((hyps,globs) as sofar) id a ->
-               if Idset.mem id globs then
-                 (add_sign (id,a) hyps, 
-		  Idset.union (global_vars_set (body_of_type a)) globs)
-               else 
-		 sofar) 
-	    (nil_sign,needed) sign))
     

@@ -261,9 +261,9 @@ and evar_eqappr_x env isevars pbty appr1 appr2 =
 
     | ((DOP2(Prod,c1,DLAM(n,c2)),[]), (DOP2(Prod,c'1,DLAM(_,c'2)),[])) -> 
         evar_conv_x env isevars CONV c1 c'1 
-        & evar_conv_x 
-	  (push_rel (n,Retyping.get_assumption_of env !isevars (nf_ise1 !isevars c1)) env) isevars
-	  pbty c2 c'2
+        & 
+	(let d = Retyping.get_assumption_of env !isevars (nf_ise1 !isevars c1)
+	 in evar_conv_x (push_rel_decl (n,d) env) isevars pbty c2 c'2)
 
     | ((DOPN(MutInd _ as o1,cl1) as ind1,l'1),
        (DOPN(MutInd _ as o2,cl2) as ind2,l'2)) ->

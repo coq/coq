@@ -97,7 +97,7 @@ val splay_prod : env -> 'a evar_map -> constr -> (name * constr) list * constr
 val splay_arity : env -> 'a evar_map -> constr -> (name * constr) list * sorts
 val sort_of_arity : env -> constr -> sorts
 val decomp_n_prod : 
-  env -> 'a evar_map -> int -> constr -> ((name * constr) list) * constr
+  env -> 'a evar_map -> int -> constr -> Sign.rel_context * constr
 
 type 'a miota_args = {
   mP      : constr;     (* the result type *)
@@ -130,7 +130,7 @@ val fold_commands : constr list -> 'a reduction_function
 val pattern_occs : (int list * constr * constr) list -> 'a reduction_function
 val compute : 'a reduction_function
 
-val fix_recarg : constr -> 'a list -> (int * 'a) option
+val fix_recarg : fixpoint -> 'a list -> (int * 'a) option
 val reduce_fix : (constr -> 'a list -> constr * constr list) -> constr ->
   constr list -> bool * (constr * constr list)
 

@@ -52,7 +52,7 @@ let tclMAP tacfun l =
 (* apply a tactic to the nth element of the signature  *)
 
 let tclNTH_HYP m (tac : constr->tactic) gl =
-  tac (try VAR(fst(nth_sign (pf_untyped_hyps gl) m)) 
+  tac (try VAR(let (id,_,_) = List.nth (pf_hyps gl) (m-1) in id) 
        with Failure _ -> error "No such assumption") gl
 
 (* apply a tactic to the last element of the signature  *)
@@ -65,10 +65,10 @@ let tclTRY_sign (tac : constr->tactic) sign gl =
     | [s]     -> tac (VAR(s)) (* added in order to get useful error messages *)
     | (s::sl) -> tclORELSE (tac (VAR(s))) (arec sl) 
   in 
-  arec (ids_of_sign sign) gl
+  arec (ids_of_var_context sign) gl
 
 let tclTRY_HYPS (tac : constr->tactic) gl = 
-  tclTRY_sign tac (pf_untyped_hyps gl) gl
+  tclTRY_sign tac (pf_hyps gl) gl
 
 (* OR-branch *)
 let tryClauses tac = 
@@ -101,10 +101,10 @@ let nth_clause n gl =
   if n = 0 then 
     None
   else if n < 0 then 
-    let id = List.nth (ids_of_sign (pf_untyped_hyps gl)) (-n-1) in 
+    let id = List.nth (pf_ids_of_hyps gl) (-n-1) in 
     Some id
   else 
-    let id = List.nth (ids_of_sign (pf_untyped_hyps gl)) (n-1) in 
+    let id = List.nth (pf_ids_of_hyps gl) (n-1) in 
     Some id
 
 (* Gets the conclusion or the type of a given hypothesis *)
@@ -112,7 +112,7 @@ let nth_clause n gl =
 let clause_type cls gl =
   match cls with
     | None    -> pf_concl gl
-    | Some id -> pf_get_hyp gl id
+    | Some id -> pf_get_hyp_typ gl id
 
 (* Functions concerning matching of clausal environments *)
 
@@ -132,7 +132,7 @@ let onCL cfind cltac gl = cltac (cfind gl) gl
 
 (* Create a clause list with all the hypotheses from the context *)
 
-let allHyps gl = (List.map in_some (ids_of_sign (pf_untyped_hyps gl)))
+let allHyps gl = List.map in_some (pf_ids_of_hyps gl)
 
 
 (* Create a clause list with all the hypotheses from the context, occuring
@@ -140,20 +140,19 @@ let allHyps gl = (List.map in_some (ids_of_sign (pf_untyped_hyps gl)))
 
 let afterHyp id gl =
   List.map in_some
-    (fst (list_splitby (fun hyp -> hyp = id) 
-	    (ids_of_sign (pf_untyped_hyps gl))))
+    (fst (list_splitby (fun hyp -> hyp = id) (pf_ids_of_hyps gl)))
     
 
 (* Create a singleton clause list with the last hypothesis from then context *)
 
 let lastHyp gl = 
-  let (id,_) = hd_sign (pf_untyped_hyps gl) in [(Some id)]
+  let id = List.hd (pf_ids_of_hyps gl) in [(Some id)]
 
 (* Create a clause list with the n last hypothesis from then context *)
 
 let nLastHyps n gl =
   let ids =
-    try list_firstn n (ids_of_sign (pf_untyped_hyps gl))
+    try list_firstn n (pf_ids_of_hyps gl)
     with Failure "firstn" -> error "Not enough hypotheses in the goal"
   in 
   List.map in_some ids
@@ -162,7 +161,7 @@ let nLastHyps n gl =
 (* A clause list with the conclusion and all the hypotheses *)
 
 let allClauses gl = 
-  let ids = ids_of_sign(pf_untyped_hyps gl) in  
+  let ids = pf_ids_of_hyps gl in  
   (None::(List.map in_some ids))
 
 let onClause t cls gl  = t cls gl
@@ -193,7 +192,7 @@ let conclPattern concl pat tacast gl =
   let ast_bindings = 
     List.map 
       (fun (i,c) ->
-	 (i, Termast.ast_of_constr false (assumptions_for_print []) c))
+	 (i, Termast.ast_of_constr false (pf_env gl) c))
       constr_bindings in 
   let tacast' = Coqast.subst_meta ast_bindings tacast in
   Tacinterp.interp tacast' gl
@@ -285,21 +284,6 @@ let sort_of_goal gl =
 (* Find the right elimination suffix corresponding to the sort of the goal *)
 (* c should be of type A1->.. An->B with B an inductive definition *)
 
-let suff gl cl = match hnf_type_of gl cl with
-  | DOP0(Sort(Type(_)))    -> "_rect"
-  | DOP0(Sort(Prop(Null))) -> "_ind"
-  | DOP0(Sort(Prop(Pos)))  -> "_rec"
-  | _                      -> anomaly "goal should be a type"
-
-(* Look up function for the default elimination constant *)
-
-let lookup_eliminator sign path suff =
-  let name = id_of_string ((string_of_id (basename path)) ^ suff) in
-  try 
-    Declare.global_reference (kind_of_path path) name
-  with UserError _ -> 
-    VAR(fst(lookup_glob name (gLOB sign)))
-
 let last_arg = function
   | DOPN(AppL,cl) -> cl.(Array.length cl - 1)
   | _ -> anomaly "last_arg"
@@ -355,9 +339,7 @@ let general_elim_then_using
 
 let elimination_then_using tac predicate (indbindings,elimbindings) c gl = 
   let (ity,path_name,_,t) = reduce_to_ind_goal gl (pf_type_of gl c) in
-  let elim = 
-    lookup_eliminator (pf_hyps gl) path_name (suff gl (pf_concl gl))
-  in
+  let elim = lookup_eliminator (pf_env gl) path_name (sort_of_goal gl) in
   general_elim_then_using
     elim elim_sign tac predicate (indbindings,elimbindings) c gl
 
@@ -409,7 +391,7 @@ let make_elim_branch_assumptions ba gl =
       | (_, _) -> error "make_elim_branch_assumptions"
   in 
   makerec ([],[],[],[],[]) ba.branchsign
-    (try list_firstn ba.nassums (ids_of_sign (pf_untyped_hyps gl))
+    (try list_firstn ba.nassums (pf_ids_of_hyps gl)
      with Failure _ -> anomaly "make_elim_branch_assumptions")
 
 let elim_on_ba tac ba gl = tac (make_elim_branch_assumptions ba gl) gl
@@ -437,7 +419,7 @@ let make_case_branch_assumptions ba gl =
       | (_, _) -> error "make_case_branch_assumptions"
   in 
   makerec ([],[],[],[]) ba.branchsign
-    (try list_firstn ba.nassums (ids_of_sign (pf_untyped_hyps gl))
+    (try list_firstn ba.nassums (pf_ids_of_hyps gl)
      with Failure _ -> anomaly "make_case_branch_assumptions")
 
 let case_on_ba tac ba gl = tac (make_case_branch_assumptions ba gl) gl

@@ -85,8 +85,7 @@ val make_resolves :
    Never raises an User_exception;
    If the hyp cannot be used as a Hint, the empty list is returned. *)
 
-val make_resolve_hyp : identifier -> constr
-      -> (constr_label * pri_auto_tactic) list
+val make_resolve_hyp : var_declaration -> (constr_label * pri_auto_tactic) list
 
 (* [make_extern name pri pattern tactic_ast] *)
 
@@ -97,7 +96,7 @@ val make_extern :
 (* Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints *)
 
-val make_local_hint_db : constr signature -> Hint_db.t
+val make_local_hint_db : var_context -> Hint_db.t
 
 val priority : (int * 'a) list -> 'a list
 

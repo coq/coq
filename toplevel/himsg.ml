@@ -22,15 +22,16 @@ let guill s = "\""^s^"\""
 
 let explain_unbound_rel k ctx n =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
+  let pe = pr_ne_context_of [< 'sTR"in environment" >] k ctx in
   [< 'sTR"Unbound reference: "; pe; 'fNL;
      'sTR"The reference "; 'iNT n; 'sTR" is free" >]
 
 let explain_not_type k ctx j =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_env [< 'sTR"In environment" >] k ctx in
+  let pe = pr_ne_context_of [< 'sTR"In environment" >] k ctx in
   let pc,pt = prjudge_env ctx j in
-  [< pe; 'cUT; 'sTR "the term"; 'bRK(1,1); pc; 'sPC; 'sTR"has type"; 'sPC; 
+  [< pe; 'fNL; 'sTR "the term"; 'bRK(1,1); pc; 'sPC;
+     'sTR"has type"; 'sPC; pt; 'sPC; 
      'sTR"which should be Set, Prop or Type." >];;
 
 let explain_bad_assumption k ctx c =
@@ -92,9 +93,9 @@ let explain_ill_formed_branch k ctx c i actty expty =
 
 let explain_generalization k ctx (name,var) j =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
+  let pe = pr_ne_context_of [< 'sTR"in environment" >] k ctx in
   let pv = prtype_env ctx var in
-  let (pc,pt) = prjudge_env (add_rel (name,var) ctx) j in
+  let (pc,pt) = prjudge_env (push_rel_decl (name,var) ctx) j in
   [< 'sTR"Illegal generalization: "; pe; 'fNL;
      'sTR"Cannot generalize"; 'bRK(1,1); pv; 'sPC;
      'sTR"over"; 'bRK(1,1); pc; 'sTR","; 'sPC; 'sTR"it has type"; 'sPC; pt; 
@@ -102,7 +103,7 @@ let explain_generalization k ctx (name,var) j =
 
 let explain_actual_type k ctx c ct pt =
   let ctx = make_all_name_different ctx in
-  let pe = pr_ne_env [< 'sTR"In environment" >] k ctx in
+  let pe = pr_ne_context_of [< 'sTR"In environment" >] k ctx in
   let pc = prterm_env ctx c in
   let pct = prterm_env ctx ct in
   let pt = prterm_env ctx pt in
@@ -113,10 +114,14 @@ let explain_actual_type k ctx c ct pt =
 
 let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
   let ctx = make_all_name_different ctx in
-(*  let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in*)
+(*  let pe = pr_ne_context_of [< 'sTR"in environment" >] k ctx in*)
   let pr,prt = prjudge_env ctx rator in
-  let term_string = if List.length randl > 1 then "terms" else "term" in
-  let many = match n mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
+  let term_string1,term_string2 =
+    if List.length randl > 1 then
+      let many = match n mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
+      "terms", "The "^(string_of_int n)^many^" term"
+    else
+      "term","This term" in
   let appl = prlist_with_sep pr_fnl 
 	       (fun c ->
 		  let pc,pct = prjudge_env ctx c in
@@ -125,15 +130,14 @@ let explain_cant_apply_bad_type k ctx (n,exptyp,actualtyp) rator randl =
   [< 'sTR"Illegal application (Type Error): "; (* pe; *) 'fNL;
      'sTR"The term"; 'bRK(1,1); pr; 'sPC;
      'sTR"of type"; 'bRK(1,1); prt; 'sPC ;
-     'sTR("cannot be applied to the "^term_string); 'fNL; 
+     'sTR("cannot be applied to the "^term_string1); 'fNL; 
      'sTR" "; v 0 appl; 'fNL;
-     'sTR"The ";'iNT n; 'sTR (many^" term of type"); 'bRK(1,1); 
-     prterm_env ctx actualtyp; 'sPC;
-     'sTR"should be coercible to"; 'bRK(1,1); prterm_env ctx exptyp >]
+     'sTR (term_string2^" has type"); 'bRK(1,1); prterm_env ctx exptyp; 'sPC;
+     'sTR"which should be coercible to"; 'bRK(1,1); prterm_env ctx actualtyp >]
 
 let explain_cant_apply_not_functional k ctx rator randl =
   let ctx = make_all_name_different ctx in
-(*  let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in*)
+(*  let pe = pr_ne_context_of [< 'sTR"in environment" >] k ctx in*)
   let pr = prterm_env ctx rator.uj_val in
   let prt = prterm_env ctx (body_of_type rator.uj_type) in
   let term_string = if List.length randl > 1 then "terms" else "term" in
@@ -356,22 +360,19 @@ let explain_refiner_error = function
   | NotWellTyped c -> explain_refiner_not_well_typed c
   | BadTacticArgs (s,l) -> explain_refiner_bad_tactic_args s l
 
-let error_non_strictly_positive k lna c v  =
-  let env = assumptions_for_print lna in
+let error_non_strictly_positive k env c v  =
   let pc = prterm_env env c in
   let pv = prterm_env env v in
   [< 'sTR "Non strictly positive occurrence of "; pv; 'sTR " in";
      'bRK(1,1); pc >]
 
-let error_ill_formed_inductive k lna c v =
-  let env = assumptions_for_print lna in
+let error_ill_formed_inductive k env c v =
   let pc = prterm_env env c in
   let pv = prterm_env env v in
   [< 'sTR "Not enough arguments applied to the "; pv;
      'sTR " in"; 'bRK(1,1); pc >]
 
-let error_ill_formed_constructor k lna c v =
-  let env = assumptions_for_print lna in
+let error_ill_formed_constructor k env c v =
   let pc = prterm_env env c in
   let pv = prterm_env env v in
   [< 'sTR "The conclusion of"; 'bRK(1,1); pc; 'bRK(1,1); 
@@ -385,8 +386,7 @@ let str_of_nth n =
      | 3 -> "rd"
      | _ -> "th")
 
-let error_bad_ind_parameters k lna c n v1 v2  =
-  let env = assumptions_for_print lna in
+let error_bad_ind_parameters k env c n v1 v2  =
   let pc = prterm_env_at_top env c in
   let pv1 = prterm_env env v1 in
   let pv2 = prterm_env env v2 in
@@ -412,7 +412,7 @@ let error_not_allowed_case_analysis dep kind i =
   [< 'sTR (if dep then "Dependent" else "Non Dependent");
      'sTR " case analysis on sort: "; print_sort kind; 'fNL;
      'sTR "is not allowed for inductive definition: ";
-     pr_inductive (Global.context()) i >]
+     pr_inductive (Global.env()) i >]
 
 let error_bad_induction dep indid kind =
   [<'sTR (if dep then "Dependent" else "Non dependend");
@@ -425,10 +425,10 @@ let error_not_mutual_in_scheme () =
 
 let explain_inductive_error = function
   (* These are errors related to inductive constructions *)
-  | NonPos (lna,c,v) -> error_non_strictly_positive CCI lna c v
-  | NotEnoughArgs (lna,c,v) -> error_ill_formed_inductive CCI lna c v
-  | NotConstructor (lna,c,v) -> error_ill_formed_constructor CCI lna c v
-  | NonPar (lna,c,n,v1,v2) -> error_bad_ind_parameters CCI lna c n v1 v2
+  | NonPos (env,c,v) -> error_non_strictly_positive CCI env c v
+  | NotEnoughArgs (env,c,v) -> error_ill_formed_inductive CCI env c v
+  | NotConstructor (env,c,v) -> error_ill_formed_constructor CCI env c v
+  | NonPar (env,c,n,v1,v2) -> error_bad_ind_parameters CCI env c n v1 v2
   | SameNamesTypes id -> error_same_names_types id
   | SameNamesConstructors (id,cid) -> error_same_names_constructors id cid
   | NotAnArity id -> error_not_an_arity id

@@ -5,6 +5,7 @@
 open Names
 open Term
 open Sign
+open Environ
 open Rawterm
 (*i*)
 
@@ -13,11 +14,10 @@ open Rawterm
 
 exception StillDLAM
 
-val detype : identifier list -> unit assumptions -> constr -> rawconstr
+val detype : identifier list -> names_context -> constr -> rawconstr
 
 (* look for the index of a named var or a nondep var as it is renamed *)
-val lookup_name_as_renamed :
-  unit assumptions -> constr -> identifier -> int option
+val lookup_name_as_renamed : var_context -> constr -> identifier -> int option
 val lookup_index_as_renamed : constr -> int -> int option
 
 

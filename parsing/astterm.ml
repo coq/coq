@@ -167,24 +167,32 @@ let ref_from_constr = function
   | VAR id -> RVar id  (* utilisé pour coe_value (tmp) *)
   | _ -> anomaly "Not a reference"
 
-let dbize_ref k sigma env loc s =
+(* [vars1] is a set of name to avoid (used for the tactic language);
+   [vars2] is the set of global variables, env is the set of variables
+   abstracted until this point *)
+let dbize_ref k sigma env loc s (vars1,vars2)=
   let id = ident_of_nvar loc s in
-  try 
-    match lookup_id id env with
-      | RELNAME(n,_) -> RRef (loc,RVar id),[]
-      | _ -> RRef(loc,RVar id), (try implicits_of_var id with _ -> [])
+  if Idset.mem id env then
+    RRef (loc,RVar id),[]
+  else
+  if List.mem s vars1 then
+    RRef(loc,RVar id),[]
+  else
+  try
+    let _ = lookup_id id vars2 in
+    RRef (loc,RVar id), (try implicits_of_var id with _ -> [])
   with Not_found ->
-    try 
-      let c,il = match k with
-	| CCI -> Declare.global_reference_imps CCI id
-	| FW  -> Declare.global_reference_imps FW id
-	| OBJ -> anomaly "search_ref_cci_fw" in
-      RRef (loc,ref_from_constr c), il
-    with Not_found ->
-      try 
-	(Syntax_def.search_syntactic_definition id, [])
-      with Not_found -> 
-	error_var_not_found_loc loc CCI id
+  try 
+    let c,il = match k with
+      | CCI -> Declare.global_reference_imps CCI id
+      | FW  -> Declare.global_reference_imps FW id
+      | OBJ -> anomaly "search_ref_cci_fw" in
+    RRef (loc,ref_from_constr c), il
+  with Not_found ->
+  try 
+    (Syntax_def.search_syntactic_definition id, [])
+  with Not_found -> 
+    error_var_not_found_loc loc CCI id
 	  
 let mkLambdaC (x,a,b) = ope("LAMBDA",[a;slam(Some (string_of_id x),b)])
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
@@ -268,22 +276,18 @@ let check_capture s ty = function
 
 let dbize k sigma env allow_soapp lvar =
   let rec dbrec env = function
-    | Nvar(loc,s) ->
-      if List.mem s lvar then
-        RRef(loc,RVar (id_of_string s))
-      else
-        fst (dbize_ref k sigma env loc s)
+    | Nvar(loc,s) -> fst (dbize_ref k sigma env loc s lvar)
 	  
    (*
    | Slam(_,ona,Node(_,"V$",l)) ->
        let na =
          (match ona with Some s -> Name (id_of_string s) | _ -> Anonymous)
-       in DLAMV(na,Array.of_list (List.map (dbrec (add_rel (na,()) env)) l))
+       in DLAMV(na,Array.of_list (List.map (dbrec (Idset.add na env)) l))
 
    | Slam(_,ona,t) ->
        let na =
          (match ona with Some s -> Name (id_of_string s) | _ -> Anonymous)
-       in DLAM(na, dbrec (add_rel (na,()) env) t)
+       in DLAM(na, dbrec (Idset.add na env) t)
    *)
     | Node(loc,"FIX", (Nvar (locid,iddef))::ldecl) ->
 	let (lf,ln,lA,lt) = dbize_fix ldecl in
@@ -293,7 +297,7 @@ let dbize k sigma env allow_soapp lvar =
           with Not_found ->
 	    error_fixname_unbound "dbize (FIX)" false locid iddef in
 	let ext_env =
-	  List.fold_left (fun env fid -> add_rel (Name fid,()) env) env lf in
+	  List.fold_left (fun env fid -> Idset.add fid env) env lf in
 	let defl = Array.of_list (List.map (dbrec ext_env) lt) in
 	let arityl = Array.of_list (List.map (dbrec env) lA) in
 	RRec (loc,RFix (Array.of_list ln,n), Array.of_list lf, arityl, defl)
@@ -306,17 +310,17 @@ let dbize k sigma env allow_soapp lvar =
           with Not_found ->
 	    error_fixname_unbound "dbize (COFIX)" true locid iddef in
 	let ext_env =
-	  List.fold_left (fun env fid -> add_rel (Name fid,()) env) env lf in
+	  List.fold_left (fun env fid -> Idset.add fid env) env lf in
 	let defl = Array.of_list (List.map (dbrec ext_env) lt) in
 	let arityl = Array.of_list (List.map (dbrec env) lA) in
 	RRec (loc,RCofix n, Array.of_list lf, arityl, defl)
 	  
     | Node(loc,("PROD"|"LAMBDA" as k), [c1;Slam(_,ona,c2)]) ->
-	let na = match ona with
-	  | Some s -> Name (id_of_string s)
-	  | _ -> Anonymous in
+	let na,env' = match ona with
+	  | Some s -> let id = id_of_string s in Name id, Idset.add id env
+	  | _ -> Anonymous, env in
 	let kind = if k="PROD" then BProd else BLambda in
-	RBinder(loc, kind, na, dbrec env c1, dbrec (add_rel (na,()) env) c2)
+	RBinder(loc, kind, na, dbrec env c1, dbrec env' c2)
 
     | Node(_,"PRODLIST", [c1;(Slam _ as c2)]) -> 
 	iterated_binder BProd 0 c1 env c2
@@ -326,11 +330,7 @@ let dbize k sigma env allow_soapp lvar =
     | Node(loc,"APPLISTEXPL", f::args) ->
 	RApp (loc,dbrec env f,List.map (dbrec env) args)
     | Node(loc,"APPLIST", Nvar(locs,s)::args) ->
-	let (c, impargs) =
-          if List.mem s lvar then
-            RRef(loc,RVar (id_of_string s)),[]
-          else
-            dbize_ref k sigma env locs s
+	let (c, impargs) = dbize_ref k sigma env locs s lvar
         in
 	  RApp (loc, c, dbize_args env impargs args)
     | Node(loc,"APPLIST", f::args) ->	   
@@ -393,18 +393,20 @@ let dbize k sigma env allow_soapp lvar =
 	check_uppercase loc ids;
 	check_number_of_pattern loc n pl;
 	let env' =
-	  List.fold_left (fun env id -> add_rel (Name id,()) env) env ids in
+	  List.fold_left (fun env id -> Idset.add id env) env ids in
 	(ids,pl,dbrec env' rhs)
     | _ -> anomaly "dbize: badly-formed ast for Cases equation"
 
   and iterated_binder oper n ty env = function
     | Slam(loc,ona,body) ->
-	let na = match ona with 
-	  | Some s -> check_capture s ty body; Name (id_of_string s) 
-	  | _ -> Anonymous
+	let na,env' = match ona with 
+	  | Some s ->
+	      check_capture s ty body;
+	      let id = id_of_string s in Name id, Idset.add id env
+	  | _ -> Anonymous, env
 	in
 	RBinder(loc, oper, na, dbrec env ty,
-		(iterated_binder oper n ty (add_rel (na,()) env) body))
+		(iterated_binder oper n ty env' body))
     | body -> dbrec env body
 
   and dbize_args env l args =
@@ -434,16 +436,23 @@ let dbize k sigma env allow_soapp lvar =
  * and translates a command to a constr. *)
 
 (*Takes a list of variables which must not be globalized*)
+let from_list l = List.fold_right Idset.add l Idset.empty
+
 let interp_rawconstr_gen sigma env allow_soapp lvar com =
-  dbize CCI sigma (unitize_env (context env)) allow_soapp lvar com
+  dbize CCI sigma
+    (from_list (ids_of_rel_context (rel_context env)))
+    allow_soapp (lvar,var_context env) com
 
 let interp_rawconstr sigma env com =
   interp_rawconstr_gen sigma env false [] com
 
 (*The same as interp_rawconstr but with a list of variables which must not be
   globalized*)
+
 let interp_rawconstr_wo_glob sigma env lvar com =
-  dbize CCI sigma (unitize_env (context env)) false lvar com
+  dbize CCI sigma
+    (from_list (ids_of_rel_context (rel_context env)))
+    false (lvar,var_context env) com
 
 (*let raw_fconstr_of_com sigma env com =
   dbize_fw sigma (unitize_env (context env)) [] com
@@ -460,7 +469,7 @@ let ast_adjust_consts sigma = (* locations are kept *)
 	(let id = id_of_string s in
 	 if Ast.isMeta s then 
 	   ast
-	 else if List.mem id (ids_of_env env) then 
+	 else if Idset.mem id env then 
 	   ast
 	 else 
 	   try 
@@ -481,10 +490,10 @@ let ast_adjust_consts sigma = (* locations are kept *)
 	     with Not_found -> 
 	       warning ("Could not globalize "^s); ast)
 
-    | Slam(loc,None,t) -> Slam(loc,None,dbrec (add_rel (Anonymous,()) env) t)
+    | Slam(loc,None,t) -> Slam(loc,None,dbrec env t)
 	 
     | Slam(loc,Some na,t) ->
-	let env' = add_rel (Name (id_of_string na),()) env in
+	let env' = Idset.add (id_of_string na) env in
         Slam(loc,Some na,dbrec env' t)
     | Node(loc,opn,tl) -> Node(loc,opn,List.map (dbrec env) tl)
     | x -> x
@@ -493,7 +502,7 @@ let ast_adjust_consts sigma = (* locations are kept *)
 
 let globalize_command ast =
   let sign = Global.var_context () in
-  ast_adjust_consts Evd.empty (gLOB sign) ast
+  ast_adjust_consts Evd.empty (from_list (ids_of_var_context sign)) ast
 
 (* Avoid globalizing in non command ast for tactics *)
 let rec glob_ast sigma env = function 
@@ -502,16 +511,16 @@ let rec glob_ast sigma env = function
   | Node(loc,"COMMANDLIST",l) -> 
       Node(loc,"COMMANDLIST", List.map (ast_adjust_consts sigma env) l)
   | Slam(loc,None,t) ->
-      Slam(loc,None,glob_ast sigma (add_rel (Anonymous,()) env) t)
+      Slam(loc,None,glob_ast sigma env t)
   | Slam(loc,Some na,t) ->
-      let env' = add_rel (Name (id_of_string na),()) env in
+      let env' = Idset.add (id_of_string na) env in
       Slam(loc,Some na, glob_ast sigma env' t)
   | Node(loc,opn,tl) -> Node(loc,opn,List.map (glob_ast sigma env) tl)
   | x -> x
 
 let globalize_ast ast =
   let sign = Global.var_context () in
-  glob_ast Evd.empty (gLOB sign) ast
+  glob_ast Evd.empty (from_list (ids_of_var_context sign)) ast
 
 
 (* Installation of the AST quotations. "command" is used by default. *)
@@ -692,8 +701,10 @@ let pattern_of_rawconstr lvar c =
 
 let interp_constrpattern_gen sigma env lvar com = 
   let c =
-    dbize CCI sigma (unitize_env (context env)) true (List.map (fun x ->
-      string_of_id (fst x)) lvar) com
+    dbize CCI sigma (from_list (ids_of_rel_context (rel_context env)))
+      true (List.map
+	      (fun x ->
+		 string_of_id (fst x)) lvar,var_context env) com
   and nlvar = List.map (fun (id,c) -> (id,pattern_of_constr c)) lvar in
   try 
     pattern_of_rawconstr nlvar c

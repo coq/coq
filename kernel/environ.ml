@@ -26,13 +26,21 @@ type globals = {
   env_locals : (global * section_path) list;
   env_imports : import list }
 
+type context = {
+  env_var_context : var_context;
+  env_rel_context : rel_context }
+
 type env = {
   env_context : context;
   env_globals : globals;
   env_universes : universes }
 
+let empty_context = {
+  env_var_context = empty_var_context;
+  env_rel_context = empty_rel_context }
+  
 let empty_env = { 
-  env_context = ENVIRON (nil_sign,nil_dbsign);
+  env_context = empty_context;
   env_globals = {
     env_constants = Spmap.empty;
     env_inductives = Spmap.empty;
@@ -43,29 +51,93 @@ let empty_env = {
 
 let universes env = env.env_universes
 let context env = env.env_context
-let var_context env = let (ENVIRON(g,_)) = env.env_context in g
+let var_context env = env.env_context.env_var_context
+let rel_context env = env.env_context.env_rel_context
 
 (* Construction functions. *)
 
-let push_var idvar env =
-  { env with env_context = add_glob idvar env.env_context }
+let map_context f env =
+  let context = env.env_context in
+  { env with
+      env_context = {
+	context with
+	  env_var_context = map_var_context f context.env_var_context ;
+	  env_rel_context = map_rel_context f context.env_rel_context } }
 
-let change_hyps f env =
-  let (ENVIRON(g,r)) = env.env_context in
-  { env with env_context = ENVIRON (f g, r) }
+let var_context_app f env =
+  { env with
+      env_context = { env.env_context with
+			env_var_context = f env.env_context.env_var_context } }
 
-(* == functions to deal with names in contexts (previously in cases.ml) == *)
+let change_hyps = var_context_app
 
-(* If cur=(Rel j) then 
- * if env = ENVIRON(sign,[na_h:Th]...[na_j:Tj]...[na_1:T1])
- * then it yields ENVIRON(sign,[na_h:Th]...[Name id:Tj]...[na_1:T1])
- *)
-let change_name_rel env j id = 
-  { env with env_context = change_name_env (context env) j id }
-(****)
+let push_var d   = var_context_app (add_var d)
+let push_var_def def   = var_context_app (add_var_def def)
+let push_var_decl decl = var_context_app (add_var_decl decl)
+let pop_var id         = var_context_app (pop_var id)
 
-let push_rel idrel env =
-  { env with env_context = add_rel idrel env.env_context }
+let rel_context_app f env =
+  { env with
+      env_context = { env.env_context with
+			env_rel_context = f env.env_context.env_rel_context } }
+
+let reset_context env =
+  { env with
+      env_context = { env_var_context = empty_var_context;
+		      env_rel_context = empty_rel_context} }
+
+let fold_var_context f env a =
+  snd (Sign.fold_var_context
+	 (fun d (env,e) -> (push_var d env, f env d e))
+         (var_context env) (reset_context env,a))
+
+let process_var_context f env =
+  Sign.fold_var_context
+    (fun d env -> f env d) (var_context env) (reset_context env)
+
+let process_var_context_both_sides f env =
+  fold_var_context_both_sides f (var_context env) (reset_context env)
+
+let push_rel d   = rel_context_app (add_rel d)
+let push_rel_def def   = rel_context_app (add_rel_def def)
+let push_rel_decl decl = rel_context_app (add_rel_decl decl)
+let push_rels ctxt     = rel_context_app (concat_rel_context ctxt)
+
+let push_rels_to_vars env =
+  let sign0 = env.env_context.env_var_context in
+  let (subst,_,sign) =
+  List.fold_right
+    (fun (na,c,t) (subst,avoid,sign) ->
+       let na = if na = Anonymous then Name(id_of_string"_") else na in
+       let id = next_name_away na avoid in
+       ((VAR id)::subst,id::avoid,
+	add_var (id,option_app (substl subst) c,typed_app (substl subst) t)
+	  sign))
+    env.env_context.env_rel_context ([],ids_of_var_context sign0,sign0)
+  in subst, (var_context_app (fun _ -> sign) env)
+
+let reset_rel_context env =
+  { env with
+      env_context = { env_var_context = env.env_context.env_var_context;
+		      env_rel_context = empty_rel_context} }
+
+let fold_rel_context f env a =
+  snd (List.fold_right
+	 (fun d (env,e) -> (push_rel d env, f env d e))
+         (rel_context env) (reset_rel_context env,a))
+
+let process_rel_context f env =
+  List.fold_right (fun d env -> f env d)
+    (rel_context env) (reset_rel_context env)
+
+let instantiate_vars = instantiate_sign
+
+let ids_of_context env = 
+  (ids_of_rel_context env.env_context.env_rel_context)
+  @ (ids_of_var_context env.env_context.env_var_context)
+
+let names_of_rel_context env =
+  names_of_rel_context env.env_context.env_rel_context
 
 let set_universes g env =
   if env.env_universes == g then env else { env with env_universes = g }
@@ -109,12 +181,19 @@ let new_meta ()=incr meta_ctr;!meta_ctr;;
 
 (* Access functions. *)
   
-let lookup_var id env =
-  let (_,var) = lookup_glob id env.env_context in
-  (Name id, var)
+let lookup_var_type id env =
+  lookup_id_type id env.env_context.env_var_context
 
-let lookup_rel n env =
-  Sign.lookup_rel n env.env_context
+let lookup_var_value id env =
+  lookup_id_value id env.env_context.env_var_context
+
+let lookup_var id env = lookup_id id env.env_context.env_var_context
+
+let lookup_rel_type n env =
+  Sign.lookup_rel_type n env.env_context.env_rel_context
+
+let lookup_rel_value n env =
+  Sign.lookup_rel_value n env.env_context.env_rel_context
 
 let lookup_constant sp env =
   Spmap.find sp env.env_globals.env_constants
@@ -171,7 +250,7 @@ let hdchar env c =
     | Rel n ->
 	(if n<=k then "p" (* the initial term is flexible product/function *)
 	 else
-	   try match lookup_rel (n-k) env with
+	   try match lookup_rel_type (n-k) env with
 	     | Name id,_ -> lowercase_first_char id
 	     | Anonymous,t -> hdrec 0 (lift (n-k) (body_of_type t))
 	   with Not_found -> "y")
@@ -195,6 +274,32 @@ let it_lambda_name env = List.fold_left (fun c (n,t) ->lambda_name env (n,t,c))
 
 let prod_create   env (a,b) = mkProd (named_hd env a Anonymous) a b
 let lambda_create env (a,b) =  mkLambda (named_hd env a Anonymous) a b
+
+let name_assumption env (na,c,t) =
+  match c with
+    | None      -> (named_hd env (body_of_type t) na, None, t)
+    | Some body -> (named_hd env body na, c, t)
+
+let prod_assum_name env b d = mkProd_or_LetIn (name_assumption env d) b 
+let lambda_assum_name env b d = mkLambda_or_LetIn (name_assumption env d) b 
+
+let it_mkProd_or_LetIn_name   env = List.fold_left (prod_assum_name env)
+let it_mkLambda_or_LetIn_name env = List.fold_left (lambda_assum_name env)
+
+let it_mkProd_or_LetIn   = List.fold_left (fun c d -> mkProd_or_LetIn d c)
+let it_mkLambda_or_LetIn = List.fold_left (fun c d -> mkLambda_or_LetIn d c)
+
+let it_mkNamedProd_or_LetIn = it_var_context_quantifier mkNamedProd_or_LetIn
+let it_mkNamedLambda_or_LetIn = it_var_context_quantifier mkNamedLambda_or_LetIn
+
+let make_all_name_different env =
+  let avoid = ref (ids_of_var_context (var_context env)) in
+  process_rel_context
+    (fun newenv (na,c,t) -> 
+       let id = next_name_away na !avoid in
+       avoid := id::!avoid;
+       push_rel (Name id,c,t) newenv)
+    env
 
 (* Abstractions. *)
 

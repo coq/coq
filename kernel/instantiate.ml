@@ -11,21 +11,22 @@ open Evd
 open Declarations
 open Environ
 
-let is_id_inst ids args =
-  let is_id id = function
-    | VAR id' -> id = id'
+let is_id_inst inst =
+  let is_id = function
+    | id, VAR id' -> id = id'
     | _ -> false
   in
-  List.for_all2 is_id ids args
+  List.for_all is_id inst
 
-let instantiate_constr ids c args =
-  if is_id_inst ids args then
+let instantiate_constr sign c args =
+  let inst = instantiate_vars sign args in
+  if is_id_inst inst then
     c
   else
-    replace_vars (List.combine ids args) c
+    replace_vars inst c
 
-let instantiate_type ids tty args =
-  typed_app (fun c -> instantiate_constr ids c args) tty
+let instantiate_type sign tty args =
+  typed_app (fun c -> instantiate_constr sign c args) tty
 
 (* Constants. *)
 
@@ -33,8 +34,7 @@ let instantiate_type ids tty args =
 let constant_type env sigma (sp,args) =
   let cb = lookup_constant sp env in
   (* TODO: check args *)
-  instantiate_type 
-    (ids_of_sign cb.const_hyps) cb.const_type (Array.to_list args)
+  instantiate_type cb.const_hyps cb.const_type (Array.to_list args)
 
 type const_evaluation_error = NotDefinedConst | OpaqueConst
 
@@ -48,8 +48,7 @@ let constant_value env cst =
   match cb.const_body with
     | Some v -> 
 	let body = cook_constant v in
-        instantiate_constr 
-	  (ids_of_sign cb.const_hyps) body (Array.to_list args)
+        instantiate_constr cb.const_hyps body (Array.to_list args)
     | None ->
 	anomalylabstrm "termenv__constant_value"
 	  [< 'sTR "a defined constant with no body." >]
@@ -62,14 +61,14 @@ let existential_type sigma (n,args) =
   let info = Evd.map sigma n in
   let hyps = evar_hyps info in
   (* TODO: check args [this comment was in Typeops] *)
-  instantiate_constr (ids_of_sign hyps) info.evar_concl (Array.to_list args)
+  instantiate_constr hyps info.evar_concl (Array.to_list args)
 
 let existential_value sigma (n,args) =
   let info = Evd.map sigma n in
   let hyps = evar_hyps info in
   match info.evar_body with
     | Evar_defined c ->
-	instantiate_constr (ids_of_sign hyps) c (Array.to_list args)
+	instantiate_constr hyps c (Array.to_list args)
     | Evar_empty ->
 	anomaly "a defined existential with no body"
 

@@ -17,10 +17,6 @@ open Reduction
 val filter_unique : 'a list -> 'a list
 val distinct_id_list : identifier list -> identifier list
 
-val filter_sign :
-  ('a -> identifier * typed_type -> bool * 'a) -> var_context -> 'a ->
-  'a * identifier list * var_context
-
 val dummy_sort : constr
 val do_restrict_hyps : 'a evar_map -> constr -> 'a evar_map * constr
 val has_ise : 'a evar_map -> constr -> bool

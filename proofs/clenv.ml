@@ -33,10 +33,9 @@ type 'a clausenv = {
 type wc = walking_constraints
 
 let new_evar_in_sign env =
-  let hyps = Environ.var_context env in
+  let ids = ids_of_var_context (Environ.var_context env) in
   let ev = new_evar () in
-  DOPN(Evar ev,
-       Array.of_list (List.map (fun id -> VAR id) (ids_of_sign hyps)))
+  DOPN(Evar ev, Array.of_list (List.map (fun id -> VAR id) ids))
 
 let rec whd_evar env sigma = function
   | DOPN(Evar ev,_) as k ->

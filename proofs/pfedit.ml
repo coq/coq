@@ -116,11 +116,11 @@ let get_current_proof_name () =
 let add_proof (na,pfs,ts) =
   Edit.create proof_edits (na,pfs,ts,Some !undo_limit)
     
-let del_proof na =
+let delete_proof na =
   try 
     Edit.delete proof_edits na
   with (UserError ("Edit.delete",_)) ->
-    errorlabstrm "Pfedit.del_proof"
+    errorlabstrm "Pfedit.delete_proof"
       [< 'sTR"No such proof" ; msg_proofs false >]
       
 let init_proofs () = Edit.clear proof_edits
@@ -142,7 +142,7 @@ let restart_proof () =
 	errorlabstrm "Pfedit.restart"
           [< 'sTR"No focused proof to restart" ; msg_proofs true >]
     | Some(na,_,ts) -> 
-	del_proof na;
+	delete_proof na;
         start (na,ts);
         set_current_proof na
 
@@ -178,16 +178,15 @@ let undo n =
     errorlabstrm "Pfedit.undo" [< 'sTR"No focused proof"; msg_proofs true >]
 
 (*********************************************************************)
-(*                Proof releasing                                    *)
+(*                  Proof cooking                                    *)
 (*********************************************************************)
 
-let release_proof () =
+let cook_proof () =
   let (pfs,ts) = get_state() 
   and ident = get_current_proof_name () in
   let {evar_concl=concl} = ts.top_goal 
   and strength = ts.top_strength in
   let pfterm = extract_pftreestate pfs in
-  del_proof ident;
   (ident,
    ({ const_entry_body = Cooked pfterm; const_entry_type = Some concl },
     strength))
@@ -204,11 +203,9 @@ let check_no_pending_proofs () =
       [< 'sTR"Proof editing in progress" ; (msg_proofs false) ;
          'sTR"Use \"Abort All\" first or complete proof(s)." >]
 
-let abort_proof = del_proof
+let delete_current_proof () = delete_proof (get_current_proof_name ())
 
-let abort_current_proof () = del_proof (get_current_proof_name ())
-
-let abort_all_proofs = init_proofs
+let delete_all_proofs = init_proofs
    
 (*********************************************************************)
 (*              Modifying the current prooftree                      *)
@@ -238,14 +235,6 @@ let solve_nth k tac =
   let pft = get_pftreestate() in
   if not (List.mem (-1) (cursor_of_pftreestate pft)) then 
     mutate (solve_nth_pftreestate k tac)
-    (* ;
-    let pfs =get_pftreestate() in
-    let pf = proof_of_pftreestate pfs in
-    let (pfterm,metamap) = refiner__extract_open_proof pf.goal.hyps pf
-    in (try typing__control_only_guard empty_evd pfterm
-    with e -> (undo 1; raise e));
-    ()) 
-    *)
   else 
     error "cannot apply a tactic when we are descended behind a tactic-node"
 

@@ -91,8 +91,9 @@ let hypothesis_def_var is_refining ident n c =
 	parameter_def_var ident c
     | DischargeAt disch_sp ->
         if Lib.is_section_p disch_sp then begin
+	  let t = interp_type Evd.empty (Global.env()) c in
           declare_variable (id_of_string ident)
-             (interp_type Evd.empty (Global.env()) c,n,false);
+             (SectionLocalDecl t,n,false);
 	  if is_verbose() then message (ident ^ " is assumed");
           if is_refining then 
             mSGERRNL [< 'sTR"Warning: Variable "; 'sTR ident; 
@@ -145,7 +146,7 @@ let build_mutual lparams lnamearconstrs finite =
 	(fun (env,arl) (recname,arityc,_) -> 
            let arity =
 	     typed_type_of_com Evd.empty env (mkProdCit lparams arityc) in
-	   let env' = Environ.push_rel (Name recname,arity) env in
+	   let env' = Environ.push_rel_decl (Name recname,arity) env in
 	   (env', (arity::arl)))
 	(env0,[]) lnamearconstrs 
     in
@@ -218,8 +219,8 @@ let build_recursive lnameargsardef =
       List.fold_left 
         (fun (env,arl) (recname,lparams,arityc,_) -> 
            let arity = typed_type_of_com Evd.empty env (mkProdCit lparams arityc) in
-           declare_variable recname (body_of_type arity,NeverDischarge,false);
-           (Environ.push_var (recname,arity) env, (arity::arl)))
+           declare_variable recname (SectionLocalDecl (body_of_type arity),NeverDischarge,false);
+           (Environ.push_var_decl (recname,arity) env, (arity::arl)))
         (env0,[]) lnameargsardef
     with e ->
       States.unfreeze fs; raise e
@@ -281,8 +282,8 @@ let build_corecursive lnameardef =
       List.fold_left 
         (fun (env,arl) (recname,arityc,_) -> 
            let arity = typed_type_of_com Evd.empty env0 arityc in
-           declare_variable recname (body_of_type arity,NeverDischarge,false);
-           (Environ.push_var (recname,arity) env, (arity::arl)))
+           declare_variable recname (SectionLocalDecl (body_of_type arity),NeverDischarge,false);
+           (Environ.push_var_decl (recname,arity) env, (arity::arl)))
         (env0,[]) lnameardef
     with e -> 
       States.unfreeze fs; raise e
@@ -376,15 +377,17 @@ let start_proof_com sopt stre com =
   Pfedit.start_proof id stre env (interp_type Evd.empty env com)
 
 let save_named opacity =
-  let id,(const,strength) = Pfedit.release_proof () in
+  let id,(const,strength) = Pfedit.cook_proof () in
   declare_constant id (const,strength);
+  Pfedit.delete_current_proof ();
   if Options.is_verbose() then message ((string_of_id id) ^ " is defined")
 
 let save_anonymous opacity save_ident strength =
-  let id,(const,_) = Pfedit.release_proof () in
+  let id,(const,_) = Pfedit.cook_proof () in
   if atompart_of_id id <> "Unnamed_thm" then
     message("Overriding name "^(string_of_id id)^" and using "^save_ident);
   declare_constant (id_of_string save_ident) (const,strength);
+  Pfedit.delete_current_proof ();
   if Options.is_verbose() then message (save_ident ^ " is defined")
 
 let save_anonymous_thm opacity id =

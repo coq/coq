@@ -530,32 +530,27 @@ let contract_fix ((recindices,bodynum),(types,names,bodies as typedbodies)) =
   let make_Fi j = mkFix ((recindices,nbodies-j-1),typedbodies) in
   substl (list_tabulate make_Fi nbodies) bodies.(bodynum)
 
-let fix_recarg fix stack =
-  match fix with 
-    | DOPN(Fix(recindices,bodynum),_) ->
-    	if 0 <= bodynum & bodynum < Array.length recindices then
-	  let recargnum = Array.get recindices bodynum in
-          (try 
-	     Some (recargnum, List.nth stack recargnum)
-           with Failure "nth" | Invalid_argument "List.nth" -> 
-	     None)
-    	else 
-	  None
-    | _ -> assert false
+let fix_recarg ((recindices,bodynum),_) stack =
+  if 0 <= bodynum & bodynum < Array.length recindices then
+    let recargnum = Array.get recindices bodynum in
+    (try 
+       Some (recargnum, List.nth stack recargnum)
+     with Failure "nth" | Invalid_argument "List.nth" -> 
+       None)
+  else 
+    None
 
 let reduce_fix whfun fix stack =
-  match fix with 
-    | DOPN(Fix(recindices,bodynum),bodyvect) ->
-    	(match fix_recarg fix stack with
-           | None -> (false,(fix,stack))
-	   | Some (recargnum,recarg) ->
-               let (recarg'hd,_ as recarg') = whfun recarg [] in
-               let stack' = list_assign stack recargnum (applist recarg') in
-	       (match recarg'hd with
-                  | DOPN(MutConstruct _,_) -> 
-		      (true,(contract_fix (destFix fix),stack'))
-		  | _ -> (false,(fix,stack'))))
-    | _ -> assert false
+  let dfix = destFix fix in
+  match fix_recarg dfix stack with
+    | None -> (false,(fix,stack))
+    | Some (recargnum,recarg) ->
+        let (recarg'hd,_ as recarg') = whfun recarg [] in
+        let stack' = list_assign stack recargnum (applist recarg') in
+	(match recarg'hd with
+           | DOPN(MutConstruct _,_) -> 
+	       (true,(contract_fix dfix,stack'))
+	   | _ -> (false,(fix,stack')))
 
 (* NB : Cette fonction alloue peu c'est l'appel 
      ``let (recarg'hd,_ as recarg') = whfun recarg [] in''
@@ -1035,10 +1030,11 @@ let sort_of_arity env c = snd (splay_arity env Evd.empty c)
 let decomp_n_prod env sigma n = 
   let rec decrec m ln c = if m = 0 then (ln,c) else 
     match whd_betadeltaiota env sigma c with
-      | DOP2(Prod,a,DLAM(n,c_0)) -> decrec (m-1) ((n,a)::ln) c_0
+      | DOP2(Prod,a,DLAM(n,c0)) ->
+	  decrec (m-1) (Sign.add_rel_decl (n,outcast_type a) ln) c0
       | _                      -> error "decomp_n_prod: Not enough products"
   in 
-  decrec n []
+  decrec n Sign.empty_rel_context
 
 
 

@@ -47,10 +47,12 @@ let general_rewrite_bindings lft2rgt (c,l) gl =
         let hdcncls = string_head hdcncl in 
         let elim =
 	  if lft2rgt then
-            pf_global gl (id_of_string 
-			    (hdcncls^(suff gl (pf_concl gl))^"_r"))
+            pf_global gl
+	      (id_of_string 
+		 (hdcncls^(Declare.elimination_suffix (sort_of_goal gl))^"_r"))
           else
-	    pf_global gl (id_of_string (hdcncls^(suff gl (pf_concl gl))))
+	    pf_global gl
+	      (id_of_string (hdcncls^(Declare.elimination_suffix (sort_of_goal gl))))
         in 
 	tclNOTSAMEGOAL (general_elim (c,l) (elim,[])) gl
    (* was tclWEAK_PROGRESS which only fails for tactics generating one subgoal 
@@ -445,8 +447,8 @@ let discriminable env sigma t1 t2 =
 
    the continuation then constructs the case-split.
  *)
-let push_rel_type sigma (na,t) env =
-  push_rel (na,make_typed t (get_sort_of env sigma t)) env
+let push_rel_type sigma (na,c,t) env =
+  push_rel (na,c,t) env
 
 let push_rels vars env =
   List.fold_right (fun nvar env -> push_rel_type Evd.empty nvar env) vars env
@@ -466,7 +468,7 @@ let descend_then sigma env head dirn =
       let p = lam_it (lift (mis_nrealargs mispec) resty) aritysign in
       let build_branch i =
 	let result = if i = dirn then dirnval else dfltval in
-	it_lambda_name env result cstr.(i-1).cs_args
+	it_mkLambda_or_LetIn_name env result cstr.(i-1).cs_args
       in
       mkMutCase (make_default_case_info mispec) p head 
 	(List.map build_branch (interval 1 (mis_nconstr mispec)))))
@@ -510,7 +512,7 @@ let construct_discriminator sigma env dirn c sort =
   let cstrs = get_constructors indf in
   let build_branch i =
     let endpt = if i = dirn then true_0 else false_0 in
-    lam_it endpt cstrs.(i-1).cs_args 
+    it_mkLambda_or_LetIn endpt cstrs.(i-1).cs_args 
   in
   let build_match =
     mkMutCase (make_default_case_info mispec) p c 
@@ -608,7 +610,7 @@ let discr id gls =
      | Inl(cpath,MutConstruct(_,dirn),_) ->
 	 let e = pf_get_new_id (id_of_string "ee") gls in
 	 let e_env =
-	   push_var (e,assumption_of_judgment env sigma tj) env
+	   push_var_decl (e,assumption_of_judgment env sigma tj) env
 	 in
 	 let discriminator =
 	   build_discriminator sigma e_env dirn (VAR e) sort cpath in
@@ -714,7 +716,7 @@ let make_tuple env sigma (rterm,rty) lind =
     let a = type_of env sigma (Rel lind) in
     (* We replace (Rel lind) by (Rel 1) in rty then abstract on (na:a) *)
     let rty' = substnl [Rel 1] lind rty in
-    let na = fst (lookup_rel lind env) in
+    let na = fst (lookup_rel_type lind env) in
     let p = mkLambda na a rty' in
     (applist(exist_term,[a;p;(Rel lind);rterm]),
      applist(sig_term,[a;p]))
@@ -888,7 +890,7 @@ let inj id gls =
     | Inr posns ->
 	let e = pf_get_new_id (id_of_string "e") gls in
 	let e_env =
-	  push_var (e,assumption_of_judgment env sigma tj) env
+	  push_var_decl (e,assumption_of_judgment env sigma tj) env
 	in
 	let injectors =
 	  map_succeed
@@ -954,7 +956,7 @@ let decompEqThen ntac id gls =
      | Inl(cpath,MutConstruct(_,dirn),_) ->
 	 let e = pf_get_new_id (id_of_string "e") gls in
 	 let e_env =
-	   push_var (e,assumption_of_judgment env sigma tj) env in
+	   push_var_decl (e,assumption_of_judgment env sigma tj) env in
 	 let discriminator =
 	   build_discriminator sigma e_env dirn (VAR e) sort cpath in
 	 let (pf, absurd_term) =
@@ -966,7 +968,7 @@ let decompEqThen ntac id gls =
      | Inr posns ->
 	 (let e = pf_get_new_id (id_of_string "e") gls in
 	  let e_env =
-	    push_var (e,assumption_of_judgment env sigma tj) env in
+	    push_var_decl (e,assumption_of_judgment env sigma tj) env in
 	  let injectors =
 	    map_succeed
 	      (fun (cpath,t1_0,t2_0) ->

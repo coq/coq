@@ -34,7 +34,7 @@ val tclWEAK_PROGRESS : tactic -> tactic
 val tclNTH_HYP       : int -> (constr -> tactic) -> tactic
 val tclMAP           : ('a -> tactic) -> 'a list -> tactic
 val tclLAST_HYP      : (constr -> tactic) -> tactic
-val tclTRY_sign      : (constr -> tactic) -> constr signature -> tactic
+val tclTRY_sign      : (constr -> tactic) -> var_context -> tactic
 val tclTRY_HYPS      : (constr -> tactic) -> tactic
 
 (*val dyn_tclIDTAC     : tactic_arg list -> tactic
@@ -103,9 +103,7 @@ type branch_assumptions = {
   indargs   : identifier list} (* the inductive arguments *)
 
 val sort_of_goal      : goal sigma -> sorts
-val suff              : goal sigma -> constr -> string
-val lookup_eliminator : 
-  typed_type signature -> section_path -> string -> constr
+(*val suff              : goal sigma -> constr -> string*)
 
 val general_elim_then_using :
   constr ->  (inductive -> int -> bool list) -> 

@@ -27,10 +27,10 @@ open Typeops
 
 type inductive_error =
   (* These are errors related to inductive constructions in this module *)
-  | NonPos of name list * constr * constr
-  | NotEnoughArgs of name list * constr * constr
-  | NotConstructor of name list * constr * constr
-  | NonPar of name list * constr * int * constr * constr
+  | NonPos of env * constr * constr
+  | NotEnoughArgs of env * constr * constr
+  | NotConstructor of env * constr * constr
+  | NonPar of env * constr * int * constr * constr
   | SameNamesTypes of identifier
   | SameNamesConstructors of identifier * identifier
   | NotAnArity of identifier
@@ -74,30 +74,22 @@ let mind_check_names mie =
    for all the given types. *)
 
 let mind_extract_params n c =
-  let (l,c') = decompose_prod_n n c in (List.rev l,c')
+  let (l,c') = decompose_prod_n_assum n c in (l,c')
   
 let extract nparams c =
-  try mind_extract_params nparams c 
+  try fst (mind_extract_params nparams c)
   with UserError _ -> raise (InductiveError BadEntry)
 
-let check_params nparams params c = 
-  let eparams = fst (extract nparams c) in
-  try
-    List.iter2 
-      (fun (n1,t1) (n2,t2) ->
-	 if n1 <> n2 || strip_all_casts t1 <> strip_all_casts t2 then
-	   raise (InductiveError BadEntry))
-      eparams params
-  with Invalid_argument _ ->
-    raise (InductiveError BadEntry)
+let check_params params params' =
+  if not (params = params') then raise (InductiveError BadEntry)
 
 let mind_extract_and_check_params mie =
   let nparams = mie.mind_entry_nparams in
   match mie.mind_entry_inds with
     | [] -> anomaly "empty inductive types declaration"
     | (_,ar,_,_)::l -> 
-	let (params,_) = extract nparams ar in
-	List.iter (fun (_,c,_,_) -> check_params nparams params c) l;
+	let params = extract nparams ar in
+	List.iter (fun (_,c,_,_) -> check_params params (extract nparams c)) l;
 	params
 
 let decomp_all_DLAMV_name constr = 
@@ -110,7 +102,8 @@ let decomp_all_DLAMV_name constr =
 
 let mind_check_lc params mie =
   let nparams = List.length params in
-  let check_lc (_,_,_,lc) = List.iter (check_params nparams params) lc in
+  let check_lc (_,_,_,lc) =
+    List.iter (fun c -> check_params params (extract nparams c)) lc in
   List.iter check_lc mie.mind_entry_inds
 
 let mind_check_arities env mie =
@@ -130,8 +123,6 @@ let allowed_sorts issmall isunit = function
   | Prop Null -> 
       if isunit then [prop;spec] else [prop]
 
-let is_small_type t = is_small t.typ
-
 type ill_formed_ind =
   | LocalNonPos of int
   | LocalNotEnoughArgs of int
@@ -140,9 +131,9 @@ type ill_formed_ind =
 
 exception IllFormedInd of ill_formed_ind
 
-let explain_ind_err ntyp lna nbpar c err = 
+let explain_ind_err ntyp env0 nbpar c err = 
   let (lpar,c') = mind_extract_params nbpar c in
-  let env = (List.map fst lpar)@lna in
+  let env = push_rels lpar env0 in
   match err with
     | LocalNonPos kt -> 
 	raise (InductiveError (NonPos (env,c',Rel (kt+nbpar))))
@@ -290,14 +281,13 @@ let listrec_mconstr env ntypes nparams i indlc =
 	    List.rev lrec
     in check_constr_rec []
   in
-  let lna = it_dbenv (fun l na t -> na::l) [] (context env) in
   Array.map
     (fun c ->
        let c = body_of_type c in
        try
 	 check_construct true (1+nparams) (decomp_par nparams c)
        with IllFormedInd err -> 
-	 explain_ind_err (ntypes-i+1) lna nparams c err)
+	 explain_ind_err (ntypes-i+1) env nparams c err)
     indlc
     
 let is_recursive listind =
@@ -357,7 +347,7 @@ let cci_inductive env env_ar kind nparams finite inds cst =
   let packets = Array.of_list (list_map_i one_packet 1 inds) in
   { mind_kind = kind;
     mind_ntypes = ntypes;
-    mind_hyps = keep_hyps (var_context env) ids;
+    mind_hyps = keep_hyps ids (var_context env);
     mind_packets = packets;
     mind_constraints = cst;
     mind_singl = None;

@@ -5,6 +5,7 @@
 open Names
 open Term
 open Sign
+open Environ
 open Rawterm
 open Pattern
 (*i*)
@@ -14,21 +15,21 @@ open Pattern
 
 val ast_of_cases_pattern : cases_pattern -> Coqast.t
 val ast_of_rawconstr : rawconstr -> Coqast.t
-val ast_of_pattern : unit assumptions -> constr_pattern -> Coqast.t
+val ast_of_pattern : names_context -> constr_pattern -> Coqast.t
 
 (* If [b=true] in [ast_of_constr b env c] then the variables in the first 
    level of quantification clashing with the variables in [env] are renamed *)
 
-val ast_of_constr : bool -> unit assumptions -> constr -> Coqast.t
+val ast_of_constr : bool -> env -> constr -> Coqast.t
 
 (*i C'est bdize qui sait maintenant s'il faut afficher les casts ou pas
 val bdize_no_casts : bool -> unit assumptions -> constr -> Coqast.t
 i*)
 
-val ast_of_constant     : unit assumptions -> constant -> Coqast.t
-val ast_of_existential  : unit assumptions -> existential -> Coqast.t
-val ast_of_constructor  : unit assumptions -> constructor -> Coqast.t
-val ast_of_inductive    : unit assumptions -> inductive -> Coqast.t
+val ast_of_constant     : env -> constant -> Coqast.t
+val ast_of_existential  : env -> existential -> Coqast.t
+val ast_of_constructor  : env -> constructor -> Coqast.t
+val ast_of_inductive    : env -> inductive -> Coqast.t
 
 (* For debugging *)
 val print_implicits : bool ref

@@ -60,8 +60,12 @@ val subst1 : 'a term -> 'a term -> 'a term
 val global_vars : 'a term -> identifier list
 
 val global_vars_set : 'a term -> Idset.t
-val subst_var : identifier -> 'a term -> 'a term
 val replace_vars : (identifier * 'a term) list -> 'a term -> 'a term
+val subst_var : identifier -> 'a term -> 'a term
+
+(* [subst_vars [id1;...;idn] t] substitute [VAR idj] by [Rel j] in [t]
+   if two names are identical, the one of least indice is keeped *)
+val subst_vars : identifier list -> 'a term -> 'a term
 
 (* [rel_list n m] and [rel_vect n m] compute [[Rel (n+m);...;Rel(n+1)]] *)
 val rel_vect : int -> int -> 'a term array

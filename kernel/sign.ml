@@ -8,251 +8,190 @@ open Term
 
 (* Signatures *)
 
-type 'a signature = identifier list * 'a list
-type 'a db_signature = (name * 'a) list
-type ('a,'b) sign = ENVIRON of 'a signature * 'b db_signature
+let add d sign = d::sign
+let map f = List.map (fun (na,c,t) -> (na,option_app f c,typed_app f t))
 
-let gLOB hyps = ENVIRON (hyps,[])
+let add_decl (n,t) sign = (n,None,t)::sign
+let add_def (n,c,t) sign = (n,Some c,t)::sign
 
-let ids_of_sign (idl,_) = idl
-let vals_of_sign (_,vals) = vals
-let add_sign (id,ty) (idl,tyl) = (id::idl,ty::tyl)
-let sign_it f (idl,tyl) e = List.fold_right2 f idl tyl e
-let it_sign f e (idl,tyl) = List.fold_left2 f e idl tyl
-let nil_sign = ([],[])
-let rev_sign (idl,tyl) = (List.rev idl, List.rev tyl)
-let map_sign_typ f (idl,tyl) = (idl, List.map f tyl)
-let concat_sign (idl1,tyl1) (idl2,tyl2) = (idl1@idl2, tyl1@tyl2)
-let diff_sign (idl1,tyl1) (idl2,tyl2) = 
-  (list_subtract idl1 idl2, list_subtract tyl1 tyl2)
-let nth_sign (idl,tyl) n = (List.nth idl (n-1), List.nth tyl (n-1))
-let map_sign_graph f (ids,tys) = List.map2 f ids tys
+type var_declaration = identifier * constr option * typed_type
+type var_context = var_declaration list
 
-let isnull_sign = function 
-  | ([],[])     -> true
-  | (_::_,_::_) -> false
-  | _           -> invalid_arg "isnull_sign"
+let add_var = add
+let add_var_decl = add_decl
+let add_var_def = add_def
+let rec lookup_id_type id = function
+  | (id',c,t) :: _ when id=id' -> t
+  | _ :: sign -> lookup_id_type id sign
+  | [] -> raise Not_found
+let rec lookup_id_value id = function
+  | (id',c,t) :: _ when id=id' -> c
+  | _ :: sign -> lookup_id_value id sign
+  | [] -> raise Not_found
+let rec lookup_id id = function
+  | (id',c,t) :: _ when id=id' -> (c,t)
+  | _ :: sign -> lookup_id id sign
+  | [] -> raise Not_found
+let empty_var_context = []
+let pop_var id = function
+  | (id',_,_) :: sign -> assert (id = id'); sign
+  | [] -> assert false
+let ids_of_var_context = List.map (fun (id,_,_) -> id)
+let map_var_context = map
+let rec mem_var_context id = function
+  | (id',_,_) :: _ when id=id' -> true
+  | _ :: sign -> mem_var_context id sign
+  | [] -> false
+let fold_var_context = List.fold_right
+let fold_var_context_both_sides = list_fold_right_and_left
+let it_var_context_quantifier f = List.fold_left (fun c d -> f d c)
 
-let hd_sign = function
-  | (id::_,ty::_) -> (id,ty)
-  | _             -> failwith "hd_sign"
+type rel_declaration = name * constr option * typed_type
+type rel_context = rel_declaration list
 
-let tl_sign = function
-  | (_::idl,_::tyl) -> (idl,tyl)
-  | _               -> failwith "tl_sign"
-
-let lookup_sign id (dom,rang) = 
-  let rec aux = function
-    | ([],          [])        -> raise Not_found
-    | ((id'::id'l), (ty::tyl)) -> if id' = id then (id',ty) else aux (id'l,tyl)
-    | _                        -> anomaly "Names: lookup_sign"
-  in 
-  aux (dom,rang)
-
-let list_of_sign (ids,tys) =
-  try List.combine ids tys
-  with _ -> anomaly "Corrupted signature"
-
-
-let make_sign = List.split
-let do_sign f (ids,tys) = List.iter2 f ids tys
-
-let uncons_sign = function
-  | (id::idl,ty::tyl) -> ((id,ty),(idl,tyl))
-  | _ -> anomaly "signatures are being manipulated in a non-abstract way"
-
-let sign_length (idl,tyl) =
-  let lenid = List.length idl
-  and lenty = List.length tyl in
-  if lenid = lenty then 
-    lenid
-  else 
-    invalid_arg "lookup_sign"
-
-let mem_sign sign id = List.mem id (ids_of_sign sign)
-
-let modify_sign id ty = 
-  let rec modrec = function
-    | [],[] -> invalid_arg "modify_sign"
-    | sign  -> 
-	let (id',ty') = hd_sign sign in
-	if id = id' then
-      	  add_sign (id,ty) (tl_sign sign)
-	else
-      	  add_sign (id',ty') (modrec (tl_sign sign))
-  in 
-  modrec
-
-let exists_sign f = 
-  let rec exrec sign =
-    if isnull_sign sign then 
-      false
-    else 
-      let ((id,t),tl) = uncons_sign sign in
-      f id t or exrec tl
-  in 
-  exrec
-
-(* [sign_prefix id sign] returns the signature up to and including id,
-   with all later assumptions stripped off.  It is an error to call it
-   with a signature not containing id, and that error is generated
-   with error. *)
-
-let sign_prefix id sign = 
-  let rec prefrec sign =
-    if isnull_sign sign then
-      error "sign_prefix"
-    else
-      let ((id',t),sign') = uncons_sign sign in
-      if id' = id then sign else prefrec sign'
-  in 
-  prefrec sign
-
-let add_sign_after whereid (id,t) sign = 
-  let rec addrec sign =
-    if isnull_sign sign then
-      error "add_sign_after"
-    else
-      let ((id',t'),sign') = uncons_sign sign in
-      if id' = whereid then add_sign (id,t) sign
-      else add_sign (id',t') (addrec sign')
-  in 
-  addrec sign
-
-let add_sign_replacing whereid (id,t) sign = 
-  let rec addrec sign =
-    if isnull_sign sign then
-      error "add_replacing_after"
-    else
-      let ((id',t'),sign') = uncons_sign sign in
-      if id' = whereid then add_sign (id,t) sign'
-      else add_sign (id',t') (addrec sign')
-  in 
-  addrec sign
-  
-(* [prepend_sign Gamma1 Gamma2]
-   prepends Gamma1 to the front of Gamma2, given that their namespaces
-   are distinct. *)
-
-let prepend_sign gamma1 gamma2 =
-  if [] = list_intersect (ids_of_sign gamma1) (ids_of_sign gamma2) then
-    let (ids1,vals1) = gamma1
-    and (ids2,vals2) = gamma2 in
-    (ids1@ids2, vals1@vals2)
-  else
-    invalid_arg "prepend_sign"
-
-let dunbind default sign ty = function 
-  | DLAM(na,c) ->
-      let id = next_ident_away (id_of_name default na) (ids_of_sign sign) in
-      (add_sign (id,ty) sign, subst1 (VAR id) c)
-  | _ -> invalid_arg "dunbind default"
-
-let dunbindv default sign ty = function
-  | DLAMV(na,c) ->
-      let id = next_ident_away (id_of_name default na) (ids_of_sign sign) in 
-      (add_sign (id,ty) sign,Array.map (subst1 (VAR id)) c)
-  | _ -> invalid_arg "dunbindv default"
-
-let dbind sign c =
-  let (id,ty) = hd_sign sign
-  and sign' = tl_sign sign in
-  (ty,DLAM(Name id,subst_var id c))
-
-let dbindv sign cl =
-  let (id,ty) = hd_sign sign
-  and sign' = tl_sign sign in
-  (ty,DLAMV(Name id,Array.map (subst_var id) cl))
-
-(* de Bruijn environments *)
-
-let nil_dbsign = []
-
-(* Signatures + de Bruijn environments *)
-
-let dbenv_it f (ENVIRON(_,dbs)) init =
-  List.fold_right (fun (na,t) v -> f na t v) dbs init
-
-let it_dbenv f init (ENVIRON(_,dbs)) =
-  List.fold_left (fun v (na,t) -> f v na t) init dbs
-
-let isnull_rel_env (ENVIRON(_,dbs)) = (dbs = [])
-let uncons_rel_env (ENVIRON(sign,dbs)) = List.hd dbs,ENVIRON(sign,List.tl dbs)
-
-let ids_of_env (ENVIRON(sign,dbenv)) =
-  let filter (n,_) l = match n with (Name id) -> id::l | Anonymous -> l in
-  (ids_of_sign sign) @ (List.fold_right filter dbenv [])
-
-let get_globals (ENVIRON(g,_)) = g
-let get_rels (ENVIRON(_,r)) = r
-
-let add_rel (n,x) (ENVIRON(g,r)) = (ENVIRON(g,(n,x)::r))
-
-let add_glob (id,x) (ENVIRON((dom,rang),r)) = (ENVIRON((id::dom,x::rang),r))
-
-let lookup_glob id (ENVIRON((dom,rang),_)) = 
-  let rec aux = function
-    | ([],          [])        -> raise Not_found
-    | ((id'::id'l), (ty::tyl)) -> if id' = id then (id',ty) else aux (id'l,tyl)
-    | _                        -> anomaly "Names: lookup_glob"
-  in 
-  aux (dom,rang)
-
-let mem_glob id (ENVIRON((dom,_),_)) = List.mem id dom
-
-let lookup_rel n (ENVIRON(_,r)) = 
-  let rec lookrec n l = match (n,l) with
-    | (1, ((na,x)::l)) -> (na,x)
-    | (n, (_::l))      -> lookrec (n-1) l
-    | (_, [])          -> raise Not_found
-  in 
-  lookrec n r
-
-let rec lookup_rel_id id (ENVIRON(_,r)) = 
+let add_rel = add
+let add_rel_decl = add_decl
+let add_rel_def = add_def
+let lookup_rel_type n sign =
   let rec lookrec = function
-    | (n, ((Anonymous,x)::l)) -> lookrec (n+1,l)
-    | (n, ((Name id',x)::l))  -> if id' = id then (n,x) else lookrec (n+1,l)
+    | (1, (na,_,t) :: _) -> (na,t)
+    | (n, _ :: sign)     -> lookrec (n-1,sign)
+    | (_, [])            -> raise Not_found
+  in 
+  lookrec (n,sign)
+let lookup_rel_value n sign =
+  let rec lookrec = function
+    | (1, (_,c,_) :: _) -> c
+    | (n, _ :: sign )   -> lookrec (n-1,sign)
+    | (_, [])           -> raise Not_found
+  in 
+  lookrec (n,sign)
+let rec lookup_rel_id id sign = 
+  let rec lookrec = function
+    | (n, (Anonymous,_,_)::l) -> lookrec (n+1,l)
+    | (n, (Name id',_,t)::l)  -> if id' = id then (n,t) else lookrec (n+1,l)
     | (_, [])                 -> raise Not_found
   in 
-  lookrec (1,r)
+  lookrec (1,sign)
+let empty_rel_context = []
+let rel_context_length = List.length
+let lift_rel_context n sign =
+  let rec liftrec k = function
+    | (na,c,t)::sign ->
+	(na,option_app (liftn n k) c,typed_app (liftn n k) t)
+	::(liftrec (k-1) sign)
+    | [] -> []
+  in
+  liftrec (rel_context_length sign) sign
+let concat_rel_context = (@)
+let ids_of_rel_context sign =
+  List.fold_right
+    (fun (na,_,_) l -> match na with Name id -> id::l | Anonymous -> l)
+    sign []
+let names_of_rel_context = List.map (fun (na,_,_) -> na)
+let decls_of_rel_context sign =
+  List.fold_right
+    (fun (na,c,t) l -> match c with Some _ -> l | None -> (na,body_of_type t)::l)
+    sign []
+let map_rel_context = map
 
-let map_rel_env f (ENVIRON(g,r)) =
-  ENVIRON (g,List.map (fun (na,x) -> (na,f x)) r)
+let instantiate_sign sign args =
+  let rec instrec = function
+    | ((id,None,_) :: sign, c::args) -> (id,c) :: (instrec (sign,args))
+    | ((id,Some c,_) :: _, args)     -> (id,c) :: (instrec (sign,args))
+    | ([],[])                       -> []
+    | ([],_) | (_,[]) ->
+    anomaly "Signature and its instance do not match"
+  in 
+  instrec (sign,args)
 
-let map_var_env f (ENVIRON((dom,rang),r)) =
-  ENVIRON (List.fold_right2 
-	     (fun na x (doml,rangl) -> (na::doml,(f x)::rangl))
-      	     dom rang ([],[]),r)
+(* [keep_hyps sign ids] keeps the part of the signature [sign] which 
+   contains the variables of the set [ids], and recursively the variables 
+   contained in the types of the needed variables. *)
 
-let number_of_rels (ENVIRON(_,db)) = List.length db
+let rec keep_hyps needed = function
+  | (id,copt,t as d) ::sign when Idset.mem id needed ->
+      let globc = 
+	match copt with
+	  | None -> Idset.empty
+	  | Some c -> global_vars_set c in
+      let needed' =
+	Idset.union (global_vars_set (body_of_type t)) 
+	  (Idset.union globc needed) in
+      d :: (keep_hyps needed' sign)
+  | _::sign -> keep_hyps needed sign
+  | [] -> []
 
-let change_name_env (ENVIRON(sign,db)) j id =
-  match list_chop (j-1) db with
-    | db1,((_,ty)::db2) -> ENVIRON(sign,db1@(Name id,ty)::db2)
-    | _ -> raise Not_found
+(*************************)
+(*   Names environments  *)
+(*************************)
+type names_context = name list
+let add_name n nl = n::nl
+let lookup_name_of_rel p names =
+  try List.nth names (p-1)
+  with Failure "nth" -> raise Not_found
+let rec lookup_rel_of_name id names = 
+  let rec lookrec n = function
+    | Anonymous :: l  -> lookrec (n+1) l
+    | (Name id') :: l -> if id' = id then n else lookrec (n+1) l
+    | []            -> raise Not_found
+  in 
+  lookrec 1 names
+let empty_names_context = []
 
-let unitize_env env = map_rel_env (fun _ -> ()) env
+(*********************************)
+(*       Term destructors        *)
+(*********************************)
 
-type ('b,'a) search_result =
-  | GLOBNAME of identifier  * 'b
-  | RELNAME of int * 'a
+(* Transforms a product term (x1:T1)..(xn:Tn)T into the pair
+   ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
+let decompose_prod_assum = 
+  let rec prodec_rec l = function
+    | DOP2(Prod,t,DLAM(x,c)) ->
+	prodec_rec (add_rel_decl (x,outcast_type t) l) c
+(*    | Letin,t,DLAM(x,c)) ->
+	prodec_rec (add_rel_def (x,c,outcast_type t) l) c*)
+    | DOP2(Cast,c,_)         -> prodec_rec l c
+    | c                      -> l,c
+  in 
+  prodec_rec empty_rel_context
 
-let lookup_id id env =
-  try 
-    let (x,y) = lookup_rel_id id env in RELNAME(x,y)
-  with 
-    | Not_found -> let (x,y) = lookup_glob id env in GLOBNAME(x,y)
+(* Transforms a lambda term [x1:T1]..[xn:Tn]T into the pair
+   ([(xn,Tn);...;(x1,T1)],T), where T is not a lambda *)
+let decompose_lam_assum = 
+  let rec lamdec_rec l = function
+    | DOP2(Lambda,t,DLAM(x,c)) ->
+	lamdec_rec (add_rel_decl (x,outcast_type t) l) c
+(*    | Letin,t,DLAM(x,c)) ->
+	lamdec_rec (add_rel_def (x,c,outcast_type t) l) c*)
+    | DOP2(Cast,c,_)         -> lamdec_rec l c
+    | c                      -> l,c
+  in 
+  lamdec_rec empty_rel_context
 
-let make_all_name_different (ENVIRON((dom,_) as sign,dbs)) =
-  let _,newdbs =
-    List.fold_right
-      (fun (na,t) (avoid,newdbs) -> 
-	 let id = next_name_away na avoid in
-	 (id::avoid),((Name id,t)::newdbs))
-      dbs (dom,[])
-  in ENVIRON (sign,newdbs)
+(* Given a positive integer n, transforms a product term (x1:T1)..(xn:Tn)T 
+   into the pair ([(xn,Tn);...;(x1,T1)],T) *)
+let decompose_prod_n_assum n =
+  if n < 0 then error "decompose_prod_n: integer parameter must be positive";
+  let rec prodec_rec l n c = 
+    if n=0 then l,c 
+    else match c with 
+      | DOP2(Prod,t,DLAM(x,c)) -> prodec_rec (add_rel_decl (x,outcast_type t) l) (n-1) c
+      | DOP2(Cast,c,_)         -> prodec_rec l n c
+      | c -> error "decompose_prod_n: not enough products"
+  in 
+  prodec_rec empty_rel_context n 
 
-type 'b assumptions = (typed_type,'b) sign
-type context = (typed_type,typed_type) sign
-type var_context = typed_type signature
+(* Given a positive integer n, transforms a lambda term [x1:T1]..[xn:Tn]T 
+   into the pair ([(xn,Tn);...;(x1,T1)],T) *)
+let decompose_lam_n_assum n =
+  if n < 0 then error "decompose_lam_n: integer parameter must be positive";
+  let rec lamdec_rec l n c = 
+    if n=0 then l,c 
+    else match c with 
+      | DOP2(Lambda,t,DLAM(x,c)) -> lamdec_rec (add_rel_decl (x,outcast_type t) l) (n-1) c
+      | DOP2(Cast,c,_)           -> lamdec_rec l n c
+      | c -> error "decompose_lam_n: not enough abstractions"
+  in 
+  lamdec_rec empty_rel_context n 
 

@@ -45,12 +45,6 @@ let constr_of_Constr = function
   | Constr c -> c
   | _ -> anomalylabstrm "constr_of_Constr" [<'sTR "Not a CONSTR tactic_arg">]
 
-(* Transforms a type_judgment signature into a (string * constr) list *)
-let make_hyps hyps =
-  let lid = List.map string_of_id (ids_of_sign hyps)
-  and lhyp = List.map body_of_type (vals_of_sign hyps) in
-    List.rev (List.combine lid lhyp)
-
 (* Extracted the constr list from lfun *)
 let rec constr_list goalopt = function
   | (str,VArg(Constr c))::tl -> (id_of_string str,c)::(constr_list goalopt tl)
@@ -62,7 +56,7 @@ let rec constr_list goalopt = function
        (match goalopt with
        | None -> constr_list goalopt tl
        | Some goal ->
-         if List.mem_assoc (string_of_id id) (make_hyps (pf_hyps goal)) then
+         if mem_var_context id (pf_hyps goal) then
            (id_of_string str,VAR id)::(constr_list goalopt tl)
          else
            constr_list goalopt tl))
@@ -287,12 +281,11 @@ let apply_matching pat csr =
      PatternMatchingFailure -> raise No_match
 
 (* Tries to match one hypothesis with a list of hypothesis patterns *)
-let apply_one_hyp_context lmatch mhyps (idhyp,hyp) =
+let apply_one_hyp_context lmatch mhyps (idhyp,bodyopt,hyp) =
   let rec apply_one_hyp_context_rec (idhyp,hyp) mhyps_acc = function
     | (Hyp (idpat,pat))::tl ->
       (try
-         ([idpat,VArg (Identifier
-           (id_of_string idhyp))],verify_metas_coherence lmatch
+         ([idpat,VArg (Identifier idhyp)],verify_metas_coherence lmatch
            (Pattern.matches pat hyp),mhyps_acc@tl)
        with
            PatternMatchingFailure | Not_coherent_metas ->
@@ -307,7 +300,7 @@ let apply_one_hyp_context lmatch mhyps (idhyp,hyp) =
              apply_one_hyp_context_rec (idhyp,hyp) (mhyps_acc@[NoHypId pat])
                tl)
     | [] -> raise No_match in
-  apply_one_hyp_context_rec (idhyp,hyp) [] mhyps
+  apply_one_hyp_context_rec (idhyp,body_of_type hyp) [] mhyps
 
 (* Prepares the lfun list for constr substitutions *)
 let rec make_subs_list = function
@@ -473,7 +466,7 @@ and match_context_interp evc env lfun lmatch goalopt ast lmr =
       (try eval_with_fail (val_interp (evc,env,lfun,lmatch,Some goal)) t goal
        with No_match -> apply_match_context evc env lfun lmatch goal tl)
     | (Pat (mhyps,mgoal,mt))::tl ->
-      let hyps = make_hyps (pf_hyps goal)
+      let hyps = pf_hyps goal
       and concl = pf_concl goal in
       (try
          (let lgoal = apply_matching mgoal concl in

@@ -107,6 +107,9 @@ let outcast_type x = x
 let typed_combine f g t u = f t u
 (**)
 
+type var_declaration = identifier * constr option * typed_type
+type rel_declaration = name * constr option * typed_type
+
 (****************************************************************************)
 (*              Functions for dealing with constr terms                     *)
 (****************************************************************************)
@@ -159,16 +162,53 @@ let mkCast t1 t2 =
 
 (* Constructs the product (x:t1)t2 *)
 let mkProd x t1 t2 = (DOP2 (Prod,t1,(DLAM (x,t2))))
-
-(* non-dependent product t1 -> t2 *)
-let mkArrow t1 t2 = mkProd Anonymous t1 t2
-
-(* named product *)
-let mkNamedProd name typ c = mkProd (Name name) typ (subst_var name c)
+let mkNamedProd id typ c = mkProd (Name id) typ (subst_var id c)
+let mkProd_string   s t c = mkProd (Name (id_of_string s)) t c
 
 (* Constructs the abstraction [x:t1]t2 *)
 let mkLambda x t1 t2 = (DOP2 (Lambda,t1,(DLAM (x,t2))))
-let mkNamedLambda name typ c = mkLambda (Name name) typ (subst_var name c)
+let mkNamedLambda id typ c = mkLambda (Name id) typ (subst_var id c)
+let mkLambda_string s t c = mkLambda (Name (id_of_string s)) t c
+
+(* Constructs [x=c_1:t]c_2 *)
+let mkLetIn x c1 t c2 = failwith "TODO"
+let mkNamedLetIn id c1 t c2 = mkLetIn (Name id) c1 t (subst_var id c2)
+
+(* Constructs either [(x:t)c] or [[x=b:t]c] *)
+let mkProd_or_LetIn (na,body,t) c =
+  match body with
+    | None -> mkProd na t c
+    | Some b -> mkLetIn na b t c
+
+let mkNamedProd_or_LetIn (id,body,t) c =
+  match body with
+    | None -> mkNamedProd id (body_of_type t) c
+    | Some b -> mkNamedLetIn id b (body_of_type t) c
+
+(* Constructs either [[x:t]c] or [[x=b:t]c] *)
+let mkLambda_or_LetIn (na,body,t) c =
+  match body with
+    | None -> mkLambda na t c
+    | Some b -> mkLetIn na b t c
+
+let mkNamedLambda_or_LetIn (id,body,t) c =
+  match body with
+    | None -> mkNamedLambda id (body_of_type t) c
+    | Some b -> mkNamedLetIn id b (body_of_type t) c
+
+(* Constructs either [(x:t)c] or [c] where [x] is replaced by [b] *)
+let mkProd_wo_LetIn (na,body,t) c =
+  match body with
+    | None -> mkProd na (body_of_type t) c
+    | Some b -> subst1 b c
+
+let mkNamedProd_wo_LetIn (id,body,t) c =
+  match body with
+    | None -> mkNamedProd id (body_of_type t) c
+    | Some b -> subst1 b (subst_var id c)
+
+(* non-dependent product t1 -> t2 *)
+let mkArrow t1 t2 = mkProd Anonymous t1 t2
 
 (* If lt = [t1; ...; tn], constructs the application (t1 ... tn) *)
 let mkAppL a = DOPN (AppL, a)
@@ -179,7 +219,7 @@ let mkAppList a l = DOPN (AppL, Array.of_list (a::l))
 let mkConst (sp,a) = DOPN (Const  sp, a)
 
 (* Constructs an existential variable *)
-let mkEvar n a = DOPN (Evar n, a)
+let mkEvar (n,a) = DOPN (Evar n, a)
 
 (* Constructs an abstract object *)
 let mkAbst sp a = DOPN (Abst sp, a)
@@ -215,9 +255,6 @@ let mkMutCaseA ci p c ac =
     with     fn [ctxn] = bn.
 
    where the lenght of the jth context is ij.
-
-   Warning: as an invariant the ti are casted during the Fix formation;
-   these casts are then used by destFix
 *)
 
 (* Here, we assume the body already constructed *)
@@ -509,10 +546,6 @@ let destCase = function
    where the lenght of the jth context is ij.
 *)
 
-let out_fixcast = function
-  | DOP2 (Cast, b, DOP0 (Sort s)) as c -> outcast_type c
-  | _ -> anomaly "destFix: malformed recursive definition"
-
 let destGralFix a =
   let nbofdefs = Array.length a in
   let types    = Array.sub a 0 (nbofdefs-1) in
@@ -529,26 +562,13 @@ let destGralFix a =
 let destFix = function 
   | DOPN (Fix (recindxs,i),a) -> 
       let (types,funnames,bodies) = destGralFix a in 
-      ((recindxs,i),((*Array.map out_fixcast *) types,funnames,bodies))
+      ((recindxs,i),(types,funnames,bodies))
   | _ -> invalid_arg "destFix"
 	
 let destCoFix = function 
   | DOPN ((CoFix i),a) ->
       let (types,funnames,bodies) = destGralFix a in
-      (i,((*Array.map out_fixcast *) types,funnames,bodies))
-  | _ -> invalid_arg "destCoFix"
-
-(* Provisoire, le temps de maitriser les cast *)
-let destUntypedFix = function 
-  | DOPN (Fix (recindxs,i),a) -> 
-      let (types,funnames,bodies) = destGralFix a in 
-      (recindxs,i,types,funnames,bodies)
-  | _ -> invalid_arg "destFix"
-
-let destUntypedCoFix = function 
-  | DOPN (CoFix i,a) -> 
-      let (types,funnames,bodies) = destGralFix a in 
-      (i,types,funnames,bodies)
+      (i,(types,funnames,bodies))
   | _ -> invalid_arg "destCoFix"
 
 (**********************************************************************)
@@ -635,9 +655,6 @@ let kind_of_term c =
 let abs_implicit c = mkLambda Anonymous mkImplicit c
 let lambda_implicit a = mkLambda (Name(id_of_string"y")) mkImplicit a
 let lambda_implicit_lift n a = iterate lambda_implicit n (lift n a)
-
-let mkLambda_string s t c = mkLambda (Name (id_of_string s)) t c
-let mkProd_string   s t c = mkProd (Name (id_of_string s)) t c
 
 
 (* prod_it b [xn:Tn;..;x1:T1] = (x1:T1)..(xn:Tn)b *)
@@ -754,11 +771,11 @@ let rec isArity = function
    ([(xn,Tn);...;(x1,T1)],T), where T is not a product *)
 let decompose_prod = 
   let rec prodec_rec l = function
-    | DOP2(Prod,t,DLAM(x,c)) -> prodec_rec ((x,t)::l) c
+    | DOP2(Prod,t,DLAM(x,c)) ->	prodec_rec ((x,t)::l) c
     | DOP2(Cast,c,_)         -> prodec_rec l c
     | c                      -> l,c
   in 
-  prodec_rec [] 
+  prodec_rec []
 
 (* Transforms a lambda term [x1:T1]..[xn:Tn]T into the pair
    ([(xn,Tn);...;(x1,T1)],T), where T is not a lambda *)
@@ -768,7 +785,7 @@ let decompose_lam =
     | DOP2(Cast,c,_)         -> lamdec_rec l c
     | c                      -> l,c
   in 
-  lamdec_rec [] 
+  lamdec_rec []
 
 (* Given a positive integer n, transforms a product term (x1:T1)..(xn:Tn)T 
    into the pair ([(xn,Tn);...;(x1,T1)],T) *)
@@ -1306,13 +1323,14 @@ let rec subst_meta bl c =
    substitution is done the list may contain only negative occurrences
    that will not be substituted. *)
 
-let subst_term_occ locs c t = 
-  let rec substcheck except k occ c t =
+let subst_term_occ_gen locs occ c t =
+  let except = List.for_all (fun n -> n<0) locs in
+  let rec substcheck k occ c t =
     if except or List.exists (function u -> u>=occ) locs then
-      substrec except k occ c t
+      substrec k occ c t
     else 
       (occ,t)
-  and substrec except k occ c t =
+  and substrec k occ c t =
     if eq_constr t c then
       if except then 
 	if List.mem (-occ) locs then (occ+1,t) else (occ+1,Rel(k))
@@ -1327,44 +1345,60 @@ let subst_term_occ locs c t =
 	     let (occ',cl') =   
                Array.fold_left 
 		 (fun (nocc',lfd) f ->
-		    let (nocc'',f') = substcheck except k nocc' c f in
+		    let (nocc'',f') = substcheck k nocc' c f in
                     (nocc'',f'::lfd)) 
 		 (occ,[]) cl
              in 
 	     (occ',DOPN(i,Array.of_list (List.rev cl')))
 	|  DOP2(i,t1,t2) -> 
-	     let (nocc1,t1')=substrec except k occ c t1 in
-             let (nocc2,t2')=substcheck except k nocc1 c t2 in
+	     let (nocc1,t1')=substrec k occ c t1 in
+             let (nocc2,t2')=substcheck k nocc1 c t2 in
              nocc2,DOP2(i,t1',t2')
 	|  DOP1(i,t) -> 
-	     let (nocc,t')= substrec except k occ c t in
+	     let (nocc,t')= substrec k occ c t in
 	     nocc,DOP1(i,t')
 	|  DLAM(n,t) -> 
-	     let (occ',t') = substcheck except (k+1) occ (lift 1 c) t in
+	     let (occ',t') = substcheck (k+1) occ (lift 1 c) t in
              (occ',DLAM(n,t'))
 	|  DLAMV(n,cl) -> 
 	     let (occ',cl') =   
                Array.fold_left 
 		 (fun (nocc',lfd) f ->
 		    let (nocc'',f') = 
-		      substcheck except (k+1) nocc' (lift 1 c) f
+		      substcheck (k+1) nocc' (lift 1 c) f
                     in (nocc'',f'::lfd)) 
 		 (occ,[]) cl
              in 
 	     (occ',DLAMV(n,Array.of_list (List.rev cl') ))
 	|  _ -> occ,t
-  in 
-  if locs = [] then 
+  in
+  substcheck 1 occ c t
+
+let subst_term_occ locs c t = 
+  if locs = [] then
     subst_term c t
   else if List.mem 0 locs then 
     t
   else 
-    let except = List.for_all (fun n -> n<0) locs in
-    let (nbocc,t') = substcheck except 1 1 c t in
+    let (nbocc,t') = subst_term_occ_gen locs 1 c t in
     if List.exists (fun o -> o >= nbocc or o <= -nbocc) locs then
-      failwith "subst_term_occ: too few occurences";
+      errorlabstrm "subst_term_occ" [< 'sTR "Too few occurences" >];
     t'
 
+let subst_term_occ_decl locs c (id,bodyopt,typ as d) =
+  match bodyopt with
+    | None -> (id,None,subst_term_occ locs c typ)
+    | Some body -> 
+	if locs = [] then
+	  (id,Some (subst_term c body),typed_app (subst_term c) typ)
+	else if List.mem 0 locs then 
+	  d
+	else 
+	  let (nbocc,body') = subst_term_occ_gen locs 1 c body in
+	  let (nbocc',t') = typed_app (subst_term_occ_gen locs nbocc c) typ in
+	  if List.exists (fun o -> o >= nbocc' or o <= -nbocc') locs then
+	    errorlabstrm "subst_term_occ_decl" [< 'sTR "Too few occurences" >];
+	  (id,Some body',t')
   
 (***************************)
 (* occurs check functions  *)                         

@@ -48,7 +48,7 @@ let rec execute mf env cstr =
 	(relative env Evd.empty n, cst0)
 
     | IsVar id -> 
-	(make_judge cstr (snd (lookup_var id env)), cst0)
+	(make_judge cstr (lookup_var_type id env), cst0)
 
     | IsAbst _ ->
         if evaluable_abst env cstr then 
@@ -108,7 +108,7 @@ let rec execute mf env cstr =
     | IsLambda (name,c1,c2) -> 
         let (j,cst1) = execute mf env c1 in
         let var = assumption_of_judgment env Evd.empty j in
-	let env1 = push_rel (name,var) env in
+	let env1 = push_rel_decl (name,var) env in
         let (j',cst2) = execute mf env1 c2 in 
         let (j,cst3) = abs_rel env1 Evd.empty name var j' in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
@@ -117,7 +117,7 @@ let rec execute mf env cstr =
      | IsProd (name,c1,c2) ->
         let (j,cst1) = execute mf env c1 in
         let varj = type_judgment env Evd.empty j in
-	let env1 = push_rel (name,assumption_of_type_judgment varj) env in
+	let env1 = push_rel_decl (name,assumption_of_type_judgment varj) env in
         let (j',cst2) = execute mf env1 c2 in
 	let (j,cst3) = gen_rel env1 Evd.empty name varj j' in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
@@ -137,7 +137,7 @@ and execute_fix mf env lar lfi vdef =
   let nlara = 
     List.combine (List.rev lfi) (Array.to_list (vect_lift_type lara)) in
   let env1 = 
-    List.fold_left (fun env nvar -> push_rel nvar env) env nlara in
+    List.fold_left (fun env nvar -> push_rel_decl nvar env) env nlara in
   let (vdefj,cst2) = execute_array mf env1 vdef in
   let vdefv = Array.map j_val_only vdefj in
   let cst3 = type_fixpoint env1 Evd.empty lfi lara vdefj in
@@ -239,8 +239,9 @@ let universes = universes
 let context = context
 let var_context = var_context
 
+let lookup_var_type = lookup_var_type
+let lookup_rel_type = lookup_rel_type
 let lookup_var = lookup_var
-let lookup_rel = lookup_rel
 let lookup_constant = lookup_constant
 let lookup_mind = lookup_mind
 let lookup_mind_specif = lookup_mind_specif
@@ -248,21 +249,27 @@ let lookup_mind_specif = lookup_mind_specif
 (* Insertion of variables (named and de Bruijn'ed). They are now typed before
    being added to the environment. *)
 
-let push_rel_or_var push (id,c) env =
+let push_rel_or_var_def push (id,c) env =
   let (j,cst) = safe_machine env c in
   let env' = add_constraints cst env in
-  let var = assumption_of_judgment env' Evd.empty j in
+  push (id,j.uj_val,j.uj_type) env'
+
+let push_var_def nvar env = push_rel_or_var_def push_var_def nvar env
+
+let push_rel_def nrel env = push_rel_or_var_def push_rel_def nrel env
+
+let push_rel_or_var_decl push (id,c) env =
+  let (j,cst) = safe_machine_type env c in
+  let env' = add_constraints cst env in
+  let var = assumption_of_type_judgment j in
   push (id,var) env'
 
-let push_var nvar env = push_rel_or_var push_var nvar env
+let push_var_decl nvar env = push_rel_or_var_decl push_var_decl nvar env
 
-let push_rel nrel env = push_rel_or_var push_rel nrel env
+let push_rel_decl nrel env = push_rel_or_var_decl push_rel_decl nrel env
 
-let push_vars vars env =
-  List.fold_left (fun env nvar -> push_var nvar env) env vars
-
-let push_rels vars env =
-  List.fold_left (fun env nvar -> push_rel nvar env) env vars
+let push_rels_with_univ vars env =
+  List.fold_left (fun env nvar -> push_rel_decl nvar env) env vars
 
 (* Insertion of constants and parameters in environment. *)
 
@@ -291,7 +298,7 @@ let add_constant_with_value sp body typ env =
     const_kind = kind_of_path sp;
     const_body = Some (ref (Cooked body));
     const_type = ty;
-    const_hyps = keep_hyps (var_context env) ids;
+    const_hyps = keep_hyps ids (var_context env);
     const_constraints = Constraint.union cst cst';
     const_opaque = false } 
   in
@@ -305,7 +312,7 @@ let add_lazy_constant sp f t env =
     const_kind = kind_of_path sp;
     const_body = Some (ref (Recipe f));
     const_type = assumption_of_judgment env' Evd.empty jt;
-    const_hyps = keep_hyps (var_context env) ids;
+    const_hyps = keep_hyps ids (var_context env);
     const_constraints = cst;
     const_opaque = false } 
   in
@@ -327,7 +334,7 @@ let add_parameter sp t env =
     const_kind = kind_of_path sp;
     const_body = None;
     const_type = assumption_of_judgment env' Evd.empty jt;
-    const_hyps = keep_hyps (var_context env) ids;
+    const_hyps = keep_hyps ids (var_context env);
     const_constraints = cst;
     const_opaque = false } 
   in
@@ -344,24 +351,21 @@ let max_universe (s1,cst1) (s2,cst2) g =
     | Type u1, _  -> s1, cst1
     | _, _ -> s2, cst2
 
-(* This (re)computes informations relevant to extraction and the sort of
-   an arity or type constructor *)
+(* This (re)computes informations relevant to extraction and the sort of an
+   arity or type constructor; we do not to recompute universes constraints *)
 
 let rec infos_and_sort env t =
   match kind_of_term t with
     | IsProd (name,c1,c2) ->
-        let (varj,cst1) = safe_machine_type env c1 in
+        let (varj,_) = safe_machine_type env c1 in
 	let var = assumption_of_type_judgment varj in
-	let env1 = Environ.push_rel (name,var) env in
-	let (infos,smax,cst) = infos_and_sort env1 c2 in
+	let env1 = Environ.push_rel_decl (name,var) env in
 	let s1 = varj.utj_type in
-	let smax',cst' = max_universe (s1,cst1) (smax,cst) (universes env) in
 	let logic = not (is_info_type env Evd.empty varj) in
 	let small = is_small s1 in
-	((logic,small) :: infos, smax', cst')
+	(logic,small) :: (infos_and_sort env1 c2)
     | IsCast (c,_) -> infos_and_sort env c
-    | _ ->
-	([],prop (* = neutral element of max_universe *),Constraint.empty)
+    | _ -> []
 
 (* [infos] is a sequence of pair [islogic,issmall] for each type in
    the product of a constructor or arity *)
@@ -376,10 +380,12 @@ let is_unit arinfos constrsinfos =
    | [constrinfos] -> is_logic_constr constrinfos && is_logic_arity arinfos
    | _ -> false
 
-let small_unit constrsinfos (env_par,nparams,ar) =
+let small_unit constrsinfos (env_ar,nparams,ar) =
   let issmall = List.for_all is_small constrsinfos in
-  let (arinfos,_,_) =
-    let (_,a) = mind_extract_params nparams ar in infos_and_sort env_par a in
+  let arinfos =
+    let (params,a) = mind_extract_params nparams ar in
+    let env_par = push_rels params env_ar in
+    infos_and_sort env_par a in
   let isunit = is_unit arinfos constrsinfos in
   issmall, isunit
 
@@ -391,14 +397,19 @@ let enforce_type_constructor arsort smax cst =
     | _,_ -> cst
 
 let type_one_constructor env_ar nparams arsort c =
-  let (infos,max,cst1) = 
+  let infos = 
     let (params,dc) = mind_extract_params nparams c in
     let env_par = push_rels params env_ar in
     infos_and_sort env_par dc in
-  let (j,cst2) = safe_machine_type env_ar c in
-  (*C'est idiot, cst1 et cst2 sont essentiellement des copies l'un de l'autre*)
-  let cst3 =enforce_type_constructor arsort max (Constraint.union cst1 cst2) in
-  (infos, assumption_of_type_judgment j, cst3)
+  (* Constructors are typed-checked here *)
+  let (j,cst) = safe_machine_type env_ar c in
+
+  (* If the arity is at some level Type arsort, then the sort of the
+     constructor must be below arsort; here we consider constructors with the
+     global parameters (which add a priori more constraints on their sort) *)
+  let cst2 = enforce_type_constructor arsort j.utj_type cst in
+
+  (infos, assumption_of_type_judgment j, cst2)
 
 let type_one_inductive i env_ar env_par nparams ninds (id,ar,cnames,vc) =
   let arsort = sort_of_arity env_ar ar in
@@ -412,7 +423,7 @@ let type_one_inductive i env_ar env_par nparams ninds (id,ar,cnames,vc) =
   in
   let vc' = Array.of_list jlc in
   let issmall,isunit = small_unit constrsinfos (env_par,nparams,ar) in
-  let (_,tyar) = lookup_rel (ninds+1-i) env_ar in
+  let (_,tyar) = lookup_rel_type (ninds+1-i) env_ar in
   ((id,tyar,cnames,issmall,isunit,vc'), cst)
 
 let add_mind sp mie env =
@@ -425,7 +436,8 @@ let add_mind sp mie env =
   let types_sign = 
     List.map (fun (id,ar,_,_) -> (Name id,ar)) mie.mind_entry_inds
   in
-  let env_arities = push_rels types_sign env in
+  (* Arities with params are typed-checked here *)
+  let env_arities = push_rels_with_univ types_sign env in
   let env_params = push_rels params env_arities in
   let _,inds,cst =
     List.fold_right
@@ -445,18 +457,10 @@ let add_mind sp mie env =
     
 let add_constraints = add_constraints
 
-let pop_vars idl env =
-  let rec remove n sign = 
-    if n = 0 then
-      sign
-    else
-      if isnull_sign sign then anomaly "pop_vars"
-      else
-	let (id,_) = hd_sign sign in 
-	    if not (List.mem id idl) then anomaly "pop_vars";
-	    remove (pred n) (tl_sign sign)
-  in
-  change_hyps (remove (List.length idl)) env
+let rec pop_vars idl env =
+  match idl with 
+    | [] -> env
+    | id::l -> pop_vars l (Environ.pop_var id env)
 
 let export = export
 let import = import

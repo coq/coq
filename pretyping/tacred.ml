@@ -26,69 +26,59 @@ let rev_firstn_liftn fn ln =
   in 
   rfprec fn []
 
-let make_elim_fun f largs =
-  try
-    let (sp, _) = destConst f in
-    match constant_eval sp with
-    | EliminationCases n when List.length largs >= n -> f
-    | EliminationFix (lv,n) when List.length largs >= n ->
-	let labs,_ = list_chop n largs in
-	let p = List.length lv in
-	let la' = list_map_i 
-		    (fun q aq ->
-		       try (Rel (p+1-(list_index (n+1-q) (List.map fst lv)))) 
-		       with Not_found -> aq) 1
-                    (List.map (lift p) labs) 
-	in
-	list_fold_left_i 
-	  (fun i c (k,a) -> 
-             DOP2(Lambda,(substl (rev_firstn_liftn (n-k) (-i) la') a),
-                  DLAM(Name(id_of_string"x"),c))) 0 (applistc f la') lv
-    | _ -> raise Redelimination
-  with Failure _ -> 
-    raise Redelimination
+(*  EliminationFix ([(yi1,Ti1);...;(yip,Tip)],n) means f is some
+   [y1:T1,...,yn:Tn](Fix(..) yi1 ... yip);
+   f is applied to largs and we need for recursive calls to build
+   [x1:Ti1',...,xp:Tip'](f a1..a(n-p) yi1 ... yip) 
+   where a1...an are the n first arguments of largs and Tik' is Tik[yil=al]
+   To check ... *)
 
-(* F is convertible to DOPN(Fix(recindices,bodynum),bodyvect) make 
+let make_elim_fun f lv n largs =
+  let (sp,args) = destConst f in
+  let labs,_ = list_chop n largs in
+  let p = List.length lv in
+  let ylv = List.map fst lv in
+  let la' = list_map_i 
+	      (fun q aq ->
+		 try (Rel (p+1-(list_index (n-q) ylv))) 
+		 with Not_found -> aq) 0
+              (List.map (lift p) labs) 
+  in 
+  fun id -> 
+    let fi = DOPN(Const(make_path (dirpath sp) id (kind_of_path sp)),args) in
+    list_fold_left_i 
+      (fun i c (k,a) -> 
+	 DOP2(Lambda,(substl (rev_firstn_liftn (n-k) (-i) la') a),
+              DLAM(Name(id_of_string"x"),c))) 0 (applistc fi la') lv
+
+(* [f] is convertible to [DOPN(Fix(recindices,bodynum),bodyvect)] make 
    the reduction using this extra information *)
 
-let rebuild_global_name id =
-  let sp = Nametab.sp_of_id CCI id in
-  let (oper,hyps) = Declare.global_operator sp id in
-  DOPN(oper,Array.of_list(List.map (fun id -> VAR id) (Sign.ids_of_sign hyps)))
-
-let mydestFix = function 
-  | DOPN (Fix (recindxs,i),a) ->
-      let (types,funnames,bodies) = destGralFix a in 
-	(recindxs,i,funnames,bodies)
-  | _ -> invalid_arg "destFix"
-
-let contract_fix_use_function f fix =
-  let (recindices,bodynum,names,bodies) = mydestFix fix in
+let contract_fix_use_function f
+  ((recindices,bodynum),(types,names,bodies as typedbodies)) =
   let nbodies = Array.length recindices in
   let make_Fi j =
-    let id = match List.nth names j with Name id -> id | _ -> assert false in
-    rebuild_global_name id in
-  let lbodies = list_assign (list_tabulate make_Fi nbodies) bodynum f in
-    substl (List.rev lbodies) bodies.(bodynum)
+    match List.nth names j with Name id -> f id | _ -> assert false in
+  let lbodies = list_tabulate make_Fi nbodies in
+  substl (List.rev lbodies) bodies.(bodynum)
 
 let reduce_fix_use_function f whfun fix stack =
-  match fix with 
-    | DOPN (Fix(recindices,bodynum),bodyvect) ->
-	(match fix_recarg fix stack with
-           | None -> (false,(fix,stack))
-	   | Some (recargnum,recarg) ->
-               let (recarg'hd,_ as recarg')= whfun recarg [] in
-               let stack' = list_assign stack recargnum (applist recarg') in
-	       (match recarg'hd with
-                  | DOPN(MutConstruct _,_) ->
-		      (true,(contract_fix_use_function f fix,stack'))
-		  | _ -> (false,(fix,stack'))))
-    | _ -> assert false
+  let dfix = destFix fix in
+  match fix_recarg dfix stack with
+    | None -> (false,(fix,stack))
+    | Some (recargnum,recarg) ->
+        let (recarg'hd,_ as recarg')= whfun recarg [] in
+        let stack' = list_assign stack recargnum (applist recarg') in
+	(match recarg'hd with
+           | DOPN(MutConstruct _,_) ->
+	       (true,(contract_fix_use_function f dfix,stack'))
+	   | _ -> (false,(fix,stack')))
 
-let contract_cofix_use_function f (bodynum,(_,_,bodies as typedbodies)) =
+let contract_cofix_use_function f (bodynum,(_,names,bodies as typedbodies)) =
   let nbodies = Array.length bodies in
-  let make_Fi j = mkCoFix (nbodies-j-1,typedbodies) in
-  let subbodies = list_assign (list_tabulate make_Fi nbodies) bodynum f in
+  let make_Fi j =
+    match List.nth names j with Name id -> f id | _ -> assert false in
+  let subbodies = list_tabulate make_Fi nbodies in
   substl subbodies bodies.(bodynum)
 
 let reduce_mind_case_use_function env f mia =
@@ -106,12 +96,14 @@ let special_red_case env whfun p c ci lf  =
   let rec redrec c l = 
     let (constr,cargs) = whfun c l in 
     match constr with 
-      | DOPN(Const _,_) as g -> 
+      | DOPN(Const sp,args) as g -> 
           if evaluable_constant env g then
             let gvalue = constant_value env g in
             if reducible_mind_case gvalue then
-              reduce_mind_case_use_function env g
-                {mP=p; mconstr=gvalue; mcargs=cargs; mci=ci; mlf=lf}
+	      let build_fix_name id =
+		DOPN(Const(make_path (dirpath sp) id (kind_of_path sp)),args)
+	      in reduce_mind_case_use_function env build_fix_name
+                   {mP=p; mconstr=gvalue; mcargs=cargs; mci=ci; mlf=lf}
             else 
 	      redrec gvalue cargs
           else 
@@ -127,17 +119,30 @@ let special_red_case env whfun p c ci lf  =
 
 let rec red_elim_const env sigma k largs =
   if not (evaluable_constant env k) then raise Redelimination;
-  let f = make_elim_fun k largs in
-  match whd_betadeltaeta_stack env sigma (constant_value env k) largs with
-    | (DOPN(MutCase _,_) as mc,lrest) ->
-        let (ci,p,c,lf) = destCase mc in
-        (special_red_case env (construct_const env sigma) p c ci lf, lrest)
-    | (DOPN(Fix _,_) as fix,lrest) -> 
-        let (b,(c,rest)) = 
-	  reduce_fix_use_function f (construct_const env sigma) fix lrest
-        in 
-	if b then (nf_beta env sigma c, rest) else raise Redelimination
-    | _ -> assert false
+  let (sp, args) = destConst k in
+  let elim_style = constant_eval sp in
+  match elim_style with
+    | EliminationCases n when List.length largs >= n -> begin
+	let c = constant_value env k in
+	match whd_betadeltaeta_stack env sigma c largs with
+	  | (DOPN(MutCase _,_) as mc,lrest) ->
+              let (ci,p,c,lf) = destCase mc in
+              (special_red_case env (construct_const env sigma) p c ci lf,
+	       lrest)
+	  | _ -> assert false
+      end
+    | EliminationFix (lv,n) when List.length largs >= n -> begin
+	let c = constant_value env k in
+	match whd_betadeltaeta_stack env sigma c largs with
+	  | (DOPN(Fix _,_) as fix,lrest) -> 
+	      let f id = make_elim_fun k lv n largs id in
+              let (b,(c,rest)) = 
+		reduce_fix_use_function f (construct_const env sigma) fix lrest
+              in 
+	      if b then (nf_beta env sigma c, rest) else raise Redelimination
+	  | _ -> assert false
+      end
+    | _ -> raise Redelimination
 
 and construct_const env sigma c stack = 
   let rec hnfstack x stack =

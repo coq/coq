@@ -15,10 +15,10 @@ open Environ
 
 type inductive_error =
   (* These are errors related to inductive constructions in this module *)
-  | NonPos of name list * constr * constr
-  | NotEnoughArgs of name list * constr * constr
-  | NotConstructor of name list * constr * constr
-  | NonPar of name list * constr * int * constr * constr
+  | NonPos of env * constr * constr
+  | NotEnoughArgs of env * constr * constr
+  | NotConstructor of env * constr * constr
+  | NonPar of env * constr * int * constr * constr
   | SameNamesTypes of identifier
   | SameNamesConstructors of identifier * identifier
   | NotAnArity of identifier
@@ -45,11 +45,11 @@ val mind_check_names : mutual_inductive_entry -> unit
    [mind_entry_inds]. *)
 
 val mind_extract_and_check_params : 
-  mutual_inductive_entry -> (name * constr) list
+  mutual_inductive_entry -> Sign.rel_context
 
-val mind_extract_params : int -> constr -> (name * constr) list * constr
+val mind_extract_params : int -> constr -> Sign.rel_context * constr
 
-val mind_check_lc : (name * constr) list -> mutual_inductive_entry -> unit
+val mind_check_lc : Sign.rel_context -> mutual_inductive_entry -> unit
 
 (* [mind_check_arities] checks that the types declared for all the
    inductive types are some arities. *)

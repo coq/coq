@@ -42,9 +42,8 @@ let print_basename_mind sp mindid =
 let print_closed_sections = ref false
 
 let print_typed_value_in_env env (trm,typ) =
-  let sign = Environ.var_context env in
-  [< prterm_env (gLOB sign) trm ; 'fNL ;
-     'sTR "     : "; prtype_env (gLOB sign) typ ; 'fNL >]
+  [< prterm_env env trm ; 'fNL ;
+     'sTR "     : "; prtype_env env typ ; 'fNL >]
 
 let print_typed_value x = print_typed_value_in_env (Global.env ()) x
 
@@ -80,30 +79,22 @@ let print_impl_args = function
    the pretty-print of a proposition (P:(nat->nat)->Prop)(P [u]u)
    synthesizes the type nat of the abstraction on u *)
 
-let print_var name typ =
+let print_var_def name body typ =
+  [< 'sTR "*** [" ; 'sTR name ; 'sPC; 
+     hOV 0 [< 'sTR "="; prterm body; 'sPC; 'sTR ": "; prtype typ >] ;
+     'sTR "]"; 'fNL >]
+
+let print_var_decl name typ =
   [< 'sTR "*** [" ; 'sTR name ; 'sTR " : "; prtype typ; 'sTR "]"; 'fNL >]
 
-let print_env pk = 
-  let pterminenv = (* if pk = FW then fprterm_env else *) prterm_env in
-  let pr_binder env (na,c) =
-    match na with
-      | Name id as name ->
-          let pc = pterminenv env c in [< print_id id; 'sTR":"; pc >]
-      | Anonymous -> anomaly "Anonymous variables in inductives" 
-  in
-  let rec prec env = function
-    | [] -> [<>] 
-    | [b] -> pr_binder env b
-    | b::rest ->
-        let pb = pr_binder env b in
-        let penvtl = prec (add_rel b env) rest in
-        [< pb; 'sTR";"; 'sPC; penvtl >]
-  in 
-  prec (gLOB nil_sign)
+let print_var (id,c,typ) =
+  let s = string_of_id id in
+  match c with
+    | Some body -> print_var_def s body typ
+    | None -> print_var_decl s typ
 
 let assumptions_for_print lna =
-  List.fold_right (fun na env -> add_rel (na,()) env) lna
-    (ENVIRON(nil_sign,nil_dbsign))
+  List.fold_right (fun na env -> add_name na env) lna empty_names_context
 
 let implicit_args_id id l = 
   if l = [] then 
@@ -126,26 +117,24 @@ let implicit_args_msg sp mipv =
 
 let print_mutual sp mib = 
   let pk = kind_of_path sp in
-  let pterm,pterminenv = pkprinters pk in
   let env = Global.env () in
   let evd = Evd.empty in
   let {mind_packets=mipv; mind_nparams=nparams} = mib in 
   let (lpars,_) = decomp_n_prod env evd nparams (mind_user_arity mipv.(0)) in
-  let lparsname = List.map fst lpars in
-  let lna = Array.map (fun mip -> Name mip.mind_typename) mipv in
-  let lparsprint = assumptions_for_print lparsname in
-  let prass ass_name (id,c) =
-    let pc = pterminenv ass_name c in [< print_id id; 'sTR " : "; pc >] 
+  let arities = Array.map (fun mip -> (Name mip.mind_typename, None, mip.mind_nf_arity)) mipv in
+  let env_ar = push_rels lpars env in
+  let env_cstr = push_rels lpars (push_rels (Array.to_list arities) env) in
+  let pr_constructor (id,c) =
+    let pc = prterm_env env_cstr c in [< print_id id; 'sTR " : "; pc >] 
   in
   let print_constructors mip =
     let lC = mind_user_lc mip in
-    let ass_name = assumptions_for_print (lparsname@(Array.to_list lna)) in
     let lidC =
       Array.to_list 
         (array_map2 (fun id c -> (id,snd (decomp_n_prod env evd nparams c)))
            mip.mind_consnames lC) in
     let plidC = prlist_with_sep (fun () -> [<'bRK(1,0); 'sTR "| " >])
-                  (prass ass_name) lidC in
+                  pr_constructor lidC in
     (hV 0 [< 'sTR "  "; plidC >]) 
   in
   let print_oneind mip = 
@@ -156,9 +145,8 @@ let print_mutual sp mib =
 		  if nparams = 0 then 
 		    [<>] 
 		  else
-		    [< 'sTR "["; print_env pk (List.rev lpars); 
-		       'sTR "]"; 'bRK(1,2) >]; 
-	          'sTR ": "; pterminenv lparsprint arity; 'sTR " :=" >]);
+		    [< 'sTR "["; pr_rel_context env lpars; 'sTR "]"; 'bRK(1,2) >]; 
+	          'sTR ": "; prterm_env env_ar arity; 'sTR " :=" >]);
             'bRK(1,2); print_constructors mip >]) 
   in 
   let mip = mipv.(0) in
@@ -170,8 +158,8 @@ let print_mutual sp mib =
               if nparams = 0 then 
 		[<>] 
               else 
-		[< 'sTR" ["; print_env pk (List.rev lpars); 'sTR "]">];
-              'bRK(1,5); 'sTR": "; pterminenv lparsprint arity; 'sTR" :=";
+		[< 'sTR" ["; pr_rel_context env lpars; 'sTR "]">];
+              'bRK(1,5); 'sTR": "; prterm_env env_ar arity; 'sTR" :=";
               'bRK(0,4); print_constructors mip; 'fNL;
               implicit_args_msg sp mipv  >] )
   (* Mutual [co]inductive definitions *)
@@ -211,10 +199,10 @@ let print_extracted_mutual sp =
 	print_mutual fwsp (Global.lookup_mind fwsp)
     | Some a -> fprterm a
 
-let print_variable sp =
-  let (name,typ,_,_) = out_variable sp in
-  let l = implicits_of_var name in
-  [< print_var (string_of_id name) typ; print_impl_args l; 'fNL >]
+let print_section_variable sp =
+  let ((id,_,_) as d,_,_) = out_variable sp in
+  let l = implicits_of_var id in
+  [< print_var d; print_impl_args l; 'fNL >]
 
 let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
@@ -251,7 +239,7 @@ let print_leaf_entry with_values sep (sp,lobj) =
   let tag = object_tag lobj in
   match (sp,tag) with
     | (_,"VARIABLE") ->
-	print_variable sp
+	print_section_variable sp
     | (_,("CONSTANT"|"PARAMETER")) ->
 	print_constant with_values sep sp
     | (_,"INDUCTIVE") ->
@@ -332,39 +320,37 @@ let list_filter_vec f vec =
    of the object, the assumptions that will make it possible to print its type,
    and the constr term that represent its type. *)
 
-let print_constructors fn lna mip = 
-  let ass_name = assumptions_for_print lna in
+let print_constructors fn env_ar mip = 
   let _ =
-    array_map2 (fun id c -> fn (string_of_id id) ass_name c)
+    array_map2 (fun id c -> fn (string_of_id id) env_ar c)
     mip.mind_consnames (mind_user_lc mip)
   in ()
 
-let crible (fn : string -> unit assumptions -> constr -> unit) name =
-  let hyps = gLOB (Global.var_context()) in
+let crible (fn : string -> env -> constr -> unit) name =
+  let env = Global.env () in
   let imported = Library.opened_modules() in
   let const = global_reference CCI name in 
   let rec crible_rec = function
     | (spopt,Lib.Leaf lobj)::rest ->
 	(match (spopt,object_tag lobj) with
 	   | (_,"VARIABLE") ->
-	       let (namec,typ,_,_) = out_variable spopt in 
+	       let ((idc,_,typ),_,_) = out_variable spopt in 
                if (head_const (body_of_type typ)) = const then  
-                 fn (string_of_id namec) hyps (body_of_type typ);
+                 fn (string_of_id idc) env (body_of_type typ);
                crible_rec rest
 	   | (sp,("CONSTANT"|"PARAMETER")) ->
 	       let {const_type=typ} = Global.lookup_constant sp in
                if (head_const (body_of_type typ)) = const then
-                 fn (print_basename sp) hyps (body_of_type typ);
+                 fn (print_basename sp) env (body_of_type typ);
                crible_rec rest
 	   | (sp,"INDUCTIVE") -> 
                let mib = Global.lookup_mind sp in 
-	       let lna =
-		 array_map_to_list
-		   (fun mip -> Name mip.mind_typename) mib.mind_packets in
+	       let arities = array_map_to_list (fun mip -> (Name mip.mind_typename, None, mip.mind_nf_arity)) mib.mind_packets in
+	       let env_ar = push_rels arities env in
                (match const with 
 		  | (DOPN(MutInd(sp',tyi),_)) -> 
 		      if sp = objsp_of sp' then
-			print_constructors fn lna
+			print_constructors fn env_ar
 			  (mind_nth_type_packet mib tyi)
 		  | _ -> ());
                crible_rec rest
@@ -423,25 +409,20 @@ let print_name name =
 	| _ -> raise Not_found
     in
     print_leaf_entry true " = " (sp,lobj)
-  with 
-    | Not_found -> 
-	(try 
-	   (match Declare.global_reference CCI name with
-	      | VAR _ ->
-		  let (_,typ) = Global.lookup_var name in 
-		  [< print_var str typ;
-		     try print_impl_args (implicits_of_var name)
-		     with _ -> [<>] >]
-	      | DOPN(Const sp,_) ->
-		  print_constant true " = " sp
-	      | DOPN(MutInd (sp,_),_) ->
-		  print_inductive sp
-	      | DOPN (MutConstruct((sp,_),_),_) ->
-		  print_inductive sp
-	      | _ -> assert false)
-	 with Not_found | Invalid_argument _ -> 
-	   error (str ^ " not a defined object"))
-    | Invalid_argument _ -> error (str ^ " not a defined object")
+  with Not_found -> 
+  try 
+    match fst (Declare.global_operator CCI name) with
+      | Const sp -> print_constant true " = " sp
+      | MutInd (sp,_) -> print_inductive sp
+      | MutConstruct((sp,_),_) -> print_inductive sp
+      | _ -> assert false
+  with Not_found -> 
+  try
+    let (c,typ) = Global.lookup_var name in 
+    [< print_var (name,c,typ);
+       try print_impl_args (implicits_of_var name)
+       with _ -> [<>] >]
+  with Not_found -> error (str ^ " not a defined object")
 
 let print_opaque_name name = 
   let sigma = Evd.empty in
@@ -463,8 +444,8 @@ let print_opaque_name name =
 	  let ty = Typeops.type_of_constructor env sigma cstr in
 	  print_typed_value (x, ty)
       | IsVar id ->
-          let a = snd(lookup_sign id sign) in 
-	  print_var (string_of_id id) a
+          let (c,ty) = lookup_var id env in 
+	  print_var (id,c,ty)
       | _ -> failwith "print_name"
   with Not_found -> 
     error ((string_of_id name) ^ " not declared")
@@ -475,9 +456,9 @@ let print_local_context () =
     | [] -> [< >]
     | (sp,Lib.Leaf lobj)::rest ->
 	if "VARIABLE" = object_tag lobj then
-          let (name,typ,_,_) = out_variable sp in 
+          let (d,_,_) = out_variable sp in 
 	  [< print_var_rec rest;
-             print_var (string_of_id name) typ >]
+             print_var d >]
 	else 
 	  print_var_rec rest
     | _::rest -> print_var_rec rest

@@ -30,7 +30,7 @@ open Rawterm
 
 type used_idents = identifier list
 
-let occur_id env id0 c =
+let occur_id env_names id0 c =
   let rec occur n = function
     | VAR id             -> id=id0
     | DOPN (Const sp,cl) -> (basename sp = id0) or (array_exists (occur n) cl)
@@ -49,26 +49,27 @@ let occur_id env id0 c =
     | DLAMV(_,v)         -> array_exists (occur (n+1)) v
     | Rel p              ->
     	p>n &
-    	(try (fst (lookup_rel (p-n) env) = Name id0)
-	 with Not_found -> false) (* Unbound indice : may happen in debug *)
+    	(try lookup_name_of_rel (p-n) env_names = Name id0
+	 with Not_found -> false) (* Unbound indice: may happen in debug *)
     | DOP0 _             -> false
   in 
   occur 1 c
 
-let next_name_not_occuring name l env t =
+let next_name_not_occuring name l env_names t =
   let rec next id =
-    if List.mem id l or occur_id env id t then next (lift_ident id) else id
+    if List.mem id l or occur_id env_names id t then next (lift_ident id)
+    else id
   in 
   match name with
     | Name id   -> next id
     | Anonymous -> id_of_string "_"
 
 (* Remark: Anonymous var may be dependent in Evar's contexts *)
-let concrete_name l env n c =
+let concrete_name l env_names n c =
   if n = Anonymous & not (dependent (Rel 1) c) then
     (None,l)
   else
-    let fresh_id = next_name_not_occuring n l env c in
+    let fresh_id = next_name_not_occuring n l env_names c in
     let idopt = if dependent (Rel 1) c then (Some fresh_id) else None in
     (idopt, fresh_id::l)
 
@@ -95,8 +96,6 @@ let global_vars_and_consts t =
   list_uniquize (collect [] t)
     
 let used_of = global_vars_and_consts
-let ids_of_env = Sign.ids_of_env
-
 
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)
@@ -262,22 +261,22 @@ let ids_of_var cl =
     (Array.to_list cl)
 *)
 
-let lookup_name_as_renamed env t s =
-  let rec lookup avoid env n = function
-      DOP2(Prod,_,DLAM(name,c')) ->
-       (match concrete_name avoid env name c' with
+let lookup_name_as_renamed ctxt t s =
+  let rec lookup avoid env_names n = function
+      DOP2(Prod,t,DLAM(name,c')) ->
+       (match concrete_name avoid env_names name c' with
           (Some id,avoid') -> 
 	    if id=s then (Some n) 
-	    else lookup avoid' (add_rel (Name id,()) env) (n+1) c'
-	  | (None,avoid')    -> lookup avoid' env (n+1) (pop c'))
-     | DOP2(Cast,c,_) -> lookup avoid env n c
+	    else lookup avoid' (add_name (Name id) env_names) (n+1) c'
+	  | (None,avoid')    -> lookup avoid' env_names (n+1) (pop c'))
+     | DOP2(Cast,c,_) -> lookup avoid env_names n c
      | _ -> None
-  in lookup (ids_of_env env) env 1 t
+  in lookup (ids_of_var_context ctxt) empty_names_context 1 t
 
 let lookup_index_as_renamed t n =
   let rec lookup n d = function
       DOP2(Prod,_,DLAM(name,c')) -> 
-	  (match concrete_name [] (gLOB nil_sign) name c' with
+	  (match concrete_name [] empty_names_context name c' with
           (Some _,_) -> lookup n (d+1) c'
         | (None  ,_) -> if n=1 then Some d else lookup (n-1) (d+1) c')
     | DOP2(Cast,c,_) -> lookup n d c
@@ -294,11 +293,11 @@ let rec detype avoid env t =
     | regular_constr -> 
     (match kind_of_term regular_constr with
     | IsRel n ->
-      (try match fst (lookup_rel n env) with
+      (try match lookup_name_of_rel n env with
 	 | Name id   -> RRef (dummy_loc, RVar id)
 	 | Anonymous -> anomaly "detype: index to an anonymous variable"
        with Not_found ->
-	 let s = "[REL "^(string_of_int (number_of_rels env - n))^"]"
+	 let s = "[REL "^(string_of_int n)^"]"
 	 in RRef (dummy_loc, RVar (id_of_string s)))
     | IsMeta n -> RMeta (dummy_loc, n)
     | IsVar id -> RRef (dummy_loc,RVar id)
@@ -363,7 +362,7 @@ and detype_fix fk avoid env cl lfn vt =
   let lfi = List.map (fun id -> next_name_away id avoid) lfn in
   let def_avoid = lfi@avoid in
   let def_env =
-    List.fold_left (fun env id -> add_rel (Name id,()) env) env lfi in
+    List.fold_left (fun env id -> add_name (Name id) env) env lfi in
   RRec(dummy_loc,fk,Array.of_list lfi,Array.map (detype avoid env) cl,
        Array.map (detype def_avoid def_env) vt)
 
@@ -372,9 +371,9 @@ and detype_eqn avoid env constr_id construct_nargs branch =
   let make_pat x avoid env b ids =
     if not (force_wildcard ()) or (dependent (Rel 1) b) then
       let id = next_name_away_with_default "x" x avoid in
-      PatVar (dummy_loc,Name id),id::avoid,(add_rel (Name id,()) env),id::ids
+      PatVar (dummy_loc,Name id),id::avoid,(add_name (Name id) env),id::ids
     else 
-      PatVar (dummy_loc,Anonymous),avoid,(add_rel (Anonymous,()) env),ids
+      PatVar (dummy_loc,Anonymous),avoid,(add_name Anonymous env),ids
   in
   let rec buildrec ids patlist avoid env = function
     | 0  , rhs	-> 
@@ -405,4 +404,4 @@ and detype_binder bk avoid env na ty c =
     | (None,l')    -> Anonymous, l' in
   RBinder (dummy_loc,bk,
 	   na',detype [] env ty,
-	   detype avoid' (add_rel (na',()) env) c)
+	   detype avoid' (add_name na' env) c)

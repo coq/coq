@@ -29,19 +29,19 @@ val refining : unit -> bool
 
 val check_no_pending_proofs : unit -> unit
 
-(*s [abort_proof name] aborts proof of name [name] or failed if no proof
-has this name *)
+(*s [delete_proof name] deletes proof of name [name] or failed if no proof
+    has this name *)
 
-val abort_proof : identifier -> unit
+val delete_proof : identifier -> unit
 
-(* [abort_current_proof ()] aborts current focused proof or failed if
+(* [delete_current_proof ()] deletes current focused proof or failed if
     no proof is focused *)
 
-val abort_current_proof : unit -> unit
+val delete_current_proof : unit -> unit
 
-(* [abort_all_proofs ()] aborts all open proofs if any *)
+(* [delete_all_proofs ()] deletes all open proofs if any *)
 
-val abort_all_proofs : unit -> unit
+val delete_all_proofs : unit -> unit
 
 (*s [undo n] undoes the effect of the last [n] tactics applied to the
     current proof; it fails if no proof is focused or if the ``undo''
@@ -82,13 +82,11 @@ val resume_proof : identifier -> unit
 
 val suspend_proof : unit -> unit
 
-(*s [release_proof ()] turns the current proof into a constant with
-    its name and strength, then remove the proof from the set of
-    pending proofs; it fails if there is no current proof of if it is
-    not completed *)
+(*s [cook_proof ()] turns the current proof (assumed completed)
+    into a constant with its name and strength; it fails if there is
+    no current proof of if it is not completed *)
 
-val release_proof : unit ->
-  identifier * (Declarations.constant_entry * strength)
+val cook_proof : unit -> identifier * (Declarations.constant_entry * strength)
 
 (*s [get_pftreestate ()] returns the current focused pending proof or
    raises [UserError "no focused proof"] *)
@@ -145,22 +143,3 @@ val traverse : int -> unit
 val traverse_nth_goal : int -> unit
 val traverse_next_unproven : unit -> unit
 val traverse_prev_unproven : unit -> unit
-
-(*i N'ont pas à être exportées
-type proof_topstate
-val msg_proofs : bool -> std_ppcmds
-val undo_limit : int ref
-val get_state : unit -> pftreestate * proof_topstate
-val get_topstate : unit -> proof_topstate
-val add_proof : string * pftreestate * proof_topstate -> unit
-val del_proof : string -> unit
-val init_proofs : unit -> unit
-
-val mutate : (pftreestate -> pftreestate) -> unit
-val rev_mutate : (pftreestate -> pftreestate) -> unit
-val start : string * proof_topstate -> unit
-val proof_term : unit -> constr
-val save_anonymous : bool -> string -> unit
-val traverse_to : int list -> unit
-i*)
-

@@ -51,8 +51,7 @@ val judge_of_prop_contents : contents -> unsafe_judgment
 
 val judge_of_type : universe -> unsafe_judgment * constraints
 
-val typed_product_without_universes :
-  name -> typed_type -> typed_type -> typed_type
+val generalize_without_universes : var_declaration -> typed_type -> typed_type
 
 val abs_rel : 
   env -> 'a evar_map -> name -> typed_type -> unsafe_judgment 
@@ -85,6 +84,7 @@ open Inductive
 val find_case_dep_nparams :
   env -> 'a evar_map -> constr * constr -> inductive_family -> constr -> bool
 
+(*
 val hyps_inclusion : env -> 'a evar_map -> var_context -> var_context -> bool
+*)
 
-val keep_hyps : var_context -> Idset.t -> var_context

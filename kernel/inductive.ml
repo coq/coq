@@ -18,6 +18,11 @@ type inductive_instance = {
   mis_args : constr array;
   mis_mip : one_inductive_body }
 
+
+let build_mis ((sp,tyi),args) mib =
+  { mis_sp = sp; mis_mib = mib; mis_tyi = tyi; mis_args = args;
+    mis_mip = mind_nth_type_packet mib tyi }
+
 let mis_ntypes mis = mis.mis_mib.mind_ntypes
 let mis_nparams mis = mis.mis_mib.mind_nparams
 
@@ -36,9 +41,9 @@ let mis_consnames mis = mis.mis_mip.mind_consnames
 let mis_inductive mis = ((mis.mis_sp,mis.mis_tyi),mis.mis_args)
 
 let mis_typed_lc mis =
-  let ids = ids_of_sign mis.mis_mib.mind_hyps in
+  let sign = mis.mis_mib.mind_hyps in
   let args = Array.to_list mis.mis_args in
-  Array.map (fun t -> Instantiate.instantiate_type ids t args)
+  Array.map (fun t -> Instantiate.instantiate_type sign t args)
     mis.mis_mip.mind_nf_lc
 
 let mis_lc mis = Array.map body_of_type (mis_typed_lc mis)
@@ -75,9 +80,9 @@ let mis_type_mconstruct i mispec =
   typed_app (substl (list_tabulate make_Ik ntypes)) specif.(i-1)
 
 let mis_typed_arity mis =
-  let idhyps = ids_of_sign mis.mis_mib.mind_hyps 
+  let hyps = mis.mis_mib.mind_hyps 
   and largs = Array.to_list mis.mis_args in
-  Instantiate.instantiate_type idhyps mis.mis_mip.mind_nf_arity largs
+  Instantiate.instantiate_type hyps mis.mis_mip.mind_nf_arity largs
 
 (*
 let mis_arity mispec = incast_type (mis_typed_arity mispec)
@@ -87,7 +92,7 @@ let mis_arity mis = body_of_type (mis_typed_arity mis)
 
 let mis_params_ctxt mispec =
   let paramsign,_ =
-    decompose_prod_n mispec.mis_mib.mind_nparams
+    decompose_prod_n_assum mispec.mis_mib.mind_nparams
       (body_of_type (mis_typed_arity mispec))
   in paramsign
 
@@ -203,10 +208,8 @@ let find_mcoinductype env sigma c =
     | _ -> raise Induc
 
 (* raise Induc if not an inductive type *)
-let lookup_mind_specif ((sp,tyi),args) env =
-  let mib = lookup_mind sp env in
-  { mis_sp = sp; mis_mib = mib; mis_tyi = tyi; mis_args = args;
-    mis_mip = mind_nth_type_packet mib tyi }
+let lookup_mind_specif ((sp,tyi),args as ind) env =
+  build_mis ind (lookup_mind sp env)
 
 let find_rectype env sigma ty =
   let (mind,largs) = find_mrectype env sigma ty in
@@ -219,7 +222,7 @@ type constructor_summary = {
   cs_cstr : constructor;
   cs_params : constr list;
   cs_nargs : int;
-  cs_args : (name * constr) list;
+  cs_args : rel_context;
   cs_concl_realargs : constr array
 }
 
@@ -227,18 +230,18 @@ let lift_constructor n cs = {
   cs_cstr = (let (csp,ctxt) = cs.cs_cstr in (csp,Array.map (lift n) ctxt));
   cs_params = List.map (lift n) cs.cs_params;
   cs_nargs = cs.cs_nargs;
-  cs_args = lift_context n cs.cs_args;
+  cs_args = lift_rel_context n cs.cs_args;
   cs_concl_realargs = Array.map (liftn n (cs.cs_nargs+1)) cs.cs_concl_realargs
 }
 
 let get_constructor (IndFamily (mispec,params)) j =
   assert (j <= mis_nconstr mispec);
   let typi = mis_type_nf_mconstruct j mispec in
-  let (args,ccl) = decompose_prod (prod_applist typi params) in
+  let (args,ccl) = decompose_prod_assum (prod_applist typi params) in
   let (_,vargs) = array_chop (mis_nparams mispec + 1) (destAppL (ensure_appl ccl)) in
   { cs_cstr = ith_constructor_of_inductive (mis_inductive mispec) j;
     cs_params = params;
-    cs_nargs = List.length args;
+    cs_nargs = rel_context_length args;
     cs_args = args;
     cs_concl_realargs = vargs }
 
@@ -277,8 +280,8 @@ let make_arity env dep indf s =
 let build_branch_type env dep p cs =
   let base = appvect (lift cs.cs_nargs p, cs.cs_concl_realargs) in
   if dep then
-    it_prod_name env
+    it_mkProd_or_LetIn_name env
       (applist (base,[build_dependent_constructor cs]))
       cs.cs_args
   else
-    prod_it base cs.cs_args
+    it_mkProd_or_LetIn base cs.cs_args

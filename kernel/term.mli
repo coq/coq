@@ -59,10 +59,9 @@ type constr = sorts oper term
 
 type flat_arity = (name * constr) list * sorts
 
-type 'a judge = { body : constr; typ : 'a }
+(*type 'a judge = { body : constr; typ : 'a }*)
 
 type typed_type
-type typed_term = typed_type judge
 
 val make_typed : constr -> sorts -> typed_type
 val make_typed_lazy : constr -> (constr -> sorts) -> typed_type
@@ -77,6 +76,9 @@ val level_of_type : typed_type -> sorts
 val incast_type : typed_type -> constr
 
 val outcast_type : constr -> typed_type
+
+type var_declaration = identifier * constr option * typed_type
+type rel_declaration = name * constr option * typed_type
 
 (**********************************************************************)
 type binder_kind = BProd | BLambda
@@ -96,7 +98,10 @@ type 'ctxt reference =
   manipulation of terms. Some of these functions may be overlapped with
   previous ones. *)
 
-(*  Concrete type for making pattern-matching. *)
+(* Concrete type for making pattern-matching. *)
+
+(* [constr array] is an instance matching definitional var_context in
+   the same order (i.e. last argument first) *)
 type existential = int * constr array
 type constant = section_path * constr array
 type constructor = constructor_path * constr array
@@ -169,17 +174,29 @@ val implicit_sort : sorts
    type $t_2$ (that means t2 is declared as the type of t1). *)
 val mkCast : constr -> constr -> constr
 
-(* Constructs the product $(x:t_1)t_2$. $x$ may be anonymous. *)
+(* Constructs the product $(x:t_1)t_2$ *)
 val mkProd : name -> constr -> constr -> constr
-
-(* [mkProd_string s t c] constructs the product $(s:t)c$ *)
+val mkNamedProd : identifier -> constr -> constr -> constr
 val mkProd_string : string -> constr -> constr -> constr
+
+(* Constructs the product $(x:t_1)t_2$ *)
+val mkLetIn : name -> constr -> constr -> constr -> constr
+val mkNamedLetIn : identifier -> constr -> constr -> constr -> constr
+
+(* Constructs either [(x:t)c] or [[x=b:t]c] *)
+val mkProd_or_LetIn : rel_declaration -> constr -> constr
+val mkNamedProd_or_LetIn : var_declaration -> constr -> constr
+
+(* Constructs either [[x:t]c] or [[x=b:t]c] *)
+val mkLambda_or_LetIn : rel_declaration -> constr -> constr
+val mkNamedLambda_or_LetIn : var_declaration -> constr -> constr
+
+(* Constructs either [(x:t)c] or [c] where [x] is replaced by [b] *)
+val mkProd_wo_LetIn : rel_declaration -> constr -> constr
+val mkNamedProd_wo_LetIn : var_declaration -> constr -> constr
 
 (* non-dependant product $t_1 \rightarrow t_2$ *)
 val mkArrow : constr -> constr -> constr
-
-(* named product *)
-val mkNamedProd : identifier -> constr -> constr -> constr
 
 (* Constructs the abstraction $[x:t_1]t_2$ *)
 val mkLambda : name -> constr -> constr -> constr
@@ -198,7 +215,7 @@ val mkAppList : constr -> constr list  -> constr
 val mkConst : constant -> constr
 
 (* Constructs an existential variable *)
-val mkEvar : int -> constr array -> constr
+val mkEvar : existential -> constr
 
 (* Constructs an abstract object *)
 val mkAbst : section_path -> constr array -> constr
@@ -360,13 +377,6 @@ val destFix : constr -> fixpoint
 
 val destCoFix : constr -> cofixpoint
 
-(* Provisoire, le temps de maitriser les cast *)
-val destUntypedFix : 
-  constr -> int array * int * constr array * Names.name list * constr array
-val destUntypedCoFix : 
-  constr -> int * constr array * Names.name list * constr array
-
-
 (*s Other term constructors. *)
 
 val abs_implicit : constr -> constr
@@ -410,7 +420,8 @@ val prod_applist : constr -> constr list -> constr
 (*s Other term destructors. *)
 
 (* Transforms a product term $(x_1:T_1)..(x_n:T_n)T$ into the pair
-   $([(x_n,T_n);...;(x_1,T_1)],T)$, where $T$ is not a product. *)
+   $([(x_n,T_n);...;(x_1,T_1)],T)$, where $T$ is not a product.
+   It includes also local definitions *)
 val decompose_prod : constr -> (name*constr) list * constr
 
 (* Transforms a lambda term $[x_1:T_1]..[x_n:T_n]T$ into the pair
@@ -420,11 +431,11 @@ val decompose_lam : constr -> (name*constr) list * constr
 (* Given a positive integer n, transforms a product term 
    $(x_1:T_1)..(x_n:T_n)T$
    into the pair $([(xn,Tn);...;(x1,T1)],T)$. *)
-val decompose_prod_n : int -> constr -> (name*constr) list * constr
+val decompose_prod_n : int -> constr -> (name * constr) list * constr
 
 (* Given a positive integer $n$, transforms a lambda term 
    $[x_1:T_1]..[x_n:T_n]T$ into the pair $([(x_n,T_n);...;(x_1,T_1)],T)$ *)
-val decompose_lam_n : int -> constr -> (name*constr) list * constr
+val decompose_lam_n : int -> constr -> (name * constr) list * constr
 
 (* [nb_lam] $[x_1:T_1]...[x_n:T_n]c$ where $c$ is not an abstraction
    gives $n$ (casts are ignored) *)
@@ -565,11 +576,16 @@ val rename_bound_var : identifier list -> constr -> constr
 val eta_reduce_head : constr -> constr
 val eq_constr : constr -> constr -> bool
 val eta_eq_constr : constr -> constr -> bool
-val subst_term : constr -> constr -> constr
-val subst_term_eta_eq : constr -> constr -> constr
+
+(*s The following functions substitutes [what] by [Rel 1] in [where] *)
+val subst_term : what:constr -> where:constr -> constr
+val subst_term_eta_eq : what:constr -> where:constr -> constr
+val subst_term_occ : occs:int list -> what:constr -> where:constr -> constr
+val subst_term_occ_decl : occs:int list -> what:constr ->
+      where:var_declaration -> var_declaration
+
 val replace_consts :
   (section_path * (identifier list * constr) option) list -> constr -> constr
-val subst_term_occ : int list -> constr -> constr -> constr
 
 (* [subst_meta bl c] substitutes the metavar $i$ by $c_i$ in [c] 
    for each binding $(i,c_i)$ in [bl],

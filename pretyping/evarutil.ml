@@ -29,6 +29,7 @@ let distinct_id_list =
   in drec []
 
 
+(*
 let filter_sign p sign x =
   sign_it
     (fun id ty (v,ids,sgn) ->
@@ -36,21 +37,21 @@ let filter_sign p sign x =
       if disc then (v', id::ids, sgn) else (v', ids, add_sign (id,ty) sgn))
     sign
     (x,[],nil_sign)
-
+*)
 
 (*------------------------------------*
  * functional operations on evar sets *
  *------------------------------------*)
 
 (* All ids of sign must be distincts! *)
-let new_isevar_sign env sigma typ args =
+let new_isevar_sign env sigma typ instance =
   let sign = var_context env in
-  if not (list_distinct (ids_of_sign sign)) then 
+  if not (list_distinct (ids_of_var_context sign)) then 
     error "new_isevar_sign: two vars have the same name";
   let newev = Evd.new_evar() in
   let info = { evar_concl = typ; evar_env = env; 
 	       evar_body = Evar_empty; evar_info = None } in
-  (Evd.add sigma newev info, mkEvar newev args)
+  (Evd.add sigma newev info, mkEvar (newev,Array.of_list instance))
 
 (* We don't try to guess in which sort the type should be defined, since
    any type has type Type. May cause some trouble, but not so far... *)
@@ -60,8 +61,8 @@ let dummy_sort = mkType dummy_univ
    cumulativity now includes Prop and Set in Type. *)
 let new_type_var env sigma =
   let sign = var_context env in
-  let args = (Array.of_list (List.map mkVar (ids_of_sign sign))) in
-  let (sigma',c) = new_isevar_sign env sigma dummy_sort args in
+  let instance = List.map mkVar (ids_of_var_context sign) in
+  let (sigma',c) = new_isevar_sign env sigma dummy_sort instance in
   (sigma', c)
 
 let split_evar_to_arrow sigma c =
@@ -70,16 +71,16 @@ let split_evar_to_arrow sigma c =
   let evenv = evd.evar_env in
   let (sigma1,dom) = new_type_var evenv sigma in
   let hyps = var_context evenv in
-  let nvar = next_ident_away (id_of_string "x") (ids_of_sign hyps) in
-  let nevenv = push_var (nvar,make_typed dom (Type dummy_univ)) evenv in
-  let (sigma2,rng) = new_type_var nevenv sigma1 in
-  let prod = mkProd (named_hd nevenv dom Anonymous) dom (subst_var nvar rng) in
+  let nvar = next_ident_away (id_of_string "x") (ids_of_var_context hyps) in
+  let newenv = push_var_decl (nvar,make_typed dom (Type dummy_univ)) evenv in
+  let (sigma2,rng) = new_type_var newenv sigma1 in
+  let prod = mkProd (named_hd newenv dom Anonymous) dom (subst_var nvar rng) in
   let sigma3 = Evd.define sigma2 ev prod in
   let dsp = num_of_evar dom in
   let rsp = num_of_evar rng in
   (sigma3,
-   mkEvar dsp args,
-   mkEvar rsp (array_cons (mkRel 1) (Array.map (lift 1) args)))
+   mkEvar (dsp,args),
+   mkEvar (rsp, array_cons (mkRel 1) (Array.map (lift 1) args)))
 
 
 (* Redefines an evar with a smaller context (i.e. it may depend on less
@@ -99,17 +100,17 @@ let do_restrict_hyps sigma c =
   let (_,(rsign,ncargs)) =
     List.fold_left 
       (fun (sign,(rs,na)) a ->
-	 (tl_sign sign,
+	 (List.tl sign,
 	  if not(closed0 a) then 
 	    (rs,na)
 	  else 
-	    (add_sign (hd_sign sign) rs, a::na)))
-      (hyps,(nil_sign,[])) args 
+	    (add_var (List.hd sign) rs, a::na)))
+      (hyps,([],[])) args 
   in
-  let sign' = rev_sign rsign in
+  let sign' = List.rev rsign in
   let env' = change_hyps (fun _ -> sign') env in
-  let args' = Array.of_list (List.map mkVar (ids_of_sign sign')) in
-  let (sigma',nc) = new_isevar_sign env' sigma evd.evar_concl args' in
+  let instance = List.map mkVar (ids_of_var_context sign') in
+  let (sigma',nc) = new_isevar_sign env' sigma evd.evar_concl instance in
   let sigma'' = Evd.define sigma' ev nc in
   (sigma'', nc)
 
@@ -199,28 +200,15 @@ let real_clean isevars sp args rhs =
 (* [new_isevar] declares a new existential in an env env with type typ *)
 (* Converting the env into the sign of the evar to define *)
 
-let append_rels_to_vars ctxt =
-  dbenv_it
-    (fun na t (subst,sign) ->
-       let na = if na = Anonymous then Name(id_of_string"_") else na in
-       let id = next_name_away na (ids_of_sign sign) in
-       ((VAR id)::subst, add_sign (id,typed_app (substl subst) t) sign))
-    ctxt ([],get_globals ctxt)
-
 let new_isevar isevars env typ k =
-  let ctxt = context env in
-  let subst,sign = append_rels_to_vars ctxt in
+  let subst,env' = push_rels_to_vars env in
   let typ' = substl subst typ in
-  let env' = change_hyps (fun _ -> sign) env in
-  let newargs =
-    (List.rev(rel_list 0 (number_of_rels ctxt)))
-    @(List.map (fun id -> VAR id) (ids_of_sign (get_globals ctxt))) in
-  let (sigma',evar) =
-    new_isevar_sign env' !isevars typ' (Array.of_list newargs) in
+  let instance =
+    (List.rev (rel_list 0 (rel_context_length (rel_context env))))
+    @(List.map mkVar (ids_of_var_context (var_context env))) in
+  let (sigma',evar) = new_isevar_sign env' !isevars typ' instance in
   isevars := sigma';
   evar
-
-
 
 (* [evar_define] solves the problem lhs = rhs when lhs is an uninstantiated
  * evar, i.e. tries to find the body ?sp for lhs=DOPN(Const sp,args)
@@ -247,7 +235,7 @@ let evar_define isevars lhs rhs =
   let evd = ise_map isevars ev in
   let hyps = var_context evd.evar_env in
   (* the substitution to invert *)
-  let worklist = List.combine (ids_of_sign hyps) args in
+  let worklist = List.combine (ids_of_var_context hyps) args in
   let body = real_clean isevars ev worklist rhs in
   ise_define isevars ev body;
   [ev]
@@ -269,19 +257,19 @@ let solve_refl conv_algo isevars c1 c2 =
     array_fold_left2
       (fun (sgn,rsgn) a1 a2 ->
 	 if conv_algo a1 a2 then 
-	   (tl_sign sgn, add_sign (hd_sign sgn) rsgn)
+	   (List.tl sgn, add_var (List.hd sgn) rsgn)
 	 else 
-	   (tl_sign sgn, rsgn))
-      (hyps,nil_sign) argsv1 argsv2 
+	   (List.tl  sgn, rsgn))
+      (hyps,[]) argsv1 argsv2 
   in
-  let nsign = rev_sign rsign in
+  let nsign = List.rev rsign in
   let nenv = change_hyps (fun _ -> nsign) env in
-  let nargs = (Array.of_list (List.map mkVar (ids_of_sign nsign))) in
+  let nargs = (Array.of_list (List.map mkVar (ids_of_var_context nsign))) in
   let newev = Evd.new_evar () in
   let info = { evar_concl = evd.evar_concl; evar_env = nenv;
 	       evar_body = Evar_empty; evar_info = None } in
   isevars :=
-    Evd.define (Evd.add !isevars newev info) ev (mkEvar newev nargs);
+    Evd.define (Evd.add !isevars newev info) ev (mkEvar (newev,nargs));
   Some [ev]
 
 
@@ -419,8 +407,7 @@ let split_tycon loc env isevars = function
 	    isevars := sigma;
 	    Some dom, Some rng
 	| _ ->
-	    Stdpp.raise_with_loc loc (Type_errors.TypeError (CCI,context env,Type_errors.NotProduct c)))
+	    Stdpp.raise_with_loc loc (Type_errors.TypeError (CCI,env,Type_errors.NotProduct c)))
 
 let valcon_of_tycon x = x
 
-  

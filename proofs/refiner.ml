@@ -44,7 +44,7 @@ let norm_goal sigma gl =
   let red_fun = nf_ise1 sigma in
   let ncl = red_fun gl.evar_concl in
   { evar_concl = ncl;
-    evar_env = change_hyps (map_sign_typ (typed_app red_fun)) gl.evar_env;
+    evar_env = map_context red_fun gl.evar_env;
     evar_body = gl.evar_body;
     evar_info = gl.evar_info }
 
@@ -74,9 +74,10 @@ let rec mapshape nl (fl : (proof_tree list -> proof_tree) list)
 	let m,l = list_chop h l in 
 	(List.hd fl m) :: (mapshape t (List.tl fl) l)
 
-(* given a proof p, frontier p gives (l,v) where l is the list of goals
+(* frontier : proof_tree -> goal list * validation
+   given a proof p, frontier p gives (l,v) where l is the list of goals
    to be solved to complete the proof, and v is the corresponding validation *)
-
+   
 let rec frontier p =
   match p.ref with
     | None -> 
@@ -230,17 +231,14 @@ let rc_of_pfsigma sigma = rc_of_gc sigma.sigma sigma.it.goal
 (* rc_of_glsigma : proof sigma -> readable_constraints *)
 let rc_of_glsigma sigma = rc_of_gc sigma.sigma sigma.it
 
-(* extract_open_proof : constr signature -> proof
-  -> constr * (int * constr) list
-  takes a constr signature corresponding to global definitions
-  and a (not necessarly complete) proof
-  and gives a pair (pfterm,obl)
+(* extract_open_proof : proof_tree -> constr * (int * constr) list
+  takes a (not necessarly complete) proof and gives a pair (pfterm,obl)
   where pfterm is the constr corresponding to the proof
   and obl is an int*constr list [ (m1,c1) ; ... ; (mn,cn)]
   where the mi are metavariables numbers, and ci are their types.
   Their proof should be completed in order to complete the initial proof *)
 
-let extract_open_proof sign pf =
+let extract_open_proof sigma pf =
   let open_obligations = ref [] in
   let rec proof_extractor vl = function
     | {ref=Some(Prim _,_)} as pf -> prim_extractor proof_extractor vl pf
@@ -255,42 +253,31 @@ let extract_open_proof sign pf =
     | {ref=Some(Local_constraints lc,[pf])} -> (proof_extractor vl) pf
 	  
     | {ref=None;goal=goal} ->
-	let n_rels = number_of_rels vl in
 	let visible_rels =
           map_succeed
             (fun id ->
-               match lookup_id id vl with
-		 | GLOBNAME _ -> failwith "caught"
-		 | RELNAME(n,_) -> (n,id))
-            (ids_of_sign (evar_hyps goal)) in
-	let sorted_rels = 
-	  Sort.list (fun (n1,_) (n2,_) -> n1>n2) visible_rels in
+               try let n = list_index id vl in (n,id)
+	       with Not_found -> failwith "caught")
+            (ids_of_var_context (evar_hyps goal)) in
+	let sorted_rels =
+	  Sort.list (fun (n1,_) (n2,_) -> n1 > n2 ) visible_rels in
 	let abs_concl =
           List.fold_right
             (fun (_,id) concl ->
-	       let (_,ty) = lookup_sign id (evar_hyps goal) in
-	       mkNamedProd id (incast_type ty) concl)
+	       let (c,ty) = lookup_id id (evar_hyps goal) in
+	       mkNamedProd_or_LetIn (id,c,ty) concl)
             sorted_rels goal.evar_concl
 	in
+	let ass = Retyping.get_assumption_of goal.evar_env sigma abs_concl in
 	let mv = new_meta() in
-	open_obligations := (mv,abs_concl):: !open_obligations;
+	open_obligations := (mv,ass):: !open_obligations;
 	applist(DOP0(Meta mv),List.map (fun (n,_) -> Rel n) sorted_rels) 
 	  
     | _ -> anomaly "Bug : a case has been forgotten in proof_extractor"
   in
-  let pfterm = proof_extractor (gLOB sign) pf in
+  let pfterm = proof_extractor [] pf in
   (pfterm, List.rev !open_obligations)
   
-(* extracts a constr from a proof, and raises an error if the proof is
-   incomplete *)
-
-let extract_proof sign pf =
-  match extract_open_proof sign pf with
-    | t,[] -> t
-    | _ -> errorlabstrm "extract_proof"
-	  [< 'sTR "Attempt to save an incomplete proof" >]
-
-
 (*********************)
 (*   Tacticals       *)
 (*********************)
@@ -554,7 +541,11 @@ let tactic_list_tactic tac gls =
 
 
 
-(* solve_subgoal n tac pf_sigma applies the tactic tac at the nth subgoal of
+(* solve_subgoal :
+     (global_constraints ref * goal list * validation -> 
+         global_constraints ref * goal list * validation) -> 
+      (proof_tree sigma -> proof_tree sigma)
+   solve_subgoal tac pf_sigma applies the tactic tac at the nth subgoal of
    pf_sigma *)
 let solve_subgoal tacl pf_sigma =
   let (sigr,pf) = unpackage pf_sigma in
@@ -587,7 +578,7 @@ type pftreestate = {
 let proof_of_pftreestate pts = pts.tpf
 let is_top_pftreestate pts = pts.tstack = [] 
 let cursor_of_pftreestate pts = List.map fst pts.tstack
-let evc_of_pftreestate pts = pts.tpfsigma
+let evc_of_pftreestate pts = ts_it pts.tpfsigma
 
 let top_goal_of_pftreestate pts = 
   { it = goal_of_proof pts.tpf; sigma = pts.tpfsigma }
@@ -649,12 +640,12 @@ let change_constraints_pftreestate newgc pts =
 
 (* solve the nth subgoal with tactic tac *)
 let solve_nth_pftreestate n tac pts =
-  let pf = pts.tpf in
-  let rslts =
-    solve_subgoal (theni_tac n tac) {it = pts.tpf;sigma = pts.tpfsigma} in
-  { tpf      = rslts.it;
-    tpfsigma = rslts.sigma;
-    tstack   = pts.tstack }
+ let rslts =
+   solve_subgoal (theni_tac n tac) {it = pts.tpf;sigma = pts.tpfsigma}
+ in
+ { tpf      = rslts.it;
+   tpfsigma = rslts.sigma;
+   tstack   = pts.tstack }
 
 let solve_pftreestate = solve_nth_pftreestate 1
 
@@ -678,15 +669,19 @@ let mk_pftreestate g =
    proof is not complete or the state does not correspond to the head
    of the proof-tree *)
 
+let extract_open_pftreestate pts =
+  extract_open_proof (ts_it pts.tpfsigma) pts.tpf
+
 let extract_pftreestate pts =
   if pts.tstack <> [] then
     errorlabstrm "extract_pftreestate"
       [< 'sTR"Cannot extract from a proof-tree in which we have descended;" ;
          'sPC; 'sTR"Please ascend to the root" >];
-  let env = pts.tpf.goal.evar_env in
-  let hyps = Environ.var_context env in
-  strong whd_betaiotaevar env (ts_it pts.tpfsigma)
-    (extract_proof hyps pts.tpf)
+  let pfterm,subgoals = extract_open_pftreestate pts in
+  if subgoals <> [] then
+   errorlabstrm "extract_proof"
+   [< 'sTR "Attempt to save an incomplete proof" >];
+  strong whd_betaiotaevar pts.tpf.goal.evar_env (ts_it pts.tpfsigma) pfterm
 
 
 (* Focus on the first leaf proof in a proof-tree state *)
@@ -811,18 +806,22 @@ let pr_rule = function
   | Context ctxt -> pr_ctxt ctxt
   | Local_constraints lc -> [< 'sTR"Local constraint change" >]
 
-let thin_sign osign sign =
-  sign_it
-    (fun id ty nsign ->
-       if (not (mem_sign osign id))
-         or (id,ty) <> (lookup_sign id osign)  (* Hum, egalité sur les types *)
-       then add_sign (id,ty) nsign
-       else nsign) sign nil_sign
+exception Different
+
+(* We remove from the var context of env what is already in osign *)
+let thin_sign osign env =
+  process_var_context
+    (fun env (id,c,ty as d) ->
+       try 
+	 if lookup_id id osign = (c,ty) then env
+	 else raise Different
+       with Not_found | Different -> push_var d env)
+    env
 
 let rec print_proof sigma osign pf =
   let {evar_env=env; evar_concl=cl; 
        evar_info=info; evar_body=body} = pf.goal in
-  let env' = change_hyps (fun sign -> thin_sign osign sign) env in
+  let env' = thin_sign osign env in
   match pf.ref with
     | None -> 
 	hOV 0 [< pr_seq {evar_env=env'; evar_concl=cl;

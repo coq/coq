@@ -66,16 +66,9 @@ let dest_match_eq gls eqn =
     
 let implicit = Sort implicit_sort
 
-let change_sign env (vars,rels) =
-  let env' = change_hyps (fun _ -> vars) env in
-  List.fold_left 
-    (fun env (n,t) -> 
-       let tt = execute_type env Evd.empty t in push_rel (n,tt) env)
-    env' rels
-
 (* Environment management *)
 let push_rel_type sigma (na,t) env =
-  push_rel (na,make_typed t (get_sort_of env sigma t)) env
+  push_rel_decl (na,make_typed t (get_sort_of env sigma t)) env
 
 let push_rels vars env =
   List.fold_left (fun env nvar -> push_rel_type Evd.empty nvar env) env vars
@@ -111,7 +104,7 @@ let make_inv_predicate env sigma ind id status concl =
 		let p = make_arity env true indf sort in
 		abstract_list_all env sigma p concl (realargs@[VAR id])
 	  in
-	  let hyps,_ = decompose_lam pred in
+	  let hyps,_ = decompose_lam_n (nrealargs+1) pred in
 	  let c3 = whd_beta (applist (pred,rel_list nrealargs (nrealargs +1))) 
 	  in
 	  (hyps,c3)
@@ -210,7 +203,7 @@ let generalizeRewriteIntros tac depids id gls =
 
 let var_occurs_in_pf gl id =
   occur_var id (pf_concl gl) or
-  exists_sign (fun _ t -> occur_var id t) (pf_untyped_hyps gl)
+  List.exists (fun (_,t) -> occur_var id t) (pf_hyps_types gl)
 
 let split_dep_and_nodep idl gl =
   (List.filter (var_occurs_in_pf gl) idl,

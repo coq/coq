@@ -21,13 +21,13 @@ let e_give_exact c gl = tclTHEN (unify (pf_type_of gl c)) (Tactics.exact c) gl
 let assumption id = e_give_exact (VAR id)
         
 let e_assumption gl = 
-  tclFIRST (List.map assumption (ids_of_sign (pf_untyped_hyps gl))) gl
+  tclFIRST (List.map assumption (pf_ids_of_hyps gl)) gl
 
 let e_give_exact_constr = hide_constr_tactic "EExact" e_give_exact
 
 let registered_e_assumption gl = 
   tclFIRST (List.map (fun id gl -> e_give_exact_constr (VAR id) gl) 
-              (ids_of_sign (pf_untyped_hyps gl))) gl
+              (pf_ids_of_hyps gl)) gl
     
 let e_resolve_with_bindings_tac  (c,lbind) gl = 
   let (wc,kONT) = startWalk gl in
@@ -54,9 +54,9 @@ let vernac_e_resolve_constr =
 let one_step l gl =
   [Tactics.intro]
   @ (List.map e_resolve_constr (List.map (fun x -> VAR x)
-				  (ids_of_sign (pf_untyped_hyps gl))))
+				  (pf_ids_of_hyps gl)))
   @ (List.map e_resolve_constr l)
-  @ (List.map assumption (ids_of_sign (pf_untyped_hyps gl)))
+  @ (List.map assumption (pf_ids_of_hyps gl))
 
 let rec prolog l n gl =
   if n <= 0 then error "prolog - failure";
@@ -152,8 +152,8 @@ let rec e_trivial_fail_db db_list local_db goal =
     registered_e_assumption ::
     (tclTHEN Tactics.intro 
        (function g'->
-	  let (hn,htyp) = hd_sign (pf_untyped_hyps g') in
-	  let hintl = make_resolve_hyp hn htyp in
+	  let d = pf_last_hyp g' in
+	  let hintl = make_resolve_hyp d in
           (e_trivial_fail_db db_list
 	     (Hint_db.add_list hintl local_db) g'))) ::
     (e_trivial_resolve db_list local_db (pf_concl goal)) 
@@ -223,14 +223,13 @@ let rec e_search n db_list local_db lg =
 	     (assumption_tac_list id)
 	     (e_search n db_list local_db)
 	     gls)
-	(ids_of_sign (pf_untyped_hyps g)) 
+	(pf_ids_of_hyps g)
     in
     let intro_tac = 
       apply_tac_list
 	(tclTHEN Tactics.intro 
 	   (fun g' -> 		   
-	      let (hid,htyp) = hd_sign (pf_untyped_hyps g') in
-	      let hintl = make_resolve_hyp hid htyp in
+	      let hintl = make_resolve_hyp (pf_last_hyp g') in
 	      (tactic_list_tactic 
 		 (e_search n db_list
 		    (Hint_db.add_list hintl local_db))) g')) 
@@ -249,7 +248,7 @@ let rec e_search n db_list local_db lg =
 
 let e_search_auto n db_list gl = 
   tactic_list_tactic 
-    (e_search n db_list (make_local_hint_db (pf_untyped_hyps gl)))
+    (e_search n db_list (make_local_hint_db (pf_hyps gl)))
     gl
 
 let eauto n dbnames = 
@@ -268,7 +267,7 @@ let full_eauto n gl =
   let dbnames = stringmap_dom !searchtable in
   let dbnames =  list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> Stringmap.find x !searchtable) dbnames in
-  let local_db = make_local_hint_db (pf_untyped_hyps gl) in
+  let local_db = make_local_hint_db (pf_hyps gl) in
   tclTRY (tclCOMPLETE (e_search_auto n db_list)) gl
 
 let default_full_auto gl = full_auto !default_search_depth gl

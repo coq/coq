@@ -38,11 +38,15 @@ let make_strength_2 () =
   make_strength path
 
 
-(* Variables. *)
+(* Section variables. *)
+
+type section_variable_entry =
+  | SectionLocalDef of constr
+  | SectionLocalDecl of constr
 
 type sticky = bool
 
-type variable_declaration = constr * strength * sticky
+type variable_declaration = section_variable_entry * strength * sticky
 
 let vartab = ref (Spmap.empty : (identifier * variable_declaration) Spmap.t)
 
@@ -51,8 +55,11 @@ let _ = Summary.declare_summary "VARIABLE"
 	    Summary.unfreeze_function = (fun ft -> vartab := ft);
 	    Summary.init_function = (fun () -> vartab := Spmap.empty) }
 
-let cache_variable (sp,(id,(ty,_,_) as vd,imps)) = 
-  Global.push_var (id,ty);
+let cache_variable (sp,((id,(d,_,_) as vd),imps)) =
+  begin match d with (* Fails if not well-typed *)
+    | SectionLocalDecl ty -> Global.push_var_decl (id,ty)
+    | SectionLocalDef c -> Global.push_var_def (id,c)
+  end;
   Nametab.push id sp;
   if imps then declare_var_implicits id;
   vartab := Spmap.add sp vd !vartab
@@ -63,7 +70,7 @@ let open_variable _ = ()
 
 let specification_variable x = x
 
-let (in_variable, out_variable) =
+let (in_variable, _ (* out_variable *) ) =
   let od = {
     cache_function = cache_variable;
     load_function = load_variable;
@@ -197,8 +204,8 @@ let is_variable id =
   
 let out_variable sp = 
   let (id,(_,str,sticky)) = Spmap.find sp !vartab in
-  let (_,ty) = Global.lookup_var id in
-  (id,ty,str,sticky)
+  let (c,ty) = Global.lookup_var id in
+  ((id,c,ty),str,sticky)
 
 let variable_strength id =
   let sp = Nametab.sp_of_id CCI id in 
@@ -229,22 +236,68 @@ let mind_oper_of_id sp id mib =
 	   mip.mind_consnames)
     mib.mind_packets
 
-let construct_operator env sp id =
+let global_sp_operator env sp id =
   try
     let cb = Environ.lookup_constant sp env in Const sp, cb.const_hyps
   with Not_found -> 
     let mib = Environ.lookup_mind sp env in
     mind_oper_of_id sp id mib, mib.mind_hyps
 
-let global_operator sp id = construct_operator (Global.env()) sp id
+let global_operator kind id =
+  let sp = Nametab.sp_of_id kind id in
+  global_sp_operator (Global.env()) sp id
 
+(*
 let construct_sp_reference env sp id =
-  let (oper,hyps) = construct_operator env sp id in
+  let (oper,hyps) = global_sp_operator env sp id in
   let hyps' = Global.var_context () in
   if not (hyps_inclusion env Evd.empty hyps hyps') then
     error_reference_variables CCI env id;
   let ids = ids_of_sign hyps in
   DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids))
+*)
+
+let occur_decl env (id,c,t) hyps =
+  try
+    let (c',t') = Sign.lookup_id id hyps in
+    let matching_bodies = match c,c' with
+      | None, _ -> true
+      | Some c, None -> false
+      | Some c, Some c' -> is_conv env Evd.empty c c' in
+    let matching_types = 
+      is_conv env Evd.empty (body_of_type t) (body_of_type t') in
+    matching_types & matching_bodies
+  with Not_found -> false
+
+(*
+let rec find_common_hyps_then_abstract c env hyps' = function
+  | (id,_,_ as d) :: hyps when occur_decl env d hyps' ->
+      find_common_hyps_then_abstract c (Environ.push_var d env) hyps' hyps
+  | hyps ->
+      Environ.it_mkNamedLambda_or_LetIn c hyps
+
+let find_common_hyps_then_abstract c env hyps' hyps =
+  find_common_hyps_then_abstract c env hyps' (List.rev hyps)
+*)
+
+let find_common_hyps_then_abstract c env hyps' hyps = 
+  snd (fold_var_context_both_sides
+	 (fun
+	    (env,c) (id,_,_ as d) hyps ->
+	      if occur_decl env d hyps' then 
+		(Environ.push_var d env,c)
+	      else
+		(env, Environ.it_mkNamedLambda_or_LetIn c hyps))
+	 hyps
+	 (env,c))
+
+let construct_sp_reference env sp id =
+  let (oper,hyps) = global_sp_operator env sp id in
+  let hyps0 = Global.var_context () in
+  let env0 = Environ.reset_context env in
+  let args = List.map mkVar (ids_of_var_context hyps) in
+  let body = DOPN(oper,Array.of_list args) in
+  find_common_hyps_then_abstract body env0 hyps0 hyps
 
 let construct_reference env kind id =
   try
@@ -271,11 +324,11 @@ let global_reference_imps kind id =
     | VAR id ->
 	c, implicits_of_var id
     | _ -> assert false
-
+(*
 let global env id =
   try let _ = lookup_glob id (Environ.context env) in VAR id
   with Not_found -> global_reference CCI id
-
+*)
 let is_global id =
   try 
     let osp = Nametab.sp_of_id CCI id in
@@ -299,10 +352,20 @@ let path_of_inductive_path (sp,tyi) =
 
 (* Eliminations. *)
 
+let eliminations = [ (prop,"_ind") ; (spec,"_rec") ; (types,"_rect") ]
+
+let elimination_suffix = function
+  | Type _    -> "_rect"
+  | Prop Null -> "_ind"
+  | Prop Pos  -> "_rec"
+
 let declare_eliminations sp i =
   let oper = MutInd (sp,i) in
   let mib = Global.lookup_mind sp in
-  let ids = ids_of_sign mib.mind_hyps in
+  let ids = ids_of_var_context mib.mind_hyps in
+  if not (list_subset ids (ids_of_var_context (Global.var_context ()))) then
+    error ("Declarations of elimination scheme outside the section "^
+    "of the inductive definition is not implemented");
   let ctxt = Array.of_list (List.map (fun id -> VAR id) ids) in
   let mispec = Global.lookup_mind_specif ((sp,i),ctxt) in 
   let mindstr = string_of_id (mis_typename mispec) in
@@ -318,11 +381,15 @@ let declare_eliminations sp i =
   let npars = mis_nparams mispec in
   let make_elim s = instanciate_indrec_scheme s npars elim_scheme in
   let kelim = mis_kelim mispec in
-  if List.mem prop kelim then
-    declare (mindstr^"_ind") (make_elim prop);
-  if List.mem spec kelim then
-    declare (mindstr^"_rec") (make_elim spec);
-  if List.mem types kelim then
-    declare (mindstr^"_rect") (make_elim (Type (Univ.new_univ sp)))
+  List.iter
+    (fun (sort,suff) -> 
+       if List.mem sort kelim then declare (mindstr^suff) (make_elim sort))
+    eliminations
+
+(* Look up function for the default elimination constant *)
+
+let lookup_eliminator env path s =
+  let s = (string_of_id (basename path))^(elimination_suffix s) in
+  construct_reference env (kind_of_path path) (id_of_string s)
 
       

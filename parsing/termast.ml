@@ -9,6 +9,7 @@ open Generic
 open Term
 open Inductive
 open Sign
+open Environ
 open Declare
 open Impargs
 open Coqast
@@ -349,7 +350,7 @@ let occur_id env id0 c =
     | DLAMV(_,v)         -> array_exists (occur (n+1)) v
     | Rel p              ->
     	p>n &
-    	(try (fst (lookup_rel (p-n) env) = Name id0)
+    	(try lookup_name_of_rel (p-n) env = Name id0
 	 with Not_found -> false) (* Unbound indice : may happen in debug *)
     | DOP0 _             -> false
   in 
@@ -396,8 +397,6 @@ let global_vars_and_consts t =
   list_uniquize (collect [] t)
     
 let used_of = global_vars_and_consts
-let ids_of_env = Sign.ids_of_env
-
 
 (****************************************************************************)
 (* Tools for printing of Cases                                              *)
@@ -490,14 +489,14 @@ let ids_of_var cl =
 (* Main translation function from constr -> ast *)
 
 let old_bdize at_top env t =
-  let init_avoid = if at_top then ids_of_env env else [] in
+  let init_avoid = if at_top then ids_of_context env else [] in
   let rec bdrec avoid env t = match collapse_appl t with
     (* Not well-formed constructions *)
     | DLAM(na,c) ->
 	(match concrete_name true (*On ne sait pas si prod*)avoid env na c with
            | (Some id,avoid') -> 
 	       slam(Some (string_of_id id),
-                    bdrec avoid' (add_rel (Name id,()) env) c)
+                    bdrec avoid' (add_name (Name id) env) c)
            | (None,avoid') -> 
 	       slam(None,bdrec avoid' env (pop c)))
     | DLAMV(na,cl) ->
@@ -508,14 +507,14 @@ let old_bdize at_top env t =
 	  let id = next_name_away na avoid in 
 	  slam(Some (string_of_id id),
 	       ope("V$", array_map_to_list
-		     (bdrec (id::avoid) (add_rel (Name id,()) env)) cl))
+		     (bdrec (id::avoid) (add_name (Name id) env)) cl))
 	    
     (* Well-formed constructions *)
     | regular_constr -> 
 	(match kind_of_term regular_constr with
 	   | IsRel n ->
 	       (try 
-		  match fst(lookup_rel n env) with
+		  match lookup_name_of_rel n env with
 		    | Name id   -> nvar (string_of_id id)
 		    | Anonymous -> raise Not_found
 		with Not_found -> 
@@ -610,7 +609,7 @@ let old_bdize at_top env t =
 	       let lfi = List.map (fun na -> next_name_away na avoid) lfn in
 	       let def_env = 
 		 List.fold_left
-		   (fun env id -> add_rel (Name id,()) env) env lfi in
+		   (fun env id -> add_name (Name id) env) env lfi in
 	       let def_avoid = lfi@avoid in
 	       let f = List.nth lfi n in
 	       let rec split_lambda binds env avoid = function
@@ -621,7 +620,7 @@ let old_bdize at_top env t =
 		     let id = next_name_away na avoid in
 		     let ast_of_bind = 
 		       ope("BINDER",[ast;nvar (string_of_id id)]) in
-		     let new_env = add_rel (Name id,()) env in
+		     let new_env = add_name (Name id) env in
 		     split_lambda (ast_of_bind::binds) 
 		       new_env (id::avoid) (n-1,b)
 		 | _ -> error "split_lambda" 
@@ -632,7 +631,7 @@ let old_bdize at_top env t =
 		 | (n, DOP2(Prod,t,DLAM(na,b))) ->
 		     let ast = bdrec avoid env t in
 		     let id = next_name_away na avoid in
-		     let new_env = add_rel (Name id,()) env in
+		     let new_env = add_name (Name id) env in
 		     split_product new_env (id::avoid) (n-1,b)
 		 | _ -> error "split_product" 
 	       in
@@ -655,7 +654,7 @@ let old_bdize at_top env t =
 	       let lfi = List.map (fun na -> next_name_away na avoid) lfn in
 	       let def_env =
 		 List.fold_left 
-		   (fun env id -> add_rel (Name id,()) env) env lfi in
+		   (fun env id -> add_name (Name id) env) env lfi in
 	       let def_avoid = lfi@avoid in
 	       let f = List.nth lfi n in
 	       let listdecl =
@@ -684,7 +683,7 @@ let old_bdize at_top env t =
           if not print_underscore or (dependent (Rel 1) b) then x 
           else Anonymous in
            let id = next_name_away x' avoid in
-           let new_env = (add_rel (Name id,()) env) in
+           let new_env = (add_name (Name id) env) in
            let new_avoid = id::avoid in
            let new_nvarlist = (nvar (string_of_id id))::nvarlist in
              buildrec new_nvarlist new_avoid new_env (n-1,b)
@@ -697,7 +696,7 @@ let old_bdize at_top env t =
 	-> (* nommage de la nouvelle variable *)
           let id = next_ident_away (id_of_string "x") avoid in
 	  let new_nvarlist = (nvar (string_of_id id))::nvarlist in
-          let new_env = (add_rel (Name id,()) env) in
+          let new_env = (add_name (Name id) env) in
           let new_avoid = id::avoid in
           let new_b = DOPN(AppL,[|lift 1 b; Rel 1|]) in
             buildrec new_nvarlist new_avoid new_env (n-1,new_b)
@@ -707,8 +706,8 @@ let old_bdize at_top env t =
   and factorize_binder n avoid env oper na ty c =
     let (env2, avoid2,na2) =
       match concrete_name (oper=Lambda) avoid env na c with
-	  (Some id,l') -> add_rel (Name id,()) env, l', Some (string_of_id id) 
-	| (None,l')    -> add_rel (Anonymous,()) env, l', None
+	  (Some id,l') -> add_name (Name id) env, l', Some (string_of_id id) 
+	| (None,l')    -> add_name Anonymous env, l', None
     in
     let (p,body) = match c with
 	DOP2(oper',ty',DLAM(na',c')) 
@@ -720,7 +719,7 @@ let old_bdize at_top env t =
     in (p,slam(na2, body))
 
   in
-    bdrec init_avoid env t
+    bdrec init_avoid (names_of_rel_context env) t
 (* FIN TO EJECT *)
 (******************************************************************)
        
@@ -728,10 +727,11 @@ let ast_of_constr at_top env t =
   let t' =
     if !print_casts then t
     else Reduction.strong (fun _ _ -> strip_outer_cast)
-      Environ.empty_env Evd.empty t in
+      empty_env Evd.empty t in
   try
-    let avoid = if at_top then ids_of_env env else [] in
-    ast_of_raw (Detyping.detype avoid env t')
+    let avoid = if at_top then ids_of_context env else [] in
+    ast_of_raw 
+      (Detyping.detype avoid (names_of_rel_context env) t')
   with Detyping.StillDLAM ->
     old_bdize at_top env t'
 
@@ -744,14 +744,15 @@ let ast_of_inductive env   = ast_of_inductive_ref (ast_of_constr false env)
 let ast_of_constructor env = ast_of_constructor_ref (ast_of_constr false env)
 
 let rec ast_of_pattern env = function
-  | PRef ref -> ast_of_ref (ast_of_constr false env) ref
+  | PRef ref -> ast_of_ref (fun c -> ast_of_raw (Detyping.detype [] env c)) ref
+
   | PRel n ->
-      (try match fst (lookup_rel n env) with
+      (try match lookup_name_of_rel n env with
 	 | Name id   -> ast_of_ident id
 	 | Anonymous ->
 	     anomaly "ast_of_pattern: index to an anonymous variable"
        with Not_found ->
-	 let s = "[REL "^(string_of_int (number_of_rels env - n))^"]"
+	 let s = "[REL "^(string_of_int n)^"]"
 	 in nvar s)
 
   | PApp (f,args) ->
@@ -771,7 +772,7 @@ let rec ast_of_pattern env = function
   | PBinder (BProd,Anonymous,t,c) ->
       ope("PROD",[ast_of_pattern env t; slam(None,ast_of_pattern env c)])
   | PBinder (bk,na,t,c) ->
-      let env' = add_rel (na,()) env in
+      let env' = add_name na env in
       let (n,a) = factorize_binder_pattern
 		    env' 1 bk na (ast_of_pattern env t) c in
       let tag = match bk with
@@ -785,7 +786,7 @@ let rec ast_of_pattern env = function
       ope(tag,[ast_of_pattern env t;a])
 
   | PLet (id,a,t,c) ->
-      let c' = ast_of_pattern (add_rel (Name id,()) env) c in
+      let c' = ast_of_pattern (add_name (Name id) env) c in
       ope("LET",[ast_of_pattern env a; 	slam(Some (string_of_id id),c')])
 		
 
@@ -814,7 +815,7 @@ and factorize_binder_pattern env n oper na aty c =
 	when (oper = oper') & (aty = ast_of_pattern env ty')
 	  & not (na' = Anonymous & oper = BProd)
 	  ->
-	factorize_binder_pattern (add_rel (na',()) env) (n+1) oper na' aty c'
+	factorize_binder_pattern (add_name na' env) (n+1) oper na' aty c'
     | _ -> (n,ast_of_pattern env c)
   in
   (p,slam(stringopt_of_name na, body))

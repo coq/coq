@@ -13,13 +13,12 @@ open Environ
 
 (* A Pretty-Printer for the Calculus of Inductive Constructions. *)
 
-val assumptions_for_print : name list -> unit assumptions
+val assumptions_for_print : name list -> names_context
 
 val print_basename : section_path -> string
 val print_basename_mind : section_path -> identifier -> string
 val print_closed_sections : bool ref
 val print_impl_args : int list -> std_ppcmds
-val print_env : path_kind -> (name * constr) list -> std_ppcmds
 val print_context : bool -> Lib.library_segment -> std_ppcmds
 val print_library_entry : bool -> (section_path * Lib.node) -> std_ppcmds
 val print_full_context : unit -> std_ppcmds
@@ -50,7 +49,7 @@ val print_coercions : unit -> std_ppcmds
 val print_path_between : identifier -> identifier -> std_ppcmds
 
 
-val crible : (string -> unit assumptions -> constr -> unit) -> identifier ->
+val crible : (string -> env -> constr -> unit) -> identifier ->
   unit
 val inspect : int -> std_ppcmds
 

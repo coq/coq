@@ -20,9 +20,13 @@ type strength =
   | DischargeAt of section_path 
   | NeverDischarge
 
+type section_variable_entry =
+  | SectionLocalDef of constr
+  | SectionLocalDecl of constr
+
 type sticky = bool
 
-type variable_declaration = constr * strength * sticky
+type variable_declaration = section_variable_entry * strength * sticky
 val declare_variable : identifier -> variable_declaration -> unit
 
 type constant_declaration = constant_entry * strength
@@ -46,16 +50,15 @@ val constant_strength : section_path -> strength
 val constant_or_parameter_strength : section_path -> strength
 
 val is_variable : identifier -> bool
-val out_variable : 
-  section_path -> identifier * typed_type * strength * sticky
+val out_variable : section_path -> var_declaration * strength * sticky
 val variable_strength : identifier -> strength
 
 
-(*s [global_operator sp id] returns the operator (constant, inductive or
-    construtor) corresponding to [(sp,id)] in global environment, together
+(*s [global_operator k id] returns the operator (constant, inductive or
+    construtor) corresponding to [id] in global environment, together
     with its definition environment. *)
 
-val global_operator : section_path -> identifier -> sorts oper * var_context
+val global_operator : path_kind -> identifier -> sorts oper * var_context
 
 (*s [global_reference k id] returns the object corresponding to
     the name [id] in the global environment. It may be a constant, 
@@ -76,3 +79,7 @@ val is_global : identifier -> bool
 
 val path_of_inductive_path : inductive_path -> section_path
 val path_of_constructor_path : constructor_path -> section_path
+
+(* Look up function for the default elimination constant *)
+val elimination_suffix : sorts -> string
+val lookup_eliminator : Environ.env -> section_path -> sorts -> constr

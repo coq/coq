@@ -20,7 +20,7 @@ type constant_body = {
   const_kind : path_kind;
   const_body : constant_value option;
   const_type : typed_type;
-  const_hyps : typed_type signature;
+  const_hyps : var_context; (* New: younger hyp at top *)
   const_constraints : constraints;
   mutable const_opaque : bool }
 
@@ -66,7 +66,7 @@ type one_inductive_body = {
 type mutual_inductive_body = {
   mind_kind : path_kind;
   mind_ntypes : int;
-  mind_hyps : typed_type signature;
+  mind_hyps : var_context;
   mind_packets : one_inductive_body array;
   mind_constraints : constraints;
   mind_singl : constr option;

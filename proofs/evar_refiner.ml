@@ -100,7 +100,7 @@ let w_add_sign (id,t) (wc : walking_constraints) =
   ids_mk (ts_mod
             (fun evr ->
                { focus = evr.focus;
-		 env = push_var (id,t) evr.env;
+		 env = push_var_decl (id,t) evr.env;
 		 decls = evr.decls })
             (ids_it wc))
 
