@@ -80,9 +80,9 @@ let undo e n =
     | None -> invalid_arg "Edit.undo"
     | Some d ->
 	let (bs,_) = Hashtbl.find e.buf d in
-        repeat n Bstack.pop bs;
-	if Bstack.depth bs = 1 then
-          errorlabstrm "Edit.undo" (str"Undo stack exhausted")
+	if Bstack.depth bs <= n then
+          errorlabstrm "Edit.undo" (str"Undo stack exhausted");
+        repeat n Bstack.pop bs
 
 let create e (d,b,c,udepth) =
   if Hashtbl.mem e.buf d then
