@@ -80,7 +80,7 @@ let native_suffix f =
     failwith ("File "^f^" has not extension .cmo or .cma")
 
 (* Transforms a file name in the corresponding Caml module name. *)
-let rem_ext_regexpr = Str.regexp "\(.*\)\.\(cm..?\|ml\)"
+let rem_ext_regexpr = Str.regexp "\\(.*\\)\\.\\(cm..?\\|ml\\)"
 
 let module_of_file name =
   let s = Str.replace_first rem_ext_regexpr "\\1" (Filename.basename name) in
