@@ -811,7 +811,8 @@ let _ =
 	     definition_body_red red_option id (local,stre) c typ_opt;
              if coe then begin
 	       Class.try_add_new_coercion id stre;
-               message ((string_of_id id) ^ " is now a coercion")
+               if (not (is_silent())) then
+		 message ((string_of_id id) ^ " is now a coercion")
 	     end;
 	     if idcoe then 
 	       Class.try_add_new_coercion_subclass id stre;
@@ -1247,7 +1248,8 @@ let _ =
 	   let isid = identity = "IDENTITY" in
 	   fun () -> 
 	     Class.try_add_new_coercion_with_target id stre ids idt isid;
-             message ((string_of_id id) ^ " is now a coercion")
+             if (not (is_silent())) then
+	       message ((string_of_id id) ^ " is now a coercion")
        | _ -> bad_vernac_args "COERCION")
 
 let _ =

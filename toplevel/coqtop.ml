@@ -63,11 +63,16 @@ let require () =
 
 let re_exec s =
   let is_native = (Mltop.get()) = Mltop.Native in
-  if (is_native && s = "byte") || ((not is_native) && s = "opt") then 
+  if (is_native && s = "byte") || ((not is_native) && s = "opt") then begin
     let prog = Sys.argv.(0) in
-    let newprog = Filename.concat (Filename.dirname prog) ("coqtop." ^ s) in
+    let newprog = 
+      let dir = Filename.dirname prog in
+      let com = "coqtop." ^ s in
+      if dir <> "." then Filename.concat dir com else com 
+    in
     Sys.argv.(0) <- newprog;
-    Unix.execv newprog Sys.argv
+    Unix.execvp newprog Sys.argv
+  end
 
 (* Parsing of the command line.
  *
