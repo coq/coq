@@ -348,7 +348,8 @@ let error_unbound_metanum loc n =
   (loc,"intern_qualid_or_metanum", str "?" ++ pr_patvar n ++ str " is unbound")
 
 let intern_metanum sign loc n =
-  if List.mem n sign.metavars then n else error_unbound_metanum loc n
+  if List.mem n sign.metavars or find_var n sign then n
+  else error_unbound_metanum loc n
 
 let intern_hyp_or_metanum ist = function
   | AN id -> AN (intern_hyp ist (loc,id))
@@ -524,14 +525,10 @@ let intern_constr_may_eval ist = function
 
 (* Reads the hypotheses of a Match Context rule *)
 let rec intern_match_context_hyps evc env lfun = function
-  | (NoHypId mp)::tl ->
+  | (Hyp ((_,na) as locna,mp))::tl ->
       let metas1, pat = intern_pattern evc env lfun mp in
       let lfun, metas2, hyps = intern_match_context_hyps evc env lfun tl in
-      lfun, metas1@metas2, (NoHypId pat)::hyps
-  | (Hyp ((_,s) as locs,mp))::tl ->
-      let metas1, pat = intern_pattern evc env lfun mp in
-      let lfun, metas2, hyps = intern_match_context_hyps evc env lfun tl in
-      s::lfun, metas1@metas2, Hyp (locs,pat)::hyps
+      name_fold (fun a l -> a::l) na lfun, metas1@metas2, Hyp (locna,pat)::hyps
   | [] -> lfun, [], []
 
 (* Utilities *)
@@ -753,7 +750,7 @@ and intern_match_rule ist = function
       let lfun',metas1,hyps = intern_match_context_hyps sigma env lfun rl in
       let metas2,pat = intern_pattern sigma env lfun mp in
       let metas = list_uniquize (metas1@metas2@lmeta) in
-      let ist' = { ist with ltacvars = (lfun',l2); metavars = metas } in
+      let ist' = { ist with ltacvars = (metas@lfun',l2); metavars = [] } in
       Pat (hyps,pat,intern_tactic ist' tc) :: (intern_match_rule ist tl)
   | [] -> []
 
@@ -834,18 +831,18 @@ let read_pattern evc env lfun = function
   | Term pc -> Term (eval_pattern lfun pc)
 
 (* Reads the hypotheses of a Match Context rule *)
-let rec read_match_context_hyps evc env lfun lidh = function
-  | (NoHypId mp)::tl ->
-    (NoHypId (read_pattern evc env lfun mp))::
-      (read_match_context_hyps evc env lfun lidh tl)
-  | (Hyp ((loc,id) as locid,mp))::tl ->
-    if List.mem id lidh then
-      user_err_loc (loc,"Tacinterp.read_match_context_hyps",
+let cons_and_check_name id l =
+  if List.mem id l then
+    user_err_loc (loc,"read_match_context_hyps",
       str ("Hypothesis pattern-matching variable "^(string_of_id id)^
-           " used twice in the same pattern"))
-    else
-    (Hyp (locid,read_pattern evc env lfun mp))::
-      (read_match_context_hyps evc env lfun (id::lidh) tl)
+      " used twice in the same pattern"))
+  else id::l
+
+let rec read_match_context_hyps evc env lfun lidh = function
+  | (Hyp ((loc,na) as locna,mp))::tl ->
+      let lidh' = name_fold cons_and_check_name na lidh in
+      Hyp (locna,read_pattern evc env lfun mp)::
+	(read_match_context_hyps evc env lfun lidh' tl)
   | [] -> []
 
 (* Reads the rules of a Match Context or a Match *)
@@ -887,69 +884,40 @@ let apply_matching pat csr =
      PatternMatchingFailure -> raise No_match
 
 (* Tries to match one hypothesis pattern with a list of hypotheses *)
-let apply_one_mhyp_context ist env gl lmatch mhyp lhyps noccopt =
-  let get_pattern = function
-    | Hyp (_,pat) -> pat
-    | NoHypId pat -> pat
-  and get_id_couple id = function
-    | Hyp((_,idpat),_) -> [idpat,VIdentifier id]
-    | NoHypId _ -> [] 
-  and get_info_pattern = function
-    | Hyp((_,idpat),pat) -> (Some idpat,pat)
-    | NoHypId pat -> (None,pat) in
-  let rec apply_one_mhyp_context_rec ist env mhyp lhyps_acc nocc = function
-    | (id,hyp)::tl ->
-      (match (get_pattern mhyp) with
+let apply_one_mhyp_context ist env gl lmatch (hypname,pat) (lhyps,nocc) =
+  let get_id_couple id = function
+    | Name idpat -> [idpat,VIdentifier id]
+    | Anonymous -> [] in
+  let rec apply_one_mhyp_context_rec nocc = function
+    | (id,hyp)::tl as hyps ->
+      (match pat with
       | Term t ->
         (try
-          let lmeta = 
-            verify_metas_coherence gl lmatch (matches t hyp) in
-          (get_id_couple id mhyp,[],lmeta,tl,(id,hyp),None)
-         with | PatternMatchingFailure | Not_coherent_metas ->
-          apply_one_mhyp_context_rec ist env mhyp (lhyps_acc@[id,hyp]) 0 tl)
+          let lmeta = verify_metas_coherence gl lmatch (matches t hyp) in
+          (get_id_couple id hypname,lmeta,(id,hyp),(tl,0))
+        with
+	| PatternMatchingFailure | Not_coherent_metas ->
+            apply_one_mhyp_context_rec 0 tl)
       | Subterm (ic,t) ->
         (try
           let (lm,ctxt) = sub_match nocc t hyp in
           let lmeta = verify_metas_coherence gl lmatch lm in
-          (get_id_couple id mhyp,give_context ctxt
-            ic,lmeta,tl,(id,hyp),Some nocc)
+          ((get_id_couple id hypname)@(give_context ctxt ic),
+	   lmeta,(id,hyp),(hyps,nocc + 1))
          with
-        | NextOccurrence _ ->
-          apply_one_mhyp_context_rec ist env mhyp (lhyps_acc@[id,hyp]) 0 tl
-        | Not_coherent_metas ->
-          apply_one_mhyp_context_rec ist env mhyp lhyps_acc (nocc + 1)
-                                     ((id,hyp)::tl)))
+         | NextOccurrence _ ->
+             apply_one_mhyp_context_rec 0 tl
+         | Not_coherent_metas ->
+             apply_one_mhyp_context_rec (nocc + 1) hyps))
     | [] ->
-      begin
-        db_hyp_pattern_failure ist.debug env (get_info_pattern mhyp);
+        db_hyp_pattern_failure ist.debug env (hypname,pat);
         raise No_match
-      end in
-  let nocc =
-    match noccopt with
-    | None -> 0
-    | Some n -> n in
-  apply_one_mhyp_context_rec ist env mhyp [] nocc lhyps
+      in
+  apply_one_mhyp_context_rec nocc lhyps
 
-(* Gets the identifier of the pattern if it exists *)
-let get_id_pattern = function
-  | [] -> None
-  | [(id,_)] -> Some id
-  | _ -> assert false
-
-(*
-let coerce_to_qualid loc = function
-  | Constr c when isVar c -> make_short_qualid (destVar c)
-  | Constr c -> 
-      (try qualid_of_sp (sp_of_global (Global.env()) (reference_of_constr c))
-      with Not_found -> invalid_arg_loc (loc, "Not a reference"))
-  | Identifier id -> make_short_qualid id
-  | Qualid qid -> qid
-  | _ -> invalid_arg_loc (loc, "Not a reference")
-*)
-
-let constr_to_id loc c =
-  if isVar c then destVar c
-  else invalid_arg_loc (loc, "Not an identifier")
+let constr_to_id loc = function
+  | VConstr c when isVar c -> destVar c
+  | _ -> invalid_arg_loc (loc, "Not an identifier")
 
 let constr_to_qid loc c =
   try shortest_qualid_of_global Idset.empty (reference_of_constr c)
@@ -1038,7 +1006,7 @@ let eval_name ist = function
 
 let interp_hyp_or_metanum ist gl = function
   | AN id -> eval_variable ist gl (dummy_loc,id)
-  | MetaNum (loc,n) -> constr_to_id loc (List.assoc n ist.lmatch)
+  | MetaNum (loc,n) -> constr_to_id loc (List.assoc n ist.lfun)
 
 (* To avoid to move to much simple functions in the big recursive block *)
 let forward_vcontext_interp = ref (fun ist v -> failwith "not implemented")
@@ -1065,7 +1033,7 @@ let pf_interp_reference ist gl = interp_reference ist (pf_env gl)
 
 let interp_inductive_or_metanum ist = function
   | MetaNum (loc,n) ->
-      coerce_to_inductive (VConstr (List.assoc n ist.lmatch))
+      coerce_to_inductive (List.assoc n ist.lfun)
   | AN r -> match r with
       | ArgArg r -> r
       | ArgVar (_,id) -> 
@@ -1073,7 +1041,7 @@ let interp_inductive_or_metanum ist = function
 
 let interp_evaluable_or_metanum ist env = function
   | MetaNum (loc,n) ->
-      coerce_to_evaluable_ref env (VConstr (List.assoc n ist.lmatch))
+      coerce_to_evaluable_ref env (List.assoc n ist.lfun)
   | AN r -> match r with
       | ArgArg (r,Some (loc,id)) ->
           (* Maybe [id] has been introduced by Intro-like tactics *)
@@ -1434,7 +1402,8 @@ and match_context_interp ist g lr lmr =
       let (lgoal,ctxt) = sub_match nocc c csr in
       let lctxt = give_context ctxt id in
       if mhyps = [] then
-        eval_with_fail {ist with lfun=lctxt@ist.lfun; lmatch=lgoal@ist.lmatch}
+	let lgoal = List.map (fun (id,c) -> (id,VConstr c)) lgoal in
+        eval_with_fail {ist with lfun=lgoal@lctxt@ist.lfun; lmatch=ist.lmatch}
           mt goal
       else
         apply_hyps_context ist env goal mt lgoal mhyps hyps
@@ -1468,7 +1437,8 @@ and match_context_interp ist g lr lmr =
             if mhyps = [] then
             begin
               db_mc_pattern_success ist.debug;
-              eval_with_fail {ist with lmatch=lgoal@ist.lmatch} mt goal
+	      let lgoal = List.map (fun (id,c) -> (id,VConstr c)) lgoal in
+              eval_with_fail {ist with lfun=lgoal@ist.lfun} mt goal
             end
             else
               apply_hyps_context ist env goal mt lgoal mhyps hyps
@@ -1499,44 +1469,29 @@ and match_context_interp ist g lr lmr =
     (read_match_rule (project g) env (fst (constr_list ist env)) lmr)
 
 (* Tries to match the hypotheses in a Match Context *)
-and apply_hyps_context ist env goal mt lgmatch mhyps hyps =
-  let rec apply_hyps_context_rec ist mt lfun lmatch mhyps lhyps_mhyp
-    lhyps_rest noccopt =
-    match mhyps with
-      | hd::tl ->
-        let (lid,lc,lm,newlhyps,hyp_match,noccopt) =
-          apply_one_mhyp_context ist env goal lmatch hd lhyps_mhyp noccopt in
-        begin
-          db_matched_hyp ist.debug (pf_env goal) hyp_match
-                         (get_id_pattern lid);
-          (try
-          if tl = [] then
-          begin
-            db_mc_pattern_success ist.debug;
-            eval_with_fail {ist with lfun=lfun@lid@lc@ist.lfun;
-                                     lmatch=lmatch@lm@ist.lmatch} mt goal
-          end
-          else
-            let nextlhyps =
-              List.fold_left (fun l e -> if e = hyp_match then l else l@[e]) []
-                lhyps_rest in
-            apply_hyps_context_rec ist mt
-              (lfun@lid@lc) (lmatch@lm) tl nextlhyps nextlhyps None
-           with
-           | e when is_failure e -> raise e
-	   | e when is_match_catchable e -> 
-             (match noccopt with
-             | None ->
-               apply_hyps_context_rec ist mt lfun
-                 lmatch mhyps newlhyps lhyps_rest None
-             | Some nocc ->
-               apply_hyps_context_rec ist mt ist.lfun ist.lmatch mhyps
-                 (hyp_match::newlhyps) lhyps_rest (Some (nocc + 1))))
+and apply_hyps_context ist env goal mt (lgmatch:(Rawterm.patvar * Term.constr) list) mhyps hyps =
+  let rec apply_hyps_context_rec lfun lmatch lhyps_rest current = function
+    | Hyp ((_,hypname),mhyp)::tl ->
+        let (lids,lm,hyp_match,next) =
+          apply_one_mhyp_context ist env goal lmatch (hypname,mhyp) current in
+        db_matched_hyp ist.debug (pf_env goal) hyp_match hypname;
+        begin 
+	  try
+            let nextlhyps = list_except hyp_match lhyps_rest in
+            apply_hyps_context_rec (lfun@lids) (lmatch@lm) nextlhyps
+	      (nextlhyps,0) tl
+          with
+          | e when is_failure e -> raise e
+	  | e when is_match_catchable e -> 
+	      apply_hyps_context_rec lfun lmatch lhyps_rest next mhyps
         end
-      |	[] ->
-        anomalylabstrm "apply_hyps_context_rec" (str
-          "Empty list should not occur") in
-  apply_hyps_context_rec ist mt [] lgmatch mhyps hyps hyps None
+    | [] ->
+	let lmatch = List.map (fun (id,c) -> (id,VConstr c)) lmatch in
+        db_mc_pattern_success ist.debug;
+        eval_with_fail {ist with lfun=lmatch@lfun@ist.lfun;
+          lmatch=ist.lmatch} mt goal
+  in
+  apply_hyps_context_rec [] lgmatch hyps (hyps,0) mhyps
 
   (* Interprets extended tactic generic arguments *)
 and interp_genarg ist goal x =
@@ -1589,7 +1544,8 @@ and match_interp ist g constr lmr =
     try 
       let (lm,ctxt) = sub_match nocc c csr in
       let lctxt = give_context ctxt id in
-      val_interp {ist with lfun=lctxt@ist.lfun; lmatch=lm@ist.lmatch} g mt
+      let lm = List.map (fun (id,c) -> (id,VConstr c)) lm in
+      val_interp {ist with lfun=lm@lctxt@ist.lfun; lmatch=ist.lmatch} g mt
     with | NextOccurrence _ -> raise No_match
   in
   let rec apply_match ist csr = function
@@ -1598,8 +1554,10 @@ and match_interp ist g constr lmr =
          with e when is_match_catchable e -> apply_match ist csr [])
     | (Pat ([],Term c,mt))::tl ->
         (try
+	  let lm = apply_matching c csr in
+	  let lm = List.map (fun (id,c) -> (id,VConstr c)) lm in
           val_interp
-            { ist with lmatch=(apply_matching c csr)@ist.lmatch } g mt
+            { ist with lfun=lm@ist.lfun } g mt
          with e when is_match_catchable e -> apply_match ist csr tl)
     | (Pat ([],Subterm (id,c),mt))::tl ->
         (try
@@ -1853,9 +1811,6 @@ let subst_match_pattern subst = function
   | Term pc -> Term (subst_pattern subst pc)
 
 let rec subst_match_context_hyps subst = function
-  | NoHypId mp :: tl ->
-      NoHypId (subst_match_pattern subst mp)
-      :: subst_match_context_hyps subst tl
   | Hyp (locs,mp) :: tl ->
       Hyp (locs,subst_match_pattern subst mp)
       :: subst_match_context_hyps subst tl
@@ -2115,7 +2070,9 @@ let interp_redexp env evc r =
 (* Backwarding recursive needs of tactic glob/interp/eval functions *)
 
 let _ = Auto.set_extern_interp
-  (fun l -> interp_tactic {lfun=[];lmatch=l;debug=get_debug()})
+  (fun l -> 
+    let l = List.map (fun (id,c) -> (id,VConstr c)) l in
+    interp_tactic {lfun=l;lmatch=[];debug=get_debug()})
 let _ = Auto.set_extern_intern_tac 
   (fun l -> intern_tactic {(make_empty_glob_sign()) with metavars=l})
 let _ = Auto.set_extern_subst_tactic subst_tactic

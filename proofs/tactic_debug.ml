@@ -7,6 +7,7 @@
 (***********************************************************************)
 
 open Ast
+open Names
 open Constrextern
 open Pp
 open Pptactic
@@ -120,8 +121,8 @@ let db_pattern_rule debug num r =
 
 (* Prints the hypothesis pattern identifier if it exists *)
 let hyp_bound = function
-  | None -> " (unbound)"
-  | Some id -> " (bound to "^(Names.string_of_id id)^")"
+  | Anonymous -> " (unbound)"
+  | Name id -> " (bound to "^(Names.string_of_id id)^")"
 
 (* Prints a matched hypothesis *)
 let db_matched_hyp debug env (id,c) ido =
@@ -147,13 +148,13 @@ let pp_match_pattern env = function
     Subterm (o,(extern_pattern env (names_of_rel_context env) c))
 
 (* Prints a failure message for an hypothesis pattern *)
-let db_hyp_pattern_failure debug env hyp =
+let db_hyp_pattern_failure debug env (na,hyp) =
   if debug = DebugOn then
-    msgnl (str ("The pattern hypothesis"^(hyp_bound (fst hyp))^
+    msgnl (str ("The pattern hypothesis"^(hyp_bound na)^
                 " cannot match: ") ++
            pr_match_pattern
              (Printer.pr_pattern_env env (names_of_rel_context env))
-             (snd hyp))
+             hyp)
 
 (* Prints a matching failure message for a rule *)
 let db_matching_failure debug =

@@ -98,12 +98,12 @@ GEXTEND Gram
   (* Either an hypothesis or a ltac ref (variable or pattern patvar) *)
   id_or_ltac_ref:
     [ [ id = base_ident -> AN id
-      | "?"; n = natural -> MetaNum (loc,Pattern.patvar_of_int n) ] ]
+(*      | "?"; n = natural -> MetaNum (loc,Pattern.patvar_of_int n) *) ] ]
   ;
   (* Either a global ref or a ltac ref (variable or pattern patvar) *)
   global_or_ltac_ref:
     [ [ qid = global -> AN qid
-      | "?"; n = natural -> MetaNum (loc,Pattern.patvar_of_int n) ] ]
+(*      | "?"; n = natural -> MetaNum (loc,Pattern.patvar_of_int n) *) ] ]
   ;
   (* An identifier or a quotation meta-variable *)
   id_or_meta:

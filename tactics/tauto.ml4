@@ -21,28 +21,33 @@ open Tacticals
 open Tacinterp
 open Tactics
 open Util
-   
+
+let assoc_last ist =
+  match List.assoc (Pattern.patvar_of_int 1) ist.lfun with
+    | VConstr c -> c
+    | _ -> failwith "Tauto: anomaly"
+
 let is_empty ist =
-  if (is_empty_type (List.assoc (id_of_string "1") ist.lmatch)) then
+  if is_empty_type (assoc_last ist) then
     <:tactic<Idtac>>
   else
     <:tactic<Fail>>
 
 let is_unit ist =
-  if (is_unit_type (List.assoc (id_of_string "1") ist.lmatch)) then
+  if is_unit_type (assoc_last ist) then
     <:tactic<Idtac>>
   else
     <:tactic<Fail>>
     
 let is_conj ist =
-  let ind=(List.assoc (id_of_string "1") ist.lmatch) in
+  let ind = assoc_last ist in
     if (is_conjunction ind) && (is_nodep_ind ind) then
       <:tactic<Idtac>>
     else
       <:tactic<Fail>>
 
 let is_disj ist =
-  if (is_disjunction (List.assoc (id_of_string "1") ist.lmatch)) then
+  if is_disjunction (assoc_last ist) then
     <:tactic<Idtac>>
   else
     <:tactic<Fail>>

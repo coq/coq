@@ -305,9 +305,8 @@ let mlexpr_of_match_pattern = function
       <:expr< Tacexpr.Subterm $mlexpr_of_option mlexpr_of_ident ido$ $mlexpr_of_pattern_ast t$ >>
 
 let mlexpr_of_match_context_hyps = function
-  | Tacexpr.NoHypId l -> <:expr< Tacexpr.NoHypId $mlexpr_of_match_pattern l$ >>
   | Tacexpr.Hyp (id,l) ->
-      let f = mlexpr_of_located mlexpr_of_ident in
+      let f = mlexpr_of_located mlexpr_of_name in
       <:expr< Tacexpr.Hyp $f id$ $mlexpr_of_match_pattern l$ >>
 
 let mlexpr_of_match_rule f = function

@@ -228,7 +228,7 @@ let rec pretype tycon env isevars lvar lmeta = function
       assert (not someta);
       let j =
 	try
-	  List.assoc n lmeta
+	  List.assoc n (lmeta@lvar)
 	with
             Not_found ->
 	      user_err_loc

@@ -307,7 +307,7 @@ let parse_226_tail tk = parser
       TokIdent (get_buff len)
 
 
-(* Parse what foolows a dot *)
+(* Parse what follows a dot *)
 let parse_after_dot bp c strm =
   if !Options.v7 then 
     match strm with parser

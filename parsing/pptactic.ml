@@ -183,8 +183,7 @@ let pr_match_pattern pr_pat = function
   | Subterm (Some id,a) -> pr_id id ++ str "[" ++ pr_pat a ++ str "]"
 
 let pr_match_hyps pr_pat = function
-  | NoHypId mp -> str "_:" ++ pr_match_pattern pr_pat mp
-  | Hyp ((_,id),mp) -> pr_id id ++ str ":" ++ pr_match_pattern pr_pat mp
+  | Hyp ((_,na),mp) -> pr_name na ++ str ":" ++ pr_match_pattern pr_pat mp
 
 let pr_match_rule m pr_pat pr = function
   | Pat ([],mp,t) when m ->

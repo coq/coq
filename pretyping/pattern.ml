@@ -21,7 +21,7 @@ open Pp
 (* Metavariables *)
 
 type patvar_map = (patvar * constr) list
-let patvar_of_int n = Names.id_of_string (string_of_int n)
+let patvar_of_int n = Names.id_of_string ("X" ^ string_of_int n)
 let pr_patvar = pr_id
 
 (* Patterns *)

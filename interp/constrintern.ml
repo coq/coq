@@ -471,12 +471,17 @@ let internalise isarity sigma env allow_soapp lvar c =
 		  Array.of_list (List.map (intern false env) cl))
     | CHole loc -> 
 	RHole (loc, QuestionMark)
-    | CPatVar (loc, n) when allow_soapp = None or !interning_grammar ->
+    | CPatVar (loc, n) when allow_soapp = None ->
 	RPatVar (loc, n)
+    | CPatVar (loc, n) when Options.do_translate () ->
+	RVar (loc, snd n)
     | CPatVar (loc, (false,n as x)) ->
-        if List.mem n (out_some allow_soapp) then 
+        if List.mem n (out_some allow_soapp) or Options.do_translate () then
 	  RPatVar (loc, x)
-        else 
+        else if List.mem n (fst (let (a,_,_) = lvar in a))
+	  (* & !Options.v7 : ne pas exiger, Tauto est encore en V7 ! *) then 
+	  RVar (loc, n)
+	else
           error_unbound_patvar loc n
     | CPatVar (loc, _) ->
 	raise (InternalisationError (loc,NegativeMetavariable))
