@@ -1668,11 +1668,11 @@ but on the accessibility of this argument along {\tt R}.
 
 See file \vfile{\InitWf}{Wf}.
 
-\Question{How to perform double induction?}
+\Question{How to perform simultaneous double induction?}
 
- In general a double induction is simply solved by an induction on the
-first hypothesis followed by an inversion over the second
-hypothesis. Here is an example
+ In general a (simultaneous) double induction is simply solved by an
+induction on the first hypothesis followed by an inversion over the
+second hypothesis. Here is an example
 
 \begin{coq_eval}
 Reset Initial.
@@ -1687,19 +1687,19 @@ Inductive odd : nat -> Prop :=
   | odd_SO : odd 1
   | odd_S : forall n:nat, odd n -> odd (S (S n)).
 
-Goal forall n:nat, even n -> odd n -> False.
+Lemma not_even_and_odd : forall n:nat, even n -> odd n -> False.
 induction 1.
   inversion 1.
   inversion 1. apply IHeven; trivial.
-Qed.
 \end{coq_example}
+\begin{coq_eval}
+Qed.
+\end{coq_eval}
 
 In case the type of the second induction hypothesis is not
 dependent, {\tt inversion} can just be replaced by {\tt destruct}.
 
-
-
-\Question{How to define a function by double recursion?}
+\Question{How to define a function by simultaneous double recursion?}
 
  The same trick applies, you can even use the pattern-matching
 compilation algorithm to do the work for you. Here is an example:
@@ -1718,23 +1718,31 @@ In case of dependencies in the type of the induction objects
 $t_1$ and $t_2$, an extra argument stating $t_1=t_2$ must be given to
 the fixpoint definition
 
-\Question{How to perform nested induction?}
+\Question{How to perform nested and double induction?}
 
- To reason by nested induction, just reason by induction on the
-successive components.
+ To reason by nested (i.e. lexicographic) induction, just reason by
+induction on the successive components.
 
-\begin{coq_eval}
-Require Import Arith.
-\end{coq_eval}
+\smallskip
+
+Double induction (or induction on pairs) is a restriction of the
+lexicographic induction. Here is an example of double induction.
 
 \begin{coq_example}
-Infix "<" := lt (at level 70, no associativity).
-Infix "<=" := le (at level 70, no associativity).
-Lemma le_or_lt : forall n n0:nat, n0 < n \/ n <= n0.
-induction n; destruct n0; auto with arith.
-destruct (IHn n0); auto with arith.
+Lemma nat_double_ind : 
+forall P : nat -> nat -> Prop, P 0 0 -> 
+  (forall m n, P m n -> P m (S n)) -> 
+  (forall m n, P m n -> P (S m) n) -> 
+     forall m n, P m n.
+intros P H00 HmS HSn; induction m.
+(* case 0 *)
+induction n; [assumption | apply HmS; apply IHn].
+(* case Sm *)
+intro n; apply HSn; apply IHm.
 \end{coq_example}
-
+\begin{coq_eval}
+Qed.
+\end{coq_eval}
 
 \Question{How to define a function by nested recursion?}
 
@@ -1753,7 +1761,6 @@ Fixpoint ack (n:nat) : nat -> nat :=
         end)
   end.
 \end{coq_example}
-
 
 
 \subsection{Co-inductive types}
@@ -1780,7 +1787,6 @@ Proof.
   case (nats n); reflexivity.
 Qed.
 \end{coq_example}
-
 
 
 
