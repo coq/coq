@@ -44,7 +44,7 @@ let rec set_loc loc = function
 
 let path_section loc sp =
   let (sl,bn,pk) = repr_path sp in
-  Coqast.Path(loc,List.rev(string_of_id bn :: sl), string_of_kind pk)
+  Coqast.Path(loc, string_of_id bn :: (List.rev sl), string_of_kind pk)
 
 let section_path sl k =
   match List.rev sl with
