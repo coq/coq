@@ -1,3 +1,11 @@
+Changes from V7.4 to ???
+========================
+
+Bug fixes
+
+- Bad printing of delimiters using backquotes instead of quotes fixed
+
+
 Changes from V7.3.1 to V7.4
 ===========================
 

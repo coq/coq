@@ -187,7 +187,7 @@ let pr_parenthesis inherited se strm =
 let print_delimiters inh se strm = function
   | None -> pr_parenthesis inh se strm
   | Some key ->
-      let left = "`"^key^":" and right = "`" in
+      let left = "'"^key^":" and right = "'" in
       let lspace =
 	if is_letter (left.[String.length left -1]) then str " " else mt () in
       let rspace =
@@ -241,7 +241,7 @@ let call_primitive_parser rec_pr otherwise inherited scopes (se,env) =
 	  | Some (scopt,key) ->
 	      print_delimiters inherited se
 		(print_syntax_entry rec_pr (option_cons scopt scopes) env 
-		  {se with syn_hunks = [sub]}) scopt)
+		  {se with syn_hunks = [sub]}) key)
     | _ ->
 	pr_parenthesis inherited se (print_syntax_entry rec_pr scopes env se)
   )
