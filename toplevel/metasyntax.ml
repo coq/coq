@@ -26,6 +26,9 @@ open Pcoq
 open Rawterm
 open Libnames
 
+let interp_global_rawconstr_with_vars vars c =
+  interp_rawconstr_gen false Evd.empty (Global.env()) false (vars,[]) c
+
 (*************************
  **** PRETTY-PRINTING ****
  *************************)
@@ -900,8 +903,7 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
     (* Used only by v7 *)
     if onlyparse then None
     else
-      let r = interp_rawconstr_gen
-          false Evd.empty (Global.env()) [] false (vars,[]) c in
+      let r = interp_global_rawconstr_with_vars vars c in
       Some (make_old_pp_rule n symbols typs r notation scope vars) in
   let onlyparse = onlyparse or !Options.v7_only in
   let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
@@ -982,8 +984,7 @@ let add_notation_v8only local c (df,modifiers) sc =
 		let (vars,symbs) = analyse_tokens toks in
 		let onlyparse = modifiers = [SetOnlyParsing] in
 		let a = interp_aconstr vars c in
-		let a_for_old = interp_rawconstr_gen
-		  false Evd.empty (Global.env()) [] false (vars,[]) c in
+		let a_for_old = interp_global_rawconstr_with_vars vars c in
 		add_notation_interpretation_core local symbs None df a sc 
 		  onlyparse true
 	  | Some n ->
@@ -1022,8 +1023,7 @@ let add_notation local c dfmod mv8 sc =
 		let (vars,symbs) = analyse_tokens toks in
 		let onlyparse = modifiers = [SetOnlyParsing] in
 		let a = interp_aconstr vars c in
-		let a_for_old = interp_rawconstr_gen
-		  false Evd.empty (Global.env()) [] false (vars,[]) c in
+		let a_for_old = interp_global_rawconstr_with_vars vars c in
 		let for_old = Some (a_for_old,vars) in
 		add_notation_interpretation_core local symbs for_old df a
 		  sc onlyparse false
@@ -1075,8 +1075,7 @@ let add_infix local (inf,modl) pr mv8 sc =
       (* Declare only interpretation *)
       let (vars,symbs) = analyse_tokens toks in
       let a' = interp_aconstr vars a in
-      let a_for_old = interp_rawconstr_gen
-	false Evd.empty (Global.env()) [] false (vars,[]) a in
+      let a_for_old = interp_global_rawconstr_with_vars vars a in
       add_notation_interpretation_core local symbs None df a' sc 
 	onlyparse true
     else
@@ -1104,8 +1103,7 @@ let add_infix local (inf,modl) pr mv8 sc =
     (* Declare only interpretation *)
     let (vars,symbs) = analyse_tokens toks in
     let a' = interp_aconstr vars a in
-    let a_for_old = interp_rawconstr_gen
-      false Evd.empty (Global.env()) [] false (vars,[]) a in
+    let a_for_old = interp_global_rawconstr_with_vars vars a in
     let for_old = Some (a_for_old,vars) in
     add_notation_interpretation_core local symbs for_old df a' sc 
       onlyparse false
