@@ -769,16 +769,6 @@ clean::
 .ml4.cmo:
 	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
-# Use these lines for Windows
-#.ml4.cmx:
-#	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -o $*.ppo -impl $< 
-#	$(OCAMLOPT) $(OPTFLAGS) -c -impl $*.ppo
-
-# Use these lines for Windows
-#.ml4.cmo:
-#	$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -o $*.ppo -impl $< 
-#	$(OCAMLC) $(BYTEFLAGS) -c -impl $*.ppo
-
 .v.vo:
 	$(COQTOP) -boot -$(BEST) $(COQINCLUDES) -compile $*
 
