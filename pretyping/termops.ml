@@ -471,8 +471,7 @@ let subst_term_occ_gen locs occ c t =
   (!pos, t')
 
 let subst_term_occ locs c t = 
-  if locs = [] then
-    subst_term_gen eq_constr c t
+  if locs = [] then subst_term c t
   else if List.mem 0 locs then 
     t
   else 
