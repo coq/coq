@@ -149,7 +149,8 @@ type located_destructor_pattern =
 type destructor_data = {
   d_pat : located_destructor_pattern;
   d_pri : int;
-  d_code : raw_tactic_expr } (* should be of phylum tactic *)
+  d_code : identifier option * raw_tactic_expr (* should be of phylum tactic *)
+}
 
 type t = (identifier,destructor_data) Nbtermdn.t
 type frozen_t = (identifier,destructor_data) Nbtermdn.frozen_t
@@ -206,12 +207,14 @@ let ((inDD : destructor_data_object->obj),
                     export_function = export_dd }
     
 let add_destructor_hint na loc pat pri code =
-  begin match loc, code with
-    | HypLocation _, TacFun ([id],body) -> ()
-    | ConclLocation _, _ -> ()
-    | _ ->
-	errorlabstrm "add_destructor_hint"
-          (str "The tactic should be a function of the hypothesis name") end;
+  let code =
+    begin match loc, code with
+      | HypLocation _, TacFun ([id],body) -> (id,body)
+      | ConclLocation _, _ -> (None, code)
+      | _ ->
+	  errorlabstrm "add_destructor_hint"
+          (str "The tactic should be a function of the hypothesis name") end
+  in
   let (_,pat) = Astterm.interp_constrpattern Evd.empty (Global.env()) pat in
   let pat = match loc with
     | HypLocation b ->
@@ -246,11 +249,13 @@ let applyDestructor cls discard dd gls =
   let mvb =
     try match_dpat dd.d_pat cls gls
     with PatternMatchingFailure -> error "No match" in
-  let tac = match cls with
-    | Some id -> 
+  let tac = match cls, dd.d_code with
+    | Some id, (Some x, tac) -> 
 	let arg = Reference (RIdent (dummy_loc,id)) in
-	TacCall (dummy_loc, Tacexp dd.d_code, [arg])
-    | None -> Tacexp dd.d_code in
+        TacLetIn ([(dummy_loc, x), None, arg], tac)
+    | None, (None, tac) -> tac
+    | _, (Some _,_) -> error "Destructor expects an hypothesis"
+    | _, (None,_) -> error "Destructor is for conclusion" in
   let discard_0 =
     match (cls,dd.d_pat) with
       | (Some id,HypLocation(discardable,_,_)) ->
@@ -258,7 +263,7 @@ let applyDestructor cls discard dd gls =
       | (None,ConclLocation _) -> tclIDTAC
       | _ -> error "ApplyDestructor" 
   in
-  tclTHEN (!forward_tac_interp (TacArg tac)) discard_0 gls
+  tclTHEN (!forward_tac_interp tac) discard_0 gls
 
 
 (* [DHyp id gls]

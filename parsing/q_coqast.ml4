@@ -489,7 +489,7 @@ and mlexpr_of_tactic_arg = function
       <:expr< Tacexpr.AstTacArg $mlexpr_of_ast t$ >>
 *)
   | Tacexpr.TacCall (loc,t,tl) ->
-      <:expr< Tacexpr.TacCall loc $mlexpr_of_tactic_arg t$ $mlexpr_of_list mlexpr_of_tactic_arg tl$>>
+      <:expr< Tacexpr.TacCall loc $mlexpr_of_reference t$ $mlexpr_of_list mlexpr_of_tactic_arg tl$>>
   | Tacexpr.Tacexp t ->
       <:expr< Tacexpr.Tacexp $mlexpr_of_tactic t$ >>
   | Tacexpr.ConstrMayEval c ->

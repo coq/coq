@@ -209,7 +209,8 @@ and ('constr,'cst,'ind,'id) gen_tactic_arg =
   | ConstrMayEval  of 'constr may_eval
   | Reference      of reference_expr
   | Integer        of int
-  | TacCall of loc * ('constr,'cst,'ind,'id) gen_tactic_arg * ('constr,'cst,'ind,'id) gen_tactic_arg list
+  | TacCall        of loc *
+      reference_expr * ('constr,'cst,'ind,'id) gen_tactic_arg list
   | Tacexp of raw_tactic_expr
 
 type raw_atomic_tactic_expr =

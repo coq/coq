@@ -608,7 +608,7 @@ and glob_tacarg ist = function
   | MetaNumArg (loc,n) -> MetaNumArg (loc,glob_metanum ist loc n)
   | MetaIdArg (loc,_) -> error_syntactic_metavariables_not_allowed loc
   | TacCall (loc,f,l) ->
-      TacCall (loc,glob_tacarg ist f,List.map (glob_tacarg ist) l)
+      TacCall (loc,glob_ltac_reference ist f,List.map (glob_tacarg ist) l)
   | Tacexp t -> Tacexp (glob_tactic ist t)
   | TacDynamic(_,t) as x ->
       (match tag t with
@@ -905,22 +905,23 @@ let hyp_or_metanum_interp ist = function
 (* To avoid to move to much simple functions in the big recursive block *)
 let forward_vcontext_interp = ref (fun ist v -> failwith "not implemented")
 
-let interp_pure_qualid ist (loc,qid) =
+let interp_pure_qualid is_applied ist (loc,qid) =
   try VConstr (constr_of_reference (find_reference ist qid))
   with Not_found ->
     let (dir,id) = repr_qualid qid in
-    if dir = empty_dirpath then VIdentifier id
+    if not is_applied & dir = empty_dirpath then VIdentifier id
     else user_err_loc (loc,"interp_pure_qualid",str "Unknown reference")
 
-let interp_ltac_qualid ist (loc,qid as lqid) =
+let interp_ltac_qualid is_applied ist (loc,qid as lqid) =
   try (!forward_vcontext_interp ist (lookup qid))
-  with Not_found -> interp_pure_qualid ist lqid
+  with Not_found -> interp_pure_qualid is_applied ist lqid
 
-let interp_ltac_reference ist = function
+let interp_ltac_reference isapplied ist = function
   | RIdent (loc,id) -> 
       (try unrec (List.assoc id ist.lfun)
-      with | Not_found -> interp_ltac_qualid ist (loc,make_short_qualid id))
-  | RQualid qid -> interp_ltac_qualid ist qid
+      with | Not_found ->
+        interp_ltac_qualid isapplied ist (loc,make_short_qualid id))
+  | RQualid qid -> interp_ltac_qualid isapplied ist qid
 
 (* Interprets a qualified name *)
 let eval_qualid ist (loc,qid as locqid) =
@@ -929,7 +930,7 @@ let eval_qualid ist (loc,qid as locqid) =
     if dir = empty_dirpath then unrec (List.assoc id ist.lfun) 
     else raise Not_found
   with | Not_found ->
-    interp_pure_qualid ist locqid
+    interp_pure_qualid false ist locqid
 
 let qualid_interp ist qid =
   let v = eval_qualid ist qid in
@@ -1149,7 +1150,7 @@ and eval_tactic ist = function
 
 and tacarg_interp ist = function
   | TacVoid -> VVoid
-  | Reference r -> interp_ltac_reference ist r
+  | Reference r -> interp_ltac_reference false ist r
   | Integer n -> VInteger n
   | ConstrMayEval c -> VConstr (constr_interp_may_eval ist c)
   | MetaNumArg (_,n) -> VConstr (List.assoc n ist.lmatch)
@@ -1159,7 +1160,7 @@ and tacarg_interp ist = function
       with
         | Not_found -> error_syntactic_metavariables_not_allowed loc)
   | TacCall (loc,f,l) ->
-      let fv = tacarg_interp ist f
+      let fv = interp_ltac_reference true ist f
       and largs = List.map (tacarg_interp ist) l in
       app_interp ist fv largs loc
   | Tacexp t -> val_interp ist t
@@ -1209,6 +1210,7 @@ and tactic_of_value vle g =
   | VFTactic (largs,f) -> (f largs g) 
   | VRTactic res -> res
   | VTactic tac -> tac g
+  | VFun _ -> error "A fully applied tactic is expected"
   | _ -> raise NotTactic
 
 (* Evaluation with FailError catching *)
@@ -1278,7 +1280,7 @@ and letin_interp ist = function
        with | NotTactic ->
          delete_proof id;
          errorlabstrm "Tacinterp.letin_interp"
-         (str "Term or tactic expected"))
+         (str "Term or fully applied tactic expected in Let"))
 
 (* Interprets the clauses of a LetCut *)
 and letcut_interp ist = function
@@ -1333,7 +1335,7 @@ and letcut_interp ist = function
        with | NotTactic ->
          delete_proof id;
          errorlabstrm "Tacinterp.letcut_interp"
-         (str "Term or tactic expected")))
+         (str "Term or fully applied tactic expected in Let")))
 
 (* Interprets the Match Context expressions *)
 and match_context_interp ist lr lmr g =

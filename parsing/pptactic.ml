@@ -558,25 +558,24 @@ and pr6 = function
 
   | TacArg c -> pr_tacarg c
 
+and pr_reference = function 
+  | RQualid (_,qid) -> pr_qualid qid
+  | RIdent (_,id) -> pr_id id
+
 and pr_tacarg0 = function
   | TacDynamic (_,t) -> str ("<dynamic ["^(Dyn.tag t)^"]>")
   | MetaNumArg (_,n) -> str ("?" ^ string_of_int n )
   | MetaIdArg (_,s) -> str ("$" ^ s)
   | TacVoid -> str "()"
-  | Reference (RQualid (_,qid)) -> pr_qualid qid
-  | Reference (RIdent (_,id)) -> pr_id id
+  | Reference r -> pr_reference r
   | ConstrMayEval (ConstrTerm c) -> str "'" ++ pr_constr c
   | ConstrMayEval c -> pr_may_eval pr_constr c
   | Integer n -> int n
-(*
-  | Tac of
-      'c * (Coqast.t,qualid or_metanum, identifier or_metaid) gen_tactic_expr
-*)
   | (TacCall _ | Tacexp _) as t -> str "(" ++ pr_tacarg1 t ++ str ")"
 
 and pr_tacarg1 = function
   | TacCall (_,f,l) ->
-      hov 0 (pr_tacarg0 f ++ spc () ++ prlist_with_sep spc pr_tacarg0 l)
+      hov 0 (pr_reference f ++ spc () ++ prlist_with_sep spc pr_tacarg0 l)
   | Tacexp t -> !pr_rawtac t
   | t -> pr_tacarg0 t
 

@@ -207,7 +207,7 @@ GEXTEND Gram
 	  ConstrMayEval (ConstrContext (id,c))
       | IDENT "Check"; c = Constr.constr ->
 	  ConstrMayEval (ConstrTypeOf c)
-      | qid = lqualid -> qid
+      | qid = lqualid -> Reference qid
       | ta = tactic_arg0 -> ta ] ]
   ;
   tactic_arg1:
@@ -218,13 +218,13 @@ GEXTEND Gram
       | IDENT "Check"; c = Constr.constr ->
 	  ConstrMayEval (ConstrTypeOf c)
       | qid = lqualid; la = LIST1 tactic_arg0 -> TacCall (loc,qid,la)
-      | qid = lqualid -> qid
+      | qid = lqualid -> Reference qid
       | ta = tactic_arg0 -> ta ] ]
   ;
   tactic_arg0:
     [ [ "("; a = tactic_expr; ")" -> Tacexp a
       | "()" -> TacVoid
-      | qid = lqualid -> qid
+      | qid = lqualid -> Reference qid
       | n = Prim.integer -> Integer n
       | id = METAIDENT -> MetaIdArg (loc,id)
       |	"?" -> ConstrMayEval (ConstrTerm <:ast< (ISEVAR) >>)
@@ -232,11 +232,7 @@ GEXTEND Gram
       |	"'"; c = Constr.constr -> ConstrMayEval (ConstrTerm c) ] ]
   ;
   lqualid:
-    [ [ qid = Prim.reference -> 
-(*  match Nametab.repr_qualid qid with
-  | (dir,id) when dir = Nameops.empty_dirpath -> Identifier id
-  | _ -> Qualid *) Reference qid
-    ] ]
+    [ [ ref = Prim.reference -> ref ] ]
   ;
 
   (* Definitions for tactics *)
