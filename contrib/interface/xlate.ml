@@ -696,16 +696,9 @@ let xlate_lettac_clauses = function
 	      CT_unfold_list((CT_coerce_ID_to_UNFOLD(CT_ident "Goal"))::res)
 	  | None -> CT_unfold_list res;;
 
-let xlate_intro_patt_list = function
-    [] -> CT_coerce_ID_OPT_to_INTRO_PATT_OPT ctv_ID_OPT_NONE
-  | (fp::ll) ->
-      CT_coerce_INTRO_PATT_to_INTRO_PATT_OPT
-	(CT_disj_pattern
-    	   (CT_intro_patt_list(List.map xlate_intro_pattern fp),
-	    List.map
-	      (fun l -> 
-		 CT_intro_patt_list(List.map xlate_intro_pattern l))
-	      ll));;
+let xlate_intro_patt_opt = function
+    None -> CT_coerce_ID_OPT_to_INTRO_PATT_OPT ctv_ID_OPT_NONE
+  | Some fp -> CT_coerce_INTRO_PATT_to_INTRO_PATT_OPT (xlate_intro_pattern fp)
 
 let rec (xlate_tacarg:raw_tactic_arg -> ct_TACTIC_ARG) =
   function
@@ -1155,12 +1148,12 @@ and xlate_tac =
     | (*For translating tactics/Inv.v *)
       TacInversion (NonDepInversion (k,idl,l),quant_hyp) ->
 	CT_inversion(compute_INV_TYPE k, xlate_quantified_hypothesis quant_hyp,
-		     xlate_intro_patt_list l,
+		     xlate_intro_patt_opt l,
 	             CT_id_list (List.map xlate_hyp idl))
     | TacInversion (DepInversion (k,copt,l),quant_hyp) ->
 	let id = xlate_quantified_hypothesis quant_hyp in
 	CT_depinversion (compute_INV_TYPE k, id, 
-			 xlate_intro_patt_list l, xlate_formula_opt copt)
+			 xlate_intro_patt_opt l, xlate_formula_opt copt)
     | TacInversion (InversionUsing (c,idlist), id) ->
 	let id = xlate_quantified_hypothesis id in
 	  CT_use_inversion (id, xlate_formula c,
@@ -1174,11 +1167,11 @@ and xlate_tac =
     | TacNewDestruct(a,b,(c,_)) ->
 	CT_new_destruct
 	  (xlate_int_or_constr a, xlate_using b, 
-	   xlate_intro_patt_list c)
+	   xlate_intro_patt_opt c)
     | TacNewInduction(a,b,(c,_)) ->
 	CT_new_induction
 	  (xlate_int_or_constr a, xlate_using b,
-	   xlate_intro_patt_list c)
+	   xlate_intro_patt_opt c)
     | TacInstantiate (a, b, cl) -> 
         CT_instantiate(CT_int a, xlate_formula b,
 		       xlate_clause cl)

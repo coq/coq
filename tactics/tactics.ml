@@ -1639,7 +1639,7 @@ let raw_induct_nodep n = tclTHEN (intros_until_n n) (tclLAST_HYP simplest_elim)
 (* This was Induction in 6.3 (hybrid form) *)
 let induction_from_context_old_style hyp b_ids gl =
   let elim_info = find_elim_signature true true None hyp gl in
-  let x = induction_from_context true elim_info hyp ([],b_ids) gl in
+  let x = induction_from_context true elim_info hyp (None,b_ids) gl in
   (* For translator *) fst (List.hd !b_ids) := true;
   x
 

@@ -523,15 +523,15 @@ open Tacexpr
 
 let inv k = inv_gen false k NoDep
 
-let half_inv_tac id  = inv SimpleInversion [] (NamedHyp id)
-let inv_tac id       = inv FullInversion [] (NamedHyp id)
-let inv_clear_tac id = inv FullInversionClear [] (NamedHyp id)
+let half_inv_tac id  = inv SimpleInversion None (NamedHyp id)
+let inv_tac id       = inv FullInversion None (NamedHyp id)
+let inv_clear_tac id = inv FullInversionClear None (NamedHyp id)
 
 let dinv k c = inv_gen false k (Dep c)
 
-let half_dinv_tac id  = dinv SimpleInversion None [] (NamedHyp id)
-let dinv_tac id       = dinv FullInversion None [] (NamedHyp id)
-let dinv_clear_tac id = dinv FullInversionClear None [] (NamedHyp id)
+let half_dinv_tac id  = dinv SimpleInversion None None (NamedHyp id)
+let dinv_tac id       = dinv FullInversion None None (NamedHyp id)
+let dinv_clear_tac id = dinv FullInversionClear None None (NamedHyp id)
 
 (* InvIn will bring the specified clauses into the conclusion, and then
  * perform inversion on the named hypothesis.  After, it will intro them

@@ -267,11 +267,13 @@ type branch_assumptions = {
   ba        : branch_args;     (* the branch args *)
   assums    : named_context}   (* the list of assumptions introduced *)
 
-let compute_induction_names n names =
-  let names = if names = [] then Array.make n [] else Array.of_list names in
-  if Array.length names <> n then
-    errorlabstrm "" (str "Expects " ++ int n ++ str " lists of names");
-  names
+let compute_induction_names n = function
+  | None ->
+      Array.make n []
+  | Some (IntroOrAndPattern names) when List.length names = n ->
+      Array.of_list names
+  | _ ->
+      errorlabstrm "" (str "Expects " ++ int n ++ str " lists of names")
 
 let compute_construtor_signatures isrec (_,k as ity) =
   let rec analrec c recargs =
@@ -377,7 +379,7 @@ let elimination_then_using tac predicate (indbindings,elimbindings) c gl =
   let elim =
     Indrec.lookup_eliminator ind (elimination_sort_of_goal gl) in
   general_elim_then_using
-    elim true [] tac predicate (indbindings,elimbindings) c gl
+    elim true None tac predicate (indbindings,elimbindings) c gl
 
 
 let elimination_then tac        = elimination_then_using tac None 

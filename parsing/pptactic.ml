@@ -141,8 +141,8 @@ let pr_with_constr prc = function
   | Some c -> spc () ++ hov 1 (str "with" ++ spc () ++ prc c)
 
 let pr_with_names = function
-  | [] -> mt ()
-  | ids -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_case_intro_pattern ids)
+  | None -> mt ()
+  | Some ipat -> spc () ++ hov 1 (str "as" ++ spc () ++ pr_intro_pattern ipat)
 
 let pr_hyp_location pr_id = function
   | id, _, (InHyp,_) -> spc () ++ pr_id id

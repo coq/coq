@@ -549,10 +549,10 @@ let intern_redexp ist = function
 let intern_inversion_strength lf ist = function
   | NonDepInversion (k,idl,ids) ->
       NonDepInversion (k,List.map (intern_hyp_or_metaid ist) idl,
-      intern_case_intro_pattern lf ist ids)
+      option_app (intern_intro_pattern lf ist) ids)
   | DepInversion (k,copt,ids) ->
       DepInversion (k, option_app (intern_constr ist) copt,
-      intern_case_intro_pattern lf ist ids)
+      option_app (intern_intro_pattern lf ist) ids)
   | InversionUsing (c,idl) ->
       InversionUsing (intern_constr ist c, List.map (intern_hyp_or_metaid ist) idl)
 
@@ -672,13 +672,13 @@ let rec intern_atomic lf ist x =
   | TacNewInduction (c,cbo,(ids,ids')) ->
       TacNewInduction (intern_induction_arg ist c,
                option_app (intern_constr_with_bindings ist) cbo,
-               (intern_case_intro_pattern lf ist ids,ids'))
+               (option_app (intern_intro_pattern lf ist) ids,ids'))
   | TacSimpleDestruct h ->
       TacSimpleDestruct (intern_quantified_hypothesis ist h)
   | TacNewDestruct (c,cbo,(ids,ids')) ->
       TacNewDestruct (intern_induction_arg ist c,
                option_app (intern_constr_with_bindings ist) cbo,
-	       (intern_case_intro_pattern lf ist ids,ids'))
+	       (option_app (intern_intro_pattern lf ist) ids,ids'))
   | TacDoubleInduction (h1,h2) ->
       let h1 = intern_quantified_hypothesis ist h1 in
       let h2 = intern_quantified_hypothesis ist h2 in
@@ -1704,13 +1704,13 @@ and interp_atomic ist gl = function
   | TacNewInduction (c,cbo,(ids,ids')) ->
       h_new_induction (interp_induction_arg ist gl c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
-        (interp_case_intro_pattern ist ids,ids')
+        (option_app (interp_intro_pattern ist) ids,ids')
   | TacSimpleDestruct h ->
       h_simple_destruct (interp_quantified_hypothesis ist gl h)
   | TacNewDestruct (c,cbo,(ids,ids')) -> 
       h_new_destruct (interp_induction_arg ist gl c)
         (option_app (interp_constr_with_bindings ist gl) cbo)
-        (interp_case_intro_pattern ist ids,ids')
+        (option_app (interp_intro_pattern ist) ids,ids')
   | TacDoubleInduction (h1,h2) ->
       let h1 = interp_quantified_hypothesis ist gl h1 in
       let h2 = interp_quantified_hypothesis ist gl h2 in
@@ -1757,11 +1757,11 @@ and interp_atomic ist gl = function
   (* Equality and inversion *)
   | TacInversion (DepInversion (k,c,ids),hyp) ->
       Inv.dinv k (option_app (pf_interp_constr ist gl) c)
-        (interp_case_intro_pattern ist ids)
+        (option_app (interp_intro_pattern ist) ids)
         (interp_quantified_hypothesis ist gl hyp)
   | TacInversion (NonDepInversion (k,idl,ids),hyp) ->
       Inv.inv_clause k 
-        (interp_case_intro_pattern ist ids)
+        (option_app (interp_intro_pattern ist) ids)
         (List.map (interp_hyp ist gl) idl)
         (interp_quantified_hypothesis ist gl hyp)
   | TacInversion (InversionUsing (c,idl),hyp) ->

@@ -21,19 +21,19 @@ type inversion_status = Dep of constr option | NoDep
 
 val inv_gen :
   bool -> inversion_kind -> inversion_status ->
-    case_intro_pattern_expr -> quantified_hypothesis -> tactic
+    intro_pattern_expr option -> quantified_hypothesis -> tactic
 val invIn_gen :
-  inversion_kind -> case_intro_pattern_expr -> identifier list -> 
+  inversion_kind -> intro_pattern_expr option -> identifier list -> 
     quantified_hypothesis -> tactic
 
 val inv_clause :
-  inversion_kind -> case_intro_pattern_expr -> identifier list ->
+  inversion_kind -> intro_pattern_expr option -> identifier list ->
     quantified_hypothesis -> tactic
 
-val inv : inversion_kind -> case_intro_pattern_expr ->
+val inv : inversion_kind -> intro_pattern_expr option ->
   quantified_hypothesis -> tactic
 
-val dinv : inversion_kind -> constr option -> case_intro_pattern_expr ->
+val dinv : inversion_kind -> constr option -> intro_pattern_expr option ->
   quantified_hypothesis -> tactic
 
 val half_inv_tac : identifier -> tactic
