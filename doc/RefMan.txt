@@ -11,7 +11,7 @@ MANUEL DE REFERENCE
 \part{The language}
 \defaultheaders
 \include{RefMan-gal.v}% Gallina					BB
-\include{RefMan-ext.v}% Gallina extensions			HH
+\include{RefMan-ext.v}% Gallina extensions			HH -fait
 \include{RefMan-lib.v}% The coq library				BB
 \include{RefMan-cic.v}% The Calculus of Constructions		CP
 
@@ -32,7 +32,7 @@ MANUEL DE REFERENCE
 \include{RefMan-ltac.v}% Writing tactics			BB -fait
 
 \part{Practical tools}
-\include{RefMan-com}% The coq commands (coqc coqtop)		HH
+\include{RefMan-com}% The coq commands (coqc coqtop)		HH -fait
 %%ajouter nouvelles options -v7 -translate au document de passage
 \include{RefMan-uti}% utilities (gallina, do_Makefile, etc)	JCF -fait
 \include{RefMan-ide}%CoqIde					CM
@@ -40,7 +40,7 @@ MANUEL DE REFERENCE
 \include{AddRefMan-pre}%					CP
 
 \include{Cases.v}%						CP
-\include{Coercion.v}%						HH
+\include{Coercion.v}%						HH -fait
 %%SUPPRIME \include{Natural.v}%
 \include{Omega.v}%						JCF - fait
 %%Nouvelle version ROmega					Pierre Cregut
