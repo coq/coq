@@ -5,10 +5,11 @@ provided for users willing to experiment the new features which are:
 
   - a primitive let-in construct
   - qualified names (such as Logic.f_equal)
-  - a new tactic language based on a mini functional language with higher-
-    level pattern-matching constructs on goals (by David Delahaye)
+  - a more high-level tactic language based on a small functional core with
+    recursors and elaborated matching operators for terms and proof contexts
+    (by David Delahaye)
   - an improved Search facilities using patterns (by Yves Bertot)
-  - a "natural" syntax for real numbers (by Micaëla Mayero)
+  - a "natural" syntax for real numbers (by Micaela Mayero)
   - various bug fixes
   - a command to export theories to XML to be used with Helm's publishing
     and rendering tools (see http://www.cs.unibo.it/helm) (by Claudio
