@@ -258,7 +258,7 @@ let _ = declare_bool_option
 	  {optsync = true; 
 	   optname = "Extraction Optimize";
 	   optkey = SecondaryTable ("Extraction", "Optimize");
-	   optread = (fun () -> !int_flag_ref = 0); 
+	   optread = (fun () -> !int_flag_ref <> 0); 
 	   optwrite = (fun b -> chg_flag (if b then int_flag_init else 0))}
 
 let _ = declare_int_option
