@@ -187,7 +187,8 @@ Note that \TERM{struct} is not a reserved identifier.
           &&\RNAME{if-case}
 \SEPDEF
 \DEFNT{appl-arg}
-       \KWD{@}~\NT{int}~\!\KWD{:=}~\NTL{constr}{9}  &&\RNAME{impl-arg}
+%       \KWD{@}~\NT{int}~\!\KWD{:=}~\NTL{constr}{9}  &&\RNAME{impl-arg}
+       \KWD{(}~\NT{ident}~\!\KWD{:=}~\NTL{constr}~\KWD{)}  &&\RNAME{impl-arg}
 \nlsep \NTL{constr}{9}
 \SEPDEF
 \DEFNT{atomic-constr}
@@ -846,8 +847,7 @@ $$
        ~\NT{class-rawexpr}~\TERM{$>->$}~\NT{class-rawexpr}
 \nlsep \TERM{Implicit}~\TERM{Arguments}~\NT{reference}~\TERM{[}~\STAR{\NT{int}}~\TERM{]}
 \nlsep \TERM{Implicit}~\TERM{Arguments}~\NT{reference}
-\nlsep \TERM{Implicit}~\TERM{Variable}~\KWD{Type}~\PLUS{\NT{ident}}
-       ~\KWD{:}~\NT{constr}
+\nlsep \TERM{Implicit}~\KWD{Type}~\PLUS{\NT{ident}}~\KWD{:}~\NT{constr}
 \SEPDEF
 \DEFNT{command}
        \TERM{Comments}~\STAR{\NT{comment}}
@@ -1047,7 +1047,7 @@ $$
        ~\OPT{\NT{in-scope}}
 \nlsep \TERM{Notation}~\OPT{\TERM{Local}}~\NT{ident}~\KWD{:=}~\NT{constr}
        ~\OPT{\NT{modifiers}}~\OPT{\NT{in-scope}}
-\nlsep \TERM{Uninterpreted}~\TERM{Notation}~\OPT{\TERM{Local}}~\NT{string}
+\nlsep \TERM{Reserved}~\TERM{Notation}~\OPT{\TERM{Local}}~\NT{string}
        ~\OPT{\NT{modifiers}}
 \SEPDEF
 \DEFNT{modifiers}

@@ -47,16 +47,28 @@ associativity of an operator cannot be redefined. Typical level are:
 
   The new scale can induce incompatibilities. To set the level an
 operator should have after translation, use the V8only modifier of
-Infix or Notation in the v7 file (V8only not supported for Distfix,
+Infix or Notation in the v7 file (V8only is not supported for Distfix,
 use Notation instead), as e.g.:
 
-   Infix 6 "<=" le  V8only 50.
+   Infix 6 "<=" le V8only (at level 50, no associativity).
    Notation "( x , y )" := (pair ? ? x y)  V8only "x , y" (at level 0).
-   Infix 3 "*" mult : nat_scope  V8only (left associativity).
+   Infix 3 "*" mult : nat_scope  V8only (at level 30, left associativity).
 
-  The default for precedence is to multiply the level by 10. Notice
-that you can change not only the precedence but also the
-associativity and the syntax itself.
+  The semantics of V8only is:
+
+  - Without V8only, the associativity is as for V7 and the levels are
+  the V7 levels scaled by 10.
+
+  - If the syntactic parameters of the notation are already defined
+  (e.g. in theories/Init/Notations.v), then the V8only keyword alone
+  means that the levels and associativity will be inherited from the
+  reserved ones for this syntax. No levels and associativity will be
+  mentioned in the v8 files.
+
+  - Otherwise, both associativity and levels must be mentioned after
+  the V8only keyword
+
+  Notice that you can also change the syntax itself.
 
 III) Main examples for new syntax
      ----------------------------
