@@ -273,7 +273,7 @@ let rawconstr_of_qualid env vars loc qid =
   (* Is it a reference to a syntactic definition? *)
   try
     let sp = Syntax_def.locate_syntactic_definition qid in
-    Syntax_def.search_syntactic_definition sp, []
+    set_loc_of_rawconstr loc (Syntax_def.search_syntactic_definition sp), []
   with Not_found ->
     error_global_not_found_loc loc qid
 

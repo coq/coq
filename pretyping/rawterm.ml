@@ -75,6 +75,19 @@ let loc_of_rawconstr = function
   | RHole (None) -> dummy_loc
   | RCast (loc,_,_) -> loc
 
+let set_loc_of_rawconstr loc = function
+  | RRef (_,a)      -> RRef (loc,a)
+  | RVar (_,a)      -> RVar (loc,a)
+  | RMeta (_,a)     -> RMeta (loc,a) 
+  | RApp (_,a,b)    -> RApp (loc,a,b)
+  | RBinder (_,a,b,c,d) -> RBinder (loc,a,b,c,d)
+  | RCases (_,a,b,c,d) -> RCases (loc,a,b,c,d) 
+  | ROldCase (_,a,b,c,d) -> ROldCase (loc,a,b,c,d) 
+  | RRec (_,a,b,c,d) -> RRec (loc,a,b,c,d) 
+  | RSort (_,a)      -> RSort (loc,a) 
+  | RHole _          -> RHole (Some loc)
+  | RCast (_,a,b)    -> RCast (loc,a,b) 
+
 let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
 
 
