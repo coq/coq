@@ -715,7 +715,7 @@ print_endline "PASSATO" ; flush stdout ;
                A.ACase
                 (fresh_id'', (uri_of_kernel_name kn Inductive), i,
                   aux' env idrefs ty, aux' env idrefs term, a')
-           | T.Fix ((ai,i),((f,t,b) as rec_decl)) ->
+           | T.Fix ((ai,i),(f,t,b)) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
               if is_a_Prop innersort then add_inner_type fresh_id'' ;
               let fresh_idrefs =
@@ -723,22 +723,33 @@ print_endline "PASSATO" ; flush stdout ;
               let new_idrefs =
                (List.rev (Array.to_list fresh_idrefs)) @ idrefs
               in
-               A.AFix (fresh_id'', i,
-                Array.fold_right
-                 (fun (id,fi,ti,bi,ai) i ->
-                   let fi' =
-                    match fi with
-                       N.Name fi -> fi
-                     | N.Anonymous -> Util.error "Anonymous fix function met"
-                   in
-                    (id, fi', ai,
-                     aux' env idrefs ti,
-                     aux' (E.push_rec_types rec_decl env) new_idrefs bi)::i)
-                 (Array.mapi
-                  (fun j x -> (fresh_idrefs.(j),x,t.(j),b.(j),ai.(j))) f 
-                 ) []
-                )
-           | T.CoFix (i,((f,t,b) as rec_decl)) ->
+               let f' =
+                let ids = ref (Termops.ids_of_context env) in
+                 Array.map
+                  (function
+                      N.Anonymous -> Util.error "Anonymous fix function met"
+                    | N.Name id as n ->
+                       let res = N.Name (Nameops.next_name_away n !ids) in
+                        ids := id::!ids ;
+                        res
+                 ) f
+               in
+                A.AFix (fresh_id'', i,
+                 Array.fold_right
+                  (fun (id,fi,ti,bi,ai) i ->
+                    let fi' =
+                     match fi with
+                        N.Name fi -> fi
+                      | N.Anonymous -> Util.error "Anonymous fix function met"
+                    in
+                     (id, fi', ai,
+                      aux' env idrefs ti,
+                      aux' (E.push_rec_types (f',t,b) env) new_idrefs bi)::i)
+                  (Array.mapi
+                   (fun j x -> (fresh_idrefs.(j),x,t.(j),b.(j),ai.(j))) f'
+                  ) []
+                 )
+           | T.CoFix (i,(f,t,b)) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
               if is_a_Prop innersort then add_inner_type fresh_id'' ;
               let fresh_idrefs =
@@ -746,21 +757,32 @@ print_endline "PASSATO" ; flush stdout ;
               let new_idrefs =
                (List.rev (Array.to_list fresh_idrefs)) @ idrefs
               in
-               A.ACoFix (fresh_id'', i,
-                Array.fold_right
-                 (fun (id,fi,ti,bi) i ->
-                   let fi' =
-                    match fi with
-                       N.Name fi -> fi
-                     | N.Anonymous -> Util.error "Anonymous fix function met"
-                   in
-                    (id, fi',
-                     aux' env idrefs ti,
-                     aux' (E.push_rec_types rec_decl env) new_idrefs bi)::i)
-                 (Array.mapi
-                   (fun j x -> (fresh_idrefs.(j),x,t.(j),b.(j)) ) f
-                 ) []
-                )
+               let f' =
+                let ids = ref (Termops.ids_of_context env) in
+                 Array.map
+                  (function
+                      N.Anonymous -> Util.error "Anonymous fix function met"
+                    | N.Name id as n ->
+                       let res = N.Name (Nameops.next_name_away n !ids) in
+                        ids := id::!ids ;
+                        res
+                 ) f
+               in
+                A.ACoFix (fresh_id'', i,
+                 Array.fold_right
+                  (fun (id,fi,ti,bi) i ->
+                    let fi' =
+                     match fi with
+                        N.Name fi -> fi
+                      | N.Anonymous -> Util.error "Anonymous fix function met"
+                    in
+                     (id, fi',
+                      aux' env idrefs ti,
+                      aux' (E.push_rec_types (f',t,b) env) new_idrefs bi)::i)
+                  (Array.mapi
+                    (fun j x -> (fresh_idrefs.(j),x,t.(j),b.(j)) ) f'
+                  ) []
+                 )
     in
      aux computeinnertypes None [] env idrefs t
 ;;
