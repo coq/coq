@@ -32,9 +32,5 @@ val set_print_hyps_limit : int -> unit
 val unset_print_hyps_limit : unit -> unit
 val print_hyps_limit : unit -> int option
 
-val make_mes_ambig : bool -> unit
-val is_mes_ambig : unit -> bool
-val without_mes_ambig : ('a -> 'b) -> 'a -> 'b
-
 val add_unsafe : string -> unit
 val is_unsafe : string -> bool
