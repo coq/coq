@@ -13,8 +13,8 @@ Require Rfunctions.
 Require Ranalysis1.
 Require Rtopology.
 
-(* Théorème des accroissements finis généralisés *)
-Theorem TAF_gen : (f,g:R->R;a,b:R;pr1:(c:R)``a<c<b``->(derivable_pt f c);pr2:(c:R)``a<c<b``->(derivable_pt g c)) ``a<b`` -> ((c:R)``a<=c<=b``->(continuity_pt f c)) -> ((c:R)``a<=c<=b``->(continuity_pt g c)) -> (EXT c : R | (EXT P : ``a<c<b`` | ``((g b)-(g a))*(derive_pt f c (pr1 c P))==((f b)-(f a))*(derive_pt g c (pr2 c P))``)).
+(* The Mean Value Theorem *)
+Theorem MVT : (f,g:R->R;a,b:R;pr1:(c:R)``a<c<b``->(derivable_pt f c);pr2:(c:R)``a<c<b``->(derivable_pt g c)) ``a<b`` -> ((c:R)``a<=c<=b``->(continuity_pt f c)) -> ((c:R)``a<=c<=b``->(continuity_pt g c)) -> (EXT c : R | (EXT P : ``a<c<b`` | ``((g b)-(g a))*(derive_pt f c (pr1 c P))==((f b)-(f a))*(derive_pt g c (pr2 c P))``)).
 Intros; Assert H2 := (Rlt_le ? ? H).
 Pose h := [y:R]``((g b)-(g a))*(f y)-((f b)-(f a))*(g y)``.
 Cut (c:R)``a<c<b``->(derivable_pt h c).
@@ -104,13 +104,13 @@ Apply derivable_pt_const.
 Apply (pr2 ? H3).
 Qed.
 
-(* Une version plus faible (mais usuelle ) *)
-Lemma TAF : (f:(R->R); a,b:R; pr:(derivable f)) ``a < b``->(EXT c:R | ``(f b)-(f a) == (derive_pt f c (pr c))*(b-a)``/\``a < c < b``).
+(* Corollaries ... *)
+Lemma MVT_cor1 : (f:(R->R); a,b:R; pr:(derivable f)) ``a < b``->(EXT c:R | ``(f b)-(f a) == (derive_pt f c (pr c))*(b-a)``/\``a < c < b``).
 Intros; Cut (c:R)``a<c<b``->(derivable_pt f c); [Intro | Intros; Apply pr].
 Cut (c:R)``a<c<b``->(derivable_pt id c); [Intro | Intros; Apply derivable_pt_id].
 Cut ((c:R)``a<=c<=b``->(continuity_pt f c)); [Intro | Intros; Apply derivable_continuous_pt; Apply pr].
 Cut ((c:R)``a<=c<=b``->(continuity_pt id c)); [Intro | Intros; Apply derivable_continuous_pt; Apply derivable_id].
-Assert H2 := (TAF_gen f id a b X X0 H H0 H1).
+Assert H2 := (MVT f id a b X X0 H H0 H1).
 Elim H2; Intros c H3; Elim H3; Intros.
 Exists c; Split.
 Cut (derive_pt id c (X0 c x)) == (derive_pt id c (derivable_pt_id c)); [Intro | Apply pr_nu].
@@ -118,14 +118,14 @@ Rewrite H5 in H4; Rewrite (derive_pt_id c) in H4; Rewrite Rmult_1r in H4; Rewrit
 Apply x.
 Qed.
 
-Theorem TAF_cor1 : (f,f':R->R;a,b:R) ``a<b`` -> ((c:R)``a<=c<=b``->(derivable_pt_lim f c (f' c))) -> (EXT c:R | ``(f b)-(f a)==(f' c)*(b-a)``/\``a<c<b``).
+Theorem MVT_cor2 : (f,f':R->R;a,b:R) ``a<b`` -> ((c:R)``a<=c<=b``->(derivable_pt_lim f c (f' c))) -> (EXT c:R | ``(f b)-(f a)==(f' c)*(b-a)``/\``a<c<b``).
 Intros; Cut ((c:R)``a<=c<=b``->(derivable_pt f c)).
 Intro; Cut ((c:R)``a<c<b``->(derivable_pt f c)).
 Intro; Cut ((c:R)``a<=c<=b``->(continuity_pt f c)).
 Intro; Cut ((c:R)``a<=c<=b``->(derivable_pt id c)).
 Intro; Cut ((c:R)``a<c<b``->(derivable_pt id c)).
 Intro; Cut ((c:R)``a<=c<=b``->(continuity_pt id c)).
-Intro; Elim (TAF_gen f id a b X0 X2 H H1 H2); Intros; Elim H3; Clear H3; Intros; Exists x; Split.
+Intro; Elim (MVT f id a b X0 X2 H H1 H2); Intros; Elim H3; Clear H3; Intros; Exists x; Split.
 Cut (derive_pt id x (X2 x x0))==R1.
 Cut (derive_pt f x (X0 x x0))==(f' x).
 Intros; Rewrite H4 in H3; Rewrite H5 in H3; Unfold id in H3; Rewrite Rmult_1r in H3; Rewrite Rmult_sym; Symmetry; Assumption.
@@ -140,16 +140,14 @@ Intros; Elim H1; Intros; Apply X; Split; Left; Assumption.
 Intros; Unfold derivable_pt; Apply Specif.existT with (f' c); Apply H0; Apply H1.
 Qed.
 
-Lemma TAF_cor2 : (f,f':(R->R); a,b:R) ``a < b``  -> ((x:R)``a <= x`` ->  ``x <= b``->(derivable_pt_lim f x (f' x))) -> (EXT c:R | ``a<=c``/\``c<=b``/\``(f b)==(f a) + (f' c)*(b-a)``).
-Intros; Assert H1 : (EXT c:R | ``(f b) -(f a) == (f' c)*(b-a)``/\``a<c<b``); [Apply TAF_cor1; [Apply H | Intros; Elim H1; Intros; Apply (H0 ? H2 H3)] | Elim H1; Intros; Exists x; Elim H2; Intros; Elim H4; Intros; Split; [Left; Assumption | Split; [Left; Assumption | Rewrite <- H3; Ring]]].
+Lemma MVT_cor3 : (f,f':(R->R); a,b:R) ``a < b``  -> ((x:R)``a <= x`` ->  ``x <= b``->(derivable_pt_lim f x (f' x))) -> (EXT c:R | ``a<=c``/\``c<=b``/\``(f b)==(f a) + (f' c)*(b-a)``).
+Intros; Assert H1 : (EXT c:R | ``(f b) -(f a) == (f' c)*(b-a)``/\``a<c<b``); [Apply MVT_cor2; [Apply H | Intros; Elim H1; Intros; Apply (H0 ? H2 H3)] | Elim H1; Intros; Exists x; Elim H2; Intros; Elim H4; Intros; Split; [Left; Assumption | Split; [Left; Assumption | Rewrite <- H3; Ring]]].
 Qed.
-
-(*** Corollaires ***)
 
 Lemma Rolle : (f:R->R;a,b:R;pr:(x:R)``a<x<b``->(derivable_pt f x)) ((x:R)``a<=x<=b``->(continuity_pt f x)) -> ``a<b`` -> (f a)==(f b) -> (EXT c:R | (EXT P: ``a<c<b`` | ``(derive_pt f c (pr c P))==0``)).
 Intros; Assert H2 : (x:R)``a<x<b``->(derivable_pt id x).
 Intros; Apply derivable_pt_id.
-Assert H3 := (TAF_gen f id a b pr H2 H0 H); Assert H4 : (x:R)``a<=x<=b``->(continuity_pt id x).
+Assert H3 := (MVT f id a b pr H2 H0 H); Assert H4 : (x:R)``a<=x<=b``->(continuity_pt id x).
 Intros; Apply derivable_continuous; Apply derivable_id.
 Elim (H3 H4); Intros; Elim H5; Intros; Exists x; Exists x0; Rewrite H1 in H6; Unfold id in H6; Unfold Rminus in H6; Rewrite Rplus_Ropp_r in H6; Rewrite Rmult_Ol in H6; Apply r_Rmult_mult with ``b-a``; [Rewrite Rmult_Or; Apply H6 | Apply Rminus_eq_contra; Red; Intro; Rewrite H7 in H0; Elim (Rlt_antirefl ? H0)].
 Qed.
@@ -163,7 +161,7 @@ Case (total_order_T x y); Intro.
 Elim s; Intro.
 Apply Rle_anti_compatibility with ``-(f x)``.
 Rewrite Rplus_Ropp_l; Rewrite Rplus_sym.
-Assert H1 := (TAF f ? ? pr a).
+Assert H1 := (MVT_cor1 f ? ? pr a).
 Elim H1; Intros.
 Elim H2; Intros.
 Unfold Rminus in H3.
@@ -294,7 +292,7 @@ Unfold strict_increasing.
 Intros.
 Apply Rlt_anti_compatibility with ``-(f x)``.
 Rewrite Rplus_Ropp_l; Rewrite Rplus_sym.
-Assert H1 := (TAF f ? ? pr H0).
+Assert H1 := (MVT_cor1 f ? ? pr H0).
 Elim H1; Intros.
 Elim H2; Intros.
 Unfold Rminus in H3.
@@ -371,7 +369,7 @@ Intros.
 Split; Intros.
 Apply Rlt_anti_compatibility with ``-(f x)``.
 Rewrite Rplus_Ropp_l; Rewrite Rplus_sym.
-Assert H4 := (TAF f ? ? pr H3).
+Assert H4 := (MVT_cor1 f ? ? pr H3).
 Elim H4; Intros.
 Elim H5; Intros.
 Unfold Rminus in H6.
@@ -388,7 +386,7 @@ Apply Rlt_anti_compatibility with x.
 Rewrite Rplus_Or; Replace ``x+(y+ -x)`` with y; [Assumption | Ring].
 Apply Rle_anti_compatibility with ``-(f x)``.
 Rewrite Rplus_Ropp_l; Rewrite Rplus_sym.
-Assert H4 := (TAF f ? ? pr H3).
+Assert H4 := (MVT_cor1 f ? ? pr H3).
 Elim H4; Intros.
 Elim H5; Intros.
 Unfold Rminus in H6.
@@ -423,7 +421,7 @@ Theorem IAF : (f:R->R;a,b,k:R;pr:(derivable f)) ``a<=b`` -> ((c:R) ``a<=c<=b`` -
 Intros.
 Case (total_order_T a b); Intro.
 Elim s; Intro.
-Assert H1 := (TAF f ? ? pr a0).
+Assert H1 := (MVT_cor1 f ? ? pr a0).
 Elim H1; Intros.
 Elim H2; Intros.
 Rewrite H3.
@@ -482,7 +480,7 @@ Intros; Apply H; Elim H5; Intros; Split.
 Assumption.
 Elim H1; Intros; Apply Rle_trans with x; Assumption.
 Elim H1; Clear H1; Intros; Elim H1; Clear H1; Intro.
-Assert H7 := (TAF_gen f id a x H4 H2 H1 H5 H3).
+Assert H7 := (MVT f id a x H4 H2 H1 H5 H3).
 Elim H7; Intros; Elim H8; Intros; Assert H10 : ``a<x0<b``.
 Elim x1; Intros; Split.
 Assumption.
@@ -499,7 +497,7 @@ Rewrite H2; Reflexivity.
 Elim H1; Intros; Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? (Rle_trans ? ? ? H2 H3) r)).
 Qed.
 
-(* La primitive est unique a une constante pres *)
+(* Unicity of the antiderivative *)
 Lemma antiderivative_Ucte : (f,g1,g2:R->R;a,b:R) (antiderivative f g1 a b) -> (antiderivative f g2 a b) -> (EXT c:R | (x:R)``a<=x<=b``->``(g1 x)==(g2 x)+c``).
 Unfold antiderivative; Intros; Elim H; Clear H; Intros; Elim H0; Clear H0; Intros H0 _; Exists ``(g1 a)-(g2 a)``; Intros; Assert H3 : (x:R)``a<=x<=b``->(derivable_pt g1 x).
 Intros; Unfold derivable_pt; Apply Specif.existT with (f x0); Elim (H x0 H3); Intros; EApply derive_pt_eq_1; Symmetry; Apply H4.

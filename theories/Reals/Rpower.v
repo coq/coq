@@ -110,7 +110,7 @@ Elim (Rlt_antirefl ? (Rlt_trans ? ? ? H H2)).
 Qed.
  
 Lemma exp_ineq1 : (x:R) ``0<x`` -> ``1+x < (exp x)``.
-Intros; Apply Rlt_anti_compatibility with ``-(exp 0)``; Rewrite <- (Rplus_sym (exp x)); Assert H0 := (TAF exp R0 x derivable_exp H); Elim H0; Intros; Elim H1; Intros; Unfold Rminus in H2; Rewrite H2; Rewrite Ropp_O; Rewrite Rplus_Or; Replace (derive_pt exp x0 (derivable_exp x0)) with (exp x0).
+Intros; Apply Rlt_anti_compatibility with ``-(exp 0)``; Rewrite <- (Rplus_sym (exp x)); Assert H0 := (MVT_cor1 exp R0 x derivable_exp H); Elim H0; Intros; Elim H1; Intros; Unfold Rminus in H2; Rewrite H2; Rewrite Ropp_O; Rewrite Rplus_Or; Replace (derive_pt exp x0 (derivable_exp x0)) with (exp x0).
 Rewrite exp_0; Rewrite <- Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Ol; Pattern 1 x; Rewrite <- Rmult_1r; Rewrite (Rmult_sym (exp x0)); Apply Rlt_monotony.
 Apply H.
 Rewrite <- exp_0; Apply exp_increasing; Elim H3; Intros; Assumption.
