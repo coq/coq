@@ -6,6 +6,8 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
+Load Extraction.
+
 Extraction nat.
 
 Extraction [x:nat]x.
@@ -23,8 +25,8 @@ Extraction [f:(nat->nat)->nat][x:nat][g:nat->nat](f g).
 
 Extraction (pair nat nat (S O) O).
 
-Definition f :=  [x:nat][_:(le x O)](S x).
-Extraction (f O (le_n O)).  
+Definition cf :=  [x:nat][_:(le x O)](S x).
+Extraction (cf O (le_n O)).  
 
 Extraction ([X:Set][x:X]x nat).
 
@@ -83,3 +85,7 @@ with forest_size [f:forest] : nat :=
          end.
 
 Extraction tree_size.
+
+Extraction Cases (left True True I) of (left x)=>(S O) | (right x)=>O end.
+
+Extraction sumbool_rec.
