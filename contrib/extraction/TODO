@@ -1,6 +1,22 @@
 
- 12. Ocaml typing => magic + cast.
+ 15. Finish extraction of modules (bugs with functors) 
 
- 13. Managing huge extraction (constructive FTA).
+ 16. Haskell : 
+     - equivalent of Obj.magic (unsafeCoerce ?) 
+     - look again at the syntax (make it independant of layout ...)  
+     - producing .hi files
+     - modules/modules types/functors in Haskell ?
 
- 14. Extract Constant do not work under a section.
+ 17. Scheme : 
+     - modular Scheme ? 
+
+ 18. Improve speed (profiling)
+
+ 19. Look again at those hugly renamings functions. 
+     Especially get rid of ML clashes like 
+   
+    let t = 0
+    module M = struct 
+       let t = 1 
+       let u = The.External.t (* ?? *)
+    end

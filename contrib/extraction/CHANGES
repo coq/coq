@@ -1,3 +1,81 @@
+7.3 -> 7.4
+
+* The two main new features: 
+  - Automatic generation of Obj.magic when the extracted code 
+  in Ocaml is not directly typable.
+  - A very limited and buggish extraction of Coq's new modules 
+  to Ocaml modules. 
+
+* Concerning those Obj.magic: 
+  - The extraction now computes the expected type of any terms. Then 
+  it compares it with the actual type of the produced code. And when 
+  a mismatch is found, a Obj.magic is inserted. 
+  
+  - As a rule, any extracted development that was compiling out of the box 
+  should not contain any Obj.magic. At the other hand, generation of 
+  Obj.magic is not optimized yet: there might be several of them at a place 
+  were one would have been enough. 
+  
+  - Examples of code needing those Obj.magic: 
+     * contrib/extraction/test_extraction.v in the Coq source
+     * in the users' contributions: 
+	Lannion
+	Lyon/CIRCUITS
+        Rocq/HIGMAN
+ 
+  - As a side-effect of this Obj.magic feature, we now print the types 
+  of the extracted terms, both in .ml files as commented documentation 
+  and in interfaces .mli files
+
+  - This feature hasn't been ported yet to Haskell. We are aware of 
+  some unsafe casting functions like "unsafeCoerce" on some Haskell implems.
+  So it will eventually be done.
+
+* Concerning the extraction of Coq's new modules: 
+  - Taking in account the new Coq's modules system has implied a *huge*
+  rewrite of most of the extraction code.
+
+  - the work is not complete, even if most of it is done. Today's 
+  status (22 jan 2003) is that we can extract *very* simple modules 
+  like 
+     
+    Module M. 
+    Definition t := O.
+    End M. 
+
+  which gives by Recursive Extraction t the following ocaml code: 
+
+    module M: 
+    sig 
+      val t : nat
+    end = 
+    struct 
+      (** val t : nat **)
+      let t = O
+    end
+
+  - unfortunately anything more complex (in particular functors)
+  tends to produce various bugs, the most common of them been 
+  "Anomaly: Search error. Please report."
+  Patches for those bugs will follow ... (I hope). Please be patient.
+
+  - As an interesting side-effect, definitions are now printed following
+  the user's original order. No more of this "dependency-correct but weird"
+  order. In particular realized axioms via Extract Constant are now at their 
+  right place, and not at the beginning. 
+
+* Other news: 
+  
+  - Records are now printed using the Ocaml record syntax
+ 
+  - Syntax output toward Scheme. Quite funny, but quite experimental and 
+  not documented. I recommend using the bigloo compiler since it contains 
+  natively some pattern matching.
+
+  - the dummy constant "__" have changed. see README
+
+  - a few bug-fixes (#191 and others)
+
 7.2 -> 7.3
 
 * Improved documentation in the Reference Manual.
@@ -74,7 +152,7 @@ Those constants does not match the auto-inlining criterion based on strictness.
 Of course, you can still overide this behaviour via some Extraction NoInline. 
 
 * There is now a web page showing the extraction of all standard theories: 
-http://www.lri.fr/~letouzey/extraction (* TODO mettre à jour *)
+http://www.lri.fr/~letouzey/extraction
 
 
 7.1 -> 7.2 :
