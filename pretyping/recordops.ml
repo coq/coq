@@ -43,6 +43,7 @@ let (inStruc,outStruc) =
 let add_new_struc (s,c,n,l) = 
   Lib.add_anonymous_leaf (inStruc (s,{s_CONST=c;s_PARAM=n;s_PROJ=l}))
 
+let find_structure indsp = List.assoc indsp !sTRUCS
 
 (*** table des definitions "object" : pour chaque object c,
 c := [x1:B1]...[xk:Bk](R_Cons a1...am t1...t_n)

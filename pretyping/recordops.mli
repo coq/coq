@@ -24,6 +24,10 @@ type struc_typ = {
 val add_new_struc : 
   inductive_path * identifier * int * section_path option list -> unit
 
+(* [find_structure isp] returns the infos associated to inductive path
+   [isp] if it corresponds to a structure, otherwise fails with [Not_found] *)
+val find_structure : inductive_path -> struc_typ
+
 type obj_typ = {
   o_DEF : constr;
   o_TABS : constr list; (* dans l'ordre *)
