@@ -418,7 +418,7 @@ let make_pp_rule symbols typs =
 (* Syntax extenstion: common parsing/printing rules and no interpretation *)
 
 let cache_syntax_extension (_,(prec,ntn,gr,se)) =
-  if not (Symbols.exists_notation prec notation) then begin
+  if not (Symbols.exists_notation prec ntn) then begin
     Egrammar.extend_grammar (Egrammar.Notation gr);
     if se<>None then
       Symbols.declare_notation_printing_rule ntn (out_some se,fst prec)
