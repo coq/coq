@@ -224,20 +224,20 @@ let load_object mname fname=
 (* List and not Stringset because order is important *)
 let loaded_modules = ref []
 let get_loaded_modules () = !loaded_modules
-let add_loaded_module md = 
-  loaded_modules := md :: list_except md !loaded_modules
+let add_loaded_module md = loaded_modules := md :: !loaded_modules
 
 let orig_loaded_modules = ref !loaded_modules
 let init_ml_modules () = loaded_modules := !orig_loaded_modules
 
 let unfreeze_ml_modules x =
+  loaded_modules := [];
   List.iter
     (fun name ->
        let mname = mod_of_name name in
        if not (module_is_known mname) then
          if enable_load() then
            let fname = file_of_name mname in
-           load_object mname fname                
+           load_object mname fname
          else 
 	   errorlabstrm "Mltop.unfreeze_ml_modules"
              [< str"Loading of ML object file forbidden in a native Coq" >];
