@@ -1,13 +1,18 @@
-Changes from V8.0 to V8.0 bugfix
-================================
+Changes from V8.0 to V8.0pl1
+============================
 
-- Fixed typing bug for "if" with explicit type annotation (#690)
-- Fixed anomaly bug about a sort not being a sort (#705)
-- Fixed bug Not_found with destruct (#742)
-- Improved error message "w_Unify" (#667)
-- Fixed pretty-printing removal of coercions to Funclass (#785)
-- Fixed erroneous interpretation of the quantified hypothesis in intro until
-- Improved pretty-printing of coercions to Funclass
+Unicode support
+
+- Miscellaneous Mathematical Symbols-A and B, and Supplemental
+  Arrows-A now supported
+
+Bug fixes
+
+- GPL-incompatible QPL files for CoqIde are now GPL 
+- Pretty-printing of coercions to Funclass fixed and improved
+- Erroneous interpretation of the quantified hypothesis in intro until fixed
+- See coq-bugs web page for a full list of fixed bugs (look for
+  fixes in V8-0-bugfix before July 17)
 
 Changes from V8.0beta to V8.0
 =============================
