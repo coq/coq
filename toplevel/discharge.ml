@@ -15,6 +15,7 @@ open Typeops
 open Libobject
 open Lib
 open Declare
+open Impargs
 open Classops
 open Class
 open Recordops
@@ -280,10 +281,10 @@ let inductive_message inds =
 			 'sPC; 'sTR "are discharged.">]))
 
 type discharge_operation = 
-  | Variable of identifier * section_variable_entry * strength * bool
-  | Parameter of identifier * constr
-  | Constant of identifier * constant_entry * strength
-  | Inductive of mutual_inductive_entry
+  | Variable of identifier * section_variable_entry * strength * bool * bool
+  | Parameter of identifier * constr * bool
+  | Constant of identifier * constant_entry * strength * bool
+  | Inductive of mutual_inductive_entry * bool
   | Class of cl_typ * cl_info_typ
   | Struc of inductive_path * struc_typ
   | Coercion of ((coe_typ * coe_info_typ) * cl_typ * cl_typ) 
@@ -297,6 +298,7 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
 	if stre = (DischargeAt sec_sp) or ids_to_discard <> [] then
 	  (ops,id::ids_to_discard,work_alist)
 	else
+	  let imp = is_implicit_var id in
 	  let newdecl =
 	    match c with
 	      | None ->
@@ -306,7 +308,8 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
 		  SectionLocalDef
 		    (expmod_constr oldenv work_alist body)
 	  in
-	  (Variable (id,newdecl,stre,sticky) :: ops, ids_to_discard,work_alist)
+	  (Variable (id,newdecl,stre,sticky,imp) :: ops,
+	   ids_to_discard,work_alist)
 
     | "CONSTANT" | "PARAMETER" ->
 	let stre = constant_or_parameter_strength sp in
@@ -315,25 +318,27 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
 	else
 	  let cb = Environ.lookup_constant sp oldenv in
 	  let spid = basename sp in
+	  let imp = is_implicit_constant sp in
 	  let newsp = recalc_sp sp in
 	  let (body,typ,mods) = 
 	    process_constant sp newsp oldenv (ids_to_discard,work_alist) cb in
 	  let op = match body with
 	    | None -> 
-		Parameter (spid,typ)
+		Parameter (spid,typ,imp)
 	    | Some { contents = b } -> 
 		let ce = 
 		  { const_entry_body = b; const_entry_type = Some typ } in
-		Constant (spid,ce,stre)
+		Constant (spid,ce,stre,imp)
 	  in
           (op::ops, ids_to_discard, mods@work_alist)
   
     | "INDUCTIVE" ->
 	let mib = Environ.lookup_mind sp oldenv in
 	let newsp = recalc_sp sp in
+	let imp = is_implicit_inductive_definition sp in
 	let (mie,mods) = 
 	  process_inductive sp newsp oldenv (ids_to_discard,work_alist) mib in
-        ((Inductive mie)::ops, ids_to_discard, mods@work_alist)
+	((Inductive(mie,imp))::ops, ids_to_discard, mods@work_alist)
 
     | "CLASS" -> 
 	let ((cl,clinfo) as x) = outClass lobj in
@@ -376,16 +381,16 @@ let process_item oldenv sec_sp acc = function
   | (_,_) -> acc
 
 let process_operation = function
-  | Variable (id,expmod_a,stre,sticky) ->
-      declare_variable id (expmod_a,stre,sticky)
-  | Parameter (spid,typ) ->
-      declare_parameter spid typ;
+  | Variable (id,expmod_a,stre,sticky,imp) ->
+      with_implicits imp declare_variable id (expmod_a,stre,sticky)
+  | Parameter (spid,typ,imp) ->
+      with_implicits imp declare_parameter spid typ;
       constant_message spid
-  | Constant (spid,ce,stre) ->
-      declare_constant spid (ce,stre);
+  | Constant (spid,ce,stre,imp) ->
+      with_implicits imp declare_constant spid (ce,stre);
       constant_message spid
-  | Inductive mie ->
-      let _ = declare_mind mie in
+  | Inductive (mie,imp) ->
+      let _ = with_implicits imp declare_mind mie in
       inductive_message mie.mind_entry_inds
   | Class (y1,y2) ->
       Lib.add_anonymous_leaf (inClass (y1,y2))

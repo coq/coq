@@ -19,10 +19,10 @@ let implicit_args = ref false
 let make_implicit_args flag = implicit_args := flag
 let is_implicit_args () = !implicit_args
 
-let implicitely f x =
+let with_implicits b f x =
   let oimplicit = !implicit_args in
   try 
-    implicit_args := true;
+    implicit_args := b;
     let rslt = f x in 
     implicit_args := oimplicit;
     rslt
@@ -30,6 +30,12 @@ let implicitely f x =
     implicit_args := oimplicit;
     raise e
   end
+
+let implicitely f = with_implicits true f
+
+let using_implicits = function
+  | No_impl -> with_implicits false
+  | _ -> with_implicits true
 
 let auto_implicits env ty = Impl_auto (poly_args env Evd.empty ty)
 
@@ -106,6 +112,17 @@ let declare_var_implicits id =
 
 let implicits_of_var id =
   list_of_implicits (try Idmap.find id !var_table with Not_found -> No_impl)
+
+(* Tests if declared implicit *)
+
+let is_implicit_constant sp =
+  try let _ = Spmap.find sp !constants_table in true with Not_found -> false
+
+let is_implicit_inductive_definition sp =
+  try let _ = Spmap.find sp !inductives_table in true with Not_found -> false
+
+let is_implicit_var id =
+  try let _ = Idmap.find id !var_table in true with Not_found -> false
 
 (* Registration as global tables and roolback. *)
 

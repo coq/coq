@@ -18,6 +18,7 @@ type implicits =
 val make_implicit_args : bool -> unit
 val is_implicit_args : unit -> bool
 val implicitely : ('a -> 'b) -> 'a -> 'b
+val with_implicits : bool -> ('a -> 'b) -> 'a -> 'b
 
 val list_of_implicits : implicits -> int list
 
@@ -35,6 +36,10 @@ val constant_implicits_list : section_path -> int list
 
 val declare_var_implicits : identifier -> unit
 val implicits_of_var : identifier -> int list
+
+val is_implicit_constant : section_path -> bool
+val is_implicit_inductive_definition : section_path -> bool
+val is_implicit_var : identifier -> bool
 
 type frozen_t
 val freeze : unit -> frozen_t
