@@ -38,7 +38,6 @@ let filter_sign p sign x =
     (x,[],nil_sign)
 
 
-
 (*------------------------------------*
  * functional operations on evar sets *
  *------------------------------------*)
@@ -74,8 +73,10 @@ let split_evar_to_arrow sigma c =
   let nvar = next_ident_away (id_of_string "x") (ids_of_sign hyps) in
   let nevenv = push_var (nvar,dom) evenv in
   let (sigma2,rng) = new_type_var nevenv sigma1 in
-  let prod = prod_create nevenv (incast_type dom, 
-				 subst_var nvar (body_of_type rng)) in
+  let prod =
+    let a = incast_type dom in
+    mkProd (named_hd nevenv a Anonymous) a (subst_var nvar (body_of_type rng))
+  in
   let sigma3 = Evd.define sigma2 ev prod in
   let dsp = num_of_evar (body_of_type dom) in
   let rsp = num_of_evar (body_of_type rng) in
