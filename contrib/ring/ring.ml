@@ -93,6 +93,7 @@ let logic_constant dir s =
 let coq_f_equal2 = lazy (logic_constant ["Logic"] "f_equal2")
 let coq_eq = lazy (logic_constant ["Logic"] "eq")
 let coq_eqT = lazy (logic_constant ["Logic_Type"] "eqT")
+let coq_sym_eqT = lazy (logic_constant ["Logic_Type"] "sym_eqT")
 
 (*********** Useful types and functions ************)
 
@@ -554,14 +555,24 @@ let raw_polynom th op lc gl =
       then build_polynom gl th lc
       else build_spolynom gl th lc in 
   let polynom_tac = 
-    List.fold_right2 
+    List.fold_right2
       (fun ci (c'i, c''i, c'i_eq_c''i) tac ->
         let c'''i = pf_nf gl c''i in
-	 tclTHENS 
-	   (elim_type (mkAppA [| Lazy.force coq_eqT; th.th_a; c'''i; ci |]))
-           [ tac ;
-             h_exact c'i_eq_c''i
-           ]
+          if pf_conv_x gl c'''i ci then tac (* Ring == Reflexivity *)
+          else
+           (tclORELSE
+             (tclORELSE
+               (h_exact c'i_eq_c''i)
+               (h_exact (mkAppA
+                 [| Lazy.force coq_sym_eqT; th.th_a; c'''i; ci; c'i_eq_c''i |]))
+             ) 
+	     (tclTHENS 
+	       (elim_type (mkAppA [| Lazy.force coq_eqT; th.th_a; c'''i; ci |]))
+               [ tac ;
+                 h_exact c'i_eq_c''i
+               ]
+             )
+           )
       ) lc ltriplets polynom_unfold_tac 
   in
   polynom_tac gl
