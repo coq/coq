@@ -1,8 +1,6 @@
-  THIS IS A LIST OF KNOWN BUGS OF COQ V7.0 BETA
+  THIS IS A LIST OF KNOWN BUGS OF COQ V7.0
 
 - Realizer and Program/Program_all are not available
-
-- Correctness is not available
 
 - Local definitions in Record/Structure are not allowed
 
