@@ -188,16 +188,6 @@ type extended_global_reference =
   | TrueGlobal of global_reference
   | SyntacticDef of kernel_name
 
-let subst_ext subst glref = match glref with
-  | TrueGlobal ref -> 
-      let ref' = subst_global subst ref in
-	if ref' == ref then glref else
-	  TrueGlobal ref'
-  | SyntacticDef kn ->
-      let kn' = subst_kn subst kn in
-	if kn' == kn then glref else
-	  SyntacticDef kn'
-
 let encode_kn dir id = make_kn (MPfile dir) empty_dirpath (label_of_id id)
 
 let decode_kn kn = 

@@ -82,9 +82,6 @@ type extended_global_reference =
   | TrueGlobal of global_reference
   | SyntacticDef of kernel_name
 
-val subst_ext : 
-  substitution -> extended_global_reference -> extended_global_reference
-
 (*s Temporary function to brutally form kernel names from section paths *)
 
 val encode_kn : dir_path -> identifier -> kernel_name
