@@ -152,9 +152,11 @@ module Tactic :
     val simple_tactic : Coqast.t Gram.Entry.e
     val tactic : Coqast.t Gram.Entry.e
     val tactic_arg : Coqast.t Gram.Entry.e
+    val tactic_atom0 : Coqast.t Gram.Entry.e
     val tactic_atom : Coqast.t Gram.Entry.e
     val tactic_eoi : Coqast.t Gram.Entry.e
     val tactic_expr : Coqast.t Gram.Entry.e
+    val tactic_expr_par : Coqast.t Gram.Entry.e
     val unfold_occ : Coqast.t Gram.Entry.e
     val with_binding_list : Coqast.t Gram.Entry.e
   end
