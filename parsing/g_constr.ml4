@@ -173,6 +173,8 @@ GEXTEND Gram
 	  CFix (loc, id, fbinders)
       | IDENT "CoFix"; id = identref; "{"; fbinders = cofixbinders; "}" ->
 	  CCoFix (loc, id, fbinders)
+      | IDENT "Prefix" ; "(" ;  s = STRING ; cl = LIST0 constr ; ")" ->
+	  CNotation(loc, s, cl)
       | s = sort -> CSort (loc, s)
       | v = global -> CRef v
       | n = bigint -> CNumeral (loc,n)

@@ -227,7 +227,7 @@ PARSERREQUIRES=\
   interp/constrextern.cmo parsing/egrammar.cmo parsing/esyntax.cmo \
   toplevel/metasyntax.cmo parsing/g_prim.cmo parsing/g_basevernac.cmo \
   parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
-  lib/stamps.cmo pretyping/typing.cmo proofs/proof_trees.cmo \
+  pretyping/typing.cmo proofs/proof_trees.cmo \
   proofs/logic.cmo proofs/refiner.cmo proofs/evar_refiner.cmo \
   proofs/tacmach.cmo toplevel/himsg.cmo parsing/g_natsyntax.cmo \
   parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo toplevel/class.cmo \
