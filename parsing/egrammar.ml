@@ -268,7 +268,7 @@ let extend_entry univ (te, etyp, pos, name, ass, p4ass, rls) =
 (* Defines new entries. If the entry already exists, check its type *)
 let define_entry univ {ge_name=typ; gl_assoc=ass; gl_rules=rls} =
   let e,lev,keepassoc = get_constr_entry false typ in
-  let pos,p4ass,name = find_position keepassoc ass lev in
+  let pos,p4ass,name = find_position false keepassoc ass lev in
   (e,typ,pos,name,ass,p4ass,rls)
 
 (* Add a bunch of grammar rules. Does not check if it is well formed *)
@@ -307,12 +307,13 @@ let extend_constr entry (n,assoc,pos,p4assoc,name) make_act (forpat,pt) =
 let extend_constr_notation (n,assoc,ntn,rule) =
   let mkact loc env = CNotation (loc,ntn,List.map snd env) in
   let (e,level,keepassoc) = get_constr_entry false (ETConstr (n,())) in
-  let pos,p4assoc,name = find_position keepassoc assoc level in
+  let pos,p4assoc,name = find_position false keepassoc assoc level in
   extend_constr e (ETConstr(n,()),assoc,pos,p4assoc,name)
     (make_act mkact) (false,rule);
   if not !Options.v7 then
   let mkact loc env = CPatNotation (loc,ntn,List.map snd env) in
   let (e,level,keepassoc) = get_constr_entry true (ETConstr (n,())) in
+  let pos,p4assoc,name = find_position true keepassoc assoc level in
   extend_constr e (ETConstr (n,()),assoc,pos,p4assoc,name)
     (make_act_in_cases_pattern mkact) (true,rule)
     
@@ -378,7 +379,7 @@ let add_tactic_entries gl =
   let f (s,l,tac) =
     make_rule univ (make_act s tac) (make_vprod_item "tactic") l in
   let rules = List.map f gl in
-  let _ = find_position true None None (* for synchronisation with remove *) in
+  let _ = find_position true true None None (* to synchronise with remove *) in
   grammar_extend Tactic.simple_tactic None [(None, None, List.rev rules)]
 
 let extend_grammar gram =
@@ -411,27 +412,26 @@ let factorize_grams l1 l2 =
 
 let number_of_entries gcl =
   List.fold_left
-    (fun (n,l) -> function
+    (fun n -> function
       | Notation _ -> 
-          (if !Options.v7 then n + 1
-          else n + 2 (* 1 for operconstr, 1 for pattern *)), l + 1
+          if !Options.v7 then n + 1
+	  else n + 2 (* 1 for operconstr, 1 for pattern *)
       | Grammar gc ->
-          n + (List.length gc.gc_entries), l + (List.length gc.gc_entries)
-      | TacticGrammar _ -> n + 1, l + 1)
-    (0,0) gcl
+          n + (List.length gc.gc_entries)
+      | TacticGrammar _ -> n + 1)
+    0 gcl
 
 let unfreeze (grams, lex) =
   let (undo, redo, common) = factorize_grams !grammar_state grams in
-  let n,l = number_of_entries undo in
+  let n = number_of_entries undo in
   remove_grammars n;
-  remove_levels l;
-  reinit_levels ();
+  remove_levels n;
   grammar_state := common;
   Lexer.unfreeze lex;
   List.iter extend_grammar (List.rev redo)
  
 let init_grammar () =
-  remove_grammars (fst (number_of_entries !grammar_state));
+  remove_grammars (number_of_entries !grammar_state);
   grammar_state := []
 
 let init () =

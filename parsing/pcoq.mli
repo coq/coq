@@ -46,8 +46,6 @@ val grammar_extend :
 
 val remove_grammars : int -> unit
 
-val reinit_levels : unit -> unit
-
 val camlp4_verbosity : bool -> ('a -> unit) -> 'a -> unit
 
 (* Parse a string *)
@@ -183,7 +181,7 @@ val reset_all_grammars : unit -> unit
 (* Registering/resetting the level of an entry *)
 
 val find_position : 
-  bool -> Gramext.g_assoc option -> int option ->
+  bool -> bool -> Gramext.g_assoc option -> int option ->
     Gramext.position option * Gramext.g_assoc option * string option
 
 val remove_levels : int -> unit 

@@ -426,14 +426,6 @@ let reset_all_grammars () =
   f Vernac_.vernac;
   Lexer.init()
 
-let reinit_levels () =
-  if not !Options.v7 then begin
-  (* Ensure that primitive levels exist even if emptied by rule deletion *)
-    G.extend Constr.pattern (Some(Gramext.Before "0")) [(Some "1",None,[])];
-    G.extend Constr.operconstr (Some(Gramext.After "10")) [(Some "9",None,[])];
-    G.extend Constr.pattern (Some(Gramext.After "10")) [(Some "9",None,[])]
-  end
-
 let main_entry = Gram.Entry.create "vernac"
 
 GEXTEND Gram
@@ -561,8 +553,15 @@ let default_levels_v8 =
    1,Gramext.LeftA;
    0,Gramext.RightA]
 
+let default_pattern_levels_v8 =
+  [250,Gramext.LeftA;
+   10,Gramext.LeftA;
+   0,Gramext.RightA]
+
 let level_stack = 
-  ref [if !Options.v7 then default_levels_v7 else default_levels_v8]
+  ref 
+    [if !Options.v7 then (default_levels_v7, default_levels_v7)
+     else (default_levels_v8, default_pattern_levels_v8)]
 
 (* At a same level, LeftA takes precedence over RightA and NoneA *)
 (* In case, several associativity exists for a level, we make two levels, *)
@@ -590,10 +589,10 @@ let error_level_assoc p current expected =
      pr_assoc current ++ str " associative while it is now expected to be " ++
      pr_assoc expected ++ str " associative")
 
-let find_position other assoc lev =
+let find_position forpat other assoc lev =
   let default =
     if !Options.v7 then (10,Gramext.RightA) else (200,Gramext.RightA) in
-  let current = List.hd !level_stack in 
+  let ccurrent,pcurrent as current = List.hd !level_stack in 
   match lev with
   | None ->
       level_stack := current :: !level_stack;
@@ -621,8 +620,10 @@ let find_position other assoc lev =
       in
       try
 	(* Create the entry *)
-        let current = List.hd !level_stack in
-        level_stack := add_level default current :: !level_stack;
+	let updated =
+	  if forpat then (ccurrent, add_level default pcurrent)
+	  else (add_level default ccurrent, pcurrent) in
+        level_stack := updated:: !level_stack;
 	let assoc = create_assoc assoc in
         Some (Gramext.After (constr_level2 !after)),
 	Some assoc, Some (constr_level2 (n,assoc))
