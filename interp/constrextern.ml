@@ -1079,6 +1079,83 @@ and check_same_fix_binder bl1 bl2 =
 
 let same c d = try check_same_type c d; true with _ -> false
 
+(* Idem for rawconstr *)
+let option_iter2 f o1 o2 = 
+  match o1, o2 with
+      Some o1, Some o2 -> f o1 o2
+    | None, None -> ()
+    | _ -> failwith "option"
+
+let array_iter2 f v1 v2 =
+  List.iter2 f (Array.to_list v1) (Array.to_list v2)
+
+let rec same_patt p1 p2 =
+  match p1, p2 with
+      PatVar(_,na1), PatVar(_,na2) -> if na1<>na2 then failwith "PatVar"
+    | PatCstr(_,c1,pl1,al1), PatCstr(_,c2,pl2,al2) ->
+        if c1<>c2 || al1 <> al2 then failwith "PatCstr";
+        List.iter2 same_patt pl1 pl2
+    | _ -> failwith "same_patt"
+
+let rec same_raw c d =
+  match c,d with
+   | RRef(_,gr1), RRef(_,gr2) -> if gr1<>gr2 then failwith "RRef"
+   | RVar(_,id1), RVar(_,id2) -> if id1<>id2 then failwith "RVar"
+   | REvar(_,e1,a1), REvar(_,e2,a2) ->
+       if e1 <> e2 then failwith "REvar";
+       option_iter2(List.iter2 same_raw) a1 a2
+  | RPatVar(_,pv1), RPatVar(_,pv2) -> if pv1<>pv2 then failwith "RPatVar"
+  | RApp(_,f1,a1), RApp(_,f2,a2) ->
+      List.iter2 same_raw (f1::a1) (f2::a2)
+  | RLambda(_,na1,t1,m1), RLambda(_,na2,t2,m2) ->
+      if na1 <> na2 then failwith "RLambda";
+      same_raw t1 t2; same_raw m1 m2
+  | RProd(_,na1,t1,m1), RProd(_,na2,t2,m2) ->
+      if na1 <> na2 then failwith "RProd";
+      same_raw t1 t2; same_raw m1 m2
+  | RLetIn(_,na1,t1,m1), RLetIn(_,na2,t2,m2) ->
+      if na1 <> na2 then failwith "RLetIn";
+      same_raw t1 t2; same_raw m1 m2
+  | RCases(_,_,c1,b1), RCases(_,_,c2,b2) ->
+      List.iter2
+        (fun (t1,{contents=(al1,oind1)}) (t2,{contents=(al2,oind2)}) ->
+          same_raw t1 t2;
+          if al1 <> al2 then failwith "RCases";
+          option_iter2(fun (_,i1,nl1) (_,i2,nl2) ->
+            if i1<>i2 || nl1 <> nl2 then failwith "RCases") oind1 oind2) c1 c2;
+      List.iter2 (fun (_,_,pl1,b1) (_,_,pl2,b2) ->
+        List.iter2 same_patt pl1 pl2;
+        same_raw b1 b2) b1 b2
+  | ROrderedCase(_,_,_,c1,v1,_), ROrderedCase(_,_,_,c2,v2,_) ->
+      same_raw c1 c2;
+      array_iter2 same_raw v1 v2
+  | RLetTuple(_,nl1,_,b1,c1), RLetTuple(_,nl2,_,b2,c2) ->
+      if nl1<>nl2 then failwith "RLetTuple";
+      same_raw b1 b2;
+      same_raw c1 c2
+  | RIf(_,b1,_,t1,e1),RIf(_,b2,_,t2,e2) ->
+      same_raw b1 b2; same_raw t1 t2; same_raw e1 e2
+  | RRec(_,fk1,na1,bl1,ty1,def1), RRec(_,fk2,na2,bl2,ty2,def2) ->
+      if fk1 <> fk2 || na1 <> na2 then failwith "RRec";
+      array_iter2
+        (List.iter2 (fun (na1,bd1,ty1) (na2,bd2,ty2) ->
+          if na1<>na2 then failwith "RRec";
+          option_iter2 same_raw bd1 bd2;
+          same_raw ty1 ty2)) bl1 bl2;
+      array_iter2 same_raw ty1 ty2;
+      array_iter2 same_raw def1 def2
+  | RSort(_,s1), RSort(_,s2) -> if s1<>s2 then failwith "RSort"
+  | RHole _, _ -> ()
+  | _, RHole _ -> ()
+  | RCast(_,c1,_),r2 -> same_raw c1 r2
+  | r1, RCast(_,c2,_) -> same_raw r1 c2
+  | RDynamic(_,d1), RDynamic(_,d2) -> if d1<>d2 then failwith"RDynamic"
+  | _ -> failwith "same_raw"
+     
+let same_rawconstr c d = 
+  try same_raw c d; true
+  with Failure _ | Invalid_argument _ -> false
+
 (**********************************************************************)
 (* mapping patterns to cases_pattern_expr                                *)
 
@@ -1399,6 +1476,20 @@ let rec remove_coercions_in_application inctx = function
       else RApp (loc,f,List.map (remove_coercions_in_application true) args)
   | c -> c
 
+let rec share_fix_binders n rbl ty def =
+  match ty,def with
+      RProd(_,na0,t0,b), RLambda(_,na1,t1,m) ->
+        let (do_fact,na) =
+          match na0, na1 with
+              Name id0, Name id1 -> (id0=id1, na0)
+            | Name id, _ -> (not (occur_rawconstr id m), na0)
+            | _, Name id -> (not (occur_rawconstr id b), na1)
+            | _ -> (true, na0) in
+        if do_fact && same_rawconstr t0 t1 then
+          share_fix_binders (n-1) ((na,None,t0)::rbl) b m
+        else List.rev rbl, ty, def
+    | _ -> List.rev rbl, ty, def
+
 (**********************************************************************)
 (* mapping rawterms to constr_expr                                    *)
 
@@ -1519,11 +1610,18 @@ let rec extern inctx scopes vars r =
 	 | RFix (nv,n) ->
 	     let listdecl = 
 	       Array.mapi (fun i fi ->
-                 let (ids,bl) = extern_local_binder scopes vars blv.(i) in
+                 let (bl,ty,def) =
+                   if Options.do_translate() then
+                     let n = List.fold_left
+                       (fun n (_,obd,_) -> if obd=None then n-1 else n)
+                       nv.(i) blv.(i) in
+                     share_fix_binders n (List.rev blv.(i)) tyv.(i) bv.(i)
+                   else blv.(i), tyv.(i), bv.(i) in
+                 let (ids,bl) = extern_local_binder scopes vars bl in
                  let vars0 = List.fold_right (name_fold Idset.add) ids vars in
                  let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
-		 (fi,nv.(i), bl, extern_type scopes vars1 tyv.(i),
-                  extern false scopes vars0 bv.(i))) idv
+		 (fi,nv.(i), bl, extern_type scopes vars1 ty,
+                  extern false scopes vars0 def)) idv
 	     in 
 	     CFix (loc,(loc,idv.(n)),Array.to_list listdecl)
 	 | RCoFix n -> 

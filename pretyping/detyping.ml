@@ -387,7 +387,7 @@ and share_names tenv n l avoid env c t =
   if !Options.v7 && n=0 then
     let c = detype tenv avoid env c in
     let t = detype tenv avoid env t in
-    (l,c,t)
+    (List.rev l,c,t)
   else
   match kind_of_term c, kind_of_term t with
     | Lambda (na,t,c), Prod (na',t',c') ->
@@ -420,7 +420,7 @@ and share_names tenv n l avoid env c t =
         if n>0 then warning "Detyping.detype: cannot factorize fix enough";
         let c = detype tenv avoid env c in
         let t = detype tenv avoid env t in
-        (l,c,t)
+        (List.rev l,c,t)
 
 and detype_eqn tenv avoid env constr construct_nargs branch =
   let make_pat x avoid env b ids =
