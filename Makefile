@@ -41,7 +41,7 @@ OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
 CAMLP4IFDEF=camlp4o pa_ifdef.cmo -D$(OSTYPE)
 
-COQINCLUDES=-I theories/Init -I theories/Logic
+COQINCLUDES=-I theories/Init -I theories/Logic -I theories/Arith
 
 ###########################################################################
 # Objects files 
@@ -211,13 +211,24 @@ clean::
 
 LOGICVO=theories/Logic/Classical.vo          theories/Logic/Classical_Type.vo \
       theories/Logic/Classical_Pred_Set.vo   theories/Logic/Eqdep.vo          \
-      theories/Logic/Classical_Pred_Type.vo  theories/Logic/Eqdep_dec.vo      \
-      theories/Logic/Classical_Prop.vo
+      theories/Logic/Classical_Pred_Type.vo  theories/Logic/Classical_Prop.vo
+#     theories/Logic/Eqdep_dec.vo      \
+      
+ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
+	theories/Arith/Between.vo       theories/Arith/Le.vo          \
+	theories/Arith/Compare.vo       theories/Arith/Lt.vo          \
+	theories/Arith/Compare_dec.vo   theories/Arith/Min.vo         \
+	theories/Arith/Div.vo           theories/Arith/Minus.vo       \
+	theories/Arith/Div2.vo          theories/Arith/Mult.vo        \
+	theories/Arith/EqNat.vo         theories/Arith/Peano_dec.vo   \
+	theories/Arith/Euclid_def.vo    theories/Arith/Plus.vo        \
+	theories/Arith/Euclid_proof.vo  theories/Arith/Wf_nat.vo      \
+	theories/Arith/Even.vo
 
-theories/Logic/%.vo: theories/Logic/%.v states/initial.coq
-	$(COQC) -q -I theories/Init $<
+#theories/Logic/%.vo: theories/Logic/%.v states/initial.coq
+#	$(COQC) -q -I theories/Init $<
 
-theories: $(INITVO) $(LOGICVO)
+theories: $(INITVO) $(LOGICVO) $(ARITHVO)
 
 clean::
 	rm -f theories/*/*.vo theories/*/*~
