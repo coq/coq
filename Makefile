@@ -238,8 +238,8 @@ OMEGACMO=\
   contrib/omega/g_omega.cmo 
 
 ROMEGACMO=\
-  contrib/romega/const_omega.cmo contrib/romega/refl_omega.cmo \
-  contrib/romega/g_romega.cmo 
+  contrib/romega/omega2.cmo contrib/romega/const_omega.cmo \
+  contrib/romega/refl_omega.cmo contrib/romega/g_romega.cmo
 
 RINGCMO=\
   contrib/ring/quote.cmo contrib/ring/g_quote.cmo \

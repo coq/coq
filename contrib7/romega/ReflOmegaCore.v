@@ -1,25 +1,39 @@
 (*************************************************************************
 
    PROJET RNRT Calife - 2001
-   Author: Pierre Crégut - France Télécom R&D
-   Licence : LGPL version 2.1
+   Author: Pierre CrÃ©gut - France TÃ©lÃ©com R&D
+   Licence du projet : LGPL version 2.1
 
  *************************************************************************)
 
 Require Arith.
 Require PolyList.
 Require Bool.
-Require ZArith_base.
-Require OmegaLemmas.
+Require ZArith.
+Require Import OmegaLemmas.
 
-(* \subsection{Définition des types} *)
+(* \subsection{Definition of basic types} *)
 
-(* \subsubsection{Définition des termes dans Z réifiés}
-   Les termes comprennent les entiers relatifs [Tint] et les 
-   variables [Tvar] ainsi que les opérations de base sur Z (addition,
-   multiplication, opposé et soustraction). Les deux denières sont
-   rapidement traduites dans les deux premières durant la normalisation
-   des termes. *)
+(* \subsubsection{Environment of propositions (lists) *)
+Inductive PropList : Type := 
+  Pnil : PropList | Pcons : Prop -> PropList -> PropList.
+
+(* Access function for the environment with a default *)
+Fixpoint nthProp [n:nat; l:PropList] : Prop -> Prop :=
+  [default]Cases n l of
+    O (Pcons x l') => x
+  | O other => default
+  | (S m) Pnil => default
+  | (S m) (Pcons x t) => (nthProp m t default)
+  end.
+   
+(* \subsubsection{DÃ©finition of reified integer expressions}
+   Terms are either:
+   \begin{itemize}
+   \item integers [Tint]
+   \item variables [Tvar]
+   \item operation over integers (addition, product, opposite, subtraction)
+   The last two are translated in additions and products. *)
 
 Inductive term : Set :=
    Tint : Z -> term
@@ -30,49 +44,167 @@ Inductive term : Set :=
  | Tvar : nat -> term
 .
 
-(* \subsubsection{Définition des buts réifiés} *)
-(* Définition très restreinte des prédicats manipulés (à enrichir). 
-   La prise en compte des négations et des diséquations demande la
-   prise en compte de la résolution en parallèle de plusieurs buts.
-   Ceci n'est possible qu'en modifiant de manière drastique la définition
-   de normalize qui doit pouvoir générer des listes de buts. Il faut
-   donc aussi modifier la normalisation qui peut elle aussi amener la
-   génération d'une liste de but et donc l'application d'une liste de
-   tactiques de résolution ([execute_omega])  *)
+(* \subsubsection{Definition of reified goals} *)
+(* Very restricted definition of handled predicates that should be extended
+   to cover a wider set of operations.
+   Taking care of negations and disequations require solving more than a
+   goal in parallel. This is a major improvement over previous versions. *)
+
 Inductive proposition : Set :=
-  EqTerm : term -> term -> proposition
-| LeqTerm : term -> term -> proposition
-| TrueTerm : proposition
-| FalseTerm : proposition
-| Tnot : proposition -> proposition
+  EqTerm : term -> term -> proposition (* egalitÃ© entre termes *)
+| LeqTerm : term -> term -> proposition (* plus petit ou egal *)
+| TrueTerm : proposition (* vrai *)
+| FalseTerm : proposition (* faux *)
+| Tnot : proposition -> proposition (* nÃ©gation *)
 | GeqTerm : term -> term -> proposition
 | GtTerm : term -> term -> proposition
 | LtTerm : term -> term -> proposition
-| NeqTerm: term -> term -> proposition.
+| NeqTerm: term -> term -> proposition
+| Tor : proposition -> proposition -> proposition
+| Tand : proposition -> proposition -> proposition
+| Timp : proposition -> proposition -> proposition
+| Tprop : nat -> proposition
+.
 
-(* Définition des hypothèses *)
-Notation hyps := (list proposition).      
+(* Definition of goals as a list of hypothesis *)
+Syntactic Definition hyps := (list proposition).      
 
+(* Definition of lists of subgoals  (set of open goals) *)
+Syntactic Definition lhyps := (list hyps).
+
+(* a syngle goal packed in a subgoal list *)
+Syntactic Definition singleton :=  [a: hyps] (cons a (nil hyps)).
+
+(* an absurd goal *)
 Definition absurd := (cons FalseTerm (nil proposition)).
 
-(* \subsubsection{Traces de fusion d'équations} *)
+(* \subsubsection{Traces for merging equations}
+   This inductive type describes how the monomial of two equations should be
+   merged when the equations are added.
+
+   For [F_equal], both equations have the same head variable and coefficient
+   must be added, furthermore if coefficients are opposite, [F_cancel] should
+   be used to collapse the term. [F_left] and [F_right] indicate which monomial
+   should be put first in the result *)
 
 Inductive t_fusion : Set :=
     F_equal : t_fusion | F_cancel : t_fusion
   | F_left : t_fusion  | F_right : t_fusion.
 
-(* \subsection{Egalité décidable efficace} *)
-(* Pour chaque type de donnée réifié, on calcule un test d'égalité efficace.
+(* \subsubsection{Rewriting steps to normalize terms} *)
+Inductive step : Set := 
+ (* apply the rewriting steps to both subterms of an operation *)
+ | C_DO_BOTH : step -> step -> step
+ (* apply the rewriting step to the first branch *)
+ | C_LEFT : step -> step
+ (* apply the rewriting step to the second branch *)
+ | C_RIGHT : step -> step
+ (* apply two steps consecutively to a term *)
+ | C_SEQ : step -> step -> step
+ (* empty step *)
+ | C_NOP : step
+ (* the following operations correspond to actual rewriting *)
+ | C_OPP_PLUS : step
+ | C_OPP_OPP : step
+ | C_OPP_MULT_R : step
+ | C_OPP_ONE : step
+ (* This is a special step that reduces the term (computation) *)
+ | C_REDUCE : step
+ | C_MULT_PLUS_DISTR : step
+ | C_MULT_OPP_LEFT : step
+ | C_MULT_ASSOC_R : step
+ | C_PLUS_ASSOC_R : step
+ | C_PLUS_ASSOC_L : step
+ | C_PLUS_PERMUTE : step
+ | C_PLUS_SYM : step
+ | C_RED0 : step
+ | C_RED1 : step
+ | C_RED2 : step
+ | C_RED3 : step
+ | C_RED4 : step
+ | C_RED5 : step
+ | C_RED6 : step
+ | C_MULT_ASSOC_REDUCED : step
+ | C_MINUS :step
+ | C_MULT_SYM : step
+.
+
+(* \subsubsection{Omega steps} *)
+(* The following inductive type describes steps as they can be found in
+   the trace coming from the decision procedure Omega. *)
+
+Inductive t_omega : Set :=
+   (* n = 0 n!= 0 *)
+ | O_CONSTANT_NOT_NUL : nat -> t_omega
+ | O_CONSTANT_NEG : nat -> t_omega
+   (* division et approximation of an equation *)
+ | O_DIV_APPROX : Z -> Z -> term -> nat -> t_omega -> nat -> t_omega
+   (* no solution because no exact division *)
+ | O_NOT_EXACT_DIVIDE :  Z -> Z -> term -> nat -> nat -> t_omega
+   (* exact division *)
+ | O_EXACT_DIVIDE : Z -> term -> nat -> t_omega -> nat -> t_omega
+ | O_SUM : Z -> nat -> Z -> nat -> (list t_fusion) -> t_omega -> t_omega
+ | O_CONTRADICTION : nat -> nat -> nat -> t_omega
+ | O_MERGE_EQ : nat -> nat -> nat -> t_omega -> t_omega
+ | O_SPLIT_INEQ : nat -> nat -> t_omega -> t_omega -> t_omega
+ | O_CONSTANT_NUL : nat -> t_omega 
+ | O_NEGATE_CONTRADICT : nat -> nat -> t_omega
+ | O_NEGATE_CONTRADICT_INV : nat -> nat -> nat -> t_omega
+ | O_STATE : Z -> step -> nat -> nat -> t_omega -> t_omega.
+
+(* \subsubsection{RÃ¨gles pour normaliser les hypothÃ¨ses} *)
+(* Ces rÃ¨gles indiquent comment normaliser les propositions utiles 
+   de chaque hypothÃ¨se utile avant la dÃ©composition des hypothÃ¨ses et 
+   incluent l'Ã©tape d'inversion pour la suppression des nÃ©gations *)
+Inductive p_step : Set :=
+  P_LEFT : p_step -> p_step
+| P_RIGHT :  p_step -> p_step
+| P_INVERT :  step -> p_step
+| P_STEP : step -> p_step
+| P_NOP : p_step
+.
+(* Liste des normalisations a effectuer : avec un constructeur dans le
+   type [p_step] permettant
+   de parcourir Ã  la fois les branches gauches et droit, on pourrait n'avoir
+   qu'une normalisation par hypothÃ¨se. Et comme toutes les hypothÃ¨ses sont 
+   utiles (sinon on ne les incluerait pas), on pourrait remplacer [h_step] 
+   par une simple liste *)
+
+Inductive h_step : Set := pair_step : nat -> p_step -> h_step.
+
+(* \subsubsection{RÃ¨gles pour dÃ©composer les hypothÃ¨ses} *)
+(* Ce type permet de se diriger dans les constructeurs logiques formant les
+   prÃ©dicats des hypothÃ¨ses pour aller les dÃ©composer. Ils permettent
+   en particulier d'extraire une hypothÃ¨se d'une conjonction avec
+   Ã©ventuellement le bon niveau de nÃ©gations. *)
+
+Inductive direction : Set :=
+   D_left : direction
+ | D_right : direction
+ | D_mono : direction.
+
+(* Ce type permet d'extraire les composants utiles des hypothÃ¨ses : que ce
+   soit des hypothÃ¨ses gÃ©nÃ©rÃ©es par Ã©clatement d'une disjonction, ou 
+   des Ã©quations. Le constructeur terminal indique comment rÃ©soudre le systÃ¨me
+   obtenu en recourrant au type de trace d'Omega [t_omega] *)
+
+Inductive e_step : Set :=
+   E_SPLIT : nat -> (list direction) -> e_step -> e_step -> e_step
+ | E_EXTRACT : nat -> (list direction) -> e_step -> e_step
+ | E_SOLVE : t_omega -> e_step.
+
+(* \subsection{EgalitÃ© dÃ©cidable efficace} *)
+(* Pour chaque type de donnÃ©e rÃ©ifiÃ©, on calcule un test d'Ã©galitÃ© efficace.
    Ce n'est pas le cas de celui rendu par [Decide Equality].
    
-   Puis on prouve deux théorèmes permettant d'éliminer de telles égalités :
+   Puis on prouve deux thÃ©orÃ¨mes permettant d'Ã©liminer de telles Ã©galitÃ©s :
    \begin{verbatim}
    (t1,t2: typ) (eq_typ t1 t2) = true -> t1 = t2.
    (t1,t2: typ) (eq_typ t1 t2) = false -> ~ t1 = t2.
    \end{verbatim} *)
 
-(* Ces deux tactiques permettent de résoudre pas mal de cas. L'une pour
-   les théorèmes positifs, l'autre pour les théorèmes négatifs *)
+(* Ces deux tactiques permettent de rÃ©soudre pas mal de cas. L'une pour
+   les thÃ©orÃ¨mes positifs, l'autre pour les thÃ©orÃ¨mes nÃ©gatifs *)
 
 Tactic Definition absurd_case := Simpl; Intros; Discriminate.
 Tactic Definition trivial_case := Unfold not; Intros; Discriminate.
@@ -175,7 +307,7 @@ Induction t1; [
     Simplify_eq H0; Auto]].
 Save.
 
-(* \subsubsection{Termes réifiés} *)
+(* \subsubsection{Termes rÃ©ifiÃ©s} *)
 
 Fixpoint eq_term [t1,t2: term] : bool := 
    Cases t1 of
@@ -245,19 +377,19 @@ Induction t1; [
 
 Save.
 
-(* \subsubsection{Tactiques pour éliminer ces tests} 
+(* \subsubsection{Tactiques pour Ã©liminer ces tests} 
 
    Si on se contente de faire un [Case (eq_typ t1 t2)] on perd 
    totalement dans chaque branche le fait que [t1=t2] ou [~t1=t2].
 
-   Initialement, les développements avaient été réalisés avec les
-   tests rendus par [Decide Equality], c'est à dire un test rendant
-   des termes du type [{t1=t2}+{~t1=t2}]. Faire une élimination sur un 
-   tel test préserve bien l'information voulue mais calculatoirement de
+   Initialement, les dÃ©veloppements avaient Ã©tÃ© rÃ©alisÃ©s avec les
+   tests rendus par [Decide Equality], c'est Ã  dire un test rendant
+   des termes du type [{t1=t2}+{~t1=t2}]. Faire une Ã©limination sur un 
+   tel test prÃ©serve bien l'information voulue mais calculatoirement de
    telles fonctions sont trop lentes. *)
 
-(* Le théorème suivant permet de garder dans les hypothèses la valeur
-   du booléen lors de l'élimination. *)
+(* Le thÃ©orÃ¨me suivant permet de garder dans les hypothÃ¨ses la valeur
+   du boolÃ©en lors de l'Ã©limination. *)
 
 Theorem bool_ind2 : 
    (P:(bool->Prop)) (b:bool)
@@ -267,8 +399,8 @@ Theorem bool_ind2 :
 Induction b; Auto.
 Save.
 
-(* Les tactiques définies si après se comportent exactement comme si on
-   avait utilisé le test précédent et fait une elimination dessus. *)
+(* Les tactiques dÃ©finies si aprÃ¨s se comportent exactement comme si on
+   avait utilisÃ© le test prÃ©cÃ©dent et fait une elimination dessus. *)
 
 Tactic Definition Elim_eq_term t1 t2 :=
   Pattern (eq_term t1 t2); Apply bool_ind2; Intro Aux; [
@@ -287,8 +419,8 @@ Tactic Definition Elim_eq_pos t1 t2 :=
 
 (* \subsubsection{Comparaison sur Z} *)
 
-(* Sujet très lié au précédent : on introduit la tactique d'élimination
-   avec son théorème *)
+(* Sujet trÃ¨s liÃ© au prÃ©cÃ©dent : on introduit la tactique d'Ã©limination
+   avec son thÃ©orÃ¨me *)
 
 Theorem relation_ind2 : 
    (P:(relation->Prop)) (b:relation)
@@ -302,8 +434,8 @@ Save.
 Tactic Definition Elim_Zcompare t1 t2 :=
   Pattern (Zcompare t1 t2); Apply relation_ind2.
 
-(* \subsection{Interprétations}
-   \subsubsection{Interprétation des termes dans Z} *)
+(* \subsection{InterprÃ©tations}
+   \subsubsection{InterprÃ©tation des termes dans Z} *)
 
 Fixpoint interp_term [env:(list Z); t:term] : Z :=
   Cases t of
@@ -315,48 +447,63 @@ Fixpoint interp_term [env:(list Z); t:term] : Z :=
   | (Tvar n) => (nth n env ZERO)
   end.
 
-(* \subsubsection{Interprétation des prédicats} *) 
-Fixpoint interp_proposition [env: (list Z); p:proposition] : Prop := 
+(* \subsubsection{InterprÃ©tation des prÃ©dicats} *) 
+Fixpoint interp_proposition 
+    [envp : PropList; env: (list Z); p:proposition] : Prop := 
   Cases p of
     (EqTerm t1 t2) => ((interp_term env t1) = (interp_term env t2))
   | (LeqTerm t1 t2) => `(interp_term env t1) <= (interp_term env t2)`
   | TrueTerm => True
   | FalseTerm => False
-  | (Tnot p') => ~(interp_proposition env p')
+  | (Tnot p') => ~(interp_proposition envp env p')
   | (GeqTerm t1 t2) => `(interp_term env t1) >= (interp_term env t2)`
   | (GtTerm t1 t2) => `(interp_term env t1) > (interp_term env t2)`
   | (LtTerm t1 t2) => `(interp_term env t1) < (interp_term env t2)`
   | (NeqTerm t1 t2) => `(Zne (interp_term env t1) (interp_term env t2))`
+
+  | (Tor p1 p2) => 
+	(interp_proposition envp env p1) \/ (interp_proposition envp env p2)
+  | (Tand p1 p2) =>
+	(interp_proposition envp env p1) /\ (interp_proposition envp env p2)
+  | (Timp p1 p2) =>
+	(interp_proposition envp env p1) -> (interp_proposition envp env p2)
+  | (Tprop n) => (nthProp n envp True)
   end.
 
-(* \subsubsection{Inteprétation des listes d'hypothèses}
+(* \subsubsection{InteprÃ©tation des listes d'hypothÃ¨ses}
    \paragraph{Sous forme de conjonction}
-   Interprétation sous forme d'une conjonction d'hypothèses plus faciles
-   à manipuler individuellement *)
+   InterprÃ©tation sous forme d'une conjonction d'hypothÃ¨ses plus faciles
+   Ã  manipuler individuellement *)
 
-Fixpoint interp_hyps [env : (list Z); l: hyps] : Prop :=
+Fixpoint interp_hyps [envp: PropList; env : (list Z); l: hyps] : Prop :=
   Cases l of 
      nil => True
-   | (cons p' l') => (interp_proposition env p') /\ (interp_hyps env l')
+   | (cons p' l') => 
+	(interp_proposition envp env p') /\ (interp_hyps envp env l')
   end.
 
-(* \paragraph{Sous forme de but}
-   C'est cette interpétation que l'on utilise sur le but (car on utilise
-   [Generalize] et qu'une conjonction est forcément lourde (répétition des
-   types dans les conjonctions intermédiaires) *)
+(* \paragraph{sous forme de but}
+   C'est cette interpÃ©tation que l'on utilise sur le but (car on utilise
+   [Generalize] et qu'une conjonction est forcÃ©ment lourde (rÃ©pÃ©tition des
+   types dans les conjonctions intermÃ©diaires) *)
 
-Fixpoint interp_goal [env : (list Z); l: hyps] : Prop :=
+Fixpoint interp_goal_concl [envp: PropList;env : (list Z); c: proposition; l: hyps] : Prop :=
   Cases l of 
-     nil => False
-   | (cons p' l') => (interp_proposition env p') -> (interp_goal env l')
+     nil => (interp_proposition envp env c)
+   | (cons p' l') => 
+	(interp_proposition envp env p') -> (interp_goal_concl envp env c l')
   end.
 
-(* Les théorèmes qui suivent assurent la correspondance entre les deux
-   interprétations. *)
+Syntactic Definition interp_goal  :=
+  [envp: PropList;env : (list Z); l: hyps]
+	(interp_goal_concl envp env FalseTerm l).
+
+(* Les thÃ©orÃ¨mes qui suivent assurent la correspondance entre les deux
+   interprÃ©tations. *)
 
 Theorem goal_to_hyps : 
-  (env : (list Z); l: hyps) 
-     ((interp_hyps env l) -> False) -> (interp_goal env l).
+  (envp: PropList; env : (list Z); l: hyps) 
+     ((interp_hyps envp env l) -> False) -> (interp_goal envp env l).
 
 Induction l; [
   Simpl; Auto
@@ -364,73 +511,73 @@ Induction l; [
 Save.
 
 Theorem hyps_to_goal : 
-  (env : (list Z); l: hyps) 
-     (interp_goal env l) -> ((interp_hyps env l) -> False).
+  (envp: PropList; env : (list Z); l: hyps) 
+     (interp_goal envp env l) -> ((interp_hyps envp env l) -> False).
 
 Induction l; Simpl; [
   Auto
 | Intros; Apply H; Elim H1; Auto ].
 Save.
       
-(* \subsection{Manipulations sur les hypothèses} *)
+(* \subsection{Manipulations sur les hypothÃ¨ses} *)
 
-(* \subsubsection{Définitions de base de stabilité pour la réflexion} *)
-(* Une opération laisse un terme stable si l'égalité est préservée *)
+(* \subsubsection{DÃ©finitions de base de stabilitÃ© pour la rÃ©flexion} *)
+(* Une opÃ©ration laisse un terme stable si l'Ã©galitÃ© est prÃ©servÃ©e *)
 Definition term_stable [f: term -> term] :=
  (e: (list Z); t:term) (interp_term e t) = (interp_term e (f t)).
 
-(* Une opération est valide sur une hypothèse, si l'hypothèse implique le
-   résultat de l'opération. \emph{Attention : cela ne concerne que des 
-   opérations sur les hypothèses et non sur les buts (contravariance)}.
-   On définit la validité pour une opération prenant une ou deux propositions
+(* Une opÃ©ration est valide sur une hypothÃ¨se, si l'hypothÃ¨se implique le
+   rÃ©sultat de l'opÃ©ration. \emph{Attention : cela ne concerne que des 
+   opÃ©rations sur les hypothÃ¨ses et non sur les buts (contravariance)}.
+   On dÃ©finit la validitÃ© pour une opÃ©ration prenant une ou deux propositions
    en argument (cela suffit pour omega). *)
 
 Definition valid1 [f: proposition -> proposition] :=
-  (e: (list Z)) (p1: proposition) 
-    (interp_proposition e p1) -> (interp_proposition e (f p1)).
+  (ep : PropList; e: (list Z)) (p1: proposition) 
+    (interp_proposition ep e p1) -> (interp_proposition ep e (f p1)).
 
 Definition valid2 [f: proposition -> proposition -> proposition] :=
-  (e: (list Z)) (p1,p2: proposition) 
-    (interp_proposition e p1) -> (interp_proposition e p2) ->
-      (interp_proposition e (f p1 p2)).
+  (ep : PropList; e: (list Z)) (p1,p2: proposition) 
+    (interp_proposition ep e p1) -> (interp_proposition ep e p2) ->
+      (interp_proposition ep e (f p1 p2)).
 
-(* Dans cette notion de validité, la fonction prend directement une 
-   liste de propositions et rend une nouvelle liste de propositions. 
+(* Dans cette notion de validitÃ©, la fonction prend directement une 
+   liste de propositions et rend une nouvelle liste de proposition. 
    On reste contravariant *)
 
 Definition valid_hyps [f: hyps -> hyps] :=
-  (e : (list Z)) (lp: hyps) (interp_hyps e lp) -> (interp_hyps e (f lp)).
+  (ep : PropList; e : (list Z))
+    (lp: hyps) (interp_hyps ep e lp) -> (interp_hyps ep e (f lp)).
 
-(* Enfin ce théorème élimine la contravariance et nous ramène à une 
-   opération sur les buts *)
+(* Enfin ce thÃ©orÃ¨me Ã©limine la contravariance et nous ramÃ¨ne Ã  une 
+   opÃ©ration sur les buts *)
 
-Theorem valid_goal :
-  (env : (list Z); l: hyps; a : hyps -> hyps) 
-    (valid_hyps a) -> (interp_goal env (a l)) -> (interp_goal env l).
+ Theorem valid_goal :
+  (ep: PropList; env : (list Z); l: hyps; a : hyps -> hyps) 
+    (valid_hyps a) -> (interp_goal ep env (a l)) -> (interp_goal ep env l).
 
-Intros; Apply goal_to_hyps; Intro H1; Apply (hyps_to_goal env (a l) H0);
-Apply H; Assumption.
+Intros; Simpl; Apply goal_to_hyps; Intro H1;
+Apply (hyps_to_goal ep env (a l) H0); Apply H; Assumption.
 Save.
 
-(* \subsubsection{Généralisation à des listes de buts (disjonctions)} *)
+(* \subsubsection{GÃ©nÃ©ralisation a des listes de buts (disjonctions)} *)
 
-Notation lhyps := (list hyps).
 
-Fixpoint interp_list_hyps [env: (list Z); l : lhyps] : Prop :=
+Fixpoint interp_list_hyps [envp: PropList; env: (list Z); l : lhyps] : Prop :=
    Cases l of
       nil => False
-    | (cons h l') => (interp_hyps env h) \/ (interp_list_hyps env l')
+    | (cons h l') => (interp_hyps envp env h) \/ (interp_list_hyps envp env l')
    end.
 
-Fixpoint interp_list_goal [env: (list Z);l : lhyps] : Prop :=
+Fixpoint interp_list_goal [envp: PropList; env: (list Z);l : lhyps] : Prop :=
    Cases l of
       nil => True
-    | (cons h l') => (interp_goal env h) /\ (interp_list_goal env l')
+    | (cons h l') => (interp_goal envp env h) /\ (interp_list_goal envp env l')
    end.
 
 Theorem list_goal_to_hyps : 
-  (env: (list Z); l: lhyps)
-    ((interp_list_hyps env l) -> False) -> (interp_list_goal env l).
+  (envp: PropList; env: (list Z); l: lhyps)
+    ((interp_list_hyps envp env l) -> False) -> (interp_list_goal envp env l).
 
 Induction l; Simpl; [
   Auto
@@ -440,8 +587,8 @@ Induction l; Simpl; [
 Save.
 
 Theorem list_hyps_to_goal : 
-  (env: (list Z); l: lhyps)
-    (interp_list_goal env l) -> ((interp_list_hyps env l) -> False).
+  (envp: PropList; env: (list Z); l: lhyps)
+    (interp_list_goal envp env l) -> ((interp_list_hyps envp env l) -> False).
 
 Induction l; Simpl; [
   Auto
@@ -451,25 +598,26 @@ Induction l; Simpl; [
 Save.
 
 Definition valid_list_hyps [f: hyps -> lhyps] :=
-  (e : (list Z)) (lp: hyps) (interp_hyps e lp) -> (interp_list_hyps e (f lp)).
+  (ep : PropList; e : (list Z)) (lp: hyps)
+    (interp_hyps ep e lp) -> (interp_list_hyps ep e (f lp)).
 
 Definition valid_list_goal [f: hyps -> lhyps] :=
-  (e : (list Z)) (lp: hyps) 
-     (interp_list_goal e (f lp)) -> (interp_goal e lp) .
+  (ep : PropList; e : (list Z)) (lp: hyps) 
+     (interp_list_goal ep e (f lp)) -> (interp_goal ep e lp) .
 
 Theorem goal_valid : 
   (f: hyps -> lhyps) (valid_list_hyps f) -> (valid_list_goal f).
 
-Unfold valid_list_goal; Intros f H e lp H1; Apply goal_to_hyps;
-Intro H2; Apply list_hyps_to_goal with 1:=H1; Apply (H e lp); Assumption.
+Unfold valid_list_goal; Intros f H ep e lp H1; Apply goal_to_hyps;
+Intro H2; Apply list_hyps_to_goal with 1:=H1; Apply (H ep e lp); Assumption.
 Save.
  
 Theorem append_valid :
-  (e: (list Z)) (l1,l2:lhyps)
-     (interp_list_hyps e l1) \/ (interp_list_hyps e l2) ->
-     (interp_list_hyps e (app l1 l2)).
+  (ep: PropList; e: (list Z)) (l1,l2:lhyps)
+     (interp_list_hyps ep e l1) \/ (interp_list_hyps ep e l2) ->
+     (interp_list_hyps ep e (app l1 l2)).
 
-Intros e; Induction l1; [
+Intros ep e; Induction l1; [
   Simpl; Intros l2 [H | H]; [ Contradiction | Trivial ]
 | Simpl; Intros h1 t1 HR l2 [[H | H] | H] ;[
     Auto
@@ -478,14 +626,14 @@ Intros e; Induction l1; [
 
 Save.
 
-(* \subsubsection{Opérateurs valides sur les hypothèses} *)
+(* \subsubsection{OpÃ©rateurs valides sur les hypothÃ¨ses} *)
 
-(* Extraire une hypothèse de la liste *)
+(* Extraire une hypothÃ¨se de la liste *)
 Definition nth_hyps [n:nat; l: hyps] := (nth n l TrueTerm).
 
 Theorem nth_valid :
-  (e: (list Z); i:nat; l: hyps) 
-     (interp_hyps e l) -> (interp_proposition e (nth_hyps i l)).
+  (ep: PropList; e: (list Z); i:nat; l: hyps) 
+     (interp_hyps ep e l) -> (interp_proposition ep e (nth_hyps i l)).
 
 Unfold nth_hyps; Induction i; [
   Induction l; Simpl; [ Auto | Intros; Elim H0; Auto ]
@@ -493,8 +641,8 @@ Unfold nth_hyps; Induction i; [
     [ Simpl; Trivial | Intros; Simpl; Apply H; Elim H1; Auto ]].
 Save.
 
-(* Appliquer une opération (valide) sur deux hypothèses extraites de 
-   la liste et ajouter le résultat à la liste. *)
+(* Appliquer une opÃ©ration (valide) sur deux hypothÃ¨ses extraites de 
+   la liste et ajouter le rÃ©sultat Ã  la liste. *)
 Definition apply_oper_2 
   [i,j : nat; f : proposition -> proposition -> proposition ] :=
   [l: hyps] (cons (f (nth_hyps i l)  (nth_hyps j l)) l).
@@ -507,7 +655,7 @@ Intros i j f Hf; Unfold apply_oper_2 valid_hyps; Simpl; Intros lp Hlp; Split;
   [ Apply Hf; Apply nth_valid; Assumption | Assumption].
 Save.
 
-(* Modifier une hypothèse par application d'une opération valide *)
+(* Modifier une hypothÃ¨se par application d'une opÃ©ration valide *)
 
 Fixpoint apply_oper_1 [i:nat] : (proposition -> proposition) -> hyps -> hyps :=
   [f : (proposition -> proposition); l : hyps] 
@@ -524,7 +672,7 @@ Theorem apply_oper_1_valid :
   (i : nat; f : proposition -> proposition )
     (valid1 f) -> (valid_hyps (apply_oper_1 i f)).
 
-Unfold valid_hyps; Intros i f Hf e; Elim i; [
+Unfold valid_hyps; Intros i f Hf ep e; Elim i; [
   Intro lp; Case lp; [
     Simpl; Trivial
   | Simpl; Intros p l' (H1, H2); Split; [ Apply Hf with 1:=H1 | Assumption ]]
@@ -537,8 +685,8 @@ Save.
 
 (* \subsubsection{Manipulations de termes} *)
 (* Les fonctions suivantes permettent d'appliquer une fonction de
-   réécriture sur un sous terme du terme principal. Avec la composition,
-   cela permet de construire des réécritures complexes proches des 
+   rÃ©Ã©criture sur un sous terme du terme principal. Avec la composition,
+   cela permet de construire des rÃ©Ã©critures complexes proches des 
    tactiques de conversion *)
 
 Definition apply_left [f: term -> term; t : term]:= 
@@ -563,7 +711,7 @@ Definition apply_both [f,g: term -> term; t : term]:=
   | x => x
   end.
 
-(* Les théorèmes suivants montrent la stabilité (conditionnée) des 
+(* Les thÃ©orÃ¨mes suivants montrent la stabilitÃ© (conditionnÃ©e) des 
    fonctions. *)
 
 Theorem apply_left_stable :
@@ -595,43 +743,44 @@ Theorem compose_term_stable :
 Unfold term_stable; Intros f g Hf Hg e t; Elim Hf; Apply Hg.
 Save.
 
-(* \subsection{Les règles de réécriture} *)
-(* Chacune des règles de réécriture est accompagnée par sa preuve de 
-   stabilité. Toutes ces preuves ont la même forme : il faut analyser 
-   suivant la forme du terme (élimination de chaque Case). On a besoin d'une
-   élimination uniquement dans les cas d'utilisation d'égalité décidable. 
+(* \subsection{Les rÃ¨gles de rÃ©Ã©criture} *)
+(* Chacune des rÃ¨gles de rÃ©Ã©criture est accompagnÃ©e par sa preuve de 
+   stabilitÃ©. Toutes ces preuves ont la mÃªme forme : il faut analyser 
+   suivant la forme du terme (Ã©limination de chaque Case). On a besoin d'une
+   Ã©limination uniquement dans les cas d'utilisation d'Ã©galitÃ© dÃ©cidable. 
 
-   Cette tactique itère la décomposition des Case. Elle est
-   constituée de deux fonctions s'appelant mutuellement :
+   Cette tactique itÃ¨re la dÃ©composition des Case. Elle est
+   constituÃ©e de deux fonctions s'appelant mutuellement :
    \begin{itemize} 
     \item une fonction d'enrobage qui lance la recherche sur le but,
-    \item une fonction récursive qui décompose ce but. Quand elle a trouvé un
-          Case, elle l'élimine. 
+    \item une fonction rÃ©cursive qui dÃ©compose ce but. Quand elle a trouvÃ© un
+          Case, elle l'Ã©limine. 
    \end{itemize}  
-   Les motifs sur les cas sont très imparfaits et dans certains cas, il
+   Les motifs sur les cas sont trÃ¨s imparfaits et dans certains cas, il
    semble que cela ne marche pas. On aimerait plutot un motif de la
    forme [ Case (?1 :: T) of _ end ] permettant de s'assurer que l'on 
    utilise le bon type.
 
-   Chaque élimination introduit correctement exactement le nombre d'hypothèses
-   nécessaires et conserve dans le cas d'une égalité la connaissance du
-   résultat du test en faisant la réécriture. Pour un test de comparaison,
-   on conserve simplement le résultat.
+   Chaque Ã©limination introduit correctement exactement le nombre d'hypothÃ¨ses
+   nÃ©cessaires et conserve dans le cas d'une Ã©galitÃ© la connaissance du
+   rÃ©sultat du test en faisant la rÃ©Ã©criture. Pour un test de comparaison,
+   on conserve simplement le rÃ©sultat.
 
-   Cette fonction déborde très largement la résolution des réécritures
+   Cette fonction dÃ©borde trÃ¨s largement la rÃ©solution des rÃ©Ã©critures
    simples et fait une bonne partie des preuves des pas de Omega.
 *)
 
-(* \subsubsection{La tactique pour prouver la stabilité} *)
+(* \subsubsection{La tactique pour prouver la stabilitÃ©} *)
+
 Recursive Tactic Definition loop t := (
   Match t With
   (* Global *)
     [(?1 = ?2)] -> (loop ?1) Orelse (loop ?2)
   | [ ? -> ?1 ] ->  (loop ?1)
-  (* Interprétations *)
-  | [ (interp_hyps ? ?1) ] -> (loop ?1)
-  | [ (interp_list_hyps ? ?1) ] -> (loop ?1)
-  | [ (interp_proposition ? ?1) ] -> (loop ?1)
+  (* Interpretations *)
+  | [ (interp_hyps ? ? ?1) ] -> (loop ?1)
+  | [ (interp_list_hyps ? ? ?1) ] -> (loop ?1)
+  | [ (interp_proposition ? ? ?1) ] -> (loop ?1)
   | [ (interp_term ? ?1) ] -> (loop ?1)
   (* Propositions *)
   | [(EqTerm ?1 ?2)] -> (loop ?1) Orelse (loop ?2)
@@ -643,7 +792,7 @@ Recursive Tactic Definition loop t := (
   | [(Topp ?1)] -> (loop ?1)
   | [(Tint ?1)] -> (loop ?1)
   (* Eliminations *)
-  | [(Cases ?1 of
+  |  [(Cases ?1 of
         | (EqTerm _ _) => ?
         | (LeqTerm _ _) => ?
         | TrueTerm => ?
@@ -653,10 +802,15 @@ Recursive Tactic Definition loop t := (
         | (GtTerm _ _) => ?
         | (LtTerm _ _) => ?
         | (NeqTerm _ _) => ?
+        | (Tor _ _) => ?
+        | (Tand _ _) => ?
+        | (Timp _ _) => ?
+        | (Tprop _) => ?
         end)] -> 
        (Case ?1; [ Intro; Intro | Intro; Intro | Idtac | Idtac 
                  | Intro | Intro; Intro | Intro; Intro | Intro; Intro
-                 | Intro; Intro ]);
+                 | Intro; Intro
+                 | Intro;Intro | Intro;Intro | Intro;Intro | Intro  ]);
         Auto; Simplify
   | [(Cases ?1 of
         (Tint _) => ?
@@ -689,10 +843,11 @@ Recursive Tactic Definition loop t := (
 And Simplify := (
   Match Context With [|- ?1 ] -> Try (loop ?1) | _ -> Idtac).
 
-Tactic Definition ProveStable x th :=
-  Unfold term_stable x; Intros; Simplify; Simpl; Apply th.
 
-(* \subsubsection{Les règles elle mêmes} *)
+Tactic Definition ProveStable x th :=
+  (Match x With [?1] -> Unfold term_stable ?1; Intros; Simplify; Simpl; Apply th).
+
+(* \subsubsection{Les rÃ¨gles elle mÃªmes} *)
 Definition Tplus_assoc_l [t: term] :=
   Cases t of
     (Tplus n (Tplus m p)) => (Tplus (Tplus n m) p)
@@ -701,7 +856,7 @@ Definition Tplus_assoc_l [t: term] :=
 
 Theorem  Tplus_assoc_l_stable : (term_stable  Tplus_assoc_l).
 
-(ProveStable Tplus_assoc_l Zplus_assoc).
+(ProveStable Tplus_assoc_l Zplus_assoc_l).
 Save.
 
 Definition Tplus_assoc_r [t: term] :=
@@ -925,7 +1080,7 @@ Definition Tmult_plus_distr  [t: term] :=
 
 Theorem Tmult_plus_distr_stable : (term_stable Tmult_plus_distr).
 
-(ProveStable Tmult_plus_distr Zmult_plus_distr_l).
+(ProveStable Tmult_plus_distr Zmult_plus_distr).
 Save.
 
 Definition Tmult_opp_left [t: term] :=
@@ -982,8 +1137,8 @@ Definition Tred_factor2 [t: term] :=
   | _ => t
   end.
 
-(* Attention : il faut rendre opaque [Zplus] pour éviter que la tactique
-   de simplification n'aille trop loin et défasse [Zplus 1 k] *)
+(* Attention : il faut rendre opaque [Zplus] pour Ã©viter que la tactique
+   de simplification n'aille trop loin et dÃ©fasse [Zplus 1 k] *)
 
 Opaque Zplus.
 
@@ -1039,16 +1194,16 @@ Definition Tminus_def [t:term] :=
 
 Theorem  Tminus_def_stable : (term_stable  Tminus_def).
 
-(* Le théorème ne sert à rien. Le but est prouvé avant. *)
+(* Le thÃ©orÃ¨me ne sert Ã  rien. Le but est prouvÃ© avant. *)
 (ProveStable Tminus_def False).
 Save.
 
-(* \subsection{Fonctions de réécriture complexes} *)
+(* \subsection{Fonctions de rÃ©Ã©criture complexes} *)
 
-(* \subsubsection{Fonction de réduction} *)
-(* Cette fonction réduit un terme dont la forme normale est un entier. Il
-   suffit pour cela d'échanger le constructeur [Tint] avec les opérateurs
-   réifiés. La réduction est ``gratuite''.  *)
+(* \subsubsection{Fonction de rÃ©duction} *)
+(* Cette fonction rÃ©duit un terme dont la forme normale est un entier. Il
+   suffit pour cela d'Ã©changer le constructeur [Tint] avec les opÃ©rateurs
+   rÃ©ifiÃ©s. La rÃ©duction est ``gratuite''.  *)
 
 Fixpoint reduce [t:term] : term :=
   Cases t of
@@ -1102,11 +1257,11 @@ Intros t0 H0; Simpl; Rewrite H0; Case (reduce t0); Intros; Auto.
 Save.
 
 (* \subsubsection{Fusions}
-    \paragraph{Fusion de deux équations} *)
-(* On donne une somme de deux équations qui sont supposées normalisées. 
+    \paragraph{Fusion de deux Ã©quations} *)
+(* On donne une somme de deux Ã©quations qui sont supposÃ©es normalisÃ©es. 
    Cette fonction prend une trace de fusion en argument et transforme
-   le terme en une équation normalisée. C'est une version très simplifiée
-   du moteur de réécriture [rewrite]. *)
+   le terme en une Ã©quation normalisÃ©e. C'est une version trÃ¨s simplifiÃ©e
+   du moteur de rÃ©Ã©criture [rewrite]. *)
 
 Fixpoint fusion [trace : (list t_fusion)] : term -> term := [t: term]
   Cases trace of
@@ -1128,7 +1283,7 @@ Theorem fusion_stable : (t : (list t_fusion)) (term_stable (fusion t)).
 
 Induction t; Simpl; [
   Exact reduce_stable
-| Intros step l H; Case step; [
+| Intros stp l H; Case stp; [
     Apply compose_term_stable; 
       [ Apply apply_right_stable; Assumption | Exact T_OMEGA10_stable ]
   | Unfold term_stable; Intros e t1; Rewrite T_OMEGA10_stable; 
@@ -1140,7 +1295,7 @@ Induction t; Simpl; [
 
 Save.
 
-(* \paragraph{Fusion de deux équations dont une sans coefficient} *)
+(* \paragraph{Fusion de deux Ã©quations dont une sans coefficient} *)
 
 Definition fusion_right [trace : (list t_fusion)] : term -> term := [t: term]
   Cases trace of
@@ -1159,7 +1314,7 @@ Definition fusion_right [trace : (list t_fusion)] : term -> term := [t: term]
   end.
 
 (* \paragraph{Fusion avec anihilation} *)
-(* Normalement le résultat est une constante *)
+(* Normalement le rÃ©sultat est une constante *)
 
 Fixpoint fusion_cancel [trace:nat] : term -> term := [t:term]
   Cases trace of
@@ -1174,7 +1329,7 @@ Unfold term_stable fusion_cancel; Intros trace e; Elim trace; [
 | Intros n H t; Elim H; Exact (T_OMEGA13_stable e t) ].
 Save. 
 
-(* \subsubsection{Opérations afines sur une équation} *)
+(* \subsubsection{OpÃ©rations afines sur une Ã©quation} *)
 (* \paragraph{Multiplication scalaire et somme d'une constante} *)
 
 Fixpoint scalar_norm_add [trace:nat] : term -> term := [t: term]
@@ -1221,37 +1376,8 @@ Unfold term_stable add_norm; Intros trace; Elim trace; [
     [ Exact (Tplus_assoc_r_stable e t) | Exact H ]].
 Save.
 
-(* \subsection{La fonction de normalisation des termes (moteur de réécriture)} *)
+(* \subsection{La fonction de normalisation des termes (moteur de rÃ©Ã©criture)} *)
 
-Inductive step : Set := 
- | C_DO_BOTH : step -> step -> step
- | C_LEFT : step -> step
- | C_RIGHT : step -> step
- | C_SEQ : step -> step -> step
- | C_NOP : step
- | C_OPP_PLUS : step
- | C_OPP_OPP : step
- | C_OPP_MULT_R : step
- | C_OPP_ONE : step
- | C_REDUCE : step
- | C_MULT_PLUS_DISTR : step
- | C_MULT_OPP_LEFT : step
- | C_MULT_ASSOC_R : step
- | C_PLUS_ASSOC_R : step
- | C_PLUS_ASSOC_L : step
- | C_PLUS_PERMUTE : step
- | C_PLUS_SYM : step
- | C_RED0 : step
- | C_RED1 : step
- | C_RED2 : step
- | C_RED3 : step
- | C_RED4 : step
- | C_RED5 : step
- | C_RED6 : step
- | C_MULT_ASSOC_REDUCED : step
- | C_MINUS :step
- | C_MULT_SYM : step
-.
 
 Fixpoint rewrite [s: step] : term -> term :=
   Cases s of 
@@ -1316,9 +1442,9 @@ Induction s; Simpl; [
 | Exact Tmult_sym_stable ].
 Save.
 
-(* \subsection{tactiques de résolution d'un but omega normalisé} 
-   Trace de la procédure 
-\subsubsection{Tactiques générant une contradiction}
+(* \subsection{tactiques de rÃ©solution d'un but omega normalisÃ©} 
+   Trace de la procÃ©dure 
+\subsubsection{Tactiques gÃ©nÃ©rant une contradiction}
 \paragraph{[O_CONSTANT_NOT_NUL]} *)
 
 Definition constant_not_nul [i:nat; h: hyps] :=
@@ -1335,7 +1461,7 @@ Theorem constant_not_nul_valid :
   (i:nat) (valid_hyps (constant_not_nul i)).
 
 Unfold valid_hyps constant_not_nul; Intros;
-Generalize (nth_valid e i lp); Simplify; Simpl; (Elim_eq_Z z0 ZERO); Auto;
+Generalize (nth_valid ep e i lp); Simplify; Simpl; (Elim_eq_Z z0 ZERO); Auto;
 Simpl; Intros H1 H2; Elim H1; Symmetry; Auto.
 Save.   
 
@@ -1350,7 +1476,7 @@ Definition constant_neg [i:nat; h: hyps] :=
 Theorem constant_neg_valid : (i:nat) (valid_hyps (constant_neg i)).
 
 Unfold valid_hyps constant_neg; Intros;
-Generalize (nth_valid e i lp); Simplify; Simpl; Unfold Zle; Simpl;
+Generalize (nth_valid ep e i lp); Simplify; Simpl; Unfold Zle; Simpl;
 Intros H1; Elim H1; [ Assumption | Trivial ].
 Save.   
 
@@ -1376,7 +1502,7 @@ Definition not_exact_divide [k1,k2:Z; body:term; t:nat; i : nat; l:hyps] :=
 Theorem not_exact_divide_valid : (k1,k2:Z; body:term; t:nat; i:nat) 
 	(valid_hyps (not_exact_divide k1 k2 body t i)).
 
-Unfold valid_hyps not_exact_divide; Intros; Generalize (nth_valid e i lp);
+Unfold valid_hyps not_exact_divide; Intros; Generalize (nth_valid ep e i lp);
 Simplify;
 (Elim_eq_term '(scalar_norm_add t (Tplus (Tmult body (Tint k1)) (Tint k2)))
 	     't1); Auto; 
@@ -1409,8 +1535,8 @@ Definition contradiction [t: nat; i,j:nat;l:hyps] :=
 
 Theorem contradiction_valid : (t,i,j: nat) (valid_hyps (contradiction t i j)).
 
-Unfold valid_hyps contradiction; Intros t i j e l H;
-Generalize (nth_valid ? i ? H); Generalize (nth_valid ? j ? H);
+Unfold valid_hyps contradiction; Intros t i j ep e l H;
+Generalize (nth_valid ? ? i ? H); Generalize (nth_valid ? ? j ? H);
 Case (nth_hyps i l); Auto; Intros t1 t2; Case t1; Auto; Intros z; Case z; Auto;
 Case (nth_hyps j l); Auto; Intros t3 t4; Case t3; Auto; Intros z'; Case z'; 
 Auto; Simpl; Intros H1 H2;
@@ -1471,12 +1597,11 @@ Definition negate_contradict_inv [t:nat; i1,i2:nat; h:hyps]:=
   | _ => h
   end.
 
-
 Theorem negate_contradict_valid :
   (i,j:nat) (valid_hyps (negate_contradict i j)).
 
-Unfold valid_hyps negate_contradict; Intros i j e l H;
-Generalize (nth_valid ? i ? H); Generalize (nth_valid ? j ? H);
+Unfold valid_hyps negate_contradict; Intros i j ep e l H;
+Generalize (nth_valid ? ? i ? H); Generalize (nth_valid ? ? j ? H);
 Case (nth_hyps i l); Auto; Intros t1 t2; Case t1; Auto; Intros z; Case z; Auto;
 Case (nth_hyps j l); Auto; Intros t3 t4; Case t3; Auto; Intros z'; Case z'; 
 Auto; Simpl; Intros H1 H2; [
@@ -1490,8 +1615,8 @@ Theorem negate_contradict_inv_valid :
   (t,i,j:nat) (valid_hyps (negate_contradict_inv t i j)).
 
 
-Unfold valid_hyps negate_contradict_inv; Intros t i j e l H;
-Generalize (nth_valid ? i ? H); Generalize (nth_valid ? j ? H);
+Unfold valid_hyps negate_contradict_inv; Intros t i j ep e l H;
+Generalize (nth_valid ? ? i ? H); Generalize (nth_valid ? ? j ? H);
 Case (nth_hyps i l); Auto; Intros t1 t2; Case t1; Auto; Intros z; Case z; Auto;
 Case (nth_hyps j l); Auto; Intros t3 t4; Case t3; Auto; Intros z'; Case z'; 
 Auto; Simpl; Intros H1 H2;
@@ -1510,13 +1635,12 @@ Auto; Simpl; Intros H1 H2;
 
 Save.
 
-
-(* \subsubsection{Tactiques générant une nouvelle équation} *)
+(* \subsubsection{Tactiques gÃ©nÃ©rant une nouvelle Ã©quation} *)
 (* \paragraph{[O_SUM]}
- C'est une oper2 valide mais elle traite plusieurs cas à la fois (suivant
- les opérateurs de comparaison des deux arguments) d'où une
- preuve un peu compliquée. On utilise quelques lemmes qui sont des 
- généralisations des théorèmes utilisés par OMEGA. *)
+ C'est une oper2 valide mais elle traite plusieurs cas Ã  la fois (suivant
+ les opÃ©rateurs de comparaison des deux arguments) d'oÃ¹ une
+ preuve un peu compliquÃ©e. On utilise quelques lemmes qui sont des 
+ gÃ©nÃ©ralisations des thÃ©orÃ¨mes utilisÃ©s par OMEGA. *)
 
 Definition sum [k1,k2: Z; trace: (list t_fusion); prop1,prop2:proposition]:=
   Cases prop1 of
@@ -1611,7 +1735,7 @@ Save.
 
 Theorem sum_valid : (k1,k2:Z; t:(list t_fusion)) (valid2 (sum k1 k2 t)).
 
-Unfold valid2; Intros k1 k2 t e p1 p2; Unfold sum; Simplify; Simpl; Auto;
+Unfold valid2; Intros k1 k2 t ep e p1 p2; Unfold sum; Simplify; Simpl; Auto;
 Try (Elim (fusion_stable t)); Simpl; Intros; [
   Apply sum1; Assumption
 | Apply sum2; Try Assumption; Apply sum4; Assumption
@@ -1622,7 +1746,7 @@ Try (Elim (fusion_stable t)); Simpl; Intros; [
 Save.
 
 (* \paragraph{[O_EXACT_DIVIDE]}
-   c'est une oper1 valide mais on préfère une substitution a ce point la *)
+   c'est une oper1 valide mais on prÃ©fÃ¨re une substitution a ce point la *)
 
 Definition exact_divide [k:Z; body:term; t: nat; prop:proposition] :=
    Cases prop of
@@ -1641,9 +1765,9 @@ Theorem exact_divide_valid :
   (k:Z) (t:term) (n:nat) (valid1 (exact_divide k t n)).
 
 
-Unfold valid1 exact_divide; Intros k1 k2 t e p1; Simplify;Simpl; Auto;
+Unfold valid1 exact_divide; Intros k1 k2 t ep e p1; Simplify;Simpl; Auto;
 (Elim_eq_term  '(scalar_norm t (Tmult k2 (Tint k1))) 't1); Simpl; Auto;
-(Elim_eq_Z 'k1 '(ZERO)); Simpl; Auto;  Intros H1 H2; Elim H2; 
+(Elim_eq_Z 'k1 'ZERO); Simpl; Auto;  Intros H1 H2; Elim H2; 
 Elim scalar_norm_stable; Simpl; Generalize H1; Case (interp_term e k2);
 Try Trivial; (Case k1; Simpl; [
   Intros; Absurd `0 = 0`; Assumption
@@ -1655,8 +1779,8 @@ Save.
 
 
 (* \paragraph{[O_DIV_APPROX]}
-  La preuve reprend le schéma de la précédente mais on
-  est sur une opération de type valid1 et non sur une opération terminale. *)
+  La preuve reprend le schÃ©ma de la prÃ©cÃ©dente mais on
+  est sur une opÃ©ration de type valid1 et non sur une opÃ©ration terminale. *)
 
 Definition divide_and_approx [k1,k2:Z; body:term; t:nat; prop:proposition] :=
   Cases prop of
@@ -1679,7 +1803,7 @@ Definition divide_and_approx [k1,k2:Z; body:term; t:nat; prop:proposition] :=
 Theorem divide_and_approx_valid : (k1,k2:Z; body:term; t:nat) 
 	(valid1 (divide_and_approx k1 k2 body t)).
 
-Unfold valid1 divide_and_approx; Intros k1 k2 body t e p1;Simplify;
+Unfold valid1 divide_and_approx; Intros k1 k2 body t ep e p1;Simplify;
 (Elim_eq_term '(scalar_norm_add t (Tplus (Tmult body (Tint k1)) (Tint k2))) 't1); Simplify; Auto;  Intro E; Elim E; Simpl; 
 Elim (scalar_norm_add_stable t e); Simpl; Intro H1; 
 Apply Zmult_le_approx with 3 := H1; Assumption.
@@ -1703,7 +1827,7 @@ Definition merge_eq [t: nat; prop1, prop2: proposition] :=
 
 Theorem merge_eq_valid : (n:nat) (valid2 (merge_eq n)).
 
-Unfold valid2 merge_eq; Intros n e p1 p2; Simplify; Simpl; Auto;
+Unfold valid2 merge_eq; Intros n ep e p1 p2; Simplify; Simpl; Auto;
 Elim (scalar_norm_stable n e); Simpl; Intros; Symmetry; 
 Apply OMEGA8 with 2 := H0; [ Assumption | Elim Zopp_one; Trivial ].
 Save.
@@ -1721,7 +1845,7 @@ Definition constant_nul [i:nat; h: hyps] :=
 Theorem constant_nul_valid : 
   (i:nat) (valid_hyps (constant_nul i)).
 
-Unfold valid_hyps constant_nul; Intros; Generalize (nth_valid e i lp);
+Unfold valid_hyps constant_nul; Intros; Generalize (nth_valid ep e i lp);
 Simplify; Simpl; Unfold Zne; Intro H1; Absurd `0=0`; Auto.
 Save.
 
@@ -1740,16 +1864,16 @@ Definition state [m:Z;s:step; prop1,prop2:proposition] :=
 
 Theorem state_valid : (m:Z; s:step) (valid2 (state m s)).
 
-Unfold valid2; Intros m s e p1 p2; Unfold state; Simplify; Simpl;Auto;
+Unfold valid2; Intros m s ep e p1 p2; Unfold state; Simplify; Simpl;Auto;
 Elim (rewrite_stable s e); Simpl; Intros H1 H2; Elim H1;
 Rewrite (Zplus_sym `-(interp_term e t5)` `(interp_term e t3)`);
 Elim H2; Simpl; Reflexivity.
 
 Save.
 
-(* \subsubsection{Tactiques générant plusieurs but}
+(* \subsubsection{Tactiques gÃ©nÃ©rant plusieurs but}
    \paragraph{[O_SPLIT_INEQ]} 
-   La seule pour le moment (tant que la normalisation n'est pas réfléchie). *)
+   La seule pour le moment (tant que la normalisation n'est pas rÃ©flÃ©chie). *)
 
 Definition split_ineq  [i,t: nat; f1,f2:hyps -> lhyps;  l:hyps] :=
   Cases (nth_hyps i l) of
@@ -1767,8 +1891,8 @@ Theorem split_ineq_valid :
     (valid_list_hyps f1) ->(valid_list_hyps f2) -> 
       (valid_list_hyps (split_ineq i t f1 f2)).
 
-Unfold valid_list_hyps split_ineq; Intros i t f1 f2 H1 H2 e lp H; 
-Generalize (nth_valid ? i ? H); 
+Unfold valid_list_hyps split_ineq; Intros i t f1 f2 H1 H2 ep e lp H; 
+Generalize (nth_valid ? ? i ? H); 
 Case (nth_hyps i lp); Simpl; Auto; Intros t1 t2; Case t1; Simpl; Auto;
 Intros z; Case z; Simpl; Auto;
 Intro H3; Apply append_valid;Elim (OMEGA19 (interp_term e t2)) ;[
@@ -1780,26 +1904,6 @@ Save.
 
 
 (* \subsection{La fonction de rejeu de la trace} *)
-Inductive t_omega : Set :=
-   (* n = 0 n!= 0 *)
- | O_CONSTANT_NOT_NUL : nat -> t_omega
- | O_CONSTANT_NEG : nat -> t_omega
-   (* division et approximation d'une équation *)
- | O_DIV_APPROX : Z -> Z -> term -> nat -> t_omega -> nat -> t_omega
-   (* pas de solution car pas de division exacte (fin) *)
- | O_NOT_EXACT_DIVIDE :  Z -> Z -> term -> nat -> nat -> t_omega
-   (* division exacte *)
- | O_EXACT_DIVIDE : Z -> term -> nat -> t_omega -> nat -> t_omega
- | O_SUM : Z -> nat -> Z -> nat -> (list t_fusion) -> t_omega -> t_omega
- | O_CONTRADICTION : nat -> nat -> nat -> t_omega
- | O_MERGE_EQ : nat -> nat -> nat -> t_omega -> t_omega
- | O_SPLIT_INEQ : nat -> nat -> t_omega -> t_omega -> t_omega
- | O_CONSTANT_NUL : nat -> t_omega 
- | O_NEGATE_CONTRADICT : nat -> nat -> t_omega
- | O_NEGATE_CONTRADICT_INV : nat -> nat -> nat -> t_omega
- | O_STATE : Z -> step -> nat -> nat -> t_omega -> t_omega.
-
-Notation singleton :=  [a: hyps] (cons a (nil hyps)).
 
 Fixpoint execute_omega [t: t_omega] : hyps -> lhyps := 
   [l : hyps] Cases t of
@@ -1831,45 +1935,45 @@ Theorem omega_valid : (t: t_omega) (valid_list_hyps (execute_omega t)).
 
 Induction t; Simpl; [
   Unfold valid_list_hyps; Simpl; Intros; Left; 
-  Apply (constant_not_nul_valid n e lp H)
+  Apply (constant_not_nul_valid n ep e lp H)
 | Unfold valid_list_hyps; Simpl; Intros; Left; 
-  Apply (constant_neg_valid n e lp H)
-| Unfold valid_list_hyps valid_hyps; Intros k1 k2 body n t' Ht' m e lp H; 
+  Apply (constant_neg_valid n ep e lp H)
+| Unfold valid_list_hyps valid_hyps; Intros k1 k2 body n t' Ht' m ep e lp H; 
   Apply Ht';
   Apply (apply_oper_1_valid m (divide_and_approx k1 k2 body n)
-	  (divide_and_approx_valid k1 k2 body n) e lp H)
+	  (divide_and_approx_valid k1 k2 body n) ep e lp H)
 | Unfold valid_list_hyps; Simpl; Intros; Left; 
-  Apply (not_exact_divide_valid z z0 t0 n n0 e lp H)
-| Unfold valid_list_hyps valid_hyps; Intros k body n t' Ht' m e lp H; 
+  Apply (not_exact_divide_valid z z0 t0 n n0 ep e lp H)
+| Unfold valid_list_hyps valid_hyps; Intros k body n t' Ht' m ep e lp H; 
   Apply Ht';
   Apply (apply_oper_1_valid m (exact_divide k body n)
-	  (exact_divide_valid k body n) e lp H)
-| Unfold valid_list_hyps valid_hyps; Intros k1 i1 k2 i2 trace t' Ht' e lp H;
+	  (exact_divide_valid k body n) ep e lp H)
+| Unfold valid_list_hyps valid_hyps; Intros k1 i1 k2 i2 trace t' Ht' ep e lp H;
   Apply Ht'; 
   Apply (apply_oper_2_valid i1 i2 (sum k1 k2 trace) 
-	  (sum_valid k1 k2 trace) e lp H)
+	  (sum_valid k1 k2 trace) ep e lp H)
 | Unfold valid_list_hyps; Simpl; Intros; Left; 
-  Apply (contradiction_valid n n0 n1 e lp H)
-| Unfold valid_list_hyps valid_hyps; Intros trace i1 i2 t' Ht' e lp H; 
+  Apply (contradiction_valid n n0 n1 ep e lp H)
+| Unfold valid_list_hyps valid_hyps; Intros trace i1 i2 t' Ht' ep e lp H; 
   Apply Ht';
   Apply (apply_oper_2_valid i1 i2 (merge_eq trace) 
-          (merge_eq_valid trace) e lp H) 
-| Intros t' i k1 H1 k2 H2; Unfold valid_list_hyps; Simpl; Intros e lp H;
+          (merge_eq_valid trace) ep e lp H) 
+| Intros t' i k1 H1 k2 H2; Unfold valid_list_hyps; Simpl; Intros ep e lp H;
   Apply (split_ineq_valid i t' (execute_omega k1) (execute_omega k2) 
-	 H1 H2 e lp H)
-| Unfold valid_list_hyps; Simpl; Intros i e lp H; Left; 
-  Apply (constant_nul_valid i e lp H)
-| Unfold valid_list_hyps; Simpl; Intros i j e lp H; Left; 
-  Apply (negate_contradict_valid i j e lp H)
-| Unfold valid_list_hyps; Simpl; Intros n i j e lp H; Left; 
-  Apply (negate_contradict_inv_valid n i j e lp H)
-| Unfold valid_list_hyps valid_hyps; Intros m s i1 i2 t' Ht' e lp H; Apply Ht';
-  Apply (apply_oper_2_valid i1 i2 (state m s) (state_valid m s) e lp H)
+	 H1 H2 ep e lp H)
+| Unfold valid_list_hyps; Simpl; Intros i ep e lp H; Left; 
+  Apply (constant_nul_valid i ep e lp H)
+| Unfold valid_list_hyps; Simpl; Intros i j ep e lp H; Left; 
+  Apply (negate_contradict_valid i j ep e lp H)
+| Unfold valid_list_hyps; Simpl; Intros n i j ep e lp H; Left; 
+  Apply (negate_contradict_inv_valid n i j ep e lp H)
+| Unfold valid_list_hyps valid_hyps; Intros m s i1 i2 t' Ht' ep e lp H; Apply Ht';
+  Apply (apply_oper_2_valid i1 i2 (state m s) (state_valid m s) ep e lp H)
 ].
 Save.
 
 
-(* \subsection{Les opérations globales sur le but} 
+(* \subsection{Les opÃ©rations globales sur le but} 
    \subsubsection{Normalisation} *)
 
 Definition move_right [s: step; p:proposition] :=
@@ -1894,7 +1998,7 @@ Save.
 
 Theorem move_right_valid : (s: step) (valid1 (move_right s)).
 
-Unfold valid1 move_right; Intros s e p; Simplify; Simpl;
+Unfold valid1 move_right; Intros s ep e p; Simplify; Simpl;
 Elim (rewrite_stable s e); Simpl; [
   Symmetry; Apply Zegal_left; Assumption
 | Intro; Apply Zle_left; Assumption 
@@ -1923,37 +2027,576 @@ Theorem do_normalize_list_valid :
 
 Induction l; Simpl; Unfold valid_hyps; [
   Auto
-| Intros a l' Hl' i e lp H; Unfold valid_hyps in Hl'; Apply Hl';
-  Apply (do_normalize_valid i a e lp); Assumption ].
+| Intros a l' Hl' i ep e lp H; Unfold valid_hyps in Hl'; Apply Hl';
+  Apply (do_normalize_valid i a ep e lp); Assumption ].
 Save.
 
 Theorem normalize_goal :
-  (s: (list step); env : (list Z); l: hyps)
-    (interp_goal env (do_normalize_list s O l)) -> 
-      (interp_goal env l).
+  (s: (list step); ep: PropList; env : (list Z); l: hyps)
+    (interp_goal ep env (do_normalize_list s O l)) -> 
+      (interp_goal ep env l).
 
 Intros; Apply valid_goal with 2:=H; Apply do_normalize_list_valid.
 Save.
 
-(* \subsubsection{Exécution de la trace} *)
+(* \subsubsection{ExÃ©cution de la trace} *)
 
 Theorem execute_goal :
-  (t : t_omega; env : (list Z); l: hyps)
-    (interp_list_goal env (execute_omega t l)) -> (interp_goal env l).
+  (t : t_omega; ep: PropList; env : (list Z); l: hyps)
+    (interp_list_goal ep env (execute_omega t l)) -> (interp_goal ep env l).
 
-Intros; Apply (goal_valid (execute_omega t) (omega_valid t) env l H).
+Intros; Apply (goal_valid (execute_omega t) (omega_valid t) ep env l H).
 Save.
 
 
 Theorem append_goal :
-  (e: (list Z)) (l1,l2:lhyps)
-     (interp_list_goal e l1) /\ (interp_list_goal e l2) ->
-     (interp_list_goal e (app l1 l2)).
+  (ep: PropList; e: (list Z)) (l1,l2:lhyps)
+     (interp_list_goal ep e l1) /\ (interp_list_goal ep e l2) ->
+     (interp_list_goal ep e (app l1 l2)).
 
-Intros e; Induction l1; [
+Intros ep e; Induction l1; [
   Simpl; Intros l2 (H1, H2); Assumption
 | Simpl; Intros h1 t1 HR l2 ((H1 , H2), H3) ; Split; Auto].
 
+Save.
+
+Require Decidable.
+
+(* A simple decidability checker : if the proposition belongs to the
+   simple grammar describe below then it is decidable. Proof is by 
+   induction and uses well known theorem about arithmetic and propositional
+   calculus *)
+
+Fixpoint decidability [p:proposition] : bool :=
+  Cases p of
+    (EqTerm _ _) => true
+  | (LeqTerm _ _) => true
+  | (GeqTerm _ _) => true
+  | (GtTerm _ _) => true
+  | (LtTerm _ _) => true
+  | (NeqTerm _ _) => true
+  | (FalseTerm) => true
+  | (TrueTerm) => true
+  | (Tnot t) => (decidability t)
+  | (Tand t1 t2) => (andb (decidability t1) (decidability t2))
+  | (Timp t1 t2) => (andb (decidability t1) (decidability t2))
+  | (Tor t1 t2) =>  (andb (decidability t1) (decidability t2))
+  | (Tprop _) => false
+  end
+.
+
+Theorem decidable_correct :
+  (ep: PropList) (e: (list Z)) (p:proposition)
+    (decidability p)=true -> (decidable (interp_proposition ep e p)).
+
+Induction p; Simpl; Intros; [
+  Apply dec_eq
+| Apply dec_Zle
+| Left;Auto
+| Right; Unfold not; Auto
+| Apply dec_not; Auto
+| Apply dec_Zge
+| Apply dec_Zgt
+| Apply dec_Zlt
+| Apply dec_Zne
+| Apply dec_or; Elim andb_prop with 1 := H1; Auto
+| Apply dec_and; Elim andb_prop with 1 := H1; Auto
+| Apply dec_imp; Elim andb_prop with 1 := H1; Auto
+| Discriminate H].
 
 Save.
 
+(* An interpretation function for a complete goal with an explicit
+   conclusion. We use an intermediate fixpoint. *)
+
+Fixpoint interp_full_goal 
+    [envp: PropList;env : (list Z); c : proposition; l: hyps] : Prop :=
+  Cases l of 
+     nil => (interp_proposition envp env c)
+   | (cons p' l') => 
+	(interp_proposition envp env p') -> (interp_full_goal envp env c l')
+  end.
+
+Definition interp_full 
+    [ep: PropList;e : (list Z); lc : (hyps * proposition)] : Prop :=
+      Cases lc of (l,c) => (interp_full_goal ep e c l) end.
+
+(* Relates the interpretation of a complete goal with the interpretation
+   of its hypothesis and conclusion *)
+
+Theorem interp_full_false :
+  (ep: PropList; e : (list Z); l: hyps; c : proposition) 
+    ((interp_hyps ep e l) -> (interp_proposition ep e c)) -> 
+	(interp_full ep e (l,c)).
+
+Induction l; Unfold interp_full; Simpl; [
+  Auto
+| Intros a l1 H1 c H2 H3; Apply H1; Auto].
+
+Save.
+
+(* Push the conclusion in the list of hypothesis using a double negation
+   If the decidability cannot be "proven", then just forget about the 
+   conclusion (equivalent of replacing it with false) *)
+
+Definition to_contradict [lc : hyps * proposition] :=
+   Cases lc of
+      (l,c) => (if (decidability c) then (cons (Tnot c) l) else l)
+   end.
+
+(* The previous operation is valid in the sense that the new list of
+   hypothesis implies the original goal *)
+
+Theorem to_contradict_valid :
+  (ep: PropList; e : (list Z); lc: hyps * proposition)
+	(interp_goal ep e (to_contradict lc)) -> (interp_full ep e lc).
+
+Intros ep e lc; Case lc; Intros l c; Simpl; (Pattern (decidability c));
+Apply bool_ind2; [
+   Simpl; Intros H H1; Apply interp_full_false; Intros H2; Apply not_not; [
+     Apply decidable_correct; Assumption
+   | Unfold 1 not; Intro H3; Apply hyps_to_goal with 2:=H2; Auto]
+| Intros H1 H2; Apply interp_full_false; Intro H3; Elim hyps_to_goal with 1:= H2; Assumption ].
+Save.
+
+(* [map_cons x l] adds [x] at the head of each list in [l] (which is a list
+   of lists *)
+
+Fixpoint map_cons [A:Set; x:A; l:(list (list A))] : (list (list A)) :=
+  Cases l of
+    nil => (nil ?)
+  | (cons l ll) => (cons (cons x l) (map_cons A x ll))
+  end.
+
+(* This function breaks up a list of hypothesis in a list of simpler 
+   list of hypothesis that together implie the original one. The goal
+   of all this is to transform the goal in a list of solvable problems. 
+   Note that :
+	- we need a way to drive the analysis as some hypotheis may not
+          require a split. 
+        - this procedure must be perfectly mimicked by the ML part otherwise
+          hypothesis will get desynchronised and this will be a mess.
+ *)
+ 
+Fixpoint destructure_hyps [nn: nat] : hyps -> lhyps :=
+  [ll:hyps]Cases nn of
+    O => (cons ll (nil ?))
+  | (S n) =>
+       Cases ll of 
+	  nil => (cons (nil ?) (nil ?))
+       | (cons (Tor p1 p2) l) => 
+	    (app (destructure_hyps n (cons p1 l))
+	         (destructure_hyps n (cons p2 l)))
+       | (cons (Tand p1 p2) l) => 
+	    (destructure_hyps n (cons p1 (cons p2 l)))
+       | (cons (Timp p1 p2) l) =>
+	    (if (decidability p1) then 
+	      (app (destructure_hyps n (cons (Tnot p1) l))
+		   (destructure_hyps n (cons p2 l)))
+	     else (map_cons ? (Timp p1 p2) (destructure_hyps n l)))
+       | (cons (Tnot p) l) =>
+	    Cases p of 
+	       (Tnot p1) =>
+		    (if (decidability p1) then (destructure_hyps n (cons p1 l))
+		     else (map_cons ? (Tnot (Tnot p1)) (destructure_hyps n l)))
+ 	    | (Tor p1 p2) =>
+		  (destructure_hyps n (cons (Tnot p1) (cons (Tnot p2) l)))
+ 	    | (Tand p1 p2) =>
+   	         (if (decidability p1) then 
+ 		    (app (destructure_hyps n (cons (Tnot p1) l))
+			 (destructure_hyps n (cons (Tnot p2) l)))
+		 else (map_cons ? (Tnot p) (destructure_hyps n l)))
+	    | _ =>  (map_cons ? (Tnot p) (destructure_hyps n l))
+	    end
+       | (cons x l) => (map_cons ? x (destructure_hyps n l))
+       end
+  end.
+
+Theorem map_cons_val : 
+  (ep: PropList; e : (list Z))
+  (p:proposition;l:lhyps) 
+	(interp_proposition ep e p) ->
+	(interp_list_hyps ep e l) ->
+	(interp_list_hyps ep e (map_cons ? p l) ).
+
+Induction l; Simpl; [ Auto | Intros; Elim H1;  Intro H2; Auto ].
+Save.
+
+Hints Resolve map_cons_val append_valid decidable_correct.
+
+Theorem destructure_hyps_valid : 
+  (n:nat) (valid_list_hyps (destructure_hyps n)).
+
+Induction n; [
+  Unfold valid_list_hyps; Simpl; Auto
+| Unfold 2 valid_list_hyps; Intros n1 H  ep e lp; Case lp; [
+    Simpl; Auto
+  | Intros p l; Case p; 
+    Try (Simpl; Intros; Apply map_cons_val; Simpl; Elim H0; Auto); [
+      Intro p'; Case p';
+      Try (Simpl; Intros; Apply map_cons_val; Simpl; Elim H0; Auto); [
+	Simpl; Intros p1 (H1,H2);  Pattern (decidability p1); Apply bool_ind2;
+	Intro H3; [
+	  Apply H; Simpl; Split; [ Apply not_not; Auto | Assumption ]
+        | Auto]
+      | Simpl; Intros p1 p2 (H1,H2); Apply H; Simpl; 
+	Elim not_or with 1 := H1; Auto
+      | Simpl; Intros p1 p2 (H1,H2);Pattern (decidability p1); Apply bool_ind2;
+        Intro H3; [
+	  Apply append_valid; Elim not_and with 2 := H1; [
+	    Intro; Left; Apply H; Simpl; Auto
+	  | Intro; Right; Apply H; Simpl; Auto
+          | Auto ]
+        | Auto ]]
+    | Simpl; Intros p1 p2 (H1, H2); Apply append_valid; 
+      (Elim H1; Intro H3; Simpl; [ Left | Right ]); Apply H; Simpl; Auto 
+    | Simpl; Intros; Apply H; Simpl; Tauto
+    | Simpl; Intros p1 p2 (H1, H2); Pattern (decidability p1); Apply bool_ind2;
+      Intro H3; [ 
+	Apply append_valid; Elim imp_simp with 2:=H1; [
+	  Intro H4; Left; Simpl; Apply H; Simpl; Auto
+	| Intro H4; Right; Simpl; Apply H; Simpl; Auto
+	| Auto ]
+      | Auto ]]]].
+
+Save.
+
+Definition prop_stable [f: proposition -> proposition] :=
+  (ep: PropList; e: (list Z); p:proposition) 
+     (interp_proposition ep e p) <-> (interp_proposition ep e (f p)).
+
+Definition p_apply_left [f: proposition -> proposition; p : proposition]:= 
+  Cases p of
+    (Timp x y) => (Timp (f x) y)
+  | (Tor x y) => (Tor (f x) y)
+  | (Tand x y) => (Tand (f x) y)
+  | (Tnot x) => (Tnot (f x))
+  | x => x
+  end.
+
+Theorem p_apply_left_stable :
+  (f : proposition -> proposition) 
+    (prop_stable f) -> (prop_stable (p_apply_left f)).
+
+Unfold prop_stable; Intros f H ep e p; Split; 
+(Case p; Simpl; Auto; Intros p1; Elim (H ep e p1); Tauto).
+Save.
+
+Definition p_apply_right [f: proposition -> proposition; p : proposition]:= 
+  Cases p of
+    (Timp x y) => (Timp x (f y))
+  | (Tor x y) => (Tor x (f y))
+  | (Tand x y) => (Tand x (f y))
+  | (Tnot x) => (Tnot (f x))
+  | x => x
+  end.
+
+Theorem p_apply_right_stable :
+  (f : proposition -> proposition) 
+    (prop_stable f) -> (prop_stable (p_apply_right f)).
+
+Unfold prop_stable; Intros f H ep e p; Split; 
+(Case p; Simpl; Auto; [
+   Intros p1; Elim (H ep e p1); Tauto
+ | Intros p1 p2; Elim (H ep e p2); Tauto
+ | Intros p1 p2; Elim (H ep e p2); Tauto
+ | Intros p1 p2; Elim (H ep e p2); Tauto
+ ]).
+Save.
+
+Definition p_invert [f : proposition -> proposition; p : proposition] := 
+Cases p of
+  (EqTerm x y) => (Tnot (f (NeqTerm x y)))
+| (LeqTerm x y) => (Tnot (f (GtTerm x y)))
+| (GeqTerm x y) => (Tnot (f (LtTerm x y)))
+| (GtTerm x y) => (Tnot (f (LeqTerm x y)))
+| (LtTerm x y) => (Tnot (f (GeqTerm x y)))
+| (NeqTerm x y) => (Tnot (f (EqTerm x y)))
+| x => x
+end.
+
+Theorem p_invert_stable :
+  (f : proposition -> proposition) 
+    (prop_stable f) -> (prop_stable (p_invert f)).
+
+Unfold prop_stable; Intros f H ep e p; Split;(Case p; Simpl; Auto; [
+  Intros t1 t2; Elim (H ep e (NeqTerm t1 t2)); Simpl; Unfold Zne; 
+  Generalize (dec_eq (interp_term e t1) (interp_term e t2)); 
+  Unfold decidable; Tauto
+| Intros t1 t2; Elim (H ep e (GtTerm t1 t2)); Simpl; Unfold Zgt; 
+  Generalize (dec_Zgt (interp_term e t1) (interp_term e t2)); 
+  Unfold decidable Zgt Zle; Tauto
+| Intros t1 t2; Elim (H ep e (LtTerm t1 t2)); Simpl; Unfold Zlt; 
+  Generalize (dec_Zlt (interp_term e t1) (interp_term e t2)); 
+  Unfold decidable Zge; Tauto
+| Intros t1 t2; Elim (H ep e (LeqTerm t1 t2)); Simpl; 
+  Generalize (dec_Zgt (interp_term e t1) (interp_term e t2)); Unfold Zle Zgt;
+  Unfold decidable; Tauto
+| Intros t1 t2; Elim (H ep e (GeqTerm t1 t2)); Simpl;
+  Generalize (dec_Zlt (interp_term e t1) (interp_term e t2));  Unfold Zge Zlt; 
+  Unfold decidable; Tauto
+| Intros t1 t2; Elim (H ep e (EqTerm t1 t2)); Simpl;
+  Generalize (dec_eq (interp_term e t1) (interp_term e t2)); 
+  Unfold decidable Zne; Tauto ]).
+Save.
+
+Theorem Zlt_left_inv : (x,y:Z) `0 <= ((y + (-1)) + (-x))` ->  `x<y`.
+
+Intros; Apply Zlt_S_n; Apply Zle_lt_n_Sm; 
+Apply (Zsimpl_le_plus_r (Zplus `-1` (Zopp x))); Rewrite Zplus_assoc_l; 
+Unfold Zs; Rewrite (Zplus_assoc_r x); Rewrite (Zplus_assoc_l y); Simpl;
+Rewrite Zero_right; Rewrite Zplus_inverse_r; Assumption.
+Save.
+
+Theorem move_right_stable : (s: step) (prop_stable (move_right s)).
+
+Unfold move_right prop_stable; Intros s ep e p; Split; [
+    Simplify; Simpl; Elim (rewrite_stable s e); Simpl; [
+    Symmetry; Apply Zegal_left; Assumption
+  | Intro; Apply Zle_left; Assumption
+  | Intro; Apply Zge_left; Assumption
+  | Intro; Apply Zgt_left; Assumption
+  | Intro; Apply Zlt_left; Assumption
+  | Intro; Apply Zne_left_2; Assumption ]
+| Case p; Simpl; Intros; Auto; Generalize H; Elim (rewrite_stable s); Simpl; 
+  Intro H1; [
+    Rewrite (Zplus_n_O (interp_term e t0)); Rewrite H1; Rewrite Zplus_permute;
+    Rewrite Zplus_inverse_r; Rewrite Zero_right; Trivial
+  | Apply (Zsimpl_le_plus_r (Zopp (interp_term e t))); Rewrite Zplus_inverse_r;
+    Assumption
+  | Apply Zle_ge; Apply (Zsimpl_le_plus_r (Zopp (interp_term e t0))); 
+    Rewrite Zplus_inverse_r; Assumption
+  | Apply Zlt_gt; Apply Zlt_left_inv; Assumption
+  | Apply Zlt_left_inv; Assumption
+  | Unfold Zne not; Unfold Zne in H1; Intro H2; Apply H1; Rewrite H2;
+    Rewrite Zplus_inverse_r; Trivial ]].
+Save.
+
+
+Fixpoint p_rewrite [s: p_step] : proposition -> proposition :=
+  Cases s of 
+   | (P_LEFT s) => (p_apply_left (p_rewrite s))
+   | (P_RIGHT s) => (p_apply_right (p_rewrite s))
+   | (P_STEP s) => (move_right s)
+   | (P_INVERT s) => (p_invert (move_right s))
+   | P_NOP => [p:proposition]p
+  end.
+
+Theorem p_rewrite_stable : (s : p_step) (prop_stable (p_rewrite s)).
+
+
+Induction s; Simpl; [
+  Intros; Apply p_apply_left_stable; Trivial
+| Intros; Apply p_apply_right_stable; Trivial
+| Intros; Apply p_invert_stable; Apply move_right_stable
+| Apply move_right_stable
+| Unfold prop_stable; Simpl; Intros; Split; Auto ].
+Save.
+
+Fixpoint normalize_hyps [l: (list h_step)] : hyps -> hyps :=
+  [lh:hyps] Cases l of
+    nil => lh
+  | (cons (pair_step i s) r) =>
+	 (normalize_hyps r (apply_oper_1 i (p_rewrite s) lh))
+  end.
+
+Theorem normalize_hyps_valid : 
+  (l: (list h_step)) (valid_hyps (normalize_hyps l)).
+
+Induction l; Unfold valid_hyps; Simpl; [
+  Auto
+| Intros n_s r; Case n_s; Intros n s H ep e lp H1; Apply H; 
+  Apply apply_oper_1_valid; [
+    Unfold valid1; Intros ep1 e1 p1 H2; Elim (p_rewrite_stable s ep1 e1 p1);
+    Auto
+  | Assumption ]].
+Save.
+
+Theorem normalize_hyps_goal :
+  (s: (list h_step); ep: PropList; env : (list Z); l: hyps)
+    (interp_goal ep env (normalize_hyps s l)) -> 
+      (interp_goal ep env l).
+
+Intros; Apply valid_goal with 2:=H; Apply normalize_hyps_valid.
+Save.
+
+Fixpoint extract_hyp_pos [s: (list direction)] : proposition -> proposition :=
+  [p: proposition]
+  Cases s of 
+   | (cons D_left l) =>
+	Cases p of
+          (Tand x y) => (extract_hyp_pos l x)
+        | _ => p
+        end
+   | (cons D_right l) =>
+	Cases p of
+          (Tand x y) => (extract_hyp_pos l y)
+        | _ => p
+        end
+   | (cons D_mono l) =>
+	Cases p of
+          (Tnot x ) => (extract_hyp_neg l x)
+        | _ => p
+        end
+   | _ => p
+  end
+with extract_hyp_neg [s: (list direction)] : proposition -> proposition :=
+  [p: proposition]
+  Cases s of 
+   | (cons D_left l) =>
+	Cases p of
+          (Tor x y) => (extract_hyp_neg l x)
+	| (Timp x y) =>
+	    (if (decidability x) then (extract_hyp_pos l x) else (Tnot p))
+        | _ => (Tnot p)
+        end
+   | (cons D_right l) =>
+	Cases p of
+          (Tor x y) => (extract_hyp_neg l y)
+	| (Timp x y) => (extract_hyp_neg l y)
+        | _ => (Tnot p)
+        end
+   | (cons D_mono l) =>
+	Cases p of
+          (Tnot x) => 
+	     (if (decidability x) then (extract_hyp_pos l x) else (Tnot p))
+        | _ => (Tnot p)
+        end
+   | _ => 
+	Cases p of
+	  (Tnot x) => (if (decidability x) then x else (Tnot p))
+        | _ => (Tnot p) 
+	end
+  end.
+
+Definition co_valid1 [f: proposition -> proposition] :=
+  (ep : PropList; e: (list Z)) (p1: proposition) 
+     (interp_proposition ep e (Tnot p1)) -> (interp_proposition ep e (f p1)).
+
+Theorem extract_valid : 
+  (s: (list direction))
+    ((valid1 (extract_hyp_pos s)) /\ (co_valid1 (extract_hyp_neg s))).
+
+Unfold valid1 co_valid1; Induction s; [
+  Split; [
+    Simpl; Auto
+  | Intros ep e p1; Case p1; Simpl; Auto; Intro p; Pattern (decidability p);
+    Apply bool_ind2; [
+      Intro H; Generalize (decidable_correct ep e p H); Unfold decidable; Tauto
+    | Simpl; Auto]]
+| Intros a s' (H1,H2);  Simpl in H2; Split; Intros ep e p; Case a; Auto; 
+  Case p; Auto; Simpl; Intros; 
+  (Apply H1; Tauto) Orelse (Apply H2; Tauto) Orelse
+  (Pattern (decidability p0); Apply bool_ind2; [
+     Intro H3; Generalize (decidable_correct ep e p0 H3);Unfold decidable;
+     Intro H4; Apply H1; Tauto
+   | Intro; Tauto ])].
+
+Save.
+
+Fixpoint decompose_solve [s: e_step] : hyps -> lhyps := 
+ [h:hyps]
+ Cases s of 
+   (E_SPLIT i dl s1 s2) => 
+	(Cases (extract_hyp_pos dl (nth_hyps i h)) of
+	   (Tor x y) => 
+	      (app (decompose_solve s1 (cons x h)) 
+	           (decompose_solve s2 (cons y h)))
+	|  (Tnot (Tand x y)) => 
+	      (if (decidability x) then
+		      (app (decompose_solve s1 (cons (Tnot x) h)) 
+		           (decompose_solve s2 (cons (Tnot y) h)))
+		else (cons h (nil hyps)))
+	| _ => (cons h (nil hyps))
+	end)
+ | (E_EXTRACT i dl s1) =>
+     (decompose_solve s1 (cons (extract_hyp_pos dl (nth_hyps i h)) h))
+ | (E_SOLVE t) => (execute_omega t h)
+ end.
+
+Theorem decompose_solve_valid : 
+   (s:e_step)(valid_list_goal (decompose_solve s)).
+
+Intro s; Apply goal_valid; Unfold valid_list_hyps; Elim s; Simpl; Intros; [
+  Cut (interp_proposition ep e1 (extract_hyp_pos l (nth_hyps n lp))); [
+    Case (extract_hyp_pos l (nth_hyps n lp)); Simpl; Auto; [
+      Intro p; Case p; Simpl;Auto; Intros p1 p2 H2;
+      Pattern (decidability p1); Apply bool_ind2; [
+        Intro H3; Generalize (decidable_correct ep e1 p1 H3); 
+        Intro H4; Apply append_valid; Elim H4; Intro H5; [
+          Right; Apply H0; Simpl; Tauto
+        | Left; Apply H; Simpl; Tauto ]
+      | Simpl; Auto]
+    | Intros p1 p2 H2; Apply append_valid; Simpl; Elim H2; [
+        Intros H3; Left; Apply H; Simpl; Auto
+      | Intros H3; Right; Apply H0; Simpl; Auto ]]
+  | Elim (extract_valid l); Intros H2 H3; Apply H2; Apply nth_valid; Auto]
+| Intros; Apply H; Simpl; Split; [
+    Elim (extract_valid l); Intros H2 H3; Apply H2; Apply nth_valid; Auto
+  | Auto ]
+| Apply omega_valid with 1:= H].
+
+Save.
+
+(* \subsection{La derniÃ¨re Ã©tape qui Ã©limine tous les sÃ©quents inutiles} *)
+
+Definition valid_lhyps [f: lhyps -> lhyps] :=
+  (ep : PropList; e : (list Z)) (lp: lhyps)
+    (interp_list_hyps ep e lp) -> (interp_list_hyps ep e (f lp)).
+
+Fixpoint reduce_lhyps [lp:lhyps] : lhyps :=
+   Cases lp of
+     (cons (cons FalseTerm nil) lp') => (reduce_lhyps lp')
+   | (cons x lp') => (cons x (reduce_lhyps lp'))
+   | nil => (nil hyps)
+   end.
+
+Theorem reduce_lhyps_valid : (valid_lhyps reduce_lhyps).
+
+Unfold valid_lhyps; Intros ep e lp; Elim lp; [
+  Simpl; Auto
+| Intros a l HR; Elim a; [
+    Simpl; Tauto
+  | Intros a1 l1; Case l1; Case a1; Simpl; Try Tauto]].
+Save.
+
+Theorem do_reduce_lhyps : 
+  (envp: PropList; env: (list Z); l: lhyps)
+    (interp_list_goal envp env (reduce_lhyps l)) ->
+	 (interp_list_goal envp env l).
+
+Intros envp env l H; Apply list_goal_to_hyps; Intro H1; 
+Apply list_hyps_to_goal with 1 := H; Apply reduce_lhyps_valid; Assumption.
+Save.
+
+Definition concl_to_hyp := [p:proposition]
+  (if (decidability p) then (Tnot p) else TrueTerm).
+
+Definition do_concl_to_hyp :
+  (envp: PropList; env: (list Z); c : proposition; l:hyps)
+    (interp_goal envp env (cons (concl_to_hyp c) l)) ->
+       (interp_goal_concl envp env c l).
+
+Simpl; Intros envp env c l; Induction l; [
+  Simpl; Unfold concl_to_hyp; Pattern (decidability c); Apply bool_ind2; [
+    Intro H; Generalize (decidable_correct envp env c H); Unfold decidable;
+    Simpl; Tauto
+  | Simpl; Intros H1 H2; Elim H2; Trivial]
+| Simpl; Tauto ].
+Save.
+
+Definition omega_tactic := 
+  [t1:e_step ; t2:(list h_step) ; c:proposition; l:hyps] 
+    (reduce_lhyps 
+      (decompose_solve t1 (normalize_hyps t2 (cons (concl_to_hyp c) l)))).
+
+Theorem do_omega:
+  (t1: e_step ; t2: (list h_step);
+   envp: PropList; env: (list Z); c: proposition; l:hyps)
+    (interp_list_goal envp env (omega_tactic t1 t2 c l)) ->
+       (interp_goal_concl envp env c l).
+
+Unfold omega_tactic; Intros; Apply do_concl_to_hyp; 
+Apply (normalize_hyps_goal t2); Apply (decompose_solve_valid t1); 
+Apply do_reduce_lhyps; Assumption.
+Save.
