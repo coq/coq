@@ -35,6 +35,8 @@ Language
 - Cases predicate inference bug fixed
 - Known dependent Cases predicate bugs fixed
 - Bug with identifiers ended by a number greater than 2^30 fixed (+)
+- an improved reduction strategy for lazy evaluation
+
 
 Language : long names
 
@@ -150,6 +152,9 @@ Parsing and grammar extension
 
 New commands
 
+- New commands "Print XML All", "Show XML Proof", ... to show or
+  export theories to XML to be used with Helm's publishing and rendering
+  tools (see http://www.cs.unibo.it/helm) (by Claudio Sacerdoti Coen) (+)
 - New command to manually set implicits arguments (+)
   - "Implicits ident." to activate the implicit arguments mode just for ident
   - "Implicits ident [num1 num2 ...]." to explicitly give which
@@ -173,7 +178,7 @@ Changes in existing commands
   module accessible by their short name, and activates the Grammar,
   Syntax, Hint, ... declared in the module (+)
 - The scope of the "Search" command can be restricted to some modules (+)
-- Final dot in command (full stop) must be followed by a space
+- Final dot in command (full stop/period) must be followed by a blank
   (newline, tablation or whitespace) (+)
 - Slight restriction of the syntax for Cbv Delta: if present, option [-myconst]
   must immediately follow the Delta keyword (*)(+)
@@ -210,13 +215,14 @@ Tools
 Extraction
 
 - New algorithm for extraction able to deal with "Type" (+)
+  (by J.-C. Filliâtre and P. Letouzey)
 
 
 Standard library
 
 - New library on maps on integers (IntMap, contributed by Jean Goubault)
 - New lemmas about integer numbers [ZArith]
-- New lemmas about [Reals] (+)
+- New lemmas and a "natural" syntax for reals [Reals] (+)
 - Exc/Error/Value renamed into Option/Some/None (*)
 
 
