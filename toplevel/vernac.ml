@@ -99,12 +99,26 @@ let parse_phrase (po, verbch) =
 
 let just_parsing = ref false
 let chan_translate = ref stdout
+let last_char = ref '\000'
+
+let set_formatter_translator() =
+  let ch = !chan_translate in
+  let out s b e =
+    let n = e-b in
+    if n > 0 then begin
+      (match !last with
+          '.' -> if s.[b] = '(' then output ch " " 0 1 
+        | _ -> ());
+      last := s.[e-1]
+    end;
+    output ch s b e
+  in
+  Format.set_formatter_output_functions out (fun () -> flush ch);
+  Format.set_max_boxes max_int
+
 
 let pr_new_syntax loc ocom =
-  if !translate_file then begin
-    Format.set_formatter_out_channel !chan_translate;
-    Format.set_max_boxes max_int;
-  end;
+  if !translate_file then set_formatter_translator();
   let fs = States.freeze () in
   let com = match ocom with
     | Some (VernacV7only _) ->
