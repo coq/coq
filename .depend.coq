@@ -153,12 +153,14 @@ theories/Logic/JMeq.vo: theories/Logic/JMeq.v
 theories/Logic/Decidable.vo: theories/Logic/Decidable.v
 theories/Logic/Eqdep_dec.vo: theories/Logic/Eqdep_dec.v
 theories/Logic/Berardi.vo: theories/Logic/Berardi.v
-theories/Logic/Classical_Prop.vo: theories/Logic/Classical_Prop.v
+theories/Logic/Classical_Prop.vo: theories/Logic/Classical_Prop.v theories/Logic/ProofIrrelevance.vo
 theories/Logic/Classical_Pred_Type.vo: theories/Logic/Classical_Pred_Type.v theories/Logic/Classical_Prop.vo
 theories/Logic/Eqdep.vo: theories/Logic/Eqdep.v
 theories/Logic/Classical_Pred_Set.vo: theories/Logic/Classical_Pred_Set.v theories/Logic/Classical_Prop.vo
 theories/Logic/Classical_Type.vo: theories/Logic/Classical_Type.v theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Type.vo
 theories/Logic/Classical.vo: theories/Logic/Classical.v theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Set.vo
+theories/Logic/ProofIrrelevance.vo: theories/Logic/ProofIrrelevance.v theories/Logic/Hurkens.vo
+theories/Logic/Hurkens.vo: theories/Logic/Hurkens.v
 theories/Init/Logic_TypeSyntax.vo: theories/Init/Logic_TypeSyntax.v theories/Init/Logic_Type.vo
 theories/Init/Wf.vo: theories/Init/Wf.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo
 theories/Init/Logic_Type.vo: theories/Init/Logic_Type.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo
