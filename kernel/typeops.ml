@@ -679,8 +679,6 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 	| IsMeta _ -> true
 
 	| IsVar _ | IsSort _ ->  List.for_all (check_rec_call env n lst) l
-
-	| IsXtra _ ->  List.for_all (check_rec_call env n lst) l
      )
 
      and check_rec_call_fix_body env n lst decr recArgsDecrArg body =
@@ -885,7 +883,7 @@ let type_fixpoint env sigma lna lar vdefj =
 let control_only_guard env sigma = 
   let rec control_rec c = match kind_of_term c with
     | IsRel _ | IsVar _    -> ()
-    | IsSort _ | IsMeta _ | IsXtra _ -> ()
+    | IsSort _ | IsMeta _ -> ()
     | IsCoFix (_,(tys,_,bds) as cofix) ->
 	check_cofix env sigma cofix;
 	Array.iter control_rec tys;

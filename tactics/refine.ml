@@ -213,8 +213,7 @@ let rec compute_metamap env c = match kind_of_term c with
       	TH (c,[],[])
 
   (* Autres cas. *)
-  | IsXtra _|IsCoFix _ ->
-      invalid_arg "Tcc.compute_metamap"
+  | IsCoFix _ -> invalid_arg "Tcc.compute_metamap"
 
 
 (*  tcc_aux : term_with_holes -> tactic

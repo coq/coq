@@ -82,7 +82,6 @@ let constr_display csr =
   | IsMeta n -> "Meta("^(string_of_int n)^")"
   | IsVar id -> "Var("^(string_of_id id)^")"
   | IsSort s -> "Sort("^(sort_display s)^")"
-  | IsXtra s -> "Xtra("^s^")"
   | IsCast (c,t) -> "Cast("^(term_display c)^","^(term_display t)^")"
   | IsProd (na,t,c) ->
       "Prod("^(name_display na)^","^(term_display t)^","^(term_display c)^")\n"
@@ -145,7 +144,6 @@ let print_pure_constr csr =
   | IsMeta n -> print_string "Meta("; print_int n; print_string ")"
   | IsVar id -> print_string (string_of_id id)
   | IsSort s -> sort_display s
-  | IsXtra s -> print_string ("Xtra("^s^")")
   | IsCast (c,t) -> open_hovbox 1;
       print_string "("; (term_display c); print_cut();
       print_string "::"; (term_display t); print_string ")"; close_box()

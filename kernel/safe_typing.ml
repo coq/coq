@@ -138,8 +138,6 @@ let rec execute mf env cstr =
 	let (j, cst0) = cast_rel env Evd.empty cj tj in
 	(j, Constraint.union cst cst0)
 	  
-    | IsXtra _ -> anomaly "Safe_typing: found an Extra"
-	  
 and execute_fix mf env lar lfi vdef =
   let (larj,cst1) = execute_array mf env lar in
   let lara = Array.map (assumption_of_judgment env Evd.empty) larj in

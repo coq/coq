@@ -255,7 +255,7 @@ let hdchar env c =
     | IsCoFix (i,(_,ln,_)) -> 
 	let id = match List.nth ln i with Name id -> id | _ -> assert false in
 	lowercase_first_char id
-    | IsMeta _|IsXtra _|IsEvar _|IsMutCase (_, _, _, _) -> "y"
+    | IsMeta _|IsEvar _|IsMutCase (_, _, _, _) -> "y"
   in 
   hdrec 0 c
 

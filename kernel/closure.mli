@@ -7,11 +7,14 @@ open Names
 open Term
 open Evd
 open Environ
+open Esubst
 (*i*)
 
 (* Flags for profiling reductions. *)
 val stats : bool ref
 val share : bool ref
+
+val with_stats: 'a Lazy.t -> 'a
 
 type evaluable_global_reference =
   | EvalVarRef of identifier
@@ -75,16 +78,23 @@ val betadeltaiota : flags
 val hnf_flags : flags
 val unfold_flags : evaluable_global_reference -> flags
 
-(*s Explicit substitutions of type ['a]. [ESID n] = %n~END = bounded identity. 
-  [CONS(t,S)] = $S.t$ i.e. parallel substitution. [SHIFT(n,S)] = 
-  $(\uparrow n~o~S)$ i.e. terms in S are relocated with n vars. 
-  [LIFT(n,S)] = $(\%n~S)$ stands for $((\uparrow n~o~S).n...1)$. *)
-type 'a subs =
-  | ESID of int
-  | CONS of 'a * 'a subs
-  | SHIFT of int * 'a subs
-  | LIFT of int * 'a subs
+(***********************************************************************)
 
+type 'a table_key =
+  | ConstBinding of constant
+  | EvarBinding of (existential * 'a subs)
+  | VarBinding of identifier
+  | FarRelBinding of int
+
+type ('a,'b) infos
+val ref_value_cache: ('a,'b) infos -> 'a table_key -> 'a option
+val info_flags: ('a,'b) infos -> flags
+val infos_under: ('a,'b) infos -> ('a,'b) infos
+val create:
+  (('a,'b) infos -> 'a subs -> constr -> 'a) ->
+  flags -> env -> 'b evar_map -> ('a,'b) infos
+
+(***********************************************************************)
 (*s A [stack] is a context of arguments, arguments are pushed by
    [append_stack] one array at a time but popped with [decomp_stack]
    one by one *)
@@ -92,6 +102,7 @@ type 'a subs =
 type 'a stack
 val empty_stack : 'a stack
 val append_stack : 'a array -> 'a stack -> 'a stack
+
 val decomp_stack : 'a stack -> ('a * 'a stack) option
 val list_of_stack : 'a stack -> 'a list
 val array_of_stack : 'a stack -> 'a array
@@ -102,27 +113,20 @@ val stack_tail : int -> 'a stack -> 'a stack
 val stack_nth : 'a stack -> int -> 'a
 
 (***********************************************************************)
-(*s Call-by-value reduction *)
-
-(* Entry point for cbv normalization of a constr *)
-type 'a cbv_infos
-val create_cbv_infos : flags -> env -> 'a evar_map -> 'a cbv_infos
-val cbv_norm : 'a cbv_infos -> constr -> constr
-
 (*s Lazy reduction. *)
 
 (* [fconstr] is the type of frozen constr *)
 
 type fconstr
 
-(* [fconstr] can be accessed by using the function [frterm_of] and by
-   matching on type [frterm] *)
+(* [fconstr] can be accessed by using the function [fterm_of] and by
+   matching on type [fterm] *)
 
-type frterm =
+type fterm =
   | FRel of int
   | FAtom of constr
   | FCast of fconstr * fconstr
-  | FFlex of frreference
+  | FFlex of freference
   | FInd of inductive_path * fconstr array
   | FConstruct of constructor_path * fconstr array
   | FApp of fconstr * fconstr array
@@ -135,26 +139,26 @@ type frterm =
   | FProd of name * fconstr * fconstr * constr * fconstr subs
   | FLetIn of name * fconstr * fconstr * fconstr * constr * fconstr subs
   | FLIFT of int * fconstr
-  | FFROZEN of constr * fconstr subs
+  | FCLOS of constr * fconstr subs
 
-and frreference =
+and freference =
   | FConst of section_path * fconstr array
   | FEvar of (existential * fconstr subs)
   | FVar of identifier
   | FFarRel of int
 
-val frterm_of : fconstr -> frterm
 
 (* To lazy reduce a constr, create a ['a clos_infos] with
    [create_cbv_infos], inject the term to reduce with [inject]; then use
    a reduction function *)
 
+val inject : constr -> fconstr
+val fterm_of : fconstr -> fterm
+val term_of_fconstr : fconstr -> constr
+
 (* Global and local constant cache *)
 type 'a clos_infos
 val create_clos_infos : flags -> env -> 'a evar_map -> 'a clos_infos
-val clos_infos_env : 'a clos_infos -> env
-
-val inject : constr -> fconstr
 
 (* Reduction function *)
 
@@ -164,92 +168,35 @@ val norm_val : 'a clos_infos -> fconstr -> constr
 (* [whd_val] is for weak head normalization *)
 val whd_val : 'a clos_infos -> fconstr -> constr
 
+(* Conversion auxiliary functions to do step by step normalisation *)
+
 (* [fhnf] and [fnf_apply] are for weak head normalization but staying
-   in [fcontr] world to perform step by step weak head normalization *)
+   in [fconstr] world to perform step by step weak head normalization *)
 
 val fhnf: 'a clos_infos -> fconstr -> int * fconstr * fconstr stack
 val fhnf_apply : 'a clos_infos ->
   int -> fconstr -> fconstr stack -> int * fconstr * fconstr stack
 
-(* [search_frozen_value] unfolds references in a [fconstr] *)
-val search_frozen_value : 'a clos_infos -> frreference -> fconstr option
+(* [unfold_reference] unfolds references in a [fconstr] *)
+val unfold_reference : 'a clos_infos -> freference -> fconstr option
 
-
-(*i This is for cbv debug *)
-type cbv_value =
-  | VAL of int * constr
-  | LAM of name * constr * constr * cbv_value subs
-  | FIXP of fixpoint * cbv_value subs * cbv_value list
-  | COFIXP of cofixpoint * cbv_value subs * cbv_value list
-  | CONSTR of int * (section_path * int) * cbv_value array * cbv_value list
-
-val shift_value : int -> cbv_value -> cbv_value
-
-type cbv_stack =
-  | TOP
-  | APP of cbv_value list * cbv_stack
-  | CASE of constr * constr array * case_info * cbv_value subs * cbv_stack
-
-val stack_app : cbv_value list -> cbv_stack -> cbv_stack
-val under_case_stack : cbv_stack -> bool
-val strip_appl : cbv_value -> cbv_stack -> cbv_value * cbv_stack
-
-val red_allowed : flags -> cbv_stack -> red_kind -> bool
-val reduce_const_body :
-  (cbv_value -> cbv_value) -> cbv_value -> cbv_stack -> cbv_value * cbv_stack
-
-(* recursive functions... *)
-val cbv_stack_term : 'a cbv_infos ->
-  cbv_stack -> cbv_value subs -> constr -> cbv_value
-val cbv_norm_term : 'a cbv_infos -> cbv_value subs -> constr -> constr
-val cbv_norm_more : 'a cbv_infos -> cbv_value subs -> cbv_value -> cbv_value
-val norm_head : 'a cbv_infos ->
-  cbv_value subs -> constr -> cbv_stack -> cbv_value * cbv_stack
-val apply_stack : 'a cbv_infos -> constr -> cbv_stack -> constr
-val cbv_norm_value : 'a cbv_infos -> cbv_value -> constr
-(* End of cbv debug section i*)
-
+(***********************************************************************)
 (*i This is for lazy debug *)
-type freeze = fconstr
-val is_val : freeze -> bool
 
-val lift_frterm : int -> freeze -> freeze
-val lift_freeze : int -> freeze -> freeze
+val lift_fconstr : int -> fconstr -> fconstr
+val lift_fconstr_vect : int -> fconstr array -> fconstr array
 
-val freeze : freeze subs -> constr -> freeze
-val freeze_vect : freeze subs -> constr array -> freeze array
-val freeze_list : freeze subs -> constr list -> freeze list
+val mk_clos : fconstr subs -> constr -> fconstr
+val mk_clos_vect : fconstr subs -> constr array -> fconstr array
+val mk_clos_deep :
+  (fconstr subs -> constr -> fconstr) ->
+   fconstr subs -> constr -> fconstr
 
-val traverse_term : freeze subs -> constr -> freeze
-val lift_term_of_freeze : lift_spec -> freeze -> constr
+val knr: 'a clos_infos -> fconstr -> fconstr stack ->
+  fconstr * fconstr stack
+val kl: 'a clos_infos -> fconstr -> fconstr
 
-(* Back to constr *)
-val fstrong : (freeze -> freeze) -> lift_spec -> freeze -> constr
-val term_of_freeze : freeze -> constr
-val applist_of_freeze : freeze array -> constr list
-
-(* contract a substitution *)
-val contract_subst : int -> constr -> freeze subs -> freeze -> freeze
-
-val strip_frterm :
-  int -> fconstr -> fconstr stack -> int * fconstr * fconstr stack
-val strip_freeze : fconstr -> int * fconstr * fconstr stack
-
-(* Auxiliary functions for (co)fixpoint reduction *)
-val contract_fix_vect : frterm -> fconstr
-val copy_case : case_info -> fconstr -> fconstr -> fconstr array -> fconstr
-
-(* Iota analysis: reducible ? *)
-type case_status =
-  | CONSTRUCTOR of int * fconstr stack
-  | COFIX of int * int * (fconstr array * name list * fconstr array) *
-      fconstr stack * constr array * freeze subs
-  | IRREDUCTIBLE
-
-(* recursive functions... *)
-val unfreeze : 'a clos_infos -> fconstr -> fconstr
-val whnf_frterm : 'a clos_infos -> fconstr -> fconstr
-val whnf_term : 'a clos_infos -> fconstr subs -> constr -> fconstr
-val whnf_apply : 'a clos_infos -> fconstr -> fconstr stack -> fconstr
+val to_constr :
+  (lift -> fconstr -> 'a) -> lift -> fconstr -> ('a,'a) kind_of_term
 
 (* End of cbn debug section i*)

@@ -31,6 +31,26 @@ type case_printing =
 (* the integer is the number of real args, needed for reduction *)
 type case_info = int array * case_printing
 
+(* Concrete type for making pattern-matching. *)
+module Polymorph :
+sig
+(* [constr array] is an instance matching definitional [named_context] in
+   the same order (i.e. last argument first) *)
+type 'constr existential = existential_key * 'constr array
+type 'constr constant = constant_path * 'constr array
+type 'constr constructor = constructor_path * 'constr array
+type 'constr inductive = inductive_path * 'constr array
+type ('constr, 'types) rec_declaration =
+    'types array * name list * 'constr array
+type ('constr, 'types) fixpoint =
+    (int array * int) * ('constr, 'types) rec_declaration
+type ('constr, 'types) cofixpoint =
+    int * ('constr, 'types) rec_declaration
+
+(* [IsVar] is used for named variables and [IsRel] for variables as
+   de Bruijn indices. *)
+end 
+
 (********************************************************************)
 (* type of global reference *)
 
@@ -74,46 +94,39 @@ type arity = rel_declaration list * sorts
   manipulation of terms. Some of these functions may be overlapped with
   previous ones. *)
 
-(* Concrete type for making pattern-matching. *)
+open Polymorph
+type ('constr, 'types) kind_of_term =
+  | IsRel          of int
+  | IsMeta         of int
+  | IsVar          of identifier
+  | IsSort         of sorts
+  | IsCast         of 'constr * 'constr
+  | IsProd         of name * 'types * 'constr 
+  | IsLambda       of name * 'types * 'constr
+  | IsLetIn        of name * 'constr * 'types * 'constr
+  | IsApp          of 'constr * 'constr array
+  | IsEvar         of 'constr existential
+  | IsConst        of 'constr constant
+  | IsMutInd       of 'constr inductive
+  | IsMutConstruct of 'constr constructor
+  | IsMutCase      of case_info * 'constr * 'constr * 'constr array
+  | IsFix          of ('constr, 'types) fixpoint
+  | IsCoFix        of ('constr, 'types) cofixpoint
 
-(* [constr array] is an instance matching definitional [named_context] in
-   the same order (i.e. last argument first) *)
 type existential = existential_key * constr array
 type constant = constant_path * constr array
 type constructor = constructor_path * constr array
 type inductive = inductive_path * constr array
-type rec_declaration = constr array * name list * constr array
+type rec_declaration = types array * name list * constr array
 type fixpoint = (int array * int) * rec_declaration
 type cofixpoint = int * rec_declaration
-
-(* [IsVar] is used for named variables and [IsRel] for variables as
-   de Bruijn indices. *)
-
-type kind_of_term =
-  | IsRel          of int
-  | IsMeta         of int
-  | IsVar          of identifier
-  | IsXtra         of string
-  | IsSort         of sorts
-  | IsCast         of constr * constr
-  | IsProd         of name * types * constr 
-  | IsLambda       of name * types * constr
-  | IsLetIn        of name * constr * types * constr
-  | IsApp         of constr * constr array
-  | IsEvar         of existential
-  | IsConst        of constant
-  | IsMutInd       of inductive
-  | IsMutConstruct of constructor
-  | IsMutCase      of case_info * constr * constr * constr array
-  | IsFix          of fixpoint
-  | IsCoFix        of cofixpoint
 
 (* User view of [constr]. For [IsApp], it is ensured there is at
    least one argument and the function is not itself an applicative
    term *)
 
-val kind_of_term : constr -> kind_of_term
-
+val kind_of_term : constr -> (constr, types) kind_of_term
+val mk_constr : (constr, types) kind_of_term -> constr
 
 (*s Term constructors. *)
 
@@ -125,9 +138,6 @@ val mkMeta : int -> constr
 
 (* Constructs a Variable *)
 val mkVar : identifier -> constr
-
-(* Construct an  [XTRA] term. *)
-val mkXtra : string -> constr
 
 (* Construct a type *)
 val mkSort : sorts -> constr
@@ -251,9 +261,6 @@ val isMeta : constr -> bool
 
 (* Destructs a variable *)
 val destVar : constr -> identifier
-
-(* Destructs an XTRA *)
-val destXtra : constr -> string
 
 (* Destructs a sort. [is_Prop] recognizes the sort \textsf{Prop}, whether 
    [isprop] recognizes both \textsf{Prop} and \textsf{Set}. *)
@@ -478,17 +485,9 @@ val subst_vars : identifier list -> constr -> constr
    if two names are identical, the one of least indice is keeped *)
 val substn_vars : int -> identifier list -> constr -> constr
 
-(*s Compact representation of implicit lifts. \\
-   [ELSHFT(l,n)] == lift of [n], then apply [lift l].
-  [ELLFT(n,l)] == apply [l] to de Bruijn > [n] i.e under n binders. *)
-type lift_spec =
-  | ELID
-  | ELSHFT of lift_spec * int
-  | ELLFT of int * lift_spec
-val el_shft : int -> lift_spec -> lift_spec
-val el_liftn : int -> lift_spec -> lift_spec
-val el_lift : lift_spec -> lift_spec
-val reloc_rel : int -> lift_spec -> int
+(* [rel_list n m] and [rel_vect n m] compute [[Rel (n+m);...;Rel(n+1)]] *)
+val rel_vect : int -> int -> constr array
+val rel_list : int -> int -> constr list
 
 (*s Occur check functions. *)                         
 
@@ -552,19 +551,22 @@ type constr_operator =
   | OpMutConstruct of constructor_path
   | OpMutCase of case_info
   | OpRec of fix_kind * Names.name list
-  | OpXtra of string
+
 
 val splay_constr : constr -> constr_operator * constr array
 val gather_constr : constr_operator * constr array -> constr
-
+(*
+val splay_constr : ('a,'a)kind_of_term -> constr_operator * 'a array
+val gather_constr : constr_operator * 'a array -> ('a,'a) kind_of_term
+*)
 val splay_constr_with_binders : constr ->
-      constr_operator * (name * constr option * constr) list * constr array
+      constr_operator * rel_declaration list * constr array
 val gather_constr_with_binders : 
-  constr_operator * (name * constr option * constr) list * constr array
+  constr_operator * rel_declaration list * constr array
   -> constr
 
 val generic_fold_left :
-  ('a -> constr -> 'a) -> 'a -> (name * constr option * constr) list
+  ('a -> constr -> 'a) -> 'a -> rel_declaration list
       -> constr array -> 'a
 
 (*s Functionals working on the immediate subterm of a construction *)

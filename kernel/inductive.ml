@@ -345,14 +345,6 @@ let build_branch_type env dep p cs =
 
 (* [Rel (n+m);...;Rel(n+1)] *)
 
-let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
-
-let rel_list n m = 
-  let rec reln l p = 
-    if p>m then l else reln (mkRel(n+p)::l) (p+1)
-  in 
-  reln [] 1
-
 let extended_rel_list n hyps =
   let rec reln l p = function
     | (_,None,_) :: hyps -> reln (mkRel (n+p) :: l) (p+1) hyps

@@ -73,7 +73,6 @@ let rec type_of env cstr=
 			  (Array.to_list args))
     | IsCast (c,t) -> t
     | IsSort _ | IsProd (_,_,_) | IsMutInd _ -> mkSort (sort_of env cstr)
-    | IsXtra _ -> error "type_of: Unexpected constr"
 
 and sort_of env t = 
   match kind_of_term t with

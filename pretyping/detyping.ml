@@ -283,9 +283,6 @@ let rec detype avoid env t =
 	 in RVar (dummy_loc, id_of_string s))
     | IsMeta n -> RMeta (dummy_loc, n)
     | IsVar id -> RVar (dummy_loc, id)
-    | IsXtra s -> warning "bdize: Xtra should no longer occur in constr";
-	RVar(dummy_loc, id_of_string ("XTRA"^s))
-        (* ope("XTRA",((str s):: pl@(List.map detype cl)))*) 
     | IsSort (Prop c) -> RSort (dummy_loc,RProp c)
     | IsSort (Type _) -> RSort (dummy_loc,RType)
     | IsCast (c1,c2) ->

@@ -7,6 +7,7 @@ open Util
 open Pp
 open Names
 open Univ
+open Esubst
 
 (* Coq abstract syntax with deBruijn variables; 'a is the type of sorts *)
 
@@ -70,13 +71,12 @@ type kind_of_term =
   | IsRel          of int
   | IsMeta         of int
   | IsVar          of identifier
-  | IsXtra         of string
   | IsSort         of sorts
   | IsCast         of constr * constr
   | IsProd         of name * constr * constr
   | IsLambda       of name * constr * constr
   | IsLetIn        of name * constr * constr * constr
-  | IsApp         of constr * constr array
+  | IsApp          of constr * constr array
   | IsEvar         of existential
   | IsConst        of constant
   | IsMutInd       of inductive
@@ -88,7 +88,6 @@ type kind_of_term =
 val mkRel : int -> constr
 val mkMeta : int -> constr
 val mkVar : identifier -> constr
-val mkXtra : string -> constr
 val mkSort : sorts -> constr
 val mkCast : constr * constr -> constr
 val mkProd : name * constr * constr -> constr
@@ -119,34 +118,54 @@ module Internal : InternalSig =
 struct
 *)
 
-type constr = kind_of_term
+module Polymorph =
+struct
+(* [constr array] is an instance matching definitional [named_context] in
+   the same order (i.e. last argument first) *)
+type 'constr existential = existential_key * 'constr array
+type 'constr constant = constant_path * 'constr array
+type 'constr constructor = constructor_path * 'constr array
+type 'constr inductive = inductive_path * 'constr array
+type ('constr, 'types) rec_declaration =
+    'types array * name list * 'constr array
+type ('constr, 'types) fixpoint =
+    (int array * int) * ('constr, 'types) rec_declaration
+type ('constr, 'types) cofixpoint =
+    int * ('constr, 'types) rec_declaration
 
-and existential = existential_key * constr array
-and constant = constant_path * constr array
-and constructor = constructor_path * constr array
-and inductive = inductive_path * constr array
-and rec_declaration = constr array * name list * constr array
-and fixpoint = (int array * int) * rec_declaration
-and cofixpoint = int * rec_declaration
+(* [IsVar] is used for named variables and [IsRel] for variables as
+   de Bruijn indices. *)
 
-and kind_of_term =
+end 
+open Polymorph
+
+type ('constr, 'types) kind_of_term =
   | IsRel          of int
   | IsMeta         of int
   | IsVar          of identifier
-  | IsXtra         of string
   | IsSort         of sorts
-  | IsCast         of constr * constr
-  | IsProd         of name * constr * constr
-  | IsLambda       of name * constr * constr
-  | IsLetIn        of name * constr * constr * constr
-  | IsApp         of constr * constr array
-  | IsEvar         of existential
-  | IsConst        of constant
-  | IsMutInd       of inductive
-  | IsMutConstruct of constructor
-  | IsMutCase      of case_info * constr * constr * constr array
-  | IsFix          of fixpoint
-  | IsCoFix        of cofixpoint
+  | IsCast         of 'constr * 'constr
+  | IsProd         of name * 'types * 'constr 
+  | IsLambda       of name * 'types * 'constr
+  | IsLetIn        of name * 'constr * 'types * 'constr
+  | IsApp          of 'constr * 'constr array
+  | IsEvar         of 'constr existential
+  | IsConst        of 'constr constant
+  | IsMutInd       of 'constr inductive
+  | IsMutConstruct of 'constr constructor
+  | IsMutCase      of case_info * 'constr * 'constr * 'constr array
+  | IsFix          of ('constr, 'types) fixpoint
+  | IsCoFix        of ('constr, 'types) cofixpoint
+
+type constr = (constr,constr) kind_of_term
+
+type existential = existential_key * constr array
+type constant = constant_path * constr array
+type constructor = constructor_path * constr array
+type inductive = inductive_path * constr array
+type rec_declaration = constr array * name list * constr array
+type fixpoint = (int array * int) * rec_declaration
+type cofixpoint = int * rec_declaration
 
 (***************************)
 (* hash-consing functions  *)                         
@@ -158,7 +177,6 @@ let comp_term t1 t2 =
   | IsMeta m1, IsMeta m2 -> m1 = m2
   | IsVar id1, IsVar id2 -> id1 == id2
   | IsSort s1, IsSort s2 -> s1 == s2
-  | IsXtra s1, IsXtra s2 -> s1 == s2
   | IsCast (c1,t1), IsCast (c2,t2) -> c1 == c2 & t1 == t2
   | IsProd (n1,t1,c1), IsProd (n2,t2,c2) -> n1 == n2 & t1 == t2 & c1 == c2
   | IsLambda (n1,t1,c1), IsLambda (n2,t2,c2) -> n1 == n2 & t1 == t2 & c1 == c2
@@ -185,7 +203,6 @@ let hash_term (sh_rec,(sh_sort,sh_sp,sh_na,sh_id,sh_str)) t =
   | IsRel _ | IsMeta _ -> t
   | IsVar x -> IsVar (sh_id x)
   | IsSort s -> IsSort (sh_sort s)
-  | IsXtra s -> IsXtra (sh_str s)
   | IsCast (c,t) -> IsCast (sh_rec c, sh_rec t)
   | IsProd (na,t,c) -> IsProd (sh_na na, sh_rec t, sh_rec c)
   | IsLambda (na,t,c) -> IsLambda (sh_na na, sh_rec t, sh_rec c)
@@ -227,9 +244,6 @@ let mkMeta  n =  IsMeta n
 
 (* Constructs a Variable named id *)
 let mkVar id = IsVar id
-
-(* Construct an XTRA term (XTRA is an extra slot for whatever you want) *)
-let mkXtra s = IsXtra s
 
 (* Construct a type *)
 let mkSort s = IsSort s
@@ -283,6 +297,7 @@ let mkFix fix = IsFix fix
 let mkCoFix cofix = IsCoFix cofix
 
 let kind_of_term c = c
+let mk_constr c = c
 
 (*
 end
@@ -345,11 +360,6 @@ let isMeta c = match kind_of_term c with IsMeta _ -> true | _ -> false
 let destVar c = match kind_of_term c with
   | IsVar id -> id
   | _ -> invalid_arg "destVar"
-
-(* Destructs an XTRA *)
-let destXtra c = match kind_of_term c with
-  | IsXtra s -> s
-  | _ -> invalid_arg "destXtra"
 
 (* Destructs a type *)
 let isSort c = match kind_of_term c with
@@ -502,7 +512,7 @@ let destCoFix c = match kind_of_term c with
    the usual representation of the constructions; it is not recursive *)
 
 let fold_constr f acc c = match kind_of_term c with
-  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> acc
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _ -> acc
   | IsCast (c,t) -> f (f acc c) t
   | IsProd (_,t,c) -> f (f acc t) c
   | IsLambda (_,t,c) -> f (f acc t) c
@@ -526,7 +536,7 @@ let fold_constr f acc c = match kind_of_term c with
    each binder traversal; it is not recursive *)
 
 let fold_constr_with_binders g f n acc c = match kind_of_term c with
-  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> acc
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _ -> acc
   | IsCast (c,t) -> f n (f n acc c) t
   | IsProd (_,t,c) -> f (g n) (f n acc t) c
   | IsLambda (_,t,c) -> f (g n) (f n acc t) c
@@ -549,7 +559,7 @@ let fold_constr_with_binders g f n acc c = match kind_of_term c with
    not specified *)
 
 let iter_constr f c = match kind_of_term c with
-  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> ()
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _ -> ()
   | IsCast (c,t) -> f c; f t
   | IsProd (_,t,c) -> f t; f c
   | IsLambda (_,t,c) -> f t; f c
@@ -570,7 +580,7 @@ let iter_constr f c = match kind_of_term c with
    subterms are processed is not specified *)
 
 let iter_constr_with_binders g f n c = match kind_of_term c with
-  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> ()
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _ -> ()
   | IsCast (c,t) -> f n c; f n t
   | IsProd (_,t,c) -> f n t; f (g n) c
   | IsLambda (_,t,c) -> f n t; f (g n) c
@@ -591,7 +601,7 @@ let iter_constr_with_binders g f n c = match kind_of_term c with
    not specified *)
 
 let map_constr f c = match kind_of_term c with
-  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> c
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _ -> c
   | IsCast (c,t) -> mkCast (f c, f t)
   | IsProd (na,t,c) -> mkProd (na, f t, f c)
   | IsLambda (na,t,c) -> mkLambda (na, f t, f c)
@@ -612,7 +622,7 @@ let map_constr f c = match kind_of_term c with
    subterms are processed is not specified *)
 
 let map_constr_with_binders g f l c = match kind_of_term c with
-  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> c
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _ -> c
   | IsCast (c,t) -> mkCast (f l c, f l t)
   | IsProd (na,t,c) -> mkProd (na, f l t, f (g l) c)
   | IsLambda (na,t,c) -> mkLambda (na, f l t, f (g l) c)
@@ -637,7 +647,7 @@ let map_constr_with_binders g f l c = match kind_of_term c with
    and the order with which subterms are processed is not specified *)
 
 let map_constr_with_named_binders g f l c = match kind_of_term c with
-  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> c
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _ -> c
   | IsCast (c,t) -> mkCast (f l c, f l t)
   | IsProd (na,t,c) -> mkProd (na, f l t, f (g na l) c)
   | IsLambda (na,t,c) -> mkLambda (na, f l t, f (g na l) c)
@@ -688,7 +698,7 @@ let array_map_left_pair f a g b =
   end
 
 let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
-  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> c
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _ -> c
   | IsCast (c,t) -> let c' = f l c in mkCast (c', f l t)
   | IsProd (na,t,c) -> let t' = f l t in mkProd (na, t', f (g l) c)
   | IsLambda (na,t,c) -> let t' = f l t in mkLambda (na, t', f (g l) c)
@@ -714,7 +724,7 @@ let map_constr_with_binders_left_to_right g f l c = match kind_of_term c with
 
 (* strong *)
 let map_constr_with_full_binders g f l c = match kind_of_term c with
-  | IsRel _ | IsMeta _ | IsVar _   | IsSort _  | IsXtra _ -> c
+  | IsRel _ | IsMeta _ | IsVar _   | IsSort _ -> c
   | IsCast (c,t) -> mkCast (f l c, f l t)
   | IsProd (na,t,c) -> mkProd (na, f l t, f (g (na,None,t) l) c)
   | IsLambda (na,t,c) -> mkLambda (na, f l t, f (g (na,None,t) l) c)
@@ -744,7 +754,6 @@ let compare_constr f c1 c2 =
   | IsMeta m1, IsMeta m2 -> m1 = m2
   | IsVar id1, IsVar id2 -> id1 = id2
   | IsSort s1, IsSort s2 -> s1 = s2
-  | IsXtra s1, IsXtra s2 -> s1 = s2
   | IsCast (c1,_), _ -> f c1 c2
   | _, IsCast (c2,_) -> f c1 c2
   | IsProd (_,t1,c1), IsProd (_,t2,c2) -> f t1 t2 & f c1 c2
@@ -857,35 +866,6 @@ let noccur_with_meta n m term =
 (*********************)
 (*      Lifting      *)
 (*********************)
-
-(* Explicit lifts and basic operations *)
-type lift_spec =
-  | ELID
-  | ELSHFT of lift_spec * int (* ELSHFT(l,n) == lift of n, then apply lift l *)
-  | ELLFT of int * lift_spec  (* ELLFT(n,l)  == apply l to de Bruijn > n *)
-                            (*                 i.e under n binders *)
-
-(* compose a relocation of magnitude n *)
-let rec el_shft n = function
-  | ELSHFT(el,k) -> el_shft (k+n) el
-  | el -> if n = 0 then el else ELSHFT(el,n)
-
-
-(* cross n binders *)
-let rec el_liftn n = function
-  | ELID -> ELID
-  | ELLFT(k,el) -> el_liftn (n+k) el
-  | el -> if n=0 then el else ELLFT(n, el)
-
-let el_lift el = el_liftn 1 el
-
-(* relocation of de Bruijn n in an explicit lift *)
-let rec reloc_rel n = function
-  | ELID -> n
-  | ELLFT(k,el) ->
-      if n <= k then n else (reloc_rel (n-k) el) + k
-  | ELSHFT(el,k) -> (reloc_rel (n+k) el)
-
 
 (* The generic lifting function *)
 let rec exliftn el c = match kind_of_term c with
@@ -1006,9 +986,6 @@ let mkMeta = mkMeta
 
 (* Constructs a Variable named id *)
 let mkVar = mkVar
-
-(* Construct an XTRA term (XTRA is an extra slot for whatever you want) *)
-let mkXtra = mkXtra
 
 (* Construct a type *)
 let mkSort   = mkSort
@@ -1238,6 +1215,15 @@ let prod_appvect t nL = Array.fold_left prod_app t nL
 (* prod_applist T [ a1 ; ... ; an ] -> (T a1 ... an) *)
 let prod_applist t nL = List.fold_left prod_app t nL
 
+
+(* [Rel (n+m);...;Rel(n+1)] *)
+let rel_vect n m = Array.init m (fun i -> mkRel(n+m-i))
+
+let rel_list n m = 
+  let rec reln l p = 
+    if p>m then l else reln (mkRel(n+p)::l) (p+1)
+  in 
+  reln [] 1
 
 (*********************************)
 (* Other term destructors        *)
@@ -1693,7 +1679,6 @@ type constr_operator =
   | OpMutConstruct of constructor_path
   | OpMutCase of case_info
   | OpRec of fix_kind * name list
-  | OpXtra of string
 
 let splay_constr c = match kind_of_term c with
   | IsRel n                    -> OpRel n, [||]
@@ -1704,7 +1689,7 @@ let splay_constr c = match kind_of_term c with
   | IsProd (x, t1, t2)         -> OpProd x, [|t1;t2|]
   | IsLambda (x, t1, t2)       -> OpLambda x, [|t1;t2|]
   | IsLetIn (x, b, t1, t2)     -> OpLetIn x, [|b;t1;t2|]
-  | IsApp (f,a)               -> OpApp, Array.append [|f|] a
+  | IsApp (f,a)                -> OpApp, Array.append [|f|] a
   | IsConst (sp, a)            -> OpConst sp, a
   | IsEvar (sp, a)             -> OpEvar sp, a
   | IsMutInd (ind_sp, l)       -> OpMutInd ind_sp, l
@@ -1712,7 +1697,6 @@ let splay_constr c = match kind_of_term c with
   | IsMutCase (ci,p,c,bl)      -> OpMutCase ci, Array.append [|p;c|] bl
   | IsFix (fi,(tl,lna,bl))     -> OpRec (RFix fi,lna), Array.append tl bl
   | IsCoFix (fi,(tl,lna,bl))   -> OpRec (RCoFix fi,lna), Array.append tl bl
-  | IsXtra s                   -> OpXtra s, [||]
 
 let gather_constr = function
   | OpRel n, [||]  -> mkRel n
@@ -1737,7 +1721,6 @@ let gather_constr = function
   | OpRec (RCoFix i,lna), a ->
       let n = Array.length a / 2 in
       mkCoFix (i,(Array.sub a 0 n, lna, Array.sub a n n))
-  | OpXtra s, [||] -> mkXtra s
   | _ -> errorlabstrm "Term.gather_term" [< 'sTR "ill-formed splayed constr">]
 
 let rec mycombine l1 l3 =
@@ -1778,7 +1761,6 @@ let splay_constr_with_binders c = match kind_of_term c with
 		   (List.rev lna)
 		   (Array.to_list (Array.mapi lift tl)) in
       OpRec (RCoFix fi,lna), ctxt, bl
-  | IsXtra s -> OpXtra s, [], [||]
 
 let gather_constr_with_binders = function
   | OpRel n, [], [||]  -> mkRel n
@@ -1805,7 +1787,6 @@ let gather_constr_with_binders = function
       let (lna, tl) = mysplit ctxt in
       let tl = Array.mapi (fun i -> lift (-i)) (Array.of_list tl) in
       mkCoFix (i,(tl, List.rev lna, bl))
-  | OpXtra s, [], [||] -> mkXtra s
   | _  -> errorlabstrm "Term.gather_term" [< 'sTR "ill-formed splayed constr">]
 
 let generic_fold_left f acc bl tl =

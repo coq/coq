@@ -115,8 +115,6 @@ let rec execute mf env sigma cstr =
         let j, _ = cast_rel env sigma cj tj in
 	j
 	  
-    | IsXtra _ -> anomaly "Typing: found an Extra"
-	  
 and execute_fix mf env sigma lar lfi vdef =
   let larj = execute_array mf env sigma lar in
   let lara = Array.map (assumption_of_judgment env sigma) larj in

@@ -485,8 +485,6 @@ let print_term inner_types l env csr =
 	   (Array.mapi (fun j x -> (x,t.(j),b.(j)) ) (Array.of_list f) ) [<>]
        >]
 )
-   | T.IsXtra _ ->
-      Util.anomaly "Xtra node in a term!!!"
    | T.IsEvar _ ->
       Util.anomaly "Evar node in a term!!!"
   in

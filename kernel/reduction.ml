@@ -11,6 +11,7 @@ open Declarations
 open Environ
 open Instantiate
 open Closure
+open Esubst
 
 exception Elimconst
 
@@ -78,7 +79,6 @@ let nf_betaiota env = clos_norm_flags betaiota env
 let nf_betadeltaiota env =  clos_norm_flags betadeltaiota env
 
 (* lazy weak head reduction functions *)
-(* Pb: whd_val parcourt tout le terme, meme si aucune reduction n'a lieu *)
 let whd_flags flgs env sigma t =
   whd_val (create_clos_infos flgs env sigma) (inject t)
 
@@ -710,7 +710,7 @@ and eqappr cv_pb infos appr1 appr2 =
   and (lft2,(n2,hd2,v2)) = appr2 in
   let el1 = el_shft n1 lft1
   and el2 = el_shft n2 lft2 in
-  match (frterm_of hd1, frterm_of hd2) with
+  match (fterm_of hd1, fterm_of hd2) with
     (* case of leaves *)
     | (FAtom a1, FAtom a2) ->
 	(match kind_of_term a1, kind_of_term a2 with
@@ -720,10 +720,6 @@ and eqappr cv_pb infos appr1 appr2 =
 		 (sort_cmp cv_pb s1 s2)
 	   | (IsMeta n, IsMeta m) ->
                bool_and_convert (n=m) 
-		 (convert_stacks (ccnv (pb_equal cv_pb) infos lft1 lft2)
-		    v1 v2)
-	   | IsXtra s1, IsXtra s2 ->
-               bool_and_convert (s1=s2)
 		 (convert_stacks (ccnv (pb_equal cv_pb) infos lft1 lft2)
 		    v1 v2)
 	   | _ -> fun _ -> raise NotConvertible)
@@ -742,22 +738,22 @@ and eqappr cv_pb infos appr1 appr2 =
 	     (convert_stacks (ccnv (pb_equal cv_pb) infos lft1 lft2) v1 v2))
           (* else expand the second occurrence (arbitrary heuristic) *)
           (fun u ->
-	     match search_frozen_value infos fl2 with
+	     match unfold_reference infos fl2 with
              | Some def2 -> 
 		 eqappr cv_pb infos appr1 (lft2, fhnf_apply infos n2 def2 v2) u
-             | None -> (match search_frozen_value infos fl1 with
+             | None -> (match unfold_reference infos fl1 with
                           | Some def1 -> eqappr cv_pb infos
 				(lft1, fhnf_apply infos n1 def1 v1) appr2 u
 			  | None -> raise NotConvertible))
 
     (* only one constant, existential, defined var or defined rel *)
     | (FFlex fl1, _)      ->
-        (match search_frozen_value infos fl1 with
+        (match unfold_reference infos fl1 with
            | Some def1 -> 
 	       eqappr cv_pb infos (lft1, fhnf_apply infos n1 def1 v1) appr2
            | None -> fun _ -> raise NotConvertible)
     | (_, FFlex fl2)      ->
-        (match search_frozen_value infos fl2 with
+        (match unfold_reference infos fl2 with
            | Some def2 -> 
 	       eqappr cv_pb infos appr1 (lft2, fhnf_apply infos n2 def2 v2)
            | None -> fun _ -> raise NotConvertible)

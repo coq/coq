@@ -116,11 +116,6 @@ val build_dependent_constructor : constructor_summary -> constr
    the constructor argument of a dependent predicate in a cases branch *)
 val build_dependent_inductive : inductive_family -> constr
 
-(*s [rel_list n m] and [rel_vect n m] compute [[Rel (n+m);...;Rel(n+1)]] *)
-(* (this is iota operator in C. Paulin habilitation thesis) *)
-val rel_vect : int -> int -> constr array
-val rel_list : int -> int -> constr list
-
 (*s [extended_rel_vect n hyps] and [extended_rel_list n hyps]
     generalizes [rel_vect] when local definitions may occur in parameters *)
 val extended_rel_vect : int -> rel_context -> constr array

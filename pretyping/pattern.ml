@@ -269,7 +269,7 @@ let rec sub_match nocc pat c =
       let (lm,le) = try_sub_match (nocc - 1) pat (c1::Array.to_list lc) in
       (lm,mkMutCaseL (ci,hd,List.hd le,List.tl le)))
   | IsMutConstruct _ | IsFix _ | IsMutInd _|IsCoFix _ |IsEvar _|IsConst _
-  | IsRel _|IsMeta _|IsVar _|IsXtra _|IsSort _ ->
+  | IsRel _|IsMeta _|IsVar _|IsSort _ ->
     (try authorized_occ nocc ((matches pat c),mkMeta (-1)) with
     | PatternMatchingFailure -> raise (NextOccurrence nocc)
     | NextOccurrence nocc -> raise (NextOccurrence (nocc - 1)))
@@ -320,7 +320,6 @@ let rec pattern_of_constr t =
     | IsFix f -> PFix f
     | IsCoFix _ ->
 	error "pattern_of_constr: (co)fix currently not supported"
-    | IsXtra _   -> anomaly "No longer supported"
 
 and pattern_of_ref ref inst =
   let args = Declare.extract_instance ref inst in

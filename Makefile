@@ -35,8 +35,8 @@ LOCALINCLUDES= -I config -I tools -I scripts -I lib -I kernel -I library \
 	       -I contrib/extraction
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
-BYTEFLAGS=$(INCLUDES) $(CAMLDEBUG)
-OPTFLAGS=$(INCLUDES) $(CAMLTIMEPROF)
+BYTEFLAGS=-rectypes $(INCLUDES) $(CAMLDEBUG)
+OPTFLAGS=-rectypes $(INCLUDES) $(CAMLTIMEPROF)
 OCAMLDEP=ocamldep
 DEPFLAGS=$(LOCALINCLUDES)
 
@@ -67,12 +67,12 @@ LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/bstack.cmo lib/edit.cmo lib/stamps.cmo lib/gset.cmo lib/gmap.cmo \
     lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo
 
-KERNEL=kernel/names.cmo kernel/univ.cmo kernel/term.cmo \
+KERNEL=kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo \
        kernel/sign.cmo kernel/declarations.cmo \
        kernel/environ.cmo kernel/evd.cmo kernel/instantiate.cmo \
-       kernel/closure.cmo kernel/reduction.cmo kernel/inductive.cmo\
-       kernel/type_errors.cmo kernel/typeops.cmo kernel/indtypes.cmo \
-       kernel/cooking.cmo kernel/safe_typing.cmo
+       kernel/closure.cmo kernel/reduction.cmo \
+       kernel/inductive.cmo kernel/type_errors.cmo kernel/typeops.cmo \
+       kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo
 
 LIBRARY=library/libobject.cmo library/summary.cmo library/nametab.cmo \
 	library/lib.cmo library/goptions.cmo \
@@ -80,7 +80,7 @@ LIBRARY=library/libobject.cmo library/summary.cmo library/nametab.cmo \
 	library/impargs.cmo library/indrec.cmo library/declare.cmo 
 
 PRETYPING=pretyping/rawterm.cmo pretyping/detyping.cmo \
-	  pretyping/retyping.cmo pretyping/tacred.cmo \
+	  pretyping/retyping.cmo pretyping/cbv.cmo pretyping/tacred.cmo \
 	  pretyping/pretype_errors.cmo pretyping/typing.cmo \
 	  pretyping/classops.cmo pretyping/recordops.cmo \
 	  pretyping/evarutil.cmo pretyping/evarconv.cmo \
@@ -155,11 +155,11 @@ COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP)
 world: $(COQBINARIES) states theories contrib tools
 
 $(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
-	$(COQMKTOP) -opt $(OPTFLAGS) -o $@
+	$(COQMKTOP) -opt $(INCLUDES) $(CAMLDEBUG) -o $@
 	$(STRIP) $@
 
 $(COQTOPBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO)
-	$(COQMKTOP) -top $(BYTEFLAGS) -o $@
+	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@
 
 # coqmktop 
 

@@ -217,7 +217,7 @@ let _ =
 			 (constr_of amult)
 			 (constr_of aone)
 			 (constr_of azero)
-			 (mkXtra "not a term")
+			 mkImplicit
 			 (constr_of aeq)
 			 (constr_of t)
 			 (cset_of_comarg_list l)))
@@ -253,7 +253,7 @@ let _ =
 			 (constr_of amult)
 			 (constr_of aone)
 			 (constr_of azero)
-			 (mkXtra "not a term")
+			 mkImplicit
 			 (constr_of aeq)
 			 (constr_of t)
 			 ConstrSet.empty))

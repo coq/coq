@@ -10,6 +10,7 @@ open Environ
 open Reduction
 open Closure
 open Instantiate
+open Cbv
 
 (************************************************************************)
 (* Reduction of constant hiding fixpoints (e.g. for Simpl). The trick   *)
@@ -584,7 +585,7 @@ let rec substlin env name n ol c =
     | IsCoFix _ -> 
         (warning "do not consider occurrences inside cofixpoints"; (n,ol,c))
 
-    | (IsRel _|IsMeta _|IsVar _|IsXtra _|IsSort _
+    | (IsRel _|IsMeta _|IsVar _|IsSort _
       |IsEvar _|IsConst _|IsMutInd _|IsMutConstruct _) -> (n,ol,c)
 	
 let unfold env sigma name =
