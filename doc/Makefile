@@ -1,6 +1,6 @@
 # Makefile for the Coq documentation
 
-# You need the environment varibles COQTOP and COQBIN to be correctly set
+# You need the environment variables COQTOP and COQBIN to be correctly set
 # (some files are preprocessed using Coq and some part of the documentation
 # is automatically built from the theories sources)
 
@@ -80,7 +80,7 @@ all-pdf: Tutorial.v.pdf Reference-Manual.pdf Library.pdf Changes.v.pdf
 
 all-ps: Tutorial.v.ps Reference-Manual.ps Library.ps Changes.v.ps
 
-all-html: Tutorial.v.html Reference-Manual.html Changes.v.html
+all-html: Tutorial.v.html Reference-Manual.html Library.html Changes.v.html
 
 
 # dvips et dviselect existent sur loupiac
