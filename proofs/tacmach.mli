@@ -161,8 +161,10 @@ val context       : ctxtty -> tactic
 val refiner         : rule -> tactic
 val introduction    : identifier -> tactic
 val intro_replacing : identifier -> tactic
+val internal_cut    : identifier -> types -> tactic
+val internal_cut_rev : identifier -> types -> tactic
 val refine          : constr -> tactic
-val convert_concl   : constr -> tactic
+val convert_concl   : types -> tactic
 val convert_hyp     : identifier -> types -> tactic
 val convert_deftype : identifier -> types -> tactic
 val convert_defbody : identifier -> constr -> tactic

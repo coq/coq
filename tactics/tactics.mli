@@ -262,6 +262,7 @@ val cut_intro                   : constr -> tactic
 val cut_replacing               : identifier -> constr -> tactic
 val cut_in_parallel             : constr list -> tactic
 val dyn_cut                     : tactic_arg list -> tactic
+val dyn_true_cut                : tactic_arg list -> tactic
 val dyn_lettac                  : tactic_arg list -> tactic
 
 val generalize                  : constr list -> tactic

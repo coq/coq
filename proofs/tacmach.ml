@@ -223,6 +223,14 @@ let intro_replacing whereid pf =
   refiner (Prim { name = Intro_replacing; newids = [];
                   hypspecs = [whereid]; terms = []; params = [] }) pf
 
+let internal_cut id t pf = 
+  refiner (Prim { name = Cut true; newids = [id];
+                  hypspecs = []; terms = [t]; params = [] }) pf
+
+let internal_cut_rev id t pf = 
+  refiner (Prim { name = Cut false; newids = [id];
+                  hypspecs = []; terms = [t]; params = [] }) pf
+
 let refine c pf = 
   refiner (Prim { name = Refine; terms = [c];
 		  hypspecs = []; newids = []; params = [] }) pf

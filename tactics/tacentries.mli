@@ -36,6 +36,7 @@ val v_move_dep      : tactic_arg list -> tactic
 val v_apply         : tactic_arg list -> tactic
 val v_cutAndResolve : tactic_arg list -> tactic
 val v_cut           : tactic_arg list -> tactic
+val v_truecut       : tactic_arg list -> tactic
 val v_lettac        : tactic_arg list -> tactic
 val v_generalize    : tactic_arg list -> tactic
 val v_generalize_dep : tactic_arg list -> tactic

@@ -97,6 +97,8 @@ let bad_tactic_args s l =
 
 let introduction    = Tacmach.introduction 
 let intro_replacing = Tacmach.intro_replacing 
+let internal_cut    = Tacmach.internal_cut
+let internal_cut_rev = Tacmach.internal_cut_rev
 let refine          = Tacmach.refine
 let convert_concl   = Tacmach.convert_concl
 let convert_hyp     = Tacmach.convert_hyp
@@ -586,11 +588,27 @@ let dyn_cut_and_apply = function
 (*     Cut tactics        *)
 (**************************)
 
+let true_cut c gl =
+  match kind_of_term (hnf_type_of gl c) with
+    | IsSort _ ->
+        let id=next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
+        internal_cut id c gl
+    | _  -> error "Not a proposition or a type"
+
+let dyn_true_cut = function
+  | [Command com] -> tactic_com_sort true_cut com
+  | [Constr  c]   -> true_cut c
+  | l             -> bad_tactic_args "true_cut" l
+
 let cut c gl =
   match kind_of_term (hnf_type_of gl c) with
     | IsSort _ ->
-	apply_type (mkProd (Anonymous, c, pf_concl gl)) 
-          [mkMeta (new_meta())] gl
+        let id=next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
+        let t = mkProd (Anonymous, c, pf_concl gl) in
+        tclTHENS
+          (internal_cut_rev id c)
+          [tclTHEN (apply_type t [mkVar id]) (thin [id]);
+           tclIDTAC] gl
     | _  -> error "Not a proposition or a type"
 
 let dyn_cut = function

@@ -35,6 +35,7 @@ let v_move_dep      = hide_tactic "MoveDep"       dyn_move_dep
 let v_apply         = hide_tactic "Apply"         dyn_apply
 let v_cutAndResolve = hide_tactic "CutAndApply"   dyn_cut_and_apply
 let v_cut           = hide_tactic "Cut"           dyn_cut
+let v_truecut       = hide_tactic "TrueCut"       dyn_true_cut
 let v_lettac        = hide_tactic "LetTac"        dyn_lettac
 let v_generalize    = hide_tactic "Generalize"    dyn_generalize
 let v_generalize_dep = hide_tactic "GeneralizeDep" dyn_generalize_dep

@@ -10,6 +10,9 @@ Modifications depuis la V7.0
 - Correction bugs Cases en cas de prédicat dépendant
 - Le flag Delta n'inclut plus Zeta et Evar, nouveaux flags Zeta et Evar inclus
   dans Compute (à documenter)
+- Nouvelle tactique TrueCut qui fait la coupure du calcul des séquents
+  (et dans le sens attendu)
+- Amélioration de l'efficacité de l'ancien Cut
 
 Différences oubliées dans la V7.0beta :
 

@@ -39,6 +39,7 @@ type prim_rule_name =
   | Intro
   | Intro_after
   | Intro_replacing
+  | Cut of bool
   | Fix
   | Cofix
   | Refine 

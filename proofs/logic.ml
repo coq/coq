@@ -379,6 +379,12 @@ let prim_refiner r sigma goal =
 	       if !check then error "Introduction needs a product"
 	       else anomaly "Intro_replacing: expects a product")
 	
+    | { name = Cut b; terms = [t]; newids = [id] } ->
+        if occur_meta t then error_use_instantiate();
+        let sg1 = mk_goal info sign t in
+        let sg2 = mk_goal info (add_named_decl (id,None,t) sign) cl in
+        if b then [sg1;sg2] else [sg2;sg1]  
+
     | { name = Fix; hypspecs = []; terms = []; 
 	newids = [f]; params = [Num(_,n)] } ->
      	let rec check_ind k cl = 
@@ -533,7 +539,11 @@ let prim_extractor subfun vl pft =
 	       let cty = subst_vars vl ty in
 	       mkLetIn (Name id, cb, cty, subfun (id::vl) spf)
 	   | _ -> error "incomplete proof!")
-	
+
+    | {ref=Some(Prim{name=Cut b;terms=[t];newids=[id]},[spf1;spf2]) } ->
+        let spf1, spf2 = if b then spf1, spf2 else spf2, spf1 in
+	mkLetIn (Name id,subfun vl spf1,subst_vars vl t,subfun (id::vl) spf2)
+
     | {ref=Some(Prim{name=Fix;newids=[f];params=[Num(_,n)]},[spf]) } -> 
 	let cty = subst_vars vl cl in 
 	let na = Name f in 
@@ -603,6 +613,12 @@ let pr_prim_rule = function
 	
   | {name=Intro_replacing;newids=[id]} -> 
       [< 'sTR"intro replacing " ; pr_id id >]
+	
+  | {name=Cut b;terms=[t];newids=[id]} ->
+      if b then
+        [< 'sTR"TrueCut "; prterm t >]
+      else
+        [< 'sTR"Cut "; prterm t; 'sTR ";[Intro "; pr_id id; 'sTR "|Idtac]" >]
 	
   | {name=Fix;newids=[f];params=[Num(_,n)]} -> 
       [< 'sTR"Fix "; pr_id f; 'sTR"/"; 'iNT n>]

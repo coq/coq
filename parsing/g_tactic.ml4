@@ -318,6 +318,7 @@ GEXTEND Gram
       | IDENT "Decompose"; "["; l = ne_qualidarg_list; "]"; c = constrarg ->
           <:ast< (DecomposeThese $c ($LIST $l)) >>
       | IDENT "Cut"; c = constrarg -> <:ast< (Cut $c) >>
+      | IDENT "TrueCut"; c = constrarg -> <:ast< (TrueCut $c) >>
       | IDENT "Specialize"; n = pure_numarg; lcb = constrarg_binding_list ->
           <:ast< (Specialize $n ($LIST $lcb))>>
       | IDENT "Specialize"; lcb = constrarg_binding_list ->
