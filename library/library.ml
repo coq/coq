@@ -71,7 +71,7 @@ let add_load_path_entry (phys_path,coq_path) =
 	begin
           (* Assume the user is concerned by module naming *)
 	  if dir <> Nametab.default_root_prefix then
-	    warning (phys_path^" was previously bound to "
+	    Options.if_verbose warning (phys_path^" was previously bound to "
 	    ^(string_of_dirpath dir)
 	    ^("\nIt is remapped to "^(string_of_dirpath coq_path)));
 	  remove_path phys_path;
