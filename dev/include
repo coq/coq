@@ -1,7 +1,7 @@
 
 (* File to include to install the pretty-printers in the ocaml toplevel *)
 
-#use "base_include.ml";;
+#use "base_include";;
 
 #install_printer  (* ast *)  prast;;
 #install_printer  (* pat *)  prastpat;;
