@@ -156,12 +156,10 @@ let judge_of_abstraction env name var j =
 
 (* Type of let-in. *)
 
-let judge_of_letin env name defj j =
-  let v = match kind_of_term defj.uj_val with
-      Cast(c,t) -> c
-    | _ -> defj.uj_val in
-  { uj_val = mkLetIn (name, v, defj.uj_type, j.uj_val) ;
-    uj_type = type_app (subst1 v) j.uj_type }
+let judge_of_letin env name defj typj j =
+  let cst = conv_leq env defj.uj_type typj.utj_val in
+  { uj_val = mkLetIn (name, defj.uj_val, typj.utj_val, j.uj_val) ;
+    uj_type = type_app (subst1 defj.uj_val) j.uj_type }, cst
 
 (* Type of an application. *)
 
@@ -237,7 +235,7 @@ let judge_of_product env name t1 t2 =
 let judge_of_cast env cj tj =
   try 
     let cst = conv_leq env cj.uj_type tj.utj_val in
-    { uj_val = j_val cj;
+    { uj_val = mkCast (j_val cj, tj.utj_val);
       uj_type = tj.utj_val },
     cst
   with NotConvertible ->
@@ -373,10 +371,12 @@ let rec execute env cstr cu =
           (judge_of_product env name varj varj')
 
     | LetIn (name,c1,c2,c3) ->
-        let (j,cu1) = execute env (mkCast(c1,c2)) cu in
-        let env1 = push_rel (name,Some j.uj_val,j.uj_type) env in
+        let (j1,cu1) = execute env c1 cu in
+        let (j2,cu2) = execute_type env c2 cu in
+        let env1 = push_rel (name,Some j1.uj_val,j2.utj_val) env in
         let (j',cu2) = execute env1 c3 cu1 in
-        (judge_of_letin env name j j', cu2)
+        univ_combinator cu2
+          (judge_of_letin env name j1 j2 j')
 	  
     | Cast (c,t) ->
         let (cj,cu1) = execute env c cu in

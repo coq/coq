@@ -68,8 +68,8 @@ val judge_of_product :
 
 (* s Type of a let in. *)
 val judge_of_letin :
-  env -> name -> unsafe_judgment -> unsafe_judgment 
-    -> unsafe_judgment
+  env -> name -> unsafe_judgment -> unsafe_type_judgment -> unsafe_judgment 
+    -> unsafe_judgment * constraints
 
 (*s Type of a cast. *)
 val judge_of_cast :

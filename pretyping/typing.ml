@@ -111,10 +111,13 @@ let rec execute mf env sigma cstr =
 	j
 
      | LetIn (name,c1,c2,c3) ->
-        let j1 = execute mf env sigma (mkCast (c1, c2)) in
-        let env1 = push_rel (name,Some j1.uj_val,j1.uj_type) env in
+        let j1 = execute mf env sigma c1 in
+        let j2 = execute mf env sigma c2 in
+        let j2 = type_judgment env sigma j2 in
+        let env1 = push_rel (name,Some j1.uj_val,j2.utj_val) env in
         let j3 = execute mf env1 sigma c3 in
-        judge_of_letin env name j1 j3
+        let (j,_) = judge_of_letin env name j1 j2 j3 in
+        j
   
     | Cast (c,t) ->
         let cj = execute mf env sigma c in
