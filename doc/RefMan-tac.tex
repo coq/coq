@@ -619,7 +619,7 @@ product {\tt \ident$_i$:T} (for some type \T); if \vref$_i$ is
 A bindings list can also be a simple list of terms {\tt \term$_1$
   \term$_2$ \dots\term$_n$}. In that case the references to which
 these terms correspond are determined by the tactic. In case of {\tt
-  Elim \term} (see section \ref{Elim}) the terms should correspond to
+  elim \term} (see section \ref{elim}) the terms should correspond to
 all the dependent products in the type of \term\ while in the case of
 {\tt apply \term} only the dependent products which are not bound in
 the conclusion of the type are given.
@@ -638,15 +638,15 @@ very useful in proofs by cases, where some cases are impossible. In
 most cases, \texttt{P} or $\sim$\texttt{P} is one of the hypotheses of
 the local context.
 
-\subsection{\tt Contradiction}
+\subsection{\tt contradiction}
 \label{Contradiction}
-\tacindex{Contradiction}
+\tacindex{contradiction}
 
-This tactic applies to any goal. The {\tt Contradiction} tactic
+This tactic applies to any goal. The {\tt contradiction} tactic
 attempts to find in the current context (after all {\tt intros}) one
 which is equivalent to {\tt False}. It permits to prune irrelevant
 cases.  This tactic is a macro for the tactics sequence {\tt intros;
-  ElimType False; Assumption}.
+  elimtype False; assumption}.
 
 \begin{ErrMsgs}
 \item \errindex{No such assumption}
@@ -747,29 +747,39 @@ The term \verb+(n:nat)(plus (S n) (S n))+ is not reduced by {\tt Hnf}.
 (i.e. which have not been frozen with an {\tt Opaque} command; see
 section \ref{Opaque}).
 
-\subsection{\tt Simpl}
-\tacindex{Simpl}
+\subsection{\tt simpl}
+\tacindex{simpl}
 
-This tactic applies to any goal. The tactic {\tt Simpl} first applies
+This tactic applies to any goal. The tactic {\tt simpl} first applies
 $\beta\iota$-reduction rule.  Then it expands transparent constants
 and tries to reduce {\tt T'} according, once more, to $\beta\iota$
 rules. But when the $\iota$ rule is not applicable then possible
 $\delta$-reductions are not applied.  For instance trying to use {\tt
-  Simpl} on {\tt (plus n O)=n} will change nothing.
+  simpl} on {\tt (plus n O)=n} will change nothing.
 
-\tacindex{Simpl \dots\ in}
+\tacindex{simpl \dots\ in}
 \begin{Variants}
-\item {\tt Simpl {\term}}
+\item {\tt simpl {\term}}
   
-  This applies {\tt Simpl} only to the occurrences of {\term} in the
+  This applies {\tt simpl} only to the occurrences of {\term} in the
   current goal.
 
-\item {\tt Simpl \num$_1$ \dots\ \num$_i$ {\term}}
+\item {\tt simpl {\term} at \num$_1$ \dots\ \num$_i$}
   
-  This applies {\tt Simpl} only to the \num$_1$, \dots, \num$_i$
+  This applies {\tt simpl} only to the \num$_1$, \dots, \num$_i$
   occurrences of {\term} in the current goal.
 
   \ErrMsg {\tt Too few occurrences}
+
+\item {\tt simpl {\ident}}
+  
+  This applies {\tt simpl} only to the applicative subterms whose head
+  occurrence is {\ident}.
+
+\item {\tt simpl {\ident} at \num$_1$ \dots\ \num$_i$}
+  
+  This applies {\tt simpl} only to the \num$_1$, \dots, \num$_i$
+applicative subterms whose head occurrence is {\ident}.
 
 \end{Variants}
 
@@ -950,27 +960,41 @@ case analysis.  Indeed, they make use of the elimination (or
 induction) principles generated with inductive definitions (see
 section~\ref{Cic-inductive-definitions}).
 
-\subsection{\tt NewInduction \term}
-\tacindex{NewInduction}
+\subsection{\tt induction \term}
+\tacindex{induction}
 
 This tactic applies to any goal. The type of the argument {\term} must
-be an inductive constant. Then, the tactic {\tt NewInduction}
+be an inductive constant. Then, the tactic {\tt induction}
 generates subgoals, one for each possible form of {\term}, i.e. one
 for each constructor of the inductive type.
 
-The tactic {\tt NewInduction} automatically replaces every occurrences
+The tactic {\tt induction} automatically replaces every occurrences
 of {\term} in the conclusion and the hypotheses of the goal.  It
 automatically adds induction hypotheses (using names of the form {\tt
   IHn1}) to the local context. If some hypothesis must not be taken
 into account in the induction hypothesis, then it needs to be removed
-first (you can also use the tactic {\tt Elim}, see below).
+first (you can also use the tactics {\tt elim} or {\tt simple induction},
+see below).
 
-{\tt NewInduction} works also when {\term} is an identifier denoting a
-  quantified variable of the conclusion of the goal. Then it behaves as
-  {\tt intros until {\ident}; NewInduction {\ident}}.
+There are particular cases:
+
+\begin{itemize}
+
+\item If {\term} is an identifier {\ident} denoting a quantified
+variable of the conclusion of the goal, then {\tt induction {\ident}}
+behaves as {\tt intros until {\ident}; induction {\ident}}
+
+\item If {\term} is a {\num}, then {\tt induction {\num}} behaves as
+{\tt intros until {\num}} followed by {\tt induction} applied to the
+last introduced hypothesis.
+
+\Rem For simple induction on a numeral, use syntax {\tt induction
+({\num})} (not very interesting anyway).
+
+\end{itemize}
 
 \begin{coq_example}
-Lemma induction_test : forall n:nat, n = n -> (n <= n).
+Lemma induction_test : forall n:nat, n = n -> n <= n.
 intros n H.
 induction n.
 \end{coq_example}
@@ -979,32 +1003,54 @@ induction n.
 \item \errindex{Not an inductive product}
 \item \errindex{Cannot refine to conclusions with meta-variables}
   
-  As {\tt NewInduction} uses {\tt Apply}, see section \ref{Apply} and
-  the variant {\tt Elim \dots\ with \dots} below.
+  As {\tt induction} uses {\tt apply}, see section \ref{apply} and
+  the variant {\tt elim \dots\ with \dots} below.
 \end{ErrMsgs}
 
 \begin{Variants}
+\item{\tt induction {\term} as {\pattern}}
 
-\item {\tt NewInduction {\num}} 
-  
-  is analogous to {\tt NewInduction {\ident}} (when {\ident} a
-  quantified variable of the goal) but for the {\num}-th non-dependent
-  premise of the goal.
+  This behaves as {\tt induction {\term}} but uses the names in
+  {\pattern} to names the variables introduced in the context. The
+  list {\pattern} must have the form {\tt [} $p_{11}$ \ldots
+  $p_{1n_1}$ {\tt |} {\ldots} {\tt |} $p_{m1}$ \ldots $p_{mn_m}$ {\tt
+  ]} with $m$ being the number of constructors of the type of
+  {\term}. Each variable introduced by {\tt induction} in the context of
+  the $i^{th}$ goal gets its name from the list $p_{i1}$ \ldots
+  $p_{in_i}$ in order. If there are not enough names, {\tt induction}
+  invents names for the remaining variables to introduce. More
+  generally, the $p$'s can be any introduction patterns (see section
+  \ref{intros-pattern}). This provides a concise notation for nested
+  induction.
 
-\item{\tt Elim \term}\label{Elim}
+  It is recommended to use this variant of {\tt induction} for 
+  robust proof scripts.
+
+\item {\tt induction {\term} using {\qualid}}
+
+  This behaves as {\tt induction {\term}} but using the induction
+scheme of name {\qualid}. It does not expect that the type of
+{\term} is inductive.
+
+\item {\tt induction {\term} using {\qualid} as {\pattern}}
+
+  This combines {\tt induction {\term} using {\qualid}}
+and {\tt induction {\term} as {\pattern}}.
+
+\item {\tt elim \term}\label{elim}
   
   This is a more basic induction tactic.  Again, the type of the
   argument {\term} must be an inductive constant. Then according to
-  the type of the goal, the tactic {\tt Elim} chooses the right
-  destructor and applies it (as in the case of the {\tt Apply}
+  the type of the goal, the tactic {\tt elim} chooses the right
+  destructor and applies it (as in the case of the {\tt apply}
   tactic). For instance, assume that our proof context contains {\tt
     n:nat}, assume that our current goal is {\tt T} of type {\tt
-    Prop}, then {\tt Elim n} is equivalent to {\tt Apply nat\_ind with
-    n:=n}.  The tactic {\tt Elim} does not affect the hypotheses of
+    Prop}, then {\tt elim n} is equivalent to {\tt apply nat\_ind with
+    n:=n}.  The tactic {\tt elim} does not affect the hypotheses of
   the goal, neither introduces the induction loading into the context
   of hypotheses.
 
-\item {\tt Elim \term} 
+\item {\tt elim \term} 
   
   also works when the type of {\term} starts with products and the
   head symbol is an inductive definition. In that case the tactic
@@ -1014,97 +1060,140 @@ induction n.
   hypotheses. In the case of dependent products, the tactic will try
   to find an instance for which the elimination lemma applies.
 
-\item {\tt Elim {\term} with \term$_1$ \dots\ \term$_n$}
-  \tacindex{Elim \dots\ with} \
+\item {\tt elim {\term} with \term$_1$ \dots\ \term$_n$}
+  \tacindex{elim \dots\ with} \
   
   Allows the user to give explicitly the values for dependent
   premises of the elimination schema. All arguments must be given.
 
   \ErrMsg \errindex{Not the right number of dependent arguments}
 
-\item{\tt Elim {\term} with {\vref$_1$} := {\term$_1$} \dots\ {\vref$_n$}
+\item{\tt elim {\term} with {\vref$_1$} := {\term$_1$} \dots\ {\vref$_n$}
     := {\term$_n$}} 
   
-  Provides also {\tt Elim} with values for instantiating premises by
+  Provides also {\tt elim} with values for instantiating premises by
   associating explicitly variables (or non dependent products) with
   their intended instance.
 
-\item{\tt Elim {\term$_1$} using {\term$_2$}}
-\tacindex{Elim \dots\ using} 
+\item{\tt elim {\term$_1$} using {\term$_2$}}
+\tacindex{elim \dots\ using} 
 
 Allows the user to give explicitly an elimination predicate
 {\term$_2$} which is not the standard one for the underlying inductive
 type of {\term$_1$}. Each of the {\term$_1$} and {\term$_2$} is either
 a simple term or a term with a bindings list (see \ref{Binding-list}).
 
-\item {\tt ElimType \form}\tacindex{ElimType}
+\item {\tt elimtype \form}\tacindex{elimtype}
   
-  The argument {\form} must be inductively defined. {\tt ElimType I}
-  is equivalent to {\tt cut I. intro H{\rm\sl n}; Elim H{\rm\sl n};
-    Clear H{\rm\sl n}} Therefore the hypothesis {\tt H{\rm\sl n}} will
+  The argument {\form} must be inductively defined. {\tt elimtype I}
+  is equivalent to {\tt cut I. intro H{\rm\sl n}; elim H{\rm\sl n};
+    clear H{\rm\sl n}}. Therefore the hypothesis {\tt H{\rm\sl n}} will
   not appear in the context(s) of the subgoal(s).  Conversely, if {\tt
     t} is a term of (inductive) type {\tt I} and which does not occur
-  in the goal then {\tt Elim t} is equivalent to {\tt ElimType I; 2:
+  in the goal then {\tt elim t} is equivalent to {\tt elimtype I; 2:
     exact t.}
 
   \ErrMsg \errindex{Impossible to unify \dots\ with \dots} 
   
   Arises when {\form} needs to be applied to parameters.
 
-\item {\tt Induction \ident}\tacindex{Induction}
+\item {\tt simple induction \ident}\tacindex{simple induction}
   
-  This is a deprecated tactic, which behaves as {\tt intros until
-    {\ident}; Elim {\tt {\ident}}} when {\ident} is a quantified
-  variable of the goal, and similarly as {\tt NewInduction \ident},
-  when {\ident} is an hypothesis (except in the way induction
-  hypotheses are named).
-
-\item {\tt Induction {\num}}
-  
-  This is a deprecated tactic, which behaves as {\tt intros until
-    {\num}; Elim {\tt {\ident}}} where {\ident} is the name given by
-  {\tt intros until {\num}} to the {\num}-th non-dependent premise of
-  the goal.
-\end{Variants}
-
-\subsection{\tt NewDestruct \term}\tacindex{Destruct}\tacindex{NewDestruct}
-
-The tactic {\tt NewDestruct} is used to perform case analysis without
-recursion. Its behaviour is similar to {\tt NewInduction \term} except
-that no induction hypotheses is generated.  It applies to any goal and
-the type of {\term} must be inductively defined.  {\tt NewDestruct}
-works also when {\term} is an identifier denoting a quantified
-variable of the conclusion of the goal. Then it behaves as {\tt intros
-  until {\ident}; NewDestruct {\ident}}.
-
-\begin{Variants}
-\item {\tt NewDestruct {\num}}
-  
-  Is analogous to {\tt NewDestruct {\ident}} (when {\ident} a
-  quantified variable of the goal), but for the {\num}-th
-  non-dependent premise of the goal.
-
-\item{\tt Case \term}\label{Case}\tacindex{Case}
-  
-  The tactic {\tt Case} is a more basic tactic to perform case
-  analysis without recursion. It behaves as {\tt Elim \term} but using
-  a case-analysis elimination principle and not a recursive one.
-
-\item {\tt Case {\term} with \term$_1$ \dots\ \term$_n$}
-  \tacindex{Case \dots\ with}
-
-  Analogous to {\tt Elim \dots\ with} above.
-
-\item {\tt Destruct \ident}\tacindex{Destruct}
-  
-  This is a deprecated tactic, which behaves as {\tt intros until
-    {\ident}; Case {\tt {\ident}}} when {\ident} is a quantified
+  This tactic behaves as {\tt intros until
+    {\ident}; elim {\tt {\ident}}} when {\ident} is a quantified
   variable of the goal.
 
-\item {\tt Destruct {\num}}
+\item {\tt simple induction {\num}}
   
-  This is a deprecated tactic, which behaves as {\tt intros until
-    {\num}; Case {\tt {\ident}}} where {\ident} is the name given by
+  This tactic behaves as {\tt intros until
+    {\num}; elim {\tt {\ident}}} where {\ident} is the name given by
+  {\tt intros until {\num}} to the {\num}-th non-dependent premise of
+  the goal.
+
+%% \item {\tt simple induction {\term}}\tacindex{simple induction}
+  
+%%   If {\term} is an {\ident} corresponding to a quantified variable of
+%%   the goal then the tactic behaves as {\tt intros until {\ident}; elim
+%%   {\tt {\ident}}}.  If {\term} is a {\num} then the tactic behaves as
+%%   {\tt intros until {\ident}; elim {\tt {\ident}}}.  Otherwise, it is
+%%   a synonym for {\tt elim {\term}}.
+
+%%   \Rem For simple induction on a numeral, use syntax {\tt simple
+%%   induction ({\num})}.
+
+\end{Variants}
+
+\subsection{\tt destruct \term}
+\tacindex{destruct}
+
+The tactic {\tt destruct} is used to perform case analysis without
+recursion. Its behavior is similar to {\tt induction \term} except
+that no induction hypothesis is generated.  It applies to any goal and
+the type of {\term} must be inductively defined. There are particular cases:
+
+\begin{itemize}
+
+\item If {\term} is an identifier {\ident} denoting a quantified
+variable of the conclusion of the goal, then {\tt destruct {\ident}}
+behaves as {\tt intros until {\ident}; destruct {\ident}}
+
+\item If {\term} is a {\num}, then {\tt destruct {\num}} behaves as
+{\tt intros until {\num}} followed by {\tt destruct} applied to the
+last introduced hypothesis.
+
+\Rem For destruction of a numeral, use syntax {\tt destruct
+({\num})} (not very interesting anyway).
+
+\end{itemize}
+
+\begin{Variants}
+\item{\tt destruct {\term} as {\pattern}}
+
+  This behaves as {\tt destruct {\term}} but uses the names in
+  {\pattern} to names the variables introduced in the context. The
+  list {\pattern} must have the form {\tt [} $p_{11}$ \ldots
+  $p_{1n_1}$ {\tt |} {\ldots} {\tt |} $p_{m1}$ \ldots $p_{mn_m}$ {\tt
+  ]} with $m$ being the number of constructors of the type of
+  {\term}. Each variable introduced by {\tt destruct} in the context of
+  the $i^{th}$ goal gets its name from the list $p_{i1}$ \ldots
+  $p_{in_i}$ in order. If there are not enough names, {\tt destruct}
+  invents names for the remaining variables to introduce. More
+  generally, the $p$'s can be any introduction patterns (see section
+  \ref{intros-pattern}). This provides a concise notation for nested
+  destruction.
+
+  It is recommended to use this variant of {\tt destruct} for 
+  robust proof scripts.
+
+\item{\tt destruct {\term} using {\qualid}}
+
+  This is a synonym of {\tt induction {\term} using {\qualid}}.
+
+\item{\tt destruct {\term} using {\qualid} as {\pattern}}
+
+  This is a synonym of {\tt induction {\term} using {\qualid} as {\pattern}}.
+
+\item{\tt case \term}\label{case}\tacindex{case}
+  
+  The tactic {\tt case} is a more basic tactic to perform case
+  analysis without recursion. It behaves as {\tt elim \term} but using
+  a case-analysis elimination principle and not a recursive one.
+
+\item {\tt case {\term} with \term$_1$ \dots\ \term$_n$}
+  \tacindex{case \dots\ with}
+
+  Analogous to {\tt elim \dots\ with} above.
+
+\item {\tt simple destruct \ident}\tacindex{simple destruct}
+  
+  This tactic behaves as {\tt intros until
+    {\ident}; case {\tt {\ident}}} when {\ident} is a quantified
+  variable of the goal.
+
+\item {\tt simple destruct {\num}}
+  
+  This tactic behaves as {\tt intros until
+    {\num}; case {\tt {\ident}}} where {\ident} is the name given by
   {\tt intros until {\num}} to the {\num}-th non-dependent premise of
   the goal.
 
@@ -1124,8 +1213,8 @@ A pattern is either:
 \item a list of patterns: $p_1~\ldots~p_n$
 \item a disjunction of patterns: {\tt [}$p_1$ {\tt |} {\ldots} {\tt
 |} $p_n$ {\tt ]}
-\item a conjunction of patterns: {\tt (} $p_1$ {\tt ,} {\ldots} {\tt
-,} $p_n$ {\tt )}
+%equivalent to {\tt [}$p_1$ {\ldots} $p_n$ {\tt ]}
+%\item a conjunction of patterns: {\tt (} $p_1$ {\tt ,} {\ldots} {\tt ,} $p_n$ {\tt )}
 \end{itemize}
 
 The behavior of \texttt{intros} is defined inductively over the
@@ -1179,7 +1268,7 @@ with the induction hypotheses \verb+(P (S n) m)+ and
 \verb+(m:nat)(P n m)+ (hence \verb+(P n m)+ and \verb+(P n (S m))+).
 
 \Rem When the induction hypothesis \verb+(P (S n) m)+ is not
-needed, {\tt NewInduction \ident$_1$; NewDestruct \ident$_2$} produces
+needed, {\tt induction \ident$_1$; destruct \ident$_2$} produces
 more concise subgoals.
 
 \begin{Variant}
