@@ -123,6 +123,8 @@ let list_for_all_i p =
   in 
   for_all_p
 
+let list_except x l = List.filter (fun y -> not (x = y)) l
+
 (* Arrays *)
 
 let array_exists f v = 
@@ -240,6 +242,9 @@ let iterate f =
     if n <= 0 then x else iterate_f (pred n) (f x)
   in 
   iterate_f
+
+let repeat n f x =
+  for i = 1 to n do f x done
  
 (* Misc *)
 
@@ -250,7 +255,6 @@ module Intset = Set.Make(struct type t = int let compare = compare end)
 let out_some = function
   | Some x -> x
   | None -> failwith "out_some"
-
 
 let option_app f = function
   | None -> None

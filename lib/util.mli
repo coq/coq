@@ -39,6 +39,7 @@ val list_map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
 val list_index : 'a -> 'a list -> int
 val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
 val list_for_all_i : (int -> 'a -> bool) -> int -> 'a list -> bool
+val list_except : 'a -> 'a list -> 'a list
 
 (*s Arrays. *)
 
@@ -65,6 +66,7 @@ val array_map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 
 val compose : ('a -> 'b) -> ('c -> 'a) -> 'c -> 'b
 val iterate : ('a -> 'a) -> int -> 'a -> 'a
+val repeat : int -> ('a -> unit) -> 'a -> unit
 
 (*s Misc. *)
 
