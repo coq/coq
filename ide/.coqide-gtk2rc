@@ -1,6 +1,13 @@
+# Some default functions for CoqIde. You may copy the file in your HOME and
+# edit as you want. See 
+# http://developer.gnome.org/doc/API/2.0/gtk/gtk-Resource-Files.html
+# for a complete set of options
+# To set the font of the text windows, edit the .coqiderc file through the menus.
+
+
 binding "text" {
   bind "<ctrl>k" { "set-anchor" ()
-		   "move-cursor" (display-lines,1,0)
+		   "move-cursor" (display-line-ends,1,0)
 		   "cut-clipboard" ()	
 		}
   bind "<ctrl>w" { "cut-clipboard" () }
@@ -13,7 +20,7 @@ class "GtkTextView" binding "text"
 
 
 style "views" {
-font_name = "Monospace 10"
+base[NORMAL] = "CornSilk"
 }
 class "GtkTextView" style "views"
 
@@ -21,16 +28,11 @@ widget "*.*.*.*.*.ScriptWindow" style "views"
 widget "*.*.*.*.GoalWindow" style "views"
 widget "*.*.*.*.MessageWindow" style "views"
 
-style "menu" {
-font_name = "Sans 12"
-}
-class "GtkLabel" style "menu"
-
+gtk-font-name = "Sans 12"
 
 style "location" {
 font_name = "Monospace 10"
 }
-widget "*.*.*.location" style "location"
-
+widget "*location*" style "location"
 
 gtk-key-theme-name = "Emacs"

@@ -3,8 +3,8 @@ open Printf
 open Util
 
 let pref_file = 
-  try (Filename.concat (Sys.getenv "HOME") ".coqidepref")
-  with _ -> ".coqidepref"
+  try (Filename.concat (Sys.getenv "HOME") ".coqiderc")
+  with _ -> ".coqiderc"
 
 let mod_to_str (m:Gdk.Tags.modifier) = 
   match m with
@@ -63,6 +63,8 @@ type pref =
 
       mutable cmd_browse : string * string;
 
+      mutable text_font : Pango.font_description;
+
       mutable doc_url : string;
       mutable library_url : string;
     }
@@ -94,6 +96,9 @@ let save_pref p =
     add "modifiers_valid" 
       (List.map mod_to_str p.modifiers_valid) ++
     add "cmd_browse" [fst p.cmd_browse; snd p.cmd_browse] ++
+
+    add "text_font" [Pango.Font.to_string p.text_font] ++
+
     add "doc_url" [p.doc_url] ++
     add "library_url" [p.library_url] ++
     Config_lexer.print_file pref_file
@@ -130,6 +135,8 @@ let (current:pref ref) =
 
     
     cmd_browse = "netscape -remote \"OpenURL(", ")\"";
+    
+    text_font = Pango.Font.from_string "Monospace 12";
 
     doc_url = "http://coq.inria.fr/doc/";
     library_url = "http://coq.inria.fr/library/";
@@ -171,10 +178,13 @@ let load_pref p =
     set "modifiers_valid" 
       (fun v -> np.modifiers_valid <- List.map str_to_mod v);
     set_pair "cmd_browse" (fun v1 v2 -> np.cmd_browse <- (v1,v2));
+    set_hd "text_font" (fun v -> np.text_font <- Pango.Font.from_string v);
     set_hd "doc_url" (fun v -> np.doc_url <- v);
     set_hd "library_url" (fun v -> np.library_url <- v);
     current := np
-  with e -> prerr_endline (Printexc.to_string e); prerr_endline "Could not load preferences."
+  with e -> 
+    prerr_endline ("Could not load preferences ("^
+		   (Printexc.to_string e)^").")
 
 let configure () = 
   let cmd_coqc = 

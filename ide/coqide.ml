@@ -22,11 +22,6 @@ let window_height = 600
 
 let initial_cwd = Sys.getcwd ()
 
-let default_general_font_name = "Sans 14"
-let default_monospace_font_name = "Monospace 14"
-
-let manual_monospace_font = ref None
-let manual_general_font = ref None
 
 let status = ref None
 let push_info = ref (function s -> failwith "not ready")
@@ -36,17 +31,6 @@ let flash_info = ref  (function s -> failwith "not ready")
 let set_location = ref  (function s -> failwith "not ready")
 
 let pulse = ref (function () -> failwith "not ready")
-
-let has_config_file = 
-  (Sys.file_exists (Filename.concat lib_ide ".coqiderc")) || 
-  (try Sys.file_exists (Filename.concat (Sys.getenv "HOME") ".coqiderc")
-   with Not_found -> false)
-
-let () = if not has_config_file then 
-  manual_monospace_font := Some 
-    (Pango.Font.from_string default_monospace_font_name);
-  manual_general_font := Some 
-    (Pango.Font.from_string default_general_font_name)
 
 let (font_selector:GWindow.font_selection_dialog option ref) = ref None
 let (message_view:GText.view option ref) = ref None
@@ -196,8 +180,8 @@ let (input_views:analyzed_views viewable_script Vector.t) = Vector.create ()
 
 let signals_to_crash = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup; 
 			  Sys.sigill; Sys.sigpipe; Sys.sigquit; 
-			  (* Sys.sigsegv;*)  Sys.sigterm; Sys.sigusr2] 
-			
+			  (* Sys.sigsegv; Sys.sigterm;*) Sys.sigusr2] 
+
 let crash_save i =
 (*  ignore (Unix.sigprocmask Unix.SIG_BLOCK signals_to_crash);*)
   Pervasives.prerr_endline "Trying to save all buffers in .crashcoqide files";
@@ -219,7 +203,7 @@ let crash_save i =
     )
     input_views;
   Pervasives.prerr_endline "Done. Please report.";
-  exit i
+  if i <> 127 then exit i
 
 let ignore_break () = 
   List.iter 
@@ -1463,9 +1447,7 @@ let main files =
       with_file f ~f:(input_channel b);
       let s = do_convert (Buffer.contents b) in
       let view = create_input_tab (Glib.Convert.filename_to_utf8 (Filename.basename f)) in
-      (match !manual_monospace_font with
-	 | None -> ()
-	 | Some n -> view#misc#modify_font n);
+      view#misc#modify_font !current.text_font;
       let index = add_input_view {view = view;
 				  analyzed_view = None;
 				 }
@@ -1677,10 +1659,10 @@ let main files =
 	       (get_current_view()).view#buffer;
 	       (out_some (get_current_view()).analyzed_view)#recenter_insert));
 
-  (* File/Refresh Menu *)
+(*  (* File/Refresh Menu *)
   let refresh_m = file_factory#add_item "Restart all" ~key:GdkKeysyms._R in
   refresh_m#misc#set_state `INSENSITIVE;
-
+*)
   (* File/Quit Menu *)
   let quit_f () =
     if has_something_to_save () then 
@@ -1718,7 +1700,7 @@ let main files =
 	   (fun () -> GtkSignal.emit_unit
 	      (get_current_view()).view#as_view 
 	      GtkText.View.Signals.copy_clipboard));
-  ignore(edit_f#add_item "Cut" (* ~key:GdkKeysyms._X *) ~callback:
+  ignore(edit_f#add_item "Cut" ~key:GdkKeysyms._X ~callback:
 	   (do_if_not_computing 
 	      (fun () -> GtkSignal.emit_unit
 		 (get_current_view()).view#as_view 
@@ -1731,7 +1713,7 @@ let main files =
 		   GtkText.View.Signals.paste_clipboard
 		 with _ -> prerr_endline "EMIT PASTE FAILED")));
   ignore (edit_f#add_separator ());
-  let read_only_i = edit_f#add_check_item "Read only" ~active:false
+  let read_only_i = edit_f#add_check_item "_Read only" ~active:false
 		      ~callback:(fun b -> 
 				   let v = get_current_view () in
 				   v.view#set_editable (not b);
@@ -1739,14 +1721,13 @@ let main files =
 				) 
   in
   read_only_i#misc#set_state `INSENSITIVE;
-  let search_i = edit_f#add_item "Search"
+  let search_if = edit_f#add_item "Search _forward"
 		   ~key:GdkKeysyms._F
-		   ~callback:(fun b -> 
-				let v = get_current_view () in 
-				!flash_info "Search Unsupported"
-			     ) 
   in
-  let complete_i = edit_f#add_item "Complete"
+  let search_ib = edit_f#add_item "Search _backward"
+		   ~key:GdkKeysyms._R
+  in
+  let complete_i = edit_f#add_item "_Complete"
 		     ~key:GdkKeysyms._comma
 		     ~callback:
 		     (do_if_not_computing 
@@ -2042,22 +2023,18 @@ let main files =
     configuration_factory#add_item "Edit _preferences"
       ~callback:(fun () -> configure ();reset_revert_timer ())
   in
-  (* let save_prefs_m =
-     configuration_factory#add_item "Save preferences"
-     ~callback:(fun () ->
-     let fd = open_out "toto" in
-     output_pref fd current;
-     close_out fd)
-     in
-  *)
+  let save_prefs_m =
+    configuration_factory#add_item "_Save preferences"
+      ~callback:(fun () -> save_pref !current)
+  in
   font_selector := 
   Some (GWindow.font_selection_dialog 
 	  ~title:"Select font..."
 	  ~modal:true ());
   let font_selector = out_some !font_selector in
-  font_selector#selection#set_font_name default_monospace_font_name;
-  font_selector#selection#set_preview_text 
-    "Lemma Truth: (p:Prover) `p < Coq`. Proof. Auto with *. Save."; 
+  font_selector#selection#set_font_name (Pango.Font.to_string !current.text_font);
+  font_selector#selection#set_preview_text
+    "Lemma Truth: ∀ p:Prover, `p < Coq`. Proof. Auto with *. Save."; 
   let customize_fonts_m = 
     configuration_factory#add_item "Customize _fonts"
       ~callback:(fun () -> font_selector#present ())
@@ -2120,6 +2097,100 @@ let main files =
   let lower_hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
   let status_bar = GMisc.statusbar ~packing:(lower_hbox#pack ~expand:true) () 
   in
+  let search_lbl = GMisc.label ~text:"Search:"
+		 ~show:true
+		 ~packing:(lower_hbox#pack ~expand:false) () 
+  in
+  let search_history = ref [] in
+  let search_input = GEdit.combo ~popdown_strings:!search_history
+		       ~use_arrows:`DEFAULT
+		       ~show:true
+		       ~packing:(lower_hbox#pack ~expand:false) () 
+  in
+  search_input#disable_activate ();
+  let ready_to_wrap_search = ref false in
+  let start_of_search = ref None in
+  let search_forward = ref true in
+  ignore (search_input#entry#connect#activate 
+	    ~callback:
+	    (fun () -> 
+	       if not (List.mem search_input#entry#text !search_history) then
+	       (search_history := 
+	       search_input#entry#text::!search_history;
+	       search_input#set_popdown_strings !search_history);
+	       let v = (get_current_view ()).view in
+	       v#coerce#misc#grab_focus ();
+	       v#buffer#move_mark `SEL_BOUND (v#buffer#get_iter_at_mark `INSERT);
+	       search_input#entry#set_text ""; 
+	       start_of_search := None;
+	       ready_to_wrap_search := false
+	    )) ;
+
+  to_do_on_page_switch := 
+  (fun i -> 
+     start_of_search := None;
+     ready_to_wrap_search:=false)::!to_do_on_page_switch;
+  let rec search_f () = 
+    if !start_of_search = None then 
+      start_of_search := 
+      Some ((get_current_view ()).view#buffer#create_mark 
+	      ((get_current_view ()).view#buffer#get_iter_at_mark `INSERT));
+    let txt = search_input#entry#text in 
+	       let v = (get_current_view ()).view in 
+	       let iit = v#buffer#get_iter_at_mark `SEL_BOUND in
+	       (match 
+		  if !search_forward then iit#forward_search txt 
+		  else (find_word_end iit)#backward_search txt 
+		with 
+		 | None -> 
+		     if !ready_to_wrap_search then begin
+		       ready_to_wrap_search := false;
+		       !flash_info "Search wrapped";
+		       v#buffer#place_cursor 
+			 (if !search_forward then v#buffer#start_iter else
+			 v#buffer#end_iter);
+		       search_f ()
+		     end else begin
+		       if !search_forward then !flash_info "Search at end"
+		       else !flash_info "Search at start";
+		       ready_to_wrap_search := true
+		     end
+		 | Some (start,stop) -> 
+		     v#buffer#move_mark `SEL_BOUND start;
+		     v#buffer#move_mark `INSERT stop;
+		     v#scroll_to_mark `INSERT
+	       ) 
+  in  
+  ignore (search_input#entry#event#connect#key_release 
+	    ~callback:
+	    (fun ev ->
+	       if GdkEvent.Key.keyval ev = GdkKeysyms._Escape then begin
+		       let v = (get_current_view ()).view in
+		       (match !start_of_search with 
+			 | None -> 
+			     v#buffer#move_mark 
+			     `SEL_BOUND 
+			     (v#buffer#get_iter_at_mark `INSERT)
+			 | Some mk -> let it = v#buffer#get_iter_at_mark 
+						 (`MARK mk) in
+			   v#buffer#place_cursor it;
+			   start_of_search := None
+		       );
+		       search_input#entry#set_text ""; 
+		       v#coerce#misc#grab_focus ();
+	       end else search_f (); 
+	       false
+	    )) ;
+  ignore (search_if#connect#activate
+    ~callback:(fun b -> 
+		 search_forward:= true;
+		 search_input#entry#coerce#misc#grab_focus (); 
+	      ));
+  ignore (search_ib#connect#activate
+    ~callback:(fun b ->
+		 search_forward:= false;
+		 search_input#entry#coerce#misc#grab_focus (); 
+	      ));
   let status_context = status_bar#new_context "Messages" in
   let flash_context = status_bar#new_context "Flash" in
   ignore (status_context#push "Ready");
@@ -2129,7 +2200,7 @@ let main files =
   flash_info := (fun s -> flash_context#flash ~delay:5000 s);
 
   (* Location display *)
-  let l = GMisc.label 
+  let l = GMisc.label
 	     ~text:"Line:     1 Char:   1" 
 	     ~packing:lower_hbox#pack () in 
   l#coerce#misc#set_name "location";
@@ -2190,7 +2261,7 @@ let main files =
 				Vector.iter 
 				  (fun {view=view} -> view#misc#modify_font pango_font)
 				  input_views;
-				manual_monospace_font := Some pango_font
+				!current.text_font <- pango_font
 			 );
 			 font_selector#misc#hide ()));
 
@@ -2228,12 +2299,9 @@ let main files =
   (get_input_view index).analyzed_view <- Some (new analyzed_view index);
   activate_input index;
   set_tab_image index yes_icon;
-  (match !manual_monospace_font with 
-     | None -> ()
-     | Some f -> 
-	 view#misc#modify_font f; 
-	 tv2#misc#modify_font f; 
-	 tv3#misc#modify_font f);
+  view#misc#modify_font !current.text_font; 
+  tv2#misc#modify_font !current.text_font; 
+  tv3#misc#modify_font !current.text_font;
   ignore (about_m#connect#activate 
 	    ~callback:(fun () -> tv3#buffer#set_text "by Benjamin Monate"));
   ignore (w#misc#connect#size_allocate 
@@ -2267,9 +2335,9 @@ let main files =
 let start () = 
   let files = Coq.init () in
   ignore_break ();
-  GtkMain.Rc.add_default_file (Filename.concat lib_ide ".coqiderc");
+  GtkMain.Rc.add_default_file (Filename.concat lib_ide ".coqide-gtk2rc");
   (try 
-     GtkMain.Rc.add_default_file (Filename.concat (Sys.getenv "HOME") ".coqiderc");
+     GtkMain.Rc.add_default_file (Filename.concat (Sys.getenv "HOME") ".coqide-gtk2rc");
   with Not_found -> ());
   ignore (GtkMain.Main.init ());
   GtkData.AccelGroup.set_default_mod_mask 

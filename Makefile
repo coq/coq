@@ -399,7 +399,7 @@ beforedepend:: ide/config_lexer.ml ide/find_phrase.ml ide/highlight.ml
 beforedepend:: ide/config_parser.mli ide/config_parser.ml
 
 FULLIDELIB=$(FULLCOQLIB)/ide
-IDEFILES=ide/coq.png ide/.coqiderc
+IDEFILES=ide/coq.png ide/.coqide-gtk2rc
 
 ide: $(COQIDEBYTE) $(COQIDE) states
 clean-ide: 

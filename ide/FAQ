@@ -1,22 +1,13 @@
 Q1) How to enable Emacs keybindings?
 R1: Insert 
 	gtk-key-theme-name = "Emacs"
-    in your ".coqiderc" file. It may be in the current dir
-    or in $HOME dir.
+    in your ".coqide-gtk2rc" file. It may be in the current dir
+    or in $HOME dir. This is done by default.
 
-Q2) How to change the default font ?
-R2) Insert 
-	style "default" {
-	font_name = "Monospace 14"
-	}
-	class "GtkTextView" style "default"
-    in your .coqiderc file. See Q1.
-    You may replace Monospace 14 by anything reasonable describing 
-    a font. For example "Sans bold 22". See Pango Font Descriptions for more
-    informations (http://www.pango.org/).
 
-Q3) How to enable antialiased fonts?
-R3) Set the GDK_USE_XFT variable to 1.
+Q2) How to enable antialiased fonts?
+R2) Set the GDK_USE_XFT variable to 1. This is by default with Gtk >= 2.2.
+    If some of your fonts seem not to be available, set to 0.
 
 Q4) How can use Forall and Exists pretty symbols ?
 R4) Thanks to the Notation features in Coq, you just need to insert these
@@ -25,10 +16,14 @@ R4) Thanks to the Notation features in Coq, you just need to insert these
 Notation "∀ x : t | P" := (x:t)P (at level 1, x,t,P at level 10).
 Notation "∃ x : t | P" := (EXT x:t|P) (at level 1, x,t,P at level 10).
 ======================================================================
-Copy/Paste might not work. You need to load a file containing these lines or to enter 
-the "∀" using an input method. As a convenience, you may put these lines in
+Copy/Paste from this file will not work. 
+You need to load a file containing these lines or to enter the "∀" 
+using an input method. As a convenience, you may put these lines in
 a utf8.v file and start coqide with : 
 	coqide -l utf8.v
+In the ide subdir of Coq sources, you will find a sample utf8.v with some 
+notations
+
 
 
 Input Methods:
@@ -36,14 +31,14 @@ Input Methods:
 	2200 is the hexadecimal code for forall in unicode charts and is encoded as "∀"	
 	in UTF-8.
 	2203 is for exists. See http://www.unicode.org for more.
--Second solution : rebind "<AltGr>a" to forall and "<AltGr>e" to exists. Under X11, you need to 
-	use something like
+-Second solution : rebind "<AltGr>a" to forall and "<AltGr>e" to exists. 
+	Under X11, you need to use something like
 		xmodmap -e "keycode  24 = a A F13 F13" 
 		xmodmap -e "keycode  26 = e E F14 F14" 
 	and then to add   
 		bind "F13" {"insert-at-cursor" ("∀")}
 		bind "F14" {"insert-at-cursor" ("∃")}
-	to your "binding "text"" section in .coqiderc. 
+	to your "binding "text"" section in .coqiderc-gtk2rc.
 	The strange ("∀") argument is the UTF-8 encoding for
 	0x2200. It is computed by lablgtk2 by 
 		Glib.Utf8.from_unichar 0x2200;;
