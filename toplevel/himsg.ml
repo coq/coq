@@ -546,6 +546,7 @@ let explain_non_exhaustive env pats =
 
 let explain_cannot_infer_predicate env typs =
   let pr_branch (cstr,typ) =
+    let cstr,_ = decompose_app cstr in
     [< 'sTR "For "; prterm_env env cstr; 'sTR " : "; prterm_env env typ >]
   in
   [<'sTR "Unable to unify the types found in the branches:";
