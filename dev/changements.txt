@@ -76,6 +76,10 @@ Changements dans les fonctions :
 	  type_of_type     ->  judge_of_type
 	  fcn_proposition  ->  judge_of_prop_contents
 
+	Reduction, Clenv
+          whd_betadeltat      -> whd_betaevar
+          whd_betadeltatiota  -> whd_betaiotaevar
+
 Changements dans les inductifs
 ------------------------------
 Nouveaux types "constructor" et "inductive" dans Term

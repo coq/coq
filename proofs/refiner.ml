@@ -684,7 +684,7 @@ let extract_pftreestate pts =
          'sPC; 'sTR"Please ascend to the root" >];
   let env = pts.tpf.goal.evar_env in
   let hyps = Environ.var_context env in
-  strong whd_betadeltatiota env (ts_it pts.tpfsigma)
+  strong whd_betaiotaevar env (ts_it pts.tpfsigma)
     (extract_proof hyps pts.tpf)
 
 

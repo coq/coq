@@ -66,14 +66,15 @@ val whd_delta_stack : 'a stack_reduction_function
 val whd_delta : 'a reduction_function
 val whd_betadelta_stack : 'a stack_reduction_function
 val whd_betadelta : 'a reduction_function
-val whd_betadeltat_stack : 'a stack_reduction_function
-val whd_betadeltat : 'a reduction_function
-val whd_betadeltatiota_stack : 'a stack_reduction_function
-val whd_betadeltatiota : 'a reduction_function
+val whd_betaevar_stack : 'a stack_reduction_function
+val whd_betaevar : 'a reduction_function
+val whd_betaiotaevar_stack : 'a stack_reduction_function
+val whd_betaiotaevar : 'a reduction_function
 val whd_betadeltaeta_stack : 'a stack_reduction_function
 val whd_betadeltaeta : 'a reduction_function
 val whd_betadeltaiotaeta_stack : 'a stack_reduction_function
 val whd_betadeltaiotaeta : 'a reduction_function
+val whd_evar : 'a reduction_function
 
 val beta_applist : (constr * constr list) -> constr
 
@@ -180,14 +181,15 @@ val whd_meta : (int * constr) list -> constr -> constr
 val plain_instance : (int * constr) list -> constr -> constr
 val instance : (int * constr) list -> 'a reduction_function
 
-(* [whd_ise] raise [Uninstantiated_evar] if an evar remains uninstantiated *)
-(* the *[_ise1]* leave uninstantiated evar as it *)
+(* [whd_ise] raise [Uninstantiated_evar] if an evar remains uninstantiated; *)
+(* *[whd_ise1]* is synonymous of *[whd_evar empty_env]* and *[nf_ise1]* of *)
+(* *[strong whd_evar empty_env]*: they leave uninstantiated evar as it *)
 
-exception Uninstantiated_evar of int
-
-val whd_ise : 'a evar_map -> constr -> constr
 val whd_ise1 : 'a evar_map -> constr -> constr
 val nf_ise1 : 'a evar_map -> constr -> constr
+exception Uninstantiated_evar of int
+val whd_ise : 'a evar_map -> constr -> constr
+
 val whd_ise1_metas : 'a evar_map -> constr -> constr
 
 (*s Obsolete Reduction Functions *)

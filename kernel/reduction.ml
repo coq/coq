@@ -381,14 +381,9 @@ let whd_betadelta_stack env sigma =
 let whd_betadelta env sigma c = applist(whd_betadelta_stack env sigma c [])
 
 
-let whd_betadeltat_stack env sigma = 
+let whd_betaevar_stack env sigma = 
   let rec whrec x l =
     match x with
-      | DOPN(Const _,_) ->
-          if evaluable_constant env x then 
-	    whrec (constant_value env x) l
-          else 
-	    (x,l)
       | DOPN(Evar ev,_) ->
           if Evd.is_defined sigma ev then 
 	    whrec (existential_value sigma x) l
@@ -405,11 +400,12 @@ let whd_betadeltat_stack env sigma =
           (match l with
              | [] -> (x,l)
              | (a::m) -> stacklam whrec [a] c m)
+      | DOPN(Const _,_) -> (x,l)
       | x -> (x,l)
   in 
   whrec
        
-let whd_betadeltat env sigma c = applist(whd_betadeltat_stack env sigma c [])
+let whd_betaevar env sigma c = applist(whd_betaevar_stack env sigma c [])
 
 let whd_betadeltaeta_stack env sigma = 
   let rec whrec x stack =
@@ -560,14 +556,9 @@ let whd_betaiota_stack env sigma =
 let whd_betaiota env sigma x = applist (whd_betaiota_stack env sigma x [])
 
 
-let whd_betadeltatiota_stack env sigma = 
+let whd_betaiotaevar_stack env sigma = 
   let rec whrec x stack =
     match x with
-      | DOPN(Const _,_) ->
-          if evaluable_constant env x then
-            whrec (constant_value env x) stack
-          else 
-	    (x,stack)
       | DOPN(Evar ev,_) ->
           if Evd.is_defined sigma ev then 
 	    whrec (existential_value sigma x) stack
@@ -595,12 +586,13 @@ let whd_betadeltatiota_stack env sigma =
       | DOPN(Fix _,_) ->
           let (reduced,(fix,stack)) = reduce_fix whrec x stack in
           if reduced then whrec fix stack else (fix,stack)
+      | DOPN(Const _,_) -> (x,stack)
       | x -> (x,stack)
  in 
   whrec   
 
-let whd_betadeltatiota env sigma x = 
-  applist(whd_betadeltatiota_stack env sigma x [])
+let whd_betaiotaevar env sigma x = 
+  applist(whd_betaiotaevar_stack env sigma x [])
 
 let whd_betadeltaiota_stack env sigma =
   let rec bdi_rec x stack =
@@ -1167,7 +1159,8 @@ let make_constructor_summary (hyps,lc,nconstr,ntypes) ind params =
 
 let make_arity env sigma (hyps,arity) ind params =
   let ((sp,i),ctxt) = ind in
-  let arity' = instantiate_type (Sign.ids_of_sign hyps) arity (Array.to_list ctxt) in
+  let arity' =
+    instantiate_type (Sign.ids_of_sign hyps) arity (Array.to_list ctxt) in
   match splay_prod env sigma (prod_applist (body_of_type arity') params) with
     | (sign, DOP0 (Sort s)) -> (sign,s)
     | _ -> anomaly "make_arity: the conclusion of this arity is not a sort"
@@ -1312,10 +1305,15 @@ let rec whd_ise1 sigma = function
       else 
 	k
   | DOP2(Cast,c,_) -> whd_ise1 sigma c
+  (* A quoi servait cette ligne ???
   | DOP0(Sort(Type _)) -> DOP0(Sort(Type dummy_univ))
+ *)
   | c -> c
 
 let nf_ise1 sigma = strong (fun _ -> whd_ise1) empty_env sigma
+
+(* A form of [whd_ise1] with type "reduction_function" *)
+let whd_evar env = whd_ise1
 
 (* Same as whd_ise1, but replaces the remaining ISEVAR by Metavariables
  * Similarly we have is_fmachine1_metas and is_resolve1_metas *)

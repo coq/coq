@@ -38,10 +38,10 @@ let new_evar_in_sign env =
   DOPN(Evar ev,
        Array.of_list (List.map (fun id -> VAR id) (ids_of_sign hyps)))
 
-let rec whd_deltat wc = function
+let rec w_whd_evar wc = function
   | DOPN(Evar ev,_) as k ->
       if is_defined (w_Underlying wc) ev then
-        whd_deltat wc (w_const_value wc k)
+        w_whd_evar wc (w_const_value wc k)
       else 
 	collapse_appl k
   | t -> 
@@ -81,8 +81,8 @@ let mimick_evar hdc nargs sp wc =
 
 let unify_0 mc wc m n =
   let rec unirec_rec ((metasubst,evarsubst) as substn) m n =
-    let cM = whd_deltat wc m
-    and cN = whd_deltat wc n in 
+    let cM = w_whd_evar wc m
+    and cN = w_whd_evar wc n in 
     try 
       match (cM,cN) with
 	| DOP2(Cast,c,_),t2 -> unirec_rec substn c t2
@@ -166,7 +166,7 @@ let unify_0 mc wc m n =
       unirec_rec (mc,[]) m n
 
 	
-let whd_castappdeltat_stack sigma = 
+let whd_castappevar_stack sigma = 
   let rec whrec x l =
     match x with
       | DOPN(Evar ev,_) as c ->
@@ -180,9 +180,9 @@ let whd_castappdeltat_stack sigma =
   in 
   whrec
 
-let whd_castappdeltat sigma c = applist(whd_castappdeltat_stack sigma c [])
+let whd_castappevar sigma c = applist(whd_castappevar_stack sigma c [])
 
-let w_whd wc c = whd_castappdeltat (w_Underlying wc) c
+let w_whd wc c = whd_castappevar (w_Underlying wc) c
 
 (* Unification
  *
