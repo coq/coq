@@ -835,7 +835,8 @@ let vernac_global_check c =
   let j = Safe_typing.typing senv c in
   msg (print_safe_judgment env j)
 
-let vernac_print = function
+let vernac_print p = 
+  if Options.is_verbose () then match p with
   | PrintTables -> print_tables ()
   | PrintLocalContext -> msg (print_local_context ())
   | PrintFullContext -> msg (print_full_context_typ ())
