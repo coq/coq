@@ -224,6 +224,13 @@ Intro;Generalize (H0 r1==R0 r2==R0 (Rmult r1 r2)==R0
 Tauto.
 Save.
 
+(**********) 
+Lemma Rmult_Rplus_distrl:
+   (r1,r2,r3:R) ((Rmult (Rplus r1 r2) r3)==
+                (Rplus (Rmult r1 r3) (Rmult r2 r3))).
+Intros; Ring.
+Save.
+
 (***********)
 Definition Rsqr:R->R:=[r:R](Rmult r r).
 
@@ -282,6 +289,13 @@ Tauto.
 Save.
 
 (**********)
+Lemma Rminus_distr:
+  (x,y,z:R) (Rmult x (Rminus y z))==
+            (Rminus (Rmult x y) (Rmult x z)).
+Intros; Ring.
+Save.
+
+(**********)
 Lemma eq_Ropp:(r1,r2:R)(r1==r2)->((Ropp r1)==(Ropp r2)).
   Auto with real.
 Save.
@@ -313,6 +327,28 @@ Intros;Red;Intro;Generalize (Rplus_plus_r r (Ropp r) R0 H0);Intro;
  Rewrite (Rplus_Ropp_r r) in H1;
  Rewrite (let (H1,H2)=(Rplus_ne r) in H1) in H1;
  Generalize (sym_eqT R R0 r H1);Intro;Auto.
+Save.
+
+(*********)
+Lemma Rinv_R1:(Rinv R1)==R1.
+Apply (r_Rmult_mult R1 (Rinv R1) R1);
+ [Rewrite (Rinv_r R1 R1_neq_R0);
+  Rewrite (let (H1,H2)=(Rmult_ne R1) in H1);Trivial|
+  Red;Intro;Apply R1_neq_R0;Assumption].
+Save.
+
+(*********)
+Lemma Rinv_neq_R0:(r:R)(~r==R0)->~(Rinv r)==R0.
+Intros;Red;Intro;Generalize (Rmult_mult_r r (Rinv r) R0 H0);
+ Clear H0;Intro;Rewrite (Rinv_r r H) in H0;Rewrite (Rmult_Or r) in H0;
+ Generalize R1_neq_R0;Intro;Auto. 
+Save.
+
+(*********)
+Lemma Rinv_Rinv:(r:R)(~r==R0)->(Rinv (Rinv r))==r.
+Intros;Apply (r_Rmult_mult (Rinv r) (Rinv (Rinv r)) r);
+ [Rewrite (Rinv_r (Rinv r) (Rinv_neq_R0 r H));
+  Rewrite (Rinv_l r H);Trivial |Apply Rinv_neq_R0;Assumption].
 Save.
 
 (*********)
@@ -372,6 +408,13 @@ Lemma Rle_not:(r1,r2:R)(Rlt r2 r1)->~(Rle r1 r2).
 Intros; Red; Intro;Unfold Rle in H0;Elim H0; Intro.
 Generalize (Rlt_antisym r1 r2 H1); Intro; Auto with zarith real.
 Elim (imp_not_Req r2 r1);Auto with zarith real.
+Save.
+
+(**********)
+Lemma Rlt_ge_not:(r1,r2:R)(Rlt r1 r2)->~(Rge r1 r2).
+Intros;Red;Intro;Unfold Rge in H0;Unfold Rgt in H0;Elim H0;Intro.
+Apply (Rlt_antisym r1 r2 H H1).
+Rewrite H1 in H;Exact (Rlt_antisym r2 r2 H H).
 Save.
 
 (**********)
@@ -490,6 +533,18 @@ Intros;Generalize (Rlt_Ropp r1 r2 H0);Intro;Unfold Rgt;
 Apply (Rlt_anti_compatibility r R0 (Ropp r));
  Elim (Rplus_ne r);Intros a b;Rewrite a;Clear a b;
  Rewrite (Rplus_Ropp_r r);Assumption.
+Save.
+
+(**********)
+Lemma Rle_monotony: 
+  (r,r1,r2:R)
+        (Rle R0 r)
+        ->(Rle r1 r2)->(Rle (Rmult r r1) (Rmult r r2)).
+Intros r r1 r2;Unfold Rle;Intros;Elim H;Elim H0;Intros.
+Left;Apply Rlt_monotony;Assumption.
+Right;Rewrite H1;Reflexivity.
+Right;Rewrite <- H2;Rewrite Rmult_Ol;Rewrite Rmult_Ol;Reflexivity.
+Right;Rewrite H1;Reflexivity.
 Save.
 
 (**********)
@@ -644,6 +699,37 @@ Apply (imp_not_Req r R0);Left;Assumption.
 Generalize (Rmult_mult_r r R0 (Rinv r) H1);Rewrite (Rinv_r r).
 Rewrite (Rmult_Or r);Intro;Generalize R1_neq_R0;Auto.
 Apply (imp_not_Req r R0);Left;Assumption.
+Save.
+
+(*********)
+Lemma Rinv_lt:(r1,r2:R)(Rlt R0 (Rmult r1 r2))->(Rlt r1 r2)->
+                       (Rlt (Rinv r2) (Rinv r1)).  
+Intros;Generalize (Rlt_monotony (Rinv (Rmult r1 r2)) r1 r2 
+                  (Rlt_Rinv (Rmult r1 r2) H) H0);Intro;
+ Elim (without_div_O_contr r1 r2  
+       (sym_not_eqT R R0 (Rmult r1 r2) (imp_not_Req R0 (Rmult r1 r2) 
+       (or_introl (Rlt R0 (Rmult r1 r2)) (Rgt R0 (Rmult r1 r2)) H))));
+ Intros;Rewrite Rinv_Rmult in H1;Auto;
+ Rewrite (Rmult_assoc (Rinv r1) (Rinv r2) r2) in H1;
+ Rewrite (Rinv_l r2 H3) in H1;
+ Rewrite (let (H1,H2)=(Rmult_ne (Rinv r1)) in H1) in H1;
+ Rewrite (Rmult_sym (Rinv r1) (Rinv r2)) in H1;
+ Rewrite (Rmult_assoc (Rinv r2) (Rinv r1) r1 ) in H1;
+ Rewrite (Rinv_l r1 H2) in H1;
+ Rewrite (let (H1,H2)=(Rmult_ne (Rinv r2)) in H1) in H1;Assumption.
+Save.
+
+(**********)
+Lemma Rlt_monotony_rev:
+  (r,r1,r2:R)(Rlt R0 r)->(Rlt (Rmult r r1) (Rmult r r2))
+             ->(Rlt r1 r2).
+Intros;Cut (s:R) (Rmult (Rinv r) (Rmult r s))==s.
+Intros; Rewrite <- (H1 r1); Rewrite <- (H1 r2);Apply Rlt_monotony. 
+Apply Rlt_Rinv; Assumption.
+Assumption.
+Intro;Rewrite <- Rmult_assoc;Rewrite Rinv_l.
+Ring.
+Apply imp_not_Req; Right; Unfold Rgt; Assumption.
 Save.
 
 (*********************************************************)        
@@ -815,12 +901,30 @@ Right; Apply (r_Rplus_plus r r1 r2 H0).
 Save.
 
 (***********)
+Lemma Rge_monotony:
+ (x,y,z:R) (Rge z R0) -> (Rge x y) -> (Rge (Rmult x z) (Rmult y z)).
+Intros;Apply Rle_sym1;
+ Rewrite (Rmult_sym y z); Rewrite (Rmult_sym x z);
+ Apply Rle_monotony;Apply Rle_sym2; Assumption.
+Save.
+
+(***********)
 Lemma Rgt_minus:(r1,r2:R)(Rgt r1 r2)->(Rgt (Rminus r1 r2) R0).
 Intros; Cut (Rgt (Rminus r1 r2) (Rminus r2 r2)).
 Rewrite -> (eq_Rminus r2 r2); Auto with zarith real.
 Unfold Rminus; Rewrite -> (Rplus_sym r1 (Ropp r2));
  Rewrite -> (Rplus_sym r2 (Ropp r2));
  Apply (Rgt_plus_plus_r (Ropp r2) r1 r2 H).
+Save.
+
+(*********)
+Lemma minus_Rgt:(r1,r2:R)(Rgt (Rminus r1 r2) R0)->(Rgt r1 r2).
+Intros;Generalize (Rgt_plus_plus_r r2 (Rminus r1 r2) R0 H); Intro;
+ Rewrite (Rplus_sym r2 (Rminus r1 r2)) in H0;Unfold Rminus in H0;
+ Rewrite (Rplus_assoc r1 (Ropp r2) r2) in H0;
+ Rewrite (Rplus_Ropp_l r2) in H0;
+ Elim (Rplus_ne r1); Intros a b; Rewrite a in H0; Clear a b;
+ Elim (Rplus_ne r2); Intros a b; Rewrite a in H0; Clear a b;Exact H0.
 Save.
 
 (**********)
@@ -845,6 +949,12 @@ Lemma Rmult_gt:(r1,r2:R)(Rgt r1 R0)->(Rgt r2 R0)->(Rgt (Rmult r1 r2) R0).
 Unfold Rgt;Intros;Generalize (Rlt_monotony r1 R0 r2 H H0);Intro;
  Rewrite (Rmult_Or r1) in H1;Assumption.
 Save.
+
+(*********)
+Lemma Rmult_lt_pos:(x,y:R)(Rlt R0 x)->(Rlt R0 y)->(Rlt R0 (Rmult x y)).
+Generalize Rmult_gt;Unfold Rgt;Auto.
+Save.
+
 
 (***********)
 Lemma Rplus_eq_R0:(a,b:R)(Rle R0 a)->(Rle R0 b)->(Rplus a b)==R0->
@@ -919,12 +1029,52 @@ Unfold Rminus; Rewrite -> Rplus_sym; Rewrite -> Rplus_assoc;
 Auto with zarith real.
 Save.
 
+(*********)
+Lemma mult_INR:(n,m:nat)(INR (mult n m))==(Rmult (INR n) (INR m)).
+Induction n.
+Simpl; Intro;Apply sym_eqT;Apply Rmult_Ol.
+Intros;Unfold 1 mult;Cbv Beta Iota;Fold mult;
+ Rewrite (plus_INR m (mult n0 m));Rewrite (H m);
+ Pattern 1 (INR m); 
+ Rewrite <-(let (H1,H2)=(Rmult_ne (INR m)) in H1);
+ Rewrite (Rmult_sym (INR n0) (INR m));
+ Rewrite <-(Rmult_Rplus_distr (INR m) R1 (INR n0));
+ Rewrite (Rplus_sym R1 (INR n0));Rewrite <-(S_INR n0);
+ Apply Rmult_sym. 
+Save. 
+
+
+(*********)
+Lemma INR_lt_0:(n:nat)(lt O n)->(Rlt R0 (INR n)).
+Induction n;Intros.
+Absurd (lt (0) (0));[Apply lt_n_n|Assumption].
+Elim (le_lt_or_eq (0) n0 (lt_n_Sm_le (0) n0 H0));Intro.
+Generalize (H H1);Clear H H1;Intro;Rewrite (S_INR n0);
+ Generalize (Rlt_compatibility R1 R0 (INR n0) H);Intro;
+ Rewrite (let (H1,H2)=(Rplus_ne R1) in H1) in H1;
+ Rewrite (Rplus_sym (INR n0) R1);
+ Apply (Rlt_trans R0 R1 (Rplus R1 (INR n0)) (Rlt_R0_R1) H1).
+Rewrite <-H1;Simpl;Apply Rlt_R0_R1.
+Save.
+
 (**********)
 Lemma INR_le:(n:nat)(Rle R0 (INR n)).
 Induction n.
 Simpl; Apply (eq_Rle R0 R0 (refl_eqT R R0)).
 Intros;Rewrite (S_INR n0);Apply (Rlt_le R0 (Rplus (INR n0) R1));
  Apply (Rlt_r_plus_R1 (INR n0) H).
+Save.
+
+(*********)
+Lemma INR_le_nm:(n,m:nat)(le n m)->(Rle (INR n) (INR m)).
+Intros;Elim (le_lt_or_eq n m H);Intro.
+Cut (lt (0) (minus m n)).
+Intro;Generalize (INR_lt_0 (minus m n) H1);
+ Intro;Rewrite minus_INR in H2;Auto;
+ Apply (Rlt_le (INR n) (INR m));Fold (Rgt (INR m) (INR n));
+ Apply (minus_Rgt (INR m) (INR n));Unfold Rgt;Assumption.
+Omega.
+Rewrite H0;Unfold Rle;Right;Trivial.
 Save.
 
 (**********)
@@ -950,6 +1100,11 @@ Save.
 
 (**********)
 Definition INZ:=inject_nat.
+
+(**********)
+Lemma IZN:(z:Z)(`0<=z`)->(Ex [n:nat] z=(INZ n)).
+Unfold INZ;Intros;Apply inject_nat_complete;Assumption.
+Save.
 
 (**********)
 Lemma INR_IZR_INZ:(n:nat)(INR n)==(IZR (INZ n)).
@@ -1077,6 +1232,14 @@ Intros;Generalize (eq_Rminus (IZR z1) (IZR z2) H);
  Intro;Omega.
 Save.
 
+(*********)
+Lemma le_O_IZR:(z:Z)(Rle R0 (IZR z))->(Zle ZERO z).
+Unfold Rle;Intros;Elim H;Clear H;Intro.
+Unfold Zle;Red;Intro;Apply (Zlt_le_weak `0` z (lt_O_IZR z H));
+ Assumption.
+Generalize (eq_IZR_R0 z (sym_eqT R R0 (IZR z) H));Intro;Omega.
+Save.
+
 (**********)
 Lemma le_IZR_R1:(z:Z)(Rle (IZR z) R1)->(Zle z `1`).
 Induction z; Intros.
@@ -1103,6 +1266,12 @@ Intro;Rewrite H1 in H0;Clear H1;Fold (Rgt (IZR `1`) (IZR (NEG p))) in H0;
  Assumption.
 Right;Cut (R1==(IZR `1`));Auto with zarith real.
 Intro;Rewrite H1 in H0;Clear H1 H;Apply (eq_IZR (NEG p) `1` H0).
+Save.
+
+(**********)
+Lemma IZR_ge: 
+  (m,n:Z) `m>= n` ->(Rge (IZR m) (IZR n)).
+Intros;Apply Rlt_not_ge;Red;Intro;Generalize (lt_IZR m n H0);Intro; Omega.
 Save.
 
 (**********)

@@ -17,7 +17,45 @@ Fixpoint fact [n:nat]:nat:=
      O     => (S O)
     |(S n) => (mult (S n) (fact n))
   end.
+
+(*********)
+(*Lemma mult_neq_O:(n,m:nat)~n=O->~m=O->~(mult n m)=O.
+Double Induction 1 2;Simpl;Auto.
+Save.*)
  
+(*********)
+Lemma fact_neq_0:(n:nat)~(fact n)=O.
+Cut (n,m:nat)~n=O->~m=O->~(mult n m)=O.
+Intro;Induction n;Simpl;Auto.
+Intros; Replace (plus (fact n0) (mult n0 (fact n0))) with 
+  (mult (fact n0) (plus n0 (1))).
+Cut ~(plus n0 (1))=O.
+Intro;Apply H;Assumption.
+Replace (plus n0 (1)) with (S n0);[Auto|Ring].
+Intros;Ring.
+Double Induction 1 2;Simpl;Auto.
+Save.
+
+(*********)
+Lemma INR_fact_neq_0:(n:nat)~(INR (fact n))==R0.
+Intro;Red;Intro;Apply (not_O_INR (fact n) (fact_neq_0 n));Assumption.
+Save.    
+
+(*********)
+Lemma simpl_fact:(n:nat)(Rmult (Rinv (INR (fact (S n)))) 
+         (Rinv (Rinv (INR (fact n)))))==
+         (Rinv (INR (S n))).
+Intro;Rewrite (Rinv_Rinv (INR (fact n)) (INR_fact_neq_0 n)); 
+ Unfold 1 fact;Cbv Beta Iota;Fold fact;
+ Rewrite (mult_INR (S n) (fact n));
+ Rewrite (Rinv_Rmult (INR (S n)) (INR (fact n))).
+Rewrite (Rmult_assoc (Rinv (INR (S n))) (Rinv (INR (fact n))) 
+  (INR (fact n)));Rewrite (Rinv_l (INR (fact n)) (INR_fact_neq_0 n));
+ Apply (let (H1,H2)=(Rmult_ne (Rinv (INR (S n)))) in H1).
+Apply not_O_INR;Auto.
+Apply INR_fact_neq_0.
+Save.
+
 (*******************************)
 (*          Power              *)
 (*******************************)
@@ -86,6 +124,7 @@ Definition sum_f [s,n:nat;f:nat->R]:R:=
 (*******************************)
 (*********)
 Definition infinit_sum:(nat->R)->R->Prop:=[s:nat->R;l:R]
-  (eps:R)(Ex[N:nat](n:nat)(ge n N)/\(Rlt (R_dist (sum_f_R0 s n) l) eps)).
+  (eps:R)(Rgt eps R0)->
+  (Ex[N:nat](n:nat)(ge n N)->(Rlt (R_dist (sum_f_R0 s n) l) eps)).
 
 
