@@ -60,6 +60,7 @@ val empty_seq : int -> t
 val create_with_ref_list : global_reference list ->
   int -> Proof_type.goal sigma -> t
 
-val create_with_auto_hints : int -> Proof_type.goal sigma -> t
+val create_with_auto_hints : Auto.hint_db_name list -> 
+  int -> Proof_type.goal sigma -> t
 
 val print_cmap: global_reference list CM.t -> unit 

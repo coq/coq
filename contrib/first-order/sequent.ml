@@ -258,7 +258,7 @@ let create_with_ref_list l depth gl=
 
 open Auto
 
-let create_with_auto_hints depth gl=
+let create_with_auto_hints l depth gl=
   let seqref=ref (empty_seq depth) in
   let f p_a_t =
     match p_a_t.code with
@@ -271,8 +271,13 @@ let create_with_auto_hints depth gl=
 	   with Not_found->())
       | _-> () in
   let g _ l=List.iter f l in
-  let h str hdb=Hint_db.iter g hdb in
-    Util.Stringmap.iter h (!searchtable);
+  let h dbname=
+    let hdb=
+      try
+	Util.Stringmap.find dbname !searchtable 
+      with Not_found-> error ("Ground: "^dbname^" : No such Hint database") in
+      Hint_db.iter g hdb in
+    List.iter h l;
     !seqref
 
 let print_cmap map=

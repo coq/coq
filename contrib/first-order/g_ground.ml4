@@ -18,6 +18,7 @@ open Tactics
 open Tacticals
 open Term
 open Names
+open Libnames
 
 (* declaring search depth as a global option *)
 
@@ -40,7 +41,12 @@ let default_solver=(Tacinterp.interp <:tactic<Auto with *>>)
     
 let fail_solver=tclFAIL 0 "GTauto failed"
 		      
-let gen_ground_tac flag taco l gl=
+type external_env=
+    Ids of global_reference list
+  | Bases of Auto.hint_db_name list
+  | Void
+
+let gen_ground_tac flag taco ext gl=
   let backup= !qflag in
     try
       qflag:=flag;
@@ -48,12 +54,16 @@ let gen_ground_tac flag taco l gl=
 	match taco with 
 	    Some tac->tac
 	  | None-> default_solver in
-      let startseq=create_with_ref_list l !ground_depth in
+      let startseq=
+	match ext with
+	    Void -> (fun gl -> empty_seq !ground_depth)
+	  | Ids l-> create_with_ref_list l !ground_depth
+	  | Bases l-> create_with_auto_hints l !ground_depth in
       let result=ground_tac solver startseq gl in 
 	qflag:=backup;result
     with e ->qflag:=backup;raise e
-
-(* special for compatibility with old Intuition *)
+      
+(* special for compatibility with old Intuition 
 
 let constant str = Coqlib.gen_constant "User" ["Init";"Logic"] str
 
@@ -67,30 +77,32 @@ let normalize_evaluables=
 	 None->unfold_in_concl (Lazy.force defined_connectives)
        | Some id-> 
 	   unfold_in_hyp (Lazy.force defined_connectives) 
-	   (Tacexpr.InHypType id))
+	   (Tacexpr.InHypType id)) *)
 
 TACTIC EXTEND Ground
-      |   [ "Ground" tactic(t) "with" ne_reference_list(l) ] -> 
-	    [ gen_ground_tac true (Some (snd t)) l ]
-      |   [ "Ground" tactic(t) ] -> 
-	    [ gen_ground_tac true (Some (snd t)) [] ]
-      |   [ "Ground" "with" ne_reference_list(l) ] -> 
-	    [ gen_ground_tac true None l ]
-      |   [ "Ground" ] ->
-	    [ gen_ground_tac true None [] ]
+    [ "Ground" tactic(t) "with" ne_reference_list(l) ] -> 
+      [ gen_ground_tac true (Some (snd t)) (Ids l) ]
+|   [ "Ground" "with" ne_reference_list(l) ] -> 
+      [ gen_ground_tac true None (Ids l) ]
+|   [ "Ground" tactic(t) "using" ne_preident_list(l) ] -> 
+      [ gen_ground_tac true (Some (snd t)) (Bases l) ]
+|   [ "Ground" "using" ne_preident_list(l) ] -> 
+      [ gen_ground_tac true None (Bases l) ]
+|   [ "Ground" tactic(t) ] -> 
+      [ gen_ground_tac true (Some (snd t)) Void ]
+|   [ "Ground" ] ->
+      [ gen_ground_tac true None Void ]
 END
 
 TACTIC EXTEND GTauto   
-  [ "GTauto" ] ->
-     [ gen_ground_tac false (Some fail_solver) [] ]   
+  [ "Tauto" ] ->
+     [ gen_ground_tac false (Some fail_solver) Void ]   
 END
 
 TACTIC EXTEND GIntuition
-   ["GIntuition" tactic(t)] ->
-     [ gen_ground_tac false 
-	 (Some(tclTHEN normalize_evaluables (snd t))) [] ]
+   [ "GIntuition" tactic(t) ] ->
+     [ gen_ground_tac false (Some (snd t)) Void ]
 |  [ "GIntuition" ] ->
-     [ gen_ground_tac false 
-	 (Some (tclTHEN normalize_evaluables default_solver)) [] ] 
+     [ gen_ground_tac false (Some default_solver) Void ] 
 END
 
