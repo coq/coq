@@ -439,10 +439,19 @@ and extract_prod_lam env (n,t,d) vl flag =
     Precondition: [r] is of type an arity. *)
 		  
 and extract_type_app env (r,sc,vlc) vl args =
+  let diff = (List.length args - List.length sc ) in
+  let args = if diff > 0 then begin
+    (* This can (normally) only happen when r is a flexible type. 
+       We discard the remaining arguments *)
+    (*    wARN (hOV 0 [< 'sTR ("Discarding " ^
+		 (string_of_int diff) ^ " type(s) argument(s).") >]); *)
+    list_firstn (List.length sc) args
+  end else args in
   let nargs = List.length args in
-  assert (List.length sc >= nargs);
   (* [r] is of type an arity, so it can't be applied to more than n args, 
      where n is the number of products in this arity type. *)
+  (* But there are flexibles ... *)
+
   let (sign_args,sign_rem) = list_chop nargs sc in
   let (mlargs,vl') = 
     List.fold_right 
@@ -769,16 +778,21 @@ and extract_mib sp =
     let vl = vl_of_lbinders genv lb in
     (* First pass: we store inductive signatures together with 
        an initial type var list. *)
-    for i = 0 to mib.mind_ntypes - 1 do
-      let ip = (sp,i) in 
-      let mis = build_mis (ip,[||]) mib in 
-      if (mis_sort mis) = (Prop Null) then 
-	add_inductive_extraction ip Iprop
-      else
-	let arity = mis_nf_arity mis in
-	add_inductive_extraction ip 
-	  (Iml (sign_of_arity genv arity, vl_of_arity genv arity))
-    done;
+    let vl0 = iterate_for 0 (mib.mind_ntypes - 1)
+	(fun i vl -> 
+	   let ip = (sp,i) in 
+	   let mis = build_mis (ip,[||]) mib in 
+	   if (mis_sort mis) = (Prop Null) then begin
+	     add_inductive_extraction ip Iprop; vl
+	   end else begin
+	     let arity = mis_nf_arity mis in
+	     let vla = List.rev (vl_of_arity genv arity) in 
+	     add_inductive_extraction ip 
+	       (Iml (sign_of_arity genv arity, vla));
+	     vla @ vl 
+	   end
+	) []
+    in
     (* Second pass: we extract constructors arities and we accumulate
        type variables. Thanks to on-the-fly renaming in [extract_type],
        the [vl] list should be correct. *)
@@ -804,26 +818,30 @@ and extract_mib sp =
 			add_constructor_extraction (ip,j) (Cml (l,s,nbtokeep));
 			v)
 	       vl)
-	vl
+	vl0
     in
-    (* Third pass: we update the type variables list in every tables *)
+    let vl = list_firstn (List.length vl - List.length vl0) vl in
+    (* Third pass: we update the type variables list in the inductives table *)
     for i = 0 to mib.mind_ntypes-1 do 
       let ip = (sp,i) in 
       let mis = build_mis (ip,[||]) mib in
       match lookup_inductive_extraction ip with 
 	| Iprop -> ()
-	| Iml (s,_) -> begin 
-	    add_inductive_extraction ip (Iml (s,vl));
-	    for j = 1 to mis_nconstr mis do
-	      let cp = (ip,j) in 
-	      match lookup_constructor_extraction cp  with 
-		| Cprop -> assert false
-		| Cml (t,s,n) -> 
-		    let vl = List.rev_map (fun i -> Tvar i) vl in
-		    let t' = List.map (update_args sp vl) t in 
-		    add_constructor_extraction cp (Cml (t',s, n))
-	    done
-	  end
+	| Iml (s,l) -> add_inductive_extraction ip (Iml (s,vl@l));
+    done;
+    (* Fourth pass: we update also in the constructors table *)
+    for i = 0 to mib.mind_ntypes-1 do 
+      let ip = (sp,i) in 
+      let mis = build_mis (ip,[||]) mib in 
+      for j = 1 to mis_nconstr mis do
+	let cp = (ip,j) in 
+	match lookup_constructor_extraction cp  with 
+	  | Cprop -> ()
+	  | Cml (t,s,n) -> 
+	      let vl = List.rev_map (fun i -> Tvar i) vl in
+	      let t' = List.map (update_args sp vl) t in 
+	      add_constructor_extraction cp (Cml (t',s, n))
+      done
     done
   end	      
 

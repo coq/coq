@@ -28,7 +28,7 @@ let prop_name = id_of_string "_"
 let rec update_args sp vl = function  
   | Tapp ( Tglob r :: l ) -> 
       (match r with 
-	| IndRef (s,_) when s = sp -> Tapp ( Tglob r :: vl)
+	| IndRef (s,_) when s = sp -> Tapp ( Tglob r :: l @ vl )
 	| _ -> Tapp (Tglob r :: (List.map (update_args sp vl) l)))
   | Tapp l -> Tapp (List.map (update_args sp vl) l) 
   | Tarr (a,b)-> 

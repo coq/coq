@@ -58,7 +58,7 @@ REALSVO:=$(filter-out theories/Reals/Rsyntax.vo,$(REALSALLVO))
 REALSML:=$(shell test -x v2ml && ./v2ml $(REALSVO))
 REALSCMO:= $(patsubst %.ml,%.cmo,$(REALSML))
 
-reals: all $(REALSML) $(REALSCMO)
+reals: all $(REALSML) addReals.cmo $(REALSCMO)
 
 realsml: 
 	./extract_reals $(REALSVO)
