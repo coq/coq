@@ -10,8 +10,7 @@
 (*i Due to L.Thery i*) 
 
 (************************************************************)
-(* Preuve de l'existence de log et de la fonction puissance *)
-(* Propriétés                                               *)
+(* Definitions of log and Rpower : R->R->R; main properties *)
 (************************************************************)
 
 Require Rbase.
@@ -152,10 +151,10 @@ Assert H3 := (exp_pos x); Red; Intro; Rewrite H4 in H3; Elim (Rlt_antirefl ? H3)
 Apply Rinv_neq_R0; Red; Intro; Rewrite H3 in H; Elim (Rlt_antirefl ? H).
 Qed.
 
-(* Définition du log népérien R+*>R *)
+(* Definition of log R+* -> R *)
 Definition Rln [y:posreal] : R := Cases (ln_exists (pos y) (RIneq.cond_pos y)) of (existTT a b) => a end.
 
-(* Une extension sur R *)
+(* Extension on R *)
 Definition ln : R->R := [x:R](Cases (total_order_Rlt R0 x) of
       (leftT a) => (Rln (mkposreal x a)) 
     | (rightT a) => R0 end).
