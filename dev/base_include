@@ -18,8 +18,7 @@
 
 (* parsing of names *)
 
-let qid_of_string s = Libnames.qualid_of_sp (Libnames.path_of_string s);;
-let qualid_of_string = qid_of_string;;
+let qid = Libnames.qualid_of_string;;
 
 (* parsing of terms *)
 

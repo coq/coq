@@ -20,7 +20,7 @@ exception UserError of string * std_ppcmds (* User errors *)
 let error string = raise (UserError(string, str string))
 let errorlabstrm l pps = raise (UserError(l,pps))
 
-let todo s = () (*prerr_string ("TODO: "^s^"\n")*)
+let todo s = prerr_string ("TODO: "^s^"\n")
 
 (* raising located exceptions *)
 type loc = int * int

@@ -90,97 +90,6 @@ let rec check_modpath_equiv env mp1 mp2 =
       | Some mp1' -> check_modpath_equiv env mp2 mp1'
 
 
-
-(*
-let subst_signature subst_constr subst_module subst_modtype sign = 
-  let subst_body = function
-      SPBconst cb -> 
-	SPBconst (map_const_body subst_constr cb)
-    | SPBmind mib -> 
-	SPBmind (map_mind subst_constr mib)
-    | SPBmodule mb -> 
-	SPBmodule (subst_module mb)
-    | SPBmodtype mtb -> 
-	SPBmodtype (subst_modtype mtb)
-  in
-    List.map (fun (l,b) -> (l,subst_body b)) sign
-  
-let rec subst_module subst_mp subst_modtype mb =
-  { mod_type = subst_modtype mb.mod_type;
-    mod_eq = option_app subst_mp mb.mod_eq}
-
-
-(*let rec subst_signature_mbid id mp sign
-  let subst_body = function
-      SPBconst cb -> 
-	SPBconst (map_const_body (subst_constr_mbid id mp) cb)
-    | SPBmind mib -> 
-	SPBmind (map_mind (subst_constr_mbid id mp) mib)
-    | SPBmodule mb -> 
-	SPBmodule (subst_module_mbid id mp mb)
-    | SPBmodtype mtb -> 
-	SPBmodtype (subst_modtype_mbid id mp mtb)
-  in
-    List.map (fun (l,b) -> (l,sub_body b)) sign
-*)
-
-
-
-let rec subst_signature_mbid bid mp sign =
-  subst_signature 
-    (subst_constr_mbid bid mp)
-    (subst_module_mbid bid mp)
-    (subst_modtype_mbid bid mp)
-    sign
-
-and subst_module_mbid bid mp mb = 
-  subst_module 
-    (subst_mp_mbid bid mp)
-    (subst_modtype_mbid bid mp) 
-    mb 
-
-and subst_modtype_mbid bid mp = function
-  | MTBident ln -> MTBident (subst_kernel_name_mbid bid mp ln)
-  | MTBfunsig (arg_id, arg_b, body_b) ->
-      assert (arg_id <> bid);
-      assert (not (occur_mbid arg_id mp));
-      MTBfunsig (arg_id, 
-		 subst_modtype_mbid bid mp arg_b, 
-		 subst_modtype_mbid bid mp body_b)
-  | MTBsig (sid, msb) -> 
-      (* assert sid <> bid; *)
-      assert (not (occur_msid sid mp));
-      MTBsig (sid, subst_signature_mbid bid mp msb)
-
-
-
-let rec subst_signature_msid sid mp sign =
-  subst_signature 
-    (subst_constr_msid sid mp)
-    (subst_module_msid sid mp)
-    (subst_modtype_msid sid mp)
-    sign
-
-and subst_module_msid sid mp mb = 
-  subst_module 
-    (subst_mp_msid sid mp) 
-    (subst_modtype_msid sid mp) 
-    mb 
-
-and subst_modtype_msid sid mp = function
-  | MTBident ln -> MTBident (subst_kernel_name_msid sid mp ln)
-  | MTBfunsig (arg_id, arg_b, body_b) ->
-      (* assert arg_id <> sid; *)
-      assert (not (occur_mbid arg_id mp));
-      MTBfunsig (arg_id, 
-		 subst_modtype_msid sid mp arg_b, 
-		 subst_modtype_msid sid mp body_b)
-  | MTBsig (sid1, msb) -> 
-      assert (sid<>sid1);
-      assert (not (occur_msid sid1 mp));
-      MTBsig (sid1, subst_signature_msid sid mp msb)
-
-*****************************************************)
 let rec subst_modtype sub = function
   | MTBident ln -> MTBident (subst_kn sub ln)
   | MTBfunsig (arg_id, arg_b, body_b) ->
@@ -217,8 +126,6 @@ let subst_signature_msid msid mp =
 (* we assume that the substitution of "mp" into "msid" is already done
 (or unnecessary) *)
 let rec add_signature mp sign env = 
-  todo "add_signature should not be here (Modops) and should take care of universes"; 
-(*  let mp = MPself msid in *)
   let add_one env (l,elem) =
     let kn = make_kn mp empty_dirpath l in
       match elem with
@@ -233,7 +140,6 @@ let rec add_signature mp sign env =
 
 
 and add_module mp mb env = 
-  todo "universes!!!!";
   let env = Environ.shallow_add_module mp mb env in
     match scrape_modtype env mb.mod_type with
       | MTBident _ -> anomaly "scrape_modtype does not work!"
@@ -241,65 +147,5 @@ and add_module mp mb env =
 	  add_signature mp (subst_signature_msid msid mp sign) env
 
       | MTBfunsig _ -> env
-
-
-(* getting names of module components *)
-
-(* We assume the original mp is in the environment with all its
-   components. This is important because of module types *)
-
-(*
-let component_names env make_dir make_path dir mp =
-
-  let inductive_names_from_body dir ln mib names =
-    let names, _ = 
-      Array.fold_left
-	(fun (names, n) ind ->
-	   let ind_p = (ln,n) in
-	   let names, _ =
-	     Array.fold_left
-	       (fun (names, p) l ->
-		let sp = make_path dir l in
-		  ((sp, ConstructRef (ind_p,p)) :: names, p+1))
-	       (names, 1) ind.mind_consnames in
-	   let sp = make_path dir ind.mind_typename in
-	     ((sp, IndRef ind_p) :: names, n+1))
-	(names, 0) mib.mind_packets
-    in names
-	 
-  in
-    
-  let rec process_signature dir mp sign names = 
-    let process_one names (l,elem) =
-      let ln = make_ln mp l in
-      let path = make_path dir l in
-	match elem with
-	  | SPBconst _ -> (path,ConstRef ln)::names
-	  | SPBmind mib -> 
-	      inductive_names_from_body dir ln mib names
-	  | SPBmodule _ -> 
-	      let mp' = MPdot (mp,l) in
-	      let dir' = make_dir dir l in
-	      let names' = (path, ModRef mp')::names in
-		process_module dir' mp' names'
-	  | SPBmodtype mtb -> 
-	      (path, ModTypeRef ln)::names
-    in
-      List.fold_left process_one names sign
-	
-  and process_module dir mp names = 
-    let mb = Environ.lookup_module mp env in
-      match scrape_modtype env mb.mod_type with
-	| MTBident _ -> anomaly "scrape_modtype does not work!"
-	| MTBsig (_,sign) -> 
-	    process_signature dir mp sign names 
-	| MTBfunsig _ -> names
-
-  in
-    List.rev (process_module dir mp [])
-    
-*)
-
-
 
 

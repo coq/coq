@@ -488,14 +488,6 @@ let rec load_library dir =
       m.library_digest;
     register_loaded_library m;
     m
-(*
-    let mp = Global.import m.library_compiled_env m.library_digest in
-    load_objects m.library_objects;
-    Nametab.push_loaded_library m.library_name;
-    (* TODO: chwilowy hak *)
-    Declaremods.push_module_with_components m.module_name mp true;
-    m
-*)
 
 let cache_require (_,(modl,export)) =
   let ml = list_map_left load_library modl in

@@ -244,7 +244,6 @@ module KNpred = Predicate.Make(KNord)
 module KNset = Set.Make(KNord)
 
 
-(* TODO: revise this!!! *)
 let initial_msid = (make_msid [] "TOP")
 let initial_path = MPself initial_msid
 

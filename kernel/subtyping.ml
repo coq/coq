@@ -136,8 +136,6 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
     in
       cst
     
-    (* TODO: constraints ? *)
-
 let check_constant cst env msid1 l info1 cb2 spec2 = 
   let error () = error_not_match l spec2 in
   let check_conv cst f = check_conv_error error cst f in
@@ -147,7 +145,6 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
       | _ -> error ()
   in 
     assert (cb1.const_hyps=[] && cb2.const_hyps=[]) ;
-      (* TODO: we should think about universes!!!! *)
     let cst = check_conv cst conv_leq env cb1.const_type cb2.const_type in
     match cb1.const_body, cb2.const_body with
       | None, None -> cst

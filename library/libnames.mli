@@ -84,6 +84,8 @@ val repr_qualid : qualid -> dir_path * identifier
 val string_of_qualid : qualid -> string
 val pr_qualid : qualid -> std_ppcmds
 
+val qualid_of_string : string -> qualid
+
 (* Turns an absolute name into a qualified name denoting the same name *)
 val qualid_of_sp : section_path -> qualid
 

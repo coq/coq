@@ -174,6 +174,8 @@ let repr_qualid = repr_path
 let string_of_qualid = string_of_path
 let pr_qualid = pr_sp
 
+let qualid_of_string = path_of_string
+
 let qualid_of_sp sp = sp
 let make_short_qualid id = make_qualid empty_dirpath id
 let qualid_of_dirpath dir = 

@@ -117,7 +117,6 @@ val occur_mbid : mod_bound_id -> substitution -> bool
      
 
 (* Name of the toplevel structure *)
-(* TODO: revise!*)
 val initial_msid : mod_self_id
 val initial_path : module_path (* [= MPself initial_msid] *)
 

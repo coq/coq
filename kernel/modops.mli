@@ -14,7 +14,7 @@ open Univ
 open Environ
 open Declarations
 open Entries
-   (*i*)
+(*i*)
 
 (* Various operations on modules and module types *)
 
@@ -45,14 +45,9 @@ val subst_signature_msid :
 val add_signature : 
   module_path -> module_signature_body -> env -> env
 
+(* adds a module and its components, but not the constraints *)
 val add_module :
   module_path -> module_body -> env -> env
-
-(*
-  val component_names : 
-  env -> ('dir -> label -> 'dir) -> ('dir -> label -> 'path) 
-  -> 'dir -> module_path -> ('path * global_reference) list
-*)
 
 val check_modpath_equiv : env -> module_path -> module_path -> unit
 

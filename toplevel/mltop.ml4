@@ -41,7 +41,7 @@ open Vernacinterp
    put all the needed names into the ML Module object.) *)
 
 (* This path is where we look for .cmo *)
-let coq_mlpath_copy = ref []
+let coq_mlpath_copy = ref ["."]
 let keep_copy_mlpath s = 
   let dir = glob s in
   coq_mlpath_copy := dir :: !coq_mlpath_copy

@@ -117,7 +117,7 @@ let subst_mind sub mib =
     mind_ntypes = mib.mind_ntypes ;
     mind_hyps = (assert (mib.mind_hyps=[]); []) ;
     mind_packets = array_smartmap (subst_mind_packet sub) mib.mind_packets ;
-    mind_constraints = (* TODO *) mib.mind_constraints ;
+    mind_constraints = mib.mind_constraints ;
     mind_singl = option_app (Term.subst_mps sub) mib.mind_singl;
 }
 
