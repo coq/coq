@@ -34,6 +34,9 @@ val reference_of_constr : constr -> global_reference
 module Refset : Set.S with type elt = global_reference 
 module Refmap : Map.S with type key = global_reference
 
+module Indmap : Map.S with type key = inductive
+module Constrmap : Map.S with type key = constructor
+
 (*s Dirpaths *)
 val pr_dirpath : dir_path -> Pp.std_ppcmds
 
@@ -135,4 +138,3 @@ val qualid_of_reference : reference -> qualid located
 val string_of_reference : reference -> string
 val pr_reference : reference -> std_ppcmds
 val loc_of_reference : reference -> loc
-

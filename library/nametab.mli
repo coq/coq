@@ -75,7 +75,7 @@ val push_syntactic_definition :
 val push_modtype : visibility -> section_path -> kernel_name -> unit
 val push_dir : visibility -> dir_path -> global_dir_reference -> unit
 val push_object : visibility -> section_path -> unit
-val push_tactic : visibility -> section_path -> unit
+val push_tactic : visibility -> section_path -> kernel_name -> unit
 
 
 (*s The following functions perform globalization of qualified names *)
@@ -101,9 +101,8 @@ val locate_section : qualid -> dir_path
 val locate_modtype : qualid -> kernel_name
 val locate_syntactic_definition : qualid -> kernel_name
 
-type ltac_constant = section_path
+type ltac_constant = kernel_name
 val locate_tactic : qualid -> ltac_constant
-val shortest_qualid_of_tactic : ltac_constant -> qualid
 val locate_dir : qualid -> global_dir_reference
 val locate_module : qualid -> module_path
 
@@ -136,13 +135,11 @@ val full_name_module : qualid -> dir_path
   internal name *)
 
 val sp_of_syntactic_definition : kernel_name -> section_path
-val shortest_qualid_of_global : 
-  Idset.t -> global_reference -> qualid
-val shortest_qualid_of_syndef : 
-  kernel_name -> qualid
+val shortest_qualid_of_global : Idset.t -> global_reference -> qualid
+val shortest_qualid_of_syndef : kernel_name -> qualid
+val shortest_qualid_of_tactic : ltac_constant -> qualid
 
-val dir_of_mp :
-  module_path -> dir_path
+val dir_of_mp : module_path -> dir_path
 
 val sp_of_global : global_reference -> section_path
 val id_of_global : global_reference -> identifier

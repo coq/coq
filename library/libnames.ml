@@ -54,6 +54,24 @@ module RefOrdered =
 module Refset = Set.Make(RefOrdered)
 module Refmap = Map.Make(RefOrdered)
 
+module InductiveOrdered = struct
+  type t = inductive
+  let compare (spx,ix) (spy,iy) = 
+    let c = ix - iy in if c = 0 then compare spx spy else c
+end
+
+module Indmap = Map.Make(InductiveOrdered)
+
+let inductives_table = ref Indmap.empty
+
+module ConstructorOrdered = struct
+  type t = constructor
+  let compare (indx,ix) (indy,iy) = 
+    let c = ix - iy in if c = 0 then InductiveOrdered.compare indx indy else c
+end
+
+module Constrmap = Map.Make(ConstructorOrdered)
+
 (**********************************************)
 
 let pr_dirpath sl = (str (string_of_dirpath sl))
@@ -130,8 +148,8 @@ let repr_path { dirpath = pa; basename = id } = (pa,id)
 (* parsing and printing of section paths *)
 let string_of_path sp =
   let (sl,id) = repr_path sp in
-  if repr_dirpath sl = [] then string_of_v7_id id
-  else (string_of_dirpath sl) ^ "." ^ (string_of_v7_id id)
+  if repr_dirpath sl = [] then string_of_id id
+  else (string_of_dirpath sl) ^ "." ^ (string_of_id id)
 
 let sp_ord sp1 sp2 =
   let (p1,id1) = repr_path sp1
@@ -249,3 +267,4 @@ let pr_reference = function
 let loc_of_reference = function
   | Qualid (loc,qid) -> loc
   | Ident (loc,id) -> loc
+
