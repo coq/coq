@@ -62,6 +62,8 @@ Tactiques
   en général plus son nom (sauf dans les cas "simples"). Rem : c'est une
   source d'incompatibilité.
 
+- EAuto réussit parfois plus (source d'incompatibilité).
+
 Utilisation générale
 
 - La plupart des erreurs de typage sont maintenant localisée dans le

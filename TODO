@@ -1,17 +1,18 @@
 Distribution:
 
 - Faire fonctionner coqc/coqtop en non local
+- "System Error (Failure): "input_value: code mismatch" quand on
+  charge en bytecode certains .vo compilés en natif (exemple typique:
+  Ring_abstract.v)
+- où va RELATIONS/WELLFOUNDED ?
 
 Environnement:
 
 - Faire fonctionner Search
 - Faire fonctionner Abstract
 - Faire fonctionner Reset
-- Faire fonctionner Transparent/Opaque
+- Décider s'il faut garder Transparent/Opaque et si oui, l'implanter
 - Ajouter "parsing" aux chemins par défaut (pour g_{nat,z}syntax.cmo)
-
-- Que les Infix soit chargés lors d'un Require (DONE)
-- Problème de compatibilité du mode implicite au discharge (DONE)
 
 Tactiques
 
@@ -25,3 +26,9 @@ Noyau:
 Theories:
 
 - remplacer Realizer par Refine ou autre chose dans TheoryList.v
+
+Compatibilité:
+
+- Pourquoi EAuto fait-il plus dans Ring_theory ???
+
+
