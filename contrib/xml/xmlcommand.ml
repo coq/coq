@@ -219,12 +219,14 @@ let print_object uri obj sigma proof_tree_infos filename =
      None -> ()
    | Some (sigma0,proof_tree,proof_tree_to_constr,
            proof_tree_to_flattened_proof_tree) ->
+(*CSC: bug in V8
       let xmlprooftree =
        ProofTree2Xml.print_proof_tree
         uri sigma0 proof_tree proof_tree_to_constr
         proof_tree_to_flattened_proof_tree constr_to_ids
       in
        pp xmlprooftree (prooftree_filename_of_filename filename)
+*) ()
 ;;
 
 let string_list_of_named_context_list =
@@ -758,19 +760,6 @@ let filename_of_path ?(keep_sections=false) xml_library_root kn tag =
       let tokens = Cic2acic.token_list_of_kernel_name ~keep_sections kn tag in
        Some (join_dirs xml_library_root' tokens)
 ;;
-
-(*CSC: Ask Hugo for a better solution *)
-(*
-let ref_of_kernel_name kn =
- let module N = Names in
- let module Ln = Libnames in
-  let (modpath,_,label) = N.repr_kn kn in
-   match modpath with
-      N.MPself _ -> Ln.Qualid (Ln.qualid_of_sp (Nametab.sp_of_global None kn))
-    | _ ->
-      Util.anomaly ("ref_of_kernel_name: the module path is not MPself")
-;;
-*)
 
 (* Let's register the callbacks *)
 let xml_library_root =
