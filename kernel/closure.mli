@@ -115,7 +115,7 @@ type table_key =
   | ConstKey of constant
   | VarKey of identifier
   | FarRelKey of int
-   (* FarRel: index in the rel_context part of _initial_ environment *)
+   (* FarRel: index in the [rel_context] part of {\em initial} environment *)
 
 type 'a infos
 val ref_value_cache: 'a infos -> table_key -> 'a option

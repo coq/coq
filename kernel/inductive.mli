@@ -59,7 +59,7 @@ val type_case_branches :
   env -> inductive * constr list -> unsafe_judgment -> constr
     -> types array * types * constraints
 
-(* Check a case_info actually correspond to a Case expression on the
+(* Check a [case_info] actually correspond to a Case expression on the
    given inductive type. *)
 val check_case_info : env -> inductive -> case_info -> unit
 
