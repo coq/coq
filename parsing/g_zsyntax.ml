@@ -151,9 +151,12 @@ let fast_integer_module = make_dir ["Coq";"ZArith";"fast_integer"]
 let make_path dir id = Libnames.encode_kn dir id
 
 let positive_path = make_path fast_integer_module (id_of_string "positive")
-let glob_xI = ConstructRef ((positive_path,0),1)
-let glob_xO = ConstructRef ((positive_path,0),2)
-let glob_xH = ConstructRef ((positive_path,0),3)
+let path_of_xI = ((positive_path,0),1)
+let path_of_xO = ((positive_path,0),2)
+let path_of_xH = ((positive_path,0),3)
+let glob_xI = ConstructRef path_of_xI
+let glob_xO = ConstructRef path_of_xO
+let glob_xH = ConstructRef path_of_xH
 
 let pos_of_bignat dloc x =
   let ref_xI = RRef (dloc, glob_xI) in
@@ -169,6 +172,21 @@ let pos_of_bignat dloc x =
 
 let interp_positive dloc = function
   | POS n -> pos_of_bignat dloc n
+  | NEG n ->
+      user_err_loc (dloc, "interp_positive",
+        str "No negative number in type \"positive\"!")
+
+let rec pat_pos_of_bignat dloc x name =
+  match div2_with_rest x with
+    | (q,false) -> 
+        PatCstr (dloc,path_of_xO,[pat_pos_of_bignat dloc q Anonymous],name)
+    | (q,true) when is_nonzero q -> 
+        PatCstr (dloc,path_of_xI,[pat_pos_of_bignat dloc q Anonymous],name)
+    | (q,true) ->
+        PatCstr (dloc,path_of_xH,[],name)
+
+let pat_interp_positive dloc = function
+  | POS n -> pat_pos_of_bignat dloc n
   | NEG n ->
       user_err_loc (dloc, "interp_positive",
         str "No negative number in type \"positive\"!")
@@ -195,7 +213,7 @@ let uninterp_positive p =
 
 let _ = Symbols.declare_numeral_interpreter "positive_scope"
   ["Coq";"ZArith";"Zsyntax"]
-  (interp_positive,None)
+  (interp_positive,Some pat_interp_positive)
   ([RRef (dummy_loc, glob_xI); 
     RRef (dummy_loc, glob_xO); 
     RRef (dummy_loc, glob_xH)],
@@ -208,9 +226,12 @@ let _ = Symbols.declare_numeral_interpreter "positive_scope"
 
 let z_path = make_path fast_integer_module (id_of_string "Z")
 let glob_z = IndRef (z_path,0)
-let glob_ZERO = ConstructRef ((z_path,0),1)
-let glob_POS = ConstructRef ((z_path,0),2)
-let glob_NEG = ConstructRef ((z_path,0),3)
+let path_of_ZERO = ((z_path,0),1)
+let path_of_POS = ((z_path,0),2)
+let path_of_NEG = ((z_path,0),3)
+let glob_ZERO = ConstructRef path_of_ZERO
+let glob_POS = ConstructRef path_of_POS
+let glob_NEG = ConstructRef path_of_NEG
 
 let z_of_posint dloc pos_or_neg n = 
   if is_nonzero n then
@@ -223,6 +244,18 @@ let z_of_int dloc z =
   match z with
   | POS n -> z_of_posint dloc true n 
   | NEG n -> z_of_posint dloc false n 
+
+let pat_z_of_posint dloc pos_or_neg n name = 
+  if is_nonzero n then
+    let sgn = if pos_or_neg then path_of_POS else path_of_NEG in
+    PatCstr (dloc, sgn, [pat_pos_of_bignat dloc n Anonymous], name)
+  else 
+    PatCstr (dloc, path_of_ZERO, [], name)
+
+let pat_z_of_int dloc n name =
+  match n with
+  | POS n -> pat_z_of_posint dloc true n name
+  | NEG n -> pat_z_of_posint dloc false n name
 
 (**********************************************************************)
 (* Printing Z via scopes                                              *)
@@ -244,7 +277,7 @@ let uninterp_z p =
 
 let _ = Symbols.declare_numeral_interpreter "Z_scope"
   ["Coq";"ZArith";"Zsyntax"]
-  (z_of_int,None)
+  (z_of_int,Some pat_z_of_int)
   ([RRef (dummy_loc, glob_ZERO); 
     RRef (dummy_loc, glob_POS); 
     RRef (dummy_loc, glob_NEG)],
