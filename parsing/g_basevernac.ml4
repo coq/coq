@@ -18,7 +18,8 @@ open Vernac
 GEXTEND Gram
   GLOBAL: identarg ne_identarg_list numarg ne_numarg_list numarg_list
           stringarg ne_stringarg_list constrarg sortarg tacarg 
-          ne_qualidarg_list qualidarg qualidconstarg;
+          ne_qualidarg_list qualidarg qualidconstarg commentarg 
+          commentarg_list;
 
   identarg:
     [ [ id = Constr.ident -> id ] ]
@@ -64,13 +65,24 @@ GEXTEND Gram
   tacarg:
     [ [ tcl = Tactic.tactic -> tcl ] ]
   ;
+  commentarg:
+    [ [ c = constrarg -> c
+    |   c = stringarg -> c 
+    |   c = numarg -> c ] ]
+  ;
+  commentarg_list:
+    [ [ c = commentarg; l = commentarg_list -> c::l
+    | -> [] ] ]
+  ;
 END;
 
 GEXTEND Gram
   GLOBAL: command;
 
   command:
-    [ [ IDENT "Pwd" -> <:ast< (PWD) >>
+    [ [ IDENT "Comments"; args = commentarg_list ->
+	  <:ast< (Comments ($LIST args)) >>
+      | IDENT "Pwd" -> <:ast< (PWD) >>
       | IDENT "Cd" -> <:ast< (CD) >>
       | IDENT "Cd"; dir = stringarg -> <:ast< (CD $dir) >>
 
