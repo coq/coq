@@ -196,6 +196,9 @@ Defined.
 
 End VECTORS.
 
+Implicit Arguments Vnil [A].
+Implicit Arguments Vcons [A n].
+
 Section BOOLEAN_VECTORS.
 
 (* 
@@ -212,9 +215,9 @@ ATTENTION : Tous les décalages prennent la taille moins un comme paramètre
 
 Definition Bvector := vector bool.
 
-Definition Bnil := Vnil bool.
+Definition Bnil := @Vnil bool.
 
-Definition Bcons := Vcons bool.
+Definition Bcons := @Vcons bool.
 
 Definition Bvect_true := Vconst bool true.
 

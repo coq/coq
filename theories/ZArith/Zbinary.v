@@ -17,10 +17,10 @@ Require Export Zpower.
 Require Import Omega.
 
 (*
-L'évaluation des vecteurs de booléens se font à la fois en binaire et
-en complément à deux. Le nombre appartient à Z. 
+L'Ã©valuation des vecteurs de boolÃ©ens se font Ã  la fois en binaire et
+en complÃ©ment Ã  deux. Le nombre appartient Ã  Z. 
 On utilise donc Omega pour faire les calculs dans Z.
-De plus, on utilise les fonctions 2^n où n est un naturel, ici la longueur.
+De plus, on utilise les fonctions 2^n oÃ¹ n est un naturel, ici la longueur.
 	two_power_nat = [n:nat](POS (shift_nat n xH))
      		: nat->Z
 	two_power_nat_S
@@ -33,12 +33,12 @@ De plus, on utilise les fonctions 2^n où n est un naturel, ici la longueur.
 Section VALUE_OF_BOOLEAN_VECTORS.
 
 (*
-Les calculs sont effectués dans la convention positive usuelle.
-Les valeurs correspondent soit à l'écriture binaire (nat), 
-soit au complément à deux (int).
-On effectue le calcul suivant le schéma de Horner.
-Le complément à deux n'a de sens que sur les vecteurs de taille 
-supérieure ou égale à un, le bit de signe étant évalué négativement.
+Les calculs sont effectuÃ©s dans la convention positive usuelle.
+Les valeurs correspondent soit Ã  l'Ã©criture binaire (nat), 
+soit au complÃ©ment Ã  deux (int).
+On effectue le calcul suivant le schÃ©ma de Horner.
+Le complÃ©ment Ã  deux n'a de sens que sur les vecteurs de taille 
+supÃ©rieure ou Ã©gale Ã  un, le bit de signe Ã©tant Ã©valuÃ© nÃ©gativement.
 *)
 
 Definition bit_value (b:bool) : Z :=
@@ -84,11 +84,11 @@ Section ENCODING_VALUE.
 
 (*
 On calcule la valeur binaire selon un schema de Horner.
-Le calcul s'arrete à la longueur du vecteur sans vérification.
+Le calcul s'arrete Ã  la longueur du vecteur sans vÃ©rification.
 On definit une fonction Zmod2 calquee sur Zdiv2 mais donnant le quotient
 de la division z=2q+r avec 0<=r<=1.
-La valeur en complément à deux est calculée selon un schema de Horner
-avec Zmod2, le paramètre est la taille moins un.
+La valeur en complÃ©ment Ã  deux est calculÃ©e selon un schema de Horner
+avec Zmod2, le paramÃ¨tre est la taille moins un.
 *)
 
 Definition Zmod2 (z:Z) :=
@@ -186,7 +186,7 @@ Meriterait d'etre reecrite.
 
 Lemma binary_value_Sn :
  forall (n:nat) (b:bool) (bv:Bvector n),
-   binary_value (S n) (Vcons bool b n bv) =
+   binary_value (S n) (Vcons b bv) =
    (bit_value b + 2 * binary_value n bv)%Z.
 Proof.
 	intros; auto.
@@ -355,8 +355,8 @@ End Z_BRIC_A_BRAC.
 Section COHERENT_VALUE.
 
 (*
-On vérifie que dans l'intervalle de définition les fonctions sont 
-réciproques l'une de l'autre.
+On vÃ©rifie que dans l'intervalle de dÃ©finition les fonctions sont 
+rÃ©ciproques l'une de l'autre.
 Elles utilisent les lemmes du bric-a-brac.
 *)
 
