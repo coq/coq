@@ -352,15 +352,6 @@ Unset Implicit Arguments.
 
 (* Section properties. *)
 
-(**************
-Syntax constr 
-  level 0:
-  fix_cache [<<Fix $x{$_[$_:$_]:$_:=$_}>>] -> [ "Fix " $x ]
-| fix_cache2 [<<Fix $x{$_[$_:$_;$_:$_]:$_:=$_}>>] -> [ "Fix " $x ]
-| fix_cache3 [<<Fix $x{$_[$_:$_;$_:$_;$_:$_]:$_:=$_}>>] -> [ "Fix " $x ]
-.
-************)
-
 Variable T : (Semi_Setoid_Ring_Theory A Aequiv Aplus Amult Aone Azero Aeq).
 
 Hint SSR_plus_sym_T := Resolve (SSR_plus_sym T).
