@@ -272,6 +272,8 @@ CONTRIBVO = contrib/omega/Omega.vo       contrib/omega/Zlogarithm.vo \
             contrib/omega/OmegaSyntax.vo contrib/omega/Zpower.vo \
             contrib/omega/Zcomplements.vo
 
+$(CONTRIBVO): states/initial.coq
+
 contrib: $(CONTRIBVO)
 
 clean::
