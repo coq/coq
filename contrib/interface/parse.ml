@@ -112,7 +112,7 @@ let execute_when_necessary v =
       (try 
 	Vernacentries.interp v
        with _ ->
-	 let l=prlist_with_sep spc (fun (_,qid) -> pr_qualid qid) l in
+	 let l=prlist_with_sep spc pr_reference l in
 	 msgnl (str "Reinterning of " ++ l ++ str " failed"))
   | VernacRequireFrom (_,_,name,_) ->
       (try 

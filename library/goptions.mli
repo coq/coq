@@ -94,8 +94,8 @@ sig
 end
 
 (* The functor [MakeRefTable] declares a new table of objects of type
-   [A.t] practically denoted by [qualid]; the encoding function
-   [encode : qualid -> A.t] is typically a globalization function,
+   [A.t] practically denoted by [reference]; the encoding function
+   [encode : reference -> A.t] is typically a globalization function,
    possibly with some restriction checks; the function
    [member_message] say what to print when invoking the "Test Toto
    Titi foo." command; at the end [title] is the table name printed
@@ -107,7 +107,7 @@ module MakeRefTable :
   functor
     (A : sig
            type t
-           val encode : qualid located -> t
+           val encode : reference -> t
 	   val subst : substitution -> t -> t
            val printer : t -> std_ppcmds
            val key : option_name
@@ -156,9 +156,9 @@ val get_string_table :
 
 val get_ref_table :
   option_name ->
-    < add : qualid located -> unit;
-      remove : qualid located -> unit;
-      mem : qualid located -> unit;
+    < add : reference -> unit;
+      remove : reference -> unit;
+      mem : reference -> unit;
       print : unit >
 
 val set_int_option_value    : option_name -> int option -> unit

@@ -81,14 +81,14 @@ let _ =
     (wit_diskname, pr_diskname)
 
 VERNAC COMMAND EXTEND Xml
-| [ "Print" "XML" filename(fn) qualid(id) ] -> [ Xmlcommand.print id fn ]
+| [ "Print" "XML" filename(fn) global(id) ] -> [ Xmlcommand.print id fn ]
 
 | [ "Show" "XML" filename(fn) "Proof" ] -> [ Xmlcommand.show fn ]
 
 (*
 | [ "Print" "XML" "All" ] -> [ Xmlcommand.printAll () ]
 
-| [ "Print" "XML" "Module" diskname(dn) qualid(id) ] ->
+| [ "Print" "XML" "Module" diskname(dn) global(id) ] ->
     [ Xmlcommand.printLibrary id dn ]
 
 | [ "Print" "XML" "Section" diskname(dn) ident(id) ] ->

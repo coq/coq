@@ -11,9 +11,6 @@
 open Pp
 open Util
 open Names
-open Declarations
-open Environ
-open Term
 
 (* Identifiers *)
 
@@ -132,6 +129,11 @@ let next_ident_away_from id avoid =
 let out_name = function
   | Name id -> id
   | Anonymous -> anomaly "out_name: expects a defined name"
+
+let name_fold f na a =
+  match na with
+  | Name id -> f id a
+  | Anonymous -> a
 
 let next_name_away_with_default default name l = 
   match name with

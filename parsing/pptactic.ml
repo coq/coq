@@ -1,13 +1,10 @@
-(****************************************************************************)
-(*                                                                          *)
-(*                          The Coq Proof Assistant                         *)
-(*                                                                          *)
-(*                                 Projet Coq                               *)
-(*                                                                          *)
-(*                     INRIA        LRI-CNRS        ENS-CNRS                *)
-(*              Rocquencourt         Orsay          Lyon                    *)
-(*                                                                          *)
-(****************************************************************************)
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
 
 (* $Id$ *)
 
@@ -19,8 +16,9 @@ open Extend
 open Ppconstr
 open Tacexpr
 open Rawterm
-open Coqast
+open Topconstr
 open Genarg
+open Libnames
 
   (* Extensions *)
 let prtac_tab = Hashtbl.create 17
@@ -56,21 +54,13 @@ let pr_rawtac0 =
 
 let pr_arg pr x = spc () ++ pr x
 
-let pr_name = function
-  | Anonymous -> mt ()
-  | Name id -> spc () ++ pr_id id
-
 let pr_metanum pr = function
-  | AN (_,x) -> pr x
+  | AN x -> pr x
   | MetaNum (_,n) -> str "?" ++ int n
 
 let pr_or_var pr = function
   | ArgArg x -> pr x
   | ArgVar (_,s) -> pr_id s
-
-let pr_opt pr = function
-  | None -> mt ()
-  | Some x -> spc () ++ pr x
 
 let pr_or_meta pr = function
   | AI x -> pr x
@@ -189,7 +179,7 @@ let pr_autoarg_adding = function
   | [] -> mt ()
   | l ->
       spc () ++ str "Adding [" ++
-        hv 0 (prlist_with_sep spc (fun (_,x) -> pr_qualid x) l) ++ str "]"
+        hv 0 (prlist_with_sep spc pr_reference l) ++ str "]"
 
 let pr_autoarg_destructing = function
   | true -> spc () ++ str "Destructing"
@@ -207,14 +197,15 @@ let rec pr_rawgen prtac x =
   | StringArgType -> spc () ++ str "\"" ++ str (out_gen rawwit_string x) ++ str "\""
   | PreIdentArgType -> pr_arg str (out_gen rawwit_pre_ident x)
   | IdentArgType -> pr_arg pr_id (out_gen rawwit_ident x)
-  | QualidArgType -> pr_arg pr_qualid (snd (out_gen rawwit_qualid x))
+  | RefArgType -> pr_arg pr_reference (out_gen rawwit_ref x)
+  | SortArgType -> pr_arg pr_sort (out_gen rawwit_sort x)
   | ConstrArgType -> pr_arg pr_constr (out_gen rawwit_constr x)
   | ConstrMayEvalArgType ->
       pr_arg (pr_may_eval pr_constr) (out_gen rawwit_constr_may_eval x)
   | QuantHypArgType ->
       pr_arg pr_quantified_hypothesis (out_gen rawwit_quant_hyp x)
   | RedExprArgType ->
-      pr_arg (pr_red_expr (pr_constr,pr_metanum pr_qualid)) (out_gen rawwit_red_expr x)
+      pr_arg (pr_red_expr (pr_constr,pr_metanum pr_reference)) (out_gen rawwit_red_expr x)
   | TacticArgType -> pr_arg prtac (out_gen rawwit_tactic x)
   | CastedOpenConstrArgType ->
       pr_arg pr_casted_open_constr (out_gen rawwit_casted_open_constr x)
@@ -264,7 +255,8 @@ let rec pr_generic prtac x =
   | StringArgType -> spc () ++ str "\"" ++ str (out_gen wit_string x) ++ str "\""
   | PreIdentArgType -> pr_arg str (out_gen wit_pre_ident x)
   | IdentArgType -> pr_arg pr_id (out_gen wit_ident x)
-  | QualidArgType -> pr_arg pr_global (out_gen wit_qualid x)
+  | RefArgType -> pr_arg pr_global (out_gen wit_ref x)
+  | SortArgType -> pr_arg Printer.prterm (Term.mkSort (out_gen wit_sort x))
   | ConstrArgType -> pr_arg Printer.prterm (out_gen wit_constr x)
   | ConstrMayEvalArgType ->
       pr_arg Printer.prterm (out_gen wit_constr_may_eval x)
@@ -329,7 +321,7 @@ let rec pr_atom0 = function
 
   (* Main tactic printer *)
 and pr_atom1 = function
-  | TacExtend (s,l) -> pr_extend !pr_rawtac s l
+  | TacExtend (_,s,l) -> pr_extend !pr_rawtac s l
   | TacAlias (s,l,_) -> pr_extend !pr_rawtac s (List.map snd l)
 
   (* Basic tactics *)
@@ -372,9 +364,9 @@ and pr_atom1 = function
   | TacTrueCut (Some id,c) -> 
       hov 1 (str "Assert" ++ spc () ++ pr_id id ++ str ":" ++ pr_constr c)
   | TacForward (false,na,c) ->
-      hov 1 (str "Assert" ++ pr_name na ++ str ":=" ++ pr_constr c)
+      hov 1 (str "Assert" ++ pr_arg pr_name na ++ str ":=" ++ pr_constr c)
   | TacForward (true,na,c) ->
-      hov 1 (str "Pose" ++ pr_name na ++ str ":=" ++ pr_constr c)
+      hov 1 (str "Pose" ++ pr_arg pr_name na ++ str ":=" ++ pr_constr c)
   | TacGeneralize l ->
       hov 1 (str "Generalize" ++ spc () ++ prlist_with_sep spc pr_constr l)
   | TacGeneralizeDep c ->
@@ -566,10 +558,6 @@ and pr6 = function
 
   | TacArg c -> pr_tacarg c
 
-and pr_reference = function 
-  | RQualid (_,qid) -> pr_qualid qid
-  | RIdent (_,id) -> pr_id id
-
 and pr_tacarg0 = function
   | TacDynamic (_,t) -> str ("<dynamic ["^(Dyn.tag t)^"]>")
   | MetaNumArg (_,n) -> str ("?" ^ string_of_int n )
@@ -596,8 +584,8 @@ in (prtac,pr0,pr_match_rule)
 let (pr_raw_tactic,pr_raw_tactic0,pr_match_rule) =
   make_pr_tac
     (Ppconstr.pr_constr,
-     pr_metanum pr_qualid,
-     pr_qualid,
+     pr_metanum pr_reference,
+     pr_reference,
      pr_or_meta (fun (loc,id) -> pr_id id),
      pr_raw_extend)
 

@@ -35,7 +35,7 @@ let tactic_syntax_universe = "tactic"
 
 (* This is starting precedence for printing constructions or tactics *)
 (* Level 9 means no parentheses except for applicative terms (at level 10) *)
-let tactic_initial_prec = Some ((tactic_syntax_universe,(9,0,0)),Extend.L)
+let tactic_initial_prec = Some ((tactic_syntax_universe,(9,0,0)),Ppextend.L)
 
 let prterm_env_at_top env = gentermpr_core true env
 let prterm_env env = gentermpr_core false env

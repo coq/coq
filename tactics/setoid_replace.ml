@@ -45,7 +45,7 @@ type morphism =
       lem2 : constr option
     }
 
-let constr_of c = Astterm.interp_constr Evd.empty (Global.env()) c
+let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c
 
 let constant dir s =
   let dir = make_dirpath
@@ -414,9 +414,8 @@ let new_morphism m id hook =
 	let args_t = (List.map snd args) in
 	let poss = (List.map setoid_table_mem args_t) in
 	let lem = (gen_compat_lemma env m body args_t poss) in
-	let lemast = (ast_of_constr true env lem) in
 	new_edited id m poss;
-	start_proof_com (Some id) (IsGlobal DefinitionBody) ([],lemast) hook;
+	start_proof id (IsGlobal DefinitionBody) lem hook;
 	(Options.if_verbose Vernacentries.show_open_subgoals ()))
 
 let rec sub_bool l1 n = function

@@ -22,10 +22,6 @@ val share : bool ref
 
 val with_stats: 'a Lazy.t -> 'a
 
-type evaluable_global_reference =
-  | EvalVarRef of identifier
-  | EvalConstRef of kernel_name
-
 (*s Delta implies all consts (both global (= by
   [kernel_name]) and local (= by [Rel] or [Var])), all evars, and letin's.
   Rem: reduction of a Rel/Var bound to a term is Delta, but reduction of 

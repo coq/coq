@@ -13,13 +13,12 @@ open Names
 open Term
 open Libnames
 open Rawterm
+open Topconstr
 
-type 'a or_var = ArgArg of 'a | ArgVar of loc * identifier
-
-type constr_ast = Coqast.t
+type 'a or_var = ArgArg of 'a | ArgVar of identifier located
 
 type open_constr = Evd.evar_map * Term.constr
-type open_rawconstr = constr_ast
+type open_rawconstr = constr_expr
 
 
 (* The route of a generic argument, from parsing to evaluation
@@ -34,7 +33,7 @@ type open_rawconstr = constr_ast
 
 To distinguish between the uninterpreted (raw) and the interpreted
 worlds, we annotate the type generic_argument by a phantom argument
-which is either constr_ast or constr (actually we add also a second
+which is either constr_expr or constr (actually we add also a second
 argument raw_tactic_expr and tactic, but this is only for technical
 reasons, because these types are undefined at the type of compilation
 of Genarg).
@@ -48,13 +47,13 @@ IntOrVarArgType                int or_var               int
 StringArgType                  string (parsed w/ "")    string
 IdentArgType                   identifier               identifier         
 PreIdentArgType                string (parsed w/o "")   string
-QualidArgType                  qualid located           global_reference
-ConstrArgType                  constr_ast               constr
-ConstrMayEvalArgType               constr_ast may_eval      constr
+RefArgType                     reference           global_reference
+ConstrArgType                  constr_expr               constr
+ConstrMayEvalArgType               constr_expr may_eval      constr
 QuantHypArgType                quantified_hypothesis    quantified_hypothesis
 TacticArgType                  raw_tactic_expr          tactic
-CastedOpenConstrArgType        constr_ast               open_constr
-ConstrWithBindingsArgType      constr_ast with_bindings constr with_bindings
+CastedOpenConstrArgType        constr_expr               open_constr
+ConstrWithBindingsArgType      constr_expr with_bindings constr with_bindings
 List0ArgType of argument_type
 List1ArgType of argument_type
 OptArgType of argument_type
@@ -81,29 +80,32 @@ val wit_ident : (identifier,'co,'ta) abstract_argument_type
 val rawwit_pre_ident : (string,'co,'ta) abstract_argument_type
 val wit_pre_ident : (string,'co,'ta) abstract_argument_type
 
-val rawwit_qualid : (qualid located,constr_ast,'ta) abstract_argument_type
-val wit_qualid : (global_reference,constr,'ta) abstract_argument_type
+val rawwit_ref : (reference,constr_expr,'ta) abstract_argument_type
+val wit_ref : (global_reference,constr,'ta) abstract_argument_type
 
 val rawwit_quant_hyp : (quantified_hypothesis,'co,'ta) abstract_argument_type
 val wit_quant_hyp : (quantified_hypothesis,'co,'ta) abstract_argument_type
 
-val rawwit_constr : (constr_ast,constr_ast,'ta) abstract_argument_type
+val rawwit_sort : (rawsort,constr_expr,'ta) abstract_argument_type
+val wit_sort : (sorts,constr,'ta) abstract_argument_type
+
+val rawwit_constr : (constr_expr,constr_expr,'ta) abstract_argument_type
 val wit_constr : (constr,constr,'ta) abstract_argument_type
 
-val rawwit_constr_may_eval : (constr_ast may_eval,constr_ast,'ta) abstract_argument_type
+val rawwit_constr_may_eval : (constr_expr may_eval,constr_expr,'ta) abstract_argument_type
 val wit_constr_may_eval : (constr,constr,'ta) abstract_argument_type
 
-val rawwit_casted_open_constr : (open_rawconstr,constr_ast,'ta) abstract_argument_type
+val rawwit_casted_open_constr : (open_rawconstr,constr_expr,'ta) abstract_argument_type
 val wit_casted_open_constr : (open_constr,constr,'ta) abstract_argument_type
 
-val rawwit_constr_with_bindings : (constr_ast with_bindings,constr_ast,'ta) abstract_argument_type
+val rawwit_constr_with_bindings : (constr_expr with_bindings,constr_expr,'ta) abstract_argument_type
 val wit_constr_with_bindings : (constr with_bindings,constr,'ta) abstract_argument_type
 
-val rawwit_red_expr : ((constr_ast,qualid or_metanum) red_expr_gen,constr_ast,'ta) abstract_argument_type
-val wit_red_expr : ((constr,Closure.evaluable_global_reference) red_expr_gen,constr,'ta) abstract_argument_type
+val rawwit_red_expr : ((constr_expr,reference or_metanum) red_expr_gen,constr_expr,'ta) abstract_argument_type
+val wit_red_expr : ((constr,evaluable_global_reference) red_expr_gen,constr,'ta) abstract_argument_type
 
 (* TODO: transformer tactic en extra arg *)
-val rawwit_tactic : ('ta,constr_ast,'ta) abstract_argument_type
+val rawwit_tactic : ('ta,constr_expr,'ta) abstract_argument_type
 val wit_tactic : ('ta,constr,'ta) abstract_argument_type
 
 val wit_list0 :
@@ -163,13 +165,16 @@ val create_arg : string ->
 val exists_argtype : string -> bool
 
 type argument_type =
+  (* Basic types *)
   | BoolArgType
   | IntArgType
   | IntOrVarArgType
   | StringArgType
   | PreIdentArgType
   | IdentArgType
-  | QualidArgType
+  | RefArgType
+  (* Specific types *)
+  | SortArgType
   | ConstrArgType
   | ConstrMayEvalArgType
   | QuantHypArgType

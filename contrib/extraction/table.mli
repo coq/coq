@@ -57,14 +57,14 @@ open Util
 
 val extraction_language : lang -> unit
 
-val extraction_inline : bool -> qualid located list -> unit
+val extraction_inline : bool -> reference list -> unit
 
 val print_extraction_inline : unit -> unit
 
 val reset_extraction_inline : unit -> unit
 
-val extract_constant_inline : bool -> qualid located -> string -> unit
+val extract_constant_inline : bool -> reference -> string -> unit
 
-val extract_inductive : qualid located -> string * string list -> unit
+val extract_inductive : reference -> string * string list -> unit
 
 

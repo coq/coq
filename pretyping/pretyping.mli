@@ -76,3 +76,7 @@ val pretype_type :
   val_constraint -> env -> evar_defs -> var_map -> meta_map ->
     rawconstr -> unsafe_type_judgment
 (*i*)
+
+val interp_sort : rawsort -> sorts
+
+val interp_elimination_sort : rawsort -> sorts_family

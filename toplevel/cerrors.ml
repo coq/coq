@@ -88,7 +88,7 @@ let rec explain_exn_default = function
       hov 0 (str "Error: Fail tactic always fails (level " ++ 
 	       int i ++ str").")
   | Stdpp.Exc_located (loc,exc) ->
-      hov 0 ((if loc = Ast.dummy_loc then (mt ())
+      hov 0 ((if loc = dummy_loc then (mt ())
                else (str"At location " ++ print_loc loc ++ str":" ++ fnl ()))
                ++ explain_exn_default exc)
   | Lexer.Error Illegal_character -> 

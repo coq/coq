@@ -19,6 +19,7 @@ open Reductionops
 open Environ
 open Type_errors
 open Typeops
+open Libnames
 open Classops
 open List
 open Recordops 
@@ -48,7 +49,7 @@ let transform_rec loc env sigma (pj,c,lf) indt =
   let (mib,mip) = lookup_mind_specif env ind in
   let recargs = mip.mind_recargs in
   let mI = mkInd ind in
-  let ci = make_default_case_info env ind in
+  let ci = make_default_case_info env MatchStyle ind in
   let nconstr = Array.length mip.mind_consnames in
   if Array.length lf <> nconstr then 
     (let cj = {uj_val=c; uj_type=mkAppliedInd indt} in
@@ -185,7 +186,7 @@ let make_dep_of_undep env (IndType (indf,realargs)) pj =
 (* Main pretyping function                                               *)
 
 let pretype_ref isevars env lvar ref = 
-  let c = Declare.constr_of_reference ref in
+  let c = constr_of_reference ref in
   make_judge c (Retyping.get_type_of env Evd.empty c)
 
 let pretype_sort = function
@@ -285,7 +286,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 	      | _ ->
 		  let hj = pretype empty_tycon env isevars lvar lmeta c in
 		  error_cant_apply_not_functional_loc 
-		    (Rawterm.join_loc floc argloc) env (evars_of isevars)
+		    (join_loc floc argloc) env (evars_of isevars)
 	      	    resj [hj]
 
       in let resj = apply_rec env 1 fj args in
@@ -331,7 +332,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 	uj_type = type_app (subst1 j.uj_val) j'.uj_type }
 
   (* Special Case for let constructions to avoid exponential behavior *)      
-  | ROldCase (loc,false,po,c,[|f|]) ->
+  | ROrderedCase (loc,st,po,c,[|f|]) when st <> MatchStyle ->
       let cj = pretype empty_tycon env isevars lvar lmeta c in
       let (IndType (indf,realargs) as indt) = 
 	try find_rectype env (evars_of isevars) cj.uj_type
@@ -364,7 +365,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 	     check_branches_message loc env isevars cj.uj_val (bty,[|ft|]);
 	     let v =
 	       let mis,_ = dest_ind_family indf in
-	       let ci = make_default_case_info env mis in
+	       let ci = make_default_case_info env st mis in
 	       mkCase (ci, (nf_betaiota pj.uj_val), cj.uj_val,[|fv|])
 	     in 
 	     { uj_val = v;  uj_type = rsty }
@@ -422,12 +423,13 @@ let rec pretype tycon env isevars lvar lmeta = function
 	     let ft = fj.uj_type in
 	     let v =
 	       let mis,_ = dest_ind_family indf in
-	       let ci = make_default_case_info env mis in
+	       let ci = make_default_case_info env st mis in
 	       mkCase (ci, (nf_betaiota pj.uj_val), cj.uj_val,[|fv|] ) 
 	     in
 	     { uj_val = v; uj_type = rsty })
 
-  | ROldCase (loc,isrec,po,c,lf) ->
+  | ROrderedCase (loc,st,po,c,lf) ->
+      let isrec = (st = MatchStyle) in
       let cj = pretype empty_tycon env isevars lvar lmeta c in
       let (IndType (indf,realargs) as indt) = 
 	try find_rectype env (evars_of isevars) cj.uj_type
@@ -498,14 +500,14 @@ let rec pretype tycon env isevars lvar lmeta = function
 	    transform_rec loc env (evars_of isevars)(pj,cj.uj_val,lfv) indt
 	  else
 	    let mis,_ = dest_ind_family indf in
-	    let ci = make_default_case_info env mis in
+	    let ci = make_default_case_info env st mis in
 	    mkCase (ci, (nf_betaiota pj.uj_val), cj.uj_val,
                        Array.map (fun j-> j.uj_val) lfj)
 	in
 	{ uj_val = v;
 	  uj_type = rsty }
 
-  | RCases (loc,prinfo,po,tml,eqns) ->
+  | RCases (loc,po,tml,eqns) ->
       Cases.compile_cases loc
 	((fun vtyc env -> pretype vtyc env isevars lvar lmeta),isevars)
 	tycon env (* loc *) (po,tml,eqns)
@@ -640,3 +642,12 @@ let understand_gen sigma env lvar lmeta ~expected_type:exptyp c =
 let understand_gen_tcc sigma env lvar lmeta exptyp c =
   let metamap, c = ise_infer_gen false sigma env lvar lmeta exptyp c in
   metamap, c.uj_val
+
+let interp_sort = function
+  | RProp c -> Prop c
+  | RType _ -> new_Type_sort ()
+
+let interp_elimination_sort = function
+  | RProp Null -> InProp
+  | RProp Pos  -> InSet
+  | RType _ -> InType

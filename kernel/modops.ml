@@ -10,6 +10,7 @@
 
 (*i*)
 open Util
+open Pp
 open Names
 open Univ
 open Term
@@ -51,11 +52,13 @@ let error_no_module_to_end _ =
 let error_no_modtype_to_end _ =
   error "No open module type to end"
 
-let error_not_a_modtype s = 
-  error ("\""^s^"\" is not a module type")
+let error_not_a_modtype_loc loc s = 
+  user_err_loc (loc,"",str ("\""^s^"\" is not a module type"))
 
-let error_not_a_module s = 
-  error ("\""^s^"\" is not a module")
+let error_not_a_module_loc loc s = 
+  user_err_loc (loc,"",str ("\""^s^"\" is not a module"))
+
+let error_not_a_module s = error_not_a_module_loc dummy_loc s
 
 let error_not_a_constant l = 
   error ("\""^(string_of_label l)^"\" is not a constant")

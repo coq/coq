@@ -17,6 +17,10 @@ open Tacmach;;
 open Tacexpr;;
 open Typing;;
 open Pp;;
+open Libnames;;
+open Topconstr;;
+
+let zz = (0,0);;
 
 (* get_hyp_by_name : goal sigma -> string -> constr,
    looks up for an hypothesis (or a global constant), from its name *)
@@ -25,13 +29,12 @@ let get_hyp_by_name g name =
   let env = pf_env g in
   try (let judgment = 
          Pretyping.understand_judgment 
-          evd env (RVar(dummy_loc, name)) in
+          evd env (RVar(zz, name)) in
        ("hyp",judgment.uj_type))
 (* je sais, c'est pas beau, mais je ne sais pas trop me servir de look_up...
    Loïc *)
-  with _ -> (let ast = Termast.ast_of_qualid (Libnames.make_short_qualid name)in
-             let c = Astterm.interp_constr evd env ast in
-             ("cste",type_of (Global.env()) Evd.empty c))
+  with _ -> (let c = Nametab.global (Ident (zz,name)) in
+             ("cste",type_of (Global.env()) Evd.empty (constr_of_reference c)))
 ;;
 
 type pbp_atom =
@@ -84,8 +87,6 @@ type pbp_rule = (identifier list *
                      bool ->
                        identifier option -> (types, constr) kind_of_term -> int list -> pbp_sequence)) ->
                     pbp_sequence option;;
-
-let zz = (0,0);;
 
 (*
 let make_named_intro s =
@@ -164,10 +165,13 @@ let (imply_intro1: pbp_rule) = function
 		(kind_of_term prem) path))
   | _ -> None;;
 
+let make_var id = CRef (Ident(zz, id))
+
+let make_app f l = CApp (zz,f,List.map (fun x -> (x,None)) l)
+
 let make_pbp_pattern x =
-  Coqast.Node(zz,"APPLIST",
-    [Coqast.Nvar (zz, id_of_string "PBP_META");
-     Coqast.Nvar (zz, id_of_string ("Value_for_" ^ (string_of_id x)))])
+  make_app (make_var (id_of_string "PBP_META"))
+     [make_var (id_of_string ("Value_for_" ^ (string_of_id x)))]
 
 let rec make_then = function
   | [] -> TacId
@@ -177,26 +181,26 @@ let rec make_then = function
 let make_pbp_atomic_tactic = function
   | PbpTryAssumption None -> TacTry (TacAtom (zz, TacAssumption))
   | PbpTryAssumption (Some a) ->
-      TacTry (TacAtom (zz, TacExact (Coqast.Nvar (zz,a))))
+      TacTry (TacAtom (zz, TacExact (make_var a)))
   | PbpExists x -> 
       TacAtom (zz, TacSplit (ImplicitBindings [make_pbp_pattern x]))
   | PbpGeneralize (h,args) ->
-      let l = Coqast.Nvar (zz, h)::List.map make_pbp_pattern args in
-      TacAtom (zz, TacGeneralize [Coqast.Node (zz, "APPLIST", l)])
+      let l = List.map make_pbp_pattern args in
+      TacAtom (zz, TacGeneralize [make_app (make_var h) l])
   | PbpLeft -> TacAtom (zz, TacLeft NoBindings)
   | PbpRight -> TacAtom (zz, TacRight NoBindings)
   | PbpReduce -> TacAtom (zz, TacReduce (Red false, []))
   | PbpIntros l -> 
       let l = List.map (fun id -> IntroIdentifier id) l in
       TacAtom (zz, TacIntroPattern l)
-  | PbpLApply h -> TacAtom (zz, TacLApply (Coqast.Nvar (zz, h)))
-  | PbpApply h -> TacAtom (zz, TacApply (Coqast.Nvar(zz, h),NoBindings))
+  | PbpLApply h -> TacAtom (zz, TacLApply (make_var h))
+  | PbpApply h -> TacAtom (zz, TacApply (make_var h,NoBindings))
   | PbpElim (hyp_name, names) ->
       let bind = List.map (fun s -> (NamedHyp s,make_pbp_pattern s)) names in
       TacAtom
-	(zz, TacElim ((Coqast.Nvar(zz,hyp_name),ExplicitBindings bind),None))
+	(zz, TacElim ((make_var hyp_name,ExplicitBindings bind),None))
   | PbpTryClear l -> 
-      TacTry (TacAtom (zz, TacClear (List.map (fun s -> AN (zz,s)) l)))
+      TacTry (TacAtom (zz, TacClear (List.map (fun s -> AN s) l)))
   | PbpSplit -> TacAtom (zz, TacSplit NoBindings);;
 
 let rec make_pbp_tactic = function
@@ -254,7 +258,7 @@ let reference dir s =
     anomaly ("Coqlib: cannot find "^
 	     (Libnames.string_of_qualid (Libnames.make_qualid dir id)))
 
-let constant dir s =  Declare.constr_of_reference (reference dir s);;
+let constant dir s =  constr_of_reference (reference dir s);;
 
 let andconstr: unit -> constr = Coqlib.build_coq_and;;
 let prodconstr () = constant "Datatypes" "prod";;

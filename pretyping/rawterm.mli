@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Names
 open Sign
 open Term
@@ -51,25 +52,18 @@ type hole_kind =
   | InternalHole
   | TomatchTypeParameter of inductive * int
 
-type 'ctxt reference =
-  | RConst of constant * 'ctxt
-  | RInd of inductive * 'ctxt
-  | RConstruct of constructor * 'ctxt
-  | RVar of identifier
-  | REVar of int * 'ctxt
-
 type rawconstr = 
-  | RRef of loc * Libnames.global_reference
-  | RVar of loc * identifier
+  | RRef of (loc * global_reference)
+  | RVar of (loc * identifier)
   | REvar of loc * existential_key
   | RMeta of loc * int
   | RApp of loc * rawconstr * rawconstr list
   | RLambda of loc * name * rawconstr * rawconstr
   | RProd of loc * name * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
-  | RCases of loc * Term.case_style * rawconstr option * rawconstr list * 
+  | RCases of loc * rawconstr option * rawconstr list * 
       (loc * identifier list * cases_pattern list * rawconstr) list
-  | ROldCase of loc * bool * rawconstr option * rawconstr * 
+  | ROrderedCase of loc * case_style * rawconstr option * rawconstr * 
       rawconstr array
   | RRec of loc * fix_kind * identifier array * 
       rawconstr array * rawconstr array
@@ -92,11 +86,17 @@ i*)
 
 val map_rawconstr : (rawconstr -> rawconstr) -> rawconstr -> rawconstr
 
-val dummy_loc : loc
-val loc_of_rawconstr : rawconstr -> loc
-val join_loc : loc -> loc -> loc
+(*
+val map_rawconstr_with_binders_loc : loc -> 
+  (identifier -> 'a -> identifier * 'a) ->
+  ('a -> rawconstr -> rawconstr) -> 'a -> rawconstr -> rawconstr
+*)
 
+val loc_of_rawconstr : rawconstr -> loc
+
+(*
 val subst_raw : Names.substitution -> rawconstr -> rawconstr
+*)
 
 type 'a raw_red_flag = {
   rBeta : bool;
@@ -117,10 +117,10 @@ type ('a,'b) red_expr_gen =
   | Pattern of (int list * 'a) list
   | ExtraRedExpr of string * 'a
 
-type 'a or_metanum = AN of loc * 'a | MetaNum of loc * int
+type 'a or_metanum = AN of 'a | MetaNum of int located
 
 type 'a may_eval =
   | ConstrTerm of 'a
-  | ConstrEval of ('a, qualid or_metanum) red_expr_gen * 'a
+  | ConstrEval of ('a, reference or_metanum) red_expr_gen * 'a
   | ConstrContext of (loc * identifier) * 'a
   | ConstrTypeOf of 'a

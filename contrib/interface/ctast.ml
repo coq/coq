@@ -44,7 +44,8 @@ let rec ct_to_ast = function
   | Path (loc,sl) -> Coqast.Path (loc,section_path sl)
   | Dynamic (loc,a) -> Coqast.Dynamic (loc,a)
 
-let rec ast_to_ct = function
+let rec ast_to_ct = function x -> failwith "ast_to_ct: not TODO?"
+(*
   | Coqast.Node (loc,a,b) -> Node (loc,a,List.map ast_to_ct b)
   | Coqast.Nvar (loc,a) -> Nvar (loc,string_of_id a)
   | Coqast.Nmeta (loc,a) -> Nvar (loc,"$"^a)
@@ -60,6 +61,7 @@ let rec ast_to_ct = function
     Path(loc, (List.map string_of_id
                 (List.rev (repr_dirpath sl))) @ [string_of_id bn])
   | Coqast.Dynamic (loc,a) -> Dynamic (loc,a)
+*)
 
 let loc = function
   | Node (loc,_,_) -> loc
@@ -71,4 +73,4 @@ let loc = function
   | Path (loc,_) -> loc
   | Dynamic (loc,_) -> loc
 
-let str s = Str(Ast.dummy_loc,s)
+let str s = Str(Util.dummy_loc,s)

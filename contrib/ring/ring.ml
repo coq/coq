@@ -36,7 +36,7 @@ open Nametab
 open Quote
 
 let mt_evd = Evd.empty
-let constr_of c = Astterm.interp_constr mt_evd (Global.env()) c
+let constr_of c = Constrintern.interp_constr mt_evd (Global.env()) c
 
 let constant dir s =
   let dir = make_dirpath (List.map id_of_string (List.rev ("Coq"::dir))) in

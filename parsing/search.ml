@@ -18,7 +18,6 @@ open Declarations
 open Libobject
 open Declare
 open Coqast
-open Astterm
 open Environ
 open Pattern
 open Printer

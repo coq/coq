@@ -217,18 +217,21 @@ let rec ast_of_raw = function
       (* Pour compatibilité des theories, il faut LAMBDALIST partout *)
       ope("LAMBDALIST",[ast_of_raw t;a])
 
-  | RCases (_,printinfo,typopt,tml,eqns) ->
+  | RCases (_,typopt,tml,eqns) ->
       let pred = ast_of_rawopt typopt in
-      let tag = match printinfo with
-	| PrintIf -> "FORCEIF"
-	| PrintLet -> "FORCELET"
-	| PrintCases -> "CASES" 
-      in
+      let tag = "CASES" in
       let asttomatch = ope("TOMATCH", List.map ast_of_raw tml) in
       let asteqns = List.map ast_of_eqn eqns in 
       ope(tag,pred::asttomatch::asteqns)
 	
-  | ROldCase (_,isrec,typopt,tm,bv) ->
+  | ROrderedCase (_,st,typopt,tm,bv) ->
+      let tag = match st with
+	| IfStyle -> "FORCEIF"
+	| LetStyle -> "FORCELET"
+	| RegularStyle -> "CASES"
+	| MatchStyle -> "MATCH"
+      in
+
       (* warning "Old Case syntax"; *)
       ope("CASE",(ast_of_rawopt typopt)
 	    ::(ast_of_raw tm)
@@ -387,7 +390,7 @@ let rec ast_of_pattern tenv env = function
       let tag = if n=1 then "LAMBDA" else "LAMBDALIST" in
       ope(tag,[ast_of_pattern tenv env t;a])
 
-  | PCase (typopt,tm,bv) ->
+  | PCase (st,typopt,tm,bv) ->
       warning "Old Case syntax";
       ope("MUTCASE",(ast_of_patopt tenv env typopt)
 	    ::(ast_of_pattern tenv env tm)

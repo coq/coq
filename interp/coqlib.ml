@@ -53,7 +53,7 @@ let reference dir s =
   with Not_found ->
     anomaly ("Coqlib: cannot find "^(string_of_qualid (make_qualid dir id)))
 
-let constant dir s = Declare.constr_of_reference (reference dir s)
+let constant dir s = constr_of_reference (reference dir s)
 
 type coq_sigma_data = {
   proj1 : constr;
@@ -191,7 +191,7 @@ let parse_astconstr s =
     error "Syntax error : not a construction"
 
 let parse_pattern s =
-  Astterm.interp_constrpattern Evd.empty (Global.env()) (parse_astconstr s)
+  Constrintern.interp_constrpattern Evd.empty (Global.env()) (parse_astconstr s)
 
 let coq_eq_pattern =
   lazy (snd (parse_pattern "(Coq.Init.Logic.eq ?1 ?2 ?3)"))

@@ -99,21 +99,21 @@ and validation = (proof_tree list -> proof_tree)
 
 and tactic_expr =
   (constr,
-   Closure.evaluable_global_reference,
+   evaluable_global_reference,
    inductive or_metanum,
    identifier)
      Tacexpr.gen_tactic_expr
 
 and atomic_tactic_expr =
   (constr,
-   Closure.evaluable_global_reference,
+   evaluable_global_reference,
    inductive or_metanum,
    identifier)
      Tacexpr.gen_atomic_tactic_expr
 
 and tactic_arg =
   (constr,
-   Closure.evaluable_global_reference,
+   evaluable_global_reference,
    inductive or_metanum,
    identifier)
      Tacexpr.gen_tactic_arg
@@ -127,5 +127,3 @@ type closed_generic_argument =
 
 type 'a closed_abstract_argument_type =
     ('a,constr,raw_tactic_expr) abstract_argument_type
-
-type declaration_hook = Decl_kinds.strength -> global_reference -> unit

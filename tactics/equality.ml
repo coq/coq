@@ -372,7 +372,7 @@ let descend_then sigma env head dirn =
       let brl =
         List.map build_branch
           (interval 1 (Array.length mip.mind_consnames)) in
-      let ci = make_default_case_info env ind in
+      let ci = make_default_case_info env RegularStyle ind in
       mkCase (ci, p, head, Array.of_list brl)))
   
 (* Now we need to construct the discriminator, given a discriminable
@@ -420,7 +420,7 @@ let construct_discriminator sigma env dirn c sort =
     it_mkLambda_or_LetIn endpt cstrs.(i-1).cs_args in
   let brl =
     List.map build_branch(interval 1 (Array.length mip.mind_consnames)) in
-  let ci = make_default_case_info env ind in
+  let ci = make_default_case_info env RegularStyle ind in
   mkCase (ci, p, c, Array.of_list brl)
     
 let rec build_discriminator sigma env dirn c sort = function
@@ -555,12 +555,6 @@ let discr_tac = function
 
 let discrConcl gls  = discrClause None gls
 let discrHyp id gls = discrClause (Some id) gls
-
-(*
-let h_discr      = hide_atomic_tactic "Discr"      discrEverywhere
-let h_discrConcl = hide_atomic_tactic "DiscrConcl" discrConcl
-let h_discrHyp   = hide_ident_or_numarg_tactic "DiscrHyp" discrHyp
-*)
 
 (* returns the sigma type (sigS, sigT) with the respective
     constructor depending on the sort *)
@@ -811,11 +805,6 @@ let injClause = function
 let injConcl gls  = injClause None gls
 let injHyp id gls = injClause (Some id) gls
 
-(*
-let h_injConcl = hide_atomic_tactic "Inj" injConcl
-let h_injHyp   = hide_ident_or_numarg_tactic "InjHyp" injHyp
-*)
-
 let decompEqThen ntac id gls =
   let eqn = pf_whd_betadeltaiota gls (clause_type (Some id) gls) in
   let (lbeq,(t,t1,t2))= find_eq_data_decompose  eqn in
@@ -875,11 +864,6 @@ let dEq = dEqThen (fun x -> tclIDTAC)
 
 let dEqConcl gls = dEq None gls
 let dEqHyp id gls = dEq (Some id) gls
-
-(*
-let dEqConcl_tac = hide_atomic_tactic "DEqConcl" dEqConcl
-let dEqHyp_tac = hide_ident_or_numarg_tactic "DEqHyp" dEqHyp
-*)
 
 let rewrite_msg = function 
   | None ->  
@@ -1099,18 +1083,6 @@ let subst l2r eqn cls gls =
 
 let substConcl l2r eqn gls = try_rewrite (subst l2r eqn None) gls
 let substConcl_LR = substConcl true
-(*
-let substConcl_LR_tac = 
-  let gentac = 
-    hide_tactic "SubstConcl_LR"
-      (function 
-	 | [Command eqn] -> 
-	     (fun gls ->  substConcl_LR (pf_interp_constr gls eqn)  gls)
-	 | [Constr c] -> substConcl_LR c
-	 | _ -> assert false)
-  in 
-  fun eqn  -> gentac [Command eqn] 
-*)
 
 (* id:(P a) |- G
  * SubstHyp a=b id
@@ -1135,16 +1107,6 @@ let hypSubst_LR = hypSubst true
  *)
 let substHypInConcl l2r id gls = try_rewrite (hypSubst l2r id None) gls
 let substHypInConcl_LR = substHypInConcl true
-(*
-let substHypInConcl_LR_tac =
-  let gentac = 
-    hide_tactic "SubstHypInConcl_LR" 
-      (function 
-	 | [Identifier id] -> substHypInConcl_LR id
-	 | _ -> assert false)
-  in 
-  fun id -> gentac [Identifier id]
-*)
 
 (* id:a=b H:(P a) |- G
    SubstHypInHyp id H.
@@ -1156,18 +1118,6 @@ let substHypInConcl_LR_tac =
      |- a=b
 *)
 let substConcl_RL = substConcl false
-(*
-let substConcl_RL_tac = 
-  let gentac = 
-    hide_tactic "SubstConcl_RL"
-      (function 
-	 | [Command eqn] -> 
-	     (fun gls ->  substConcl_RL (pf_interp_constr gls eqn)  gls)
-         | [Constr c] -> substConcl_RL c
-	 | _ -> assert false)
-  in 
-  fun eqn  -> gentac [Command eqn] 
-*)
 
 (* id:(P b) |-G
    SubstHyp_RL a=b id 
@@ -1184,16 +1134,6 @@ let hypSubst_RL = hypSubst false
  * id:a=b |- (P a)
  *)
 let substHypInConcl_RL = substHypInConcl false
-(*
-let substHypInConcl_RL_tac =
-  let gentac = 
-    hide_tactic "SubstHypInConcl_RL" 
-      (function 
-	 | [Identifier id] -> substHypInConcl_RL id
-         | _ -> assert false)
-  in 
-  fun id -> gentac [Identifier id]
-*)
 
 (* id:a=b H:(P b) |- G
    SubstHypInHyp id H.

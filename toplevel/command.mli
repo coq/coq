@@ -17,7 +17,10 @@ open Declare
 open Library
 open Libnames
 open Nametab
+open Tacexpr
 open Vernacexpr
+open Rawterm
+open Topconstr
 open Decl_kinds
 (*i*)
 
@@ -27,31 +30,32 @@ open Decl_kinds
    defined object *)
 
 val declare_definition : identifier -> definition_kind ->
-  local_binder list -> Tacred.red_expr option -> Coqast.t -> Coqast.t option
-    -> global_reference
+  local_binder list -> Tacred.red_expr option -> constr_expr ->
+    constr_expr option -> global_reference
 
-val syntax_definition : identifier -> Coqast.t -> unit
+val syntax_definition : identifier -> constr_expr -> unit
 
 val declare_assumption : identifier -> assumption_kind -> 
-  local_binder list -> Coqast.t -> global_reference
+  local_binder list -> constr_expr -> global_reference
 
 val build_mutual : inductive_expr list -> bool -> unit
 
 val declare_mutual_with_eliminations :
   Entries.mutual_inductive_entry -> mutual_inductive
 
-val build_recursive :
-  (identifier * ((identifier * Coqast.t) list) * Coqast.t * Coqast.t) list 
-  -> unit
+val build_recursive : fixpoint_expr list -> unit
 
-val build_corecursive :  (identifier * Coqast.t * Coqast.t) list -> unit
+val build_corecursive : cofixpoint_expr list -> unit
 
-val build_scheme : (identifier * bool * qualid located * Coqast.t) list -> unit
+val build_scheme : (identifier * bool * reference * rawsort) list -> unit
 
-val generalize_rawconstr : Coqast.t -> local_binder list -> Coqast.t
+val generalize_rawconstr : constr_expr -> local_binder list -> constr_expr
+
+val start_proof : identifier -> goal_kind -> constr ->
+  declaration_hook -> unit
 
 val start_proof_com : identifier option -> goal_kind -> 
-  (local_binder list * Coqast.t) -> Proof_type.declaration_hook -> unit
+  (local_binder list * constr_expr) -> declaration_hook -> unit
 
 (*s [save_named b] saves the current completed proof under the name it
 was started; boolean [b] tells if the theorem is declared opaque; it

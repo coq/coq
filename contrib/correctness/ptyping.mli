@@ -12,6 +12,7 @@
 
 open Names
 open Term
+open Topconstr
 
 open Ptype
 open Past
@@ -19,7 +20,7 @@ open Penv
 
 (* This module realizes type and effect inference *)
 
-val cic_type_v : local_env -> Prename.t -> Coqast.t ml_type_v -> type_v
+val cic_type_v : local_env -> Prename.t -> constr_expr ml_type_v -> type_v
 
 val effect_app : Prename.t -> local_env
             -> (typing_info,'b) Past.t

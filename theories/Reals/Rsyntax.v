@@ -59,9 +59,14 @@ with rexpr0 : constr :=
 | expr_inv [ "/" rexpr0($c) ] -> [ (Rinv $c) ]
 | expr_meta [ meta($m) ] -> [ $m ]
 
-with meta : ast :=
-| rimpl [ "?" ] -> [ (ISEVAR) ]
-| rmeta [ "?" constr:numarg($n) ] -> [ (META $n) ]
+with meta :=
+| rimpl [ "?" ] -> [ ? ]
+| rmeta0 [ "?" "0" ] -> [ ?0 ]
+| rmeta1 [ "?" "1" ] -> [ ?1 ]
+| rmeta2 [ "?" "2" ] -> [ ?2 ]
+| rmeta3 [ "?" "3" ] -> [ ?3 ]
+| rmeta4 [ "?" "4" ] -> [ ?4 ]
+| rmeta5 [ "?" "5" ] -> [ ?5 ]
 
 with rapplication : constr :=
   apply [ rapplication($p) rexpr($c1) ] -> [ ($p $c1) ]

@@ -177,7 +177,7 @@ let get_ref_table k = List.assoc (nickname k) !ref_table
 module type RefConvertArg =
 sig
   type t
-  val encode : qualid located -> t
+  val encode : reference -> t
   val subst : substitution -> t -> t
   val printer : t -> std_ppcmds
   val key : option_name
@@ -189,7 +189,7 @@ end
 module RefConvert = functor (A : RefConvertArg) -> 
 struct
   type t = A.t
-  type key = qualid located
+  type key = reference
   let table = ref_table
   let encode = A.encode
   let subst = A.subst

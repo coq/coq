@@ -9,17 +9,16 @@
 (*i $Id$ i*)
 
 (*i*)
-open Names
 open Declarations
 open Environ
 open Entries
-open Evd
+open Topconstr
 (*i*)
 
 (* Module expressions and module types are interpreted relatively to 
    eventual functor or funsig arguments. *)
 
-val interp_modtype : env -> Coqast.t -> module_type_entry
+val interp_modtype : env -> module_type_ast -> module_type_entry
 
-val interp_modexpr : env -> Coqast.t -> module_expr
+val interp_modexpr : env -> module_ast -> module_expr
 

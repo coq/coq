@@ -13,8 +13,8 @@ open Util
 open Names
 open Entries
 open Libnames
-open Coqast
-open Astterm
+open Topconstr
+open Constrintern
  
 let rec make_mp mp = function
     [] -> mp
@@ -65,69 +65,39 @@ let lookup_qualid (modtype:bool) qid =
    and the basename. Searches Nametab otherwise.
 *)
 
-let lookup_module qid =
-  Nametab.locate_module qid
+let lookup_module (loc,qid) =
+  try
+    Nametab.locate_module qid
+  with
+    | Not_found -> Modops.error_not_a_module_loc loc (string_of_qualid qid)
 	
-let lookup_modtype qid =
-  Nametab.locate_modtype qid
+let lookup_modtype (loc,qid) =
+  try
+    Nametab.locate_modtype qid
+  with
+    | Not_found -> 
+	Modops.error_not_a_modtype_loc loc (string_of_qualid qid)
 
 let transl_with_decl env = function 
-  | Node(loc,"WITHMODULE",[id_ast;qid_ast]) ->
-      let id = match id_ast with
-	  Nvar(_,id) -> id
-	| _ -> anomaly "Identifier AST expected"
-      in
-      let qid = match qid_ast with
-	| Node (loc, "QUALID", astl) -> 
-  	    interp_qualid astl
-	| _ -> anomaly "QUALID expected"
-      in
-	With_Module (id,lookup_module qid)
-  | Node(loc,"WITHDEFINITION",[id_ast;cast]) ->
-      let id = match id_ast with
-	  Nvar(_,id) -> id
-	| _ -> anomaly "Identifier AST expected"
-      in
-      let c = interp_constr Evd.empty env cast in
-	With_Definition (id,c)
-  | _ -> anomaly "Unexpected AST"
+  | CWith_Module (id,qid) ->
+      With_Module (id,lookup_module qid)
+  | CWith_Definition (id,c) ->
+      With_Definition (id,interp_constr Evd.empty env c)
 
 let rec interp_modtype env = function 
-  | Node(loc,"MODTYPEQID",qid_ast) -> begin match qid_ast with 
-      | [Node (loc, "QUALID", astl)] -> 
-  	  let qid = interp_qualid astl in begin
-	      try 
-	        MTEident (lookup_modtype qid)
-	      with
-	        | Not_found -> 
-		    Modops.error_not_a_modtype (*loc*) (string_of_qualid qid)
-	    end
-      | _ -> anomaly "QUALID expected"
-    end
-  | Node(loc,"MODTYPEWITH",[mty_ast;decl_ast]) ->
-      let mty = interp_modtype env mty_ast in
-      let decl = transl_with_decl env decl_ast in
+  | CMTEident qid ->
+      MTEident (lookup_modtype qid)
+  | CMTEwith (mty,decl) ->
+      let mty = interp_modtype env mty in
+      let decl = transl_with_decl env decl in
 	MTEwith(mty,decl)
-  | _ -> anomaly "TODO: transl_modtype: I can handle qualid module types only"
  
 
 let rec interp_modexpr env = function 
-  | Node(loc,"MODEXPRQID",qid_ast) -> begin match qid_ast with 
-      | [Node (loc, "QUALID", astl)] -> 
-	  let qid = interp_qualid astl in begin
-	    try 
-	      MEident (lookup_module qid)
-	    with
-	      | Not_found -> 
-		 Modops.error_not_a_module (*loc*) (string_of_qualid qid)
-	  end
-      | _ -> anomaly "QUALID expected"
-    end
-  | Node(_,"MODEXPRAPP",[ast1;ast2]) ->
-      let me1 = interp_modexpr env ast1 in
-      let me2 = interp_modexpr env ast2 in
+  | CMEident qid ->
+      MEident (lookup_module qid)
+  | CMEapply (me1,me2) ->
+      let me1 = interp_modexpr env me1 in
+      let me2 = interp_modexpr env me2 in
 	MEapply(me1,me2)
-  | Node(_,"MODEXPRAPP",_) -> 
-      anomaly "transl_modexpr: MODEXPRAPP must have two arguments"
-  | _ -> anomaly "transl_modexpr: I can handle MODEXPRQID or MODEXPRAPP only..."
 

@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*i camlp4deps: "parsing/grammar.cma" i*)
-
 (* $Id$ *)
 
 open Pp
@@ -27,7 +25,7 @@ open Tactic
 (* Functions overloaded by quotifier *)
 
 let induction_arg_of_constr c =
-  try ElimOnIdent (Ast.loc c,coerce_to_id c) with _ -> ElimOnConstr c
+  try ElimOnIdent (Topconstr.constr_loc c,coerce_to_id c) with _ -> ElimOnConstr c
 
 let local_compute = [FBeta;FIota;FDeltaBut [];FZeta]
 
@@ -80,13 +78,13 @@ GEXTEND Gram
 
   int_or_var:
     [ [ n = integer  -> Genarg.ArgArg n
-      | id = ident -> Genarg.ArgVar (loc,id) ] ]
+      | id = identref -> Genarg.ArgVar id ] ]
   ;
   autoarg_depth:
   [ [ n = OPT natural -> n ] ]
   ;
   autoarg_adding:
-  [ [ IDENT "Adding" ; "["; l = LIST1 qualid; "]" -> l | -> [] ] ]
+  [ [ IDENT "Adding" ; "["; l = LIST1 global; "]" -> l | -> [] ] ]
   ;
   autoarg_destructing:
   [ [ IDENT "Destructing" -> true | -> false ] ]
@@ -100,17 +98,17 @@ GEXTEND Gram
   ;
   (* Either an hypothesis or a ltac ref (variable or pattern metavariable) *)
   id_or_ltac_ref:
-    [ [ id = ident -> AN (loc,id)
+    [ [ id = base_ident -> AN id
       | "?"; n = natural -> MetaNum (loc,n) ] ]
   ;
   (* Either a global ref or a ltac ref (variable or pattern metavariable) *)
-  qualid_or_ltac_ref:
-    [ [ (loc,qid) = qualid -> AN (loc,qid)
+  global_or_ltac_ref:
+    [ [ qid = global -> AN qid
       | "?"; n = natural -> MetaNum (loc,n) ] ]
   ;
   (* An identifier or a quotation meta-variable *)
   id_or_meta:
-    [ [ id = rawident -> AI id 
+    [ [ id = identref -> AI id 
 
       (* This is used in quotations *)
       | id = METAIDENT -> MetaId (loc,id) ] ]
@@ -122,7 +120,7 @@ GEXTEND Gram
       ] ]
   ;
   constrarg:
-    [ [ IDENT "Inst"; id = rawident; "["; c = constr; "]" ->
+    [ [ IDENT "Inst"; id = identref; "["; c = constr; "]" ->
         ConstrContext (id, c)
       | IDENT "Eval"; rtc = Tactic.red_expr; "in"; c = constr ->
         ConstrEval (rtc,c) 
@@ -138,7 +136,7 @@ GEXTEND Gram
     ] ]
   ;
   quantified_hypothesis:
-    [ [ id = ident -> NamedHyp id
+    [ [ id = base_ident -> NamedHyp id
       | n = natural -> AnonHyp n ] ]
   ;
   pattern_occ:
@@ -161,11 +159,11 @@ GEXTEND Gram
     [ [ "["; tc = LIST1 intropatterns SEP "|" ; "]" -> IntroOrAndPattern tc
       | "("; tc = LIST1 simple_intropattern SEP "," ; ")" -> IntroOrAndPattern [tc]
       | IDENT "_" -> IntroWildcard
-      | id = ident -> IntroIdentifier id
+      | id = base_ident -> IntroIdentifier id
       ] ]
   ;
   simple_binding:
-    [ [ id = ident; ":="; c = constr -> (NamedHyp id, c)
+    [ [ id = base_ident; ":="; c = constr -> (NamedHyp id, c)
       | n = natural; ":="; c = constr -> (AnonHyp n, c) ] ]
   ;
   binding_list:
@@ -183,15 +181,15 @@ GEXTEND Gram
     [ [ "with"; bl = binding_list -> bl | -> NoBindings ] ]
   ;
   unfold_occ:
-    [ [ nl = LIST0 integer; c = qualid_or_ltac_ref -> (nl,c) ] ]
+    [ [ nl = LIST0 integer; c = global_or_ltac_ref -> (nl,c) ] ]
   ;
   red_flag:
     [ [ IDENT "Beta" -> FBeta
       | IDENT "Delta" -> FDeltaBut []
       | IDENT "Iota" -> FIota
       | IDENT "Zeta" -> FZeta
-      | IDENT "Delta"; "["; idl = LIST1 qualid_or_ltac_ref; "]" -> FConst idl
-      | IDENT "Delta"; "-"; "["; idl = LIST1 qualid_or_ltac_ref; "]" -> FDeltaBut idl
+      | IDENT "Delta"; "["; idl = LIST1 global_or_ltac_ref; "]" -> FConst idl
+      | IDENT "Delta"; "-"; "["; idl = LIST1 global_or_ltac_ref; "]" -> FDeltaBut idl
     ] ]
   ;
   red_tactic:
@@ -227,10 +225,10 @@ GEXTEND Gram
       | -> [] ] ]
   ;
   fixdecl:
-    [ [ id = ident; "/"; n = natural; ":"; c = constr -> (id,n,c) ] ]
+    [ [ id = base_ident; "/"; n = natural; ":"; c = constr -> (id,n,c) ] ]
   ;
   cofixdecl:
-    [ [ id = ident; ":"; c = constr -> (id,c) ] ]
+    [ [ id = base_ident; ":"; c = constr -> (id,c) ] ]
   ;
   hintbases:
     [ [ "with"; "*" -> None
@@ -241,7 +239,7 @@ GEXTEND Gram
     [ [ "using"; el = constr_with_bindings -> el ] ]
   ;
   with_names:
-    [ [ "as"; "["; ids = LIST1 (LIST0 Prim.ident) SEP "|"; "]" -> ids
+    [ [ "as"; "["; ids = LIST1 (LIST0 base_ident) SEP "|"; "]" -> ids
       | -> [] ] ]
   ;
   simple_tactic:
@@ -250,11 +248,11 @@ GEXTEND Gram
         IDENT "Intros"; IDENT "until"; id = quantified_hypothesis -> 
 	  TacIntrosUntil id
       | IDENT "Intros"; pl = intropatterns -> TacIntroPattern pl
-      | IDENT "Intro"; id = ident; IDENT "after"; id2 = rawident ->
+      | IDENT "Intro"; id = base_ident; IDENT "after"; id2 = identref ->
 	  TacIntroMove (Some id, Some id2)
-      | IDENT "Intro"; IDENT "after"; id2 = rawident ->
+      | IDENT "Intro"; IDENT "after"; id2 = identref ->
 	  TacIntroMove (None, Some id2)
-      | IDENT "Intro"; id = ident -> TacIntroMove (Some id, None)
+      | IDENT "Intro"; id = base_ident -> TacIntroMove (Some id, None)
       | IDENT "Intro" -> TacIntroMove (None, None)
 
       | IDENT "Assumption" -> TacAssumption
@@ -269,12 +267,12 @@ GEXTEND Gram
       | IDENT "Case"; cl = constr_with_bindings -> TacCase cl
       | IDENT "CaseType"; c = constr -> TacCaseType c
       | IDENT "Fix"; n = natural -> TacFix (None,n)
-      | IDENT "Fix"; id = ident; n = natural -> TacFix (Some id,n)
-      | IDENT "Fix"; id = ident; n = natural; "with"; fd = LIST0 fixdecl ->
+      | IDENT "Fix"; id = base_ident; n = natural -> TacFix (Some id,n)
+      | IDENT "Fix"; id = base_ident; n = natural; "with"; fd = LIST0 fixdecl ->
 	  TacMutualFix (id,n,fd)
       | IDENT "Cofix" -> TacCofix None
-      | IDENT "Cofix"; id = ident -> TacCofix (Some id)
-      | IDENT "Cofix"; id = ident; "with"; fd = LIST0 cofixdecl ->
+      | IDENT "Cofix"; id = base_ident -> TacCofix (Some id)
+      | IDENT "Cofix"; id = base_ident; "with"; fd = LIST0 cofixdecl ->
 	  TacMutualCofix (id,fd)
 
       | IDENT "Cut"; c = constr -> TacCut c
@@ -288,7 +286,7 @@ GEXTEND Gram
       | IDENT "Pose"; b = constr -> TacForward (true,Names.Anonymous,b)
       | IDENT "Generalize"; lc = LIST1 constr -> TacGeneralize lc
       | IDENT "Generalize"; IDENT "Dependent"; c = constr -> TacGeneralizeDep c
-      | IDENT "LetTac"; id = ident; ":="; c = constr; p = clause_pattern
+      | IDENT "LetTac"; id = base_ident; ":="; c = constr; p = clause_pattern
         -> TacLetTac (id,c,p)
       | IDENT "Instantiate"; n = natural; c = constr -> TacInstantiate (n,c)
 
@@ -307,7 +305,7 @@ GEXTEND Gram
           ids = with_names -> TacNewDestruct (c,el,ids)
       | IDENT "Decompose"; IDENT "Record" ; c = constr -> TacDecomposeAnd c
       | IDENT "Decompose"; IDENT "Sum"; c = constr -> TacDecomposeOr c
-      | IDENT "Decompose"; "["; l = LIST1 qualid_or_ltac_ref; "]"; c = constr
+      | IDENT "Decompose"; "["; l = LIST1 global_or_ltac_ref; "]"; c = constr
         -> TacDecompose (l,c)
 
       (* Automation tactic *)
@@ -315,8 +313,8 @@ GEXTEND Gram
       | IDENT "Auto"; n = OPT natural; db = hintbases -> TacAuto (n, db)
 
       | IDENT "AutoTDB"; n = OPT natural -> TacAutoTDB n
-      | IDENT "CDHyp"; id = rawident -> TacDestructHyp (true,id)
-      | IDENT "DHyp";  id = rawident -> TacDestructHyp (false,id)
+      | IDENT "CDHyp"; id = identref -> TacDestructHyp (true,id)
+      | IDENT "DHyp";  id = identref -> TacDestructHyp (false,id)
       | IDENT "DConcl"  -> TacDestructConcl
       | IDENT "SuperAuto"; l = autoargs -> TacSuperAuto l
       | IDENT "Auto"; n = OPT natural; IDENT "Decomp"; p = OPT natural ->
@@ -325,9 +323,9 @@ GEXTEND Gram
       (* Context management *)
       | IDENT "Clear"; l = LIST1 id_or_ltac_ref -> TacClear l
       | IDENT "ClearBody"; l = LIST1 id_or_ltac_ref -> TacClearBody l
-      | IDENT "Move"; id1 = rawident; IDENT "after"; id2 = rawident -> 
+      | IDENT "Move"; id1 = identref; IDENT "after"; id2 = identref -> 
 	  TacMove (true,id1,id2)
-      | IDENT "Rename"; id1 = rawident; IDENT "into"; id2 = rawident -> 
+      | IDENT "Rename"; id1 = identref; IDENT "into"; id2 = identref -> 
 	  TacRename (id1,id2)
 
       (* Constructors *)
@@ -353,14 +351,6 @@ GEXTEND Gram
 (* Unused ??
       | IDENT "ML"; s = string -> ExtraTactic<:ast< (MLTACTIC $s) >>
 *)
-
- (*   | [ id = identarg; l = constrarg_list ->
-          match (isMeta (nvar_of_ast id), l) with
-            | (true, []) -> id
-            | (false, _) -> <:ast< (CALL $id ($LIST $l)) >>
-            | _ -> Util.user_err_loc
-                  (loc, "G_tactic.meta_tactic",
-                   (str"Cannot apply arguments to a meta-tactic."))
-      ] *)] ]
+    ] ]
   ;
 END;;

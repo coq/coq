@@ -13,10 +13,11 @@
 open Names
 open Term
 open Ptype
+open Topconstr
 
 (* Some misc. functions *)
 
-val reraise_with_loc : Coqast.loc -> ('a -> 'b) -> 'a -> 'b
+val reraise_with_loc : Util.loc -> ('a -> 'b) -> 'a -> 'b
 
 val list_of_some : 'a option -> 'a list
 val difference : 'a list -> 'a list -> 'a list
@@ -49,8 +50,9 @@ val id_of_name : name -> identifier
 val isevar : constr
 
 val subst_in_constr : (identifier * identifier) list -> constr -> constr
-val subst_in_ast : (identifier * identifier) list -> Coqast.t -> Coqast.t
-val subst_ast_in_ast : (identifier * Coqast.t) list -> Coqast.t -> Coqast.t
+val subst_in_ast : (identifier * identifier) list -> constr_expr -> constr_expr
+val subst_ast_in_ast :
+  (identifier * constr_expr) list -> constr_expr -> constr_expr
 val real_subst_in_constr : (identifier * constr) list -> constr -> constr
 
 val constant : string -> constr

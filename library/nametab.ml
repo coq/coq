@@ -387,7 +387,8 @@ let absolute_reference sp =
 let locate_in_absolute_module dir id =
   absolute_reference (make_path dir id)
 
-let global (loc,qid) =
+let global r =
+  let (loc,qid) = qualid_of_reference r in
   try match extended_locate qid with
     | TrueGlobal ref -> ref
     | SyntacticDef _ -> 
@@ -396,9 +397,6 @@ let global (loc,qid) =
           pr_qualid qid)
   with Not_found ->
     error_global_not_found_loc loc qid
-
-
-
 
 (* Exists functions ********************************************************)
 
@@ -452,12 +450,12 @@ let pr_global_env env ref =
   let s = string_of_qualid (shortest_qualid_of_global env ref) in
   (str s)
 
-let global_inductive (loc,qid as locqid) =
-  match global locqid with
+let global_inductive r =
+  match global r with
   | IndRef ind -> ind
   | ref ->
-      user_err_loc (loc,"global_inductive",
-        pr_qualid qid ++ spc () ++ str "is not an inductive type")
+      user_err_loc (loc_of_reference r,"global_inductive",
+        pr_reference r ++ spc () ++ str "is not an inductive type")
 
 (********************************************************************)
 
@@ -500,4 +498,3 @@ let _ =
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init;
       Summary.survive_section = false }
-

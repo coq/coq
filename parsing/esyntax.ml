@@ -15,11 +15,13 @@ open Libnames
 open Coqast
 open Ast
 open Extend
+open Ppextend
 open Vernacexpr
 open Names
 open Nametab
+open Topconstr
 open Symbols
-
+ 
 (*** Syntax keys ***)
 
 (* We define keys for ast and astpats. This is a kind of hash
@@ -84,30 +86,20 @@ let se_key se = spat_key se.syn_astpat
 let from_name_table = ref Gmap.empty
 let from_key_table = ref Gmapl.empty
 
-let infix_symbols_map = ref Stringmap.empty
-let infix_names_map = ref Spmap.empty
-
 (* Summary operations *)
 type frozen_t = (string * string, astpat syntax_entry) Gmap.t * 
-                (string * key, astpat syntax_entry) Gmapl.t *
-                 section_path Stringmap.t * string list Spmap.t
+                (string * key, astpat syntax_entry) Gmapl.t
 
 let freeze () =
-  (!from_name_table, !from_key_table, !infix_symbols_map, !infix_names_map)
+  (!from_name_table, !from_key_table)
 
-let unfreeze (fnm,fkm,infs,infn) =
+let unfreeze (fnm,fkm) =
   from_name_table := fnm;
-  from_key_table := fkm;
-  infix_symbols_map := infs;
-  infix_names_map := infn
+  from_key_table := fkm
 
 let init () =
   from_name_table := Gmap.empty;
   from_key_table := Gmapl.empty
-(*
-  infix_symbols_map := Stringmap.empty;
-  infix_names_map := Spmap.empty
-*)
 
 let find_syntax_entry whatfor gt =
   let gt_keys = ast_keys gt in
@@ -140,9 +132,9 @@ let add_ppobject {sc_univ=wf;sc_entries=sel} = List.iter (add_rule wf) sel
 
 (* Pretty-printing machinery *)
 
-type std_printer = Genarg.constr_ast -> std_ppcmds
+type std_printer = Coqast.t -> std_ppcmds
 type unparsing_subfunction = string -> tolerability option -> std_printer
-type primitive_printer = Genarg.constr_ast -> std_ppcmds option
+type primitive_printer = Coqast.t -> std_ppcmds option
 
 (* Module of primitive printers *)
 module Ppprim =
@@ -187,9 +179,7 @@ let _ = declare_primitive_printer "print_as" default_scope print_as_printer
 (* Handle infix symbols *)
 
 let pr_parenthesis inherited se strm =
-  let rule_prec = (se.syn_id, se.syn_prec) in
-  let no_paren = tolerable_prec inherited rule_prec in
-  if no_paren then 
+  if tolerable_prec inherited se.syn_prec then
     strm
   else 
     (str"(" ++ strm ++ str")")
@@ -212,7 +202,7 @@ let print_delimiters inh se strm = function
 let print_syntax_entry sub_pr scopes env se = 
   let rec print_hunk rule_prec scopes = function
     | PH(e,externpr,reln) ->
-	let node = Ast.pat_sub Ast.dummy_loc env e in
+	let node = Ast.pat_sub dummy_loc env e in
 	let printer =
 	  match externpr with (* May branch to an other printer *)
 	    | Some c ->
@@ -228,8 +218,7 @@ let print_syntax_entry sub_pr scopes env se =
     | UNP_BOX (b,sub) -> ppcmd_of_box b (prlist (print_hunk rule_prec scopes) sub)
     | UNP_SYMBOLIC _ -> anomaly "handled by call_primitive_parser"
   in 
-  let rule_prec = (se.syn_id, se.syn_prec) in
-  prlist (print_hunk rule_prec scopes) se.syn_hunks
+  prlist (print_hunk se.syn_prec scopes) se.syn_hunks
 
 let call_primitive_parser rec_pr otherwise inherited scopes (se,env) =
   try (
@@ -242,7 +231,7 @@ let call_primitive_parser rec_pr otherwise inherited scopes (se,env) =
 	    | None -> otherwise ()
 	    | Some (dlm,scopes) ->
 	        (* We can use this printer *)
-	        let node = Ast.pat_sub Ast.dummy_loc env e in
+	        let node = Ast.pat_sub dummy_loc env e in
 	        match pr node with
 		  | Some strm -> print_delimiters inherited se strm dlm
 		  | None -> otherwise ())

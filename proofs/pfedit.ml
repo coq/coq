@@ -22,9 +22,9 @@ open Declare
 open Typing
 open Tacmach
 open Proof_trees
+open Tacexpr
 open Proof_type
 open Lib
-open Astterm
 open Safe_typing
 
 (*********************************************************************)
@@ -76,14 +76,13 @@ let get_goal_context n =
 
 let get_current_goal_context () = get_goal_context 1
 
-let set_current_proof s = 
-  try 
-    Edit.focus proof_edits s
-  with Invalid_argument "Edit.focus" ->
-    errorlabstrm "Pfedit.set_proof"
-      (str"No such proof" ++ (msg_proofs false))
+let set_current_proof = Edit.focus proof_edits
 
-let resume_proof = set_current_proof
+let resume_proof (loc,id) = 
+  try 
+    Edit.focus proof_edits id
+  with Invalid_argument "Edit.focus" ->
+    user_err_loc(loc,"Pfedit.set_proof",str"No such proof" ++ msg_proofs false)
 
 let suspend_proof () =
   try 
@@ -108,13 +107,15 @@ let get_current_proof_name () =
 
 let add_proof (na,pfs,ts) =
   Edit.create proof_edits (na,pfs,ts,Some (!undo_limit+1))
-    
-let delete_proof na =
+
+let delete_proof_gen = Edit.delete proof_edits
+
+let delete_proof (loc,id) =
   try 
-    Edit.delete proof_edits na
+    delete_proof_gen id
   with (UserError ("Edit.delete",_)) ->
-    errorlabstrm "Pfedit.delete_proof"
-      (str"No such proof" ++ msg_proofs false)
+    user_err_loc
+      (loc,"Pfedit.delete_proof",str"No such proof" ++ msg_proofs false)
       
 let init_proofs () = Edit.clear proof_edits
 		       
@@ -135,7 +136,7 @@ let restart_proof () =
 	errorlabstrm "Pfedit.restart"
           (str"No focused proof to restart" ++ msg_proofs true)
     | Some(na,_,ts) -> 
-	delete_proof na;
+	delete_proof_gen na;
         start (na,ts);
         set_current_proof na
 
@@ -204,7 +205,7 @@ let check_no_pending_proofs () =
       (str"Proof editing in progress" ++ (msg_proofs false) ++
          str"Use \"Abort All\" first or complete proof(s).")
 
-let delete_current_proof () = delete_proof (get_current_proof_name ())
+let delete_current_proof () = delete_proof_gen (get_current_proof_name ())
 
 let delete_all_proofs = init_proofs
    

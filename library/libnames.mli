@@ -10,7 +10,9 @@
 
 (*i*)
 open Pp
+open Util
 open Names
+open Term
 (*i*)
 
 (*s Global reference is a kernel side type for all references together *)
@@ -22,7 +24,14 @@ type global_reference =
 
 val subst_global : substitution -> global_reference -> global_reference
 
-(* dirpaths *)
+(* Turn a global reference into a construction *)
+val constr_of_reference : global_reference -> constr
+
+(* Turn a construction denoting a global into a reference;
+   raise [Not_found] if not a global *)
+val reference_of_constr : constr -> global_reference
+
+(*s Dirpaths *)
 val pr_dirpath : dir_path -> Pp.std_ppcmds
 
 val dirpath_of_string : string -> dir_path
@@ -111,3 +120,13 @@ type global_dir_reference =
   | DirModule of object_prefix
   | DirClosedSection of dir_path
       (* this won't last long I hope! *)
+
+type reference = 
+  | Qualid of qualid located
+  | Ident of identifier located
+
+val qualid_of_reference : reference -> qualid located
+val string_of_reference : reference -> string
+val pr_reference : reference -> std_ppcmds
+val loc_of_reference : reference -> loc
+

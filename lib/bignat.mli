@@ -8,6 +8,10 @@
 
 (* $Id$ *)
 
+(*i*)
+open Pp
+(*i*)
+
 (* Arbitrary big natural numbers *)
 
 type bignat
@@ -27,3 +31,5 @@ val mult_2 : bignat -> bignat
 val less_than : bignat -> bignat -> bool
 
 type bigint = POS of bignat | NEG of bignat
+
+val pr_bigint : bigint -> std_ppcmds

@@ -19,7 +19,6 @@ open Inductiveops
 open Environ
 open Sign
 open Declare
-open Impargs
 open Rawterm
 open Nameops
 open Termops
@@ -43,23 +42,23 @@ let isomorphic_to_bool lc =
 
 let isomorphic_to_tuple lc = (Array.length lc = 1)
 
-let encode_bool (loc,_ as locqid) =
-  let (_,lc as x) = encode_inductive locqid in
+let encode_bool r =
+  let (_,lc as x) = encode_inductive r in
   if not (isomorphic_to_bool lc) then
-    user_err_loc (loc,"encode_if",
+    user_err_loc (loc_of_reference r,"encode_if",
       str "This type cannot be seen as a boolean type");
   x
 
-let encode_tuple (loc,_ as locqid) =
-  let (_,lc as x) = encode_inductive locqid in
+let encode_tuple r =
+  let (_,lc as x) = encode_inductive r in
   if not (isomorphic_to_tuple lc) then
-    user_err_loc (loc,"encode_tuple",
+    user_err_loc (loc_of_reference r,"encode_tuple",
       str "This type cannot be seen as a tuple type");
   x
 
 module PrintingCasesMake =
   functor (Test : sig 
-     val encode : qualid located -> inductive * int array
+     val encode : reference -> inductive * int array
      val member_message : std_ppcmds -> bool -> std_ppcmds
      val field : string
      val title : string
@@ -249,14 +248,18 @@ let rec detype tenv avoid env t =
 	  array_map3 (detype_eqn tenv avoid env) constructs consnargsl bl in
 	let eqnl = Array.to_list eqnv in
 	let tag =
-	  if PrintingLet.active (indsp,consnargsl) then 
-	    PrintLet 
+	  if PrintingLet.active (indsp,consnargsl) then
+	    LetStyle
 	  else if PrintingIf.active (indsp,consnargsl) then 
-	    PrintIf 
+	    IfStyle
 	  else 
-	    PrintCases
+	    annot.ci_pp_info.style
 	in 
-	RCases (dummy_loc,tag,pred,[tomatch],eqnl)
+	if tag = RegularStyle then
+	  RCases (dummy_loc,pred,[tomatch],eqnl)
+	else
+	  let bl = Array.map (detype tenv avoid env) bl in
+	  ROrderedCase (dummy_loc,LetStyle,pred,tomatch,bl)
 	
     | Fix (nvn,recdef) -> detype_fix tenv avoid env (RFix nvn) recdef
     | CoFix (n,recdef) -> detype_fix tenv avoid env (RCoFix n) recdef

@@ -21,22 +21,16 @@ open Entries
 open Declare
 open Nametab
 open Coqast
-open Astterm
+open Constrintern
 open Command
 open Inductive
 open Safe_typing
 open Decl_kinds
 open Indtypes
 open Type_errors
+open Topconstr
 
 (********** definition d'un record (structure) **************)
-
-let occur_fields id fs =
-  List.exists
-    (function
-      | Vernacexpr.AssumExpr (_,a) -> Ast.occur_var_ast id a
-      | Vernacexpr.DefExpr (_,a,_) -> Ast.occur_var_ast id a)
-    fs
 
 let name_of id = if id = wildcard then Anonymous else Name id
 
@@ -45,7 +39,7 @@ let interp_decl sigma env = function
   | Vernacexpr.DefExpr(id,c,t) ->
       let c = match t with
 	| None -> c
-	| Some t -> Ast.ope("CAST",[c; t])
+	| Some t -> mkCastC (c,t)
       in
       let j = judgment_of_rawconstr Evd.empty env c in
       (Name id,Some j.uj_val, j.uj_type)
@@ -166,7 +160,7 @@ let declare_projections indsp coers fields =
 		let p = mkLambda (x, lift 1 rp, ccl') in
 		let branch = it_mkLambda_or_LetIn (mkRel nfi) lifted_fields in
 		let ci = Inductiveops.make_case_info env indsp
-		  (Some PrintLet) [| RegularPat |] in
+		  LetStyle [| RegularPat |] in
 		mkCase (ci, p, mkRel 1, [|branch|]) in
 	      let proj =
 	        it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in

@@ -8,7 +8,7 @@
 
 (* $Id$ *)
 
-open Astterm
+open Constrintern
 open Closure
 open RedFlags
 open Declarations
@@ -30,7 +30,7 @@ open Proof_type
 open Refiner
 open Tacmach
 open Tactic_debug
-open Coqast
+open Topconstr
 open Ast
 open Term
 open Termops
@@ -63,7 +63,7 @@ type value =
   | VFTactic of value list * (value list->tactic)
   | VRTactic of (goal list sigma * validation)
   | VContext of interp_sign * direction_flag
-      * (pattern_ast,raw_tactic_expr) match_rule list
+      * (pattern_expr,raw_tactic_expr) match_rule list
   | VFun of (identifier * value) list * identifier option list *raw_tactic_expr
   | VVoid
   | VInteger of int
@@ -164,9 +164,6 @@ let valueOut = function
   | ast ->
     anomalylabstrm "valueOut"
       (str "Not a Dynamic ast: " (* ++ print_ast ast*) )
-
-let constrIn c = constrIn c
-let constrOut = constrOut
 
 let loc = dummy_loc
 
@@ -297,7 +294,7 @@ let glob_hyp (lfun,_) (loc,id) =
 *)
     Pretype_errors.error_var_not_found_loc loc id
 
-let glob_lochyp ist (loc,_ as locid) = (loc,glob_hyp ist locid)
+let glob_lochyp ist (_loc,_ as locid) = (loc,glob_hyp ist locid)
 
 let error_unbound_metanum loc n =
   user_err_loc
@@ -307,30 +304,25 @@ let glob_metanum ist loc n =
   if List.mem n (snd ist) then n else error_unbound_metanum loc n
 
 let glob_hyp_or_metanum ist = function
-  | AN (loc,id) -> AN (loc,glob_hyp ist (loc,id))
-  | MetaNum (loc,n) -> MetaNum (loc,glob_metanum ist loc n)
+  | AN id -> AN (glob_hyp ist (loc,id))
+  | MetaNum (_loc,n) -> MetaNum (loc,glob_metanum ist loc n)
 
 let glob_qualid_or_metanum ist = function
-  | AN (loc,qid) -> AN (loc,qualid_of_sp (sp_of_global None (Nametab.global (loc,qid))))
-  | MetaNum (loc,n) -> MetaNum (loc,glob_metanum ist loc n)
+  | AN qid -> AN (Qualid(loc,qualid_of_sp (sp_of_global None (Nametab.global qid))))
+  | MetaNum (_loc,n) -> MetaNum (loc,glob_metanum ist loc n)
 
-let glob_reference ist (_,qid as locqid) =
-  let dir, id = repr_qualid qid in
-  try 
-    if dir = empty_dirpath && List.mem id (fst ist) then qid
-    else raise Not_found
-  with Not_found ->
-    qualid_of_sp (sp_of_global None (Nametab.global locqid))
+let glob_reference ist = function
+  | Ident (loc,id) as r when List.mem id (fst ist) -> r
+  | r -> Qualid (loc,qualid_of_sp (sp_of_global None (Nametab.global r)))
 
-let glob_ltac_qualid ist (loc,qid as locqid) =
-  try qualid_of_sp (locate_tactic qid)
-  with Not_found -> glob_reference ist locqid
+let glob_ltac_qualid ist ref =
+  let (loc,qid) = qualid_of_reference ref in
+  try Qualid (loc,qualid_of_sp (locate_tactic qid))
+  with Not_found -> glob_reference ist ref
 
 let glob_ltac_reference ist = function
-  | RIdent (loc,id) -> 
-      if List.mem id (fst ist) then RIdent (loc,id)
-      else RQualid (loc,glob_ltac_qualid ist (loc,make_short_qualid id))
-  | RQualid qid -> RQualid (loc,glob_ltac_qualid ist qid)
+  | Ident (_loc,id) when List.mem id (fst ist) -> Ident (loc,id)
+  | r -> glob_ltac_qualid ist r
 
 let rec glob_intro_pattern lf ist = function
   | IntroOrAndPattern l ->
@@ -346,8 +338,10 @@ let glob_quantified_hypothesis ist x =
   x
 
 let glob_constr ist c =
-  let _ = Astterm.interp_rawconstr_gen Evd.empty (Global.env()) [] false (fst ist) c in
-  c
+  let _ =
+    Constrintern.interp_rawconstr_gen
+      Evd.empty (Global.env()) [] false (fst ist) c
+  in c
 
 (* Globalize bindings *)
 let glob_binding ist (b,c) =
@@ -364,7 +358,7 @@ let glob_constr_with_bindings ist (c,bl) =
 let glob_clause_pattern ist (l,occl) =
   let rec check = function
     | (hyp,l) :: rest -> 
-	let (loc,_ as id) = skip_metaid hyp in
+	let (_loc,_ as id) = skip_metaid hyp in
 	(AI(loc,glob_hyp ist id),l)::(check rest)
     | [] -> []
   in (l,check occl)
@@ -372,12 +366,12 @@ let glob_clause_pattern ist (l,occl) =
 let glob_induction_arg ist = function
   | ElimOnConstr c -> ElimOnConstr (glob_constr ist c)
   | ElimOnAnonHyp n as x -> x
-  | ElimOnIdent (loc,id) as x -> x
+  | ElimOnIdent (_loc,id) as x -> ElimOnIdent (loc,id)
 
 (* Globalize a reduction expression *)
 let glob_evaluable_or_metanum ist = function
-  | AN (loc,qid) -> AN (loc,glob_reference ist (loc,qid))
-  | MetaNum (loc,n) -> MetaNum (loc,glob_metanum ist loc n)
+  | AN qid -> AN (glob_reference ist qid)
+  | MetaNum (_loc,n) -> MetaNum (loc,glob_metanum ist loc n)
 
 let glob_unfold ist (l,qid) = (l,glob_evaluable_or_metanum ist qid)
 
@@ -398,10 +392,10 @@ let glob_redexp ist = function
 (* Interprets an hypothesis name *)
 let glob_hyp_location ist = function
   | InHyp id ->
-      let (loc,_ as id) = skip_metaid id in
+      let (_loc,_ as id) = skip_metaid id in
       InHyp (AI(loc,glob_hyp ist id))
   | InHypType id -> 
-      let (loc,_ as id) = skip_metaid id in
+      let (_loc,_ as id) = skip_metaid id in
       InHypType (AI(loc,glob_hyp ist id))
 
 (* Reads a pattern *)
@@ -465,7 +459,7 @@ let rec glob_atomic lf ist = function
   | TacIntrosUntil hyp -> TacIntrosUntil (glob_quantified_hypothesis ist hyp)
   | TacIntroMove (ido,ido') ->
       TacIntroMove (option_app (glob_ident lf ist) ido,
-          option_app (fun (loc,_ as x) -> (loc,glob_hyp ist x)) ido')
+          option_app (fun (_loc,_ as x) -> (loc,glob_hyp ist x)) ido')
   | TacAssumption -> TacAssumption
   | TacExact c -> TacExact (glob_constr ist c)
   | TacApply cb -> TacApply (glob_constr_with_bindings ist cb)
@@ -497,7 +491,7 @@ let rec glob_atomic lf ist = function
   | TacTrivial l -> TacTrivial l
   | TacAuto (n,l) -> TacAuto (n,l)
   | TacAutoTDB n -> TacAutoTDB n
-  | TacDestructHyp (b,(loc,_ as id)) -> TacDestructHyp(b,(loc,glob_hyp ist id))
+  | TacDestructHyp (b,(_loc,_ as id)) -> TacDestructHyp(b,(loc,glob_hyp ist id))
   | TacDestructConcl -> TacDestructConcl
   | TacSuperAuto (n,l,b1,b2) -> TacSuperAuto (n,l,b1,b2)
   | TacDAuto (n,p) -> TacDAuto (n,p)
@@ -550,15 +544,15 @@ let rec glob_atomic lf ist = function
   | TacTransitivity c -> TacTransitivity (glob_constr ist c)
 
   (* For extensions *)
-  | TacExtend (opn,l) ->
+  | TacExtend (_loc,opn,l) ->
       let _ = lookup_tactic opn in
-      TacExtend (opn,List.map (glob_genarg ist) l)
+      TacExtend (loc,opn,List.map (glob_genarg ist) l)
   | TacAlias (_,l,body) -> failwith "TacAlias globalisation: TODO"
 
 and glob_tactic ist tac = snd (glob_tactic_seq ist tac)
 
 and glob_tactic_seq (lfun,lmeta as ist) = function
-  | TacAtom (loc,t) ->
+  | TacAtom (_loc,t) ->
       let lf = ref lfun in
       let t = glob_atomic lf ist t in
       !lf, TacAtom (loc, t)
@@ -612,10 +606,10 @@ and glob_tacarg ist = function
   | Reference r -> Reference (glob_ltac_reference ist r)
   | Integer n -> Integer n
   | ConstrMayEval c -> ConstrMayEval (glob_constr_may_eval ist c)
-  | MetaNumArg (loc,n) -> MetaNumArg (loc,glob_metanum ist loc n)
-  | MetaIdArg (loc,_) -> error_syntactic_metavariables_not_allowed loc
-  | TacCall (loc,f,l) ->
-      TacCall (loc,glob_ltac_reference ist f,List.map (glob_tacarg ist) l)
+  | MetaNumArg (_loc,n) -> MetaNumArg (loc,glob_metanum ist loc n)
+  | MetaIdArg (_loc,_) -> error_syntactic_metavariables_not_allowed loc
+  | TacCall (_loc,f,l) ->
+      TacCall (_loc,glob_ltac_reference ist f,List.map (glob_tacarg ist) l)
   | Tacexp t -> Tacexp (glob_tactic ist t)
   | TacDynamic(_,t) as x ->
       (match tag t with
@@ -641,7 +635,7 @@ and glob_genarg ist x =
   | IntArgType -> in_gen rawwit_int (out_gen rawwit_int x)
   | IntOrVarArgType ->
       let f = function
-	| ArgVar (loc,id) -> ArgVar (loc,glob_hyp ist (loc,id))
+	| ArgVar (_loc,id) -> ArgVar (loc,glob_hyp ist (loc,id))
 	| ArgArg n as x -> x in
       in_gen rawwit_int_or_var (f (out_gen rawwit_int_or_var x))
   | StringArgType ->
@@ -650,9 +644,10 @@ and glob_genarg ist x =
       in_gen rawwit_pre_ident (out_gen rawwit_pre_ident x)
   | IdentArgType ->
       in_gen rawwit_ident (glob_hyp ist (dummy_loc,out_gen rawwit_ident x))
-  | QualidArgType ->
-      let (loc,qid) = out_gen rawwit_qualid x in
-      in_gen rawwit_qualid (loc,glob_ltac_qualid ist (loc,qid))
+  | RefArgType ->
+      in_gen rawwit_ref (glob_ltac_reference ist (out_gen rawwit_ref x))
+  | SortArgType ->
+      in_gen rawwit_sort (out_gen rawwit_sort x)
   | ConstrArgType ->
       in_gen rawwit_constr (glob_constr ist (out_gen rawwit_constr x))
   | ConstrMayEvalArgType ->
@@ -678,29 +673,6 @@ and glob_genarg ist x =
 
 
 (************* END GLOBALIZE ************)
-
-(* Reads the head of Fun *)
-let read_fun ast =
-  let rec read_fun_rec = function
-    | Node(_,"VOID",[])::tl -> None::(read_fun_rec tl)
-    | Nvar(_,s)::tl -> (Some s)::(read_fun_rec tl)
-    | [] -> []
-    | _ ->
-      anomalylabstrm "Tacinterp.read_fun_rec" (str "Fun not well formed")
-  in
-    match ast with
-      | Node(_,"FUNVAR",l) -> read_fun_rec l
-      | _ ->
-        anomalylabstrm "Tacinterp.read_fun" (str "Fun not well formed")
-
-(* Reads the clauses of a Rec *)
-let rec read_rec_clauses = function
-  | [] -> []
-  | Node(_,"RECCLAUSE",[Nvar(_,name);it;body])::tl ->
-    (name,it,body)::(read_rec_clauses tl)
-  |_ ->
-    anomalylabstrm "Tacinterp.read_rec_clauses"
-      (str "Rec not well formed")
 
 (* Associates variables with values and gives the remaining variables and
    values *)
@@ -906,7 +878,7 @@ let name_interp ist = function
   | Name id -> Name (ident_interp ist id)
 
 let hyp_or_metanum_interp ist = function
-  | AN (loc,id) -> ident_interp ist id
+  | AN id -> ident_interp ist id
   | MetaNum (loc,n) -> constr_to_id loc (List.assoc n ist.lmatch)
 
 (* To avoid to move to much simple functions in the big recursive block *)
@@ -924,32 +896,30 @@ let interp_ltac_qualid is_applied ist (loc,qid as lqid) =
   with Not_found -> interp_pure_qualid is_applied ist lqid
 
 let interp_ltac_reference isapplied ist = function
-  | RIdent (loc,id) -> 
+  | Ident (loc,id) -> 
       (try unrec (List.assoc id ist.lfun)
       with | Not_found ->
         interp_ltac_qualid isapplied ist (loc,make_short_qualid id))
-  | RQualid qid -> interp_ltac_qualid isapplied ist qid
+  | Qualid qid -> interp_ltac_qualid isapplied ist qid
 
 (* Interprets a qualified name *)
-let eval_qualid ist (loc,qid as locqid) =
-  let dir, id = repr_qualid qid in
-  try 
-    if dir = empty_dirpath then unrec (List.assoc id ist.lfun) 
-    else raise Not_found
-  with | Not_found ->
-    interp_pure_qualid false ist locqid
+let eval_ref ist = function
+  | Qualid locqid -> interp_pure_qualid false ist locqid
+  | Ident (loc,id) ->
+      try unrec (List.assoc id ist.lfun)
+      with Not_found -> interp_pure_qualid false ist (loc,make_short_qualid id)
 
-let qualid_interp ist qid =
-  let v = eval_qualid ist qid in
+let reference_interp ist qid =
+  let v = eval_ref ist qid in
   coerce_to_reference ist v
 
 (* Interprets a qualified name. This can be a metavariable to be injected *)
 let qualid_or_metanum_interp ist = function
-  | AN (loc,qid) -> qid
+  | AN qid -> qid
   | MetaNum (loc,n) -> constr_to_qid loc (List.assoc n ist.lmatch)
 
 let eval_ref_or_metanum ist = function
-  | AN (loc,qid) -> eval_qualid ist (loc,qid)
+  | AN qid -> eval_ref ist qid
   | MetaNum (loc,n) -> VConstr (List.assoc n ist.lmatch)
 
 let interp_evaluable_or_metanum ist c =
@@ -1080,7 +1050,8 @@ let interp_induction_arg ist = function
       | Some gl ->
 	  if Tactics.is_quantified_hypothesis id gl then ElimOnIdent (loc,id)
 	  else ElimOnConstr
-	    (constr_interp ist (Termast.ast_of_qualid (make_short_qualid id)))
+(*	    (constr_interp ist (Termast.ast_of_qualid (make_short_qualid id)))*)
+	    (constr_interp ist (CRef (Ident (loc,id))))
 
 let binding_interp ist (b,c) =
   (interp_quantified_hypothesis ist b,constr_interp ist c)
@@ -1173,12 +1144,6 @@ and tacarg_interp ist = function
   | Tacexp t -> val_interp ist t
 (*
   | Tacexp t -> VArg (Tacexp ((*tactic_interp ist t,*)t))
-*)
-(*
-    | Node(loc,s,l) ->
-        let fv = val_interp ist (Node(loc,"PRIMTACTIC",[Node(loc,s,[])]))
-        and largs = List.map (val_interp ist) l in
-        app_interp ist fv largs ast
 *)
   | TacDynamic(_,t) ->
       let tg = (tag t) in
@@ -1282,10 +1247,10 @@ and letin_interp ist = function
          by t;
          let (_,({const_entry_body = pft; const_entry_type = _},_,_)) =
            cook_proof () in
-         delete_proof id;
+         delete_proof (dummy_loc,id);
          (id,VConstr (mkCast (pft,typ)))::(letin_interp ist tl)
        with | NotTactic ->
-         delete_proof id;
+         delete_proof (dummy_loc,id);
          errorlabstrm "Tacinterp.letin_interp"
          (str "Term or fully applied tactic expected in Let"))
 
@@ -1329,7 +1294,7 @@ and letcut_interp ist = function
          by t;
          let (_,({const_entry_body = pft; const_entry_type = _},_,_)) =
            cook_proof () in
-         delete_proof id;
+         delete_proof (dummy_loc,id);
          let cutt = h_cut typ
          and exat = h_exact pft in
          tclTHENSV cutt [|tclTHEN (introduction id)
@@ -1340,7 +1305,7 @@ and letcut_interp ist = function
          tclTHEN ntac (tclTHEN (introduction id)
          (letcut_interp ist tl))*)
        with | NotTactic ->
-         delete_proof id;
+         delete_proof (dummy_loc,id);
          errorlabstrm "Tacinterp.letcut_interp"
          (str "Term or fully applied tactic expected in Let")))
 
@@ -1478,8 +1443,12 @@ and genarg_interp ist x =
       in_gen wit_pre_ident (out_gen rawwit_pre_ident x)
   | IdentArgType ->
       in_gen wit_ident (ident_interp ist (out_gen rawwit_ident x))
-  | QualidArgType ->
-      in_gen wit_qualid (qualid_interp ist (out_gen rawwit_qualid x))
+  | RefArgType ->
+      in_gen wit_ref (reference_interp ist (out_gen rawwit_ref x))
+  | SortArgType ->
+      in_gen wit_sort
+        (destSort 
+	  (constr_interp ist (CSort (dummy_loc,out_gen rawwit_sort x))))
   | ConstrArgType ->
       in_gen wit_constr (constr_interp ist (out_gen rawwit_constr x))
   | ConstrMayEvalArgType ->
@@ -1692,17 +1661,17 @@ and interp_atomic ist = function
   | TacTransitivity c -> h_transitivity (constr_interp ist c)
 
   (* For extensions *)
-  | TacExtend (opn,l) -> vernac_tactic (opn,List.map (genarg_interp ist) l)
+  | TacExtend (loc,opn,l) -> vernac_tactic (opn,List.map (genarg_interp ist) l)
   | TacAlias (_,l,body) ->
       let f x = match genarg_tag x with
   | IdentArgType -> VIdentifier (ident_interp ist (out_gen rawwit_ident x))
-  | QualidArgType -> VConstr (constr_of_reference (qualid_interp ist (out_gen rawwit_qualid x)))
+  | RefArgType -> VConstr (constr_of_reference (reference_interp ist (out_gen rawwit_ref x)))
   | ConstrArgType -> VConstr (constr_interp ist (out_gen rawwit_constr x))
   | ConstrMayEvalArgType ->
       VConstr (constr_interp_may_eval ist (out_gen rawwit_constr_may_eval x))
   | _ -> failwith "This generic type is not supported in alias" in
 
-      tactic_of_value (val_interp { ist with lfun=(List.map (fun (x,c) -> (id_of_string x,f c)) l)@ist.lfun } body)
+      tactic_of_value (val_interp { ist with lfun=(List.map (fun (x,c) -> (x,f c)) l)@ist.lfun } body)
 
 let _ = forward_vcontext_interp := vcontext_interp
  

@@ -220,7 +220,7 @@ let evars_reset_evd evd d = d.evars <- evd
 let add_conv_pb d pb = d.conv_pbs <- pb::d.conv_pbs
 let evar_source ev d =
   try List.assoc ev d.history
-  with Failure _ -> (Rawterm.dummy_loc, Rawterm.InternalHole)
+  with Failure _ -> (dummy_loc, Rawterm.InternalHole)
 
 (* ise_try [f1;...;fn] tries fi() for i=1..n, restoring the evar constraints
  * when fi returns false or an exception. Returns true if one of the fi

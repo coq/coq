@@ -6,14 +6,12 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*i camlp4deps: "parsing/grammar.cma" i*)
-
 (* $Id$ *)
 
 open Pp
 open Util
 open Ast
-open Coqast
+open Topconstr
 open Rawterm
 open Tacexpr
 open Ast
@@ -23,15 +21,16 @@ open Qast
 else
 open Pcoq
 
+open Prim
 open Tactic
 
 ifdef Quotify then
 open Q
 
 type let_clause_kind =
-  | LETTOPCLAUSE of Names.identifier * Genarg.constr_ast
+  | LETTOPCLAUSE of Names.identifier * constr_expr
   | LETCLAUSE of
-      (Names.identifier Util.located * Genarg.constr_ast may_eval option * raw_tactic_arg)
+      (Names.identifier Util.located * constr_expr may_eval option * raw_tactic_arg)
 
 ifdef Quotify then
 module Prelude = struct
@@ -69,20 +68,20 @@ GEXTEND Gram
   GLOBAL: tactic_atom tactic_atom0 tactic_expr input_fun;
 *)
   input_fun:
-    [ [ l = Prim.ident -> Some l
+    [ [ l = base_ident -> Some l
       | "()" -> None ] ]
   ;
   let_clause:
-    [ [ id = Prim.rawident; "="; te = tactic_letarg -> LETCLAUSE (id, None, te)
-      | id = Prim.ident; ":"; c = Constr.constr; ":="; "Proof" ->
+    [ [ id = identref; "="; te = tactic_letarg -> LETCLAUSE (id, None, te)
+      | id = base_ident; ":"; c = Constr.constr; ":="; "Proof" ->
           LETTOPCLAUSE (id, c)
-      | id = Prim.rawident; ":"; c = constrarg; ":="; te = tactic_letarg ->
+      | id = identref; ":"; c = constrarg; ":="; te = tactic_letarg ->
           LETCLAUSE (id, Some c, te)
-      |	id = Prim.ident; ":"; c = Constr.constr ->
+      |	id = base_ident; ":"; c = Constr.constr ->
 	  LETTOPCLAUSE (id, c) ] ]
   ;
   rec_clause:
-    [ [ name = Prim.rawident; it = LIST1 input_fun; "->"; body = tactic_expr ->
+    [ [ name = identref; it = LIST1 input_fun; "->"; body = tactic_expr ->
           (name,(it,body)) ] ]
   ;
   match_pattern:
@@ -92,7 +91,7 @@ GEXTEND Gram
       | pc = Constr.constr_pattern -> Term pc ] ]
   ;
   match_hyps:
-    [ [ id = Prim.rawident; ":"; mp =  match_pattern -> Hyp (id, mp)
+    [ [ id = identref; ":"; mp =  match_pattern -> Hyp (id, mp)
       | IDENT "_"; ":"; mp = match_pattern -> NoHypId mp ] ]
   ;
   match_context_rule:
@@ -126,7 +125,7 @@ GEXTEND Gram
   ;
   tactic_expr3:
     [ [ IDENT "Try"; ta = tactic_expr3 -> TacTry ta
-      | IDENT "Do"; n = Prim.natural; ta = tactic_expr3 -> TacDo (n,ta)
+      | IDENT "Do"; n = natural; ta = tactic_expr3 -> TacDo (n,ta)
       | IDENT "Repeat"; ta = tactic_expr3 -> TacRepeat ta
       | IDENT "Progress"; ta = tactic_expr3 -> TacProgress ta
       | IDENT "Info"; tc = tactic_expr3 -> TacInfo tc
@@ -179,7 +178,7 @@ GEXTEND Gram
         TacMatch (c,mrl)
 (*To do: put Abstract in Refiner*)
       | IDENT "Abstract"; tc = tactic_expr -> TacAbstract (tc,None)
-      | IDENT "Abstract"; tc = tactic_expr; "using";  s = Prim.ident ->
+      | IDENT "Abstract"; tc = tactic_expr; "using";  s = base_ident ->
           TacAbstract (tc,Some s)
 (*End of To do*)
       | IDENT "First" ; "["; l = LIST0 tactic_expr SEP "|"; "]" ->
@@ -188,7 +187,7 @@ GEXTEND Gram
 	  TacSolve l
       |	IDENT "Idtac" -> TacId
       |	IDENT "Fail" -> TacFail fail_default_value
-      |	IDENT "Fail"; n = Prim.natural -> TacFail n
+      |	IDENT "Fail"; n = natural -> TacFail n
       |	st = simple_tactic -> TacAtom (loc,st)
       | "("; a = tactic_expr; ")" -> a
       | a = tactic_arg -> TacArg a
@@ -203,7 +202,7 @@ GEXTEND Gram
        parsed as lqualid! *)
     [ [ IDENT "Eval"; rtc = red_expr; "in"; c = Constr.constr ->
 	  ConstrMayEval (ConstrEval (rtc,c))
-      | IDENT "Inst"; id = Prim.rawident; "["; c = Constr.constr; "]" ->
+      | IDENT "Inst"; id = identref; "["; c = Constr.constr; "]" ->
 	  ConstrMayEval (ConstrContext (id,c))
       | IDENT "Check"; c = Constr.constr ->
 	  ConstrMayEval (ConstrTypeOf c)
@@ -213,7 +212,7 @@ GEXTEND Gram
   tactic_arg1:
     [ [ IDENT "Eval"; rtc = red_expr; "in"; c = Constr.constr ->
 	  ConstrMayEval (ConstrEval (rtc,c))
-      | IDENT "Inst"; id = Prim.rawident; "["; c = Constr.constr; "]" ->
+      | IDENT "Inst"; id = identref; "["; c = Constr.constr; "]" ->
 	  ConstrMayEval (ConstrContext (id,c))
       | IDENT "Check"; c = Constr.constr ->
 	  ConstrMayEval (ConstrTypeOf c)
@@ -225,14 +224,14 @@ GEXTEND Gram
     [ [ "("; a = tactic_expr; ")" -> Tacexp a
       | "()" -> TacVoid
       | qid = lqualid -> Reference qid
-      | n = Prim.integer -> Integer n
+      | n = integer -> Integer n
       | id = METAIDENT -> MetaIdArg (loc,id)
-      |	"?" -> ConstrMayEval (ConstrTerm <:ast< (ISEVAR) >>)
-      | "?"; n = Prim.natural -> MetaNumArg (loc,n)
+      |	"?" -> ConstrMayEval (ConstrTerm (CHole loc))
+      | "?"; n = natural -> MetaNumArg (loc,n)
       |	"'"; c = Constr.constr -> ConstrMayEval (ConstrTerm c) ] ]
   ;
   lqualid:
-    [ [ ref = Prim.reference -> ref ] ]
+    [ [ ref = reference -> ref ] ]
   ;
 
   (* Definitions for tactics *)
@@ -241,18 +240,18 @@ GEXTEND Gram
       | IDENT "Tactic" ] ]
   ;
   vrec_clause:
-    [ [ name = Prim.rawident; it=LIST1 input_fun; ":="; body = tactic_expr ->
+    [ [ name = identref; it=LIST1 input_fun; ":="; body = tactic_expr ->
 	  (name, TacFunRec (name, (it, body)))
-      | name = Prim.rawident; ":="; body = tactic_expr ->
+      | name = identref; ":="; body = tactic_expr ->
 	  (name, body) ] ]
   ;
   tactic:
     [ [ tac = tactic_expr -> tac ] ]
   ;
   Vernac_.command: 
-    [ [ deftok; "Definition"; name = Prim.rawident; ":="; body = tactic ->
+    [ [ deftok; "Definition"; name = identref; ":="; body = tactic ->
         Vernacexpr.VernacDeclareTacticDefinition (loc, [name, body])
-      | deftok; "Definition"; name = Prim.rawident; largs=LIST1 input_fun;
+      | deftok; "Definition"; name = identref; largs=LIST1 input_fun;
         ":="; body=tactic_expr ->
         Vernacexpr.VernacDeclareTacticDefinition
 	  (loc, [name, TacFun (largs,body)])

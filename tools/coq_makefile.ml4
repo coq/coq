@@ -191,8 +191,7 @@ let variables l =
   print "CAMLOPTLINK=ocamlopt\n";
   print "COQDEP=$(COQBIN)coqdep -c\n";
   print "COQVO2XML=coq_vo2xml\n";
-  print "GRAMMARS=grammar.cma g_constr.cmo g_tactic.cmo g_ltac.cmo \\
-  g_basevernac.cmo tacextend.cmo vernacextend.cmo\n";
+  print "GRAMMARS=grammar.cma";
   print "CAMLP4EXTEND=pa_extend.cmo pa_ifdef.cmo q_MLast.cmo\n";
   print "PP=-pp \"camlp4o -I . -I $(COQTOP)/parsing $(CAMLP4EXTEND) $(GRAMMARS) -impl\"\n";
   var_aux l;

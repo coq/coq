@@ -18,6 +18,7 @@ open Tactic_debug
 open Term
 open Tacexpr
 open Genarg
+open Topconstr
 (*i*)
 
 (* Values for interpretation *)
@@ -27,7 +28,7 @@ type value =
   | VFTactic of value list * (value list->tactic)
   | VRTactic of (goal list sigma * validation)
   | VContext of interp_sign * direction_flag
-      * (pattern_ast,raw_tactic_expr) match_rule list
+      * (pattern_expr,raw_tactic_expr) match_rule list
   | VFun of (identifier * value) list * identifier option list *raw_tactic_expr
   | VVoid
   | VInteger of int
@@ -59,9 +60,6 @@ val tacticIn : (interp_sign -> raw_tactic_expr) -> raw_tactic_expr
 val tacticOut : raw_tactic_expr -> (interp_sign -> raw_tactic_expr)
 val valueIn : value -> raw_tactic_arg
 val valueOut: raw_tactic_arg -> value
-val constrIn : constr -> Coqast.t
-val constrOut : Coqast.t -> constr
-val loc : Coqast.loc
 
 (* Sets the debugger mode *)
 val set_debug : debug_info -> unit
@@ -97,7 +95,7 @@ val tac_interp : (identifier * value) list -> (int * constr) list ->
                  debug_info -> raw_tactic_expr -> tactic
 
 (* Interprets constr expressions *)
-val constr_interp : interp_sign -> constr_ast -> constr
+val constr_interp : interp_sign -> constr_expr -> constr
 
 (* Initial call for interpretation *)
 val interp : raw_tactic_expr -> tactic

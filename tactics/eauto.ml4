@@ -45,11 +45,7 @@ let e_resolve_with_bindings_tac  (c,lbind) gl =
   let clause = make_clenv_binding_apply wc (-1) (c,t) lbind in 
   e_res_pf kONT clause gl
 
-let e_resolve_with_bindings = 
-  tactic_com_bind_list e_resolve_with_bindings_tac
-
 let e_resolve_constr c gls = e_resolve_with_bindings_tac (c,NoBindings) gls
-let resolve_constr c gls = Tactics.apply_with_bindings (c,NoBindings) gls
 			     
 TACTIC EXTEND EExact
 | [ "EExact" constr(c) ] -> [ e_give_exact c ]
@@ -61,6 +57,7 @@ let registered_e_assumption gl =
   tclFIRST (List.map (fun id gl -> e_give_exact_constr (mkVar id) gl) 
               (pf_ids_of_hyps gl)) gl
 
+(* This automatically define h_eApply (among other things) *)
 TACTIC EXTEND EApply
   [ "EApply" constr_with_bindings(c) ] -> [ e_resolve_with_bindings_tac c ]
 END

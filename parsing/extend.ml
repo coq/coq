@@ -10,9 +10,16 @@
 (*i $Id$ i*)
 
 open Util
-open Gramext
 open Pp
+open Gramext
+open Names
 open Ast
+open Ppextend
+open Topconstr
+open Genarg
+
+type entry_type = argument_type
+type constr_entry_type = ETConstr | ETIdent | ETReference
 
 type nonterm_prod =
   | ProdList0 of nonterm_prod
@@ -22,16 +29,16 @@ type nonterm_prod =
 
 type prod_item =
   | Term of Token.pattern
-  | NonTerm of nonterm_prod * (string * ast_action_type) option
+  | NonTerm of nonterm_prod * (Names.identifier * constr_entry_type) option
 
 type grammar_rule = {
   gr_name : string; 
   gr_production : prod_item list; 
-  gr_action : act }
+  gr_action : aconstr }
 
 type grammar_entry = { 
   ge_name : string;
-  ge_type : ast_action_type;
+  ge_type : constr_entry_type;
   gl_assoc : Gramext.g_assoc option;
   gl_rules : grammar_rule list }
 
@@ -40,18 +47,40 @@ type grammar_command = {
   gc_entries : grammar_entry list }
 
 type grammar_associativity = Gramext.g_assoc option
+
+(**********************************************************************)
+(* Globalisation and type-checking of Grammar actions *)
+
+type entry_context = (identifier * constr_entry_type) list
+
+let ast_to_rawconstr = ref (fun _ _ -> AVar (id_of_string "Z"))
+let set_ast_to_rawconstr f = ast_to_rawconstr := f
+
+let act_of_ast vars = function
+  | SimpleAction (loc,ConstrNode a) -> !ast_to_rawconstr vars a
+  | SimpleAction (loc,CasesPatternNode a) -> failwith "TODO:act_of_ast: cases_pattern"
+  | CaseAction _ -> failwith "case/let not supported"
+
+let to_act_check_vars = act_of_ast
+
+type syntax_modifier =
+  | SetItemLevel of string * int
+  | SetLevel of int
+  | SetAssoc of Gramext.g_assoc
+  | SetEntryType of string * constr_entry_type
+
 type nonterm =
   | NtShort of string
   | NtQual of string * string
 type grammar_production =
   | VTerm of string
-  | VNonTerm of loc * nonterm * string option
+  | VNonTerm of loc * nonterm * Names.identifier option
 type raw_grammar_rule = string * grammar_production list * grammar_action
 type raw_grammar_entry = 
-  string * ast_action_type * grammar_associativity * raw_grammar_rule list
+  string * constr_entry_type * grammar_associativity * raw_grammar_rule list
 
 let subst_grammar_rule subst gr =
-  { gr with gr_action = subst_act subst gr.gr_action }
+  { gr with gr_action = subst_aconstr subst gr.gr_action }
 
 let subst_grammar_entry subst ge =
   { ge with gl_rules = List.map (subst_grammar_rule subst) ge.gl_rules }
@@ -116,15 +145,20 @@ let qualified_nterm current_univ = function
   | NtQual (univ, en) -> (rename_command univ, rename_command en)
   | NtShort en -> (current_univ, rename_command en)
 
+let entry_type_of_constr_entry_type = function
+  | ETConstr -> ConstrArgType
+  | ETIdent -> IdentArgType
+  | ETReference -> RefArgType
+
+let constr_entry_of_entry = function
+  | ConstrArgType -> ETConstr
+  | IdentArgType -> ETIdent
+  | RefArgType -> ETReference
+  | _ -> error "Cannot arbitrarily extend non constr/ident/ref entries"
+
 let nterm loc (get_entry_type,univ) nont =
   let nt = qualified_nterm univ nont in
-  try 
-    let et = match get_entry_type nt with
-      | PureAstType -> ETast
-      | GenAstType Genarg.ConstrArgType -> ETast
-      | AstListType -> ETastl
-      | _ -> error "Cannot arbitrarily extend non ast entries"
-    in (nt,et)
+  try (nt,constr_entry_of_entry (get_entry_type nt))
   with Not_found -> 
     let (s,n) = nt in
     user_err_loc(loc,"Externd.nterm",str("unknown grammar entry: "^s^":"^n))
@@ -132,7 +166,7 @@ let nterm loc (get_entry_type,univ) nont =
 let prod_item univ env = function
   | VTerm s -> env, Term (terminal s)
   | VNonTerm (loc, nt, Some p) ->
-      let (nont, etyp) = nterm loc univ nt in
+     let (nont, etyp) = nterm loc univ nt in
       ((p, etyp) :: env, NonTerm (ProdPrimitive nont, Some (p,etyp)))
   | VNonTerm (loc, nt, None) ->
       let (nont, etyp) = nterm loc univ nt in 
@@ -148,7 +182,7 @@ let rec prod_item_list univ penv pil =
 
 let gram_rule univ etyp (name,pil,act) =
   let (pilc, act_env) = prod_item_list univ [] pil in
-  let a = Ast.to_act_check_vars act_env etyp act in
+  let a = to_act_check_vars act_env act in
   { gr_name = name; gr_production = pilc; gr_action = a }
 
 let gram_entry univ (nt, etyp, ass, rl) =
@@ -161,21 +195,6 @@ let interp_grammar_command univ ge entryl =
   let univ = rename_command univ in
   { gc_univ = univ;
     gc_entries = List.map (gram_entry (ge,univ)) entryl }
-
-(*s Pretty-print. *)
-
-(* Dealing with precedences *)
-
-type precedence = int * int * int
-
-type parenRelation = L | E | Any | Prec of precedence
-
-type ppbox =
-  | PpHB of int
-  | PpHOVB of int
-  | PpHVB of int
-  | PpVB of int
-  | PpTB
 
 (* unparsing objects *)
 
@@ -212,28 +231,22 @@ let rec subst_hunk subst_pat subst hunk = match hunk with
    highest precedence), and the child's one, follow the given
    relation. *)
 
-type tolerability = (string * precedence) * parenRelation
-
+(*
 let compare_prec (a1,b1,c1) (a2,b2,c2) =
   match (a1=a2),(b1=b2),(c1=c2) with
     | true,true,true -> 0
     | true,true,false -> c1-c2
     | true,false,_ -> b1-b2
     | false,_,_ -> a1-a2
+*)
+let compare_prec a1 a2 = a1-a2
 
-let tolerable_prec oparent_prec_reln (_,child_prec) =
+let tolerable_prec oparent_prec_reln child_prec =
   match oparent_prec_reln with
-    | Some ((_,pprec), L) -> (compare_prec child_prec pprec) < 0
-    | Some ((_,pprec), E) -> (compare_prec child_prec pprec) <= 0
+    | Some (pprec, L) -> (compare_prec child_prec pprec) < 0
+    | Some (pprec, E) -> (compare_prec child_prec pprec) <= 0
     | Some (_, Prec level) -> (compare_prec child_prec level) <= 0
     | _ -> true
-
-let ppcmd_of_box = function
-  | PpHB n -> h n
-  | PpHOVB n -> hov n
-  | PpHVB n -> hv n
-  | PpVB n -> v n
-  | PpTB   -> t
 
 type 'pat syntax_entry = {
   syn_id : string;
@@ -265,7 +278,7 @@ let subst_syntax_command subst_pat subst scomm =
       { scomm with sc_entries = sc_entries' }
       
 type syntax_rule = string * Coqast.t * Coqast.t unparsing_hunk list
-type syntax_entry_ast = precedence * syntax_rule list
+type raw_syntax_entry = precedence * syntax_rule list
 
 let rec interp_unparsing env = function
   | PH (ast,ext,pr) -> PH (Ast.val_of_ast env ast,ext,pr)

@@ -132,7 +132,7 @@ let print_highlight_location ib (bp,ep) =
 let print_location_in_file s fname (bp,ep) =
   let errstrm = (str"Error while reading " ++ str s ++ str" :" ++ fnl () ++
                    str"File " ++ str ("\""^fname^"\"")) in
-  if (bp,ep) = Ast.dummy_loc then 
+  if (bp,ep) = dummy_loc then 
     (errstrm ++ str", unknown location." ++ fnl ())
   else
     let ic = open_in fname in
@@ -158,7 +158,7 @@ let print_command_location ib dloc =
     | None -> (mt ())
 
 let valid_loc dloc (b,e) =
-  (b,e) <> Ast.dummy_loc
+  (b,e) <> dummy_loc
   & match dloc with
     | Some (bd,ed) -> bd<=b & e<=ed
     | _ -> true
@@ -208,7 +208,7 @@ let print_toplevel_error exc =
   let (dloc,exc) =
     match exc with
       | DuringCommandInterp (loc,ie) ->
-          if loc = Ast.dummy_loc then (None,ie) else (Some loc, ie)
+          if loc = dummy_loc then (None,ie) else (Some loc, ie)
       | _ -> (None, exc) 
   in
   let (locstrm,exc) =

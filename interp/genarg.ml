@@ -12,6 +12,7 @@ open Util
 open Names
 open Nametab
 open Rawterm
+open Topconstr
 
 type argument_type =
   (* Basic types *)
@@ -21,8 +22,9 @@ type argument_type =
   | StringArgType
   | PreIdentArgType
   | IdentArgType
-  | QualidArgType
+  | RefArgType
   (* Specific types *)
+  | SortArgType
   | ConstrArgType
   | ConstrMayEvalArgType
   | QuantHypArgType
@@ -36,9 +38,7 @@ type argument_type =
   | PairArgType of argument_type * argument_type
   | ExtraArgType of string
 
-type 'a or_var = ArgArg of 'a | ArgVar of loc * identifier
-
-type constr_ast = Coqast.t
+type 'a or_var = ArgArg of 'a | ArgVar of identifier located
 
 (* Dynamics but tagged by a type expression *)
 
@@ -58,7 +58,8 @@ let create_arg s =
 let exists_argtype s = List.mem s !dyntab
 
 type open_constr = Evd.evar_map * Term.constr
-type open_rawconstr = Coqast.t
+(*type open_rawconstr = Coqast.t*)
+type open_rawconstr = constr_expr
 
 let rawwit_bool = BoolArgType
 let wit_bool = BoolArgType
@@ -78,11 +79,14 @@ let wit_ident = IdentArgType
 let rawwit_pre_ident = PreIdentArgType
 let wit_pre_ident = PreIdentArgType
 
-let rawwit_qualid = QualidArgType
-let wit_qualid = QualidArgType
+let rawwit_ref = RefArgType
+let wit_ref = RefArgType
 
 let rawwit_quant_hyp = QuantHypArgType
 let wit_quant_hyp = QuantHypArgType
+
+let rawwit_sort = SortArgType
+let wit_sort = SortArgType
 
 let rawwit_constr = ConstrArgType
 let wit_constr = ConstrArgType

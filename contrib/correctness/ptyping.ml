@@ -16,9 +16,10 @@ open Names
 open Term
 open Termops
 open Environ
-open Astterm
+open Constrintern
 open Himsg
 open Proof_trees
+open Topconstr
 
 open Pmisc
 open Putil
@@ -110,7 +111,7 @@ let effect_app ren env f args =
 let state_coq_ast sign a =
   let env = Global.env_of_context sign in
   let j =
-    reraise_with_loc (Ast.loc a) (judgment_of_rawconstr Evd.empty env) a in
+    reraise_with_loc (constr_loc a) (judgment_of_rawconstr Evd.empty env) a in
   let ids = global_vars env j.uj_val in
   j.uj_val, j.uj_type, ids
 

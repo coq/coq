@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*i camlp4deps: "parsing/grammar.cma" i*)
-
 (* $Id$ *)
 
 open Pcoq
@@ -15,9 +13,10 @@ open Pp
 open Tactic
 open Util
 open Vernac_
-open Coqast
+open Topconstr
 open Vernacexpr
 open Prim
+open Constr
 
 (* Proof commands *)
 GEXTEND Gram
@@ -42,17 +41,17 @@ GEXTEND Gram
 *)
       | IDENT "Abort" -> VernacAbort None
       | IDENT "Abort"; IDENT "All" -> VernacAbortAll
-      | IDENT "Abort"; id = ident -> VernacAbort (Some id)
+      | IDENT "Abort"; id = identref -> VernacAbort (Some id)
       | "Qed" -> VernacEndProof (true,None)
       | IDENT "Save" -> VernacEndProof (true,None)
       | IDENT "Defined" -> VernacEndProof (false,None)
-      |	IDENT "Defined"; id = ident -> VernacEndProof (false,Some (id,None))
-      | IDENT "Save"; tok = thm_token; id = ident ->
+      |	IDENT "Defined"; id=base_ident -> VernacEndProof (false,Some (id,None))
+      | IDENT "Save"; tok = thm_token; id = base_ident ->
 	  VernacEndProof (true,Some (id,Some tok))
-      | IDENT "Save"; id = ident -> VernacEndProof (true,Some (id,None))
+      | IDENT "Save"; id = base_ident -> VernacEndProof (true,Some (id,None))
       | IDENT "Suspend" -> VernacSuspend
       | IDENT "Resume" -> VernacResume None
-      | IDENT "Resume"; id = ident -> VernacResume (Some id)
+      | IDENT "Resume"; id = identref -> VernacResume (Some id)
       | IDENT "Restart" -> VernacRestart
       | "Proof"; c = Constr.constr -> VernacExactProof c
       | IDENT "Undo" -> VernacUndo 1
@@ -86,13 +85,13 @@ GEXTEND Gram
 
       | IDENT "HintDestruct"; 
           dloc = destruct_location;
-          id  = ident;
+          id  = base_ident;
           hyptyp = Constr.constr_pattern;
           pri = natural;
           "["; tac = tactic; "]" -> 
 	    VernacHintDestruct (id,dloc,hyptyp,pri,tac)
 
-      | IDENT "Hint"; hintname = ident; dbnames = opt_hintbases; ":="; h = hint
+      | IDENT "Hint"; hintname = base_ident; dbnames = opt_hintbases; ":="; h = hint
           -> VernacHints (dbnames, h hintname)
 	  
       | IDENT "Hints"; (dbnames,h) = hints -> VernacHints (dbnames, h)
@@ -107,17 +106,17 @@ GEXTEND Gram
   hint:
     [ [ IDENT "Resolve"; c = Constr.constr -> fun name -> HintsResolve [Some name, c]
       | IDENT "Immediate"; c = Constr.constr -> fun name -> HintsImmediate [Some name, c]
-      | IDENT "Unfold"; qid = qualid -> fun name -> HintsUnfold [Some name,qid]
-      | IDENT "Constructors"; c = qualid -> fun n -> HintsConstructors (n,c)
+      | IDENT "Unfold"; qid = global -> fun name -> HintsUnfold [Some name,qid]
+      | IDENT "Constructors"; c = global -> fun n -> HintsConstructors (n,c)
       | IDENT "Extern"; n = natural; c = Constr.constr8 ; tac = tactic ->
 	  fun name -> HintsExtern (name,n,c,tac) ] ]
   ;
   hints:
-    [ [ IDENT "Resolve"; l = LIST1 Constr.qualid; dbnames = opt_hintbases ->
-         (dbnames, HintsResolve (List.map (fun qid -> (None, qid)) l))
-      | IDENT "Immediate"; l = LIST1 Constr.qualid; dbnames = opt_hintbases ->
-        (dbnames, HintsImmediate (List.map (fun qid -> (None, qid)) l))
-      | IDENT "Unfold"; l = LIST1 qualid; dbnames = opt_hintbases ->
+    [ [ IDENT "Resolve"; l = LIST1 global; dbnames = opt_hintbases ->
+         (dbnames, HintsResolve (List.map (fun qid -> (None, CRef qid)) l))
+      | IDENT "Immediate"; l = LIST1 global; dbnames = opt_hintbases ->
+        (dbnames, HintsImmediate (List.map (fun qid -> (None, CRef qid)) l))
+      | IDENT "Unfold"; l = LIST1 global; dbnames = opt_hintbases ->
         (dbnames, HintsUnfold (List.map (fun qid -> (None,qid)) l)) ] ]
     ;
   END

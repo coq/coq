@@ -393,7 +393,7 @@ let mk_inductive_obj sp packs variables hyps finite =
 (* Note: it is printed only (and directly) the most cooked available      *)
 (*       form of the definition (all the parameters are                   *)
 (*       lambda-abstracted, but the object can still refer to variables)  *)
-let print (_,qid as locqid) fn =
+let print r fn =
  let module D = Declarations in
  let module De = Declare in
  let module G = Global in
@@ -402,14 +402,16 @@ let print (_,qid as locqid) fn =
  let module T = Term in
  let module X = Xml in
  let module Ln = Libnames in
-  let (_,id) = Libnames.repr_qualid qid in
+  let (_,id) = Ln.repr_qualid (snd (Ln.qualid_of_reference r)) in
   let glob_ref =
 (*CSC: ask Hugo why Nametab.global does not work with variables and *)
 (*CSC: we have to do this hugly try ... with                        *)
    try
-    Nt.global locqid
+    Nt.global r
    with
-    _ -> let (_,id) = Ln.repr_qualid qid in Ln.VarRef id
+    _ ->
+      let (_,id) = Ln.repr_qualid (snd (Ln.qualid_of_reference r)) in
+      Ln.VarRef id
   in
   (* Variables are the identifiers of the variables in scope *)
   let variables = search_variables () in
@@ -761,14 +763,17 @@ let filename_of_path ?(keep_sections=false) xml_library_root kn tag =
 ;;
 
 (*CSC: Ask Hugo for a better solution *)
-let qualid_of_kernel_name kn =
+(*
+let ref_of_kernel_name kn =
  let module N = Names in
+ let module Ln = Libnames in
   let (modpath,_,label) = N.repr_kn kn in
    match modpath with
-      N.MPself _ -> Libnames.make_qualid (Lib.cwd ()) (N.id_of_label label)
+      N.MPself _ -> Ln.Qualid (Ln.qualid_of_sp (Nametab.sp_of_global None kn))
     | _ ->
-      Util.anomaly ("qualid_of_kernel_name: the module path is not MPself")
+      Util.anomaly ("ref_of_kernel_name: the module path is not MPself")
 ;;
+*)
 
 (* Let's register the callbacks *)
 let xml_library_root =
@@ -787,37 +792,37 @@ let _ =
 
 let _ =
   Declare.set_xml_declare_variable
-   (function kn ->
+   (function (sp,kn) ->
      let filename =
       filename_of_path ~keep_sections:true xml_library_root kn
        Cic2acic.Variable in
-     let qualid = qualid_of_kernel_name kn in
      let dummy_location = -1,-1 in
-      print (dummy_location,qualid) filename)
+     let ref = Libnames.Qualid (dummy_location,Libnames.qualid_of_sp sp) in
+      print ref filename)
 ;;
 
 let _ =
   Declare.set_xml_declare_constant
-   (function kn ->
+   (function (sp,kn) ->
      let filename = filename_of_path xml_library_root kn Cic2acic.Constant in
-     let qualid = qualid_of_kernel_name kn in
+     let dummy_location = -1,-1 in
+     let ref = Libnames.Qualid (dummy_location,Libnames.qualid_of_sp sp) in
      match !proof_to_export with
         None ->
-         let dummy_location = -1,-1 in
-          print (dummy_location,qualid) filename
+          print ref filename
       | Some pftreestate ->
          (* It is a proof. Let's export it starting from the proof-tree *)
          (* I saved in the Pfedit.set_xml_cook_proof callback.          *)
-         show_pftreestate filename pftreestate
-          (Names.id_of_label (Names.label kn)) ;
+         show_pftreestate filename pftreestate 
+	  (Names.id_of_label (Names.label kn)) ;
          proof_to_export := None)
 ;;
 
 let _ =
   Declare.set_xml_declare_inductive
-   (function kn ->
+   (function (sp,kn) ->
      let filename = filename_of_path xml_library_root kn Cic2acic.Inductive in
-     let qualid = qualid_of_kernel_name kn in
      let dummy_location = -1,-1 in
-      print (dummy_location,qualid) filename)
+     let ref = Libnames.Qualid (dummy_location,Libnames.qualid_of_sp sp) in
+      print ref filename)
 ;;

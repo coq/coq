@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Names
 open Libnames
 open Libobject
@@ -141,7 +142,7 @@ val current_prefix : unit -> module_path * dir_path
 (*s Backtracking (undo). *)
 
 val reset_to : object_name -> unit
-val reset_name : identifier -> unit
+val reset_name : identifier located -> unit
 
 (* [back n] resets to the place corresponding to the $n$-th call of 
    [mark_end_of_command] (counting backwards) *)

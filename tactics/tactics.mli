@@ -96,7 +96,7 @@ val try_intros_until :
 val assumption         : tactic
 val exact_no_check      : constr -> tactic
 val exact_check      : constr -> tactic
-val exact_proof      : Coqast.t -> tactic
+val exact_proof      : Topconstr.constr_expr -> tactic
 
 (*s Reduction tactics. *)
 
@@ -121,12 +121,11 @@ val simpl_option      : hyp_location option -> tactic
 val normalise_in_concl: tactic
 val normalise_in_hyp  : hyp_location        -> tactic
 val normalise_option  : hyp_location option -> tactic
-val unfold_in_concl   : (int list * Closure.evaluable_global_reference) list
-  -> tactic
+val unfold_in_concl   : (int list * evaluable_global_reference) list -> tactic
 val unfold_in_hyp     : 
-  (int list * Closure.evaluable_global_reference) list -> hyp_location -> tactic
+  (int list * evaluable_global_reference) list -> hyp_location -> tactic
 val unfold_option     : 
-  (int list * Closure.evaluable_global_reference) list -> hyp_location option
+  (int list * evaluable_global_reference) list -> hyp_location option
     -> tactic
 val reduce            : red_expr -> hyp_location list -> tactic
 val change            : constr -> hyp_location list -> tactic

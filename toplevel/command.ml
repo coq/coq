@@ -24,11 +24,10 @@ open Nametab
 open Names
 open Libnames
 open Nameops
-open Coqast
-open Ast
+open Topconstr
 open Library
 open Libobject
-open Astterm
+open Constrintern
 open Proof_type
 open Tacmach
 open Safe_typing
@@ -37,6 +36,7 @@ open Typeops
 open Indtypes
 open Vernacexpr
 open Decl_kinds
+open Pretyping
 
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
 let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
@@ -45,14 +45,14 @@ let rec abstract_rawconstr c = function
   | [] -> c
   | LocalRawDef (x,b)::bl -> mkLetInC(x,b,abstract_rawconstr c bl)
   | LocalRawAssum (idl,t)::bl ->
-      List.fold_right (fun x b -> mkLambdaC(x,t,b)) idl
+      List.fold_right (fun x b -> mkLambdaC([x],t,b)) idl
         (abstract_rawconstr c bl)
 
 let rec prod_rawconstr c = function
   | [] -> c
   | LocalRawDef (x,b)::bl -> mkLetInC(x,b,prod_rawconstr c bl)
   | LocalRawAssum (idl,t)::bl ->
-      List.fold_right (fun x b -> mkProdC(x,t,b)) idl
+      List.fold_right (fun x b -> mkProdC([x],t,b)) idl
         (prod_rawconstr c bl)
 
 let rec destSubCast c = match kind_of_term c with
@@ -119,7 +119,8 @@ let declare_definition ident local bl red_option c typopt =
         declare_global_definition ident ce' local
 
 let syntax_definition ident c =
-  let c = interp_rawconstr Evd.empty (Global.env()) c in 
+  let c = 
+interp_aconstr c in 
   Syntax_def.declare_syntactic_definition ident c;
   if_verbose message ((string_of_id ident) ^ " is now a syntax macro")
 
@@ -236,7 +237,7 @@ let declare_mutual_with_eliminations mie =
   Indrec.declare_eliminations kn;
   kn
 
-let eq_la (id,ast) (id',ast') = id = id' & alpha_eq(ast,ast')
+let eq_la (id,ast) (id',ast') = id = id' & (* alpha_eq(ast,ast') *) (warning "check paramaters convertibility"; true)
 
 let extract_coe lc =
   List.fold_right
@@ -306,12 +307,14 @@ let collect_non_rec env =
   in 
   searchrec [] 
 
-let build_recursive lnameargsardef = 
-  let lrecnames = List.map (fun (f,_,_,_) -> f) lnameargsardef
+let build_recursive lnameargsardef =
+  let lrecnames = List.map (fun (f,_,_,_) -> f) lnameargsardef 
   and sigma = Evd.empty
   and env0 = Global.env()
-  and nv = Array.of_list (List.map (fun (_,la,_,_) -> (List.length la) -1)
-                            lnameargsardef) 
+  and nv = Array.of_list 
+    (List.map
+      (fun (_,la,_,_) -> List.length (List.flatten (List.map fst la)) - 1)
+        lnameargsardef)
   in
   let fs = States.freeze() in
   let (rec_sign,arityl) = 
@@ -455,9 +458,9 @@ let build_scheme lnamedepindsort =
 
 let rec generalize_rawconstr c = function
   | [] -> c
-  | LocalRawDef (id,b)::bl -> Ast.mkLetInC(id,b,generalize_rawconstr c bl)
+  | LocalRawDef (id,b)::bl -> mkLetInC(id,b,generalize_rawconstr c bl)
   | LocalRawAssum (idl,t)::bl ->
-      List.fold_right (fun x b -> Ast.mkProdC(x,t,b)) idl
+      List.fold_right (fun x b -> mkProdC([x],t,b)) idl
         (generalize_rawconstr c bl)
 
 let rec binders_length = function
@@ -465,10 +468,12 @@ let rec binders_length = function
   | LocalRawDef _::bl -> 1 + binders_length bl
   | LocalRawAssum (idl,_)::bl -> List.length idl + binders_length bl
 
-let start_proof_com sopt kind (bl,t) hook =
-  let env = Global.env () in
+let start_proof id kind c hook =
   let sign = Global.named_context () in
   let sign = clear_proofs sign in
+  Pfedit.start_proof id kind sign c hook
+
+let start_proof_com sopt kind (bl,t) hook =
   let id = match sopt with
     | Some id ->
         (* We check existence here: it's a bit late at Qed time *)
@@ -479,9 +484,10 @@ let start_proof_com sopt kind (bl,t) hook =
 	next_ident_away (id_of_string "Unnamed_thm")
 	  (Pfedit.get_all_proof_names ())
   in
+  let env = Global.env () in
   let c = interp_type Evd.empty env (generalize_rawconstr t bl) in
   let _ = Typeops.infer_type env c in
-  Pfedit.start_proof id kind sign c hook
+  start_proof id kind c hook
 
 let apply_tac_not_declare id pft = function
   | None -> error "Type of Let missing"

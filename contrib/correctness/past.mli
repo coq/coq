@@ -14,10 +14,11 @@
 
 open Names
 open Ptype
+open Topconstr
 
 type termination = 
   | RecArg of int 
-  | Wf of Coqast.t * Coqast.t
+  | Wf of constr_expr * constr_expr
 
 type variable = identifier
 
@@ -43,7 +44,7 @@ type ('a, 'b) t = {
   desc : ('a, 'b) t_desc;
   pre  : 'b Ptype.precondition list;
   post : 'b Ptype.postcondition option;
-  loc  : Coqast.loc;
+  loc  : Util.loc;
   info : 'a 
 }
 
@@ -73,7 +74,7 @@ and ('a, 'b) arg =
   | Refarg of variable
   | Type of 'b Ptype.ml_type_v
 
-type program = (unit, Coqast.t) t
+type program = (unit, Topconstr.constr_expr) t
 
 (*s Intermediate type for CC terms. *)
 

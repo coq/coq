@@ -73,9 +73,9 @@ let flin_emult a f =
 (*****************************************************************************)
 open Vernacexpr
 let parse_ast   = Pcoq.parse_string Pcoq.Constr.constr;;
-let parse s = Astterm.interp_constr Evd.empty (Global.env()) (parse_ast s);;
+let parse s = Constrintern.interp_constr Evd.empty (Global.env()) (parse_ast s);;
 let pf_parse_constr gl s =
-   Astterm.interp_constr Evd.empty (pf_env gl) (parse_ast s);;
+   Constrintern.interp_constr Evd.empty (pf_env gl) (parse_ast s);;
 
 let string_of_R_constant kn = 
   match Names.repr_kn kn with

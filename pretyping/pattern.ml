@@ -31,7 +31,8 @@ type constr_pattern =
   | PLetIn of name * constr_pattern * constr_pattern
   | PSort of rawsort
   | PMeta of int option
-  | PCase of constr_pattern option * constr_pattern * constr_pattern array
+  | PCase of case_style * constr_pattern option * constr_pattern * 
+      constr_pattern array
   | PFix of fixpoint
   | PCoFix of cofixpoint
 
@@ -41,9 +42,9 @@ let rec occur_meta_pattern = function
   | PLambda (na,t,c)  -> (occur_meta_pattern t) or (occur_meta_pattern c)
   | PProd (na,t,c)  -> (occur_meta_pattern t) or (occur_meta_pattern c)
   | PLetIn (na,t,c)  -> (occur_meta_pattern t) or (occur_meta_pattern c)
-  | PCase(None,c,br)   ->
+  | PCase(_,None,c,br)   ->
       (occur_meta_pattern c) or (array_exists occur_meta_pattern br)
-  | PCase(Some p,c,br) ->
+  | PCase(_,Some p,c,br) ->
       (occur_meta_pattern p) or
       (occur_meta_pattern c) or (array_exists occur_meta_pattern br)
   | PMeta _ | PSoApp _ -> true
@@ -83,12 +84,12 @@ let rec subst_pattern subst pat = match pat with
 	  PLetIn (name,c1',c2')
   | PSort _ 
   | PMeta _ -> pat
-  | PCase (typ, c, branches) -> 
+  | PCase (cs,typ, c, branches) -> 
       let typ' = option_smartmap (subst_pattern subst) typ in 
       let c' = subst_pattern subst c in
       let branches' = array_smartmap (subst_pattern subst) branches in
 	if typ' == typ && c' == c && branches' == branches then pat else
-	  PCase(typ', c', branches') 
+	  PCase(cs,typ', c', branches') 
   | PFix fixpoint ->
       let cstr = mkFix fixpoint in
       let fixpoint' = destFix (subst_mps subst cstr) in
@@ -132,7 +133,7 @@ let rec head_pattern_bound t =
     | PProd (_,_,b)  -> head_pattern_bound b 
     | PLetIn (_,_,b) -> head_pattern_bound b 
     | PApp (c,args)  -> head_pattern_bound c
-    | PCase (p,c,br) -> head_pattern_bound c
+    | PCase (_,p,c,br) -> head_pattern_bound c
     | PRef r         -> label_of_ref r
     | PVar id        -> VarNode id
     | PEvar _ | PRel _ | PMeta _ | PSoApp _  | PSort _ | PFix _
@@ -229,7 +230,7 @@ let matches_core convert pat c =
 
       | PVar v1, Var v2 when v1 = v2 -> sigma
 
-      | PRef ref, _ when Declare.constr_of_reference ref = cT -> sigma
+      | PRef ref, _ when constr_of_reference ref = cT -> sigma
 
       | PRel n1, Rel n2 when n1 = n2 -> sigma
 
@@ -252,11 +253,11 @@ let matches_core convert pat c =
 
       | PRef (ConstRef _ as ref), _ when convert <> None ->
 	  let (env,evars) = out_some convert in
-	  let c = Declare.constr_of_reference ref in
+	  let c = constr_of_reference ref in
 	  if is_conv env evars c cT then sigma
 	  else raise PatternMatchingFailure
 
-      | PCase (_,a1,br1), Case (_,_,a2,br2) ->
+      | PCase (_,_,a1,br1), Case (_,_,a2,br2) ->
 	  (* On ne teste pas le prédicat *)
           if (Array.length br1) = (Array.length br2) then
   	    array_fold_left2 (sorec stk) (sorec stk sigma a1 a2) br1 br2
@@ -386,7 +387,8 @@ let rec pattern_of_constr t =
 	if ctxt = [||] then PEvar n
 	else PApp (PEvar n, Array.map pattern_of_constr ctxt)
     | Case (ci,p,a,br) ->
-	PCase (Some (pattern_of_constr p),pattern_of_constr a,
+	PCase (ci.ci_pp_info.style,
+	       Some (pattern_of_constr p),pattern_of_constr a,
 	       Array.map pattern_of_constr br)
     | Fix f -> PFix f
     | CoFix _ ->

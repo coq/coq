@@ -15,39 +15,54 @@ open Util
 open Names
 open Ast
 open Extend
+open Topconstr
+open Libnames
 
 let get_z_sign loc =
-  let ast_of_id id = Astterm.globalize_constr (Nvar(loc,id)) in
+  let mkid id =
+    mkRefC (Qualid (loc,Libnames.make_short_qualid id))
+  in
+  ((mkid (id_of_string "xI"),
+    mkid (id_of_string "xO"),
+    mkid (id_of_string "xH")),
+   (mkid (id_of_string "ZERO"), 
+    mkid (id_of_string "POS"),
+    mkid (id_of_string "NEG")))
+
+open Bignat
+
+let pos_of_bignat xI xO xH x =
+  let rec pos_of x =
+    match div2_with_rest x with
+      | (q, true) when is_nonzero q -> mkAppC (xI, [pos_of q])
+      | (q, false) -> mkAppC (xO, [pos_of q])
+      | (_, true) -> xH
+  in 
+  pos_of x
+    
+let z_of_string pos_or_neg s dloc = 
+  let ((xI,xO,xH),(aZERO,aPOS,aNEG)) = get_z_sign dloc in
+  let v = Bignat.of_string s in
+  if is_nonzero v then
+    if pos_or_neg then
+      mkAppC (aPOS, [pos_of_bignat xI xO xH v])
+    else 
+      mkAppC (aNEG, [pos_of_bignat xI xO xH v])
+  else 
+    aZERO
+      
+exception Non_closed_number
+
+let get_z_sign_ast loc =
+  let ast_of_id id = 
+    Termast.ast_of_ref (Nametab.locate (Libnames.make_short_qualid id))
+  in
   ((ast_of_id (id_of_string "xI"),
     ast_of_id (id_of_string "xO"),
     ast_of_id (id_of_string "xH")),
    (ast_of_id (id_of_string "ZERO"), 
     ast_of_id (id_of_string "POS"),
     ast_of_id (id_of_string "NEG")))
-
-open Bignat
-
-let pos_of_bignat astxI astxO astxH x =
-  let rec pos_of x =
-    match div2_with_rest x with
-      | (q, true) when is_nonzero q -> ope("APPLIST", [astxI; pos_of q])
-      | (q, false) -> ope("APPLIST", [astxO; pos_of q])
-      | (_, true) -> astxH
-  in 
-  pos_of x
-    
-let z_of_string pos_or_neg s dloc = 
-  let ((astxI,astxO,astxH),(astZERO,astPOS,astNEG)) = get_z_sign dloc in
-  let v = Bignat.of_string s in
-  if is_nonzero v then
-    if pos_or_neg then
-      ope("APPLIST",[astPOS; pos_of_bignat astxI astxO astxH v])
-    else 
-      ope("APPLIST",[astNEG; pos_of_bignat astxI astxO astxH v])
-  else 
-    astZERO
-      
-exception Non_closed_number
 
 let rec bignat_of_pos c1 c2 c3 p =
   match p with
@@ -58,9 +73,9 @@ let rec bignat_of_pos c1 c2 c3 p =
     | a when alpha_eq(a,c3) -> Bignat.one
     | _ -> raise Non_closed_number
 	  
-let bignat_option_of_pos astxI astxO astxH p =
+let bignat_option_of_pos xI xO xH p =
   try 
-    Some (bignat_of_pos astxO astxI astxH p)
+    Some (bignat_of_pos xO xI xH p)
   with Non_closed_number -> 
     None
 
@@ -68,8 +83,8 @@ let pr_pos a = hov 0 (str "POS" ++ brk (1,1) ++ a)
 let pr_neg a = hov 0 (str "NEG" ++ brk (1,1) ++ a)
 
 let inside_printer posneg std_pr p =
-  let ((astxI,astxO,astxH),_) = get_z_sign dummy_loc in
-  match (bignat_option_of_pos astxI astxO astxH p) with
+  let ((xI,xO,xH),_) = get_z_sign_ast dummy_loc in
+  match (bignat_option_of_pos xI xO xH p) with
     | Some n -> 
 	if posneg then 
 	  (str (Bignat.to_string n))
@@ -82,8 +97,8 @@ let inside_printer posneg std_pr p =
 let outside_zero_printer std_pr p = str "`0`"
 
 let outside_printer posneg std_pr p =
-  let ((astxI,astxO,astxH),_) = get_z_sign dummy_loc in
-  match (bignat_option_of_pos astxI astxO astxH p) with
+  let ((xI,xO,xH),_) = get_z_sign_ast dummy_loc in
+  match (bignat_option_of_pos xI xO xH p) with
     | Some n -> 
 	if posneg then 
 	  (str "`" ++ str (Bignat.to_string n) ++ str "`")
@@ -177,15 +192,19 @@ let z_of_int dloc z =
 let _ = Symbols.declare_numeral_interpreter "Z_scope" (z_of_int,None)
 
 (***********************************************************************)
+(* Printer for positive *)
+
+
+(***********************************************************************)
 (* Printers *)
 
 exception Non_closed_number
 
 let bignat_of_pos p =
-  let ((astxI,astxO,astxH),_) = get_z_sign dummy_loc in
-  let c1 = astxO in
-  let c2 = astxI in
-  let c3 = astxH in
+  let ((xI,xO,xH),_) = get_z_sign_ast dummy_loc in
+  let c1 = xO in
+  let c2 = xI in
+  let c3 = xH in
   let rec transl = function
     | Node (_,"APPLIST",[b; a]) when alpha_eq(b,c1) -> mult_2(transl a)
     | Node (_,"APPLIST",[b; a]) when alpha_eq(b,c2) -> add_1(mult_2(transl a))

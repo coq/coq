@@ -9,8 +9,6 @@
 (* $Id$ *)
 
 open Names
-open Term
-open Environ
 
 (* Identifiers and names *)
 val pr_id : identifier -> Pp.std_ppcmds
@@ -34,6 +32,7 @@ val next_name_away_with_default :
 
 val out_name : name -> identifier
 
+val name_fold : (identifier -> 'a -> 'a) -> name -> 'a -> 'a
 
 val pr_lab : label -> Pp.std_ppcmds
 

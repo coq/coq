@@ -38,7 +38,8 @@ noargument:
 ###########################################################################
 
 LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
-              -I proofs -I tactics -I pretyping -I parsing -I toplevel  \
+              -I proofs -I tactics -I pretyping \
+              -I interp -I toplevel -I parsing \
               -I contrib/omega -I contrib/romega \
 	      -I contrib/ring -I contrib/xml \
 	      -I contrib/extraction -I contrib/correctness \
@@ -70,85 +71,99 @@ CLIBS=unix.cma
 
 CAMLP4OBJS=gramlib.cma
 
-CONFIG=config/coq_config.cmo
+CONFIG=\
+  config/coq_config.cmo
 
-LIBREP=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/bignat.cmo \
-    lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
-    lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
-    lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
-    lib/predicate.cmo lib/rtree.cmo  # Rem: Cygwin already uses variable LIB 
+LIBREP=\
+  lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/bignat.cmo \
+  lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
+  lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
+  lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
+  lib/predicate.cmo lib/rtree.cmo  # Rem: Cygwin already uses variable LIB 
 
-KERNEL=kernel/names.cmo kernel/univ.cmo \
-       kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
-       kernel/declarations.cmo kernel/environ.cmo kernel/closure.cmo \
-       kernel/conv_oracle.cmo kernel/reduction.cmo kernel/entries.cmo \
-       kernel/modops.cmo \
-       kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
-       kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
-       kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo
+KERNEL=\
+  kernel/names.cmo kernel/univ.cmo \
+  kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
+  kernel/declarations.cmo kernel/environ.cmo kernel/closure.cmo \
+  kernel/conv_oracle.cmo kernel/reduction.cmo kernel/entries.cmo \
+  kernel/modops.cmo \
+  kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
+  kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
+  kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo
 
-LIBRARY=library/libnames.cmo library/nameops.cmo library/libobject.cmo \
-	library/summary.cmo \
-        library/nametab.cmo library/global.cmo library/lib.cmo \
-	library/declaremods.cmo library/library.cmo library/states.cmo \
-	library/impargs.cmo library/decl_kinds.cmo \
-	library/dischargedhypsmap.cmo library/declare.cmo \
-        library/goptions.cmo 
+LIBRARY=\
+  library/nameops.cmo library/libnames.cmo library/libobject.cmo \
+  library/summary.cmo \
+  library/nametab.cmo library/global.cmo library/lib.cmo \
+  library/declaremods.cmo library/library.cmo library/states.cmo \
+  library/impargs.cmo library/decl_kinds.cmo \
+  library/dischargedhypsmap.cmo library/declare.cmo library/goptions.cmo 
 
-PRETYPING=pretyping/termops.cmo \
-          pretyping/evd.cmo pretyping/instantiate.cmo \
-          pretyping/reductionops.cmo pretyping/inductiveops.cmo \
-          pretyping/rawterm.cmo pretyping/detyping.cmo pretyping/retyping.cmo \
-	  pretyping/cbv.cmo pretyping/tacred.cmo \
-	  pretyping/pretype_errors.cmo pretyping/typing.cmo \
-	  pretyping/classops.cmo pretyping/recordops.cmo pretyping/indrec.cmo \
-	  pretyping/evarutil.cmo pretyping/evarconv.cmo \
-          pretyping/coercion.cmo pretyping/cases.cmo pretyping/pretyping.cmo \
-	  pretyping/syntax_def.cmo pretyping/pattern.cmo 
+PRETYPING=\
+  pretyping/termops.cmo pretyping/evd.cmo pretyping/instantiate.cmo \
+  pretyping/reductionops.cmo pretyping/inductiveops.cmo \
+  pretyping/rawterm.cmo pretyping/detyping.cmo pretyping/retyping.cmo \
+  pretyping/cbv.cmo pretyping/tacred.cmo \
+  pretyping/pretype_errors.cmo pretyping/typing.cmo \
+  pretyping/classops.cmo pretyping/recordops.cmo pretyping/indrec.cmo \
+  pretyping/evarutil.cmo pretyping/evarconv.cmo \
+  pretyping/coercion.cmo pretyping/cases.cmo pretyping/pretyping.cmo \
+  pretyping/pattern.cmo 
 
-PARSING=parsing/lexer.cmo parsing/coqast.cmo \
-        parsing/genarg.cmo proofs/tacexpr.cmo parsing/ast.cmo \
-        parsing/termast.cmo parsing/symbols.cmo parsing/astterm.cmo \
-        parsing/astmod.cmo parsing/extend.cmo parsing/esyntax.cmo \
-        parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
-	parsing/coqlib.cmo parsing/printmod.cmo parsing/prettyp.cmo \
-	parsing/search.cmo
+INTERP=\
+  interp/topconstr.cmo interp/ppextend.cmo interp/symbols.cmo \
+  interp/genarg.cmo interp/syntax_def.cmo interp/constrintern.cmo \
+  interp/modintern.cmo interp/constrextern.cmo interp/coqlib.cmo
 
-HIGHPARSING= parsing/g_prim.cmo parsing/g_basevernac.cmo \
-	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
-	parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
-	parsing/g_module.cmo \
-	parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
+PARSING=\
+  parsing/lexer.cmo parsing/coqast.cmo parsing/ast.cmo \
+  parsing/termast.cmo parsing/extend.cmo parsing/esyntax.cmo \
+  parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
+  parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo
 
-ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
+HIGHPARSING=\
+  parsing/g_prim.cmo parsing/g_basevernac.cmo \
+  parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
+  parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
+  parsing/g_module.cmo \
+  parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
 
-PROOFS=proofs/proof_type.cmo proofs/proof_trees.cmo proofs/logic.cmo \
-       proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
-       proofs/clenv.cmo proofs/pfedit.cmo \
-       proofs/tactic_debug.cmo
+ARITHSYNTAX=\
+  parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
 
-TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
-        tactics/nbtermdn.cmo tactics/hipattern.cmo tactics/wcclausenv.cmo \
-        tactics/tacticals.cmo tactics/tactics.cmo \
-        tactics/hiddentac.cmo tactics/elim.cmo \
-	tactics/dhyp.cmo tactics/auto.cmo tactics/tacinterp.cmo
+PROOFS=\
+  proofs/tacexpr.cmo proofs/proof_type.cmo \
+  proofs/proof_trees.cmo proofs/logic.cmo \
+  proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
+  proofs/clenv.cmo proofs/pfedit.cmo \
+  proofs/tactic_debug.cmo
 
-TOPLEVEL=toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
-	 toplevel/command.cmo toplevel/record.cmo toplevel/recordobj.cmo \
-         toplevel/discharge.cmo toplevel/vernacexpr.cmo \
-         toplevel/vernacinterp.cmo toplevel/mltop.cmo \
-         parsing/pcoq.cmo parsing/egrammar.cmo toplevel/metasyntax.cmo \
-         toplevel/vernacentries.cmo toplevel/vernac.cmo \
-	 toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
-         toplevel/toplevel.cmo toplevel/usage.cmo \
-	 toplevel/coqinit.cmo toplevel/coqtop.cmo
+TACTICS=\
+  tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
+  tactics/nbtermdn.cmo tactics/hipattern.cmo tactics/wcclausenv.cmo \
+  tactics/tacticals.cmo tactics/tactics.cmo \
+  tactics/hiddentac.cmo tactics/elim.cmo \
+  tactics/dhyp.cmo tactics/auto.cmo tactics/tacinterp.cmo
 
-HIGHTACTICS=tactics/setoid_replace.cmo tactics/equality.cmo \
-            tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
-            tactics/autorewrite.cmo tactics/refine.cmo \
-	    tactics/extraargs.cmo tactics/extratactics.cmo tactics/eauto.cmo
+TOPLEVEL=\
+  toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
+  toplevel/command.cmo toplevel/record.cmo toplevel/recordobj.cmo \
+  toplevel/discharge.cmo toplevel/vernacexpr.cmo \
+  toplevel/vernacinterp.cmo toplevel/mltop.cmo \
+  parsing/pcoq.cmo parsing/egrammar.cmo toplevel/metasyntax.cmo \
+  toplevel/vernacentries.cmo toplevel/vernac.cmo \
+  toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
+  toplevel/toplevel.cmo toplevel/usage.cmo \
+  toplevel/coqinit.cmo toplevel/coqtop.cmo
 
-QUOTIFY=parsing/qast.cmo parsing/q_prim.cmo parsing/q_tactic.cmo
+HIGHTACTICS=\
+  tactics/setoid_replace.cmo tactics/equality.cmo \
+  tactics/contradiction.cmo tactics/inv.cmo tactics/leminv.cmo \
+  tactics/autorewrite.cmo tactics/refine.cmo \
+  tactics/extraargs.cmo tactics/extratactics.cmo tactics/eauto.cmo
+
+QUOTIFY=\
+  parsing/qast.cmo parsing/q_prim.cmo parsing/q_tactic.cmo
 
 parsing/q_prim.ml4: parsing/g_prim.ml4
 	camlp4o -I parsing grammar.cma pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -o parsing/q_prim.ml4 -impl parsing/g_prim.ml4
@@ -167,124 +182,136 @@ ML4FILES += $(USERTAC) tactics/extraargs.ml4 tactics/extratactics.ml4 \
 USERTACCMO=$(USERTAC:.ml4=.cmo)
 USERTACCMX=$(USERTAC:.ml4=.cmx)
 
-INTERFACE=contrib/interface/vtp.cmo \
-	contrib/interface/ctast.cmo contrib/interface/xlate.cmo \
-	contrib/interface/paths.cmo contrib/interface/translate.cmo \
-	contrib/interface/pbp.cmo \
-	contrib/interface/dad.cmo \
-	contrib/interface/history.cmo \
-	contrib/interface/name_to_ast.cmo contrib/interface/debug_tac.cmo \
-	contrib/interface/showproof_ct.cmo contrib/interface/showproof.cmo \
-	contrib/interface/blast.cmo contrib/interface/centaur.cmo
+INTERFACE=\
+  contrib/interface/vtp.cmo \
+  contrib/interface/ctast.cmo contrib/interface/xlate.cmo \
+  contrib/interface/paths.cmo contrib/interface/translate.cmo \
+  contrib/interface/pbp.cmo \
+  contrib/interface/dad.cmo \
+  contrib/interface/history.cmo \
+  contrib/interface/name_to_ast.cmo contrib/interface/debug_tac.cmo \
+  contrib/interface/showproof_ct.cmo contrib/interface/showproof.cmo \
+  contrib/interface/blast.cmo contrib/interface/centaur.cmo
 
 ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
 
 PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
-	lib/util.cmo lib/bignat.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
-        lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo \
-        lib/system.cmo lib/bstack.cmo lib/edit.cmo lib/options.cmo \
-	lib/rtree.cmo lib/gset.cmo lib/tlm.cmo \
-        kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
-        kernel/term.cmo kernel/sign.cmo kernel/declarations.cmo \
-	kernel/environ.cmo \
-	kernel/closure.cmo kernel/conv_oracle.cmo kernel/reduction.cmo \
-	kernel/modops.cmo \
-	kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
-	kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
-        kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo \
-	library/libnames.cmo \
-	library/nameops.cmo library/libobject.cmo library/summary.cmo \
-	library/nametab.cmo library/lib.cmo library/global.cmo \
-	library/declaremods.cmo \
-	library/library.cmo lib/options.cmo library/impargs.cmo \
-	library/dischargedhypsmap.cmo library/goptions.cmo \
-	pretyping/evd.cmo pretyping/instantiate.cmo \
-        pretyping/termops.cmo pretyping/reductionops.cmo \
-        pretyping/inductiveops.cmo pretyping/retyping.cmo library/declare.cmo \
-        pretyping/cbv.cmo pretyping/tacred.cmo pretyping/classops.cmo \
-        pretyping/rawterm.cmo \
-        pretyping/pattern.cmo pretyping/pretype_errors.cmo \
-	pretyping/evarutil.cmo pretyping/recordops.cmo pretyping/evarconv.cmo \
-	pretyping/coercion.cmo pretyping/cases.cmo \
-        pretyping/indrec.cmo \
-	pretyping/pretyping.cmo pretyping/syntax_def.cmo \
-	parsing/lexer.cmo parsing/coqast.cmo parsing/genarg.cmo \
-	proofs/tacexpr.cmo toplevel/vernacexpr.cmo \
-	parsing/pcoq.cmo parsing/ast.cmo \
-	parsing/g_prim.cmo parsing/g_basevernac.cmo \
-	parsing/extend.cmo parsing/symbols.cmo \
-	parsing/coqlib.cmo pretyping/detyping.cmo \
-	parsing/termast.cmo parsing/astterm.cmo parsing/astmod.cmo \
-	parsing/egrammar.cmo parsing/esyntax.cmo toplevel/metasyntax.cmo \
-	parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
-	lib/stamps.cmo pretyping/typing.cmo \
-	proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
-	proofs/evar_refiner.cmo proofs/tacmach.cmo toplevel/himsg.cmo \
-	parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
-	toplevel/class.cmo toplevel/recordobj.cmo toplevel/cerrors.cmo \
-	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
-	parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
-	proofs/tactic_debug.cmo \
-	proofs/pfedit.cmo proofs/clenv.cmo tactics/wcclausenv.cmo \
-	tactics/tacticals.cmo tactics/hipattern.cmo \
-	tactics/tactics.cmo tactics/hiddentac.cmo \
-	tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
-	tactics/nbtermdn.cmo tactics/dhyp.cmo tactics/elim.cmo \
-	tactics/auto.cmo tactics/tacinterp.cmo tactics/extraargs.cmo \
-	$(CMO) # Solution de facilité...
+  lib/util.cmo lib/bignat.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
+  lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo \
+  lib/system.cmo lib/bstack.cmo lib/edit.cmo lib/options.cmo \
+  lib/rtree.cmo lib/gset.cmo lib/tlm.cmo \
+  kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
+  kernel/term.cmo kernel/sign.cmo kernel/declarations.cmo \
+  kernel/environ.cmo \
+  kernel/closure.cmo kernel/conv_oracle.cmo kernel/reduction.cmo \
+  kernel/modops.cmo \
+  kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
+  kernel/indtypes.cmo kernel/cooking.cmo kernel/term_typing.cmo \
+  kernel/subtyping.cmo kernel/mod_typing.cmo kernel/safe_typing.cmo \
+  library/nameops.cmo library/libnames.cmo \
+  library/libobject.cmo library/summary.cmo \
+  library/nametab.cmo library/lib.cmo library/global.cmo \
+  library/declaremods.cmo \
+  library/library.cmo lib/options.cmo library/impargs.cmo \
+  library/dischargedhypsmap.cmo library/goptions.cmo \
+  pretyping/evd.cmo pretyping/instantiate.cmo \
+  pretyping/termops.cmo pretyping/reductionops.cmo \
+  pretyping/inductiveops.cmo pretyping/retyping.cmo library/declare.cmo \
+  pretyping/cbv.cmo pretyping/tacred.cmo pretyping/classops.cmo \
+  pretyping/rawterm.cmo \
+  pretyping/pattern.cmo pretyping/pretype_errors.cmo \
+  pretyping/evarutil.cmo pretyping/recordops.cmo pretyping/evarconv.cmo \
+  pretyping/coercion.cmo pretyping/cases.cmo \
+  pretyping/indrec.cmo pretyping/pretyping.cmo \
+  parsing/lexer.cmo parsing/coqast.cmo interp/genarg.cmo \
+  proofs/tacexpr.cmo toplevel/vernacexpr.cmo \
+  interp/topconstr.cmo interp/syntax_def.cmo \
+  interp/ppextend.cmo interp/symbols.cmo \
+  interp/constrintern.cmo interp/coqlib.cmo \
+  parsing/pcoq.cmo parsing/ast.cmo \
+  parsing/extend.cmo pretyping/detyping.cmo \
+  parsing/termast.cmo interp/modintern.cmo \
+  parsing/g_prim.cmo parsing/g_basevernac.cmo \
+  parsing/egrammar.cmo parsing/esyntax.cmo toplevel/metasyntax.cmo \
+  parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
+  lib/stamps.cmo pretyping/typing.cmo \
+  proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
+  proofs/evar_refiner.cmo proofs/tacmach.cmo toplevel/himsg.cmo \
+  parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
+  toplevel/class.cmo toplevel/recordobj.cmo toplevel/cerrors.cmo \
+  parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
+  parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
+  proofs/tactic_debug.cmo \
+  proofs/pfedit.cmo proofs/clenv.cmo tactics/wcclausenv.cmo \
+  tactics/tacticals.cmo tactics/hipattern.cmo \
+  tactics/tactics.cmo tactics/hiddentac.cmo \
+  tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
+  tactics/nbtermdn.cmo tactics/dhyp.cmo tactics/elim.cmo \
+  tactics/auto.cmo tactics/tacinterp.cmo tactics/extraargs.cmo \
+  $(CMO) # Solution de facilité...
 
 ML4FILES += contrib/correctness/psyntax.ml4 contrib/omega/g_omega.ml4 \
-         contrib/romega/g_romega.ml4 contrib/ring/g_quote.ml4 \
-	 contrib/ring/g_ring.ml4 \
-         contrib/field/field.ml4 contrib/fourier/g_fourier.ml4 \
-	 contrib/extraction/g_extraction.ml4 contrib/xml/xmlentries.ml4
+  contrib/romega/g_romega.ml4 contrib/ring/g_quote.ml4 \
+  contrib/ring/g_ring.ml4 \
+  contrib/field/field.ml4 contrib/fourier/g_fourier.ml4 \
+  contrib/extraction/g_extraction.ml4 contrib/xml/xmlentries.ml4
 
-OMEGACMO=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
-         contrib/omega/g_omega.cmo 
+OMEGACMO=\
+  contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
+  contrib/omega/g_omega.cmo 
 
-ROMEGACMO=contrib/romega/const_omega.cmo contrib/romega/refl_omega.cmo \
-         contrib/romega/g_romega.cmo 
+ROMEGACMO=\
+  contrib/romega/const_omega.cmo contrib/romega/refl_omega.cmo \
+  contrib/romega/g_romega.cmo 
 
-RINGCMO=contrib/ring/quote.cmo contrib/ring/g_quote.cmo \
-	contrib/ring/ring.cmo contrib/ring/g_ring.cmo 
+RINGCMO=\
+  contrib/ring/quote.cmo contrib/ring/g_quote.cmo \
+  contrib/ring/ring.cmo contrib/ring/g_ring.cmo 
 
-FIELDCMO=contrib/field/field.cmo 
+FIELDCMO=\
+  contrib/field/field.cmo 
 
-XMLCMO=contrib/xml/unshare.cmo contrib/xml/xml.cmo contrib/xml/acic.cmo \
-       contrib/xml/doubleTypeInference.cmo \
-       contrib/xml/cic2acic.cmo contrib/xml/acic2Xml.cmo \
-       contrib/xml/proof2aproof.cmo contrib/xml/proofTree2Xml.cmo \
-       contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo 	
+XMLCMO=\
+  contrib/xml/unshare.cmo contrib/xml/xml.cmo contrib/xml/acic.cmo \
+  contrib/xml/doubleTypeInference.cmo \
+  contrib/xml/cic2acic.cmo contrib/xml/acic2Xml.cmo \
+  contrib/xml/proof2aproof.cmo contrib/xml/proofTree2Xml.cmo \
+  contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo 	
 
-FOURIERCMO=contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo \
-        contrib/fourier/g_fourier.cmo
+FOURIERCMO=\
+  contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo \
+  contrib/fourier/g_fourier.cmo
 
-EXTRACTIONCMO=contrib/extraction/table.cmo\
-	      contrib/extraction/mlutil.cmo\
-	      contrib/extraction/ocaml.cmo \
-	      contrib/extraction/haskell.cmo \
-              contrib/extraction/scheme.cmo \
-	      contrib/extraction/extraction.cmo \
-              contrib/extraction/common.cmo \
-	      contrib/extraction/extract_env.cmo \
-	      contrib/extraction/g_extraction.cmo
+EXTRACTIONCMO=\
+  contrib/extraction/table.cmo\
+  contrib/extraction/mlutil.cmo\
+  contrib/extraction/ocaml.cmo \
+  contrib/extraction/haskell.cmo \
+  contrib/extraction/scheme.cmo \
+  contrib/extraction/extraction.cmo \
+  contrib/extraction/common.cmo \
+  contrib/extraction/extract_env.cmo \
+  contrib/extraction/g_extraction.cmo
 
-CORRECTNESSCMO=contrib/correctness/pmisc.cmo				\
-	contrib/correctness/peffect.cmo contrib/correctness/prename.cmo	\
-	contrib/correctness/perror.cmo contrib/correctness/penv.cmo	\
-	contrib/correctness/putil.cmo contrib/correctness/pdb.cmo	\
-	contrib/correctness/pcic.cmo contrib/correctness/pmonad.cmo	\
-	contrib/correctness/pcicenv.cmo					\
-	contrib/correctness/pred.cmo contrib/correctness/ptyping.cmo	\
-	contrib/correctness/pwp.cmo contrib/correctness/pmlize.cmo	\
-	contrib/correctness/ptactic.cmo	contrib/correctness/psyntax.cmo
+CORRECTNESSCMO=\
+  contrib/correctness/pmisc.cmo					  \
+  contrib/correctness/peffect.cmo contrib/correctness/prename.cmo \
+  contrib/correctness/perror.cmo contrib/correctness/penv.cmo  	  \
+  contrib/correctness/putil.cmo contrib/correctness/pdb.cmo	  \
+  contrib/correctness/pcic.cmo contrib/correctness/pmonad.cmo     \
+  contrib/correctness/pcicenv.cmo  				  \
+  contrib/correctness/pred.cmo contrib/correctness/ptyping.cmo	  \
+  contrib/correctness/pwp.cmo contrib/correctness/pmlize.cmo	  \
+  contrib/correctness/ptactic.cmo  contrib/correctness/psyntax.cmo
 
-JPROVERCMO=contrib/jprover/opname.cmo \
-           contrib/jprover/jterm.cmo contrib/jprover/jlogic.cmo \
-           contrib/jprover/jtunify.cmo contrib/jprover/jall.cmo \
-           contrib/jprover/jprover.cmo
+JPROVERCMO=\
+  contrib/jprover/opname.cmo \
+  contrib/jprover/jterm.cmo contrib/jprover/jlogic.cmo \
+  contrib/jprover/jtunify.cmo contrib/jprover/jall.cmo \
+  contrib/jprover/jprover.cmo
 
-CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo  
+CCCMO=\
+  contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo  
 
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4
 
@@ -295,8 +322,8 @@ CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
-CMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING)  \
-    $(PROOFS) $(TACTICS) $(PARSING) $(TOPLEVEL) \
+CMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING) \
+    $(PROOFS) $(TACTICS) $(INTERP) $(PARSING) $(TOPLEVEL) \
     $(HIGHPARSING) $(HIGHTACTICS) $(CONTRIB)
 CMX=$(CMO:.cmo=.cmx)
 
@@ -342,9 +369,10 @@ scripts/tolink.ml: Makefile
 	echo "let kernel = \""$(KERNEL)"\"" >> $@
 	echo "let library = \""$(LIBRARY)"\"" >> $@
 	echo "let pretyping = \""$(PRETYPING)"\"" >> $@
-	echo "let parsing = \""$(PARSING)"\"" >> $@
 	echo "let proofs = \""$(PROOFS)"\"" >> $@
 	echo "let tactics = \""$(TACTICS)"\"" >> $@
+	echo "let interp = \""$(INTERP)"\"" >> $@
+	echo "let parsing = \""$(PARSING)"\"" >> $@
 	echo "let toplevel = \""$(TOPLEVEL)"\"" >> $@
 	echo "let highparsing = \""$(HIGHPARSING)"\"" >> $@
 	echo "let hightactics = \""$(HIGHTACTICS)" "$(USERTACCMO)"\"" >> $@
@@ -373,6 +401,7 @@ kernel: $(KERNEL)
 library: $(LIBRARY)
 proofs: $(PROOFS)
 tactics: $(TACTICS)
+interp: $(INTERP)
 parsing: $(PARSING)
 pretyping: $(PRETYPING)
 highparsing: $(HIGHPARSING)
@@ -793,7 +822,8 @@ LPLIB = lib/doc.tex $(LIBREP:.cmo=.mli)
 LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
 LPLIBRARY = library/doc.tex $(LIBRARY:.cmo=.mli)
 LPPRETYPING = pretyping/doc.tex pretyping/rawterm.mli $(PRETYPING:.cmo=.mli)
-LPPARSING =$(PARSING:.cmo=.mli) $(HIGHPARSING:.cmo=.mli)
+LPINTERP = $(INTERP:.cmo=.mli)
+LPPARSING = $(PARSING:.cmo=.mli) $(HIGHPARSING:.cmo=.mli)
 LPPROOFS = proofs/doc.tex $(PROOFS:.cmo=.mli)
 LPTACTICS = tactics/doc.tex $(TACTICS:.cmo=.mli) $(HIGHTACTICS:.cmo=.mli)
 LPTOPLEVEL = toplevel/doc.tex $(TOPLEVEL:.cmo=.mli)
@@ -847,23 +877,31 @@ otags:
 ML4FILES += parsing/lexer.ml4 parsing/q_util.ml4 parsing/q_coqast.ml4 \
             parsing/g_prim.ml4 parsing/pcoq.ml4
 
-CAMLP4EXTENSIONS= parsing/argextend.cmo parsing/tacextend.cmo \
-	   parsing/vernacextend.cmo 
+GRAMMARNEEDEDCMO=\
+  lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/bignat.cmo \
+  lib/dyn.cmo lib/options.cmo \
+  lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo \
+  kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo kernel/term.cmo \
+  kernel/sign.cmo kernel/declarations.cmo kernel/environ.cmo\
+  library/nameops.cmo library/libnames.cmo library/summary.cmo \
+  library/nametab.cmo library/libobject.cmo library/lib.cmo \
+  library/goptions.cmo library/decl_kinds.cmo \
+  pretyping/rawterm.cmo pretyping/evd.cmo \
+  interp/topconstr.cmo interp/genarg.cmo \
+  interp/ppextend.cmo parsing/coqast.cmo parsing/ast.cmo \
+  proofs/tacexpr.cmo parsing/ast.cmo \
+  parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
+  toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_coqast.cmo \
+  parsing/egrammar.cmo 
 
-GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/bignat.cmo \
-	   lib/dyn.cmo lib/options.cmo \
-	   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo \
-	   $(KERNEL) \
-	   library/libnames.cmo library/summary.cmo library/nameops.cmo \
-	   library/nametab.cmo library/libobject.cmo library/lib.cmo \
-           library/goptions.cmo library/decl_kinds.cmo \
-           pretyping/rawterm.cmo pretyping/evd.cmo \
-	   parsing/coqast.cmo parsing/genarg.cmo \
-	   proofs/tacexpr.cmo proofs/proof_type.cmo parsing/ast.cmo \
-           parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
-           parsing/symbols.cmo \
-           toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_coqast.cmo \
-           parsing/egrammar.cmo parsing/g_prim.cmo $(CAMLP4EXTENSIONS)
+CAMLP4EXTENSIONSCMO=\
+  parsing/argextend.cmo parsing/tacextend.cmo parsing/vernacextend.cmo 
+
+GRAMMARSCMO=\
+  parsing/g_prim.cmo parsing/g_tactic.cmo \
+  parsing/g_ltac.cmo parsing/g_constr.cmo
+
+GRAMMARCMO=$(GRAMMARNEEDEDCMO) $(CAMLP4EXTENSIONSCMO) $(GRAMMARSCMO)
 
 parsing/grammar.cma: $(GRAMMARCMO)
 	$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
@@ -975,6 +1013,7 @@ archclean::
 	rm -f library/*.cmx library/*.[so]
 	rm -f proofs/*.cmx proofs/*.[so]
 	rm -f tactics/*.cmx tactics/*.[so]
+	rm -f interp/*.cmx interp/*.[so]
 	rm -f parsing/*.cmx parsing/*.[so]
 	rm -f pretyping/*.cmx pretyping/*.[so]
 	rm -f toplevel/*.cmx toplevel/*.[so]
@@ -991,6 +1030,7 @@ clean:: archclean
 	rm -f library/*.cm[io]
 	rm -f proofs/*.cm[io]
 	rm -f tactics/*.cm[io]
+	rm -f interp/*.cm[io]
 	rm -f parsing/*.cm[io] parsing/*.ppo
 	rm -f pretyping/*.cm[io]
 	rm -f toplevel/*.cm[io]

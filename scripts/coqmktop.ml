@@ -30,6 +30,7 @@ let lib = split_cmo Tolink.lib
 let kernel = split_cmo Tolink.kernel
 let library = split_cmo Tolink.library
 let pretyping = split_cmo Tolink.pretyping
+let interp = split_cmo Tolink.interp
 let parsing = split_cmo Tolink.parsing
 let proofs = split_cmo Tolink.proofs
 let tactics = split_cmo Tolink.tactics
@@ -37,7 +38,7 @@ let toplevel = split_cmo Tolink.toplevel
 let highparsing = split_cmo Tolink.highparsing
 
 let core_objs = 
-  libobjs @ lib @ kernel @ library @ pretyping @ parsing @ 
+  libobjs @ lib @ kernel @ library @ pretyping @ interp @ parsing @ 
   proofs @ tactics
 
 (* 3. Files only in coqsearchisos (if option -searchisos is used) *)

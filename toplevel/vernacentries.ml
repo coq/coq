@@ -20,17 +20,18 @@ open Term
 open Pfedit
 open Tacmach
 open Proof_trees
-open Astterm
+open Constrintern
 open Prettyp
 open Printer
 open Tacinterp
 open Command
 open Goptions
-(*open Declare*)
 open Libnames
 open Nametab
 open Vernacexpr
 open Decl_kinds
+open Topconstr
+open Pretyping
 
 (* Pcoq hooks *)
 
@@ -39,9 +40,9 @@ type pcoq_hook = {
   solve : int -> unit;
   abort : string -> unit;
   search : searchable -> dir_path list * bool -> unit;
-  print_name : qualid located -> unit;
+  print_name : reference -> unit;
   print_check : Environ.unsafe_judgment -> unit;
-  print_eval : (constr -> constr) -> Environ.env -> Coqast.t -> Environ.unsafe_judgment -> unit;
+  print_eval : (constr -> constr) -> Environ.env -> constr_expr -> Environ.unsafe_judgment -> unit;
   show_goal : int option -> unit
 }
 
@@ -175,14 +176,16 @@ let print_modules () =
   pr_vertical_list pr_dirpath only_loaded
 
 
-let print_module (loc,qid) =
+let print_module r =
+  let (loc,qid) = qualid_of_reference r in
   try
     let mp = Nametab.locate_module qid in
       msgnl (Printmod.print_module true mp)
   with
       Not_found -> msgnl (str"Unknown Module " ++ pr_qualid qid)
 
-let print_modtype (loc,qid) = 
+let print_modtype r = 
+  let (loc,qid) = qualid_of_reference r in
   try
     let kn = Nametab.locate_modtype qid in
       msgnl (Printmod.print_modtype kn)
@@ -211,7 +214,8 @@ let locate_file f =
     msgnl (hov 0 (str"Can't find file" ++ spc () ++ str f ++ spc () ++
 		  str"on loadpath"))
 
-let print_located_qualid (_,qid) =
+let print_located_qualid r =
+  let (loc,qid) = qualid_of_reference r in
   let msg = 
     try
       let ref = Nametab.locate qid in
@@ -274,7 +278,8 @@ let msg_notfound_library loc qid = function
 	(str"Unable to locate library" ++ spc () ++ pr_qualid qid))
   | e -> assert false
 
-let print_located_library (loc,qid) =
+let print_located_library r =
+  let (loc,qid) = qualid_of_reference r in
   try msg_found_library (Library.locate_qualified_library qid)
   with e -> msg_notfound_library loc qid e
 
@@ -286,6 +291,8 @@ let vernac_syntax = Metasyntax.add_syntax_obj
 
 let vernac_grammar = Metasyntax.add_grammar_obj
 
+let vernac_syntax_extension = Metasyntax.add_syntax_extension
+
 let vernac_delimiters = Metasyntax.add_delimiters
 
 let vernac_open_scope = Symbols.open_scope
@@ -293,20 +300,9 @@ let vernac_open_scope = Symbols.open_scope
 let vernac_arguments_scope qid scl =
   Symbols.declare_arguments_scope (global qid) scl
 
-let vernac_infix assoc n inf qid sc =
-  let sp = sp_of_global None (global qid) in
-  let dir = repr_dirpath (dirpath sp) in
-(*
-  if dir <> [] then begin
-    let modname = List.hd dir in
-    let long_inf = (string_of_id modname) ^ "." ^ inf in
-    Metasyntax.add_infix assoc n long_inf qid
-  end;
-*)
-  Metasyntax.add_infix assoc n inf qid sc
+let vernac_infix = Metasyntax.add_infix
 
-let vernac_distfix assoc n inf qid sc =
-  Metasyntax.add_distfix assoc n inf (Astterm.globalize_qualid qid) sc
+let vernac_distfix = Metasyntax.add_distfix
 
 let vernac_notation = Metasyntax.add_notation
 
@@ -392,15 +388,16 @@ let vernac_declare_module id binders_ast mty_ast_o mexpr_ast_o =
   match Lib.is_specification (), mty_ast_o, mexpr_ast_o with
     | _, None, None 
     | false, _, None ->
-	Declaremods.start_module Astmod.interp_modtype
+	Declaremods.start_module Modintern.interp_modtype
 	  id binders_ast mty_ast_o;
 	if_verbose message 
 	  ("Interactive Module "^ string_of_id id ^" started")
 	  
     | true, Some _, None
-    | true, _, Some (Coqast.Node(_,"QUALID",_))
+    | true, _, Some (CMEident _)
     | false, _, Some _ ->
-	Declaremods.declare_module Astmod.interp_modtype Astmod.interp_modexpr
+	Declaremods.declare_module 
+	  Modintern.interp_modtype Modintern.interp_modexpr
 	  id binders_ast mty_ast_o mexpr_ast_o;
 	if_verbose message 
 	  ("Module "^ string_of_id id ^" is defined")
@@ -422,12 +419,12 @@ let vernac_declare_module_type id binders_ast mty_ast_o =
   
   match mty_ast_o with
     | None ->
-	Declaremods.start_modtype Astmod.interp_modtype id binders_ast;
+	Declaremods.start_modtype Modintern.interp_modtype id binders_ast;
 	if_verbose message 
 	  ("Interactive Module Type "^ string_of_id id ^" started")
 	  
     | Some base_mty ->
-	Declaremods.declare_modtype Astmod.interp_modtype 
+	Declaremods.declare_modtype Modintern.interp_modtype 
 	  id binders_ast base_mty;
 	if_verbose message 
 	  ("Module Type "^ string_of_id id ^" is defined")
@@ -446,7 +443,7 @@ let vernac_record struc binders sort nameopt cfs =
   let const = match nameopt with 
     | None -> add_prefix "Build_" (snd struc)
     | Some id -> id in
-  let s = Astterm.interp_sort sort in
+  let s = interp_sort sort in
   Record.definition_structure (struc,binders,cfs,const,s)
 
   (* Sections *)
@@ -480,6 +477,7 @@ let is_obsolete_module (_,qid) =
   | _ -> false
 
 let vernac_require import _ qidl =
+  let qidl = List.map qualid_of_reference qidl in
   try
     match import with
       | None -> List.iter Library.read_library qidl
@@ -496,6 +494,7 @@ let vernac_require import _ qidl =
       raise e
       
 let vernac_import export qidl =
+  let qidl = List.map qualid_of_reference qidl in
   if export then
     List.iter Library.export_library qidl
   else
@@ -517,14 +516,14 @@ let vernac_canonical locqid =
 let cl_of_qualid = function
   | FunClass -> Classops.CL_FUN
   | SortClass -> Classops.CL_SORT
-  | RefClass (loc,qid) -> Class.class_of_ref (Nametab.global (loc, qid))
+  | RefClass r -> Class.class_of_ref (Nametab.global r)
 
-let vernac_coercion stre (loc,qid as locqid) qids qidt =
+let vernac_coercion stre ref qids qidt =
   let target = cl_of_qualid qidt in
   let source = cl_of_qualid qids in
-  let ref = Nametab.global locqid in
-  Class.try_add_new_coercion_with_target ref stre source target;
-  if_verbose message ((string_of_qualid qid) ^ " is now a coercion")
+  let ref' = Nametab.global ref in
+  Class.try_add_new_coercion_with_target ref' stre source target;
+  if_verbose message ((string_of_reference ref) ^ " is now a coercion")
 
 let vernac_identity_coercion stre id qids qidt =
   let target = cl_of_qualid qidt in
@@ -619,8 +618,8 @@ let vernac_hints = Auto.add_hints
 let vernac_syntactic_definition id c = function
   | None -> syntax_definition id c
   | Some n ->
-      let l = list_tabulate (fun _ -> Ast.ope("ISEVAR",[])) n in
-      let c = Ast.ope ("APPLIST",c :: l) in
+      let l = list_tabulate (fun _ -> (CHole (dummy_loc),None)) n in
+      let c = CApp (dummy_loc,c,l) in
       syntax_definition id c
 
 let vernac_declare_implicits locqid = function
@@ -785,7 +784,8 @@ let vernac_print = function
   | PrintHintDbName s -> Auto.print_hint_db_by_name s
   | PrintHintDb -> Auto.print_searchtable ()
 
-let global_loaded_library (loc, qid) =
+let global_loaded_library r =
+  let (loc,qid) = qualid_of_reference r in
   try Nametab.locate_loaded_library qid
   with Not_found -> 
     user_err_loc (loc, "global_loaded_library",
@@ -834,7 +834,7 @@ let vernac_abort = function
       if !pcoq <> None then (out_some !pcoq).abort ""
   | Some id ->
       delete_proof id;
-      let s = string_of_id id in
+      let s = string_of_id (snd id) in
       if_verbose message ("Goal "^s^" aborted");
       if !pcoq <> None then (out_some !pcoq).abort s
 
@@ -1008,12 +1008,13 @@ let interp c = match c with
   | VernacSyntax (whatfor,sel) -> vernac_syntax whatfor sel
   | VernacTacticGrammar al -> Metasyntax.add_tactic_grammar al
   | VernacGrammar (univ,al) -> vernac_grammar univ al
+  | VernacSyntaxExtension (s,l) -> vernac_syntax_extension s l
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
   | VernacOpenScope sc -> vernac_open_scope sc
   | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope qid scl
   | VernacInfix (assoc,n,inf,qid,sc) -> vernac_infix assoc n inf qid sc
   | VernacDistfix (assoc,n,inf,qid,sc) -> vernac_distfix assoc n inf qid sc
-  | VernacNotation (assoc,n,inf,c,pl,sc) -> vernac_notation assoc n inf c pl sc
+  | VernacNotation (inf,c,pl,sc) -> vernac_notation inf c pl sc
 
   (* Gallina *)
   | VernacDefinition (k,id,d,f) -> vernac_definition k id d f

@@ -9,10 +9,20 @@
 (*i $Id$ i*)
 
 (*i*)
-
 open Pp
+open Util
+open Names
 open Ast
 open Coqast
+open Ppextend
+open Topconstr
+open Genarg
+(*i*)
+
+type entry_type = argument_type
+type constr_entry_type = ETConstr | ETIdent | ETReference
+
+val entry_type_of_constr_entry_type : constr_entry_type -> entry_type
 
 type nonterm_prod =
   | ProdList0 of nonterm_prod
@@ -22,16 +32,16 @@ type nonterm_prod =
 
 type prod_item =
   | Term of Token.pattern
-  | NonTerm of nonterm_prod * (string * ast_action_type) option
+  | NonTerm of nonterm_prod * (Names.identifier * constr_entry_type) option
 
 type grammar_rule = {
   gr_name : string; 
   gr_production : prod_item list; 
-  gr_action : Ast.act }
+  gr_action : aconstr }
 
 type grammar_entry = { 
   ge_name : string;
-  ge_type : ast_action_type;
+  ge_type : constr_entry_type;
   gl_assoc : Gramext.g_assoc option;
   gl_rules : grammar_rule list }
 
@@ -40,15 +50,27 @@ type grammar_command = {
   gc_entries : grammar_entry list }
 
 type grammar_associativity = Gramext.g_assoc option
+
+(* Globalisation and type-checking of Grammar actions *)
+type entry_context = (identifier * constr_entry_type) list
+val to_act_check_vars : entry_context -> grammar_action -> aconstr
+val set_ast_to_rawconstr : (entry_context -> constr_expr -> aconstr) -> unit
+
+type syntax_modifier =
+  | SetItemLevel of string * int
+  | SetLevel of int
+  | SetAssoc of Gramext.g_assoc
+  | SetEntryType of string * constr_entry_type
+
 type nonterm =
   | NtShort of string
   | NtQual of string * string
 type grammar_production =
   | VTerm of string
-  | VNonTerm of loc * nonterm * string option
+  | VNonTerm of loc * nonterm * Names.identifier option
 type raw_grammar_rule = string * grammar_production list * grammar_action
 type raw_grammar_entry = 
-  string * ast_action_type * grammar_associativity * raw_grammar_rule list
+  string * constr_entry_type * grammar_associativity * raw_grammar_rule list
 
 val terminal : string -> string * string
 
@@ -56,21 +78,6 @@ val rename_command : string -> string
 
 val subst_grammar_command : 
   Names.substitution -> grammar_command -> grammar_command
-
-(*s Pretty-print. *)
-
-(* Dealing with precedences *)
-
-type precedence = int * int * int
-
-type parenRelation = L | E | Any | Prec of precedence
-
-type ppbox =
-  | PpHB of int
-  | PpHOVB of int
-  | PpHVB of int
-  | PpVB of int
-  | PpTB
 
 (* unparsing objects *)
 
@@ -97,11 +104,7 @@ type 'pat unparsing_hunk =
    highest precedence), and the child's one, follow the given
    relation. *)
 
-type tolerability = (string * precedence) * parenRelation
-
-val tolerable_prec : tolerability option -> (string * precedence) -> bool
-
-val ppcmd_of_box : ppbox -> std_ppcmds -> std_ppcmds
+val tolerable_prec : tolerability option -> precedence -> bool
 
 type 'pat syntax_entry = {
   syn_id : string;
@@ -123,11 +126,11 @@ val subst_syntax_command :
   Names.substitution -> 'pat syntax_command -> 'pat syntax_command
 
 type syntax_rule = string * Coqast.t * Coqast.t unparsing_hunk list
-type syntax_entry_ast = precedence * syntax_rule list
+type raw_syntax_entry = precedence * syntax_rule list
 
 val interp_grammar_command :
-  string -> (string * string -> entry_type) -> 
+  string -> (string * string -> Genarg.argument_type) -> 
       raw_grammar_entry list -> grammar_command
 
 val interp_syntax_entry :
-  string -> syntax_entry_ast list -> Ast.astpat syntax_command
+  string -> raw_syntax_entry list -> Ast.astpat syntax_command

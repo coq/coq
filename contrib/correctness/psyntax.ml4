@@ -13,11 +13,14 @@
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
 open Options
+open Util
 open Names
 open Nameops
 open Vernacentries
 open Reduction
 open Term
+open Libnames
+open Topconstr
 
 open Prename
 open Pmisc
@@ -92,17 +95,23 @@ module Programs =
 open Programs
 
 let ast_of_int n =
-  G_zsyntax.z_of_string true n Ast.dummy_loc
+  G_zsyntax.z_of_string true n dummy_loc
 
 let constr_of_int n =
-  Astterm.interp_constr Evd.empty (Global.env ()) (ast_of_int n)
+  Constrintern.interp_constr Evd.empty (Global.env ()) (ast_of_int n)
 
-let ast_constant loc s = <:ast< (QUALID ($VAR $s)) >>
+open Util
+open Coqast
+
+let mk_id loc id = mkRefC (Ident (loc, id))
+let mk_ref loc s = mk_id loc (id_of_string s)
+let mk_appl loc1 loc2 f args =
+  CApp (join_loc loc1 loc2, mk_ref loc1 f, List.map (fun a -> a,None) args)
 
 let conj_assert {a_name=n;a_value=a} {a_value=b} = 
-  let loc = Ast.loc a in
-  let et = ast_constant loc "and" in
-  { a_value = <:ast< (APPLIST $et $a $b) >>; a_name = n }
+  let loc1 = constr_loc a in
+  let loc2 = constr_loc a in
+  { a_value = mk_appl loc1 loc2 "and" [a;b]; a_name = n }
 
 let conj = function
     None,None     -> None
@@ -137,28 +146,26 @@ let bool_not loc a =
   let d = SApp ( [Variable connective_not ], [a]) in
   w d
 
-let ast_zwf_zero loc =
-  let zwf = ast_constant loc "Zwf" and zero = ast_constant loc "ZERO" in
-    <:ast< (APPLIST $zwf $zero) >>
+let ast_zwf_zero loc = mk_appl loc loc "Zwf" [mk_ref loc "ZERO"]
 
 (* program -> Coq AST *)
 
-let bdize c = 
+let bdize c =
   let env = 
     Global.env_of_context (Pcicenv.cci_sign_of Prename.empty_ren Penv.empty)
   in
-  Termast.ast_of_constr true env c
+  Constrextern.extern_constr true env c
 
 let rec coqast_of_program loc = function
-  | Variable id -> let s = string_of_id id in <:ast< ($VAR $s) >>
-  | Acc id -> let s = string_of_id id in <:ast< ($VAR $s) >>
+  | Variable id -> mk_id loc id
+  | Acc id -> mk_id loc id
   | Apply (f,l) -> 
       let f = coqast_of_program f.loc f.desc in
       let args = List.map 
-		   (function Term t -> coqast_of_program t.loc t.desc
+		   (function Term t -> (coqast_of_program t.loc t.desc,None)
 		      | _ -> invalid_arg "coqast_of_program") l
       in
-      <:ast< (APPLIST $f ($LIST $args)) >>
+      CApp (dummy_loc, f, args)
   | Expression c -> bdize c
   | _ -> invalid_arg "coqast_of_program"
 
@@ -174,9 +181,8 @@ let rec coqast_of_program loc = function
  *)
 
 let ast_plus_un loc ast =
-  let zplus = ast_constant loc "Zplus" in
   let un = ast_of_int "1" in
-  <:ast< (APPLIST $zplus $ast $un) >>
+  mk_appl loc loc "Zplus" [ast;un]
 
 let make_ast_for loc i v1 v2 inv block =
   let f = for_name() in
@@ -197,22 +203,20 @@ let make_ast_for loc i v1 v2 inv block =
       without_effect loc (Seq (block @ [Statement f_succ_i]))
     in
     let inv' = 
-      let zle = ast_constant loc "Zle" in
-      let i_le_sv2 = <:ast< (APPLIST $zle ($VAR $i) $succ_v2) >> in
+      let i_le_sv2 = mk_appl loc loc "Zle" [mk_ref loc i; succ_v2] in
       conj_assert {a_value=i_le_sv2;a_name=inv.a_name} inv
     in
     { desc = If(test,br_t,br_f); loc = loc; 
       pre = [pre_of_assert false inv']; post = Some post; info = () } 
   in
   let bl = 
-    let typez = ast_constant loc "Z" in
+    let typez = mk_ref loc "Z" in
     [(id_of_string i, BindType (TypePure typez))] 
   in
   let fv1 = without_effect loc (Apply (var_f, [Term v1])) in
-  let v = TypePure (ast_constant loc "unit") in
+  let v = TypePure (mk_ref loc "unit") in
   let var = 
-    let zminus = ast_constant loc "Zminus" in
-    let a = <:ast< (APPLIST $zminus $succ_v2 ($VAR $i)) >> in
+    let a = mk_appl loc loc "Zminus" [succ_v2;mk_ref loc i] in
     (a, ast_zwf_zero loc)
   in
   Let (f, without_effect loc (LetRec (f,bl,v,var,e1)), fv1)

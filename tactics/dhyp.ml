@@ -128,10 +128,10 @@ open Tacticals
 open Libobject
 open Library
 open Pattern
-open Coqast
 open Ast
 open Pcoq
 open Tacexpr
+open Libnames
 
 (* two patterns - one for the type, and one for the type of the type *)
 type destructor_pattern = {
@@ -215,7 +215,7 @@ let add_destructor_hint na loc pat pri code =
 	  errorlabstrm "add_destructor_hint"
           (str "The tactic should be a function of the hypothesis name") end
   in
-  let (_,pat) = Astterm.interp_constrpattern Evd.empty (Global.env()) pat in
+  let (_,pat) = Constrintern.interp_constrpattern Evd.empty (Global.env()) pat in
   let pat = match loc with
     | HypLocation b ->
 	HypLocation
@@ -251,7 +251,7 @@ let applyDestructor cls discard dd gls =
     with PatternMatchingFailure -> error "No match" in
   let tac = match cls, dd.d_code with
     | Some id, (Some x, tac) -> 
-	let arg = Reference (RIdent (dummy_loc,id)) in
+	let arg = Reference (Ident (dummy_loc,id)) in
         TacLetIn ([(dummy_loc, x), None, arg], tac)
     | None, (None, tac) -> tac
     | _, (Some _,_) -> error "Destructor expects an hypothesis"

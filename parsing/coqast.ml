@@ -9,11 +9,10 @@
 (* $Id$ *)
 
 (*i*)
+open Util
 open Names
 open Libnames
 (*i*)
-
-type loc = int * int
 
 type t =
   | Node of loc * string * t list
@@ -122,86 +121,3 @@ let rec subst_ast subst ast = match ast with
   | Str _
   | Id _
   | Dynamic _ -> ast
-
-open Util
-open Rawterm
-open Term
-
-type scope_name = string
-
-type reference_expr = 
-  | RQualid of qualid located
-  | RIdent of identifier located
-
-type explicitation = int
-
-type cases_pattern =
-  | CPatAlias of loc * cases_pattern * identifier
-  | CPatCstr of loc * reference_expr * cases_pattern list
-  | CPatAtom of loc * reference_expr option
-  | CPatNumeral of loc * Bignat.bigint
-  | CPatDelimiters of loc * scope_name * cases_pattern
-
-type ordered_case_style = CIf | CLet | CMatch | CCase
-
-type constr_ast =
-  | CRef of reference_expr
-  | CFix of loc * identifier located * fixpoint_expr list
-  | CCoFix of loc * identifier located * cofixpoint_expr list
-  | CArrow of loc * constr_ast * constr_ast
-  | CProdN of loc * (name located list * constr_ast) list * constr_ast
-  | CLambdaN of loc * (name located list * constr_ast) list * constr_ast
-  | CLetIn of loc * identifier located * constr_ast * constr_ast
-  | CAppExpl of loc * reference_expr * constr_ast list
-  | CApp of loc * constr_ast * (constr_ast * explicitation option) list
-  | CCases of loc * case_style * constr_ast option * constr_ast list *
-      (loc * cases_pattern list * constr_ast) list
-  | COrderedCase of loc * ordered_case_style * constr_ast option * constr_ast * constr_ast list
-  | CHole of loc
-  | CMeta of loc * int
-  | CSort of loc * rawsort
-  | CCast of loc * constr_ast * constr_ast
-  | CNotation of loc * string * constr_ast list
-  | CNumeral of loc * Bignat.bigint
-  | CDelimiters of loc * scope_name * constr_ast
-  | CDynamic of loc * Dyn.t
-
-and local_binder = name located list * constr_ast 
-
-and fixpoint_expr = identifier * local_binder list * constr_ast * constr_ast
-
-and cofixpoint_expr = identifier * constr_ast * constr_ast
-
-let constr_loc = function
-  | CRef (RIdent (loc,_)) -> loc
-  | CRef (RQualid (loc,_)) -> loc
-  | CFix (loc,_,_) -> loc
-  | CCoFix (loc,_,_) -> loc
-  | CArrow (loc,_,_) -> loc
-  | CProdN (loc,_,_) -> loc
-  | CLambdaN (loc,_,_) -> loc
-  | CLetIn (loc,_,_,_) -> loc
-  | CAppExpl (loc,_,_) -> loc
-  | CApp (loc,_,_) -> loc
-  | CCases (loc,_,_,_,_) -> loc
-  | COrderedCase (loc,_,_,_,_) -> loc
-  | CHole loc -> loc
-  | CMeta (loc,_) -> loc
-  | CSort (loc,_) -> loc
-  | CCast (loc,_,_) -> loc
-  | CNotation (loc,_,_) -> loc
-  | CNumeral (loc,_) -> loc
-  | CDelimiters (loc,_,_) -> loc
-  | CDynamic _ -> dummy_loc
-
-let cases_pattern_loc = function
-  | CPatAlias (loc,_,_) -> loc
-  | CPatCstr (loc,_,_) -> loc
-  | CPatAtom (loc,_) -> loc
-  | CPatNumeral (loc,_) -> loc
-  | CPatDelimiters (loc,_,_) -> loc
-
-let replace_vars_constr_ast l t =
-  if l = [] then t else failwith "replace_constr_ast: TODO"
-
-let occur_var_constr_ast id t = Pp.warning "occur_var_constr_ast:TODO"; true

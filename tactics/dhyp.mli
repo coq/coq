@@ -27,4 +27,4 @@ val h_auto_tdb : int option -> tactic
 
 val add_destructor_hint :
   identifier -> (bool,unit) Tacexpr.location ->
-    Genarg.constr_ast -> int -> Tacexpr.raw_tactic_expr -> unit
+    Topconstr.constr_expr -> int -> Tacexpr.raw_tactic_expr -> unit

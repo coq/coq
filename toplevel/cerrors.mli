@@ -10,11 +10,12 @@
 
 (*i*)
 open Pp
+open Util
 (*i*)
 
 (* Error report. *)
 
-val print_loc : Coqast.loc -> std_ppcmds
+val print_loc : loc -> std_ppcmds
 
 val explain_exn : exn -> std_ppcmds
 

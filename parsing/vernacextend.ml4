@@ -42,7 +42,8 @@ let rec make_rawwit loc = function
   | StringArgType -> <:expr< Genarg.rawwit_string >>
   | PreIdentArgType -> <:expr< Genarg.rawwit_pre_ident >>
   | IdentArgType -> <:expr< Genarg.rawwit_ident >>
-  | QualidArgType -> <:expr< Genarg.rawwit_qualid >>
+  | RefArgType -> <:expr< Genarg.rawwit_ref >>
+  | SortArgType -> <:expr< Genarg.rawwit_sort >>
   | ConstrArgType -> <:expr< Genarg.rawwit_constr >>
   | ConstrMayEvalArgType -> <:expr< Genarg.rawwit_constr_may_eval >>
   | QuantHypArgType -> <:expr< Genarg.rawwit_quant_hyp >>
@@ -147,9 +148,7 @@ let rec interp_entry_name loc s =
 	| None -> None, <:expr< $lid:s$ >> in
     let t =
       match t with
-	| Some (GenAstType t) -> t
-	| Some _ -> 
-	    failwith "Only entries of generic type can be used in extension"
+	| Some t -> t
 	| None ->
 (*	    Pp.warning_with Pp_control.err_ft
             ("Unknown primitive grammar entry: "^s);*)

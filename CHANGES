@@ -3,6 +3,13 @@ Changes from V7.3.1 to ????
 
 TODO: unification 2eme ordre avec NewDestruct
 
+Grammar extension
+
+- In old syntax, the only predefined non-terminal entries are ident,
+  global, constr and pattern (e.g. nvar, numarg disappears); the only
+  allowed grammar types are constr and pattern; ast and ast list are no
+  longer supported.
+
 Symbolic notations
 
 - Introduction of a notion of scope gathering notations in a consistent set;

@@ -52,25 +52,18 @@ type hole_kind =
   | InternalHole
   | TomatchTypeParameter of inductive * int
 
-type 'ctxt reference =
-  | RConst of constant * 'ctxt
-  | RInd of inductive * 'ctxt
-  | RConstruct of constructor * 'ctxt
-  | RVar of identifier
-  | REVar of int * 'ctxt
-
 type rawconstr = 
-  | RRef of loc * global_reference
-  | RVar of loc * identifier
+  | RRef of (loc * global_reference)
+  | RVar of (loc * identifier)
   | REvar of loc * existential_key
   | RMeta of loc * int
   | RApp of loc * rawconstr * rawconstr list
   | RLambda of loc * name * rawconstr * rawconstr
   | RProd of loc * name * rawconstr * rawconstr
   | RLetIn of loc * name * rawconstr * rawconstr
-  | RCases of loc * Term.case_style * rawconstr option * rawconstr list * 
+  | RCases of loc * rawconstr option * rawconstr list * 
       (loc * identifier list * cases_pattern list * rawconstr) list
-  | ROldCase of loc * bool * rawconstr option * rawconstr * 
+  | ROrderedCase of loc * case_style * rawconstr option * rawconstr * 
       rawconstr array
   | RRec of loc * fix_kind * identifier array * 
       rawconstr array * rawconstr array
@@ -96,14 +89,54 @@ let map_rawconstr f = function
   | RLambda (loc,na,ty,c) -> RLambda (loc,na,f ty,f c)
   | RProd (loc,na,ty,c) -> RProd (loc,na,f ty,f c)
   | RLetIn (loc,na,b,c) -> RLetIn (loc,na,f b,f c)
-  | RCases (loc,prinfo,tyopt,tml,pl) ->
-      RCases (loc,prinfo,option_app f tyopt,List.map f tml,
+  | RCases (loc,tyopt,tml,pl) ->
+      RCases (loc,option_app f tyopt,List.map f tml,
         List.map (fun (loc,idl,p,c) -> (loc,idl,p,f c)) pl)
-  | ROldCase (loc,b,tyopt,tm,bv) ->
-      ROldCase (loc,b,option_app f tyopt,f tm, Array.map f bv)
+  | ROrderedCase (loc,b,tyopt,tm,bv) ->
+      ROrderedCase (loc,b,option_app f tyopt,f tm, Array.map f bv)
   | RRec (loc,fk,idl,tyl,bv) -> RRec (loc,fk,idl,Array.map f tyl,Array.map f bv)
   | RCast (loc,c,t) -> RCast (loc,f c,f t)
   | (RSort _ | RHole _ | RRef _ | REvar _ | RMeta _ | RDynamic _) as x -> x
+
+(*
+let name_app f e = function
+  | Name id -> let (id, e) = f id e in (Name id, e)
+  | Anonymous -> Anonymous, e
+
+let fold_ident g idl e =
+  let (idl,e) =
+    Array.fold_right
+      (fun id (idl,e) -> let id,e = g id e in (id::idl,e)) idl ([],e)
+  in (Array.of_list idl,e)
+
+let map_rawconstr_with_binders_loc loc g f e = function
+  | RVar (_,id) -> RVar (loc,id)
+  | RApp (_,a,args) -> RApp (loc,f e a, List.map (f e) args)
+  | RLambda (_,na,ty,c) ->
+      let na,e = name_app g e na in RLambda (loc,na,f e ty,f e c)
+  | RProd (_,na,ty,c) ->
+      let na,e = name_app g e na in RProd (loc,na,f e ty,f e c)
+  | RLetIn (_,na,b,c) ->
+      let na,e = name_app g e na in RLetIn (loc,na,f e b,f e c)
+  | RCases (_,tyopt,tml,pl) ->
+      (* We don't modify pattern variable since we don't traverse patterns *)
+      let g' id e = snd (g id e) in
+      let h (_,idl,p,c) = (loc,idl,p,f (List.fold_right g' idl e) c) in
+      RCases
+	(loc,option_app (f e) tyopt,List.map (f e) tml, List.map h pl)
+  | ROrderedCase (_,b,tyopt,tm,bv) ->
+      ROrderedCase (loc,b,option_app (f e) tyopt,f e tm,Array.map (f e) bv)
+  | RRec (_,fk,idl,tyl,bv) ->
+      let idl',e' = fold_ident g idl e in
+      RRec (loc,fk,idl',Array.map (f e) tyl,Array.map (f e') bv)
+  | RCast (_,c,t) -> RCast (loc,f e c,f e t)
+  | RSort (_,x) -> RSort (loc,x)
+  | RHole (_,x)  -> RHole (loc,x)
+  | RRef (_,x) -> RRef (loc,x)
+  | REvar (_,x) -> REvar (loc,x)
+  | RMeta (_,x) -> RMeta (loc,x)
+  | RDynamic (_,x) -> RDynamic (loc,x)
+*)
 
 let rec subst_pat subst pat = 
   match pat with
@@ -114,6 +147,7 @@ let rec subst_pat subst pat =
 	if kn' == kn && cpl' == cpl then pat else
 	  PatCstr (loc,((kn',i),j),cpl',n)
 	
+(*
 let rec subst_raw subst raw = 
   match raw with
   | RRef (loc,ref) -> 
@@ -146,7 +180,7 @@ let rec subst_raw subst raw =
 	if r1' == r1 && r2' == r2 then raw else
 	  RLetIn (loc,n,r1',r2')
 
-  | RCases (loc,cs,ro,rl,branches) -> 
+  | RCases (loc,ro,rl,branches) -> 
       let ro' = option_smartmap (subst_raw subst) ro 
       and rl' = list_smartmap (subst_raw subst) rl
       and branches' = list_smartmap 
@@ -158,14 +192,14 @@ let rec subst_raw subst raw =
 			branches
       in
 	if ro' == ro && rl' == rl && branches' == branches then raw else
-	  RCases (loc,cs,ro',rl',branches')
+	  RCases (loc,ro',rl',branches')
 
-  | ROldCase (loc,b,ro,r,ra) -> 
+  | ROrderedCase (loc,b,ro,r,ra) -> 
       let ro' = option_smartmap (subst_raw subst) ro
       and r' = subst_raw subst r 
       and ra' = array_smartmap (subst_raw subst) ra in
 	if ro' == ro && r' == r && ra' == ra then raw else
-	  ROldCase (loc,b,ro',r',ra')
+	  ROrderedCase (loc,b,ro',r',ra')
 
   | RRec (loc,fix,ida,ra1,ra2) -> 
       let ra1' = array_smartmap (subst_raw subst) ra1
@@ -188,8 +222,7 @@ let rec subst_raw subst raw =
 	  RCast (loc,r1',r2')
 
   | RDynamic _ -> raw
-
-let dummy_loc = (0,0)
+*)
 
 let loc_of_rawconstr = function
   | RRef (loc,_) -> loc
@@ -200,15 +233,13 @@ let loc_of_rawconstr = function
   | RLambda (loc,_,_,_) -> loc
   | RProd (loc,_,_,_) -> loc
   | RLetIn (loc,_,_,_) -> loc
-  | RCases (loc,_,_,_,_) -> loc
-  | ROldCase (loc,_,_,_,_) -> loc
+  | RCases (loc,_,_,_) -> loc
+  | ROrderedCase (loc,_,_,_,_) -> loc
   | RRec (loc,_,_,_,_) -> loc
   | RSort (loc,_) -> loc
   | RHole (loc,_) -> loc
   | RCast (loc,_,_) -> loc
   | RDynamic (loc,_) -> loc
-
-let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
 
 type 'a raw_red_flag = {
   rBeta : bool;
@@ -229,10 +260,10 @@ type ('a,'b) red_expr_gen =
   | Pattern of (int list * 'a) list
   | ExtraRedExpr of string * 'a
 
-type 'a or_metanum = AN of loc * 'a | MetaNum of loc * int
+type 'a or_metanum = AN of 'a | MetaNum of int located
 
 type 'a may_eval =
   | ConstrTerm of 'a
-  | ConstrEval of ('a, qualid or_metanum) red_expr_gen * 'a
+  | ConstrEval of ('a, reference or_metanum) red_expr_gen * 'a
   | ConstrContext of (loc * identifier) * 'a
   | ConstrTypeOf of 'a

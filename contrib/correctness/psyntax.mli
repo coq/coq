@@ -13,13 +13,14 @@
 open Pcoq
 open Ptype
 open Past
+open Topconstr
 
 (* Grammar for the programs and the tactic Correctness *)
 
 module Programs :
   sig
     val program : program Gram.Entry.e
-    val type_v  : Coqast.t ml_type_v Gram.Entry.e
-    val type_c  : Coqast.t ml_type_c Gram.Entry.e
+    val type_v  : constr_expr ml_type_v Gram.Entry.e
+    val type_c  : constr_expr ml_type_c Gram.Entry.e
   end
 

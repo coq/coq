@@ -10,7 +10,6 @@ open Translate
 open Term
 open Reduction
 open Clenv
-open Astterm
 open Typing
 open Inductive
 open Vernacinterp

@@ -1,12 +1,26 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(* $Id$ *)
+
+(*i*)
 open Util
 open Pp
+open Bignat
 open Names
 open Nametab
 open Summary
 open Rawterm
-open Bignat
+open Topconstr
+open Ppextend
+(*i*)
 
-(* A scope is a set of notations; it includes
+(*s A scope is a set of notations; it includes
 
   - a set of ML interpreters/parsers for positive (e.g. 0, 1, 15, ...) and
     negative numbers (e.g. -0, -2, -13, ...). These interpreters may
@@ -21,19 +35,13 @@ open Bignat
     expression, set this scope to be the current scope
 *)
 
-let pr_bigint = function
-  | POS n -> str (Bignat.to_string n)
-  | NEG n -> str "-" ++ str (Bignat.to_string n)
-
 (**********************************************************************)
 (* Scope of symbols *)
 
-type level = Extend.precedence * Extend.precedence list
-type notation = string
-type scope_name = string
+type level = precedence * precedence list
 type delimiters = string * string
 type scope = {
-  notations: (rawconstr * level) Stringmap.t;
+  notations: (aconstr * level) Stringmap.t;
   delimiters: delimiters option
 }
 type scopes = scope_name list
@@ -98,18 +106,12 @@ let declare_delimiters scope dlm =
 
 (* The mapping between notations and production *)
 
-let declare_notation prec nt c scope =
+let declare_notation nt scope (c,prec as info) =
   let sc = find_scope scope in
   if Stringmap.mem nt sc.notations && Options.is_verbose () then
     warning ("Notation "^nt^" is already used in scope "^scope);
-  let sc = { sc with notations = Stringmap.add nt (c,prec) sc.notations } in
+  let sc = { sc with notations = Stringmap.add nt info sc.notations } in
   scope_map := Stringmap.add scope sc !scope_map
-
-open Coqast
-
-let rec subst_meta_rawconstr subst = function
-  | RMeta (_,n) -> List.nth subst (n-1)
-  | t -> map_rawconstr (subst_meta_rawconstr subst) t
 
 let rec find_interpretation f = function
   | scope::scopes ->
@@ -117,10 +119,8 @@ let rec find_interpretation f = function
        with Not_found -> find_interpretation f scopes)
   | [] -> raise Not_found
 
-let rec interp_notation ntn scopes args =
-  let f scope =
-    let (c,_) = Stringmap.find ntn scope.notations in
-    subst_meta_rawconstr args c in
+let rec interp_notation ntn scopes =
+  let f scope = fst (Stringmap.find ntn scope.notations) in
   try find_interpretation f scopes
   with Not_found -> anomaly ("Unknown interpretation for notation "^ntn)
 
@@ -318,3 +318,14 @@ let _ =
       unfreeze_function = unfreeze;
       init_function = init;
       survive_section = false }
+
+
+let printing_rules = 
+  ref (Stringmap.empty : (unparsing list * precedence) Stringmap.t)
+
+let declare_printing_rule ntn unpl =
+  printing_rules := Stringmap.add ntn unpl !printing_rules
+
+let find_notation_printing_rule ntn =
+  try Stringmap.find ntn !printing_rules
+  with Not_found -> anomaly ("No printing rule found for "^ntn)

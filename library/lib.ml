@@ -471,12 +471,12 @@ let reset_to sp =
   let (after,_,_) = split_lib spf in
   recache_context after
 
-let reset_name id =
+let reset_name (loc,id) =
   let (sp,_) = 
     try
       find_entry_p (fun (sp,_) -> let (_,spi) = repr_path (fst sp) in id = spi)
     with Not_found ->
-      error (string_of_id id ^ ": no such entry")
+      user_err_loc (loc,"reset_name",pr_id id ++ str ": no such entry")
   in
   reset_to sp
 

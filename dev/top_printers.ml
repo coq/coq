@@ -277,7 +277,7 @@ let _ =
        | [VARG_CONSTR c] -> 
 	   (fun () ->
               let (evmap,sign) = Command.get_current_context () in
-  	      constr_display (Astterm.interp_constr evmap sign c))
+  	      constr_display (Constrintern.interp_constr evmap sign c))
        | _ -> bad_vernac_args "PrintConstr")
 
 let _ =
@@ -286,7 +286,7 @@ let _ =
        | [VARG_CONSTR c] -> 
 	   (fun () ->
               let (evmap,sign) = Command.get_current_context () in
-  	      print_pure_constr (Astterm.interp_constr evmap sign c))
+  	      print_pure_constr (Constrintern.interp_constr evmap sign c))
        | _ -> bad_vernac_args "PrintPureConstr")
 *)
 

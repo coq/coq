@@ -8,12 +8,16 @@
 
 (*i $Id$ i*)
 
+open Util
 open Names
-open Tacexpr
+open Rawterm
 open Ast
 open Genarg
+open Topconstr
 open Tacexpr
 open Vernacexpr
+open Libnames
+open Extend
 
 (* The lexer and parser of Coq. *)
 
@@ -24,11 +28,11 @@ module Gram : Grammar.S with type te = Token.t
 type grammar_object
 type typed_entry
 
-val type_of_typed_entry : typed_entry -> entry_type
+val type_of_typed_entry : typed_entry -> Extend.entry_type
 val object_of_typed_entry : typed_entry -> grammar_object Gram.Entry.e
 
 val grammar_extend :
-  typed_entry -> Gramext.position option ->
+  'a Gram.Entry.e -> Gramext.position option ->
     (string option * Gramext.g_assoc option *
      (Token.t Gramext.g_symbol list * Gramext.g_action) list) list
     -> unit
@@ -40,12 +44,6 @@ val remove_grammars : int -> unit
 val parse_string : 'a Gram.Entry.e -> string -> 'a
 val eoi_entry : 'a Gram.Entry.e -> 'a Gram.Entry.e
 val map_entry : ('a -> 'b) -> 'a Gram.Entry.e -> 'b Gram.Entry.e
-
-(*
-val slam_ast : Coqast.loc -> Coqast.t -> Coqast.t -> Coqast.t
-val abstract_binders_ast :
-  Coqast.loc -> string -> Coqast.t -> Coqast.t -> Coqast.t
-*)
 
 (* Entry types *)
 
@@ -67,35 +65,30 @@ val force_entry_type :
   string * gram_universe -> string -> entry_type -> typed_entry
 
 val create_constr_entry :
-  string * gram_universe -> string -> Coqast.t Gram.Entry.e
-val create_generic_entry : string -> ('a, constr_ast,raw_tactic_expr) abstract_argument_type -> 'a Gram.Entry.e
+  string * gram_universe -> string -> constr_expr Gram.Entry.e
+val create_generic_entry : string -> ('a, constr_expr,raw_tactic_expr) abstract_argument_type -> 'a Gram.Entry.e
 val get_generic_entry : string -> grammar_object Gram.Entry.e
 val get_generic_entry_type : string * gram_universe -> string -> Genarg.argument_type
 
 type parser_type =
-  | AstListParser
-  | AstParser
   | ConstrParser
   | CasesPatternParser
-  | TacticParser
-  | VernacParser
 
-val entry_type_from_name : string -> entry_type
 val entry_type_of_parser : parser_type -> entry_type option
 val parser_type_from_name : string -> parser_type
 
-(* Quotations *)
-val define_quotation : bool -> string -> (Coqast.t Gram.Entry.e) -> unit
-val set_globalizer : (typed_ast -> typed_ast) -> unit
+(* Quotations in ast parser *)
+val define_ast_quotation : bool -> string -> (Coqast.t Gram.Entry.e) -> unit
+val set_globalizer : (constr_expr -> Coqast.t) -> unit
 
 (* The default parser for actions in grammar rules *)
 
-val default_action_parser : typed_ast Gram.Entry.e
+val default_action_parser : dynamic_grammar Gram.Entry.e
 val set_default_action_parser : parser_type -> unit
 
 (* The main entry: reads an optional vernac command *)
 
-val main_entry : (Coqast.loc * vernac_expr) option Gram.Entry.e
+val main_entry : (loc * vernac_expr) option Gram.Entry.e
 
 (* Initial state of the grammar *)
 
@@ -106,64 +99,63 @@ module Prim :
     open Libnames
     val preident : string Gram.Entry.e
     val ident : identifier Gram.Entry.e
-    val rawident : identifier located Gram.Entry.e
+    val name : name located Gram.Entry.e
+    val identref : identifier located Gram.Entry.e
+    val base_ident : identifier Gram.Entry.e
     val natural : int Gram.Entry.e
     val integer : int Gram.Entry.e
     val string : string Gram.Entry.e
     val qualid : qualid located Gram.Entry.e
-    val reference : Coqast.reference_expr Gram.Entry.e
+    val reference : reference Gram.Entry.e
     val dirpath : dir_path Gram.Entry.e
     val astpat: typed_ast Gram.Entry.e
     val ast : Coqast.t Gram.Entry.e
     val astlist : Coqast.t list Gram.Entry.e
     val ast_eoi : Coqast.t Gram.Entry.e
-    val astact : Coqast.t Gram.Entry.e
-    val metaident : Coqast.t Gram.Entry.e
-    val var : Coqast.t Gram.Entry.e
+    val var : identifier Gram.Entry.e
   end
 
 module Constr :
   sig
-    val constr : Coqast.t Gram.Entry.e
-    val constr0 : Coqast.t Gram.Entry.e
-    val constr1 : Coqast.t Gram.Entry.e
-    val constr2 : Coqast.t Gram.Entry.e
-    val constr3 : Coqast.t Gram.Entry.e
-    val lassoc_constr4 : Coqast.t Gram.Entry.e
-    val constr5 : Coqast.t Gram.Entry.e
-    val constr6 : Coqast.t Gram.Entry.e
-    val constr7 : Coqast.t Gram.Entry.e
-    val constr8 : Coqast.t Gram.Entry.e
-    val constr9 : Coqast.t Gram.Entry.e
-    val constr91 : Coqast.t Gram.Entry.e
-    val constr10 : Coqast.t Gram.Entry.e
-    val constr_eoi : constr_ast Gram.Entry.e
-    val lconstr : Coqast.t Gram.Entry.e
-    val ident : Coqast.t Gram.Entry.e
-    val qualid : Coqast.t Gram.Entry.e
-    val global : Coqast.t Gram.Entry.e
-    val ne_ident_comma_list : Coqast.t list Gram.Entry.e
-    val ne_constr_list : Coqast.t list Gram.Entry.e
-    val sort : Coqast.t Gram.Entry.e
-    val pattern : Coqast.t Gram.Entry.e
-    val constr_pattern : Coqast.t Gram.Entry.e
-    val ne_binders_list : Coqast.t list Gram.Entry.e
-    val numarg : Coqast.t Gram.Entry.e
+    val constr : constr_expr Gram.Entry.e
+    val constr0 : constr_expr Gram.Entry.e
+    val constr1 : constr_expr Gram.Entry.e
+    val constr2 : constr_expr Gram.Entry.e
+    val constr3 : constr_expr Gram.Entry.e
+    val lassoc_constr4 : constr_expr Gram.Entry.e
+    val constr5 : constr_expr Gram.Entry.e
+    val constr6 : constr_expr Gram.Entry.e
+    val constr7 : constr_expr Gram.Entry.e
+    val constr8 : constr_expr Gram.Entry.e
+    val constr9 : constr_expr Gram.Entry.e
+    val constr91 : constr_expr Gram.Entry.e
+    val constr10 : constr_expr Gram.Entry.e
+    val constr_eoi : constr_expr Gram.Entry.e
+    val lconstr : constr_expr Gram.Entry.e
+    val ident : identifier Gram.Entry.e
+    val global : reference Gram.Entry.e
+    val ne_name_comma_list : name located list Gram.Entry.e
+    val ne_constr_list : constr_expr list Gram.Entry.e
+    val sort : rawsort Gram.Entry.e
+    val pattern : cases_pattern_expr Gram.Entry.e
+    val constr_pattern : constr_expr Gram.Entry.e
+(*
+    val ne_binders_list : local_binder list Gram.Entry.e
+*)
   end
 
 module Module : 
   sig
-    val ne_binders_list : Coqast.t list Gram.Entry.e
-    val module_expr : Coqast.t Gram.Entry.e
-    val module_type : Coqast.t Gram.Entry.e
+    val module_expr : module_ast Gram.Entry.e
+    val module_type : module_type_ast Gram.Entry.e
   end
 
 module Tactic :
   sig
     open Rawterm
-    val castedopenconstr : constr_ast Gram.Entry.e
-    val constr_with_bindings : constr_ast with_bindings Gram.Entry.e
-    val constrarg : constr_ast may_eval Gram.Entry.e
+    val castedopenconstr : constr_expr Gram.Entry.e
+    val constr_with_bindings : constr_expr with_bindings Gram.Entry.e
+    val constrarg : constr_expr may_eval Gram.Entry.e
     val quantified_hypothesis : quantified_hypothesis Gram.Entry.e
     val int_or_var : int or_var Gram.Entry.e
     val red_expr : raw_red_expr Gram.Entry.e

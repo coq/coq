@@ -82,8 +82,8 @@ val type_case_branches_with_names :
   env -> inductive * constr list -> unsafe_judgment -> constr ->
     types array * types
 val make_case_info :
-  env -> inductive -> case_style option -> pattern_source array -> case_info
-val make_default_case_info : env -> inductive -> case_info
+  env -> inductive -> case_style -> pattern_source array -> case_info
+val make_default_case_info : env -> case_style -> inductive -> case_info
 
 (********************)
 val control_only_guard : env -> types -> unit

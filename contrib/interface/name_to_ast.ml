@@ -20,6 +20,7 @@ open Declare;;
 open Nametab
 open Vernacexpr;;
 open Decl_kinds;;
+open Constrextern;;
 
 (* This function converts the parameter binders of an inductive definition,
    in particular you have to be careful to handle each element in the
@@ -28,7 +29,7 @@ open Decl_kinds;;
 let convert_env =
     let convert_binder env (na, _, c) =
       match na with 
-       | Name id -> (id, ast_of_constr true env c)
+       | Name id -> (id, extern_constr true env c)
        | Anonymous -> failwith "anomaly: Anonymous variables in inductives" in
     let rec cvrec env = function
        [] -> []
@@ -102,7 +103,7 @@ let convert_constructors envpar names types =
     array_map2 
       (fun n t -> 
 	let coercion_flag = false (* arbitrary *) in
-	(coercion_flag, (n, ast_of_constr true envpar t)))
+	(coercion_flag, (n, extern_constr true envpar t)))
       names types in
   Array.to_list array_idC;;
   
@@ -116,7 +117,7 @@ let convert_one_inductive sp tyi =
   let sp = sp_of_global None (IndRef (sp, tyi)) in
   (basename sp,
    convert_env(List.rev params),
-   (ast_of_constr true envpar arity),
+   (extern_constr true envpar arity),
    convert_constructors envpar cstrnames cstrtypes);;
 
 (* This function converts a Mutual inductive definition to a Coqast.t.
@@ -132,7 +133,7 @@ let mutual_to_ast_list sp mib =
   :: (implicit_args_to_ast_list sp mipv);;
 
 let constr_to_ast v = 
-  ast_of_constr true (Global.env()) v;;
+  extern_constr true (Global.env()) v;;
 
 let implicits_to_ast_list implicits =
   match (impl_args_to_string implicits) with
@@ -215,7 +216,8 @@ let leaf_entry_to_ast_list ((sp,kn),lobj) =
 
 
 (* this function is inspired by print_name *)
-let name_to_ast qid = 
+let name_to_ast ref =
+  let (loc,qid) = qualid_of_reference ref in
   let l = 
     try
       let sp = Nametab.locate_obj qid in

@@ -91,9 +91,9 @@ let make_case_info env ind style pats_source =
     ci_npar    = mip.mind_nparams;
     ci_pp_info = print_info }
 
-let make_default_case_info env ind =
+let make_default_case_info env style ind =
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  make_case_info env ind None
+  make_case_info env ind style
     (Array.map (fun _ -> RegularPat) mip.mind_consnames)
 
 (*s Useful functions *)

@@ -185,4 +185,4 @@ type autoArguments =
 val superauto : int -> (identifier * constr) list -> autoArguments list -> tactic
 *)
 
-val h_superauto : int option -> qualid located list -> bool -> bool -> tactic
+val h_superauto : int option -> reference list -> bool -> bool -> tactic

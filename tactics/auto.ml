@@ -428,19 +428,19 @@ let add_hints dbnames h =
   let dbnames = if dbnames = [] then ["core"] else dbnames in match h with
   | HintsResolve lhints ->	
       let env = Global.env() and sigma = Evd.empty in
-      let f (n,c) = 
-	let c = Astterm.interp_constr sigma env c in
+      let f (n,c) =
+	let c = Constrintern.interp_constr sigma env c in
 	let n = match n with
-	  | None -> basename (sp_of_global None (Declare.reference_of_constr c))
+	  | None -> basename (sp_of_global None (reference_of_constr c))
 	  | Some n -> n in
 	(n,c) in
       add_resolves env sigma (List.map f lhints) dbnames
   | HintsImmediate lhints ->
       let env = Global.env() and sigma = Evd.empty in
       let f (n,c) = 
-	let c = Astterm.interp_constr sigma env c in
+	let c = Constrintern.interp_constr sigma env c in
 	let n = match n with
-	  | None -> basename (sp_of_global None (Declare.reference_of_constr c))
+	  | None -> basename (sp_of_global None (reference_of_constr c))
 	  | Some n -> n in
 	(n,c) in
       add_trivials env sigma (List.map f lhints) dbnames
@@ -460,7 +460,7 @@ let add_hints dbnames h =
       let lcons = List.map2 (fun id c -> (id,c)) (Array.to_list consnames) lcons in
       add_resolves env sigma lcons dbnames
   | HintsExtern (hintname, pri, patcom, tacexp) ->
-      let pat =	Astterm.interp_constrpattern Evd.empty (Global.env()) patcom in
+      let pat =	Constrintern.interp_constrpattern Evd.empty (Global.env()) patcom in
       add_externs hintname pri pat tacexp dbnames
 
 (**************************************************************************)
@@ -901,7 +901,7 @@ let default_superauto g = superauto !default_search_depth [] [] g
 let interp_to_add gl locqid =
   let r = Nametab.global locqid in
   let id = basename (sp_of_global None r) in
-  (next_ident_away id (pf_ids_of_hyps gl), Declare.constr_of_reference r)
+  (next_ident_away id (pf_ids_of_hyps gl), constr_of_reference r)
 
 let gen_superauto nopt l a b gl =
   let n = match nopt with Some n -> n | None -> !default_search_depth in

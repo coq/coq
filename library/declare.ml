@@ -108,9 +108,9 @@ let declare_variable_common id obj =
 
 (* for initial declaration *)
 let declare_variable id obj =
-  let (_,kn as oname) = declare_variable_common id obj in
-  !xml_declare_variable kn;
-  Dischargedhypsmap.set_discharged_hyps (fst oname) [];
+  let (sp,kn as oname) = declare_variable_common id obj in
+  !xml_declare_variable oname;
+  Dischargedhypsmap.set_discharged_hyps sp [];
   oname
 
 (* when coming from discharge: no xml output *)
@@ -185,10 +185,10 @@ let hcons_constant_declaration = function
 
 let declare_constant id (cd,kind) =
   (* let cd = hcons_constant_declaration cd in *)
-  let (_,kn as oname) = add_leaf id (in_constant (ConstantEntry cd,kind)) in
+  let (sp,kn as oname) = add_leaf id (in_constant (ConstantEntry cd,kind)) in
   if is_implicit_args() then declare_constant_implicits kn;
-  Dischargedhypsmap.set_discharged_hyps (fst oname) [] ;
-  !xml_declare_constant kn;
+  Dischargedhypsmap.set_discharged_hyps sp [] ;
+  !xml_declare_constant oname;
   oname
 
 (* when coming from discharge *)
@@ -285,9 +285,9 @@ let declare_inductive_common mie =
 
 (* for initial declaration *)
 let declare_mind mie =
-  let (_,kn as oname) = declare_inductive_common mie in
-  Dischargedhypsmap.set_discharged_hyps (fst oname) [] ;
-  !xml_declare_inductive kn;
+  let (sp,kn as oname) = declare_inductive_common mie in
+  Dischargedhypsmap.set_discharged_hyps sp [] ;
+  !xml_declare_inductive oname;
   oname
 
 (* when coming from discharge: no xml output *)
@@ -361,13 +361,6 @@ let context_of_global_reference = function
   | IndRef (sp,_) -> (Global.lookup_mind sp).mind_hyps
   | ConstructRef ((sp,_),_) -> (Global.lookup_mind sp).mind_hyps
 
-let reference_of_constr c = match kind_of_term c with
-  | Const sp -> ConstRef sp
-  | Ind ind_sp -> IndRef ind_sp
-  | Construct cstr_cp -> ConstructRef cstr_cp
-  | Var id -> VarRef id
-  |  _ -> raise Not_found
-
 let last_section_hyps dir =
   fold_named_context
     (fun (id,_,_) sec_ids ->
@@ -377,12 +370,6 @@ let last_section_hyps dir =
       with Not_found -> sec_ids)
     (Environ.named_context (Global.env()))
     ~init:[]
-
-let constr_of_reference = function
-  | VarRef id -> mkVar id
-  | ConstRef sp -> mkConst sp
-  | ConstructRef sp -> mkConstruct sp
-  | IndRef sp -> mkInd sp
 
 let construct_absolute_reference sp =
   constr_of_reference (Nametab.absolute_reference sp)

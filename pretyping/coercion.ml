@@ -204,7 +204,7 @@ let inh_apply_rel_list apploc env isevars argjl (funloc,funj) tycon =
 	      apply_rec (push_rel (na,None,c1) env) (n+1) newresj restjl
           | _ ->
               error_cant_apply_not_functional_loc 
-		(Rawterm.join_loc funloc loc) env sigma resj
+		(join_loc funloc loc) env sigma resj
                 (List.map snd restjl)
   in 
   apply_rec env 1 funj argjl

@@ -260,6 +260,11 @@ let ith_constructor_of_inductive ind i = (ind,i)
 let inductive_of_constructor (ind,i) = ind
 let index_of_constructor (ind,i) = i
 
+(* Better to have it here that in closure, since used in grammar.cma *)
+type evaluable_global_reference =
+  | EvalVarRef of identifier
+  | EvalConstRef of constant
+
 (* Hash-consing of name objects *)
 module Hname = Hashcons.Make(
   struct 

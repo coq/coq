@@ -10,7 +10,9 @@
 
 (* $Id$ *)
 
+open Util
 open Names
+open Nameops
 open Libnames
 open Term
 open Termops
@@ -21,6 +23,7 @@ open Sign
 open Rawterm
 open Typeops
 open Entries
+open Topconstr
 
 open Pmisc
 open Past
@@ -39,26 +42,21 @@ let tuple_exists id =
   try let _ = Nametab.locate (make_short_qualid id) in true
   with Not_found -> false
 
-let ast_set = Ast.ope ("SET", [])
+let ast_set = CSort (dummy_loc,RProp Pos)
 
 let tuple_n n =
-  let name = "tuple_" ^ string_of_int n in
-  let id = id_of_string name in
+  let id = make_ident "tuple_" (Some n) in
   let l1n = Util.interval 1 n in
-  let params = 
-    List.map 
-      (fun i -> let id = id_of_string ("T" ^ string_of_int i) in (id, ast_set))
-      l1n
-  in
+  let params = List.map (fun i -> (make_ident "T" (Some i), ast_set)) l1n in
   let fields = 
     List.map
       (fun i -> 
-	 let id = id_of_string 
-		    ("proj_" ^ string_of_int n ^ "_" ^ string_of_int i) in
-	 (false, Vernacexpr.AssumExpr (id, Ast.nvar (id_of_string ("T" ^ string_of_int i)))))
+	 let id = make_ident ("proj_" ^ string_of_int n ^ "_") (Some i) in
+	 let id' = make_ident "T" (Some i) in
+	 (false, Vernacexpr.AssumExpr (id, mkIdentC id')))
       l1n 
   in
-  let cons = id_of_string ("Build_tuple_" ^ string_of_int n) in
+  let cons = make_ident "Build_tuple_" (Some n) in
   Record.definition_structure ((false, id), params, fields, cons, mk_Set)
 
 (*s [(sig_n n)] generates the inductive
@@ -68,12 +66,11 @@ let tuple_n n =
     \end{verbatim} *)
 
 let sig_n n =
-  let name = "sig_" ^ string_of_int n in
-  let id = id_of_string name in
+  let id = make_ident "sig_" (Some n) in
   let l1n = Util.interval 1 n in
-  let lT = List.map (fun i -> id_of_string ("T" ^ string_of_int i)) l1n in
-  let lx = List.map (fun i -> id_of_string ("x" ^ string_of_int i)) l1n in
-  let idp = id_of_string "P" in
+  let lT = List.map (fun i -> make_ident "T" (Some i)) l1n in
+  let lx = List.map (fun i -> make_ident "x" (Some i)) l1n in
+  let idp = make_ident "P" None in
   let params =
     let typ = List.fold_right (fun _ c -> mkArrow (mkRel n) c) lT mkProp in
     (idp, LocalAssum typ) :: 
@@ -87,7 +84,7 @@ let sig_n n =
     let c = mkArrow app_p app_sig in
     List.fold_right (fun id c -> mkProd (Name id, mkRel (n+1), c)) lx c
   in
-  let cname = id_of_string ("exist_" ^ string_of_int n) in
+  let cname = make_ident "exist_" (Some n) in
   Declare.declare_mind 
     { mind_entry_finite = true;
       mind_entry_inds = 
@@ -123,14 +120,12 @@ let tuple_ref dep n =
       if n = 1 then 
 	exist
       else begin
-	let name = Printf.sprintf "exist_%d" n in
-	let id = id_of_string name in
+	let id = make_ident "exist_" (Some n) in
 	if not (tuple_exists id) then ignore (sig_n n);
 	Nametab.locate (make_short_qualid id)
       end
     else begin
-      let name = Printf.sprintf "Build_tuple_%d" n in
-      let id = id_of_string name in
+      let id = make_ident "Build_tuple_%d" (Some n) in
       if not (tuple_exists id) then tuple_n n;
       Nametab.locate (make_short_qualid id)
     end
@@ -185,7 +180,7 @@ let rawconstr_of_prog p =
 	let (bl',avoid',nenv') = push_vars avoid nenv bl in
 	let c1 = trad avoid nenv e1
 	and c2 = trad avoid' nenv' e2 in
-	ROldCase (dummy_loc, false, None, c1, [| raw_lambda bl' c2 |])
+	ROrderedCase (dummy_loc, LetStyle, None, c1, [| raw_lambda bl' c2 |])
 
     | CC_lam (bl,e) ->
 	let bl',avoid',nenv' = push_vars avoid nenv bl in
@@ -219,7 +214,7 @@ let rawconstr_of_prog p =
 	let c = trad avoid nenv b in
 	let cl = List.map (trad avoid nenv) el in
 	let ty = Detyping.detype (Global.env()) avoid nenv ty in
-	ROldCase (dummy_loc, false, Some ty, c, Array.of_list cl)
+	ROrderedCase (dummy_loc, RegularStyle, Some ty, c, Array.of_list cl)
 
     | CC_expr c -> 
 	Detyping.detype (Global.env()) avoid nenv c

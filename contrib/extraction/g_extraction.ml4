@@ -34,11 +34,11 @@ END
 
 VERNAC COMMAND EXTEND Extraction
 (* Extraction in the Coq toplevel *)
-| [ "Extraction" qualid(x) ] -> [ extraction x ]
-| [ "Recursive" "Extraction" ne_qualid_list(l) ] -> [ extraction_rec l ]
+| [ "Extraction" global(x) ] -> [ extraction x ]
+| [ "Recursive" "Extraction" ne_global_list(l) ] -> [ extraction_rec l ]
 
 (* Monolithic extraction to a file *)
-| [ "Extraction" string(f) ne_qualid_list(l) ] 
+| [ "Extraction" string(f) ne_global_list(l) ] 
   -> [ extraction_file f l ]
 END
 
@@ -61,12 +61,12 @@ END
 
 VERNAC COMMAND EXTEND ExtractionInline
 (* Custom inlining directives *)
-| [ "Extraction" "Inline" ne_qualid_list(l) ] 
+| [ "Extraction" "Inline" ne_global_list(l) ] 
   -> [ extraction_inline true l ]
 END
 
 VERNAC COMMAND EXTEND ExtractionNoInline
-| [ "Extraction" "NoInline" ne_qualid_list(l) ] 
+| [ "Extraction" "NoInline" ne_global_list(l) ] 
   -> [ extraction_inline false l ]
 END
 
@@ -82,16 +82,16 @@ END
 
 (* Overriding of a Coq object by an ML one *)
 VERNAC COMMAND EXTEND ExtractionConstant
-| [ "Extract" "Constant" qualid(x) "=>" mlname(y) ]
+| [ "Extract" "Constant" global(x) "=>" mlname(y) ]
   -> [ extract_constant_inline false x y ]
 END
 
 VERNAC COMMAND EXTEND ExtractionInlinedConstant
-| [ "Extract" "Inlined" "Constant" qualid(x) "=>" mlname(y) ]
+| [ "Extract" "Inlined" "Constant" global(x) "=>" mlname(y) ]
   -> [ extract_constant_inline true x y ]
 END
 
 VERNAC COMMAND EXTEND ExtractionInductive
-| [ "Extract" "Inductive" qualid(x) "=>" mlname(id) "[" mlname_list(idl) "]" ]
+| [ "Extract" "Inductive" global(x) "=>" mlname(id) "[" mlname_list(idl) "]" ]
   -> [ extract_inductive x (id,idl) ]
 END

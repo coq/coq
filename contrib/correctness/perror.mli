@@ -11,10 +11,10 @@
 (* $Id$ *)
 
 open Pp
+open Util
 open Names
 open Ptype
 open Past
-open Coqast
 
 val unbound_variable : identifier -> loc option -> 'a
 val unbound_reference : identifier -> loc option -> 'a

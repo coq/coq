@@ -6,66 +6,63 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*i camlp4deps: "parsing/grammar.cma" i*)
-
 (* $Id$ *)
 
 open Pcoq
 open Constr
+open Topconstr
+open Term
+open Libnames
+
+open Prim
+
+let pair loc =
+  Qualid (loc, Libnames.qualid_of_string "Coq.Init.Datatypes.pair")
 
 GEXTEND Gram
   GLOBAL: constr1 pattern;
 
   pattern:
-    [ [ qid = global -> qid
+    [ [ r = Prim.reference -> CPatAtom (loc,Some r)
+      | IDENT "_" -> CPatAtom (loc,None)
       (* Hack to parse syntax "(n)" as a natural number *)
       | "("; G_constr.test_int_rparen; n = INT; ")" ->
- 	  let n = Coqast.Str (loc,n) in
-          <:ast< (PATTDELIMITERS "nat_scope" (PATTNUMERAL $n)) >>
+	  let n = CPatNumeral (loc,Bignat.POS (Bignat.of_string n)) in
+          CPatDelimiters (loc,"nat_scope",n)
       | "("; p = compound_pattern; ")" -> p
-      | n = INT ->
-	  let n = Coqast.Str (loc,n) in <:ast< (PATTNUMERAL $n) >>
-      | "-"; n = INT ->
-	  let n = Coqast.Str (loc,n) in <:ast< (PATTNEGNUMERAL $n) >>
+      | n = INT -> CPatNumeral (loc,Bignat.POS (Bignat.of_string n))
+      | "-"; n = INT -> CPatNumeral (loc,Bignat.NEG (Bignat.of_string n))
     ] ]
   ;
   compound_pattern:
-    [ [ p = pattern ; lp = ne_pattern_list ->
+    [ [ p = pattern ; lp = LIST1 pattern ->
         (match p with
-          | Coqast.Node(_,"QUALID",_) -> ()
+          | CPatAtom (_, Some r) -> CPatCstr (loc, r, lp)
           | _ -> Util.user_err_loc 
-              (loc, "compound_pattern", Pp.str "Constructor expected"));
-	  <:ast< (PATTCONSTRUCT $p ($LIST $lp)) >>
-      | p = pattern; "as"; id = Prim.var ->
-	  <:ast< (PATTAS $id $p)>>
+              (loc, "compound_pattern", Pp.str "Constructor expected"))
+      | p = pattern; "as"; id = base_ident ->
+	  CPatAlias (loc, p, id)
       | p1 = pattern; ","; p2 = pattern ->
-          <:ast< (PATTCONSTRUCT Coq.Init.Datatypes.pair $p1 $p2) >>
+	  CPatCstr (loc, pair loc, [p1; p2])
       | p = pattern -> p ] ]
   ;
-  ne_pattern_list:
-    [ [ c1 = pattern; cl = ne_pattern_list -> c1 :: cl
-      | c1 = pattern -> [c1] ] ]
-  ;
   equation:
-    [ [ lhs = ne_pattern_list; "=>"; rhs = constr9 ->
-	      <:ast< (EQN $rhs ($LIST $lhs)) >> ] ]
+    [ [ lhs = LIST1 pattern; "=>"; rhs = constr9 -> (loc,lhs,rhs) ] ]
   ;
   ne_eqn_list:
-    [ [ e = equation; "|"; leqn = ne_eqn_list -> e :: leqn
-      | e = equation -> [e] ] ]
+    [ [ leqn = LIST1 equation SEP "|" -> leqn ] ]
   ;
 
   constr1:
-    [ [ "<"; l1 = lconstr; ">"; "Cases"; lc = ne_constr_list; "of";
+    [ [ "<"; p = lconstr; ">"; "Cases"; lc = LIST1 constr; "of";
         OPT "|"; eqs = ne_eqn_list; "end" ->
-          <:ast< (CASES $l1 (TOMATCH ($LIST $lc)) ($LIST $eqs)) >>
+	  CCases (loc, Some p, lc, eqs)
       | "Cases"; lc = ne_constr_list; "of";
 	OPT "|"; eqs = ne_eqn_list; "end" ->
-          <:ast< (CASES "SYNTH" (TOMATCH ($LIST $lc)) ($LIST $eqs)) >>
-      | "<"; l1 = lconstr; ">"; "Cases"; lc = ne_constr_list; "of";
-        "end" ->
-          <:ast< (CASES $l1 (TOMATCH ($LIST $lc))) >>
+	  CCases (loc, None, lc, eqs)
+      | "<"; p = lconstr; ">"; "Cases"; lc = ne_constr_list; "of"; "end" ->
+	  CCases (loc, Some p, lc, [])
       | "Cases"; lc = ne_constr_list; "of"; "end" -> 
-          <:ast< (CASES "SYNTH" (TOMATCH ($LIST $lc))) >> ] ]
+	  CCases (loc, None, lc, []) ] ]
   ;
 END;

@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*i camlp4deps: "parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo parsing/g_ltac.cmo parsing/g_constr.cmo" i*)
+(*i camlp4deps: "parsing/grammar.cma" i*)
 
 (* $Id$ *)
 
@@ -33,7 +33,7 @@ exception Not_an_eq
 let fail()=raise Not_an_eq
     
 let constr_of_string s () =
-  Declare.constr_of_reference (Nametab.locate (qualid_of_string s))
+  constr_of_reference (Nametab.locate (qualid_of_string s))
 
 let eq2eqT_theo = constr_of_string "Coq.Logic.Eqdep_dec.eq2eqT"
 let eqT2eq_theo = constr_of_string "Coq.Logic.Eqdep_dec.eqT2eq"
@@ -58,7 +58,7 @@ let eq_type_of_term term=
   match kind_of_term term with
       App (f,args)->
 	(try 
-	   let ref = Declare.reference_of_constr f in
+	   let ref = reference_of_constr f in
 	     if (ref=Coqlib.glob_eq || ref=Coqlib.glob_eqT) && 
 	       (Array.length args)=3 
 	     then (args.(0),args.(1),args.(2)) 

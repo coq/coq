@@ -13,24 +13,37 @@ open Util
 open Names
 open Pcoq
 open Extend
+open Topconstr
+open Libnames
 
 let get_r_sign loc =
-  let ast_of_id id = Astterm.globalize_constr (Nvar(loc,id)) in
-  ((ast_of_id (id_of_string "R0"),
-    ast_of_id (id_of_string "R1"),
-    ast_of_id (id_of_string "Rplus"), 
-    ast_of_id (id_of_string "NRplus")))
+  let mkid id =
+    mkRefC (Qualid (loc,Libnames.make_short_qualid id))
+  in
+  ((mkid (id_of_string "R0"),
+    mkid (id_of_string "R1"),
+    mkid (id_of_string "Rplus"), 
+    mkid (id_of_string "NRplus")))
+
+let get_r_sign_ast loc =
+  let mkid id =
+    Termast.ast_of_ref (Nametab.locate (Libnames.make_short_qualid id))
+  in
+  ((mkid (id_of_string "R0"),
+    mkid (id_of_string "R1"),
+    mkid (id_of_string "Rplus"), 
+    mkid (id_of_string "NRplus")))
 
 (* Parsing via Grammar *)
 let r_of_int n dloc =
-  let (ast0,ast1,astp,_) = get_r_sign dloc in
+  let (a0,a1,plus,_) = get_r_sign dloc in
   let rec mk_r n =
-    if n <= 0 then 
-      ast0
+    if n <= 0 then
+      a0
     else if n = 1 then 
-      ast1
+      a1
     else
-      Node(dloc,"APPLIST", [astp; ast1; mk_r (n-1)])
+      mkAppC (plus, [a1; mk_r (n-1)])
   in 
   mk_r n
 
@@ -49,33 +62,33 @@ let _ =
 
 exception Non_closed_number
 
-let rec int_of_r_rec ast1 astp p =
+let rec int_of_r_rec a1 plus p =
   match p with
-    | Node (_,"APPLIST", [b; a; c]) when alpha_eq(b,astp) && 
-                                         alpha_eq(a,ast1) ->
-        (int_of_r_rec ast1 astp c)+1
-    | a when alpha_eq(a,ast1) -> 1  
+    | Node (_,"APPLIST", [b; a; c]) when alpha_eq(b,plus) && 
+                                         alpha_eq(a,a1) ->
+        (int_of_r_rec a1 plus c)+1
+    | a when alpha_eq(a,a1) -> 1  
     | _ -> raise Non_closed_number
           
 let int_of_r p =
-  let (_,ast1,astp,_) = get_r_sign dummy_loc in
+  let (_,a1,plus,_) = get_r_sign_ast dummy_loc in
   try 
-    Some (int_of_r_rec ast1 astp p)
+    Some (int_of_r_rec a1 plus p)
   with
     Non_closed_number -> None
 
 let replace_plus p = 
-  let (_,ast1,_,astnr) = get_r_sign dummy_loc in
-     ope ("REXPR",[ope("APPLIST", [astnr; ast1; p])]) 
+  let (_,a1,_,astnr) = get_r_sign_ast dummy_loc in
+     ope ("REXPR",[ope("APPLIST", [astnr; a1; p])]) 
 
 let r_printer std_pr p =
-  let (_,ast1,astp,_) = get_r_sign dummy_loc in
+  let (_,a1,plus,_) = get_r_sign dummy_loc in
   match (int_of_r p) with
     | Some i -> str (string_of_int (i+1))
     | None -> std_pr (replace_plus p)
 
 let r_printer_outside std_pr p =
-  let (_,ast1,astp,_) = get_r_sign dummy_loc in
+  let (_,a1,plus,_) = get_r_sign dummy_loc in
   match (int_of_r p) with
     | Some i -> str "``" ++ str (string_of_int (i+1)) ++ str "``"
     | None -> std_pr (replace_plus p)
@@ -144,7 +157,7 @@ let _ = Symbols.declare_numeral_interpreter "R_scope" (r_of_int,None)
 exception Non_closed_number
 
 let bignat_of_pos p =
-  let (_,one,plus,_) = get_r_sign dummy_loc in
+  let (_,one,plus,_) = get_r_sign_ast dummy_loc in
   let rec transl = function
     | Node (_,"APPLIST",[p; o; a]) when alpha_eq(p,plus) & alpha_eq(o,one)
         -> add_1(transl a)

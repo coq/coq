@@ -83,7 +83,7 @@ Syntax constr
 (* Things parsed in command5 *)
 
   level 5:
-    cast [ ($C :: $T) ] -> [ [<hv 0> $C:L [0 0] "::" $T:E] ]
+    cast [ << (CAST $C $T) >> ] -> [ [<hv 0> $C:L [0 0] "::" $T:E] ]
   ;
 (* Things parsed in command6 *)
 
@@ -117,7 +117,7 @@ Syntax constr
   | lambdal_cons [ << (LAMLBOX $pbi $c (IDS ($LIST $ids)) [$id]$body) >> ]
       -> [(LAMLBOX $pbi $c (IDS ($LIST $ids) $id) $body)]
 
-  | pi [ ($x : $A)$B ] -> [ (PRODBOX (BINDERS) <<($x : $A)$B>>) ]
+  | pi [ << (PROD $A [$x]$B) >> ] -> [ (PRODBOX (BINDERS) (PROD $A [$x]$B)) ]
   | prodlist  [ << (PRODLIST $c $b) >> ]
        -> [(PRODBOX (BINDERS) (PRODLIST $c $b))]
 
@@ -125,7 +125,7 @@ Syntax constr
      -> [ [<hov 0> "(" [<hov 0> $pbi] ")" [0 1] $t:E ] ]
 
   | prod_cons
-      [ << (PRODBOX (BINDERS ($LIST $acc)) <:constr:<($x : $Dom)$body>>) >> ]
+      [ << (PRODBOX (BINDERS ($LIST $acc)) (PROD $Dom [$x]$body)) >> ]
       -> [(PRODBOX (BINDERS ($LIST $acc) (BINDER $Dom $x)) $body)]
   | prodl_start_cons [ << (PRODBOX $pbi (PRODLIST $Dom $Body)) >> ]
       -> [(PRODLBOX $pbi $Dom (IDS) $Body)]
@@ -138,17 +138,18 @@ Syntax constr
       -> [(PRODLBOX $pbi $c (IDS ($LIST $ids) $id) $body)]
 
 
-  | arrow [ $A -> $B ] -> [ [<hv 0> $A:L [0 0] "->" (ARROWBOX $B) ] ]
+  | arrow [ << (PROD $A [<>]$B) >> ] ->
+       [ [<hv 0> $A:L [0 0] "->" (ARROWBOX $B) ] ]
   | arrow_stop [ << (ARROWBOX $c) >> ] -> [ $c:E ]
-  | arrow_again [ << (ARROWBOX <:constr:< $A -> $B >>) >> ] ->
+  | arrow_again [ << (ARROWBOX (PROD $A [<>]$B)) >> ] ->
 	 [ $A:L [0 0] "->" (ARROWBOX $B) ]
 
 (* These are synonymous *)
 (* redundant
   | let [ [$x = $M]$N ] -> [ [<hov 0> "[" $x "=" $M:E "]" [0 1] $N:E ] ]
 *)
-  | letin [ [$x := $A]$B ] -> [ [ <hov 0> "[" $x ":=" $A:E "]" [0 1] $B:E ] ]
-  | letincast [ [$x := $A : $C]$B ] -> [ [ <hov 0> "[" $x ":=" $A:E ":" $C:E "]" [0 1] $B:E ] ]
+  | letin [ << (LETIN $A [$x]$B) >> ] -> [ [ <hov 0> "[" $x ":=" $A:E "]" [0 1] $B:E ] ]
+  | letincast [ << (LETIN (CAST $A $C) [$x]$B) >> ] -> [ [ <hov 0> "[" $x ":=" $A:E ":" $C:E "]" [0 1] $B:E ] ]
   ;
 
 (* Things parsed in command9 *)
@@ -261,5 +262,3 @@ Syntax constr
     evalconstr [ << (EVAL $c $r) >> ] ->
 	 [ [<hv 0> "Eval" [1 1] $r [1 0] "in" [1 1] $c:E ] ].
 
-
-  

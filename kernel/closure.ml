@@ -52,10 +52,6 @@ let with_stats c =
   end else
     Lazy.force c
 
-type evaluable_global_reference =
-  | EvalVarRef of identifier
-  | EvalConstRef of constant
-
 type transparent_state = Idpred.t * KNpred.t
 
 let all_opaque = (Idpred.empty, KNpred.empty)

@@ -11,6 +11,8 @@
 open Pp
 open Util
 open Names
+open Nameops
+open Term
 
 type global_reference =
   | VarRef of variable
@@ -30,6 +32,18 @@ let subst_global subst ref = match ref with
       let kn' = subst_kn subst kn in if kn==kn' then ref else
           ConstructRef ((kn',i),j)
 
+let reference_of_constr c = match kind_of_term c with
+  | Const sp -> ConstRef sp
+  | Ind ind_sp -> IndRef ind_sp
+  | Construct cstr_cp -> ConstructRef cstr_cp
+  | Var id -> VarRef id
+  |  _ -> raise Not_found
+
+let constr_of_reference = function
+  | VarRef id -> mkVar id
+  | ConstRef sp -> mkConst sp
+  | ConstructRef sp -> mkConstruct sp
+  | IndRef sp -> mkInd sp
 
 (**********************************************)
 
@@ -205,3 +219,23 @@ type global_dir_reference =
       let kn' = subst_kernel_name subst kn in if kn==kn' then ref else
           ModTypeRef kn'
 *)
+
+type reference = 
+  | Qualid of qualid located
+  | Ident of identifier located
+
+let qualid_of_reference = function
+  | Qualid (loc,qid) -> loc, qid
+  | Ident (loc,id) -> loc, make_short_qualid id
+
+let string_of_reference = function
+  | Qualid (loc,qid) -> string_of_qualid qid
+  | Ident (loc,id) -> string_of_id id
+
+let pr_reference = function 
+  | Qualid (_,qid) -> pr_qualid qid
+  | Ident (_,id) -> pr_id id
+
+let loc_of_reference = function
+  | Qualid (loc,qid) -> loc
+  | Ident (loc,id) -> loc

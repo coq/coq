@@ -12,10 +12,11 @@
 
 open Pp
 open Util
-open Coqast
 open Names
 open Nameops
 open Term
+open Libnames
+open Topconstr
 
 (* debug *)
 
@@ -122,6 +123,7 @@ let subst_in_constr alist =
   let alist' = List.map (fun (id,id') -> (id, mkVar id')) alist in
   replace_vars alist'
 
+(*
 let subst_in_ast alist ast =
   let rec subst = function
       Nvar(l,s) -> Nvar(l,try List.assoc s alist with Not_found -> s)
@@ -130,7 +132,8 @@ let subst_in_ast alist ast =
     | x -> x
   in
     subst ast
-
+*)
+(*
 let subst_ast_in_ast alist ast =
   let rec subst = function
       Nvar(l,s) as x -> (try List.assoc s alist with Not_found -> x)
@@ -139,6 +142,17 @@ let subst_ast_in_ast alist ast =
     | x -> x
   in
     subst ast
+*)
+
+let rec subst_in_ast alist = function
+  | CRef (Ident (loc,id)) ->
+      CRef (Ident (loc,(try List.assoc id alist with Not_found -> id)))
+  | x -> map_constr_expr_with_binders subst_in_ast List.remove_assoc alist x
+
+let rec subst_ast_in_ast alist = function
+  | CRef (Ident (_,id)) as x -> (try List.assoc id alist with Not_found -> x)
+  | x ->
+      map_constr_expr_with_binders subst_ast_in_ast List.remove_assoc alist x
 
 (* subst. of variables by constr *)
 let real_subst_in_constr = replace_vars

@@ -591,10 +591,10 @@ let occur_rawconstr id =
     | RLambda (loc,na,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
     | RProd (loc,na,ty,c) -> (occur ty) or ((na <> Name id) & (occur c))
     | RLetIn (loc,na,b,c) -> (occur b) or ((na <> Name id) & (occur c))
-    | RCases (loc,prinfo,tyopt,tml,pl) ->
+    | RCases (loc,tyopt,tml,pl) ->
 	(occur_option tyopt) or (List.exists occur tml)
 	or (List.exists occur_pattern pl)
-    | ROldCase (loc,b,tyopt,tm,bv) -> 
+    | ROrderedCase (loc,b,tyopt,tm,bv) -> 
 	(occur_option tyopt) or (occur tm) or (array_exists occur bv)
     | RRec (loc,fk,idl,tyl,bv) ->
 	(array_exists occur tyl) or
@@ -1369,7 +1369,7 @@ and match_current pb ((current,typ as ct),deps) =
 	  let (pred,typ,s) =
 	    find_predicate pb.caseloc pb.env pb.isevars 
 	      pb.pred brtyps cstrs current indt in
-	  let ci = make_case_info pb.env mind None tags in
+	  let ci = make_case_info pb.env mind RegularStyle tags in
 	  let case = mkCase (ci,nf_betaiota pred,current,brvals) in
 	  let inst = List.map mkRel deps in
 	  pattern_status tags,

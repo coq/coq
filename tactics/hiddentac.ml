@@ -61,7 +61,7 @@ let h_specialize n (c,bl as d) =
 let h_lapply c = abstract_tactic (TacLApply c) (cut_and_apply c)
 
 (* Context management *)
-let inj x = AN (Rawterm.dummy_loc,x)
+let inj x = AN x
 let h_clear l = abstract_tactic (TacClear (List.map inj l)) (clear l)
 let h_clear_body l =
   abstract_tactic (TacClearBody (List.map inj l)) (clear_body l)

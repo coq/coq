@@ -157,6 +157,11 @@ val ith_constructor_of_inductive : inductive -> int -> constructor
 val inductive_of_constructor : constructor -> inductive
 val index_of_constructor : constructor -> int
 
+(* Better to have it here that in Closure, since required in grammar.cma *)
+type evaluable_global_reference =
+  | EvalVarRef of identifier
+  | EvalConstRef of constant
+
 (* Hash-consing *)
 val hcons_names : unit ->
   (kernel_name -> kernel_name) * (dir_path -> dir_path) *

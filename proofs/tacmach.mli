@@ -54,8 +54,8 @@ val pf_check_type         : goal sigma -> constr -> types -> unit
 val pf_execute            : goal sigma -> constr -> unsafe_judgment
 val hnf_type_of           : goal sigma -> constr -> types
 
-val pf_interp_constr      : goal sigma -> Coqast.t -> constr
-val pf_interp_type        : goal sigma -> Coqast.t -> types
+val pf_interp_constr      : goal sigma -> Topconstr.constr_expr -> constr
+val pf_interp_type        : goal sigma -> Topconstr.constr_expr -> types
 
 val pf_get_hyp            : goal sigma -> identifier -> named_declaration
 val pf_get_hyp_typ        : goal sigma -> identifier -> types
@@ -77,7 +77,7 @@ val pf_nf_betaiota             : goal sigma -> constr -> constr
 val pf_reduce_to_quantified_ind : goal sigma -> types -> inductive * types
 val pf_reduce_to_atomic_ind     : goal sigma -> types -> inductive * types
 val pf_compute                 : goal sigma -> constr -> constr
-val pf_unfoldn    : (int list * Closure.evaluable_global_reference) list
+val pf_unfoldn    : (int list * evaluable_global_reference) list
         -> goal sigma -> constr -> constr
 
 val pf_const_value : goal sigma -> constant -> constr
@@ -154,39 +154,12 @@ val tactic_list_tactic : tactic_list -> tactic
 val tclFIRSTLIST       : tactic_list list -> tactic_list
 val tclIDTAC_list      : tactic_list
 
-
-(*s Tactic Registration. *)
-
-(*
-val add_tactic         : string -> (tactic_arg list -> tactic) -> unit
-val overwriting_tactic : string -> (tactic_arg list -> tactic) -> unit
-*)
-
-(*s Transformation of tactic arguments. *)
-
-type ('a,'b) parse_combinator = ('a -> tactic) -> ('b -> tactic)
-
-val tactic_com       : (constr,Coqast.t) parse_combinator
-val tactic_com_sort  : (constr,Coqast.t) parse_combinator
-val tactic_com_list  : (constr list, Coqast.t list) parse_combinator
-
-val tactic_bind_list :
-  (constr substitution, Coqast.t substitution) parse_combinator
-
-val tactic_com_bind_list : 
-  (constr   * constr substitution,
-   Coqast.t * Coqast.t substitution) parse_combinator
-
-val tactic_com_bind_list_list :  
-  ((constr   * constr substitution) list, 
-   (Coqast.t * Coqast.t substitution) list) parse_combinator
-
 (*s Pretty-printing functions. *)
 
 (*i*)
 open Pp
 (*i*)
 
-val pr_com    : evar_map -> goal -> Coqast.t -> std_ppcmds
+val pr_com    : evar_map -> goal -> Topconstr.constr_expr -> std_ppcmds
 val pr_gls    : goal sigma -> std_ppcmds
 val pr_glls   : goal list sigma -> std_ppcmds

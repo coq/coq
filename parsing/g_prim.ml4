@@ -8,14 +8,11 @@
 
 (*i $Id$ i*)
 
-(*
-camlp4o pa_ifdef.cmo pa_extend.cmo pr_o.cmo pr_extend.cmo -quotify -DQuotify -impl parsing/g_prim.ml4
-*)
-
 open Coqast
 open Pcoq
 open Names
 open Libnames
+open Topconstr
 
 ifdef Quotify then
 open Qast
@@ -72,23 +69,30 @@ ifdef Quotify then
 open Q
 
 GEXTEND Gram
-  GLOBAL: var ident natural metaident integer string preident ast astpat
-  astact astlist qualid reference dirpath rawident;
+  GLOBAL: ident natural integer string preident ast
+    astlist qualid reference dirpath identref name base_ident var;
 
+ (* Compatibility: Prim.var is a synonym of Prim.ident *)
+  var:
+    [ [ id = ident -> id ] ]
+  ;
   metaident:
     [ [ s = METAIDENT -> Nmeta (loc,s) ] ]
-  ;
-  var:
-    [ [ id = ident -> Nvar(loc, id) ] ]
   ;
   preident:
     [ [ s = IDENT -> s ] ]
   ;
-  ident:
+  base_ident:
     [ [ s = IDENT -> local_id_of_string s ] ]
   ;
-  rawident:
-    [ [ id = ident -> (loc,id) ] ]
+  name:
+    [ [ IDENT "_" -> (loc, Anonymous) | id = base_ident -> (loc, Name id) ] ]
+  ;
+  identref:
+    [ [ id = base_ident -> (loc,id) ] ]
+  ;
+  ident:
+    [ [ id = base_ident -> id ] ]
   ;
   natural:
     [ [ i = INT -> local_make_posint i ] ]
@@ -101,7 +105,8 @@ GEXTEND Gram
     [ [ s = FIELD -> local_id_of_string s ] ]
   ;
   dirpath:
-    [ [ id = ident; l = LIST0 field -> local_make_dirpath (local_append l id) ] ]
+    [ [ id = base_ident; l = LIST0 field ->
+        local_make_dirpath (local_append l id) ] ]
   ;
   fields:
     [ [ id = field; (l,id') = fields -> (local_append l id,id')
@@ -109,26 +114,26 @@ GEXTEND Gram
       ] ]
   ;
   basequalid:
-    [ [ id = ident; (l,id')=fields -> local_make_qualid (local_append l id) id'
-      | id = ident -> local_make_short_qualid id
+    [ [ id = base_ident; (l,id')=fields -> local_make_qualid (local_append l id) id'
+      | id = base_ident -> local_make_short_qualid id
       ] ]
   ;
   qualid:
     [ [ qid = basequalid -> loc, qid ] ]
   ;
   reference:
-    [ [ id = ident; (l,id') = fields ->
-        Coqast.RQualid (loc, local_make_qualid (local_append l id) id')
-      | id = ident -> Coqast.RIdent (loc,id)
+    [ [ id = base_ident; (l,id') = fields ->
+        Qualid (loc, local_make_qualid (local_append l id) id')
+      | id = base_ident -> Ident (loc,id)
       ] ]
   ;
   string:
     [ [ s = STRING -> s ] ]
   ;
   astpath:
-    [ [ id = ident; (l,a) = fields ->
+    [ [ id = base_ident; (l,a) = fields ->
           Path(loc, local_make_path (local_append l id) a)
-      | id = ident -> Nvar(loc, id)
+      | id = base_ident -> Nvar(loc, id)
       ] ]
   ;
   (* ast *)
@@ -156,6 +161,6 @@ GEXTEND Gram
       | "'"; a = ast -> Node(loc,"$QUOTE",[a]) ] ]
   ;
   astlist:
-    [ [ l = LIST0 Prim.ast -> l ] ]
+    [ [ l = LIST0 ast -> l ] ]
   ;
 END

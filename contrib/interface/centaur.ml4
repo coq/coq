@@ -40,7 +40,7 @@ open Blast;;
 open Dad;;
 open Debug_tac;;
 open Search;;
-open Astterm;;
+open Constrintern;;
 open Nametab;;
 open Showproof;;
 open Showproof_ct;;
@@ -494,9 +494,9 @@ let pcoq_reset_initial() =
 let pcoq_reset x =
   if refining() then
     output_results (ctf_AbortedAllMessage ()) None;
-    Vernacentries.abort_refine Lib.reset_name x;
+    Vernacentries.abort_refine Lib.reset_name (dummy_loc,x);
     output_results
-         (ctf_ResetIdentMessage !global_request_id (string_of_id x)) None;;
+      (ctf_ResetIdentMessage !global_request_id (string_of_id x)) None;;
 
 
 VERNAC ARGUMENT EXTEND text_mode
@@ -568,8 +568,8 @@ let pcoq_search s l =
   end;
   search_output_results()
 
-let pcoq_print_name (_,qid) =
-  let results = xlate_vernac_list (name_to_ast qid) in
+let pcoq_print_name ref =
+  let results = xlate_vernac_list (name_to_ast ref) in
   output_results 
     (fnl () ++ str "message" ++ fnl () ++ str "PRINT_VALUE" ++ fnl ())
     (Some (P_cl results))

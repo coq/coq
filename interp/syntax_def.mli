@@ -10,13 +10,13 @@
 
 (*i*)
 open Names
-open Libnames
+open Topconstr
 open Rawterm
 (*i*)
 
 (* Syntactic definitions. *)
 
-val declare_syntactic_definition : identifier -> rawconstr -> unit
+val declare_syntactic_definition : identifier -> aconstr -> unit
 
 val search_syntactic_definition : loc -> kernel_name -> rawconstr
 

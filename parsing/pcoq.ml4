@@ -10,9 +10,14 @@
 
 open Pp
 open Util
+open Names
+open Libnames
+open Rawterm
+open Topconstr
 open Ast
 open Genarg
 open Tacexpr
+open Extend
 
 (* The lexer of Coq *)
 
@@ -46,59 +51,39 @@ let grammar_delete e rls =
        List.iter (fun (pil,_) -> G.delete_rule e pil) (List.rev lev))
     (List.rev rls)
 
+(* grammar_object is the superclass of all grammar entry *)
 module type Gramobj =
 sig
   type grammar_object
-  type 'a entry
-
-  val in_entry : 'a -> 'b G.Entry.e -> 'a entry
-  val object_of_entry : 'a entry -> grammar_object G.Entry.e
-  val type_of_entry : 'a entry -> 'a
+  val weaken_entry : 'a G.Entry.e -> grammar_object G.Entry.e
 end
 
 module Gramobj : Gramobj =
 struct
   type grammar_object = Obj.t
-  type 'a entry = 'a * grammar_object G.Entry.e
-
-  let in_entry t e = (t,Obj.magic e)
-  let object_of_entry (t,e) = e
-  let type_of_entry (t,e) = t
+  let weaken_entry e = Obj.magic e
 end
 
 type grammar_object = Gramobj.grammar_object
-let in_typed_entry = Gramobj.in_entry
-let type_of_typed_entry = Gramobj.type_of_entry
-let object_of_typed_entry = Gramobj.object_of_entry
-type typed_entry = entry_type Gramobj.entry
+type typed_entry = entry_type * grammar_object G.Entry.e
+let in_typed_entry t e = (t,Gramobj.weaken_entry e)
+let type_of_typed_entry (t,e) = t
+let object_of_typed_entry (t,e) = e
 
 module type Gramtypes =
 sig
   open Decl_kinds
-  val inAstListType : Coqast.t list G.Entry.e -> typed_entry
-  val inTacticAtomAstType : raw_atomic_tactic_expr G.Entry.e -> typed_entry
-  val inThmTokenAstType : theorem_kind G.Entry.e -> typed_entry
-  val inDynamicAstType : typed_ast G.Entry.e -> typed_entry
-  val inReferenceAstType : Coqast.reference_expr G.Entry.e -> typed_entry
-  val inPureAstType : constr_ast G.Entry.e -> typed_entry
-  val inGenAstType : 'a raw_abstract_argument_type ->
-      'a G.Entry.e -> typed_entry
-  val outGenAstType : 'a raw_abstract_argument_type -> typed_entry -> 'a G.Entry.e
+  val inGramObj : 'a raw_abstract_argument_type -> 'a G.Entry.e -> typed_entry
+  val outGramObj : 'a raw_abstract_argument_type -> typed_entry -> 'a G.Entry.e
 end
 
 module Gramtypes : Gramtypes =
 struct
-  let inAstListType = in_typed_entry AstListType
-  let inTacticAtomAstType = in_typed_entry TacticAtomAstType
-  let inThmTokenAstType = in_typed_entry ThmTokenAstType
-  let inDynamicAstType = in_typed_entry DynamicAstType
-  let inReferenceAstType = in_typed_entry ReferenceAstType
-  let inPureAstType = in_typed_entry (GenAstType ConstrArgType)
-  let inGenAstType rawwit = in_typed_entry (GenAstType (unquote rawwit))
-
-  let outGenAstType (a:'a raw_abstract_argument_type) o =
-    if type_of_typed_entry o <> GenAstType (unquote a) 
-      then anomaly "outGenAstType: wrong type";
+  let inGramObj rawwit = in_typed_entry (unquote rawwit)
+  let outGramObj (a:'a raw_abstract_argument_type) o =
+    if type_of_typed_entry o <> unquote a
+      then anomaly "outGramObj: wrong type";
+    (* downcast from grammar_object *)
     Obj.magic (object_of_typed_entry o)
 end
 
@@ -106,7 +91,7 @@ open Gramtypes
 
 type ext_kind =
   | ByGrammar of
-      typed_entry * Gramext.position option *
+      grammar_object G.Entry.e * Gramext.position option *
       (string option * Gramext.g_assoc option *
        (Token.t Gramext.g_symbol list * Gramext.g_action) list) list
   | ByGEXTEND of (unit -> unit) * (unit -> unit)
@@ -138,22 +123,20 @@ module Gram =
 (* This extension command is used by the Grammar constr *)
 
 let grammar_extend te pos rls =
-  camlp4_state := ByGrammar (te,pos,rls) :: !camlp4_state;
+  camlp4_state := ByGrammar (Gramobj.weaken_entry te,pos,rls) :: !camlp4_state;
   let a = !Gramext.warning_verbose in
   Gramext.warning_verbose := Options.is_verbose ();
-  G.extend (object_of_typed_entry te) pos rls;
+  G.extend te pos rls;
   Gramext.warning_verbose := a
 
 (* n is the number of extended entries (not the number of Grammar commands!)
    to remove. *)
-let remove_grammar rls te = grammar_delete (object_of_typed_entry te) rls
-
 let rec remove_grammars n =
   if n>0 then
     (match !camlp4_state with
        | [] -> anomaly "Pcoq.remove_grammars: too many rules to remove"
        | ByGrammar(g,_,rls)::t ->
-           remove_grammar rls g;
+           grammar_delete g rls;
            camlp4_state := t;
            remove_grammars (n-1)
        | ByGEXTEND (undo,redo)::t ->
@@ -187,14 +170,6 @@ let parse_string f x =
   let strm = Stream.of_string x in Gram.Entry.parse f (Gram.parsable strm)
 
 (*
-let slam_ast (_,fin) id ast =
-  match id with
-    | Coqast.Nvar (loc, s) -> Coqast.Slam (loc, Some s, ast)
-    | Coqast.Nmeta (loc, s) -> Coqast.Smetalam (loc, s, ast)
-    | _ -> invalid_arg "Ast.slam_ast"
-*)
-
-(*
 let entry_type ast =
   match ast with
     | Coqast.Id (_, "LIST") -> ETastl
@@ -216,7 +191,7 @@ let trace = ref false
 (* The univ_tab is not part of the state. It contains all the grammar that
    exist or have existed before in the session. *)
 
-let univ_tab = Hashtbl.create 7
+let univ_tab = (Hashtbl.create 7 : (string, string * gram_universe) Hashtbl.t)
 
 let create_univ s =
   let u = s, Hashtbl.create 29 in Hashtbl.add univ_tab s u; u
@@ -283,22 +258,22 @@ let create_entry (u, utab) s etyp =
     new_entry etyp (u, utab) s
 
 let create_constr_entry u s =
-  outGenAstType rawwit_constr (create_entry u s (GenAstType ConstrArgType))
+  outGramObj rawwit_constr (create_entry u s ConstrArgType)
 
 let create_generic_entry s wit = 
   let (u,utab) = utactic in
   let etyp = unquote wit in
   try
     let e = Hashtbl.find utab s in
-    if type_of_typed_entry e <> GenAstType etyp then
+    if type_of_typed_entry e <> etyp then
       failwith ("Entry " ^ u ^ ":" ^ s ^ " already exists with another type");
-    outGenAstType wit e
+    outGramObj wit e
   with Not_found ->
     if !trace then begin
       Printf.eprintf "[Creating entry %s:%s]\n" u s; flush stderr; ()
     end;
   let e = Gram.Entry.create s in
-  Hashtbl.add utab s (inGenAstType wit e); e
+  Hashtbl.add utab s (inGramObj wit e); e
 
 let get_generic_entry s =
   let (u,utab) = utactic in
@@ -308,10 +283,7 @@ let get_generic_entry s =
     error ("unknown grammar entry "^u^":"^s)
 
 let get_generic_entry_type (u,utab) s =
-  try
-    match type_of_typed_entry (Hashtbl.find utab s) with
-      | GenAstType t -> t
-      | _ -> error "Not a generic type"
+  try type_of_typed_entry (Hashtbl.find utab s)
   with Not_found -> 
     error ("unknown grammar entry "^u^":"^s)
 
@@ -319,8 +291,6 @@ let force_entry_type (u, utab) s etyp =
   try
     let entry = Hashtbl.find utab s in
     let extyp = type_of_typed_entry entry in
-    if etyp = PureAstType && extyp = GenAstType ConstrArgType then
-      entry else
     if etyp = extyp then 
       entry
     else begin
@@ -333,45 +303,55 @@ let force_entry_type (u, utab) s etyp =
   with Not_found -> 
     new_entry etyp (u, utab) s
 
-(* Grammar entries *)
+(* [make_gen_entry] builds entries extensible by giving its name (a string) *)
+(* For entries extensible only via the ML name, Gram.Entry.create is enough *)
 
-let make_entry (u,univ) in_fun s =
+let make_gen_entry (u,univ) rawwit s =
   let e = Gram.Entry.create (u ^ ":" ^ s) in
-  Hashtbl.add univ s (in_fun e); e
+  Hashtbl.add univ s (inGramObj rawwit e); e
 
-let make_gen_entry u rawwit = make_entry u (inGenAstType rawwit)
+(* Grammar entries *)
 
 module Prim =
   struct
     let gec_gen x = make_gen_entry uprim x
-    let gec = make_entry uprim inPureAstType
-    let gec_list = make_entry uprim inAstListType
     
+    (* Entries that can be refered via the string -> Gram.Entry.e table *)
+    (* Typically for tactic or vernac extensions *)
     let preident = gec_gen rawwit_pre_ident "preident"
     let ident = gec_gen rawwit_ident "ident"
-    let rawident = Gram.Entry.create "Prim.rawident"
     let natural = gec_gen rawwit_int "natural"
     let integer = gec_gen rawwit_int "integer"
     let string = gec_gen rawwit_string "string"
-    let qualid = gec_gen rawwit_qualid "qualid"
-    let reference = make_entry uprim inReferenceAstType "reference"
+    let reference = make_gen_entry uprim rawwit_ref "reference"
+
+    (* A synonym of ident, for compatibility *)
+    let var = gec_gen rawwit_ident "var"
+
+    let name = Gram.Entry.create "Prim.name"
+    let identref = Gram.Entry.create "Prim.identref"
+
+    (* A synonym of ident - maybe ident will be located one day *)
+    let base_ident = Gram.Entry.create "Prim.base_ident"
+
+    let qualid = Gram.Entry.create "Prim.qualid"
     let dirpath = Gram.Entry.create "Prim.dirpath"
-    let astpat = make_entry uprim inDynamicAstType "astpat"
-    let ast = gec "ast"
-    let astlist = gec_list "astlist"
+
+    (* For old ast printer *)
+    let astpat = Gram.Entry.create "Prim.astpat"
+    let ast = Gram.Entry.create "Prim.ast"
+    let astlist = Gram.Entry.create "Prim.astlist"
     let ast_eoi = eoi_entry ast
-    let astact = gec "astact"
-    let metaident = gec "metaident"
-    let var = gec "var"
+    let astact = Gram.Entry.create "Prim.astact"
   end
 
 
 module Constr =
   struct
-    let gec = make_entry uconstr inPureAstType
     let gec_constr = make_gen_entry uconstr rawwit_constr
-    let gec_list = make_entry uconstr inAstListType
+    let gec_constr_list = make_gen_entry uconstr (wit_list0 rawwit_constr)
 
+    (* Entries that can be refered via the string -> Gram.Entry.e table *)
     let constr = gec_constr "constr"
     let constr0 = gec_constr "constr0"
     let constr1 = gec_constr "constr1"
@@ -387,35 +367,30 @@ module Constr =
     let constr10 = gec_constr "constr10"
     let constr_eoi = eoi_entry constr
     let lconstr = gec_constr "lconstr"
-    let ident = gec "ident"
-    let qualid = gec "qualid"
-    let global = gec "global"
-    let ne_ident_comma_list = gec_list "ne_ident_comma_list"
-    let ne_constr_list = gec_list "ne_constr_list"
-    let sort = gec_constr "sort"
-    let pattern = gec "pattern"
-    let constr_pattern = gec "constr_pattern"
-    let ne_binders_list = gec_list "ne_binders_list"
-    let numarg = gec "numarg"
-  end
+    let sort = make_gen_entry uconstr rawwit_sort "sort"
 
+    let ident = make_gen_entry uconstr rawwit_ident "ident"
+    let global = make_gen_entry uconstr rawwit_ref "global"
+
+    let ne_name_comma_list = Gram.Entry.create "constr:ne_name_comma_list"
+    let ne_constr_list = gec_constr_list "ne_constr_list"
+    let pattern = Gram.Entry.create "constr:pattern"
+    let constr_pattern = gec_constr "constr_pattern"
+  end
 
 module Module =
   struct
-    let gec = make_entry umodule inPureAstType
-    let gec_list = make_entry umodule inAstListType
-
-    let ident = gec "ident"
-    let qualid = gec_list "qualid"
-    let ne_binders_list = gec_list "ne_binders_list"
-    let module_expr = gec "module_expr"
-    let module_type = gec "module_type"
+    let module_expr = Gram.Entry.create "module_expr"
+    let module_type = Gram.Entry.create "module_type"
   end
 
 module Tactic =
   struct
-    let gec = make_entry utactic inPureAstType
-    let gec_list = make_entry utactic inAstListType
+    (* Main entry for extensions *)
+    let simple_tactic = Gram.Entry.create "tactic:simple_tactic"
+
+    (* Entries that can be refered via the string -> Gram.Entry.e table *)
+    (* Typically for tactic user extensions *)
     let castedopenconstr = 
       make_gen_entry utactic rawwit_casted_open_constr "castedopenconstr"
     let constr_with_bindings =
@@ -425,23 +400,31 @@ module Tactic =
       make_gen_entry utactic rawwit_quant_hyp "quantified_hypothesis"
     let int_or_var = make_gen_entry utactic rawwit_int_or_var "int_or_var"
     let red_expr = make_gen_entry utactic rawwit_red_expr "red_expr"
-    let simple_tactic = make_entry utactic inTacticAtomAstType "simple_tactic"
+
+    (* Main entries for ltac *)
     let tactic_arg = Gram.Entry.create "tactic:tactic_arg"
     let tactic = make_gen_entry utactic rawwit_tactic "tactic"
+
+    (* Main entry for quotations *)
     let tactic_eoi = eoi_entry tactic
   end
 
 
 module Vernac_ =
   struct
-    let thm_token = make_entry uvernac inThmTokenAstType "thm_token"
-    let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
     let gec_vernac s = Gram.Entry.create ("vernac:" ^ s)
+
+    (* The different kinds of vernacular commands *)
     let gallina = gec_vernac "gallina"
     let gallina_ext = gec_vernac "gallina_ext"
     let command = gec_vernac "command"
     let syntax = gec_vernac "syntax_command"
     let vernac = gec_vernac "Vernac_.vernac"
+
+    (* Various vernacular entries needed to be exported *)
+    let thm_token = Gram.Entry.create "vernac:thm_token"
+    let class_rawexpr = Gram.Entry.create "vernac:class_rawexpr"
+
     let vernac_eoi = eoi_entry vernac
   end
 
@@ -462,8 +445,12 @@ open Tactic
 open Vernac_
 
 (* current file and toplevel/vernac.ml *)
+let globalizer = ref (fun x -> failwith "No globalizer")
+let set_globalizer f = globalizer := f
 
-let define_quotation default s e =
+let f = (ast : Coqast.t G.Entry.e)
+
+let define_ast_quotation default s (e:Coqast.t G.Entry.e) =
   (if default then
     GEXTEND Gram
       ast: [ [ "<<"; c = e; ">>" -> c ] ];
@@ -487,31 +474,16 @@ let define_quotation default s e =
      *)
    END)
 
-let _ = define_quotation false "ast" ast in ()
+(*
+let _ = define_ast_quotation false "ast" ast in ()
+*)
 
-let gecdyn s =
-  let e = Gram.Entry.create ("Dyn." ^ s) in
-  Hashtbl.add (snd uconstr) s (inDynamicAstType e); e
-
-let dynconstr = gecdyn "dynconstr"
-let dyncasespattern = gecdyn "dyncasespattern"
-let dyntactic = gecdyn "dyntactic"
-let dynvernac = gecdyn "dynvernac"
-let dynastlist = gecdyn "dynastlist"
-let dynast = gecdyn "dynast"
-
-let globalizer = ref (fun x -> x)
-let set_globalizer f = globalizer := f
+let dynconstr = Gram.Entry.create "Constr.dynconstr"
+let dyncasespattern = Gram.Entry.create "Constr.dyncasespattern"
 
 GEXTEND Gram
-  dynconstr: [ [ a = Constr.constr -> !globalizer (PureAstNode a) ] ];
-  dyncasespattern: [ [ a = Constr.pattern -> !globalizer (PureAstNode a) ] ];
-(*
-  dyntactic: [ [ a = Tactic.tactic -> !globalizer (TacticAstNode a) ] ];
-  dynvernac: [ [ a = Vernac_.vernac -> !globalizer(VernacAstNode a) ] ];
-*)
-  dynastlist: [ [ a = Prim.astlist -> AstListNode a ] ];
-  dynast:    [ [ a = ast -> PureAstNode a ] ];
+  dynconstr: [ [ a = Constr.constr -> ConstrNode a ] ];
+  dyncasespattern: [ [ a = Constr.pattern -> CasesPatternNode a ] ];
 END
 
 (**********************************************************************)
@@ -519,41 +491,27 @@ END
 (* and Syntax pattern, according to the universe of the rule defined  *)
 
 type parser_type =
-  | AstListParser
-  | AstParser
   | ConstrParser
   | CasesPatternParser
-  | TacticParser
-  | VernacParser
 
-let default_action_parser_ref = ref dynast
+let default_action_parser_ref = ref dynconstr
 
 let get_default_action_parser () = !default_action_parser_ref
 
-let entry_type_from_name =  function
-  | "constr" -> GenAstType ConstrArgType
-  | "tactic" -> failwith "Not supported"
-  | "vernac" -> failwith "Not supported"
-  | s -> GenAstType ConstrArgType
-
 let entry_type_of_parser =  function
-  | AstListParser -> Some AstListType
-  | _ -> None
+  | ConstrParser -> Some ConstrArgType
+  | CasesPatternParser -> failwith "entry_type_of_parser: cases_pattern, TODO"
 
 let parser_type_from_name =  function
   | "constr" -> ConstrParser
   | "cases_pattern" -> CasesPatternParser
-  | "tactic" -> TacticParser
-  | "vernac" -> VernacParser
-  | s -> AstParser
+  | "tactic" -> assert false
+  | "vernac" -> error "No longer supported"
+  | s -> ConstrParser
 
 let set_default_action_parser = function
-  | AstListParser -> default_action_parser_ref := dynastlist
-  | AstParser -> default_action_parser_ref := dynast
   | ConstrParser  -> default_action_parser_ref := dynconstr
   | CasesPatternParser  -> default_action_parser_ref := dyncasespattern
-  | TacticParser -> default_action_parser_ref := dyntactic
-  | VernacParser -> default_action_parser_ref := dynvernac
 
 let default_action_parser =
   Gram.Entry.of_parser "default_action_parser" 

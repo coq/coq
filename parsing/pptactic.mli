@@ -1,13 +1,10 @@
-(****************************************************************************)
-(*                                                                          *)
-(*                          The Coq Proof Assistant                         *)
-(*                                                                          *)
-(*                                 Projet Coq                               *)
-(*                                                                          *)
-(*                     INRIA        LRI-CNRS        ENS-CNRS                *)
-(*              Rocquencourt         Orsay          Lyon                    *)
-(*                                                                          *)
-(****************************************************************************)
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
 
 (* $Id$ *)
 
@@ -28,7 +25,8 @@ val declare_extra_tactic_pprule :
       string * Egrammar.grammar_tactic_production list)
       -> unit 
 
-val pr_match_rule : bool -> (raw_tactic_expr -> std_ppcmds) -> (pattern_ast,raw_tactic_expr) match_rule -> std_ppcmds
+val pr_match_rule : bool -> (raw_tactic_expr -> std_ppcmds) ->
+  (pattern_expr,raw_tactic_expr) match_rule -> std_ppcmds
 
 val pr_raw_tactic : raw_tactic_expr -> std_ppcmds
 

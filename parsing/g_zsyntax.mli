@@ -10,4 +10,7 @@
 
 (* Nice syntax for integers. *)
 
-val z_of_string : bool -> string -> Coqast.loc -> Coqast.t
+open Util
+open Topconstr
+
+val z_of_string : bool -> string -> loc -> constr_expr

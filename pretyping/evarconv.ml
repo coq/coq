@@ -19,6 +19,7 @@ open Typing
 open Classops
 open Recordops 
 open Evarutil
+open Libnames
 
 type flexible_term = FConst of constant | FRel of int | FVar of identifier 
 type flex_kind_of_term =
@@ -70,8 +71,8 @@ let evar_apprec env isevars stack c =
 
 let check_conv_record (t1,l1) (t2,l2) =
   try
-    let proji = Declare.reference_of_constr t1 in
-    let cstr = Declare.reference_of_constr t2 in
+    let proji = reference_of_constr t1 in
+    let cstr = reference_of_constr t2 in
     let { o_DEF = c; o_TABS = bs; o_TPARAMS = params; o_TCOMPS = us } = 
       objdef_info (proji, cstr) in
     let params1, c1, extra_args1 =
@@ -327,7 +328,7 @@ and conv_record env isevars (c,bs,(params,params1),(us,us2),(ts,ts1),c1) =
   let ks =
     List.fold_left
       (fun ks b ->
-	 let dloc = (Rawterm.dummy_loc,Rawterm.InternalHole) in
+	 let dloc = (dummy_loc,Rawterm.InternalHole) in
 	 (new_isevar isevars env dloc (substl ks b)) :: ks)
       [] bs
   in

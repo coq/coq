@@ -68,7 +68,7 @@ let mis_make_case_com depopt env sigma (ind,mib,mip) kind =
       let nbprod = k+1 in
       let indf = make_ind_family(ind,extended_rel_list nbprod lnamespar) in
       let lnamesar,_ = get_arity env indf in
-      let ci = make_default_case_info env ind in
+      let ci = make_default_case_info env RegularStyle ind in
       it_mkLambda_or_LetIn_name env'
        	(lambda_create env'
            (build_dependent_inductive env indf,
@@ -288,7 +288,7 @@ let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
 		(lambda_create env
 		   (build_dependent_inductive env
                      (lift_inductive_family nrec indf),
-		    mkCase (make_default_case_info env indi,
+		    mkCase (make_default_case_info env RegularStyle indi,
 			       mkRel (dect+j+1), mkRel 1, branches)))
 		(Termops.lift_rel_context nrec lnames)
 	    in

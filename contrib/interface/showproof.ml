@@ -17,7 +17,6 @@ open Translate
 open Term
 open Reductionops
 open Clenv
-open Astterm
 open Typing
 open Inductive
 open Inductiveops
@@ -188,8 +187,8 @@ let rule_to_ntactic r =
    let rt =
      (match r with
        Tactic (t,_) -> t
-     | Prim (Refine h) -> TacAtom (Ast.dummy_loc,TacExact h)
-     | _ -> TacAtom (Ast.dummy_loc, TacIntroPattern [])) in
+     | Prim (Refine h) -> TacAtom (dummy_loc,TacExact h)
+     | _ -> TacAtom (dummy_loc, TacIntroPattern [])) in
    if rule_is_complex r
    then (match rt with
            TacArg (Tacexp _) as t -> t
@@ -198,12 +197,13 @@ let rule_to_ntactic r =
    else rt
 ;;
 
-
+(*
 let term_of_command x =
   match x with
     Node(_,_,y::_) -> y
   | _ -> x
 ;;
+*)
 
 (* Attribue les preuves de la liste l aux sous-buts non-prouvés de nt  *)
 
@@ -270,7 +270,7 @@ let  to_nproof sigma osign pf =
 			    t_concl=concl ntree;
 			    t_full_concl=ntree.t_goal.t_full_concl;
 			    t_full_env=ntree.t_goal.t_full_env};
-		  t_proof= Proof (TacAtom (Ast.dummy_loc,TacExtend ("InfoAuto",[])), [ntree])}
+		  t_proof= Proof (TacAtom (dummy_loc,TacExtend (dummy_loc,"InfoAuto",[])), [ntree])}
 	      else ntree
 	  | _ -> ntree))
       	else
@@ -415,7 +415,7 @@ let enumerate f ln =
 ;;
 
 
-let constr_of_ast = Astterm.interp_constr Evd.empty (Global.env());;
+let constr_of_ast = Constrintern.interp_constr Evd.empty (Global.env());;
 
 (*
 let sp_tac tac =
@@ -1139,7 +1139,7 @@ let eq_term = eq_constr;;
 let is_equality_tac = function
   | TacAtom (_,
       (TacExtend
-	(("ERewriteLR"|"ERewriteRL"|"ERewriteLRocc"|"ERewriteRLocc"
+	(_,("ERewriteLR"|"ERewriteRL"|"ERewriteLRocc"|"ERewriteRLocc"
 	 |"ERewriteParallel"|"ERewriteNormal"
 	 |"RewriteLR"|"RewriteRL"|"Replace"),_)
       | TacReduce _
@@ -1196,7 +1196,7 @@ let  list_to_eq l o=
 
 let stde = Global.env;;
 
-let dbize env = Astterm.interp_constr Evd.empty env;;
+let dbize env = Constrintern.interp_constr Evd.empty env;;
 
 (**********************************************************************)
 let rec natural_ntree ig ntree =
@@ -1214,8 +1214,7 @@ let rec natural_ntree ig ntree =
 	(fun (_,ntree) ->
 	 let lemma =  match (proof ntree) with
 	   Proof (tac,ltree) ->
-	     (try (sph [spt (dbize (gLOB ge)
-				(term_of_command (arg1_tactic tac)));(* TODO *)
+	     (try (sph [spt (dbize (gLOB ge) (arg1_tactic tac));(* TODO *)
 			  (match ltree with
 			    [] ->spe
 			  | [_] -> spe
@@ -1279,39 +1278,39 @@ let rec natural_ntree ig ntree =
 	  | TacLeft _ -> natural_left ig lh g gs ltree
 	  | (* "Simpl" *)TacReduce (r,cl)  ->
 	      natural_reduce ig lh g gs ge r cl ltree
-	  | TacExtend ("InfoAuto",[]) -> natural_infoauto ig lh g gs ltree
+	  | TacExtend (_,"InfoAuto",[]) -> natural_infoauto ig lh g gs ltree
 	  | TacAuto _ -> natural_auto ig lh g gs ltree
-	  | TacExtend ("EAuto",_) -> natural_auto ig lh g gs ltree
+	  | TacExtend (_,"EAuto",_) -> natural_auto ig lh g gs ltree
 	  | TacTrivial _ -> natural_trivial ig lh g gs ltree
 	  | TacAssumption -> natural_trivial ig lh g gs ltree
 	  | TacClear _ -> natural_clear ig lh g gs ltree
 (* Besoin de l'argument de la tactique *)
 	  | TacOldInduction (NamedHyp id) -> 
               natural_induction ig lh g gs ge id ltree false
-	  | TacExtend ("InductionIntro",[a]) -> 
+	  | TacExtend (_,"InductionIntro",[a]) -> 
               let id=(out_gen wit_ident a) in
               natural_induction ig lh g gs ge id ltree true
 	  | TacApply (c,_) -> natural_apply ig lh g gs c ltree
 	  | TacExact c -> natural_exact ig lh g gs c ltree
 	  | TacCut c -> natural_cut ig lh g gs c ltree
-	  | TacExtend ("CutIntro",[a]) ->
+	  | TacExtend (_,"CutIntro",[a]) ->
 	      let c = out_gen wit_constr a in
 	      natural_cutintro ig lh g gs a ltree
 	  | TacCase (c,_) -> natural_case ig lh g gs ge c ltree false
-	  | TacExtend ("CaseIntro",[a]) ->
+	  | TacExtend (_,"CaseIntro",[a]) ->
 	      let c = out_gen wit_constr a in
 	      natural_case ig lh g gs ge c ltree true
 	  | TacElim ((c,_),_) -> natural_elim ig lh g gs ge c ltree false
-	  | TacExtend ("ElimIntro",[a]) ->
+	  | TacExtend (_,"ElimIntro",[a]) ->
 	      let c = out_gen wit_constr a in
 	      natural_elim ig lh g gs ge c ltree true
-	  | TacExtend ("Rewrite",[_;a]) ->
+	  | TacExtend (_,"Rewrite",[_;a]) ->
 	      let (c,_) = out_gen wit_constr_with_bindings a in
 	      natural_rewrite ig lh g gs c ltree
-	  | TacExtend ("ERewriteRL",[a]) ->
+	  | TacExtend (_,"ERewriteRL",[a]) ->
 	      let c = out_gen wit_constr a in (* TODO *)
 	      natural_rewrite ig lh g gs c ltree
-	  | TacExtend ("ERewriteLR",[a]) ->
+	  | TacExtend (_,"ERewriteLR",[a]) ->
 	      let c = out_gen wit_constr a in (* TODO *)
 	      natural_rewrite ig lh g gs c ltree
 	  |_ -> natural_generic ig lh g gs (sps (name_tactic tac)) (prl sp_tac [tac]) ltree

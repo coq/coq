@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*i camlp4deps: "parsing/grammar.cma kernel/names.cmo parsing/ast.cmo parsing/g_tactic.cmo  parsing/g_ltac.cmo parsing/g_constr.cmo" i*)
+(*i camlp4deps: "parsing/grammar.cma" i*)
 
 (* $Id$ *)
 
@@ -23,7 +23,7 @@ open Vernacexpr
 open Tacexpr
 
 (* Interpretation of constr's *)
-let constr_of com = Astterm.interp_constr Evd.empty (Global.env()) com
+let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c
 
 (* Construction of constants *)
 let constant dir s =

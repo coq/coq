@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Names
 open Univ
 open Environ
@@ -80,7 +81,9 @@ val error_no_module_to_end : unit -> 'a
 
 val error_no_modtype_to_end : unit -> 'a
 
-val error_not_a_modtype : string -> 'a 
+val error_not_a_modtype_loc : loc -> string -> 'a 
+
+val error_not_a_module_loc : loc -> string -> 'a 
 
 val error_not_a_module : string -> 'a 
 

@@ -12,14 +12,14 @@ open Util
 open Pp
 open Names
 open Libnames
-open Rawterm
+open Topconstr
 open Libobject
 open Lib
 open Nameops
 
 (* Syntactic definitions. *)
 
-let syntax_table = ref (KNmap.empty : rawconstr KNmap.t)
+let syntax_table = ref (KNmap.empty : aconstr KNmap.t)
 
 let _ = Summary.declare_summary
 	  "SYNTAXCONSTANT"
@@ -49,7 +49,7 @@ let open_syntax_constant i ((sp,kn),c) =
   Nametab.push_syntactic_definition (Nametab.Exactly i) sp kn
 
 let subst_syntax_constant ((sp,kn),subst,c) =
-  subst_raw subst c
+  subst_aconstr subst c
 
 let classify_syntax_constant (_,c) = Substitute c
 
@@ -65,17 +65,8 @@ let (in_syntax_constant, out_syntax_constant) =
 let declare_syntactic_definition id c =
   let _ = add_leaf id (in_syntax_constant c) in ()
 
-let rec set_loc loc = function
-  | RRef (_,a)      -> RRef (loc,a)
-  | RVar (_,a)      -> RVar (loc,a)
-  | RApp (_,a,b)    -> RApp (loc,set_loc loc a,List.map (set_loc loc) b)
-  | RSort (_,a)      -> RSort (loc,a) 
-  | RHole (_,a)      -> RHole (loc,a)
-  | RLambda (_,na,ty,c) -> RLambda (loc,na,set_loc loc ty,set_loc loc c)
-  | RProd (_,na,ty,c) -> RProd (loc,na,set_loc loc ty,set_loc loc c)
-  | RLetIn (_,na,b,c) -> RLetIn (loc,na,set_loc loc b,set_loc loc c)
-  | RCast (_,a,b) -> RCast (loc,set_loc loc a,set_loc loc b)
-  | a -> warning "Unrelocatated syntactic definition"; a
+let rec set_loc loc _ a =
+  map_aconstr_with_binders_loc loc (fun id e -> (id,e)) (set_loc loc) () a
 
 let search_syntactic_definition loc kn =
-  set_loc loc (KNmap.find kn !syntax_table)
+  set_loc loc () (KNmap.find kn !syntax_table)

@@ -14,8 +14,8 @@ open Util
 open Names
 open Libnames
 
-val extraction : qualid located -> unit
-val extraction_rec : qualid located list -> unit
-val extraction_file : string -> qualid located list -> unit
+val extraction : reference -> unit
+val extraction_rec : reference list -> unit
+val extraction_file : string -> reference list -> unit
 val extraction_module : identifier -> unit
 val recursive_extraction_module : identifier -> unit

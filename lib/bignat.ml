@@ -8,6 +8,10 @@
 
 (* $Id$ *)
 
+(*i*)
+open Pp
+(*i*)
+
 (* Arbitrary big natural numbers *)
 
 type bignat = int array
@@ -101,3 +105,8 @@ let less_than m n =
   (um < un) || (um = un && lt 0)
 
 type bigint = POS of bignat | NEG of bignat
+
+let pr_bigint = function
+  | POS n -> str (to_string n)
+  | NEG n -> str "-" ++ str (to_string n)
+

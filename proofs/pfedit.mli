@@ -9,14 +9,15 @@
 (*i $Id$ i*)
 
 (*i*)
+open Util
 open Pp
 open Names
 open Term
 open Sign
 open Environ
 open Decl_kinds
-open Proof_type
 open Tacmach
+open Tacexpr
 (*i*)
 
 (*s Several proofs can be opened simultaneously but at most one is
@@ -39,7 +40,7 @@ val check_no_pending_proofs : unit -> unit
 (*s [delete_proof name] deletes proof of name [name] or fails if no proof
     has this name *)
 
-val delete_proof : identifier -> unit
+val delete_proof : identifier located -> unit
 
 (* [delete_current_proof ()] deletes current focused proof or fails if
     no proof is focused *)
@@ -83,7 +84,7 @@ val resume_last_proof : unit -> unit
 (* [resume_proof name] focuses on the proof of name [name] or
    raises [UserError] if no proof has name [name] *)
 
-val resume_proof : identifier -> unit
+val resume_proof : identifier located -> unit
 
 (* [suspend_proof ()] unfocuses the current focused proof or
    failed with [UserError] if no proof is currently focused *)
@@ -141,7 +142,7 @@ val by : tactic -> unit
    UserError if no proof is focused or if there is no such [n]th
    existential variable *)
 
-val instantiate_nth_evar_com : int -> Coqast.t -> unit
+val instantiate_nth_evar_com : int -> Topconstr.constr_expr -> unit
 
 (*s To deal with subgoal focus *)
 

@@ -85,10 +85,10 @@ val locate : qualid -> global_reference
 
 (* This function is used to transform a qualified identifier into a
    global reference, with a nice error message in case of failure *)
-val global : qualid located -> global_reference
+val global : reference -> global_reference
 
 (* The same for inductive types *)
-val global_inductive : qualid located -> inductive
+val global_inductive : reference -> inductive
 
 (* This locates also syntactic definitions *)
 val extended_locate : qualid -> extended_global_reference

@@ -22,12 +22,12 @@ open Vernacinterp
    Use the module Coqtoplevel, which catches these exceptions
    (the exceptions are explained only at the toplevel). *)
 
-exception DuringCommandInterp of Coqast.loc * exn
+exception DuringCommandInterp of Util.loc * exn
 
 (* Like Exc_located, but specifies the outermost file read, the filename
    associated to the location of the error, and the error itself. *)
 
-exception Error_in_file of string * (string * Coqast.loc) * exn
+exception Error_in_file of string * (string * Util.loc) * exn
 
 (* Specifies which file is read. The intermediate file names are
    discarded here. The Drop exception becomes an error. We forget
@@ -37,13 +37,13 @@ let raise_with_file file exc =
   let (cmdloc,re) =
     match exc with
       | DuringCommandInterp(loc,e) -> (loc,e)
-      | e -> (Ast.dummy_loc,e) 
+      | e -> (dummy_loc,e) 
   in
   let (inner,inex) =
     match re with
-      | Error_in_file (_, (f,loc), e) when loc <> Ast.dummy_loc ->
+      | Error_in_file (_, (f,loc), e) when loc <> dummy_loc ->
           ((f, loc), e)
-      | Stdpp.Exc_located (loc, e) when loc <> Ast.dummy_loc ->
+      | Stdpp.Exc_located (loc, e) when loc <> dummy_loc ->
           ((file, loc), e)
       | _ -> ((file,cmdloc), re)
   in 

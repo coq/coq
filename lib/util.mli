@@ -39,6 +39,7 @@ val dummy_loc : loc
 val anomaly_loc : loc * string * std_ppcmds -> 'a
 val user_err_loc : loc * string * std_ppcmds -> 'a
 val invalid_arg_loc : loc * string -> 'a
+val join_loc : loc -> loc -> loc
 
 (*s Chars. *)
 

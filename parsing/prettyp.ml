@@ -398,7 +398,8 @@ let list_filter_vec f vec =
   frec (Array.length vec -1) []
 
 (* This is designed to print the contents of an opened section *)
-let read_sec_context (loc,qid) =
+let read_sec_context r =
+  let loc,qid = qualid_of_reference r in
   let dir =
     try Nametab.locate_section qid
     with Not_found ->
@@ -430,7 +431,8 @@ let print_eval red_fun env {uj_val=trm;uj_type=typ} =
   let ntrm = red_fun env Evd.empty trm in
   (str "     = " ++ print_judgment env {uj_val = ntrm; uj_type = typ})
 
-let print_name (loc,qid) = 
+let print_name r = 
+  let loc,qid = qualid_of_reference r in
   try 
     let sp = Nametab.locate_obj qid in
     let (oname,lobj) = 

@@ -4,7 +4,6 @@
 open Ctast;;
 open Termops;;
 open Nameops;;
-open Astterm;;
 open Auto;;
 open Clenv;;
 open Command;;

@@ -132,7 +132,7 @@ END
 
 let add_rewrite_hint name ort t lcsr =
   let env = Global.env() and sigma = Evd.empty in
-  let f c = Astterm.interp_constr sigma env c, ort, t in
+  let f c = Constrintern.interp_constr sigma env c, ort, t in
   add_rew_rules name (List.map f lcsr)
 
 VERNAC COMMAND EXTEND HintRewrite
@@ -171,10 +171,6 @@ VERNAC COMMAND EXTEND AddSetoid
 | [ "Add" "Morphism" constr(m) ":" ident(s) ] -> [ new_named_morphism s m ]
 END
 
-(*
-cp tactics/extratactics.ml4 toto.ml; camlp4o -I parsing pa_extend.cmo grammar.cma pr_o.cmo toto.ml 
-*)
-
 (* Inversion lemmas (Leminv) *)
 
 VERNAC COMMAND EXTEND DeriveInversionClear
@@ -188,15 +184,18 @@ VERNAC COMMAND EXTEND DeriveInversionClear
   -> [ add_inversion_lemma_exn na c s false inv_clear_tac ]
 
 | [ "Derive" "Inversion_clear"  ident(na) "with" constr(c) ]
-  -> [ add_inversion_lemma_exn na c (let loc = (0,0) in <:ast< (PROP) >>) false inv_clear_tac ]
+  -> [ add_inversion_lemma_exn na c (Rawterm.RProp Term.Null) false inv_clear_tac ]
 END
+
+open Term
+open Rawterm
 
 VERNAC COMMAND EXTEND DeriveInversion
 | [ "Derive" "Inversion" ident(na) "with" constr(c) "Sort" sort(s) ]
   -> [ add_inversion_lemma_exn na c s false half_inv_tac ]
 
 | [ "Derive" "Inversion" ident(na) "with" constr(c) ]
-  -> [ add_inversion_lemma_exn na c (let loc = (0,0) in <:ast< (PROP) >>) false half_inv_tac ]
+  -> [ add_inversion_lemma_exn na c (RProp Null) false half_inv_tac ]
 
 | [ "Derive" "Inversion" ident(na) ident(id) ]
   -> [ inversion_lemma_from_goal 1 na id Term.mk_Prop false half_inv_tac ]

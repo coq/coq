@@ -279,7 +279,7 @@ let mkOnThen t1 t2 selected_indices =
   let a = in_gen rawwit_tactic t1 in
   let b = in_gen rawwit_tactic t2 in
   let l = in_gen (wit_list0 rawwit_int) selected_indices in
-  TacAtom (dummy_loc, TacExtend ("OnThen", [a;b;l]));;
+  TacAtom (dummy_loc, TacExtend (dummy_loc, "OnThen", [a;b;l]));;
 
 (* Analyzing error reports *)
 
@@ -363,7 +363,7 @@ let rec reconstruct_success_tac tac =
 	  Report_node(true, n, l) -> tac
 	| Report_node(false, n, rl) ->
 	    let selected_indices = select_success 1 rl in
-	    TacAtom (Ast.dummy_loc,TacExtend ("OnThen",
+	    TacAtom (dummy_loc,TacExtend (dummy_loc,"OnThen",
 	      [in_gen rawwit_tactic a;
 	       in_gen rawwit_tactic b;
 	       in_gen (wit_list0 rawwit_int) selected_indices]))

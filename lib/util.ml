@@ -29,6 +29,7 @@ let dummy_loc = (0,0)
 let anomaly_loc (loc,s,strm) = Stdpp.raise_with_loc loc (Anomaly (s,strm))
 let user_err_loc (loc,s,strm) = Stdpp.raise_with_loc loc (UserError (s,strm))
 let invalid_arg_loc (loc,s) = Stdpp.raise_with_loc loc (Invalid_argument s)
+let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
 
 (* Characters *)
 

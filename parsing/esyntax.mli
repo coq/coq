@@ -13,6 +13,8 @@ open Pp
 open Extend
 open Vernacexpr
 open Symbols
+open Ppextend
+open Topconstr
 (*i*)
 
 (* Syntax entry tables. *)
@@ -33,9 +35,9 @@ val warning_verbose : bool ref
 
 (* Pretty-printing *)
 
-type std_printer = Genarg.constr_ast -> std_ppcmds
+type std_printer = Coqast.t -> std_ppcmds
 type unparsing_subfunction = string -> tolerability option -> std_printer
-type primitive_printer = Genarg.constr_ast -> std_ppcmds option
+type primitive_printer = Coqast.t -> std_ppcmds option
 
 (* Module of constr primitive printers [old style - no scope] *)
 module Ppprim :

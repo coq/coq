@@ -224,8 +224,8 @@ let reduce redexp cl goal =
 (* Unfolding occurrences of a constant *)
 
 let unfold_constr = function 
-  | ConstRef sp -> unfold_in_concl [[],Closure.EvalConstRef sp]
-  | VarRef id -> unfold_in_concl [[],Closure.EvalVarRef id]
+  | ConstRef sp -> unfold_in_concl [[],EvalConstRef sp]
+  | VarRef id -> unfold_in_concl [[],EvalVarRef id]
   | _ -> errorlabstrm "unfold_constr" (str "Cannot unfold a non-constant.")
 
 (*******************************************)
@@ -481,7 +481,6 @@ let apply_with_bindings (c,lbind) gl =
 
 
 let apply c = apply_with_bindings (c,NoBindings)
-let apply_com = tactic_com (fun c -> apply_with_bindings (c,NoBindings))
 
 let apply_list = function 
   | c::l -> apply_with_bindings (c,ImplicitBindings l)
@@ -493,8 +492,6 @@ let apply_without_reduce c gl =
   let (wc,kONT) = startWalk gl in
   let clause = mk_clenv_type_of wc c in 
   res_pf kONT clause gl
-
-let apply_without_reduce_com = tactic_com  apply_without_reduce
 
 let refinew_scheme kONT clause gl = res_pf kONT clause gl
 
@@ -750,7 +747,7 @@ let exact_no_check = refine
 
 let exact_proof c gl =
   (* on experimente la synthese d'ise dans exact *)
-  let c = Astterm.interp_casted_constr (project gl) (pf_env gl) c (pf_concl gl)
+  let c = Constrintern.interp_casted_constr (project gl) (pf_env gl) c (pf_concl gl)
   in refine c gl 
 
 let (assumption : tactic) = fun gl ->
@@ -1638,7 +1635,7 @@ let abstract_subproof name tac gls =
     let cd = Entries.DefinitionEntry const in
     let sp = Declare.declare_constant na (cd,IsProof Lemma) in
     let newenv = Global.env() in
-    Declare.constr_of_reference (ConstRef (snd sp))
+    constr_of_reference (ConstRef (snd sp))
   in
   exact_no_check 
     (applist (lemme,

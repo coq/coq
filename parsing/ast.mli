@@ -10,19 +10,17 @@
 
 (*i*)
 open Pp
+open Util
 open Names
 open Libnames
 open Coqast
+open Topconstr
 open Genarg
 (*i*)
 
 (* Abstract syntax trees. *)
 
-val dummy_loc : Coqast.loc
-val loc : Coqast.t -> Coqast.loc
-(*
-val vernac_loc : Coqast.vernac_ast -> Coqast.loc
-*)
+val loc : Coqast.t -> loc
 
 (* ast constructors with dummy location *)
 val ope : string * Coqast.t list -> Coqast.t
@@ -34,9 +32,9 @@ val string : string -> Coqast.t
 val path : kernel_name -> Coqast.t
 val dynamic : Dyn.t -> Coqast.t
 
-val set_loc : Coqast.loc -> Coqast.t -> Coqast.t
+val set_loc : loc -> Coqast.t -> Coqast.t
 
-val path_section : Coqast.loc -> kernel_name -> Coqast.t
+val path_section : loc -> kernel_name -> Coqast.t
 val section_path : kernel_name -> kernel_name
 
 (* ast destructors *)
@@ -44,19 +42,6 @@ val num_of_ast : Coqast.t -> int
 val id_of_ast : Coqast.t -> string
 val nvar_of_ast : Coqast.t -> identifier
 val meta_of_ast : Coqast.t -> string
-
-(* ast processing datatypes *)
-
-type entry_type =
-  | PureAstType
-  | IntAstType
-  | IdentAstType
-  | AstListType
-  | TacticAtomAstType
-  | ThmTokenAstType
-  | DynamicAstType
-  | ReferenceAstType
-  | GenAstType of Genarg.argument_type
 
 (* patterns of ast *)
 type astpat =
@@ -79,7 +64,7 @@ type pat =
 
 (* semantic actions of grammar rules *)
 type act =
-  | Act of pat
+  | Act of constr_expr
   | ActCase of act * (pat * act) list
   | ActCaseList of act * (pat * act) list
 
@@ -90,28 +75,21 @@ type typed_ast =
 
 type ast_action_type = ETast | ETastl
 
+type dynamic_grammar =
+  | ConstrNode of constr_expr
+  | CasesPatternNode of cases_pattern_expr
+
 type grammar_action =
-  | SimpleAction of loc * typed_ast
+  | SimpleAction of loc * dynamic_grammar
   | CaseAction of
       loc * grammar_action * ast_action_type * (t list * grammar_action) list
 
 type env = (string * typed_ast) list
 
-val coerce_to_var : Coqast.t -> Coqast.t 
+val coerce_to_id : constr_expr -> identifier
 
-val coerce_to_id : Coqast.t -> identifier
-
-val coerce_qualid_to_id : qualid Util.located -> identifier
-
-val coerce_reference_to_id : reference_expr -> identifier
-
-val abstract_binders_ast :
-  Coqast.loc -> string -> Coqast.t -> Coqast.t -> Coqast.t
-
-val mkCastC : Coqast.t * Coqast.t -> Coqast.t
-val mkLambdaC : identifier * Coqast.t * Coqast.t -> Coqast.t
-val mkLetInC : identifier * Coqast.t * Coqast.t -> Coqast.t
-val mkProdC : identifier * Coqast.t * Coqast.t -> Coqast.t
+val coerce_global_to_id : reference -> identifier
+val coerce_reference_to_id : reference -> identifier
 
 exception No_match of string
 
@@ -126,32 +104,20 @@ val print_astlpat : patlist -> std_ppcmds
 
 type entry_env = (string * ast_action_type) list
 
-val grammar_type_error : Coqast.loc * string -> 'a
+val grammar_type_error : loc * string -> 'a
  
 (* Converting and checking free meta-variables *)
-val pat_sub : Coqast.loc -> env -> astpat -> Coqast.t
+
+(* For old ast printer *)
+val pat_sub : loc -> env -> astpat -> Coqast.t
 val val_of_ast : entry_env -> Coqast.t -> astpat
-val vall_of_astl : entry_env -> Coqast.t list -> patlist
-
-val pat_of_ast : entry_env -> Coqast.t -> astpat * entry_env
-
 val alpha_eq : Coqast.t * Coqast.t -> bool
 val alpha_eq_val : typed_ast * typed_ast -> bool
-
 val occur_var_ast : identifier -> Coqast.t -> bool
-val replace_vars_ast : (identifier * identifier) list -> Coqast.t -> Coqast.t
-
-val bind_env : env -> string -> typed_ast -> env
-val ast_match : env -> astpat -> Coqast.t -> env
-val astl_match : env -> patlist -> Coqast.t list -> env
 val find_all_matches : ('a -> astpat) -> env -> t -> 'a list -> ('a * env) list
 val first_matchl : ('a -> patlist) -> env -> Coqast.t list -> 'a list ->
   ('a * env) option
-
 val to_pat : entry_env -> Coqast.t -> (astpat * entry_env)
 
-val eval_act : Coqast.loc -> env -> act -> typed_ast
-val to_act_check_vars : entry_env -> ast_action_type -> grammar_action -> act
-
+(* Object substitution in modules *)
 val subst_astpat : Names.substitution -> astpat -> astpat
-val subst_act : Names.substitution -> act -> act

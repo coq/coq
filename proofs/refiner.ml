@@ -212,7 +212,7 @@ let vernac_tactic (s,args) =
 let abstract_tactic te = abstract_tactic_expr (Tacexpr.TacAtom (dummy_loc,te))
 
 let abstract_extended_tactic s args = 
-  abstract_tactic (Tacexpr.TacExtend (s, args))
+  abstract_tactic (Tacexpr.TacExtend (dummy_loc, s, args))
 
 let vernac_tactic (s,args) =
   let tacfun = lookup_tactic s args in

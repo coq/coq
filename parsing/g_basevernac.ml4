@@ -6,12 +6,11 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*i camlp4deps: "parsing/grammar.cma" i*)
-
 (* $Id$ *)
 
 open Coqast
 open Extend
+open Ppextend
 open Vernacexpr
 open Pcoq
 open Vernac_
@@ -25,7 +24,7 @@ GEXTEND Gram
   class_rawexpr:
     [ [ IDENT "FUNCLASS" -> FunClass
       | IDENT "SORTCLASS" -> SortClass
-      | qid = Prim.qualid -> RefClass qid ] ]
+      | qid = global -> RefClass qid ] ]
   ;
 END;
 
@@ -54,9 +53,9 @@ GEXTEND Gram
       | IDENT "Dump"; IDENT "Universes"; fopt = OPT STRING ->
 	  VernacPrint (PrintUniverses fopt)
 
-      | IDENT "Locate"; qid = qualid -> VernacLocate (LocateTerm qid)
+      | IDENT "Locate"; qid = global -> VernacLocate (LocateTerm qid)
       | IDENT "Locate"; IDENT "File"; f = STRING -> VernacLocate (LocateFile f)
-      | IDENT "Locate"; IDENT "Library"; qid = qualid ->
+      | IDENT "Locate"; IDENT "Library"; qid = global ->
 	  VernacLocate (LocateLibrary  qid)
 
       (* Managing load paths *)
@@ -77,16 +76,16 @@ GEXTEND Gram
 
       (* Printing (careful factorization of entries) *)
       | IDENT "Print"; p = printable -> VernacPrint p
-      | IDENT "Print"; qid = qualid -> VernacPrint (PrintName qid)
+      | IDENT "Print"; qid = global -> VernacPrint (PrintName qid)
       | IDENT "Print" -> VernacPrint PrintLocalContext 
-      | IDENT "Print"; IDENT "Module"; "Type"; qid = qualid -> 
+      | IDENT "Print"; IDENT "Module"; "Type"; qid = global -> 
 	  VernacPrint (PrintModuleType qid)
-      | IDENT "Print"; IDENT "Module"; qid = qualid -> 
+      | IDENT "Print"; IDENT "Module"; qid = global -> 
 	  VernacPrint (PrintModule qid)
       | IDENT "Inspect"; n = natural -> VernacPrint (PrintInspect n)
 
       (* Searching the environment *)
-      | IDENT "Search"; qid = Prim.qualid; l = in_or_out_modules -> 
+      | IDENT "Search"; qid = global; l = in_or_out_modules -> 
 	  VernacSearch (SearchHead qid, l)
       | IDENT "SearchPattern"; c = constr_pattern; l = in_or_out_modules ->
 	  VernacSearch (SearchPattern c, l)
@@ -135,7 +134,7 @@ GEXTEND Gram
       | IDENT "Add"; table = IDENT; field = IDENT; v = LIST1 option_ref_value
         -> VernacAddOption (SecondaryTable (table,field), v)
 
-      (* Un value qualid ci-dessous va être caché par un field au dessus! *)
+      (* Un value global ci-dessous va être caché par un field au dessus! *)
       | IDENT "Add"; table = IDENT; v = LIST1 option_ref_value ->
           VernacAddOption (PrimaryTable table, v)
 
@@ -155,7 +154,7 @@ GEXTEND Gram
   ;
   printable:
     [ [ IDENT "All" -> PrintFullContext
-      | IDENT "Section"; s = qualid -> PrintSectionContext s
+      | IDENT "Section"; s = global -> PrintSectionContext s
       | "Grammar"; uni = IDENT; ent = IDENT ->
           (* This should be in "syntax" section but is here for factorization*)
 	  PrintGrammar (uni, ent)
@@ -170,9 +169,9 @@ GEXTEND Gram
       | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr
          -> PrintCoercionPaths (s,t)
       | IDENT "Tables" -> PrintTables
-      | "Proof"; qid = qualid -> PrintOpaqueName qid
+      | "Proof"; qid = global -> PrintOpaqueName qid
       | IDENT "Hint" -> PrintHintGoal
-      | IDENT "Hint"; qid = qualid -> PrintHint qid
+      | IDENT "Hint"; qid = global -> PrintHint qid
       | IDENT "Hint"; "*" -> PrintHintDb
       | IDENT "HintDb"; s = IDENT  -> PrintHintDbName s ] ]
   ;
@@ -181,15 +180,15 @@ GEXTEND Gram
       | s  = STRING    -> StringValue s ] ]
   ;
   option_ref_value:
-    [ [ id = qualid   -> QualidRefValue id
+    [ [ id = global   -> QualidRefValue id
       | s  = STRING   -> StringRefValue s ] ]
   ;
   as_dirpath:
     [ [ d = OPT [ "as"; d = dirpath -> d ] -> d ] ]
   ;
   in_or_out_modules:
-    [ [ IDENT "inside"; l = LIST1 qualid -> SearchInside l
-      | IDENT "outside"; l = LIST1 qualid -> SearchOutside l
+    [ [ IDENT "inside"; l = LIST1 global -> SearchInside l
+      | IDENT "outside"; l = LIST1 global -> SearchOutside l
       | -> SearchOutside [] ] ]
   ;
 END;
@@ -218,48 +217,57 @@ GEXTEND Gram
      | "Syntax"; u = univ; el = LIST1 syntax_entry SEP ";" ->
          VernacSyntax (u,el)
 
+     | "Syntax"; IDENT "Extension"; s = STRING; 
+	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
+	 -> VernacSyntaxExtension (s,l)
+
      | IDENT "Open"; IDENT "Scope"; sc = IDENT -> VernacOpenScope sc
 
      | IDENT "Delimiters"; left = STRING; sc = IDENT; right = STRING ->
 	 VernacDelimiters (sc,(left,right))
 
-     | IDENT "Arguments"; IDENT "Scope"; qid = qualid;
+     | IDENT "Arguments"; IDENT "Scope"; qid = global;
          "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
 
-     (* Faudrait une version de qualidarg dans Prim pour respecter l'ordre *)
-     | IDENT "Infix"; a = entry_prec; n = natural; op = STRING; p = qualid;
+     | IDENT "Infix"; a = entry_prec; n = natural; op = STRING; p = global;
 	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacInfix (a,n,op,p,sc)
-     | IDENT "Distfix"; a = entry_prec; n = natural; s = STRING; p = qualid;
+     | IDENT "Distfix"; a = entry_prec; n = natural; s = STRING; p = global;
 	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacDistfix (a,n,s,p,sc)
      | IDENT "Notation"; a = entry_prec; n = natural; s = STRING; c = constr;
-         precl = [ "("; l = LIST1 var_precedence SEP ","; ")" -> l | -> [] ];
-	 sc = OPT [ ":"; sc = IDENT -> sc ] -> 
-           VernacNotation (a,n,s,c,precl,sc)
+         modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
+	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
+	   let a = match a with None -> Gramext.LeftA | Some a -> a in
+	   VernacNotation (s,c,(SetAssoc a)::(SetLevel n)::modl,sc)
 
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
   ] ]
   ;
-  var_precedence:
-    [ [ x = IDENT; IDENT "at"; IDENT "level"; n = natural -> (x,n) ] ]
+  syntax_modifier:
+    [ [ x = IDENT; IDENT "at"; IDENT "level"; n = natural -> SetItemLevel (x,n)
+      | IDENT "at"; IDENT "level"; n = natural -> SetLevel n
+      | IDENT "left"; IDENT "associativity" -> SetAssoc Gramext.LeftA
+      | IDENT "right"; IDENT "associativity" -> SetAssoc Gramext.RightA
+      | IDENT "no"; IDENT "associativity" -> SetAssoc Gramext.NonA
+      | x = IDENT; typ = syntax_extension_type -> SetEntryType (x,typ) ] ]
+  ;
+  syntax_extension_type:
+    [ [ IDENT "ident" -> ETIdent | IDENT "global" -> ETReference ] ]
   ;
   opt_scope:
     [ [ IDENT "_" -> None | sc = IDENT -> Some sc ] ]
   ;
   (* Syntax entries for Grammar. Only grammar_entry is exported *)
   grammar_entry:
-    [[ nont = located_ident; etyp = set_entry_type; ":=";
+    [[ nont = IDENT; etyp = set_entry_type; ":=";
        ep = entry_prec; OPT "|"; rl = LIST0 grammar_rule SEP "|" ->
 	 (nont,etyp,ep,rl) ]]
-  ;
-  located_ident:
-    [[ id = IDENT -> (loc,id) ]]
   ;
   entry_prec:
     [[ IDENT "LEFTA" -> Some Gramext.LeftA
      | IDENT "RIGHTA" -> Some Gramext.RightA
      | IDENT "NONA" -> Some Gramext.NonA
-     | ->  None ]]
+     | -> None  ]]
   ;
   grammar_tactic_rule:
     [[ name = rule_name; "["; s = STRING; pil = LIST0 production_item; "]";
@@ -274,9 +282,9 @@ GEXTEND Gram
   ;
   production_item:
     [[ s = STRING -> VTerm s
-     | nt = non_terminal; po = OPT [ "("; p = Prim.metaident; ")" -> p ] ->
+     | nt = non_terminal; po = OPT [ "("; p = METAIDENT; ")" -> p ] ->
          match po with
-           | Some p -> VNonTerm (loc,nt,Some (Ast.meta_of_ast p))
+           | Some p -> VNonTerm (loc,nt,Some (Names.id_of_string p))
            | _ -> VNonTerm (loc,nt,None) ]]
   ;
   non_terminal:
@@ -294,8 +302,9 @@ GEXTEND Gram
     [ [ nm = IDENT; "["; s = astpat; "]"; "->"; u = unparsing -> (nm,s,u) ] ]
   ;
   precedence:
-    [ [ a = natural -> (a,0,0)
-      | "["; a1 = natural; a2 = natural; a3 = natural; "]" -> (a1,a2,a3) ] ]
+    [ [ a = natural -> a
+(*      | "["; a1 = natural; a2 = natural; a3 = natural; "]" -> (a1,a2,a3)*)
+    ] ]
   ;
   unparsing:
     [ [ "["; ll = LIST0 next_hunks; "]" -> ll ] ]
@@ -313,7 +322,8 @@ GEXTEND Gram
       | e = Prim.ast; oprec = OPT [ ":"; pr = paren_reln_or_extern -> pr ] ->
           match oprec with
 	    | Some (ext,pr) -> PH (e,ext,pr)
-            | None -> PH (e,None,Any) ]]
+            | None -> PH (e,None,Any)
+ ]]
   ;
   box:
     [ [ "<"; bk = box_kind; ">" -> bk ] ]
@@ -335,11 +345,11 @@ GEXTEND Gram
   ;
   (* meta-syntax entries *)
   astpat:
-    [ [ "<<" ; a = Prim.ast; ">>" -> a
-      | a = default_action_parser -> 
-	  match a with
-	    | Ast.PureAstNode a -> a
-	    | _ -> failwith "Cannot deal with non pure ast expression" ] ]
+    [ [ "<<" ; a = Prim.ast; ">>" -> a 
+      | a = Constr.constr -> 
+	  Termast.ast_of_rawconstr 
+	  (Constrintern.interp_rawconstr Evd.empty (Global.env()) a)
+    ] ]
   ; 
   action:
     [ [ IDENT "let"; p = Prim.astlist; et = set_internal_entry_type;
@@ -356,15 +366,20 @@ GEXTEND Gram
      | [ ":"; IDENT "ast" -> () | -> () ] -> Ast.ETast ]]
   ;
   set_entry_type:
-    [[ ":"; et = entry_type -> set_default_action_parser et; entry_type_of_parser et
-     | -> None ]]
+    [[ ":"; et = entry_type -> set_default_action_parser et;
+       let a = match et with
+	 | ConstrParser -> ETConstr
+	 | CasesPatternParser ->
+	     failwith "entry_type_of_parser: cases_pattern, TODO" in
+       a
+     | -> ETConstr ]]
   ;
   entry_type:
-    [[ IDENT "ast"; IDENT "list" -> AstListParser
-     | IDENT "ast" -> AstParser
+    [[ IDENT "ast"; IDENT "list" -> Util.error "type ast list no longer supported"
+     | IDENT "ast" -> Util.error "type ast no longer supported"
      | IDENT "constr" -> ConstrParser
-     | IDENT "cases_pattern" -> CasesPatternParser
-     | IDENT "tactic" -> TacticParser
-     | IDENT "vernac" -> VernacParser ]]
+     | IDENT "pattern" -> CasesPatternParser
+     | IDENT "tactic" -> assert false
+     | IDENT "vernac" -> Util.error "vernac extensions no longer supported" ] ]
   ;
 END

@@ -147,7 +147,7 @@ let instantiate n c gl =
 
 let pfic gls c =
   let evc = gls.sigma in 
-  Astterm.interp_constr evc (Global.env_of_context gls.it.evar_hyps) c
+  Constrintern.interp_constr evc (Global.env_of_context gls.it.evar_hyps) c
 
 (*
 let instantiate_tac = function
@@ -170,7 +170,7 @@ let instantiate_pf_com n com pfts =
     with Failure _ -> 
       error "not so many uninstantiated existential variables"
   in 
-  let c = Astterm.interp_constr sigma (Evarutil.evar_env evd) com in     
+  let c = Constrintern.interp_constr sigma (Evarutil.evar_env evd) com in     
   let wc' = w_Define sp c wc in
   let newgc = (w_Underlying wc') in
   change_constraints_pftreestate newgc pfts

@@ -9,7 +9,7 @@
 (* $Id$ *)
 
 open Names
-open Coqast
+open Topconstr
 open Libnames
 open Nametab
 open Rawterm
@@ -24,10 +24,10 @@ type raw_red_flag =
   | FBeta
   | FIota
   | FZeta
-  | FConst of qualid or_metanum list
-  | FDeltaBut of qualid or_metanum list
+  | FConst of reference or_metanum list
+  | FDeltaBut of reference or_metanum list
 
-type raw_red_expr = (constr_ast, qualid or_metanum) red_expr_gen
+type raw_red_expr = (constr_expr, reference or_metanum) red_expr_gen
 
 let make_red_flag =
   let rec add_flag red = function
@@ -55,10 +55,6 @@ type 'a raw_hyp_location = (* To distinguish body and type of local defs *)
   | InHyp of 'a
   | InHypType of 'a
 
-type extend_tactic_arg =
-  | TacticArgMeta of loc * string
-  | TacticArgAst of Coqast.t
-
 type 'a induction_arg =
   | ElimOnConstr of 'a
   | ElimOnIdent of identifier located
@@ -73,7 +69,7 @@ type 'id clause_pattern = int list option * ('id * int list) list
 
 type ('a,'b) location = HypLocation of 'a | ConclLocation of 'b
 
-type pattern_ast = Coqast.t
+type pattern_expr = constr_expr
 
 (* Type of patterns *)
 type 'a match_pattern =
@@ -138,7 +134,7 @@ type ('constr,'cst,'ind,'id) gen_atomic_tactic_expr =
   | TacAutoTDB of int option
   | TacDestructHyp of (bool * identifier located)
   | TacDestructConcl
-  | TacSuperAuto of (int option * qualid located list * bool * bool)
+  | TacSuperAuto of (int option * reference list * bool * bool)
   | TacDAuto of int option * int option
 
   (* Context management *)
@@ -164,15 +160,15 @@ type ('constr,'cst,'ind,'id) gen_atomic_tactic_expr =
   | TacTransitivity of 'constr 
 
   (* For ML extensions *)
-  | TacExtend of string * ('constr,raw_tactic_expr) generic_argument list
+  | TacExtend of loc * string * ('constr,raw_tactic_expr) generic_argument list
 
   (* For syntax extensions *)
   | TacAlias of string *
-      (string * ('constr,raw_tactic_expr) generic_argument) list
+      (identifier * ('constr,raw_tactic_expr) generic_argument) list
       * raw_tactic_expr
 
 and raw_tactic_expr =
-    (constr_ast,qualid or_metanum,qualid or_metanum,identifier located or_metaid) gen_tactic_expr
+    (constr_expr,reference or_metanum,reference or_metanum,identifier located or_metaid) gen_tactic_expr
 
 and ('constr,'cst,'ind,'id) gen_tactic_expr =
   | TacAtom of loc * ('constr,'cst,'ind,'id) gen_atomic_tactic_expr
@@ -191,10 +187,10 @@ and ('constr,'cst,'ind,'id) gen_tactic_expr =
   | TacInfo of ('constr,'cst,'ind,'id) gen_tactic_expr
 
   | TacLetRecIn of (identifier located * ('constr,'cst,'ind,'id) gen_tactic_fun_ast) list * ('constr,'cst,'ind,'id) gen_tactic_expr
-  | TacLetIn of (identifier located * constr_ast may_eval option * ('constr,'cst,'ind,'id) gen_tactic_arg) list * ('constr,'cst,'ind,'id) gen_tactic_expr
-  | TacLetCut of (identifier * constr_ast may_eval * ('constr,'cst,'ind,'id) gen_tactic_arg) list
-  | TacMatch of constr_ast may_eval * (pattern_ast,('constr,'cst,'ind,'id) gen_tactic_expr) match_rule list
-  | TacMatchContext of direction_flag * (pattern_ast,('constr,'cst,'ind,'id) gen_tactic_expr) match_rule list
+  | TacLetIn of (identifier located * constr_expr may_eval option * ('constr,'cst,'ind,'id) gen_tactic_arg) list * ('constr,'cst,'ind,'id) gen_tactic_expr
+  | TacLetCut of (identifier * constr_expr may_eval * ('constr,'cst,'ind,'id) gen_tactic_arg) list
+  | TacMatch of constr_expr may_eval * (pattern_expr,('constr,'cst,'ind,'id) gen_tactic_expr) match_rule list
+  | TacMatchContext of direction_flag * (pattern_expr,('constr,'cst,'ind,'id) gen_tactic_expr) match_rule list
   | TacFun of ('constr,'cst,'ind,'id) gen_tactic_fun_ast
   | TacFunRec of (identifier located * ('constr,'cst,'ind,'id) gen_tactic_fun_ast)
   | TacArg of ('constr,'cst,'ind,'id) gen_tactic_arg
@@ -209,23 +205,32 @@ and ('constr,'cst,'ind,'id) gen_tactic_arg =
   | MetaNumArg     of loc * int
   | MetaIdArg      of loc * string
   | ConstrMayEval  of 'constr may_eval
-  | Reference      of reference_expr
+  | Reference      of reference
   | Integer        of int
   | TacCall        of loc *
-      reference_expr * ('constr,'cst,'ind,'id) gen_tactic_arg list
+      reference * ('constr,'cst,'ind,'id) gen_tactic_arg list
   | Tacexp of raw_tactic_expr
 
 type raw_atomic_tactic_expr =
-    (constr_ast,qualid or_metanum,qualid or_metanum,identifier located or_metaid) gen_atomic_tactic_expr
+    (constr_expr,                 (* constr *)
+     reference or_metanum,        (* evaluable reference *)
+     reference or_metanum,        (* inductive *)
+     identifier located or_metaid (* identifier *)
+    ) gen_atomic_tactic_expr
 
 type raw_tactic_arg =
-    (constr_ast,qualid or_metanum,qualid or_metanum,identifier located or_metaid) gen_tactic_arg
+    (constr_expr,
+     reference or_metanum,
+     reference or_metanum,
+     identifier located or_metaid) gen_tactic_arg
 
 type raw_generic_argument =
-    (constr_ast,raw_tactic_expr) generic_argument
+    (constr_expr,raw_tactic_expr) generic_argument
 
 type closed_raw_generic_argument =
-    (constr_ast,raw_tactic_expr) generic_argument
+    (constr_expr,raw_tactic_expr) generic_argument
 
 type 'a raw_abstract_argument_type =
-    ('a, constr_ast,raw_tactic_expr) abstract_argument_type
+    ('a, constr_expr,raw_tactic_expr) abstract_argument_type
+
+type declaration_hook = Decl_kinds.strength -> global_reference -> unit

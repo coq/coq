@@ -11,7 +11,6 @@
 open Genarg
 open Q_util
 open Q_coqast
-open Ast
 
 let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
 let loc = (0,0)
@@ -43,8 +42,9 @@ let rec make_wit loc = function
   | StringArgType -> <:expr< Genarg.wit_string >>
   | PreIdentArgType -> <:expr< Genarg.wit_pre_ident >>
   | IdentArgType -> <:expr< Genarg.wit_ident >>
-  | QualidArgType -> <:expr< Genarg.wit_qualid >>
+  | RefArgType -> <:expr< Genarg.wit_ref >>
   | QuantHypArgType -> <:expr< Genarg.wit_quant_hyp >>
+  | SortArgType -> <:expr< Genarg.wit_sort >>
   | ConstrArgType -> <:expr< Genarg.wit_constr >>
   | ConstrMayEvalArgType -> <:expr< Genarg.wit_constr_may_eval >>
   | TacticArgType -> <:expr< Genarg.wit_tactic >>
@@ -179,9 +179,7 @@ let rec interp_entry_name loc s =
 	| None -> None, <:expr< $lid:s$ >> in
     let t =
       match t with
-	| Some (GenAstType t) -> t
-	| Some _ -> 
-	    failwith "Only entries of generic type can be used in extension"
+	| Some t -> t
 	| None ->
 (*	    Pp.warning_with Pp_control.err_ft
             ("Unknown primitive grammar entry: "^s);*)

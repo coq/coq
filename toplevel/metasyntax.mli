@@ -11,32 +11,35 @@
 (*i*)
 open Util
 open Libnames
+open Ppextend
 open Extend
 open Tacexpr
 open Vernacexpr
 open Symbols
+open Topconstr
 (*i*)
 
 (* Adding grammar and pretty-printing objects in the environment *)
 
-val add_syntax_obj : string -> syntax_entry_ast list -> unit
+val add_syntax_obj : string -> raw_syntax_entry list -> unit
 
-val add_grammar_obj : string -> grammar_entry_ast list -> unit
+val add_grammar_obj : string -> raw_grammar_entry list -> unit
 val add_token_obj : string -> unit
 val add_tactic_grammar :
   (string * (string * grammar_production list) * raw_tactic_expr) list -> unit
 
 val add_infix :
-  Gramext.g_assoc option -> precedence -> string -> qualid located
+  grammar_associativity -> precedence -> string -> reference
     -> scope_name option -> unit
 val add_distfix :
-  Gramext.g_assoc option -> precedence -> string -> Coqast.t 
+  grammar_associativity -> precedence -> string -> reference
     -> scope_name option -> unit
 val add_delimiters : scope_name -> delimiters -> unit
 
-val add_notation : 
-  Gramext.g_assoc option -> precedence -> string -> Coqast.t
-    -> (string * precedence) list -> scope_name option -> unit
+val add_notation : string -> constr_expr
+    -> syntax_modifier list -> scope_name option -> unit
+
+val add_syntax_extension : string -> syntax_modifier list -> unit
 
 val print_grammar : string -> string -> unit
 
