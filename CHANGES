@@ -33,6 +33,10 @@ Grammar extensions
   2300-23FF (miscellaneous technical, including sqrt symbol) and
   2600-26FF (miscellaneous symbols) are supported symbols
 
+Tactic language
+
+- Fail tactic now accepts a failure message
+
 Bugs
 
 - Rename bug fixed (#244)
