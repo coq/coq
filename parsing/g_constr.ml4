@@ -134,9 +134,9 @@ GEXTEND Gram
 *)
       | f = operconstr; args = LIST1 constr91 -> CApp (loc, f, args) ]
     | "9" RIGHTA
-      [ c1 = operconstr; "::"; c2 = operconstr -> CCast (loc, c1, c2) ]
+      [ c1 = operconstr; "::"; c2 = operconstr LEVEL "9" -> CCast (loc, c1, c2) ]
     | "8" RIGHTA
-      [ c1 = operconstr; "->"; c2 = operconstr -> CArrow (loc, c1, c2) ]
+      [ c1 = operconstr; "->"; c2 = operconstr LEVEL "8"-> CArrow (loc, c1, c2) ]
     | "1" RIGHTA
       [ "<"; p = annot; ">"; IDENT "Match"; c = constr; "with";
         cl = LIST0 constr; "end" ->
