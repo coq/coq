@@ -415,7 +415,7 @@ module ModularParams = struct
     else 
       string_of_id id
 
-  let id_of_global r s =
+  let qualify_global r s =
     let sp = match r with
       | ConstRef sp -> sp
       | IndRef (sp,_) -> sp
@@ -423,22 +423,26 @@ module ModularParams = struct
       | _ -> assert false
     in
     let m = list_last (dirpath sp) in
-    id_of_string 
-      (if Some m = !current_module then s 
-       else (String.capitalize (string_of_id m)) ^ "." ^ s)
+    if Some m = !current_module then s 
+    else (String.capitalize (string_of_id m)) ^ "." ^ s
 
-  let rename_type_global r = 
+  let rename_qualified_type_global r = 
     let id = Environ.id_of_global (Global.env()) r in 
-    id_of_global r (rename_lower id)
+    qualify_global r (rename_lower id)
 
-  let rename_global r = 
+  let rename_global_to_string r = 
     let id = Environ.id_of_global (Global.env()) r in 
     match r with
-      | ConstructRef _ -> id_of_global r (rename_upper id)
-      | _ -> id_of_global r (rename_lower id)
+      | ConstructRef _ -> rename_upper id
+      | _ -> rename_lower id
 
-  let pp_type_global r = pr_id (rename_type_global r)
-  let pp_global r = pr_id (rename_global r)
+  let rename_global r = id_of_string (rename_global_to_string r)
+
+  let rename_qualified_global r = 
+    qualify_global r (rename_global_to_string r)
+ 
+  let pp_type_global r = string (rename_qualified_type_global r)
+  let pp_global r = string (rename_qualified_global r)
 
   let cofix_warning = true
 end
