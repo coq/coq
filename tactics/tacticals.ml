@@ -247,14 +247,14 @@ let reduce_to_ind_goal gl t =
     match kind_of_term c with
       | IsMutInd (ind_sp,args as ity) -> 
 	  ((ity, path_of_inductive_path ind_sp, t), t)
-      | IsConst _ ->
-	  elimrec (pf_nf_betaiota gl (pf_one_step_reduce gl t))
       | IsCast (c,_) when args = [] ->
 	  elimrec c
       | IsProd (n,ty,t') when args = [] ->
 	  let (ind, t) = elimrec t' in (ind, mkProd (n,ty,t))
       | IsLetIn (n,c,ty,t') when args = [] ->
 	  let (ind, t) = elimrec t' in (ind, mkLetIn (n,c,ty,t))
+      | _ when Instantiate.isEvalRef c ->
+	  elimrec (pf_nf_betaiota gl (pf_one_step_reduce gl t))
       | _ -> error "Not an inductive product"
   in 
   elimrec t
