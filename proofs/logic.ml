@@ -60,21 +60,8 @@ let catchable_exception = function
 (* Tells if the refiner should check that the submitted rules do not
    produce invalid subgoals *)
 let check = ref false
+let with_check = Options.with_option check
 
-let without_check tac gl =
-  let c = !check in
-  check := false;
-  let r = tac gl in
-  check := c;
-  r
-
-let with_check tac gl =
-  let c = !check in
-  check := true;
-  let r = tac gl in
-  check := c;
-  r
-   
 (************************************************************************)
 (************************************************************************)
 (* Implementation of the structural rules (moving and deleting

@@ -20,7 +20,6 @@ open Proof_type
 (* This suppresses check done in [prim_refiner] for the tactic given in
    argument; works by side-effect *)
 
-val without_check : tactic -> tactic
 val with_check    : tactic -> tactic
 
 (* [without_check] respectively means:\\
