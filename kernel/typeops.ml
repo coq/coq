@@ -204,7 +204,7 @@ let error_elim_expln env kp ki =
 
 exception Arity of (constr * constr * string) option
 
-let is_correct_arity env kd kn (c,p) = 
+let is_correct_arity env kelim (c,p) = 
   let rec srec ind (pt,t) =
     try 
       (match whd_betadeltaiota env pt, whd_betadeltaiota env t with
@@ -218,7 +218,7 @@ let is_correct_arity env kd kn (c,p) =
              let ksort = (match k with DOP0(Sort s) -> s 
 			    | _ -> raise (Arity None)) in
              if is_conv env a1 ind then
-               if List.exists (base_sort_cmp CONV ksort) kd then
+               if List.exists (base_sort_cmp CONV ksort) kelim then
 		 (true,k)
                else 
 		 raise (Arity (Some(k,ki,error_elim_expln env k ki)))
@@ -229,14 +229,14 @@ let is_correct_arity env kd kn (c,p) =
 	 | k, ki -> 
 	     let ksort = (match k with DOP0(Sort s) -> s 
                             | _ ->  raise (Arity None)) in
-             if List.exists (base_sort_cmp CONV ksort) kn then 
+             if List.exists (base_sort_cmp CONV ksort) kelim then 
 	       false,k
              else 
 	       raise (Arity (Some(k,ki,error_elim_expln env k ki))))
     with Arity kinds ->
       let listarity =
-	(List.map (fun s -> make_arity_dep env (DOP0(Sort s)) t ind) kd)
-	@(List.map (fun s -> make_arity_nodep env (DOP0(Sort s)) t) kn)
+	(List.map (fun s -> make_arity_dep env (DOP0(Sort s)) t ind) kelim)
+	@(List.map (fun s -> make_arity_nodep env (DOP0(Sort s)) t) kelim)
       in error_elim_arity CCI env ind listarity c p pt kinds
   in srec 
 
@@ -247,13 +247,12 @@ let cast_instantiate_arity mis =
 let find_case_dep_nparams env (c,p) (mind,largs) typP =    
   let mis = lookup_mind_specif mind env in 
   let nparams = mis_nparams mis
-  and kd = mis_kd mis 
-  and kn = mis_kn mis
+  and kelim = mis_kelim mis 
   and t = cast_instantiate_arity mis in 
   let (globargs,la) = list_chop nparams largs in
   let glob_t = hnf_prod_applist env "find_elim_boolean" t globargs in
   let arity = applist(mind,globargs) in
-  let (dep,_) = is_correct_arity env kd kn (c,p) arity (typP,glob_t) in
+  let (dep,_) = is_correct_arity env kelim (c,p) arity (typP,glob_t) in
   (dep, (nparams, globargs,la))
 
 let type_one_branch_dep (env,nparams,globargs,p) co t = 

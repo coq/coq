@@ -220,4 +220,6 @@ type unsafe_judgment = {
   uj_type : constr;
   uj_kind : constr }
 
-
+let cast_of_judgment = function
+  | { uj_val = DOP2 (Cast,_,_) as c } -> c
+  | { uj_val = c; uj_type = ty } -> mkCast c ty

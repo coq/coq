@@ -55,3 +55,4 @@ type unsafe_judgment = {
   uj_type : constr;
   uj_kind : constr }
 
+val cast_of_judgment : unsafe_judgment -> constr

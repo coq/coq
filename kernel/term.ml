@@ -26,7 +26,7 @@ type 'a oper =
   | Fix of int array * int
   | CoFix of int
 
-  | XTRA of string * Coqast.t list
+  | XTRA of string
       (* an extra slot, for putting in whatever sort of
          operator we need for whatever sort of application *)
 
@@ -77,7 +77,7 @@ let incast_type tty = DOP2 (Cast, tty.body, (DOP0 (Sort tty.typ)))
 let mkRel   n = (Rel n)
 
 (* Constructs an existential variable named "?" *)
-let mkExistential = (DOP0 (XTRA ("ISEVAR",[])))
+let mkExistential = (DOP0 (XTRA "ISEVAR"))
 
 (* Constructs an existential variable named "?n" *)
 let mkMeta  n =  DOP0 (Meta n)
@@ -86,7 +86,7 @@ let mkMeta  n =  DOP0 (Meta n)
 let mkVar id = VAR id
 
 (* Construct an XTRA term (XTRA is an extra slot for whatever you want) *)
-let mkXtra s astlist = (DOP0 (XTRA (s, astlist)))
+let mkXtra s = (DOP0 (XTRA s))
 
 (* Construct a type *)
 let mkSort s = DOP0 (Sort s)
@@ -243,7 +243,7 @@ let destVar = function
 
 (* Destructs an XTRA *)
 let destXtra = function
-  | DOP0 (XTRA (s,astlist)) -> (s,astlist)
+  | DOP0 (XTRA s) -> s
   | _ -> invalid_arg "destXtra"
 
 (* Destructs a type *)
@@ -468,7 +468,7 @@ type kindOfTerm =
   | IsRel            of int
   | IsMeta           of int
   | IsVar            of identifier
-  | IsXtra           of string * (Coqast.t list)
+  | IsXtra           of string
   | IsSort           of sorts
   | IsImplicit       
   | IsCast           of constr*constr
@@ -498,7 +498,7 @@ let kind_of_term c =
     | VAR id                               -> IsVar id 
     | DOP0 (Meta n)                        -> IsMeta  n
     | DOP0 (Sort s)                        -> IsSort  s
-    | DOP0 (XTRA (s, astlist))             -> IsXtra (s,astlist)
+    | DOP0 (XTRA s)                        -> IsXtra s
     | DOP0 Implicit                        -> IsImplicit
     | DOP2 (Cast, t1, t2)                  -> IsCast   (t1,t2)
     | DOP2 (Prod, t1, (DLAM (x,t2)))       -> IsProd (x,t1,t2) 
@@ -807,7 +807,7 @@ let lam_and_popl_named  n env t l =
   poprec (n,(env,t,l,[]))
 
 (* [lambda_ize n T endpt]
- * will pop off the first n products in T, then stick in endpt,
+ * will pop off the first [n] products in [T], then stick in [endpt],
  * properly lifted, and then push back the products, but as lambda-
  * abstractions *)
 let lambda_ize n t endpt =
@@ -1169,59 +1169,6 @@ let rec occur_meta = function
 
 let rel_vect = (Generic.rel_vect : int -> int -> constr array)
 		 
-(* Transforms a constr into a matchable constr*)
-let rec matchable=function
-  | DOP1(op,t) ->
-      DOP1(op,matchable t)
-  | DOP2(op,t1,t2) ->
-      DOP2(op,matchable t1,matchable t2)
-  | DOPN(op,tab) ->
-      (match op with
-         | MutInd(sp,rk) ->
-             DOPL(XTRA("IT",[Coqast.Id((rk,0),string_of_path sp)]),
-		  Array.to_list (Array.map matchable tab))
-         | MutConstruct((sp,rkt),rkc) ->
-             DOPL(XTRA("IC",[Coqast.Id((rkt,rkc),string_of_path sp)]),
-		  Array.to_list (Array.map matchable tab))
-         | Const sp ->
-             DOPL(XTRA("C",[Coqast.Id((0,0),string_of_path sp)]),
-		  Array.to_list (Array.map matchable tab))
-         | a ->
-             DOPL(a,Array.to_list (Array.map matchable tab)))
-  | DOPL(op,lst) ->
-      DOPL(op,List.map matchable lst)
-  | DLAM(ne,t) ->
-      DLAM(ne,matchable t)
-  | DLAMV(ne,tab) ->
-      DLAMV(ne,(Array.map matchable tab))
-  | a -> a
-
-let rec unmatchable=function
-  | DOP1(op,t) ->
-      DOP1(op,unmatchable t)
-  | DOP2(op,t1,t2) ->
-      DOP2(op,unmatchable t1,unmatchable t2)
-  | DOPN(op,tab) ->
-      DOPN(op,Array.map unmatchable tab)
-  | DOPL(op,lst) ->
-      (match op with
-         | XTRA("IT",[Coqast.Id((rk,0),str)]) ->
-             DOPN(MutInd(path_of_string str,rk),
-		  Array.of_list (List.map unmatchable lst))
-         | XTRA("IC",[Coqast.Id((rkt,rkc),str)]) ->
-             DOPN(MutConstruct((path_of_string str,rkt),rkc),
-		  Array.of_list (List.map unmatchable lst))
-         | XTRA("C",[Coqast.Id((0,0),str)]) ->
-             DOPN(Const(path_of_string str),
-		  Array.of_list (List.map unmatchable lst))
-         | a ->
-             DOPN(a,Array.of_list (List.map unmatchable lst)))
-  | DLAM(ne,t) ->
-      DLAM(ne,unmatchable t)
-  | DLAMV(ne,tab) ->
-      DLAMV(ne,(Array.map unmatchable tab))
-  | a -> a
-
 
 (***************************)
 (* hash-consing functions  *)                         
@@ -1248,10 +1195,10 @@ module Hoper =
   Hashcons.Make(
     struct
       type t = sorts oper
-      type u = (Coqast.t -> Coqast.t) * (sorts -> sorts)
+      type u = (sorts -> sorts)
                * (section_path -> section_path) * (string -> string)
-      let hash_sub (hast,hsort,hsp,hstr) = function
-	| XTRA(s,al) -> XTRA(hstr s, List.map hast al)
+      let hash_sub (hsort,hsp,hstr) = function
+	| XTRA s -> XTRA (hstr s)
         | Sort s -> Sort (hsort s)
         | Const sp -> Const (hsp sp)
         | Abst sp -> Abst (hsp sp)
@@ -1261,9 +1208,7 @@ module Hoper =
         | t -> t 
       let equal o1 o2 =
         match (o1,o2) with
-          | (XTRA(s1,al1), XTRA(s2,al2)) ->
-              (s1==s2 & List.length al1 = List.length al2)
-              & List.for_all2 (==) al1 al2
+          | (XTRA s1, XTRA s2) -> s1==s2
           | (Sort s1, Sort s2) -> s1==s2
           | (Const sp1, Const sp2) -> sp1==sp2
           | (Abst sp1, Abst sp2) -> sp1==sp2
@@ -1287,11 +1232,11 @@ module Hconstr =
       let hash = Hashtbl.hash
     end)
 
-let hcons_oper (hast,hsorts,hsp,hstr) =
-  Hashcons.simple_hcons Hoper.f (hast,hsorts,hsp,hstr)
+let hcons_oper (hsorts,hsp,hstr) =
+  Hashcons.simple_hcons Hoper.f (hsorts,hsp,hstr)
 
-let hcons_term (hast,hsorts,hsp,hname,hident,hstr) =
-  let hoper = hcons_oper (hast,hsorts,hsp,hstr) in
+let hcons_term (hsorts,hsp,hname,hident,hstr) =
+  let hoper = hcons_oper (hsorts,hsp,hstr) in
   Hashcons.recursive_hcons Hconstr.f (hoper,hname,hident)
 
 module Htype =
@@ -1307,9 +1252,8 @@ module Htype =
 let hcons_constr (hspcci,hspfw,hname,hident,hstr) =
   let hsortscci = Hashcons.simple_hcons Hsorts.f hspcci in
   let hsortsfw = Hashcons.simple_hcons Hsorts.f hspfw in
-  let (hast,_) = Coqast.hcons_ast hstr in
-  let hcci = hcons_term (hast,hsortscci,hspcci,hname,hident,hstr) in
-  let hfw = hcons_term (hast,hsortsfw,hspfw,hname,hident,hstr) in
+  let hcci = hcons_term (hsortscci,hspcci,hname,hident,hstr) in
+  let hfw = hcons_term (hsortsfw,hspfw,hname,hident,hstr) in
   let htcci = Hashcons.simple_hcons Htype.f (hcci,hsortscci) in
   (hcci,hfw,htcci)
 

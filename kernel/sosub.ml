@@ -40,13 +40,13 @@ let propagate_name smap argt new_na =
     | (_, _) -> smap
 	  
 let is_soapp_operator = function
-  | DOPN(XTRA("$SOAPP",[]),cl) -> true
-  | DOP2(XTRA("$SOAPP",[]),_,_) -> true
+  | DOPN(XTRA "$SOAPP",cl) -> true
+  | DOP2(XTRA "$SOAPP",_,_) -> true
   | _ -> false
 	
 let dest_soapp_operator = function
-  | DOPN(XTRA("$SOAPP",[]),cl) -> (array_hd cl,array_list_of_tl cl)
-  | DOP2(XTRA("$SOAPP",[]),c1,c2) -> (c1,[c2])
+  | DOPN(XTRA "$SOAPP",cl) -> (array_hd cl,array_list_of_tl cl)
+  | DOP2(XTRA "$SOAPP",c1,c2) -> (c1,[c2])
   | _ -> failwith "dest_soapp_operator"
 	
 let solam_names = 

@@ -14,6 +14,7 @@ open Inductive
 open Environ
 open Type_errors
 open Typeops
+open Indtypes
 
 (* Fonctions temporaires pour relier la forme castée de la forme jugement *)
 
@@ -58,10 +59,10 @@ let rec execute mf env cstr =
 	in
         (match kind_of_term metaty with
            | IsCast (typ,kind) -> 
-	       ({ uj_val = cstr; uj_type = typ; uj_kind = kind}, u0)
+	       ({ uj_val = cstr; uj_type = typ; uj_kind = kind }, u0)
            | _ ->
 	       let (jty,u1) = execute mf env metaty in
-	       let k = hnf_constr env jty.uj_type in
+	       let k = whd_betadeltaiotaeta env jty.uj_type in
 	       ({ uj_val = cstr; uj_type = metaty; uj_kind = k }, u1))
 	
     | IsRel n -> 
@@ -248,13 +249,11 @@ let lookup_mind = lookup_mind
 let lookup_mind_specif = lookup_mind_specif
 let lookup_meta = lookup_meta
 
-let push_rel_or_var push (id,ty) env =
-  let (j,u) = safe_machine env ty.body in
+let push_rel_or_var push (id,c) env =
+  let (j,u) = safe_machine env c in
   let env' = set_universes u env in
-  let expty = DOP0(Sort ty.typ) in
-  match conv env' j.uj_type expty with
-    | Convertible u' -> push (id,ty) (set_universes u' env')
-    | NotConvertible -> error_actual_type CCI env ty.body j.uj_type expty
+  let var = assumption_of_judgement env' j in
+  push (id,var) env'
 
 let push_var nvar env = push_rel_or_var push_var nvar env
 
@@ -272,8 +271,7 @@ let add_constant sp ce env =
 	  const_body = Some (ref (Cooked ce.const_entry_body));
 	  const_type = typed_type_of_judgment env'' jt;
 	  const_hyps = get_globals (context env);
-	  const_opaque = false;
-	  const_eval = None } 
+	  const_opaque = false } 
 	in
 	add_constant sp cb (set_universes u'' env'')
     | NotConvertible -> 
@@ -292,31 +290,46 @@ let add_parameter sp c env =
     const_body = Some (ref (Cooked c));
     const_type = type_from_judgment env' j;
     const_hyps = get_globals (context env);
-    const_opaque = false;
-    const_eval = None } 
+    const_opaque = false } 
   in
   Environ.add_constant sp cb env'
 
-let add_mind sp me env =
-  let name_params = 
-    List.map (fun (id,c) -> (Name id, c)) me.mind_entry_params in
-  (* just to check the params *)
-  let env_params =
-    List.fold_left 
-      (fun env (id,c) ->
-	 let (j,u) = safe_machine env c in
-	 let env' = set_universes u env in
-	 Environ.push_var (id, assumption_of_judgement env' j) env')
-      env me.mind_entry_params
+let push_vars vars env =
+  List.fold_left (fun env nvar -> push_var nvar env) env vars
+
+let push_rels vars env =
+  List.fold_left (fun env nvar -> push_rel nvar env) env vars
+
+let check_type_constructs env_params univ nparams lc =
+  let check_one env c =
+    let (_,c) = decompose_prod_n nparams c in
+    let (j,u) = safe_machine env c in
+    match whd_betadeltaiota env j.uj_type with
+      | DOP0 (Sort (Type uc)) -> set_universes (enforce_geq univ uc u) env
+      | _ -> error "Type of Constructor not well-formed"
   in
-  let env_arities =
-    List.fold_left 
-      (fun env (id,ar,_) -> 
-	 let (j,u) = safe_machine env (prod_it ar name_params) in
-	 let env' = set_universes u env in
-	 Environ.push_var (id, assumption_of_judgement env' j) env')
-      env me.mind_entry_inds
+  Array.fold_left check_one env_params lc
+
+let check_prop_constructs env_ar lc =
+  let check_one c = 
+    let (j,_) = safe_machine env_ar c in
+    match whd_betadeltaiota env_ar j.uj_type with
+      | DOP0 (Sort _) -> cast_of_judgment j
+      | _ -> error "The type of a constructor must be a type"
   in
+  Array.map check_one lc
+
+let add_mind sp mie env =
+  mind_check_names mie;
+  mind_check_arities env mie;
+  let params = mind_extract_and_check_params mie in
+  mind_check_lc params mie;
+  let env_arities = 
+    push_rels 
+      (List.map (fun (id,ar,_,_) -> (Name id,ar)) mie.mind_entry_inds) env 
+  in
+  let env_params = push_rels params env_arities in
+  (* ICI *)
   env_arities
 
 type judgment = unsafe_judgment

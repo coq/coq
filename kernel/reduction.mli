@@ -83,9 +83,6 @@ val whd_ise1 : 'a reduction_function
 val nf_ise1 : 'a reduction_function
 val whd_ise1_metas : 'a reduction_function
 
-val red_elim_const : 'a stack_reduction_function
-val one_step_reduce : 'a reduction_function
-
 val hnf_prod_app : 'c unsafe_env -> string -> constr -> constr -> constr
 val hnf_prod_appvect : 
   'c unsafe_env -> string -> constr -> constr array -> constr
@@ -102,6 +99,7 @@ val decomp_prod : 'c unsafe_env -> constr -> int * constr
 val decomp_n_prod : 
   'c unsafe_env -> int -> constr -> ((name * constr) list) * constr
 
+val is_arity : 'c unsafe_env -> constr -> bool
 val is_info_arity : 'c unsafe_env -> constr -> bool
 val is_info_sort : 'c unsafe_env -> constr -> bool
 val is_logic_arity : 'c unsafe_env -> constr -> bool
@@ -109,34 +107,16 @@ val is_type_arity : 'c unsafe_env -> constr -> bool
 val is_info_cast_type : 'c unsafe_env -> constr -> bool
 val contents_of_cast_type : 'c unsafe_env -> constr -> contents
 val poly_args : 'a unsafe_env -> constr -> int list
-val reduce_to_mind : 'c unsafe_env -> constr -> constr * constr * constr
-
 
 val whd_programs : 'a reduction_function
 
-
-(*s Generic reduction: reduction functions associated to tactics *)
-type red_expr =
-  | Red
-  | Hnf
-  | Simpl
-  | Cbv of flags
-  | Lazy of flags
-  | Unfold of (int list * section_path) list
-  | Fold of constr list
-  | Change of constr
-  | Pattern of (int list * constr * constr) list
-
-val nf : 'a reduction_function
 val unfoldn : 
   (int list * section_path) list -> 'a reduction_function
 val fold_one_com : constr -> 'a reduction_function
 val fold_commands : constr list -> 'a reduction_function
 val subst_term_occ : int list -> constr -> constr -> constr
 val pattern_occs : (int list * constr * constr) list -> 'a reduction_function
-val hnf_constr : 'a reduction_function
 val compute : 'a reduction_function
-val reduction_of_redexp : red_expr -> 'a reduction_function
 
 
 (*s Conversion Functions (uses closures, lazy strategy) *)

@@ -20,9 +20,7 @@ type constant_body = {
   const_body : recipe ref option;
   const_type : typed_type;
   const_hyps : typed_type signature;
-  mutable const_opaque : bool;
-  mutable const_eval : ((int * constr) list * int * bool) option option;
-}
+  mutable const_opaque : bool }
 
 val is_defined : constant_body -> bool
 

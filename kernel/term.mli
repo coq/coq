@@ -24,7 +24,7 @@ type 'a oper =
   | Fix of int array * int
   | CoFix of int
 
-  | XTRA of string * Coqast.t list
+  | XTRA of string
       (* an extra slot, for putting in whatever sort of
          operator we need for whatever sort of application *)
 
@@ -73,7 +73,7 @@ type kindOfTerm =
   | IsRel          of int
   | IsMeta         of int
   | IsVar          of identifier
-  | IsXtra         of string * Coqast.t list
+  | IsXtra         of string
   | IsSort         of sorts
   | IsImplicit
   | IsCast         of constr * constr
@@ -112,7 +112,7 @@ val mkMeta : int -> constr
 val mkVar : identifier -> constr
 
 (* Construct an  [XTRA] term. *)
-val mkXtra : string -> Coqast.t list -> constr
+val mkXtra : string -> constr
 
 (* Construct a type *)
 val mkSort : sorts -> constr
@@ -232,7 +232,7 @@ val isMETA : constr -> bool
 val destVar : constr -> identifier
 
 (* Destructs an XTRA *)
-val destXtra : constr -> string * Coqast.t list
+val destXtra : constr -> string
 
 (* Destructs a sort. [is_Prop] recognizes the sort \textsf{Prop}, whether 
    [isprop] recognizes both \textsf{Prop} and \textsf{Set}. *)
@@ -417,8 +417,7 @@ val prod_and_pop :
     -> (name * constr) list * constr * (int * constr) list
 
 (* recusively applies [prod_and_pop] :
-   if [env] = $[na_1:T_1 ; na_2:T_2 ; ... ; na_n:T_n]@tlenv$
-   then
+   if [env] = $[na_1:T_1 ; na_2:T_2 ; ... ; na_n:T_n]@tlenv$ then
    [(prod_and_popl n env T l)] gives $(tlenv,(na_n:T_n)...(na_1:T_1)T,l')$
    where $l'$ is [l] lifted down [n] steps *)
 val prod_and_popl :
@@ -507,10 +506,6 @@ val replace_consts :
    association list *) 
 
 val subst_meta : (int * constr) list -> constr -> constr
-
-(* Transforms a constr into a matchable constr *)
-val matchable : constr -> constr
-val unmatchable: constr -> constr
 
 
 (*s Hash-consing functions for constr. *)

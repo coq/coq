@@ -23,8 +23,8 @@ val universes : 'a environment -> universes
 val metamap : 'a environment -> (int * constr) list
 val context : 'a environment -> context
 
-val push_var : identifier * typed_type -> 'a environment -> 'a environment
-val push_rel : name * typed_type -> 'a environment -> 'a environment
+val push_var : identifier * constr -> 'a environment -> 'a environment
+val push_rel : name * constr -> 'a environment -> 'a environment
 val add_constant : 
   section_path -> constant_entry -> 'a environment -> 'a environment
 val add_parameter :
