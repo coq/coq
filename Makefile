@@ -41,7 +41,8 @@ OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
 CAMLP4IFDEF=camlp4o pa_ifdef.cmo -D$(OSTYPE)
 
-COQINCLUDES=-I theories/Init -I theories/Logic -I theories/Arith
+COQINCLUDES=-I theories/Init -I theories/Logic -I theories/Arith \
+            -I theories/Bool
 
 ###########################################################################
 # Objects files 
@@ -225,10 +226,15 @@ ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
 	theories/Arith/Euclid_proof.vo  theories/Arith/Wf_nat.vo      \
 	theories/Arith/Even.vo
 
-#theories/Logic/%.vo: theories/Logic/%.v states/initial.coq
-#	$(COQC) -q -I theories/Init $<
+BOOLVO=theories/Bool/Bool.vo  theories/Bool/IfProp.vo \
+       theories/Bool/Zerob.vo theories/Bool/DecBool.vo theories/Bool/Sumbool.vo
 
-theories: $(INITVO) $(LOGICVO) $(ARITHVO)
+theories: $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO)
+
+init: $(INITVO)
+logic: $(LOGICVO)
+arith: $(ARITHVO)
+bool: $(BOOLVO)
 
 clean::
 	rm -f theories/*/*.vo theories/*/*~
