@@ -140,8 +140,7 @@ let new_type_var env sigma =
   let (sigma',c) = new_isevar_sign env sigma (new_Type ()) instance in
   (sigma', c)
 
-let split_evar_to_arrow sigma c =
-  let (ev,args) = destEvar c in
+let split_evar_to_arrow sigma (ev,args) =
   let evd = Evd.map sigma ev in
   let evenv = evar_env evd in
   let (sigma1,dom) = new_type_var evenv sigma in
@@ -153,10 +152,17 @@ let split_evar_to_arrow sigma c =
   let sigma3 = Evd.define sigma2 ev prod in
   let dsp = num_of_evar dom in
   let rsp = num_of_evar rng in
-  (sigma3,
-   mkEvar (dsp,args),
-   mkEvar (rsp, array_cons (mkRel 1) (Array.map (lift 1) args)))
+  (sigma3, prod,
+   (dsp,args), (rsp, array_cons (mkRel 1) (Array.map (lift 1) args)))
 
+let define_evar_as_arrow sigma ev =
+  let (sigma, prod, _, _) = split_evar_to_arrow sigma ev in
+  (sigma, prod)
+
+let define_evar_as_sort sigma (ev,args) =
+  let s = new_Type () in
+  let sigma = Evd.define sigma ev s in
+  (sigma, destSort s)
 
 (* Redefines an evar with a smaller context (i.e. it may depend on less
  * variables) such that c becomes closed.
@@ -231,13 +237,11 @@ let ise_map isevars sp = Evd.map isevars.evars sp
 let ise_define isevars sp body =
   isevars.evars <- Evd.define isevars.evars sp body
 
+let is_defined_evar isevars (n,_) = Evd.is_defined isevars.evars n
+
 (* Does k corresponds to an (un)defined existential ? *)
 let ise_undefined isevars c = match kind_of_term c with
-  | IsEvar (n,_) -> not (Evd.is_defined isevars.evars n)
-  | _ -> false
-
-let ise_defined isevars c = match kind_of_term c with
-  | IsEvar (n,_) -> Evd.is_defined isevars.evars n
+  | IsEvar ev -> not (is_defined_evar isevars ev)
   | _ -> false
 
 let need_restriction isevars args = not (array_for_all closed0 args)
@@ -519,13 +523,11 @@ let split_tycon loc env isevars = function
       let t = whd_betadeltaiota env sigma c in
       match kind_of_term t with
         | IsProd (na,dom,rng) -> Some dom, Some rng
-	| _ ->
-	    if ise_undefined isevars t then
-	      let (sigma',dom,rng) = split_evar_to_arrow sigma t in
-	      evars_reset_evd sigma' isevars;
-	      Some dom, Some rng
-	    else
-	      error_not_product_loc loc env sigma c
+	| IsEvar (n,_ as ev) when not (Evd.is_defined isevars.evars n) ->
+	    let (sigma',_,evdom,evrng) = split_evar_to_arrow sigma ev in
+	    evars_reset_evd sigma' isevars;
+	    Some (mkEvar evdom), Some (mkEvar evrng)
+	| _ -> error_not_product_loc loc env sigma c
 
 let valcon_of_tycon x = x
 

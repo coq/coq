@@ -50,6 +50,7 @@ val evars_reset_evd : 'a evar_map -> 'a evar_defs -> unit
 type evar_constraint = conv_pb * constr * constr
 val add_conv_pb : 'a evar_defs -> evar_constraint -> unit
 
+val is_defined_evar : 'a evar_defs -> existential -> bool
 val ise_try : 'a evar_defs -> (unit -> bool) list -> bool
 val ise_undefined : 'a evar_defs -> constr -> bool
 val has_undefined_isevars : 'a evar_defs -> constr -> bool
@@ -61,6 +62,9 @@ val head_is_embedded_evar : 'a evar_defs -> constr -> bool
 val solve_simple_eqn :
   (env -> 'a evar_defs -> conv_pb -> constr -> constr -> bool)
   -> env -> 'a evar_defs -> conv_pb * existential * constr -> bool
+
+val define_evar_as_arrow : 'a evar_map -> existential -> 'a evar_map * types
+val define_evar_as_sort : 'a evar_map -> existential -> 'a evar_map * sorts
 
 (* Value/Type constraints *)
 

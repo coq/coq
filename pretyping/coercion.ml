@@ -66,6 +66,10 @@ let inh_app_fun env isevars j =
   let t = whd_betadeltaiota env (evars_of isevars) j.uj_type in
   match kind_of_term t with
     | IsProd (_,_,_) -> j
+    | IsEvar ev when not (is_defined_evar isevars ev) ->
+	let (sigma',t) = define_evar_as_arrow (evars_of isevars) ev in
+	evars_reset_evd sigma' isevars;
+	{ uj_val = j.uj_val; uj_type = t }
     | _ ->
        	(try
  	   let t,i1 = class_of1 env (evars_of isevars) j.uj_type in
@@ -85,6 +89,10 @@ let inh_coerce_to_sort env isevars j =
   let typ = whd_betadeltaiota env (evars_of isevars) j.uj_type in
   match kind_of_term typ with
     | IsSort s -> { utj_val = j.uj_val; utj_type = s }
+    | IsEvar ev when not (is_defined_evar isevars ev) ->
+	let (sigma', s) = define_evar_as_sort (evars_of isevars) ev in
+	evars_reset_evd sigma' isevars;
+	{ utj_val = j.uj_val; utj_type = s }
     | _ ->
         let j1 = inh_tosort_force env isevars j in 
 	type_judgment env (evars_of isevars) j1 
