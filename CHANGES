@@ -6,17 +6,18 @@ Vernacular commands
 - New option "Set Printing All" to deactivate all high-level forms of
   printing (implicit arguments, coercions, destructing let,
   if-then-else, notations, projections)
-- "Functional Scheme" and "Functional Induction" extended to polymorphic types
-  and dependent types
-- Notation now allows recursive patterns, hence recovering parts of V7 Grammar
-  fonctionalities
+- "Functional Scheme" and "Functional Induction" extended to polymorphic
+  types and dependent types
+- Notation now allows recursive patterns, hence recovering parts of the
+  fonctionalities of pre-V8 Grammar/Syntax commands
 - Command "Print." discontinued.
 - Redundant syntax "Implicit Arguments On/Off" discontinued
 
-Syntax
+New syntax
 
-- Semantic change of the if-then-else construction: "if c then t1 else t2"
-  now stands for "match c with c1 _ ... _ => t1 | c2 _ ... _ => t2 end"
+- Semantics change of the if-then-else construction in new syntax: 
+  "if c then t1 else t2" now stands for
+  "match c with c1 _ ... _ => t1 | c2 _ ... _ => t2 end"
   with no dependency of t1 and t2 in the arguments of the constructors;
   this may cause incompatibilities for files translated using coq 8.0beta
 
@@ -25,46 +26,23 @@ Interpretation scopes
 - Delimiting key %bool for bool_scope added
 - Import no more needed to activate argument scopes from a module
 
-Tactics
+Tactics and the tactic Language
 
-- "assert" semantics now consistent with reference manual
+- Semantics of "assert" is now consistent with the reference manual
 - New tactics stepl and stepr for chaining transitivity steps
 - Tactic "replace ... with ... in" added
-
-Tactic Language
-
 - Intro patterns now supported in Ltac (parsed with prefix "ipattern:")
 
-Commands
+Executables and tools
 
 - Added option -top to change the name of the toplevel module "Top"
-
-Tools
-
 - Coqdoc updated to new syntax and now part of Coq sources
+- XML exportation tool now exports the structure of vernacular files and
+  the proof scripts (cf chapter 13 in the reference manual)
 
 Bug fixes
 
-- Fix a bug with 'Notation "'id'" := c.'
-- Fix a Notation bug when variable names clash with global names
-- Translator printing bug of reals fixed
-- Fix bugs in induction/destruct in case the type of the eliminated object 
-  has parameters
-- Fix a printing bug with lambda-variable names inherited from the names of 
-  a product cast
-- Fix a bug with Focus
-- Fix pattern-matching compilation bugs (and new support for patterns
-  in a same column but in different inductive types)
-- Fix a potential precedence problem with notations including pattern "{ _ }"
-- Fix an incorrect numbering of occurrences in "simpl id at num"
-- Fix nested coercion printing bug
-- Fix printing of notation when interleaved with coercions 
-- Fix "Tactic Notation" translation bugs and improve file location of errors
-- Fix an "omega" bug (may cause "auto with zarith" to succeed more often)
-- Fix ltac "context" bug on right-hand-side of match clauses
-- Fix a printing bug with fixpoints when a notation for products or lambdas
-  is redefined
-- Fix "abstract" tactical bug within sections
+- Many bugs have been fixed (cf coq-bugs web page)
 
 Changes from V8.0beta old syntax to V8.0beta
 ============================================
