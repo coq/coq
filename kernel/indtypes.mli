@@ -60,7 +60,7 @@ val mind_check_arities : env -> mutual_inductive_entry -> unit
 
 val cci_inductive : 
   env -> env -> path_kind -> int -> bool -> 
-    (identifier * typed_type * identifier list * bool * bool * constr array)
+   (identifier * typed_type * identifier list * bool * bool * typed_type array)
       list ->
       constraints ->
       	mutual_inductive_body

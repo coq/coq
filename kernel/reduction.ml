@@ -1191,11 +1191,12 @@ let is_type_arity env sigma =
   srec 
 
 let is_info_type env sigma t =
-  let s = level_of_type t in
+  let s = t.utj_type in
   (s = Prop Pos) ||
   (s <> Prop Null && 
-   try info_arity env sigma (body_of_type t) with IsType -> true)
+   try info_arity env sigma t.utj_val with IsType -> true)
 
+(* Pour l'extraction 
 let is_info_cast_type env sigma c = 
   match c with  
     | DOP2(Cast,c,t) -> 
@@ -1205,6 +1206,7 @@ let is_info_cast_type env sigma c =
 	   
 let contents_of_cast_type env sigma c = 
   if is_info_cast_type env sigma c then Pos else Null
+*)
 
 let is_info_sort = is_info_arity
 

@@ -28,7 +28,8 @@ let rec execute mf env sigma cstr =
     | IsEvar _ ->
 	let ty = type_of_existential env sigma cstr in
 	let jty = execute mf env sigma ty in
-	{ uj_val = cstr; uj_type = ty; uj_kind = jty.uj_type }
+	let jty = assumption_of_judgment env sigma jty in
+	{ uj_val = cstr; uj_type = jty }
 	
     | IsRel n -> 
 	relative env n
@@ -49,8 +50,7 @@ let rec execute mf env sigma cstr =
 	make_judge cstr (type_of_inductive env sigma ind)
 	  
     | IsMutConstruct cstruct -> 
-	let (typ,kind) = destCast (type_of_constructor env sigma cstruct) in
-        { uj_val = cstr; uj_type = typ; uj_kind = kind }
+	make_judge cstr (type_of_constructor env sigma cstruct)
 	  
     | IsMutCase (ci,p,c,lf) ->
         let cj = execute mf env sigma c in
@@ -88,7 +88,7 @@ let rec execute mf env sigma cstr =
 	    
     | IsLambda (name,c1,c2) -> 
         let j = execute mf env sigma c1 in
-        let var = assumption_of_judgment env sigma j in
+	let var = assumption_of_judgment env sigma j in
 	let env1 = push_rel (name,var) env in
         let j' = execute mf env1 sigma c2 in 
         let (j,_) = abs_rel env1 sigma name var j' in
@@ -96,10 +96,11 @@ let rec execute mf env sigma cstr =
 	  
     | IsProd (name,c1,c2) ->
         let j = execute mf env sigma c1 in
-        let var = assumption_of_judgment env sigma j in
+        let varj = type_judgment env sigma j in
+	let var = assumption_of_type_judgment varj in
 	let env1 = push_rel (name,var) env in
         let j' = execute mf env1 sigma c2 in
-	let (j,_) = gen_rel env1 sigma name var j' in
+	let (j,_) = gen_rel env1 sigma name varj j' in
 	j
 	  
     | IsCast (c,t) ->
@@ -146,7 +147,7 @@ let unsafe_machine env sigma constr =
 
 let type_of env sigma c = 
   let j = safe_machine env sigma c in 
-  nf_betaiota env sigma j.uj_type
+  nf_betaiota env sigma (body_of_type j.uj_type)
 
 (* The typed type of a judgment. *)
 

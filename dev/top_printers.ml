@@ -38,13 +38,10 @@ let prvar ((id,a)) =
     pP [< 'sTR"#" ; 'sTR(string_of_id id) ; 'sTR":" ; 
 	  term0 (gLOB nil_sign) a >]
 
-let genprj f j = [< (f (gLOB nil_sign)j.uj_val); 
-                 'sTR " : ";
-               (f (gLOB nil_sign)j.uj_type);
-                  'sTR " : ";
-               (f  (gLOB nil_sign)j.uj_kind)>]
+let genprj f j =
+  let (c,t) = Termast.with_casts f j in [< c; 'sTR " : "; t >]
 
-let prj j = pP (genprj term0 j)
+let prj j = pP (genprj prjudge j)
 
 
 let prsp sp = pP[< 'sTR(string_of_path sp) >]

@@ -293,6 +293,7 @@ let listrec_mconstr env ntypes nparams i indlc =
   let lna = it_dbenv (fun l na t -> na::l) [] (context env) in
   Array.map
     (fun c ->
+       let c = body_of_type c in
        try
 	 check_construct true (1+nparams) (decomp_par nparams c)
        with IllFormedInd err -> 
@@ -330,7 +331,7 @@ let cci_inductive env env_ar kind nparams finite inds cst =
       (fun acc (_,ar,_,_,_,lc) -> 
 	 Idset.union (global_vars_set (body_of_type ar))
 	   (Array.fold_left
-	      (fun acc c -> Idset.union (global_vars_set c) acc)
+	      (fun acc c -> Idset.union (global_vars_set (body_of_type c)) acc)
 	      acc
 	      lc))
       Idset.empty inds

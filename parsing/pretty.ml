@@ -44,7 +44,7 @@ let print_closed_sections = ref false
 let print_typed_value_in_env env (trm,typ) =
   let sign = Environ.var_context env in
   [< prterm_env (gLOB sign) trm ; 'fNL ;
-     'sTR "     : "; prterm_env (gLOB sign) typ ; 'fNL >]
+     'sTR "     : "; prtype_env (gLOB sign) typ ; 'fNL >]
 
 let print_typed_value x = print_typed_value_in_env (Global.env ()) x
 
@@ -142,7 +142,9 @@ let print_mutual sp mib =
     let ass_name = assumptions_for_print (lparsname@(Array.to_list lna)) in
     let lidC =
       Array.to_list 
-        (array_map2 (fun id c -> (id,snd (decomp_n_prod env evd nparams c)))
+        (array_map2
+	   (fun id c ->
+	      (id,snd (decomp_n_prod env evd nparams (body_of_type c))))
            mip.mind_consnames lC) in
     let plidC = prlist_with_sep (fun () -> [<'bRK(1,0); 'sTR "| " >])
                   (prass ass_name) lidC in
@@ -332,14 +334,15 @@ let list_filter_vec f vec =
    of the object, the assumptions that will make it possible to print its type,
    and the constr term that represent its type. *)
 
-let print_constructors_head 
+(*
+let print_constructors_head
   (fn : string -> unit assumptions -> constr -> unit) c lna mip = 
   let lC = mip.mind_lc in
   let ass_name = assumptions_for_print lna in
   let lidC = array_map2 (fun id c_0 -> (id,c_0)) mip.mind_consnames lC in
-  let flid = list_filter_vec (fun (_,c_0) -> head_const c_0 = c) lidC in
+  let flid = list_filter_vec (fun (_,c_0) -> head_const (body_of_type c_0) = c) lidC in
   List.iter
-    (function (id,c_0) -> fn (string_of_id id) ass_name c_0) flid
+    (function (id,c_0) -> fn (string_of_id id) ass_name (body_of_type c_0)) flid
     
 let print_all_constructors_head fn c mib = 
   let mipvec = mib.mind_packets 
@@ -353,8 +356,17 @@ let print_constructors_rel fn lna mip =
   let lC = mip.mind_lc in
   let ass_name = assumptions_for_print lna in
   let lidC = array_map2 (fun id c -> (id,c)) mip.mind_consnames lC in
-  let flid = list_filter_vec (fun (_,c) -> isRel (head_const c)) lidC in
-  List.iter (function (id,c) -> fn (string_of_id id) ass_name c) flid
+  let flid = list_filter_vec (fun (_,c) -> isRel (head_const (body_of_type c))) lidC in
+  List.iter (function (id,c) -> fn (string_of_id id) ass_name (body_of_type c))
+    flid
+*)
+
+let print_constructors fn lna mip = 
+  let ass_name = assumptions_for_print lna in
+  let _ =
+    array_map2 (fun id c -> fn (string_of_id id) ass_name (body_of_type c))
+    mip.mind_consnames mip.mind_lc
+  in ()
 
 let crible (fn : string -> unit assumptions -> constr -> unit) name =
   let hyps = gLOB (Global.var_context()) in
@@ -380,9 +392,10 @@ let crible (fn : string -> unit assumptions -> constr -> unit) name =
 		   (fun mip -> Name mip.mind_typename) mib.mind_packets in
                (match const with 
 		  | (DOPN(MutInd(sp',tyi),_)) -> 
-		      if sp = objsp_of sp' then print_constructors_rel fn lna
-			(mind_nth_type_packet mib tyi) 
-		  | _ -> print_all_constructors_head fn const mib); 
+		      if sp = objsp_of sp' then
+			print_constructors fn lna
+			  (mind_nth_type_packet mib tyi)
+		  | _ -> ());
                crible_rec rest
 	   | _ -> crible_rec rest)
 
@@ -420,12 +433,11 @@ let print_val env {uj_val=trm;uj_type=typ} =
   print_typed_value_in_env env (trm,typ)
     
 let print_type env {uj_val=trm;uj_type=typ} =
-  print_typed_value_in_env env (trm, nf_betaiota env Evd.empty typ)
+  print_typed_value_in_env env (trm, typed_app (nf_betaiota env Evd.empty) typ)
     
 let print_eval red_fun env {uj_val=trm;uj_type=typ} =
-  let ntrm = red_fun env Evd.empty trm
-  and ntyp = nf_betaiota env Evd.empty typ in
-  [< 'sTR "     = "; print_typed_value_in_env env (ntrm, ntyp) >]
+  let ntrm = red_fun env Evd.empty trm in
+  [< 'sTR "     = "; print_type env {uj_val = ntrm; uj_type = typ} >]
 
 let print_name name = 
   let str = string_of_id name in 
@@ -471,14 +483,14 @@ let print_opaque_name name =
 	  let cb = Global.lookup_constant sp in
           if is_defined cb then
 	    let typ = constant_type env Evd.empty cst in
-            print_typed_value (constant_value env x, body_of_type typ)
+            print_typed_value (constant_value env x, typ)
           else 
 	    anomaly "print_opaque_name"
       | IsMutInd ((sp,_),_) ->
           print_mutual sp (Global.lookup_mind sp)
       | IsMutConstruct cstr -> 
 	  let ty = Typeops.type_of_constructor env sigma cstr in
-	  print_typed_value(x, ty)
+	  print_typed_value (x, ty)
       | IsVar id ->
           let a = snd(lookup_sign id sign) in 
 	  print_var (string_of_id id) a
@@ -521,7 +533,7 @@ let fprint_var name typ =
   [< 'sTR ("*** [" ^ name ^ " :"); fprtype typ; 'sTR "]"; 'fNL >]
 
 let fprint_judge {uj_val=trm;uj_type=typ} = 
-  [< fprterm trm; 'sTR" : " ; fprterm typ >]
+  [< fprterm trm; 'sTR" : " ; fprterm (body_of_type typ) >]
 
 let unfold_head_fconst = 
   let rec unfrec = function

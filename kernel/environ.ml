@@ -297,9 +297,8 @@ let import cenv env =
 
 type unsafe_judgment = { 
   uj_val : constr;
-  uj_type : constr;
-  uj_kind : constr }
+  uj_type : typed_type }
 
-let cast_of_judgment = function
-  | { uj_val = DOP2 (Cast,_,_) as c } -> c
-  | { uj_val = c; uj_type = ty } -> mkCast c ty
+type unsafe_type_judgment = { 
+  utj_val : constr;
+  utj_type : sorts }

@@ -45,7 +45,7 @@ val mis_inductive : inductive_instance -> inductive
 val mis_arity : inductive_instance -> constr
 val mis_lc : inductive_instance -> constr array
 val mis_type_mconstructs : inductive_instance -> constr array * constr array
-val mis_type_mconstruct : int -> inductive_instance -> constr
+val mis_type_mconstruct : int -> inductive_instance -> typed_type
 val mis_params_ctxt : inductive_instance -> (name * constr) list
 val mis_sort : inductive_instance -> sorts
 

@@ -24,37 +24,97 @@ open Evarconv
 let mkExistential isevars env =
   new_isevar isevars env (mkCast dummy_sort dummy_sort) CCI
 
-let norec_branch_scheme env isevars typc =
-  let rec crec typc = match whd_betadeltaiota env !isevars typc with 
-    | DOP2(Prod,c,DLAM(name,t)) -> DOP2(Prod,c,DLAM(name,crec t))
-    | _ -> mkExistential isevars env
-  in 
-  crec typc
+let norec_branch_scheme env isevars cstr =
+  prod_it (mkExistential isevars env) cstr.cs_args 
 
-let rec_branch_scheme env isevars ((sp,j),_) typc recargs = 
-  let rec crec (typc,recargs) = 
-    match whd_betadeltaiota env !isevars typc, recargs with 
-      | (DOP2(Prod,c,DLAM(name,t)),(ra::reca)) -> 
-          DOP2(Prod,c,
+let lift_args l = list_map_i (fun i (name,c) -> (name,liftn 1 i c)) 1 l
+
+let rec_branch_scheme env isevars ((sp,j),_) recargs cstr = 
+  let rec crec (args,recargs) = 
+    match args, recargs with 
+      | (name,c)::rea,(ra::reca) -> 
+          DOP2(Prod,c,DLAM(name,
 	       match ra with 
-		 | Mrec k -> 
-                     if k=j then 
-		       DLAM(name,mkArrow (mkExistential isevars env)
-                              (crec (lift 1 t,reca)))
-                     else 
-		       DLAM(name,crec (t,reca))
-                 | _ -> DLAM(name,crec (t,reca)))
-      | (_,_) -> mkExistential isevars env
+		 | Mrec k when k=j -> 
+		     mkArrow (mkExistential isevars env)
+		       (crec (lift_args rea,reca))
+                 | _ -> crec (rea,reca)))
+      | [],[] -> mkExistential isevars env
+      | _ -> anomaly "rec_branch_scheme"
   in 
-  crec (typc,recargs) 
+  crec (List.rev cstr.cs_args,recargs) 
     
-let branch_scheme env isevars isrec i (IndFamily (mis,params) as indf) = 
-  let typc = type_inst_construct i indf in 
+let branch_scheme env isevars isrec (IndFamily (mis,params) as indf) =
+  let cstrs = get_constructors indf in 
   if isrec then
-    let recarg = (mis_recarg mis).(i-1) in
-    rec_branch_scheme env isevars (mis_inductive mis) typc recarg
+    array_map2
+      (rec_branch_scheme env isevars (mis_inductive mis))
+      (mis_recarg mis) cstrs
   else 
-    norec_branch_scheme env isevars typc
+    Array.map (norec_branch_scheme env isevars) cstrs
+
+(***************************************************)
+(* Building ML like case expressions without types *)
+
+let concl_n env sigma = 
+  let rec decrec m c = if m = 0 then c else 
+    match whd_betadeltaiota env sigma c with
+      | DOP2(Prod,_,DLAM(n,c_0)) -> decrec (m-1) c_0
+      | _                        -> failwith "Typing.concl_n"
+  in 
+  decrec
+
+let count_rec_arg j = 
+  let rec crec i = function 
+    | [] -> i 
+    | (Mrec k::l) -> crec (if k=j then (i+1) else i) l
+    | (_::l) -> crec i l
+  in 
+  crec 0
+
+(* Used in Program only *)      
+let make_case_ml isrec pred c ci lf = 
+  if isrec then 
+    DOPN(XTRA("REC"),Array.append [|pred;c|] lf)
+  else 
+    mkMutCaseA ci pred c lf
+
+(* if arity of mispec is (p_bar:P_bar)(a_bar:A_bar)s where p_bar are the
+ * K parameters. Then then build_notdep builds the predicate
+ * [a_bar:A'_bar](lift k pred) 
+ * where A'_bar = A_bar[p_bar <- globargs] *)
+
+let build_notdep_pred env sigma indf pred =
+  let arsign,_ = get_arity env sigma indf in
+  let nar = List.length arsign in
+  it_lambda_name env (lift nar pred) arsign
+
+let pred_case_ml_fail env sigma isrec (IndType (indf,realargs)) (i,ft) =
+  let pred =
+    let mispec,_ = dest_ind_family indf in
+    let recargs = mis_recarg mispec in
+    assert (Array.length recargs <> 0);
+    let recargi = recargs.(i) in
+    let j = mis_index mispec in
+    let nbrec = if isrec then count_rec_arg j recargi else 0 in
+    let nb_arg = List.length (recargs.(i)) + nbrec in
+    let pred = concl_n env sigma nb_arg ft in
+    if noccur_between 1 nb_arg pred then 
+      lift (-nb_arg) pred
+    else 
+      failwith "Dependent"
+  in
+  if realargs = [] then 
+    pred
+  else (* we try with [_:T1]..[_:Tn](lift n pred) *)
+    build_notdep_pred env sigma indf pred  
+
+let pred_case_ml env sigma isrec indt lf (i,ft) = 
+    pred_case_ml_fail env sigma isrec indt (i,ft)
+
+(* similar to pred_case_ml but does not expect the list lf of braches *)
+let pred_case_ml_onebranch env sigma isrec indt (i,f,ft) = 
+    pred_case_ml_fail env sigma isrec indt (i,ft)
 
 (************************************************************************)
 (*            Pattern-matching compilation (Cases)                      *)
@@ -429,7 +489,7 @@ let rec recover_pat_names = function
   | _,[] -> anomaly "Cases.recover_pat_names: Not enough patterns"
 
 let push_rels_eqn sign eqn =
-  let sign' = recover_pat_names (List.rev sign, eqn.patterns) in
+  let sign' = recover_pat_names (sign, eqn.patterns) in
   {eqn with
      rhs = {eqn.rhs with
 	      rhs_env = push_rels sign' eqn.rhs.rhs_env} }
@@ -563,8 +623,8 @@ let find_predicate env isevars p typs cstrs current (IndType (indf,realargs)) =
       | Some p -> abstract_predicate env !isevars indf p
       | None -> infer_predicate env isevars typs cstrs indf in
   let typ = applist (pred, realargs) in
-  if dep then (pred, applist (typ, [current]), dummy_sort)
-  else (pred, typ, dummy_sort)
+  if dep then (pred, applist (typ, [current]), Type Univ.dummy_univ)
+  else (pred, typ, Type Univ.dummy_univ)
 
 (************************************************************************)
 (* Sorting equation by constructor *)
@@ -617,8 +677,7 @@ let build_leaf pb =
   let j = pb.typing_function tycon rhs.rhs_env rhs.it in
   let subst = (*List.map (fun id -> (id,make_substituend (List.assoc id rhs.subst))) rhs.user_ids *)[] in
   {uj_val = replace_vars subst j.uj_val;
-   uj_type = replace_vars subst j.uj_type;
-   uj_kind = j.uj_kind}
+   uj_type = typed_app (replace_vars subst) j.uj_type }
 
 (* Building the sub-problem when all patterns are variables *)
 let shift_problem pb =
@@ -703,14 +762,13 @@ and match_current pb (n,tm) =
 	  let tags = Array.map (pattern_status defaults) eqns in
 	  let brs = Array.map compile pbs in
 	  let brvals = Array.map (fun j -> j.uj_val) brs in
-	  let brtyps = Array.map (fun j -> j.uj_type) brs in
+	  let brtyps = Array.map (fun j -> body_of_type j.uj_type) brs in
 	  let (pred,typ,s) =
 	    find_predicate pb.env pb.isevars 
 	      pb.pred brtyps cstrs current indt in
 	  let ci = make_case_info mis None tags in
 	  { uj_val = mkMutCaseA ci (*eta_reduce_if_rel*) pred current brvals;
-	    uj_type = typ;
-	    uj_kind = s }
+	    uj_type = make_typed typ s }
 
 and compile_further pb firstnext rest =
   (* We pop as much as possible tomatch not dependent one of the other *)
@@ -718,20 +776,21 @@ and compile_further pb firstnext rest =
   (* the next pattern to match is at the end of [nexts], it has ref (Rel n)
      where n is the length of nexts *)
   let sign = List.map (fun ((na,t),_) -> (na,type_of_tomatch_type t)) nexts in
+  let revsign = List.rev sign in
   let currents =
     list_map_i
       (fun i ((na,t),(_,rhsdep)) ->
 	 Pushed (insert_lifted ((Rel i, lift_tomatch_type i t), rhsdep)))
       1 nexts in
   let pb' = { pb with
-		env = push_rels sign pb.env;
+		env = push_rels revsign pb.env;
 		tomatch = List.rev_append currents future;
                 pred= option_app (weaken_predicate (List.length sign)) pb.pred;
-		mat = List.map (push_rels_eqn sign) pb.mat } in
+		mat = List.map (push_rels_eqn revsign) pb.mat } in
   let j = compile pb' in
   { uj_val = lam_it j.uj_val sign;
-    uj_type = prod_it j.uj_type sign;
-    uj_kind = j.uj_kind }
+    uj_type =  (* Pas d'univers ici: imprédicatif si Prop/Set, dummy si Type *)
+      typed_app (fun t -> prod_it t sign) j.uj_type }
 
 
 (* pour les alias des initiaux, enrichir les env de ce qu'il faut et
@@ -799,25 +858,26 @@ let inh_coerce_to_ind isevars env ty tyi =
 
 let coerce_row typing_fun isevars env row tomatch =
   let j = typing_fun empty_tycon env tomatch in
+  let typ = body_of_type j.uj_type in
   let t =
     match find_row_ind row with
 	Some (cloc,(cstr,_ as c)) ->
 	  (let tyi = inductive_of_rawconstructor c in
 	   try 
-	     let indtyp = inh_coerce_to_ind isevars env j.uj_type tyi in
-	     IsInd (j.uj_type,find_inductive env !isevars j.uj_type)
-	 with NotCoercible ->
-	   (* 2 cas : pas le bon inductive ou pas un inductif du tout *)
-	   try
-	     let mind,_ = find_minductype env !isevars j.uj_type in
-	     error_bad_constructor_loc cloc CCI
-	       (constructor_of_rawconstructor c) mind
-	   with Induc ->
-	     error_case_not_inductive_loc
-	       (loc_of_rawconstr tomatch) CCI env j.uj_val j.uj_type)
+	     let indtyp = inh_coerce_to_ind isevars env typ tyi in
+	     IsInd (typ,find_inductive env !isevars typ)
+	   with NotCoercible ->
+	     (* 2 cas : pas le bon inductive ou pas un inductif du tout *)
+	     try
+	       let mind,_ = find_minductype env !isevars typ in
+	       error_bad_constructor_loc cloc CCI
+		 (constructor_of_rawconstructor c) mind
+	     with Induc ->
+	       error_case_not_inductive_loc
+		 (loc_of_rawconstr tomatch) CCI env j.uj_val typ)
       | None -> 
-	  try IsInd (j.uj_type,find_inductive env !isevars j.uj_type)
-	  with Induc -> NotInd (j.uj_type)
+	  try IsInd (typ,find_inductive env !isevars typ)
+	  with Induc -> NotInd typ
   in (j.uj_val,t)
 
 let coerce_to_indtype typing_fun isevars env matx tomatchl =
@@ -895,9 +955,9 @@ let case_dependent env sigma loc predj tomatchs =
     | (c,NotInd t) ->
 	errorlabstrm "case_dependent" (error_case_not_inductive CCI env c t)
   in
-  let etapred = eta_expand env sigma predj.uj_val predj.uj_type in
+  let etapred = eta_expand env sigma predj.uj_val (body_of_type predj.uj_type) in
   let n = nb_lam etapred in
-  let _,sort = decomp_prod env sigma predj.uj_type in
+  let _,sort = decomp_prod env sigma (body_of_type predj.uj_type) in
   let ndepv = List.map nb_dep_ity tomatchs in
   let sum = List.fold_right (fun i j -> i+j)  ndepv 0 in
   let depsum = sum + List.length tomatchs in
@@ -915,7 +975,7 @@ let prepare_predicate typing_fun isevars env tomatchs = function
       let cdep,arity = case_dependent env !isevars loc predj1 tomatchs in
       (* We got the expected arity of pred and relaunch pretype with it *)
       let predj = typing_fun (mk_tycon arity) env pred in
-      let etapred = eta_expand env !isevars predj.uj_val predj.uj_type in
+      let etapred = eta_expand env !isevars predj.uj_val (body_of_type predj.uj_type) in
       Some (build_initial_predicate cdep etapred tomatchs)
 
 (**************************************************************************)

@@ -53,7 +53,7 @@ type recarg =
 type one_inductive_body = {
   mind_consnames : identifier array;
   mind_typename : identifier;
-  mind_lc : constr array;
+  mind_lc : typed_type array;
   mind_arity : typed_type;
   mind_sort : sorts;
   mind_nrealargs : int;

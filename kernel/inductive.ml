@@ -35,11 +35,13 @@ let mis_typepath mis =
 let mis_consnames mis = mis.mis_mip.mind_consnames
 let mis_inductive mis = ((mis.mis_sp,mis.mis_tyi),mis.mis_args)
 
-let mis_lc mis =
+let mis_typed_lc mis =
   let ids = ids_of_sign mis.mis_mib.mind_hyps in
   let args = Array.to_list mis.mis_args in
-  Array.map (fun t -> Instantiate.instantiate_constr ids t args)
+  Array.map (fun t -> Instantiate.instantiate_type ids t args)
     mis.mis_mip.mind_lc
+
+let mis_lc mis = Array.map body_of_type (mis_typed_lc mis)
 
 (* gives the vector of constructors and of 
    types of constructors of an inductive definition 
@@ -57,12 +59,12 @@ let mis_type_mconstructs mispec =
    Array.map (substl (list_tabulate make_Ik ntypes)) specif)
 
 let mis_type_mconstruct i mispec =
-  let specif = mis_lc mispec
+  let specif = mis_typed_lc mispec
   and ntypes = mis_ntypes mispec
   and nconstr = mis_nconstr mispec in
   let make_Ik k = DOPN(MutInd(mispec.mis_sp,ntypes-k-1),mispec.mis_args) in 
   if i > nconstr then error "Not enough constructors in the type";
-  substl (list_tabulate make_Ik ntypes) specif.(i-1)
+  typed_app (substl (list_tabulate make_Ik ntypes)) specif.(i-1)
 
 let mis_typed_arity mis =
   let idhyps = ids_of_sign mis.mis_mib.mind_hyps 

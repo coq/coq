@@ -18,10 +18,9 @@ open Retyping
 
 let class_of1 env sigma t = class_of env sigma (nf_ise1 sigma t)
 
-let j_nf_ise env sigma {uj_val=v;uj_type=t;uj_kind=k} =
+let j_nf_ise env sigma {uj_val=v;uj_type=t} =
   { uj_val = nf_ise1 sigma v; 
-    uj_type = nf_ise1 sigma t; 
-    uj_kind = k }
+    uj_type = typed_app (nf_ise1 sigma) t }
 
 let jl_nf_ise env sigma = List.map (j_nf_ise env sigma)
 
@@ -29,8 +28,7 @@ let jl_nf_ise env sigma = List.map (j_nf_ise env sigma)
 let apply_coercion_args env argl funj =
   let rec apply_rec acc typ = function
     | [] -> { uj_val=applist(j_val_only funj,argl);
-              uj_type= typ;
-              uj_kind = funj.uj_kind }
+              uj_type= typed_app (fun _ -> typ) funj.uj_type }
     | h::restl ->
       (* On devrait pouvoir s'arranger pour qu'on ait pas à faire hnf_constr *)
   	match whd_betadeltaiota env Evd.empty typ with
@@ -39,7 +37,7 @@ let apply_coercion_args env argl funj =
 	      apply_rec (h::acc) (subst1 h c2) restl
 	  | _ -> anomaly "apply_coercion_args"
   in 
-  apply_rec [] funj.uj_type argl
+  apply_rec [] (body_of_type funj.uj_type) argl
 
 (* appliquer le chemin de coercions p a` hj *)
 
@@ -55,20 +53,20 @@ let apply_pcoercion env p hj typ_cl =
               let argl = (class_args_of typ_cl)@[ja.uj_val] in
               let jres = apply_coercion_args env argl fv in
               (if b then 
-		 {uj_type=jres.uj_type;uj_kind=jres.uj_kind;uj_val=ja.uj_val}
+		 { uj_val=ja.uj_val; uj_type=jres.uj_type }
                else 
 		 jres),
-	      jres.uj_type)
+	      (body_of_type jres.uj_type))
            (hj,typ_cl) p)
   with _ -> 
     failwith "apply_pcoercion"
 
 let inh_app_fun env isevars j = 
-  match whd_betadeltaiota env !isevars j.uj_type with
+  match whd_betadeltaiota env !isevars (body_of_type j.uj_type) with
     | DOP2(Prod,_,DLAM(_,_)) -> j
     | _ ->
        	(try
- 	   let t,i1 = class_of1 env !isevars j.uj_type in
+ 	   let t,i1 = class_of1 env !isevars (body_of_type j.uj_type) in
       	   let p = lookup_path_to_fun_from i1 in
            apply_pcoercion env p j t
 	 with _ -> j)
@@ -76,38 +74,39 @@ let inh_app_fun env isevars j =
 
 let inh_tosort_force env isevars j =
   try
-    let t,i1 = class_of1 env !isevars j.uj_type in
+    let t,i1 = class_of1 env !isevars (body_of_type j.uj_type) in
     let p = lookup_path_to_sort_from i1 in
     apply_pcoercion env p j t 
   with Not_found -> 
     j
 
 let inh_tosort env isevars j = 
-  let typ = whd_betadeltaiota env !isevars j.uj_type in
+  let typ = whd_betadeltaiota env !isevars (body_of_type j.uj_type) in
   match typ with
     | DOP0(Sort _) -> j  (* idem inh_app_fun *)
     | _ -> (try inh_tosort_force env isevars j with _ -> j)
 
 let inh_ass_of_j env isevars j =
-  let typ = whd_betadeltaiota env !isevars j.uj_type in
+  let typ = whd_betadeltaiota env !isevars (body_of_type j.uj_type) in
   match typ with
-    | DOP0(Sort s) -> make_typed j.uj_val s
+    | DOP0(Sort s) -> { utj_val = j.uj_val; utj_type = s }
     | _ ->
         let j1 = inh_tosort_force env isevars j in 
-	assumption_of_judgment env !isevars j1 
+	type_judgment env !isevars j1 
 
 let inh_coerce_to env isevars c1 hj =
   let t1,i1 = class_of1 env !isevars c1 in
-  let t2,i2 = class_of1 env !isevars hj.uj_type in
+  let t2,i2 = class_of1 env !isevars (body_of_type hj.uj_type) in
   let p = lookup_path_between (i2,i1) in
   let hj' = apply_pcoercion env p hj t2 in
-  if the_conv_x_leq env isevars hj'.uj_type c1 then 
+  if the_conv_x_leq env isevars (body_of_type hj'.uj_type) c1 then 
     hj'
   else 
     failwith "inh_coerce_to"
 
 let rec inh_conv_coerce_to env isevars c1 hj =
-  let {uj_val = v; uj_type = t; uj_kind = k} = hj in
+  let {uj_val = v; uj_type = t} = hj in
+  let t = body_of_type t in
   if the_conv_x_leq env isevars t c1 then hj
   else 
     try 
@@ -130,8 +129,9 @@ let rec inh_conv_coerce_to env isevars c1 hj =
 	       let assv1 = outcast_type v1 in
                let env1 = push_rel (x,assv1) env in
                let h2 = inh_conv_coerce_to env isevars u2
-			  {uj_val = v2; uj_type = t2;
-			   uj_kind = mkSort (get_sort_of env !isevars t2) } in
+			  {uj_val = v2;
+			   uj_type =
+			     make_typed t2 (get_sort_of env !isevars t2) } in
                fst (abs_rel env !isevars x assv1 h2)
              else 
                (* let ju1 = exemeta_rec def_vty_con env isevars u1 in 
@@ -146,36 +146,36 @@ let rec inh_conv_coerce_to env isevars c1 hj =
                let env1 = push_rel (name,assu1) env in
                let h1 = 
 		 inh_conv_coerce_to env isevars t1
-		   {uj_val = Rel 1; uj_type = u1;
-		    uj_kind = mkSort (level_of_type assu1) } in
+		   {uj_val = Rel 1; 
+		    uj_type = typed_app (fun _ -> u1) assu1 } in
                let h2 = inh_conv_coerce_to env isevars u2  
 			 { uj_val = DOPN(AppL,[|(lift 1 v);h1.uj_val|]);
-                           uj_type = subst1 h1.uj_val t2;
-			   uj_kind = mkSort (get_sort_of env !isevars t2) }
+                           uj_type =
+			     make_typed (subst1 h1.uj_val t2)
+			       (get_sort_of env !isevars t2) }
 	       in
 	       fst (abs_rel env !isevars name assu1 h2)
 	 | _ -> failwith "inh_coerce_to")
             
 let inh_cast_rel loc env isevars cj tj =
+  let tj = assumption_of_judgment env !isevars tj in
   let cj' = 
     try 
-      inh_conv_coerce_to env isevars tj.uj_val cj 
+      inh_conv_coerce_to env isevars (body_of_type tj) cj 
     with Not_found | Failure _ -> 
       let rcj = j_nf_ise env !isevars cj in
-      let atj = j_nf_ise env !isevars tj in
-      error_actual_type_loc loc env rcj.uj_val rcj.uj_type atj.uj_type
+      let atj = nf_ise1 !isevars (body_of_type tj) in
+      error_actual_type_loc loc env rcj.uj_val (body_of_type rcj.uj_type) atj
   in
-  { uj_val = mkCast cj'.uj_val tj.uj_val;
-    uj_type = tj.uj_val;
-    uj_kind = whd_betadeltaiota env !isevars tj.uj_type }
+  { uj_val = mkCast cj'.uj_val (body_of_type tj);
+    uj_type = tj }
 
 let inh_apply_rel_list nocheck apploc env isevars argjl funj vtcon =
   let rec apply_rec n acc typ = function
     | [] -> 
 	let resj =
       	  { uj_val=applist(j_val_only funj,List.map j_val_only (List.rev acc));
-	    uj_type= typ;
-	    uj_kind = funj.uj_kind } 
+	    uj_type= typed_app (fun _ -> typ) funj.uj_type } 
       	in
       	(match vtcon with 
 	   | (_,(_,Some typ')) ->
@@ -193,7 +193,7 @@ let inh_apply_rel_list nocheck apploc env isevars argjl funj vtcon =
 		  (try 
 		     inh_conv_coerce_to env isevars c1 hj 
 		   with Failure _ | Not_found ->
-                     error_cant_apply_bad_type_loc apploc env (n,c1,hj.uj_type)
+                     error_cant_apply_bad_type_loc apploc env (n,c1,(body_of_type hj.uj_type))
 		       (j_nf_ise env !isevars funj)
 		       (jl_nf_ise env !isevars argjl)) 
 	      in
@@ -202,5 +202,5 @@ let inh_apply_rel_list nocheck apploc env isevars argjl funj vtcon =
               error_cant_apply_not_functional_loc apploc env
 	      	(j_nf_ise env !isevars funj) (jl_nf_ise env !isevars argjl)
   in 
-  apply_rec 1 [] funj.uj_type argjl
+  apply_rec 1 [] (body_of_type funj.uj_type) argjl
 

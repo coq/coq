@@ -65,6 +65,8 @@ type typed_term = typed_type judge
 val make_typed : constr -> sorts -> typed_type
 
 val typed_app : (constr -> constr) -> typed_type -> typed_type
+val typed_combine : (constr -> constr -> constr) -> (sorts -> sorts -> sorts)
+      -> (typed_type -> typed_type -> typed_type)
 
 val body_of_type : typed_type -> constr
 val level_of_type : typed_type -> sorts

@@ -294,8 +294,8 @@ let try_add_new_coercion_core idf stre source target isid =
   let env = Global.env () in
   let v = construct_reference env CCI idf in
   let t = Retyping.get_type_of env Evd.empty v in
-  let k = Retyping.get_type_of env Evd.empty t in
-  let vj = {uj_val=v; uj_type=t; uj_kind = k} in
+  let k = Retyping.get_sort_of env Evd.empty t in
+  let vj = {uj_val=v; uj_type= make_typed t k} in
   let f_vardep,coef = coe_of_reference v in
   if coercion_exists coef then
     errorlabstrm "try_add_coercion" 

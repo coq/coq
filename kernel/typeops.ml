@@ -17,25 +17,28 @@ open Type_errors
 
 let make_judge v tj =
   { uj_val = v;
-    uj_type = body_of_type tj;
-    uj_kind= DOP0 (Sort (level_of_type tj)) }
+    uj_type = tj }
 
 let j_val_only j = j.uj_val
 (* Faut-il caster ? *)
 let j_val = j_val_only
 
-let j_val_cast j = mkCast j.uj_val j.uj_type
+let j_val_cast j = mkCast j.uj_val (body_of_type j.uj_type)
 
-let typed_type_of_judgment env sigma j =
-  match whd_betadeltaiota env sigma j.uj_kind with
-    | DOP0(Sort s) -> make_typed j.uj_type s
-    | _ -> error_not_type CCI env j.uj_type
-
+let typed_type_of_judgment env sigma j = j.uj_type
 
 let assumption_of_judgment env sigma j =
-  match whd_betadeltaiota env sigma j.uj_type with
+  match whd_betadeltaiota env sigma (body_of_type j.uj_type) with
     | DOP0(Sort s) -> make_typed j.uj_val s
     | _ -> error_assumption CCI env j.uj_val
+
+let assumption_of_type_judgment j = make_typed j.utj_val j.utj_type
+
+let type_judgment env sigma j =
+  match whd_betadeltaiota env sigma (body_of_type j.uj_type) with
+    | DOP0(Sort s) -> {utj_val = j.uj_val; utj_type = s }
+    | _ -> error_assumption CCI env j.uj_val
+
 
 (* Type of a de Bruijn index. *)
 	  
@@ -43,8 +46,7 @@ let relative env n =
   try
     let (_,typ) = lookup_rel n env in
     { uj_val  = Rel n;
-      uj_type = lift n (body_of_type typ);
-      uj_kind = DOP0 (Sort (level_of_type typ)) }
+      uj_type = typed_app (lift n) typ }
   with Not_found -> 
     error_unbound_rel CCI env n
 
@@ -99,8 +101,10 @@ let type_of_inductive env sigma i =
 
 (* Constructors. *)
 
+(*
 let type_mconstructs env sigma mind =
   mis_type_mconstructs (lookup_mind_specif mind env)
+*)
 
 let type_mconstruct env sigma i mind =
   mis_type_mconstruct i (lookup_mind_specif mind env)
@@ -110,10 +114,6 @@ let type_of_constructor env sigma cstr =
     (index_of_constructor cstr)
     (inductive_of_constructor cstr)
 
-let type_inst_construct i (IndFamily (mis,globargs)) =
-  let tc = mis_type_mconstruct i mis in
-  prod_applist tc globargs
-
 let type_of_existential env sigma c =
   Instantiate.existential_type sigma (destEvar c)
 
@@ -121,7 +121,7 @@ let type_of_existential env sigma c =
 
 let rec mysort_of_arity env sigma c =
   match whd_betadeltaiota env sigma c with
-    | DOP0(Sort( _)) as c' -> c'
+    | DOP0(Sort(s)) -> s
     | DOP2(Prod,_,DLAM(_,c2)) -> mysort_of_arity env sigma c2
     | _ -> invalid_arg "mysort_of_arity"
 
@@ -209,29 +209,27 @@ let check_branches_message env sigma (c,ct) (explft,lft) =
   done
 
 let type_of_case env sigma ci pj cj lfj =
-  let lft = Array.map (fun j -> j.uj_type) lfj in
+  let lft = Array.map (fun j -> body_of_type j.uj_type) lfj in
   let indspec =
-    try find_inductive env sigma cj.uj_type
-    with Induc -> error_case_not_inductive CCI env cj.uj_val cj.uj_type in
+    try find_inductive env sigma (body_of_type cj.uj_type)
+    with Induc ->
+      error_case_not_inductive CCI env cj.uj_val (body_of_type cj.uj_type) in
   let (bty,rslty) =
-    type_case_branches env sigma indspec pj.uj_type pj.uj_val cj.uj_val in
-  let kind = mysort_of_arity env sigma pj.uj_type in
-  check_branches_message env sigma (cj.uj_val,cj.uj_type) (bty,lft);
+    type_case_branches env sigma indspec (body_of_type pj.uj_type) pj.uj_val cj.uj_val in
+  let kind = mysort_of_arity env sigma (body_of_type pj.uj_type) in
+  check_branches_message env sigma (cj.uj_val,body_of_type cj.uj_type) (bty,lft);
   { uj_val  = mkMutCaseA ci (j_val pj) (j_val cj) (Array.map j_val lfj);
-    uj_type = rslty;
-    uj_kind = kind }
+    uj_type = make_typed rslty kind }
 
 (* Prop and Set *)
 
 let judge_of_prop =
   { uj_val = DOP0(Sort prop);
-    uj_type = DOP0(Sort type_0);
-    uj_kind = DOP0(Sort type_1) }
+    uj_type = make_typed (DOP0(Sort type_0)) type_1 }
 
 let judge_of_set =
   { uj_val = DOP0(Sort spec);
-    uj_type = DOP0(Sort type_0);
-    uj_kind = DOP0(Sort type_1) }
+    uj_type = make_typed (DOP0(Sort type_0)) type_1 }
 
 let judge_of_prop_contents = function
   | Null -> judge_of_prop
@@ -242,14 +240,13 @@ let judge_of_prop_contents = function
 let judge_of_type u =
   let (uu,uuu,c) = super_super u in
   { uj_val = DOP0 (Sort (Type u));
-    uj_type = DOP0 (Sort (Type uu));
-    uj_kind = DOP0 (Sort (Type uuu)) },
+    uj_type = make_typed (DOP0(Sort (Type uu))) (Type uuu) },
   c
 
 let type_of_sort c =
   match c with
-    | DOP0 (Sort (Type u)) -> let (uu,cst) = super u in mkType uu, cst
-    | DOP0 (Sort (Prop _)) -> mkType prop_univ, Constraint.empty
+    | DOP0 (Sort (Type u)) -> let (uu,cst) = super u in Type uu, cst
+    | DOP0 (Sort (Prop _)) -> Type prop_univ, Constraint.empty
     | _ -> invalid_arg "type_of_sort"
 
 (* Type of a lambda-abstraction. *)
@@ -273,46 +270,52 @@ let sort_of_product_without_univ domsort rangsort =
            | Prop _ -> rangsort
            | Type u1 -> Type dummy_univ)
 
+let typed_product_without_universes name var c =
+  typed_combine (mkProd name) sort_of_product_without_univ var c
+
+let typed_product env name var c =
+  (* Gros hack ! *)
+  let rcst = ref Constraint.empty in
+  let hacked_sort_of_product s1 s2 =
+    let (s,cst) = sort_of_product s1 s2 (universes env) in (rcst:=cst; s) in
+  typed_combine (mkProd name) hacked_sort_of_product var c, !rcst
+
 let abs_rel env sigma name var j =
-  let rngtyp = whd_betadeltaiota env sigma j.uj_kind in
   let cvar = incast_type var in
-  let (s,cst) =
-    sort_of_product (level_of_type var) (destSort rngtyp) (universes env) in
+  let typ,cst = typed_product env name var j.uj_type in
   { uj_val = mkLambda name cvar (j_val j);
-    uj_type = mkProd name cvar j.uj_type;
-    uj_kind = mkSort s },
+    uj_type = typ },
   cst
 
 (* Type of a product. *)
 
-let gen_rel env sigma name var j =
-  let jtyp = whd_betadeltaiota env sigma j.uj_type in
-  let jkind = whd_betadeltaiota env sigma j.uj_kind in
-  let j = { uj_val = j.uj_val; uj_type = jtyp; uj_kind = jkind } in
-  if isprop jkind then 
-    error "Proof objects can only be abstracted" 
-  else
-    match jtyp with
-      | DOP0(Sort s) ->
-	  let (s',g) = sort_of_product (level_of_type var) s (universes env) in
-          let res_type = mkSort s' in
-	  let (res_kind,g') = type_of_sort res_type in
-          { uj_val = 
-	      mkProd name (incast_type var) (j_val_cast j);
-            uj_type = res_type;
-            uj_kind = res_kind }, g'
-      | _ -> 
+let gen_rel env sigma name varj j =
+  let var = assumption_of_type_judgment varj in
+  match whd_betadeltaiota env sigma (body_of_type j.uj_type) with
+    | DOP0(Sort s) as ts ->
+	let t = mkCast j.uj_val ts in
+	let (s',g) = sort_of_product varj.utj_type s (universes env) in
+	let res_type = mkSort s' in
+	let (res_kind,g') = type_of_sort res_type in
+        { uj_val = mkProd name (incast_type var) t;
+          uj_type = make_typed res_type res_kind },
+	g'
+    | _ -> 
+(* 	if is_small (level_of_type j.uj_type) then (* message historique ?? *)
+	  error "Proof objects can only be abstracted" 
+	else
+*)
 	  error_generalization CCI env (name,var) j.uj_val
 
 (* Type of a cast. *)
 	    
 let cast_rel env sigma cj tj =
-  if is_conv_leq env sigma cj.uj_type tj.uj_val then
+  let tj = assumption_of_judgment env sigma tj in
+  if is_conv_leq env sigma (body_of_type cj.uj_type) (body_of_type tj) then
     { uj_val = j_val_only cj;
-      uj_type = tj.uj_val;
-      uj_kind = whd_betadeltaiota env sigma tj.uj_type }
+      uj_type = tj }
   else 
-    error_actual_type CCI env cj.uj_val cj.uj_type tj.uj_val
+    error_actual_type CCI env cj.uj_val (body_of_type cj.uj_type) (body_of_type tj)
 
 (* Type of an application. *)
 
@@ -320,8 +323,7 @@ let apply_rel_list env sigma nocheck argjl funj =
   let rec apply_rec n typ cst = function
     | [] -> 
 	{ uj_val  = applist (j_val_only funj, List.map j_val_only argjl);
-          uj_type = typ;
-          uj_kind = funj.uj_kind },
+          uj_type = typed_app (fun _ -> typ) funj.uj_type },
 	cst
     | hj::restjl ->
         match whd_betadeltaiota env sigma typ with
@@ -330,16 +332,16 @@ let apply_rel_list env sigma nocheck argjl funj =
                 apply_rec (n+1) (subst1 hj.uj_val c2) cst restjl
 	      else 
 		(try 
-		   let c = conv_leq env sigma hj.uj_type c1 in
+		   let c = conv_leq env sigma (body_of_type hj.uj_type) c1 in
 		   let cst' = Constraint.union cst c in
 		   apply_rec (n+1) (subst1 hj.uj_val c2) cst' restjl
 		 with NotConvertible -> 
-		   error_cant_apply_bad_type CCI env (n,hj.uj_type,c1)
+		   error_cant_apply_bad_type CCI env (n,body_of_type hj.uj_type,c1)
 		     funj argjl)
           | _ ->
 	      error_cant_apply_not_functional CCI env funj argjl
   in 
-  apply_rec 1 funj.uj_type Constraint.empty argjl
+  apply_rec 1 (body_of_type funj.uj_type) Constraint.empty argjl
 
 
 (* Fixpoints. *)
@@ -808,7 +810,7 @@ let type_fixpoint env sigma lna lar vdefj =
 	 try conv_leq env sigma def (lift lt ar) 
 	 with NotConvertible -> raise (IllBranch i))
       env sigma
-      (Array.map (fun j -> j.uj_type) vdefj) (Array.map body_of_type lar)
+      (Array.map (fun j -> body_of_type j.uj_type) vdefj) (Array.map body_of_type lar)
   with IllBranch i ->
     error_ill_typed_rec_body CCI env i lna vdefj lar
 

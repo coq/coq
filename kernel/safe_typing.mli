@@ -53,13 +53,12 @@ val import : compiled_env -> safe_environment -> safe_environment
 
 val env_of_safe_env : safe_environment -> env
 
+(*i For debug
 (*s Typing without information. *)
-
 type judgment
 
 val j_val : judgment -> constr
 val j_type : judgment -> constr
-val j_kind : judgment -> constr
 
 val safe_machine : safe_environment -> constr -> judgment * constraints
 val safe_machine_type : safe_environment -> constr -> typed_type * constraints
@@ -81,5 +80,5 @@ i*)
 (*s Typing with information (extraction). *)
 
 type information = Logic | Inf of judgment
-
+i*)
 

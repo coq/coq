@@ -18,7 +18,7 @@ val inh_tosort_force :
 val inh_tosort :
   env -> 'a evar_defs -> unsafe_judgment -> unsafe_judgment
 val inh_ass_of_j : 
-  env -> 'a evar_defs -> unsafe_judgment -> typed_type
+  env -> 'a evar_defs -> unsafe_judgment -> unsafe_type_judgment
 val inh_coerce_to : 
   env -> 'a evar_defs -> constr -> unsafe_judgment -> unsafe_judgment
 val inh_conv_coerce_to : 

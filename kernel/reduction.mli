@@ -115,9 +115,11 @@ val is_info_arity : env -> 'a evar_map -> constr -> bool
 val is_info_sort : env -> 'a evar_map -> constr -> bool
 val is_logic_arity : env -> 'a evar_map -> constr -> bool
 val is_type_arity : env -> 'a evar_map -> constr -> bool
-val is_info_type : env -> 'a evar_map -> typed_type -> bool
+val is_info_type : env -> 'a evar_map -> unsafe_type_judgment -> bool
+(*i Pour l'extraction
 val is_info_cast_type : env -> 'a evar_map -> constr -> bool
 val contents_of_cast_type : env -> 'a evar_map -> constr -> contents
+i*)
 val poly_args : env -> 'a evar_map -> constr -> int list
 
 val whd_programs : 'a reduction_function

@@ -96,7 +96,8 @@ val import : compiled_env -> env -> env
 
 type unsafe_judgment = { 
   uj_val : constr;
-  uj_type : constr;
-  uj_kind : constr }
+  uj_type : typed_type }
 
-val cast_of_judgment : unsafe_judgment -> constr
+type unsafe_type_judgment = { 
+  utj_val : constr;
+  utj_type : sorts }

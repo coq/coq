@@ -46,11 +46,10 @@ let rec type_of env cstr=
     | IsRel n -> lift n (body_of_type (snd (lookup_rel n env)))
     | IsVar id -> body_of_type (snd (lookup_var id env))
     | IsAbst _ -> error "No more Abst" (*type_of env (abst_value cstr)*)
-    | IsConst c -> (body_of_type (type_of_constant env sigma c))
+    | IsConst c -> body_of_type (type_of_constant env sigma c)
     | IsEvar _ -> type_of_existential env sigma cstr
-    | IsMutInd ind -> (body_of_type (type_of_inductive env sigma ind))
-    | IsMutConstruct cstr -> 
-        let (typ,kind) = destCast (type_of_constructor env sigma cstr) in typ
+    | IsMutInd ind -> body_of_type (type_of_inductive env sigma ind)
+    | IsMutConstruct cstr -> body_of_type (type_of_constructor env sigma cstr)
     | IsMutCase (_,p,c,lf) ->
         let IndType (indf,realargs) =
           try find_inductive env sigma (type_of env c)
@@ -97,4 +96,4 @@ let get_type_of_with_meta env sigma metamap = fst (typeur sigma metamap) env
 let mk_unsafe_judgment env evc c=
   let typ=get_type_of env evc c
   in
-    {uj_val=c;uj_type=typ;uj_kind=(mkSort (get_sort_of env evc typ))};;
+    {uj_val=c;uj_type=make_typed typ (get_sort_of env evc typ)};;

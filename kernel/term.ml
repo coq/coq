@@ -68,7 +68,7 @@ type constr = sorts oper term
 
 type 'a judge = { body : constr; typ : 'a }
 
-(**)
+(*
 type typed_type = sorts judge
 type typed_term = typed_type judge
 
@@ -84,8 +84,10 @@ let incast_type tty = DOP2 (Cast, tty.body, (DOP0 (Sort tty.typ)))
 let outcast_type = function
    DOP2 (Cast, b, DOP0 (Sort s)) -> {body=b; typ=s}
   | _ -> anomaly "outcast_type: Not an in-casted type judgement"
-(**)
-(*
+
+let typed_combine f g t u = { f t.body u.body ; g t.typ u.typ}
+*)
+
 type typed_type = constr
 type typed_term = typed_type judge
 
@@ -98,7 +100,8 @@ let level_of_type t = failwith "N'existe plus"
 
 let incast_type tty = tty
 let outcast_type x = x
-*)
+let typed_combine f g t u = f t u
+(**)
 
 (****************************************************************************)
 (*              Functions for dealing with constr terms                     *)
@@ -1481,14 +1484,14 @@ module Htype =
     struct
       type t = typed_type
       type u = (constr -> constr) * (sorts -> sorts)
-(**)
+(*
       let hash_sub (hc,hs) j = {body=hc j.body; typ=hs j.typ}
       let equal j1 j2 = j1.body==j2.body & j1.typ==j2.typ
+*)
 (**)
-(*
       let hash_sub (hc,hs) j = hc j
       let equal j1 j2 = j1==j2
-*)
+(**)
       let hash = Hashtbl.hash
     end)
 

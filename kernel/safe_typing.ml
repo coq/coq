@@ -19,8 +19,7 @@ open Indtypes
 type judgment = unsafe_judgment
 
 let j_val j = j.uj_val
-let j_type j = j.uj_type
-let j_kind j = j.uj_kind
+let j_type j = body_of_type j.uj_type
 
 let vect_lift = Array.mapi lift
 let vect_lift_type = Array.mapi (fun i t -> typed_app (lift i) t)
@@ -68,8 +67,7 @@ let rec execute mf env cstr =
 	(make_judge cstr (type_of_inductive env Evd.empty ind), cst0)
 	  
     | IsMutConstruct c -> 
-	let (typ,kind) =destCast (type_of_constructor env Evd.empty c) in
-        ({ uj_val = cstr; uj_type = typ; uj_kind = kind } , cst0)
+	(make_judge cstr (type_of_constructor env Evd.empty c), cst0)
 	  
     | IsMutCase (ci,p,c,lf) ->
         let (cj,cst1) = execute mf env c in
@@ -118,10 +116,11 @@ let rec execute mf env cstr =
 	  
      | IsProd (name,c1,c2) ->
         let (j,cst1) = execute mf env c1 in
-        let var = assumption_of_judgment env Evd.empty j in
+        let varj = type_judgment env Evd.empty j in
+	let var = assumption_of_type_judgment varj in
 	let env1 = push_rel (name,var) env in
         let (j',cst2) = execute mf env1 c2 in
-	let (j,cst3) = gen_rel env1 Evd.empty name var j' in
+	let (j,cst3) = gen_rel env1 Evd.empty name varj j' in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
 	(j, cst)
 	  
@@ -158,12 +157,11 @@ and execute_list mf env = function
       let (jr,cst2) = execute_list mf env r in
       (j::jr, Constraint.union cst1 cst2)
 
-
 (* The typed type of a judgment. *)
 
 let execute_type mf env constr = 
   let (j,cst) = execute mf env constr in
-  (assumption_of_judgment env Evd.empty j, cst)
+  (type_judgment env Evd.empty j, cst)
 
 
 (* Exported machines.  First safe machines, with no general fixpoint
@@ -202,7 +200,7 @@ let unsafe_machine_type env constr =
 (* ``Type of'' machines. *)
 
 let type_of env c = 
-  let (j,_) = safe_machine env c in nf_betaiota env Evd.empty j.uj_type
+  let (j,_) = safe_machine env c in nf_betaiota env Evd.empty (body_of_type j.uj_type)
 
 (* obsolètes
 let type_of_type env c = 
@@ -280,12 +278,12 @@ let add_constant_with_value sp body typ env =
 	  let (jt,cst') = safe_machine env ty in
 	  let env'' = add_constraints cst' env' in
 	  try
-	    let cst'' = conv env'' Evd.empty jb.uj_type jt.uj_val in
+	    let cst'' = conv env'' Evd.empty (body_of_type jb.uj_type) jt.uj_val in
 	    let env'' = add_constraints cst'' env'' in
 	    (env'', assumption_of_judgment env'' Evd.empty jt, 
 	     Constraint.union cst' cst'')
 	  with NotConvertible -> 
-	    error_actual_type CCI env jb.uj_val jb.uj_type jt.uj_val
+	    error_actual_type CCI env jb.uj_val (body_of_type jb.uj_type) jt.uj_val
   in
   let ids = 
     Idset.union (global_vars_set body) (global_vars_set (body_of_type ty))
@@ -353,12 +351,13 @@ let max_universe (s1,cst1) (s2,cst2) g =
 let rec infos_and_sort env t =
   match kind_of_term t with
     | IsProd (name,c1,c2) ->
-        let (var,cst1) = safe_machine_type env c1 in
+        let (varj,cst1) = safe_machine_type env c1 in
+	let var = assumption_of_type_judgment varj in
 	let env1 = Environ.push_rel (name,var) env in
 	let (infos,smax,cst) = infos_and_sort env1 c2 in
-	let s1 = level_of_type var in
+	let s1 = varj.utj_type in
 	let smax',cst' = max_universe (s1,cst1) (smax,cst) (universes env) in
-	let logic = not (is_info_type env Evd.empty var) in
+	let logic = not (is_info_type env Evd.empty varj) in
 	let small = is_small s1 in
 	((logic,small) :: infos, smax', cst')
     | IsCast (c,t) -> infos_and_sort env c
@@ -400,7 +399,7 @@ let type_one_constructor env_ar nparams arsort c =
   let (j,cst2) = safe_machine_type env_ar c in
   (*C'est idiot, cst1 et cst2 sont essentiellement des copies l'un de l'autre*)
   let cst3 =enforce_type_constructor arsort max (Constraint.union cst1 cst2) in
-  (infos, j, cst3)
+  (infos, assumption_of_type_judgment j, cst3)
 
 let type_one_inductive i env_ar env_par nparams ninds (id,ar,cnames,vc) =
   let arsort = sort_of_arity env_ar ar in
@@ -412,7 +411,7 @@ let type_one_inductive i env_ar env_par nparams ninds (id,ar,cnames,vc) =
       vc
       ([],[],Constraint.empty)
   in
-  let vc' = Array.of_list (List.map incast_type jlc) in
+  let vc' = Array.of_list jlc in
   let issmall,isunit = small_unit constrsinfos (env_par,nparams,ar) in
   let (_,tyar) = lookup_rel (ninds+1-i) env_ar in
   ((id,tyar,cnames,issmall,isunit,vc'), cst')
