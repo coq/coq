@@ -54,7 +54,7 @@ GEXTEND Gram
     [ [ l = LIST1 qualidarg -> l ] ]
   ;
   ne_qualidconstarg_list:
-    [ [ l = LIST1 qualidarg -> l ] ]
+    [ [ l = LIST1 qualidconstarg -> l ] ]
   ;
   ne_num_list:
     [ [ n = numarg; l = ne_num_list -> n :: l | n = numarg -> [n] ] ]
