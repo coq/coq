@@ -26,7 +26,6 @@ val search_by_head : global_reference -> dir_path list * bool -> unit
 val search_rewrite : constr_pattern -> dir_path list * bool -> unit
 val search_pattern : constr_pattern -> dir_path list * bool -> unit
 val search_about  : glob_search_about_item list -> dir_path list * bool -> unit
-val search_named  : string list -> dir_path list * bool -> unit
 
 (* The filtering function that is by standard search facilities.
    It can be passed as argument to the raw search functions.
@@ -46,5 +45,3 @@ val raw_search_rewrite : (global_reference -> env -> constr -> bool) ->
 val raw_search_about : (global_reference -> env -> constr -> bool) ->
   (global_reference -> env -> constr -> unit) -> 
       glob_search_about_item list -> unit
-val raw_search_named : (global_reference -> env -> constr -> bool) ->
-  (global_reference -> env -> constr -> unit) -> string list -> unit

@@ -569,9 +569,6 @@ let pcoq_search s l =
   | SearchHead locqid ->
       filtered_search
 	(filter_by_module_from_list l) add_search (Nametab.global locqid)
-  | SearchNamed strings ->
-      raw_search_named
-	(filter_by_module_from_list l) add_search strings
   end;
   search_output_results()
 

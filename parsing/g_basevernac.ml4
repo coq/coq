@@ -108,8 +108,6 @@ GEXTEND Gram
    		 | qid = global -> [SearchRef qid] ];
 	  l = in_or_out_modules -> 
 	  VernacSearch (SearchAbout sl, l)
-      | IDENT "SearchNamed"; sl = LIST1 string; l = in_or_out_modules -> 
-	  VernacSearch (SearchNamed sl, l)
 
       (* TODO: rapprocher Eval et Check *)
       | IDENT "Eval"; r = Tactic.red_expr; "in";

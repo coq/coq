@@ -903,8 +903,6 @@ let vernac_search s r =
       Search.search_by_head (Nametab.global locqid) r
   | SearchAbout sl ->
       Search.search_about (List.map interp_search_about_item sl) r
-  | SearchNamed strings ->
-      Search.search_named strings r
 
 let vernac_locate = function
   | LocateTerm qid -> msgnl (print_located_qualid qid)

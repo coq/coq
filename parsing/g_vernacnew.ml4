@@ -526,8 +526,6 @@ GEXTEND Gram
    		 | qid = global -> [SearchRef qid] ];
 	  l = in_or_out_modules -> 
 	  VernacSearch (SearchAbout sl, l)
-      | IDENT "SearchNamed"; sl = LIST1 string; l = in_or_out_modules -> 
-	  VernacSearch (SearchNamed sl, l)
 
       | IDENT "Add"; IDENT "ML"; IDENT "Path"; dir = STRING ->
 	  VernacAddMLPath (false, dir)

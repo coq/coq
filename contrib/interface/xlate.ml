@@ -1502,8 +1502,7 @@ let xlate_vernac =
 	| SearchHead id ->
 	    CT_search(loc_qualid_to_ct_ID id, xlate_search_restr x)
 	| SearchRewrite c -> xlate_error "TODO: SearchRewrite"
-	| SearchAbout id -> xlate_error "TODO: SearchAbout"
-	| SearchNamed id -> xlate_error "TODO: SearchNamed")
+	| SearchAbout id -> xlate_error "TODO: SearchAbout")
 
   | (*Record from tactics/Record.v *)
     VernacRecord 

@@ -222,27 +222,3 @@ let raw_search_about filter_modules display_function l =
 
 let search_about ref inout = 
   raw_search_about (filter_by_module_from_list inout) plain_display ref
-
-(** SearchNamed *)
-
-let close_string s = 
-  if s.[String.length s - 1] = '*' then String.sub s 0 (String.length s - 1)
-  else s^"_"
-
-let occur_string_in_name name s =
-  let l = String.length s + 1 in
-  let l' = String.length name in
-  string_string_contains name (close_string ("_"^s))
-  || l' >= l && String.sub name 0 l = (close_string s)
-  || l' >= l && String.sub name (l'-l) l = ("_"^s)
-
-let raw_search_named filter_modules display_function strings =
-  let filter ref' env typ =
-    filter_modules ref' env typ &&
-    List.for_all (occur_string_in_name (name_of_reference ref')) strings
-  in
-  gen_filtered_search filter display_function
-
-
-let search_named strings inout =
-  raw_search_named (filter_by_module_from_list inout) plain_display strings

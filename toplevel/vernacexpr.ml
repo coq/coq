@@ -65,7 +65,6 @@ type searchable =
   | SearchRewrite of pattern_expr
   | SearchHead of reference
   | SearchAbout of search_about_item list
-  | SearchNamed of string list
 
 type locatable =
   | LocateTerm of reference
