@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*i logic: "-strongly-classical" i*)
-
 (*i $Id$ i*)
 
 (** This file provides classical logic and definite description *)
@@ -16,8 +14,6 @@
     implies the double-negation of excluded-middle in Set, hence it
     implies a strongly classical world. Especially it conflicts with
     impredicativity of Set, knowing that true<>false in Set.
-
-    This file and all files depending on it require option -strongly-classical
 
     [1] Laurent Chicli, Loïc Pottier, Carlos Simpson, Mathematical
     Quotients and Quotient Types in Coq, Proceedings of TYPES 2002,

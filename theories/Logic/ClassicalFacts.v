@@ -163,22 +163,22 @@ End Proof_irrelevance_gen.
 
 Section Proof_irrelevance_CC.
 
-Definition Bool  := (C:Prop)C->C->C.
-Definition True  := [C][c1,c2]c1 : Bool.
-Definition False := [C][c1,c2]c2 : Bool.
-Definition Bool_elim := [C][c1,c2][b:Bool](b C c1 c2).
-Definition Bool_elim_redl : (C:Prop)(c1,c2:C)c1==(Bool_elim C c1 c2 True)
+Definition BoolP  := (C:Prop)C->C->C.
+Definition TrueP  := [C][c1,c2]c1 : BoolP.
+Definition FalseP := [C][c1,c2]c2 : BoolP.
+Definition BoolP_elim := [C][c1,c2][b:BoolP](b C c1 c2).
+Definition BoolP_elim_redl : (C:Prop)(c1,c2:C)c1==(BoolP_elim C c1 c2 TrueP)
   := [C;c1,c2](refl_eqT C c1).
-Definition Bool_elim_redr : (C:Prop)(c1,c2:C)c2==(Bool_elim C c1 c2 False)
+Definition BoolP_elim_redr : (C:Prop)(c1,c2:C)c2==(BoolP_elim C c1 c2 FalseP)
   := [C;c1,c2](refl_eqT C c2).
 
-Definition Bool_dep_induction := 
- (P:Bool->Prop)(P True)->(P False)->(b:Bool)(P b).
+Definition BoolP_dep_induction := 
+ (P:BoolP->Prop)(P TrueP)->(P FalseP)->(b:BoolP)(P b).
 
 Lemma ext_prop_dep_proof_irrel_cc :
-  prop_extensionality -> Bool_dep_induction -> proof_irrelevance.
-Proof (ext_prop_dep_proof_irrel_gen Bool True False Bool_elim
-         Bool_elim_redl Bool_elim_redr).
+  prop_extensionality -> BoolP_dep_induction -> proof_irrelevance.
+Proof (ext_prop_dep_proof_irrel_gen BoolP TrueP FalseP BoolP_elim
+         BoolP_elim_redl BoolP_elim_redr).
 
 End Proof_irrelevance_CC.
 

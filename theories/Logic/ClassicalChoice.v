@@ -6,8 +6,6 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(*i logic: "-strongly-classical" i*)
-
 (*i $Id$ i*)
 
 (** This file provides classical logic and functional choice *)
@@ -17,8 +15,6 @@
     excluded-middle in Set and implies a strongly classical
     world. Especially it conflicts with impredicativity of Set, knowing
     that true<>false in Set.
-
-    This file and all files depending on it require option -strongly-classical
 *)
 
 Require Export ClassicalDescription.
