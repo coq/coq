@@ -145,6 +145,8 @@ let rec pp bv = function
   | DOP0 (Sort (Type u)) -> print_type u
   | DOP2 (Lambda, t, DLAM(na, c)) ->
       [< 'sTR"["; print_name na; 'sTR":"; pp bv t; 'sTR"]"; pp (na::bv) c >]
+  | DOP2 (Prod, t, DLAM(Anonymous, c)) ->
+      [< pp bv t; 'sTR"->"; pp (Anonymous::bv) c >]
   | DOP2 (Prod, t, DLAM(na, c)) ->
       [< 'sTR"("; print_name na; 'sTR":"; pp bv t; 'sTR")"; pp (na::bv) c >]
   | DOP2 (Cast, c, t) ->
