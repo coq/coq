@@ -58,10 +58,10 @@ with hintbase_list: List :=
        [(REDEXP (Explicit ($LIST $b))) ($LIST $tail) ]
 
 with hintbase: List := 
-  onehint_lr [ comarg($c) "LR" ] -> [(REDEXP (LR $c))]
-| onehint_rl  [ comarg($c) "RL" ] -> [(REDEXP (RL $c))]
-| conshint_lr [ comarg($c) "LR" hintbase($tail)] -> [(REDEXP (LR $c)) ($LIST $tail)]
-| conshint_rl [ comarg($c) "RL" hintbase($tail)] -> [(REDEXP (RL $c)) ($LIST $tail)]
+  onehint_lr [ constrarg($c) "LR" ] -> [(REDEXP (LR $c))]
+| onehint_rl  [ constrarg($c) "RL" ] -> [(REDEXP (RL $c))]
+| conshint_lr [ constrarg($c) "LR" hintbase($tail)] -> [(REDEXP (LR $c)) ($LIST $tail)]
+| conshint_rl [ constrarg($c) "RL" hintbase($tail)] -> [(REDEXP (RL $c)) ($LIST $tail)]
 
 with simple_tactic := 
  AutoRewrite [ "AutoRewrite" "[" hintbase_list($lbase) "]"
@@ -69,7 +69,7 @@ with simple_tactic :=
   [(AutoRewrite (REDEXP (BaseList ($LIST $lbase))) ($LIST $laa))].
 
 Grammar tactic simple_tactic :=
-  replace [ "Replace" comarg($c1) "with" comarg($c2) ] -> [(Replace $c1 $c2)]
+  replace [ "Replace" constrarg($c1) "with" constrarg($c2) ] -> [(Replace $c1 $c2)]
 
 | deqhyp   [ "Simplify_eq" identarg($id) ] -> [(DEqHyp $id)]
 | deqconcl [ "Simplify_eq" ] -> [(DEqConcl)]
@@ -80,31 +80,31 @@ Grammar tactic simple_tactic :=
 | inj    [ "Injection" ] -> [(Inj)]
 | inj_id [ "Injection" identarg($id) ] -> [(InjHyp $id)]
 
-| rewriteLR [ "Rewrite" "->" comarg_binding_list($cl) ] -> [(RewriteLR ($LIST $cl))]
-| rewriteRL [ "Rewrite" "<-" comarg_binding_list($cl) ] -> [(RewriteRL ($LIST $cl))]
-| rewrite [ "Rewrite" comarg_binding_list($cl) ] -> [(RewriteLR ($LIST $cl))]
+| rewriteLR [ "Rewrite" "->" constrarg_binding_list($cl) ] -> [(RewriteLR ($LIST $cl))]
+| rewriteRL [ "Rewrite" "<-" constrarg_binding_list($cl) ] -> [(RewriteRL ($LIST $cl))]
+| rewrite [ "Rewrite" constrarg_binding_list($cl) ] -> [(RewriteLR ($LIST $cl))]
 
-| condrewriteLR [ "Conditional" tactic_com($tac) "Rewrite" "->" comarg_binding_list($cl) ] -> [(CondRewriteLR (TACTIC $tac) ($LIST $cl))]
-| condrewriteRL [ "Conditional" tactic_com($tac) "Rewrite" "<-" comarg_binding_list($cl) ] -> [(CondRewriteRL (TACTIC $tac) ($LIST $cl))]
-| condrewrite [ "Conditional" tactic_com($tac) "Rewrite" comarg_binding_list($cl) ] -> [(CondRewriteLR (TACTIC $tac) ($LIST $cl))]
+| condrewriteLR [ "Conditional" tactic_com($tac) "Rewrite" "->" constrarg_binding_list($cl) ] -> [(CondRewriteLR (TACTIC $tac) ($LIST $cl))]
+| condrewriteRL [ "Conditional" tactic_com($tac) "Rewrite" "<-" constrarg_binding_list($cl) ] -> [(CondRewriteRL (TACTIC $tac) ($LIST $cl))]
+| condrewrite [ "Conditional" tactic_com($tac) "Rewrite" constrarg_binding_list($cl) ] -> [(CondRewriteLR (TACTIC $tac) ($LIST $cl))]
 
-| rewrite_in [ "Rewrite" comarg_binding_list($cl) "in" identarg($h) ]
+| rewrite_in [ "Rewrite" constrarg_binding_list($cl) "in" identarg($h) ]
        -> [(RewriteLRin $h ($LIST $cl))]
-| rewriteRL_in [ "Rewrite" "->" comarg_binding_list($cl) "in" identarg($h) ]
+| rewriteRL_in [ "Rewrite" "->" constrarg_binding_list($cl) "in" identarg($h) ]
        -> [(RewriteLRin $h ($LIST $cl))]
-| rewriteLR_in [ "Rewrite" "<-" comarg_binding_list($cl) "in" identarg($h) ]
+| rewriteLR_in [ "Rewrite" "<-" constrarg_binding_list($cl) "in" identarg($h) ]
        -> [(RewriteRLin $h ($LIST $cl))]
 
 | condrewriteLRin 
-  [ "Conditional" tactic_com($tac) "Rewrite" "->" comarg_binding_list($cl) 
+  [ "Conditional" tactic_com($tac) "Rewrite" "->" constrarg_binding_list($cl) 
 	"in" identarg($h) ] ->
 	   [(CondRewriteLRin (TACTIC $tac) $h ($LIST $cl))]
 | condrewriteRLin 
-  [ "Conditional" tactic_com($tac) "Rewrite" "<-" comarg_binding_list($cl) 
+  [ "Conditional" tactic_com($tac) "Rewrite" "<-" constrarg_binding_list($cl) 
 	"in" identarg($h)] ->
   	   [(CondRewriteRLin (TACTIC $tac) $h ($LIST $cl))]
 | condrewritein 
-  [ "Conditional" tactic_com($tac) "Rewrite" comarg_binding_list($cl) "in" identarg($h) ] 
+  [ "Conditional" tactic_com($tac) "Rewrite" constrarg_binding_list($cl) "in" identarg($h) ] 
         -> [(CondRewriteLRin (TACTIC $tac) $h ($LIST $cl))]
 
 | DRewriteLR [ "Dependent" "Rewrite" "->" identarg($id) ]
@@ -112,11 +112,11 @@ Grammar tactic simple_tactic :=
 | DRewriteRL [ "Dependent" "Rewrite" "<-" identarg($id) ]
        -> [(SubstHypInConcl_RL $id)]
 
-| cutrewriteLR [ "CutRewrite" "->" comarg($eqn) ] -> [(SubstConcl_LR $eqn)]
-| cutrewriteLRin [ "CutRewrite" "->" comarg($eqn) "in" identarg($id) ]
+| cutrewriteLR [ "CutRewrite" "->" constrarg($eqn) ] -> [(SubstConcl_LR $eqn)]
+| cutrewriteLRin [ "CutRewrite" "->" constrarg($eqn) "in" identarg($id) ]
       -> [(SubstHyp_LR $eqn $id)]
-| cutrewriteRL [ "CutRewrite" "<-" comarg($eqn) ] -> [(SubstConcl_RL $eqn)]
-| cutrewriteRLin [ "CutRewrite" "<-" comarg($eqn) "in" identarg($id) ]
+| cutrewriteRL [ "CutRewrite" "<-" constrarg($eqn) ] -> [(SubstConcl_RL $eqn)]
+| cutrewriteRLin [ "CutRewrite" "<-" constrarg($eqn) "in" identarg($id) ]
       -> [(SubstHyp_RL $eqn $id)].
 
 Syntax tactic level 0:

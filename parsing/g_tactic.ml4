@@ -21,10 +21,10 @@ GEXTEND Gram
       | "-"; n = Prim.number -> Coqast.Num (Ast.loc n, ( - Ast.num_of_ast n))
       ] ]
   ;
-  comarg:
+  constrarg:
     [ [ c = Constr.constr -> <:ast< (COMMAND $c) >> ] ]
   ;
-  lcomarg:
+  lconstrarg:
     [ [ c = Constr.lconstr -> <:ast< (COMMAND $c) >> ] ]
   ;
   ne_identarg_list:
@@ -34,8 +34,8 @@ GEXTEND Gram
     [ [ n = numarg; l = ne_num_list -> n :: l | n = numarg -> [n] ] ]
   ;
   pattern_occ:
-    [ [ nl = ne_num_list; c = comarg -> <:ast< (PATTERN $c ($LIST $nl)) >>
-      | c = comarg -> <:ast< (PATTERN $c) >> ] ]
+    [ [ nl = ne_num_list; c = constrarg -> <:ast< (PATTERN $c ($LIST $nl)) >>
+      | c = constrarg -> <:ast< (PATTERN $c) >> ] ]
   ;
   ne_pattern_list:
     [ [ l = LIST1 pattern_occ -> l ] ]
@@ -70,39 +70,39 @@ GEXTEND Gram
          | -> <:ast< (LISTPATTERN) >> ]]
   ;
   simple_binding:
-    [ [ id = identarg; ":="; c = comarg -> <:ast< (BINDING $id $c) >>
-      | n = numarg; ":="; c = comarg -> <:ast< (BINDING $n $c) >> ] ]
+    [ [ id = identarg; ":="; c = constrarg -> <:ast< (BINDING $id $c) >>
+      | n = numarg; ":="; c = constrarg -> <:ast< (BINDING $n $c) >> ] ]
   ;
   simple_binding_list:
     [ [ b = simple_binding; l = simple_binding_list -> b :: l | -> [] ] ]
   ;
   com_binding_list:
-    [ [ c = comarg; bl = com_binding_list -> <:ast< (BINDING $c) >> :: bl
+    [ [ c = constrarg; bl = com_binding_list -> <:ast< (BINDING $c) >> :: bl
       | -> [] ] ]
   ;
   binding_list:
-    [ [ c1 = comarg; ":="; c2 = comarg; bl = simple_binding_list ->
+    [ [ c1 = constrarg; ":="; c2 = constrarg; bl = simple_binding_list ->
           let id = match c1 with 
             | Coqast.Node(_,"COMMAND",[c]) -> coerce_to_var "c1" c
             | _ -> assert false
           in <:ast<(BINDINGS (BINDING ($VAR $id) $c2) ($LIST $bl))>>
-      | n = numarg; ":="; c = comarg; bl = simple_binding_list ->
+      | n = numarg; ":="; c = constrarg; bl = simple_binding_list ->
           <:ast<(BINDINGS (BINDING $n $c) ($LIST $bl))>>
-      | c1 = comarg; bl = com_binding_list ->
+      | c1 = constrarg; bl = com_binding_list ->
           <:ast<(BINDINGS (BINDING $c1) ($LIST $bl))>>
       | -> <:ast<(BINDINGS)>> ] ]
   ;
   with_binding_list:
     [ [ "with"; l = binding_list -> l | -> <:ast<(BINDINGS)>> ] ]
   ;
-  comarg_binding_list:
-    [ [ c = comarg; l = with_binding_list -> [c; l] ] ]
+  constrarg_binding_list:
+    [ [ c = constrarg; l = with_binding_list -> [c; l] ] ]
   ;
   numarg_binding_list:
     [ [ n = numarg; l = with_binding_list -> [n; l] ] ]
   ;
-  comarg_list:
-    [ [ c = comarg; l = comarg_list -> c :: l | -> [] ] ]
+  constrarg_list:
+    [ [ c = constrarg; l = constrarg_list -> c :: l | -> [] ] ]
   ;
   unfold_occ:
     [ [ nl = ne_num_list; c = identarg -> <:ast< (UNFOLD $c ($LIST $nl)) >>
@@ -129,7 +129,7 @@ GEXTEND Gram
       | IDENT "Compute" -> <:ast< (Cbv (Beta) (Delta) (Iota)) >>
       | IDENT "Unfold"; ul = ne_unfold_occ_list ->
           <:ast< (Unfold ($LIST ul)) >>
-      | IDENT "Fold"; cl = comarg_list -> <:ast< (Fold ($LIST cl)) >>
+      | IDENT "Fold"; cl = constrarg_list -> <:ast< (Fold ($LIST cl)) >>
       | IDENT "Pattern"; pl = ne_pattern_list ->
           <:ast< (Pattern ($LIST $pl)) >> ] ]
   ;
@@ -155,12 +155,12 @@ GEXTEND Gram
       | -> Coqast.Str(loc,"NoAutoArg")  ] ]
   ;
   fixdecl:
-    [ [ id = identarg; n = numarg; ":"; c = comarg; fd = fixdecl ->
+    [ [ id = identarg; n = numarg; ":"; c = constrarg; fd = fixdecl ->
           <:ast< (FIXEXP $id $n $c) >> :: fd
       | -> [] ] ]
   ;
   cofixdecl:
-    [ [ id = identarg; ":"; c = comarg; fd = cofixdecl ->
+    [ [ id = identarg; ":"; c = constrarg; fd = cofixdecl ->
           <:ast< (COFIXEXP $id $c) >> :: fd
       | -> [] ] ]
   ;
@@ -241,46 +241,46 @@ GEXTEND Gram
 	  IDENT "after"; id2 = identarg -> <:ast< (IntroMove $id2) >>
       | IDENT "Intro"; id = identarg -> <:ast< (Intro $id) >>
       | IDENT "Intro" -> <:ast< (Intro) >>
-      | IDENT "Apply"; cl = comarg_binding_list ->
+      | IDENT "Apply"; cl = constrarg_binding_list ->
           <:ast< (Apply ($LIST $cl)) >>
-      | IDENT "Elim"; cl = comarg_binding_list; "using";
-        el = comarg_binding_list ->
+      | IDENT "Elim"; cl = constrarg_binding_list; "using";
+        el = constrarg_binding_list ->
           <:ast< (Elim ($LIST $cl) ($LIST $el)) >>
-      | IDENT "Elim"; cl = comarg_binding_list ->
+      | IDENT "Elim"; cl = constrarg_binding_list ->
           <:ast< (Elim ($LIST $cl)) >>
       | IDENT "Assumption" -> <:ast< (Assumption) >>
       | IDENT "Contradiction" -> <:ast< (Contradiction) >>
-      | IDENT "Exact"; c = comarg -> <:ast< (Exact $c) >>
-      | IDENT "OldElim"; c = comarg -> <:ast< (OldElim $c) >>
-      | IDENT "ElimType"; c = comarg -> <:ast< (ElimType $c) >>
-      | IDENT "Case"; cl = comarg_binding_list ->
+      | IDENT "Exact"; c = constrarg -> <:ast< (Exact $c) >>
+      | IDENT "OldElim"; c = constrarg -> <:ast< (OldElim $c) >>
+      | IDENT "ElimType"; c = constrarg -> <:ast< (ElimType $c) >>
+      | IDENT "Case"; cl = constrarg_binding_list ->
           <:ast< (Case ($LIST $cl)) >>
-      | IDENT "CaseType"; c = comarg -> <:ast< (CaseType $c) >>
+      | IDENT "CaseType"; c = constrarg -> <:ast< (CaseType $c) >>
       | IDENT "Destruct"; s = identarg -> <:ast< (Destruct $s) >>
       | IDENT "Destruct"; n = numarg -> <:ast< (Destruct $n) >>
-      | IDENT "Decompose"; IDENT "Record" ; c = comarg -> 
+      | IDENT "Decompose"; IDENT "Record" ; c = constrarg -> 
              <:ast< (DecomposeAnd $c) >>
-      | IDENT "Decompose"; IDENT "Sum"; c = comarg -> 
+      | IDENT "Decompose"; IDENT "Sum"; c = constrarg -> 
              <:ast< (DecomposeOr $c) >>
-      | IDENT "Decompose"; "["; l = ne_identarg_list; "]"; c = comarg ->
+      | IDENT "Decompose"; "["; l = ne_identarg_list; "]"; c = constrarg ->
           <:ast< (DecomposeThese (CLAUSE ($LIST $l)) $c) >>
       |	IDENT "First" ; "["; l = LIST0 tactic_com_list SEP "|"; "]" ->
           <:ast<(FIRST ($LIST $l))>>
       |	IDENT "Solve" ; "["; l = LIST0 tactic_com_list SEP "|"; "]" ->
           <:ast<(TCLSOLVE ($LIST $l))>>
-      | IDENT "Cut"; c = comarg -> <:ast< (Cut $c) >>
-      | IDENT "Specialize"; n = numarg; lcb = comarg_binding_list ->
+      | IDENT "Cut"; c = constrarg -> <:ast< (Cut $c) >>
+      | IDENT "Specialize"; n = numarg; lcb = constrarg_binding_list ->
           <:ast< (Specialize $n ($LIST $lcb))>>
-      | IDENT "Specialize"; lcb = comarg_binding_list ->
+      | IDENT "Specialize"; lcb = constrarg_binding_list ->
           <:ast< (Specialize ($LIST $lcb)) >>
-      | IDENT "Generalize"; lc = comarg_list ->
+      | IDENT "Generalize"; lc = constrarg_list ->
           <:ast< (Generalize ($LIST $lc)) >>
-      | IDENT "Generalize"; IDENT "Dependent"; c = comarg ->
+      | IDENT "Generalize"; IDENT "Dependent"; c = constrarg ->
           <:ast< (GeneralizeDep $c) >>
-      | IDENT "Let"; s = identarg; ":="; c = comarg; "in";
+      | IDENT "Let"; s = identarg; ":="; c = constrarg; "in";
 	  l = ne_pattern_hyp_list -> 
 	    <:ast< (LetTac $s $c (LETPATTERNS ($LIST $l))) >>
-      | IDENT "LApply"; c = comarg -> <:ast< (CutAndApply $c) >>
+      | IDENT "LApply"; c = constrarg -> <:ast< (CutAndApply $c) >>
       | IDENT "Clear"; l = ne_identarg_list -> 
                 <:ast< (Clear (CLAUSE ($LIST $l))) >>
       | IDENT "Move"; id1 = identarg; IDENT "after"; id2 = identarg -> 
@@ -301,18 +301,18 @@ GEXTEND Gram
       | IDENT "Constructor" -> <:ast<(Constructor) >>
       | IDENT "Reflexivity" -> <:ast< (Reflexivity) >>
       | IDENT "Symmetry" -> <:ast< (Symmetry) >>
-      | IDENT "Transitivity"; c = comarg -> <:ast< (Transitivity $c) >>
-      | IDENT "Absurd"; c = comarg -> <:ast< (Absurd $c) >>
+      | IDENT "Transitivity"; c = constrarg -> <:ast< (Transitivity $c) >>
+      | IDENT "Absurd"; c = constrarg -> <:ast< (Absurd $c) >>
       | IDENT "Idtac" -> <:ast< (Idtac) >>
       | IDENT "Fail" -> <:ast< (Fail) >>
       | "("; tcl = tactic_com_list; ")" -> tcl
       | r = red_tactic; cl = clausearg -> <:ast< (Reduce (REDEXP $r) $cl) >>
       (* Change ne doit pas s'appliquer dans un Definition t := Eval ... *)
-      | IDENT "Change"; c = comarg; cl = clausearg ->
+      | IDENT "Change"; c = constrarg; cl = clausearg ->
 	  <:ast< (Change $c $cl) >> 
       | IDENT "ML"; s = Prim.string -> <:ast< (MLTACTIC $s) >> ]
 
-    | [ id = identarg; l = comarg_list ->
+    | [ id = identarg; l = constrarg_list ->
           match (isMeta (nvar_of_ast id), l) with
             | (true, []) -> id
             | (false, _) -> <:ast< (CALL $id ($LIST $l)) >>

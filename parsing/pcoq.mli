@@ -94,14 +94,14 @@ module Tactic :
     val clausearg : Coqast.t Gram.Entry.e
     val cofixdecl : Coqast.t list Gram.Entry.e
     val com_binding_list : Coqast.t list Gram.Entry.e
-    val comarg : Coqast.t Gram.Entry.e
-    val comarg_binding_list : Coqast.t list Gram.Entry.e
-    val comarg_list : Coqast.t list Gram.Entry.e
+    val constrarg : Coqast.t Gram.Entry.e
+    val constrarg_binding_list : Coqast.t list Gram.Entry.e
+    val constrarg_list : Coqast.t list Gram.Entry.e
     val fixdecl : Coqast.t list Gram.Entry.e
     val identarg : Coqast.t Gram.Entry.e
     val intropattern : Coqast.t Gram.Entry.e
-    val lcomarg : Coqast.t Gram.Entry.e
-    val lcomarg_binding_list : Coqast.t list Gram.Entry.e
+    val lconstrarg : Coqast.t Gram.Entry.e
+    val lconstrarg_binding_list : Coqast.t list Gram.Entry.e
     val ne_identarg_list : Coqast.t list Gram.Entry.e
     val ne_intropattern : Coqast.t Gram.Entry.e
     val ne_num_list : Coqast.t list Gram.Entry.e
