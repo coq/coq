@@ -501,7 +501,8 @@ SORTINGVO=theories/Sorting/Heap.vo \
  
 BOOLVO=theories/Bool/Bool.vo  		theories/Bool/IfProp.vo \
        theories/Bool/Zerob.vo 		theories/Bool/DecBool.vo \
-	theories/Bool/Sumbool.vo 	theories/Bool/BoolEq.vo
+	theories/Bool/Sumbool.vo 	theories/Bool/BoolEq.vo \
+	theories/Bool/Bvector.vo
 
 ZARITHVO=theories/ZArith/Wf_Z.vo        theories/ZArith/Zsyntax.vo \
 	 theories/ZArith/ZArith.vo      theories/ZArith/auxiliary.vo \
@@ -511,7 +512,7 @@ ZARITHVO=theories/ZArith/Wf_Z.vo        theories/ZArith/Zsyntax.vo \
 	 theories/ZArith/Zpower.vo 	theories/ZArith/Zcomplements.vo \
 	 theories/ZArith/Zdiv.vo	theories/ZArith/Zsqrt.vo \
 	 theories/ZArith/Zwf.vo		theories/ZArith/ZArith_base.vo \
-	 theories/ZArith/Zbool.vo
+	 theories/ZArith/Zbool.vo	theories/ZArith/Zbinary.vo
 
 LISTSVO=theories/Lists/List.vo      theories/Lists/PolyListSyntax.vo \
         theories/Lists/ListSet.vo   theories/Lists/Streams.vo \
