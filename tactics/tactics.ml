@@ -1699,7 +1699,7 @@ let abstract_subproof name tac gls =
   let concl = 
     List.fold_left (fun t d -> mkNamedProd_or_LetIn d t) (pf_concl gls) sign 
   in
-  if occur_existential concl then error "Cannot abstract with existentials";
+  if occur_existential concl then error "Abstract cannot handle existentials";
   let lemme =
     start_proof na Declare.NeverDischarge current_sign concl;
     let _,(const,strength) =
