@@ -561,13 +561,31 @@ $identificateur$      & $module$     & $infixe/préfixe$ & $précédence$ \\
 \texttt{eq _}         & $Logic$      & =        & 50 \\
 \texttt{eqT _}        & $Logic_Type$ & =        & 50 \\
 \texttt{identityT _}  & $Data_Type$  & =        & 50 \\
-\texttt{plus}         & $Peano$      & +        & 40\,L \\
+\texttt{le}           & $Peano$      & $<=$     & 50 \\
+\texttt{lt}           & $Peano$      & $<$      & 50 \\
+\texttt{ge}           & $Peano$      & $>=$     & 50 \\
+\texttt{gt}           & $Peano$      & $>$      & 50 \\
+\texttt{Zle}          & $zarith_aux$   & $<=$   & 50 \\
+\texttt{Zlt}          & $zarith_aux$   & $<$    & 50 \\
+\texttt{Zge}          & $zarith_aux$   & $>=$   & 50 \\
+\texttt{Zgt}          & $zarith_aux$   & $>$    & 50 \\
+\texttt{Rle}          & $Rdefinitions$ & $<=$   & 50 \\
+\texttt{Rlt}          & $Rdefinitions$ & $<$    & 50 \\
+\texttt{Rge}          & $Rdefinitions$ & $>=$   & 50 \\
+\texttt{Rgt}          & $Rdefinitions$ & $>$    & 50 \\
+\texttt{plus}         & $Peano$        & +      & 40\,L \\
 \texttt{Zplus}        & $fast_integer$ & +      & 40\,L \\
-\texttt{minus}        & $Minus$      & -        & 40\,L \\
-\texttt{Zminus}       & $zarith_aux$ & -        & 40\,L \\
+\texttt{Rplus}        & $fast_integer$ & +      & 40\,L \\
+\texttt{minus}        & $Minus$        & -      & 40\,L \\
+\texttt{Zminus}       & $zarith_aux$   & -      & 40\,L \\
+\texttt{Rminus}       & $Rdefinitions$ & -      & 40\,L \\
 \texttt{Zopp}         & $fast_integer$ & -      & 40\,L \\
-\texttt{mult}         & $Peano$      & *        & 30\,L \\
-\texttt{Zmult}        & $fast_integer$ & *      & 30\,L
+\texttt{Ropp}         & $Rdefinitions$ & -      & 40\,L \\
+\texttt{mult}         & $Peano$        & *      & 30\,L \\
+\texttt{Zmult}        & $fast_integer$ & *      & 30\,L \\
+\texttt{Rmult}        & $Rdefinitions$ & *      & 30\,L \\
+\texttt{Rdiv}         & $Rdefinitions$ & /      & 30\,L \\
+\texttt{pow}          & $Rfunctions$   & \hat   & 20\,L \\
 \end{array}
 $$
 
@@ -647,7 +665,7 @@ Même problème pour l'entier de Specialize (ou virer Specialize ?) ?
 \verb=EAuto= : deux syntaxes différentes pour la recherche en largeur
 et en profondeur ? Quelle recherche par défaut ?
 
-\section*{Remarques p\^ele-m\^ele (HH)}
+\section*{Remarques pêle-mêle (HH)}
 
 Renommer Variable/Hypothesis hors section en Parameter/Axiom.
 
