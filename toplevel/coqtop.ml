@@ -13,6 +13,14 @@ let print_header () =
   Printf.printf "Welcome to Coq %s (%s)\n" Coq_config.version Coq_config.date;
   flush stdout
 
+let memory_stat = ref false
+
+let print_memory_stat () = 
+  if !memory_stat then
+    Format.printf "memory use = %d kbytes\n" (heap_size_kb ())
+
+let _ = at_exit print_memory_stat
+
 let set_batch_mode () = batch_mode := true
 
 let remove_top_ml () = Mltop.remove ()
@@ -154,6 +162,8 @@ let parse_args () =
     | "-notactics" :: rem -> remove_top_ml (); parse rem
 
     | "-just-parsing" :: rem -> Vernac.just_parsing := true; parse rem
+
+    | ("-m" | "--memory") :: rem -> memory_stat := true; parse rem
 
     | s :: _ -> prerr_endline ("Don't know what to do with " ^ s); usage ()
 

@@ -164,3 +164,8 @@ val prvect_with_sep :
 val size_w : 'a -> int
 val size_b : 'a -> int
 val size_kb : 'a -> int
+
+(*s Total size of the allocated ocaml heap. *)
+
+val heap_size : unit -> int
+val heap_size_kb : unit -> int

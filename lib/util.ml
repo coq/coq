@@ -561,4 +561,12 @@ let size_w = Size.size_w
 let size_b = Size.size_b
 let size_kb = Size.size_kb
 
+(*s Total size of the allocated ocaml heap. *)
 
+let heap_size () =
+  let stat = Gc.stat ()
+  and control = Gc.get () in
+  let max_words_total = stat.Gc.heap_words + control.Gc.minor_heap_size in
+  (max_words_total * Sys.word_size / 8)
+
+let heap_size_kb () = (heap_size () + 1023) / 1024
