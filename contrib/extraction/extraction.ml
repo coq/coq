@@ -30,7 +30,7 @@ open Mlutil
 
 exception I of inductive_info
 
-(* A flag used to avoid loop in extract_inductive *)
+(* A flag used to avoid loops in [extract_inductive] *)
 let internal_call = ref (None : kernel_name option) 
 
 let none = Evd.empty
