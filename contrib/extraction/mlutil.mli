@@ -33,6 +33,11 @@ val ml_lift : int -> ml_ast -> ml_ast
 
 val ml_subst : ml_ast -> ml_ast -> ml_ast
 
+(* Simplification of singleton inductive types: one contructor
+   with one argument is isomorphic to identity *)
+
+val elim_singleton : ml_decl list -> ml_decl list
+
 (*s Some transformations of ML terms. [betared_ast] and [betared_ecl] reduce
     all beta redexes (when the argument does not occur, it is just
     thrown away; when it occurs exactly once it is substituted; otherwise

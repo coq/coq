@@ -1,14 +1,8 @@
 
- 2. Inductifs singletons
-
- 3. Axiomes : vérifier les flexibles sortant d'une constante
-
  4. Cofix : seulement en Haskell
 
  5. Syntaxe Haskell
 
- 6. Renommage des var de type caml
-
  7. Eta expansion pour contourner typage Caml
 
-
+ 8. Synchroniser Reset & les tables 
