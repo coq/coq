@@ -334,7 +334,7 @@ let evar_define isevars (ev,argsv) rhs =
  *)
 
 let has_undefined_isevars isevars t = 
-  try let _ = whd_ise isevars.evars t in false
+  try let _ = local_strong (whd_ise isevars.evars) t in false
   with Uninstantiated_evar _ -> true
 
 let head_is_evar isevars = 
