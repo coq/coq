@@ -346,6 +346,36 @@ let find_arguments_scope r =
   try Refmap.find r !arguments_scope
   with Not_found -> []
 
+(* Analysing *)
+
+type symbol_token = WhiteSpace of int | String of string
+
+let split str =
+  let push_token beg i l =
+    if beg == i then l else String (String.sub str beg (i - beg)) :: l 
+  in
+  let push_whitespace beg i l =
+    if beg = i then l else WhiteSpace (i-beg) :: l 
+  in
+  let rec loop beg i =
+    if i < String.length str then
+      if str.[i] == ' ' then
+	push_token beg i (loop_on_whitespace (succ i) (succ i))
+      else
+	loop beg (succ i)
+    else
+      push_token beg i []
+  and loop_on_whitespace beg i =
+    if i < String.length str then
+      if str.[i] <> ' ' then
+	push_whitespace beg i (loop i (succ i))
+      else
+	loop_on_whitespace beg (succ i)
+    else
+      push_whitespace beg i []
+  in
+  loop 0 0
+
 (* Printing *)
 
 let pr_delimiters_info = function
@@ -379,28 +409,51 @@ let rec find_default ntn = function
   | _::scopes -> find_default ntn scopes
   | [] -> raise Not_found
 
-let locate_notation prraw ntn =
-  let ntn = if String.contains ntn ' ' then ntn else "_ "^ntn^" _" in
-  let l = 
+let factorize_entries = function
+  | [] -> []
+  | (ntn,c)::l ->
+      let (ntn,l_of_ntn,rest) =
+	List.fold_left
+          (fun (a',l,rest) (a,c) ->
+	    if a = a' then (a',c::l,rest) else (a,[c],(a',l)::rest))
+	  (ntn,[c],[]) l in
+      (ntn,l_of_ntn)::rest
+
+let is_ident s = (* Poor analysis *)
+  String.length s <> 0 & is_letter s.[0] 
+
+let browse_notation ntn map =
+  let find =
+    if is_ident ntn then
+      fun ntn' -> List.mem (String ntn) (split ntn')
+    else if
+      String.contains ntn '_' then (=) ntn
+    else
+      fun ntn' -> string_string_contains ~where:ntn' ~what:ntn in
+  let l =
     Stringmap.fold 
-      (fun scope_name sc l ->
-	try
-	  let ((_,r),df) = Stringmap.find ntn sc.notations in
-	  (scope_name,r,df)::l
-	with Not_found -> l) !scope_map []
-  in
-  if l = [] then
+      (fun scope_name sc ->
+	Stringmap.fold (fun ntn ((_,r),df) l ->
+	  if find ntn then (ntn,(scope_name,r,df))::l else l) sc.notations)
+      map [] in
+  let l = List.sort (fun x y -> Pervasives.compare (fst x) (fst y)) l in
+  factorize_entries l
+
+let locate_notation prraw ntn =
+  let ntns = browse_notation ntn !scope_map in
+  if ntns = [] then
     str "Unknown notation"
   else
-    let scope = find_default ntn !scope_stack in
-    prlist 
-      (fun (sc,r,df) ->
-	hov 0 (
-	  pr_notation_info prraw df r ++ brk (1,2) ++
-	  str ": " ++ str sc ++ 
-	  (if sc = scope then str " (default interpretation)" else mt ()) ++
-	  fnl ()))
-      l
+    prlist (fun (ntn,l) ->
+      let scope = find_default ntn !scope_stack in
+      prlist 
+	(fun (sc,r,df) ->
+	  hov 0 (
+	    pr_notation_info prraw df r ++ brk (1,2) ++
+	    str ": " ++ str sc ++ 
+	    (if sc = scope then str " (default interpretation)" else mt ()) ++
+	    fnl ()))
+	l) ntns
 
 (**********************************************************************)
 (* Mapping notations to concrete syntax *)
@@ -419,20 +472,62 @@ let find_notation_printing_rule ntn =
   with Not_found -> anomaly ("No printing rule found for "^ntn)
 
 (**********************************************************************)
+(* Mapping classes to scopes *)
+
+open Classops
+
+let class_scope_map = ref (Gmap.empty : (cl_typ,scope_name) Gmap.t)
+
+let declare_class_scope cl sc =
+  class_scope_map := Gmap.add cl sc !class_scope_map
+
+let find_class_scope cl =
+  Gmap.find cl !class_scope_map
+
+open Term
+
+let find_class t =
+  let t, _ = decompose_app (Reductionops.whd_betaiotazeta t) in
+  match kind_of_term t with
+    | Var id -> CL_SECVAR id
+    | Const sp -> CL_CONST sp
+    | Ind ind_sp -> CL_IND ind_sp
+    | Prod (_,_,_) -> CL_FUN
+    | Sort _ -> CL_SORT
+    |  _ -> raise Not_found
+
+let rec compute_ref_arguments_scope t =
+  match kind_of_term (Reductionops.whd_betaiotazeta t) with
+    | Prod (_,t,u) ->
+	let sc =
+	  try Some (find_class_scope (find_class t)) with Not_found -> None in
+	sc :: compute_ref_arguments_scope u
+    | _ -> []
+
+let declare_ref_arguments_scope ref =
+  let t = Global.type_of_global ref in
+(*
+  declare_arguments_scope ref (compute_ref_arguments_scope t)  
+*)
+  ()
+
+(**********************************************************************)
 (* Synchronisation with reset *)
 
 let freeze () =
  (!scope_map, !notation_level_map, !scope_stack, !arguments_scope,
-  !delimiters_map, !notations_key_table, !printing_rules)
+  !delimiters_map, !notations_key_table, !printing_rules,
+  !class_scope_map)
 
-let unfreeze (scm,nlm,scs,asc,dlm,fkm,pprules) =
+let unfreeze (scm,nlm,scs,asc,dlm,fkm,pprules,clsc) =
   scope_map := scm;
   notation_level_map := nlm;
   scope_stack := scs;
   delimiters_map := dlm;
   arguments_scope := asc;
   notations_key_table := fkm;
-  printing_rules := pprules
+  printing_rules := pprules;
+  class_scope_map := clsc
 
 let init () =
   init_scope_map ();
@@ -443,7 +538,8 @@ let init () =
   notation_level_map := Stringmap.empty;
   delimiters_map := Stringmap.empty;
   notations_key_table := Gmapl.empty;
-  printing_rules := Stringmap.empty
+  printing_rules := Stringmap.empty;
+  class_scope_map := Gmap.add CL_SORT "type_scope" Gmap.empty
 
 let _ = 
   declare_summary "symbols"
