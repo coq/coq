@@ -41,9 +41,6 @@ Definition decreasing [f:R->R] : Prop := (x,y:R) ``x<=y``->``(f y)<=(f x)``.
 Definition strict_increasing [f:R->R] : Prop := (x,y:R) ``x<y``->``(f x)<(f y)``.
 Definition strict_decreasing [f:R->R] : Prop := (x,y:R) ``x<y``->``(f y)<(f x)``.
 Definition constant [f:R->R] : Prop := (x,y:R) ``(f x)==(f y)``.
-
-(**********)
-Axiom fct_eq : (f1,f2:R->R) ((x:R)(f1 x)==(f2 x))->f1==f2.
   
 (**********) 
 Definition no_cond : R->Prop := [x:R] True.
