@@ -105,12 +105,21 @@ let token_list_of_kernel_name ~keep_sections kn tag =
       N.MPdot (path,label) ->
        token_list_of_modpath path @ [N.string_of_label label]
     | N.MPfile dirpath -> token_list_of_dirpath dirpath
-    | N.MPself _ ->
-(*CSC: ask Hugo if this always make sense *)
-       let module_path =
-        subtract (Lib.cwd ()) (snd (Lib.current_prefix ()))
-       in
-        token_list_of_dirpath module_path
+    | N.MPself self ->
+(*CSC: ask Hugo if there is a better way *)
+(*CSC: also check if multiple ways have been used *)
+       if self = Names.initial_msid then
+        [ "Top" ]
+       else
+        let module_path =
+          let f = N.string_of_id (N.id_of_msid self) in
+          let _,longf = 
+            System.find_file_in_path (Library.get_load_path ()) (f^".v") in
+          let ldir0 = Library.find_logical_path (Filename.dirname longf) in
+          let id = Names.id_of_string (Filename.basename f) in
+           Libnames.extend_dirpath ldir0 id
+        in
+          token_list_of_dirpath module_path
     | N.MPbound _ -> raise FunctorsXMLExportationNotImplementedYet
   in
    token_list_of_modpath modpath @
@@ -122,6 +131,175 @@ let uri_of_kernel_name ?(keep_sections=false) kn tag =
  let module N = Names in
   let tokens = token_list_of_kernel_name ~keep_sections kn tag in
    "cic:/" ^ String.concat "/" tokens
+;;
+
+(* Special functions for handling of CCorn's CProp "sort" *)
+
+type sort =
+   Coq_sort of Term.sorts_family
+ | CProp
+;;
+
+let cprop =
+ let module N = Names in
+  N.make_kn
+   (N.MPfile
+     (Libnames.dirpath_of_string "CoRN.algebra.CLogic"))
+   (N.make_dirpath [])
+   (N.mk_label "CProp")
+;;
+
+let prerr_endline _ = ();;
+
+let whd_betadeltaiotacprop env evar_map ty =
+ let module R = Rawterm in
+  let red_exp =
+   R.Hnf  (*** Instead CProp is made Opaque ***)
+(*
+   R.Cbv
+    {R.rBeta = true ; R.rIota = true ; R.rDelta = true; R.rZeta=true ;
+     R.rConst = [Names.EvalConstRef cprop]
+    }
+*)
+  in
+Conv_oracle.set_opaque_const cprop;
+prerr_endline "###whd_betadeltaiotacprop:" ;
+let xxx =
+(*Pp.msgerr (Printer.prterm_env env ty);*)
+prerr_endline "";
+   Tacred.reduction_of_redexp red_exp env evar_map ty
+in
+prerr_endline "###FINE" ;
+(*
+Pp.msgerr (Printer.prterm_env env xxx);
+*)
+prerr_endline "";
+Conv_oracle.set_transparent_const cprop;
+xxx
+;;
+
+let family_of_term ty =
+ match Term.kind_of_term ty with
+    Term.Sort s -> Coq_sort (Term.family_of_sort s)
+  | Term.Const _ -> CProp  (* I could check that the constant is CProp *)
+  | _ -> Util.anomaly "family_of_term"
+;;
+
+module CPropRetyping =
+ struct
+  module T = Term
+
+  let outsort env sigma t =
+   family_of_term (whd_betadeltaiotacprop env sigma t)
+
+  let rec subst_type env sigma typ = function
+  | [] -> typ
+  | h::rest ->
+      match T.kind_of_term (whd_betadeltaiotacprop env sigma typ) with
+        | T.Prod (na,c1,c2) -> subst_type env sigma (T.subst1 h c2) rest
+        | _ -> Util.anomaly "Non-functional construction"
+
+                                                                                
+  let sort_of_atomic_type env sigma ft args =
+  let rec concl_of_arity env ar =
+    match T.kind_of_term (whd_betadeltaiotacprop env sigma ar) with
+      | T.Prod (na, t, b) -> concl_of_arity (Environ.push_rel (na,None,t) env) b
+      | T.Sort s -> Coq_sort (T.family_of_sort s)
+      | _ -> outsort env sigma (subst_type env sigma ft (Array.to_list args))
+  in concl_of_arity env ft
+                                                                                
+let typeur sigma metamap =
+  let rec type_of env cstr=
+    match Term.kind_of_term cstr with
+    | T.Meta n ->
+          (try T.strip_outer_cast (List.assoc n metamap)
+           with Not_found -> Util.anomaly "type_of: this is not a well-typed term")
+    | T.Rel n ->
+        let (_,_,ty) = Environ.lookup_rel n env in
+        T.lift n ty
+    | T.Var id ->
+        (try
+          let (_,_,ty) = Environ.lookup_named id env in
+          T.body_of_type ty
+        with Not_found ->
+          Util.anomaly ("type_of: variable "^(Names.string_of_id id)^" unbound"))
+    | T.Const c ->
+        let cb = Environ.lookup_constant c env in
+        T.body_of_type cb.Declarations.const_type
+    | T.Evar ev -> Instantiate.existential_type sigma ev
+    | T.Ind ind -> T.body_of_type (Inductive.type_of_inductive env ind)
+    | T.Construct cstr ->
+       T.body_of_type (Inductive.type_of_constructor env cstr)
+    | T.Case (_,p,c,lf) ->
+        let Inductiveops.IndType(_,realargs) =
+          try Inductiveops.find_rectype env sigma (type_of env c)
+          with Not_found -> Util.anomaly "type_of: Bad recursive type" in
+        let t = Reductionops.whd_beta (T.applist (p, realargs)) in
+        (match Term.kind_of_term (whd_betadeltaiotacprop env sigma (type_of env t)) with
+          | T.Prod _ -> Reductionops.whd_beta (T.applist (t, [c]))
+          | _ -> t)
+    | T.Lambda (name,c1,c2) ->
+          T.mkProd (name, c1, type_of (Environ.push_rel (name,None,c1) env) c2)
+    | T.LetIn (name,b,c1,c2) ->
+         T.subst1 b (type_of (Environ.push_rel (name,Some b,c1) env) c2)
+    | T.Fix ((_,i),(_,tys,_)) -> tys.(i)
+    | T.CoFix (i,(_,tys,_)) -> tys.(i)
+    | T.App(f,args)->
+        T.strip_outer_cast
+          (subst_type env sigma (type_of env f) (Array.to_list args))
+    | T.Cast (c,t) -> t
+    | T.Sort _ | T.Prod _ ->
+       match sort_of env cstr with
+          Coq_sort T.InProp -> T.mkProp
+        | Coq_sort T.InSet -> T.mkSet
+        | Coq_sort T.InType -> T.mkType Univ.prop_univ (* ERROR HERE *)
+        | CProp -> T.mkConst cprop
+                                                                                
+  and sort_of env t =
+    match Term.kind_of_term t with
+    | T.Cast (c,s) when T.isSort s -> family_of_term s
+    | T.Sort (T.Prop c) -> Coq_sort (if c = T.Pos then T.InSet else T.InProp)
+    | T.Sort (T.Type u) -> Coq_sort T.InType
+    | T.Prod (name,t,c2) ->
+       sort_of (Environ.push_rel (name,None,t) env) c2
+    | T.App(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
+    | T.Lambda _ | T.Fix _ | T.Construct _ ->
+        Util.anomaly "sort_of: Not a type (1)"
+    | _ -> outsort env sigma (type_of env t)
+                                                                                
+  and sort_family_of env t =
+    match T.kind_of_term t with
+    | T.Cast (c,s) when T.isSort s -> family_of_term s
+    | T.Sort (T.Prop c) -> Coq_sort T.InType
+    | T.Sort (T.Type u) -> Coq_sort T.InType
+    | T.Prod (name,t,c2) -> sort_family_of (Environ.push_rel (name,None,t) env) c2
+    | T.App(f,args) ->
+       sort_of_atomic_type env sigma (type_of env f) args
+    | T.Lambda _ | T.Fix _ | T.Construct _ ->
+        Util.anomaly "sort_of: Not a type (1)"
+    | _ -> outsort env sigma (type_of env t)
+                                                                                
+  in type_of, sort_of, sort_family_of
+
+  let get_sort_family_of env sigma c = let _,_,f = typeur sigma [] in f env c
+
+ end
+;;
+
+let get_sort_family_of env evar_map ty =
+ CPropRetyping.get_sort_family_of env evar_map ty
+;;
+
+let type_as_sort env evar_map ty =
+(* CCorn code *)
+ family_of_term (whd_betadeltaiotacprop env evar_map ty)
+;;
+
+let is_a_Prop =
+ function
+    "Prop"
+  | "CProp" -> true
+  | _ -> false
 ;;
 
 (* Main Functions *)
@@ -167,14 +345,14 @@ let acic_of_cic_context' computeinnertypes seed ids_to_terms constr_to_ids
      let aux' = aux computeinnertypes (Some fresh_id'') [] in
       let string_of_sort_family =
        function
-          T.InProp -> "Prop"
-        | T.InSet  -> "Set"
-        | T.InType -> "Type"
+          Coq_sort T.InProp -> "Prop"
+        | Coq_sort T.InSet  -> "Set"
+        | Coq_sort T.InType -> "Type"
+        | CProp -> "CProp"
       in
       let string_of_sort t =
        string_of_sort_family
-        (T.family_of_sort
-         (T.destSort (Reductionops.whd_betadeltaiota env evar_map t)))
+        (type_as_sort env evar_map t)
       in
        let ainnertypes,innertype,innersort,expected_available =
         let {D.synthesized = synthesized; D.expected = expected} =
@@ -204,7 +382,7 @@ print_endline "ENVIRONMENT:" ; flush stdout ;
 Pp.ppnl (Printer.pr_context_of env) ; flush stdout ;
 print_endline "FINE_ENVIRONMENT" ; flush stdout ;
 *)
-         let innersort = Retyping.get_sort_family_of env evar_map synthesized in
+         let innersort = get_sort_family_of env evar_map synthesized in
 (* Debugging only:
 print_endline "PASSATO" ; flush stdout ;
 *)
@@ -323,19 +501,19 @@ print_endline "PASSATO" ; flush stdout ;
                 | (N.Anonymous,_,_) -> Nameops.make_ident "_" None
               in
                Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-               if innersort = "Prop"  && expected_available then
+               if is_a_Prop innersort  && expected_available then
                 add_inner_type fresh_id'' ;
                A.ARel (fresh_id'', n, List.nth idrefs (n-1), id)
            | T.Var id ->
               let path = get_uri_of_var (N.string_of_id id) pvars in
                Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-               if innersort = "Prop"  && expected_available then
+               if is_a_Prop innersort  && expected_available then
                 add_inner_type fresh_id'' ;
                A.AVar
                 (fresh_id'', path ^ "/" ^ (N.string_of_id id) ^ ".var")
            | T.Evar (n,l) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-              if innersort = "Prop"  && expected_available then
+              if is_a_Prop innersort  && expected_available then
                add_inner_type fresh_id'' ;
               A.AEvar
                (fresh_id'', n, Array.to_list (Array.map (aux' env idrefs) l))
@@ -343,7 +521,7 @@ print_endline "PASSATO" ; flush stdout ;
            | T.Sort s -> A.ASort (fresh_id'', s)
            | T.Cast (v,t) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-              if innersort = "Prop" then
+              if is_a_Prop innersort then
                add_inner_type fresh_id'' ;
               A.ACast (fresh_id'', aux' env idrefs v, aux' env idrefs t)
            | T.Prod (n,s,t) ->
@@ -351,7 +529,11 @@ print_endline "PASSATO" ; flush stdout ;
                match n with
                   N.Anonymous -> N.Anonymous
                 | _ ->
-                  N.Name (Nameops.next_name_away n (Termops.ids_of_context env))
+                  if T.noccurn 1 t then
+                   N.Anonymous
+                  else
+                   N.Name
+                    (Nameops.next_name_away n (Termops.ids_of_context env))
               in
                Hashtbl.add ids_to_inner_sorts fresh_id''
                 (string_of_sort innertype) ;
@@ -403,7 +585,7 @@ print_endline "PASSATO" ; flush stdout ;
                        T.Lambda _ -> true
                      | _ -> false
                in
-                if innersort = "Prop" &&
+                if is_a_Prop innersort &&
                    ((not father_is_lambda) || expected_available)
                 then add_inner_type fresh_id'' ;
                 let new_passed_lambdas =
@@ -437,7 +619,7 @@ print_endline "PASSATO" ; flush stdout ;
               in
                Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
                let sourcesort =
-                Retyping.get_sort_family_of env evar_map
+                get_sort_family_of env evar_map
                  (Retyping.get_type_of env evar_map s)
                in
                 Hashtbl.add ids_to_inner_sorts (source_id_of_id fresh_id'')
@@ -452,7 +634,7 @@ print_endline "PASSATO" ; flush stdout ;
                        T.LetIn _ -> true
                      | _ -> false
                in
-                if innersort = "Prop" then
+                if is_a_Prop innersort then
                  add_inner_type fresh_id'' ;
                 let new_passed_letins =
                  (fresh_id'',n', aux' env idrefs s)::
@@ -469,7 +651,7 @@ print_endline "PASSATO" ; flush stdout ;
                            (new_passed_letins, aux' new_env new_idrefs d))
            | T.App (h,t) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-              if innersort = "Prop" then
+              if is_a_Prop innersort then
                add_inner_type fresh_id'' ;
               let
                compute_result_if_eta_expansion_not_required subst residual_args
@@ -496,7 +678,7 @@ print_endline "PASSATO" ; flush stdout ;
                  compute_result_if_eta_expansion_not_required
            | T.Const kn ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-              if innersort = "Prop"  && expected_available then
+              if is_a_Prop innersort  && expected_available then
                add_inner_type fresh_id'' ;
               let compute_result_if_eta_expansion_not_required _ _ =
                A.AConst (fresh_id'', subst, (uri_of_kernel_name kn Constant))
@@ -515,7 +697,7 @@ print_endline "PASSATO" ; flush stdout ;
                  compute_result_if_eta_expansion_not_required
            | T.Construct ((kn,i),j) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-              if innersort = "Prop"  && expected_available then
+              if is_a_Prop innersort  && expected_available then
                add_inner_type fresh_id'' ;
               let compute_result_if_eta_expansion_not_required _ _ =
                A.AConstruct
@@ -527,7 +709,7 @@ print_endline "PASSATO" ; flush stdout ;
                  compute_result_if_eta_expansion_not_required
            | T.Case ({T.ci_ind=(kn,i)},ty,term,a) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-              if innersort = "Prop" then
+              if is_a_Prop innersort then
                add_inner_type fresh_id'' ;
               let a' =
                Array.fold_right (fun x i -> (aux' env idrefs x)::i) a []
@@ -537,7 +719,7 @@ print_endline "PASSATO" ; flush stdout ;
                   aux' env idrefs ty, aux' env idrefs term, a')
            | T.Fix ((ai,i),((f,t,b) as rec_decl)) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-              if innersort = "Prop" then add_inner_type fresh_id'' ;
+              if is_a_Prop innersort then add_inner_type fresh_id'' ;
               let fresh_idrefs =
                Array.init (Array.length t) (function _ -> gen_id seed) in
               let new_idrefs =
@@ -560,7 +742,7 @@ print_endline "PASSATO" ; flush stdout ;
                 )
            | T.CoFix (i,((f,t,b) as rec_decl)) ->
               Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
-              if innersort = "Prop" then add_inner_type fresh_id'' ;
+              if is_a_Prop innersort then add_inner_type fresh_id'' ;
               let fresh_idrefs =
                Array.init (Array.length t) (function _ -> gen_id seed) in
               let new_idrefs =
