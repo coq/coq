@@ -59,10 +59,15 @@ Tools
 User Contributions
 
 - CongruenceClosure (congruence closure decision procedure)
+  [Pierre Corbineau, ENS Cachan]
 - MapleMode (an interface to embed Maple simplification procedures over
   rational fractions in Coq)
+  [David Delahaye, Micaela Mayero, Chalmers University]
+- Presburger: A formalization of Presburger's algorithm 
+  [Laurent Thery, INRIA Sophia Antipolis]
 - Chinese has been rewritten using Z from ZArith as datatype
   ZChinese is the new version, Chinese the obsolete one
+  [Pierre Letouzey, LRI Orsay]
 
 Incompatibilities
 
