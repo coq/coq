@@ -307,6 +307,21 @@ let safe_pf_conv_x gl c1 c2 = try pf_conv_x gl c1 c2 with _ -> false
 let implement_theory env t th args =
   is_conv env Evd.empty (Typing.type_of env Evd.empty t) (mkLApp (th, args))
 
+(* The following test checks whether the provided morphism is the default
+   one for the given operation. In principle the test is too strict, since
+   it should possible to provide another proof for the same fact (proof
+   irrelevance). In particular, the error message is be not very explicative. *)
+let states_compatibility_for env plus mult opp morphs =
+ let check op compat =
+  is_conv env Evd.empty (Setoid_replace.default_morphism op).Setoid_replace.lem
+   compat in
+ check plus morphs.plusm &&
+ check mult morphs.multm &&
+ (match (opp,morphs.oppm) with
+     None, None -> true
+   | Some opp, Some compat -> check opp compat
+   | _,_ -> assert false)
+
 let add_theory want_ring want_abstract want_setoid a aequiv asetth amorph aplus amult aone azero aopp aeq t cset = 
   if theories_map_mem a then errorlabstrm "Add Semi Ring" 
     (str "A (Semi-)(Setoid-)Ring Structure is already declared for " ++
@@ -317,13 +332,17 @@ let add_theory want_ring want_abstract want_setoid a aequiv asetth amorph aplus 
 	  [| a; (unbox aequiv); aplus; amult; aone; azero; (unbox aopp); aeq|])
         ||
 	not (implement_theory env (unbox asetth) coq_Setoid_Theory
-	  [| a; (unbox aequiv) |]))) then 
+	  [| a; (unbox aequiv) |]) ||
+        not (states_compatibility_for env aplus amult aopp (unbox amorph))
+        )) then 
       errorlabstrm "addring" (str "Not a valid Setoid-Ring theory");
     if (not want_ring & want_setoid & (
         not (implement_theory env t coq_Semi_Setoid_Ring_Theory 
 	  [| a; (unbox aequiv); aplus; amult; aone; azero; aeq|]) ||
 	not (implement_theory env (unbox asetth) coq_Setoid_Theory
-	  [| a; (unbox aequiv) |]))) then 
+	  [| a; (unbox aequiv) |]) ||
+        not (states_compatibility_for env aplus amult aopp (unbox amorph))))
+    then
       errorlabstrm "addring" (str "Not a valid Semi-Setoid-Ring theory");
     if (want_ring & not want_setoid &
 	not (implement_theory env t coq_Ring_Theory
