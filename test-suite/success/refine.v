@@ -30,10 +30,26 @@ Refine [l]<[l]l=l>
        end.
 Abort.
 
+(* Submitted by Roland Zumkeller (bug #888) *)
+
+(* The Fix and CoFix rules expect a subgoal even for closed components of the
+   (co-)fixpoint *)
+
+Goal nat -> nat.
+Refine(
+  Fix f {f [n:nat] : nat := (S ?) with
+         pred [n:nat] : nat := n}).
+Intro; Exact 0.
+Qed.
+
 (* Submitted by Roland Zumkeller (bug #889) *)
+
+(* The types of metas were in metamap and they were not updated when
+   passing through a binder *)
 
 Goal (n:nat) nat -> n=0.
 Refine [n]
   Fix f { f [i:nat] : n=0 :=
     Cases i of 0 => ? | (S _) => ? end }.
 Abort.
+
