@@ -33,6 +33,7 @@ open Nametab
 open Typeops
 open Indtypes
 
+let mkCastC(a,b) = ope("CAST",[a;b])
 let mkLambdaC(x,a,b) = ope("LAMBDA",[a;slam(Some x,b)])
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
 let mkProdC (x,a,b) = ope("PROD",[a;slam(Some x,b)])
@@ -51,8 +52,11 @@ let constant_entry_of_com (com,comtypopt,opacity) =
 	  const_entry_type = None;
           const_entry_opaque = opacity }
     | Some comtyp ->
-	let typ = interp_type sigma env comtyp in
-	{ const_entry_body = interp_casted_constr sigma env com typ;
+	(* We use a cast to avoid troubles with evars in comtyp *)
+	(* that can only be resolved knowing com *)
+	let b = mkCastC (com,comtyp) in
+	let (body,typ) = destCast (interp_constr sigma env b) in
+	{ const_entry_body = body;
 	  const_entry_type = Some typ;
           const_entry_opaque = opacity }
 
