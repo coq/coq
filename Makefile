@@ -93,13 +93,14 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_constr.cmo parsing/g_cases.cmo \
         parsing/extend.cmo parsing/termast.cmo \
         parsing/esyntax.cmo parsing/printer.cmo parsing/pretty.cmo \
-	parsing/astterm.cmo parsing/egrammar.cmo
+	parsing/pattern.cmo parsing/astterm.cmo parsing/egrammar.cmo
+
 ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo
 
 PROOFS=proofs/proof_type.cmo proofs/proof_trees.cmo proofs/logic.cmo \
        proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
-       proofs/macros.cmo proofs/clenv.cmo proofs/stock.cmo proofs/pattern.cmo \
-       proofs/tacinterp.cmo proofs/pfedit.cmo
+       proofs/macros.cmo proofs/clenv.cmo proofs/stock.cmo proofs/pfedit.cmo \
+       proofs/tacinterp.cmo
 
 TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/nbtermdn.cmo tactics/hipattern.cmo tactics/wcclausenv.cmo \
