@@ -44,8 +44,6 @@ type prim_rule_name =
   | Refine 
   | Convert_concl
   | Convert_hyp
-  | Convert_defbody
-  | Convert_deftype
   | Thin
   | ThinBody
   | Move of bool

@@ -235,17 +235,12 @@ let convert_concl c pf =
   refiner (Prim { name = Convert_concl; terms = [c];
                   hypspecs = []; newids = []; params = [] }) pf
 
-let convert_hyp id t pf =
+let convert_hyp (id,b,t) pf =
+  let lt = match b with
+    | None -> [t]
+    | Some c -> [c;t] in
   refiner (Prim { name = Convert_hyp; hypspecs = [id];
-                  terms = [t]; newids = []; params = []}) pf
-
-let convert_defbody id t pf =
-  refiner (Prim { name = Convert_defbody; hypspecs = [id];
-                  terms = [t]; newids = []; params = []}) pf
-
-let convert_deftype id t pf =
-  refiner (Prim { name = Convert_deftype; hypspecs = [id];
-                  terms = [t]; newids = []; params = []}) pf
+                  terms = lt; newids = []; params = []}) pf
 
 let thin ids gl = 
   refiner (Prim { name = Thin; hypspecs = ids;

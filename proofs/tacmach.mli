@@ -157,9 +157,7 @@ val internal_cut    : identifier -> types -> tactic
 val internal_cut_rev : identifier -> types -> tactic
 val refine          : constr -> tactic
 val convert_concl   : types -> tactic
-val convert_hyp     : identifier -> types -> tactic
-val convert_deftype : identifier -> types -> tactic
-val convert_defbody : identifier -> constr -> tactic
+val convert_hyp     : named_declaration -> tactic
 val thin            : identifier list -> tactic
 val thin_body       : identifier list -> tactic
 val move_hyp        : bool -> identifier -> identifier -> tactic

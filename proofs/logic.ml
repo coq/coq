@@ -390,37 +390,14 @@ let error_use_instantiate () =
     (str"cannot intro when there are open metavars in the domain type" ++
        spc () ++ str"- use Instantiate")
 
-let convert_hyp sign sigma id b =
+let convert_hyp sign sigma (id,b,bt as d) =
   apply_to_hyp sign id
-    (fun sign (idc,c,ct) _ ->
+    (fun sign (_,c,ct) _ ->
        let env = Global.env_of_context sign in
-       match c with
-	 | None -> (* Change the type *)
-	     if !check && not (is_conv env sigma b ct) then
-	       error "convert-hyp rule passed non-converting term";
-	     add_named_decl (idc,c,b) sign
-	 | Some c -> (* Change the body *)
-	     if !check && not (is_conv env sigma b c) then
-	       error "convert-hyp rule passed non-converting term";
-	     add_named_decl (idc,Some b,ct) sign)
-
-let convert_def inbody sign sigma id c =
-  apply_to_hyp sign id
-    (fun sign (idc,b,t) _ ->
-       let env = Global.env_of_context sign in
-       match b with
-	 | None -> error "convert-deftype rule passed to an hyp without body" 
-	 | Some b ->
-	     let b,t = 
-	       if inbody then
-		 (if !check && not (is_conv env sigma c b) then 
-		    error "convert-deftype rule passed non-converting type";
-		  (c,t))
-	       else
-		 (if !check && not (is_conv env sigma c t) then
-		    error "convert-deftype rule passed non-converting type";
-		  (b,c)) in
-	     add_named_decl (idc,Some b,t) sign)
+       if !check && not (is_conv env sigma bt ct) &&
+         not (option_compare (is_conv env sigma) b c) then
+	   error "convert-hyp rule passed non-converting term";
+       add_named_decl d sign)
 
 
 (***********************************************************************)
@@ -584,14 +561,15 @@ let prim_refiner r sigma goal =
 	else 
 	  error "convert-concl rule passed non-converting term"
 
+(*
     | { name = Convert_hyp; hypspecs = [id]; terms = [ty] } ->
 	[mk_goal (convert_hyp sign sigma id ty) cl]
+*)
+    | { name = Convert_hyp; hypspecs = [id]; terms = [c;ty] } ->
+	[mk_goal (convert_hyp sign sigma (id,Some c,ty)) cl]
 
-    | { name = Convert_defbody; hypspecs = [id]; terms = [c] } ->
-	[mk_goal (convert_def true sign sigma id c) cl]
-
-    | { name = Convert_deftype; hypspecs = [id]; terms = [ty] } ->
-	[mk_goal (convert_def false sign sigma id ty) cl]
+    | { name = Convert_hyp; hypspecs = [id]; terms = [ty] } ->
+	[mk_goal (convert_hyp sign sigma (id,None,ty)) cl]
 
     (* And now the structural rules *)
     | { name = Thin; hypspecs = ids } -> [clear_hyps ids goal]
@@ -706,15 +684,9 @@ let prim_extractor subfun vl pft =
     | {ref=Some(Prim{name=Convert_concl;terms=[c]},[pf])} ->
 	subfun vl pf
 	
-    | {ref=Some(Prim{name=Convert_hyp;hypspecs=[id];terms=[_]},[pf])} ->
+    | {ref=Some(Prim{name=Convert_hyp;hypspecs=[id];terms=_},[pf])} ->
 	subfun vl pf
 
-    | {ref=Some(Prim{name=Convert_defbody;hypspecs=[id];terms=[_]},[pf])} ->
-	subfun vl pf
-
-    | {ref=Some(Prim{name=Convert_deftype;hypspecs=[id];terms=[_]},[pf])} ->
-	subfun vl pf
-	
     | {ref=Some(Prim{name=Thin;hypspecs=ids},[pf])} ->
      (* No need to make ids Anonymous in vl: subst_vars take the more recent *)
 	subfun vl pf
@@ -788,13 +760,10 @@ let pr_prim_rule = function
       
   | {name=Convert_hyp;hypspecs=[id];terms=[c]} ->
       (str"Change "  ++ prterm c  ++ spc ()  ++ str"in "  ++ pr_id id)
-      
-  | {name=Convert_defbody;hypspecs=[id];terms=[c]} ->
-      (str"Change "  ++ prterm c  ++ spc ()  ++ str"in "  ++ pr_id id)
 
-  | {name=Convert_deftype;hypspecs=[id];terms=[c]} ->
-      (str"Change "  ++ prterm c  ++ spc ()  ++
-	 str"in (Type of "  ++ pr_id id ++ str ")")
+  | {name=Convert_hyp;hypspecs=[id];terms=[c;t]} ->
+      (str"Change "  ++ prterm c  ++ spc ()  ++ str"in "
+       ++ pr_id id ++ str" (Type of "  ++ pr_id id ++ str ")")
       
   | {name=Thin;hypspecs=ids} ->
       (str"Clear "  ++ prlist_with_sep pr_spc pr_id ids)
