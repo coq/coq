@@ -25,7 +25,7 @@ type production_position =
   | InternalProd
 
 type 'pos constr_entry_key =
-  | ETIdent | ETReference
+  | ETIdent | ETReference | ETBigint
   | ETConstr of (int * 'pos)
   | ETPattern
   | ETOther of string * string
@@ -158,6 +158,7 @@ let rename_command_entry nt =
 
 let explicitize_prod_entry pos univ nt =
   if univ = "prim" & nt = "var" then ETIdent else
+  if univ = "prim" & nt = "bigint" then ETBigint else
   if univ <> "constr" then ETOther (univ,nt) else
   match nt with
   | "constr0" -> ETConstr (0,pos)
@@ -238,18 +239,18 @@ let border = function
   | NonTerm (ProdPrimitive (ETConstr(_,BorderProd (_,a))),_) :: _ -> a
   | _ -> None
 
-let clever_assoc = function
+let clever_assoc ass = function
   | [g] when g.gr_production <> [] ->
       (match border g.gr_production, border (List.rev g.gr_production) with
-	  Some RightA, Some LeftA -> Some NonA
-	| a, b when a=b -> a
-	| Some LeftA, Some RightA -> Some LeftA (* since LR *)
-	| _ -> None)
-  | _ -> None
+	| Some LeftA, Some RightA -> ass (* Untractable; we cheat *)
+	| Some LeftA, _ -> Some LeftA
+	| _, Some RightA -> Some RightA
+	| _ -> Some NonA)
+  | _ -> ass
 
 let gram_entry univ (nt, ass, rl) =
   let l = List.map (gram_rule (univ,nt)) rl in
-  let ass = if ass = None then clever_assoc l else ass in
+  let ass = clever_assoc ass l in
   { ge_name = nt;
     gl_assoc = ass;
     gl_rules = l }

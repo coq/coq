@@ -37,49 +37,46 @@ let (grammar_state : all_grammar_command list ref) = ref []
 
 
 (**************************************************************************)
-let canonise_assoc = function
-  | None -> Gramext.LeftA (* camlp4 rule *)
-  | Some Gramext.NonA -> Gramext.RightA
-  | Some a -> a
-
 let assoc_level = function
   | Gramext.LeftA -> "L"
   | _ -> ""
 
-let constr_level assoc = function
-  | 8 -> assert (assoc <> Some Gramext.LeftA); "top"
-  | n -> (string_of_int n)^(assoc_level (canonise_assoc assoc))
+let constr_level = function
+  | 8,assoc -> assert (assoc <> Gramext.LeftA); "top"
+  | n,assoc -> (string_of_int n)^(assoc_level assoc)
 
 let constr_prod_level = function
   | 8 -> "top"
   | n -> string_of_int n
 
 let numeric_levels =
-  ref [8,Some Gramext.RightA; 1,Some Gramext.RightA; 0,Some Gramext.RightA]
+  ref [8,Gramext.RightA; 1,Gramext.RightA; 0,Gramext.RightA]
 
 (* At a same level, LeftA takes precedence over RightA and NoneA *)
 (* In case, several associativity exists for a level, we make two levels, *)
 (* first LeftA, then RightA and NoneA together *)
-exception Found of Gramext.g_assoc option
+exception Found of Gramext.g_assoc
 
-let eq_assoc a b = match (canonise_assoc a, canonise_assoc b) with
-  | Gramext.LeftA, Gramext.LeftA -> true
-  | Gramext.LeftA, _ -> false
-  | _, Gramext.LeftA -> false
+open Ppextend
+
+let admissible_assoc = function
+  | Gramext.LeftA, (Gramext.RightA | Gramext.NonA) -> false
+  | Gramext.RightA, Gramext.LeftA -> false
   | _ -> true
- 
-let find_position assoc = function
-  | None -> None, Some (canonise_assoc assoc)
+
+let find_position other assoc = function
+  | None -> None, (if other then assoc else None), None
   | Some n ->
-      if n = 8 & canonise_assoc assoc = Gramext.LeftA then 
+      let assoc = out_some assoc in
+      if n = 8 & assoc = Gramext.LeftA then 
 	error "Left associativity not allowed at level 8";
-      let after = ref (8,Some Gramext.RightA) in
+      let after = ref (8,Gramext.RightA) in
       let rec add_level q = function
         | (p,_ as pa)::l when p > n -> pa :: add_level pa l
         | (p,a as pa)::l as l' when p = n ->
-	    if eq_assoc a assoc then raise (Found a);
+	    if admissible_assoc (a,assoc) then raise (Found a);
 	    (* Maybe this was (p,Left) and p occurs a second time *)
-	    if canonise_assoc a = Gramext.LeftA then
+	    if a = Gramext.LeftA then
 	      match l with
 		| (p,a)::_ as l' when p = n -> raise (Found a)
 		| _ -> after := pa; (n,assoc)::l'
@@ -90,12 +87,14 @@ let find_position assoc = function
 	    after := q; (n,assoc)::l
       in
       try
-        numeric_levels := add_level (8,Some Gramext.RightA) !numeric_levels;
-        Some (Gramext.After (constr_level (snd !after) (fst !after))),
-	Some (canonise_assoc assoc)
+	(* Create the entry *)
+        numeric_levels := add_level (8,Gramext.RightA) !numeric_levels;
+        Some (Gramext.After (constr_level !after)),
+	Some assoc, Some (constr_level (n,assoc))
       with
-          Found a -> Some (Gramext.Level (constr_level a n)),
-	  Some (canonise_assoc a)
+          Found a ->
+	    (* Just inherit the existing associativity and name (None) *)
+	    Some (Gramext.Level (constr_level (n,a))), None, None
 
 (* Interpretation of the right hand side of grammar rules *)
 
@@ -147,6 +146,9 @@ let make_act f pil =
     | Some (p, ETIdent) :: tl -> (* non-terminal *)
         Gramext.action (fun (v:identifier) ->
 	  make ((p,CRef (Ident (dummy_loc,v))) :: env) tl)
+    | Some (p, ETBigint) :: tl -> (* non-terminal *)
+        Gramext.action (fun (v:Bignat.bigint) ->
+	  make ((p,CNumeral (dummy_loc,v)) :: env) tl)
     | Some (p, ETPattern) :: tl -> 
 	failwith "Unexpected entry of type cases pattern" in
   make [] (List.rev pil)
@@ -160,7 +162,10 @@ let make_cases_pattern_act f pil =
     | Some (p, ETPattern) :: tl -> (* non-terminal *)
         Gramext.action (fun v -> make ((p,v) :: env) tl)
     | Some (p, ETReference) :: tl -> (* non-terminal *)
-        Gramext.action (fun v -> make ((p,CPatAtom (dummy_loc,Some v)) :: env) tl)
+	Gramext.action (fun v -> make ((p,CPatAtom(dummy_loc,Some v)) :: env)
+	  tl)
+    | Some (p, ETBigint) :: tl -> (* non-terminal *)
+	Gramext.action (fun v -> make ((p,CPatNumeral(dummy_loc,v)) :: env) tl)
     | Some (p, (ETIdent | ETConstr _ | ETOther _)) :: tl ->
 	error "ident and constr entry not admitted in patterns cases syntax extensions" in
   make [] (List.rev pil)
@@ -210,17 +215,17 @@ let make_rule univ assoc etyp rule =
 
 (* Rules of a level are entered in reverse order, so that the first rules
    are applied before the last ones *)
-let extend_entry univ (te, etyp, pos, name, ass, rls) =
+let extend_entry univ (te, etyp, pos, name, ass, p4ass, rls) =
   let rules = List.rev (List.map (make_rule univ ass etyp) rls) in
-  grammar_extend te pos [(name, ass, rules)]
+  grammar_extend te pos [(name, p4ass, rules)]
 
 (* Defines new entries. If the entry already exists, check its type *)
 let define_entry univ {ge_name=n; gl_assoc=ass; gl_rules=rls} =
   let typ = explicitize_entry (fst univ) n in
   let e,lev = get_constr_entry typ in
-  let pos,ass = find_position ass lev in
-  let name = option_app (constr_level ass) lev in
-  (e,typ,pos,name,ass,rls)
+  let other = match typ with ETOther _ -> true | _ -> false in
+  let pos,p4ass,name = find_position other ass lev in
+  (e,typ,pos,name,ass,p4ass,rls)
 
 (* Add a bunch of grammar rules. Does not check if it is well formed *)
 let extend_grammar_rules gram =
@@ -248,27 +253,24 @@ let make_gen_act f pil =
         Gramext.action (fun v -> make ((p,in_generic t v) :: env) tl) in
   make [] (List.rev pil)
 
-let extend_constr entry pos (level,assoc) make_act pt =
+let extend_constr entry (level,assoc) make_act pt =
   let univ = get_univ "constr" in
   let pil = List.map (symbol_of_prod_item univ assoc) pt in
   let (symbs,ntl) = List.split pil in
   let act = make_act ntl in
-  grammar_extend entry pos [(level, assoc, [symbs, act])]
+  let pos,p4assoc,name = find_position false assoc level in
+  grammar_extend entry pos [(name, p4assoc, [symbs, act])]
 
 let extend_constr_notation (n,assoc,ntn,rule) =
   let mkact loc env = CNotation (loc,ntn,env) in
   let (e,level) = get_constr_entry (ETConstr (n,())) in
-  let pos,assoc = find_position assoc level in
-  extend_constr e pos (option_app (constr_level assoc) level,assoc) 
-    (make_act mkact) rule
+  extend_constr e (level,assoc) (make_act mkact) rule
 
 let extend_constr_delimiters (sc,rule,pat_rule) =
   let mkact loc env = CDelimiters (loc,sc,snd (List.hd env)) in
-  extend_constr Constr.constr (Some (Gramext.Level "0"))
-    (None,None)
-    (make_act mkact) rule;
+  extend_constr Constr.constr (Some 0,Some Gramext.NonA) (make_act mkact) rule;
   let mkact loc env = CPatDelimiters (loc,sc,snd (List.hd env)) in
-  extend_constr Constr.pattern None (None,None)
+  extend_constr Constr.pattern (None,None)
     (make_cases_pattern_act mkact) pat_rule
 
 (* These grammars are not a removable *)

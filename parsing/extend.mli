@@ -26,7 +26,7 @@ type production_position =
   | InternalProd
 
 type 'pos constr_entry_key =
-  | ETIdent | ETReference
+  | ETIdent | ETReference | ETBigint
   | ETConstr of (int * 'pos)
   | ETPattern
   | ETOther of string * string

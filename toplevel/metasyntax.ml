@@ -327,7 +327,7 @@ let string_of_assoc = function
   | Some(Gramext.LeftA) | None -> "LEFTA"
   | Some(Gramext.NonA) -> "NONA"
 
-let make_symbolic assoc n symbols etyps =
+let make_symbolic n symbols etyps =
   (n,List.map assoc_of_type etyps),
   (String.concat " " (List.flatten (List.map string_of_symbol symbols)))
 
@@ -446,6 +446,7 @@ let interp_syntax_modifiers =
   let rec interp assoc level etyps = function
     | [] ->
 	let n = match level with None -> 1 | Some n -> n in
+	let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
 	(assoc,n,etyps,!onlyparsing)
     | SetEntryType (s,typ) :: l ->
 	let id = id_of_string s in
@@ -486,25 +487,20 @@ let set_entry_type etyps (x,typ) =
 	  let assoc = if left then Gramext.LeftA else Gramext.RightA in
           ETConstr (n,BorderProd (left,Some assoc))
       | ETConstr (n,()), (_,InternalProd) -> ETConstr (n,InternalProd)
-      | (ETPattern | ETIdent | ETOther _ | ETReference as t), _ -> t
+      | (ETPattern | ETIdent | ETBigint | ETOther _ | ETReference as t), _ -> t
     with Not_found -> ETConstr typ
   in (x,typ)
 
-let collapse_assoc_left = function
-  | None | Some Gramext.LeftA -> Some Gramext.NonA
-  | a -> a
+let border = function
+  | (_,ETConstr(_,BorderProd (_,a))) :: _ -> a
+  | _ -> None
 
-let collapse_assoc_right = function
-  | Some Gramext.RightA -> Some Gramext.NonA
-  | a -> a
-
-let is_border = function
-  | (_,ETConstr(_,BorderProd _)) :: _ -> true
-  | _ -> false
-
-let adjust_associativity typs assoc =
-  let assoc = if is_border typs then assoc else collapse_assoc_left assoc in
-  if is_border (List.rev typs) then assoc else collapse_assoc_right assoc 
+let recompute_assoc typs =
+  match border typs, border (List.rev typs) with
+    | Some Gramext.LeftA, Some Gramext.RightA -> assert false
+    | Some Gramext.LeftA, _ -> Some Gramext.LeftA
+    | _, Some Gramext.RightA -> Some Gramext.RightA
+    | _ -> Some Gramext.NonA
 
 let add_syntax_extension df modifiers =
   let (assoc,n,etyps,onlyparse) = interp_syntax_modifiers modifiers in
@@ -513,8 +509,8 @@ let add_syntax_extension df modifiers =
       (n,BorderProd(true,assoc)) (10,InternalProd) (n,BorderProd(false,assoc))
       [] (split df) in
   let typs = List.map (set_entry_type etyps) typs in
-  let assoc = adjust_associativity typs assoc in
-  let (prec,notation) = make_symbolic assoc n symbs typs in
+  let assoc = recompute_assoc typs in
+  let (prec,notation) = make_symbolic n symbs typs in
   let gram_rule = make_grammar_rule n assoc typs symbs notation in
   let pp_rule = if onlyparse then None else Some (make_pp_rule typs symbs) in
   Lib.add_anonymous_leaf (inSyntaxExtension(prec,notation,gram_rule,pp_rule))
@@ -596,9 +592,9 @@ let add_notation_in_scope df a modifiers sc toks =
   let etyps = merge_entry_types etyps' etyps in
 *)
   let typs = List.map (set_entry_type etyps) typs in
-  let assoc = adjust_associativity typs assoc in
+  let assoc = recompute_assoc typs in
   (* Declare the parsing and printing rules if not already done *)
-  let (prec,notation) = make_symbolic assoc n symbols typs in
+  let (prec,notation) = make_symbolic n symbols typs in
   let gram_rule = make_grammar_rule n assoc typs symbols notation in
   let pp_rule = if onlyparse then None else Some (make_pp_rule typs symbols) in
   Lib.add_anonymous_leaf (inSyntaxExtension(prec,notation,gram_rule,pp_rule));
