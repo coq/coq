@@ -8,3 +8,5 @@ coq_makefile
 gallina
 coq-tex
 coq-extraction
+coq-interface
+parser
