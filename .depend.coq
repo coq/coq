@@ -3,7 +3,7 @@ theories/Reals/Rdefinitions.vo: theories/Reals/Rdefinitions.v theories/ZArith/ZA
 theories/Reals/Rsyntax.vo: theories/Reals/Rsyntax.v theories/Reals/Rdefinitions.vo
 theories/Reals/Raxioms.vo: theories/Reals/Raxioms.v theories/ZArith/ZArith_base.vo theories/Reals/Rsyntax.vo theories/Reals/TypeSyntax.vo
 theories/Reals/RIneq.vo: theories/Reals/RIneq.v theories/Reals/Raxioms.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo contrib/field/Field.vo
-theories/Reals/DiscrR.vo: theories/Reals/DiscrR.v theories/Reals/RIneq.vo
+theories/Reals/DiscrR.vo: theories/Reals/DiscrR.v theories/Reals/RIneq.vo contrib/omega/Omega.vo
 theories/Reals/Rbase.vo: theories/Reals/Rbase.v theories/Reals/Rdefinitions.vo theories/Reals/TypeSyntax.vo theories/Reals/Raxioms.vo theories/Reals/RIneq.vo theories/Reals/DiscrR.vo
 theories/Reals/R_Ifp.vo: theories/Reals/R_Ifp.v theories/Reals/Rbase.vo contrib/omega/Omega.vo
 theories/Reals/Rbasic_fun.vo: theories/Reals/Rbasic_fun.v theories/Reals/Rbase.vo theories/Reals/R_Ifp.vo contrib/fourier/Fourier.vo
@@ -186,7 +186,7 @@ theories/Reals/Rdefinitions.vo: theories/Reals/Rdefinitions.v theories/ZArith/ZA
 theories/Reals/Rsyntax.vo: theories/Reals/Rsyntax.v theories/Reals/Rdefinitions.vo
 theories/Reals/Raxioms.vo: theories/Reals/Raxioms.v theories/ZArith/ZArith_base.vo theories/Reals/Rsyntax.vo theories/Reals/TypeSyntax.vo
 theories/Reals/RIneq.vo: theories/Reals/RIneq.v theories/Reals/Raxioms.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo contrib/field/Field.vo
-theories/Reals/DiscrR.vo: theories/Reals/DiscrR.v theories/Reals/RIneq.vo
+theories/Reals/DiscrR.vo: theories/Reals/DiscrR.v theories/Reals/RIneq.vo contrib/omega/Omega.vo
 theories/Reals/Rbase.vo: theories/Reals/Rbase.v theories/Reals/Rdefinitions.vo theories/Reals/TypeSyntax.vo theories/Reals/Raxioms.vo theories/Reals/RIneq.vo theories/Reals/DiscrR.vo
 theories/Reals/R_Ifp.vo: theories/Reals/R_Ifp.v theories/Reals/Rbase.vo contrib/omega/Omega.vo
 theories/Reals/Rbasic_fun.vo: theories/Reals/Rbasic_fun.v theories/Reals/Rbase.vo theories/Reals/R_Ifp.vo contrib/fourier/Fourier.vo
