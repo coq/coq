@@ -885,6 +885,7 @@ let vernac_print = function
   | PrintHintGoal -> Auto.print_applicable_hint ()
   | PrintHintDbName s -> Auto.print_hint_db_by_name s
   | PrintHintDb -> Auto.print_searchtable ()
+  | PrintSetoids -> Setoid_replace.print_setoids()
   | PrintScopes ->
       pp (Symbols.pr_scopes (Constrextern.without_symbols pr_rawterm))
   | PrintScope s ->

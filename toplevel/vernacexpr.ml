@@ -56,6 +56,7 @@ type printable =
   | PrintHintGoal
   | PrintHintDbName of string
   | PrintHintDb
+  | PrintSetoids
   | PrintScopes
   | PrintScope of string
   | PrintVisibility of string option

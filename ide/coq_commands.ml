@@ -173,6 +173,7 @@ let state_preserving = [
   "Print Module Type";
   "Print Modules";
   "Print Proof";
+  "Print Setoids";
   "Print Scope";
   "Print Scopes.";
   "Print Section";
