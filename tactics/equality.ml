@@ -173,15 +173,16 @@ let find_constructor env sigma c =
     | _ -> error "find_constructor"
 
 type leibniz_eq = {
-  eq   : marked_term;
-  ind  : marked_term;
-  rrec : marked_term option;
-  rect : marked_term option;
-  congr: marked_term;
-  sym  : marked_term }
+  eq   : marked_pattern;
+  ind  : marked_pattern;
+  rrec : marked_pattern option;
+  rect : marked_pattern option;
+  congr: marked_pattern;
+  sym  : marked_pattern }
 
 let mmk = make_module_marker [ "Prelude"; "Logic_Type"; "Specif"; "Logic" ]
 
+(* Patterns *)
 let eq_pattern = put_pat mmk "(eq ? ? ?)"
 let not_pattern = put_pat mmk "(not ?)"
 let imp_False_pattern = put_pat mmk "? -> False"
@@ -1119,12 +1120,12 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
 
  *)
 
+(* squeletons *)
+let comp_carS_squeleton = put_pat mmk "<<x>>(projS1 ? ? (?)@[x])"
+let comp_cdrS_squeleton = put_pat mmk "<<x>>(projS2 ? ? (?)@[x])"
 
-let comp_carS_pattern = put_pat mmk "<<x>>(projS1 ? ? (?)@[x])"
-let comp_cdrS_pattern = put_pat mmk "<<x>>(projS2 ? ? (?)@[x])"
-
-let comp_carT_pattern = put_pat mmk "<<x>>(projT1 ? ? (?)@[x])"
-let comp_cdrT_pattern = put_pat mmk "<<x>>(projT2 ? ? (?)@[x])"
+let comp_carT_squeleton = put_pat mmk "<<x>>(projT1 ? ? (?)@[x])"
+let comp_cdrT_squeleton = put_pat mmk "<<x>>(projT2 ? ? (?)@[x])"
 
 let dest_somatch_sigma ex ex_pat =
   match dest_somatch ex ex_pat with
@@ -1133,11 +1134,11 @@ let dest_somatch_sigma ex ex_pat =
 
 let find_sigma_data_decompose ex =
   try 
-    (comp_carS_pattern, comp_cdrS_pattern,
+    (comp_carS_squeleton, comp_cdrS_squeleton,
      dest_somatch_sigma ex existS_pattern)
   with _ -> 
     (try 
-       (comp_carT_pattern,comp_cdrT_pattern,
+       (comp_carT_squeleton,comp_cdrT_squeleton,
         dest_somatch_sigma ex existT_pattern)   
      with _ -> 
        errorlabstrm "find_sigma_data_decompose" [< >])
@@ -1145,10 +1146,10 @@ let find_sigma_data_decompose ex =
 let decomp_tuple_term env = 
   let rec decomprec to_here_fun ex =
     try
-      let (comp_car_pattern,comp_cdr_pattern,(a,p,car,cdr)) =
+      let (comp_car_squeleton,comp_cdr_squeleton,(a,p,car,cdr)) =
 	find_sigma_data_decompose  ex in
-      let car_code = soinstance comp_car_pattern [a;p;to_here_fun]
-      and cdr_code = soinstance comp_cdr_pattern [a;p;to_here_fun] in
+      let car_code = soinstance comp_car_squeleton [a;p;to_here_fun]
+      and cdr_code = soinstance comp_cdr_squeleton [a;p;to_here_fun] in
       (car,named_hd env a Anonymous,car_code)::(decomprec cdr_code cdr)
     with e when catchable_exception e ->
       [(ex,named_hd env ex Anonymous,to_here_fun)]

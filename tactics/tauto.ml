@@ -46,6 +46,7 @@ let classically cltac = function
 
 let somatch m pat = somatch None (get_pat pat) m
 let module_mark   = ["Logic"]
+(* patterns *)
 let mmk           = make_module_marker ["Prelude"]
 let false_pattern = put_pat mmk "False"
 let true_pattern = put_pat mmk "True"
@@ -54,9 +55,12 @@ let or_pattern    = put_pat mmk "(or ? ?)"
 let eq_pattern    = put_pat mmk "(eq ? ? ?)"
 let pi_pattern    = put_pat mmk "(x : ?)((?)@[x])"
 let imply_pattern = put_pat mmk "?1 -> ?2"
+let atomic_imply_bot_pattern = put_pat mmk "?1 -> ?2"
 let iff_pattern   = put_pat mmk "(iff ? ?)"
 let not_pattern   = put_pat mmk "(not ?1)"
-let mkIMP a b     = soinstance imply_pattern [a;b]    
+(* squeletons *)
+let imply_squeleton = put_pat mmk "?1 -> ?2"
+let mkIMP a b       = soinstance imply_squeleton [a;b]    
 
 let is_atomic m =
  (not (is_conjunction m)     ||
@@ -120,7 +124,6 @@ let dyck_imply_intro = (dImp None)
     --------------
     A->B,A,Gamma |- G  (A Atomique)
  *)
-let atomic_imply_bot_pattern = put_pat mmk "?1 -> ?2"
 
 let atomic_imply_step cls gls =
   let mvb = somatch (clause_type cls gls) atomic_imply_bot_pattern in 

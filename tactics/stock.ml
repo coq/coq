@@ -59,7 +59,7 @@ let mmk_ctr = ref 0
 
 let new_mmk () = (incr mmk_ctr; !mmk_ctr)
 
-let make_module_marker stock sl =
+let make_module_marker sl =
   let sorted_sl = Sort.list (<) sl in 
   try 
     Bij.map !path_mark_bij sorted_sl

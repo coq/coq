@@ -37,17 +37,43 @@ open Proof_trees
    at tactic-application time.  The ONLY difference will be that
    no implicit syntax resolution will happen. *)
 
-(*s First part : introduction of term patterns *)
+(* A pattern is intented to be pattern-matched (using functions
+   [somatch] and co), while a squeleton is a term with holes intented to
+   be substituted by [soinstance] *)
+
+(*s First part : introduction of term patterns and term squeletons *)
+
+(* [make_module_marker modl] makes a key from the list of
+   vernacular modules [modl] where names in a pattern or squeleton has
+   to be searched *)
 
 type module_mark = Stock.module_mark
-type marked_term
-
 val make_module_marker : string list -> module_mark
-val put_pat            : module_mark -> string -> marked_term
-val get_pat            : marked_term -> constr
-val pattern_stock      : constr Stock.stock
 
+(* [put_pat mmk s] declares a pattern [s] to be parsed using the
+   definitions in the modules associated to the key [mmk] *)
+
+type marked_pattern
+val put_pat            : module_mark -> string -> marked_pattern
+(*val get_pat            : marked_pattern -> constr*)
+
+
+(* [pattern_of_constr c] translates a term [c] with metavariables into
+   a pattern; currently, no destructor (Cases, Fix, Cofix) and no
+   existential variable are allowed in [c] *)
+
+val pattern_of_constr : constr -> Rawterm.constr_pattern
+
+(* [put_squel mmk s] declares an open term [s] to be parsed using the
+   definitions in the modules associated to the key [mmk] *)
+
+type marked_term
+val put_squel          : module_mark -> string -> marked_term
+(*val get_squel          : marked_term -> constr*)
+
+(*i Remplacé par Astterm.interp_constrpattern
 val raw_sopattern_of_compattern : Environ.env -> Coqast.t -> constr
+i*)
 
 (*s Second part : Given a term with second-order variables in it,
    represented by Meta's, and possibly applied using \verb!XTRA[$SOAPP]! to
@@ -69,9 +95,12 @@ val raw_sopattern_of_compattern : Environ.env -> Coqast.t -> constr
    contained in the arguments of the application, and in that case, we
    construct a [DLAM] with the names on the stack. *)
 
-val somatch      : int list option -> constr -> constr -> (int * constr) list
-val somatches    : constr -> marked_term -> bool
-val dest_somatch : constr -> marked_term -> constr list
+(*i Devrait être une fonction de filtrage externe i*)
+val somatch      : int list option -> Rawterm.constr_pattern -> constr -> (int * constr) list
+
+val somatches    : constr -> marked_pattern -> bool
+val dest_somatch : constr -> marked_pattern -> constr list
+
 val soinstance   : marked_term -> constr list -> constr 
 
 val is_imp_term : constr -> bool

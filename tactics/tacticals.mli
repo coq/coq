@@ -48,8 +48,13 @@ val tclTHEN_i1     : tactic -> (int -> tactic) -> tactic
 val nth_clause  : int -> goal sigma -> clause
 val clause_type : clause -> goal sigma -> constr
 
+(*
 val matches      : goal sigma -> constr -> marked_term -> bool
 val dest_match   : goal sigma -> constr -> marked_term -> constr list
+*)
+(* The second argument is the pattern *)
+val matches      : goal sigma -> constr -> constr -> bool
+val dest_match   : goal sigma -> constr -> constr -> constr list
 
 val allHyps    : goal sigma -> clause list
 val afterHyp   : identifier -> goal sigma -> clause list
@@ -78,7 +83,7 @@ val ifOnClause     :
    [Pattern.somatches], then replace [?1] [?2] metavars in tacast by the
    right values to build a tactic *)
 
-val conclPattern : constr -> constr -> Coqast.t -> tactic
+val conclPattern : constr -> Rawterm.constr_pattern -> Coqast.t -> tactic
 
 (*s Elimination tacticals. *)
 

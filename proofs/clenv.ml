@@ -538,53 +538,87 @@ let clenv_wtactic wt clenv =
     env = clenv.env;
     hook = wt clenv.hook }
 
+let clenv_type_of ce c =
+  Typing.type_of (w_env ce.hook) (w_Underlying ce.hook) c
+  (***
+  let metamap =
+    List.map 
+      (function
+	 | (n,Clval(_,typ)) -> (n,typ.rebus)
+         | (n,Cltyp typ)    -> (n,typ.rebus))
+      (intmap_to_list ce.env)
+  in
+  (Pretyping.ise_resolve true (w_Underlying ce.hook) metamap
+     (gLOB(w_hyps ce.hook)) c).uj_type
+  ***)
+
+let clenv_instance_type_of ce c =
+  clenv_instance ce (mk_freelisted (clenv_type_of ce c))
+
+(* [clenv_merge b metas evars clenv] merges common instances in metas
+   or in evars, possibly generating new unification problems; if [b]
+   is true, unification of types of metas is required *)
+
+let clenv_merge with_types =
+  let rec clenv_resrec metas evars clenv =
+    match (evars,metas) with
+      | ([],[]) -> clenv
+
+      | ((lhs,(DOP0(Meta k) as rhs))::t,metas) ->
+    	  clenv_resrec ((k,lhs)::metas) t clenv
+
+      | ((DOPN(Evar evn,_) as evar,rhs)::t,metas) ->
+    	  if w_defined_const clenv.hook evar then
+            let (metas',evars') = unify_0 [] clenv.hook rhs evar in
+            clenv_resrec (metas'@metas) (evars'@t) clenv
+    	  else
+            (try 
+	       clenv_resrec metas t (clenv_wtactic (w_Define evn rhs) clenv)
+             with ex when catchable_exception ex ->
+               (match rhs with
+		  | DOPN(AppL,cl) ->
+		      (match cl.(0) with
+			 | (DOPN(Const _,_) | DOPN(MutConstruct _,_)) ->
+			     clenv_resrec metas evars 
+			       (clenv_wtactic (mimick_evar cl.(0) 
+						 ((Array.length cl) - 1) evn) 
+				  clenv)
+			 | _ -> error "w_Unify")
+           	  | _ -> error "w_Unify"))
+      | ([],(mv,n)::t) ->
+    	  if clenv_defined clenv mv then
+            let (metas',evars') =
+              unify_0 [] clenv.hook (clenv_value clenv mv).rebus n in
+            clenv_resrec (metas'@t) evars' clenv
+    	  else
+	    let mc,ec =
+	      if with_types then
+		let nty = clenv_type_of clenv 
+			    (clenv_instance clenv (mk_freelisted n)) in
+		unify_0 [] clenv.hook (clenv_instance_type clenv mv) nty
+	      else ([],[]) in
+	    clenv_resrec (mc@t) ec (clenv_assign mv n clenv)
+
+      | _ -> anomaly "clenv_resrec"
+
+  in clenv_resrec
 
 (* [clenv_unify M N clenv]
- * performs a unification of M and N, generating a bunch of
- * unification constraints in the process.  These constraints
- * are processed, one-by-one - they may either generate new
- * bindings, or, if there is already a binding, new unifications,
- * which themselves generate new constraints.  This continues
- * until we get failure, or we run out of constraints. *)
+   performs a unification of M and N, generating a bunch of
+   unification constraints in the process.  These constraints
+   are processed, one-by-one - they may either generate new
+   bindings, or, if there is already a binding, new unifications,
+   which themselves generate new constraints.  This continues
+   until we get failure, or we run out of constraints.
+   [clenv_typed_unify M N clenv] expects in addition that expected
+   types of metavars are unifiable with the types of their instances    *)
 
-let rec clenv_unify m n clenv =
+let clenv_unify_core with_types m n clenv =
   let (mc,ec) = unify_0 [] clenv.hook m n in 
-  clenv_resrec mc ec clenv
+  clenv_merge with_types mc ec clenv
     
-and clenv_resrec metas evars clenv =
-  match (evars,metas) with
-    | ([],[]) -> clenv
-	  
-    | ((lhs,(DOP0(Meta k) as rhs))::t,metas) ->
-    	clenv_resrec ((k,lhs)::metas) t clenv
-	  
-    | ((DOPN(Evar evn,_) as evar,rhs)::t,metas) ->
-    	if w_defined_const clenv.hook evar then
-          let (metas',evars') = unify_0 [] clenv.hook rhs evar in
-          clenv_resrec (metas'@metas) (evars'@t) clenv
-    	else
-          (try 
-	     clenv_resrec metas t (clenv_wtactic (w_Define evn rhs) clenv)
-           with ex when catchable_exception ex ->
-             (match rhs with
-		| DOPN(AppL,cl) ->
-		    (match cl.(0) with
-		       | (DOPN(Const _,_) | DOPN(MutConstruct _,_)) ->
-			   clenv_resrec metas evars 
-			     (clenv_wtactic (mimick_evar cl.(0) 
-					       ((Array.length cl) - 1) evn) 
-				clenv)
-		       | _ -> error "w_Unify")
-           	| _ -> error "w_Unify"))
-    | ([],(mv,n)::t) ->
-    	if clenv_defined clenv mv then
-          let (metas',evars') =
-            unify_0 [] clenv.hook (clenv_value clenv mv).rebus n in
-          clenv_resrec (metas'@t) evars' clenv
-    	else 
-	  clenv_resrec t [] (clenv_assign mv n clenv)
-    | _ -> anomaly "clenv_resrec"
-	  
+let clenv_unify = clenv_unify_core false
+let clenv_typed_unify = clenv_unify_core true
 
 (* [clenv_bchain mv clenv' clenv]
  *
@@ -884,76 +918,6 @@ let clenv_add_sign (id,sign) clenv =
     namenv = clenv.namenv;
     env = clenv.env;
     hook = w_add_sign (id,sign) clenv.hook}
-
-let clenv_type_of ce c =
-  Typing.type_of (w_env ce.hook) (w_Underlying ce.hook) c
-  (***
-  let metamap =
-    List.map 
-      (function
-	 | (n,Clval(_,typ)) -> (n,typ.rebus)
-         | (n,Cltyp typ)    -> (n,typ.rebus))
-      (intmap_to_list ce.env)
-  in
-  (Pretyping.ise_resolve true (w_Underlying ce.hook) metamap
-     (gLOB(w_hyps ce.hook)) c).uj_type
-  ***)
-
-let clenv_instance_type_of ce c =
-  clenv_instance ce (mk_freelisted (clenv_type_of ce c))
-
-(* [clenv_typed_unify gls M N clenv]
- * peforms a unification of M and N, generating a bunch of
- * unification constraints in the process.  These constraints
- * are processed, one-by-one - they may either generate new
- * bindings, or, if there is already a binding, new unifications,
- * which themselves generate new constraints.  This continues
- * until we get failure, or we run out of constraints. *)
-
-let rec clenv_typed_unify m n clenv =
-  let (mc,ec) = unify_0 [] clenv.hook m n in 
-  clenv_resrec mc ec clenv
-
-and clenv_resrec metas evars clenv =
-  match (evars,metas) with
-    | ([],[]) -> clenv
-	  
-    | ((lhs,(DOP0(Meta k) as rhs))::t,metas) ->
-    	clenv_resrec ((k,lhs)::metas) t clenv
-
-    | ((DOPN(Evar evn,_) as evar,rhs)::t,metas) ->
-    	if w_defined_const clenv.hook evar then
-          let (metas',evars') = unify_0 [] clenv.hook rhs evar in
-          clenv_resrec (metas'@metas) (evars'@t) clenv
-    	else
-          (try 
-	     clenv_resrec metas t (clenv_wtactic (w_Define evn rhs) clenv)
-           with ex when catchable_exception ex ->
-             (match rhs with
-		| DOPN(AppL,cl) ->
-		    (match cl.(0) with
-		       | (DOPN(Const _,_) |  DOPN(MutConstruct _,_)) ->
-			   clenv_resrec metas evars 
-			     (clenv_wtactic (mimick_evar cl.(0) 
-					       ((Array.length cl) - 1) evn) 
-				clenv)
-		       | _ -> error "w_Unify")
-           	| _ -> error "w_Unify"))
-	  
-    | ([],(mv,n)::t) ->
-    	if clenv_defined clenv mv then
-          let (metas',evars') =
-            unify_0 [] clenv.hook (clenv_value clenv mv).rebus n in
-          clenv_resrec (metas'@t) evars' clenv
-    	else 
-	  let nty = clenv_type_of clenv 
-		      (clenv_instance clenv (mk_freelisted n)) in
-	  let (mc,ec) =
-	    unify_0 [] clenv.hook (clenv_instance_type clenv mv) nty in
-	  clenv_resrec (mc@t) ec (clenv_assign mv n clenv)
-
-    | _ -> anomaly "clenv_resrec"
-
 
 (* The unique unification algorithm works like this: If the pattern is
    flexible, and the goal has a lambda-abstraction at the head, then

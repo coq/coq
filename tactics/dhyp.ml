@@ -8,7 +8,7 @@
    The idea here is that we are going to store patterns.  These
    patterns look like:
 
-   TYP=<patern>
+   TYP=<pattern>
    SORT=<pattern>
 
    and from these patterns, we will be able to decide which tactic to
@@ -111,6 +111,7 @@ open Generic
 open Term
 open Environ
 open Reduction
+open Rawterm
 open Proof_trees
 open Tacmach
 open Tactics
@@ -127,8 +128,8 @@ open Pcoq
 
 (* two patterns - one for the type, and one for the type of the type *)
 type destructor_pattern = {
-  d_typ: constr; 
-  d_sort: constr }
+  d_typ: Rawterm.constr_pattern; 
+  d_sort: Rawterm.constr_pattern }
     
 type ('a,'b) location = Hyp of 'a | Concl of 'b
 
@@ -215,16 +216,17 @@ let _ =
 	     | _ -> assert false
 	   in
 	   fun () ->
-	     let pat = raw_sopattern_of_compattern (Global.env()) patcom in
+	     let (_,pat) = Astterm.interp_constrpattern
+			Evd.empty (Global.env()) patcom in
 	     let code = Ast.to_act_check_vars ["$0",ETast] ETast tacexp in
 	     add_destructor_hint na
                (match loc with
 		  | Hyp b ->
-		      Hyp(b,{d_typ=pat;d_sort=DOP0(Meta(new_meta()))},
-			  { d_typ=DOP0(Meta(new_meta()));
-		       	    d_sort=DOP0(Meta(new_meta())) })
+		      Hyp(b,{d_typ=pat;d_sort=PMeta(new_meta())},
+			  { d_typ=PMeta(new_meta());
+		       	    d_sort=PMeta(new_meta()) })
 		  | Concl () ->
-		      Concl({d_typ=pat;d_sort=DOP0(Meta(new_meta()))}))
+		      Concl({d_typ=pat;d_sort=PMeta(new_meta())}))
                pri code
        | _ -> bad_vernac_args "HintDestruct")
 

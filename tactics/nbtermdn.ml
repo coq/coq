@@ -20,11 +20,12 @@ open Library
    Eduardo (5/8/97) *)
 
 type ('na,'a) t = {
-  mutable table : ('na,constr * 'a) Gmap.t;
-  mutable patterns : (Termdn.lbl option,'a Btermdn.t) Gmap.t }
+  mutable table : ('na,Rawterm.constr_pattern * 'a) Gmap.t;
+  mutable patterns : (Rawterm.constr_label option,'a Btermdn.t) Gmap.t }
 
 type ('na,'a) frozen_t = 
-    ('na,constr * 'a) Gmap.t * (Termdn.lbl option,'a Btermdn.t) Gmap.t
+    ('na,Rawterm.constr_pattern * 'a) Gmap.t
+    * (Rawterm.constr_label option,'a Btermdn.t) Gmap.t
 
 let create () =
   { table = Gmap.empty;

@@ -14,6 +14,7 @@ open Typing
 open Tacmach
 open Proof_trees
 open Pfedit
+open Rawterm
 open Tacred
 open Tactics
 open Tacticals
@@ -39,7 +40,7 @@ type auto_tactic =
 type pri_auto_tactic = { 
   hname : identifier;    (* name of the hint *)
   pri  : int;            (* A number between 0 and 4, 4 = lower priority *)
-  pat  : constr option;  (* A pattern for the concl of the Goal *)
+  pat  : constr_pattern option; (* A pattern for the concl of the Goal *)
   code : auto_tactic     (* the tactic to apply when the concl matches pat *)
 }
 
@@ -88,7 +89,7 @@ let lookup_tacs (hdc,c) (l,l',dn) =
 
 
 module Constr_map = Map.Make(struct 
-			       type t = constr 
+			       type t = constr_label
 			       let compare = Pervasives.compare 
 			     end)
 
@@ -182,20 +183,25 @@ let rec nb_hyp = function
 
 (* adding and removing tactics in the search table *)
 
+let try_head_pattern c = 
+  try head_pattern_bound c
+  with BoundPattern -> error "Bound head variable"
+
 let make_exact_entry name (c,cty) =
   match strip_outer_cast cty with
     | DOP2(Prod,_,_) -> 
 	failwith "make_exact_entry"
-    | cty -> 
-	(List.hd (head_constr cty),
-	 { hname=name; pri=0; pat=None; code=Give_exact c })
+    | cty ->
+	(head_of_constr_reference (List.hd (head_constr cty)),
+	   { hname=name; pri=0; pat=None; code=Give_exact c })
 
 let make_apply_entry (eapply,verbose) name (c,cty) =
   match hnf_constr (Global.env()) Evd.empty cty with
     | DOP2(Prod,_,_) as cty ->
-        let hdconstr = (try  List.hd (head_constr_bound cty [])  
-                        with Bound -> failwith "make_apply_entry") in
-        let ce = mk_clenv_from () (c,cty) in 
+        let ce = mk_clenv_from () (c,cty) in
+	let pat = Pattern.pattern_of_constr (clenv_template_type ce).rebus in
+        let hd = (try head_pattern_bound pat
+                  with BoundPattern -> failwith "make_apply_entry") in
         let nmiss = 
 	  List.length 
             (clenv_missing ce (clenv_template ce,clenv_template_type ce)) 
@@ -204,16 +210,16 @@ let make_apply_entry (eapply,verbose) name (c,cty) =
           if verbose then 
 	    wARN [< 'sTR "the hint: EApply "; prterm c;
 		    'sTR " will only be used by EAuto" >]; 
-          (hdconstr,
+          (hd,
            { hname = name;
 	     pri = nb_hyp cty + nmiss;
-             pat = Some (clenv_template_type ce).rebus;
+             pat = Some pat;
              code = ERes_pf(c,ce) })
         end else 
-	  (hdconstr,
+	  (hd,
            { hname = name;
 	     pri = nb_hyp cty;
-             pat = Some (clenv_template_type ce).rebus;
+             pat = Some pat;
              code = Res_pf(c,ce) })
     | _ -> failwith "make_apply_entry"
  
@@ -263,7 +269,7 @@ let make_unfold (hintname, id) =
      with Not_found -> 
        errorlabstrm  "make_unfold" [<print_id id; 'sTR " not declared" >])
   in 
-  (hdconstr, 
+  (head_of_constr_reference hdconstr, 
    { hname = hintname;
      pri = 4;
      pat = None;
@@ -276,18 +282,17 @@ let add_unfolds l dbnames =
     dbnames
 
 let make_extern name pri pat tacast = 
-  let hdconstr = List.hd (head_constr pat) in 
+  let hdconstr = try_head_pattern pat in 
   (hdconstr,
    { hname = name;
      pri=pri;
      pat = Some pat;
      code= Extern tacast })
 
-let add_extern name pri pat tacast dbname =
+let add_extern name pri (patmetas,pat) tacast dbname =
   (* We check that all metas that appear in tacast have at least
      one occurence in the left pattern pat *)
   let tacmetas = Coqast.collect_metas tacast in 
-  let patmetas = Clenv.collect_metas pat in
   match (list_subtract tacmetas patmetas) with
     | i::_ ->
 	errorlabstrm "add_extern" 
@@ -302,11 +307,11 @@ let add_externs name pri pat tacast dbnames =
 let make_trivial (name,c) =
   let sigma = Evd.empty and env = Global.env() in
   let t = type_of env sigma c in
-  let hdconstr = List.hd (head_constr t) in
+  let hd = head_of_constr_reference (List.hd (head_constr t)) in
   let ce = mk_clenv_from () (c,hnf_constr env sigma t) in
-  (hdconstr, { hname = name;
+  (hd, { hname = name;
 	       pri=1;
-               pat = Some(clenv_template_type ce).rebus;
+               pat = Some (Pattern.pattern_of_constr (clenv_template_type ce).rebus);
                code=Res_pf_THEN_trivial_fail(c,ce) })
 
 let add_trivials l dbnames =
@@ -378,8 +383,8 @@ let _ =
     (function 
        | [VARG_IDENTIFIER hintname; VARG_VARGLIST l;
 	  VARG_NUMBER pri; VARG_CONSTR patcom; VARG_TACTIC tacexp] ->
-           let pat = Pattern.raw_sopattern_of_compattern 
-		       (Global.env()) patcom in
+           let pat =
+	     Astterm.interp_constrpattern Evd.empty (Global.env()) patcom in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
 		      	 | _ -> bad_vernac_args "HintConstructors") l in
@@ -464,10 +469,10 @@ let fmt_hint_list_for_head c =
       dbs 
   in
   if valid_dbs = [] then 
-    [<'sTR "No hint declared for :"; prterm c >]
+    [<'sTR "No hint declared for :"; pr_ref_label c >]
   else 
     hOV 0 
-      [< 'sTR"For "; prterm c; 'sTR" -> ";
+      [< 'sTR"For "; pr_ref_label c; 'sTR" -> ";
 	 prlist (fun (name,db,hintlist) ->
 	 	   [< 'sTR "  In the database "; 'sTR name; 'sTR " :"; 'fNL;
 		      fmt_hint_list hintlist >])
@@ -475,7 +480,8 @@ let fmt_hint_list_for_head c =
 
 let fmt_hint_id id = 
   try 
-    let c = Declare.global_reference CCI id in fmt_hint_list_for_head c
+    let c = Declare.global_reference CCI id in
+    fmt_hint_list_for_head (head_of_constr_reference c)
   with Not_found -> 
     [< print_id id; 'sTR " not declared" >]
 
@@ -488,16 +494,17 @@ let fmt_hint_term cl =
       | hdc::args -> (hdc,args)
       | [] -> assert false 
     in
+    let hd = head_of_constr_reference hdc in
     let dbs = stringmap_to_list !searchtable in
     let valid_dbs = 
       if occur_existential cl then 
 	map_succeed 
-	  (fun (name, db) -> (name, db, Hint_db.map_all hdc db)) 
+	  (fun (name, db) -> (name, db, Hint_db.map_all hd db)) 
 	  dbs
       else 
 	map_succeed 
 	  (fun (name, db) -> 
-	     (name, db, Hint_db.map_auto (hdc,applist(hdc,args)) db)) 
+	     (name, db, Hint_db.map_auto (hd,applist(hdc,args)) db)) 
 	  dbs
     in 
     if valid_dbs = [] then 
@@ -525,7 +532,7 @@ let print_hint_db db =
   Hint_db.iter 
     (fun head hintlist ->
        mSG (hOV 0 
-	      [< 'sTR "For "; prterm head; 'sTR " -> "; 
+	      [< 'sTR "For "; pr_ref_label head; 'sTR " -> "; 
 		 fmt_hint_list hintlist; 'fNL >]))
     db
 
@@ -644,8 +651,9 @@ and my_find_search db_list local_db hdc concl =
 
 and trivial_resolve db_list local_db cl = 
   try 
+    let hdconstr = List.hd (head_constr_bound cl []) in
     priority 
-      (my_find_search db_list local_db (List.hd (head_constr_bound cl [])) cl)
+      (my_find_search db_list local_db (head_of_constr_reference hdconstr) cl)
   with Bound | Not_found -> 
     []
 
@@ -685,9 +693,9 @@ let h_trivial = hide_tactic "Trivial" dyn_trivial
 
 let possible_resolve db_list local_db cl =
   try 
+    let hdconstr = List.hd (head_constr_bound cl []) in
     List.map snd 
-      (my_find_search db_list local_db 
-	 (List.hd (head_constr_bound cl [])) cl)
+      (my_find_search db_list local_db (head_of_constr_reference hdconstr) cl)
   with Bound | Not_found -> 
     []
 

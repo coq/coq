@@ -117,7 +117,7 @@ type rhs =
 
 type equation =
     { dependencies : constr lifted list;
-      patterns     : pattern list; 
+      patterns     : cases_pattern list; 
       rhs          : rhs;
       tag          : pattern_source }
 

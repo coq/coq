@@ -18,7 +18,7 @@ type 'a stock_args = {
   proc : string -> 'a }
 
 val make_stock : 'a stock_args -> 'a stock
-val make_module_marker : 'a stock -> string list -> module_mark
+val make_module_marker : string list -> module_mark
 val stock : 'a stock -> module_mark -> string -> 'a stocked
 val retrieve : 'a stock -> 'a stocked -> 'a
 
