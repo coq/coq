@@ -85,7 +85,8 @@ let rec make_compilation_args = function
 
 let compile command args files =
   let args' = command :: args @ (make_compilation_args files) in
-  Unix.execvpe command (Array.of_list args') environment 
+  Unix.handle_unix_error
+    Unix.execvpe command (Array.of_list args') environment 
 
 (* parsing of the command line
  *
