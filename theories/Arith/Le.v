@@ -14,6 +14,13 @@ Open Local Scope nat_scope.
 
 Implicit Variables Type m,n,p:nat.
 
+(** Reflexivity *)
+
+Theorem le_refl : (n:nat)(le n n).
+Proof.
+Exact le_n.
+Qed.
+
 (** Transitivity *)
 
 Theorem le_trans : (n,m,p:nat)(le n m)->(le m p)->(le n p).
@@ -60,7 +67,7 @@ Elim H ; Simpl ; Auto with arith.
 Qed.
 Hints Immediate le_S_n : arith v62.
 
-Lemma le_pred : (n,m:nat)(le n m)->(le (pred n) (pred m)).
+Theorem le_pred : (n,m:nat)(le n m)->(le (pred n) (pred m)).
 Proof.
 NewInduction n as [|n IHn]. Simpl. Auto with arith.
 NewDestruct m as [|m]. Simpl. Intro H. Inversion H.
