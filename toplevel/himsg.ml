@@ -28,7 +28,11 @@ open Printer
 open Ast
 open Rawterm
 
-let guill s = "\""^s^"\""
+let quote s = str "\"" ++ s ++ str "\""
+
+let prterm c = quote (prterm c)
+let prterm_env e c = quote (prterm_env e c)
+let prjudge_env e c = let v,t = prjudge_env e c in (quote v, quote t)
 
 let nth i =
   let many = match i mod 10 with 1 -> "st" | 2 -> "nd" | _ -> "th" in
@@ -73,6 +77,7 @@ let explain_reference_variables c =
   str "refers to variables which are not in the context"
 
 let explain_elim_arity ctx ind aritylst c pj okinds = 
+  let ctx = make_all_name_different ctx in
   let pi = pr_inductive ctx ind in
   let ppar = prlist_with_sep pr_coma (prterm_env ctx) aritylst in
   let pc = prterm_env ctx c in
@@ -105,6 +110,7 @@ let explain_elim_arity ctx ind aritylst c pj okinds =
   msg
 
 let explain_case_not_inductive ctx cj =
+  let ctx = make_all_name_different ctx in
   let pc = prterm_env ctx cj.uj_val in
   let pct = prterm_env ctx cj.uj_type in
     match kind_of_term cj.uj_type with
@@ -116,6 +122,7 @@ let explain_case_not_inductive ctx cj =
 	  str "which is not a (co-)inductive type"
 
 let explain_number_branches ctx cj expn =
+  let ctx = make_all_name_different ctx in
   let pc = prterm_env ctx cj.uj_val in
   let pct = prterm_env ctx cj.uj_type in
   str "Cases on term" ++ brk(1,1) ++ pc ++ spc ()  ++
@@ -123,6 +130,7 @@ let explain_number_branches ctx cj expn =
   str "expects " ++  int expn ++ str " branches"
 
 let explain_ill_formed_branch ctx c i actty expty =
+  let ctx = make_all_name_different ctx in
   let pc = prterm_env ctx c in
   let pa = prterm_env ctx actty in
   let pe = prterm_env ctx expty in
@@ -148,7 +156,7 @@ let explain_actual_type ctx j pt =
   let (pc,pct) = prjudge_env ctx j in
   let pt = prterm_env ctx pt in
   pe ++
-  str "The term" ++ brk(1,1) ++ pc  ++ spc ()  ++
+  str "The term" ++ brk(1,1) ++ pc ++ spc ()  ++
   str "has type"  ++ brk(1,1) ++ pct ++ brk(1,1) ++ 
   str "while it is expected to have type" ++ brk(1,1) ++ pt
 
@@ -288,6 +296,7 @@ let explain_ill_formed_rec_body ctx err names i =
   st
 
 let explain_ill_typed_rec_body ctx i names vdefj vargs =
+  let ctx = make_all_name_different ctx in
   let pvd,pvdt = prjudge_env ctx (vdefj.(i)) in
   let pv = prterm_env ctx vargs.(i) in
   str"The "  ++
@@ -297,21 +306,25 @@ let explain_ill_typed_rec_body ctx i names vdefj vargs =
   str "it should be" ++ spc () ++ pv 
 
 let explain_not_inductive ctx c =
+  let ctx = make_all_name_different ctx in
   let pc = prterm_env ctx c in
   str"The term" ++ brk(1,1) ++ pc ++ spc () ++
   str "is not an inductive definition"
 
 let explain_cant_find_case_type ctx c =
+  let ctx = make_all_name_different ctx in
   let pe = prterm_env ctx c in
   hov 3 (str "Cannot infer type of pattern-matching on" ++ ws 1 ++ pe)
 
 let explain_occur_check ctx ev rhs =
+  let ctx = make_all_name_different ctx in
   let id = Evd.string_of_existential ev in
   let pt = prterm_env ctx rhs in
   str"Occur check failed: tried to define " ++ str id ++
   str" with term" ++ brk(1,1) ++ pt
 
 let explain_not_clean ctx ev t =
+  let ctx = make_all_name_different ctx in
   let c = mkRel (Intset.choose (free_rels t)) in
   let id = Evd.string_of_existential ev in
   let var = prterm_env ctx c in
@@ -350,6 +363,7 @@ let explain_var_not_found ctx id =
   spc ()  ++ str "in the current" ++ spc ()  ++ str "environment"
 
 let explain_wrong_case_info ctx ind ci =
+  let ctx = make_all_name_different ctx in
   let pi = prterm (mkInd ind) in
   if ci.ci_ind = ind then
     str"Cases expression on an object of inductive" ++ spc () ++ pi ++
@@ -459,7 +473,7 @@ let explain_intro_needs_product () =
   str "Introduction tactics needs products"
 
 let explain_does_not_occur_in c hyp =
-  str "The term" ++ spc () ++ prterm c ++ spc () ++ str "does not occur in" ++
+  str "The term" ++ spc () ++ prterm c ++ spc () ++ str "does not occur in" ++ 
   spc () ++ pr_id hyp
 
 let explain_non_linear_proof c =
@@ -573,6 +587,7 @@ let explain_inductive_error = function
 (* Pattern-matching errors *)
 
 let explain_bad_pattern ctx cstr ty = 
+  let ctx = make_all_name_different ctx in
   let pt = prterm_env ctx ty in
   let pc = pr_constructor ctx cstr in
   str "Found the constructor " ++ pc ++ brk(1,1) ++ 
@@ -594,6 +609,7 @@ let explain_wrong_numarg_of_constructor ctx cstr n =
    else (int n  ++ str " arguments."))
 
 let explain_wrong_predicate_arity ctx pred nondep_arity dep_arity=
+  let ctx = make_all_name_different ctx in
   let pp = prterm_env ctx pred in
   str "The elimination predicate " ++ spc () ++ pp ++ fnl () ++
   str "should be of arity"  ++ spc () ++
@@ -602,6 +618,7 @@ let explain_wrong_predicate_arity ctx pred nondep_arity dep_arity=
   spc () ++ prterm_env ctx dep_arity  ++ spc () ++ str "(for dependent case)."
 
 let explain_needs_inversion ctx x t =
+  let ctx = make_all_name_different ctx in
   let px = prterm_env ctx x in
   let pt = prterm_env ctx t in
   str "Sorry, I need inversion to compile pattern matching of term " ++
@@ -620,10 +637,11 @@ let explain_non_exhaustive env pats =
   str ("Non exhaustive pattern-matching: no clause found for pattern"^s) ++
   spc () ++ hov 0 (prlist_with_sep pr_spc pr_cases_pattern pats)
 
-let explain_cannot_infer_predicate env typs =
+let explain_cannot_infer_predicate ctx typs =
+  let ctx = make_all_name_different ctx in
   let pr_branch (cstr,typ) =
     let cstr,_ = decompose_app cstr in
-    str "For " ++ prterm_env env cstr ++ str " : " ++ prterm_env env typ
+    str "For " ++ prterm_env ctx cstr ++ str " : " ++ prterm_env ctx typ
   in
   str "Unable to unify the types found in the branches:" ++
   spc () ++ hov 0 (prlist_with_sep pr_fnl pr_branch (Array.to_list typs))
