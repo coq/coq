@@ -634,31 +634,27 @@ let find_sigma_data s =
     | Type _    -> build_sigma_type ()                   (* Type *)
     | Prop Null -> error "find_sigma_data"
 
-(* [make_tuple env sigma (lift,rterm,rty) lind] assumes [lind-lift] is
-   bound in [rty] but no lesser index is bound in [rty]
+(* [make_tuple env sigma (rterm,rty) lind] assumes [lind] is the lesser
+   index bound in [rty]
 
-   Then we will build the term
+   Then we build the term
 
-     (existS A==[type_of(mkRel lind)] P==(Lambda(na:type_of(mkRel lind),
-                                        [rty{1/lind}]))
-              [(mkRel lind)] [rterm])
+     [(existS A P (mkRel lind) rterm)] of type [(sigS A P)]
 
-   which should have type (sigS A P) - we can verify it by
-   typechecking at the end.
+   where [A] is the type of [mkRel lind] and [P] is [\na:A.rty{1/lind}]
  *)
 
-let make_tuple env sigma (prev_lind,rterm,rty) lind =
+let make_tuple env sigma (rterm,rty) lind =
   assert (dependent (mkRel lind) rty);
   let {intro = exist_term; typ = sig_term} =
     find_sigma_data (get_sort_of env sigma rty) in
   let a = type_of env sigma (mkRel lind) in
   let (na,_,_) = lookup_rel lind env in
-  (* If [lind] is not [prev_lind+1] then we lift down rty *)
-  let rty = lift (- lind + prev_lind + 1) rty in
+  (* We move [lind] to [1] and lift other rels > [lind] by 1 *)
+  let rty = lift (1-lind) (liftn lind (lind+1) rty) in
   (* Now [lind] is [mkRel 1] and we abstract on (na:a) *)
   let p = mkLambda (na, a, rty) in
-  (lind,
-   applist(exist_term,[a;p;(mkRel lind);rterm]),
+  (applist(exist_term,[a;p;(mkRel lind);rterm]),
    applist(sig_term,[a;p]))
 
 (* check that the free-references of the type of [c] are contained in
@@ -762,9 +758,9 @@ let sig_clausale_forme env sigma sort_of_ty siglen ty (dFLT,dFLTty) =
 let make_iterated_tuple env sigma (dFLT,dFLTty) (c,cty) =
   let (cty,rels) = minimal_free_rels env sigma (c,cty) in
   let sort_of_cty = get_sort_of env sigma cty in
-  let sorted_rels = Sort.list (>=) (Intset.elements rels) in
-  let (_,tuple,tuplety) =
-    List.fold_left (make_tuple env sigma) (0,c,cty) sorted_rels 
+  let sorted_rels = Sort.list (<) (Intset.elements rels) in
+  let (tuple,tuplety) =
+    List.fold_left (make_tuple env sigma) (c,cty) sorted_rels 
   in
   assert (closed0 tuplety);
   let dfltval = 
