@@ -330,6 +330,10 @@ We have the failing tactic:\\
 It always fails and leaves the goal unchanged. It does not appear in the proof
 script and can be catched by {\sf Try}.
 
+{\sf Error message:}\\
+
+{\tt Fail tactic always fails (level $n$)}.
+
 \subsubsection{Pattern matching on proof contexts}
 
 We can make pattern matching on proof contexts using the following
@@ -559,11 +563,11 @@ table~\ref{permutlem}.
 \label{permutlem}
 \end{table}
 
-\subsection{Deciding intuitionnistic propositional logic}
+\subsection{Deciding intuitionistic propositional logic}
 
 The pattern matching on proof contexts allows a complete and so a powerful
 backtracking when returning tactic values. An interesting application is the
-problem of deciding intuitionnistic propositional logic. Considering the
+problem of deciding intuitionistic propositional logic. Considering the
 contraction-free sequent calculi {\sf LJT*} of Roy~Dyckhoff (\cite{Dyc92}), it
 is quite natural to code such a tactic using the tactic language as shown in
 table~\ref{tautoltac}. The tactic {\sf Axioms} tries to conclude using usual
@@ -618,7 +622,7 @@ for the left implication to get rid of the contraction and the right or).
 \>\>\>\>\>{\sf |[|-?$\bs{}$/?] ->}\\
 \>\>\>\>\>\>\>{\sf (Left;TautoProp) Orelse (Right;TautoProp).}
 \end{tabbing}}}
-\caption{Deciding intuitionnistic propositions}
+\caption{Deciding intuitionistic propositions}
 \label{tautoltac}
 \end{table}
 
