@@ -1,7 +1,5 @@
-Changes from V7.3.1 to ????
+Changes from V7.3.1 to V7.4
 -------------------------
-
-TODO: unification 2eme ordre avec NewDestruct
 
 Grammar extension
 
@@ -39,6 +37,7 @@ Library
 
 Language
 
+- Modules (see doc chap 2.5 for commands and chap 4 for theory)
 - Inductive definitions now accept ">" in constructor types to declare
   the corresponding constructor as a coercion.
 - Idem for assumptions declarations and constants when the type is mentionned.
@@ -65,6 +64,7 @@ ML tactic and vernacular commands
   COMMAND EXTEND.
 - "Check n c" now "n:Check c", "Eval n ..." now "n:Eval ..."
 - "Proof with T" (* no documentation *)
+
 Tactic definitions
 
 - static globalisation of identifiers and global references (source of
