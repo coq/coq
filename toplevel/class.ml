@@ -446,21 +446,27 @@ let count_extra_abstractions hyps ids_to_discard =
 let defined_in_sec sp sec_sp = dirpath sp = sec_sp
 
 (* This moves the global path one step below *)
-let process_global = function
+let process_global sec_sp = function
   | VarRef _ ->
       anomaly "process_global only processes global surviving the section"
-  | ConstRef sp ->
-      let ((_,spid,spk)) = repr_path sp in
-      let newsp = Lib.make_path spid CCI in
-      ConstRef newsp
-  | IndRef (sp,i) -> 
-      let ((_,spid,spk)) = repr_path sp in
-      let newsp = Lib.make_path spid CCI in
-      IndRef (newsp,i)
-  | ConstructRef ((sp,i),j) -> 
-      let ((_,spid,spk)) = repr_path sp in
-      let newsp = Lib.make_path spid CCI in
-      ConstructRef ((newsp,i),j)
+  | ConstRef sp as x ->
+      if defined_in_sec sp sec_sp then
+        let ((_,spid,spk)) = repr_path sp in
+        let newsp = Lib.make_path spid CCI in
+        ConstRef newsp
+      else x
+  | IndRef (sp,i) as x -> 
+      if defined_in_sec sp sec_sp then
+        let ((_,spid,spk)) = repr_path sp in
+        let newsp = Lib.make_path spid CCI in
+        IndRef (newsp,i)
+      else x
+  | ConstructRef ((sp,i),j) as x -> 
+      if defined_in_sec sp sec_sp then
+        let ((_,spid,spk)) = repr_path sp in
+        let newsp = Lib.make_path spid CCI in
+        ConstructRef ((newsp,i),j)
+      else x
 
 let process_class sec_sp ids_to_discard x =
   let (cl,{cl_strength=stre; cl_param=p}) = x in
@@ -517,7 +523,11 @@ let process_cl sec_sp cl =
     | _ -> cl
 
 let process_coercion sec_sp ids_to_discard ((coe,coeinfo),cls,clt) =
-  let hyps = context_of_global_reference coe in let nargs =
-  count_extra_abstractions hyps ids_to_discard in (process_global coe,
-  coercion_strength coeinfo, coercion_identity coeinfo, process_cl
-  sec_sp cls, process_cl sec_sp clt, nargs + coercion_params coeinfo)
+  let hyps = context_of_global_reference coe in
+  let nargs = count_extra_abstractions hyps ids_to_discard in
+  (process_global sec_sp coe,
+   coercion_strength coeinfo,
+   coercion_identity coeinfo,
+   process_cl sec_sp cls,
+   process_cl sec_sp clt,
+   nargs + coercion_params coeinfo)
