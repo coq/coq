@@ -178,7 +178,7 @@ let save_named opacity =
     ({ const_entry_body = Cooked pfterm; const_entry_type = Some concl }, 
      strength);
   del_proof ident;
-  message(ident ^ " is defined")
+  if Options.is_verbose() then message (ident ^ " is defined")
     
 let save_anonymous opacity save_ident n =
   let (pfs,ts) = get_state() 
@@ -197,7 +197,7 @@ let save_anonymous opacity save_ident n =
        strength)
   end;
   del_proof ident;
-  message(save_ident ^ " is defined")
+  if Options.is_verbose() then message (save_ident ^ " is defined")
     
 let save_anonymous_thm opacity id =
   save_anonymous opacity id NeverDischarge

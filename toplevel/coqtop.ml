@@ -159,7 +159,7 @@ let start () =
     Lib.init();
     try
       parse_args ();
-      print_header ();
+      if is_verbose() then print_header ();
       init_load_path ();
       inputstate ();
       load_vernac_obj ();

@@ -76,8 +76,11 @@ let inh_app_fun env isevars j =
 
 let inh_tosort_force env isevars j =
   let t,i1 = class_of1 env !isevars j.uj_type in
-  let p = lookup_path_to_sort_from i1 in
-  apply_pcoercion env p j t 
+  try
+    let p = lookup_path_to_sort_from i1 in
+    apply_pcoercion env p j t 
+  with Not_found -> 
+    j
 
 let inh_tosort env isevars j = 
   let typ = whd_betadeltaiota env !isevars j.uj_type in

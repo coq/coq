@@ -34,15 +34,15 @@ with command8 :=
 
 with command10 :=
   allexplicit [ "ALL" ident($x) ":" command($t) "|" command($p) ]
-                          -> [<<(all $t [$x:$t]$p)>>]
+                          -> [<<(all $t [$x : $t]$p)>>]
 | allimplicit [ "ALL" ident($x) "|" command($p) ]
                           -> [<<(all ? [$x]$p)>>]
 | exexplicit [ "EX" ident($v) ":" command($t) "|" command($c1) ]
-                          -> [<<(ex $t [$v:$t]$c1)>>]
+                          -> [<<(ex $t [$v : $t]$c1)>>]
 | eximplicit [ "EX" ident($v) "|" command($c1) ] 
                           -> [<<(ex ? [$v]$c1)>>]
 | ex2explicit [ "EX" ident($v) ":" command($t) "|" command($c1) "&"
-           command($c2) ] -> [<<(ex2 $t [$v:$t]$c1 [$v:$t]$c2)>>]
+           command($c2) ] -> [<<(ex2 $t [$v : $t]$c1 [$v : t]$c2)>>]
 | ex2implicit [ "EX" ident($v) "|" command($c1) "&" 
            command($c2) ] -> [<<(ex2 ? [$v]$c1 [$v]$c2)>>].
 
@@ -79,14 +79,14 @@ Syntax constr
 
   level 10:
     all_pred [<<(all $_ $p)>>] -> [ [<hov 4> "All " $p:L ] ]
-  | all_imp [<<(all $_ [$x:$T]$t)>>]
+  | all_imp [<<(all $_ [$x : $T]$t)>>]
        -> [ [<hov 3> "ALL " $x ":" $T:L " |" [1 0] $t:L ] ]
 
   | ex_pred [<<(ex $_ $p)>>] -> [ [<hov 0> "Ex " $p:L ] ]
-  | ex [<<(ex $_ [$x:$T]$P)>>] 
+  | ex [<<(ex $_ [$x : $T]$P)>>] 
        -> [ [<hov 2> "EX " $x ":" $T:L " |" [1 0] $P:L ] ]
 
   | ex2_pred [<<(ex2 $_ $p1 $p2)>>]
        -> [ [<hov 3> "Ex2 " $p1:L [1 0] $p2:L ] ]
-  | ex2 [<<(ex2 $_ [$x:$T]$P1 [$x:$T]$P2)>>] 
+  | ex2 [<<(ex2 $_ [$x : T]$P1 [$x : $T]$P2)>>] 
        -> [ [<hov 2> "EX " $x ":" $T:L " |" [1 2] $P1:L [1 0] "& " $P2:L] ].

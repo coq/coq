@@ -213,8 +213,8 @@ let declare_async_option cast uncast
     let _ = get_option key in
     error "Sorry, this option name is already used"
   with Not_found ->
-    if List.mem_assoc (nickname key) !param_table
-    then error "Sorry, this option name is already used";
+    if List.mem_assoc (nickname key) !param_table then 
+      error "Sorry, this option name is already used";
     let cread () = cast (read ()) in
     let cwrite v = write (uncast v) in
     async_value_tab := OptionMap.add key (name,(cread,cwrite)) !async_value_tab

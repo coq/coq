@@ -29,8 +29,8 @@ Definition pred : nat->nat := [n:nat](Cases n of O => O | (S u) => u end).
 Hint eq_pred : v62 := Resolve (f_equal nat nat pred).
 
 Theorem pred_Sn : (m:nat) m=(pred (S m)).
- Proof.
-Auto.
+Proof.
+  Auto.
 Qed.
 
 Theorem eq_add_S : (n,m:nat) (S n)=(S m) -> n=m.
@@ -44,7 +44,7 @@ Hints Immediate eq_add_S : core v62.
 
 Theorem not_eq_S : (n,m:nat) ~(n=m) -> ~((S n)=(S m)).
 Proof.
- Red; Auto.
+  Red; Auto.
 Qed.
 Hints Resolve not_eq_S : core v62.
 
@@ -62,7 +62,7 @@ Hints Resolve O_S : core v62.
 
 Theorem n_Sn : (n:nat) ~(n=(S n)).
 Proof.
- Induction n ; Auto.
+  Induction n ; Auto.
 Qed.
 Hints Resolve n_Sn : core v62.
 
@@ -79,13 +79,13 @@ Hint eq_nat_binary : core := Resolve (f_equal2 nat nat).
 
 Lemma plus_n_O : (n:nat) n=(plus n O).
 Proof.
- Induction n ; Simpl ; Auto.
+  Induction n ; Simpl ; Auto.
 Qed.
 Hints Resolve plus_n_O : core v62.
 
 Lemma plus_n_Sm : (n,m:nat) (S (plus n m))=(plus n (S m)).
 Proof.
- Intros m n; Elim m; Simpl; Auto.
+  Intros m n; Elim m; Simpl; Auto.
 Qed.
 Hints Resolve plus_n_Sm : core v62.
 
@@ -100,15 +100,15 @@ Hint eq_mult : core v62 := Resolve (f_equal2 nat nat nat mult).
 
 Lemma mult_n_O : (n:nat) O=(mult n O).
 Proof.
- Induction n; Simpl; Auto.
+  Induction n; Simpl; Auto.
 Qed.
 Hints Resolve mult_n_O : core v62.
 
 Lemma mult_n_Sm : (n,m:nat) (plus (mult n m) n)=(mult n (S m)).
 Proof.
- Intros; Elim n; Simpl; Auto.
- Intros p H; Case H; Elim plus_n_Sm; Apply (f_equal nat nat S).
- Pattern 1 3 m; Elim m; Simpl; Auto.
+  Intros; Elim n; Simpl; Auto.
+  Intros p H; Case H; Elim plus_n_Sm; Apply (f_equal nat nat S).
+  Pattern 1 3 m; Elim m; Simpl; Auto.
 Qed.
 Hints Resolve mult_n_Sm : core v62.
 
@@ -141,7 +141,7 @@ Hints Unfold gt : core v62.
 
 Theorem nat_case : (n:nat)(P:nat->Prop)(P O)->((m:nat)(P (S m)))->(P n).
 Proof.
- Induction n ; Auto.
+  Induction n ; Auto.
 Qed.
 
 (**********************************************************)
@@ -153,6 +153,6 @@ Theorem nat_double_ind : (R:nat->nat->Prop)
      -> ((n,m:nat)(R n m)->(R (S n) (S m)))
      -> (n,m:nat)(R n m).
 Proof.
- Induction n; Auto.
- Induction m; Auto.
+  Induction n; Auto.
+  Induction m; Auto.
 Qed.

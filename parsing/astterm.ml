@@ -315,6 +315,9 @@ let dbize k sigma =
     | Node(loc,("CONST"|"EVAR"|"MUTIND"|"MUTCONSTRUCT"|"SYNCONST" as key),l) ->
 	dbize_global loc (key,l)
 
+    | Node(loc,"CAST", [c1;c2]) ->	   
+	RCast (loc,dbrec env c1,dbrec env c2)
+
     | Node(loc,opn,tl) -> 
 	anomaly ("dbize found operator "^opn^" with "^
 		 (string_of_int (List.length tl))^" arguments")

@@ -166,7 +166,7 @@ let specification_autohint x = x
 
 let (inAutoHint,outAutoHint) =
   declare_object ("AUTOHINT",
-                  { load_function = (fun _ -> ());
+                  { load_function = cache_autohint;
                     cache_function = cache_autohint;
 		    open_function = (fun _ -> ());
                     specification_function = specification_autohint })
@@ -203,7 +203,7 @@ let make_apply_entry (eapply,verbose) name (c,cty) =
 	if eapply & (nmiss <> 0) then begin
           if verbose then 
 	    wARN [< 'sTR "the hint: EApply "; prterm c;
-		    'sTR " will only used by EAuto" >]; 
+		    'sTR " will only be used by EAuto" >]; 
           (hdconstr,
            { hname = name;
 	     pri = nb_hyp cty + nmiss;
@@ -234,7 +234,7 @@ let make_resolves name eap (c,cty) =
 (* used to add an hypothesis to the local hint database *)
 let make_resolve_hyp hname htyp = 
   try
-    [make_apply_entry (true, false) hname (mkVar hname, htyp)]
+    [make_apply_entry (true, Options.is_verbose()) hname (mkVar hname, htyp)]
   with 
     | Failure _ -> []
     | UserError _ -> anomaly "Papageno programme comme un blaireau"
@@ -249,7 +249,8 @@ let add_resolves clist dbnames =
 		(List.map (fun (name,c) -> 
 			     let env = Global.env() in
 			     let ty = type_of env Evd.empty c in
-			     make_resolves name (true,true) (c,ty)) clist))
+			     let verbose = Options.is_verbose() in
+			     make_resolves name (true,verbose) (c,ty)) clist))
 	    )))
     dbnames
 
@@ -730,7 +731,8 @@ let rec search_gen decomp n db_list local_db add_sign goal =
 	 let (hid,htyp) = hd_sign (pf_untyped_hyps g') in
 	 let hintl = 
 	   try 
-	     [make_apply_entry (true,false) hid (mkVar hid,htyp)]
+	     [make_apply_entry (true,Options.is_verbose()) 
+		hid (mkVar hid,htyp)]
 	   with Failure _ -> [] 
 	 in
          search_gen decomp n db_list
