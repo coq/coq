@@ -452,11 +452,6 @@ contrib/jprover/jall.cmi: contrib/jprover/jlogic.cmi \
     contrib/jprover/jterm.cmi contrib/jprover/opname.cmi 
 contrib/jprover/jlogic.cmi: contrib/jprover/jterm.cmi 
 contrib/jprover/jterm.cmi: contrib/jprover/opname.cmi 
-contrib/linear/dpctypes.cmi: kernel/names.cmi kernel/term.cmi 
-contrib/linear/prove.cmi: contrib/linear/dpctypes.cmi 
-contrib/linear/subst.cmi: contrib/linear/dpctypes.cmi kernel/names.cmi 
-contrib/linear/unif.cmi: contrib/linear/dpctypes.cmi \
-    contrib/linear/general.cmi 
 contrib/xml/doubleTypeInference.cmi: contrib/xml/acic.cmo kernel/environ.cmi \
     pretyping/evd.cmi kernel/term.cmi 
 contrib/xml/xmlcommand.cmi: library/libnames.cmi 
@@ -3135,64 +3130,6 @@ contrib/jprover/jtunify.cmo: contrib/jprover/jtunify.cmi
 contrib/jprover/jtunify.cmx: contrib/jprover/jtunify.cmi 
 contrib/jprover/opname.cmo: contrib/jprover/opname.cmi 
 contrib/jprover/opname.cmx: contrib/jprover/opname.cmi 
-contrib/linear/ccidpc.cmo: proofs/clenv.cmi contrib/linear/dpctypes.cmi \
-    kernel/environ.cmi library/global.cmi toplevel/himsg.cmi \
-    tactics/hipattern.cmi library/libnames.cmi library/nameops.cmi \
-    kernel/names.cmi library/nametab.cmi lib/pp.cmi parsing/printer.cmi \
-    pretyping/rawterm.cmi pretyping/reductionops.cmi kernel/sign.cmi \
-    tactics/tacinterp.cmi proofs/tacmach.cmi tactics/tacticals.cmi \
-    tactics/tactics.cmi kernel/term.cmi pretyping/termops.cmi lib/util.cmi 
-contrib/linear/ccidpc.cmx: proofs/clenv.cmx contrib/linear/dpctypes.cmx \
-    kernel/environ.cmx library/global.cmx toplevel/himsg.cmx \
-    tactics/hipattern.cmx library/libnames.cmx library/nameops.cmx \
-    kernel/names.cmx library/nametab.cmx lib/pp.cmx parsing/printer.cmx \
-    pretyping/rawterm.cmx pretyping/reductionops.cmx kernel/sign.cmx \
-    tactics/tacinterp.cmx proofs/tacmach.cmx tactics/tacticals.cmx \
-    tactics/tactics.cmx kernel/term.cmx pretyping/termops.cmx lib/util.cmx 
-contrib/linear/dpc.cmo: contrib/linear/ccidpc.cmo toplevel/cerrors.cmi \
-    parsing/egrammar.cmi interp/genarg.cmi lib/options.cmi parsing/pcoq.cmi \
-    lib/pp.cmi parsing/pptactic.cmi proofs/proof_trees.cmi \
-    contrib/linear/prove.cmi proofs/refiner.cmi tactics/tacinterp.cmi \
-    proofs/tacmach.cmi tactics/tacticals.cmi tactics/tactics.cmi lib/util.cmi 
-contrib/linear/dpc.cmx: contrib/linear/ccidpc.cmx toplevel/cerrors.cmx \
-    parsing/egrammar.cmx interp/genarg.cmx lib/options.cmx parsing/pcoq.cmx \
-    lib/pp.cmx parsing/pptactic.cmx proofs/proof_trees.cmx \
-    contrib/linear/prove.cmx proofs/refiner.cmx tactics/tacinterp.cmx \
-    proofs/tacmach.cmx tactics/tacticals.cmx tactics/tactics.cmx lib/util.cmx 
-contrib/linear/dpctypes.cmo: kernel/names.cmi kernel/term.cmi \
-    contrib/linear/dpctypes.cmi 
-contrib/linear/dpctypes.cmx: kernel/names.cmx kernel/term.cmx \
-    contrib/linear/dpctypes.cmi 
-contrib/linear/general.cmo: contrib/linear/general.cmi 
-contrib/linear/general.cmx: contrib/linear/general.cmi 
-contrib/linear/graph.cmo: contrib/linear/graph.cmi 
-contrib/linear/graph.cmx: contrib/linear/graph.cmi 
-contrib/linear/kwc.cmo: contrib/linear/dpctypes.cmi \
-    contrib/linear/general.cmi contrib/linear/graph.cmi kernel/names.cmi \
-    contrib/linear/subst.cmi contrib/linear/unif.cmi lib/util.cmi 
-contrib/linear/kwc.cmx: contrib/linear/dpctypes.cmx \
-    contrib/linear/general.cmx contrib/linear/graph.cmx kernel/names.cmx \
-    contrib/linear/subst.cmx contrib/linear/unif.cmx lib/util.cmx 
-contrib/linear/lk_proofs.cmo: contrib/linear/dpctypes.cmi \
-    contrib/linear/general.cmi kernel/names.cmi contrib/linear/subst.cmi \
-    contrib/linear/unif.cmi 
-contrib/linear/lk_proofs.cmx: contrib/linear/dpctypes.cmx \
-    contrib/linear/general.cmx kernel/names.cmx contrib/linear/subst.cmx \
-    contrib/linear/unif.cmx 
-contrib/linear/prove.cmo: contrib/linear/dpctypes.cmi contrib/linear/kwc.cmo \
-    contrib/linear/lk_proofs.cmo contrib/linear/prove.cmi 
-contrib/linear/prove.cmx: contrib/linear/dpctypes.cmx contrib/linear/kwc.cmx \
-    contrib/linear/lk_proofs.cmx contrib/linear/prove.cmi 
-contrib/linear/subst.cmo: contrib/linear/dpctypes.cmi \
-    contrib/linear/general.cmi kernel/names.cmi contrib/linear/subst.cmi 
-contrib/linear/subst.cmx: contrib/linear/dpctypes.cmx \
-    contrib/linear/general.cmx kernel/names.cmx contrib/linear/subst.cmi 
-contrib/linear/unif.cmo: contrib/linear/dpctypes.cmi \
-    contrib/linear/general.cmi library/nameops.cmi contrib/linear/subst.cmi \
-    contrib/linear/unif.cmi 
-contrib/linear/unif.cmx: contrib/linear/dpctypes.cmx \
-    contrib/linear/general.cmx library/nameops.cmx contrib/linear/subst.cmx \
-    contrib/linear/unif.cmi 
 contrib/omega/coq_omega.cmo: parsing/ast.cmi proofs/clenv.cmi \
     kernel/closure.cmi tactics/contradiction.cmi interp/coqlib.cmi \
     kernel/declarations.cmi kernel/environ.cmi tactics/equality.cmi \
@@ -3439,10 +3376,6 @@ contrib/jprover/jprover.cmo: parsing/grammar.cma
 contrib/jprover/jprover.cmx: parsing/grammar.cma
 contrib/cc/cctac.cmo: parsing/grammar.cma
 contrib/cc/cctac.cmx: parsing/grammar.cma
-contrib/linear/ccidpc.cmo: parsing/grammar.cma
-contrib/linear/ccidpc.cmx: parsing/grammar.cma
-contrib/linear/dpc.cmo: parsing/grammar.cma
-contrib/linear/dpc.cmx: parsing/grammar.cma
 contrib/funind/tacinv.cmo: parsing/grammar.cma
 contrib/funind/tacinv.cmx: parsing/grammar.cma
 contrib/first-order/g_ground.cmo: parsing/grammar.cma
