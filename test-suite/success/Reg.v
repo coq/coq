@@ -124,3 +124,13 @@ Reg().
 Left; Apply Rlt_R0_R1.
 Right; Unfold Rminus; Rewrite Rplus_Ropp_r; Reflexivity.
 Qed.
+
+Lemma essai24 : (derivable [x:R]``(sqrt (x*x+2*x+2))+(Rabsolu (x*x+1))``).
+Reg ().
+Replace ``x*x+2*x+2`` with ``(Rsqr (x+1))+1``.
+Apply ge0_plus_gt0_is_gt0; [Apply pos_Rsqr | Apply Rlt_R0_R1].
+Unfold Rsqr; Ring.
+Red; Intro; Cut ``0<x*x+1``.
+Intro; Rewrite H in H0; Elim (Rlt_antirefl ? H0).
+Apply ge0_plus_gt0_is_gt0; [Replace ``x*x`` with (Rsqr x); [Apply pos_Rsqr | Reflexivity] | Apply Rlt_R0_R1].
+Qed.
