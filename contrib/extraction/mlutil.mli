@@ -118,6 +118,11 @@ val case_expunge :
 val term_expunge : 
   bool list -> identifier list * ml_ast -> ml_ast
 
+type do_ref = global_reference -> unit 
+
+val type_iter_references : do_ref -> ml_type -> unit
+val ast_iter_references : do_ref -> do_ref -> do_ref -> ml_ast -> unit
+val decl_iter_references : do_ref -> do_ref -> do_ref -> ml_decl -> unit
 
 
 

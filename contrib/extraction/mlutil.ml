@@ -1183,7 +1183,47 @@ and optimize_Dfix prm (r,t,typ) b l =
 	  else optimize prm l 
     | _ -> raise Impossible
 
+(* Apply some fonctions upon all references in 
+   [ml_type], [ml_ast], [ml_decl]. *)
 
+type do_ref = global_reference -> unit
+
+let type_iter_references do_type t = 
+  let rec iter = function 
+    | Tglob (r,l) -> do_type r; List.iter iter l 
+    | Tarr (a,b) -> iter a; iter b 
+    | _ -> () 
+  in iter t
+
+let ast_iter_references do_term do_cons do_type a = 
+  let rec iter a = 
+    ast_iter iter a;
+    match a with 
+      | MLglob r -> do_term r
+      | MLcons (r,_) -> do_cons r
+      | MLcase (_,v) as a -> Array.iter (fun (r,_,_) -> do_cons r) v
+      | MLcast (_,t) -> type_iter_references do_type t 
+      | _ -> ()
+  in iter a
+
+let decl_iter_references do_term do_cons do_type = 
+  let type_iter = type_iter_references do_type 
+  and ast_iter = ast_iter_references do_term do_cons do_type in 
+  let cons_iter (r,l) = do_cons r; List.iter type_iter l in 
+  let ind_iter (_,r,l) = 
+    do_type r; 
+    (try List.iter do_term (find_proj ((kn_of_r r),0)) 
+     with Not_found -> ()); 
+    List.iter cons_iter l 
+  in 
+  function 
+    | Dind (l,_) -> List.iter ind_iter l 
+    | Dtype (r,_,t) -> do_type r; type_iter t 
+    | Dterm (r,a,t) -> do_term r; ast_iter a; type_iter t
+    | Dfix(rv,c,t) -> 	
+	Array.iter do_term rv; Array.iter ast_iter c; Array.iter type_iter t
+    | DcustomTerm (r,_) -> do_term r
+    | DcustomType (r,_) -> do_type r
 
 
 

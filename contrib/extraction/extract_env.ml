@@ -20,7 +20,7 @@ open Extraction
 open Mlutil
 open Common
 
-
+(*
 
 let mp_of_kn kn = 
   let mp,_,l = repr_kn kn in MPdot (mp,l) 
@@ -64,7 +64,51 @@ type visit = { mutable kn : KNset.t; mutable mp : MPset.t }
 let in_kn kn v = KNset.mem kn v.kn
 let in_mp mp v = MPset.mem mp v.mp
 
-(* let rec extract_msb mp all v = function 
+let rec visit_type m eenv t =
+  let rec visit = function
+    | Tglob (r,l) -> visit_reference m eenv r; List.iter visit l  
+    | Tarr (t1,t2) -> visit t1; visit t2
+    | Tvar _ | Tdummy | Tunknown | Tcustom _ -> ()
+    | Tmeta _ | Tvar' _ -> assert false 
+  in
+  visit t
+    
+and visit_ast m eenv a =
+  let rec visit = function
+    | MLglob r -> visit_reference m eenv r
+    | MLapp (a,l) -> visit a; List.iter visit l
+    | MLlam (_,a) -> visit a
+    | MLletin (_,a,b) -> visit a; visit b
+    | MLcons (r,l) -> visit_reference m eenv r; List.iter visit l
+    | MLcase (a,br) -> 
+	visit a; 
+	Array.iter (fun (r,_,a) -> visit_reference m eenv r; visit a) br
+    | MLfix (_,_,l) -> Array.iter visit l
+    | MLcast (a,t) -> visit a; visit_type m eenv t
+    | MLmagic a -> visit a
+    | MLrel _ | MLdummy | MLexn _ | MLcustom _ -> ()
+  in
+  visit a
+
+and visit_inductive m eenv inds =
+  let visit_constructor (_,tl) = List.iter (visit_type m eenv) tl in
+  let visit_ind (_,_,cl) = List.iter visit_constructor cl in
+  List.iter visit_ind inds
+
+and visit_decl m eenv = function
+  | Dind (inds,_) -> visit_inductive m eenv inds
+  | Dtype (_,_,t) -> visit_type m eenv t
+  | Dterm (_,a,t) -> visit_ast m eenv a; visit_type m eenv t
+  | Dfix (_,c,t) -> 
+      Array.iter (visit_ast m eenv) c;
+      Array.iter (visit_type m eenv) t
+  | _ -> ()
+
+
+let rec get_structure_elem_references = function 
+  | SEind ml_ind -> 
+      
+let rec extract_msb mp all v = function 
   | [] -> [] 
   | (l,seb) -> 
       let ml_msb = extract_msb v in 
@@ -73,7 +117,7 @@ let in_mp mp v = MPset.mem mp v.mp
 	    let kn = std_kn mp l in 
 	    if all || in_kn kn v then 
 	      let ml_se = extraction_constant_body kn cb in 
-	      search_visit ml_se v; 
+	      get_structure_elem_references ml_se v; 
 	      ml_se :: ml_msb
 	    else ml_msb
 	| SEBmind mib ->
@@ -93,9 +137,8 @@ let in_mp mp v = MPset.mem mp v.mp
 	    if all || in_kn kn v then 
 	      SEmodtype (extraction_mtb (MPdot (mp,l)) true v m) :: ml_msb
 	    else msb
-*)
 
-(*
+
 let mono_environment kn_set = 
   let add_mp kn mpset = KNset.union (sub_modpath (modpath kn)) mpset
   let kn_to_visit = ref kn_set 
@@ -106,7 +149,8 @@ let mono_environment kn_set =
 
 
   let top = toplevel_structure_body ()
-*)	      
+
+*)
 
 (*s Auxiliary functions dealing with modules. *)
 
