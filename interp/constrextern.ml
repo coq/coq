@@ -1079,22 +1079,30 @@ let has_curly_brackets ntn =
     String.sub ntn (String.length ntn - 6) 6 = " { _ }" or
     string_string_contains ntn " { _ } ")
 
+let rec wildcards ntn n =
+  if n = String.length ntn then []
+  else let l = spaces ntn (n+1) in if ntn.[n] = '_' then n::l else l
+and spaces ntn n =
+  if n = String.length ntn then []
+  else if ntn.[n] = ' ' then wildcards ntn (n+1) else spaces ntn (n+1)
+
 let expand_curly_brackets make_ntn ntn l =
   let ntn' = ref ntn in
-  let rec expand_ntn =
+  let rec expand_ntn i =
     function
     | [] -> []
-    | a::l as l' ->
+    | a::l ->
         let a' = 
-          try
-            let i = string_index_from !ntn' 0 "{ _ }" in
+          let p = List.nth (wildcards !ntn' 0) i - 2 in
+          if p>=0 & p+5 <= String.length !ntn' & String.sub !ntn' p 5 = "{ _ }"
+          then begin
             ntn' := 
-              String.sub !ntn' 0 i ^ "_" ^ 
-              String.sub !ntn' (i+5) (String.length !ntn' -i-5);
-            make_ntn "{ _ }" [a]
-          with Not_found -> a in
-        a' :: expand_ntn l in
-  let l = expand_ntn l in
+              String.sub !ntn' 0 p ^ "_" ^ 
+              String.sub !ntn' (p+5) (String.length !ntn' -p-5);
+            make_ntn "{ _ }" [a] end
+          else a in
+        a' :: expand_ntn (i+1) l in
+  let l = expand_ntn 0 l in
   (* side effect *)
   make_ntn !ntn' l
 
