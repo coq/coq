@@ -326,7 +326,7 @@ let explain_unsolvable_implicit env = function
   | BinderType (Name id) ->
       str "Cannot infer a type for " ++ Nameops.pr_id id
   | BinderType Anonymous ->
-      str "Cannot infer a type of this anonymous binder"
+      str "Cannot infer a type for this anonymous binder"
   | ImplicitArg (c,n) ->
       str "Cannot infer the " ++ pr_ord n ++
       str " implicit argument of " ++ Nametab.pr_global_env Idset.empty c
