@@ -8,6 +8,7 @@
 
 (*i $Id$ i*)
 
+Require Datatypes.
 Require LogicSyntax.
 Require Specif.
 
