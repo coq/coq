@@ -732,7 +732,7 @@ object(self)
       with e -> prerr_endline ("Don't worry be happy despite: "^Printexc.to_string e)
 	
 
-  val mutable full_goal_done = false
+  val mutable full_goal_done = true
 
   method show_goals_full = 
     if not full_goal_done then
@@ -910,7 +910,16 @@ object(self)
       in
       end_iter#nocopy#set_offset (start#offset + !Find_phrase.length);
       Some (start,end_iter)
-    with _ -> None
+    with
+    | Find_phrase.EOF s -> 
+	(* Phrase is at the end of the buffer*)
+	let si = start#offset in
+	let ei = si + !Find_phrase.length in
+	end_iter#nocopy#set_offset (ei - 1);
+	input_buffer#insert ~iter:end_iter "\n";
+	Some (input_buffer#get_iter (`OFFSET si),
+	      input_buffer#get_iter (`OFFSET ei))
+    | _ -> None
 
   method complete_at_offset (offset:int) = 
     prerr_endline ("Completion at offset : " ^ string_of_int offset);
@@ -2267,6 +2276,8 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 				    match get_current_view () with  
 				    | {view=v;analyzed_view=Some av} -> 
 			      		let w = GWindow.window ~show:true 
+						  ~width:(!current.window_width/2)
+						  ~height:(!current.window_height)
 						  ~title:(match av#filename with
 							  | None -> "*Unamed*"
 							  | Some f -> f) 
@@ -2280,6 +2291,8 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 						   ~packing:sb#add 
 						   ()
 					in
+					nv#misc#modify_font 
+					  !current.text_font; 
 					ignore (w#connect#destroy 
 						  ~callback:
 						  (fun () -> av#remove_detached_view w));
@@ -2593,7 +2606,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 		   old_h := h;
 		   old_w := w;
 		   hb#set_position (w/2);
-		   hb2#set_position (h*4/5);
+		   hb2#set_position (h/2);
 		   !current.window_height <- h;
 		   !current.window_width <- w;
 		 end

@@ -400,7 +400,7 @@ beforedepend:: ide/config_parser.mli ide/config_parser.ml
 beforedepend:: ide/utf8_convert.ml
 
 FULLIDELIB=$(FULLCOQLIB)/ide
-IDEFILES=ide/coq.png ide/.coqide-gtk2rc
+IDEFILES=ide/coq.png ide/.coqide-gtk2rc ide/FAQ
 
 ide: $(COQIDEBYTE) $(COQIDE) states
 clean-ide: 

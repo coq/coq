@@ -12,6 +12,8 @@
   exception Lex_error of string
   let length = ref 0
   let buff = Buffer.create 513
+  exception EOF of string
+
 }
 
 let phrase_sep = '.'
@@ -30,6 +32,12 @@ rule next_phrase = parse
       length := !length + 2; 
       Buffer.add_string buff (Lexing.lexeme lexbuf);
       Buffer.contents buff}
+
+  | phrase_sep eof{
+      length := !length + 2; 
+      Buffer.add_string buff (Lexing.lexeme lexbuf);
+      Buffer.add_char buff '\n';
+      raise (EOF(Buffer.contents buff))}
   | _ 
       { 
 	let c = Lexing.lexeme_char lexbuf 0 in 

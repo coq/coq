@@ -215,7 +215,7 @@ let parse_args is_ide =
        parse rem
 
     | s :: rem -> 
-	if is_ide && Filename.check_suffix s ".v" then begin
+	if is_ide then begin
 	  ide_args := s :: !ide_args;
 	  parse rem
 	end else begin
