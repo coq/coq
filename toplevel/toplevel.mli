@@ -25,7 +25,7 @@ val top_buffer : input_buffer
 val set_prompt : (unit -> string) -> unit
 
 (* Toplevel error explanation, dealing with locations, Drop, Ctrl-D
-  May raise only the following exceptions: Drop and End_of_input,
+  May raise only the following exceptions: [Drop] and [End_of_input],
   meaning we get out of the Coq loop *)
 
 val print_toplevel_error : exn -> std_ppcmds

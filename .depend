@@ -45,6 +45,7 @@ parsing/coqast.cmi: lib/dyn.cmi
 parsing/g_minicoq.cmi: kernel/names.cmi lib/pp.cmi kernel/sign.cmi \
     kernel/term.cmi 
 parsing/pcoq.cmi: parsing/coqast.cmi 
+proofs/pfedit.cmi: lib/pp.cmi 
 proofs/proof_trees.cmi: parsing/coqast.cmi kernel/names.cmi kernel/term.cmi 
 toplevel/errors.cmi: parsing/coqast.cmi lib/pp.cmi 
 toplevel/himsg.cmi: kernel/environ.cmi kernel/names.cmi lib/pp.cmi \
@@ -153,8 +154,12 @@ kernel/typing.cmx: kernel/constant.cmx kernel/environ.cmx kernel/generic.cmx \
     kernel/typing.cmi 
 kernel/univ.cmo: kernel/names.cmi lib/pp.cmi lib/util.cmi kernel/univ.cmi 
 kernel/univ.cmx: kernel/names.cmx lib/pp.cmx lib/util.cmx kernel/univ.cmi 
+lib/bstack.cmo: lib/util.cmi lib/bstack.cmi 
+lib/bstack.cmx: lib/util.cmx lib/bstack.cmi 
 lib/dyn.cmo: lib/util.cmi lib/dyn.cmi 
 lib/dyn.cmx: lib/util.cmx lib/dyn.cmi 
+lib/edit.cmo: lib/bstack.cmi lib/pp.cmi lib/util.cmi lib/edit.cmi 
+lib/edit.cmx: lib/bstack.cmx lib/pp.cmx lib/util.cmx lib/edit.cmi 
 lib/hashcons.cmo: lib/hashcons.cmi 
 lib/hashcons.cmx: lib/hashcons.cmi 
 lib/options.cmo: lib/options.cmi 
@@ -259,12 +264,14 @@ toplevel/toplevel.cmx: parsing/ast.cmx toplevel/errors.cmx toplevel/mltop.cmx \
     lib/options.cmx parsing/pcoq.cmi proofs/pfedit.cmi lib/pp.cmx \
     toplevel/protectedtoplevel.cmx lib/util.cmx toplevel/vernac.cmx \
     toplevel/vernacinterp.cmi toplevel/toplevel.cmi 
-toplevel/vernac.cmo: parsing/ast.cmi library/discharge.cmi \
-    library/library.cmi parsing/pcoq.cmi proofs/pfedit.cmi lib/pp.cmi \
-    lib/system.cmi toplevel/vernacinterp.cmi toplevel/vernac.cmi 
-toplevel/vernac.cmx: parsing/ast.cmx library/discharge.cmi \
-    library/library.cmx parsing/pcoq.cmi proofs/pfedit.cmi lib/pp.cmx \
-    lib/system.cmx toplevel/vernacinterp.cmi toplevel/vernac.cmi 
+toplevel/vernac.cmo: parsing/ast.cmi parsing/coqast.cmi library/lib.cmi \
+    library/library.cmi lib/options.cmi parsing/pcoq.cmi proofs/pfedit.cmi \
+    lib/pp.cmi lib/system.cmi lib/util.cmi toplevel/vernacinterp.cmi \
+    toplevel/vernac.cmi 
+toplevel/vernac.cmx: parsing/ast.cmx parsing/coqast.cmx library/lib.cmx \
+    library/library.cmx lib/options.cmx parsing/pcoq.cmi proofs/pfedit.cmi \
+    lib/pp.cmx lib/system.cmx lib/util.cmx toplevel/vernacinterp.cmi \
+    toplevel/vernac.cmi 
 parsing/g_basevernac.cmo: parsing/ast.cmi parsing/coqast.cmi parsing/pcoq.cmi \
     toplevel/vernac.cmi 
 parsing/g_basevernac.cmx: parsing/ast.cmx parsing/coqast.cmx parsing/pcoq.cmi \

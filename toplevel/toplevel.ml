@@ -40,8 +40,8 @@ let resynch_buffer ibuf =
         ibuf.start <- ibuf.start + ll
     | _ -> ()
 
-(* Read a char in an input channel, displaying a prompt af every
-   begining of line. *)
+(* Read a char in an input channel, displaying a prompt at every
+   beginning of line. *)
 
 let prompt_char ic ibuf count =
   let bol = match ibuf.bols with
@@ -125,8 +125,7 @@ let print_highlight_location ib (bp,ep) =
 let print_location_in_file s fname (bp,ep) =
   let errstrm = [< 'sTR"Error while reading "; 'sTR s; 'sTR" :"; 'fNL;
                    'sTR"File "; 'sTR ("\""^fname^"\"") >] in
-  if (bp,ep) = Ast.dummy_loc
-  then 
+  if (bp,ep) = Ast.dummy_loc then 
     [< errstrm; 'sTR", unknown location."; 'fNL >]
   else
     let ic = open_in fname in
@@ -241,8 +240,8 @@ let rec discard_to_dot () =
 
 
 (* If the error occured while parsing, we read the input until a dot token
- * in encountered.
- *)
+ * in encountered. *)
+
 let process_error = function
   | DuringCommandInterp _ as e -> e
   | e ->
@@ -266,7 +265,8 @@ let do_vernac () =
   begin 
     try 
       raw_do_vernac top_buffer.tokens
-    with e -> mSGNL (print_toplevel_error (process_error e)) 
+    with e -> 
+      mSGNL (print_toplevel_error (process_error e)) 
   end;
   flush_all()
 
