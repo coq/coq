@@ -41,14 +41,11 @@ make clean
 rm -rf %{buildroot}
 make -e COQINSTALLPREFIX=%{buildroot} install-coq
 
+%define __spec_install_post /usr/lib/rpm/brp-compress
+
 %files
 %{_bindir}/*
-%{_libdir}/coq/theories
-%{_libdir}/coq/contrib
-%{_libdir}/coq/states
-%{_libdir}/coq/theories7
-%{_libdir}/coq/contrib7
-%{_libdir}/coq/states7
+%{_libdir}/coq
 %{_mandir}/man1/*
 %{_datadir}/emacs/site-lisp/*
 %{_datadir}/texmf/tex/latex/misc/*

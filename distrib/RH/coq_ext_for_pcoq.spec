@@ -35,8 +35,11 @@ make clean
 rm -rf %{buildroot}
 make -e COQINSTALLPREFIX=%{buildroot} install-pcoq
 
+%define __spec_install_post /usr/lib/rpm/brp-compress
+
 %files
 %{_bindir}/*
+%{_libdir}/coq/contrib/interface
 %{_mandir}/man1/*
 
 %defattr(-,root,root)
