@@ -531,7 +531,7 @@ let transf_pattern env c =
   if Options.do_translate() then
     Constrextern.extern_rawconstr (Termops.vars_of_env env)
       (Constrintern.for_grammar
-	(Constrintern.interp_rawconstr_gen false Evd.empty env [] None ([],[]))
+	(Constrintern.interp_rawconstr_gen false Evd.empty env [] true ([],[]))
 	c)
   else c
 

@@ -25,13 +25,8 @@ type raw_red_flag =
   | FBeta
   | FIota
   | FZeta
-  | FConst of reference or_metanum list
-  | FDeltaBut of reference or_metanum list
-
-type raw_red_expr = (constr_expr, reference or_metanum) red_expr_gen
-
-type glob_red_expr =
-    (rawconstr_and_expr, evaluable_global_reference or_var or_metanum) red_expr_gen
+  | FConst of reference list
+  | FDeltaBut of reference list
 
 let make_red_flag =
   let rec add_flag red = function
@@ -138,10 +133,10 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   | TacDAuto of int option * int option
 
   (* Context management *)
-  | TacClear of identifier or_metanum list
-  | TacClearBody of identifier or_metanum list
-  | TacMove of bool * identifier located * identifier located
-  | TacRename of identifier located * identifier located
+  | TacClear of 'id list
+  | TacClearBody of 'id list
+  | TacMove of bool * 'id * 'id
+  | TacRename of 'id * 'id
 
   (* Constructors *)
   | TacLeft of 'constr bindings
@@ -211,8 +206,8 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg =
 type raw_tactic_expr =
     (constr_expr,
      pattern_expr,
-     reference or_metanum,
-     reference or_metanum,
+     reference,
+     reference,
      reference,
      identifier located or_metaid,
      raw_tactic_expr) gen_tactic_expr
@@ -220,8 +215,8 @@ type raw_tactic_expr =
 type raw_atomic_tactic_expr =
     (constr_expr,                  (* constr *)
      pattern_expr,                 (* pattern *)
-     reference or_metanum,         (* evaluable reference *)
-     reference or_metanum,         (* inductive *)
+     reference,                    (* evaluable reference *)
+     reference,                    (* inductive *)
      reference,                    (* ltac reference *)
      identifier located or_metaid, (* identifier *)
      raw_tactic_expr) gen_atomic_tactic_expr
@@ -229,8 +224,8 @@ type raw_atomic_tactic_expr =
 type raw_tactic_arg =
     (constr_expr,
      pattern_expr,
-     reference or_metanum,
-     reference or_metanum,
+     reference,
+     reference,
      reference,
      identifier located or_metaid,
      raw_tactic_expr) gen_tactic_arg
@@ -238,12 +233,14 @@ type raw_tactic_arg =
 type raw_generic_argument =
     (constr_expr,raw_tactic_expr) generic_argument
 
+type raw_red_expr = (constr_expr, reference) red_expr_gen
+
 (* Globalized tactics *)
 type glob_tactic_expr =
     (rawconstr_and_expr,
      constr_pattern,
-     evaluable_global_reference and_short_name or_var or_metanum,
-     inductive or_var or_metanum,
+     evaluable_global_reference and_short_name or_var,
+     inductive or_var,
      ltac_constant located or_var,
      identifier located,
      glob_tactic_expr) gen_tactic_expr
@@ -251,8 +248,8 @@ type glob_tactic_expr =
 type glob_atomic_tactic_expr =
     (rawconstr_and_expr,
      constr_pattern,
-     evaluable_global_reference and_short_name or_var or_metanum,
-     inductive or_var or_metanum,
+     evaluable_global_reference and_short_name or_var,
+     inductive or_var,
      ltac_constant located or_var,
      identifier located,
      glob_tactic_expr) gen_atomic_tactic_expr
@@ -260,14 +257,17 @@ type glob_atomic_tactic_expr =
 type glob_tactic_arg =
     (rawconstr_and_expr,
      constr_pattern,
-     evaluable_global_reference and_short_name or_var or_metanum,
-     inductive or_var or_metanum,
-     ltac_constant located or_var,
-     identifier located,
+     evaluable_global_reference and_short_name or_var,
+     inductive or_var,
+     ltac_constant located,
+     identifier located or_var,
      glob_tactic_expr) gen_tactic_arg
 
 type glob_generic_argument =
     (rawconstr_and_expr,glob_tactic_expr) generic_argument
+
+type glob_red_expr =
+    (rawconstr_and_expr, evaluable_global_reference or_var) red_expr_gen
 
 type closed_raw_generic_argument =
     (constr_expr,raw_tactic_expr) generic_argument

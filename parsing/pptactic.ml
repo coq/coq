@@ -83,10 +83,6 @@ let pi3 (_,_,a) = a
 
 let pr_arg pr x = spc () ++ pr x
 
-let pr_or_metanum pr = function
-  | AN x -> pr x
-  | MetaNum (_,n) -> str "?" ++ pr_patvar n
-
 let pr_or_var pr = function
   | ArgArg x -> pr x
   | ArgVar (_,s) -> pr_id s
@@ -249,13 +245,13 @@ let rec pr_raw_generic prc prlc prtac x =
   | SortArgType -> pr_arg pr_sort (out_gen rawwit_sort x)
   | ConstrArgType -> pr_arg prc (out_gen rawwit_constr x)
   | ConstrMayEvalArgType ->
-      pr_arg (pr_may_eval prc (pr_or_metanum pr_reference))
+      pr_arg (pr_may_eval prc pr_reference)
         (out_gen rawwit_constr_may_eval x)
   | QuantHypArgType ->
       pr_arg pr_quantified_hypothesis (out_gen rawwit_quant_hyp x)
   | RedExprArgType ->
       pr_arg (pr_red_expr 
-        (prc,pr_or_metanum pr_reference)) (out_gen rawwit_red_expr x)
+        (prc,pr_reference)) (out_gen rawwit_red_expr x)
   | TacticArgType -> pr_arg prtac (out_gen rawwit_tactic x)
   | CastedOpenConstrArgType ->
       pr_arg prc (out_gen rawwit_casted_open_constr x)
@@ -292,12 +288,12 @@ let rec pr_glob_generic prc prlc prtac x =
   | ConstrArgType -> pr_arg prc (out_gen globwit_constr x)
   | ConstrMayEvalArgType ->
       pr_arg (pr_may_eval prc
-        (pr_or_metanum (pr_or_var (pr_and_short_name pr_evaluable_reference)))) (out_gen globwit_constr_may_eval x)
+        (pr_or_var (pr_and_short_name pr_evaluable_reference))) (out_gen globwit_constr_may_eval x)
   | QuantHypArgType ->
       pr_arg pr_quantified_hypothesis (out_gen globwit_quant_hyp x)
   | RedExprArgType ->
       pr_arg (pr_red_expr 
-        (prc,pr_or_metanum (pr_or_var (pr_and_short_name pr_evaluable_reference)))) (out_gen globwit_red_expr x)
+        (prc,pr_or_var (pr_and_short_name pr_evaluable_reference))) (out_gen globwit_red_expr x)
   | TacticArgType -> pr_arg prtac (out_gen globwit_tactic x)
   | CastedOpenConstrArgType ->
       pr_arg prc (out_gen globwit_casted_open_constr x)
@@ -481,7 +477,7 @@ and pr_atom1 = function
       hov 1 (str "Decompose Sum" ++ pr_arg pr_constr c)
   | TacDecompose (l,c) ->
       hov 1 (str "Decompose" ++ spc () ++
-        hov 0 (str "[" ++ prlist_with_sep spc (pr_or_metanum pr_ind) l
+        hov 0 (str "[" ++ prlist_with_sep spc pr_ind l
 	  ++ str "]"))
   | TacSpecialize (n,c) ->
       hov 1 (str "Specialize" ++ pr_opt int n ++ pr_with_bindings c)
@@ -506,19 +502,19 @@ and pr_atom1 = function
 
   (* Context management *)
   | TacClear l ->
-      hov 1 (str "Clear" ++ spc () ++ prlist_with_sep spc (pr_or_metanum pr_id) l)
+      hov 1 (str "Clear" ++ spc () ++ prlist_with_sep spc pr_ident l)
   | TacClearBody l ->
-      hov 1 (str "Clear" ++ spc () ++ prlist_with_sep spc (pr_or_metanum pr_id) l)
-  | TacMove (b,(_,id1),(_,id2)) ->
+      hov 1 (str "Clear" ++ spc () ++ prlist_with_sep spc pr_ident l)
+  | TacMove (b,id1,id2) ->
       (* Rem: only b = true is available for users *)
       assert b;
       hov 1
-        (str "Move" ++ brk (1,1) ++ pr_id id1 ++ spc () ++ 
-	 str "after" ++ brk (1,1) ++ pr_id id2)
-  | TacRename ((_,id1),(_,id2)) ->
+        (str "Move" ++ brk (1,1) ++ pr_ident id1 ++ spc () ++ 
+	 str "after" ++ brk (1,1) ++ pr_ident id2)
+  | TacRename (id1,id2) ->
       hov 1
-        (str "Rename" ++ brk (1,1) ++ pr_id id1 ++ spc () ++ 
-	 str "into" ++ brk (1,1) ++ pr_id id2)
+        (str "Rename" ++ brk (1,1) ++ pr_ident id1 ++ spc () ++ 
+	 str "into" ++ brk (1,1) ++ pr_ident id2)
 
   (* Constructors *)
   | TacLeft l -> hov 1 (str "Left" ++ pr_bindings l)
@@ -679,7 +675,7 @@ let rec glob_printers =
      pr_glob_tactic0,
      pr_and_constr_expr Ppconstr.pr_rawconstr,
      Printer.pr_pattern,
-     pr_or_metanum (pr_or_var (pr_and_short_name pr_evaluable_reference)),
+     pr_or_var (pr_and_short_name pr_evaluable_reference),
      pr_or_var pr_inductive,
      pr_or_var (pr_located pr_ltac_constant),
      pr_located pr_id,

@@ -144,11 +144,6 @@ let mlexpr_of_intro_pattern = function
 
 let mlexpr_of_ident_option = mlexpr_of_option (mlexpr_of_ident)
 
-let mlexpr_of_or_metanum f = function
-  | Genarg.AN a -> <:expr< Genarg.AN $f a$ >>
-  | Genarg.MetaNum (_,n) ->
-      <:expr< Genarg.MetaNum $dloc$ $mlexpr_of_ident n$ >>
-
 let mlexpr_of_or_metaid f = function
   | Tacexpr.AI a -> <:expr< Tacexpr.AI $f a$ >>
   | Tacexpr.MetaId (_,id) -> <:expr< Tacexpr.AI $anti loc id$ >>
@@ -161,11 +156,11 @@ let mlexpr_of_located f (loc,x) = <:expr< ($dloc$, $f x$) >>
 
 let mlexpr_of_loc loc = <:expr< $dloc$ >>
 
+let mlexpr_of_hyp = mlexpr_of_or_metaid (mlexpr_of_located mlexpr_of_ident)
+
 let mlexpr_of_hyp_location = function
-  | Tacexpr.InHyp id ->
-      <:expr< Tacexpr.InHyp $mlexpr_of_or_metaid (mlexpr_of_located mlexpr_of_ident) id$ >>
-  | Tacexpr.InHypType id ->
-      <:expr< Tacexpr.InHypType $mlexpr_of_or_metaid (mlexpr_of_located mlexpr_of_ident) id$ >>
+  | Tacexpr.InHyp id -> <:expr< Tacexpr.InHyp $mlexpr_of_hyp id$ >>
+  | Tacexpr.InHypType id -> <:expr< Tacexpr.InHypType $mlexpr_of_hyp id$ >>
 
 (*
 let mlexpr_of_red_mode = function
@@ -185,7 +180,7 @@ let mlexpr_of_red_flags {
   Rawterm.rIota = $mlexpr_of_bool bi$;
   Rawterm.rZeta = $mlexpr_of_bool bz$;
   Rawterm.rDelta = $mlexpr_of_bool bd$;
-  Rawterm.rConst = $mlexpr_of_list (mlexpr_of_or_metanum mlexpr_of_reference) l$
+  Rawterm.rConst = $mlexpr_of_list mlexpr_of_reference l$
 } >>
 
 let rec mlexpr_of_constr = function
@@ -221,7 +216,7 @@ let mlexpr_of_red_expr = function
       <:expr< Rawterm.Lazy $mlexpr_of_red_flags f$ >>
   | Rawterm.Unfold l ->
       let f1 = mlexpr_of_list mlexpr_of_int in
-      let f2 = mlexpr_of_or_metanum mlexpr_of_reference in
+      let f2 = mlexpr_of_reference in
       let f = mlexpr_of_list (mlexpr_of_pair f1 f2) in
       <:expr< Rawterm.Unfold $f l$ >>
   | Rawterm.Fold l ->
@@ -392,15 +387,15 @@ let rec mlexpr_of_atomic_tactic = function
 
   (* Context management *)
   | Tacexpr.TacClear l ->
-      let l = mlexpr_of_list (mlexpr_of_or_metanum mlexpr_of_ident) l in
+      let l = mlexpr_of_list (mlexpr_of_hyp) l in
       <:expr< Tacexpr.TacClear $l$ >>
   | Tacexpr.TacClearBody l ->
-      let l = mlexpr_of_list (mlexpr_of_or_metanum mlexpr_of_ident) l in
+      let l = mlexpr_of_list (mlexpr_of_hyp) l in
       <:expr< Tacexpr.TacClearBody $l$ >>
   | Tacexpr.TacMove (dep,id1,id2) ->
       <:expr< Tacexpr.TacMove $mlexpr_of_bool dep$
-              $mlexpr_of_located mlexpr_of_ident id1$
-              $mlexpr_of_located mlexpr_of_ident id2$ >>
+              $mlexpr_of_hyp id1$
+              $mlexpr_of_hyp id2$ >>
 
   (* Constructors *)
   | Tacexpr.TacLeft l ->

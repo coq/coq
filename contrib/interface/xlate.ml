@@ -200,16 +200,6 @@ let loc_qualid_to_ct_ID ref =
 let int_of_meta n = int_of_string (string_of_id n)
 let is_int_meta n = try let _ = int_of_meta n in true with _ -> false
 
-let qualid_or_meta_to_ct_ID = function
-  | AN qid -> tac_qualid_to_ct_ID qid
-  | MetaNum (_,n) when is_int_meta n -> CT_metac (CT_int (int_of_meta n))
-  | MetaNum _ -> xlate_error "TODO: ident meta"
-
-let ident_or_meta_to_ct_ID = function
-  | AN id -> xlate_ident id
-  | MetaNum (_,n) when is_int_meta n -> CT_metac (CT_int (int_of_meta n))
-  | MetaNum _ -> xlate_error "TODO: ident meta"
-
 let xlate_qualid_list l = CT_id_list (List.map loc_qualid_to_ct_ID l)
 
 let reference_to_ct_ID = function
@@ -394,6 +384,10 @@ let (xlate_ident_or_metaid:
     AI (_, x) -> xlate_ident x
   | MetaId(_, x) -> CT_metaid x;;
 
+let xlate_hyp = function
+  | AI (_,id) -> xlate_ident id
+  | MetaId _ -> xlate_error "MetaId should occur only in quotations"
+
 let xlate_hyp_location =
  function
   | InHyp (AI (_,id)) -> CT_coerce_ID_to_ID_OR_INTYPE (xlate_ident id)
@@ -495,12 +489,12 @@ let strip_targ_intropatt =
 let get_flag r =
   let conv_flags, red_ids = 
     if r.rDelta then
-      [CT_delta], CT_unfbut (List.map qualid_or_meta_to_ct_ID r.rConst)
+      [CT_delta], CT_unfbut (List.map tac_qualid_to_ct_ID r.rConst)
     else
       (if r.rConst = []
       then (* probably useless: just for compatibility *) []
       else [CT_delta]),
-      CT_unf (List.map qualid_or_meta_to_ct_ID r.rConst) in
+      CT_unf (List.map tac_qualid_to_ct_ID r.rConst) in
   let conv_flags = if r.rBeta then CT_beta::conv_flags else conv_flags in
   let conv_flags = if r.rIota then CT_iota::conv_flags else conv_flags in
   let conv_flags = if r.rZeta then CT_zeta::conv_flags else conv_flags in
@@ -560,7 +554,7 @@ let xlate_using = function
 let xlate_one_unfold_block = function
     (nums,qid) -> 
       CT_unfold_occ (CT_int_list (List.map (fun x -> CT_int x) nums),
-		     qualid_or_meta_to_ct_ID qid);;
+		     tac_qualid_to_ct_ID qid);;
 
 let xlate_lettac_clauses = function
     (opt_l, l') ->
@@ -814,8 +808,8 @@ and xlate_tac =
      CT_intro_after(CT_coerce_ID_to_ID_OPT (xlate_ident id1),xlate_ident id2)
     | TacIntroMove (None, Some (_,id2)) ->
 	CT_intro_after(CT_coerce_NONE_to_ID_OPT CT_none, xlate_ident id2)
-    | TacMove (true, (_,id1), (_,id2)) ->
-	CT_move_after(xlate_ident id1, xlate_ident id2)
+    | TacMove (true, id1, id2) ->
+	CT_move_after(xlate_hyp id1, xlate_hyp id2)
     | TacMove (false, id1, id2) -> xlate_error "Non dep Move is only internal"
     | TacIntroPattern [] -> CT_intros (CT_intro_patt_list [])
     | TacIntroPattern patt_list ->
@@ -961,16 +955,16 @@ and xlate_tac =
     | TacDecompose ([],c) ->
 	xlate_error "Decompose : empty list of identifiers?"
     | TacDecompose (id::l,c) ->
-	let id' = qualid_or_meta_to_ct_ID id in
-	let l' = List.map qualid_or_meta_to_ct_ID l in
+	let id' = tac_qualid_to_ct_ID id in
+	let l' = List.map tac_qualid_to_ct_ID l in
         CT_decompose_list(CT_id_ne_list(id',l'),xlate_formula c)
     | TacDecomposeAnd c -> CT_decompose_record (xlate_formula c)
     | TacDecomposeOr c -> CT_decompose_sum(xlate_formula c)
     | TacClear [] ->
 	xlate_error "Clear expects a non empty list of identifiers"
     | TacClear (id::idl) ->
-       let idl' = List.map ident_or_meta_to_ct_ID idl in
-       CT_clear (CT_id_ne_list (ident_or_meta_to_ct_ID id, idl'))
+       let idl' = List.map xlate_hyp idl in
+       CT_clear (CT_id_ne_list (xlate_hyp id, idl'))
     | (*For translating tactics/Inv.v *)
       TacExtend (_,("SimpleInversion"|"Inversion"|"InversionClear" as s), [id])
       ->
@@ -1002,12 +996,10 @@ and xlate_tac =
      CT_use_inversion (id, xlate_formula c,
        CT_id_list (List.map xlate_ident idlist))
     | TacExtend (_,"Omega", []) -> CT_omega
-    | TacRename ((_,id1), (_,id2)) -> CT_rename(xlate_ident id1, xlate_ident id2)
+    | TacRename (id1, id2) -> CT_rename(xlate_hyp id1, xlate_hyp id2)
     | TacClearBody([]) -> assert false
     | TacClearBody(a::l) -> 
-	CT_clear_body
-	  (CT_id_ne_list
-	     (ident_or_meta_to_ct_ID a, List.map ident_or_meta_to_ct_ID l))
+	CT_clear_body (CT_id_ne_list (xlate_hyp a, List.map xlate_hyp l))
     | TacDAuto (a, b) -> CT_dauto(xlate_int_opt a, xlate_int_opt b)
     | TacNewDestruct(a,b,c) ->
 	CT_new_destruct

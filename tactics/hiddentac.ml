@@ -60,14 +60,12 @@ let h_specialize n d = abstract_tactic (TacSpecialize (n,d)) (new_hyp n d)
 let h_lapply c = abstract_tactic (TacLApply c) (cut_and_apply c)
 
 (* Context management *)
-let inj x = Genarg.AN x
-let h_clear l = abstract_tactic (TacClear (List.map inj l)) (clear l)
-let h_clear_body l =
-  abstract_tactic (TacClearBody (List.map inj l)) (clear_body l)
+let h_clear l = abstract_tactic (TacClear l) (clear l)
+let h_clear_body l = abstract_tactic (TacClearBody l) (clear_body l)
 let h_move dep id1 id2 =
-  abstract_tactic (TacMove (dep,inj_id id1,inj_id id2)) (move_hyp dep id1 id2)
+  abstract_tactic (TacMove (dep,id1,id2)) (move_hyp dep id1 id2)
 let h_rename id1 id2 =
-  abstract_tactic (TacRename (inj_id id1,inj_id id2)) (rename_hyp id1 id2)
+  abstract_tactic (TacRename (id1,id2)) (rename_hyp id1 id2)
 
 (* Constructors *)
 let h_left l          = abstract_tactic (TacLeft l) (left l)

@@ -71,7 +71,7 @@ and tactic_expr =
   (constr,
    constr_pattern,
    evaluable_global_reference,
-   inductive or_metanum,
+   inductive,
    ltac_constant,
    identifier,
    glob_tactic_expr)
@@ -81,7 +81,7 @@ and atomic_tactic_expr =
   (constr,
    constr_pattern,
    evaluable_global_reference,
-   inductive or_metanum,
+   inductive,
    ltac_constant,
    identifier,
    glob_tactic_expr)
@@ -91,7 +91,7 @@ and tactic_arg =
   (constr,
    constr_pattern,
    evaluable_global_reference,
-   inductive or_metanum,
+   inductive,
    ltac_constant,
    identifier,
    glob_tactic_expr)

@@ -17,7 +17,6 @@ open Topconstr
 open Rawterm
 
 val pr_or_var : ('a -> std_ppcmds) -> 'a or_var -> std_ppcmds
-val pr_or_metanum : ('a -> std_ppcmds) -> 'a or_metanum -> std_ppcmds
 val pr_or_metaid : ('a -> std_ppcmds) -> 'a or_metaid -> std_ppcmds
 val pr_and_short_name : ('a -> std_ppcmds) -> 'a and_short_name -> std_ppcmds
 val pr_located : ('a -> std_ppcmds) -> 'a Util.located -> std_ppcmds

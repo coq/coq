@@ -151,7 +151,7 @@ module Tactic :
     open Rawterm
     val castedopenconstr : constr_expr Gram.Entry.e
     val constr_with_bindings : constr_expr with_bindings Gram.Entry.e
-    val constrarg : (constr_expr,reference or_metanum) may_eval Gram.Entry.e
+    val constrarg : (constr_expr,reference) may_eval Gram.Entry.e
     val quantified_hypothesis : quantified_hypothesis Gram.Entry.e
     val int_or_var : int or_var Gram.Entry.e
     val red_expr : raw_red_expr Gram.Entry.e

@@ -18,7 +18,6 @@ open Rawterm
 open Evarutil
 (*i*)
 
-type meta_map = (patvar * unsafe_judgment) list
 type var_map = (identifier * unsafe_judgment) list
 
 (* constr with holes *)
@@ -28,7 +27,7 @@ type open_constr = evar_map * constr
 (* Generic call to the interpreter from rawconstr to constr, failing
    unresolved holes in the rawterm cannot be instantiated.
 
-   In [understand_gen sigma env varmap metamap typopt raw],
+   In [understand_gen sigma env varmap typopt raw],
 
    sigma : initial set of existential variables (typically dependent subgoals)
    varmap : partial subtitution of variables (used for the tactic language)
@@ -36,7 +35,7 @@ type open_constr = evar_map * constr
    typopt : is not None, this is the expected type for raw (used to define evars)
 *)
 val understand_gen :
-  evar_map -> env -> var_map -> meta_map 
+  evar_map -> env -> var_map
     -> expected_type:(constr option) -> rawconstr -> constr
 
 
@@ -44,7 +43,7 @@ val understand_gen :
    unresolved holes into metas. Returns also the typing context of
    these metas. Work as [understand_gen] for the rest. *)
 val understand_gen_tcc :
-  evar_map -> env -> var_map -> meta_map 
+  evar_map -> env -> var_map
     -> constr option -> rawconstr -> open_constr
 
 (* Standard call to get a constr from a rawconstr, resolving implicit args *)
@@ -69,11 +68,11 @@ val constr_out : Dyn.t -> constr
  * Unused outside, but useful for debugging
  *)
 val pretype : 
-  type_constraint -> env -> evar_defs -> var_map -> meta_map ->
+  type_constraint -> env -> evar_defs -> var_map ->
     rawconstr -> unsafe_judgment
 
 val pretype_type : 
-  val_constraint -> env -> evar_defs -> var_map -> meta_map ->
+  val_constraint -> env -> evar_defs -> var_map ->
     rawconstr -> unsafe_type_judgment
 (*i*)
 

@@ -39,10 +39,6 @@ let pr_quantified_hypothesis = function
 
 let pr_quantified_hypothesis_arg h = spc () ++ pr_quantified_hypothesis h
 
-let pr_or_metanum pr = function
-  | AN x -> pr x
-  | MetaNum (_,n) -> Pattern.pr_patvar n
-
 (*
 let pr_binding prc = function
   | NamedHyp id, c -> hov 1 (pr_id id ++ str " := " ++ cut () ++ prc c)
@@ -296,7 +292,7 @@ and pr_atom1 env = function
   | TacDecompose (l,c) ->
       let vars = Termops.vars_of_env env in
       hov 1 (str "decompose" ++ spc () ++
-        hov 0 (str "[" ++ prlist_with_sep spc (pr_or_metanum (pr_ind vars)) l
+        hov 0 (str "[" ++ prlist_with_sep spc (pr_ind vars) l
 	  ++ str "]" ++ pr_lconstrarg env c))
   | TacSpecialize (n,c) ->
       hov 1 (str "specialize " ++ pr_opt int n ++ pr_with_bindings env c)
@@ -321,19 +317,19 @@ and pr_atom1 env = function
 
   (* Context management *)
   | TacClear l ->
-      hov 1 (str "clear" ++ spc () ++ prlist_with_sep spc (pr_or_metanum pr_id) l)
+      hov 1 (str "clear" ++ spc () ++ prlist_with_sep spc pr_ident l)
   | TacClearBody l ->
-      hov 1 (str "clear" ++ spc () ++ prlist_with_sep spc (pr_or_metanum pr_id) l)
-  | TacMove (b,(_,id1),(_,id2)) ->
+      hov 1 (str "clear" ++ spc () ++ prlist_with_sep spc pr_ident l)
+  | TacMove (b,id1,id2) ->
       (* Rem: only b = true is available for users *)
       assert b;
       hov 1
-        (str "move" ++ brk (1,1) ++ pr_id id1 ++ spc () ++ 
-	 str "after" ++ brk (1,1) ++ pr_id id2)
-  | TacRename ((_,id1),(_,id2)) ->
+        (str "move" ++ brk (1,1) ++ pr_ident id1 ++ spc () ++ 
+	 str "after" ++ brk (1,1) ++ pr_ident id2)
+  | TacRename (id1,id2) ->
       hov 1
-        (str "rename" ++ brk (1,1) ++ pr_id id1 ++ spc () ++ 
-	 str "into" ++ brk (1,1) ++ pr_id id2)
+        (str "rename" ++ brk (1,1) ++ pr_ident id1 ++ spc () ++ 
+	 str "into" ++ brk (1,1) ++ pr_ident id2)
 
   (* Constructors *)
   | TacLeft l -> hov 1 (str "left" ++ pr_bindings env l)
@@ -502,7 +498,7 @@ let rec raw_printers =
      Ppconstrnew.pr_constr_env,
      Ppconstrnew.pr_lconstr_env,
      Ppconstrnew.pr_pattern,
-     pr_or_metanum pr_reference,
+     pr_reference,
      (fun _ -> pr_reference),
      pr_reference,
      pr_or_metaid (pr_located pr_id),
@@ -525,7 +521,7 @@ let rec glob_printers =
      (fun env -> pr_and_constr_expr (Ppconstrnew.pr_rawconstr_env env)),
      (fun env -> pr_and_constr_expr (Ppconstrnew.pr_lrawconstr_env env)),
      Printer.pr_pattern,
-     pr_or_metanum (pr_or_var (pr_and_short_name pr_evaluable_reference)),
+     pr_or_var (pr_and_short_name pr_evaluable_reference),
      (fun vars -> pr_or_var (pr_inductive vars)),
      pr_or_var (pr_located pr_ltac_constant),
      pr_located pr_id,

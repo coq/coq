@@ -471,14 +471,12 @@ let internalise isarity sigma env allow_soapp lvar c =
 		  Array.of_list (List.map (intern false env) cl))
     | CHole loc -> 
 	RHole (loc, QuestionMark)
-    | CPatVar (loc, n) when allow_soapp = None ->
+    | CPatVar (loc, n) when allow_soapp ->
 	RPatVar (loc, n)
-    | CPatVar (loc, n) when Options.do_translate () ->
-	RVar (loc, snd n)
+    | CPatVar (loc, (false,n)) when Options.do_translate () ->
+	RVar (loc, n)
     | CPatVar (loc, (false,n as x)) ->
-        if List.mem n (out_some allow_soapp) or Options.do_translate () then
-	  RPatVar (loc, x)
-        else if List.mem n (fst (let (a,_,_) = lvar in a))
+        if List.mem n (fst (let (a,_,_) = lvar in a))
 	  (* & !Options.v7 : ne pas exiger, Tauto est encore en V7 ! *) then 
 	  RVar (loc, n)
 	else
@@ -589,13 +587,13 @@ let interp_rawconstr_gen isarity sigma env impls allow_soapp ltacvar c =
     allow_soapp (ltacvar,Environ.named_context env, []) c
 
 let interp_rawconstr sigma env c =
-  interp_rawconstr_gen false sigma env [] (Some []) ([],[]) c
+  interp_rawconstr_gen false sigma env [] false ([],[]) c
 
 let interp_rawtype sigma env c =
-  interp_rawconstr_gen true sigma env [] (Some []) ([],[]) c
+  interp_rawconstr_gen true sigma env [] false ([],[]) c
 
 let interp_rawtype_with_implicits sigma env impls c =
-  interp_rawconstr_gen true sigma env impls (Some []) ([],[]) c
+  interp_rawconstr_gen true sigma env impls false ([],[]) c
 
 (*
 (* The same as interp_rawconstr but with a list of variables which must not be
@@ -612,10 +610,10 @@ let interp_constr sigma env c =
   understand sigma env (interp_rawconstr sigma env c)
 
 let interp_openconstr sigma env c =
-  understand_gen_tcc sigma env [] [] None (interp_rawconstr sigma env c)
+  understand_gen_tcc sigma env [] None (interp_rawconstr sigma env c)
 
 let interp_casted_openconstr sigma env c typ =
-  understand_gen_tcc sigma env [] [] (Some typ) (interp_rawconstr sigma env c)
+  understand_gen_tcc sigma env [] (Some typ) (interp_rawconstr sigma env c)
 
 let interp_type sigma env c =
   understand_type sigma env (interp_rawtype sigma env c)
@@ -650,25 +648,25 @@ type ltac_env =
 (* Interprets a constr according to two lists *)
 (* of instantiations (variables and metas)    *)
 (* Note: typ is retyped *)
-let interp_constr_gen sigma env (ltacvar,unbndltacvar) lmeta c exptyp =
-  let c = interp_rawconstr_gen false sigma env [] (Some (List.map fst lmeta))
-    (List.map fst ltacvar,unbndltacvar) c
-  and rtype lst = retype_list sigma env lst in
-  understand_gen sigma env (rtype ltacvar) (rtype lmeta) exptyp c;;
+let interp_constr_gen sigma env (ltacvars,unbndltacvars) c exptyp =
+  let c = interp_rawconstr_gen false sigma env [] false
+    (List.map fst ltacvars,unbndltacvars) c in
+  let typs = retype_list sigma env ltacvars in
+  understand_gen sigma env typs exptyp c
 
 (*Interprets a casted constr according to two lists of instantiations
   (variables and metas)*)
-let interp_openconstr_gen sigma env (ltacvar,unbndltacvar) lmeta c exptyp =
-  let c = interp_rawconstr_gen false sigma env [] (Some (List.map fst lmeta))
-    (List.map fst ltacvar,unbndltacvar) c
-  and rtype lst = retype_list sigma env lst in
-  understand_gen_tcc sigma env (rtype ltacvar) (rtype lmeta) exptyp c;;
+let interp_openconstr_gen sigma env (ltacvars,unbndltacvars) c exptyp =
+  let c = interp_rawconstr_gen false sigma env [] false
+    (List.map fst ltacvars,unbndltacvars) c in
+  let typs = retype_list sigma env ltacvars in
+  understand_gen_tcc sigma env typs exptyp c
 
 let interp_casted_constr sigma env c typ = 
-  understand_gen sigma env [] [] (Some typ) (interp_rawconstr sigma env c)
+  understand_gen sigma env [] (Some typ) (interp_rawconstr sigma env c)
 
 let interp_constrpattern_gen sigma env (ltacvar,unbndltacvar) c =
-  let c = interp_rawconstr_gen false sigma env [] None
+  let c = interp_rawconstr_gen false sigma env [] true
     (List.map fst ltacvar,unbndltacvar) c in
   pattern_of_rawconstr c
 
@@ -680,7 +678,7 @@ let interp_aconstr vars a =
   (* [vl] is intended to remember the scope of the free variables of [a] *)
   let vl = List.map (fun id -> (id,ref None)) vars in
   let c = for_grammar (internalise false Evd.empty (extract_ids env, [], [])
-    (Some []) (([],[]),Environ.named_context env,vl)) a in
+    false (([],[]),Environ.named_context env,vl)) a in
   (* Translate and check that [c] has all its free variables bound in [vars] *)
   let a = aconstr_of_rawconstr vars c in
   (* Returns [a] and the ordered list of variables with their scopes *)

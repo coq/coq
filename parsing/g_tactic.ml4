@@ -84,13 +84,13 @@ GEXTEND Gram
   ;
   (* Either an hypothesis or a ltac ref (variable or pattern patvar) *)
   id_or_ltac_ref:
-    [ [ id = base_ident -> Genarg.AN id
-      | "?"; n = natural -> Genarg.MetaNum (loc,Pattern.patvar_of_int n) ] ]
+    [ [ id = base_ident -> AI (loc,id)
+      | "?"; n = natural -> AI (loc,Pattern.patvar_of_int n) ] ]
   ;
   (* Either a global ref or a ltac ref (variable or pattern patvar) *)
   global_or_ltac_ref:
-    [ [ qid = global -> AN qid
-      | "?"; n = natural -> MetaNum (loc,Pattern.patvar_of_int n) ] ]
+    [ [ qid = global -> qid
+      | "?"; n = natural -> Libnames.Ident (loc,Pattern.patvar_of_int n) ] ]
   ;
   (* An identifier or a quotation meta-variable *)
   id_or_meta:
@@ -320,10 +320,10 @@ GEXTEND Gram
       (* Context management *)
       | IDENT "Clear"; l = LIST1 id_or_ltac_ref -> TacClear l
       | IDENT "ClearBody"; l = LIST1 id_or_ltac_ref -> TacClearBody l
-      | IDENT "Move"; id1 = identref; IDENT "after"; id2 = identref -> 
-	  TacMove (true,id1,id2)
-      | IDENT "Rename"; id1 = identref; IDENT "into"; id2 = identref -> 
-	  TacRename (id1,id2)
+      | IDENT "Move"; id1 = id_or_ltac_ref; IDENT "after"; 
+	  id2 = id_or_ltac_ref -> TacMove (true,id1,id2)
+      | IDENT "Rename"; id1 = id_or_ltac_ref; IDENT "into"; 
+	  id2 = id_or_ltac_ref -> TacRename (id1,id2)
 
       (* Constructors *)
       | IDENT "Left"; bl = with_binding_list -> TacLeft bl

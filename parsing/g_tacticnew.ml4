@@ -95,16 +95,6 @@ GEXTEND Gram
   [ [ a0 = autoarg_depth; l = autoarg_adding; 
       a2 = autoarg_destructing; a3 = autoarg_usingTDB -> (a0,l,a2,a3) ] ]
   ;
-  (* Either an hypothesis or a ltac ref (variable or pattern patvar) *)
-  id_or_ltac_ref:
-    [ [ id = base_ident -> AN id
-(*      | "?"; n = natural -> MetaNum (loc,Pattern.patvar_of_int n) *) ] ]
-  ;
-  (* Either a global ref or a ltac ref (variable or pattern patvar) *)
-  global_or_ltac_ref:
-    [ [ qid = global -> AN qid
-(*      | "?"; n = natural -> MetaNum (loc,Pattern.patvar_of_int n) *) ] ]
-  ;
   (* An identifier or a quotation meta-variable *)
   id_or_meta:
     [ [ id = identref -> AI id 
@@ -186,15 +176,15 @@ GEXTEND Gram
     [ [ "with"; bl = binding_list -> bl | -> NoBindings ] ]
   ;
   unfold_occ:
-    [ [ nl = LIST0 integer; c = global_or_ltac_ref -> (nl,c) ] ]
+    [ [ nl = LIST0 integer; c = global -> (nl,c) ] ]
   ;
   red_flag:
     [ [ IDENT "beta" -> FBeta
       | IDENT "delta" -> FDeltaBut []
       | IDENT "iota" -> FIota
       | IDENT "zeta" -> FZeta
-      | IDENT "delta"; "["; idl = LIST1 global_or_ltac_ref; "]" -> FConst idl
-      | IDENT "delta"; "-"; "["; idl = LIST1 global_or_ltac_ref; "]" -> FDeltaBut idl
+      | IDENT "delta"; "["; idl = LIST1 global; "]" -> FConst idl
+      | IDENT "delta"; "-"; "["; idl = LIST1 global; "]" -> FDeltaBut idl
     ] ]
   ;
   red_tactic:
@@ -310,7 +300,7 @@ GEXTEND Gram
           ids = with_names -> TacNewDestruct (c,el,ids)
       | IDENT "decompose"; IDENT "record" ; c = lconstr -> TacDecomposeAnd c
       | IDENT "decompose"; IDENT "sum"; c = lconstr -> TacDecomposeOr c
-      | IDENT "decompose"; "["; l = LIST1 global_or_ltac_ref; "]"; c = lconstr
+      | IDENT "decompose"; "["; l = LIST1 global; "]"; c = lconstr
         -> TacDecompose (l,c)
 
       (* Automation tactic *)
@@ -326,11 +316,11 @@ GEXTEND Gram
 	  TacDAuto (n, p)
 
       (* Context management *)
-      | IDENT "clear"; l = LIST1 id_or_ltac_ref -> TacClear l
-      | IDENT "clearbody"; l = LIST1 id_or_ltac_ref -> TacClearBody l
-      | IDENT "move"; id1 = identref; IDENT "after"; id2 = identref -> 
+      | IDENT "clear"; l = LIST1 id_or_meta -> TacClear l
+      | IDENT "clearbody"; l = LIST1 id_or_meta -> TacClearBody l
+      | IDENT "move"; id1 = id_or_meta; IDENT "after"; id2 = id_or_meta -> 
 	  TacMove (true,id1,id2)
-      | IDENT "rename"; id1 = identref; IDENT "into"; id2 = identref -> 
+      | IDENT "rename"; id1 = id_or_meta; IDENT "into"; id2 = id_or_meta -> 
 	  TacRename (id1,id2)
 
       (* Constructors *)

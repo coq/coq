@@ -31,7 +31,7 @@ open Q
 type let_clause_kind =
   | LETTOPCLAUSE of Names.identifier * constr_expr
   | LETCLAUSE of
-      (Names.identifier Util.located * (constr_expr, Libnames.reference Genarg.or_metanum) may_eval option * raw_tactic_arg)
+      (Names.identifier Util.located * (constr_expr, Libnames.reference) may_eval option * raw_tactic_arg)
 
 ifdef Quotify then
 module Prelude = struct

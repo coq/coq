@@ -726,7 +726,7 @@ let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
     if onlyparse then None
     else
       let r = interp_rawconstr_gen
-          false Evd.empty (Global.env()) [] (Some []) (vars,[]) c in
+          false Evd.empty (Global.env()) [] false (vars,[]) c in
       Some (make_old_pp_rule ppn ppsymbols pptyps r notation scope vars) in
   (* Declare the interpretation *)
   let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
@@ -802,7 +802,7 @@ let add_notation local df c modifiers mv8 sc =
 		let onlyparse = modifiers = [SetOnlyParsing] in
 		let a = interp_aconstr vars c in
 		let a_for_old = interp_rawconstr_gen
-		  false Evd.empty (Global.env()) [] (Some []) (vars,[]) c in
+		  false Evd.empty (Global.env()) [] false (vars,[]) c in
 		add_notation_interpretation_core local vars symbs df
 		  (a,a_for_old) sc onlyparse
 	  | Some n ->

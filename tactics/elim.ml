@@ -128,10 +128,8 @@ let decompose_or c gls =
     (fun (_,t) -> is_disjunction t)
     c gls
 
-let inj x = Genarg.AN x
 let h_decompose l c =
-  Refiner.abstract_tactic
-    (TacDecompose (List.map inj l,c)) (decompose_these c l)
+  Refiner.abstract_tactic (TacDecompose (l,c)) (decompose_these c l)
 
 let h_decompose_or c =
   Refiner.abstract_tactic (TacDecomposeOr c) (decompose_or c)
