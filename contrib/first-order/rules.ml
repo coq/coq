@@ -205,7 +205,7 @@ let left_false_tac id=
 
 let ll_ind_tac ind largs id tacrec seq gl= 
   (try
-     let rcs=ind_hyps ind largs in
+     let rcs=ind_hyps 0 ind largs in
      let vargs=Array.of_list largs in
 	     (* construire le terme  H->B, le generaliser etc *)   
      let myterm i=
@@ -217,13 +217,13 @@ let ll_ind_tac ind largs id tacrec seq gl=
        let head=mkApp ((lift p (constr_of_reference id)),[|capply|]) in
 	 Sign.it_mkLambda_or_LetIn head rc in
        let lp=Array.length rcs in
-       let newhyps=List.map myterm (interval 0 (lp-1)) in
+       let newhyps=list_tabulate myterm lp in
 	 tclTHENLIST 
 	   [generalize newhyps;
 	    clear_global id;
 	    tclDO lp intro;
 	    wrap lp false tacrec seq]
-   with Dependent_Inductive | Invalid_argument _ ->tclFAIL 0 "") gl
+   with Invalid_argument _ ->tclFAIL 0 "") gl
 
 let ll_forall_tac prod id tacrec seq=
   tclTHENS (cut prod)

@@ -28,13 +28,13 @@ let (==?) fg h i1 i2 j1 j2 k1 k2=
   let c=fg i1 i2 j1 j2 in
     if c=0 then h k1 k2 else c
 
-type ('a,'b)sum=Left of 'a|Right of 'b
+type ('a,'b) sum = Left of 'a | Right of 'b
 	
 type kind_of_formula=
    Arrow of constr*constr
   |And of inductive*constr list
   |Or of inductive*constr list
-  |Exists of inductive*constr*constr*constr
+  |Exists of inductive*constr list
   |Forall of constr*constr
   |Atom of constr
   |Evaluable of evaluable_global_reference*constr
@@ -42,33 +42,12 @@ type kind_of_formula=
 
 type counter = bool -> metavariable
 
-let constant path str ()=Coqlib.gen_constant "User" ["Init";path] str
+let constant path str () = Coqlib.gen_constant "User" ["Init";path] str
 
-let op2bool=function Some _->true |None->false
+let op2bool = function Some _->true | None->false
 
-let id_ex=constant "Logic" "ex"
-let id_sig=constant "Specif" "sig"
-let id_sigT=constant "Specif" "sigT"
-let id_sigS=constant "Specif" "sigS"
 let id_not=constant "Logic" "not"
 let id_iff=constant "Logic" "iff"
-
-let is_ex t = 
-  t=(id_ex ()) || 
-    t=(id_sig ()) || 
-      t=(id_sigT ()) || 
-	t=(id_sigS ())
-
-let match_with_exist_term t=
-  match kind_of_term t with
-      App(t,v)->
-	if t=id_ex () && (Array.length v)=2 then
-	  let p=v.(1) in
-	    match kind_of_term p with 
-		Lambda(na,a,b)->Some(t,a,b,p)
-	      | _ ->Some(t,v.(0),mkApp(p,[|mkRel 1|]),p)
-	else None
-    | _->None
 
 let match_with_evaluable t=
   match kind_of_term t with
@@ -91,51 +70,49 @@ let nhyps mip =
     Array.map hyp constr_types
 
 let construct_nhyps ind= nhyps (snd (Global.lookup_inductive ind))
-    
-exception Dependent_Inductive
 
-(* builds the array of arrays of constructor hyps for (ind Vargs)*)
-let ind_hyps ind largs= 
+(* builds the array of arrays of constructor hyps for (ind largs)*)
+
+let ind_hyps nevar ind largs= 
   let (mib,mip) = Global.lookup_inductive ind in
   let n = mip.mind_nparams in
-    if n<>(List.length largs) then 
-      raise Dependent_Inductive
-    else
-      let p=nhyps mip in
-      let lp=Array.length p in
-      let types= mip.mind_nf_lc in   
-      let myhyps i=
-	let t1=Term.prod_applist types.(i) largs in
-	  fst (Sign.decompose_prod_n_assum p.(i) t1) in
-	Array.init lp myhyps
+(*  assert (n=(List.length largs));*)
+    let lp=Array.length mip.mind_consnames in
+    let types= mip.mind_nf_lc in   
+    let lp=Array.length types in     
+    let myhyps i=
+      let t1=Term.prod_applist types.(i) largs in
+      let t2=snd (Sign.decompose_prod_n_assum nevar t1) in
+	fst (Sign.decompose_prod_assum t2) in
+      Array.init lp myhyps
 
-let kind_of_formula cciterm =
-  match match_with_imp_term cciterm with
-      Some (a,b)-> Arrow(a,(pop b))
-    |_->
-       match match_with_forall_term cciterm with
-	   Some (_,a,b)-> Forall(a,b)
-	 |_-> 
-	    match match_with_exist_term cciterm with
-		Some (i,a,b,p)-> Exists((destInd i),a,b,p)
-	      |_-> 
-		 match match_with_nodep_ind cciterm with
-		     Some (i,l)->
-		       let ind=destInd i in
-		       let (mib,mip) = Global.lookup_inductive ind in
-			 if Inductiveops.mis_is_recursive (ind,mib,mip) then
-			   Atom cciterm 
-			 else
-			   (match Array.length mip.mind_consnames with
-				0->False
-			      | 1->And(ind,l)
-			      | _->Or(ind,l)) 
-		   | None -> 
-		       match match_with_evaluable cciterm with 
-			   Some (cst,t)->Evaluable ((EvalConstRef cst),t)
-			 | None ->Atom cciterm
-
- 
+let kind_of_formula term =
+  let cciterm=whd_betaiotazeta term in
+    match match_with_imp_term cciterm with
+	Some (a,b)-> Arrow(a,(pop b))
+      |_->
+	 match match_with_forall_term cciterm with
+	     Some (_,a,b)-> Forall(a,b)
+	   |_-> 
+	      match match_with_nodep_ind cciterm with
+		  Some (i,l)->
+		    let ind=destInd i in
+		    let (mib,mip) = Global.lookup_inductive ind in
+		      if Inductiveops.mis_is_recursive (ind,mib,mip) then
+			Atom cciterm 
+		      else
+			(match Array.length mip.mind_consnames with
+			     0->False
+			   | 1->And(ind,l)
+			   | _->Or(ind,l)) 
+		| _ ->  
+		    match match_with_sigma_type cciterm with
+			Some (i,l)-> Exists((destInd i),l)
+		      |_-> 
+			 match match_with_evaluable cciterm with 
+			     Some (cst,t)->Evaluable ((EvalConstRef cst),t)
+			   | None ->Atom cciterm
+			       
 let build_atoms gl metagen=
   let rec build_rec env polarity cciterm =
     match kind_of_formula cciterm with
@@ -144,18 +121,21 @@ let build_atoms gl metagen=
 	  (build_rec env (not polarity) a)@
 	  (build_rec env polarity b)
       | And(i,l) | Or(i,l)->
-	  (try
-	     let v = ind_hyps i l in
-	     let g i accu (_,_,t) =
-	       (build_rec env polarity (lift i t))@accu in
-	     let f l accu =
-	       list_fold_left_i g (1-(List.length l)) accu l in
-	       Array.fold_right f v [] 
-	   with Dependent_Inductive ->
-	     [polarity,(substnl env 0 cciterm)])
-      | Forall(_,b)|Exists(_,_,b,_)->
+	  let v = ind_hyps 0 i l in
+	  let g i accu (_,_,t) =
+	    (build_rec env polarity (lift i t))@accu in
+	  let f l accu =
+	    list_fold_left_i g (1-(List.length l)) accu l in
+	    Array.fold_right f v [] 
+      | Exists(i,l)->
 	  let var=mkMeta (metagen true) in
-	    build_rec (var::env) polarity b 
+	  let v =(ind_hyps 1 i l).(0) in
+	  let g i accu (_,_,t) =
+	    (build_rec (var::env) polarity (lift i t))@accu in
+	    list_fold_left_i g (2-(List.length l)) [] v
+      | Forall(_,b)->
+	  let var=mkMeta (metagen true) in
+	    build_rec (var::env) polarity b
       | Atom t->
 	  [polarity,(substnl env 0 cciterm)]
       | Evaluable(ec,t)->
@@ -181,7 +161,7 @@ type left_arrow_pattern=
   | LLand of inductive*constr list
   | LLor of inductive*constr list
   | LLforall of constr
-  | LLexists of inductive*constr*constr*constr
+  | LLexists of inductive*constr list
   | LLarrow of constr*constr*constr
   | LLevaluable of evaluable_global_reference
 
@@ -212,7 +192,7 @@ let build_left_entry nam typ internal gl metagen=
 	| Atom a       ->  raise (Is_atom a)
 	| And(i,_)         ->  Land i
 	| Or(i,_)          ->  Lor i
-	| Exists (_,_,_,_) ->  Lexists
+	| Exists (_,_) ->  Lexists
 	| Forall (d,_) -> let m=meta_succ(metagen false) in Lforall(m,d)
 	| Evaluable (egc,_) ->Levaluable egc 
 	| Arrow (a,b) ->LA (a, 
@@ -222,7 +202,7 @@ let build_left_entry nam typ internal gl metagen=
 			      | And(i,l)->      LLand(i,l)
 			      | Or(i,l)->       LLor(i,l)
 			      | Arrow(a,c)-> LLarrow(a,c,b)
-			      | Exists(i,a,_,p)->LLexists(i,a,p,b)
+			      | Exists(i,l)->LLexists(i,l)
 			      | Forall(_,_)->LLforall a
 			      | Evaluable (egc,_)-> LLevaluable egc) in    
     let l=
@@ -244,8 +224,10 @@ let build_right_entry typ gl metagen=
 	| Atom a       -> raise (Is_atom a)
 	| And(_,_)        -> Rand
 	| Or(_,_)         -> Ror
-	| Exists (_,d,_,_) -> 
-	    let m=meta_succ(metagen false) in Rexists(m,d) 
+	| Exists (i,l) -> 
+	    let m=meta_succ(metagen false) in 
+	    let (_,_,d)=list_last (ind_hyps 0 i l).(0) in
+	      Rexists(m,d)
 	| Forall (_,a) -> Rforall 
 	| Arrow (a,b) -> Rarrow 
 	| Evaluable (egc,_)->Revaluable egc in

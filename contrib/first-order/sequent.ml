@@ -34,7 +34,7 @@ let priority = function (* pure heuristics, <=0 for non reversible *)
 	  | LLand (_,_)        ->  80
 	  | LLor (_,_)         ->  70
 	  | LLforall _         -> -20
-	  | LLexists (_,_,_,_) ->  50
+	  | LLexists (_,_)     ->  50
 	  | LLarrow  (_,_,_)   -> -10 
 	  | LLevaluable _      -> 100
 

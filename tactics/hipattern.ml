@@ -223,6 +223,22 @@ let match_with_nodep_ind t =
 	  
 let is_nodep_ind t=op2bool (match_with_nodep_ind t)
 
+let match_with_sigma_type t=
+  let (hdapp,args) = decompose_app t in
+  match (kind_of_term hdapp) with
+    | Ind ind  -> 
+        let (mib,mip) = Global.lookup_inductive ind in
+          if (mip.mind_nrealargs=0) &&
+	    (Array.length mip.mind_consnames=1) &&
+	    has_nodep_prod_after (mip.mind_nparams+1) mip.mind_nf_lc.(0) then
+	      (*allowing only 1 existential*) 
+	      Some (hdapp,args)
+	  else 
+	    None
+    | _ -> None
+
+let is_sigma_type t=op2bool (match_with_sigma_type t)
+
 (***** Destructing patterns bound to some theory *)
 
 let rec first_match matcher = function

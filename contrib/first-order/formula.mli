@@ -26,7 +26,7 @@ type kind_of_formula=
    Arrow of constr*constr
   |And of inductive*constr list
   |Or of inductive*constr list
-  |Exists of inductive*constr*constr*constr
+  |Exists of inductive*constr list
   |Forall of constr*constr
   |Atom of constr
   |Evaluable of Names.evaluable_global_reference * Term.constr
@@ -36,9 +36,7 @@ type counter = bool -> metavariable
 
 val construct_nhyps : inductive -> int array
 
-exception Dependent_Inductive
-
-val ind_hyps : inductive -> constr list -> Sign.rel_context array
+val ind_hyps : int -> inductive -> constr list -> Sign.rel_context array
 
 val kind_of_formula : constr -> kind_of_formula
 			
@@ -63,7 +61,7 @@ type left_arrow_pattern=
   | LLand of inductive*constr list
   | LLor of inductive*constr list
   | LLforall of constr
-  | LLexists of inductive*constr*constr*constr
+  | LLexists of inductive*constr list
   | LLarrow of constr*constr*constr
   | LLevaluable of Names.evaluable_global_reference
 
@@ -81,6 +79,8 @@ type left_formula={id:global_reference;
 		   pat:left_pattern;
 		   atoms:(bool*constr) list;
 		   internal:bool}
+
+exception Is_atom of constr
 
 val build_left_entry : 
   global_reference -> types -> bool -> Proof_type.goal Tacmach.sigma ->

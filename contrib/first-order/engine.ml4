@@ -47,29 +47,32 @@ let ground_tac solver startseq gl=
 		 if not (is_empty_left seq) && rev_left seq then 
 		   left_tac seq [] 
 		 else 
-		   right_tac seq pat l []) gl
-  and right_tac seq pat atoms ctx gl=
+		   right_tac seq []) gl
+  and right_tac seq ctx gl=
     let re_add s=re_add_left_list ctx s in
-      match pat with
-	  Ror->
-	    tclORELSE
-	    (or_tac toptac (re_add seq))
-	    (left_tac seq ctx) gl
-	| Rexists(i,dom)->
-	    let cont_tac=left_tac seq ctx in
-	      if seq.depth<=0 || not !qflag then 
-		cont_tac gl
-	      else 
-		(match Unify.give_right_instances i dom atoms seq with
-		    Some l -> tclORELSE
-		      (exists_tac l toptac (re_add seq)) cont_tac gl
-		  | None ->
-		      tclORELSE cont_tac
-		      (dummy_exists_tac dom  toptac (re_add seq)) gl)
-	| _-> anomaly "unreachable place"
+      match seq.gl with
+	  Complex (pat,_,atoms)->
+	    (match pat with
+		 Ror->
+		   tclORELSE
+		   (or_tac toptac (re_add seq))
+		   (left_tac seq ctx) gl
+	       | Rexists(i,dom)->
+		   let cont_tac=left_tac seq ctx in
+		     if seq.depth<=0 || not !qflag then 
+		       cont_tac gl
+		     else 
+		       (match Unify.give_right_instances i dom atoms seq with
+			    Some l -> tclORELSE
+			      (exists_tac l toptac (re_add seq)) cont_tac gl
+			  | None ->
+			      tclORELSE cont_tac
+			      (dummy_exists_tac dom  toptac (re_add seq)) gl)
+	       | _-> anomaly "unreachable place")
+	| Atomic _ -> left_tac seq ctx gl
   and left_tac seq ctx gl=
     if is_empty_left seq then 
-      solver gl (* put solver here *)
+      solver gl
     else 
       let (hd,seq1)=take_left seq in 
       let re_add s=re_add_left_list ctx s in 
@@ -99,11 +102,7 @@ let ground_tac solver startseq gl=
 	      (ll_atom_tac typ hd.id toptac (re_add seq1))
 	      (match lap with
 		   LLatom->
-		     (match seq1.gl with 
-			  Atomic t->
-			    (left_tac seq1 (hd::ctx))
-			| Complex (pat,_,atoms)->
-			    (right_tac seq1 pat atoms (hd::ctx))) 
+		     right_tac seq1 (hd::ctx) 
 		 | LLfalse->
 		     ll_false_tac hd.id toptac (re_add seq1) 
 		 | LLand (ind,largs) | LLor(ind,largs) ->
@@ -115,9 +114,9 @@ let ground_tac solver startseq gl=
 		      else 
 			ll_forall_tac p hd.id toptac (re_add seq1))
 		     (left_tac seq1 (hd::ctx))
-		 | LLexists (ind,a,p,_) ->
+		 | LLexists (ind,l) ->
 		     if !qflag then
-		       ll_ind_tac ind [a;p] hd.id toptac (re_add seq1) 
+		       ll_ind_tac ind l hd.id toptac (re_add seq1) 
 		     else
 		       left_tac seq1 (hd::ctx)
 		 | LLarrow (a,b,c) ->	      
@@ -155,39 +154,28 @@ open Genarg
 open Pcoq
 open Pp
 
-type depth=int option
-
-let pr_depth _ _=function
-    None->mt ()
-  | Some i -> str " depth " ++ int i
-
-ARGUMENT EXTEND depth TYPED AS depth PRINTED BY pr_depth
-[ "depth" integer(i)]-> [ Some i]
-| [ ] -> [None]
-END 
-
-type with_reflist = global_reference list
-
-let pr_ref_list _ _=function
-    [] -> mt ()
-  | l -> prlist pr_reference l
-
 TACTIC EXTEND Ground
-   [ "Ground" tactic(t) "with" ne_reference_list(l) ] -> 
-	 [ gen_ground_tac true (Some (snd t)) None l ]
-|   [ "Ground" tactic(t) "depth" integer(i) "with" ne_reference_list(l) ] -> 
-	 [ gen_ground_tac true (Some (snd t)) (Some i) l ]
+    [ "Ground" tactic(t) "depth" integer(i) "with" ne_reference_list(l) ] -> 
+      [ gen_ground_tac true (Some (snd t)) (Some i) l ]
 |   [ "Ground" tactic(t) "depth" integer(i) ] -> 
-	 [ gen_ground_tac true (Some (snd t)) (Some i) [] ]
+      [ gen_ground_tac true (Some (snd t)) (Some i) [] ]
+|   [ "Ground" tactic(t) "with" ne_reference_list(l) ] -> 
+      [ gen_ground_tac true (Some (snd t)) None l ]
 |   [ "Ground" tactic(t) ] -> 
-	 [ gen_ground_tac true (Some (snd t)) None [] ]
+      [ gen_ground_tac true (Some (snd t)) None [] ]
+|   [ "Ground" "depth" integer(i) "with" ne_reference_list(l) ] -> 
+      [ gen_ground_tac true None (Some i) l ]
+|   [ "Ground" "depth" integer(i) ] -> 
+      [ gen_ground_tac true None (Some i) [] ]
+|   [ "Ground" "with" ne_reference_list(l) ] -> 
+      [ gen_ground_tac true None None l ]
 |   [ "Ground" ] ->
-	 [ gen_ground_tac true None None [] ]
+      [ gen_ground_tac true None None [] ]
 END
 
 TACTIC EXTEND GTauto   
   [ "GTauto" ] ->
-     [ gen_ground_tac false (Some fail_solver) (Some 0) [] ]   
+     [ gen_ground_tac false (Some fail_solver) None [] ]   
 END
 
 TACTIC EXTEND GIntuition

@@ -91,6 +91,9 @@ val has_nodep_prod         : testing_function
 val match_with_nodep_ind   : (constr * constr list) matching_function	  
 val is_nodep_ind           : testing_function 
 
+val match_with_sigma_type   : (constr * constr list) matching_function	  
+val is_sigma_type           : testing_function 
+
 (***** Destructing patterns bound to some theory *)
 
 open Coqlib

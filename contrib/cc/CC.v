@@ -28,9 +28,10 @@ Intros A B H E;Rewrite E;Assumption.
 Save.
 
 Tactic Definition CCsolve :=
- Match Context With
+ Repeat (Match Context With
  [ H: ?1 |- ?2] -> 
-        (Assert (?2==?1);[CC|
-        Match Reverse Context With 
-                [ H: ?1;Heq: (?2==?1)|- ?2] ->(Rewrite Heq;Exact H)]).
+ (Assert Heq____:(?2==?1);[CC|(Rewrite Heq____;Exact H)])
+ |[ H: ?1; G: ?2 -> ?3 |- ?] ->                        
+ (Assert Heq____:(?2==?1) ;[CC|                              
+     (Rewrite Heq____ in G;Generalize (G H);Clear G;Intro G)])).  
 
