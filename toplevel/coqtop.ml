@@ -78,7 +78,9 @@ let add_compile verbose s =
   Options.make_silent true; 
   compile_list := (verbose,s) :: !compile_list
 let compile_files () =
-  List.iter (fun (v,f) -> Vernac.compile v f) (List.rev !compile_list)
+  List.iter
+    (fun (v,f) -> with_option translate_file (Vernac.compile v) f)
+    (List.rev !compile_list)
 
 let re_exec_version = ref ""
 let set_byte () = re_exec_version := "byte"
@@ -180,10 +182,6 @@ let parse_args is_ide =
     | "-no-proofs" :: rem -> Options.dont_load_proofs := true; parse rem
 
     | "-translate" :: rem -> make_translate true; parse rem
-    | "-ftranslate" :: rem ->
-        make_translate true;
-        translate_file := true;
-        parse rem
 
     | "-unsafe" :: f :: rem -> add_unsafe f; parse rem
     | "-unsafe" :: []       -> usage ()

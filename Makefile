@@ -212,7 +212,8 @@ ML4FILES += contrib/interface/debug_tac.ml4 contrib/interface/centaur.ml4
 PARSERREQUIRES=$(CMO) # Solution de facilité...
 PARSERREQUIRESCMX=$(PARSERREQUIRES:.cmo=.cmx)
 
-ML4FILES += contrib/correctness/psyntax.ml4 contrib/omega/g_omega.ml4 \
+ML4FILES +=\
+  contrib/correctness/psyntax.ml4 contrib/omega/g_omega.ml4 \
   contrib/romega/g_romega.ml4 contrib/ring/g_quote.ml4 \
   contrib/ring/g_ring.ml4 \
   contrib/field/field.ml4 contrib/fourier/g_fourier.ml4 \
@@ -717,7 +718,7 @@ CORRECTNESSVO=contrib/correctness/Arrays.vo				\
 	contrib/correctness/Exchange.vo					\
 	contrib/correctness/ArrayPermut.vo				\
 	contrib/correctness/ProgBool.vo contrib/correctness/ProgInt.vo	\
-	contrib/correctness/Sorted.vo	contrib/correctness/Tuples.vo
+	contrib/correctness/Sorted.vo	contrib/correctness/Tuples.vo   
 #	contrib/correctness/ProgramsExtraction.vo			
 
 OMEGAVO = contrib/omega/Omega.vo
@@ -1274,7 +1275,7 @@ devel:
 
 # 1. Translate the old syntax files and build new syntax theories hierarchy
 translation::
-	@$(MAKE) COQ_XML="-ftranslate -no-strict" world
+	@$(MAKE) COQ_XML="-translate -no-strict" world
 	@$(MAKE) movenew
 
 movenew::

@@ -108,8 +108,6 @@ let parse_args () =
 	keep := true ; parse (cfiles,args) rem
     | ("-verbose" | "--verbose") :: rem -> 
 	verbose := true ; parse (cfiles,args) rem
-    | "-translate" :: rem ->
-	parse (cfiles,"-ftranslate"::args) rem
     | "-boot" :: rem ->
 	bindir:= Filename.concat Coq_config.coqtop "bin";
 	parse (cfiles, "-boot"::args) rem
@@ -138,7 +136,7 @@ let parse_args () =
     | "-R" as o :: s :: t :: rem -> parse (cfiles,t::s::o::args) rem
     | ("-notactics"|"-debug"|"-db"|"-debugger"|"-nolib"|"-batch"|"-nois"
       |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
-      |"-silent"|"-m"|"-xml"|"-v7"|"-v8" as o) :: rem ->
+      |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-translate" as o) :: rem ->
 	parse (cfiles,o::args) rem
     | ("-v"|"--version") :: _ ->
         Usage.version ()
