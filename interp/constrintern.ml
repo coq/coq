@@ -116,7 +116,7 @@ let add_glob loc ref =
   i*)
   let sp = Nametab.sp_of_global ref in
   let id = let _,id = repr_path sp in string_of_id id in
-  let dp = string_of_dirpath (Declare.library_part ref) in
+  let dp = string_of_dirpath (Lib.library_part ref) in
   dump_string (Printf.sprintf "R%d %s.%s\n" (fst loc) dp id)
 
 (**********************************************************************)
@@ -611,7 +611,7 @@ let internalise sigma env allow_soapp lvar c =
 	let body = iterate_prod loc2 (push_name_env env na) ty body nal in
 	let ty = locate_if_isevar loc1 na (intern_type env ty) in
 	RProd (join_loc loc1 loc2, na, ty, body)
-    | [] -> intern env body
+    | [] -> intern_type env body
 
   and iterate_lam loc2 env ty body = function
     | (loc1,na)::nal ->
