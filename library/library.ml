@@ -337,20 +337,20 @@ exception LibNotFound
 type library_location = LibLoaded | LibInPath
 
 let locate_absolute_library dir =
-  (* Look if loaded in current environment *)
+  (* Search in loadpath *)
+  let pref, base = split_dirpath dir in
+  let loadpath = load_path_of_logical_path pref in
+  if loadpath = [] then raise LibUnmappedDir;
   try
-    let m = CompilingLibraryMap.find dir !libraries_table in
-    (dir, m.library_filename)
-  with Not_found ->
-  (* Look if in loadpath *)
-  try
-    let pref, base = split_dirpath dir in
-    let loadpath = load_path_of_logical_path pref in
-    if loadpath = [] then raise LibUnmappedDir;
     let name = (string_of_id base)^".vo" in
     let _, file = System.where_in_path loadpath name in
     (dir, file)
-  with Not_found ->  raise LibNotFound
+  with Not_found ->
+  (* Last chance, removed from the file system but still in memory *)
+  try
+    (dir, library_full_filename dir)
+  with Not_found ->
+    raise LibNotFound
 
 let with_magic_number_check f a =
   try f a
@@ -453,13 +453,8 @@ let rec_intern_by_filename_only id f =
     m.library_name
 
 let locate_qualified_library qid =
-  (* Look if loaded in current environment *)
-  try 
-    let dir = Nametab.full_name_module qid in
-    (LibLoaded, dir, library_full_filename dir)
-  with Not_found ->
-  (* Look if in loadpath *)
   try
+    (* Search library in loadpath *)
     let dir, base = repr_qualid qid in 
     let loadpath =
       if repr_dirpath dir = [] then get_load_path ()
@@ -470,7 +465,12 @@ let locate_qualified_library qid =
     if loadpath = [] then raise LibUnmappedDir;
     let name =  (string_of_id base)^".vo" in
     let path, file = System.where_in_path loadpath name in
-    (LibInPath, extend_dirpath (find_logical_path path) base, file)
+    let dir = extend_dirpath (find_logical_path path) base in
+    (* Look if loaded *)
+    try 
+      (LibLoaded, dir, library_full_filename dir)      
+    with Not_found ->
+      (LibInPath, dir, file)
   with Not_found -> raise LibNotFound
 
 let rec_intern_qualified_library (loc,qid) =
