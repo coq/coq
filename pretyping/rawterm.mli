@@ -54,6 +54,7 @@ type rawconstr =
   | RSort of loc * rawsort
   | RHole of loc option
   | RCast of loc * rawconstr * rawconstr
+  | RDynamic of loc * Dyn.t
 
 
 (*i - if PRec (_, names, arities, bodies) is in env then arities are

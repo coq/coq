@@ -26,6 +26,7 @@ open Pretype_errors
 open Rawterm
 open Evarconv
 open Coercion
+open Dyn
 
 
 (***********************************************************************)
@@ -101,6 +102,10 @@ let transform_rec loc env sigma (pj,c,lf) indt =
     mkMutCase (ci, p, c, lf)
 
 (***********************************************************************)
+
+(* To embed constr in rawconstr *)
+let ((constr_in : constr -> Dyn.t),
+     (constr_out : Dyn.t -> constr)) = create "constr"
 
 let ctxt_of_ids cl = cl
 
@@ -431,6 +436,15 @@ let rec pretype tycon env isevars lvar lmeta = function
       let cj = pretype (mk_tycon tj.utj_val) env isevars lvar lmeta c in
       let cj = {uj_val = mkCast (cj.uj_val,tj.utj_val); uj_type=tj.utj_val} in
       inh_conv_coerce_to_tycon loc env isevars cj tycon
+
+  | RDynamic (loc,d) ->
+    if (tag d) = "constr" then
+      let c = constr_out d in
+      let j = (Retyping.get_judgment_of env (evars_of isevars) c) in
+      j
+      (*inh_conv_coerce_to_tycon loc env isevars j tycon*)
+    else
+      user_err_loc (loc,"pretype",[< 'sTR "Not a constr tagged Dynamic" >])
 
 (* [pretype_type valcon env isevars lvar lmeta c] coerces [c] into a type *)
 and pretype_type valcon env isevars lvar lmeta = function

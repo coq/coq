@@ -56,6 +56,9 @@ let globpr gt = match gt with
       global_ind_name (section_path sl, tyi)
   | Node(_,"MUTCONSTRUCT",[Path(_,sl); Num(_,tyi); Num(_,i)]) ->
       global_constr_name ((section_path sl, tyi), i)
+  | Dynamic(_,d) ->
+    if (Dyn.tag d) = "constr" then [< 'sTR"<dynamic [constr]>" >]
+    else dfltpr gt
   | gt -> dfltpr gt
 
 let wrap_exception = function
@@ -152,6 +155,12 @@ and default_tacpr = function
     | Node(_,s,[]) -> [< 'sTR s >]
     | Node(_,s,ta) ->
 	[< 'sTR s; 'bRK(1,2); hOV 0 (prlist_with_sep pr_spc gentacpr ta) >]
+    | Dynamic(_,d) as gt ->
+      let tg = Dyn.tag d in
+      if tg = "tactic" then [< 'sTR"<dynamic [tactic]>" >]
+      else if tg = "value" then [< 'sTR"<dynamic [value]>" >]
+      else if tg = "constr" then [< 'sTR"<dynamic [constr]>" >]
+      else dfltpr gt
     | gt -> dfltpr gt 
 
 let pr_var_decl env (id,c,typ) =

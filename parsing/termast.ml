@@ -270,6 +270,7 @@ let rec ast_of_raw = function
 	 | RType _ -> ope("TYPE",[]))
   | RHole _ -> ope("ISEVAR",[])
   | RCast (_,c,t) -> ope("CAST",[ast_of_raw c;ast_of_raw t])
+  | RDynamic (loc,d) -> Dynamic (loc,d)
 	
 and ast_of_eqn (_,ids,pl,c) =
   ope("EQN", (ast_of_raw c)::(List.map ast_of_cases_pattern pl))

@@ -478,6 +478,8 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	anomaly ("ast_to_rawconstr found operator "^opn^" with "^
 		 (string_of_int (List.length tl))^" arguments")
 
+    | Dynamic (loc,d) -> RDynamic (loc,d)
+
     | _ -> anomaly "ast_to_rawconstr: unexpected ast"
 
   and ast_to_eqn n (ids,impls as env) = function
@@ -668,6 +670,18 @@ let interp_rawconstr_wo_glob sigma env lvar com =
 (* V6 compat: Functions before in ex-trad                            *)
 
 (* Functions to parse and interpret constructions *)
+
+(* To embed constr in Coqast.t *)
+let constrIn t = Dynamic (dummy_loc,constr_in t)
+let constrOut = function
+  | Dynamic (_,d) ->
+    if (Dyn.tag d) = "constr" then
+      constr_out d
+    else
+      anomalylabstrm "constrOut" [<'sTR "Dynamic tag should be constr">]
+  | ast ->
+    anomalylabstrm "constrOut"
+      [<'sTR "Not a Dynamic ast: "; print_ast ast>]
 
 let interp_constr sigma env c =
   understand sigma env (interp_rawconstr sigma env c)

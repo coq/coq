@@ -20,6 +20,10 @@ open Pattern
 
 (* Translation from AST to terms. *)
 
+(* To embed constr in Coqast.t *)
+val constrIn : constr -> Coqast.t
+val constrOut : Coqast.t -> constr
+
 val interp_rawconstr     : 'a evar_map -> env -> Coqast.t -> rawconstr
 val interp_constr        : 'a evar_map -> env -> Coqast.t -> constr
 val interp_casted_constr : 'a evar_map -> env -> Coqast.t -> constr -> constr

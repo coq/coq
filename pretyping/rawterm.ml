@@ -56,6 +56,7 @@ type rawconstr =
   | RSort of loc * rawsort
   | RHole of loc option
   | RCast of loc * rawconstr * rawconstr
+  | RDynamic of loc * Dyn.t
 
 
 (*i - if PRec (_, names, arities, bodies) is in env then arities are
@@ -87,6 +88,7 @@ let loc_of_rawconstr = function
   | RHole (Some loc) -> loc
   | RHole (None) -> dummy_loc
   | RCast (loc,_,_) -> loc
+  | RDynamic (loc,_) -> loc
 
 let set_loc_of_rawconstr loc = function
   | RRef (_,a)      -> RRef (loc,a)
@@ -103,9 +105,6 @@ let set_loc_of_rawconstr loc = function
   | RSort (_,a)      -> RSort (loc,a) 
   | RHole _          -> RHole (Some loc)
   | RCast (_,a,b)    -> RCast (loc,a,b) 
+  | RDynamic (_,d)   -> RDynamic (loc,d)
 
 let join_loc (deb1,_) (_,fin2) = (deb1,fin2)
-
-
-
-

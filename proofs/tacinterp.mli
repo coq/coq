@@ -38,12 +38,17 @@ and interp_sign =
     goalopt : goal sigma option;
     debug : debug_info }
 
-(* Gives the constr corresponding to a CONSTR [tactic_arg] *)
+(* Gives the constr corresponding to a Constr [tactic_arg] *)
 val constr_of_Constr : tactic_arg -> constr
 
-(* To provide the tactic expressions *)
-val loc : Coqast.loc
+(* To embed several objects in Coqast.t *)
 val tacticIn : (interp_sign -> Coqast.t) -> Coqast.t
+val tacticOut : Coqast.t -> (interp_sign -> Coqast.t)
+val valueIn : value -> Coqast.t
+val valueOut: Coqast.t -> value
+val constrIn : constr -> Coqast.t
+val constrOut : Coqast.t -> constr
+val loc : Coqast.loc
 
 (* Sets the debugger mode *)
 val set_debug : debug_info -> unit

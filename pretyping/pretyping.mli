@@ -60,6 +60,10 @@ val understand_judgment : 'a evar_map -> env -> rawconstr -> unsafe_judgment
 val understand_type_judgment : 'a evar_map -> env -> rawconstr 
   -> unsafe_type_judgment
 
+(* To embed constr in rawconstr *)
+val constr_in : constr -> Dyn.t
+val constr_out : Dyn.t -> constr
+
 (*i*)
 (* Internal of Pretyping...
  * Unused outside, but useful for debugging

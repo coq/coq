@@ -48,7 +48,6 @@ type value =
   | VRec of value ref
 
 (* Signature for interpretation: val_interp and interpretation functions *)
-
 and interp_sign =
   { evc : enamed_declarations;
     env : Environ.env;
@@ -145,16 +144,39 @@ let interp_openconstr ist c ocl =
   interp_openconstr_gen ist.evc ist.env
     (constr_list ist.goalopt ist.lfun) ist.lmatch c ocl
 
-(* For user tactics *)
-(*let ((ocamlIn : (unit -> Coqast.t) -> Dyn.t),
-     (ocamlOut : Dyn.t -> (unit -> Coqast.t))) = create "ocaml"*)
+(* To embed several objects in Coqast.t *)
+let ((tactic_in : (interp_sign -> Coqast.t) -> Dyn.t),
+     (tactic_out : Dyn.t -> (interp_sign -> Coqast.t))) = create "tactic"
 
-let ((ocamlIn : (interp_sign -> Coqast.t) -> Dyn.t),
-     (ocamlOut : Dyn.t -> (interp_sign -> Coqast.t))) = create "ocaml"
+let ((value_in : value -> Dyn.t),
+     (value_out : Dyn.t -> value)) = create "value"
 
-(* To provide the tactic expressions *)
-let loc = (0,0)
-let tacticIn t = Dynamic (loc,ocamlIn t)
+let tacticIn t = Dynamic (dummy_loc,tactic_in t)
+let tacticOut = function
+  | Dynamic (_,d) ->
+    if (tag d) = "tactic" then
+      tactic_out d
+    else
+      anomalylabstrm "tacticOut" [<'sTR "Dynamic tag should be tactic">]
+  | ast ->
+    anomalylabstrm "tacticOut"
+      [<'sTR "Not a Dynamic ast: "; print_ast ast>]
+
+let valueIn t = Dynamic (dummy_loc,value_in t)
+let valueOut = function
+  | Dynamic (_,d) ->
+    if (tag d) = "value" then
+      value_out d
+    else
+      anomalylabstrm "valueOut" [<'sTR "Dynamic tag should be value">]
+  | ast ->
+    anomalylabstrm "valueOut"
+      [<'sTR "Not a Dynamic ast: "; print_ast ast>]
+
+let constrIn = constrIn
+let constrOut = constrOut
+
+let loc = dummy_loc
 
 (* Table of interpretation functions *)
 let interp_tab =
@@ -533,8 +555,13 @@ let rec val_interp ist ast =
            Not_found ->
              val_interp ist (Node(dummy_loc,"APPTACTIC",[ast])))
     | Dynamic(_,t) ->
-      if (tag t) = "ocaml" then
-        let f = (ocamlOut t) in val_interp ist (f ist)
+      let tg = (tag t) in
+      if tg = "tactic" then
+        let f = (tactic_out t) in val_interp ist (f ist)
+      else if tg = "value" then
+        value_out t
+      else if tg = "constr" then
+        VArg (Constr (Pretyping.constr_out t))
       else
         anomaly_loc (Ast.loc ast, "Tacinterp.val_interp",
           [<'sTR "Unknown dynamic ast: "; print_ast ast>])
