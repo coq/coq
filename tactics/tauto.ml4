@@ -126,7 +126,13 @@ let compute = function
     let ast_id = nvar id in
     interp <:tactic<Compute in $ast_id>>
 
-let reduction = Tacticals.onAllClauses (fun ido -> compute ido)
+let red = function
+  | None -> interp <:tactic<Repeat Red>>
+  | Some id ->
+    let ast_id = nvar id in
+    interp <:tactic<Repeat Red in $ast_id>>
+
+let reduction = Tacticals.onAllClauses
 
 (* As a simple heuristic, first we try to avoid reduction both in tauto and
    intuition *)
@@ -136,14 +142,14 @@ let tauto g =
     (tclTHEN init_intros
       (tclORELSE
         (tclTHEN reduction_not_iff (interp (tacticIn tauto_main)))
-        (tclTHEN reduction (interp (tacticIn tauto_main))))) g
+        (tclTHEN (reduction compute) (interp (tacticIn tauto_main))))) g
   with UserError _ -> errorlabstrm "tauto" [< str "Tauto failed" >]
 
 let intuition =
   tclTHEN init_intros
     (tclORELSE
       (tclTHEN reduction_not_iff (interp (tacticIn intuition_main)))
-      (tclTHEN reduction (interp (tacticIn intuition_main))))
+      (tclTHEN (reduction red) (interp (tacticIn intuition_main))))
 
 let _ = hide_atomic_tactic "Tauto" tauto
 let _ = hide_atomic_tactic "Intuition" intuition
