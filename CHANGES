@@ -22,6 +22,7 @@ Symbolic notations
 - Declarations with only implicit arguments now handled (e.g. the
   argument of nil can be set implicit; use !nil to refer to nil
   without arguments)
+- "Print Scope sc" and "Locate ntn" allows to know to what a notation is bound
 - New defensive strategy for printing or not implicit arguments to ensure
   re-type-checkability of the printed term
 
