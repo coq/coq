@@ -242,49 +242,18 @@ let traverse n = mutate (traverse n)
    Traverses the current proof to get to the location specified by
    [path].
 
-   ALGORITHM:
-
-   If the cursor is equal to the path, we are done.
-
-   If the cursor is longer than the path, then traverse to the parent
-
-   If the cursor is equal to the tail of the path, then traverse to
-   the head of the path, and we are done.
-
-   Otherwise, traverse to the parent, traverse to the tail of the
-   path, then traverse to the path.
+   ALGORITHM: The algorithm works on reversed paths. One just has to remove
+   the common part on the reversed paths.
 
 *)
 
-let rec nth_cdr = function
-  | 0 -> (function l -> l)
-  | n -> (compose List.tl (nth_cdr (n - 1)))
-	
-let rec common_ancestor_equal_length = function
-  | ((a::l1), (b::l2)) ->
-      let (prefx,n) as result = (common_ancestor_equal_length (l1,l2)) in
-      if result = ([],0) then    
-        if a = b then 
-	  result
-        else 
-	  (a::prefx),(n + 1)
-      else 
-	(a::prefx),(n + 1)
-  | ([], []) -> [],0
-  | (_, _) -> anomaly "common_ancestor_equal_length"
-	
 let common_ancestor l1 l2 =
-  let diff_lengths = (List.length l1) - (List.length l2) in
-  if diff_lengths > 0 then
-    let head,tail = list_chop diff_lengths l1 in
-    let (prefx,n) = common_ancestor_equal_length (tail,l2) in 
-    (head@prefx),n
-  else if diff_lengths < 0 then
-    let (prefx,n) = common_ancestor_equal_length
-		      (l1, (nth_cdr (- diff_lengths) l2)) in
-    prefx,(n - diff_lengths)
-  else 
-    common_ancestor_equal_length (l1,l2)
+  let rec common_aux l1 l2 =
+    match l1, l2 with
+      | a1::l1', a2::l2' when a1 = a2 -> common_aux l1' l2'
+      | _, _ -> List.rev l1, List.length l2
+  in
+  common_aux (List.rev l1) (List.rev l2)
       
 let rec traverse_up = function
   | 0 -> (function pf -> pf)

@@ -36,12 +36,12 @@ val refining : unit -> bool
 
 val check_no_pending_proofs : unit -> unit
 
-(*s [delete_proof name] deletes proof of name [name] or failed if no proof
+(*s [delete_proof name] deletes proof of name [name] or fails if no proof
     has this name *)
 
 val delete_proof : identifier -> unit
 
-(* [delete_current_proof ()] deletes current focused proof or failed if
+(* [delete_current_proof ()] deletes current focused proof or fails if
     no proof is focused *)
 
 val delete_current_proof : unit -> unit
