@@ -44,7 +44,7 @@ OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
 CAMLP4IFDEF=camlp4o pa_ifdef.cmo -D$(OSTYPE)
 
-COQINCLUDES=-I parsing -I contrib/omega -I contrib/ring -I contrib/xml \
+COQINCLUDES=-I contrib/omega -I contrib/ring -I contrib/xml \
             -I theories/Init -I theories/Logic -I theories/Arith \
             -I theories/Bool -I theories/Zarith -I theories/Lists \
 	    -I theories/Sets -I theories/Relations -I theories/Reals
@@ -93,9 +93,10 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_vernac.cmo parsing/g_tactic.cmo \
 	parsing/g_constr.cmo parsing/g_cases.cmo \
         parsing/extend.cmo parsing/esyntax.cmo \
-	parsing/printer.cmo parsing/pretty.cmo parsing/egrammar.cmo
+	parsing/printer.cmo parsing/pretty.cmo parsing/egrammar.cmo \
+        parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo
 
-ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo
+# ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo
 
 PROOFS=proofs/proof_type.cmo proofs/proof_trees.cmo proofs/logic.cmo \
        proofs/refiner.cmo proofs/evar_refiner.cmo proofs/tacmach.cmo \
@@ -120,15 +121,15 @@ HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo \
 
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
         contrib/ring/quote.cmo contrib/ring/ring.cmo \
-        contrib/xml/xml.cmo contrib/xml/cooking.cmo contrib/xml/xmlcommand.cmo \
-        contrib/xml/xmlentries.cmo
+        contrib/xml/xml.cmo contrib/xml/cooking.cmo \
+	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
 CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PRETYPING) $(PARSING) \
     $(PROOFS) $(TACTICS) $(TOPLEVEL) $(HIGHTACTICS) $(CONTRIB)
-CMX=$(CMO:.cmo=.cmx) $(ARITHSYNTAX:.cmo=.cmx)
+CMX=$(CMO:.cmo=.cmx)
 
 ###########################################################################
 # Main targets (coqmktop, coqtop.opt, coqtop.byte)

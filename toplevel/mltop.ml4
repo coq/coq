@@ -149,8 +149,8 @@ let init_with_state () =
   List.iter (fun f -> f()) (List.rev !init_list); init_list := []
 
 
-(* known_loaded_module contains the names of the loaded ML modules
- * (linked or loaded with load_object). It is used not to loaded a 
+(* [known_loaded_module] contains the names of the loaded ML modules
+ * (linked or loaded with load_object). It is used not to load a 
  * module twice. It is NOT the list of ML modules Coq knows. *)
 
 type ml_module_object = { mnames : string list }
@@ -203,13 +203,15 @@ let cache_ml_module_object (_,{mnames=mnames}) =
     (fun name ->
        let mname = mod_of_name name in
        if not (module_is_known mname) then
-         let fname= file_of_name mname in
-         begin try 
-	   mSG [< 'sTR"[Loading ML file " ; 'sTR fname ; 'sTR" ..." >];
-           load_object mname fname;
-           mSGNL [< 'sTR"done]" >]
-         with e -> 
-	   begin pPNL [< 'sTR"failed]" >]; raise e end
+         let fname = file_of_name mname in
+         begin 
+	   try 
+	     mSG [< 'sTR"[Loading ML file " ; 'sTR fname ; 'sTR" ..." >];
+             load_object mname fname;
+             mSGNL [< 'sTR"done]" >]
+           with e -> 
+	     pPNL [< 'sTR"failed]" >]; 
+	     raise e
 	 end;
          add_loaded_module mname)
     mnames
@@ -219,7 +221,7 @@ let specification_ml_module_object x = x
 let (inMLModule,outMLModule) =
   declare_object ("ML-MODULE",
                   { load_function = cache_ml_module_object;
-                    cache_function = (fun _ -> ());
+                    cache_function = cache_ml_module_object;
 		    open_function = (fun _ -> ());
                     specification_function = specification_ml_module_object })
 

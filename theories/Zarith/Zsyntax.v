@@ -4,9 +4,6 @@
 Require Export fast_integer.
 Require Export zarith_aux.
 
-Declare ML Module "g_zsyntax".
-
-
 Axiom My_special_variable0 : positive->positive.
 Axiom My_special_variable1 : positive->positive.
 

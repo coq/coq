@@ -11,7 +11,6 @@ Require Export Between.
 Require Export Minus.
 
 Axiom My_special_variable : nat -> nat.
-Declare ML Module "g_natsyntax".
 
 Grammar nat number :=.
 

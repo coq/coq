@@ -3,7 +3,7 @@
 # wrap around ocamldebug for Coq
 
 # export COQTOP=`coqtop -where`
-export COQTOP=$HOME/coq/V7
+export COQTOP=$HOME/local/coq/V7
 export COQLIB=$COQTOP
 export COQTH=$COQLIB/theories
 export CAMLP4LIB=`camlp4 -where`

@@ -44,7 +44,7 @@ let camlp4objs =
    "q_coqast.cmo" ]
 let topobjs = camlp4objs
 
-let gramobjs = ["g_zsyntax.cmo"; "g_natsyntax.cmo"]
+let gramobjs = []
 let notopobjs = gramobjs
 
 (* 5. High-level tactics objects *)
