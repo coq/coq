@@ -328,7 +328,7 @@ let pat_z_of_int dloc n name =
 
 let bigint_of_z = function
   | RApp (_, RRef (_,b),[a]) when b = glob_POS -> bignat_of_pos a
-  | RApp (_, RRef (_,b),[a]) when b = glob_NEG -> bignat_of_pos a
+  | RApp (_, RRef (_,b),[a]) when b = glob_NEG -> Bigint.neg (bignat_of_pos a)
   | RRef (_, a) when a = glob_ZERO -> Bigint.zero
   | _ -> raise Non_closed_number
 
