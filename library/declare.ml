@@ -24,8 +24,19 @@ let make_strength = function
 
 (* Variables. *)
 
-let cache_variable (_,obj) = 
-  Global.push_var obj
+type variable_declaration = identifier * constr * strength * bool
+
+let vartab = ref (Spmap.empty : variable_declaration Spmap.t)
+
+let _ = Summary.declare_summary "VARIABLE"
+	  { Summary.freeze_function = (fun () -> !vartab);
+	    Summary.unfreeze_function = (fun ft -> vartab := ft);
+	    Summary.init_function = (fun () -> vartab := Spmap.empty) }
+
+let cache_variable (sp,((id,ty,_,_) as vd)) = 
+  Global.push_var (id,ty);
+  Nametab.push id sp;
+  vartab := Spmap.add sp vd !vartab
 
 let load_variable _ = 
   anomaly "we shouldn't load a variable"
@@ -44,11 +55,10 @@ let (in_variable, out_variable) =
     specification_function = specification_variable } in
   declare_object ("VARIABLE", od)
 
-let declare_variable id c =
-  let obj = (id,c) in
-  Global.push_var obj;
-  let _ = add_leaf id CCI (in_variable obj) in
-  ()
+let declare_variable ((id,ty,_,_) as obj) =
+  Global.push_var (id,ty);
+  let sp = add_leaf id CCI (in_variable obj) in
+  Nametab.push id sp
 
 (* Parameters. *)
 
@@ -76,6 +86,15 @@ let declare_parameter id c =
  
 (* Constants. *)
 
+type constant_declaration = identifier * constant_entry * strength * bool
+
+let csttab = ref (Spmap.empty : constant_declaration Spmap.t)
+
+let _ = Summary.declare_summary "CONSTANT"
+	  { Summary.freeze_function = (fun () -> !vartab);
+	    Summary.unfreeze_function = (fun ft -> vartab := ft);
+	    Summary.init_function = (fun () -> vartab := Spmap.empty) }
+
 let cache_constant (sp,ce) =
   Global.add_constant sp ce;
   Nametab.push (basename sp) sp;
@@ -95,7 +114,7 @@ let (in_constant, out_constant) =
     specification_function = specification_constant } in
   declare_object ("CONSTANT", od)
 
-let declare_constant id ce =
+let declare_constant ((id,ce,_,_) as cd) =
   let sp = add_leaf id CCI (in_constant ce) in
   Global.add_constant sp ce;
   Nametab.push (basename sp) sp;
@@ -176,12 +195,23 @@ let out_syntax_constant id = Idmap.find id !syntax_table
 
 (* Test and access functions. *)
 
-let is_constant sp = failwith "TODO"
+let is_constant sp = 
+  try let _ = Global.lookup_constant sp in true with Not_found -> false
+
 let constant_strength sp = failwith "TODO"
 
-let is_variable id = failwith "TODO"
-let out_variable sp = failwith "TODO"
-let variable_strength id = failwith "TODO"
+let is_variable id = 
+  let sp = Nametab.sp_of_id CCI id in Spmap.mem sp !vartab
+  
+let out_variable sp = 
+  let (id,_,str,sticky) = Spmap.find sp !vartab in
+  let (_,ty) = Global.lookup_var id in
+  (id,ty,str,sticky)
+
+let variable_strength id =
+  let sp = Nametab.sp_of_id CCI id in 
+  let (_,_,str,_) = Spmap.find sp !vartab in
+  str
 
 (* Global references. *)
 
@@ -263,8 +293,10 @@ let declare_eliminations sp =
   let redmind = minductype_spec env sigma mind in
   let mindstr = string_of_id mindid in
   let declare na c =
-    declare_constant (id_of_string na) 
-      { const_entry_body = c; const_entry_type = None } in
+    declare_constant 
+      (id_of_string na, { const_entry_body = c; const_entry_type = None },
+       false, NeverDischarge)
+  in
   let mispec = Global.lookup_mind_specif redmind in 
   let elim_scheme = 
     strip_all_casts (mis_make_indrec env sigma [] mispec).(0) in

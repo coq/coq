@@ -136,6 +136,9 @@ let safe_machine env sigma constr =
   let mf = { fix = false; nocheck = false } in
   execute mf env sigma constr
 
+let unsafe_machine env sigma constr =
+  let mf = { fix = false; nocheck = true } in
+  execute mf env sigma constr
 
 (* Type of a constr *)
 

@@ -10,6 +10,8 @@ open Evd
 (* This module provides the typing machine with existential variables
    (but without universes). *)
 
+val unsafe_machine : env -> 'a evar_map -> constr -> unsafe_judgment
+
 val type_of : env -> 'a evar_map -> constr -> constr
 
 val execute_type : env -> 'a evar_map -> constr -> typed_type

@@ -46,7 +46,7 @@ let print_typed_value_in_env env (trm,typ) =
   [< term0 (gLOB sign) trm ; 'fNL ;
      'sTR "     : "; term0 (gLOB sign) typ ; 'fNL >]
 
-let print_typed_value x = print_typed_value_in_env (Global.unsafe_env()) x
+let print_typed_value x = print_typed_value_in_env (Global.env()) x
 			  		  
 let print_recipe = function
   | Some c -> prterm c
@@ -131,7 +131,7 @@ let print_mutual sp mib =
   let pk = kind_of_path sp in
   let pterm,pterminenv =
     if pk = FW then (fprterm,fterm0) else (prterm,term0) in
-  let env = Global.unsafe_env () in
+  let env = Global.env () in
   let evd = Evd.empty in
   let {mind_packets=mipv; mind_nparams=nparams} = mib in 
   let (lpars,_) = decomp_n_prod env evd nparams mipv.(0).mind_arity.body in
@@ -218,7 +218,7 @@ let print_leaf_entry with_values sep (spopt,lobj) =
   let tag = object_tag lobj in
   match (spopt,tag) with
     | (_,"VARIABLE") ->
-	let (name,typ,_) = out_variable spopt in
+	let (name,typ,_,_) = out_variable spopt in
 	let l = implicits_of_var (kind_of_path spopt) name in
 	[< print_var (string_of_id name) typ; print_impl_args l; 'fNL >]
  
@@ -359,7 +359,7 @@ let crible (fn:string -> unit assumptions -> constr -> unit) name =
     | (spopt,Lib.Leaf lobj)::rest ->
 	(match (spopt,object_tag lobj) with
 	   | (_,"VARIABLE") ->
-	       let (namec,typ,_) = out_variable spopt in 
+	       let (namec,typ,_,_) = out_variable spopt in 
                if (head_const typ.body) = const then  
                  fn (string_of_id namec) hyps typ.body;
                crible_rec rest
@@ -437,7 +437,7 @@ let print_name name =
 
 let print_opaque_name name = 
   let sigma = Evd.empty in
-  let env = Global.unsafe_env () in
+  let env = Global.env () in
   let sign = Global.var_context () in
   try 
     match global_reference CCI name with
@@ -466,7 +466,7 @@ let print_local_context () =
     | [] -> [< >]
     | (sp,Lib.Leaf lobj)::rest ->
 	if "VARIABLE" = object_tag lobj then
-          let (name,typ,_) = out_variable sp in 
+          let (name,typ,_,_) = out_variable sp in 
 	  [< print_var_rec rest;
              print_var (string_of_id name) typ >]
 	else 
@@ -500,7 +500,7 @@ let fprint_judge {uj_val=trm;uj_type=typ} =
 
 let unfold_head_fconst = 
   let rec unfrec = function
-    | DOPN(Const _,_) as k -> constant_value (Global.unsafe_env()) k 
+    | DOPN(Const _,_) as k -> constant_value (Global.env()) k 
     | DOP2(Lambda,t,DLAM(na,b)) -> DOP2(Lambda,t,DLAM(na,unfrec b))
     | DOPN(AppL,v) -> DOPN(AppL,array_cons (unfrec (array_hd v)) (array_tl v))
     | x -> x

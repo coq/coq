@@ -9,9 +9,12 @@ open Generic
 open Term
 open Environ
 open Evd
+open Reduction
 open Impargs
 open Rawterm
+open Typing
 open Pretyping
+open Evarutil
 open Ast
 open Coqast
 
@@ -614,8 +617,7 @@ let ast_adjust_consts sigma = (* locations are kept *)
   dbrec
 
 let globalize_command ast =
-  let env = Global.unsafe_env () in
-  let sign = Environ.var_context env in
+  let sign = Global.var_context () in
   ast_adjust_consts Evd.empty (gLOB sign) ast
 
 (* Avoid globalizing in non command ast for tactics *)
@@ -708,7 +710,7 @@ let constr_of_com_casted sigma env com typ =
   let c = raw_constr_of_com sigma sign com in
   let isevars = ref sigma in
   try
-    let j = unsafe_fmachine
+    let j = unsafe_machine
 	      (mk_tycon (nf_ise1 sigma typ)) false isevars [] env c in
     (j_apply (process_evars true !isevars) j).uj_val
   with e -> 
