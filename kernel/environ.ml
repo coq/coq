@@ -193,6 +193,8 @@ let named_hd env a = function
 
 let prod_name env (n,a,b) = mkProd (named_hd env a n) a b
 
+let lambda_create env (a,b) =  mkLambda (named_hd env a Anonymous) a b
+
 (* Abstractions. *)
 
 let evaluable_abst env = function

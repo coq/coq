@@ -57,12 +57,11 @@ let cache_variable (sp,(id,(ty,_,_) as vd,imps)) =
   if imps then declare_var_implicits id;
   vartab := Spmap.add sp vd !vartab
 
-let load_variable _ = anomaly "we shouldn't load a variable"
+let load_variable _ = ()
 
-let open_variable _ = anomaly "we shouldn't open a variable"
+let open_variable _ = ()
 
-let specification_variable _ = 
-  anomaly "we shouldn't extract the specification of a variable"
+let specification_variable x = x
 
 let (in_variable, out_variable) =
   let od = {

@@ -30,6 +30,8 @@ val add_parameter : section_path -> constr -> unit
 val add_mind : section_path -> mutual_inductive_entry -> unit
 val add_constraints : constraints -> unit
 
+val pop_vars : identifier list -> unit
+
 val lookup_var : identifier -> name * typed_type
 val lookup_rel : int -> name * typed_type
 val lookup_constant : section_path -> constant_body

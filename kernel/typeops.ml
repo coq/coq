@@ -84,7 +84,7 @@ let check_hyps id env sigma hyps =
 let type_of_constant env sigma (sp,args) =
   let cb = lookup_constant sp env in
   let hyps = cb.const_hyps in
-  check_hyps (basename sp) env sigma hyps;
+  (* TODO: check args *)
   instantiate_type (ids_of_sign hyps) cb.const_type (Array.to_list args)
 
 (* Inductive types. *)
@@ -99,7 +99,7 @@ let instantiate_arity mis =
 let type_of_inductive env sigma i =
   let mis = lookup_mind_specif i env in
   let hyps = mis.mis_mib.mind_hyps in
-  check_hyps (basename mis.mis_sp) env sigma hyps;
+  (* TODO: check args *)
   instantiate_arity mis
 
 (* Constructors. *)
@@ -112,7 +112,7 @@ let instantiate_lc mis =
 let type_of_constructor env sigma ((ind_sp,j),args as cstr) =
   let mind = inductive_of_constructor cstr in
   let mis = lookup_mind_specif mind env in
-  check_hyps (basename mis.mis_sp) env sigma (mis.mis_mib.mind_hyps);
+  (* TODO: check args *)
   let specif = instantiate_lc mis in
   let make_ik k = DOPN (MutInd (mis.mis_sp,k), mis.mis_args) in
   if j > mis_nconstr mis then
@@ -161,7 +161,7 @@ let type_of_existential env sigma c =
   let evi = Evd.map sigma ev in
   let hyps = var_context evi.Evd.evar_env in
   let id = id_of_string ("?" ^ string_of_int ev) in
-  check_hyps id env sigma hyps;
+  (* TODO: check args *)
   instantiate_constr (ids_of_sign hyps) evi.Evd.evar_concl (Array.to_list args)
 
 

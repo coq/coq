@@ -52,6 +52,8 @@ val list_tabulate : (int -> 'a) -> int -> 'a list
 val list_assign : 'a list -> int -> 'a -> 'a list
 val list_distinct : 'a list -> bool
 val list_map_i : (int -> 'a -> 'b) -> int -> 'a list -> 'b list
+val list_map2_i : 
+  (int -> 'a -> 'b -> 'c) -> int -> 'a list -> 'b list -> 'c list
 val list_index : 'a -> 'a list -> int
 val list_iter_i :  (int -> 'a -> unit) -> 'a list -> unit
 val list_fold_left_i :  (int -> 'a -> 'b -> 'a) -> int -> 'a -> 'b list -> 'a
@@ -73,7 +75,7 @@ val list_map_append2 : ('a -> 'b -> 'c list) -> 'a list -> 'b list -> 'c list
 val list_share_tails : 'a list -> 'a list -> 'a list * 'a list * 'a list
 val list_except_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
 val list_join_map : ('a -> 'b list) -> 'a list -> 'b list
-
+val list_try_find : ('a -> 'b) -> 'a list -> 'b
 
 (*s Arrays. *)
 
@@ -95,6 +97,7 @@ val array_list_of_tl : 'a array -> 'a list
 val array_map_to_list : ('a -> 'b) -> 'a array -> 'b list
 val array_chop : int -> 'a array -> 'a array * 'a array
 val array_map2 : ('a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
+val array_map2_i : (int -> 'a -> 'b -> 'c) -> 'a array -> 'b array -> 'c array
 val array_map3 : 
   ('a -> 'b -> 'c -> 'd) -> 'a array -> 'b array -> 'c array -> 'd array
 

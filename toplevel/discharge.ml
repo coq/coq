@@ -172,8 +172,9 @@ let process_constant osecsp nsecsp oldenv (ids_to_discard,modlist) cb =
   let body = 
     expmod_constant_value cb.const_opaque oldenv modlist cb.const_body in
   let typ = expmod_type oldenv modlist cb.const_type in
+  let hyps = map_sign_typ (expmod_type oldenv modlist) cb.const_hyps in
   let (body',typ',modl) = 
-    abstract_constant ids_to_discard cb.const_hyps (body,typ)
+    abstract_constant ids_to_discard hyps (body,typ)
   in
   let mods = (Const osecsp, DO_ABSTRACT(Const nsecsp,modl)) :: modlist in
   (body', typ'.body, mods)
@@ -305,10 +306,10 @@ let process_operation = function
 
 let close_section _ s = 
   let oldenv = Global.env() in
-  let (sec_sp,decls,frozen) = close_section s in
-  let (ops,_,_) = 
+  let (sec_sp,decls) = close_section s in
+  let (ops,ids,_) = 
     List.fold_left (process_item oldenv sec_sp) ([],[],[]) decls in 
-  Summary.unfreeze_summaries frozen;
+  Global.pop_vars ids;
   List.iter process_operation (List.rev ops)
 
 

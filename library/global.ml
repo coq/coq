@@ -37,6 +37,8 @@ let add_parameter sp c = global_env := add_parameter sp c !global_env
 let add_mind sp mie = global_env := add_mind sp mie !global_env
 let add_constraints c = global_env := add_constraints c !global_env
 
+let pop_vars ids = global_env := pop_vars ids !global_env
+
 let lookup_var id = lookup_var id !global_env
 let lookup_rel n = lookup_rel n !global_env
 let lookup_constant sp = lookup_constant sp !global_env

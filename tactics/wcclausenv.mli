@@ -5,6 +5,7 @@
 open Names
 open Term
 open Sign
+open Environ
 open Evd
 open Proof_trees
 open Tacmach
@@ -27,11 +28,10 @@ type wc = walking_constraints
 
 val clenv_constrain_with_bindings : arg_bindings -> wc clausenv -> wc clausenv
 
+val add_prod_rel : 'a evar_map -> constr * env -> constr * env
+val add_prods_rel : 'a evar_map -> constr * env -> constr * env
+
 (*i**
-val add_prod_rel : 'a evar_map -> constr * context -> constr * context
-
-val add_prods_rel : 'a evar_map -> constr * context -> constr * context
-
 val add_prod_sign : 
   'a evar_map -> constr * typed_type signature -> constr * typed_type signature
 

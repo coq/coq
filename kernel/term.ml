@@ -424,6 +424,10 @@ let destEvar = function
   | DOPN (Evar n, a) -> (n,a)
   | _ -> invalid_arg "destEvar"
 
+let num_of_evar = function
+  | DOPN (Evar n, _) -> n
+  | _ -> anomaly "num_of_evar called with bad args"
+
 (* Destructs an abstract term *)
 let destAbst = function
   | DOPN (Abst sp, a) -> (sp, a)

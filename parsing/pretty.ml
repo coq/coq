@@ -289,8 +289,10 @@ let rec print_library_entry with_values ent =
   match ent with
     | (sp,Lib.Leaf lobj) -> 
 	[< print_leaf_entry with_values sep (sp,lobj) >]
-    | (_,Lib.OpenedSection (str,_)) -> 
+    | (_,Lib.OpenedSection str) -> 
         [< 'sTR(" >>>>>>> Section " ^ str); 'fNL >]
+    | (_,Lib.ClosedSection (str,_)) -> 
+        [< 'sTR(" >>>>>>> Closed Section " ^ str); 'fNL >]
     | (_,Lib.Module str) ->
 	[< 'sTR(" >>>>>>> Module " ^ str); 'fNL >]
     | (_,Lib.FrozenState _) ->
@@ -386,6 +388,8 @@ let crible (fn:string -> unit assumptions -> constr -> unit) name =
 
     | (_, (Lib.OpenedSection _ | Lib.FrozenState _ | Lib.Module _))::rest -> 
 	crible_rec rest
+    | (_, Lib.ClosedSection _) :: rest ->
+	crible_rec rest
     | []      -> ()
   in 
   try 
@@ -400,7 +404,7 @@ let print_crible name =
 
 let read_sec_context sec =
   let rec get_cxt in_cxt = function
-    | ((sp,Lib.OpenedSection (str,_)) as hd)::rest ->
+    | ((sp,Lib.OpenedSection str) as hd)::rest ->
         if str = sec then (hd::in_cxt) else get_cxt (hd::in_cxt) rest
     | [] -> []
     | hd::rest -> get_cxt (hd::in_cxt) rest 

@@ -15,15 +15,15 @@ Grammar command command1 :=
 
 with command10 :=
   allTexplicit [ "ALLT" ident($v) ":" command($t) "|" command($c1) ]
-                          -> [<<(allT $t [$v:$t]$c1)>>]
+                          -> [<<(allT $t [$v : $t]$c1)>>]
 | allTimplicit [ "ALLT" ident($v) "|" command($c1) ] 
                           -> [<<(allT ? [$v]$c1)>>]
 | exTexplicit [ "EXT" ident($v) ":" command($t) "|" command($c1) ]
-                          -> [<<(exT $t [$v:$t]$c1)>>]
+                          -> [<<(exT $t [$v : $t]$c1)>>]
 | exTimplicit [ "EXT" ident($v) "|" command($c1) ] 
                           -> [<<(exT ? [$v]$c1)>>]
 | exT2explicit [ "EXT" ident($v) ":" command($t) "|" command($c1) "&"
-           command($c2) ] -> [<<(exT2 $t [$v:$t]$c1 [$v:$t]$c2)>>]
+           command($c2) ] -> [<<(exT2 $t [$v : $t]$c1 [$v : $t]$c2)>>]
 | exT2implicit [ "EXT" ident($v) "|" command($c1) "&" 
            command($c2) ] -> [<<(exT2 ? [$v]$c1 [$v]$c2)>>].
 
@@ -32,16 +32,16 @@ with command10 :=
 Syntax constr
   level 10:
     allT_pred [<<(allT $_ $p)>>] -> [ [<hov 0> "AllT " $p:L ] ]
-  | allT [<<(allT $T [$x:$T]$p)>>]
+  | allT [<<(allT $T [$x : $T]$p)>>]
        -> [ [<hov 3> "ALLT " $x ":" $T:L " |" [1 0] $p:L ] ]
 
   | exT_pred [<<(exT $_ $p)>>] -> [ [<hov 4> "ExT " $p:L ] ]
-  | exT [<<(exT $t1 [$x:$T]$p)>>] 
+  | exT [<<(exT $t1 [$x : $T]$p)>>] 
        -> [ [<hov 4> "EXT " $x ":" $T:L " |" [1 0] $p:L ] ]
 
   | exT2_pred [<<(exT2 $_ $p1 $p2)>>]
        -> [ [<hov 4> "ExT2 " $p1:L [1 0] $p2:L ] ]
-  | exT2 [<<(exT2 $T [$x:$T]$P1 [$x:$T]$P2)>>] 
+  | exT2 [<<(exT2 $T [$x : $T]$P1 [$x : $T]$P2)>>] 
        -> [ [<hov 2> "EXT " $x ":" $T:L " |" [1 2] $P1:L [1 0] "& " $P2:L] ]
   ;
 

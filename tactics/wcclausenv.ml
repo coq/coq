@@ -90,19 +90,19 @@ let clenv_constrain_with_bindings bl clause =
     in 
     matchrec clause bl
 
-(***TODO: SUPPRIMMER ??
 let add_prod_rel sigma (t,env) =
   match t with
     | DOP2(Prod,c1,(DLAM(na,b))) ->
-        (b,add_rel (na,Typing_ev.execute_type sigma env c1) env)
+        (b,push_rel (na,Typing.execute_type env sigma c1) env)
     | _ -> failwith "add_prod_rel"
 
 let rec add_prods_rel sigma (t,env) =
   try 
-    add_prods_rel sigma (add_prod_rel sigma (whd_betadeltaiota sigma t,env))
+    add_prods_rel sigma (add_prod_rel sigma (whd_betadeltaiota env sigma t,env))
   with Failure "add_prod_rel" -> 
     (t,env)
 
+(***TODO: SUPPRIMMER ??
 let add_prod_sign sigma (t,sign) =
   match t with
     | DOP2(Prod,c1,(DLAM(na,_) as b)) ->

@@ -29,30 +29,31 @@ type module_t = {
   module_deps : (string * Digest.t * bool) list;
   module_digest : Digest.t }
 
-let modules_table =
-  (Hashtbl.create 17 : (string, module_t) Hashtbl.t)
+let modules_table = ref Stringmap.empty
+
+let _ = 
+  Summary.declare_summary "MODULES"
+    { Summary.freeze_function = (fun () -> !modules_table);
+      Summary.unfreeze_function = (fun ft -> modules_table := ft);
+      Summary.init_function = (fun () -> modules_table := Stringmap.empty) }
 
 let find_module s =
   try
-    Hashtbl.find modules_table s
+    Stringmap.find s !modules_table
   with Not_found ->
     error ("Unknown module " ^ s)
 
 let module_is_loaded s =
-  try let _ = Hashtbl.find modules_table s in true with Not_found -> false
+  try let _ = Stringmap.find s !modules_table in true with Not_found -> false
 
-let module_is_opened s =
-  (find_module s).module_opened
+let module_is_opened s = (find_module s).module_opened
 
 let loaded_modules () =
-  let l = ref [] in
-  Hashtbl.iter (fun s _ -> l := s :: !l) modules_table;
-  !l
+  Stringmap.fold (fun s _ l -> s :: l) !modules_table []
 
 let opened_modules () =
-  let l = ref [] in
-  Hashtbl.iter (fun s m -> if m.module_opened then l := s :: !l) modules_table;
-  !l
+  Stringmap.fold (fun s m l -> if m.module_opened then s :: l else l) 
+    !modules_table []
 
 let vo_magic_number = 0700
 
@@ -63,6 +64,7 @@ let segment_iter f =
   let rec apply = function
     | sp,Leaf obj -> f (sp,obj)
     | _,OpenedSection _ -> assert false
+    | _,ClosedSection (_,seg) -> iter seg
     | _,(FrozenState _ | Module _) -> ()
   and iter seg =
     List.iter apply seg
@@ -106,7 +108,7 @@ let rec load_module_from doexp s f =
   List.iter (load_mandatory_module doexp s) m.module_deps;
   Global.import m.module_compiled_env;
   load_objects m.module_declarations;
-  Hashtbl.add modules_table s m;
+  modules_table := Stringmap.add s m !modules_table;
   m
 
 and load_mandatory_module doexp caller (s,d,export) =
@@ -116,8 +118,10 @@ and load_mandatory_module doexp caller (s,d,export) =
   if doexp && export then open_module s
 
 and find_module doexp s f =
-  try Hashtbl.find modules_table s with Not_found -> load_module_from doexp s f
-
+  try 
+    Stringmap.find s !modules_table 
+  with Not_found -> 
+    load_module_from doexp s f
 
 let load_module s = function
   | None -> let _ = load_module_from true s s in ()
@@ -138,11 +142,9 @@ let require_module spec name fileopt export =
 (* [save_module s] saves the module [m] to the disk. *)
 
 let current_imports () =
-  let l = ref [] in
-  Hashtbl.iter 
-    (fun _ m -> l := (m.module_name, m.module_digest, m.module_exported) :: !l)
-    modules_table;
-  !l
+  Stringmap.fold
+    (fun _ m l -> (m.module_name, m.module_digest, m.module_exported) :: l)
+    !modules_table []
 
 let save_module_to s f =
   let seg = export_module () in

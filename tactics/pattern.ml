@@ -42,7 +42,7 @@ let parse_pattern s =
   raw_sopattern_of_compattern (Global.env()) com
     
 let (pattern_stock : constr Stock.stock) =
-  Stock.make_stock {name="PATTERN";proc=parse_pattern}
+  Stock.make_stock { name = "PATTERN"; proc = parse_pattern }
 
 let make_module_marker = Stock.make_module_marker pattern_stock
 let put_pat = Stock.stock pattern_stock
@@ -306,8 +306,8 @@ let match_with_equation  t =
     | IsMutInd ind -> 
         let constr_types = 
 	  Global.mind_lc_without_abstractions ind in 
-        let refl_rel_term1 = put_pat mmk "(A:?)(x:A)(? A x x)" in
-        let refl_rel_term2 = put_pat mmk "(x:?)(? x x)" in
+        let refl_rel_term1 = put_pat mmk "(A : ?)(x:A)(? A x x)" in
+        let refl_rel_term2 = put_pat mmk "(x : ?)(? x x)" in
         let nconstr = Global.mind_nconstr ind in
 	if nconstr = 1 &&
            (somatches constr_types.(0) refl_rel_term1 ||

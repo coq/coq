@@ -20,7 +20,7 @@ noargument:
 	@echo "   ./configure"
 	@echo "   make world"
 	@echo "   make install"
-	@echo "   make cleanall"
+	@echo "   make clean"
 	@echo "or make archclean"
 
 ###########################################################################
@@ -41,7 +41,7 @@ OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
 CAMLP4IFDEF=camlp4o pa_ifdef.cmo -D$(OSTYPE)
 
-COQINCLUDES=-I theories/Init
+COQINCLUDES=-I theories/Init -I theories/Logic
 
 ###########################################################################
 # Objects files 
@@ -107,7 +107,7 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo \
          toplevel/usage.cmo toplevel/coqinit.cmo toplevel/coqtop.cmo
 
-HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo
+HIGHTACTICS=tactics/dhyp.cmo tactics/auto.cmo tactics/equality.cmo
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -163,6 +163,9 @@ $(COQC): $(COQCCMO)
 scripts/coqc.cmo: scripts/coqc.ml4
 	$(OCAMLC) $(BYTEFLAGS) -c -pp "$(CAMLP4IFDEF) -impl" -impl $<
 
+archclean::
+	rm -f scripts/coqc scripts/coqmktop
+
 # we provide targets for each subdirectories
 
 lib: $(LIB)
@@ -174,27 +177,48 @@ parsing: $(PARSING)
 pretyping: $(PRETYPING)
 toplevel: $(TOPLEVEL)
 
-# states
+###########################################################################
+# theories and states
+###########################################################################
 
-states: states/barestate.coq
+states: states/barestate.coq states/initial.coq
 
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v syntax/PPTactic.v
 
 states/barestate.coq: $(SYNTAXPP) coqtop.byte
 	./coqtop.byte -q -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
 
-###########################################################################
-# theories
-###########################################################################
+INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
+       theories/Init/DatatypesSyntax.vo   theories/Init/Prelude.vo       \
+       theories/Init/Logic.vo             theories/Init/Specif.vo        \
+       theories/Init/LogicSyntax.vo       theories/Init/SpecifSyntax.vo  \
+       theories/Init/Logic_Type.vo        theories/Init/Wf.vo            \
+       theories/Init/Logic_TypeSyntax.vo
 
-INIT=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
-     theories/Init/DatatypesSyntax.vo   theories/Init/Prelude.vo       \
-     theories/Init/Logic.vo             theories/Init/Specif.vo        \
-     theories/Init/LogicSyntax.vo       theories/Init/SpecifSyntax.vo  \
-     theories/Init/Logic_Type.vo        theories/Init/Wf.vo            \
-     theories/Init/Logic_TypeSyntax.vo
+theories/Init/%.vo: theories/Init/%.v states/barestate.coq
+	$(COQC) -q -I theories/Init -is states/barestate.coq $<
 
-theories: $(INIT)
+TACTICSVO=tactics/Equality.vo
+
+tactics/%.vo: tactics/%.v states/barestate.coq
+	$(COQC) -q -I tactics -is states/barestate.coq $<
+
+states/initial.coq: states/barestate.coq $(INITVO) $(TACTICSVO)
+	./coqtop.byte -q -batch -silent -is states/barestate.coq -I tactics -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+
+clean::
+	rm -f states/barestate.coq states/initial.coq
+
+LOGICVO=theories/Logic/Classical.vo          theories/Logic/Classical_Type.vo \
+      theories/Logic/Classical_Pred_Set.vo   theories/Logic/Eqdep.vo          \
+      theories/Logic/Classical_Pred_Type.vo  theories/Logic/Eqdep_dec.vo      \
+      theories/Logic/Classical_Prop.vo
+
+theories: $(INITVO) $(LOGICVO)
+
+clean::
+	rm -f theories/*/*.vo theories/*/*~
+	rm -f tactics/*.vo tactics/*~
 
 ###########################################################################
 # tools
@@ -222,6 +246,9 @@ tools/coq_makefile: tools/coq_makefile.ml
 tools/coq-tex: tools/coq-tex.ml
 	$(OCAMLOPT) $(OPTFLAGS) -o tools/coq-tex str.cmxa tools/coq-tex.ml \
           $(STRLIB)
+
+archclean::
+	rm -f tools/coqdep tools/gallina tools/coq-tex tools/coq_makefile
 
 ###########################################################################
 # minicoq
@@ -279,6 +306,9 @@ doc/coq.tex: doc/preamble.tex $(LPFILES)
 	ocamlweb --no-preamble $(LPFILES) >> doc/coq.tex
 	echo "\end{document}" >> doc/coq.tex
 
+clean::
+	rm -f doc/*~ doc/coq.tex
+
 ###########################################################################
 # Emacs tags
 ###########################################################################
@@ -302,7 +332,7 @@ tags:
 parsing/lexer.cmo: parsing/lexer.ml
 	$(OCAMLC_P4O) -c $<
 
-cleanall::
+clean::
 	rm -f parsing/lexer.ml
 
 beforedepend:: parsing/lexer.ml
@@ -326,6 +356,9 @@ GRAMMARCMO=./lib/pp_control.cmo ./lib/pp.cmo ./lib/util.cmo ./lib/dyn.cmo \
 
 parsing/grammar.cma: $(GRAMMARCMO)
 	$(OCAMLC) $(BYTEFLAGS) $(GRAMMARCMO) -linkall -a -o $@
+
+clean::
+	rm -f parsing/grammar.cma
 
 CAMLP4GRAMMAR=camlp4o -I parsing pa_extend.cmo grammar.cma
 OPTCAMLP4GRAMMAR=camlp4o -I parsing pa_extend.cmo grammar.cma $(OSDEPP4OPTFLAGS)
@@ -407,11 +440,11 @@ archclean::
 	rm -f toplevel/*.cmx toplevel/*.[so]
 	rm -f tools/*.cmx tools/*.[so]
 	rm -f coqtop.opt coqtop.byte minicoq
-	rm -f tools/coqdep tools/gallina tools/coq-tex tools/coq_makefile
+	rm -f scripts/*.cmx scripts/*~
 
-cleanall:: archclean
+clean:: archclean
 	rm -f *~
-	rm -f doc/*~
+	rm -f gmon.out core
 	rm -f config/*.cm[io] config/*~
 	rm -f lib/*.cm[io] lib/*~
 	rm -f kernel/*.cm[io] kernel/*~
@@ -422,6 +455,7 @@ cleanall:: archclean
 	rm -f pretyping/*.cm[io] pretyping/*~
 	rm -f toplevel/*.cm[io] toplevel/*~
 	rm -f tools/*.cm[io] tools/*~
+	rm -f scripts/*.cm[io] scripts/*~
 
 cleanconfig::
 	rm -f config/Makefile config/coq_config.ml

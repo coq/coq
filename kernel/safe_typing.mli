@@ -40,6 +40,8 @@ val add_mind :
     -> safe_environment
 val add_constraints : constraints -> safe_environment -> safe_environment
 
+val pop_vars : identifier list -> safe_environment -> safe_environment
+
 val lookup_var : identifier -> safe_environment -> name * typed_type
 val lookup_rel : int -> safe_environment -> name * typed_type
 val lookup_constant : section_path -> safe_environment -> constant_body

@@ -75,8 +75,8 @@ let inh_app_fun env isevars j =
 (* find out which exc we must trap (e.g we don't want to catch Sys.Break!) *)
 
 let inh_tosort_force env isevars j =
-  let t,i1 = class_of1 env !isevars j.uj_type in
   try
+    let t,i1 = class_of1 env !isevars j.uj_type in
     let p = lookup_path_to_sort_from i1 in
     apply_pcoercion env p j t 
   with Not_found -> 
@@ -85,20 +85,17 @@ let inh_tosort_force env isevars j =
 let inh_tosort env isevars j = 
   let typ = whd_betadeltaiota env !isevars j.uj_type in
   match typ with
-    | DOP0(Sort(_)) -> j  (* idem inh_app_fun *)
+    | DOP0(Sort _) -> j  (* idem inh_app_fun *)
     | _ -> (try inh_tosort_force env isevars j with _ -> j)
 
 let inh_ass_of_j env isevars j =
   let typ = whd_betadeltaiota env !isevars j.uj_type in
   match typ with
-    | DOP0(Sort s) -> {body=j.uj_val;typ=s}
+    | DOP0(Sort s) -> 
+	{ body = j.uj_val; typ = s }
     | _ ->
-        (try
-           let j1 = inh_tosort_force env isevars j in 
-	   assumption_of_judgment env !isevars j1 
-         with _ -> 
-	   error_assumption CCI env (nf_ise1 !isevars j.uj_val))
-           (* try ... with _ -> ... is BAD *)
+        let j1 = inh_tosort_force env isevars j in 
+	assumption_of_judgment env !isevars j1 
 
 let inh_coerce_to1 env isevars c1 v t k =
   let t1,i1 = class_of1 env !isevars c1 in

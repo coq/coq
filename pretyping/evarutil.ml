@@ -77,11 +77,11 @@ let split_evar_to_arrow sigma c =
   let prod = prod_create nevenv (incast_type dom, 
 				 subst_var nvar (body_of_type rng)) in
   let sigma3 = Evd.define sigma2 ev prod in
-  let dsp = path_of_const (body_of_type dom) in
-  let rsp = path_of_const (body_of_type rng) in
+  let dsp = num_of_evar (body_of_type dom) in
+  let rsp = num_of_evar (body_of_type rng) in
   (sigma3,
-   mkCast (mkConst (dsp,args)) dummy_sort,
-   mkCast (mkConst (rsp,array_cons (mkRel 1) args)) dummy_sort)
+   mkCast (mkEvar dsp args) dummy_sort,
+   mkCast (mkEvar rsp (array_cons (mkRel 1) args)) dummy_sort)
 
 
 (* Redefines an evar with a smaller context (i.e. it may depend on less
@@ -193,7 +193,7 @@ let real_clean isevars sp args rhs =
     | DLAM(n,a) -> DLAM(n, subs (k+1) a)
     | DLAMV(n,v) -> DLAMV(n, Array.map (subs (k+1)) v) in
   let body = subs 0 rhs in
-  if not (closed0 body) then error_not_clean CCI empty_env sp body;
+  (* if not (closed0 body) then error_not_clean CCI empty_env sp body; *)
   body
 
 
@@ -303,7 +303,7 @@ let rec solve_simple_eqn conv_algo isevars ((pbty,t1,t2) as pb) =
   else 
     match (ise_undefined isevars t1, ise_undefined isevars t2) with
       | (true,true) ->
-	  if path_of_const t1 = path_of_const t2 then 
+	  if num_of_evar t1 = num_of_evar t2 then 
 	    solve_refl conv_algo isevars t1 t2
 	  else if Array.length(args_of_const t1) < 
 	          Array.length(args_of_const t2) then 

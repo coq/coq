@@ -509,8 +509,10 @@ let ise_resolve_nocheck sigma metamap env c =
 
 
 let ise_resolve1 is_ass sigma env c =
-  if is_ass then body_of_type (ise_resolve_type true sigma [] env c)
-  else (ise_resolve true sigma [] env c).uj_val
+  if is_ass then 
+    body_of_type (ise_resolve_type true sigma [] env c)
+  else 
+    (ise_resolve true sigma [] env c).uj_val
 
 (* Keeping universe constraints *)
 (*

@@ -434,6 +434,19 @@ let add_mind sp mie env =
 
 let add_constraints = add_constraints
 
+let pop_vars idl env =
+  let rec remove n sign = 
+    if n = 0 then
+      sign
+    else
+      match sign with
+	| (id::ids,_::tys) ->
+	    if not (List.mem id idl) then anomaly "pop_vars";
+	    remove (pred n) (ids,tys) 
+	| _ -> anomaly "pop_vars"
+  in
+  change_hyps (remove (List.length idl)) env
+
 let export = export
 let import = import
 

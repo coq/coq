@@ -513,9 +513,6 @@ let constr_of_com sigma env com =
 let constr_of_com_sort sigma sign com =
   constr_of_com1 true sigma sign com
 
-let constr_of_com_pattern sigma sign com =
-  constr_of_com1 true sigma sign com
-
 let fconstr_of_com1 is_ass sigma env com = 
   fconstr_of_com_env1 is_ass sigma env com
 
@@ -560,12 +557,60 @@ let fconstruct_with_univ sigma sign com =
   j
 *)
 
-open Closure
-open Tacred
+(* To process patterns, we need a translation from AST to term
+   without typing at all. *)
+
+let ctxt_of_ids ids =
+  Array.of_list (List.map (function id -> VAR id) ids)
+
+let constr_of_ref vars = function
+  | RConst (sp,ids) -> DOPN (Const sp, ctxt_of_ids ids)
+  | RInd (ip,ids) -> DOPN (MutInd ip, ctxt_of_ids ids)
+  | RConstruct (cp,ids) -> DOPN (MutConstruct cp, ctxt_of_ids ids)
+  | RAbst sp -> DOPN (Abst sp, [||])
+  | RVar id -> 
+      (try Rel (list_index (Name id) vars) with Not_found -> VAR id)
+  | REVar (n,ids) -> DOPN (Evar n, ctxt_of_ids ids)
+  | RMeta n -> DOP0 (Meta n)
+
+let constr_of_rawconstr c = 
+  let rec glob vars = function
+    | RRef (_,r) -> 
+	constr_of_ref vars r
+    | RApp (_,c,cl) -> 
+	let l = List.map (glob vars) (c::cl) in
+	DOPN (AppL, Array.of_list l)
+    | RBinder (_,BProd,na,c1,c2) ->
+	DOP2 (Prod, glob vars c1, DLAM (na, glob (na::vars) c2))
+    | RBinder (_,BLambda,na,c1,c2) ->
+	DOP2 (Lambda, glob vars c1, DLAM (na, glob (na::vars) c2))
+    | RSort (_,RProp c) ->
+	DOP0 (Sort (Prop c))
+    | RSort (_,RType) ->
+	DOP0 (Sort (Type (Univ.dummy_univ)))
+    | RHole _ -> 
+	DOP0 (Meta (new_meta()))
+    | RCast (_,c1,c2) ->
+	DOP2 (Cast, glob vars c1, glob vars c2)
+    | _ ->
+	error "constr_of_rawconstr: not implemented"
+  in
+  glob [] c
+
+let constr_of_com_pattern sigma env com = 
+  let c = raw_constr_of_com sigma (context env) com in
+  try 
+    constr_of_rawconstr c
+  with e -> 
+    Stdpp.raise_with_loc (Ast.loc com) e
+
 
 (* Translation of reduction expression: we need trad because of Fold
  * Moreover, reduction expressions are used both in tactics and in
  * vernac. *)
+
+open Closure
+open Tacred
 
 let glob_nvar com =
   let s = nvar_of_ast com in

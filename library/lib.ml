@@ -9,7 +9,8 @@ open Summary
 type node = 
   | Leaf of obj
   | Module of string
-  | OpenedSection of string * Summary.frozen
+  | OpenedSection of string
+  | ClosedSection of string * library_segment
   | FrozenState of Summary.frozen
 
 and library_entry = section_path * node
@@ -101,8 +102,7 @@ let contents_after = function
 
 let open_section s =
   let sp = make_path (id_of_string s) OBJ in
-  let fs = freeze_summaries () in
-  add_entry sp (OpenedSection (s,fs));
+  add_entry sp (OpenedSection s);
   path_prefix := !path_prefix @ [s];
   sp
 
@@ -123,18 +123,19 @@ let start_module s =
 let is_opened_section = function (_,OpenedSection _) -> true | _ -> false
 
 let close_section s =
-  let (sp,frozen) = 
+  let sp = 
     try match find_entry_p is_opened_section with
-      | sp,OpenedSection (s',fs) -> 
-	  if s <> s' then error "this is not the last opened section"; (sp,fs)
+      | sp,OpenedSection s' -> 
+	  if s <> s' then error "this is not the last opened section"; sp
       | _ -> assert false
     with Not_found ->
       error "no opened section"
   in
   let (after,_,before) = split_lib sp in
   lib_stk := before;
+  add_entry (make_path (id_of_string s) OBJ) (ClosedSection (s,after));
   pop_path_prefix ();
-  (sp,after,frozen)
+  (sp,after)
 
 (* The following function exports the whole library segment, that will be 
    saved as a module. Objects are presented in chronological order, and
@@ -145,6 +146,7 @@ let export_module () =
   let rec export acc = function
     | (_,Module _) :: _ -> acc
     | (_,Leaf _) as node :: stk -> export (node::acc) stk
+    | (_,ClosedSection _) as node :: stk -> export (node::acc) stk
     | (_,OpenedSection _) :: _ -> error "there are still opened sections"
     | (_,FrozenState _) :: stk -> export acc stk
     | _ -> assert false

@@ -119,6 +119,14 @@ let list_map_i f =
   in 
   map_i_rec
 
+let list_map2_i f i l1 l2 =  
+  let rec map_i i = function
+    | ([], []) -> []
+    | ((h1::t1), (h2::t2)) -> (f i h1 h2) :: (map_i (succ i) (t1,t2))
+    | (_, _) -> invalid_arg "map2_i"
+  in 
+  map_i i (l1,l2)
+
 let list_index x = 
   let rec index_x n = function
     | y::l -> if x = y then n else index_x (succ n) l
@@ -233,6 +241,13 @@ let list_except_assoc e =
 
 let list_join_map f l = List.flatten (List.map f l)
 
+let list_try_find f = 
+  let rec try_find_f = function
+    | [] -> failwith "try_find"
+    | h::t -> try f h with Failure _ -> try_find_f t
+  in 
+  try_find_f
+
 
 (* Arrays *)
 
@@ -327,6 +342,18 @@ let array_map2 f v1 v2 =
     let res = Array.create (Array.length v1) (f v1.(0) v2.(0)) in
     for i = 1 to pred (Array.length v1) do
       res.(i) <- f v1.(i) v2.(i)
+    done;
+    res
+  end
+
+let array_map2_i f v1 v2 =
+  if Array.length v1 <> Array.length v2 then invalid_arg "array_map2";
+  if Array.length v1 == 0 then 
+    [| |] 
+  else begin
+    let res = Array.create (Array.length v1) (f 0 v1.(0) v2.(0)) in
+    for i = 1 to pred (Array.length v1) do
+      res.(i) <- f i v1.(i) v2.(i)
     done;
     res
   end
