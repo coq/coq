@@ -131,9 +131,9 @@ let parse_args () =
 	try
 	  Stream.empty s; exit 1
 	with Stream.Failure ->
-	  mSGNL (Himsg.explain_error e); exit 1
+	  mSGNL (Errors.explain_exn e); exit 1
       end
-    | e -> begin mSGNL (Himsg.explain_error e); exit 1 end
+    | e -> begin mSGNL (Errors.explain_exn e); exit 1 end
 
 
 (* To prevent from doing the initialization twice *)
@@ -163,4 +163,4 @@ let start () =
   if !batch_mode then (flush_all(); Profile.print_profile ();exit 0);
   Toplevel.loop()
 
-let _ = start()
+(* Coqtop.start will be called by the code produced by coqmktop *)

@@ -92,3 +92,6 @@ val clenv_constrain_dep_args_of :
 val constrain_clenv_using_subterm_list : 
   bool -> wc clausenv -> constr list -> constr -> wc clausenv * constr list
 val clenv_typed_unify : constr -> constr -> wc clausenv -> wc clausenv
+
+val pr_clenv : 'a clausenv -> Pp.std_ppcmds
+

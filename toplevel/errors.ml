@@ -4,6 +4,7 @@
 open Pp
 open Util
 open Ast
+open Type_errors
 
 let print_loc loc =
   if loc = dummy_loc then 
@@ -44,6 +45,8 @@ let rec explain_exn_default = function
   | Invalid_argument s -> hOV 0 [< 'sTR"Invalid argument: " ; 'sTR (guill s) >]
 
   | Sys.Break -> hOV 0 [< 'fNL; 'sTR"User Interrupt." >]
+
+  | TypeError(k,ctx,te) -> Himsg.explain_type_error k ctx te
 
   | Stdpp.Exc_located (loc,exc) ->
       hOV 0 [< if loc = Ast.dummy_loc then [<>]

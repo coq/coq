@@ -1050,3 +1050,22 @@ let elim_res_pf kONT clenv gls =
 let e_res_pf kONT clenv gls =
   clenv_refine kONT
     (clenv_pose_dependent_evars (clenv_unique_resolver false clenv gls)) gls
+
+open Printer
+
+let pr_clenv clenv =
+  let pr_name mv =
+    try 
+      let id = Intmap.find mv clenv.namenv in
+      [< 'sTR"[" ; print_id id ; 'sTR"]" >]
+    with Not_found -> [< >]
+  in
+  let pr_meta_binding = function
+    | (mv,Cltyp b) ->
+      	hOV 0 [< 'iNT mv ; pr_name mv ; 'sTR " : " ; prterm b.rebus ; 'fNL >]
+    | (mv,Clval(b,_)) ->
+      	hOV 0 [< 'iNT mv ; pr_name mv ; 'sTR " := " ; prterm b.rebus ; 'fNL >]
+  in
+  [< 'sTR"TEMPL: " ; prterm clenv.templval.rebus ;
+     'sTR" : " ; prterm clenv.templtyp.rebus ; 'fNL ;
+     (prlist pr_meta_binding (intmap_to_list clenv.env)) >]

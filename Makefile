@@ -1,16 +1,33 @@
-# Main Makefile for Coq
+
+###########################################################################
+# Makefile for Coq
+#
+# This is the only Makefile. You won't find Makefiles in sub-directories
+# and this is done on purpose. If you are not yet convinced of the advantages
+# of a single Makefile, please read
+#    http://www.pcug.org.au/~millerp/rmch/recu-make-cons-harm.html
+# before complaining.
+# 
+# When you are working in a subdir, you can compile without moving to the
+# upper directory using "make -C ..", and the output is still understood
+# by Emacs' next-error.
+###########################################################################
 
 include config/Makefile
 
 noargument:
-	@echo Please use either
+	@echo "Please use either"
 	@echo "   ./configure"
 	@echo "   make world"
 	@echo "   make install"
 	@echo "   make cleanall"
-	@echo or make archclean
+	@echo "or make archclean"
 
-LOCALINCLUDES=-I config -I lib -I kernel -I library \
+###########################################################################
+# Compilation options
+###########################################################################
+
+LOCALINCLUDES=-I config -I scripts -I lib -I kernel -I library \
               -I proofs -I tactics -I pretyping -I parsing -I toplevel
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
@@ -23,7 +40,11 @@ CAMLP4EXTEND=camlp4o $(INCLUDES) pa_extend.cmo
 OCAMLC_P4O=$(OCAMLC) -pp camlp4o $(BYTEFLAGS)
 OCAMLOPT_P4O=$(OCAMLOPT) -pp camlp4o $(OPTFLAGS)
 
+###########################################################################
 # Objects files 
+###########################################################################
+
+STRLIB=-cclib -lstr
 
 CLIBS=unix.cma
 
@@ -47,7 +68,8 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
 LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
 	library/global.cmo library/states.cmo library/library.cmo \
 	library/nametab.cmo library/impargs.cmo library/redinfo.cmo \
-        library/indrec.cmo library/declare.cmo library/goptions.cmo
+        library/indrec.cmo library/declare.cmo library/discharge.cmo \
+        library/goptions.cmo
 
 PRETYPING=pretyping/tacred.cmo pretyping/pretype_errors.cmo \
           pretyping/retyping.cmo pretyping/typing.cmo \
@@ -87,15 +109,40 @@ CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PRETYPING) $(PARSING) \
     $(PROOFS) $(TACTICS) $(TOPLEVEL)
 CMX=$(CMO:.cmo=.cmx)
 
-# Targets
+###########################################################################
+# Main targets
+###########################################################################
+
+COQMKTOP=scripts/coqmktop
 
 world: minicoq coqtop.byte dev/db_printers.cmo
 
-LINK=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PRETYPING) $(PARSING) \
-     $(PROOFS) $(TACTICS) $(TOPLEVEL)
-link: $(LINK)
-	ocamlc -custom $(INCLUDES) -o link dynlink.cma $(CMA) $(LINK) $(OSDEPLIBS)
-	rm -f link 
+coqtop: $(COQMKTOP) $(CMX)
+	$(COQMKTOP) -opt -notactics $(OPTFLAGS) -o coqtop
+
+coqtop.byte: $(COQMKTOP) $(CMO) Makefile
+	$(COQMKTOP) -top -notactics $(BYTEFLAGS) -o coqtop.byte
+
+# coqmktop 
+
+COQMKTOPCMO=$(CONFIG) scripts/tolink.cmo scripts/coqmktop.cmo 
+
+$(COQMKTOP): $(COQMKTOPCMO)
+	$(OCAMLC) $(BYTEFLAGS) -o $(COQMKTOP) -custom str.cma unix.cma $(COQMKTOPCMO) $(OSDEPLIBS) $(STRLIB)
+
+scripts/tolink.ml: Makefile
+	echo "let lib = \""$(LIB)"\"" > $@
+	echo "let kernel = \""$(KERNEL)"\"" >> $@
+	echo "let library = \""$(LIBRARY)"\"" >> $@
+	echo "let pretyping = \""$(PRETYPING)"\"" >> $@
+	echo "let parsing = \""$(PARSING)"\"" >> $@
+	echo "let proofs = \""$(PROOFS)"\"" >> $@
+	echo "let tactics = \""$(TACTICS)"\"" >> $@
+	echo "let toplevel = \""$(TOPLEVEL)"\"" >> $@
+
+beforedepend:: scripts/tolink.ml
+
+# we provide targets for each subdirectories
 
 lib: $(LIB)
 kernel: $(KERNEL)
@@ -106,16 +153,9 @@ parsing: $(PARSING)
 pretyping: $(PRETYPING)
 toplevel: $(TOPLEVEL)
 
-# coqtop
-
-coqtop: $(CMX)
-	$(OCAMLOPT) $(INCLUDES) -o coqtop $(CMXA) $(CMX) $(OSDEPLIBS)
-
-coqtop.byte: $(CMO) Makefile
-	ocamlmktop $(BYTEFLAGS) -o coqtop.byte -custom dynlink.cma $(CMA) \
-	  $(CMO) $(OSDEPLIBS)
-
+###########################################################################
 # minicoq
+###########################################################################
 
 MINICOQCMO=$(CONFIG) $(LIB) $(KERNEL) \
 	   parsing/lexer.cmo parsing/g_minicoq.cmo \
@@ -125,14 +165,15 @@ minicoq: $(MINICOQCMO)
 	$(OCAMLC) $(INCLUDES) -o minicoq -custom $(CMA) $(MINICOQCMO) \
 	  $(OSDEPLIBS)
 
+###########################################################################
 # Documentation
+# Literate programming (with ocamlweb)
+###########################################################################
 
 .PHONY: doc
 
 doc: doc/coq.tex
 	make -C doc coq.ps minicoq.dvi
-
-# Literate programming (with ocamlweb)
 
 LPLIB = lib/doc.tex $(LIB:.cmo=.mli)
 LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
@@ -150,7 +191,9 @@ doc/coq.tex: doc/preamble.tex $(LPFILES)
 	ocamlweb --no-preamble $(LPFILES) >> doc/coq.tex
 	echo "\end{document}" >> doc/coq.tex
 
+###########################################################################
 # Emacs tags
+###########################################################################
 
 tags:
 	find . -name "*.ml*" | sort -r | xargs \
@@ -162,7 +205,9 @@ tags:
 	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
 
+###########################################################################
 ### Special rules
+###########################################################################
 
 # lexer (compiled with camlp4 to get optimized streams)
 
@@ -210,7 +255,9 @@ parsing/extend.cmx: parsing/extend.ml4 parsing/grammar.cma
 
 beforedepend:: $(GRAMMARCMO)
 
+###########################################################################
 # Default rules
+###########################################################################
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx .mll .ml4
 
@@ -232,7 +279,9 @@ beforedepend:: $(GRAMMARCMO)
 .ml4.cmx:
 	$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4EXTEND) -impl" -c -impl $<
 
+###########################################################################
 # Cleaning
+###########################################################################
 
 archclean::
 	rm -f config/*.cmx config/*.[so]
@@ -261,7 +310,9 @@ cleanall:: archclean
 cleanconfig::
 	rm -f config/Makefile config/coq_config.ml
 
+###########################################################################
 # Dependencies
+###########################################################################
 
 alldepend: depend dependcamlp4
 

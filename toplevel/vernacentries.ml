@@ -109,20 +109,20 @@ let reset_top_of_tree () =
  
 let locate_file f =
   try
-    mSG [< 'sTR (System.where_in_path (System.search_paths()) f) ; 'fNL >]
+    mSG [< 'sTR (System.where_in_path (System.search_paths()) f); 'fNL >]
   with Not_found -> 
-    mSG [< 'sTR"Can't find file" ; 'sPC ; 'sTR f ; 'sPC ;
-           'sTR"on loadpath" ; 'fNL >]
+    mSG (hOV 0 [< 'sTR"Can't find file"; 'sPC; 'sTR f; 'sPC;
+		  'sTR"on loadpath"; 'fNL >])
 
 let locate_id id =
   try
-    mSG [< 'sTR (string_of_path (Nametab.sp_of_id CCI id)) ; 'fNL >]
+    mSG [< 'sTR (string_of_path (Nametab.sp_of_id CCI id)); 'fNL >]
   with Not_found -> 
     error ((string_of_id id) ^ " not a defined object")
 
 let print_loadpath () =
   let l = search_paths () in
-  mSGNL [< 'sTR"Load Path:" ; 'fNL; 'sTR"  ";
+  mSGNL [< 'sTR"Load Path:"; 'fNL; 'sTR"  ";
            hV 0 (prlist_with_sep pr_fnl (fun s -> [< 'sTR s >]) l) >]
 
 let goal_of_args = function
@@ -304,7 +304,6 @@ let _ =
 	   (fun () -> let _ = Lib.open_section (string_of_id id) in ())
        | _ -> bad_vernac_args "BeginSection")
 
-(***
 let _ =
   add "EndSection"
     (function 
@@ -314,9 +313,8 @@ let _ =
 		errorlabstrm "vernacentries : EndSection"
 		  [< 'sTR"proof editing in progress" ; (msg_proofs false) ;
                      'sTR"Use \"Abort All\" first or complete proof(s)." >];
-              close_section_or_module (not (is_silent())) (string_of_id id))
+              Discharge.close_section (not (is_silent())) (string_of_id id))
        | _ -> bad_vernac_args "EndSection")
-***)
 
 (* Proof switching *)
 
@@ -1110,7 +1108,6 @@ let _ =
        | [] -> (fun () -> ())
        | _  -> bad_vernac_args "NOP")
 
-(***
 let _ =
   add "CLASS"
     (function 
@@ -1140,10 +1137,9 @@ let _ =
 	   in
 	   let isid = identity = "IDENTITY" in
 	   fun () -> 
-	     Class.try_add_new_coercion id stre ids idt isid;
+	     Class.try_add_new_coercion_with_target id stre ids idt isid;
              message ((string_of_id id) ^ " is now a coercion")
        | _ -> bad_vernac_args "COERCION")
-     ***)
 
 let _ =
   add "PrintGRAPH"
