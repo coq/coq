@@ -12,7 +12,7 @@ open Evarutil
 (*i*)
 
 (* Raw calls to the inference machine of Trad: boolean says if we must fail
-   on unresolved evars, or replace them by Metas ; the unsafe_judgment list
+   on unresolved evars, or replace them by Metas ; the [unsafe_judgment] list
    allows us to extend env with some bindings *)
 val ise_resolve : bool -> 'a evar_map -> (int * constr) list ->
   env -> (identifier * unsafe_judgment) list ->

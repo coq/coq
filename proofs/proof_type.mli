@@ -1,3 +1,6 @@
+
+(* $Id$ *)
+
 (*i*)
 open Environ
 open Evd
@@ -7,8 +10,8 @@ open Term
 open Util
 (*i*)
 
-(*This module defines the structure of proof tree and the tactic type. So, it
-  is used by Proof_tree and Refiner*)
+(* This module defines the structure of proof tree and the tactic type. So, it
+   is used by [Proof_tree] and [Refiner] *)
 
 type bindOcc = 
   | Dep of identifier

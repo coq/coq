@@ -48,10 +48,10 @@ val tclTHEN_i1     : tactic -> (int -> tactic) -> tactic
 val nth_clause  : int -> goal sigma -> clause
 val clause_type : clause -> goal sigma -> constr
 
-(*
+(*i
 val matches      : goal sigma -> constr -> marked_term -> bool
 val dest_match   : goal sigma -> constr -> marked_term -> constr list
-*)
+i*)
 val pf_matches : goal sigma -> constr_pattern -> constr -> (int * constr) list
 val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 

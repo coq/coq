@@ -63,7 +63,8 @@ val get_pat            : marked_pattern -> constr_pattern
 
 type marked_term
 val put_squel          : module_mark -> string -> marked_term
-(*val get_squel          : marked_term -> constr*)
+
+(*i val get_squel          : marked_term -> constr i*)
 
 (*i Remplacé par Astterm.interp_constrpattern
 val raw_sopattern_of_compattern : Environ.env -> Coqast.t -> constr
@@ -98,7 +99,7 @@ val get_reference : string list -> string -> constr
 (* [dest_somatch c pat] matches [c] against [pat] and returns the resulting
    assignment of metavariables; it raises [PatternMatchingFailure] if
    not matchable *)
-(*
+(*i
 val dest_somatch : constr -> marked_pattern -> constr list
 
 (* [somatches c pat] just tells if [c] matches against [pat] *)
@@ -117,7 +118,7 @@ val dest_somatch_conv :
 
 val somatches_conv :
   Environ.env -> 'a evar_map -> constr -> marked_pattern -> bool
-*)
+i*)
 
 val soinstance   : marked_term -> constr list -> constr 
 

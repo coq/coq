@@ -515,8 +515,8 @@ val sort_hdchar : sorts -> string
 
 val occur_meta : constr -> bool
 
-(*Returns the maximum of metas. Returns -1 if there is no meta*)
-(*val max_occur_meta:constr->int;;*)
+(*i Returns the maximum of metas. Returns -1 if there is no meta i*)
+(*i val max_occur_meta : constr -> int i*)
 
 val occur_existential : constr -> bool
 val rel_vect : int -> int -> constr array
@@ -562,4 +562,4 @@ val hcons_constr:
 
 val hcons1_constr : constr -> constr
 
-val constr_display: constr -> unit;;
+val constr_display: constr -> unit

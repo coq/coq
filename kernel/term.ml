@@ -1649,4 +1649,4 @@ let constr_display csr=
      Name(id) -> "Name("^(string_of_id id)^")"
     |Anonymous -> "Anonymous"
   in
-    mSG [<'sTR (term_display csr);'fNL>];;
+    mSG [<'sTR (term_display csr);'fNL>]

@@ -1,8 +1,10 @@
 
+(*i*)
 open Pp
 open Names
 open Term
 open Sign
+(*i*)
 
 val term : constr Grammar.Entry.e
 
