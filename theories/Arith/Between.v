@@ -14,6 +14,8 @@ Require Lt.
 V7only [Import nat_scope.].
 Open Local Scope nat_scope.
 
+Implicit Variables Type k,l,p,q,r:nat.
+
 Section Between.
 Variables P,Q : nat -> Prop.
 
