@@ -752,6 +752,15 @@ Qed.
 
 V7only [Unset Implicit Arguments.].
 
+Lemma Zmult_1_inversion_l : 
+ (x,y:Z) (Zmult x y)=(POS xH) -> x=(POS xH) \/ x=(NEG xH).
+Proof.
+Intros x y; NewDestruct x as [|p|p]; Intro; [ Discriminate | Left | Right ];
+  (NewDestruct y as [|q|q]; Try Discriminate;
+  Simpl in H; Injection H; Clear H; Intro H;
+  Rewrite times_one_inversion_l with 1:=H; Reflexivity).
+Qed.
+
 (** Multiplication and Opposite *)
 
 Theorem Zopp_Zmult_l : (x,y:Z)(Zopp (Zmult x y)) = (Zmult (Zopp x) y).

@@ -13,6 +13,8 @@ Require Arith.
 Require BinPos.
 Require BinInt.
 Require Zorder.
+Require Zsyntax.
+Require ZArith_dec.
 
 V7only [Import nat_scope.].
 Open Local Scope Z_scope.
@@ -36,6 +38,18 @@ Theorem Zabs_Zopp: (z : Z)  (Zabs (Zopp z)) = (Zabs z).
 Proof.
 Intros z; Case z; Simpl; Auto.
 Qed.
+
+(** Proving a property of the absolute value by cases *)
+
+Lemma Zabs_ind : 
+  (P:Z->Prop)(x:Z)(`x >= 0` -> (P x)) -> (`x <= 0` -> (P `-x`)) ->
+  (P `|x|`).
+Proof.
+Intros P x H H0; Elim (Z_lt_ge_dec x `0`); Intro.
+Assert `x<=0`. Apply Zlt_le_weak; Assumption.
+Rewrite Zabs_non_eq. Apply H0. Assumption. Assumption.
+Rewrite Zabs_eq. Apply H; Assumption. Apply Zge_le. Assumption.
+Save.
 
 V7only [ (* From Zdivides *) ].
 Theorem Zabs_intro: (P : ?) (z : Z) (P (Zopp z)) -> (P z) ->  (P (Zabs z)).

@@ -639,6 +639,16 @@ Intros x y z H; Apply simpl_times_r with z:=z.
 Rewrite times_sym with x:=x; Rewrite times_sym with x:=y; Assumption.
 Qed.
 
+(** Inversion of multiplication *)
+
+Lemma times_one_inversion_l : (x,y:positive) (times x y)=xH -> x=xH.
+Proof.
+Intros x y; NewDestruct x; Simpl.
+ NewDestruct y; Intro; Discriminate.
+ Intro; Discriminate.
+ Reflexivity.
+Qed.
+
 (**********************************************************************)
 (** Properties of comparison on binary positive numbers *)
 

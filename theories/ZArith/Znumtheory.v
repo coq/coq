@@ -136,17 +136,12 @@ Hints Resolve Zdivide_plus Zdivide_opp Zdivide_opp_rev
 Lemma Zmult_one : 
  (x,y:Z) `x>=0` -> `x*y=1` -> `x=1`.
 Proof.
-Intros.
-Assert `x<>0`.
- Intro; Subst; Auto with zarith.
-Assert `y>0`.
- Apply (Zmult_gt x y); Auto with zarith.
-Elim (Z_lt_ge_dec `1` x); [ Intros | Auto with zarith ].
-Elim (Z_lt_ge_dec `1` y); Intros.
-Assert `x*y >= 2*1`.
- Apply Zge_Zmult_pos_compat; Omega.
-Auto with zarith.
-Assert y=1; Subst; Auto with zarith.
+Intros x y H H0; NewDestruct (Zmult_1_inversion_l ? ? H0) as [Hpos|Hneg].
+  Assumption.
+  Rewrite Hneg in H; Simpl in H.
+  Contradiction (Zle_not_lt `0` `-1`).
+    Apply Zge_le; Assumption.
+    Apply NEG_lt_ZERO.
 Save.
 
 (** Only [1] and [-1] divide [1]. *)
@@ -182,15 +177,6 @@ Rewrite H1 in H0; Right; Omega.
 Save.
 
 (** If [a] divides [b] and [b<>0] then [|a| <= |b|]. *)
-
-Lemma Zabs_ind : 
-  (P:Z->Prop)(x:Z)(`x >= 0` -> (P x)) -> (`x <= 0` -> (P `-x`)) ->
-  (P `|x|`).
-Proof.
-Intros; Elim (Z_lt_ge_dec x `0`); Intro. 
-Rewrite Zabs_non_eq. Apply H0; Omega. Omega.
-Rewrite Zabs_eq. Apply H; Assumption. Omega.
-Save.
 
 Lemma Zdivide_bounds : (a,b:Z) (a|b) -> `b<>0` -> `|a| <= |b|`.
 Proof.
@@ -353,7 +339,7 @@ Inductive Bezout [a,b,d:Z] : Prop :=
 Lemma gcd_bezout : (a,b,d:Z) (gcd a b d) -> (Bezout a b d).
 Proof.
 Intros a b d Hgcd.
-Elim (euclid a b); Intros.
+Elim (euclid a b); Intros u v d0 e g.
 Generalize (gcd_uniqueness_apart_sign a b d d0 Hgcd g).
 Intro H; Elim H; Clear H; Intros.
 Apply Bezout_intro with u v.
@@ -366,7 +352,7 @@ Save.
 
 Lemma gcd_mult : (a,b,c,d:Z) (gcd a b d) -> (gcd `c*a` `c*b` `c*d`).
 Proof.
-Induction 1; Constructor; Intuition.
+Intros a b c d; Induction 1; Constructor; Intuition.
 Elim (gcd_bezout a b d H); Intros.
 Elim H3; Intros.
 Elim H4; Intros.
@@ -430,11 +416,11 @@ Defined.
 Definition Zgcd := [a,b:Z](let (g,_) = (Zgcd_spec a b) in g).
 
 Lemma Zgcd_is_pos : (a,b:Z)`(Zgcd a b) >=0`.
-Intros; Unfold Zgcd; Case (Zgcd_spec a b); Tauto.
+Intros a b; Unfold Zgcd; Case (Zgcd_spec a b); Tauto.
 Qed.
 
 Lemma Zgcd_is_gcd : (a,b:Z)(gcd a b (Zgcd a b)).
-Intros; Unfold Zgcd; Case (Zgcd_spec a b); Tauto.
+Intros a b; Unfold Zgcd; Case (Zgcd_spec a b); Tauto.
 Qed.
 
 (** * Relative primality *)
@@ -488,7 +474,7 @@ Lemma rel_prime_cross_prod :
   (a,b,c,d:Z) (rel_prime a b) -> (rel_prime c d) -> `b>0` -> `d>0` -> 
   `a*d = b*c` -> (a=c /\ b=d).
 Proof.
-Intros.
+Intros a b c d; Intros.
 Elim (Zdivide_antisym b d).
 Split; Auto with zarith.
 Rewrite H4 in H3.
@@ -510,7 +496,7 @@ Save.
 
 Lemma gcd_rel_prime : 
  (a,b,g:Z)`b>0` -> `g>=0`-> (gcd a b g) -> (rel_prime `a/g` `b/g`).
-Intros.
+Intros a b g; Intros.
 Assert `g <> 0`.
  Intro.
  Elim H1; Intros. 
@@ -598,14 +584,14 @@ Hints Resolve prime_rel_prime : zarith.
 (** [Zdivide] can be expressed using [Zmod]. *)
 
 Lemma Zmod_Zdivide : (a,b:Z) `b>0` -> `a%b = 0` -> (b|a).
-Intros. 
+Intros a b H H0.
 Apply Zdivide_intro with `(a/b)`.
 Pattern 1 a; Rewrite (Z_div_mod_eq a b H).
 Rewrite H0; Ring.
 Save.
 
 Lemma Zdivide_Zmod : (a,b:Z) `b>0` -> (b|a) -> `a%b = 0`.
-Destruct 2; Intros; Subst.
+Intros a b; Destruct 2; Intros; Subst.
 Change `q*b` with `0+q*b`.
 Rewrite Z_mod_plus; Auto.
 Save.
@@ -635,7 +621,7 @@ Save.
 Lemma prime_mult : 
   (p:Z) (prime p) -> (a,b:Z) (p | `a*b`) -> (p | a) \/ (p | b).
 Proof.
-Induction 1; Intros.
+Intro p; Induction 1; Intros.
 Case (Zdivide_dec p a); Intuition.
 Right; Apply Gauss with a; Auto with zarith.
 Save.
