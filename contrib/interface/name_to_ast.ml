@@ -61,8 +61,8 @@ let impl_args_to_string l =
 let implicit_args_id_to_ast_list id l ast_list = 
     (match impl_args_to_string l with
            None -> ast_list
-         | Some(s) -> CommentString ("For " ^ (string_of_id id))::
-                      CommentString s::
+         | Some(s) -> CommentString s::
+                      CommentString ("For " ^ (string_of_id id))::
                       ast_list);;
 
 (* This function construct an ast to enumerate the implicit positions for an
