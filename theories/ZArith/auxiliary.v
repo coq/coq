@@ -157,9 +157,6 @@ Theorem dec_Zlt: (x,y:Z) (decidable (Zlt x y)).
 Intros x y; Unfold decidable Zlt ; Elim (Zcompare x y);
   [ Right; Discriminate | Auto with arith | Right; Discriminate].
 Qed.
-Theorem dec_eq_nat:(x,y:nat)(decidable (x=y)).
-Intros x y; Unfold decidable; Elim (eq_nat_dec x y); Auto with arith.
-Qed.
 
 Theorem not_Zge : (x,y:Z) ~(Zge x y) -> (Zlt x y).
 Unfold Zge Zlt ; Intros x y H; Apply dec_not_not;
