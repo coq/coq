@@ -140,7 +140,7 @@ let nat_of_int dloc n =
       mk_nat ref_O n
   | NEG n ->
       user_err_loc (dloc, "nat_of_int",
-        str "Cannot interpret a negative number as a natural number")
+        str "Cannot interpret a negative number as a number of type nat")
 
 let pat_nat_of_int dloc n name =
   match n with
@@ -154,7 +154,7 @@ let pat_nat_of_int dloc n name =
       mk_nat n name
   | NEG n ->
       user_err_loc (dloc, "pat_nat_of_int",
-        str "Cannot interpret a negative number as a natural number")
+        str "Unable to interpret a negative number in type nat")
 
 (***********************************************************************)
 (* Printing via scopes *)
