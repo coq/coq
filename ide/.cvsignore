@@ -6,3 +6,5 @@ highlight.ml
 coqide
 Makefile
 test
+config_lexer.ml
+*.crashcoqide

@@ -80,3 +80,9 @@ let browse_keyword text =
     let u = url_for_keyword text in browse (current.doc_url ^ u) 
   with _ -> ()
 
+let my_stat f = try Some (Unix.stat f) with _ -> None
+
+let revert_timer = ref None
+let disconnect_revert_timer () = match !revert_timer with
+  | None -> ()
+  | Some id -> GMain.Timeout.remove id; revert_timer := None

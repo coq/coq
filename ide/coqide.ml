@@ -98,7 +98,8 @@ end
 type 'a viewable_script =
     {view : GText.view;
      mutable analyzed_view : 'a option;
-     mutable filename : string option
+     mutable filename : string option;
+     mutable stats : Unix.stats option;
     }
 
 class type analyzed_views = 
@@ -116,6 +117,7 @@ object('self)
     val proof_view : GText.view
     val mutable is_active : bool
     val mutable read_only : bool
+    method revert : string -> unit
     method read_only : bool
     method set_read_only : bool -> unit
     method is_active : bool
@@ -220,7 +222,8 @@ let input_channel b ic =
 
 let with_file name ~f =
   let ic = open_in_gen [Open_rdonly;Open_creat] 0o644 name in
-  try f ic; close_in ic with exn -> close_in ic; raise exn
+  try f ic; close_in ic with exn -> 
+    close_in ic; !flash_info ("Error: "^Printexc.to_string exn)
 
 type info =  {start:GText.mark;
 	      stop:GText.mark;
@@ -335,14 +338,11 @@ let activate_input i =
      | None -> () 
      | Some n ->
 	 let a_v = out_some (Vector.get input_views n).analyzed_view in
-	 prerr_endline ("DEACT"^(string_of_int n));
 	 a_v#deactivate ();
 	 a_v#reset_initial
   );
   let activate_function = (out_some (Vector.get input_views i).analyzed_view)#activate in
-  prerr_endline ("ACT"^(string_of_int i));
   activate_function ();
-  prerr_endline ("ACTIVATED"^(string_of_int i));
   set_active_view i
 
 class analyzed_view index =
@@ -359,6 +359,23 @@ object(self)
   val message_buffer = message_view_#buffer 
   val mutable is_active = false
   val mutable read_only = false
+  method revert f = 
+    !push_info "Reverting buffer";
+    try
+      if is_active then self#reset_initial;
+      let b = Buffer.create 1024 in
+      with_file f ~f:(input_channel b);
+      let s = try_convert (Buffer.contents b) in
+      input_buffer#set_text s;
+      input_buffer#place_cursor input_buffer#start_iter;
+      Highlight.highlight_all input_buffer;
+      input_buffer#set_modified false;
+      !pop_info ();
+      !flash_info "Buffer reverted";
+    with _  -> 
+      !pop_info ();
+      !flash_info "Warning: could not revert buffer";
+
   method set_read_only b = read_only<-b
   method read_only = read_only
   method is_active = is_active
@@ -835,11 +852,15 @@ object(self)
       (input_view#event#connect#key_press self#active_keypress_handler);
     prerr_endline "CONNECTED active : ";
     print_id (out_some act_id);
-    Sys.chdir (match (Vector.get input_views index).filename with
+    let dir = (match (Vector.get input_views index).filename with
 		 | None -> initial_cwd
 		 | Some f -> Filename.dirname f
 	      )
-      
+    in 
+    ignore (Coq.interp (Printf.sprintf "Add LoadPath \"%s\". " dir));
+    Sys.chdir dir
+    
+  
   method electric_handler = 
     input_buffer#connect#insert_text ~callback:
       (fun it x -> 
@@ -977,7 +998,7 @@ let main () =
   let load_f () = 	  
     match GToolbox.select_file ~title:"_Load file" () with 
       | None -> ()
-      | Some f -> 
+      | (Some f) as fn -> 
 	  try
 	    let b = Buffer.create 1024 in
 	    with_file f ~f:(input_channel b);
@@ -988,10 +1009,12 @@ let main () =
 	       | Some n -> view#misc#modify_font n);
 	    let index = add_input_view {view = view;
 					analyzed_view = None;
-					filename = Some f
+					filename = fn;
+					stats = my_stat f
 				       }
 	    in
-	    (get_input_view index).analyzed_view <- Some (new analyzed_view index);
+	    (get_input_view index).analyzed_view <- 
+	    Some (new analyzed_view index);
 	    activate_input index;
 	    let input_buffer = view#buffer in
 	    input_buffer#set_text s;
@@ -1015,11 +1038,13 @@ let main () =
 		 | Some f -> 
 		     try_export f (current.view#buffer#get_text ());
 		     current.filename <- Some f;
+		     current.stats <- my_stat f;
 		     set_current_tab_label (Filename.basename f);
 		     current.view#buffer#set_modified false
 	       end
 	   | Some f -> 
 	       try_export f (current.view#buffer#get_text ());
+	       current.stats <- my_stat f;
 	       current.view#buffer#set_modified false);
       !flash_info "Saved"
     with e -> !flash_info "Save failed"
@@ -1038,6 +1063,7 @@ let main () =
 		 | Some f -> 
 		     try_export f (current.view#buffer#get_text ());
 		     current.filename <- Some f;
+		     current.stats <- my_stat f;
 		     set_current_tab_label (Filename.basename f);
 		     current.view#buffer#set_modified false
 	       end
@@ -1051,6 +1077,7 @@ let main () =
 		 | Some f -> 
 		     try_export f (current.view#buffer#get_text ());
 		     current.filename <- Some f;
+		     current.stats <- my_stat f;
 		     set_current_tab_label (Filename.basename f);
 		     current.view#buffer#set_modified false
 	       end);
@@ -1063,13 +1090,13 @@ let main () =
   (* File/Save All Menu *)
   let saveall_m = file_factory#add_item "Sa_ve All" in
   let saveall_f () = 
-
     Vector.iter 
-      (fun {view = view ; filename = filename} -> 
+      (function {view = view ; filename = filename } as full -> 
 	 match filename with 
 	   | None -> ()
 	   | Some f ->
 	       try_export f (view#buffer#get_text ());
+	       full.stats <- my_stat f;
 	       view#buffer#set_modified false
       )  input_views
   in
@@ -1081,8 +1108,22 @@ let main () =
   ignore (saveall_m#connect#activate saveall_f);
 
   (* File/Revert Menu *)
-  let revert_m = file_factory#add_item "_Revert" in
-  revert_m#misc#set_state `INSENSITIVE;
+  let revert_m = file_factory#add_item "_Revert All Buffers" in
+  let revert_f () = 
+    Vector.iter 
+      (function 
+	   {view = view ; analyzed_view = Some av ;
+	    filename = Some f ; stats = Some stats } as full -> 
+	     (try 
+	       let new_stats = Unix.stat f in
+	       if new_stats.Unix.st_mtime > 
+		 stats.Unix.st_mtime 
+	       then begin av#revert f; full.stats <- Some new_stats end
+	     with _ -> av#revert f)
+	 | _ -> ()
+      )  input_views
+  in
+  ignore (revert_m#connect#activate revert_f);
 
   (* File/Print Menu *)
   let print_f () =
@@ -1151,7 +1192,7 @@ let main () =
   let refresh_m = file_factory#add_item "Restart all" ~key:GdkKeysyms._R in
   refresh_m#misc#set_state `INSENSITIVE;
 
-  (* Fiel/Quit Menu *)
+  (* File/Quit Menu *)
   let quit_f () =
     if has_something_to_save () then 
       match (GToolbox.question_box ~title:"Quit"
@@ -1209,7 +1250,11 @@ let main () =
   
   (* Navigation Menu *)
   let navigation_menu =  factory#add_submenu "Navigation" in
-  let navigation_factory = new GMenu.factory navigation_menu ~accel_group ~accel_modi:[`CONTROL ; `MOD1] in
+  let navigation_factory = 
+    new GMenu.factory navigation_menu 
+      ~accel_group 
+      ~accel_modi:current.modifier_for_navigation 
+  in
   let do_or_activate f () = 
     let current = get_current_view () in
     let analyzed_view = out_some current.analyzed_view in
@@ -1245,7 +1290,11 @@ let main () =
 
   (* Tactics Menu *)
   let tactics_menu =  factory#add_submenu "Tactics" in
-  let tactics_factory = new GMenu.factory tactics_menu ~accel_group ~accel_modi:[`MOD1] in
+  let tactics_factory = 
+    new GMenu.factory tactics_menu 
+      ~accel_group 
+      ~accel_modi:current.modifier_for_templates 
+  in
   let do_if_active f () = 
     let current = get_current_view () in
     let analyzed_view = out_some current.analyzed_view in
@@ -1310,7 +1359,7 @@ let main () =
   let templates_menu =  factory#add_submenu "Templates" in
   let templates_factory = new GMenu.factory templates_menu 
 			    ~accel_group 
-			    ~accel_modi:[`MOD1] 
+			    ~accel_modi:current.modifier_for_templates
   in
   let templates_tactics = templates_factory#add_submenu "Tactics" in
   let templates_tactics_factory = new GMenu.factory templates_tactics ~accel_group in
@@ -1376,14 +1425,28 @@ let main () =
   let _ = commands_factory#add_item "Make Makefile" ~callback:coq_makefile_f in
 
   (* Configuration Menu *)
-
+  let reset_revert_timer () =
+    disconnect_revert_timer ();
+    if current.global_auto_revert then 
+      revert_timer := Some
+	(GMain.Timeout.add ~ms:current.global_auto_revert_delay 
+	   ~callback:(fun () -> revert_f ();true))
+  in
   let configuration_menu = factory#add_submenu "Configuration" in
   let configuration_factory = new GMenu.factory configuration_menu ~accel_group
   in
-  let customize_colors_m =
-    configuration_factory#add_item "Customize colors"
-      ~callback:(fun () -> !flash_info "Not implemented")
+  let edit_prefs_m =
+    configuration_factory#add_item "Edit preferences"
+      ~callback:(fun () -> configure ();reset_revert_timer ())
   in
+(* let save_prefs_m =
+    configuration_factory#add_item "Save preferences"
+      ~callback:(fun () ->
+		   let fd = open_out "toto" in
+		   output_pref fd current;
+  close_out fd)
+  in
+*)
   font_selector := 
   Some (GWindow.font_selection_dialog 
 	  ~title:"Select font..."
@@ -1422,6 +1485,10 @@ let main () =
   in
   let _ = help_factory#add_separator () in
   let about_m = help_factory#add_item "About" in
+
+  (* Statup preferences *)
+  load_pref current;
+  reset_revert_timer ();
 
   (* Window layout *)
 
@@ -1525,7 +1592,8 @@ let main () =
   let view = create_input_tab "*Unamed Buffer*" in
   let index = add_input_view {view = view;
 			      analyzed_view = None;
-			      filename = None}
+			      filename = None;
+			      stats = None}
   in
   (get_input_view index).analyzed_view <- Some (new analyzed_view index);
   activate_input index;

@@ -39,7 +39,8 @@ noargument:
 
 LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
               -I proofs -I tactics -I pretyping \
-              -I interp -I toplevel -I parsing -I ide -I translate \
+              -I interp -I toplevel -I parsing -I ide/utils \
+	      -I ide -I translate \
               -I contrib/omega -I contrib/romega \
 	      -I contrib/ring -I contrib/xml \
 	      -I contrib/extraction -I contrib/correctness \
@@ -440,12 +441,16 @@ COQIDEBYTE=bin/coqide.byte$(EXE)
 COQIDEOPT=bin/coqide.opt$(EXE)
 COQIDE=bin/coqide.$(BEST)$(EXE)
 
-COQIDECMO=ide/preferences.cmo \
+COQIDECMO=ide/utils/okey.cmo ide/utils/uoptions.cmo \
+	  ide/utils/configwin_keys.cmo ide/utils/configwin_types.cmo \
+	  ide/utils/configwin_messages.cmo ide/utils/configwin_ihm.cmo \
+	  ide/utils/configwin.cmo ide/config_lexer.cmo ide/preferences.cmo \
 	  ide/ideutils.cmo ide/find_phrase.cmo \
           ide/highlight.cmo ide/coq.cmo ide/coqide.cmo
+
 COQIDECMX=$(COQIDECMO:.cmo=.cmx)
 COQIDEFLAGS=-I +lablgtk2
-beforedepend:: ide/find_phrase.ml ide/highlight.ml
+beforedepend:: ide/config_lexer.ml ide/find_phrase.ml ide/highlight.ml
 
 FULLIDELIB=$(FULLCOQLIB)/ide
 IDEFILES=ide/coq.gif ide/.coqiderc
@@ -468,6 +473,14 @@ ide/%.cmi: ide/%.mli
 ide/%.cmx: ide/%.ml
 	$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
 
+ide/utils/%.cmo: ide/%.ml
+	$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+
+ide/utils/%.cmi: ide/%.mli
+	$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+
+ide/utils/%.cmx: ide/%.ml
+	$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
 clean::
 	rm -f $(COQIDEBYTE) $(COQIDEOPT)
 
