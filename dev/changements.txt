@@ -1,3 +1,19 @@
+MAIN CHANGES FROM COQ V7.1 TO COQ V7.2
+======================================
+
+The core of Coq (kernel) has meen minimized with the following effects:
+
+kernel/term.ml      split into kernel/term.ml,      pretyping/termops.ml
+kernel/reduction.ml split into kernel/reduction.ml, pretyping/reductionops.ml
+kernel/names.ml     split into kernel/names.ml,     library/nameops.ml
+kernel/inductive.ml split into kernel/inductive.ml, pretyping/inductiveops.ml
+
+the prefixes "Is" ans "IsMut" have been dropped from kind_of_term constructors,
+e.g. IsRel is now Rel, IsMutCase is now Case, etc.
+
+
+PRINCIPAUX CHANGEMENTS ENTRE COQ V6.3.1 ET COQ V7.0
+===================================================
 
 Changements d'organisation / modules :
 --------------------------------------
