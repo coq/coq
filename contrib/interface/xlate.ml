@@ -3337,6 +3337,10 @@ let xlate_vernac =
      VernacTacticGrammar _|VernacVar _|VernacTime _|VernacNop|VernacComments _)
     -> xlate_error "TODO: vernac"
 
+  (* Modules and Module Types *)
+  | VernacDeclareModule _ -> xlate_error "TODO: vernac"
+  | VernacDeclareModuleType _ -> xlate_error "TODO: vernac"
+
 let xlate_vernac_list =
  function
    | VernacList (v::l) ->
