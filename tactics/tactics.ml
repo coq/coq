@@ -88,8 +88,7 @@ let mutual_fix   = Tacmach.mutual_fix
 let fix f n      = mutual_fix [f] [n] []
 
 let fix_noname n =  
-  let l = Pfedit.list_proofs() in
-  let id = id_of_string (List.hd l) in  
+  let id = id_of_string (Pfedit.get_current_proof_name ()) in
   fix id n
 
 let dyn_mutual_fix argsl gl = 
@@ -111,8 +110,7 @@ let mutual_cofix = Tacmach.mutual_cofix
 let cofix f      =  mutual_cofix [f] []
 
 let cofix_noname n =  
-  let l = Pfedit.list_proofs() in
-  let id = id_of_string (List.hd l) in  
+  let id = id_of_string (Pfedit.get_current_proof_name ()) in
   cofix id n
 
 let dyn_mutual_cofix argsl gl = 
@@ -1464,39 +1462,6 @@ let dImp cls gl =
     | None    -> intro gl
     | Some id -> impE id gl
 
-(******************************************)
-(* Instantiation of existential variables *)
-(******************************************)
-
-let instantiate_pf n c pfts = 
-  let gls = top_goal_of_pftreestate pfts in
-  let (wc,_) = startWalk gls in
-  let sigma  = (w_Underlying wc) in 
-  let (sp,_) = 
-    try 
-      List.nth (Evd.non_instantiated sigma) (n-1)
-    with Failure _ -> 
-      error "not so many uninstantiated existential variables"
-  in 
-  let wc' = w_Define sp c wc in 
-  let newgc = ts_mk (w_Underlying wc') in 
-  change_constraints_pftreestate newgc pfts
-
-let instantiate_pf_com n com pfts = 
-  let gls = top_goal_of_pftreestate pfts in
-  let (wc,_) = startWalk gls in
-  let sigma = (w_Underlying wc) in 
-  let (sp,evd) = 
-    try
-      List.nth (Evd.non_instantiated sigma) (n-1) 
-    with Failure _ -> 
-      error "not so many uninstantiated existential variables"
-  in 
-  let c = Astterm.interp_constr sigma evd.evar_env com in     
-  let wc' = w_Define sp c wc in
-  let newgc = ts_mk (w_Underlying wc') in
-  change_constraints_pftreestate newgc pfts
-
 (************************************************)
 (*  Tactics related with logic connectives      *)
 (************************************************)
@@ -1652,21 +1617,15 @@ let abstract_subproof name tac gls =
   let concl = Sign.it_sign (fun t id typ -> mkNamedProd id typ t)
                 (pf_concl gls) sign in
   let env' = change_hyps (fun _ -> current_sign) env in
-  let top_goal = mk_goal (mt_ctxt Intset.empty) env' concl in
-  let ts = { top_hyps = (Global.env(), empty_env);
-             top_goal = top_goal;
-             top_strength = Declare.NeverDischarge } 
-  in 
-  start(nas,ts);set_proof (Some nas);
+  start_proof nas Declare.NeverDischarge env' concl;
   begin 
     try
-      by (tclCOMPLETE (tclTHEN (tclDO (sign_length sign) intro) 
-			 tac)); 
+      by (tclCOMPLETE (tclTHEN (tclDO (sign_length sign) intro) tac)); 
       save_named true
     with e when catchable_exception e -> 
-      (abort_cur_goal(); raise e)
+      (abort_current_goal(); raise e)
   end;
-  exact (applist ((Declare.construct_reference env' CCI na), 
+  exact (applist ((Declare.construct_reference env' CCI na),
                   (List.map (fun id -> VAR(id)) 
                      (List.rev (ids_of_sign sign)))))
     gls
@@ -1674,7 +1633,7 @@ let abstract_subproof name tac gls =
 let tclABSTRACT name_op tac gls = 
   let s = match name_op with 
     | Some s -> s 
-    | None   -> id_of_string ((get_proof ())^"_subproof") 
+    | None   -> id_of_string ((get_current_proof_name ())^"_subproof") 
   in  
   abstract_subproof s tac gls
 

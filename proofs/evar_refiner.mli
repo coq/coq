@@ -49,3 +49,6 @@ val w_ORELSE     : w_tactic -> w_tactic -> w_tactic
 val ctxt_type_of : readable_constraints -> constr -> constr
 
 val evars_of     : readable_constraints -> constr -> local_constraints
+
+val instantiate_pf     : int -> constr -> pftreestate -> pftreestate
+val instantiate_pf_com : int -> Coqast.t -> pftreestate -> pftreestate

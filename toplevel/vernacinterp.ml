@@ -96,9 +96,8 @@ let rec cvt_varg ast =
     | Node(_,"AST",[a]) -> VARG_AST a
     | Node(_,"ASTLIST",al) -> VARG_ASTLIST al
     | Node(_,"TACTIC_ARG",[targ]) ->
-      let (evc,env)=Pfedit.get_evmap_sign None
-      in
-        VARG_TACTIC_ARG (interp_tacarg (evc,env,[],[],None) targ)
+      let (evc,env)= Pfedit.get_current_goal_context () in
+      VARG_TACTIC_ARG (interp_tacarg (evc,env,[],[],None) targ)
     | Node(_,"VERNACDYN",[Dynamic (_,d)]) -> VARG_DYN d
     | _ -> anomaly_loc (Ast.loc ast, "Vernacinterp.cvt_varg",
                         [< 'sTR "Unrecognizable ast node of vernac arg:";

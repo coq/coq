@@ -97,6 +97,7 @@ val nth_goal_of_pftreestate : int -> pftreestate -> goal sigma
 val traverse : int -> pftreestate -> pftreestate
 val solve_nth_pftreestate : int -> tactic -> pftreestate -> pftreestate
 val solve_pftreestate : tactic -> pftreestate -> pftreestate
+
 (* a weak version of logical undoing, that is really correct only *)
 (* if there are no existential variables.                         *)
 val weak_undo_pftreestate : pftreestate -> pftreestate

@@ -150,6 +150,8 @@ let prev_unproven           = prev_unproven
 let top_of_tree             = top_of_tree
 let frontier                = frontier
 let change_constraints_pftreestate = change_constraints_pftreestate
+let instantiate_pf     = instantiate_pf
+let instantiate_pf_com = instantiate_pf_com
 
 (***********************************)
 (* Walking constraints re-exported *)

@@ -101,11 +101,6 @@ let show_top_evars () =
   let sigma = project gls in 
   mSG (pr_evars_int 1 (Evd.non_instantiated sigma))
 
-(* Focus commands *)
-let reset_top_of_tree () = 
-  let pts = get_pftreestate () in 
-  if not (is_top_pftreestate pts) then Pfedit.mutate top_of_tree
-
 (* Locate commands *)
  
 let locate_file f =
@@ -125,9 +120,9 @@ let print_loadpath () =
   mSGNL [< 'sTR"Load Path:"; 'fNL; 'sTR"  ";
            hV 0 (prlist_with_sep pr_fnl (fun s -> [< 'sTR s >]) l) >]
 
-let goal_of_args = function
-  | [VARG_NUMBER n] -> Some n
-  | [] -> None
+let get_goal_context_of_args = function
+  | [VARG_NUMBER n] -> get_goal_context n
+  | [] -> get_current_goal_context ()
   | _ -> bad_vernac_args "goal_of_args"
 
 let isfinite = function 
@@ -218,24 +213,29 @@ let _ =
 
 (* Managing states *)
 
+let abort_refine f x =
+  if Pfedit.refining() then abort_goals ();
+  f x
+  (* used to be: error "Must save or abort current goal first" *)
+
 let _ =
   add "WriteState"
     (function 
        | [VARG_STRING file] ->
-	   (fun () -> Pfedit.abort_refine States.extern_state file)
+	   (fun () -> abort_refine States.extern_state file)
        | [VARG_IDENTIFIER id] ->
 	   let file = string_of_id id in
-	   (fun () -> Pfedit.abort_refine States.extern_state file)
+	   (fun () -> abort_refine States.extern_state file)
        | _ -> bad_vernac_args "SaveState")
 
 let _ =
   add "RestoreState"
     (function 
        | [VARG_STRING file] ->
-	   (fun () -> Pfedit.abort_refine States.intern_state file)
+	   (fun () -> abort_refine States.intern_state file)
        | [VARG_IDENTIFIER id] ->
 	   let file = string_of_id id in
-	   (fun () -> Pfedit.abort_refine States.intern_state file)
+	   (fun () -> abort_refine States.intern_state file)
        | _ -> bad_vernac_args "LoadState")
 
 (* Resetting *)
@@ -244,13 +244,13 @@ let _ =
   add "ResetName"
     (function 
        | [VARG_IDENTIFIER id] -> 
-	   (fun () -> Pfedit.abort_refine Lib.reset_name id)
+	   (fun () -> abort_refine Lib.reset_name id)
        | _ -> bad_vernac_args "ResetName")
 
 let _ =
   add "ResetInitial"
     (function 
-       | [] -> (fun () -> Pfedit.abort_refine Lib.reset_initial ())
+       | [] -> (fun () -> abort_refine Lib.reset_initial ())
        | _  -> bad_vernac_args "ResetInitial")
 
 (***
@@ -328,10 +328,7 @@ let _ =
     (function 
        | [VARG_IDENTIFIER id] ->
 	   (fun () ->
-              if refining () then 
-		errorlabstrm "vernacentries : EndSection"
-		  [< 'sTR"proof editing in progress" ; (msg_proofs false) ;
-                     'sTR"Use \"Abort All\" first or complete proof(s)." >];
+	      check_no_pending_proofs ();
               Discharge.close_section (not (is_silent())) (string_of_id id))
        | _ -> bad_vernac_args "EndSection")
 
@@ -343,7 +340,7 @@ let _ =
        | [VARG_CONSTR com] ->
 	   (fun () ->
               if not (refining()) then begin
-              	start_proof "Unnamed_thm" NeverDischarge com;
+              	start_proof_com "Unnamed_thm" NeverDischarge com;
 		if not (is_silent()) then show_open_subgoals ()
               end else 
 		error "repeated Goal not permitted in refining mode")
@@ -357,13 +354,21 @@ let _ =
 	   (fun () -> 
 	      let s = string_of_id id in
 	      abort_goal s; message ("Goal "^s^" aborted"))
-       | [] -> (fun () -> abort_cur_goal (); message "Current goal aborted")
+       | [] -> (fun () -> 
+		  abort_current_goal ();
+		  message "Current goal aborted")
        | _  -> bad_vernac_args "ABORT")
 
 let _ =
   add "ABORTALL"
     (function 
-       | [] -> (fun () -> abort_goals())
+       | [] -> (fun () ->
+		  if refining() then begin
+		    abort_goals ();
+		    message "Current goals aborted"
+		  end else
+		    error "No proof-editing in progress")
+
        | _  -> bad_vernac_args "ABORTALL")
 
 let _ =
@@ -375,15 +380,15 @@ let _ =
 let _ =
   add "SUSPEND"
     (function 
-       | [] -> (fun () -> set_proof None)
+       | [] -> (fun () -> set_current_proof None)
        | _  -> bad_vernac_args "SUSPEND")
 
 let _ =
   add "RESUME"
     (function 
        | [VARG_IDENTIFIER id] ->
-	   (fun () -> set_proof (Some(string_of_id id)))
-       | [] -> (fun () -> resume_last ())
+	   (fun () -> set_current_proof (Some(string_of_id id)))
+       | [] -> (fun () -> resume_last_proof ())
        | _  -> bad_vernac_args "RESUME")
 
 let _ =
@@ -509,11 +514,11 @@ let _ =
        | [VARG_NUMBER n] ->
 	   (fun () -> (Pfedit.traverse n;show_node()))
        | [VARG_STRING"top"] ->
-           (fun () -> (mutate top_of_tree;show_node()))
+           (fun () -> (Pfedit.reset_top_of_tree ();show_node()))
        | [VARG_STRING"next"] ->
-           (fun () -> (mutate next_unproven;show_node()))
+           (fun () -> (Pfedit.traverse_next_unproven ();show_node()))
        | [VARG_STRING"prev"] ->
-           (fun () -> (mutate prev_unproven;show_node()))
+           (fun () -> (Pfedit.traverse_prev_unproven ();show_node()))
        | _ -> bad_vernac_args "Go")
 
 let _ =
@@ -608,7 +613,7 @@ let _ =
   add "ShowProofs"
     (function [] ->
        (fun () ->
-	  let l = Pfedit.list_proofs() in 
+	  let l = Pfedit.get_all_proof_names() in 
 	  mSGNL (prlist_with_sep pr_spc pr_str l))
        | _  -> bad_vernac_args "ShowProofs")
 
@@ -660,7 +665,7 @@ let _ =
 let _ =
   add "StartProof"
     (function 
-       | [VARG_STRING kind;VARG_IDENTIFIER s;VARG_CONSTR c] ->
+       | [VARG_STRING kind;VARG_IDENTIFIER s;VARG_CONSTR com] ->
 	   let stre = match kind with
 	     | "THEOREM" -> NeverDischarge
              | "LEMMA" -> NeverDischarge
@@ -673,7 +678,7 @@ let _ =
            in 
 	   fun () ->
              begin
-               start_proof (string_of_id s) stre c;
+               start_proof_com (string_of_id s) stre com;
                if (not(is_silent())) then show_open_subgoals()
              end
        | _ -> bad_vernac_args "StartProof")
@@ -682,7 +687,7 @@ let _ =
   add "TheoremProof"
     (function 
        | [VARG_STRING kind; VARG_IDENTIFIER s; 
-	  VARG_CONSTR c; VARG_VARGLIST coml] ->
+	  VARG_CONSTR com; VARG_VARGLIST coml] ->
 	   let calls = List.map
 			 (function 
 			    | (VCALL(na,l)) -> (na,l)
@@ -703,7 +708,7 @@ let _ =
               try
             	States.with_heavy_rollback
 		  (fun () ->
-                     start_proof (string_of_id s) stre c;
+                     start_proof_com (string_of_id s) stre com;
                      if not (is_silent()) then show_open_subgoals();
                      List.iter Vernacinterp.call calls;
                      if not (is_silent()) then show_script();
@@ -714,8 +719,8 @@ let _ =
                   mSGNL [< 'sTR"Error: checking of theorem " ; print_id s ;
                            'sPC ; 'sTR"failed" ;
                            'sTR"... converting to Axiom" >];
-                  del_proof (string_of_id s);
-                  parameter_def_var (string_of_id s) c
+                  abort_goal (string_of_id s);
+                  parameter_def_var (string_of_id s) com
            	end else 
 		  errorlabstrm "vernacentries__TheoremProof"
                     [< 'sTR"checking of theorem " ; print_id s ; 'sPC ;
@@ -809,7 +814,7 @@ let _ =
   add "Eval"
     (function
        | VARG_TACTIC_ARG (Redexp redexp) :: VARG_CONSTR c :: g ->
-           let (evmap,sign) = get_evmap_sign (goal_of_args g) in
+           let (evmap,sign) = get_goal_context_of_args g in
            let redfun = print_eval (reduction_of_redexp redexp) sign in 
 	   fun () -> mSG (redfun (judgment_of_com evmap sign c))
        | _ -> bad_vernac_args "Eval")
@@ -818,7 +823,7 @@ let _ =
   add "Check"
     (function 
        | VARG_STRING kind :: VARG_CONSTR c :: g ->
-	   let (evmap, sign) = get_evmap_sign (goal_of_args g) in
+	   let (evmap, sign) = get_goal_context_of_args g in
 	   let prfun = match kind with
 	     | "CHECK" -> print_val
              | "PRINTTYPE" -> print_type
@@ -862,7 +867,7 @@ let _ =
 let _ =
   add "UNSETUNDO"
     (function 
-       | [] -> (fun () -> unset_undo ())
+       | [] -> (fun () -> reset_undo ())
        | _  -> bad_vernac_args "UNSETUNDO")
 
 let _ =
@@ -1407,7 +1412,7 @@ let _ =
   vinterp_add "EXISTENTIAL"
     (function 
        | [VARG_NUMBER n; VARG_CONSTR c] -> 
-           (fun () -> mutate (instantiate_pf_com n c))
+           (fun () -> instantiate_nth_evar_com n c)
        |  _  -> assert false)
 
 (* The second is a stupid macro that should be replaced by ``Exact
@@ -1449,5 +1454,5 @@ let _ =
           (* in case a strict subtree was completed, 
               go back to the top of the prooftree *) 
 	  if subtree_solved () then 
-	    (rev_mutate top_of_tree; print_subgoals()) 
+	    (reset_top_of_tree (); print_subgoals()) 
        ))

@@ -310,7 +310,7 @@ let explain_refiner_cannot_unify m n =
      'sTR"with"; 'bRK(1,1) ; pn >]
 
 let explain_refiner_cannot_generalize ty =
-  [< 'sTR "cannot find a generalisation of the goal with type : "; 
+  [< 'sTR "Cannot find a well-typed generalisation of the goal with type : "; 
      prterm ty >]
 
 let explain_refiner_not_well_typed c =

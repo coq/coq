@@ -162,3 +162,36 @@ let w_Define sp c wc =
     	in 
 	(ids_mod (fun evc -> (Proof_trees.remap evc (sp,spdecl'))) wc)
     | _ -> error "define_evar"
+
+(******************************************)
+(* Instantiation of existential variables *)
+(******************************************)
+
+let instantiate_pf n c pfts = 
+  let gls = top_goal_of_pftreestate pfts in
+  let (wc,_) = startWalk gls in
+  let sigma  = (w_Underlying wc) in 
+  let (sp,_) = 
+    try 
+      List.nth (Evd.non_instantiated sigma) (n-1)
+    with Failure _ -> 
+      error "not so many uninstantiated existential variables"
+  in 
+  let wc' = w_Define sp c wc in 
+  let newgc = ts_mk (w_Underlying wc') in 
+  change_constraints_pftreestate newgc pfts
+
+let instantiate_pf_com n com pfts = 
+  let gls = top_goal_of_pftreestate pfts in
+  let (wc,_) = startWalk gls in
+  let sigma = (w_Underlying wc) in 
+  let (sp,evd) = 
+    try
+      List.nth (Evd.non_instantiated sigma) (n-1) 
+    with Failure _ -> 
+      error "not so many uninstantiated existential variables"
+  in 
+  let c = Astterm.interp_constr sigma evd.evar_env com in     
+  let wc' = w_Define sp c wc in
+  let newgc = ts_mk (w_Underlying wc') in
+  change_constraints_pftreestate newgc pfts

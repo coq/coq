@@ -107,6 +107,8 @@ val prev_unproven           : pftreestate -> pftreestate
 val top_of_tree             : pftreestate -> pftreestate
 val change_constraints_pftreestate :
   global_constraints -> pftreestate -> pftreestate
+val instantiate_pf     : int -> constr -> pftreestate -> pftreestate
+val instantiate_pf_com : int -> Coqast.t -> pftreestate -> pftreestate
 
 
 (*s Tacticals re-exported from the Refiner module. *)

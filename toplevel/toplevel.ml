@@ -162,10 +162,13 @@ let valid_buffer_loc ib dloc (b,e) =
 (* A buffer to store the current command read on stdin. It is
  * initialized when a vernac command is immediately followed by "\n",
  * or after a Drop. *)
+let make_prompt () =
+  if Pfedit.refining () then
+    (Pfedit.get_current_proof_name ())^" < "
+  else "Coq < "
 
 let top_buffer =
-  let pr() = 
-    (Pfedit.proof_prompt())^(emacs_str (String.make 1 (Char.chr 249)))
+  let pr() = (make_prompt())^(emacs_str (String.make 1 (Char.chr 249)))
   in
   { prompt = pr;
     str = "";

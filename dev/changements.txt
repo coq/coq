@@ -106,6 +106,13 @@ Changements dans les fonctions :
         Divers
           initial_sign -> var_context
 
+        Pfedit
+	  list_proofs -> get_all_proof_names
+          get_proof -> get_current_proof_name
+          abort_cur_goal -> abort_current_goal
+          get_evmap_sign -> get_goal_context/get_current_goal_context
+          unset_undo -> reset_undo
+
 Changements dans les inductifs
 ------------------------------
 Nouveaux types "constructor" et "inductive" dans Term

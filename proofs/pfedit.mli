@@ -12,32 +12,143 @@ open Proof_type
 open Tacmach
 (*i*)
 
-val proof_prompt : unit -> string
+(* [refining ()] tells if there is some proof in progress, even if a not
+   focused one *)
+
 val refining : unit -> bool
+
+(* [check_no_pending_proofs ()] fails if there is still some proof in
+   progress *)
+
+val check_no_pending_proofs : unit -> unit
+
+(* [abort_goal name] aborts proof of name [name] or failed if no proof
+has this name *)
+
 val abort_goal : string -> unit
-val abort_cur_goal : unit -> unit
+
+(* [abort_current_goal ()] aborts current focused proof or failed if
+    no proof is focused *)
+
+val abort_current_goal : unit -> unit
+
+(* [abort_goals ()] aborts all open proofs if any *)
+
 val abort_goals : unit -> unit
-val abort_refine : ('a -> 'b) -> 'a -> 'b
-val msg_proofs : bool -> std_ppcmds
 
-val undo_limit : int ref
-val set_undo : int -> unit
-val unset_undo : unit -> unit
+(* [undo n] undoes the effect of the last [n] tactics applied to the
+    current proof; it fails if no proof is focused or if the ``undo''
+    stack is exhausted *)
+
 val undo : int -> unit
-val resume_last : unit -> unit
 
-type proof_topstate = {
-  top_hyps : env * env;
-  top_goal : goal;
-  top_strength : strength }
+(* [set_undo n] sets the size of the ``undo'' stack *)
 
+val set_undo : int -> unit
+
+(* [reset_undo n] sets the size of the ``undo'' stack to the default
+   value (12) *)
+
+val reset_undo : unit -> unit
+
+(* [resume_last_proof ()] focus on the last unfocused proof or fails
+   if there is no suspended proofs *)
+
+val resume_last_proof : unit -> unit
+
+(* [get_pftreestate ()] returns the current focused pending proof or
+   raises [UserError "no focused proof"] *)
+
+val get_pftreestate : unit -> pftreestate
+
+(* [get_goal_context n] returns the context of the [n]th subgoal of
+   the current focused proof or raises a [UserError] if there is no
+   focused proof or if there is no more subgoals *)
+
+val get_goal_context : int -> evar_declarations * env
+
+(* [get_current_goal_context ()] works as [get_goal_context 1] *)
+
+val get_current_goal_context : unit -> evar_declarations * env
+
+(* [set_current_proof None] unfocuses the current focused proof; [set_proof
+(Some name)] focuses on the proof of name [name] or raises a
+[UserError] if no proof has name [name] *)
+
+val set_current_proof : string option -> unit
+
+(* [get_current_proof_name ()] return the name of the current focused
+    proof or failed if no proof is focused *)
+
+val get_current_proof_name : unit -> string
+
+(* [list_proofs ()] returns the list of all pending proof names *)
+
+val get_all_proof_names : unit -> string list
+
+(* [restart ()] restarts the current focused proof from the beginning
+   or fails if no proof is focused *)
+
+val restart : unit -> unit
+
+(* [start_proof s str env t] starts a proof of name [s] and conclusion [t] *)
+
+val start_proof : string -> strength -> env -> constr -> unit
+
+(* [save_named b] saves the current completed proof under the name it
+was started; boolean [b] tells if the theorem is declared opaque; it
+fails if the proof is not completed *)
+
+val save_named : bool -> unit
+
+(* [save_anonymous_thm b name] behaves as [save_named] but declares the
+theorem under the name [name] and gives it the strength of a theorem *)
+
+val save_anonymous_thm : bool -> string -> unit
+
+(* [save_anonymous_remark b name] behaves as [save_named] but declares the
+theorem under the name [name] and gives it the strength of a remark *)
+
+val save_anonymous_remark : bool -> string -> unit
+
+(* [solve_nth n tac] applies tactic [tac] to the [n]th subgoal of the
+   current focused proof or raises a UserError if no proof is focused or
+   if there is no [n]th subgoal *)
+
+val solve_nth : int -> tactic -> unit
+
+(* [by tac] applies tactic [tac] to the 1st subgoal of the current
+   focused proof or raises a UserError if there is no focused proof or
+   if there is no more subgoals *)
+
+val by : tactic -> unit
+
+(* [instantiate_nth_evar_com n c] instantiate the [n]th undefined
+   existential variable of the current focused proof by [c] or raises a
+   UserError if no proof is focused or if there is no such [n]th
+   existential variable *)
+
+val instantiate_nth_evar_com : int -> Coqast.t -> unit
+
+(* To deal with focus *)
+
+val make_focus : int -> unit
+val focus : unit -> int
+val focused_goal : unit -> int
+val subtree_solved : unit -> bool
+
+val reset_top_of_tree : unit -> unit
+val traverse : int -> unit
+val traverse_nth_goal : int -> unit
+val traverse_next_unproven : unit -> unit
+val traverse_prev_unproven : unit -> unit
+
+(*i N'ont pas à être exportées
+type proof_topstate
+val msg_proofs : bool -> std_ppcmds
+val undo_limit : int ref
 val get_state : unit -> pftreestate * proof_topstate
 val get_topstate : unit -> proof_topstate
-val get_pftreestate : unit -> pftreestate
-val get_evmap_sign : int option -> evar_declarations * env
-val set_proof : string option -> unit
-val get_proof : unit -> string
-val list_proofs : unit -> string list
 val add_proof : string * pftreestate * proof_topstate -> unit
 val del_proof : string -> unit
 val init_proofs : unit -> unit
@@ -45,26 +156,8 @@ val init_proofs : unit -> unit
 val mutate : (pftreestate -> pftreestate) -> unit
 val rev_mutate : (pftreestate -> pftreestate) -> unit
 val start : string * proof_topstate -> unit
-val restart : unit -> unit
-val proof_prompt : unit -> string
 val proof_term : unit -> constr
-
-val start_proof : string -> strength -> Coqast.t -> unit
-val start_proof_constr : string -> strength -> constr -> unit
-
-val save_named : bool -> unit
-val save_anonymous : bool -> string -> 'a -> unit
-val save_anonymous_thm : bool -> string -> unit
-val save_anonymous_remark : bool -> string -> unit
-
-val solve_nth : int -> tactic -> unit
-val by : tactic -> unit
-val traverse : int -> unit
-val traverse_nth_goal : int -> unit
+val save_anonymous : bool -> string -> unit
 val traverse_to : int list -> unit
+i*)
 
-val make_focus : int -> unit
-val focus : unit -> int
-val focused_goal : unit -> int
-
-val subtree_solved : unit -> bool

@@ -149,11 +149,6 @@ val dyn_apply             : tactic_arg list -> tactic
 val cut_and_apply         : constr -> tactic
 val dyn_cut_and_apply     : tactic_arg list -> tactic
 
-(*s Instantiation tactics. *)
-
-val instantiate_pf     : int -> constr -> pftreestate -> pftreestate
-val instantiate_pf_com : int -> Coqast.t -> pftreestate -> pftreestate
-
 (*s Elimination tactics. *)
 
 val general_elim   : constr * constr substitution ->

@@ -125,9 +125,7 @@ and raw_compile_module verbosely only_spec mname file =
   Library.open_module mname;
   let lfname = read_vernac_file verbosely file in
   let base = Filename.chop_suffix lfname ".v" in
-  if Pfedit.refining () then
-    errorlabstrm "Vernac.raw_compile_module"
-      [< 'sTR"proof editing in progress" ; (Pfedit.msg_proofs false) >];
+  Pfedit.check_no_pending_proofs ();
   if only_spec then
     failwith ".vi not yet implemented"
   else 

@@ -25,13 +25,14 @@ type proof_topstate = {
 
 let proof_edits = (Edit.empty() : (string,pftreestate,proof_topstate) Edit.t)
 
-let list_proofs () = Edit.dom proof_edits
+let get_all_proof_names () = Edit.dom proof_edits
 
 let msg_proofs use_resume =
   match Edit.dom proof_edits with
     | [] -> [< 'sPC ; 'sTR"(No proof-editing in progress)." >]
     | l ->  [< 'sTR"." ; 'fNL ; 'sTR"Proofs currently edited:" ; 'sPC ;
-               (prlist_with_sep pr_spc pr_str (list_proofs ())) ; 'sTR"." ;
+               (prlist_with_sep pr_spc pr_str (get_all_proof_names ())) ;
+	       'sTR"." ;
                (if use_resume then [< 'fNL ; 'sTR"Use \"Resume\" first." >]
               	else [< >])
             >]
@@ -52,6 +53,7 @@ let get_state () =
 let get_topstate ()    = snd(get_state())
 let get_pftreestate () = fst(get_state())
 
+(*
 let get_evmap_sign og =
   let og = match og with
     | Some n ->
@@ -67,22 +69,30 @@ let get_evmap_sign og =
   match og with
     | Some goal -> (project goal, pf_env goal)
     | _ -> (Evd.empty, Global.env())
- 
-let set_proof s = 
+*)
+
+let get_goal_context n =
+  let pftree = get_pftreestate () in
+  let goal = nth_goal_of_pftreestate n pftree in
+  (project goal, pf_env goal)
+
+let get_current_goal_context () = get_goal_context 1
+
+let set_current_proof s = 
   try 
     Edit.focus proof_edits s
   with Invalid_argument "Edit.focus" ->
     errorlabstrm "Pfedit.set_proof"
       [< 'sTR"No such proof" ; (msg_proofs false) >]
       
-let resume_last () =
+let resume_last_proof () =
   match (Edit.last_focused proof_edits) with
     | None ->
         errorlabstrm "resume_last" [< 'sTR"No proof-editing in progress." >]
     | p -> 
 	Edit.focus proof_edits p
 	  
-let get_proof () =
+let get_current_proof_name () =
   match Edit.read proof_edits with
     | None ->
         errorlabstrm "Pfedit.get_proof"
@@ -108,13 +118,6 @@ let mutate f =
     errorlabstrm "Pfedit.mutate"
       [< 'sTR"No focused proof" ; msg_proofs true >]
 
-let rev_mutate f =
-  try 
-    Edit.mutate proof_edits (fun _ pfs -> f pfs)
-  with Invalid_argument "Edit.rev_mutate" ->
-    errorlabstrm "Pfedit.rev_mutate"
-      [< 'sTR"No focused proof"; msg_proofs true >]
-
 let start (na,ts) =
   let pfs = mk_pftreestate ts.top_goal in 
   add_proof(na,pfs,ts)
@@ -127,13 +130,8 @@ let restart () =
     | Some(na,_,ts) -> 
 	del_proof na;
         start (na,ts);
-        set_proof (Some na)
+        set_current_proof (Some na)
 
-let proof_prompt () =
-  match Edit.read proof_edits with
-    | None -> "Coq < "
-    | Some(na,_,_) -> na^" < "
-	  
 let proof_term () =
   extract_pftreestate (get_pftreestate())
     
@@ -153,7 +151,7 @@ let set_undo n =
   else 
     error "Cannot set a negative undo limit"
       
-let unset_undo  () = set_undo undo_default
+let reset_undo  () = set_undo undo_default
 
 let undo n =
   try 
@@ -171,7 +169,7 @@ let undo n =
 
 let save_named opacity =
   let (pfs,ts) = get_state() 
-  and ident = get_proof() in
+  and ident = get_current_proof_name () in
   let {evar_concl=concl} = ts.top_goal 
   and strength = ts.top_strength in
   let pfterm = extract_pftreestate pfs in 
@@ -181,11 +179,11 @@ let save_named opacity =
   del_proof ident;
   if Options.is_verbose() then message (ident ^ " is defined")
     
-let save_anonymous opacity save_ident n =
+let save_anonymous opacity save_ident strength =
   let (pfs,ts) = get_state() 
-  and ident = get_proof() in
-  let {evar_concl=concl} = ts.top_goal 
-  and strength = ts.top_strength in
+  and ident = get_current_proof_name() in
+  let {evar_concl=concl} = ts.top_goal in
+  (* we do not consider default ts.top_strength *)
   let pfterm = extract_pftreestate pfs in 
   if ident = "Unnamed_thm" then
     declare_constant (id_of_string save_ident)
@@ -213,28 +211,23 @@ let save_anonymous_remark opacity id =
  
 let refining () = [] <> (Edit.dom proof_edits)
 
+let check_no_pending_proofs () =
+  if refining () then 
+    errorlabstrm "check_no_pending_proofs"
+      [< 'sTR"Proof editing in progress" ; (msg_proofs false) ;
+         'sTR"Use \"Abort All\" first or complete proof(s)." >]
+
 let abort_goal pn = del_proof pn
 
-let abort_cur_goal () = del_proof (get_proof ())
+let abort_current_goal () = del_proof (get_current_proof_name ())
 
-let abort_goals () =
-  if refining() then begin
-    init_proofs();
-    message "Current goals aborted"
-  end else 
-    error "No proof-editing in progress"
-
-let abort_refine f x = 
-  if refining() then abort_goals(); 
-  f x
-  (* used to be: error "Must save or abort current goal first" *)
-
+let abort_goals = init_proofs
    
 (*********************************************************************)
 (*              Modifying the current prooftree                      *)
 (*********************************************************************)
 
-let start_proof_with_type na str env concl =
+let start_proof na str env concl =
   let top_goal = mk_goal (mt_ctxt Intset.empty) env concl in
   let ts = { 
     top_hyps = (env,empty_env);
@@ -242,19 +235,17 @@ let start_proof_with_type na str env concl =
     top_strength = str }
   in
   start(na,ts);
-  set_proof (Some na)
+  set_current_proof (Some na)
 
-let start_proof na str concl_com =
-  let sigma = Evd.empty in
-  let env = Global.env() in
-  let concl = interp_type sigma env concl_com in
-  start_proof_with_type na str env concl
-
+(*
 let start_proof_constr na str concl =
   let sigma = Evd.empty in
   let env = Global.env() in
+(* Si c'est un constr, il est supposé typable dans le contexte courant
   let _ = execute_type env sigma concl in
+*)
   start_proof_with_type na str env concl
+*)
 
 let solve_nth k tac =
   let pft = get_pftreestate() in
@@ -273,7 +264,9 @@ let solve_nth k tac =
 
 let by tac = mutate (solve_pftreestate tac)
 
-let traverse n = rev_mutate (traverse n)
+let instantiate_nth_evar_com n c = mutate (instantiate_pf_com n c)
+
+let traverse n = mutate (traverse n)
  
 (* [traverse_to path]
 
@@ -338,15 +331,25 @@ let traverse_to path =
     let down_list, up_count = common_ancestor path cursor in
     traverse_down down_list (traverse_up up_count pfs)
   in
-  rev_mutate (up_and_down path)
+  mutate (up_and_down path)
 
 (* traverse the proof tree until it reach the nth subgoal *)
 let traverse_nth_goal n = mutate (nth_unproven n)
+
+let traverse_prev_unproven () = mutate prev_unproven
+
+let traverse_next_unproven () = mutate next_unproven
+
 
 (* The goal focused on *)
 let focus_n = ref 0
 let make_focus n = focus_n := n
 let focus () = !focus_n
 let focused_goal () = let n = !focus_n in if n=0 then 1 else n
+
+let reset_top_of_tree () = 
+  let pts = get_pftreestate () in 
+  if not (is_top_pftreestate pts) then mutate top_of_tree
+
 
 

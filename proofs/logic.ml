@@ -123,7 +123,7 @@ and mk_casegoals sigma goal goalacc p c =
   let (acc',ct) = mk_hdgoals sigma goal goalacc c in 
   let (acc'',pt) = mk_hdgoals sigma goal acc' p in
   let indspec =
-    try try_mutind_of env sigma ct
+    try find_inductive env sigma ct
     with Induc -> anomaly "mk_casegoals" in
   let (lbrty,conclty) = type_case_branches env sigma indspec pt p c in
   (acc'',lbrty,conclty)

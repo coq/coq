@@ -372,3 +372,11 @@ let build_scheme lnamedepindsort =
   declare 0 lrecnames; 
   if is_verbose() then pPNL(recursive_message lrecnames)
 
+let start_proof_com s stre com =
+  let env = Global.env () in
+  Pfedit.start_proof s stre env (interp_type Evd.empty env com)
+
+let get_current_context () =
+  try Pfedit.get_current_goal_context ()
+  with e when Logic.catchable_exception e -> 
+    (Evd.empty, Global.env())

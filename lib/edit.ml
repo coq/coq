@@ -20,7 +20,7 @@ let focus e nd =
     | Some f -> if not (Hashtbl.mem e.buf f) then invalid_arg "Edit.focus"
   end;
   begin match e.focus with
-    | None -> ()
+    | None -> if nd = None then warning "There is already no focused proof"
     | Some foc -> 
 	if e.focus <> nd then
           e.last_focused_stk <- foc::(list_except foc e.last_focused_stk)
