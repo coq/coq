@@ -117,9 +117,12 @@ let contents_first_level mp =
 	  mib.mind_packets
     | _ -> ()
   in
-  match (Environ.lookup_module mp !cur_env).mod_expr with 
-    | Some (MEBstruct (_,msb)) -> List.iter contents_seb msb; (mp,!s)
-    | _ -> mp,!s
+  try 
+    let m = Environ.lookup_module mp !cur_env in 
+    match m.mod_expr with 
+      | Some (MEBstruct (_,msb)) -> List.iter contents_seb msb; (mp,!s)
+      | _ -> mp,!s
+  with Not_found -> mp,!s
 
 let modules_first_level mp = 
   let s = ref Stringset.empty in 
@@ -128,9 +131,12 @@ let modules_first_level mp =
     | (l, (SEBmodule _ | SEBmodtype _)) -> add (id_of_label l) 
     | _ -> ()
   in
-  match (Environ.lookup_module mp !cur_env).mod_expr with 
-    | Some (MEBstruct (_,msb)) -> List.iter contents_seb msb; !s
-    | _ -> !s
+  try 
+    let m = Environ.lookup_module mp !cur_env in
+    match m.mod_expr with 
+      | Some (MEBstruct (_,msb)) -> List.iter contents_seb msb; !s
+      | _ -> !s
+  with Not_found -> !s
 
 let contents_first_level = 
   let cache = ref MPmap.empty in 
