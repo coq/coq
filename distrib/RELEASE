@@ -1,0 +1,353 @@
+(**************************************************************************)
+(*               Liste des choses à faire pour une release                *)
+(**************************************************************************)
+
+PLAN
+
+A) LE LOGICIEL (SOURCES ET BINAIRES)
+B) LES CONTRIBS
+C) LA DOC
+D) LE SERVEUR WEB
+E) LE CDROM (indépendant de la release)
+
+(**************************************************************************)
+A) LE LOGICIEL
+
+A1) VÉRIFICATIONS
+
+  S'assurer que les choses suivantes été réalisées et COMMITÉES.
+
+  - Changement du magic number dans src/meta/library.ml si la syntaxe
+    interne des .vo a changé
+
+  - Changement des variables en tête du fichier "configure" et
+    vérification du numéro de versions de OCaml et Camlp4 demandées
+  - Mise à jour des champs Version, Source et Require et vérifier la
+    liste des "%files" dans "distrib/coq.spec"
+  - Relecture des fichiers "README", "README.win", en particulier,
+    vérification du numéro de version, des adresses internet et des
+    coordonnées de Coq
+  - Relecture des fichiers "INSTALL", "INSTALL.win" en particulier numéro
+    de version de coq et numéros des versions de OCaml et Camlp4 demandées
+
+  - S'assurer après un "make cleanall" que "make world" et "make
+    world-opt" commutent                      # Caduc pour la V7
+
+  - Mise à jour/nettoyage du fichier CHANGES et du fichier ANNONCE
+
+  EN CAS DE MODIFICATION DE L'ARCHIVE, REPRENDRE EN A3
+  (ou en A2 si la date ou le numéro de version a changé)
+
+  Dans le cas simple d'une recompilation sur une autre architecture,
+sauter A3. Sauter aussi A4 s'il est possible de mettre le fichier
+coq-6.2.5.tar.gz à la main dans distrib.
+
+A2) CONFIGURATION DES PARAMETRES DE LA DISTRIBUTION
+
+  Se placer dans le répertoire distrib et faire
+
+     ./configure.distrib
+
+  pour positionner les paramètres de la distrib (les paramètres par
+défaut sont obtenus via le fichier "../configure". Si celui-ci n'est
+pas conforme à l'archive (sans doute peu probable, mais cela m'est
+arrivé), il faut donner les valeurs à la main.
+
+A3) ESTAMPILLAGE DE L'ARCHIVE
+
+  Toujours dans le répertoire distrib, faire
+
+     make tag
+
+  pour (on suppose que le numéro de version donné dans
+configure.distrib est V6.2.5) poser le tag V6-2-5 à l'archive V6-2.
+
+  La commande "make tag" peut être refaite plusieurs fois auquel cas
+l'ancienne marque est supprimée avant d'être remise à la nouvelle
+place.
+
+  Pour ne modifier qu'un fichier isolément sans retagger toute
+l'archive faire "cvs tag -F V6-2-5 nom_du_fichier".
+
+
+A4) CREATION DU PACKAGE SOURCE
+
+  Créer le coq-6.2.5.tar.gz des sources à partir d'un extrait tout
+frais (obtenu par cvs export) de l'archive avec
+
+     make tar-gz
+
+  En particulier, les fichiers à ne pas distribuer (dont la doc) sont
+retirés. Cette commande fait dérouler une check-list. Si on
+l'interrompt ou qu'elle échoue, le tar-gz reste créé et c'est à la
+charge de l'utilisateur de s'assurer que les paramètres sont corrects.
+
+  Pour l'installation sous ftp voir A7.
+
+
+A5) CREATION DES PACKAGES BINAIRES (ad libitum)
+   (prévoir pour chaque package près de 100Mo dispo sur la partition)
+
+A5a) Création d'un package binaire tar.gz 
+
+      make arch-tar-gz
+
+  dans le répertoire distrib sous l'architecture ARCH avec le système SYS
+crée un fichier coq-6.2.5-SYS-ARCH.tar.gz (ex : coq-6.2.5-alpha-OSF1.tar.gz).
+
+  Pour compiler sur plusieurs machines en parallèle, il faut des
+répertoires "distrib" distincts pour que les compilations ne se
+téléscopent pas. Sur une 2ème machine dans un autre répertoire
+"distrib", refaire "make tar-gz" en interrompant la check-list (ou
+simplement copier le coq-6.2.5.tar.gz déjà fait) puis "make arch-tar-gz".
+
+  Pour l'installation sous ftp voir A7.
+
+  Remarque : ce binaire est prévu pour être dé-tar-ré dans / avec une
+installation dans /usr/local/bin.
+
+A5b) Création du source rpm et du premier package rpm
+
+     make rpm
+
+  dans le répertoire distrib sous l'architecture ARCH crée un package
+source coq-6.2.5-1.src.rpm et un package binaire coq-6.2.5-1.ARCH.rpm
+(ex : coq-6.2.5-1.i386.rpm).
+
+  Remarques : 1) Les packages Intel s'appellent i386 même si
+l'architecture est i586 ou i686 (faux avec rpm 3.0). 2) Les rpm sont
+prévus pour une installation dans /usr/bin (!).
+
+  Pour l'installation sous ftp voir A7.
+
+A5c) Création d'un second package rpm à partir des sources rpm
+
+  Refaire 
+
+     make rpm
+
+  sous une autre architecture pour créer un deuxième package rpm binaire.
+
+  Pour l'installation sous ftp voir A7.
+
+A6) CREATION DU FICHIER DE PATCH (attention ne marche pas sur DEC je crois)
+
+    make patch (pas déboggué)
+
+  Pour créer un fichier de patch entre la version à distribuer et la
+version précédente se trouvant dans l'archive (supposée être la même
+que celle taggée V6-2-4 (version -1) dans l'archive CVS...).
+
+Remarque: On peut faire un patch aussi par
+
+  cvs rdiff -r V6-2-4 -r V6-2-5 V6-2 > patch-coq-6.2.4-6.2.5
+
+  Mais il faut alors éditer pour supprimer les références aux
+répertoires distrib et doc, aux fichiers TODO, KNOWNBUGS, ANNONCE et
+les .cvsignore .
+
+
+A7) INSTALLATION SOUS FTP
+
+   make ftp-install # Avec les droits du groupe coq
+
+   - crée le dossier /net/pauillac/infosystems/ftp/coq/coq/V6.2.5, le
+   lie symboliquement à /net/pauillac/infosystems/ftp/coq/coq/current.
+
+   - installe sous ftp tous les fichiers tar.gz ou .rpm du répertoire
+  distrib (sources et binaires), ainsi que le fichier CHANGES
+
+  Pour installer seulement un des packages, faire au choix
+
+    make tar-gz-ftp-install
+    make src-rpm-ftp-install
+    make arch-rpm-ftp-install
+    make arch-tar-gz-ftp-install
+
+  À faire : ne mettre le lien current qu'au dernier moment.
+
+A8) VÉRIFICATION GÉNÉRALE
+
+  Télécharger et utiliser 24 heures la version FTP
+
+    # sur SunOS, Next, ...
+    ncftp ftp://ftp.inria.fr/INRIA/coq/V6.2.5/V6.2.5.tar.gz
+    tar xvzf V6.2.5.tar.gz
+    cd V6.2.5
+    yes "" | ./configure
+    make world-opt world
+    make cleanall world world-opt
+    make install	
+
+    # sur i586
+    ncftp ftp://ftp.inria.fr/INRIA/coq/V6.2.5/coq-6.2.5-1.i586.rpm
+    rpm -Uvh coq-6.2.5-1.i586.rpm
+    coqtop      # etc...
+    coqtop -opt # etc...
+
+    # sur linux ppc et apx
+    ncftp ftp://ftp.inria.fr/INRIA/coq/V6.2.5/coq-6.2.5-1.src.rpm 
+    rpm --recompile coq-6.2.5-1.src.rpm
+    coqtop      # etc...
+    coqtop -opt # etc...
+
+  Cliquer un peu partout sur le serveur coq.inria.fr (rubrique coq
+proof assistant).
+
+  Si jamais quelque chose ne va pas, reprendre à l'étape A2 en retaggant
+l'archive après les modifications (le tag est automatiquement déplacé)
+
+A9) DIFFUSION
+
+  Préparer les contribs (B), la doc (C), le serveur web (D)
+
+  Ouf, c'est prêt... faire l'annonce sur coq-club
+
+
+(**************************************************************************)
+B) LES CONTRIBS
+
+B1) PRÉPARATION
+
+  - se placer dans une version à jour des contribs (si pas déjà fait,
+le faire avec un "cvs checkout contrib" quelque part en dehors de
+l'archive V6).
+
+  - positionner les variables COQTOP et COQBIN (avec un / à la fin !!)
+sur une version à jour de l'archive V6 et s'assurer que make opt et
+make passent.
+
+B2) POSE DU TAG
+
+  Dans le répertoire distrib, faire
+
+    make contrib-tag
+
+  pour poser le tag V6-2-5
+  (ceci est équivalent à "cvs rtag -F V6-2-5 contrib")
+
+B3) CRÉATION DU PACKAGE
+
+  Dans le répertoire distrib, faire
+
+    make contrib-tar-gz
+
+  pour créer contrib-6.2.5.tar.gz
+
+B4) INSTALLATION SOUS FTP
+
+  Dans le répertoire distrib, faire
+
+    make contrib-ftp-install
+
+  pour installer le package contrib-6.2.5.tar.gz en ftp
+
+
+(**************************************************************************)
+C) LA DOC
+
+  Dans l'état actuel des choses, la doc est compilée dans le
+répertoire doc d'une copie locale des sources de Coq. Il n'y a pas
+pour la doc d'export relatif au tag V6-2-5 comme c'est le cas pour la
+creation de l'exécutable.
+
+C1) PRÉPARATION
+
+  S'assurer que les outils suivants sont disponibles
+
+    Dvi: latex (latex2e), bibtex, makeindex, dviselect (rpm dviutils)
+    Ps: dvips, psselect (package psutils)
+    Pdf: pdflatex (optionnel)
+    Html: hevea (par Luc Maranget), htmlsplit (par David Delahaye)
+
+  Mettre à jour les fichiers suivants :
+
+  - Tutorial.tex : numéro de version (2 fois) et date
+  - title.tex    : numéro de version
+  - cover.html   : numéro de version et date (2 fois)
+  - README       : numéros de version (3 fois)
+  - macros.tex   : numéro de version
+
+  Vérification que "CHANGES" est à jour par rapport à "Changes.tex"
+
+  Faire un make clean; grep V6 *.{tex,sty,html} pour s'assurer
+qu'aucun autre V6.? ne traine.
+
+  Les fichiers Tutorial-cover.tex et RefMan-cover.tex ne servent que
+pour faire des rapports INRIA.
+
+  Si un fichier Anomaly.dvi doit être distribué, s'en occuper à la main
+(ou modifier le Makefile en conséquence).
+
+C2) COMPILATION
+
+  Pour compiler l'ensemble des fichiers de documentation à installer
+sous ftp et/ou sur le serveur web, faire dans le répertoire doc
+
+    make distrib
+
+  qui crée les versions dvi.gz, ps.gz, pdf.gz de la doc, les packages
+all-ps-doc.tars.gz et doc-html.tar.gz ainsi qu'un répertoire www
+recopiable sur le site web
+
+  Si la doc est modifiée après le tagguage des sources Coq, retagguer
+la doc séparemment depuis le répertoire doc avec
+
+  cvs tag -F V6-2-5 * library/*
+
+C3) INSTALLATION SOUS FTP
+
+    Après avoir positionner la variable VERSION à V6.2.5, installer
+la doc sous ftp depuis le répertoire doc avec
+
+    make doc-ftp-install
+
+    On retrouve alors sous ftp avec le README, plusieurs couples
+    .dvi.gz et .ps.gz, le tar de la doc html, le tar des docs en ps.
+
+
+(**************************************************************************)
+D) LE SERVEUR WEB
+
+D1) PRÉPARATION
+
+   Cela se fait sous CVS : faire un check-out ou update du module
+"www" quelque part chez soi en dehors de l'archive V6, puis
+
+   - mettre à jour les fichiers (numéro de version, version
+     nécessaires de ocaml et camlp4, date de mise à jour)
+     distrib1-fra.html et distrib1-eng.html,
+     contribs1-fra.html et contribs1-eng.html
+     assis1-eng.html et assis1-fra.html
+     tools1-eng.html et tools1-fra.html (pas de V devant le numéro)
+
+   - commiter
+
+   - À partir de votre copie locale du répertoire www, faire
+  
+     (cd contribs; make pages)
+
+   - Puis positionner la variables THEORIES sur le repertoire theories
+     d'une copie fraîche de l'archive et faire (sur PAUILLAC et avec
+     gmake parce que fabrique un binaire devant tourner sur pauillac)
+
+     (cd library; gmake pages)
+
+D2) ACTUALISATION DU SERVEUR WEB
+
+     Enfin, faites-en part au monde entier :
+
+     make install
+     (cd contribs; make install)
+     (cd library; make install)
+
+
+(**************************************************************************)
+E) LE CDROM
+
+  Tout est en place dans /net/pauillac/constr/cdrom. S'y rendre et 
+
+  - mettre à jour les fichiers prog/{unix,pc,mac}/coq/{fra,eng}.htm
+  - mettre à jour les liens dans ftp/coq 
+	(1 lien pour la version Mac, 1 lien pour les autres architectures).
+  - vérifier que projs/coq/{fra,eng}.htm sont corrects
