@@ -791,6 +791,19 @@ tags:
 	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
 
+otags: 
+	find . -maxdepth 3 -name "*.ml" -o -name "*.mli" \
+	| sort -r | xargs otags
+	find . -maxdepth 3 -name "*.ml4" | sort -r | xargs \
+	etags --append --language=none\
+	      "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/and[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/type[ \t]+\([^ \t]+\)/\1/" \
+              "--regex=/exception[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/val[ \t]+\([^ \t]+\)/\1/" \
+	      "--regex=/module[ \t]+\([^ \t]+\)/\1/"
+
 
 ###########################################################################
 ### Special rules
