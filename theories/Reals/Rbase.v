@@ -531,8 +531,7 @@ Qed.
 
 (** Inverse *)
 Lemma Rinv_R1:``/1==1``.
-Apply (r_Rmult_mult ``1`` ``/1`` ``1``); Auto with real.
-Rewrite (Rinv_r R1 R1_neq_R0);Auto with real.
+Field;Auto with real.
 Qed.
 Hints Resolve Rinv_R1 : real.
 
@@ -545,26 +544,18 @@ Hints Resolve Rinv_neq_R0 : real.
 
 (*********)
 Lemma Rinv_Rinv:(r:R)``r<>0``->``/(/r)==r``.
-Intros;Apply (r_Rmult_mult ``/r``); Auto with real.
-Transitivity ``1``; Auto with real.
+Intros;Field;Auto with real.
 Qed.
 Hints Resolve Rinv_Rinv : real.
 
 (*********)
 Lemma Rinv_Rmult:(r1,r2:R)``r1<>0``->``r2<>0``->``/(r1*r2)==(/r1)*(/r2)``.
-Intros; Apply (r_Rmult_mult ``r1*r2``);Auto with real.
-Transitivity ``1``; Auto with real.
-Transitivity ``(r1*/r1)*(r2*(/r2))``; Auto with real.
-Rewrite Rinv_r; Trivial.
-Rewrite Rinv_r; Auto with real.
-Ring.
+Intros;Field;Auto with real.
 Qed.
 
 (*********)
 Lemma Ropp_Rinv:(r:R)``r<>0``->``-(/r)==/(-r)``.
-Intros; Apply (r_Rmult_mult ``-r``);Auto with real.
-Transitivity ``1``; Auto with real.
-Rewrite (Ropp_mul2 r ``/r``); Auto with real.
+Intros;Field;Auto with real.
 Qed.
 
 Lemma Rinv_r_simpl_r : (r1,r2:R)``r1<>0``->``r1*(/r1)*r2==r2``.
@@ -1586,3 +1577,7 @@ Lemma add_auto : (p,q:nat) ``(INR2 (S p))+(INR2 q)==(INR2 p)+(INR2 (S q))``.
 Intros; Repeat Rewrite <- INR_eq_INR2; Repeat Rewrite S_INR; Ring.
 Qed.
 
+(**********)
+Lemma complet_weak : (E:R->Prop) (bound E) -> (ExT [x:R] (E x)) -> (ExT [m:R] (is_lub E m)).
+Intros; Elim (complet E H H0); Intros; Split with x; Assumption.
+Qed.

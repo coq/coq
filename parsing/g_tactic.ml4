@@ -76,7 +76,7 @@ ifdef Quotify then open Q
 
 GEXTEND Gram
   GLOBAL: simple_tactic constrarg constr_with_bindings quantified_hypothesis
-    red_tactic int_or_var castedopenconstr;
+    red_expr int_or_var castedopenconstr;
 
   int_or_var:
     [ [ n = integer  -> Genarg.ArgArg n
@@ -124,7 +124,7 @@ GEXTEND Gram
   constrarg:
     [ [ IDENT "Inst"; id = rawident; "["; c = constr; "]" ->
         ConstrContext (id, c)
-      | IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = constr ->
+      | IDENT "Eval"; rtc = Tactic.red_expr; "in"; c = constr ->
         ConstrEval (rtc,c) 
       | IDENT "Check"; c = constr -> ConstrTypeOf c
       | c = constr -> ConstrTerm c ] ]
@@ -204,6 +204,19 @@ GEXTEND Gram
       | IDENT "Unfold"; ul = LIST1 unfold_occ -> Unfold ul
       | IDENT "Fold"; cl = LIST1 constr -> Fold cl
       | IDENT "Pattern"; pl = LIST1 pattern_occ -> Pattern pl ] ]
+  ;
+  (* This is [red_tactic] including possible extensions *)
+  red_expr:
+    [ [ IDENT "Red" -> Red false
+      | IDENT "Hnf" -> Hnf
+      | IDENT "Simpl" -> Simpl
+      | IDENT "Cbv"; s = LIST1 red_flag -> Cbv (make_red_flag s)
+      | IDENT "Lazy"; s = LIST1 red_flag -> Lazy (make_red_flag s)
+      | IDENT "Compute" -> Cbv (make_red_flag [FBeta;FIota;FDeltaBut [];FZeta])
+      | IDENT "Unfold"; ul = LIST1 unfold_occ -> Unfold ul
+      | IDENT "Fold"; cl = LIST1 constr -> Fold cl
+      | IDENT "Pattern"; pl = LIST1 pattern_occ -> Pattern pl
+      | s = IDENT; c = constr -> ExtraRedExpr (s,c) ] ]
   ;
   hypident:
     [ [ id = id_or_meta -> InHyp id

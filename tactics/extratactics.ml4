@@ -39,17 +39,17 @@ TACTIC EXTEND ReplaceIn
 END
 
 TACTIC EXTEND DEq
-  [ "Simplify_eq" ident_opt(h) ] -> [ dEq h ]
+  [ "Simplify_eq" quantified_hypothesis_opt(h) ] -> [ dEq h ]
 END
 
 TACTIC EXTEND Discriminate
-  [ "Discriminate" ident_opt(h) ] -> [ discr_tac h ]
+  [ "Discriminate" quantified_hypothesis_opt(h) ] -> [ discr_tac h ]
 END
 
 let h_discrHyp id = h_discriminate (Some id)
 
 TACTIC EXTEND Injection
-  [ "Injection" ident_opt(h) ] -> [ injClause h ]
+  [ "Injection" quantified_hypothesis_opt(h) ] -> [ injClause h ]
 END
 
 let h_injHyp id = h_injection (Some id)
@@ -208,7 +208,9 @@ END
 VERNAC COMMAND EXTEND DeriveDependentInversion
 | [ "Derive" "Dependent" "Inversion" ident(na) "with" constr(c) "Sort" sort(s) ]
   -> [ add_inversion_lemma_exn na c s true half_dinv_tac ]
+    END
 
+VERNAC COMMAND EXTEND DeriveDependentInversionClear
 | [ "Derive" "Dependent" "Inversion_clear" ident(na) "with" constr(c) "Sort" sort(s) ]
   -> [ add_inversion_lemma_exn na c s true dinv_clear_tac ]
 END

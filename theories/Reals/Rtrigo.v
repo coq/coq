@@ -8,43 +8,21 @@
 
 (*i $Id$ i*)
 
-Require ZArith.
+Require ZArith_base.
 Require Classical_Prop.
 Require DiscrR.
 Require Rbase.
 Require R_sqr.
 Require Rfunctions.
 Require Rsigma.
-
-(**********)
-Parameter PI : R.
-
-Axiom PI_RGT_0 : ``0<PI``.
+Require Rlimit.
+Require Export Rtrigo_def.
 
 Lemma PI_neq0 : ~``PI==0``.
 Red; Intro.
 Generalize PI_RGT_0; Intro; Rewrite H in H0.
 Elim (Rlt_antirefl ``0`` H0).
 Qed.
-
-(******************************************************************)
-(* Axiomatic definitions of cos and sin                           *)
-(******************************************************************)
-
-Parameter sin : R->R.
-Parameter cos : R->R.
-
-Axiom sin_plus : (x,y:R) ``(sin (x+y))==(sin x)*(cos y)+(cos x)*(sin y)``.
-
-Axiom sin_minus : (x,y:R) ``(sin (x-y))==(sin x)*(cos y)-(cos x)*(sin y)``.
-
-Axiom  cos_plus : (x,y:R) ``(cos (x+y))==(cos x)*(cos y)-(sin x)*(sin y)``. 
-
-Axiom cos_minus : (x,y:R) ``(cos (x-y))==(cos x)*(cos y)+(sin x)*(sin y)``.
-
-Axiom cos_0 : ``(cos 0)==1``.
-
-Axiom sin_PI2 : ``(sin (PI/2))==1``.
 
 (**********)
 Lemma sin2_cos2 : (x:R) ``(Rsqr (sin x)) + (Rsqr (cos x))==1``.
@@ -97,17 +75,8 @@ Lemma pythagorean : (x,y,z:R) ``(Rsqr x)+(Rsqr y)==(Rsqr z)`` -> ``0<=x`` -> ``0
 Intros x y z H1 H2 H3 H4; Generalize (arc_sin_cos x y z H2 H3 H4); Intro H5; Elim H5; [ Intros x0 H6; Elim H6; Intros H7 H8; Exists x0; Rewrite H7; Rewrite H8; Replace ``z*(cos x0)*(cos x0)+z*(sin x0)*(sin x0)`` with ``z*((Rsqr (sin x0))+(Rsqr (cos x0)))``; [ Rewrite sin2_cos2; Ring | Unfold Rsqr; Ring] | Assumption].
 Qed.
 
-Lemma double : (x:R) ``2*x==x+x``.
-Intro; Ring.
-Qed.
-
 Lemma aze : ``2<>0``.
 DiscrR.
-Qed.
-
-Lemma double_var : (x:R) ``x == x/2 + x/2``.
-Intro; Rewrite <- double; Unfold Rdiv; Rewrite <- Rmult_assoc; Symmetry; Apply Rinv_r_simpl_m.
-Apply aze.
 Qed.
 
 Lemma sin_2a : (x:R) ``(sin (2*x))==2*(sin x)*(cos x)``.
@@ -336,10 +305,6 @@ Lemma PI2_RGT_0 : ``0<PI/2``.
 Cut ~(O=(2)); [Intro H; Generalize (lt_INR_0 (2) (neq_O_lt (2) H)); Rewrite INR_eq_INR2; Unfold INR2; Intro H1; Generalize (Rmult_lt_pos PI (Rinv ``2``) PI_RGT_0 (Rlt_Rinv ``2`` H1)); Intro H2; Assumption | Discriminate].
 Qed. 
 
-Lemma Rgt_2_0 : ``0<2``.
-Cut ~(O=(2)); [Intro H0; Generalize (lt_INR_0 (2) (neq_O_lt (2) H0)); Unfold INR; Intro H; Assumption | Discriminate].
-Qed.
-
 Lemma cos_eq_0_2PI_0 : (x:R) ``R0<=x`` -> ``x<=2*PI`` -> ``(cos x)==0`` -> ``x==(PI/2)``\/``x==3*(PI/2)``.
 Intros; Case (total_order x ``3*(PI/2)``); Intro.
 Rewrite cos_sin in H1.
@@ -477,9 +442,9 @@ Definition sin_term [a:R] : nat->R := [i:nat] ``(pow (-1) i)*(pow a (plus (mult 
 
 Definition cos_term [a:R] : nat->R := [i:nat] ``(pow (-1) i)*(pow a (mult (S (S O)) i))/(INR (fact (mult (S (S O)) i)))``.
 
-Definition sin_approx [a:R;n:nat] : R := (sigma_aux (sin_term a) O n n).
+Definition sin_approx [a:R;n:nat] : R := (sum_f_R0 (sin_term a) n).
 
-Definition cos_approx [a:R;n:nat] : R := (sigma_aux (cos_term a) O n n).
+Definition cos_approx [a:R;n:nat] : R := (sum_f_R0 (cos_term a) n).
 
 Axiom sin_bound : (a:R)(n:nat) ``0<=a``->``a<=PI``->``(sin_approx a (plus (mult (S (S O)) n) (S O)))<=(sin a)<=(sin_approx a (mult (S (S O)) (plus n (S O))))``.
 
@@ -531,10 +496,6 @@ Lemma PI6_RLT_PI2 : ``PI/6<PI/2``.
 Cut ~(O=(4)); [ Intro H; Cut ~(O=(1)); [Intro H0; Generalize (lt_INR_0 (4) (neq_O_lt (4) H)); Rewrite INR_eq_INR2; Unfold INR2; Intro H1; Generalize (Rlt_compatibility ``2`` ``0`` ``4`` H1); Rewrite Rplus_sym; Rewrite Rplus_Ol; Replace ``2+4`` with ``6``; [Intro H2; Generalize (lt_INR_0 (1) (neq_O_lt (1) H0)); Rewrite INR_eq_INR2; Unfold INR2; Intro H3; Generalize (Rlt_compatibility ``1`` ``0`` ``1`` H3); Rewrite Rplus_sym; Rewrite Rplus_Ol; Clear H3; Intro H3; Generalize (Rlt_Rinv_R1 ``2`` ``6`` (Rlt_le ``1`` ``2`` H3) H2); Intro H4; Generalize (Rlt_monotony PI (Rinv ``6``) (Rinv ``2``) PI_RGT_0 H4); Intro H5; Assumption | Ring] | Discriminate] | Discriminate ].
 Qed.
 
-Lemma Rgt_3_0 : ``0<3``.
-Cut ~(O=(3)); [Intro H0; Generalize (lt_INR_0 (3) (neq_O_lt (3) H0)); Rewrite INR_eq_INR2; Unfold INR2; Intro H; Assumption | Discriminate].
-Qed.
-
 Lemma sqrt2_neq_0 : ~``(sqrt 2)==0``.
 Generalize (Rlt_le ``0`` ``2`` Rgt_2_0); Intro H1; Red; Intro H2; Generalize (sqrt_eq_0 ``2`` H1 H2); Intro H; Absurd ``2==0``; [ DiscrR | Assumption].
 Qed.
@@ -545,10 +506,6 @@ Qed.
 
 Lemma sqrt3_2_neq_0 : ~``2*(sqrt 3)==0``.
 Apply prod_neq_R0; [DiscrR | Generalize (Rlt_le ``0`` ``3`` Rgt_3_0); Intro H1; Red; Intro H2; Generalize (sqrt_eq_0 ``3`` H1 H2); Intro H; Absurd ``3==0``; [ DiscrR | Assumption]].
-Qed.
-
-Lemma not_sym : (r1,r2:R) ``r1<>r2`` -> ``r2<>r1``.
-Intros; Red; Intro H0; Rewrite H0 in H; Elim H; Reflexivity.
 Qed.
 
 Lemma Rlt_sqrt2_0 : ``0<(sqrt 2)``.
@@ -1528,7 +1485,7 @@ Lemma sin_lb_ge_0 : (a:R) ``0<=a``->``a<=PI/2``->``0<=(sin_lb a)``.
 Intros; Case (total_order R0 a); Intro.
 Left; Apply sin_lb_gt_0; Assumption.
 Elim H1; Intro.
-Rewrite <- H2; Unfold sin_lb; Unfold sin_approx; Unfold sigma_aux; Unfold sin_term; Repeat Rewrite pow_ne_zero.
+Rewrite <- H2; Unfold sin_lb; Unfold sin_approx; Unfold sum_f_R0; Unfold sin_term; Repeat Rewrite pow_ne_zero.
 Unfold Rdiv; Repeat Rewrite Rmult_Ol; Repeat Rewrite Rmult_Or; Repeat Rewrite Rplus_Or; Right; Reflexivity.
 Simpl; Discriminate.
 Simpl; Discriminate.

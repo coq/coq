@@ -212,35 +212,37 @@ let decl_in_r r0 = function
 let pp_decl d = match lang () with 
   | Ocaml -> OcamlMonoPp.pp_decl d
   | Haskell -> HaskellMonoPp.pp_decl d
+  | Scheme -> SchemeMonoPp.pp_decl d
   | Toplevel -> ToplevelPp.pp_decl d
 
 let pp_ast a = match lang () with 
   | Ocaml -> OcamlMonoPp.pp_ast a
   | Haskell -> HaskellMonoPp.pp_ast a
+  | Scheme -> SchemeMonoPp.pp_ast a
   | Toplevel -> ToplevelPp.pp_ast a
 
 let pp_type t = match lang () with 
   | Ocaml -> OcamlMonoPp.pp_type t
   | Haskell -> HaskellMonoPp.pp_type t
+  | Scheme -> SchemeMonoPp.pp_type t
   | Toplevel -> ToplevelPp.pp_type t
 
 let extract_reference r =
   if is_ml_extraction r then
     print_user_extract r 
+  else if decl_is_logical_ind r then 
+    msgnl (pp_logical_ind r) 
+  else if decl_is_singleton r then 
+    msgnl (pp_singleton_ind r) 
   else
-    if decl_is_logical_ind r then 
-      msgnl (pp_logical_ind r) 
-    else if decl_is_singleton r then 
-      msgnl (pp_singleton_ind r) 
-    else
-      let prm = 
-	{ modular = false; mod_name = id_of_string "Main"; to_appear = [r]} in
-      let decls = optimize prm (decl_of_refs [r]) in 
-      let d = list_last decls in
-      let d = if (decl_in_r r d) then d 
-      else List.find (decl_in_r r) decls
-      in msgnl (pp_decl d)
-
+    let prm = 
+      { modular = false; mod_name = id_of_string "Main"; to_appear = [r]} in
+    let decls = optimize prm (decl_of_refs [r]) in 
+    let d = list_last decls in
+    let d = if (decl_in_r r d) then d 
+    else List.find (decl_in_r r) decls
+    in msgnl (pp_decl d)
+	 
 let extraction rawconstr =
   set_globals ();
   let c = Astterm.interp_constr Evd.empty (Global.env()) rawconstr in
@@ -276,6 +278,7 @@ let extraction_rec = mono_extraction (None,id_of_string "Main")
 let lang_suffix () = match lang () with 
   | Ocaml -> ".ml"
   | Haskell -> ".hs"
+  | Scheme -> ".scm"
   | Toplevel -> assert false
 
 let filename f = 
@@ -284,14 +287,14 @@ let filename f =
     Some f,id_of_string (Filename.chop_suffix f s) 
   else Some (f^s),id_of_string f
 
-let lang_error () = 
-  errorlabstrm "extraction_language"
+let toplevel_error () = 
+  errorlabstrm "toplevel_extraction_language"
     (str "Toplevel pseudo-ML language cannot be used outside Coq toplevel." 
      ++ fnl () ++
      str "You should use Extraction Language Ocaml or Haskell before.") 
 
 let extraction_file f vl =
-  if lang () = Toplevel then lang_error () 
+  if lang () = Toplevel then toplevel_error () 
   else mono_extraction (filename f) vl
 
 (*s Extraction of a module. The vernacular command is 
@@ -308,39 +311,46 @@ let decl_in_m m = function
 let module_file_name m = match lang () with 
   | Ocaml -> (String.uncapitalize (string_of_id m)) ^ ".ml"
   | Haskell -> (String.capitalize (string_of_id m)) ^ ".hs"
-  | Toplevel -> assert false
+  | _ -> assert false
+
+let scheme_error () = 
+  errorlabstrm "scheme_extraction_language"
+    (str "No Scheme modular extraction available yet." ++ fnl ())
 
 let extraction_module m =
-  if lang () = Toplevel then lang_error () 
-  else 
-    let dir_m = module_of_id m in 
-    let f = module_file_name m in
-    let prm = {modular=true; mod_name=m; to_appear=[]} in 
-    let rl = extract_module dir_m in 
-    let decls = optimize prm (decl_of_refs rl) in
-    let decls = add_ml_decls prm decls in 
-    check_one_module dir_m decls; 
-    let decls = List.filter (decl_in_m dir_m) decls in
-    extract_to_file (Some f) prm decls
-
+  match lang () with 
+    | Toplevel -> toplevel_error ()
+    | Scheme -> scheme_error ()
+    | _ -> 
+	let dir_m = module_of_id m in 
+	let f = module_file_name m in
+	let prm = {modular=true; mod_name=m; to_appear=[]} in 
+	let rl = extract_module dir_m in 
+	let decls = optimize prm (decl_of_refs rl) in
+	let decls = add_ml_decls prm decls in 
+	check_one_module dir_m decls; 
+	let decls = List.filter (decl_in_m dir_m) decls in
+	extract_to_file (Some f) prm decls
+	  
 (*s Recursive Extraction of all the modules [M] depends on. 
   The vernacular command is \verb!Recursive Extraction Module! [M]. *) 
 
 let recursive_extraction_module m =
-  if lang () = Toplevel then lang_error () 
-  else 
-    let dir_m = module_of_id m in 
-    let modules,refs = 
-      modules_extract_env dir_m in
-    check_modules modules; 
-    let dummy_prm = {modular=true; mod_name=m; to_appear=[]} in
-    let decls = optimize dummy_prm (decl_of_refs refs) in
-    let decls = add_ml_decls dummy_prm decls in
-    Dirset.iter 
-      (fun m ->
-	let short_m = snd (split_dirpath m) in
-	let f = module_file_name short_m in 
-	let prm = {modular=true;mod_name=short_m;to_appear=[]} in 
-	let decls = List.filter (decl_in_m m) decls in
-	if decls <> [] then extract_to_file (Some f) prm decls)
-      modules
+  match lang () with 
+    | Toplevel -> toplevel_error () 
+    | Scheme -> scheme_error () 
+    | _ -> 
+	let dir_m = module_of_id m in 
+	let modules,refs = modules_extract_env dir_m in
+	check_modules modules; 
+	let dummy_prm = {modular=true; mod_name=m; to_appear=[]} in
+	let decls = optimize dummy_prm (decl_of_refs refs) in
+	let decls = add_ml_decls dummy_prm decls in
+	Dirset.iter 
+	  (fun m ->
+	     let short_m = snd (split_dirpath m) in
+	     let f = module_file_name short_m in 
+	     let prm = {modular=true;mod_name=short_m;to_appear=[]} in 
+	     let decls = List.filter (decl_in_m m) decls in
+	     if decls <> [] then extract_to_file (Some f) prm decls)
+	  modules

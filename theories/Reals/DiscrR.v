@@ -20,13 +20,10 @@ Recursive Tactic Definition Isrealint trm:=
   | [``-?1``] -> (Isrealint ?1)
   | _ -> Fail.
 
-Recursive Tactic Definition Sup0 :=
-  Match Context With
-  | [ |- ``1>0`` ] -> Unfold Rgt;Apply Rlt_R0_R1
-  | [ |- ``1+?1>0`` ] ->
-    Apply (Rgt_trans ``1+?1`` ?1 ``0``);
-    [Pattern 1 ``1+?1``;Rewrite Rplus_sym;Unfold Rgt;
-     Apply Rlt_r_r_plus_R1|Sup0].
+Recursive Meta Definition ToINR trm:=
+  Match trm With
+  | [ ``1`` ] ->  '(S O)
+  | [ ``1 + ?1`` ] -> Let t=(ToINR ?1) In '(S t).
 
 Tactic Definition DiscrR :=
   Try Match Context With
@@ -36,4 +33,23 @@ Tactic Definition DiscrR :=
       (Match Context With
       | [ |- [``-1``] ] -> 
         Repeat Rewrite <- Ropp_distr1;Apply Ropp_neq
-      | _ -> Idtac);Apply Rgt_not_eq;Sup0.
+      | _ -> Idtac);
+      (Match Context With
+      | [ |- ``?1<>0``] -> Let nbr=(ToINR ?1) In
+        Replace ?1 with (INR nbr);
+          [Apply not_O_INR;Discriminate|Simpl;Ring]).
+
+Tactic Definition Sup0_lt trm:=
+  Replace ``0`` with (INR O);
+  [Let nbr=(ToINR trm) In
+      Replace trm with (INR nbr);
+      [Apply lt_INR; Apply lt_O_Sn|Simpl;Ring]|Simpl;Reflexivity].
+
+Tactic Definition Sup0_gt trm:=
+  Unfold Rgt; Sup0_lt trm.   
+
+Tactic Definition Sup0 :=
+  Match Context With
+  | [ |- ``0<?1`` ] -> (Sup0_lt ?1)
+  | [ |- ``?1>0`` ] -> (Sup0_gt ?1).
+

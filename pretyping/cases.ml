@@ -187,11 +187,16 @@ let push_rels vars env = List.fold_right push_rel vars env
 let push_rel_defs =
   List.fold_right (fun (x,d,t) e -> push_rel (x,Some d,t) e)
 
-(*
-let it_mkSpecialLetIn = 
-  List.fold_left
-    (fun c (na,b,t) -> if isRel b then subst1 b c else mkLetIn (na,b,t,c))
-*)
+(* We have x1:t1...xn:tn,xi':ti,y1..yk |- c and re-generalize
+   over xi:ti to get x1:t1...xn:tn,xi':ti,y1..yk |- c[xi:=xi'] *)
+
+let regeneralize_rel i k j = if j = i+k then k else if j < i+k then j else j
+
+let rec regeneralize_index i k t = match kind_of_term t with
+  | Rel j when j = i+k -> mkRel (k+1)
+  | Rel j when j < i+k -> t
+  | Rel j when j > i+k -> t
+  | _ -> map_constr_with_binders succ (regeneralize_index i) k t
 
 type alias_constr =
   | DepAlias
@@ -249,16 +254,10 @@ type tomatch_type =
   | IsInd of types * inductive_type
   | NotInd of constr option * types
 
-type dependency_in_rhs = DepInRhs | NotDepInRhs
-type dependency_on_previous = DepOnPrevious | NotDepOnPrevious
-type dependency_status = dependency_on_previous * dependency_in_rhs
-
-type pushed_attributes = (constr * tomatch_type) * dependency_in_rhs
-type topush_attributes = (name * tomatch_type) * dependency_status
-
 type tomatch_status =
-  | Pushed of pushed_attributes lifted
-  | ToPush of topush_attributes
+  | Pushed of ((constr * tomatch_type) * int list)
+  | Alias of (constr * constr * alias_constr * constr)
+  | Abstract of rel_declaration
 
 type tomatch_stack = tomatch_status list
 
@@ -266,35 +265,23 @@ type tomatch_stack = tomatch_status list
    
 type predicate_signature =
   | PrLetIn of (constr list * constr option) * predicate_signature
-  | PrProd of name * tomatch_type * predicate_signature
+  | PrProd of rel_declaration * predicate_signature
   | PrNotInd of constr option * predicate_signature
   | PrCcl of constr
 
 (* We keep a constr for aliases and a cases_pattern for error message *)
 
 type alias_builder =
-  | AliasLeaf of constr * types
-  | AliasConstructor of (constr * constr * alias_constr) * constructor
-
-type history_partial_result =
-  | HistoryArg of (constr * cases_pattern)
-  | HistoryLift of int
+  | AliasLeaf
+  | AliasConstructor of constructor
 
 type pattern_history =
   | Top
   | MakeAlias of alias_builder * pattern_continuation
 
 and pattern_continuation =
-  | Continuation of int * history_partial_result list * pattern_history
+  | Continuation of int * cases_pattern list * pattern_history
   | Result of cases_pattern list
-
-let lift_history k h = 
-  if k = 0 then h else match h with
-    | Continuation (n, HistoryLift p :: l, h) ->
-	Continuation (n, (HistoryLift (k+p) :: l), h)
-    | Continuation (n, l, h) ->
-	Continuation (n, (HistoryLift k :: l), h)
-    | Result _ -> h
 
 let start_history n = Continuation (n, [], Top)
 
@@ -302,7 +289,7 @@ let initial_history = function Continuation (_,[],Top) -> true | _ -> false
 
 let feed_history arg = function
   | Continuation (n, l, h) when n>=1 ->
-      Continuation (n-1, HistoryArg arg :: l, h)
+      Continuation (n-1, arg :: l, h)
   | Continuation (n, _, _) ->
       anomaly ("Bad number of expected remaining patterns: "^(string_of_int n))
   | Result _ -> 
@@ -310,23 +297,18 @@ let feed_history arg = function
 
 (* This is for non exhaustive error message *)
 
-let rec eval_partial_pattern_args pargs = function
-  | HistoryArg (_,p):: h -> eval_partial_pattern_args (p::pargs) h
-  | HistoryLift _ :: h -> eval_partial_pattern_args pargs h 
-  | [] -> pargs
-
 let rec rawpattern_of_partial_history args2 = function
   | Continuation (n, args1, h) ->
       let args3 = make_anonymous_patvars (n - (List.length args2)) in
-      build_rawpattern ((eval_partial_pattern_args [] args1)@args2@args3) h
+      build_rawpattern (List.rev_append args1 (args2@args3)) h
   | Result pl -> pl
 
 and build_rawpattern args = function
   | Top -> args
-  | MakeAlias (AliasLeaf _, rh) ->
+  | MakeAlias (AliasLeaf, rh) ->
       assert (args = []);
       rawpattern_of_partial_history [PatVar (dummy_loc, Anonymous)] rh
-  | MakeAlias (AliasConstructor (_, pci), rh) ->
+  | MakeAlias (AliasConstructor pci, rh) ->
       rawpattern_of_partial_history
 	[PatCstr (dummy_loc, pci, args, Anonymous)] rh
 
@@ -334,28 +316,18 @@ let complete_history = rawpattern_of_partial_history []
 
 (* This is to build glued pattern-matching history and alias bodies *)
 
-let rec eval_partial_args k (cargs,pargs as args) = function
-  | HistoryArg (u,p):: h -> eval_partial_args k ((lift k u)::cargs,p::pargs) h
-  | HistoryLift n :: h -> eval_partial_args (k+n) args h 
-  | [] -> k, args
-
 let rec simplify_history = function
-  | Continuation (0, l, Top) -> [], Result (eval_partial_pattern_args [] l)
+  | Continuation (0, l, Top) -> Result (List.rev l)
   | Continuation (0, l, MakeAlias (f, rh)) ->
-      let (k,(cargs,pargs)) = eval_partial_args 0 ([],[]) l in
-      let (_,nondeppat,_ as d), pat = match f with
-	| AliasConstructor ((c1,c2,d),pci) ->
-	    let c1 = applist(lift k c1,cargs) in
-	    let c2 = lift k c2 in
-	    (c1,c2,d), PatCstr (dummy_loc,pci,pargs,Anonymous)
-	| AliasLeaf (x,t) -> 
+      let pargs = List.rev l in
+      let pat = match f with
+	| AliasConstructor pci ->
+	    PatCstr (dummy_loc,pci,pargs,Anonymous)
+	| AliasLeaf -> 
 	    assert (l = []);
-	    let c = lift k x in
-	    (c,c,NonDepAlias), PatVar (dummy_loc, Anonymous) in
-      let l, h = simplify_history
-		   (feed_history (nondeppat,pat) (lift_history k rh)) in
-      (d::l, h)
-  | h -> [], h
+	    PatVar (dummy_loc, Anonymous) in
+      feed_history pat rh
+  | h -> h
 
 (* Builds a continuation expecting [n] arguments and building [ci] applied
    to this [n] arguments *)
@@ -367,24 +339,24 @@ let push_history_pattern n current cont =
 
    env, isevars |- <pred> Cases tomatch of mat end
 
-  where tomatch is some sequence (t1  ... tn)
+  where tomatch is some sequence of "instructions" (t1  ... tn)
 
   and mat is some matrix 
    (p11 ... p1n -> rhs1)
    (    ...            )
    (pm1 ... pmn -> rhsm)
 
-  Terms to match: there are 3 kinds of terms to match
+  Terms to match: there are 3 kinds of instructions
 
-  - initials terms are arbitrary terms given by user and typed in [env]
-  - to-push inherited terms are subterms, actually variables, obtained
-    from the top-down analysis of pattern, they are typed in [env]
-    enriched by the previous inherited terms to match and are still to be
-    pushed in env
-  - pushed inherited terms are variables refering to a variable in [env]
-
-  A variable inherited from a subpattern is not immediately pushed in
-  [env] because of possible dependencies from previous variables to match
+  - "pushed" terms to match are typed in [env]; these are usually just
+    Rel(n) except for the initial terms given by user and typed in [env]
+  - "Abstract" instructions means an abstraction has to be inserted in the
+    current branch to build (this means a pattern has been detected dependent
+    in another one and generalisation is necessary to ensure well-typing)
+  - "Alias" instructions means an alias has to be inserted (this alias
+    is usually removed at the end, except when its type is not the
+    same as the type of the matched term from which it comes -
+    typically because the inductive types are "real" parameters)
 
   Right-hand-sides:
 
@@ -476,6 +448,7 @@ let coerce_to_indtype typing_fun isevars env matx tomatchl =
 (************************************************************************)
 (* Utils *)
 
+   (* extract some ind from [t], possibly coercing from constructors in [tm] *)
 let to_mutind env isevars tm c t =
   match c with
     | Some body -> NotInd (c,t)
@@ -489,22 +462,15 @@ let mkDeclTomatch na = function
   | IsInd (t,_) -> (na,None,t)
   | NotInd (c,t) -> (na,c,t)
 
-let mkProdTomatch na t c = mkProd_or_LetIn (mkDeclTomatch na t) c
+let map_tomatch_type f = function
+  | IsInd (t,ind) -> IsInd (f t,map_inductive_type f ind)
+  | NotInd (c,t) -> NotInd (option_app f c, f t)
 
-let liftn_tomatch_type n depth = function
-  | IsInd (t,ind) -> IsInd (liftn n depth t,liftn_inductive_type n depth ind)
-  | NotInd (c,t) -> NotInd (option_app (liftn n depth) c, liftn n depth t)
-
+let liftn_tomatch_type n depth = map_tomatch_type (liftn n depth)
 let lift_tomatch_type n = liftn_tomatch_type n 1
 
 let lift_tomatch n ((current,typ),info) =
   ((lift n current,lift_tomatch_type n typ),info)
-
-let substnl_tomatch v depth = function
-  | IsInd (t,indt) -> IsInd (substnl v depth t,substnl_ind_type v depth indt)
-  | NotInd (c,t) -> NotInd (option_app (substnl v depth) c, substnl v depth t)
-
-let subst_tomatch (depth,c) = substnl_tomatch [c] depth
 
 (**********************************************************************)
 (* Utilities on patterns *)
@@ -542,18 +508,6 @@ let lower_pattern_status = function
   | RegularPat -> DefaultPat 0
   | DefaultPat n -> DefaultPat (n+1)
 
-(*
-let pattern_status defaults eqns =
-  if eqns <> [] then RegularPat
-  else
-    let min =
-      List.fold_right
-	(fun (_,eqn) n -> match eqn with
-	   | {tag = DefaultPat i} when i<n -> i
-	   | _ -> n)
-	defaults 0 in
-    DefaultPat min
-*)
 let pattern_status pats =
   if array_exists ((=) RegularPat) pats then RegularPat
   else 
@@ -657,7 +611,7 @@ let occur_in_rhs na rhs =
 
 let is_dep_patt eqn = function
   | PatVar (_,name) -> occur_in_rhs name eqn.rhs
-  | _ -> false
+  | PatCstr _ -> true
 
 let dependencies_in_rhs nargs eqns =
   if eqns = [] then list_tabulate (fun _ -> false) nargs (* Only "_" patts *)
@@ -666,21 +620,36 @@ let dependencies_in_rhs nargs eqns =
   let columns = matrix_transpose deps in
   List.map (List.exists ((=) true)) columns
 
-(* Introduction of an argument of the current constructor must be
-   delayed (flag DepOnPrevious) if it depends in the rhs and depends
-   on a previous variable of inductive type, or on a previous variable
-   already dependent *)
+let dependent_decl a = function
+  | (na,None,t) -> dependent a t
+  | (na,Some c,t) -> dependent a t || dependent a c
 
-let rec is_dep_on_previous n t = function
-  | ((_,IsInd _),_)::_ when dependent (mkRel n) t -> DepOnPrevious
-  | ((_,NotInd _),_(*DepOnPrevious,DepInRhs*))::_ 
-      when dependent (mkRel n) t -> DepOnPrevious
-  | _::rest -> is_dep_on_previous (n+1) t rest
-  | [] -> NotDepOnPrevious
+(* Computing the matrix of dependencies *)
 
-let find_dependencies t prevlist is_dep_in_rhs =
-  if is_dep_in_rhs then (is_dep_on_previous 1 t prevlist,DepInRhs)
-  else (NotDepOnPrevious,NotDepInRhs)
+(* We are in context d1...dn |- and [find_dependencies k 1 nextlist]
+   computes for declaration [k+1] in which of declarations in
+   [nextlist] (which corresponds to d(k+2)...dn) it depends;
+   declarations are expressed by index, e.g. in dependency list
+   [n-2;1], [1] points to [dn] and [n-2] to [d3] *)
+
+let rec find_dependency_list k n = function
+  | [] -> []
+  | (used,tdeps,d)::rest -> 
+      let deps = find_dependency_list k (n+1) rest in
+      if used && dependent_decl (mkRel n) d
+      then list_add_set (k+1-n) (list_union deps tdeps)
+      else deps
+
+let find_dependencies is_dep_or_cstr_in_rhs d (k,nextlist) =
+  let deps = find_dependency_list k 1 nextlist in
+  if is_dep_or_cstr_in_rhs || deps <> []
+  then (k-1,(true ,deps,d)::nextlist)
+  else (k-1,(false,[]  ,d)::nextlist)
+
+let find_dependencies_signature deps_in_rhs typs =
+  let k = List.length deps_in_rhs in
+  let _,l = List.fold_right2 find_dependencies deps_in_rhs typs (k,[]) in
+  List.map (fun (_,deps,_) -> deps) l
 
 (******)
 
@@ -694,34 +663,59 @@ let find_dependencies t prevlist is_dep_in_rhs =
      be lifted by n
 
   We start with depth=1
-
-  We delay lift for Pushed but not for ToPush (trop complexe !)
 *)
 
-let rec lift_subst_tomatch n (depth,ci as binder) = function
+let regeneralize_index_tomatch n =
+  let rec genrec depth = function
   | [] -> []
+  | Pushed ((c,tm),l)::rest ->
+      let c = regeneralize_index n depth c in
+      let tm = map_tomatch_type (regeneralize_index n depth) tm in
+      let l = List.map (regeneralize_rel n depth) l in
+      Pushed ((c,tm),l)::(genrec depth rest)
+  | Alias (c1,c2,d,t)::rest ->
+      Alias (regeneralize_index n depth c1,c2,d,t)::(genrec depth rest)
+  | Abstract d::rest ->
+      Abstract (map_rel_declaration (regeneralize_index n depth) d)
+      ::(genrec (depth+1) rest) in
+  genrec 0
 
-  (* By definition ToPush terms depend on the previous substituted tm *)
-  (* and they contribute to the environment (hence [depth+1]) *)
-  | ToPush ((na,t),info)::rest ->
-      let t' = liftn_tomatch_type n (depth+1) t in
-      let t'' = substnl_tomatch [ci] (depth-1) t' in
-      ToPush ((na,t''), info)::(lift_subst_tomatch n (depth+1,ci) rest)
+let rec replace_term n c k t = 
+  if t = mkRel (n+k) then lift k c
+  else map_constr_with_binders succ (replace_term n c) k t
 
-  (* By definition Pushed terms do not depend on previous terms to match *)
-  (* and are already pushed in the environment; *)
-  (* if all is correct, [tm] has no variables < depth *)
-  (* +n-1 and not +n to simulate the substitution we don't apply *)
-  | Pushed (lift,tm)::rest ->
-      Pushed (lift+n-1, tm)::(lift_subst_tomatch n (depth,ci) rest)
+let replace_tomatch n c =
+  let rec replrec depth = function
+  | [] -> []
+  | Pushed ((b,tm),l)::rest ->
+      let b = replace_term n c depth b in
+      let tm = map_tomatch_type (replace_term n c depth) tm in
+      List.iter (fun i -> if i=n+depth then anomaly "replace_tomatch") l;
+      Pushed ((b,tm),l)::(replrec depth rest)
+  | Alias (c1,c2,d,t)::rest ->
+      Alias (replace_term n c depth c1,c2,d,t)::(replrec depth rest)
+  | Abstract d::rest ->
+      Abstract (map_rel_declaration (replace_term n c depth) d)
+      ::(replrec (depth+1) rest) in
+  replrec 0
+
+let liftn_rel_declaration n k = map_rel_declaration (liftn n k)
+let substnl_rel_declaration sigma k = map_rel_declaration (substnl sigma k)
 
 let rec liftn_tomatch_stack n depth = function
   | [] -> []
-  | ToPush ((na,t),info)::rest ->
-      let t' = liftn_tomatch_type n (depth+1) t in
-      ToPush ((na,t'), info)::(liftn_tomatch_stack n (depth+1) rest)
-  | Pushed (lift,tm)::rest ->
-      Pushed (n+lift, tm)::(liftn_tomatch_stack n depth rest)
+  | Pushed ((c,tm),l)::rest ->
+      let c = liftn n depth c in
+      let tm = liftn_tomatch_type n depth tm in
+      let l = List.map (fun i -> if i<depth then i else i+n) l in
+      Pushed ((c,tm),l)::(liftn_tomatch_stack n depth rest)
+  | Alias (c1,c2,d,t)::rest ->
+      Alias (liftn n depth c1,liftn n depth c2,d,liftn n depth t)
+      ::(liftn_tomatch_stack n depth rest)
+  | Abstract d::rest ->
+      Abstract (map_rel_declaration (liftn n depth) d)
+      ::(liftn_tomatch_stack n (depth+1) rest)
+
 
 let lift_tomatch_stack n = liftn_tomatch_stack n 1
 
@@ -729,11 +723,6 @@ let lift_tomatch_stack n = liftn_tomatch_stack n 1
    of constructor [ci] of type [I(p1...pn u'1...u'm)], then the
    default variable [name] is expected to have which type?
    Rem: [current] is [(Rel i)] except perhaps for initial terms to match *)
-
-let rec pop_next_tomatchs acc = function
-  | ToPush((na,t),(NotDepOnPrevious,_ as deps))::l ->
-      pop_next_tomatchs (((na,t),deps)::acc) l
-  | ((ToPush(_,(DepOnPrevious,_)) | Pushed _)::_ | []) as l -> (acc,l)
 
 (************************************************************************)
 (* Some heuristics to get names for variables pushed in pb environment *)
@@ -795,24 +784,25 @@ let build_aliases_context env sigma names allpats pats =
   (* They all are defined in env and we turn them into a sign *)
   (* cuts in sign need to be done in allpats *)
   let rec insert env sign1 sign2 n newallpats oldallpats = function
-    | (deppat,_,_)::pats, Anonymous::names when not (isRel deppat) ->
+    | (deppat,_,_,_)::pats, Anonymous::names when not (isRel deppat) ->
         (* Anonymous leaves must be considered named and treated in the *)
         (* next clause because they may occur in implicit arguments *)
 	insert env sign1 sign2
 	  n newallpats (List.map List.tl oldallpats) (pats,names)
-    | (deppat,nondeppat,d)::pats, na::names ->
+    | (deppat,nondeppat,d,t)::pats, na::names ->
 	let nondeppat = lift n nondeppat in
 	let deppat = lift n deppat in
 	let newallpats =
 	  List.map2 (fun l1 l2 -> List.hd l2::l1) newallpats oldallpats in
 	let oldallpats = List.map List.tl oldallpats in
-	let t = Retyping.get_type_of env sigma deppat in
+	let u = Retyping.get_type_of env sigma deppat in
 	let decl = (na,Some deppat,t) in
 	let a = (deppat,nondeppat,d,t) in
 	insert (push_rel decl env) (decl::sign1) ((na,a)::sign2) (n+1) 
 	  newallpats oldallpats (pats,names)
     | [], [] -> newallpats, sign1, sign2, env
-    | _ -> anomaly "Inconsistent alias and name lists"
+    | _ -> anomaly "Inconsistent alias and name lists" in
+  let allpats = List.map (fun x -> [x]) allpats
   in insert env [] [] 0 (List.map (fun _ -> []) allpats) allpats (pats, names)
 
 let insert_aliases_eqn sign eqnnames alias_rest eqn =
@@ -821,22 +811,18 @@ let insert_aliases_eqn sign eqnnames alias_rest eqn =
       alias_stack = alias_rest;
       rhs = {eqn.rhs with rhs_env = push_rels thissign eqn.rhs.rhs_env } }
 
-let insert_aliases env sigma aliases eqns =
-  let n = List.length aliases in
-  if n = 0 then (* optimisation *) [], env, eqns
-  else
+let insert_aliases env sigma alias eqns =
   (* Là, y a une faiblesse, si un alias est utilisé dans un cas par *)
   (* défaut présent mais inutile, ce qui est le cas général, l'alias *)
   (* est introduit même s'il n'est pas utilisé dans les cas réguliers *)
-  let names1 = list_tabulate (fun _ -> Anonymous) n in
-  let myeqnsnames = List.map (fun eqn -> list_chop n eqn.alias_stack) eqns in
-  let eqnsnames, alias_rests = List.split myeqnsnames in
+  let eqnsnames = List.map (fun eqn -> List.hd eqn.alias_stack) eqns in
+  let alias_rests = List.map (fun eqn -> List.tl eqn.alias_stack) eqns in
   (* names2 takes the meet of all needed aliases *)
   let names2 = 
-    List.fold_right (merge_names (fun x -> x)) eqnsnames names1 in
+    List.fold_right (merge_name (fun x -> x)) eqnsnames Anonymous in
   (* Only needed aliases are kept by build_aliases_context *)
   let eqnsnames, sign1, sign2, env =
-    build_aliases_context env sigma names2 eqnsnames aliases in
+    build_aliases_context env sigma [names2] eqnsnames [alias] in
   let eqns = list_map3 (insert_aliases_eqn sign1) eqnsnames alias_rests eqns in
   sign2, env, eqns
 
@@ -855,18 +841,17 @@ let noccur_between_without_evar n m term =
 (* Infering the predicate *)
 let prepare_unif_pb typ cs =
   let n = List.length (assums_of_rel_context cs.cs_args) in
-  let (sign,p) = decompose_prod_n n typ in
 
-  (* We may need to invert ci if its parameters occur in p *)
-  let p' =
-    if noccur_between_without_evar 1 n p then lift (-n) p
+  (* We may need to invert ci if its parameters occur in typ *)
+  let typ' =
+    if noccur_between_without_evar 1 n typ then lift (-n) typ
     else (* TODO4-1 *)
       error "Inference of annotation not yet implemented in this case" in
   let args = extended_rel_list (-n) cs.cs_args in
   let ci = applist (mkConstruct cs.cs_cstr, cs.cs_params@args) in
 
-  (* This is the problem: finding P s.t. cs_args |- (P realargs ci) = p' *)
-  (Array.map (lift (-n)) cs.cs_concl_realargs, ci, p')
+  (* This is the problem: finding P s.t. cs_args |- (P realargs ci) = typ' *)
+  (Array.map (lift (-n)) cs.cs_concl_realargs, ci, typ')
 
 
 (* Infering the predicate *)
@@ -1002,12 +987,10 @@ let rec dependent_predicate c = function
       dependent c t or dependent_predicate (lift 1 c) pred
   | PrNotInd (None,pred) ->
       dependent_predicate c pred
-  | PrProd (na,NotInd (None,t),pred) ->
+  | PrProd ((na,None,t),pred) ->
       dependent c t or dependent_predicate (lift 1 c) pred
-  | PrProd (na,NotInd (Some b,t),pred) ->
-      dependent b t or dependent c t or dependent_predicate (lift 1 c) pred
-  | PrProd (na,IsInd (t,_),pred) ->
-      dependent c t or dependent_predicate (lift 1 c) pred
+  | PrProd ((na,Some b,t),pred) ->
+      dependent c b or dependent c t or dependent_predicate (lift 1 c) pred
   | PrLetIn ((args,None),pred) -> 
       List.exists (dependent c) args or
       dependent_predicate (lift (List.length args) c) pred
@@ -1017,41 +1000,33 @@ let rec dependent_predicate c = function
 
 (* Propagation of user-provided predicate through compilation steps *)
 
-let liftn_predicate n k pred =
-  let rec liftrec k = function
-  | PrCcl ccl -> PrCcl (liftn n k ccl)
-  | PrNotInd (copt,ccl) ->
+let rec map_predicate f k = function
+  | PrCcl ccl -> PrCcl (f k ccl)
+  | PrNotInd (copt,pred) ->
       let p = if copt = None then 0 else 1 in
-      PrNotInd (option_app (liftn n k) copt,liftrec (k+p) ccl)
-  | PrProd (na,t,pred) ->
-      PrProd (na,liftn_tomatch_type n k t, liftrec (k+1) pred)
+      PrNotInd (option_app (f k) copt, map_predicate f (k+p) pred)
+  | PrProd (d,pred) ->
+      PrProd (map_rel_declaration (f k) d, map_predicate f (k+1) pred)
   | PrLetIn ((args,copt),pred) ->
-      let args' = List.map (liftn n k) args in
-      let copt' = option_app (liftn n k) copt in
+      let args' = List.map (f k) args in
+      let copt' = option_app (f k) copt in
       let k' = List.length args + (if copt = None then 0 else 1) in
-      PrLetIn ((args',copt'), liftrec (k+k') pred) in
-  liftrec k pred
+      PrLetIn ((args',copt'), map_predicate f (k+k') pred)
+
+let liftn_predicate n = map_predicate (liftn n)
 
 let lift_predicate n = liftn_predicate n 1
+
+let regeneralize_index_predicate n = map_predicate (regeneralize_index n) 0
+
+let substnl_predicate sigma = map_predicate (substnl sigma)
 
 (* This is parallel substitution *)
 let subst_predicate (args,copt) pred =
   let sigma = match copt with
     | None -> List.rev args
     | Some c -> c::(List.rev args) in
-  let rec substrec k = function
-    | PrCcl ccl -> PrCcl (substnl sigma k ccl)
-    | PrNotInd (copt,pred) ->
-	let p = if copt = None then 0 else 1 in
-	PrNotInd (option_app (substnl sigma k) copt, substrec (k+p) pred)
-    | PrProd (na,t,pred) ->
-	PrProd (na, substnl_tomatch sigma k t, substrec (k+1) pred)
-    | PrLetIn ((args,copt),pred) ->
-	let args' = List.map (substnl sigma k) args in
-	let copt' = option_app (substnl sigma k) copt in
-	let k' = List.length args + (if copt = None then 0 else 1) in
-	PrLetIn ((args',copt'), substrec (k+k') pred) in
-  substrec 0 pred
+  substnl_predicate sigma 0 pred
 
 let specialize_predicate_var = function
   | PrProd _ | PrCcl _ ->
@@ -1059,8 +1034,36 @@ let specialize_predicate_var = function
   | PrNotInd (copt,pred) -> subst_predicate ([],copt) pred
   | PrLetIn (tm,pred) -> subst_predicate tm pred
 
+let ungeneralize_predicate = function
+  | PrNotInd _ | PrLetIn _ | PrCcl _ ->
+      anomaly "ungeneralize_predicate: expects a product"
+  | PrProd (d,pred) -> pred
+
+(*****************************************************************************)
+(* We have pred = [X:=realargs;x:=c]P typed in Gamma1, x:I(realargs), Gamma2 *)
+(* and we want to abstract P over y:t(x) typed in the same context to get    *)
+(*                                                                           *)
+(*    pred' = [X:=realargs;x':=c](y':t(x'))P[y:=y']                          *)
+(*                                                                           *)
+(* We first need to lift t(x) s.t. it is typed in Gamma, X:=rargs, x'        *)
+(* then we have to replace x by x' in t(x) and y by y' in P                  *)
+(*****************************************************************************)
+let generalize_predicate nx ny d = function
+  | PrLetIn ((args,copt as tm),pred) ->
+      if copt = None then anomaly "Undetected dependency";
+      let p = List.length args + 1 in
+      let pred = lift_predicate 1 pred in
+      let pred = regeneralize_index_predicate (ny+p+1) pred in
+      let d = map_rel_declaration (lift p) d in
+      let d = match kind_of_term nx with
+	| Rel n -> map_rel_declaration (regeneralize_index (n+p) 0) d
+	| _ -> (* initial case *) d in
+      PrLetIn (tm, PrProd (d,pred))
+  | PrProd _ | PrCcl _ | PrNotInd _ ->
+     anomaly "generalize_predicate: expects a non trivial pattern"
+
 let rec extract_predicate = function
-  | PrProd (na,t,pred) -> mkProdTomatch na t (extract_predicate pred)
+  | PrProd (d,pred) -> mkProd_or_LetIn d (extract_predicate pred)
   | PrNotInd (Some c,pred) -> substl [c] (extract_predicate pred)
   | PrNotInd (None,pred) -> extract_predicate pred
   | PrLetIn ((args,Some c),pred) -> substl (c::(List.rev args)) (extract_predicate pred)
@@ -1086,74 +1089,64 @@ let rec known_dependent = function
   | Some (PrProd _) ->
       anomaly "known_dependent: can only be used when patterns remain"
 
-(*****************************************************************************)
-(* pred = (x1:I1(args1))...(xn:In(argsn))P types the following problem:      *)
-(*                                                                           *)
-(*  Gamma |- Cases ToPush (x1:T1) ... ToPush (xn:Tn) rest of ... end : pred  *)
-(*                                                                           *)
-(* We replace it by pred' = [X1:=rargs1,x1:=y1]...[Xn:=rargsn,xn:=yn]P s.t.  *)
-(*                                                                           *)
-(*  Gamma,y1:T1...yn:Tn |- Cases Pushed(y1)...Pushd(yn) rest of...end: pred' *)
-(*                                                                           *)
-(* The realargs are not necessary; it would be simpler not to take then into *)
-(* account; especially, no lift would be necessary (but                      *)
-(* [specialize_predicate_match] assumes realargs are given, then ...)        *)
-(*****************************************************************************)
-let weaken_predicate q pred =
-  let rec weakrec n k pred =
-    if n=0 then pred else match pred with
-      | (PrLetIn _ | PrCcl _ | PrNotInd _) ->
-	  anomaly "weaken_predicate: only product can be weakened"
-      | PrProd (_,t,pred) ->
-	  (* copt can occur in pred even if the original problem *)
-	  (* is not dependent *)
-	  let dep = dependent_predicate (mkRel 1) pred in
-	  let copt, p = if dep then Some (mkRel (n+k)), 1 else None, 0 in
-	  let pred = if dep then pred else lift_predicate (-1) pred in
-	  match t with
-	    | IsInd (_,IndType(_,realargs)) ->
-		(* To make it more uniform, we apply realargs but *)
-		(* they dont occur! *)
-		(* We replace 1 product by |realargs| arguments + possibly  *)
-		(* copt Then we need to shift pred accordingly *)
-		let nletargs = List.length realargs in
-		let pred = liftn_predicate nletargs (p+1) pred in 
-		(* The lift to refer to the y1...yn is now k+nletargs+p *)
-		PrLetIn ((realargs, copt), weakrec (n-1) (k+nletargs+p) pred)
-	    | NotInd _ ->
-		PrNotInd (copt, weakrec (n-1) (k+p) pred) in
-  (* We inserted q arguments in context then we lift pred by q *)
-  let pred = lift_predicate q pred in
-  weakrec q 0 pred
+(* [expand_arg] is used by [specialize_predicate]
+   it replaces gamma, x1...xn, x1...xk |- pred
+   by gamma, x1...xn, x1...xk-1 |- [X=realargs,xk=xk]pred (if dep) or
+   by gamma, x1...xn, x1...xk-1 |- [X=realargs]pred (if not dep) *)
+
+let expand_arg n (na,t) deps (k,pred) =
+  (* copt can occur in pred even if the original problem *)
+  (* is not dependent *)
+  let dep = deps <> [] || dependent_predicate (mkRel 1) pred in
+  let copt, p = if dep then Some (mkRel n), 1 else None, 0 in
+  let pred = if dep then pred else lift_predicate (-1) pred in
+  match t with
+    | IsInd (_,IndType(_,realargs)) ->
+	(* To make it more uniform, we apply realargs but they dont occur! *)
+	(* We replace [xk] by |realargs| arguments + possibly [copt]  *)
+	let nletargs = List.length realargs in
+	let pred = liftn_predicate nletargs (p+1) pred in 
+	(* [realargs] for [xk] are in context gamma, x1..xk-1 *)
+	let realargs = List.map (liftn n k) realargs in
+	(k-1, PrLetIn ((realargs, copt), pred))
+    | NotInd _ ->
+	(k-1, PrNotInd (copt, pred))
+
 
 (*****************************************************************************)
-(* pred = [X:=realargs;x:=e]P types the following problem:                   *)
+(* pred = [X:=realargs;x:=c]P types the following problem:                   *)
 (*                                                                           *)
-(*  Gamma |- Cases Pushed(e:I) rest of...end: pred                           *)
+(*  Gamma |- Cases Pushed(c:I(realargs)) rest of...end: pred                 *)
 (*                                                                           *)
 (* where the branch with constructor Ci:(x1:T1)...(xn:Tn)->I(realargsi)      *)
-(* is considered. We let e=Ci(x1,...,xn) and                                 *)
-(* we replace pred by pred' = (x1:T1)...(xn:Tn)P[X:=realargsi;x:=e] s.t.     *)
+(* is considered. Assume each Ti is some Ii(argsi).                          *)
+(* We let e=Ci(x1,...,xn) and replace pred by                                *)
 (*                                                                           *)
-(*  Gamma |- Cases ToPush(x1)...ToPush(xn) rest of...end: pred'              *)
+(* pred' = [X1:=rargs1,x1:=x1']...[Xn:=rargsn,xn:=xn'](P[X:=realargsi;x:=e]) *)
+(*                                                                           *)
+(* s.t Gamma,x1'..xn' |- Cases Pushed(x1')..Pushed(xn') rest of...end: pred' *)
+(*                                                                           *)
+(* Remark: if Ti is not inductive we use constructor PrNotInd                *)
 (*****************************************************************************)
-let specialize_predicate_match tomatchs cs = function
+let specialize_predicate tomatchs deps cs = function
   | (PrProd _ | PrCcl _ | PrNotInd _) ->
-      anomaly "specialize_predicate_match: a matched pattern must be pushed"
+      anomaly "specialize_predicate: a matched pattern must be pushed"
   | PrLetIn ((args,copt),pred) ->
       (* Assume some gamma st: gamma, (X,x:=realargs,copt) |- pred *)
       let k = List.length args + (if copt = None then 0 else 1) in
-      (* We adjust pred st: gamma, x1...xn, (X,x:=realargs,copt) |- pred *)
-      let pred' = liftn_predicate cs.cs_nargs (k+1) pred in
+      (* We adjust pred st: gamma, x1..xn, (X,x:=realargs,copt) |- pred' *)
+      let n = cs.cs_nargs in
+      let pred' = liftn_predicate n (k+1) pred in
       let argsi = Array.to_list cs.cs_concl_realargs in
       let copti = option_app (fun _ -> build_dependent_constructor cs) copt in
       (* The substituends argsi, copti are all defined in gamma, x1...xn *)
-      (* We need _parallel_ substitution *)
+      (* We *need _parallel_ substitution to get gamma, x1...xn |- pred'' *)
       let pred'' = subst_predicate (argsi, copti) pred' in
-      let dep = (copt <> None) in
-      List.fold_right
-	(* realargs doit être rehaussé non? *)
-	(fun ((na,t),_) p -> PrProd (na,t,p)) tomatchs pred''
+      (* We adjust pred st: gamma, x1..xn, x1..xn |- pred'' *)
+      let pred''' = liftn_predicate n (n+1) pred'' in
+      (* We finally get gamma,x1..xn |- [X1,x1:=R1,x1]..[Xn,xn:=Rn,xn]pred'''*)
+      snd (List.fold_right2 (expand_arg n) tomatchs deps (n,pred'''))
+
 
 let find_predicate loc env isevars p typs cstrs current
   (IndType (indf,realargs)) =
@@ -1168,7 +1161,7 @@ let find_predicate loc env isevars p typs cstrs current
     (pred, typ, new_Type ())
 
 (************************************************************************)
-(* Sorting equation by constructor *)
+(* Sorting equations by constructor *)
 
 type inversion_problem =
   (* the discriminating arg in some Ind and its order in Ind *)
@@ -1216,7 +1209,19 @@ let group_equations pb mind current cstrs mat =
   (brs,!only_default)
 
 (************************************************************************)
-(* Here start the pattern-matching compiling algorithm *)
+(* Here starts the pattern-matching compilation algorithm *)
+
+(* Abstracting over dependent subterms to match *)
+let rec generalize_problem pb current = function
+  | [] -> pb
+  | i::l ->
+      let d = map_rel_declaration (lift i) (Environ.lookup_rel i pb.env) in
+      let pb' = generalize_problem pb current l in
+      let tomatch = lift_tomatch_stack 1 pb'.tomatch in
+      let tomatch = regeneralize_index_tomatch (i+1) tomatch in
+      { pb with
+	  tomatch = Abstract d :: tomatch;
+          pred = option_app (generalize_predicate current i d) pb'.pred }
 
 (* No more patterns: typing the right-hand-side of equations *)
 let build_leaf pb =
@@ -1230,17 +1235,17 @@ let build_leaf pb =
 (* Building the sub-problem when all patterns are variables *)
 let shift_problem (current,t) pb =
   {pb with
+     tomatch = Alias (current,current,NonDepAlias,type_of_tomatch t)::pb.tomatch;
      pred = option_app specialize_predicate_var pb.pred;
-     history = push_history_pattern 0
-		 (AliasLeaf (current,type_of_tomatch t)) pb.history;
+     history = push_history_pattern 0 AliasLeaf pb.history;
      mat = List.map remove_current_pattern pb.mat }
 
 (* Building the sub-pattern-matching problem for a given branch *)
-let build_branch current pb eqns const_info =
+let build_branch current deps pb eqns const_info =
   (* We remember that we descend through a constructor *)
   let alias_type =
     if Array.length const_info.cs_concl_realargs = 0
-      & not (known_dependent pb.pred)
+      & not (known_dependent pb.pred) & deps = []
     then
       NonDepAlias
     else 
@@ -1250,7 +1255,7 @@ let build_branch current pb eqns const_info =
     applist (mkConstruct const_info.cs_cstr, const_info.cs_params) in
   let history = 
     push_history_pattern const_info.cs_nargs
-      (AliasConstructor ((partialci,current,alias_type), const_info.cs_cstr))
+      (AliasConstructor const_info.cs_cstr)
       pb.history in
 
   (* We find matching clauses *)
@@ -1264,38 +1269,48 @@ let build_branch current pb eqns const_info =
   let _,typs',_ =
     List.fold_right
       (fun (na,c,t as d) (env,typs,tms) ->
-	 let tm1 = List.map (fun c -> List.hd c) tms in
-	 let tms = List.map (fun c -> List.tl c) tms in
- 	 (push_rel d env, ((na,to_mutind env pb.isevars tm1 c t),t)::typs,tms))
+	 let tm1 = List.map List.hd tms in
+	 let tms = List.map List.tl tms in
+ 	 (push_rel d env, (na,to_mutind env pb.isevars tm1 c t)::typs,tms))
       typs (pb.env,[],List.map fst eqns) in
-  let tomatchs =
-    List.fold_left2
-      (fun l (d,t) dep_in_rhs -> (d,find_dependencies t l dep_in_rhs)::l)
-      [] (List.rev typs') (dependencies_in_rhs const_info.cs_nargs eqns) in
-  let tomatchs = List.rev tomatchs in
-  let topushs = List.map (fun x -> ToPush x) tomatchs in
+
+  let dep_sign =
+    find_dependencies_signature
+      (dependencies_in_rhs const_info.cs_nargs eqns) (List.rev typs) in
+
   (* The dependent term to subst in the types of the remaining UnPushed 
      terms is relative to the current context enriched by topushs *)
-  let ci =
-    applist
-      (mkConstruct const_info.cs_cstr, 
-       (List.map (lift const_info.cs_nargs) const_info.cs_params)
-       @(extended_rel_list 0 const_info.cs_args)) in
+  let ci = build_dependent_constructor const_info in
 
   (* We replace [(mkRel 1)] by its expansion [ci] *)
-  (* and context "Gamma; current" by "Gamma; current; tomatchs" *)
-  (* This is done in two steps : first from "Gamma; current |- oldtm : T(1)" *)
-  (* into  "Gamma; current; tomatchs; current |- ... : liftn 1 (n+1) T(1)" *)
-  (* then into "Gamma; current; tomatchs |- updated_old_tomatch : U" where *)
-  (* U = subst ci (lift (n+1) T(1)) *)
-  let updated_old_tomatch =
-    lift_subst_tomatch (const_info.cs_nargs + 1) (1,ci) pb.tomatch in
+  (* and context "Gamma = Gamma1, current, Gamma2" by "Gamma;typs;curalias" *)
+  (* This is done in two steps : first from "Gamma |- tms" *)
+  (* into  "Gamma; typs; curalias |- tms" *)
+  let tomatch = lift_tomatch_stack const_info.cs_nargs pb.tomatch in
 
+  let currents =
+    list_map2_i
+      (fun i (na,t) deps -> Pushed ((mkRel i, lift_tomatch_type i t), deps))
+      1 typs' (List.rev dep_sign) in
+
+  let sign = List.map (fun (na,t) -> mkDeclTomatch na t) typs' in
+
+  let ind =
+    appvect (
+      applist (mkInd (inductive_of_constructor const_info.cs_cstr),
+      List.map (lift const_info.cs_nargs) const_info.cs_params),
+      const_info.cs_concl_realargs) in
+
+  let cur_alias = lift (List.length sign) current in
+  let currents = Alias (ci,cur_alias,alias_type,ind) :: currents in
+
+  sign,
   { pb with
-      tomatch = topushs@updated_old_tomatch;
-      pred = option_app (specialize_predicate_match tomatchs const_info) pb.pred;
+      env = push_rels sign pb.env;
+      tomatch = List.rev_append currents tomatch;
+      pred = option_app (specialize_predicate (List.rev typs') dep_sign const_info) pb.pred;
       history = history;
-      mat = submat }
+      mat = List.map (push_rels_eqn sign) submat }
 
 (**********************************************************************
  INVARIANT:
@@ -1316,77 +1331,88 @@ let build_branch current pb eqns const_info =
 let rec compile pb =
   match pb.tomatch with
     | (Pushed cur)::rest -> match_current { pb with tomatch = rest } cur
-    | (ToPush next)::rest -> compile_further pb next rest
+    | (Alias x)::rest -> compile_alias pb x rest
+    | (Abstract d)::rest -> compile_generalization pb d rest
     | [] -> build_leaf pb
 
-and match_current pb (n,tm) =
-  let ((current,typ as ct),info) = lift_tomatch n tm in
+and match_current pb ((current,typ as ct),deps) =
+  let tm1 = List.map (fun eqn -> List.hd eqn.patterns) pb.mat in
+  let (_,c,t) = mkDeclTomatch Anonymous typ in
+  let typ = to_mutind pb.env pb.isevars tm1 c t in
   match typ with
     | NotInd (_,typ) ->
 	check_all_variables typ pb.mat;
-	compile_aliases (shift_problem ct pb)
+	compile (shift_problem ct pb)
     | IsInd (_,(IndType(indf,realargs) as indt)) ->
 	let mind,_ = dest_ind_family indf in
 	let cstrs = get_constructors pb.env indf in
 	let eqns,onlydflt = group_equations pb mind current cstrs pb.mat in
 	if (cstrs <> [||] or not (initial_history pb.history)) & onlydflt then
-	  compile_aliases (shift_problem ct pb)
+	  compile (shift_problem ct pb)
 	else
           let constraints = Array.map (solve_constraints indt) cstrs in
-	  let pbs = array_map2 (build_branch current pb) eqns cstrs in
-	  let brs = Array.map compile_aliases pbs in
-	  let brvals = Array.map (fun (_,j) -> j.uj_val) brs in
-	  let brtyps = Array.map (fun (_,j) -> body_of_type j.uj_type) brs in
-	  let tags = Array.map fst brs in
+
+	  (* We generalize over terms depending on current term to match *)
+	  let pb = generalize_problem pb current deps in
+
+	  (* We compile branches *)
+	  let brs = array_map2 (compile_branch current deps pb) eqns cstrs in
+
+	  (* We build the (elementary) case analysis *)
+	  let tags   = Array.map (fun (t,_,_) -> t) brs in
+	  let brvals = Array.map (fun (_,v,_) -> v) brs in
+	  let brtyps = Array.map (fun (_,_,t) -> t) brs in
 	  let (pred,typ,s) =
 	    find_predicate pb.caseloc pb.env pb.isevars 
 	      pb.pred brtyps cstrs current indt in
 	  let ci = make_case_info pb.env mind None tags in
+	  let case = mkCase (ci,nf_betaiota pred,current,brvals) in
+	  let inst = List.map mkRel deps in
 	  pattern_status tags,
-	  { uj_val = mkCase (ci, (*eta_reduce_if_rel*)(nf_betaiota pred),current,brvals);
-	    uj_type = typ }
+	  { uj_val = applist (case, inst);
+	    uj_type = substl inst typ }
 
-and compile_further pb firstnext rest =
-  (* We pop as much as possible tomatch not dependent one of the other *)
-  let nexts,future = pop_next_tomatchs [firstnext] rest in
-  (* the next pattern to match is at the end of [nexts], it has ref (mkRel n)
-     where n is the length of nexts *)
-  let sign = List.map (fun ((na,t),_) -> mkDeclTomatch na t) nexts in
-  let currents =
-    list_map_i
-      (fun i ((na,t),(_,rhsdep)) ->
-	 Pushed (insert_lifted ((mkRel i, lift_tomatch_type i t), rhsdep)))
-      1 nexts in
-  let pb' = { pb with
-		env = push_rels sign pb.env;
-		tomatch = List.rev_append currents future;
-                pred= option_app (weaken_predicate (List.length sign)) pb.pred;
-		history = lift_history (List.length sign) pb.history;
-		mat = List.map (push_rels_eqn sign) pb.mat } in
-  let tag, j = compile pb' in
-  tag,
-  { uj_val = it_mkLambda_or_LetIn j.uj_val sign;
-    uj_type = (* Pas d'univers ici: imprédicatif si Prop/Set, dummy si Type *)
-      type_app (fun t -> it_mkProd_wo_LetIn t sign) j.uj_type }
+and compile_branch current deps pb eqn cstr =
+  let sign, pb = build_branch current deps pb eqn cstr in
+  let tag, j = compile pb in
+  (tag, it_mkLambda_or_LetIn j.uj_val sign, j.uj_type)
 
-and compile_aliases pb =
-  let aliases, history = simplify_history pb.history in
+and compile_generalization pb d rest =
+  let pb =
+    { pb with
+       env = push_rel d pb.env;
+       tomatch = rest;
+       pred = option_app ungeneralize_predicate pb.pred;
+       mat = List.map (push_rels_eqn [d]) pb.mat } in
+  let patstat,j = compile pb in
+  patstat, 
+  { uj_val = mkLambda_or_LetIn d j.uj_val;
+    uj_type = mkProd_or_LetIn d j.uj_type }
+
+and compile_alias pb (deppat,nondeppat,d,t) rest =
+  let history = simplify_history pb.history in
   let sign, newenv, mat =
-    insert_aliases pb.env (evars_of pb.isevars) aliases pb.mat in
+    insert_aliases pb.env (evars_of pb.isevars) (deppat,nondeppat,d,t) pb.mat in
   let n = List.length sign in
+
+  (* We had Gamma1; x:current; Gamma2 |- tomatch(x) and we rebind x to get *)
+  (* Gamma1; x:current; Gamma2; typs; x':=curalias |- tomatch(x') *)
+  let tomatch = lift_tomatch_stack n rest in
+  let tomatch = match kind_of_term nondeppat with
+    | Rel i ->
+	if n = 1 then regeneralize_index_tomatch (i+n) tomatch
+	else replace_tomatch i deppat tomatch
+    | _ -> (* initial terms are not dependent *) tomatch in
+
   let pb =
     {pb with
        env = newenv;
-       tomatch = lift_tomatch_stack n pb.tomatch;
+       tomatch = tomatch;
        pred = option_app (lift_predicate n) pb.pred;
-       history = lift_history n history;
+       history = history;
        mat = mat } in
   let patstat,j = compile pb in
-  patstat,
-(*
-  { uj_val = it_mkSpecialLetIn j.uj_val sign;
-    uj_type = substl (List.map (fun (_,b,_) -> b) sign) j.uj_type }
-*)
+  patstat, 
   List.fold_left mkSpecialLetInJudge j sign
 
 (* pour les alias des initiaux, enrichir les env de ce qu'il faut et
@@ -1637,8 +1663,7 @@ let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
 
   (* We push the initial terms to match and push their alias to rhs' envs *)
   (* names of aliases will be recovered from patterns (hence Anonymous here) *)
-  let initial_pushed =
-    List.map (fun tm -> Pushed (insert_lifted (tm,NotDepInRhs))) tomatchs in
+  let initial_pushed = List.map (fun tm -> Pushed (tm,[])) tomatchs in
  
   let pb =
     { env      = env;

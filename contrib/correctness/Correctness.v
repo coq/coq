@@ -16,7 +16,7 @@ Require Export Tuples.
 
 Require Export ProgInt.
 Require Export ProgBool.
-Require Export ProgWf.
+Require Export Zwf.
 
 Require Export Arrays.
 

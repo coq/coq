@@ -45,6 +45,7 @@ build-stamp:
 	    && echo Coq was built in bytecode instead); \
 	else ${MAKE} world; \
 	fi
+	${MAKE} check
 	touch build-stamp
 
 clean:

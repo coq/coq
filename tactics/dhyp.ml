@@ -243,7 +243,9 @@ let forward_tac_interp =
 let set_extern_interp f = forward_tac_interp := f
 
 let applyDestructor cls discard dd gls =
-  let mvb = match_dpat dd.d_pat cls gls in
+  let mvb =
+    try match_dpat dd.d_pat cls gls
+    with PatternMatchingFailure -> error "No match" in
   let tac = match cls with
     | Some id -> 
 	let arg = Reference (RIdent (dummy_loc,id)) in

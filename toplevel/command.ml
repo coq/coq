@@ -85,7 +85,7 @@ let declare_definition red_option ident (local,n) c typopt =
     | DischargeAt (disch_sp,_) ->
         if Lib.is_section_p disch_sp then begin
 	  let c = SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type) in
-          let sp = declare_variable ident (Lib.cwd(), c, n) in
+          let _ = declare_variable ident (Lib.cwd(), c, n) in
 	  if_verbose message ((string_of_id ident) ^ " is defined");
           if Pfedit.refining () then 
             msgerrnl (str"Warning: Local definition " ++ pr_id ident ++ 
@@ -112,22 +112,25 @@ let declare_assumption ident n c =
   let c = interp_type Evd.empty (Global.env()) c in
   match n with
     | NeverDischarge ->
-	let _ = declare_constant ident (ParameterEntry c, NeverDischarge) in
-	assumption_message ident
+	let (_,kn) = declare_constant ident (ParameterEntry c, NeverDischarge) in
+	assumption_message ident;
+	ConstRef kn
     | DischargeAt (disch_sp,_) ->
         if Lib.is_section_p disch_sp then begin
-          let _ = declare_variable ident (Lib.cwd(),SectionLocalAssum c,n) in
+          let r = declare_variable ident (Lib.cwd(),SectionLocalAssum c,n) in
 	  assumption_message ident;
           if is_verbose () & Pfedit.refining () then 
             msgerrnl (str"Warning: Variable " ++ pr_id ident ++ 
-                      str" is not visible from current goals")
+                      str" is not visible from current goals");
+	  VarRef ident
         end
 	else
-	  let _ = declare_constant ident (ParameterEntry c, NeverDischarge) in
+	  let (_,kn) = declare_constant ident (ParameterEntry c, NeverDischarge) in
 	  assumption_message ident;
 	  if_verbose
 	    msg_warning (pr_id ident ++ str" is declared as a parameter" ++
                str" because it is at a global level");
+	  ConstRef kn
     | NotDeclare ->
       anomalylabstrm "Command.hypothesis_def_var"
         (str "Strength NotDeclare not for Variable, only for Let")
@@ -222,7 +225,7 @@ let eq_la (id,ast) (id',ast') = id = id' & alpha_eq(ast,ast')
 
 let extract_coe lc =
   List.fold_right
-    (fun (id,addcoe,t) (l1,l2) ->
+    (fun (addcoe,(id,t)) (l1,l2) ->
       ((if addcoe then id::l1 else l1), (id,t)::l2)) lc ([],[])
 
 let extract_coe_la_lc = function

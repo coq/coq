@@ -133,8 +133,8 @@ let pr_red_expr (pr_constr,pr_ref) = function
       hov 1 (str "Pattern" ++ 
         prlist(fun (nl,c) -> prlist (pr_arg int) nl ++ (pr_arg pr_constr) c) l)
   | (Red true | Cbv _ | Lazy _) -> error "Shouldn't be accessible from user"
-  | ExtraRedExpr (s,l) ->
-      hov 1 (str s ++ prlist (pr_arg pr_constr) l)
+  | ExtraRedExpr (s,c) ->
+      hov 1 (str s ++ pr_arg pr_constr c)
 
 let rec pr_may_eval pr = function
   | ConstrEval (r,c) ->

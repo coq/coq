@@ -17,6 +17,7 @@ open Nametab
 module ToplevelPp : Mlpp
 module OcamlMonoPp : Mlpp
 module HaskellMonoPp : Mlpp
+module SchemeMonoPp:Mlpp
 
 val is_long_module : dir_path -> global_reference -> bool
 

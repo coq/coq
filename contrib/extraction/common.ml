@@ -187,8 +187,11 @@ module OcamlModularPp = Ocaml.Make(ModularParams)
 module HaskellMonoPp = Haskell.Make(MonoParams)
 module HaskellModularPp = Haskell.Make(ModularParams)
 
+module SchemeMonoPp = Scheme.Make(MonoParams)
+
 let pp_comment s = match lang () with 
   | Haskell -> str "-- " ++ s ++ fnl () 
+  | Scheme -> str ";" ++ s ++ fnl () 
   | Ocaml | Toplevel -> str "(* " ++ s ++ str " *)" ++ fnl ()
 
 let pp_logical_ind r = 
@@ -204,6 +207,9 @@ let set_globals () = match lang () with
   | Haskell -> 
       keywords := Haskell.keywords;
       global_ids := Haskell.keywords
+  | Scheme -> 
+      keywords := Scheme.keywords;
+      global_ids := Scheme.keywords
   | _ -> ()
 
 (*s Extraction to a file. *)
@@ -213,6 +219,7 @@ let extract_to_file f prm decls =
   let preamble = match lang () with 
     | Ocaml -> Ocaml.preamble    
     | Haskell -> Haskell.preamble
+    | Scheme -> Scheme.preamble
     | _ -> assert false 
   in 
   let pp_decl = match lang (),prm.modular with 
@@ -220,6 +227,7 @@ let extract_to_file f prm decls =
     | Ocaml, _ -> OcamlModularPp.pp_decl
     | Haskell, false -> HaskellMonoPp.pp_decl    
     | Haskell, _ -> HaskellModularPp.pp_decl
+    | Scheme, _ -> SchemeMonoPp.pp_decl
     | _ -> assert false 
   in
   let used_modules = if prm.modular then 
@@ -227,7 +235,7 @@ let extract_to_file f prm decls =
   else Idset.empty
   in 
   let print_dummy = match lang() with 
-    | Ocaml -> decl_search MLdummy' decls
+    | Ocaml | Scheme -> decl_search MLdummy' decls
     | Haskell -> (decl_search MLdummy decls) || (decl_search MLdummy' decls)
     | _ -> assert false 
   in 

@@ -12,6 +12,7 @@
 open Names
 open Term
 open Sign
+open Vernacexpr
 (*i*)
 
 (* [declare_projections ref coers params fields] declare projections of
@@ -22,5 +23,5 @@ val declare_projections :
   inductive -> bool list -> rel_context -> constant option list
 
 val definition_structure :
-  bool * identifier * (identifier * Genarg.constr_ast) list *
-  (bool * Vernacexpr.local_decl_expr) list * identifier * sorts -> unit
+  identifier with_coercion * (identifier * Genarg.constr_ast) list *
+  (local_decl_expr with_coercion) list * identifier * sorts -> unit

@@ -18,14 +18,13 @@ open Coqast
 open Rawterm
 open Tacexpr
 open Ast
+open Tactic
 
 ifdef Quotify then
 open Qast
 
 ifdef Quotify then
 open Q
-
-open Tactic
 
 type let_clause_kind =
   | LETTOPCLAUSE of Names.identifier * Genarg.constr_ast
@@ -194,7 +193,7 @@ GEXTEND Gram
   tactic_letarg:
     (* Cannot be merged with tactic_arg1, since then "In"/"And" are 
        parsed as lqualid! *)
-    [ [ IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = Constr.constr ->
+    [ [ IDENT "Eval"; rtc = red_expr; "in"; c = Constr.constr ->
 	  ConstrMayEval (ConstrEval (rtc,c))
       | IDENT "Inst"; id = Prim.rawident; "["; c = Constr.constr; "]" ->
 	  ConstrMayEval (ConstrContext (id,c))
@@ -204,7 +203,7 @@ GEXTEND Gram
       | ta = tactic_arg0 -> ta ] ]
   ;
   tactic_arg1:
-    [ [ IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = Constr.constr ->
+    [ [ IDENT "Eval"; rtc = red_expr; "in"; c = Constr.constr ->
 	  ConstrMayEval (ConstrEval (rtc,c))
       | IDENT "Inst"; id = Prim.rawident; "["; c = Constr.constr; "]" ->
 	  ConstrMayEval (ConstrContext (id,c))
@@ -247,7 +246,7 @@ GEXTEND Gram
     [ [ tac = tactic_expr -> tac ] ]
   ;
   Vernac_.command: 
-    [ [ deftok; "Definition"; name = Prim.rawident; ":="; body=Tactic.tactic ->
+    [ [ deftok; "Definition"; name = Prim.rawident; ":="; body = tactic ->
         Vernacexpr.VernacDeclareTacticDefinition (loc, [name, body])
       | deftok; "Definition"; name = Prim.rawident; largs=LIST1 input_fun;
         ":="; body=tactic_expr ->

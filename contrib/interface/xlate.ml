@@ -2290,7 +2290,7 @@ let xlate_check =
     | _ -> xlate_error "xlate_check";;
 
 let build_constructors l =
- let f (id,coe,c) =
+ let f (coe,(id,c)) =
    if coe then xlate_error "TODO: coercions in constructors"
    else CT_constr (xlate_ident id, xlate_constr c) in
  CT_constr_list (List.map f l)
@@ -2912,6 +2912,7 @@ let xlate_vernac =
       CT_variable (xlate_var kind, b)
 *)
   | VernacAssumption (kind, b) ->
+      let b = List.map snd b in (* TODO: handle possible coercions *)
       CT_variable (xlate_var kind, cvt_vernac_binders b)
 (*
      | "Check", ((Varg_string (CT_string kind)) :: (c :: [])) ->
@@ -2980,7 +2981,7 @@ let xlate_vernac =
 *)
   | (*Record from tactics/Record.v *)
     VernacRecord 
-      (add_coercion, s, binders, c1, rec_constructor_or_none, field_list) ->
+      ((add_coercion, s), binders, c1, rec_constructor_or_none, field_list) ->
       let record_constructor = xlate_ident_opt rec_constructor_or_none in
 (*	match rec_constructor_or_none with
 	  | None -> CT_coerce_NONE_to_ID_OPT CT_none

@@ -69,7 +69,8 @@ let mkBranches =
 
 let solveRightBranch  = 
   tclTHEN h_simplest_right
-    (tclTHEN (intro_force true) (onLastHyp Extratactics.h_discrHyp))
+    (tclTHEN (intro_force true)
+      (onLastHyp (fun id -> Extratactics.h_discrHyp (Rawterm.NamedHyp id))))
 
 let h_solveRightBranch =
   Refiner.abstract_extended_tactic "solveRightBranch" [] solveRightBranch
@@ -111,7 +112,7 @@ let diseqCase =
   (tclTHEN  red_in_concl
   (tclTHEN  (intro_using absurd)
   (tclTHEN  (h_simplest_apply (mkVar diseq))
-  (tclTHEN  (Extratactics.h_injHyp absurd)
+  (tclTHEN  (Extratactics.h_injHyp (Rawterm.NamedHyp absurd))
             full_trivial))))))
 
 let solveArg a1 a2 tac  g = 

@@ -109,7 +109,7 @@ let wf_nat_pattern =
   PApp (PRef well_founded, [| PRef nat; PRef lt |])
 (* ["((well_founded Z (Zwf ?1))"] *)
 let wf_z_pattern = 
-  let zwf = ConstRef (coq_constant ["correctness";"ProgWf"] "Zwf") in
+  let zwf = ConstRef (coq_constant ["ZArith";"Zwf"] "Zwf") in
   PApp (PRef well_founded, [| PRef z; PApp (PRef zwf, [| PMeta (Some 1) |]) |])
 (* ["(and ?1 ?2)"] *)
 let and_pattern = 
@@ -229,6 +229,7 @@ let correctness_hook _ ref =
   register pf_id None
 
 let correctness s p opttac =
+  Library.check_required_library ["Coq";"correctness";"Correctness"];
   Pmisc.reset_names();
   let p,oc,cty,v = coqast_of_prog p in
   let env = Global.env () in

@@ -392,7 +392,7 @@ let glob_redexp ist = function
   | Lazy f -> Lazy (glob_flag ist f)
   | Pattern l -> Pattern (List.map (glob_pattern ist) l)
   | (Red _ | Simpl | Hnf as r) -> r
-  | ExtraRedExpr (s,l) -> ExtraRedExpr (s, List.map (glob_constr ist) l)
+  | ExtraRedExpr (s,c) -> ExtraRedExpr (s, glob_constr ist c)
 
 (* Interprets an hypothesis name *)
 let glob_hyp_location ist = function
@@ -1011,7 +1011,7 @@ let redexp_interp ist = function
   | Lazy f -> Lazy (flag_interp ist f)
   | Pattern l -> Pattern (List.map (pattern_interp ist) l)
   | (Red _ | Simpl | Hnf as r) -> r
-  | ExtraRedExpr (s,l) -> ExtraRedExpr (s,List.map (constr_interp ist) l)
+  | ExtraRedExpr (s,c) -> ExtraRedExpr (s,constr_interp ist c)
 
 let interp_may_eval f ist = function
   | ConstrEval (r,c) ->
@@ -1049,11 +1049,8 @@ let interp_quantified_hypothesis ist = function
   | AnonHyp n -> AnonHyp n
   | NamedHyp id -> 
       match eval_ident ist id with
-	| VIdentifier id -> NamedHyp id
 	| VInteger n -> AnonHyp n
-	| _ -> invalid_arg_loc
-	    (loc, "Not a reference to an hypothesis: "^(string_of_id id))
-
+	| v -> NamedHyp (coerce_to_hypothesis ist v)
 
 let interp_induction_arg ist = function
   | ElimOnConstr c -> ElimOnConstr (constr_interp ist c)
@@ -1391,7 +1388,9 @@ and vcontext_interp ist = function
   | (VContext (ist',lr,lmr)) as v ->
     (match ist.goalopt with
     | None -> v
-    | Some g -> (* Relaunch *) match_context_interp ist' lr lmr g)
+    | Some g as go -> 
+        let ist = { ist' with goalopt = go; env = pf_env g; evc = project g }
+        in match_context_interp ist lr lmr g)
   | v -> v
 
 (* Tries to match the hypotheses in a Match Context *)

@@ -36,7 +36,7 @@ open Nametab
 open Quote
 
 let mt_evd = Evd.empty
-let constr_of com = Astterm.interp_constr mt_evd (Global.env()) com
+let constr_of c = Astterm.interp_constr mt_evd (Global.env()) c
 
 let constant dir s =
   let dir = make_dirpath (List.map id_of_string (List.rev ("Coq"::dir))) in
@@ -78,11 +78,11 @@ let coq_polynomial_simplify_ok =
   lazy (constant ["ring";"Ring_normalize"] "polynomial_simplify_ok")
 
 (* Setoid theory *)
-let coq_Setoid_Theory = lazy(constant ["setoid";"Setoid_replace"] "Setoid_Theory")
+let coq_Setoid_Theory = lazy(constant ["Setoid"] "Setoid_Theory")
 
-let coq_seq_refl = lazy(constant ["setoid";"Setoid_replace"] "Seq_refl")
-let coq_seq_sym = lazy(constant ["setoid";"Setoid_replace"] "Seq_sym")
-let coq_seq_trans = lazy(constant ["setoid";"Setoid_replace"] "Seq_trans")
+let coq_seq_refl = lazy(constant ["Setoid"] "Seq_refl")
+let coq_seq_sym = lazy(constant ["Setoid"] "Seq_sym")
+let coq_seq_trans = lazy(constant ["Setoid"] "Seq_trans")
 
 (* Setoid Ring normalize *)
 let coq_SetSPplus = lazy (constant ["ring";"Ring_normalize"] "SetSPplus")
@@ -868,6 +868,7 @@ let match_with_equiv c = match (kind_of_term c) with
   | _ -> None
 
 let polynom lc gl =
+  Library.check_required_library ["Coq";"ring";"Ring"];
   match lc with 
    (* If no argument is given, try to recognize either an equality or
       a declared relation with arguments c1 ... cn, 

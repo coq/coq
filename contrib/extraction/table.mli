@@ -24,15 +24,9 @@ val optim :  unit -> bool
 
 module Refset : Set.S with type elt = global_reference
 
-(*s Auxiliary functions *) 
-		      
-val check_constant : global_reference -> global_reference
-
-(*val refs_of_vargl : Extend.vernac_arg list -> global_reference list*)
-
 (*s Target language. *)
 
-type lang = Ocaml | Haskell | Toplevel
+type lang = Ocaml | Haskell | Scheme | Toplevel
 
 val lang : unit -> lang 
 
@@ -67,3 +61,5 @@ val reset_extraction_inline : unit -> unit
 val extract_constant_inline : bool -> qualid located -> string -> unit
 
 val extract_inductive : qualid located -> string * string list -> unit
+
+

@@ -1,6 +1,9 @@
 MAIN CHANGES FROM COQ V7.3
 ==========================
 
+Internal representation of tactics bindings has changed (see type
+Rawterm.substitution).
+
 New parsing model for tactics and vernacular commands
 
   - Introduction of a dedicated type for tactic expressions

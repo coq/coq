@@ -252,6 +252,7 @@ EXTRACTIONCMO=contrib/extraction/table.cmo\
 	      contrib/extraction/mlutil.cmo\
 	      contrib/extraction/ocaml.cmo \
 	      contrib/extraction/haskell.cmo \
+              contrib/extraction/scheme.cmo \
 	      contrib/extraction/extraction.cmo \
               contrib/extraction/common.cmo \
 	      contrib/extraction/extract_env.cmo \
@@ -279,7 +280,6 @@ CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(FIELDCMO) \
 
 #later 	$(EXTRACTIONCMO) $(CORRECTNESSCMO) $(JPROVERCMO)
 #later :) $(XMLCMO)
-#$(OMEGACMO) $(RINGCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -384,8 +384,9 @@ clean::
 # tests
 ###########################################################################
 
-check:: $(BESTCOQTOP)
-	cd test-suite; ./check -$(BEST)
+check:: world
+	cd test-suite; ./check -$(BEST) | tee check.log
+	grep -F 'Error!' test-suite/check.log
 
 ###########################################################################
 # theories and states
@@ -447,6 +448,7 @@ ARITHVO=theories/Arith/ArithSyntax.vo \
 	theories/Arith/EqNat.vo         theories/Arith/Peano_dec.vo   \
 	theories/Arith/Euclid.vo        theories/Arith/Plus.vo        \
 	theories/Arith/Wf_nat.vo  	theories/Arith/Max.vo	      \
+	theories/Arith/Bool_nat.vo
 #	theories/Arith/Div.vo 
 
 SORTINGVO=theories/Sorting/Heap.vo \
@@ -463,7 +465,9 @@ ZARITHVO=theories/ZArith/Wf_Z.vo        theories/ZArith/Zsyntax.vo \
 	 theories/ZArith/Zmisc.vo       theories/ZArith/zarith_aux.vo \
 	 theories/ZArith/Zhints.vo	theories/ZArith/Zlogarithm.vo \
 	 theories/ZArith/Zpower.vo 	theories/ZArith/Zcomplements.vo \
-	 theories/ZArith/Zdiv.vo
+	 theories/ZArith/Zdiv.vo	theories/ZArith/Zsqrt.vo \
+	 theories/ZArith/Zwf.vo		theories/ZArith/ZArith_base.vo \
+	 theories/ZArith/Zbool.vo
 
 LISTSVO=theories/Lists/List.vo      theories/Lists/PolyListSyntax.vo \
         theories/Lists/ListSet.vo   theories/Lists/Streams.vo \
@@ -516,9 +520,15 @@ REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/SplitAbsolu.vo  theories/Reals/SplitRmult.vo \
 	theories/Reals/Rfunctions.vo   theories/Reals/Rlimit.vo \
 	theories/Reals/Rderiv.vo       theories/Reals/Rseries.vo \
-	theories/Reals/Rtrigo_fun.vo   theories/Reals/Rsigma.vo \
-	theories/Reals/Rtrigo.vo       theories/Reals/Ranalysis.vo \
-	theories/Reals/Rgeom.vo        theories/Reals/Reals.vo 
+	theories/Reals/Rtrigo_fun.vo   theories/Reals/Alembert.vo \
+	theories/Reals/Binome.vo       theories/Reals/Rsigma.vo \
+	theories/Reals/Rcomplet.vo     theories/Reals/Alembert_compl.vo \
+	theories/Reals/AltSeries.vo \
+	theories/Reals/Rtrigo_def.vo   theories/Reals/Rtrigo.vo  \
+	theories/Reals/Ranalysis1.vo   theories/Reals/Ranalysis2.vo \
+	theories/Reals/Ranalysis3.vo   theories/Reals/Ranalysis4.vo \
+	theories/Reals/Ranalysis.vo    theories/Reals/Rgeom.vo \
+	theories/Reals/Reals.vo 
 
 SETOIDSVO=theories/Setoids/Setoid.vo
 
@@ -563,8 +573,7 @@ CORRECTNESSVO=contrib/correctness/Arrays.vo				\
 	contrib/correctness/Exchange.vo					\
 	contrib/correctness/ArrayPermut.vo				\
 	contrib/correctness/ProgBool.vo contrib/correctness/ProgInt.vo	\
-	contrib/correctness/ProgWf.vo contrib/correctness/Sorted.vo	\
-	contrib/correctness/Tuples.vo
+	contrib/correctness/Sorted.vo	contrib/correctness/Tuples.vo
 #	contrib/correctness/ProgramsExtraction.vo			
 
 OMEGAVO = contrib/omega/Omega.vo
@@ -794,7 +803,8 @@ tags:
 ML4FILES += parsing/lexer.ml4 parsing/q_util.ml4 parsing/q_coqast.ml4 \
             parsing/g_prim.ml4 parsing/pcoq.ml4
 
-CAMLP4EXTENSIONS= parsing/tacextend.cmo parsing/vernacextend.cmo 
+CAMLP4EXTENSIONS= parsing/argextend.cmo parsing/tacextend.cmo \
+	   parsing/vernacextend.cmo 
 
 GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
 	   lib/dyn.cmo lib/options.cmo \
@@ -820,7 +830,7 @@ clean::
 ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
 	   parsing/g_vernac.ml4 parsing/g_proofs.ml4 parsing/g_cases.ml4 \
 	   parsing/g_constr.ml4 parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
-	   parsing/tacextend.ml4 parsing/vernacextend.ml4
+	   parsing/argextend.ml4 parsing/tacextend.ml4 parsing/vernacextend.ml4
 
 # beforedepend:: $(GRAMMARCMO)
 

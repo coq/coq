@@ -792,11 +792,9 @@ let make_flag f =
 
 let red_expr_tab = ref Stringmap.empty
 
-type generic_reduction_function = constr list -> reduction_function
-
 let declare_red_expr s f =
   try 
-    let _ = Stringmap.find s in
+    let _ = Stringmap.find s !red_expr_tab in
     error ("There is already a reduction expression of name "^s)
   with Not_found ->
     red_expr_tab := Stringmap.add s f !red_expr_tab
@@ -810,7 +808,7 @@ let reduction_of_redexp = function
   | Unfold ubinds -> unfoldn ubinds
   | Fold cl -> fold_commands cl
   | Pattern lp -> pattern_occs lp
-  | ExtraRedExpr (s,cl) -> Stringmap.find s !red_expr_tab cl
+  | ExtraRedExpr (s,c) -> Stringmap.find s !red_expr_tab
 
 (* Used in several tactics. *)
 

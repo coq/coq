@@ -818,6 +818,7 @@ let destructure_hyps gl =
   loop (pf_ids_of_hyps gl) (pf_hyps gl) gl
 
 let omega_solver gl =
+  Library.check_required_library ["Coq";"romega";"ROmega"];
   let concl = pf_concl gl in
   let rec loop t =
     match destructurate t with

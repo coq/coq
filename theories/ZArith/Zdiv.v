@@ -19,7 +19,7 @@ Then only after proves the main required property.
 
 *)
 
-Require Export ZArith.
+Require Export ZArith_base.
 Require Omega.
 Require ZArithRing.
 Require Zcomplements.
@@ -357,7 +357,7 @@ Generalize (Z_mod_lt a c cPos).
 Generalize (Z_div_mod_eq `a+b*c` c cPos).
 Generalize (Z_mod_lt `a+b*c` c cPos).
 Intros.
-Apply Zmult_reg_left with 1:=cPos.
+Apply Zmult_reg_left with c. Omega.
 Replace `c*((a+b*c)/c)` with `a+b*c-(a+b*c)%c`.
 Rewrite (Z_mod_plus a b c cPos).
 Pattern 1 a; Rewrite H2.

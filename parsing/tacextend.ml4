@@ -69,13 +69,22 @@ let rec make_let e = function
 let add_clause s (_,pt,e) l =
   let p = make_patt pt in
   let w = Some (make_when (MLast.loc_of_expr e) pt) in
-  if List.exists (fun (p',w',_) -> p=p' & w=w') l then
-    Pp.warning_with Pp_control.err_ft
-      ("Two distinct rules of tactic entry "^s^" have the same\n"^
-      "non-terminals in the same order: put them in distinct tactic entries");
   (p, w, make_let e pt)::l
 
+let rec extract_signature = function
+  | [] -> []
+  | TacNonTerm (_,t,_,_) :: l -> t :: extract_signature l
+  | _::l -> extract_signature l
+
+let check_unicity s l =
+  let l' = List.map (fun (_,l,_) -> extract_signature l) l in
+  if not (Util.list_distinct l') then
+    Pp.warning_with Pp_control.err_ft
+      ("Two distinct rules of tactic entry "^s^" have the same\n"^
+      "non-terminals in the same order: put them in distinct tactic entries")
+
 let make_clauses s l =
+  check_unicity s l;
   let default =
     (<:patt< _ >>,None,<:expr< failwith "Tactic extension: cannot occur" >>) in
   List.fold_right (add_clause s) l [default]

@@ -11,7 +11,7 @@
 (* Instantiation of the Ring tactic for the binary integers of ZArith *)
 
 Require Export ArithRing.
-Require Export ZArith.
+Require Export ZArith_base.
 Require Eqdep_dec.
 
 Definition Zeq := [x,y:Z]

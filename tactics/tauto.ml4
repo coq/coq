@@ -120,20 +120,6 @@ let reduction_not_iff =
 
 let t_reduction_not_iff = Tacexpr.TacArg (valueIn (VTactic reduction_not_iff))
 
-(*
-let reduction_not_iff ist =
-  match ist.goalopt with 
-    | None -> anomaly "reduction_not_iff"
-    | Some gl ->
-	List.fold_right
-	(fun id tac -> 
-	  let id = (dummy_loc,id) in <:tactic<Unfold not iff in $id; $tac>>)
-	(Tacmach.pf_ids_of_hyps gl)
-	<:tactic<Unfold not iff>>
-
-let t_reduction_not_iff = tacticIn reduction_not_iff
-*)
-
 let intuition_gen tac =
   interp (tacticIn (tauto_intuit t_reduction_not_iff tac))
 

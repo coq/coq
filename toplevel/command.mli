@@ -23,32 +23,12 @@ open Nametab
    functions of [Declare]; they return an absolute reference to the
    defined object *)
 
-(*i
-val constant_entry_of_com :
-  Coqast.t * Coqast.t option * bool -> Safe_typing.constant_entry
-
-val declare_global_definition :
-  Names.identifier ->
-  Safe_typing.constant_entry ->
-  Declare.strength -> bool -> global_reference
-
-val definition_body : identifier -> bool * strength -> 
-  Coqast.t -> Coqast.t option -> global_reference
-i*)
-
 val declare_definition : Tacred.red_expr option -> identifier
   -> bool * strength -> Coqast.t -> Coqast.t option -> global_reference
 
 val syntax_definition : identifier -> Coqast.t -> unit
 
-(*i
-val hypothesis_def_var : bool -> identifier -> strength -> Coqast.t
-  -> global_reference
-
-val parameter_def_var : identifier -> Coqast.t -> constant
-i*)
-
-val declare_assumption : identifier -> strength -> Coqast.t -> unit
+val declare_assumption : identifier -> strength -> Coqast.t -> global_reference
 
 val build_mutual : Vernacexpr.inductive_expr list -> bool -> unit
 

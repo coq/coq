@@ -33,14 +33,34 @@ and library_entry = object_name * node
 and library_segment = library_entry list
 
 
+(*s These functions iterate (or map) object functions.
+
+  [subst_segment prefix subst seg] makes an assumption that all
+  objects in [seg] have the same prefix. This prefix is universally
+  changed to [prefix].
+
+  [classify_segment seg] divides segment into objects which responded
+  with [Substitute], [Keep], [Anticipate] respectively, to the
+  [classify_object] function.  The order of each returned list is the
+  same as in the input list.
+
+  [change_kns mp lib] only changes the prefix of the [kernel_name]
+  part of the [object_name] of every object to [(mp,empty_dirpath)].
+  The [section_path] part of the [object_name] and the object itself
+  are unchanged.
+*)
+
+
 val open_segment : int -> library_segment -> unit
 val load_segment : int -> library_segment -> unit
 val subst_segment : 
   object_prefix -> substitution -> library_segment -> library_segment
 val classify_segment : 
   library_segment -> library_segment * library_segment * library_segment
+val change_kns : module_path -> library_segment -> library_segment
 
-(*s Adding operations (which calls the [cache] method, and getting the
+
+(*s Adding operations (which call the [cache] method, and getting the
   current list of operations (most recent ones coming first). *)
 
 val add_leaf : identifier -> obj -> object_name
@@ -98,6 +118,9 @@ val current_prefix : unit -> module_path * dir_path
 
 val reset_to : object_name -> unit
 val reset_name : identifier -> unit
+
+(* [back n] resets to the place corresponding to the $n$-th call of 
+   [mark_end_of_command] (counting backwards) *)
 val back : int -> unit
 
 (*s We can get and set the state of the operations (used in [States]). *)

@@ -1022,29 +1022,7 @@ Apply Rlt_Rinv; Apply Rgt_2_0.
 Qed.
 
 (**********)
-Axiom TAF : (f:R->R;a,b:R;pr:(derivable f)) ``a<b`` -> (EXT c : R | ``((f b)-(f a))==(derive_pt f c (pr c))*(b-a)``/\``a<c<b``).
-
-(**********)
-Lemma nonneg_derivative_1 : (f:R->R;pr:(derivable f)) ((x:R) ``0<=(derive_pt f x (pr x))``) -> (increasing f).
-Intros.
-Unfold increasing.
-Intros.
-Case (total_order_T x y); Intro.
-Elim s; Intro.
-Apply Rle_anti_compatibility with ``-(f x)``.
-Rewrite Rplus_Ropp_l; Rewrite Rplus_sym.
-Assert H1 := (TAF f ? ? pr a).
-Elim H1; Intros.
-Elim H2; Intros.
-Unfold Rminus in H3.
-Rewrite H3.
-Apply Rmult_le_pos.
-Apply H.
-Apply Rle_anti_compatibility with x.
-Rewrite Rplus_Or; Replace ``x+(y+ -x)`` with y; [Assumption | Ring].
-Rewrite b; Right; Reflexivity.
-Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H0 r)).
-Qed.
+Axiom nonneg_derivative_1 : (f:R->R;pr:(derivable f)) ((x:R) ``0<=(derive_pt f x (pr x))``) -> (increasing f).
  
 (**********)
 Lemma nonpos_derivative_0 : (f:R->R;pr:(derivable f)) (decreasing f) -> ((x:R) ``(derive_pt f x (pr x))<=0``).
@@ -1165,23 +1143,8 @@ Intro; Ring.
 Qed.
  
 (**********)
-Lemma positive_derivative : (f:R->R;pr:(derivable f)) ((x:R) ``0<(derive_pt f x (pr x))``)->(strict_increasing f).
-Intros.
-Unfold strict_increasing.
-Intros.
-Apply Rlt_anti_compatibility with ``-(f x)``.
-Rewrite Rplus_Ropp_l; Rewrite Rplus_sym.
-Assert H1 := (TAF f ? ? pr H0).
-Elim H1; Intros.
-Elim H2; Intros.
-Unfold Rminus in H3.
-Rewrite H3.
-Apply Rmult_lt_pos.
-Apply H.
-Apply Rlt_anti_compatibility with x.
-Rewrite Rplus_Or; Replace ``x+(y+ -x)`` with y; [Assumption | Ring].
-Qed.
-
+Axiom positive_derivative : (f:R->R;pr:(derivable f)) ((x:R) ``0<(derive_pt f x (pr x))``)->(strict_increasing f).
+ 
 (**********)
 Lemma strictincreasing_strictdecreasing_opp : (f:R->R) (strict_increasing f) ->
 (strict_decreasing (opp_fct f)).
@@ -1243,44 +1206,7 @@ Intro; Right; Apply (H x).
 Qed.
 
 (**********)
-Lemma derive_increasing_interv_ax : (a,b:R;f:R->R;pr:(derivable f)) ``a<b``-> (((t:R) ``a<t<b`` -> ``0<(derive_pt f t (pr t))``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<(f y)``)) /\ (((t:R) ``a<t<b`` -> ``0<=(derive_pt f t (pr t))``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<=(f y)``)).
-Intros.
-Split; Intros.
-Apply Rlt_anti_compatibility with ``-(f x)``.
-Rewrite Rplus_Ropp_l; Rewrite Rplus_sym.
-Assert H4 := (TAF f ? ? pr H3).
-Elim H4; Intros.
-Elim H5; Intros.
-Unfold Rminus in H6.
-Rewrite H6.
-Apply Rmult_lt_pos.
-Apply H0.
-Elim H7; Intros.
-Split.
-Elim H1; Intros.
-Apply Rle_lt_trans with x; Assumption.
-Elim H2; Intros.
-Apply Rlt_le_trans with y; Assumption.
-Apply Rlt_anti_compatibility with x.
-Rewrite Rplus_Or; Replace ``x+(y+ -x)`` with y; [Assumption | Ring].
-Apply Rle_anti_compatibility with ``-(f x)``.
-Rewrite Rplus_Ropp_l; Rewrite Rplus_sym.
-Assert H4 := (TAF f ? ? pr H3).
-Elim H4; Intros.
-Elim H5; Intros.
-Unfold Rminus in H6.
-Rewrite H6.
-Apply Rmult_le_pos.
-Apply H0.
-Elim H7; Intros.
-Split.
-Elim H1; Intros.
-Apply Rle_lt_trans with x; Assumption.
-Elim H2; Intros.
-Apply Rlt_le_trans with y; Assumption.
-Apply Rle_anti_compatibility with x.
-Rewrite Rplus_Or; Replace ``x+(y+ -x)`` with y; [Left; Assumption | Ring].
-Qed.
+Axiom derive_increasing_interv_ax : (a,b:R;f:R->R;pr:(derivable f)) ``a<b``-> (((t:R) ``a<t<b`` -> ``0<(derive_pt f t (pr t))``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<(f y)``)) /\ (((t:R) ``a<t<b`` -> ``0<=(derive_pt f t (pr t))``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<=(f y)``)).
 
 (**********)
 Lemma derive_increasing_interv : (a,b:R;f:R->R;pr:(derivable f)) ``a<b``-> ((t:R) ``a<t<b`` -> ``0<(derive_pt f t (pr t))``) -> ((x,y:R) ``a<=x<=b``->``a<=y<=b``->``x<y``->``(f x)<(f y)``).
@@ -1296,23 +1222,4 @@ Qed.
 
 (**********)
 (**********)
-Theorem IAF : (f:R->R;a,b,k:R;pr:(derivable f)) ``a<=b`` -> ((c:R) ``a<=c<=b`` -> ``(derive_pt f c (pr c))<=k``) -> ``(f b)-(f a)<=k*(b-a)``.
-Intros.
-Case (total_order_T a b); Intro.
-Elim s; Intro.
-Assert H1 := (TAF f ? ? pr a0).
-Elim H1; Intros.
-Elim H2; Intros.
-Rewrite H3.
-Do 2 Rewrite <- (Rmult_sym ``(b-a)``).
-Apply Rle_monotony.
-Apply Rle_anti_compatibility with ``a``; Rewrite Rplus_Or.
-Replace ``a+(b-a)`` with b; [Assumption | Ring].
-Apply H0.
-Elim H4; Intros.
-Split; Left; Assumption.
-Rewrite b0.
-Unfold Rminus; Do 2 Rewrite Rplus_Ropp_r.
-Rewrite Rmult_Or; Right; Reflexivity.
-Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? H r)).
-Qed.
+Axiom IAF : (f,g:R->R;a,b:R;pr1:(derivable f);pr2:(derivable g)) ``a<=b`` -> ((c:R) ``a<=c<=b`` -> ``(derive_pt g c (pr2 c))<=(derive_pt f c (pr1 c))``) -> ``(g b)-(g a)<=(f b)-(f a)``.

@@ -90,7 +90,7 @@ GEXTEND Gram
           id  = ident;
           hyptyp = Constr.constr_pattern;
           pri = natural;
-          tac = tactic -> 
+          "["; tac = tactic; "]" -> 
 	    VernacHintDestruct (id,dloc,hyptyp,pri,tac)
 
       | IDENT "Hint"; hintname = ident; dbnames = opt_hintbases; ":="; h = hint

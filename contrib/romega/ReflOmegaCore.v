@@ -9,7 +9,7 @@
 Require Arith.
 Require PolyList.
 Require Bool.
-Require ZArith.
+Require ZArith_base.
 
 (* \subsection{Définition des types} *)
 

@@ -97,7 +97,7 @@ let test_plurial_form = function
 
 (* Gallina declarations *)
 GEXTEND Gram
-  GLOBAL: gallina gallina_ext (* reduce *) thm_token;
+  GLOBAL: gallina gallina_ext thm_token;
 
   thm_token:
     [ [ "Theorem" -> Theorem
@@ -125,15 +125,21 @@ GEXTEND Gram
       | IDENT "Variables" -> AssumptionVariable
       | IDENT "Parameters" -> AssumptionParameter ] ]
   ;
+  of_type_with_opt_coercion:
+    [ [ ":>" -> true
+      | ":"; ">" -> true
+      | ":" -> false ] ]
+  ;
   params:
-    [ [ idl = LIST1 ident SEP ","; ":"; c = constr -> join_binders (idl,c)
+    [ [ idl = LIST1 ident SEP ","; coe = of_type_with_opt_coercion; c = constr
+      -> List.map (fun c -> (coe,c)) (join_binders (idl,c))
     ] ]
   ;
   ne_params_list:
     [ [ ll = LIST1 params SEP ";" -> List.flatten ll ] ]
   ;
   reduce:
-    [ [ IDENT "Eval"; r = Tactic.red_tactic; "in" -> Some r
+    [ [ IDENT "Eval"; r = Tactic.red_expr; "in" -> Some r
       | -> None ] ]
   ;
   binders_list:
@@ -186,7 +192,7 @@ GEXTEND Gram
   ;
   constructor:
     [ [ id = ident; coe = of_type_with_opt_coercion; c = constr ->
-        (id,coe,c) ] ]
+        (coe,(id,c)) ] ]
   ;
   ne_constructor_list:
     [ [ idc = constructor; "|"; l = ne_constructor_list -> idc :: l
@@ -285,7 +291,7 @@ GEXTEND Gram
 	  VernacInductive (f,indl')
       | record_token; oc = opt_coercion; name = ident; ps = indpar; ":";
 	s = sort; ":="; c = rec_constructor; "{"; fs = fields; "}" ->
-	  VernacRecord (oc,name,ps,s,c,fs)
+	  VernacRecord ((oc,name),ps,s,c,fs)
     ] ]
   ;
   gallina:

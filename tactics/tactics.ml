@@ -231,10 +231,13 @@ let unfold_constr = function
 (*         Introduction tactics            *)
 (*******************************************)
 
+let is_section_variable id =
+  try let _ = Declare.find_section_variable id in true with Not_found -> false
+
 let next_global_ident_from id avoid = 
   let rec next_rec id =
     let id = next_ident_away_from id avoid in
-    if not (Declare.is_global id) then
+    if is_section_variable id || not (Declare.is_global id) then
       id
     else  
       next_rec (lift_ident id)
@@ -243,7 +246,7 @@ let next_global_ident_from id avoid =
 
 let next_global_ident_away id avoid =
   let id  = next_ident_away id avoid in
-  if not (Declare.is_global id) then
+  if is_section_variable id || not (Declare.is_global id) then
     id
   else  
     next_global_ident_from (lift_ident id) avoid

@@ -205,8 +205,8 @@ let mlexpr_of_red_expr = function
       let f1 = mlexpr_of_list mlexpr_of_int in
       let f = mlexpr_of_list (mlexpr_of_pair f1 mlexpr_of_constr) in
       <:expr< Rawterm.Pattern $f l$ >>
-  | Rawterm.ExtraRedExpr (s,l) ->
-      let l = mlexpr_of_list mlexpr_of_constr l in
+  | Rawterm.ExtraRedExpr (s,c) ->
+      let l = mlexpr_of_constr c in
       <:expr< Rawterm.ExtraRedExpr $mlexpr_of_string s$ $l$ >>
 
 let rec mlexpr_of_argtype loc = function

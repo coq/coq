@@ -5,6 +5,7 @@ Language
 
 - Inductive definitions now accept ">" in constructor types to declare
   the corresponding constructor as a coercion.
+- Idem for assumptions declarations and constants when the type is mentionned.
 
 ML tactic and vernacular commands
 

@@ -346,12 +346,12 @@ let process_module_bindings argids args =
 (* this function removes keep objects from submodules *) 
 let rec kill_keep objs =
   let kill = function
-    | (sp,Leaf obj) as node ->
+    | (oname,Leaf obj) as node ->
 	if object_tag obj = "MODULE" then
 	  let (entry,(substobjs,substitute,keep)) = out_module obj in
 	    match substitute,keep with
 	      | [],[] -> node
-	      | _ -> sp, Leaf (in_module (entry,(substobjs,[],[])))
+	      | _ -> oname, Leaf (in_module (entry,(substobjs,[],[])))
 	else
 	  node
     | _ -> anomaly "kill_keep expects Leafs only!"
@@ -398,6 +398,7 @@ let end_module id =
 		  subst_segment newprefix (map_msid msid mp) substitute 
 		                                             (* no ' *)
 		in
+		let keep = change_kns mp keep  in
 		  substobjs, substituted, keep
 	    | _ ->
 		substobjs,[],[])
@@ -478,6 +479,7 @@ let export_library dir =
   let prefix, lib_stack = Lib.end_compilation dir in
   let msid = msid_of_prefix prefix in
   let substitute, keep, _ = Lib.classify_segment lib_stack in
+  let keep = change_kns (MPfile dir) keep in
     cenv,(msid,substitute,keep)
 
 

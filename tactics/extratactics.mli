@@ -11,9 +11,10 @@
 open Names
 open Term
 open Proof_type
+open Rawterm
 
-val h_discrHyp : identifier -> tactic
-val h_injHyp : identifier -> tactic
+val h_discrHyp : quantified_hypothesis -> tactic
+val h_injHyp : quantified_hypothesis -> tactic
 val h_rewriteLR : constr -> tactic
 
 val refine_tac : Genarg.open_constr -> tactic

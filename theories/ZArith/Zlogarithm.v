@@ -19,7 +19,7 @@
     - [Log_nearest]: [y= (Log_nearest x) iff 2^(y-1/2) < x <= 2^(y+1/2)]
       i.e. [Log_nearest x] is the integer nearest from [Log x] *)
 
-Require ZArith.
+Require ZArith_base.
 Require Omega.
 Require Zcomplements.
 Require Zpower.

@@ -82,8 +82,10 @@ type library_location = LibLoaded | LibInPath
 val locate_qualified_library :
   qualid -> library_location * dir_path * System.physical_path
 
-(*s Displays the memory use of a library. *)
 
+val check_required_library : string list -> unit
+
+(*s Displays the memory use of a library. *)
 val mem : dir_path -> Pp.std_ppcmds
 
 (* For discharge *)

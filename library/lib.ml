@@ -46,6 +46,15 @@ let open_segment = iter_leaves open_object
 
 let load_segment = iter_leaves load_object
 
+let change_kns mp seg = 
+  let subst_one = function
+    | ((sp,kn),(Leaf obj as lobj)) -> 
+	let kn' = make_kn mp empty_dirpath (label kn) in
+	  ((sp,kn'),lobj)
+    | _ -> anomaly "We should have leaves only here"
+  in
+    List.map subst_one seg
+
 let subst_segment (dirpath,(mp,dir)) subst seg = 
   let subst_one = function
     | ((sp,kn),Leaf obj) ->
@@ -178,16 +187,16 @@ let is_something_opened = function
 let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
     | (_,CompilingModule _) :: _ | [] -> acc
-    | (sp,Leaf o) as node :: stk -> 
-	(match classify_object (sp,o) with 
+    | (oname,Leaf o) as node :: stk -> 
+	(match classify_object (oname,o) with 
 	   | Dispose -> clean acc stk
 	   | Keep o' -> 
-	       clean (substl, (sp,Leaf o')::keepl, anticipl) stk
+	       clean (substl, (oname,Leaf o')::keepl, anticipl) stk
 	   | Substitute o' -> 
-	       clean ((sp,Leaf o')::substl, keepl, anticipl) stk
+	       clean ((oname,Leaf o')::substl, keepl, anticipl) stk
 	   | Anticipate o' ->
-	       clean (substl, keepl, (sp,Leaf o')::anticipl) stk)
-    | (sp,ClosedSection _ as item) :: stk -> clean acc stk
+	       clean (substl, keepl, (oname,Leaf o')::anticipl) stk)
+    | (oname,ClosedSection _ as item) :: stk -> clean acc stk
     | (_,OpenedSection _) :: _ -> error "there are still opened sections"
     | (_,OpenedModule _) :: _ -> error "there are still opened modules"
     | (_,OpenedModtype _) :: _ -> error "there are still opened module types"
@@ -198,11 +207,11 @@ let classify_segment seg =
 let export_segment seg =
   let rec clean acc = function
     | (_,CompilingModule _) :: _ | [] -> acc
-    | (sp,Leaf o) as node :: stk ->
+    | (oname,Leaf o) as node :: stk ->
 	(match export_object o with
 	   | None -> clean acc stk
-	   | Some o' -> clean ((sp,Leaf o') :: acc) stk)
-    | (sp,ClosedSection _ as item) :: stk -> clean (item :: acc) stk
+	   | Some o' -> clean ((oname,Leaf o') :: acc) stk)
+    | (oname,ClosedSection _ as item) :: stk -> clean (item :: acc) stk
     | (_,OpenedSection _) :: _ -> error "there are still opened sections"
     | (_,OpenedModule _) :: _ -> error "there are still opened modules"
     | (_,OpenedModtype _) :: _ -> error "there are still opened module types"
@@ -214,10 +223,10 @@ let export_segment seg =
 let start_module id mp nametab = 
   let dir = extend_dirpath (fst !path_prefix) id in
   let prefix = dir,(mp,empty_dirpath) in
-  let name = make_path id, make_kn id in
+  let oname = make_path id, make_kn id in
   if Nametab.exists_module dir then
     errorlabstrm "open_module" (pr_id id ++ str " already exists") ;
-  add_entry name (OpenedModule (prefix,nametab));
+  add_entry oname (OpenedModule (prefix,nametab));
   path_prefix := prefix
 (*  add_frozen_state () must be called in declaremods *)
  

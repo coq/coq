@@ -18,6 +18,7 @@ open Evd
 type inductive_family
 val make_ind_family : inductive * constr list -> inductive_family
 val dest_ind_family : inductive_family -> inductive * constr list
+val map_ind_family : (constr -> constr) -> inductive_family -> inductive_family
 val liftn_inductive_family : int -> int -> inductive_family -> inductive_family
 val lift_inductive_family  : int -> inductive_family -> inductive_family
 val substnl_ind_family :
@@ -27,6 +28,7 @@ val substnl_ind_family :
 type inductive_type = IndType of inductive_family * constr list
 val make_ind_type : inductive_family * constr list -> inductive_type
 val dest_ind_type : inductive_type -> inductive_family * constr list
+val map_inductive_type : (constr -> constr) -> inductive_type -> inductive_type
 val liftn_inductive_type : int -> int -> inductive_type -> inductive_type
 val lift_inductive_type  : int -> inductive_type -> inductive_type
 val substnl_ind_type :
