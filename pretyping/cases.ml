@@ -980,6 +980,13 @@ let rec map_predicate f k = function
       let k' = List.length names + (if dep<>Anonymous then 1 else 0) in
       PrLetIn (tm, map_predicate f (k+k') pred)
 
+let rec noccurn_predicate k = function
+  | PrCcl ccl -> noccurn k ccl
+  | PrProd pred -> noccurn_predicate (k+1) pred
+  | PrLetIn ((names,dep as tm),pred) ->
+      let k' = List.length names + (if dep<>Anonymous then 1 else 0) in
+      noccurn_predicate (k+k') pred
+
 let liftn_predicate n = map_predicate (liftn n)
 
 let lift_predicate n = liftn_predicate n 1
@@ -1091,8 +1098,9 @@ let rec known_dependent = function
 let expand_arg n alreadydep (na,t) deps (k,pred) =
   (* current can occur in pred even if the original problem is not dependent *)
   let dep =
-    if alreadydep<>Anonymous then alreadydep else 
-    if deps <> [] then Name (id_of_string "x") else Anonymous in
+    if alreadydep<>Anonymous then alreadydep
+    else if deps = [] && noccurn_predicate 1 pred then Anonymous
+    else Name (id_of_string "x") in
   let pred = if dep<>Anonymous then pred else lift_predicate (-1) pred in
   (* There is no dependency in realargs for subpattern *)
   (k-1, PrLetIn (([],dep), pred))
