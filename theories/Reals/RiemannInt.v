@@ -700,12 +700,12 @@ Apply Rlt_anti_compatibility with ``-l2``; Replace ``-l2+(l1+l2)/2`` with ``(l1-
 Rewrite Rplus_sym; Apply Rle_lt_trans with ``(Rabsolu ((Vn N)-l2))``.
 Apply Rle_Rabsolu.
 Apply H1; Unfold ge; Unfold N; Apply le_max_r.
-Field; DiscrR.
+Apply r_Rmult_mult with ``2``; [Unfold Rdiv; Do 2 Rewrite -> (Rmult_sym ``2``); Rewrite (Rmult_Rplus_distrl ``-l2`` ``(l1+l2)*/2`` ``2``); Repeat Rewrite -> Rmult_assoc; Rewrite <- Rinv_l_sym; [ Ring | DiscrR ] | DiscrR].
 Apply Ropp_Rlt; Apply Rlt_anti_compatibility with l1; Replace ``l1+ -((l1+l2)/2)`` with ``(l1-l2)/2``.
 Apply Rle_lt_trans with ``(Rabsolu ((Un N)-l1))``.
 Rewrite <- Rabsolu_Ropp; Rewrite Ropp_distr2; Apply Rle_Rabsolu.
 Apply H0; Unfold ge; Unfold N; Apply le_max_l.
-Field; DiscrR.
+Apply r_Rmult_mult with ``2``; [Unfold Rdiv; Do 2 Rewrite -> (Rmult_sym ``2``); Rewrite (Rmult_Rplus_distrl ``l1`` ``-((l1+l2)*/2)`` ``2``); Rewrite <- Ropp_mul1; Repeat Rewrite -> Rmult_assoc; Rewrite <- Rinv_l_sym; [ Ring | DiscrR ] | DiscrR].
 Qed.
 
 Lemma RiemannInt_P17 : (f:R->R;a,b:R;pr1:(Riemann_integrable f a b);pr2:(Riemann_integrable [x:R](Rabsolu (f x)) a b)) ``a<=b`` -> ``(Rabsolu (RiemannInt pr1))<=(RiemannInt pr2)``.
@@ -1376,7 +1376,7 @@ Apply Rlt_anti_compatibility with x; Rewrite Rplus_Or; Assumption.
 Rewrite (RiemannInt_P13 H7 (RiemannInt_P14 x ``x+h0`` (f x)) (RiemannInt_P10 ``-1`` H7 (RiemannInt_P14 x ``x+h0`` (f x)))).
 Ring.
 Unfold Rdiv Rminus; Rewrite Rmult_Rplus_distrl; Ring.
-Rewrite RiemannInt_P15; Field; Assumption.
+Rewrite RiemannInt_P15; Apply r_Rmult_mult with h0; [Unfold Rdiv; Rewrite -> (Rmult_sym h0); Repeat Rewrite -> Rmult_assoc; Rewrite <- Rinv_l_sym; [Ring | Assumption] | Assumption].
 Cut ``a<=x+h0``.
 Cut ``x+h0<=b``.
 Intros; Unfold primitive.
@@ -1467,12 +1467,12 @@ Rewrite RiemannInt_P15.
 Rewrite Rmult_assoc; Replace ``(b-(b+h0))*(Rabsolu (/h0))`` with R1.
 Rewrite Rmult_1r; Unfold Rdiv; Apply Rlt_monotony_contra with ``2``; [Sup0 | Rewrite <- (Rmult_sym ``/2``); Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym; [Rewrite Rmult_1l; Pattern 1 eps; Rewrite <- Rplus_Or; Rewrite double; Apply Rlt_compatibility; Assumption | DiscrR]].
 Rewrite Rabsolu_left.
-Field; Assumption.
+Apply r_Rmult_mult with h0; [Do 2 Rewrite (Rmult_sym h0); Rewrite Rmult_assoc; Rewrite Ropp_mul1; Rewrite <- Rinv_l_sym; [ Ring | Assumption ] | Assumption].
 Apply Rlt_Rinv2; Assumption.
 Rewrite (RiemannInt_P13 H13 (RiemannInt_P14 ``b+h0`` b (f b)) (RiemannInt_P10 ``-1`` H13 (RiemannInt_P14 ``b+h0`` b (f b)))); Ring.
 Unfold Rdiv Rminus; Rewrite Rmult_Rplus_distrl; Ring.
 Rewrite RiemannInt_P15.
-Field; Assumption.
+Rewrite <- Ropp_mul1; Apply r_Rmult_mult with h0; [Repeat Rewrite (Rmult_sym h0); Unfold Rdiv; Repeat Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Ring | Assumption] | Assumption].
 Cut ``a<=b+h0``.
 Cut ``b+h0<=b``.
 Intros; Unfold primitive; Case (total_order_Rle a ``b+h0``); Case (total_order_Rle ``b+h0`` b); Case (total_order_Rle a b); Case (total_order_Rle b b); Intros; Try (Elim n; Right; Reflexivity) Orelse (Elim n; Left; Assumption).
@@ -1587,13 +1587,14 @@ Rewrite RiemannInt_P15.
 Rewrite Rmult_assoc; Replace ``((a+h0)-a)*(Rabsolu (/h0))`` with R1.
 Rewrite Rmult_1r; Unfold Rdiv; Apply Rlt_monotony_contra with ``2``; [Sup0 | Rewrite <- (Rmult_sym ``/2``); Rewrite <- Rmult_assoc; Rewrite <- Rinv_r_sym; [Rewrite Rmult_1l; Pattern 1 eps; Rewrite <- Rplus_Or; Rewrite double; Apply Rlt_compatibility; Assumption | DiscrR]].
 Rewrite Rabsolu_right.
-Field; Assumption.
+Rewrite Rplus_sym; Unfold Rminus; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r; Rewrite Rplus_Or; Rewrite <- Rinv_r_sym; [ Reflexivity | Assumption ].
 Apply Rle_sym1; Left; Apply Rlt_Rinv; Assert H14 := (Rle_sym2 ? ? r); Elim H14; Intro.
 Assumption.
 Elim H10; Symmetry; Assumption.
 Rewrite (RiemannInt_P13 H13 (RiemannInt_P14 a ``a+h0`` (f a)) (RiemannInt_P10 ``-1`` H13 (RiemannInt_P14 a ``a+h0`` (f a)))); Ring.
 Unfold Rdiv Rminus; Rewrite Rmult_Rplus_distrl; Ring.
-Rewrite RiemannInt_P15; Field; Assumption.
+Rewrite RiemannInt_P15.
+Rewrite Rplus_sym; Unfold Rminus; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r; Rewrite Rplus_Or; Unfold Rdiv; Rewrite Rmult_assoc; Rewrite <- Rinv_r_sym; [ Ring | Assumption ].
 Cut ``a<=a+h0``.
 Cut ``a+h0<=b``.
 Intros; Unfold primitive; Case (total_order_Rle a ``a+h0``); Case (total_order_Rle ``a+h0`` b); Case (total_order_Rle a a); Case (total_order_Rle a b); Intros; Try (Elim n; Right; Reflexivity) Orelse (Elim n; Left; Assumption).
