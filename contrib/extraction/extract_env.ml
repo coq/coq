@@ -20,13 +20,10 @@ open Extraction
 open Mlutil
 open Common
 
-(*
-
 let mp_of_kn kn = 
   let mp,_,l = repr_kn kn in MPdot (mp,l) 
 
-
-let toplevel_structure_body () = 
+let toplevel () = 
   let seg = Lib.contents_after None in 
   let get_reference = function 
     | (_,kn), Lib.Leaf o ->
@@ -40,8 +37,7 @@ let toplevel_structure_body () =
 	in l,seb
     | _ -> failwith "caught"
   in 
-  List.rev (map_succeed get_reference seg)
-
+  MEBstruct (initial_msid, List.rev (map_succeed get_reference seg))
 
 let environment_until dir_opt = 
   let rec parse = function 
@@ -49,7 +45,7 @@ let environment_until dir_opt =
     | d :: l when dir_opt = Some d -> []
     | d :: l -> 
 	match (Global.lookup_module (MPfile d)).mod_expr with 
-	  | Some (MEBstruct (_, msb)) -> (d, msb) :: (parse l)
+	  | Some meb -> (d, meb) :: (parse l)
 	  | _ -> assert false
   in parse (Library.loaded_libraries ())
 
@@ -58,6 +54,113 @@ let std_kn mp l = make_kn mp empty_dirpath l
 let rec sub_modpath mp = match mp with 
   | MPdot (mp',_) -> MPset.add mp (sub_modpath mp')
   | _ -> MPset.singleton mp
+
+(* Add _all_ direct subobjects of a module, not only those exported. 
+   Build on the Modops.add_signature model. *)
+
+let add_structure mp msb env = 
+  let add_one env (l,elem) = 
+    let kn = std_kn mp l in 
+    match elem with 
+      | SEBconst cb -> Environ.add_constant kn cb env 
+      | SEBmind mib -> Environ.add_mind kn mib env 
+      | SEBmodule mb -> Modops.add_module (MPdot (mp,l)) mb env 
+      | SEBmodtype mtb -> Environ.add_modtype kn mtb env  
+  in List.fold_left add_one env msb
+
+let add_functor mbid mtb env = 
+  Modops.add_module (MPbound mbid) (Modops.module_body_of_type mtb) env 
+  
+let mp_short = ref initial_path 
+let cur_env = ref (Global.env ()) 
+
+let pr_label l = str (string_of_label l)
+let pr_term t = Printer.prterm_env !cur_env t
+
+let rec print_seb = function 
+  | l, SEBconst {const_body=None; const_type=t} ->
+      msg (str "Cst " ++ pr_label l ++ str " : " ++ 
+      pr_term t ++ fnl ()) 
+  | l, SEBconst {const_body=Some lbody} -> 
+      let body = Declarations.force lbody in 
+      let t = Retyping.get_type_of !cur_env Evd.empty body in 
+      msg (str "Cst " ++ pr_label l ++ str " = " ++ 
+	   pr_term body ++ fnl () ++
+	   str "  : " ++ pr_term t ++ fnl ())
+  | l, SEBmind mind -> 
+      let t = Inductive.type_of_inductive !cur_env ((std_kn !mp_short l),0) in 
+      msg (str "Ind " ++ pr_label l ++ str " : " ++ pr_term t ++ fnl ()) 
+  | l, SEBmodule mb -> print_module l mb 
+  | l, SEBmodtype mtb -> print_modtype l mtb 
+
+and print_msb = function 
+  | [] -> () 
+  | seb :: msb -> print_seb seb; print_msb msb
+
+and print_module l mb = 
+  msg (str "Begin Module " ++ pr_label l ++ fnl ());
+  (match mb.mod_expr with 
+     | None -> ()
+     | Some meb -> print_meb meb);
+  msg (str "End Module " ++ pr_label l ++ fnl ())
+
+and print_meb = function 
+  | MEBident mp -> ()
+  | MEBfunctor (mbid, mtb, meb) -> 
+      cur_env := add_functor mbid mtb !cur_env; 
+      print_meb meb 
+  | MEBstruct (msid, msb) -> 
+      let mp_old = !mp_short in 
+      mp_short := MPself msid; 
+      cur_env := add_structure !mp_short msb !cur_env;
+      msg (str "Begin Struct " ++ str (string_of_mp !mp_short) ++ fnl ());
+      print_msb msb;
+      msg (str "End Struct " ++ str  (string_of_mp !mp_short) ++ fnl ());
+      mp_short := mp_old
+  | MEBapply (meb, meb',_) -> 
+      print_meb meb; msg (str "@" ++ fnl ()); print_meb meb'
+
+and print_modtype l mtb = 
+  msg (str "Begin Module Type " ++ pr_label l ++ fnl ());
+  (match mtb with 
+     | MTBident mp -> ()
+     | MTBfunsig (mbid, mtb, mtb') -> 
+	 cur_env := add_functor mbid mtb !cur_env; 
+	 print_modtype l mtb'
+     | MTBsig (msid, sign) -> 
+	 let mp_old = !mp_short in
+	 mp_short := MPself msid; 
+	 cur_env := Modops.add_signature !mp_short sign !cur_env;
+	 msg (str "Begin Sig " ++ str (string_of_mp !mp_short) ++ fnl ());
+	 print_sign sign;
+	 msg (str "End Sig " ++ str  (string_of_mp !mp_short) ++ fnl ());
+	 mp_short := mp_old);
+  msg (str "End Module Type " ++ pr_label l ++ fnl ())
+
+and print_sign = function 
+  | [] -> () 
+  | spec :: sign -> print_spec spec; print_sign sign 
+	
+and print_spec = function 
+  | l, SPBconst {const_type=t} -> 
+      msg (str "Cst " ++ pr_label l ++ str " : " ++ pr_term t ++ fnl ())
+  | l, SPBmind mind -> 
+       let t = Inductive.type_of_inductive !cur_env ((std_kn !mp_short l),0) in 
+       msg (str "Ind " ++ pr_label l ++ str " : " ++ pr_term t ++ fnl ()) 
+  | l, SPBmodule {msb_modtype=mtb} -> print_modtype l mtb 
+  | l, SPBmodtype mtb -> print_modtype l mtb
+
+
+let print_all () = 
+  cur_env := Global.env (); 
+  mp_short := initial_path; 
+  List.iter 
+    (fun (d,meb) -> 
+       msg (str "Library " ++ pr_dirpath d ++ fnl ()); print_meb meb) 
+    (environment_until None); 
+  msg (str "Toplevel" ++ fnl ()); print_meb (toplevel ())
+
+(* 
 
 type visit = { mutable kn : KNset.t; mutable mp : MPset.t }
 
@@ -449,3 +552,4 @@ let recursive_extraction_module m =
 	     let decls = List.filter (decl_in_m m) decls in
 	     if decls <> [] then extract_to_file (Some f) prm decls)
 	  modules
+
