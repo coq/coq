@@ -1359,11 +1359,12 @@ let xlate_defn x = CT_defn (match x with
  | (Local, Definition) -> "Local"
  | (Global, Definition) -> "Definition"
  | (Global, SubClass) -> "SubClass"
+ | (Global, Coercion) -> "Coercion"
  | (Local, SubClass) -> "Local SubClass"
+ | (Local, Coercion) -> "Local Coercion"
  | (Global,CanonicalStructure) -> "Canonical Structure"
  | (Local, CanonicalStructure) -> 
-     xlate_error "Local CanonicalStructure not parsed"
- | (_, SubClass) -> xlate_error "Obsolete SubClass not supported")
+     xlate_error "Local CanonicalStructure not parsed")
 
 let xlate_var x = CT_var (match x with
  | (Global,Definitional) -> "Parameter"
