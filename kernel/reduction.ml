@@ -625,7 +625,7 @@ let whd_betadeltaiota_stack env sigma =
       | DOPN(AppL,cl) ->  bdi_rec (array_hd cl)  (array_app_tl cl stack)
       | DOP2(Lambda,_,DLAM(_,c)) ->
           (match stack with
-             | [] -> (x,stack)
+             | [] -> (x,[])
              | (a::m) -> stacklam bdi_rec [a] c m)
       | DOPN(MutCase _,_) ->
           let (ci,p,d,lf) = destCase x in
