@@ -134,9 +134,11 @@ let add_constant dir l decl senv =
   check_label l senv.labset;
   let cb = match decl with 
       ConstantEntry ce -> translate_constant senv.env ce
-    | GlobalRecipe r -> translate_recipe senv.env r
+    | GlobalRecipe r ->
+        let cb = translate_recipe senv.env r in
+        if dir = empty_dirpath then hcons_constant_body cb else cb
   in
-  let cb = if dir = empty_dirpath then hcons_constant_body cb else cb in
+(*  let cb = if dir = empty_dirpath then hcons_constant_body cb else cb in*)
   let env' = Environ.add_constraints cb.const_constraints senv.env in
   let kn = make_kn senv.modinfo.modpath dir l in
   let env'' = Environ.add_constant kn cb env' in

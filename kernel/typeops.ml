@@ -444,6 +444,9 @@ and execute_list env l cu =
 let infer env constr =
   let (j,(cst,_)) =
     execute env constr (Constraint.empty, universes env) in
+  let j = if j.uj_val = constr then { j with uj_val = constr } else
+    (error "Kernel built a body different from its input\n";
+     flush stdout; j) in
   (j, cst)
 
 let infer_type env constr =

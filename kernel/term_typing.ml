@@ -29,7 +29,11 @@ let constrain_type env j cst1 = function
       let cst3 =
 	try conv_leq env j.uj_type tj.utj_val
 	with NotConvertible -> error_actual_type env j tj.utj_val in
-      tj.utj_val, Constraint.union (Constraint.union cst1 cst2) cst3
+      let typ = 
+        if t = tj.utj_val then t else
+          (error "Kernel built a type different from its input\n";
+           flush stdout; tj.utj_val) in
+      typ, Constraint.union (Constraint.union cst1 cst2) cst3
 
 
 let translate_local_def env (b,topt) =
