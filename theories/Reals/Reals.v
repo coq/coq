@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require Export RealsB.
+Require Export Rbase.
 Require Export Rfunctions.
 Require Export SeqSeries.
 Require Export Rtrigo.

@@ -559,8 +559,8 @@ WELLFOUNDEDVO=theories/Wellfounded/Disjoint_Union.vo \
 
 REALSBASEVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Rdefinitions.vo theories/Reals/Rsyntax.vo \
-	theories/Reals/Raxioms.vo      theories/Reals/Rbase.vo \
-	theories/Reals/DiscrR.vo       theories/Reals/RealsB.vo \
+	theories/Reals/Raxioms.vo      theories/Reals/RIneq.vo \
+	theories/Reals/DiscrR.vo       theories/Reals/Rbase.vo \
 
 REALS_basic= 
 

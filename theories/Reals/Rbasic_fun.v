@@ -13,7 +13,7 @@
 (*                                                       *)
 (*********************************************************)
 
-Require RealsB.
+Require Rbase.
 Require R_Ifp.
 Require Fourier.
 

@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 Require Sumbool.
-Require RealsB.
+Require Rbase.
 Require Rfunctions.
 Require SeqSeries.
 Require Ranalysis1.

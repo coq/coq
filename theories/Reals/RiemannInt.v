@@ -11,7 +11,7 @@
 Require Rfunctions.
 Require SeqSeries.
 Require Ranalysis.
-Require RealsB.
+Require Rbase.
 Require RiemannInt_SF.
 Require Classical_Prop.
 Require Classical_Pred_Type.

@@ -8,7 +8,7 @@
  
 (*i $Id$ i*)
 
-Require RealsB.
+Require Rbase.
 Require Rfunctions.
 Require SeqSeries.
 Require Rtrigo.
@@ -198,7 +198,7 @@ Symmetry; Assumption.
 Assert H8 := (derive_pt_eq_1 F0 x (f x) x0 H7); Unfold derivable_pt_lim in H8; Intros; Elim (H8 ? H9); Intros; Pose D := (Rmin x1 ``b-x``).
 Assert H11 : ``0<D``.
 Unfold D; Unfold Rmin; Case (total_order_Rle x1 ``b-x``); Intro.
-Apply (Rbase.cond_pos x1).
+Apply (cond_pos x1).
 Apply Rlt_Rminus; Assumption.
 Exists (mkposreal ? H11); Intros; Case (total_order_Rle x b); Intro.
 Case (total_order_Rle ``x+h`` b); Intro.
@@ -225,8 +225,8 @@ Symmetry; Assumption.
 Assert H11 := (derive_pt_eq_1 F0 x (f x) x1 H9); Assert H12 := (derive_pt_eq_1 F1 x (f x) x0 H10); Assert H13 : (derivable_pt_lim [x:R]Cases (total_order_Rle x b) of (leftT _) => (F0 x) | (rightT _) => ``(F1 x)+((F0 b)-(F1 b))`` end x (f x)).
 Unfold derivable_pt_lim; Unfold derivable_pt_lim in H11 H12; Intros; Elim (H11 ? H13); Elim (H12 ? H13); Intros; Pose D := (Rmin x2 x3); Assert H16 : ``0<D``.
 Unfold D; Unfold Rmin; Case (total_order_Rle x2 x3); Intro.
-Apply (Rbase.cond_pos x2).
-Apply (Rbase.cond_pos x3).
+Apply (cond_pos x2).
+Apply (cond_pos x3).
 Exists (mkposreal ? H16); Intros; Case (total_order_Rle x b); Intro.
 Case (total_order_Rle ``x+h`` b); Intro.
 Apply H15.
@@ -248,7 +248,7 @@ Unfold derivable_pt_lim; Assert H7 : ``(derive_pt F1 x x0)==(f x)``.
 Symmetry; Assumption.
 Assert H8 := (derive_pt_eq_1 F1 x (f x) x0 H7); Unfold derivable_pt_lim in H8; Intros; Elim (H8 ? H9); Intros; Pose D := (Rmin x1 ``x-b``); Assert H11 : ``0<D``.
 Unfold D; Unfold Rmin; Case (total_order_Rle x1 ``x-b``); Intro.
-Apply (Rbase.cond_pos x1).
+Apply (cond_pos x1).
 Apply Rlt_Rminus; Assumption.
 Exists (mkposreal ? H11); Intros; Case (total_order_Rle x b); Intro.
 Elim (Rlt_antirefl ? (Rle_lt_trans ? ? ? r0 r)).

@@ -8,7 +8,7 @@
 
 (*i $Id$ i*)
 
-Require RealsB.
+Require Rbase.
 Require Rfunctions.
 Require SeqSeries.
 Require Export Rtrigo_fun.

@@ -8,7 +8,7 @@
  
 (*i $Id$ i*)
 
-Require RealsB.
+Require Rbase.
 Require Rfunctions.
 Require Rseries.
 Require SeqProp.
@@ -145,7 +145,7 @@ Apply H7; Assumption.
 Unfold Rdiv; Apply Rlt_monotony_contra with ``2``.
 Sup0.
 Rewrite (Rmult_sym ``2``); Rewrite Rmult_assoc; Rewrite <- Rinv_l_sym; [Rewrite Rmult_1r | DiscrR].
-Rewrite Rbase.double.
+Rewrite RIneq.double.
 Pattern 1 eps; Rewrite <- (Rplus_Or eps); Apply Rlt_compatibility; Assumption.
 Elim H10; Intro; Apply le_double.
 Rewrite <- H11; Apply le_trans with N.

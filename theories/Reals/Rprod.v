@@ -9,7 +9,7 @@
 (*i $Id$ i*)
 
 Require Compare.
-Require RealsB.
+Require Rbase.
 Require Rfunctions.
 Require Rseries.
 Require PartSum.

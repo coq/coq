@@ -8,7 +8,7 @@
 
 (*i        $Id$       i*)
 
-Require Rbase.
+Require RIneq.
 
 Recursive Tactic Definition Isrealint trm:=
   Match trm With

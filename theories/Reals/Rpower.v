@@ -14,7 +14,7 @@
 (* Propriétés                                               *)
 (************************************************************)
 
-Require RealsB.
+Require Rbase.
 Require Rfunctions.
 Require SeqSeries.
 Require Rtrigo.
@@ -153,7 +153,7 @@ Apply Rinv_neq_R0; Red; Intro; Rewrite H3 in H; Elim (Rlt_antirefl ? H).
 Qed.
 
 (* Définition du log népérien R+*>R *)
-Definition Rln [y:posreal] : R := Cases (ln_exists (pos y) (Rbase.cond_pos y)) of (existTT a b) => a end.
+Definition Rln [y:posreal] : R := Cases (ln_exists (pos y) (RIneq.cond_pos y)) of (existTT a b) => a end.
 
 (* Une extension sur R *)
 Definition ln : R->R := [x:R](Cases (total_order_Rlt R0 x) of
@@ -162,7 +162,7 @@ Definition ln : R->R := [x:R](Cases (total_order_Rlt R0 x) of
 
 Lemma exp_ln :  (x : R) ``0<x`` ->  (exp (ln x)) == x.
 Intros; Unfold ln; Case (total_order_Rlt R0 x); Intro.
-Unfold Rln; Case (ln_exists (mkposreal x r) (Rbase.cond_pos (mkposreal x r))); Intros.
+Unfold Rln; Case (ln_exists (mkposreal x r) (RIneq.cond_pos (mkposreal x r))); Intros.
 Simpl in e; Symmetry; Apply e.
 Elim n; Apply H.
 Qed.
@@ -474,7 +474,7 @@ Red; Intros H3; Case H2; Apply ln_inv; Auto.
 Apply limit_comp with l := (ln y) g := [x : R]  (Rdiv (Rminus (exp x) (exp (ln y))) (Rminus x (ln y))) f := ln.
 Apply ln_continue; Auto.
 Assert H0 := (derivable_pt_lim_exp (ln y)); Unfold derivable_pt_lim in H0; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Elim (H0 ? H); Intros; Exists (pos x); Split.
-Apply (Rbase.cond_pos x).
+Apply (RIneq.cond_pos x).
 Intros; Pattern 3 y; Rewrite <- exp_ln.
 Pattern 1 x0; Replace x0 with ``(ln y)+(x0-(ln y))``; [Idtac | Ring].
 Apply H1.
