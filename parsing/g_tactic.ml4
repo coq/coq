@@ -456,7 +456,7 @@ GEXTEND Gram
 	  <:ast< (Change $c $cl) >> 
       | IDENT "ML"; s = Prim.string -> <:ast< (MLTACTIC $s) >> ]
 
-(*    | [ id = identarg; l = constrarg_list ->
+ (*   | [ id = identarg; l = constrarg_list ->
           match (isMeta (nvar_of_ast id), l) with
             | (true, []) -> id
             | (false, _) -> <:ast< (CALL $id ($LIST $l)) >>

@@ -3,8 +3,9 @@ Require Export AddProps.
 
 (*s This file contains basic properties of the less than relation *)
 
-Lemma lt_anti_refl : (x:N)~(x<x).
-Red; Intros x H; Exact (lt_anti_sym x x H H).
+
+Lemma lt_anti_sym : (x,y:N)x<y->~(y<x).
+Red; Intros x y lt1 lt2; Apply (lt_anti_refl x); EAuto with num.
 Save.
 Hints Resolve lt_anti_refl : num.
 
@@ -65,4 +66,8 @@ Intros x y z H; Apply lt_eq_compat with (x+z) (y+z); Auto with num.
 Save.
 Hints Resolve lt_add_compat_r : num.
 
+Lemma lt_add_compat : (x1,x2,y1,y2:N)(x1<x2)->(y1<y2)->((x1+y1)<(x2+y2)).
+Intros; Apply lt_trans with (x1+y2); Auto with num.
+Save.
+Hints Immediate lt_add_compat : num.
 

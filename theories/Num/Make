@@ -1,4 +1,5 @@
-Definitions.v
+Params.v
+NeqDef.v
 NSyntax.v
 Axioms.v
 AddProps.v
@@ -14,3 +15,6 @@ GeProps.v
 DiscrAxioms.v
 DiscrProps.v
 OppAxioms.v
+NatParams.v
+NatSyntax.v
+NatAxioms.v

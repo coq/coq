@@ -1,4 +1,8 @@
-Require Definitions.
+
+(*s Syntax for arithmetic *)
+
+Require Export Params.
+Require Export NeqDef.
 
 Infix 6 "<" lt.
 Infix 6 "<=" le.

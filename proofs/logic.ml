@@ -63,6 +63,12 @@ let conv_leq_goal env sigma arg ty conclty =
 let rec mk_refgoals sigma goal goalacc conclty trm =
   let env = evar_env goal in
   let hyps = goal.evar_hyps in
+(*  if  not (occur_meta trm) then
+    let t'ty = (unsafe_machine env sigma trm).uj_type in 	
+    let _ = conv_leq_goal env sigma trm t'ty conclty in
+      (goalacc,t'ty)
+  else
+*)
   match kind_of_term trm with
     | IsMeta mv ->
 	if occur_meta conclty then

@@ -1,6 +1,6 @@
 (*i $Id$ i*)
 
-Require Export Definitions.
+Require Export Params.
 Require Export NSyntax.
 
 (*s Axiom for a discrete set *)
