@@ -793,7 +793,7 @@ let buildFunscheme fonc mutflist =
    fun acc ev,nam,typ -> 
     mkLambda (Name (id_of_name nam) , typ, 
     substitterm 0 ev (mkRel 1) (lift 0 acc)))
-   t params in
+   t (List.rev params) in
  if Array.length evararr = 0 (* Is there a Fixpoint? *)
 	then (* No Fixpoint *)
    princ_replace_params parms (mkLambda ((Name (id_of_string "Q")), 
