@@ -19,3 +19,6 @@ val show_nth_open_subgoal : int -> unit
 val show_open_subgoals_focused : unit -> unit
 val show_node : unit -> unit
 
+(* This function can be used by any command that want to observe terms
+   in the context of the current goal, as for instance in pcoq *)
+val get_current_context_of_args : vernac_arg list -> Proof_type.enamed_declarations * Environ.env
