@@ -10,4 +10,7 @@
 
 open Term
 
+val unif_atoms_for_meta : int -> (bool * constr) -> (bool * constr) ->
+  (int*constr) option
+
 val find_instances : int -> (bool * constr) list -> Sequent.t -> constr list

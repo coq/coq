@@ -90,20 +90,34 @@ let collect i l=
       if is_ground t then Some t else None
   with Not_found->None
 
+let value i=
+  let tref=mkMeta i in
+  let rec vaux term=
+    if term=tref then 1 else 
+      let f v t=max v (vaux t) in
+      let vrec=fold_constr f 0 term in
+	if vrec=0 then 0 else succ vrec in vaux
+
+let is_head_meta t=match kind_of_term t with Meta _->true | _ ->false
+
 let unif_atoms_for_meta i (b1,t1) (b2,t2)=
-  if b1=b2 then None else
+  if b1=b2  || is_head_meta t1 || is_head_meta t2  then None else
     try 
-      collect i (unif t1 t2) 
+       match collect i (unif t1 t2) with
+	   None->None
+	 | Some t->Some ((max (value i t1) (value i t2)),t)
     with UFAIL(_,_) ->None
     
 module OrderedConstr=
 struct
-  type t=constr
-  let compare=Pervasives.compare
+  type t=int*constr
+  let compare (n1,t1) (n2,t2)=
+    (n2 - n1) +- (Pervasives.compare t1 t2) 
+    (* we want a decreasing total order *)
 end
-
+  
 module CS=Set.Make(OrderedConstr)
-
+  
 let match_atom_list i atom l=
   let f atom2 accu=
     match unif_atoms_for_meta i atom atom2 with
@@ -118,14 +132,19 @@ let match_lists i l1 l2=
       
 let find_instances i l seq=
   let match_hyp f accu=
-    CS.union (if f.internal then match_lists i l f.atoms else CS.empty) accu in
-  let match_atom t nam accu=
+    CS.union 
+      (if f.internal then 
+	 match_lists i l f.atoms 
+       else 
+	 CS.empty) 
+      accu in
+  let match_atom t accu=
     CS.union (match_atom_list i (false,t) l) accu in
   let s1=
     match seq.gl with 
 	Atomic t->(match_atom_list i (true,t) l)
-      | Complex(_,l1)->(match_lists i l l1) in
-  let s2=CM.fold match_atom seq.hatoms s1 in
-  let s3=HP.fold match_hyp seq.hyps s2 in
-    CS.fold (fun x l->x::l) s3 []
+      | Complex(_,_,l1)->(match_lists i l l1) in
+  let s2=List.fold_right match_atom seq.latoms s1 in
+  let s3=HP.fold match_hyp seq.redexes s2 in
+    List.map snd (CS.elements s3)
 

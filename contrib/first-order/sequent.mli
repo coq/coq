@@ -21,15 +21,36 @@ val left_reversible : left_pattern -> bool
 
 module CM: Map.S with type key=constr
 
+module History: Set.S with type elt = global_reference * constr option
+
+val cm_add : constr -> global_reference -> global_reference list CM.t ->
+  global_reference list CM.t
+
+val cm_remove : constr -> global_reference -> global_reference list CM.t ->
+  global_reference list CM.t
+
 module HP: Heap.S with type elt=left_formula
 
-type t = {hyps:HP.t;hatoms: global_reference CM.t;gl:right_formula}
+type t = {redexes:HP.t;
+	  context: global_reference list CM.t;
+	  latoms:constr list;
+	  gl:right_formula;
+	  cnt:counter;
+	  history:History.t;
+	  depth:int}
 
-val add_left : global_reference * constr -> t -> bool -> counter -> t
+val deepen: t -> t
+
+val record: global_reference -> constr option -> t -> t
+
+val lookup: global_reference -> constr option -> t -> bool
+
+val add_left : global_reference * constr -> t -> bool -> 
+  Proof_type.goal sigma -> t
 
 val re_add_left_list : left_formula list -> t -> t
 
-val change_right : constr -> t -> counter -> t
+val change_right : constr -> t -> Proof_type.goal sigma -> t
 
 val find_left : constr -> t -> global_reference
 
@@ -41,6 +62,11 @@ val take_left : t -> left_formula * t
 
 val take_right : t -> right_formula
 
-val empty_seq : t
+val empty_seq : int -> t
 
-val create_with_auto_hints : Proof_type.goal sigma -> counter -> t
+val create_with_ref_list : global_reference list ->
+  int -> Proof_type.goal sigma -> t
+
+val create_with_auto_hints : int -> Proof_type.goal sigma -> t
+
+val print_cmap: global_reference list CM.t -> unit 

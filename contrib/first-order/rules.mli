@@ -13,42 +13,46 @@ open Tacmach
 open Names
 open Libnames
 
-type hptac= Sequent.t -> (Sequent.t -> tactic) -> Formula.counter -> tactic
+type seqtac= (Sequent.t -> tactic) -> Sequent.t -> tactic
 
-type lhptac= global_reference -> hptac
+type lseqtac= global_reference -> seqtac
 
-val wrap : int -> bool -> hptac
+val wrap : int -> bool -> seqtac
 
 val clear_global: global_reference -> tactic
 
 val axiom_tac : constr -> Sequent.t -> tactic
 
-val and_tac : hptac
+val evaluable_tac : evaluable_global_reference -> seqtac
 
-val left_and_tac : inductive -> lhptac
+val left_evaluable_tac : evaluable_global_reference -> lseqtac
 
-val or_tac : hptac
+val and_tac : seqtac
 
-val left_or_tac : inductive -> lhptac
+val left_and_tac : inductive -> lseqtac
 
-val forall_tac : hptac
+val or_tac : seqtac
 
-val left_forall_tac : int -> types -> (bool * constr) list -> lhptac
+val left_or_tac : inductive -> lseqtac
 
-val arrow_tac : hptac
+val forall_tac : seqtac
 
-val exists_tac : int -> types -> (bool * constr) list -> hptac
+val left_forall_tac : int -> types -> (bool * constr) list -> bool -> lseqtac
+
+val arrow_tac : seqtac
+
+val exists_tac : int -> types -> (bool * constr) list -> seqtac
 	       
-val left_exists_tac : lhptac
+val left_exists_tac : lseqtac
 
-val ll_arrow_tac : constr -> constr -> constr -> lhptac
+val ll_arrow_tac : constr -> constr -> constr -> lseqtac
 
-val ll_atom_tac : constr -> lhptac
+val ll_atom_tac : constr -> lseqtac
 
-val ll_false_tac : lhptac
+val ll_false_tac : lseqtac
 
 val left_false_tac : global_reference -> tactic
 
-val ll_ind_tac : inductive -> constr list -> lhptac
+val ll_ind_tac : inductive -> constr list -> lseqtac
 
-val ll_forall_tac : types -> lhptac
+val ll_forall_tac : types -> lseqtac

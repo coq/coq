@@ -18,8 +18,12 @@ open Util
 open Declarations
 open Libnames
 
-type ('a,'b)sum=Left of 'a|Right of 'b
+let qflag=ref true
 
+let (+-) i j=if i=0 then j else i
+
+type ('a,'b)sum=Left of 'a|Right of 'b
+	
 type kind_of_formula=
    Arrow of constr*constr
   |And of inductive*constr list
@@ -27,13 +31,10 @@ type kind_of_formula=
   |Exists of inductive*constr*constr*constr
   |Forall of constr*constr
   |Atom of constr
+  |Evaluable of evaluable_global_reference*constr
   |False
 
 type counter = bool -> int
-
-let newcnt ()=
-  let cnt=ref (-1) in
-    fun b->if b then incr cnt;!cnt
 
 let constant path str ()=Coqlib.gen_constant "User" ["Init";path] str
 
@@ -44,7 +45,8 @@ let id_sig=constant "Specif" "sig"
 let id_sigT=constant "Specif" "sigT"
 let id_sigS=constant "Specif" "sigS"
 let id_not=constant "Logic" "not"
- 
+let id_iff=constant "Logic" "iff"
+
 let is_ex t = 
   t=(id_ex ()) || 
     t=(id_sig ()) || 
@@ -62,13 +64,14 @@ let match_with_exist_term t=
 	else None
     | _->None
 
-let match_with_not_term t=
-  match match_with_nottype t with 
-    | None ->
-	(match kind_of_term t with
-	     App (no,b) when no=id_not ()->Some (no,b.(0))
-	   | _->None)
-    | o -> o
+let match_with_evaluable t=
+  match kind_of_term t with
+      App (hd,b)-> 
+	if (hd=id_not () && (Array.length b) = 1) ||
+	  (hd=id_iff () && (Array.length b) = 2) then 
+	    Some(destConst hd,t)
+	else None
+    | _-> None
 
 let rec nb_prod_after n c=
   match kind_of_term c with
@@ -78,8 +81,8 @@ let rec nb_prod_after n c=
 
 let nhyps mip = 
   let constr_types = mip.mind_nf_lc in 
-  let nhyps = nb_prod_after mip.mind_nparams in	
-    Array.map nhyps constr_types
+  let hyp = nb_prod_after mip.mind_nparams in	
+    Array.map hyp constr_types
 
 let construct_nhyps ind= nhyps (snd (Global.lookup_inductive ind))
     
@@ -111,19 +114,23 @@ let kind_of_formula cciterm =
 		Some (i,a,b,p)-> Exists((destInd i),a,b,p)
 	      |_-> 
 		 match match_with_nodep_ind cciterm with
-		     None -> Atom cciterm 
-		   | Some (i,l)->
+		     Some (i,l)->
 		       let ind=destInd i in
 		       let (mib,mip) = Global.lookup_inductive ind in
 			 if Inductiveops.mis_is_recursive (ind,mib,mip) then
 			   Atom cciterm 
 			 else
-			   match Array.length mip.mind_consnames with
-			       0->False
-			     | 1->And(ind,l)
-			     | _->Or(ind,l) 
+			   (match Array.length mip.mind_consnames with
+				0->False
+			      | 1->And(ind,l)
+			      | _->Or(ind,l)) 
+		   | None -> 
+		       match match_with_evaluable cciterm with 
+			   Some (cst,t)->Evaluable ((EvalConstRef cst),t)
+			 | None ->Atom cciterm
 
-let build_atoms metagen=
+ 
+let build_atoms gl metagen=
   let rec build_rec env polarity cciterm =
     match kind_of_formula cciterm with
 	False->[]
@@ -132,19 +139,22 @@ let build_atoms metagen=
 	  (build_rec env polarity b)
       | And(i,l) | Or(i,l)->
 	  (try
-	    let v = ind_hyps i l in
-	      Array.fold_right
-		(fun l accu->
-		   List.fold_right 
-		   (fun (_,_,t) accu0->
-		      (build_rec env polarity t)@accu0) l accu) v []
-	  with Dependent_Inductive ->
-	    [polarity,(substnl env 0 cciterm)])
+	     let v = ind_hyps i l in
+	     let g i accu (_,_,t) =
+	       (build_rec env polarity (lift i t))@accu in
+	     let f l accu =
+	       list_fold_left_i g (1-(List.length l)) accu l in
+	       Array.fold_right f v [] 
+	   with Dependent_Inductive ->
+	     [polarity,(substnl env 0 cciterm)])
       | Forall(_,b)|Exists(_,_,b,_)->
 	  let var=mkMeta (metagen true) in
 	    build_rec (var::env) polarity b 
       | Atom t->
 	  [polarity,(substnl env 0 cciterm)]
+      | Evaluable(ec,t)->
+	  let nt=Tacred.unfoldn [[1],ec] (pf_env gl) (Refiner.sig_sig gl) t in
+	  build_rec env polarity nt
   in build_rec []
        
 type right_pattern =
@@ -153,33 +163,40 @@ type right_pattern =
   | Rforall
   | Rexists of int*constr
   | Rarrow
+  | Revaluable of evaluable_global_reference
       
 type right_formula =
-    Complex of right_pattern*((bool*constr) list)
+    Complex of right_pattern*constr*((bool*constr) list)
   | Atomic of constr
       
+type left_arrow_pattern=
+    LLatom
+  | LLfalse
+  | LLand of inductive*constr list
+  | LLor of inductive*constr list
+  | LLforall of constr
+  | LLexists of inductive*constr*constr*constr
+  | LLarrow of constr*constr*constr
+  | LLevaluable of evaluable_global_reference
+
 type left_pattern=
     Lfalse    
   | Land of inductive
   | Lor of inductive 
   | Lforall of int*constr
   | Lexists
-  | LAatom of constr
-  | LAfalse
-  | LAand of inductive*constr list
-  | LAor of inductive*constr list
-  | LAforall of constr
-  | LAexists of inductive*constr*constr*constr
-  | LAarrow of constr*constr*constr
-      
+  | Levaluable of evaluable_global_reference
+  | LA of constr*left_arrow_pattern
+
 type left_formula={id:global_reference;
+		   constr:constr;
 		   pat:left_pattern;
 		   atoms:(bool*constr) list;
 		   internal:bool}
     
 exception Is_atom of constr
 
-let build_left_entry nam typ internal metagen=
+let build_left_entry nam typ internal gl metagen=
   try 
     let pattern=
       match kind_of_formula typ with
@@ -189,20 +206,29 @@ let build_left_entry nam typ internal metagen=
 	| Or(i,_)          ->  Lor i
 	| Exists (_,_,_,_) ->  Lexists
 	| Forall (d,_) -> let m=1+(metagen false) in Lforall(m,d)
-	| Arrow (a,b) ->
-	    (match kind_of_formula a with
-		 False->      LAfalse
-	       | Atom a->     LAatom a
-	       | And(i,l)->      LAand(i,l)
-	       | Or(i,l)->       LAor(i,l)
-	       | Arrow(a,c)-> LAarrow(a,c,b)
-	       | Exists(i,a,_,p)->LAexists(i,a,p,b)
-	       | Forall(_,_)->LAforall a) in    
-    let l=build_atoms metagen false typ in
-      Left {id=nam;pat=pattern;atoms=l;internal=internal}
+	| Evaluable (egc,_) ->Levaluable egc 
+	| Arrow (a,b) ->LA (a, 
+			    match kind_of_formula a with
+				False->      LLfalse
+			      | Atom t->     LLatom
+			      | And(i,l)->      LLand(i,l)
+			      | Or(i,l)->       LLor(i,l)
+			      | Arrow(a,c)-> LLarrow(a,c,b)
+			      | Exists(i,a,_,p)->LLexists(i,a,p,b)
+			      | Forall(_,_)->LLforall a
+			      | Evaluable (egc,_)-> LLevaluable egc) in    
+    let l=
+      if !qflag then 
+	build_atoms gl metagen false typ 
+      else [] in
+      Left {id=nam;
+	    constr=typ;
+	    pat=pattern;
+	    atoms=l;
+	    internal=internal}
   with Is_atom a-> Right a
-
-let build_right_entry typ metagen=
+    
+let build_right_entry typ gl metagen=
   try
     let pattern=
       match kind_of_formula typ with
@@ -213,8 +239,12 @@ let build_right_entry typ metagen=
 	| Exists (_,d,_,_) -> 
 	    let m=1+(metagen false) in Rexists(m,d) 
 	| Forall (_,a) -> Rforall 
-	| Arrow (a,b) -> Rarrow in
-    let l=build_atoms metagen true typ in
-      Complex(pattern,l)
+	| Arrow (a,b) -> Rarrow 
+	| Evaluable (egc,_)->Revaluable egc in
+    let l=
+      if !qflag then 
+	build_atoms gl metagen true typ
+      else [] in
+      Complex(pattern,typ,l)
   with Is_atom a-> Atomic a
 

@@ -204,12 +204,13 @@ let match_with_nodep_ind t =
   match (kind_of_term hdapp) with
     | Ind ind  -> 
         let (mib,mip) = Global.lookup_inductive ind in
-        let constr_types = mip.mind_nf_lc in 
-	let nodep_constr = has_nodep_prod_after mip.mind_nparams in	
-	if array_for_all nodep_constr constr_types then 
-	  Some (hdapp,args)
-        else 
-	  None
+          if mip.mind_nrealargs>0 then None else
+	    let constr_types = mip.mind_nf_lc in 
+	    let nodep_constr = has_nodep_prod_after mip.mind_nparams in	
+	      if array_for_all nodep_constr constr_types then 
+		Some (hdapp,args)
+              else 
+		None
     | _ -> None
 	  
 let is_nodep_ind t=op2bool (match_with_nodep_ind t)
