@@ -3256,8 +3256,8 @@ contrib/omega/g_omega.cmx: lib/util.cmx tactics/tacinterp.cmx \
     proofs/tacexpr.cmx proofs/refiner.cmx parsing/pptactic.cmx lib/pp.cmx \
     parsing/pcoq.cmx lib/options.cmx parsing/egrammar.cmx \
     contrib/omega/coq_omega.cmx toplevel/cerrors.cmx 
-contrib/omega/omega.cmo: lib/util.cmi kernel/names.cmi library/nameops.cmi 
-contrib/omega/omega.cmx: lib/util.cmx kernel/names.cmx library/nameops.cmx 
+contrib/omega/omega.cmo: lib/util.cmi kernel/names.cmi 
+contrib/omega/omega.cmx: lib/util.cmx kernel/names.cmx 
 contrib/ring/g_quote.cmo: lib/util.cmi tactics/tacinterp.cmi \
     proofs/tacexpr.cmo proofs/refiner.cmi contrib/ring/quote.cmo \
     parsing/pptactic.cmi lib/pp.cmi parsing/pcoq.cmi lib/options.cmi \
