@@ -24,17 +24,7 @@ let explode s =
   in 
   explode_rec 0
 
-let implode sl =
-  let len = List.fold_left (fun a b -> a + (String.length b)) 0 sl in
-  let dest = String.create len in
-  let _ = List.fold_left 
-	    (fun start src ->
-	       let src_len = String.length src in
-	       String.blit src 0 dest start src_len;
-	       start + src_len)
-	    0 sl 
-  in
-  dest
+let implode sl = String.concat "" sl
 
 let parse_section_path s =
   let len = String.length s in
