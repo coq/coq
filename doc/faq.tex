@@ -31,6 +31,10 @@
   {http://coq.inria.fr/library/Coq.Logic.ClassicalFacts.html}
 \urldef{\LogicProofIrrelevance}{\url}
   {http://coq.inria.fr/library/Coq.Logic.ProofIrrelevance.html}
+\urldef{\LogicEqdep}{\url}
+  {http://coq.inria.fr/library/Coq.Logic.Eqdep.html}
+\urldef{\LogicEqdepDec}{\url}
+  {http://coq.inria.fr/library/Coq.Logic.Eqdep_dec.html}
 
 \begin{center}
 \begin{Large}
@@ -55,7 +59,7 @@ from a proof of their specification.
 \question{What are the main applications done in {\Coq}?}
 
 \answer Consequent developments include Java certification, safety of
-cryptographic protocols, medical robotics, constructive and classical
+cryptographic protocols, constructive and classical
 analysis, algebraic topology, ...
 
 \question{What is the logic of {\Coq}?}
@@ -82,10 +86,8 @@ double-checked by the kernel.
 
 \question{Can I define non-terminating programs in {\Coq}?}
 
-\answer No, all programs in {\Coq} are terminating. To reason on
-non-terminating programs, you must turn your program into a
-terminating one by explicitly giving a bound on the number of
-iterations of the program.
+\answer No, all programs in {\Coq} are terminating. Especially, loops
+must come with an evidence of their termination.
 
 \question{Is {\Coq} a theorem prover?}
 
@@ -161,42 +163,59 @@ classical logic.
 pairs are equal?}
 
 \answer The answer is the same as for proofs of equality
-statements. It is yes if equality on the domain of the first component
-is decidable, no in the general case. More precisely it is a
-consequence of Streicher's axiom $K$.
+statements. It is provable if equality on the domain of the first
+component is decidable (look at \verb=inj_right_pair= from file
+\vfile{\LogicEqdepDec}{Eqdep\_dec}), but not provable in the general
+case. However, it is consistent (with the Calculus of Constructions)
+to assume it is true. The file \vfile{\LogicEqdep}{Eqdep} actually
+provides an axiom (equivalent to Streicher's axiom $K$) which entails
+the result (look at \verb=inj_pair2= in \vfile{\LogicEqdep}{Eqdep}).
 
 \question{What is Streicher's axiom $K$}
 \label{Streicher}
 
-\answer Streicher's axiom $K$ \cite{HofStr98} states that the only proof of a reflexivity statement is a reflexivity proof:
+\answer Streicher's axiom $K$ \cite{HofStr98} asserts dependent
+elimination of reflexive equality proofs.
 
 \begin{coq_example*}
-Axiom K: (A:Set)(x:A)(p:x=x)p==(refl_equal ? x).
+Axiom Streicher_K: (U:Type)(x:U)(P:x=x->Prop)
+  (P (refl_equal ? x))->(p:x=x)(P p).
 \end{coq_example*}
 
 In the general case, axiom $K$ is an independent statement of the
-Calculus of Inductive Constructions.
-However, it is true on decidable domains. It is also
+Calculus of Inductive Constructions.  However, it is true on decidable
+domains (see file \vfile{\LogicEqdepDec}{Eqdep\_dec}). It is also
 trivially a consequence of proof-irrelevance (see
 \ref{proof-irrelevance}) hence of classical logic.
 
-Axiom $K$ is equivalent to {\em Uniqueness of Identity Proofs} which
-states that
+Axiom $K$ is equivalent to {\em Uniqueness of Identity Proofs} \cite{HofStr98}
+which states that
 
 \begin{coq_example*}
 Axiom UIP: (A:Set)(x,y:A)(p1,p2:x=y)p1==p2.
 \end{coq_example*}
 
-Axiom $K$ is also equivalent to the following statements.
+Axiom $K$ is also equivalent to {\em Uniqueness of Reflexive Identity Proofs} \cite{HofStr98}
 
 \begin{coq_example*}
-Axiom eq_rec_eq : (a:A)(P:A->Set)(p:(P p))(h:a=a) x=(eq_rec A a P p a h).
-Inductive eq_dep [p:U;x:(P p)] : (q:U)(P q)->Prop :=
-   eq_dep_intro : (eq_dep p x p x).
-Axiom eq_dep_eq : (a:A)(P:A->Set)(p1,p2:(P a))(eq_dep a x a y)->x=y.
+Axiom UIP_refl: (A:Set)(x:A)(p:x=x)p==(refl_equal A x).
 \end{coq_example*}
 
-All of these statements can be found in file \verb=Eqdep.v=.
+Axiom $K$ is also equivalent to 
+
+\begin{coq_example*}
+Axiom eq_rec_eq : (a:A)(P:A->Set)(p:(P p))(h:a==a) p=(eq_rect A a P p a h).
+\end{coq_example*}
+
+It is also equivalent to the injectivity of dependent equality (dependent equality is itself equivalent to equality of dependent pairs).
+
+\begin{coq_example*}
+Inductive eq_dep [p:U;x:(P p)] : (q:U)(P q)->Prop :=
+   eq_dep_intro : (eq_dep p x p x).
+Axiom eq_dep_eq : (a:A)(P:A->Set)(p1,p2:(P a))(eq_dep a p1 a p2)->p1=p2.
+\end{coq_example*}
+
+All of these statements can be found in file \vfile{\LogicEqdep}{Eqdep}.
 
 % \subsection{Equality on types}
 
@@ -239,7 +258,7 @@ Intros.
 Assert Hdiscr : (discr_int_n m {x:nat | (le x m)}).
 Split with (proj1_sig nat [x:?](le x m)) (proj2_sig nat [x:?](le x m)).
 NewDestruct x; NewDestruct y.
-Exact [x:?]x.
+Exact [x]x.
 Rewrite H in Hdiscr.
 Elim Hdiscr.
 Assert H1:=(snd (exist nat [z](le z (S n)) (S n) (le_n (S n)))).
@@ -269,7 +288,6 @@ own extensional equality on \verb=A->B=.
 
 and to reason on \verb=A->B= as a setoid (see the Chapter on
 Setoids in the Reference Manual).
-
 
 \question{Is {\Type} impredicative (that is, letting
 \coqtt{T:=(X:Type)X->X}, can I apply an expression \coqtt{t} of type \coqtt{T} to \coqtt{T} itself)?}
@@ -490,8 +508,7 @@ available by default?}
 This is just because most of the time it is not needed. To derive a
 dependent elimination principle in Prop, use the command {\tt Scheme} and
 apply the elimination scheme using the \verb=using= option of
-\verb=Elim=.
-
+\verb=Elim=, \verb=NewDestruct= or \verb=NewInduction=. 
 
 
 %\subsection{Induction}
@@ -663,7 +680,7 @@ Qed.
 \question{Why does {\Coq} tell me that \texttt{\{x:A|(P x)\}} is not convertible with \texttt{(sig A P)}?}
 
 \answer
-This is because \texttt{\{x:A|(P x)\}} is a notation for \texttt{(sig A [x:A](p x))}. Since {\Coq} does not reason up to $\eta$-conversion, this is different from
+This is because \texttt{\{x:A|(P x)\}} is a notation for \texttt{(sig A [x:A](P x))}. Since {\Coq} does not reason up to $\eta$-conversion, this is different from
 \texttt{(sig A P)}.
 
 \bibliographystyle{plain}
