@@ -27,7 +27,7 @@ case $ANSWER in
 esac
 
 DASHEDVERSION=V`echo $VERSION | sed -e 's/\./-/g'`
-MAJORVERSION=V`echo $VERSION | sed -e 's/^\([0-9]\.[0-9]\).*/\1/'`
+MAJORVERSION=V`echo $VERSION | sed -e 's/^\([0-9]\)\.[0-9].*/\1/'`
 MAINNUMBER=`echo $VERSION | sed -e 's/\(.*\)\.[0-9]*$/\1/'`
 LASTNUMBER=`echo $VERSION | sed -e 's/.*\.\([0-9]*\)$/\1/'`
 if [ "$LASTNUMBER" = "0" ]; then

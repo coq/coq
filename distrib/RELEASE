@@ -74,10 +74,11 @@ frais (obtenu par cvs export) de l'archive avec
 
      make tar-gz
 
-  En particulier, les fichiers à ne pas distribuer (dont la doc) sont
-retirés. Cette commande fait dérouler une check-list. Si on
-l'interrompt ou qu'elle échoue, le tar-gz reste créé et c'est à la
-charge de l'utilisateur de s'assurer que les paramètres sont corrects.
+  En particulier, les fichiers à ne pas distribuer (dont le répertoire
+distrib, le TODO, etc) sont retirés. Cette commande fait dérouler une
+check-list. Si on l'interrompt ou qu'elle échoue, le tar-gz reste créé
+et c'est à la charge de l'utilisateur de s'assurer que les paramètres
+sont corrects.
 
   Pour l'installation sous ftp voir A7.
 

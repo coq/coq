@@ -50,10 +50,8 @@ rpm: src-rpm arch-rpm
 
 #################
 tag:
-	@dashedversion=V`echo ${VERSION} | sed -e 's/\./-/g'`;\
-	majorversion=V`echo ${VERSION} | sed -e 's/^\([0-9]\.[0-9]\).*/\1/g'`;\
-	echo -n "Tagging the archive with version number $$dashedversion... ";\
-	cvs rtag -F $$dashedversion $$majorversion
+	echo -n "Tagging the archive with version number $(DASHEDVERSION)...";\
+	cvs rtag -F $(DASHEDVERSION) $(MAJORVERSION)
 
 tar-gz:
 	@echo -n Exporting a fresh copy of the archive...
@@ -198,16 +196,14 @@ coq.spec: RH/coq.list RH/coq.spec.tpl
 
 ##########
 contrib-tag:
-	@dashedversion=V`echo ${VERSION} | sed -e 's/\./-/g'`;\
-	echo -n "Tagging the contrib with version number $$dashedversion... ";\
-	cvs rtag -F $$dashedversion contrib
+	echo -n "Tagging the contrib with version number $(DASHEDVERSION)...";\
+	cvs rtag -F $(DASHEDVERSION) contrib
 	@echo done
 
 contrib-tar-gz:
 	- rm -rf contrib-${VERSION}
 	@echo -n Exporting a fresh copy of the contribs...
-	@dashedversion=V`echo ${VERSION} | sed -e 's/\./-/g'`;\
-	cvs export -d contrib-${VERSION} -r $$dashedversion contrib
+	cvs export -d contrib-${VERSION} -r $(DASHEDVERSION) contrib
 	@echo done
 	- rm contrib-${VERSION}.tar.gz
 	@echo -n Building the tar.gz contrib package
