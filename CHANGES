@@ -12,6 +12,7 @@ Syntax
 - Command "Print." discontinued.
 - "assert" semantics now consistent with reference manual
 - Redundant syntax "Implicit Arguments On/Off" discontinued
+- Delimiting key %bool for bool_scope added
 
 Interpretation scopes
 
@@ -34,9 +35,10 @@ Bug fixes
 - Fix pattern-matching compilation bugs (and new support for patterns
   in a same column but in different inductive types)
 - Fix a potential precedence problem with notations including pattern "{ _ }"
+- Fix an incorrect numbering of occurrences in "simpl id at num"
 - Fix nested coercion printing bug
 - Fix printing of notation when interleaved with coercions 
-- Fix "Tactic Notation" translation bugs
+- Fix "Tactic Notation" translation bugs and improve file location of errors
 
 Changes from V8.0beta old syntax to V8.0beta
 ============================================
