@@ -64,23 +64,6 @@ let get_reference mods s =
       error ("get_reference: "^s^"is not defined in the given modules")
   else error "The required modules are not open"
 
-(*
-let dest_somatch n pat =
-  let _,m = get_pat pat in
-  matches m n
-
-let somatches n pat =
-  let _,m = get_pat pat in
-  is_matching m n
-
-let dest_somatch_conv env sigma n pat =
-  let _,m = get_pat pat in
-  matches_conv env sigma m n
-
-let somatches_conv env sigma n pat =
-  let _,m = get_pat pat in
-  is_matching_conv env sigma m n
-*)
 let soinstance squel arglist =
   let mvs,c = get_squel_core squel in
   let mvb = List.combine mvs arglist in 
