@@ -374,7 +374,6 @@ let info f =
     (str ("The file "^f^" has been created by extraction."))
 
 let print_structure_to_file f prm struc =
-  cons_cofix := Refset.empty;
   Hashtbl.clear renamings;
   mod_1st_level := Idmap.empty; 
   modcontents := Gset.empty;
