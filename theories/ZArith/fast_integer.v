@@ -188,6 +188,7 @@ V8Infix "/" Zdiv2_pos : positive_scope.
 
 (**********************************************************************)
 (** Comparison on binary positive numbers *)
+V7only [Notation relation := Datatypes.relation.].
 
 Fixpoint compare [x,y:positive]: relation -> relation :=
   [r:relation] 
@@ -2358,9 +2359,9 @@ Qed.
 
 (** Associativity mixed with commutativity *)
 
-Theorem Zmult_permute : (x,y,z:Z)(Zmult x (Zmult y z)) = (Zmult y (Zmult x z)).
+Theorem Zmult_permute : (n,m,p:Z)(Zmult n (Zmult m p)) = (Zmult m (Zmult n p)).
 Proof.
-Intros; Rewrite -> (Zmult_assoc y x z); Rewrite -> (Zmult_sym y x).
+Intros; Rewrite -> (Zmult_assoc m n p); Rewrite -> (Zmult_sym m n).
 Apply Zmult_assoc.
 Qed.
 
