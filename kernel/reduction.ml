@@ -975,7 +975,7 @@ let splay_prod env sigma =
     let t = whd_betadeltaiota env sigma c in
     match kind_of_term t with
       | IsProd (n,a,c0) ->
-	  decrec (push_rel_assum (n,outcast_type a) env)
+	  decrec (push_rel_assum (n,a) env)
 	    ((n,a)::m) c0
       | _ -> m,t
   in 
@@ -986,11 +986,11 @@ let splay_prod_assum env sigma =
     let t = whd_betadeltaiota_nolet env sigma c in
     match kind_of_term c with
     | IsProd (x,t,c)  ->
-	prodec_rec (push_rel_assum (x,outcast_type t) env)
-	  (Sign.add_rel_assum (x,outcast_type t) l) c
+	prodec_rec (push_rel_assum (x,t) env)
+	  (Sign.add_rel_assum (x, t) l) c
     | IsLetIn (x,b,t,c) ->
-	prodec_rec (push_rel_def (x,b,outcast_type t) env)
-	  (Sign.add_rel_def (x,b,outcast_type t) l) c
+	prodec_rec (push_rel_def (x,b, t) env)
+	  (Sign.add_rel_def (x,b, t) l) c
     | IsCast (c,_)    -> prodec_rec env l c
     | _               -> l,t
   in
@@ -1008,7 +1008,6 @@ let decomp_n_prod env sigma n =
   let rec decrec env m ln c = if m = 0 then (ln,c) else 
     match kind_of_term (whd_betadeltaiota env sigma c) with
       | IsProd (n,a,c0) ->
-	  let a = make_typed_lazy a (fun _ -> Type dummy_univ) in
 	  decrec (push_rel_assum (n,a) env)
 	    (m-1) (Sign.add_rel_assum (n,a) ln) c0
       | _                      -> error "decomp_n_prod: Not enough products"
@@ -1078,8 +1077,8 @@ let find_conclusion env sigma =
   let rec decrec env c =
     let t = whd_betadeltaiota env sigma c in
     match kind_of_term t with
-      | IsProd (x,t,c0) -> decrec (push_rel_assum (x,outcast_type t) env) c0
-      | IsLambda (x,t,c0) -> decrec (push_rel_assum (x,outcast_type t) env) c0
+      | IsProd (x,t,c0) -> decrec (push_rel_assum (x,t) env) c0
+      | IsLambda (x,t,c0) -> decrec (push_rel_assum (x,t) env) c0
       | t -> t
   in 
   decrec env
@@ -1135,12 +1134,12 @@ let poly_args env sigma t =
     match kind_of_term (whd_betadeltaiota env sigma t) with
       | IsProd (x,a,b) ->
 	  add_free_rels_until n a
-	    (aux (push_rel_assum (x,outcast_type a) env) (n+1) b)
+	    (aux (push_rel_assum (x,a) env) (n+1) b)
       | _ -> Intset.empty
   in 
   match kind_of_term (whd_betadeltaiota env sigma t) with 
     | IsProd (x,a,b) ->
-	Intset.elements (aux (push_rel_assum (x,outcast_type a) env) 1 b)
+	Intset.elements (aux (push_rel_assum (x,a) env) 1 b)
     | _ -> []
 
 (* Expanding existential variables (pretyping.ml) *)

@@ -66,22 +66,22 @@ let all_vars t =
 let print_id_list l = 
   [< 'sTR "[" ; prlist_with_sep pr_coma print_id l; 'sTR "]" >]
 
+open Environ
+
 let typecheck_params_and_field ps fs =
   let env0 = Global.env () in
   let env1,newps =
     List.fold_left
       (fun (env,newps) (id,t) -> 
-         let tj = type_judgment_of_rawconstr Evd.empty env t in
-	 let ass = Typeops.assumption_of_type_judgment tj in
-         (Environ.push_named_assum (id,ass) env,(id,tj.Environ.utj_val)::newps))
+         let tj = interp_type Evd.empty env t in
+         (push_named_assum (id,tj) env,(id,tj)::newps))
       (env0,[]) ps
   in
   let env2,newfs =
     List.fold_left
       (fun (env,newfs) (id,t) -> 
-         let tj = type_judgment_of_rawconstr Evd.empty env t in
-	 let ass = Typeops.assumption_of_type_judgment tj in
-         (Environ.push_named_assum (id,ass) env,(id,tj.Environ.utj_val)::newfs)) (env1,[]) fs
+         let ass = interp_type Evd.empty env t in
+         (push_named_assum (id,ass) env,(id,ass)::newfs)) (env1,[]) fs
   in
   List.rev(newps),List.rev(newfs)
 

@@ -33,8 +33,8 @@ val add_constraints : constraints -> unit
 
 val pop_named_decls : identifier list -> unit
 
-val lookup_named : identifier -> constr option * typed_type
-(*i val lookup_rel : int -> name * typed_type i*)
+val lookup_named : identifier -> constr option * types
+(*i val lookup_rel : int -> name * types i*)
 val lookup_constant : section_path -> constant_body
 val lookup_mind : section_path -> mutual_inductive_body
 val lookup_mind_specif : inductive -> inductive_instance

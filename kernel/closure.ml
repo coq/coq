@@ -738,15 +738,6 @@ and frreference =
 
 let reloc_flex r el = r
 
-(*
-let typed_map f t = f (body_of_type t), level_of_type t
-let typed_unmap f (t,s) = make_typed (f t) s
-*)
-(**)
-let typed_map f t = f (body_of_type t)
-let typed_unmap f t = make_typed_lazy (f t) (fun _ -> assert false)
-(**)
-
 let frterm_of v = v.term
 let is_val v = v.norm 
 

@@ -12,12 +12,12 @@ open Term
 type named_context = named_declaration list
 
 val add_named_decl : 
-  identifier * constr option * typed_type -> named_context -> named_context
-val add_named_assum : identifier * typed_type -> named_context -> named_context
+  identifier * constr option * types -> named_context -> named_context
+val add_named_assum : identifier * types -> named_context -> named_context
 val add_named_def : 
-  identifier * constr * typed_type -> named_context -> named_context
-val lookup_id : identifier -> named_context -> constr option * typed_type
-val lookup_id_type : identifier -> named_context -> typed_type
+  identifier * constr * types -> named_context -> named_context
+val lookup_id : identifier -> named_context -> constr option * types
+val lookup_id_type : identifier -> named_context -> types
 val lookup_id_value : identifier -> named_context -> constr option 
 val pop_named_decl : identifier -> named_context -> named_context
 val empty_named_context : named_context
@@ -41,12 +41,12 @@ val keep_hyps : Idset.t -> named_context -> named_context
 
 type rel_context = rel_declaration list
 
-val add_rel_decl : (name * constr option * typed_type) -> rel_context -> rel_context
-val add_rel_assum : (name * typed_type) -> rel_context -> rel_context
-val add_rel_def : (name * constr * typed_type) -> rel_context -> rel_context
-val lookup_rel_type : int -> rel_context -> name * typed_type
+val add_rel_decl : (name * constr option * types) -> rel_context -> rel_context
+val add_rel_assum : (name * types) -> rel_context -> rel_context
+val add_rel_def : (name * constr * types) -> rel_context -> rel_context
+val lookup_rel_type : int -> rel_context -> name * types
 val lookup_rel_value : int -> rel_context -> constr option
-val lookup_rel_id : identifier -> rel_context -> int * typed_type
+val lookup_rel_id : identifier -> rel_context -> int * types
 val empty_rel_context : rel_context
 val rel_context_length : rel_context -> int
 val lift_rel_context : int -> rel_context -> rel_context

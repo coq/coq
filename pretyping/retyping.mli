@@ -21,7 +21,7 @@ val get_type_of_with_meta : env -> 'a evar_map -> metamap -> constr -> constr
 val get_sort_of : env -> 'a evar_map -> constr -> sorts
 
 (* Makes an assumption from a constr *)
-val get_assumption_of : env -> 'a evar_map -> constr -> typed_type
+val get_assumption_of : env -> 'a evar_map -> constr -> types
 
 (* Makes an unsafe judgment from a constr *)
 val get_judgment_of : env -> 'a evar_map -> constr -> unsafe_judgment

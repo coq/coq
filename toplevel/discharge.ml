@@ -26,8 +26,6 @@ let recalc_sp sp =
 
 let whd_all c = whd_betadeltaiota (Global.env()) Evd.empty c
 
-let generalize_type = generalize_without_universes
-
 type modification_action = ABSTRACT | ERASE
 
 let interp_modif absfun oper (oper',modif) cl = 
@@ -129,11 +127,9 @@ let abstract_inductive ids_to_abs hyps inds =
     let inds' =
       List.map
       	(function (tname,arity,cnames,lc) -> 
-	   let arity' = generalize_type d arity in
+	   let arity' = mkNamedProd_or_LetIn d arity in
 	   let lc' =
-	     List.map
-	       (fun b -> generalize_type d (typed_app (substl new_refs) b))
-	       lc
+	     List.map (fun b -> mkNamedProd_or_LetIn d (substl new_refs b)) lc
 	   in
            (tname,arity',cnames,lc'))
       	inds
@@ -171,7 +167,7 @@ let abstract_constant ids_to_abs hyps (body,typ) =
 	| Some { contents = Recipe f } ->
 	    Some (ref (Recipe (fun () -> mkNamedLambda_or_LetIn decl (f()))))
       in
-      let typ' = generalize_type decl typ in
+      let typ' = mkNamedProd_or_LetIn decl typ in
       (rest, body', typ', ABSTRACT::modl)
   in
   let (_,body',typ',revmodl) =
@@ -206,8 +202,8 @@ let expmod_constr oldenv modlist c =
     | IsCast (val_0,typ) -> mkCast (simpfun val_0,simpfun typ)
     | _ -> simpfun c'
 
-let expmod_type oldenv modlist c = 
-  typed_app (expmod_constr oldenv modlist) c
+let expmod_type oldenv modlist c =
+  type_app (expmod_constr oldenv modlist) c
 
 let expmod_constant_value opaque oldenv modlist = function
   | None -> None

@@ -93,9 +93,9 @@ let clenv_constrain_with_bindings bl clause =
 let add_prod_rel sigma (t,env) =
   match kind_of_term t with
     | IsProd (na,t1,b) ->
-        (b,push_rel_assum (na,Retyping.get_assumption_of env sigma t1) env)
+        (b,push_rel_assum (na, t1) env)
     | IsLetIn (na,c1,t1,b) ->
-        (b,push_rel_def (na,c1,Retyping.get_assumption_of env sigma t1) env)
+        (b,push_rel_def (na,c1, t1) env)
     | _ -> failwith "add_prod_rel"
 
 let rec add_prods_rel sigma (t,env) =

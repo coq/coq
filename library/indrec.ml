@@ -173,19 +173,19 @@ let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs =
         (match optionpos with 
            | None -> 
 	       lambda_name env
-		 (n,incast_type t,process_constr (i+1)
+		 (n,t,process_constr (i+1)
 		    (whd_beta (applist (lift 1 f, [(mkRel 1)])))
 		    (cprest,rest))
            | Some(_,f_0) -> 
 	       let nF = lift (i+1+decF) f_0 in
 	       let arg = process_pos nF (lift 1 (body_of_type t)) in 
                lambda_name env
-		 (n,incast_type t,process_constr (i+1)
+		 (n,t,process_constr (i+1)
 		    (whd_beta (applist (lift 1 f, [(mkRel 1); arg])))
 		    (cprest,rest)))
     | (n,Some c,t)::cprest, rest ->
 	       mkLetIn
-		 (n,c,incast_type t,
+		 (n,c,t,
 		  process_constr (i+1) (lift 1 f) (cprest,rest))
     | [],[] -> f
     | _,[] | [],_ -> anomaly "process_constr"

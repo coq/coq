@@ -41,14 +41,14 @@ type type_error =
   | CaseNotInductive of constr * constr
   | NumberBranches of constr * constr * int
   | IllFormedBranch of constr * int * constr * constr
-  | Generalization of (name * typed_type) * unsafe_judgment
+  | Generalization of (name * types) * unsafe_judgment
   | ActualType of constr * constr * constr
   | CantApplyBadType of (int * constr * constr)
       * unsafe_judgment * unsafe_judgment list
   | CantApplyNonFunctional of unsafe_judgment * unsafe_judgment list
   | IllFormedRecBody of guard_error * name list * int * constr array
   | IllTypedRecBody of int * name list * unsafe_judgment array 
-      * typed_type array
+      * types array
   | NotInductive of constr
   | MLCase of string * constr * constr * constr * constr
   | CantFindCaseType of constr
@@ -88,7 +88,7 @@ val error_ill_formed_branch :
   path_kind -> env -> constr -> int -> constr -> constr -> 'b
 
 val error_generalization :
-  path_kind -> env -> 'a Evd.evar_map -> name * typed_type -> unsafe_judgment -> 'b
+  path_kind -> env -> 'a Evd.evar_map -> name * types -> unsafe_judgment -> 'b
 
 val error_actual_type :
   path_kind -> env -> constr -> constr -> constr -> 'b
@@ -105,7 +105,7 @@ val error_ill_formed_rec_body :
 
 val error_ill_typed_rec_body  :
   path_kind -> env -> int -> name list -> unsafe_judgment array 
-    -> typed_type array -> 'b
+    -> types array -> 'b
 
 val error_not_inductive : path_kind -> env -> constr -> 'a
 

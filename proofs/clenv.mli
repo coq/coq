@@ -80,7 +80,7 @@ val clenv_unique_resolver : bool -> wc clausenv -> goal sigma -> wc clausenv
 
 (* Exported for program.ml only *)
 val clenv_add_sign : 
-  (identifier * typed_type) -> wc clausenv -> wc clausenv
+  (identifier * types) -> wc clausenv -> wc clausenv
 val constrain_clenv_to_subterm : 
   wc clausenv -> constr * constr -> wc clausenv * constr
 val clenv_constrain_dep_args_of : 

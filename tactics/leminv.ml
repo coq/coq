@@ -128,13 +128,11 @@ let rec add_prods_sign env sigma t =
     | IsProd (na,c1,b) ->
 	let id = Environ.id_of_name_using_hdchar env t na in
 	let b'= subst1 (mkVar id) b in
-	let j = Retyping.get_assumption_of env sigma c1 in
-        add_prods_sign (Environ.push_named_assum (id,j) env) sigma b'
+        add_prods_sign (Environ.push_named_assum (id,c1) env) sigma b'
     | IsLetIn (na,c1,t1,b) ->
 	let id = Environ.id_of_name_using_hdchar env t na in
 	let b'= subst1 (mkVar id) b in
-	let j = Retyping.get_assumption_of env sigma t1 in
-        add_prods_sign (Environ.push_named_def (id,c1,j) env) sigma b'
+        add_prods_sign (Environ.push_named_def (id,c1,t1) env) sigma b'
     | _ -> (env,t)
 
 (* [dep_option] indicates wether the inversion lemma is dependent or not.
@@ -176,8 +174,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       (pty,goal)
   in
   let npty = nf_betadeltaiota env sigma pty in
-  let nptyj = make_typed npty (Retyping.get_sort_of env sigma npty) in
-  let extenv = push_named_assum (p,nptyj) env in
+  let extenv = push_named_assum (p,npty) env in
   extenv, goal
 
 (* [inversion_scheme sign I]

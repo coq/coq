@@ -1717,9 +1717,9 @@ let rec lisvarprop = function
 let rec constr_lseq gls = function
   | [] -> []
   | (idx,c,hx)::rest -> 
-      match Retyping.get_sort_of (pf_env gls) (project gls) (incast_type hx) with
+      match Retyping.get_sort_of (pf_env gls) (project gls) hx with
         | Prop Null -> 
-            (TVar(string_of_id idx),tauto_of_cci_fmla gls (body_of_type hx))
+            (TVar(string_of_id idx),tauto_of_cci_fmla gls hx)
             :: constr_lseq gls rest
         |_-> constr_lseq gls rest
 

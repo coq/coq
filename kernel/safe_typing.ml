@@ -22,7 +22,7 @@ let j_val j = j.uj_val
 let j_type j = body_of_type j.uj_type
 
 let vect_lift = Array.mapi lift
-let vect_lift_type = Array.mapi (fun i t -> typed_app (lift i) t)
+let vect_lift_type = Array.mapi (fun i t -> type_app (lift i) t)
 
 (*s The machine flags. 
    [fix] indicates if we authorize general fixpoints ($\mathit{recarg} < 0$)
@@ -113,7 +113,7 @@ let rec execute mf env cstr =
      | IsProd (name,c1,c2) ->
         let (j,cst1) = execute mf env c1 in
         let varj = type_judgment env Evd.empty j in
-	let env1 = push_rel_assum (name,assumption_of_type_judgment varj) env in
+	let env1 = push_rel_assum (name,varj.utj_val) env in
         let (j',cst2) = execute mf env1 c2 in
 	let (j,cst3) = gen_rel env1 Evd.empty name varj j' in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
@@ -122,18 +122,21 @@ let rec execute mf env cstr =
      | IsLetIn (name,c1,c2,c3) ->
         let (j1,cst1) = execute mf env c1 in
         let (j2,cst2) = execute mf env c2 in
-	let { uj_val = b; uj_type = t } = cast_rel env Evd.empty j1 j2 in
+	let tj2 = assumption_of_judgment env Evd.empty j2 in
+	let ({uj_val = b; uj_type = t},cst0) = cast_rel env Evd.empty j1 tj2 in
         let (j3,cst3) = execute mf (push_rel_def (name,b,t) env) c3 in
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
-	({ uj_val = mkLetIn (name, j1.uj_val, j2.uj_val, j3.uj_val) ;
-	   uj_type = typed_app (subst1 j1.uj_val) j3.uj_type },
-	 cst)
+	({ uj_val = mkLetIn (name, j1.uj_val, tj2, j3.uj_val) ;
+	   uj_type = type_app (subst1 j1.uj_val) j3.uj_type },
+	 Constraint.union cst cst0)
 	  
     | IsCast (c,t) ->
         let (cj,cst1) = execute mf env c in
         let (tj,cst2) = execute mf env t in
+	let tj = assumption_of_judgment env Evd.empty tj in
 	let cst = Constraint.union cst1 cst2 in
-        (cast_rel env Evd.empty cj tj, cst)
+	let (j, cst0) = cast_rel env Evd.empty cj tj in
+	(j, Constraint.union cst cst0)
 	  
     | IsXtra _ -> anomaly "Safe_typing: found an Extra"
 	  
@@ -145,7 +148,7 @@ and execute_fix mf env lar lfi vdef =
   let env1 = 
     List.fold_left (fun env nvar -> push_rel_assum nvar env) env nlara in
   let (vdefj,cst2) = execute_array mf env1 vdef in
-  let vdefv = Array.map j_val_only vdefj in
+  let vdefv = Array.map j_val vdefj in
   let cst3 = type_fixpoint env1 Evd.empty lfi lara vdefj in
   let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
   (lara,vdefv,cst)
@@ -273,7 +276,7 @@ let add_constant_with_value sp body typ env =
   let (env'',ty,cst') = 
     match typ with
       | None -> 
-	  env', typed_type_of_judgment env' Evd.empty jb, Constraint.empty
+	  env', jb.uj_type, Constraint.empty
       | Some ty -> 
 	  let (jt,cst') = safe_infer env ty in
 	  let env'' = add_constraints cst' env' in
@@ -352,8 +355,7 @@ let rec infos_and_sort env t =
   match kind_of_term t with
     | IsProd (name,c1,c2) ->
         let (varj,_) = safe_infer_type env c1 in
-	let var = assumption_of_type_judgment varj in
-	let env1 = Environ.push_rel_assum (name,var) env in
+	let env1 = Environ.push_rel_assum (name,varj.utj_val) env in
 	let s1 = varj.utj_type in
 	let logic = not (is_info_type env Evd.empty varj) in
 	let small = is_small s1 in
@@ -403,7 +405,7 @@ let type_one_constructor env_ar nparams arsort c =
      global parameters (which add a priori more constraints on their sort) *)
   let cst2 = enforce_type_constructor arsort j.utj_type cst in
 
-  (infos, assumption_of_type_judgment j, cst2)
+  (infos, j.utj_val, cst2)
 
 let type_one_inductive i env_ar env_par nparams ninds (id,ar,cnames,vc) =
   let arsort = sort_of_arity env_ar ar in

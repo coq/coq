@@ -37,14 +37,14 @@ type type_error =
   | CaseNotInductive of constr * constr
   | NumberBranches of constr * constr * int
   | IllFormedBranch of constr * int * constr * constr
-  | Generalization of (name * typed_type) * unsafe_judgment
+  | Generalization of (name * types) * unsafe_judgment
   | ActualType of constr * constr * constr
   | CantApplyBadType of (int * constr * constr)
       * unsafe_judgment * unsafe_judgment list
   | CantApplyNonFunctional of unsafe_judgment * unsafe_judgment list
   | IllFormedRecBody of guard_error * name list * int * constr array
   | IllTypedRecBody of int * name list * unsafe_judgment array 
-      * typed_type array
+      * types array
   | NotInductive of constr
   | MLCase of string * constr * constr * constr * constr
   | CantFindCaseType of constr

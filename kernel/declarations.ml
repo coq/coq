@@ -18,7 +18,7 @@ type constant_value = lazy_constant_value ref
 type constant_body = {
   const_kind : path_kind;
   const_body : constant_value option;
-  const_type : typed_type;
+  const_type : types;
   const_hyps : named_context;
   const_constraints : constraints;
   mutable const_opaque : bool }
@@ -47,11 +47,11 @@ type recarg =
 type one_inductive_body = {
   mind_consnames : identifier array;
   mind_typename : identifier;
-  mind_nf_lc : typed_type array;
-  mind_nf_arity : typed_type;
+  mind_nf_lc : types array;
+  mind_nf_arity : types;
   (* lc and arity as given by user if not in nf; useful e.g. for Ensemble.v *)
-  mind_user_lc : typed_type array option;
-  mind_user_arity : typed_type option;
+  mind_user_lc : types array option;
+  mind_user_arity : types option;
   mind_sort : sorts;
   mind_nrealargs : int;
   mind_kelim : sorts list;

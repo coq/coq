@@ -63,11 +63,9 @@ let rec type_of env cstr=
 	  then realargs@[c] else realargs in
         whd_betadeltaiota env sigma (applist (p,al))
     | IsLambda (name,c1,c2) ->
-        let var = make_typed c1 (sort_of env c1) in
-          mkProd (name, c1, type_of (push_rel_assum (name,var) env) c2)
+          mkProd (name, c1, type_of (push_rel_assum (name,c1) env) c2)
     | IsLetIn (name,b,c1,c2) ->
-        let var = make_typed c1 (sort_of env c1) in
-         subst1 b (type_of (push_rel_def (name,b,var) env) c2)
+         subst1 b (type_of (push_rel_def (name,b,c1) env) c2)
     | IsFix ((vn,i),(lar,lfi,vdef)) -> lar.(i)
     | IsCoFix (i,(lar,lfi,vdef)) -> lar.(i)
     | IsApp(f,args)->
@@ -83,8 +81,7 @@ and sort_of env t =
     | IsSort (Prop c) -> type_0
     | IsSort (Type u) -> Type Univ.dummy_univ
     | IsProd (name,t,c2) ->
-        let var = make_typed t (sort_of env t) in
-        (match (sort_of (push_rel_assum (name,var) env) c2) with
+        (match (sort_of (push_rel_assum (name,t) env) c2) with
 	  | Prop _ as s -> s
 	  | Type u2 -> Type Univ.dummy_univ)
     | IsApp(f,args) -> sort_of_atomic_type env sigma (type_of env f) args
@@ -99,10 +96,8 @@ let get_sort_of env sigma t = snd (typeur sigma []) env t
 let get_type_of_with_meta env sigma metamap = fst (typeur sigma metamap) env
 
 (* Makes an assumption from a constr *)
-let get_assumption_of env evc c = make_typed_lazy c (get_sort_of env evc)
+let get_assumption_of env evc c = c
 
 (* Makes an unsafe judgment from a constr *)
-let get_judgment_of env evc c =
-  let typ = get_type_of env evc c in
-  { uj_val = c; uj_type = get_assumption_of env evc typ }
+let get_judgment_of env evc c = { uj_val = c; uj_type = get_type_of env evc c }
 

@@ -30,16 +30,16 @@ val reset_context : env -> env
 
 (*s This concerns only local vars referred by names [named_context] *)
 val push_named_decl : named_declaration -> env -> env
-val push_named_assum : identifier * typed_type -> env -> env
-val push_named_def : identifier * constr * typed_type -> env -> env
+val push_named_assum : identifier * types -> env -> env
+val push_named_def : identifier * constr * types -> env -> env
 val change_hyps : (named_context -> named_context) -> env -> env
 val instantiate_named_context  : named_context -> constr list -> (identifier * constr) list
 val pop_named_decl : identifier -> env -> env
 
 (*s This concerns only local vars referred by indice [rel_context] *)
 val push_rel : rel_declaration -> env -> env
-val push_rel_assum : name * typed_type -> env -> env
-val push_rel_def : name * constr * typed_type -> env -> env
+val push_rel_assum : name * types -> env -> env
+val push_rel_def : name * constr * types -> env -> env
 val push_rels : rel_context -> env -> env
 val names_of_rel_context : env -> names_context
 
@@ -83,13 +83,13 @@ val new_meta : unit -> int
 
 (* Looks up in the context of local vars referred by names ([named_context]) *)
 (* raises [Not_found] if the identifier is not found *)
-val lookup_named_type : identifier -> env -> typed_type
+val lookup_named_type : identifier -> env -> types
 val lookup_named_value : identifier -> env -> constr option
-val lookup_named : identifier -> env -> constr option * typed_type
+val lookup_named : identifier -> env -> constr option * types
 
 (* Looks up in the context of local vars referred by indice ([rel_context]) *)
 (* raises [Not_found] if the index points out of the context *)
-val lookup_rel_type : int -> env -> name * typed_type
+val lookup_rel_type : int -> env -> name * types
 val lookup_rel_value : int -> env -> constr option
 
 (* Looks up in the context of global constant names *)
@@ -121,11 +121,8 @@ val named_hd : env -> constr -> name -> name
    first in [sign]; none of these functions substitute named
    variables in [c] by de Bruijn indices *)
 
-val lambda_name : env -> name * constr * constr -> constr
-val prod_name : env -> name * constr * constr -> constr
-
-val it_lambda_name : env -> constr -> (name * constr) list -> constr
-val it_prod_name : env -> constr -> (name * constr) list -> constr
+val lambda_name : env -> name * types * constr -> constr
+val prod_name : env -> name * types * constr -> constr
 
 val it_mkLambda_or_LetIn_name : env -> constr -> rel_context -> constr
 val it_mkProd_or_LetIn_name : env -> constr -> rel_context -> constr
@@ -141,8 +138,8 @@ val it_mkNamedProd_or_LetIn : constr -> named_context -> constr
    from [t]; [prod_create env (t,c)] builds [(x:t)c] where [x] is a
    name built from [t] *)
 
-val lambda_create : env -> constr * constr -> constr
-val prod_create : env -> constr * constr -> constr
+val lambda_create : env -> types * constr -> constr
+val prod_create : env -> types * constr -> constr
 
 val defined_constant : env -> constant -> bool
 val evaluable_constant : env -> constant -> bool
@@ -160,7 +157,7 @@ val import : compiled_env -> env -> env
 
 type unsafe_judgment = { 
   uj_val : constr;
-  uj_type : typed_type }
+  uj_type : types }
 
 type unsafe_type_judgment = { 
   utj_val : constr;

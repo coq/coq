@@ -255,7 +255,7 @@ let convert_hyp env sigma id ty =
     (fun env (idc,c,ct) _ ->
        if !check && not (is_conv env sigma ty (body_of_type ct)) then
 	 error "convert-hyp rule passed non-converting term";
-       push_named_decl (idc,c,get_assumption_of env sigma ty) env)
+       push_named_decl (idc,c,ty) env)
 
 let replace_hyp env id d =
   apply_to_hyp env id
@@ -291,16 +291,14 @@ let prim_refiner r sigma goal =
         (match kind_of_term (strip_outer_cast cl) with
 	   | IsProd (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let a = get_assumption_of env sigma c1
-	       and v = mkVar id in
-	       let sg = mk_goal info (push_named_assum (id,a) env) (subst1 v b) in
+	       let sg = mk_goal info (push_named_assum (id,c1) env)
+			  (subst1 (mkVar id) b) in
 	       [sg]
 	   | IsLetIn (_,c1,t1,b) ->
 	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
-	       let a = get_assumption_of env sigma t1
-	       and v = mkVar id in
 	       let sg =
-		 mk_goal info (push_named_def (id,c1,a) env) (subst1 v b) in
+		 mk_goal info (push_named_def (id,c1,t1) env)
+		   (subst1 (mkVar id) b) in
 	       [sg]
 	   | _ ->
 	       if !check then raise (RefinerError IntroNeedsProduct)
@@ -312,17 +310,13 @@ let prim_refiner r sigma goal =
         (match kind_of_term (strip_outer_cast cl) with
 	   | IsProd (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let a = get_assumption_of env sigma c1
-	       and v = mkVar id in
-	       let env' = insert_after_hyp env whereid (id,None,a) in
-	       let sg = mk_goal info env' (subst1 v b) in 
+	       let env' = insert_after_hyp env whereid (id,None,c1) in
+	       let sg = mk_goal info env' (subst1 (mkVar id) b) in 
 	       [sg]
 	   | IsLetIn (_,c1,t1,b) ->
 	       if occur_meta c1 or occur_meta t1 then error_use_instantiate();
-	       let a = get_assumption_of env sigma t1
-	       and v = mkVar id in
-	       let env' = insert_after_hyp env whereid (id,Some c1,a) in
-	       let sg = mk_goal info env' (subst1 v b) in 
+	       let env' = insert_after_hyp env whereid (id,Some c1,t1) in
+	       let sg = mk_goal info env' (subst1 (mkVar id) b) in 
 	       [sg]
 	   | _ ->
 	       if !check then error "Introduction needs a product"
@@ -332,17 +326,13 @@ let prim_refiner r sigma goal =
 	(match kind_of_term (strip_outer_cast cl) with
            | IsProd (_,c1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let a = get_assumption_of env sigma c1
-	       and v = mkVar id in
-	       let env' = replace_hyp env id (id,None,a) in
-	       let sg = mk_goal info env' (subst1 v b) in
+	       let env' = replace_hyp env id (id,None,c1) in
+	       let sg = mk_goal info env' (subst1 (mkVar id) b) in
 	       [sg]
            | IsLetIn (_,c1,t1,b) ->
 	       if occur_meta c1 then error_use_instantiate();
-	       let a = get_assumption_of env sigma t1
-	       and v = mkVar id in
-	       let env' = replace_hyp env id (id,Some c1,a) in
-	       let sg = mk_goal info env' (subst1 v b) in
+	       let env' = replace_hyp env id (id,Some c1,t1) in
+	       let sg = mk_goal info env' (subst1 (mkVar id) b) in
 	       [sg]
 	   | _ ->
 	       if !check then error "Introduction needs a product"
@@ -365,8 +355,7 @@ let prim_refiner r sigma goal =
      	check_ind n cl;
 	if !check && mem_named_context f sign then
 	  error ("The name "^(string_of_id f)^" is already used");
-        let a = get_assumption_of env sigma cl in
-        let sg = mk_goal info (push_named_assum (f,a) env) cl in
+        let sg = mk_goal info (push_named_assum (f,cl) env) cl in
         [sg]
     
     | { name = Fix; hypspecs = []; terms = lar; newids = lf; params = ln } ->
@@ -392,8 +381,7 @@ let prim_refiner r sigma goal =
 		       "mutual inductive declaration");
 	      if mem_named_context f sign then 
 		error "name already used in the environment";
-	      let a = get_assumption_of env sigma ar in
-	      mk_sign (add_named_assum (f,a) sign) (lar',lf',ln')
+	      mk_sign (add_named_assum (f,ar) sign) (lar',lf',ln')
 	  | ([],[],[]) -> 
 	      List.map (mk_goal info env) (cl::lar)
 	  | _ -> error "not the right number of arguments"
@@ -419,9 +407,7 @@ let prim_refiner r sigma goal =
                 (let _ = lookup_named f env in
                 error "name already used in the environment")
               with
-              |	Not_found ->
-  	        let a = get_assumption_of env sigma ar in
-	        mk_env (push_named_assum (f,a) env) (lar',lf'))
+              |	Not_found -> mk_env (push_named_assum (f,ar) env) (lar',lf'))
 	  | ([],[]) -> List.map (mk_goal info env) (cl::lar)
 	  | _ -> error "not the right number of arguments"
      	in 

@@ -11,7 +11,7 @@ open Type_errors
 open Typeops
 
 let vect_lift = Array.mapi lift
-let vect_lift_type = Array.mapi (fun i t -> typed_app (lift i) t)
+let vect_lift_type = Array.mapi (fun i t -> type_app (lift i) t)
 
 type 'a mach_flags = {
   fix : bool;
@@ -94,8 +94,7 @@ let rec execute mf env sigma cstr =
     | IsProd (name,c1,c2) ->
         let j = execute mf env sigma c1 in
         let varj = type_judgment env sigma j in
-	let var = assumption_of_type_judgment varj in
-	let env1 = push_rel_assum (name,var) env in
+	let env1 = push_rel_assum (name,varj.utj_val) env in
         let j' = execute mf env1 sigma c2 in
 	let (j,_) = gen_rel env1 sigma name varj j' in
 	j
@@ -103,15 +102,18 @@ let rec execute mf env sigma cstr =
      | IsLetIn (name,c1,c2,c3) ->
         let j1 = execute mf env sigma c1 in
         let j2 = execute mf env sigma c2 in
-	let { uj_val = b; uj_type = t } = cast_rel env sigma j1 j2 in
+	let tj2 = assumption_of_judgment env sigma j2 in
+	let { uj_val = b; uj_type = t },_ = cast_rel env sigma j1 tj2 in
         let j3 = execute mf (push_rel_def (name,b,t) env) sigma c3 in
-	{ uj_val = mkLetIn (name, j1.uj_val, j2.uj_val, j3.uj_val) ;
-	  uj_type = typed_app (subst1 j1.uj_val) j3.uj_type }
+	{ uj_val = mkLetIn (name, j1.uj_val, tj2, j3.uj_val) ;
+	  uj_type = type_app (subst1 j1.uj_val) j3.uj_type }
   
     | IsCast (c,t) ->
         let cj = execute mf env sigma c in
         let tj = execute mf env sigma t in
-        cast_rel env sigma cj tj
+	let tj = assumption_of_judgment env sigma tj in
+        let j, _ = cast_rel env sigma cj tj in
+	j
 	  
     | IsXtra _ -> anomaly "Typing: found an Extra"
 	  
@@ -123,7 +125,7 @@ and execute_fix mf env sigma lar lfi vdef =
   let env1 = 
     List.fold_left (fun env nvar -> push_rel_assum nvar env) env nlara in
   let vdefj = execute_array mf env1 sigma vdef in
-  let vdefv = Array.map j_val_only vdefj in
+  let vdefv = Array.map j_val vdefj in
   let cst3 = type_fixpoint env1 sigma lfi lara vdefj in
   (lara,vdefv)
 

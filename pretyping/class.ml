@@ -285,14 +285,12 @@ lorque source est None alors target est None aussi.
 let try_add_new_coercion_core idf stre source target isid =
   let env = Global.env () in
   let v = construct_reference env CCI idf in
-  let t = Retyping.get_type_of env Evd.empty v in
-  let k = Retyping.get_sort_of env Evd.empty t in
-  let vj = {uj_val=v; uj_type= make_typed t k} in
+  let vj = Retyping.get_judgment_of env Evd.empty v in
   let f_vardep,coef = coe_of_reference v in
   if coercion_exists coef then
     errorlabstrm "try_add_coercion" 
       [< 'sTR(string_of_id idf) ; 'sTR" is already a coercion" >];
-  let lp = prods_of t in
+  let lp = prods_of (vj.uj_type) in
   let llp = List.length lp in
   if llp <= 1 then
     errorlabstrm "try_add_coercion"         

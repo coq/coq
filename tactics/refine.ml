@@ -138,8 +138,7 @@ let rec compute_metamap env c = match kind_of_term c with
    *    où x est une variable FRAICHE *)
   | IsLambda (name,c1,c2) ->
       let v = fresh env name in
-      let tj = Retyping.get_assumption_of env Evd.empty c1 in
-      let env' = push_named_assum (v,tj) env in
+      let env' = push_named_assum (v,c1) env in
       begin match compute_metamap env' (subst1 (mkVar v) c2) with
 	(* terme de preuve complet *)
 	| TH (_,_,[]) -> TH (c,[],[])
@@ -179,9 +178,7 @@ let rec compute_metamap env c = match kind_of_term c with
   | IsFix ((ni,i),(ai,fi,v)) ->
       let vi = List.rev (List.map (fresh env) fi) in
       let env' =
-	List.fold_left
-	  (fun env (v,ar) -> push_named_assum (v,Retyping.get_assumption_of env Evd.empty ar) env)
-	  env
+	List.fold_left (fun env (v,ar) -> push_named_assum (v, ar) env) env
 	  (List.combine vi (Array.to_list ai)) 
       in
       let a = Array.map

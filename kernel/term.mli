@@ -37,23 +37,17 @@ type case_info = int array * case_printing
 
 type constr
 
-type typed_type
+(* [types] is the same as [constr] but is intended to be used where a
+   {\em type} in CCI sense is expected (Rem:plurial form since [type] is a
+   reserved ML keyword) *)
 
-(*s Functions about [typed_type] *)
+type types = constr
 
-val make_typed : constr -> sorts -> typed_type
-val make_typed_lazy : constr -> (constr -> sorts) -> typed_type
+(*s Functions about [types] *)
 
-val typed_app : (constr -> constr) -> typed_type -> typed_type
-val typed_combine : (constr -> constr -> constr) -> (sorts -> sorts -> sorts)
-      -> (typed_type -> typed_type -> typed_type)
+val type_app : (constr -> constr) -> types -> types
 
-val body_of_type : typed_type -> constr
-val level_of_type : typed_type -> sorts
-
-val incast_type : typed_type -> constr
-
-val outcast_type : constr -> typed_type
+val body_of_type : types -> constr
 
 (*s A {\em declaration} has the form (name,body,type). It is either an
     {\em assumption} if [body=None] or a {\em definition} if
@@ -62,8 +56,8 @@ val outcast_type : constr -> typed_type
     (in the latter case, [na] is of type [name] but just for printing
     purpose *)
 
-type named_declaration = identifier * constr option * typed_type
-type rel_declaration = name * constr option * typed_type
+type named_declaration = identifier * constr option * types
+type rel_declaration = name * constr option * types
 
 type arity = rel_declaration list * sorts
 
@@ -101,9 +95,9 @@ type kind_of_term =
   | IsXtra         of string
   | IsSort         of sorts
   | IsCast         of constr * constr
-  | IsProd         of name * constr * constr
-  | IsLambda       of name * constr * constr
-  | IsLetIn        of name * constr * constr * constr
+  | IsProd         of name * types * constr 
+  | IsLambda       of name * types * constr
+  | IsLetIn        of name * constr * types * constr
   | IsApp         of constr * constr array
   | IsEvar         of existential
   | IsConst        of constant
@@ -155,12 +149,12 @@ val implicit_sort : sorts
 val mkCast : constr * constr -> constr
 
 (* Constructs the product $(x:t_1)t_2$ *)
-val mkProd : name * constr * constr -> constr
+val mkProd : name * types * constr -> constr
 val mkNamedProd : identifier -> constr -> constr -> constr
 val mkProd_string : string -> constr -> constr -> constr
 
 (* Constructs the product $(x:t_1)t_2$ *)
-val mkLetIn : name * constr * constr * constr -> constr
+val mkLetIn : name * constr * types * constr -> constr
 val mkNamedLetIn : identifier -> constr -> constr -> constr -> constr
 
 (* Constructs either [(x:t)c] or [[x=b:t]c] *)
@@ -179,7 +173,7 @@ val mkNamedProd_wo_LetIn : named_declaration -> constr -> constr
 val mkArrow : constr -> constr -> constr
 
 (* Constructs the abstraction $[x:t_1]t_2$ *)
-val mkLambda : name * constr * constr -> constr
+val mkLambda : name * types * constr -> constr
 val mkNamedLambda : identifier -> constr -> constr -> constr
 
 (* [mkLambda_string s t c] constructs $[s:t]c$ *)
@@ -652,6 +646,6 @@ val hcons_constr:
   ->
     (constr -> constr) *
     (constr -> constr) *
-    (typed_type -> typed_type)
+    (types -> types)
 
 val hcons1_constr : constr -> constr

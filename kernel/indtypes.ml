@@ -180,7 +180,7 @@ let listrec_mconstr env ntypes nparams i indlc =
 	  assert (largs = []);
           if not (noccur_between n ntypes b) then
 	    raise (IllFormedInd (LocalNonPos n));
-	  check_pos (push_rel_assum (na, outcast_type b) env) (n+1) d
+	  check_pos (push_rel_assum (na, b) env) (n+1) d
       | IsRel k ->
           if k >= n && k<n+ntypes then begin
 	    check_correct_par env nparams ntypes n (k-n+1) largs;
@@ -246,7 +246,7 @@ let listrec_mconstr env ntypes nparams i indlc =
       (* The extra case *)
       | IsLambda (na,b,d) -> 
           if noccur_between n ntypes b
-          then check_weak_pos (push_rel_assum (na,outcast_type b) env) (n+1) d
+          then check_weak_pos (push_rel_assum (na,b) env) (n+1) d
           else raise (IllFormedInd (LocalNonPos n))
       (******************)
       | _ -> check_pos env n x
@@ -263,7 +263,7 @@ let listrec_mconstr env ntypes nparams i indlc =
         | IsProd (na,b,d) -> 
 	    assert (largs = []);
             let recarg = check_pos env n b in 
-	    check_constr_rec (push_rel_assum (na,outcast_type b) env)
+	    check_constr_rec (push_rel_assum (na, b) env)
 	      (recarg::lrec) (n+1) d
 
         (* LetIn's must be free of occurrence of the inductive types and
@@ -271,11 +271,11 @@ let listrec_mconstr env ntypes nparams i indlc =
         | IsLetIn (na,b,t,d) -> 
 	    assert (largs = []);
             if not (noccur_between n ntypes b & noccur_between n ntypes t) then
-	      check_constr_rec (push_rel_def (na,b,outcast_type b) env)
+	      check_constr_rec (push_rel_def (na,b, b) env)
 		lrec n (subst1 b d)
 	    else
               let recarg = check_pos env n b in 
-	      check_constr_rec (push_rel_def (na,b,outcast_type b) env)
+	      check_constr_rec (push_rel_def (na,b, b) env)
 		lrec (n+1) d 
 	| hd ->
 	    if check_head then
@@ -318,20 +318,13 @@ let cci_inductive env env_ar kind nparams finite inds cst =
     
     let nf_ar,user_ar =
       if isArity (body_of_type ar) then ar,None
-      else
-	(make_typed_lazy (prod_it (mkSort ar_sort) ar_sign)
-	   (fun _ -> level_of_type ar)),
-	Some ar in
+      else (prod_it (mkSort ar_sort) ar_sign, Some ar) in
     let kelim = allowed_sorts issmall isunit ar_sort in
     let lc_bodies = Array.map body_of_type lc in
 
     let splayed_lc = Array.map (splay_prod_assum env_ar Evd.empty) lc_bodies in
     let nf_lc =
-      array_map2
-	(fun (d,b) c ->
-	   make_typed_lazy 
-	     (it_mkProd_or_LetIn b d) (fun _ -> level_of_type c))
-	splayed_lc lc in
+      array_map2 (fun (d,b) c -> it_mkProd_or_LetIn b d) splayed_lc lc in
     let nf_lc,user_lc = if nf_lc = lc then lc,None else nf_lc, Some lc in
     { mind_consnames = Array.of_list cnames;
       mind_typename = id;

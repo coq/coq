@@ -51,7 +51,7 @@ val explain_ill_formed_branch :
   path_kind -> env -> constr -> int -> constr -> constr -> std_ppcmds
 
 val explain_generalization :
-  path_kind -> env -> name * typed_type -> constr -> std_ppcmds
+  path_kind -> env -> name * types -> constr -> std_ppcmds
 
 val explain_actual_type :
   path_kind -> env -> constr -> constr -> constr -> std_ppcmds
@@ -62,6 +62,6 @@ val explain_ill_formed_rec_body :
 
 val explain_ill_typed_rec_body  :
   path_kind -> env -> int -> name list -> unsafe_judgment array 
-    -> typed_type array -> std_ppcmds
+    -> types array -> std_ppcmds
 
 end

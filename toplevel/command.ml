@@ -140,7 +140,7 @@ let build_mutual lparams lnamearconstrs finite =
 	(fun (env,arl) (recname,arityc,_) -> 
            let raw_arity = mkProdCit lparams arityc in
            let arj = type_judgment_of_rawconstr Evd.empty env raw_arity in
-	   let arity = Typeops.assumption_of_type_judgment arj in
+	   let arity = arj.utj_val in
 	   let env' = Environ.push_rel_assum (Name recname,arity) env in
 	   (env', (arity::arl)))
 	(env0,[]) lnamearconstrs 
@@ -215,7 +215,7 @@ let build_recursive lnameargsardef =
         (fun (env,arl) (recname,lparams,arityc,_) -> 
            let raw_arity = mkProdCit lparams arityc in
            let arj = type_judgment_of_rawconstr Evd.empty env raw_arity in
-	   let arity = Typeops.assumption_of_type_judgment arj in
+	   let arity = arj.utj_val in
            declare_variable recname
 	     (SectionLocalDecl arj.utj_val,NeverDischarge,false);
            (Environ.push_named_assum (recname,arity) env, (arity::arl)))
@@ -239,7 +239,7 @@ let build_recursive lnameargsardef =
   if lnamerec <> [] then begin
     let recvec = 
       Array.map (subst_vars (List.rev lnamerec)) (Array.of_list ldefrec) in
-    let varrec = Array.of_list (List.map incast_type larrec) in
+    let varrec = Array.of_list larrec in
     let rec declare i = function 
       | fi::lf ->
 	  let ce = 
@@ -283,7 +283,7 @@ let build_corecursive lnameardef =
       List.fold_left 
         (fun (env,arl) (recname,arityc,_) -> 
            let arj = type_judgment_of_rawconstr Evd.empty env0 arityc in
-	   let arity = Typeops.assumption_of_type_judgment arj in
+	   let arity = arj.utj_val in
            declare_variable recname
 	     (SectionLocalDecl arj.utj_val,NeverDischarge,false);
            (Environ.push_named_assum (recname,arity) env, (arity::arl)))
@@ -310,7 +310,7 @@ let build_corecursive lnameardef =
 	[||] 
       else 
 	Array.map (subst_vars (List.rev lnamerec)) (Array.of_list ldefrec) in
-    let varrec = Array.of_list (List.map incast_type larrec) in
+    let varrec = Array.of_list larrec in
     let rec declare i = function 
       | fi::lf ->
 	  let ce = 

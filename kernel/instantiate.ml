@@ -26,7 +26,7 @@ let instantiate_constr sign c args =
     replace_vars inst c
 
 let instantiate_type sign tty args =
-  typed_app (fun c -> instantiate_constr sign c args) tty
+  type_app (fun c -> instantiate_constr sign c args) tty
 
 (* Constants. *)
 

@@ -43,11 +43,11 @@ val mis_is_recursive_subset : int list -> inductive_instance -> bool
 val mis_is_recursive : inductive_instance -> bool
 val mis_consnames : inductive_instance -> identifier array
 val mis_inductive : inductive_instance -> inductive
-val mis_nf_arity : inductive_instance -> typed_type
-val mis_user_arity : inductive_instance -> typed_type
+val mis_nf_arity : inductive_instance -> types
+val mis_user_arity : inductive_instance -> types
 val mis_params_ctxt : inductive_instance -> rel_context
 val mis_sort : inductive_instance -> sorts
-val mis_type_mconstruct : int -> inductive_instance -> typed_type
+val mis_type_mconstruct : int -> inductive_instance -> types
 val mis_finite : inductive_instance -> bool 
 
 (* The ccl of constructor is pre-normalised in the following functions *)

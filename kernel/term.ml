@@ -750,42 +750,22 @@ let compare_constr f c1 c2 =
 
 (*
 type 'a judge = { body : constr; typ : 'a }
-type typed_type = sorts judge
+type types = sorts judge
 
-let make_typed t s = { body = t; typ = s }
-let make_typed_lazy t f = { body = t; typ = f s }
-
-let typed_app f tt = { body = f tt.body; typ = tt.typ }
+let type_app f tt = { body = f tt.body; typ = tt.typ }
 
 let body_of_type ty = ty.body
-let level_of_type t = (t.typ : sorts)
-
-let incast_type tty = mkCast (tty.body, mkSort tty.typ)
-
-let outcast_type c = kind_of_term c with
-  | IsCast (b, s) when isSort s -> {body=b; typ=destSort s}
-  | _ -> anomaly "outcast_type: Not an in-casted type judgement"
-
-let typed_combine f g t u = { f t.body u.body ; g t.typ u.typ}
 *)
 
-type typed_type = constr
+type types = constr
 
-let make_typed t s = t
-let make_typed_lazy t f = t
-
-let typed_app f tt = f tt
+let type_app f tt = f tt
 
 let body_of_type ty = ty
-let level_of_type t = failwith "N'existe plus"
-
-let incast_type tty = tty
-let outcast_type x = x
-let typed_combine f g t u = f t u
 (**)
 
-type named_declaration = identifier * constr option * typed_type
-type rel_declaration = name * constr option * typed_type
+type named_declaration = identifier * constr option * types
+type rel_declaration = name * constr option * types
 
 
 
@@ -959,7 +939,7 @@ let subst1 lam = substl [lam]
 let substl_decl laml (id,bodyopt,typ as d) =
   match bodyopt with
     | None -> (id,None,substl laml typ)
-    | Some body -> (id, Some (substl laml body), typed_app (substl laml) typ)
+    | Some body -> (id, Some (substl laml body), type_app (substl laml) typ)
 let subst1_decl lam = substl_decl [lam]
 
 (* (thin_val sigma) removes identity substitutions from sigma *)
@@ -1624,12 +1604,12 @@ let subst_term_occ_decl locs c (id,bodyopt,typ as d) =
     | None -> (id,None,subst_term_occ locs c typ)
     | Some body -> 
 	if locs = [] then
-	  (id,Some (subst_term c body),typed_app (subst_term c) typ)
+	  (id,Some (subst_term c body),type_app (subst_term c) typ)
 	else if List.mem 0 locs then 
 	  d
 	else 
 	  let (nbocc,body') = subst_term_occ_gen locs 1 c body in
-	  let (nbocc',t') = typed_app (subst_term_occ_gen locs nbocc c) typ in
+	  let (nbocc',t') = type_app (subst_term_occ_gen locs nbocc c) typ in
 	  if List.exists (fun o -> o >= nbocc' or o <= -nbocc') locs then
 	    errorlabstrm "subst_term_occ_decl" [< 'sTR "Too few occurences" >];
 	  (id,Some body',t')
@@ -1654,7 +1634,7 @@ let occur_existential c =
 module Htype =
   Hashcons.Make(
     struct
-      type t = typed_type
+      type t = types
       type u = (constr -> constr) * (sorts -> sorts)
 (*
       let hash_sub (hc,hs) j = {body=hc j.body; typ=hs j.typ}

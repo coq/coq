@@ -9,12 +9,12 @@ open Term
 (* Signatures *)
 
 let add d sign = d::sign
-let map f = List.map (fun (na,c,t) -> (na,option_app f c,typed_app f t))
+let map f = List.map (fun (na,c,t) -> (na,option_app f c,type_app f t))
 
 let add_decl (n,t) sign = (n,None,t)::sign
 let add_def (n,c,t) sign = (n,Some c,t)::sign
 
-type named_declaration = identifier * constr option * typed_type
+type named_declaration = identifier * constr option * types
 type named_context = named_declaration list
 
 let add_named_decl = add
@@ -47,7 +47,7 @@ let fold_named_context_reverse = List.fold_left
 let fold_named_context_both_sides = list_fold_right_and_left
 let it_named_context_quantifier f = List.fold_left (fun c d -> f d c)
 
-type rel_declaration = name * constr option * typed_type
+type rel_declaration = name * constr option * types
 type rel_context = rel_declaration list
 
 let add_rel_decl = add
@@ -79,7 +79,7 @@ let rel_context_length = List.length
 let lift_rel_context n sign =
   let rec liftrec k = function
     | (na,c,t)::sign ->
-	(na,option_app (liftn n k) c,typed_app (liftn n k) t)
+	(na,option_app (liftn n k) c,type_app (liftn n k) t)
 	::(liftrec (k-1) sign)
     | [] -> []
   in
@@ -149,8 +149,8 @@ let empty_names_context = []
 let decompose_prod_assum = 
   let rec prodec_rec l c =
     match kind_of_term c with
-    | IsProd (x,t,c)  -> prodec_rec (add_rel_assum (x,outcast_type t) l) c
-    | IsLetIn (x,b,t,c) -> prodec_rec (add_rel_def (x,b,outcast_type t) l) c
+    | IsProd (x,t,c)  -> prodec_rec (add_rel_assum (x,t) l) c
+    | IsLetIn (x,b,t,c) -> prodec_rec (add_rel_def (x,b,t) l) c
     | IsCast (c,_)    -> prodec_rec l c
     | _               -> l,c
   in 
@@ -161,8 +161,8 @@ let decompose_prod_assum =
 let decompose_lam_assum = 
   let rec lamdec_rec l c =
     match kind_of_term c with
-    | IsLambda (x,t,c) -> lamdec_rec (add_rel_assum (x,outcast_type t) l) c
-    | IsLetIn (x,b,t,c) -> lamdec_rec (add_rel_def (x,b,outcast_type t) l) c
+    | IsLambda (x,t,c) -> lamdec_rec (add_rel_assum (x,t) l) c
+    | IsLetIn (x,b,t,c) -> lamdec_rec (add_rel_def (x,b,t) l) c
     | IsCast (c,_)     -> lamdec_rec l c
     | _                -> l,c
   in 
@@ -175,9 +175,9 @@ let decompose_prod_n_assum n =
   let rec prodec_rec l n c = 
     if n=0 then l,c 
     else match kind_of_term c with 
-    | IsProd (x,t,c) -> prodec_rec (add_rel_assum(x,outcast_type t) l) (n-1) c
+    | IsProd (x,t,c) -> prodec_rec (add_rel_assum(x,t) l) (n-1) c
     | IsLetIn (x,b,t,c) ->
-	prodec_rec (add_rel_def (x,b,outcast_type t) l) (n-1) c
+	prodec_rec (add_rel_def (x,b,t) l) (n-1) c
     | IsCast (c,_)   -> prodec_rec l n c
     | c -> error "decompose_prod_n: not enough products"
   in 
@@ -190,9 +190,9 @@ let decompose_lam_n_assum n =
   let rec lamdec_rec l n c = 
     if n=0 then l,c 
     else match kind_of_term c with 
-    | IsLambda (x,t,c) -> lamdec_rec (add_rel_assum (x,outcast_type t) l) (n-1) c
+    | IsLambda (x,t,c) -> lamdec_rec (add_rel_assum (x,t) l) (n-1) c
     | IsLetIn (x,b,t,c) ->
-	lamdec_rec (add_rel_def (x,b,outcast_type t) l) (n-1) c
+	lamdec_rec (add_rel_def (x,b,t) l) (n-1) c
     | IsCast (c,_)     -> lamdec_rec l n c
     | c -> error "decompose_lam_n: not enough abstractions"
   in 

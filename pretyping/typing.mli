@@ -14,7 +14,7 @@ val unsafe_machine : env -> 'a evar_map -> constr -> unsafe_judgment
 
 val type_of : env -> 'a evar_map -> constr -> constr
 
-val execute_type : env -> 'a evar_map -> constr -> typed_type
+val execute_type : env -> 'a evar_map -> constr -> types
 
-val execute_rec_type : env -> 'a evar_map -> constr -> typed_type
+val execute_rec_type : env -> 'a evar_map -> constr -> types
 

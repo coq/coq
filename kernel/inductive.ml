@@ -84,7 +84,7 @@ let mis_type_mconstruct i mispec =
   and nconstr = mis_nconstr mispec in
   let make_Ik k = mkMutInd ((mispec.mis_sp,ntypes-k-1),mispec.mis_args) in 
   if i > nconstr then error "Not enough constructors in the type";
-  typed_app (substl (list_tabulate make_Ik ntypes)) specif.(i-1)
+  type_app (substl (list_tabulate make_Ik ntypes)) specif.(i-1)
 
 let mis_user_arity mis =
   let hyps = mis.mis_mib.mind_hyps 

@@ -33,10 +33,10 @@ val add_prods_rel : 'a evar_map -> constr * env -> constr * env
 
 (*i**
 val add_prod_sign : 
-  'a evar_map -> constr * typed_type signature -> constr * typed_type signature
+  'a evar_map -> constr * types signature -> constr * types signature
 
 val add_prods_sign : 
-  'a evar_map -> constr * typed_type signature -> constr * typed_type signature
+  'a evar_map -> constr * types signature -> constr * types signature
 **i*)
 
 val res_pf_THEN : 

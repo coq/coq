@@ -905,9 +905,7 @@ let rec super_search n db_list local_db argl goal =
 let search_superauto n ids argl g = 
   let sigma =
     List.fold_right
-      (fun id -> add_named_assum
-	   (id,Retyping.get_assumption_of (pf_env g) (project g) 
-	      (pf_type_of g (pf_global g id))))
+      (fun id -> add_named_assum (id, pf_type_of g (pf_global g id)))
       ids empty_named_context in
   let db0 = list_map_append (make_resolve_hyp (pf_env g) (project g)) sigma in
   let db = Hint_db.add_list db0 (make_local_hint_db g) in

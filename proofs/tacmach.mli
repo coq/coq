@@ -98,7 +98,7 @@ val weak_undo_pftreestate   : pftreestate -> pftreestate
 val solve_nth_pftreestate   : int -> tactic -> pftreestate -> pftreestate
 val solve_pftreestate       : tactic -> pftreestate -> pftreestate
 val mk_pftreestate          : goal -> pftreestate
-val extract_open_pftreestate : pftreestate -> constr * (int * typed_type) list
+val extract_open_pftreestate : pftreestate -> constr * (int * types) list
 val extract_pftreestate     : pftreestate -> constr
 val first_unproven          : pftreestate -> pftreestate
 val last_unproven           : pftreestate -> pftreestate
@@ -197,7 +197,7 @@ val w_Underlying        : walking_constraints -> enamed_declarations
 val w_env               : walking_constraints -> env
 val w_hyps              : walking_constraints -> named_context
 val w_type_of           : walking_constraints -> constr -> constr
-val w_add_sign          : (identifier * typed_type) 
+val w_add_sign          : (identifier * types) 
                           -> walking_constraints -> walking_constraints
 val w_IDTAC             : w_tactic
 val w_ORELSE            : w_tactic -> w_tactic -> w_tactic

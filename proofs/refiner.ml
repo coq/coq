@@ -255,9 +255,8 @@ let extract_open_proof sigma pf =
 	       mkNamedProd_or_LetIn (id,c,ty) concl)
             sorted_rels goal.evar_concl
 	in
-	let ass = Retyping.get_assumption_of goal.evar_env sigma abs_concl in
 	let mv = new_meta() in
-	open_obligations := (mv,ass):: !open_obligations;
+	open_obligations := (mv,abs_concl):: !open_obligations;
 	applist (mkMeta mv, List.map (fun (n,_) -> mkRel n) sorted_rels) 
 	  
     | _ -> anomaly "Bug : a case has been forgotten in proof_extractor"

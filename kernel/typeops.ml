@@ -19,14 +19,12 @@ let make_judge v tj =
   { uj_val = v;
     uj_type = tj }
 
-let j_val_only j = j.uj_val
-
-let typed_type_of_judgment env sigma j = j.uj_type
+let j_val j = j.uj_val
 
 (* This should be a type intended to be assumed *)
 let assumption_of_judgment env sigma j =
   match kind_of_term(whd_betadeltaiota env sigma (body_of_type j.uj_type)) with
-    | IsSort s -> make_typed j.uj_val s
+    | IsSort s -> j.uj_val
     | _ -> error_assumption CCI env j.uj_val
 
 (* This should be a type (a priori without intension to be an assumption) *)
@@ -35,15 +33,13 @@ let type_judgment env sigma j =
     | IsSort s -> {utj_val = j.uj_val; utj_type = s }
     | _ -> error_not_type CCI env j
 
-let assumption_of_type_judgment j = make_typed j.utj_val j.utj_type
-
 (* Type of a de Bruijn index. *)
 	  
 let relative env sigma n = 
   try
     let (_,typ) = lookup_rel_type n env in
     { uj_val  = mkRel n;
-      uj_type = typed_app (lift n) typ }
+      uj_type = type_app (lift n) typ }
   with Not_found -> 
     error_unbound_rel CCI env sigma n
 
@@ -205,18 +201,18 @@ let type_of_case env sigma ci pj cj lfj =
     type_case_branches env sigma indspec (body_of_type pj.uj_type) pj.uj_val cj.uj_val in
   let kind = mysort_of_arity env sigma (body_of_type pj.uj_type) in
   check_branches_message env sigma (cj.uj_val,body_of_type cj.uj_type) (bty,lft);
-  { uj_val  = mkMutCase (ci, pj.uj_val, cj.uj_val, Array.map j_val_only lfj);
-    uj_type = make_typed rslty kind }
+  { uj_val  = mkMutCase (ci, pj.uj_val, cj.uj_val, Array.map j_val lfj);
+    uj_type = rslty }
 
 (* Prop and Set *)
 
 let judge_of_prop =
   { uj_val = mkSort prop;
-    uj_type = make_typed (mkSort type_0) type_1 }
+    uj_type = mkSort type_0 }
 
 let judge_of_set =
   { uj_val = mkSort spec;
-    uj_type = make_typed (mkSort type_0) type_1 }
+    uj_type = mkSort type_0 }
 
 let judge_of_prop_contents = function
   | Null -> judge_of_prop
@@ -227,7 +223,7 @@ let judge_of_prop_contents = function
 let judge_of_type u =
   let (uu,uuu,c) = super_super u in
   { uj_val = mkSort (Type u);
-    uj_type = make_typed (mkSort (Type uu)) (Type uuu) },
+    uj_type = mkSort (Type uu) },
   c
 
 let type_of_sort c =
@@ -249,71 +245,67 @@ let sort_of_product domsort rangsort g =
            (* Product rule (Type_i,Type_i,Type_i) *) 
            | Type u1 -> let (u12,cst) = sup u1 u2 g in Type u12, cst)
 
-let sort_of_product_without_univ domsort rangsort =
-  match rangsort with
-    | Prop _ -> rangsort
-    | Type u2 ->
-        (match domsort with
-           | Prop _ -> rangsort
-           | Type u1 -> Type dummy_univ)
+(* [abs_rel env sigma name var j] implements the rule
 
-let generalize_without_universes (_,_,var as d) c =
-  typed_combine
-    (fun _ c -> mkNamedProd_or_LetIn d c)
-    sort_of_product_without_univ
-    var c
+ env, name:typ |- j.uj_val:j.uj_type     env, |- (name:typ)j.uj_type : s
+ -----------------------------------------------------------------------
+          env |- [name:typ]j.uj_val : (name:typ)j.uj_type
 
-let typed_product env name var c =
-  (* Gros hack ! *)
-  let rcst = ref Constraint.empty in
-  let hacked_sort_of_product s1 s2 =
-    let (s,cst) = sort_of_product s1 s2 (universes env) in (rcst:=cst; s) in
-  typed_combine (fun c t -> mkProd (name,c,t)) hacked_sort_of_product var c,
-  !rcst
+  Since all products are defined in the Calculus of Inductive Constructions
+  and no upper constraint exists on the sort $s$, we don't need to compute $s$
+*)
 
 let abs_rel env sigma name var j =
-  let cvar = incast_type var in
-  let typ,cst = typed_product env name var j.uj_type in
-  { uj_val = mkLambda (name, cvar, j.uj_val);
-    uj_type = typ },
-  cst
+  { uj_val = mkLambda (name, var, j.uj_val);
+    uj_type = mkProd (name, var, j.uj_type) },
+  Constraint.empty
 
-(* Type of a product. *)
+(* [gen_rel env sigma name (typ1,s1) j] implements the rule
 
-let gen_rel env sigma name varj j =
-  let var = assumption_of_type_judgment varj in
-  match kind_of_term(whd_betadeltaiota env sigma (body_of_type j.uj_type)) with
+    env |- typ1:s1       env, name:typ |- j.uj_val : j.uj_type
+    -------------------------------------------------------------------------
+         s' >= (s1,s2), env |- (name:typ)j.uj_val : s'
+
+  where j.uj_type is convertible to a sort s2
+*)
+
+let gen_rel env sigma name {utj_val = t1; utj_type = s1} j =
+  match kind_of_term (whd_betadeltaiota env sigma j.uj_type) with
     | IsSort s ->
-	let (s',g) = sort_of_product varj.utj_type s (universes env) in
-	let res_type = mkSort s' in
-	let (res_kind,g') = type_of_sort res_type in
-        { uj_val = mkProd (name, incast_type var, j.uj_val);
-          uj_type = make_typed res_type res_kind },
-	g'
+	let (s',g) = sort_of_product s1 s (universes env) in
+        { uj_val = mkProd (name, t1, j.uj_val);
+          uj_type = mkSort s' },
+	g
     | _ -> 
 (* 	if is_small (level_of_type j.uj_type) then (* message historique ?? *)
 	  error "Proof objects can only be abstracted" 
 	else
 *)
-	  error_generalization CCI env sigma (name,var) j
+	  error_generalization CCI env sigma (name,t1) j
 
-(* Type of a cast. *)
+(* [cast_rel env sigma (typ1,s1) j] implements the rule
+
+    env, sigma |- cj.uj_val:cj.uj_type    cst, env, sigma |- cj.uj_type = t
+    ---------------------------------------------------------------------
+         cst, env, sigma |- cj.uj_val:t
+*)
 	    
-let cast_rel env sigma cj tj =
-  let tj = assumption_of_judgment env sigma tj in
-  if is_conv_leq env sigma (body_of_type cj.uj_type) (body_of_type tj) then
-    { uj_val = j_val_only cj;
-      uj_type = tj }
-  else 
-    error_actual_type CCI env cj.uj_val (body_of_type cj.uj_type) (body_of_type tj)
+let cast_rel env sigma cj t =
+  try 
+    let cst = conv_leq env sigma (body_of_type cj.uj_type) t in
+    { uj_val = j_val cj;
+      uj_type = t },
+    cst
+  with NotConvertible ->
+    error_actual_type CCI env cj.uj_val (body_of_type cj.uj_type) t
 
 (* Type of an application. *)
 
 let apply_rel_list env sigma nocheck argjl funj =
   let rec apply_rec n typ cst = function
     | [] -> 
-	{ uj_val  = applist (j_val_only funj, List.map j_val_only argjl);
-          uj_type = typed_app (fun _ -> typ) funj.uj_type },
+	{ uj_val  = applist (j_val funj, List.map j_val argjl);
+          uj_type = type_app (fun _ -> typ) funj.uj_type },
 	cst
     | hj::restjl ->
         match kind_of_term (whd_betadeltaiota env sigma typ) with
@@ -368,13 +360,13 @@ let check_term env mind_recvec f =
     match lrec, kind_of_term (strip_outer_cast c) with
       | (Param(_)::lr, IsLambda (x,a,b)) -> 
           let l' = map_lift_fst l in
-          crec (push_rel_assum (x,outcast_type a) env) (n+1) l' (lr,b)
+          crec (push_rel_assum (x,a) env) (n+1) l' (lr,b)
       | (Norec::lr, IsLambda (x,a,b)) -> 
           let l' = map_lift_fst l in
-          crec (push_rel_assum (x,outcast_type a) env) (n+1) l' (lr,b)
+          crec (push_rel_assum (x,a) env) (n+1) l' (lr,b)
       | (Mrec(i)::lr, IsLambda (x,a,b)) -> 
           let l' = map_lift_fst l in
-          crec (push_rel_assum (x,outcast_type a) env) (n+1)
+          crec (push_rel_assum (x, a) env) (n+1)
 	    ((1,mind_recvec.(i))::l') (lr,b)
       | (Imbr((sp,i) as ind_sp,lrc)::lr, IsLambda (x,a,b)) -> 
           let l' = map_lift_fst l in
@@ -383,7 +375,7 @@ let check_term env mind_recvec f =
           let lc = 
 	    Array.map (List.map (instantiate_recarg sp lrc)) sprecargs.(i)
 	  in
-          crec (push_rel_assum (x,outcast_type a) env) (n+1) ((1,lc)::l') (lr,b)
+          crec (push_rel_assum (x, a) env) (n+1) ((1,lc)::l') (lr,b)
       | _,_ -> f env n l (strip_outer_cast c)
   in 
   crec env
@@ -444,7 +436,7 @@ let is_subterm_specif env sigma lcx mind_recvec =
 	    
       | IsLambda (x,a,b) when l=[] -> 
           let lst' = map_lift_fst lst in
-          crec (push_rel_assum (x,outcast_type a) env) (n+1) lst' b
+          crec (push_rel_assum (x, a) env) (n+1) lst' b
 
       (*** Experimental change *************************)
       | IsMeta _ -> [||]
@@ -473,7 +465,7 @@ let rec check_subterm_rec_meta env sigma vectn k def =
      match kind_of_term (strip_outer_cast def) with
        | IsLambda (x,a,b) -> 
 	   if noccur_with_meta n nfi a then
-	     let env' = push_rel_assum (x,outcast_type a) env in
+	     let env' = push_rel_assum (x, a) env in
              if n = k+1 then (env',a,b)
 	     else check_occur env' (n+1) b
            else 
@@ -581,20 +573,20 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 
 	| IsLambda (x,a,b) -> 
 	    (check_rec_call env n lst a) &&
-            (check_rec_call (push_rel_assum (x,outcast_type a) env)
+            (check_rec_call (push_rel_assum (x, a) env)
 	       (n+1) (map_lift_fst lst) b) &&
             (List.for_all (check_rec_call env n lst) l)
 
 	| IsProd (x,a,b) -> 
 	    (check_rec_call env n lst a) &&
-            (check_rec_call (push_rel_assum (x,outcast_type a) env)
+            (check_rec_call (push_rel_assum (x, a) env)
 	       (n+1) (map_lift_fst lst) b) &&
             (List.for_all (check_rec_call env n lst) l)
 
 	| IsLetIn (x,a,b,c) -> 
 	    (check_rec_call env n lst a) &&
 	    (check_rec_call env n lst b) &&
-            (check_rec_call (push_rel_def (x,a,outcast_type b) env)
+            (check_rec_call (push_rel_def (x,a, b) env)
 	       (n+1) (map_lift_fst lst) c) &&
             (List.for_all (check_rec_call env n lst) l)
 
@@ -643,7 +635,7 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 	    | IsLambda (x,a,b) ->
 		(check_rec_call env n lst a) &
 		(check_rec_call_fix_body
-		   (push_rel_assum (x,outcast_type a) env) (n+1)
+		   (push_rel_assum (x, a) env) (n+1)
 		   (map_lift_fst lst) (decr-1) recArgsDecrArg b)
 	    | _ -> anomaly "Not enough abstractions in fix body"
     
@@ -683,7 +675,7 @@ let check_guard_rec_meta env sigma nbfix def deftype =
     let b = whd_betadeltaiota env sigma (strip_outer_cast c) in
     match kind_of_term b with
       | IsProd (x,a,b) ->
-	  codomain_is_coind (push_rel_assum (x,outcast_type a) env) b 
+	  codomain_is_coind (push_rel_assum (x, a) env) b 
       | _ -> 
 	  try
 	    find_coinductive env sigma b
@@ -756,7 +748,7 @@ let check_guard_rec_meta env sigma nbfix def deftype =
 	| IsLambda (x,a,b) ->
 	     assert (args = []);
             if (noccur_with_meta n nbfix a) then
-              check_rec_call (push_rel_assum (x,outcast_type a) env)
+              check_rec_call (push_rel_assum (x, a) env)
 		alreadygrd (n+1)  vlra b
             else 
 	      raise (CoFixGuardError (RecCallInTypeOfAbstraction t))

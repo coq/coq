@@ -111,13 +111,13 @@ let push_rel_context_to_named_context env =
        let na = if na = Anonymous then Name(id_of_string"_") else na in
        let id = next_name_away na avoid in
        ((mkVar id)::subst,id::avoid,
-	add_named_decl (id,option_app (substl subst) c,typed_app (substl subst) t)
+	add_named_decl (id,option_app (substl subst) c,type_app (substl subst) t)
 	  sign))
     env.env_context.env_rel_context ([],ids_of_named_context sign0,sign0)
   in subst, (named_context_app (fun _ -> sign) env)
 
 let push_rec_types (typarray,names,_) env =
-  let vect_lift_type = Array.mapi (fun i t -> outcast_type (lift i t)) in
+  let vect_lift_type = Array.mapi (fun i t -> lift i t) in
   let nlara = 
     List.combine (List.rev names) (Array.to_list (vect_lift_type typarray)) in
   List.fold_left (fun env nvar -> push_rel_assum nvar env) env nlara
@@ -264,18 +264,17 @@ let named_hd env a = function
   | Anonymous -> Name (id_of_string (hdchar env a)) 
   | x         -> x
 
-let prod_name   env (n,a,b) = mkProd (named_hd env a n, a, b)
-let lambda_name env (n,a,b) = mkLambda (named_hd env a n, a, b)
+let named_hd_type env a = named_hd env (body_of_type a)
 
-let it_prod_name   env = List.fold_left (fun c (n,t) ->prod_name env (n,t,c)) 
-let it_lambda_name env = List.fold_left (fun c (n,t) ->lambda_name env (n,t,c))
+let prod_name   env (n,a,b) = mkProd (named_hd_type env a n, a, b)
+let lambda_name env (n,a,b) = mkLambda (named_hd_type env a n, a, b)
 
-let prod_create   env (a,b) = mkProd (named_hd env a Anonymous, a, b)
-let lambda_create env (a,b) =  mkLambda (named_hd env a Anonymous, a, b)
+let prod_create   env (a,b) = mkProd (named_hd_type env a Anonymous, a, b)
+let lambda_create env (a,b) =  mkLambda (named_hd_type env a Anonymous, a, b)
 
 let name_assumption env (na,c,t) =
   match c with
-    | None      -> (named_hd env (body_of_type t) na, None, t)
+    | None      -> (named_hd_type env t na, None, t)
     | Some body -> (named_hd env body na, c, t)
 
 let prod_assum_name env b d = mkProd_or_LetIn (name_assumption env d) b 
@@ -379,7 +378,7 @@ let import cenv env =
 
 type unsafe_judgment = { 
   uj_val : constr;
-  uj_type : typed_type }
+  uj_type : types }
 
 type unsafe_type_judgment = { 
   utj_val : constr;

@@ -263,8 +263,8 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
     | IsProd (n,c1,c'1), IsProd (_,c2,c'2) when l1=[] & l2=[] -> 
         evar_conv_x env isevars CONV c1 c2
         & 
-	(let d = Retyping.get_assumption_of env !isevars (nf_ise1 !isevars c1)
-	 in evar_conv_x (push_rel_assum (n,d) env) isevars pbty c'1 c'2)
+	(let d = nf_ise1 !isevars c1 in
+	 evar_conv_x (push_rel_assum (n,d) env) isevars pbty c'1 c'2)
 
     | IsMutInd (sp1,cl1), IsMutInd (sp2,cl2) ->
 	sp1=sp2

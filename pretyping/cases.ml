@@ -135,11 +135,7 @@ let inductive_of_rawconstructor c =
   inductive_of_constructor (constructor_of_rawconstructor c)
 
 (* Environment management *)
-let push_rel_type sigma (na,t) env =
-  push_rel_assum (na,get_assumption_of env sigma t) env
-
-let push_rels vars env =
-  List.fold_right (fun nvar env -> push_rel_type Evd.empty nvar env) vars env
+let push_rels vars env = List.fold_right push_rel_assum vars env
 
 (**********************************************************************)
 (* Structures used in compiling pattern-matching *)
@@ -670,8 +666,7 @@ let abstract_predicate env sigma indf = function
       let dep = copt <> None in
       let sign' =
 	if dep then
-	  let ind=get_assumption_of env sigma (build_dependent_inductive indf)
-	  in (Anonymous,None,ind)::sign
+	  (Anonymous,None,build_dependent_inductive indf) :: sign
 	else sign in
       (dep, it_mkLambda_or_LetIn_name env (extract_predicate pred) sign')
 
@@ -764,7 +759,7 @@ let build_branch pb defaults eqns const_info =
   let _,typs' =
     List.fold_right
       (fun (na,t) (env,typs) ->
- 	 (push_rel_assum (na,outcast_type t) env,
+ 	 (push_rel_assum (na,t) env,
 	  ((na,to_mutind env !(pb.isevars) t),t)::typs))
       typs (pb.env,[]) in
   let tomatchs =
@@ -834,7 +829,7 @@ and match_current pb (n,tm) =
 	      pb.pred brtyps cstrs current indt in
 	  let ci = make_case_info mis None tags in
 	  { uj_val = mkMutCase (ci, (*eta_reduce_if_rel*)pred,current,brvals);
-	    uj_type = make_typed typ s }
+	    uj_type = typ }
 
 and compile_further pb firstnext rest =
   (* We pop as much as possible tomatch not dependent one of the other *)
@@ -855,7 +850,7 @@ and compile_further pb firstnext rest =
   let j = compile pb' in
   { uj_val = lam_it j.uj_val sign;
     uj_type = (* Pas d'univers ici: imprédicatif si Prop/Set, dummy si Type *)
-      typed_app (fun t -> prod_it t sign) j.uj_type }
+      type_app (fun t -> prod_it t sign) j.uj_type }
 
 
 (* pour les alias des initiaux, enrichir les env de ce qu'il faut et
@@ -923,9 +918,8 @@ let inh_coerce_to_ind isevars env ty tyi =
   let (_,evarl) =
     List.fold_right
       (fun (na,ty) (env,evl) ->
-	 let aty = get_assumption_of env Evd.empty ty in
-	   (push_rel_assum (na,aty) env,
-	    (new_isevar isevars env (incast_type aty) CCI)::evl))
+	 (push_rel_assum (na,ty) env,
+	    (new_isevar isevars env ty CCI)::evl))
       ntys (env,[]) in
   let expected_typ = applist (mkMutInd tyi,evarl) in
      (* devrait être indifférent d'exiger leq ou pas puisque pour 
@@ -1105,7 +1099,5 @@ let compile_cases loc (typing_fun,isevars) tycon env (predopt, tomatchl, eqns)=
   let j = compile pb in
   
   match tycon with
-    | Some p ->
-	let p = get_assumption_of env !isevars p in
-	Coercion.inh_conv_coerce_to loc env isevars j p
+    | Some p ->	Coercion.inh_conv_coerce_to loc env isevars j p
     | None -> j

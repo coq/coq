@@ -45,9 +45,9 @@ val add_constraints : constraints -> safe_environment -> safe_environment
 
 val pop_named_decls : identifier list -> safe_environment -> safe_environment
 
-val lookup_named : identifier -> safe_environment -> constr option * typed_type
+val lookup_named : identifier -> safe_environment -> constr option * types
 (*i
-val lookup_rel : int -> safe_environment -> name * typed_type
+val lookup_rel : int -> safe_environment -> name * types
 i*)
 val lookup_constant : section_path -> safe_environment -> constant_body
 val lookup_mind : section_path -> safe_environment -> mutual_inductive_body
@@ -70,10 +70,10 @@ val safe_infer : safe_environment -> constr -> judgment * constraints
 
 (*i For debug
 val fix_machine : safe_environment -> constr -> judgment * constraints
-val fix_machine_type : safe_environment -> constr -> typed_type * constraints
+val fix_machine_type : safe_environment -> constr -> types * constraints
 
 val unsafe_infer : safe_environment -> constr -> judgment * constraints
-val unsafe_infer_type : safe_environment -> constr -> typed_type * constraints
+val unsafe_infer_type : safe_environment -> constr -> types * constraints
 
 val type_of : safe_environment -> constr -> constr
 

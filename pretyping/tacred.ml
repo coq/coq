@@ -625,12 +625,8 @@ let reduce_to_mind env sigma t =
 	     elimrec t' l
            with UserError _ -> errorlabstrm "tactics__reduce_to_mind"
                [< 'sTR"Not an inductive product." >])
-      | IsProd (n,ty,t') ->
-	let ty' = Retyping.get_assumption_of (Global.env()) Evd.empty ty in
-	elimrec t' ((n,None,ty')::l)
-      | IsLetIn (n,b,ty,t') ->
-	  let ty' = Retyping.get_assumption_of (Global.env()) Evd.empty ty in
-	  elimrec t' ((n,Some b,ty')::l)
+      | IsProd (n,ty,t') -> elimrec t' ((n,None,ty)::l)
+      | IsLetIn (n,b,ty,t') -> elimrec t' ((n,Some b,ty)::l)
       | _ -> error "Not an inductive product"
  in
  elimrec t []
