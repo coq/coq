@@ -73,12 +73,13 @@ let implicit_args_to_ast_list sp mipv =
       let ast_list = ref [] in
        	(Array.iteri
            (fun i mip  ->
-	      let imps = inductive_implicits_list(sp, i) in
+	      let imps = implicits_of_global (IndRef (sp, i)) in
 		      (ast_list :=
 	      	implicit_args_id_to_ast_list mip.mind_typename imps !ast_list;
 	      	Array.iteri
 		  (fun j idc ->
-		     let impls = constructor_implicits_list ((sp,i), succ j) in
+		     let impls = implicits_of_global
+		       (ConstructRef ((sp,i),j+1)) in
 		       ast_list := 
 		       implicit_args_id_to_ast_list idc impls !ast_list)
 		  mip.mind_consnames))
@@ -167,7 +168,7 @@ let constant_to_ast_list kn =
   let cb = Global.lookup_constant kn in
   let c = cb.const_body in
   let typ = cb.const_type in
-  let l = constant_implicits_list kn in
+  let l = implicits_of_global (ConstRef kn) in
   (match c with
       None -> 
 	make_variable_ast (id_of_label (label kn)) typ l
@@ -176,7 +177,7 @@ let constant_to_ast_list kn =
 
 let variable_to_ast_list sp =
   let (id, c, v) = get_variable sp in
-  let l = implicits_of_var sp in
+  let l = implicits_of_global (VarRef sp) in
     (match c with
 	 None -> 
 	   make_variable_ast id v l
