@@ -833,10 +833,10 @@ newtheories/Lists/List.v: newtheories/Lists/PolyList.v
 	(cd newtheories/Lists; cp -f PolyList.v List.v)
 
 newtheories/Lists/PolyList.vo:
-	rm newtheories/Lists/PolyList.v
+	@cd #nil command: don't compile it
 
 newtheories/Lists/PolyListSyntax.vo:
-	rm newtheories/Lists/PolyListSyntax.v
+	@cd #nil command: don't compile it
 
 # Obsolete ?
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
