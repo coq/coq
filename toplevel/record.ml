@@ -90,29 +90,15 @@ let warning_or_error coe st =
   if coe then errorlabstrm "structure" st;
   pPNL (hOV 0 [< 'sTR"Warning: "; st >])
 
-(* Fields have names [idfs] and types [tyfs]; [coers] is a boolean list 
-   telling if the corresponding field must me a coercion *)
-
-let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
-  let coers,fs = List.split cfs in     
-  let idps,typs = List.split ps in      
-  let idfs,tyfs = List.split fs in
-  if not (free_in_asts idstruc tyfs) then error "A record cannot be recursive";
-  let newps,newfs = typecheck_params_and_field ps fs in
-  let app_constructor = 
-    ope("APPLISTEXPL",
-        (nvar (string_of_id idstruc))::
-        List.map (fun id -> nvar(string_of_id id)) idps) in
-  let type_constructor = make_constructor fs app_constructor in 
-  let _ = build_mutual ps [(idstruc,s,[(idbuild,type_constructor)])] true in
+(* We build projections *)
+let declare_projections idstruc coers params constr_types =
   let r = global_reference CCI idstruc in
-  let rsp = op_of_mind r in
-  let x = Environ.named_hd (Global.env()) r Anonymous in
-  let lp = List.length idps in
+  let lp = List.length constr_types in
   let rp1 = applist (r,(rel_list 0 lp)) in
   let rp2 = applist (r,(rel_list 1 lp)) in
-
-  (* We build projections *)
+  let x = Environ.named_hd (Global.env()) r Anonymous in
+  let args =  (* Rel 1 refers to "x" *)
+    (List.map (fun (id,_) -> mkVar id) constr_types)@[mkRel 1] in
   let (sp_projs,_,_) =
     List.fold_left2
       (fun (sp_projs,ids_not_ok,subst) coe (fi,ti) -> 
@@ -129,11 +115,11 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
            (None::sp_projs,fi::ids_not_ok,subst)
          end else 
 	   let p = mkLambda (x, rp2, replace_vars subst ti) in
-	   let branch = mk_LambdaCit newfs (mkVar fi) in
+	   let branch = mk_LambdaCit constr_types (mkVar fi) in
 	   let ci = Inductive.make_case_info
 		      (Global.lookup_mind_specif (destMutInd r))
 		      (Some PrintLet) [| RegularPat |] in
-	   let proj = mk_LambdaCit newps 
+	   let proj = mk_LambdaCit params 
 			(mkLambda (x, rp1,
 				   mkMutCase (ci, p, mkRel 1, [|branch|]))) in
 	   let ok = 
@@ -156,12 +142,30 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
              if coe then
 	       Class.try_add_new_coercion_record fi NeverDischarge idstruc;
              let constr_fi = global_reference CCI fi in
-             let constr_fip = (* Rel 1 refers to "x" *)
-               applist (constr_fi,(List.map mkVar idps)@[mkRel 1])
+             let constr_fip = applist (constr_fi,args)
              in (Some(path_of_const constr_fi)::sp_projs,
 		 ids_not_ok, (fi,constr_fip)::subst)
 	   end)
-      ([],[],[]) coers newfs
-  in 
+      ([],[],[]) coers constr_types
+  in sp_projs
+
+(* Fields have names [idfs] and types [tyfs]; [coers] is a boolean list 
+   telling if the corresponding field must me a coercion *)
+let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
+  let coers,fs = List.split cfs in     
+  let idps,typs = List.split ps in      
+  let idfs,tyfs = List.split fs in
+  if not (free_in_asts idstruc tyfs) then error "A record cannot be recursive";
+  let newps,newfs = typecheck_params_and_field ps fs in
+  let app_constructor = 
+    ope("APPLISTEXPL",
+        (nvar (string_of_id idstruc))::
+        List.map (fun id -> nvar(string_of_id id)) idps) in
+  let type_constructor = make_constructor fs app_constructor in 
+  let sp = build_mutual_give_path
+	     ps [(idstruc,s,[(idbuild,type_constructor)])] true in
+  let sp_projs = declare_projections idstruc coers newps newfs in
+
+  let rsp = (sp,0) in
   if is_coe then Class.try_add_new_coercion idbuild NeverDischarge;
-  Recordops.add_new_struc (rsp,idbuild,lp,List.rev sp_projs)
+  Recordops.add_new_struc (rsp,idbuild,List.length idps,List.rev sp_projs)

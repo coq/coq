@@ -30,6 +30,11 @@ val build_mutual :
   (identifier * Coqast.t) list -> 
     (identifier * Coqast.t * (identifier * Coqast.t) list) list -> bool -> unit
 
+val build_mutual_give_path : 
+  (identifier * Coqast.t) list -> 
+    (identifier * Coqast.t * (identifier * Coqast.t) list) list -> bool
+      -> section_path
+
 val build_recursive :
   (identifier * ((identifier * Coqast.t) list) * Coqast.t * Coqast.t) list 
   -> unit

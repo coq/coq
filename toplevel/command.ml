@@ -134,7 +134,7 @@ let corecursive_message = function
   | l   -> hOV 0 [< prlist_with_sep pr_coma pr_id l;
                     'sPC; 'sTR "are corecursively defined">]
 
-let build_mutual lparams lnamearconstrs finite =
+let interp_mutual lparams lnamearconstrs finite = 
   let allnames = 
     List.fold_left 
       (fun acc (id,_,l) -> id::(List.map fst l)@acc) [] lnamearconstrs in
@@ -182,14 +182,24 @@ let build_mutual lparams lnamearconstrs finite =
 	   mind_entry_lc = constrs })
       (List.rev arityl) lnamearconstrs
   in
-  let mie = { mind_entry_finite = finite; mind_entry_inds = mispecvec }
-  in
+  { mind_entry_finite = finite; mind_entry_inds = mispecvec },
+  lrecnames
+
+let declare_mutual_with_eliminations mie lrecnames finite =
   let sp = declare_mind mie in
   if is_verbose() then pPNL(minductive_message lrecnames);
   if finite then
-    for i = 0 to List.length mispecvec - 1 do
+    for i = 0 to List.length lrecnames - 1 do
       declare_eliminations sp i
-    done
+    done;
+  sp
+
+let build_mutual_give_path lparams lnamearconstrs finite =
+  let mie, lrecnames = interp_mutual lparams lnamearconstrs finite in
+  declare_mutual_with_eliminations mie lrecnames finite
+
+let build_mutual lparams lnamearconstrs finite =
+  let _ = build_mutual_give_path lparams lnamearconstrs finite in ()
 
 (* try to find non recursive definitions *)
 
