@@ -109,9 +109,6 @@ let rec tauto_intuit t_reduce t_solver ist =
       $t_solver
    ) >>
 
-let tauto_main t_reduce ist =
-  tauto_intuit t_reduce <:tactic< Failtac >> ist
-
 let unfold_not_iff = function
   | None -> interp <:tactic<Unfold not iff>>
   | Some id ->
@@ -122,18 +119,18 @@ let reduction_not_iff = Tacticals.onAllClauses (fun ido -> unfold_not_iff ido)
 
 let t_reduction_not_iff = valueIn (VTactic reduction_not_iff)
 
-let tauto g =
-  try
-        (interp (tacticIn (tauto_main t_reduction_not_iff)))
-    g
-  with UserError _ -> errorlabstrm "tauto" [< str "Tauto failed" >]
-
 let intuition_gen tac =
   interp (tacticIn (tauto_intuit t_reduction_not_iff tac))
 
+let tauto g =
+  try intuition_gen <:tactic<Failtac>> g
+  with UserError _ -> errorlabstrm "tauto" [< str "Tauto failed" >]
+
+let default_intuition_tac = <:tactic< Auto with * >>
+
 let intuition args =
   match args with
-    | [] -> intuition_gen <:tactic< Auto with * >>
+    | [] -> intuition_gen default_intuition_tac
     | [ Tac(_, t)] -> intuition_gen t
     | _ -> assert false
 
