@@ -868,7 +868,7 @@ clean:: archclean
 	rm -f */*.pp[iox] contrib/*/*.pp[iox]
 
 cleanconfig::
-	rm -f config/Makefile config/coq_config.ml
+	rm -f config/Makefile config/coq_config.ml dev/ocamldebug-v7
 
 ###########################################################################
 # Dependencies
