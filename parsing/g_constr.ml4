@@ -198,7 +198,9 @@ GEXTEND Gram
         IDENT "if"; c1 = constr;
         IDENT "then"; c2 = constr; 
         IDENT "else"; c3 = constr ->
-	  COrderedCase (loc, IfStyle, Some p, c1, [c2; c3]) ]
+	  COrderedCase (loc, IfStyle, Some p, c1, [c2; c3])
+      | ".."; c = operconstr LEVEL "0"; ".." ->
+          CAppExpl (loc,(None,Ident (loc,Topconstr.ldots_var)),[c]) ]
     | "0" RIGHTA
       [ "?" -> CHole loc
       | "?"; n = Prim.natural -> CPatVar (loc, (false,Pattern.patvar_of_int n))
