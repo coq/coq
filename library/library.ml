@@ -86,7 +86,7 @@ let vo_magic_number = 0700
 let (raw_extern_module, raw_intern_module) =
   System.raw_extern_intern vo_magic_number ".vo"
 
-let segment_iter f =
+let segment_rec_iter f =
   let rec apply = function
     | sp,Leaf obj -> f (sp,obj)
     | _,OpenedSection _ -> assert false
@@ -97,6 +97,16 @@ let segment_iter f =
   in
   iter
 
+let segment_iter f =
+  let rec apply = function
+    | sp,Leaf obj -> f (sp,obj)
+    | _,OpenedSection _ -> assert false
+    | _,ClosedSection (_,seg) -> ()
+    | _,(FrozenState _ | Module _) -> ()
+  and iter seg =
+    List.iter apply seg
+  in
+  iter
 
 (*s [open_module s] opens a module. The module [s] and all modules needed by
     [s] are assumed to be already loaded. When opening [s] we recursively open
@@ -121,7 +131,7 @@ let rec open_module s =
    then same value as for caller is reused in recursive loadings). *)
 
 let load_objects decls =
-  segment_iter load_object decls
+  segment_rec_iter load_object decls
 
 let rec load_module_from s f =
   let (lpe,fname,ch) = raw_intern_module (get_load_path ()) f in
