@@ -741,8 +741,25 @@ Apply Zmult_reg_right with z.
   Intro. Rewrite H0 in Hz. Contradiction (Zgt_antirefl `0`).
 Assumption.
 Qed.
+V7only [Notation Zle_mult_simpl := Zle_Zmult_right2.
+(* Zle_mult_simpl 
+ : (a,b,c:Z)(Zgt c ZERO)->(Zle (Zmult a c) (Zmult b c))->(Zle a b). *)
+].
 
 V7only [Unset Implicit Arguments.].
+
+Lemma Zge_mult_simpl 
+ : (a,b,c:Z) (Zgt c ZERO)->(Zge (Zmult a c) (Zmult b c))->(Zge a b).
+Intros a b c H1 H2; Apply Zle_ge; Apply Zle_mult_simpl with c; Trivial.
+Apply Zge_le; Trivial.
+Qed.
+
+Lemma Zgt_mult_simpl 
+ : (a,b,c:Z) (Zgt c ZERO)->(Zgt (Zmult a c) (Zmult b c))->(Zgt a b).
+Intros a b c H1 H2; Apply Zlt_gt; Apply Zlt_Zmult_right2 with c; Trivial.
+Apply Zgt_lt; Trivial.
+Qed.
+
 
 (** Compatibility of multiplication by a positive wrt to being positive *)
 
