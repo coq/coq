@@ -275,17 +275,14 @@ GEXTEND Gram
     [ [ fs = LIST0 record_field SEP ";" -> fs ] ]
   ;
   simple_params:
-    [ [ idl = LIST1 base_ident SEP ","; ":"; c = constr -> join_binders (idl, c)
-      | idl = LIST1 base_ident SEP "," -> join_binders (idl, evar_constr dummy_loc)
-    ] ]
+    [ [ nal = LIST1 name SEP ","; ":"; c = constr -> LocalRawAssum (nal, c)
+      | nal = LIST1 name SEP "," -> LocalRawAssum (nal, evar_constr loc) ] ]
   ;
   simple_binders:
-    [ [ "["; bll = LIST1 simple_params SEP ";"; "]" -> List.flatten bll ] ]
+    [ [ "["; bll = LIST1 vardecls SEP ";"; "]" -> bll ] ]
   ;
   ne_simple_binders_list:
-    [ [ bll = LIST1 simple_binders ->
-          List.map (fun (id,t) -> LocalRawAssum ([dummy_loc,Name id],t))
-            (List.flatten bll) ] ]
+    [ [ bll = LIST1 simple_binders -> (List.flatten bll) ] ]
   ;
   fix_params:
     [ [ idl = LIST1 name SEP ","; ":"; c = constr -> (idl, c)
