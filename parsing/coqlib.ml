@@ -206,6 +206,12 @@ let coq_existT_ref  = lazy (reference "Logic_Type" "existT")
 let coq_not_ref     = lazy (reference "Logic" "not")
 let coq_False_ref   = lazy (reference "Logic" "False")
 let coq_sumbool_ref = lazy (reference "Specif" "sumbool")
+let coq_sig_ref = lazy (reference "Specif" "sig")
+
+(* Pattern "(sig ?1 ?2)" *)
+let coq_sig_pattern = 
+  lazy (PApp (PRef (Lazy.force coq_sig_ref), 
+	      [| PMeta (Some 1); PMeta (Some 2) |]))
 
 (* Patterns "(eq ?1 ?2 ?3)", "(eqT ?1 ?2 ?3)" and "(idT ?1 ?2 ?3)" *)
 let coq_eq_pattern_gen eq = 
@@ -274,3 +280,4 @@ let build_coq_eqdec_pattern () = Lazy.force coq_eqdec_pattern
 let build_coq_arrow_pattern () = Lazy.force coq_arrow_pattern
 let build_coq_refl_rel1_pattern () = Lazy.force coq_refl_rel1_pattern
 let build_coq_refl_rel2_pattern () = Lazy.force coq_refl_rel2_pattern
+let build_coq_sig_pattern () = Lazy.force coq_sig_pattern

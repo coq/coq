@@ -16,5 +16,5 @@ open Names
 
 (* translation of imperative programs into intermediate functional programs *)
 
-val trans : Renamings.t -> typed_program -> cc_term
+val trans : Prename.t -> typed_program -> cc_term
 

@@ -9,3 +9,5 @@
 (*i $Id$ i*)
 
 (* Nice syntax for integers. *)
+
+val z_of_string : bool -> string -> Coqast.loc -> Coqast.t

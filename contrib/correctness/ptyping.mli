@@ -19,17 +19,17 @@ open Penv
 
 (* This module realizes type and effect inference *)
 
-val cic_type_v : local_env -> Renamings.t -> CoqAst.t ml_type_v -> type_v
+val cic_type_v : local_env -> Prename.t -> Coqast.t ml_type_v -> type_v
 
-val effect_app : Renamings.t -> local_env
-            -> (typing_info,'b) ProgAst.t
+val effect_app : Prename.t -> local_env
+            -> (typing_info,'b) Past.t
             -> (typing_info,constr) arg list
             -> (type_v binder list * type_c) 
              * ((identifier*identifier) list * (identifier*constr) list * bool)
              * type_c
 
-val typed_var : Renamings.t -> local_env -> constr * constr -> variant
+val typed_var : Prename.t -> local_env -> constr * constr -> variant
 
-val type_of_expression : Renamings.t -> local_env -> constr -> constr
+val type_of_expression : Prename.t -> local_env -> constr -> constr
 
-val states : Renamings.t -> local_env -> program -> typed_program
+val states : Prename.t -> local_env -> program -> typed_program

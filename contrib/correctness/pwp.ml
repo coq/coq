@@ -10,11 +10,9 @@
 
 (* $Id$ *)
 
-open More_util
+open Util
 open Names
-open Generic
 open Term
-open Environ
 
 open Pmisc
 open Ptype
@@ -41,7 +39,7 @@ open Prename
 
 (* force a post-condition *)
 let update_post env top ef c =
-  let i,o = Effects.get_repr ef in
+  let i,o = Peffect.get_repr ef in
   let al = 
     List.fold_left 
       (fun l id -> 
@@ -109,18 +107,16 @@ let create_bool_post c =
  * (if result then c=true else c=false) if b is an expression c.
  *)
 
-let bool_id = id_of_string "bool"
-
 let is_bool = function
-    TypePure c ->
-      (match (strip_outer_cast c) with
-	   DOPN(MutInd _ as op,_) -> id_of_global op = bool_id
+  | TypePure c ->
+      (match kind_of_term (strip_outer_cast c) with
+	 | IsMutInd (op,_) -> Global.string_of_global (IndRef op) = "bool"
 	 | _ -> false)
   | _ -> false
 
 let normalize_boolean ren env b =
   let ((res,v),ef,p,q) = b.info.kappa in
-  Prog_errors.check_no_effect b.loc ef;
+  Perror.check_no_effect b.loc ef;
   if is_bool v then
     match q with
 	Some _ ->
@@ -142,7 +138,7 @@ let normalize_boolean ren env b =
 	    | _ -> b
 	end
   else
-    Prog_errors.should_be_boolean b.loc
+    Perror.should_be_boolean b.loc
 
 (* [decomp_boolean c] returns the specs R and S of a boolean expression *)
 
@@ -150,7 +146,7 @@ let decomp_boolean = function
     Some { a_value = q } ->
       Reduction.whd_betaiota (Term.applist (q, [constant "true"])),
       Reduction.whd_betaiota (Term.applist (q, [constant "false"]))
-  | _ -> invalid_arg "Prog_typing.decomp_boolean"
+  | _ -> invalid_arg "Ptyping.decomp_boolean"
 
 (* top point of a program *)
 
@@ -211,7 +207,7 @@ let rec propagate_desc ren info d =
     | TabAcc (ch,x,e) ->
       	TabAcc (ch, x, propagate ren e)
     | TabAff (ch,x,({desc=Expression c} as e1),e2) ->
-	let p = Monad.make_pre_access ren env x c in
+	let p = Pmonad.make_pre_access ren env x c in
 	let e1' = add_pre [(anonymous_pre true p)] e1 in
       	TabAff (false, x, propagate ren e1', propagate ren e2)
     | TabAff (ch,x,e1,e2) ->
@@ -296,7 +292,7 @@ and propagate ren p =
 	let q =
 	  let conn = if id = connective_and then "spec_and" else "spec_or" in
 	  let c = Term.applist (constant conn, [r1; s1; r2; s2]) in
-	  let c = Reduction.whd_betadeltaiota (Evd.mt_evd()) c in
+	  let c = Reduction.whd_betadeltaiota (Global.env()) Evd.empty c in
 	  create_bool_post c
 	in
 	let d = 
@@ -310,7 +306,7 @@ and propagate ren p =
 	let (r1,s1) = decomp_boolean q1 in
 	let q = 
 	  let c = Term.applist (constant "spec_not", [r1; s1]) in
-	  let c = Reduction.whd_betadeltaiota (Evd.mt_evd()) c in
+	  let c = Reduction.whd_betadeltaiota (Global.env ()) Evd.empty c in
 	  create_bool_post c 
 	in
 	let d = SApp ([Var id; Expression (out_post q1)], [ e1 ]) in
@@ -328,7 +324,7 @@ and propagate_block ren env = function
   | (Statement p) :: (Assert q) :: rem when annotation_candidate p ->
       let q' =
 	let ((id,v),_,_,_) = p.info.kappa in
-	let tv = Monad.trad_ml_type_v ren env v in
+	let tv = Pmonad.trad_ml_type_v ren env v in
 	named_app (abstract [id,tv]) q
       in
       let p' = post_if_none env (Some q') p in

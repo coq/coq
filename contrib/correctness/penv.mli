@@ -45,8 +45,8 @@ type typed_program = (typing_info, constr) t
 
 (* global environment *)
 
-val add_global : identifier -> type_v -> typed_program option -> unit
-val add_global_set : identifier -> unit
+val add_global : identifier -> type_v -> typed_program option -> section_path
+val add_global_set : identifier -> section_path
 val is_global : identifier -> bool
 val is_global_set : identifier -> bool
 val lookup_global : identifier -> type_v

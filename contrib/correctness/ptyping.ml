@@ -14,7 +14,8 @@ open Pp
 open Util
 open Names
 open Term
-open Termast
+open Environ
+open Astterm
 open Himsg
 open Proof_trees
 
@@ -38,22 +39,22 @@ let type_v_sup loc t1 t2 =
   if t1 = t2 then
     t1
   else
-    Prog_errors.if_branches loc
+    Perror.if_branches loc
 
 let typed_var ren env (phi,r) =
-  let sign = TradEnv.before_after_sign_of ren env in
-  let a = Mach.type_of (Evd.mt_evd()) sign phi in
+  let sign = Pcicenv.before_after_sign_of ren env in
+  let a = Typing.type_of (Global.env_of_context sign) Evd.empty phi in
   (phi,r,a)
 
 (* Application de fonction *)
 
 let rec convert = function
   | (TypePure c1, TypePure c2) -> 
-      Reduction.conv_x (Evd.mt_evd()) c1 c2
+      Reduction.is_conv (Global.env ()) Evd.empty c1 c2
   | (Ref v1, Ref v2) -> 
       convert (v1,v2)
   | (Array (s1,v1), Array (s2,v2)) -> 
-      (Reduction.conv_x (Evd.mt_evd()) s1 s2) && (convert (v1,v2))
+      (Reduction.is_conv (Global.env ()) Evd.empty s1 s2) && (convert (v1,v2))
   | (v1,v2) -> v1 = v2
       
 let effect_app ren env f args =
@@ -65,13 +66,13 @@ let effect_app ren env f args =
   let bl,c = 
     match tf with
 	Arrow (bl, c) ->
-	  if List.length bl <> n then Prog_errors.partial_app f.loc;
+	  if List.length bl <> n then Perror.partial_app f.loc;
 	  bl,c
-      | _ -> Prog_errors.app_of_non_function f.loc
+      | _ -> Perror.app_of_non_function f.loc
   in
   let check_type loc v t so =
     let v' = type_v_rsubst so v in
-    if not (convert (v',t)) then Prog_errors.expected_type loc (pp_type_v v')
+    if not (convert (v',t)) then Perror.expected_type loc (pp_type_v v')
   in
   let s,so,ok = 
     (* s est la substitution des références, so celle des autres arg. 
@@ -83,7 +84,7 @@ let effect_app ren env f args =
 	     let ta = type_in_env env id' in
 	     check_type f.loc v ta so;
 	     (id,id')::s, so, ok
-	 | _, Refarg _ -> Prog_errors.should_be_a_variable f.loc
+	 | _, Refarg _ -> Perror.should_be_a_variable f.loc
 	 | (id,BindType v), Term t ->
 	     let ((_,ta),_,_,_) = t.info.kappa in
 	     check_type t.loc v ta so;
@@ -91,10 +92,10 @@ let effect_app ren env f args =
 		  Expression c -> s, (id,c)::so, ok
 		| _ -> s,so,false)
 	 | (id,BindSet), Type v ->
-	     let c = Monad.trad_ml_type_v ren env v in
+	     let c = Pmonad.trad_ml_type_v ren env v in
 	     s, (id,c)::so, ok
-	 | (id,BindSet), Term t -> Prog_errors.expects_a_type id t.loc
-	 | (id,BindType _), Type _ -> Prog_errors.expects_a_term id
+	 | (id,BindSet), Term t -> Perror.expects_a_type id t.loc
+	 | (id,BindType _), Type _ -> Perror.expects_a_term id
 	 | (_,Untyped), _ -> invalid_arg "effects_app")
     ([],[],true)
     (List.combine bl args)
@@ -107,15 +108,16 @@ let effect_app ren env f args =
 
 let state_coq_ast sign a =
   let j =
-    reraise_with_loc (Ast.loc a) (fconstruct (Evd.mt_evd()) sign) a in
-  let ids = global_vars j._VAL in
-  j._VAL, j._TYPE, ids
+    let env = Global.env_of_context sign in
+    reraise_with_loc (Ast.loc a) (judgment_of_rawconstr Evd.empty env) a in
+  let ids = global_vars j.uj_val in
+  j.uj_val, j.uj_type, ids
 
 (* [is_pure p] tests wether the program p is an expression or not. *)
 
 let type_of_expression ren env c =
   let sign = now_sign_of ren env in
-  Mach.type_of (Evd.mt_evd()) sign c
+  Typing.type_of (Global.env_of_context sign) Evd.empty c
 
 let rec is_pure_type_v = function
     TypePure _ -> true
@@ -154,13 +156,13 @@ and is_pure_arg ren env = function
  *)
 
 let state_var ren env (phi,r) = 
-  let sign = TradEnv.before_after_sign_of ren env in
+  let sign = Pcicenv.before_after_sign_of ren env in
   let phi',_,ids = state_coq_ast sign phi in
   let ef = List.fold_left
 	     (fun e id ->
-		if is_mutable_in_env env id then Effects.add_read id e else e)
-	     Effects.bottom ids in
-  let r',_,_ = state_coq_ast (initial_sign()) r in
+		if is_mutable_in_env env id then Peffect.add_read id e else e)
+	     Peffect.bottom ids in
+  let r',_,_ = state_coq_ast (Global.named_context ()) r in
   ef,(phi',r')
 	
 (* [state_pre ren env pl] returns a pair (e,c) where e is the effect of the
@@ -170,16 +172,16 @@ let state_var ren env (phi,r) =
 
 let state_pre ren env pl =
   let state e p =
-    let sign = TradEnv.before_sign_of ren env in
+    let sign = Pcicenv.before_sign_of ren env in
     let cc,_,ids = state_coq_ast sign p.p_value in
     let ef = List.fold_left
 	       (fun e id ->
 		  if is_mutable_in_env env id then
-		    Effects.add_read id e
+		    Peffect.add_read id e
 		  else if is_at id then
 		    let uid,_ = un_at id in
 		    if is_mutable_in_env env uid then
-		      Effects.add_read uid e
+		      Peffect.add_read uid e
 		    else
 		      e
 	     	  else
@@ -190,7 +192,7 @@ let state_pre ren env pl =
   in
   List.fold_left 
     (fun (e,cl) p -> let ef,c = state e p in (ef,c::cl)) 
-    (Effects.bottom,[]) pl
+    (Peffect.bottom,[]) pl
 
 let state_assert ren env a =
   let p = pre_of_assert true a in
@@ -198,7 +200,7 @@ let state_assert ren env a =
   e,assert_of_pre (List.hd l)
 
 let state_inv ren env = function
-    None -> Effects.bottom, None
+    None -> Peffect.bottom, None
   | Some i -> let e,p = state_assert ren env i in e,Some p
 	  
 (* [state_post ren env (id,v,ef) q] returns a pair (e,c)
@@ -210,29 +212,29 @@ let state_inv ren env = function
  *)
 
 let state_post ren env (id,v,ef) = function
-    None -> Effects.bottom, None
+    None -> Peffect.bottom, None
   | Some q ->
-      let v' = Monad.trad_ml_type_v ren env v in
-      let sign = TradEnv.before_after_result_sign_of (Some (id,v')) ren env in
+      let v' = Pmonad.trad_ml_type_v ren env v in
+      let sign = Pcicenv.before_after_result_sign_of (Some (id,v')) ren env in
       let cc,_,ids = state_coq_ast sign q.a_value in
       let ef,c = 
 	List.fold_left
 	  (fun (e,c) id ->
 	     if is_mutable_in_env env id then
 	       if is_write ef id then
-		 Effects.add_write id e, c
+		 Peffect.add_write id e, c
 	       else
-		 Effects.add_read id e,
+		 Peffect.add_read id e,
 		 subst_in_constr [id,at_id id ""] c
 	     else if is_at id then
 	       let uid,_ = un_at id in
 	       if is_mutable_in_env env uid then
-		 Effects.add_read uid e, c
+		 Peffect.add_read uid e, c
 	       else
 		 e,c
 	     else
 	       e,c)
-	  (Effects.bottom,cc) ids 
+	  (Peffect.bottom,cc) ids 
       in
       let c = abstract [id,v'] c in
       ef, Some { a_name = q.a_name; a_value = c }
@@ -240,10 +242,10 @@ let state_post ren env (id,v,ef) = function
 (* transformation of AST into constr in types V and C *)
 
 let rec cic_type_v env ren = function
-    Ref v -> Ref (cic_type_v env ren v)
+  | Ref v -> Ref (cic_type_v env ren v)
   | Array (com,v) ->
-      let sign = TradEnv.now_sign_of ren env in
-      let c = constr_of_com (Evd.mt_evd()) sign com in
+      let sign = Pcicenv.now_sign_of ren env in
+      let c = interp_constr Evd.empty (Global.env_of_context sign) com in
       Array (c, cic_type_v env ren v)
   | Arrow (bl,c) ->
       let bl',ren',env' =
@@ -258,16 +260,16 @@ let rec cic_type_v env ren = function
       let c' = cic_type_c env' ren' c in
       Arrow (List.rev bl',c')
   | TypePure com ->
-      let sign = TradEnv.cci_sign_of ren env in
-      let c = constr_of_com (Evd.mt_evd()) sign com in
+      let sign = Pcicenv.cci_sign_of ren env in
+      let c = interp_constr Evd.empty (Global.env_of_context sign) com in
       TypePure c
 
 and cic_type_c env ren ((id,v),e,p,q) =
   let v' = cic_type_v env ren v in
-  let cv = Monad.trad_ml_type_v ren env v' in
+  let cv = Pmonad.trad_ml_type_v ren env v' in
   let efp,p' = state_pre ren env p in
   let efq,q' = state_post ren env (id,v',e) q in
-  let ef = Effects.union e (Effects.union efp efq) in
+  let ef = Peffect.union e (Peffect.union efp efq) in
   ((id,v'),ef,p',q')
 
 and cic_binder env ren = function
@@ -302,16 +304,16 @@ and cic_binders env ren = function
 
 let states_expression ren env expr =
   let rec effect pl = function
-      Var id -> 
-	(if is_global id then constant (string_of_id id) else VAR id),
-	pl, Effects.bottom
-    | Expression c -> c, pl, Effects.bottom
-    | Acc id -> VAR id, pl, Effects.add_read id Effects.bottom
+    | Var id -> 
+	(if is_global id then constant (string_of_id id) else mkVar id),
+	pl, Peffect.bottom
+    | Expression c -> c, pl, Peffect.bottom
+    | Acc id -> mkVar id, pl, Peffect.add_read id Peffect.bottom
     | TabAcc (_,id,p) ->
 	let c,pl,ef = effect pl p.desc in
-	let pre = Monad.make_pre_access ren env id c in
-	Monad.make_raw_access ren env (id,id) c, 
-	(anonymous_pre true pre)::pl, Effects.add_read id ef
+	let pre = Pmonad.make_pre_access ren env id c in
+	Pmonad.make_raw_access ren env (id,id) c, 
+	(anonymous_pre true pre)::pl, Peffect.add_read id ef
     | App (p,args) ->
 	let a,pl,e = effect pl p.desc in
 	let args,pl,e =
@@ -320,23 +322,25 @@ let states_expression ren env expr =
 	       match arg with
 		   Term p ->
 		     let carg,pl,earg = effect pl p.desc in
-		     carg::l,pl,Effects.union e earg
+		     carg::l,pl,Peffect.union e earg
 		 | Type v ->
 		     let v' = cic_type_v env ren v in
-		     (Monad.trad_ml_type_v ren env v')::l,pl,e
+		     (Pmonad.trad_ml_type_v ren env v')::l,pl,e
 		 | Refarg _ -> assert false) 
 	    args ([],pl,e) 
 	in
 	Term.applist (a,args),pl,e
-    | _ -> invalid_arg "Prog_typing.states_expression"
+    | _ -> invalid_arg "Ptyping.states_expression"
   in
   let e0,pl0 = state_pre ren env expr.pre in
   let c,pl,e = effect [] expr.desc in
-  let sign =TradEnv.before_sign_of ren env in
+  let sign = Pcicenv.before_sign_of ren env in
+  (*i WAS
   let c = (Trad.ise_resolve true empty_evd [] (gLOB sign) c)._VAL in
-  let ty = Mach.type_of empty_evd sign c in
+  i*)
+  let ty = Typing.type_of (Global.env_of_context sign) Evd.empty c in
   let v = TypePure ty in
-  let ef = Effects.union e0 e in
+  let ef = Peffect.union e0 e in
   Expression c, (v,ef), pl0@pl
 
 
@@ -364,18 +368,18 @@ let rec states_desc ren env loc = function
     Expression c ->
       let ty = type_of_expression ren env c in
       let v = v_of_constr ty in
-      Expression c, (v,Effects.bottom)
+      Expression c, (v,Peffect.bottom)
 
   | Acc _ ->
-      failwith "Prog_typing.states: term is supposed not to be pure"
+      failwith "Ptyping.states: term is supposed not to be pure"
 
   | Var id ->
       let v = type_in_env env id in
-      let ef = Effects.bottom in
+      let ef = Peffect.bottom in
       Var id, (v,ef)
 
   | Aff (x, e1) ->
-      Prog_errors.check_for_reference loc x (type_in_env env x);
+      Perror.check_for_reference loc x (type_in_env env x);
       let s_e1 = states ren env e1 in
       let _,e,_,_ = s_e1.info.kappa in
       let ef = add_write x e in
@@ -385,7 +389,7 @@ let rec states_desc ren env loc = function
   | TabAcc (check, x, e) ->
       let s_e = states ren env e in
       let _,efe,_,_ = s_e.info.kappa in
-      let ef = Effects.add_read x efe in
+      let ef = Peffect.add_read x efe in
       let _,ty = dearray_type (type_in_env env x) in
       TabAcc (check, x, s_e), (ty, ef)
 
@@ -394,7 +398,7 @@ let rec states_desc ren env loc = function
       let s_e2 = states ren env e2 in 
       let _,ef1,_,_ = s_e1.info.kappa in
       let _,ef2,_,_ = s_e2.info.kappa in
-      let ef = Effects.add_write x (Effects.union ef1 ef2) in
+      let ef = Peffect.add_write x (Peffect.union ef1 ef2) in
       let v = constant_unit () in
       TabAff (check, x, s_e1, s_e2), (v,ef)
 
@@ -411,7 +415,7 @@ let rec states_desc ren env loc = function
       let efinv,inv = state_inv ren env invopt in
       let _,efb,_,_ = s_b.info.kappa in
       let ef = 
-	Effects.union (Effects.union ef_bl efb) (Effects.union efinv efphi)
+	Peffect.union (Peffect.union ef_bl efb) (Peffect.union efinv efphi)
       in
       let v = constant_unit () in
       let cvar = 
@@ -421,7 +425,7 @@ let rec states_desc ren env loc = function
       While (s_b,inv,(cvar,r'),s_bl), (v,ef)
       
   | Lam ([],_) ->
-      failwith "Prog_typing.states: abs. should have almost one binder"
+      failwith "Ptyping.states: abs. should have almost one binder"
 
   | Lam (bl, e) ->
       let bl' = cic_binders env ren bl in
@@ -429,7 +433,7 @@ let rec states_desc ren env loc = function
       let ren' = initial_renaming env' in
       let s_e = states ren' env' e in
       let v = make_arrow bl' s_e.info.kappa in
-      let ef = Effects.bottom in
+      let ef = Peffect.bottom in
       Lam(bl',s_e), (v,ef)
 	 
   (* Connectives AND and OR *)
@@ -438,7 +442,7 @@ let rec states_desc ren env loc = function
       and s_e2 = states ren env e2 in
       let (_,ef1,_,_) = s_e1.info.kappa
       and (_,ef2,_,_) = s_e2.info.kappa in
-      let ef = Effects.union ef1 ef2 in
+      let ef = Peffect.union ef1 ef2 in
       SApp ([Var id], [s_e1; s_e2]), 
       (TypePure (constant "bool"), ef)
 
@@ -449,7 +453,7 @@ let rec states_desc ren env loc = function
       SApp ([Var id], [s_e]), 
       (TypePure (constant "bool"), ef)
       
-  | SApp _ -> invalid_arg "Prog_typing.states (SApp)"
+  | SApp _ -> invalid_arg "Ptyping.states (SApp)"
 
   (* ATTENTION:
      Si un argument réel de type ref. correspond à une ref. globale
@@ -466,12 +470,12 @@ let rec states_desc ren env loc = function
       let ef_args = 
 	List.map 
 	  (function Term t -> let (_,e,_,_) = t.info.kappa in e
-	          | _ -> Effects.bottom) 
+	          | _ -> Peffect.bottom) 
 	  s_args 
       in
       let _,_,((_,tapp),efapp,_,_) = effect_app ren env s_f s_args in
       let ef = 
-	Effects.compose (List.fold_left Effects.compose eff ef_args) efapp
+	Peffect.compose (List.fold_left Peffect.compose eff ef_args) efapp
       in
       App (s_f, s_args), (tapp, ef)
       
@@ -482,18 +486,18 @@ let rec states_desc ren env loc = function
       let ren' = next ren [x] in
       let s_e2 = states ren' env' e2 in
       let (_,v2),ef2,_,_ = s_e2.info.kappa in
-      Prog_errors.check_for_let_ref loc v2;
-      let ef = Effects.compose ef1 (Effects.remove ef2 x) in
+      Perror.check_for_let_ref loc v2;
+      let ef = Peffect.compose ef1 (Peffect.remove ef2 x) in
       LetRef (x, s_e1, s_e2), (v2,ef)
 	
   | LetIn (x, e1, e2) ->
       let s_e1 = states ren env e1 in
       let (_,v1),ef1,_,_ = s_e1.info.kappa in
-      Prog_errors.check_for_not_mutable e1.loc v1;
+      Perror.check_for_not_mutable e1.loc v1;
       let env' = add (x,v1) env in
       let s_e2 = states ren env' e2 in
       let (_,v2),ef2,_,_ = s_e2.info.kappa in
-      let ef = Effects.compose ef1 ef2 in
+      let ef = Peffect.compose ef1 ef2 in
       LetIn (x, s_e1, s_e2), (v2,ef)
 	    
   | If (b, e1, e2) ->
@@ -503,7 +507,7 @@ let rec states_desc ren env loc = function
       let (_,tb),efb,_,_ = s_b.info.kappa in
       let (_,t1),ef1,_,_ = s_e1.info.kappa in
       let (_,t2),ef2,_,_ = s_e2.info.kappa in
-      let ef = Effects.compose efb (disj ef1 ef2) in
+      let ef = Peffect.compose efb (disj ef1 ef2) in
       let v = type_v_sup loc t1 t2 in
       If (s_b, s_e1, s_e2), (v,ef)
 
@@ -529,13 +533,13 @@ let rec states_desc ren env loc = function
       in 
       let s_e = state_rec ((result_id,v'),efvar,[],None) in
       let tf = make_arrow bl' s_e.info.kappa in
-      LetRec (f,bl',v',var',s_e), (tf,Effects.bottom)
+      LetRec (f,bl',v',var',s_e), (tf,Peffect.bottom)
 
   | PPoint (s,d) -> 
       let ren' = push_date ren s in
       states_desc ren' env loc d
 	
-  | Debug _ -> failwith "Prog_typing.states: Debug: TODO"
+  | Debug _ -> failwith "Ptyping.states: Debug: TODO"
 
 
 and states_arg ren env = function
@@ -555,7 +559,7 @@ and states ren env expr =
   in
   let (ep,p) = state_pre ren env expr.pre in
   let (eq,q) = state_post ren env (result_id,v,e) expr.post in
-  let e' = Effects.union e (Effects.union ep eq) in
+  let e' = Peffect.union e (Peffect.union ep eq) in
   let p' = p1 @ p in
   let tinfo = { env = env; kappa = ((result_id,v),e',p',q) } in
   { desc = d;
@@ -568,13 +572,13 @@ and states_block ren env bl =
   let rec ef_block ren tyres = function
       [] ->
 	begin match tyres with
-	    Some ty -> [],ty,Effects.bottom,ren
+	    Some ty -> [],ty,Peffect.bottom,ren
 	  | None -> failwith "a block should contain at least one statement"
 	end
     | (Assert p)::block -> 
 	let ep,c = state_assert ren env p in
 	let bl,t,ef,ren' = ef_block ren tyres block in
-	(Assert c)::bl,t,Effects.union ep ef,ren'
+	(Assert c)::bl,t,Peffect.union ep ef,ren'
     | (Label s)::block ->
 	let ren' = push_date ren s in
 	let bl,t,ef,ren'' = ef_block ren' tyres block in
@@ -584,7 +588,7 @@ and states_block ren env bl =
 	let (_,t),efe,_,_ = s_e.info.kappa in
 	let ren' = next ren (get_writes efe) in
 	let bl,t,ef,ren'' = ef_block ren' (Some t) block in
-	(Statement s_e)::bl,t,Effects.compose efe ef,ren''
+	(Statement s_e)::bl,t,Peffect.compose efe ef,ren''
   in
   ef_block ren None bl
 

@@ -26,13 +26,10 @@ open Ptyping
 open Pmonad
 
 
-let mmk = make_module_marker [ "#Specif.obj" ]
-let sig_pattern = put_pat mmk "(sig ? ?)"
-
 let has_proof_part ren env c =
-  let sign = TradEnv.trad_sign_of ren env in
-  let ty = Mach.type_of (Evd.mt_evd()) sign c in
-  somatches ty sig_pattern
+  let sign = Pcicenv.trad_sign_of ren env in
+  let ty = Typing.type_of (Global.env_of_context sign) Evd.empty c in
+  is_matching (Coqlib.build_coq_sig_pattern ()) ty
 
 (* main part: translation of imperative programs into functional ones.
  * 
@@ -80,12 +77,14 @@ and trad_desc ren env ct d =
       let w = get_writes ef1 in
       let ren' = next ren w in
       let id = id_of_string "index" in
-      let access = make_raw_access ren' env (x,current_var ren' x) (VAR id) in
+      let access = 
+	make_raw_access ren' env (x,current_var ren' x) (mkVar id) 
+      in
       let t,ty = result_tuple ren' (current_date ren) env
 		   (CC_expr access, ty_elem) (eft,qt) in
       let t =
 	if check then 
-	  let h = make_pre_access ren env x (VAR id) in 
+	  let h = make_pre_access ren env x (mkVar id) in 
 	  let_in_pre ty (anonymous_pre true h) t
 	else
 	  t 
@@ -120,15 +119,15 @@ and trad_desc ren env ct d =
       let ren''' = next ren'' [x] in
       let t,ty = result_tuple ren''' (current_date ren) env
 		   (CC_expr (constant "tt"), constant "unit") (eft,qt) in
-      let store = make_raw_store ren'' env (x,current_var ren'' x) (VAR id1)
-		   (VAR id2) in
+      let store = make_raw_store ren'' env (x,current_var ren'' x) (mkVar id1)
+		   (mkVar id2) in
       let t = make_let_in ren'' env (CC_expr store) [] ([],None) 
 		(current_var ren''' x,ty_array) (t,ty) in
       let t = make_let_in ren' env te2 p2
      	(current_vars ren'' w2,q2) (id2,ty_elem) (t,ty) in
       let t = 
 	if check then
-	  let h = make_pre_access ren' env x (VAR id1) in
+	  let h = make_pre_access ren' env x (mkVar id1) in
 	  let_in_pre ty (anonymous_pre true h) t
 	else
 	  t 
@@ -211,12 +210,12 @@ and trad_desc ren env ct d =
       let tc_args =
 	List.combine
 	  (List.rev targs)
-	  (Std.map_succeed
+	  (Util.map_succeed
 	     (function
-		  Term x -> x.info.kappa
+		| Term x -> x.info.kappa
 		| Refarg _ -> failwith "caught"
 		| Type _ -> 
-		    (result_id,TypePure mkSet),Effects.bottom,[],None)
+		    (result_id,TypePure mkSet),Peffect.bottom,[],None)
 	     args)
       in
       make_app env ren tc_args ren' (tf,cf) (c,s,capp) ct
@@ -287,7 +286,7 @@ and trad_binders ren env = function
       let tt = trad_ml_type_v ren env v in
       (id, CC_typed_binder tt) :: (trad_binders ren env bl)
   | (id,BindSet)::bl ->
-      (id, CC_typed_binder (DOP0(Sort(Prop Pos)))) :: (trad_binders ren env bl)
+      (id, CC_typed_binder mkSet) :: (trad_binders ren env bl)
   | (_,Untyped)::_ -> invalid_arg "trad_binders"
 
 	

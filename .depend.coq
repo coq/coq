@@ -55,9 +55,11 @@ theories/Reals/Rbase.vo: theories/Reals/Rbase.v theories/Reals/Raxioms.vo contri
 theories/Reals/Raxioms.vo: theories/Reals/Raxioms.v theories/Zarith/ZArith.vo theories/Reals/Rsyntax.vo theories/Reals/TypeSyntax.vo
 theories/Reals/R_Ifp.vo: theories/Reals/R_Ifp.v theories/Reals/Rbase.vo contrib/omega/Omega.vo
 theories/Num/SubProps.vo: theories/Num/SubProps.v
+theories/Num/Params.vo: theories/Num/Params.v
 theories/Num/OppProps.vo: theories/Num/OppProps.v
 theories/Num/OppAxioms.vo: theories/Num/OppAxioms.v
-theories/Num/NSyntax.vo: theories/Num/NSyntax.v
+theories/Num/NeqDef.vo: theories/Num/NeqDef.v theories/Num/Params.vo theories/Num/EqParams.vo
+theories/Num/NSyntax.vo: theories/Num/NSyntax.v theories/Num/Params.vo
 theories/Num/LtProps.vo: theories/Num/LtProps.v theories/Num/Axioms.vo theories/Num/AddProps.vo
 theories/Num/LeProps.vo: theories/Num/LeProps.v theories/Num/LtProps.vo theories/Num/LeAxioms.vo
 theories/Num/LeAxioms.vo: theories/Num/LeAxioms.v theories/Num/Axioms.vo theories/Num/LtProps.vo
@@ -65,11 +67,13 @@ theories/Num/GtProps.vo: theories/Num/GtProps.v
 theories/Num/GtAxioms.vo: theories/Num/GtAxioms.v theories/Num/Axioms.vo theories/Num/LeProps.vo
 theories/Num/GeProps.vo: theories/Num/GeProps.v
 theories/Num/GeAxioms.vo: theories/Num/GeAxioms.v theories/Num/Axioms.vo theories/Num/LtProps.vo
+theories/Num/EqParams.vo: theories/Num/EqParams.v theories/Num/Params.vo
+theories/Num/EqAxioms.vo: theories/Num/EqAxioms.v theories/Num/Params.vo theories/Num/EqParams.vo theories/Num/NeqDef.vo theories/Num/NSyntax.vo
 theories/Num/DiscrProps.vo: theories/Num/DiscrProps.v theories/Num/DiscrAxioms.vo theories/Num/LtProps.vo
-theories/Num/DiscrAxioms.vo: theories/Num/DiscrAxioms.v theories/Num/NSyntax.vo
+theories/Num/DiscrAxioms.vo: theories/Num/DiscrAxioms.v theories/Num/Params.vo theories/Num/NSyntax.vo
 theories/Num/Definitions.vo: theories/Num/Definitions.v
-theories/Num/Axioms.vo: theories/Num/Axioms.v theories/Num/NSyntax.vo
-theories/Num/AddProps.vo: theories/Num/AddProps.v theories/Num/Axioms.vo
+theories/Num/Axioms.vo: theories/Num/Axioms.v theories/Num/Params.vo theories/Num/EqParams.vo theories/Num/NeqDef.vo theories/Num/NSyntax.vo
+theories/Num/AddProps.vo: theories/Num/AddProps.v theories/Num/Axioms.vo theories/Num/EqAxioms.vo
 theories/Logic/Eqdep_dec.vo: theories/Logic/Eqdep_dec.v
 theories/Logic/Eqdep.vo: theories/Logic/Eqdep.v
 theories/Logic/Classical_Type.vo: theories/Logic/Classical_Type.v theories/Logic/Classical_Prop.vo theories/Logic/Classical_Pred_Type.vo
@@ -124,14 +128,18 @@ test-suite/success/mutual_ind.vo: test-suite/success/mutual_ind.v theories/Lists
 test-suite/success/induct.vo: test-suite/success/induct.v theories/Lists/PolyList.vo
 test-suite/success/inds_type_sec.vo: test-suite/success/inds_type_sec.v
 test-suite/success/fix.vo: test-suite/success/fix.v theories/Bool/Bool.vo theories/Zarith/ZArith.vo
+test-suite/success/evars.vo: test-suite/success/evars.v
 test-suite/success/eqdecide.vo: test-suite/success/eqdecide.v
+test-suite/success/eauto.vo: test-suite/success/eauto.v theories/Lists/PolyList.vo
 test-suite/success/Tauto.vo: test-suite/success/Tauto.v
 test-suite/success/Check.vo: test-suite/success/Check.v
-test-suite/success/Cases.vo: test-suite/success/Cases.v theories/Bool/Bool.vo theories/Arith/Peano_dec.vo theories/Init/Prelude.vo theories/Init/Logic_TypeSyntax.vo theories/Init/Logic_Type.vo
+test-suite/success/Cases.vo: test-suite/success/Cases.v theories/Bool/Bool.vo theories/Arith/Peano_dec.vo theories/Init/Prelude.vo theories/Init/Logic_TypeSyntax.vo theories/Init/Logic_Type.vo theories/Arith/Arith.vo theories/Zarith/ZArith.vo
 test-suite/success/Apply.vo: test-suite/success/Apply.v
+test-suite/failure/search.vo: test-suite/failure/search.v
 test-suite/failure/redef.vo: test-suite/failure/redef.v
 test-suite/failure/positivity.vo: test-suite/failure/positivity.v
 test-suite/failure/illtype1.vo: test-suite/failure/illtype1.v
+test-suite/failure/fixpoint1.vo: test-suite/failure/fixpoint1.v
 test-suite/failure/clash_cons.vo: test-suite/failure/clash_cons.v
 test-suite/failure/Tauto.vo: test-suite/failure/Tauto.v
 test-suite/bench/lists_100.vo: test-suite/bench/lists_100.v
@@ -149,6 +157,22 @@ contrib/omega/Zlogarithm.vo: contrib/omega/Zlogarithm.v theories/Zarith/ZArith.v
 contrib/omega/Zcomplements.vo: contrib/omega/Zcomplements.v theories/Zarith/ZArith.vo contrib/omega/Omega.vo theories/Arith/Wf_nat.vo
 contrib/omega/OmegaSyntax.vo: contrib/omega/OmegaSyntax.v
 contrib/omega/Omega.vo: contrib/omega/Omega.v theories/Zarith/ZArith.vo theories/Arith/Minus.vo contrib/omega/omega.cmo contrib/omega/coq_omega.cmo contrib/omega/OmegaSyntax.vo
+contrib/extraction/test_extraction.vo: contrib/extraction/test_extraction.v
+contrib/extraction/Extraction.vo: contrib/extraction/Extraction.v
+contrib/correctness/preuves.vo: contrib/correctness/preuves.v contrib/omega/Omega.vo
+contrib/correctness/Tuples.vo: contrib/correctness/Tuples.v
+contrib/correctness/Sorted.vo: contrib/correctness/Sorted.v contrib/correctness/Arrays.vo theories/Sets/Permut.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo
+contrib/correctness/Programs_stuff.vo: contrib/correctness/Programs_stuff.v contrib/correctness/Arrays_stuff.vo
+contrib/correctness/ProgramsExtraction.vo: contrib/correctness/ProgramsExtraction.v contrib/extraction/Extraction.vo
+contrib/correctness/ProgWf.vo: contrib/correctness/ProgWf.v theories/Zarith/ZArith.vo theories/Arith/Wf_nat.vo
+contrib/correctness/ProgInt.vo: contrib/correctness/ProgInt.v theories/Zarith/ZArith.vo theories/Zarith/ZArith_dec.vo
+contrib/correctness/ProgBool.vo: contrib/correctness/ProgBool.v theories/Arith/Compare_dec.vo theories/Arith/Peano_dec.vo theories/Zarith/ZArith.vo theories/Bool/Sumbool.vo
+contrib/correctness/Permut.vo: contrib/correctness/Permut.v contrib/correctness/ProgInt.vo contrib/correctness/Arrays.vo contrib/correctness/Exchange.vo contrib/omega/Omega.vo
+contrib/correctness/MakeProgramsState.vo: contrib/correctness/MakeProgramsState.v
+contrib/correctness/Exchange.vo: contrib/correctness/Exchange.v contrib/correctness/ProgInt.vo contrib/correctness/Arrays.vo
+contrib/correctness/Correctness.vo: contrib/correctness/Correctness.v tactics/Refine.vo contrib/correctness/Tuples.vo contrib/correctness/ProgInt.vo contrib/correctness/ProgBool.vo contrib/correctness/ProgWf.vo contrib/correctness/Arrays.vo contrib/correctness/pmisc.cmo contrib/correctness/peffect.cmo contrib/correctness/prename.cmo contrib/correctness/ptype.cmo contrib/correctness/past.cmo contrib/correctness/perror.cmo contrib/correctness/penv.cmo contrib/correctness/putil.cmo contrib/correctness/pdb.cmo contrib/correctness/pcic.cmo contrib/correctness/pmonad.cmo contrib/correctness/pcicenv.cmo contrib/correctness/pred.cmo contrib/correctness/ptyping.cmo contrib/correctness/pwp.cmo contrib/correctness/pmlize.cmo contrib/correctness/ptactic.cmo contrib/correctness/psyntax.cmo
+contrib/correctness/Arrays_stuff.vo: contrib/correctness/Arrays_stuff.v contrib/correctness/Exchange.vo theories/Sets/Permut.vo contrib/correctness/Sorted.vo
+contrib/correctness/Arrays.vo: contrib/correctness/Arrays.v contrib/correctness/ProgInt.vo
 tactics/Tauto.vo: tactics/Tauto.v
 tactics/Refine.vo: tactics/Refine.v
 tactics/Inv.vo: tactics/Inv.v tactics/Equality.vo
@@ -161,6 +185,23 @@ syntax/PPConstr.vo: syntax/PPConstr.v
 syntax/PPCases.vo: syntax/PPCases.v
 syntax/MakeBare.vo: syntax/MakeBare.v
 states/MakeInitial.vo: states/MakeInitial.v theories/Init/Prelude.vo theories/Init/Logic_Type.vo theories/Init/Logic_TypeSyntax.vo tactics/Equality.vo test-suite/success/Tauto.vo tactics/Inv.vo tactics/EAuto.vo tactics/AutoRewrite.vo tactics/Refine.vo tactics/EqDecide.vo
+contrib/correctness/Correctness.vo: contrib/correctness/Correctness.v tactics/Refine.vo contrib/correctness/Tuples.vo contrib/correctness/ProgInt.vo contrib/correctness/ProgBool.vo contrib/correctness/ProgWf.vo contrib/correctness/Arrays.vo contrib/correctness/pmisc.cmo contrib/correctness/peffect.cmo contrib/correctness/prename.cmo contrib/correctness/ptype.cmo contrib/correctness/past.cmo contrib/correctness/perror.cmo contrib/correctness/penv.cmo contrib/correctness/putil.cmo contrib/correctness/pdb.cmo contrib/correctness/pcic.cmo contrib/correctness/pmonad.cmo contrib/correctness/pcicenv.cmo contrib/correctness/pred.cmo contrib/correctness/ptyping.cmo contrib/correctness/pwp.cmo contrib/correctness/pmlize.cmo contrib/correctness/ptactic.cmo contrib/correctness/psyntax.cmo
+contrib/correctness/ProgWf.vo: contrib/correctness/ProgWf.v theories/Zarith/ZArith.vo theories/Arith/Wf_nat.vo
+contrib/correctness/Programs_stuff.vo: contrib/correctness/Programs_stuff.v contrib/correctness/Arrays_stuff.vo
+contrib/correctness/ProgramsExtraction.vo: contrib/correctness/ProgramsExtraction.v contrib/extraction/Extraction.vo
+contrib/correctness/ProgInt.vo: contrib/correctness/ProgInt.v theories/Zarith/ZArith.vo theories/Zarith/ZArith_dec.vo
+contrib/correctness/ProgBool.vo: contrib/correctness/ProgBool.v theories/Arith/Compare_dec.vo theories/Arith/Peano_dec.vo theories/Zarith/ZArith.vo theories/Bool/Sumbool.vo
+contrib/correctness/preuves.vo: contrib/correctness/preuves.v contrib/omega/Omega.vo
+contrib/correctness/Permut.vo: contrib/correctness/Permut.v contrib/correctness/ProgInt.vo contrib/correctness/Arrays.vo contrib/correctness/Exchange.vo contrib/omega/Omega.vo
+contrib/correctness/MakeProgramsState.vo: contrib/correctness/MakeProgramsState.v
+contrib/correctness/Exchange.vo: contrib/correctness/Exchange.v contrib/correctness/ProgInt.vo contrib/correctness/Arrays.vo
+contrib/correctness/Arrays.vo: contrib/correctness/Arrays.v contrib/correctness/ProgInt.vo
+contrib/correctness/Arrays_stuff.vo: contrib/correctness/Arrays_stuff.v contrib/correctness/Exchange.vo theories/Sets/Permut.vo contrib/correctness/Sorted.vo
+contrib/correctness/Tuples.vo: contrib/correctness/Tuples.v
+contrib/correctness/Sorted.vo: contrib/correctness/Sorted.v contrib/correctness/Arrays.vo theories/Sets/Permut.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo
+contrib/extraction/test/bench.vo: contrib/extraction/test/bench.v theories/Lists/PolyList.vo theories/Zarith/ZArith.vo theories/Arith/Even.vo
+contrib/extraction/test_extraction.vo: contrib/extraction/test_extraction.v
+contrib/extraction/Extraction.vo: contrib/extraction/Extraction.v
 contrib/xml/Xml.vo: contrib/xml/Xml.v contrib/xml/xml.cmo contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
 contrib/ring/ZArithRing.vo: contrib/ring/ZArithRing.v contrib/ring/ArithRing.vo theories/Zarith/ZArith.vo theories/Logic/Eqdep_dec.vo
 contrib/ring/Ring_theory.vo: contrib/ring/Ring_theory.v theories/Bool/Bool.vo
@@ -174,10 +215,17 @@ contrib/omega/Zcomplements.vo: contrib/omega/Zcomplements.v theories/Zarith/ZAri
 contrib/omega/OmegaSyntax.vo: contrib/omega/OmegaSyntax.v
 contrib/omega/Omega.vo: contrib/omega/Omega.v theories/Zarith/ZArith.vo theories/Arith/Minus.vo contrib/omega/omega.cmo contrib/omega/coq_omega.cmo contrib/omega/OmegaSyntax.vo
 contrib/omega/Zlogarithm.vo: contrib/omega/Zlogarithm.v theories/Zarith/ZArith.vo contrib/omega/Omega.vo contrib/omega/Zcomplements.vo contrib/omega/Zpower.vo
+theories/Num/Nat/NeqDef.vo: theories/Num/Nat/NeqDef.v theories/Num/Params.vo
+theories/Num/Nat/NSyntax.vo: theories/Num/Nat/NSyntax.v
+theories/Num/Nat/Axioms.vo: theories/Num/Nat/Axioms.v theories/Num/Params.vo theories/Num/EqAxioms.vo theories/Num/NSyntax.vo
+theories/Num/Params.vo: theories/Num/Params.v
+theories/Num/NeqDef.vo: theories/Num/NeqDef.v theories/Num/Params.vo theories/Num/EqParams.vo
+theories/Num/EqParams.vo: theories/Num/EqParams.v theories/Num/Params.vo
+theories/Num/EqAxioms.vo: theories/Num/EqAxioms.v theories/Num/Params.vo theories/Num/EqParams.vo theories/Num/NeqDef.vo theories/Num/NSyntax.vo
 theories/Num/SubProps.vo: theories/Num/SubProps.v
 theories/Num/OppProps.vo: theories/Num/OppProps.v
 theories/Num/OppAxioms.vo: theories/Num/OppAxioms.v
-theories/Num/NSyntax.vo: theories/Num/NSyntax.v
+theories/Num/NSyntax.vo: theories/Num/NSyntax.v theories/Num/Params.vo
 theories/Num/LtProps.vo: theories/Num/LtProps.v theories/Num/Axioms.vo theories/Num/AddProps.vo
 theories/Num/LeProps.vo: theories/Num/LeProps.v theories/Num/LtProps.vo theories/Num/LeAxioms.vo
 theories/Num/LeAxioms.vo: theories/Num/LeAxioms.v theories/Num/Axioms.vo theories/Num/LtProps.vo
@@ -186,10 +234,13 @@ theories/Num/GtAxioms.vo: theories/Num/GtAxioms.v theories/Num/Axioms.vo theorie
 theories/Num/GeProps.vo: theories/Num/GeProps.v
 theories/Num/GeAxioms.vo: theories/Num/GeAxioms.v theories/Num/Axioms.vo theories/Num/LtProps.vo
 theories/Num/DiscrProps.vo: theories/Num/DiscrProps.v theories/Num/DiscrAxioms.vo theories/Num/LtProps.vo
-theories/Num/DiscrAxioms.vo: theories/Num/DiscrAxioms.v theories/Num/NSyntax.vo
+theories/Num/Leibniz/Params.vo: theories/Num/Leibniz/Params.v
+theories/Num/Leibniz/NSyntax.vo: theories/Num/Leibniz/NSyntax.v theories/Num/Params.vo
+theories/Num/Leibniz/EqAxioms.vo: theories/Num/Leibniz/EqAxioms.v theories/Num/NSyntax.vo
+theories/Num/DiscrAxioms.vo: theories/Num/DiscrAxioms.v theories/Num/Params.vo theories/Num/NSyntax.vo
+theories/Num/Axioms.vo: theories/Num/Axioms.v theories/Num/Params.vo theories/Num/EqParams.vo theories/Num/NeqDef.vo theories/Num/NSyntax.vo
+theories/Num/AddProps.vo: theories/Num/AddProps.v theories/Num/Axioms.vo theories/Num/EqAxioms.vo
 theories/Num/Definitions.vo: theories/Num/Definitions.v
-theories/Num/Axioms.vo: theories/Num/Axioms.v theories/Num/NSyntax.vo
-theories/Num/AddProps.vo: theories/Num/AddProps.v theories/Num/Axioms.vo
 theories/Zarith/zarith_aux.vo: theories/Zarith/zarith_aux.v theories/Arith/Arith.vo theories/Zarith/fast_integer.vo
 theories/Zarith/fast_integer.vo: theories/Zarith/fast_integer.v theories/Arith/Le.vo theories/Arith/Lt.vo theories/Arith/Plus.vo theories/Arith/Mult.vo theories/Arith/Minus.vo
 theories/Zarith/auxiliary.vo: theories/Zarith/auxiliary.v theories/Arith/Arith.vo theories/Zarith/fast_integer.vo theories/Zarith/zarith_aux.vo theories/Arith/Peano_dec.vo theories/Arith/Compare_dec.vo

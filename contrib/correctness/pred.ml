@@ -53,7 +53,6 @@ let rec red = function
 
 (* How to reduce uncomplete proof terms when they have become constr *)
 
-open Generic
 open Term
 open Reduction
 
@@ -64,16 +63,19 @@ open Reduction
  * puis on applique la reduction spéciale programmes définie dans
  * typing/reduction *)
 
+(*i
 let bin_app = function
-    DOPN(AppL,v) as c ->
+  | DOPN(AppL,v) as c ->
       (match Array.length v with
-	   1 -> v.(0)
+	 | 1 -> v.(0)
 	 | 2 -> c
 	 | n ->
 	     let f = DOPN(AppL,Array.sub v 0 (pred n)) in
-	       DOPN(AppL,[|f;v.(pred n)|]))
+	     DOPN(AppL,[|f;v.(pred n)|]))
   | c -> c
+i*)
 
 let red_cci c = 
-  let c = strong bin_app c in strong whd_programs c
+  (*i let c = strong bin_app c in i*) 
+  strong whd_programs (Global.env ()) Evd.empty c
 

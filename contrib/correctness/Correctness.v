@@ -23,11 +23,9 @@ Require Export ProgWf.
 Require Export Arrays.
 
 Declare ML Module
-    "misc_utils" "effects" "renamings" "progTypes" "progAst"
-    "prog_errors" "prog_env" "prog_utils"
-    "prog_db" "prog_cci" "monad" "tradEnv"
-    "prog_red" "prog_typing" "prog_wp" "mlise" "prog_tactic"
-    "pprog".
+    "pmisc" "peffect" "prename" "ptype" "past"
+    "perror" "penv" "putil" "pdb" "pcic" "pmonad" "pcicenv"
+    "pred" "ptyping" "pwp" "pmlize" "ptactic" "psyntax".
 
 Token "'".
 

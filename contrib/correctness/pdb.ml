@@ -11,15 +11,15 @@
 (* $Id$ *)
 
 open Names
+open Term
 
 open Ptype
 open Past
 open Penv
 
-
 let cci_global id =
   try
-    Machops.global (gLOB(initial_sign())) id
+    Declare.global_reference CCI id
   with
     _ -> raise Not_found
 
@@ -28,12 +28,12 @@ let lookup_var ids locop id =
     None
   else begin
     try Some (cci_global id)
-    with Not_found -> Prog_errors.unbound_variable id locop
+    with Not_found -> Perror.unbound_variable id locop
   end
 
 let check_ref idl loc id =
-  if (not (List.mem id idl)) & (not (Prog_env.is_global id)) then
-    Prog_errors.unbound_reference id (Some loc)
+  if (not (List.mem id idl)) & (not (Penv.is_global id)) then
+    Perror.unbound_reference id (Some loc)
 
 (* db types  : just do nothing for the moment ! *)
 
@@ -69,12 +69,11 @@ let rec db_binders ((tids,pids,refs) as idl) = function
 (* db patterns *)
 
 let rec db_pattern = function
-    (PatVar id) as t ->
+  | (PatVar id) as t ->
       (try 
-	 let sp = Nametab.fw_sp_of_id id in
-	 (match Environ.global_operator sp id with
-	      Term.MutConstruct (x,y),_ -> [], PatConstruct (id,(x,y))
-	    | _                         -> [id],t)
+	 (match Nametab.sp_of_id CCI id with
+	    | ConstructRef (x,y) -> [], PatConstruct (id,(x,y))
+	    | _                  -> [id],t)
        with Not_found -> [id],t)
   | PatAlias (p,id) ->
       let ids,p' = db_pattern p in ids,PatAlias (p',id)
@@ -159,7 +158,7 @@ let db_prog e =
       loc = e.loc; info = e.info }
 
   in
-  let ids = Names.ids_of_sign (Vartab.initial_sign()) in
+  let ids = Sign.ids_of_named_context (Global.named_context ()) in
             (* TODO: separer X:Set et x:V:Set
                      virer le reste (axiomes, etc.) *)
   let vars,refs = all_vars (), all_refs () in

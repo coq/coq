@@ -118,3 +118,5 @@ val build_coq_refl_rel2_pattern : constr_pattern delayed
 (* ["(?1 -> ?2)"] *)
 val build_coq_arrow_pattern : constr_pattern delayed
 
+(* ["(sig ?1 ?2)"] *)
+val build_coq_sig_pattern : constr_pattern delayed

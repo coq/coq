@@ -18,5 +18,5 @@
  * Then an ad-hoc automatic tactic is applied on each subgoal to solve the
  * trivial proof obligations *)
 
-val correctness : string -> ProgAst.program -> Tacmach.tactic option -> unit
+val correctness : string -> Past.program -> Tacmach.tactic option -> unit
 

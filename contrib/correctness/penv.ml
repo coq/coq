@@ -115,7 +115,6 @@ let (inProg,outProg) =
                     cache_function = cache_global;
                     open_function = (fun _ -> ());
 		    export_function = (fun x -> Some x) })
-;;
 
 let add_global id v p =
   try
@@ -125,16 +124,17 @@ let add_global id v p =
     Not_found -> begin
       let id' =
 	if is_mutable v then id 
-        else id_of_string ("prog_" ^ (string_of_id id)) in
-	add_named_object (id',OBJ) (inProg (id,TypeV v,p))
+        else id_of_string ("prog_" ^ (string_of_id id)) 
+      in
+      Lib.add_leaf id' OBJ (inProg (id,TypeV v,p))
     end
 
 let add_global_set id =
   try
     let _ = Env.find id !env in
-    Prog_errors.clash id None
+    Perror.clash id None
   with
-    Not_found -> add_named_object (id,OBJ) (inProg (id,Set,None))
+    Not_found -> Lib.add_leaf id OBJ (inProg (id,Set,None))
 
 let is_global id =
   try
@@ -152,7 +152,7 @@ let is_global_set id =
 let lookup_global id =
   match Env.find id !env with TypeV v -> v | Set -> raise Not_found
 
-let find_pgm id = IdMap.find id !pgm_table
+let find_pgm id = Idmap.find id !pgm_table
 
 let all_vars () =
   Env.fold
@@ -167,17 +167,18 @@ let all_refs () =
 (* initializations *)
 
 let cache_init (_,(id,c)) =
-  init_table := IdMap.add id c !init_table
+  init_table := Idmap.add id c !init_table
 
 let (inInit,outInit) =
   declare_object ("programs-objects-init",
-                  { load_function = (fun _ -> ());
+                  { load_function = cache_init;
+		    open_function = (fun _ -> ());
                     cache_function = cache_init;
-                    specification_function = fun x -> x})
+                    export_function = fun x -> Some x })
 
-let initialize id c = add_anonymous_object (inInit (id,c))
+let initialize id c = Lib.add_anonymous_leaf (inInit (id,c))
 
-let find_init id = IdMap.find id !init_table
+let find_init id = Idmap.find id !init_table
 
 
 (* access in env, local then global *)
@@ -206,19 +207,19 @@ let find_recursion = Env.find_rec
 open Pp
 open Himsg
 
-let (edited : (type_v * typed_program) IdMap.t ref) = ref IdMap.empty
+let (edited : (type_v * typed_program) Idmap.t ref) = ref Idmap.empty
 
 let new_edited id v =
-  edited := IdMap.add id v !edited
+  edited := Idmap.add id v !edited
 
 let is_edited id =
-  try let _ = IdMap.find id !edited in true with Not_found -> false
+  try let _ = Idmap.find id !edited in true with Not_found -> false
 
 let register id id' =
   try
-    let (v,p) = IdMap.find id !edited in
-      add_global id' v (Some p);
-      mSGNL (hOV 0 [< 'sTR"Program "; pID id'; 'sPC; 'sTR"is defined" >]);
-      edited := IdMap.remove id !edited
+    let (v,p) = Idmap.find id !edited in
+    let _ = add_global id' v (Some p) in
+    mSGNL (hOV 0 [< 'sTR"Program "; pr_id id'; 'sPC; 'sTR"is defined" >]);
+    edited := Idmap.remove id !edited
   with Not_found -> ()
 

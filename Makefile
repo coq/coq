@@ -40,7 +40,7 @@ noargument:
 LOCALINCLUDES= -I config -I tools -I scripts -I lib -I kernel -I library \
                -I proofs -I tactics -I pretyping -I parsing -I toplevel  \
                -I contrib/omega -I contrib/ring -I contrib/xml \
-	       -I contrib/extraction
+	       -I contrib/extraction -I contrib/correctness
 INCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
 
 BYTEFLAGS=-rectypes $(INCLUDES) $(CAMLDEBUG)
@@ -136,10 +136,28 @@ ML4FILES += $(USERTAC)
 USERTACCMO=$(USERTAC:.ml4=.cmo)
 USERTACCMX=$(USERTAC:.ml4=.cmx)
 
+EXTRACTIONCMO=contrib/extraction/mlutil.cmo contrib/extraction/ocaml.cmo \
+	      contrib/extraction/extraction.cmo \
+	      contrib/extraction/extract_env.cmo
+
+CORRECTNESS=contrib/correctness/pmisc.cmo				\
+	contrib/correctness/peffect.cmo contrib/correctness/prename.cmo	\
+	contrib/correctness/ptype.cmo contrib/correctness/past.cmo	\
+	contrib/correctness/perror.cmo contrib/correctness/penv.cmo	\
+	contrib/correctness/putil.cmo contrib/correctness/pdb.cmo	\
+	contrib/correctness/pcic.cmo contrib/correctness/pmonad.cmo	\
+	contrib/correctness/pcicenv.cmo					\
+	contrib/correctness/pred.cmo contrib/correctness/ptyping.cmo	\
+	contrib/correctness/pwp.cmo contrib/correctness/pmlize.cmo	\
+	contrib/correctness/ptactic.cmo	contrib/correctness/psyntax.cmo
+
+ML4FILES += contrib/correctness/psyntax.ml4
+
 CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
         contrib/ring/quote.cmo contrib/ring/ring.cmo \
 	contrib/xml/xml.cmo \
 	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
+#	$(CORRECTNESS)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -216,10 +234,6 @@ pretyping: $(PRETYPING)
 toplevel: $(TOPLEVEL)
 
 # special binaries for debugging
-
-EXTRACTIONCMO=contrib/extraction/mlutil.cmo contrib/extraction/ocaml.cmo \
-	      contrib/extraction/extraction.cmo \
-	      contrib/extraction/extract_env.cmo
 
 bin/coq-extraction: $(COQMKTOP) $(CMO) $(USERTACCMO) $(EXTRACTIONCMO)
 	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@ $(EXTRACTIONCMO)
@@ -357,6 +371,11 @@ clean::
 # contribs
 ###########################################################################
 
+EXTRACTIONVO=contrib/extraction/Extraction.vo
+contrib/extraction/Extraction.vo: contrib/extraction/Extraction.v \
+                                  $(EXTRACTIONCMO)
+	$(COQC) -q -byte -bindir bin $(COQINCLUDES) $<
+
 OMEGAVO = contrib/omega/Omega.vo       contrib/omega/Zlogarithm.vo \
           contrib/omega/OmegaSyntax.vo contrib/omega/Zpower.vo \
           contrib/omega/Zcomplements.vo
@@ -368,7 +387,7 @@ RINGVO = contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
 
 XMLVO = contrib/xml/Xml.vo
 
-CONTRIBVO = $(OMEGAVO) $(RINGVO) $(XMLVO)
+CONTRIBVO = $(OMEGAVO) $(RINGVO) $(XMLVO) $(EXTRACTIONVO)
 
 $(CONTRIBVO): states/initial.coq
 

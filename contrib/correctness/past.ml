@@ -100,18 +100,18 @@ type cc_binder = variable * cc_bind_type
 
 type cc_term =
     CC_var   of variable
-  | CC_letin of bool                (* dep. or not *)
-              * cc_type             (* type of result *)
+  | CC_letin of bool                   (* dep. or not *)
+              * cc_type                (* type of result *)
 	      * cc_binder list
-	      * (cc_term * constr)  (* the matched term and its ind. type *)
+	      * (cc_term * case_info)  (* the matched term and its ind. type *)
 	      * cc_term
   | CC_lam   of cc_binder list * cc_term
   | CC_app   of cc_term * cc_term list
-  | CC_tuple of bool                (* dep. or not *)
+  | CC_tuple of bool                   (* dep. or not *)
               * cc_type list * cc_term list
-  | CC_case  of cc_type             (* type of result *)
-              * (cc_term * constr)  (* the test and its inductive type *)
-	      * cc_term list        (* branches *)
+  | CC_case  of cc_type                (* type of result *)
+              * (cc_term * case_info)  (* the test and its inductive type *)
+	      * cc_term list           (* branches *)
   | CC_expr  of constr
   | CC_hole  of cc_type
 

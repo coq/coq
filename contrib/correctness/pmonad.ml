@@ -74,7 +74,7 @@ let arrow ren env v pl =
 
 let rec abstract_post ren env (e,q) =
   let after_id id = id_of_string ((string_of_id id) ^ "'") in
-  let (_,go) = Effects.get_repr e in
+  let (_,go) = Peffect.get_repr e in
   let al = List.map (fun id -> (id,after_id id)) go in
   let q = option_app (named_app (subst_in_constr al)) q in
   let tgo = List.map (fun (id,aid) -> (aid, trad_type_in_env ren env id)) al in
@@ -93,12 +93,12 @@ and prod ren env g =
     g
 
 and input ren env e  =
-  let i,_ = Effects.get_repr e in
+  let i,_ = Peffect.get_repr e in
   prod ren env i
 
 and output ren env ((id,v),e) =
   let tv = trad_ml_type_v ren env v in
-  let _,o = Effects.get_repr e in
+  let _,o = Peffect.get_repr e in
   (prod ren env o) @ [id,tv]
 
 and input_output ren env c =
@@ -134,7 +134,7 @@ and trad_ml_type_v ren env = function
 		 let ren' = initial_renaming env' in
 		 (id,tt)::bl,ren',env'
 	     | (id, BindSet) ->
-		 (id,(DOP0(Sort(Prop Pos))))::bl,ren,env
+		 (id,mkSet) :: bl,ren,env
 	     | _ -> failwith "Monad: trad_ml_type_v: not yet implemented"
  	  )
  	  ([],ren,env) bl 
@@ -217,7 +217,7 @@ let result_tuple ren before env (res,v) (ef,q) =
 
    vo=[_,y1;...;_,ym] are list of renamings.
    v is the type of res
- *)
+   *)
 
 let let_in_pre ty p t =
   let h = p.p_value in
@@ -229,7 +229,7 @@ let multiple_let_in_pre ty hl t =
 let make_let_in ren env fe p (vo,q) (res,tyres) (t,ty) =
   let b = [res, CC_typed_binder tyres] in
   let b',dep = match q with
-      None -> [],false
+    | None -> [],false
     | Some q -> [post_name q.a_name, CC_untyped_binder],true 
   in
   let bl = (binding_of_alist ren env vo) @ b @ b' in
@@ -268,15 +268,15 @@ let make_block ren env finish bl =
   let rec rec_block ren result = function
       [] ->
 	finish ren result
-   | (Assert c)::block ->
+   | (Assert c) :: block ->
        let t,ty = rec_block ren result block in
        let c = apply_assert ren env c in
        let p = { p_assert = true; p_name = c.a_name; p_value = c.a_value } in
        let_in_pre ty p t, ty
-   | (Label s)::block ->
+   | (Label s) :: block ->
        let ren' = push_date ren s in
        rec_block ren' result block
-   | (Statement (te,info))::block ->
+   | (Statement (te,info)) :: block ->
        let (_,tye),efe,pe,qe = info in
        let w = get_writes efe in
        let ren' = next ren w in
@@ -302,12 +302,12 @@ let lt r e1 e2 =
   Term.applist (r, [e1; e2])
 
 let is_recursive env = function
-    CC_var x -> 
+  | CC_var x -> 
       (try let _ = find_recursion x env in true with Not_found -> false)
   | _ -> false
 
 let if_recursion env f = function
-    CC_var x ->
+  | CC_var x ->
       (try let v = find_recursion x env in (f v x) with Not_found -> [])
   | _ -> []
 
@@ -316,7 +316,7 @@ let dec_phi ren env s svi =
     (fun (phi0,(cphi,r,_)) f -> 
        let phi = subst_in_constr svi (subst_in_constr s cphi) in
        let phi = (apply_pre ren env (anonymous_pre true phi)).p_value in
-       [CC_expr phi; CC_hole (lt r phi (VAR phi0))])
+       [CC_expr phi; CC_hole (lt r phi (mkVar phi0))])
 
 let eq_phi ren env s svi =
   if_recursion env
@@ -326,7 +326,7 @@ let eq_phi ren env s svi =
        [CC_hole (eq a phi phi)])
 
 let is_ref_binder = function 
-    (_,BindType (Ref _ | Array _)) -> true
+  | (_,BindType (Ref _ | Array _)) -> true
   | _ -> false
 
 let make_app env ren args ren' (tf,cf) ((bl,cb),s,capp) c =
@@ -334,7 +334,7 @@ let make_app env ren args ren' (tf,cf) ((bl,cb),s,capp) c =
   let (_,eapp,papp,qapp) = capp in
   let ((_,v),e,p,q) = c in
 
-  let bl = Std.map_succeed 
+  let bl = Util.map_succeed 
 	     (function b -> if is_ref_binder b then failwith "caught" else b) 
 	     bl
   in
@@ -380,7 +380,7 @@ let make_app env ren args ren' (tf,cf) ((bl,cb),s,capp) c =
 	(res_f,trad_ml_type_v ren env tvf) (t,ty)
   in
   let rec eval_args ren = function
-      [] -> t
+    | [] -> t
     | (vx,(ta,((_,tva),ea,pa,qa)))::args ->
 	let w = get_writes ea in
 	let ren' = next ren w in
@@ -404,10 +404,10 @@ let make_app env ren args ren' (tf,cf) ((bl,cb),s,capp) c =
 
 let make_if_case ren env ty (b,qb) (br1,br2) =
   let ty',id_b = match qb with
-      Some q ->  
+    | Some q ->  
   	let q = apply_post ren env (current_date ren) q in
     	let (name,t1,t2) = Term.destLambda q.a_value in
-    	Term.mkLambda name t1 (mkArrow t2 ty), q.a_name
+    	Term.mkLambda (name, t1, (mkArrow t2 ty)), q.a_name
     | None -> assert false
   in
   CC_app (CC_case (ty', (b, constant "bool"), [br1;br2]),
@@ -488,15 +488,15 @@ let make_body_while ren env phi_of a r id_phi0 id_w (tb,cb) tbl (i,c) =
   let t1 = 
     make_block ren' env 
       (fun ren'' result -> match result with
-	   Some (id,_) ->
+	 | Some (id,_) ->
 	     let v = List.rev (current_vars ren'' (get_writes ef)) in
 	       CC_app (CC_var id_w,
 		       [CC_expr (phi_of ren'');
-			CC_hole (lt r (phi_of ren'') (VAR id_phi0))]
+			CC_hole (lt r (phi_of ren'') (mkVar id_phi0))]
 		       @(List.map (fun (_,id) -> CC_var id) v)
 		       @(CC_hole (eq a (phi_of ren'') (phi_of ren'')))
 		       ::(match i with
-			      None -> [] 
+			    | None -> [] 
 			    | Some c -> 
 				[CC_hole (apply_assert ren'' env c).a_value])),
 	       ty
@@ -526,7 +526,7 @@ let make_body_while ren env phi_of a r id_phi0 id_w (tb,cb) tbl (i,c) =
   in
   let t = 
     CC_lam ([var_name Anonymous,
-	     CC_typed_binder (eq a (VAR id_phi0) (phi_of ren'))],t) 
+	     CC_typed_binder (eq a (mkVar id_phi0) (phi_of ren'))],t) 
   in
   let bl = binding_of_alist ren env (current_vars ren' (get_writes ef)) in
   make_abs (List.rev bl) t
@@ -544,19 +544,19 @@ let make_while ren env (cphi,r,a) (tb,cb) tbl (i,c) =
     let _,lo = input_output ren env c in
     let is = abstract_post ren' env (ef,is) in
     match i with
-	None -> product ren' env before lo is
+      | None -> product ren' env before lo is
       | Some ci -> 
 	  Term.mkArrow (apply_assert ren' env ci).a_value 
 	    (product ren' env before lo is) 
   in
-  let v = Term.mkArrow (eq a (VAR id_phi) (phi_of ren')) v in
+  let v = Term.mkArrow (eq a (mkVar id_phi) (phi_of ren')) v in
   let v = 
     n_mkNamedProd v 
       (List.map (fun (id,id') -> (id',trad_type_in_env ren env id)) al) 
   in
   let tw = 
     Term.mkNamedProd id_phi a
-      (Term.mkArrow (lt r (VAR id_phi) (VAR id_phi0)) v) 
+      (Term.mkArrow (lt r (mkVar id_phi) (mkVar id_phi0)) v) 
   in
   let id_w = id_of_string "loop" in
   let vars = List.rev (current_vars ren (get_writes ef)) in
@@ -574,7 +574,7 @@ let make_while ren env (cphi,r,a) (tb,cb) tbl (i,c) =
 	  @(List.map (fun (_,id) -> CC_var id) vars)
           @(CC_hole (eq a (phi_of ren) (phi_of ren)))
 	  ::(match i with
-		 None -> [] 
+	       | None -> [] 
 	       | Some c -> [CC_hole (apply_assert ren env c).a_value])) 
 
 
@@ -601,7 +601,7 @@ let make_letrec ren env (id_phi0,(cphi,r,a)) idf bl (te,ce) c =
     let q = abstract_post ren env (ef,q) in
     arrow ren env (product ren env (current_date ren) lo q) p 
   in
-  let v = Term.mkArrow (eq a (VAR id_phi) (phi_of ren)) v in
+  let v = Term.mkArrow (eq a (mkVar id_phi) (phi_of ren)) v in
   let v = 
     n_mkNamedProd v 
       (List.map (fun (id,id') -> (id',trad_type_in_env ren env id)) al) 
@@ -613,14 +613,14 @@ let make_letrec ren env (id_phi0,(cphi,r,a)) idf bl (te,ce) c =
   in
   let tw = 
     Term.mkNamedProd id_phi a
-      (Term.mkArrow (lt r (VAR id_phi) (VAR id_phi0)) v) 
+      (Term.mkArrow (lt r (mkVar id_phi) (mkVar id_phi0)) v) 
   in
   let vars = List.rev (current_vars ren (get_reads ef)) in
   let body =
     let al = current_vars ren (get_reads ef) in
     let bod = abs_pre ren env (te,v) p in
     let bod = CC_lam ([var_name Anonymous,
-		       CC_typed_binder (eq a (VAR id_phi0) (phi_of ren))],
+		       CC_typed_binder (eq a (mkVar id_phi0) (phi_of ren))],
 		      bod) 
     in
     let bl' = binding_of_alist ren env al in
@@ -660,16 +660,13 @@ let array_info ren env id =
 
 let make_raw_access ren env (id,id') c =
   let size,ty_elem,_ = array_info ren env id in
-    Term.applist (constant "access", [size; ty_elem; VAR id'; c])
+  Term.applist (constant "access", [size; ty_elem; mkVar id'; c])
 
 let make_pre_access ren env id c =
   let size,_,_ = array_info ren env id in
-    conj (lt (constant "Zle") (constant "ZERO") c)
-         (lt (constant "Zlt") c size)
-
+  conj (lt (constant "Zle") (constant "ZERO") c)
+       (lt (constant "Zlt") c size)
+      
 let make_raw_store ren env (id,id') c1 c2 =
   let size,ty_elem,_ = array_info ren env id in
-    Term.applist (constant "store", [size; ty_elem; VAR id'; c1; c2])
-
-
-(* $Id$ *)
+  Term.applist (constant "store", [size; ty_elem; mkVar id'; c1; c2])

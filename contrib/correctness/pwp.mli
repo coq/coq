@@ -13,6 +13,6 @@
 open Term
 open Penv
 
-val update_post : local_env -> string -> Effects.t -> constr -> constr
+val update_post : local_env -> string -> Peffect.t -> constr -> constr
 
-val propagate : Renamings.t -> typed_program -> typed_program
+val propagate : Prename.t -> typed_program -> typed_program
