@@ -258,3 +258,26 @@ let extract_inductive r (s,l) =
   | _ -> 
       errorlabstrm "extract_inductive"
 	(Printer.pr_global g ++ spc () ++ str "is not an inductive type.")
+
+(*s Record Inductive tables. *)
+
+let record_type_table = 
+  ref (Gmap.empty : (inductive, global_reference list) Gmap.t)
+
+let record_proj_table = ref Refset.empty
+
+let add_record i l = 
+  record_type_table := Gmap.add i l !record_type_table; 
+  record_proj_table := List.fold_right Refset.add l !record_proj_table
+
+let find_proj i = Gmap.find i !record_type_table
+
+let is_proj r = Refset.mem r !record_proj_table 
+
+let _ = declare_summary "Extraction Record tables"
+	  { freeze_function = (fun () -> !record_type_table,!record_proj_table); 
+	    unfreeze_function = 
+	      (fun (x,y) -> record_type_table := x; record_proj_table := y); 
+	    init_function = (fun () -> ()); 
+	    survive_section = true }
+

@@ -20,6 +20,7 @@ open Table
 open Mlutil
 open Options
 open Nametab
+open Libnames
 
 let current_module = ref None
 
@@ -30,6 +31,8 @@ let cons_cofix = ref Refset.empty
 let open_par = function true -> str "(" | false -> (mt ())
 
 let close_par = function true -> str ")" | false -> (mt ())
+
+let pp_par par st = function true -> str "(" ++ st ++ str ")" | false -> mt ()
 
 let pp_tvar id = 
   let s = string_of_id id in 
@@ -181,14 +184,15 @@ let expr_needs_par = function
   | MLcase _ -> true
   | _        -> false 
 
+let pp_apply st par args = match args with
+  | [] -> st
+  | _  -> hov 2 (open_par par ++ st ++ spc () ++
+                 prlist_with_sep (fun () -> (spc ())) (fun s -> s) args ++
+                 close_par par) 
+
 let rec pp_expr par env args = 
   let par' = args <> [] || par in 
-  let apply st = match args with
-    | [] -> st
-    | _  -> hov 2 (open_par par ++ st ++ spc () ++
-                     prlist_with_sep (fun () -> (spc ())) (fun s -> s) args ++
-                     close_par par) 
-  in
+  let apply st = pp_apply st par args in 
   function
     | MLrel n -> 
 	let id = get_db_name n env in apply (pr_id id)
@@ -211,6 +215,9 @@ let rec pp_expr par env args =
 			++ pp_expr false env [] a1) ++ 
 		    spc () ++ str "in") ++ 
 	      spc () ++ hov 0 (pp_expr par2 env' [] a2) ++ close_par par'))
+    | MLglob r when is_proj r && args <> [] ->
+	let record = List.hd args in 
+	pp_apply (record ++ str "." ++ pp_type_global r) par (List.tl args)
     | MLglob r -> 
 	apply (pp_global r env )
     | MLcons (r,[]) ->
@@ -371,6 +378,13 @@ let pp_ind il =
    prlist_with_sep (fun () -> (fnl () ++ str "and ")) (pp_one_ind "") il
    ++ fnl ())
 
+let pp_record ip pl l = 
+  let pl = rename_tvars keywords pl in 
+  (str "type " ++ pp_parameters pl ++ pp_type_global (IndRef ip) ++ str " = { "++
+   hov 0 (prlist_with_sep (fun () -> (str ";" ++ spc ())) 
+	    (fun (r,t) -> pp_type_global r ++ str " : " ++ pp_type true pl t) l)
+   ++ str " }") 
+
 let pp_coind_preamble (pl,name,_) = 
   let pl = rename_tvars keywords pl in
   (pp_parameters pl ++ pp_type_global name ++ str " = " ++ 
@@ -387,15 +401,18 @@ let pp_coind il =
 
 let pp_decl = function
   | Dind ([], _) -> mt ()
-  | Dind (i, cofix) -> 
-      if cofix then begin
-	List.iter   
-	  (fun (_,_,l) -> 
-	     List.iter (fun (r,_) -> 
-			  cons_cofix := Refset.add r !cons_cofix)  l) i; 
-	hov 0 (pp_coind i)
-      end else 
-	hov 0 (pp_ind i)
+  | Dind (i, true) -> 
+      List.iter   
+	(fun (_,_,l) -> 
+	   List.iter (fun (r,_) -> 
+			cons_cofix := Refset.add r !cons_cofix)  l) i; 
+      hov 0 (pp_coind i)
+  | Dind ([vl, IndRef ip, [_,l]] as i, _) -> 
+      (try 
+	 let projs = find_proj ip in 
+	 hov 0 (pp_record ip vl (List.combine projs l))
+       with Not_found -> hov 0 (pp_ind i)) 
+  | Dind (i,_) -> hov 0 (pp_ind i)
   | Dtype (r, l, t) ->
       let l = rename_tvars keywords l in 
       hov 0 (str "type" ++ spc () ++ pp_parameters l ++ 

@@ -72,4 +72,8 @@ val extract_constant_inline : bool -> reference -> string -> unit
 
 val extract_inductive : reference -> string * string list -> unit
 
+val add_record : inductive -> global_reference list -> unit
 
+val find_proj : inductive -> global_reference list
+
+val is_proj : global_reference -> bool 

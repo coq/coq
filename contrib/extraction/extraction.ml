@@ -20,14 +20,15 @@ open Environ
 open Reductionops
 open Inductive
 open Inductiveops
-open Instantiate
+(* open Instantiate *)
 open Miniml
 open Table
 open Mlutil
-open Closure
+(* open Closure *)
 open Summary
 open Libnames
 open Nametab
+open Recordops
 (*i*)
 
 (*S Extraction results. *)
@@ -350,7 +351,20 @@ and extract_mib kn =
   for i = 0 to mib.mind_ntypes - 1 do
     let mip = snd (Global.lookup_inductive (kn,i)) in 
     if mip.mind_sort <> (Prop Null) then 
-      add_inductive (kn,i) (type_sign_vl env mip.mind_nf_arity)
+      let ip = (kn,i) in 
+      let s,vl = type_sign_vl env mip.mind_nf_arity in 
+      add_inductive ip (s,vl); 
+      (* Record tables: *)
+      if not (is_singleton_inductive ip) then 
+	try 
+	  let l = (find_structure ip).s_PROJ in 
+	  assert (List.length s = List.length l); 
+	  let check (_,o) = match o with 
+	    | None -> raise Not_found 
+	    | Some kn -> ConstRef kn 
+	  in 
+	  add_record ip (List.map check (List.filter fst (List.combine s l)))
+	with Not_found  -> () 
   done;
   (* Second pass: we extract constructors *)
   for i = 0 to mib.mind_ntypes - 1 do
@@ -390,6 +404,24 @@ and extract_type_cons env db dbmap c i =
 	(extract_type env db 0 t []) :: l 
     | _ -> [] 
 
+(*s Looking for informative singleton case, i.e. an inductive with one 
+   constructor which has one informative argument. This dummy case will 
+   be simplified. *)
+
+and is_singleton_inductive ip = 
+  let (mib,mip) = Global.lookup_inductive ip in 
+  mib.mind_finite &&
+  (mib.mind_ntypes = 1) &&
+  (Array.length mip.mind_consnames = 1) && 
+  try 
+    let l = 
+      List.filter (type_neq mlt_env Tdummy) (fst (extract_constructor (ip,1)))
+    in List.length l = 1 && not (type_mem_kn (fst ip) (List.hd l))
+  with Not_found -> false
+          
+and is_singleton_constructor ((kn,i),_) = 
+  is_singleton_inductive (kn,i) 
+
 (*s Recording the ML type abbreviation of a Coq type scheme constant. *)
 
 and mlt_env r = match r with 
@@ -428,23 +460,6 @@ let record_constant_type kn =
     let mlt = extract_type env [] 1 (constant_type env kn) [] in 
     let schema = (type_maxvar mlt, mlt)
     in add_cst_type kn schema; schema
-
-(*s Looking for informative singleton case, i.e. an inductive with one 
-   constructor which has one informative argument. This dummy case will 
-   be simplified. *)
-
-let is_singleton_inductive ip = 
-  let (mib,mip) = Global.lookup_inductive ip in 
-  mib.mind_finite &&
-  (mib.mind_ntypes = 1) &&
-  (Array.length mip.mind_consnames = 1) && 
-  try 
-    let l = List.filter (type_neq Tdummy) (fst (extract_constructor (ip,1))) in
-    List.length l = 1 && not (type_mem_kn (fst ip) (List.hd l))
-  with Not_found -> false
-          
-let is_singleton_constructor ((kn,i),_) = 
-  is_singleton_inductive (kn,i) 
 
 (*S Extraction of a term. *)
 
