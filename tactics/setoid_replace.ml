@@ -55,6 +55,7 @@ type relation =
      rel_aeq: constr;
      rel_refl: constr option;
      rel_sym: constr option;
+     rel_trans : constr option;
      rel_quantifiers_no: int  (* it helps unification *)
    }
 
@@ -111,6 +112,8 @@ let coq_reflexive =
  lazy(gen_constant ["Relations"; "Relation_Definitions"] "reflexive")
 let coq_symmetric =
  lazy(gen_constant ["Relations"; "Relation_Definitions"] "symmetric")
+let coq_transitive =
+ lazy(gen_constant ["Relations"; "Relation_Definitions"] "transitive")
 let coq_relation =
  lazy(gen_constant ["Relations"; "Relation_Definitions"] "relation")
 
@@ -193,6 +196,7 @@ let coq_prop_relation =
      rel_aeq = gen_constant ["Init"; "Logic"] "iff";
      rel_refl = Some (gen_constant ["Init"; "Logic"] "iff_refl");
      rel_sym = Some (gen_constant ["Init"; "Logic"] "iff_sym");
+     rel_trans = Some (gen_constant ["Init"; "Logic"] "iff_trans");
      rel_quantifiers_no = 0
    })
 
@@ -203,6 +207,7 @@ let coq_prop_relation2 =
      rel_aeq = Lazy.force coq_impl;
      rel_refl = Some (constant ["Setoid"] "impl_refl");
      rel_sym = None;
+     rel_trans = Some (constant ["Setoid"] "impl_trans");
      rel_quantifiers_no = 0
    })
 
@@ -253,16 +258,16 @@ let prmorphism k m =
 (* A function that gives back the only relation_class on a given carrier *)
 (*CSC: this implementation is really inefficient. I should define a new
   map to make it efficient. However, is this really worth of? *)
-let default_relation_for_carrier a =
+let default_relation_for_carrier ?(filter=fun _ -> true) a =
  let rng = Gmap.rng !relation_table in
- match List.filter (fun {rel_a=rel_a} -> rel_a = a) rng with
+ match List.filter (fun ({rel_a=rel_a} as r) -> rel_a = a && filter r) rng with
     [] -> Leibniz (Some a)
   | relation::tl ->
      if tl <> [] then
       ppnl
        (*CSC: still "setoid" in the error message *)
-       (str "Warning: There are several setoids whose carrier is "++ prterm a ++
-         str ". The setoid " ++ prrelation relation ++
+       (str "Warning: There are several setoids whose carrier is \""++ prterm a ++
+         str "\". The setoid " ++ prrelation relation ++
          str " is randomly chosen.") ;
      Relation relation
 
@@ -297,17 +302,20 @@ let subst_relation subst relation =
   let rel_aeq' = subst_mps subst relation.rel_aeq in
   let rel_refl' = option_app (subst_mps subst) relation.rel_refl in
   let rel_sym' = option_app (subst_mps subst) relation.rel_sym in
+  let rel_trans' = option_app (subst_mps subst) relation.rel_trans in
     if rel_a' == relation.rel_a
       && rel_aeq' == relation.rel_aeq
       && rel_refl' == relation.rel_refl
       && rel_sym' == relation.rel_sym
+      && rel_trans' == relation.rel_trans
     then
       relation
     else
       { rel_a = rel_a' ;
         rel_aeq = rel_aeq' ;
         rel_refl = rel_refl' ;
-        rel_sym = rel_sym' ;
+        rel_sym = rel_sym';
+        rel_trans = rel_trans';
         rel_quantifiers_no = relation.rel_quantifiers_no
       }
       
@@ -409,6 +417,17 @@ let morphism_table_add (m,c) =
        prterm old_morph.lem ++ str ".")
   with
    Not_found -> morphism_table := Gmap.add m (c::old) !morphism_table
+
+let default_morphism ?(filter=fun _ -> true) m =
+  match List.filter filter (morphism_table_find m) with
+      [] -> raise Not_found
+    | m1::ml ->
+        if ml <> [] then
+          ppnl
+            (str "Warning: There are several morphisms associated to \"" ++
+            prterm m ++ str"\". Morphism " ++ prmorphism m m1 ++
+            str " is randomly chosen.");
+        relation_morphism_of_constr_morphism m1
 
 let subst_morph subst morph = 
   let lem' = subst_mps subst morph.lem in
@@ -525,6 +544,18 @@ let check_sym env a_quantifiers_rev a aeq sym =
   errorlabstrm "Add Relation Class"
    (str "Not a valid proof of symmetry")
 
+let check_trans env a_quantifiers_rev a aeq trans =
+ if
+  not
+   (is_conv env Evd.empty (Typing.type_of env Evd.empty trans)
+    (Sign.it_mkProd_or_LetIn
+     (mkApp ((Lazy.force coq_transitive),
+       [| apply_to_rels a   a_quantifiers_rev ;
+          apply_to_rels aeq a_quantifiers_rev |])) a_quantifiers_rev))
+ then
+  errorlabstrm "Add Relation Class"
+   (str "Not a valid proof of transitivity")
+
 let check_setoid_theory env a_quantifiers_rev a aeq th =
  if
   not
@@ -537,24 +568,26 @@ let check_setoid_theory env a_quantifiers_rev a aeq th =
   errorlabstrm "Add Relation Class"
    (str "Not a valid proof of symmetry")
 
-let int_add_relation a aeq refl sym =
+let int_add_relation a aeq refl sym trans =
  let env = Global.env () in
  let a_quantifiers_rev = check_a env a in
   check_eq env a_quantifiers_rev a aeq  ;
   option_iter (check_refl env a_quantifiers_rev a aeq) refl ;
   option_iter (check_sym env a_quantifiers_rev a aeq) sym ;
+  option_iter (check_trans env a_quantifiers_rev a aeq) trans ;
   Lib.add_anonymous_leaf 
    (relation_to_obj 
     (aeq, { rel_a = a;
             rel_aeq = aeq;
             rel_refl = refl;
             rel_sym = sym;
+            rel_trans = trans;
             rel_quantifiers_no = List.length a_quantifiers_rev }))
 
 (* The vernac command "Add Relation ..." *)
 let add_relation a aeq refl sym =
  int_add_relation (constr_of a) (constr_of aeq) (option_app constr_of refl)
-  (option_app constr_of sym)
+  (option_app constr_of sym) None
 
 (***************** Adding a morphism to the database ****************************)
 
@@ -720,6 +753,7 @@ let apply_to_relation subst rel =
     rel_aeq = mkApp (rel.rel_aeq, subst) ;
     rel_refl = option_app (fun c -> mkApp (c,subst)) rel.rel_refl ; 
     rel_sym = option_app (fun c -> mkApp (c,subst)) rel.rel_sym;
+    rel_trans = option_app (fun c -> mkApp (c,subst)) rel.rel_trans;
     rel_quantifiers_no = new_quantifiers_no }
 
 (* first order matching with a bit of conversion *)
@@ -938,11 +972,16 @@ let add_setoid id a aeq th =
     Sign.it_mkLambda_or_LetIn
      (mkApp ((Lazy.force coq_seq_sym),
        [| a_instance; aeq_instance; th_instance |])) a_quantifiers_rev in
+   let trans =
+    Sign.it_mkLambda_or_LetIn
+     (mkApp ((Lazy.force coq_seq_trans),
+       [| a_instance; aeq_instance; th_instance |])) a_quantifiers_rev in
    let aeq_rel =
     { rel_a = a ;
       rel_aeq = aeq ;
       rel_refl = Some refl ;
       rel_sym = Some sym ;
+      rel_trans = Some trans;
       rel_quantifiers_no = List.length a_quantifiers_rev } in
    let aeq_rel_class_and_var = None, Relation aeq_rel in
    Lib.add_anonymous_leaf (relation_to_obj (aeq, aeq_rel)) ;
