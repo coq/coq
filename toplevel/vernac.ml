@@ -122,6 +122,26 @@ let set_formatter_translator() =
   Format.set_formatter_output_functions out (fun () -> flush ch);
   Format.set_max_boxes max_int
 
+let pre_printing = function
+  | VernacSolve (i,tac,deftac) when Options.do_translate () ->
+      let (_,env) = Pfedit.get_goal_context i in
+      let t = Options.with_option Options.translate_syntax
+	(Tacinterp.glob_tactic_env [] env) tac in
+      let pfts = Pfedit.get_pftreestate () in
+      let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in
+      Some (env,t,Pfedit.focus(),List.length gls)
+  | _ -> None
+
+let post_printing loc (env,t,f,n) = function
+  | VernacSolve (i,_,deftac) ->
+      set_formatter_translator();
+      let pp = Ppvernacnew.pr_vernac_solve (i,env,t,deftac) ++ sep_end () in
+      if !translate_file then begin
+	msg (hov 0 (comment (fst loc) ++ pp ++ comment (snd loc - 1)));
+      end
+      else
+	msgnl (hov 4 (str"New Syntax:" ++ fnl() ++ pp))
+  | _ -> ()
 
 let pr_new_syntax loc ocom =
   if !translate_file then set_formatter_translator();
@@ -131,10 +151,6 @@ let pr_new_syntax loc ocom =
         Options.v7_only := true;
         mt()
     | Some VernacNop -> mt()
-    | Some (VernacImport (false,[Libnames.Ident (_,a)])) when
-	(* Pour ceux qui ont utilisé la couche "Import *_scope" de compat *)
-	let a = Names.string_of_id a in
-	a = "nat_scope" or a = "Z_scope" or a = "R_scope" -> mt()
     | Some com -> pr_vernac com
     | None -> mt() in
   if !translate_file then
@@ -196,8 +212,10 @@ let rec vernac_com interpfun (loc,com) =
   in 
   try
     Options.v7_only := false;
-    if do_translate () then pr_new_syntax loc (Some com);
+    let pp = pre_printing com in
+    if pp = None & do_translate() then pr_new_syntax loc (Some com);
     interp com;
+    if pp <> None & do_translate() then post_printing loc (out_some pp) com
   with e -> 
     Format.set_formatter_out_channel stdout;
     Options.v7_only := false;
