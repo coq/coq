@@ -44,6 +44,8 @@ open Tacinvutils
 module Smap = Map.Make(struct type t = constr let compare = compare end)
 let smap_to_list m = Smap.fold (fun c cb l -> (c,cb)::l) m []
 let merge_smap m1 m2 = Smap.fold (fun c cb m -> Smap.add c cb m) m1 m2
+let rec listsuf i l = if i<=0 then l else listsuf (i-1) (List.tl l)
+let rec listpref i l = if i<=0 then [] else List.hd l :: listpref (i-1) (List.tl l)
 
 let mkthesort = mkProp (* would like to put Type here, but with which index? *)
 
@@ -59,18 +61,23 @@ let nthhyp = ref 1
  (*debugging*)
 let debug i = prstr ("DEBUG "^ string_of_int i ^"\n")
 let pr2constr = (fun c1 c2 -> prconstr c1; prstr " <---> "; prconstr c2)
+(* Operations on names *)
+let id_of_name = function
+    Anonymous -> id_of_string "H"
+  | Name id   -> id;;
+let string_of_name nme = string_of_id (id_of_name nme)
  (*end debugging *)
 
 let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c
 
 let rec collect_cases l =
  match l with
-  | [||] -> [||],[],[],[||],[||]
+  | [||] -> [||],[],[],[||],[||],[]
   | arr -> 
-     let (a,c,d,f,e)= arr.(0) in
-     let aa,lc,ld,_,_ = 
+     let (a,c,d,f,e,g)= arr.(0) in
+     let aa,lc,ld,_,_,_ = 
       collect_cases (Array.sub arr 1 ((Array.length arr)-1)) in
-     Array.append [|a|] aa , (c@lc) , (d@ld) , f , e
+     Array.append [|a|] aa , (c@lc) , (d@ld) , f , e, g
 
 let rec collect_pred l =
  match l with
@@ -90,6 +97,8 @@ let lift1_relleqs leq= List.map (function (r,x) -> lift 1 r,x) leq
    intentional. Use with care. *)
 let lift1_lvars lvars= List.map 
  (function x,(nme,c) -> lift 1 x, (nme, (*lift 1*) c)) lvars
+
+let pop1_levar levars = List.map (function ev,tev -> ev, popn 1 tev) levars
 
 
 let rec add_n_dummy_prod t n = 
@@ -137,7 +146,22 @@ let rec patternify ltypes c nme =
   | [] -> c
   | (mv,t)::ltypes' -> 
      let c'= substitterm 0 mv (mkRel 1) c in
-     patternify ltypes' (mkLambda (newname_append nme "rec", t, c')) nme
+     let tlift = lift (List.length ltypes') t in
+     let res = 
+      patternify ltypes' (mkLambda (newname_append nme "rec", tlift, c')) nme in
+     res
+
+let rec npatternify ltypes c =
+ match ltypes with
+  | [] -> c
+  | (mv,nme,t)::ltypes' -> 
+     let c'= substitterm 0 mv (mkRel 1) c in
+(*      let _ = prconstr c' in *)
+     let tlift = lift (List.length ltypes') t in
+     let res = 
+      npatternify ltypes' (mkLambda (newname_append nme "", tlift, c')) in
+(*      let _ = prconstr res in *)
+     res
 
 let rec apply_levars c lmetav =
  match lmetav with
@@ -165,7 +189,9 @@ let rec mkAppRel c largs n =
 
 let applFull c typofc =
  let lv,t = decompose_prod typofc in 
- let ltyp = List.map fst lv in mkAppRel c  ltyp ((List.length ltyp))
+ let ltyp = List.map fst lv in 
+ let res = mkAppRel c ltyp (List.length ltyp) in
+ res
 
 
 let rec build_rel_map typ type_of_b = 
@@ -228,8 +254,11 @@ type mimickinfo =
      sigma: Evd.evar_map;
      nmefonc: constr array;
      fonc: int * int;
-     doeqs: bool (* this reference is to toggle building of equalities during
+     doeqs: bool; (* this reference is to toggle building of equalities during
                     the building of the principle (default is true) *)
+     fix: bool (* did I already went through a fix or case constr? lambdas
+                  found before a case or a fix are treated as parameters of
+                  the induction principle *)
     }
 
 (*
@@ -249,16 +278,32 @@ type mimickinfo =
   [(ev1,tev1);(ev2,tev2)..],
   [(i1,j1,k1);(i2,j2,k2)..],
   [|c1;c2..|],
-  [|typ1;typ2..|]]
+  [|typ1;typ2..|],
+  [(param,tparam)..]]
 
+ *)
+
+(* This could be the return type of [proofPrinc], but not yet *)
+type funind =
+    {
+     princ:constr;
+     evarlist: (constr*Term.types) list;
+     hypnum: (int*int*int) list;
+     mutfixmetas: constr array ;
+     conclarray: types array;
+     params:(constr*name*constr) list
+    }
+
+(* 
   où:
 
   \begin{itemize} 
 
-  \item[t] est le principe demandé, il contient des meta variables représentant
-  soit des trous à prouver plus tard, soit les conclusions à compléter avant de
-  rendre le terme (plusieurs conclusions si plusieurs fonction mutuellement
-  récursives) voir la suite.
+  \item[t] est le principe demandé, il contient des meta variables
+  représentant soit des trous à prouver plus tard, soit les conclusions à
+  compléter avant de rendre le terme (suivant qu'on utilise le principe pour
+  faire refine ou functional scheme). Il y plusieurs conclusions si plusieurs
+  fonction mutuellement récursives) voir la suite.
 
   \item[[(ev1,tev1);(ev2,tev2)...]] est l'ensemble des méta variables
   correspondant à des trous. [evi] est la meta variable, [tevi] est son type.
@@ -270,19 +315,22 @@ type mimickinfo =
   \item[[|c1;c2...|]] est un tableau de meta variables correspondant à chacun
   des prédicats mutuellement récursifs construits.
 
-  \item[|typ1;typ2...|] est un tableau contenant les conclusions respectives de
-  chacun des prédicats mutuellement récursifs. Permet de finir la construction
-  du principe.
+  \item[[|typ1;typ2...|]] est un tableau contenant les conclusions respectives
+  de chacun des prédicats mutuellement récursifs. Permet de finir la
+  construction du principe.
+
+  \item[[(param,tparam)..]] est la liste des paramètres (les lambda au-dessus
+  du fix) du fixpoint si fixpoint il y a.
 
   \end{itemize}
 *)
-let heq_prefix = "_eq_"
+let heq_prefix = "H_eq_"
 
 type kind_of_hyp = Var | Eq  (*| Rec*)
 
-let rec proofPrinc (mi:mimickinfo) lst_vars lst_eqs lst_recs:
+let rec proofPrinc mi lst_vars lst_eqs lst_recs:
  constr * (constr*Term.types) list * (int*int*int) list 
- * constr array * types array =
+ * constr array * types array * (constr*name*constr) list =
  match kind_of_term mi.mimick with
     (* Fixpoint: we reproduce the Fix, fonc becomes (1,nbofmutf) to point on
        the name of recursive calls *) 
@@ -298,12 +346,11 @@ let rec proofPrinc (mi:mimickinfo) lst_vars lst_eqs lst_recs:
         let pis = prod_change_concl ftyp gl_app in
         let gl_abstr = lam_change_concl ftyp gl_app in
         (gl,gl_abstr,pis):: build_pred (n+1) in
-     
+
      let evarl,predl,pisl = collect_pred (build_pred 0) in
      let newabsconcl = Array.of_list predl in
      let evararr = Array.of_list evarl in
      let pisarr = Array.of_list pisl in
-     
      let newenv = push_rec_types (narr,tarr,carr) mi.env in
 
      let rec collect_fix n =
@@ -314,17 +361,19 @@ let rec proofPrinc (mi:mimickinfo) lst_vars lst_eqs lst_recs:
         (* rappelle sur le sous-terme, on ajoute un niveau de
            profondeur (lift) parce que Fix est un binder. *)
         let newmi = {mi with concl=(pisarr.(n)); absconcl=newabsconcl;
-        mimick=c; fonc=(1,((Array.length iarr)));env=newenv} in
-        let appel_rec,levar,lposeq,_,evarrarr = 
+        mimick=c; fonc=(1,((Array.length iarr)));env=newenv;fix=true} in
+        let appel_rec,levar,lposeq,_,evarrarr,parms = 
          proofPrinc newmi (lift1_lvars lst_vars) 
           (lift1_leqs lst_eqs) (lift1L lst_recs) in
         let lnme,lappel_rec,llevar,llposeq = collect_fix (n+1) in
         (nme::lnme),(appel_rec::lappel_rec),(levar@llevar), (lposeq@llposeq) in
+
      let lnme,lappel_rec,llevar,llposeq =collect_fix  0 in
      let lnme' = List.map (fun nme -> newname_append nme "_ind") lnme in
      let anme = Array.of_list lnme' in
      let aappel_rec = Array.of_list lappel_rec in
-     mkFix((iarr,i),(anme, pisarr,aappel_rec)),llevar,llposeq,evararr,pisarr
+     (* llevar are put outside the fix, so one level of rel must be removed *)
+     mkFix((iarr,i),(anme, pisarr,aappel_rec)),(pop1_levar llevar),llposeq,evararr,pisarr,[]
 
   (* <pcase> Cases b of arrPt end.*)
   | Case(cinfo, pcase, b, arrPt) -> 
@@ -372,12 +421,12 @@ let rec proofPrinc (mi:mimickinfo) lst_vars lst_eqs lst_recs:
        then mkProd (name_of_string heq_prefix,lift nargs neweq,lift 1 b'')
        else b'' in
       let newconcl = prodn nargs b' newb'' in
-      let newmi = {mi with mimick=newmimick; concl=newconcl} in
-      let a,b,c,d,e = proofPrinc newmi lst_vars new_lsteqs new_lst_recs in
-      a,b,c,d,e
+      let newmi = {mi with mimick=newmimick; concl=newconcl; fix=true} in
+      let a,b,c,d,e,p = proofPrinc newmi lst_vars new_lsteqs new_lst_recs in
+      a,b,c,d,e,p
       in
      
-     let arrPt_proof,levar,lposeq,evararr,absc = 
+     let arrPt_proof,levar,lposeq,evararr,absc,_ = 
       collect_cases (Array.mapi fold_proof arrPt) in
      let prod_pcase,concl_pcase = decompose_lam pcase in
      let nme,typ = List.hd prod_pcase in
@@ -427,7 +476,7 @@ let rec proofPrinc (mi:mimickinfo) lst_vars lst_eqs lst_recs:
      let trm = 
       if mi.doeqs then mkApp (trm',[|(mkRefl type_of_b newb)|]) 
       else trm' in
-     trm,levar,lposeq,evararr,absc
+     trm,levar,lposeq,evararr,absc,[] (* fix parms here (fix inside case)*)
       
   | Lambda(nme, typ, cstr) ->
      let _, _, cconcl = destProd mi.concl in
@@ -435,10 +484,20 @@ let rec proofPrinc (mi:mimickinfo) lst_vars lst_eqs lst_recs:
      let newenv = push_rel (nme,None,typ) mi.env in
      let newmi = {mi with concl=cconcl; mimick=cstr; env=newenv;
       fonc=((if d > 0 then d+1 else 0),(if f > 0 then f+1 else 0))} in
-     let rec_call,levar,lposeq,evararr,absc =
-      proofPrinc newmi ((mkRel 1,(nme,typ)):: lift1_lvars lst_vars)
-       (lift1_leqs lst_eqs) (lift1L lst_recs) in
-     mkLambda (nme,typ,rec_call) , levar, lposeq,evararr,absc
+     let newlst_var = (* if this lambda is a param, then don't add it here *)
+      if mi.fix then (mkRel 1,(nme,typ)) :: lift1_lvars lst_vars
+      else (*(mkRel 1,(nme,typ)) :: *) lift1_lvars lst_vars in
+     let rec_call,levar,lposeq,evararr,absc,parms =
+      proofPrinc newmi newlst_var (lift1_leqs lst_eqs) (lift1L lst_recs) in
+     (* are we inside a fixpoint or a case? then this is a normal lambda *)
+     if mi.fix then mkLambda (nme,typ,rec_call) , levar, lposeq,evararr,absc,[]
+     else (* otherwise this is a parameter *)
+       let metav = mknewmeta() in
+       let substmeta t = popn 1 (substitterm 0 (mkRel 1) metav t) in
+       let newrec_call = substmeta rec_call in
+       let newlevar = List.map (fun ev,tev -> ev, substmeta tev) levar in
+       let newabsc = Array.map substmeta absc in
+       newrec_call,newlevar,lposeq,evararr,newabsc,((metav,nme, typ)::parms)
 
   | LetIn(nme,cstr1, typ, cstr) ->
      failwith ("I don't deal with let ins yet. "^
@@ -474,7 +533,7 @@ let rec proofPrinc (mi:mimickinfo) lst_vars lst_eqs lst_recs:
      let concl_with_var = applistc newmeta varrels in
      let conclrecs = applistc concl_with_var terms_recs in
      conclrecs,[newmeta,typeofhole], [nb_vars,(List.length terms_recs)
-      ,nb_eqs],[||],mi.absconcl
+      ,nb_eqs],[||],mi.absconcl,[]
 
 
 
@@ -508,14 +567,13 @@ let interp_fonc_tacarg fonctac gl =
    This function calls the big function proofPrinc. *)
 
 let invfun_proof fonc def_fonc gl_abstr pis env sigma =
- let _ = resetmeta() in
  let mi = {concl=pis; absconcl=gl_abstr; mimick=def_fonc; env=env;
- sigma=sigma; nmefonc=fonc; fonc=(0,0); doeqs=true} in
- let princ_proof,levar,lposeq,evararr,absc = proofPrinc mi [] [] [] in
- princ_proof,levar,lposeq,evararr,absc
+ sigma=sigma; nmefonc=fonc; fonc=(0,0); doeqs=true; fix=false} in
+ let princ_proof,levar,lposeq,evararr,absc,parms = proofPrinc mi [] [] [] in
+ princ_proof,levar,lposeq,evararr,absc,parms
 
 (* Do intros [i] times, then do rewrite on all introduced hyps which are called
-   ["H_eq_xx"], FIX: have another filter than the name. *)
+   like [heq_prefix], FIX: have another filter than the name. *)
 let rec iterintro i = 
  if i<=0 then tclIDTAC else 
    tclTHEN
@@ -529,7 +587,7 @@ let rec iterintro i =
         let hypname = (string_of_id (destVar hyp)) in
         let sub = 
          try String.sub hypname 0 (String.length heq_prefix)
-         with _ -> "" (* different than "H_eq_"*) in
+         with _ -> "" (* different than [heq_prefix] *) in
         if sub=heq_prefix then rewriteLR hyp else tclFAIL 0 "Cannot rewrite")
       )) gl)
 
@@ -604,6 +662,12 @@ let rec applistc_iota cstr lcstr env sigma =
 
 
 
+(* TODO: ne plus mettre les sous-but à l'exterieur, mais à l'intérieur (le bug
+   de refine est normalement resolu). Ca permettra 2 choses: d'une part que
+   les preuves soient plus simple, et d'autre part de fabriquer un terme de
+   refine qui pourra s'aapliquer SANS FAIRE LES INTROS AVANT, ce qui est bcp
+   mieux car fonctionne comme induction et plus comme inversion (pas de perte
+   de connexion entre les hypothèse et les variables). *)
 
 (*s Tactic that makes induction and case analysis following the shape
   of a function (idf) given with arguments (listargs) *)
@@ -618,24 +682,62 @@ let invfun c l dorew gl =
  let def_fonc'',listargs' = 
   applistc_iota def_fonc' l (pf_env gl) (project gl)  in
  let def_fonc = expand_letins def_fonc'' in
- (* Generalize the goal. [[x1:T1][x2:T2]... g[arg1 <- x1 ...]]. *)
- let gl_abstr = (add_lambdas (pf_concl gl) gl listargs') in
  (* quantifies on previously generalized arguments. 
     [(x1:T1)...g[arg1 <- x1 ...]] *)
  let pis = add_pis (pf_concl gl) gl listargs' in
  (* princ_proof builds the principle *)
- let princ_proof,levar, lposeq,evararr,_ = 
+ let _ = resetmeta() in
+ let princ_proof,levar, lposeq,evararr,_,parms = 
   invfun_proof [|fonc|] def_fonc [||] pis (pf_env gl) (project gl) in
- (* We do not consider mutual fixpt here *)
- let princ_proof_applied = applistc princ_proof listargs' in
- let princ_applied_hyps' = patternify (List.rev levar) 
-  princ_proof_applied (Name (id_of_string "Hyp"))  in
+
+ (* Generalize the goal. [[x1:T1][x2:T2]... g[arg1 <- x1 ...]]. *)
+ let gl_abstr' = add_lambdas (pf_concl gl) gl listargs' in
+ (* apply parameters immediately *)
+ let gl_abstr = applistc gl_abstr' (List.map (fun x,y,z -> x) (List.rev parms)) in
+
+ (* we apply args of the fix now, the parameters will be applied later *)
+ let princ_proof_applied_args = 
+  applistc princ_proof (listsuf (List.length parms) listargs') in
+
+ (* parameters are still there so patternify must not take them -> lift *)
+ let princ_proof_applied_lift = 
+  lift (List.length levar) princ_proof_applied_args in
+
+ let princ_applied_hyps'' = patternify (List.rev levar)
+  princ_proof_applied_lift (Name (id_of_string "Hyp"))  in
+ (* if there was a fix, we will not add "Q" as in funscheme, so we make a pop,
+    TODO: find were we made the lift in proofPrinc instead and supress it here,
+    and add lift in funscheme. *)
+ let princ_applied_hyps' = 
+  if Array.length evararr > 0 then popn 1 princ_applied_hyps''
+  else princ_applied_hyps'' in
+ 
  let princ_applied_hyps = 
-  if Array.length evararr > 0 then (* Fixpoint? *)
-    substit_red 0 (evararr.(0)) gl_abstr princ_applied_hyps'
+  if Array.length evararr > 0 then (* mutual Fixpoint not treated in the tactic *) 
+     (substit_red 0 (evararr.(0)) gl_abstr princ_applied_hyps')
   else princ_applied_hyps' (* No Fixpoint *) in
-(* let _ = prconstr princ_applied_hyps' in *)
- let princ_applied_evars = apply_levars princ_applied_hyps levar in
+ let _ = prNamedConstr "princ_applied_hyps" princ_applied_hyps in
+
+ (* replace params metavar by real args *)
+ let rec replace_parms lparms largs t = 
+  match lparms, largs with
+     [], _ -> t
+   | ((p,_,_)::lp), (a::la) -> let t'= substitterm 0 p a t in replace_parms lp la t'
+   | _, _ -> error "problem with number of args." in
+ let princ_proof_applied = replace_parms parms listargs' princ_applied_hyps in
+
+
+(*
+ (* replace params metavar by abstracted variables *)
+  let princ_proof_params = npatternify (List.rev parms) princ_applied_hyps in
+ (* we apply now the real parameters *)
+ let princ_proof_applied = 
+  applistc princ_proof_params (listpref (List.length parms) listargs') in
+*)
+
+
+
+ let princ_applied_evars = apply_levars princ_proof_applied levar in
  let open_princ_proof_applied = princ_applied_evars in
  let listargs_ids = List.map destVar (List.filter isVar listargs') in
  invfun_basic (mkevarmap_aux open_princ_proof_applied) listargs_ids 
@@ -664,32 +766,43 @@ END
 let buildFunscheme fonc mutflist =
  let def_fonc = expand_letins (def_of_const fonc) in
  let ftyp = type_of (Global.env ()) Evd.empty fonc in
+ let _ = resetmeta() in
  let gl = mknewmeta() in
  let gl_app = applFull gl ftyp in
  let pis = prod_change_concl ftyp gl_app in
  (* Here we call the function invfun_proof, that effectively 
     builds the scheme *)
- let princ_proof,levar,_,evararr,absc = 
+ let princ_proof,levar,_,evararr,absc,parms = 
   invfun_proof mutflist def_fonc [||] pis (Global.env()) Evd.empty in
- let lst_hyps = List.map snd levar in
+ (* parameters are still there (unboud rel), and patternify must not take them
+  -> lift*)
+ let princ_proof_lift = lift (List.length levar) princ_proof in
  let princ_proof_hyps = 
-  patternify (List.rev levar) princ_proof (Name (id_of_string "Hyp"))  in
+  patternify (List.rev levar) princ_proof_lift (Name (id_of_string "Hyp"))  in
  let rec princ_replace_metas ev abs i t = 
   if i>= Array.length ev then t
-  else
+  else (* fix? *)
     princ_replace_metas ev abs (i+1)
      (mkLambda (
       (Name (id_of_string ("Q"^(string_of_int i)))),
-      prod_change_concl (lift 1 abs.(i)) mkthesort,
-      (substitterm 0 ev.(i) (mkRel (1)) (lift 1 t))))
+      prod_change_concl (lift 0 abs.(i)) mkthesort,
+      (substitterm 0 ev.(i) (mkRel 1) (lift 0 t))))
  in
+ let rec princ_replace_params params t = 
+  List.fold_left (
+   fun acc ev,nam,typ -> 
+    mkLambda (Name (id_of_name nam) , typ, 
+    substitterm 0 ev (mkRel 1) (lift 0 acc)))
+   t params in
  if Array.length evararr = 0 (* Is there a Fixpoint? *)
 	then (* No Fixpoint *)
-		 (mkLambda ((Name (id_of_string ("Q"))), 
+   princ_replace_params parms (mkLambda ((Name (id_of_string "Q")), 
 		 prod_change_concl ftyp mkthesort,
    (substitterm 0 gl (mkRel 1) princ_proof_hyps)))
-	else
-   princ_replace_metas evararr absc 0 princ_proof_hyps
+	else (* there is a fix -> add parameters + replace metas *)
+   let princ_rpl = princ_replace_metas evararr absc 0 princ_proof_hyps in
+   princ_replace_params parms princ_rpl
+
 
     
 (* Declaration of the functional scheme. *)
@@ -733,6 +846,7 @@ END
 *** tuareg-if-then-else-inden:1 ***
 *** fill-column: 78 ***
 *** indent-tabs-mode: nil ***
+***  test-tactic: "../../bin/coqtop -translate -q -batch -load-vernac-source ../../test-suite/success/Funind.v" ***
 *** End: ***
 *)
           

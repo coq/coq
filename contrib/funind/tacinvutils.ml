@@ -20,7 +20,8 @@ open Reductionops
 
 (*s printing of constr -- debugging *)
 
-let msg x = () (* comment this to see debugging msgs *)
+let msg x = () ;; let prterm c = str "" (* comment this to see debug msgs *)
+  (* uncomment this to see debugging *)
 let prconstr c =  msg (str"  " ++ prterm c ++ str"\n")
 let prlistconstr lc = List.iter prconstr lc
 let prstr s = msg(str s)
@@ -29,12 +30,12 @@ let prchr () = msg (str" (ret) \n")
 let prNamedConstr s c = 
   begin
     msg(str "");
-    msg(str(s^"==>\n  ") ++ prterm c ++ str "\n<==\n");
+    msg(str(s^"==>\n ") ++ prterm c ++ str "\n<==\n");
     msg(str "");
   end
 
 let prNamedLConstr_aux lc = 
-  List.map (prNamedConstr "#>") lc
+  List.iter (prNamedConstr "#>") lc
 
 let prNamedLConstr s lc = 
   begin
@@ -137,10 +138,9 @@ let apply_eq_leqtrpl leq eq =
 (* [(a b c) a] -> true *)
 let constr_head_match u t=
   if isApp u 
-  then let uhd,_= destApplication u in
-  begin
+  then 
+	 let uhd,args= destApplication u in
     uhd=t
-  end
   else false
 
 (* My operations on constr *)
@@ -215,9 +215,16 @@ let hdMatchSub_cpl u (d,f) =
 let exchange_hd_prod subst_hd t =
     let (hd,args)= destApplication t in mkApp (subst_hd,args)
 
+(* substitute t by by_t in head of products inside in_u, reduces each
+	product found  *)
 let rec substit_red prof t by_t in_u =
   if constr_head_match in_u (lift prof t) 
-  then whd_beta (exchange_hd_prod (lift prof by_t) in_u)
+  then
+	 let _ = prNamedConstr "in_u" in_u in
+	 let x = whd_beta (exchange_hd_prod (lift prof by_t) in_u) in
+	 let _ = prNamedConstr "xx " x in
+	 let _ = prstr "\n\n" in
+	 x
   else
     map_constr_with_binders succ (fun i u -> substit_red i t by_t u)
     	prof in_u
@@ -262,9 +269,9 @@ let name_of_const t =
 
 
 (*i
-  Local Variables:
-  compile-command: "make -k tacinvutils.cmo"
-  test-command: "../../bin/coqtop -q -batch -load-vernac-source ../../test-suite/success/Funind.v"
- End:
+***  Local Variables:
+***  compile-command: "make -k tacinvutils.cmo"
+***  test-tactic: "../../bin/coqtop -translate -q -batch -load-vernac-source ../../test-suite/success/Funind.v"
+***  End:
 i*)
 

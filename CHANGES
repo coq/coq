@@ -141,6 +141,8 @@ Vernacular commands
   and on substrings of the name of the lemma
 - "Print Implicit" displays the implicit arguments of a constant
 - Locate now searches for all names having a given suffix
+- New command "Functional Scheme" for building an induction principle
+  from a function defined by case analysis and fix.
 
 Commands
 
@@ -226,6 +228,8 @@ Tactics
   immediate hint), resulting in shorter proofs
 - Instantiate now works in hyps (syntax : Instantiate in ...)
 - Some new tactics : EConstructor, ELeft, Eright, ESplit, EExists
+- New tactic "functional induction" to perform case analysis and
+  induction following the definition of a function.
 - Clear now fails when trying to remove a local definition used by
   a constant appearing in the current goal
 

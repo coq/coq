@@ -24,6 +24,8 @@ open Evd
 (* printing debugging *)
 val prconstr: constr -> unit
 val prlistconstr: constr list  -> unit
+val prNamedConstr:string -> constr -> unit
+val prNamedLConstr:string -> constr list -> unit
 val prstr: string -> unit 
 
 
