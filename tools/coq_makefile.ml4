@@ -28,6 +28,7 @@ let some_vfile = ref false
 let some_mlfile = ref false
 
 let opt = ref "-opt"
+let impredicative_set = ref false
 
 let print x = output_string !output_channel x
 let printf x = Printf.fprintf !output_channel x
@@ -71,6 +72,7 @@ coq_makefile [subdirectory] .... [file.v] ... [file.ml] ... [-custom
 [VARIABLE = value]: Add the variable definition \"VARIABLE=value\"
 [-byte]: compile with byte-code version of coq
 [-opt]: compile with native-code version of coq
+[-impredicative-set]: compile with option -impredicative-set of coq
 [-f file]: take the contents of file as arguments
 [-o file]: output should go in file file 
 [-h]: print this usage summary
@@ -184,7 +186,8 @@ let variables l =
     print "override OPT=-byte\n"
   else
     print "OPT=\n";
-  print "COQFLAGS=-q $(OPT) $(COQLIBS) $(COQ_XML)\n";
+  if !impredicative_set = true then print "OTHERFLAGS=-impredicative-set\n";
+  print "COQFLAGS=-q $(OPT) $(COQLIBS) $(OTHERFLAGS) $(COQ_XML)\n";
   print "COQC=$(COQBIN)coqc\n";
   print "GALLINA=gallina\n";
   print "COQDOC=coqdoc\n";
@@ -341,6 +344,8 @@ let rec process_cmd_line = function
       opt := "-byte"; process_cmd_line r
   | ("-full"|"-opt") :: r -> 
       opt := "-opt"; process_cmd_line r
+  | "-impredicative-set" :: r ->
+      impredicative_set := true; process_cmd_line r
   | "-custom" :: com :: dependencies :: file :: r ->
       some_file := true;
       Special (file,dependencies,com) :: (process_cmd_line r)

@@ -137,7 +137,7 @@ let parse_args () =
     | ("-notactics"|"-debug"|"-db"|"-debugger"|"-nolib"|"-batch"|"-nois"
       |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
       |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-translate"|"strict-implicit"
-      |"-dont-load-proofs" as o) :: rem ->
+      |"-dont-load-proofs"|"-impredicative-set" as o) :: rem ->
 	parse (cfiles,o::args) rem
     | ("-v"|"--version") :: _ ->
         Usage.version ()
