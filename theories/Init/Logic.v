@@ -78,7 +78,7 @@ Theorem iff_refl : (A:Prop) (iff A A).
     Split; Auto.
   Qed.
 
-Theorem iff_trans : (A,B,C:Prop) (iff A B) -> (iff B C) -> (iff A C).
+Theorem iff_trans : (a,b,c:Prop) (iff a b) -> (iff b c) -> (iff a c).
   Proof.
     Intros A B C (H1,H2) (H3,H4); Split; Auto.
   Qed.
@@ -92,7 +92,8 @@ End Equivalence.
 
 (** [(IF P Q R)], or more suggestively [(either P and_then Q or_else R)],
     denotes either [P] and [Q], or [~P] and [Q] *)
-Definition IF := [P,Q,R:Prop] (or (and P Q) (and (not P) R)).
+Definition IF_then_else := [P,Q,R:Prop] (or (and P Q) (and (not P) R)).
+V7only [Notation IF:=IF_then_else.].
 
 Notation "'IF' c1 'then' c2 'else' c3" := (IF c1 c2 c3)
   (at level 1, c1, c2, c3 at level 8) : type_scope

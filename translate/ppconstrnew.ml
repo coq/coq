@@ -729,21 +729,26 @@ let is_arith ref =
   let sp = sp_of_global ref in
   is_arith_dir (dirpath sp) (basename sp)
 
-let get_name (ln,lp,lz) id n =
+let get_name (ln,lp,lz,ll) id n =
   let id' = string_of_id n in
   (match id' with
-    | "nat" -> (id_of_string (List.hd ln),(List.tl ln,lp,lz))
-    | "positive" -> (id_of_string (List.hd lp),(ln,List.tl lp,lz))
-    | "Z" -> (id_of_string (List.hd lz),(ln,lp,List.tl lz))
-    | _ -> id,(ln,lp,lz))
+    | "nat" -> (id_of_string (List.hd ln),(List.tl ln,lp,lz,ll))
+    | "positive" -> (id_of_string (List.hd lp),(ln,List.tl lp,lz,ll))
+    | "Z" -> (id_of_string (List.hd lz),(ln,lp,List.tl lz,ll))
+    | "Prop" when List.mem (string_of_id id) ["a";"b";"c"] -> 
+	(* pour iff_trans *)
+	(id_of_string (List.hd ll),(ln,lp,lz,List.tl ll))
+    | _ -> id,(ln,lp,lz,ll))
 
 let get_name_constr names id t = match kind_of_term t with
   | Ind ind ->
       let n = basename (sp_of_global (IndRef ind)) in
       get_name names id n
+  | Sort _ -> get_name names id (id_of_string "Prop")
   | _ -> id,names
 
-let names = (["n";"m";"p";"q"],["p";"q";"r";"s"],["n";"m";"p";"q"])
+let names = 
+  (["n";"m";"p";"q"],["p";"q";"r";"s"],["n";"m";"p";"q"],["A";"B";"C"])
 
 let znames t =
   let rec aux c names = match kind_of_term c with
@@ -757,6 +762,7 @@ let znames t =
 
 let get_name_raw names id t = match t with
   | CRef(Ident (_,n)) -> get_name names id n
+  | CSort _ -> get_name names id (id_of_string "Prop")
   | _ -> id,names
 
 let rename_bound_variables id t =
