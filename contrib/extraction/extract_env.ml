@@ -109,17 +109,26 @@ end
 
 module Pp = Ocaml.Make(ToplevelParams)
 
-let pp_ast a = Pp.pp_ast (normalize a)
-let pp_decl a = Pp.pp_decl (normalize_decl a)
-
 open Vernacinterp
 
+let refs_set_of_list l = List.fold_right Refset.add l Refset.empty 
+
+let decl_of_refs refs =
+  let params = 
+    { modular = false ; module_name = "" ; 
+    optimization = true ; to_keep = refs_set_of_list refs;
+    to_expand = Refset.empty } in
+  let rl = List.map extract_declaration (extract_env refs) in
+  optimize params rl
+
+let print_user_extract r = 
+  mSGNL [< 'sTR "User defined extraction:"; 'sPC; 'sTR (find_ml_extraction r) ; 'fNL>]
+
 let extract_reference r =
-  mSGNL 
-    (if is_ml_extraction r then
-       [< 'sTR "User defined extraction:"; 'sPC; 'sTR (find_ml_extraction r) >]
-     else
-       pp_decl (extract_declaration r))
+  if is_ml_extraction r then
+    print_user_extract r 
+  else
+    mSGNL (Pp.pp_decl (list_last (decl_of_refs [r])))
 
 let _ = 
   vinterp_add "Extraction"
@@ -136,7 +145,7 @@ let _ =
 		| _ ->
 		    match extract_constr (Global.env()) [] c with
 		      | Emltype (t,_,_) -> mSGNL (Pp.pp_type t)
-		      | Emlterm a -> mSGNL (pp_ast a))
+		      | Emlterm a -> mSGNL (Pp.pp_ast (normalize a)))
        | _ -> assert false)
 
 (*s Recursive extraction in the Coq toplevel. The vernacular command is
@@ -154,16 +163,15 @@ let reference_of_varg = function
 
 let refs_of_vargl = List.map reference_of_varg
 
-let refs_set_of_list l = List.fold_right Refset.add l Refset.empty 
-
-let decl_of_refs refs =
-  List.map extract_declaration (extract_env refs)
-
 let _ = 
   vinterp_add "ExtractionRec"
     (fun vl () ->
-       let rl' = decl_of_refs (refs_of_vargl vl) in
-       List.iter (fun d -> mSGNL (pp_decl d)) rl')
+       let rl = refs_of_vargl vl in 
+       let ml_rl = List.filter is_ml_extraction rl in
+       let rl = List.filter (fun x -> not (is_ml_extraction x)) rl in 
+       let dl = decl_of_refs rl in
+       List.iter print_user_extract ml_rl ;
+       List.iter (fun d -> mSGNL (Pp.pp_decl d)) dl)
 
 (*s Extraction parameters. *)
 
