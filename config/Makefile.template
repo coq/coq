@@ -104,7 +104,8 @@ INSTALL=COQTOPDIRECTORY/bin/ARCHITECTURE/coqinstallEXECUTEEXTENSION
 MKDIR=mkdir -p
 
 #the command STRIP 
-# Unix systems: strip
+# Unix systems and profiling: true
+# Unix systems and no profiling: strip
 # Win32 systems: true (actually strip is bogus)
 STRIP=STRIPCOMMAND
 
