@@ -127,7 +127,7 @@ let parse_args () =
     | ("-libdir"|"-I"|"-include"|"-outputstate"
       |"-inputstate"|"-is"|"-load-vernac-source"|"-load-vernac-object"
       |"-load-ml-source"|"-require"|"-load-ml-object"|"-user"
-      |"-init-file"|"-dump-glob"|"-no-strict" as o) :: rem ->
+      |"-init-file"|"-dump-glob" as o) :: rem ->
 	begin
 	  match rem with
 	    | s :: rem' -> parse (cfiles,s::o::args) rem'
@@ -136,7 +136,8 @@ let parse_args () =
     | "-R" as o :: s :: t :: rem -> parse (cfiles,t::s::o::args) rem
     | ("-notactics"|"-debug"|"-db"|"-debugger"|"-nolib"|"-batch"|"-nois"
       |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
-      |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-translate" as o) :: rem ->
+      |"-silent"|"-m"|"-xml"|"-v7"|"-v8"|"-translate"|"strict-implicit"
+      |"-dont-load-proofs" as o) :: rem ->
 	parse (cfiles,o::args) rem
     | ("-v"|"--version") :: _ ->
         Usage.version ()

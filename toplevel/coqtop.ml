@@ -182,7 +182,7 @@ let parse_args is_ide =
     | "-compile-verbose" :: f :: rem -> add_compile true f; parse rem
     | "-compile-verbose" :: []       -> usage ()
 
-    | "-no-proofs" :: rem -> Options.dont_load_proofs := true; parse rem
+    | "-dont-load-proofs" :: rem -> Options.dont_load_proofs := true; parse rem
 
     | "-translate" :: rem -> make_translate true; parse rem
 
@@ -220,7 +220,7 @@ let parse_args is_ide =
     | "-v8" :: rem -> (* Options.v7 := false; *) parse rem
 
     (* Translator options *)
-    | "-no-strict" :: rem -> 
+    | "-strict-implicit" :: rem -> 
 	Options.translate_strict_impargs := false; parse rem
 
     | s :: rem -> 
