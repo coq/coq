@@ -1496,6 +1496,9 @@ and fTACTIC_COM = function
    fINT x2;
    fFIX_TAC_LIST x3;
    fNODE "fixtactic" 3
+| CT_formula_marker(x1) ->
+   fFORMULA x1;
+   fNODE "formula_marker" 1
 | CT_generalize(x1) ->
    fFORMULA_NE_LIST x1;
    fNODE "generalize" 1

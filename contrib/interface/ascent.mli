@@ -619,6 +619,7 @@ and ct_TACTIC_COM =
   | CT_fail of ct_INT * ct_STRING_OPT
   | CT_first of ct_TACTIC_COM * ct_TACTIC_COM list
   | CT_fixtactic of ct_ID_OPT * ct_INT * ct_FIX_TAC_LIST
+  | CT_formula_marker of ct_FORMULA
   | CT_generalize of ct_FORMULA_NE_LIST
   | CT_generalize_dependent of ct_FORMULA
   | CT_idtac of ct_STRING_OPT
