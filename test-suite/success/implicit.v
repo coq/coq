@@ -17,3 +17,13 @@ Record stack : Type := {type : Set; elt : type;
 Check (type:Set; elt:type; empty:(type->bool))(empty elt)=true->stack.
 
 End Spec.
+
+(* Example submitted by Frédéric (interesting in v8 syntax) *)
+
+Parameter f : nat -> nat * nat.
+Notation lhs := fst.
+Check [x](lhs ? ? (f x)).
+Check [x](!lhs ? ? (f x)).
+Notation "'rhs'" := snd.
+Check [x](rhs ? ? (f x)).
+Check [x](!rhs ? ? (f x)).
