@@ -21,8 +21,6 @@ open Evd
 open Proof_type
 open Proof_trees
 open Logic
-open Closure
-open Reduction
 open Reductionops
 open Tacmach
 open Evar_refiner
@@ -48,42 +46,6 @@ let abstract_list_all env sigma typ c l =
     else error "abstract_list_all"
   with UserError _ ->
     raise (RefinerError (CannotGeneralize typ))
-
-let rec has_flexible_head env c =
-  let (h,l) = whd_stack c in
-  match kind_of_term h with
-      Const sp ->
-        if evaluable_constant sp env then Some (ConstKey sp) else None
-    | Var v ->
-        if evaluable_named v env then Some (VarKey v) else None
-    | Rel n ->
-        if evaluable_rel n env then Some (FarRelKey n) else None
-    | Case(_,_,i,_) -> has_flexible_head env i
-    | Fix ((ri,i),_) ->
-        (try has_flexible_head env (List.nth l ri.(i))
-         with Invalid_argument _ | Failure _ -> None)
-    | _ -> None
-
-let rec reduce_flexible_head env c =
-  let (h,l) = whd_stack c in
-  match kind_of_term h with
-      Const sp -> beta_appvect (constant_value env sp) (Array.of_list l)
-    | Var var ->
-        (match lookup_named var env with
-            (_,Some v,_) -> beta_appvect v (Array.of_list l)
-          | _ -> c)
-    | Rel n ->
-        (match lookup_rel n env with
-            (_,Some v,_) -> beta_appvect v (Array.of_list l)
-          | _ -> c)
-    | Case(ci,p,i,br) ->
-        mkApp(mkCase(ci,p,reduce_flexible_head env i,br), Array.of_list l)
-    | Fix ((ri,i),_) ->
-        let l' =
-          list_assign l ri.(i)
-            (reduce_flexible_head env (List.nth l ri.(i))) in
-        mkApp(h,Array.of_list l')
-    | _ -> c
 
 (* Generator of metavariables *)
 let meta_ctr=ref 0;;
@@ -162,7 +124,7 @@ let mimick_evar hdc nargs sp wc =
    Attention : pas d'unification entre les différences instances d'une
    même meta ou evar, il peut rester des doublons *)
 
-let unify_0 allow_red cv_pb wc m n =
+let unify_0 cv_pb wc m n =
   let env = w_env wc
   and sigma = w_Underlying wc in
   let rec unirec_rec pb ((metasubst,evarsubst) as substn) m n =
@@ -170,15 +132,14 @@ let unify_0 allow_red cv_pb wc m n =
     and cN = Evarutil.whd_castappevar sigma n in 
     try 
       match (kind_of_term cM,kind_of_term cN) with
+	| Cast (c,_), _ -> unirec_rec pb substn c cN
+	| _, Cast (c,_) -> unirec_rec pb substn cM c
 	| Meta k1, Meta k2 ->
 	    if k1 < k2 then (k1,cN)::metasubst,evarsubst
 	    else if k1 = k2 then substn
 	    else (k2,cM)::metasubst,evarsubst
 	| Meta k, _    -> (k,cN)::metasubst,evarsubst
 	| _, Meta k    -> (k,cM)::metasubst,evarsubst
-	| Evar _, _ -> metasubst,((cM,cN)::evarsubst)
-	| _, Evar _ -> metasubst,((cN,cM)::evarsubst)
-
 	| Lambda (_,t1,c1), Lambda (_,t2,c2) ->
 	    unirec_rec CONV (unirec_rec CONV substn t1 t2) c1 c2
 	| Prod (_,t1,c1), Prod (_,t2,c2) ->
@@ -205,31 +166,51 @@ let unify_0 allow_red cv_pb wc m n =
             array_fold_left2 (unirec_rec CONV)
 	      (unirec_rec CONV (unirec_rec CONV substn p1 p2) c1 c2) cl1 cl2
 		
+	| Construct _, Construct _ ->
+	    if is_conv env sigma cM cN then
+	      substn
+	    else
+	      error_cannot_unify (m,n)
+	      
+	| Ind _, Ind _ ->
+	    if is_conv env sigma  cM cN then
+	      substn
+	    else
+	      error_cannot_unify (m,n)
+	      
+	| Evar _, _ ->
+	    metasubst,((cM,cN)::evarsubst)
+	| _, Evar _ ->
+	    metasubst,((cN,cM)::evarsubst)
+
+	| (Const _ | Var _ | Rel _), _ ->
+	    if is_conv env sigma cM cN then
+	      substn
+	    else 
+	      error_cannot_unify (m,n)
+		
+	| _, (Const _ | Var _| Rel _) ->
+	    if (not (occur_meta cM)) & is_conv env sigma cM cN then 
+	      substn
+	    else 
+	      error_cannot_unify (m,n)
+
+	| LetIn (_,b,_,c), _ -> unirec_rec pb substn (subst1 b c) cN
+	| _, LetIn (_,b,_,c) -> unirec_rec pb substn cM (subst1 b c)
+		
 	| _ -> error_cannot_unify (m,n)
 	      
     with ex when catchable_exception ex ->
       if (not(occur_meta cM)) & is_fconv pb env sigma cM cN then 
 	substn
-      else if allow_red then
-        match kind_of_term cM, kind_of_term cN with
-          | LetIn (_,b,_,c), _ -> unirec_rec pb substn (subst1 b c) cN
-	  | _, LetIn (_,b,_,c) -> unirec_rec pb substn cM (subst1 b c)
-          | _ ->
-              (match (has_flexible_head env cM, has_flexible_head env cN) with
-              (None, None) -> raise ex
-            | (Some _, None) ->
-                unirec_rec pb substn (reduce_flexible_head env cM) cN
-            | (None, Some _) ->
-                unirec_rec pb substn cM (reduce_flexible_head env cN)
-            | (Some k1, Some k2) ->
-                if Conv_oracle.oracle_order k1 k2
-                then unirec_rec pb substn (reduce_flexible_head env cM) cN
-                else unirec_rec pb substn cM (reduce_flexible_head env cN))
-      else raise ex
+      else 
+	raise ex
 
-  in
-  if (not(occur_meta m)) & is_fconv cv_pb env sigma m n then ([],[])
-  else unirec_rec cv_pb ([],[]) m n
+    in
+    if (not(occur_meta m)) & is_fconv cv_pb env sigma m n then 
+      ([],[])
+    else 
+      unirec_rec cv_pb ([],[]) m n
 
 
 (* Unification
@@ -282,7 +263,7 @@ let unify_0 allow_red cv_pb wc m n =
  * since other metavars might also need to be resolved. *)
 
 let rec w_Unify cv_pb m n wc =
-  let (mc',ec') = unify_0 true cv_pb wc m n in 
+  let (mc',ec') = unify_0 cv_pb wc m n in 
   w_resrec (List.rev mc') (List.rev ec') wc
 
 and w_resrec metas evars wc =
@@ -627,7 +608,7 @@ let clenv_merge with_types =
 
 	  | Evar (evn,_) ->
     	      if w_defined_evar clenv.hook evn then
-		let (metas',evars') = unify_0 true CONV clenv.hook rhs lhs in
+		let (metas',evars') = unify_0 CONV clenv.hook rhs lhs in
 		clenv_resrec (List.rev metas'@metas) (List.rev evars'@t) clenv
     	      else begin
 		let rhs' = 
@@ -652,7 +633,7 @@ let clenv_merge with_types =
       | ([], (mv,n)::t) ->
     	  if clenv_defined clenv mv then
             let (metas',evars') =
-              unify_0 true CONV clenv.hook (clenv_value clenv mv).rebus n in
+              unify_0 CONV clenv.hook (clenv_value clenv mv).rebus n in
             clenv_resrec (List.rev metas'@t) (List.rev evars') clenv
     	  else
 	    let mc,ec =
@@ -661,7 +642,7 @@ let clenv_merge with_types =
 		(try 
 		let nty = clenv_type_of clenv 
 			    (clenv_instance clenv (mk_freelisted n)) in
-		unify_0 true CUMUL clenv.hook nty mvty
+		unify_0 CUMUL clenv.hook nty mvty
 		with e when Logic.catchable_exception e -> ([],[]))
 	      else ([],[]) in
 	    clenv_resrec (List.rev mc@t) (List.rev ec)
@@ -679,12 +660,12 @@ let clenv_merge with_types =
    [clenv_typed_unify M N clenv] expects in addition that expected
    types of metavars are unifiable with the types of their instances    *)
 
-let clenv_unify_core_0 allow_red with_types cv_pb m n clenv =
-  let (mc,ec) = unify_0 allow_red cv_pb clenv.hook m n in 
+let clenv_unify_core_0 with_types cv_pb m n clenv =
+  let (mc,ec) = unify_0 cv_pb clenv.hook m n in 
   clenv_merge with_types (List.rev mc) (List.rev ec) clenv
 
-let clenv_unify_0 allow_red = clenv_unify_core_0 allow_red false
-let clenv_typed_unify = clenv_unify_core_0 false true
+let clenv_unify_0 = clenv_unify_core_0 false
+let clenv_typed_unify = clenv_unify_core_0 true
 
 
 (* takes a substitution s, an open term op and a closed term cl
@@ -708,7 +689,7 @@ let unify_to_subterm clause (op,cl) =
     let cl = strip_outer_cast cl in
     (try 
        if closed0 cl 
-       then clenv_unify_0 false CONV op cl clause,cl
+       then clenv_unify_0 CONV op cl clause,cl
        else error "Bound 1"
      with ex when catchable_exception ex ->
        (match kind_of_term cl with 
@@ -783,9 +764,9 @@ let secondOrderAbstraction allow_K typ (p, oplist) clause =
   let (clause',cllist) = unify_to_subterm_list allow_K clause oplist typ in
   let typp = clenv_instance_type clause' p in 
   let pred = abstract_list_all env sigma typp typ cllist in
-  clenv_unify_0 false CONV (mkMeta p) pred clause'
+  clenv_unify_0 CONV (mkMeta p) pred clause'
 
-let clenv_unify_2 allow_K cv_pb ty1 ty2 clause =
+let clenv_unify2 allow_K cv_pb ty1 ty2 clause =
   let c1, oplist1 = whd_stack ty1 in
   let c2, oplist2 = whd_stack ty2 in
   match kind_of_term c1, kind_of_term c2 with
@@ -794,14 +775,14 @@ let clenv_unify_2 allow_K cv_pb ty1 ty2 clause =
 	let clause' =
           secondOrderAbstraction allow_K ty2 (p1,oplist1) clause in 
         (* Resume first order unification *)
-	clenv_unify_0 false cv_pb (clenv_instance_term clause' ty1) ty2 clause'
+	clenv_unify_0 cv_pb (clenv_instance_term clause' ty1) ty2 clause'
     | _, Meta p2 ->
         (* Find the predicate *)
 	let clause' =
           secondOrderAbstraction allow_K ty1 (p2, oplist2) clause in 
         (* Resume first order unification *)
-	clenv_unify_0 false cv_pb ty1 (clenv_instance_term clause' ty2) clause'
-    | _ -> error "clenv_unify_2"
+	clenv_unify_0 cv_pb ty1 (clenv_instance_term clause' ty2) clause'
+    | _ -> error "clenv_unify2"
 
 
 (* The unique unification algorithm works like this: If the pattern is
@@ -833,20 +814,20 @@ let clenv_unify allow_K cv_pb ty1 ty2 clenv =
 	   clenv_typed_unify cv_pb ty1 ty2 clenv
 	 with ex when catchable_exception ex -> 
 	   try 
-	     clenv_unify_2 allow_K cv_pb ty1 ty2 clenv
+	     clenv_unify2 allow_K cv_pb ty1 ty2 clenv
 	   with ex when catchable_exception ex -> 
 	     error "Cannot solve a second-order unification problem")
 
      | (Meta _, true, _, _ | _, _, Meta _, true) -> 
 	(try 
-	   clenv_unify_2 allow_K cv_pb ty1 ty2 clenv
+	   clenv_unify2 allow_K cv_pb ty1 ty2 clenv
          with ex when catchable_exception ex -> 
            try 
 	     clenv_typed_unify cv_pb ty1 ty2 clenv
            with ex when catchable_exception ex -> 
              error "Cannot solve a second-order unification problem")
 
-     | _ -> clenv_unify_0 false cv_pb ty1 ty2 clenv
+     | _ -> clenv_unify_0 cv_pb ty1 ty2 clenv
 
 
 (* [clenv_bchain mv clenv' clenv]

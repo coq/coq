@@ -56,6 +56,9 @@ type 'a clausenv = {
 type wc = named_context sigma (* for a better reading of the following *)
 
 val unify : constr -> tactic
+val unify_0 : 
+  Reductionops.conv_pb -> wc -> constr -> constr 
+    -> (int * constr) list * (constr * constr) list
 
 val collect_metas : constr -> int list
 val mk_clenv : 'a -> constr -> 'a clausenv
@@ -128,7 +131,3 @@ val pr_clenv : 'a clausenv -> Pp.std_ppcmds
 val abstract_list_all :
   Environ.env -> Evd.evar_map -> constr -> constr -> constr list -> constr
 
-(* For debug *)
-val unify_0 : 
-  bool -> Reductionops.conv_pb -> wc -> constr -> constr 
-    -> (int * constr) list * (constr * constr) list
