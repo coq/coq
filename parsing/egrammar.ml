@@ -56,9 +56,13 @@ exception Found of Gramext.g_assoc
 open Ppextend
 
 let admissible_assoc = function
-  | Gramext.LeftA, (Gramext.RightA | Gramext.NonA) -> false
-  | Gramext.RightA, Gramext.LeftA -> false
+  | Gramext.LeftA, Some (Gramext.RightA | Gramext.NonA) -> false
+  | Gramext.RightA, Some Gramext.LeftA -> false
   | _ -> true
+
+let create_assoc = function
+  | None -> Gramext.RightA
+  | Some a -> a
 
 let find_position other assoc lev =
   let current = List.hd !level_stack in 
@@ -67,8 +71,7 @@ let find_position other assoc lev =
       level_stack := current :: !level_stack;
       None, (if other then assoc else None), None
   | Some n ->
-      let assoc = out_some assoc in
-      if n = 8 & assoc = Gramext.LeftA then 
+      if n = 8 & assoc = Some Gramext.LeftA then 
 	error "Left associativity not allowed at level 8";
       let after = ref (8,Gramext.RightA) in
       let rec add_level q = function
@@ -79,17 +82,18 @@ let find_position other assoc lev =
 	    if a = Gramext.LeftA then
 	      match l with
 		| (p,a)::_ as l' when p = n -> raise (Found a)
-		| _ -> after := pa; (n,assoc)::l'
+		| _ -> after := pa; (n,create_assoc assoc)::l'
 	    else
 	      (* This was not (p,LeftA) hence assoc is LeftA *)
-	      (after := q; (n,assoc)::l')
+	      (after := q; (n,create_assoc assoc)::l')
 	| l ->
-	    after := q; (n,assoc)::l
+	    after := q; (n,create_assoc assoc)::l
       in
       try
 	(* Create the entry *)
         let current = List.hd !level_stack in
         level_stack := add_level (8,Gramext.RightA) current :: !level_stack;
+	let assoc = create_assoc assoc in
         Some (Gramext.After (constr_level !after)),
 	Some assoc, Some (constr_level (n,assoc))
       with
@@ -138,8 +142,10 @@ let specify_name name e =
 
 open Names
 
-let make_act f pil =
-  let rec make env = function
+type 'a action_env = (identifier * 'a) list
+
+let make_act (f : loc -> constr_expr action_env -> constr_expr) pil =
+  let rec make (env : constr_expr action_env) = function
     | [] ->
 	Gramext.action (fun loc -> f loc env)
     | None :: tl -> (* parse a non-binding item *)
@@ -158,8 +164,9 @@ let make_act f pil =
 	failwith "Unexpected entry of type cases pattern" in
   make [] (List.rev pil)
 
-let make_cases_pattern_act f pil =
-  let rec make env = function
+let make_cases_pattern_act 
+  (f : loc -> cases_pattern_expr action_env -> cases_pattern_expr) pil =
+  let rec make (env : cases_pattern_expr action_env) = function
     | [] ->
 	Gramext.action (fun loc -> f loc env)
     | None :: tl -> (* parse a non-binding item *)
@@ -194,24 +201,95 @@ let symbol_of_prod_item univ assoc = function
       let eobj = build_prod_item univ assoc nt in
       (eobj, ovar)
 
+let coerce_to_id = function
+  | CRef (Ident (_,id)) -> id 
+  | c ->
+      user_err_loc (constr_loc c, "subst_rawconstr",
+        str"This expression should be a simple identifier")
+
+let coerce_to_ref = function
+  | CRef r -> r
+  | c ->
+      user_err_loc (constr_loc c, "subst_rawconstr",
+        str"This expression should be a simple reference")
+
+let subst_ref loc subst id =
+  try coerce_to_ref (List.assoc id subst) with Not_found -> Ident (loc,id)
+
+let subst_pat_id loc subst id =
+  try List.assoc id subst
+  with Not_found -> CPatAtom (loc,Some (Ident (loc,id)))
+
+let subst_id subst id =
+  try coerce_to_id (List.assoc id subst) with Not_found -> id
+
+let name_app f = function
+  | Name id -> Name (f id)
+  | Anonymous -> Anonymous
+
+let subst_cases_pattern_expr a loc subs =
+  let rec subst = function
+  | CPatAlias (_,p,x) -> CPatAlias (loc,subst p,x)
+    (* No subst in compound pattern ? *)
+  | CPatCstr (_,ref,pl) -> CPatCstr (loc,ref,List.map subst pl)
+  | CPatAtom (_,Some (Ident (_,id))) -> subst_pat_id loc subs id
+  | CPatAtom (_,x) -> CPatAtom (loc,x)
+  | CPatNumeral (_,n) -> CPatNumeral (loc,n)
+  | CPatDelimiters (_,key,p) -> CPatDelimiters (loc,key,subst p)
+  in subst a
+
+let subst_constr_expr a loc subs =
+  let rec subst = function
+  | CRef (Ident (_,id)) ->
+      (try List.assoc id subs with Not_found -> CRef (Ident (loc,id)))
+  (* Temporary: no robust treatment of substituted binders *)
+  | CLambdaN (_,[],c) -> subst c
+  | CLambdaN (_,([],t)::bl,c) -> subst (CLambdaN (loc,bl,c))
+  | CLambdaN (_,((_,na)::bl,t)::bll,c) -> 
+      let na = name_app (subst_id subs) na in
+      CLambdaN (loc,[[loc,na],subst t], subst (CLambdaN (loc,(bl,t)::bll,c)))
+  | CProdN (_,[],c) -> subst c
+  | CProdN (_,([],t)::bl,c) -> subst (CProdN (loc,bl,c))
+  | CProdN (_,((_,na)::bl,t)::bll,c) -> 
+      let na = name_app (subst_id subs) na in
+      CProdN (loc,[[loc,na],subst t], subst (CProdN (loc,(bl,t)::bll,c)))
+  | CLetIn (_,(_,na),b,c) ->
+      let na = name_app (subst_id subs) na in
+      CLetIn (loc,(loc,na),subst b,subst c)
+  | CArrow (_,a,b) -> CArrow (loc,subst a,subst b)
+  | CAppExpl (_,Ident (_,id),l) ->
+      CAppExpl (loc,subst_ref loc subs id,List.map subst l) 
+  | CAppExpl (_,r,l) -> CAppExpl (loc,r,List.map subst l) 
+  | CApp (_,a,l) -> CApp (loc,subst a,List.map (fun (a,i) -> (subst a,i)) l)
+  | CCast (_,a,b) -> CCast (loc,subst a,subst b)
+  | CNotation (_,n,l) -> CNotation (loc,n,List.map (fun (x,t) ->(x,subst t)) l)
+  | CDelimiters (_,s,a) -> CDelimiters (loc,s,subst a)
+  | CHole _ | CMeta _ | CSort _ | CNumeral _ | CDynamic _ | CRef _ as x -> x
+  | CCases (_,po,a,bl) ->
+      (* TODO: apply g on the binding variables in pat... *)
+      let bl = List.map (fun (_,pat,rhs) -> (loc,pat,subst rhs)) bl in
+      CCases (loc,option_app subst po,List.map subst a,bl)
+  | COrderedCase (_,s,po,a,bl) ->
+      COrderedCase (loc,s,option_app subst po,subst a,List.map subst bl)
+  | CFix (_,id,dl) ->
+      CFix (loc,id,List.map (fun (id,n,t,d) -> (id,n,subst t,subst d)) dl)
+  | CCoFix (_,id,dl) ->
+      CCoFix (loc,id,List.map (fun (id,t,d) -> (id,subst t,subst d)) dl)
+  in subst a
+
 let make_rule univ assoc etyp rule =
   let pil = List.map (symbol_of_prod_item univ assoc) rule.gr_production in
   let (symbs,ntl) = List.split pil in
-  let f loc env = match rule.gr_action, env with
-    | AVar p, [p',a] when p=p' -> a
-    | AApp (AVar f,[AVar a]), [f',v;a',w] when f=f' & a=a' ->
-        CApp (loc,v,[w,None])
-    | AApp (AVar f,[AVar a]), [a',w;f',v] when f=f' & a=a' ->
-        CApp (loc,v,[w,None])
-    | pat,_ -> CGrammar (loc, pat, env) in
   let act = match etyp with
-    | ETPattern -> 
+    | ETPattern ->
         (* Ugly *)
         let f loc env = match rule.gr_action, env with
-          | AVar p, [p',a] when p=p' -> a
+          | CRef (Ident(_,p)), [p',a] when p=p' -> a
           | _ -> error "Unable to handle this grammar extension of pattern" in
-        make_cases_pattern_act f ntl
-    | _ -> make_act f ntl in
+	make_cases_pattern_act f ntl
+    | ETIdent | ETBigint | ETReference -> error "Cannot extend"
+    | ETConstr _ | ETOther _ -> 
+	make_act (subst_constr_expr rule.gr_action) ntl in
   (symbs, act)
 
 (* Rules of a level are entered in reverse order, so that the first rules

@@ -76,7 +76,7 @@ Grammar constr constr1 :=
 Definition equal := [A:Setoid]
    <[s:Setoid](Relation |s|)>let (S,R,e)=A in R.
 
-Grammar constr constr1 :=
+Grammar constr constr1 := NONA
  equal   [ constr0($c) "=" "%" "S" constr0($c2) ] -> 
          [ (equal ? $c $c2) ].
 
@@ -111,7 +111,7 @@ End Maps.
 
 Notation ap := (explicit_ap ? ?). 
 
-Grammar constr constr8 :=
+Grammar constr constr8 := RIGHTA
   map_setoid [ constr7($c1) "=>" constr8($c2) ] 
                  -> [ (Map_setoid $c1 $c2) ].
 

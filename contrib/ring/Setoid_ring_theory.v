@@ -13,40 +13,12 @@ Require Export Setoid.
 
 Set Implicit Arguments.
 
-Grammar ring formula : constr :=
-  formula_expr [ expr($p) ] -> [$p]
-| formula_eq [ expr($p) "==" expr($c) ] -> [ (Aequiv $p $c) ]
-
-with expr : constr :=
-  RIGHTA
-    expr_plus [ expr($p) "+" expr($c) ] -> [ (Aplus $p $c) ]
-  | expr_expr1 [ expr1($p) ] -> [$p]
-
-with expr1 : constr :=
-  RIGHTA
-    expr1_plus [ expr1($p) "*" expr1($c) ] -> [ (Amult $p $c) ]
-  | expr1_final [ final($p) ] -> [$p]
-
-with final : constr :=
-  final_var [ prim:var($id) ] -> [ $id ]
-| final_constr [ "[" constr:constr($c) "]" ] -> [ $c ]
-| final_app [ "(" application($r) ")" ] -> [ $r ]
-| final_0 [ "0" ] -> [ Azero ]
-| final_1 [ "1" ] -> [ Aone ]
-| final_uminus [ "-" expr($c) ] -> [ (Aopp $c) ]
-
-with application : constr :=
-  LEFTA
-    app_cons [ application($p) application($c1) ] -> [ ($p $c1) ]
-  | app_tail [ expr($c1) ] -> [ $c1 ].
-
-Grammar constr constr0 :=
-  formula_in_constr [ "[" "|" ring:formula($c) "|" "]" ] -> [ $c ].
-
 Section Setoid_rings.
 
 Variable A : Type.
 Variable Aequiv : A -> A -> Prop.
+
+Infix "==" Aequiv (at level 5).
 
 Variable S : (Setoid_Theory A Aequiv).
 
@@ -59,12 +31,15 @@ Variable Azero : A.
 Variable Aopp : A -> A.
 Variable Aeq : A -> A -> bool.
 
-Variable plus_morph : (a,a0,a1,a2:A)
- (Aequiv a a0)->(Aequiv a1 a2)->(Aequiv (Aplus a a1) (Aplus a0 a2)).
-Variable mult_morph : (a,a0,a1,a2:A)
- (Aequiv a a0)->(Aequiv a1 a2)->(Aequiv (Amult a a1) (Amult a0 a2)).
-Variable opp_morph : (a,a0:A)
- (Aequiv a a0)->(Aequiv (Aopp a) (Aopp a0)).
+Infix "+" Aplus (at level 4).
+Infix "*" Amult (at level 3).
+Notation "0" := Azero.
+Notation "1" := Aone.
+Notation "- x" := (Aopp x) (at level 3).
+
+Variable plus_morph : (a,a0,a1,a2:A) a == a0 -> a1 == a2 -> a+a1 == a0+a2.
+Variable mult_morph : (a,a0,a1,a2:A) a == a0 -> a1 == a2 -> a*a1 == a0*a2.
+Variable opp_morph : (a,a0:A) a == a0 -> -a == -a1.
 
 Add Morphism Aplus : Aplus_ext.
 Exact plus_morph.
@@ -81,16 +56,16 @@ Save.
 Section Theory_of_semi_setoid_rings.
 
 Record Semi_Setoid_Ring_Theory : Prop :=
-{ SSR_plus_sym  : (n,m:A) [| n + m == m + n |];
-  SSR_plus_assoc : (n,m,p:A) [| n + (m + p) == (n + m) + p |];
-  SSR_mult_sym : (n,m:A) [| n*m == m*n |];
-  SSR_mult_assoc : (n,m,p:A) [| n*(m*p) == (n*m)*p |];
-  SSR_plus_zero_left :(n:A) [| 0 + n == n|];
-  SSR_mult_one_left : (n:A) [| 1*n == n |];
-  SSR_mult_zero_left : (n:A) [| 0*n == 0 |];
-  SSR_distr_left : (n,m,p:A) [| (n + m)*p == n*p + m*p |];
-  SSR_plus_reg_left : (n,m,p:A)[| n + m == n + p |] -> (Aequiv m p);
-  SSR_eq_prop : (x,y:A) (Is_true (Aeq x y)) -> (Aequiv x y)
+{ SSR_plus_sym  : (n,m:A) n + m == m + n;
+  SSR_plus_assoc : (n,m,p:A) n + (m + p) == (n + m) + p;
+  SSR_mult_sym : (n,m:A) n*m == m*n;
+  SSR_mult_assoc : (n,m,p:A) n*(m*p) == (n*m)*p;
+  SSR_plus_zero_left :(n:A) 0 + n == n;
+  SSR_mult_one_left : (n:A) 1*n == n;
+  SSR_mult_zero_left : (n:A) 0*n == 0;
+  SSR_distr_left : (n,m,p:A) (n + m)*p == n*p + m*p;
+  SSR_plus_reg_left : (n,m,p:A)n + m == n + p -> m == p;
+  SSR_eq_prop : (x,y:A) (Is_true (Aeq x y)) -> x == y
 }.
 
 Variable T : Semi_Setoid_Ring_Theory.
@@ -115,25 +90,25 @@ Hints Immediate equiv_sym.
 
 (* Lemmas whose form is x=y are also provided in form y=x because
   Auto does not symmetry *) 
-Lemma SSR_mult_assoc2 : (n,m,p:A)[| (n * m) * p == n * (m * p) |].
+Lemma SSR_mult_assoc2 : (n,m,p:A) (n * m) * p == n * (m * p).
 Auto. Save.
 
-Lemma SSR_plus_assoc2 : (n,m,p:A)[| (n + m) + p == n + (m + p) |].
+Lemma SSR_plus_assoc2 : (n,m,p:A) (n + m) + p == n + (m + p).
 Auto. Save.
 
-Lemma SSR_plus_zero_left2 : (n:A)[| n == 0 + n |].
+Lemma SSR_plus_zero_left2 : (n:A) n == 0 + n.
 Auto. Save.
 
-Lemma SSR_mult_one_left2 : (n:A)[| n == 1*n |].
+Lemma SSR_mult_one_left2 : (n:A) n == 1*n.
 Auto. Save.
 
-Lemma SSR_mult_zero_left2 : (n:A)[| 0 == 0*n |].
+Lemma SSR_mult_zero_left2 : (n:A) 0 == 0*n.
 Auto. Save.
 
-Lemma SSR_distr_left2 : (n,m,p:A)[| n*p + m*p  == (n + m)*p |].
+Lemma SSR_distr_left2 : (n,m,p:A) n*p + m*p  == (n + m)*p.
 Auto. Save.
 
-Lemma SSR_plus_permute : (n,m,p:A)[| n+(m+p) == m+(n+p) |].
+Lemma SSR_plus_permute : (n,m,p:A) n+(m+p) == m+(n+p).
 Intros.
 Rewrite (plus_assoc n m p).
 Rewrite (plus_sym n m).
@@ -141,7 +116,7 @@ Rewrite <- (plus_assoc m n p).
 Trivial.
 Save.
 
-Lemma SSR_mult_permute : (n,m,p:A) [| n*(m*p) == m*(n*p) |].
+Lemma SSR_mult_permute : (n,m,p:A) n*(m*p) == m*(n*p).
 Intros.
 Rewrite (mult_assoc n m p).
 Rewrite (mult_sym n m).
@@ -151,7 +126,7 @@ Save.
 
 Hints Resolve SSR_plus_permute SSR_mult_permute.
 
-Lemma SSR_distr_right : (n,m,p:A) [| n*(m+p) == (n*m) + (n*p) |].
+Lemma SSR_distr_right : (n,m,p:A) n*(m+p) == (n*m) + (n*p).
 Intros.
 Rewrite (mult_sym n (Aplus m p)).
 Rewrite (mult_sym n m).
@@ -159,37 +134,37 @@ Rewrite (mult_sym n p).
 Auto.
 Save.
 
-Lemma SSR_distr_right2 : (n,m,p:A) [| (n*m) + (n*p) == n*(m + p) |].
+Lemma SSR_distr_right2 : (n,m,p:A) (n*m) + (n*p) == n*(m + p).
 Intros.
 Apply equiv_sym.
 Apply SSR_distr_right.
 Save.
 
-Lemma SSR_mult_zero_right : (n:A)[|  n*0 == 0|].
+Lemma SSR_mult_zero_right : (n:A) n*0 == 0.
 Intro; Rewrite (mult_sym n Azero); Auto.
 Save.
 
-Lemma SSR_mult_zero_right2 : (n:A)[| 0 == n*0 |].
+Lemma SSR_mult_zero_right2 : (n:A) 0 == n*0.
 Intro; Rewrite (mult_sym n Azero); Auto.
 Save.
 
-Lemma SSR_plus_zero_right :(n:A)[| n + 0 == n |].
+Lemma SSR_plus_zero_right :(n:A) n + 0 == n.
 Intro; Rewrite (plus_sym n Azero); Auto.
 Save.
 
-Lemma SSR_plus_zero_right2 :(n:A)[| n == n + 0 |].
+Lemma SSR_plus_zero_right2 :(n:A) n == n + 0.
 Intro; Rewrite (plus_sym n Azero); Auto.
 Save.
 
-Lemma SSR_mult_one_right : (n:A)[| n*1 == n |].
+Lemma SSR_mult_one_right : (n:A) n*1 == n.
 Intro; Rewrite (mult_sym n Aone); Auto.
 Save.
 
-Lemma SSR_mult_one_right2 : (n:A)[| n == n*1 |].
+Lemma SSR_mult_one_right2 : (n:A) n == n*1.
 Intro; Rewrite (mult_sym n Aone); Auto.
 Save.
 
-Lemma SSR_plus_reg_right : (n,m,p:A) [| m+n == p+n |] -> [| m==p |].
+Lemma SSR_plus_reg_right : (n,m,p:A) m+n == p+n -> m==p.
 Intros n m p; Rewrite (plus_sym m n); Rewrite (plus_sym p n).
 Intro; Apply plus_reg_left with n; Trivial.
 Save.
@@ -199,15 +174,15 @@ End Theory_of_semi_setoid_rings.
 Section Theory_of_setoid_rings.
 
 Record Setoid_Ring_Theory : Prop :=
-{ STh_plus_sym  : (n,m:A)[| n + m == m + n |];
-  STh_plus_assoc : (n,m,p:A)[| n + (m + p) == (n + m) + p |];
-  STh_mult_sym : (n,m:A)[| n*m == m*n |];
-  STh_mult_assoc : (n,m,p:A)[| n*(m*p) == (n*m)*p |];
-  STh_plus_zero_left :(n:A)[| 0 + n == n|];
-  STh_mult_one_left : (n:A)[| 1*n == n |];
-  STh_opp_def : (n:A) [| n + (-n) == 0 |];
-  STh_distr_left : (n,m,p:A) [| (n + m)*p == n*p + m*p |];
-  STh_eq_prop : (x,y:A) (Is_true (Aeq x y)) -> (Aequiv x y)
+{ STh_plus_sym  : (n,m:A) n + m == m + n;
+  STh_plus_assoc : (n,m,p:A) n + (m + p) == (n + m) + p;
+  STh_mult_sym : (n,m:A) n*m == m*n;
+  STh_mult_assoc : (n,m,p:A) n*(m*p) == (n*m)*p;
+  STh_plus_zero_left :(n:A) 0 + n == n;
+  STh_mult_one_left : (n:A) 1*n == n;
+  STh_opp_def : (n:A)  n + (-n) == 0;
+  STh_distr_left : (n,m,p:A) (n + m)*p == n*p + m*p;
+  STh_eq_prop : (x,y:A) (Is_true (Aeq x y)) -> x == y
 }.
 
 Variable T : Setoid_Ring_Theory.
@@ -231,25 +206,25 @@ Hints Resolve plus_sym plus_assoc mult_sym mult_assoc
 (* Lemmas whose form is x=y are also provided in form y=x because Auto does
   not symmetry *)
 
-Lemma STh_mult_assoc2 : (n,m,p:A)[| (n * m) * p == n * (m * p) |].
+Lemma STh_mult_assoc2 : (n,m,p:A) (n * m) * p == n * (m * p).
 Auto. Save.
 
-Lemma STh_plus_assoc2 : (n,m,p:A)[| (n + m) + p == n + (m + p) |].
+Lemma STh_plus_assoc2 : (n,m,p:A) (n + m) + p == n + (m + p).
 Auto. Save.
 
-Lemma STh_plus_zero_left2 : (n:A)[| n == 0 + n |].
+Lemma STh_plus_zero_left2 : (n:A) n == 0 + n.
 Auto. Save.
 
-Lemma STh_mult_one_left2 : (n:A)[| n == 1*n |].
+Lemma STh_mult_one_left2 : (n:A) n == 1*n.
 Auto. Save.
 
-Lemma STh_distr_left2 : (n,m,p:A) [| n*p + m*p  == (n + m)*p |].
+Lemma STh_distr_left2 : (n,m,p:A) n*p + m*p  == (n + m)*p.
 Auto. Save.
 
-Lemma STh_opp_def2 : (n:A) [| 0 == n + (-n) |].
+Lemma STh_opp_def2 : (n:A) 0 == n + (-n).
 Auto. Save.
 
-Lemma STh_plus_permute : (n,m,p:A)[| n + (m + p) == m + (n + p) |].
+Lemma STh_plus_permute : (n,m,p:A) n + (m + p) == m + (n + p).
 Intros.
 Rewrite (plus_assoc n m p).
 Rewrite (plus_sym n m).
@@ -257,7 +232,7 @@ Rewrite <- (plus_assoc m n p).
 Trivial.
 Save.
 
-Lemma STh_mult_permute : (n,m,p:A) [| n*(m*p) == m*(n*p) |].
+Lemma STh_mult_permute : (n,m,p:A) n*(m*p) == m*(n*p).
 Intros.
 Rewrite (mult_assoc n m p).
 Rewrite (mult_sym n m).
@@ -267,7 +242,7 @@ Save.
 
 Hints Resolve STh_plus_permute STh_mult_permute.
 
-Lemma Saux1 : (a:A) [| a + a == a |] -> [| a == 0 |].
+Lemma Saux1 : (a:A)  a + a == a -> a == 0.
 Intros.
 Rewrite <- (plus_zero_left a).
 Rewrite (plus_sym Azero a).
@@ -277,7 +252,7 @@ Rewrite H.
 Apply opp_def.
 Save.
 
-Lemma STh_mult_zero_left :(n:A)[| 0*n == 0 |].
+Lemma STh_mult_zero_left :(n:A) 0*n == 0.
 Intros.
 Apply Saux1.
 Rewrite <- (distr_left Azero Azero n).
@@ -286,11 +261,11 @@ Trivial.
 Save.
 Hints Resolve STh_mult_zero_left.
 
-Lemma STh_mult_zero_left2 : (n:A)[| 0 == 0*n |].
+Lemma STh_mult_zero_left2 : (n:A) 0 == 0*n.
 Auto.
 Save.
 
-Lemma Saux2 : (x,y,z:A) [|x+y==0|] -> [|x+z==0|] -> (Aequiv y z). 
+Lemma Saux2 : (x,y,z:A) x+y==0 -> x+z==0 -> y == z.
 Intros.
 Rewrite <- (plus_zero_left y).
 Rewrite <- H0.
@@ -301,7 +276,7 @@ Rewrite H.
 Auto.
 Save.
 
-Lemma STh_opp_mult_left : (x,y:A)[| -(x*y) == (-x)*y |].
+Lemma STh_opp_mult_left : (x,y:A) -(x*y) == (-x)*y.
 Intros.
 Apply Saux2 with (Amult x y); Auto.
 Rewrite <- (distr_left x (Aopp x) y).
@@ -310,49 +285,49 @@ Auto.
 Save.
 Hints Resolve STh_opp_mult_left.
 
-Lemma STh_opp_mult_left2 : (x,y:A)[| (-x)*y == -(x*y)  |].
+Lemma STh_opp_mult_left2 : (x,y:A) (-x)*y == -(x*y) .
 Auto.
 Save.
 
-Lemma STh_mult_zero_right : (n:A)[| n*0 == 0|].
+Lemma STh_mult_zero_right : (n:A) n*0 == 0.
 Intro; Rewrite (mult_sym n Azero); Auto.
 Save.
 
-Lemma STh_mult_zero_right2 : (n:A)[| 0 == n*0 |].
+Lemma STh_mult_zero_right2 : (n:A) 0 == n*0.
 Intro; Rewrite (mult_sym n Azero); Auto.
 Save.
 
-Lemma STh_plus_zero_right :(n:A)[| n + 0 == n |].
+Lemma STh_plus_zero_right :(n:A) n + 0 == n.
 Intro; Rewrite (plus_sym n Azero); Auto.
 Save.
 
-Lemma STh_plus_zero_right2 :(n:A)[| n == n + 0 |].
+Lemma STh_plus_zero_right2 :(n:A) n == n + 0.
 Intro; Rewrite (plus_sym n Azero); Auto.
 Save.
 
-Lemma STh_mult_one_right : (n:A)[| n*1 == n |].
+Lemma STh_mult_one_right : (n:A) n*1 == n.
 Intro; Rewrite (mult_sym n Aone); Auto.
 Save.
 
-Lemma STh_mult_one_right2  : (n:A)[| n == n*1 |].
+Lemma STh_mult_one_right2  : (n:A) n == n*1.
 Intro; Rewrite (mult_sym n Aone); Auto.
 Save.
 
-Lemma STh_opp_mult_right : (x,y:A)[| -(x*y) == x*(-y) |].
+Lemma STh_opp_mult_right : (x,y:A) -(x*y) == x*(-y).
 Intros.
 Rewrite (mult_sym x y).
 Rewrite (mult_sym x (Aopp y)).
 Auto.
 Save.
 
-Lemma STh_opp_mult_right2 : (x,y:A)[| x*(-y) == -(x*y) |].
+Lemma STh_opp_mult_right2 : (x,y:A) x*(-y) == -(x*y).
 Intros.
 Rewrite (mult_sym x y).
 Rewrite (mult_sym x (Aopp y)).
 Auto.
 Save.
 
-Lemma STh_plus_opp_opp : (x,y:A)[| (-x) + (-y) == -(x+y) |].
+Lemma STh_plus_opp_opp : (x,y:A) (-x) + (-y) == -(x+y).
 Intros.
 Apply Saux2 with (Aplus x y); Auto.
 Rewrite (STh_plus_permute (Aplus x y) (Aopp x) (Aopp y)).
@@ -361,40 +336,40 @@ Rewrite (opp_def y); Rewrite (STh_plus_zero_right x).
 Rewrite (STh_opp_def2 x); Trivial.
 Save.
 
-Lemma STh_plus_permute_opp: (n,m,p:A)[| (-m)+(n+p) == n+((-m)+p) |].
+Lemma STh_plus_permute_opp: (n,m,p:A) (-m)+(n+p) == n+((-m)+p).
 Auto.
 Save.
 
-Lemma STh_opp_opp : (n:A)[| -(-n) == n |].
+Lemma STh_opp_opp : (n:A) -(-n) == n.
 Intro.
 Apply Saux2 with (Aopp n); Auto.
 Rewrite (plus_sym (Aopp n) n); Auto.
 Save.
 Hints Resolve STh_opp_opp.
 
-Lemma STh_opp_opp2 : (n:A)[| n == -(-n) |].
+Lemma STh_opp_opp2 : (n:A) n == -(-n).
 Auto.
 Save.
 
-Lemma STh_mult_opp_opp : (x,y:A)[| (-x)*(-y) == x*y |].
+Lemma STh_mult_opp_opp : (x,y:A) (-x)*(-y) == x*y.
 Intros.
 Rewrite (STh_opp_mult_left2 x (Aopp y)).
 Rewrite (STh_opp_mult_right2 x y).
 Trivial.
 Save.
 
-Lemma STh_mult_opp_opp2 : (x,y:A)[| x*y == (-x)*(-y) |].
+Lemma STh_mult_opp_opp2 : (x,y:A) x*y == (-x)*(-y).
 Intros.
 Apply equiv_sym.
 Apply STh_mult_opp_opp.
 Save.
 
-Lemma STh_opp_zero :[| -0 == 0 |].
+Lemma STh_opp_zero : -0 == 0.
 Rewrite <- (plus_zero_left (Aopp Azero)).
 Trivial.
 Save.
 
-Lemma STh_plus_reg_left : (n,m,p:A)[| n+m == n+p |] -> [|m==p|].
+Lemma STh_plus_reg_left : (n,m,p:A) n+m == n+p -> m==p.
 Intros.
 Rewrite <- (plus_zero_left m).
 Rewrite <- (plus_zero_left p).
@@ -405,14 +380,14 @@ Rewrite <- (plus_assoc (Aopp n) n p).
 Auto.
 Save.
 
-Lemma STh_plus_reg_right : (n,m,p:A)[| m+n == p+n |] -> [|m==p|].
+Lemma STh_plus_reg_right : (n,m,p:A) m+n == p+n -> m==p.
 Intros.
 Apply STh_plus_reg_left with n.
 Rewrite (plus_sym n m); Rewrite (plus_sym n p);
 Assumption.
 Save.
 
-Lemma STh_distr_right : (n,m,p:A)[|n*(m+p) == (n*m)+(n*p)|].
+Lemma STh_distr_right : (n,m,p:A) n*(m+p) == (n*m)+(n*p).
 Intros.
 Rewrite (mult_sym n (Aplus m p)).
 Rewrite (mult_sym n m).
@@ -420,7 +395,7 @@ Rewrite (mult_sym n p).
 Trivial.
 Save.
 
-Lemma STh_distr_right2 : (n,m,p:A)(Aequiv (Aplus (Amult n m) (Amult n p)) (Amult n (Aplus m p))).
+Lemma STh_distr_right2 : (n,m,p:A) (n*m)+(n*p) == n*(m+p).
 Intros.
 Apply equiv_sym.
 Apply STh_distr_right.
