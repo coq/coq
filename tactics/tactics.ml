@@ -588,16 +588,26 @@ let dyn_cut_and_apply = function
 (*     Cut tactics        *)
 (**************************)
 
-let true_cut c gl =
+let true_cut id c gl =
   match kind_of_term (hnf_type_of gl c) with
-    | IsSort _ ->
-        let id=next_name_away_with_default "H" Anonymous (pf_ids_of_hyps gl) in
+    | IsSort _ -> internal_cut id c gl
+    | _  -> error "Not a proposition or a type"
+
+let true_cut_anon c gl =
+  match kind_of_term (hnf_type_of gl c) with
+    | IsSort s -> 
+        let d = match s with Prop _ -> "H" | Type _ -> "X" in
+        let id = next_name_away_with_default d Anonymous (pf_ids_of_hyps gl) in
         internal_cut id c gl
     | _  -> error "Not a proposition or a type"
 
 let dyn_true_cut = function
-  | [Command com] -> tactic_com_sort true_cut com
-  | [Constr  c]   -> true_cut c
+  | [Command com] -> tactic_com_sort true_cut_anon com
+  | [Constr  c]   -> true_cut_anon c
+(* Pas trouvé de syntaxe pour cela
+  | [Command com; Identifier id] -> tactic_com_sort (true_cut id) com
+  | [Constr  c; Identifier id]   -> true_cut id c
+*)
   | l             -> bad_tactic_args "true_cut" l
 
 let cut c gl =
