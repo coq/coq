@@ -51,3 +51,18 @@ Fixpoint  beq_nat [n:nat] : nat -> bool :=
              | (S _)   O     => false
              | (S n1) (S m1) => (beq_nat n1 m1)
           end.
+
+Lemma beq_nat_refl : (x:nat)true=(beq_nat x x).
+Proof.
+  Induction x; Simpl; Auto.
+Qed.
+
+Definition beq_nat_eq : (x,y:nat)true=(beq_nat x y)->x=y.
+Proof.
+  Double Induction 1 2; Simpl.
+    Reflexivity.
+    Intros; Discriminate H0.
+    Intros; Discriminate H0.
+    Intros; Case (H0 ? H1); Reflexivity.
+Defined.
+

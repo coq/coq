@@ -1218,10 +1218,7 @@ let _ =
   add "TACDEF"
     (let rec tacdef_fun lacc=function
         (VARG_IDENTIFIER name)::(VARG_AST tacexp)::tl ->
-          let ve=
-            val_interp (empty,empty_env,[],[],None,get_debug ()) tacexp
-          in
-            tacdef_fun ((string_of_id name,ve)::lacc) tl
+          tacdef_fun ((string_of_id name,tacexp)::lacc) tl
        |[] ->
          fun () ->
            List.iter (fun (name,ve) -> Tacinterp.add_tacdef name ve) lacc

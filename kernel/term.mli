@@ -20,9 +20,6 @@ val mk_Prop : sorts
 
 val print_sort : sorts -> std_ppcmds
 
-(*s The operators of the Calculus of Inductive Constructions. 
-  ['a] is the type of sorts. ([XTRA] is an extra slot, for putting in 
-  whatever sort of operator we need for whatever sort of application.) *)
 
 type existential_key = int
 

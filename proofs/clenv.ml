@@ -667,6 +667,12 @@ let clenv_refine_cast kONT clenv gls =
    try to find a subterm of cl which matches op, if op is just a Meta
    FAIL because we cannot find a binding *)
 
+let iter_fail f a = let n = Array.length a in 
+		    let rec ffail i = if i = n then error "iter_fail" 
+                    else try f a.(i) 
+		    with ex when catchable_exception ex -> ffail (i+1)
+		    in ffail 0
+
 let constrain_clenv_to_subterm clause (op,cl) =
   let rec matchrec cl =
     let cl = strip_outer_cast cl in
@@ -676,8 +682,11 @@ let constrain_clenv_to_subterm clause (op,cl) =
        else error "Bound 1"
      with ex when catchable_exception ex ->
        (match kind_of_term cl with 
-	  | IsApp (f,args) ->
-	      let n = Array.length args in
+	  | IsApp (f,args) ->  (try 
+		 matchrec f
+	       with ex when catchable_exception ex -> 
+		 iter_fail matchrec args)
+	(* let n = Array.length args in
 	      assert (n>0);
 	      let c1 = mkApp (f,Array.sub args 0 (n-1)) in
 	      let c2 = args.(n-1) in
@@ -685,6 +694,30 @@ let constrain_clenv_to_subterm clause (op,cl) =
 		 matchrec c1
 	       with ex when catchable_exception ex -> 
 		 matchrec c2)
+	   *)
+          | IsMutCase(_,_,c,lf) -> (* does not search in the predicate *)
+	       (try 
+		 matchrec c
+	       with ex when catchable_exception ex -> 
+		 iter_fail matchrec lf)
+	  | IsLetIn(_,c1,_,c2) -> 
+	       (try 
+		 matchrec c1
+	       with ex when catchable_exception ex -> 
+		 matchrec c2)
+
+	  | IsFix(_,(types,_,terms)) -> 
+	       (try 
+		 iter_fail matchrec types
+	       with ex when catchable_exception ex -> 
+		 iter_fail matchrec terms)
+	
+	  | IsCoFix(_,(types,_,terms)) -> 
+	       (try 
+		 iter_fail matchrec types
+	       with ex when catchable_exception ex -> 
+		 iter_fail matchrec terms)
+
           | IsProd (_,t,c) ->
 	      (try 
 		 matchrec t 

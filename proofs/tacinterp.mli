@@ -49,7 +49,7 @@ val set_debug : debug_info -> unit
 val get_debug : unit -> debug_info
 
 (* Adds a Tactic Definition in the table *)
-val add_tacdef : string -> value -> unit
+val add_tacdef : string -> Coqast.t -> unit
 
 (* Interprets any expression *)
 val val_interp : interp_sign -> Coqast.t -> value

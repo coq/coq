@@ -165,6 +165,41 @@ Definition identityT_rect_r :
  Intros A x P H y H0; Case sym_idT with 1:= H0; Trivial.
 Defined.
 
+Inductive sigT [A:Set; P:A->Prop] : Type := existT : (x:A)(P x)->(sigT A P).
+
+Section sigT_proj.
+
+  Variable A : Set.
+  Variable P : A->Prop.
+
+  Definition projT1 := [H:(sigT A P)]
+    let (x, _) = H in x.
+  Definition projT2 := [H:(sigT A P)]<[H:(sigT A P)](P (projT1 H))>
+    let (_, h) = H in h.
+
+End sigT_proj.
+
+Inductive prodT [A,B:Type] : Type := pairT : A -> B -> (prodT A B).
+
+Section prodT_proj.
+
+  Variables A, B : Type.
+
+  Definition fstT := [H:(prodT A B)]Cases H of (pairT x _) => x end.
+  Definition sndT := [H:(prodT A B)]Cases H of (pairT _ y) => y end.
+
+End prodT_proj.
+
+Definition prodT_uncurry : (A,B,C:Type)((prodT A B)->C)->A->B->C :=
+  [A,B,C:Type; f:((prodT A B)->C); x:A; y:B]
+  (f (pairT A B x y)).
+
+Definition prodT_curry : (A,B,C:Type)(A->B->C)->(prodT A B)->C :=
+  [A,B,C:Type; f:(A->B->C); p:(prodT A B)]
+  Cases p of
+  | (pairT x y) => (f x y)
+  end.
+
 Hints Immediate sym_idT sym_not_idT : core v62.
 
 

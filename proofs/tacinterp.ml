@@ -156,25 +156,6 @@ let _ =
       Summary.unfreeze_function = unfreeze;
       Summary.init_function     = init }
 
-let (inMD,outMD) =
-  let add (na,td) = mactab := Gmap.add na td !mactab in
-  let cache_md (_,(na,td)) = add (na,td) in 
-    declare_object ("TACTIC-DEFINITION",
-       {cache_function         = cache_md;
-        load_function          = (fun _ -> ());
-        open_function          = (fun _ -> ());
-        specification_function = (fun x -> x)})
-
-(* Adds a Tactic Definition in the table *)
-let add_tacdef na vbody =
-  begin
-    if Gmap.mem na !mactab then
-      errorlabstrm "Tacdef.add_tacdef" 
-        [<'sTR "There is already a Tactic Definition named "; 'sTR na>];
-    let _ = Lib.add_leaf (id_of_string na) OBJ (inMD (na,vbody)) in
-    if Options.is_verbose() then mSGNL [< 'sTR (na ^ " is defined") >]
-  end
-
 (* Unboxes the tactic_arg *)
 let unvarg = function
   | VArg a -> a
@@ -956,3 +937,25 @@ let vernac_interp_atomic =
 let bad_tactic_args s =
   anomalylabstrm s
     [<'sTR "Tactic "; 'sTR s; 'sTR " called with bad arguments">]
+
+let (inMD,outMD) =
+  let add (na,td) = mactab := Gmap.add na td !mactab in
+  let cache_md (_,(na,td)) =  
+    let ve=val_interp (Evd.empty,Environ.empty_env,[],[],None,get_debug ()) td 
+    in add (na,ve) in 
+    declare_object ("TACTIC-DEFINITION",
+       {cache_function         = cache_md;
+        load_function          = cache_md;
+        open_function          = (fun _ -> ());
+        specification_function = (fun x -> x)})
+
+(* Adds a Tactic Definition in the table *)
+let add_tacdef na vbody =
+  begin
+    if Gmap.mem na !mactab then
+      errorlabstrm "Tacdef.add_tacdef" 
+        [<'sTR "There is already a Tactic Definition named "; 'sTR na>];
+    let _ = Lib.add_leaf (id_of_string na) OBJ (inMD (na,vbody)) in
+    if Options.is_verbose() then mSGNL [< 'sTR (na ^ " is defined") >]
+  end
+

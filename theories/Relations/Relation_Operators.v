@@ -11,7 +11,6 @@
 
 Require Relation_Definitions.
 Require PolyList.
-Require PolyListSyntax.
 
 (* Some operators to build relations *)
 
