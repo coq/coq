@@ -131,7 +131,8 @@ let pr_constructor env cstr = prterm_env env (mkConstruct cstr)
 let pr_global = pr_global Idset.empty
 
 let pr_rawterm t =
-  pr_constr (Constrextern.extern_rawconstr Idset.empty t)
+  if !Options.v7 then gentermpr (Termast.ast_of_rawconstr t)
+  else Ppconstrnew.pr_lconstr (Constrextern.extern_rawconstr Idset.empty t)
 
 open Pattern
 let pr_ref_label = function (* On triche sur le contexte *)

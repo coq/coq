@@ -687,7 +687,7 @@ let pr_and_constr_expr pr (c,_) = pr c
 let rec glob_printers =
     (pr_glob_tactic, 
      pr_glob_tactic0,
-     pr_and_constr_expr Ppconstr.pr_rawconstr,
+     pr_and_constr_expr Printer.pr_rawterm,
      Printer.pr_pattern,
      pr_or_var (pr_and_short_name pr_evaluable_reference),
      pr_or_var pr_inductive,
