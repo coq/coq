@@ -17,17 +17,15 @@ construction allows to define ``signatures''.
 \begin{figure}
 \begin{tabular}{|lcl|}
 \hline
-{\sentence} & ::= & {\record}\\
+{\sentence} & ++= & {\record}\\
   & & \\
-{\record} & ::= &  {\tt Record} {\ident} {\binderlet} {\tt :} {\sort}
+{\record} & ::= &  {\tt Record} {\ident} \sequence{\binderlet}{} {\tt :} {\sort}
     \verb.:=. \zeroone{\ident} \verb!{! 
     \zeroone{\nelist{\field}{;}}
     \verb!}! \verb:.:\\
   & & \\
-{\field} & ::= & {\ident} \verb.:. {\type} \\
- & $|$ & {\ident} \verb.:=. {\term} \\
- & $|$ & {\ident} \verb.:. {\type} \verb.:=. {\term} \\
- & $|$ & {\ident} \verb.:=. {\term} \verb.:. {\type} \\
+{\field} & ::= & {\name} \verb.:. {\type} \\
+ & $|$ & {\name} {\typecstr} \verb.:=. {\term} \\
 \hline
 \end{tabular}
 \caption{Syntax for the definition of {\tt Record}}
@@ -37,16 +35,16 @@ construction allows to define ``signatures''.
 \noindent In the expression
 
 \smallskip
-{\tt Record} {\ident} {\tt [} {\params} {\tt ]} \texttt{:} 
+{\tt Record} {\ident} {\params} \texttt{:} 
    {\sort} := {\ident$_0$} \verb+{+
  {\ident$_1$} \texttt{:} {\term$_1$}; 
               \dots
   {\ident$_n$} \texttt{:} {\term$_n$} \verb+}+.
 \smallskip
  
-\noindent the identifier {\ident} is the name of the defined record and {\sort}
-is its type. The identifier {\ident$_0$} is the name of its
-constructor. If {\ident$_0$} is omitted, the default name {\tt
+\noindent the identifier {\ident} is the name of the defined record
+and {\sort} is its type. The identifier {\ident$_0$} is the name of
+its constructor. If {\ident$_0$} is omitted, the default name {\tt
 Build\_{\ident}} is used. The identifiers {\ident$_1$}, ..,
 {\ident$_n$} are the names of fields and {\term$_1$}, .., {\term$_n$}
 their respective types. Remark that the type of {\ident$_i$} may
@@ -57,8 +55,10 @@ record.
 More generally, a record may have explicitly defined (a.k.a.
 manifest) fields. For instance, {\tt Record} {\ident} {\tt [}
 {\params} {\tt ]} \texttt{:} {\sort} := \verb+{+ {\ident$_1$}
-\texttt{:} {\type$_1$} \verb+;+ {\ident$_2$} \texttt{:=} {\term$_2$} \verb+;+
-{\ident$_3$} \texttt{:} {\type$_3$} \verb+}+ in which case the correctness of {\type$_3$} may rely on the instance {\term$_2$}  of  {\ident$_2$} and  {\term$_2$}  in turn may depend on {\ident$_1$}.
+\texttt{:} {\type$_1$} \verb+;+ {\ident$_2$} \texttt{:=} {\term$_2$}
+\verb+;+ {\ident$_3$} \texttt{:} {\type$_3$} \verb+}+ in which case
+the correctness of {\type$_3$} may rely on the instance {\term$_2$} of
+{\ident$_2$} and {\term$_2$} in turn may depend on {\ident$_1$}.
 
 
 \Example
@@ -79,24 +79,16 @@ Record Rat : Set := mkRat
 Remark here that the field
 \verb+Rat_cond+ depends on the field \verb+bottom+. 
 
-Let us now see the work done by the {\tt Record} macro.
-First the macro generates an inductive definition
-with just one constructor:
+Let us now see the work done by the {\tt Record} macro.  First the
+macro generates an inductive definition with just one constructor:
 
 \medskip
 \noindent
-{\tt Inductive {\ident} {\binderlet} : {\sort} := \\
-\mbox{}\hspace{0.4cm} {\ident$_0$} : forall ({\ident$_1$}:{\term$_1$}) .. 
-({\ident$_n$}:{\term$_n$}), {\ident} {\rm\sl params}.}
-\medskip
-
-or, equivalently,
-
-\medskip
-\noindent
-{\tt Inductive {\ident} {\binderlet} : {\sort} := \\
-\mbox{}\hspace{0.4cm} {\ident$_0$} ({\ident$_1$}:{\term$_1$}) .. 
-({\ident$_n$}:{\term$_n$}).}
+\begin{tabular}{l}
+{\tt Inductive {\ident} {\params} :{\sort} :=} \\
+~~~~{\tt
+  {\ident$_0$} ({\ident$_1$}:{\term$_1$}) .. ({\ident$_n$}:{\term$_n$}).}
+\end{tabular}
 \medskip
 
 

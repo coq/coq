@@ -847,45 +847,77 @@ module {\tt ZArith} and opening scope {\tt Z\_scope}.
 \ttindex{?=}
 \ttindex{mod}
 
-Figure~\ref{zarith-syntax} shows the notations provided by {\tt
-Z\_scope}. It specifies how notations are interpreted and, when not
-already reserved, the precedence and associativity.
-
 \begin{figure}
 \begin{center}
 \begin{tabular}{l|l|l|l}
 Notation & Interpretation & Precedence & Associativity\\
 \hline
-\verb!_ < _! & {\tt Zlt} \\
-\verb!x <= y! & {\tt Zle} \\
-\verb!_ > _! & {\tt Zgt} \\
-\verb!x >= y! & {\tt Zge} \\
-\verb!x < y < z! & {\tt x < y \verb!/\! y < z} \\
-\verb!x < y <= z! & {\tt x < y \verb!/\! y <= z} \\
-\verb!x <= y < z! & {\tt x <= y \verb!/\! y < z} \\
-\verb!x <= y <= z! & {\tt x <= y \verb!/\! y <= z} \\
+\verb!_ < _! & {\tt Zlt} &&\\
+\verb!x <= y! & {\tt Zle} &&\\
+\verb!_ > _! & {\tt Zgt} &&\\
+\verb!x >= y! & {\tt Zge} &&\\
+\verb!x < y < z! & {\tt x < y \verb!/\! y < z} &&\\
+\verb!x < y <= z! & {\tt x < y \verb!/\! y <= z} &&\\
+\verb!x <= y < z! & {\tt x <= y \verb!/\! y < z} &&\\
+\verb!x <= y <= z! & {\tt x <= y \verb!/\! y <= z} &&\\
 \verb!_ ?= _! & {\tt Zcompare} & 70 & no\\
-\verb!_ + _! & {\tt Zplus} \\
-\verb!_ - _! & {\tt Zminus} \\
-\verb!_ * _! & {\tt Zmult} \\
-\verb!_ / _! & {\tt Zdix} \\
+\verb!_ + _! & {\tt Zplus} &&\\
+\verb!_ - _! & {\tt Zminus} &&\\
+\verb!_ * _! & {\tt Zmult} &&\\
+\verb!_ / _! & {\tt Zdiv} &&\\
 \verb!_ mod _! & {\tt Zmod} & 40 & no \\
-\verb!- _!  & {\tt Zopp} \\
-\verb!_ ^ _! & {\tt Zpower} \\
+\verb!- _!  & {\tt Zopp} &&\\
+\verb!_ ^ _! & {\tt Zpower} &&\\
 \end{tabular}
 \end{center}
 \label{zarith-syntax}
 \caption{Definition of the scope for integer arithmetics ({\tt Z\_scope})}
 \end{figure}
 
+Figure~\ref{zarith-syntax} shows the notations provided by {\tt
+Z\_scope}. It specifies how notations are interpreted and, when not
+already reserved, the precedence and associativity.
+
+\begin{coq_example}
+Require Import ZArith.
+Check  (2 + 3)%Z.
+Open Scope Z_scope.
+Check 2 + 3.
+\end{coq_example}
+
 \subsection{Peano's arithmetic (\texttt{nat})}
 \index{Peano's arithmetic}
+\ttindex{nat\_scope}
 
 While in the initial state, many operations and predicates of Peano's
 arithmetic are defined, further operations and results belong to other
 modules. For instance, the decidability of the basic predicates are
 defined here. This is provided by requiring the module {\tt Arith}.
 
+Figure~\ref{nat-syntax} describes notation available in scope {\tt
+nat\_scope}.
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{l|l}
+Notation & Interpretation \\
+\hline
+\verb!_ < _! & {\tt lt} \\
+\verb!x <= y! & {\tt le} \\
+\verb!_ > _! & {\tt gt} \\
+\verb!x >= y! & {\tt ge} \\
+\verb!x < y < z! & {\tt x < y \verb!/\! y < z} \\
+\verb!x < y <= z! & {\tt x < y \verb!/\! y <= z} \\
+\verb!x <= y < z! & {\tt x <= y \verb!/\! y < z} \\
+\verb!x <= y <= z! & {\tt x <= y \verb!/\! y <= z} \\
+\verb!_ + _! & {\tt plus} \\
+\verb!_ - _! & {\tt minus} \\
+\verb!_ * _! & {\tt mult} \\
+\end{tabular}
+\end{center}
+\label{nat-syntax}
+\caption{Definition of the scope for natural numbers ({\tt nat\_scope})}
+\end{figure}
 
 \subsection{Real numbers library}
 
@@ -897,8 +929,8 @@ opening scope {\tt R\_scope}. This set of notations is very similar to
 the notation for integer arithmetics. The inverse function was added.
 \begin{figure}
 \begin{center}
-\begin{tabular}{l|l|l|l}
-Notation & Interpretation & Precedence & Associativity\\
+\begin{tabular}{l|l}
+Notation & Interpretation \\
 \hline
 \verb!_ < _! & {\tt Rlt} \\
 \verb!x <= y! & {\tt Rle} \\
@@ -911,7 +943,7 @@ Notation & Interpretation & Precedence & Associativity\\
 \verb!_ + _! & {\tt Rplus} \\
 \verb!_ - _! & {\tt Rminus} \\
 \verb!_ * _! & {\tt Rmult} \\
-\verb!_ / _! & {\tt Rdix} \\
+\verb!_ / _! & {\tt Rdiv} \\
 \verb!- _!  & {\tt Ropp} \\
 \verb!/ _!  & {\tt Rinv} \\
 \verb!_ ^ _! & {\tt pow} \\
@@ -1011,6 +1043,7 @@ can be accessed by requiring module {\tt List}.
 It defines the following notions:
 \begin{center}
 \begin{tabular}{l|l}
+\hline
 {\tt length} & length \\
 {\tt head} & first element (with default) \\
 {\tt tail} & all but first element \\
@@ -1021,6 +1054,7 @@ It defines the following notions:
 {\tt flat\_map} & applying a function returning lists \\
 {\tt fold\_left} & iterator (from head to tail) \\
 {\tt fold\_right} & iterator (from tail to head) \\
+\hline
 \end{tabular}
 \end{center}
 

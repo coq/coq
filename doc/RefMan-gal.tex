@@ -96,45 +96,6 @@ sequence of any characters different from \verb!"! or the sequence
 \verb!""! to denote the double quote character. In grammars, the
 entry for quoted strings is {\qstring}.
 
-
-%% \begin{center}
-%% \begin{tabular}{|l|l|}
-%% \hline
-%% Sequence        & Character denoted \\
-%% \hline
-%% \verb"\\"       & backslash (\verb"\") \\
-%% \verb'\"'       & double quote (\verb'"') \\
-%% \verb"\n"       & newline (LF) \\
-%% \verb"\r"       & return (CR) \\
-%% \verb"\t"       & horizontal tabulation (TAB) \\
-%% \verb"\b"       & backspace (BS) \\
-%% \verb"\"$ddd$  & the character with ASCII code $ddd$ in decimal \\
-%% \hline
-%% \end{tabular}
-%% \end{center}
-
-%% Strings can be split on several lines using a backslash (\verb!\!)  at
-%% the end of each line, just before the newline. For instance,
-
-%% \begin{flushleft}
-%% \begin{small}
-%% \begin{verbatim}
-%% Add LoadPath "/usr/local/coq/\
-%% contrib/Rocq/LAMBDA".
-%% \end{verbatim}
-%% \end{small}
-%% \end{flushleft}
-      
-%% is correctly parsed, and equivalent to
-
-%% \begin{flushleft}
-%% \begin{small}
-%% \begin{verbatim}
-%% Add LoadPath "/usr/local/coq/contrib/Rocq/LAMBDA".
-%% \end{verbatim}
-%% \end{small}
-%% \end{flushleft}
-
 \paragraph{Keywords}
 The following identifiers are reserved keywords, and cannot be
 employed otherwise:
@@ -173,83 +134,6 @@ employed otherwise:
 \end{tabular}
 \end{center}
 
-%% Hard to maintain...
-
-%% Although they are not considered as keywords, it is not advised to use
-%% words of the following list as identifiers:
-%% \begin{center}
-%% \begin{tabular}{lllll}
-%% \verb!Add!        &
-%% \verb!AddPath!    &
-%% \verb!Abort!      &
-%% \verb!Abstraction!&
-%% \verb!All!        \\
-%% \verb!Begin!      &
-%% \verb!Cd!         &
-%% \verb!Chapter!    &
-%% \verb!Check!      &
-%% \verb!Compute!    \\
-%% % \verb!Conjectures! \\ que dans Show Conjectures sans conflit avec ident
-%% \verb!Defined!    &
-%% \verb!DelPath!    &
-%% \verb!Drop!       &
-%% \verb!End!        &
-%% \verb!Eval!       \\
-%% % \verb!Explain!  n'est pas documente 
-%% \verb!Extraction! &
-%% \verb!Fact!       &
-%% \verb!Focus!      &
-%% % \verb!for! n'intervient que pour Scheme ... Induction ... sans conflit
-%% % \verb!Go! n'est pas documente et semble peu robuste aux erreurs
-%% \verb!Goal!       &
-%% \verb!Guarded!    \\
-%% \verb!Hint!       &
-%% \verb!Immediate!  &
-%% \verb!Induction!  &
-%% \verb!Infix!      &
-%% \verb!Inspect!    \\
-%% \verb!Lemma!      &
-%% \verb!Let!        &
-%% \verb!LoadPath!   &
-%% \verb!Local!      &
-%% \verb!Minimality! \\
-%% \verb!ML!         &
-%% \verb!Module!     &
-%% \verb!Modules!    &
-%% \verb!Mutual!     &
-%% % \verb!Node!   que dans Show Node sans conflit avec ident
-%% \verb!Opaque!     \\
-%% \verb!Parameters! &
-%% \verb!Print!      &
-%% \verb!Pwd!        &
-%% \verb!Remark!     &
-%% \verb!Remove!     \\
-%% \verb!Require!    &
-%% \verb!Reset!      &
-%% \verb!Restart!    &
-%% \verb!Restore!    &
-%% \verb!Resume!     \\
-%% \verb!Save!       &
-%% \verb!Scheme!     &
-%% % \verb!Script!  que dans Show Script sans conflit avec ident
-%% \verb!Search!     &
-%% \verb!Section!    &
-%% \verb!Show!       \\
-%% \verb!Silent!     &
-%% \verb!State!      &
-%% \verb!States!     &
-%% \verb!Suspend!    &
-%% \verb!Syntactic!  \\
-%% \verb!Test!       &
-%% \verb!Transparent!&
-%% % \verb!Tree! que dans Show Tree et Explain Proof Tree sans conflit avec id
-%% \verb!Undo!       &
-%% \verb!Unset!      &
-%% \verb!Unfocus!    \\
-%% \verb!Variables!  &
-%% \verb!Write!      & & &
-%% \end{tabular}
-%% \end{center}
 
 \paragraph{Special tokens}
 The following sequences of characters are special tokens:
@@ -309,7 +193,8 @@ The following sequences of characters are special tokens:
 \verb!|-!  &
 \verb!||!  &
 \verb!}!   &
-\verb!~!   \\\end{tabular}
+\verb!~!   \\
+\end{tabular}
 \end{center}
 
 Lexical ambiguities are resolved according to the ``longest match''
@@ -341,7 +226,8 @@ chapter \ref{Addoc-syntax}.
  & $|$ & {\tt let fix} {\fixpointbody} {\tt in} {\term} &(\ref{fixpoints})\\
  & $|$ & {\tt let cofix} {\cofixpointbody}
          {\tt in} {\term} &(\ref{fixpoints})\\
- & $|$ & {\tt let} {\tt (} \sequence{\name}{,} {\tt) :=} {\term}
+ & $|$ & {\tt let} {\tt (} \sequence{\name}{,} {\tt )} {\returntype}
+         {\tt :=} {\term}
          {\tt in} {\term}  &(\ref{caseanalysis}, \ref{Mult-match})\\
  & $|$ & {\tt if} {\ifitem} {\tt then} {\term}
          {\tt else} {\term} &(\ref{caseanalysis}, \ref{Mult-match})\\
@@ -689,14 +575,14 @@ and ends with a dot.
             & $|$ & {\statement} \zeroone{\proof} \\
 &&\\
 %% Declarations
-{\declaration} & ::= & {\declarationkeyword} {\params} {\tt .} \\
+{\declaration} & ::= & {\declarationkeyword} {\assums} {\tt .} \\
 &&\\
 {\declarationkeyword} & ::= & {\tt Axiom} $|$ {\tt Conjecture} \\
   & $|$  & {\tt Parameter} $|$  {\tt Parameters} \\
   & $|$  & {\tt Variable}  $|$ {\tt Variables}  \\
   & $|$  & {\tt Hypothesis}  $|$ {\tt Hypotheses}\\
 &&\\
-{\params} & ::= & \nelist{\ident}{} {\tt :} {\term} \\
+{\assums} & ::= & \nelist{\ident}{} {\tt :} {\term} \\
           & $|$ & \nelist{\binder}{} \\
 &&\\
 %% Definitions
