@@ -193,6 +193,11 @@ GEXTEND Gram
       | IDENT "Test"; IDENT "Implicit"; IDENT "Arguments" ->
           <:ast< (TEST_IMPLICIT_ARGS) >>
 
+      (* Set printing depth *)
+      (* An explicit entry, to be factorized with Printing Coercions *)
+      | "Set"; table = IDENT "Printing"; field = IDENT "Depth"; n = numarg ->
+          <:ast< (SetTableField ($VAR $table) ($VAR $field) $n) >>
+
       (* Set printing of coercions *)
       | "Set"; IDENT "Printing"; IDENT "Coercion"; 
 	qidl = ne_qualidarg_list ->
