@@ -17,9 +17,21 @@ open Refiner
 val rc_of_pfsigma : proof_tree sigma -> readable_constraints
 val rc_of_glsigma : goal sigma -> readable_constraints
 
+(* a [walking_constraints] is a structure associated to a specific
+   goal; it collects all evars of which the goal depends.
+  It has the following structure:
+  [(identifying stamp, time stamp, 
+  { focus : set of evars among decls of which the goal depends;
+    hyps  : context of the goal;
+    decls : a superset of evars of which the goal may depend })]
+*)
 type walking_constraints
 
 type 'a result_w_tactic = walking_constraints -> walking_constraints * 'a
+
+(* A [w_tactic] is a tactic which modifies the a set of evars of which
+a goal depend, either by instantiating one, or by declaring a new
+dependent goal *)
 type w_tactic           = walking_constraints -> walking_constraints
 
 val local_Constraints : 

@@ -55,7 +55,36 @@ type enamed_declarations = ctxtty evar_map
    with some extra information for the program tactic *)
 type global_constraints  = enamed_declarations timestamped
 
-(* Signature useful to define the tactic type *)
+(* The type [goal sigma] is the type of subgoal. It has the following form
+\begin{verbatim}
+   it    = { evar_concl = [the conclusion of the subgoal]
+             evar_hyps = [the hypotheses of the subgoal]
+             evar_body = Evar_Empty;
+             evar_info = { pgm    : [The Realizer pgm if any]
+                           lc     : [Set of evar num occurring in subgoal] }}
+   sigma = { stamp = [an int characterizing the ed field, for quick compare]
+             ed : [A set of existential variables depending in the subgoal]
+               number of first evar,
+               it = { evar_concl = [the type of first evar]
+                      evar_hyps = [the context of the evar]
+                      evar_body = [the body of the Evar if any]
+                      evar_info = { pgm    : [Useless ??]
+                                    lc     : [Set of evars occurring
+                                              in the type of evar] } };
+               ...
+               number of last evar, 
+               it = { evar_concl = [the type of evar]
+                      evar_hyps = [the context of the evar]
+                      evar_body = [the body of the Evar if any]
+                      evar_info = { pgm    : [Useless ??]
+                                    lc     : [Set of evars occurring
+                                              in the type of evar] } } }
+   }
+\end{verbatim}
+*)
+
+(* The type constructor ['a sigma] adds an evar map to an object of
+  type ['a] (see below the form of a [goal sigma] *)
 type 'a sigma = { 
   it : 'a ; 
   sigma : global_constraints }
