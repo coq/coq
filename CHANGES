@@ -33,6 +33,8 @@ Tactics
 
 - New tactic "ClearBody H" to clear the body of definitions in local context
 - New tactic "Assert H := c" for forward reasoning
+- Slight improvement in naming strategy for NewInduction/NewDestruct (may
+  occasionnally affect compatibility with V7.1 NewInduction/NewDestruct)
 
 Efficiency
 
