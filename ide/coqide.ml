@@ -2043,6 +2043,13 @@ let main files =
 		 with _ -> prerr_endline "EMIT PASTE FAILED")));
   ignore (edit_f#add_separator ());
 
+  ignore(edit_f#add_item "Complete" ~key:GdkKeysyms._slash ~callback:
+	 (do_if_not_computing 
+	    (fun () -> 
+	       ignore (
+		 let av = out_some ((get_current_view()).analyzed_view) in 
+		 av#complete_at_offset (av#get_insert)#offset
+	    ))));
 
 (*
    let toggle_auto_complete_i = 
