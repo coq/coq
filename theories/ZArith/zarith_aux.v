@@ -12,7 +12,7 @@
 Require Arith.
 Require Export fast_integer.
 
-Meta Definition ElimCompare com1 com2:=
+Tactic Definition ElimCompare com1 com2:=
   Elim (Dcompare (Zcompare com1 com2)); [
          Idtac 
        | Intro hidden_auxiliary; Elim hidden_auxiliary; 
