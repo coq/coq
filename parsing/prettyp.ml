@@ -41,13 +41,22 @@ let print_typed_value x = print_typed_value_in_env (Global.env ()) x
 			  		  
 let print_impl_args_by_pos = function
   | []  -> mt ()
-  | [i] -> str"Position [" ++ int i ++ str"] is implicit"
+  | [i] -> str"Position [" ++ int i ++ str"] is implicit" ++ fnl()
   | l   -> 
       str"Positions [" ++ 
       prlist_with_sep (fun () -> str "; ") int l ++
-      str"] are implicit"
+      str"] are implicit" ++ fnl()
 
 let print_impl_args l = print_impl_args_by_pos (positions_of_implicits l)
+
+let print_argument_scopes = function
+  | [Some sc] -> str"Argument scope is [" ++ str sc ++ str"]" ++ fnl()
+  | l when not (List.for_all ((=) None) l) ->
+      hov 2 (str"Argument scopes are" ++ spc() ++ 
+      str "[" ++ 
+      prlist_with_sep spc (function Some sc -> str sc | None -> str "_") l ++
+      str "]") ++ fnl()
+  | _  -> mt()
 
 (* To be improved; the type should be used to provide the types in the
    abstractions. This should be done recursively inside prterm, so that
@@ -74,24 +83,29 @@ let print_named_decl (id,c,typ) =
 let assumptions_for_print lna =
   List.fold_right (fun na env -> add_name na env) lna empty_names_context
 
-let implicit_args_id id l =
-  if List.exists is_status_implicit l then 
-    (str"For " ++ pr_id id ++ str": " ++ print_impl_args l ++ fnl ())
+let print_id_args_data test pr id l =
+  if List.exists test l then
+    str"For " ++ pr_id id ++ str": " ++ pr l
   else 
-    (mt ())
+    mt()
 
-let implicit_args_msg sp mipv = 
-  (prvecti
-       (fun i mip -> 
-	  let imps = implicits_of_global (IndRef (sp,i)) in
-          ((implicit_args_id mip.mind_typename imps) ++
-             prvecti 
-	       (fun j idc ->
-		  let imps = implicits_of_global (ConstructRef ((sp,i),j+1)) in
-                  (implicit_args_id idc imps))
-               mip.mind_consnames 
-))
-       mipv)
+let print_args_data_of_inductive_ids get test pr sp mipv =
+  prvecti
+    (fun i mip -> 
+      print_id_args_data test pr mip.mind_typename (get (IndRef (sp,i))) ++
+      prvecti 
+	(fun j idc ->
+	  print_id_args_data test pr idc (get (ConstructRef ((sp,i),j+1))))
+        mip.mind_consnames)
+    mipv
+
+let print_inductive_implicit_args =
+  print_args_data_of_inductive_ids
+    implicits_of_global is_status_implicit print_impl_args
+
+let print_inductive_argument_scopes =
+  print_args_data_of_inductive_ids 
+    Symbols.find_arguments_scope ((<>) None) print_argument_scopes
 
 let print_params env params =
   if List.length params = 0 then 
@@ -143,12 +157,14 @@ let print_mutual sp =
   let mipv = mib.mind_packets in
   let names = list_tabulate (fun x -> (sp,x)) (Array.length mipv) in
   pr_mutual_inductive mib.mind_finite names ++
-  implicit_args_msg sp mipv
+  print_inductive_implicit_args sp mipv ++
+  print_inductive_argument_scopes sp mipv
 
 let print_section_variable sp =
   let d = get_variable sp in
-  let l = implicits_of_global (VarRef sp) in
-  (print_named_decl d ++ print_impl_args l)
+  print_named_decl d ++ 
+  print_impl_args (implicits_of_global (VarRef sp)) ++
+  print_argument_scopes (Symbols.find_arguments_scope (VarRef sp))
 
 let print_body = function
   | Some lc  -> prterm (Declarations.force lc)
@@ -161,20 +177,18 @@ let print_constant with_values sep sp =
   let cb = Global.lookup_constant sp in
   let val_0 = cb.const_body in
   let typ = cb.const_type in
-  let impls = implicits_of_global (ConstRef sp) in
-  hov 0 ((match val_0 with 
-		| None -> 
-		    (str"*** [ " ++ 
-		       print_basename sp ++  
-		       str " : " ++ cut () ++ prtype typ ++ str" ]" ++ fnl ())
-		| _ -> 
-		    (print_basename sp ++ 
-		       str sep ++ cut () ++
-		       if with_values then 
-			 print_typed_body (val_0,typ) 
-		       else 
-			 (prtype typ ++ fnl ()))) ++ 
-	     print_impl_args impls)
+  hov 0 (
+    match val_0 with 
+    | None -> 
+	str"*** [ " ++ 
+	print_basename sp ++ str " : " ++ cut () ++ prtype typ ++ 
+	str" ]" ++ fnl ()
+    | _ -> 
+	print_basename sp ++ str sep ++ cut () ++
+	(if with_values then print_typed_body (val_0,typ) else prtype typ) ++
+	fnl ()) ++ 
+  print_impl_args (implicits_of_global (ConstRef sp)) ++
+  print_argument_scopes (Symbols.find_arguments_scope (ConstRef sp))
 
 let print_inductive sp = (print_mutual sp)
 
