@@ -13,6 +13,7 @@
 (***********************************************************)
 
 Require Export BinPos.
+Require BinNat.
 Require Le.
 Require Lt.
 Require Gt.
