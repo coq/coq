@@ -238,7 +238,8 @@ let split_dep_and_nodep hyps gl =
 
 let dest_eq gls t =
   match dest_match_eq gls t with
-    | [(1,x);(2,y);(3,z)] -> (x,y,z)
+    | [(1,x);(2,y);(3,z)] ->
+        (x,pf_whd_betadeltaiota gls y, pf_whd_betadeltaiota gls z)
     | _ -> error "dest_eq: should be an equality"
 
 (* invariant: ProjectAndApplyNoThining simplifies the clause (an equality) .
@@ -246,26 +247,30 @@ let dest_eq gls t =
    a rewrite rule. It erases the clause which is given as input *)
 
 let projectAndApply thin id depids gls =
+  let env = pf_env gls in
   let subst_hyp_LR id = tclTRY(hypSubst id None) in
   let subst_hyp_RL id = tclTRY(revHypSubst id None) in
   let subst_hyp gls = 
     let orient_rule id = 
       let (t,t1,t2) = dest_eq gls (pf_get_hyp_typ gls id) in
-      match (kind_of_term (strip_outer_cast t1),
-	     kind_of_term (strip_outer_cast t2)) with
-        | Var id1, _ -> generalizeRewriteIntros (subst_hyp_LR id) depids id1
-        | _, Var id2 -> generalizeRewriteIntros (subst_hyp_RL id) depids id2
+      match (kind_of_term t1, kind_of_term t2) with
+        | Var id1, _ ->
+            generalizeRewriteIntros (subst_hyp_LR id) depids id1
+        | _, Var id2 ->
+            generalizeRewriteIntros (subst_hyp_RL id) depids id2
         | _ -> subst_hyp_RL id
     in 
     onLastHyp orient_rule gls 
   in
   let (t,t1,t2) = dest_eq gls (pf_get_hyp_typ gls id)  in
-  match (thin, kind_of_term (strip_outer_cast t1), kind_of_term (strip_outer_cast t2)) with
-    | (true, Var id1,  _) -> generalizeRewriteIntros
+  match (thin, kind_of_term t1, kind_of_term t2) with
+    | (true, Var id1,  _) ->
+        generalizeRewriteIntros
           (tclTHEN (subst_hyp_LR id) (clear_clause id)) depids id1 gls
     | (false, Var id1,  _) ->
         generalizeRewriteIntros (subst_hyp_LR id) depids id1 gls
-    | (true, _ , Var id2) -> generalizeRewriteIntros
+    | (true, _ , Var id2) ->
+        generalizeRewriteIntros
           (tclTHEN (subst_hyp_RL id) (clear_clause id)) depids id2 gls
     | (false, _ , Var id2) ->
         generalizeRewriteIntros (subst_hyp_RL id) depids id2 gls
