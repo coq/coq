@@ -338,6 +338,7 @@ let clenv_environments bound c =
 	  let e' = Intmap.add mv (Cltyp (mk_freelisted c1)) e in 
 	  clrec (ne',e', (mkMeta mv)::metas) (n-1)
 	    (if dep then (subst1 (mkMeta mv) c2) else c2)
+      | (n, IsLetIn (na,b,_,c)) -> clrec (ne,e,metas) (n-1) (subst1 b c)
       | (n, _) -> (ne, e, List.rev metas, c)
   in 
   clrec (Intmap.empty,Intmap.empty,[]) bound c
