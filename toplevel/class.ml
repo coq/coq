@@ -263,7 +263,7 @@ let build_id_coercion idf_opt source =
   let constr_entry = (* Cast is necessary to express [val_f] is identity *)
     DefinitionEntry
       { const_entry_body = mkCast (val_f, typ_f);
-	const_entry_type = None;
+	const_entry_type = Some typ_f;
         const_entry_opaque = false } in
   let (_,kn) = declare_constant idf (constr_entry,NeverDischarge) in
   ConstRef kn

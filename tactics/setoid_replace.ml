@@ -85,6 +85,7 @@ let coq_fleche = lazy(constant ["Setoid"] "fleche")
 let coqeq = lazy(global_constant ["Logic"] "eqT")
 
 let coqconj = lazy(global_constant ["Logic"] "conj")
+let coqand = lazy(global_constant ["Logic"] "and")
 
 (************************* Table of declared setoids **********************)
 
@@ -210,53 +211,62 @@ let find_theory a =
     
 (* Add a Setoid to the database after a type verification. *)
 
+let eq_lem_common_sign env a eq =
+  let na = named_hd env a Anonymous in
+  let ne = named_hd env eq Anonymous in
+  [(ne,None,mkApp (eq, [|(mkRel 3);(mkRel 2)|]));
+   (ne,None,mkApp (eq, [|(mkRel 4);(mkRel 3)|]));
+   (na,None,a);(na,None,a);(na,None,a);(na,None,a)]
+
 (* Proof of (a,b,c,d:A)(eq a b)->(eq c d)->(eq a c)->(eq b d) *)
 let eq_lem_proof env a eq sym trans = 
-  lambda_create env
-    (a, lambda_create env
-       (a, lambda_create env
-	  (a, lambda_create env 
-	     (a, lambda_create env 
-		((mkApp (eq, [|(mkRel 4);(mkRel 3)|])), lambda_create env
-		   ((mkApp (eq, [|(mkRel 3);(mkRel 2)|])), lambda_create env
-		      ((mkApp (eq, [|(mkRel 6);(mkRel 4)|])),
-		       (mkApp (trans,
-			       [|(mkRel 6);(mkRel 7);(mkRel 4);
-				 (mkApp (sym, [|(mkRel 7);(mkRel 6);(mkRel 3)|]));
-				 (mkApp (trans,
-					 [|(mkRel 7);(mkRel 5);(mkRel 4);(mkRel 1);(mkRel 2)|]))|]
-			      )))))))))
+  let sign = eq_lem_common_sign env a eq in
+  let ne = named_hd env eq Anonymous in
+  let sign = (ne,None,mkApp (eq, [|(mkRel 6);(mkRel 4)|]))::sign in
+  let ccl = mkApp (eq, [|(mkRel 6);(mkRel 4)|]) in
+  let body =
+    mkApp (trans,
+      [|(mkRel 6);(mkRel 7);(mkRel 4);
+        (mkApp (sym, [|(mkRel 7);(mkRel 6);(mkRel 3)|]));
+	  (mkApp (trans,
+	    [|(mkRel 7);(mkRel 5);(mkRel 4);(mkRel 1);(mkRel 2)|]))|]) in
+  let p = it_mkLambda_or_LetIn body sign in
+  let t = it_mkProd_or_LetIn ccl sign in
+  (p,t)
 
 (* Proof of (a,b,c,d:A)(eq a b)->(eq c d)->((eq a c)<->(eq b d)) *)
-let eq_lem2_proof env a eq sym trans = 
-  lambda_create env
-    (a, lambda_create env
-       (a, lambda_create env
-	  (a, lambda_create env 
-	     (a, lambda_create env 
-		((mkApp (eq, [|(mkRel 4);(mkRel 3)|])), lambda_create env
-		   ((mkApp (eq, [|(mkRel 3);(mkRel 2)|])),
-		    (mkApp ((Lazy.force coqconj),
-			    [|(mkArrow 
-				 (mkApp (eq, [|(mkRel 6);(mkRel 4)|]))
-				 (mkApp (eq, [|(mkRel 6);(mkRel 4)|])));
-			      (mkArrow
-				 (mkApp (eq, [|(mkRel 5);(mkRel 3)|]))
-				 (mkApp (eq, [|(mkRel 7);(mkRel 5)|])));
-			      (lambda_create env
-				 ((mkApp (eq, [|(mkRel 6);(mkRel 4)|])),
-				  (mkApp (trans,
-					  [|(mkRel 6);(mkRel 7);(mkRel 4);
-					    (mkApp (sym, [|(mkRel 7);(mkRel 6);(mkRel 3)|]));
-					    (mkApp (trans,
-						    [|(mkRel 7);(mkRel 5);(mkRel 4);(mkRel 1);(mkRel 2)|]))|]))));
-			      (lambda_create env
-				 ((mkApp (eq, [|(mkRel 5);(mkRel 3)|])),
-				  (mkApp (trans,
-					  [|(mkRel 7);(mkRel 6);(mkRel 5);(mkRel 3);
-					    (mkApp (trans,
-						    [|(mkRel 6);(mkRel 4);(mkRel 5);(mkRel 1);
-						      (mkApp (sym, [|(mkRel 5);(mkRel 4);(mkRel 2)|]))|]))|]))))|]))))))))
+let eq_lem2_proof env a eq sym trans =
+  let sign = eq_lem_common_sign env a eq in
+  let ccl1 =
+    mkArrow
+      (mkApp (eq, [|(mkRel 6);(mkRel 4)|]))
+      (mkApp (eq, [|(mkRel 6);(mkRel 4)|])) in
+  let ccl2 =
+    mkArrow
+      (mkApp (eq, [|(mkRel 5);(mkRel 3)|]))
+      (mkApp (eq, [|(mkRel 7);(mkRel 5)|])) in
+  let ccl = mkApp (Lazy.force coqand, [|ccl1;ccl2|]) in
+  let body =
+    mkApp ((Lazy.force coqconj),
+    [|ccl1;ccl2;
+      lambda_create env
+	(mkApp (eq, [|(mkRel 6);(mkRel 4)|]),
+	(mkApp (trans,
+	  [|(mkRel 6);(mkRel 7);(mkRel 4);
+	    (mkApp (sym, [|(mkRel 7);(mkRel 6);(mkRel 3)|]));
+	    (mkApp (trans,
+	      [|(mkRel 7);(mkRel 5);(mkRel 4);(mkRel 1);(mkRel 2)|]))|])));
+      lambda_create env
+        (mkApp (eq, [|(mkRel 5);(mkRel 3)|]),
+        (mkApp (trans,
+          [|(mkRel 7);(mkRel 6);(mkRel 5);(mkRel 3);
+            (mkApp (trans,
+              [|(mkRel 6);(mkRel 4);(mkRel 5);(mkRel 1);
+                (mkApp (sym, [|(mkRel 5);(mkRel 4);(mkRel 2)|]))|]))|])))|])
+  in
+  let p = it_mkLambda_or_LetIn body sign in
+  let t = it_mkProd_or_LetIn ccl sign in
+  (p,t)
 
 let gen_eq_lem_name =
   let i = ref 0 in
@@ -278,19 +288,19 @@ let add_setoid a aeq th =
 		     set_th = th}));
 	  let sym = mkApp ((Lazy.force coq_seq_sym), [|a; aeq; th|]) in
 	  let trans = mkApp ((Lazy.force coq_seq_trans), [|a; aeq; th|]) in
-	  let eq_morph = eq_lem_proof env a aeq sym trans in
-	  let eq_morph2 = eq_lem2_proof env a aeq sym trans in
+	  let (eq_morph, eq_morph_typ) = eq_lem_proof env a aeq sym trans in
+	  let (eq_morph2, eq_morph2_typ) = eq_lem2_proof env a aeq sym trans in
 	    Options.if_verbose ppnl (prterm a ++str " is registered as a setoid");
 	    let eq_ext_name = gen_eq_lem_name () in 
 	    let eq_ext_name2 = gen_eq_lem_name () in 
 	    let _ = Declare.declare_constant eq_ext_name
 		      ((DefinitionEntry {const_entry_body = eq_morph; 
-		                       const_entry_type = None;
+		                       const_entry_type = Some eq_morph_typ;
                                        const_entry_opaque = true}),
 		       Libnames.NeverDischarge) in
 	    let _ = Declare.declare_constant eq_ext_name2
 		      ((DefinitionEntry {const_entry_body = eq_morph2; 
-				       const_entry_type = None;
+				       const_entry_type = Some eq_morph2_typ;
                                        const_entry_opaque = true}),
 		       Libnames.NeverDischarge) in
 	    let eqmorph = (current_constant eq_ext_name) in

@@ -108,16 +108,14 @@ type field_status =
   | NoProjection of name
   | Projection of constr
 
-type projection_status =
-  | NotDefinable of identifier list
-  | Definable of constr
+exception NotDefinable of record_error
 
 (* This replaces previous projection bodies in current projection *)
 (* Undefined projs are collected and, at least one undefined proj occurs *)
 (* in the body of current projection then the latter can not be defined *)
 (* [c] is defined in ctxt [[params;fields]] and [l] is an instance of *)
 (* [[fields]] defined in ctxt [[params;x:ind]] *)
-let subst_projection l c =
+let subst_projection fid l c =
   let lv = List.length l in
   let bad_projs = ref [] in
   let rec substrec depth c = match kind_of_term c with
@@ -136,10 +134,9 @@ let subst_projection l c =
   in
   let c' = lift 1 c in (* to get [c] defined in ctxt [[params;fields;x:ind]] *)
   let c'' = substrec 0 c' in
-  if !bad_projs <> [] then
-    NotDefinable (List.rev !bad_projs)
-  else 
-    Definable c''
+  if !bad_projs <> [] then 
+    raise (NotDefinable (MissingProj (fid,List.rev !bad_projs)));
+  c''
 
 (* We build projections *)
 let declare_projections indsp coers fields =
@@ -158,54 +155,44 @@ let declare_projections indsp coers fields =
 	| Anonymous ->
 	    (nfi-1, None::sp_projs,NoProjection fi::subst)
 	| Name fid ->
-	  let abstract, c = match optci with
-	  | Some ci -> false, ci
-	  | None -> true, ti in
-	  match subst_projection subst c with
-	  | NotDefinable bad_projs ->
-	      warning_or_error coe indsp (MissingProj (fid,bad_projs));
-	      (nfi-1, None::sp_projs,NoProjection fi::subst)
-	  | Definable c' ->
-	    (* [c'] is defined in context [params;x:rp] *)
-	    let body =
-	      if abstract then
-		(* [c''] is defined in context [params;x:rp;x:rp] *)
-		let c'' = liftn 1 2 c' in
-		let p = mkLambda (x, lift 1 rp, c'') in
+            try
+              let ccl = subst_projection fid subst ti in
+	      let body = match optci with
+              | Some ci -> subst_projection fid subst ci
+              | None ->
+	        (* [ccl] is defined in context [params;x:rp] *)
+		(* [ccl'] is defined in context [params;x:rp;x:rp] *)
+		let ccl' = liftn 1 2 ccl in
+		let p = mkLambda (x, lift 1 rp, ccl') in
 		let branch = it_mkLambda_or_LetIn (mkRel nfi) lifted_fields in
 		let ci = Inductiveops.make_case_info env indsp
 		  (Some PrintLet) [| RegularPat |] in
-		mkCase (ci, p, mkRel 1, [|branch|])
-	      else c' in
-	    let proj =
-	      it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in
-	    let name = 
-	      try
-		let cie = {
-		  const_entry_body = proj;
-                  const_entry_type = None;
-                  const_entry_opaque = false } in
-		let sp =
+		mkCase (ci, p, mkRel 1, [|branch|]) in
+	      let proj =
+	        it_mkLambda_or_LetIn (mkLambda (x,rp,body)) paramdecls in
+              let projtyp =
+                it_mkProd_or_LetIn (mkProd (x,rp,ccl)) paramdecls in
+	      let (sp,kn) =
+	        try
+		  let cie = {
+		    const_entry_body = proj;
+                    const_entry_type = Some projtyp;
+                    const_entry_opaque = false } in
 		  declare_constant fid (DefinitionEntry cie,NeverDischarge)
-		in Some sp
-              with Type_errors.TypeError (ctx,te) -> begin
-		warning_or_error coe indsp (BadTypedProj (fid,ctx,te));
-		None
-	     end in
-	   match name with
-	     | None ->
-		 (nfi-1, None::sp_projs, NoProjection fi::subst)
-	     | Some (sp,kn) ->
-		 let refi = ConstRef kn in
-		 let constr_fi = mkConst kn in
-		 if coe then begin
-		   let cl = Class.class_of_ref (IndRef indsp) in
-		   Class.try_add_new_coercion_with_source 
-		     refi NeverDischarge cl
-		 end;
-		 let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
-		 let constr_fip = applist (constr_fi,proj_args) in
-		 (nfi-1, (Some kn)::sp_projs, Projection constr_fip::subst))
+                with Type_errors.TypeError (ctx,te) ->
+                  raise (NotDefinable (BadTypedProj (fid,ctx,te))) in
+	      let refi = ConstRef kn in
+	      let constr_fi = mkConst kn in
+	      if coe then begin
+	        let cl = Class.class_of_ref (IndRef indsp) in
+	        Class.try_add_new_coercion_with_source refi NeverDischarge cl
+	      end;
+	      let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
+	      let constr_fip = applist (constr_fi,proj_args) in
+	      (nfi-1, (Some kn)::sp_projs, Projection constr_fip::subst)
+            with NotDefinable why ->
+	      warning_or_error coe indsp why;
+	      (nfi-1, None::sp_projs,NoProjection fi::subst))
       (List.length fields,[],[]) coers (List.rev fields)
   in sp_projs
 

@@ -354,14 +354,11 @@ let build_recursive lnameargsardef =
   let n = NeverDischarge in 
   let recvec = 
     Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in
+  let recdecls = (Array.map (fun id -> Name id) namerec, arrec, recvec) in
   let rec declare i fi =
     let ce = 
-      { const_entry_body =
-	  mkFix ((nvrec,i),
-	         (Array.map (fun id -> Name id) namerec,
-                  arrec,
-		  recvec));
-        const_entry_type = None;
+      { const_entry_body = mkFix ((nvrec,i),recdecls);
+        const_entry_type = Some arrec.(i);
         const_entry_opaque = false } in
     let (_,kn) = declare_constant fi (DefinitionEntry ce, n) in
     (ConstRef kn)
@@ -418,13 +415,11 @@ let build_corecursive lnameardef =
   let n = NeverDischarge in 
   let recvec = 
     Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in
+  let recdecls = (Array.map (fun id -> Name id) namerec, arrec, recvec) in
   let rec declare i fi =
     let ce = 
-      { const_entry_body =
-	  mkCoFix (i, (Array.map (fun id -> Name id) namerec,
-                       arrec,
-		       recvec));
-        const_entry_type = None;
+      { const_entry_body = mkCoFix (i, recdecls);
+        const_entry_type = Some (arrec.(i));
         const_entry_opaque = false } 
     in
     let _,kn = declare_constant fi (DefinitionEntry ce,n) in
@@ -462,8 +457,10 @@ let build_scheme lnamedepindsort =
   let n = NeverDischarge in 
   let listdecl = Indrec.build_mutual_indrec env0 sigma lrecspec in 
   let rec declare decl fi lrecref =
+    let decltype = Retyping.get_type_of env0 Evd.empty decl in
+    let decltype = Evarutil.refresh_universes decltype in
     let ce = { const_entry_body = decl;
-               const_entry_type = None;
+               const_entry_type = Some decltype;
                const_entry_opaque = false } in
     let _,kn = declare_constant fi (DefinitionEntry ce,n) in
     ConstRef kn :: lrecref
