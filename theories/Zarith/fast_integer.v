@@ -258,7 +258,7 @@ Theorem compare_convert1 :
   ~(compare x y SUPERIEUR) = EGAL /\ ~(compare x y INFERIEUR) = EGAL.
 Proof.
 Induction x;Induction y;Split;Simpl;Auto with arith;
-  (Discriminate Orelse (Elim (H y0); Auto with arith)).
+  (Discriminate Orelse (Elim (H p0); Auto with arith)).
 Save.
 
 Theorem compare_convert_EGAL : (x,y:positive) (compare x y EGAL) = EGAL -> x=y.
