@@ -25,6 +25,11 @@ open Pattern
 val gen_reference : string->string list -> string -> global_reference
 val gen_constant : string->string list -> string -> constr
 
+(* Search in several modules (not prefixed by "Coq") *)
+val gen_constant_in_modules : string->string list list-> string -> constr
+val zarith_base_modules : string list list
+val init_modules : string list list
+
 (*s Global references *)
 
 (* Modules *)

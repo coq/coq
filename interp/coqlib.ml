@@ -9,6 +9,7 @@
 (* $Id$ *)
 
 open Util
+open Pp
 open Names
 open Term
 open Libnames
@@ -20,18 +21,60 @@ let make_dir l = make_dirpath (List.map id_of_string (List.rev l))
 let gen_reference locstr dir s =
   let dir = make_dir ("Coq"::dir) in
   let id = Constrextern.id_of_v7_string s in
-  try 
-    Nametab.absolute_reference (Libnames.make_path dir id)
+  let sp = Libnames.make_path dir id in
+  try
+    Nametab.absolute_reference sp
   with Not_found ->
-    anomaly (locstr^": cannot find "^(string_of_qualid (make_qualid dir id)))
-
+    anomaly (locstr^": cannot find "^(string_of_path sp))
+    
 let gen_constant locstr dir s = 
   constr_of_reference (gen_reference locstr dir s)
+
+let list_try_find f = 
+  let rec try_find_f = function
+    | [] -> raise Not_found
+    | h::t -> try f h with Not_found -> try_find_f t
+  in 
+  try_find_f
+
+let gen_constant_in_modules locstr dirs s =
+  let dirs = List.map make_dir dirs in
+  let id = Constrextern.id_of_v7_string s in
+  try
+    list_try_find
+      (fun dir ->
+	constr_of_reference
+	  (Nametab.absolute_reference (Libnames.make_path dir id)))
+      dirs
+  with Not_found ->
+    anomalylabstrm "" (str (locstr^": cannot find "^s^
+    " in module"^(if List.length dirs > 1 then "s " else " ")) ++
+    prlist_with_sep pr_coma pr_dirpath dirs)
 
 let init_reference dir s=gen_reference "Coqlib" ("Init"::dir) s
 
 let init_constant dir s=gen_constant "Coqlib" ("Init"::dir) s  
 
+let zarith_dir = ["Coq";"ZArith"]
+let zarith_base_modules = [
+  zarith_dir@["fast_integer"];
+  zarith_dir@["zarith_aux"];
+  zarith_dir@["auxiliary"];
+  zarith_dir@["ZArith_dec"];
+  zarith_dir@["Zmisc"];
+  zarith_dir@["Wf_Z"]
+]
+
+let init_dir = ["Coq";"Init"]
+let init_modules = [
+  init_dir@["Datatypes"];
+  init_dir@["Logic"];
+  init_dir@["Specif"];
+  init_dir@["Logic_Type"];
+  init_dir@["Peano"];
+  init_dir@["Wf"]
+]
+  
 let coq_id = id_of_string "Coq"
 let init_id = id_of_string "Init"
 let arith_id = id_of_string "Arith"
