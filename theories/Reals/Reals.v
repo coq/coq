@@ -29,6 +29,7 @@ Require Export Rcomplet.
 Require Export Alembert_compl.
 Require Export Rtrigo_fun.
 Require Export Ranalysis.
+Require Export Rtopology.
 Require Export TAF.
 Require Export DiscrR.
 Require Export SplitRmult.
