@@ -1297,7 +1297,8 @@ let rec val_interp ist gl (tac:glob_tactic_expr) =
   (* Delayed evaluation *)
   | t -> VTactic (dummy_loc,eval_tactic ist t)
 
-  in match ist.debug with
+  in check_for_interrupt (); 
+    match ist.debug with
     | DebugOn lev ->
 	debug_prompt lev gl tac (fun v -> value_interp {ist with debug=v})
     | _ -> value_interp ist

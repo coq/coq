@@ -332,6 +332,7 @@ let unpackage glsig = (ref (glsig.sigma)),glsig.it
 let repackage r v = {it=v;sigma = !r}
 
 let apply_sig_tac r tac g =
+  check_for_interrupt (); (* Breakpoint *) 
   let glsigma,v = tac (repackage r g) in 
   r := glsigma.sigma;
   (glsigma.it,v)
@@ -517,9 +518,10 @@ let tclNOTSAMEGOAL (tac : tactic) goal =
 let tclORELSE0 t1 t2 g =
   try 
     t1 g
-  with
-  | e when catchable_exception e -> t2 g
-  | FailError (0,_) | Stdpp.Exc_located(_, FailError (0,_)) -> t2 g
+  with (* Breakpoint *)
+  | e when catchable_exception e -> check_for_interrupt (); t2 g
+  | FailError (0,_) | Stdpp.Exc_located(_, FailError (0,_)) ->
+      check_for_interrupt (); t2 g
   | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
   | Stdpp.Exc_located (s,FailError (lvl,s')) ->
       raise (Stdpp.Exc_located (s,FailError (lvl - 1, s')))
@@ -551,10 +553,11 @@ let ite_gen tcal tac_if continue tac_else gl=
       tac_else gl in
     try 
       tcal tac_if0 continue gl
-    with
-      | e when catchable_exception e -> tac_else0 e gl
+    with (* Breakpoint *)
+      | e when catchable_exception e ->
+	  check_for_interrupt (); tac_else0 e gl
       | (FailError (0,_) | Stdpp.Exc_located(_, FailError (0,_))) as e ->
-	  tac_else0 e gl
+	  check_for_interrupt (); tac_else0 e gl
       | FailError (lvl,s) -> raise (FailError (lvl - 1, s))
       | Stdpp.Exc_located (s,FailError (lvl,s')) ->
 	  raise (Stdpp.Exc_located (s,FailError (lvl - 1, s')))
