@@ -480,8 +480,8 @@ ide/find_phrase.cmo: ide/ideutils.cmo
 ide/find_phrase.cmx: ide/ideutils.cmx 
 ide/highlight.cmo: ide/ideutils.cmo 
 ide/highlight.cmx: ide/ideutils.cmx 
-ide/ideutils.cmo: config/coq_config.cmi ide/preferences.cmo 
-ide/ideutils.cmx: config/coq_config.cmx ide/preferences.cmx 
+ide/ideutils.cmo: config/coq_config.cmi lib/options.cmi ide/preferences.cmo 
+ide/ideutils.cmx: config/coq_config.cmx lib/options.cmx ide/preferences.cmx 
 ide/preferences.cmo: ide/config_lexer.cmo ide/utils/configwin.cmi 
 ide/preferences.cmx: ide/config_lexer.cmx ide/utils/configwin.cmx 
 interp/constrextern.cmo: pretyping/classops.cmi library/declare.cmi \
