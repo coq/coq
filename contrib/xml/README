@@ -1,99 +1,177 @@
 (******************************************************************************)
 (*                                                                            *)
-(*                               PROJECT HELM                                 *)
+(*                   PROJECT HELM (http://www.cs.unibo.it/helm)               *)
 (*                                                                            *)
-(*                     A tactic to print Coq objects in XML                   *)
+(*                     A module to print Coq objects in XML                   *)
 (*                                                                            *)
 (*                Claudio Sacerdoti Coen <sacerdot@cs.unibo.it>               *)
-(*                                 22/11/1999                                 *)
+(*                                 20/12/2000                                 *)
 (******************************************************************************)
 
-This tactic is aimed to exporting a piece of Coq library in XML format.
-It adds a few new commands to the vernacular:
+This module provides commands to export a piece of Coq library in XML format
+and it must be considered beta-software. Only the information relevant
+to proof-checking and proof-rendering is exported, i.e. only the CIC objects.
 
- Print XML id.                     It prints in XML the object whose name is id
-                                   Only the most cooked available form of the
-                                   term is printed
- Print XML File "filename" id.     It prints in XML the object whose name is id
-                                   on the file whose name is filename
-                                   Only the most cooked available form of the
-                                   term is printed
+This document is tructured in the following way:
+ 1. Inner-types
+ 2. New commands available
+ 3. URIs fixing
+ 4. Suggested usage
+ 5. How to exploit the XML files
+
+==========================
+1. Inner-types
+==========================
+
+In order to do proof-rendering (for example in natural language),
+some redundant typing information is required, i.e. the type of
+at least some of the subterms of the bodies and types. So, each
+one of the new commands described in section 2, print not only
+the object, but also another XML file in which you can find
+the type of all the subterms of the terms of the printed object
+which respect the following conditions:
+
+ 1. It's sort is Prop.
+ 2. It is not a cast or an atomic term, i.e. it's root is not a CAST, REL,
+    VAR, MUTCONSTR or CONST.
+ 3. If it's root is a LAMBDA, then the root's parent node is not a LAMBDA,
+    i.e. only the type of the outer LAMBDA of a block of nested LAMBDAs is
+    printed.
+
+The rationale for the 3rd condition is that the type of the inner LAMBDAs
+could be easily computed starting from the type of the outer LAMBDA; moreover,
+the types of the inner LAMBDAs requires a lot of disk/memory space: removing
+the 3rd condition leads to XML file that are two times as big as the ones
+exported appling the 3rd condition.
+
+In the rest of this file the types of the subterms satisfing all the
+three conditions are called "inner types".
+
+==========================
+2. New commands available:
+==========================
+
+The new commands are:
+
+ Print XML qualid.                 It prints in XML the object whose qualified
+                                   name is qualid. It prints also an XML file
+				   made of inner-types.
+                                   Only the most discharged available form of
+				   the term is printed.
+				   WARNING: relative URIs for variables
+				   are broken.
+
+ Print XML File "filename" qualid. It prints in XML the object whose qualified
+                                   name is qualid on the file whose name is
+				   filename. It prints also an XML file made
+				   of inner types.
+                                   Only the most discharged available form of
+				   the term is printed.
+				   WARNING: relative URIs for variables
+				   are broken.
+
  Show XML Proof.                   It prints in XML the current proof in
-                                   progress
+                                   progress. It prints also an XML file made
+				   of inner types.
+				   WARNING: relative URIs for variables
+				   are broken.
+
  Show XML File "filename" Proof.   It prints in XML the current proof in
-                                   progress on the file whose name is filename
- Print XML Dir id.                 It prints recursively in XML the closed
-                                   section whose name is id. The terms are
-                                   printed in their uncooked form plus the
-                                   informations on the parameters of their
-                                   most cooked form
- Print XML Dir Disk "dirname" id.  It prints recursively in XML the closed
-                                   section whose name is id rooting the dir
-                                   corresponding to the section to the dir
-                                   whose name is dirname.  The terms are
-                                   printed in their uncooked form plus the
-                                   informations on the parameters of their
-                                   most cooked form
+                                   progress on the file whose name is filename.
+				   It prints also an XML file made of inner
+				   types.
+				   WARNING: relative URIs for variables
+				   are broken.
+
+ Print XML Module id.              It prints in XML all the objects defined
+                                   in the already required module whose name
+				   is id, each one with the corresponding
+				   inner types XML file.
+				   This command is completely working.
+
+ Print XML Module Disk "dir" id.   It prints in XML all the objects defined
+                                   in the already required module whose name
+				   is id, each one with the corresponding
+				   inner types XML file. The files are
+				   structured on the disk in a Unix
+				   hierarchy isomorphic to the tree of
+				   sections of Coq: each Unix directory
+				   corresponds to a Coq section. Coq's
+				   root section is exported to a root
+				   dir rooted in the "dir" directory.
+				   This command is completely working.
+
+ Print XML Section id.             It behaves as "Print XML Module", but
+                                   it works on a closed section instead
+				   of on an already required module.
+				   WARNING: this command could be deprecated
+				   in the final release.
+
+ Print XML Section Disk "dir" id.  It behaves as "Print XML Module Disk", but
+                                   it works on a closed section instead
+				   of on an already required module.
+				   WARNING: this command could be deprecated
+				   in the final release.
+
  Print XML All.                    It prints what is the structure of the
-                                   current environment of Coq. No terms are
-                                   printed. Useful only for debugging
+                                   current environment of Coq with an high
+				   level of verbosity.
+				   WARING: useful only for debugging
 
  If xmlcommand.ml is compiled with the configuration parameter verbose
  set to true, then the verbosity of all the previous commands will be
  increased, except the one of Print XML All (that is always very verbose :-)
 
-Important note (fixing the uris):
- 
+===============
+3. URIs fixing
+===============
+
  The previous new commands are all damaged because they produce xml files
- in which all the uris to other xml files are broken (they are only suffixes
- of the right uris). So, to fix the uris, you must use the script fix_uri.pl
- giving to it on stdin all the filenames of the uris to repair. The script
- will modify all the files fixing all the uris in them. An uri will be fixed
- iff it is a reference to one of the files whose name has been given on stdin.
+ in which all the URIs to other xml files are slightly broken. This will
+ be hopefully fixed in the final release of Coq.
+ So, to fix the uris, you must do the following operations:
+   1. export with the same root all the modules on which the module
+      you want to repair depends.
+   2. cd to the root and run "./mkindex.pl" to create the index.txt file
+      with the URIs of all the exported XML files.
+   3. copy index.txt to tmp.txt and remove in tmp.txt all the URIs of
+      the XML files that you have already repaired (perhaps none).
+   4. run "./fix_uri.pl index.txt tmp.txt"
+      The script will modify all the files whose URIs are in tmp.txt fixing
+      all the URIs belonging to index.txt. If an URI not belonging to index.txt
+      if found, then the script may fail.
 
-How to compile:
+===================
+4. Suggested usage
+===================
 
- Edit the configuration parameters at the very beginning of file xmlcommand.ml:
-  dtdname is the complete path-name of the dtd file
-  verbose if set to true, increases the verbosity of all the "Print something"
-           commands (useful only for debugging)
- Then do "make clean ; make all ; make opt ; make install-library"
+ 1. Compile to .vo all the .v files you are interested in paying attention
+    to mapping LoadPath to significative absolute names.
+ 2. Use "Print XML Module Disk" to export all the compiled modules to XML.
+ 3. Fix the URIs.
 
-The files forming the tactic are:
+ Example: let's imagine we have already exported all the standard library
+  of Coq in the "examples" directory and that now we want to export the
+  HIGMAN contribution in the Rocq directory of Coq's contrib. Following
+  the previous points, we do:
 
- Xml.v                  It adds new grammar rules to Coq environment.
- xmlentries.ml          Links the functions implementing the new commands to
-                        the grammar rules declared in Xml.v
- xmlcommand.ml          Defines the functions that implements the new commands
-                        Uses ntrefiner.ml, cooking.ml and xml.ml
-                        Contains also some configuration parameters
- ntrefiner.ml           This file is copied verbatim from the natural tactic
-                        and used to get informations on the proof in progress
- cooking.ml             Contains a function that returns the list of the
-                        ingredients for cooking an uncooked term
- xml.ml                 The definition of a pretty-printer for XML and the one
-                        of the stream of commands to the pp
+  1. From the Unix prompt: "coqc -R HIGMAN Rocq.HIGMAN HIGMAN/Higman.v"
+  2. In Coq:
+      Require Export Xml.
+      Require Higman.
+      Print XML Module Disk "examples" Higman.
+  3. From the Unix prompt:
+      "cd examples ; mkindex.pl ; cp index.txt tmp.txt"
+     Then edit tmp.txt removing all the entries but the ones starting
+     with "cic:/Rocq/HIGMAN".
+      "fix_uri.pl index.txt tmp.txt"
 
-The files to export the standard library of Coq are:
+===============================
+5. How to exploit the XML files
+===============================
 
- provacoq.v             Loads one at a time all the provacoqXXX files
- provacoqXxx.v	        If Loaded it exports the theory XXX of the standard
-                        library of Coq
+ Once the information is exported to XML, it becomes quite easy
+ to do many interesting computations on it. If you are interested
+ in proof-rendering, see project HELM:
 
-Other files useful to test the new commands:
-
- prova.v                Declares and exports some objects; exports also the
-                        theories provastruct, provastruct2 e provastruct3
- provastruct.v          An example theory
- provastruct2.v         Another example theory
- provastruct3.v         Yet another example theory
-
-Other files:
-
- README	               This file
- fix_uri.pl            The script that fixes the broken uris in the xml files
- Makefile              Targets are "all", "opt", "clean" and "install-library"
- .depend               The dependecies file used by make
- mkdirs.sh             Make all the dirs needed to export the standard library
-                        of Coq via provacoq.v
- examples              A simbolic link to the root of the exported library
+                  http://www.cs.unibo.it/helm
