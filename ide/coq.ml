@@ -22,6 +22,7 @@ open Evd
 open Hipattern
 open Tacmach
 open Reductionops
+open Termops
 open Ideutils
 
 let prerr_endline s = if !debug then prerr_endline s else ()
@@ -404,7 +405,7 @@ let make_cases s =
 	     let rec rename avoid = function 
 	       | [] -> []
 	       | (n,_)::l -> 
-		   let n' = Tactics.next_global_ident_away 
+		   let n' = next_global_ident_away true
 			      (id_of_name n) 
 			      avoid
 		   in (string_of_id n')::(rename (n'::avoid) l)

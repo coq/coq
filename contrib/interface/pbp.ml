@@ -20,10 +20,13 @@ open Pp;;
 open Libnames;;
 open Genarg;;
 open Topconstr;;
+open Termops;;
 
 let zz = (0,0);;
 
 let hyp_radix = id_of_string "H";;
+
+let next_global_ident = next_global_ident_away true
 
 (* get_hyp_by_name : goal sigma -> string -> constr,
    looks up for an hypothesis (or a global constant), from its name *)
@@ -117,7 +120,7 @@ let (forall_intro: pbp_rule) = function
    Prod(Name x, _, body),
    (2::path),
    f) ->
-     let x' = next_global_ident_away x avoid in
+     let x' = next_global_ident x avoid in
       Some(chain_tactics [make_named_intro x']
 	      (f (x'::avoid)
 		clear_names clear_flag None (kind_of_term body) path))
@@ -126,7 +129,7 @@ let (forall_intro: pbp_rule) = function
 let (imply_intro2: pbp_rule) = function
   avoid, clear_names,
   clear_flag, None, Prod(Anonymous, _, body), 2::path, f ->
-   let h' = next_global_ident_away hyp_radix avoid in
+   let h' = next_global_ident hyp_radix avoid in
      Some(chain_tactics [make_named_intro h']
           (f (h'::avoid) clear_names clear_flag None (kind_of_term body) path))
   | _ -> None;;
@@ -135,7 +138,7 @@ let (imply_intro2: pbp_rule) = function
 let (imply_intro1: pbp_rule) = function
   avoid, clear_names,
   clear_flag, None, Prod(Anonymous, prem, body), 1::path, f ->
-   let h' = next_global_ident_away hyp_radix avoid in
+   let h' = next_global_ident hyp_radix avoid in
    let str_h' = h' in
      Some(chain_tactics [make_named_intro str_h']
             (f (h'::avoid) clear_names clear_flag (Some str_h') 
@@ -190,7 +193,7 @@ let rec make_pbp_tactic = function
 let (forall_elim: pbp_rule) = function
   avoid, clear_names, clear_flag, 
   Some h, Prod(Name x, _, body), 2::path, f ->
-  let h' = next_global_ident_away hyp_radix avoid in
+  let h' = next_global_ident hyp_radix avoid in
   let clear_names' = if clear_flag then h::clear_names else clear_names in
     Some
      (chain_tactics [PbpGeneralize (h,[x]); make_named_intro h']
@@ -202,7 +205,7 @@ let (imply_elim1: pbp_rule) = function
   avoid, clear_names, clear_flag,
   Some h, Prod(Anonymous, prem, body), 1::path, f ->
   let clear_names' = if clear_flag then h::clear_names else clear_names in
-  let h' = next_global_ident_away hyp_radix avoid in
+  let h' = next_global_ident hyp_radix avoid in
   let str_h' = (string_of_id h') in
   Some(PbpThens
 	  ([PbpLApply h],
@@ -215,7 +218,7 @@ let (imply_elim2: pbp_rule) = function
   avoid, clear_names, clear_flag,
   Some h, Prod(Anonymous, prem, body), 2::path, f ->
   let clear_names' = if clear_flag then h::clear_names else clear_names in
-  let h' = next_global_ident_away hyp_radix avoid in
+  let h' = next_global_ident hyp_radix avoid in
   Some(PbpThens
 	 ([PbpLApply h],
           [chain_tactics [PbpIntros [h']]
@@ -310,7 +313,7 @@ let (not_intro: pbp_rule) = function
     App(not_oper, [|c1|]), 2::1::path, f ->
       if(is_matching_local (notconstr ()) not_oper) or 
 	(is_matching_local (notTconstr ()) not_oper) then
-	let h' = next_global_ident_away hyp_radix avoid in
+	let h' = next_global_ident hyp_radix avoid in
 	Some(chain_tactics [PbpReduce;make_named_intro h']
 	       (f (h'::avoid) clear_names false (Some h') 
 		  (kind_of_term c1) path))
@@ -430,8 +433,8 @@ let (head_tactic_patt: pbp_rule) = function
        App(oper, [|c1; c2|]), 2::a::path) 
       when ((is_matching_local (andconstr()) oper) or
 	    (is_matching_local (prodconstr()) oper)) & (a = 1 or a = 2) ->
-	let h1 = next_global_ident_away hyp_radix avoid in
-	let h2 = next_global_ident_away hyp_radix (h1::avoid) in
+	let h1 = next_global_ident hyp_radix avoid in
+	let h2 = next_global_ident hyp_radix (h1::avoid) in
 	Some(PbpThens
                   ([elim_with_bindings h str_list],
 		    let cont_body = 
@@ -452,7 +455,7 @@ let (head_tactic_patt: pbp_rule) = function
 		     Lambda(Name x, _,body) ->
 		       Some(PbpThens
 		    		 ([elim_with_bindings h str_list],
-				   let x' = next_global_ident_away x avoid in
+				   let x' = next_global_ident x avoid in
 				   let cont_body =
 				     Prod(Name x', c1,
 					    mkProd(Anonymous, body, 
@@ -470,7 +473,7 @@ let (head_tactic_patt: pbp_rule) = function
 		     Lambda(Name x, _,body), (2::path) ->
 		       Some(PbpThens
 		    		 ([elim_with_bindings h str_list],
-				   let x' = next_global_ident_away x avoid in
+				   let x' = next_global_ident x avoid in
 				   let cont_body =
 				     Prod(Name x', c1,
 					    mkProd(Anonymous, body, 
@@ -492,7 +495,7 @@ let (head_tactic_patt: pbp_rule) = function
 		      let cont_body =
 			if a = 1 then c1 else c2 in
                       (* h' is the name for the new intro *)
-		      let h' = next_global_ident_away hyp_radix avoid in
+		      let h' = next_global_ident hyp_radix avoid in
 		      let cont_tac =
                         chain_tactics 
 			  [make_named_intro h']
