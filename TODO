@@ -23,12 +23,10 @@ Grammaires:
 
 Doc:
 
-- documenter AutoRewrite
 - Ajouter let dans les règles du CIC
   -> FAIT, mais reste a documenter le let dans les inductifs
   et les champs manifestes dans les Record   
 - une passe sur le chapitre extensions de syntaxe
-- documenter le langage de tactique et Field
 - revoir le chapitre sur les tactiques utilisateur 
 - faut-il mieux spécifier la sémantique de Simpl (??)
 - documenter @Definition and co
