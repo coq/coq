@@ -42,7 +42,7 @@ Inductive Empty_set:Set :=.
     member is the singleton datatype [identity A a a] whose
     sole inhabitant is denoted [refl_identity A a] *)
 
-Inductive identity [A:Set; a:A] : A->Set :=
+Inductive identity [A:Type; a:A] : A->Set :=
      refl_identity: (identity A a a).
 Hints Resolve refl_identity : core v62.
 
@@ -77,7 +77,6 @@ V7only [
 Notation Fst := (fst ? ?).
 Notation Snd := (snd ? ?).
 ].
-
 Hints Resolve pair inl inr : core v62.
 
 V7only[
