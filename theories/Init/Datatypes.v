@@ -44,11 +44,16 @@ Hints Resolve refl_identity : core v62.
 
 Inductive option [A:Set] : Set := Some : A -> (option A) | None : (option A).
 
+Arguments Scope option [ type_scope ].
+
 (** [sum A B], equivalently [A + B], is the disjoint sum of [A] and [B] *)
 (* Syntax defined in Specif.v *)
 Inductive sum [A,B:Set] : Set
     := inl : A -> (sum A B)
      | inr : B -> (sum A B).
+
+Infix "+" sum (at level 4, left associativity) : type_scope.
+Arguments Scope sum [type_scope type_scope].
 
 (** [prod A B], written [A * B], is the product of [A] and [B];
     the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
@@ -56,10 +61,28 @@ Inductive sum [A,B:Set] : Set
 Inductive prod [A,B:Set] : Set := pair : A -> B -> (prod A B).
 Add Printing Let prod.
 
+Arguments Scope prod [type_scope type_scope].
+
+Notation "x * y" := (prod x y) (at level 3, right associativity) : type_scope
+  V8only (at level 30, left associativity).
+
+Notation "( x , y )" := (pair ? ? x y) (at level 0)
+  V8only "x , y" (at level 150, left associativity).
+
 Section projections.
    Variables A,B:Set.
    Definition fst := [p:(prod A B)]Cases p of (pair x y) => x end.
    Definition snd := [p:(prod A B)]Cases p of (pair x y) => y end.
 End projections. 
 
+Notation Fst := (fst ? ?).
+Notation Snd := (snd ? ?).
+
 Hints Resolve pair inl inr : core v62.
+
+(** Parsing only of things in [Datatypes.v] *)
+V7only[
+Notation "< A , B > ( x , y )" := (pair A B x y) (at level 1, only parsing, A annot).
+Notation "< A , B > 'Fst' ( p )" := (fst A B p) (at level 1, only parsing, A annot).
+Notation "< A , B > 'Snd' ( p )" := (snd A B p) (at level 1, only parsing, A annot).
+].
