@@ -132,7 +132,7 @@ let declare_mind mie =
   Global.add_mind sp mie;
   push_inductive_names sp mie;
   declare_inductive_implicits sp
-
+  (***TODO: declare_eliminations ***)
 
 (* Global references. *)
 

@@ -37,3 +37,15 @@ val lookup_mind_specif : constr -> mind_specif
 
 val export : string -> compiled_env
 val import : compiled_env -> unit
+
+(*s Re-exported functions of [Inductive], composed with 
+    [lookup_mind_specif]. *)
+
+val mind_is_recursive : constr -> bool
+val mind_nconstr : constr -> int
+val mind_nparams : constr -> int
+val mind_arity : constr -> constr
+
+val mind_lc_without_abstractions : constr -> constr array
+
+

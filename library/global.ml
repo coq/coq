@@ -1,6 +1,10 @@
 
 (* $Id$ *)
 
+open Generic
+open Term
+open Instantiate
+open Sign
 open Typing
 open Summary
 
@@ -39,3 +43,38 @@ let lookup_mind_specif c = lookup_mind_specif c !global_env
 
 let export s = export !global_env s
 let import cenv = global_env := import cenv !global_env
+
+(* Re-exported functions of [Inductive], composed with [lookup_mind_specif]. *)
+
+open Inductive
+
+let mind_is_recursive = Util.compose mis_is_recursive lookup_mind_specif 
+let mind_nconstr = Util.compose mis_nconstr lookup_mind_specif
+let mind_nparams = Util.compose mis_nparams lookup_mind_specif
+
+let mis_arity' mis =
+  let idhyps = ids_of_sign mis.mis_mib.mind_hyps 
+  and largs = Array.to_list mis.mis_args in 
+  { body = instantiate_constr idhyps mis.mis_mip.mind_arity.body largs;
+    typ = mis.mis_mip.mind_arity.typ }
+
+let mis_arity mispec =
+  let { body = b; typ = t } = mis_arity' mispec in
+  DOP2 (Cast, b, DOP0 (Sort t))
+
+let mind_arity = Util.compose mis_arity lookup_mind_specif
+
+let mis_lc mis = 
+  instantiate_constr (ids_of_sign mis.mis_mib.mind_hyps)
+    mis.mis_mip.mind_lc (Array.to_list mis.mis_args)
+
+let mis_lc_without_abstractions mis = 
+  let rec strip_DLAM = function
+    | (DLAM (n,c1)) -> strip_DLAM c1 
+    | (DLAMV (n,v)) -> v
+    | _ -> assert false
+  in 
+  strip_DLAM (mis_lc mis)
+
+let mind_lc_without_abstractions = 
+  Util.compose mis_lc_without_abstractions lookup_mind_specif
