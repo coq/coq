@@ -434,7 +434,7 @@ GEXTEND Gram
 	  VernacDeclareImplicits (qid,pos)
 
       | IDENT "Implicit"; ["Variable"; "Type" | IDENT "Variables"; "Type"];
-	   idl = LIST1 ident; ":"; c = constr -> VernacReserve (idl,c)
+	   idl = LIST1 ident; ":"; c = lconstr -> VernacReserve (idl,c)
 
       (* For compatibility *)
       | IDENT "Implicit"; IDENT "Arguments"; IDENT "On" ->
@@ -593,6 +593,7 @@ GEXTEND Gram
       | IDENT "Hint"; qid = global -> PrintHint qid
       | IDENT "Hint"; "*" -> PrintHintDb
       | IDENT "HintDb"; s = IDENT -> PrintHintDbName s
+      | IDENT "Scopes" -> PrintScopes
       | IDENT "Scope"; s = IDENT -> PrintScope s ] ]
   ;
   class_rawexpr:
@@ -661,8 +662,11 @@ GEXTEND Gram
    [ [ IDENT "Open"; local = locality; IDENT "Scope"; sc = IDENT -> 
          VernacOpenScope (local,sc)
 
-     | IDENT "Delimits"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
+     | IDENT "Delimit"; IDENT "Scope"; sc = IDENT; "with"; key = IDENT ->
 	 VernacDelimiters (sc,key)
+
+     | IDENT "Bind"; IDENT "Scope"; sc = IDENT; "with"; 
+       refl = LIST1 class_rawexpr -> VernacBindScope (sc,refl)
 
      | IDENT "Arguments"; IDENT "Scope"; qid = global;
          "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
