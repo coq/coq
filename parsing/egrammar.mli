@@ -19,10 +19,11 @@ open Rawterm
 open Mod_subst
 (*i*)
 
+type notation_grammar = 
+    int * Gramext.g_assoc option * notation * prod_item list * int list option
+
 type all_grammar_command =
-  | Notation of
-      (int * Gramext.g_assoc option * notation * prod_item list *
-      int list option)
+  | Notation of Symbols.level * notation_grammar
   | Grammar of grammar_command
   | TacticGrammar of
       (string * (string * grammar_production list) * 
@@ -53,3 +54,5 @@ val subst_all_grammar_command :
 
 val interp_entry_name : string -> string -> 
   entry_type * Token.t Gramext.g_symbol
+
+val recover_notation_grammar :  notation -> Symbols.level -> notation_grammar
