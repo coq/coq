@@ -18,6 +18,10 @@ GEXTEND Gram
 
   pattern:
     [ [ qid = global -> qid
+      (* Hack to parse syntax "(n)" as a natural number *)
+      | "("; G_constr.test_int_rparen; n = INT; ")" ->
+ 	  let n = Coqast.Str (loc,n) in
+          <:ast< (PATTDELIMITERS "nat_scope" (PATTNUMERAL $n)) >>
       | "("; p = compound_pattern; ")" -> p
       | n = INT ->
 	  let n = Coqast.Str (loc,n) in <:ast< (PATTNUMERAL $n) >>

@@ -13,6 +13,20 @@
 open Pcoq
 open Constr
 
+(* Hack to parse "(n)" as nat without conflicts with the (useless) *)
+(* admissible notation "(n)" *)
+let test_int_rparen =
+  Gram.Entry.of_parser "test_int_rparen"
+    (fun strm ->
+      match Stream.npeek 1 strm with
+        | [("INT", _)] ->
+            begin match Stream.npeek 2 strm with
+              | [_; ("", ")")] -> ()
+              | _ -> raise Stream.Failure
+            end
+        | _ -> raise Stream.Failure)
+
+
 GEXTEND Gram
   GLOBAL: constr0 constr1 constr2 constr3 lassoc_constr4 constr5
           constr6 constr7 constr8 constr9 constr10 lconstr constr
@@ -71,6 +85,10 @@ GEXTEND Gram
       | "?"; n = Prim.natural ->
 	  let n = Coqast.Num (loc,n) in <:ast< (META $n) >>
       | bl = binders; c = constr -> <:ast< ($ABSTRACT "LAMBDALIST" $bl $c) >>
+      (* Hack to parse syntax "(n)" as a natural number *)
+      | "("; test_int_rparen; n = INT; ")" ->
+ 	  let n = Coqast.Str (loc,n) in
+          <:ast< (DELIMITERS "nat_scope" (NUMERAL $n)) >>
       | "("; lc1 = lconstr; ":"; c = constr; body = product_tail ->
           let id = Ast.coerce_to_var lc1 in
             <:ast< (PROD $c [$id]$body) >>
@@ -147,7 +165,8 @@ GEXTEND Gram
         IDENT "if"; c1 = constr; IDENT "then";
         c2 = constr; IDENT "else"; c3 = constr ->
           <:ast< (IF $l1 $c1 $c2 $c3) >>
-      | c = constr0 -> c ] ]
+      | c = constr0 -> c
+    ] ]
   ;
   constr2: (* ~ will be here *)
     [ [ c = constr1 -> c ] ]
