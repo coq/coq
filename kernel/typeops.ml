@@ -86,12 +86,15 @@ let type_of_constant env sigma (sp,args) =
 
 (* Inductive types. *)
 
+(* Q: A faire disparaitre ??
 let instantiate_arity mis =
   let ids = ids_of_sign mis.mis_mib.mind_hyps in
   let args = Array.to_list mis.mis_args in 
   let arity = mis.mis_mip.mind_arity in
   { body = instantiate_constr ids arity.body args;
     typ = arity.typ }
+*)
+let instantiate_arity = Instantiate.mis_typed_arity
 
 let type_of_inductive env sigma i =
   let mis = lookup_mind_specif i env in
@@ -101,10 +104,13 @@ let type_of_inductive env sigma i =
 
 (* Constructors. *)
 
+(*
 let instantiate_lc mis =
   let hyps = mis.mis_mib.mind_hyps in
   let lc = mis.mis_mip.mind_lc in
   instantiate_constr (ids_of_sign hyps) lc (Array.to_list mis.mis_args)
+*)
+let instantiate_lc = Instantiate.mis_lc
 
 let type_of_constructor env sigma ((ind_sp,j),args as cstr) =
   let mind = inductive_of_constructor cstr in
