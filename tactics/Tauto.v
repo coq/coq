@@ -3,7 +3,7 @@
 
 Declare ML Module "Tauto".
 
-Grammar tactic simple_tactic :=
+Grammar tactic simple_tactic: Ast :=
   tauto [ "Tauto" ] -> [(Tauto)]
 | intuition [ "Intuition" ] -> [(Intuition)].
 

@@ -60,14 +60,18 @@ GEXTEND Gram
       | IDENT "case"; a = action; et = entry_type; "of";
         cl = LIST1 case SEP "|"; IDENT "esac" ->
           Node(loc,"$CASE",a::et::cl)
-      | "["; al = astlist; "]" -> al ] ]
+      | "["; al = default_action_parser; "]" -> al ] ]
   ;
   case:
     [[ p = astlist; "->"; a = action -> Node(loc,"CASE",[p;a]) ]]
   ;
   entry_type:
-    [[ ":"; IDENT "List" -> Id(loc,"LIST")
-     | ":"; IDENT "Ast" -> Id(loc,"AST")
+    [[ ":"; IDENT "AstList" -> 
+	 let _ = set_default_action_parser astlist in Id(loc,"LIST")
+     | ":"; IDENT "List" -> (* For compatibility *)
+	 let _ = set_default_action_parser astlist in Id(loc,"LIST")
+     | ":"; IDENT "Ast" ->
+	 let _ = set_default_action_parser ast in Id(loc,"AST")
      | -> Id(loc,"AST") ]]
   ;
 END

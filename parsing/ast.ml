@@ -544,16 +544,12 @@ let rec act_of_ast vars etyp ast =
            | ETastl ->
                let acl = List.map (caselist vars etyp) cl in
                Acaselist (pa,acl))
-    | Node(_,"ASTLIST",al) ->
-        (match (etyp,al) with
-           | (ETast,[a]) -> Aast (val_of_ast vars a)
-           | (ETastl,_) -> Aastlist (vall_of_astl vars al)
-           | (ETast,_) -> user_err_loc
-                 (loc ast,"Ast.act_of_ast",
-                  [< 'sTR
-                       "entry type is Ast, but the right hand side is a list"
-                  >]))
-    | _ -> invalid_arg_loc (loc ast,"Ast.act_of_ast: ill-formed")
+    | Node(_,"ASTLIST",al) when etyp = ETastl ->
+	Aastlist (vall_of_astl vars al)
+    | a when etyp = ETast ->
+	  Aast (val_of_ast vars a)
+    | _ ->
+	invalid_arg_loc (loc ast,"Ast.act_of_ast: ill-typed")
 
 and case vars etyp ast =
   match ast with

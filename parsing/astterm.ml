@@ -418,12 +418,17 @@ let dbize k sigma env allow_soapp lvar =
 	    else 
 	      (RHole None)::(aux (n+1) l' args)
 	  else 
-	    error "Bad explicitation number"
+	    if i<>n then
+	      error ("Bad explicitation number: found "^
+		   (string_of_int j)^" but was expecting a regular argument")
+	    else
+	      error ("Bad explicitation number: found "^
+		   (string_of_int j)^" but was expecting "^(string_of_int i))
       | (i::l',a::args') -> 
 	  if i=n then 
 	    (RHole None)::(aux (n+1) l' args)
 	  else 
-	    (dbrec env a)::(aux (n+1) l' args')
+	    (dbrec env a)::(aux (n+1) l args')
       | ([],args) -> List.map (dbrec env) args
       | (_,[]) -> []
     in 

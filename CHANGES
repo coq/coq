@@ -16,3 +16,9 @@
 - Ajout de la syntaxe "[" phrase_1 ... phrase_n"]." pour grouper des
 phrases (utile pour Time et pour des grammaires abrégeant plusieurs
 commandes)
+
+- Le parseur par défaut des actions des règles de grammaires est
+maintenant celui associé au nom de la grammaire (vernac, tactic ou
+constr). Donc plus de piquants <:vernac:<...>> etc. Pour retourner de
+l'ast, il faut typer explicitement la grammaire avec Ast ou List
+(renommé d'ailleurs AstList).

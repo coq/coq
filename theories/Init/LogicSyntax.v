@@ -7,44 +7,44 @@ Require Export Logic.
 
 Grammar constr constr1 :=
   conj [ "<" lconstr($l1) "," lconstr($c2) ">" "{" constr($c3) ","
-        constr($c4) "}" ] -> [<<(conj $l1 $c2 $c3 $c4)>>]
+        constr($c4) "}" ] -> [ (conj $l1 $c2 $c3 $c4) ]
 | proj1 [ "<" lconstr($l1) "," lconstr($c2) ">" "Fst" "{"
-        lconstr($l) "}" ] -> [<<(proj1 $l1 $c2 $l)>>]
+        lconstr($l) "}" ] -> [ (proj1 $l1 $c2 $l) ]
 | proj2 [ "<" lconstr($l1) "," lconstr($c2) ">" "Snd" "{"
-        lconstr($l) "}" ] -> [<<(proj2 $l1 $c2 $l)>>]
+        lconstr($l) "}" ] -> [ (proj2 $l1 $c2 $l) ]
 | IF [ "either" constr($c) "and_then" constr($t) "or_else" constr($e) ] ->
-       [<<(IF $c $t $e)>>]
+       [ (IF $c $t $e) ]
 | all [ "<" lconstr($l1) ">" "All" "(" lconstr($l2) ")" ] ->
-       [<<(all $l1 $l2)>>]
+       [ (all $l1 $l2) ]
 | eq_expl [ "<" lconstr($l1) ">" constr0($c1) "=" constr0($c2) ] ->
-            [<<(eq $l1 $c1 $c2)>>]
-| eq_impl [ constr0($c) "=" constr0($c2) ] -> [<<(eq ? $c $c2)>>]
+            [ (eq $l1 $c1 $c2) ]
+| eq_impl [ constr0($c) "=" constr0($c2) ] -> [ (eq ? $c $c2) ]
 
 with constr2 :=
-  not [ "~" constr2($c) ] -> [<<(not $c)>>]
+  not [ "~" constr2($c) ] -> [ (not $c) ]
 
 with constr6 :=
-  and [ constr5($c1) "/\\" constr6($c2) ] -> [<<(and $c1 $c2)>>]
+  and [ constr5($c1) "/\\" constr6($c2) ] -> [ (and $c1 $c2) ]
 
 with constr7 :=
-  or [ constr6($c1) "\\/" constr7($c2) ] -> [<<(or $c1 $c2)>>]
+  or [ constr6($c1) "\\/" constr7($c2) ] -> [ (or $c1 $c2) ]
 
 with constr8 :=
-  iff [ constr7($c1) "<->" constr8($c2) ] -> [<<(iff $c1 $c2)>>]
+  iff [ constr7($c1) "<->" constr8($c2) ] -> [ (iff $c1 $c2) ]
 
 with constr10 :=
   allexplicit [ "ALL" ident($x) ":" constr($t) "|" constr($p) ]
-                          -> [<<(all $t [$x : $t]$p)>>]
+                          -> [ (all $t [$x : $t]$p) ]
 | allimplicit [ "ALL" ident($x) "|" constr($p) ]
-                          -> [<<(all ? [$x]$p)>>]
+                          -> [ (all ? [$x]$p) ]
 | exexplicit [ "EX" ident($v) ":" constr($t) "|" constr($c1) ]
-                          -> [<<(ex $t [$v : $t]$c1)>>]
+                          -> [ (ex $t [$v : $t]$c1) ]
 | eximplicit [ "EX" ident($v) "|" constr($c1) ] 
-                          -> [<<(ex ? [$v]$c1)>>]
+                          -> [ (ex ? [$v]$c1) ]
 | ex2explicit [ "EX" ident($v) ":" constr($t) "|" constr($c1) "&"
-           constr($c2) ] -> [<<(ex2 $t [$v : $t]$c1 [$v : $t]$c2)>>]
+           constr($c2) ] -> [ (ex2 $t [$v : $t]$c1 [$v : $t]$c2) ]
 | ex2implicit [ "EX" ident($v) "|" constr($c1) "&" 
-           constr($c2) ] -> [<<(ex2 ? [$v]$c1 [$v]$c2)>>].
+           constr($c2) ] -> [ (ex2 ? [$v]$c1 [$v]$c2) ].
 
 
 (* Pretty-printing of things in Logic.v *)

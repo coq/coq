@@ -390,20 +390,49 @@ END
 (* Quotations *)
 
 open Prim
+open Constr
+open Tactic
+open Vernac
 
 let define_quotation default s e =
   (if default then
     GEXTEND Gram
       ast: [ [ "<<"; c = e; ">>" -> c ] ];
+     (* Uncomment this to keep compatibility with old grammar syntax
+     constr: [ [ "<<"; c = e; ">>" -> c ] ];
+     vernac: [ [ "<<"; c = e; ">>" -> c ] ];
+     tactic: [ [ "<<"; c = e; ">>" -> c ] ];
+     *)
    END);
   (GEXTEND Gram
-     GLOBAL: ast;
+     GLOBAL: ast constr vernac tactic;
      ast:
-       [ [ _ = langle_colon; IDENT $s$; _ = colon_langle; c = e; ">>" -> c ] ];
-     langle_colon:
-       [ [ "<"; ":" -> ()
-	 | "<:" -> () ] ];  (* Maximal token rule *)
-     colon_langle:
-       [ [ ":"; "<" -> ()
-	 | ":<" -> () ] ]; (* Maximal token rule *)
+       [ [ "<:"; IDENT $s$; ":<"; c = e; ">>" -> c ] ];
+     (* Uncomment this to keep compatibility with old grammar syntax
+     constr:
+       [ [ "<:"; IDENT $s$; ":<"; c = e; ">>" -> c ] ];
+     vernac:
+       [ [ "<:"; IDENT $s$; ":<"; c = e; ">>" -> c ] ];
+     tactic:
+       [ [ "<:"; IDENT $s$; ":<"; c = e; ">>" -> c ] ];
+     *)
    END)
+
+let _ = define_quotation false "ast" ast in ()
+
+let default_action_parser_ref = ref ast
+
+let get_default_action_parser () = !default_action_parser_ref
+
+let set_default_action_parser f = (default_action_parser_ref := f)
+
+let set_default_action_parser_by_name = function
+  | "constr" -> set_default_action_parser Constr.constr
+  | "tactic" -> set_default_action_parser Tactic.tactic
+  | "vernac" -> set_default_action_parser Vernac.vernac
+  | _ -> set_default_action_parser ast
+
+let default_action_parser =
+  Gram.Entry.of_parser "default_action_parser" 
+    (fun strm -> Gram.Entry.parse_token (get_default_action_parser ()) strm)
+

@@ -52,6 +52,12 @@ val force_entry_type : string * gram_universe -> string ->
 
 val define_quotation : bool -> string -> (Coqast.t Gram.Entry.e) -> unit
 
+(* The default parser for actions in grammar rules *)
+
+val default_action_parser : Coqast.t Gram.Entry.e
+val set_default_action_parser : Coqast.t Gram.Entry.e -> unit
+val set_default_action_parser_by_name : string -> unit
+
 (* The main entry: reads an optional vernac command *)
 
 val main_entry : Coqast.t option Gram.Entry.e

@@ -8,20 +8,21 @@ Require Export Specif.
 
 Grammar constr constr1 :=
   sig [ "{" lconstr($lc) ":" lconstr($c1) "|" lconstr($c2) "}" ]
-       -> [<<(sig $c1 [$lc : $c1]$c2)>>]
+       -> [ (sig $c1 [$lc : $c1]$c2) ]
 
 | sig2 [ "{" lconstr($lc) ":" lconstr($c1)
            "|" lconstr($c2) "&" lconstr($c3) "}" ]
-       -> [<<(sig2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3)>>]
+       -> [ (sig2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3) ]
 
 | sigS [ "{" lconstr($lc) ":" lconstr($c1) "&" lconstr($c2) "}" ]
-       -> [<<(sigS $c1 [$lc : $c1]$c2)>>]
+       -> [ (sigS $c1 [$lc : $c1]$c2) ]
 
 | sigS2 [ "{" lconstr($lc) ":" lconstr($c1)
              "&" lconstr($c2) "&" lconstr($c3) "}" ]
-       -> [<<(sigS2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3)>>]
+       -> [ (sigS2 $c1 [$lc : $c1]$c2 [$lc : $c1]$c3) ].
 
-| squash [ "{" lconstr($lc) "}" ] -> [(SQUASH $lc)].
+Grammar constr constr1: Ast :=
+  squash [ "{" lconstr($lc) "}" ] -> [(SQUASH $lc)].
 
 Grammar constr lassoc_constr4 :=
   squash_sum
@@ -29,10 +30,10 @@ Grammar constr lassoc_constr4 :=
       case [$c2] of
         (SQUASH $T2) ->
             case [$c1] of
-              (SQUASH $T1) -> [<<(sumbool $T1 $T2)>>] (* {T1}+{T2} *)
-            | $_           -> [<<(sumor $c1 $T2)>>]   (* c1+{T2} *)
+              (SQUASH $T1) -> [ (sumbool $T1 $T2) ] (* {T1}+{T2} *)
+            | $_           -> [ (sumor $c1 $T2) ]   (* c1+{T2} *)
             esac
-      | $_           -> [<<(sum $c1 $c2)>>]           (* c1+c2 *)
+      | $_           -> [ (sum $c1 $c2) ]           (* c1+c2 *)
       esac.
 
 (* Pretty-printing of things in Specif.v *)
