@@ -46,6 +46,7 @@ val constr_of_com_casted : 'a evar_map -> env -> Coqast.t -> constr ->
 val constr_of_com1 : bool -> 'a evar_map -> env -> Coqast.t -> constr
 val constr_of_com : 'a evar_map -> env -> Coqast.t -> constr
 val constr_of_com_sort : 'a evar_map -> env -> Coqast.t -> constr
+val constr_of_com_pattern : 'a evar_map -> env -> Coqast.t -> constr
 
 val fconstr_of_com1 : bool -> 'a evar_map -> env -> Coqast.t -> constr
 val fconstr_of_com : 'a evar_map -> env -> Coqast.t -> constr

@@ -63,7 +63,7 @@ let find_syntax_entry whatfor gt =
   let gt_keys = ast_keys gt in
   let entries =
     List.flatten
-      (List.map (fun k -> Gmap.find (whatfor,k) !from_key_table) gt_keys)
+      (List.map (fun k -> Gmapl.find (whatfor,k) !from_key_table) gt_keys)
   in 
   first_match (fun se -> se.syn_astpat) [] gt entries
 

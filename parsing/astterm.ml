@@ -494,6 +494,9 @@ let constr_of_com sigma env com =
 let constr_of_com_sort sigma sign com =
   constr_of_com1 true sigma sign com
 
+let constr_of_com_pattern sigma sign com =
+  constr_of_com1 true sigma sign com
+
 let fconstr_of_com1 is_ass sigma env com = 
   fconstr_of_com_env1 is_ass sigma env com
 

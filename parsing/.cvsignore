@@ -1,2 +1,4 @@
 lexer.ml
 *.ppo
+pcoq.ml
+extend.ml

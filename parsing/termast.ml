@@ -852,7 +852,7 @@ let rec ast_of_raw avoid env = function
 	  (* PROD et PRODLIST doivent être distingués à cause du cas *)
 	  (* non dépendant, pour isoler l'implication; peut-être un *)
 	  (* constructeur ARROW serait-il plus justifié ? *) 
-	| BProd -> if n=1 then "PROD" else "PROLIST" 
+	| BProd -> if n=1 then "PROD" else "PRODLIST" 
       in
       ope(tag,[ast_of_raw [] env t;a])
 
@@ -963,7 +963,7 @@ and weak_concrete_name avoid env na c =
     | Anonymous -> (None,avoid)
     | Name id -> (Some id,avoid)
 
-let bdize_no_casts at_top env t =
+let bdize at_top env t =
   try
     let avoid = if at_top then ids_of_env env else [] in
     ast_of_raw avoid env (detype t)
@@ -984,6 +984,6 @@ let rec strong whdfun t =
     | VAR _ as t -> t
     | Rel _ as t -> t
 
-let bdize at_top env t = bdize_no_casts at_top env (strong strip_outer_cast t) 
+let bdize_no_casts at_top env t = bdize at_top env (strong strip_outer_cast t) 
 			   
 let ast_of_rawconstr = ast_of_raw []

@@ -222,7 +222,7 @@ let print_leaf_entry with_values sep (spopt,lobj) =
 	let l = implicits_of_var (kind_of_path spopt) name in
 	[< print_var (string_of_id name) typ; print_impl_args l; 'fNL >]
  
-    | (sp,"CONSTANT") ->
+    | (sp,("CONSTANT"|"PARAMETER")) ->
 	let cb = Global.lookup_constant sp in
 	if kind_of_path sp = CCI then
 	  let val_0 = cb.const_body in
@@ -364,7 +364,7 @@ let crible (fn:string -> unit assumptions -> constr -> unit) name =
                if (head_const typ.body) = const then  
                  fn (string_of_id namec) hyps typ.body;
                crible_rec rest
-	   | (sp,"CONSTANT") ->
+	   | (sp,("CONSTANT"|"PARAMETER")) ->
 	       let {const_type=typ} = Global.lookup_constant sp in
                if (head_const typ.body) = const then
                  fn (print_basename sp) hyps typ.body;
@@ -422,8 +422,15 @@ let print_eval red_fun env {uj_val=trm;uj_type=typ} =
 let print_name name = 
   let str = string_of_id name in 
   try 
-    let sp = Nametab.sp_of_id CCI name in  
-    let lobj = Lib.map_leaf (objsp_of sp) in
+    let (sp,lobj) = 
+      let (sp,entry) =
+      	List.find (fun en -> basename (fst en) = name) 
+	  (Lib.contents_after None)
+      in
+      match entry with
+	| Lib.Leaf obj -> (sp,obj)
+	| _ -> raise Not_found
+    in
     print_leaf_entry true " = " (sp,lobj)
   with 
     | Not_found -> 
@@ -477,7 +484,7 @@ let print_local_context () =
   and print_last_const = function
     | (sp,Lib.Leaf lobj)::rest -> 
         (match object_tag lobj with
-           | "CONSTANT" -> 
+           | "CONSTANT" | "PARAMETER" -> 
                let {const_body=val_0;const_type=typ} = 
 		 Global.lookup_constant sp in
                [< print_last_const rest;

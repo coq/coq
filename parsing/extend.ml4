@@ -8,7 +8,7 @@ open Pcoq
 open Coqast
 open Ast
 
-open Vernac
+open Pcoq.Vernac
 
 GEXTEND Gram
   vernac:

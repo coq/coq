@@ -13,13 +13,53 @@ exception BadToken of string
 
 exception Error of error * int * int
 
-type frozen_t = string list
+(* token trees *)
 
-let kw_table = Hashtbl.create 149
+module Charmap = Map.Make (struct type t = char let compare = compare end)
+
+type ttree = { node : string option; branch : ttree Charmap.t }
+
+let ttree_empty = { node = None; branch = Charmap.empty }
+
+let ttree_add ttree str =
+  let n = String.length str in
+  let rec insert tt i =
+    if i == n then 
+      { node = Some str; branch = tt.branch }
+    else
+      let c = str.[i] in
+      let br =
+        match 
+	  try Some (Charmap.find c tt.branch) with Not_found -> None
+        with
+          | Some tt' ->
+              Charmap.add c (insert tt' (i + 1)) (Charmap.remove c tt.branch)
+          | None ->
+              let tt' = { node = None; branch = Charmap.empty } in
+              Charmap.add c (insert tt' (i + 1)) tt.branch
+      in
+      { node = tt.node; branch = br }
+  in 
+  insert ttree 0
+
+let ttree_find ttree str =
+  let n = String.length str in
+  let rec proc_rec tt i =
+    if i == n then
+      match tt.node with
+	| Some s -> s
+      	| None -> raise Not_found
+    else 
+      proc_rec (Charmap.find str.[i] tt.branch) (i+1)
+  in 
+  proc_rec ttree 0
+
+let kw_table = ref ttree_empty
 
 let init () =
-  Hashtbl.clear kw_table;
-  List.iter (fun kw -> Hashtbl.add kw_table kw ())
+  kw_table := ttree_empty;
+  List.iter 
+    (fun kw -> kw_table := ttree_add !kw_table kw)
     [ "Grammar"; "Syntax"; "Quit"; "Load"; "Compile";
       "of"; "with"; "end"; "as"; "in"; "using";
       "Cases"; "Fixpoint"; "CoFixpoint";
@@ -28,21 +68,19 @@ let init () =
       "Orelse"; "Proof"; "Qed";
       "Prop"; "Set"; "Type" ]  
 
-let add_keyword s = Hashtbl.add kw_table s ()
+let _ = init ()
 
-let is_keyword s = try Hashtbl.find kw_table s; true with Not_found -> false
+let add_keyword s = kw_table := ttree_add !kw_table s
 
-let freeze () = 
-  let l = ref [] in
-  Hashtbl.iter (fun k _ -> l := k :: !l) kw_table;
-  !l
+let is_keyword s = 
+  try let _ = ttree_find !kw_table s in true with Not_found -> false
 
-let unfreeze ft =
-  init ();
-  List.iter add_keyword ft
+type frozen_t = ttree
 
-let find_keyword s = if is_keyword s then s else raise Not_found
-      
+let freeze () = !kw_table
+
+let unfreeze ft = kw_table := ft
+
 let char_for_backslash =
   match Sys.os_type with
   | "Unix" | "Win32" ->
@@ -79,12 +117,13 @@ let comment_start_pos = ref 0
 
 let blank = [' ' '\010' '\013' '\009' '\012']
 let firstchar = 
-  ['$' 'A'-'Z' 'a'-'z' '\192'-'\214' '\216'-'\246' '\248'-'\255']
+  ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255']
 let identchar = 
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' 
    '\'' '0'-'9']
 let symbolchar =
-  ['!' '$' '%' '&' '*' '+' '-' '<' '>' '/' ':' ';' '=' '?' '@' '^' '|' '~' '#']
+  ['!' '$' '%' '&' '*' '+' '-' '<' '>' '/' ':' ',' ';' '=' '?' '@' '^'
+   '|' '~' '#']
 let decimal_literal = ['0'-'9']+
 let hex_literal = '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
 let oct_literal = '0' ['o' 'O'] ['0'-'7']+
@@ -197,8 +236,15 @@ let func cs =
   let ts = Stream.from next_token in
   (ts, find_loc loct)
 
+let is_ident s =
+  String.length s > 0 &&
+  (match s.[0] with
+     | '$' | 'A'..'Z' | 'a'..'z' | '\192'..'\214' | '\216'..'\246' 
+     | '\248'..'\255' -> true
+     | _ -> false)
+
 let add_token = function
-  | ("",kw) -> add_keyword kw
+  | ("",kw) -> if is_ident kw then add_keyword kw
   | _ -> ()
 	 
 let token_text = function
