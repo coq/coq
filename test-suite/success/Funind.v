@@ -58,6 +58,26 @@ Apply le_S.
 Apply le_n_S.
 Exact H.
 Qed.
+
+
+Fixpoint nested_lam [n:nat] : nat -> nat := 
+Cases n of 
+ O => [m:nat]O
+|(S n') => [m:nat](plus m (nested_lam n' m))
+end.
+
+Functional Scheme nested_lam_ind := Induction for nested_lam.
+
+Lemma nest : (n,m:nat)(nested_lam n m)=(mult n m).
+Intros n m.
+Functional Induction nested_lam n m;Auto.
+Save.
+
+Lemma nest2 : (n,m:nat)(nested_lam n m)=(mult n m).
+Intros n m. Pattern n m. 
+Apply nested_lam_ind;Simpl;Intros;Auto.
+Save.
+
  
 Fixpoint essai [x : nat] : nat * nat ->  nat :=
  [p : nat * nat]  ( Case p of [n, m : ?]  Cases n of
