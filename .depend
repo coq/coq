@@ -3180,9 +3180,9 @@ contrib/xml/cic2acic.cmo: contrib/xml/acic.cmo kernel/declarations.cmi \
     kernel/inductive.cmi pretyping/inductiveops.cmi pretyping/instantiate.cmi \
     library/lib.cmi library/libnames.cmi library/library.cmi \
     library/nameops.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
-    parsing/printer.cmi pretyping/reductionops.cmi pretyping/retyping.cmi \
-    kernel/term.cmi pretyping/termops.cmi kernel/univ.cmi \
-    contrib/xml/unshare.cmi lib/util.cmi 
+    parsing/printer.cmi pretyping/reductionops.cmi kernel/term.cmi \
+    pretyping/termops.cmi kernel/univ.cmi contrib/xml/unshare.cmi \
+    lib/util.cmi 
 contrib/xml/cic2acic.cmx: contrib/xml/acic.cmx kernel/declarations.cmx \
     library/declare.cmx library/dischargedhypsmap.cmx \
     contrib/xml/doubleTypeInference.cmx kernel/environ.cmx \
@@ -3190,9 +3190,9 @@ contrib/xml/cic2acic.cmx: contrib/xml/acic.cmx kernel/declarations.cmx \
     kernel/inductive.cmx pretyping/inductiveops.cmx pretyping/instantiate.cmx \
     library/lib.cmx library/libnames.cmx library/library.cmx \
     library/nameops.cmx kernel/names.cmx library/nametab.cmx lib/pp.cmx \
-    parsing/printer.cmx pretyping/reductionops.cmx pretyping/retyping.cmx \
-    kernel/term.cmx pretyping/termops.cmx kernel/univ.cmx \
-    contrib/xml/unshare.cmx lib/util.cmx 
+    parsing/printer.cmx pretyping/reductionops.cmx kernel/term.cmx \
+    pretyping/termops.cmx kernel/univ.cmx contrib/xml/unshare.cmx \
+    lib/util.cmx 
 contrib/xml/doubleTypeInference.cmo: contrib/xml/acic.cmo \
     kernel/conv_oracle.cmi kernel/environ.cmi pretyping/evarutil.cmi \
     pretyping/evd.cmi kernel/inductive.cmi pretyping/instantiate.cmi \
