@@ -587,9 +587,110 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
       Clear r'_h2 l'_h2 s_h2; Intuition.
     Inversion_clear H10; Intuition.
     Inversion_clear H14; Intuition.
-    (* hl > hr + 2 *)
-
- Defined.
+    (* hl <= hr + 2 *)
+    Case (Z_gt_le_dec hr (hl + 2)); Intro.
+    (* hr > hl + 2 *)
+    NewDestruct r.
+    (* r = Leaf => absurd *)
+    Simpl in hr; Unfold hr.
+    Absurd hr>hl+2; Trivial.
+    AVL avl_l; Unfold hl hr; Omega.
+    (* r = Node t0 t1 t2 z0 *)
+    Case (Z_ge_lt_dec (height t2) (height t0)); Intro.
+    (* height t2 >= height t0 *)
+    Case (create l x t0); Auto.
+    Inversion_clear bst_r; Trivial. 
+    Inversion_clear avl_r; Trivial.
+    Generalize Hh z z0; Clear Hh z z0; Simpl in hr; Unfold hl hr.
+    AVL avl_l; AVL avl_r; Intuition Try Omega.
+    Intro lxt0; Intuition.
+    Case (create lxt0 t1 t2); Auto.
+    Inversion_clear bst_r; Trivial. 
+    Inversion_clear avl_r; Trivial.
+    Clear H2; Intro; Intro; Intuition; Generalize (H5 y); Intuition.
+    Apply ME.eq_lt with x; Auto. 
+    Apply E.lt_trans with x; [Apply Hl|Apply Hr]; Auto.
+    Inversion_clear bst_r; Auto. 
+    Inversion_clear bst_r; Auto. 
+    Clear H5.
+    Generalize z z0 H H0; Clear z z0 H H0; Simpl in hr; Unfold hl hr.
+    Unfold height_of_node in H2; AVL avl_r; AVL H3; Omega.
+    Intros s (s_bst,(s_avl,(Hs1,Hs2))).
+    Exists (t_intro s s_bst s_avl); Simpl; Split.
+    Unfold height_of_node; Simpl.
+    Clear H5 Hs2.
+    Generalize z z0 H H0; Clear z z0 H H0; Simpl in hr; Unfold hl hr.
+    Unfold height_of_node in H2 Hs1; AVL avl_r; AVL H3; AVL s_avl; Omega.
+    Intuition; Generalize (Hs2 y); Generalize (H5 y); Clear Hs2 H5; Intuition.
+    Inversion_clear H4; Intuition.
+    (* height t2 < height t0 *)
+    NewDestruct t0.
+    (* t0 = Leaf => absurd *)
+    Simpl in z2.
+    Absurd (height t2)<0; Trivial.
+    Inversion_clear avl_r; AVL H0; Omega.
+    (* t0 = Node t0 t3 t4 z2 *)
+    Case (create l x t0); Auto.
+    Inversion_clear bst_r; Inversion_clear H; Auto.
+    Inversion_clear avl_r; Inversion_clear H; Auto.
+    Generalize z z0 Hh; Clear z z0 Hh; Simpl in hr; Unfold hl hr.
+    Simpl in z2; AVL avl_r; Simpl in H.
+    Inversion_clear avl_r; Unfold height_of_node in H4; Simpl in H3 H4.
+    AVL H1; Omega.
+    Intros l' (l'_bst, (l'_avl, (l'_h1, l'_h2))).
+    Case (create t4 t1 t2).
+    Inversion_clear bst_r; Inversion_clear H; Trivial.
+    Inversion_clear avl_r; Inversion_clear H; Trivial.
+    Inversion_clear bst_r; Trivial.
+    Inversion_clear avl_r; Trivial.
+    Inversion_clear bst_r; Intro; Intro; Apply H1; EAuto.
+    Inversion_clear bst_r; Trivial.
+    Generalize z z0 Hh; Clear z z0 Hh; Simpl in hr; Unfold hl hr.
+    Simpl in z2; AVL avl_r; Simpl in H.
+    Inversion_clear avl_r; Unfold height_of_node in H4; Simpl in H3 H4.
+    AVL H1; Omega.
+    Intros r' (r'_bst, (r'_avl, (r'_h1, r'_h2))).
+    Case (create l' t3 r'); Auto.
+    Inversion_clear bst_r; Inversion_clear H.
+    Intro; Intro; Generalize (l'_h2 y); Clear l'_h2; Intuition.
+    Apply ME.eq_lt with x; Auto.
+    Apply E.lt_trans with x; [ Apply Hl | Apply Hr ]; Auto.
+    Inversion_clear bst_r; Inversion_clear H.
+    Intro; Intro; Generalize (r'_h2 y); Clear r'_h2; Intuition.
+    Apply ME.lt_eq with t1; Auto.
+    Apply E.lt_trans with t1; [Apply H1|Apply H2]; Auto.
+    Generalize z z0 Hh; Clear z z0 Hh; Simpl in hr; Unfold hl hr.
+    Simpl in z2; AVL avl_r; Simpl in H.
+    Inversion_clear avl_r; Unfold height_of_node in H4; Simpl in H3 H4.
+    AVL H1; Unfold height_of_node in r'_h1 l'_h1; Omega.
+    Intros s (s_bst,(s_avl,(s_h1,s_h2))).
+    Exists (t_intro s s_bst s_avl); Simpl; Split.
+    Clear r'_h2 l'_h2 s_h2.
+    Generalize z z0 Hh; Clear z z0 Hh; Simpl in hr; Unfold hl hr.
+    AVL avl_r; Inversion_clear avl_r.
+    AVL H1; Unfold height_of_node in H4; Simpl in H4.
+    Unfold height_of_node; Simpl.
+    Unfold height_of_node in s_h1 r'_h1 l'_h1; Simpl.
+    Simpl in z2; AVL r'_avl; AVL l'_avl; Simpl in H.
+    Clear bst_l bst_r avl_l Hl Hr hl hr r'_bst r'_avl
+      l'_bst l'_avl s_bst s_avl H1 H2; Intuition Omega. (* 9 seconds *)
+    Intro y; Generalize (r'_h2 y); 
+      Generalize (l'_h2 y); Generalize (s_h2 y); 
+      Clear r'_h2 l'_h2 s_h2; Intuition.
+    Inversion_clear H10; Intuition.
+    Inversion_clear H14; Intuition.
+    (* hr <= hl + 2 *)
+    LetTac s := (Node l x r ((max (height l) (height r)) + 1)).
+    Assert (bst s). 
+    Unfold s; Auto.
+    Assert (avl s). 
+    Unfold s; Constructor; Auto.
+    Generalize z z0; Unfold hl hr; Intros; Omega.
+    Unfold height_of_node; MaxCase '(height l) '(height r); Intros; Omega.
+    Exists (t_intro s H H0); Unfold s height_of_node; Simpl; Intuition.
+    Generalize z z0; Unfold hl hr; MaxCase '(height l) '(height r); Intros; Omega.
+    Inversion_clear H3; Intuition.
+  Defined.
 
 
 End Make.
