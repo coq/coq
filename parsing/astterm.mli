@@ -29,16 +29,17 @@ val type_judgment_of_rawconstr :
   'a evar_map -> env -> Coqast.t -> unsafe_type_judgment
 
 (*Interprets a constr according to two lists of instantiations (variables and
-  metas)*)
-val interp_constr1     :
+  metas), possibly casting it*)
+val interp_constr_gen     :
   'a evar_map -> env -> (identifier * constr) list ->
-    (int * constr) list -> Coqast.t -> constr
+    (int * constr) list -> Coqast.t -> constr option -> constr
 
-(*Interprets a casted constr according to two lists of instantiations
-  (variables and metas)*)
-val interp_casted_constr1 :
+(*Interprets a constr according to two lists of instantiations (variables and
+  metas), possibly casting it, and turning unresolved evar into metas*)
+val interp_openconstr_gen     :
   'a evar_map -> env -> (identifier * constr) list ->
-    (int * constr) list -> Coqast.t -> constr -> constr
+    (int * constr) list -> Coqast.t -> constr option
+      -> (int * constr) list * constr
 
 (*Interprets constr patterns according to a list of instantiations
   (variables)*)

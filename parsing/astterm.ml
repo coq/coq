@@ -554,24 +554,25 @@ let type_judgment_of_rawconstr sigma env c =
 let retype_list sigma env lst=
   List.map (fun (x,csr) -> (x,Retyping.get_judgment_of env sigma csr)) lst;;
 
+(*Interprets a constr according to two lists of instantiations (variables and
+  metas)*)
 (* Note: typ is retyped *)
-
-let interp_casted_gen_constr1 sigma env lvar lmeta exptyp com =
+let interp_constr_gen sigma env lvar lmeta com exptyp =
   let c =
     interp_rawconstr_gen sigma env false (List.map (fun x -> string_of_id (fst
       x)) lvar) com
   and rtype=fun lst -> retype_list sigma env lst in
   understand_gen sigma env (rtype lvar) (rtype lmeta) exptyp c;;
 
-(*Interprets a constr according to two lists of instantiations (variables and
-  metas)*)
-let interp_constr1 sigma env lvar lmeta com =
-  interp_casted_gen_constr1 sigma env lvar lmeta None com
-
 (*Interprets a casted constr according to two lists of instantiations
   (variables and metas)*)
-let interp_casted_constr1 sigma env lvar lmeta com typ =
-  interp_casted_gen_constr1 sigma env lvar lmeta (Some typ) com
+let interp_openconstr_gen sigma env lvar lmeta com exptyp =
+  let c =
+    interp_rawconstr_gen sigma env false (List.map (fun x -> string_of_id (fst
+      x)) lvar) com
+  and rtype=fun lst -> retype_list sigma env lst in
+  understand_gen_tcc sigma env (rtype lvar) (rtype lmeta) exptyp c;;
+
 
 let interp_casted_constr sigma env com typ = 
   understand_gen sigma env [] [] (Some typ) (interp_rawconstr sigma env com)
