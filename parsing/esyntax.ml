@@ -193,7 +193,7 @@ let print_delimiters inh se strm = function
       let rspace =
         let c = right.[0] in
 	if is_letter c or is_digit c or c = '\'' then str " " else mt () in
-      str left ++ lspace ++ strm ++ rspace ++ str right
+      hov 0 (str left ++ lspace ++ strm ++ rspace ++ str right)
 
 (* Print the syntax entry. In the unparsing hunks, the tokens are
  * printed using the token_printer, unless another primitive printer
@@ -229,16 +229,16 @@ let call_primitive_parser rec_pr otherwise inherited scopes (se,env) =
 	  (* Look if scope [sc] associated to this printer is OK *)
 	  (match Symbols.availability_of_numeral sc scopes with
 	    | None -> otherwise ()
-	    | Some scopt ->
+	    | Some key ->
 	        (* We can use this printer *)
 	        let node = Ast.pat_sub dummy_loc env e in
 	        match pr node with
-		  | Some strm -> print_delimiters inherited se strm scopt
+		  | Some strm -> print_delimiters inherited se strm key
 		  | None -> otherwise ())
     | [UNP_SYMBOLIC (sc,pat,sub)] ->
 	(match Symbols.availability_of_notation (sc,pat) scopes with
 	  | None -> otherwise ()
-	  | Some scopt ->
+	  | Some (scopt,key) ->
 	      print_delimiters inherited se
 		(print_syntax_entry rec_pr (option_cons scopt scopes) env 
 		  {se with syn_hunks = [sub]}) scopt)

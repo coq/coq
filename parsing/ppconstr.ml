@@ -87,9 +87,8 @@ let prec_less child (parent,assoc) =
   (if assoc = E then (<=) else (<)) child parent
 
 let env_assoc_value v env =
-  try List.assoc v env
-  with Not_found ->
-    anomaly ("Printing metavariable "^(string_of_id v)^" is unbound")
+  try List.nth env (v-1)
+  with Not_found -> anomaly "Inconsistent environment for pretty-print rule"
 
 open Symbols
 
