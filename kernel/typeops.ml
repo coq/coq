@@ -166,7 +166,7 @@ let find_case_dep_nparams env sigma (c,p) (IndFamily (mis,_) as indf) typP =
   dep
 
 (* type_case_branches type un <p>Case c of ... end 
-   ct = type de c, si inductif il a la forme APP(mI,largs), sinon raise Induc
+   IndType (indf,realargs) = type de c
    pt = sorte de p
    type_case_branches retourne (lb, lr); lb est le vecteur des types
    attendus dans les branches du Case; lr est le type attendu du resultat
