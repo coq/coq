@@ -71,6 +71,8 @@ GEXTEND Gram
       | IDENT "Focus"; n = numarg -> <:ast< (FOCUS $n) >>
       | IDENT "Unfocus" -> <:ast< (UNFOCUS) >>
       | IDENT "Show" -> <:ast< (SHOW) >>
+      | IDENT "Show"; IDENT "Intro" -> <:ast< (SHOWINTRO) >>
+      | IDENT "Show"; IDENT "Intros" -> <:ast< (SHOWINTROS) >>
       | IDENT "Show"; IDENT "Implicits" -> <:ast< (SHOWIMPL) >>
       | IDENT "Show"; IDENT "Node" -> <:ast< (ShowNode) >>
       | IDENT "Show"; IDENT "Script" -> <:ast< (ShowScript) >>

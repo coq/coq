@@ -1770,3 +1770,39 @@ let _ = vinterp_add "DumpUniverses"
 		 )
 	     | _ -> 
 		 anomaly "DumpUniverses : expects a filename or nothing as argument") 
+
+(* Simulate the Intro(s) tactic *)
+
+open Tactics
+
+let id_of_name = function
+    Anonymous -> id_of_string "H"
+  | Name id   -> id;;
+
+let rec do_renum avoid gl = function
+    [] -> ""
+  | [n] -> (string_of_id (fresh_id avoid (id_of_name n) gl))
+  | n :: l -> let id = fresh_id avoid (id_of_name n) gl in
+        (string_of_id id)^" "^(do_renum (id :: avoid) gl l)
+
+let _ = vinterp_add "SHOWINTRO" 
+	  (function 
+	     | [] -> 
+		 (fun () ->
+		    let pf = get_pftreestate() in
+		    let gl = nth_goal_of_pftreestate 1 pf in
+		    let l,_= decompose_prod (strip_outer_cast (pf_concl gl)) in
+		    let n = List.hd (List.rev_map fst l) in
+		      message (string_of_id (fresh_id [] (id_of_name n) gl)))
+	     | _ -> bad_vernac_args "Show Intro")
+
+let _ =  vinterp_add "SHOWINTROS"
+	   (function 
+	      | [] -> 
+		  (fun () ->
+		     let pf = get_pftreestate() in
+		     let gl = nth_goal_of_pftreestate 1 pf in
+		     let l,_= decompose_prod (strip_outer_cast (pf_concl gl)) in
+		     let l = List.rev_map fst l in
+		       message (do_renum [] gl l))
+	      | _ -> bad_vernac_args "Show Intros")

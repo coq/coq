@@ -59,6 +59,7 @@ val dyn_mutual_cofix : tactic_arg list -> tactic
 (*s Introduction tactics. *)
 
 val next_global_ident_away : identifier -> identifier list -> identifier
+val fresh_id : identifier list -> identifier -> goal sigma -> identifier
 
 val intro                : tactic
 val introf               : tactic
