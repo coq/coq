@@ -510,12 +510,17 @@ let maybe_constructor ref =
               str " is understood as a pattern variable");
         VarPat (find_pattern_variable ref)
 
+let mustbe_constructor loc ref = 
+  try find_constructor ref
+  with (Environ.NotEvaluableConst _ | Not_found) ->
+    raise (InternalisationError (loc,NotAConstructor ref))
+
 let rec intern_cases_pattern scopes aliases tmp_scope = function
   | CPatAlias (loc, p, id) ->
       let aliases' = merge_aliases aliases id in
       intern_cases_pattern scopes aliases' tmp_scope p
   | CPatCstr (loc, head, pl) ->
-      let c,pl0 = find_constructor head in
+      let c,pl0 = mustbe_constructor loc head in
       let argscs =
 	simple_adjust_scopes (find_arguments_scope (ConstructRef c), pl) in
       let (idsl,pl') =
