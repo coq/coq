@@ -89,18 +89,22 @@ and merge_with env mtb with_decl =
 		      let cst = 
 			Constraint.union 
 			  (Constraint.union cb.const_constraints cst1)
-			  cst2
-		      in
+			  cst2 in
+                      let body = Some (Declarations.from_val j.uj_val) in
 			SPBconst {cb with 
-				    const_body = 
-				      Some (Declarations.from_val j.uj_val);
-				    const_constraints = cst}
+				    const_body = body;
+			            const_body_code = Cemitcodes.from_val
+                        (Cbytegen.compile_constant_body env' body false false);
+                                    const_constraints = cst}
 		  | Some b -> 
 		      let cst1 = Reduction.conv env' c (Declarations.force b) in
 		      let cst = Constraint.union cb.const_constraints cst1 in
+                      let body = Some (Declarations.from_val c) in
 			SPBconst {cb with 
-				    const_body = Some (Declarations.from_val c);
-				    const_constraints = cst}
+				    const_body = body;
+				    const_body_code = Cemitcodes.from_val
+                        (Cbytegen.compile_constant_body env' body false false);
+                                    const_constraints = cst}
 	      end	
 (* and what about msid's ????? Don't they clash ? *)
 	| With_Module (id, mp) ->
