@@ -1,0 +1,49 @@
+
+<< L'uniformité du style est plus importante que le style lui-même. >>
+(Kernigan & Pike, The Practice of Programming)
+
+Mode Emacs
+==========
+   Tuareg, que l'on trouve ici :  http://www.prism.uvsq.fr/~acohen/tuareg/
+
+   avec le réglage suivant :     (setq tuareg-in-indent 2)
+
+Types récursifs et filtrages
+============================
+   Une barre de séparation y compris sur le premier constructeur
+
+type t =
+  | A 
+  | B of machin
+
+match expr with
+  | A -> ...
+  | B x -> ...
+
+
+Conditionnelles
+===============
+  if condition then
+    premier-cas
+  else
+    deuxieme-cas
+
+  Si effets de bord dans les branches, utilisez begin ... end et non des
+  parenthèses i.e.
+
+  if condition then begin
+    instr1;
+    instr2
+  end else begin
+    instr3;
+    instr4
+  end
+    
+  Si la première branche lève une exception, évitez le else i.e.
+
+    if condition then                     if condition then error "machin";
+      error "machin"          ----->      suite
+    else
+      suite
+
+  
