@@ -339,7 +339,8 @@ let find_eq_pattern aritysort sort =
 
  *)
 
-exception DiscrFound of (sorts oper * int) list * sorts oper * sorts oper
+exception DiscrFound of
+  (constructor_path * int) list * constructor_path * constructor_path
 
 let find_positions env sigma t1 t2 =
   let rec findrec posn t1 t2 =
@@ -354,10 +355,10 @@ let find_positions env sigma t1 t2 =
             List.flatten
 	      (list_map2_i
 		 (fun i arg1 arg2 ->
-		    findrec ((MutConstruct sp1,i)::posn) arg1 arg2)
+		    findrec ((sp1,i)::posn) arg1 arg2)
 		 0 args1 args2)
 	  else
-	    raise (DiscrFound(List.rev posn,MutConstruct sp1,MutConstruct sp2))
+	    raise (DiscrFound(List.rev posn,sp1,sp2))
 
       | _ ->
 	  let t1_0 = applist (hd1,args1) 
@@ -518,7 +519,7 @@ let construct_discriminator sigma env dirn c sort =
     
 let rec build_discriminator sigma env dirn c sort = function
   | [] -> construct_discriminator sigma env dirn c sort
-  | (MutConstruct(sp,cnum),argnum)::l ->
+  | ((sp,cnum),argnum)::l ->
       let cty = type_of env sigma c in
       let IndType (indf,_) =
 	try find_rectype env sigma cty with Not_found -> assert false in
@@ -531,7 +532,6 @@ let rec build_discriminator sigma env dirn c sort = function
          | Type_Type ->
 	     kont subval (build_EmptyT (),mkSort (Type(dummy_univ)))
 	 | _ -> kont subval (build_False (),mkSort (Prop Null)))
-  | _ -> assert false
 
 let find_eq_data_decompose eqn =
   if (is_matching (eq_pattern ()) eqn) then
@@ -603,7 +603,7 @@ let discr id gls =
   let env = pf_env gls in
   (match find_positions env sigma t1 t2 with
      | Inr _ -> raise NotDiscriminable
-     | Inl(cpath,MutConstruct(_,dirn),_) ->
+     | Inl (cpath, (_,dirn), _) ->
 	 let e = pf_get_new_id (id_of_string "ee") gls in
 	 let e_env =
 	   push_var_decl (e,assumption_of_judgment env sigma tj) env
@@ -617,8 +617,8 @@ let discr id gls =
 	 in
 	 tclCOMPLETE((tclTHENS (cut_intro absurd_term)
 			([onLastHyp (compose gen_absurdity out_some);
-			  refine (mkAppL (pf, [| mkVar id |]))]))) gls
-     | _ -> assert false)
+			  refine (mkAppL (pf, [| mkVar id |]))]))) gls)
+
 
 let not_found_message id =
   [<'sTR "the variable"; 'sPC ; 'sTR (string_of_id id) ; 'sPC;
@@ -835,7 +835,7 @@ let rec build_injrec sigma env (t1,t2) c = function
   | [] ->
       make_iterated_tuple env sigma (t1,type_of env sigma t1)
         (c,type_of env sigma c)
-  | (MutConstruct(sp,cnum),argnum)::l ->
+  | ((sp,cnum),argnum)::l ->
       let cty = type_of env sigma c in
       let (ity,_) = find_mrectype env sigma cty in
       let nparams = Global.mind_nparams ity in
@@ -846,7 +846,6 @@ let rec build_injrec sigma env (t1,t2) c = function
       in
       (kont subval (dfltval,tuplety),
        tuplety,dfltval)
-  | _ -> assert false
 
 let build_injector sigma env (t1,t2) c cpath =
   let (injcode,resty,_) = build_injrec sigma env (t1,t2) c cpath in
@@ -949,7 +948,7 @@ let decompEqThen ntac id gls =
   let sigma = project gls in
   let env = pf_env gls in 
   (match find_positions env sigma t1 t2 with
-     | Inl(cpath,MutConstruct(_,dirn),_) ->
+     | Inl (cpath, (_,dirn), _) ->
 	 let e = pf_get_new_id (id_of_string "e") gls in
 	 let e_env =
 	   push_var_decl (e,assumption_of_judgment env sigma tj) env in
@@ -989,8 +988,7 @@ let decompEqThen ntac id gls =
 			     ([tclIDTAC;refine pf]))))
 		 (List.rev injectors))
 	      (ntac (List.length injectors))))
-	  gls)
-     | _ -> assert false)
+	  gls))
 
 let decompEq = decompEqThen (fun x -> tclIDTAC)
 
