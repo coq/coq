@@ -38,10 +38,15 @@ let empty_environment = empty_env
 (* Insertion of variables (named and de Bruijn'ed). They are now typed before
    being added to the environment. *)
 
-let push_rel_or_named_def push (id,b) env =
+let push_rel_or_named_def push (id,b,topt) env =
   let (j,cst) = safe_infer env b in
+  let (t,cst) = match topt with
+    | None -> j.uj_type, cst
+    | Some t -> 
+	let (jt,cstt) = safe_infer_type env t in
+	jt.utj_val, Constraint.union cst cstt in
   let env' = add_constraints cst env in
-  let env'' = push (id,Some j.uj_val,j.uj_type) env' in
+  let env'' = push (id,Some j.uj_val,t) env' in
   (cst,env'')
 
 let push_named_def = push_rel_or_named_def push_named_decl

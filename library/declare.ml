@@ -66,8 +66,8 @@ let make_strength_2 () =
 (* Section variables. *)
 
 type section_variable_entry =
-  | SectionLocalDef of constr
-  | SectionLocalAssum of constr
+  | SectionLocalDef of constr * types option
+  | SectionLocalAssum of types
 
 type variable_declaration = dir_path * section_variable_entry * strength
 
@@ -90,7 +90,7 @@ let cache_variable (sp,(id,(p,d,str))) =
     errorlabstrm "cache_variable" [< pr_id id; 'sTR " already exists" >];
   let cst = match d with (* Fails if not well-typed *)
     | SectionLocalAssum ty -> Global.push_named_assum (id,ty)
-    | SectionLocalDef c -> Global.push_named_def (id,c) in
+    | SectionLocalDef (c,t) -> Global.push_named_def (id,c,t) in
   let (_,bd,ty) = Global.lookup_named id in
   let vd = (bd,ty,cst) in
   Nametab.push 0 (restrict_path 0 sp) (VarRef id);

@@ -64,11 +64,6 @@ let red_constant_entry ce = function
       { ce with const_entry_body = 
 	  reduction_of_redexp red (Global.env()) Evd.empty body }
 
-let constr_of_constr_entry ce =
-  match ce.const_entry_type with
-    | None -> ce.const_entry_body 
-    | Some t -> mkCast (ce.const_entry_body, t)
-
 let declare_global_definition ident ce n local =
   let sp = declare_constant ident (ConstantEntry ce,n) in
   if local then
@@ -83,8 +78,8 @@ let definition_body_red red_option ident (local,n) com comtypeopt =
     | NeverDischarge -> declare_global_definition ident ce' n local
     | DischargeAt (disch_sp,_) ->
         if Lib.is_section_p disch_sp then begin
-	  let c = constr_of_constr_entry ce' in
-          let sp = declare_variable ident (Lib.cwd(),SectionLocalDef c,n) in
+	  let c = SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type) in
+          let sp = declare_variable ident (Lib.cwd(), c, n) in
 	  if_verbose message ((string_of_id ident) ^ " is defined");
           if Pfedit.refining () then 
             mSGERRNL [< 'sTR"Warning: Local definition "; pr_id ident; 
@@ -254,8 +249,8 @@ let collect_non_rec env =
 	    | _ -> [] (* nrec=[] for cofixpoints *)
         with Failure "list_chop" -> []
       in 
-      searchrec ((f,mkCast (def,body_of_type ar))::lnonrec) 
-        (lf1@lf2) (ldef1@ldef2) (lar1@lar2) newlnv
+      searchrec ((f,def,ar)::lnonrec) 
+	(lf1@lf2) (ldef1@ldef2) (lar1@lar2) newlnv
     with Failure "try_find_i" -> 
       (List.rev lnonrec,
        (Array.of_list lnamerec, Array.of_list ldefrec,
@@ -318,9 +313,9 @@ let build_recursive lnameargsardef =
   let var_subst id = (id, global_reference id) in
   let _ = 
     List.fold_left
-      (fun subst (f,def) ->
+      (fun subst (f,def,t) ->
 	 let ce = { const_entry_body = replace_vars subst def;
-		    const_entry_type = None;
+		    const_entry_type = Some t;
                     const_entry_opaque = false } in
 	 let _ = declare_constant f (ConstantEntry ce,n) in
       	 warning ((string_of_id f)^" is non-recursively defined");
@@ -350,9 +345,9 @@ let build_corecursive lnameardef =
   let arityl = List.rev arityl in
   let recdef =
     try 
-      List.map (fun (_,arityc,def) -> 
-                  interp_constr sigma rec_sign
-                    (mkCastC(def,arityc)))
+      List.map (fun (_,arityc,def) ->
+		  let arity = interp_constr sigma rec_sign arityc in
+                  interp_casted_constr sigma rec_sign def arity)
         lnameardef
     with e -> 
       States.unfreeze fs; raise e 
@@ -380,9 +375,9 @@ let build_corecursive lnameardef =
   let var_subst id = (id, global_reference id) in
   let _ = 
     List.fold_left
-      (fun subst (f,def) ->
+      (fun subst (f,def,t) ->
 	 let ce = { const_entry_body = replace_vars subst def;
-		    const_entry_type = None;
+		    const_entry_type = Some t;
                     const_entry_opaque = false } in
 	 let _ = declare_constant f (ConstantEntry ce,n) in
       	 warning ((string_of_id f)^" is non-recursively defined");
@@ -454,8 +449,8 @@ let save id const strength =
        const_entry_opaque = opacity } = const in
   begin match strength with
     | DischargeAt (disch_sp,_) when Lib.is_section_p disch_sp && not opacity ->
-	let c = constr_of_constr_entry const in
-	let _ = declare_variable id (Lib.cwd(),SectionLocalDef c,strength)
+	let c = SectionLocalDef (pft, tpo) in
+	let _ = declare_variable id (Lib.cwd(), c, strength)
         in ()
     | NeverDischarge | DischargeAt _ ->
         let _ = declare_constant id (ConstantEntry const,strength)

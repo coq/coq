@@ -30,7 +30,7 @@ val push_named_assum :
   identifier * types -> safe_environment ->
     Univ.constraints * safe_environment
 val push_named_def :
-  identifier * constr -> safe_environment ->
+  identifier * constr * types option -> safe_environment ->
     Univ.constraints * safe_environment
 val pop_named_decls : identifier list -> safe_environment -> safe_environment
 

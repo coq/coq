@@ -32,8 +32,8 @@ type strength =
   | NeverDischarge
 
 type section_variable_entry =
-  | SectionLocalDef of constr
-  | SectionLocalAssum of constr
+  | SectionLocalDef of constr * types option
+  | SectionLocalAssum of types
 
 type variable_declaration = dir_path * section_variable_entry * strength
 
