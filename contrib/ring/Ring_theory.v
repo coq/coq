@@ -151,9 +151,9 @@ Infix 4 "*" Amult V8only 30 (left associativity).
 Notation "0" := Azero.
 Notation "1" := Aone.
 Notation "- 0" := (Aopp Azero) (at level 3)
-  V8only (at level 40, left associativity).
+  V8only (at level 0, left associativity).
 Notation "- 1" := (Aopp Aone) (at level 3)
-  V8only (at level 40, left associativity).
+  V8only (at level 0, left associativity).
 Notation "- x" := (Aopp x) (at level 3)
   V8only (at level 0, left associativity).
 
