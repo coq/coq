@@ -132,7 +132,7 @@ module Hdir = Hashcons.Make(
     type t = dir_path
     type u = identifier -> identifier
     let hash_sub hident d = List.map hident d
-    let equal = list_for_all2_eq (==)
+    let equal = list_for_all2eq (==)
     let hash = Hashtbl.hash
   end)
 
