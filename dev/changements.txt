@@ -71,3 +71,17 @@ Changements dans les grammaires
                                  casse particulière dans Coq)
 		
 	
+Changements divers
+------------------
+
+ . il n'y a plus de script coqtop => coqtop et coqtop.byte sont
+   directement le résultat du link du code
+   => debuggage et profiling directs
+
+ . il n'y a plus d'installation locale dans bin/
+ 
+ . #use "include.ml"  =>  #use "include"
+   go()               =>  loop()
+
+ . il y "make depend" et "make dependcamlp4" car ce dernier prend beaucoup
+   de temps

@@ -228,7 +228,7 @@ let abort_refine f x =
   f x
   (* used to be: error "Must save or abort current goal first" *)
 
-let reset_name = abort_refine reset_to
+let reset_name = abort_refine reset_name
 (*** TODO 
 and reset_keeping_name = abort_refine reset_keeping
 and reset_section = abort_refine raw_reset_section

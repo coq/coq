@@ -72,19 +72,24 @@ let parameter_def_var ident c =
   declare_parameter (id_of_string ident) c
     
 let hypothesis_def_var is_refining ident n c =
+  let warning () = 
+    mSGERRNL [< 'sTR"Warning: "; 'sTR ident; 
+                'sTR" is declared as a parameter";
+                'sTR" because it is at a global level" >]
+  in
   match n with
-    | NeverDischarge -> parameter_def_var ident c
+    | NeverDischarge -> 
+	warning();
+	parameter_def_var ident c
     | DischargeAt disch_sp ->
         if Lib.is_section_p disch_sp then begin
           declare_variable (id_of_string ident)
              (constr_of_com1 true Evd.empty (Global.env()) c,n,false);
           if is_refining then 
-            mSGERRNL [< 'sTR"Warning: Variable " ; 'sTR ident ; 
+            mSGERRNL [< 'sTR"Warning: Variable "; 'sTR ident; 
                         'sTR" is not visible from current goals" >]
         end else begin
-	  mSGERRNL [< 'sTR"Warning: Declaring " ; 'sTR ident ; 
-                      'sTR" as a parameter rather than a variable " ;
-                      'sTR" because it is at a global level" >];
+	  warning();
           parameter_def_var ident c
 	end
 	  
@@ -109,6 +114,11 @@ let corecursive_message = function
                     'sPC; 'sTR "are corecursively defined">]
 
 let build_mutual lparams lnamearconstrs finite =
+  let allnames = 
+    List.fold_left 
+      (fun acc (id,_,l) -> id::(List.map fst l)@acc) [] lnamearconstrs in
+  if not (list_distinct allnames) then
+    error "Two inductive objects have the same name";
   let lrecnames = List.map (fun (x,_,_)->x)  lnamearconstrs
   and nparams = List.length lparams
   and sigma = Evd.empty 
@@ -142,8 +152,8 @@ let build_mutual lparams lnamearconstrs finite =
       mind_entry_finite = finite;
       mind_entry_inds = mispecvec }
     in
-    declare_mind mie;
     States.unfreeze fs;
+    declare_mind mie;
     pPNL(minductive_message lrecnames)
   with e ->
     States.unfreeze fs; raise e

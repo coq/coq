@@ -254,12 +254,12 @@ let _ =
 	   (fun () -> reset_section (string_of_id id))
        | _ -> bad_vernac_args "ResetSection")
 
+***)
 let _ =
   add "ResetName"
     (function 
-       | [VARG_IDENTIFIER id] -> (fun () -> reset_name id)
+       | [VARG_IDENTIFIER id] -> (fun () -> Pfedit.reset_name id)
        | _ -> bad_vernac_args "ResetName")
-***)
 
 (* Modules *)
 

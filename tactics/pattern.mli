@@ -47,9 +47,7 @@ val put_pat            : module_mark -> string -> marked_term
 val get_pat            : marked_term -> constr
 val pattern_stock      : constr Stock.stock
 
-(*i**
-val raw_sopattern_of_compattern : typed_type signature -> CoqAst.t -> constr
-**i*)
+val raw_sopattern_of_compattern : Environ.env -> Coqast.t -> constr
 
 (*s Second part : Given a term with second-order variables in it,
    represented by Meta's, and possibly applied using \verb!XTRA[$SOAPP]! to

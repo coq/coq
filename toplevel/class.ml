@@ -328,12 +328,11 @@ let coercion_syntax idf ps clt =
     | _ -> coercion_syntax_entry idf ps
 
 let add_new_coercion_in_graph1 (coef,v,stre,isid,cls,clt) idf ps =
-  let _ = add_anonymous_leaf
-	    (inCoercion
-	       ((coef,
-		 {cOE_VALUE=v;cOE_STRE=stre;cOE_ISID=isid;cOE_PARAM=ps}),
-		cls,clt)) 
-  in
+  add_anonymous_leaf
+    (inCoercion
+       ((coef,
+	 {cOE_VALUE=v;cOE_STRE=stre;cOE_ISID=isid;cOE_PARAM=ps}),
+	cls,clt));
   coercion_syntax idf ps clt
 
 (* 

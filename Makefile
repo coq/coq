@@ -154,6 +154,13 @@ parsing: $(PARSING)
 pretyping: $(PRETYPING)
 toplevel: $(TOPLEVEL)
 
+# states
+
+SYNTAXPP=syntax/PPCommand.v syntax/PPTactic.v syntax/PPMultipleCase.v
+
+states/barestate.coq: $(SYNTAXPP) coqtop.byte
+	./coqtop.byte -q -batch -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
+
 ###########################################################################
 # minicoq
 ###########################################################################
@@ -256,7 +263,14 @@ parsing/extend.cmx: parsing/extend.ml4 parsing/grammar.cma
 
 beforedepend:: $(GRAMMARCMO)
 
-# toplevel/mltop.ml4 (ifdef Opt)
+parsing/pcoq.ml: parsing/pcoq.ml4
+	$(CAMLP4EXTEND) pr_o.cmo -impl $< -o $@
+parsing/extend.ml: parsing/extend.ml4 parsing/grammar.cma
+	$(CAMLP4GRAMMAR) pr_o.cmo -impl $< -o $@
+
+beforedepend:: parsing/pcoq.ml parsing/extend.ml
+
+# toplevel/mltop.ml4 (ifdef Byte)
 
 CAMLP4IFDEF=camlp4o pa_ifdef.cmo
 
@@ -303,6 +317,7 @@ archclean::
 	rm -f parsing/*.cmx parsing/*.[so]
 	rm -f pretyping/*.cmx pretyping/*.[so]
 	rm -f toplevel/*.cmx toplevel/*.[so]
+	rm -f coqtop coqtop.byte minicoq
 
 cleanall:: archclean
 	rm -f *~
@@ -333,7 +348,7 @@ dependcamlp4: beforedepend
 	rm -f .depend.camlp4
 	for f in */*.ml4; do \
 	  file=`dirname $$f`/`basename $$f .ml4`; \
-	  camlp4o $(INCLUDES) pa_extend.cmo q_MLast.cmo $(GRAMMARCMO) pr_o.cmo -impl $$f > $$file.ml; \
+	  camlp4o $(INCLUDES) pa_ifdef.cmo pa_extend.cmo q_MLast.cmo $(GRAMMARCMO) pr_o.cmo -impl $$f > $$file.ml; \
 	  ocamldep $(DEPFLAGS) $$file.ml >> .depend.camlp4; \
 	  rm -f $$file.ml; \
 	done

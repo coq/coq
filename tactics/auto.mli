@@ -17,9 +17,7 @@ type auto_tactic =
   | Give_exact of constr                  
   | Res_pf_THEN_trivial_fail of constr * unit clausenv (* Hint Immediate *)
   | Unfold_nth of constr                 (* Hint Unfold *)
-  (***TODO
-  | Extern     of CoqAst.t               (* Hint Extern *)
-  ***)
+  | Extern     of Coqast.t               (* Hint Extern *)
 
 type pri_auto_tactic = { 
   hname : identifier;     (* name of the hint *)
@@ -87,10 +85,8 @@ val make_resolve_hyp : identifier -> constr -> (constr * pri_auto_tactic) list
 
 (* [make_extern name pri pattern tactic_ast] *)
 
-(***TODO
 val make_extern :
-  identifier -> int -> constr -> CoqAst.t -> constr * pri_auto_tactic
-***)
+  identifier -> int -> constr -> Coqast.t -> constr * pri_auto_tactic
 
 (* Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints *)

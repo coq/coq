@@ -28,12 +28,9 @@ let rec whd_replmeta = function
   | DOP2(Cast,c,_) -> whd_replmeta c
   | c -> c
 
-let raw_sopattern_of_compattern sign com =
-  failwith "raw_sopattern_of_compattern: TODO"
-  (***
-  let c = Astterm.raw_constr_of_compattern Evd.empty (gLOB sign) com in
-  strong whd_replmeta c
-  ***)
+let raw_sopattern_of_compattern env com =
+  let c = Astterm.constr_of_com_pattern Evd.empty env com in
+  strong (fun _ _ -> whd_replmeta) env Evd.empty c
 
 let parse_pattern s =
   let com =
@@ -42,7 +39,7 @@ let parse_pattern s =
     with Stdpp.Exc_located (_ , (Stream.Failure | Stream.Error _)) ->
       error "Malformed pattern" 
   in
-  raw_sopattern_of_compattern (Global.context()) com
+  raw_sopattern_of_compattern (Global.env()) com
     
 let (pattern_stock : constr Stock.stock) =
   Stock.make_stock {name="PATTERN";proc=parse_pattern}

@@ -16,6 +16,7 @@ open Proof_trees
 open Clenv
 open Pattern
 open Wcclausenv
+open Pretty
 
 (******************************************)
 (*         Basic Tacticals                *)
@@ -197,7 +198,7 @@ let conclPattern concl pat tacast gl =
     List.map 
       (fun (i,c) -> (i, Termast.bdize false (assumptions_for_print []) c))
       constr_bindings in 
-  let tacast' = CoqAst.subst_meta ast_bindings tacast in
+  let tacast' = Coqast.subst_meta ast_bindings tacast in
     Tacinterp.interp tacast' gl
 ***)
 

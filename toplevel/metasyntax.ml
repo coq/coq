@@ -27,7 +27,7 @@ let _ =
 let (inPPSyntax,outPPSyntax) =
   declare_object
     ("PPSYNTAX",
-     { load_function = (fun _ -> ());
+     { load_function = (fun (_,ppobj) -> Esyntax.add_ppobject ppobj);
        open_function = (fun _ -> ());
        cache_function = (fun (_,ppobj) -> Esyntax.add_ppobject ppobj);
        specification_function = (fun x -> x) })
@@ -42,8 +42,8 @@ let ppobj_of_ast whatfor sel =
   (whatfor, List.flatten (List.map (Extend.level_of_ast whatfor) sel))
 
 let add_syntax_obj whatfor sel =
-  let _ = Lib.add_anonymous_leaf (inPPSyntax (ppobj_of_ast whatfor sel)) in
-  ()
+  let ppobj = ppobj_of_ast whatfor sel in
+  Lib.add_anonymous_leaf (inPPSyntax ppobj)
 
 
 (************************
@@ -66,7 +66,7 @@ let (inToken, outToken) =
        cache_function = (fun (_, s) -> Pcoq.lexer.Token.using ("", s));
        specification_function = (fun x -> x)})
 
-let add_token_obj s = let _ = Lib.add_anonymous_leaf (inToken s) in ()
+let add_token_obj s = Lib.add_anonymous_leaf (inToken s)
 
 (* Grammar rules *)
 let (inGrammar, outGrammar) =
@@ -78,8 +78,7 @@ let (inGrammar, outGrammar) =
        specification_function = (fun x -> x)})
 
 let add_grammar_obj univ al =
-  let _ = Lib.add_anonymous_leaf (inGrammar (Extend.gram_of_ast univ al)) in
-  ()
+   Lib.add_anonymous_leaf (inGrammar (Extend.gram_of_ast univ al))
 
 (* printing grammar entries *)
 let print_grammar univ entry =
@@ -201,8 +200,7 @@ let add_infix assoc n inf pr =
   let gram_rule = gram_infix assoc n (split inf) pr in
   (* check the syntax entry *)
   let syntax_rule = infix_syntax_entry assoc n inf pr in
-  let _ = Lib.add_anonymous_leaf (inInfix(gram_rule,syntax_rule)) in
-  ()
+  Lib.add_anonymous_leaf (inInfix(gram_rule,syntax_rule))
 
 (* Distfix *)
 (* Distfix LEFTA 7 "/ _ / _ /" app.*)
@@ -246,6 +244,5 @@ let distfix assoc n sl f =
   }
 
 let add_distfix a n df f =
-  let _ = Lib.add_anonymous_leaf (inInfix(distfix a n (split df) f, [])) in
-  ()
+  Lib.add_anonymous_leaf (inInfix(distfix a n (split df) f, []))
 

@@ -881,7 +881,7 @@ let clenv_type_of ce c =
          | (n,Cltyp typ)    -> (n,typ.rebus))
       (intmap_to_list ce.env)
   in
-  failwith "TODO"
+  failwith "clenv_type_of: TODO"
   (***
   (Pretyping.ise_resolve true (w_Underlying ce.hook) metamap
      (gLOB(w_hyps ce.hook)) c).uj_type

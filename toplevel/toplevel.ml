@@ -203,10 +203,11 @@ let print_toplevel_error exc =
           if valid_buffer_loc top_buffer dloc loc then
             (print_highlight_location top_buffer loc, ie)
           else 
-	    (print_command_location top_buffer dloc, ie)
+	    ([<>] (* print_command_location top_buffer dloc *), ie)
       | Error_in_file (s, (fname, loc), ie) ->
           (print_location_in_file s fname loc, ie)
-      | _ -> (print_command_location top_buffer dloc, exc)
+      | _ -> 
+	  ([<>] (* print_command_location top_buffer dloc *), exc)
   in
   match exc with
     | End_of_input -> 

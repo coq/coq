@@ -7,10 +7,12 @@ open Options
 open Names
 open Generic
 open Term
+open Inductive
 open Sign
 open Environ
 open Type_errors
 open Reduction
+open Pretty
 open Printer
 open Ast
 
@@ -176,28 +178,28 @@ let explain_cant_find_case_type k ctx c =
   let pe = gentermpr k ctx c in
   hOV 3 [<'sTR "Cannot infer type of whole Case expression on"; 'wS 1; pe >]
 
+(***
 let explain_cant_find_case_type_loc loc k ctx c =
   let pe = gentermpr k ctx c in
   user_err_loc
     (loc,"pretype",
      hOV 3 [<'sTR "Cannot infer type of whole Case expression on"; 
 	     'wS 1; pe >])
+***)
 
 let explain_occur_check k ctx ev rhs =
   let id = "?" ^ string_of_int ev in
   let pt = gentermpr k ctx rhs in
-  errorlabstrm "Trad.occur_check"
-    [< 'sTR"Occur check failed: tried to define "; 'sTR id;
-      'sTR" with term"; 'bRK(1,1); pt >]
+  [< 'sTR"Occur check failed: tried to define "; 'sTR id;
+     'sTR" with term"; 'bRK(1,1); pt >]
 
 let explain_not_clean k ctx ev t =
   let c = Rel (Intset.choose (free_rels t)) in
   let id = "?" ^ string_of_int ev in
   let var = gentermpr k ctx c in
-  errorlabstrm "Trad.not_clean"
-    [< 'sTR"Tried to define "; 'sTR id;
-       'sTR" with a term using variable "; var; 'sPC;
-       'sTR"which is not in its scope." >]
+  [< 'sTR"Tried to define "; 'sTR id;
+     'sTR" with a term using variable "; var; 'sPC;
+     'sTR"which is not in its scope." >]
 
 let explain_type_error k ctx = function
   | UnboundRel n -> 
@@ -240,20 +242,82 @@ let explain_type_error k ctx = function
       explain_not_clean k ctx n c
 
 let explain_refiner_bad_type k ctx arg ty conclty =
-  errorlabstrm "Logic.conv_leq_goal"
-    [< 'sTR"refiner was given an argument"; 'bRK(1,1); 
-       gentermpr k ctx arg; 'sPC;
-       'sTR"of type"; 'bRK(1,1); gentermpr k ctx ty; 'sPC;
-       'sTR"instead of"; 'bRK(1,1); gentermpr k ctx conclty >]
+  [< 'sTR"refiner was given an argument"; 'bRK(1,1); 
+     gentermpr k ctx arg; 'sPC;
+     'sTR"of type"; 'bRK(1,1); gentermpr k ctx ty; 'sPC;
+     'sTR"instead of"; 'bRK(1,1); gentermpr k ctx conclty >]
 
 let explain_refiner_occur_meta k ctx t =
-  errorlabstrm "Logic.mk_refgoals"
-    [< 'sTR"cannot refine with term"; 'bRK(1,1); gentermpr k ctx t;
-       'sPC; 'sTR"because there are metavariables, and it is";
-       'sPC; 'sTR"neither an application nor a Case" >]
+  [< 'sTR"cannot refine with term"; 'bRK(1,1); gentermpr k ctx t;
+     'sPC; 'sTR"because there are metavariables, and it is";
+     'sPC; 'sTR"neither an application nor a Case" >]
 
 let explain_refiner_cannot_applt k ctx t harg =
-  errorlabstrm "Logic.mkARGGOALS"
-    [< 'sTR"in refiner, a term of type "; 'bRK(1,1);
-       gentermpr k ctx t; 'sPC; 'sTR"could not be applied to"; 'bRK(1,1);
-       gentermpr k ctx harg >]
+  [< 'sTR"in refiner, a term of type "; 'bRK(1,1);
+     gentermpr k ctx t; 'sPC; 'sTR"could not be applied to"; 'bRK(1,1);
+     gentermpr k ctx harg >]
+
+let explain_refiner_error e =
+  [< 'sTR "TODO: EXPLAIN REFINER ERROR" >]
+
+let error_non_strictly_positive k lna c v  =
+  let env = assumptions_for_print lna in
+  let pc = gentermpr k env c in
+  let pv = gentermpr k env v in
+  [< 'sTR "Non strictly positive occurrence of "; pv; 'sTR " in";
+     'bRK(1,1); pc >]
+
+let error_ill_formed_inductive k lna c v =
+  let env = assumptions_for_print lna in
+  let pc = gentermpr k env c in
+  let pv = gentermpr k env v in
+  [< 'sTR "Not enough arguments applied to the "; pv;
+     'sTR " in"; 'bRK(1,1); pc >]
+
+let error_ill_formed_constructor k lna c v =
+  let env = assumptions_for_print lna in
+  let pc = gentermpr k env c in
+  let pv = gentermpr k env v in
+  [< 'sTR "The conclusion of"; 'bRK(1,1); pc; 'bRK(1,1); 
+     'sTR "is not valid;"; 'bRK(1,1); 'sTR "it must be built from "; pv >]
+
+let str_of_nth n =
+  (string_of_int n)^
+  (match n mod 10 with
+     | 1 -> "st"
+     | 2 -> "nd"
+     | 3 -> "rd"
+     | _ -> "th")
+
+let error_bad_ind_parameters k lna c n v1 v2  =
+  let env = assumptions_for_print lna in
+  let pc = gentermpr k env c in
+  let pv1 = gentermpr k env v1 in
+  let pv2 = gentermpr k env v2 in
+  [< 'sTR ("The "^(str_of_nth n)^" argument of "); pv2; 'bRK(1,1);
+     'sTR "must be "; pv1; 'sTR " in"; 'bRK(1,1); pc >]
+
+let error_same_names_types id =
+  [< 'sTR "The name"; 'sPC; print_id id; 'sPC; 
+     'sTR "is used twice is the inductive types definition." >]
+
+let error_same_names_constructors id cid =
+  [< 'sTR "The constructor name"; 'sPC; print_id cid; 'sPC; 
+     'sTR "is used twice is the definition of type"; 'sPC;
+     print_id id >]
+
+let error_not_an_arity id =
+  [< 'sTR "The type of"; 'sPC; print_id id; 'sPC; 'sTR "is not an arity." >]
+
+let error_bad_entry () =
+  [< 'sTR "Bad inductive definition." >]
+
+let explain_inductive_error = function
+  | NonPos (lna,c,v) -> error_non_strictly_positive CCI lna c v
+  | NotEnoughArgs (lna,c,v) -> error_ill_formed_inductive CCI lna c v
+  | NotConstructor (lna,c,v) -> error_ill_formed_constructor CCI lna c v
+  | NonPar (lna,c,n,v1,v2) -> error_bad_ind_parameters CCI lna c n v1 v2
+  | SameNamesTypes id -> error_same_names_types id
+  | SameNamesConstructors (id,cid) -> error_same_names_constructors id cid
+  | NotAnArity id -> error_not_an_arity id
+  | BadEntry -> error_bad_entry ()
