@@ -5,7 +5,6 @@ tactics/extratactics.ml: parsing/grammar.cma
 tactics/eauto.ml: parsing/grammar.cma
 contrib/interface/debug_tac.ml: parsing/grammar.cma
 contrib/interface/centaur.ml: parsing/grammar.cma
-contrib/correctness/psyntax.ml: parsing/grammar.cma
 contrib/omega/g_omega.ml: parsing/grammar.cma
 contrib/romega/g_romega.ml: parsing/grammar.cma
 contrib/ring/g_quote.ml: parsing/grammar.cma

@@ -273,14 +273,6 @@ contrib/field/Field_Compl.vo: contrib/field/Field_Compl.v
 contrib/field/Field_Theory.vo: contrib/field/Field_Theory.v theories/Arith/Peano_dec.vo contrib/ring/Ring.vo contrib/field/Field_Compl.vo
 contrib/field/Field_Tactic.vo: contrib/field/Field_Tactic.v contrib/ring/Ring.vo contrib/field/Field_Compl.vo contrib/field/Field_Theory.vo
 contrib/field/Field.vo: contrib/field/Field.v contrib/field/Field_Compl.vo contrib/field/Field_Theory.vo contrib/field/Field_Tactic.vo
-contrib/correctness/Arrays.vo: contrib/correctness/Arrays.v contrib/correctness/ProgInt.vo
-contrib/correctness/Correctness.vo: contrib/correctness/Correctness.v contrib/correctness/Tuples.vo contrib/correctness/ProgInt.vo contrib/correctness/ProgBool.vo theories/ZArith/Zwf.vo contrib/correctness/Arrays.vo
-contrib/correctness/Exchange.vo: contrib/correctness/Exchange.v contrib/correctness/ProgInt.vo contrib/correctness/Arrays.vo
-contrib/correctness/ArrayPermut.vo: contrib/correctness/ArrayPermut.v contrib/correctness/ProgInt.vo contrib/correctness/Arrays.vo contrib/correctness/Exchange.vo contrib/omega/Omega.vo
-contrib/correctness/ProgBool.vo: contrib/correctness/ProgBool.v theories/ZArith/ZArith.vo theories/Arith/Bool_nat.vo theories/Bool/Sumbool.vo
-contrib/correctness/ProgInt.vo: contrib/correctness/ProgInt.v theories/ZArith/ZArith.vo theories/ZArith/ZArith_dec.vo
-contrib/correctness/Sorted.vo: contrib/correctness/Sorted.v contrib/correctness/Arrays.vo contrib/correctness/ArrayPermut.vo contrib/ring/ZArithRing.vo contrib/omega/Omega.vo
-contrib/correctness/Tuples.vo: contrib/correctness/Tuples.v
 contrib/fourier/Fourier_util.vo: contrib/fourier/Fourier_util.v theories/Reals/Rbase.vo
 contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/field/field.cmo contrib/fourier/Fourier_util.vo contrib/field/Field.vo theories/Reals/DiscrR.vo
 contrib/cc/CCSolve.vo: contrib/cc/CCSolve.v
