@@ -10,7 +10,7 @@ kernel/esubst.cmi: lib/util.cmi
 kernel/indtypes.cmi: kernel/declarations.cmi kernel/environ.cmi \
     kernel/names.cmi kernel/term.cmi kernel/typeops.cmi kernel/univ.cmi 
 kernel/inductive.cmi: kernel/declarations.cmi kernel/environ.cmi \
-    kernel/names.cmi kernel/term.cmi kernel/univ.cmi 
+    kernel/names.cmi kernel/term.cmi kernel/type_errors.cmi kernel/univ.cmi 
 kernel/names.cmi: lib/pp.cmi lib/predicate.cmi 
 kernel/reduction.cmi: kernel/environ.cmi kernel/sign.cmi kernel/term.cmi \
     kernel/univ.cmi 
@@ -1483,18 +1483,18 @@ toplevel/protectedtoplevel.cmx: toplevel/errors.cmx \
 toplevel/record.cmo: parsing/ast.cmi parsing/astterm.cmi toplevel/class.cmi \
     toplevel/command.cmi parsing/coqast.cmi kernel/declarations.cmi \
     library/declare.cmi kernel/environ.cmi pretyping/evd.cmi \
-    library/global.cmi toplevel/himsg.cmi kernel/indtypes.cmi \
-    kernel/inductive.cmi pretyping/inductiveops.cmi kernel/names.cmi \
-    library/nametab.cmi lib/pp.cmi pretyping/recordops.cmi \
+    library/global.cmi kernel/indtypes.cmi kernel/inductive.cmi \
+    pretyping/inductiveops.cmi kernel/names.cmi library/nametab.cmi \
+    lib/options.cmi lib/pp.cmi parsing/printer.cmi pretyping/recordops.cmi \
     kernel/safe_typing.cmi kernel/term.cmi pretyping/termops.cmi \
     kernel/type_errors.cmi kernel/typeops.cmi lib/util.cmi \
     toplevel/record.cmi 
 toplevel/record.cmx: parsing/ast.cmx parsing/astterm.cmx toplevel/class.cmx \
     toplevel/command.cmx parsing/coqast.cmx kernel/declarations.cmx \
     library/declare.cmx kernel/environ.cmx pretyping/evd.cmx \
-    library/global.cmx toplevel/himsg.cmx kernel/indtypes.cmx \
-    kernel/inductive.cmx pretyping/inductiveops.cmx kernel/names.cmx \
-    library/nametab.cmx lib/pp.cmx pretyping/recordops.cmx \
+    library/global.cmx kernel/indtypes.cmx kernel/inductive.cmx \
+    pretyping/inductiveops.cmx kernel/names.cmx library/nametab.cmx \
+    lib/options.cmx lib/pp.cmx parsing/printer.cmx pretyping/recordops.cmx \
     kernel/safe_typing.cmx kernel/term.cmx pretyping/termops.cmx \
     kernel/type_errors.cmx kernel/typeops.cmx lib/util.cmx \
     toplevel/record.cmi 
