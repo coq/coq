@@ -51,31 +51,7 @@ let pr_import_module =
   (* We assume List is never imported with "Import" ... *)
   Libnames.pr_reference
 
-let pr_reference r =
-  let loc = loc_of_reference r in
-  try match Nametab.extended_locate (snd (qualid_of_reference r)) with
-    | TrueGlobal ref ->
-        pr_with_comments loc
-	  (pr_reference (Constrextern.extern_reference loc Idset.empty ref))
-    | SyntacticDef kn ->
-	let is_coq_root d =
-	  let d = repr_dirpath d in
-	  d <> [] & string_of_id (list_last d) = "Coq" in
-        let dir,id = repr_path (sp_of_syntactic_definition kn) in
-	let r =
-          if (is_coq_root (Lib.library_dp()) or is_coq_root dir) then
-            (match string_of_id id with
-              | "refl_eqT" -> 
-		  Constrextern.extern_reference dummy_loc Idset.empty 
-		  (reference_of_constr (Coqlib.build_coq_eq_data ()).Coqlib.refl)
-              | "sym_eqT" -> 
-		  Constrextern.extern_reference dummy_loc Idset.empty 
-		  (reference_of_constr (Coqlib.build_coq_eq_data ()).Coqlib.sym)
-              | _ -> r)
-          else r
-	in pr_with_comments loc (pr_reference r)
-  with Not_found ->
-    error_global_not_found (snd (qualid_of_reference r))
+let pr_reference = Ppconstrnew.pr_reference
 
 let sep_end () = str"."
 
@@ -169,11 +145,15 @@ let pr_in_out_modules = function
   | SearchOutside [] -> mt()
   | SearchOutside l -> spc() ++ str"outside" ++ spc() ++ prlist_with_sep sep pr_module l
 
+let pr_search_about = function
+  | Search.SearchRef r -> pr_reference r
+  | Search.SearchString s -> qsnew s
+
 let pr_search a b pr_p = match a with
   | SearchHead qid -> str"Search" ++ spc() ++ pr_reference qid ++ pr_in_out_modules b
   | SearchPattern c -> str"SearchPattern" ++ spc() ++ pr_p c ++ pr_in_out_modules b
   | SearchRewrite c -> str"SearchRewrite" ++ spc() ++ pr_p c ++ pr_in_out_modules b
-  | SearchAbout qid -> str"SearchAbout" ++ spc() ++ pr_reference qid ++ pr_in_out_modules b
+  | SearchAbout sl -> str"SearchAbout" ++ spc() ++ str "[" ++ prlist_with_sep spc pr_search_about sl ++ str "]" ++ pr_in_out_modules b
   | SearchNamed sl -> str"SearchNamed" ++ spc() ++ prlist_with_sep spc qsnew sl ++ pr_in_out_modules b
 
 let pr_locality local = if local then str "Local " else str ""
@@ -305,7 +285,7 @@ let without_translation f x =
   with e -> Options.make_translate old; Options.v7:=oldv7; raise e
 
 let pr_decl_notation prc =
-  pr_opt (fun (ntn,c,scopt) ->
+  pr_opt (fun (ntn,c,scopt) -> fnl () ++
     str "where " ++ qsnew ntn ++ str " := " ++ without_translation prc c ++
     pr_opt (fun sc -> str ": " ++ str sc) scopt)
 
@@ -731,7 +711,7 @@ let rec pr_vernac = function
           str key ++ spc() ++
           pr_id id ++ pr_and_type_binders_arg indpar ++ spc() ++ str":" ++ 
 	  spc() ++ pr_type s ++ 
-	  str" :=") ++ pr_constructor_list lc ++ fnl () ++ fnl () ++
+	  str" :=") ++ pr_constructor_list lc ++ fnl () ++ 
 	pr_decl_notation pr_constr ntn in
 
       (* Copie simplifiée de command.ml pour déclarer les notations locales *)
@@ -800,11 +780,11 @@ let rec pr_vernac = function
 		true (abstract_rawconstr (CCast (dummy_loc,def,type_)) bl) in
             pr_id id ++ pr_binders_arg bl ++ annot ++ spc()
             ++ pr_type_option (fun c -> spc() ++ pr_type c) type_
-            ++ str" :=" ++ brk(1,1) ++ ppc ++ fnl () ++ fnl () ++
+            ++ str" :=" ++ brk(1,1) ++ ppc ++ 
 	    pr_decl_notation pr_constr ntn
       in
       hov 1 (str"Fixpoint" ++ spc() ++
-        prlist_with_sep (fun _ -> fnl() ++ str"with ") pr_onerec recs)
+        prlist_with_sep (fun _ -> fnl() ++ fnl() ++ str"with ") pr_onerec recs)
 
   | VernacCoFixpoint corecs ->
       let pr_onecorec (id,c,def) =
