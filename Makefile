@@ -959,7 +959,7 @@ OLDINITVO=$(INITVO:theories%.vo=theories7%.vo)
 OLDTHEORIESVO=$(THEORIESVO:theories%.vo=theories7%.vo) $(OBSOLETETHEORIESVO)
 OLDCONTRIBVO=$(CONTRIBVO:contrib%.vo=contrib7%.vo)
 
-$(CONTRIBVO): states7/initial.coq
+$(OLDCONTRIBVO): states7/initial.coq
 
 NEWINITV=$(INITVO:%.vo=%.v)
 NEWTHEORIESV=$(THEORIESVO:%.vo=%.v)
