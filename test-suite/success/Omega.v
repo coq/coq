@@ -52,3 +52,22 @@ Lemma lem5 : `H > 0`.
 Omega.
 Qed.
 End B.
+
+(* From Nicolas Oury (bug #180): handling -> on Set (fixed Oct 2002) *)
+Lemma lem7: (A: Set) (i:Z) `i<= 0` -> (`i<= 0` -> A) -> `i<=0`.
+Intros.
+Omega.
+Qed.
+
+(* Adapted from an example in Nijmegen/FTA/ftc/RefSeparating (Oct 2002) *)
+Require Omega.
+Section C.
+Parameter g:(m:nat)~m=O->Prop.
+Parameter f:(m:nat)(H:~m=O)(g m H).
+Variable n:nat.
+Variable ap_n:~n=O.
+Local delta:=(f n ap_n).
+Lemma lem6 : n=n.
+Omega.
+Qed.
+End C.

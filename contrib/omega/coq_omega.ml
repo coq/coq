@@ -1335,6 +1335,10 @@ let destructure_omega gl tac_def (id,c) =
       | _ -> tac_def
     with e when catchable_exception e -> tac_def
 
+let reintroduce id =
+  (* [id] cannot be cleared if dependent: protect it by a try *)
+  tclTHEN (tclTRY (clear [id])) (intro_using id)
+      
 let coq_omega gl =
   clear_tables ();
   let tactic_normalisation, system = 
@@ -1462,8 +1466,7 @@ let nat_inject gl =
 		    [mkApp (Lazy.force coq_inj_le, [| t1;t2;mkVar i |]) ]);
 		  (explore [P_APP 1; P_TYPE] t1);
 		  (explore [P_APP 2; P_TYPE] t2);
-		  (clear [i]);
-                  (intros_using [i]);
+		  (reintroduce i);
 		  (loop lit)
                 ]
             | Kapp("lt",[t1;t2]) ->
@@ -1472,8 +1475,7 @@ let nat_inject gl =
 		    [mkApp (Lazy.force coq_inj_lt, [| t1;t2;mkVar i |]) ]);
 		  (explore [P_APP 1; P_TYPE] t1);
 		  (explore [P_APP 2; P_TYPE] t2);
-		  (clear [i]);
-		  (intros_using [i]);
+		  (reintroduce i);
 		  (loop lit)
                 ]
             | Kapp("ge",[t1;t2]) ->
@@ -1482,8 +1484,7 @@ let nat_inject gl =
 		    [mkApp (Lazy.force coq_inj_ge, [| t1;t2;mkVar i |]) ]);
 		  (explore [P_APP 1; P_TYPE] t1);
 		  (explore [P_APP 2; P_TYPE] t2);
-		  (clear [i]);
-		  (intros_using [i]);
+		  (reintroduce i);
 		  (loop lit)
                 ]
             | Kapp("gt",[t1;t2]) ->
@@ -1492,8 +1493,7 @@ let nat_inject gl =
                     [mkApp (Lazy.force coq_inj_gt, [| t1;t2;mkVar i |]) ]);
 		  (explore [P_APP 1; P_TYPE] t1);
 		  (explore [P_APP 2; P_TYPE] t2);
-		  (clear [i]);
-		  (intros_using [i]);
+		  (reintroduce i);
 		  (loop lit)
                 ]
             | Kapp("neq",[t1;t2]) ->
@@ -1502,8 +1502,7 @@ let nat_inject gl =
 		    [mkApp (Lazy.force coq_inj_neq, [| t1;t2;mkVar i |]) ]);
 		  (explore [P_APP 1; P_TYPE] t1);
 		  (explore [P_APP 2; P_TYPE] t2);
-		  (clear [i]);
-		  (intros_using [i]);
+		  (reintroduce i);
 		  (loop lit)
 ]
             | Kapp("eq",[typ;t1;t2]) ->
@@ -1513,8 +1512,7 @@ let nat_inject gl =
 		      [mkApp (Lazy.force coq_inj_eq, [| t1;t2;mkVar i |]) ]);
 		    (explore [P_APP 2; P_TYPE] t1);
 		    (explore [P_APP 3; P_TYPE] t2);
-		    (clear [i]);
-		    (intros_using [i]);
+		    (reintroduce i);
 		    (loop lit)
                   ]
 		else loop lit
