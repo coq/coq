@@ -18,6 +18,8 @@ Open Local Scope nat_scope.
 
 Implicit Variables Type m,n,p,q:nat.
 
+(** Commutativity *)
+
 Lemma plus_sym : (n,m:nat)(n+m)=(m+n).
 Proof.
 Intros n m ; Elim n ; Simpl ; Auto with arith.
@@ -25,17 +27,14 @@ Intros y H ; Elim (plus_n_Sm m y) ; Auto with arith.
 Qed.
 Hints Immediate plus_sym : arith v62.
 
+(** Associativity *)
+
 Lemma plus_Snm_nSm : (n,m:nat)((S n)+m)=(n+(S m)).
 Intros.
 Simpl.
 Rewrite -> (plus_sym n m).
 Rewrite -> (plus_sym n (S m)).
 Trivial with arith.
-Qed.
-
-Lemma simpl_plus_l : (n,m,p:nat)((n+m)=(n+p))->(m=p).
-Proof.
-NewInduction n ; Simpl ; Auto with arith.
 Qed.
 
 Lemma plus_assoc_l : (n,m,p:nat)((n+(m+p))=((n+m)+p)).
@@ -55,7 +54,21 @@ Auto with arith.
 Qed.
 Hints Resolve plus_assoc_r : arith v62.
 
+(** Simplification *)
+
+Lemma simpl_plus_l : (n,m,p:nat)((n+m)=(n+p))->(m=p).
+Proof.
+NewInduction n ; Simpl ; Auto with arith.
+Qed.
+
+(** Relations with order *)
+
 Lemma simpl_le_plus_l : (p,n,m:nat) (p+n)<=(p+m) -> n<=m.
+Proof.
+NewInduction p; Simpl; Auto with arith.
+Qed.
+
+Lemma simpl_lt_plus_l : (n,m,p:nat) (p+n)<(p+m) -> n<m.
 Proof.
 NewInduction p; Simpl; Auto with arith.
 Qed.
@@ -71,12 +84,6 @@ Proof.
 NewInduction 1 ; Simpl; Auto with arith.
 Qed.
 Hints Resolve le_reg_r : arith v62.
-
-Lemma le_plus_plus : (n,m,p,q:nat)  n<=m -> p<=q -> (n+p)<=(m+q).
-Proof.
-Intros n m p q H H0.
-Elim H; Simpl; Auto with arith.
-Qed.
 
 Lemma le_plus_l : (n,m:nat) n<=(n+m).
 Proof.
@@ -96,10 +103,11 @@ Intros; Apply le_trans with m:=m; Auto with arith.
 Qed.
 Hints Resolve le_plus_trans : arith v62.
 
-Lemma simpl_lt_plus_l : (n,m,p:nat) (p+n)<(p+m) -> n<m.
+Theorem lt_plus_trans : (n,m,p:nat) n<m -> n<(m+p).
 Proof.
-NewInduction p; Simpl; Auto with arith.
+Intros; Apply lt_le_trans with m:=m; Auto with arith.
 Qed.
+Hints Immediate lt_plus_trans : arith v62.
 
 Lemma lt_reg_l : (n,m,p:nat) n<m -> (p+n)<(p+m).
 Proof.
@@ -114,11 +122,11 @@ Elim p; Auto with arith.
 Qed.
 Hints Resolve lt_reg_r : arith v62.
 
-Theorem lt_plus_trans : (n,m,p:nat) n<m -> n<(m+p).
+Lemma le_plus_plus : (n,m,p,q:nat)  n<=m -> p<=q -> (n+p)<=(m+q).
 Proof.
-Intros; Apply lt_le_trans with m:=m; Auto with arith.
+Intros n m p q H H0.
+Elim H; Simpl; Auto with arith.
 Qed.
-Hints Immediate lt_plus_trans : arith v62.
 
 Lemma le_lt_plus_plus : (n,m,p,q:nat)  n<=m -> p<q -> (n+p)<(m+q).
 Proof.
@@ -137,6 +145,7 @@ Proof.
   Apply lt_le_weak. Assumption.
 Qed.
 
+(** Inversion lemmas *)
 
 Lemma plus_is_O : (m,n:nat) (m+n)=O -> m=O /\ n=O.
 Proof.
@@ -153,13 +162,14 @@ Proof.
   Simpl in H. Discriminate H.
 Defined.
 
+(** Derived properties *)
+
 Lemma plus_permute_2_in_4 : (m,n,p,q:nat) ((m+n)+(p+q))=((m+p)+(n+q)).
 Proof.
   Intros. 
   Rewrite <- (plus_assoc_l m n (p+q)). Rewrite (plus_assoc_l n p q).
   Rewrite (plus_sym n p). Rewrite <- (plus_assoc_l p n q). Apply plus_assoc_l.
 Qed.
-
 
 (** Tail-recursive plus *)
 

@@ -18,7 +18,7 @@ Open Local Scope nat_scope.
 
 Implicit Variables Type m,n,p:nat.
 
-(** Multiplication *)
+(** Distributivity *)
 
 Lemma mult_plus_distr : 
       (n,m,p:nat)((mult (plus n m) p)=(plus (mult n p) (mult m p))).
@@ -41,11 +41,7 @@ Elim minus_plus_simpl; Auto with arith.
 Qed.
 Hints Resolve mult_minus_distr : arith v62.
 
-Lemma mult_O_le : (n,m:nat)(m=O)\/(le n (mult m n)).
-Proof.
-NewInduction m; Simpl; Auto with arith.
-Qed.
-Hints Resolve mult_O_le : arith v62.
+(** Associativity *)
 
 Lemma mult_assoc_r : (n,m,p:nat)((mult (mult n m) p) = (mult n (mult m p))).
 Proof.
@@ -61,11 +57,7 @@ Auto with arith.
 Qed.
 Hints Resolve mult_assoc_l : arith v62.
 
-Lemma mult_1_n : (n:nat)(mult (S O) n)=n.
-Proof.
-Simpl; Auto with arith.
-Qed.
-Hints Resolve mult_1_n : arith v62.
+(** Commutativity *)
 
 Lemma mult_sym : (n,m:nat)(mult n m)=(mult m n).
 Proof.
@@ -75,11 +67,27 @@ Elim H; Apply plus_sym.
 Qed.
 Hints Resolve mult_sym : arith v62.
 
+(** 1 is neutral *)
+
+Lemma mult_1_n : (n:nat)(mult (S O) n)=n.
+Proof.
+Simpl; Auto with arith.
+Qed.
+Hints Resolve mult_1_n : arith v62.
+
 Lemma mult_n_1 : (n:nat)(mult n (S O))=n.
 Proof.
 Intro; Elim mult_sym; Auto with arith.
 Qed.
 Hints Resolve mult_n_1 : arith v62.
+
+(** Compatibility with orders *)
+
+Lemma mult_O_le : (n,m:nat)(m=O)\/(le n (mult m n)).
+Proof.
+NewInduction m; Simpl; Auto with arith.
+Qed.
+Hints Resolve mult_O_le : arith v62.
 
 Lemma mult_le : (m,n,p:nat) (le n p) -> (le (mult m n) (mult m p)).
 Proof.
