@@ -71,3 +71,11 @@ Lemma lem6 : n=n.
 Omega.
 Qed.
 End C.
+
+(* Problem of dependencies *)
+Require Omega.
+Lemma lem7 : (H:O=O->O=O) H=H -> O=O.
+Intros; Omega.
+Qed.
+
+

@@ -1582,7 +1582,12 @@ let rec decidability gl t =
     | Kapp(Other t,[]) -> error ("Omega: Unrecognized atomic proposition: "^t)
     | Kvar _ -> error "Omega: Can't solve a goal with proposition variables"
     | _ -> error "Omega: Unrecognized proposition"
-	  
+
+let onClearedName id tac gl =
+  (* Since we cannot ensure that hyps can be cleared (because of *)
+  (* dependencies) we rename them *)
+  tac (fresh_id [] id gl) gl
+
 let destructure_hyps gl =
   let rec loop evbd = function
     | [] -> (tclTHEN nat_inject coq_omega)
@@ -1592,8 +1597,11 @@ let destructure_hyps gl =
           | Kapp((Zle|Zge|Zgt|Zlt|Zne),[t1;t2]) -> loop evbd lit
           | Kapp(Or,[t1;t2]) ->
               (tclTHENS 
-                (tclTHENLIST [ (elim_id i); (clear [i]); (intros_using [i]) ])
-	        [ loop evbd ((i,None,t1)::lit); loop evbd ((i,None,t2)::lit) ])
+                (elim_id i)
+                [ onClearedName i (fun i -> 
+                   tclTHEN (intros_using [i]) (loop evbd ((i,None,t1)::lit)));
+                  onClearedName i (fun i ->
+                   tclTHEN (intros_using [i]) (loop evbd ((i,None,t2)::lit)))])
           | Kapp(And,[t1;t2]) ->
               let i1 = id_of_string (string_of_id i ^ "_left") in
               let i2 = id_of_string (string_of_id i ^ "_right") in
@@ -1612,9 +1620,10 @@ let destructure_hyps gl =
 		tclTHENLIST [
 		  (generalize_tac [mkApp (Lazy.force coq_imp_simp,
                     [| t1; t2; decidability gl t1; mkVar i|])]);
-		  (clear [i]);
-		  (intros_using [i]);
-		  (loop evbd ((i,None,mk_or (mk_not t1) t2)::lit))
+		  (onClearedName i (fun i ->
+                    tclTHEN
+		    (intros_using [i])
+		    (loop evbd ((i,None,mk_or (mk_not t1) t2)::lit))))
                 ]
               else
 		loop evbd lit
@@ -1624,54 +1633,60 @@ let destructure_hyps gl =
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_or,[| t1; t2; mkVar i |])]);
-		      (clear [i]);
-		      (intros_using [i]);
-                      (loop evbd
-                        ((i,None,mk_and (mk_not t1) (mk_not t2)):: lit))
+		      (onClearedName i (fun i ->
+                        tclTHEN
+		        (intros_using [i])
+                        (loop evbd
+                          ((i,None,mk_and (mk_not t1) (mk_not t2)):: lit))))
                     ]
 		| Kapp(And,[t1;t2]) -> 
                     tclTHENLIST [
 		      (generalize_tac
 		        [mkApp (Lazy.force coq_not_and, [| t1; t2;
 			  decidability gl t1;mkVar i|])]);
-		      (clear [i]);
-		      (intros_using [i]);
-                      (loop evbd 
-                        ((i,None,mk_or (mk_not t1) (mk_not t2))::lit))
+		      (onClearedName i (fun i ->
+                        tclTHEN
+		        (intros_using [i])
+                        (loop evbd
+                          ((i,None,mk_or (mk_not t1) (mk_not t2))::lit))))
                     ]
 		| Kimp(t1,t2) ->
                     tclTHENLIST [
 		      (generalize_tac 
 		        [mkApp (Lazy.force coq_not_imp, [| t1; t2; 
 		          decidability gl t1;mkVar i |])]);
-		      (clear [i]);
-		      (intros_using [i]);
-                      (loop evbd ((i,None,mk_and t1 (mk_not t2)) :: lit))
+		      (onClearedName i (fun i ->
+                        tclTHEN
+		        (intros_using [i])
+                        (loop evbd ((i,None,mk_and t1 (mk_not t2)) :: lit))))
                     ]
 		| Kapp(Not,[t]) ->
                     tclTHENLIST [
 		      (generalize_tac
 			[mkApp (Lazy.force coq_not_not, [| t;
 			  decidability gl t; mkVar i |])]);
-		      (clear [i]);
-		      (intros_using [i]);
-                      (loop evbd ((i,None,t)::lit))
+		      (onClearedName i (fun i ->
+                        tclTHEN
+		        (intros_using [i])
+                        (loop evbd ((i,None,t)::lit))))
                     ]
 		| Kapp(Zle, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_Zle, [| t1;t2;mkVar i|])]);
-		      (clear [i]);
-		      (intros_using [i]);
-		      (loop evbd lit)
+		      (onClearedName i (fun i ->
+                        tclTHEN
+		        (intros_using [i])
+		        (loop evbd lit)))
                     ]
 		| Kapp(Zge, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_Zge, [| t1;t2;mkVar i|])]);
-		      (clear [i]); 
-		      (intros_using [i]); 
-		      (loop evbd lit);
+		      (onClearedName i (fun i ->
+                        tclTHEN
+		        (intros_using [i])
+		        (loop evbd lit)))
                     ]
 		| Kapp(Zlt, [t1;t2]) ->
                     tclTHENLIST [
@@ -1685,41 +1700,46 @@ let destructure_hyps gl =
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_Zgt, [| t1;t2;mkVar i|])]);
-		      (clear [i]); 
-		      (intros_using [i]); 
-		      (loop evbd lit);
+		      (onClearedName i (fun i ->
+                        tclTHEN
+		        (intros_using [i])
+		         (loop evbd lit)))
                     ]
 		| Kapp(Le, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_le, [| t1;t2;mkVar i|])]);
-		      (clear [i]); 
-		      (intros_using [i]); 
-		      (loop evbd lit);
+		      (onClearedName i (fun i ->
+                        tclTHEN
+		        (intros_using [i])
+		        (loop evbd lit)))
                     ]
 		| Kapp(Ge, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_ge, [| t1;t2;mkVar i|])]);
-		      (clear [i]); 
-		      (intros_using [i]); 
-		      (loop evbd lit);
+		      (onClearedName i (fun i ->
+                        tclTHEN
+		        (intros_using [i])
+		        (loop evbd lit)))
                     ]
 		| Kapp(Lt, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_lt, [| t1;t2;mkVar i|])]);
-		      (clear [i]); 
-		      (intros_using [i]); 
-		      (loop evbd lit);
+		      (onClearedName i (fun i ->
+                        tclTHEN
+		        (intros_using [i])
+		        (loop evbd lit)))
                     ]
 		| Kapp(Gt, [t1;t2]) ->
                     tclTHENLIST [
 		      (generalize_tac
                         [mkApp (Lazy.force coq_not_gt, [| t1;t2;mkVar i|])]);
-		      (clear [i]); 
-		      (intros_using [i]); 
-		      (loop evbd lit);
+		      (onClearedName i (fun i ->
+                        tclTHEN
+		        (intros_using [i])
+		        (loop evbd lit)))
                     ]
 		| Kapp(Eq,[typ;t1;t2]) ->
                     if !old_style_flag then begin 
@@ -1729,18 +1749,20 @@ let destructure_hyps gl =
 			      (simplest_elim 
 				(mkApp
                                   (Lazy.force coq_not_eq, [|t1;t2;mkVar i|])));
-			      (clear [i]); 
-			      (intros_using [i]); 
-			      (loop evbd lit);
+		              (onClearedName i (fun i ->
+                                tclTHEN
+		                (intros_using [i])
+		                (loop evbd lit)))
                             ]
 			| Kapp(Z,_) ->
                             tclTHENLIST [
 			      (simplest_elim 
 				(mkApp
 				  (Lazy.force coq_not_Zeq, [|t1;t2;mkVar i|])));
-			      (clear [i]);
-			      (intros_using [i]);
-			      (loop evbd lit);
+		              (onClearedName i (fun i ->
+                                tclTHEN
+		                (intros_using [i])
+		                (loop evbd lit)))
                             ]
 			| _ -> loop evbd lit
                     end else begin 
