@@ -38,7 +38,7 @@ cime/cime-deps:
 
 build-release: copy-cime cime/cimecmo-def
 	dev/copy_cime $(CIMEHOME) cime/cime-cmos
-	echo change Makefile (include cime/Makefile)
+	echo change Makefile (include Makefile.cime)
 	echo do make clean; make depend; make world
 
 copy-cime: cime/cime-cmos
