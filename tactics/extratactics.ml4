@@ -228,6 +228,19 @@ VERNAC COMMAND EXTEND AddRelation3
    [ add_relation n a aeq None None (Some t) ]
 END
 
+TACTIC EXTEND SetoidSymmetry
+   [ "Setoid_symmetry" ] -> [ setoid_symmetry ]
+ | [ "Setoid_symmetry" "in" ident(n) ] -> [ setoid_symmetry_in n ]
+END
+
+TACTIC EXTEND SetoidReflexivity
+   [ "Setoid_reflexivity" ] -> [ setoid_reflexivity ]
+END
+
+TACTIC EXTEND SetoidTransitivity
+   [ "Setoid_transitivity" constr(t) ] -> [ setoid_transitivity t ]
+END
+
 (* Inversion lemmas (Leminv) *)
 
 open Inv

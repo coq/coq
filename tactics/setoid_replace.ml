@@ -1143,8 +1143,7 @@ let beta_expand c args_rev =
 
 exception Use_rewrite
 
-let relation_of_hypothesis_and_term_to_rewrite new_goals gl (_,h) t =
- let hypt = pf_type_of gl h in
+let relation_class_that_matches_a_constr caller_name raise_opt new_goals hypt =
  let (heq, hargs) = decompose_app hypt in
  let rec get_all_but_last_two =
   function
@@ -1160,19 +1159,19 @@ let relation_of_hypothesis_and_term_to_rewrite new_goals gl (_,h) t =
    match rel,new_goals with
       Leibniz _,[] ->
        assert (subst = []);
-       raise Use_rewrite (* let's optimize the proof term size *)
+       raise_opt () (* let's optimize the proof term size *)
     | Leibniz (Some _), _ ->
        assert (subst = []);
        rel
     | Leibniz None, _ ->
-       (match subst with
-           [t] -> Leibniz (Some t)
-         | _ -> assert false)
+       (* for well-typedness reasons it should have been catched by the
+          previous guard in the previous iteration. *)
+       assert false
     | Relation rel,_ -> Relation (apply_to_relation (Array.of_list subst) rel)
   with Not_found ->
    if l = [] then
     (*CSC: still "setoid" in the error message *)
-    errorlabstrm "Setoid_rewrite"
+    errorlabstrm caller_name
      (prterm (mkApp (aeq, Array.of_list all_aeq_args)) ++
       str " is not a setoid equality.")
    else
@@ -1628,7 +1627,8 @@ let relation_rewrite c1 c2 (input_direction,cl) ~new_goals gl =
  in
   try
    let input_relation =
-    relation_of_hypothesis_and_term_to_rewrite new_goals gl hyp c1 in
+    relation_class_that_matches_a_constr "Setoid_rewrite"
+     (fun () -> raise Use_rewrite) new_goals (pf_type_of gl (snd hyp)) in
    let output_relation,output_direction,marked_but =
     mark_occur gl ~new_goals c1 but input_relation input_direction in
    let cic_output_direction = cic_direction_of_direction output_direction in
@@ -1748,3 +1748,73 @@ let setoid_replace_in id relation c1 c2 ~new_goals gl =
      tclTHENLASTn
       (setoid_replace relation c2 c1 ~new_goals)
       [| exact_check (mkVar id); tclIDTAC |] ] gl
+
+(* [setoid_]{reflexivity,symmetry,transitivity} tactics *)
+
+exception Use_reflexivity
+
+let setoid_reflexivity gl =
+ try
+  let relation_class =
+   relation_class_that_matches_a_constr "Setoid_reflexivity"
+    (fun () -> raise Use_reflexivity) [] (pf_concl gl) in
+  match relation_class with
+     Leibniz _ -> assert false (* since [] is empty *)
+   | Relation rel ->
+      match rel.rel_refl with
+         None ->
+          errorlabstrm "Setoid_reflexivity"
+           (str "The relation " ++ prrelation rel ++ str " is not reflexive.")
+       | Some refl -> apply refl gl
+ with
+  Use_reflexivity -> reflexivity gl
+
+exception Use_symmetry
+
+let setoid_symmetry gl =
+ try
+  let relation_class =
+   relation_class_that_matches_a_constr "Setoid_symmetry"
+    (fun () -> raise Use_symmetry) [] (pf_concl gl) in
+  match relation_class with
+     Leibniz _ -> assert false (* since [] is empty *)
+   | Relation rel ->
+      match rel.rel_sym with
+         None ->
+          errorlabstrm "Setoid_symmetry"
+           (str "The relation " ++ prrelation rel ++ str " is not symmetric.")
+       | Some sym -> apply sym gl
+ with
+  Use_symmetry -> symmetry gl
+
+let setoid_symmetry_in = symmetry_in
+
+exception Use_transitivity
+
+let setoid_transitivity c gl =
+ try
+  let relation_class =
+   relation_class_that_matches_a_constr "Setoid_transitivity"
+    (fun () -> raise Use_transitivity) [] (pf_concl gl) in
+  match relation_class with
+     Leibniz _ -> assert false (* since [] is empty *)
+   | Relation rel ->
+      let ctyp = pf_type_of gl c in
+      let rel' = unify_relation_carrier_with_type (pf_env gl) rel ctyp in
+       match rel'.rel_trans with
+          None ->
+           errorlabstrm "Setoid_transitivity"
+            (str "The relation " ++ prrelation rel ++ str " is not transitive.")
+        | Some trans ->
+           let transty = nf_betaiota (pf_type_of gl trans) in
+           let argsrev, _ =
+            Reductionops.decomp_n_prod (pf_env gl) Evd.empty 2 transty in
+           let binder =
+            match List.rev argsrev with
+               _::(Name n2,None,_)::_ -> Rawterm.NamedHyp n2
+             | _ -> assert false
+           in
+            apply_with_bindings
+             (trans, Rawterm.ExplicitBindings [ dummy_loc, binder, c ]) gl
+ with
+  Use_transitivity -> transitivity c gl

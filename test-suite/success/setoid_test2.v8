@@ -12,10 +12,8 @@ Require Export Setoid.
    +8. test con occorrenze non lineari del pattern
    +9. test in cui setoid_replace fa direttamente fallback su replace
    10. sezioni
-   11. setoid_rewrite invocata su una Leibniz equality ritorna un errore
-       invece di provare rewrite.
-  +12. goal con impl
-  +13. testare *veramente* setoid_replace (ora testato solamente il caso
+  +11. goal con impl
+  +12. testare *veramente* setoid_replace (ora testato solamente il caso
        di fallback su replace)
 
   Incompatibilita':
@@ -29,34 +27,47 @@ Require Export Setoid.
 ### Come evitare di dover fare "Require Setoid" prima di usare la
     tattica?
 
-### scelta: quando ci sono piu' scelte dare un warning oppure fallire?
+??? scelta: quando ci sono piu' scelte dare un warning oppure fallire?
     difficile quando la tattica e' rewrite ed e' usata in tattiche
     automatiche
 
-### in test4.v il setoid_rewrite non si puo' sostituire con rewrite
+??? in test4.v il setoid_rewrite non si puo' sostituire con rewrite
     perche' questo ultimo fallisce per via dell'unificazione
 
-### ??? <-> non e' sottorelazione di ->. Quindi ora puo' capitare
+??? ??? <-> non e' sottorelazione di ->. Quindi ora puo' capitare
     di non riuscire a provare goal del tipo A /\ B dove (A, <->) e
     (B, ->) (per esempio)
 
-### Dichiarazione dentro a un module type e a una sezione: ???
-### Relazioni universalmente quantificate: ???
-### Implementare zucchero sintattico per partial setoids.
-    Stessa cosa per ogni relazione transitiva? In effetti basta lo
-    zucchero sintattico per le transitive.
 ### Nota: il parsing e pretty printing delle relazioni non e' in synch!
     eq contro (ty,eq). Uniformare
 
 ### diminuire la taglia dei proof term
 
-### il messaggio di errore non e' assolutamente significativo quando
+??? il messaggio di errore non e' assolutamente significativo quando
     nessuna marcatura viene trovata
+
+### fare in modo che uscendo da una sezione vengano quantificate le
+    relazioni e i morfismi. Hugo: paciugare nel discharge.ml
+
+### implementare relazioni/morfismi quantificati con dei LetIn (che palle...)
+    decompose_prod da far diventare simile a un Reduction.dest_arity?
+    (ma senza riduzione??? e perche' li' c'e' riduzione?)
+    Soluzione da struzzo: fare zeta-conversione.
+
+### fare in modo che impl sia espanso nel lemma di compatibilita' del
+    morfismo (richiesta di Marco per poter fare Add Hing)
+
+??? snellire la sintassi omettendo "proved by" come proposto da Marco?  ;-(
+
+### non capisce piu' le riscritture con uguaglianze quantificate (almeno
+    nell'esempio di Marco)
+
+### unificare le varie check_...
+### sostituire a Use_* una sola eccezione Optimize
 
   Implementare:
    -2. user-defined subrelations && user-proved subrelations
    -1. trucco di Bruno
-    0. [setoid_]symmetry, [setoid_]reflexivity, [setoid_]transitivity (?!?)
 
   Sorgenti di inefficacia:
     1. scelta del setoide di default per un sostegno: per farlo velocemente
@@ -83,20 +94,23 @@ Require Export Setoid.
        l'utente puo' esplicitamente disambiguare la scelta globale fornendo
        esplicitamente la scelta delle side conditions generate.
     8. nel caso in cui la setoid_replace sia stata invocata al posto
-       della replace la setoid_replace invoca direttamente la replace
+       della replace la setoid_replace invoca direttamente la replace.
+       Stessa cosa per la setoid_rewrite.
     9. permette di gestire termini in cui il prefisso iniziale dell'albero
        (fino a trovare il termine da riscrivere) non sia formato esclusivamente
        da morfismi il cui dominio e codominio sia un setoide.
        Ovvero ammette anche morfismi il cui dominio e/o codominio sia
        l'uguaglianza di Leibniz. (Se entrambi sono uguaglianze di Leibniz
        allora il setoide e' una semplice funzione).
-  ?10. [setoid_]rewrite ... in ...
+   10. [setoid_]rewrite ... in ...
        setoid_replace ... in ...
-       [setoid_]reflexivity???
-       [setoid_]transitivity???
-       [setoid_]symmetry???
+       [setoid_]reflexivity
+       [setoid_]transitivity ...
+       [setoid_]symmetry
+       [setoid_]symmetry in ...
    11. permette di dichiarare dei setoidi/relazioni/morfismi in un module
        type
+   12. relazioni, morfismi e setoidi quantificati
 *)
 
 Axiom S1: Set.
@@ -122,13 +136,13 @@ Add Morphism f : f_compat2. Admitted.
 Theorem test1: forall x y, (eqS1 x y) -> (eqS2 (f x 0) (f y 0)).
  intros.
  rewrite H.
- apply (Seq_refl _ _ SetoidS2).
+ setoid_reflexivity.
 Qed.
 
 Theorem test1': forall x y, (eqS1 x y) -> (eqS2 (f x 0) (f y 0)).
  intros.
  setoid_replace x with y.
- apply (Seq_refl _ _ SetoidS2).
+ setoid_reflexivity.
  assumption.
 Qed.
 

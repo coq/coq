@@ -54,8 +54,7 @@ split; apply add_aux.
 assumption.
 
 rewrite H.
-apply Seq_refl.
-exact setoid_set.
+setoid_reflexivity.
 Qed.
 
 Fixpoint remove (a : A) (s : set) {struct s} : set :=
