@@ -175,7 +175,7 @@ let pf_lookup_name_as_renamed hyps ccl s =
 let pf_lookup_index_as_renamed ccl n =
   Detyping.lookup_index_as_renamed ccl n
 
-let pr_idl idl = prlist_with_sep pr_spc print_id idl
+let pr_idl idl = prlist_with_sep pr_spc pr_id idl
 
 let pr_goal g =
   let env = evar_env g in
@@ -274,7 +274,7 @@ let pr_evd evd =
   prlist_with_sep pr_fnl
     (fun (ev,evd) ->
        let pe = pr_decl evd in 
-       h 0 [< print_id (id_of_existential ev) ; 'sTR"==" ; pe >])
+       h 0 [< pr_id (id_of_existential ev) ; 'sTR"==" ; pe >])
     (Evd.to_list evd)
     
 let pr_decls decls = pr_evd (ts_it decls)
@@ -291,7 +291,7 @@ let pr_evars =
   prlist_with_sep pr_fnl
     (fun (ev,evd) ->
        let pegl = pr_evgl_sign evd in 
-       [< print_id (id_of_existential ev); 'sTR " : "; pegl >])
+       [< pr_id (id_of_existential ev); 'sTR " : "; pegl >])
 
 (* Print an enumerated list of existential variables *)
 let rec pr_evars_int i = function
@@ -300,7 +300,7 @@ let rec pr_evars_int i = function
       let pegl = pr_evgl_sign evd in 
       let pei = pr_evars_int (i+1) rest in
       [< (hOV 0 [< 'sTR "Existential "; 'iNT i; 'sTR " ="; 'sPC;
-                   print_id (id_of_existential ev) ; 'sTR " : "; pegl >]); 
+                   pr_id (id_of_existential ev) ; 'sTR " : "; pegl >]); 
 	 'fNL ; pei >]
 
 let pr_subgoals_existential sigma = function 
@@ -349,10 +349,11 @@ let last_of_cvt_flags (_,red) =
   (if (red_set red BETA) then [ope("Beta",[])]
    else [])@
   (let (n_unf,lconst) = red_get_const red in
-   let lnvar = List.map (fun sp -> nvar (print_basename sp)) lconst in
-   if lnvar = [] then []
-   else if n_unf then [ope("Delta",[]);ope("UnfBut",lnvar)]
-   else [ope("Delta",[]);ope("Unf",lnvar)])@
+   let lqid = List.map (fun sp -> ast_of_qualid (Global.qualid_of_global 
+              (ConstRef sp))) lconst in
+   if lqid = [] then []
+   else if n_unf then [ope("Delta",[]);ope("UnfBut",lqid)]
+   else [ope("Delta",[]);ope("Unf",lqid)])@
   (if (red_set red IOTA) then [ope("Iota",[])]
    else [])
 
@@ -365,7 +366,8 @@ let ast_of_cvt_redexp = function
   | Lazy flg -> ope("Lazy",last_of_cvt_flags flg)
   | Unfold l ->
     ope("Unfold",List.map (fun (locc,sp) -> ope("UNFOLD",
-      [nvar (print_basename sp)]@(List.map num locc))) l)
+      [ast_of_qualid (Global.qualid_of_global (ConstRef sp))]
+      @(List.map num locc))) l)
   | Fold l ->
     ope("Fold",List.map (fun c -> ope ("COMMAND",
       [ast_of_constr false (Global.env ()) c])) l)
