@@ -1021,19 +1021,6 @@ let _ =
               mSG (print_safe_judgment env j))
        | _ -> bad_vernac_args "Check")
     
-(***
-let _ =
-  add "PrintExtractId"
-    (function 
-       | [VARG_IDENTIFIER id] -> (fun () -> mSG(print_extracted_name id))
-       | _ -> bad_vernac_args "PrintExtractId")
-
-let _ =
-  add "PrintExtract"
-    (function 
-       | [] -> (fun () -> mSG(print_extraction ()))
-       | _  -> bad_vernac_args "PrintExtract")
-    ***)
 
 let extract_qualid = function 
   | VARG_QUALID qid ->
