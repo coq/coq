@@ -15,7 +15,11 @@ open Pcoq
 open Genarg
 open Pp
 
-VERNAC ARGUMENT EXTEND mlname
+let pr_mlname _ _ s = spc () ++ str"\"" ++ str s ++ str"\""
+
+ARGUMENT EXTEND mlname
+  TYPED AS string
+  PRINTED BY pr_mlname
 | [ preident(id) ] -> [ id ]
 | [ string(s) ] -> [ s ]
 END
