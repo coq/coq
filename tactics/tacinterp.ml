@@ -1059,7 +1059,7 @@ let eval_opt_ident ist = option_app (eval_ident ist)
 
 (* Interpretation of constructions *)
 
-(* Extracted the constr list from lfun *)
+(* Extract the constr list from lfun *)
 let rec constr_list_aux env = function
   | (id,v)::tl -> 
       let (l1,l2) = constr_list_aux env tl in
@@ -1069,6 +1069,12 @@ let rec constr_list_aux env = function
   | [] -> ([],[])
 
 let constr_list ist env = constr_list_aux env ist.lfun
+
+(* Extract the identifier list from lfun *)
+let rec extract_ids = function
+  | (id,VIdentifier id')::tl -> id'::extract_ids tl
+  | _::tl -> extract_ids tl
+  | [] -> []
 
 let retype_list sigma env lst =
   List.fold_right (fun (x,csr) a ->
@@ -1266,7 +1272,7 @@ and interp_tacarg ist gl = function
       interp_app ist gl fv largs loc
   | TacFreshId idopt -> 
       let s = match idopt with None -> "H" | Some s -> s in
-      VIdentifier (Tactics.fresh_id [] (id_of_string s) gl)
+      VIdentifier (Tactics.fresh_id (extract_ids ist.lfun) (id_of_string s) gl)
   | Tacexp t -> val_interp ist gl t
   | TacDynamic(_,t) ->
       let tg = (tag t) in
