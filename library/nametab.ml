@@ -8,6 +8,9 @@ open Libobject
 open Declarations
 open Term
 
+let roots = ref []
+let push_library_root s = roots := list_add_set s !roots
+
 type cci_table = global_reference Stringmap.t
 type obj_table = (section_path * obj) Stringmap.t
 type mod_table = (section_path * module_contents) Stringmap.t
@@ -70,8 +73,8 @@ let push_object sp obj =
 let push_module sp mc =
   let dir, s = repr_qualid (qualid_of_sp sp) in
   push_mod_absolute dir s (sp,mc);
-  if s = List.hd coq_root then 
-    warning ("Cannot allow access to "^s^" by relative paths: it conflicts with the \nroot of Coq library")
+  if List.mem s !roots then 
+    warning ("Cannot allow access to "^s^" by relative paths: it is already registered as a root of the Coq library")
   else push_mod_current s (sp,mc)
 
 (* These are entry points to locate names *)
@@ -133,20 +136,20 @@ let exists_cci sp =
 (***********************************************)
 (* Registration as a global table and rollback *)
     
-let init () = nametabs := empty
+let init () = nametabs := empty; roots := []
 
-type frozen = module_contents
+type frozen = module_contents * dir_path list
 
-let freeze () = !nametabs
+let freeze () = !nametabs, !roots
 		  
-let unfreeze mc = nametabs := mc
+let unfreeze (mc,r) = nametabs := mc; roots := r
 
 let _ = 
   Summary.declare_summary "names"
     { Summary.freeze_function = freeze;
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init;
-      Summary.survive_section = false }
+      Summary.survive_section = true }
 
 let rollback f x =
   let fs = freeze () in

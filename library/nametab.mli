@@ -36,5 +36,5 @@ val exists_cci : section_path -> bool
 val open_module_contents : qualid -> unit
 val rec_open_module_contents : qualid -> unit
 
-
+val push_library_root : string -> unit
 
