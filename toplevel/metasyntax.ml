@@ -410,7 +410,8 @@ let rec find_pattern xl = function
       error ("The token "^s^" occurs on one side of \"..\" but not on the other side")
   | [NonTerminal _], Break s :: _ | Break s :: _, _ ->
       error ("A break occurs on one side of \"..\" but not on the other side")
-  | ((SProdList _ | NonTerminal _) :: _ | []), _ -> assert false
+  | ((SProdList _ | NonTerminal _) :: _ | []), _ -> 
+      error ("The special symbol \"..\" must occur in a configuration of the form\n\"x symbs .. symbs y\"")
 
 let rec interp_list_parser hd = function
   | [] -> [], List.rev hd
