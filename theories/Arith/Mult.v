@@ -91,7 +91,7 @@ Hints Resolve mult_O_le : arith v62.
 
 Lemma mult_le : (m,n,p:nat) (le n p) -> (le (mult m n) (mult m p)).
 Proof.
-  NewInduction m. Intros. Simpl. Apply le_n.
+  Intro m; NewInduction m. Intros. Simpl. Apply le_n.
   Intros. Simpl. Apply le_plus_plus. Assumption.
   Apply IHm. Assumption.
 Qed.
@@ -122,7 +122,7 @@ Qed.
 
 Lemma mult_lt : (m,n,p:nat) (lt n p) -> (lt (mult (S m) n) (mult (S m) p)).
 Proof.
-  NewInduction m. Intros. Simpl. Rewrite <- plus_n_O. Rewrite <- plus_n_O. Assumption.
+  Intro m; NewInduction m. Intros. Simpl. Rewrite <- plus_n_O. Rewrite <- plus_n_O. Assumption.
   Intros. Exact (lt_plus_plus ? ? ? ? H (IHm ? ? H)).
 Qed.
 
@@ -145,11 +145,32 @@ Qed.
 
 Lemma mult_le_conv_1 : (m,n,p:nat) (le (mult (S m) n) (mult (S m) p)) -> (le n p).
 Proof.
-  Intros. Elim (le_or_lt n p). Trivial.
+  Intros m n p H. Elim (le_or_lt n p). Trivial.
   Intro H0. Cut (lt (mult (S m) n) (mult (S m) n)). Intro. Elim (lt_n_n ? H1).
   Apply le_lt_trans with m:=(mult (S m) p). Assumption.
   Apply mult_lt. Assumption.
 Qed.
+
+(** n|->2*n and n|->2n+1 have disjoint image *)
+
+V7only [ (* From Zdivides *) ].
+Theorem odd_even_lem:
+  (p, q : ?)  ~ (plus (mult (2) p) (1)) = (mult (2) q).
+Intros p; Elim p; Auto.
+Intros q; Case q; Simpl.
+Red; Intros; Discriminate.
+Intros q'; Rewrite [x, y : ?]  (plus_sym x (S y)); Simpl; Red; Intros;
+ Discriminate.
+Intros p' H q; Case q.
+Simpl; Red; Intros; Discriminate.
+Intros q'; Red; Intros H0; Case (H q').
+Replace (mult (S (S O)) q') with (minus (mult (S (S O)) (S q')) (2)).
+Rewrite <- H0; Simpl; Auto.
+Repeat Rewrite [x, y : ?]  (plus_sym x (S y)); Simpl; Auto.
+Simpl; Repeat Rewrite [x, y : ?]  (plus_sym x (S y)); Simpl; Auto.
+Case q'; Simpl; Auto.
+Qed.
+
 
 (** Tail-recursive mult *)
 

@@ -133,7 +133,7 @@ Defined.
 
 Lemma lt_wf_ind : (p:nat)(P:nat->Prop)
               ((n:nat)((m:nat)(lt m n)->(P m))->(P n)) -> (P p).
-Intros; Elim (lt_wf p); Auto with arith.
+Intro p; Intros; Elim (lt_wf p); Auto with arith.
 Qed.
 
 Lemma gt_wf_rec : (p:nat)(P:nat->Set)
@@ -151,7 +151,7 @@ Lemma lt_wf_double_rec :
   ((n,m:nat)((p,q:nat)(lt p n)->(P p q))->((p:nat)(lt p m)->(P n p))->(P n m))
    -> (p,q:nat)(P p q).
 Intros P Hrec p; Pattern p; Apply lt_wf_rec.
-Intros; Pattern q; Apply lt_wf_rec; Auto with arith.
+Intros n H q; Pattern q; Apply lt_wf_rec; Auto with arith.
 Defined.
 
 Lemma lt_wf_double_ind : 
@@ -159,7 +159,7 @@ Lemma lt_wf_double_ind :
   ((n,m:nat)((p,q:nat)(lt p n)->(P p q))->((p:nat)(lt p m)->(P n p))->(P n m))
    -> (p,q:nat)(P p q).
 Intros P Hrec p; Pattern p; Apply lt_wf_ind.
-Intros; Pattern q; Apply lt_wf_ind; Auto with arith.
+Intros n H q; Pattern q; Apply lt_wf_ind; Auto with arith.
 Qed.
 
 Hints Resolve lt_wf : arith.

@@ -64,7 +64,7 @@ Fixpoint  beq_nat [n:nat] : nat -> bool :=
 
 Lemma beq_nat_refl : (x:nat)true=(beq_nat x x).
 Proof.
-  NewInduction x; Simpl; Auto.
+  Intro x; NewInduction x; Simpl; Auto.
 Qed.
 
 Definition beq_nat_eq : (x,y:nat)true=(beq_nat x y)->x=y.

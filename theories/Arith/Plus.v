@@ -61,17 +61,17 @@ Proof.
 NewInduction n ; Simpl ; Auto with arith.
 Qed.
 
-(** Relations with order *)
-
 Lemma simpl_le_plus_l : (p,n,m:nat) (p+n)<=(p+m) -> n<=m.
 Proof.
-NewInduction p; Simpl; Auto with arith.
+Intro p; NewInduction p; Simpl; Auto with arith.
 Qed.
 
 Lemma simpl_lt_plus_l : (n,m,p:nat) (p+n)<(p+m) -> n<m.
 Proof.
 NewInduction p; Simpl; Auto with arith.
 Qed.
+
+(** Compatibility with order *)
 
 Lemma le_reg_l : (n,m,p:nat) n<=m -> (p+n)<=(p+m).
 Proof.
@@ -149,14 +149,14 @@ Qed.
 
 Lemma plus_is_O : (m,n:nat) (m+n)=O -> m=O /\ n=O.
 Proof.
-  NewDestruct m; Auto.
+  Intro m; NewDestruct m; Auto.
   Intros. Discriminate H.
 Qed.
 
 Definition plus_is_one : 
       (m,n:nat) (m+n)=(S O) -> {m=O /\ n=(S O)}+{m=(S O) /\ n=O}.
 Proof.
-  NewDestruct m; Auto.
+  Intro m; NewDestruct m; Auto.
   NewDestruct n; Auto.
   Intros. 
   Simpl in H. Discriminate H.
@@ -166,7 +166,7 @@ Defined.
 
 Lemma plus_permute_2_in_4 : (m,n,p,q:nat) ((m+n)+(p+q))=((m+p)+(n+q)).
 Proof.
-  Intros. 
+  Intros m n p q. 
   Rewrite <- (plus_assoc_l m n (p+q)). Rewrite (plus_assoc_l n p q).
   Rewrite (plus_sym n p). Rewrite <- (plus_assoc_l p n q). Apply plus_assoc_l.
 Qed.

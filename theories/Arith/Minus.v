@@ -35,7 +35,7 @@ Qed.
 Hints Resolve minus_Sn_m : arith v62.
 
 Theorem pred_of_minus : (x:nat)(pred x)=(minus x (S O)).
-NewInduction x; Simpl; Auto with arith.
+Intro x; NewInduction x; Simpl; Auto with arith.
 Qed.
 
 (** Diagonal *)
