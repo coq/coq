@@ -45,7 +45,7 @@ Proof.
  Apply H2.
  Auto with sets.
 
- Injection H8. (*** BUG ***)
+ Injection H8.
  Induction 2.
  Injection H9.
  Induction 2;Auto with sets.

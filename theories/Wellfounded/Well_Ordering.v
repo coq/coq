@@ -28,7 +28,7 @@ Proof.
  Apply Acc_intro.
  Elim a.
  Intros.
- Inversion H0. (*** BUG ***)
+ Inversion H0.
  Apply Acc_intro.
  Generalize H4 ;Generalize H1 ;Generalize f0 ;Generalize v.
  Rewrite -> H3.
