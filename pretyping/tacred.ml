@@ -18,7 +18,8 @@ exception Elimconst
 exception Redelimination
 
 type constant_evaluation = 
-  | EliminationFix of int * (constant * int * (int * constr) list * int)
+  | EliminationFix of
+      int * (evaluable_reference * int * (int * constr) list * int)
   | EliminationCases of int
   | NotAnElimination
 
@@ -93,23 +94,28 @@ let check_fix_reversibility cst labs args ((lv,i),(tys,_,bds)) =
    reversible (in case of a unary Fix) or the last one before the Fix
    if the latter is mutually defined *)
 
-let compute_consteval_direct cst c =
-  let rec srec n labs c =
-    let c',l = whd_betadeltaeta_stack (Global.env()) Evd.empty c in
+let compute_consteval_direct sigma env cst c =
+  let rec srec env n labs c =
+    let c',l = whd_betadeltaeta_stack env sigma c in
     match kind_of_term c' with
-      | IsLambda (_,t,g) when l=[] -> srec (n+1) (t::labs) g
+      | IsLambda (id,t,g) when l=[] ->
+	  srec (push_rel_assum (id,t) env) (n+1) (t::labs) g
       | IsFix fix -> check_fix_reversibility cst labs l fix
       | IsMutCase (_,_,d,_) when isRel d -> EliminationCases n
       | _ -> NotAnElimination
-  in srec 0 [] c
+  in srec env 0 [] c
 
-let rec compute_consteval cst c = 
-  let rec srec n labs c =
+let rec compute_consteval sigma env cst c = 
+  let rec srec env n labs c =
     let c',l = whd_betaetalet_stack c in
     let nargs = List.length l in
     match kind_of_term c' with
-      | IsConst cst2 ->
-	  (match descend_consteval cst2 with
+      | IsLambda (na,t,g) when l=[] ->
+	  srec (push_rel_assum (na,t) env) (n+1) (t::labs) g
+      | IsFix fix -> check_fix_reversibility cst labs l fix
+      | IsMutCase (_,_,d,_) when isRel d -> EliminationCases n
+      | _ when isEvalRef c' ->
+	  (match descend_consteval sigma env (destEvalRef c') with
 	     | NotAnElimination -> NotAnElimination
 	     | EliminationFix (minarg,(_,nbfix,_,_ as info)) ->
 		 (* We know that the underlying Fix must be fold by oldcst *)
@@ -119,7 +125,7 @@ let rec compute_consteval cst c =
 		   try
 		     (* We try to name the Fix by cst *)
 		     (* Complexité en n^2, bof, peut mieux faire *)
-		     compute_consteval_direct cst c
+		     compute_consteval_direct sigma env cst c
 		   with
 		       Elimconst -> EliminationFix (new_minarg,info)
 		 else
@@ -127,28 +133,26 @@ let rec compute_consteval cst c =
 	     | EliminationCases minarg ->
 		 let new_minarg = max (minarg+n-nargs) minarg in
 		 EliminationCases new_minarg)
-      | IsLambda (_,t,g) when l=[] -> srec (n+1) (t::labs) g
-      | IsFix fix -> check_fix_reversibility cst labs l fix
-      | IsMutCase (_,_,d,_) when isRel d -> EliminationCases n
       | _ -> raise Elimconst
   in
-  try srec 0 [] c
+  try srec env 0 [] c
   with Elimconst -> NotAnElimination
 
-and descend_consteval cst =
-  match constant_opt_value (Global.env ()) cst with
+and descend_consteval sigma env cst =
+  match reference_opt_value sigma env cst with
     | None -> NotAnElimination
-    | Some c -> compute_consteval cst c
+    | Some c -> compute_consteval sigma env cst c
 
-let constant_eval (sp,_ as cst) =
-  try
-    Cstmap.find cst !eval_table
-  with Not_found -> begin
-    let v = descend_consteval cst in
-    eval_table := Cstmap.add cst v !eval_table;
-    v
-  end
-
+let reference_eval sigma env = function
+  | EvalConst cst as ref -> 
+      (try
+	 Cstmap.find cst !eval_table
+       with Not_found -> begin
+	 let v = descend_consteval sigma env ref in
+	 eval_table := Cstmap.add cst v !eval_table;
+	 v
+       end)
+  | ref -> descend_consteval sigma env ref
 
 let rev_firstn_liftn fn ln = 
   let rec rfprec p res l = 
@@ -168,7 +172,7 @@ let rev_firstn_liftn fn ln =
    where a1...an are the n first arguments of largs and Tik' is Tik[yil=al]
    To check ... *)
 
-let make_elim_fun ((sp,args as cst),nbfix,lv,n) largs =
+let make_elim_fun (ref,nbfix,lv,n) largs =
   let labs,_ = list_chop n (list_of_stack largs) in
   let p = List.length lv in
   let ylv = List.map fst lv in
@@ -181,9 +185,12 @@ let make_elim_fun ((sp,args as cst),nbfix,lv,n) largs =
   fun id -> 
     let fi = 
       if nbfix = 1 then
-	mkConst cst
+	mkEvalRef ref
       else
-	mkConst (make_path (dirpath sp) id (kind_of_path sp),args)
+	match ref with
+	  | EvalConst (sp,args) ->
+	      mkConst (make_path (dirpath sp) id (kind_of_path sp),args)
+	  | _ -> anomaly "elimination of local fixpoints not implemented"
     in
       list_fold_left_i 
 	(fun i c (k,a) -> 
@@ -207,7 +214,12 @@ let reduce_fix_use_function f whfun fix stack =
   match fix_recarg fix stack with
     | None -> NotReducible
     | Some (recargnum,recarg) ->
-        let (recarg'hd,_ as recarg')= whfun (recarg, empty_stack) in
+        let (recarg'hd,_ as recarg') =
+	  if isRel recarg then
+	    (* The recarg cannot be a local def, no worry about the right env *)
+	    (recarg, empty_stack) 
+	  else
+	    whfun (recarg, empty_stack) in
         let stack' = stack_assign stack recargnum (app_stack recarg') in
 	(match kind_of_term recarg'hd with
            | IsMutConstruct _ ->
@@ -258,24 +270,24 @@ let special_red_case env whfun (ci, p, c, lf)  =
   in 
   redrec (c, empty_stack)
 
-let rec red_elim_const env sigma cst largs =
-  if not (evaluable_constant env cst) then raise Redelimination;
-  match constant_eval cst with
+let rec red_elim_const env sigma ref largs =
+  if not (evaluable_reference sigma env ref) then raise Redelimination;
+  match reference_eval sigma env ref with
     | EliminationCases n when stack_args_size largs >= n ->
-	let c = constant_value env cst in
+	let c = reference_value sigma env ref in
 	let c', lrest = whd_betadeltaeta_state env sigma (c,largs) in
         (special_red_case env (construct_const env sigma) (destCase c'),
 	 lrest)
-    | EliminationFix (min,(cstgoal,_,_,_ as infos))
+    | EliminationFix (min,(refgoal,_,_,_ as infos))
 	when stack_args_size largs >=min ->
-	let rec descend cst args =
-	  let c = constant_value env cst in
-	  if cst = cstgoal then
+	let rec descend ref args =
+	  let c = reference_value sigma env ref in
+	  if ref = refgoal then
 	    (c,args)
 	  else
 	    let c', lrest = whd_betaetalet_state (c,args) in
-	    descend (destConst c') lrest in
-	let (_, midargs as s) = descend cst largs in
+	    descend (destEvalRef c') lrest in
+	let (_, midargs as s) = descend ref largs in
 	let d, lrest = whd_betadeltaeta_state env sigma s in
 	let f = make_elim_fun infos midargs in
 	let co = construct_const env sigma in
@@ -287,17 +299,6 @@ let rec red_elim_const env sigma cst largs =
 and construct_const env sigma = 
   let rec hnfstack (x, stack as s) =
     match kind_of_term x with
-      | IsConst cst  ->
-          (try
-	     hnfstack (red_elim_const env sigma cst stack)
-           with Redelimination ->
-	     (match constant_opt_value env cst with
-		| Some cval ->
-		    (match kind_of_term cval with
-                       | IsCoFix _ -> s
-                       | _ -> hnfstack (cval, stack))
-		| None ->
-		    raise Redelimination))
       | IsCast (c,_) -> hnfstack (c, stack)
       | IsApp (f,cl) -> hnfstack (f, append_stack cl stack)
       | IsLambda (_,_,c) ->
@@ -313,6 +314,18 @@ and construct_const env sigma =
 	  (match reduce_fix hnfstack fix stack with
              | Reduced s' -> hnfstack s'
 	     | NotReducible -> raise Redelimination)
+      | _ when isEvalRef x ->
+	  let ref = destEvalRef x in
+          (try
+	     hnfstack (red_elim_const env sigma ref stack)
+           with Redelimination ->
+	     (match reference_opt_value sigma env ref with
+		| Some cval ->
+		    (match kind_of_term cval with
+                       | IsCoFix _ -> s
+                       | _ -> hnfstack (cval, stack))
+		| None ->
+		    raise Redelimination))
       | _ -> raise Redelimination
   in 
   hnfstack
@@ -323,19 +336,17 @@ and construct_const env sigma =
 (* Red reduction tactic: reduction to a product *)
 
 let internal_red_product env sigma c = 
-  let rec redrec x =
+  let rec redrec env x =
     match kind_of_term x with
-      | IsApp (f,l) -> appvect (redrec f, l)
-      | IsConst cst -> constant_value env cst
-      | IsEvar ev -> existential_value sigma ev
-      | IsCast (c,_) -> redrec c
-      | IsProd (x,a,b) -> mkProd (x, a, redrec b)
+      | IsApp (f,l) -> appvect (redrec env f, l)
+      | IsCast (c,_) -> redrec env c
+      | IsProd (x,a,b) -> mkProd (x, a, redrec (push_rel_assum (x,a) env) b)
+      | _ when isEvalRef x -> 
+	  (match reference_opt_value sigma env (destEvalRef x) with
+	     | None -> raise Redelimination
+	     | Some c -> c)
       | _ -> raise Redelimination
-  in
-  let c' =
-    try redrec c with NotEvaluableConst _ | NotInstantiatedEvar ->
-					      raise Redelimination
-  in nf_betaiota env sigma (redrec c)
+  in nf_betaiota env sigma (redrec env c)
 
 let red_product env sigma c = 
   try internal_red_product env sigma c
@@ -352,17 +363,6 @@ let hnf_constr env sigma c =
              | Some (a,rest) -> stacklam redrec [a] c rest)
       | IsLetIn (n,b,_,c) -> stacklam redrec [b] c largs
       | IsApp (f,cl)   -> redrec (f, append_stack cl largs)
-      | IsConst cst ->
-          (try
-             let (c',lrest) = red_elim_const env sigma cst largs in 
-	     redrec (c', lrest)
-           with Redelimination ->
-             match constant_opt_value env cst with
-	       | Some c ->
-		   (match kind_of_term c with 
-                      | IsCoFix _ -> app_stack (x,largs)
-		      | _ ->  redrec (c, largs))
-	       | None -> app_stack s)
       | IsCast (c,_) -> redrec (c, largs)
       | IsMutCase (ci,p,c,lf) ->
           (try
@@ -375,6 +375,18 @@ let hnf_constr env sigma c =
 	  (match reduce_fix (whd_betadeltaiota_state env sigma) fix largs with
              | Reduced s' -> redrec s'
 	     | NotReducible -> app_stack s)
+      | _ when isEvalRef x ->
+	  let ref = destEvalRef x in
+          (try
+             let (c',lrest) = red_elim_const env sigma ref largs in 
+	     redrec (c', lrest)
+           with Redelimination ->
+             match reference_opt_value sigma env ref with
+	       | Some c ->
+		   (match kind_of_term c with 
+                      | IsCoFix _ -> app_stack (x,largs)
+		      | _ ->  redrec (c, largs))
+	       | None -> app_stack s)
       | _ -> app_stack s
   in 
   redrec (c, empty_stack)
@@ -392,11 +404,6 @@ let whd_nf env sigma c =
       | IsLetIn (n,b,_,c) -> stacklam nf_app [b] c stack
       | IsApp (f,cl) -> nf_app (f, append_stack cl stack)
       | IsCast (c,_) -> nf_app (c, stack)
-      | IsConst cst ->
-          (try
-	     nf_app (red_elim_const env sigma cst stack)
-           with Redelimination -> 
-	     s)
       | IsMutCase (ci,p,d,lf) ->
           (try
              nf_app (special_red_case env nf_app (ci,p,d,lf), stack)
@@ -406,6 +413,11 @@ let whd_nf env sigma c =
 	  (match reduce_fix nf_app fix stack with
              | Reduced s' -> nf_app s'
 	     | NotReducible -> s)
+      | _ when isEvalRef c ->
+          (try
+	     nf_app (red_elim_const env sigma (destEvalRef c) stack)
+           with Redelimination -> 
+	     s)
       | _ -> s
   in 
   app_stack (nf_app (c, empty_stack))
@@ -427,7 +439,17 @@ let rec substlin env name n ol c =
 		errorlabstrm "substlin"
 		  [< pr_sp sp; 'sTR " is not a defined constant" >]
         else 
-	  ((n+1),ol,c)
+	  ((n+1), ol, c)
+
+    | IsVar id when id = basename name ->
+        if List.hd ol = n then
+          match lookup_named_value id env with
+	    | Some c -> (n+1, List.tl ol, c)
+	    | None -> 
+		errorlabstrm "substlin"
+		  [< pr_sp name; 'sTR " is not a defined constant" >]
+        else 
+	  ((n+1), ol, c)
 
     (* INEFFICIENT: OPTIMIZE *)
     | IsApp (c1,cl) ->
@@ -451,10 +473,10 @@ let rec substlin env name n ol c =
     | IsLetIn (na,c1,t,c2) ->
         let (n1,ol1,c1') = substlin env name n ol c1 in
         (match ol1 with 
-           | [] -> (n1,[],mkLambda (na,c1',c2))
+           | [] -> (n1,[],mkLetIn (na,c1',t,c2))
            | _  ->
                let (n2,ol2,c2') = substlin env name n1 ol1 c2 in
-               (n2,ol2,mkLambda (na,c1',c2')))
+               (n2,ol2,mkLetIn (na,c1',t,c2')))
 
     | IsProd (na,c1,c2) ->
         let (n1,ol1,c1') = substlin env name n ol c1 in
@@ -519,8 +541,10 @@ let unfoldoccs env sigma (occl,name) c =
     | l -> 
         match substlin env name 1 (Sort.list (<) l) c with
           | (_,[],uc) -> nf_betaiota env sigma uc
-          | (1,_,_) -> error ((string_of_path name)^" does not occur")
-          | _ -> error ("bad occurrence numbers of "^(string_of_path name))
+          | (1,_,_) -> error ((string_of_qualid (qualid_of_sp name))
+			      ^" does not occur")
+          | _ -> error ("bad occurrence numbers of "
+			^(string_of_qualid (qualid_of_sp name)))
 
 (* Unfold reduction tactic: *)
 let unfoldn loccname env sigma c = 
@@ -597,14 +621,6 @@ let one_step_reduce env sigma c =
              | None      -> error "Not reducible 1"
              | Some (a,rest) -> (subst1 a c, rest))
       | IsApp (f,cl) -> redrec (f, append_stack cl largs)
-      | IsConst cst ->
-          (try
-             red_elim_const env sigma cst largs
-           with Redelimination ->
-	     try
-               constant_value env cst, largs
-             with NotEvaluableConst _ -> error "Not reductible 1")
-
       | IsMutCase (ci,p,c,lf) ->
           (try
 	     (special_red_case env (whd_betadeltaiota_state env sigma)
@@ -615,6 +631,15 @@ let one_step_reduce env sigma c =
              | Reduced s' -> s'
 	     | NotReducible -> error "Not reducible 3")
       | IsCast (c,_) -> redrec (c,largs)
+      | _ when isEvalRef x ->
+	  let ref = destEvalRef x in
+          (try
+             red_elim_const env sigma ref largs
+           with Redelimination ->
+	     match reference_opt_value sigma env ref with
+	       | Some d -> d, largs
+	       | None -> error "Not reductible 1")
+
       | _ -> error "Not reducible 3"
   in 
   app_stack (redrec (c, empty_stack))
@@ -623,21 +648,23 @@ let one_step_reduce env sigma c =
    return name, B and t' *)
 
 let reduce_to_mind env sigma t = 
-  let rec elimrec t l = 
+  let rec elimrec env t l = 
     let c, _ = whd_stack t in
     match kind_of_term c with
       | IsMutInd (mind,args) -> ((mind,args),t,it_mkProd_or_LetIn t l)
-      | IsConst _ | IsMutCase _ ->
+      | IsConst _ | IsMutCase _ | IsEvar _ | IsRel _ | IsVar _ ->
           (try 
 	     let t' = nf_betaiota env sigma (one_step_reduce env sigma t) in 
-	     elimrec t' l
+	     elimrec env t' l
            with UserError _ -> errorlabstrm "tactics__reduce_to_mind"
                [< 'sTR"Not an inductive product." >])
-      | IsProd (n,ty,t') -> elimrec t' ((n,None,ty)::l)
-      | IsLetIn (n,b,ty,t') -> elimrec t' ((n,Some b,ty)::l)
+      | IsProd (n,ty,t') ->
+	  elimrec (push_rel_assum (n,t) env) t' ((n,None,ty)::l)
+      | IsLetIn (n,b,ty,t') ->
+	  elimrec (push_rel_def (n,b,t) env) t' ((n,Some b,ty)::l)
       | _ -> error "Not an inductive product"
  in
- elimrec t []
+ elimrec env t []
 
 let reduce_to_ind env sigma t =
   let ((ind_sp,_),redt,c) = reduce_to_mind env sigma t in 
