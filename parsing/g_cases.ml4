@@ -22,11 +22,15 @@ GEXTEND Gram
   ;
   compound_pattern:
     [ [ p = pattern ; lp = ne_pattern_list ->
+        (match p with
+          | Coqast.Node(_,"QUALID",_) -> ()
+          | _ -> Util.user_err_loc 
+              (loc, "compound_pattern", Pp.str "Constructor expected"));
 	  <:ast< (PATTCONSTRUCT $p ($LIST $lp)) >>
       | p = pattern; "as"; id = Prim.var ->
 	  <:ast< (PATTAS $id $p)>>
       | p1 = pattern; ","; p2 = pattern ->
-          <:ast< (PATTCONSTRUCT  Coq.Init.Datatypes.pair $p1 $p2) >>
+          <:ast< (PATTCONSTRUCT Coq.Init.Datatypes.pair $p1 $p2) >>
       | p = pattern -> p ] ]
   ;
   ne_pattern_list:
