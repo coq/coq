@@ -1134,14 +1134,6 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
 
  *)
 
-(*
-let comp_carS_squeleton = put_squel mmk "<<x>>(projS1 ? ? (?)@[x])"
-let comp_cdrS_squeleton = put_squel mmk "<<x>>(projS2 ? ? (?)@[x])"
-
-let comp_carT_squeleton = put_squel mmk "<<x>>(projT1 ? ? (?)@[x])"
-let comp_cdrT_squeleton = put_squel mmk "<<x>>(projT2 ? ? (?)@[x])"
-*)
-
 let match_sigma ex ex_pat =
   match matches (get_pat ex_pat) ex with
     | [(1,a);(2,p);(3,car);(4,cdr)] -> (a,p,car,cdr)
