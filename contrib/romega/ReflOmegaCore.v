@@ -10,6 +10,7 @@ Require Arith.
 Require PolyList.
 Require Bool.
 Require ZArith_base.
+Require OmegaLemmas.
 
 (* \subsection{Définition des types} *)
 
@@ -924,7 +925,7 @@ Definition Tmult_plus_distr  [t: term] :=
 
 Theorem Tmult_plus_distr_stable : (term_stable Tmult_plus_distr).
 
-(ProveStable Tmult_plus_distr Zmult_plus_distr).
+(ProveStable Tmult_plus_distr Zmult_plus_distr_l).
 Save.
 
 Definition Tmult_opp_left [t: term] :=
