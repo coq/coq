@@ -116,10 +116,9 @@ let is_normal_token str =
 	  (match str.[1], str.[2] with
 	    | ('\132', '\128'..'\191') | ('\133', '\128'..'\143') ->
 		(* utf8 letter-like unicode 2100-214F *) true
-	    | (('\136'..'\143' | '\152'..'\155'),_) ->
-		(* utf8 mathematical operators unicode 2200-22FF *)
-		(* utf8 miscellaneous technical unicode 2300-23FF *)
-		(* utf8 miscellaneous symbols unicode 2600-26FF *)
+	    | (('\134'..'\143' | '\152'..'\155'
+               | '\164'..'\165' | '\168'..'\171'),_) ->
+		(* utf8 symbols (see [parse_226_tail] *)
 		false
 	    | _ ->
 		(* default to iso 8859-1 "â" *)
@@ -293,10 +292,14 @@ let parse_226_tail tk = parser
       (* utf8 letter-like unicode 2100-214F *)
       len = ident (store (store (store 0 '\226') c2) c3) >] ->
       TokIdent (get_buff len) 
-  | [< ' ('\136'..'\143' | '\152'..'\155' as c2); 'c3;
+  | [< ' ('\134'..'\143' | '\152'..'\155' 
+         | '\164'..'\165' | '\168'..'\171' as c2); 'c3;
+      (* utf8 arrows A unicode 2190-21FF *)
       (* utf8 mathematical operators unicode 2200-22FF *)
       (* utf8 miscellaneous technical unicode 2300-23FF *)
       (* utf8 miscellaneous symbols unicode 2600-26FF *)
+      (* utf8 arrows B unicode 2900-297F *)
+      (* utf8 mathematical operators unicode 2A00-2AFF *)
       t = special (progress_special c3 (progress_special c2 
 	(progress_special '\226' tk))) >] ->
       TokSymbol t
