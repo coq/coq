@@ -73,6 +73,7 @@ type typed_type = sorts judge
 type typed_term = typed_type judge
 
 let make_typed t s = { body = t; typ = s }
+let make_typed_lazy t f = { body = t; typ = f s }
 
 let typed_app f tt = { body = f tt.body; typ = tt.typ }
 
@@ -92,6 +93,7 @@ type typed_type = constr
 type typed_term = typed_type judge
 
 let make_typed t s = t
+let make_typed_lazy t f = t
 
 let typed_app f tt = f tt
 
@@ -340,14 +342,6 @@ let destCast = function
   | _ -> invalid_arg "destCast"
 
 let isCast = function DOP2(Cast,_,_) -> true | _ -> false
-
-let cast_term = function
-  | DOP2(Cast,c,t) -> c
-  | _ -> anomaly "found a type which did not contain a cast (cast_term)"
-
-let cast_type = function
-  | DOP2(Cast,c,t) -> t
-  | _ -> anomaly "found a type which did not contain a cast (cast_type)"
 
 let rec strip_outer_cast = function
   | DOP2(Cast,c,_) -> strip_outer_cast c

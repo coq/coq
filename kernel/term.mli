@@ -63,6 +63,7 @@ type typed_type
 type typed_term = typed_type judge
 
 val make_typed : constr -> sorts -> typed_type
+val make_typed_lazy : constr -> (constr -> sorts) -> typed_type
 
 val typed_app : (constr -> constr) -> typed_type -> typed_type
 val typed_combine : (constr -> constr -> constr) -> (sorts -> sorts -> sorts)
@@ -283,8 +284,6 @@ val is_small : sorts -> bool (* true for \textsf{Prop} and \textsf{Set} *)
 
 (* Destructs a casted term *)
 val destCast : constr -> constr * constr
-val cast_type : constr -> constr (* 2nd proj *)
-val cast_term : constr -> constr (* 1st proj *)
 val isCast : constr -> bool
 
 (* Removes recursively the casts around a term i.e.
