@@ -63,6 +63,13 @@ Symmetry; Auto with arith.
 Qed.
 Hints Resolve le_plus_minus_r : arith v62.
 
+Theorem le_minus: (i,h:nat) (le (minus i h) i).
+Proof.
+Intros i h;Pattern i h; Apply nat_double_ind; [
+  Auto
+| Auto
+| Intros m n H; Simpl; Apply le_trans with m:=m; Auto ].
+Qed.
 
 Lemma minus_Sn_m : (n,m:nat)(le m n)->((S (minus n m))=(minus (S n) m)).
 Proof.
