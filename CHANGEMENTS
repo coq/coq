@@ -122,6 +122,8 @@ Commandes
   peut lui aussi être restreint à une recherche dans ou à l'extérieur de
   modules.
 
+- SearchIsos n'a pas encore été porté.
+
 - Le point final des commandes doit être suivi d'un blanc (retour
   chariot, tabulation ou espace)
 
