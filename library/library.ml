@@ -144,7 +144,13 @@ let rec load_module_from s f =
   try
     Stringmap.find s !modules_table
   with Not_found ->
-    let (lpe,fname,ch) = raw_intern_module (get_load_path ()) f in
+    let (lpe,fname,ch) =
+      try raw_intern_module (get_load_path ()) f
+      with System.Bad_magic_number fname ->
+        errorlabstrm "load_module_from"
+          [< 'sTR"file "; 'sTR fname; 'sPC; 'sTR"has bad magic number.";
+             'sPC; 'sTR"It is corrupted"; 'sPC;
+             'sTR"or was compiled with another version of Coq." >] in
     let md = System.marshal_in ch in
     let digest = System.marshal_in ch in
     close_in ch;

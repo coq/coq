@@ -579,8 +579,8 @@ and app_interp (evc,env,lfun,lmatch,goalopt,debug) fv largs ast =
       else
         VFun(olfun@newlfun,lvar,body)
     | _ ->
-      anomaly_loc (Ast.loc ast, "Tacinterp.app_interp",[<'sTR
-        "Illegal application: "; print_ast ast>])
+      user_err_loc (Ast.loc ast, "Tacinterp.app_interp",[<'sTR
+        "Illegal tactic application: "; print_ast ast>])
 
 (* Interprets recursive expressions *)
 and rec_interp (evc,env,lfun,lmatch,goalopt,debug) ast = function
