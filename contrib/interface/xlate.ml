@@ -1610,34 +1610,28 @@ let rec xlate_vernac =
 		      CT_id_ne_list(n1, names), dblist)
 	| HintsExtern (None, n, c, t) ->
 	    CT_hint_extern(CT_int n, xlate_formula c, xlate_tactic t, dblist)
-        | HintsResolve l -> 
-	 let l = 
-	   List.map 
-	     (function (None,CRef r) -> r 
-		| _ -> xlate_error "obsolete Hint Resolve not supported") l in
-	 let n1, names = match List.map tac_qualid_to_ct_ID l with
-	     n1 :: names -> n1, names
-	   | _  -> failwith "" in
-	   if local then
-             CT_local_hints(CT_ident "Resolve",
-			    CT_id_ne_list(n1, names), dblist)
-	   else
-             CT_hints(CT_ident "Resolve", CT_id_ne_list(n1, names), dblist)
-        | HintsImmediate l -> 
-	    let l =
+        | HintsResolve l | HintsImmediate l -> 
+	    let l = 
 	      List.map 
-		(function (None,CRef r) -> r 
-		   | _ ->
-		       xlate_error "obsolete Hint Immediate not supported") l
-	    in
-	 let n1, names = match List.map tac_qualid_to_ct_ID l with
-	     n1 :: names -> n1, names
+	     	(function (None, f) -> xlate_formula f
+		   | _ -> 
+		       xlate_error "obsolete Hint Resolve not supported") l in
+	 let f1, formulas = match l  with
+	     a :: tl -> a, tl
 	   | _  -> failwith "" in
+	 let l' = CT_formula_ne_list(f1, formulas) in
 	   if local then
-             CT_local_hints(CT_ident "Immediate",
-			    CT_id_ne_list(n1, names), dblist)
+             (match h with 
+		  HintsResolve _ ->
+		    CT_local_hints_resolve(l', dblist)
+	       	| HintsImmediate _ ->
+		    CT_local_hints_immediate(l', dblist)
+	       	| _ -> assert false)
 	   else
-             CT_hints(CT_ident "Immediate", CT_id_ne_list(n1, names), dblist)
+	     (match h with
+		  HintsResolve _ -> CT_hints_resolve(l', dblist)
+		| HintsImmediate _ -> CT_hints_immediate(l', dblist)
+		| _ -> assert false)
         | HintsUnfold l -> 
 	 let l = List.map
 	   (function (None,ref) -> loc_qualid_to_ct_ID ref |
@@ -1921,8 +1915,15 @@ let rec xlate_vernac =
        else
 	 CT_define_notation(translated_s, formula, 
 			    translated_modif_list, translated_scope)
-   | VernacSyntaxExtension _ -> xlate_error "Syntax Extension not implemented"
-
+   | VernacSyntaxExtension(b,Some(s,modif_list), None) -> 
+       let translated_s = CT_string s in
+       let translated_modif_list = 
+	 CT_modifier_list(List.map xlate_syntax_modifier modif_list) in
+       if b then
+	 CT_local_reserve_notation(translated_s, translated_modif_list)
+       else
+	 CT_reserve_notation(translated_s, translated_modif_list)
+   | VernacSyntaxExtension(_, _, _) -> assert false
    | VernacInfix (b,(str,modl),id,_, opt_scope) ->
        let id1 = loc_qualid_to_ct_ID id in
        let modl1 = CT_modifier_list(List.map xlate_syntax_modifier modl) in
