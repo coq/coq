@@ -23,30 +23,14 @@ Grammar constr constr1 :=
 with constr0 :=
   pair [ "(" lconstr($lc1) "," lconstr($lc2) ")" ] ->
          [ (pair ? ? $lc1 $lc2) ]
-
-(*
-with constr3 :=
-  prod [ constr2($c1) "*" constr3($c2) ] -> [ (prod $c1 $c2) ]
-*)
 .
 
-Infix 4 "+" sum.
-
-Infix RIGHTA 3 "*" prod.
+Infix 7 "+" sum.
+Infix RIGHTA 6 "*" prod.
 
 (** Pretty-printing of things in Datatypes.v *)
 
 Syntax constr
-(*
-  level 4:
-    sum [ (sum $t1 $t2) ] -> [ [<hov 0> $t1:E [0 1] "+" $t2:L ] ]
-  ;
-
-  level 3:
-    product [ (prod $t1 $t2) ] -> [ [<hov 0>  $t1:L [0 1] "*" $t2:E ] ]
-  ;
-
-*)
   level 1:
     pair
       [ (pair $_ $_ $t3 $t4) ] -> [ [<hov 0> "(" $t3:E ","[0 1] $t4:E ")" ] ]
