@@ -365,15 +365,17 @@ macosx-dmg:
 	# - create the dmg file
 	# - bind it to a device /dev/diskXs2 (name)
 	# - create the file system and name it "Coq X.X"
-	# - unbind the device to mount the image on /Volumes
+	# - unbind the device and mount the image on /Volumes
 	# - copy the package
+	# - unbind again the image for cleaning up the installation
 	(export size=`du -s $(MACOSXPKG) | cut -dc -f 1`;\
 	hdiutil create -sectors `expr $$size + 1000` $(MACOSXDMG);\
 	export name=`hdid -nomount $(MACOSXDMG) | tail -1 | cut -d" " -f 1`;\
 	newfs_hfs -v "Coq $(VERSION)" $$name;\
-	hdiutil eject $$name; hdid $(MACOSXDMG);\
-	mkdir "/Volumes/Coq $(VERSION)/coq-$(VERSION).pkg";\
-	ditto -rsrcFork -v $(MACOSXPKG) "/Volumes/Coq $(VERSION)/$(MACOSXPKG)")
+	hdiutil detach $$name;\
+	export name=`hdid $(MACOSXDMG) | tail -1 | cut -d" " -f 1`;\
+	ditto -rsrcFork -v $(MACOSXPKG) "/Volumes/Coq $(VERSION)/$(MACOSXPKG)";\
+	hdiutil detach $$name)
 
 
 ###################################################################
