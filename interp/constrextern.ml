@@ -1332,7 +1332,18 @@ let rec skip_coercion dest_ref (f,args as app) =
 		   if n >= List.length args then app
 		   else (* We skip a coercion *) 
 		     let fargs = list_skipn n args in
-	       	     skip_coercion dest_ref (List.hd fargs,List.tl fargs)
+		     (match fargs with
+		       | [] -> assert false
+		       | [RApp(_,a,l)] -> skip_coercion dest_ref (a,l)
+		       | [a] -> (a,[])
+		       | a::l ->
+			   (* If l'<>[], it is because a class reduces to
+			      a functional type, in which case the
+			      synthesis back of the coercion is not possible
+			      without a cast... Moving coercions to 
+			      detyping will be required for a better
+			      analysis *)
+			   app)
 	       | None -> app)
 	| None -> app
     with Not_found -> app
@@ -1365,6 +1376,18 @@ let rec extern_args extern scopes env args subscopes =
 	  | scopt::subscopes -> (scopt,scopes), subscopes in
 	extern argscopes env a :: extern_args extern scopes env args subscopes
 
+let rec remove_coercions_in_application inctx = function
+  | RApp (loc,f,args) ->
+      let f,args = 
+	if inctx then
+	  skip_coercion (function RRef(_,r) -> Some r | _ -> None) (f,args)
+	else 
+	  (f,args)
+      in
+      if args = [] then f
+      else RApp (loc,f,List.map (remove_coercions_in_application true) args)
+  | c -> c
+
 (**********************************************************************)
 (* mapping rawterms to constr_expr                                    *)
 
@@ -1374,6 +1397,8 @@ let rec extern inctx scopes vars r =
     extern_numeral (Rawterm.loc_of_rawconstr r)
       scopes (Symbols.uninterp_numeral r)
   with No_match ->
+
+  let r = remove_coercions_in_application inctx r in
 
   try 
     if !Options.raw_print or !print_no_symbol then raise No_match;
@@ -1390,11 +1415,13 @@ let rec extern inctx scopes vars r =
   | RPatVar (loc,n) -> if !print_meta_as_hole then CHole loc else CPatVar (loc,n)
 
   | RApp (loc,f,args) ->
+(*
       let (f,args) =
 	if inctx then
 	  skip_coercion (function RRef(_,r) -> Some r | _ -> None) (f,args)
 	else 
 	  (f,args) in
+*)
       (match f with
 	 | RRef (rloc,ref) ->
 	     let subscopes = Symbols.find_arguments_scope ref in
