@@ -218,11 +218,12 @@ open Symbols
 
 type white_status = Juxtapose | Separate of int | NextIsTerminal
 
-let precedence_of_entry_type = function
-  | ETConstr (n,BorderProd (_,None)) -> n, Prec n
-  | ETConstr (n,BorderProd (left,Some a)) ->
+let precedence_of_entry_type from = function
+  | ETConstr (NumLevel n,BorderProd (_,None)) -> n, Prec n
+  | ETConstr (NumLevel n,BorderProd (left,Some a)) ->
       n, let (lp,rp) = prec_assoc a in if left then lp else rp
-  | ETConstr (n,InternalProd) -> n, Prec n
+  | ETConstr (NumLevel n,InternalProd) -> n, Prec n
+  | ETConstr (NextLevel,_) -> from, L
   | ETOther ("constr","annot") -> 10, Prec 10
   | _ -> 0, E (* ?? *)
 
@@ -270,7 +271,7 @@ let add_break n l = UNP_BRK (n,1) :: l
 let make_hunks_ast symbols etyps from =
   let rec make ws = function
     | NonTerminal m :: prods ->
-	let _,lp = precedence_of_entry_type (List.assoc m etyps) in
+	let _,lp = precedence_of_entry_type from (List.assoc m etyps) in
 	let u = PH (meta_pattern (string_of_id m), None, lp) in
 	if prods <> [] && is_non_terminal (List.hd prods) then
 	  u :: add_break 1 (make CanBreak prods)
@@ -307,12 +308,12 @@ let make_hunks_ast symbols etyps from =
 
 let add_break n l = UnpCut (PpBrk(n,0)) :: l
 
-let make_hunks etyps symbols =
+let make_hunks etyps symbols from =
   let vars,typs = List.split etyps in
   let rec make ws = function
     | NonTerminal m :: prods ->
 	let i = list_index m vars in
-	let _,prec = precedence_of_entry_type (List.nth typs (i-1)) in
+	let _,prec = precedence_of_entry_type from (List.nth typs (i-1)) in
 	let u = UnpMetaVar (i ,prec) in
 	if prods <> [] && is_non_terminal (List.hd prods) then
 	  u :: add_break 1 (make CanBreak prods)
@@ -363,16 +364,18 @@ let string_of_symbol = function
   | Terminal s -> [s]
   | Break _ -> []
 
-let assoc_of_type (_,typ) = level_rule (precedence_of_entry_type typ)
+let assoc_of_type n (_,typ) = level_rule (precedence_of_entry_type n typ)
 
 let string_of_assoc = function
   | Some(Gramext.RightA) -> "RIGHTA"
   | Some(Gramext.LeftA) | None -> "LEFTA"
   | Some(Gramext.NonA) -> "NONA"
 
+let make_anon_notation symbols =
+  String.concat " " (List.flatten (List.map string_of_symbol symbols))
+
 let make_symbolic n symbols etyps =
-  (n,List.map assoc_of_type etyps),
-  (String.concat " " (List.flatten (List.map string_of_symbol symbols)))
+  ((n,List.map (assoc_of_type n) etyps), make_anon_notation symbols)
 
 let rec define_keywords = function
     NonTerm(_,Some(_,(ETConstr _|ETOther("constr","binder_constr")))) as n1 ::
@@ -411,7 +414,31 @@ let quote x =
   else
     x
 
-let rec find_symbols c_current c_next c_last vars = function
+let rec analyse_tokens = function
+  | []    -> [], []
+  | String x :: sl when Lexer.is_normal_token x ->
+      Lexer.check_ident x;
+      let id = Names.id_of_string x in
+      let (vars,l) = analyse_tokens sl in
+      if List.mem id vars then
+	error ("Variable "^x^" occurs more than once");
+      (id::vars, NonTerminal id :: l)
+  | String s :: sl ->
+      Lexer.check_special_token s;
+      let (vars,l) = analyse_tokens sl in (vars, Terminal (strip s) :: l)
+  | WhiteSpace n :: sl ->
+      let (vars,l) = analyse_tokens sl in (vars, Break n :: l)
+
+let rec find_symbols c_current c_next c_last = function
+  | [] -> []
+  | NonTerminal id :: sl ->
+      let prec = if sl <> [] then c_current else c_last in
+      (id, prec) :: (find_symbols c_next c_next c_last sl)
+  | Terminal s :: sl -> find_symbols c_next c_next c_last sl
+  | Break n :: sl -> find_symbols c_current c_next c_last sl
+
+(*
+let rec find_symbols c_current c_next c_last = function
   | []    -> (vars, [])
   | String x :: sl when Lexer.is_normal_token x ->
       Lexer.check_ident x;
@@ -419,7 +446,7 @@ let rec find_symbols c_current c_next c_last vars = function
       if List.mem_assoc id vars then
 	error ("Variable "^x^" occurs more than once");
       let prec = if sl <> [] then c_current else c_last in
-      let (vars,l) = find_symbols c_next c_next c_last vars sl in
+      let (vars,l) = find_symbols c_next c_next c_last sl in
       ((id,prec)::vars, NonTerminal id :: l)
 (*
   | "_"::sl ->
@@ -432,11 +459,12 @@ let rec find_symbols c_current c_next c_last vars = function
 *)
   | String s :: sl ->
       Lexer.check_special_token s;
-      let (vars,l) = find_symbols c_next c_next c_last vars sl in
+      let (vars,l) = find_symbols c_next c_next c_last sl in
       (vars, Terminal (strip s) :: l)
   | WhiteSpace n :: sl ->
-      let (vars,l) = find_symbols c_current c_next c_last vars sl in
+      let (vars,l) = find_symbols c_current c_next c_last sl in
       (vars, Break n :: l)
+*)
 
 let make_grammar_rule n assoc typs symbols ntn =
   let prod = make_production typs symbols in
@@ -463,8 +491,8 @@ let make_syntax_rule n name symbols typs ast ntn sc =
     syn_hunks =
       [UNP_SYMBOLIC(sc,ntn,UNP_BOX (PpHOVB 1,make_hunks_ast symbols typs n))]}]
 
-let make_pp_rule symbols typs =
-  [UnpBox (PpHOVB 0, make_hunks symbols typs)]
+let make_pp_rule symbols typs n =
+  [UnpBox (PpHOVB 0, make_hunks symbols typs n)]
 
 
 (**************************************************************************)
@@ -576,17 +604,18 @@ let recompute_assoc typs =
 
 let add_syntax_extension local df modifiers =
   let (assoc,n,etyps,onlyparse) = interp_notation_modifiers modifiers in
-  let inner = if !Options.v7 then (10,InternalProd) else
-    (200,InternalProd) in
-  let (typs,symbs) =
+  let inner = if !Options.v7 then (NumLevel 10,InternalProd) else
+    (NumLevel 200,InternalProd) in
+  let (vars,symbs) = analyse_tokens (split df) in
+  let typs =
     find_symbols
-      (n,BorderProd(true,assoc)) inner (n,BorderProd(false,assoc))
-      [] (split df) in
+      (NumLevel n,BorderProd(true,assoc)) inner
+      (NumLevel n,BorderProd(false,assoc)) symbs in
   let typs = List.map (set_entry_type etyps) typs in
   let assoc = recompute_assoc typs in
   let (prec,notation) = make_symbolic n symbs typs in
   let gram_rule = make_grammar_rule n assoc typs symbs notation in
-  let pp_rule = if onlyparse then None else Some (make_pp_rule typs symbs) in
+  let pp_rule = if onlyparse then None else Some (make_pp_rule typs symbs n) in
   Lib.add_anonymous_leaf
     (inSyntaxExtension(local,prec,notation,gram_rule,pp_rule))
 
@@ -662,12 +691,13 @@ let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
   let onlyparse = onlyparse or !Options.v7_only in
   let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
   let inner =
-    if !Options.v7 then (10,InternalProd) else (200,InternalProd) in
-  let (typs,symbols) =
+    if !Options.v7 then (NumLevel 10,InternalProd)
+    else (NumLevel 200,InternalProd) in
+  let (vars,symbols) = analyse_tokens toks in
+  let typs =
     find_symbols
-      (n,BorderProd(true,assoc)) inner (n,BorderProd(false,assoc))
-      [] toks in
-  let vars = List.map fst typs in
+      (NumLevel n,BorderProd(true,assoc)) inner 
+      (NumLevel n,BorderProd(false,assoc)) symbols in
   (* To globalize... *)
   let a = interp_aconstr vars c in
   let typs = List.map (set_entry_type etyps) typs in
@@ -677,11 +707,12 @@ let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
   let (ppprec,ppn,pptyps,ppsymbols) =
     match omodv8 with
         Some(toks8,(a8,n8,typs8,_)) when Options.do_translate() ->
-          let (typs,symbols) =
+          let (_,symbols) = analyse_tokens toks8 in
+          let typs =
             find_symbols
-              (n8,BorderProd(true,a8)) (200,InternalProd)
-              (n8,BorderProd(false,a8))
-              [] toks8 in
+              (NumLevel n8,BorderProd(true,a8)) (NumLevel 200,InternalProd)
+              (NumLevel n8,BorderProd(false,a8))
+              symbols in
           let typs = List.map (set_entry_type typs8) typs in
           let (prec,notation) = make_symbolic n8 symbols typs in
           (prec, n8, typs, symbols)
@@ -689,7 +720,7 @@ let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
   let gram_rule = make_grammar_rule n assoc typs symbols notation in
   let pp_rule =
     if onlyparse then None
-    else Some (make_pp_rule pptyps ppsymbols) in
+    else Some (make_pp_rule pptyps ppsymbols n) in
   Lib.add_anonymous_leaf
     (inSyntaxExtension(local,ppprec,notation,gram_rule,pp_rule));
   let old_pp_rule =
@@ -721,6 +752,24 @@ let add_notation local df a modifiers mv8 sc =
             let im8 = interp_notation_modifiers ml8 in
             (toks8,im8)) mv8)
           sc toks
+
+let check_occur l id =
+  if not (List.mem (Name id) l) then error ((string_of_id id)^"is unbound")
+
+let add_notation_interpretation df (c,l) sc =
+  let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
+  let (vars,symbs) = analyse_tokens (split df) in
+  let notation = make_anon_notation symbs in
+  let old_pp_rule = None in
+  let prec = Symbols.find_notation_level notation in
+  List.iter (check_occur l) vars;
+  let a = AApp (c,List.map (function Name id when List.mem id vars -> AVar id | 
+_ -> AHole QuestionMark) l) in
+  let la = List.map (fun id -> id,[]) vars in
+  let onlyparse = false in
+  let local = false in
+  Lib.add_anonymous_leaf
+    (inNotation(local,old_pp_rule,prec,notation,scope,(la,a),onlyparse,df))
 
 (* TODO add boxes information in the expression *)
 

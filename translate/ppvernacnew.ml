@@ -299,7 +299,10 @@ let pr_require_token = function
   | None -> str "Closed"
 
 let pr_syntax_modifier = function
-  | SetItemLevel (l,n) ->
+  | SetItemLevel (l,NextLevel) ->
+      prlist_with_sep sep_v2 str l ++
+      spc() ++ str"at next level"
+  | SetItemLevel (l,NumLevel n) ->
       prlist_with_sep sep_v2 str l ++
       spc() ++ str"at level" ++ spc() ++ int n
   | SetLevel n -> str"at level" ++ spc() ++ int n
@@ -513,7 +516,7 @@ let rec pr_vernac = function
   | VernacInductive (f,l) ->
 
       (* Copie simplifiée de command.ml pour recalculer les implicites *)
-      let lparams = match l with [] -> assert false | (_,la,_,_)::_ -> la in
+      let lparams = match l with [] -> assert false | (_,_,la,_,_)::_ -> la in
       let nparams = List.length lparams
       and sigma = Evd.empty 
       and env0 = Global.env() in
@@ -525,7 +528,7 @@ let rec pr_vernac = function
 	    (Name id,None,p)::params))
 	  (env0,[]) lparams in
       let impls = List.map
-	(fun (recname, _,arityc,_) ->
+	(fun (recname,_,_,arityc,_) ->
 	  let arity = Constrintern.interp_type sigma env_params arityc in
 	  let fullarity =
             Termops.prod_it arity (List.map (fun (id,_,ty) -> (id,ty)) params)
@@ -555,9 +558,13 @@ let rec pr_vernac = function
         | _ ->
             fnl() ++ str (if List.length l = 1 then "   " else " | ") ++
             prlist_with_sep (fun _ -> fnl() ++ str" | ") pr_constructor l in
-      let pr_oneind key (id,indpar,s,lc) =
-	hov 0 (str key ++ spc() ++ pr_id id ++ spc() ++
-	  pr_sbinders indpar ++ str":" ++ spc() ++
+      let pr_oneind key (id,ntn,indpar,s,lc) =
+	hov 0 (
+          str key ++ spc() ++
+          pr_opt (fun (ntn,scopt) -> 
+            str ntn ++ pr_opt (fun sc -> str " :" ++ str sc) scopt ++ spc ())
+          ntn ++
+          pr_id id ++ spc() ++ pr_sbinders indpar ++ str":" ++ spc() ++
           pr_lconstr s ++ str" :=") ++ pr_constructor_list lc in
       hov 1 (pr_oneind (if f then "Inductive" else "CoInductive") (List.hd l))
       ++ 

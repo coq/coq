@@ -1536,10 +1536,12 @@ let xlate_vernac =
 *)
    | VernacInductive (isind, lmi) ->
       let co_or_ind = if isind then "Inductive" else "CoInductive" in
-      let strip_mutind (s, parameters, c, constructors) =
+      let strip_mutind (s, notopt, parameters, c, constructors) =
+        if notopt = None then
            CT_ind_spec
             (xlate_ident s, cvt_vernac_binders parameters, xlate_formula c,
-             build_constructors constructors) in
+             build_constructors constructors)
+        else xlate_error "TODO: Notation in Inductive" in
         CT_mind_decl
 	  (CT_co_ind co_or_ind, CT_ind_spec_list (List.map strip_mutind lmi))
    | VernacFixpoint [] -> xlate_error "mutual recursive"

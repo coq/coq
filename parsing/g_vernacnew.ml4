@@ -103,7 +103,7 @@ GEXTEND Gram
 	  test_plurial_form bl;
 	  VernacAssumption (stre, bl)
       (* Gallina inductive declarations *)
-      | OPT[IDENT "Mutual"]; f = finite_token;
+      | (* Non porté (?) : OPT[IDENT "Mutual"];*) f = finite_token;
         indl = LIST1 inductive_definition SEP "with" ->
           VernacInductive (f,indl)
       | "Fixpoint"; recs = LIST1 rec_definition SEP "with" ->
@@ -118,9 +118,11 @@ GEXTEND Gram
 	s = lconstr; ":="; cstr = OPT base_ident; "{";
         fs = LIST0 local_decl_expr; "}" ->
 	  VernacRecord ((oc,name),ps,s,cstr,fs)
+(* Non porté ?
       | f = finite_token; s = csort; id = base_ident;
         indpar = LIST0 simple_binder; ":="; lc = constructor_list -> 
-          VernacInductive (f,[id,indpar,s,lc])
+          VernacInductive (f,[id,None,indpar,s,lc])
+*)
     ] ]
   ;
   thm_token:
@@ -171,17 +173,20 @@ GEXTEND Gram
   ;
   (* Inductives and records *)
   inductive_definition:
-    [ [ id = base_ident; indpar = LIST0 simple_binder; ":"; c = lconstr; ":=";
-	lc = constructor_list -> (id,indpar,c,lc) ] ]
+    [ [ ntn = OPT [ ntn = STRING -> (ntn,None) ];
+        id = base_ident; indpar = LIST0 simple_binder; ":"; c = lconstr; ":=";
+	lc = constructor_list -> (id,ntn,indpar,c,lc) ] ]
   ;
   constructor_list:
     [ [ "|"; l = LIST1 constructor_binder SEP "|" -> l
       | l = LIST1 constructor_binder SEP "|" -> l
       |  -> [] ] ]
   ;
+(*
   csort:
     [ [ s = sort -> CSort (loc,s) ] ]
   ;
+*)
   opt_coercion:
     [ [ ">" -> true
       |  -> false ] ]
@@ -699,11 +704,14 @@ GEXTEND Gram
   [ [ univ = IDENT ->
         set_default_action_parser (parser_type_from_name univ); univ ] ]
   ;
+  level:
+    [ [ IDENT "level"; n = natural -> NumLevel n
+      | IDENT "next"; IDENT "level" -> NextLevel ] ]
+  ;
   syntax_modifier:
-    [ [ x = IDENT; IDENT "at"; IDENT "level"; n = natural -> 
-        SetItemLevel ([x],n)
-      | x = IDENT; ","; l = LIST1 IDENT SEP ","; IDENT "at"; IDENT "level";
-        n = natural -> SetItemLevel (x::l,n)
+    [ [ x = IDENT; IDENT "at"; lev = level -> SetItemLevel ([x],lev)
+      | x = IDENT; ","; l = LIST1 IDENT SEP ","; IDENT "at"; 
+        lev = level -> SetItemLevel (x::l,lev)
       | IDENT "at"; IDENT "level"; n = natural -> SetLevel n
       | IDENT "left"; IDENT "associativity" -> SetAssoc Gramext.LeftA
       | IDENT "right"; IDENT "associativity" -> SetAssoc Gramext.RightA

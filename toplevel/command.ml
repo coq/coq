@@ -178,7 +178,7 @@ let corecursive_message v =
 let interp_mutual lparams lnamearconstrs finite = 
   let allnames = 
     List.fold_left 
-      (fun acc (id,_,l) -> id::(List.map fst l)@acc) [] lnamearconstrs in
+      (fun acc (id,_,_,l) -> id::(List.map fst l)@acc) [] lnamearconstrs in
   if not (list_distinct allnames) then
     error "Two inductive objects have the same name";
   let nparams = List.length lparams
@@ -201,7 +201,7 @@ let interp_mutual lparams lnamearconstrs finite =
   in
   let (ind_env,ind_impls,arityl) =
     List.fold_left
-      (fun (env, ind_impls, arl) (recname, arityc,_) ->
+      (fun (env, ind_impls, arl) (recname, _, arityc, _) ->
          let arity = interp_type sigma env_params arityc in
 	 let fullarity =
            prod_it arity (List.map (fun (id,_,ty) -> (id,ty)) params) in
@@ -213,10 +213,19 @@ let interp_mutual lparams lnamearconstrs finite =
 	 (env', (recname,impls)::ind_impls, (arity::arl)))
       (env0, [], []) lnamearconstrs
   in
+  let lparnames = List.map (fun (na,_,_) -> na) params in
+  let fs = States.freeze() in
+  List.iter2 (fun (recname,ntnopt,_,_) ar ->
+      option_iter
+        (fun (df,scope) ->
+          let larnames = lparnames @ List.map fst (fst (decompose_prod ar)) in
+          Metasyntax.add_notation_interpretation df
+            (AVar recname,larnames) scope) ntnopt)
+    lnamearconstrs arityl;
   let ind_env_params = push_rel_context params ind_env in
   let mispecvec = 
     List.map2
-      (fun ar (name,_,lname_constr) ->
+      (fun ar (name,_,_,lname_constr) ->
 	 let constrnames, bodies = List.split lname_constr in
          let constrs =
 	   List.map 
@@ -248,23 +257,23 @@ let extract_coe lc =
 
 let extract_coe_la_lc = function
   | []            -> anomaly "Vernacentries: empty list of inductive types"
-  | (id,la,ar,lc)::rest ->
+  | (id,ntn,la,ar,lc)::rest ->
       let rec check = function 
 	| []             -> [],[]
-  	| (id,la',ar,lc)::rest ->
+  	| (id,ntn,la',ar,lc)::rest ->
             if (List.length la = List.length la') && 
                (List.for_all2 eq_la la la')
 	    then
 	      let mcoes, mspec = check rest in
 	      let coes, lc' = extract_coe lc in
-	      (coes::mcoes,(id,ar,lc')::mspec)
+	      (coes::mcoes,(id,ntn,ar,lc')::mspec)
 	    else 
 	      error ("Parameters should be syntactically the same "^
 		     "for each inductive type")
       in
       let mcoes, mspec = check rest in
       let coes, lc' = extract_coe lc in
-      (coes,la,(id,ar,lc'):: mspec)
+      (coes,la,(id,ntn,ar,lc'):: mspec)
 
 let build_mutual lind finite =
   let (coes,lparams,lnamearconstructs) = extract_coe_la_lc lind in

@@ -396,6 +396,17 @@ let locate_notation prraw ntn =
 	  fnl ()))
       l
 
+let find_notation_level ntn =
+  let l = 
+    Stringmap.fold 
+      (fun _ sc l ->
+	try fst (snd (Stringmap.find ntn sc.notations)) :: l
+	with Not_found -> l) !scope_map [] in
+  match l with
+  | [] -> raise Not_found
+  | [prec] -> prec
+  | prec::_ -> warning ("Several parsing rules for notation \""^ntn^"\""); prec
+
 (**********************************************************************)
 (* Mapping notations to concrete syntax *)
 

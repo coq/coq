@@ -216,8 +216,9 @@ GEXTEND Gram
           (id,c,lc) ] ]
   ;
   oneind:
-    [ [ id = base_ident; indpar = simple_binders_list; ":"; c = constr; ":=";
-	lc = constructor_list -> (id,indpar,c,lc) ] ]
+    [ [ ntn = OPT [ ntn = STRING; ":=" -> (ntn,None) ];
+        id = base_ident; indpar = simple_binders_list; ":"; c = constr; ":=";
+	lc = constructor_list -> (id,ntn,indpar,c,lc) ] ]
   ;
   simple_binders_list:
     [ [ bl = ne_simple_binders_list -> bl
@@ -298,7 +299,7 @@ GEXTEND Gram
   gallina_ext:
     [ [ IDENT "Mutual"; bl = ne_simple_binders_list ; f = finite_token;
         indl = block_old_style ->
-	  let indl' = List.map (fun (id,ar,c) -> (id,bl,ar,c)) indl in
+	  let indl' = List.map (fun (id,ar,c) -> (id,None,bl,ar,c)) indl in
 	  VernacInductive (f,indl')
       | record_token; oc = opt_coercion; name = base_ident;
 	ps = simple_binders_list; ":";
@@ -316,7 +317,7 @@ GEXTEND Gram
       | IDENT "Scheme"; l = schemes -> VernacScheme l
       | f = finite_token; s = csort; id = base_ident;
 	indpar = simple_binders_list; ":="; lc = constructor_list -> 
-          VernacInductive (f,[id,indpar,s,lc]) ] ]
+          VernacInductive (f,[id,None,indpar,s,lc]) ] ]
   ;
   csort:
     [ [ s = sort -> CSort (loc,s) ] ]

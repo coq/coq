@@ -41,8 +41,10 @@ val add_notation : locality_flag -> string -> constr_expr
     -> syntax_modifier list -> (string * syntax_modifier list) option
       -> scope_name option -> unit
 
-val add_syntax_extension : locality_flag -> string -> syntax_modifier list
-  -> unit
+val add_notation_interpretation : string -> (aconstr * Names.name list)
+  -> scope_name option -> unit
+
+val add_syntax_extension : locality_flag -> string -> syntax_modifier list -> unit
 
 val print_grammar : string -> string -> unit
 

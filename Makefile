@@ -158,11 +158,10 @@ TACTICS=\
 
 TOPLEVEL=\
   toplevel/himsg.cmo toplevel/cerrors.cmo toplevel/class.cmo \
+  toplevel/vernacexpr.cmo  toplevel/metasyntax.cmo \
   toplevel/command.cmo toplevel/record.cmo toplevel/recordobj.cmo \
-  toplevel/discharge.cmo toplevel/vernacexpr.cmo \
-  translate/ppvernacnew.cmo \
+  toplevel/discharge.cmo translate/ppvernacnew.cmo \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
-  toplevel/metasyntax.cmo \
   toplevel/vernacentries.cmo toplevel/vernac.cmo \
   toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
   toplevel/toplevel.cmo toplevel/usage.cmo \

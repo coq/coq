@@ -24,14 +24,20 @@ type production_position =
   | BorderProd of bool * Gramext.g_assoc option  (* true=left; false=right *)
   | InternalProd
 
-type 'pos constr_entry_key =
+type production_level =
+  | NextLevel
+  | NumLevel of int
+
+type ('lev,'pos) constr_entry_key =
   | ETIdent | ETReference | ETBigint
-  | ETConstr of (int * 'pos)
+  | ETConstr of ('lev * 'pos)
   | ETPattern
   | ETOther of string * string
 
-type constr_production_entry = production_position constr_entry_key
-type constr_entry = unit constr_entry_key
+type constr_production_entry =
+    (production_level,production_position) constr_entry_key
+type constr_entry = (int,unit) constr_entry_key
+type simple_constr_production_entry = (production_level,unit) constr_entry_key
 
 type nonterm_prod =
   | ProdList0 of nonterm_prod
@@ -80,10 +86,10 @@ let act_of_ast vars = function
 let to_act_check_vars = act_of_ast
 
 type syntax_modifier =
-  | SetItemLevel of string list * int
+  | SetItemLevel of string list * production_level
   | SetLevel of int
   | SetAssoc of Gramext.g_assoc
-  | SetEntryType of string * constr_entry
+  | SetEntryType of string * simple_constr_production_entry
   | SetOnlyParsing
 
 type nonterm =
@@ -162,44 +168,50 @@ let rename_command_entry nt =
 
 (* This translates constr0, constr1, ... level into camlp4 levels of constr *)
 
-let explicitize_prod_entry pos univ nt =
+let explicitize_prod_entry inj pos univ nt =
   if univ = "prim" & nt = "var" then ETIdent else
   if univ = "prim" & nt = "bigint" then ETBigint else
   if univ <> "constr" then ETOther (univ,nt) else
   match nt with
-  | "constr0" -> ETConstr (0,pos)
-  | "constr1" -> ETConstr (1,pos)
-  | "constr2" -> ETConstr (2,pos)
-  | "constr3" -> ETConstr (3,pos)
-  | "lassoc_constr4" -> ETConstr (4,pos)
-  | "constr5" -> ETConstr (5,pos)
-  | "constr6" -> ETConstr (6,pos)
-  | "constr7" -> ETConstr (7,pos)
-  | "constr8" -> ETConstr (8,pos)
-  | "constr" when !Options.v7 -> ETConstr (8,pos)
-  | "constr9" -> ETConstr (9,pos)
-  | "constr10" | "lconstr" -> ETConstr (10,pos)
+  | "constr0" -> ETConstr (inj 0,pos)
+  | "constr1" -> ETConstr (inj 1,pos)
+  | "constr2" -> ETConstr (inj 2,pos)
+  | "constr3" -> ETConstr (inj 3,pos)
+  | "lassoc_constr4" -> ETConstr (inj 4,pos)
+  | "constr5" -> ETConstr (inj 5,pos)
+  | "constr6" -> ETConstr (inj 6,pos)
+  | "constr7" -> ETConstr (inj 7,pos)
+  | "constr8" -> ETConstr (inj 8,pos)
+  | "constr" when !Options.v7 -> ETConstr (inj 8,pos)
+  | "constr9" -> ETConstr (inj 9,pos)
+  | "constr10" | "lconstr" -> ETConstr (inj 10,pos)
   | "pattern" -> ETPattern
   | "ident" -> ETIdent
   | "global" -> ETReference
   | _ -> ETOther (univ,nt)
 
-let explicitize_entry = explicitize_prod_entry ()
+let explicitize_entry = explicitize_prod_entry (fun x -> x) ()
 
 (* Express border sub entries in function of the from level and an assoc *)
 (* We're cheating: not necessarily the same assoc on right and left *)
 let clever_explicitize_prod_entry pos univ from en =
-  let t = explicitize_prod_entry pos univ en in
+  let t = explicitize_prod_entry (fun x -> NumLevel x) pos univ en in
   match from with
     | ETConstr (from,()) ->
 	(match t with
-	  | ETConstr (n,BorderProd (left,None)) when (n=from & left) ->
+	  | ETConstr (n,BorderProd (left,None))
+              when (n=NumLevel from & left) ->
 	      ETConstr (n,BorderProd (left,Some Gramext.LeftA))
-	  | ETConstr (n,BorderProd (left,None)) when (n=from-1 & not left) ->
-	      ETConstr (n+1,BorderProd (left,Some Gramext.LeftA))
-	  | ETConstr (n,BorderProd (left,None)) when (n=from-1 & left) ->
-	      ETConstr (n+1,BorderProd (left,Some Gramext.RightA))
-	  | ETConstr (n,BorderProd (left,None)) when (n=from & not left) ->
+	  | ETConstr (NumLevel n,BorderProd (left,None))
+              when (n=from-1 & not left) ->
+	      ETConstr
+                (NumLevel (n+1),BorderProd (left,Some Gramext.LeftA))
+	  | ETConstr (NumLevel n,BorderProd (left,None))
+              when (n=from-1 & left) ->
+	      ETConstr
+                (NumLevel (n+1),BorderProd (left,Some Gramext.RightA))
+	  | ETConstr (n,BorderProd (left,None))
+              when (n=NumLevel from & not left) ->
 	      ETConstr (n,BorderProd (left,Some Gramext.RightA))
 	  | t -> t)
     | _ -> t

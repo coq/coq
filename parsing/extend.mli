@@ -25,14 +25,20 @@ type production_position =
   | BorderProd of bool * Gramext.g_assoc option  (* true=left; false=right *)
   | InternalProd
 
-type 'pos constr_entry_key =
+type production_level =
+  | NextLevel
+  | NumLevel of int
+
+type ('lev,'pos) constr_entry_key =
   | ETIdent | ETReference | ETBigint
-  | ETConstr of (int * 'pos)
+  | ETConstr of ('lev * 'pos)
   | ETPattern
   | ETOther of string * string
 
-type constr_production_entry = production_position constr_entry_key
-type constr_entry = unit constr_entry_key
+type constr_production_entry =
+    (production_level,production_position) constr_entry_key
+type constr_entry = (int,unit) constr_entry_key
+type simple_constr_production_entry = (production_level,unit) constr_entry_key
 
 type nonterm_prod =
   | ProdList0 of nonterm_prod
@@ -68,10 +74,10 @@ val set_constr_globalizer :
   (entry_context -> constr_expr -> constr_expr) -> unit
 
 type syntax_modifier =
-  | SetItemLevel of string list * int
+  | SetItemLevel of string list * production_level
   | SetLevel of int
   | SetAssoc of Gramext.g_assoc
-  | SetEntryType of string * constr_entry
+  | SetEntryType of string * simple_constr_production_entry
   | SetOnlyParsing
 
 type nonterm =

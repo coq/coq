@@ -542,22 +542,27 @@ let camlp4_assoc = function
          s.t. if [cur] is set then [n] is the same as the [from] level *)
 let adjust_level assoc from = function
 (* Associativity is None means force the level *)
-  | (n,BorderProd (_,None)) -> Some (Some (n,true))
+  | (NumLevel n,BorderProd (_,None)) -> Some (Some (n,true))
 (* Compute production name on the right side *)
   (* If NonA or LeftA on the right-hand side, set to NEXT *)
-  | (n,BorderProd (false,Some (Gramext.NonA|Gramext.LeftA))) -> Some None
+  | (NumLevel n,BorderProd (false,Some (Gramext.NonA|Gramext.LeftA))) ->
+      Some None
   (* If RightA on the right-hand side, set to the explicit (current) level *)
-  | (n,BorderProd (false,Some Gramext.RightA)) -> Some (Some (n,true))
+  | (NumLevel n,BorderProd (false,Some Gramext.RightA)) ->
+      Some (Some (n,true))
 (* Compute production name on the left side *)
   (* If NonA on the left-hand side, adopt the current assoc ?? *)
-  | (n,BorderProd (true,Some Gramext.NonA)) -> None
+  | (NumLevel n,BorderProd (true,Some Gramext.NonA)) -> None
   (* If the expected assoc is the current one, set to SELF *)
-  | (n,BorderProd (true,Some a)) when a = camlp4_assoc assoc -> None
+  | (NumLevel n,BorderProd (true,Some a)) when a = camlp4_assoc assoc ->
+      None
   (* Otherwise, force the level, n or n-1, according to expected assoc *)
-  | (n,BorderProd (true,Some a)) ->
+  | (NumLevel n,BorderProd (true,Some a)) ->
       if a = Gramext.LeftA then Some (Some (n,true)) else Some None
+  (* None means NEXT *)
+  | (NextLevel,_) -> Some None
 (* Compute production name elsewhere *)
-  | (n,InternalProd) ->
+  | (NumLevel n,InternalProd) ->
       match from with
 	| ETConstr (p,()) when p = n+1 -> Some None
 	| ETConstr (p,()) -> Some (Some (n,n=p))
@@ -609,7 +614,7 @@ let compute_entry allow_create adjust = function
 (* This computes the name of the level where to add a new rule *)
 let get_constr_entry en =
   match en with
-      ETConstr(200,_) when not !Options.v7 ->
+      ETConstr(200,()) when not !Options.v7 ->
         snd (get_entry (get_univ "constr") "binder_constr"),
         None,
         false
@@ -620,7 +625,7 @@ let get_constr_entry en =
 let get_constr_production_entry ass from en =
   (* first 2 cases to help factorisation *)
   match en with
-    | ETConstr (10,q) when !Options.v7 ->
+    | ETConstr (NumLevel 10,q) when !Options.v7 ->
         weaken_entry Constr.lconstr, None, false
 (*
     | ETConstr (8,q) when !Options.v7 ->
@@ -643,9 +648,9 @@ let constr_prod_level assoc cur lev =
 
 let is_self from e =
   match from, e with
-      ETConstr(n,_), ETConstr(n',
+      ETConstr(n,()), ETConstr(NumLevel n',
         BorderProd(false, _ (* Some(Gramext.NonA|Gramext.LeftA) *))) -> false
-    | ETConstr(n,_), ETConstr(n',BorderProd(true,_)) -> n=n'
+    | ETConstr(n,()), ETConstr(NumLevel n',BorderProd(true,_)) -> n=n'
     | (ETIdent,ETIdent | ETReference, ETReference | ETBigint,ETBigint
       | ETPattern, ETPattern) -> true
     | ETOther(s1,s2), ETOther(s1',s2') -> s1=s1' & s2=s2'
@@ -653,7 +658,7 @@ let is_self from e =
 
 let is_binder_level from e =
   match from, e with
-      ETConstr(200,_), ETConstr(200,_) -> not !Options.v7
+      ETConstr(200,()), ETConstr(NumLevel 200,_) -> not !Options.v7
     | _ -> false
 
 let symbol_of_production assoc from typ =
@@ -667,3 +672,5 @@ let symbol_of_production assoc from typ =
       | (eobj,Some None,_) -> Gramext.Snext
       | (eobj,Some (Some (lev,cur)),_) -> 
           Gramext.Snterml (Gram.Entry.obj eobj,constr_prod_level assoc cur lev)
+
+

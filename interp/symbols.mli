@@ -117,6 +117,9 @@ val pr_scope : (rawconstr -> std_ppcmds) -> scope_name -> std_ppcmds
 val pr_scopes : (rawconstr -> std_ppcmds) -> std_ppcmds
 val locate_notation : (rawconstr -> std_ppcmds) -> notation -> std_ppcmds
 
+(* [raise Not_found] if non existing notation *)
+val find_notation_level : notation -> level
+
 (**********************************************************************)
 (*s Printing rules for notations *)
 

@@ -214,7 +214,7 @@ END
 (* automatic translation of levels *)
 let adapt_level n = n*10
 let map_modl = function
-  | SetItemLevel(ids,n) -> SetItemLevel(ids,adapt_level n)
+  | SetItemLevel(ids,NumLevel n) -> SetItemLevel(ids,NumLevel (adapt_level n))
   | SetLevel n -> SetLevel(adapt_level n)
   | m -> m
 	  
@@ -305,11 +305,14 @@ GEXTEND Gram
   locality:
     [ [ IDENT "Local" -> true | -> false ] ]
   ;
+  level:
+    [ [ IDENT "level"; n = natural -> NumLevel n
+      | IDENT "next"; IDENT "level" -> NextLevel ] ]
+  ;
   syntax_modifier:
-    [ [ x = IDENT; IDENT "at"; IDENT "level"; n = natural -> 
-        SetItemLevel ([x],n)
-      | x = IDENT; ","; l = LIST1 IDENT SEP ","; IDENT "at"; IDENT "level";
-        n = natural -> SetItemLevel (x::l,n)
+    [ [ x = IDENT; IDENT "at"; lev = level -> SetItemLevel ([x],lev)
+      | x = IDENT; ","; l = LIST1 IDENT SEP ","; IDENT "at"; lev = level ->
+          SetItemLevel (x::l,lev)
       | IDENT "at"; IDENT "level"; n = natural -> SetLevel n
       | IDENT "left"; IDENT "associativity" -> SetAssoc Gramext.LeftA
       | IDENT "right"; IDENT "associativity" -> SetAssoc Gramext.RightA
