@@ -1473,6 +1473,46 @@ let xlate_syntax_modifier = function
   | Extend.SetFormat(_,s) -> CT_format(CT_string s);;
 
 
+let rec xlate_module_type = function
+  | CMTEident(_, qid) -> 
+      CT_coerce_ID_to_MODULE_TYPE(CT_ident (xlate_qualid qid))
+  | CMTEwith(mty, decl) ->
+      let mty1 = xlate_module_type mty in
+	(match decl with
+	     CWith_Definition((_, id), c) ->
+	       CT_module_type_with_def(xlate_module_type mty, 
+				       xlate_ident id, xlate_formula c)
+	   | CWith_Module((_, id), (_, qid)) ->
+	       CT_module_type_with_mod(xlate_module_type mty,
+				       xlate_ident id, 
+				       CT_ident (xlate_qualid qid)));;
+
+let xlate_module_binder_list (l:module_binder list) =
+  CT_module_binder_list
+    (List.map (fun (idl, mty) ->
+		 let idl1 = 
+		   List.map (fun (_, x) -> CT_ident (string_of_id x)) idl in
+		 let fst,idl2 = match idl1 with
+		     [] -> assert false
+		   | fst::idl2 -> fst,idl2 in
+		 CT_module_binder
+		   (CT_id_ne_list(fst, idl2), xlate_module_type mty)) l);;
+
+let xlate_module_type_check_opt = function
+    None -> CT_coerce_MODULE_TYPE_OPT_to_MODULE_TYPE_CHECK
+ 	(CT_coerce_ID_OPT_to_MODULE_TYPE_OPT ctv_ID_OPT_NONE)
+  | Some(mty, true) -> CT_only_check(xlate_module_type mty)
+  | Some(mty, false) -> 
+      CT_coerce_MODULE_TYPE_OPT_to_MODULE_TYPE_CHECK
+	(CT_coerce_MODULE_TYPE_to_MODULE_TYPE_OPT
+	   (xlate_module_type mty));;
+
+let rec xlate_module_expr = function
+    CMEident (_, qid) -> CT_coerce_ID_OPT_to_MODULE_EXPR
+	(CT_coerce_ID_to_ID_OPT (CT_ident (xlate_qualid qid)))
+  | CMEapply (me1, me2) -> CT_module_app(xlate_module_expr me1,
+					 xlate_module_expr me2)
+
 let rec xlate_vernac =
  function
    | VernacDeclareTacticDefinition (false,[(_,id),TacFun (largs,tac)]) ->
@@ -1533,6 +1573,13 @@ let rec xlate_vernac =
     | VernacSolve (n, tac, b) -> CT_solve (CT_int n, xlate_tactic tac)
     | VernacFocus nopt -> CT_focus (xlate_int_opt nopt)
     | VernacUnfocus -> CT_unfocus
+    |VernacExtend("Extraction", [f;l]) ->
+       let file = out_gen rawwit_string f in
+       let l1 = out_gen (wit_list1 rawwit_ref) l in
+       let fst,l2 = match l1 with [] -> assert false | fst::l2 -> fst, l2 in
+	 CT_extract_to_file(CT_string file, 
+		       CT_id_ne_list(loc_qualid_to_ct_ID fst,
+				     List.map loc_qualid_to_ct_ID l2))
   | VernacExtend (("HintRewriteV7"|"HintRewriteV8") as key, largs) ->
       let in_v8 = (key = "HintRewriteV8") in
       let orient = out_gen Extraargs.rawwit_orient (List.nth largs 0) in
@@ -1802,6 +1849,31 @@ let rec xlate_vernac =
        CT_syntax_macro (xlate_ident id, xlate_formula c, xlate_int_opt None)
    | VernacSyntacticDefinition (id, c, true, _) ->
        xlate_error "TODO: Local abbreviations"
+  (* Modules and Module Types *)
+  | VernacDeclareModuleType((_, id), bl, mty_o)  -> 
+      CT_module_type_decl(xlate_ident id,
+			  xlate_module_binder_list bl,
+			  match mty_o with
+			      None ->
+				CT_coerce_ID_OPT_to_MODULE_TYPE_OPT
+				  ctv_ID_OPT_NONE
+			    | Some mty1 ->
+				CT_coerce_MODULE_TYPE_to_MODULE_TYPE_OPT
+				  (xlate_module_type mty1))
+   | VernacDefineModule((_, id), bl, mty_o, mexpr_o) ->
+       CT_module(xlate_ident id, 
+		 xlate_module_binder_list bl,
+		 xlate_module_type_check_opt mty_o,
+		 match mexpr_o with
+		     None -> CT_coerce_ID_OPT_to_MODULE_EXPR ctv_ID_OPT_NONE
+		   | Some m -> xlate_module_expr m)
+  | VernacDeclareModule((_, id), bl, mty_o, mexpr_o) -> 
+       CT_declare_module(xlate_ident id, 
+		 xlate_module_binder_list bl,
+		 xlate_module_type_check_opt mty_o,
+		 match mexpr_o with
+		     None -> CT_coerce_ID_OPT_to_MODULE_EXPR ctv_ID_OPT_NONE
+		   | Some m -> xlate_module_expr m)
    | VernacRequire (impexp, spec, id::idl) ->
       let ct_impexp, ct_spec = get_require_flags impexp spec in
       CT_require (ct_impexp, ct_spec, 
@@ -1973,12 +2045,7 @@ let rec xlate_vernac =
      VernacWriteState _|VernacSolveExistential (_, _)|VernacCanonical _|
      VernacImport (_, _)|VernacDistfix _|
      VernacTacticGrammar _|VernacVar _|VernacProof _)
-    -> xlate_error "TODO: vernac"
-
-  (* Modules and Module Types *)
-  | VernacDeclareModule _ -> xlate_error "TODO: vernac"
-  | VernacDefineModule _ -> xlate_error "TODO: vernac"
-  | VernacDeclareModuleType _ -> xlate_error "TODO: vernac"
+    -> xlate_error "TODO: vernac";;
 
 let rec xlate_vernac_list =
  function
