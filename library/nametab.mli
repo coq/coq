@@ -109,6 +109,7 @@ val locate_syntactic_definition : qualid -> kernel_name
 
 val locate_tactic : qualid -> section_path
 val locate_dir : qualid -> global_dir_reference
+val locate_module : qualid -> module_path
 
 (* [exists sp] tells if [sp] is already bound to a cci term *)
 val exists_cci : section_path -> bool

@@ -2867,7 +2867,7 @@ let xlate_vernac =
 (*
      | "EndSection", ((Varg_ident id) :: []) ->
 *)
-  | VernacEndSection id -> CT_section_end (xlate_ident id)
+  | VernacEndSegment id -> CT_section_end (xlate_ident id)
 (*
      | "StartProof",
          ((Varg_string (CT_string kind)) :: ((Varg_ident s) :: (c :: []))) ->

@@ -533,16 +533,19 @@ let require_library_from_file spec idopt file export =
   add_anonymous_leaf (in_require ([modref],Some export));
   add_frozen_state ()
 
-let import_library export (loc,qid) =
-  let modref =
-    try 
-      Nametab.locate_loaded_library qid
-    with Not_found ->
-      user_err_loc
-        (loc,"import_library",
-	 str ((string_of_qualid qid)^" not loaded")) in
-  add_anonymous_leaf (in_require ([modref],Some export))
-
+let export_library (loc,qid) =
+  try
+    match Nametab.locate_module qid with
+	MPfile dir -> 
+	  add_anonymous_leaf (in_require ([dir],Some true))
+      | _ ->
+	  raise Not_found
+  with
+      Not_found ->
+	user_err_loc
+        (loc,"export_library",
+	 str ((string_of_qualid qid)^" is not a loaded library"))
+  
 let read_library qid =
   let modref = rec_intern_qualified_library qid in
   add_anonymous_leaf (in_require ([modref],None));

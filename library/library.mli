@@ -26,7 +26,7 @@ val read_library : qualid located -> unit
 
 val read_library_from_file : System.physical_path -> unit
 
-val import_library : bool -> qualid located -> unit
+val export_library : qualid located -> unit
 
 val library_is_loaded : dir_path -> bool
 val library_is_opened : dir_path -> bool

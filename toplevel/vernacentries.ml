@@ -14,6 +14,7 @@ open Pp
 open Util
 open Options
 open Names
+open Entries
 open Nameops
 open Term
 open Pfedit
@@ -348,6 +349,92 @@ let vernac_cofixpoint = build_corecursive
 
 let vernac_scheme = build_scheme
 
+(**********************)
+(* Modules            *)
+
+let vernac_declare_module id bl mty_ast_o mexpr_ast_o = 
+  let evd = Evd.empty in
+  let env = Global.env () in
+  let arglist,base_mty_o,base_mexpr_o =
+    Astmod.interp_module_decl evd env bl mty_ast_o mexpr_ast_o 
+  in
+  let argids, args = List.split arglist 
+  in (* We check the state of the system (in module, in module type)
+	and what parts are supplied *)
+    match Lib.is_specification (), base_mty_o, base_mexpr_o with
+      | _, None, None 
+      | false, _, None ->
+	  Declaremods.start_module id argids args base_mty_o;
+	  if_verbose message 
+	    ("Interactive Module "^ string_of_id id ^" started")
+	  
+      | true, Some _, None
+      | false, _, Some _ ->
+	  let mexpr_o = 
+	    option_app
+	      (List.fold_right 
+		 (fun (mbid,mte) me -> MEfunctor(mbid,mte,me))
+		 args)
+	      base_mexpr_o
+	  in
+	  let mty_o = 
+	    option_app
+	      (List.fold_right 
+		 (fun (arg_id,arg_t) mte -> MTEfunsig(arg_id,arg_t,mte))
+		 args)
+	      base_mty_o
+	  in
+	  let mod_entry = 
+	    {mod_entry_type = mty_o;
+	     mod_entry_expr = mexpr_o}
+	  in
+	    Declaremods.declare_module id mod_entry;
+	    if_verbose message 
+	      ("Module "^ string_of_id id ^" is defined")
+
+      | true, _, Some _ ->
+	  error "Module definition not allowed in a Module Type"
+
+
+let vernac_end_module id =
+  Declaremods.end_module id;
+  if_verbose message 
+    ("Module "^ string_of_id id ^" is defined")
+  
+
+
+let vernac_declare_module_type id bl mty_ast_o =
+  let evd = Evd.empty in
+  let env = Global.env () in
+  let arglist,base_mty_o,_ =
+    Astmod.interp_module_decl evd env bl mty_ast_o None
+  in
+  let argids, args = List.split arglist 
+  in (* We check the state of the system (in module, in module type)
+	and what parts are supplied *)
+    match Lib.is_specification (), base_mty_o with
+      | _, None ->
+	  Declaremods.start_modtype id argids args;
+	  if_verbose message 
+	    ("Interactive Module "^ string_of_id id ^" started")
+
+      | _, Some base_mty ->
+	  let mty = 
+	    List.fold_right 
+	      (fun (arg_id,arg_t) mte -> MTEfunsig(arg_id,arg_t,mte))
+	      args
+	      base_mty
+	  in
+	    Declaremods.declare_modtype id mty;
+	    if_verbose message 
+	      ("Module Type "^ string_of_id id ^" is defined")
+
+
+let vernac_end_modtype id =
+  Declaremods.end_modtype id;
+  if_verbose message 
+    ("Module Type "^ string_of_id id ^" is defined")
+
 
 (**********************)
 (* Gallina extensions *)
@@ -364,8 +451,19 @@ let vernac_record struc binders sort nameopt cfs =
 let vernac_begin_section id = let _ = Lib.open_section id in ()
 
 let vernac_end_section id =
-  check_no_pending_proofs ();
   Discharge.close_section (is_verbose ()) id
+
+
+let vernac_end_segment id =
+  check_no_pending_proofs ();
+  try
+    match Lib.what_is_opened () with
+      | _,Lib.OpenedModule _ -> vernac_end_module id
+      | _,Lib.OpenedModtype _ -> vernac_end_modtype id
+      | _,Lib.OpenedSection _ -> vernac_end_section id
+      | _ -> anomaly "No more opened things"
+  with
+      Not_found -> error "There is nothing to end."
 
 let is_obsolete_module (_,qid) =
   match repr_qualid qid with
@@ -395,7 +493,20 @@ let vernac_require import _ qidl =
       raise e
       
 let vernac_import export qidl =
-  List.iter (Library.import_library export) qidl
+  if export then
+    List.iter Library.export_library qidl
+  else
+    let import (loc,qid) = 
+      try
+	let mp = Nametab.locate_module qid in
+	  Declaremods.import_module mp
+      with Not_found ->
+	user_err_loc
+        (loc,"vernac_import",
+	 str ((string_of_qualid qid)^" is not a module"))
+    in
+      List.iter import qidl;
+      Lib.add_frozen_state ()
 
 let vernac_canonical locqid =
   Recordobj.objdef_declare (Nametab.global locqid)
@@ -906,10 +1017,18 @@ let interp c = match c with
   | VernacCoFixpoint l -> vernac_cofixpoint l
   | VernacScheme l -> vernac_scheme l
 
+  (* Modules *)
+  | VernacDeclareModule (id,bl,mtyo,mexpro) -> 
+      vernac_declare_module id bl mtyo mexpro
+  | VernacDeclareModuleType (id,bl,mtyo) -> 
+      vernac_declare_module_type id bl mtyo
+
   (* Gallina extensions *)
-  | VernacRecord (id,bl,s,idopt,fs) -> vernac_record id bl s idopt fs
   | VernacBeginSection id -> vernac_begin_section id
-  | VernacEndSection id -> vernac_end_section id
+
+  | VernacEndSegment id -> vernac_end_segment id
+
+  | VernacRecord (id,bl,s,idopt,fs) -> vernac_record id bl s idopt fs
   | VernacRequire (export,spec,qidl) -> vernac_require export spec qidl
   | VernacImport (export,qidl) -> vernac_import export qidl
   | VernacCanonical qid -> vernac_canonical qid

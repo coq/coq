@@ -106,7 +106,7 @@ PRETYPING=pretyping/termops.cmo \
 
 PARSING=parsing/lexer.cmo parsing/coqast.cmo \
         parsing/genarg.cmo proofs/tacexpr.cmo parsing/ast.cmo \
-        parsing/termast.cmo parsing/astterm.cmo \
+        parsing/termast.cmo parsing/astterm.cmo parsing/astmod.cmo \
 	parsing/extend.cmo parsing/esyntax.cmo \
         parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
 	parsing/coqlib.cmo parsing/prettyp.cmo parsing/search.cmo
@@ -114,6 +114,7 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo \
 HIGHPARSING= parsing/g_prim.cmo parsing/g_basevernac.cmo \
 	parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
 	parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
+	parsing/g_module.cmo \
 	parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
 
 ARITHSYNTAX=parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo
@@ -210,7 +211,7 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo \
 	parsing/extend.cmo \
 	parsing/coqlib.cmo pretyping/detyping.cmo \
-	parsing/termast.cmo parsing/astterm.cmo \
+	parsing/termast.cmo parsing/astterm.cmo parsing/astmod.cmo \
 	parsing/egrammar.cmo parsing/esyntax.cmo toplevel/metasyntax.cmo \
 	parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo \
 	lib/stamps.cmo pretyping/typing.cmo \
@@ -789,7 +790,7 @@ clean::
 ###########################################################################
 
 tags:
-	find . -name "*.ml[,i,4]" | sort -r | xargs \
+	find . -regex ".*\.ml[i4]?" | sort -r | xargs \
 	etags "--regex=/let[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/let[ \t]+rec[ \t]+\([^ \t]+\)/\1/" \
 	      "--regex=/and[ \t]+\([^ \t]+\)/\1/" \
@@ -833,9 +834,12 @@ clean::
 	rm -f parsing/grammar.cma
 
 ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
-	   parsing/g_vernac.ml4 parsing/g_proofs.ml4 parsing/g_cases.ml4 \
-	   parsing/g_constr.ml4 parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
-	   parsing/argextend.ml4 parsing/tacextend.ml4 parsing/vernacextend.ml4
+	   parsing/g_vernac.ml4 parsing/g_proofs.ml4 \
+	   parsing/g_cases.ml4 \
+	   parsing/g_constr.ml4 parsing/g_module.ml4 \
+	   parsing/g_tactic.ml4 parsing/g_ltac.ml4 \
+	   parsing/argextend.ml4 parsing/tacextend.ml4 \
+	   parsing/vernacextend.ml4
 
 # beforedepend:: $(GRAMMARCMO)
 

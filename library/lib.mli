@@ -92,6 +92,11 @@ val mark_end_of_command : unit -> unit
 
 val contents_after : object_name option -> library_segment
 
+(* Returns true if we are inside an opened module type *)
+val is_specification : unit -> bool
+
+(* Returns the most recent OpenedThing node *)
+val what_is_opened : unit -> library_entry
 
 (*s Opening and closing a section. *)
 

@@ -295,10 +295,46 @@ ident_comma_list_tail:
     [ [ 
 (* Sections *)
 	IDENT "Section"; id = ident -> VernacBeginSection id
-      | IDENT "Chapter"; id = ident -> VernacBeginSection id
-      | IDENT "Module"; id = ident  -> 
-	  warning "Module is currently unsupported"; VernacNop
-      | IDENT "End"; id = ident -> VernacEndSection id
+      | IDENT "Chapter"; id = ident -> VernacBeginSection id ] ]
+(*      | IDENT "Module"; id = ident  -> 
+	  warning "Module is currently unsupported"; VernacNop *)
+  ;
+
+  module_vardecls: (* This is interpreted by Pcoq.abstract_binder *)
+    [ [ id = ident; idl = ident_comma_list_tail; 
+	":"; mty = Module.module_type ->
+          (id::idl,mty) ] ]
+  ;
+  module_binders:
+    [ [ "["; bl = LIST1 module_vardecls SEP ";"; "]" -> bl ] ]
+  ;
+  module_binders_list:
+    [ [ bls = LIST0 module_binders -> List.flatten bls ] ]
+  ;
+  of_module_type:
+    [ [ ":"; mty = Module.module_type -> mty ] ]
+  ;
+  is_module_type:
+    [ [ ":="; mty = Module.module_type -> mty ] ]
+  ;
+  is_module_expr:
+    [ [ ":="; mexpr = Module.module_expr -> mexpr ] ]
+  ;
+  gallina_ext:
+    [ [ 
+	  (* Interactive module declaration *)
+	IDENT "Module"; id = ident; bl = module_binders_list;
+	mty_o = OPT of_module_type; mexpr_o = OPT is_module_expr ->
+	  VernacDeclareModule id bl mty_o mexpr_o
+	  
+      | IDENT "Module"; "Type"; id = ident; 
+	bl = module_binders_list; mty_o = OPT is_module_type ->
+	  VernacDeclareModuleType id bl mty_o
+
+	  (* This end a Section a Module or a Module Type *)
+
+      | IDENT "End"; id = ident -> VernacEndSegment id
+
 
 (* Transparent and Opaque *)
       | IDENT "Transparent"; l = LIST1 qualid -> VernacSetOpacity (false, l)

@@ -265,6 +265,11 @@ let locate_tactic qid = get (find_in_idtree the_objtab qid)
 
 let locate_dir qid = get (find_dir qid)
 
+let locate_module qid = 
+  match locate_dir qid with
+    | DirModule (_,(mp,_)) -> mp
+    | _ -> raise Not_found
+
 let locate_loaded_library qid = 
   match locate_dir qid with
     | DirModule (dir,_) -> dir

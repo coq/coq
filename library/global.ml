@@ -26,7 +26,7 @@ let safe_env () = !global_env
 let env () = env_of_safe_env !global_env
 
 let _ = 
-  declare_summary "Global environment"
+  declare_global_environment
     { freeze_function = (fun () -> !global_env);
       unfreeze_function = (fun fr -> global_env := fr);
       init_function = (fun () -> global_env := empty_environment);

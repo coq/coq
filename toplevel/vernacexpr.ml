@@ -166,6 +166,9 @@ type grammar_entry_ast =
   (loc * string) * Ast.entry_type option * 
     grammar_associativity * raw_grammar_rule list
 
+type module_ast = Coqast.t
+type module_binder = identifier list * module_ast
+
 type vernac_expr =
   (* Control *)
   | VernacList of located_vernac_expr list
@@ -198,7 +201,7 @@ type vernac_expr =
   | VernacRecord of identifier with_coercion * simple_binder list
       * sort_expr * identifier option * local_decl_expr with_coercion list
   | VernacBeginSection of identifier
-  | VernacEndSection of identifier
+  | VernacEndSegment of identifier
   | VernacRequire of
       export_flag option * specif_flag option * qualid located list
   | VernacImport of export_flag * qualid located list
@@ -206,6 +209,12 @@ type vernac_expr =
   | VernacCoercion of strength * qualid located * class_rawexpr * class_rawexpr
   | VernacIdentityCoercion of strength * identifier * 
       class_rawexpr * class_rawexpr
+
+  (* Modules and Module Types *)
+  | VernacDeclareModule of identifier * 
+      module_binder list * module_ast option * module_ast option
+  | VernacDeclareModuleType of identifier * 
+      module_binder list * module_ast option
 
   (* Solving *)
   | VernacSolve of int * raw_tactic_expr

@@ -222,6 +222,7 @@ let create_univ s =
 
 let uprim   = create_univ "prim"
 let uconstr = create_univ "constr"
+let umodule = create_univ "module"
 let utactic = create_univ "tactic"
 let uvernac = create_univ "vernac"
 
@@ -397,6 +398,18 @@ module Constr =
     let ne_binders_list = gec_list "ne_binders_list"
   end
 
+
+module Module =
+  struct
+    let gec = make_entry umodule inPureAstType
+    let gec_list = make_entry umodule inAstListType
+
+    let ident = gec "ident"
+    let qualid = gec_list "qualid"
+    let ne_binders_list = gec_list "ne_binders_list"
+    let module_expr = gec "module_expr"
+    let module_type = gec "module_type"
+  end
 
 module Tactic =
   struct

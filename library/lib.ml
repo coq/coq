@@ -290,7 +290,7 @@ let end_module id =
   let (after,_,before) = split_lib oname in
   lib_stk := before;
   let prefix = !path_prefix in
-  pop_path_prefix ();
+  recalc_path_prefix ();
   (* add_frozen_state must be called after processing the module, 
      because we cannot recache interactive modules  *) 
   (oname, prefix, nametab,after)
@@ -323,7 +323,7 @@ let end_modtype id =
   let (after,_,before) = split_lib sp in
   lib_stk := before;
   let dir = !path_prefix in
-  pop_path_prefix ();
+  recalc_path_prefix ();
   (* add_frozen_state must be called after processing the module type.
      This is because we cannot recache interactive module types *) 
   (sp,dir,nametab,after)
@@ -384,6 +384,19 @@ let end_compilation dir =
   let (after,_,before) = split_lib oname in
   !path_prefix,after
 
+(* Returns true if we are inside an opened module type *)
+let is_specification () = 
+  let opened_p = function
+    | _, OpenedModtype _ -> true 
+    | _ -> false
+  in
+    try 
+      let _ = find_entry_p opened_p in true
+    with
+	Not_found -> false
+
+(* Returns the most recent OpenedThing node *)
+let what_is_opened () = find_entry_p is_something_opened
 
 (* Sections. *)
 

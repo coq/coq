@@ -412,11 +412,13 @@ let end_module id =
   let oldoname,oldprefix,fs,lib_stack = Lib.end_module id in
   let mp = Global.end_module id in
   let substitute, keep, special = Lib.classify_objects lib_stack in
-  Summary.unfreeze_other_summaries fs;
 
   let dir = fst oldprefix in
   let msid = msid_of_prefix oldprefix in
   let mbids, res_o = !openmod_info in
+
+  Summary.unfreeze_other_summaries fs;
+
   let substobjs = match res_o with
     | None -> 
 	empty_subst, mbids, msid, substitute
@@ -522,10 +524,12 @@ let end_modtype id =
   let oldoname,prefix,fs,lib_stack = Lib.end_modtype id in
   let ln = Global.end_modtype id in
   let substitute, _, special = Lib.classify_objects lib_stack in
-  Summary.unfreeze_other_summaries fs;
 
   let msid = msid_of_prefix prefix in
   let mbids = !openmodtype_info in
+
+  Summary.unfreeze_other_summaries fs;
+
   let modtypeobjs = empty_subst, mbids, msid, substitute in
 
   let oname = Lib.add_leaves id (special@[in_modtype (None, modtypeobjs)]) in

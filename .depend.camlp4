@@ -26,6 +26,7 @@ parsing/g_vernac.ml: parsing/grammar.cma
 parsing/g_proofs.ml: parsing/grammar.cma
 parsing/g_cases.ml: parsing/grammar.cma
 parsing/g_constr.ml: parsing/grammar.cma
+parsing/g_module.ml: parsing/grammar.cma
 parsing/g_tactic.ml: parsing/grammar.cma
 parsing/g_ltac.ml: parsing/grammar.cma
 parsing/argextend.ml: 

@@ -150,6 +150,13 @@ module Constr :
     val ne_binders_list : Coqast.t list Gram.Entry.e
   end
 
+module Module : 
+  sig
+    val ne_binders_list : Coqast.t list Gram.Entry.e
+    val module_expr : Coqast.t Gram.Entry.e
+    val module_type : Coqast.t Gram.Entry.e
+  end
+
 module Tactic :
   sig
     open Rawterm
