@@ -254,11 +254,11 @@ Ltac apply_simplif sfun :=
 
 Ltac unfolds FT :=
   match eval cbv beta iota delta [Aminus] in (Aminus FT) with
-  | (Some _ ?X1) => unfold X1 in |- *
+  | (Field_Some _ ?X1) => unfold X1 in |- *
   | _ => idtac
   end;
    match eval cbv beta iota delta [Adiv] in (Adiv FT) with
-   | (Some _ ?X1) => unfold X1 in |- *
+   | (Field_Some _ ?X1) => unfold X1 in |- *
    | _ => idtac
    end.
 
@@ -304,11 +304,11 @@ Ltac field_gen FT := unfolds FT; (inverse_test FT; ring) || field_gen_aux FT.
 Ltac init_exp FT trm :=
   let e :=
    (match eval cbv beta iota delta [Aminus] in (Aminus FT) with
-    | (Some _ ?X1) => eval cbv beta delta [X1] in trm
+    | (Field_Some _ ?X1) => eval cbv beta delta [X1] in trm
     | _ => trm
     end) in
   match eval cbv beta iota delta [Adiv] in (Adiv FT) with
-  | (Some _ ?X1) => eval cbv beta delta [X1] in e
+  | (Field_Some _ ?X1) => eval cbv beta delta [X1] in e
   | _ => e
   end.
 

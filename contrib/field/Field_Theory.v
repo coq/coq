@@ -21,8 +21,8 @@ Record Field_Theory : Type :=
    Aopp : A -> A;
    Aeq : A -> A -> bool;
    Ainv : A -> A;
-   Aminus : option A;
-   Adiv : option A;
+   Aminus : field_rel_option A;
+   Adiv : field_rel_option A;
    RT : Ring_Theory Aplus Amult Aone Azero Aopp Aeq;
    Th_inv_def : forall n:A, n <> Azero -> Amult (Ainv n) n = Aone}.
 

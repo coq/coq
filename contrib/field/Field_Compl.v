@@ -56,6 +56,6 @@ Definition mem :=
          end
      end).
 
-Inductive option (A:Type) : Type :=
-  | None : option A
-  | Some : (A -> A -> A) -> option A.
+Inductive field_rel_option (A:Type) : Type :=
+  | Field_None : field_rel_option A
+  | Field_Some : (A -> A -> A) -> field_rel_option A.

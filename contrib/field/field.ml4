@@ -32,8 +32,8 @@ let constant dir s = Coqlib.gen_constant "Field" ("field"::dir) s
 let constr_of_opt a opt =
   let ac = constr_of a in
   match opt with
-  | None -> mkApp ((constant ["Field_Compl"] "None"),[|ac|])
-  | Some f -> mkApp ((constant ["Field_Compl"] "Some"),[|ac;constr_of f|])
+  | None -> mkApp ((constant ["Field_Compl"] "Field_None"),[|ac|])
+  | Some f -> mkApp ((constant ["Field_Compl"] "Field_Some"),[|ac;constr_of f|])
 
 (* Table of theories *)
 let th_tab = ref (Gmap.empty : (constr,constr) Gmap.t)

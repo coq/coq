@@ -236,10 +236,10 @@ Tactic Definition ApplySimplif sfun :=
 
 Tactic Definition Unfolds FT :=
   (Match Eval Cbv Beta Delta [Aminus] Iota in (Aminus FT) With
-   | [(Some ? ?1)] -> Unfold ?1
+   | [(Field_Some ? ?1)] -> Unfold ?1
    | _ -> Idtac);
   (Match Eval Cbv Beta Delta [Adiv] Iota in (Adiv FT) With
-   | [(Some ? ?1)] -> Unfold ?1
+   | [(Field_Some ? ?1)] -> Unfold ?1
    | _ -> Idtac).
 
 Tactic Definition Reduce FT :=
@@ -281,10 +281,10 @@ V7only [Tactic Definition field_gen := Field_Gen.].
 Meta Definition InitExp FT trm :=
   Let e =
     (Match Eval Cbv Beta Delta [Aminus] Iota in (Aminus FT) With
-     | [(Some ? ?1)] -> Eval Cbv Beta Delta [?1] in trm
+     | [(Field_Some ? ?1)] -> Eval Cbv Beta Delta [?1] in trm
      | _ -> trm) In
   Match Eval Cbv Beta Delta [Adiv] Iota in (Adiv FT) With
-  | [(Some ? ?1)] -> Eval Cbv Beta Delta [?1] in e
+  | [(Field_Some ? ?1)] -> Eval Cbv Beta Delta [?1] in e
   | _ -> e.
 V7only [
 (*Used by contrib Maple *)
