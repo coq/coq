@@ -1092,14 +1092,6 @@ let clenv_pose_dependent_evars clenv =
 
 (***************************)
 
-let is_dependent clause =
-  match
-    kind_of_term (clenv_instance_template clause),
-    kind_of_term (clenv_instance_template_type clause)
-  with
-      App(f,l), App(g,l') when isMeta g & array_last l = array_last l' -> true
-    | _ -> false
-
 let clenv_unique_resolver allow_K clause gl =
   clenv_unify allow_K CUMUL
     (clenv_instance_template_type clause) (pf_concl gl) clause 

@@ -487,7 +487,9 @@ let apply_without_reduce c gl =
   let clause = mk_clenv_type_of wc c in 
   res_pf kONT clause gl
 
+(* Dead code
 let refinew_scheme kONT clause gl = res_pf kONT clause gl
+*)
 
 (* A useful resolution tactic which, if c:A->B, transforms |- C into
    |- B -> C and |- A (which is realized by Cut B;[Idtac|Apply c]
