@@ -6,6 +6,20 @@ Bugs
 - "Intros H" now working like "Intro H" trying first to reduce if not a product
 - Forward dependencies in Cases now taken into account
 
+Standard library
+
+- Some additions in [ZArith]: three files (Zcomplements.v, Zpower.v and Zlogarithms.v)
+  moved from contrib/omega in order to be more visible, one Zsgn function, 
+  more induction principles (Wf_Z.v and tail of Zcomplements.v), 
+  one more general Euclid theorem. 
+
+User Contributions
+
+- Chinese has been rewritten using Z from ZArith as datatype. 
+  ZChinese is the new version, Chinese the obsolete one.   
+
+
+
 
 Changes from V7.1 to V7.2
 =========================
