@@ -380,12 +380,6 @@ let push_var_renv renv (x,ty) =
     rel_min = renv.rel_min+1;
     lst = map_lift_fst_n 1 renv.lst }
 
-let push_def_renv renv (x,b,ty) =
-  { renv with 
-    env = push_rel (x,Some b,ty) renv.env;
-    rel_min = renv.rel_min+1;
-    lst = map_lift_fst_n 1 renv.lst }
-
 let push_ctxt_renv renv ctxt =
   let n = rel_context_length ctxt in
   { renv with 
@@ -474,8 +468,7 @@ let case_branches_specif renv =
                   add_recarg renv (x,a,lc)
 	      | _ -> push_var_renv renv (x,a) in
           crec renv' lr b
-      | (_,LetIn (x,c,a,b)) ->
-          crec renv (*(push_def_renv renv (x,c,a)) *)lrec (subst1 c b)
+      | (_,LetIn (x,c,a,b)) -> crec renv lrec (subst1 c b)
       (* Rq: if branch is not eta-long, then the recursive information
          is not propagated: *)
       | (_,_) -> (renv,c')
