@@ -21,10 +21,9 @@ Definition Zeq := [x,y:Z]
   end.
 
 Lemma Zeq_prop : (x,y:Z)(Is_true (Zeq x y)) -> x==y.
-  Intros x y; Unfold Zeq.
-  Generalize (let (H1,H2)=(Zcompare_EGAL x y) in H1).
-  Elim (Zcompare x y); [Intro; Rewrite H; Trivial | Contradiction | 
-	Contradiction ].
+  Intros x y H; Unfold Zeq in H.
+  Apply Zcompare_EGAL_eq.
+  NewDestruct (Zcompare x y); [Reflexivity | Contradiction | Contradiction ].
 Save.
 
 Definition ZTheory : (Ring_Theory Zplus Zmult `1` `0` Zopp Zeq).
