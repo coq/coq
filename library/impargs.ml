@@ -405,16 +405,6 @@ let declare_var_implicits id =
   if !implicit_args or !implicit_args_out then
     declare_implicits_gen (VarRef id)
 
-(* For translator *)
-let set_var_implicits id impls = 
-  add_anonymous_leaf
-    (in_implicits 
-      [VarRef id,
-       (Impl_auto 
-	(!strict_implicit_args,!contextual_implicit_args,impls),
-       Impl_auto 
-	(!strict_implicit_args_out,!contextual_implicit_args_out,impls))])
-
 let declare_constant_implicits kn =
   if !implicit_args or !implicit_args_out then
     declare_implicits_gen (ConstRef kn)
@@ -456,7 +446,8 @@ let declare_manual_implicits r l =
     | p::l as l' ->
         if k=p then Some Manual :: aux (k+1) l else None :: aux (k+1) l' in
   let l = Impl_manual (aux 1 l) in
-  let l = l,l in
+  let (_,oimp_out) = implicits_of_global_gen r in
+  let l = l, if !Options.v7_only then oimp_out else l in
   add_anonymous_leaf (in_implicits [r,l])
 
 (* Tests if declared implicit *)
@@ -480,34 +471,17 @@ let is_implicit_var id =
 
 (*s Registration as global tables *)
 
-(* Remark: flags implicit_args, contextual_implicit_args
-   are synchronized by the general options mechanism - see Vernacentries *)
-
 let init () =
-  (* strict_implicit_args_out must be not !Options.v7 
-     but init is done before parsing *)
-  strict_implicit_args:=false;
-  implicit_args_out:=false;
-  (* strict_implicit_args_out needs to be not !Options.v7 or
-     Options.do_translate() but init is done before parsing *)
-  strict_implicit_args_out:=true;
-  contextual_implicit_args_out:=false;
   constants_table := KNmap.empty;
   inductives_table := Indmap.empty;
   constructors_table := Constrmap.empty;
   var_table := Idmap.empty
 
 let freeze () =
-  (!strict_implicit_args,
-   !implicit_args_out,!strict_implicit_args_out,!contextual_implicit_args_out,
-   !constants_table, !inductives_table, 
+  (!constants_table, !inductives_table, 
    !constructors_table, !var_table)
 
-let unfreeze (b,d,e,f,ct,it,const,vt) =
-  strict_implicit_args := b;
-  implicit_args_out := d;
-  strict_implicit_args_out := e;
-  contextual_implicit_args_out := f;
+let unfreeze (ct,it,const,vt) =
   constants_table := ct;
   inductives_table := it;
   constructors_table := const;
@@ -519,3 +493,33 @@ let _ =
       Summary.unfreeze_function = unfreeze;
       Summary.init_function = init;
       Summary.survive_section = false }
+
+(* Remark: flags implicit_args, contextual_implicit_args
+   are synchronized by the general options mechanism - see Vernacentries *)
+
+let init () =
+  (* strict_implicit_args_out must be not !Options.v7 
+     but init is done before parsing *)
+  strict_implicit_args:=false;
+  implicit_args_out:=false;
+  (* strict_implicit_args_out needs to be not !Options.v7 or
+     Options.do_translate() but init is done before parsing *)
+  strict_implicit_args_out:=true;
+  contextual_implicit_args_out:=false
+
+let freeze () =
+  (!strict_implicit_args,
+   !implicit_args_out,!strict_implicit_args_out,!contextual_implicit_args_out)
+
+let unfreeze (b,d,e,f) =
+  strict_implicit_args := b;
+  implicit_args_out := d;
+  strict_implicit_args_out := e;
+  contextual_implicit_args_out := f
+
+let _ = 
+  Summary.declare_summary "implicits-out-options"
+    { Summary.freeze_function = freeze;
+      Summary.unfreeze_function = unfreeze;
+      Summary.init_function = init;
+      Summary.survive_section = true }
