@@ -46,27 +46,47 @@ let new_meta _ =
   incr meta_count; 
   Tmeta {id = !meta_count; contents = None}
 
-(*s From a type schema to a type. All [Tvar] becomes fresh [Tmeta]. *)
+(*s Sustitution of [Tvar i] by [t] in a ML type. *)
 
-let instantiation (nb,t) =
-    let c = !meta_count in 
-    let a = Array.make nb {id=0; contents = None} 
-    in 
-    for i = 0 to nb-1 do 
-      a.(i) <- {id=i+c+1; contents=None}
-    done; 
-    let rec var2meta t = match t with 
-      | Tvar i -> Tmeta a.(i-1)
-      | Tmeta {contents=None} -> t 
-      | Tmeta {contents=Some u} -> var2meta u
-      | Tglob (r,l) -> Tglob(r, List.map var2meta l) 
-      | Tarr (t1,t2) -> Tarr (var2meta t1, var2meta t2)
-      | t -> t
-    in 
-    meta_count := !meta_count + nb; 
-    var2meta t
+let type_subst i t0 t = 
+  let rec subst t = match t with
+    | Tvar j when i = j -> t0
+    | Tmeta {contents=None} -> t 
+    | Tmeta {contents=Some u} -> subst u
+    | Tarr (a,b) -> Tarr (subst a, subst b)
+    | Tglob (r, l) -> Tglob (r, List.map subst l)
+    | a -> a 
+  in subst t
+       
+(* Simultaneous substitution of [[Tvar 1; ... ; Tvar n]] by [l] in a ML type. *)
 
-(*s Occur-check of a uninstantiated meta in a type *)
+let type_subst_list l t = 
+  let rec subst t = match t with 
+    | Tvar j -> List.nth l (j-1)
+    | Tmeta {contents=None} -> t
+    | Tmeta {contents=Some u} -> subst u
+    | Tarr (a,b) -> Tarr (subst a, subst b)
+    | Tglob (r, l) -> Tglob (r, List.map subst l)
+    | a -> a
+  in subst t
+
+(* Simultaneous substitution of [[|Tvar 1; ... ; Tvar n|]] by [v] in a ML type. *)
+
+let type_subst_vect v t = 
+  let rec subst t = match t with 
+    | Tvar j -> v.(j-1)
+    | Tmeta {contents=None} -> t
+    | Tmeta {contents=Some u} -> subst u
+    | Tarr (a,b) -> Tarr (subst a, subst b)
+    | Tglob (r, l) -> Tglob (r, List.map subst l)
+    | a -> a
+  in subst t
+
+(*s From a type schema to a type. All [Tvar] become fresh [Tmeta]. *)
+
+let instantiation (nb,t) = type_subst_vect (Array.init nb new_meta) t
+
+(*s Occur-check of a free meta in a type *)
 
 let rec type_occurs alpha t =
   match t with
@@ -113,7 +133,7 @@ module Mlenv = struct
   module Metaset = Set.Make(struct type t = ml_meta let compare = meta_cmp end)
 
   (* Main MLenv type. [env] is the real environment, whereas [free] 
-     (tries to) keep trace of the free meta variables occurring in [env]. *)
+     (tries to) record the free meta variables occurring in [env]. *)
 
   type t = { env : ml_schema list; mutable free : Metaset.t}
 
@@ -175,14 +195,17 @@ module Mlenv = struct
     clean_free mle; 
     { env = generalization mle t :: mle.env; free = mle.free }
 
+  (* Adding a type with no [Tvar], hence no generalization needed. *)
+
   let push_type {env=e;free=f} t = 
     { env = (0,t) :: e; free = find_free f t} 
     
+  (* Adding a type with no [Tvar] nor [Tmeta]. *)
+
   let push_std_type {env=e;free=f} t = 
     { env = (0,t) :: e; free = f}
 
 end
-
 
 (*S Operations upon ML types (without meta). *)
 
@@ -200,6 +223,8 @@ let rec type_mem_kn kn = function
   | Tarr (a,b) -> (type_mem_kn kn a) || (type_mem_kn kn b)
   | _ -> false
 
+(*s Greatest variable occurring in [t]. *)
+
 let type_maxvar t = 
   let rec parse n = function 
     | Tmeta _ -> assert false
@@ -209,14 +234,20 @@ let type_maxvar t =
     | _ -> n 
   in parse 0 t
 
+(*s From [a -> b -> c] to [[a;b],c]. *) 
+
 let rec type_decomp = function 
   | Tmeta _ -> assert false
   | Tarr (a,b) -> let l,h = type_decomp b in a::l, h 
   | a -> [],a
 
+(*s The converse: From [[a;b],c] to [a -> b -> c]. *)
+
 let rec type_recomp (l,t) = match l with 
   | [] -> t 
   | a::l -> Tarr (a, type_recomp (l,t))
+
+(*s Translating [Tvar] to [Tvar'] to avoid clash. *)
 
 let rec var2var' = function 
   | Tmeta _ -> assert false
@@ -225,26 +256,6 @@ let rec var2var' = function
   | Tglob (r,l) -> Tglob (r, List.map var2var' l)
   | a -> a
 
-(*s Sustitution of [Tvar i] by [t] in a ML type. *)
-
-let type_subst i t = 
-  let rec subst = function 
-  | Tvar j when i = j -> t
-  | Tarr (a,b) -> Tarr (subst a, subst b)
-  | Tglob (r, l) -> Tglob (r, List.map subst l)
-  | a -> a 
-  in subst
-
-(* Simultaneous substitution of [Tvar 1;...; Tvar n] by [l] in a ML type. *)
-
-let type_subst_all l t = 
-  let rec subst = function 
-    | Tvar j -> List.nth l (j-1)
-    | Tarr (a,b) -> Tarr (subst a, subst b)
-    | Tglob (r, l) -> Tglob (r, List.map subst l)
-    | a -> a
-  in subst t
-
 type abbrev_map = global_reference -> ml_type option
 
 (*s Delta-reduction of type constants everywhere in a ML type [t].
@@ -252,9 +263,10 @@ type abbrev_map = global_reference -> ml_type option
 
 let type_expand env t = 
   let rec expand = function
+    | Tmeta _ -> assert false
     | Tglob (r,l) as t ->    
 	(match env r with 
-	   | Some mlt -> expand (type_subst_all l mlt) 
+	   | Some mlt -> expand (type_subst_list l mlt) 
 	   | None -> Tglob (r, List.map expand l))
     | Tarr (a,b) -> Tarr (expand a, expand b)
     | a -> a
@@ -266,10 +278,11 @@ let is_arrow = function Tarr _ -> true | _ -> false
 
 let type_weak_expand env t = 
   let rec expand = function
+    | Tmeta _ -> assert false
     | Tglob (r,l) as t ->    
 	(match env r with 
 	   | Some mlt -> 
-	       let u = expand (type_subst_all l mlt) in 
+	       let u = expand (type_subst_list l mlt) in 
 	       if is_arrow u then u else t
 	   | None -> t)
     | Tarr (a,b) -> Tarr (a, expand b)
@@ -282,11 +295,16 @@ let type_eq env t t' = (type_expand env t = type_expand env t')
 
 let type_neq env t t' = (type_expand env t <> type_expand env t')
 
+(*s Generating a signature from a ML type. *)
+
 let type_to_sign env t = 
   let rec f = function 
+    | Tmeta _ -> assert false
     | Tarr (a,b) -> (Tdummy <> a) :: (f b)
     | _ -> [] 
   in f (type_expand env t)
+
+(*s Removing [Tdummy] from the top level of a ML type. *)
 
 let type_expunge env t = 
   let s = type_to_sign env t in 
@@ -295,12 +313,13 @@ let type_expunge env t =
     let rec f t s = 
       if List.mem false s then 
 	match t with 
+	  | Tmeta _ -> assert false
 	  | Tarr (a,b) -> 
 	      let t = f b (List.tl s) in 
 	      if List.hd s then Tarr (a, t) else t  
 	  | Tglob (r,l) ->
 	      (match env r with 
-		 | Some mlt -> f (type_subst_all l mlt) s
+		 | Some mlt -> f (type_subst_list l mlt) s
 		 | None -> assert false)
 	  | _ -> assert false
       else t 
@@ -801,7 +820,45 @@ let kill_dummy_lams c =
     let ids',c = kill_some_lams bl (ids,c) in 
     ids, named_lams ids' c
   else raise Impossible
-      
+
+(*s [eta_expansion_sign] takes a function [fun idn ... id1 -> c] 
+   and a signature [s] and builds a eta-long version. *)
+
+(* For example, if [s = [true;true;false;true]] then the output is :
+   [fun idn ... id1 x x _ x -> (c' 4 3 __ 1)]  with [c' = lift 4 c] *)
+
+let eta_expansion_sign s (ids,c) =
+  let rec abs ids rels i = function
+    | [] -> 
+	let a = List.rev_map (function MLrel x -> MLrel (i-x) | a -> a) rels
+	in ids, MLapp (ast_lift (i-1) c, a) 
+    | true :: l -> abs (anonymous :: ids) (MLrel i :: rels) (i+1) l 
+    | false :: l -> abs (dummy_name :: ids) (MLdummy :: rels) (i+1) l
+  in abs ids [] 1 s
+
+(*s If [s = [b1; ... ; bn]] then [case_expunge] decomposes [e] 
+  in [n] lambdas (with eta-expansion if needed) and removes all dummy lambdas 
+  corresponding to [false] in [s]. *)
+
+let case_expunge s e = 
+  let m = List.length s in 
+  let n = nb_lams e in 
+  let p = if m <= n then collect_n_lams m e 
+  else eta_expansion_sign (snd (list_chop n s)) (collect_lams e) in 
+  kill_some_lams (List.rev s) p
+
+(*s [term_expunge] takes a function [fun idn ... id1 -> c] 
+  and a signature [s] and remove dummy lams. The difference 
+  with [case_expunge] is that we here leave one dummy lambda 
+  if all lambdas are dummy. *)
+
+let term_expunge s (ids,c) =
+  if s = [] then c 
+  else 
+    let ids,c = kill_some_lams (List.rev s) (ids,c) in 
+    if ids = [] then MLlam (dummy_name, ast_lift 1 c)
+    else named_lams ids c
+
 (*s [kill_dummy_args ids t0 t] looks for occurences of [t0] in [t] and 
   purge the args of [t0] corresponding to a [dummy_name]. 
   It makes eta-expansion if needed. *) 
