@@ -126,8 +126,14 @@ val id_of_name_using_hdchar :
   env -> types -> name -> identifier
 val named_hd : env -> types -> name -> name
 val named_hd_type : env -> types -> name -> name
-val prod_name : env -> name * types * types -> constr
+
+val mkProd_name : env -> name * types * types -> types
+val mkLambda_name : env -> name * types * constr -> constr
+
+(* Deprecated synonyms of mkProd_name and mkLambda_name *)
+val prod_name : env -> name * types * types -> types
 val lambda_name : env -> name * types * constr -> constr
+
 val prod_create : env -> types * types -> constr
 val lambda_create : env -> types * constr -> constr
 val name_assumption : env -> rel_declaration -> rel_declaration

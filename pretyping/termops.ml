@@ -667,8 +667,11 @@ let named_hd env a = function
 
 let named_hd_type env a = named_hd env (body_of_type a)
 
-let prod_name   env (n,a,b) = mkProd (named_hd_type env a n, a, b)
-let lambda_name env (n,a,b) = mkLambda (named_hd_type env a n, a, b)
+let mkProd_name   env (n,a,b) = mkProd (named_hd_type env a n, a, b)
+let mkLambda_name env (n,a,b) = mkLambda (named_hd_type env a n, a, b)
+
+let lambda_name = mkLambda_name
+let prod_name = mkProd_name
 
 let prod_create   env (a,b) = mkProd (named_hd_type env a Anonymous, a, b)
 let lambda_create env (a,b) =  mkLambda (named_hd_type env a Anonymous, a, b)
