@@ -253,17 +253,45 @@ let rec detype tenv avoid env t =
 	in 
 	RCases (dummy_loc,tag,pred,[tomatch],eqnl)
 	
-    | Fix (nvn,recdef) -> detype_fix tenv avoid env (RFix nvn) recdef
-    | CoFix (n,recdef) -> detype_fix tenv avoid env (RCoFix n) recdef
+    | Fix (nvn,recdef) -> detype_fix tenv avoid env nvn recdef
+    | CoFix (n,recdef) -> detype_cofix tenv avoid env n recdef
 
-and detype_fix tenv avoid env fixkind (names,tys,bodies) =
+and detype_fix tenv avoid env (vn,_ as nvn) (names,tys,bodies) =
   let def_avoid, def_env, lfi =
     Array.fold_left
       (fun (avoid, env, l) na ->
 	 let id = next_name_away na avoid in 
 	 (id::avoid, add_name (Name id) env, id::l))
       (avoid, env, []) names in
-  RRec(dummy_loc,fixkind,Array.of_list (List.rev lfi),
+ (* Be sure that bodies and types share the same names *)
+  let rec share_names n l avoid env c t =
+    if n = 0 then
+      let c = detype tenv avoid env c in
+      let t = detype tenv avoid env t in
+      List.fold_left (fun c (na,t) -> RLambda (dummy_loc,na,t,c)) c l,
+      List.fold_left (fun c (na,t) -> RProd (dummy_loc,na,t,c)) t l
+    else match kind_of_term c, kind_of_term t with
+      | Lambda (na,t,c), Prod (_,t',c') ->
+          let t = detype tenv avoid env t in
+	  let id = next_name_away na avoid in 
+          let avoid = id::avoid and env = add_name (Name id) env in
+          share_names (n-1) ((na,t)::l) avoid env c c'
+      | _ -> anomaly "Detype: wrong fix" in
+  let n = Array.length tys in
+  let v = array_map3
+    (fun c t i -> share_names (i+1) [] def_avoid def_env c (lift n t))
+    bodies tys vn in
+  RRec(dummy_loc,RFix nvn,Array.of_list (List.rev lfi),
+       Array.map snd v, Array.map fst v)
+
+and detype_cofix tenv avoid env n (names,tys,bodies) =
+  let def_avoid, def_env, lfi =
+    Array.fold_left
+      (fun (avoid, env, l) na ->
+	 let id = next_name_away na avoid in 
+	 (id::avoid, add_name (Name id) env, id::l))
+      (avoid, env, []) names in
+  RRec(dummy_loc,RCoFix n,Array.of_list (List.rev lfi),
        Array.map (detype tenv avoid env) tys,
        Array.map (detype tenv def_avoid def_env) bodies)
 
