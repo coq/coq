@@ -705,10 +705,10 @@ let build_setspolynom gl th lc =
 			       th.th_eq; p |])) |]),
 	mkLApp(coq_setspolynomial_simplify_ok,
 	       [| th.th_a; (unbox th.th_equiv); th.th_plus;
-                  th.th_mult; th.th_one; th.th_zero; th.th_eq; v;
-                  th.th_t; (unbox th.th_setoid_th);
+                  th.th_mult; th.th_one; th.th_zero; th.th_eq;
+                  (unbox th.th_setoid_th);
 		  (unbox th.th_morph).plusm;
-                  (unbox th.th_morph).multm; p |])))
+                  (unbox th.th_morph).multm; v; th.th_t; p |])))
     lp
 
 module SectionPathSet =
