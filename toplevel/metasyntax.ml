@@ -54,18 +54,25 @@ let globalize_ref_term vars ref =
 
 let rec globalize_constr_expr vars = function
   | CRef ref -> globalize_ref_term vars ref
-  | CAppExpl (_,ref,l) ->
+  | CAppExpl (_,(p,ref),l) ->
       let f = 
 	map_constr_expr_with_binders globalize_constr_expr
 	  (fun x e -> e) vars
       in
-      CAppExpl (dummy_loc,globalize_ref vars ref, List.map f l)
+      CAppExpl (dummy_loc,(p,globalize_ref vars ref), List.map f l)
   | c ->
       map_constr_expr_with_binders globalize_constr_expr (fun id e -> id::e)
         vars c
 
+let without_translation f x =
+  let old = Options.do_translate () in
+  let oldv7 = !Options.v7 in
+  Options.make_translate false;
+  try let r = f x in Options.make_translate old; Options.v7:=oldv7; r
+  with e -> Options.make_translate old; Options.v7:=oldv7; raise e
+
 let _ = set_constr_globalizer
-  (fun vars e -> for_grammar (globalize_constr_expr vars) e)
+  (fun vars e -> for_grammar (without_translation (globalize_constr_expr vars)) e)
 
 let _ = define_ast_quotation true "constr" constr_parser_with_glob
 
@@ -163,36 +170,6 @@ let print_grammar univ entry =
   let typ = explicitize_entry (fst u) entry in
   let te,_,_ = get_constr_entry typ in
   Gram.Entry.print te
-
-(* Infix, distfix, notations *)
-
-type token = WhiteSpace of int | String of string
-
-let split str =
-  let push_token beg i l =
-    if beg == i then l else String (String.sub str beg (i - beg)) :: l 
-  in
-  let push_whitespace beg i l =
-    if beg = i then l else WhiteSpace (i-beg) :: l 
-  in
-  let rec loop beg i =
-    if i < String.length str then
-      if str.[i] == ' ' then
-	push_token beg i (loop_on_whitespace (succ i) (succ i))
-      else
-	loop beg (succ i)
-    else
-      push_token beg i []
-  and loop_on_whitespace beg i =
-    if i < String.length str then
-      if str.[i] <> ' ' then
-	push_whitespace beg i (loop i (succ i))
-      else
-	loop_on_whitespace beg (succ i)
-    else
-      push_whitespace beg i []
-  in
-  loop 0 0
 
 (* Build the syntax and grammar rules *)
 
@@ -469,9 +446,11 @@ let make_pp_rule symbols typs n =
 (**************************************************************************)
 (* Syntax extenstion: common parsing/printing rules and no interpretation *)
 
-let cache_syntax_extension (_,(_,prec,ntn,gr,se)) =
+let cache_syntax_extension (_,(_,prec,ntn,gr,se,translate)) =
   try 
     let oldprec = Symbols.level_of_notation ntn in
+    if translate (* In case the ntn was only for the printer - V8Notation *)
+    then raise Not_found else 
     if oldprec <> prec then
       if !Options.v7 then begin
 	Options.if_verbose
@@ -481,7 +460,6 @@ let cache_syntax_extension (_,(_,prec,ntn,gr,se)) =
 	error ("Notation "^ntn^" is already assigned a different level")
     else
     (* The notation is already declared; no need to redeclare it *)
-      if Options.do_translate () then raise Not_found; (* In case the notation was only given to the printer - V8Notation *)
       ()
   with Not_found ->
     (* Reserve the notation level *)
@@ -495,15 +473,15 @@ let subst_notation_grammar subst x = x
 
 let subst_printing_rule subst x = x
 
-let subst_syntax_extension (_,subst,(local,prec,ntn,gr,se)) =
+let subst_syntax_extension (_,subst,(local,prec,ntn,gr,se,t)) =
   (local,prec,ntn,
    option_app (subst_notation_grammar subst) gr,
-   subst_printing_rule subst se)
+   subst_printing_rule subst se, t)
 
-let classify_syntax_definition (_,(local,_,_,_,_ as o)) =
+let classify_syntax_definition (_,(local,_,_,_,_,_ as o)) =
   if local then Dispose else Substitute o
 
-let export_syntax_definition (local,_,_,_,_ as o) =
+let export_syntax_definition (local,_,_,_,_,_ as o) =
   if local then None else Some o
 
 let (inSyntaxExtension, outSyntaxExtension) =
@@ -604,7 +582,7 @@ let add_syntax_extension_v8only local mv8 =
   let (prec,notation) = make_symbolic n symbs typs in
   let pp_rule = make_pp_rule typs symbs n in
   Lib.add_anonymous_leaf
-    (inSyntaxExtension(local,prec,notation,None,pp_rule))
+    (inSyntaxExtension(local,prec,notation,None,pp_rule,Options.do_translate()))
 
 let add_syntax_extension local dfmod mv8 = match dfmod with
   | None -> add_syntax_extension_v8only local mv8
@@ -640,24 +618,24 @@ let add_syntax_extension local dfmod mv8 = match dfmod with
   let gram_rule = make_grammar_rule n assoc typs symbs notation in
   let pp_rule = make_pp_rule pptyps ppsymbols ppn in
   Lib.add_anonymous_leaf
-    (inSyntaxExtension(local,ppprec,notation,Some gram_rule,pp_rule))
+    (inSyntaxExtension(local,ppprec,notation,Some gram_rule,pp_rule,Options.do_translate()))
 
 (**********************************************************************)
 (* Distfix, Infix, Notations *)
 
 (* A notation comes with a grammar rule, a pretty-printing rule, an
    identifiying pattern called notation and an associated scope *)
-let load_notation _ (_,(_,_,ntn,scope,pat,onlyparse,_)) =
+let load_notation _ (_,(_,_,ntn,scope,pat,onlyparse,_,_)) =
   Symbols.declare_scope scope
 
-let open_notation i (_,(_,oldse,ntn,scope,pat,onlyparse,df)) =
+let open_notation i (_,(_,oldse,ntn,scope,pat,onlyparse,onlypp,df)) =
   if i=1 then begin
     let b = Symbols.exists_notation_in_scope scope ntn pat in
     (* Declare the old printer rule and its interpretation *)
     if not b & oldse <> None then
       Esyntax.add_ppobject {sc_univ="constr";sc_entries=out_some oldse};
     (* Declare the interpretation *)
-    if not b then
+    if not b & not onlypp then
       Symbols.declare_notation_interpretation ntn scope pat df;
     if not b & not onlyparse then
       Symbols.declare_uninterpretation (NotationRule (scope,ntn)) pat
@@ -667,16 +645,16 @@ let cache_notation o =
   load_notation 1 o;
   open_notation 1 o
 
-let subst_notation (_,subst,(lc,oldse,ntn,scope,(metas,pat),b,df)) =
+let subst_notation (_,subst,(lc,oldse,ntn,scope,(metas,pat),b,b',df)) =
   (lc,option_app
     (list_smartmap (Extend.subst_syntax_entry Ast.subst_astpat subst)) oldse,
    ntn,scope,
-   (metas,subst_aconstr subst pat), b, df)
+   (metas,subst_aconstr subst pat), b, b', df)
 
-let classify_notation (_,(local,_,_,_,_,_,_ as o)) =
+let classify_notation (_,(local,_,_,_,_,_,_,_ as o)) =
   if local then Dispose else Substitute o
 
-let export_notation (local,_,_,_,_,_,_ as o) =
+let export_notation (local,_,_,_,_,_,_,_ as o) =
   if local then None else Some o
 
 let (inNotation, outNotation) =
@@ -741,7 +719,7 @@ let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
   let gram_rule = make_grammar_rule n assoc typs symbols notation in
   let pp_rule = make_pp_rule pptyps ppsymbols ppn in
   Lib.add_anonymous_leaf
-    (inSyntaxExtension(local,ppprec,notation,Some gram_rule,pp_rule));
+    (inSyntaxExtension(local,ppprec,notation,Some gram_rule,pp_rule,Options.do_translate()));
   let old_pp_rule =
     if onlyparse then None
     else
@@ -751,9 +729,10 @@ let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
   (* Declare the interpretation *)
   let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
   Lib.add_anonymous_leaf
-    (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,df))
+    (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,false,df))
 
-let add_notation_interpretation_core local vars symbs df (a,r) sc onlyparse =
+let add_notation_interpretation_core local vars symbs df (a,r) sc onlyparse 
+  onlypp =
   let scope = match sc with None -> Symbols.default_scope | Some sc -> sc in
   let notation = make_anon_notation symbs in
   let prec = 
@@ -765,7 +744,7 @@ let add_notation_interpretation_core local vars symbs df (a,r) sc onlyparse =
       (fun id n -> id,ETConstr (NumLevel n,InternalProd)) vars (snd prec) in
     Some (make_old_pp_rule (fst prec) symbs typs r notation scope vars) in
   Lib.add_anonymous_leaf
-    (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,df))
+    (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,onlypp,df))
 
 let check_occur l id =
   if not (List.mem (Name id) l) then error ((string_of_id id)^"is unbound")
@@ -784,11 +763,11 @@ let add_notation_interpretation df (c,l) sc =
   let a = AApp (c,List.map (function 
     | Name id when List.mem id vars -> AVar id
     | _ -> AHole QuestionMark) l) in
-  let la = List.map (fun id -> id,[]) vars in
+  let la = List.map (fun id -> id,(None,[])) vars in
   let onlyparse = false in
   let local = false in
   add_notation_interpretation_core local vars symbs df ((la,a),a_for_old) sc
-    onlyparse
+    onlyparse false
 
 let add_notation_v8only local c (df,modifiers) sc =
   let add_notation_in_scope local df c (assoc,n,etyps,onlyparse) sc toks =
@@ -808,11 +787,11 @@ let add_notation_v8only local c (df,modifiers) sc =
     let (prec,notation) = make_symbolic n symbols typs in
     let pp_rule = make_pp_rule typs symbols n in
     Lib.add_anonymous_leaf
-      (inSyntaxExtension(local,prec,notation,None,pp_rule));
+      (inSyntaxExtension(local,prec,notation,None,pp_rule,Options.do_translate()));
     (* Declare the interpretation *)
     let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
     Lib.add_anonymous_leaf
-      (inNotation(local,None,notation,scope,a,onlyparse,df))
+      (inNotation(local,None,notation,scope,a,onlyparse,true,df))
   in
   let toks = split df in
   match toks with 
@@ -835,7 +814,7 @@ let add_notation_v8only local c (df,modifiers) sc =
 		let a_for_old = interp_rawconstr_gen
 		  false Evd.empty (Global.env()) [] false (vars,[]) c in
 		add_notation_interpretation_core local vars symbs df
-		  (a,a_for_old) sc onlyparse
+		  (a,a_for_old) sc onlyparse true
 	  | Some n ->
 	    (* Declare both syntax and interpretation *)
 	    let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
@@ -879,7 +858,7 @@ let add_notation local c dfmod mv8 sc =
 		let a_for_old = interp_rawconstr_gen
 		  false Evd.empty (Global.env()) [] false (vars,[]) c in
 		add_notation_interpretation_core local vars symbs df
-		  (a,a_for_old) sc onlyparse
+		  (a,a_for_old) sc onlyparse false
 	  | Some n ->
 	    (* Declare both syntax and interpretation *)
 	    let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
