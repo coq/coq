@@ -478,6 +478,7 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
   (** [bal l x r] acts as [create], but performs one step of
       rebalancing if necessary. *)
 
+(**
   Axiom bal :
     (l:tree)(x:elt)(r:tree)
     (bst l) -> (avl l) -> (bst r) -> (avl r) ->
@@ -494,8 +495,8 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
        (* elements are those of (l,x,r) *)
        (y:elt)(In_tree y s) <-> 
               ((X.eq y x) \/ (In_tree y l) \/ (In_tree y r)) }.
+**)
 
-(***
   Definition bal :
     (l:tree)(x:elt)(r:tree)
     (bst l) -> (avl l) -> (bst r) -> (avl r) ->
@@ -718,7 +719,6 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Generalize z z0; Unfold hl hr; MaxCase '(height l) '(height r); Intros; Omega.
     Intuition; Inversion_clear H3; Intuition.
   Defined.
-***)
 
   Definition add_tree : 
     (x:elt)(s:tree)(bst s) -> (avl s) ->
@@ -787,6 +787,97 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Case (add_tree x s); Trivial.
     Intros s' (s'_bst,(s'_avl,Hs')).
     Exists (t_intro s' s'_bst s'_avl); Intuition.
+  Defined.
+
+  (** * Join
+
+      Same as [bal] but does not assumme anything regarding heights
+      of [l] and [r].
+<<
+    let rec join l v r =
+      match (l, r) with
+        (Empty, _) -> add v r
+      | (_, Empty) -> add v l
+      | (Node(ll, lv, lr, lh), Node(rl, rv, rr, rh)) ->
+          if lh > rh + 2 then bal ll lv (join lr v r) else
+          if rh > lh + 2 then bal (join l v rl) rv rr else
+          create l v r
+>>
+  *)
+
+  Definition join : 
+    (l:tree)(x:elt)(r:tree)
+    (bst l) -> (avl l) -> (bst r) -> (avl r) ->
+    (lt_tree x l) -> (gt_tree x r) ->
+    { s:tree | (bst s) /\ (avl s) /\
+               ((height_of_node l r (height s)) \/
+                (height_of_node l r ((height s)+1))) /\
+               ((y:elt)(In_tree y s) <-> 
+                       ((X.eq y x) \/ (In_tree y l) \/ (In_tree y r))) }.
+  Proof.
+    Induction l; Simpl.
+    (* l = Leaf *)
+    Intros; Case (add_tree x r); Trivial.
+    Intros s' (s'_bst,(s'_avl,Hs')); Simpl; Exists s'; Intuition.
+    Unfold height_of_node; Simpl. AVL H2; AVL s'_avl; Intuition Omega.
+    Ground. Ground. Inversion_clear H5. Ground.
+    Intros; Clear H.
+    Induction r; Simpl.
+    (* r = Leaf *)
+    Clear H0.
+    Intros; Case (add_tree x (Node t0 t1 t2 z)); Simpl; Trivial.
+    Intros s' (s'_bst,(s'_avl,Hs')); Simpl; Exists s'; Intuition.
+    Unfold height_of_node; Simpl. AVL s'_avl; Intuition Omega.
+    Ground. Ground. Ground. Inversion_clear H.
+    (* l = Node t0 t1 t2 z and r = Node r1 t3 r0 z0 *)
+    Intros.
+    Case (Z_gt_le_dec z (z0+2)); Intro.
+    (* z > z0+2 *)
+    Clear Hrecr1 Hrecr0.
+    Case (H0 x (Node r1 t3 r0 z0)); Clear H0; Auto.
+    Inversion_clear H1; Trivial.
+    Inversion_clear H2; Trivial.
+    Intro s'; Unfold height_of_node; Simpl; Intuition.
+    Case (bal t0 t1 s'); Auto.
+    Inversion_clear H1; Trivial.
+    Inversion_clear H2; Trivial.
+    Inversion_clear H1; Trivial.
+    Clear H0; Intro; Intro; Generalize (H9 y); Clear H9; Intuition.
+    Apply ME.lt_eq with x; Auto.
+    Inversion_clear H1; Auto.
+    Apply X.lt_trans with x; Auto.
+    Clear H9; AVL H2; Intuition Omega.
+    Intro s''; Unfold height_of_node; Simpl; Intuition.
+    Exists s''; Do 3 (Split; Trivial).
+    Clear H5 H6 H7 H8 H9 H13; AVL H2; Clear H2; Intuition Omega.
+    Clear H0 H12 H10; Ground.
+    Inversion_clear H0; Ground.
+    (* z <= z0 + 2 *)
+    Case (Z_gt_le_dec z0 (z+2)); Intro.
+    (* z0 > z+2 *)
+    Clear H0 Hrecr0.
+    Case Hrecr1; Clear Hrecr1; Auto.
+    Inversion_clear H3; Trivial.
+    Inversion_clear H4; Trivial.
+    Intro s'; Unfold height_of_node; Simpl; Intuition.
+    Case (bal s' t3 r0); Auto.
+    Inversion_clear H3; Trivial.
+    Inversion_clear H4; Trivial.
+    Inversion_clear H3; Trivial.
+    Clear H0; Intro; Intro; Generalize (H9 y); Clear H9; Intuition.
+    Apply ME.eq_lt with x; Auto.
+    Apply X.lt_trans with x; Auto.
+    Inversion_clear H3; Auto.
+    Clear H9; AVL H4; Intuition Omega.
+    Intro s''; Unfold height_of_node; Simpl; Intuition.
+    Exists s''; Do 3 (Split; Trivial).
+    Clear H5 H6 H7 H8 H9 H13; AVL H4; Clear H4; Intuition Omega.
+    Clear H0 H12 H10; Ground.
+    Inversion_clear H0; Ground.
+    (* -2 <= z-z0 <= 2 *)
+    Clear H0 Hrecr0 Hrecr1.
+    Case (create (Node t0 t1 t2 z) x (Node r1 t3 r0 z0)); Simpl; Intuition.
+    Exists x0; Intuition.
   Defined.
 
   (** * Merge *)
@@ -1092,73 +1183,6 @@ Module Make [X : OrderedType] <: Sdep with Module E := X.
     Exists (t_intro s' H H1); Intuition.
   Defined.
 
-  (** * Join
-
-      Same as [bal] but does not assumme anything regarding heights
-      of [l] and [r].
-<<
-    let rec join l v r =
-      match (l, r) with
-        (Empty, _) -> add v r
-      | (_, Empty) -> add v l
-      | (Node(ll, lv, lr, lh), Node(rl, rv, rr, rh)) ->
-          if lh > rh + 2 then bal ll lv (join lr v r) else
-          if rh > lh + 2 then bal (join l v rl) rv rr else
-          create l v r
->>
-  *)
-
-  Definition join : 
-    (l:tree)(x:elt)(r:tree)
-    (bst l) -> (avl l) -> (bst r) -> (avl r) ->
-    (lt_tree x l) -> (gt_tree x r) ->
-    { s:tree | (bst s) /\ (avl s) /\
-               ((height_of_node l r (height s)) \/
-                (height_of_node l r ((height s)+1)))
-(*
-       (y:elt)(In_tree y s) <-> 
-              ((X.eq y x) \/ (In_tree y l) \/ (In_tree y r)) 
-*)
-}.
-  Proof.
-    Induction l; Simpl.
-    (* l = Leaf *)
-    Intros; Case (add_tree x r).
-    Intros (s',s'_bst,s'_avl); Simpl; Intro; Exists s'; Intuition.
-    Unfold height_of_node; Simpl. AVL H2; AVL s'_avl; Intuition Omega.
-    Induction r; Simpl.
-    (* r = Leaf *)
-    Clear H H0.
-    Intros; Case (add_tree x (Node t0 t1 t2 z)).
-    Intros (s',s'_bst,s'_avl); Simpl; Intro; Exists s'; Intuition.
-    Unfold height_of_node; Simpl. AVL H2; AVL s'_avl; Intuition Omega.
-    (* l = Node t0 t1 t2 z and r = Node t3 t4 t5 z0 *)
-    Intros.
-    Case (Z_gt_le_dec z (z0+2)); Intro.
-    (* z > z0+2 *)
-    Clear H H1 H2.
-    Case (H0 x (Node t3 t4 t5 z0)); Auto.
-    Inversion_clear H3; Trivial.
-    Inversion_clear H4; Trivial.
-    Intro s'; Unfold height_of_node; Simpl; Intuition.
-    Case (bal t0 t1 s'); Auto.
-    Inversion_clear H3; Trivial.
-    Inversion_clear H4; Trivial.
-
-    Intros; Exists s2; Unfold height_of_node; Simpl; Intuition.
-    AVL H2; Omega.
-    Inversion_clear H7.
-    (* s1 = Node t0 t1 t2 *)
-    Destruct s2; Simpl.
-    (* s2 = Leaf *)
-    Intros; Exists (Node t0 t1 t2 z); Unfold height_of_node; Simpl; Intuition.
-    AVL H0; Omega.
-    Inversion_clear H7.
-    (* s2 = Node t3 t4 t5 *)
-    Intros.
- 
-
-  Defined.
 
 
 
