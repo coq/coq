@@ -6,6 +6,7 @@ open Util
 open Names
 open Term
 open Pattern
+open Rawterm
 
 (* Discrimination nets of terms.
    See the module dn.ml for further explanations.

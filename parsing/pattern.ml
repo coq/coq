@@ -17,10 +17,6 @@ type constr_pattern =
   | PSort of rawsort
   | PMeta of int option
   | PCase of constr_pattern option * constr_pattern * constr_pattern array
-(*i
-  | Prec of loc * fix_kind * identifier array * 
-      constr_pattern array * constr_pattern array
-i*)
 
 let rec occur_meta_pattern = function
   | PApp (f,args) ->
@@ -123,7 +119,7 @@ let eq_context ctxt1 ctxt2 = array_for_all2 eq_constr ctxt1 ctxt2
 
 let matches_core convert pat c = 
   let rec sorec stk sigma p t =
-    let cT = whd_castapp t in
+    let cT = strip_outer_cast t in
     match p,kind_of_term cT with
       | PSoApp (n,args),m ->
 	  let relargs =

@@ -21,6 +21,15 @@ type cases_pattern =
 
 type rawsort = RProp of Term.contents | RType
 
+type binder_kind = BProd | BLambda | BLetIn
+
+type 'ctxt reference =
+  | RConst of section_path * 'ctxt
+  | RInd of inductive_path * 'ctxt
+  | RConstruct of constructor_path * 'ctxt
+  | RVar of identifier
+  | REVar of int * 'ctxt
+
 (*i Pas beau ce constr dans rawconstr, mais mal compris ce ctxt des ref i*)
 type rawconstr = 
   | RRef of loc * rawconstr array reference
