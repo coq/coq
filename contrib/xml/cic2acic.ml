@@ -354,8 +354,8 @@ let fresh_id seed ids_to_terms constr_to_ids ids_to_father_ids =
 let source_id_of_id id = "#source#" ^ id;;
 
 let acic_of_cic_context' computeinnertypes seed ids_to_terms constr_to_ids
- ids_to_father_ids ids_to_inner_sorts ids_to_inner_types pvars env idrefs
- evar_map t expectedty
+ ids_to_father_ids ids_to_inner_sorts ids_to_inner_types
+ pvars ?(fake_dependent_products=false) env idrefs evar_map t expectedty
 =
  let module D = DoubleTypeInference in
  let module E = Environ in
@@ -557,7 +557,7 @@ print_endline "PASSATO" ; flush stdout ;
                match n with
                   N.Anonymous -> N.Anonymous
                 | _ ->
-                  if T.noccurn 1 t then
+                  if not fake_dependent_products && T.noccurn 1 t then
                    N.Anonymous
                   else
                    N.Name
@@ -942,7 +942,8 @@ let acic_object_of_cic_object pvars sigma obj =
             List.map
              (function (name,ty) ->
                (name,
-                 acic_term_of_cic_term_context' env' idrefs Evd.empty ty None)
+                 acic_term_of_cic_term_context' ~fake_dependent_products:true
+                  env' idrefs Evd.empty ty None)
              ) cons
            in
             (id,name,inductive,acic_term_of_cic_term' ty None,acons)
