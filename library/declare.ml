@@ -298,9 +298,9 @@ let find_common_hyps_then_abstract c env hyps' hyps =
   find_common_hyps_then_abstract c env hyps' (List.rev hyps)
 
 let current_section_context () =
+  let current = Spmap.fold (fun _ (id,_) hyps -> id::hyps) !vartab [] in
   List.fold_right
-    (fun (id,_,_ as d) hyps ->
-       if Spmap.mem (Lib.make_path id CCI) !vartab then d::hyps else hyps)
+    (fun (id,_,_ as d) hyps -> if List.mem id current then d::hyps else hyps)
     (Global.named_context ()) []
 
 let extract_instance ref args =
