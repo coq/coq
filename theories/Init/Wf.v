@@ -50,6 +50,17 @@ Chapter Well_founded.
 
  Definition Acc_rec [P:A->Set] := (Acc_rect P).
 
+ (** A simplified version of Acc_rec(t) *)
+
+ Section AccIter.
+  Variable P : A -> Type. 
+  Variable F : (x:A)((y:A)(R y x)-> (P y))->(P x).
+
+  Fixpoint Acc_iter [x:A;a:(Acc x)] : (P x)
+     := (F x ([y:A][h:(R y x)](Acc_iter y (Acc_inv x a y h)))).
+
+ End AccIter.
+
  (** A relation is well-founded if every element is accessible *)
 
  Definition well_founded := (a:A)(Acc a).
@@ -61,7 +72,7 @@ Chapter Well_founded.
  Theorem well_founded_induction_type : 
         (P:A->Type)((x:A)((y:A)(R y x)->(P y))->(P x))->(a:A)(P a).
  Proof.
-  Intros; Apply (Acc_rect P); Auto.
+  Intros; Apply (Acc_iter P); Auto.
  Qed.
 
  Theorem well_founded_induction :
