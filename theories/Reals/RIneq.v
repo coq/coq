@@ -974,6 +974,7 @@ Lemma Rgt_ge:(r1,r2:R)``r1>r2`` -> ``r1 >= r2``.
 Red; Auto with real.
 Qed.
 
+V7only [
 (**********)
 Lemma Rlt_sym:(r1,r2:R)``r1<r2`` <-> ``r2>r1``.
 Split; Unfold Rgt; Auto with real.
@@ -983,14 +984,22 @@ Qed.
 Lemma Rle_sym1:(r1,r2:R)``r1<=r2``->``r2>=r1``.
 Proof Rle_ge.
 
+V7only [
+Notation "'Rle_sym2' a b c" := (Rge_le b a c)
+  (at level 10, a,b,c at level 9, only parsing).
+Notation Rle_sym2 := Rge_le (only parsing).
+].
+(*
 (**********)
 Lemma Rle_sym2:(r1,r2:R)``r2>=r1`` -> ``r1<=r2``.
 Proof [r1,r2](Rge_le r2 r1).
+*)
 
 (**********)
 Lemma Rle_sym:(r1,r2:R)``r1<=r2``<->``r2>=r1``.
 Split; Auto with real.
 Qed.
+].
 
 (**********)
 Lemma Rge_gt_trans:(r1,r2,r3:R)``r1>=r2``->``r2>r3``->``r1>r3``.

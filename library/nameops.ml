@@ -35,7 +35,21 @@ let translate_v7_string = function
   | "Un_suivi_de" -> "double_plus_one"
   | "Zero_suivi_de" -> "double"
   | "is_double_moins_un" -> "is_double_minus_one"
+  | "Zplus_sym" -> "Zplus_comm"
+  | "Zmult_sym" -> "Zmult_comm"
+  (* Arith *)
+  | "plus_sym" -> "plus_comm"
+  | "mult_sym" -> "mult_comm"
+  | "max_sym" -> "max_comm"
+  | "min_sym" -> "min_comm"
+  | "gt_not_sym" -> "gt_asym"
+  (* Bool *)
+  | "orb_sym" -> "orb_comm"
+  | "andb_sym" -> "andb_comm"
   (* Reals *)
+    (* redundant *)
+  | "Rle_sym1" -> "Rle_ge"
+  | "Rmin_sym" -> "Rmin_comm"
   | s when String.length s >= 7 & 
       let s' = String.sub s 0 7 in
       (s' = "unicite" or s' = "unicity") ->
