@@ -547,8 +547,9 @@ let _ =
 	 id_list)
 
 let warning_opaque s =
-  warning (
-    "This command turns the constants which depend on the definition/proof
+  if not(is_silent()) then 
+    warning
+      ("This command turns the constants which depend on the definition/proof
 of "^s^" un-re-checkable until the next \"Transparent "^s^"\" command.")
 
 let _ =
