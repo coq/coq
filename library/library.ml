@@ -132,7 +132,7 @@ let rec load_module_from doexp s f =
 	    module_compiled_env = md.md_compiled_env;
 	    module_declarations = md.md_declarations;
 	    module_opened = false;
-	    module_exported = false;
+	    module_exported = doexp;
 	    module_deps = md.md_deps;
 	    module_digest = digest } in
   if s <> md.md_name then
