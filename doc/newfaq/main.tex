@@ -198,6 +198,19 @@ relatively small proof-checker at the kernel of \Coq (8000 lines of ML
 code). Even \Coq decision procedures are producing proofs which are
 double-checked by the kernel.
 
+\Question{Who do I have to trust when I see a proof checked by Coq ?}
+
+You have to trust :
+
+\begin{description}
+\item[The theory behind Coq] The proof of constitency is quite complicated. You can check the papers. 
+\item[The Coq kernel implementation] You have to trust that the implementation of the Coq kernel mirrors the theory behind Coq.
+\item[The Objective Caml compiler] The Coq kernel is writen using the Objective Caml langage, if the compiler contains a bug, Coq may prove False. The Coq kernel does not use every Ocaml features. (no object, no label ...)
+\item[Your hardware] In theory, if your hardware does not work properly, Coq can prove False.
+You can check your proof using different computers if you feel the need to. 
+\item[Your axioms] Your axioms must be consistant with the theory behind Coq.
+\end{description}
+
 
 \Question{Where can I find information about the theory behind \Coq ?}
 \begin{description}
