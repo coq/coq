@@ -491,8 +491,9 @@ let cofixp_reducible redfun flgs _ stk =
   else 
     false
 
-let mindsp_nparams env sp =
-  let mib = lookup_mind sp env in mib.Declarations.mind_nparams
+let mindsp_nparams env (sp,i) =
+  let mib = lookup_mind sp env in
+  (Declarations.mind_nth_type_packet mib i).Declarations.mind_nparams
 
 (* The main recursive functions
  *
@@ -615,7 +616,7 @@ and cbv_stack_term info stack env t =
 
     (* constructor in a Case -> IOTA
        (use red_under because we know there is a Case) *)
-    | (CONSTR(n,(sp,_),_,_), APP(args,CASE(_,br,_,env,stk)))
+    | (CONSTR(n,sp,_,_), APP(args,CASE(_,br,_,env,stk)))
             when red_under info.i_flags IOTA ->
               let nparams = mindsp_nparams info.i_env sp in
               let real_args = snd (list_chop nparams args) in
@@ -1046,7 +1047,7 @@ type case_status =
 let constr_or_cofix env v =
   let (lft_hd, head, appl) = strip_freeze v in
   match head.term with
-    | FConstruct (((indsp,_),i),_) ->
+    | FConstruct ((indsp,i),_) ->
         let args = snd (array_chop (mindsp_nparams env indsp) appl) in
         CONSTRUCTOR (i, args)
     | FCoFix (bnum, def, bds, env) -> COFIX (lft_hd,bnum,def,appl, bds, env)

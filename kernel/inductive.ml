@@ -23,7 +23,7 @@ let build_mis ((sp,tyi),args) mib =
     mis_mip = mind_nth_type_packet mib tyi }
 
 let mis_ntypes mis = mis.mis_mib.mind_ntypes
-let mis_nparams mis = mis.mis_mib.mind_nparams
+let mis_nparams mis = mis.mis_mip.mind_nparams
 
 let mis_index mis = mis.mis_tyi
 
@@ -97,7 +97,7 @@ let mis_nf_arity mis =
 
 let mis_params_ctxt mispec =
   let paramsign,_ =
-    decompose_prod_n_assum mispec.mis_mib.mind_nparams
+    decompose_prod_n_assum mispec.mis_mip.mind_nparams
       (body_of_type (mis_nf_arity mispec))
   in paramsign
 
