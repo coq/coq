@@ -68,7 +68,7 @@ Hints Resolve plus_assoc_r : arith v62.
 
 (** Simplification *)
 
-Lemma plus_reg_l : (n,m,p:nat)((p+n)=(p+m))->(n=m).
+Lemma plus_reg_l : (m,p,n:nat)((n+m)=(n+p))->(m=p).
 Proof.
 Intros m p n; NewInduction n ; Simpl ; Auto with arith.
 Qed.
