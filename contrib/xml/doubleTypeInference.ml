@@ -19,6 +19,45 @@
 (*CSC: tutto da rifare!!! Basarsi su Retyping che e' meno costoso! *)
 type types = {synthesized : Term.types ; expected : Term.types option};;
 
+let prerr_endline _ = ();;
+
+let cprop =
+ let module N = Names in
+  N.make_kn
+   (N.MPfile
+     (Libnames.dirpath_of_string "CoRN.algebra.CLogic"))
+   (N.make_dirpath [])
+   (N.mk_label "CProp")
+;;
+
+let whd_betadeltaiotacprop env evar_map ty =
+ let module R = Rawterm in
+  let red_exp =
+   R.Hnf  (*** Instead CProp is made Opaque ***)
+(*
+   R.Cbv
+    {R.rBeta = true ; R.rIota = true ; R.rDelta = true; R.rZeta=true ;
+     R.rConst = [Names.EvalConstRef cprop]
+    }
+*)
+  in
+Conv_oracle.set_opaque_const cprop;
+prerr_endline "###whd_betadeltaiotacprop:" ;
+let xxx =
+(*Pp.msgerr (Printer.prterm_env env ty);*)
+prerr_endline "";
+   Tacred.reduction_of_redexp red_exp env evar_map ty
+in
+prerr_endline "###FINE" ;
+(*
+Pp.msgerr (Printer.prterm_env env xxx);
+*)
+prerr_endline "";
+Conv_oracle.set_transparent_const cprop;
+xxx
+;;
+
+
 (* Code similar to the code in the Typing module, but:   *)
 (*  - the term is already assumed to be well typed       *)
 (*  - some checks have been removed                      *)
@@ -31,6 +70,12 @@ let assumption_of_judgment env sigma j =
 
 let type_judgment env sigma j =
   Typeops.type_judgment env (Evarutil.j_nf_evar sigma j)
+;;
+
+let type_judgment_cprop env sigma j =
+  match Term.kind_of_term(whd_betadeltaiotacprop env sigma (Term.body_of_type j.Environ.uj_type)) with
+    | Term.Sort s -> Some {Environ.utj_val = j.Environ.uj_val; Environ.utj_type = s }
+    | _ -> None  (* None means the CProp constant *)
 ;;
 
 let double_type_of env sigma cstr expectedty subterms_to_types =
@@ -170,8 +215,12 @@ let double_type_of env sigma cstr expectedty subterms_to_types =
         let varj = type_judgment env sigma j in
         let env1 = E.push_rel (name,None,varj.E.utj_val) env in
         let j' = execute env1 sigma c2 None in
-        let varj' = type_judgment env1 sigma j' in
-         Typeops.judge_of_product env name varj varj'
+        (match type_judgment_cprop env1 sigma j' with
+            Some varj' -> Typeops.judge_of_product env name varj varj'
+          | None ->
+             (* CProp found *)
+             { Environ.uj_val = T.mkProd (name, j.Environ.uj_val, j'.Environ.uj_val);
+               Environ.uj_type = T.mkConst cprop })
 
      | T.LetIn (name,c1,c2,c3) ->
 (*CSC: What are the right expected types for the source and *)

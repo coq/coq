@@ -165,43 +165,7 @@ type sort =
  | CProp
 ;;
 
-let cprop =
- let module N = Names in
-  N.make_kn
-   (N.MPfile
-     (Libnames.dirpath_of_string "CoRN.algebra.CLogic"))
-   (N.make_dirpath [])
-   (N.mk_label "CProp")
-;;
-
 let prerr_endline _ = ();;
-
-let whd_betadeltaiotacprop env evar_map ty =
- let module R = Rawterm in
-  let red_exp =
-   R.Hnf  (*** Instead CProp is made Opaque ***)
-(*
-   R.Cbv
-    {R.rBeta = true ; R.rIota = true ; R.rDelta = true; R.rZeta=true ;
-     R.rConst = [Names.EvalConstRef cprop]
-    }
-*)
-  in
-Conv_oracle.set_opaque_const cprop;
-prerr_endline "###whd_betadeltaiotacprop:" ;
-let xxx =
-(*Pp.msgerr (Printer.prterm_env env ty);*)
-prerr_endline "";
-   Tacred.reduction_of_redexp red_exp env evar_map ty
-in
-prerr_endline "###FINE" ;
-(*
-Pp.msgerr (Printer.prterm_env env xxx);
-*)
-prerr_endline "";
-Conv_oracle.set_transparent_const cprop;
-xxx
-;;
 
 let family_of_term ty =
  match Term.kind_of_term ty with
@@ -215,19 +179,19 @@ module CPropRetyping =
   module T = Term
 
   let outsort env sigma t =
-   family_of_term (whd_betadeltaiotacprop env sigma t)
+   family_of_term (DoubleTypeInference.whd_betadeltaiotacprop env sigma t)
 
   let rec subst_type env sigma typ = function
   | [] -> typ
   | h::rest ->
-      match T.kind_of_term (whd_betadeltaiotacprop env sigma typ) with
+      match T.kind_of_term (DoubleTypeInference.whd_betadeltaiotacprop env sigma typ) with
         | T.Prod (na,c1,c2) -> subst_type env sigma (T.subst1 h c2) rest
         | _ -> Util.anomaly "Non-functional construction"
 
                                                                                 
   let sort_of_atomic_type env sigma ft args =
   let rec concl_of_arity env ar =
-    match T.kind_of_term (whd_betadeltaiotacprop env sigma ar) with
+    match T.kind_of_term (DoubleTypeInference.whd_betadeltaiotacprop env sigma ar) with
       | T.Prod (na, t, b) -> concl_of_arity (Environ.push_rel (na,None,t) env) b
       | T.Sort s -> Coq_sort (T.family_of_sort s)
       | _ -> outsort env sigma (subst_type env sigma ft (Array.to_list args))
@@ -260,7 +224,7 @@ let typeur sigma metamap =
           try Inductiveops.find_rectype env sigma (type_of env c)
           with Not_found -> Util.anomaly "type_of: Bad recursive type" in
         let t = Reductionops.whd_beta (T.applist (p, realargs)) in
-        (match Term.kind_of_term (whd_betadeltaiotacprop env sigma (type_of env t)) with
+        (match Term.kind_of_term (DoubleTypeInference.whd_betadeltaiotacprop env sigma (type_of env t)) with
           | T.Prod _ -> Reductionops.whd_beta (T.applist (t, [c]))
           | _ -> t)
     | T.Lambda (name,c1,c2) ->
@@ -278,7 +242,7 @@ let typeur sigma metamap =
           Coq_sort T.InProp -> T.mkProp
         | Coq_sort T.InSet -> T.mkSet
         | Coq_sort T.InType -> T.mkType Univ.prop_univ (* ERROR HERE *)
-        | CProp -> T.mkConst cprop
+        | CProp -> T.mkConst DoubleTypeInference.cprop
                                                                                 
   and sort_of env t =
     match Term.kind_of_term t with
@@ -317,7 +281,7 @@ let get_sort_family_of env evar_map ty =
 
 let type_as_sort env evar_map ty =
 (* CCorn code *)
- family_of_term (whd_betadeltaiotacprop env evar_map ty)
+ family_of_term (DoubleTypeInference.whd_betadeltaiotacprop env evar_map ty)
 ;;
 
 let is_a_Prop =
