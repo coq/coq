@@ -131,7 +131,7 @@ module Tactic :
     val ne_intropattern : Coqast.t Gram.Entry.e
     val ne_num_list : Coqast.t list Gram.Entry.e
     val ne_pattern_list : Coqast.t list Gram.Entry.e
-    val ne_pattern_hyp_list : Coqast.t list Gram.Entry.e
+    val clause_pattern : Coqast.t Gram.Entry.e
     val ne_unfold_occ_list : Coqast.t list Gram.Entry.e
     val numarg : Coqast.t Gram.Entry.e
     val numarg_binding_list : Coqast.t list Gram.Entry.e
