@@ -268,13 +268,13 @@ GEXTEND Gram
   grammar_entry:
     [[ nont = IDENT; set_entry_type; ":=";
        ep = entry_prec; OPT "|"; rl = LIST0 grammar_rule SEP "|" ->
-	 (nont,ep,rl) ]]
+	 (rename_command_entry nont,ep,rl) ]]
   ;
   entry_prec:
     [[ IDENT "LEFTA" -> Some Gramext.LeftA
      | IDENT "RIGHTA" -> Some Gramext.RightA
      | IDENT "NONA" -> Some Gramext.NonA
-     | -> None  ]]
+     | -> None ]]
   ;
   grammar_tactic_rule:
     [[ name = rule_name; "["; s = STRING; pil = LIST0 production_item; "]";
