@@ -185,26 +185,30 @@ let rec extract_type env db j c args =
     | Const kn -> 
 	let kn = long_kn kn in 
 	let r = ConstRef kn in 
-	if is_custom r then Tglob (r,[])
-	else if is_axiom env kn then 
-	  (* There are two kinds of informative axioms here, *)
-	  (* - the types that should be realized via [Extract Constant] *)
-	  (* - the type schemes that are not realizable (yet). *) 
-	  (* TODO: in modular extraction, we should try not to fail here !!! *)
-	  if args = [] then Tglob (r,[]) else error_axiom_scheme r
-	else 
-	  let body = constant_value env kn in 
-	  let mlt1 = extract_type env db j (applist (body, args)) [] in 
-	  (match mlt_env env r with 
-	     | Some mlt ->
-		 if mlt = Tdummy then Tdummy
-		 else 
-		   let s = type_sign env (constant_type env kn) in 
-		   let mlt2 = extract_type_app env db (r,s) args in 
-		   (* ML type abbreviation behave badly with respect to Coq *)
-		   (* reduction. Try to find the shortest correct answer. *) 
-		   if type_eq (mlt_env env) mlt1 mlt2 then mlt2 else mlt1
-	     | None -> mlt1)
+	let cb = lookup_constant kn env in 
+	let typ = cb.const_type in 
+	(match flag_of_type env typ with 
+	   | (Info, TypeScheme) -> 
+	       let mlt = extract_type_app env db (r, type_sign env typ) args in 
+	       (match cb.const_body with 
+		  | None -> mlt
+		  | Some _ when is_custom r -> mlt 
+		  | Some lbody -> 
+		      let newc = applist (Declarations.force lbody, args) in 
+		      let mlt' = extract_type env db j newc [] in 
+		      (* ML type abbreviations interact badly with Coq *)
+		      (* reduction, so [mlt] and [mlt'] might be different: *)
+		      (* The more precise is [mlt'], extracted after reduction *)
+		      (* The shortest is [mlt], which use abbreviations *)
+		      (* If possible, we take [mlt], otherwise [mlt']. *)
+		      if type_eq (mlt_env env) mlt mlt' then mlt else mlt')
+	   | _ -> (* only other case here: Info, Default, i.e. not an ML type *)
+	       (match cb.const_body with 
+		  | None -> Tunknown (* Brutal approximation ... *)
+		  | Some lbody -> 
+		     (* We try to reduce. *)
+		      let newc = applist (Declarations.force lbody, args) in 
+		      extract_type env db j newc []))
     | Ind ((kn,i) as ip) ->
 	let kn = long_kn kn in
 	let s = (extract_ind env kn).ind_packets.(i).ip_sign in  
