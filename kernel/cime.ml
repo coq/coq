@@ -1,5 +1,5 @@
 (***********************************************************************)
-(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(*  V      *   The Coq Proof Assistant  /  The Coq Development Team    *)
 (* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
 (*   \VV/  *************************************************************)
 (*    //   *      This file is distributed under the terms of the      *)
@@ -240,6 +240,12 @@ let cime_of_rhs_constr sign =
       | _ -> c,l
   in coc 0
 
+(* from Coq rule to CiME rule *)
+let cime_rule_of_coq_rule sign (l,r) =
+  let l' = cime_of_lhs_constr sign l
+  and r' = cime_of_rhs_constr sign r
+  in make_rule sign l' r'
+
 (* from constr to cime *)
 let cime_of_constr sign =
   let rec coc c =
@@ -332,12 +338,6 @@ let constr_of_cime sign =
       | _ -> anomaly "constr_of_cime"
   in coc 0
 
-(* from Coq rule to CiME rule *)
-let cime_rule_of_coq_rule sign (l,r) =
-  let l' = cime_of_lhs_constr sign l
-  and r' = cime_of_rhs_constr sign r
-  in make_rule sign l' r'
-
 (* environment for CiME *)
 type env = {
   (* sign : signature; *)
@@ -370,6 +370,34 @@ let sign =
 let add_symbol newcmap env = { env with cmap = newcmap }
 let add_inductive newimap env = { env with imap = newimap }
 
+(* head symbol of a cime term *)
+let head_symbol = function
+  | Term (Sconstr c,_) ->
+      (match kind_of_term c with
+	 | Const kn -> kn
+	 | _ -> invalid_arg "head")
+  | _ -> invalid_arg "head"
+
+(* add rules *)
+let add_rules rb env =
+  let n = List.length rb.rules_ctx in
+  if n > Array.length !vars then vars := mkvars (n+10);
+    let s = sign env in
+    let new_rules = List.map (cime_rule_of_coq_rule s) rb.rules_list in
+    let rules = new_rules @ env.rules in
+    let dnet = compile s rules in
+    let add_rule r m =
+      let s = head_symbol r.lhs in
+      (try
+	 let rules = KNmap.find s m in
+	 let m' = KNmap.remove s m in
+	   KNmap.add s (r::rules) m'
+       with Not_found -> KNmap.add s [r] m)
+    in
+    let new_rmap = List.fold_right add_rule new_rules KNmap.empty in
+    let rmap = KNmap.fold KNmap.add new_rmap env.rmap in
+      { env with rules = rules; dnet = dnet; rmap = rmap }
+
 (* definable symbols occuring in an algebraic constr *)
 let rec symbols c =
   match kind_of_term c with
@@ -391,44 +419,19 @@ let rec symbols_cime = function
   | _ -> KNset.empty
 and add_symbols_cime t = KNset.union (symbols_cime t)
 
-(* head symbol of a cime term *)
-let head_symbol = function
-  | Term (Sconstr c,_) ->
-      (match kind_of_term c with
-	 | Const kn -> kn
-	 | _ -> invalid_arg "head")
-  | _ -> invalid_arg "head"
-
-(* add rules *)
-let add_rules rb env =
-  let n = List.length rb.rules_ctx in
-  if n > Array.length !vars then vars := mkvars (n+10);
-    let s = sign env in
-    let new_rules = List.map (cime_rule_of_coq_rule s) rb.rules_list in
-    let rules = new_rules @ env.rules in
-    let dnet = compile s rules in
-    let add_rule r m = KNmap.add (head_symbol r.lhs) r m in
-    let rmap = List.fold_right add_rule new_rules env.rmap in
-      { env with rules = rules; dnet = dnet; rmap = rmap }
-
 (* module for confluence checking *)
 module Confluence = Confluence.Make(Cime)
 
 (* say if the addition of l preserves local confluence *)
 let is_locally_confluent env l =
   let s = sign env in
-  let l' = List.map (cime_rule_of_coq_rule s) l in
-  let add_rules r lst = 
-  let l' = List.fold_right add_rules l' l' in
-  let symbs = lhs_symbols_list l in
-    if KNset.inter symbs env.lhs_symbs = KNset.empty then
-      Confluence.is_confluent s default l'
-    else (
-      print_endline "Require to check critical pairs with previous rules.";
-      let p r = KNset.inter symbs (symbols_cime r.lhs) <> KNset.empty in
-      let l'' = List.filter p env.rules in
-	Confluence.is_confluent s default (l' @ l'')
-    )
+  let rules = List.map (cime_rule_of_coq_rule s) l
+  and symbs = lhs_symbols_list l
+  and add_rules symb lst =
+    (try List.append (KNmap.find symb env.rmap) lst
+     with Not_found -> lst) in
+  let rules' = KNset.fold add_rules symbs rules in
+    Confluence.is_confluent s default rules'
 
 (* hash table for normal forms *)
 (* let hcime_nf = Hashtbl.create 1997
