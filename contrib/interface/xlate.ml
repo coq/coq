@@ -1152,7 +1152,7 @@ and xlate_tac =
 	   xlate_intro_patt_opt c)
     | TacInstantiate (a, b, cl) -> 
         CT_instantiate(CT_int a, xlate_formula b,
-		       xlate_clause cl)
+		       assert false)
     | TacLetTac (na, c, cl) ->
         CT_lettac(xlate_id_opt ((0,0),na), xlate_formula c, 
 		  (* TODO LATER: This should be shared with Unfold,
