@@ -17,6 +17,7 @@ open Tacticals
 open Tactics
 open Coqlib
 open Reductionops
+open Rawterm
 
 (* Absurd *)
 
@@ -61,26 +62,27 @@ let contradiction_context gl =
 	  | _ -> seek_neg rest gl in
   seek_neg (pf_hyps gl) gl
 
-let contradiction = tclTHEN intros contradiction_context
-
 let is_negation_of env sigma typ t =
   match kind_of_term (whd_betadeltaiota env sigma t) with
     | Prod (na,t,u) -> is_empty_type u & is_conv_leq env sigma typ t
     | _ -> false
 
-let contradiction_term c gl =
+let contradiction_term (c,lbind as cl) gl =
   let env = pf_env gl in
   let sigma = project gl in
   let typ = pf_type_of gl c in
-  if is_empty_type typ then
-    simplest_elim c gl
+  let _, ccl = splay_prod env sigma typ in
+  if is_empty_type ccl then
+    tclTHEN (elim cl None) (tclTRY assumption) gl
   else
     try
-      (match kind_of_term (whd_betadeltaiota env sigma typ) with
-	| Prod (na,t,u) when is_empty_type u ->
-	    filter_hyp (fun typ -> pf_conv_x_leq gl typ t)
-	    (fun id -> simplest_elim (mkApp (c,[|mkVar id|]))) gl
-	| _ ->
-	    filter_hyp (is_negation_of env sigma typ)
-	    (fun id -> simplest_elim (mkApp (mkVar id,[|c|]))) gl)
+      if lbind = NoBindings then
+	filter_hyp (is_negation_of env sigma typ)
+	  (fun id -> simplest_elim (mkApp (mkVar id,[|c|]))) gl
+      else
+	raise Not_found
     with Not_found -> error "Not a contradiction"
+
+let contradiction = function
+  | None -> tclTHEN intros contradiction_context
+  | Some c -> contradiction_term c

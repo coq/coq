@@ -12,8 +12,8 @@
 open Names
 open Term
 open Proof_type
+open Rawterm
 (*i*)
 
-val absurd                      : constr     -> tactic
-val contradiction_on_hyp        : identifier -> tactic
-val contradiction               : tactic
+val absurd                      : constr -> tactic
+val contradiction               : constr with_bindings option -> tactic

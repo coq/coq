@@ -609,7 +609,7 @@ let rec fourier gl=
 				]));
                        !tac1]);
 	   tac:=(tclTHENS (cut (get coq_False))
-				  [tclTHEN intro contradiction;
+				  [tclTHEN intro (contradiction None);
 				   !tac])
       |_-> assert false) |_-> assert false
 	  );

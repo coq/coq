@@ -107,7 +107,7 @@ TACTIC EXTEND Absurd
 END
 
 TACTIC EXTEND Contradiction
- [ "Contradiction" ] -> [ contradiction ]
+ [ "Contradiction" constr_with_bindings_opt(c) ] -> [ contradiction c ]
 END
 
 (* AutoRewrite *)
