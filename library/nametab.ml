@@ -78,23 +78,31 @@ let dirpath_of_extended_ref = function
   | TrueGlobal ref -> dirpath_of_reference ref
   | SyntacticDef sp -> dirpath sp
 
-(* How necessarily_open works: concretely, roots and directory are
-   always open but libraries are open only during their interactive
-   construction or on demand if a precompiled one; then for a name
+(* How [visibility] works: a value of [0] means all suffixes of [dir] are
+   allowed to access the object, a value of [1] means all suffixes, except the
+   base name, are available, [2] means all suffixes except the base name and
+   the name qualified by the module name *)
+
+(* Concretely, library roots and directory are
+   always open but modules/files are open only during their interactive
+   construction or on demand if a precompiled one: for a name
    "Root.Rep.Lib.name", then "Lib.name", "Rep.Lib.name" and
-   "Root.Rep.Lib.name", but not "name" are pushed *)
+   "Root.Rep.Lib.name", but not "name" are pushed; which means, visibility is
+   always 1 *)
+
+let visibility = 1
 
 (* We add a binding of [[modid1;...;modidn;id]] to [o] in the name tab *)
 (* We proceed in the reverse way, looking first to [id] *)
 let push_tree extract_dirpath tab dir o =
-  let rec push necessarily_open (current,dirmap) = function
+  let rec push level (current,dirmap) = function
     | modid :: path as dir ->
 	let mc = 
 	  try ModIdmap.find modid dirmap
 	  with Not_found -> (None, ModIdmap.empty)
 	in
 	let this =
-          if necessarily_open then
+          if level >= visibility then
             if option_app extract_dirpath current = Some dir then
               (* This is an absolute name, we must keep it otherwise it may
                  become unaccessible forever *)
@@ -102,9 +110,9 @@ let push_tree extract_dirpath tab dir o =
             else
               Some o
           else current in
-	(this, ModIdmap.add modid (push true mc path) dirmap)
+	(this, ModIdmap.add modid (push (level+1) mc path) dirmap)
     | [] -> (Some o,dirmap) in
-  push false tab (List.rev dir)
+  push 0 tab (List.rev dir)
 
 let push_idtree extract_dirpath tab dir id o =
   let modtab =

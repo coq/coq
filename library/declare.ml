@@ -123,7 +123,10 @@ let load_parameter (sp,_) =
 let open_parameter (sp,_) =
   Nametab.push_short_name sp (ConstRef sp)
 
-let export_parameter x = Some x
+(* Hack to reduce the size of .vo: we keep only what load/open needs *)
+let dummy_parameter_entry = mkProp
+
+let export_parameter c = Some dummy_parameter_entry
 
 let (in_parameter, out_parameter) =
   let od = {
@@ -167,7 +170,12 @@ let cache_constant (sp,(cdt,stre,op)) =
     | ConstantRecipe r -> Global.add_discharged_constant sp r sc
   end;
   Nametab.push sp (ConstRef sp);
-  Nametab.push_short_name sp (ConstRef sp);
+  (match stre with
+    (* Remark & Fact outside their scope aren't visible without qualif *)
+    | DischargeAt sp when not (is_dirpath_prefix_of sp (Lib.cwd ())) -> ()
+    (* Theorem, Lemma & Definition are accessible from the base name *)
+    | NeverDischarge| DischargeAt _ -> Nametab.push_short_name sp (ConstRef sp)
+    | NotDeclare -> assert false);
   if op then Global.set_opaque sp;
   csttab := Spmap.add sp stre !csttab
 
