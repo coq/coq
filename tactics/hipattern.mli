@@ -11,72 +11,8 @@ open Pattern
 open Proof_trees
 (*i*)
 
-(* The pattern table for tactics. *)
-
-(* The idea is that we want to write tactic files which are only
-   "activated" when certain modules are loaded and imported.  Already,
-   the question of how to store the tactics is hard, and we will not
-   address that here.  However, the question arises of how to store
-   the patterns that we will want to use for term-destructuring, and
-   the solution proposed is that we will store patterns with a
-   "module-marker", telling us which modules have to be open in order
-   to use the pattern.  So we will write:
-   \begin{verbatim}
-   let mark = make_module_marker ["<module-name>";<module-name>;...];;
-   let p1 = put_pat mark "<parseable pattern goes here>";;
-   \end{verbatim}
-   And now, we can use [(get p1)]
-   to get the term which corresponds to this pattern, already parsed
-   and with the global names adjusted.
-
-   In other words, we will have the term which we would have had if we
-   had done an:
-   \begin{verbatim}
-        constr_of_com mt_ctxt (initial_sign()) "<text here>"
-   \end{verbatim}
-   except that it will be computed at module-opening time, rather than
-   at tactic-application time.  The ONLY difference will be that
-   no implicit syntax resolution will happen. *)
-
-(* A pattern is intented to be pattern-matched (using functions
-   [somatch] and co), while a squeleton is a term with holes intented to
-   be substituted by [soinstance] *)
-
-(*s First part : introduction of term patterns and term squeletons *)
-
-(* [make_module_marker modl] makes a key from the list of
-   vernacular modules [modl] where names in a pattern or squeleton has
-   to be searched *)
-
-type module_mark = Stock.module_mark
-val make_module_marker : string list -> module_mark
-
-(* [put_pat mmk s] declares a pattern [s] to be parsed using the
-   definitions in the modules associated to the key [mmk] *)
-
-type marked_pattern
-val put_pat            : module_mark -> string -> marked_pattern
-val get_pat            : marked_pattern -> constr_pattern
-
-(* [put_squel mmk s] declares an open term [s] to be parsed using the
-   definitions in the modules associated to the key [mmk] *)
-
-type marked_term
-val put_squel          : module_mark -> string -> marked_term
-
-(*i val get_squel          : marked_term -> constr i*)
-
-(*i Remplacé par Astterm.interp_constrpattern
-val raw_sopattern_of_compattern : Environ.env -> Coqast.t -> constr
-i*)
-
-(* [get_reference mods id] interprets [id] as a global identifier
-   assuming defined in the modules listed in [mods] *)
-
-val get_reference : string list -> string -> constr
-
-(*s Second part : Given a term with second-order variables in it,
-   represented by Meta's, and possibly applied using \verb!XTRA[$SOAPP]! to
+(*s Given a term with second-order variables in it,
+   represented by Meta's, and possibly applied using SoApp
    terms, this function will perform second-order, binding-preserving,
    matching, in the case where the pattern is a pattern in the sense
    of Dale Miller.
@@ -92,38 +28,7 @@ val get_reference : string list -> string -> constr
 
    When we reach a second-order application, we ask that the
    intersection of the free-rels of the term and the current stack be
-   contained in the arguments of the application, and in that case, we
-   construct a [DLAM] with the names on the stack. *)
-
-
-(* [dest_somatch c pat] matches [c] against [pat] and returns the resulting
-   assignment of metavariables; it raises [PatternMatchingFailure] if
-   not matchable *)
-(*i
-val dest_somatch : constr -> marked_pattern -> constr list
-
-(* [somatches c pat] just tells if [c] matches against [pat] *)
-
-val somatches    : constr -> marked_pattern -> bool
-
-(* [dest_somatch_conv env sigma] matches up to conversion in
-   environment [(env,sgima)] when constants in pattern are concerned;
-   it raises [PatternMatchingFailure] if not matchable *)
-
-val dest_somatch_conv :
-  Environ.env -> 'a evar_map -> constr -> marked_pattern -> (int * constr) list
-
-(* [somatches_conv env sigma c pat] tells if [c] matches against [pat]
-   up to conversion for constants in patterns *)
-
-val somatches_conv :
-  Environ.env -> 'a evar_map -> constr -> marked_pattern -> bool
-i*)
-
-val soinstance   : marked_term -> constr list -> constr 
-
-(* This works only for squeleton without metavariables *)
-val get_squel    : marked_term -> constr 
+   contained in the arguments of the application *)
 
 val is_imp_term : constr -> bool
 

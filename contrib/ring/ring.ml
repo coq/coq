@@ -26,8 +26,11 @@ let mt_evd = Evd.empty
 let constr_of com = Astterm.interp_constr mt_evd (Global.env()) com
 
 let constant dir s =
-  Declare.global_absolute_reference
-    (make_path ("Coq"::"ring"::dir) (id_of_string s) CCI)
+  let dir = "Coq"::"ring"::dir in
+  try 
+    Declare.global_reference_in_absolute_module dir (id_of_string s)
+  with Not_found ->
+    anomaly ("Ring: cannot find "^(string_of_qualid (make_qualid dir s)))
 
 (* Ring_theory *)
 
@@ -85,15 +88,14 @@ let coq_aspolynomial_normalize_ok =
 let coq_apolynomial_normalize_ok = 
   lazy (constant ["Ring_abstract"] "apolynomial_normalize_ok")
 
-let logic_constant dir s =
-  Declare.global_absolute_reference
-    (make_path ("Coq"::"Init"::dir) (id_of_string s) CCI)
+(* Logic --> to be found in Coqlib *)
+open Coqlib
+(*
+val build_coq_f_equal2 : constr delayed
+val build_coq_eqT : constr delayed
+val build_coq_sym_eqT : constr delayed
+*)
 
-(* Logic *)
-let coq_f_equal2 = lazy (logic_constant ["Logic"] "f_equal2")
-let coq_eq = lazy (logic_constant ["Logic"] "eq")
-let coq_eqT = lazy (logic_constant ["Logic_Type"] "eqT")
-let coq_sym_eqT = lazy (logic_constant ["Logic_Type"] "sym_eqT")
 
 (*********** Useful types and functions ************)
 
@@ -564,10 +566,10 @@ let raw_polynom th op lc gl =
              (tclORELSE
                (h_exact c'i_eq_c''i)
                (h_exact (mkAppA
-                 [| Lazy.force coq_sym_eqT; th.th_a; c'''i; ci; c'i_eq_c''i |]))
+                 [| build_coq_sym_eqT (); th.th_a; c'''i; ci; c'i_eq_c''i |]))
              ) 
 	     (tclTHENS 
-	       (elim_type (mkAppA [| Lazy.force coq_eqT; th.th_a; c'''i; ci |]))
+	       (elim_type (mkAppA [| build_coq_eqT (); th.th_a; c'''i; ci |]))
                [ tac ;
                  h_exact c'i_eq_c''i
                ]
@@ -583,10 +585,10 @@ let guess_eq_tac th =
 	polynom_unfold_tac
 	(tclREPEAT 
 	   (tclORELSE 
-	      (apply (mkAppA [| Lazy.force coq_f_equal2;
+	      (apply (mkAppA [| build_coq_f_equal2 ();
 				th.th_a; th.th_a; th.th_a;
 				th.th_plus |])) 
-	      (apply (mkAppA [| Lazy.force coq_f_equal2;
+	      (apply (mkAppA [| build_coq_f_equal2 ();
 				th.th_a; th.th_a; th.th_a; 
 				th.th_mult |]))))))
 

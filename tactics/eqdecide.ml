@@ -14,6 +14,7 @@ open Hipattern
 open Proof_trees
 open Proof_type
 open Tacmach
+open Coqlib
 
 (* This file containts the implementation of the tactics ``Decide
    Equality'' and ``Compare''. They can be used to decide the
@@ -56,15 +57,10 @@ let h_solveRightBranch =
 
 (* Constructs the type {c1=c2}+{~c1=c2} *)
 
-let mmk         = make_module_marker [ "Logic"; "Specif" ]
-let eqpat       = put_squel mmk "eq"                 
-let sumboolpat  = put_squel mmk "sumbool"             
-let notpat      = put_squel mmk "not"   
-
 let mkDecideEqGoal rectype c1 c2 g = 
-  let equality    = mkAppA [|get_squel eqpat;rectype;c1;c2|] in
-  let disequality = mkAppA [|get_squel notpat;equality|] in
-  mkAppA [|get_squel sumboolpat;equality;disequality |]
+  let equality    = mkAppA [|build_coq_eq_data.eq (); rectype; c1; c2|] in
+  let disequality = mkAppA [|build_coq_not (); equality|] in
+  mkAppA [|build_coq_sumbool (); equality; disequality |]
 
 
 (* Constructs the type (x1,x2:R){x1=x2}+{~x1=x2} *)
@@ -101,11 +97,9 @@ let solveArg a1 a2 tac  g =
      (h_elimType decide) 
      [(eqCase tac);diseqCase;default_auto]) g
 
-let conclpatt = lazy (get_pat (put_pat mmk "{<?1>?2=?3}+{?4}"))
-
 let solveLeftBranch rectype g =
   match
-    try matches (Lazy.force conclpatt) (pf_concl g)
+    try matches (Coqlib.build_coq_eqdec_partial_pattern ()) (pf_concl g)
     with Pattern.PatternMatchingFailure -> error "Unexpected conclusion!"
   with 
     | _ :: lhs :: rhs :: _ -> 
@@ -118,10 +112,6 @@ let solveLeftBranch rectype g =
     | _ -> anomaly "Unexpected pattern for solveLeftBranch"
 
 
-(* The expected form of the goal for the tactic Decide Equality *)
-
-let initialpatt = lazy (get_pat (put_pat mmk "(x,y:?1){<?1>x=y}+{~(<?1>x=y)}"))
-
 (* The tactic Decide Equality *)
 
 let hd_app c = match kind_of_term c with
@@ -130,7 +120,7 @@ let hd_app c = match kind_of_term c with
 
 let decideGralEquality g =
   match
-    try matches (Lazy.force initialpatt) (pf_concl g)
+    try matches (build_coq_eqdec_pattern ()) (pf_concl g)
     with Pattern.PatternMatchingFailure ->
       error "The goal does not have the expected form"
   with 

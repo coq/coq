@@ -10,70 +10,9 @@ open Inductive
 open Evd
 open Environ
 open Proof_trees
-open Stock
 open Clenv
 open Pattern
-
-(* The pattern table for tactics. *)
-
-(* Description: see the interface. *)
-
-(* First part : introduction of term patterns *)
-
-type module_mark = Stock.module_mark
-
-let parse_astconstr s =
-  try 
-    Pcoq.parse_string Pcoq.Constr.constr_eoi s 
-  with Stdpp.Exc_located (_ , (Stream.Failure | Stream.Error _)) ->
-    error "Syntax error : not a construction" 
-
-(* Patterns *)
-let parse_pattern s =
-  Astterm.interp_constrpattern Evd.empty (Global.env()) (parse_astconstr s)
-
-type marked_pattern = (int list * constr_pattern) Stock.stocked
-
-let (pattern_stock : (int list * constr_pattern) Stock.stock) =
-  Stock.make_stock { name = "PATTERN"; proc = parse_pattern }
-
-let put_pat = Stock.stock pattern_stock
-let get_pat tm = snd (Stock.retrieve pattern_stock tm)
-
-let make_module_marker = Stock.make_module_marker
-
-(* Squeletons *)
-let parse_squeleton s =
-  let c = Astterm.interp_constr Evd.empty (Global.env()) (parse_astconstr s) in
-  (collect_metas c, c)
-
-type marked_term = (int list * constr) Stock.stocked
-
-let (squeleton_stock : (int list * constr) Stock.stock) =
-  Stock.make_stock { name = "SQUELETON"; proc = parse_squeleton }
-
-let put_squel = Stock.stock squeleton_stock
-let get_squel_core = Stock.retrieve squeleton_stock
-
-(* Sera mieux avec des noms qualifiés *)
-let get_reference mods s =
-  if list_subset mods (Library.loaded_modules()) then
-    try Declare.global_reference CCI (id_of_string s)
-    with Not_found ->
-      error ("get_reference: "^s^"is not defined in the given modules")
-  else error "The required modules are not open"
-
-let soinstance squel arglist =
-  let mvs,c = get_squel_core squel in
-  let mvb = List.combine mvs arglist in 
-  Reduction.local_strong (Reduction.whd_meta mvb) c
-
-let get_squel m =
-  let mvs, c = get_squel_core m in
-  if mvs = [] then c
-  else errorlabstrm "get_squel"
-    [< Printer.prterm c;
-       'sPC; 'sTR "is not a closed squeleton, use 'soinstance'" >]
+open Coqlib
 
 (* I implemented the following functions which test whether a term t
    is an inductive but non-recursive type, a general conjuction, a
@@ -84,8 +23,6 @@ let get_squel m =
    also work on ad-hoc disjunctions introduced by the user.
   
   -- Eduardo (6/8/97). *)
-
-let mmk = make_module_marker ["Prelude"]
 
 type 'a matching_function = constr -> 'a option
 
@@ -177,9 +114,6 @@ let is_unit_type t = op2bool (match_with_unit_type t)
    inductive binary relation R, so that R has only one constructor
    stablishing its reflexivity.  *)
 
-let refl_rel_pat1 = put_pat mmk "(A : ?)(x:A)(? A x x)"
-let refl_rel_pat2 = put_pat mmk "(x : ?)(? x x)"
-
 let match_with_equation  t =
   let (hdapp,args) = decomp_app t in
   match (kind_of_term hdapp) with
@@ -187,8 +121,8 @@ let match_with_equation  t =
         let constr_types = Global.mind_nf_lc ind in 
         let nconstr = Global.mind_nconstr ind in
 	if nconstr = 1 &&
-           (is_matching (get_pat refl_rel_pat1) constr_types.(0) ||
-            is_matching (get_pat refl_rel_pat2) constr_types.(0)) 
+           (is_matching (build_coq_refl_rel1_pattern ()) constr_types.(0) ||
+            is_matching (build_coq_refl_rel1_pattern ()) constr_types.(0)) 
         then 
 	  Some (hdapp,args)
         else 
@@ -197,11 +131,9 @@ let match_with_equation  t =
 
 let is_equation t = op2bool (match_with_equation  t)
 
-let arrow_pat = put_pat mmk "(?1 -> ?2)"
-
 let match_with_nottype t =
   try
-    match matches (get_pat arrow_pat) t with
+    match matches (build_coq_arrow_pattern ()) t with
       |	[(1,arg);(2,mind)] ->
 	  if is_empty_type mind then Some (mind,arg) else None
       | _ -> anomaly "Incorrect pattern matching" 

@@ -24,6 +24,7 @@ open Tactics
 open Tacinterp
 open Tacred
 open Vernacinterp
+open Coqlib
 
 (* Rewriting tactics *)
 
@@ -44,14 +45,12 @@ let general_rewrite_bindings lft2rgt (c,l) gl =
     | None -> error "The term provided does not end with an equation" 
     | Some (hdcncl,_) -> 
         let hdcncls = string_head hdcncl in 
+	let suffix = Declare.elimination_suffix (sort_of_goal gl) in
         let elim =
 	  if lft2rgt then
-            pf_global gl
-	      (id_of_string 
-		 (hdcncls^(Declare.elimination_suffix (sort_of_goal gl))^"_r"))
+            pf_global gl (id_of_string (hdcncls^suffix^"_r"))
           else
-	    pf_global gl
-	      (id_of_string (hdcncls^(Declare.elimination_suffix (sort_of_goal gl))))
+	    pf_global gl (id_of_string (hdcncls^suffix))
         in 
 	tclNOTSAMEGOAL (general_elim (c,l) (elim,[])) gl
    (* was tclWEAK_PROGRESS which only fails for tactics generating one subgoal 
@@ -176,90 +175,16 @@ let find_constructor env sigma c =
     | IsMutConstruct _ -> (hd,stack)
     | _ -> error "find_constructor"
 
-type leibniz_eq = {
-  eq   : marked_term;
-  ind  : marked_term;
-  rrec : marked_term option;
-  rect : marked_term option;
-  congr: marked_term;
-  sym  : marked_term }
-
-type sigma_type = {
-  proj1 : constr;
-  proj2 : constr;
-  elim  : constr;
-  intro : constr;
-  typ   : constr }
-
-let mmk = make_module_marker [ "Prelude"; "Logic_Type"; "Specif"; "Logic" ]
-
 (* Patterns *)
-let eq_pattern_mark = put_pat mmk "(eq ?1 ?2 ?3)"
-let not_pattern_mark = put_pat mmk "(not ?)"
-let imp_False_pattern_mark = put_pat mmk "? -> False"
 
-let eq_pattern () = get_pat eq_pattern_mark
-let not_pattern () = get_pat not_pattern_mark
-let imp_False_pattern () = get_pat imp_False_pattern_mark
-
-let eq = { eq = put_squel mmk "eq";
-           ind = put_squel mmk "eq_ind" ;
-           rrec = Some (put_squel mmk "eq_rec");
-           rect = Some (put_squel mmk "eq_rect");
-           congr = put_squel mmk "f_equal"  ;
-           sym  = put_squel mmk "sym_eq" }
-
-let build_eq eq = get_squel eq.eq
-let build_ind eq = get_squel eq.ind
+let build_coq_eq eq = eq.eq ()
+let build_ind eq = eq.ind ()
 let build_rect eq = 
   match eq.rect with
     | None -> assert false
-    | Some sq -> get_squel sq
+    | Some c -> c ()
 	  
-let eqT_pattern_mark = put_pat mmk "(eqT ?1 ?2 ?3)"
-let eqT_pattern () = get_pat eqT_pattern_mark
- 
-let eqT = { eq  = put_squel mmk "eqT";
-            ind = put_squel mmk "eqT_ind" ;
-            rrec = None;
-            rect = None;
-            congr = put_squel mmk "congr_eqT"  ;
-            sym  = put_squel mmk "sym_eqT" }
-
-let idT_pattern_mark = put_pat mmk "(identityT ?1 ?2 ?3)"
-let idT_pattern () = get_pat idT_pattern_mark
-
-let idT = { eq  = put_squel mmk "identityT";
-            ind = put_squel mmk "identityT_ind" ;
-            rrec = Some (put_squel mmk "identityT_rec")  ;
-            rect = Some (put_squel mmk "identityT_rect");
-            congr = put_squel mmk "congr_idT"  ;
-            sym  = put_squel mmk "sym_idT" }
-
 (* List of constructions depending of the initial state *)
-
-(* Initialisation part *)
-let squel_EmptyT = put_squel mmk "EmptyT"
-let squel_True   = put_squel mmk "True"
-let squel_False  = put_squel mmk "False"
-let squel_UnitT  = put_squel mmk "UnitT"
-let squel_IT     = put_squel mmk "IT"
-let squel_I      = put_squel mmk "I"
-
-(* Runtime part *)
-let build_EmptyT () = get_squel squel_EmptyT
-let build_True ()  = get_squel squel_True
-let build_False () = get_squel squel_False
-let build_UnitT () = get_squel squel_UnitT
-let build_IT ()    = get_squel squel_IT
-let build_I ()     = get_squel squel_I
-
-let pat_False_mark  = put_pat mmk "False"
-let pat_False () = get_pat pat_False_mark
-let pat_EmptyT_mark = put_pat mmk "EmptyT"
-let pat_EmptyT () = get_pat pat_EmptyT_mark
-
-let notT_pattern = put_pat mmk "(notT ?)"
 
 (* Destructuring patterns *)
 let match_eq eqn eq_pat =
@@ -294,14 +219,11 @@ let necessary_elimination sort_arity sort =
         [< 'sTR "no primitive equality on proofs" >]
 
 let find_eq_pattern aritysort sort = 
-  let mt =
-    match necessary_elimination aritysort sort with
-      | Set_Type       ->  eq.eq
-      | Type_Type      ->  idT.eq
-      | Set_SetorProp  ->  eq.eq
-      | Type_SetorProp ->  eqT.eq
-  in 
-  get_squel mt
+  match necessary_elimination aritysort sort with
+    | Set_Type       ->  build_coq_eq_data.eq ()
+    | Type_Type      ->  build_coq_idT_data.eq ()
+    | Set_SetorProp  ->  build_coq_eq_data.eq ()
+    | Type_SetorProp ->  build_coq_eqT_data.eq ()
 
 (* [find_positions t1 t2]
 
@@ -501,8 +423,8 @@ let construct_discriminator sigma env dirn c sort =
   let arsign,arsort = get_arity indf in
   let (true_0,false_0,sort_0) = 
     match necessary_elimination arsort (destSort sort) with
-      | Type_Type -> build_UnitT (), build_EmptyT (), (Type dummy_univ)
-      | _         -> build_True (),  build_False (),  (Prop Null)
+      | Type_Type -> build_coq_UnitT (), build_coq_EmptyT (), (Type dummy_univ)
+      | _         -> build_coq_True (),  build_coq_False (),  (Prop Null)
   in
   let p = it_mkLambda_or_LetIn (mkSort sort_0) arsign in
   let cstrs = get_constructors indf in
@@ -529,22 +451,25 @@ let rec build_discriminator sigma env dirn c sort = function
       let subval = build_discriminator sigma cnum_env dirn newc sort l  in
       (match necessary_elimination arsort (destSort sort) with
          | Type_Type ->
-	     kont subval (build_EmptyT (),mkSort (Type(dummy_univ)))
-	 | _ -> kont subval (build_False (),mkSort (Prop Null)))
+	     kont subval (build_coq_EmptyT (),mkSort (Type(dummy_univ)))
+	 | _ -> kont subval (build_coq_False (),mkSort (Prop Null)))
 
 let find_eq_data_decompose eqn =
-  if (is_matching (eq_pattern ()) eqn) then
-    (eq, match_eq (eq_pattern ()) eqn)
-  else if (is_matching (eqT_pattern ()) eqn) then
-    (eqT, match_eq (eqT_pattern ()) eqn)
-  else if (is_matching (idT_pattern ()) eqn) then
-    (idT, match_eq (idT_pattern ()) eqn)
+  if (is_matching (build_coq_eq_pattern ()) eqn) then
+    (build_coq_eq_data, match_eq (build_coq_eq_pattern ()) eqn)
+  else if (is_matching (build_coq_eqT_pattern ()) eqn) then
+    (build_coq_eqT_data, match_eq (build_coq_eqT_pattern ()) eqn)
+  else if (is_matching (build_coq_idT_pattern ()) eqn) then
+    (build_coq_idT_data, match_eq (build_coq_idT_pattern ()) eqn)
   else
     errorlabstrm  "find_eq_data_decompose" [< >]
 
 let gen_absurdity id gl =
+(*
   if   (pf_is_matching gl (pat_False ()) (clause_type (Some id) gl)) 
     or (pf_is_matching gl (pat_EmptyT ()) (clause_type  (Some id) gl))
+*)
+  if is_empty_type (clause_type (Some id) gl)
   then
     simplest_elim (mkVar id) gl
   else
@@ -565,14 +490,14 @@ let gen_absurdity id gl =
 let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
   let env = pf_env gls in
   let (indt,_) = find_mrectype env (project gls) t in 
-  let arity = Global.mind_nf_arity indt in
+  let aritysort = mis_sort (Global.lookup_mind_specif indt) in
   let sort = pf_type_of gls (pf_concl gls) in
-  match necessary_elimination (snd (destArity arity)) (destSort sort) with
+  match necessary_elimination aritysort (destSort sort) with
     | Type_Type  ->
  	let eq_elim     = build_rect lbeq in
-	let eq_term     = build_eq lbeq in
-	let i           = build_IT () in
-	let absurd_term = build_EmptyT () in
+	let eq_term     = build_coq_eq lbeq in
+	let i           = build_coq_IT () in
+	let absurd_term = build_coq_EmptyT () in
         let h = pf_get_new_id (id_of_string "HH")gls in
         let pred= mkNamedLambda e t 
                     (mkNamedLambda h (applist (eq_term, [t;t1;(mkRel 1)])) 
@@ -580,8 +505,8 @@ let discrimination_pf e (t,t1,t2) discriminator lbeq gls =
         in (applist(eq_elim, [t;t1;pred;i;t2]), absurd_term)
 	     
     | _ ->
-	let i           = build_I () in
-	let absurd_term = build_False ()
+	let i           = build_coq_I () in
+	let absurd_term = build_coq_False ()
 
  in
 	let eq_elim     = build_ind lbeq in
@@ -610,7 +535,6 @@ let discr id gls =
 	 let discriminator =
 	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
 	 let (indt,_) = find_mrectype env sigma t in 
-	 let arity = Global.mind_nf_arity indt in
 	 let (pf, absurd_term) =
 	   discrimination_pf e (t,t1,t2) discriminator lbeq gls 
 	 in
@@ -637,9 +561,9 @@ let discrOnLastHyp gls =
 let discrClause cls gls =
   match cls with
     | None ->
-    	if is_matching (not_pattern ()) (pf_concl gls) then
+    	if is_matching (build_coq_not_pattern ()) (pf_concl gls) then
           (tclTHEN (tclTHEN hnf_in_concl intro) discrOnLastHyp) gls
-    	else if is_matching (imp_False_pattern ()) (pf_concl gls)  then
+    	else if is_matching (build_coq_imp_False_pattern ()) (pf_concl gls)then
 	  (tclTHEN intro discrOnLastHyp) gls
 	else 
 	  errorlabstrm "DiscrClause" (insatisfied_prec_message cls)
@@ -665,27 +589,6 @@ let h_discr      = hide_atomic_tactic "Discr"      discrEverywhere
 let h_discrConcl = hide_atomic_tactic "DiscrConcl" discrConcl
 let h_discrHyp   = hide_ident_tactic  "DiscrHyp"   discrHyp
 (**)
-
-let existS_pattern = put_pat mmk "(existS ?1 ?2 ?3 ?4)"
-let existT_pattern = put_pat mmk "(existT ?1 ?2 ?3 ?4)"
-
-let constant dir s =
-  Declare.global_absolute_reference
-    (make_path ("Coq"::"Init"::dir) (id_of_string s) CCI)
-
-let build_sigma_set () =
-  { proj1 = constant ["Specif"] "projS1";
-    proj2 = constant ["Specif"] "projS2";
-    elim = constant ["Specif"] "sigS_rec";
-    intro = constant ["Specif"] "existS";
-    typ = constant ["Specif"] "sigS" }
-
-let build_sigma_type () =
-  { proj1 = constant ["Specif"] "projT1";
-    proj2 = constant ["Specif"] "projT2";
-    elim = constant ["Specif"] "sigT_rec";
-    intro = constant ["Specif"] "existT";
-    typ = constant ["Specif"] "sigT" }
 
 (* returns the sigma type (sigS, sigT) with the respective
     constructor depending on the sort *)
@@ -907,7 +810,7 @@ let inj id gls =
 	    [<'sTR "Failed to decompose the equality">];
 	tclMAP 
 	  (fun (injfun,resty) ->
-	     let pf = applist(get_squel eq.congr,
+	     let pf = applist(eq.congr (),
 			      [t;resty;injfun;
 			       try_delta_expand env sigma t1;
 			       try_delta_expand env sigma t2;
@@ -921,7 +824,7 @@ let inj id gls =
 let injClause cls gls =
   match cls with
     | None ->
-    	if is_matching (not_pattern ()) (pf_concl gls) then
+    	if is_matching (build_coq_not_pattern ()) (pf_concl gls) then
           (tclTHEN (tclTHEN hnf_in_concl intro)
              (onLastHyp (compose inj out_some))) gls
     	else
@@ -930,8 +833,6 @@ let injClause cls gls =
 	try 
 	  inj id gls
         with
-	  | Not_found ->
-	      errorlabstrm "InjClause" (not_found_message id)
           | UserError("refiner__fail",_) -> 
               errorlabstrm "InjClause" 
 		[< 'sTR (string_of_id id); 'sTR" Not a projectable equality" >]
@@ -984,7 +885,7 @@ let decompEqThen ntac id gls =
               [<'sTR "Discriminate failed to decompose the equality">];
 	  ((tclTHEN
 	      (tclMAP (fun (injfun,resty) ->
-			 let pf = applist(get_squel lbeq.congr,
+			 let pf = applist(lbeq.congr (),
 					  [t;resty;injfun;t1;t2;
 					   mkVar id]) in
 			 let ty = pf_type_of gls pf in
@@ -999,7 +900,7 @@ let decompEq = decompEqThen (fun x -> tclIDTAC)
 let dEqThen ntac cls gls =
   match cls with
     | None ->
-    	if is_matching (not_pattern ()) (pf_concl gls) then
+    	if is_matching (build_coq_not_pattern ()) (pf_concl gls) then
 	  (tclTHEN hnf_in_concl
 	     (tclTHEN intro
          	(onLastHyp (compose (decompEqThen ntac) out_some)))) gls
@@ -1036,7 +937,7 @@ let swap_equands gls eqn =
       find_eq_data_decompose eqn
     with _ -> errorlabstrm "swap_equamds" (rewrite_msg None)
   in 
-  applist(get_squel lbeq.eq,[t;e2;e1])
+  applist(lbeq.eq (),[t;e2;e1])
 
 let swapEquandsInConcl gls =
   let (lbeq,(t,e1,e2)) =
@@ -1044,7 +945,7 @@ let swapEquandsInConcl gls =
       find_eq_data_decompose (pf_concl gls)
     with _-> errorlabstrm "SwapEquandsInConcl" (rewrite_msg None) 
   in
-  let sym_equal = get_squel lbeq.sym in
+  let sym_equal = lbeq.sym () in
   refine (applist(sym_equal,[t;e2;e1;mkMeta (new_meta())])) gls
 
 let swapEquandsInHyp id gls =
@@ -1059,15 +960,15 @@ let swapEquandsInHyp id gls =
 
 let find_elim  sort_of_gl  lbeq =
   match kind_of_term sort_of_gl  with
-    | IsSort(Prop Null)  (* Prop *)  ->  (get_squel lbeq.ind, false)  
+    | IsSort(Prop Null)  (* Prop *)  ->  (lbeq.ind (), false)  
     | IsSort(Prop Pos)   (* Set *)   ->  
 	(match lbeq.rrec with
-           | Some eq_rec -> (get_squel eq_rec, false) 
+           | Some eq_rec -> (eq_rec (), false) 
 	   | None -> errorlabstrm "find_elim"
 		 [< 'sTR "this type of elimination is not allowed">])
     | _ (* Type *) -> 
         (match lbeq.rect with
-           | Some eq_rect -> (get_squel eq_rect, true) 
+           | Some eq_rect -> (eq_rect (), true) 
            | None -> errorlabstrm "find_elim"
 		 [< 'sTR "this type of elimination is not allowed">])
 
@@ -1078,7 +979,7 @@ let find_elim  sort_of_gl  lbeq =
 let build_dependent_rewrite_predicate (t,t1,t2) body lbeq gls =
   let e = pf_get_new_id  (id_of_string "e") gls in 
   let h = pf_get_new_id  (id_of_string "HH") gls in 
-  let eq_term = get_squel lbeq.eq in
+  let eq_term = lbeq.eq () in
   (mkNamedLambda e t 
      (mkNamedLambda h (applist (eq_term, [t;t1;(mkRel 1)])) 
         (lift 1 body))) 
@@ -1135,18 +1036,18 @@ let bareRevSubstInConcl lbeq body (t,e1,e2) gls =
  *)
 
 let match_sigma ex ex_pat =
-  match matches (get_pat ex_pat) ex with
+  match matches ex_pat ex with
     | [(1,a);(2,p);(3,car);(4,cdr)] -> (a,p,car,cdr)
     | _ ->
 	anomaly "match_sigma: a successful sigma pattern should match 4 terms"
 
 let find_sigma_data_decompose ex =
   try
-    let subst = match_sigma ex existS_pattern in
+    let subst = match_sigma ex (build_coq_existS_pattern ()) in
     (build_sigma_set (),subst)
   with PatternMatchingFailure ->
     (try 
-       let subst = match_sigma ex existT_pattern in
+       let subst = match_sigma ex (build_coq_existT_pattern ()) in
        (build_sigma_type (),subst)
      with PatternMatchingFailure -> 
        errorlabstrm "find_sigma_data_decompose" [< >])
@@ -1352,7 +1253,7 @@ let sub_term_with_unif cref ceq =
 let general_rewrite_in lft2rgt id (c,lb) gls =
   let typ_id =
     (try
-       let (_,ty) = lookup_named id (pf_env gls) in (body_of_type ty)
+       let (_,ty) = lookup_named id (pf_env gls) in ty
      with Not_found -> 
        errorlabstrm "general_rewrite_in" 
 	 [< 'sTR"No such hypothesis : "; pr_id id >])
@@ -1375,10 +1276,10 @@ let general_rewrite_in lft2rgt id (c,lb) gls =
            | None ->
                errorlabstrm "general_rewrite_in" 
 		 [<'sTR "Nothing to rewrite in: "; pr_id id>]
-           |Some (l2,nb_occ) ->
-               (tclTHENSI 
-		  (tclTHEN 
-		     (tclTHEN (generalize [(pf_global gls id)]) 
+           | Some (l2,nb_occ) ->
+               (tclTHENSI
+		  (tclTHEN
+		     (tclTHEN (generalize [(pf_global gls id)])
 			(reduce (Pattern [(list_int nb_occ 1 [],l2,
 					   pf_type_of gls l2)]) []))
 		     (general_rewrite_bindings lft2rgt (c,lb))) 

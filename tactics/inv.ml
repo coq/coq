@@ -52,13 +52,13 @@ open Pattern
 
 let dest_match_eq gls eqn =
   try 
-    pf_matches gls (eq_pattern ()) eqn
+    pf_matches gls (Coqlib.build_coq_eq_pattern ()) eqn
   with PatternMatchingFailure -> 
     (try 
-       pf_matches gls (eqT_pattern ()) eqn
+       pf_matches gls (Coqlib.build_coq_eqT_pattern ()) eqn
      with PatternMatchingFailure -> 
        (try 
-	  pf_matches gls (idT_pattern ()) eqn
+	  pf_matches gls (Coqlib.build_coq_idT_pattern ()) eqn
         with PatternMatchingFailure ->
 	  errorlabstrm "dest_match_eq" 
 	    [< 'sTR "no primitive equality here" >]))

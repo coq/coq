@@ -21,6 +21,7 @@ open Logic
 open Clenv
 open Tacticals
 open Hipattern
+open Coqlib
 
 exception Bound
 
@@ -58,6 +59,7 @@ let rec head_constr_bound t l =
   let t = strip_outer_cast(collapse_appl t) in
   match kind_of_term t with
     | IsProd (_,_,c2)  -> head_constr_bound c2 l 
+    | IsLetIn (_,_,_,c2) -> head_constr_bound c2 l 
     | IsApp (f,args)  -> 
 	head_constr_bound f (Array.fold_right (fun a l -> a::l) args l)
     | IsConst _        -> t::l
@@ -1558,19 +1560,12 @@ let contradiction_on_hyp id gl =
   else 
     error "Not a contradiction"
 
-let constant dir s = 
-  Declare.global_absolute_reference
-    (make_path ("Coq"::"Init"::dir) (id_of_string s) CCI)
-
-let coq_False = lazy (constant ["Logic"] "False")
-let coq_not = lazy (constant ["Logic"] "not")
-
 (* Absurd *)
 let absurd c gls =
   (tclTHENS
-     (tclTHEN (elim_type (Lazy.force coq_False)) (cut c)) 
+     (tclTHEN (elim_type (build_coq_False ())) (cut c)) 
      ([(tclTHENS
-          (cut (applist(Lazy.force coq_not,[c]))) 
+          (cut (applist(build_coq_not (),[c]))) 
 	  ([(tclTHEN intros
 	       ((fun gl ->
 		   let ida = pf_nth_hyp_id gl 1
@@ -1585,7 +1580,7 @@ let dyn_absurd = function
   | l             -> bad_tactic_args "absurd" l
 
 let contradiction gls = 
-  tclTHENLIST [ intros; elim_type (Lazy.force coq_False); assumption ] gls
+  tclTHENLIST [ intros; elim_type (build_coq_False ()); assumption ] gls
 
 let dyn_contradiction = function
   | []  -> contradiction
