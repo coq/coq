@@ -137,6 +137,23 @@ let add_glob loc ref =
   let dp = string_of_dirpath (Lib.library_part ref) in
   dump_string (Printf.sprintf "R%d %s.%s\n" (fst loc) dp id)
 
+let loc_of_notation f loc args ntn =
+  if args=[] or ntn.[0] <> '_' then fst loc else snd (f (List.hd args))
+
+let ntn_loc = loc_of_notation constr_loc
+let patntn_loc = loc_of_notation cases_pattern_loc
+
+let dump_notation_location =
+  let token_number = ref 0 in
+  fun pos ntn ((path,df),sc) ->
+    let rec next () =
+      let (bp,_ as loc) = !Lexer.current_location_function !token_number in
+      if bp >= pos then loc else (incr token_number; next ()) in
+    let loc = next () in
+    let path = string_of_dirpath path in
+    let sc = match sc with Some sc -> " "^sc | None -> "" in
+    dump_string (Printf.sprintf "R%d %s \"%s\"%s\n" (fst loc) path df sc)
+
 (**********************************************************************)
 (* Remembering the parsing scope of variables in notations            *)
 
@@ -408,7 +425,8 @@ let rec intern_cases_pattern scopes aliases tmp_scope = function
       intern_cases_pattern scopes aliases tmp_scope a
   | CPatNotation (loc, ntn, args) ->
       let scopes = option_cons tmp_scope scopes in
-      let (ids,c) = Symbols.interp_notation ntn scopes in
+      let ((ids,c),df) = Symbols.interp_notation ntn scopes in
+      if !dump then dump_notation_location (patntn_loc loc args ntn) ntn df;
       let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
       subst_cases_pattern loc aliases intern_cases_pattern subst scopes c
   | CPatNumeral (loc, n) ->
@@ -630,7 +648,8 @@ let internalise sigma env allow_soapp lvar c =
     | CNotation (_,"( _ )",[a]) -> intern env a
     | CNotation (loc,ntn,args) ->
 	let scopes = option_cons tmp_scope scopes in
-	let (ids,c) = Symbols.interp_notation ntn scopes in
+	let ((ids,c),df) = Symbols.interp_notation ntn scopes in
+        if !dump then dump_notation_location (ntn_loc loc args ntn) ntn df;
 	let subst = List.map2 (fun (id,scl) a -> (id,(a,scl))) ids args in
 	subst_rawconstr loc intern subst env c
     | CNumeral (loc, n) ->

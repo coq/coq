@@ -874,20 +874,20 @@ let compute_syntax_data forv7 (df,modifiers) =
   (* To globalize... *)
   let typs = List.map (set_entry_type etyps) typs in
   let (prec,notation) = make_symbolic n symbols typs in
-  ((onlyparse,vars,notation),prec,(n,typs,symbols,fmt))
+  ((onlyparse,vars,notation),prec,(n,typs,symbols,fmt),(Lib.library_dp(),df))
 
 let add_syntax_extension local mv mv8 =
   let data8 = option_app (compute_syntax_data false) mv8 in
   let data = option_app (compute_syntax_data !Options.v7) mv in
   let prec,gram_rule = match data with
     | None -> None, None
-    | Some ((_,_,notation),prec,(n,typs,symbols,_)) -> 
+    | Some ((_,_,notation),prec,(n,typs,symbols,_),_) -> 
 	Some prec, Some (make_grammar_rule n typs symbols notation) in
   match data, data8 with
     | None, None -> (* Nothing to do: V8Notation while not translating *) () 
     | _, Some d | Some d, None ->
-  let ((_,_,notation),ppprec,ppdata) = d in
-  let notation = match data with Some ((_,_,ntn),_,_) -> ntn | _ -> notation in
+  let ((_,_,notation),ppprec,ppdata,_) = d in
+  let notation = match data with Some ((_,_,ntn),_,_,_) -> ntn | _ -> notation in
   let pp_rule = make_pp_rule ppdata in
   Lib.add_anonymous_leaf
     (inSyntaxExtension (local,(prec,ppprec),notation,gram_rule,pp_rule))
@@ -963,7 +963,7 @@ let make_old_pp_rule n symbols typs r ntn scope vars =
   make_syntax_rule n rule_name symbols typs ast ntn scope
 
 let add_notation_in_scope local df c mods omodv8 scope toks =
-  let ((onlyparse,vars,notation),prec,(n,typs,symbols,_ as ppdata)) =
+  let ((onlyparse,vars,notation),prec,(n,typs,symbols,_ as ppdata),df') =
     compute_syntax_data !Options.v7 (df,mods) in
   (* Declare the parsing and printing rules if not already done *)
     (* For both v7 and translate: parsing is as described for v7 in v7 file *)
@@ -977,7 +977,7 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
   let ppnot,ppprec,pp_rule =
     match omodv8 with
     | Some mv8 ->
-        let (_,_,ntn8),p,d = compute_syntax_data false mv8 in
+        let (_,_,ntn8),p,d,_ = compute_syntax_data false mv8 in
         ntn8,p,make_pp_rule d
     | _ -> 
 	(* means the rule already exists: recover it *)
@@ -1003,7 +1003,7 @@ let add_notation_in_scope local df c mods omodv8 scope toks =
   let onlyparse = onlyparse or !Options.v7_only in
   let vars = List.map (fun id -> id,[] (* insert the right scope *)) vars in
   Lib.add_anonymous_leaf
-    (inNotation(local,old_pp_rule,ppnot,scope,a,onlyparse,false,df))
+    (inNotation(local,old_pp_rule,ppnot,scope,a,onlyparse,false,df'))
 
 let level_rule (n,p) = if p = E then n else max (n-1) 0
 
@@ -1034,7 +1034,8 @@ let add_notation_interpretation_core local symbs for_old df a scope onlyparse
       option_app (build_old_pp_rule notation scope symbs) for_old
     else None in
   Lib.add_anonymous_leaf
-    (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,onlypp,df))
+    (inNotation(local,old_pp_rule,notation,scope,a,onlyparse,onlypp,
+     (Lib.library_dp(),df)))
 
 let add_notation_interpretation df names c sc =
   let (vars,symbs) = analyse_notation_tokens (split_notation_string df) in
@@ -1046,7 +1047,7 @@ let add_notation_interpretation df names c sc =
   add_notation_interpretation_core false symbs for_oldpp df a sc false false
 
 let add_notation_in_scope_v8only local df c mv8 scope toks =
-  let (_,vars,notation),prec,ppdata = compute_syntax_data false (df,mv8) in
+  let (_,vars,notation),prec,ppdata,df' = compute_syntax_data false (df,mv8) in
   let pp_rule = make_pp_rule ppdata in
   Lib.add_anonymous_leaf
     (inSyntaxExtension(local,(None,prec),notation,None,pp_rule));
@@ -1054,7 +1055,7 @@ let add_notation_in_scope_v8only local df c mv8 scope toks =
   let onlyparse = false in
   let a = interp_aconstr [] vars c in
   Lib.add_anonymous_leaf
-    (inNotation(local,None,notation,scope,a,onlyparse,true,df))
+    (inNotation(local,None,notation,scope,a,onlyparse,true,df'))
 
 let add_notation_v8only local c (df,modifiers) sc =
   let toks = split_notation_string df in

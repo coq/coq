@@ -43,11 +43,11 @@ type level = precedence * tolerability list
 type delimiters = string
 
 type scope = {
-  notations: (interpretation * string * bool) Stringmap.t;
+  notations: (interpretation * (dir_path * string) * bool) Stringmap.t;
   delimiters: delimiters option
 }
 
-(* Uninterpreted notation map: notation -> level *)
+(* Uninterpreted notation map: notation -> level * dir_path *)
 let notation_level_map = ref Stringmap.empty
 
 (* Scopes table: scope_name -> symbol_interpretation *)
@@ -284,15 +284,16 @@ let rec find_interpretation f = function
       let scope = match sce with
 	| Scope s -> s 
 	| SingleNotation _ -> default_scope in
-      (try f (find_scope scope)
+      (try f scope
       with Not_found -> find_interpretation f scopes)
   | [] -> raise Not_found
 
 let rec interp_notation ntn scopes =
-  let f scope =
-    let (pat,_,pp8only) = Stringmap.find ntn scope.notations in
+  let f sc =
+    let scope = find_scope sc in
+    let (pat,df,pp8only) = Stringmap.find ntn scope.notations in
     if pp8only then raise Not_found;
-    pat in
+    pat,(df,if sc = default_scope then None else Some sc) in
   try find_interpretation f (List.fold_right push_scope scopes !scope_stack)
   with Not_found -> error ("Unknown interpretation for notation \""^ntn^"\"")
 
@@ -488,7 +489,7 @@ let pr_named_scope prraw scope sc =
   ++ fnl ()
   ++ pr_scope_classes scope
   ++ Stringmap.fold
-       (fun ntn ((_,r),df,_) strm ->
+       (fun ntn ((_,r),(_,df),_) strm ->
 	 pr_notation_info prraw df r ++ fnl () ++ strm)
        sc.notations (mt ())
 
@@ -542,7 +543,7 @@ let locate_notation prraw ntn =
     prlist (fun (ntn,l) ->
       let scope = find_default ntn !scope_stack in
       prlist 
-	(fun (sc,r,df) ->
+	(fun (sc,r,(_,df)) ->
 	  hov 0 (
 	    pr_notation_info prraw df r ++ tbrk (1,2) ++
 	    (if sc = default_scope then mt () else (str ": " ++ str sc)) ++ 
@@ -554,7 +555,7 @@ let locate_notation prraw ntn =
 let collect_notation_in_scope scope sc known =
   assert (scope <> default_scope);
   Stringmap.fold
-    (fun ntn ((_,r),df,_) (l,known as acc) ->
+    (fun ntn ((_,r),(_,df),_) (l,known as acc) ->
       if List.mem ntn known then acc else ((df,r)::l,ntn::known))
     sc.notations ([],known)
 
@@ -570,7 +571,7 @@ let collect_notations stack =
       | SingleNotation ntn ->
 	  if List.mem ntn knownntn then (all,knownntn)
 	  else
-	    let ((_,r),df,_) =
+	    let ((_,r),(_,df),_) =
 	      Stringmap.find ntn (find_scope default_scope).notations in
 	    let all' = match all with
 	      | (s,lonelyntn)::rest when s = default_scope ->
