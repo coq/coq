@@ -52,6 +52,5 @@ val mind_is_recursive : inductive -> bool
 val mind_nconstr : inductive -> int
 val mind_nparams : inductive -> int
 val mind_arity : inductive -> constr
-
-val mind_lc_without_abstractions : inductive -> constr array
+val mind_lc : inductive -> constr array
 

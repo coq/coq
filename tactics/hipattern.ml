@@ -153,7 +153,7 @@ let match_with_disjunction t =
   match kind_of_term hdapp with
     | IsMutInd ind  ->
 	let mispec = Global.lookup_mind_specif ind in
-        let constr_types = mis_lc_without_abstractions mispec in
+        let constr_types = mis_lc mispec in
         let only_one_arg c =
 	  ((nb_prod c) - (mis_nparams mispec)) = 1 in 
 	if (array_for_all only_one_arg constr_types) &&
@@ -180,8 +180,7 @@ let match_with_unit_type t =
   let (hdapp,args) = decomp_app t in
   match (kind_of_term hdapp) with
     | IsMutInd ind  -> 
-        let constr_types = 
-	  Global.mind_lc_without_abstractions ind in 
+        let constr_types = Global.mind_lc ind in 
         let nconstr = Global.mind_nconstr ind in
         let zero_args c = ((nb_prod c) - (Global.mind_nparams ind)) = 0 in  
 	if nconstr = 1 && (array_for_all zero_args constr_types) then 
@@ -204,7 +203,7 @@ let match_with_equation  t =
   let (hdapp,args) = decomp_app t in
   match (kind_of_term hdapp) with
     | IsMutInd ind -> 
-        let constr_types = Global.mind_lc_without_abstractions ind in 
+        let constr_types = Global.mind_lc ind in 
         let nconstr = Global.mind_nconstr ind in
 	if nconstr = 1 &&
            (is_matching (get_pat refl_rel_pat1) constr_types.(0) ||

@@ -78,19 +78,21 @@ let rec execute mf env cstr =
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
         (type_of_case env Evd.empty ci pj cj lfj, cst)
   
-    | IsFix (vn,i,lar,lfi,vdef) ->
+    | IsFix ((vn,i as vni),(lar,lfi,vdef)) ->
         if (not mf.fix) && array_exists (fun n -> n < 0) vn then
           error "General Fixpoints not allowed";
-        let (larv,vdefv,cst) = execute_fix mf env lar lfi vdef in
-        let fix = mkFix vn i larv lfi vdefv in
+        let (larjv,vdefv,cst) = execute_fix mf env lar lfi vdef in
+	let larv = Array.map body_of_type larjv in
+        let fix = (vni,(larv,lfi,vdefv)) in
         check_fix env Evd.empty fix;
-	(make_judge fix larv.(i), cst)
+	(make_judge (mkFix fix) larjv.(i), cst)
 	  
-    | IsCoFix (i,lar,lfi,vdef) ->
-        let (larv,vdefv,cst) = execute_fix mf env lar lfi vdef in
-        let cofix = mkCoFix i larv lfi vdefv in
+    | IsCoFix (i,(lar,lfi,vdef)) ->
+        let (larjv,vdefv,cst) = execute_fix mf env lar lfi vdef in
+	let larv = Array.map body_of_type larjv in
+        let cofix = (i,(larv,lfi,vdefv)) in
         check_cofix env Evd.empty cofix;
-	(make_judge cofix larv.(i), cst)
+	(make_judge (mkCoFix cofix) larjv.(i), cst)
 	  
     | IsSort (Prop c) -> 
 	(judge_of_prop_contents c, cst0)
@@ -400,22 +402,20 @@ let type_one_constructor env_ar nparams arsort c =
   let cst3 =enforce_type_constructor arsort max (Constraint.union cst1 cst2) in
   (infos, j, cst3)
 
-let type_one_inductive i env_ar env_par nparams ninds (id,ar,cnames,spec) =
-  let (lna,vc) = decomp_all_DLAMV_name spec in
+let type_one_inductive i env_ar env_par nparams ninds (id,ar,cnames,vc) =
   let arsort = sort_of_arity env_ar ar in
   let (constrsinfos,jlc,cst') = 
     List.fold_right
       (fun c (infosl,jl,cst) -> 
 	 let (infos,jc,cst') = type_one_constructor env_ar nparams arsort c in
 	 (infos::infosl,jc::jl, Constraint.union cst cst'))
-      (Array.to_list vc) 
+      vc
       ([],[],Constraint.empty)
   in
-  let castlc = List.map incast_type jlc in
-  let spec' = put_DLAMSV lna (Array.of_list castlc) in
+  let vc' = Array.of_list (List.map incast_type jlc) in
   let issmall,isunit = small_unit constrsinfos (env_par,nparams,ar) in
   let (_,tyar) = lookup_rel (ninds+1-i) env_ar in
-  ((id,tyar,cnames,issmall,isunit,spec'), cst')
+  ((id,tyar,cnames,issmall,isunit,vc'), cst')
 
 let add_mind sp mie env =
   mind_check_names mie;

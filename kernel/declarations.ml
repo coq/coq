@@ -44,10 +44,10 @@ type recarg =
   | Mrec of int 
   | Imbr of inductive_path * recarg list
 
-type mutual_inductive_packet = {
+type one_inductive_body = {
   mind_consnames : identifier array;
   mind_typename : identifier;
-  mind_lc : constr;
+  mind_lc : constr array;
   mind_arity : typed_type;
   mind_sort : sorts;
   mind_nrealargs : int;
@@ -59,7 +59,7 @@ type mutual_inductive_body = {
   mind_kind : path_kind;
   mind_ntypes : int;
   mind_hyps : typed_type signature;
-  mind_packets : mutual_inductive_packet array;
+  mind_packets : one_inductive_body array;
   mind_constraints : constraints;
   mind_singl : constr option;
   mind_nparams : int }
@@ -71,6 +71,6 @@ let mind_type_finite mib i = mib.mind_packets.(i).mind_finite
 type mutual_inductive_entry = {
   mind_entry_nparams : int;
   mind_entry_finite : bool;
-  mind_entry_inds : (identifier * constr * identifier list * constr) list }
+  mind_entry_inds : (identifier * constr * identifier list * constr list) list}
 
 let mind_nth_type_packet mib n = mib.mind_packets.(n)

@@ -105,17 +105,6 @@ let assumptions_for_print lna =
   List.fold_right (fun na env -> add_rel (na,()) env) lna
     (ENVIRON(nil_sign,nil_dbsign))
 
-let print_constructors_with_sep pk fsep mip = 
-  let pterm,pterminenv = pkprinters pk in
-  let (lna,lC) = decomp_all_DLAMV_name mip.mind_lc in
-  let ass_name = assumptions_for_print lna in
-  let lidC = Array.to_list 
-               (array_map2 (fun id c -> (id,c)) mip.mind_consnames lC) in
-  let prass (id,c) =
-    let pc = pterminenv ass_name c in [< print_id id; 'sTR " : "; pc >]
-  in
-  prlist_with_sep fsep prass lidC
-
 let implicit_args_id id l = 
   if l = [] then 
     [<>]
@@ -143,13 +132,14 @@ let print_mutual sp mib =
   let {mind_packets=mipv; mind_nparams=nparams} = mib in 
   let (lpars,_) = decomp_n_prod env evd nparams (body_of_type mipv.(0).mind_arity) in
   let lparsname = List.map fst lpars in
+  let lna = Array.map (fun mip -> Name mip.mind_typename) mipv in
   let lparsprint = assumptions_for_print lparsname in
   let prass ass_name (id,c) =
     let pc = pterminenv ass_name c in [< print_id id; 'sTR " : "; pc >] 
   in
-  let print_constructors mip = 
-    let (lna,lC) = decomp_all_DLAMV_name mip.mind_lc in
-    let ass_name = assumptions_for_print (lparsname@lna) in
+  let print_constructors mip =
+    let lC = mip.mind_lc in
+    let ass_name = assumptions_for_print (lparsname@(Array.to_list lna)) in
     let lidC =
       Array.to_list 
         (array_map2 (fun id c -> (id,snd (decomp_n_prod env evd nparams c)))
@@ -343,8 +333,8 @@ let list_filter_vec f vec =
    and the constr term that represent its type. *)
 
 let print_constructors_head 
-  (fn : string -> unit assumptions -> constr -> unit) c mip = 
-  let (lna,lC) = decomp_all_DLAMV_name mip.mind_lc in
+  (fn : string -> unit assumptions -> constr -> unit) c lna mip = 
+  let lC = mip.mind_lc in
   let ass_name = assumptions_for_print lna in
   let lidC = array_map2 (fun id c_0 -> (id,c_0)) mip.mind_consnames lC in
   let flid = list_filter_vec (fun (_,c_0) -> head_const c_0 = c) lidC in
@@ -353,13 +343,14 @@ let print_constructors_head
     
 let print_all_constructors_head fn c mib = 
   let mipvec = mib.mind_packets 
-  and n = mib.mind_ntypes in 
+  and n = mib.mind_ntypes in
+  let lna = array_map_to_list (fun mip -> Name mip.mind_typename) mipvec in
   for i = 0 to n-1 do
-    print_constructors_head fn c mipvec.(i)
+    print_constructors_head fn c lna mipvec.(i)
   done
 
-let print_constructors_rel fn mip = 
-  let (lna,lC) = decomp_all_DLAMV_name mip.mind_lc in
+let print_constructors_rel fn lna mip = 
+  let lC = mip.mind_lc in
   let ass_name = assumptions_for_print lna in
   let lidC = array_map2 (fun id c -> (id,c)) mip.mind_consnames lC in
   let flid = list_filter_vec (fun (_,c) -> isRel (head_const c)) lidC in
@@ -384,9 +375,12 @@ let crible (fn : string -> unit assumptions -> constr -> unit) name =
                crible_rec rest
 	   | (sp,"INDUCTIVE") -> 
                let mib = Global.lookup_mind sp in 
+	       let lna =
+		 array_map_to_list
+		   (fun mip -> Name mip.mind_typename) mib.mind_packets in
                (match const with 
 		  | (DOPN(MutInd(sp',tyi),_)) -> 
-		      if sp = objsp_of sp' then print_constructors_rel fn
+		      if sp = objsp_of sp' then print_constructors_rel fn lna
 			(mind_nth_type_packet mib tyi) 
 		  | _ -> print_all_constructors_head fn const mib); 
                crible_rec rest

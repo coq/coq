@@ -16,7 +16,7 @@ type inductive_instance = {
   mis_mib : mutual_inductive_body;
   mis_tyi : int;
   mis_args : constr array;
-  mis_mip : mutual_inductive_packet }
+  mis_mip : one_inductive_body }
 
 let mis_ntypes mis = mis.mis_mib.mind_ntypes
 let mis_nparams mis = mis.mis_mib.mind_nparams
@@ -36,17 +36,10 @@ let mis_consnames mis = mis.mis_mip.mind_consnames
 let mis_inductive mis = ((mis.mis_sp,mis.mis_tyi),mis.mis_args)
 
 let mis_lc mis =
-  Instantiate.instantiate_constr
-    (ids_of_sign mis.mis_mib.mind_hyps) mis.mis_mip.mind_lc
-    (Array.to_list mis.mis_args)
-
-let mis_lc_without_abstractions mis = 
-  let rec strip_DLAM = function
-    | (DLAM (n,c1)) -> strip_DLAM c1 
-    | (DLAMV (n,v)) -> v
-    | _ -> assert false
-  in 
-  strip_DLAM (mis_lc mis)
+  let ids = ids_of_sign mis.mis_mib.mind_hyps in
+  let args = Array.to_list mis.mis_args in
+  Array.map (fun t -> Instantiate.instantiate_constr ids t args)
+    mis.mis_mip.mind_lc
 
 (* gives the vector of constructors and of 
    types of constructors of an inductive definition 
@@ -56,20 +49,20 @@ let mis_type_mconstructs mispec =
   let specif = mis_lc mispec
   and ntypes = mis_ntypes mispec
   and nconstr = mis_nconstr mispec in
-  let make_Ik k = mkMutInd ((mispec.mis_sp,k),mispec.mis_args) 
+  let make_Ik k = mkMutInd ((mispec.mis_sp,ntypes-k-1),mispec.mis_args) 
   and make_Ck k = mkMutConstruct
 		    (((mispec.mis_sp,mispec.mis_tyi),k+1),
 		       mispec.mis_args) in
   (Array.init nconstr make_Ck, 
-   sAPPVList specif (list_tabulate make_Ik ntypes))
+   Array.map (substl (list_tabulate make_Ik ntypes)) specif)
 
 let mis_type_mconstruct i mispec =
   let specif = mis_lc mispec
   and ntypes = mis_ntypes mispec
   and nconstr = mis_nconstr mispec in
-  let make_Ik k = DOPN(MutInd(mispec.mis_sp,k),mispec.mis_args) in 
+  let make_Ik k = DOPN(MutInd(mispec.mis_sp,ntypes-k-1),mispec.mis_args) in 
   if i > nconstr then error "Not enough constructors in the type";
-  sAPPViList (i-1) specif (list_tabulate make_Ik ntypes)
+  substl (list_tabulate make_Ik ntypes) specif.(i-1)
 
 let mis_typed_arity mis =
   let idhyps = ids_of_sign mis.mis_mib.mind_hyps 
@@ -96,11 +89,11 @@ let liftn_inductive_instance n depth mis = {
 
 let lift_inductive_instance n = liftn_inductive_instance n 1
 
-let substn_many_ind_instance cv depth mis = {
+let substnl_ind_instance l n mis = {
   mis_sp = mis.mis_sp;
   mis_mib = mis.mis_mib;
   mis_tyi = mis.mis_tyi;
-  mis_args = Array.map (substn_many cv depth) mis.mis_args;
+  mis_args = Array.map (substnl l n) mis.mis_args;
   mis_mip = mis.mis_mip
 }
 
@@ -117,13 +110,11 @@ let liftn_inductive_type n d (IndType (indf, realargs)) =
   IndType (liftn_inductive_family n d indf, List.map (liftn n d) realargs)
 let lift_inductive_type n = liftn_inductive_type n 1
 
-let substn_many_ind_family cv depth (IndFamily (mis,params)) =
-  IndFamily (substn_many_ind_instance cv depth mis,
-	     List.map (substn_many cv depth) params)
+let substnl_ind_family l n (IndFamily (mis,params)) =
+  IndFamily (substnl_ind_instance l n mis, List.map (substnl l n) params)
 
-let substn_many_ind_type cv depth (IndType (indf,realargs)) =
-  IndType (substn_many_ind_family cv depth indf,
-	   List.map (substn_many cv depth) realargs)
+let substnl_ind_type l n (IndType (indf,realargs)) =
+  IndType (substnl_ind_family l n indf, List.map (substnl l n) realargs)
 
 let make_ind_family (mis, params) = IndFamily (mis,params)
 let dest_ind_family (IndFamily (mis,params)) = (mis,params)

@@ -43,8 +43,7 @@ val mis_consnames : inductive_instance -> identifier array
 val mis_typed_arity : inductive_instance -> typed_type
 val mis_inductive : inductive_instance -> inductive
 val mis_arity : inductive_instance -> constr
-val mis_lc : inductive_instance -> constr
-val mis_lc_without_abstractions : inductive_instance -> constr array
+val mis_lc : inductive_instance -> constr array
 val mis_type_mconstructs : inductive_instance -> constr array * constr array
 val mis_type_mconstruct : int -> inductive_instance -> constr
 val mis_params_ctxt : inductive_instance -> (name * constr) list
@@ -58,8 +57,8 @@ val dest_ind_family : inductive_family -> inductive_instance * constr list
 
 val liftn_inductive_family : int -> int -> inductive_family -> inductive_family
 val lift_inductive_family : int -> inductive_family -> inductive_family
-val substn_many_ind_family : constr Generic.substituend array -> int
-  -> inductive_family -> inductive_family
+val substnl_ind_family : constr list -> int -> inductive_family 
+  -> inductive_family
 
 (*s [inductive_type] = [inductive_family] applied to ``real'' parameters *)
 type inductive_type = IndType of inductive_family * constr list
@@ -71,8 +70,7 @@ val mkAppliedInd : inductive_type -> constr
 
 val liftn_inductive_type : int -> int -> inductive_type -> inductive_type
 val lift_inductive_type : int -> inductive_type -> inductive_type
-val substn_many_ind_type : constr Generic.substituend array -> int
- -> inductive_type -> inductive_type
+val substnl_ind_type : constr list -> int -> inductive_type -> inductive_type
 
 (*s A [constructor] is an [inductive] + an index; the following functions
     destructs and builds [constructor] *)

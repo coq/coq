@@ -61,8 +61,6 @@ let mind_is_recursive =
 let mind_nconstr = Util.compose Inductive.mis_nconstr lookup_mind_specif
 let mind_nparams = Util.compose Inductive.mis_nparams lookup_mind_specif
 let mind_arity = Util.compose Inductive.mis_arity lookup_mind_specif
-
-let mind_lc_without_abstractions = 
-  Util.compose Inductive.mis_lc_without_abstractions lookup_mind_specif
+let mind_lc = Util.compose Inductive.mis_lc lookup_mind_specif
 
 

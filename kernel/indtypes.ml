@@ -100,14 +100,17 @@ let mind_extract_and_check_params mie =
 	List.iter (fun (_,c,_,_) -> check_params nparams params c) l;
 	params
 
+let decomp_all_DLAMV_name constr = 
+  let rec decomprec lna = function 
+    | DLAM(na,lc)  -> decomprec (na::lna) lc
+    | DLAMV(na,lc) -> (na::lna,lc)
+    | _ -> assert false
+  in 
+  decomprec [] constr
+
 let mind_check_lc params mie =
-  let ntypes = List.length mie.mind_entry_inds in
   let nparams = List.length params in
-  let check_lc (_,_,_,lc) =
-    let (lna,c) = decomp_all_DLAMV_name lc in
-    Array.iter (check_params nparams params) c;
-    if not (List.length lna = ntypes) then raise (InductiveError BadEntry)
-  in
+  let check_lc (_,_,_,lc) = List.iter (check_params nparams params) lc in
   List.iter check_lc mie.mind_entry_inds
 
 let mind_check_arities env mie =
@@ -169,20 +172,19 @@ let check_correct_par env nparams ntypes n l largs =
     if not ((Rel (n-k-1))= whd_betadeltaiotaeta env Evd.empty lpar.(k)) then
       raise (IllFormedInd (LocalNonPar (k+1,l)))
   done;
-  if not (array_for_all (noccur_bet n ntypes) largs') then 
+  if not (array_for_all (noccur_between n ntypes) largs') then 
     failwith_non_pos_vect n ntypes largs'
 
 (* This removes global parameters of the inductive types in lc *)
 let abstract_mind_lc env ntyps npars lc = 
-  let lC = decomp_DLAMV ntyps lc in
   if npars = 0 then 
-    lC 
+    lc
   else 
     let make_abs = 
       list_tabulate
 	(function i -> lambda_implicit_lift npars (Rel (i+1))) ntyps 
     in 
-    Array.map (compose (nf_beta env Evd.empty) (substl make_abs)) lC
+    Array.map (compose (nf_beta env Evd.empty) (substl make_abs)) lc
 
 let decomp_par n c = snd (mind_extract_params n c)
       
@@ -191,7 +193,7 @@ let listrec_mconstr env ntypes nparams i indlc =
   let rec check_pos n c = 
     match whd_betadeltaiota env Evd.empty c with 
       | DOP2(Prod,b,DLAM(na,d)) -> 
-          if not (noccur_bet n ntypes b) then raise (IllFormedInd (LocalNonPos n));
+          if not (noccur_between n ntypes b) then raise (IllFormedInd (LocalNonPos n));
 	  check_pos (n+1) d
       | x -> 
 	  let hd,largs = destApplication (ensure_appl x) in
@@ -200,24 +202,24 @@ let listrec_mconstr env ntypes nparams i indlc =
                 if k >= n && k<n+ntypes then begin
 		  check_correct_par env nparams ntypes n (k-n+1) largs;
 		  Mrec(n+ntypes-k-1)
-                end else if noccur_bet n ntypes x then 
+                end else if noccur_between n ntypes x then 
 		  if (n-nparams) <= k & k <= (n-1) 
 		  then Param(n-1-k)
                   else Norec
 		else
 		  raise (IllFormedInd (LocalNonPos n))
             | DOPN(MutInd ind_sp,a) -> 
-                if (noccur_bet n ntypes x) then Norec
+                if (noccur_between n ntypes x) then Norec
                 else Imbr(ind_sp,imbr_positive n (ind_sp,a) largs)
             | err -> 
-		if noccur_bet n ntypes x then Norec
+		if noccur_between n ntypes x then Norec
 		else raise (IllFormedInd (LocalNonPos n))
 
   and imbr_positive n mi largs =
     let mispeci = lookup_mind_specif mi env in
     let auxnpar = mis_nparams mispeci in
     let (lpar,auxlargs) = array_chop auxnpar largs in 
-    if not (array_for_all (noccur_bet n ntypes) auxlargs) then
+    if not (array_for_all (noccur_between n ntypes) auxlargs) then
       raise (IllFormedInd (LocalNonPos n));
     let auxlc = mis_lc mispeci 
     and auxntyp = mis_ntypes mispeci in 
@@ -259,7 +261,7 @@ let listrec_mconstr env ntypes nparams i indlc =
     match whd_betadeltaiota env Evd.empty c with 
       (* The extra case *)
       | DOP2(Lambda,b,DLAM(na,d)) -> 
-          if noccur_bet n ntypes b
+          if noccur_between n ntypes b
           then check_weak_pos (n+1) d
           else raise (IllFormedInd (LocalNonPos n))
       (******************)
@@ -283,19 +285,19 @@ let listrec_mconstr env ntypes nparams i indlc =
 		    check_correct_par env nparams ntypes n (k-n+1) largs
                 | _ -> raise (IllFormedInd LocalNotConstructor)
 	    else
-	      if not (array_for_all (noccur_bet n ntypes) largs)
+	      if not (array_for_all (noccur_between n ntypes) largs)
               then raise (IllFormedInd (LocalNonPos n));
 	    List.rev lrec
     in check_constr_rec []
   in
-  let (lna,lC) = decomp_DLAMV_name ntypes indlc in
+  let lna = it_dbenv (fun l na t -> na::l) [] (context env) in
   Array.map
     (fun c ->
        try
 	 check_construct true (1+nparams) (decomp_par nparams c)
        with IllFormedInd err -> 
 	 explain_ind_err (ntypes-i+1) lna nparams c err)
-    lC
+    indlc
     
 let is_recursive listind =
   let rec one_is_rec rvec = 
@@ -326,8 +328,11 @@ let cci_inductive env env_ar kind nparams finite inds cst =
   let ids = 
     List.fold_left 
       (fun acc (_,ar,_,_,_,lc) -> 
-	 Idset.union (global_vars_set (body_of_type ar)) 
-	   (Idset.union (global_vars_set lc) acc))
+	 Idset.union (global_vars_set (body_of_type ar))
+	   (Array.fold_left
+	      (fun acc c -> Idset.union (global_vars_set c) acc)
+	      acc
+	      lc))
       Idset.empty inds
   in
   let packets = Array.of_list (list_map_i one_packet 1 inds) in

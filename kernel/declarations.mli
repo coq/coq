@@ -44,10 +44,16 @@ type recarg =
   | Mrec of int 
   | Imbr of inductive_path * (recarg list)
 
-type mutual_inductive_packet = {
+(* [mind_typename] is the name of the inductive; [mind_arity] is
+   the arity generalized over global parameters; [mind_lc] is the list
+   of types of constructors generalized over global parameters and
+   relative to the global context enriched with the arities of the
+   inductives *) 
+
+type one_inductive_body = {
   mind_consnames : identifier array;
   mind_typename : identifier;
-  mind_lc : constr;
+  mind_lc : constr array;
   mind_arity : typed_type;
   mind_sort : sorts;
   mind_nrealargs : int;
@@ -59,7 +65,7 @@ type mutual_inductive_body = {
   mind_kind : path_kind;
   mind_ntypes : int;
   mind_hyps : typed_type signature;
-  mind_packets : mutual_inductive_packet array;
+  mind_packets : one_inductive_body array;
   mind_constraints : constraints;
   mind_singl : constr option;
   mind_nparams : int }
@@ -67,12 +73,12 @@ type mutual_inductive_body = {
 val mind_type_finite : mutual_inductive_body -> int -> bool
 
 val mind_nth_type_packet : 
-  mutual_inductive_body -> int -> mutual_inductive_packet
+  mutual_inductive_body -> int -> one_inductive_body
 
 (*s Declaration of inductive types. *)
 
 type mutual_inductive_entry = {
   mind_entry_nparams : int;
   mind_entry_finite : bool;
-  mind_entry_inds : (identifier * constr * identifier list * constr) list }
+  mind_entry_inds : (identifier * constr * identifier list * constr list) list}
 
