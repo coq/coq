@@ -18,7 +18,7 @@
 \fi
 
 
-%\includeonly{RefMan-tac.v,RefMan-tacex.v}
+%\includeonly{RefMan-gal.v,RefMan-ltac.v,RefMan-lib.v,Cases.v}
 
 \input{./version.tex}
 \input{./macros.tex}% extension .tex pour htmlgen
@@ -43,7 +43,6 @@
 \include{RefMan-ext.v}% Gallina extensions
 \include{RefMan-lib.v}% The coq library
 \include{RefMan-cic.v}% The Calculus of Constructions
-
 \include{RefMan-modr}% The module system
 
 
@@ -51,13 +50,12 @@
 \include{RefMan-oth.v}% Vernacular commands
 \include{RefMan-pro}% Proof handling
 \include{RefMan-tac.v}% Tactics and tacticals
+\include{RefMan-ltac.v}% Writing tactics
 \include{RefMan-tacex.v}% Detailed Examples of tactics
 
 \part{User extensions}
 \include{RefMan-syn.v}% The Syntax and the Grammad commands
 %%SUPPRIME \include{RefMan-tus.v}% Writing tactics
-%%REMPLACE PAR
-\include{RefMan-ltac.v}% Writing tactics
 
 \part{Practical tools}
 \include{RefMan-com}% The coq commands (coqc coqtop)
