@@ -344,4 +344,10 @@ E) LE CDROM
   - mettre à jour les fichiers prog/{unix,pc,mac}/coq/{fra,eng}.htm
   - mettre à jour les liens dans ftp/coq 
 	(1 lien pour la version Mac, 1 lien pour les autres architectures).
-  - vérifier que projs/coq/{fra,eng}.htm sont corrects
+  - vérifier que projs/logical/{fra,eng}.htm et *.html sont corrects
+
+Pour les sites www (coq et logical) faire une copie et modifier les
+liens relatifs suivant l'architecture du cdrom.
+
+
+
