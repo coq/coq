@@ -51,6 +51,7 @@ Hints Resolve refl_identity : core v62.
 Inductive option [A:Set] : Set := Some : A -> (option A) | None : (option A).
 
 Implicits None [1].
+V7only [Implicits None [].].
 
 (** [sum A B], equivalently [A + B], is the disjoint sum of [A] and [B] *)
 (* Syntax defined in Specif.v *)
