@@ -158,8 +158,17 @@ END
 
 open Refine
 
+let coerce_to_goal tac (sigma,c) gl =
+  let env = Tacmach.pf_env gl in
+  let evars = Evd.create_evar_defs sigma in
+  let j = Retyping.get_judgment_of env sigma c in
+  let ccl = Tacmach.pf_concl gl in
+  let (evars,j) = Coercion.inh_conv_coerce_to Util.dummy_loc env evars j ccl in
+  let sigma = Evd.evars_of evars in
+  tac (sigma,Reductionops.nf_evar sigma j.Environ.uj_val) gl
+
 TACTIC EXTEND Refine
-  [ "Refine" castedopenconstr(c) ] -> [ refine c ]
+  [ "Refine" openconstr(c) ] -> [ coerce_to_goal refine c ]
 END
 
 let refine_tac = h_refine

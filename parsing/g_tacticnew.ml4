@@ -109,7 +109,7 @@ let join_to_constr loc c2 = (fst loc), snd (Topconstr.constr_loc c2)
 if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: simple_tactic constr_with_bindings quantified_hypothesis
-  bindings red_expr int_or_var castedopenconstr simple_intropattern;
+  bindings red_expr int_or_var openconstr simple_intropattern;
 
   int_or_var:
     [ [ n = integer  -> Genarg.ArgArg n
@@ -128,8 +128,8 @@ GEXTEND Gram
       |	id = METAIDENT -> MetaId (loc,id)
       ] ]
   ;
-  castedopenconstr:
-    [ [ c = constr -> c ] ]
+  openconstr:
+    [ [ c = constr -> ((),c) ] ]
   ;
   induction_arg:
     [ [ n = natural -> ElimOnAnonHyp n

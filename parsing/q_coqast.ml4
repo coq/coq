@@ -272,7 +272,7 @@ let rec mlexpr_of_argtype loc = function
   | Genarg.HypArgType -> <:expr< Genarg.HypArgType >>
   | Genarg.StringArgType -> <:expr< Genarg.StringArgType >>
   | Genarg.QuantHypArgType -> <:expr< Genarg.QuantHypArgType >>
-  | Genarg.CastedOpenConstrArgType -> <:expr< Genarg.CastedOpenConstrArgType >>
+  | Genarg.OpenConstrArgType -> <:expr< Genarg.OpenConstrArgType >>
   | Genarg.ConstrWithBindingsArgType -> <:expr< Genarg.ConstrWithBindingsArgType >>
   | Genarg.BindingsArgType -> <:expr< Genarg.BindingsArgType >>
   | Genarg.RedExprArgType -> <:expr< Genarg.RedExprArgType >>

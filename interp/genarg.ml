@@ -34,7 +34,7 @@ type argument_type =
   | ConstrMayEvalArgType
   | QuantHypArgType
   | TacticArgType
-  | CastedOpenConstrArgType
+  | OpenConstrArgType
   | ConstrWithBindingsArgType
   | BindingsArgType
   | RedExprArgType
@@ -85,8 +85,8 @@ and pr_case_intro_pattern = function
       ++ str "]"
 
 type open_constr = Evd.evar_map * Term.constr
-type open_constr_expr = constr_expr
-type open_rawconstr = rawconstr_and_expr
+type open_constr_expr = unit * constr_expr
+type open_rawconstr = unit * rawconstr_and_expr
 
 let rawwit_bool = BoolArgType
 let globwit_bool = BoolArgType
@@ -144,9 +144,9 @@ let rawwit_tactic = TacticArgType
 let globwit_tactic = TacticArgType
 let wit_tactic = TacticArgType
 
-let rawwit_casted_open_constr = CastedOpenConstrArgType
-let globwit_casted_open_constr = CastedOpenConstrArgType
-let wit_casted_open_constr = CastedOpenConstrArgType
+let rawwit_open_constr = OpenConstrArgType
+let globwit_open_constr = OpenConstrArgType
+let wit_open_constr = OpenConstrArgType
 
 let rawwit_constr_with_bindings = ConstrWithBindingsArgType
 let globwit_constr_with_bindings = ConstrWithBindingsArgType
