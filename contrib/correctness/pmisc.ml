@@ -146,8 +146,8 @@ let coq_constant d s =
   make_path (List.map id_of_string ("Coq" :: d)) (id_of_string s) CCI
 
 let bool_sp = coq_constant ["Init"; "Datatypes"] "bool"
-let coq_true = mkMutConstruct (((bool_sp,0),1), [||])
-let coq_false = mkMutConstruct (((bool_sp,0),2), [||])
+let coq_true = mkMutConstruct ((bool_sp,0),1)
+let coq_false = mkMutConstruct ((bool_sp,0),2)
 
 let constant s =
   let id = id_of_string s in

@@ -378,10 +378,9 @@ let _ =
 	   begin 
 	     try
 	       let env = Global.env() and sigma = Evd.empty in
-	       let (isp, _ as rectype) =
-		 destMutInd (Declare.global_qualified_reference qid) in
+	       let isp = destMutInd (Declare.global_qualified_reference qid) in
 	       let conspaths =
-		 mis_conspaths (Global.lookup_mind_specif rectype) in
+		 mis_conspaths (Global.lookup_mind_specif isp) in
 	       let hyps = Declare.implicit_section_args (IndRef isp) in
 	       let section_args = List.map (fun sp -> mkVar (basename sp)) hyps in
 	       let lcons = 

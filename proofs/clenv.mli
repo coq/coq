@@ -62,7 +62,9 @@ val unify_0 :
 val collect_metas : constr -> int list
 val mk_clenv : 'a -> constr -> 'a clausenv
 val mk_clenv_from : 'a -> constr * constr -> 'a clausenv
-val mk_clenv_rename_from : 'a -> constr * constr -> 'a clausenv
+val mk_clenv_from_n : 'a -> int -> constr * constr -> 'a clausenv
+val mk_clenv_rename_from : wc -> constr * constr -> wc clausenv
+val mk_clenv_rename_from_n : wc -> int -> constr * constr -> wc clausenv
 val mk_clenv_hnf_constr_type_of : wc -> constr -> wc clausenv
 val mk_clenv_printable_type_of : wc -> constr -> wc clausenv
 val mk_clenv_type_of : wc -> constr -> wc clausenv

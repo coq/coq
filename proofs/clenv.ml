@@ -386,13 +386,17 @@ let mk_clenv_hnf_constr_type_of wc t =
   mk_clenv_from wc (t,w_hnf_constr wc (w_type_of wc t))
 
 let mk_clenv_rename_from wc (c,t) = 
-  mk_clenv_from wc (c,rename_bound_var [] t)
+  mk_clenv_from wc (c,rename_bound_var (w_env wc) [] t)
+
+let mk_clenv_rename_from_n wc n (c,t) = 
+  mk_clenv_from_n wc n (c,rename_bound_var (w_env wc) [] t)
     
 let mk_clenv_rename_type_of wc t =
-  mk_clenv_from wc (t,rename_bound_var [] (w_type_of wc t))
+  mk_clenv_from wc (t,rename_bound_var (w_env wc) [] (w_type_of wc t))
     
 let mk_clenv_rename_hnf_constr_type_of wc t =
-  mk_clenv_from wc (t,rename_bound_var [] (w_hnf_constr wc (w_type_of wc t)))
+  mk_clenv_from wc
+    (t,rename_bound_var (w_env wc) [] (w_hnf_constr wc (w_type_of wc t)))
 
 let mk_clenv_type_of wc t = mk_clenv_from wc (t,w_type_of wc t)
 			      
@@ -1068,7 +1072,7 @@ let make_clenv_binding_apply wc n (c,t) lbind =
     let clause = mk_clenv_from_n wc n (c,t) in
     clenv_constrain_missing_args largs clause
   else if lcomargs = 0 then 
-    let clause = mk_clenv_rename_from wc (c,t) in
+    let clause = mk_clenv_rename_from_n wc n (c,t) in
     clenv_match_args lbind clause
   else 
     errorlabstrm "make_clenv_bindings"

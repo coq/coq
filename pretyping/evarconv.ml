@@ -241,14 +241,12 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	    (let c = nf_evar (evars_of isevars) c1 in
 	     evar_conv_x (push_rel_assum (n,c) env) isevars pbty c'1 c'2)
 
-	| IsMutInd (sp1,cl1), IsMutInd (sp2,cl2) ->
+	| IsMutInd sp1, IsMutInd sp2 ->
 	    sp1=sp2
-	    & array_for_all2 (evar_conv_x env isevars CONV) cl1 cl2
             & list_for_all2eq (evar_conv_x env isevars CONV) l1 l2
              
-	| IsMutConstruct (sp1,cl1), IsMutConstruct (sp2,cl2) ->
+	| IsMutConstruct sp1, IsMutConstruct sp2 ->
 	    sp1=sp2
-            & array_for_all2 (evar_conv_x env isevars CONV) cl1 cl2
             & list_for_all2eq (evar_conv_x env isevars CONV) l1 l2
 
 	| IsMutCase (_,p1,c1,cl1), IsMutCase (_,p2,c2,cl2) ->

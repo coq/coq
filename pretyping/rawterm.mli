@@ -22,17 +22,16 @@ type loc = int * int
 (* the last argument of PatCstr is a possible alias ident for the pattern *)
 type cases_pattern =
   | PatVar of loc * name
-  | PatCstr of
-      loc * (constructor_path * identifier list) * cases_pattern list * name
+  | PatCstr of loc * constructor * cases_pattern list * name
 
 type rawsort = RProp of Term.contents | RType of Univ.universe option
 
 type binder_kind = BProd | BLambda | BLetIn
 
 type 'ctxt reference =
-  | RConst of section_path * 'ctxt
-  | RInd of inductive_path * 'ctxt
-  | RConstruct of constructor_path * 'ctxt
+  | RConst of constant * 'ctxt
+  | RInd of inductive * 'ctxt
+  | RConstruct of constructor * 'ctxt
   | RVar of identifier
   | REVar of int * 'ctxt
 

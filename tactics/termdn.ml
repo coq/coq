@@ -51,8 +51,8 @@ let constr_val_discr t =
   let c, l = decomp t in
   match kind_of_term c with
     (* IsConst _,_) -> Some(TERM c,l) *)
-    | IsMutInd (ind_sp,_) -> Some(IndNode ind_sp,l)
-    | IsMutConstruct (cstr_sp,_) -> Some(CstrNode cstr_sp,l)
+    | IsMutInd ind_sp -> Some(IndNode ind_sp,l)
+    | IsMutConstruct cstr_sp -> Some(CstrNode cstr_sp,l)
     (* Ici, comment distinguer SectionVarNode de VarNode ?? *)
     | IsVar id -> Some(VarNode id,l)
     | _ -> None

@@ -24,7 +24,7 @@ exception Redelimination
 
 let check_transparency env ref =
   match ref with
-      EvalConst (sp,_) -> Opaque.is_evaluable env (EvalConstRef sp)
+      EvalConst sp -> Opaque.is_evaluable env (EvalConstRef sp)
     | EvalVar id -> Opaque.is_evaluable env (EvalVarRef id)
     | _ -> false
 
@@ -128,8 +128,8 @@ let invert_name labs l na0 env sigma ref = function
 	let refi = match ref with
 	  | EvalRel _ | EvalEvar _ -> None
 	  | EvalVar id' -> Some (EvalVar id)
-	  | EvalConst (sp,args) ->
-	      Some (EvalConst (make_path (dirpath sp) id CCI, args)) in
+	  | EvalConst sp ->
+	      Some (EvalConst (make_path (dirpath sp) id CCI)) in
 	match refi with
 	  | None -> None
 	  | Some ref ->
@@ -298,9 +298,9 @@ let contract_cofix_use_function f (bodynum,(_,names,bodies as typedbodies)) =
   let subbodies = list_tabulate make_Fi nbodies in
   substl subbodies bodies.(bodynum)
 
-let reduce_mind_case_use_function (sp,args) env mia =
+let reduce_mind_case_use_function sp env mia =
   match kind_of_term mia.mconstr with 
-    | IsMutConstruct(ind_sp,i as cstr_sp, args) ->
+    | IsMutConstruct(ind_sp,i as cstr_sp) ->
 	let real_cargs = snd (list_chop (fst mia.mci) mia.mcargs) in
 	applist (mia.mlf.(i-1), real_cargs)
     | IsCoFix (_,(names,_,_) as cofix) ->
@@ -308,9 +308,9 @@ let reduce_mind_case_use_function (sp,args) env mia =
 	  match names.(i) with 
 	    | Name id ->
 		let sp = make_path (dirpath sp) id (kind_of_path sp) in
-		(match constant_opt_value env (sp,args) with
+		(match constant_opt_value env sp with
 		  | None -> None
-		  | Some _ -> Some (mkConst (sp,args)))
+		  | Some _ -> Some (mkConst sp))
 	    | Anonymous -> None in 
 	let cofix_def = contract_cofix_use_function build_fix_name cofix in
 	mkMutCase (mia.mci, mia.mP, applist(cofix_def,mia.mcargs), mia.mlf)
@@ -320,8 +320,8 @@ let special_red_case env whfun (ci, p, c, lf)  =
   let rec redrec s = 
     let (constr, cargs) = whfun s in 
     match kind_of_term constr with 
-      | IsConst (sp,args as cst) -> 
-          (if not (Opaque.is_evaluable env (EvalConstRef sp)) then
+      | IsConst cst -> 
+          (if not (Opaque.is_evaluable env (EvalConstRef cst)) then
             raise Redelimination;
 	  let gvalue = constant_value env cst in
 	  if reducible_mind_case gvalue then
@@ -528,14 +528,14 @@ let nf env sigma c = strong whd_nf env sigma c
  * ol is the occurence list to find. *)
 let rec substlin env name n ol c =
   match kind_of_term c with
-    | IsConst (sp,_ as const) when EvalConstRef sp = name ->
+    | IsConst const when EvalConstRef const = name ->
         if List.hd ol = n then
           try 
 	    (n+1, List.tl ol, constant_value env const)
           with
 	      NotEvaluableConst _ ->
 		errorlabstrm "substlin"
-		  [< pr_sp sp; 'sTR " is not a defined constant" >]
+		  [< pr_sp const; 'sTR " is not a defined constant" >]
         else 
 	  ((n+1), ol, c)
 

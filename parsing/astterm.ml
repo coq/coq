@@ -156,7 +156,7 @@ let ids_of_ctxt ctxt =
     ctxt)
 
 type pattern_qualid_kind =
-  | IsConstrPat of loc * (constructor_path * identifier list)
+  | IsConstrPat of loc * constructor
   | IsVarPat of loc * identifier
 
 let maybe_constructor env = function
@@ -164,8 +164,7 @@ let maybe_constructor env = function
       let qid = interp_qualid l in
       (try 
 	match kind_of_term (global_qualified_reference qid) with 
-	  | IsMutConstruct ((spi,j),cl) -> 
-	      IsConstrPat (loc,((spi,j),ids_of_ctxt cl))
+	  | IsMutConstruct c -> IsConstrPat (loc,c)
 	  | _ -> 
 	      (match maybe_variable l with
 		 | Some s -> 
@@ -183,13 +182,13 @@ let maybe_constructor env = function
   (* This may happen in quotations *)
   | Node(loc,"MUTCONSTRUCT",[sp;Num(_,ti);Num(_,n)]) ->
       (* Buggy: needs to compute the context *)
-      IsConstrPat (loc,(((ast_to_sp sp,ti),n),[]))
+      IsConstrPat (loc,((ast_to_sp sp,ti),n))
 
   | Path(loc,sp) ->
       (match absolute_reference sp with 
-	| ConstructRef (spi,j) -> 
-	    IsConstrPat (loc,((spi,j),[]))
-	| _ -> error ("Unknown absolute constructor name: "^(string_of_path sp)))
+	| ConstructRef c -> IsConstrPat (loc,c)
+	| _ ->
+            error ("Unknown absolute constructor name: "^(string_of_path sp)))
 
   | Node(loc,("CONST"|"EVAR"|"MUTIND"|"SYNCONST" as key), l) ->
       user_err_loc (loc,"ast_to_pattern",

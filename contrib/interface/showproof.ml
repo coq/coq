@@ -737,7 +737,7 @@ let rec nsortrec vl x =
    | IsMutCase(_,x,t,a) 
         -> nsortrec vl x
    | IsCast(x,t)-> nsortrec vl t
-   | IsConst((c,_))  -> nsortrec vl (lookup_constant c vl).const_type
+   | IsConst c  -> nsortrec vl (lookup_constant c vl).const_type
    | _ -> nsortrec vl (type_of vl Evd.empty x)
 ;;
 let nsort x =

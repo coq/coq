@@ -70,7 +70,7 @@ val extended_locate : qualid -> extended_global_reference
 
 val locate_obj : qualid -> section_path
 
-val locate_constant : qualid -> constant_path
+val locate_constant : qualid -> constant
 val locate_section : qualid -> dir_path
 
 (* [exists sp] tells if [sp] is already bound to a cci term *)

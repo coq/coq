@@ -12,6 +12,7 @@ open Pp
 open Util
 open Names
 open Term
+open Environ
 open Reduction
 open Inductive
 open Proof_type
@@ -160,7 +161,7 @@ let induction_trailer abs_i abs_j bargs =
     (onLastHyp
        (fun id gls ->
 	  let idty = pf_type_of gls (mkVar id) in
-	  let fvty = global_vars idty in
+	  let fvty = global_vars (pf_env gls) idty in
 	  let possible_bring_ids =
 	    (List.tl (nLastHyps (abs_j - abs_i) gls))
             @bargs.assums in

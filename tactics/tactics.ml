@@ -58,12 +58,12 @@ let get_pairs_from_bindings =
   List.map pair_from_binding
 
 let rec string_head_bound x = match kind_of_term x with
-  | IsConst _ -> string_of_id (basename (path_of_const x))
-  | IsMutInd (ind_sp,args) -> 
-      let mispec = Global.lookup_mind_specif (ind_sp,args) in 
+  | IsConst cst -> string_of_id (basename cst)
+  | IsMutInd ind_sp -> 
+      let mispec = Global.lookup_mind_specif ind_sp in 
       string_of_id (mis_typename mispec)
-  | IsMutConstruct ((ind_sp,i),args) ->
-       let mispec = Global.lookup_mind_specif (ind_sp,args) in 
+  | IsMutConstruct (ind_sp,i) ->
+       let mispec = Global.lookup_mind_specif ind_sp in 
        string_of_id (mis_consnames mispec).(i-1)
   | IsVar id -> string_of_id id
   | _ -> raise Bound
@@ -469,7 +469,7 @@ let move_to_rhyp rhyp gl =
     | (hyp,c,typ) as ht :: rest ->
 	if Some hyp = rhyp then 
 	  lastfixed
-	else if List.exists (occur_var_in_decl hyp) depdecls then 
+	else if List.exists (occur_var_in_decl (pf_env gl) hyp) depdecls then 
 	  get_lhyp lastfixed (ht::depdecls) rest
         else
 	  get_lhyp (Some hyp) depdecls rest
@@ -660,10 +660,11 @@ let generalize_goal gl c cl =
 	  prod_name (Global.env()) (Anonymous, t, cl')
 
 let generalize_dep c gl =
+  let env = pf_env gl in
   let sign = pf_hyps gl in
   let init_ids = ids_of_named_context (Global.named_context()) in
   let rec seek toquant d =
-    if List.exists (fun (id,_,_) -> occur_var_in_decl id d) toquant
+    if List.exists (fun (id,_,_) -> occur_var_in_decl env id d) toquant
       or dependent_in_decl c d then 
       d::toquant
     else 
@@ -680,7 +681,7 @@ let generalize_dep c gl =
   in
   let cl' = List.fold_right mkNamedProd_or_LetIn to_quantify (pf_concl gl) in
   let cl'' = generalize_goal gl c cl' in
-  let args = instance_from_named_context to_quantify in
+  let args = Array.to_list (instance_from_named_context to_quantify) in
   tclTHEN
     (apply_type cl'' (c::args))
     (thin (List.rev tothin'))
@@ -769,7 +770,7 @@ let letin_tac with_eq name c occs gl =
   let (depdecls,marks,ccl)= letin_abstract id c occs gl in 
   let t = pf_type_of gl c in
   let tmpcl = List.fold_right mkNamedProd_or_LetIn depdecls ccl in
-  let args = instance_from_named_context depdecls in
+  let args = Array.to_list (instance_from_named_context depdecls) in
   let newcl = mkNamedLetIn id c t tmpcl in
 (*
     if with_eq then
@@ -1076,7 +1077,7 @@ let default_elim (c,lbindc)  gl =
   let elimc =
     try lookup_eliminator env ind s 
     with Not_found -> 
-      let dir, base,k = repr_path (path_of_inductive_path (fst ind)) in
+      let dir, base,k = repr_path (path_of_inductive_path ind) in
       let id = make_elimination_ident base s in
       errorlabstrm "default_elim"
 	[< 'sTR "Cannot find the elimination combinator :";
@@ -1129,7 +1130,7 @@ comes from a canonically generated one *)
 
 let rec is_rec_arg env sigma indpath t =
   try
-    let ((ind_sp,_),_) = find_mrectype env sigma t in
+    let (ind_sp,_) = find_mrectype env sigma t in
     Declare.path_of_inductive_path ind_sp = indpath
   with Induc -> 
     false
@@ -1211,7 +1212,7 @@ let atomize_param_of_ind hyp0 gl =
       let argl = snd (decomp_app indtyp) in
       let c = List.nth argl (i-1) in
       match kind_of_term c with
-	| IsVar id when not (List.exists (occur_var id) avoid) ->
+	| IsVar id when not (List.exists (occur_var (pf_env gl) id) avoid) ->
 	    atomize_one (i-1) ((mkVar id)::avoid) gl
 	| IsVar id ->
 	    let x = fresh_id [] id gl in
@@ -1239,7 +1240,8 @@ let find_atomic_param_of_ind mind indtyp =
   let indvars = ref Idset.empty in
   for i = nparams to (Array.length argv)-1 do
     match kind_of_term argv.(i) with
-      | IsVar id when not (List.exists (occur_var id) params) -> 
+      | IsVar id
+          when not (List.exists (occur_var (Global.env()) id) params) -> 
 	  indvars := Idset.add id !indvars
       | _ -> ()
   done;
@@ -1323,8 +1325,9 @@ let cook_sign hyp0 indvars env =
       indhyps := hyp::!indhyps; 
       rhyp
     end else
-      if (List.exists (fun id -> occur_var_in_decl id decl) allindhyps
-	  or List.exists (fun (id,_,_) -> occur_var_in_decl id decl) !decldeps)
+      if (List.exists (fun id -> occur_var_in_decl env id decl) allindhyps
+	  or List.exists (fun (id,_,_) -> occur_var_in_decl env id decl)
+        !decldeps)
       then begin
 	decldeps := decl::!decldeps;
 	if !before then 

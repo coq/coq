@@ -34,7 +34,7 @@ type struc_typ = {
   s_PARAM : int;
   s_PROJ : section_path option list }
 
-let sTRUCS = (ref [] : (inductive_path * struc_typ) list ref)
+let sTRUCS = (ref [] : (inductive * struc_typ) list ref)
 
 let add_new_struc1 x = sTRUCS:=x::(!sTRUCS)
 

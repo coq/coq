@@ -46,9 +46,9 @@ let rec occur_meta_pattern = function
   | PEvar _ | PVar _ | PRef _ | PRel _ | PSort _ | PFix _ | PCoFix _ -> false
 
 type constr_label =
-  | ConstNode of section_path
-  | IndNode of inductive_path
-  | CstrNode of constructor_path
+  | ConstNode of constant
+  | IndNode of inductive
+  | CstrNode of constructor
   | VarNode of identifier
 
 exception BoundPattern;;
@@ -74,9 +74,9 @@ let rec head_pattern_bound t =
     | PCoFix _ -> anomaly "head_pattern_bound: not a type"
 
 let head_of_constr_reference c = match kind_of_term c with
-  | IsConst (sp,_) -> ConstNode sp
-  | IsMutConstruct (sp,_) -> CstrNode sp
-  | IsMutInd (sp,_) -> IndNode sp
+  | IsConst sp -> ConstNode sp
+  | IsMutConstruct sp -> CstrNode sp
+  | IsMutInd sp -> IndNode sp
   | IsVar id -> VarNode id
   | _ -> anomaly "Not a rigid reference"
 
@@ -311,9 +311,9 @@ let rec pattern_of_constr t =
     | IsProd (na,c,b)   -> PProd (na,pattern_of_constr c,pattern_of_constr b)
     | IsLambda (na,c,b) -> PLambda (na,pattern_of_constr c,pattern_of_constr b)
     | IsApp (f,a) -> PApp (pattern_of_constr f,Array.map pattern_of_constr a)
-    | IsConst (sp,ctxt)         -> pattern_of_ref (ConstRef sp) ctxt
-    | IsMutInd (sp,ctxt)        -> pattern_of_ref (IndRef sp) ctxt
-    | IsMutConstruct (sp,ctxt) -> pattern_of_ref (ConstructRef sp) ctxt
+    | IsConst sp         -> PRef (ConstRef sp)
+    | IsMutInd sp        -> PRef (IndRef sp)
+    | IsMutConstruct sp -> PRef (ConstructRef sp)
     | IsEvar (n,ctxt) ->
 	if ctxt = [||] then PEvar n
 	else PApp (PEvar n, Array.map pattern_of_constr ctxt)
@@ -323,8 +323,3 @@ let rec pattern_of_constr t =
     | IsFix f -> PFix f
     | IsCoFix _ ->
 	error "pattern_of_constr: (co)fix currently not supported"
-
-and pattern_of_ref ref inst =
-  let args = Declare.extract_instance ref inst in
-  let f = PRef ref in
-  if args = [||] then f else PApp (f, Array.map pattern_of_constr args)

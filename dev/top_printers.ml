@@ -99,13 +99,12 @@ let constr_display csr =
       ^(term_display t)^","^(term_display c)^")"
   | IsApp (c,l) -> "App("^(term_display c)^","^(array_display l)^")\n"
   | IsEvar (e,l) -> "Evar("^(string_of_int e)^","^(array_display l)^")"
-  | IsConst (c,l) -> "Const("^(string_of_path c)^","^(array_display l)^")"
-  | IsMutInd ((sp,i),l) ->
-      "MutInd(("^(string_of_path sp)^","^(string_of_int i)^"),"
-      ^(array_display l)^")"
-  | IsMutConstruct (((sp,i),j),l) ->
-      "MutConstruct((("^(string_of_path sp)^","^(string_of_int i)^"),"
-      ^(string_of_int j)^"),"^(array_display l)^")"
+  | IsConst c -> "Const("^(string_of_path c)^")"
+  | IsMutInd (sp,i) ->
+      "MutInd("^(string_of_path sp)^","^(string_of_int i)^")"
+  | IsMutConstruct ((sp,i),j) ->
+      "MutConstruct(("^(string_of_path sp)^","^(string_of_int i)^"),"
+      ^(string_of_int j)^")"
   | IsMutCase (ci,p,c,bl) ->
       "MutCase(<abs>,"^(term_display p)^","^(term_display c)^","
       ^(array_display bl)^")"
@@ -180,24 +179,19 @@ let print_pure_constr csr =
   | IsEvar (e,l) -> print_string "Evar#"; print_int e; print_string "{";
       Array.iter (fun x -> print_space (); box_display x) l;
       print_string"}"
-  | IsConst (c,l) -> print_string "Cons(";
+  | IsConst c -> print_string "Cons(";
       sp_display c;
-      print_string "){";
-      Array.iter (fun x -> print_space (); box_display x) l;
-      print_string"}"
-  | IsMutInd ((sp,i),l) ->
+      print_string ")"
+  | IsMutInd (sp,i) ->
       print_string "Ind(";
       sp_display sp;
       print_string ","; print_int i;
-      print_string "){";
-      Array.iter (fun x -> print_space (); box_display x) l;
-      print_string"}"
-  | IsMutConstruct (((sp,i),j),l) ->
+      print_string ")"
+  | IsMutConstruct ((sp,i),j) ->
       print_string "Constr(";
       sp_display sp;
       print_string ",";
-      print_int i; print_string ","; print_int j; print_string ")";
-      Array.iter (fun x -> print_space (); box_display x) l;
+      print_int i; print_string ","; print_int j; print_string ")"
   | IsMutCase (ci,p,c,bl) ->
       open_vbox 0;
       print_string "<"; box_display p; print_string ">";

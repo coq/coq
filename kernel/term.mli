@@ -41,7 +41,7 @@ type existential_key = int
 type pattern_source = DefaultPat of int | RegularPat
 type case_style = PrintLet | PrintIf | PrintCases
 type case_printing =
-    inductive_path * identifier array * int
+    inductive * identifier array * int
     * case_style option * pattern_source array
 (* the integer is the number of real args, needed for reduction *)
 type case_info = int * case_printing
@@ -52,9 +52,6 @@ sig
 (* [constr array] is an instance matching definitional [named_context] in
    the same order (i.e. last argument first) *)
 type 'constr existential = existential_key * 'constr array
-type 'constr constant = constant_path * 'constr array
-type 'constr constructor = constructor_path * 'constr array
-type 'constr inductive = inductive_path * 'constr array
 type ('constr, 'types) rec_declaration =
     name array * 'types array * 'constr array
 type ('constr, 'types) fixpoint =
@@ -71,9 +68,9 @@ end
 
 type global_reference =
   | VarRef of section_path
-  | ConstRef of constant_path
-  | IndRef of inductive_path
-  | ConstructRef of constructor_path
+  | ConstRef of constant
+  | IndRef of inductive
+  | ConstructRef of constructor
 
 (*s*******************************************************************)
 (* The type of constructions *)
@@ -121,17 +118,14 @@ type ('constr, 'types) kind_of_term =
   | IsLetIn        of name * 'constr * 'types * 'constr
   | IsApp          of 'constr * 'constr array
   | IsEvar         of 'constr existential
-  | IsConst        of 'constr constant
-  | IsMutInd       of 'constr inductive
-  | IsMutConstruct of 'constr constructor
+  | IsConst        of constant
+  | IsMutInd       of inductive
+  | IsMutConstruct of constructor
   | IsMutCase      of case_info * 'constr * 'constr * 'constr array
   | IsFix          of ('constr, 'types) fixpoint
   | IsCoFix        of ('constr, 'types) cofixpoint
 
 type existential = existential_key * constr array
-type constant = constant_path * constr array
-type constructor = constructor_path * constr array
-type inductive = inductive_path * constr array
 type rec_declaration = name array * types array * constr array
 type fixpoint = (int array * int) * rec_declaration
 type cofixpoint = int * rec_declaration
@@ -327,10 +321,8 @@ i*)
 val destApplication : constr -> constr * constr array
 
 (* Destructs a constant *)
-val destConst : constr -> constant_path * constr array
+val destConst : constr -> constant
 val isConst : constr -> bool
-val path_of_const : constr -> constant_path
-val args_of_const : constr -> constr array
 
 (* Destructs an existential variable *)
 val destEvar : constr -> existential_key * constr array
@@ -338,14 +330,10 @@ val num_of_evar : constr -> existential_key
 
 (* Destructs a (co)inductive type *)
 val destMutInd : constr -> inductive
-val op_of_mind : constr -> inductive_path
-val args_of_mind : constr -> constr array
 
 (* Destructs a constructor *)
 val destMutConstruct : constr -> constructor
 val isMutConstruct : constr -> bool
-val op_of_mconstr : constr -> constructor_path
-val args_of_mconstr : constr -> constr array
 
 (* Destructs a term <p>Case c of lc1 | lc2 .. | lcn end *)
 val destCase : constr -> case_info * constr * constr * constr array
@@ -479,14 +467,6 @@ val subst1 : constr -> constr -> constr
 val substl_decl : constr list -> named_declaration -> named_declaration
 val subst1_decl : constr -> named_declaration -> named_declaration
 
-(* [global_vars c] returns the list of [id]'s occurring as [VAR id] in [c] *)
-val global_vars : constr -> identifier list
-
-(* [global_vars_decl d] returns the list of [id]'s occurring as [VAR
-    id] in declaration [d] (type and body if any) *)
-val global_vars_decl : named_declaration -> identifier list
-
-val global_vars_set : constr -> Idset.t
 val replace_vars : (identifier * constr) list -> constr -> constr
 val subst_var : identifier -> constr -> constr
 
@@ -518,17 +498,11 @@ val occur_existential : constr -> bool
 
 (* [(occur_const (s:section_path) c)] returns [true] if constant [s] occurs 
    in c, [false] otherwise *)
-val occur_const : constant_path -> constr -> bool
+val occur_const : constant -> constr -> bool
 
 (* [(occur_evar ev c)] returns [true] if existential variable [ev] occurs 
    in c, [false] otherwise *)
 val occur_evar : existential_key -> constr -> bool
-
-(* [(occur_var id c)] returns [true] if variable [id] occurs free
-   in c, [false] otherwise *)
-val occur_var : identifier -> constr -> bool
-
-val occur_var_in_decl : identifier -> named_declaration -> bool
 
 (* [dependent M N] is true iff M is eq\_constr with a subterm of N 
    M is appropriately lifted through abstractions of N *)
@@ -536,7 +510,6 @@ val dependent : constr -> constr -> bool
 
 (* strips head casts and flattens head applications *)
 val strip_head_cast : constr -> constr
-val rename_bound_var : identifier list -> constr -> constr
 val eta_reduce_head : constr -> constr
 val eq_constr : constr -> constr -> bool
 val eta_eq_constr : constr -> constr -> bool
@@ -566,10 +539,10 @@ type constr_operator =
   | OpSort of sorts
   | OpRel of int | OpVar of identifier
   | OpCast | OpProd of name | OpLambda of name | OpLetIn of name
-  | OpApp | OpConst of constant_path
+  | OpApp | OpConst of constant
   | OpEvar of existential_key
-  | OpMutInd of inductive_path
-  | OpMutConstruct of constructor_path
+  | OpMutInd of inductive
+  | OpMutConstruct of constructor
   | OpMutCase of case_info
   | OpRec of fix_kind * name array
 

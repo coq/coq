@@ -262,7 +262,7 @@ type inductive_extraction_result =
   | Iprop
    
 let inductive_extraction_table = 
-  ref (Gmap.empty : (inductive_path, inductive_extraction_result) Gmap.t)
+  ref (Gmap.empty : (inductive, inductive_extraction_result) Gmap.t)
 
 let add_inductive_extraction i e = 
   inductive_extraction_table := Gmap.add i e !inductive_extraction_table
@@ -274,7 +274,7 @@ type constructor_extraction_result =
   | Cprop
 
 let constructor_extraction_table = 
-  ref (Gmap.empty : (constructor_path, constructor_extraction_result) Gmap.t)
+  ref (Gmap.empty : (constructor, constructor_extraction_result) Gmap.t)
 
 let add_constructor_extraction c e = 
   constructor_extraction_table := Gmap.add c e !constructor_extraction_table
@@ -358,13 +358,13 @@ and extract_type_rec_info env c vl args =
 	   | None ->
 	       let id = id_of_name (fst (lookup_rel_type n env)) in 
 	       Tmltype (Tvar id, [], vl))
-    | IsConst (sp,a) when args = [] && is_ml_extraction (ConstRef sp) ->
+    | IsConst sp when args = [] && is_ml_extraction (ConstRef sp) ->
 	Tmltype (Tglob (ConstRef sp), [], vl)
-    | IsConst (sp,a) when is_axiom sp -> 
+    | IsConst sp when is_axiom sp -> 
 	let id = next_ident_away (basename sp) vl in 
 	Tmltype (Tvar id, [], id :: vl)
-    | IsConst (sp,a) ->
-	let t = constant_type env none (sp,a) in 
+    | IsConst sp ->
+	let t = constant_type env none sp in 
 	if is_arity env none t then
 	  (match extract_constant sp with 
 	     | Emltype (Miniml.Tarity,_,_) -> Tarity
@@ -375,9 +375,9 @@ and extract_type_rec_info env c vl args =
 	else 
 	  (* We can't keep as ML type abbreviation a CIC constant *)
 	  (*   which type is not an arity: we reduce this constant. *)
-	  let cvalue = constant_value env (sp,a) in
+	  let cvalue = constant_value env sp in
 	  extract_type_rec_info env (applist (cvalue, args)) vl []
-    | IsMutInd (spi,_) ->
+    | IsMutInd spi ->
 	(match extract_inductive spi with 
 	   |Iml (si,vli) -> 
 	       extract_type_app env (IndRef spi,si,vli) vl args 
@@ -520,11 +520,11 @@ and extract_term_info_with_type env ctx c t =
 		extract_term_info env' (false :: ctx) c2)
      | IsRel n ->
 	 MLrel (renum_db ctx n)
-     | IsConst (sp,_) ->
+     | IsConst sp ->
 	 MLglob (ConstRef sp)
      | IsApp (f,a) ->
       	 extract_app env ctx f a 
-     | IsMutConstruct (cp,_) ->
+     | IsMutConstruct cp ->
 	 abstract_constructor cp
      | IsMutCase ((_,(ip,_,_,_,_)),_,c,br) ->
 	 extract_case env ctx ip c br
@@ -577,7 +577,7 @@ and abstract_constructor cp  =
 (* Extraction of a case *)
 
 and extract_case env ctx ip c br = 
-  let mis = Global.lookup_mind_specif (ip,[||]) in
+  let mis = Global.lookup_mind_specif ip in
   let ni = Array.map List.length (mis_recarg mis) in
   (* [ni]: number of arguments without parameters in each branch *)
   (* [br]: bodies of each branch (in functional form) *)
@@ -756,7 +756,7 @@ and extract_constructor (((sp,_),_) as c) =
 and is_singleton_inductive (sp,_) = 
   let mib = Global.lookup_mind sp in 
   (mib.mind_ntypes = 1) &&
-  let mis = build_mis ((sp,0),[||]) mib in
+  let mis = build_mis (sp,0) mib in
   (mis_nconstr mis = 1) && 
   match extract_constructor ((sp,0),1) with 
     | Cml ([mlt],_,_)-> (try parse_ml_type sp mlt; true with Found_sp -> false)
@@ -775,7 +775,7 @@ and extract_mib sp =
     let genv = Global.env () in 
     (* Everything concerning parameters. 
        We do that first, since they are common to all the [mib]. *)
-    let mis = build_mis ((sp,0),[||]) mib in
+    let mis = build_mis (sp,0) mib in
     let nb = mis_nparams mis in
     let rb = mis_params_ctxt mis in 
     let env = push_rels rb genv in
@@ -789,7 +789,7 @@ and extract_mib sp =
     let vl0 = iterate_for 0 (mib.mind_ntypes - 1)
 	(fun i vl -> 
 	   let ip = (sp,i) in 
-	   let mis = build_mis (ip,[||]) mib in 
+	   let mis = build_mis ip mib in 
 	   if (mis_sort mis) = (Prop Null) then begin
 	     add_inductive_extraction ip Iprop; vl
 	   end else begin
@@ -808,7 +808,7 @@ and extract_mib sp =
       iterate_for 0 (mib.mind_ntypes - 1)
 	(fun i vl -> 
 	   let ip = (sp,i) in
-	   let mis = build_mis (ip,[||]) mib in
+	   let mis = build_mis ip mib in
 	   if mis_sort mis = Prop Null then begin
 	     for j = 1 to mis_nconstr mis do
 	       add_constructor_extraction (ip,j) Cprop
@@ -832,7 +832,7 @@ and extract_mib sp =
     (* Third pass: we update the type variables list in the inductives table *)
     for i = 0 to mib.mind_ntypes-1 do 
       let ip = (sp,i) in 
-      let mis = build_mis (ip,[||]) mib in
+      let mis = build_mis ip mib in
       match lookup_inductive_extraction ip with 
 	| Iprop -> ()
 	| Iml (s,l) -> add_inductive_extraction ip (Iml (s,vl@l));
@@ -840,7 +840,7 @@ and extract_mib sp =
     (* Fourth pass: we update also in the constructors table *)
     for i = 0 to mib.mind_ntypes-1 do 
       let ip = (sp,i) in 
-      let mis = build_mis (ip,[||]) mib in 
+      let mis = build_mis ip mib in 
       for j = 1 to mis_nconstr mis do
 	let cp = (ip,j) in 
 	match lookup_constructor_extraction cp  with 
@@ -880,7 +880,7 @@ and extract_inductive_declaration sp =
       iterate_for (1 - mib.mind_ntypes) 0
 	(fun i acc -> 
 	   let ip = (sp,-i) in
-	   let mis = build_mis (ip,[||]) mib in 
+	   let mis = build_mis ip mib in 
 	   match lookup_inductive_extraction ip with
 	     | Iprop -> acc
 	     | Iml (_,vl) -> 

@@ -459,18 +459,17 @@ let constr_of_reference _ _ ref =
 if Options.immediate_discharge then
   match ref with
     | VarRef sp -> mkVar (basename sp)
-    | ConstRef sp -> mkConst (sp,[||])
-    | ConstructRef sp -> mkMutConstruct (sp,[||])
-    | IndRef sp -> mkMutInd (sp,[||])
+    | ConstRef sp -> mkConst sp
+    | ConstructRef sp -> mkMutConstruct sp
+    | IndRef sp -> mkMutInd sp
 else
   let hyps = context_of_global_reference ref in
   let hyps0 = current_section_context () in
-  let args = instance_from_section_context hyps in
   let body = match ref with
     | VarRef sp -> mkVar (basename sp)
-    | ConstRef sp -> mkConst (sp,Array.of_list args)
-    | ConstructRef sp -> mkMutConstruct (sp,Array.of_list args)
-    | IndRef sp -> mkMutInd (sp,Array.of_list args)
+    | ConstRef sp -> mkConst sp
+    | ConstructRef sp -> mkMutConstruct sp
+    | IndRef sp -> mkMutInd sp
   in
   find_common_hyps_then_abstract body hyps0 hyps
 
@@ -565,7 +564,7 @@ let declare_one_elimination mispec =
   let mindstr = string_of_id (mis_typename mispec) in
   let declare na c =
     (* Hack to get const_hyps right in the declaration *)
-    let c = instantiate_inductive_section_params c (fst (mis_inductive mispec))
+    let c = instantiate_inductive_section_params c (mis_inductive mispec)
     in
     let _ = declare_constant (id_of_string na)
       (ConstantEntry
@@ -594,16 +593,15 @@ let declare_eliminations sp =
   if not (list_subset ids (ids_of_named_context (Global.named_context ()))) then    error ("Declarations of elimination scheme outside the section "^
     "of the inductive definition is not implemented");
 *)
-  let ctxt = instance_from_section_context mib.mind_hyps in
   for i = 0 to Array.length mib.mind_packets - 1 do
     if mind_type_finite mib i then
-      let mispec = Global.lookup_mind_specif ((sp,i), Array.of_list ctxt) in 
+      let mispec = Global.lookup_mind_specif (sp,i) in 
       declare_one_elimination mispec
   done
 
 (* Look up function for the default elimination constant *)
 
-let lookup_eliminator env (ind_sp,_) s =
+let lookup_eliminator env ind_sp s =
   let path = path_of_inductive_path ind_sp in
   let dir, base,k = repr_path path in
   let id = add_suffix base (elimination_suffix s) in

@@ -32,16 +32,15 @@ let recalc_sp dir sp =
   let (_,spid,k) = repr_path sp in Names.make_path dir spid k
 
 let rec find_var id = function
-  | [] -> raise Not_found
+  | [] -> false
   | (sp,b,_)::l -> if basename sp = id then b=None else find_var id l
 
 let build_abstract_list hyps ids_to_discard =
-  map_succeed 
-    (fun id ->
-       try
-	 if find_var id hyps then ABSTRACT else failwith "caugth"
-       with Not_found -> failwith "caugth")
-    ids_to_discard
+  let l =
+    List.fold_left
+      (fun vars id -> if find_var id hyps then mkVar id::vars else vars)
+      [] ids_to_discard in
+  Array.of_list l
 
 (* Discharge of inductives is done here (while discharge of constants 
    is done by the kernel for efficiency). *)
@@ -61,7 +60,7 @@ let abstract_inductive ids_to_abs hyps inds =
            (np,tname,arity',cnames,lc'))
       	inds
     in 
-    (inds',ABSTRACT) in
+    inds' in
   let abstract_one_def id c inds =
     List.map
       (function (np,tname,arity,cnames,lc) -> 
@@ -69,22 +68,21 @@ let abstract_inductive ids_to_abs hyps inds =
 	 let lc' = List.map (replace_vars [id, c]) lc in
          (np,tname,arity',cnames,lc'))
       inds in
-  let abstract_once ((hyps,inds,modl) as sofar) id =
+  let abstract_once ((hyps,inds,vars) as sofar) id =
     match hyps with
       | (hyp,None,t as d)::rest when id = hyp ->
-	  let (inds',modif) = abstract_one_assum hyp t inds in 
-	  (rest, inds', modif::modl)
+	  let inds' = abstract_one_assum hyp t inds in 
+	  (rest, inds', mkVar id::vars)
       | (hyp,Some b,t as d)::rest when id = hyp ->
 	  let inds' = abstract_one_def hyp b inds in 
-	  (rest, inds', modl)
-      | _ -> sofar
-  in
-  let (_,inds',revmodl) =
+	  (rest, inds', vars)
+      | _ -> sofar in
+  let (_,inds',vars) =
     List.fold_left abstract_once (hyps,inds,[]) ids_to_abs in
   let inds'' =
     List.map 
       (fun (nparams,a,arity,c,lc) ->
-	 let nparams' = nparams + (List.length revmodl) in
+	 let nparams' = nparams + (List.length vars) in
 	 let params, short_arity = decompose_prod_n_assum nparams' arity in
 	 let shortlc =
 	   List.map (fun c -> snd (decompose_prod_n_assum nparams' c))lc in
@@ -102,7 +100,7 @@ let abstract_inductive ids_to_abs hyps inds =
 	   mind_entry_consnames = c;
 	   mind_entry_lc = shortlc })
       inds' in
-  (inds'', List.rev revmodl)
+  (inds'', Array.of_list vars)
 
 let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
   assert (Array.length mib.mind_packets > 0);
@@ -111,8 +109,8 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
     array_map_to_list
       (fun mip ->
 	 let nparams = mip.mind_nparams in
-	 let arity = expmod_type oldenv modlist (mind_user_arity mip) in
-	 let lc = Array.map (expmod_type oldenv modlist) (mind_user_lc mip) in
+	 let arity = expmod_type modlist (mind_user_arity mip) in
+	 let lc = Array.map (expmod_type modlist) (mind_user_lc mip) in
 	 (nparams,
 	  mip.mind_typename,
 	  arity,
@@ -121,15 +119,15 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
       mib.mind_packets
   in
   let hyps = List.map (fun (sp,c,t) -> (basename sp,c,t)) mib.mind_hyps in
-  let hyps' = map_named_context (expmod_constr oldenv modlist) hyps in
-  let (inds',modl) = abstract_inductive ids_to_discard hyps' inds in
+  let hyps' = map_named_context (expmod_constr modlist) hyps in
+  let (inds',abs_vars) = abstract_inductive ids_to_discard hyps' inds in
   let lmodif_one_mind i = 
     let nbc = Array.length (mind_nth_type_packet mib i).mind_consnames in 
-    (((osecsp,i), DO_ABSTRACT ((nsecsp,i),modl)),
+    (((osecsp,i), DO_ABSTRACT ((nsecsp,i),abs_vars)),
      list_tabulate
        (function j -> 
 	  let j' = j + 1 in
-	  (((osecsp,i),j'), DO_ABSTRACT (((nsecsp,i),j'),modl)))
+	  (((osecsp,i),j'), DO_ABSTRACT (((nsecsp,i),j'),abs_vars)))
       nbc)
   in
   let indmodifs,cstrmodifs =
@@ -167,8 +165,8 @@ type discharge_operation =
   | Constant of section_path * recipe * strength * bool
   | Inductive of mutual_inductive_entry * bool
   | Class of cl_typ * cl_info_typ
-  | Struc of inductive_path * (unit -> struc_typ)
-  | Objdef of constant_path
+  | Struc of inductive * (unit -> struc_typ)
+  | Objdef of constant
   | Coercion of coercion_entry
   | Require of module_reference
   | Constraints of Univ.constraints
@@ -204,7 +202,7 @@ let process_object oldenv dir sec_sp
 	   ids_to_discard,work_alist)
 *)
 
-    | "CONSTANT" | "PARAMETER" ->
+    | ("CONSTANT" | "PARAMETER") ->
 	(* CONSTANT/PARAMETER means never discharge (though visibility *)
 	(* may vary) *)
  	let stre = constant_or_parameter_strength sp in
@@ -215,20 +213,20 @@ let process_object oldenv dir sec_sp
 	  (ops, ids_to_discard, (constl,indl,cstrl))
 	else
 *)
-	  let cb = Environ.lookup_constant sp oldenv in
-	  let imp = is_implicit_constant sp in
-	  let newsp = match stre with
-	    | DischargeAt (d,_) when not (is_dirpath_prefix_of d dir) -> sp
-	    | _ -> recalc_sp dir sp in
-	  let mods = 
-	    let modl = build_abstract_list cb.const_hyps ids_to_discard in
-	    [ (sp, DO_ABSTRACT(newsp,modl)) ]
-	  in
-	  let r = { d_from = cb;
-		    d_modlist = work_alist;
-		    d_abstract = ids_to_discard } in
-	  let op = Constant (newsp,r,stre,imp) in
-          (op :: ops, ids_to_discard, (mods@constl, indl, cstrl))
+	let cb = Environ.lookup_constant sp oldenv in
+	let imp = is_implicit_constant sp in
+	let newsp = match stre with
+	  | DischargeAt (d,_) when not (is_dirpath_prefix_of d dir) -> sp
+	  | _ -> recalc_sp dir sp in
+        let mods = 
+	  let abs_vars = build_abstract_list cb.const_hyps ids_to_discard in
+	  [ (sp, DO_ABSTRACT(newsp,abs_vars)) ]
+	in
+	let r = { d_from = cb;
+	          d_modlist = work_alist;
+	          d_abstract = ids_to_discard } in
+	let op = Constant (newsp,r,stre,imp) in
+        (op :: ops, ids_to_discard, (mods@constl, indl, cstrl))
   
     | "INDUCTIVE" ->
 	let mib = Environ.lookup_mind sp oldenv in

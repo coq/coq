@@ -97,7 +97,7 @@ module RedFlags = (struct
     r_iota : bool }
 
   type red_kind = BETA | DELTA | EVAR | IOTA | ZETA
-	      | CONST of constant_path | VAR of identifier
+	      | CONST of constant | VAR of identifier
   let fBETA = BETA
   let fDELTA = DELTA
   let fEVAR = EVAR 
@@ -566,8 +566,8 @@ and fterm =
   | FAtom of constr
   | FCast of fconstr * fconstr
   | FFlex of freference
-  | FInd of inductive_path * fconstr array
-  | FConstruct of constructor_path * fconstr array
+  | FInd of inductive
+  | FConstruct of constructor
   | FApp of fconstr * fconstr array
   | FFix of (int array * int) * (name array * fconstr array * fconstr array)
       * constr array * fconstr subs
@@ -583,7 +583,7 @@ and fterm =
 
 and freference =
   (* only vars as args of FConst ... exploited for caching *)
-  | FConst of section_path * fconstr array
+  | FConst of constant
   | FEvar of existential_key * fconstr array
   | FVar of identifier
   | FFarRel of int (* index in the rel_context part of _initial_ environment *)
@@ -677,13 +677,13 @@ let mk_clos_deep clos_fun env t =
     | IsApp (f,v) ->
         { norm = Red;
 	  term = FApp (clos_fun env f, Array.map (clos_fun env) v) }
-    | IsMutInd (sp,v) ->
-        { norm = Cstr; term = FInd (sp, Array.map (clos_fun env) v) }
-    | IsMutConstruct (sp,v) ->
-        { norm = Cstr; term = FConstruct (sp,Array.map (clos_fun env) v)}
-    | IsConst (sp,v) ->
+    | IsMutInd sp ->
+        { norm = Norm; term = FInd sp }
+    | IsMutConstruct sp ->
+        { norm = Norm; term = FConstruct sp }
+    | IsConst sp ->
         { norm = Red;
-	  term = FFlex (FConst (sp,Array.map (clos_fun env) v)) }
+	  term = FFlex (FConst sp) }
     | IsEvar (n,v) ->
         { norm = Red;
 	  term = FFlex (FEvar (n, Array.map (clos_fun env) v)) }
@@ -736,14 +736,11 @@ let rec to_constr constr_fun lfts v =
           | _ -> assert false)
     | FCast (a,b) ->
         mkCast (constr_fun lfts a, constr_fun lfts b)
-    | FFlex (FConst (op,ve)) ->
-	mkConst (op, Array.map (constr_fun lfts) ve)
+    | FFlex (FConst op) -> mkConst op
     | FFlex (FEvar (n,args)) ->
 	mkEvar (n, Array.map (constr_fun lfts) args)
-    | FInd (op,ve) ->
-	mkMutInd (op, Array.map (constr_fun lfts) ve)
-    | FConstruct (op,ve) -> 
-	mkMutConstruct (op, Array.map (constr_fun lfts) ve)
+    | FInd op -> mkMutInd op
+    | FConstruct op -> mkMutConstruct op
     | FCases (ci,p,c,ve) ->
 	mkMutCase (ci, constr_fun lfts p,
 		   constr_fun lfts c,
@@ -984,9 +981,8 @@ let rec knr info m stk =
       (match get_arg m stk with
           (Some(depth,arg),s) -> knit info (subs_shift_cons(depth,e,arg)) f s
         | (None,s) -> (m,s))
-  | FFlex(FConst(sp,args)) when can_red info stk (fCONST sp) ->
-      let cst = (sp, Array.map term_of_fconstr args) in
-      (match ref_value_cache info (ConstBinding cst) with
+  | FFlex(FConst sp) when can_red info stk (fCONST sp) ->
+      (match ref_value_cache info (ConstBinding sp) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
   | FFlex(FEvar (n,args)) when can_red info stk fEVAR ->
@@ -1004,7 +1000,7 @@ let rec knr info m stk =
       (match ref_value_cache info (FarRelBinding k) with
           Some v -> kni info v stk
         | None -> (set_norm m; (m,stk)))
-  | FConstruct((sp,c),args) when can_red info stk fIOTA ->
+  | FConstruct(ind,c) when can_red info stk fIOTA ->
       (match strip_update_shift_app m stk with
           (depth, args, Zcase(((*cn*) npar,_),_,br)::s) ->
             assert (npar>=0);
@@ -1061,15 +1057,9 @@ and down_then_up info m stk =
             FLetIn(na, kl info a, kl info b, kl info c, f, e)
         | FProd(na,dom,rng,f,e) ->
             FProd(na, kl info dom, kl info rng, f, e)
-        | FInd(ind,args) ->
-            FInd(ind, Array.map (kl info) args)
-        | FConstruct(c,args) ->
-            FConstruct(c, Array.map (kl info) args)
         | FCoFix(n,(na,ftys,fbds),bds,e) ->
             FCoFix(n,(na, Array.map (kl info) ftys,
                           Array.map (kl info) fbds),bds,e)
-        | FFlex(FConst(sp,args)) ->
-            FFlex(FConst(sp, Array.map (kl info) args))
         | FFlex(FEvar(i,args)) ->
             FFlex(FEvar(i, Array.map (kl info) args))
         | t -> t in
@@ -1097,9 +1087,7 @@ let create_clos_infos flgs env sigma =
   create (fun _ -> inject) flgs env sigma
 
 let unfold_reference info = function
-  | FConst (op,v) -> 
-      let cst = (op, Array.map (norm_val info) v) in
-      ref_value_cache info (ConstBinding cst)
+  | FConst op -> ref_value_cache info (ConstBinding op)
   | FEvar (n,v) ->
       let evar = (n, Array.map (norm_val info) v) in
       ref_value_cache info (EvarBinding evar)

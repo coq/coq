@@ -76,7 +76,7 @@ let pf_parse_constr gl s =
 let rec string_of_constr c =
  match kind_of_term c with
    IsCast (c,t) -> string_of_constr c
-  |IsConst (c,l) -> string_of_path c
+  |IsConst c -> string_of_path c
   |IsVar(c) -> string_of_id c
   | _ -> "not_of_constant"
 ;;
@@ -86,7 +86,7 @@ let rec rational_of_constr c =
   | IsCast (c,t) -> (rational_of_constr c)
   | IsApp (c,args) ->
         (match kind_of_term c with
-           IsConst (c,l) ->
+           IsConst c ->
                (match (string_of_path c) with
 		 "Coq.Reals.Rdefinitions.Ropp" -> 
 		      rop (rational_of_constr args.(0))
@@ -106,7 +106,7 @@ let rec rational_of_constr c =
                              (rational_of_constr args.(1))
                 | _ -> failwith "not a rational")
           | _ -> failwith "not a rational")
-  | IsConst (c,l) ->
+  | IsConst c ->
         (match (string_of_path c) with
 	       "Coq.Reals.Rdefinitions.R1" -> r1
               |"Coq.Reals.Rdefinitions.R0" -> r0
@@ -120,7 +120,7 @@ let rec flin_of_constr c =
   | IsCast (c,t) -> (flin_of_constr c)
   | IsApp (c,args) ->
         (match kind_of_term c with
-           IsConst (c,l) ->
+           IsConst c ->
             (match (string_of_path c) with
 	     "Coq.Reals.Rdefinitions.Ropp" -> 
                   flin_emult (rop r1) (flin_of_constr args.(0))
@@ -152,7 +152,7 @@ let rec flin_of_constr c =
                              (rinv b)))
             |_->assert false)
            |_ -> assert false)
-  | IsConst (c,l) ->
+  | IsConst c ->
         (match (string_of_path c) with
 	       "Coq.Reals.Rdefinitions.R1" -> flin_one ()
               |"Coq.Reals.Rdefinitions.R0" -> flin_zero ()
@@ -187,7 +187,7 @@ let ineq1_of_constr (h,t) =
          let t1= args.(0) in
          let t2= args.(1) in
          (match kind_of_term f with
-           IsConst (c,l) ->
+           IsConst c ->
             (match (string_of_path c) with
 		 "Coq.Reals.Rdefinitions.Rlt" -> [{hname=h;
                            htype="Rlt";
@@ -218,13 +218,13 @@ let ineq1_of_constr (h,t) =
                                              (flin_of_constr t1);
 			   hstrict=false}]
                 |_->assert false)
-          | IsMutInd ((sp,i),l) ->
+          | IsMutInd (sp,i) ->
               (match (string_of_path sp) with 
 		 "Coq.Init.Logic_Type.eqT" ->  let t0= args.(0) in
                            let t1= args.(1) in
                            let t2= args.(2) in
 		    (match (kind_of_term t0) with
-                         IsConst (c,l) ->
+                         IsConst c ->
 			   (match (string_of_path c) with
 			      "Coq.Reals.Rdefinitions.R"->
                          [{hname=h;

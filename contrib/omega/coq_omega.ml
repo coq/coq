@@ -177,9 +177,9 @@ let dest_const_apply t =
   let f,args = get_applist t in
   let ref = 
   match kind_of_term f with 
-    | IsConst (sp,_)         ->	ConstRef sp
-    | IsMutConstruct (csp,_) -> ConstructRef csp
-    | IsMutInd (isp,_)       -> IndRef isp
+    | IsConst sp         -> ConstRef sp
+    | IsMutConstruct csp -> ConstructRef csp
+    | IsMutInd isp       -> IndRef isp
     | _ -> raise Destruct
   in
   basename (Global.sp_of_global ref), args
@@ -193,12 +193,12 @@ type result =
 let destructurate t =
   let c, args = get_applist t in
   match kind_of_term c, args with
-    | IsConst (sp,_), args ->
+    | IsConst sp, args ->
 	Kapp (string_of_id (basename (Global.sp_of_global (ConstRef sp))),args)
-    | IsMutConstruct (csp,_) , args ->
+    | IsMutConstruct csp , args ->
 	Kapp (string_of_id (basename (Global.sp_of_global (ConstructRef csp))),
 			    args)
-    | IsMutInd (isp,_), args ->
+    | IsMutInd isp, args ->
 	Kapp (string_of_id (basename (Global.sp_of_global (IndRef isp))),args)
     | IsVar id,[] -> Kvar(string_of_id id)
     | IsProd (Anonymous,typ,body), [] -> Kimp(typ,body)

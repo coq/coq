@@ -45,7 +45,7 @@ val check_and_push_named_def :
   identifier * constr -> safe_environment -> 
     (constr option * types * constraints) * safe_environment
 
-type local_names = (identifier * variable_path) list
+type local_names = (identifier * variable) list
 
 val add_parameter :
   section_path -> constr -> local_names -> safe_environment -> safe_environment

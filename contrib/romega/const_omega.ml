@@ -18,14 +18,14 @@ type result =
 let destructurate t =
   let c, args = Reduction.whd_stack t in
   match Term.kind_of_term c, args with
-    | Term.IsConst (sp,_), args ->
+    | Term.IsConst sp, args ->
 	Kapp (Names.string_of_id
 		(Names.basename (Global.sp_of_global (Term.ConstRef sp))),args)
-    | Term.IsMutConstruct (csp,_) , args ->
+    | Term.IsMutConstruct csp , args ->
 	Kapp (Names.string_of_id
 		(Names.basename (Global.sp_of_global (Term.ConstructRef csp))),
 	      args)
-    | Term.IsMutInd (isp,_), args ->
+    | Term.IsMutInd isp, args ->
 	Kapp (Names.string_of_id
 		(Names.basename (Global.sp_of_global (Term.IndRef isp))),args)
     | Term.IsVar id,[] -> Kvar(Names.string_of_id id)
@@ -40,9 +40,9 @@ let dest_const_apply t =
   let f,args = Reduction.whd_stack t in
   let ref = 
   match Term.kind_of_term f with 
-    | Term.IsConst (sp,_)         -> Term.ConstRef sp
-    | Term.IsMutConstruct (csp,_) -> Term.ConstructRef csp
-    | Term.IsMutInd (isp,_)       -> Term.IndRef isp
+    | Term.IsConst sp         -> Term.ConstRef sp
+    | Term.IsMutConstruct csp -> Term.ConstructRef csp
+    | Term.IsMutInd isp       -> Term.IndRef isp
     | _ -> raise Destruct
   in
   Names.basename (Global.sp_of_global ref), args

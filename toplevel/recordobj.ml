@@ -48,7 +48,7 @@ let objdef_declare ref =
   let v = constr_of_reference Evd.empty env ref in
   let vc =
     match kind_of_term v with
-      | IsConst (sp,l as cst) ->
+      | IsConst cst ->
 	  (match constant_opt_value env cst with
 	     | Some vc -> vc
 	     | None -> objdef_err ref)
@@ -60,7 +60,7 @@ let objdef_declare ref =
 	let { s_PARAM = p; s_PROJ = lpj } = 
         (try (find_structure
 		(match kind_of_term f with
-                   | IsMutConstruct ((indsp,1),_) -> indsp
+                   | IsMutConstruct (indsp,1) -> indsp
 		   | _ -> objdef_err ref))
          with _ -> objdef_err ref) in
         let params, projs =

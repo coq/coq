@@ -477,7 +477,7 @@ let explain_bad_constructor ctx cstr ind =
      'sTR "is expected" >]
 
 let explain_wrong_numarg_of_constructor ctx cstr n =
-  let pc = pr_constructor ctx (cstr,[||]) in
+  let pc = pr_constructor ctx cstr in
     [<'sTR "The constructor "; pc; 'sTR " expects " ; 
       if n = 0 then [< 'sTR "no argument.">]
       else [< 'iNT n ; 'sTR " arguments.">]

@@ -316,11 +316,11 @@ module Spmap = Map.Make(SpOrdered)
 
 (* Special references for inductive objects *)
 
-type variable_path = section_path
-type constant_path = section_path
-type inductive_path = section_path * int
-type constructor_path = inductive_path * int
-type mutual_inductive_path = section_path
+type variable = section_path
+type constant = section_path
+type inductive = section_path * int
+type constructor = inductive * int
+type mutual_inductive = section_path
 
 (* Hash-consing of name objects *)
 module Hname = Hashcons.Make(

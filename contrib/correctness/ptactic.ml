@@ -122,6 +122,7 @@ let eq_pattern =
  
 let (loop_ids : tactic) = fun gl ->
   let rec arec hyps gl =
+    let env = pf_env gl in
     let concl = pf_concl gl in 
     match hyps with
       | [] -> tclIDTAC gl
@@ -135,7 +136,7 @@ let (loop_ids : tactic) = fun gl ->
 	    match pf_matches gl eq_pattern (body_of_type a) with
 	      | [_; _,varphi; _] when isVar varphi ->
 		  let phi = destVar varphi in
-		  if occur_var phi concl then
+		  if Environ.occur_var env phi concl then
 		    tclTHEN (rewriteLR (mkVar id)) (arec al) gl
 		  else
 		    arec al gl

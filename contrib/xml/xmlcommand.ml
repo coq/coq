@@ -414,16 +414,16 @@ let print_term inner_types l env csr =
           (fun x i -> [< (term_display idradix false l env x); i >]) t [<>])
        >]
 )
-   | T.IsConst (sp,_) ->
+   | T.IsConst sp ->
       X.xml_empty "CONST"
        (add_sort_attribute false
         ["uri",(uri_of_path sp Constant) ; "id", next_id])
-   | T.IsMutInd ((sp,i),_) ->
+   | T.IsMutInd (sp,i) ->
       X.xml_empty "MUTIND"
        ["uri",(uri_of_path sp Inductive) ;
         "noType",(string_of_int i) ;
         "id", next_id]
-   | T.IsMutConstruct (((sp,i),j),_) ->
+   | T.IsMutConstruct ((sp,i),j) ->
       X.xml_empty "MUTCONSTRUCT"
        (add_sort_attribute false
         ["uri",(uri_of_path sp Inductive) ;

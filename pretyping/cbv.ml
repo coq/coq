@@ -34,8 +34,7 @@ open Esubst
  *  FIXP(op,bd,S,args) is the fixpoint (Fix or Cofix) of bodies bd under
  *          the substitution S, and then applied to args. Here again,
  *          weak reduction.
- *  CONSTR(n,(sp,i),vars,args) is the n-th constructor of the i-th
- *          inductive type sp.
+ *  CONSTR(c,args) is the constructor [c] applied to [args].
  *
  * Note that any term has not an equivalent in cbv_value: for example,
  * a product (x:A)B must be in normal form because only VAL may
@@ -49,7 +48,7 @@ type cbv_value =
   | LAM of name * constr * constr * cbv_value subs
   | FIXP of fixpoint * cbv_value subs * cbv_value list
   | COFIXP of cofixpoint * cbv_value subs * cbv_value list
-  | CONSTR of int * inductive_path * cbv_value array * cbv_value list
+  | CONSTR of constructor * cbv_value list
 
 (* les vars pourraient etre des constr,
    cela permet de retarder les lift: utile ?? *) 
@@ -64,9 +63,8 @@ let rec shift_value n = function
       FIXP (fix,subs_shft (n,s), List.map (shift_value n) args)
   | COFIXP (cofix,s,args) ->
       COFIXP (cofix,subs_shft (n,s), List.map (shift_value n) args)
-  | CONSTR (i,spi,vars,args) ->
-      CONSTR (i, spi, Array.map (shift_value n) vars,
-              List.map (shift_value n) args)
+  | CONSTR (c,args) ->
+      CONSTR (c, List.map (shift_value n) args)
 	
 
 (* Contracts a fixpoint: given a fixpoint and a substitution,
@@ -142,7 +140,7 @@ let red_allowed_ref flags stack = function
   | FarRelBinding _ -> red_allowed flags stack fDELTA
   | VarBinding id -> red_allowed flags stack (fVAR id)
   | EvarBinding _ -> red_allowed flags stack fEVAR
-  | ConstBinding (sp,_) -> red_allowed flags stack (fCONST sp)
+  | ConstBinding sp -> red_allowed flags stack (fCONST sp)
 
 (* Transfer application lists from a value to the stack
  * useful because fixpoints may be totally applied in several times
@@ -151,7 +149,7 @@ let strip_appl head stack =
   match head with
     | FIXP (fix,env,app) -> (FIXP(fix,env,[]), stack_app app stack)
     | COFIXP (cofix,env,app) -> (COFIXP(cofix,env,[]), stack_app app stack)
-    | CONSTR (i,spi,vars,app) -> (CONSTR(i,spi,vars,[]), stack_app app stack)
+    | CONSTR (c,app) -> (CONSTR(c,[]), stack_app app stack)
     | _ -> (head, stack)
 
 
@@ -232,9 +230,8 @@ let rec norm_head info env t stack =
 
   | IsVar id -> norm_head_ref 0 info env stack (VarBinding id)
 
-  | IsConst (sp,vars) ->
-      let normt = (sp,Array.map (cbv_norm_term info env) vars) in
-      norm_head_ref 0 info env stack (ConstBinding normt)
+  | IsConst sp ->
+      norm_head_ref 0 info env stack (ConstBinding sp)
 
   | IsEvar (ev,args) ->
       let evar = (ev, Array.map (cbv_norm_term info env) args) in
@@ -262,13 +259,10 @@ let rec norm_head info env t stack =
   | IsLambda (x,a,b) -> (LAM(x,a,b,env), stack)
   | IsFix fix -> (FIXP(fix,env,[]), stack)
   | IsCoFix cofix -> (COFIXP(cofix,env,[]), stack)
-  | IsMutConstruct ((spi,i),vars) ->
-      (CONSTR(i,spi, Array.map (cbv_stack_term info TOP env) vars,[]), stack)
+  | IsMutConstruct c -> (CONSTR(c, []), stack)
 
   (* neutral cases *)
-  | (IsSort _ | IsMeta _) -> (VAL(0, t), stack)
-  | IsMutInd (sp,vars) -> 
-      (VAL(0, mkMutInd (sp, Array.map (cbv_norm_term info env) vars)), stack)
+  | (IsSort _ | IsMeta _ | IsMutInd _) -> (VAL(0, t), stack)
   | IsProd (x,t,c) -> 
       (VAL(0, mkProd (x, cbv_norm_term info env t,
 		      cbv_norm_term info (subs_lift env) c)),
@@ -317,17 +311,13 @@ and cbv_stack_term info stack env t =
 
     (* constructor in a Case -> IOTA
        (use red_under because we know there is a Case) *)
-    | (CONSTR(n,sp,_,_), APP(args,CASE(_,br,(arity,_),env,stk)))
+    | (CONSTR((sp,n),_), APP(args,CASE(_,br,(arity,_),env,stk)))
             when red_under (info_flags info) fIOTA ->
-(*
-	let ncargs = arity.(n-1) in
-	let real_args = list_lastn ncargs args in
-*)
 	let real_args = snd (list_chop arity args) in
         cbv_stack_term info (stack_app real_args stk) env br.(n-1)
          
     (* constructor of arity 0 in a Case -> IOTA ( "   " )*)
-    | (CONSTR(n,_,_,_), CASE(_,br,_,env,stk))
+    | (CONSTR((_,n),_), CASE(_,br,_,env,stk))
                   when red_under (info_flags info) fIOTA ->
                     cbv_stack_term info stk env br.(n-1)
 
@@ -335,7 +325,7 @@ and cbv_stack_term info stack env t =
     | (head, TOP) -> head
     | (FIXP(fix,env,_), APP(appl,TOP)) -> FIXP(fix,env,appl) 
     | (COFIXP(cofix,env,_), APP(appl,TOP)) -> COFIXP(cofix,env,appl) 
-    | (CONSTR(n,spi,vars,_), APP(appl,TOP)) -> CONSTR(n,spi,vars,appl)
+    | (CONSTR(c,_), APP(appl,TOP)) -> CONSTR(c,appl)
 
     (* definitely a value *)
     | (head,stk) -> VAL(0,apply_stack info (cbv_norm_value info head) stk)
@@ -390,9 +380,9 @@ and cbv_norm_value info = function (* reduction under binders *)
 		   Array.map (cbv_norm_term info 
 				(subs_liftn (Array.length lty) env)) bds)))
         (List.map (cbv_norm_value info) args)
-  | CONSTR (n,spi,vars,args) ->
+  | CONSTR (c,args) ->
       applistc
-        (mkMutConstruct ((spi,n), Array.map (cbv_norm_value info) vars))
+        (mkMutConstruct c)
         (List.map (cbv_norm_value info) args)
 
 (* with profiling *)

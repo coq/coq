@@ -83,14 +83,15 @@ let no_inductive_inconstr env constr =
 
  *)
  
-let thin_ids (hyps,vars) =
+let thin_ids env (hyps,vars) =
   fst
     (List.fold_left
        (fun ((ids,globs) as sofar) (id,c,a) ->
           if List.mem id globs then
 	    match c with
-	      | None -> (id::ids,(global_vars a)@globs)
-	      | Some body -> (id::ids,(global_vars body)@(global_vars a)@globs)
+	      | None -> (id::ids,(global_vars env a)@globs)
+	      | Some body ->
+                  (id::ids,(global_vars env body)@(global_vars env a)@globs)
           else sofar)
        ([],vars) hyps)
 
@@ -167,7 +168,7 @@ let compute_first_inversion_scheme env sigma ind sort dep_option =
       pty,goal
     else
       let i = mkAppliedInd ind in
-      let ivars = global_vars i in
+      let ivars = global_vars env i in
       let revargs,ownsign =
 	fold_named_context
 	  (fun env (id,_,_ as d) (revargs,hyps) ->
@@ -201,7 +202,7 @@ let inversion_scheme env sigma t sort dep_option inv_op =
   in
   assert 
     (list_subset 
-       (global_vars invGoal) 
+       (global_vars env invGoal) 
        (ids_of_named_context (named_context invEnv)));
   (*
     errorlabstrm "lemma_inversion"
@@ -252,7 +253,7 @@ let inversion_lemma_from_goal n na id sort dep_option inv_op =
   let gl = nth_goal_of_pftreestate n pts in
   let t = pf_get_hyp_typ gl id in
   let env = pf_env gl and sigma = project gl in
-  let fv = global_vars t in
+  let fv = global_vars env t in
 (* Pourquoi ??? 
   let thin_ids = thin_ids (hyps,fv) in
   if not(list_subset thin_ids fv) then

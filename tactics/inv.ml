@@ -189,7 +189,9 @@ let rec dependent_hyps id idlist sign =
     | [] -> []
     | (id1::l) -> 
 	let id1ty = snd (lookup_named id1 sign) in  
-	if occur_var id (body_of_type id1ty) then id1::dep_rec l else dep_rec l
+	if occur_var (Global.env()) id (body_of_type id1ty)
+        then id1::dep_rec l
+        else dep_rec l
   in 
   dep_rec idlist 
 
@@ -201,8 +203,9 @@ let generalizeRewriteIntros tac depids id gls =
   gls
 
 let var_occurs_in_pf gl id =
-  occur_var id (pf_concl gl) or
-  List.exists (fun (_,t) -> occur_var id t) (pf_hyps_types gl)
+  let env = pf_env gl in
+  occur_var env id (pf_concl gl) or
+  List.exists (fun (_,t) -> occur_var env id t) (pf_hyps_types gl)
 
 let split_dep_and_nodep idl gl =
   (List.filter (var_occurs_in_pf gl) idl,

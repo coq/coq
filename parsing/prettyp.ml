@@ -105,9 +105,7 @@ let print_constructors envpar names types =
   in hV 0 [< 'sTR "  "; pc >] 
 
 let build_inductive sp tyi =
-  let ctxt = context_of_global_reference (IndRef (sp,tyi)) in
-  let ctxt = Array.of_list (instance_from_section_context ctxt) in
-  let mis = Global.lookup_mind_specif ((sp,tyi),ctxt) in
+  let mis = Global.lookup_mind_specif (sp,tyi) in
   let params = mis_params_ctxt mis in
   let args = extended_rel_list 0 params in
   let indf = make_ind_family (mis,args) in
@@ -460,13 +458,13 @@ let print_opaque_name qid =
   try 
     let x = global_qualified_reference qid in
     match kind_of_term x with
-      | IsConst (sp,_ as cst) ->
-	  let cb = Global.lookup_constant sp in
+      | IsConst cst ->
+	  let cb = Global.lookup_constant cst in
           if is_defined cb then
-	    print_constant true " = " sp
+	    print_constant true " = " cst
           else 
 	    error "not a defined constant"
-      | IsMutInd ((sp,_),_) ->
+      | IsMutInd (sp,_) ->
           print_mutual sp
       | IsMutConstruct cstr -> 
 	  let ty = Typeops.type_of_constructor env sigma cstr in

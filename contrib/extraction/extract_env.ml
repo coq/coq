@@ -138,9 +138,9 @@ let _ =
 	      let c = Astterm.interp_constr Evd.empty (Global.env()) ast in
 	      match kind_of_term c with
 		(* If it is a global reference, then output the declaration *)
-		| IsConst (sp,_) -> extract_reference (ConstRef sp)
-		| IsMutInd (ind,_) -> extract_reference (IndRef ind)
-		| IsMutConstruct (cs,_) -> extract_reference (ConstructRef cs)
+		| IsConst sp -> extract_reference (ConstRef sp)
+		| IsMutInd ind -> extract_reference (IndRef ind)
+		| IsMutConstruct cs -> extract_reference (ConstructRef cs)
 		(* Otherwise, output the ML type or expression *)
 		| _ ->
 		    match extract_constr (Global.env()) [] c with

@@ -189,13 +189,13 @@ let listrec_mconstr env ntypes hyps nparams i indlc =
             else Norec
 	  else
 	    raise (IllFormedInd (LocalNonPos n))
-      | IsMutInd (ind_sp,a) -> 
-          if array_for_all (noccur_between n ntypes) a
-            && List.for_all (noccur_between n ntypes) largs 
+      | IsMutInd ind_sp -> 
+          if List.for_all (noccur_between n ntypes) largs 
 	  then Norec
-          else Imbr(ind_sp,imbr_positive env n (ind_sp,a) largs)
+          else Imbr(ind_sp,imbr_positive env n ind_sp largs)
       | err -> 
-	  if noccur_between n ntypes x && List.for_all (noccur_between n ntypes) largs 
+	  if noccur_between n ntypes x &&
+             List.for_all (noccur_between n ntypes) largs 
 	  then Norec
 	  else raise (IllFormedInd (LocalNonPos n))
 
@@ -315,9 +315,9 @@ let is_recursive listind =
 let abstract_inductive ntypes hyps (par,np,id,arity,cnames,issmall,isunit,lc) =
   let args = instance_from_named_context (List.rev hyps) in
   let nhyps = List.length hyps in
-  let nparams = List.length args in (* nparams = nhyps - nb(letin) *)
+  let nparams = Array.length args in (* nparams = nhyps - nb(letin) *)
   let new_refs =
-    list_tabulate (fun k -> applist(mkRel (k+nhyps+1),args)) ntypes in
+    list_tabulate (fun k -> appvect(mkRel (k+nhyps+1),args)) ntypes in
   let abs_constructor b = it_mkNamedProd_or_LetIn (substl new_refs b) hyps in
   let lc' = Array.map abs_constructor lc in
   let arity' = it_mkNamedProd_or_LetIn arity hyps in
@@ -329,14 +329,15 @@ let cci_inductive locals env env_ar kind finite inds cst =
   let ids = 
     List.fold_left 
       (fun acc (_,_,_,ar,_,_,_,lc) -> 
-	 Idset.union (global_vars_set (body_of_type ar))
+	 Idset.union (global_vars_set env (body_of_type ar))
 	   (Array.fold_left
-	      (fun acc c -> Idset.union (global_vars_set (body_of_type c)) acc)
+	      (fun acc c ->
+                Idset.union (global_vars_set env (body_of_type c)) acc)
 	      acc
 	      lc))
       Idset.empty inds
   in
-  let hyps = keep_hyps ids (named_context env) in
+  let hyps = keep_hyps env ids (named_context env) in
   let inds' =
     if Options.immediate_discharge then
       List.map (abstract_inductive ntypes hyps) inds

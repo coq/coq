@@ -116,12 +116,12 @@ let ast_of_qualid p =
 let rec ast_of_cases_pattern = function   (* loc is thrown away for printing *)
   | PatVar (loc,Name id) -> nvar id
   | PatVar (loc,Anonymous) -> nvar wildcard
-  | PatCstr(loc,(cstrsp,_),args,Name id) ->
+  | PatCstr(loc,cstrsp,args,Name id) ->
       let args = List.map ast_of_cases_pattern args in
       ope("PATTAS",
 	  [nvar id;
 	   ope("PATTCONSTRUCT", (ast_of_constructor_ref cstrsp)::args)])
-  | PatCstr(loc,(cstrsp,_),args,Anonymous) ->
+  | PatCstr(loc,cstrsp,args,Anonymous) ->
       ope("PATTCONSTRUCT",
 	  (ast_of_constructor_ref cstrsp)
 	  :: List.map ast_of_cases_pattern args)
@@ -303,11 +303,9 @@ let ast_of_constr at_top env t =
   ast_of_raw 
     (Detyping.detype avoid (names_of_rel_context env) t')
 
-let ast_of_constant env (sp,ids) =
+let ast_of_constant env sp =
   let a = ast_of_constant_ref sp in
-  if !print_arguments then
-    ope("INSTANCE",a::(array_map_to_list (ast_of_constr false env) ids))
-  else a
+  a
 
 let ast_of_existential env (ev,ids) =
   let a = ast_of_existential_ref ev in
@@ -315,17 +313,13 @@ let ast_of_existential env (ev,ids) =
     ope("INSTANCE",a::(array_map_to_list (ast_of_constr false env) ids))
   else a
 
-let ast_of_constructor env (cstr_sp,ids) =
+let ast_of_constructor env cstr_sp =
   let a = ast_of_constructor_ref cstr_sp in
-  if !print_arguments then
-    ope("INSTANCE",a::(array_map_to_list (ast_of_constr false env) ids))
-  else a
+  a
 
-let ast_of_inductive env (ind_sp,ids) =
+let ast_of_inductive env ind_sp =
   let a = ast_of_inductive_ref ind_sp in
-  if !print_arguments then
-    ope("INSTANCE",a::(array_map_to_list (ast_of_constr false env) ids))
-  else a
+  a
 
 let decompose_binder_pattern = function
   | PProd(na,ty,c) -> Some (BProd,na,ty,c)

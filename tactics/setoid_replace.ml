@@ -292,9 +292,9 @@ let check_is_dependent t n =
 
 let gen_lem_name m = match kind_of_term m with 
   | IsVar id -> add_suffix id "_ext"
-  | IsConst (sp, _) -> add_suffix (basename sp) "_ext"
-  | IsMutInd ((sp, i), _) -> add_suffix (basename sp) ((string_of_int i)^"_ext")
-  | IsMutConstruct (((sp,i),j), _) -> add_suffix
+  | IsConst sp -> add_suffix (basename sp) "_ext"
+  | IsMutInd (sp, i) -> add_suffix (basename sp) ((string_of_int i)^"_ext")
+  | IsMutConstruct ((sp,i),j) -> add_suffix
       (basename sp) ((string_of_int i)^(string_of_int i)^"_ext")
   | _ -> errorlabstrm "New Morphism" [< 'sTR "The term "; prterm m; 'sTR "is not a known name">]
 
@@ -617,9 +617,7 @@ and zapply is_r gl gl_m c1 c2 hyp glll = (match ((kind_of_term gl), gl_m) with
       let al = [|hh; cc|] in
       let a = [|hhm; ccm|] in
       let fleche_constr = (Lazy.force coq_fleche) in
-      let fleche_cp = (match (kind_of_term fleche_constr) with
-			 | (IsConst (cp,_)) -> cp 
-			 | _ -> assert false) in
+      let fleche_cp = destConst fleche_constr in
       let new_concl = (mkApp (fleche_constr, al)) in
 	if is_r 
 	then

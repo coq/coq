@@ -34,9 +34,9 @@ type constr_pattern =
 val occur_meta_pattern : constr_pattern -> bool
 
 type constr_label =
-  | ConstNode of section_path
-  | IndNode of inductive_path
-  | CstrNode of constructor_path
+  | ConstNode of constant
+  | IndNode of inductive
+  | CstrNode of constructor
   | VarNode of identifier
 
 val label_of_ref : global_reference -> constr_label

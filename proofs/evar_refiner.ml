@@ -125,7 +125,7 @@ let w_env     wc    = get_env (ids_it wc)
 let w_hyps    wc    = named_context (get_env (ids_it wc))
 let w_ORELSE wt1 wt2 wc = 
   try wt1 wc with e when catchable_exception e -> wt2 wc
-let w_defined_const wc (sp,_) = defined_constant (w_env wc) sp
+let w_defined_const wc sp = defined_constant (w_env wc) sp
 let w_defined_evar wc k      = Evd.is_defined (w_Underlying wc) k
 let w_const_value wc         = constant_value (w_env wc)
 let w_conv_x wc m n          = is_conv (w_env wc) (w_Underlying wc) m n

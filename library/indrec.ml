@@ -319,7 +319,7 @@ let mis_make_indrec env sigma listdepkind mispec =
 	      it_mkLambda_or_LetIn_name env
 		(lambda_create env
 		   (build_dependent_inductive
-		      (lift_inductive_family nrec indf),
+                     (lift_inductive_family nrec indf),
 		    mkMutCase (make_default_case_info mispeci,
 			       mkRel (dect+j+1), mkRel 1, branches)))
 		(Sign.lift_rel_context nrec lnames)
@@ -443,13 +443,13 @@ let check_arities listdepkind =
 
 let build_mutual_indrec env sigma = function 
   | (mind,dep,s)::lrecspec ->
-      let ((sp,tyi),_) = mind in
+      let (sp,tyi) = mind in
       let mispec = lookup_mind_specif mind env in
       let listdepkind = 
     	(mispec, dep,s)::
     	(List.map
 	   (function (mind',dep',s') ->
-	      let ((sp',_),_) = mind' in
+	      let (sp',_) = mind' in
 	      if sp=sp' then 
 		(lookup_mind_specif mind' env,dep',s') 
 	      else 

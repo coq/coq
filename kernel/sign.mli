@@ -40,15 +40,14 @@ val it_named_context_quantifier :
   (named_declaration -> constr -> constr) -> constr -> named_context -> constr
 val instantiate_sign :
   named_context -> constr list -> (identifier * constr) list
-val keep_hyps : Idset.t -> named_context -> named_context
-val instance_from_named_context : named_context -> constr list
+val instance_from_named_context : named_context -> constr array
 
 (*s Signatures of ordered section variables *)
 
-type section_declaration = variable_path * constr option * constr
+type section_declaration = variable * constr option * constr
 type section_context = section_declaration list
 
-val instance_from_section_context : section_context -> constr list
+val instance_from_section_context : section_context -> constr array
 
 (*s Signatures of ordered optionally named variables, intended to be
    accessed by de Bruijn indices *)

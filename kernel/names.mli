@@ -112,11 +112,11 @@ module Sppred : Predicate.S with type elt = section_path
 module Spmap  : Map.S with type key = section_path
 
 (*s Specific paths for declarations *)
-type variable_path = section_path
-type constant_path = section_path
-type inductive_path = section_path * int
-type constructor_path = inductive_path * int
-type mutual_inductive_path = section_path
+type variable = section_path
+type constant = section_path
+type inductive = section_path * int
+type constructor = inductive * int
+type mutual_inductive = section_path
 
 (* Hash-consing *)
 val hcons_names : unit ->

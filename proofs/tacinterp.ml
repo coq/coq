@@ -107,7 +107,7 @@ let make_qid = function
   | VArg (Identifier id) -> VArg (Qualid (make_qualid [] id))
   | VArg (Constr c) ->
     (match (kind_of_term c) with
-    | IsConst _ -> VArg (Qualid (qualid_of_sp (path_of_const c)))
+    | IsConst cst -> VArg (Qualid (qualid_of_sp cst))
     | _ -> anomalylabstrm "make_qid" [< 'sTR "Not a Qualid" >])
   | _ -> anomalylabstrm "make_qid" [< 'sTR "Not a Qualid" >]
 
@@ -1057,7 +1057,7 @@ and cast_opencom_interp ist com =
 and qid_interp ist = function
   | Node(loc,"QUALIDARG",p) -> interp_qualid p
   | Node(loc,"QUALIDMETA",[Num(_,n)]) ->
-    Nametab.qualid_of_sp (path_of_const (List.assoc n ist.lmatch))
+      Nametab.qualid_of_sp (destConst(List.assoc n ist.lmatch))
   | ast -> 
       anomaly_loc (Ast.loc ast, "Tacinterp.qid_interp",[<'sTR
         "Unrecognizable qualid ast: "; print_ast ast>])

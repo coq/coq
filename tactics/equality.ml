@@ -273,7 +273,7 @@ let find_eq_pattern aritysort sort =
  *)
 
 exception DiscrFound of
-  (constructor_path * int) list * constructor_path * constructor_path
+  (constructor * int) list * constructor * constructor
 
 let find_positions env sigma t1 t2 =
   let rec findrec posn t1 t2 =
@@ -281,7 +281,7 @@ let find_positions env sigma t1 t2 =
     let hd2,args2 = whd_betadeltaiota_stack env sigma t2 in
     match (kind_of_term hd1, kind_of_term hd2) with
   	
-      | IsMutConstruct (sp1,_), IsMutConstruct (sp2,_) ->
+      | IsMutConstruct sp1, IsMutConstruct sp2 ->
         (* both sides are constructors, so either we descend, or we can
            discriminate here. *)
 	  if sp1 = sp2 then
@@ -1192,7 +1192,7 @@ let rec eq_mod_rel l_meta t0 t1 =
 let is_hd_const c = match kind_of_term c with
   | IsApp (f,args) ->
       (match kind_of_term f with
-         | IsConst (c,_) -> Some (c, args)
+         | IsConst c -> Some (c, args)
          |_ -> None)
   | _ -> None
 
@@ -1218,7 +1218,7 @@ let sub_term_with_unif cref ceq =
     | OpApp, cl -> begin
 	let f, args = destApplication u in
 	match kind_of_term f with
-          | IsConst (sp,_) when sp = hdsp -> begin
+          | IsConst sp when sp = hdsp -> begin
 	      try (array_fold_left2 eq_mod_rel l_meta args t_args, nb_occ+1)
 	      with NotEqModRel ->
 		Array.fold_left

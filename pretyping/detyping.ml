@@ -46,10 +46,10 @@ let occur_rel p env id =
 let occur_id env id0 c =
   let rec occur n c = match kind_of_term c with
     | IsVar id when  id=id0 -> raise Occur
-    | IsConst (sp, _) when basename sp = id0 -> raise Occur
-    | IsMutInd (ind_sp, _)
+    | IsConst sp when basename sp = id0 -> raise Occur
+    | IsMutInd ind_sp
 	when basename (path_of_inductive_path ind_sp) = id0 -> raise Occur
-    | IsMutConstruct (cstr_sp, _) 
+    | IsMutConstruct cstr_sp
 	when basename (path_of_constructor_path cstr_sp) = id0 -> raise Occur
     | IsRel p when p>n & occur_rel (p-n) env id0 -> raise Occur
     | _ -> iter_constr_with_binders succ occur n c
@@ -99,18 +99,18 @@ let used_of = global_vars_and_consts
 (* Tools for printing of Cases                                              *)
 
 let encode_inductive ref =
-  let (indsp,_ as ind) =
+  let indsp =
       match kind_of_term (constr_of_reference Evd.empty (Global.env()) ref)with
-        | IsMutInd (indsp,args) -> (indsp,args)
+        | IsMutInd indsp -> indsp
 	| _ -> errorlabstrm "indsp_of_id" 
-	    [< 'sTR ((Global.string_of_global ref)^" is not an inductive type") >]
-  in
-  let mis = Global.lookup_mind_specif ind in
+	    [< 'sTR ((Global.string_of_global ref)^
+                      " is not an inductive type") >] in
+  let mis = Global.lookup_mind_specif indsp in
   let constr_lengths = Array.map List.length (mis_recarg mis) in
   (indsp,constr_lengths)
 
 let constr_nargs indsp =
-  let mis = Global.lookup_mind_specif (indsp,[||] (* ?? *)) in
+  let mis = Global.lookup_mind_specif indsp in
   let nparams = mis_nparams mis in
   Array.map (fun t -> List.length (fst (decompose_prod_assum t)) - nparams)
     (mis_nf_lc mis)
@@ -138,7 +138,7 @@ module PrintingCasesMake =
      val title : string
   end) ->
   struct
-    type t = inductive_path * int array
+    type t = inductive * int array
     let encode = encode_inductive
     let check (_,lc) =
       if not (Test.test lc) then 
@@ -292,15 +292,14 @@ let rec detype avoid env t =
     | IsLetIn (na,b,_,c) -> detype_binder BLetIn avoid env na b c
     | IsApp (f,args) ->
 	RApp (dummy_loc,detype avoid env f,array_map_to_list (detype avoid env) args)
-    | IsConst (sp,cl) ->
-	detype_reference avoid env (ConstRef sp) cl
+    | IsConst sp -> RRef (dummy_loc, ConstRef sp)
     | IsEvar (ev,cl) ->
 	let f = REvar (dummy_loc, ev) in
 	RApp (dummy_loc, f, List.map (detype avoid env) (Array.to_list cl))
-    | IsMutInd (ind_sp,cl) ->
-	detype_reference avoid env (IndRef ind_sp) cl
-    | IsMutConstruct (cstr_sp,cl) ->
-	detype_reference avoid env (ConstructRef cstr_sp) cl
+    | IsMutInd ind_sp ->
+	RRef (dummy_loc, IndRef ind_sp)
+    | IsMutConstruct cstr_sp ->
+	RRef (dummy_loc, ConstructRef cstr_sp)
     | IsMutCase (annot,p,c,bl) ->
 	let synth_type = synthetize_type () in
 	let tomatch = detype avoid env c in
@@ -312,8 +311,7 @@ let rec detype avoid env t =
 	  else 
 	    Some (detype avoid env p) in
 	let constructs = 
-	  Array.init (Array.length considl)
-	    (fun i -> ((indsp,i+1),[] (* on triche *))) in
+	  Array.init (Array.length considl) (fun i -> (indsp,i+1)) in
 	let eqnv =
 	  array_map3 (detype_eqn avoid env) constructs consnargsl bl in
 	let eqnl = Array.to_list eqnv in
@@ -330,20 +328,6 @@ let rec detype avoid env t =
     | IsFix (nvn,recdef) -> detype_fix avoid env (RFix nvn) recdef
     | IsCoFix (n,recdef) -> detype_fix avoid env (RCoFix n) recdef
 
-and detype_reference avoid env ref args =
-  let args = 
-    try Array.to_list (extract_instance ref args)
-    with Not_found -> (* May happen in debugger *)
-      if Array.length args = 0 then []
-      else
-	let m = "<<Cannot split "^(string_of_int (Array.length args))^
-		" arguments>>" in
-	(mkVar (id_of_string m))::(Array.to_list args)
-  in
-  let f = RRef (dummy_loc, ref) in
-  if args = [] then f
-  else RApp (dummy_loc, f, List.map (detype avoid env) args)
-
 and detype_fix avoid env fixkind (names,tys,bodies) =
   let lfi = Array.map (fun id -> next_name_away id avoid) names in
   let def_avoid = Array.to_list lfi@avoid in
@@ -353,7 +337,7 @@ and detype_fix avoid env fixkind (names,tys,bodies) =
        Array.map (detype def_avoid def_env) bodies)
 
 
-and detype_eqn avoid env constr_id construct_nargs branch =
+and detype_eqn avoid env constr construct_nargs branch =
   let make_pat x avoid env b ids =
     if not (force_wildcard ()) or (dependent (mkRel 1) b) then
       let id = next_name_away_with_default "x" x avoid in
@@ -364,7 +348,7 @@ and detype_eqn avoid env constr_id construct_nargs branch =
   let rec buildrec ids patlist avoid env n b =
     if n=0 then
       (dummy_loc, ids, 
-       [PatCstr(dummy_loc, constr_id, List.rev patlist,Anonymous)],
+       [PatCstr(dummy_loc, constr, List.rev patlist,Anonymous)],
        detype avoid env b)
     else
       match kind_of_term b with

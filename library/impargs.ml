@@ -126,7 +126,7 @@ let constant_implicits_list sp =
    implicit arguments of the constructors. *)
 
 module Inductive_path = struct
-  type t = inductive_path
+  type t = inductive
   let compare (spx,ix) (spy,iy) = 
     let c = ix - iy in if c = 0 then sp_ord spx spy else c
 end
@@ -136,7 +136,7 @@ module Indmap = Map.Make(Inductive_path)
 let inductives_table = ref Indmap.empty
 
 module Construtor_path = struct
-  type t = constructor_path
+  type t = constructor
   let compare (indx,ix) (indy,iy) = 
     let c = ix - iy in if c = 0 then Inductive_path.compare indx indy else c
 end
@@ -269,18 +269,15 @@ let context_of_global_reference = function
   | ConstructRef ((sp,_),_) -> (Global.lookup_mind sp).mind_hyps
 
 let type_of_global r =
-  let args = 
-    Array.of_list
-      (Sign.instance_from_section_context (context_of_global_reference r)) in
   match r with
   | VarRef sp ->
       lookup_named_type (basename sp) (Global.env ())
   | ConstRef sp ->
-      Typeops.type_of_constant (Global.env ()) Evd.empty (sp,args)
+      Typeops.type_of_constant (Global.env ()) Evd.empty sp
   | IndRef sp -> 
-      Typeops.type_of_inductive (Global.env ()) Evd.empty (sp,args)
+      Typeops.type_of_inductive (Global.env ()) Evd.empty sp
   | ConstructRef sp ->
-      Typeops.type_of_constructor (Global.env ()) Evd.empty (sp,args)
+      Typeops.type_of_constructor (Global.env ()) Evd.empty sp
 
 let check_range n i =
   if i<1 or i>n then error ("Bad argument number: "^(string_of_int i))

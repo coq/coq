@@ -82,7 +82,7 @@ let warning_or_error coe err =
 
 (* We build projections *)
 let declare_projections indsp coers fields =
-  let mispec = Global.lookup_mind_specif (indsp,[||]) in
+  let mispec = Global.lookup_mind_specif indsp in
   let paramdecls = Inductive.mis_params_ctxt mispec in
   let paramdecls = 
     List.map (fun (na,b,t) -> match na with Name id -> (id,b,t) | _ -> assert false)
@@ -96,8 +96,9 @@ let declare_projections indsp coers fields =
     List.fold_left2
       (fun (sp_projs,ids_not_ok,subst) coe (fi,optci,ti) ->
 	 let fv_ti = match optci with
-	   | Some ci -> global_vars ci (* Type is then meaningless *)
-	   | None -> global_vars ti in
+	   | Some ci ->
+               global_vars (Global.env()) ci (* Type is then meaningless *)
+	   | None -> global_vars (Global.env()) ti in
 	 let bad_projs = (list_intersect ids_not_ok fv_ti) in
 	 if bad_projs <> [] then begin
 	   warning_or_error coe (MissingProj (fi,bad_projs));

@@ -20,9 +20,9 @@ open Declare
 type cl_typ = 
   | CL_SORT 
   | CL_FUN 
-  | CL_SECVAR of variable_path
-  | CL_CONST of constant_path
-  | CL_IND of inductive_path
+  | CL_SECVAR of variable
+  | CL_CONST of constant
+  | CL_IND of inductive
 
 (* This is the type of infos for declared classes *)
 type cl_info_typ = {

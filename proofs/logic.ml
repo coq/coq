@@ -202,10 +202,11 @@ let split_sign hfrom hto l =
   splitrec [] false l
 
 let move_after with_dep toleft (left,(idfrom,_,_ as declfrom),right) hto =
+  let env = Global.env() in
   let test_dep (hyp,c,typ as d) (hyp2,c,typ2 as d2) =
     if toleft
-    then occur_var_in_decl hyp2 d
-    else occur_var_in_decl hyp d2
+    then occur_var_in_decl env hyp2 d
+    else occur_var_in_decl env hyp d2
   in
   let rec moverec first middle = function
     | [] -> error ("No such hypothesis : " ^ (string_of_id hto))
@@ -260,9 +261,11 @@ let apply_to_hyp2 env id f =
   if (not !check) || !found then env' else error "No such assumption"
 
 let global_vars_set_of_var = function
-  | (_,None,t) -> global_vars_set (body_of_type t)
+  | (_,None,t) -> global_vars_set (Global.env()) (body_of_type t)
   | (_,Some c,t) ->
-      Idset.union (global_vars_set (body_of_type t)) (global_vars_set c)
+      let env =Global.env() in
+      Idset.union (global_vars_set env (body_of_type t))
+        (global_vars_set env c)
 
 let check_backward_dependencies sign d =
   if not (Idset.for_all
@@ -272,9 +275,10 @@ let check_backward_dependencies sign d =
     error "Can't introduce at that location: free variable conflict"
 
 let check_forward_dependencies id tail =
+  let env = Global.env() in
   List.iter
     (function (id',_,_ as decl) ->
-       if occur_var_in_decl id decl then
+       if occur_var_in_decl env id decl then
 	 error ((string_of_id id) ^ " is used in the hypothesis " 
 		^ (string_of_id id')))
     tail
@@ -529,7 +533,7 @@ let prim_refiner r sigma goal =
 
     | { name = Thin; hypspecs = ids } ->
 	let clear_aux sign id =
-          if !check && occur_var id cl then
+          if !check && occur_var env id cl then
             error ((string_of_id id) ^ " is used in the conclusion.");
           remove_hyp sign id 
 	in

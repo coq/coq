@@ -35,7 +35,7 @@ i*)
 val hypothesis_def_var : bool -> identifier -> strength -> Coqast.t
   -> global_reference
 
-val parameter_def_var : identifier -> Coqast.t -> constant_path
+val parameter_def_var : identifier -> Coqast.t -> constant
 
 val build_mutual : 
   (identifier * Coqast.t) list -> 

@@ -227,13 +227,13 @@ let list_chop_hd i l = match list_chop i l with
   | (l1,x::l2) -> (l1,x,l2)
   | _ -> assert false
 
-let collect_non_rec  = 
+let collect_non_rec env = 
   let rec searchrec lnonrec lnamerec ldefrec larrec nrec = 
     try
       let i = 
         list_try_find_i
           (fun i f ->
-             if List.for_all (fun def -> not (occur_var f def)) ldefrec
+             if List.for_all (fun def -> not (occur_var env f def)) ldefrec
              then i else failwith "try_find_i")
           0 lnamerec 
       in
@@ -288,7 +288,7 @@ let build_recursive lnameargsardef =
   in
   States.unfreeze fs;
   let (lnonrec,(namerec,defrec,arrec,nvrec)) = 
-    collect_non_rec lrecnames recdef arityl (Array.to_list nv) in
+    collect_non_rec env0 lrecnames recdef arityl (Array.to_list nv) in
   let n = NeverDischarge in 
   let recvec = 
     Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in
@@ -352,7 +352,7 @@ let build_corecursive lnameardef =
   in
   States.unfreeze fs;
   let (lnonrec,(namerec,defrec,arrec,_)) = 
-    collect_non_rec lrecnames recdef arityl [] in
+    collect_non_rec env0 lrecnames recdef arityl [] in
   let n = NeverDischarge in 
   let recvec = 
     Array.map (subst_vars (List.rev (Array.to_list namerec))) defrec in

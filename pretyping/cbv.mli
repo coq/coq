@@ -33,7 +33,7 @@ type cbv_value =
   | LAM of name * constr * constr * cbv_value subs
   | FIXP of fixpoint * cbv_value subs * cbv_value list
   | COFIXP of cofixpoint * cbv_value subs * cbv_value list
-  | CONSTR of int * (section_path * int) * cbv_value array * cbv_value list
+  | CONSTR of constructor * cbv_value list
 
 val shift_value : int -> cbv_value -> cbv_value
 

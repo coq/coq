@@ -45,7 +45,7 @@ type recarg =
   | Param of int 
   | Norec 
   | Mrec of int 
-  | Imbr of inductive_path * recarg list
+  | Imbr of inductive * recarg list
 
 type one_inductive_body = {
   mind_consnames : identifier array;

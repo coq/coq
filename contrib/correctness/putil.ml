@@ -14,6 +14,7 @@ open Util
 open Names
 open Term
 open Pattern
+open Environ
 
 open Pmisc
 open Ptype
@@ -61,10 +62,10 @@ let is_mutable_in_env env id =
 let now_vars env c =
   Util.map_succeed 
     (function id -> if is_mutable_in_env env id then id else failwith "caught")
-    (global_vars c)
+    (global_vars (Global.env()) c)
 
 let make_before_after c =
-  let ids = global_vars c in
+  let ids = global_vars (Global.env()) c in
   let al = 
     Util.map_succeed
       (function id -> 
@@ -98,18 +99,18 @@ let make_assoc_list ren env on_prime ids =
     [] ids
 
 let apply_pre ren env c =
-  let ids = global_vars c.p_value in
+  let ids = global_vars (Global.env()) c.p_value in
   let al = make_assoc_list ren env current_var ids in
   { p_assert = c.p_assert; p_name = c.p_name; 
     p_value = subst_in_constr al c.p_value }
 
 let apply_assert ren env c =
-  let ids = global_vars c.a_value in
+  let ids = global_vars (Global.env()) c.a_value in
   let al = make_assoc_list ren env current_var ids in
   { a_name = c.a_name; a_value = subst_in_constr al c.a_value }
  
 let apply_post ren env before c =
-  let ids = global_vars c.a_value in
+  let ids = global_vars (Global.env()) c.a_value in
   let al = 
     make_assoc_list ren env (fun r uid -> var_at_date r before uid) ids in
   { a_name = c.a_name; a_value = subst_in_constr al c.a_value }

@@ -43,10 +43,12 @@ let pop_named_decl id = function
   | (id',_,_) :: sign -> assert (id = id'); sign
   | [] -> assert false
 let ids_of_named_context = List.map (fun (id,_,_) -> id)
-let rec instance_from_named_context = function
-  | (id,None,_) :: sign -> mkVar id :: instance_from_named_context sign
-  | _ :: sign -> instance_from_named_context sign
-  | [] -> []
+let instance_from_named_context sign =
+  let rec inst_rec = function
+    | (id,None,_) :: sign -> mkVar id :: inst_rec sign
+    | _ :: sign -> inst_rec sign
+    | [] -> [] in
+  Array.of_list (inst_rec sign)
 let map_named_context = map
 let rec mem_named_context id = function
   | (id',_,_) :: _ when id=id' -> true
@@ -59,15 +61,17 @@ let it_named_context_quantifier f = List.fold_left (fun c d -> f d c)
 
 (*s Signatures of ordered section variables *)
 
-type section_declaration = variable_path * constr option * constr
+type section_declaration = variable * constr option * constr
 type section_context = section_declaration list
-let rec instance_from_section_context = function
-  | (sp,None,_) :: sign -> 
-      mkVar (basename sp) :: instance_from_section_context sign
-  | _ :: sign -> instance_from_section_context sign
-  | [] -> []
+let instance_from_section_context sign =
+  let rec inst_rec = function
+    | (sp,None,_) :: sign ->  mkVar (basename sp) :: inst_rec sign
+    | _ :: sign -> inst_rec sign
+    | [] -> [] in
+  Array.of_list (inst_rec sign)
 let instance_from_section_context x =
-  if Options.immediate_discharge then [] else instance_from_section_context x
+  if Options.immediate_discharge then [||]
+  else instance_from_section_context x
 
 (*s Signatures of ordered optionally named variables, intended to be
    accessed by de Bruijn indices *)
@@ -155,23 +159,6 @@ let instantiate_sign sign args =
     anomaly "Signature and its instance do not match"
   in 
   instrec (sign,args)
-
-(* [keep_hyps sign ids] keeps the part of the signature [sign] which 
-   contains the variables of the set [ids], and recursively the variables 
-   contained in the types of the needed variables. *)
-
-let rec keep_hyps needed = function
-  | (id,copt,t as d) ::sign when Idset.mem id needed ->
-      let globc = 
-	match copt with
-	  | None -> Idset.empty
-	  | Some c -> global_vars_set c in
-      let needed' =
-	Idset.union (global_vars_set (body_of_type t)) 
-	  (Idset.union globc needed) in
-      d :: (keep_hyps needed' sign)
-  | _::sign -> keep_hyps needed sign
-  | [] -> []
 
 (*************************)
 (*   Names environments  *)

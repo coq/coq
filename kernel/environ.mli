@@ -104,11 +104,17 @@ val lookup_rel_value : int -> env -> constr option
 
 (* Looks up in the context of global constant names *)
 (* raises [Not_found] if the required path is not found *)
-val lookup_constant : constant_path -> env -> constant_body
+val lookup_constant : constant -> env -> constant_body
 
 (* Looks up in the context of global inductive names *)
 (* raises [Not_found] if the required path is not found *)
 val lookup_mind : section_path -> env -> mutual_inductive_body
+
+(* Looks up the array of section variables used by a global (constant,
+   inductive or constructor). *)
+val lookup_constant_variables : constant -> env -> constr array
+val lookup_inductive_variables : inductive -> env -> constr array
+val lookup_constructor_variables : constructor -> env -> constr array
 
 (*s Miscellanous *)
 
@@ -158,11 +164,29 @@ val it_mkNamedProd_wo_LetIn : constr -> named_context -> constr
 val lambda_create : env -> types * constr -> constr
 val prod_create : env -> types * constr -> constr
 
-val defined_constant : env -> constant_path -> bool
-val evaluable_constant : env -> constant_path -> bool
+val defined_constant : env -> constant -> bool
+val evaluable_constant : env -> constant -> bool
 
 val evaluable_named_decl : env -> identifier -> bool
 val evaluable_rel_decl : env -> int -> bool
+
+(*s Ocurrence of section variables. *)
+(* [(occur_var id c)] returns [true] if variable [id] occurs free
+   in c, [false] otherwise *)
+val occur_var : env -> identifier -> constr -> bool
+val occur_var_in_decl : env -> identifier -> named_declaration -> bool
+
+(* [global_vars c] returns the list of [id]'s occurring as [VAR id] in [c] *)
+val global_vars : env -> constr -> identifier list
+
+(* [global_vars_decl d] returns the list of [id]'s occurring as [VAR
+    id] in declaration [d] (type and body if any) *)
+val global_vars_decl : env -> named_declaration -> identifier list
+val global_vars_set : env -> constr -> Idset.t
+
+val keep_hyps : env -> Idset.t -> named_context -> named_context
+
+val rename_bound_var : env -> identifier list -> constr -> constr
 
 (*s Modules. *)
 

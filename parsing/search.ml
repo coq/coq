@@ -68,7 +68,7 @@ let crible (fn : global_reference -> env -> constr -> unit) ref =
 		 (Name mip.mind_typename, None, mip.mind_nf_arity))
 	      mib.mind_packets in
           (match kind_of_term const with 
-	     | IsMutInd ((sp',tyi) as indsp,_) -> 
+	     | IsMutInd ((sp',tyi) as indsp) -> 
 		 if sp=sp' then
 		   print_constructors indsp fn env
 		     (mind_nth_type_packet mib tyi)
@@ -92,7 +92,7 @@ let rec head c =
   | _              -> c
       
 let constr_to_section_path c = match kind_of_term c with
-  | IsConst (sp,_) -> sp
+  | IsConst sp -> sp
   | _ -> raise No_section_path
       
 let xor a b = (a or b) & (not (a & b))

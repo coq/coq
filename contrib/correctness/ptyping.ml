@@ -107,10 +107,10 @@ let effect_app ren env f args =
  * Also returns its variables *)
 
 let state_coq_ast sign a =
+  let env = Global.env_of_context sign in
   let j =
-    let env = Global.env_of_context sign in
     reraise_with_loc (Ast.loc a) (judgment_of_rawconstr Evd.empty env) a in
-  let ids = global_vars j.uj_val in
+  let ids = global_vars env j.uj_val in
   j.uj_val, j.uj_type, ids
 
 (* [is_pure p] tests wether the program p is an expression or not. *)

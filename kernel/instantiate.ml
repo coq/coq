@@ -61,23 +61,20 @@ let instantiate_type sign tty args =
 (* Constants. *)
 
 (* constant_type gives the type of a constant *)
-let constant_type env sigma (sp,args) =
+let constant_type env sigma sp =
   let cb = lookup_constant sp env in
-  (* TODO: check args *)
-(*  instantiate_type cb.const_hyps *) cb.const_type (*(Array.to_list args)*)
+  cb.const_type  
 
 type const_evaluation_result = NoBody | Opaque
 
 exception NotEvaluableConst of const_evaluation_result
 
-let constant_value env (sp,args) =
+let constant_value env sp =
   let cb = lookup_constant sp env in
   if cb.const_opaque then raise (NotEvaluableConst Opaque);
   match cb.const_body with
-    | Some body -> 
-        instantiate_constr cb.const_hyps body (Array.to_list args)
-    | None ->
-	raise (NotEvaluableConst NoBody)
+    | Some body -> body
+    | None -> raise (NotEvaluableConst NoBody)
 
 let constant_opt_value env cst =
   try Some (constant_value env cst)
@@ -133,7 +130,7 @@ let destEvalRef c = match kind_of_term c with
   | _ -> anomaly "Not an evaluable reference"
 
 let evaluable_reference sigma env = function
-  | EvalConst (sp,_) -> evaluable_constant env sp
+  | EvalConst sp -> evaluable_constant env sp
   | EvalVar id -> evaluable_named_decl env id
   | EvalRel n -> evaluable_rel_decl env n
   | EvalEvar (ev,_) -> Evd.is_defined sigma ev

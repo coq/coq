@@ -123,9 +123,9 @@ let pr_constructor env cstr =
 
 open Pattern
 let pr_ref_label = function (* On triche sur le contexte *)
-  | ConstNode sp -> pr_constant (Global.env()) (sp,[||])
-  | IndNode sp -> pr_inductive (Global.env()) (sp,[||])
-  | CstrNode sp -> pr_constructor (Global.env()) (sp,[||])
+  | ConstNode sp -> pr_constant (Global.env()) sp
+  | IndNode sp -> pr_inductive (Global.env()) sp
+  | CstrNode sp -> pr_constructor (Global.env()) sp
   | VarNode id -> pr_id id
 
 let pr_cases_pattern t = gentermpr (Termast.ast_of_cases_pattern t)

@@ -201,7 +201,7 @@ let contract_cofix (bodynum,(types,names,bodies as typedbodies)) =
 
 let reduce_mind_case mia =
   match kind_of_term mia.mconstr with
-    | IsMutConstruct (ind_sp,i as cstr_sp, args) ->
+    | IsMutConstruct (ind_sp,i as cstr_sp) ->
 (*	let ncargs = (fst mia.mci).(i-1) in*)
 	let real_cargs = snd (list_chop (fst mia.mci) mia.mcargs) in
         applist (mia.mlf.(i-1),real_cargs)
@@ -574,17 +574,14 @@ and eqappr cv_pb infos appr1 appr2 cuniv =
         let u3 = convert_vect infos el1 el2 cl1 cl2 u2 in
 	convert_stacks infos lft1 lft2 v1 v2 u3
 
-     | (FInd (op1,cl1), FInd(op2,cl2)) ->
-         if op1 = op2 then
-           let u1 = convert_vect infos el1 el2 cl1 cl2 cuniv in
-           convert_stacks infos lft1 lft2 v1 v2 u1
+     | (FInd op1, FInd op2) ->
+         if op1 = op2
+         then convert_stacks infos lft1 lft2 v1 v2 cuniv
          else raise NotConvertible
 
-     | (FConstruct (op1,cl1), FConstruct(op2,cl2)) ->
+     | (FConstruct op1, FConstruct op2) ->
          if op1 = op2
-         then
-	   let u1 = convert_vect infos el1 el2 cl1 cl2 cuniv in
-           convert_stacks infos lft1 lft2 v1 v2 u1
+         then convert_stacks infos lft1 lft2 v1 v2 cuniv
          else raise NotConvertible
 
      | (FFix (op1,(_,tys1,cl1),_,_), FFix(op2,(_,tys2,cl2),_,_)) ->

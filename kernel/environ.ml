@@ -214,6 +214,112 @@ let lookup_constant sp env =
 let lookup_mind sp env =
   Spmap.find sp env.env_globals.env_inductives
 
+
+(* Lookup of section variables *)
+let lookup_constant_variables c env =
+  let cmap = lookup_constant c env in
+  Sign.instance_from_section_context cmap.const_hyps
+
+let lookup_inductive_variables (sp,i) env =
+  let mis = lookup_mind sp env in
+  Sign.instance_from_section_context mis.mind_hyps
+
+let lookup_constructor_variables (ind,_) env =
+  lookup_inductive_variables ind env
+
+(* Returns the list of global variables in a term *)
+
+let vars_of_global env constr =
+  match kind_of_term constr with
+      IsVar id -> [id]
+    | IsConst sp ->
+        List.map destVar 
+          (Array.to_list (lookup_constant_variables sp env))
+    | IsMutInd ind ->
+        List.map destVar 
+          (Array.to_list (lookup_inductive_variables ind env))
+    | IsMutConstruct cstr ->
+        List.map destVar 
+          (Array.to_list (lookup_constructor_variables cstr env))
+    | _ -> []
+
+let rec global_varsl env l constr =
+  let l = vars_of_global env constr @ l in
+  fold_constr (global_varsl env) l constr
+
+let global_vars env = global_varsl env []
+
+let global_vars_decl env = function
+  | (_, None, t) -> global_vars env t
+  | (_, Some c, t) -> (global_vars env c)@(global_vars env t)
+
+let global_vars_set env constr = 
+  let rec filtrec acc c =
+    let vl = vars_of_global env c in
+    let acc = List.fold_right Idset.add vl acc in
+    fold_constr filtrec acc c
+  in 
+  filtrec Idset.empty constr
+
+
+exception Occur
+
+let occur_in_global env id constr =
+  let vars = vars_of_global env constr in
+  if List.mem id vars then raise Occur
+
+let occur_var env s c = 
+  let rec occur_rec c =
+    occur_in_global env s c;
+    iter_constr occur_rec c
+  in 
+  try occur_rec c; false with Occur -> true
+
+let occur_var_in_decl env hyp (_,c,typ) =
+  match c with
+    | None -> occur_var env hyp (body_of_type typ)
+    | Some body ->
+        occur_var env hyp (body_of_type typ) ||
+        occur_var env hyp body
+
+(* [keep_hyps sign ids] keeps the part of the signature [sign] which 
+   contains the variables of the set [ids], and recursively the variables 
+   contained in the types of the needed variables. *)
+
+let rec keep_hyps env needed = function
+  | (id,copt,t as d) ::sign when Idset.mem id needed ->
+      let globc = 
+	match copt with
+	  | None -> Idset.empty
+	  | Some c -> global_vars_set env c in
+      let needed' =
+	Idset.union (global_vars_set env (body_of_type t)) 
+	  (Idset.union globc needed) in
+      d :: (keep_hyps env needed' sign)
+  | _::sign -> keep_hyps env needed sign
+  | [] -> []
+
+(* This renames bound variables with fresh and distinct names *)
+(* in such a way that the printer doe not generate new names  *)
+(* and therefore that printed names are the intern names      *)
+(* In this way, tactics such as Induction works well          *)
+
+let rec rename_bound_var env l c =
+  match kind_of_term c with
+  | IsProd (Name s,c1,c2)  ->
+      if dependent (mkRel 1) c2 then
+        let s' = next_ident_away s (global_vars env c2@l) in
+        let env' = push_rel (Name s',None,c1) env in
+        mkProd (Name s', c1, rename_bound_var env' (s'::l) c2)
+      else 
+        let env' = push_rel (Name s,None,c1) env in
+	mkProd (Name s, c1, rename_bound_var env' l c2)
+  | IsProd (Anonymous,c1,c2) ->
+        let env' = push_rel (Anonymous,None,c1) env in
+        mkProd (Anonymous, c1, rename_bound_var env' l c2)
+  | IsCast (c,t) -> mkCast (rename_bound_var env l c, t)
+  | x -> c
+
 (* First character of a constr *)
 
 let lowercase_first_char id = String.lowercase (first_char id)
@@ -244,15 +350,15 @@ let hdchar env c =
     | IsLetIn (_,_,_,c)    -> hdrec (k+1) c
     | IsCast (c,_)         -> hdrec k c
     | IsApp (f,l)         -> hdrec k f
-    | IsConst (sp,_)       ->
+    | IsConst sp       ->
 	let c = lowercase_first_char (basename sp) in
 	if c = "?" then "y" else c
-    | IsMutInd ((sp,i) as x,_) ->
+    | IsMutInd ((sp,i) as x) ->
 	if i=0 then 
 	  lowercase_first_char (basename sp)
 	else 
 	  lowercase_first_char (id_of_global env (IndRef x))
-    | IsMutConstruct ((sp,i) as x,_) ->
+    | IsMutConstruct ((sp,i) as x) ->
 	lowercase_first_char (id_of_global env (ConstructRef x))
     | IsVar id  -> lowercase_first_char id
     | IsSort s -> sort_hdchar s

@@ -47,7 +47,7 @@ type recarg =
   | Param of int 
   | Norec 
   | Mrec of int 
-  | Imbr of inductive_path * (recarg list)
+  | Imbr of inductive * (recarg list)
 
 (* [mind_typename] is the name of the inductive; [mind_arity] is
    the arity generalized over global parameters; [mind_lc] is the list

@@ -460,7 +460,7 @@ let check_term env mind_recvec f =
 	      Mrec(i) -> crec env' n' ((1,mind_recvec.(i))::lst') (lr,b)
             | Imbr((sp,i) as ind_sp,lrc) ->           
 	        let sprecargs =
-                  mis_recargs (lookup_mind_specif (ind_sp,[||]) env) in
+                  mis_recargs (lookup_mind_specif ind_sp env) in
                 let lc = Array.map
                   (List.map (instantiate_recarg sp lrc)) sprecargs.(i)
                 in crec env' n' ((1,lc)::lst') (lr,b)
@@ -589,7 +589,7 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 	     anomaly "check_subterm_rec_meta: Bad occurrence of recursive call"
        | _ -> raise (FixGuardError NotEnoughAbstractionInFixBody) in
    let (env',c,d) = check_occur env 1 def in
-   let ((sp,tyi),_ as mind, largs) = 
+   let ((sp,tyi) as mind, largs) = 
      try find_inductive env' sigma c 
      with Induc -> raise (FixGuardError RecursionNotOnInductiveType) in
    let mind_recvec = mis_recargs (lookup_mind_specif mind env') in 
@@ -690,17 +690,14 @@ let rec check_subterm_rec_meta env sigma vectn k def =
 	| IsLetIn (x,a,b,c) -> 
 	    anomaly "check_rec_call: should have been reduced"
 
-	| IsMutInd (_,la) -> 
-	     (array_for_all (check_rec_call env n lst) la) &&
+	| IsMutInd _ -> 
              (List.for_all (check_rec_call env n lst) l)
 
-	| IsMutConstruct (_,la) -> 
-	     (array_for_all (check_rec_call env n lst) la) &&
+	| IsMutConstruct _ -> 
              (List.for_all (check_rec_call env n lst) l)
 
-	| IsConst (sp,la) as c -> 
+	| IsConst sp -> 
             (try 
-	    (array_for_all (check_rec_call env n lst) la) &&
             (List.for_all (check_rec_call env n lst) l)
 	     with (FixGuardError _ ) as e
 		 -> if evaluable_constant env sp then 
@@ -791,7 +788,7 @@ let check_guard_rec_meta env sigma nbfix def deftype =
 	    raise (CoFixGuardError (CodomainNotInductiveType b))
   in
   let (mind, _) = codomain_is_coind env deftype in
-  let ((sp,tyi),_) = mind in
+  let (sp,tyi) = mind in
   let lvlra = mis_recargs (lookup_mind_specif mind env) in
   let vlra = lvlra.(tyi) in  
   let rec check_rec_call env alreadygrd n vlra  t =
@@ -815,9 +812,9 @@ let check_guard_rec_meta env sigma nbfix def deftype =
              else  
 	       error "check_guard_rec_meta: ???"  (* ??? *)
 		 
-	| IsMutConstruct ((_,i as cstr_sp),l)  ->
+	| IsMutConstruct (_,i as cstr_sp)  ->
             let lra =vlra.(i-1) in 
-            let mI = inductive_of_constructor (cstr_sp,l) in
+            let mI = inductive_of_constructor cstr_sp in
 	    let mis = lookup_mind_specif mI env in
             let _,realargs = list_chop (mis_nparams mis) args in
             let rec process_args_of_constr l lra =
@@ -835,8 +832,7 @@ let check_guard_rec_meta env sigma nbfix def deftype =
                             (process_args_of_constr lr lrar)
 			    
                        |  (Imbr((sp,i) as ind_sp,lrc)::lrar)  ->
-			    let mis =
-			      lookup_mind_specif (ind_sp,[||]) env in
+			    let mis = lookup_mind_specif ind_sp env in
                             let sprecargs = mis_recargs mis in
                             let lc = (Array.map 
                                         (List.map 
@@ -934,6 +930,9 @@ let control_only_guard env sigma =
   let rec control_rec c = match kind_of_term c with
     | IsRel _ | IsVar _    -> ()
     | IsSort _ | IsMeta _ -> ()
+    | IsMutInd _       -> ()
+    | IsMutConstruct _ -> ()
+    | IsConst _        -> ()
     | IsCoFix (_,(_,tys,bds) as cofix) ->
 	check_cofix env sigma cofix;
 	Array.iter control_rec tys;
@@ -943,9 +942,6 @@ let control_only_guard env sigma =
 	Array.iter control_rec tys;
 	Array.iter control_rec bds;
     | IsMutCase(_,p,c,b) ->control_rec p;control_rec c;Array.iter control_rec b
-    | IsMutInd (_,cl)       -> Array.iter control_rec cl
-    | IsMutConstruct (_,cl) -> Array.iter control_rec cl
-    | IsConst (_,cl)        -> Array.iter control_rec cl
     | IsEvar (_,cl)         -> Array.iter control_rec cl
     | IsApp (_,cl)         -> Array.iter control_rec cl
     | IsCast (c1,c2)       -> control_rec c1; control_rec c2

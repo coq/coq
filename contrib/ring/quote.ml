@@ -200,9 +200,9 @@ let decomp_term c = kind_of_term (strip_outer_cast c)
 
 let compute_lhs typ i nargsi =
   match kind_of_term typ with
-    | IsMutInd((sp,0),args) -> 
+    | IsMutInd(sp,0) -> 
         let argsi = Array.init nargsi (fun j -> mkMeta (nargsi - j)) in
-        mkApp (mkMutConstruct (((sp,0),i+1), args), argsi)
+        mkApp (mkMutConstruct ((sp,0),i+1), argsi)
     | _ -> i_can't_do_that ()
 
 (*s This function builds the pattern from the RHS. Recursive calls are

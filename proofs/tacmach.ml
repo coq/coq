@@ -276,7 +276,7 @@ let mutual_cofix lf lar pf =
 let rename_bound_var_goal gls =
   let { evar_hyps = sign; evar_concl = cl } as gl = sig_it gls in 
   let ids = ids_of_named_context sign in
-  convert_concl (rename_bound_var ids cl) gls
+  convert_concl (rename_bound_var (Global.env()) ids cl) gls
     
 
 (***************************************)
@@ -481,7 +481,7 @@ open Pp
 open Printer
 
 let pr_com sigma goal com =
-  prterm (rename_bound_var 
+  prterm (rename_bound_var (Global.env())
             (ids_of_named_context goal.evar_hyps) 
             (Astterm.interp_constr sigma (Evarutil.evar_env goal) com))
 

@@ -22,24 +22,24 @@ open Rawterm
 (* usage qque peu general: utilise aussi dans record *)
 
 type cte_typ = 
-  | NAM_Section_Variable of variable_path
-  | NAM_Constant of constant_path
-  | NAM_Inductive of inductive_path
-  | NAM_Constructor of constructor_path
+  | NAM_Section_Variable of variable
+  | NAM_Constant of constant
+  | NAM_Inductive of inductive
+  | NAM_Constructor of constructor
 
 let cte_of_constr c = match kind_of_term c with
-  | IsConst (sp,_) -> ConstRef sp
-  | IsMutInd (ind_sp,_) -> IndRef ind_sp
-  | IsMutConstruct (cstr_cp,_) -> ConstructRef cstr_cp
+  | IsConst sp -> ConstRef sp
+  | IsMutInd ind_sp -> IndRef ind_sp
+  | IsMutConstruct cstr_cp -> ConstructRef cstr_cp
   | IsVar id -> VarRef (Declare.find_section_variable id)
   |  _ -> raise Not_found
 
 type cl_typ = 
   | CL_SORT 
   | CL_FUN
-  | CL_SECVAR of variable_path
-  | CL_CONST of constant_path
-  | CL_IND of inductive_path
+  | CL_SECVAR of variable
+  | CL_CONST of constant
+  | CL_IND of inductive
 
 type cl_info_typ = {
   cl_strength : strength;
@@ -203,8 +203,8 @@ let _ =
 let constructor_at_head t = 
   let rec aux t' = match kind_of_term t' with
     | IsVar id -> CL_SECVAR (find_section_variable id),0
-    | IsConst (sp,_) -> CL_CONST sp,0
-    | IsMutInd (ind_sp,_) -> CL_IND ind_sp,0
+    | IsConst sp -> CL_CONST sp,0
+    | IsMutInd ind_sp -> CL_IND ind_sp,0
     | IsProd (_,_,c) -> CL_FUN,0
     | IsLetIn (_,_,_,c) -> aux c
     | IsSort _ -> CL_SORT,0

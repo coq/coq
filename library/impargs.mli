@@ -33,9 +33,9 @@ val compute_implicits : env -> 'a Evd.evar_map -> types -> implicits_list
 
 (*s Computation of implicits (done using the global environment). *)
 
-val declare_var_implicits : variable_path -> unit
-val declare_constant_implicits : constant_path -> unit
-val declare_mib_implicits : mutual_inductive_path -> unit
+val declare_var_implicits : variable -> unit
+val declare_constant_implicits : constant -> unit
+val declare_mib_implicits : mutual_inductive -> unit
 val declare_implicits : global_reference -> unit
 
 (* Manual declaration of which arguments are expected implicit *)
@@ -43,15 +43,15 @@ val declare_manual_implicits : global_reference -> implicits_list -> unit
 
 (*s Access to already computed implicits. *)
 
-val constructor_implicits_list : constructor_path -> implicits_list
-val inductive_implicits_list : inductive_path -> implicits_list
-val constant_implicits_list : constant_path -> implicits_list
+val constructor_implicits_list : constructor -> implicits_list
+val inductive_implicits_list : inductive -> implicits_list
+val constant_implicits_list : constant -> implicits_list
 
-val implicits_of_var : variable_path -> implicits_list
+val implicits_of_var : variable -> implicits_list
 
-val is_implicit_constant : constant_path -> bool
-val is_implicit_inductive_definition : inductive_path -> bool
-val is_implicit_var : variable_path -> bool
+val is_implicit_constant : constant -> bool
+val is_implicit_inductive_definition : inductive -> bool
+val is_implicit_var : variable -> bool
 
 val implicits_of_global : global_reference -> implicits_list
 

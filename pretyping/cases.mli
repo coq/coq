@@ -21,7 +21,7 @@ open Evarutil
 type pattern_matching_error =
   | BadPattern of constructor * constr
   | BadConstructor of constructor * inductive
-  | WrongNumargConstructor of constructor_path * int
+  | WrongNumargConstructor of constructor * int
   | WrongPredicateArity of constr * constr * constr
   | NeedsInversion of constr * constr
   | UnusedClause of cases_pattern list

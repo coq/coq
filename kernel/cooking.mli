@@ -16,17 +16,15 @@ open Univ
 
 (*s Cooking the constants. *)
 
-type modification_action = ABSTRACT | ERASE
-
 type 'a modification =
   | NOT_OCCUR
-  | DO_ABSTRACT of 'a * modification_action list
+  | DO_ABSTRACT of 'a * constr array
   | DO_REPLACE of constant_body
 
 type work_list =
-    (section_path * section_path modification) list
-    * (inductive_path * inductive_path modification) list
-    * (constructor_path * constructor_path modification) list
+    (constant * constant modification) list
+    * (inductive * inductive modification) list
+    * (constructor * constructor modification) list
 
 type recipe = {
   d_from : constant_body;
@@ -38,7 +36,7 @@ val cook_constant :
 
 (*s Utility functions used in module [Discharge]. *)
 
-val expmod_constr : env -> work_list -> constr -> constr
-val expmod_type : env -> work_list -> types -> types
+val expmod_constr : work_list -> constr -> constr
+val expmod_type : work_list -> types -> types
 
 

@@ -30,7 +30,7 @@ open Evarconv
 type pattern_matching_error =
   | BadPattern of constructor * constr
   | BadConstructor of constructor * inductive
-  | WrongNumargConstructor of constructor_path * int
+  | WrongNumargConstructor of constructor * int
   | WrongPredicateArity of constr * constr * constr
   | NeedsInversion of constr * constr
   | UnusedClause of cases_pattern list
@@ -68,7 +68,7 @@ let norec_branch_scheme env isevars cstr =
     | [] -> mkExistential isevars env in 
   crec env (List.rev cstr.cs_args)
 
-let rec_branch_scheme env isevars ((sp,j),_) recargs cstr =
+let rec_branch_scheme env isevars (sp,j) recargs cstr =
   let rec crec env (args,recargs) = 
     match args, recargs with 
       | (name,None,c as d)::rea,(ra::reca) -> 
@@ -182,16 +182,6 @@ let mssg_this_case_cannot_occur () =
   "This pattern-matching is not exhaustive."
 
 (* Utils *)
-
-let ids_of_ctxt ids =
-  try Array.to_list (Array.map destVar ids)
-  with _ -> anomaly "Context of constructor is not built from Var"
-let ctxt_of_ids ids = Array.of_list (List.map mkVar ids)
-let constructor_of_rawconstructor (cstr_sp,ids) = (cstr_sp,ctxt_of_ids ids)
-let rawconstructor_of_constructor (cstr_sp,ctxt) = (cstr_sp,ids_of_ctxt ctxt)
-let inductive_of_rawconstructor c =
-  inductive_of_constructor (constructor_of_rawconstructor c)
-
 let make_anonymous_patvars =
   list_tabulate (fun _ -> PatVar (dummy_loc,Anonymous)) 
 
@@ -266,7 +256,7 @@ type alias_constr =
 
 type alias_builder =
   | AliasLeaf of constr
-  | AliasConstructor of alias_constr * (constructor_path * identifier list)
+  | AliasConstructor of alias_constr * constructor
 
 type history_partial_result =
   | HistoryArg of (constr * cases_pattern)
@@ -490,10 +480,10 @@ let pattern_status pats =
 (* Well-formedness tests *)
 (* Partial check on patterns *)
 
-let check_constructor loc ((_,j as cstr_sp,ids),args) mind cstrs =
+let check_constructor loc (_,j as cstr_sp) mind cstrs args =
   (* Check it is constructor of the right type *)
-  if inductive_path_of_constructor_path cstr_sp <> fst mind
-  then error_bad_constructor_loc loc (cstr_sp,ctxt_of_ids ids) mind;
+  if inductive_of_constructor cstr_sp <> mind
+  then error_bad_constructor_loc loc cstr_sp mind;
   (* Check the constructor has the right number of args *)
   let nb_args_constr = cstrs.(j-1).cs_nargs in 
   if List.length args <> nb_args_constr
@@ -503,8 +493,8 @@ let check_all_variables typ mat =
   List.iter
     (fun eqn -> match current_pattern eqn with
        | PatVar (_,id) -> ()
-       | PatCstr (loc,(cstr_sp,ids),_,_) ->
-	   error_bad_pattern_loc loc (cstr_sp,ctxt_of_ids ids) typ)
+       | PatCstr (loc,cstr_sp,_,_) ->
+	   error_bad_pattern_loc loc cstr_sp typ)
     mat
 
 let check_unused_pattern env eqn =
@@ -1048,9 +1038,9 @@ let group_equations mind current cstrs mat =
 		 let rest = {rest with tag = lower_pattern_status rest.tag} in
 		 brs.(i-1) <- (args, rest) :: brs.(i-1)
 	       done
-	   | PatCstr(loc,((ind_sp,i),ids as cstr),largs,alias) ->
+	   | PatCstr(loc,((ind_sp,i) as cstr),largs,alias) ->
 	       (* This is a regular clause *)
-	       check_constructor loc (cstr,largs) mind cstrs;
+	       check_constructor loc cstr mind cstrs largs;
 	       only_default := false;
 	       brs.(i-1) <- (largs,rest) :: brs.(i-1)) mat () in
   (brs,!only_default)
@@ -1087,8 +1077,7 @@ let build_branch current pb eqns const_info =
       DepAlias (applist (mkMutConstruct const_info.cs_cstr, params)) in
   let history = 
     push_history_pattern const_info.cs_nargs
-      (AliasConstructor
-	 (partialci, rawconstructor_of_constructor const_info.cs_cstr))
+      (AliasConstructor (partialci, const_info.cs_cstr))
       pb.history in
 
   (* We find matching clauses *)
@@ -1350,7 +1339,7 @@ let coerce_row typing_fun isevars env cstropt tomatch =
   let typ = body_of_type j.uj_type in
   let t = match cstropt with
       | Some (cloc,(cstr,_ as c)) ->
-	  (let tyi = inductive_of_rawconstructor c in
+	  (let tyi = inductive_of_constructor c in
 	   try 
 	     let indtyp = inh_coerce_to_ind isevars env typ tyi in
 	     IsInd (typ,find_rectype env (evars_of isevars) typ)
@@ -1358,8 +1347,7 @@ let coerce_row typing_fun isevars env cstropt tomatch =
 	     (* 2 cases : Not the right inductive or not an inductive at all *)
 	     try
 	       let mind,_ = find_mrectype env (evars_of isevars) typ in
-	       error_bad_constructor_loc cloc
-		 (constructor_of_rawconstructor c) mind
+	       error_bad_constructor_loc cloc c mind
 	     with Induc ->
 	       error_case_not_inductive_loc
 		 (loc_of_rawconstr tomatch) CCI env (evars_of isevars) j)
@@ -1381,7 +1369,7 @@ let coerce_to_indtype typing_fun isevars env matx tomatchl =
 let build_expected_arity env isevars isdep tomatchl =
   let cook n = function
     | _,IsInd (_,IndType(indf,_)) ->
-	let indf' = lift_inductive_family n indf in
+        let indf' = lift_inductive_family n indf in
 	Some (build_dependent_inductive indf', fst (get_arity indf'))
     | _,NotInd _ -> None
   in

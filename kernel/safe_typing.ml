@@ -264,14 +264,15 @@ let safe_infer_declaration env = function
       let (j,cst) = safe_infer env t in
       None, assumption_of_judgment env Evd.empty j, cst
 
-type local_names = (identifier * variable_path) list
+type local_names = (identifier * variable) list
 
 let add_global_declaration sp env locals (body,typ,cst) op =
   let env' = add_constraints cst env in
   let ids = match body with 
-    | None -> global_vars_set typ
-    | Some b -> Idset.union (global_vars_set b) (global_vars_set typ) in
-  let hyps = keep_hyps ids (named_context env) in
+    | None -> global_vars_set env typ
+    | Some b ->
+        Idset.union (global_vars_set env b) (global_vars_set env typ) in
+  let hyps = keep_hyps env ids (named_context env) in
   let body, typ =
     if Options.immediate_discharge then
       option_app (fun c -> it_mkNamedLambda_or_LetIn c hyps) body,
@@ -312,8 +313,9 @@ let add_discharged_constant sp r locals env =
 	add_parameter sp typ locals (* Bricolage avant poubelle *) env'
     | Some c -> 
 	(* let c = hcons1_constr c in *)
-	let ids = Idset.union (global_vars_set c) (global_vars_set typ)	in
-	let hyps = keep_hyps ids (named_context env') in
+	let ids =
+          Idset.union (global_vars_set env c) (global_vars_set env typ)	in
+	let hyps = keep_hyps env ids (named_context env') in
 	let sp_hyps =
 	  List.map (fun (id,b,t) -> (List.assoc id locals,b,t)) hyps in
 	let cb =

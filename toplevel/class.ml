@@ -182,31 +182,18 @@ let check_target clt = function
 
 (* decomposition de constr vers coe_typ *)
 
-(* t provient de global_reference donc pas de Cast, pas de App *)
-let coe_of_reference t = 
-  match kind_of_term t with
-    | IsConst (sp,l) -> (Array.to_list l), ConstRef sp
-    | IsMutInd (ind_sp,l) -> (Array.to_list l), IndRef ind_sp
-    | IsMutConstruct (cstr_sp,l) -> (Array.to_list l), ConstructRef cstr_sp
-    | IsVar id  ->
-	let sp =
-	  try find_section_variable id 
-	  with Not_found -> anomaly "Not a reference"
-	in [], VarRef sp
-    |  _ -> anomaly "Not a reference"
-
 let constructor_at_head1 t = 
   let rec aux t' =
     match kind_of_term t' with
-      | IsConst (sp,l) -> t',[],(Array.to_list l),CL_CONST sp,0
-      | IsMutInd (ind_sp,l) -> t',[],(Array.to_list l),CL_IND ind_sp,0
-      | IsVar id -> t',[],[],CL_SECVAR (find_section_variable id),0
+      | IsConst sp -> t',[],CL_CONST sp,0
+      | IsMutInd ind_sp -> t',[],CL_IND ind_sp,0
+      | IsVar id -> t',[],CL_SECVAR (find_section_variable id),0
       | IsCast (c,_) -> aux c
       | IsApp(f,args) -> 
-	  let t',_,l,c,_ = aux f in t',Array.to_list args,l,c,Array.length args
-      | IsProd (_,_,_) -> t',[],[],CL_FUN,0
+	  let t',_,l,_ = aux f in t',Array.to_list args,l,Array.length args
+      | IsProd (_,_,_) -> t',[],CL_FUN,0
       | IsLetIn (_,_,_,c) -> aux c
-      | IsSort _ -> t',[],[],CL_SORT,0
+      | IsSort _ -> t',[],CL_SORT,0
       |  _ -> raise Not_found
   in 
   aux (collapse_appl t)
@@ -254,21 +241,21 @@ la liste des variables dont depend la classe source
 let get_source lp source =
   match source with
     | None ->
-	let (v1,lv1,l,cl1,p1) =
+	let (v1,lv1,cl1,p1) =
 	  match lp with
 	    | [] -> raise Not_found
             | t1::_ ->
 		try constructor_at_head1 t1
                 with _ -> raise Not_found
         in 
-	(cl1,p1,v1,lv1,1,l)
+	(cl1,p1,v1,lv1,1)
     | Some cl ->
 	let rec aux n = function
 	  | [] -> raise Not_found
 	  | t1::lt ->
 	      try 
-		let v1,lv1,l,cl1,p1 = constructor_at_head1 t1 in
-		if cl1 = cl then cl1,p1,v1,lv1,n,l
+		let v1,lv1,cl1,p1 = constructor_at_head1 t1 in
+		if cl1 = cl then cl1,p1,v1,lv1,n
 		else aux (n+1) lt
               with _ -> aux (n + 1) lt
 	in aux 1 lp
@@ -277,7 +264,7 @@ let get_target t ind =
   if (ind > 1) then 
     CL_FUN,0,t
   else 
-    let v2,_,_,cl2,p2 = constructor_at_head1 t in cl2,p2,v2
+    let v2,_,cl2,p2 = constructor_at_head1 t in cl2,p2,v2
 
 let prods_of t = 
   let rec aux acc d = match kind_of_term d with
@@ -360,19 +347,15 @@ booleen "coercion identite'?"
 lorque source est None alors target est None aussi.
 *)
 
-let add_new_coercion_core idf stre source target isid =
+let add_new_coercion_core coef stre source target isid =
   let env = Global.env () in
-  let v = constr_of_reference Evd.empty env idf in
+  let v = constr_of_reference Evd.empty env coef in
   let vj = Retyping.get_judgment_of env Evd.empty v in
-  (* coef, c'est idf non ?
-  let f_vardep,coef = coe_of_reference v in
-  *)
-  let coef = idf in
   if coercion_exists coef then raise (CoercionError AlreadyExists);
   let lp = prods_of (vj.uj_type) in
   let llp = List.length lp in
   if llp <= 1 then raise (CoercionError NotACoercion);
-  let (cls,ps,vs,lvs,ind,s_vardep) =
+  let (cls,ps,vs,lvs,ind) =
     try 
       get_source (List.tl lp) source
     with Not_found ->

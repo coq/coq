@@ -166,8 +166,8 @@ type fterm =
   | FAtom of constr
   | FCast of fconstr * fconstr
   | FFlex of freference
-  | FInd of inductive_path * fconstr array
-  | FConstruct of constructor_path * fconstr array
+  | FInd of inductive
+  | FConstruct of constructor
   | FApp of fconstr * fconstr array
   | FFix of (int array * int) * (name array * fconstr array * fconstr array)
       * constr array * fconstr subs
@@ -182,7 +182,7 @@ type fterm =
   | FLOCKED
 
 and freference =
-  | FConst of section_path * fconstr array
+  | FConst of constant
   | FEvar of existential_key * fconstr array
   | FVar of identifier
   | FFarRel of int

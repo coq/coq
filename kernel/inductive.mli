@@ -67,10 +67,10 @@ type inductive_family = IndFamily of inductive_instance * constr list
 val make_ind_family : inductive_instance * constr list -> inductive_family
 val dest_ind_family : inductive_family -> inductive_instance * constr list
 
-val liftn_inductive_family : int -> int -> inductive_family -> inductive_family
-val lift_inductive_family : int -> inductive_family -> inductive_family
-val substnl_ind_family : constr list -> int -> inductive_family 
-  -> inductive_family
+val liftn_inductive_family :
+  int -> int -> inductive_family -> inductive_family
+val lift_inductive_family : 
+  int -> inductive_family -> inductive_family
 
 (*s [inductive_type] = [inductive_family] applied to ``real'' parameters *)
 type inductive_type = IndType of inductive_family * constr list
@@ -89,10 +89,6 @@ val substnl_ind_type : constr list -> int -> inductive_type -> inductive_type
 val inductive_of_constructor : constructor -> inductive
 val index_of_constructor : constructor -> int
 val ith_constructor_of_inductive : inductive -> int -> constructor
-
-val inductive_path_of_constructor_path : constructor_path -> inductive_path
-val ith_constructor_path_of_inductive_path :
-  inductive_path -> int -> constructor_path
 
 (*s This type gathers useful informations about some instance of a constructor
     relatively to some implicit context (the current one)

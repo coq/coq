@@ -298,7 +298,7 @@ let case_sign ity i =
   analrec [] recarg.(i-1)
 
 let elim_sign ity i =
-  let (_,j),_ = ity in
+  let (_,j) = ity in
   let rec analrec acc = function 
     | (Param(_)::rest) -> analrec (false::acc) rest
     | (Norec::rest)    -> analrec (false::acc) rest
@@ -346,7 +346,7 @@ let general_elim_then_using
       | _ ->
 	  let name_elim =
 	    match kind_of_term elim with
-	      | IsConst (sp,_) -> string_of_path sp
+	      | IsConst sp -> string_of_path sp
 	      | IsVar id -> string_of_id id
 	      | _ -> "\b"
 	  in

@@ -13,6 +13,7 @@
 open Util
 open Names
 open Term
+open Environ
 
 open Pmisc
 open Ptype
@@ -53,7 +54,7 @@ let update_post env top ef c =
 	     l
 	 else
 	   l) 
-      [] (global_vars c)
+      [] (global_vars (Global.env()) c)
   in
   subst_in_constr al c
   
@@ -110,7 +111,7 @@ let create_bool_post c =
 let is_bool = function
   | TypePure c ->
       (match kind_of_term (strip_outer_cast c) with
-	 | IsMutInd (op,_) -> Global.string_of_global (IndRef op) = "bool"
+	 | IsMutInd op -> Global.string_of_global (IndRef op) = "bool"
 	 | _ -> false)
   | _ -> false
 
