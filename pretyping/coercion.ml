@@ -119,7 +119,7 @@ let rec inh_conv_coerce_to_fail env isevars c1 hj =
              then 
 	       let (x,v1,v2) = destLambda v' in
                let env1 = push_rel_assum (x,v1) env in
-               let h2 = inh_conv_coerce_to_fail env isevars u2
+               let h2 = inh_conv_coerce_to_fail env1 isevars u2
 			  {uj_val = v2; uj_type = t2 } in
                fst (abs_rel env !isevars x v1 h2)
              else 
@@ -131,7 +131,7 @@ let rec inh_conv_coerce_to_fail env isevars c1 hj =
 		 inh_conv_coerce_to_fail env isevars t1
 		   {uj_val = mkRel 1; 
 		    uj_type = u1 } in
-               let h2 = inh_conv_coerce_to_fail env isevars u2  
+               let h2 = inh_conv_coerce_to_fail env1 isevars u2  
 			 { uj_val = mkApp (lift 1 v, [|h1.uj_val|]);
                            uj_type = subst1 h1.uj_val t2 }
 	       in
