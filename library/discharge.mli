@@ -1,4 +1,4 @@
 
 (* $Id$ *)
 
-val close_section : string -> unit
+val close_section : bool -> string -> unit
