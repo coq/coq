@@ -16,3 +16,15 @@ Refine let y = O in (plus O ?).
 Exact (S O).
 Save test3.
 
+(* Example submitted by Yves on coqdev *)
+
+Require PolyList.
+
+Goal (l:(list nat))l=l.
+Proof.
+Refine [l]<[l]l=l>
+       Cases l of
+       | nil => ?
+       | (cons O l0) => ?
+       | (cons (S _) l0) => ?
+       end.
