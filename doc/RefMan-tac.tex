@@ -982,8 +982,9 @@ induction n.
   \ref{intros-pattern}). This provides a concise notation for nested
   induction.
 
-  It is recommended to use this variant of {\tt induction} for 
-  robust proof scripts.
+\Rem for an inductive type with one constructeur, the pattern notation
+{\tt ($p_{1}$,\ldots,$p_{n}$)} can be used instead of
+{\tt [} $p_{1}$ \ldots $p_{n}$ {\tt ]}.
 
 \item {\tt induction {\term} using {\qualid}}
 
@@ -1123,6 +1124,10 @@ last introduced hypothesis.
 
 %  It is recommended to use this variant of {\tt destruct} for 
 %  robust proof scripts.
+
+\Rem for an inductive type with one constructeur, the pattern notation
+{\tt ($p_{1}$,\ldots,$p_{n}$)} can be used instead of
+{\tt [} $p_{1} $\ldots $p_{n}$ {\tt ]}.
 
 \item{\tt destruct {\term} using {\qualid}}
 
@@ -2428,7 +2433,7 @@ main subgoal excluded.
 % En attente d'un moyen de valoriser les fichiers de demos
 %\SeeAlso file \texttt{contrib/Rocq/DEMOS/Demo\_AutoRewrite.v}
 
-\section{The hints databases for auto and eauto}
+\section{The hints databases for {\tt auto} and {\tt eauto}ê}
 \index{Hints databases}\label{Hints-databases}\comindex{Hint}
 The hints for \texttt{auto} and \texttt{eauto} are stored in databases.
 Each databases maps head
