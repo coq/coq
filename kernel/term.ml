@@ -68,6 +68,7 @@ type constr = sorts oper term
 
 type 'a judge = { body : constr; typ : 'a }
 
+(**)
 type typed_type = sorts judge
 type typed_term = typed_type judge
 
@@ -83,6 +84,21 @@ let incast_type tty = DOP2 (Cast, tty.body, (DOP0 (Sort tty.typ)))
 let outcast_type = function
    DOP2 (Cast, b, DOP0 (Sort s)) -> {body=b; typ=s}
   | _ -> anomaly "outcast_type: Not an in-casted type judgement"
+(**)
+(*
+type typed_type = constr
+type typed_term = typed_type judge
+
+let make_typed t s = t
+
+let typed_app f tt = f tt
+
+let body_of_type ty = ty
+let level_of_type t = failwith "N'existe plus"
+
+let incast_type tty = tty
+let outcast_type x = x
+*)
 
 (****************************************************************************)
 (*              Functions for dealing with constr terms                     *)
@@ -196,11 +212,10 @@ let mkMutCaseA ci p c ac =
    Warning: as an invariant the ti are casted during the Fix formation;
    these casts are then used by destFix
 *)
-let in_fixcast {body=b; typ=s} = DOP2 (Cast, b, DOP0 (Sort s))
 
 (* Here, we assume the body already constructed *)
 let mkFixDlam recindxs i jtypsarray body =
-  let typsarray = Array.map in_fixcast jtypsarray in
+  let typsarray = Array.map incast_type jtypsarray in
   DOPN (Fix (recindxs,i),Array.append typsarray body)
 
 let mkFix recindxs i jtypsarray funnames bodies = 
@@ -229,7 +244,7 @@ let mkFix recindxs i jtypsarray funnames bodies =
 *)
 (* Here, we assume the body already constructed *)
 let mkCoFixDlam i jtypsarray body =
-  let typsarray = Array.map in_fixcast jtypsarray in
+  let typsarray = Array.map incast_type jtypsarray in
   DOPN ((CoFix i),(Array.append typsarray body))
 
 let mkCoFix i jtypsarray funnames bodies = 
@@ -491,7 +506,7 @@ let destCase = function
 *)
 
 let out_fixcast = function
-  | DOP2 (Cast, b, DOP0 (Sort s)) -> { body = b; typ = s }
+  | DOP2 (Cast, b, DOP0 (Sort s)) as c -> outcast_type c
   | _ -> anomaly "destFix: malformed recursive definition"
 
 let destGralFix a =
@@ -1368,8 +1383,14 @@ module Htype =
     struct
       type t = typed_type
       type u = (constr -> constr) * (sorts -> sorts)
+(**)
       let hash_sub (hc,hs) j = {body=hc j.body; typ=hs j.typ}
       let equal j1 j2 = j1.body==j2.body & j1.typ==j2.typ
+(**)
+(*
+      let hash_sub (hc,hs) j = hc j
+      let equal j1 j2 = j1==j2
+*)
       let hash = Hashtbl.hash
     end)
 

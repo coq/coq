@@ -1372,7 +1372,7 @@ let sub_term_with_unif cref ceq =
 let general_rewrite_in lft2rgt id (c,lb) gls =
   let typ_id =
     (try
-       let (_,ty) = lookup_var id (pf_env gls) in ty.body
+       let (_,ty) = lookup_var id (pf_env gls) in (body_of_type ty)
      with Not_found -> 
        errorlabstrm "general_rewrite_in" 
 	 [< 'sTR"No such hypothesis : "; print_id id >])

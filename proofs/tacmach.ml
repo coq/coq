@@ -46,7 +46,7 @@ let pf_concl gls = (sig_it gls).evar_concl
 
 let pf_untyped_hyps gls  =
   let sign = Environ.var_context (pf_env gls) in
-  map_sign_typ (fun x -> x.body) sign
+  map_sign_typ (fun x -> body_of_type x) sign
 
 let pf_nth_hyp gls n = nth_sign (pf_untyped_hyps gls) n
 

@@ -55,6 +55,7 @@ val gen_rel :
   env -> 'a evar_map -> name -> typed_type -> unsafe_judgment 
     -> unsafe_judgment * constraints
 
+val sort_of_product : sorts -> sorts -> universes -> sorts * constraints
 val sort_of_product_without_univ : sorts -> sorts -> sorts
 
 val cast_rel : 

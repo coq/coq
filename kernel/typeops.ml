@@ -17,8 +17,8 @@ open Type_errors
 
 let make_judge v tj =
   { uj_val = v;
-    uj_type = tj.body;
-    uj_kind= DOP0 (Sort tj.typ) }
+    uj_type = body_of_type tj;
+    uj_kind= DOP0 (Sort (level_of_type tj)) }
 
 let j_val_only j = j.uj_val
 (* Faut-il caster ? *)
@@ -28,12 +28,13 @@ let j_val_cast j = mkCast j.uj_val j.uj_type
 
 let typed_type_of_judgment env sigma j =
   match whd_betadeltaiota env sigma j.uj_kind with
-    | DOP0(Sort s) -> { body = j.uj_type; typ = s }
+    | DOP0(Sort s) -> make_typed j.uj_type s
     | _ -> error_not_type CCI env j.uj_type
+
 
 let assumption_of_judgment env sigma j =
   match whd_betadeltaiota env sigma j.uj_type with
-    | DOP0(Sort s) -> { body = j.uj_val; typ = s }
+    | DOP0(Sort s) -> make_typed j.uj_val s
     | _ -> error_assumption CCI env j.uj_val
 
 (* Type of a de Bruijn index. *)
@@ -42,8 +43,8 @@ let relative env n =
   try
     let (_,typ) = lookup_rel n env in
     { uj_val  = Rel n;
-      uj_type = lift n typ.body;
-      uj_kind = DOP0 (Sort typ.typ) }
+      uj_type = lift n (body_of_type typ);
+      uj_kind = DOP0 (Sort (level_of_type typ)) }
   with Not_found -> 
     error_unbound_rel CCI env n
 
@@ -78,11 +79,7 @@ let check_hyps id env sigma hyps =
 
 (* Instantiation of terms on real arguments. *)
 
-let type_of_constant env sigma (sp,args) =
-  let cb = lookup_constant sp env in
-  let hyps = cb.const_hyps in
-  (* TODO: check args *)
-  instantiate_type (ids_of_sign hyps) cb.const_type (Array.to_list args)
+let type_of_constant = Instantiate.constant_type
 
 (* Inductive types. *)
 
@@ -244,7 +241,7 @@ let is_correct_arity env sigma kelim (c,p) =
   in 
   srec
 
-let find_case_dep_nparams env sigma (c,p) (mind,largs) typP =    
+let find_case_dep_nparams env sigma (c,p) (mind,largs) typP =
   let mis = lookup_mind_specif mind env in
   let nparams = mis_nparams mis
   and kelim = mis_kelim mis
@@ -387,7 +384,8 @@ let sort_of_product_without_univ domsort rangsort =
 let abs_rel env sigma name var j =
   let rngtyp = whd_betadeltaiota env sigma j.uj_kind in
   let cvar = incast_type var in
-  let (s,cst) = sort_of_product var.typ (destSort rngtyp) (universes env) in
+  let (s,cst) =
+    sort_of_product (level_of_type var) (destSort rngtyp) (universes env) in
   { uj_val = mkLambda name cvar (j_val j);
     uj_type = mkProd name cvar j.uj_type;
     uj_kind = mkSort s },
@@ -404,11 +402,11 @@ let gen_rel env sigma name var j =
   else
     match jtyp with
       | DOP0(Sort s) ->
-	  let (s',g) = sort_of_product var.typ s (universes env) in
+	  let (s',g) = sort_of_product (level_of_type var) s (universes env) in
           let res_type = mkSort s' in
 	  let (res_kind,g') = type_of_sort res_type in
           { uj_val = 
-	      mkProd name (mkCast var.body (mkSort var.typ)) (j_val_cast j);
+	      mkProd name (incast_type var) (j_val_cast j);
             uj_type = res_type;
             uj_kind = res_kind }, g'
       | _ -> 
@@ -967,7 +965,7 @@ let keep_hyps sign needed =
 	    (fun ((hyps,globs) as sofar) id a ->
                if Idset.mem id globs then
                  (add_sign (id,a) hyps, 
-		  Idset.union (global_vars_set a.body) globs)
+		  Idset.union (global_vars_set (body_of_type a)) globs)
                else 
 		 sofar) 
 	    (nil_sign,needed) sign))

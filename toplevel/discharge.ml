@@ -27,14 +27,14 @@ let recalc_sp sp =
 let whd_all c = whd_betadeltaiota (Global.env()) Evd.empty c
 
 let generalize_type id var c =
-  let c' = mkProd (Name id) var.body (subst_var id c.body) in
-  let c'ty = sort_of_product_without_univ var.typ c.typ in 
-  { body = c'; typ = c'ty }
+  let c' = mkProd (Name id) (body_of_type var) (subst_var id (body_of_type c)) in
+  let c'ty = sort_of_product_without_univ (level_of_type var) (level_of_type c) in 
+  make_typed c' c'ty
 
 let casted_generalize id var c =
-  let c' = mkProd (Name id) var.body (subst_var id (cast_term c)) in
+  let c' = mkProd (Name id) (body_of_type var) (subst_var id (cast_term c)) in
   let s = destSort (whd_all (cast_type c)) in
-  let c'ty = sort_of_product_without_univ var.typ s in 
+  let c'ty = sort_of_product_without_univ (level_of_type var) s in 
   mkCast c' (DOP0 (Sort c'ty))
 
 type modification_action = ABSTRACT | ERASE
@@ -125,7 +125,7 @@ let abstract_inductive ids_to_abs hyps inds =
   in
   let (_,inds',revmodl) =
     List.fold_left abstract_once (hyps,inds,[]) ids_to_abs in
-  let inds'' = List.map (fun (a,b,c,d) -> (a,b.body,c,d)) inds' in
+  let inds'' = List.map (fun (a,b,c,d) -> (a,body_of_type b,c,d)) inds' in
   (inds'', List.rev revmodl)
 
 let abstract_constant ids_to_abs hyps (body,typ) =
@@ -144,9 +144,9 @@ let abstract_constant ids_to_abs hyps (body,typ) =
 	    Some (ref (Recipe 
 			 (fun () -> mkLambda name cvar (subst_var id (f())))))
       in
-      let typ' =
-    	{ body = mkProd name cvar (subst_var id typ.body);
-	  typ  = sort_of_product_without_univ var.typ typ.typ } 
+      let typ' = make_typed
+    	(mkProd name cvar (subst_var id (body_of_type typ)))
+	(sort_of_product_without_univ (level_of_type var) (level_of_type typ))
       in
       (tl_sign hyps,body',typ',ABSTRACT::modl)
   in
@@ -182,8 +182,8 @@ let expmod_constr oldenv modlist c =
     | DOP2 (Cast,val_0,typ) -> DOP2 (Cast,simpfun val_0,simpfun typ)
     | _ -> simpfun c'
 
-let expmod_type oldenv modlist {body=c;typ=s} = 
-  { body = expmod_constr oldenv modlist c; typ = s }
+let expmod_type oldenv modlist c = 
+  typed_app (expmod_constr oldenv modlist) c
 
 let expmod_constant_value opaque oldenv modlist = function
   | None -> None
@@ -236,7 +236,7 @@ let process_constant osecsp nsecsp oldenv (ids_to_discard,modlist) cb =
   let hyps = map_sign_typ (expmod_type oldenv modlist) cb.const_hyps in
   let (body',typ',modl) = abstract_constant ids_to_discard hyps (body,typ) in
   let mods = [ (Const osecsp, DO_ABSTRACT(Const nsecsp,modl)) ] in
-  (body', typ'.body, mods)
+  (body', body_of_type typ', mods)
 
 
 (* Discharge of the various objects of the environment. *)
@@ -273,7 +273,7 @@ let process_object oldenv sec_sp (ops,ids_to_discard,work_alist) (sp,lobj) =
 	if stre = (DischargeAt sec_sp) or ids_to_discard <> [] then
 	  (ops,id::ids_to_discard,work_alist)
 	else
-	  let expmod_a = expmod_constr oldenv work_alist a.body in
+	  let expmod_a = expmod_constr oldenv work_alist (body_of_type a) in
 	  (Variable (id,expmod_a,stre,sticky) :: ops,
            ids_to_discard,work_alist)
 

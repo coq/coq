@@ -4,7 +4,7 @@
 open Pp
 open Util
 open Ast
-open Inductive
+open Indtypes
 open Type_errors
 open Lexer
 

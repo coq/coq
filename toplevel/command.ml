@@ -154,7 +154,7 @@ let build_mutual lparams lnamearconstrs finite =
                     (mkProdCit lparams constr))
                lname_constr 
 	   in
-           (name, ar.body, List.map fst lname_constr,
+           (name, (body_of_type ar), List.map fst lname_constr,
             put_DLAMSV_subst (List.rev lrecnames) (Array.of_list consconstrl)))
         (List.rev arityl) lnamearconstrs
     in
@@ -219,7 +219,7 @@ let build_recursive lnameargsardef =
       List.fold_left 
         (fun (env,arl) (recname,lparams,arityc,_) -> 
            let arity = typed_type_of_com Evd.empty env (mkProdCit lparams arityc) in
-           declare_variable recname (arity.body,NeverDischarge,false);
+           declare_variable recname (body_of_type arity,NeverDischarge,false);
            (Environ.push_var (recname,arity) env, (arity::arl)))
         (env0,[]) lnameargsardef
     with e ->
@@ -282,7 +282,7 @@ let build_corecursive lnameardef =
       List.fold_left 
         (fun (env,arl) (recname,arityc,_) -> 
            let arity = typed_type_of_com Evd.empty env0 arityc in
-           declare_variable recname (arity.body,NeverDischarge,false);
+           declare_variable recname (body_of_type arity,NeverDischarge,false);
            (Environ.push_var (recname,arity) env, (arity::arl)))
         (env0,[]) lnameardef
     with e -> 

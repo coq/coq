@@ -26,33 +26,34 @@ let instantiate_constr ids c args =
     replace_vars (List.combine ids (List.map make_substituend args)) c
 
 let instantiate_type ids tty args =
-  { body = instantiate_constr ids tty.body args;
-    typ = tty.typ }
+  typed_app (fun c -> instantiate_constr ids c args) tty
 
 (* Constants. *)
 
 (* constant_type gives the type of a constant *)
-let constant_type env k =
-  let (sp,args) = destConst k in
+let constant_type env sigma (sp,args) =
   let cb = lookup_constant sp env in
+  (* TODO: check args *)
   instantiate_type 
     (ids_of_sign cb.const_hyps) cb.const_type (Array.to_list args)
 
-let constant_value env k =
-  let (sp,args) = destConst k in
-  let cb = lookup_constant sp env in
-  if not cb.const_opaque & defined_constant env k then
-    match cb.const_body with
-      | Some v -> 
-	  let body = cook_constant v in
-          instantiate_constr 
-	    (ids_of_sign cb.const_hyps) body (Array.to_list args)
-      | None -> 
-	  anomalylabstrm "termenv__constant_value"
-	    [< 'sTR "a defined constant with no body." >]
-  else 
-    failwith "opaque"
+type const_evaluation_error = NotDefinedConst | OpaqueConst
 
+exception NotEvaluableConst of const_evaluation_error
+
+let constant_value env cst =
+  let (sp,args) = destConst cst in
+  let cb = lookup_constant sp env in
+  if cb.const_opaque then raise (NotEvaluableConst OpaqueConst) else
+  if not (is_defined cb) then raise (NotEvaluableConst NotDefinedConst) else
+  match cb.const_body with
+    | Some v -> 
+	let body = cook_constant v in
+        instantiate_constr 
+	  (ids_of_sign cb.const_hyps) body (Array.to_list args)
+    | None ->
+	anomalylabstrm "termenv__constant_value"
+	  [< 'sTR "a defined constant with no body." >]
 
 let mis_lc mis =
   instantiate_constr (ids_of_sign mis.mis_mib.mind_hyps) mis.mis_mip.mind_lc
@@ -115,7 +116,6 @@ let mis_typed_arity mis =
   and largs = Array.to_list mis.mis_args in
   instantiate_type idhyps mis.mis_mip.mind_arity largs
 
-let mis_arity mispec =
-  let { body = b; typ = t } = mis_typed_arity mispec in
-  DOP2 (Cast, b, DOP0 (Sort t))
+let mis_arity mispec = incast_type (mis_typed_arity mispec)
+
 

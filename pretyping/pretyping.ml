@@ -208,14 +208,14 @@ let evar_type_case isevars env ct pt lft p c =
 let pretype_var loc env id = 
   try
     match lookup_id id (context env) with
-      | RELNAME (n,{body=typ;typ=s}) ->
+      | RELNAME (n,typ) ->
 	  { uj_val  = Rel n;
-	    uj_type = lift n typ;
-	    uj_kind = DOP0 (Sort s) }
-      | GLOBNAME (id,{body=typ;typ=s}) ->
+	    uj_type = lift n (body_of_type typ);
+	    uj_kind = DOP0 (Sort (level_of_type typ)) }
+      | GLOBNAME (id,typ) ->
 	  { uj_val  = VAR id;
-	    uj_type = typ;
-	    uj_kind = DOP0 (Sort s) }
+	    uj_type = body_of_type typ;
+	    uj_kind = DOP0 (Sort (level_of_type typ)) }
     with Not_found ->
       error_var_not_found_loc loc CCI id
 
@@ -448,7 +448,8 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
   let tj = pretype def_vty_con env isevars t in
   let tj = inh_tosort_force env isevars tj in
   let cj =
-    pretype (mk_tycon2 vtcon (assumption_of_judgment env !isevars tj).body)
+    pretype
+      (mk_tycon2 vtcon (body_of_type (assumption_of_judgment env !isevars tj)))
       env isevars c in
   inh_cast_rel env isevars cj tj
 

@@ -110,7 +110,7 @@ let rec execute mf env cstr =
 	let cst = Constraint.union cst1 (Constraint.union cst2 cst3) in
 	(j, cst)
 	  
-    | IsProd (name,c1,c2) ->
+     | IsProd (name,c1,c2) ->
         let (j,cst1) = execute mf env c1 in
         let var = assumption_of_judgment env Evd.empty j in
 	let env1 = push_rel (name,var) env in
@@ -156,8 +156,8 @@ and execute_list mf env = function
 (* The typed type of a judgment. *)
 
 let execute_type mf env constr = 
-  let (j,_) = execute mf env constr in
-  assumption_of_judgment env Evd.empty j
+  let (j,cst) = execute mf env constr in
+  (assumption_of_judgment env Evd.empty j, cst)
 
 
 (* Exported machines.  First safe machines, with no general fixpoint
@@ -198,15 +198,16 @@ let unsafe_machine_type env constr =
 let type_of env c = 
   let (j,_) = safe_machine env c in nf_betaiota env Evd.empty j.uj_type
 
+(* obsolètes
 let type_of_type env c = 
-  let tt = safe_machine_type env c in DOP0 (Sort tt.typ)
+  let tt = safe_machine_type env c in DOP0 (Sort (level_of_type tt.typ)
 
 let unsafe_type_of env c = 
   let (j,_) = unsafe_machine env c in nf_betaiota env Evd.empty j.uj_type
 
 let unsafe_type_of_type env c = 
   let tt = unsafe_machine_type env c in DOP0 (Sort tt.typ)
-
+*)
 (* Typing of several terms. *)
 
 let safe_machine_l env cl =
@@ -281,7 +282,7 @@ let add_constant_with_value sp body typ env =
 	    error_actual_type CCI env jb.uj_val jb.uj_type jt.uj_val
   in
   let ids = 
-    Idset.union (global_vars_set body) (global_vars_set ty.body)
+    Idset.union (global_vars_set body) (global_vars_set (body_of_type ty))
   in
   let cb = { 
     const_kind = kind_of_path sp;
@@ -331,76 +332,84 @@ let add_parameter sp t env =
 
 (* Insertion of inductive types. *)
 
-(* [for_all_prods p env c] checks a boolean condition [p] on all types
-   appearing in products in front of [c]. The boolean condition [p] is a 
-   function taking a value of type [typed_type] as argument. *)
+(* Only the case where at least s1 or s2 is a [Type] is taken into account *)
+let max_universe (s1,cst1) (s2,cst2) g =
+  match s1,s2 with
+    | Type u1, Type u2 ->
+	let (u12,cst) = sup u1 u2 g in
+	Type u12, Constraint.union cst (Constraint.union cst1 cst2)
+    | Type u1, _  -> s1, cst1
+    | _, _ -> s2, cst2
 
-let rec for_all_prods p env c =
-  match whd_betadeltaiota env Evd.empty c with
-    | DOP2(Prod, DOP2(Cast,t,DOP0 (Sort s)), DLAM(name,c)) -> 
-	(p (make_typed t s)) &&
-	(let ty = { body = t; typ = s } in
-	 let env' = Environ.push_rel (name,ty) env in
-	 for_all_prods p env' c)
-    | DOP2(Prod, b, DLAM(name,c)) -> 
-	let (jb,cst) = unsafe_machine env b in
-	let var = assumption_of_judgment env Evd.empty jb in
-	(p var) &&
-	(let env' = Environ.push_rel (name,var) (add_constraints cst env) in
-	 for_all_prods p env' c)
-    | _ -> true
+(* This (re)computes informations relevant to extraction and the sort of
+   an arity or type constructor *)
 
-let is_small_type e c = for_all_prods (fun t -> is_small t.typ) e c
+let rec infos_and_sort env t =
+  match kind_of_term t with
+    | IsProd (name,c1,c2) ->
+        let (var,cst1) = safe_machine_type env c1 in
+	let env1 = Environ.push_rel (name,var) env in
+	let (infos,smax,cst) = infos_and_sort env1 c2 in
+	let s1 = level_of_type var in
+	let smax',cst' = max_universe (s1,cst1) (smax,cst) (universes env) in
+	let logic = not (is_info_type env Evd.empty var) in
+	let small = is_small s1 in
+	((logic,small) :: infos, smax', cst')
+    | IsCast (c,t) -> infos_and_sort env c
+    | _ ->
+	([],prop (* = neutral element of max_universe *),Constraint.empty)
 
-let enforce_type_constructor env univ j cst =
-  match whd_betadeltaiota env Evd.empty j.uj_type with
-    | DOP0 (Sort (Type uc)) -> 
-	Constraint.add (univ,Geq,uc) cst
-    | _ -> error "Type of Constructor not well-formed"
+(* [infos] is a sequence of pair [islogic,issmall] for each type in
+   the product of a constructor or arity *)
 
-let type_one_constructor env_ar nparams ar c =
-  let (params,dc) = mind_extract_params nparams c in
-  let env_par = push_rels params env_ar in
-  let (jc,cst) = safe_machine env_par dc in
-  let cst' = match sort_of_arity env_ar ar with
-    | Type u -> enforce_type_constructor env_par u jc cst
-    | Prop _ -> cst
-  in
-  let (j,cst'') = safe_machine env_ar c in
-  let issmall = is_small_type env_par dc in
-  ((issmall,j), Constraint.union cst' cst'')
+let is_small infos = List.for_all (fun (logic,small) -> small) infos
+let is_logic_constr infos = List.for_all (fun (logic,small) -> logic) infos
+let is_logic_arity infos =
+  List.for_all (fun (logic,small) -> logic || small) infos
 
-let logic_constr env c =
-  for_all_prods (fun t -> not (is_info_type env Evd.empty t)) env c
+let is_unit arinfos constrsinfos =
+  match constrsinfos with  (* One info = One constructor *)
+   | [constrinfos] -> is_logic_constr constrinfos && is_logic_arity arinfos
+   | _ -> false
 
-let logic_arity env c =
-  for_all_prods 
-    (fun t -> 
-       (not (is_info_type env Evd.empty t)) or (is_small_type env t.body)) 
-    env c
+let small_unit constrsinfos (env_par,nparams,ar) =
+  let issmall = List.for_all is_small constrsinfos in
+  let (arinfos,_,_) =
+    let (_,a) = mind_extract_params nparams ar in infos_and_sort env_par a in
+  let isunit = is_unit arinfos constrsinfos in
+  issmall, isunit
 
-let is_unit env_par nparams ar spec =
-  match decomp_all_DLAMV_name spec with
-    | (_,[|c|]) ->
-	(let (_,a) = mind_extract_params nparams ar in 
-	 logic_arity env_par ar) &&
-	(let (_,c') = mind_extract_params nparams c in 
-	 logic_constr env_par c')
-    | _ -> false
+(* [smax] is the max of the sorts of the products of the constructor type *)
+
+let enforce_type_constructor arsort smax cst =
+  match smax, arsort with
+    | Type uc, Type ua -> Constraint.add (ua,Geq,uc) cst
+    | _,_ -> cst
+
+let type_one_constructor env_ar nparams arsort c =
+  let (infos,max,cst1) = 
+    let (params,dc) = mind_extract_params nparams c in
+    let env_par = push_rels params env_ar in
+    infos_and_sort env_par dc in
+  let (j,cst2) = safe_machine_type env_ar c in
+  (*C'est idiot, cst1 et cst2 sont essentiellement des copies l'un de l'autre*)
+  let cst3 =enforce_type_constructor arsort max (Constraint.union cst1 cst2) in
+  (infos, j, cst3)
 
 let type_one_inductive i env_ar env_par nparams ninds (id,ar,cnames,spec) =
   let (lna,vc) = decomp_all_DLAMV_name spec in
-  let ((issmall,jlc),cst') = 
+  let arsort = sort_of_arity env_ar ar in
+  let (constrsinfos,jlc,cst') = 
     List.fold_right
-      (fun c ((small,jl),cst) -> 
-	 let ((sm,jc),cst') = type_one_constructor env_ar nparams ar c in
-	 ((small && sm,jc::jl), Constraint.union cst cst'))
+      (fun c (infosl,jl,cst) -> 
+	 let (infos,jc,cst') = type_one_constructor env_ar nparams arsort c in
+	 (infos::infosl,jc::jl, Constraint.union cst cst'))
       (Array.to_list vc) 
-      ((true,[]),Constraint.empty)
+      ([],[],Constraint.empty)
   in
-  let castlc = List.map cast_of_judgment jlc in
+  let castlc = List.map incast_type jlc in
   let spec' = put_DLAMSV lna (Array.of_list castlc) in
-  let isunit = is_unit env_par nparams ar spec in
+  let issmall,isunit = small_unit constrsinfos (env_par,nparams,ar) in
   let (_,tyar) = lookup_rel (ninds+1-i) env_ar in
   ((id,tyar,cnames,issmall,isunit,spec'), cst')
 
@@ -431,7 +440,7 @@ let add_mind sp mie env =
     cci_inductive env env_arities kind nparams mie.mind_entry_finite inds cst
   in
   add_mind sp mib (add_constraints cst env)
-
+    
 let add_constraints = add_constraints
 
 let pop_vars idl env =

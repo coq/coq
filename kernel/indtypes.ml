@@ -16,12 +16,102 @@ open Typeops
    is given, since inductive types are typed in an environment without 
    existentials. *)
 
+(* [check_constructors_names id s cl] checks that all the constructors names
+   appearing in [l] are not present in the set [s], and returns the new set
+   of names. The name [id] is the name of the current inductive type, used
+   when reporting the error. *)
+
+(***********************************************************************)
+(* Various well-formedness check for inductive declarations            *)
+
+type inductive_error =
+  | NonPos of name list * constr * constr
+  | NotEnoughArgs of name list * constr * constr
+  | NotConstructor of name list * constr * constr
+  | NonPar of name list * constr * int * constr * constr
+  | SameNamesTypes of identifier
+  | SameNamesConstructors of identifier * identifier
+  | NotAnArity of identifier
+  | BadEntry
+
+exception InductiveError of inductive_error
+
+let check_constructors_names id =
+  let rec check idset = function
+    | [] -> idset
+    | c::cl -> 
+	if Idset.mem c idset then 
+	  raise (InductiveError (SameNamesConstructors (id,c)))
+	else
+	  check (Idset.add c idset) cl
+  in
+  check
+
+(* [mind_check_names mie] checks the names of an inductive types declaration,
+   and raises the corresponding exceptions when two types or two constructors
+   have the same name. *)
+
+let mind_check_names mie =
+  let rec check indset cstset = function
+    | [] -> ()
+    | (id,_,cl,_)::inds -> 
+	if Idset.mem id indset then
+	  raise (InductiveError (SameNamesTypes id))
+	else
+	  let cstset' = check_constructors_names id cstset cl in
+	  check (Idset.add id indset) cstset' inds
+  in
+  check Idset.empty Idset.empty mie.mind_entry_inds
+
+(* [mind_extract_params mie] extracts the params from an inductive types
+   declaration, and checks that they are all present (and all the same)
+   for all the given types. *)
+
+let mind_extract_params n c =
+  let (l,c') = decompose_prod_n n c in (List.rev l,c')
+  
+let extract nparams c =
+  try mind_extract_params nparams c 
+  with UserError _ -> raise (InductiveError BadEntry)
+
+let check_params nparams params c = 
+  let eparams = fst (extract nparams c) in
+  try
+    List.iter2 
+      (fun (n1,t1) (n2,t2) ->
+	 if n1 <> n2 || strip_all_casts t1 <> strip_all_casts t2 then
+	   raise (InductiveError BadEntry))
+      eparams params
+  with Invalid_argument _ ->
+    raise (InductiveError BadEntry)
+
+let mind_extract_and_check_params mie =
+  let nparams = mie.mind_entry_nparams in
+  match mie.mind_entry_inds with
+    | [] -> anomaly "empty inductive types declaration"
+    | (_,ar,_,_)::l -> 
+	let (params,_) = extract nparams ar in
+	List.iter (fun (_,c,_,_) -> check_params nparams params c) l;
+	params
+
+let mind_check_lc params mie =
+  let ntypes = List.length mie.mind_entry_inds in
+  let nparams = List.length params in
+  let check_lc (_,_,_,lc) =
+    let (lna,c) = decomp_all_DLAMV_name lc in
+    Array.iter (check_params nparams params) c;
+    if not (List.length lna = ntypes) then raise (InductiveError BadEntry)
+  in
+  List.iter check_lc mie.mind_entry_inds
+
 let mind_check_arities env mie =
   let check_arity id c =
     if not (is_arity env Evd.empty c) then 
       raise (InductiveError (NotAnArity id))
   in
   List.iter (fun (id,ar,_,_) -> check_arity id ar) mie.mind_entry_inds
+
+(***********************************************************************)
 
 let allowed_sorts issmall isunit = function
   | Type _ -> 
@@ -34,10 +124,10 @@ let allowed_sorts issmall isunit = function
 let is_small_type t = is_small t.typ
 
 type ill_formed_ind =
-  | NonPos of int
-  | NotEnoughArgs of int
-  | NotConstructor
-  | NonPar of int * int
+  | LocalNonPos of int
+  | LocalNotEnoughArgs of int
+  | LocalNotConstructor
+  | LocalNonPar of int * int
 
 exception IllFormedInd of ill_formed_ind
 
@@ -45,33 +135,33 @@ let explain_ind_err ntyp lna nbpar c err =
   let (lpar,c') = mind_extract_params nbpar c in
   let env = (List.map fst lpar)@lna in
   match err with
-    | NonPos kt -> 
-	raise (InductiveError (Inductive.NonPos (env,c',Rel (kt+nbpar))))
-    | NotEnoughArgs kt -> 
+    | LocalNonPos kt -> 
+	raise (InductiveError (NonPos (env,c',Rel (kt+nbpar))))
+    | LocalNotEnoughArgs kt -> 
 	raise (InductiveError 
-		 (Inductive.NotEnoughArgs (env,c',Rel (kt+nbpar))))
-    | NotConstructor ->
+		 (NotEnoughArgs (env,c',Rel (kt+nbpar))))
+    | LocalNotConstructor ->
 	raise (InductiveError 
-		 (Inductive.NotConstructor (env,c',Rel (ntyp+nbpar))))
-    | NonPar (n,l) ->
+		 (NotConstructor (env,c',Rel (ntyp+nbpar))))
+    | LocalNonPar (n,l) ->
 	raise (InductiveError 
-		 (Inductive.NonPar (env,c',n,Rel (nbpar-n+1), Rel (l+nbpar))))
+		 (NonPar (env,c',n,Rel (nbpar-n+1), Rel (l+nbpar))))
 
 let failwith_non_pos_vect n ntypes v =
   for i = 0 to Array.length v - 1 do
     for k = n to n + ntypes - 1 do
-      if not (noccurn k v.(i)) then raise (IllFormedInd (NonPos (k-n+1)))
+      if not (noccurn k v.(i)) then raise (IllFormedInd (LocalNonPos (k-n+1)))
     done
   done;
   anomaly "failwith_non_pos_vect: some k in [n;n+ntypes-1] should occur in v"
 
 let check_correct_par env nparams ntypes n l largs =
   if Array.length largs < nparams then 
-    raise (IllFormedInd (NotEnoughArgs l));
+    raise (IllFormedInd (LocalNotEnoughArgs l));
   let (lpar,largs') = array_chop nparams largs in
   for k = 0 to nparams - 1 do
     if not ((Rel (n-k-1))= whd_betadeltaiotaeta env Evd.empty lpar.(k)) then
-      raise (IllFormedInd (NonPar (k+1,l)))
+      raise (IllFormedInd (LocalNonPar (k+1,l)))
   done;
   if not (array_for_all (noccur_bet n ntypes) largs') then 
     failwith_non_pos_vect n ntypes largs'
@@ -95,7 +185,7 @@ let listrec_mconstr env ntypes nparams i indlc =
   let rec check_pos n c = 
     match whd_betadeltaiota env Evd.empty c with 
       | DOP2(Prod,b,DLAM(na,d)) -> 
-          if not (noccur_bet n ntypes b) then raise (IllFormedInd (NonPos n));
+          if not (noccur_bet n ntypes b) then raise (IllFormedInd (LocalNonPos n));
 	  check_pos (n+1) d
       | x -> 
 	  let hd,largs = destApplication (ensure_appl x) in
@@ -109,23 +199,23 @@ let listrec_mconstr env ntypes nparams i indlc =
 		  then Param(n-1-k)
                   else Norec
 		else
-		  raise (IllFormedInd (NonPos n))
+		  raise (IllFormedInd (LocalNonPos n))
             | DOPN(MutInd ind_sp,a) -> 
                 if (noccur_bet n ntypes x) then Norec
                 else Imbr(ind_sp,imbr_positive n (ind_sp,a) largs)
             | err -> 
 		if noccur_bet n ntypes x then Norec
-		else raise (IllFormedInd (NonPos n))
+		else raise (IllFormedInd (LocalNonPos n))
 
   and imbr_positive n mi largs =
     let mispeci = lookup_mind_specif mi env in
     let auxnpar = mis_nparams mispeci in
     let (lpar,auxlargs) = array_chop auxnpar largs in 
     if not (array_for_all (noccur_bet n ntypes) auxlargs) then
-      raise (IllFormedInd (NonPos n));
+      raise (IllFormedInd (LocalNonPos n));
     let auxlc = mis_lc mispeci 
     and auxntyp = mis_ntypes mispeci in 
-    if auxntyp <> 1 then raise (IllFormedInd (NonPos n));
+    if auxntyp <> 1 then raise (IllFormedInd (LocalNonPos n));
     let lrecargs = array_map_to_list (check_weak_pos n) lpar in
     (* The abstract imbricated inductive type with parameters substituted *)
     let auxlcvect = abstract_mind_lc env auxntyp auxnpar auxlc in
@@ -165,7 +255,7 @@ let listrec_mconstr env ntypes nparams i indlc =
       | DOP2(Lambda,b,DLAM(na,d)) -> 
           if noccur_bet n ntypes b
           then check_weak_pos (n+1) d
-          else raise (IllFormedInd (NonPos n))
+          else raise (IllFormedInd (LocalNonPos n))
       (******************)
       | x -> check_pos n x
   
@@ -185,10 +275,10 @@ let listrec_mconstr env ntypes nparams i indlc =
               match hd with
 		| Rel k when k = n+ntypes-i ->
 		    check_correct_par env nparams ntypes n (k-n+1) largs
-                | _ -> raise (IllFormedInd NotConstructor)
+                | _ -> raise (IllFormedInd LocalNotConstructor)
 	    else
 	      if not (array_for_all (noccur_bet n ntypes) largs)
-              then raise (IllFormedInd (NonPos n));
+              then raise (IllFormedInd (LocalNonPos n));
 	    List.rev lrec
     in check_constr_rec []
   in
@@ -215,7 +305,7 @@ let cci_inductive env env_ar kind nparams finite inds cst =
   let one_packet i (id,ar,cnames,issmall,isunit,lc) =
     let recargs = listrec_mconstr env_ar ntypes nparams i lc in
     let isunit = isunit && ntypes = 1 && (not (is_recursive [0] recargs)) in
-    let (ar_sign,ar_sort) = splay_arity env Evd.empty ar.body in
+    let (ar_sign,ar_sort) = splay_arity env Evd.empty (body_of_type ar) in
     let kelim = allowed_sorts issmall isunit ar_sort in
     { mind_consnames = Array.of_list cnames;
       mind_typename = id;
@@ -229,7 +319,7 @@ let cci_inductive env env_ar kind nparams finite inds cst =
   let ids = 
     List.fold_left 
       (fun acc (_,ar,_,_,_,lc) -> 
-	 Idset.union (global_vars_set ar.body) 
+	 Idset.union (global_vars_set (body_of_type ar)) 
 	   (Idset.union (global_vars_set lc) acc))
       Idset.empty inds
   in

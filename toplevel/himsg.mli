@@ -4,7 +4,7 @@
 (*i*)
 open Pp
 open Names
-open Inductive
+open Indtypes
 open Sign
 open Type_errors
 open Logic

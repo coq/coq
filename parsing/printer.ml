@@ -86,10 +86,10 @@ let prterm = prterm_env (gLOB nil_sign)
 let fprterm_env a = gentermpr FW a
 let fprterm = fprterm_env (gLOB nil_sign)
 
-let prtype_env env typ = prterm_env env (mkCast typ.body (mkSort typ.typ))
+let prtype_env env typ = prterm_env env (incast_type typ)
 let prtype = prtype_env (gLOB nil_sign)
 
-let fprtype_env env typ = fprterm_env env (mkCast typ.body (mkSort typ.typ))
+let fprtype_env env typ = fprterm_env env (incast_type typ)
 let fprtype = fprtype_env (gLOB nil_sign)
 
 let pr_constant cst = gencompr CCI (ast_of_constant cst)
@@ -124,11 +124,11 @@ and default_tacpr = function
     | gt -> dfltpr gt
 
 let print_decl k sign (s,typ) =
-  let ptyp = gentermpr k (gLOB sign) typ.body in
+  let ptyp = gentermpr k (gLOB sign) (body_of_type typ) in
   [< print_id s ; 'sTR" : "; ptyp >]
 
 let print_binding k env (na,typ) =
-  let ptyp = gentermpr k env typ.body in
+  let ptyp = gentermpr k env (body_of_type typ) in
   match na with
     | Anonymous -> [< 'sTR"<>" ; 'sTR" : " ; ptyp >]
     | Name id -> [< print_id id ; 'sTR" : "; ptyp >]

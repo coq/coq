@@ -62,19 +62,20 @@ val j_type : judgment -> constr
 val j_kind : judgment -> constr
 
 val safe_machine : safe_environment -> constr -> judgment * constraints
-val safe_machine_type : safe_environment -> constr -> typed_type
+val safe_machine_type : safe_environment -> constr -> typed_type * constraints
 
 val fix_machine : safe_environment -> constr -> judgment * constraints
-val fix_machine_type : safe_environment -> constr -> typed_type
+val fix_machine_type : safe_environment -> constr -> typed_type * constraints
 
 val unsafe_machine : safe_environment -> constr -> judgment * constraints
-val unsafe_machine_type : safe_environment -> constr -> typed_type
+val unsafe_machine_type : safe_environment -> constr -> typed_type * constraints
 
 val type_of : safe_environment -> constr -> constr
 
+(*i obsolète 
 val type_of_type : safe_environment -> constr -> constr
-
 val unsafe_type_of : safe_environment -> constr -> constr
+i*)
 
 
 (*s Typing with information (extraction). *)

@@ -91,8 +91,7 @@ let inh_tosort env isevars j =
 let inh_ass_of_j env isevars j =
   let typ = whd_betadeltaiota env !isevars j.uj_type in
   match typ with
-    | DOP0(Sort s) -> 
-	{ body = j.uj_val; typ = s }
+    | DOP0(Sort s) -> make_typed j.uj_val s
     | _ ->
         let j1 = inh_tosort_force env isevars j in 
 	assumption_of_judgment env !isevars j1 

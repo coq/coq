@@ -1227,10 +1227,10 @@ let is_type_arity env sigma =
   srec 
 
 let is_info_type env sigma t =
-  let s = t.typ in
+  let s = level_of_type t in
   (s = Prop Pos) ||
   (s <> Prop Null && 
-   try info_arity env sigma t.body with IsType -> true)
+   try info_arity env sigma (body_of_type t) with IsType -> true)
 
 let is_info_cast_type env sigma c = 
   match c with  

@@ -59,7 +59,7 @@ type constr = sorts oper term
 
 type 'a judge = { body : constr; typ : 'a }
 
-type typed_type = sorts judge
+type typed_type
 type typed_term = typed_type judge
 
 val make_typed : constr -> sorts -> typed_type

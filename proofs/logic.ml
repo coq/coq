@@ -191,9 +191,9 @@ let split_sign hfrom hto l =
 let move_after with_dep toleft (left,htfrom,right) hto =
   let test_dep (hyp,typ) (hyp2,typ2) =
     if toleft then 
-      occur_var hyp2 typ.body
+      occur_var hyp2 (body_of_type typ)
     else 
-      occur_var hyp typ2.body 
+      occur_var hyp (body_of_type typ2)
   in
   let rec moverec first middle = function
     | [] -> error ("No such hypothesis : " ^ (string_of_id hto))
@@ -264,7 +264,7 @@ let prim_refiner r sigma goal =
 	       if not (List.for_all 
 			 (mem_sign (tl_sign (sign_prefix id sign))) 
 			 (global_vars c1))
-                 or List.exists (fun t -> occur_var id t.body) 
+                 or List.exists (fun t -> occur_var id (body_of_type t)) 
 			 (vals_of_sign sign) 
 	       then 
 		 error 
@@ -368,7 +368,7 @@ let prim_refiner r sigma goal =
       (* Faut-il garder la sorte d'origine ou celle du converti ?? *)
 	let env' = change_hyps (sign_before id) env in
     	let tj = execute_type env' sigma ty' in
-	if is_conv env sigma ty' (snd(lookup_sign id sign)).body then
+	if is_conv env sigma ty' (body_of_type (snd(lookup_sign id sign))) then
 	  let env' = change_hyps (modify_sign id tj) env in
           [mk_goal info env' cl]
 	else 
@@ -381,7 +381,7 @@ let prim_refiner r sigma goal =
 	  let (s',ty),tlsign = uncons_sign sign in
 	  if s = s' then 
 	    tlsign
-          else if occur_var s ty.body then 
+          else if occur_var s (body_of_type ty) then 
 	    error ((string_of_id s) ^ " is used in the hypothesis " 
 		   ^ (string_of_id s'))
           else 

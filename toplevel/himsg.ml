@@ -8,6 +8,7 @@ open Names
 open Generic
 open Term
 open Inductive
+open Indtypes
 open Sign
 open Environ
 open Type_errors
@@ -93,7 +94,7 @@ let explain_ill_formed_branch k ctx c i actty expty =
 
 let explain_generalization k ctx (name,var) c =
   let pe = pr_ne_env [< 'sTR"in environment" >] k ctx in
-  let pv = gentermpr k ctx var.body in
+  let pv = gentermpr k ctx (body_of_type var) in
   let pc = gentermpr k (add_rel (name,var) ctx) c in
   [< 'sTR"Illegal generalization: "; pe; 'fNL;
      'sTR"Cannot generalize"; 'bRK(1,1); pv; 'sPC;

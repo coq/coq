@@ -22,7 +22,7 @@ let tjudge_of_cast_safe sigma env var =
   match under_casts (fun _ -> nf_ise1) env sigma var with
     | DOP2 (Cast, b, t) ->
 	(match whd_betadeltaiota env sigma t with
-	   | DOP0 (Sort s) -> {body=b; typ=s}
+	   | DOP0 (Sort s) -> make_typed b s
 	   | _ -> anomaly "Not a type (tjudge_of_cast)")
     | c -> execute_rec_type env sigma c
 (* FIN TMP ***** *)

@@ -136,7 +136,7 @@ let print_mutual sp mib =
   let env = Global.env () in
   let evd = Evd.empty in
   let {mind_packets=mipv; mind_nparams=nparams} = mib in 
-  let (lpars,_) = decomp_n_prod env evd nparams mipv.(0).mind_arity.body in
+  let (lpars,_) = decomp_n_prod env evd nparams (body_of_type mipv.(0).mind_arity) in
   let lparsname = List.map fst lpars in
   let lparsprint = assumptions_for_print lparsname in
   let prass ass_name (id,c) =
@@ -154,7 +154,7 @@ let print_mutual sp mib =
     (hV 0 [< 'sTR "  "; plidC >]) 
   in
   let print_oneind mip = 
-    let (_,arity) = decomp_n_prod env evd nparams mip.mind_arity.body in
+    let (_,arity) = decomp_n_prod env evd nparams (body_of_type mip.mind_arity) in
       (hOV 0
          [< (hOV 0
 	       [< print_id mip.mind_typename ; 'bRK(1,2);
@@ -169,7 +169,7 @@ let print_mutual sp mib =
   let mip = mipv.(0) in
   (* Case one [co]inductive *)
   if Array.length mipv = 1 then 
-    let (_,arity) = decomp_n_prod env evd nparams mip.mind_arity.body in 
+    let (_,arity) = decomp_n_prod env evd nparams (body_of_type mip.mind_arity) in 
     let sfinite = if mip.mind_finite then "Inductive " else "CoInductive " in
     (hOV 0 [< 'sTR sfinite ; print_id mip.mind_typename ;
               if nparams = 0 then 
@@ -369,13 +369,13 @@ let crible (fn : string -> unit assumptions -> constr -> unit) name =
 	(match (spopt,object_tag lobj) with
 	   | (_,"VARIABLE") ->
 	       let (namec,typ,_,_) = out_variable spopt in 
-               if (head_const typ.body) = const then  
-                 fn (string_of_id namec) hyps typ.body;
+               if (head_const (body_of_type typ)) = const then  
+                 fn (string_of_id namec) hyps (body_of_type typ);
                crible_rec rest
 	   | (sp,("CONSTANT"|"PARAMETER")) ->
 	       let {const_type=typ} = Global.lookup_constant sp in
-               if (head_const typ.body) = const then
-                 fn (print_basename sp) hyps typ.body;
+               if (head_const (body_of_type typ)) = const then
+                 fn (print_basename sp) hyps (body_of_type typ);
                crible_rec rest
 	   | (sp,"INDUCTIVE") -> 
                let mib = Global.lookup_mind sp in 
@@ -466,20 +466,21 @@ let print_opaque_name name =
   let env = Global.env () in
   let sign = Global.var_context () in
   try 
-    match global_reference CCI name with
-      | DOPN(Const sp,_) as x ->
+    let x = global_reference CCI name in
+    match kind_of_term x with
+      | IsConst (sp,_ as cst) ->
 	  let cb = Global.lookup_constant sp in
           if is_defined cb then
-	    let typ = constant_type env x in
-            print_typed_value (constant_value env x,typ.body)
+	    let typ = constant_type env Evd.empty cst in
+            print_typed_value (constant_value env x, body_of_type typ)
           else 
 	    anomaly "print_opaque_name"
-      | DOPN(MutInd (sp,_),_) as x ->
+      | IsMutInd ((sp,_),_) ->
           print_mutual sp (Global.lookup_mind sp)
-      | DOPN(MutConstruct cstr_sp,a) as x -> 
-	  let ty = Typeops.type_of_constructor env sigma (cstr_sp,a) in
+      | IsMutConstruct cstr -> 
+	  let ty = Typeops.type_of_constructor env sigma cstr in
 	  print_typed_value(x, ty)
-      | VAR id ->
+      | IsVar id ->
           let a = snd(lookup_sign id sign) in 
 	  print_var (string_of_id id) a
       | _ -> failwith "print_name"

@@ -318,7 +318,8 @@ let pr_seq evd =
   let pc = pr_ctxt info in
   let pdcl =
     prlist_with_sep pr_spc
-      (fun (id,ty) -> hOV 0 [< print_id id; 'sTR" : ";prterm ty.body >])
+      (fun (id,ty) ->
+	 hOV 0 [< print_id id; 'sTR" : ";prterm (body_of_type ty) >])
       sign 
   in
   let pcl = prterm_env_at_top (gLOB hyps) cl in
