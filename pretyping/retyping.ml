@@ -20,7 +20,8 @@ let rec subst_type env sigma typ = function
   | [] -> typ
   | h::rest ->
       match kind_of_term (whd_betadeltaiota env sigma typ) with
-          IsProd (_,c1,c2) -> subst_type env sigma (subst1 h c2) rest
+        | IsProd (na,c1,c2) -> 
+	    subst_type (push_rel_assum (na,c1) env) sigma (subst1 h c2) rest
         | _ -> anomaly "Non-functional construction"
 
 (* Si ft est le type d'un terme f, lequel est appliqué à args, *)
@@ -29,12 +30,12 @@ let rec subst_type env sigma typ = function
 (* et sinon on substitue *)
 
 let sort_of_atomic_type env sigma ft args =
-  let rec concl_of_arity ar =
+  let rec concl_of_arity env ar =
     match kind_of_term (whd_betadeltaiota env sigma ar) with
-      | IsProd (_, _, b) -> concl_of_arity b
+      | IsProd (na, t, b) -> concl_of_arity (push_rel_assum (na,t) env) b
       | IsSort s -> s
       | _ -> outsort env sigma (subst_type env sigma ft (Array.to_list args))
-  in concl_of_arity ft
+  in concl_of_arity env ft
 
 let typeur sigma metamap =
 let rec type_of env cstr=
