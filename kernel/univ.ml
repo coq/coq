@@ -458,7 +458,8 @@ module Huniv =
 	match u, v with
 	  | Variable u, Variable v -> u == v
 	  | Max (gel,gtl), Max (gel',gtl') ->
-	      (List.for_all2 (==) gel gel') && (List.for_all2 (==) gtl gtl')
+	      (list_for_all2eq (==) gel gel') &&
+              (list_for_all2eq (==) gtl gtl')
 	  | _ -> false
       let hash = Hashtbl.hash
     end)
