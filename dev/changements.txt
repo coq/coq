@@ -7,6 +7,8 @@ Changements d'organisation / modules :
   Names				-> kernel/names.ml et kernel/sign.ml
     (les parties noms et signatures ont été séparées)
 
+  Avm,Mavm,Fmavm,Mhm  ->  utiliser plutôt Map (et freeze alors gratuit)
+
 
 Changements dans les types de données :
 ---------------------------------------

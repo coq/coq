@@ -14,3 +14,9 @@ val mem :  'a -> ('a,'b) t -> bool
 val iter : ('a -> 'b -> unit) -> ('a,'b) t -> unit
 val map : ('b -> 'c) -> ('a,'b) t -> ('a,'c) t
 val fold : ('a -> 'b -> 'c -> 'c) -> ('a,'b) t -> 'c -> 'c
+
+(* Additions with respect to ocaml standard library. *)
+
+val dom : ('a,'b) t -> 'a list
+val rng : ('a,'b) t -> 'b list
+val to_list : ('a,'b) t -> ('a * 'b) list

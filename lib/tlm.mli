@@ -1,9 +1,12 @@
 
 (* $Id$ *)
 
+(* Tries. This module implements a data structure [('a,'b) t] mapping lists
+   of values of type ['a] to sets (as lists) of values of type ['b]. *)
+
 type ('a,'b) t
 
-val create : unit -> ('a,'b) t
+val empty : ('a,'b) t
 
 (* Work on labels, not on paths. *)
 
@@ -17,6 +20,6 @@ val in_dom : ('a,'b) t -> 'a -> bool
 val add : ('a,'b) t -> 'a list * 'b -> ('a,'b) t
 val rmv : ('a,'b) t -> ('a list * 'b) -> ('a,'b) t
 
-val app : (('a list * 'c) -> unit) -> ('a,'c) t -> unit
+val app : (('a list * 'b) -> unit) -> ('a,'b) t -> unit
 val to_list : ('a,'b) t -> ('a list * 'b) list
 

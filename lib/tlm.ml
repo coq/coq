@@ -1,92 +1,56 @@
 
 (* $Id$ *)
 
-(* 1er choix : une liste
-module MySet = struct
-  type 'a t = 'a list
-  let mt = []
-  let add = add_set
-  let rmv = rmv_set
-  let toList l = l
-  let app = List.map
-end
-*)
+type ('a,'b) t = Node of 'b Gset.t * ('a, ('a,'b) t) Gmap.t
 
-(* 2 ème choix : un arbre *)
-module MySet = struct
-  type 'a t = 'a Coq_set.t
-  let mt = Coq_set.empty
-  let add = Coq_set.add
-  let rmv = Coq_set.remove
-  let toList = Coq_set.elements
-  let app f l = Coq_set.fold (fun a b -> add (f a) b) l mt
-end
+let empty = Node (Gset.empty, Gmap.empty)
 
-module type MyMapType = sig
-  type ('a, 'b) t
-  val create : unit -> ('a,'b) t
-  val map : ('a,'b) t -> 'a -> 'b
-  val dom : ('a,'b) t -> 'a list
-  val rng : ('a,'b) t -> 'b list
-  val in_dom : ('a,'b) t -> 'a -> bool
-  val add : ('a,'b) t -> 'a * 'b -> ('a,'b) t
-  val remap : ('a,'b) t -> 'a -> 'b -> ('a,'b) t
-  val app : (('a * 'c) -> unit) -> ('a,'c) t -> unit
-  val toList : ('a,'b) t -> ('a * 'b) list
-end;;
+let map (Node (_,m)) lbl = Gmap.find lbl m
 
-module MyMap = (Listmap : MyMapType);;
+let xtract (Node (hereset,_)) = Gset.elements hereset
 
-type ('a,'b) t =
-    NODE of 'b MySet.t * ('a, ('a,'b) t) MyMap.t;;
+let dom (Node (_,m)) = Gmap.dom m
 
-let create () = NODE(MySet.mt,MyMap.create());;
+let in_dom (Node (_,m)) lbl = Gmap.mem lbl m
 
-let map (NODE (_,m)) lbl = MyMap.map m lbl;;
-let xtract (NODE (hereset,_)) = MySet.toList hereset;;
-let dom (NODE (_,m)) = MyMap.dom m;;
-let in_dom (NODE (_,m)) lbl = MyMap.in_dom m lbl;;
-
-let is_empty_node (NODE(a,b)) = (MySet.toList a = []) & (MyMap.toList b = []);;
+let is_empty_node (Node(a,b)) = (Gset.elements a = []) & (Gmap.to_list b = [])
 
 let assure_arc m lbl =
-    if MyMap.in_dom m lbl then m
-    else MyMap.add m (lbl,NODE (MySet.mt,MyMap.create()))
-;;
+  if Gmap.mem lbl m then 
+    m
+  else 
+    Gmap.add lbl (Node (Gset.empty,Gmap.empty)) m
 
-let cleanse_arcs (NODE (hereset,m)) =
-let l = MyMap.rng m
-in NODE(hereset,if List.for_all is_empty_node l then MyMap.create() else m)
-;;
+let cleanse_arcs (Node (hereset,m)) =
+  let l = Gmap.rng m in 
+  Node(hereset, if List.for_all is_empty_node l then Gmap.empty else m)
 
-let rec at_path f (NODE (hereset,m)) = function
-    [] -> cleanse_arcs(NODE(f hereset,m))
+let rec at_path f (Node (hereset,m)) = function
+  | [] -> 
+      cleanse_arcs (Node(f hereset,m))
   | h::t ->
-    let m = assure_arc m h
-    in cleanse_arcs(NODE(hereset,
-                         MyMap.remap m h (at_path f (MyMap.map m h) t)))
-;;
+      let m = assure_arc m h in 
+      cleanse_arcs (Node(hereset,
+                         Gmap.add h (at_path f (Gmap.find h m) t) m))
 
 let add tm (path,v) =
-    at_path (fun hereset -> MySet.add v hereset) tm path
-;;
-
+  at_path (fun hereset -> Gset.add v hereset) tm path
+    
 let rmv tm (path,v) =
-    at_path (fun hereset -> MySet.rmv v hereset) tm path
-;;
+  at_path (fun hereset -> Gset.remove v hereset) tm path
 
 let app f tlm = 
- let rec apprec pfx (NODE(hereset,m)) =
-    let path = List.rev pfx
-    in (MySet.app (fun v -> f(path,v)) hereset;
-        MyMap.app (fun (l,tm) -> apprec (l::pfx) tm) m)
- in apprec [] tlm
-;;
+  let rec apprec pfx (Node(hereset,m)) =
+    let path = List.rev pfx in 
+    Gset.iter (fun v -> f(path,v)) hereset;
+    Gmap.iter (fun l tm -> apprec (l::pfx) tm) m
+  in 
+  apprec [] tlm
     
-let toList tlm = 
- let rec torec pfx (NODE(hereset,m)) =
-    let path = List.rev pfx
-    in List.flatten((List.map (fun v -> (path,v)) (MySet.toList hereset))::
-            (List.map (fun (l,tm) -> torec (l::pfx) tm) (MyMap.toList m)))
- in torec [] tlm
-;;
+let to_list tlm = 
+  let rec torec pfx (Node(hereset,m)) =
+    let path = List.rev pfx in 
+    List.flatten((List.map (fun v -> (path,v)) (Gset.elements hereset))::
+		 (List.map (fun (l,tm) -> torec (l::pfx) tm) (Gmap.to_list m)))
+  in 
+  torec [] tlm

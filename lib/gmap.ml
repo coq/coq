@@ -107,3 +107,12 @@
         Empty -> accu
       | Node(l, v, d, r, _) ->
           fold f l (f v d (fold f r accu))
+
+(* Added with respect to ocaml standard library. *)
+
+    let dom m = fold (fun x _ acc -> x::acc) m []
+
+    let rng m = fold (fun _ y acc -> y::acc) m []
+
+    let to_list m = fold (fun x y acc -> (x,y)::acc) m []
+

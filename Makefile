@@ -33,7 +33,8 @@ CONFIG=config/coq_config.cmo
 
 LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
-    lib/bstack.cmo lib/edit.cmo lib/stamps.cmo lib/gset.cmo lib/gmap.cmo
+    lib/bstack.cmo lib/edit.cmo lib/stamps.cmo lib/gset.cmo lib/gmap.cmo \
+    lib/tlm.cmo
 
 KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/sign.cmo kernel/constant.cmo \
@@ -53,7 +54,8 @@ PROOFS=proofs/typing_ev.cmo proofs/tacred.cmo \
        proofs/refiner.cmo proofs/evar_refiner.cmo \
        proofs/macros.cmo proofs/tacinterp.cmo # proofs/clenv.cmo
 
-TACTICS=tactics/dn.cmo
+TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
+        tactics/nbtermdn.cmo
 
 PRETYPING=pretyping/astterm.cmo
 

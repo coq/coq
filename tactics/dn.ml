@@ -31,7 +31,7 @@ type ('lbl,'pat,'inf) t = {
   tm   : ('lbl,'pat,'inf) under_t; 
   args : ('lbl,'pat) dn_args }
 
-let create dna = {tm = Tlm.create(); args = dna}
+let create dna = { tm = Tlm.empty; args = dna }
 
 let path_of dna =
   let rec path_of_deferred = function
