@@ -24,6 +24,7 @@ open Tacmach
 open Tacticals
 open Tactics
 open Hiddentac
+open Genarg
 open Tacexpr
 
 let introElimAssumsThen tac ba =

@@ -13,6 +13,7 @@ open Names
 open Term
 open Proof_type
 open Tacmach
+open Genarg
 open Tacticals
 (*i*)
 
@@ -22,7 +23,7 @@ val introElimAssumsThen :
   (branch_assumptions -> tactic) -> branch_args -> tactic
 
 val introCaseAssumsThen :
-  (Tacexpr.intro_pattern_expr list -> branch_assumptions -> tactic) -> 
+  (intro_pattern_expr list -> branch_assumptions -> tactic) -> 
     branch_args -> tactic
 
 val general_decompose : (identifier * constr -> bool) -> constr -> tactic

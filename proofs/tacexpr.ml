@@ -63,13 +63,6 @@ type 'a induction_arg =
   | ElimOnIdent of identifier located
   | ElimOnAnonHyp of int
 
-type intro_pattern_expr =
-  | IntroOrAndPattern of case_intro_pattern_expr
-  | IntroWildcard
-  | IntroIdentifier of identifier
-
-and case_intro_pattern_expr = intro_pattern_expr list list
-
 type inversion_kind =
   | SimpleInversion
   | FullInversion
@@ -226,7 +219,7 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg =
   | TacVoid
   | MetaIdArg      of loc * string
   | ConstrMayEval  of ('constr,'cst) may_eval
-  | Identifier     of identifier (* parsed under Reference (Ident _) *)
+  | IntroPattern   of intro_pattern_expr
   | Reference      of 'ref
   | Integer        of int
   | TacCall        of loc *
