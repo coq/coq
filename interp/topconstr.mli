@@ -29,6 +29,8 @@ type aconstr =
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
+  | ACases of aconstr option * aconstr list *
+      (identifier list * cases_pattern list * aconstr) list
   | AOldCase of case_style * aconstr option * aconstr * aconstr array
   | ASort of rawsort
   | AHole of hole_kind

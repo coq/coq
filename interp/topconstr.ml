@@ -27,6 +27,8 @@ type aconstr =
   | ALambda of name * aconstr * aconstr
   | AProd of name * aconstr * aconstr
   | ALetIn of name * aconstr * aconstr
+  | ACases of aconstr option * aconstr list *
+      (identifier list * cases_pattern list * aconstr) list
   | AOldCase of case_style * aconstr option * aconstr * aconstr array
   | ASort of rawsort
   | AHole of hole_kind
@@ -46,6 +48,11 @@ let map_aconstr_with_binders_loc loc g f e = function
       let na,e = name_app g e na in RProd (loc,na,f e ty,f e c)
   | ALetIn (na,b,c) ->
       let na,e = name_app g e na in RLetIn (loc,na,f e b,f e c)
+  | ACases (tyopt,tml,eqnl) ->
+      let fold id (idl,e) = let (id,e) = g id e in (id::idl,e) in
+      let eqnl = List.map (fun (idl,pat,rhs) ->
+        let (idl,e) = List.fold_right fold idl ([],e) in (loc,idl,pat,f e rhs)) eqnl in
+      RCases (loc,option_app (f e) tyopt,List.map (f e) tml,eqnl)
   | AOldCase (b,tyopt,tm,bv) ->
       ROrderedCase (loc,b,option_app (f e) tyopt,f e tm,Array.map (f e) bv)
   | ACast (c,t) -> RCast (loc,f e c,f e t)
@@ -53,6 +60,15 @@ let map_aconstr_with_binders_loc loc g f e = function
   | AHole x  -> RHole (loc,x)
   | AMeta n -> RMeta (loc,n)
   | ARef x -> RRef (loc,x)
+
+let rec subst_pat subst pat = 
+  match pat with
+  | PatVar _ -> pat
+  | PatCstr (loc,((kn,i),j),cpl,n) -> 
+      let kn' = subst_kn subst kn 
+      and cpl' = list_smartmap (subst_pat subst) cpl in
+        if kn' == kn && cpl' == cpl then pat else
+          PatCstr (loc,((kn',i),j),cpl',n)
 
 let rec subst_aconstr subst raw =
   match raw with
@@ -84,6 +100,20 @@ let rec subst_aconstr subst raw =
 	if r1' == r1 && r2' == r2 then raw else
 	  ALetIn (n,r1',r2')
 
+  | ACases (ro,rl,branches) -> 
+      let ro' = option_smartmap (subst_aconstr subst) ro 
+      and rl' = list_smartmap (subst_aconstr subst) rl
+      and branches' = list_smartmap 
+                        (fun (idl,cpl,r as branch) ->
+                           let cpl' = list_smartmap (subst_pat subst) cpl
+                           and r' = subst_aconstr subst r in
+                             if cpl' == cpl && r' == r then branch else
+                               (idl,cpl',r'))
+                        branches
+      in
+        if ro' == ro && rl' == rl && branches' == branches then raw else
+          ACases (ro',rl',branches')
+
   | AOldCase (b,ro,r,ra) -> 
       let ro' = option_smartmap (subst_aconstr subst) ro
       and r' = subst_aconstr subst r 
@@ -111,6 +141,9 @@ let rec aux = function
   | RLambda (_,na,ty,c) -> ALambda (na,aux ty,aux c)
   | RProd (_,na,ty,c) -> AProd (na,aux ty,aux c)
   | RLetIn (_,na,b,c) -> ALetIn (na,aux b,aux c)
+  | RCases (_,tyopt,tml,eqnl) ->
+      let eqnl = List.map (fun (_,idl,pat,rhs) -> (idl,pat,aux rhs)) eqnl in
+      ACases (option_app aux tyopt,List.map aux tml, eqnl)
   | ROrderedCase (_,b,tyopt,tm,bv) ->
       AOldCase (b,option_app aux tyopt,aux tm, Array.map aux bv)
   | RCast (_,c,t) -> ACast (aux c,aux t)
@@ -118,8 +151,8 @@ let rec aux = function
   | RHole (_,w) -> AHole w
   | RRef (_,r) -> ARef r
   | RMeta (_,n) -> AMeta n
-  | RDynamic _ | RRec _ | RCases _ | REvar _ ->
-      error "Fixpoints, cofixpoints, existential variables and pattern-matching  not \
+  | RDynamic _ | RRec _ | REvar _ ->
+      error "Fixpoints, cofixpoints and existential variables are not \
 allowed in abbreviatable expressions"
 
 let aconstr_of_rawconstr = aux

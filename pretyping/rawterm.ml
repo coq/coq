@@ -138,6 +138,7 @@ let map_rawconstr_with_binders_loc loc g f e = function
   | RDynamic (_,x) -> RDynamic (loc,x)
 *)
 
+(*
 let rec subst_pat subst pat = 
   match pat with
   | PatVar _ -> pat
@@ -146,7 +147,7 @@ let rec subst_pat subst pat =
       and cpl' = list_smartmap (subst_pat subst) cpl in
 	if kn' == kn && cpl' == cpl then pat else
 	  PatCstr (loc,((kn',i),j),cpl',n)
-	
+*)	
 (*
 let rec subst_raw subst raw = 
   match raw with
