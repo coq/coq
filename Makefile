@@ -108,13 +108,14 @@ LIBRARY=\
 PRETYPING=\
   pretyping/termops.cmo pretyping/evd.cmo pretyping/instantiate.cmo \
   pretyping/reductionops.cmo pretyping/inductiveops.cmo \
-  pretyping/rawterm.cmo pretyping/detyping.cmo pretyping/retyping.cmo \
+  pretyping/rawterm.cmo pretyping/pattern.cmo \
+  pretyping/detyping.cmo pretyping/retyping.cmo \
   pretyping/cbv.cmo pretyping/tacred.cmo \
   pretyping/pretype_errors.cmo pretyping/typing.cmo \
   pretyping/classops.cmo pretyping/recordops.cmo pretyping/indrec.cmo \
   pretyping/evarutil.cmo pretyping/evarconv.cmo \
   pretyping/coercion.cmo pretyping/cases.cmo pretyping/pretyping.cmo \
-  pretyping/pattern.cmo pretyping/matching.cmo
+  pretyping/matching.cmo
 
 INTERP=\
   interp/topconstr.cmo interp/ppextend.cmo interp/symbols.cmo \
@@ -153,8 +154,8 @@ PROOFS=\
 
 TACTICS=\
   tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
-  tactics/nbtermdn.cmo tactics/hipattern.cmo tactics/wcclausenv.cmo \
-  tactics/tacticals.cmo tactics/tactics.cmo \
+  tactics/nbtermdn.cmo tactics/wcclausenv.cmo \
+  tactics/tacticals.cmo tactics/hipattern.cmo tactics/tactics.cmo \
   tactics/hiddentac.cmo tactics/elim.cmo \
   tactics/dhyp.cmo tactics/auto.cmo tactics/tacinterp.cmo
 
