@@ -33,7 +33,7 @@ type 'a clausenv = {
 type wc = walking_constraints
 
 let new_evar_in_sign env =
-  let hyps = get_globals (Environ.context env) in
+  let hyps = Environ.var_context env in
   let ev = new_evar () in
   DOPN(Evar ev,
        Array.of_list (List.map (fun id -> VAR id) (ids_of_sign hyps)))
@@ -881,10 +881,10 @@ let clenv_type_of ce c =
          | (n,Cltyp typ)    -> (n,typ.rebus))
       (intmap_to_list ce.env)
   in
-  failwith "TODO: clenv_type_of"
+  failwith "TODO"
   (***
-  (Trad.ise_resolve true (w_Underlying ce.hook) metamap
-     (gLOB(w_hyps ce.hook)) c)._TYPE
+  (Pretyping.ise_resolve true (w_Underlying ce.hook) metamap
+     (gLOB(w_hyps ce.hook)) c).uj_type
   ***)
 
 let clenv_instance_type_of ce c =

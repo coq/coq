@@ -6,7 +6,7 @@ open Generic
 open Term
 open Instantiate
 open Sign
-open Typing
+open Safe_typing
 open Summary
 
 (* We introduce here the global environment of the system, and we declare it
@@ -28,6 +28,7 @@ let _ =
 
 let universes () = universes !global_env
 let context () = context !global_env
+let var_context () = var_context !global_env
 
 let push_var idc = global_env := push_var idc !global_env
 let push_rel nac = global_env := push_rel nac !global_env

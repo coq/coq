@@ -100,13 +100,13 @@ let dyn_decompose args gl =
   match args with 
     | [Clause ids; Command c] -> 
         decompose_these (pf_constr_of_com gl c) ids gl
-    | [CLAUSE ids; Constr c]  -> 
+    | [Clause ids; Constr c]  -> 
         decompose_these c ids  gl
     | l -> bad_tactic_args "DecomposeThese" l gl
 	  
 let h_decompose =
   let v_decompose = hide_tactic "DecomposeThese" dyn_decompose in 
-  fun ids c -> v_decompose [(CLAUSE ids);(CONSTR c)] 
+  fun ids c -> v_decompose [Clause ids; Constr c] 
 
 let vernac_decompose_and = 
   hide_constr_tactic "DecomposeAnd" decompose_and

@@ -40,24 +40,25 @@ i*)
 
 (* Raw calls to the inference machine of Trad: boolean says if we must fail
  * on unresolved evars, or replace them by Metas *)
-val ise_resolve : bool -> 'c evar_map -> (int * constr) list ->
+val ise_resolve : bool -> unit evar_map -> (int * constr) list ->
   unsafe_env -> rawconstr -> unsafe_judgment
-val ise_resolve_type : bool -> 'c evar_map -> (int * constr) list ->
+val ise_resolve_type : bool -> unit evar_map -> (int * constr) list ->
   unsafe_env -> rawconstr -> typed_type
 
 (* Call [ise_resolve] with empty metamap and [fail_evar=true]. The boolean says
  * if we must coerce to a type *)
-val ise_resolve1 : bool -> 'c evar_map -> unsafe_env -> rawconstr -> constr
+val ise_resolve1 : bool -> unit evar_map -> unsafe_env -> rawconstr -> constr
 
 (* progmach.ml tries to type ill-typed terms: does not perform the conversion
  * test in application.
  *)
-val ise_resolve_nocheck : 'c evar_map -> (int * constr) list ->
+val ise_resolve_nocheck : unit evar_map -> (int * constr) list ->
   unsafe_env -> rawconstr -> unsafe_judgment
 
 
 (* Internal of Trad...
  * Unused outside Trad, but useful for debugging
  *)
-val pretype : bool * (constr option * constr option) 
-  -> unsafe_env -> 'c evar_defs -> rawconstr -> unsafe_judgment
+val pretype : 
+  trad_constraint -> unsafe_env -> unit evar_defs -> rawconstr 
+    -> unsafe_judgment

@@ -7,7 +7,6 @@ open Term
 open Reduction
 open Constant
 open Inductive
-open Typing
 
 type implicits =
   | Impl_auto of int list
@@ -18,7 +17,7 @@ let implicit_args = ref false
 
 let auto_implicits ty =
   if !implicit_args then
-    let genv = unsafe_env_of_env (Global.env()) in
+    let genv = Global.unsafe_env() in
     Impl_auto (poly_args genv Evd.empty ty)
   else
     No_impl

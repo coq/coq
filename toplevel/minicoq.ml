@@ -10,7 +10,7 @@ open Sign
 open Constant
 open Inductive
 open Type_errors
-open Typing
+open Safe_typing
 open G_minicoq
 
 let (env : environment ref) = ref empty_environment

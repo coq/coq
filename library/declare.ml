@@ -213,7 +213,7 @@ let global_operator sp id =
 let global_reference kind id =
   let sp = Nametab.sp_of_id kind id in
   let (oper,_) = global_operator sp id in
-  let hyps = get_globals (Global.context ()) in
+  let hyps = Global.var_context () in
   let ids = ids_of_sign hyps in
   DOPN(oper, Array.of_list (List.map (fun id -> VAR id) ids))
 

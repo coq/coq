@@ -45,7 +45,7 @@ let filter_sign p sign x =
 
 (* All ids of sign must be distincts! *)
 let new_isevar_sign env sigma typ args =
-  let sign = get_globals (context env) in
+  let sign = var_context env in
   if not (list_distinct (ids_of_sign sign)) then 
     error "new_isevar_sign: two vars have the same name";
   let newev = Evd.new_evar() in
@@ -60,7 +60,7 @@ let dummy_sort = mkType dummy_univ
 (* Declaring any type to be in the sort Type shouldn't be harmful since
    cumulativity now includes Prop and Set in Type. *)
 let new_type_var env sigma =
-  let sign = get_globals (context env) in
+  let sign = var_context env in
   let args = (Array.of_list (List.map mkVar (ids_of_sign sign))) in
   let (sigma',c) = new_isevar_sign env sigma dummy_sort args in
   (sigma', make_typed c (Type dummy_univ))
@@ -70,7 +70,7 @@ let split_evar_to_arrow sigma c =
   let evd = Evd.map sigma ev in
   let evenv = evd.evar_env in
   let (sigma1,dom) = new_type_var evenv sigma in
-  let hyps = get_globals (context evenv) in
+  let hyps = var_context evenv in
   let nvar = next_ident_away (id_of_string "x") (ids_of_sign hyps) in
   let nevenv = push_var (nvar,dom) evenv in
   let (sigma2,rng) = new_type_var nevenv sigma1 in
@@ -97,7 +97,7 @@ let do_restrict_hyps sigma c =
   let args = Array.to_list args in
   let evd = Evd.map sigma ev in
   let env = evd.evar_env in
-  let hyps = get_globals (context env) in
+  let hyps = var_context env in
   let (_,(rsign,ncargs)) =
     List.fold_left 
       (fun (sign,(rs,na)) a ->
@@ -244,7 +244,7 @@ let evar_define isevars lhs rhs =
   let args = List.map (function (VAR _ | Rel _) as t -> t | _ -> mkImplicit)
       (Array.to_list argsv) in 
   let evd = ise_map isevars ev in
-  let hyps = get_globals (context evd.evar_env) in
+  let hyps = var_context evd.evar_env in
   (* the substitution to invert *)
   let worklist = List.combine (ids_of_sign hyps) args in
   let body = real_clean isevars ev worklist rhs in
@@ -263,7 +263,7 @@ let solve_refl conv_algo isevars c1 c2 =
   and (_,argsv2) = destEvar c2 in
   let evd = Evd.map !isevars ev in
   let env = evd.evar_env in
-  let hyps = get_globals (context env) in
+  let hyps = var_context env in
   let (_,rsign) = 
     array_fold_left2
       (fun (sgn,rsgn) a1 a2 ->

@@ -11,7 +11,7 @@ open Instantiate
 open Environ
 open Reduction
 open Evd
-open Typing_ev
+open Typing
 open Tacred
 open Proof_trees
 open Logic
@@ -45,7 +45,7 @@ let pf_concl gls = (sig_it gls).evar_concl
 
 let pf_untyped_hyps gls  =
   let env = pf_env gls in
-  let (idl,tyl) = get_globals (Environ.context env) in 
+  let (idl,tyl) = Environ.var_context env in 
   (idl, List.map (fun x -> x.body) tyl)
 
 let pf_nth_hyp gls n = nth_sign (pf_untyped_hyps gls) n
@@ -68,6 +68,14 @@ let hnf_type_of gls =
 
 let pf_check_type gls c1 c2 =
   let casted = mkCast c1 c2 in pf_type_of gls casted
+
+let pf_constr_of_com gls c =
+  let evc = project gls in 
+  Astterm.constr_of_com evc (sig_it gls).hyps c
+
+let pf_constr_of_com_sort gls c =
+  let evc = project gls in 
+  Astterm.constr_of_com_sort evc (sig_it gls).hyps c
 
 let pf_reduction_of_redexp gls re c = 
   reduction_of_redexp re (pf_env gls) (project gls) c 
@@ -242,7 +250,7 @@ let mutual_cofix lf lar pf =
     
 let rename_bound_var_goal gls =
   let { evar_env = env; evar_concl = cl } as gl = sig_it gls in 
-  let ids = ids_of_sign (get_globals (Environ.context env)) in
+  let ids = ids_of_sign (Environ.var_context env) in
   convert_concl (rename_bound_var ids cl) gls
     
 

@@ -10,7 +10,7 @@ open Sign
 open Inductive
 open Evd
 open Reduction
-open Typing_ev
+open Typing
 open Tacmach
 open Proof_trees
 open Pfedit

@@ -42,24 +42,14 @@ KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
        kernel/environ.cmo kernel/evd.cmo kernel/instantiate.cmo \
        kernel/closure.cmo kernel/reduction.cmo \
        kernel/type_errors.cmo kernel/typeops.cmo kernel/indtypes.cmo \
-       kernel/typing.cmo
+       kernel/safe_typing.cmo
 
 LIBRARY=library/libobject.cmo library/summary.cmo library/lib.cmo \
 	library/global.cmo library/states.cmo library/library.cmo \
 	library/nametab.cmo library/impargs.cmo library/redinfo.cmo \
         library/indrec.cmo library/declare.cmo
 
-PROOFS=proofs/typing_ev.cmo proofs/tacred.cmo \
-       proofs/proof_trees.cmo proofs/logic.cmo \
-       proofs/refiner.cmo proofs/evar_refiner.cmo \
-       proofs/macros.cmo proofs/tacinterp.cmo proofs/clenv.cmo
-
-TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
-        tactics/nbtermdn.cmo tactics/stock.cmo tactics/pattern.cmo \
-	tactics/wcclausenv.cmo tactics/tacticals.cmo \
-        tactics/tacentries.cmo tactics/hiddentac.cmo tactics/elim.cmo
-
-PRETYPING=pretyping/classops.cmo pretyping/recordops.cmo \
+PRETYPING=pretyping/typing.cmo pretyping/classops.cmo pretyping/recordops.cmo \
           pretyping/evarutil.cmo pretyping/evarconv.cmo \
           pretyping/pretype_errors.cmo pretyping/coercion.cmo \
 	  pretyping/multcase.cmo pretyping/pretyping.cmo
@@ -69,6 +59,16 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_multiple_case.cmo\
         parsing/printer.cmo parsing/pretty.cmo parsing/astterm.cmo
 
+PROOFS=proofs/tacred.cmo \
+       proofs/proof_trees.cmo proofs/logic.cmo \
+       proofs/refiner.cmo proofs/evar_refiner.cmo \
+       proofs/macros.cmo proofs/tacinterp.cmo proofs/clenv.cmo
+
+TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
+        tactics/nbtermdn.cmo tactics/stock.cmo tactics/pattern.cmo \
+	tactics/wcclausenv.cmo tactics/tacticals.cmo \
+        tactics/tacentries.cmo tactics/hiddentac.cmo tactics/elim.cmo
+
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
          toplevel/vernac.cmo toplevel/mltop.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo
@@ -76,15 +76,15 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
-CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PROOFS) $(TACTICS) \
-    $(PRETYPING) $(PARSING) $(TOPLEVEL)
+CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PRETYPING) $(PARSING) \
+    $(PROOFS) $(TACTICS) $(TOPLEVEL)
 CMX=$(CMO:.cmo=.cmx)
 
 # Targets
 
 world: minicoq coqtop.byte dev/db_printers.cmo
 
-LINK=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY)  $(PARSING) $(PRETYPING)
+LINK=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PARSING) $(PRETYPING)
 # $(PROOFS) $(TACTICS) $(TOPLEVEL)
 link: $(LINK)
 	ocamlc -o link $(LINK)

@@ -146,17 +146,17 @@ let mt_evd = Evd.empty
 
 let vect_lift_type = Array.mapi (fun i t -> typed_app (lift i) t)
 
-let j_nf_ise env sigma {uj_val=v;uj_type=t;uj_kind=k} =
-  {uj_val=nf_ise1 env sigma v;uj_type=nf_ise1 env sigma t;uj_kind=k}
+let j_nf_ise sigma {uj_val=v;uj_type=t;uj_kind=k} =
+  {uj_val=nf_ise1 sigma v;uj_type=nf_ise1 sigma t;uj_kind=k}
 
-let jv_nf_ise env sigma = Array.map (j_nf_ise env sigma)
+let jv_nf_ise sigma = Array.map (j_nf_ise sigma)
 
 (* Utilisé pour inférer le prédicat des Cases *)
 (* Semble exagérement fort *)
 (* Faudra préférer une unification entre les types de toutes les clauses *)
 (* et autoriser des ? à rester dans le résultat de l'unification *)
-let has_ise env sigma t = 
-  try let _ = whd_ise env sigma t in true
+let has_ise sigma t = 
+  try let _ = whd_ise sigma t in true
   with UserError _ -> false
 
 let evar_type_fixpoint env isevars lna lar vdefj =
@@ -166,8 +166,8 @@ let evar_type_fixpoint env isevars lna lar vdefj =
         if not (the_conv_x_leq env isevars
 		  (vdefj.(i)).uj_type (lift lt (body_of_type lar.(i)))) then
           error_ill_typed_rec_body CCI env i lna 
-	    (jv_nf_ise env !isevars vdefj) 
-	    (Array.map (typed_app (nf_ise1 env !isevars)) lar)
+	    (jv_nf_ise !isevars vdefj) 
+	    (Array.map (typed_app (nf_ise1 !isevars)) lar)
       done
 
 
@@ -183,7 +183,7 @@ let cast_rel isevars env cj tj =
 let let_path = make_path ["Core"] (id_of_string "let") CCI
 
 let wrong_number_of_cases_message loc env isevars (c,ct) expn = 
-  let c = nf_ise1 env !isevars c and ct = nf_ise1 env !isevars ct in
+  let c = nf_ise1 !isevars c and ct = nf_ise1 !isevars ct in
   error_number_branches_loc loc CCI env c ct expn
 
 let check_branches_message loc env isevars (c,ct) (explft,lft) = 
@@ -191,10 +191,11 @@ let check_branches_message loc env isevars (c,ct) (explft,lft) =
   if n<>expn then wrong_number_of_cases_message loc env isevars (c,ct) expn;
   for i = 0 to n-1 do
     if not (the_conv_x_leq env isevars lft.(i) explft.(i)) then 
-      let c = nf_ise1 env !isevars c
-      and ct = nf_ise1 env !isevars ct 
-      and lfi = nf_betaiota env !isevars (nf_ise1 env !isevars lft.(i)) in
-      error_ill_formed_branch_loc loc CCI env c i lfi (nf_betaiota env !isevars explft.(i))
+      let c = nf_ise1 !isevars c
+      and ct = nf_ise1 !isevars ct 
+      and lfi = nf_betaiota env !isevars (nf_ise1 !isevars lft.(i)) in
+      error_ill_formed_branch_loc loc CCI env c i lfi 
+	(nf_betaiota env !isevars explft.(i))
   done
 
 (*
@@ -287,10 +288,10 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
       let (valc,typc) = destCast v in
       {uj_val=valc; uj_type=typc; uj_kind=dummy_sort}
   | (false,(None,Some ty)) ->
-      let (c,ty) = new_isevar env isevars ty CCI in
+      let (c,ty) = new_isevar isevars env ty CCI in
       {uj_val=c;uj_type=ty;uj_kind = dummy_sort}
   | (true,(None,None)) ->
-      let (c,ty) = new_isevar env isevars (mkCast dummy_sort dummy_sort) CCI in
+      let (c,ty) = new_isevar isevars env (mkCast dummy_sort dummy_sort) CCI in
       {uj_val=c;uj_type=ty;uj_kind = dummy_sort}
   | (false,(None,None)) ->
       (match loc with
@@ -336,19 +337,20 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
     let j = pretype mt_tycon env isevars f in
     let j = inh_app_fun env isevars j in
     let apply_one_arg (tycon,jl) c =
-      let cj = pretype (app_dom_tycon isevars tycon) env isevars c in
-      let rtc = app_rng_tycon isevars cj.uj_val tycon in
+      let cj = pretype (app_dom_tycon env isevars tycon) env isevars c in
+      let rtc = app_rng_tycon env isevars cj.uj_val tycon in
       (rtc,cj::jl)  in
     let jl = List.rev (snd (List.fold_left apply_one_arg
 			      (mk_tycon j.uj_type,[]) args)) in
     inh_apply_rel_list !trad_nocheck env isevars jl j vtcon
 
 | RBinder(loc,BLambda,name,c1,c2)      ->
-    let j = pretype (abs_dom_valcon isevars vtcon) env isevars c1 in
+    let j = pretype (abs_dom_valcon env isevars vtcon) env isevars c1 in
     let assum = inh_ass_of_j env isevars j in
     let var = (name,assum) in
     let j' =
-      pretype (abs_rng_tycon isevars vtcon) (push_rel var env) isevars c2 in 
+      pretype (abs_rng_tycon env isevars vtcon) (push_rel var env) isevars c2 
+    in 
     fst (abs_rel env !isevars name assum j')
 
 | RBinder(loc,BProd,name,c1,c2)        ->
@@ -364,7 +366,7 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
   let (mind,_) =
     try find_mrectype env !isevars cj.uj_type
     with Induc -> error_case_not_inductive CCI env
-	(nf_ise1 env !isevars cj.uj_val) (nf_ise1 env !isevars cj.uj_type) in
+	(nf_ise1 !isevars cj.uj_val) (nf_ise1 !isevars cj.uj_type) in
   let pj = match po with
     | Some p -> pretype mt_tycon env isevars p
     | None -> 
@@ -382,11 +384,11 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 	      try
 		let expti = Indrec.branch_scheme env !isevars isrec i cj.uj_type in
 		let fj = pretype (mk_tycon expti) env isevars lf.(i-1) in
-		let efjt = nf_ise1 env !isevars fj.uj_type in 
+		let efjt = nf_ise1 !isevars fj.uj_type in 
 		let pred = 
 		  Indrec.pred_case_ml_onebranch env !isevars isrec 
 		    (cj.uj_val,cj.uj_type) (i,fj.uj_val,efjt) in
-		if has_ise env !isevars pred then findtype (i+1)
+		if has_ise !isevars pred then findtype (i+1)
 		else 
 		  let pty = Retyping.get_type_of env !isevars pred in
 		  let k = Retyping.get_type_of env !isevars pty in
@@ -394,8 +396,8 @@ match cstr with   (* Où teste-t-on que le résultat doit satisfaire tycon ? *)
 	      with UserError _ -> findtype (i+1) in
 	    findtype 1 in
 
-  let evalct = nf_ise1 env !isevars cj.uj_type
-  and evalPt = nf_ise1 env !isevars pj.uj_type in
+  let evalct = nf_ise1 !isevars cj.uj_type
+  and evalPt = nf_ise1 !isevars pj.uj_type in
 
   let (mind,bty,rsty) =
     Indrec.type_rec_branches isrec env !isevars evalct evalPt pj.uj_val cj.uj_val in
@@ -474,20 +476,20 @@ let j_apply f env sigma j =
 let ise_resolve fail_evar sigma metamap env c =
   let isevars = ref sigma in
   let j = unsafe_fmachine mt_tycon false isevars metamap env c in
-  j_apply (process_evars fail_evar) env !isevars j
+  j_apply (fun _ -> process_evars fail_evar) env !isevars j
 
 
 let ise_resolve_type fail_evar sigma metamap env c =
   let isevars = ref sigma in
   let j = unsafe_fmachine def_vty_con false isevars metamap env c in
   let tj = inh_ass_of_j env isevars j in
-  typed_app (strong (process_evars fail_evar) env !isevars) tj
+  typed_app (strong (fun _ -> process_evars fail_evar) env !isevars) tj
 
 
 let ise_resolve_nocheck sigma metamap env c =
   let isevars = ref sigma in
   let j = unsafe_fmachine mt_tycon true isevars metamap env c in
-  j_apply (process_evars true) env !isevars j
+  j_apply (fun _ -> process_evars true) env !isevars j
 
 
 let ise_resolve1 is_ass sigma env c =

@@ -615,7 +615,7 @@ let ast_adjust_consts sigma = (* locations are kept *)
 
 let globalize_command ast =
   let env = Global.unsafe_env () in
-  let sign = get_globals (Environ.context env) in
+  let sign = Environ.var_context env in
   ast_adjust_consts Evd.empty (gLOB sign) ast
 
 (* Avoid globalizing in non command ast for tactics *)
@@ -633,8 +633,7 @@ let rec glob_ast sigma env = function
   | x -> x
 
 let globalize_ast ast =
-  let env = Global.unsafe_env () in
-  let sign = get_globals (Environ.context env) in
+  let sign = Global.var_context () in
   glob_ast Evd.empty (gLOB sign) ast
 
 

@@ -1296,17 +1296,17 @@ let nf_ise1 sigma = strong (fun _ -> whd_ise1) empty_env sigma
 (* Same as whd_ise1, but replaces the remaining ISEVAR by Metavariables
  * Similarly we have is_fmachine1_metas and is_resolve1_metas *)
 
-let rec whd_ise1_metas env sigma = function
+let rec whd_ise1_metas sigma = function
   | (DOPN(Evar n,_) as k) ->
       if Evd.in_dom sigma n then
 	if Evd.is_defined sigma n then
-      	  whd_ise1_metas env sigma (existential_value sigma k)
+      	  whd_ise1_metas sigma (existential_value sigma k)
 	else 
       	  let m = DOP0(Meta (new_meta())) in
 	  DOP2(Cast,m,existential_type sigma k)
       else
 	k
-  | DOP2(Cast,c,_) -> whd_ise1_metas env sigma c
+  | DOP2(Cast,c,_) -> whd_ise1_metas sigma c
   | c -> c
 
 

@@ -54,35 +54,35 @@ val dbindv : 'a signature -> 'b term array -> 'a * 'b term
 (*s Signatures with named and de Bruijn variables. *)
 
 type 'a db_signature = (name * 'a) list
-type ('a,'b) env = ENVIRON of 'a signature * 'b db_signature
+type ('a,'b) sign = ENVIRON of 'a signature * 'b db_signature
 
-val gLOB : 'b signature -> ('b,'a) env
+val gLOB : 'b signature -> ('b,'a) sign
 
-val add_rel : (name * 'a) -> ('b,'a) env -> ('b,'a) env 
-val add_glob : (identifier * 'b) -> ('b,'a) env -> ('b,'a) env
-val lookup_glob : identifier -> ('b,'a) env -> (identifier * 'b)
-val lookup_rel : int -> ('b,'a) env  -> (name * 'a)
-val mem_glob : identifier -> ('b,'a) env -> bool
+val add_rel : (name * 'a) -> ('b,'a) sign -> ('b,'a) sign 
+val add_glob : (identifier * 'b) -> ('b,'a) sign -> ('b,'a) sign
+val lookup_glob : identifier -> ('b,'a) sign -> (identifier * 'b)
+val lookup_rel : int -> ('b,'a) sign  -> (name * 'a)
+val mem_glob : identifier -> ('b,'a) sign -> bool
 
-val get_globals : ('b,'a) env -> 'b signature
-val get_rels : ('b,'a) env -> 'a db_signature
-val dbenv_it : (name -> 'b -> 'c -> 'c) -> ('a,'b) env -> 'c -> 'c
-val it_dbenv : ('c -> name -> 'b -> 'c) -> 'c -> ('a,'b) env -> 'c
-val map_rel_env : ('a -> 'b) -> ('c,'a) env -> ('c,'b) env
-val map_var_env : ('c -> 'b) -> ('c,'a) env -> ('b,'a) env
-val isnull_rel_env : ('a,'b) env -> bool
-val uncons_rel_env : ('a,'b) env -> (name * 'b) * ('a,'b) env
-val ids_of_env : ('a, 'b) env -> identifier list
+val get_globals : ('b,'a) sign -> 'b signature
+val get_rels : ('b,'a) sign -> 'a db_signature
+val dbenv_it : (name -> 'b -> 'c -> 'c) -> ('a,'b) sign -> 'c -> 'c
+val it_dbenv : ('c -> name -> 'b -> 'c) -> 'c -> ('a,'b) sign -> 'c
+val map_rel_env : ('a -> 'b) -> ('c,'a) sign -> ('c,'b) sign
+val map_var_env : ('c -> 'b) -> ('c,'a) sign -> ('b,'a) sign
+val isnull_rel_env : ('a,'b) sign -> bool
+val uncons_rel_env : ('a,'b) sign -> (name * 'b) * ('a,'b) sign
+val ids_of_env : ('a, 'b) sign -> identifier list
 
 type ('b,'a) search_result =
   | GLOBNAME of identifier  * 'b
   | RELNAME of int * 'a
 
-val lookup_id : identifier -> ('b,'a) env -> ('b,'a) search_result
+val lookup_id : identifier -> ('b,'a) sign -> ('b,'a) search_result
 
 
-type 'b assumptions = (typed_type,'b) env
-type context = (typed_type,typed_type) env
+type 'b assumptions = (typed_type,'b) sign
+type context = (typed_type,typed_type) sign
 type var_context = typed_type signature
 
 val unitize_env : 'a assumptions -> unit assumptions

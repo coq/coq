@@ -10,7 +10,7 @@ open Term
 open Sign
 open Environ
 open Reduction
-open Typing_ev
+open Typing
 open Proof_trees
 open Typeops
 open Coqast
@@ -215,7 +215,7 @@ let move_after with_dep toleft (left,htfrom,right) hto =
 
 let prim_refiner r sigma goal =
   let env = goal.evar_env in
-  let sign = get_globals (context env) in
+  let sign = var_context env in
   let cl = goal.evar_concl in
   let info = goal.evar_info in
   match r with
@@ -401,8 +401,8 @@ let prim_refiner r sigma goal =
     | _ -> anomaly "prim_refiner: Unrecognized primitive rule"
 
 let abst_value c =
-  let env = Global.env () in
-  Environ.abst_value (Typing.unsafe_env_of_env env) c
+  let env = Global.unsafe_env () in
+  Environ.abst_value env c
 	  
 let extract_constr = 
   let rec crec vl = function

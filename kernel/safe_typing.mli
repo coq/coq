@@ -24,6 +24,7 @@ val empty_environment : environment
 
 val universes : environment -> universes
 val context : environment -> context
+val var_context : environment -> var_context
 
 val push_var : identifier * constr -> environment -> environment
 val push_rel : name * constr -> environment -> environment

@@ -9,7 +9,7 @@ open Sign
 open Constant
 open Inductive
 open Environ
-open Typing
+open Safe_typing
 (*i*)
 
 (* This module defines the global environment of Coq. 
@@ -21,6 +21,7 @@ val unsafe_env : unit -> unsafe_env
 
 val universes : unit -> universes
 val context : unit -> context
+val var_context : unit -> var_context
 
 val push_var : identifier * constr -> unit
 val push_rel : name * constr -> unit

@@ -42,7 +42,7 @@ let print_basename_mind sp mindid =
 let print_closed_sections = ref false
 
 let print_typed_value_in_env env (trm,typ) =
-  let sign = get_globals (Environ.context env) in
+  let sign = Environ.var_context env in
   [< term0 (gLOB sign) trm ; 'fNL ;
      'sTR "     : "; term0 (gLOB sign) typ ; 'fNL >]
 
@@ -352,7 +352,7 @@ let print_constructors_rel fn mip =
   List.iter (function (id,c) -> fn (string_of_id id) ass_name c) flid
 
 let crible (fn:string -> unit assumptions -> constr -> unit) name =
-  let hyps = gLOB (get_globals (Global.context())) in
+  let hyps = gLOB (Global.var_context()) in
   let imported = Library.opened_modules() in
   let const = global_reference CCI name in 
   let rec crible_rec = function
@@ -438,7 +438,7 @@ let print_name name =
 let print_opaque_name name = 
   let sigma = Evd.empty in
   let env = Global.unsafe_env () in
-  let sign = get_globals (Global.context ()) in
+  let sign = Global.var_context () in
   try 
     match global_reference CCI name with
       | DOPN(Const sp,_) as x ->

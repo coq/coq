@@ -10,7 +10,7 @@ open Term
 
 type 'a signature = identifier list * 'a list
 type 'a db_signature = (name * 'a) list
-type ('a,'b) env = ENVIRON of 'a signature * 'b db_signature
+type ('a,'b) sign = ENVIRON of 'a signature * 'b db_signature
 
 let gLOB hyps = ENVIRON (hyps,[])
 
@@ -233,7 +233,7 @@ let lookup_id id env =
     | Not_found -> let (x,y) = lookup_glob id env in GLOBNAME(x,y)
 
 
-type 'b assumptions = (typed_type,'b) env
-type context = (typed_type,typed_type) env
+type 'b assumptions = (typed_type,'b) sign
+type context = (typed_type,typed_type) sign
 type var_context = typed_type signature
 

@@ -75,14 +75,14 @@ let hyps_inclusion env sigma (idl1,tyl1) (idl2,tyl2) =
    current context of [env]. *)
 
 let construct_reference id env sigma hyps =
-  let hyps' = get_globals (context env) in
+  let hyps' = var_context env in
   if hyps_inclusion env sigma hyps hyps' then
     Array.of_list (List.map (fun id -> VAR id) (ids_of_sign hyps))
   else 
     error_reference_variables CCI env id
 
 let check_hyps id env sigma hyps =
-  let hyps' = get_globals (context env) in
+  let hyps' = var_context env in
   if not (hyps_inclusion env sigma hyps hyps') then
     error_reference_variables CCI env id
 
@@ -178,7 +178,7 @@ let type_inst_construct env sigma i mind =
 let type_of_existential env sigma c =
   let (ev,args) = destEvar c in
   let evi = Evd.map sigma ev in
-  let hyps = get_globals (context evi.Evd.evar_env) in
+  let hyps = var_context evi.Evd.evar_env in
   let id = id_of_string ("?" ^ string_of_int ev) in
   check_hyps id env sigma hyps;
   instantiate_constr (ids_of_sign hyps) evi.Evd.evar_concl (Array.to_list args)

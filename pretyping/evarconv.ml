@@ -8,7 +8,7 @@ open Term
 open Reduction
 open Instantiate
 open Environ
-open Typing_ev
+open Typing
 open Classops
 open Recordops 
 open Evarutil

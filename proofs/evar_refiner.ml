@@ -10,7 +10,7 @@ open Term
 open Environ
 open Evd
 open Reduction
-open Typing_ev
+open Typing
 open Proof_trees
 open Logic
 open Refiner

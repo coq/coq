@@ -233,6 +233,7 @@ let empty_environment = empty_env
 
 let universes = universes
 let context = context
+let var_context = var_context
 
 let lookup_var = lookup_var
 let lookup_rel = lookup_rel
@@ -283,7 +284,7 @@ let add_constant sp ce env =
     const_kind = kind_of_path sp;
     const_body = Some ce.const_entry_body;
     const_type = ty;
-    const_hyps = get_globals (context env);
+    const_hyps = var_context env;
     const_constraints = Constraint.union cst cst';
     const_opaque = false } 
   in
@@ -296,7 +297,7 @@ let add_parameter sp t env =
     const_kind = kind_of_path sp;
     const_body = None;
     const_type = assumption_of_judgment env' Evd.empty jt;
-    const_hyps = get_globals (context env);
+    const_hyps = var_context env;
     const_constraints = cst;
     const_opaque = false } 
   in

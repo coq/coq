@@ -8,7 +8,7 @@ open Sign
 open Evd
 open Stamps
 open Environ
-open Typing_ev
+open Typing
 
 type bindOcc = 
   | Dep of identifier

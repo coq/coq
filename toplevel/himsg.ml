@@ -273,17 +273,17 @@ let explain_refiner_cannot_applt k ctx t harg =
        P.pr_term k ctx t; 'sPC; 'sTR"could not be applied to"; 'bRK(1,1);
        P.pr_term k ctx harg >]
 
-let error_occur_check ev rhs =
+let explain_occur_check k ctx ev rhs =
   let id = "?" ^ string_of_int ev in
-  let pt = prterm rhs in
+  let pt = P.pr_term k ctx rhs in
   errorlabstrm "Trad.occur_check"
     [< 'sTR"Occur check failed: tried to define "; 'sTR id;
       'sTR" with term"; 'bRK(1,1); pt >]
 
-let error_not_clean sp t =
-  let c = Rel (List.hd (Listset.elements(free_rels t))) in
+let explain_not_clean k ctx sp t =
+  let c = Rel (Intset.choose (free_rels t)) in
   let id = string_of_id (Names.basename sp) in
-  let var = pTERM(c) in
+  let var = P.pr_term k ctx c in
   errorlabstrm "Trad.not_clean"
     [< 'sTR"Tried to define "; 'sTR id;
        'sTR" with a term using variable "; var; 'sPC;

@@ -22,6 +22,7 @@ val empty_env : unsafe_env
 
 val universes : unsafe_env -> universes
 val context : unsafe_env -> context
+val var_context : unsafe_env -> var_context
 
 val push_var : identifier * typed_type -> unsafe_env -> unsafe_env
 val change_hyps : 

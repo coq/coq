@@ -149,6 +149,7 @@ let execute_type env sigma constr =
   let j = execute { fix=false; nocheck=true } env sigma constr in
   assumption_of_judgment env sigma j
 
-let execute_type env sigma constr = 
+let execute_rec_type env sigma constr = 
   let j = execute { fix=false; nocheck=false } env sigma constr in
   assumption_of_judgment env sigma j
+

@@ -714,7 +714,7 @@ let extract_pftreestate pts =
       [< 'sTR"Cannot extract from a proof-tree in which we have descended;" ;
          'sPC; 'sTR"Please ascend to the root" >];
   let env = pts.tpf.goal.evar_env in
-  let hyps = get_globals (Environ.context env) in
+  let hyps = Environ.var_context env in
   strong whd_betadeltatiota env (ts_it pts.tpfsigma)
     (extract_proof hyps pts.tpf)
 
