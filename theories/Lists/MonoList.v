@@ -8,8 +8,6 @@
 
 (*i $Id$ i*)
 
-(* This file is a copy of file MonoList.v *)
-
 (** THIS IS A OLD CONTRIB. IT IS NO LONGER MAINTAINED ***)
 
 Require Le.
