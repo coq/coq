@@ -10,6 +10,7 @@
 
 open Pp
 open Util
+open Ppextend
 open Extend
 open Pcoq
 open Topconstr
@@ -24,7 +25,7 @@ type notation_grammar =
     int * Gramext.g_assoc option * notation * prod_item list * int list option
 
 type all_grammar_command =
-  | Notation of Symbols.level * notation_grammar
+  | Notation of (precedence * tolerability list) * notation_grammar
   | Grammar of grammar_command
   | TacticGrammar of
       (string * (string * grammar_production list) * 
