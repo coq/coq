@@ -62,7 +62,9 @@ val undo : int -> unit
 val set_undo : int option -> unit
 val get_undo : unit -> int option
 
-(*s [start_proof s str env t] starts a proof of name [s] and conclusion [t] *)
+(*s [start_proof s str env t hook] starts a proof of name [s] and conclusion
+    [t]; [hook] is optionally a function to be applied at proof end (e.g. to
+    declare the built constructions as a coercion or a setoid morphism) *)
 
 val start_proof : 
   identifier -> bool * strength -> named_context -> constr
@@ -88,9 +90,9 @@ val resume_proof : identifier -> unit
 
 val suspend_proof : unit -> unit
 
-(*s [cook_proof opacity] turns the current proof (assumed completed)
-    into a constant with its name and strength; it fails if there is
-    no current proof of if it is not completed *)
+(*s [cook_proof opacity] turns the current proof (assumed completed) into
+    a constant with its name, strength and possible hook (see [start_proof]);
+    it fails if there is no current proof of if it is not completed *)
 
 val cook_proof : unit -> 
   identifier *
