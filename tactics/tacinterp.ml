@@ -876,7 +876,7 @@ let eval_variable ist gl (loc,id) =
   (* Then look if bound in the proof context at calling time *)
   if is_variable (pf_env gl) id then id
   else
-    Pretype_errors.error_var_not_found_loc loc id
+    user_err_loc (loc,"eval_variable",pr_id id ++ str " not found")
 
 let hyp_interp = eval_variable
 
