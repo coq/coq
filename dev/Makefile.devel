@@ -1,5 +1,6 @@
 # to be linked to makefile (lowercase - takes precedence over Makefile)
 # in main directory
+# make devel in main directory should do this for you.
 
 TOPDIR=.
 BASEDIR=
@@ -66,7 +67,7 @@ run:	$(TOPDIR)/coqtop
 
 
 usage::
-	@echo " vars		-- echos commands to set COQTOP and COQBIN variables"
+	@echo "  vars		-- echos commands to set COQTOP and COQBIN variables"
 vars:
 	@(cd $(TOPDIR); \
 	echo export COQTOP=`pwd`/ ; \
