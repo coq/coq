@@ -776,22 +776,22 @@ let _ =
 		 Some t, Some redexp
 	     | _ -> bad_vernac_args "DEFINITION"
 	   in 
-	   let stre,coe,objdef,idcoe = match kind with
-	     | "DEFINITION" -> NeverDischarge,false,false,false
-             | "COERCION" -> NeverDischarge,true,false,false
-             | "LCOERCION" -> make_strength_0(),true,false,false
-             | "LET" -> make_strength_2(),false,false,false
-             | "LOCAL" -> make_strength_0(),false,false,false
-             | "OBJECT" -> NeverDischarge,false,true,false
-             | "LOBJECT" -> make_strength_0(),false,true,false
-             | "OBJCOERCION" -> NeverDischarge,true,true,false
-             | "LOBJCOERCION" -> make_strength_0(),true,true,false
-             | "SUBCLASS" -> NeverDischarge,false,false,true
-             | "LSUBCLASS" -> make_strength_0(),false,false,true
+	   let local,stre,coe,objdef,idcoe = match kind with
+	     | "DEFINITION" -> false,NeverDischarge,false,false,false
+             | "COERCION" -> false,NeverDischarge,true,false,false
+             | "LCOERCION" -> true,make_strength_0(),true,false,false
+             | "LET" -> true,make_strength_2(),false,false,false
+             | "LOCAL" -> true,make_strength_0(),false,false,false
+             | "OBJECT" -> false,NeverDischarge,false,true,false
+             | "LOBJECT" -> true,make_strength_0(),false,true,false
+             | "OBJCOERCION" -> false,NeverDischarge,true,true,false
+             | "LOBJCOERCION" -> true,make_strength_0(),true,true,false
+             | "SUBCLASS" -> false,NeverDischarge,false,false,true
+             | "LSUBCLASS" -> true,make_strength_0(),false,false,true
              | _       -> anomaly "Unexpected string"
 	   in 
 	   fun () ->
-	     definition_body_red id stre c typ_opt red_option;
+	     definition_body_red red_option id (local,stre) c typ_opt;
              if coe then begin
 	       Class.try_add_new_coercion id stre;
                message ((string_of_id id) ^ " is now a coercion")

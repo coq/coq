@@ -10,11 +10,11 @@ open Declare
 (* Declaration functions. The following functions take ASTs, transform them
    into [constr] and then call the corresponding functions of [Declare]. *)
 
-val definition_body : identifier -> strength -> 
+val definition_body : identifier -> bool * strength -> 
   Coqast.t -> Coqast.t option -> unit
 
-val definition_body_red : identifier -> strength ->
-  Coqast.t -> Coqast.t option -> Tacred.red_expr option -> unit
+val definition_body_red : Tacred.red_expr option ->  
+  identifier -> bool * strength -> Coqast.t -> Coqast.t option -> unit
 
 val syntax_definition : identifier -> Coqast.t -> unit
 

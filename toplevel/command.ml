@@ -49,12 +49,16 @@ let red_constant_entry ce = function
 	const_entry_type = 
 	  ce.const_entry_type }
 
-let definition_body_red ident n com comtypeopt red_option = 
+let definition_body_red red_option ident (local,n) com comtypeopt = 
+  let warning () = 
+    mSGERRNL [< 'sTR"Warning: "; pr_id ident; 
+                'sTR" is declared as a global definition" >] in
   let ce = constant_entry_of_com (com,comtypeopt) in
   let ce' = red_constant_entry ce red_option in
   match n with
     | NeverDischarge ->
 	declare_constant ident (ConstantEntry ce',n);
+	if local then warning ();
 	if is_verbose() then message ((string_of_id ident) ^ " is defined")
     | DischargeAt disch_sp ->
         if Lib.is_section_p disch_sp then begin
@@ -67,13 +71,12 @@ let definition_body_red ident n com comtypeopt red_option =
             mSGERRNL [< 'sTR"Warning: Variable "; pr_id ident; 
                         'sTR" is not visible from current goals" >]
         end else begin
-	  mSGERRNL [< 'sTR"Warning: "; pr_id ident; 
-                      'sTR" is declared as a global definition">];
 	  declare_constant ident (ConstantEntry ce',n);
+	  warning ();
 	  if is_verbose() then message ((string_of_id ident) ^ " is defined")
 	end
 
-let definition_body ident n com typ = definition_body_red ident n com typ None
+let definition_body = definition_body_red None
 
 let syntax_definition ident com =
   let c = interp_rawconstr Evd.empty (Global.env()) com in 
@@ -96,8 +99,8 @@ let hypothesis_def_var is_refining ident n c =
   in
   match n with
     | NeverDischarge -> 
-	warning();
-	parameter_def_var ident c
+	parameter_def_var ident c;
+	warning()
     | DischargeAt disch_sp ->
         if Lib.is_section_p disch_sp then begin
 	  let t = interp_type Evd.empty (Global.env()) c in
@@ -108,8 +111,8 @@ let hypothesis_def_var is_refining ident n c =
             mSGERRNL [< 'sTR"Warning: Variable "; 'sTR ident; 
                         'sTR" is not visible from current goals" >]
         end else begin
-	  warning();
-          parameter_def_var ident c
+          parameter_def_var ident c;
+	  warning()
 	end
 
 (* 3| Mutual Inductive definitions *)
