@@ -23,6 +23,7 @@
 }
 
 let space = [' ' '\t' '\n']
+let enddot = '.' (' ' | '\t' | '\n' | eof)
 
 rule action = parse
   | "Theorem" space { print "Theorem "; body lexbuf; 
@@ -78,26 +79,27 @@ and body_def = parse
   | _            { print (Lexing.lexeme lexbuf); body lexbuf }
 
 and body = parse
-  | '.'   { print ".\n"; skip_proof lexbuf }
-  | ":="  { print ".\n"; skip_proof lexbuf }
-  | "(*"  { print "(*"; comment_depth := 1;
-      	    comment lexbuf; body lexbuf }
-  | eof   { raise Fin_fichier } 
-  | _     { print (Lexing.lexeme lexbuf); body lexbuf }
+  | enddot { print ".\n"; skip_proof lexbuf }
+  | ":="   { print ".\n"; skip_proof lexbuf }
+  | "(*"   { print "(*"; comment_depth := 1;
+      	     comment lexbuf; body lexbuf }
+  | eof    { raise Fin_fichier } 
+  | _      { print (Lexing.lexeme lexbuf); body lexbuf }
 
 and body_pgm = parse
-  | '.'   { print ".\n"; skip_proof lexbuf }
-  | "(*"  { print "(*"; comment_depth := 1;
-      	    comment lexbuf; body_pgm lexbuf }
-  | eof   { raise Fin_fichier } 
-  | _     { print (Lexing.lexeme lexbuf); body_pgm lexbuf }
+  | enddot { print ".\n"; skip_proof lexbuf }
+  | "(*"   { print "(*"; comment_depth := 1;
+      	     comment lexbuf; body_pgm lexbuf }
+  | eof    { raise Fin_fichier } 
+  | _      { print (Lexing.lexeme lexbuf); body_pgm lexbuf }
 
 and skip_until_point = parse
-  | '.'   { end_of_line lexbuf }
-  | "(*"  { comment_depth := 1;
-      	    skip_comment lexbuf; skip_until_point lexbuf }
-  | eof   { raise Fin_fichier } 
-  | _     { skip_until_point lexbuf }
+  | '.' '\n' { () }
+  | enddot   { end_of_line lexbuf }
+  | "(*"     { comment_depth := 1;
+      	       skip_comment lexbuf; skip_until_point lexbuf }
+  | eof      { raise Fin_fichier } 
+  | _        { skip_until_point lexbuf }
 
 and end_of_line = parse
   | [' ' '\t' ]*	{ end_of_line lexbuf }
@@ -119,7 +121,7 @@ and skip_proof = parse
   | "Abort" space
                 { skip_until_point lexbuf }
   | "Proof" space   { skip_until_point lexbuf }
-  | "Proof" [' ' '\t' ]* '.'  { skip_proof lexbuf }
+  | "Proof" [' ' '\t']* '.'  { skip_proof lexbuf }
   | "(*"    { comment_depth := 1;
       	      skip_comment lexbuf; skip_proof lexbuf }
   | eof     { raise Fin_fichier } 
