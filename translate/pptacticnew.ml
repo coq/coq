@@ -185,7 +185,13 @@ let pr_bindings_gen for_ex prlc prc = function
 
 let pr_bindings prlc prc = pr_bindings_gen false prlc prc
 
-let pr_with_bindings prlc prc (c,bl) = prc c ++ pr_bindings prlc prc bl
+let pr_with_bindings prlc prc (c,bl) =
+  if Options.do_translate () then
+    (* translator calls pr_with_bindings on rawconstr: we cast it! *)
+    let bl' = translate_with_bindings (fst (Obj.magic c) : rawconstr) bl in
+    prc c ++ pr_bindings prlc prc bl'
+  else
+    prc c ++ pr_bindings prlc prc bl
 
 let pr_with_constr prc = function
   | None -> mt ()
@@ -214,7 +220,7 @@ let pr_hyp_location pr_id (id,(hl,hl')) =
   if !hl' <> None then pr_hyp_location pr_id (id,out_some !hl')
   else
     (if hl = InHyp && Options.do_translate () then 
-      msgerrnl (str "Warning: Unable to detect if " ++ pr_id id ++ str " denots a local definition; if it is the case, the translation is wrong");
+      msgerrnl (str "Translator warning: Unable to detect if " ++ pr_id id ++ str " denotes a local definition");
     pr_hyp_location pr_id (id,hl))
 
 let pr_clause pr_id = function

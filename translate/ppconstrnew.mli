@@ -82,3 +82,7 @@ val pr_lterm : constr -> std_ppcmds
 
 val pr_constr_pattern_env : env -> Pattern.constr_pattern -> std_ppcmds
 val pr_constr_pattern : Pattern.constr_pattern -> std_ppcmds
+
+(* To translate names in ZArith *)
+val translate_with_bindings : rawconstr -> 'a bindings -> 'a bindings
+val rename_bound_variables : identifier -> constr_expr -> constr_expr

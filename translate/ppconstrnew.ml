@@ -709,3 +709,103 @@ let pr_constr_pattern_env env c =
 let pr_constr_pattern t =
   pr lsimple
     (Constrextern.extern_pattern (Global.env()) Termops.empty_names_context t)
+
+
+(************************************************************************)
+(* Automatic standardisation of names in Arith and ZArith by translator *)
+(* Very not robust *)
+
+let is_arith_dir dir id =
+  let dirs = List.map string_of_id (repr_dirpath dir) in
+  match List.rev dirs with
+  | "Coq"::"Arith"::"Between"::_ -> false
+  | "Coq"::"ZArith"::("Wf_Z"|"Zpower"|"Zlogarithm"|"Zbinary"|"Zdiv")::_ -> false
+  | "Coq"::("Arith"|"NArith"|"ZArith")::_ -> true
+  | "Coq"::"Init"::"Peano"::_ -> true
+  | "Coq"::"Init"::"Logic"::_ when string_of_id id = "iff_trans" -> true
+  | _ -> false
+
+let is_arith ref =
+  let sp = sp_of_global ref in
+  is_arith_dir (dirpath sp) (basename sp)
+
+let get_name (ln,lp,lz) id n =
+  let id' = string_of_id n in
+  (match id' with
+    | "nat" -> (id_of_string (List.hd ln),(List.tl ln,lp,lz))
+    | "positive" -> (id_of_string (List.hd lp),(ln,List.tl lp,lz))
+    | "Z" -> (id_of_string (List.hd lz),(ln,lp,List.tl lz))
+    | _ -> id,(ln,lp,lz))
+
+let get_name_constr names id t = match kind_of_term t with
+  | Ind ind ->
+      let n = basename (sp_of_global (IndRef ind)) in
+      get_name names id n
+  | _ -> id,names
+
+let names = (["n";"m";"p";"q"],["p";"q";"r";"s"],["n";"m";"p";"q"])
+
+let znames t =
+  let rec aux c names = match kind_of_term c with
+    | Prod (Name id as na,t,c) ->
+	let (id,names) = get_name_constr names id t in
+	(na,id) :: aux c names
+    | Prod (Anonymous,t,c) ->
+	(Anonymous,id_of_string "ZZ") :: aux c names
+    | _ -> []
+  in aux t names
+
+let get_name_raw names id t = match t with
+  | CRef(Ident (_,n)) -> get_name names id n
+  | _ -> id,names
+
+let rename_bound_variables id t =
+  if is_arith_dir (Lib.library_dp()) id then
+  let rec aux c names subst = match c with
+    | CProdN (loc,bl,c) ->
+	let rec aux2 names subst = function
+	  | (nal,t)::bl ->
+	      let rec aux3 names subst = function
+		| (loc,Name id)::nal ->
+		    let (id',names) = get_name_raw names id t in
+		    let (nal,names,subst) = aux3 names ((id,id')::subst) nal in
+		    (loc,Name id')::nal, names, subst
+		| x::nal -> 
+		    let (nal,names,subst) = aux3 names subst nal in
+		    x::nal,names,subst
+		| [] -> [],names,subst in
+	      let t = replace_vars_constr_expr subst t in
+	      let nal,names,subst = aux3 names subst nal in
+	      let bl,names,subst = aux2 names subst bl in
+	      (nal,t)::bl, names, subst
+	  | [] -> [],names,subst in
+	let bl,names,subst = aux2 names subst bl in
+	CProdN (loc,bl,aux c names subst)
+    | CArrow (loc,t,u) ->
+	let u = aux u names subst in
+	CArrow (loc,replace_vars_constr_expr subst t,u)
+    | _ -> replace_vars_constr_expr subst c
+  in aux t names []
+  else t
+
+let translate_binding kn n ebl =
+  let t = Retyping.get_type_of (Global.env()) Evd.empty (mkConst kn) in
+  let subst = znames t in
+  try
+    let _,subst' = list_chop n subst in
+    List.map (function
+      | (x,NamedHyp id,c) -> (x,NamedHyp (List.assoc (Name id) subst'),c)
+      |  x -> x) ebl
+  with _ -> ebl
+
+let translate_with_bindings c bl =
+  match bl with
+    | ExplicitBindings l -> ExplicitBindings
+	(match c with
+	  | RRef (_,(ConstRef kn as ref)) when is_arith ref -> 
+	      translate_binding kn 0 l
+	  | RApp (_,RRef (_,(ConstRef kn as ref)), args) when is_arith ref ->
+	      translate_binding kn (List.length args) l
+	  | _ ->
+	      l)
+    | x -> x

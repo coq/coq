@@ -115,7 +115,12 @@ let pr_bindings prc prlc = function
   | NoBindings -> mt ()
 
 let pr_with_bindings prc prlc (c,bl) =
-  prc c ++ hv 0 (pr_bindings prc prlc bl)
+  if Options.do_translate () then
+    (* translator calls pr_with_bindings on rawconstr: we cast it! *)
+    let bl' = Ppconstrnew.translate_with_bindings (fst (Obj.magic c) : rawconstr) bl in
+    prc c ++ hv 0 (pr_bindings prc prlc bl')
+  else
+    prc c ++ hv 0 (pr_bindings prc prlc bl)
 
 let pr_with_constr prc = function
   | None -> mt ()
