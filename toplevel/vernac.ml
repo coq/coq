@@ -214,7 +214,12 @@ let compile verbosely f =
   if !dump then dump_string ("F" ^ Names.string_of_dirpath ldir ^ "\n");
   if Options.do_translate () then chan_translate := open_out (f^".v8");
   let _ = load_vernac verbosely long_f_dot_v in
-  if Options.do_translate () then close_out !chan_translate;
+  if Options.do_translate () then begin
+    Format.set_formatter_out_channel !chan_translate;
+    msg (pr_comments !comments);
+    Format.set_formatter_out_channel stdout;
+    close_out !chan_translate
+  end;
   if Pfedit.get_all_proof_names () <> [] then
     (message "Error: There are pending proofs"; exit 1);
   Library.save_library_to ldir (long_f_dot_v ^ "o")
