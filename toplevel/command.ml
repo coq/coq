@@ -79,7 +79,7 @@ let abstraction_definition ident arity com =
 let parameter_def_var ident c =
   let c = constr_of_com1 true Evd.empty (Global.env()) c in
   declare_parameter (id_of_string ident) c;
-  if is_verbose() then message ((string_of_id ident) ^ " is assumed")
+  if is_verbose() then message (ident ^ " is assumed")
     
 let hypothesis_def_var is_refining ident n c =
   let warning () = 
@@ -95,7 +95,7 @@ let hypothesis_def_var is_refining ident n c =
         if Lib.is_section_p disch_sp then begin
           declare_variable (id_of_string ident)
              (constr_of_com1 true Evd.empty (Global.env()) c,n,false);
-	  if is_verbose() then message ((string_of_id ident) ^ " is assumed");
+	  if is_verbose() then message (ident ^ " is assumed");
           if is_refining then 
             mSGERRNL [< 'sTR"Warning: Variable "; 'sTR ident; 
                         'sTR" is not visible from current goals" >]
