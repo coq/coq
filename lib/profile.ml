@@ -1,7 +1,4 @@
-
-(* $Id$ *)
-
-(* This program is a small time-profiler for Caml-Special-Light *)
+(* This program is a small time and allocation profiler for Objective Caml *)
 
 (* It requires the UNIX library *)
 
@@ -12,34 +9,34 @@
 
 To trace a function "f" you first need to get a key for it by using :
 
-let fkey = declare_profile "f"
+let fkey = declare_profile "f";;
 
 (the string is used to print the profile infomation). Warning: this
 function does a side effect. Choose the ident you want instead "fkey".
 
-Then if the function has one ONE argument add the following just after
+Then if the function has ONE argument add the following just after
 the definition of "f" or just after the declare_profile if this one
 follows the defintion of f.
 
-let f = profile fkey f
+let f = profile fkey f;;
 
-If f has two arguments do the same with profile2, idem with 3 and
-4. For more than 4 arguments ... modify the function profile yourself,
-it is very easy (look the differences between profile and profile2.
+If f has two arguments do the same with profile2, idem with 3, ...
+For more arguments than provided in this module, make a new copy of
+function profile and adapt for the needed arity.
 
 If you want to profile two mutually recursive functions, you had better
 to rename them :
 
-let fkey = declare_profile "f"
-let gkey = declare_profile "g"
+let fkey = declare_profile "f";;
+let gkey = declare_profile "g";;
 let f' = .... f' ... g'
 and g' = .... f' .... g'
+;;
 
+let f = profile fkey f';;
+let g = profile gkey g';;
 
-let f = profile fkey f'
-let g = profile gkey g'
-
-Before the program quits, you should call "print_profile ()". It
+Before the program quits, you should call "print_profile ();;". It
 produces a result of the following kind:
 
 f 5.32 7.10
@@ -54,258 +51,704 @@ total -9.44 0.00
 - The second column give the time spend inside the function minus the
 time spend in other profiled functions called by it
 
-The last line can be ignored (there is a bug if the down-right digit is non
-zero)
+- The 4th and 5th columns give the same for allocated words
 
 *)
 
-type profile_key = float ref * float ref
+open Gc
 
-let actif = ref true
+let int_size = Sys.word_size - 1
+let int_range = -2 * (1 lsl (int_size - 1))
 
-let tot_ptr = ref 0.0 and tot_ptr' = ref 0.0
+let float_of_time t = float_of_int t /. 100.
+let time_of_float f = int_of_float (f *. 100.)
 
-let prof_table = ref ["total",(tot_ptr,tot_ptr')]
+let get_time () =
+  let  {Unix.tms_utime = ut;Unix.tms_stime = st} = Unix.times () in
+  time_of_float (ut +. st)
 
-let stack = ref [tot_ptr']
+let get_alloc () = Gc.allocated_bytes ()
 
-let ajoute ((name,(ptr1,ptr1')) as e) l =
-  try let (ptr,ptr') = List.assoc name l in
-  ptr  := !ptr  +. !ptr1;
-  ptr' := !ptr' +. !ptr1';
-  l
+let get_alloc_overhead =
+  let now = get_alloc () in
+  let after = get_alloc () in
+  after - now                    (* Rem: overhead is 16 bytes in ocaml 3.00 *)
+
+let last_alloc = ref 0
+
+let spent_alloc () =
+  let w = get_alloc () in
+  let dw = w - !last_alloc in
+  let n,dw = if dw >= 0 then (0, dw) else (1, dw+int_range) in
+  last_alloc := w;
+  n, dw - get_alloc_overhead
+
+type profile_key = {
+  mutable owntime : int;
+  mutable tottime : int;
+  mutable hiownalloc : int;
+  mutable loownalloc : int;
+  mutable hitotalloc : int;
+  mutable lototalloc : int;
+  mutable owncount : int;
+  mutable intcount : int;
+  mutable immcount : int;
+}
+
+let create_record () = {
+  owntime=0;
+  tottime=0;
+  hiownalloc=0;
+  loownalloc=0;
+  hitotalloc=0;
+  lototalloc=0;
+  owncount=0;
+  intcount=0;
+  immcount=0
+}
+
+let prof_table = ref []
+let stack = ref []
+let init_time = ref 0
+let init_alloc = ref 0
+
+let reset_record (n,e) =
+  e.owntime <- 0;
+  e.tottime <- 0;
+  e.hiownalloc <- 0;
+  e.loownalloc <- 0;
+  e.hitotalloc <- 0;
+  e.lototalloc <- 0;
+  e.owncount <- 0;
+  e.intcount <- 0;
+  e.immcount <- 0
+
+let reset_profile () = List.iter reset_record !prof_table
+
+let init_profile () =
+  prof_table :=[];
+  let outside = create_record () in
+  stack := [outside];
+  last_alloc := get_alloc ();
+  init_alloc := !last_alloc;
+  init_time := get_time ();
+  outside.tottime <- - !init_time;
+  outside.owntime <- - !init_time
+
+let ajoute ((name,n) as e) l =
+  try let o = List.assoc name l in
+      o.owntime <- o.owntime + n.owntime;
+      o.tottime <- o.tottime + n.tottime;
+      o.hiownalloc <- o.hiownalloc + n.hiownalloc;
+      o.loownalloc <- o.loownalloc + n.loownalloc;
+      o.hitotalloc <- o.hitotalloc + n.hitotalloc;
+      o.lototalloc <- o.lototalloc + n.lototalloc;
+      o.owncount <- o.owncount + n.owncount;
+      o.intcount <- o.intcount + n.intcount;
+      o.immcount <- o.immcount + n.immcount;
+      l
   with Not_found -> e::l
 
+let magic = 1249
 
-let magic = 1248
-
-let append_profile name =
-  if List.length !prof_table <> 1 then begin
-    let prof_table =
-      if name = "" then !prof_table
-      else
-	let new_prof_table =
-          try 
-            let c = open_in name in
-            if input_binary_int c <> magic 
-            then Printf.printf "Bad already existing recording file\n";
-            let old_prof_table = input_value c in
-            close_in c;
-            List.fold_right ajoute !prof_table old_prof_table
-          with Sys_error _ ->
-            (Printf.printf "Non existent or unaccessible recording file\n";
-             !prof_table)
-	in begin
-          (try
-             let c = open_out_gen 
-                       [Open_creat;Open_wronly;Open_trunc;Open_binary] 0o644 name in
-             output_binary_int c magic;
-             output_value c new_prof_table;
-             close_out c
-           with Sys_error _ -> Printf.printf "Unable to create recording file");
-            new_prof_table
-	  end
-    in
-    print_newline ();
-    Printf.printf "%-25s  %11s  %11s\n" 
-      "Function name" "Proper time" "Total time";
-    let l = Sort.list (fun (_,(_,p)) (_,(_,p')) -> !p > !p') prof_table in
-    List.iter (fun (name,(ptr,ptr')) ->
-		 Printf.printf "%-25s  %11.2f  %11.2f\n" name !ptr' !ptr) l;
-    Gc.print_stat stdout
+let merge_profile filename prof_table =
+  let new_prof_table =
+    try 
+      let c = open_in filename in
+      if input_binary_int c <> magic 
+      then Printf.printf "Incompatible recording file: %s\n" filename;
+      let old_prof_table = input_value c in
+      close_in c;
+      List.fold_right ajoute prof_table old_prof_table
+    with Sys_error msg ->
+      (Printf.printf "Unable to open %s: %s\n" filename msg;
+       prof_table)
+  in begin
+    (try
+       let c =
+	 open_out_gen 
+           [Open_creat;Open_wronly;Open_trunc;Open_binary] 0o644 filename in
+       output_binary_int c magic;
+       output_value c new_prof_table;
+       close_out c
+     with Sys_error _ -> Printf.printf "Unable to create recording file");
+    new_prof_table
   end
 
+(************************************************)
+(* Compute a rough estimation of time overheads *)
+
+(* Time and space are not measured in the same way *)
+
+(* Byte allocation is an exact number and for long runs, the total
+   number of allocated bytes may exceed the maximum integer capacity
+   (2^31 on 32-bits architectures); therefore, allocation is measured
+   by small steps, total allocations are computed by adding elementary
+   measures and carries are controled from step to step *)
+
+(* Unix measure of time is approximative and short delays are often
+   unperceivable; therefore, total times are measured in one (big)
+   step to avoid rounding errors and to get the best possible
+   approximation *)
+
+(*
+----------        start profile for f1
+overheadA|        ...
+  ---------- [1w1]  1st call to get_time for f1
+  overheadB|        ...
+  ----------        start f1
+   real 1  |        ...
+  ----------        start profile for 1st call to f2 inside f1
+  overheadA|        ...
+    ---------- [2w1]  1st call to get_time for 1st f2
+    overheadB|        ...
+    ----------        start 1st f2
+     real 2  |        ...
+    ----------        end 1st f2
+    overheadC|        ...
+    ---------- [2w1]  2nd call to get_time for 1st f2
+  overheadD|        ...
+  ----------        end profile for 1st f2
+   real 1  |        ...
+  ----------        start profile for 2nd call to f2 inside f1
+  overheadA|        ...
+    ---------- [2'w1] 1st call to get_time for 2nd f2
+    overheadB|        ...
+    ----------        start 2nd f2
+     real 2' |        ...
+    ----------        end 2nd f2
+    overheadC|        ...
+    ---------- [2'w2]  2nd call to get_time for 2nd f2 
+  overheadD|        ...
+  ----------        end profile for f2
+   real 1  |        ...
+  ----------        end f1
+  overheadC|        ...
+---------- [1w1'] 2nd call to get_time for f1
+overheadD|        ...
+----------        end profile for f1
+
+When profiling f2, overheadB + overheadC should be subtracted from measure
+and overheadA + overheadB + overheadC + overheadD should be subtracted from
+the amount for f1
+
+Then the relevant overheads are :
+
+  "overheadB + overheadC" to be subtracted to the measure of f as many time as f is called and
+
+  "overheadA + overheadB + overheadC + overheadD" to be subtracted to
+  the measure of f as many time as f calls a profiled function (itself
+  included)
+*)
+
+let dummy_last_alloc = ref 0
+let dummy_spent_alloc () =
+  let w = get_alloc () in
+  let dw = w - !dummy_last_alloc in
+  let n,dw = if dw >= 0 then (0, dw) else (1, dw+int_range) in
+  dummy_last_alloc := w;
+  n, dw - get_alloc_overhead
+let dummy_f x = x
+let dummy_stack = ref [create_record ()]
+let dummy_ov = 0
+
+let time_overhead_A_D () =
+  let e = create_record () in
+  let n = 100000 in
+  let before = get_time () in
+  for i=1 to n do
+    (* This is a copy of profile1 for overhead estimation *)
+    let hidw,lodw = dummy_spent_alloc () in
+    match !dummy_stack with [] -> assert false | p::_ ->
+      p.hiownalloc <- p.hiownalloc + hidw;
+      p.loownalloc <- p.loownalloc + lodw;
+      p.hitotalloc <- p.hitotalloc + hidw;
+      p.lototalloc <- p.lototalloc + lodw;
+      e.owncount <- e.owncount + 1;
+      if not (p==e) then stack := e::!stack;
+      let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+      let intcount0 = e.intcount in
+      let dt = get_time () - 1 in
+      e.tottime <- dt + dummy_ov; e.owntime <- e.owntime + e.tottime;
+      e.hitotalloc <- e.hitotalloc + hidw;
+      e.lototalloc <- e.lototalloc + lodw;
+      e.hiownalloc <- e.hiownalloc + hidw;
+      e.loownalloc <- e.loownalloc + lodw;
+      p.owntime <- p.owntime - e.tottime;
+      p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+      p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+      p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+      p.immcount <- p.immcount + 1;
+      if not (p==e) then 
+	(match !dummy_stack with [] -> assert false | _::s -> stack := s);
+      dummy_last_alloc := get_alloc ()
+  done;
+  let after = get_time () in
+  let beforeloop =  get_time () in
+  for i=1 to n do () done;
+  let afterloop = get_time () in
+  float_of_int ((after - before) - (afterloop - beforeloop)) /. float_of_int n
+
+let time_overhead_B_C () =
+  let dummy_x = 0 in
+  let n = 100000 in
+  let before = get_time () in
+  for i=1 to n do
+    try
+      dummy_last_alloc := get_alloc ();
+      let r = dummy_f dummy_x in
+      let hidw,lodw = dummy_spent_alloc () in
+      let dt = get_time () in
+      ()
+    with _ -> assert false
+  done;
+  let after = get_time () in
+  let beforeloop =  get_time () in
+  for i=1 to n do () done;
+  let afterloop = get_time () in
+  float_of_int ((after - before) - (afterloop - beforeloop)) /. float_of_int n
+
+let compute_alloc hi lo =
+  ((float_of_int hi) *. (float_of_int int_range) +. (float_of_int lo)) /. 1.
+
+(************************************************)
+(* End a profiling session and print the result *)
+
+let format_profile prof_table outside (ovtime, tottime, ovalloc, totalloc) =
+  print_newline ();
+  Printf.printf 
+    "%-23s  %9s %9s %10s %10s %10s\n"
+    "Function name" "Own time" "Tot. time" "Own alloc" "Tot. alloc" "Calls ";
+  let l =
+    Sort.list (fun (_,{tottime=p}) (_,{tottime=p'}) -> p > p') prof_table in
+  List.iter (fun (name,e) ->
+    Printf.printf
+      "%-23s %9.2f %9.2f %10.0f %10.0f %6d %6d\n"
+      name
+      (float_of_time e.owntime) (float_of_time e.tottime)
+      (compute_alloc e.hiownalloc e.loownalloc)
+      (compute_alloc e.hitotalloc e.lototalloc)
+      e.owncount e.intcount)
+    l;
+  Printf.printf "%-23s %9.2f %9.2f %10.0f %10.0f        %6d\n"
+    "others" 
+    (float_of_time outside.owntime) (float_of_time outside.tottime)
+    (compute_alloc outside.hiownalloc outside.loownalloc)
+    (compute_alloc outside.hitotalloc outside.lototalloc)
+    outside.intcount;
+  Printf.printf "%-23s %9.2f %9.2f %10.0f %10.0f\n"
+    "Est. overhead/total"
+    (float_of_time ovtime) (float_of_time tottime)
+    (float_of_int ovalloc) (float_of_int totalloc);
+  Printf.printf "Time in seconds and allocation in bytes\n";
 
 let recording_file = ref ""
 let set_recording s = recording_file := s
 
-let print_profile () = append_profile !recording_file
+let adjust_time ov_bc ov_ad e =
+  let bc_imm = float_of_int e.owncount *. ov_bc in
+  let ad_imm = float_of_int e.immcount *. ov_ad in
+  let abcd_all = float_of_int e.intcount *. (ov_ad +. ov_bc) in
+  {e with
+     (* We should substract ov_ext_time *. immediate subcalls from tottime *)
+     (* but the number of immediate subcalls is unknown *)
+     tottime = e.tottime - int_of_float (abcd_all +. bc_imm);
+     owntime = e.owntime - int_of_float (ad_imm +. bc_imm) }
 
-let reset_profile () = 
-  List.iter (fun (name,(p,p')) -> p:=0.0; p':=0.0) !prof_table
+let close_profile print = 
+  let hidw,lodw = spent_alloc () in
+  let t = get_time () in
+  match !stack with
+    | [outside] ->
+	outside.tottime <- outside.tottime + t;
+	outside.owntime <- outside.owntime + t;
+	outside.hiownalloc <- outside.hiownalloc + hidw;
+	outside.loownalloc <- outside.loownalloc + lodw;
+	outside.hitotalloc <- outside.hitotalloc + hidw;
+	outside.lototalloc <- outside.lototalloc + lodw;
+	if List.length !prof_table <> 0 then begin
+	  let ov_bc = time_overhead_B_C () (* B+C overhead *) in
+	  let ov_ad = time_overhead_A_D () (* A+D overhead *) in
+	  let adjust (n,e) = (n, adjust_time ov_bc ov_ad e) in
+	  let adjtable = List.map adjust !prof_table in
+	  let adjoutside = adjust_time ov_bc ov_ad outside in
+	  let globtable =
+	    match !recording_file with
+	      |	"" -> adjtable
+	      | name -> merge_profile !recording_file adjtable
+	  in
+	  if print then
+	    let ovtime = outside.tottime - adjoutside.tottime in
+	    let tottime = outside.tottime in
+	    (* TODO : Gérer la retenue *)
+	    let totalloc = !last_alloc - !init_alloc in
+	    let ovalloc = totalloc - outside.lototalloc in
+	    format_profile globtable adjoutside
+	      (ovtime,tottime,ovalloc,totalloc);
+	  init_profile ()
+	end
+    | _ -> failwith "Inconsistency"
 
-let init_profile () = 
-  tot_ptr:= 0.0; tot_ptr':=0.0; prof_table :=["total",(tot_ptr,tot_ptr')] 
+let append_profile () = close_profile false
+let print_profile () = close_profile true
 
-let declare_profile name = let ptr = ref 0.0 and ptr' = ref 0.0 in
-prof_table := (name,(ptr,ptr'))::!prof_table;(ptr,ptr')
+let declare_profile name =
+  let e = create_record () in
+  prof_table := (name,e)::!prof_table;
+  e
 
-let profile (ptr,ptr') f =
-  (fun x ->
-     let (ut,st) = System.process_time () in
-     stack := ptr'::!stack;
-     try
-       let r = f x in
-       let (ut',st') = System.process_time () in
-       let t = (ut' -. ut) +. (st' -. st) in
-       (match !stack with
-	    _::(ptr'::_ as s) -> stack:=s; ptr' := !ptr' -. t
-	  | _ -> failwith "bug in profile");
-       ptr := !ptr +. t;
-       ptr' := !ptr' +. t;
-       r
-     with e ->
-       let (ut',st') = System.process_time () in
-       let t = (ut' -. ut) +. (st' -. st) in
-       (match !stack with
-	    _::(ptr'::_ as s) -> stack:=s; ptr' := !ptr' -. t
-	  | _ -> failwith "bug in profile");
-       ptr := !ptr +. t;
-       ptr' := !ptr' +. t;
-       raise e)
+(* Default initialisation, may be overriden *)
+let _ = init_profile ()
 
+(******************************)
+(* Entry points for profiling *)
+let profile1 e f a =
+  let hidw,lodw = spent_alloc () in
+  match !stack with [] -> assert false | p::_ ->
+  (* We add spent alloc since last measure to current caller own/total alloc *)
+  p.hiownalloc <- p.hiownalloc + hidw;
+  p.loownalloc <- p.loownalloc + lodw;
+  p.hitotalloc <- p.hitotalloc + hidw;
+  p.lototalloc <- p.lototalloc + lodw;
+  e.owncount <- e.owncount + 1;
+  if not (p==e) then stack := e::!stack;
+  let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+  let intcount0 = e.intcount in
+  let t = get_time () in
+  try
+    last_alloc := get_alloc ();
+    let r = f a in
+    let hidw,lodw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    e.hitotalloc <- e.hitotalloc + hidw;
+    e.lototalloc <- e.lototalloc + lodw;
+    e.hiownalloc <- e.hiownalloc + hidw;
+    e.loownalloc <- e.loownalloc + lodw;
+    p.owntime <- p.owntime - dt;
+    p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+    p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then 
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    r
+  with exn ->
+    let hidw,lodw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    e.hitotalloc <- e.hitotalloc + hidw;
+    e.lototalloc <- e.lototalloc + lodw;
+    e.hiownalloc <- e.hiownalloc + hidw;
+    e.loownalloc <- e.loownalloc + lodw;
+    p.owntime <- p.owntime - dt;
+    p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+    p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then 
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    raise exn
 
+let profile2 e f a b =
+  let hidw,lodw = spent_alloc () in
+  match !stack with [] -> assert false | p::_ ->
+  (* We add spent alloc since last measure to current caller own/total alloc *)
+  p.hiownalloc <- p.hiownalloc + hidw;
+  p.loownalloc <- p.loownalloc + lodw;
+  p.hitotalloc <- p.hitotalloc + hidw;
+  p.lototalloc <- p.lototalloc + lodw;
+  e.owncount <- e.owncount + 1;
+  if not (p==e) then stack := e::!stack;
+  let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+  let intcount0 = e.intcount in
+  let t = get_time () in
+  try
+    last_alloc := get_alloc ();
+    let r = f a b in
+    let hidw,lodw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    e.hitotalloc <- e.hitotalloc + hidw;
+    e.lototalloc <- e.lototalloc + lodw;
+    e.hiownalloc <- e.hiownalloc + hidw;
+    e.loownalloc <- e.loownalloc + lodw;
+    p.owntime <- p.owntime - dt;
+    p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+    p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then 
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    r
+  with exn ->
+    let hidw,lodw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    e.hitotalloc <- e.hitotalloc + hidw;
+    e.lototalloc <- e.lototalloc + lodw;
+    e.hiownalloc <- e.hiownalloc + hidw;
+    e.loownalloc <- e.loownalloc + lodw;
+    p.owntime <- p.owntime - dt;
+    p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+    p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then 
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    raise exn
 
-let profile2 (ptr,ptr') f =
-  (fun x y ->
-     let (ut,st) = System.process_time () in
-     stack := ptr'::!stack;
-     try
-       let r = f x y in
-       let (ut',st') = System.process_time () in
-       let t = (ut' -. ut) +. (st' -. st) in
-       (match !stack with
-	    _::(ptr'::_ as s) -> stack:=s; ptr' := !ptr' -. t
-	  | _ -> failwith "bug in profile");
-       ptr := !ptr +. t;
-       ptr' := !ptr' +. t;
-       r
-     with e ->
-       let (ut',st') = System.process_time () in
-       let t = (ut' -. ut) +. (st' -. st) in
-       (match !stack with
-	    _::(ptr'::_ as s) -> stack:=s; ptr' := !ptr' -. t
-	  | _ -> failwith "bug in profile");
-       ptr := !ptr +. t;
-       ptr' := !ptr' +. t;
-       raise e)
+let profile3 e f a b c =
+  let hidw,lodw = spent_alloc () in
+  match !stack with [] -> assert false | p::_ ->
+  (* We add spent alloc since last measure to current caller own/total alloc *)
+  p.hiownalloc <- p.hiownalloc + hidw;
+  p.loownalloc <- p.loownalloc + lodw;
+  p.hitotalloc <- p.hitotalloc + hidw;
+  p.lototalloc <- p.lototalloc + lodw;
+  e.owncount <- e.owncount + 1;
+  if not (p==e) then stack := e::!stack;
+  let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+  let intcount0 = e.intcount in
+  let t = get_time () in
+  try
+    last_alloc := get_alloc ();
+    let r = f a b c in
+    let hidw,lodw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    e.hitotalloc <- e.hitotalloc + hidw;
+    e.lototalloc <- e.lototalloc + lodw;
+    e.hiownalloc <- e.hiownalloc + hidw;
+    e.loownalloc <- e.loownalloc + lodw;
+    p.owntime <- p.owntime - dt;
+    p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+    p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then 
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    r
+  with exn ->
+    let hidw,lodw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    e.hitotalloc <- e.hitotalloc + hidw;
+    e.lototalloc <- e.lototalloc + lodw;
+    e.hiownalloc <- e.hiownalloc + hidw;
+    e.loownalloc <- e.loownalloc + lodw;
+    p.owntime <- p.owntime - dt;
+    p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+    p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then 
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    raise exn
 
+let profile4 e f a b c d =
+  let hidw,lodw = spent_alloc () in
+  match !stack with [] -> assert false | p::_ ->
+  (* We add spent alloc since last measure to current caller own/total alloc *)
+  p.hiownalloc <- p.hiownalloc + hidw;
+  p.loownalloc <- p.loownalloc + lodw;
+  p.hitotalloc <- p.hitotalloc + hidw;
+  p.lototalloc <- p.lototalloc + lodw;
+  e.owncount <- e.owncount + 1;
+  if not (p==e) then stack := e::!stack;
+  let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+  let intcount0 = e.intcount in
+  let t = get_time () in
+  try
+    last_alloc := get_alloc ();
+    let r = f a b c d in
+    let hidw,lodw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    e.hitotalloc <- e.hitotalloc + hidw;
+    e.lototalloc <- e.lototalloc + lodw;
+    e.hiownalloc <- e.hiownalloc + hidw;
+    e.loownalloc <- e.loownalloc + lodw;
+    p.owntime <- p.owntime - dt;
+    p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+    p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then 
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    r
+  with exn ->
+    let hidw,lodw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    e.hitotalloc <- e.hitotalloc + hidw;
+    e.lototalloc <- e.lototalloc + lodw;
+    e.hiownalloc <- e.hiownalloc + hidw;
+    e.loownalloc <- e.loownalloc + lodw;
+    p.owntime <- p.owntime - dt;
+    p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+    p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then 
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    raise exn
 
+let profile5 e f a b c d g =
+  let hidw,lodw = spent_alloc () in
+  match !stack with [] -> assert false | p::_ ->
+  (* We add spent alloc since last measure to current caller own/total alloc *)
+  p.hiownalloc <- p.hiownalloc + hidw;
+  p.loownalloc <- p.loownalloc + lodw;
+  p.hitotalloc <- p.hitotalloc + hidw;
+  p.lototalloc <- p.lototalloc + lodw;
+  e.owncount <- e.owncount + 1;
+  if not (p==e) then stack := e::!stack;
+  let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+  let intcount0 = e.intcount in
+  let t = get_time () in
+  try
+    last_alloc := get_alloc ();
+    let r = f a b c d g in
+    let hidw,lodw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    e.hitotalloc <- e.hitotalloc + hidw;
+    e.lototalloc <- e.lototalloc + lodw;
+    e.hiownalloc <- e.hiownalloc + hidw;
+    e.loownalloc <- e.loownalloc + lodw;
+    p.owntime <- p.owntime - dt;
+    p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+    p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then 
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    r
+  with exn ->
+    let hidw,lodw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    e.hitotalloc <- e.hitotalloc + hidw;
+    e.lototalloc <- e.lototalloc + lodw;
+    e.hiownalloc <- e.hiownalloc + hidw;
+    e.loownalloc <- e.loownalloc + lodw;
+    p.owntime <- p.owntime - dt;
+    p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+    p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then 
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    raise exn
 
-let profile3 (ptr,ptr') f =
-  (fun x y z ->
-     let (ut,st) = System.process_time () in
-     stack := ptr'::!stack;
-     try
-       let r = f x y z in
-       let (ut',st') = System.process_time () in
-       let t = (ut' -. ut) +. (st' -. st) in
-       (match !stack with
-	    _::(ptr'::_ as s) -> stack:=s; ptr' := !ptr' -. t
-	  | _ -> failwith "bug in profile");
-       ptr := !ptr +. t;
-       ptr' := !ptr' +. t;
-       r
-     with e ->
-       let (ut',st') = System.process_time () in
-       let t = (ut' -. ut) +. (st' -. st) in
-       (match !stack with
-	    _::(ptr'::_ as s) -> stack:=s; ptr' := !ptr' -. t
-	  | _ -> failwith "bug in profile");
-       ptr := !ptr +. t;
-       ptr' := !ptr' +. t;
-       raise e)
+let profile6 e f a b c d g h =
+  let hidw,lodw = spent_alloc () in
+  match !stack with [] -> assert false | p::_ ->
+  (* We add spent alloc since last measure to current caller own/total alloc *)
+  p.hiownalloc <- p.hiownalloc + hidw;
+  p.loownalloc <- p.loownalloc + lodw;
+  p.hitotalloc <- p.hitotalloc + hidw;
+  p.lototalloc <- p.lototalloc + lodw;
+  e.owncount <- e.owncount + 1;
+  if not (p==e) then stack := e::!stack;
+  let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+  let intcount0 = e.intcount in
+  let t = get_time () in
+  try
+    last_alloc := get_alloc ();
+    let r = f a b c d g h in
+    let hidw,lodw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    e.hitotalloc <- e.hitotalloc + hidw;
+    e.lototalloc <- e.lototalloc + lodw;
+    e.hiownalloc <- e.hiownalloc + hidw;
+    e.loownalloc <- e.loownalloc + lodw;
+    p.owntime <- p.owntime - dt;
+    p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+    p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then 
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    r
+  with exn ->
+    let hidw,lodw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    e.hitotalloc <- e.hitotalloc + hidw;
+    e.lototalloc <- e.lototalloc + lodw;
+    e.hiownalloc <- e.hiownalloc + hidw;
+    e.loownalloc <- e.loownalloc + lodw;
+    p.owntime <- p.owntime - dt;
+    p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+    p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then 
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    raise exn
 
+let profile7 e f a b c d g h i =
+  let hidw,lodw = spent_alloc () in
+  match !stack with [] -> assert false | p::_ ->
+  (* We add spent alloc since last measure to current caller own/total alloc *)
+  p.hiownalloc <- p.hiownalloc + hidw;
+  p.loownalloc <- p.loownalloc + lodw;
+  p.hitotalloc <- p.hitotalloc + hidw;
+  p.lototalloc <- p.lototalloc + lodw;
+  e.owncount <- e.owncount + 1;
+  if not (p==e) then stack := e::!stack;
+  let hitotalloc0,lototalloc0 = e.hitotalloc,e.lototalloc in
+  let intcount0 = e.intcount in
+  let t = get_time () in
+  try
+    last_alloc := get_alloc ();
+    let r = f a b c d g h i in
+    let hidw,lodw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    e.hitotalloc <- e.hitotalloc + hidw;
+    e.lototalloc <- e.lototalloc + lodw;
+    e.hiownalloc <- e.hiownalloc + hidw;
+    e.loownalloc <- e.loownalloc + lodw;
+    p.owntime <- p.owntime - dt;
+    p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+    p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then 
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    r
+  with exn ->
+    let hidw,lodw = spent_alloc () in
+    let dt = get_time () - t in
+    e.tottime <- e.tottime + dt; e.owntime <- e.owntime + dt;
+    e.hitotalloc <- e.hitotalloc + hidw;
+    e.lototalloc <- e.lototalloc + lodw;
+    e.hiownalloc <- e.hiownalloc + hidw;
+    e.loownalloc <- e.loownalloc + lodw;
+    p.owntime <- p.owntime - dt;
+    p.hitotalloc <- p.hitotalloc + e.hitotalloc - hitotalloc0;
+    p.lototalloc <- p.lototalloc + e.lototalloc - lototalloc0;
+    p.intcount <- p.intcount + e.intcount - intcount0 + 1;
+    p.immcount <- p.immcount + 1;
+    if not (p==e) then 
+      (match !stack with [] -> assert false | _::s -> stack := s);
+    last_alloc := get_alloc ();
+    raise exn
 
-
-let profile4 (ptr,ptr') f =
-  (fun x y z t ->
-     let (ut,st) = System.process_time () in
-     stack := ptr'::!stack;
-     try
-       let r = f x y z t in
-       let (ut',st') = System.process_time () in
-       let t = (ut' -. ut) +. (st' -. st) in
-       (match !stack with
-	    _::(ptr'::_ as s) -> stack:=s; ptr' := !ptr' -. t
-	  | _ -> failwith "bug in profile");
-       ptr := !ptr +. t;
-       ptr' := !ptr' +. t;
-       r
-     with e ->
-       let (ut',st') = System.process_time () in
-       let t = (ut' -. ut) +. (st' -. st) in
-       (match !stack with
-	    _::(ptr'::_ as s) -> stack:=s; ptr' := !ptr' -. t
-	  | _ -> failwith "bug in profile");
-       ptr := !ptr +. t;
-       ptr' := !ptr' +. t;
-       raise e)
-
-
-
-let profile5 (ptr,ptr') f =
-  (fun x y z t u ->
-     let (ut,st) = System.process_time () in
-     stack := ptr'::!stack;
-     try
-       let r = f x y z t u in
-       let (ut',st') = System.process_time () in
-       let t = (ut' -. ut) +. (st' -. st) in
-       (match !stack with
-	    _::(ptr'::_ as s) -> stack:=s; ptr' := !ptr' -. t
-	  | _ -> failwith "bug in profile");
-       ptr := !ptr +. t;
-       ptr' := !ptr' +. t;
-       r
-     with e ->
-       let (ut',st') = System.process_time () in
-       let t = (ut' -. ut) +. (st' -. st) in
-       (match !stack with
-	    _::(ptr'::_ as s) -> stack:=s; ptr' := !ptr' -. t
-	  | _ -> failwith "bug in profile");
-       ptr := !ptr +. t;
-       ptr' := !ptr' +. t;
-       raise e)
-
-
-
-let profile6 (ptr,ptr') f =
-  (fun x y z t u v ->
-     let (ut,st) = System.process_time () in
-     stack := ptr'::!stack;
-     try
-       let r = f x y z t u v in
-       let (ut',st') = System.process_time () in
-       let t = (ut' -. ut) +. (st' -. st) in
-       (match !stack with
-	    _::(ptr'::_ as s) -> stack:=s; ptr' := !ptr' -. t
-	  | _ -> failwith "bug in profile");
-       ptr := !ptr +. t;
-       ptr' := !ptr' +. t;
-       r
-     with e ->
-       let (ut',st') = System.process_time () in
-       let t = (ut' -. ut) +. (st' -. st) in
-       (match !stack with
-	    _::(ptr'::_ as s) -> stack:=s; ptr' := !ptr' -. t
-	  | _ -> failwith "bug in profile");
-       ptr := !ptr +. t;
-       ptr' := !ptr' +. t;
-       raise e)
-
-
-
-let profile7 (ptr,ptr') f =
-  (fun x y z t u v w ->
-     let (ut,st) = System.process_time () in
-     stack := ptr'::!stack;
-     try
-       let r = f x y z t u v w in
-       let (ut',st') = System.process_time () in
-       let t = (ut' -. ut) +. (st' -. st) in
-       (match !stack with
-	    _::(ptr'::_ as s) -> stack:=s; ptr' := !ptr' -. t
-	  | _ -> failwith "bug in profile");
-       ptr := !ptr +. t;
-       ptr' := !ptr' +. t;
-       r
-     with e ->
-       let (ut',st') = System.process_time () in
-       let t = (ut' -. ut) +. (st' -. st) in
-       (match !stack with
-	    _::(ptr'::_ as s) -> stack:=s; ptr' := !ptr' -. t
-	  | _ -> failwith "bug in profile");
-       ptr := !ptr +. t;
-       ptr' := !ptr' +. t;
-       raise e)
