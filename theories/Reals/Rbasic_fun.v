@@ -14,6 +14,7 @@
 (*********************************************************)
 
 Require Export R_Ifp.
+Require Export Rbase.
 Require Fourier.
 
 (*******************************)
@@ -52,6 +53,21 @@ Lemma Rmin_Rgt:(r1,r2,r:R)(Rgt (Rmin r1 r2) r)<->
 Intros; Split.
 Exact (Rmin_Rgt_l r1 r2 r).
 Exact (Rmin_Rgt_r r1 r2 r).
+Save.
+
+(*********)
+Lemma Rmin_l : (x,y:R) ``(Rmin x y)<=x``.
+Intros; Unfold Rmin; Case (total_order_Rle x y); Intro H1; [Right; Reflexivity | Auto with real].
+Save.
+ 
+(*********)
+Lemma Rmin_r : (x,y:R) ``(Rmin x y)<=y``.
+Intros; Unfold Rmin; Case (total_order_Rle x y); Intro H1; [Assumption | Auto with real].
+Save.
+
+(*********)
+Lemma Rmin_stable_in_posreal : (x,y:posreal) ``0<(Rmin x y)``.
+Intros; Apply Rmin_Rgt_r; Split; [Apply (cond_pos x) | Apply (cond_pos y)].
 Save.
 
 (*******************************)
@@ -103,6 +119,10 @@ Case H; Intros E1.
 Case H2; Auto with real.
 Apply Rle_monotony_contra with z := r; Auto.
 Rewrite <- E1; Repeat Rewrite Rmult_Ol; Auto.
+Save.
+
+Lemma Rmax_stable_in_negreal : (x,y:negreal) ``(Rmax x y)<0``.
+Intros; Unfold Rmax; Case (total_order_Rle x y); Intro; [Apply (cond_neg y) | Apply (cond_neg x)].
 Save.
 
 (*******************************)

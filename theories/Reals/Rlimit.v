@@ -14,6 +14,7 @@
 (*********************************************************)
 
 Require Export Rbasic_fun.
+Require Export R_sqr.
 Require Export Classical_Prop.
 Require DiscrR.
 Require Fourier.
@@ -583,6 +584,7 @@ Unfold limit1_in;Unfold limit_in;Simpl;Intros;
 Save.
 
 (*********)
+(*
 Lemma limit_inv : (f:R->R)(D:R->Prop)(l:R)(x0:R) (limit1_in f D l x0)->~(l==R0)->(limit1_in [x:R](Rinv (f x)) D (Rinv l) x0).
 Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Elim (H ``(Rabsolu l)/2``).
 Intros delta1 H2; Elim (H ``eps*((Rsqr l)/2)``).
@@ -630,3 +632,4 @@ Split; [Assumption | Apply Rlt_le_trans with (Rmin delta1 delta2); [Assumption |
 Change ``0<eps*(Rsqr l)/2``; Unfold Rdiv; Repeat Rewrite Rmult_assoc; Repeat Apply Rmult_lt_pos; [Assumption | Apply Rsqr_pos_lt; Assumption | Apply Rlt_Rinv; Apply Rgt_2_0].
 Change ``0<(Rabsolu l)/2``; Unfold Rdiv; Apply Rmult_lt_pos; [Apply Rabsolu_pos_lt; Assumption | Apply Rlt_Rinv; Apply Rgt_2_0].
 Save.
+*)

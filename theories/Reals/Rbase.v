@@ -1582,30 +1582,3 @@ end.
 Theorem INR_eq_INR2 : (n:nat) (INR n)==(INR2 n).
 Induction n; [Unfold INR INR2; Reflexivity | Intros; Unfold INR INR2; Fold INR INR2; Rewrite H; Case n0; [Reflexivity | Intros; Ring]].
 Save.
-
-(*****************************************************)
-(*          Some properties of Rmin and Rmax         *)
-(*****************************************************)
-Lemma Rmin_l : (x,y:R) ``(Rmin x y)<=x``.
-Intros; Unfold Rmin; Case (total_order_Rle x y); Intro H1; [Right; Reflexivity | Auto with real].
-Save.
-  
-Lemma Rmin_r : (x,y:R) ``(Rmin x y)<=y``.
-Intros; Unfold Rmin; Case (total_order_Rle x y); Intro H1; [Assumption | Auto with real].
-Save.
-
-Lemma Rmin_stable_in_posreal : (x,y:posreal) ``0<(Rmin x y)``.
-Intros; Apply Rmin_Rgt_r; Split; [Apply (cond_pos x) | Apply (cond_pos y)].
-Save.
-
-Lemma Rmax_l : (x,y:R) ``x<=(Rmax x y)``.
-Intros; Unfold Rmax; Case (total_order_Rle x y); Intro H1; [Assumption | Right; Reflexivity].
-Save.
-
-Lemma Rmax_r : (x,y:R) ``y<=(Rmax x y)``.
-Intros; Unfold Rmax; Case (total_order_Rle x y); Intro H1; [Right; Reflexivity | Auto with real].
-Save.
-
-Lemma Rmax_stable_in_negreal : (x,y:negreal) ``(Rmax x y)<0``.
-Intros; Unfold Rmax; Case (total_order_Rle x y); Intro; [Apply (cond_neg y) | Apply (cond_neg x)].
-Save.
