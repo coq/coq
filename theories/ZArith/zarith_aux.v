@@ -32,16 +32,10 @@ V8Infix "<"  Zlt : Z_scope.
 V8Infix ">=" Zge : Z_scope.
 V8Infix ">"  Zgt : Z_scope.
 
-V8Notation "x <= y <= z" := (Zle x y)/\(Zle y z)
-  (at level 50, y at next level):Z_scope.
-V8Notation "x <= y < z"  := (Zle x y)/\(Zlt y z)
-  (at level 50, y at next level):Z_scope.
-V8Notation  "x < y < z"  := (Zlt x y)/\(Zlt y z)
-  (at level 50, y at next level):Z_scope.
-V8Notation  "x < y <= z" := (Zlt x y)/\(Zle y z) 
-  (at level 50, y at next level):Z_scope.
-V8Notation  "x = y = z" := x=y/\y=z
-  (at level 50, y at next level) : Z_scope.
+V8Notation "x <= y <= z" := (Zle x y)/\(Zle y z) :Z_scope.
+V8Notation "x <= y < z"  := (Zle x y)/\(Zlt y z) :Z_scope.
+V8Notation  "x < y < z"  := (Zlt x y)/\(Zlt y z) :Z_scope.
+V8Notation  "x < y <= z" := (Zlt x y)/\(Zle y z) :Z_scope.
 
 (** Sign function *)
 Definition Zsgn [z:Z] : Z :=

@@ -39,6 +39,11 @@ Uninterpreted V8Notation "x < y" (at level 50, no associativity).
 Uninterpreted V8Notation "x >= y" (at level 50, no associativity).
 Uninterpreted V8Notation "x > y" (at level 50, no associativity).
 
+Uninterpreted V8Notation "x <= y <= z" (at level 50, y at next level).
+Uninterpreted V8Notation "x <= y < z"  (at level 50, y at next level).
+Uninterpreted V8Notation "x < y < z"   (at level 50, y at next level).
+Uninterpreted V8Notation "x < y <= z"  (at level 50, y at next level).
+
 (** Arithmetical notations (also used for type constructors) *)
 
 Uninterpreted Notation "x * y" (at level 3, right associativity)

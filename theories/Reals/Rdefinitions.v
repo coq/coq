@@ -64,15 +64,9 @@ V8Infix "<=" Rle : R_scope.
 V8Infix ">=" Rge : R_scope.
 V8Infix ">" Rgt : R_scope.
 
-V8Notation "x = y = z" := (eqT R x y)/\(eqT R y z)
-  (at level 50, y at next level, no associativity) : R_scope.
-V8Notation "x <= y <= z" := (Rle x y)/\(Rle y z)
-  (at level 50, y at next level, no associativity) : R_scope.
-V8Notation "x <= y < z" := (Rle x y)/\(Rlt y z)
-  (at level 50, y at next level, no associativity) : R_scope.
-V8Notation "x < y < z" := (Rlt x y)/\(Rlt y z)
-  (at level 50, y at next level, no associativity) : R_scope.
-V8Notation "x < y <= z" := (Rlt x y)/\(Rle y z)
-  (at level 50, y at next level, no associativity) : R_scope.
+V8Notation "x <= y <= z" := (Rle x y)/\(Rle y z) : R_scope.
+V8Notation "x <= y < z" := (Rle x y)/\(Rlt y z) : R_scope.
+V8Notation "x < y < z" := (Rlt x y)/\(Rlt y z) : R_scope.
+V8Notation "x < y <= z" := (Rlt x y)/\(Rle y z) : R_scope.
 
 Hints Unfold Rgt : real.
