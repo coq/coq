@@ -64,27 +64,34 @@ i*)
 val pf_matches : goal sigma -> constr_pattern -> constr -> (int * constr) list
 val pf_is_matching : goal sigma -> constr_pattern -> constr -> bool
 
-val allHyps    : goal sigma -> clause list
-val afterHyp   : identifier -> goal sigma -> clause list
-val lastHyp    : goal sigma -> clause  list
-val nLastHyps  : int -> goal sigma -> clause list
+val allHyps    : goal sigma -> identifier list
+val afterHyp   : identifier -> goal sigma -> identifier list
+val lastHyp    : goal sigma -> identifier
+val nLastHyps  : int -> goal sigma -> identifier list
+
 val allClauses : goal sigma -> clause list
 
 val onCL           : (goal sigma -> clause list) -> 
                      (clause list -> tactic) -> tactic
-val tryAllHyps     : (clause -> tactic) -> tactic
 val tryAllClauses  : (clause -> tactic) -> tactic
 val onAllClauses   : (clause -> tactic) -> tactic
 val onClause       : (clause -> tactic) -> clause -> tactic
 val onAllClausesLR : (clause -> tactic) -> tactic
-val onLastHyp      : (clause -> tactic) -> tactic
 val onNthLastHyp   : int -> (clause -> tactic) -> tactic
-val onNLastHyps    : int -> (clause -> tactic) -> tactic
 val clauseTacThen  : (clause -> tactic) -> tactic -> clause -> tactic
 val if_tac         : (goal sigma -> bool) -> tactic -> (tactic) -> tactic
 val ifOnClause     : 
-  (clause * constr -> bool) -> (clause -> tactic) -> (clause -> tactic) -> 
-    clause -> tactic
+  (clause * types -> bool) ->
+    (clause -> tactic) -> (clause -> tactic) -> clause -> tactic
+val ifOnHyp        : 
+  (identifier * types -> bool) ->
+    (identifier -> tactic) -> (identifier -> tactic) -> identifier -> tactic
+
+val onHyps         : (goal sigma -> identifier list) -> 
+                     (identifier list -> tactic) -> tactic
+val tryAllHyps     : (identifier -> tactic) -> tactic
+val onNLastHyps    : int -> (identifier -> tactic) -> tactic
+val onLastHyp      : (identifier -> tactic) -> tactic
 
 (* [ConclPattern concl pat tacast]:
    if the term concl matches the pattern pat, (in sense of 
