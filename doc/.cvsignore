@@ -3,8 +3,8 @@
 *.ilg
 *.v.tex
 *.pdf
-euclid.ml
-heapsort.ml
+euclid.ml*
+heapsort.ml*
 avl.ml
 *.bbl
 www
