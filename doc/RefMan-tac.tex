@@ -1644,15 +1644,33 @@ would fail:
   Intros.
   Tauto. (* Auto would fail *)
 \end{coq_example}
+\begin{coq_eval}
+  Abort.
+\end{coq_eval}
 
 Moreover, if it has nothing else to do, {\tt Tauto} performs
 introductions. Therefore, the use of {\tt Intros} in the previous
 proof is unnecessary. {\tt Tauto} can for instance prove the
 following:
 \begin{coq_example}
-  Goal (A:Prop)(P:nat->Prop)(A \/ (x:nat) ~A -> (P x)) -> (x:nat) A -> (P x).
+  Goal (A:Prop)(P:nat->Prop)(A \/ (x:nat) ~A -> (P x)) -> (x:nat) ~A -> (P x).
   Tauto.
 \end{coq_example}
+\begin{coq_eval}
+  Abort.
+\end{coq_eval}
+
+\Rem In contrast, {\tt Tauto} cannot solve the following goal
+
+\begin{coq_example*}
+Goal (A:Prop)(P:nat->Prop)(A \/ (x:nat) ~A -> (P x)) -> (x:nat) ~~ (A \/ (P x)).
+\end{coq_example*}
+\begin{coq_eval}
+Abort.
+\end{coq_eval}
+
+because \verb=(x:nat) ~A -> (P x)= cannot be treated as atomic and an
+instantiation of \verb=x= is necessary.
 
 \subsection{\tt Intuition {\tac}}
 \tacindex{Intuition}\label{Intuition}
