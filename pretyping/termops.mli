@@ -185,3 +185,4 @@ val global_reference_in_absolute_module : dir_path -> identifier -> constr
 
 (* Test if an identifier is the basename of a global reference *)
 val is_global : identifier -> bool
+val is_section_variable : identifier -> bool
