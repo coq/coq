@@ -91,7 +91,7 @@ let is_keyword =
       "Immediate"; "Implicits"; "Import"; "Inductive"; 
       "Infix"; "Lemma"; "Load"; "Local"; 
       "Match"; "Module"; "Module Type"; "Declare Module";
-      "Mutual"; "Parameter"; "Print"; "Proof"; "Qed";
+      "Mutual"; "Parameter"; "Parameters"; "Print"; "Proof"; "Qed";
       "Record"; "Recursive"; "Remark"; "Require"; "Save"; "Scheme";
       "Section"; "Show"; "Syntactic"; "Syntax"; "Tactic"; "Theorem"; 
       "Unset"; "Variable"; "Variables"; 
