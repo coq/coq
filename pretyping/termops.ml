@@ -899,17 +899,3 @@ let rec rename_bound_var env l c =
   | Cast (c,t) -> mkCast (rename_bound_var env l c, t)
   | x -> c
 
-(* References to constr *)
-
-let global_reference id = 
-  constr_of_reference (Nametab.locate (make_short_qualid id))
-
-let construct_reference ctx id =
-  try
-    mkVar (let _ = Sign.lookup_named id ctx in id)
-  with Not_found ->
-    global_reference id
-
-let global_reference_in_absolute_module dir id = 
-  constr_of_reference (Nametab.absolute_reference (Libnames.make_path dir id))
-

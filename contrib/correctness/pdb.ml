@@ -14,6 +14,7 @@ open Names
 open Term
 open Termops
 open Nametab
+open Constrintern
 
 open Ptype
 open Past

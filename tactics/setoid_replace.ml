@@ -28,6 +28,7 @@ open Vernacexpr
 open Safe_typing
 open Nametab
 open Decl_kinds
+open Constrintern
 
 type setoid =
     { set_a : constr;

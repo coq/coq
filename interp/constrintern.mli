@@ -95,6 +95,14 @@ val interp_constrpattern :
 
 val interp_reference : ltac_sign -> reference -> rawconstr
 
+(* Locating references of constructions, possibly via a syntactic definition *)
+
+val locate_reference : qualid -> global_reference
+val is_global : identifier -> bool
+val construct_reference : named_context -> identifier -> constr
+val global_reference : identifier -> constr
+val global_reference_in_absolute_module : dir_path -> identifier -> constr
+
 (* Interprets into a abbreviatable constr *)
 val interp_aconstr : implicits_env -> identifier list -> constr_expr ->
   interpretation

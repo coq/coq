@@ -153,6 +153,10 @@ let set_var_scope loc id (_,scopt,scopes) (_,_,varscopes,_,_) =
     else
       idscopes := Some (scopt,scopes)
   with Not_found ->
+(*
+    if not (Options.do_translate ()) then
+      error ("Could not globalize " ^ (string_of_id id))
+*)
     if_verbose warning ("Could not globalize " ^ (string_of_id id))
 
 (**********************************************************************)
@@ -931,3 +935,33 @@ let interp_aconstr impls vars a =
   List.map
     (fun (id,r) -> (id,match !r with None -> None,[] | Some (a,l) -> a,l)) vl,
   a
+
+(**********************************************************************)
+(* Locating reference, possibly via an abbreviation *)
+
+let locate_reference qid =
+  match Nametab.extended_locate qid with
+    | TrueGlobal ref -> ref
+    | SyntacticDef kn -> 
+	match Syntax_def.search_syntactic_definition dummy_loc kn with
+	  | Rawterm.RRef (_,ref) -> ref
+	  | _ -> raise Not_found
+
+let is_global id =
+  try 
+    let _ = locate_reference (make_short_qualid id) in true
+  with Not_found -> 
+    false
+
+let global_reference id = 
+  constr_of_reference (locate_reference (make_short_qualid id))
+
+let construct_reference ctx id =
+  try
+    Term.mkVar (let _ = Sign.lookup_named id ctx in id)
+  with Not_found ->
+    global_reference id
+
+let global_reference_in_absolute_module dir id = 
+  constr_of_reference (Nametab.absolute_reference (Libnames.make_path dir id))
+
