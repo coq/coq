@@ -946,7 +946,10 @@ let reduce_to_ref_gen allow_product env sigma ref t =
           try 
 	    let t' = nf_betaiota (one_step_reduce env sigma t) in 
 	    elimrec env t' l
-          with NotStepReducible -> raise Not_found
+          with NotStepReducible -> 
+	    errorlabstrm ""
+	    (str "Not a statement of conclusion " ++ 
+	     Nametab.pr_global_env Idset.empty ref)
   in
   elimrec env t []
 
