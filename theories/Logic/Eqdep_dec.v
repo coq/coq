@@ -65,7 +65,7 @@ Save.
      | (or_intror neqxy) => (False_ind ? (neqxy u))
      end.
 
-  Remark nu_constant : (y:A)(u,v:x==y) (nu u)==(nu v).
+  Local nu_constant : (y:A)(u,v:x==y) (nu u)==(nu v).
 Intros.
 Unfold nu.
 Elim (eq_dec x y) using or_indd; Intros.

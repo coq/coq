@@ -49,6 +49,11 @@ let red_constant_entry ce = function
 	const_entry_type = 
 	  ce.const_entry_type }
 
+let constr_of_constr_entry ce =
+  match ce.const_entry_type with
+    | None -> ce.const_entry_body 
+    | Some t -> mkCast (ce.const_entry_body, t)
+
 let definition_body_red red_option ident (local,n) com comtypeopt = 
   let warning () = 
     mSGERRNL [< 'sTR"Warning: "; pr_id ident; 
@@ -57,21 +62,19 @@ let definition_body_red red_option ident (local,n) com comtypeopt =
   let ce' = red_constant_entry ce red_option in
   match n with
     | NeverDischarge ->
-	declare_constant ident (ConstantEntry ce',n);
+	declare_constant ident (ConstantEntry ce',n,false);
 	if local then warning ();
 	if is_verbose() then message ((string_of_id ident) ^ " is defined")
     | DischargeAt disch_sp ->
         if Lib.is_section_p disch_sp then begin
-	  let c = match ce.const_entry_type with
-	    | None -> ce.const_entry_body 
-	    | Some t -> mkCast (ce.const_entry_body, t) in
+	  let c = constr_of_constr_entry ce in
           declare_variable ident (SectionLocalDef c,n,false);
 	  if is_verbose() then message ((string_of_id ident) ^ " is defined");
           if Pfedit.refining () then 
             mSGERRNL [< 'sTR"Warning: Variable "; pr_id ident; 
                         'sTR" is not visible from current goals" >]
         end else begin
-	  declare_constant ident (ConstantEntry ce',n);
+	  declare_constant ident (ConstantEntry ce',n,false);
 	  warning ();
 	  if is_verbose() then message ((string_of_id ident) ^ " is defined")
 	end
@@ -266,7 +269,7 @@ let build_recursive lnameargsardef =
 			recvec));
 	      const_entry_type = None } 
 	  in
-	  declare_constant fi (ConstantEntry ce, n);
+	  declare_constant fi (ConstantEntry ce, n, false);
           declare (i+1) lf
       | _ -> () 
     in 
@@ -281,7 +284,7 @@ let build_recursive lnameargsardef =
       (fun subst (f,def) ->
 	 let ce = { const_entry_body = replace_vars subst def;
 		    const_entry_type = None } in
-	 declare_constant f (ConstantEntry ce,n);
+	 declare_constant f (ConstantEntry ce,n,false);
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst lnamerec)
@@ -335,7 +338,7 @@ let build_corecursive lnameardef =
 			     recvec));
 	      const_entry_type = None } 
 	  in
-          declare_constant fi (ConstantEntry ce,n);
+          declare_constant fi (ConstantEntry ce,n,false);
           declare (i+1) lf
       | _        -> () 
     in 
@@ -348,7 +351,7 @@ let build_corecursive lnameardef =
       (fun subst (f,def) ->
 	 let ce = { const_entry_body = replace_vars subst def;
 		    const_entry_type = None } in
-	 declare_constant f (ConstantEntry ce,n);
+	 declare_constant f (ConstantEntry ce,n,false);
       	 warning ((string_of_id f)^" is non-recursively defined");
       	 (var_subst f) :: subst)
       (List.map var_subst lnamerec)
@@ -381,7 +384,7 @@ let build_scheme lnamedepindsort =
   let listdecl = Indrec.build_mutual_indrec env0 sigma lrecspec in 
   let rec declare decl fi =
     let ce = { const_entry_body = decl; const_entry_type = None } 
-    in declare_constant fi (ConstantEntry ce,n)
+    in declare_constant fi (ConstantEntry ce,n,false)
   in 
   List.iter2 declare listdecl lrecnames; 
   if is_verbose() then pPNL(recursive_message lrecnames)
@@ -399,7 +402,13 @@ let start_proof_com sopt stre com =
 
 let save_named opacity =
   let id,(const,strength) = Pfedit.cook_proof () in
-  declare_constant id (ConstantEntry const,strength);
+  begin match strength with
+    | DischargeAt disch_sp when Lib.is_section_p disch_sp ->
+	let c = constr_of_constr_entry const in
+	declare_variable id (SectionLocalDef c,strength,opacity)
+    | _ ->
+	declare_constant id (ConstantEntry const,strength,opacity)
+  end;
   Pfedit.delete_current_proof ();
   if Options.is_verbose() then message ((string_of_id id) ^ " is defined")
 
@@ -407,7 +416,8 @@ let save_anonymous opacity save_ident strength =
   let id,(const,_) = Pfedit.cook_proof () in
   if atompart_of_id id <> "Unnamed_thm" then
     message("Overriding name "^(string_of_id id)^" and using "^save_ident);
-  declare_constant (id_of_string save_ident) (ConstantEntry const,strength);
+  declare_constant 
+    (id_of_string save_ident) (ConstantEntry const,strength,opacity);
   Pfedit.delete_current_proof ();
   if Options.is_verbose() then message (save_ident ^ " is defined")
 

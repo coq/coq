@@ -126,10 +126,12 @@ let inductive_message inds =
 
 (* Discharge operations for the various objects of the environment. *)
 
+type opacity = bool
+
 type discharge_operation = 
   | Variable of identifier * section_variable_entry * strength * bool * bool
   | Parameter of identifier * constr * bool
-  | Constant of identifier * recipe * strength * bool
+  | Constant of identifier * recipe * strength * opacity * bool
   | Inductive of mutual_inductive_entry * bool
   | Class of cl_typ * cl_info_typ
   | Struc of inductive_path * struc_typ
@@ -177,7 +179,7 @@ let process_object oldenv dir sec_sp
 	  let r = { d_from = sp;
 		    d_modlist = work_alist;
 		    d_abstract = ids_to_discard } in
-	  let op = Constant (spid,r,stre,imp) in
+	  let op = Constant (spid,r,stre,cb.const_opaque,imp) in
           (op :: ops, ids_to_discard, (mods@constl, indl, cstrl))
   
     | "INDUCTIVE" ->
@@ -236,8 +238,8 @@ let process_operation = function
   | Parameter (spid,typ,imp) ->
       with_implicits imp (declare_parameter spid) typ;
       constant_message spid
-  | Constant (spid,r,stre,imp) ->
-      with_implicits imp (declare_constant spid) (ConstantRecipe r,stre);
+  | Constant (spid,r,stre,opa,imp) ->
+      with_implicits imp (declare_constant spid) (ConstantRecipe r,stre,opa);
       constant_message spid
   | Inductive (mie,imp) ->
       let _ = with_implicits imp declare_mind mie in

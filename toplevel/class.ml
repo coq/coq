@@ -262,7 +262,7 @@ let build_id_coercion idf_opt ids =
   in
   let constr_entry = 
     { const_entry_body = val_f; const_entry_type = None } in
-  declare_constant idf (ConstantEntry constr_entry,NeverDischarge);
+  declare_constant idf (ConstantEntry constr_entry,NeverDischarge,false);
   idf
 
 let add_new_coercion_in_graph1 (coef,v,stre,isid,cls,clt) idf ps =

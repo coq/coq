@@ -141,7 +141,8 @@ let definition_structure (is_coe,idstruc,ps,cfs,idbuild,s) =
 	       let cie =
 		 { const_entry_body = proj;
 		   const_entry_type = None } in
-	       (declare_constant fi (ConstantEntry cie,NeverDischarge); true)
+	       (declare_constant fi (ConstantEntry cie,NeverDischarge,false); 
+		true)
              with Type_errors.TypeError (k,ctx,te) ->
                ((warning_or_error coe 
                    [<'sTR (string_of_id fi); 

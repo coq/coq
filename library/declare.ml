@@ -114,7 +114,9 @@ type constant_declaration_type =
   | ConstantEntry  of constant_entry
   | ConstantRecipe of Cooking.recipe
 
-type constant_declaration = constant_declaration_type * strength
+type opacity = bool
+
+type constant_declaration = constant_declaration_type * strength * opacity
 
 let csttab = ref (Spmap.empty : strength Spmap.t)
 
@@ -124,7 +126,7 @@ let _ = Summary.declare_summary "CONSTANT"
 	    Summary.init_function = (fun () -> csttab := Spmap.empty);
 	    Summary.survive_section = false }
 
-let cache_constant (sp,(cdt,stre)) =
+let cache_constant (sp,(cdt,stre,op)) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_constant"
       [< pr_id (basename sp); 'sTR " already exists" >] ;
@@ -133,9 +135,10 @@ let cache_constant (sp,(cdt,stre)) =
     | ConstantRecipe r -> Global.add_discharged_constant sp r
   end;
   Nametab.push sp (ConstRef sp);
+  if op then Global.set_opaque sp;
   csttab := Spmap.add sp stre !csttab
 
-let load_constant (sp,(ce,stre)) =
+let load_constant (sp,(ce,stre,op)) =
   csttab := Spmap.add sp stre !csttab
 
 let open_constant (sp,_) = ()
@@ -437,7 +440,7 @@ let declare_eliminations sp i =
   let declare na c =
     declare_constant (id_of_string na)
       (ConstantEntry { const_entry_body = c; const_entry_type = None }, 
-       NeverDischarge);
+       NeverDischarge,false);
     if Options.is_verbose() then pPNL [< 'sTR na; 'sTR " is defined" >]
   in
   let env = Global.env () in

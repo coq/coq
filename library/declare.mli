@@ -34,7 +34,9 @@ type constant_declaration_type =
   | ConstantEntry  of constant_entry
   | ConstantRecipe of Cooking.recipe
 
-type constant_declaration = constant_declaration_type * strength
+type opacity = bool
+
+type constant_declaration = constant_declaration_type * strength * opacity
 
 val declare_constant : identifier -> constant_declaration -> unit
 
