@@ -1333,8 +1333,8 @@ let make_up_names n ind (old_style,cname) =
           (make_ident (string_of_id hyprecname) None) ::
           (make_ident (string_of_id hyprecname) (Some 0)) :: [] in
         if atompart_of_id cname <> "H" then
-          (make_ident (string_of_id cname) None) :: []
-        else [] in
+          (make_ident (string_of_id cname) None) :: avoid
+        else avoid in
     cname, hyprecname, avoid
 
 let is_indhyp p n t =
