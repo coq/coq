@@ -158,7 +158,7 @@ GEXTEND Gram
       | IDENT "Section"; s = qualid -> PrintSectionContext s
       | "Grammar"; uni = IDENT; ent = IDENT ->
           (* This should be in "syntax" section but is here for factorization*)
-	  PrintGrammar uni ent
+	  PrintGrammar (uni, ent)
       | IDENT "LoadPath" -> PrintLoadPath
       | IDENT "Modules" -> PrintModules
 

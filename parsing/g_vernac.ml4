@@ -336,11 +336,11 @@ ident_comma_list_tail:
 	  (* Interactive module declaration *)
 	IDENT "Module"; id = ident; bl = module_binders_list;
 	mty_o = OPT of_module_type; mexpr_o = OPT is_module_expr ->
-	  VernacDeclareModule id bl mty_o mexpr_o
+	  VernacDeclareModule (id, bl, mty_o, mexpr_o)
 	  
       | IDENT "Module"; "Type"; id = ident; 
 	bl = module_binders_list; mty_o = OPT is_module_type ->
-	  VernacDeclareModuleType id bl mty_o
+	  VernacDeclareModuleType (id, bl, mty_o)
 
 	  (* This end a Section a Module or a Module Type *)
 
