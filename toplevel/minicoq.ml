@@ -13,7 +13,7 @@ open Type_errors
 open Typing
 open G_minicoq
 
-let (env : unit environment ref) = ref empty_environment
+let (env : environment ref) = ref empty_environment
 
 let lookup_var id =
   let rec look n = function

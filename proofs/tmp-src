@@ -1,0 +1,148 @@
+
+(********* INSTANTIATE ****************************************************)
+
+(* existential_type gives the type of an existential *)
+let existential_type env k = 
+  let (sp,args) = destConst k in
+  let evd = Evd.map (evar_map env) sp in
+  instantiate_constr 
+    (ids_of_sign evd.evar_hyps) evd.evar_concl.body (Array.to_list args)
+
+(* existential_value gives the value of a defined existential *)
+let existential_value env k =
+  let (sp,args) = destConst k in
+  if defined_const env k then
+    let evd = Evd.map (evar_map env) sp in
+    match evd.evar_body with
+      | EVAR_DEFINED c ->
+ 	  instantiate_constr (ids_of_sign evd.evar_hyps) c (Array.to_list args)
+      | _ -> anomalylabstrm "termenv__existential_value"
+            [< 'sTR"The existential variable code just registered a" ;
+               'sPC ; 'sTR"grave internal error." >]
+  else 
+    failwith "undefined existential"
+
+
+(******* REDUCTION ********************************************************)
+
+(* Expanding existential variables (trad.ml, progmach.ml) *)
+(* 1- whd_ise fails if an existential is undefined *)
+let rec whd_ise env = function
+  | DOPN(Const sp,_) as k ->
+      if Evd.in_dom (evar_map env) sp then
+        if defined_constant env k then
+          whd_ise env (constant_value env k)
+        else
+          errorlabstrm "whd_ise"
+            [< 'sTR"There is an unknown subterm I cannot solve" >]
+      else 
+	k
+  | DOP2(Cast,c,_) -> whd_ise env c
+  | DOP0(Sort(Type(_))) -> DOP0(Sort(Type(dummy_univ)))
+  | c -> c
+
+
+(* 2- undefined existentials are left unchanged *)
+let rec whd_ise1 env = function
+  | (DOPN(Const sp,_) as k) ->
+      if Evd.in_dom (evar_map env) sp & defined_const env k then
+        whd_ise1 env (constant_value env k)
+      else 
+	k
+  | DOP2(Cast,c,_) -> whd_ise1 env c
+  | DOP0(Sort(Type _)) -> DOP0(Sort(Type dummy_univ))
+  | c -> c
+
+let nf_ise1 env = strong (whd_ise1 env) env
+
+(* Same as whd_ise1, but replaces the remaining ISEVAR by Metavariables
+ * Similarly we have is_fmachine1_metas and is_resolve1_metas *)
+
+let rec whd_ise1_metas env = function
+  | (DOPN(Const sp,_) as k) ->
+      if Evd.in_dom (evar_map env) sp then
+	if defined_const env k then
+      	  whd_ise1_metas env (const_or_ex_value env k)
+	else 
+      	  let m = DOP0(Meta (new_meta())) in
+	  DOP2(Cast,m,const_or_ex_type env k)
+      else
+	k
+  | DOP2(Cast,c,_) -> whd_ise1_metas env c
+  | c -> c
+
+(********************************************************************)
+(*             Special-Purpose Reduction                            *)
+(********************************************************************)
+
+let whd_meta env = function
+  | DOP0(Meta p) as u -> (try List.assoc p (metamap env) with Not_found -> u)
+  | x -> x
+	
+(* Try to replace all metas. Does not replace metas in the metas' values
+ * Differs from (strong whd_meta). *)
+let plain_instance env c = 
+  let s = metamap env in
+  let rec irec = function
+    | DOP0(Meta p) as u -> (try List.assoc p s with Not_found -> u)
+    | DOP1(oper,c)      -> DOP1(oper, irec c)
+    | DOP2(oper,c1,c2)  -> DOP2(oper, irec c1, irec c2)
+    | DOPN(oper,cl)     -> DOPN(oper, Array.map irec cl)
+    | DOPL(oper,cl)     -> DOPL(oper, List.map irec cl)
+    | DLAM(x,c)         -> DLAM(x, irec c)
+    | DLAMV(x,v)        -> DLAMV(x, Array.map irec v)
+    | u                 -> u
+  in 
+  if s = [] then c else irec c
+    
+(* Pourquoi ne fait-on pas nf_betaiota si s=[] ? *)
+let instance env c = 
+  let s = metamap env in
+  if s = [] then c else nf_betaiota env (plain_instance env c)
+
+(************ REDUCTION.MLI **********************************************)
+
+(*s Special-Purpose Reduction Functions *)
+val whd_meta : 'a reduction_function
+val plain_instance : 'a reduction_function
+val instance : 'a reduction_function
+
+val whd_ise : 'a reduction_function
+val whd_ise1 : 'a reduction_function
+val nf_ise1 : 'a reduction_function
+val whd_ise1_metas : 'a reduction_function
+
+(*********** TYPEOPS *****************************************************)
+
+(* Existentials. *)
+
+let type_of_existential env c =
+  let (sp,args) = destConst c in
+  let info = Evd.map (evar_map env) sp in
+  let hyps = info.evar_hyps in
+  check_hyps (basename sp) env hyps;
+  instantiate_type (ids_of_sign hyps) info.evar_concl (Array.to_list args)
+
+(* Constants or existentials. *)
+
+let type_of_constant_or_existential env c =
+  if is_existential c then
+    type_of_existential env c
+  else
+    type_of_constant env c
+
+
+(******** TYPING **********************************************************)
+
+    | IsMeta n ->
+       	let metaty =
+          try lookup_meta n env
+          with Not_found -> error "A variable remains non instanciated" 
+	in
+        (match kind_of_term metaty with
+           | IsCast (typ,kind) -> 
+	       ({ uj_val = cstr; uj_type = typ; uj_kind = kind }, cst0)
+           | _ ->
+	       let (jty,cst) = execute mf env metaty in
+	       let k = whd_betadeltaiotaeta env jty.uj_type in
+	       ({ uj_val = cstr; uj_type = metaty; uj_kind = k }, cst))

@@ -33,10 +33,10 @@ CONFIG=config/coq_config.cmo
 
 LIB=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
-    lib/bstack.cmo lib/edit.cmo
+    lib/bstack.cmo lib/edit.cmo lib/stamps.cmo
 
 KERNEL=kernel/names.cmo kernel/generic.cmo kernel/univ.cmo kernel/term.cmo \
-       kernel/sign.cmo kernel/evd.cmo kernel/constant.cmo \
+       kernel/sign.cmo kernel/constant.cmo \
        kernel/inductive.cmo kernel/sosub.cmo kernel/abstraction.cmo \
        kernel/environ.cmo kernel/instantiate.cmo \
        kernel/closure.cmo kernel/reduction.cmo \
@@ -51,7 +51,7 @@ PARSING=parsing/lexer.cmo parsing/coqast.cmo parsing/pcoq.cmo parsing/ast.cmo \
 	parsing/g_prim.cmo parsing/g_basevernac.cmo parsing/g_vernac.cmo \
 	parsing/g_command.cmo parsing/g_tactic.cmo parsing/g_multiple_case.cmo
 
-PROOFS=proofs/proof_trees.cmo
+PROOFS=proofs/evd.cmo proofs/proof_trees.cmo
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernac.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo
@@ -59,7 +59,7 @@ TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernac.cmo \
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
-CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PARSING) $(TOPLEVEL)
+CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PROOFS) $(PARSING) $(TOPLEVEL)
 CMX=$(CMO:.cmo=.cmx)
 
 # Targets

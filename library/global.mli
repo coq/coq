@@ -6,7 +6,6 @@ open Names
 open Univ
 open Term
 open Sign
-open Evd
 open Constant
 open Inductive
 open Environ
@@ -17,11 +16,9 @@ open Typing
    The functions below are the exactly the same as the ones in [Typing],
    operating on that global environment. *)
 
-val env : unit -> unit environment
+val env : unit -> environment
 
-val evar_map : unit -> unit evar_map
 val universes : unit -> universes
-val metamap : unit -> (int * constr) list
 val context : unit -> context
 
 val push_var : identifier * constr -> unit
@@ -36,7 +33,6 @@ val lookup_rel : int -> name * typed_type
 val lookup_constant : section_path -> constant_body
 val lookup_mind : section_path -> mutual_inductive_body
 val lookup_mind_specif : constr -> mind_specif
-val lookup_meta : int -> constr
 
 val export : string -> compiled_env
 val import : compiled_env -> unit
