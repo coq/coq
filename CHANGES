@@ -7,6 +7,7 @@ Language
   the constructors of an inductive types (for compatibility with V6.3
   let-in style)
 - Coercions allowed in Cases patterns
+- Better error messages for ill-typed Cases expressions
 
 Tactics
 
@@ -47,8 +48,10 @@ Bugs
 - Syntax [x:=t:T]u now allowed as mentioned in documentation
 - Various incompatibilities wrt inference of "?" in V6.3.1 fixed
 - Known pattern-matching bugs fixed
+- Known Cases elimination predicate bugs fixed
 - Known coercions bugs
 - Improved errors messages for pattern-matching and projections
+- Implicits in infix section variables bug fixed
 
 ----------------------------------------------------------------------------
 Changes from V6.3.1 and V7.0 to V7.1
