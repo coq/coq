@@ -262,7 +262,7 @@ let subst_constr_expr a loc subs =
   | CAppExpl (_,r,l) -> CAppExpl (loc,r,List.map subst l) 
   | CApp (_,a,l) -> CApp (loc,subst a,List.map (fun (a,i) -> (subst a,i)) l)
   | CCast (_,a,b) -> CCast (loc,subst a,subst b)
-  | CNotation (_,n,l) -> CNotation (loc,n,List.map (fun (x,t) ->(x,subst t)) l)
+  | CNotation (_,n,l) -> CNotation (loc,n,List.map subst l)
   | CDelimiters (_,s,a) -> CDelimiters (loc,s,subst a)
   | CHole _ | CMeta _ | CSort _ | CNumeral _ | CDynamic _ | CRef _ as x -> x
   | CCases (_,po,a,bl) ->
@@ -340,7 +340,7 @@ let extend_constr entry (level,assoc,keepassoc) make_act pt =
   grammar_extend entry pos [(name, p4assoc, [symbs, act])]
 
 let extend_constr_notation (n,assoc,ntn,rule) =
-  let mkact loc env = CNotation (loc,ntn,env) in
+  let mkact loc env = CNotation (loc,ntn,List.map snd env) in
   let (e,level,keepassoc) = get_constr_entry (ETConstr (n,())) in
   extend_constr e (level,assoc,keepassoc) (make_act mkact) rule
 
