@@ -23,7 +23,7 @@ Recursive Tactic Definition MemAssoc var lvar :=
      | _ -> (MemAssoc var ?2)).
 
 Recursive Tactic Definition SeekVarAux FT lvar trm :=
-  Let AT     = Eval Cbv Beta Delta [A] Iota in (A FT)
+  Let AT     = Eval Cbv Beta Delta [A] Iota in (Field_Theory.A FT)
   And AzeroT = Eval Cbv Beta Delta [Azero] Iota in (Azero FT)
   And AoneT  = Eval Cbv Beta Delta [Aone] Iota in (Aone FT)
   And AplusT = Eval Cbv Beta Delta [Aplus] Iota in (Aplus FT)
@@ -48,7 +48,7 @@ Recursive Tactic Definition SeekVarAux FT lvar trm :=
     | [(false)] -> '(consT AT ?1 lvar).
 
 Tactic Definition SeekVar FT trm :=
-  Let AT = Eval Cbv Beta Delta [A] Iota in (A FT) In
+  Let AT = Eval Cbv Beta Delta [A] Iota in (Field_Theory.A FT) In
   (SeekVarAux FT '(nilT AT) trm).
 
 Recursive Tactic Definition NumberAux lvar cpt :=
@@ -73,7 +73,7 @@ Recursive Tactic Definition Assoc elt lst :=
     | _ -> (Assoc elt ?3).
 
 Recursive Meta Definition interp_A FT lvar trm :=
-  Let AT     = Eval Cbv Beta Delta [A] Iota in (A FT)
+  Let AT     = Eval Cbv Beta Delta [A] Iota in (Field_Theory.A FT)
   And AzeroT = Eval Cbv Beta Delta [Azero] Iota in (Azero FT)
   And AoneT  = Eval Cbv Beta Delta [Aone] Iota in (Aone FT)
   And AplusT = Eval Cbv Beta Delta [Aplus] Iota in (Aplus FT)
