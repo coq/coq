@@ -148,8 +148,7 @@ let interp_mutual lparams lnamearconstrs finite =
       (fun acc (id,_,l) -> id::(List.map fst l)@acc) [] lnamearconstrs in
   if not (list_distinct allnames) then
     error "Two inductive objects have the same name";
-  let lrecnames = List.map (fun (x,_,_) -> x)  lnamearconstrs
-  and nparams = List.length lparams
+  let nparams = List.length lparams
   and sigma = Evd.empty 
   and env0 = Global.env() in
   let env_params, params =
@@ -190,24 +189,19 @@ let interp_mutual lparams lnamearconstrs finite =
 	   mind_entry_lc = constrs })
       (List.rev arityl) lnamearconstrs
   in
-  { mind_entry_finite = finite; mind_entry_inds = mispecvec },
-  lrecnames
+  { mind_entry_finite = finite; mind_entry_inds = mispecvec }
 
-let declare_mutual_with_eliminations mie lrecnames finite =
+let declare_mutual_with_eliminations mie =
+  let lrecnames =
+    List.map (fun e -> e.mind_entry_typename) mie.mind_entry_inds in
   let sp = declare_mind mie in
   if is_verbose() then pPNL(minductive_message lrecnames);
-  if finite then
-    for i = 0 to List.length lrecnames - 1 do
-      declare_eliminations sp i
-    done;
+  declare_eliminations sp;
   sp
 
-let build_mutual_give_path lparams lnamearconstrs finite =
-  let mie, lrecnames = interp_mutual lparams lnamearconstrs finite in
-  declare_mutual_with_eliminations mie lrecnames finite
-
 let build_mutual lparams lnamearconstrs finite =
-  let _ = build_mutual_give_path lparams lnamearconstrs finite in ()
+  let mie = interp_mutual lparams lnamearconstrs finite in
+  let _ = declare_mutual_with_eliminations mie in ()
 
 (* try to find non recursive definitions *)
 

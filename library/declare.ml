@@ -427,9 +427,28 @@ let elimination_suffix = function
   | Prop Null -> "_ind"
   | Prop Pos  -> "_rec"
 
+let declare_one_elimination mispec =
+  let mindstr = string_of_id (mis_typename mispec) in
+  let declare na c =
+    declare_constant (id_of_string na)
+      (ConstantEntry { const_entry_body = c; const_entry_type = None }, 
+       NeverDischarge,false);
+    if Options.is_verbose() then pPNL [< 'sTR na; 'sTR " is defined" >]
+  in
+  let env = Global.env () in
+  let sigma = Evd.empty in
+  let elim_scheme = build_indrec env sigma mispec in
+  let npars = mis_nparams mispec in
+  let make_elim s = instanciate_indrec_scheme s npars elim_scheme in
+  let kelim = mis_kelim mispec in
+  List.iter
+    (fun (sort,suff) -> 
+       if List.mem sort kelim then declare (mindstr^suff) (make_elim sort))
+    eliminations
+(*
 let declare_eliminations sp i =
   let mib = Global.lookup_mind sp in
-  let ids = ids_of_named_context mib.mind_hyps in
+
   if not (list_subset ids (ids_of_named_context (Global.named_context ()))) then
     error ("Declarations of elimination scheme outside the section "^
     "of the inductive definition is not implemented");
@@ -452,6 +471,18 @@ let declare_eliminations sp i =
     (fun (sort,suff) -> 
        if List.mem sort kelim then declare (mindstr^suff) (make_elim sort))
     eliminations
+*)
+let declare_eliminations sp =
+  let mib = Global.lookup_mind sp in
+  let ids = ids_of_named_context mib.mind_hyps in
+  if not (list_subset ids (ids_of_named_context (Global.named_context ()))) then    error ("Declarations of elimination scheme outside the section "^
+    "of the inductive definition is not implemented");
+  let ctxt = instance_from_named_context mib.mind_hyps in
+  for i = 0 to Array.length mib.mind_packets - 1 do
+    if mind_type_finite mib i then
+      let mispec = Global.lookup_mind_specif ((sp,i), Array.of_list ctxt) in 
+      declare_one_elimination mispec
+  done
 
 (* Look up function for the default elimination constant *)
 

@@ -45,7 +45,9 @@ val declare_parameter : identifier -> constr -> unit
 
 val declare_mind : mutual_inductive_entry -> section_path
 
-val declare_eliminations : section_path -> int -> unit
+(* [declare_eliminations sp] declares elimination schemes associated
+   to the mutual inductive block refered by [sp] *)
+val declare_eliminations : section_path -> unit
 
 val out_inductive : Libobject.obj -> mutual_inductive_entry 
 
