@@ -22,7 +22,7 @@ open Util
 let constr_kw =
   [ "forall"; "fun"; "match"; "fix"; "cofix"; "with"; "in"; "for"; 
     "end"; "as"; "let"; "if"; "then"; "else"; "return";
-    "Prop"; "Set"; "Type"; ".("; "_" ]
+    "Prop"; "Set"; "Type"; ".("; "_"; ".." ]
 
 let _ = 
   if not !Options.v7 then
