@@ -527,7 +527,7 @@ let true_cut idopt c gl =
 	  match idopt with
 	  | None -> 
               let d = match s with Prop _ -> "H" | Type _ -> "X" in
-              next_name_away_with_default d Anonymous (pf_ids_of_hyps gl)
+              fresh_id [] (id_of_string d) gl
 	  | Some id -> id
 	in
 	internal_cut id c gl
@@ -695,11 +695,9 @@ let letin_abstract id c occs gl =
 
 let letin_tac with_eq name c occs gl =
   let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) name in
-  let env = pf_env gl in
-  let used_ids = ids_of_context env in
   let id =
-    if name = Anonymous then next_ident_away x used_ids else
-      if not (mem_named_context x (named_context env)) then x else
+    if name = Anonymous then fresh_id [] x gl else
+      if not (mem_named_context x (pf_hyps gl)) then x else
 	error ("The variable "^(string_of_id x)^" is already declared") in
   let (depdecls,marks,ccl)= letin_abstract id c occs gl in 
   let ctxt =
