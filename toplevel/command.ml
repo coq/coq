@@ -630,12 +630,12 @@ let start_proof_com sopt kind (bl,t) hook =
   let id = match sopt with
     | Some id ->
         (* We check existence here: it's a bit late at Qed time *)
-        if Nametab.exists_cci (Lib.make_path id) then
+        if is_global id then
           errorlabstrm "start_proof" (pr_id id ++ str " already exists");
         id
     | None ->
-	next_ident_away (id_of_string "Unnamed_thm")
-	  (Pfedit.get_all_proof_names ())
+	next_global_ident_away false (id_of_string "Unnamed_thm")
+ 	  (Pfedit.get_all_proof_names ())
   in
   let env = Global.env () in
   let c = interp_type Evd.empty env (generalize_rawconstr t bl) in
