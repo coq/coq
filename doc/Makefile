@@ -95,13 +95,13 @@ coq-part: $(REFMANCOQTEXFILES) $(COQTEXFILES) demos-programs library/libdoc.tex
 
 latex-part: all-dvi
 
-all-dvi: Tutorial.v.dvi Reference-Manual.dvi faq.v.dvi # Library.dvi Changes.v.dvi
+all-dvi: Tutorial.v.dvi Reference-Manual.dvi # faq.v.dvi Library.dvi Changes.v.dvi
 
-all-pdf: Tutorial.v.pdf Reference-Manual.pdf faq.v.pdf # Library.pdf Changes.v.pdf
+all-pdf: Tutorial.v.pdf Reference-Manual.pdf # faq.v.pdf Library.pdf Changes.v.pdf
 
-all-ps: Tutorial.v.ps Reference-Manual.ps faq.v.ps # Library.ps Changes.v.ps
+all-ps: Tutorial.v.ps Reference-Manual.ps # faq.v.ps  Library.ps Changes.v.ps
 
-all-html: Tutorial.v.html Reference-Manual.html faq.v.html # Library.html Changes.v.html
+all-html: Tutorial.v.html Reference-Manual.html # faq.v.html Library.html Changes.v.html
 
 #version
 version.tex: Makefile
