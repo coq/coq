@@ -123,6 +123,8 @@ type constructor = inductive * int
 module Cmap  : Map.S with type key = constant
 module Cpred  : Predicate.S with type elt = constant
 module Cset  : Set.S with type elt = constant
+module Indmap : Map.S with type key = inductive
+module Constrmap : Map.S with type key = constructor
 
 val constant_of_kn : kernel_name -> constant
 val make_con : module_path -> dir_path -> label -> constant

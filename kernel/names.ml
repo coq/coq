@@ -183,7 +183,6 @@ module Cmap = KNmap
 module Cpred = KNpred
 module Cset = KNset
 
-
 let default_module_name = id_of_string "If you see this, it's a bug"
 
 let initial_dir = make_dirpath [default_module_name]
@@ -209,6 +208,22 @@ let ith_mutual_inductive (kn,_) i = (kn,i)
 let ith_constructor_of_inductive ind i = (ind,i)
 let inductive_of_constructor (ind,i) = ind
 let index_of_constructor (ind,i) = i
+
+module InductiveOrdered = struct
+  type t = inductive
+  let compare (spx,ix) (spy,iy) = 
+    let c = ix - iy in if c = 0 then KNord.compare spx spy else c
+end
+
+module Indmap = Map.Make(InductiveOrdered)
+
+module ConstructorOrdered = struct
+  type t = constructor
+  let compare (indx,ix) (indy,iy) = 
+    let c = ix - iy in if c = 0 then InductiveOrdered.compare indx indy else c
+end
+
+module Constrmap = Map.Make(ConstructorOrdered)
 
 (* Better to have it here that in closure, since used in grammar.cma *)
 type evaluable_global_reference =
