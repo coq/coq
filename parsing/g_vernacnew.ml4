@@ -64,7 +64,7 @@ GEXTEND Gram
   subgoal_command:
     [ [ c = check_command; "." -> c
       | tac = Tactic.tactic;
-        use_dft_tac = [ "." -> false | ".."; "." -> true ] ->
+        use_dft_tac = [ "." -> false | "..." -> true ] ->
           (fun g ->
             let g = match g with Some gl -> gl | _ -> 1 in
             VernacSolve(g,tac,use_dft_tac)) ] ]
