@@ -16,7 +16,7 @@ Require Export Field_Theory.
 
 Recursive Tactic Definition MemAssoc var lvar :=
   Match lvar With
-  | [(nil ?)] -> false
+  | [(nilT ?)] -> false
   | [(consT ? ?1 ?2)] ->
     (Match ?1==var With
      | [?1== ?1] -> true
@@ -49,11 +49,11 @@ Recursive Tactic Definition SeekVarAux FT lvar trm :=
 
 Tactic Definition SeekVar FT trm :=
   Let AT = Eval Compute in (A FT) In
-  (SeekVarAux FT '(nil AT) trm).
+  (SeekVarAux FT '(nilT AT) trm).
 
 Recursive Tactic Definition NumberAux lvar cpt :=
   Match lvar With
-  | [(nil ?1)] -> '(nil (Sprod ?1 nat))
+  | [(nilT ?1)] -> '(nilT (Sprod ?1 nat))
   | [(consT ?1 ?2 ?3)] ->
     Let l2 = (NumberAux ?3 '(S cpt)) In
     '(consT (Sprod ?1 nat) (Spair ?1 nat ?2 cpt) l2).
@@ -66,7 +66,7 @@ Tactic Definition BuildVarList FT trm :=
 
 Recursive Tactic Definition Assoc elt lst :=
   Match lst With
-  | [(nil ?)] -> Fail
+  | [(nilT ?)] -> Fail
   | [(consT (Sprod ? nat) (Spair ? nat ?1 ?2) ?3)] ->
     Match elt== ?1 With
     | [?1== ?1] -> ?2
@@ -109,7 +109,7 @@ Recursive Tactic Definition interp_A FT lvar trm :=
 
 Recursive Tactic Definition Remove e l :=
   Match l With
-  | [(nil ?)] -> l
+  | [(nilT ?)] -> l
   | [(consT ?1 e ?2)] -> ?2
   | [(consT ?1 ?2 ?3)] ->
     Let nl = (Remove e ?3) In
@@ -117,7 +117,7 @@ Recursive Tactic Definition Remove e l :=
 
 Recursive Tactic Definition Union l1 l2 :=
   Match l1 With
-  | [(nil ?)] -> l2
+  | [(nilT ?)] -> l2
   | [(consT ?1 ?2 ?3)] ->
     Let nl2 = (Remove ?2 l2) In
     Let nl = (Union ?3 nl2) In
@@ -125,7 +125,7 @@ Recursive Tactic Definition Union l1 l2 :=
 
 Recursive Tactic Definition RawGiveMult trm :=
   Match trm With
-  | [(EAinv ?1)] -> '(consT ExprA ?1 (nil ExprA))
+  | [(EAinv ?1)] -> '(consT ExprA ?1 (nilT ExprA))
   | [(EAopp ?1)] -> (RawGiveMult ?1)
   | [(EAplus ?1 ?2)] ->
     Let l1 = (RawGiveMult ?1)
@@ -135,7 +135,7 @@ Recursive Tactic Definition RawGiveMult trm :=
     Let l1 = (RawGiveMult ?1)
     And l2 = (RawGiveMult ?2) In
     Eval Compute in (appT ExprA l1 l2)
-  | _ -> '(nil ExprA).
+  | _ -> '(nilT ExprA).
 
 Tactic Definition GiveMult trm :=
   Let ltrm = (RawGiveMult trm) In

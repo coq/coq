@@ -9,12 +9,12 @@
 (* $Id$ *)
 
 Inductive listT [A:Type] : Type :=
-  nil : (listT A) | consT : A->(listT A)->(listT A).
+  nilT : (listT A) | consT : A->(listT A)->(listT A).
 
 Fixpoint appT [A:Type][l:(listT A)] : (listT A) -> (listT A) :=
   [m:(listT A)]
   Cases l of
-  | nil => m 
+  | nilT => m 
   | (consT a l1) => (consT A a (appT A l1 m))
   end.
 
@@ -27,7 +27,7 @@ Fix assoc_2nd_rec {assoc_2nd_rec/4:
     [A:Type;B:Set;eq_dec:(e1,e2:B){e1=e2}+{~e1=e2};lst:(listT (Sprod A B));
       key:B;default:A]
   Cases lst of
-  | nil => default
+  | nilT => default
   | (consT (Spair v e) l) =>
     (Cases (eq_dec e key) of
     | (left _) => v
@@ -52,7 +52,7 @@ Definition mem :=
 Fix mem {mem/4:(A:Set)((e1,e2:A){e1=e2}+{~e1=e2})->(a:A)(listT A)->bool :=
   [A:Set;eq_dec:(e1,e2:A){e1=e2}+{~e1=e2};a:A;l:(listT A)]
   Cases l of
-  | nil => false
+  | nilT => false
   | (consT a1 l1) =>
     Cases (eq_dec a a1) of
     | (left _) => true

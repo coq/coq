@@ -67,7 +67,7 @@ Definition eqExprA := Eval Compute in eqExprA_O.
 
 Fixpoint mult_of_list [e:(listT ExprA)]: ExprA :=
   Cases e of
-  | nil => EAone
+  | nilT => EAone
   | (consT e1 l1) => (EAmult e1 (mult_of_list l1))
   end.
 
