@@ -35,9 +35,7 @@ let all_subdirs root alias =
 	      add file newrel;
 	      traverse file newrel
 	    end
-	  with Unix_error (e,s1,s2) ->
-	    (Printf.printf "Warning while scanning load path:\n%s: %s\n"
-	      s2 (error_message e); flush Pervasives.stdout)
+	  with Unix_error (e,s1,s2) -> ()
       done
     with End_of_file ->
       closedir dirh
