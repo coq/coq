@@ -49,8 +49,9 @@ REFMANFILES= Reference-Manual.tex RefMan-pre.tex RefMan-int.tex \
 
 REFMAN=Reference-Manual
 
-#VERSION=V7.3
-VERSION=POSITIONNEZ-CETTE-VARIABLE
+#VERSION=POSITIONNEZ-CETTE-VARIABLE
+VERSION=V7.3
+
 FTPDOCDIR=/net/pauillac/infosystems/ftp/coq/coq/$(VERSION)/doc
 WWWDOCDIR=/net/pauillac/infosystems/www/coq/doc
 
