@@ -237,6 +237,7 @@ let xlate_sort =
     | RType None -> CT_sortc "Type"
     | RType (Some u) -> xlate_error "xlate_sort";;
 
+
 let xlate_qualid a =
   let d,i = Libnames.repr_qualid a in
   let l = Names.repr_dirpath d in
@@ -1186,9 +1187,9 @@ and coerce_genarg_to_TARG x =
       	(CT_coerce_FORMULA_to_SCOMMENT_CONTENT(xlate_formula
 						 (out_gen
 						    rawwit_casted_open_constr x)))
-  | ConstrWithBindingsArgType -> xlate_error "TODO: constr with bindings"
-  | BindingsArgType -> xlate_error "TODO: with bindings"
-  | RedExprArgType -> xlate_error "TODO: red expr as generic argument"
+  | ConstrWithBindingsArgType -> xlate_error "TODO: generic constr with bindings"
+  | BindingsArgType -> xlate_error "TODO: generic with bindings"
+  | RedExprArgType -> xlate_error "TODO: generic red expr"
   | List0ArgType l -> xlate_error "TODO: lists of generic arguments"
   | List1ArgType l -> xlate_error "TODO: non empty lists of generic arguments"
   | OptArgType x -> xlate_error "TODO: optional generic arguments"
@@ -1271,9 +1272,9 @@ let coerce_genarg_to_VARG x =
   | TacticArgType ->
       let t = xlate_tactic (out_gen rawwit_tactic x) in
       CT_coerce_TACTIC_OPT_to_VARG (CT_coerce_TACTIC_COM_to_TACTIC_OPT t)
-  | CastedOpenConstrArgType -> xlate_error "TODO: open constr"
-  | ConstrWithBindingsArgType -> xlate_error "TODO: constr with bindings"
-  | BindingsArgType -> xlate_error "TODO: with bindings"
+  | CastedOpenConstrArgType -> xlate_error "TODO: generic open constr"
+  | ConstrWithBindingsArgType -> xlate_error "TODO: generic constr with bindings"
+  | BindingsArgType -> xlate_error "TODO: generic with bindings"
   | RedExprArgType -> xlate_error "TODO: red expr as generic argument"
   | List0ArgType l -> xlate_error "TODO: lists of generic arguments"
   | List1ArgType l -> xlate_error "TODO: non empty lists of generic arguments"
@@ -1433,13 +1434,19 @@ let xlate_vernac =
        (CT_eval (xlate_int_opt numopt, red, xlate_formula f))
     | VernacChdir (Some str) -> CT_cd (ctf_STRING_OPT_SOME (CT_string str))
     | VernacChdir None -> CT_cd ctf_STRING_OPT_NONE
-    | VernacAddLoadPath (false,str,None) -> CT_addpath (CT_string str)
-    | VernacAddLoadPath (true,str,None) -> CT_recaddpath (CT_string str)
-    | VernacAddLoadPath (_,str,Some x) ->
-	xlate_error"TODO: Add (Rec) LoadPath as"
+    | VernacAddLoadPath (false,str,None) ->
+ 	CT_addpath (CT_string str, ctv_ID_OPT_NONE)
+    | VernacAddLoadPath (false,str,Some x) ->
+ 	CT_addpath (CT_string str,
+		    CT_coerce_ID_to_ID_OPT (CT_ident (string_of_dirpath x)))
+    | VernacAddLoadPath (true,str,None) ->
+ 	CT_recaddpath (CT_string str, ctv_ID_OPT_NONE)
+    | VernacAddLoadPath (_,str, Some x) ->
+	CT_recaddpath (CT_string str,
+		       CT_coerce_ID_to_ID_OPT (CT_ident (string_of_dirpath x)))
     | VernacRemoveLoadPath str -> CT_delpath (CT_string str)
     | VernacToplevelControl Quit -> CT_quit
-    | VernacToplevelControl _ -> xlate_error "TODO?: Drop/ProtectedToplevel"
+    | VernacToplevelControl _ -> xlate_error "Drop/ProtectedToplevel not supported"
       (*ML commands *)
     | VernacAddMLPath (false,str) -> CT_ml_add_path (CT_string str)
     | VernacAddMLPath (true,str) -> CT_rec_ml_add_path (CT_string str)
@@ -1476,47 +1483,75 @@ let xlate_vernac =
       (* TODO: locality flag *)
       let dblist = CT_id_list(List.map (fun x -> CT_ident x) dbnames) in
       (match h with
-	| HintsResolve [Some id_name, c] -> (* = Old HintResolve *)
-	    CT_hint(xlate_ident id_name, dblist, CT_resolve (xlate_formula c))
-	| HintsImmediate [Some id_name, c] -> (* = Old HintImmediate *)
-	    CT_hint(xlate_ident id_name, dblist, CT_immediate(xlate_formula c))
-	| HintsUnfold [Some id_name, q] -> (* = Old HintUnfold *)
-	    CT_hint(xlate_ident id_name, dblist,
-              CT_unfold_hint (loc_qualid_to_ct_ID q))
-	| HintsConstructors (Some id_name, ql) ->
-	    CT_hint(xlate_ident id_name, dblist,
-              CT_constructors (CT_id_list(List.map loc_qualid_to_ct_ID ql)))
-	| HintsExtern (Some id_name, n, c, t) ->
-	    CT_hint(xlate_ident id_name, dblist,
-              CT_extern(CT_int n, xlate_formula c, xlate_tactic t))
-        | HintsResolve l -> (* = Old HintsResolve *)
-	 let l = List.map (function (None,CRef r) -> r | _ -> failwith "") l in
+	| HintsConstructors (None, l) ->
 	 let n1, names = match List.map tac_qualid_to_ct_ID l with
 	     n1 :: names -> n1, names
 	   | _  -> failwith "" in
-         CT_hints(CT_ident "Resolve",
-                  CT_id_ne_list(n1, names),
-		  dblist)
-        | HintsImmediate l -> (* = Old HintsImmediate *)
-	 let l = List.map (function (None,CRef r) -> r | _ -> failwith "") l in
+	   if local then
+	     CT_local_hints(CT_ident "Constructors",
+			    CT_id_ne_list(n1, names), dblist)
+	   else
+	     CT_hints(CT_ident "Constructors",
+		      CT_id_ne_list(n1, names), dblist)
+	| HintsExtern (None, n, c, t) ->
+	    CT_hint_extern(CT_int n, xlate_formula c, xlate_tactic t, dblist)
+        | HintsResolve l -> 
+	 let l = 
+	   List.map 
+	     (function (None,CRef r) -> r 
+		| _ -> xlate_error "obsolete Hint Resolve not supported") l in
 	 let n1, names = match List.map tac_qualid_to_ct_ID l with
 	     n1 :: names -> n1, names
 	   | _  -> failwith "" in
-        CT_hints(CT_ident "Immediate", 
-                 CT_id_ne_list(n1, names),
-                 dblist)
-        | HintsUnfold l ->  (* = Old HintsUnfold *)
+	   if local then
+             CT_local_hints(CT_ident "Resolve",
+			    CT_id_ne_list(n1, names), dblist)
+	   else
+             CT_hints(CT_ident "Resolve", CT_id_ne_list(n1, names), dblist)
+        | HintsImmediate l -> 
+	    let l =
+	      List.map 
+		(function (None,CRef r) -> r 
+		   | _ ->
+		       xlate_error "obsolete Hint Immediate not supported") l
+	    in
+	 let n1, names = match List.map tac_qualid_to_ct_ID l with
+	     n1 :: names -> n1, names
+	   | _  -> failwith "" in
+	   if local then
+             CT_local_hints(CT_ident "Immediate",
+			    CT_id_ne_list(n1, names), dblist)
+	   else
+             CT_hints(CT_ident "Immediate", CT_id_ne_list(n1, names), dblist)
+        | HintsUnfold l -> 
 	 let l = List.map
-	   (function
-	       (None,ref) -> loc_qualid_to_ct_ID ref
-	     | _ -> failwith "") l in
+	   (function (None,ref) -> loc_qualid_to_ct_ID ref |
+	      _ -> xlate_error "obsolete Hint Unfold not supported") l in
 	 let n1, names = match l with
 	     n1 :: names -> n1, names
 	   | _  -> failwith "" in
-        CT_hints(CT_ident "Unfold", 
-                 CT_id_ne_list(n1, names),
-                 dblist)
-        | _ -> xlate_error"TODO: Hint")
+	   if local then
+             CT_local_hints(CT_ident "Unfold",
+			    CT_id_ne_list(n1, names), dblist)
+	   else	     
+             CT_hints(CT_ident "Unfold", CT_id_ne_list(n1, names), dblist)
+       	| HintsDestruct(id, n, loc, f, t) ->
+	    let dl = match loc with
+		ConclLocation() -> CT_conclusion_location
+	      | HypLocation true -> CT_discardable_hypothesis
+	      | HypLocation false -> CT_hypothesis_location in
+	     if local then
+               CT_local_hint_destruct
+		 (xlate_ident id, CT_int n,
+		  dl, xlate_formula f, xlate_tactic t, dblist)
+	     else
+	       CT_hint_destruct
+		 (xlate_ident id, CT_int n, dl, xlate_formula f,
+		  xlate_tactic t, dblist)
+	| HintsExtern(Some _, _, _, _)
+	| HintsConstructors(Some _, _) -> 
+            xlate_error "obsolete Hint Constructors not supported"
+)
   | VernacEndProof (Proved (true,None)) ->
       CT_save (CT_coerce_THM_to_THM_OPT (CT_thm "Theorem"), ctv_ID_OPT_NONE)
   | VernacEndProof (Proved (false,None)) ->

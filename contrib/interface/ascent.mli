@@ -51,7 +51,7 @@ and ct_COMMAND =
   | CT_abort of ct_ID_OPT_OR_ALL
   | CT_abstraction of ct_ID * ct_FORMULA * ct_INT_LIST
   | CT_add_natural_feature of ct_NATURAL_FEATURE * ct_ID
-  | CT_addpath of ct_STRING
+  | CT_addpath of ct_STRING * ct_ID_OPT
   | CT_cd of ct_STRING_OPT
   | CT_check of ct_FORMULA
   | CT_class of ct_ID
@@ -69,7 +69,8 @@ and ct_COMMAND =
   | CT_focus of ct_INT_OPT
   | CT_go of ct_INT_OR_LOCN
   | CT_guarded
-  | CT_hint of ct_ID * ct_ID_LIST * ct_HINT_EXPRESSION
+  | CT_hint_destruct of ct_ID * ct_INT * ct_DESTRUCT_LOCATION * ct_FORMULA * ct_TACTIC_COM * ct_ID_LIST
+  | CT_hint_extern of ct_INT * ct_FORMULA * ct_TACTIC_COM * ct_ID_LIST
   | CT_hintrewrite of ct_ORIENTATION * ct_FORMULA_NE_LIST * ct_ID * ct_TACTIC_COM
   | CT_hints of ct_ID * ct_ID_NE_LIST * ct_ID_LIST
   | CT_implicits of ct_ID * ct_INT_LIST
@@ -78,6 +79,9 @@ and ct_COMMAND =
   | CT_inspect of ct_INT
   | CT_kill_node of ct_INT
   | CT_load of ct_VERBOSE_OPT * ct_ID_OR_STRING
+  | CT_local_hint_destruct of ct_ID * ct_INT * ct_DESTRUCT_LOCATION * ct_FORMULA * ct_TACTIC_COM * ct_ID_LIST
+  | CT_local_hint_extern of ct_INT * ct_FORMULA * ct_TACTIC_COM * ct_ID_LIST
+  | CT_local_hints of ct_ID * ct_ID_NE_LIST * ct_ID_LIST
   | CT_locate of ct_ID
   | CT_locate_file of ct_STRING
   | CT_locate_lib of ct_ID
@@ -114,7 +118,7 @@ and ct_COMMAND =
   | CT_read_module of ct_ID
   | CT_rec_ml_add_path of ct_STRING
   | CT_rec_tactic_definition of ct_REC_TACTIC_FUN_LIST
-  | CT_recaddpath of ct_STRING
+  | CT_recaddpath of ct_STRING * ct_ID_OPT
   | CT_record of ct_COERCION_OPT * ct_ID * ct_BINDER_LIST * ct_FORMULA * ct_ID_OPT * ct_RECCONSTR_LIST
   | CT_remove_natural_feature of ct_NATURAL_FEATURE * ct_ID
   | CT_require of ct_IMPEXP * ct_SPEC_OPT * ct_ID * ct_STRING_OPT
@@ -210,6 +214,10 @@ and ct_DEP =
 and ct_DESTRUCTING =
     CT_coerce_NONE_to_DESTRUCTING of ct_NONE
   | CT_destructing
+and ct_DESTRUCT_LOCATION =
+    CT_conclusion_location
+  | CT_discardable_hypothesis
+  | CT_hypothesis_location
 and ct_EQN =
     CT_eqn of ct_MATCH_PATTERN_NE_LIST * ct_FORMULA
 and ct_EQN_LIST =
@@ -265,12 +273,6 @@ and ct_FORMULA_OR_INT =
   | CT_coerce_ID_OR_INT_to_FORMULA_OR_INT of ct_ID_OR_INT
 and ct_GRAMMAR =
     CT_grammar_none
-and ct_HINT_EXPRESSION =
-    CT_constructors of ct_ID_LIST
-  | CT_extern of ct_INT * ct_FORMULA * ct_TACTIC_COM
-  | CT_immediate of ct_FORMULA
-  | CT_resolve of ct_FORMULA
-  | CT_unfold_hint of ct_ID
 and ct_HYP_LOCATION =
     CT_coerce_UNFOLD_to_HYP_LOCATION of ct_UNFOLD
   | CT_intype of ct_ID * ct_INT_LIST

@@ -116,9 +116,10 @@ and fCOMMAND = function
    fNATURAL_FEATURE x1;
    fID x2;
    fNODE "add_natural_feature" 2
-| CT_addpath(x1) ->
+| CT_addpath(x1, x2) ->
    fSTRING x1;
-   fNODE "addpath" 1
+   fID_OPT x2;
+   fNODE "addpath" 2
 | CT_cd(x1) ->
    fSTRING_OPT x1;
    fNODE "cd" 1
@@ -187,11 +188,20 @@ and fCOMMAND = function
    fINT_OR_LOCN x1;
    fNODE "go" 1
 | CT_guarded -> fNODE "guarded" 0
-| CT_hint(x1, x2, x3) ->
+| CT_hint_destruct(x1, x2, x3, x4, x5, x6) ->
    fID x1;
-   fID_LIST x2;
-   fHINT_EXPRESSION x3;
-   fNODE "hint" 3
+   fINT x2;
+   fDESTRUCT_LOCATION x3;
+   fFORMULA x4;
+   fTACTIC_COM x5;
+   fID_LIST x6;
+   fNODE "hint_destruct" 6
+| CT_hint_extern(x1, x2, x3, x4) ->
+   fINT x1;
+   fFORMULA x2;
+   fTACTIC_COM x3;
+   fID_LIST x4;
+   fNODE "hint_extern" 4
 | CT_hintrewrite(x1, x2, x3, x4) ->
    fORIENTATION x1;
    fFORMULA_NE_LIST x2;
@@ -226,6 +236,25 @@ and fCOMMAND = function
    fVERBOSE_OPT x1;
    fID_OR_STRING x2;
    fNODE "load" 2
+| CT_local_hint_destruct(x1, x2, x3, x4, x5, x6) ->
+   fID x1;
+   fINT x2;
+   fDESTRUCT_LOCATION x3;
+   fFORMULA x4;
+   fTACTIC_COM x5;
+   fID_LIST x6;
+   fNODE "local_hint_destruct" 6
+| CT_local_hint_extern(x1, x2, x3, x4) ->
+   fINT x1;
+   fFORMULA x2;
+   fTACTIC_COM x3;
+   fID_LIST x4;
+   fNODE "local_hint_extern" 4
+| CT_local_hints(x1, x2, x3) ->
+   fID x1;
+   fID_NE_LIST x2;
+   fID_LIST x3;
+   fNODE "local_hints" 3
 | CT_locate(x1) ->
    fID x1;
    fNODE "locate" 1
@@ -313,9 +342,10 @@ and fCOMMAND = function
 | CT_rec_tactic_definition(x1) ->
    fREC_TACTIC_FUN_LIST x1;
    fNODE "rec_tactic_definition" 1
-| CT_recaddpath(x1) ->
+| CT_recaddpath(x1, x2) ->
    fSTRING x1;
-   fNODE "recaddpath" 1
+   fID_OPT x2;
+   fNODE "recaddpath" 2
 | CT_record(x1, x2, x3, x4, x5, x6) ->
    fCOERCION_OPT x1;
    fID x2;
@@ -537,6 +567,10 @@ and fDEP = function
    print_string "\n"and fDESTRUCTING = function
 | CT_coerce_NONE_to_DESTRUCTING x -> fNONE x
 | CT_destructing -> fNODE "destructing" 0
+and fDESTRUCT_LOCATION = function
+| CT_conclusion_location -> fNODE "conclusion_location" 0
+| CT_discardable_hypothesis -> fNODE "discardable_hypothesis" 0
+| CT_hypothesis_location -> fNODE "hypothesis_location" 0
 and fEQN = function
 | CT_eqn(x1, x2) ->
    fMATCH_PATTERN_NE_LIST x1;
@@ -690,24 +724,6 @@ and fFORMULA_OR_INT = function
 | CT_coerce_ID_OR_INT_to_FORMULA_OR_INT x -> fID_OR_INT x
 and fGRAMMAR = function
 | CT_grammar_none -> fNODE "grammar_none" 0
-and fHINT_EXPRESSION = function
-| CT_constructors(x1) ->
-   fID_LIST x1;
-   fNODE "constructors" 1
-| CT_extern(x1, x2, x3) ->
-   fINT x1;
-   fFORMULA x2;
-   fTACTIC_COM x3;
-   fNODE "extern" 3
-| CT_immediate(x1) ->
-   fFORMULA x1;
-   fNODE "immediate" 1
-| CT_resolve(x1) ->
-   fFORMULA x1;
-   fNODE "resolve" 1
-| CT_unfold_hint(x1) ->
-   fID x1;
-   fNODE "unfold_hint" 1
 and fHYP_LOCATION = function
 | CT_coerce_UNFOLD_to_HYP_LOCATION x -> fUNFOLD x
 | CT_intype(x1, x2) ->
