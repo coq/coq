@@ -79,6 +79,7 @@ identifiers.
 Numerals are sequences of digits. Integers are numerals optionally preceded by a minus sign.
 
 \index{num@{\num}}
+\index{integer@{\integer}}
 \begin{center}
 \begin{tabular}{r@{\quad::=\quad}l}
 {\digit} & \ml{0..9} \\
@@ -88,9 +89,14 @@ Numerals are sequences of digits. Integers are numerals optionally preceded by a
 \end{center}
 
 \paragraph{Strings}
+\label{strings}
+\index{string@{\qstring}}
 Strings are delimited by \verb!"! (double quote), and enclose a
 sequence of any characters different from \verb!"! or the sequence
-\verb!""! to denote the double quote character.
+\verb!""! to denote the double quote character. In grammars, the
+entry for quoted strings is {\qstring}.
+
+
 %% \begin{center}
 %% \begin{tabular}{|l|l|}
 %% \hline
@@ -330,7 +336,9 @@ chapter \ref{Addoc-syntax}.
  & $|$ & {\tt fun} {\binderlist} {\tt =>} {\term} &(\ref{abstractions})\\
  & $|$ & {\tt fix} {\fixpointbodies} &(\ref{fixpoints})\\
  & $|$ & {\tt cofix} {\cofixpointbodies} &(\ref{fixpoints})\\
- & $|$ & {\tt let} {\letclauses} {\tt in} {\term} &(\ref{let-in})\\
+ & $|$ &
+    {\tt let} {\ident} \sequence{\binderlet}{} {\typecstr} {\tt :=} {\term}
+    {\tt in} {\term} &(\ref{let-in})\\
  & $|$ & {\tt let fix} {\fixpointbody} {\tt in} {\term} &(\ref{fixpoints})\\
  & $|$ & {\tt let cofix} {\cofixpointbody}
          {\tt in} {\term} &(\ref{fixpoints})\\
@@ -341,9 +349,11 @@ chapter \ref{Addoc-syntax}.
  & $|$ & {\term} {\tt :} {\term} &(\ref{typecast})\\
  & $|$ & {\term} {\tt ->} {\term} &(\ref{products})\\
  & $|$ & {\term} \nelist{\termarg}{}&(\ref{applications})\\
- & $|$ & {\tt @} {\qualid} \sequence{\term}{} &(\ref{applications})\\
+ & $|$ & {\tt @} {\qualid} \sequence{\term}{}
+            &(\ref{Implicits-explicitation})\\
  & $|$ & {\term} {\tt \%} {\ident} &(\ref{scopechange})\\
- & $|$ & {\tt match} {\caseitems} \zeroone{\casetype} {\tt with} &\\
+ & $|$ & {\tt match} \nelist{\caseitem}{\tt ,}
+                 \zeroone{\casetype} {\tt with} &\\
     &&   ~~~\zeroone{\zeroone{\tt |} \nelist{\eqn}{|}} {\tt end}
     &(\ref{caseanalysis})\\
  & $|$ & {\qualid} &(\ref{qualid})\\
@@ -352,8 +362,10 @@ chapter \ref{Addoc-syntax}.
  & $|$ & {\_} &(\ref{applications})\\
  & & &\\
 {\termarg} & ::= & {\term} &\\
- & $|$ & {\tt (} {\ident} {\tt :=} {\term} {\tt )} &\\
- & $|$ & {\tt (} {\num} {\tt :=} {\term} {\tt )} &\\
+ & $|$ & {\tt (} {\ident} {\tt :=} {\term} {\tt )}
+         &(\ref{Implicits-explicitation})\\
+ & $|$ & {\tt (} {\num} {\tt :=} {\term} {\tt )}
+         &(\ref{Implicits-explicitation})\\
 &&&\\
 {\binderlist} & ::= & \nelist{\name}{} {\typecstr} &\\
  & $|$ & {\binder} \nelist{\binderlet}{} &\\
@@ -362,12 +374,12 @@ chapter \ref{Addoc-syntax}.
 {\binderlet} & ::= & {\binder} &\\
  & $|$ & {\tt (} {\name} {\typecstr} {\tt :=} {\term} {\tt )} &\\
 & & &\\
-{\qualid} & ::= & {\ident} &\\
- & $|$ & {\qualid} {\accessident} &\\
- & & &\\
 {\name} & \cn{}::= & {\ident} &\\
  & $|$ & {\tt \_} &\\
 &&&\\
+{\qualid} & ::= & {\ident} &\\
+ & $|$ & {\qualid} {\accessident} &\\
+ & & &\\
 {\sort} & ::= & {\tt Prop} &\\
  & $|$ & {\tt Set} &\\
  & $|$ & {\tt Type} &\\
@@ -403,8 +415,6 @@ chapter \ref{Addoc-syntax}.
   & &\\
 {\annotation} & ::= & {\tt \{ struct} {\ident} {\tt \}} \\ 
 &&\\
-{\caseitems} & ::= & \nelist{\caseitem}{\tt ,} \\
-&&\\
 {\caseitem} & ::= & {\term} \zeroone{{\tt as} \name}
      \zeroone{{\tt in} \term} \\
 &&\\
@@ -436,7 +446,14 @@ denote local {\em variables}, what qualified identifiers do not.
 \subsection{Numerals}
 \label{numerals}
 
-%% TODO
+Numerals have no definite semantics in the calculus. They are mere
+notations that can be bound to objects through the notation mechanism
+(see chapter~\ref{Addoc-syntax} for details). Initially, numerals are
+bound to Peano's representation of natural numbers
+(see~\ref{libnats}).
+
+Note: negative integers are not at the same level as {\num}, for this
+would make precedence unnatural.
 
 \subsection{Sorts}\index{Sorts}
 \index{Type@{\Type}}
@@ -572,14 +589,14 @@ matched.
 \label{fixpoints}
 \index{fix@{fix \ident$_i$\{\dots\}}}
 
-The expression ``{\tt fix} \ident$_1$ \binders$_1$ {\tt :} {\type$_1$}
+The expression ``{\tt fix} \ident$_1$ \binder$_1$ {\tt :} {\type$_1$}
 \texttt{:=} \term$_1$ {\tt with} {\ldots} {\tt with} \ident$_n$
-\binders$_n$~{\tt :} {\type$_n$} \texttt{:=} \term$_n$ {\tt for}
+\binder$_n$~{\tt :} {\type$_n$} \texttt{:=} \term$_n$ {\tt for}
 {\ident$_i$}'' denotes the $i$th component of a block of functions
 defined by mutual well-founded recursion.
 
-The expression ``{\tt cofix} \ident$_1$~\binders$_1$ {\tt :}
-{\type$_1$} {\tt with} {\ldots} {\tt with} \ident$_n$ \binders$_n$
+The expression ``{\tt cofix} \ident$_1$~\binder$_1$ {\tt :}
+{\type$_1$} {\tt with} {\ldots} {\tt with} \ident$_n$ \binder$_n$
 {\tt :} {\type$_n$}~{\tt for} {\ident$_i$}'' denotes the $i$th
 component of a block of terms defined by a mutual guarded recursion.
 

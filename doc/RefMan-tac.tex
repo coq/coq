@@ -30,78 +30,29 @@ used to reduce any goal. In other words, before applying a tactic to a
 given goal, the system checks that some {\em preconditions} are
 satisfied. If it is not the case, the tactic raises an error message.
 
-Tactics are build from tacticals and atomic tactics.  There are, at
-least, three levels of atomic tactics. The simplest one implements
-basic rules of the logical framework. The second level is the one of
-{\em derived rules} which are built by combination of other
-tactics. The third one implements heuristics or decision procedures to
-build a complete proof of a goal.  
-%Here is a table of all existing atomic tactics in \Coq:
-%\index{atomic tactics}
-%\label{atomic-tactics-table}
+Tactics are build from atomic tactics and tactic expressions (which
+extends the folklore notion of tactical) to combine those atomic
+tactics. This chapter is devoted to atomic tactics. The tactic
+language will be descrbed in chapter~\ref{TacticLanguage}.
 
-\section{Syntax of tactics and tacticals}
+There are, at least, three levels of atomic tactics. The simplest one
+implements basic rules of the logical framework. The second level is
+the one of {\em derived rules} which are built by combination of other
+tactics. The third one implements heuristics or decision procedures to
+build a complete proof of a goal.
+
+\section{Invokation of tactics}
 \label{tactic-syntax}
 \index{tactic@{\tac}}
 
-A tactic is
-applied as an ordinary command. If the tactic does not
-address the first subgoal, the command may be preceded by the
-wished subgoal number. See figure~\ref{InvokeTactic} for the syntax of
-tactic invocation and tacticals.
+A tactic is applied as an ordinary command. If the tactic does not
+address the first subgoal, the command may be preceded by the wished
+subgoal number as shown below:
 
-\medskip
-
-\begin{figure}[t]
-\begin{center}
-\fbox{\begin{minipage}{0.95\textwidth}
 \begin{tabular}{lcl}
-{\tac} & ::= & \atomictac\\
-  & $|$ & {\tt (} {\tac} {\tt )} \\
-  & $|$ & {\tac} {\tt ||} {\tac}\\
-  & $|$ & {\tt repeat} \tac \\
-  & $|$ & {\tt do} {\num} {\tac} \\
-  & $|$ & {\tt info} \tac \\
-  & $|$ & {\tt try} \tac \\
-  & $|$ & {\tt first [} {\tac}{\tt\ | \dots\ | }{\tac} {\tt ]} \\
-  & $|$ & {\tt solve [} {\tac}{\tt\ | \dots\ | }{\tac} {\tt ]} \\
-  & $|$ & {\tt abstract} {\tac} \\
-  & $|$ & {\tt abstract} {\tac} {\tt using} {\ident}\\
-  & $|$ & {\tac} {\tt ;} {\tac}\\
-  & $|$ & {\tac} {\tt ;[} {\tac} \tt {\tt |}
-          \dots\ {\tt |} {\tac} {\tt ]} \\
 {\commandtac} & ::= & {\num} {\tt :} {\tac} {\tt .}\\
  & $|$ & {\tac} {\tt .}
 \end{tabular}
-\end{minipage}}
-\end{center}
-\caption{Invocation of tactics and tacticals}
-\label{InvokeTactic}
-\end{figure}
-
-\begin{Remarks}
-\item The infix tacticals ``\dots\ {\tt ||} \dots'' and ``\dots\ {\tt
-    ;} \dots'' are associative. 
-The tactical {\tt ||} binds more than the prefix tacticals
-{\tt try}, {\tt repeat}, {\tt do}, {\tt info} and {\tt abstract} which
-themselves bind more than  
-the postfix tactical ``{\tt \dots\ ;[ \dots\ ]}'' which 
-binds more than ``\dots\ {\tt ;} \dots''.
-
-For instance
-\begin{tabbing}
-{\tt try repeat \tac$_1$ ||
-  \tac$_2$;\tac$_3$;[\tac$_{31}$|\dots|\tac$_{3n}$];\tac$_4$.}
-\end{tabbing}
-is understood as 
-\begin{tabbing}
-{\tt (try (repeat (\tac$_1$ || \tac$_2$)));} \\
-{\tt ((\tac$_3$;[\tac$_{31}$|\dots|\tac$_{3n}$]);\tac$_4$).}
-\end{tabbing}
-
-
-\item An {\atomictac} is any of the tactics listed below.
-\end{Remarks}
 
 \section{Explicit proof as a term}
 
@@ -159,7 +110,7 @@ proved. Otherwise, it fails.
 \item  \errindex{No such assumption}
 \end{ErrMsgs}
 
-\subsection{\tt clear {\ident}.}\tacindex{clear}\label{clear}
+\subsection{\tt clear {\ident}}\tacindex{clear}\label{clear}
 This tactic erases the hypothesis named {\ident} in the local context
 of the current goal. Then {\ident} is no more displayed and no more
 usable in the proof development.
@@ -179,7 +130,8 @@ body. Otherwise said, this tactic turns a definition into an assumption.
 \item \errindex{{\ident} is used in the hypothesis {\ident'}}
 \end{ErrMsgs}
 
-\subsection{\tt move {\ident$_1$} after {\ident$_2$}.}\tacindex{Move}
+\subsection{\tt move {\ident$_1$} after {\ident$_2$}}
+\tacindex{Move}
 This moves the hypothesis named {\ident$_1$} in the local context
 after the hypothesis named {\ident$_2$}.
 
@@ -200,7 +152,8 @@ then all hypotheses between {\ident$_1$} and {\ident$_2$} which
                    it depends on {\ident$_2$}}
 \end{ErrMsgs}
 
-\subsection{\tt rename {\ident$_1$} into {\ident$_2$}.}\tacindex{Rename}
+\subsection{\tt rename {\ident$_1$} into {\ident$_2$}}
+\tacindex{Rename}
 This renames hypothesis {\ident$_1$} into {\ident$_2$} in the current
 context\footnote{but it does not rename the hypothesis in the
 proof-term...}
@@ -400,26 +353,28 @@ instantiations of the premises of the type of {\term}.
 
 \end{Variants}
 
-\subsection{\tt LetTac {\ident} {\tt :=} {\term}}\tacindex{LetTac}
+\subsection{{\tt set ( {\ident} {\tt :=} {\term} \tt )}}
+\tacindex{set}
 
-This replaces {\term} by {\ident} in the conclusion and the hypotheses
-of the current goal and adds the new definition {\ident {\tt :=}
-  \term} to the local context.
+This replaces {\term} by {\ident} in the conclusion or in the
+hypotheses of the current goal and adds the new definition {\ident
+{\tt :=} \term} to the local context. The default is to make this
+replacement only in the conclusion.
 
 \begin{Variants}
 
-\item {\tt LetTac {\ident} {\tt :=} {\term} {\tt in} {\tt Goal}}
+\item {\tt set ( } {\ident} {\tt :=} {\term} {\tt ) in *}
   
-  This is equivalent to the above form but applies only to the
-  conclusion of the goal.
+  This is equivalent to the above form but applies everywhere in the
+  goal (both in conclusion and hypotheses).
 
-\item {\tt LetTac {\ident$_0$} {\tt :=} {\term} {\tt in} {\ident$_1$}}
+\item {\tt set ( {\ident$_0$} {\tt :=} {\term} {\tt ) in} {\ident$_1$}}
   
   This behaves the same but substitutes {\term} not in the goal but in
   the hypothesis named {\ident$_1$}.
   
-\item {\tt LetTac {\ident$_0$} {\tt :=} {\term} {\tt in} {\num$_1$}
-    \dots\ {\num$_n$} {\ident$_1$}}
+\item {\tt set (} {\ident$_0$} {\tt :=} {\term} {\tt ) in}
+    {\ident$_1$} {\tt at} {\num$_1$} \dots\ {\num$_n$}
 
 This notation allows to specify which occurrences of the hypothesis
 named {\ident$_1$} (or the goal if {\ident$_1$} is the word {\tt
@@ -427,31 +382,35 @@ named {\ident$_1$} (or the goal if {\ident$_1$} is the word {\tt
 to right. A negative occurrence number means an occurrence which
 should not be substituted.
 
-\item {\tt LetTac {\ident$_0$} {\tt :=} {\term} {\tt in} {\num$_1^1$}
-    \dots\ {\num$_{n_1}^1$} {\ident$_1$} \dots {\num$_1^m$} \dots\ 
-    {\num$_{n_m}^m$} {\ident$_m$}}
+\item {\tt set (} {\ident$_0$} {\tt :=} {\term} {\tt ) in}
+    {\ident$_1$} {\tt at} {\num$_1^1$} \dots\ {\num$_{n_1}^1$} \dots
+    {\ident$_m$} {\tt at} {\num$_1^m$} \dots {\num$_{n_m}^m$}
   
   This is the general form. It substitutes {\term} at occurrences
   {\num$_1^i$} \dots\ {\num$_{n_i}^i$} of hypothesis {\ident$_i$}. One
   of the {\ident}'s may be the word {\tt Goal}.
 
-\item{\tt Pose {\ident} := {\term}}\tacindex{Pose}
-  
-  This adds the local definition {\ident} := {\term} to the current
-  context without performing any replacement in the goal or in the
-  hypotheses.
 
-\item{\tt Pose {\term}}
+\item {\tt pose (  {\ident} {\tt :=} {\term} {\tt )}}
+\tacindex{pose}
+
+  This is equivalent to the default behaviour in {\tt set}.
   
-  This behaves as {\tt Pose {\ident} := {\term}} but {\ident} is
-  generated by {\Coq}.
+%  This adds the local definition {\ident} := {\term} to the current
+%  context without performing any replacement in the goal or in the
+%  hypotheses.
+
+\item{\tt pose {\term}}
+  
+  This behaves as {\tt pose (} {\ident} := {\term} {\tt )} but
+  {\ident} is generated by {\Coq}.
 
 \end{Variants}
 
-\subsection{\tt Assert {\ident} : {\form}}
-\tacindex{Assert}
+\subsection{{\tt assert ( {\ident} : {\form} \tt )}}
+\tacindex{assert}
 
-This tactic applies to any goal. {\tt Assert H : U} adds a new
+This tactic applies to any goal. {\tt assert (H : U)} adds a new
 hypothesis of name \texttt{H} asserting \texttt{U} to the current goal
 and opens a new subgoal \texttt{U}\footnote{This corresponds to the
   cut rule of sequent calculus.}. The subgoal {\texttt U} comes first
@@ -466,15 +425,15 @@ in the list of subgoals remaining to prove.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item{\tt Assert {\form}}
+\item{\tt assert {\form}}
   
-  This behaves as {\tt Assert {\ident} : {\form}} but {\ident} is
-  generated by {\Coq}.
+  This behaves as {\tt assert (} {\ident} : {\form} {\tt )} but
+  {\ident} is generated by {\Coq}.
 
-\item{\tt Assert {\ident} := {\term}}
+\item{\tt assert (} {\ident} := {\term} {\tt )}
   
-  This behaves as {\tt Assert {\ident} : {\type};[exact
-    {\term}|Idtac]} where {\type} is the type of {\term}.
+  This behaves as {\tt assert ({\ident} : {\type});[exact
+    {\term}|idtac]} where {\type} is the type of {\term}.
 
 \item {\tt cut {\form}}\tacindex{cut} 
   
@@ -607,8 +566,8 @@ This tactic applies to any goal. It implements the rule
 \index[tactic]{Binding list}
 
 A bindings list is generally used after the keyword {\tt with} in
-tactics.  The general shape of a bindings list is {\tt \vref$_1$ :=
-  \term$_1$ \dots\ \vref$_n$ := \term$_n$} where {\vref} is either an
+tactics.  The general shape of a bindings list is {\tt (\vref$_1$ :=
+  \term$_1$) \dots\ (\vref$_n$ := \term$_n$)} where {\vref} is either an
 {\ident} or a {\num}. It is used to provide a tactic with a list of
 values (\term$_1$, \dots, \term$_n$) that have to be substituted
 respectively to \vref$_1$, \dots, \vref$_n$. For all $i \in [1\dots\ 
@@ -1862,7 +1821,7 @@ against the hints rather than pattern-matching
 As a consequence, {\tt eauto} can solve such a goal:
 
 \begin{coq_example}
-Hints Resolve ex_intro .
+Hints Resolve ex_intro.
 Goal forall P:nat -> Prop, P 0 ->  EX n : _ | P n.
 eauto.
 \end{coq_example}
@@ -1907,12 +1866,8 @@ The following goal can be proved by {\tt tauto} whereas {\tt auto}
 would fail:
 
 \begin{coq_example}
-Goal
-
-  forall (x:nat) (P:nat -> Prop), x = 0 \/ P x -> x <> 0 -> P x.
-
+Goal forall (x:nat) (P:nat -> Prop), x = 0 \/ P x -> x <> 0 -> P x.
   intros.
-
   tauto.
 \end{coq_example}
 \begin{coq_eval}
@@ -1924,10 +1879,8 @@ introductions. Therefore, the use of {\tt intros} in the previous
 proof is unnecessary. {\tt tauto} can for instance prove the
 following:
 \begin{coq_example}
-Goal
- (* auto would fail *)
-  
-  forall (A:Prop) (P:nat -> Prop),
+(* auto would fail *)
+Goal forall (A:Prop) (P:nat -> Prop),
     A \/ (forall x:nat, ~ A -> P x) -> forall x:nat, ~ A -> P x.
 
   tauto.
@@ -1939,9 +1892,7 @@ Abort.
 \Rem In contrast, {\tt tauto} cannot solve the following goal
 
 \begin{coq_example*}
-Goal
-
-  forall (A:Prop) (P:nat -> Prop),
+Goal forall (A:Prop) (P:nat -> Prop),
     A \/ (forall x:nat, ~ A -> P x) -> forall x:nat, ~ ~ (A \/ P x).
 \end{coq_example*}
 \begin{coq_eval}
@@ -1964,11 +1915,11 @@ original one (but simpler than it) and applies the tactic
 
 For instance, the tactic {\tt intuition auto} applied to the goal
 \begin{verbatim}
-((x:nat)(P x))/\B->((y:nat)(P y))/\(P O)\/B/\(P O)
+(forall (x:nat), P x)/\B -> (foral (y:nat),P y)/\ P O \/B/\ P O
 \end{verbatim}
 internally replaces it by the equivalent one:
 \begin{verbatim}
-(x:nat)(P x) ; B |- (P O)
+(forall (x:nat), P x), B |- P O
 \end{verbatim}
 and then uses {\tt auto} which completes the proof.
 
@@ -2153,7 +2104,7 @@ Variable f:A->A*A.
 \end{coq_eval}
 
 \begin{coq_example}
-Theorem inj : f=(pair a) -> (Some (f c)) = (Some (f d)) -> c=d.
+Theorem inj : f = pair a -> Some (f c) = Some (f d) -> c=d.
 intros.
 congruence.
 \end{coq_example}
@@ -2208,7 +2159,7 @@ normal form.
 
 \item \texttt{ring\_nat} is a tactic macro for \texttt{repeat rewrite
     S\_to\_plus\_one; ring}. The theorem \texttt{S\_to\_plus\_one} is a
-  proof that \texttt{(n:nat)(S n)=(plus (S O) n)}.
+  proof that \texttt{forall (n:nat), S n = plus (S O) n}.
 
 \end{Variants}
 
@@ -2220,8 +2171,7 @@ Open Scope Z_scope.
 \end{coq_eval}
 \begin{coq_example}
 Require Import ZArithRing.
-Goal
-forall a b c:Z,
+Goal forall a b c:Z,
   (a + b + c) * (a + b + c) =
   a * a + b * b + c * c + 2 * a * b + 2 * a * c + 2 * b * c.
 \end{coq_example}
@@ -2251,8 +2201,7 @@ the {\tt Add Field} command.
 \Example
 \begin{coq_example*}
 Require Import Reals.
-Goal
-  forall x y:R,
+Goal forall x y:R,
     (x * y > 0)%R ->
     (x * (1 / x + x / (x + y)))%R =
     ((- 1 / y) * y * (- x * (x / (x + y)) - 1))%R.
@@ -2654,117 +2603,6 @@ Conversely, when the user does \texttt{Require A.}, all hints
 of the module \texttt{A} that are not defined inside a section are
 loaded.
 
-\section{Tacticals}
-\index[tactic]{Tacticals}\index{Tacticals}\label{Tacticals}
-We describe in this section how to combine the tactics provided by the
-system to write synthetic proof scripts called {\em tacticals}. The
-tacticals are built using tactic operators we present below.
-
-\subsection{\tt idtac}
-\tacindex{idtac}
-\index{Tacticals!idtac@{\tt idtac}} The constant {\tt idtac} is the
-identity tactic: it leaves any goal unchanged.
-
-\subsection{\tt fail}
-\tacindex{fail}
-\index{Tacticals!fail@{\tt fail}}
-
-The tactic {\tt fail} is the always-failing tactic: it does not solve
-any goal. It is useful for defining other tacticals.
-
-\subsection{\tt do {\num} {\tac}}
-\tacindex{do}
-\index{Tacticals!do@{\tt do}}
-This tactic operator repeats {\num} times the tactic {\tac}. It fails
-when it is not possible to repeat {\num} times the tactic.
-
-\subsection{\tt \tac$_1$ {\tt ||} \tac$_2$}
-\tacindex{||}
-\index{Tacticals!orelse@{\tt ||}}
-The tactical \tac$_1$ {\tt ||} \tac$_2$ tries to apply \tac$_1$
-and, in case of a failure, applies \tac$_2$. It associates to the
-left.
-
-\subsection{\tt repeat {\tac}}
-\index[tactic]{repeat@{\tt repeat}}
-\index{Tacticals!repeat@{\tt repeat}}
-
-This tactic operator repeats {\tac} as long as it does not fail.
-
-\subsection{\tt {\tac}$_1$ {\tt ;} \tac$_2$}
-\index{;@{\tt ;}}
-\index[tactic]{;@{\tt ;}}
-\index{Tacticals!yy@{\tt {\tac$_1$};\tac$_2$}}
-This tactic operator is a generalized composition for sequencing.  The
-tactical {\tac}$_1$ {\tt ;} \tac$_2$ first applies \tac$_1$ and
-then applies \tac$_2$ to any
-subgoal generated by \tac$_1$. {\tt ;} associates to the left.
-
-\subsection{\tt \tac$_0$; [ \tac$_1$ | \dots\ | \tac$_n$ ]}
-\index[tactic]{;[]@{\tt ;[\ldots$\mid$\ldots$\mid$\ldots]}}
-\index{;[]@{\tt ;[\ldots$\mid$\ldots$\mid$\ldots]}}
-\index{Tacticals!zz@{\tt {\tac$_0$};[{\tac$_1$}$\mid$\ldots$\mid$\tac$_n$]}}
-
-This tactic operator is a generalization of the precedent tactics
-operator. The tactical {\tt \tac$_0$ ; [ \tac$_1$ | \dots\ | \tac$_n$ ]}
-first applies \tac$_0$ and then
-applies \tac$_i$ to the i-th subgoal generated by \tac$_0$. It  fails if
-$n$ is not the exact number of remaining subgoals.
-
-\subsection{\tt try {\tac}}
-\tacindex{try}
-\index{Tacticals!try@{\tt try}}
-This tactic operator applies tactic \tac, and catches the possible
-failure of \tac. It never fails.
-
-\subsection{\tt first [ \tac$_0$ | \dots\ | \tac$_n$ ]}
-\tacindex{first}
-\index{Tacticals!first@{\tt first}}
-
-This tactic operator tries to apply the tactics \tac$_i$ with $i=0\ldots{}n$,
-starting from $i=0$, until one of them does not fail. It fails if all the
-tactics fail.
-
-\begin{ErrMsgs}
-\item \errindex{No applicable tactic.}
-\end{ErrMsgs}
-
-\subsection{\tt solve [ \tac$_0$ | \dots\ | \tac$_n$ ]}
-\tacindex{solve}
-\index{Tacticals!solve@{\tt solve}}
-
-This tactic operator tries to solve the current goal with the tactics \tac$_i$
-with $i=0\ldots{}n$, starting from $i=0$, until one of them solves. It fails if
-no tactic can solve.
-
-\begin{ErrMsgs}
-\item \errindex{Cannot solve the goal.}
-\end{ErrMsgs}
-
-\subsection{\tt info {\tac}}
-\tacindex{info}
-\index{Tacticals!info@{\tt info}}
-This is not really a tactical. For elementary tactics, this is
-equivalent to \tac. For complex tactic like \texttt{auto}, it displays
-the operations performed by the tactic.
-
-\subsection{\tt abstract {\tac}}
-\tacindex{abstract}
-\index{Tacticals!abstract@{\tt abstract}}
-From outside, typing \texttt{abstract \tac} is the same that
-typing \tac. Internally it saves an auxiliary lemma called 
-{\ident}\texttt{\_subproof}\textit{n} where {\ident} is the name of the
-current goal and \textit{n} is chosen so that this is a fresh name.
-
-This tactical is useful with tactics such \texttt{Omega} or
-\texttt{discriminate} that generate big proof terms. With that tool
-the user can avoid the explosion at time of the \texttt{Save} command
-without having to cut ``by hand'' the proof in smaller lemmas.
-
-\begin{Variants}
-\item \texttt{abstract {\tac} using {\ident}}.\\
-  Give explicitly the name of the auxiliary lemma.
-\end{Variants}
 
 \section{Generation of induction principles with {\tt Scheme}}
 \label{Scheme}

@@ -29,7 +29,7 @@ MANUEL DE REFERENCE
 \include{RefMan-syn.v}% The Syntax and the Grammar commands	HH
 %%SUPPRIME \include{RefMan-tus.v}% Writing tactics
 %%REMPLACE PAR
-\include{RefMan-ltac.v}% Writing tactics			BB
+\include{RefMan-ltac.v}% Writing tactics			BB -fait
 
 \part{Practical tools}
 \include{RefMan-com}% The coq commands (coqc coqtop)		HH

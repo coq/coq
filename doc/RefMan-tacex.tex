@@ -809,8 +809,406 @@ is undecidable in general case, don't expect miracles from it!
 
 \SeeAlso comments of source file \texttt{tactics/contrib/polynom/quote.ml}
 
-\SeeAlso the tactic \texttt{ring} (chapter \ref{ring})
+\SeeAlso the tactic \texttt{Ring} (chapter \ref{Ring})
 
+
+\section{Using the tactical language}
+
+\subsection{About the cardinality of the natural number set}
+
+A first example which shows how to use the pattern matching over the proof
+contexts is the proof that natural numbers have more than two elements. The
+proof of such a lemma can be done as shown in table~\ref{cnatltac}.
+
+\begin{coq_eval}
+Reset Initial.
+Require Import Arith.
+Require Import List.
+\end{coq_eval}
+
+\begin{table}[ht]
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
+{
+\begin{coq_example*}
+Lemma card_nat :
+ ~ (exists x : nat, exists y : nat, forall z:nat, x = z \/ y = z).
+Proof.
+red; intros (x, (y, Hy)).
+elim (Hy 0); elim (Hy 1); elim (Hy 2); intros;
+ match goal with
+ | [_:(?a = ?b),_:(?a = ?c) |- _ ] =>
+     cut (b = c); [ discriminate | apply trans_equal with a; auto ]
+ end.
+Qed.
+\end{coq_example*}
+}}
+\caption{A proof on cardinality of natural numbers}
+\label{cnatltac}
+\end{table}
+
+We can notice that all the (very similar) cases coming from the three
+eliminations (with three distinct natural numbers) are successfully solved by
+a {\tt match goal} structure and, in particular, with only one pattern (use
+of non-linear matching).
+
+\subsection{Permutation on closed lists}
+
+Another more complex example is the problem of permutation on closed lists. The
+aim is to show that a closed list is a permutation of another one.
+
+First, we define the permutation predicate as shown in table~\ref{permutpred}.
+
+\begin{table}[ht]
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
+{
+\begin{coq_example*}
+Section Sort.
+Variable A : Set.
+Inductive permut : list A -> list A -> Prop :=
+  | permut_refl   : forall l, permut l l
+  | permut_cons   :
+      forall a l0 l1, permut l0 l1 -> permut (a :: l0) (a :: l1)
+  | permut_append : forall a l, permut (a :: l) (l ++ a :: nil)
+  | permut_trans  :
+      forall l0 l1 l2, permut l0 l1 -> permut l1 l2 -> permut l0 l2.
+End Sort.
+\end{coq_example*}
+}}
+\caption{Definition of the permutation predicate}
+\label{permutpred}
+\end{table}
+
+Next, we can write naturally the tactic and the result can be seen in
+table~\ref{permutltac}. We can notice that we use two toplevel definitions {\tt
+PermutProve} and {\tt Permut}. The function to be called is {\tt PermutProve}
+which computes the lengths of the two lists and calls {\tt Permut} with the
+length if the two lists have the same length. {\tt Permut} works as expected.
+If the two lists are equal, it concludes. Otherwise, if the lists have
+identical first elements, it applies {\tt Permut} on the tail of the lists.
+Finally, if the lists have different first elements, it puts the first element
+of one of the lists (here the second one which appears in the {\tt permut}
+predicate) at the end if that is possible, i.e., if the new first element has
+been at this place previously. To verify that all rotations have been done for
+a list, we use the length of the list as an argument for {\tt Permut} and this
+length is decremented for each rotation down to, but not including, 1 because
+for a list of length $n$, we can make exactly $n-1$ rotations to generate at
+most $n$ distinct lists. Here, it must be noticed that we use the natural
+numbers of {\Coq} for the rotation counter. In table~\ref{ltac}, we can see
+that it is possible to use usual natural numbers but they are only used as
+arguments for primitive tactics and they cannot be handled, in particular, we
+cannot make computations with them. So, a natural choice is to use {\Coq} data
+structures so that {\Coq} makes the computations (reductions) by {\tt eval
+compute in} and we can get the terms back by {\tt match}.
+ 
+\begin{table}[p]
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
+{
+\begin{coq_example}
+Ltac Permut n :=
+  match goal with
+  | |- (permut _ ?l ?l) => apply permut_refl
+  | |- (permut _ (?a :: ?l1) (?a :: ?l2)) =>
+      let newn := eval compute in (length l1) in
+      (apply permut_cons; Permut newn)
+  | |- (permut ?A (?a :: ?l1) ?l2) =>
+      match eval compute in n with
+      | 1 => fail
+      | _ =>
+          let l1' := constr:(l1 ++ a :: nil) in
+          (apply (permut_trans A (a :: l1) l1' l2);
+            [ apply permut_append | compute; Permut (pred n) ])
+      end
+  end.
+Ltac PermutProve :=
+  match goal with
+  | |- (permut _ ?l1 ?l2) =>
+      match eval compute in (length l1 = length l2) with
+      | (?n = ?n) => Permut n
+      end
+  end.
+\end{coq_example}
+}}
+\caption{Permutation tactic}
+\label{permutltac}
+\end{table}
+
+With {\tt PermutProve}, we can now prove lemmas such those shown in
+table~\ref{permutlem}.
+
+\begin{table}[p]
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
+{
+\begin{coq_example*}
+Lemma permut_ex1 :
+  permut nat (1 :: 2 :: 3 :: nil) (3 :: 2 :: 1 :: nil).
+Proof.
+PermutProve.
+Qed.
+
+Lemma permut_ex2 :
+  permut nat
+    (0 :: 1 :: 2 :: 3 :: 4 :: 5 :: 6 :: 7 :: 8 :: 9 :: nil)
+    (0 :: 2 :: 4 :: 6 :: 8 :: 9 :: 7 :: 5 :: 3 :: 1 :: nil).
+Proof.
+PermutProve.
+Qed.
+\end{coq_example*}
+}}
+\caption{Examples of {\tt PermutProve} use}
+\label{permutlem}
+\end{table}
+
+\subsection{Deciding intuitionistic propositional logic}
+
+The pattern matching on goals allows a complete and so a powerful
+backtracking when returning tactic values. An interesting application
+is the problem of deciding intuitionistic propositional
+logic. Considering the contraction-free sequent calculi {\tt LJT*} of
+Roy~Dyckhoff (\cite{Dyc92}), it is quite natural to code such a tactic
+using the tactic language as shown in table~\ref{tautoltac}. The
+tactic {\tt Axioms} tries to conclude using usual axioms. The tactic
+{\tt DSimplif} applies all the reversible rules of Dyckhoff's
+system. Finally, the tactic {\tt TautoProp} (the main tactic to be
+called) simplifies with {\tt DSimplif}, tries to conclude with {\tt
+Axioms} and tries several paths using the backtracking rules (one of
+the four Dyckhoff's rules for the left implication to get rid of the
+contraction and the right or).
+
+\begin{table}[ht]
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
+{
+\begin{coq_example}
+Ltac Axioms :=
+  match goal with
+  | |- True => trivial
+  | _:False |- _  => elimtype False; assumption
+  | _:?A |- ?A  => auto
+  end.
+Ltac DSimplif :=
+  repeat
+   (intros;
+    match goal with
+     | id:(~ _) |- _ => red in id
+     | id:(_ /\ _) |- _ =>
+         elim id; do 2 intro; clear id
+     | id:(_ \/ _) |- _ =>
+         elim id; intro; clear id
+     | id:(?A /\ ?B -> ?C) |- _ =>
+         cut (A -> B -> C);
+          [ intro | intros; apply id; split; assumption ]
+     | id:(?A \/ ?B -> ?C) |- _ =>
+         cut (B -> C);
+          [ cut (A -> C);
+             [ intros; clear id
+             | intro; apply id; left; assumption ]
+          | intro; apply id; right; assumption ]
+     | id0:(?A -> ?B),id1:?A |- _ =>
+         cut B; [ intro; clear id0 | apply id0; assumption ]
+     | |- (_ /\ _) => split
+     | |- (~ _) => red
+     end).
+Ltac TautoProp :=
+  DSimplif;
+   Axioms ||
+     match goal with
+     | id:((?A -> ?B) -> ?C) |- _ =>
+          cut (B -> C);
+          [ intro; cut (A -> B);
+             [ intro; cut C;
+                [ intro; clear id | apply id; assumption ]
+             | clear id ]
+          | intro; apply id; intro; assumption ]; TautoProp
+     | id:(~ ?A -> ?B) |- _ =>
+         cut (False -> B);
+          [ intro; cut (A -> False);
+             [ intro; cut B;
+                [ intro; clear id | apply id; assumption ]
+             | clear id ]
+          | intro; apply id; red; intro; assumption ]; TautoProp
+     | |- (_ \/ _) => (left; TautoProp) || (right; TautoProp)
+     end.
+\end{coq_example}
+}}
+\caption{Deciding intuitionistic propositions}
+\label{tautoltac}
+\end{table}
+
+For example, with {\tt TautoProp}, we can prove tautologies like those in
+table~\ref{tautolem}.
+
+\begin{table}[ht]
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
+{
+\begin{coq_example*}
+Lemma tauto_ex1 : forall A B:Prop, A /\ B -> A \/ B.
+Proof.
+TautoProp.
+Qed.
+
+Lemma tauto_ex2 :
+   forall A B:Prop, (~ ~ B -> B) -> (A -> B) -> ~ ~ A -> B.
+Proof.
+TautoProp.
+Qed.
+\end{coq_example*}
+}}
+\caption{Proofs of tautologies with {\tt TautoProp}}
+\label{tautolem}
+\end{table}
+
+\subsection{Deciding type isomorphisms}
+
+A more tricky problem is to decide equalities between types and modulo
+isomorphisms. Here, we choose to use the isomorphisms of the simply typed
+$\lb{}$-calculus with Cartesian product and $unit$ type (see, for example,
+\cite{RC95}). The axioms of this $\lb{}$-calculus are given by
+table~\ref{isosax}.
+
+\begin{table}[ht]
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
+{
+\begin{coq_eval}
+Reset Initial.
+\end{coq_eval}
+\begin{coq_example*}
+Open Scope type_scope.
+Section Iso_axioms.
+Variables A B C : Set.
+Axiom Com : A * B = B * A.
+Axiom Ass : A * (B * C) = A * B * C.
+Axiom Cur : (A * B -> C) = (A -> B -> C).
+Axiom Dis : (A -> B * C) = (A -> B) * (A -> C).
+Axiom P_unit : A * unit = A.
+Axiom AR_unit : (A -> unit) = unit.
+Axiom AL_unit : (unit -> A) = A.
+Lemma Cons : B = C -> A * B = A * C.
+Proof.
+intro Heq; rewrite Heq; apply refl_equal.
+Qed.
+End Iso_axioms.
+\end{coq_example*}
+}}
+\caption{Type isomorphism axioms}
+\label{isosax}
+\end{table}
+
+The tactic to judge equalities modulo this axiomatization can be written as
+shown in tables~\ref{isosltac1} and~\ref{isosltac2}. The algorithm is quite
+simple. Types are reduced using axioms that can be oriented (this done by {\tt
+MainSimplif}). The normal forms are sequences of Cartesian
+products without Cartesian product in the left component. These normal forms
+are then compared modulo permutation of the components (this is done by {\tt
+CompareStruct}). The main tactic to be called and realizing this algorithm is
+{\tt IsoProve}.
+
+\begin{table}[ht]
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
+{
+\begin{coq_example}
+Ltac DSimplif trm :=
+  match trm with
+  | (?A * ?B * ?C) =>
+      rewrite <- (Ass A B C); try MainSimplif
+  | (?A * ?B -> ?C) =>
+      rewrite (Cur A B C); try MainSimplif
+  | (?A -> ?B * ?C) =>
+      rewrite (Dis A B C); try MainSimplif
+  | (?A * unit) =>
+      rewrite (P_unit A); try MainSimplif
+  | (unit * ?B) =>
+      rewrite (Com unit B); try MainSimplif
+  | (?A -> unit) =>
+      rewrite (AR_unit A); try MainSimplif
+  | (unit -> ?B) =>
+      rewrite (AL_unit B); try MainSimplif
+  | (?A * ?B) =>
+      (DSimplif A; try MainSimplif) || (DSimplif B; try MainSimplif)
+  | (?A -> ?B) =>
+      (DSimplif A; try MainSimplif) || (DSimplif B; try MainSimplif)
+  end
+ with MainSimplif :=
+  match goal with
+  | |- (?A = ?B) => try DSimplif A; try DSimplif B
+  end.
+Ltac Length trm :=
+  match trm with
+  | (_ * ?B) => let succ := Length B in constr:(S succ)
+  | _ => constr:1
+  end.
+Ltac assoc := repeat rewrite <- Ass.
+\end{coq_example}
+}}
+\caption{Type isomorphism tactic (1)}
+\label{isosltac1}
+\end{table}
+
+\begin{table}[ht]
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
+{
+\begin{coq_example}
+Ltac DoCompare n :=
+  match goal with
+  | [ |- (?A = ?A) ] => apply refl_equal
+  | [ |- (?A * ?B = ?A * ?C) ] =>
+      apply Cons; let newn := Length B in
+                  DoCompare newn
+  | [ |- (?A * ?B = ?C) ] =>
+      match eval compute in n with
+      | 1 => fail
+      | _ =>
+          pattern (A * B) at 1; rewrite Com; assoc; DoCompare (pred n)
+      end
+  end.
+Ltac CompareStruct :=
+  match goal with
+  | [ |- (?A = ?B) ] =>
+      let l1 := Length A
+      with l2 := Length B in
+      match eval compute in (l1 = l2) with
+      | (?n = ?n) => DoCompare n
+      end
+  end.
+Ltac IsoProve := MainSimplif; CompareStruct.
+\end{coq_example}
+}}
+\caption{Type isomorphism tactic (2)}
+\label{isosltac2}
+\end{table}
+
+Table~\ref{isoslem} gives examples of what can be solved by {\tt IsoProve}.
+
+\begin{table}[ht]
+\noindent{}\framebox[6.4in][l]
+{\parbox{6.4in}
+{
+\begin{coq_example*}
+Lemma isos_ex1 : 
+  forall A B:Set, A * unit * B = B * (unit * A).
+Proof.
+intros; IsoProve.
+Qed.
+
+Lemma isos_ex2 :
+  forall A B C:Set,
+    (A * unit -> B * (C * unit)) =
+    (A * unit -> (C -> unit) * C) * (unit -> A -> B).
+Proof.
+intros; IsoProve.
+Qed.
+\end{coq_example*}
+}}
+\caption{Type equalities solved by {\tt IsoProve}}
+\label{isoslem}
+\end{table}
 
 %%% Local Variables: 
 %%% mode: latex
