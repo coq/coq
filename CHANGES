@@ -5,7 +5,7 @@ Vernacular commands
 
 - Added "Print Rewrite HintDb" to print the content of a DB used by
   autorewrite (doc TODO)
-- Added "Print Canonical Structures" (doc TODO)
+- Added "Print Canonical Projections" (doc TODO)
 
 Gallina
 

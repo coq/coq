@@ -404,9 +404,8 @@ GEXTEND Gram
       | IDENT "Canonical"; IDENT "Structure"; qid = global; d = def_body ->
           let s = Ast.coerce_global_to_id qid in
 	  VernacDefinition 
-	    ((Global,CanonicalStructure),(dummy_loc,s),d,Recordobj.add_object_hook)
-      (* Rem: LOBJECT, OBJCOERCION, LOBJCOERCION have been removed
-         (they were unused and undocumented) *)
+	    ((Global,CanonicalStructure),(dummy_loc,s),d,
+	     (fun _ -> Recordops.declare_canonical_structure))
 
 (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->

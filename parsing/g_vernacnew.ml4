@@ -402,7 +402,8 @@ GEXTEND Gram
       | IDENT "Canonical"; IDENT "Structure"; qid = global; d = def_body ->
           let s = Ast.coerce_global_to_id qid in
 	  VernacDefinition 
-	    ((Global,CanonicalStructure),(dummy_loc,s),d,Recordobj.add_object_hook)
+	    ((Global,CanonicalStructure),(dummy_loc,s),d,
+	     (fun _ -> Recordops.declare_canonical_structure))
 
       (* Coercions *)
       | IDENT "Coercion"; qid = global; d = def_body ->
@@ -579,7 +580,7 @@ GEXTEND Gram
       | IDENT "Coercions" -> PrintCoercions
       | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr
          -> PrintCoercionPaths (s,t)
-      | IDENT "Canonical"; IDENT "Structures" -> PrintCanonicalStructures
+      | IDENT "Canonical"; IDENT "Projections" -> PrintCanonicalConversions
       | IDENT "Tables" -> PrintTables
 (* Obsolete: was used for cooking V6.3 recipes ??
       | IDENT "Proof"; qid = global -> PrintOpaqueName qid

@@ -1031,7 +1031,7 @@ let rec pr_vernac = function
 	| PrintClasses -> str"Print Classes"
 	| PrintCoercions -> str"Print Coercions"
 	| PrintCoercionPaths (s,t) -> str"Print Coercion Paths" ++ spc() ++ pr_class_rawexpr s ++ spc() ++ pr_class_rawexpr t
-	| PrintCanonicalStructures -> str"Print Canonical Structures"
+	| PrintCanonicalConversions -> str"Print Canonical Structures"
 	| PrintTables -> str"Print Tables"
 	| PrintOpaqueName qid -> str"Print Term" ++ spc() ++ pr_reference qid
 	| PrintHintGoal -> str"Print Hint"

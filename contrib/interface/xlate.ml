@@ -1785,7 +1785,7 @@ let rec xlate_vernac =
 	| PrintCoercions -> CT_print_coercions
 	| PrintCoercionPaths (id1, id2) -> 
 	    CT_print_path (xlate_class id1, xlate_class id2)
-	| PrintCanonicalStructures ->
+	| PrintCanonicalConversions ->
 	    xlate_error "TODO: Print Canonical Structures"
 	| PrintInspect n -> CT_inspect (CT_int n)
 	| PrintUniverses opt_s -> CT_print_universes(ctf_STRING_OPT opt_s)

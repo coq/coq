@@ -191,7 +191,7 @@ GEXTEND Gram
       | IDENT "Coercions" -> PrintCoercions
       | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr
          -> PrintCoercionPaths (s,t)
-      | IDENT "Canonical"; IDENT "Structures" -> PrintCanonicalStructures
+      | IDENT "Canonical"; IDENT "Projections" -> PrintCanonicalConversions
       | IDENT "Tables" -> PrintTables
       | "Proof"; qid = global -> PrintOpaqueName qid
       | IDENT "Hint" -> PrintHintGoal
