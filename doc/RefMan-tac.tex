@@ -1200,13 +1200,21 @@ head symbols are two different constructors. If such a couple of subterms
 exists, then the proof of the current goal is completed,
 otherwise the tactic fails.
 
+\Rem If {\ident} does not denote an hypothesis in the local context
+but refers to an hypothesis quantified in the goal, then the
+latter is first introduced in the local context using
+\texttt{Intros until \ident}.
+
 \begin{ErrMsgs}
 \item {\ident} \errindex{Not a discriminable equality} \\
   occurs when the type of the specified hypothesis is not an equation.
 \end{ErrMsgs}  
 
-
 \begin{Variants}
+\item \texttt{Discriminate} \num\\
+  This does the same thing as \texttt{Intros until \num} then
+\texttt{Discriminate \ident} where {\ident} is the identifier for the last
+introduced hypothesis.
 \item {\tt Discriminate}\tacindex{Discriminate} \\
   It applies to a goal of the form {\tt
     \verb=~={\term$_1$}={\term$_2$}} and it is equivalent to: 
@@ -1270,6 +1278,11 @@ Abort.
 Beware that \texttt{Injection} yields always an equality in a sigma type
 whenever the injected object has a dependent type.
 
+\Rem If {\ident} does not denote an hypothesis in the local context
+but refers to an hypothesis quantified in the goal, then the
+latter is first introduced in the local context using
+\texttt{Intros until \ident}.
+
 \begin{ErrMsgs}
 \item {\ident} \errindex{is not a projectable equality} 
   occurs when the type of
@@ -1278,8 +1291,11 @@ whenever the injected object has a dependent type.
   hypothesis $id$ is not an equation.
 \end{ErrMsgs}
 
-
 \begin{Variants}
+\item \texttt{Injection} \num\\
+  This does the same thing as \texttt{Intros until \num} then
+\texttt{Injection \ident} where {\ident} is the identifier for the last
+introduced hypothesis.
 \item{\tt Injection}\tacindex{Injection} \\
   If the current goal is of the form {\tt \verb=~={\term$_1$}={\term$_2$}}, 
   the tactic computes the head normal form
@@ -1299,7 +1315,16 @@ tactic {\tt Discriminate}), then the tactic {\tt Simplify\_eq} behaves as {\tt
   Discriminate {\ident}} otherwise it behaves as {\tt Injection
   {\ident}}.
 
+\Rem If {\ident} does not denote an hypothesis in the local context
+but refers to an hypothesis quantified in the goal, then the
+latter is first introduced in the local context using
+\texttt{Intros until \ident}.
+
 \begin{Variants}
+\item \texttt{Simplify\_eq} \num\\
+  This does the same thing as \texttt{Intros until \num} then
+\texttt{Simplify\_eq \ident} where {\ident} is the identifier for the last
+introduced hypothesis.
 \item{\tt Simplify\_eq}
 If the current goal has form $\verb=~=t_1=t_2$, then this tactic does 
 \texttt{Hnf; Intro {\ident}; Simplify\_eq {\ident}}.
@@ -1336,10 +1361,15 @@ constructor $c_i$ of $(I~\vec{t})$, {\bf all} the necessary
 conditions that should hold for the instance $(I~\vec{t})$ to be
 proved by $c_i$.
 
+\Rem If {\ident} does not denote an hypothesis in the local context
+but refers to an hypothesis quantified in the goal, then the
+latter is first introduced in the local context using
+\texttt{Intros until \ident}.
+
 \begin{Variants}
 \item \texttt{Inversion} \num\\
   This does the same thing as \texttt{Intros until \num} then
-\texttt{Inversion \ident} where \ident is the identifier for the last
+\texttt{Inversion \ident} where {\ident} is the identifier for the last
 introduced hypothesis.
 \item \texttt{Inversion\_clear} \ident\\
   \tacindex{Inversion\_clear}
