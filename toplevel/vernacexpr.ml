@@ -22,11 +22,6 @@ exception ProtectedLoop
 exception Drop
 exception Quit
 
-type def_kind = DEFINITION | LET | LOCAL | THEOREM | LETTOP | DECL | REMARK
-  | FACT | LEMMA
-  | COERCION | LCOERCION | OBJECT | LOBJECT | OBJCOERCION | LOBJCOERCION
-  | SUBCLASS | LSUBCLASS
-
 open Libnames
 open Nametab
 
