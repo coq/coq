@@ -23,7 +23,11 @@ open Pattern
 let pr_red_expr = Ppconstr.pr_red_expr
 let pr_may_eval = Ppconstr.pr_may_eval
 let pr_sort = Ppconstr.pr_sort
-let pr_global = Ppconstr.pr_global Idset.empty
+let pr_global x =
+  if Options.do_translate () then (* for pr_gen *)
+    Ppconstrnew.pr_global Idset.empty x
+  else
+    Ppconstr.pr_global Idset.empty x
 let pr_name = Ppconstr.pr_name
 let pr_opt = Ppconstr.pr_opt
 let pr_occurrences = Ppconstr.pr_occurrences
@@ -63,10 +67,6 @@ let declare_extra_genarg_pprule for_v8 (rawwit, f) (globwit, g) (wit, h) =
   genarg_pprule_v7 := Stringmap.add s (f,g,h) !genarg_pprule_v7;
   if for_v8 then
     genarg_pprule := Stringmap.add s (f,g,h) !genarg_pprule 
-
-let pi1 (a,_,_) = a
-let pi2 (_,a,_) = a
-let pi3 (_,_,a) = a
 
 let pr_arg pr x = spc () ++ pr x
 
@@ -114,7 +114,7 @@ let pr_bindings prc prlc = function
         l
   | NoBindings -> mt ()
 
-let pr_with_bindings prc prlc (c,bl) = 
+let pr_with_bindings prc prlc (c,bl) =
   prc c ++ hv 0 (pr_bindings prc prlc bl)
 
 let pr_with_constr prc = function
