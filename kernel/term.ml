@@ -131,8 +131,9 @@ let comp_term t1 t2 =
   | App (c1,l1), App (c2,l2) -> c1 == c2 & array_for_all2 (==) l1 l2
   | Evar (e1,l1), Evar (e2,l2) -> e1 = e2 & array_for_all2 (==) l1 l2
   | Const c1, Const c2 -> c1 == c2
-  | Ind c1, Ind c2 -> c1 == c2
-  | Construct c1, Construct c2 -> c1 == c2
+  | Ind (sp1,i1), Ind (sp2,i2) -> sp1 == sp2 & i1 = i2
+  | Construct ((sp1,i1),j1), Construct ((sp2,i2),j2) ->
+      sp1 == sp2 & i1 = i2 & j1 = j2
   | Case (ci1,p1,c1,bl1), Case (ci2,p2,c2,bl2) ->
       ci1 == ci2 & p1 == p2 & c1 == c2 & array_for_all2 (==) bl1 bl2
   | Fix (ln1,(lna1,tl1,bl1)), Fix (ln2,(lna2,tl2,bl2)) ->
