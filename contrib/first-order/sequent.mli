@@ -46,7 +46,7 @@ val record: h_item -> t -> t
 
 val lookup: h_item -> t -> bool
 
-val add_formula : bool -> global_reference -> constr -> t -> 
+val add_formula : side -> global_reference -> constr -> t -> 
   Proof_type.goal sigma -> t
 
 val re_add_formula_list : Formula.t list -> t -> t

@@ -189,23 +189,27 @@ let lookup item seq=
 let rec add_formula side nam t seq gl=
   match build_formula side nam t gl seq.cnt with
       Left f->
-	if side then
-	  {seq with 
-	     redexes=HP.add f seq.redexes;
-	     gl=f.constr;
-	     glatom=None}
-	else
-	  {seq with 
-	     redexes=HP.add f seq.redexes;
-	     context=cm_add f.constr nam seq.context}
+	begin
+	  match side with
+	      Concl ->
+		{seq with 
+		   redexes=HP.add f seq.redexes;
+		   gl=f.constr;
+		   glatom=None}
+	    | _ ->
+		{seq with 
+		   redexes=HP.add f seq.redexes;
+		   context=cm_add f.constr nam seq.context}
+	end
     | Right t->
-	if side then
-	  {seq with gl=t;glatom=Some t}
-	else
-	  {seq with 
-	     context=cm_add t nam seq.context;
-	     latoms=t::seq.latoms}
-
+	match side with
+	    Concl ->
+	      {seq with gl=t;glatom=Some t}
+	  | _ ->
+	      {seq with 
+		 context=cm_add t nam seq.context;
+		 latoms=t::seq.latoms}
+	      
 let re_add_formula_list lf seq=
   let do_one f cm=
     if f.id == dummy_id then cm
@@ -253,7 +257,7 @@ let create_with_ref_list l depth gl=
   let f gr seq=
     let c=constr_of_reference gr in    
     let typ=(pf_type_of gl c) in
-      add_formula false gr typ seq gl in
+      add_formula Hyp gr typ seq gl in
     List.fold_right f l (empty_seq depth)
 
 open Auto
@@ -267,7 +271,7 @@ let create_with_auto_hints l depth gl=
 	  (try 
 	     let gr=reference_of_constr c in 
 	     let typ=(pf_type_of gl c) in
-	       seqref:=add_formula false  gr typ !seqref gl
+	       seqref:=add_formula Hint gr typ !seqref gl
 	   with Not_found->())
       | _-> () in
   let g _ l=List.iter f l in

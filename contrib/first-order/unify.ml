@@ -88,8 +88,6 @@ let unif t1 t2=
 	(* this place is unreachable but needed for the sake of typing *)
     with Queue.Empty-> !sigma
 
-let is_head_meta t=match kind_of_term t with Meta _->true | _ ->false
-
 let value i t=
   let add x y=
     if x<0 then y else if y<0 then x else x+y in
@@ -123,14 +121,13 @@ let mk_rel_inst t=
   let nt=renum_rec 0 t in (!new_rel - 1,nt)
 
 let unif_atoms i dom t1 t2=
-  if is_head_meta t1 || is_head_meta t2 then None else
-    try 
-      let t=List.assoc i (unif t1 t2) in 
-	if is_head_meta t then Some (Phantom dom)
-	else Some (Real(mk_rel_inst t,value i t1))
-    with
-	UFAIL(_,_) ->None
-      | Not_found ->Some (Phantom dom)
+  try 
+    let t=List.assoc i (unif t1 t2) in 
+      if isMeta t then Some (Phantom dom)
+      else Some (Real(mk_rel_inst t,value i t1))
+  with
+      UFAIL(_,_) ->None
+    | Not_found ->Some (Phantom dom)
 	   	  
 let renum_metas_from k n t= (* requires n = max (free_rels t) *)
   let l=list_tabulate (fun i->mkMeta (k+i)) n in
@@ -141,6 +138,6 @@ let more_general (m1,t1) (m2,t2)=
   and mt2=renum_metas_from m1 m2 t2 in
     try 
       let sigma=unif mt1 mt2 in
-      let p (n,t)= n<m1 || is_head_meta t in
+      let p (n,t)= n<m1 || isMeta t in
 	List.for_all p sigma
     with UFAIL(_,_)->false

@@ -30,25 +30,15 @@ val ind_hyps : int -> inductive -> constr list -> Sign.rel_context array
 
 val match_with_evaluable : Proof_type.goal Tacmach.sigma ->
   constr -> (evaluable_global_reference * constr) option
-(*
-type kind_of_formula =
-    Arrow of constr*constr
-  | False of inductive*constr list
-  | And of inductive*constr list
-  | Or of inductive*constr list
-  | Exists of inductive*constr list
-  | Forall of constr*constr
-  | Atom of constr
 
-val kind_of_formula : Proof_type.goal Tacmach.sigma -> 
-  constr -> kind_of_formula
-*)
 type atoms = {positive:constr list;negative:constr list}
+
+type side = Hyp | Concl | Hint
 
 val dummy_id: global_reference
 			
 val build_atoms : Proof_type.goal Tacmach.sigma -> counter -> 
-  bool -> constr -> bool * atoms
+  side -> constr -> bool * atoms
 
 type right_pattern =
     Rarrow
@@ -82,6 +72,6 @@ type t={id: global_reference;
     
 (*exception Is_atom of constr*)
 
-val build_formula : bool -> global_reference -> types -> 
+val build_formula : side -> global_reference -> types -> 
   Proof_type.goal Tacmach.sigma -> counter -> (t,types) sum
 

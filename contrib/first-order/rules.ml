@@ -39,10 +39,10 @@ let wrap n b continue seq gls=
 	      List.exists (occur_var_in_decl env id) ctx then
 		(aux (i-1) q (nd::ctx))
 	    else
-	      add_formula false (VarRef id) typ (aux (i-1) q (nd::ctx)) gls in
+	      add_formula Hyp (VarRef id) typ (aux (i-1) q (nd::ctx)) gls in
   let seq1=aux n nc [] in
   let seq2=if b then 
-    add_formula true dummy_id (pf_concl gls) seq1 gls else seq1 in
+    add_formula Concl dummy_id (pf_concl gls) seq1 gls else seq1 in
     continue seq2 gls
 
 let id_of_global=function

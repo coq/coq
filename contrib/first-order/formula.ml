@@ -126,11 +126,13 @@ let rec kind_of_formula gl term =
   
 type atoms = {positive:constr list;negative:constr list}
 
+type side = Hyp | Concl | Hint
+
 let no_atoms = (false,{positive=[];negative=[]})
 
 let dummy_id=VarRef (id_of_string "")
 
-let build_atoms gl metagen polarity cciterm =
+let build_atoms gl metagen side cciterm =
   let trivial =ref false
   and positive=ref []
   and negative=ref [] in
@@ -170,12 +172,20 @@ let build_atoms gl metagen polarity cciterm =
 	    build_rec (var::env) polarity b
       | Atom t->
 	  let unsigned=substnl env 0 t in
-	    if polarity then 
-	      positive:= unsigned :: !positive 
-	    else 
-	      negative:= unsigned :: !negative
-  in 
-    build_rec [] polarity cciterm;
+	    if not (isMeta unsigned) then (* discarding wildcard atoms *)
+	      if polarity then 
+		positive:= unsigned :: !positive 
+	      else 
+		negative:= unsigned :: !negative in
+    begin
+      match side with
+	  Concl    -> build_rec [] true cciterm
+	| Hyp      -> build_rec [] false cciterm
+	| Hint     -> 
+	    let rels,head=decompose_prod cciterm in
+	    let env=List.rev (List.map (fun _->mkMeta (metagen true)) rels) in
+	      build_rec env false head
+    end;
     (!trivial,
      {positive= !positive;
       negative= !negative})
@@ -219,51 +229,52 @@ let build_formula side nam typ gl metagen=
 	  build_atoms gl metagen side typ 
 	else no_atoms in
       let pattern=
-	if side then
-	  let pat=
-	    match kind_of_formula gl typ with
-		False(_,_)        -> Rfalse
-	      | Atom a       -> raise (Is_atom a)
-	      | And(_,_,_)        -> Rand
-	      | Or(_,_,_)         -> Ror
-	      | Exists (i,l) -> 
-		  let (_,_,d)=list_last (ind_hyps 0 i l).(0) in
-		    Rexists(m,d,trivial)
-	      | Forall (_,a) -> Rforall 
-	      | Arrow (a,b) -> Rarrow in
-	    Right pat
-	else
-	  let pat=
-	    match kind_of_formula gl typ with
-		False(i,_)        ->  Lfalse
-	      | Atom a       ->  raise (Is_atom a)
-	      | And(i,_,b)         ->  
-		  if b then
-		    let nftyp=normalize typ in raise (Is_atom nftyp)
-		  else Land i
-	      | Or(i,_,b)          ->
-		  if b then
-		    let nftyp=normalize typ in raise (Is_atom nftyp)
-		  else Lor i
-	      | Exists (ind,_) ->  Lexists ind 
-	      | Forall (d,_) -> 
-		  Lforall(m,d,trivial)
-	      | Arrow (a,b) ->
-		  let nfa=normalize a in
-		    LA (nfa, 
-		      match kind_of_formula gl a with
-			  False(i,l)-> LLfalse(i,l)
-			| Atom t->     LLatom
-			| And(i,l,_)-> LLand(i,l)
-			| Or(i,l,_)->  LLor(i,l)
-			| Arrow(a,c)-> LLarrow(a,c,b)
-			| Exists(i,l)->LLexists(i,l)
-			| Forall(_,_)->LLforall a) in
-	    Left pat
+	match side with
+	    Concl ->
+	      let pat=
+		match kind_of_formula gl typ with
+		    False(_,_)        -> Rfalse
+		  | Atom a       -> raise (Is_atom a)
+		  | And(_,_,_)        -> Rand
+		  | Or(_,_,_)         -> Ror
+		  | Exists (i,l) -> 
+		      let (_,_,d)=list_last (ind_hyps 0 i l).(0) in
+			Rexists(m,d,trivial)
+		  | Forall (_,a) -> Rforall 
+		  | Arrow (a,b) -> Rarrow in
+		Right pat
+	  | _ ->
+	      let pat=
+		match kind_of_formula gl typ with
+		    False(i,_)        ->  Lfalse
+		  | Atom a       ->  raise (Is_atom a)
+		  | And(i,_,b)         ->  
+		      if b then
+			let nftyp=normalize typ in raise (Is_atom nftyp)
+		      else Land i
+		  | Or(i,_,b)          ->
+		      if b then
+			let nftyp=normalize typ in raise (Is_atom nftyp)
+		      else Lor i
+		  | Exists (ind,_) ->  Lexists ind 
+		  | Forall (d,_) -> 
+		      Lforall(m,d,trivial)
+		  | Arrow (a,b) ->
+		      let nfa=normalize a in
+			LA (nfa, 
+			    match kind_of_formula gl a with
+				False(i,l)-> LLfalse(i,l)
+			      | Atom t->     LLatom
+			      | And(i,l,_)-> LLand(i,l)
+			      | Or(i,l,_)->  LLor(i,l)
+			      | Arrow(a,c)-> LLarrow(a,c,b)
+			      | Exists(i,l)->LLexists(i,l)
+			      | Forall(_,_)->LLforall a) in
+		Left pat
       in
 	Left {id=nam;
 	      constr=normalize typ;
 	      pat=pattern;
 	      atoms=atoms}
     with Is_atom a-> Right a (* already in nf *)
-    
+
