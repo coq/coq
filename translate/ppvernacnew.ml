@@ -1063,6 +1063,10 @@ and pr_extend s cl =
       if Options.do_translate() & n > 2 & String.sub s (n-2) 2 = "V7"
       then String.sub s 0 (n-2) ^ "V8"
       else s in
+    (* "Hint Rewrite in using" changes the order of its args in v8 !! *)
+    let cl = match s, cl with
+      | "HintRewriteV8", [a;b;c;d] -> [a;b;d;c]
+      | _ -> cl in
     let rls = List.assoc s (Egrammar.get_extend_vernac_grammars()) in
     let (hd,rl) = match_vernac_rule (List.map Genarg.genarg_tag cl) rls in
     let (pp,_) =
