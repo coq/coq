@@ -185,8 +185,12 @@ Ce qui fait que si la conclusion ne matche pas le pattern, Auto échoue, même
 si après Intros la conclusion matche le pattern.
 *)
 
-let conclPattern concl pat tacast gl = 
-  let constr_bindings = Pattern.matches pat concl in
+(* conclPattern doit échouer avec error car il est rattraper par tclFIRST *)
+
+let conclPattern concl pat tacast gl =
+  let constr_bindings =
+    try Pattern.matches pat concl
+    with PatternMatchingFailure -> error "conclPattern" in
   let ast_bindings = 
     List.map 
       (fun (i,c) ->
