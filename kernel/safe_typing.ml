@@ -221,6 +221,19 @@ let push_rel_or_named_assum push (id,t) env =
 let push_named_assum = push_rel_or_named_assum push_named_assum
 let push_rel_assum = push_rel_or_named_assum push_rel_assum
 
+let check_and_push_named_def (id,b) env =
+  let (j,cst) = safe_infer env b in
+  let env' = add_constraints cst env in
+  let env'' = Environ.push_named_def (id,j.uj_val,j.uj_type) env' in
+  (Some j.uj_val,j.uj_type,cst),env''
+
+let check_and_push_named_assum (id,t) env =
+  let (j,cst) = safe_infer env t in
+  let env' = add_constraints cst env in
+  let t = assumption_of_judgment env Evd.empty j in
+  let env'' = Environ.push_named_assum (id,t) env' in
+  (None,t,cst),env''
+
 let push_rels_with_univ vars env =
   List.fold_left (fun env nvar -> push_rel_assum nvar env) env vars
 
@@ -291,25 +304,21 @@ let add_constant sp ce locals env =
   add_constant_with_value sp ce.const_entry_body ce.const_entry_type locals env
 
 let add_discharged_constant sp r locals env =
-  let (body,typ) = Cooking.cook_constant env r in
+  let (body,typ,cst) = Cooking.cook_constant env r in
+  let env' = add_constraints cst env in
   match body with
     | None -> 
-	add_parameter sp typ locals (* Bricolage avant poubelle *) env
+	add_parameter sp typ locals (* Bricolage avant poubelle *) env'
     | Some c -> 
 	(* let c = hcons1_constr c in *)
-	let (jtyp,cst) = safe_infer env typ in
-	let env' = add_constraints cst env in
-	let ids = 
-	  Idset.union (global_vars_set c) 
-	    (global_vars_set (body_of_type jtyp.uj_val))
-	in
-	let hyps = keep_hyps ids (named_context env) in
+	let ids = Idset.union (global_vars_set c) (global_vars_set typ)	in
+	let hyps = keep_hyps ids (named_context env') in
 	let sp_hyps =
 	  List.map (fun (id,b,t) -> (List.assoc id locals,b,t)) hyps in
 	let cb =
 	  { const_kind = kind_of_path sp;
 	    const_body = Some c;
-	    const_type = assumption_of_judgment env' Evd.empty jtyp;
+	    const_type = typ;
 	    const_hyps = sp_hyps;
 	    const_constraints = cst;
 	    const_opaque = false } 
@@ -366,7 +375,7 @@ let small_unit constrsinfos (env_ar_par,short_arity) =
 
 let enforce_type_constructor arsort smax cst =
   match smax, arsort with
-    | Type uc, Type ua -> Constraint.add (ua,Geq,uc) cst
+    | Type uc, Type ua -> enforce_geq ua uc cst
     | _,_ -> cst
 
 let type_one_constructor env_ar_par params arsort c =
