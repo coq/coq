@@ -352,7 +352,7 @@ Unset Implicit Arguments.
 
 (* Section properties. *)
 
-Variable T : (Semi_Setoid_Ring_Theory A Aequiv Aplus Amult Aone Azero Aeq).
+Variable T : (Semi_Setoid_Ring_Theory Aequiv Aplus Amult Aone Azero Aeq).
 
 Hint SSR_plus_sym_T := Resolve (SSR_plus_sym T).
 Hint SSR_plus_assoc_T := Resolve (SSR_plus_assoc T).
@@ -1009,7 +1009,7 @@ Section setoid_rings.
 Set Implicit Arguments.
 
 Variable vm : (varmap A).
-Variable T : (Setoid_Ring_Theory A Aequiv Aplus Amult Aone Azero Aopp Aeq).
+Variable T : (Setoid_Ring_Theory Aequiv Aplus Amult Aone Azero Aopp Aeq).
 
 Hint STh_plus_sym_T := Resolve (STh_plus_sym T).
 Hint STh_plus_assoc_T := Resolve (STh_plus_assoc T).
