@@ -219,13 +219,11 @@ let contract_fix ((recindices,bodynum),(types,names,bodies as typedbodies)) =
   substl (list_tabulate make_Fi nbodies) bodies.(bodynum)
 
 let fix_recarg ((recindices,bodynum),_) stack =
-  if 0 <= bodynum & bodynum < Array.length recindices then
-    let recargnum = Array.get recindices bodynum in
-    (try 
-       Some (recargnum, stack_nth stack recargnum)
-     with Not_found ->
-       None)
-  else 
+  assert (0 <= bodynum & bodynum < Array.length recindices);
+  let recargnum = Array.get recindices bodynum in
+  try 
+    Some (recargnum, stack_nth stack recargnum)
+  with Not_found ->
     None
 
 type fix_reduction_result = NotReducible | Reduced of state
