@@ -1,4 +1,3 @@
-
 (** Translation from coq abstract syntax trees to centaur vernac
    *)
 open String;;
@@ -15,6 +14,7 @@ open Vernacexpr;;
 open Decl_kinds;;
 open Topconstr;;
 open Libnames;;
+
 
 let in_coq_ref = ref false;;
 
@@ -268,6 +268,7 @@ let rec nat_to_number =
     | Nvar (_, "O") -> 0
     | _ -> raise Not_natural;;
 
+
 let xlate_sort =
   function
     | RProp Term.Pos -> CT_sortc "Set"
@@ -287,6 +288,22 @@ let notation_to_formula s l = CT_notation(CT_string s, CT_formula_list l);;
 let xlate_reference = function
     Ident(_,i) -> CT_ident (string_of_id i)
   | Qualid(_, q) -> CT_ident (xlate_qualid q);;
+let rec xlate_match_pattern =
+ function
+   | CPatAtom(_, Some s) -> id_to_pattern_var (xlate_reference  s)
+   |CPatAtom(_, None) -> id_to_pattern_var (CT_ident "_")
+   |  CPatCstr (_, f1 , (arg1 :: args)) ->
+     CT_pattern_app
+      (id_to_pattern_var (xlate_reference  f1),
+      CT_match_pattern_ne_list
+       (xlate_match_pattern arg1, 
+	List.map xlate_match_pattern args))
+    | CPatAlias  (_,  pattern, id) ->
+     CT_pattern_as
+      (xlate_match_pattern pattern, CT_coerce_ID_to_ID_OPT (xlate_ident id))
+    | _ -> xlate_error "Unexpected data while translating a pattern";;
+
+
 
 let xlate_id_opt = function
   | (_,Name id) -> ctf_ID_OPT_SOME(CT_ident (string_of_id id))
@@ -296,11 +313,26 @@ let xlate_id_opt_ne_list = function
     [] -> assert false
   | a::l -> CT_id_opt_ne_list(xlate_id_opt a, List.map xlate_id_opt l);;
 
+
+
 let rec xlate_binder = function
     (l,t) -> CT_binder(xlate_id_opt_ne_list l, xlate_formula t)
+and xlate_formula_opt =
+  function
+    | None -> ctv_FORMULA_OPT_NONE
+    | Some e -> CT_coerce_FORMULA_to_FORMULA_OPT (xlate_formula e)
+
 and  xlate_binder_l = function
     LocalRawAssum(l,t) -> CT_binder(xlate_id_opt_ne_list l, xlate_formula t)
     |_ -> xlate_error "TODO: Local Def bindings";
+and 
+  xlate_match_pattern_ne_list = function
+    [] -> assert false
+  | a::l -> CT_match_pattern_ne_list(xlate_match_pattern a, 
+                                     List.map xlate_match_pattern l)
+and  translate_one_equation = function
+    (_,lp, a) -> CT_eqn ( xlate_match_pattern_ne_list lp,
+	     xlate_formula a)
 and 
   xlate_binder_ne_list = function
     [] -> assert false
@@ -309,6 +341,7 @@ and
   xlate_binder_list = function
   l -> CT_binder_list( List.map xlate_binder_l l)
 and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
+
      CRef r -> varc (xlate_reference r)
    | CArrow(_,a,b)-> CT_arrowc (xlate_formula a, xlate_formula b)
    | CProdN(_,ll,b)-> CT_prodc(xlate_binder_ne_list ll, xlate_formula b)
@@ -320,10 +353,27 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 	       xlate_formula_ne_list l)
    | CApp(_, f, l) ->
        CT_appc(xlate_formula f, xlate_formula_expl_ne_list l)
+   | CCases (_,po,tml,eqns)-> CT_cases(xlate_formula_opt po, 
+                         xlate_formula_ne_list tml,
+                         CT_eqn_list (List.map 
+         (fun x -> translate_one_equation x)
+			   eqns))
+   | COrderedCase (_,Term.IfStyle,po,c,[b1;b2]) -> 
+		   CT_if(xlate_formula_opt po,
+                   xlate_formula c,xlate_formula b1,xlate_formula b2)		
+
    | CSort(_, s) -> CT_coerce_SORT_TYPE_to_FORMULA(xlate_sort s)
    | CNotation(_, s, l) -> notation_to_formula s (List.map xlate_formula l)
    | CNumeral(_, i) -> CT_int_encapsulator(Bignat.bigint_to_string i)
-   | _ -> assert false
+   | CHole _ -> CT_existvarc 
+   | COrderedCase (_,_,_,_,_) -> xlate_error "TODO:COrderedCase"
+   | CDynamic (_, _) -> xlate_error "TODO:CDynamic"
+   | CDelimiters (_, key, num) -> CT_num_encapsulator(CT_num_type key , xlate_formula  num)
+   | CCast (_, _, _) -> xlate_error "TODO:CCast"
+   | CMeta (_, _) -> xlate_error "TODO:CMeta"
+   | CCoFix (_, _, _) -> xlate_error "TODO:CCoFix"
+   | CFix (_, _, _) -> xlate_error "TODO:CFix"
+
 and xlate_formula_expl = function
     (a, None) -> xlate_formula a
   | (a, i) -> CT_bang(xlate_int_opt i, xlate_formula a)
@@ -334,10 +384,7 @@ and xlate_formula_ne_list = function
     [] -> assert false
   | a::l -> CT_formula_ne_list(xlate_formula a, List.map xlate_formula l);;
 
-let xlate_formula_opt =
-  function
-    | None -> ctv_FORMULA_OPT_NONE
-    | Some e -> CT_coerce_FORMULA_to_FORMULA_OPT (xlate_formula e);;
+
 
 let xlate_hyp_location =
  function
@@ -459,7 +506,7 @@ let rec xlate_intro_pattern =
       let insert_conj l = CT_conj_pattern (CT_intro_patt_list
         (List.map xlate_intro_pattern l))
       in CT_disj_pattern(CT_intro_patt_list (List.map insert_conj ll))
-  | IntroWildcard -> xlate_error "TODO: '_' intro pattern"
+  | IntroWildcard -> CT_coerce_ID_to_INTRO_PATT(CT_ident "_" )
   | IntroIdentifier c -> CT_coerce_ID_to_INTRO_PATT(xlate_ident c)
 
 let compute_INV_TYPE_from_string = function
@@ -888,8 +935,13 @@ and xlate_tac =
     | TacNewInduction _ -> xlate_error "TODO: NewInduction"
     | TacInstantiate (_, _) -> xlate_error "TODO: Instantiate"
     | TacLetTac (_, _, _) -> xlate_error "TODO: LetTac"
+    | TacForward (true, Name id, c) -> 
+               CT_pose(CT_ident (string_of_id id), xlate_formula c)
+    | TacForward (false, Name id, c) -> 
+               CT_assert(CT_ident (string_of_id id), xlate_formula c)
     | TacForward (_, _, _) -> xlate_error "TODO: Assert/Pose id:=c"
-    | TacTrueCut (_, _) -> xlate_error "TODO: Assert id:t"
+    | TacTrueCut (idopt, c) -> 
+                             CT_truecut(xlate_ident_opt idopt, xlate_formula c)
     | TacAnyConstructor tacopt -> xlate_error "TODO: Constructor tac"
     | TacExtend(_, "Ring", [arg]) -> 
 	CT_ring
@@ -1537,6 +1589,7 @@ let xlate_vernac =
   | VernacLocate(LocateLibrary id) -> CT_locate_lib(reference_to_ct_ID id)
   | VernacLocate(LocateFile s) -> CT_locate_file(CT_string s)
   | VernacLocate(LocateNotation _) -> xlate_error "TODO: Locate Notation"
+  | VernacSetOption (Goptions.SecondaryTable ("Implicit", "Arguments"), BoolValue true)->CT_user_vernac (CT_ident "IMPLICIT_ARGS_ON", CT_varg_list[])
   | (VernacGlobalCheck _|VernacPrintOption _|
      VernacMemOption (_, _)|VernacRemoveOption (_, _)|VernacAddOption (_, _)|
      VernacSetOption (_, _)|VernacUnsetOption _|

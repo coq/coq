@@ -599,6 +599,12 @@ and fFORMULA = function
    fID x1;
    fFIX_BINDER_LIST x2;
    fNODE "fixc" 2
+| CT_if(x1, x2, x3, x4) ->
+   fFORMULA_OPT x1;
+   fFORMULA x2;
+   fFORMULA x3;
+   fFORMULA x4;
+   fNODE "if" 4
 | CT_int_encapsulator x -> fATOM "int_encapsulator";
    (f_atom_string x);
    print_string "\n"| CT_lambdac(x1, x2) ->
@@ -613,6 +619,10 @@ and fFORMULA = function
    fSTRING x1;
    fFORMULA_LIST x2;
    fNODE "notation" 2
+| CT_num_encapsulator(x1, x2) ->
+   fNUM_TYPE x1;
+   fFORMULA x2;
+   fNODE "num_encapsulator" 2
 | CT_prodc(x1, x2) ->
    fBINDER_NE_LIST x1;
    fFORMULA x2;
@@ -805,7 +815,10 @@ and fNATURAL_FEATURE = function
 | CT_nat_transparent -> fNODE "nat_transparent" 0
 and fNONE = function
 | CT_none -> fNODE "none" 0
-and fOMEGA_FEATURE = function
+and fNUM_TYPE = function
+| CT_num_type x -> fATOM "num_type";
+   (f_atom_string x);
+   print_string "\n"and fOMEGA_FEATURE = function
 | CT_coerce_STRING_to_OMEGA_FEATURE x -> fSTRING x
 | CT_flag_action -> fNODE "flag_action" 0
 | CT_flag_system -> fNODE "flag_system" 0
@@ -980,6 +993,10 @@ and fTACTIC_COM = function
    fFORMULA x1;
    fSPEC_LIST x2;
    fNODE "apply" 2
+| CT_assert(x1, x2) ->
+   fID x1;
+   fFORMULA x2;
+   fNODE "assert" 2
 | CT_assumption -> fNODE "assumption" 0
 | CT_auto(x1) ->
    fINT_OPT x1;
@@ -1174,6 +1191,10 @@ and fTACTIC_COM = function
    fTACTIC_COM x;
    (List.iter fTACTIC_COM l);
    fNODE "parallel" (1 + (List.length l))
+| CT_pose(x1, x2) ->
+   fID x1;
+   fFORMULA x2;
+   fNODE "pose" 2
 | CT_progress(x1) ->
    fTACTIC_COM x1;
    fNODE "progress" 1
@@ -1258,6 +1279,10 @@ and fTACTIC_COM = function
 | CT_trivial_with(x1) ->
    fID_NE_LIST_OR_STAR x1;
    fNODE "trivial_with" 1
+| CT_truecut(x1, x2) ->
+   fID_OPT x1;
+   fFORMULA x2;
+   fNODE "truecut" 2
 | CT_try(x1) ->
    fTACTIC_COM x1;
    fNODE "try" 1

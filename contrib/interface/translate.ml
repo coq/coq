@@ -7,7 +7,6 @@ open Pp;;
 open Libobject;;
 open Library;;
 open Vernacinterp;;
-(* dead code: open Proof_trees;; *)
 open Termast;;
 open Tacmach;;
 open Pfedit;;
@@ -108,10 +107,8 @@ let rec discard_coercions =
     | it -> it;;
 
 (*translates a formula into a centaur-tree --> FORMULA *)
-let translate_constr at_top assumptions c =
- let com = ast_of_constr at_top assumptions c in
-(* dead code:  let rcom = relativize_cci (discard_coercions com) in *)
- xlate_formula (Ctast.ast_to_ct com) (* dead code: rcom *);;
+let translate_constr at_top env c =
+  xlate_formula (Constrextern.extern_constr at_top env c);;
 
 (*translates a named_context into a centaur-tree --> PREMISES_LIST *)
 (* this code is inspired from printer.ml (function pr_named_context_of) *)

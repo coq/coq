@@ -231,10 +231,12 @@ and ct_FORMULA =
   | CT_elimc of ct_CASE * ct_FORMULA * ct_FORMULA * ct_FORMULA_LIST
   | CT_existvarc
   | CT_fixc of ct_ID * ct_FIX_BINDER_LIST
+  | CT_if of ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA * ct_FORMULA
   | CT_int_encapsulator of string
   | CT_lambdac of ct_BINDER_NE_LIST * ct_FORMULA
   | CT_letin of ct_DEF * ct_FORMULA
   | CT_notation of ct_STRING * ct_FORMULA_LIST
+  | CT_num_encapsulator of ct_NUM_TYPE * ct_FORMULA
   | CT_prodc of ct_BINDER_NE_LIST * ct_FORMULA
 and ct_FORMULA_LIST =
     CT_formula_list of ct_FORMULA list
@@ -348,6 +350,8 @@ and ct_NATURAL_FEATURE =
   | CT_nat_transparent
 and ct_NONE =
     CT_none
+and ct_NUM_TYPE =
+    CT_num_type of string
 and ct_OMEGA_FEATURE =
     CT_coerce_STRING_to_OMEGA_FEATURE of ct_STRING
   | CT_flag_action
@@ -440,6 +444,7 @@ and ct_TACTIC_COM =
     CT_abstract of ct_ID_OPT * ct_TACTIC_COM
   | CT_absurd of ct_FORMULA
   | CT_apply of ct_FORMULA * ct_SPEC_LIST
+  | CT_assert of ct_ID * ct_FORMULA
   | CT_assumption
   | CT_auto of ct_INT_OPT
   | CT_auto_with of ct_INT_OPT * ct_ID_NE_LIST_OR_STAR
@@ -496,6 +501,7 @@ and ct_TACTIC_COM =
   | CT_omega
   | CT_orelse of ct_TACTIC_COM * ct_TACTIC_COM
   | CT_parallel of ct_TACTIC_COM * ct_TACTIC_COM list
+  | CT_pose of ct_ID * ct_FORMULA
   | CT_progress of ct_TACTIC_COM
   | CT_prolog of ct_FORMULA_LIST * ct_INT
   | CT_rec_tactic_in of ct_REC_TACTIC_FUN_LIST * ct_TACTIC_COM
@@ -520,6 +526,7 @@ and ct_TACTIC_COM =
   | CT_transitivity of ct_FORMULA
   | CT_trivial
   | CT_trivial_with of ct_ID_NE_LIST_OR_STAR
+  | CT_truecut of ct_ID_OPT * ct_FORMULA
   | CT_try of ct_TACTIC_COM
   | CT_use of ct_FORMULA
   | CT_use_inversion of ct_ID_OR_INT * ct_FORMULA * ct_ID_LIST
