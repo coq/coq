@@ -33,9 +33,7 @@ let type_judgment env sigma j =
   Typeops.type_judgment env (Evarutil.j_nf_evar sigma j)
 ;;
 
-let double_type_of env sigma cstr expectedty =
- (* CSC: do you have any reasonable substitute for 503? *)
- let subterms_to_types = Acic.CicHash.create 503 in
+let double_type_of env sigma cstr expectedty subterms_to_types =
  (*CSC: the code is inefficient because judgments are created just to be   *)
  (*CSC: destroyed using Environ.j_type. Moreover I am pretty sure that the *)
  (*CSC: functions used do checks that we do not need                       *)
@@ -241,6 +239,5 @@ if Acic.CicHash.mem subterms_to_types cstr then
   List.map2 (execute env sigma)
 
 in
- ignore (execute env sigma cstr expectedty) ;
- subterms_to_types
+ ignore (execute env sigma cstr expectedty)
 ;;

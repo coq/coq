@@ -128,9 +128,9 @@ let acic_of_cic_context' computeinnertypes seed ids_to_terms constr_to_ids
  let module A = Acic in
  let module T = Term in
   let fresh_id' = fresh_id seed ids_to_terms constr_to_ids ids_to_father_ids in
-   let terms_to_types =
-    D.double_type_of env evar_map t expectedty
-   in
+   (* CSC: do you have any reasonable substitute for 503? *)
+   let terms_to_types = Acic.CicHash.create 503 in
+    D.double_type_of env evar_map t expectedty terms_to_types ;
     let rec aux computeinnertypes father passed_lambdas_or_prods_or_letins env
      idrefs ?(subst=None,[]) tt
     =
@@ -337,8 +337,8 @@ print_endline "PASSATO" ; flush stdout ;
               add_inner_type fresh_id'' ;
              let t' =
               Array.fold_right (fun x i -> (aux' env idrefs x)::i) t [] in
-(*CSC: stuff for explicit named substitution *)
-             let subst,residual_args =
+             (* begin of the stuff for explicit named substitution *)
+             let subst,residual_args,uninst_vars =
               let variables,basedir =
                match T.kind_of_term h with
                   T.Const sp
@@ -354,39 +354,61 @@ print_endline "PASSATO" ; flush stdout ;
                    (* no explicit substitution *)
                    [], Nameops.dirpath_of_string "dummy"
               in
-              (* returns a couple whose first element is  *)
+              (* returns a triple whose first element is  *)
               (* an explicit named substitution of "type" *)
-              (* (variable * argument) list and whose     *)
+              (* (variable * argument) list, whose        *)
               (* second element is the list of residual   *)
-              (* arguments                                *) 
+              (* arguments and whose third argument is    *) 
+              (* the list of uninstantiated variables     *)
               let rec get_explicit_subst variables arguments =
                match variables,arguments with
-                  [],_
-                | _,[] -> [],arguments
+                  [],_ -> [],arguments,[]
+                | _,[] -> [],[],variables
                 | he1::tl1,he2::tl2 ->
-                   let subst,extra_args = get_explicit_subst tl1 tl2 in
+                   let subst,extra_args,uninst = get_explicit_subst tl1 tl2 in
                    let (he1_sp, he1_id) = Names.repr_path he1 in
                    let he1' =
                     remove_module_dirpath_from_dirpath ~basedir he1_sp ^ "/" ^
                      (Names.string_of_id he1_id) ^ ".var"
                    in
-                    (he1',he2)::subst, extra_args
+                    (he1',he2)::subst, extra_args, uninst
               in
                get_explicit_subst variables t'
              in
-              let residual_args_not_empty = List.length residual_args > 0 in
-              let h' =
-               if residual_args_not_empty then
-                aux' env idrefs ~subst:(None,subst) h
+              let uninst_vars_length = List.length uninst_vars in
+               if uninst_vars_length > 0 then
+                (* Not enough arguments provided. We must eta-expand! *)
+                let un_args,_ =
+                 T.decompose_prod_n uninst_vars_length
+                  (Retyping.get_type_of env evar_map tt)
+                in
+                 let eta_expanded =
+                  let arguments =
+                   List.map (T.lift uninst_vars_length) (Array.to_list t) @
+                    Termops.rel_list 0 uninst_vars_length
+                  in
+                   T.unshare
+                    (T.lamn uninst_vars_length un_args
+                     (T.applistc h arguments))
+                 in
+                  D.double_type_of env evar_map eta_expanded
+                   None terms_to_types ;
+                  Hashtbl.remove ids_to_inner_types fresh_id'' ;
+                  aux' env idrefs eta_expanded
                else
-                aux' env idrefs ~subst:(Some fresh_id'',subst) h
-              in
-               (* maybe all the arguments were used for the explicit *)
-               (* named substitution                                 *)
-               if residual_args_not_empty then
-                A.AApp (fresh_id'', h'::residual_args)
-               else
-                h'
+                let residual_args_not_empty = List.length residual_args > 0 in
+                let h' =
+                 if residual_args_not_empty then
+                  aux' env idrefs ~subst:(None,subst) h
+                 else
+                  aux' env idrefs ~subst:(Some fresh_id'',subst) h
+                in
+                 (* maybe all the arguments were used for the explicit *)
+                 (* named substitution                                 *)
+                 if residual_args_not_empty then
+                  A.AApp (fresh_id'', h'::residual_args)
+                 else
+                  h'
           | T.Const sp ->
              Hashtbl.add ids_to_inner_sorts fresh_id'' innersort ;
              if innersort = "Prop"  && expected_available then
