@@ -1,17 +1,22 @@
 Changes from V8.0beta to V8.0
 =============================
 
+Syntax
+
+- Command "Print." discontinued.
+- "assert" semantics now consistent with reference manual
+- Redundant syntax "Implicit Arguments On/Off" discontinued
+
 Tools
 
 - Coqdoc support for notation links
 
 Bug fixes
 
-- "assert" semantics now consistent with reference manual
+- Fix a bug with 'Notation "'id'" := c.'
 - Translator printing bug of reals fixed
-- Obsolete "Implicit Arguments On/Off" removed
-- fix a bug in induction/destruct when not all the variables of 
-  the type of the eliminated object are bound in the elimination predicate
+- Fix bugs in induction/destruct in case the type of the eliminated object 
+  has parameters
 
 Changes from V8.0beta old syntax to V8.0beta
 ============================================
