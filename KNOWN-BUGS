@@ -17,3 +17,6 @@
 - The syntax "Specialize num ident" is temporarily not accepted
   outside "Tactic Definition". Syntax "Specialize ident" is OK.
 
+- New Induction fails for mutual inductive elimination
+
+- Elim fails with eliminators not imported
