@@ -393,17 +393,18 @@ let rec optimize prm = function
       let l' = List.map (expand (id,t)) l in optimize prm l'
   i*)	    
   | Dglob (r,t) :: l ->
-      let t' = normalize t in
-      let l' = if expand prm r t' then 
+      let t = normalize t in
+      let b = expand prm r t in
+      let l = if b then 
 	begin
 	  if_verbose warning_expansion r;
-	  List.map (subst_glob_decl r t') l
+	  List.map (subst_glob_decl r t) l
 	end
       else l in 
-      if prm.modular || l' = [] then 
-	Dglob (r,t') :: (optimize prm l')
+      if prm.modular || l = [] || not b then 
+	Dglob (r,t) :: (optimize prm l)
       else
-	optimize prm l'
+	optimize prm l
 
 
 (*s Table for direct ML extractions. *)
