@@ -150,7 +150,7 @@ arch-image: $(TARGZ)
 	(cd $(ARCHBUILDROOT);\
 	 gunzip -c $(DISTRIBDIR)/$(TARGZ) | tar xf -;\
 	 cd $(COQPACKAGE);\
-	 ./configure -prefix /usr -emacslib /usr/local/lib/emacs/site-lisp -opt -reals all;\
+	 ./configure -prefix /usr/local -emacslib /usr/local/lib/emacs/site-lisp -opt -reals all;\
 	 $(MAKECOQ) coq check;\
 	 $(MAKECOQ) -e COQINSTALLPREFIX=$(ARCHINSTALL) BASETEXDIR=$(ARCHINSTALL) install-coq) > arch-image.log 2>&1
 	@echo " .... done"
@@ -222,7 +222,7 @@ $(RPMTOPDIR):
 	@mkdir -p $(RPMTMPPATHDIR)
 	@mkdir -p $(RPMTOPDIR)/RPMS/$(ARCH)
 
-RH/rpmrc: config.distrib
+RH/rpmrc: config.distrib $(RPMTOPDIR)
 	(if [ "$(RPMVERSION)" != "2" ];\
 	then\
 	echo %_topdir $(RPMTOPDIR) > RH/rpmmacros;\
@@ -425,7 +425,7 @@ ftp-install: prep-ftp-install
 
 # prep-ftp-install: $(FTPDIR)/V$(VERSION)
 prep-ftp-install: 
-	- $(SERVEREXEC) mkdir -m g+w $(FTPDIR)/V$(VERSION)
+	- $(SERVEREXEC) mkdir -p -m g+w $(FTPDIR)/V$(VERSION)
 
 final-ftp-install:
 	$(SERVEREXEC) "'(cd $(FTPDIR); rm -f current;ln -sf V$(VERSION) current)'"
