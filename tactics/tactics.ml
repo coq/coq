@@ -1110,22 +1110,38 @@ let rec first_name_buggy = function
 
 type elim_arg_kind = RecArg | IndArg | OtherArg
 
-let induct_discharge statuslists destopt avoid' (avoid,ra) (names,force,rnames) gl =
-  let avoid = avoid @ avoid' in
+let induct_discharge statuslists destopt avoid' ((avoid7,avoid8),ra) (names,force,rnames) gl =
+  let avoid7 = avoid7 @ avoid' in
+  let avoid8 = avoid8 @ avoid' in
   let (lstatus,rstatus) = statuslists in
   let tophyp = ref None in
   let rec peel_tac ra names gl = match ra with
-    | (RecArg,recvarname) :: (IndArg,hyprecname) :: ra' ->
+    | (RecArg,(recvarname7,recvarname8)) ::
+        (IndArg,(hyprecname7,hyprecname8)) :: ra' ->
         let recpat,hyprec,names = match names with
           | [] ->
-              (IntroIdentifier (fresh_id avoid recvarname gl), 
-	       IntroIdentifier (fresh_id avoid hyprecname gl), [])
+              let idrec7 = (fresh_id avoid7 recvarname7 gl) in
+              let idrec8 = (fresh_id avoid8 recvarname8 gl) in
+              let idhyp7 = (fresh_id avoid7 hyprecname7 gl) in
+              let idhyp8 = (fresh_id avoid8 hyprecname8 gl) in
+ 	      if Options.do_translate() &
+                (idrec7 <> idrec8 or idhyp7 <> idhyp8)
+	      then force := true;
+              let idrec = if !Options.v7 then idrec7 else idrec8 in
+              let idhyp = if !Options.v7 then idhyp7 else idhyp8 in
+              (IntroIdentifier idrec, IntroIdentifier idhyp, [])
           | [IntroIdentifier id as pat] ->
-	      (pat,
-	       IntroIdentifier (next_ident_away (add_prefix "IH" id) avoid),
-	       [])
+              let id7 = next_ident_away (add_prefix "IH" id) avoid7 in
+              let id8 = next_ident_away (add_prefix "IH" id) avoid8 in
+ 	      if Options.do_translate() & id7 <> id8 then force := true;
+              let id = if !Options.v7 then id7 else id8 in
+	      (pat, IntroIdentifier id, [])
 	  | [pat] ->
-	      (pat, IntroIdentifier (fresh_id avoid hyprecname gl), [])
+              let idhyp7 = (fresh_id avoid7 hyprecname7 gl) in
+              let idhyp8 = (fresh_id avoid8 hyprecname8 gl) in
+ 	      if Options.do_translate() & idhyp7 <> idhyp8 then force := true;
+              let idhyp = if !Options.v7 then idhyp7 else idhyp8 in
+	      (pat, IntroIdentifier idhyp, [])
           | pat1::pat2::names -> (pat1,pat2,names) in
 	(* This is buggy for intro-or-patterns with different first hypnames *)
 	if !tophyp=None then tophyp := first_name_buggy hyprec;
@@ -1134,28 +1150,28 @@ let induct_discharge statuslists destopt avoid' (avoid,ra) (names,force,rnames) 
 	  [ intros_pattern destopt [recpat];
 	    intros_pattern None [hyprec];
 	    peel_tac ra' names ] gl
-    | (IndArg,hyprecname) :: ra' ->
+    | (IndArg,(hyprecname7,hyprecname8)) :: ra' ->
 	(* Rem: does not happen in Coq schemes, only in user-defined schemes *)
         let pat,names = match names with
-          | [] -> IntroIdentifier (fresh_id avoid hyprecname gl), []
+          | [] -> IntroIdentifier (fresh_id avoid8 hyprecname8 gl), []
 	  | pat::names -> pat,names in
 	rnames := !rnames @ [pat];
 	tclTHEN (intros_pattern destopt [pat]) (peel_tac ra' names) gl
-    | (RecArg,recvarname) :: ra' ->
+    | (RecArg,(recvarname7,recvarname8)) :: ra' ->
         let introtac,names = match names with
           | [] -> 
-	      let i = 
-		if !Options.v7 then IntroAvoid avoid 
-		else IntroMustBe (fresh_id avoid recvarname gl)
+              let id8 = fresh_id avoid8 recvarname8 gl in
+	      let i =
+                if !Options.v7 then IntroAvoid avoid7 else IntroMustBe id8
 	      in
 	      (* For translator *)
-	      let id = fresh_id avoid (default_id gl
+	      let id7 = fresh_id avoid7 (default_id gl
 		(match kind_of_term (pf_concl gl) with
 		  | Prod (name,t,_) -> (name,None,t)
 		  | LetIn (name,b,t,_) -> (name,Some b,t) 
 		  | _ -> assert false)) gl in
-	      if Options.do_translate() & id <> fresh_id avoid recvarname gl 
-	      then force := true;
+	      if Options.do_translate() & id7 <> id8 then force := true;
+              let id = if !Options.v7 then id7 else id8 in
 	      rnames := !rnames @ [IntroIdentifier id];
 	      intro_gen i destopt false, []
           | pat::names ->
@@ -1166,11 +1182,19 @@ let induct_discharge statuslists destopt avoid' (avoid,ra) (names,force,rnames) 
         let introtac,names = match names with
           | [] -> 
 	      (* For translator *)
-	      let id = fresh_id avoid (default_id gl
+	      let id7 = fresh_id avoid7 (default_id gl
 		(match kind_of_term (pf_concl gl) with
 		  | Prod (name,t,_) -> (name,None,t)
 		  | LetIn (name,b,t,_) -> (name,Some b,t) 
 		  | _ -> assert false)) gl in
+	      let id8 = fresh_id avoid8 (default_id gl
+		(match kind_of_term (pf_concl gl) with
+		  | Prod (name,t,_) -> (name,None,t)
+		  | LetIn (name,b,t,_) -> (name,Some b,t) 
+		  | _ -> assert false)) gl in
+	      if Options.do_translate() & id7 <> id8 then force := true;
+              let id = if !Options.v7 then id7 else id8 in
+              let avoid = if !Options.v7 then avoid7 else avoid8 in
 	      rnames := !rnames @ [IntroIdentifier id];
 	      intro_gen (IntroAvoid avoid) destopt false, []
           | pat::names ->
@@ -1357,21 +1381,19 @@ let induction_tac varname typ ((elimc,lbindelimc),elimt) gl =
     make_clenv_binding wc (mkCast (elimc,elimt),elimt) lbindelimc in
   elimination_clause_scheme kONT elimclause indclause true gl
 
-let make_up_names n ind (old_style,cname) = 
+let make_up_names7 n ind (old_style,cname) = 
   if old_style (* = V6.3 version of Induction on hypotheses *)
   then
     let recvarname =
       if n=1 then 
         cname
       else (* To force renumbering if there is only one *)
-        make_ident (string_of_id cname) (Some 1) in
+        make_ident (string_of_id cname ) (Some 1) in
     recvarname, add_prefix "Hrec" recvarname, []
   else
+    let is_hyp = atompart_of_id cname = "H" in
     let hyprecname =
-      add_prefix "IH"
-        (if atompart_of_id cname <> "H" 
-        then cname
-        else Nametab.id_of_global ind) in
+      add_prefix "IH" (if is_hyp then Nametab.id_of_global ind else cname) in
     let avoid =
       if n=1 (* Only one recursive argument *)
         or 
@@ -1389,6 +1411,32 @@ let make_up_names n ind (old_style,cname) =
           (make_ident (string_of_id cname) None) :: avoid
         else avoid in
     cname, hyprecname, avoid
+
+let make_base n id =
+  if n=0 or n=1 then id
+  else
+    (* This extends the name to accept new digits if it already ends with *)
+    (* digits *)
+    id_of_string (atompart_of_id (make_ident (string_of_id id) (Some 0)))
+
+let make_up_names8 n ind (_,cname) = 
+  let is_hyp = atompart_of_id cname = "H" in
+  let base = string_of_id (make_base n cname) in
+  let hyprecname =
+    add_prefix "IH"
+      (make_base n (if is_hyp then Nametab.id_of_global ind else cname)) in
+  let avoid =
+    if n=1 (* Only one recursive argument *) or n=0 then []
+    else
+      (* Forbid to use cname, cname0, hyprecname and hyprecname0 *)
+      (* in order to get names such as f1, f2, ... *)
+      let avoid =
+        (make_ident (string_of_id hyprecname) None) ::
+        (make_ident (string_of_id hyprecname) (Some 0)) :: [] in
+      if atompart_of_id cname <> "H" then
+        (make_ident base (Some 0)) :: (make_ident base None) :: avoid
+      else avoid in
+  id_of_string base, hyprecname, avoid
 
 let is_indhyp p n t =
   let l, c = decompose_prod t in
@@ -1453,13 +1501,16 @@ let compute_elim_signature elimt names_info =
     | (_,None,t)::brs ->
 	(match try Some (check_branch p t) with Exit -> None with
 	 | Some l ->
-	     let n = List.fold_left
-	       (fun n b -> if (!Options.v7 & b=IndArg) or
-		 (not !Options.v7 & b=RecArg) then n+1 else n) 0 l in
-             let recvarname, hyprecname, avoid = make_up_names n indt names_info in
+	     let n7 = List.fold_left
+	       (fun n b -> if b=IndArg then n+1 else n) 0 l in
+	     let n8 = List.fold_left
+	       (fun n b -> if b=RecArg then n+1 else n) 0 l in
+             let recvarname7, hyprecname7, avoid7 = make_up_names7 n7 indt names_info in
+             let recvarname8, hyprecname8, avoid8 = make_up_names8 n8 indt names_info in
 	     let namesign = List.map
-	       (fun b -> (b,if b=IndArg then hyprecname else recvarname)) l in
-	     (avoid,namesign) :: find_branches (p+1) brs
+	       (fun b -> (b,if b=IndArg then (hyprecname7,hyprecname8)
+                else (recvarname7,recvarname8))) l in
+	     ((avoid7,avoid8),namesign) :: find_branches (p+1) brs
 	 | None -> error_ind_scheme "the branches of")
     | (_,Some _,_)::_ -> error_ind_scheme "the branches of"
     | [] ->
