@@ -44,7 +44,7 @@ let ml_liftn k n c =
     | MLrel i as c -> if i < n then c else MLrel (i+k)
     | MLlam (id,t) -> MLlam (id, liftrec (n+1) t)
     | MLletin (id,a,b) -> MLletin (id, liftrec n a, liftrec (n+1) b)
-    | MLcase(t,pl) -> 
+    | MLcase (t,pl) -> 
 	MLcase (liftrec n t,
       	       	Array.map (fun (id,idl,p) -> 
 			     let k = List.length idl in
@@ -59,6 +59,76 @@ let ml_liftn k n c =
 let ml_lift k c = ml_liftn k 1 c
 
 let pop c = ml_lift (-1) c
+
+(*s substitution *)
+
+let rec ml_subst v =
+  let rec subst n m = function
+    | MLrel i ->
+	if i = n then
+	  m
+	else 
+	  if i < n then MLrel i else MLrel (i-1)
+    | MLlam (id,t) ->
+	MLlam (id, subst (n+1) (ml_lift 1 m) t)
+    | MLletin (id,a,b) ->
+	MLletin (id, subst n m a, subst (n+1) (ml_lift 1 m) b)
+    | MLcase (t,pv) ->
+	MLcase (subst n m t,
+		Array.map (fun (id,ids,t) ->
+			     let k = List.length ids in
+      	       		     (id,ids,subst (n+k) (ml_lift k m) t))
+		  pv)
+    | MLfix (i,ids,cl) -> 
+	MLfix (i,ids, 
+	       let k = List.length ids in
+	       List.map (subst (n+k) (ml_lift k m)) cl)
+    | a -> ast_map (subst n m) a
+  in 
+  subst 1 v
+
+(*s Number of occurences of [Rel 1] in [a] *)
+
+let nb_occur a =
+  let cpt = ref 0 in
+  let rec count n = function
+    | MLrel i -> if i = n then incr cpt
+    | MLlam (id,t) -> count (n+1) t
+    | MLletin (id,a,b) -> count n a; count (n+1) b
+    | MLcase (t,pv) ->
+	count n t;
+	Array.iter (fun (_,l,t) -> let k = List.length l in count (n+k) t) pv
+    | MLfix (_,ids,cl) -> 
+	let k = List.length ids in List.iter (count (n+k)) cl
+    | MLapp (a,l) -> count n a; List.iter (count n) l
+    | MLcons (_,_,l) ->  List.iter (count n) l
+    | MLmagic a -> count n a
+    | MLcast (a,_) -> count n a
+    | MLprop | MLexn _ | MLglob _ | MLarity -> ()
+  in 
+  count 1 a; !cpt
+
+(*s Beta-reduction *)
+
+let rec betared_ast = function
+  | MLapp (f, []) ->
+      betared_ast f
+  | MLapp (f, a) ->
+      let f' = betared_ast f 
+      and a' = List.map betared_ast a in
+      (match f' with
+	 | MLlam (id,t) -> 
+	     (match nb_occur t with
+		| 0 -> betared_ast (MLapp (ml_lift 1 t, List.tl a'))
+		| 1 -> betared_ast (MLapp (ml_subst (List.hd a') t,List.tl a'))
+		| _ -> MLapp (f',a'))
+	 | _ ->
+	     MLapp (f',a'))
+  | a -> ast_map betared_ast a
+    
+let betared_decl = function
+ | Dglob (id, a) -> Dglob (id, betared_ast a)
+ | d -> d
 
 (*s [uncurrify] uncurrifies the applications of constructors *)
 

@@ -134,8 +134,8 @@ end
 
 module Pp = Ocaml.Make(ToplevelParams)
 
-let pp_ast a = Pp.pp_ast (uncurrify_ast a)
-let pp_decl d = Pp.pp_decl (uncurrify_decl d)
+let pp_ast a = Pp.pp_ast (betared_ast (uncurrify_ast a))
+let pp_decl d = Pp.pp_decl (betared_decl (uncurrify_decl d))
 
 open Vernacinterp
 
