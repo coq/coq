@@ -244,7 +244,8 @@ let pr_hints local db h pr_c =
  
 let pr_with_declaration pr_c = function
   | CWith_Definition (id,c) ->
-      str"Definition" ++ spc() ++ pr_id id ++ str" := " ++ pr_c c
+      let p = pr_c c in
+      str"Definition" ++ spc() ++ pr_id id ++ str" := " ++ p
   | CWith_Module (id,qid) ->
       str"Module" ++ spc() ++ pr_id id ++ str" := " ++
       pr_located pr_qualid qid
@@ -252,22 +253,31 @@ let pr_with_declaration pr_c = function
 let rec pr_module_type pr_c = function
   | CMTEident qid -> spc () ++ pr_located pr_qualid qid
   | CMTEwith (mty,decl) ->
-      pr_module_type pr_c mty ++ spc() ++ str"with" ++ spc() ++
-      pr_with_declaration pr_c decl
+      let m = pr_module_type pr_c mty in
+      let p = pr_with_declaration pr_c decl in
+      m ++ spc() ++ str"with" ++ spc() ++ p
 
 let pr_of_module_type prc (mty,b) =
   str (if b then ":" else "<:") ++
   pr_module_type prc mty
 
-let pr_module_vardecls pr_c (l,mty) =
-  prlist
-    (fun id ->
-      spc() ++ str"(" ++ pr_id id ++ str":" ++
-      pr_module_type pr_c mty ++ str")")
-    l
+let pr_module_vardecls pr_c (idl,mty) =
+  let m = pr_module_type pr_c mty in
+  (* Update the Nametab for interpreting the body of module/modtype *)
+  let lib_dir = Lib.library_dp() in
+  List.iter (fun id ->
+    Declaremods.process_module_bindings [id]
+      [make_mbid lib_dir (string_of_id id),
+       Modintern.interp_modtype (Global.env()) mty]) idl;
+  (* Builds the stream *)
+  spc() ++ str"(" ++ prlist_with_sep spc pr_id idl ++ str":" ++ m ++ str")"
 
-let pr_module_binders l pr_c =
-  prlist (pr_module_vardecls pr_c) l
+let pr_module_binders l pr_c = 
+  (* Effet de bord complexe pour garantir la declaration des noms des
+  modules parametres dans la Nametab des l'appel de pr_module_binders
+  malgre l'aspect paresseux des streams *)
+  let ml = List.map (pr_module_vardecls pr_c) l in
+  prlist (fun id -> id) ml
 
 let pr_module_binders_list l pr_c = pr_module_binders l pr_c
 
@@ -883,18 +893,18 @@ pr_vbinders bl ++ spc())
 
   (* Modules and Module Types *)
   | VernacDefineModule (m,bl,ty,bd) ->
-      hov 2 (str"Module " ++ pr_id m ++
-             pr_module_binders_list bl pr_lconstr ++
+      let b = pr_module_binders_list bl pr_lconstr in 
+      hov 2 (str"Module " ++ pr_id m ++ b ++
              pr_opt (pr_of_module_type pr_lconstr) ty ++
              pr_opt (fun me -> str ":= " ++ pr_module_expr me) bd)
-  | VernacDeclareModule (id,l,m1,m2) ->
-      hov 2 (str"Declare Module " ++ pr_id id ++
-             pr_module_binders_list l pr_lconstr ++
+  | VernacDeclareModule (id,bl,m1,m2) ->
+      let b = pr_module_binders_list bl pr_lconstr in 
+      hov 2 (str"Declare Module " ++ pr_id id ++ b ++
              pr_opt (pr_of_module_type pr_lconstr) m1 ++
              pr_opt (fun me -> str ":= " ++ pr_module_expr me) m2)
-  | VernacDeclareModuleType (id,l,m) ->
-      hov 2 (str"Module Type " ++ pr_id id ++
-             pr_module_binders_list l pr_lconstr ++
+  | VernacDeclareModuleType (id,bl,m) ->
+      let b = pr_module_binders_list bl pr_lconstr in 
+      hov 2 (str"Module Type " ++ pr_id id ++ b ++
              pr_opt (fun mt -> str ":= " ++ pr_module_type pr_lconstr mt) m)
 
   (* Solving *)
