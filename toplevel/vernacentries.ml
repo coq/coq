@@ -289,6 +289,9 @@ let vernac_delimiters = Metasyntax.add_delimiters
 
 let vernac_open_scope = Symbols.open_scope
 
+let vernac_arguments_scope qid scl =
+  Symbols.declare_arguments_scope (global qid) scl
+
 let vernac_infix assoc n inf qid sc =
   let sp = sp_of_global None (global qid) in
   let dir = repr_dirpath (dirpath sp) in
@@ -1032,6 +1035,7 @@ let interp c = match c with
   | VernacGrammar (univ,al) -> vernac_grammar univ al
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr
   | VernacOpenScope sc -> vernac_open_scope sc
+  | VernacArgumentsScope (qid,scl) -> vernac_arguments_scope qid scl
   | VernacInfix (assoc,n,inf,qid,sc) -> vernac_infix assoc n inf qid sc
   | VernacDistfix (assoc,n,inf,qid,sc) -> vernac_distfix assoc n inf qid sc
   | VernacNotation (assoc,n,inf,c,sc) -> vernac_notation assoc n inf c sc

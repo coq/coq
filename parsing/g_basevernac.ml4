@@ -223,6 +223,9 @@ GEXTEND Gram
      | IDENT "Delimiters"; left = STRING; sc = IDENT; right = STRING ->
 	 VernacDelimiters (sc,(left,right))
 
+     | IDENT "Arguments"; IDENT "Scope"; qid = qualid;
+         "["; scl = LIST0 opt_scope; "]" -> VernacArgumentsScope (qid,scl)
+
      (* Faudrait une version de qualidarg dans Prim pour respecter l'ordre *)
      | IDENT "Infix"; a = entry_prec; n = natural; op = STRING; p = qualid;
 	 sc = OPT [ ":"; sc = IDENT -> sc ] -> VernacInfix (a,n,op,p,sc)
@@ -234,6 +237,9 @@ GEXTEND Gram
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
   ] ]
+  ;
+  opt_scope:
+    [ [ IDENT "_" -> None | sc = IDENT -> Some sc ] ]
   ;
   (* Syntax entries for Grammar. Only grammar_entry is exported *)
   grammar_entry:

@@ -46,3 +46,9 @@ val find_notation : scope_name -> notation -> scopes ->
   (delimiters option * scopes) option
 val exists_notation_in_scope : scope_name -> notation -> bool
 val exists_notation : notation -> bool
+
+(* Declare and look for scopes associated to arguments of a global ref *)
+open Libnames
+val declare_arguments_scope: global_reference -> scope_name option list -> unit
+val find_arguments_scope : global_reference -> scope_name option list
+

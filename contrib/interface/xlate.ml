@@ -1908,6 +1908,8 @@ let xlate_vernac =
          coerce_ID_OPT_to_FORMULA_OPT(CT_coerce_NONE_to_ID_OPT(CT_none)))*)
    | VernacOpenScope sc -> xlate_error "TODO: open scope"
 
+   | VernacArgumentsScope _ -> xlate_error "TODO: Arguments Scope"
+
    | VernacDelimiters _ -> xlate_error "TODO: Delimiters"
 
    | VernacNotation _ -> xlate_error "TODO: Notation"

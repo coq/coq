@@ -78,13 +78,18 @@ let lookup_numeral_interpreter s =
 (* For loading without opening *)
 let declare_scope scope =
   try let _ = Stringmap.find scope !scope_map in ()
-  with Not_found -> scope_map := Stringmap.add scope empty_scope !scope_map
+  with Not_found ->
+(*    Options.if_verbose message ("Creating scope "^scope);*)
+    scope_map := Stringmap.add scope empty_scope !scope_map
+
+let find_scope scope =
+  try Stringmap.find scope !scope_map
+  with Not_found -> error ("Scope "^scope^" is not declared")
+
+let check_scope sc = let _ = find_scope sc in ()
 
 let declare_delimiters scope dlm =
-  let sc =
-    try Stringmap.find scope !scope_map
-    with Not_found -> empty_scope
-  in
+  let sc = find_scope scope in
   if sc.delimiters <> None && Options.is_verbose () then
     warning ("Overwriting previous delimiters in "^scope);
   let sc = { sc with delimiters = Some dlm } in
@@ -93,10 +98,7 @@ let declare_delimiters scope dlm =
 (* The mapping between notations and production *)
 
 let declare_notation nt c scope =
-  let sc =
-    try Stringmap.find scope !scope_map
-    with Not_found -> empty_scope
-  in
+  let sc = find_scope scope in
   if Stringmap.mem nt sc.notations && Options.is_verbose () then
     warning ("Notation "^nt^" is already used in scope "^scope);
   let sc = { sc with notations = Stringmap.add nt c sc.notations } in
@@ -110,7 +112,7 @@ let rec subst_meta_rawconstr subst = function
 
 let rec find_interpretation f = function
   | scope::scopes ->
-      (try f (Stringmap.find scope !scope_map)
+      (try f (find_scope scope)
        with Not_found -> find_interpretation f scopes)
   | [] -> raise Not_found
 
@@ -224,10 +226,8 @@ let rec interp_numeral_as_pattern loc n name = function
 
 (* Exportation of scopes *)
 let cache_scope (_,sc) =
-  if Stringmap.mem sc !scope_map then
-    scope_stack := sc :: !scope_stack
-  else
-    error ("Unknown scope: "^sc)
+  check_scope sc;
+  scope_stack := sc :: !scope_stack
 
 let subst_scope (_,subst,sc) = sc
 
@@ -243,13 +243,51 @@ let (inScope,outScope) =
 
 let open_scope sc = Lib.add_anonymous_leaf (inScope sc)
 
+
+(* Special scopes associated to arguments of a global reference *)
+
+open Libnames
+
+module RefOrdered =
+  struct
+    type t = global_reference
+    let compare = Pervasives.compare
+  end
+
+module Refmap = Map.Make(RefOrdered)
+
+let arguments_scope = ref Refmap.empty
+
+let cache_arguments_scope (_,(r,scl)) =
+  List.iter (option_iter check_scope) scl;
+  arguments_scope := Refmap.add r scl !arguments_scope
+
+let subst_arguments_scope (_,subst,(r,scl)) = (subst_global subst r,scl)
+
+let (inArgumentsScope,outArgumentsScope) = 
+  declare_object {(default_object "ARGUMENTS-SCOPE") with
+      cache_function = cache_arguments_scope;
+      open_function = (fun i o -> if i=1 then cache_arguments_scope o);
+      subst_function = subst_arguments_scope;
+      classify_function = (fun (_,o) -> Substitute o);
+      export_function = (fun x -> Some x) }
+
+let declare_arguments_scope r scl =
+  Lib.add_anonymous_leaf (inArgumentsScope (r,scl))
+
+let find_arguments_scope r =
+  try Refmap.find r !arguments_scope
+  with Not_found -> []
+
+
 (* Synchronisation with reset *)
 
-let freeze () = (!scope_map, !scope_stack)
+let freeze () = (!scope_map, !scope_stack, !arguments_scope)
 
-let unfreeze (scm,scs) =
+let unfreeze (scm,scs,asc) =
   scope_map := scm;
-  scope_stack := scs
+  scope_stack := scs;
+  arguments_scope := asc
 
 let init () = ()
 (*

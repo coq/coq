@@ -30,6 +30,7 @@ open Evarutil
 open Ast
 open Coqast
 open Nametab
+open Symbols
 
 (*Takes a list of variables which must not be globalized*)
 let from_list l = List.fold_right Idset.add l Idset.empty
@@ -246,30 +247,22 @@ let maybe_constructor allow_var env = function
 
   | _ -> anomaly "ast_to_pattern: badly-formed ast for Cases pattern"
 
-let ast_to_global loc c =
-  match c with
-    | ("CONST", [sp]) ->
-	let ref = ConstRef (ast_to_sp sp) in
-	let imps = implicits_of_global ref in
-	RRef (loc, ref), imps
-    | ("SECVAR", [Nvar (_,s)]) ->
-	let ref = VarRef s in
-	let imps = implicits_of_global ref in
-	RRef (loc, ref), imps
-    | ("MUTIND", [sp;Num(_,tyi)]) -> 
-	let ref = IndRef (ast_to_sp sp, tyi) in
-	let imps = implicits_of_global ref in
-	RRef (loc, ref), imps
-    | ("MUTCONSTRUCT", [sp;Num(_,ti);Num(_,n)]) ->
-	let ref = ConstructRef ((ast_to_sp sp,ti),n) in
-	let imps = implicits_of_global ref in
-	RRef (loc, ref), imps
-    | ("EVAR", [(Num (_,ev))]) ->
-	REvar (loc, ev), []
-    | ("SYNCONST", [sp]) ->
-	Syntax_def.search_syntactic_definition loc (ast_to_sp sp), []
-    | _ -> anomaly_loc (loc,"ast_to_global",
-			(str "Bad ast for this global a reference"))
+let ast_to_global loc = function
+  | ("SYNCONST", [sp]) ->
+      Syntax_def.search_syntactic_definition loc (ast_to_sp sp), [], []
+  | ("EVAR", [(Num (_,ev))]) ->
+	REvar (loc, ev), [], []
+  | ast ->
+      let ref = match ast with
+        | ("CONST", [sp]) -> ConstRef (ast_to_sp sp)
+        | ("SECVAR", [Nvar (_,s)]) -> VarRef s
+        | ("MUTIND", [sp;Num(_,tyi)]) -> IndRef (ast_to_sp sp, tyi)
+        | ("MUTCONSTRUCT", [sp;Num(_,ti);Num(_,n)]) ->
+            ConstructRef ((ast_to_sp sp,ti),n)
+        | _ -> anomaly_loc (loc,"ast_to_global",
+	         (str "Bad ast for this global a reference"))
+      in
+      RRef (loc, ref), implicits_of_global ref, find_arguments_scope ref
 
 (*
 let ref_from_constr c = match kind_of_term c with
@@ -286,29 +279,29 @@ let ref_from_constr c = match kind_of_term c with
    abstracted until this point *)
 
 let ast_to_var (env,impls,_) (vars1,vars2) loc id =
-  let imps =
+  let imps, subscopes =
     if Idset.mem id env or List.mem id vars1
     then
-      try List.assoc id impls
-      with Not_found -> []
+      try List.assoc id impls, []
+      with Not_found -> [], []
     else
       let _ = lookup_named id vars2 in
       (* Car Fixpoint met les fns définies tmporairement comme vars de sect *)
       try
 	let ref = VarRef id in
-	implicits_of_global ref
-      with _ -> []
-  in RVar (loc, id), imps
+	implicits_of_global ref, find_arguments_scope ref
+      with _ -> [], []
+  in RVar (loc, id), imps, subscopes
 
 (**********************************************************************)
 
 let rawconstr_of_var env vars loc id =
   try
-    ast_to_var env vars loc id
+    let (r,_,_) = ast_to_var env vars loc id in r
   with Not_found ->
     Pretype_errors.error_var_not_found_loc loc id
 
-let rawconstr_of_qualid env vars loc qid =
+let rawconstr_of_qualid_gen env vars loc qid =
   (* Is it a bound variable? *)
   try
     match repr_qualid qid with
@@ -319,12 +312,14 @@ let rawconstr_of_qualid env vars loc qid =
   try match Nametab.extended_locate qid with
   | TrueGlobal ref ->
     if !dump then add_glob loc ref;
-    let imps = implicits_of_global ref in
-    RRef (loc, ref), imps
+    RRef (loc, ref), implicits_of_global ref, find_arguments_scope ref
   | SyntacticDef sp ->
-    Syntax_def.search_syntactic_definition loc sp, []
+    Syntax_def.search_syntactic_definition loc sp, [], []
   with Not_found ->
     error_global_not_found_loc loc qid
+
+let rawconstr_of_qualid env vars loc qid =
+  let (r,_,_) = rawconstr_of_qualid_gen env vars loc qid in r
 
 let mkLambdaC (x,a,b) = ope("LAMBDA",[a;slam(Some x,b)])
 let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b))
@@ -334,6 +329,11 @@ let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b))
 let destruct_binder = function
   | Node(_,"BINDER",c::idl) -> List.map (fun id -> (nvar_of_ast id,c)) idl
   | _ -> anomaly "BINDER is expected"
+
+let apply_scope_env (ids,impls,scopes as env) = function
+  | [] -> env, []
+  | (Some sc)::scl -> (ids,impls,sc::scopes), scl
+  | None::scl -> env, scl
 
 (* [merge_aliases] returns the sets of all aliases encountered at this
    point and a substitution mapping extra aliases to the first one *)
@@ -442,10 +442,10 @@ let build_expression loc1 loc2 (ref,impls) args =
 let ast_to_rawconstr sigma env allow_soapp lvar =
   let rec dbrec (ids,impls,scopes as env) = function
     | Nvar(loc,s) ->
-	fst (rawconstr_of_var env lvar loc s)
+	rawconstr_of_var env lvar loc s
 
     | Node(loc,"QUALID", l) ->
-        fst (rawconstr_of_qualid env lvar loc (interp_qualid l))
+        rawconstr_of_qualid env lvar loc (interp_qualid l)
   
     | Node(loc,"FIX", (Nvar (locid,iddef))::ldecl) ->
 	let (lf,ln,lA,lt) = ast_to_fix ldecl in
@@ -501,21 +501,26 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	dbrec (ids,impls,sc::scopes) e
 
     | Node(loc,"APPLISTEXPL", f::args) ->
-	RApp (loc,dbrec env f,ast_to_args env args)
+        let (f,_,subscopes) = match f with
+	  | Node(locs,"QUALID",p) ->
+              rawconstr_of_qualid_gen env lvar locs (interp_qualid p)
+          | _ ->
+              (dbrec env f, [], []) in
+	RApp (loc,f,ast_to_args env subscopes args)
 
     | Node(loc,"APPLIST", f::args) ->
-	let (c, impargs) =
+	let (c, impargs, subscopes) =
 	  match f with
 	    | Node(locs,"QUALID",p) ->
-		rawconstr_of_qualid env lvar locs (interp_qualid p)
+		rawconstr_of_qualid_gen env lvar locs (interp_qualid p)
             (* For globalized references (e.g. in Infix) *) 
 	    | Node(loc,
 		   ("CONST"|"SECVAR"|"EVAR"|"MUTIND"|"MUTCONSTRUCT"|"SYNCONST" as key),
 		   l) ->
 		ast_to_global loc (key,l)
-	    | _ -> (dbrec env f, [])
+	    | _ -> (dbrec env f, [], [])
         in
-	  RApp (loc, c, ast_to_impargs c env impargs args)
+	  RApp (loc, c, ast_to_impargs c env impargs subscopes args)
 
     | Node(loc,"CASES", p:: Node(_,"TOMATCH",tms):: eqns) ->
 	let po = match p with 
@@ -545,7 +550,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	  
     (* This case mainly parses things build in a quotation *)
     | Node(loc,("CONST"|"SECVAR"|"EVAR"|"MUTIND"|"MUTCONSTRUCT"|"SYNCONST" as key),l) ->
-	fst (ast_to_global loc (key,l))
+	let (r,_,_) = ast_to_global loc (key,l) in r
 
     | Node(loc,"CAST", [c1;c2]) ->	   
 	RCast (loc,dbrec env c1,dbrec env c2)
@@ -602,14 +607,16 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 	   | _ -> assert false)
     | body -> dbrec env body
 
-  and ast_to_impargs c env l args =
-    let rec aux n l args = match (l,args) with 
+  and ast_to_impargs c env l subscopes args =
+    let rec aux n l subscopes args =
+      let (enva,subscopes') = apply_scope_env env subscopes in
+      match (l,args) with 
       | (i::l',Node(loc, "EXPL", [Num(_,j);a])::args') ->
 	  if i=n & j>=i then
-	    if j=i then 
-	      (dbrec env a)::(aux (n+1) l' args')
+	    if j=i then
+	      (dbrec enva a)::(aux (n+1) l' subscopes' args')
 	    else 
-	      (RHole (set_hole_implicit i c))::(aux (n+1) l' args)
+	      (RHole (set_hole_implicit i c))::(aux (n+1) l' subscopes' args)
 	  else 
 	    if i<>n then
 	      error ("Bad explicitation number: found "^
@@ -619,19 +626,21 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
 		   (string_of_int j)^" but was expecting "^(string_of_int i))
       | (i::l',a::args') -> 
 	  if i=n then 
-	    (RHole (set_hole_implicit i c))::(aux (n+1) l' args)
+	    (RHole (set_hole_implicit i c))::(aux (n+1) l' subscopes' args)
 	  else 
-	    (dbrec env a)::(aux (n+1) l args')
-      | ([],args) -> ast_to_args env args
+	    (dbrec enva a)::(aux (n+1) l subscopes' args')
+      | ([],args) -> ast_to_args env subscopes args
       | (_,[]) -> []
     in 
-    aux 1 l args
+    aux 1 l subscopes args
 
-  and ast_to_args env = function
+  and ast_to_args env subscopes = function
     | Node(loc, "EXPL", _)::args' ->
         (* To deal with errors *)
 	error_expl_impl_loc loc
-    | a::args -> (dbrec env a) :: (ast_to_args env args)
+    | a::args ->
+        let enva, subscopes = apply_scope_env env subscopes in
+        (dbrec enva a) :: (ast_to_args env subscopes args)
     | [] -> []
 
   and interp_binding env = function
@@ -643,7 +652,7 @@ let ast_to_rawconstr sigma env allow_soapp lvar =
     errorlabstrm "bind_interp"
       (str "Not the expected form in binding" ++ print_ast x)
 
-  in 
+  in
   dbrec env
 
 (**************************************************************************)
@@ -781,7 +790,9 @@ let constrOut = function
       (str "Not a Dynamic ast: " ++ print_ast ast)
 
 let interp_global_constr env (loc,qid) = 
-  let c,_ = rawconstr_of_qualid (Idset.empty,[],Symbols.current_scopes()) ([],env) loc qid in
+  let c =
+    rawconstr_of_qualid (Idset.empty,[],current_scopes()) ([],env) loc qid
+  in
   understand Evd.empty env c
 
 let interp_constr sigma env c =

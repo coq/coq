@@ -186,6 +186,7 @@ type vernac_expr =
   | VernacSyntax of string * syntax_entry_ast list
   | VernacOpenScope of scope_name
   | VernacDelimiters of scope_name * (string * string)
+  | VernacArgumentsScope of qualid located * scope_name option list
   | VernacInfix of
       grammar_associativity * int * string * qualid located * scope_name option
   | VernacDistfix of
