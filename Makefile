@@ -1152,6 +1152,7 @@ FULLBINDIR=$(COQINSTALLPREFIX)$(BINDIR)
 FULLCOQLIB=$(COQINSTALLPREFIX)$(COQLIB)
 FULLMANDIR=$(COQINSTALLPREFIX)$(MANDIR)
 FULLEMACSLIB=$(COQINSTALLPREFIX)$(EMACSLIB)
+FULLCOQDOCDIR=$(COQINSTALLPREFIX)$(COQDOCDIR)
 
 install-coq: install-binaries install-library install-coq-info
 install-coq8: install-binaries install-library8 install-coq-info
@@ -1232,16 +1233,13 @@ install-emacs:
 	$(MKDIR) $(FULLEMACSLIB)
 	cp tools/coq.el tools/coq-inferior.el $(FULLEMACSLIB)
 
-# where to put the coqdoc style file
-TEXDIR = $(BASETEXDIR)/tex/latex/misc 
-
 # command to update TeX' kpathsea database
-UPDATETEX = $(MKTEXLSR) /usr/share/texmf /var/spool/texmf $(BASETEXDIR) > /dev/null
+#UPDATETEX = $(MKTEXLSR) /usr/share/texmf /var/spool/texmf $(BASETEXDIR) > /dev/null
 
 install-latex:
-	$(MKDIR) $(TEXDIR)
-	cp tools/coqdoc/coqdoc.sty $(TEXDIR)	
-	-$(UPDATETEX)
+	$(MKDIR) $(FULLCOQDOCDIR)
+	cp tools/coqdoc/coqdoc.sty $(FULLCOQDOCDIR)	
+#	-$(UPDATETEX)
 
 ###########################################################################
 # Documentation

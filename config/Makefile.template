@@ -79,17 +79,14 @@ OSDEPLIBS=OSDEPENDENTLIBS
 #  Win32 systems : .exe
 EXE=EXECUTEEXTENSION
 
-# the command used to install binaries, libs and help files
-INSTALL=COQTOPDIRECTORY/bin/ARCHITECTURE/coqinstallEXECUTEEXTENSION
-
 # the command MKDIR (try to replace it with mkdirhier if you have problems)
 MKDIR=mkdir -p
 
 # where to put the coqdoc.sty style file
-BASETEXDIR=TEXDIRECTORY
+COQDOCDIR=COQDOCDIRECTORY
 
 # command to update TeX' kpathsea database
-MKTEXLSR=MKTEXLSRCOMMAND
+#MKTEXLSR=MKTEXLSRCOMMAND
 
 #the command STRIP 
 # Unix systems and profiling: true
