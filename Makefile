@@ -50,7 +50,7 @@ OBJS=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PARSING)
 
 # Targets
 
-world: minicoq coqtop dev/db_printers.cmo
+world: minicoq coqtop doc dev/db_printers.cmo
 
 # coqtop
 
@@ -67,15 +67,20 @@ minicoq: $(MINICOQOBJS)
 	$(OCAMLC) $(INCLUDES) -o minicoq -custom $(CLIBS) $(CAMLP4OBJS) \
 	  $(MINICOQOBJS) $(OSDEPLIBS)
 
+# Documentation
+
+.PHONY: doc
+
+doc: doc/coq.tex
+	make -C doc coq.ps minicoq.dvi
+
 # Literate programming (with ocamlweb)
 
 LPLIB = lib/doc.tex $(LIB:.cmo=.mli)
 LPKERNEL = kernel/doc.tex $(KERNEL:.cmo=.mli)
 LPLIBRARY = library/doc.tex $(LIBRARY:.cmo=.mli)
 LPFILES = doc/macros.tex doc/intro.tex $(LPLIB) $(LPKERNEL) $(LPLIBRARY)
-lp: doc/coq.ps
-doc/coq.ps: doc/coq.tex
-	cd doc; make coq.ps
+
 doc/coq.tex: $(LPFILES)
 	ocamlweb -o doc/coq.tex $(LPFILES)
 
