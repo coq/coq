@@ -93,6 +93,9 @@ Changements dans les fonctions :
 	Reduction, Clenv
           whd_betadeltat      -> whd_betaevar
           whd_betadeltatiota  -> whd_betaiotaevar
+          find_mrectype       -> Inductive.find_mrectype
+          find_minductype     -> Inductive.find_inductive
+          find_mcoinductype   -> Inductive.find_coinductive
 
         Astterm
           constr_of_com_casted -> interp_casted_constr
@@ -155,7 +158,7 @@ Changements dans les inductifs
 Nouveaux types "constructor" et "inductive" dans Term
 La plupart des fonctions de typage des inductives prennent maintenant
 un inductive au lieu d'un oonstr comme argument. Les seules fonctions
-à traduite un constr en inductive sont les find_mrectype and co.
+à traduire un constr en inductive sont les find_rectype and co.
 
 Changements dans les grammaires
 -------------------------------
