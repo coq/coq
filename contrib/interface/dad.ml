@@ -11,7 +11,6 @@ open Tactics;;
 open Tacticals;;
 open Pattern;;
 open Reduction;;
-open Ctast;;
 open Constrextern;;
 open Constrintern;;
 open Vernacinterp;;
@@ -47,9 +46,7 @@ type dad_rule =
     constr_expr * int list * int list * int * int list
     * raw_atomic_tactic_expr;;
 
-(* This value will be used systematically when constructing objects of
-   type Ctast.t, the value is stupid and meaningless, but it is needed
-   to construct well-typed terms. *)
+(* This value will be used systematically when constructing objects *)
 
 let zz = (0,0);;
 
@@ -70,17 +67,7 @@ let rec get_subterm  (depth:int) (path: int list) (constr:constr) =
    first argument, an object of type env, is necessary to
    transform constr terms into abstract syntax trees.  The second argument is
    the substitution, a list of pairs linking an integer and a constr term. *)
-(*
-let map_subst (env :env) 
-   (subst:(int * Term.constr) list) =
-   let rec map_subst_aux = function
-    Coqast.Node(_, "META", [Coqast.Num(_, i)]) ->
-      let constr = List.assoc i subst in
-      ast_of_constr false env constr
-  | Coqast.Node(loc, s, l) -> Coqast.Node(loc, s, List.map map_subst_aux l)
-  | ast -> ast in
-    map_subst_aux;;
-*)
+
 let rec map_subst (env :env) (subst:(int * Term.constr) list) = function
   | CMeta (_,i) ->
       let constr = List.assoc i subst in
@@ -274,7 +261,7 @@ let start_dad () = dad_status := true;;
 
 let add_dad_rule_fn name pat p1 p2 tac =
   let pr = match decompose_path (p1, p2) with pr, _, _ -> pr in
-  add_dad_rule name (Ctast.ast_to_ct pat) p1 p2 (List.length pr) pr tac;;
+  add_dad_rule name pat p1 p2 (List.length pr) pr tac;;
 
 (* To be parsed by camlp4
 

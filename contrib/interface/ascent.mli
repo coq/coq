@@ -228,10 +228,11 @@ and ct_FORMULA =
   | CT_bang of ct_INT_OPT * ct_FORMULA
   | CT_cases of ct_FORMULA_OPT * ct_FORMULA_NE_LIST * ct_EQN_LIST
   | CT_cofixc of ct_ID * ct_COFIX_REC_LIST
-  | CT_elimc of ct_CASE * ct_FORMULA * ct_FORMULA * ct_FORMULA_LIST
+  | CT_elimc of ct_CASE * ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA_LIST
   | CT_existvarc
   | CT_fixc of ct_ID * ct_FIX_BINDER_LIST
   | CT_if of ct_FORMULA_OPT * ct_FORMULA * ct_FORMULA * ct_FORMULA
+  | CT_inductive_let of ct_FORMULA_OPT * ct_ID_OPT_NE_LIST * ct_FORMULA * ct_FORMULA
   | CT_int_encapsulator of string
   | CT_lambdac of ct_BINDER_NE_LIST * ct_FORMULA
   | CT_letin of ct_DEF * ct_FORMULA
@@ -519,7 +520,7 @@ and ct_TACTIC_COM =
   | CT_split of ct_SPEC_LIST
   | CT_superauto of ct_INT_OPT * ct_ID_LIST * ct_DESTRUCTING * ct_USINGTDB
   | CT_symmetry
-  | CT_tac_double of ct_INT * ct_INT
+  | CT_tac_double of ct_ID_OR_INT * ct_ID_OR_INT
   | CT_tacsolve of ct_TACTIC_COM * ct_TACTIC_COM list
   | CT_tactic_fun of ct_ID_UNIT_LIST * ct_TACTIC_COM
   | CT_then of ct_TACTIC_COM * ct_TACTIC_COM list

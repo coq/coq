@@ -590,7 +590,7 @@ and fFORMULA = function
    fNODE "cofixc" 2
 | CT_elimc(x1, x2, x3, x4) ->
    fCASE x1;
-   fFORMULA x2;
+   fFORMULA_OPT x2;
    fFORMULA x3;
    fFORMULA_LIST x4;
    fNODE "elimc" 4
@@ -605,6 +605,12 @@ and fFORMULA = function
    fFORMULA x3;
    fFORMULA x4;
    fNODE "if" 4
+| CT_inductive_let(x1, x2, x3, x4) ->
+   fFORMULA_OPT x1;
+   fID_OPT_NE_LIST x2;
+   fFORMULA x3;
+   fFORMULA x4;
+   fNODE "inductive_let" 4
 | CT_int_encapsulator x -> fATOM "int_encapsulator";
    (f_atom_string x);
    print_string "\n"| CT_lambdac(x1, x2) ->
@@ -1257,8 +1263,8 @@ and fTACTIC_COM = function
    fNODE "superauto" 4
 | CT_symmetry -> fNODE "symmetry" 0
 | CT_tac_double(x1, x2) ->
-   fINT x1;
-   fINT x2;
+   fID_OR_INT x1;
+   fID_OR_INT x2;
    fNODE "tac_double" 2
 | CT_tacsolve(x,l) ->
    fTACTIC_COM x;

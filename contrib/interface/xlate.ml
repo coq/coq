@@ -5,7 +5,6 @@ open Char;;
 open Util;;
 open Ast;;
 open Names;;
-open Ctast;;
 open Ascent;;
 open Genarg;;
 open Rawterm;;
@@ -17,12 +16,6 @@ open Libnames;;
 
 
 let in_coq_ref = ref false;;
-
-let xlate_mut_stuff = ref ((fun _ -> 
-          Nvar((0,0), "function xlate_mut_stuff should not be used here")):
-              Ctast.t -> Ctast.t);;
-
-let set_xlate_mut_stuff v = xlate_mut_stuff := v;;
 
 let declare_in_coq () = in_coq_ref:=true;;
 
@@ -168,18 +161,6 @@ let coerce_VARG_to_ID =
      x
     | _ -> xlate_error "coerce_VARG_to_ID";;
 
-let xlate_id =
- function
-    | Nvar (_, id) ->
-     (match id with
-     | "_" -> xlate_error "xlate_id: '_' is ident option"
-     | s -> CT_ident s)
-    | Id (_, id) ->
-     (match id with
-     | "_" -> xlate_error "xlate_id: '_' is ident option"
-     | s -> CT_ident s)
-    | _ -> xlate_error "xlate_id: not an identifier";;
-
 let xlate_id_unit = function
     None -> CT_unit
   | Some x -> CT_coerce_ID_to_ID_UNIT (xlate_ident x);;
@@ -188,11 +169,6 @@ let xlate_ident_opt =
   function
     | None -> ctv_ID_OPT_NONE
     | Some id -> ctf_ID_OPT_SOME (xlate_ident id)
-
-let xlate_int =
- function
-    | Num (_, n) -> CT_int n
-    | _ -> xlate_error "xlate_int: not an int";;
 
 let xlate_id_to_id_or_int_opt s =
    CT_coerce_ID_OPT_to_ID_OR_INT_OPT
@@ -209,11 +185,6 @@ let none_in_id_or_int_opt =
 let xlate_int_opt = function
   | Some n -> CT_coerce_INT_to_INT_OPT (CT_int n)
   | None ->  CT_coerce_NONE_to_INT_OPT CT_none
-
-let xlate_string =
- function
-    | Str (_, s) -> CT_string s
-    | _ -> xlate_error "xlate_string: not a string";;
 
 let tac_qualid_to_ct_ID ref = 
   CT_ident (Libnames.string_of_qualid (snd (qualid_of_reference ref)))
@@ -240,16 +211,6 @@ let xlate_class = function
   | SortClass -> CT_ident "SORTCLASS"
   | RefClass qid -> loc_qualid_to_ct_ID qid
 
-let split_params =
- let rec sprec acc =
-  function
-     | (Id _ as p) :: l -> sprec (p::acc) l
-     | (Str _ as p) :: l -> sprec (p::acc) l
-     | (Num _ as p) :: l -> sprec (p::acc) l
-     | (Path _ as p) :: l -> sprec (p::acc) l
-     | l -> List.rev acc, l in
- sprec [];;
-
 let id_to_pattern_var ctid =
  match ctid with
  | CT_ident "_" -> 
@@ -260,14 +221,6 @@ let id_to_pattern_var ctid =
  | _ -> assert false;;
 
 exception Not_natural;;
-
-let rec nat_to_number =
- function
-    | Node (_, "APPLIST", ((Nvar (_, "S")) :: (v :: []) as v0)) ->
-     1 + nat_to_number v
-    | Nvar (_, "O") -> 0
-    | _ -> raise Not_natural;;
-
 
 let xlate_sort =
   function
@@ -291,8 +244,9 @@ let xlate_reference = function
 let rec xlate_match_pattern =
  function
    | CPatAtom(_, Some s) -> id_to_pattern_var (xlate_reference  s)
-   |CPatAtom(_, None) -> id_to_pattern_var (CT_ident "_")
-   |  CPatCstr (_, f1 , (arg1 :: args)) ->
+   | CPatAtom(_, None) -> id_to_pattern_var (CT_ident "_")
+   | CPatCstr(_, f, []) -> id_to_pattern_var (xlate_reference f)
+   | CPatCstr (_, f1 , (arg1 :: args)) ->
      CT_pattern_app
       (id_to_pattern_var (xlate_reference  f1),
       CT_match_pattern_ne_list
@@ -301,7 +255,9 @@ let rec xlate_match_pattern =
     | CPatAlias  (_,  pattern, id) ->
      CT_pattern_as
       (xlate_match_pattern pattern, CT_coerce_ID_to_ID_OPT (xlate_ident id))
-    | _ -> xlate_error "Unexpected data while translating a pattern";;
+    | CPatDelimiters(_, _, _) -> xlate_error "CPatDelimitors"
+    | CPatNumeral(_,_) -> xlate_error "CPatNumeral";;
+
 
 
 
@@ -340,6 +296,8 @@ and
 and 
   xlate_binder_list = function
   l -> CT_binder_list( List.map xlate_binder_l l)
+and  cvt_fixpoint_binders bl =
+  CT_binder_list(List.map xlate_binder bl)
 and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 
      CRef r -> varc (xlate_reference r)
@@ -361,19 +319,49 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
    | COrderedCase (_,Term.IfStyle,po,c,[b1;b2]) -> 
 		   CT_if(xlate_formula_opt po,
                    xlate_formula c,xlate_formula b1,xlate_formula b2)		
-
+   | COrderedCase (_,Term.LetStyle, po, c, [CLambdaN(_,[l,_],b)]) ->
+       CT_inductive_let(xlate_formula_opt po,
+	       xlate_id_opt_ne_list l,
+	       xlate_formula c, xlate_formula b) 
+   | COrderedCase (_,c,v,e,l) -> 
+       let case_string = match c with
+	   Term.MatchStyle -> "Match"
+	 | _ -> "Case" in
+	 CT_elimc(CT_case "Case", xlate_formula_opt v, xlate_formula e,
+		  CT_formula_list(List.map xlate_formula l))
    | CSort(_, s) -> CT_coerce_SORT_TYPE_to_FORMULA(xlate_sort s)
    | CNotation(_, s, l) -> notation_to_formula s (List.map xlate_formula l)
    | CNumeral(_, i) -> CT_int_encapsulator(Bignat.bigint_to_string i)
    | CHole _ -> CT_existvarc 
-   | COrderedCase (_,_,_,_,_) -> xlate_error "TODO:COrderedCase"
    | CDynamic (_, _) -> xlate_error "TODO:CDynamic"
    | CDelimiters (_, key, num) -> CT_num_encapsulator(CT_num_type key , xlate_formula  num)
-   | CCast (_, _, _) -> xlate_error "TODO:CCast"
-   | CMeta (_, _) -> xlate_error "TODO:CMeta"
-   | CCoFix (_, _, _) -> xlate_error "TODO:CCoFix"
-   | CFix (_, _, _) -> xlate_error "TODO:CFix"
-
+   | CCast (_, e, t) -> 
+       CT_coerce_TYPED_FORMULA_to_FORMULA
+	 (CT_typed_formula(xlate_formula e, xlate_formula t))
+   | CMeta (_, i) -> CT_coerce_ID_to_FORMULA(CT_metac (CT_int i))
+   | CCoFix (_, (_, id), lm::lmi) -> 
+     let strip_mutcorec (fid, arf, ardef) =
+	CT_cofix_rec (xlate_ident fid, xlate_formula arf, xlate_formula ardef) in
+        CT_cofixc(xlate_ident id,
+	  (CT_cofix_rec_list (strip_mutcorec lm, List.map strip_mutcorec lmi)))
+   | CFix (_, (_, id), lm::lmi) ->       
+     let strip_mutrec (fid, n, arf, ardef) =
+        let (bl,arf,ardef) = Ppconstr.split_fix (n+1) arf ardef in
+        let arf = xlate_formula arf in
+        let ardef = xlate_formula ardef in
+	match cvt_fixpoint_binders bl with
+	  | CT_binder_list (b :: bl) ->
+	      CT_fix_rec (xlate_ident fid, CT_binder_ne_list (b, bl),
+                arf, ardef)
+          | _ -> xlate_error "mutual recursive" in
+       CT_fixc (xlate_ident id, 
+         	CT_fix_binder_list
+		  (CT_coerce_FIX_REC_to_FIX_BINDER 
+		     (strip_mutrec lm), List.map 
+		       (fun x-> CT_coerce_FIX_REC_to_FIX_BINDER (strip_mutrec x))
+		       lmi)) 
+   | CCoFix _ -> assert false
+   | CFix _ -> assert false
 and xlate_formula_expl = function
     (a, None) -> xlate_formula a
   | (a, i) -> CT_bang(xlate_int_opt i, xlate_formula a)
@@ -519,17 +507,6 @@ let is_tactic_special_case = function
     "AutoRewrite" -> true
   | _ -> false;;
 
-let tactic_special_case cont_function cvt_arg = function
-    "AutoRewrite", (tac::v::bl) ->
-      CT_autorewrite
-	(CT_id_ne_list(xlate_id v, List.map xlate_id bl),
-	   CT_coerce_TACTIC_COM_to_TACTIC_OPT(cont_function tac))
-  | "AutoRewrite", (v::bl) ->
-      CT_autorewrite
-	(CT_id_ne_list(xlate_id v, List.map xlate_id bl),
-	 CT_coerce_NONE_to_TACTIC_OPT CT_none)
-  | _ -> assert false;;
-	      
 let xlate_context_pattern = function
   | Term v -> 
       CT_coerce_FORMULA_to_CONTEXT_PATTERN (xlate_formula v)
@@ -703,9 +680,8 @@ and xlate_tac =
     | TacChange (None, f, b) -> CT_change (xlate_formula f, xlate_clause b)
     | TacChange (_, f, b) -> xlate_error "TODO: Change subterms"
     | TacExtend (_,"Contradiction",[]) -> CT_contradiction
-    | TacDoubleInduction (AnonHyp n1, AnonHyp n2) ->
-	CT_tac_double (CT_int n1, CT_int n2)
-    | TacDoubleInduction _ -> xlate_error "TODO: Double Induction id1 id2"
+    | TacDoubleInduction (n1, n2) ->
+	CT_tac_double (xlate_quantified_hypothesis n1, xlate_quantified_hypothesis n2)
     | TacExtend (_,"Discriminate", [idopt]) ->
      CT_discriminate_eq
          (xlate_quantified_hypothesis_opt
@@ -1146,30 +1122,6 @@ let build_record_field_list l =
       xlate_error "TODO: manifest fields in Record" in
  CT_recconstr_list (List.map build_record_field l);;
 
-let xlate_ast =
- let rec xlate_ast_aux =
-  function
-     | Node (_, s, tl) ->
-      CT_astnode (CT_ident s, CT_ast_list (List.map xlate_ast_aux tl))
-     | Nvar (_, s) ->
-      CT_coerce_ID_OR_STRING_to_AST
-       (CT_coerce_STRING_to_ID_OR_STRING (CT_string s))
-     | Slam (_, (Some s), t) ->
-      CT_astslam (CT_coerce_ID_to_ID_OPT (CT_ident s), xlate_ast_aux t)
-     | Slam (_, None, t) -> CT_astslam (ctv_ID_OPT_NONE, xlate_ast_aux t)
-     | Num (_, i) -> failwith "Numbers not treated in xlate_ast"
-     | Id (_, s) ->
-      CT_coerce_ID_OR_STRING_to_AST
-       (CT_coerce_STRING_to_ID_OR_STRING (CT_string s))
-     | Str (_, s) ->
-      CT_coerce_ID_OR_STRING_to_AST
-       (CT_coerce_STRING_to_ID_OR_STRING (CT_string s))
-     | Dynamic(_,_) -> failwith "Dynamics not treated in xlate_ast"
-     | Path (_, sl) ->
-      CT_astpath
-       (CT_id_list (List.map (function s -> CT_ident s) sl)) in
- xlate_ast_aux;;
-
 let get_require_flags impexp spec =
  let ct_impexp =
   match impexp with
@@ -1198,8 +1150,7 @@ let cvt_vernac_binder = function
 let cvt_vernac_binders args =
   CT_binder_list(List.map cvt_vernac_binder args)
 
-let cvt_fixpoint_binders bl =
-  CT_binder_list(List.map xlate_binder bl)
+
 
 let xlate_comment = function
     CommentConstr c -> CT_coerce_FORMULA_to_SCOMMENT_CONTENT(xlate_formula c)

@@ -183,8 +183,7 @@ USERTACCMO=$(USERTAC:.ml4=.cmo)
 USERTACCMX=$(USERTAC:.ml4=.cmx)
 
 INTERFACE=\
-  contrib/interface/vtp.cmo \
-  contrib/interface/ctast.cmo contrib/interface/xlate.cmo \
+  contrib/interface/vtp.cmo contrib/interface/xlate.cmo \
   contrib/interface/paths.cmo contrib/interface/translate.cmo \
   contrib/interface/pbp.cmo \
   contrib/interface/dad.cmo \
@@ -415,10 +414,10 @@ hightactics: $(HIGHTACTICS)
 bin/coq-interface$(EXE): $(COQMKTOP) $(CMO) $(USERTACCMO) $(INTERFACE)
 	$(COQMKTOP) -top $(BYTEFLAGS) -o $@ $(INTERFACE)
 
-bin/parser$(EXE): contrib/interface/ctast.cmo contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
+bin/parser$(EXE): contrib/interface/parse.cmo contrib/interface/line_parser.cmo $(PARSERREQUIRES) contrib/interface/xlate.cmo contrib/interface/vtp.cmo
 	$(OCAMLC) -cclib -lunix -custom $(BYTEFLAGS) -o $@ $(CMA) \
 	$(PARSERREQUIRES) \
-	ctast.cmo line_parser.cmo vtp.cmo xlate.cmo parse.cmo
+	line_parser.cmo vtp.cmo xlate.cmo parse.cmo
 
 clean::
 	rm -f bin/parser$(EXE) bin/coq-interface$(EXE)

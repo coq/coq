@@ -37,7 +37,7 @@ open Translate;;
 open Name_to_ast;;
 open Pbp;;
 open Blast;;
-open Dad;;
+(* open Dad;; *)
 open Debug_tac;;
 open Search;;
 open Constrintern;;
@@ -330,11 +330,13 @@ let globcv x =
 	       (ConstructRef ((sp, tyi), i)))
   | _ -> failwith "globcv : unexpected value";;
 
+(* <\cpa> 
 let pbp_tac_pcoq =
     pbp_tac (function (x:raw_tactic_expr) -> 
       output_results
         (ctf_header "pbp_results" !global_request_id)
        (Some (P_t(xlate_tactic x))));;
+</cpa> *)
 
 let blast_tac_pcoq =
     blast_tac (function (x:raw_tactic_expr) -> 
@@ -342,12 +344,13 @@ let blast_tac_pcoq =
 	(ctf_header "pbp_results" !global_request_id)
        (Some (P_t(xlate_tactic x))));;
 
-
+(* <\cpa> 
 let dad_tac_pcoq =
   dad_tac(function x -> 
     output_results
     (ctf_header "pbp_results" !global_request_id)
     (Some (P_t(xlate_tactic x))));;
+</cpa> *)
 
 let search_output_results () =
   output_results
@@ -551,6 +554,9 @@ let abort_hook s = output_results_nl (ctf_AbortedMessage !global_request_id s)
 let pcoq_search s l =
   ctv_SEARCH_LIST:=[];
   begin match s with
+  | SearchAbout locqid -> 
+      raw_search_about (filter_by_module_from_list l) add_search
+	(Nametab.global locqid)
   | SearchPattern c ->
       let _,pat = interp_constrpattern Evd.empty (Global.env()) c in
       raw_pattern_search (filter_by_module_from_list l) add_search pat
@@ -573,7 +579,7 @@ let pcoq_print_check j =
   let a,b = print_check j in output_results a b
 
 let pcoq_print_eval redfun env c j =
-  let strm, vtp = ct_print_eval (Ctast.ast_to_ct c) redfun env j in
+  let strm, vtp = ct_print_eval c redfun env j in
   output_results strm vtp;;
 
 open Vernacentries
@@ -879,6 +885,7 @@ let command_creations = [
 ];;
 *)
 
+(* <\cpa> 
 TACTIC EXTEND Pbp
 | [ "Pbp" ident_opt(idopt) natural_list(nl) ] -> 
     [ if_pcoq pbp_tac_pcoq idopt nl ]
@@ -891,6 +898,7 @@ TACTIC EXTEND Dad
 | [ "Dad" natural_list(nl1) "to" natural_list(nl2) ] ->
     [ if_pcoq dad_tac_pcoq nl1 nl2 ]
 END
+ </cpa> *)
 
 TACTIC EXTEND CtDebugTac
 | [ "DebugTac" tactic(t) ] -> [ if_pcoq debug_tac2_pcoq t ]
@@ -904,8 +912,9 @@ END
 let start_pcoq_mode debug = 
   begin
     pcoq_started := Some debug;
+(* <\cpa> 
     start_dad();
-    set_xlate_mut_stuff (fun x ->Ctast.ast_to_ct (globcv (Ctast.ct_to_ast x)));
+</cpa> *)
     declare_in_coq();
 (*
     add_tactic "PcoqPbp" pbp_tac_pcoq;
