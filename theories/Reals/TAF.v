@@ -15,11 +15,11 @@ Require Ranalysis1.
 Require Rtopology.
 
 (* Théorème des accroissements finis généralisés *)
-Theorem TAF_gen : (f,g:R->R;a,b:R;pr1:(c:R)``a<c<b``->(derivable_pt f c);pr2:(c:R)``a<c<b``->(derivable_pt g c)) ``a<b`` -> (continuity f) -> (continuity g) -> (EXT c : R | (EXT P : ``a<c<b`` | ``((g b)-(g a))*(derive_pt f c (pr1 c P))==((f b)-(f a))*(derive_pt g c (pr2 c P))``)).
+Theorem TAF_gen : (f,g:R->R;a,b:R;pr1:(c:R)``a<c<b``->(derivable_pt f c);pr2:(c:R)``a<c<b``->(derivable_pt g c)) ``a<b`` -> ((c:R)``a<=c<=b``->(continuity_pt f c)) -> ((c:R)``a<=c<=b``->(continuity_pt g c)) -> (EXT c : R | (EXT P : ``a<c<b`` | ``((g b)-(g a))*(derive_pt f c (pr1 c P))==((f b)-(f a))*(derive_pt g c (pr2 c P))``)).
 Intros; Assert H2 := (Rlt_le ? ? H).
 Pose h := [y:R]``((g b)-(g a))*(f y)-((f b)-(f a))*(g y)``.
 Cut (c:R)``a<c<b``->(derivable_pt h c).
-Intro; Cut (continuity h).
+Intro; Cut ((c:R)``a<=c<=b``->(continuity_pt h c)).
 Intro; Assert H4 := (continuity_ab_maj h a b H2 H3).
 Assert H5 := (continuity_ab_min h a b H2 H3).
 Elim H4; Intros Mx H6.
@@ -91,12 +91,12 @@ Rewrite H8 in H10; Rewrite <- H14 in H10; Elim H10; Reflexivity.
 Intros; Unfold h; Replace (derive_pt [y:R]``((g b)-(g a))*(f y)-((f b)-(f a))*(g y)`` c (X c P)) with (derive_pt (minus_fct (mult_fct (fct_cte ``(g b)-(g a)``) f) (mult_fct (fct_cte ``(f b)-(f a)``) g)) c (derivable_pt_minus ? ? ? (derivable_pt_mult ? ? ? (derivable_pt_const ``(g b)-(g a)`` c) (pr1 c P)) (derivable_pt_mult ? ? ? (derivable_pt_const ``(f b)-(f a)`` c) (pr2 c P)))); [Idtac | Apply pr_nu].
 Rewrite derive_pt_minus; Do 2 Rewrite derive_pt_mult; Do 2 Rewrite derive_pt_const; Do 2 Rewrite Rmult_Ol; Do 2 Rewrite Rplus_Ol; Reflexivity.
 Unfold h; Ring.
-Intros; Unfold h; Change (continuity(minus_fct (mult_fct (fct_cte ``(g b)-(g a)``) f) (mult_fct (fct_cte ``(f b)-(f a)``) g))).
-Apply continuity_minus; Apply continuity_mult.
-Apply derivable_continuous; Apply derivable_const.
-Apply H0.
-Apply derivable_continuous; Apply derivable_const.
-Apply H1.
+Intros; Unfold h; Change (continuity_pt (minus_fct (mult_fct (fct_cte ``(g b)-(g a)``) f) (mult_fct (fct_cte ``(f b)-(f a)``) g)) c).
+Apply continuity_pt_minus; Apply continuity_pt_mult.
+Apply derivable_continuous_pt; Apply derivable_const.
+Apply H0; Apply H3.
+Apply derivable_continuous_pt; Apply derivable_const.
+Apply H1; Apply H3.
 Intros; Change (derivable_pt (minus_fct (mult_fct (fct_cte ``(g b)-(g a)``) f) (mult_fct (fct_cte ``(f b)-(f a)``) g)) c).
 Apply derivable_pt_minus; Apply derivable_pt_mult.
 Apply derivable_pt_const.
@@ -109,14 +109,40 @@ Qed.
 Lemma TAF : (f:(R->R); a,b:R; pr:(derivable f)) ``a < b``->(EXT c:R | ``(f b)-(f a) == (derive_pt f c (pr c))*(b-a)``/\``a < c < b``).
 Intros; Cut (c:R)``a<c<b``->(derivable_pt f c); [Intro | Intros; Apply pr].
 Cut (c:R)``a<c<b``->(derivable_pt id c); [Intro | Intros; Apply derivable_pt_id].
-Cut (continuity f); [Intro | Apply derivable_continuous; Apply pr].
-Cut (continuity id); [Intro | Apply derivable_continuous; Apply derivable_id].
+Cut ((c:R)``a<=c<=b``->(continuity_pt f c)); [Intro | Intros; Apply derivable_continuous_pt; Apply pr].
+Cut ((c:R)``a<=c<=b``->(continuity_pt id c)); [Intro | Intros; Apply derivable_continuous_pt; Apply derivable_id].
 Assert H2 := (TAF_gen f id a b X X0 H H0 H1).
 Elim H2; Intros c H3; Elim H3; Intros.
 Exists c; Split.
 Cut (derive_pt id c (X0 c x)) == (derive_pt id c (derivable_pt_id c)); [Intro | Apply pr_nu].
 Rewrite H5 in H4; Rewrite (derive_pt_id c) in H4; Rewrite Rmult_1r in H4; Rewrite <- H4; Replace (derive_pt f c (X c x)) with (derive_pt f c (pr c)); [Idtac | Apply pr_nu]; Apply Rmult_sym.
 Apply x.
+Qed.
+
+Theorem TAF_cor1 : (f,f':R->R;a,b:R) ``a<b`` -> ((c:R)``a<=c<=b``->(derivable_pt_lim f c (f' c))) -> (EXT c:R | ``(f b)-(f a)==(f' c)*(b-a)``/\``a<c<b``).
+Intros; Cut ((c:R)``a<=c<=b``->(derivable_pt f c)).
+Intro; Cut ((c:R)``a<c<b``->(derivable_pt f c)).
+Intro; Cut ((c:R)``a<=c<=b``->(continuity_pt f c)).
+Intro; Cut ((c:R)``a<=c<=b``->(derivable_pt id c)).
+Intro; Cut ((c:R)``a<c<b``->(derivable_pt id c)).
+Intro; Cut ((c:R)``a<=c<=b``->(continuity_pt id c)).
+Intro; Elim (TAF_gen f id a b X0 X2 H H1 H2); Intros; Elim H3; Clear H3; Intros; Exists x; Split.
+Cut (derive_pt id x (X2 x x0))==R1.
+Cut (derive_pt f x (X0 x x0))==(f' x).
+Intros; Rewrite H4 in H3; Rewrite H5 in H3; Unfold id in H3; Rewrite Rmult_1r in H3; Rewrite Rmult_sym; Symmetry; Assumption.
+Apply derive_pt_eq_0; Apply H0; Elim x0; Intros; Split; Left; Assumption.
+Apply derive_pt_eq_0; Apply derivable_pt_lim_id.
+Assumption.
+Intros; Apply derivable_continuous_pt; Apply X1; Assumption.
+Intros; Apply derivable_pt_id.
+Intros; Apply derivable_pt_id.
+Intros; Apply derivable_continuous_pt; Apply X; Assumption.
+Intros; Elim H1; Intros; Apply X; Split; Left; Assumption.
+Intros; Unfold derivable_pt; Apply Specif.existT with (f' c); Apply H0; Apply H1.
+Qed.
+
+Lemma TAF_cor2 : (f,f':(R->R); a,b:R) ``a < b``  -> ((x:R)``a <= x`` ->  ``x <= b``->(derivable_pt_lim f x (f' x))) -> (EXT c:R | ``a<=c``/\``c<=b``/\``(f b)==(f a) + (f' c)*(b-a)``).
+Intros; Assert H1 : (EXT c:R | ``(f b) -(f a) == (f' c)*(b-a)``/\``a<c<b``); [Apply TAF_cor1; [Apply H | Intros; Elim H1; Intros; Apply (H0 ? H2 H3)] | Elim H1; Intros; Exists x; Elim H2; Intros; Elim H4; Intros; Split; [Left; Assumption | Split; [Left; Assumption | Rewrite <- H3; Ring]]].
 Qed.
 
 (*** Corollaires ***)
