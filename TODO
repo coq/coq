@@ -28,6 +28,7 @@ Doc:
 - documenter tactiques Induction, LetTac
 - documenter AutoRewrite
 - Ajouter let dans les règles du CIC
+  -> FAIT, mais reste a documenter le let dans les inductifs
 - changement syntaxe de AddPath
 - une passe sur le chapitre extensions de syntaxe
 - une passe sur le chapitre Cases
