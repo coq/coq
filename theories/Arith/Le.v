@@ -62,15 +62,14 @@ Hint Immediate le_Sn_le: arith v62.
 Theorem le_S_n : forall n m, S n <= S m -> n <= m.
 Proof.
 intros n m H; change (pred (S n) <= pred (S m)) in |- *.
-elim H; simpl in |- *; auto with arith.
+destruct H; simpl; auto with arith.
 Qed.
 Hint Immediate le_S_n: arith v62.
 
 Theorem le_pred : forall n m, n <= m -> pred n <= pred m.
 Proof.
-induction n as [| n IHn]. simpl in |- *. auto with arith.
-destruct m as [| m]. simpl in |- *. intro H. inversion H.
-simpl in |- *. auto with arith.
+destruct n; simpl; auto with arith.
+destruct m; simpl; auto with arith.
 Qed.
 
 (** Comparison to 0 *)
