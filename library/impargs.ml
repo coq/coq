@@ -298,24 +298,6 @@ let constant_implicits sp =
    $i$ are the implicit arguments of the inductive and $v$ the array of 
    implicit arguments of the constructors. *)
 
-module Inductive_path = struct
-  type t = inductive
-  let compare (spx,ix) (spy,iy) = 
-    let c = ix - iy in if c = 0 then compare spx spy else c
-end
-
-module Indmap = Map.Make(Inductive_path)
-
-let inductives_table = ref Indmap.empty
-
-module Construtor_path = struct
-  type t = constructor
-  let compare (indx,ix) (indy,iy) = 
-    let c = ix - iy in if c = 0 then Inductive_path.compare indx indy else c
-end
-
-module Constrmap = Map.Make(Construtor_path)
-
 let inductives_table = ref Indmap.empty
 
 let constructors_table = ref Constrmap.empty
