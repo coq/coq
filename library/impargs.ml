@@ -358,7 +358,7 @@ let cache_implicits_decl (r,imps) =
 let cache_implicits (_,l) = List.iter cache_implicits_decl l
 
 let subst_implicits_decl subst (r,imps as o) =
-  let r' = subst_global subst r in if r==r' then o else (r',imps)
+  let r' = fst (subst_global subst r) in if r==r' then o else (r',imps)
 
 let subst_implicits (_,subst,l) =
   list_smartmap (subst_implicits_decl subst) l

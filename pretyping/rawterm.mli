@@ -15,7 +15,6 @@ open Sign
 open Term
 open Libnames
 open Nametab
-open Mod_subst
 (*i*)
 
 (* Untyped intermediate terms, after ASTs and before constr. *)
@@ -99,8 +98,6 @@ val map_rawconstr_with_binders_loc : loc ->
 val occur_rawconstr : identifier -> rawconstr -> bool
 
 val loc_of_rawconstr : rawconstr -> loc
-
-val subst_raw : substitution -> rawconstr -> rawconstr
 
 type 'a raw_red_flag = {
   rBeta : bool;

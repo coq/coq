@@ -12,7 +12,6 @@
 open Util
 open Names
 open Libnames
-open Mod_subst
 (*i*)
 
 (* Abstract syntax trees. *)
@@ -42,8 +41,6 @@ val hcons_ast:
   (string -> string) * (Names.identifier -> Names.identifier)
   * (kernel_name -> kernel_name) * (constant -> constant)
   -> (t -> t) * (loc -> loc)
-
-val subst_ast: substitution -> t -> t
 
 (*
 val map_tactic_expr : (t -> t) -> (tactic_expr -> tactic_expr) -> tactic_expr -> tactic_expr

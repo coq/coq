@@ -305,7 +305,10 @@ let subst_autohint (_,subst,(local,name,hintlist as obj)) =
     }
   in
   let subst_hint (lab,data as hint) =
-    let lab' = subst_global subst lab in
+    let lab',elab' = subst_global subst lab in
+    let lab' =
+     try head_of_constr_reference (List.hd (head_constr_bound elab' []))
+     with Tactics.Bound -> lab' in
     let data' = match data.code with
       | Res_pf (c, clenv) ->
 	  let c' = subst_mps subst c in

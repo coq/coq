@@ -369,7 +369,7 @@ let cache_arguments_scope (_,(r,scl)) =
   List.iter (option_iter check_scope) scl;
   arguments_scope := Refmap.add r scl !arguments_scope
 
-let subst_arguments_scope (_,subst,(r,scl)) = (subst_global subst r,scl)
+let subst_arguments_scope (_,subst,(r,scl)) = (fst (subst_global subst r),scl)
 
 let (inArgumentsScope,outArgumentsScope) = 
   declare_object {(default_object "ARGUMENTS-SCOPE") with

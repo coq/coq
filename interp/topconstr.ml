@@ -111,100 +111,6 @@ let rec subst_pat subst pat =
         if kn' == kn && cpl' == cpl then pat else
           PatCstr (loc,((kn',i),j),cpl',n)
 
-let rec subst_aconstr subst raw =
-  match raw with
-  | ARef ref -> 
-      let ref' = subst_global subst ref in 
-	if ref' == ref then raw else
-	  ARef ref'
-
-  | AVar _ -> raw
-
-  | AApp (r,rl) -> 
-      let r' = subst_aconstr subst r 
-      and rl' = list_smartmap (subst_aconstr subst) rl in
-	if r' == r && rl' == rl then raw else
-	  AApp(r',rl')
-
-  | AList (id1,id2,r1,r2,b) -> 
-      let r1' = subst_aconstr subst r1 and r2' = subst_aconstr subst r2 in
-	if r1' == r1 && r2' == r2 then raw else
-	  AList (id1,id2,r1',r2',b)
-
-  | ALambda (n,r1,r2) -> 
-      let r1' = subst_aconstr subst r1 and r2' = subst_aconstr subst r2 in
-	if r1' == r1 && r2' == r2 then raw else
-	  ALambda (n,r1',r2')
-
-  | AProd (n,r1,r2) -> 
-      let r1' = subst_aconstr subst r1 and r2' = subst_aconstr subst r2 in
-	if r1' == r1 && r2' == r2 then raw else
-	  AProd (n,r1',r2')
-
-  | ALetIn (n,r1,r2) -> 
-      let r1' = subst_aconstr subst r1 and r2' = subst_aconstr subst r2 in
-	if r1' == r1 && r2' == r2 then raw else
-	  ALetIn (n,r1',r2')
-
-  | ACases (ro,rtntypopt,rl,branches) -> 
-      let ro' = option_smartmap (subst_aconstr subst) ro 
-      and rtntypopt' = option_smartmap (subst_aconstr subst) rtntypopt
-      and rl' = list_smartmap
-        (fun (a,(n,signopt) as x) -> 
-	  let a' = subst_aconstr subst a in
-	  let signopt' = option_app (fun ((indkn,i),nal as z) ->
-	    let indkn' = subst_kn subst indkn in
-	    if indkn == indkn' then z else ((indkn',i),nal)) signopt in
-	  if a' == a && signopt' == signopt then x else (a',(n,signopt')))
-        rl
-      and branches' = list_smartmap 
-                        (fun (idl,cpl,r as branch) ->
-                           let cpl' = list_smartmap (subst_pat subst) cpl
-                           and r' = subst_aconstr subst r in
-                             if cpl' == cpl && r' == r then branch else
-                               (idl,cpl',r'))
-                        branches
-      in
-        if ro' == ro && rtntypopt == rtntypopt' &
-          rl' == rl && branches' == branches then raw else
-          ACases (ro',rtntypopt',rl',branches')
-
-  | AOrderedCase (b,ro,r,ra) -> 
-      let ro' = option_smartmap (subst_aconstr subst) ro
-      and r' = subst_aconstr subst r 
-      and ra' = array_smartmap (subst_aconstr subst) ra in
-	if ro' == ro && r' == r && ra' == ra then raw else
-	  AOrderedCase (b,ro',r',ra')
-
-  | ALetTuple (nal,(na,po),b,c) ->
-      let po' = option_smartmap (subst_aconstr subst) po
-      and b' = subst_aconstr subst b 
-      and c' = subst_aconstr subst c in
-	if po' == po && b' == b && c' == c then raw else
-	  ALetTuple (nal,(na,po'),b',c')
-
-  | AIf (c,(na,po),b1,b2) ->
-      let po' = option_smartmap (subst_aconstr subst) po
-      and b1' = subst_aconstr subst b1
-      and b2' = subst_aconstr subst b2 
-      and c' = subst_aconstr subst c in
-	if po' == po && b1' == b1 && b2' == b2 && c' == c then raw else
-	  AIf (c',(na,po'),b1',b2')
-
-  | APatVar _ | ASort _ -> raw
-
-  | AHole (Evd.ImplicitArg (ref,i)) ->
-      let ref' = subst_global subst ref in 
-	if ref' == ref then raw else
-	  AHole (Evd.ImplicitArg (ref',i))
-  | AHole (Evd.BinderType _ | Evd.QuestionMark | Evd.CasesType |
-      Evd.InternalHole | Evd.TomatchTypeParameter _) -> raw
-
-  | ACast (r1,r2) -> 
-      let r1' = subst_aconstr subst r1 and r2' = subst_aconstr subst r2 in
-	if r1' == r1 && r2' == r2 then raw else
-	  ACast (r1',r2')
-
 let add_name r = function
   | Anonymous -> ()
   | Name id -> r := id :: !r
@@ -333,6 +239,104 @@ let aconstr_of_rawconstr vars a =
       error ((string_of_id x)^" is unbound in the right-hand-side") in
   List.iter check_type vars;
   a
+
+let aconstr_of_constr avoiding t =
+ aconstr_of_rawconstr [] (Detyping.detype (false,Global.env()) avoiding [] t)
+
+let rec subst_aconstr subst bound raw =
+  match raw with
+  | ARef ref -> 
+      let ref',t = subst_global subst ref in 
+	if ref' == ref then raw else
+	  aconstr_of_constr bound t
+
+  | AVar _ -> raw
+
+  | AApp (r,rl) -> 
+      let r' = subst_aconstr subst bound r 
+      and rl' = list_smartmap (subst_aconstr subst bound) rl in
+	if r' == r && rl' == rl then raw else
+	  AApp(r',rl')
+
+  | AList (id1,id2,r1,r2,b) -> 
+      let r1' = subst_aconstr subst bound r1 and r2' = subst_aconstr subst bound r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  AList (id1,id2,r1',r2',b)
+
+  | ALambda (n,r1,r2) -> 
+      let r1' = subst_aconstr subst bound r1 and r2' = subst_aconstr subst bound r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  ALambda (n,r1',r2')
+
+  | AProd (n,r1,r2) -> 
+      let r1' = subst_aconstr subst bound r1 and r2' = subst_aconstr subst bound r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  AProd (n,r1',r2')
+
+  | ALetIn (n,r1,r2) -> 
+      let r1' = subst_aconstr subst bound r1 and r2' = subst_aconstr subst bound r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  ALetIn (n,r1',r2')
+
+  | ACases (ro,rtntypopt,rl,branches) -> 
+      let ro' = option_smartmap (subst_aconstr subst bound) ro 
+      and rtntypopt' = option_smartmap (subst_aconstr subst bound) rtntypopt
+      and rl' = list_smartmap
+        (fun (a,(n,signopt) as x) -> 
+	  let a' = subst_aconstr subst bound a in
+	  let signopt' = option_app (fun ((indkn,i),nal as z) ->
+	    let indkn' = subst_kn subst indkn in
+	    if indkn == indkn' then z else ((indkn',i),nal)) signopt in
+	  if a' == a && signopt' == signopt then x else (a',(n,signopt')))
+        rl
+      and branches' = list_smartmap 
+                        (fun (idl,cpl,r as branch) ->
+                           let cpl' = list_smartmap (subst_pat subst) cpl
+                           and r' = subst_aconstr subst bound r in
+                             if cpl' == cpl && r' == r then branch else
+                               (idl,cpl',r'))
+                        branches
+      in
+        if ro' == ro && rtntypopt == rtntypopt' &
+          rl' == rl && branches' == branches then raw else
+          ACases (ro',rtntypopt',rl',branches')
+
+  | AOrderedCase (b,ro,r,ra) -> 
+      let ro' = option_smartmap (subst_aconstr subst bound) ro
+      and r' = subst_aconstr subst bound r 
+      and ra' = array_smartmap (subst_aconstr subst bound) ra in
+	if ro' == ro && r' == r && ra' == ra then raw else
+	  AOrderedCase (b,ro',r',ra')
+
+  | ALetTuple (nal,(na,po),b,c) ->
+      let po' = option_smartmap (subst_aconstr subst bound) po
+      and b' = subst_aconstr subst bound b 
+      and c' = subst_aconstr subst bound c in
+	if po' == po && b' == b && c' == c then raw else
+	  ALetTuple (nal,(na,po'),b',c')
+
+  | AIf (c,(na,po),b1,b2) ->
+      let po' = option_smartmap (subst_aconstr subst bound) po
+      and b1' = subst_aconstr subst bound b1
+      and b2' = subst_aconstr subst bound b2 
+      and c' = subst_aconstr subst bound c in
+	if po' == po && b1' == b1 && b2' == b2 && c' == c then raw else
+	  AIf (c',(na,po'),b1',b2')
+
+  | APatVar _ | ASort _ -> raw
+
+  | AHole (Evd.ImplicitArg (ref,i)) ->
+      let ref',t = subst_global subst ref in 
+	if ref' == ref then raw else
+	  AHole (Evd.InternalHole)
+  | AHole (Evd.BinderType _ | Evd.QuestionMark | Evd.CasesType |
+      Evd.InternalHole | Evd.TomatchTypeParameter _) -> raw
+
+  | ACast (r1,r2) -> 
+      let r1' = subst_aconstr subst bound r1 and r2' = subst_aconstr subst bound r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  ACast (r1',r2')
+
 
 let encode_list_value l = RApp (dummy_loc,RVar (dummy_loc,ldots_var),l)
 

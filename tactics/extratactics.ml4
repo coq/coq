@@ -14,6 +14,7 @@ open Pp
 open Pcoq
 open Genarg
 open Extraargs
+open Mod_subst
 
 (* Equality *)
 open Equality
@@ -348,7 +349,7 @@ let step left x tac =
   let l =
     List.map (fun lem ->
       tclTHENLAST
-      (apply_with_bindings (constr_of_reference lem, ImplicitBindings [x]))
+      (apply_with_bindings (lem, ImplicitBindings [x]))
         tac)
       !(if left then transitivity_left_table else transitivity_right_table)
   in
@@ -362,7 +363,7 @@ let cache_transitivity_lemma (_,(left,lem)) =
   else
     transitivity_right_table := lem :: !transitivity_right_table
   
-let subst_transitivity_lemma (_,subst,(b,ref)) = (b,subst_global subst ref)
+let subst_transitivity_lemma (_,subst,(b,ref)) = (b,subst_mps subst ref)
 
 let (inTransitivity,_) =
   declare_object {(default_object "TRANSITIVITY-STEPS") with
@@ -394,8 +395,9 @@ let _ =
 
 (* Main entry points *)
 
-let add_transitivity_lemma left ref =
-  add_anonymous_leaf (inTransitivity (left,Nametab.global ref))
+let add_transitivity_lemma left lem =
+ let lem' = Constrintern.interp_constr Evd.empty (Global.env ()) lem in
+  add_anonymous_leaf (inTransitivity (left,lem'))
 
 (* Vernacular syntax *)
 
@@ -410,11 +412,11 @@ TACTIC EXTEND Stepr
 END
 
 VERNAC COMMAND EXTEND AddStepl
-| [ "Declare" "Left" "Step" global(id) ] ->
-    [ add_transitivity_lemma true id ]
+| [ "Declare" "Left" "Step" constr(t) ] ->
+    [ add_transitivity_lemma true t ]
 END
 
 VERNAC COMMAND EXTEND AddStepr
-| [ "Declare" "Right" "Step" global(id) ] ->
-    [ add_transitivity_lemma false id ]
+| [ "Declare" "Right" "Step" constr(t) ] ->
+    [ add_transitivity_lemma false t ]
 END

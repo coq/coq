@@ -588,22 +588,3 @@ let rec occur_var_ast s = function
   | Slam(_,sopt,body) -> (Some s <> sopt) & occur_var_ast s body
   | Id _ | Str _ | Num _ | Path _ | ConPath _ -> false
   | Dynamic _ -> (* Hum... what to do here *) false
-
-
-(**********************************************************************)
-(* Object substitution in modules *)
-
-let rec subst_astpat subst = function
-  | Pquote a -> Pquote (subst_ast subst a)
-  | Pmeta _ as p -> p
-  | Pnode (s,pl) -> Pnode (s,subst_astpatlist subst pl)
-  | Pslam (ido,p) -> Pslam (ido,subst_astpat subst p)
-  | Pmeta_slam (s,p) -> Pmeta_slam (s,subst_astpat subst p)
-
-and subst_astpatlist subst = function
-  | Pcons (p,pl) -> Pcons (subst_astpat subst p, subst_astpatlist subst pl)
-  | (Plmeta _ | Pnil) as pl -> pl
-
-let subst_pat subst = function
-  | AstListPat pl -> AstListPat (subst_astpatlist subst pl)
-  | PureAstPat p -> PureAstPat (subst_astpat subst p)

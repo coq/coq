@@ -492,3 +492,117 @@ and detype_binder tenv bk avoid env na ty c =
     | BProd -> RProd (dummy_loc, na',detype tenv [] env ty, r)
     | BLambda -> RLambda (dummy_loc, na',detype tenv [] env ty, r)
     | BLetIn -> RLetIn (dummy_loc, na',detype tenv [] env ty, r)
+
+let rec subst_pat subst pat = 
+  match pat with
+  | PatVar _ -> pat
+  | PatCstr (loc,((kn,i),j),cpl,n) -> 
+      let kn' = subst_kn subst kn 
+      and cpl' = list_smartmap (subst_pat subst) cpl in
+	if kn' == kn && cpl' == cpl then pat else
+	  PatCstr (loc,((kn',i),j),cpl',n)
+
+let rec subst_raw subst raw = 
+  match raw with
+  | RRef (loc,ref) -> 
+      let ref',t = subst_global subst ref in 
+	if ref' == ref then raw else
+         detype (false,Global.env ()) [] [] t
+
+  | RVar _ -> raw
+  | REvar _ -> raw
+  | RPatVar _ -> raw
+
+  | RApp (loc,r,rl) -> 
+      let r' = subst_raw subst r 
+      and rl' = list_smartmap (subst_raw subst) rl in
+	if r' == r && rl' == rl then raw else
+	  RApp(loc,r',rl')
+
+  | RLambda (loc,n,r1,r2) -> 
+      let r1' = subst_raw subst r1 and r2' = subst_raw subst r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  RLambda (loc,n,r1',r2')
+
+  | RProd (loc,n,r1,r2) -> 
+      let r1' = subst_raw subst r1 and r2' = subst_raw subst r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  RProd (loc,n,r1',r2')
+
+  | RLetIn (loc,n,r1,r2) -> 
+      let r1' = subst_raw subst r1 and r2' = subst_raw subst r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  RLetIn (loc,n,r1',r2')
+
+  | RCases (loc,(ro,rtno),rl,branches) -> 
+      let ro' = option_smartmap (subst_raw subst) ro 
+      and rtno' = ref (option_smartmap (subst_raw subst) !rtno)
+      and rl' = list_smartmap (fun (a,x as y) ->
+        let a' = subst_raw subst a in
+        let (n,topt) = !x in 
+        let topt' = option_smartmap
+          (fun (loc,(sp,i),x as t) ->
+            let sp' = subst_kn subst sp in
+            if sp == sp' then t else (loc,(sp',i),x)) topt in
+        if a == a' && topt == topt' then y else (a',ref (n,topt'))) rl
+      and branches' = list_smartmap 
+			(fun (loc,idl,cpl,r as branch) ->
+			   let cpl' = list_smartmap (subst_pat subst) cpl
+			   and r' = subst_raw subst r in
+			     if cpl' == cpl && r' == r then branch else
+			       (loc,idl,cpl',r'))
+			branches
+      in
+	if ro' == ro && rl' == rl && branches' == branches then raw else
+	  RCases (loc,(ro',rtno'),rl',branches')
+
+  | ROrderedCase (loc,b,ro,r,ra,x) -> 
+      let ro' = option_smartmap (subst_raw subst) ro
+      and r' = subst_raw subst r 
+      and ra' = array_smartmap (subst_raw subst) ra in
+	if ro' == ro && r' == r && ra' == ra then raw else
+	  ROrderedCase (loc,b,ro',r',ra',x)
+
+  | RLetTuple (loc,nal,(na,po),b,c) ->
+      let po' = option_smartmap (subst_raw subst) po
+      and b' = subst_raw subst b 
+      and c' = subst_raw subst c in
+	if po' == po && b' == b && c' == c then raw else
+          RLetTuple (loc,nal,(na,po'),b',c')
+      
+  | RIf (loc,c,(na,po),b1,b2) ->
+      let po' = option_smartmap (subst_raw subst) po
+      and b1' = subst_raw subst b1 
+      and b2' = subst_raw subst b2 
+      and c' = subst_raw subst c in
+	if c' == c & po' == po && b1' == b1 && b2' == b2 then raw else
+          RIf (loc,c',(na,po'),b1',b2')
+
+  | RRec (loc,fix,ida,bl,ra1,ra2) -> 
+      let ra1' = array_smartmap (subst_raw subst) ra1
+      and ra2' = array_smartmap (subst_raw subst) ra2 in
+      let bl' = array_smartmap
+        (list_smartmap (fun (na,obd,ty as dcl) ->
+          let ty' = subst_raw subst ty in
+          let obd' = option_smartmap (subst_raw subst) obd in
+          if ty'==ty & obd'==obd then dcl else (na,obd',ty')))
+        bl in
+	if ra1' == ra1 && ra2' == ra2 && bl'==bl then raw else
+	  RRec (loc,fix,ida,bl',ra1',ra2')
+
+  | RSort _ -> raw
+
+  | RHole (loc,ImplicitArg (ref,i)) ->
+      let ref',_ = subst_global subst ref in 
+	if ref' == ref then raw else
+	  RHole (loc,InternalHole)
+  | RHole (loc, (BinderType _ | QuestionMark | CasesType |
+      InternalHole | TomatchTypeParameter _)) -> raw
+
+  | RCast (loc,r1,r2) -> 
+      let r1' = subst_raw subst r1 and r2' = subst_raw subst r2 in
+	if r1' == r1 && r2' == r2 then raw else
+	  RCast (loc,r1',r2')
+
+  | RDynamic _ -> raw
+

@@ -8,22 +8,27 @@
 
 (*i $Id$ i*)
 
+(*s Mod_subst *)
+
 open Names
 open Term
 
-(*s Substitutions *)
-
+type resolver
 type substitution
+
+val make_resolver :  (constant * constr option) list -> resolver
 
 val empty_subst : substitution
 
 val add_msid : 
   mod_self_id -> module_path -> substitution -> substitution
 val add_mbid : 
-  mod_bound_id -> module_path -> substitution -> substitution
+  mod_bound_id -> module_path -> resolver option -> substitution -> substitution
 
-val map_msid : mod_self_id -> module_path -> substitution
-val map_mbid : mod_bound_id -> module_path -> substitution
+val map_msid :
+  mod_self_id -> module_path -> substitution
+val map_mbid :
+  mod_bound_id -> module_path -> resolver option -> substitution
 
 (* sequential composition: 
    [substitute (join sub1 sub2) t = substitute sub2 (substitute sub1 t)]
@@ -47,18 +52,29 @@ val debug_pr_subst : substitution -> Pp.std_ppcmds
 val subst_mp : 
   substitution -> module_path -> module_path
 
+val subst_kn :
+  substitution -> kernel_name -> kernel_name
+
+val subst_con :
+  substitution -> constant -> constant * constr
+
+(* Here the semantics is completely unclear.
+   What does "Hint Unfold t" means when "t" is a parameter?
+   Does the user mean "Unfold X.t" or does she mean "Unfold y"
+   where X.t is later on instantiated with y? I choose the first
+   interpretation (i.e. an evaluable reference is never expanded). *)
+val subst_evaluable_reference :
+  substitution -> evaluable_global_reference -> evaluable_global_reference
+
+(* [replace_mp_in_con mp mp' con] replaces [mp] with [mp'] in [con] *)
+val replace_mp_in_con : module_path -> module_path -> constant -> constant
+
+(* [subst_mps sub c] performs the substitution [sub] on all kernel
+   names appearing in [c] *)
+val subst_mps : substitution -> constr -> constr
+
 (* [occur_*id id sub] returns true iff [id] occurs in [sub] 
    on either side *)
 
 val occur_msid : mod_self_id -> substitution -> bool
 val occur_mbid : mod_bound_id -> substitution -> bool
-
-val subst_kn : substitution -> kernel_name -> kernel_name
-val subst_con : substitution -> constant -> constant
-val subst_evaluable_reference :
-  substitution -> evaluable_global_reference -> evaluable_global_reference
-
-
-(* [subst_mps sub c] performs the substitution [sub] on all kernel
-   names appearing in [c] *)
-val subst_mps : substitution -> constr -> constr

@@ -46,7 +46,7 @@ val meta_of_ast : Coqast.t -> string
 
 (* patterns of ast *)
 type astpat =
-  | Pquote of t
+  | Pquote of Coqast.t
   | Pmeta of string * tok_kind
   | Pnode of string * patlist
   | Pslam of identifier option * astpat
@@ -119,6 +119,3 @@ val find_all_matches : ('a -> astpat) -> env -> t -> 'a list -> ('a * env) list
 val first_matchl : ('a -> patlist) -> env -> Coqast.t list -> 'a list ->
   ('a * env) option
 val to_pat : entry_env -> Coqast.t -> (astpat * entry_env)
-
-(* Object substitution in modules *)
-val subst_astpat : substitution -> astpat -> astpat

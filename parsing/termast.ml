@@ -26,6 +26,7 @@ open Ast
 open Rawterm
 open Pattern
 open Nametab
+open Mod_subst
 
 (* In this file, we translate rawconstr to ast, in order to print constr *)
 
@@ -389,6 +390,55 @@ let ast_of_constr at_top env t =
   let avoid = if at_top then ids_of_context env else [] in
   ast_of_raw 
     (Detyping.detype (at_top,env) avoid (names_of_rel_context env) t')
+
+(**********************************************************************)
+(* Object substitution in modules *)
+
+let rec subst_ast subst ast = match ast with
+  | Node (l,s,astl) ->
+      let astl' = Util.list_smartmap (subst_ast subst) astl in
+	if astl' == astl then ast else
+	  Node (l,s,astl')
+  | Slam (l,ido,ast1) ->
+      let ast1' = subst_ast subst ast1 in
+	if ast1' == ast1 then ast else
+	  Slam (l,ido,ast1')
+  | Smetalam (l,s,ast1) ->
+      let ast1' = subst_ast subst ast1 in
+	if ast1' == ast1 then ast else
+	  Smetalam (l,s,ast1')
+  | Path (loc,kn) -> 
+      let kn' = subst_kn subst kn in
+	if kn' == kn then ast else
+	  Path(loc,kn')
+  | ConPath (loc,kn) -> 
+      let kn',t = subst_con subst kn in
+	if kn' == kn then ast else
+	  ast_of_constr false (Global.env ()) t
+  | Nmeta _
+  | Nvar _ -> ast
+  | Num _
+  | Str _
+  | Id _
+  | Dynamic _ -> ast
+
+let rec subst_astpat subst = function
+(*CSC: this is wrong since I am not recompiling the whole pattern.
+  However, this is V7-syntax code that is doomed to disappear. Hence I
+  prefer to be lazy and to not fix the bug. *)
+  | Pquote a -> Pquote (subst_ast subst a)
+  | Pmeta _ as p -> p
+  | Pnode (s,pl) -> Pnode (s,subst_astpatlist subst pl)
+  | Pslam (ido,p) -> Pslam (ido,subst_astpat subst p)
+  | Pmeta_slam (s,p) -> Pmeta_slam (s,subst_astpat subst p)
+
+and subst_astpatlist subst = function
+  | Pcons (p,pl) -> Pcons (subst_astpat subst p, subst_astpatlist subst pl)
+  | (Plmeta _ | Pnil) as pl -> pl
+
+let subst_pat subst = function
+  | AstListPat pl -> AstListPat (subst_astpatlist subst pl)
+  | PureAstPat p -> PureAstPat (subst_astpat subst p)
 
 let ast_of_constant env sp =
   let a = ast_of_constant_ref sp in

@@ -1370,8 +1370,9 @@ GRAMMARNEEDEDCMO=\
   library/nameops.cmo library/libnames.cmo library/summary.cmo \
   library/nametab.cmo library/libobject.cmo library/lib.cmo \
   library/goptions.cmo library/decl_kinds.cmo library/global.cmo \
-  pretyping/termops.cmo pretyping/evd.cmo \
-  pretyping/rawterm.cmo pretyping/pattern.cmo \
+  pretyping/termops.cmo pretyping/evd.cmo pretyping/reductionops.cmo \
+  pretyping/inductiveops.cmo pretyping/rawterm.cmo pretyping/detyping.cmo \
+  pretyping/pattern.cmo \
   interp/topconstr.cmo interp/genarg.cmo interp/ppextend.cmo \
   proofs/tacexpr.cmo \
   parsing/coqast.cmo parsing/ast.cmo \

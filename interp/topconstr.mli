@@ -48,7 +48,7 @@ val rawconstr_of_aconstr_with_binders : loc ->
   (identifier -> 'a -> identifier * 'a) ->
   ('a -> aconstr -> rawconstr) -> 'a -> aconstr -> rawconstr
 
-val subst_aconstr : substitution -> aconstr -> aconstr
+val subst_aconstr : substitution -> Names.identifier list -> aconstr -> aconstr
 
 val aconstr_of_rawconstr : identifier list -> rawconstr -> aconstr
 

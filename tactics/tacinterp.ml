@@ -42,6 +42,7 @@ open Hiddentac
 open Genarg
 open Decl_kinds
 open Mod_subst
+open Printer
 
 let strip_meta id = (* For Grammar v7 compatibility *)
   let s = string_of_id id in
@@ -116,8 +117,8 @@ let pr_value env = function
   | VVoid -> str "()"
   | VInteger n -> int n
   | VIntroPattern ipat -> pr_intro_pattern ipat
-  | VConstr c -> Printer.prterm_env env c
-  | VConstr_context c -> Printer.prterm_env env c
+  | VConstr c -> prterm_env env c
+  | VConstr_context c -> prterm_env env c
   | (VTactic _ | VRTactic _ | VFun _ | VRec _) -> str "<fun>"
 
 (* Transforms a named_context into a (string * constr) list *)
@@ -236,7 +237,7 @@ let coerce_to_inductive = function
 	  | VConstr c -> reference_of_constr c
 	  | _ -> failwith "" in
 	errorlabstrm "coerce_to_inductive"
-          (Printer.pr_global r ++ str " is not an inductive type")
+          (pr_global r ++ str " is not an inductive type")
       with _ ->
 	errorlabstrm "coerce_to_inductive"
           (str "Found an argument which should be an inductive type")
@@ -1841,7 +1842,7 @@ let subst_inductive subst (kn,i) = (subst_kn subst kn,i)
 
 let subst_rawconstr subst (c,e) =
   assert (e=None); (* e<>None only for toplevel tactics *)
-  (subst_raw subst c,None)
+  (Detyping.subst_raw subst c,None)
 
 let subst_binding subst (loc,b,c) =
   (loc,subst_quantified_hypothesis subst b,subst_rawconstr subst c)
@@ -1872,11 +1873,23 @@ let subst_located f (_loc,id) = (loc,f id)
 let subst_reference subst = 
   subst_or_var (subst_located (subst_kn subst))
 
+(*CSC: subst_global_reference is used "only" for RefArgType, that propagates
+  to the syntactic non-terminals "global", used in commands such as
+  Print. It is also used for non-evaluable references. *) 
 let subst_global_reference subst = 
-  subst_or_var (subst_located (subst_global subst))
+ let subst_global ref =
+  let ref',t' = subst_global subst ref in
+   if not (eq_constr (constr_of_reference ref') t') then
+    ppnl (str "Warning: the reference " ++ pr_global ref ++ str " is not " ++
+          str " expanded to \"" ++ prterm t' ++ str "\", but to " ++
+          pr_global ref') ;
+   ref'
+ in
+  subst_or_var (subst_located subst_global)
 
 let subst_evaluable subst =
-  subst_or_var (subst_and_short_name (subst_evaluable_reference subst))
+  let subst_eval_ref = subst_evaluable_reference subst in
+    subst_or_var (subst_and_short_name subst_eval_ref)
 
 let subst_unfold subst (l,e) = 
   (l,subst_evaluable subst e)

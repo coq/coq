@@ -153,21 +153,35 @@ let lookup_pattern_path_between (s,t) =
 	 | Construct sp -> (sp, coe.coe_param)
 	 | _ -> raise Not_found) l
 
+(* find_class_type : constr -> cl_typ * int *)
+
+let find_class_type t =
+  let t', args = decompose_app (Reductionops.whd_betaiotazeta t) in
+  match kind_of_term t' with
+    | Var id -> CL_SECVAR id, args
+    | Const sp -> CL_CONST sp, args
+    | Ind ind_sp -> CL_IND ind_sp, args
+    | Prod (_,_,_) -> CL_FUN, []
+    | Sort _ -> CL_SORT, []
+    |  _ -> raise Not_found
+
 
 let subst_cl_typ subst ct = match ct with
     CL_SORT
   | CL_FUN
   | CL_SECVAR _ -> ct
   | CL_CONST kn -> 
-      let kn' = subst_con subst kn in 
+      let kn',t = subst_con subst kn in 
 	if kn' == kn then ct else
-	  CL_CONST kn'
+         fst (find_class_type t)
   | CL_IND (kn,i) ->
       let kn' = subst_kn subst kn in 
 	if kn' == kn then ct else
 	  CL_IND (kn',i)
 
-let subst_coe_typ = subst_global
+(*CSC: here we should change the datatype for coercions: it should be possible
+       to declare any term as a coercion *)
+let subst_coe_typ subst t = fst (subst_global subst t)
 
 let subst_coe_info subst info = 
   let jud = info.coe_value in
@@ -208,18 +222,6 @@ let _ =
       Summary.survive_section = false }
 
 (* classe d'un terme *)
-
-(* find_class_type : constr -> cl_typ * int *)
-
-let find_class_type t =
-  let t', args = decompose_app (Reductionops.whd_betaiotazeta t) in
-  match kind_of_term t' with
-    | Var id -> CL_SECVAR id, args
-    | Const sp -> CL_CONST sp, args
-    | Ind ind_sp -> CL_IND ind_sp, args
-    | Prod (_,_,_) -> CL_FUN, []
-    | Sort _ -> CL_SORT, []
-    |  _ -> raise Not_found
 
 (* class_of : Term.constr -> int *)
 

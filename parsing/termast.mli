@@ -18,6 +18,7 @@ open Libnames
 open Nametab
 open Rawterm
 open Pattern
+open Mod_subst
 (*i*)
 
 (* Translation of pattern, cases pattern, rawterm and term into syntax
@@ -31,6 +32,10 @@ val ast_of_pattern : env -> names_context -> constr_pattern -> Coqast.t
    level of quantification clashing with the variables in [env] are renamed *)
 
 val ast_of_constr : bool -> env -> constr -> Coqast.t
+
+(* Object substitution in modules *)
+val subst_ast: substitution -> Coqast.t -> Coqast.t
+val subst_astpat : substitution -> Ast.astpat -> Ast.astpat
 
 val ast_of_constant     : env -> constant -> Coqast.t
 val ast_of_existential  : env -> existential -> Coqast.t

@@ -259,8 +259,13 @@ and translate_mexpr env mexpr = match mexpr with
 	  | Not_path -> error_application_to_not_path mexpr
 	      (* place for nondep_supertype *)
       in
+       let resolve = Modops.resolver_of_environment farg_id farg_b mp env in
 	MEBapply(feb,meb,cst),
-	subst_modtype (map_mbid farg_id mp) fbody_b
+        (* This is the place where the functor formal parameter is
+           substituted by the given argument to compute the type of the
+           functor application. *)
+	subst_modtype
+         (map_mbid farg_id mp (Some resolve)) fbody_b
   | MEstruct (msid,structure) ->
       let structure,signature = translate_entry_list env msid true structure in
 	MEBstruct (msid,structure),

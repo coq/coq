@@ -337,14 +337,22 @@ let add_inline_entries b l =
 
 (* Registration of operations for rollback. *)
 
-let (inline_extraction,_) = 
+let (inline_extraction,_) =
   declare_object 
     {(default_object "Extraction Inline") with 
        cache_function = (fun (_,(b,l)) -> add_inline_entries b l);
        load_function = (fun _ (_,(b,l)) -> add_inline_entries b l);
        export_function = (fun x -> Some x); 
        classify_function = (fun (_,o) -> Substitute o); 
-       subst_function = (fun (_,s,(b,l)) -> (b,(List.map (subst_global s) l))) }
+       (*CSC: The following substitution may istantiate a realized parameter.
+         The right solution would be to make the substitution erase the
+         realizer from the table. However, this is not allowed by Coq.
+         In this particular case, though, keeping the realizer is place seems
+         to be harmless since the current code looks for a realizer only
+         when the constant is a parameter. However, if this behaviour changes
+         subtle bugs can happear in the future. *)
+       subst_function =
+        (fun (_,s,(b,l)) -> (b,(List.map (fun x -> fst (subst_global s x)) l)))}
 
 let _ = declare_summary "Extraction Inline"
 	  { freeze_function = (fun () -> !inline_table);

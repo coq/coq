@@ -95,3 +95,6 @@ val error_with_incorrect : label -> 'a
 val error_local_context : label option -> 'a
 
 val error_circular_with_module : identifier -> 'a
+
+val resolver_of_environment :
+ mod_bound_id -> module_type_body -> module_path -> env -> resolver

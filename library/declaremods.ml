@@ -698,21 +698,25 @@ let declare_modtype interp_modtype id args mty =
   ignore (add_leaf id (in_modtype (Some entry, substobjs)))
 			       
 
-
-let rec get_module_substobjs = function
+let rec get_module_substobjs env = function
   | MEident mp -> MPmap.find mp !modtab_substobjs 
   | MEfunctor (mbid,mty,mexpr) ->
-      let (subst, mbids, msid, objs) = 
-	get_module_substobjs mexpr 
-      in
+       let (subst, mbids, msid, objs) = get_module_substobjs env mexpr in
 	(subst, mbid::mbids, msid, objs)
   | MEstruct (msid,_) ->
       (empty_subst, [], msid, [])
   | MEapply (mexpr, MEident mp) ->
-      let (subst, mbids, msid, objs) = get_module_substobjs mexpr in
+      let feb,ftb = Mod_typing.translate_mexpr env mexpr in
+      let ftb = Modops.scrape_modtype env ftb in
+      let farg_id, farg_b, fbody_b = Modops.destr_functor ftb in
+      let (subst, mbids, msid, objs) = get_module_substobjs env mexpr in
 	(match mbids with
 	   | mbid::mbids ->
-	       (add_mbid mbid mp subst, mbids, msid, objs)
+              let resolve =
+               Modops.resolver_of_environment farg_id farg_b mp env in
+               (* application outside the kernel, only for substitutive
+                  objects (that are all non-logical objects) *)
+	       (add_mbid mbid mp (Some resolve) subst, mbids, msid, objs)
 	   | [] -> match mexpr with
 	       | MEident _ | MEstruct _ -> error "Application of a non-functor"
 	       | _ -> error "Application of a functor with too few arguments")
@@ -758,7 +762,7 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
   let substobjs =
     match entry with
       | {mod_entry_type = Some mte} -> get_modtype_substobjs mte
-      | {mod_entry_expr = Some mexpr} -> get_module_substobjs mexpr
+      | {mod_entry_expr = Some mexpr} -> get_module_substobjs env mexpr
       | _ -> anomaly "declare_module: No type, no body ..."
   in
     Summary.unfreeze_summaries fs;

@@ -22,16 +22,16 @@ type global_reference =
   | ConstructRef of constructor
 
 let subst_global subst ref = match ref with
-  | VarRef _ -> ref
+  | VarRef var -> ref, mkVar var
   | ConstRef kn ->
-      let kn' = subst_con subst kn in if kn==kn' then ref else
-          ConstRef kn'
+     let kn',t = subst_con subst kn in
+      if kn==kn' then ref, mkConst kn else ConstRef kn', t
   | IndRef (kn,i) ->
-      let kn' = subst_kn subst kn in if kn==kn' then ref else
-          IndRef(kn',i)
+      let kn' = subst_kn subst kn in if kn==kn' then ref, mkInd (kn,i) else
+          IndRef(kn',i), mkInd (kn',i)
   | ConstructRef ((kn,i),j) ->
-      let kn' = subst_kn subst kn in if kn==kn' then ref else
-          ConstructRef ((kn',i),j)
+      let kn' = subst_kn subst kn in if kn==kn' then ref, mkConstruct ((kn,i),j)
+          else ConstructRef ((kn',i),j), mkConstruct ((kn',i),j)
 
 let reference_of_constr c = match kind_of_term c with
   | Const sp -> ConstRef sp

@@ -47,9 +47,12 @@ let cache_structure (_,(ind,struc)) =
 
 let subst_structure (_,subst,((kn,i),struc as obj)) = 
   let kn' = subst_kn subst kn in
-  let proj' = list_smartmap 
-		(option_smartmap (subst_con subst)) 
-		struc.s_PROJ 
+  let proj' =
+   (* invariant: struc.s_PROJ is an evaluable reference. Thus we can take *)
+   (* the first component of subst_con.                                   *)
+   list_smartmap 
+    (option_smartmap (fun kn -> fst (subst_con subst kn)))
+    struc.s_PROJ
   in
     if proj' == struc.s_PROJ && kn' == kn then obj else
       (kn',i),{struc with s_PROJ = proj'}
@@ -120,14 +123,19 @@ let cache_canonical_structure (_,(cst,lo)) =
       object_table := x :: (!object_table)) lo
 
 let subst_object subst ((r1,r2),o as obj) = 
-  let r1' = subst_global subst r1 in
-  let r2' = subst_global subst r2 in
+  (* invariant: r1 and r2 are evaluable references. Thus subst_global   *)
+  (* cannot instantiate them. Hence we can use just the first component *)
+  (* of the answer.                                                     *)
+  let r1',_ = subst_global subst r1 in
+  let r2',_ = subst_global subst r2 in
   let o' = subst_obj subst o in
   if r1' == r1 && r2' == r2 && o' == o then obj
   else (r1',r2'),o'
 
 let subst_canonical_structure (_,subst,(cst,lo as obj)) =
-  let cst' = subst_con subst cst in
+  (* invariant: cst is an evaluable reference. Thus we can take *)
+  (* the first component of subst_con.                                   *)
+  let cst' = fst (subst_con subst cst) in
   let lo' = list_smartmap (subst_object subst) lo in
   if cst' == cst & lo' == lo then obj else (cst',lo')
 

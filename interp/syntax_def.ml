@@ -48,7 +48,7 @@ let cache_syntax_constant d =
   load_syntax_constant 1 d
 
 let subst_syntax_constant ((sp,kn),subst,(local,c,onlyparse)) =
-  (local,subst_aconstr subst c,onlyparse)
+  (local,subst_aconstr subst [] c,onlyparse)
 
 let classify_syntax_constant (_,(local,_,_ as o)) =
   if local then Dispose else Substitute o

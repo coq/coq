@@ -249,8 +249,10 @@ and check_modtypes cst env mtb1 mtb2 equiv =
 	    add_module (MPbound arg_id2) (module_body_of_type arg_t2) env 
 	  in
 	  let body_t1' = 
+            (* since we are just checking well-typedness we do not need
+               to expand any constant. Hence the identity resolver. *)
 	    subst_modtype 
-	      (map_mbid arg_id1 (MPbound arg_id2)) 
+              (map_mbid arg_id1 (MPbound arg_id2) None)
 	      body_t1
 	  in
 	  check_modtypes cst env' body_t1' body_t2 equiv

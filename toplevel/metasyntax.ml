@@ -99,7 +99,7 @@ let _ =
 let cache_syntax (_,ppobj) = Esyntax.add_ppobject ppobj
 
 let subst_syntax (_,subst,ppobj) = 
-  Extend.subst_syntax_command Ast.subst_astpat subst ppobj
+  Extend.subst_syntax_command Termast.subst_astpat subst ppobj
 
 let (inPPSyntax,outPPSyntax) =
   declare_object {(default_object "PPSYNTAX") with
@@ -1075,9 +1075,9 @@ let cache_notation o =
 
 let subst_notation (_,subst,(lc,oldse,ntn,scope,(metas,pat),b,b',df)) =
   (lc,option_app
-    (list_smartmap (Extend.subst_syntax_entry Ast.subst_astpat subst)) oldse,
+    (list_smartmap(Extend.subst_syntax_entry Termast.subst_astpat subst)) oldse,
    ntn,scope,
-   (metas,subst_aconstr subst pat), b, b', df)
+   (metas,subst_aconstr subst (List.map fst metas) pat), b, b', df)
 
 let classify_notation (_,(local,_,_,_,_,_,_,_ as o)) =
   if local then Dispose else Substitute o

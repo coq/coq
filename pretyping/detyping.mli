@@ -16,7 +16,10 @@ open Sign
 open Environ
 open Rawterm
 open Termops
+open Mod_subst
 (*i*)
+
+val subst_raw : substitution -> rawconstr -> rawconstr
 
 (* [detype env avoid nenv c] turns [c], typed in [env], into a rawconstr. *)
 (* De Bruijn indexes are turned to bound names, avoiding names in [avoid] *)
