@@ -241,16 +241,20 @@ and evar_eqappr_x env isevars pbty (term1,l1 as appr1) (term2,l2 as appr2) =
 	    & (array_for_all2 (evar_conv_x env isevars CONV) cl1 cl2)
 	    & (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
 
-	| IsFix (li1,(tys1,_,bds1)), IsFix (li2,(tys2,_,bds2)) ->
+	| IsFix (li1,(tys1,_,bds1 as recdef1)), IsFix (li2,(tys2,_,bds2)) ->
 	    li1=li2
 	    & (array_for_all2 (evar_conv_x env isevars CONV) tys1 tys2)
-	    & (array_for_all2 (evar_conv_x env isevars CONV) bds1 bds2)
+	    & (array_for_all2
+		 (evar_conv_x (push_rec_types recdef1 env) isevars CONV)
+		 bds1 bds2)
 	    & (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
 	     
-	| IsCoFix (i1,(tys1,_,bds1)), IsCoFix (i2,(tys2,_,bds2)) ->
+	| IsCoFix (i1,(tys1,_,bds1 as recdef1)), IsCoFix (i2,(tys2,_,bds2)) ->
 	    i1=i2 
 	    & (array_for_all2 (evar_conv_x env isevars CONV) tys1 tys2)
-	    & (array_for_all2 (evar_conv_x env isevars CONV) bds1 bds2)
+	    & (array_for_all2
+		 (evar_conv_x (push_rec_types recdef1 env) isevars CONV)
+		 bds1 bds2)
 	    & (list_for_all2eq (evar_conv_x env isevars CONV) l1 l2)
 
 	| (IsMeta _ | IsXtra _ | IsLambda _), _ -> false
