@@ -498,7 +498,7 @@ let check_and_adjust_constructor loc (_,j as cstr_sp) mind cstrs pats =
   let nb_args_constr = cstrs.(j-1).cs_nargs in
   if List.length pats = nb_args_constr then pats
   else
-    try adjust_local_defs (pats, cstrs.(j-1).cs_args)
+    try adjust_local_defs (pats, List.rev cstrs.(j-1).cs_args)
     with NotAdjustable ->
       error_wrong_numarg_constructor_loc loc cstr_sp nb_args_constr
 
