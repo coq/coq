@@ -134,21 +134,6 @@ ML4FILES += $(USERTAC)
 USERTACCMO=$(USERTAC:.ml4=.cmo)
 USERTACCMX=$(USERTAC:.ml4=.cmx)
 
-EXTRACTIONCMO=contrib/extraction/mlutil.cmo contrib/extraction/ocaml.cmo \
-	      contrib/extraction/haskell.cmo \
-	      contrib/extraction/extraction.cmo \
-	      contrib/extraction/extract_env.cmo
-
-CORRECTNESSCMO=contrib/correctness/pmisc.cmo				\
-	contrib/correctness/peffect.cmo contrib/correctness/prename.cmo	\
-	contrib/correctness/perror.cmo contrib/correctness/penv.cmo	\
-	contrib/correctness/putil.cmo contrib/correctness/pdb.cmo	\
-	contrib/correctness/pcic.cmo contrib/correctness/pmonad.cmo	\
-	contrib/correctness/pcicenv.cmo					\
-	contrib/correctness/pred.cmo contrib/correctness/ptyping.cmo	\
-	contrib/correctness/pwp.cmo contrib/correctness/pmlize.cmo	\
-	contrib/correctness/ptactic.cmo	contrib/correctness/psyntax.cmo
-
 INTERFACE=contrib/interface/vtp.cmo \
 	contrib/interface/ctast.cmo contrib/interface/xlate.cmo \
 	contrib/interface/paths.cmo contrib/interface/translate.cmo \
@@ -196,12 +181,33 @@ PARSERREQUIRES=lib/pp_control.cmo lib/pp.cmo \
 
 ML4FILES += contrib/correctness/psyntax.ml4 contrib/field/field.ml4
 
-CONTRIB=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo \
-        contrib/ring/quote.cmo \
-	contrib/ring/ring.cmo contrib/field/field.cmo \
-	contrib/xml/xml.cmo \
-	contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo \
-	contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo \
+OMEGACMO=contrib/omega/omega.cmo contrib/omega/coq_omega.cmo
+
+RINGCMO=contrib/ring/quote.cmo contrib/ring/ring.cmo 
+
+FIELDCMO=contrib/field/field.cmo 
+
+XMLCMO=contrib/xml/xml.cmo \
+       contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo 	
+
+FOURIERCMO=contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo 	
+
+EXTRACTIONCMO=contrib/extraction/mlutil.cmo contrib/extraction/ocaml.cmo \
+	      contrib/extraction/haskell.cmo \
+	      contrib/extraction/extraction.cmo \
+	      contrib/extraction/extract_env.cmo
+
+CORRECTNESSCMO=contrib/correctness/pmisc.cmo				\
+	contrib/correctness/peffect.cmo contrib/correctness/prename.cmo	\
+	contrib/correctness/perror.cmo contrib/correctness/penv.cmo	\
+	contrib/correctness/putil.cmo contrib/correctness/pdb.cmo	\
+	contrib/correctness/pcic.cmo contrib/correctness/pmonad.cmo	\
+	contrib/correctness/pcicenv.cmo					\
+	contrib/correctness/pred.cmo contrib/correctness/ptyping.cmo	\
+	contrib/correctness/pwp.cmo contrib/correctness/pmlize.cmo	\
+	contrib/correctness/ptactic.cmo	contrib/correctness/psyntax.cmo
+
+CONTRIB=$(OMEGACMO) $(RINGCMO) $(FIELDCMO) $(XMLCMO) $(FOURIERCMO) \
 	$(EXTRACTIONCMO) $(CORRECTNESSCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
@@ -498,15 +504,15 @@ CONTRIBVO = $(OMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) $(CORRECTNESSVO)\
 
 $(CONTRIBVO): states/initial.coq
 
-contrib: $(CONTRIBVO)
-omega: $(OMEGAVO)
-ring: $(RINGVO)
+contrib: $(CONTRIBVO) $(CONTRIBCMO)
+omega: $(OMEGAVO) $(OMEGACMO)
+ring: $(RINGVO) $(RINGCMO)
 # xml_ instead of xml to avoid conflict with "make xml"
-xml_: $(XMLVO)
+xml_: $(XMLVO) $(XMLCMO)
 extraction: $(EXTRACTIONCMO) $(EXTRACTIONVO)
 correctness: $(CORRECTNESSCMO) $(CORRECTNESSVO)
-field: $(FIELDVO)
-fourier: $(FOURIERVO)
+field: $(FIELDVO) $(FIELDCMO)
+fourier: $(FOURIERVO) $(FOURIERCMO)
 
 clean::
 	rm -f contrib/*/*.cm[io] contrib/*/*.vo
