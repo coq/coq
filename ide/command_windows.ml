@@ -26,7 +26,7 @@ class command_window () =
   let window = GWindow.window 
 		 ~allow_grow:true ~allow_shrink:true 
 		 ~width:320 ~height:200
-		 ~title:"CoqIde Commands" ~show:false ()
+		 ~title:"CoqIde queries" ~show:false ()
   in
   let accel_group = GtkData.AccelGroup.create () in
   let vbox = GPack.vbox ~homogeneous:false ~packing:window#add () in

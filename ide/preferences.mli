@@ -45,7 +45,9 @@ type pref =
       mutable contextual_menus_on_goal : bool;
       mutable window_width : int;
       mutable window_height : int;
+(*
       mutable use_utf8_notation : bool;
+*)
       mutable auto_complete : bool;
     }
 

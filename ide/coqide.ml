@@ -164,7 +164,9 @@ object('self)
     method active_keypress_handler : GdkEvent.Key.t -> bool
     method backtrack_to : GText.iter -> unit
     method backtrack_to_no_lock : GText.iter -> unit
+(*
     method backtrack_to_insert : unit
+*)
     method clear_message : unit
     method deactivate : unit -> unit
     method disconnected_keypress_handler : GdkEvent.Key.t -> bool
@@ -173,6 +175,7 @@ object('self)
       GText.iter -> (GText.iter * GText.iter) option
     method get_insert : GText.iter
     method get_start_of_input : GText.iter
+    method go_to_insert : unit
     method indent_current_line : unit
     method insert_command : string -> string -> unit
     method insert_commands : (string * string) list -> unit
@@ -180,7 +183,9 @@ object('self)
     method insert_this_phrase_on_success :
       bool -> bool -> bool -> string -> string -> bool
     method process_next_phrase : bool -> bool -> bool
+(*
     method process_until_insert_or_error : unit
+*)
     method process_until_iter_or_error : GText.iter -> unit
     method process_until_end_or_error : unit
     method recenter_insert : unit
@@ -1182,9 +1187,11 @@ object(self)
   method process_until_end_or_error = 
     self#process_until_iter_or_error input_buffer#end_iter
 
+(*
   method process_until_insert_or_error = 
     let stop = self#get_insert in
     self#process_until_iter_or_error stop
+*)
 
   method reset_initial =
     Stack.iter 
@@ -1273,9 +1280,16 @@ Please restart and report NOW.";
        !pop_info ())
     else prerr_endline "backtrack_to : discarded (lock is busy)"
 
+(*
   method backtrack_to_insert = 
     self#backtrack_to self#get_insert
+*)
 
+  method go_to_insert =
+    let point = self#get_insert in
+    if point#compare self#get_start_of_input>=0
+    then self#process_until_iter_or_error point
+    else self#backtrack_to point
 
   method undo_last_step =
     if Mutex.try_lock coq_may_stop then  
@@ -2146,6 +2160,7 @@ let main files =
     ~key:GdkKeysyms._Up
     ~callback:(do_or_activate (fun a -> a#undo_last_step))
     `GO_UP;
+(*
   add_to_menu_toolbar 
     "_Forward to" 
     ~tooltip:"Forward to" 
@@ -2158,6 +2173,13 @@ let main files =
     ~key:GdkKeysyms._Left
     ~callback:(do_or_activate (fun a-> a#backtrack_to_insert))
     `GOTO_FIRST;
+*)
+  add_to_menu_toolbar 
+    "_Go to" 
+    ~tooltip:"Go to" 
+    ~key:GdkKeysyms._Right
+    ~callback:(do_or_activate (fun a-> a#go_to_insert))
+    `GOTO_LAST;
   add_to_menu_toolbar 
     "_Start" 
     ~tooltip:"Start" 
@@ -2370,22 +2392,22 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
     ) 
     Coq_commands.commands;
   
-  (* Commands Menu *)
-  let commands_menu =  factory#add_submenu "_Commands" in
-  let commands_factory = new GMenu.factory commands_menu ~accel_group
-			   ~accel_path:"<CoqIde MenuBar>/Commands"
+  (* Queries Menu *)
+  let queries_menu =  factory#add_submenu "_Queries" in
+  let queries_factory = new GMenu.factory queries_menu ~accel_group
+			   ~accel_path:"<CoqIde MenuBar>/Queries"
 			   ~accel_modi:[]
   in
   
   (* Command/Show commands *)
-  let commands_show_m = commands_factory#add_item 
-			  "_Show Window"
+  let queries_show_m = queries_factory#add_item 
+			  "_Show Query Window"
 			  ~key:GdkKeysyms._F12
 			  ~callback:(Command_windows.command_window ())
 			  #window#present
   in  
   let _ = 
-    commands_factory#add_item "_SearchAbout " ~key:GdkKeysyms._F2
+    queries_factory#add_item "_SearchAbout " ~key:GdkKeysyms._F2
       ~callback:(fun () -> let term = get_current_word () in
 		 (Command_windows.command_window ())#new_command
 		 ~command:"SearchAbout"
@@ -2393,7 +2415,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 		   ())
   in
   let _ = 
-    commands_factory#add_item "_Check " ~key:GdkKeysyms._F3
+    queries_factory#add_item "_Check " ~key:GdkKeysyms._F3
       ~callback:(fun () -> let term = get_current_word () in
 		 (Command_windows.command_window ())#new_command
 		 ~command:"Check"
@@ -2401,7 +2423,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 		   ())
   in
   let _ = 
-    commands_factory#add_item "_Print " ~key:GdkKeysyms._F4
+    queries_factory#add_item "_Print " ~key:GdkKeysyms._F4
       ~callback:(fun () -> let term = get_current_word () in
 		 (Command_windows.command_window ())#new_command
 		 ~command:"Print"

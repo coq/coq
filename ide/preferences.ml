@@ -90,8 +90,9 @@ type pref =
       mutable contextual_menus_on_goal : bool;
       mutable window_width : int;
       mutable window_height :int;
+(*
       mutable use_utf8_notation : bool;
-
+*)
       mutable auto_complete : bool;
     }
 
@@ -111,12 +112,12 @@ let (current:pref ref) =
     auto_save_name = "#","#";
     
     encoding_use_locale = true;
-    encoding_use_utf8 = true;
+    encoding_use_utf8 = false;
     encoding_manual = "ISO_8859-1";
 
     automatic_tactics = ["Progress Trivial.","Trivial.";
-			 "Progress Auto.","Auto.";
 			 "Tauto.","Tauto.";
+			 "Progress Auto.","Auto.";
 			 "Omega.","Omega.";
 			 "Progress Auto with *.","Auto with *.";
 			 "Progress Intuition.","Intuition.";
@@ -139,8 +140,10 @@ let (current:pref ref) =
     contextual_menus_on_goal = true;
     window_width = 800;
     window_height = 600; 
-    use_utf8_notation = true;
-    auto_complete = true
+(*
+    use_utf8_notation = false;
+*)
+    auto_complete = false
   }
 
 
