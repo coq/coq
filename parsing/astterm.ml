@@ -567,7 +567,7 @@ let interp_constr1 sigma env lvar lmeta com =
   try
     ise_resolve2 sigma env (rtype lvar) (rtype lmeta) c
   with e -> 
-    Stdpp.raise_with_loc (Ast.loc com) e;;
+    Stdpp.raise_with_loc (Ast.loc com) e
 
 let typed_type_of_com sigma env com =
   let c = interp_rawconstr sigma env com in
@@ -652,45 +652,53 @@ let rec pat_of_ref metas vars = function
   | RAbst _ -> error "pattern_of_rawconstr: not implemented"
   | RVar _ -> assert false (* Capturé dans pattern_of_raw *)
 
-and pat_of_raw metas vars = function
+and pat_of_raw metas vars lvar = function
   | RRef (_,RVar id) -> 
       (try PRel (list_index (Name id) vars)
-       with Not_found -> PRef (RVar id))
+       with Not_found ->
+         (try (List.assoc id lvar)
+          with Not_found -> PRef (RVar id)))
   | RMeta (_,n) ->
       metas := n::!metas; PMeta (Some n)
   | RRef (_,r) ->
       PRef (pat_of_ref metas vars r)
   (* Hack pour ne pas réécrire une interprétation complète des patterns*)
   | RApp (_, RMeta (_,n), cl) when n<0 ->
-      PSoApp (- n, List.map (pat_of_raw metas vars) cl)
+      PSoApp (- n, List.map (pat_of_raw metas vars lvar) cl)
   | RApp (_,c,cl) -> 
-      PApp (pat_of_raw metas vars c,
-	    Array.of_list (List.map (pat_of_raw metas vars) cl))
+      PApp (pat_of_raw metas vars lvar c,
+	    Array.of_list (List.map (pat_of_raw metas vars lvar) cl))
   | RBinder (_,bk,na,c1,c2) ->
-      PBinder (bk, na, pat_of_raw metas vars c1,
-	       pat_of_raw metas (na::vars) c2)
+      PBinder (bk, na, pat_of_raw metas vars lvar c1,
+	       pat_of_raw metas (na::vars) lvar c2)
   | RSort (_,s) ->
       PSort s
   | RHole _ ->
       PMeta None
   | RCast (_,c,t) ->
       warning "Cast not taken into account in constr pattern";
-      pat_of_raw metas vars c
+      pat_of_raw metas vars lvar c
   | ROldCase (_,false,po,c,br) ->
-      PCase (option_app (pat_of_raw metas vars) po, pat_of_raw metas vars c,
-	     Array.map (pat_of_raw metas vars) br)
+      PCase (option_app (pat_of_raw metas vars lvar) po,
+             pat_of_raw metas vars lvar c,
+             Array.map (pat_of_raw metas vars lvar) br)
   | _ ->
       error "pattern_of_rawconstr: not implemented"
 
-let pattern_of_rawconstr c =
+let pattern_of_rawconstr lvar c =
   let metas = ref [] in
-  let p = pat_of_raw metas [] c in
+  let p = pat_of_raw metas [] lvar c in
   (!metas,p)
 
-let interp_constrpattern sigma env com = 
-  let c = dbize CCI sigma (unitize_env (context env)) true [] com in
+let interp_constrpattern_gen sigma env lvar com = 
+  let c =
+    dbize CCI sigma (unitize_env (context env)) true (List.map (fun x ->
+      string_of_id (fst x)) lvar) com
+  and nlvar = List.map (fun (id,c) -> (id,pattern_of_constr c)) lvar in
   try 
-    pattern_of_rawconstr c
+    pattern_of_rawconstr nlvar c
   with e -> 
     Stdpp.raise_with_loc (Ast.loc com) e
 
+let interp_constrpattern sigma env com =
+  interp_constrpattern_gen sigma env [] com

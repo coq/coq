@@ -119,9 +119,8 @@ let firstchar =
 let identchar = 
   ['$' 'A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' 
    '\'' '0'-'9']
-let symbolchar =
-  ['!' '$' '%' '&' '*' '+' '-' '<' '>' '/' '\\' ':' ',' '=' '?' '@' '^'
-   '|' '~' '#']
+let symbolchar = ['!' '$' '%' '&' '*' '+' ',' '@' '^' '~' '#']
+let extrachar = symbolchar | ['\\' '/' '-' '<' '>' '|' ':' '?' '=']
 let decimal_literal = ['0'-'9']+
 let hex_literal = '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
 let oct_literal = '0' ['o' 'O'] ['0'-'7']+
@@ -136,10 +135,20 @@ rule token = parse
   | decimal_literal | hex_literal | oct_literal | bin_literal
       { ("INT", Lexing.lexeme lexbuf) }
   | "(" | ")" | "[" | "]" | "{" | "}" | "." | "_" | ";"| "`" | "()" | "'("
-  | "->"
+  | "->" | "\\/" | "/\\" | "|-" | ":=" | "<->" | extrachar
       { ("", Lexing.lexeme lexbuf) }
-  | symbolchar+
-      { ("", Lexing.lexeme lexbuf) }
+  | ('\\' (symbolchar | '\\' | '-' | '>' | '|' | ':' | '?' | '=' | '<')+ |
+     '/'  (symbolchar | '/'  | '-' | '>' | '|' | ':' | '?' | '=' | '<')+ |
+     '-'  (symbolchar | '\\' | '/' | '-' | '|' | ':' | '?' | '=' | '<')+ |
+     '|'  (symbolchar | '\\' | '/' | '|' | '>' | ':' | '?' | '=' | '<')+ |
+     '='  (symbolchar | '\\' | '/' | '|' | '-' | '>' | ':' | '=' | '<')+ |
+     ':'  (symbolchar | '\\' | '/' | '|' | '-' | '>' | ':' | '=' | '<')+ |
+     '<'  (symbolchar | '\\' | '/' | '|' | '>' | '?' | ':' | '=' | '<')+ |
+     "<-" (symbolchar | '\\' | '/' | '|' | '-' | '?' | ':' | '=' | '<')+ |
+     '>' | '?') extrachar* | "<-"
+    { ("", Lexing.lexeme lexbuf) }
+  | symbolchar+ extrachar*
+    { ("", Lexing.lexeme lexbuf) }
   (***
   | '`' [^'`']* '`'
       { let s = Lexing.lexeme lexbuf in

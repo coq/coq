@@ -247,6 +247,7 @@ GEXTEND Gram
       | IDENT "Repeat"; ta = tactic_atom -> <:ast< (REPEAT $ta) >>
       |	IDENT "Idtac" -> <:ast< (IDTAC) >>
       |	IDENT "Fail" -> <:ast<(FAIL)>>
+      |	IDENT "Fail"; n = numarg -> <:ast<(FAIL $n)>>
       |	ta0 = tactic_atom; "Orelse"; ta1 = tactic_atom ->
           <:ast< (ORELSE $ta0 $ta1) >>
       |	st = simple_tactic -> st
@@ -255,7 +256,7 @@ GEXTEND Gram
   tactic_arg:
     [ [ "()" -> <:ast< (VOID) >>
       | n = pure_numarg -> n
-      |	c=constrarg -> 
+      |	c = constrarg ->
           (match c with
             Coqast.Node(_,"COMMAND",[Coqast.Nvar(_,s)]) -> <:ast<($VAR $s)>>
            |_ -> c) ] ]

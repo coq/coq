@@ -34,6 +34,12 @@ val interp_casted_constr1 :
   'a evar_map -> env -> (identifier * constr) list ->
     (int * constr) list -> Coqast.t -> constr -> constr
 
+(*Interprets constr patterns according to a list of instantiations
+  (variables)*)
+val interp_constrpattern_gen :
+  'a evar_map -> env -> (identifier * constr) list -> Coqast.t ->
+    int list * constr_pattern
+
 val interp_constrpattern : 
   'a evar_map -> env -> Coqast.t -> int list * constr_pattern
 
