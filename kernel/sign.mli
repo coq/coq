@@ -62,6 +62,9 @@ val fold_rel_context_reverse :
 (*s Map function of [rel_context] *)
 val map_rel_context : (constr -> constr) -> rel_context -> rel_context
 
+(*s Map function of [named_context] *)
+val map_named_context : (constr -> constr) -> named_context -> named_context
+
 (*s Term constructors *)
 
 val it_mkLambda_or_LetIn : constr -> rel_context -> constr
