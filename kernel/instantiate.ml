@@ -18,7 +18,7 @@ let is_id_inst inst =
   List.for_all is_id inst
 
 let instantiate_constr sign c args =
-  let inst = instantiate_named_context  sign args in
+  let inst = instantiate_named_context sign args in
   if is_id_inst inst then
     c
   else
@@ -76,3 +76,47 @@ let existential_value sigma (n,args) =
 let existential_opt_value sigma ev =
   try Some (existential_value sigma ev)
   with NotInstantiatedEvar -> None
+
+
+type evaluable_reference =
+  | EvalConst of constant
+  | EvalVar of identifier
+  | EvalRel of int
+  | EvalEvar of existential
+
+let mkEvalRef = function
+  | EvalConst cst -> mkConst cst
+  | EvalVar id -> mkVar id
+  | EvalRel n -> mkRel n
+  | EvalEvar ev -> mkEvar ev
+
+let isEvalRef c = match kind_of_term c with
+  | IsConst _ | IsVar _ | IsRel _ | IsEvar _ -> true
+  | _ -> false
+
+let destEvalRef c = match kind_of_term c with
+  | IsConst cst ->  EvalConst cst
+  | IsVar id  -> EvalVar id
+  | IsRel n -> EvalRel n
+  | IsEvar ev -> EvalEvar ev
+  | _ -> anomaly "Not an evaluable reference"
+
+let evaluable_reference sigma env = function
+  | EvalConst (sp,_) -> evaluable_constant env sp
+  | EvalVar id -> evaluable_named_decl env id
+  | EvalRel n -> evaluable_rel_decl env n
+  | EvalEvar (ev,_) -> Evd.is_defined sigma ev
+
+let reference_opt_value sigma env = function
+  | EvalConst cst -> constant_opt_value env cst
+  | EvalVar id -> lookup_named_value id env
+  | EvalRel n -> lookup_rel_value n env
+  | EvalEvar ev -> existential_opt_value sigma ev
+
+exception NotEvaluable
+let reference_value sigma env c =
+  match reference_opt_value sigma env c with
+    | None -> raise NotEvaluable
+    | Some d -> d
+
+

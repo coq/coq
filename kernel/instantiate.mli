@@ -34,3 +34,22 @@ exception NotInstantiatedEvar
 val existential_value : 'a evar_map -> existential -> constr
 val existential_type : 'a evar_map -> existential -> constr
 val existential_opt_value : 'a evar_map -> existential -> constr option
+
+type evaluable_reference =
+  | EvalConst of constant
+  | EvalVar of identifier
+  | EvalRel of int
+  | EvalEvar of existential
+
+val destEvalRef : constr -> evaluable_reference
+val mkEvalRef : evaluable_reference -> constr
+val isEvalRef : constr -> bool
+
+val evaluable_reference : 'a evar_map -> env -> evaluable_reference -> bool
+
+val reference_opt_value :
+  'a evar_map -> env -> evaluable_reference -> constr option
+
+(* This may raise NotEvaluable *)
+exception NotEvaluable
+val reference_value :   'a evar_map -> env -> evaluable_reference -> constr
