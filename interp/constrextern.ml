@@ -82,8 +82,6 @@ let insert_pat_delimiters e = function
   | None -> e
   | Some sc -> CPatDelimiters (dummy_loc,sc,e)
 
-let loc = dummy_loc (* shorter... *)
-
 (**********************************************************************)
 (* conversion of references                                           *)
 
@@ -132,12 +130,14 @@ let rec extern_cases_pattern_in_scope scopes vars pat =
     let (sc,n) = Symbols.uninterp_cases_numeral pat in
     match Symbols.availability_of_numeral sc scopes with
     | None -> raise No_match
-    | Some key -> insert_pat_delimiters (CPatNumeral (loc,n)) key
+    | Some key ->
+        let loc = pattern_loc pat in
+        insert_pat_delimiters (CPatNumeral (loc,n)) key
   with No_match ->
   match pat with
-  | PatVar (_,Name id) -> CPatAtom (loc,Some (Ident (loc,id)))
-  | PatVar (_,Anonymous) -> CPatAtom (loc, None) 
-  | PatCstr(_,cstrsp,args,na) ->
+  | PatVar (loc,Name id) -> CPatAtom (loc,Some (Ident (loc,id)))
+  | PatVar (loc,Anonymous) -> CPatAtom (loc, None) 
+  | PatCstr(loc,cstrsp,args,na) ->
       let args = List.map (extern_cases_pattern_in_scope scopes vars) args in
       let p = CPatCstr
         (loc,extern_reference loc vars (ConstructRef cstrsp),args) in
@@ -151,7 +151,7 @@ let occur_name na aty =
     | Anonymous -> false
 
 (* Implicit args indexes are in ascending order *)
-let explicitize impl f args =
+let explicitize loc impl f args =
   let n = List.length args in
   let rec exprec q = function
     | a::args, imp::impl when is_status_implicit imp ->
@@ -164,7 +164,7 @@ let explicitize impl f args =
     | args, [] -> List.map (fun a -> (a,None)) args (*In case of polymorphism*)
     | [], _ -> [] in
   let args = exprec 1 (args,impl) in
-  if args = [] then f else CApp (dummy_loc, f, args)
+  if args = [] then f else CApp (loc, f, args)
 
 let rec skip_coercion dest_ref (f,args as app) =
   if !print_coercions then app
@@ -182,11 +182,11 @@ let rec skip_coercion dest_ref (f,args as app) =
 	| None -> app
     with Not_found -> app
 
-let extern_app impl f args =
+let extern_app loc impl f args =
   if (!print_implicits & not !print_implicits_explicit_args) then 
-    CAppExpl (dummy_loc, f, args)
+    CAppExpl (loc, f, args)
   else
-    explicitize impl (CRef f) args
+    explicitize loc impl (CRef f) args
 
 let rec extern_args extern scopes env args subscopes =
   match args with
@@ -200,23 +200,22 @@ let rec extern_args extern scopes env args subscopes =
 let rec extern scopes vars r =
   try 
     if !print_no_symbol then raise No_match;
-    extern_numeral scopes r (Symbols.uninterp_numeral r)
+    extern_numeral (Rawterm.loc r) scopes (Symbols.uninterp_numeral r)
   with No_match ->
 
   try 
     if !print_no_symbol then raise No_match;
     extern_symbol scopes vars r (Symbols.uninterp_notations r)
   with No_match -> match r with
+  | RRef (loc,ref) -> CRef (extern_reference loc vars ref)
 
-  | RRef (_,ref) -> CRef (extern_reference loc vars ref)
+  | RVar (loc,id) -> CRef (Ident (loc,id))
 
-  | RVar (_,id) -> CRef (Ident (loc,id))
+  | REvar (loc,n) -> extern_evar loc n
 
-  | REvar (_,n) -> extern_evar loc n
+  | RMeta (loc,n) -> if !print_meta_as_hole then CHole loc else CMeta (loc,n)
 
-  | RMeta (_,n) -> if !print_meta_as_hole then CHole loc else CMeta (loc,n)
-
-  | RApp (_,f,args) ->
+  | RApp (loc,f,args) ->
       let (f,args) =
 	skip_coercion (function RRef(_,r) -> Some r | _ -> None) (f,args) in
       (match f with
@@ -224,44 +223,44 @@ let rec extern scopes vars r =
 	 | RRef (loc,ref) ->
 	     let subscopes = Symbols.find_arguments_scope ref in
 	     let args = extern_args extern scopes vars args subscopes in
-	     extern_app (implicits_of_global ref)
+	     extern_app loc (implicits_of_global ref)
                (extern_reference loc vars ref)
 	       args
 	 | _       -> 
-	     explicitize [] (extern scopes vars f)
+	     explicitize loc [] (extern scopes vars f)
                (List.map (extern scopes vars) args))
 
-  | RProd (_,Anonymous,t,c) ->
+  | RProd (loc,Anonymous,t,c) ->
       (* Anonymous product are never factorized *)
       CArrow (loc,extern scopes vars t, extern scopes vars c)
 
-  | RLetIn (_,na,t,c) ->
+  | RLetIn (loc,na,t,c) ->
       CLetIn (loc,(loc,na),extern scopes vars t,
               extern scopes (add_vname vars na) c)
 
-  | RProd (_,na,t,c) ->
+  | RProd (loc,na,t,c) ->
       let t = extern scopes vars t in
       let (idl,c) = factorize_prod scopes (add_vname vars na) t c in
-      CProdN (loc,[(loc,na)::idl,t],c)
+      CProdN (loc,[(dummy_loc,na)::idl,t],c)
 
-  | RLambda (_,na,t,c) ->
+  | RLambda (loc,na,t,c) ->
       let t = extern scopes vars t in
       let (idl,c) = factorize_lambda scopes (add_vname vars na) t c in
-      CLambdaN (loc,[(loc,na)::idl,t],c)
+      CLambdaN (loc,[(dummy_loc,na)::idl,t],c)
 
-  | RCases (_,typopt,tml,eqns) ->
+  | RCases (loc,typopt,tml,eqns) ->
       let pred = option_app (extern scopes vars) typopt in
       let tml = List.map (extern scopes vars) tml in
       let eqns = List.map (extern_eqn scopes vars) eqns in 
       CCases (loc,pred,tml,eqns)
 	
-  | ROrderedCase (_,cs,typopt,tm,bv) ->
+  | ROrderedCase (loc,cs,typopt,tm,bv) ->
       let bv = Array.to_list (Array.map (extern scopes vars) bv) in
       COrderedCase
 	(loc,cs,option_app (extern scopes vars) typopt,
          extern scopes vars tm,bv)
 
-  | RRec (_,fk,idv,tyv,bv) ->
+  | RRec (loc,fk,idv,tyv,bv) ->
       let vars' = Array.fold_right Idset.add idv vars in
       (match fk with
 	 | RFix (nv,n) ->
@@ -279,21 +278,21 @@ let rec extern scopes vars r =
 	     in
 	     CCoFix (loc,(loc,idv.(n)),Array.to_list listdecl))
 
-  | RSort (_,s) ->
+  | RSort (loc,s) ->
       let s = match s with
 	 | RProp _ -> s
 	 | RType (Some _) when !print_universes -> s
 	 | RType _ -> RType None in
       CSort (loc,s)
 
-  | RHole (_,e) -> CHole loc
+  | RHole (loc,e) -> CHole loc
 
-  | RCast (_,c,t) -> CCast (loc,extern scopes vars c,extern scopes vars t)
+  | RCast (loc,c,t) -> CCast (loc,extern scopes vars c,extern scopes vars t)
 
-  | RDynamic (_,d) -> CDynamic (loc,d)
+  | RDynamic (loc,d) -> CDynamic (loc,d)
 	
 and factorize_prod scopes vars aty = function
-  | RProd (_,Name id,ty,c)
+  | RProd (loc,Name id,ty,c)
       when aty = extern scopes vars ty
 	& not (occur_var_constr_expr id aty) (* avoid na in ty escapes scope *)
 	-> let (nal,c) = factorize_prod scopes (Idset.add id vars) aty c in
@@ -301,7 +300,7 @@ and factorize_prod scopes vars aty = function
   | c -> ([],extern scopes vars c)
 
 and factorize_lambda scopes vars aty = function
-  | RLambda (_,na,ty,c)
+  | RLambda (loc,na,ty,c)
       when aty = extern scopes vars ty
 	& not (occur_name na aty) (* To avoid na in ty' escapes scope *)
 	-> let (nal,c) = factorize_lambda scopes (add_vname vars na) aty c in
@@ -312,7 +311,7 @@ and extern_eqn scopes vars (loc,ids,pl,c) =
   (loc,List.map (extern_cases_pattern_in_scope scopes vars) pl,
    extern scopes vars c)
 
-and extern_numeral scopes t (sc,n) =
+and extern_numeral loc scopes (sc,n) =
   match Symbols.availability_of_numeral sc scopes with
     | None -> raise No_match
     | Some key -> insert_delimiters (CNumeral (loc,n)) key
@@ -320,12 +319,13 @@ and extern_numeral scopes t (sc,n) =
 and extern_symbol scopes vars t = function
   | [] -> raise No_match
   | (keyrule,pat,n as rule)::rules ->
+      let loc = Rawterm.loc t in
       try
 	(* Adjusts to the number of arguments expected by the notation *)
 	let (t,args) = match t,n with
 	  | RApp (_,f,args), Some n when List.length args > n ->
 	      let args1, args2 = list_chop n args in
-	      RApp (loc,f,args1), args2
+	      RApp (dummy_loc,f,args1), args2
 	  | _ -> t,[] in
 	(* Try matching ... *)
 	let subst = match_aconstr t pat in
@@ -346,7 +346,7 @@ and extern_symbol scopes vars t = function
           | SynDefRule kn ->
               CRef (Qualid (loc, shortest_qualid_of_syndef kn)) in
  	if args = [] then e 
-	else explicitize [] e (List.map (extern scopes vars) args)
+	else explicitize loc [] e (List.map (extern scopes vars) args)
       with
 	  No_match -> extern_symbol scopes vars t rules
 
@@ -358,7 +358,9 @@ let extern_cases_pattern vars p =
 
 (******************************************************************)
 (* Main translation function from constr -> constr_expr *)
-       
+
+let loc = dummy_loc (* for constr and pattern, locations are lost *)
+
 let extern_constr at_top env t =
   let vars = vars_of_env env in
   let avoid = if at_top then ids_of_context env else [] in
@@ -395,16 +397,16 @@ let rec extern_pattern tenv vars env = function
       let args = List.map (extern_pattern tenv vars env) args in
       (match f with
 	 | PRef ref ->
-	     extern_app (implicits_of_global ref)
+	     extern_app loc (implicits_of_global ref)
                (extern_reference loc vars ref)
 	       args
-	 | _       -> explicitize [] (extern_pattern tenv vars env f) args)
+	 | _       -> explicitize loc [] (extern_pattern tenv vars env f) args)
 
   | PSoApp (n,args) ->
       let args = List.map (extern_pattern tenv vars env) args in
       (* [-n] is the trick to embed a so patten into a regular application *)
       (* see constrintern.ml and g_constr.ml4 *)
-      explicitize [] (CMeta (loc,-n)) args
+      explicitize loc [] (CMeta (loc,-n)) args
 
   | PProd (Anonymous,t,c) ->
       (* Anonymous product are never factorized *)
