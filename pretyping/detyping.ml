@@ -257,11 +257,14 @@ let rec detype avoid env t =
     | CoFix (n,recdef) -> detype_fix avoid env (RCoFix n) recdef
 
 and detype_fix avoid env fixkind (names,tys,bodies) =
-  let lfi = Array.map (fun id -> next_name_away id avoid) names in
-  let def_avoid = Array.to_list lfi@avoid in
-  let def_env =
-    Array.fold_left (fun env id -> add_name (Name id) env) env lfi in
-  RRec(dummy_loc,fixkind,lfi,Array.map (detype avoid env) tys,
+  let def_avoid, def_env, lfi =
+    Array.fold_left
+      (fun (avoid, env, l) na ->
+	 let id = next_name_away na avoid in 
+	 (id::avoid, add_name (Name id) env, id::l))
+      (avoid, env, []) names in
+  RRec(dummy_loc,fixkind,Array.of_list (List.rev lfi),
+       Array.map (detype avoid env) tys,
        Array.map (detype def_avoid def_env) bodies)
 
 
