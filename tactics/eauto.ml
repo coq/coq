@@ -144,7 +144,7 @@ let rec e_trivial_fail_db db_list local_db goal =
     (tclTHEN Tactics.intro 
        (function g'->
 	  let d = pf_last_hyp g' in
-	  let hintl = make_resolve_hyp d in
+	  let hintl = make_resolve_hyp (pf_env g') (project g') d in
           (e_trivial_fail_db db_list
 	     (Hint_db.add_list hintl local_db) g'))) ::
     (e_trivial_resolve db_list local_db (pf_concl goal)) 
@@ -220,7 +220,8 @@ let rec e_search n db_list local_db lg =
       apply_tac_list
 	(tclTHEN Tactics.intro 
 	   (fun g' -> 		   
-	      let hintl = make_resolve_hyp (pf_last_hyp g') in
+	      let hintl = make_resolve_hyp (pf_env g') (project g') 
+			    (pf_last_hyp g') in
 	      (tactic_list_tactic 
 		 (e_search n db_list
 		    (Hint_db.add_list hintl local_db))) g')) 
@@ -238,9 +239,7 @@ let rec e_search n db_list local_db lg =
     tclIDTAC_list lg
 
 let e_search_auto n db_list gl = 
-  tactic_list_tactic 
-    (e_search n db_list (make_local_hint_db (pf_hyps gl)))
-    gl
+  tactic_list_tactic (e_search n db_list (make_local_hint_db gl)) gl
 
 let eauto n dbnames = 
   let db_list =
@@ -258,7 +257,7 @@ let full_eauto n gl =
   let dbnames = stringmap_dom !searchtable in
   let dbnames =  list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> Stringmap.find x !searchtable) dbnames in
-  let local_db = make_local_hint_db (pf_hyps gl) in
+  let local_db = make_local_hint_db gl in
   tclTRY (tclCOMPLETE (e_search_auto n db_list)) gl
 
 let default_full_auto gl = full_auto !default_search_depth gl

@@ -196,8 +196,8 @@ let make_exact_entry name (c,cty) =
 	(head_of_constr_reference (List.hd (head_constr cty)),
 	   { hname=name; pri=0; pat=None; code=Give_exact c })
 
-let make_apply_entry (eapply,verbose) name (c,cty) =
-  let cty = hnf_constr (Global.env()) Evd.empty cty in
+let make_apply_entry env sigma (eapply,verbose) name (c,cty) =
+  let cty = hnf_constr env sigma cty in
   match kind_of_term cty with
     | IsProd _ ->
         let ce = mk_clenv_from () (c,cty) in
@@ -229,37 +229,38 @@ let make_apply_entry (eapply,verbose) name (c,cty) =
    c is a constr
    cty is the type of constr *)
 
-let make_resolves name eap (c,cty) =
+let make_resolves env sigma name eap (c,cty) =
   let ents = 
     map_succeed 
       (fun f -> f name (c,cty)) 
-      [make_exact_entry; make_apply_entry eap]
+      [make_exact_entry; make_apply_entry env sigma eap]
   in 
   if ents = [] then 
     errorlabstrm "Hint" [< prterm c; 'sPC; 'sTR "cannot be used as a hint" >];
   ents
 
 (* used to add an hypothesis to the local hint database *)
-let make_resolve_hyp (hname,_,htyp) = 
+let make_resolve_hyp env sigma (hname,_,htyp) = 
   try
-    [make_apply_entry (true, Options.is_verbose()) hname
+    [make_apply_entry env sigma (true, Options.is_verbose()) hname
        (mkVar hname, body_of_type htyp)]
   with 
     | Failure _ -> []
     | e when Logic.catchable_exception e -> anomaly "make_resolve_hyp"
 
-let add_resolves clist dbnames =
+let add_resolves env sigma clist dbnames =
   List.iter 
     (fun dbname ->
        Lib.add_anonymous_leaf
 	 (inAutoHint
 	    (dbname,
      	     (List.flatten
-		(List.map (fun (name,c) -> 
-			     let env = Global.env() in
-			     let ty = type_of env Evd.empty c in
-			     let verbose = Options.is_verbose() in
-			     make_resolves name (true,verbose) (c,ty)) clist))
+		(List.map
+		   (fun (name,c) -> 
+		      let ty = type_of env sigma c in
+		      let verbose = Options.is_verbose() in
+		      make_resolves env sigma name (true,verbose) (c,ty)) clist
+		))
 	    )))
     dbnames
 
@@ -339,11 +340,12 @@ let _ =
     "HintResolve"
     (function 
        | [VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_CONSTR c] ->
-	   let c1 = Astterm.interp_constr Evd.empty (Global.env()) c in
+	   let env = Global.env() and sigma = Evd.empty in
+	   let c1 = Astterm.interp_constr sigma env c in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
 		      	 | _ -> bad_vernac_args "HintResolve") l in
-	   fun () -> add_resolves [hintname, c1] dbnames
+	   fun () -> add_resolves env sigma [hintname, c1] dbnames
        | _-> bad_vernac_args "HintResolve" )
    
 let _ = 
@@ -365,6 +367,7 @@ let _ =
        | [VARG_IDENTIFIER idr; VARG_VARGLIST l; VARG_IDENTIFIER c] ->
 	   begin 
 	     try
+	       let env = Global.env() and sigma = Evd.empty in
 	       let trad = Declare.global_reference CCI in
 	       let rectype = destMutInd (trad c) in
 	       let consnames = 
@@ -374,7 +377,7 @@ let _ =
 	       let dbnames = if l = [] then ["core"] else 
 	      	 List.map (function VARG_IDENTIFIER i -> string_of_id i
 			     | _ -> bad_vernac_args "HintConstructors") l in
-    	       fun () -> add_resolves lcons dbnames
+    	       fun () -> add_resolves env sigma lcons dbnames
 	     with Invalid_argument("mind_specif_of_mind") -> 
 	       error ((string_of_id c) ^ " is not an inductive type")
 	   end 
@@ -399,6 +402,7 @@ let _ =
     "HintsResolve"
     (function
        | (VARG_VARGLIST l)::lh ->
+	   let env = Global.env() and sigma = Evd.empty in
  	   let lhints = 
 	     List.map (function
 			 | VARG_IDENTIFIER i -> 
@@ -407,7 +411,7 @@ let _ =
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
 		      	 | _-> bad_vernac_args "HintsResolve") l in
-	   fun () -> add_resolves lhints dbnames
+	   fun () -> add_resolves env sigma lhints dbnames
        | _-> bad_vernac_args "HintsResolve")
     
 let _ = 
@@ -600,9 +604,10 @@ let unify_resolve (c,clenv) gls =
 (* builds a hint database from a constr signature *)
 (* typically used with (lid, ltyp) = pf_hyps_types <some goal> *)
 
-let make_local_hint_db sign = 
-  let hintlist = list_map_append make_resolve_hyp sign in
-  Hint_db.add_list hintlist Hint_db.empty
+let make_local_hint_db g = 
+  let sign = pf_hyps g in
+  let hintlist = list_map_append (make_resolve_hyp (pf_env g) (project g)) sign
+  in Hint_db.add_list hintlist Hint_db.empty
 
 
 (**************************************************************************)
@@ -617,8 +622,8 @@ let rec trivial_fail_db db_list local_db gl =
   let intro_tac = 
     tclTHEN intro 
       (fun g'->
-	 let hintl = make_resolve_hyp (pf_last_hyp g') in
-	 trivial_fail_db db_list (Hint_db.add_list hintl local_db) g')
+	 let hintl = make_resolve_hyp (pf_env g') (project g') (pf_last_hyp g')
+	 in trivial_fail_db db_list (Hint_db.add_list hintl local_db) g')
   in
   tclFIRST 
     (assumption::intro_tac::
@@ -667,13 +672,13 @@ let trivial dbnames gl =
 	   error ("Trivial: "^x^": No such Hint database"))
       ("core"::dbnames) 
   in
-  tclTRY (trivial_fail_db db_list (make_local_hint_db (pf_hyps gl))) gl 
+  tclTRY (trivial_fail_db db_list (make_local_hint_db gl)) gl 
     
 let full_trivial gl =
   let dbnames = stringmap_dom !searchtable in
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
-  tclTRY (trivial_fail_db db_list (make_local_hint_db (pf_hyps gl))) gl
+  tclTRY (trivial_fail_db db_list (make_local_hint_db gl)) gl
 
 let dyn_trivial = function
   | []                  -> trivial []
@@ -740,7 +745,8 @@ let rec search_gen decomp n db_list local_db extra_sign goal =
 	 let (hid,_,htyp as d) = pf_last_hyp g' in
 	 let hintl = 
 	   try 
-	     [make_apply_entry (true,Options.is_verbose()) 
+	     [make_apply_entry (pf_env g') (project g')
+		(true,Options.is_verbose()) 
 		hid (mkVar hid,body_of_type htyp)]
 	   with Failure _ -> [] 
 	 in
@@ -771,7 +777,7 @@ let auto n dbnames gl =
       ("core"::dbnames) 
   in
   let hyps = pf_hyps gl in
-  tclTRY (search n db_list (make_local_hint_db hyps) hyps) gl
+  tclTRY (search n db_list (make_local_hint_db gl) hyps) gl
 
 let default_auto = auto !default_search_depth []
 
@@ -780,7 +786,7 @@ let full_auto n gl =
   let dbnames = list_subtract dbnames ["v62"] in
   let db_list = List.map (fun x -> searchtable_map x) dbnames in
   let hyps = pf_hyps gl in
-  tclTRY (search n db_list (make_local_hint_db hyps) hyps) gl
+  tclTRY (search n db_list (make_local_hint_db gl) hyps) gl
   
 let default_full_auto gl = full_auto !default_search_depth gl
 
@@ -816,7 +822,7 @@ let default_search_decomp = ref 1
 let destruct_auto des_opt n gl = 
   let hyps = pf_hyps gl in
   search_gen des_opt n [searchtable_map "core"] 
-    (make_local_hint_db hyps) hyps gl
+    (make_local_hint_db gl) hyps gl
     
 let dautomatic des_opt n = tclTRY (destruct_auto des_opt n)
 
@@ -882,7 +888,8 @@ let rec super_search n db_list local_db argl goal =
         (fun g -> 
 	   let (hid,_,htyp) = pf_last_hyp g in
 	   let hintl =
-	     make_resolves hid (true,false) (mkVar hid,body_of_type htyp) in
+	     make_resolves (pf_env g) (project g)
+	       hid (true,false) (mkVar hid,body_of_type htyp) in
 	   super_search n db_list (Hint_db.add_list hintl local_db)
 	     argl g))
      ::
@@ -902,9 +909,9 @@ let search_superauto n ids argl g =
 	   (id,Retyping.get_assumption_of (pf_env g) (project g) 
 	      (pf_type_of g (pf_global g id))))
       ids empty_var_context in
-  let hyps = List.append (pf_hyps g) sigma in
-  super_search n [Stringmap.find "core" !searchtable] (make_local_hint_db hyps)
-    argl g
+  let db0 = list_map_append (make_resolve_hyp (pf_env g) (project g)) sigma in
+  let db = Hint_db.add_list db0 (make_local_hint_db g) in
+  super_search n [Stringmap.find "core" !searchtable] db argl g
 
 let superauto n ids_add argl  = 
   tclTRY (tclCOMPLETE (search_superauto n ids_add argl))

@@ -10,6 +10,8 @@ open Proof_type
 open Tacmach
 open Clenv
 open Pattern
+open Environ
+open Evd
 (*i*)
   
 type auto_tactic = 
@@ -66,7 +68,7 @@ val make_exact_entry :
    [cty] is the type of [hc]. *)
 
 val make_apply_entry :
-  bool * bool -> identifier -> constr * constr
+  env -> 'a evar_map -> bool * bool -> identifier -> constr * constr
       -> constr_label * pri_auto_tactic
 
 (* A constr which is Hint'ed will be:
@@ -77,7 +79,7 @@ val make_apply_entry :
        has missing arguments. *)
 
 val make_resolves :
-  identifier -> bool * bool -> constr * constr -> 
+  env -> 'a evar_map -> identifier -> bool * bool -> constr * constr -> 
     (constr_label * pri_auto_tactic) list
 
 (* [make_resolve_hyp hname htyp].
@@ -85,7 +87,9 @@ val make_resolves :
    Never raises an User_exception;
    If the hyp cannot be used as a Hint, the empty list is returned. *)
 
-val make_resolve_hyp : var_declaration -> (constr_label * pri_auto_tactic) list
+val make_resolve_hyp : 
+  env -> 'a evar_map -> var_declaration ->
+      (constr_label * pri_auto_tactic) list
 
 (* [make_extern name pri pattern tactic_ast] *)
 
@@ -96,7 +100,7 @@ val make_extern :
 (* Create a Hint database from the pairs (name, constr).
    Useful to take the current goal hypotheses as hints *)
 
-val make_local_hint_db : var_context -> Hint_db.t
+val make_local_hint_db : goal sigma -> Hint_db.t
 
 val priority : (int * 'a) list -> 'a list
 
