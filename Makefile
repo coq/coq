@@ -44,7 +44,7 @@ LOCALINCLUDES=-I config -I tools -I scripts -I lib -I kernel -I library \
 	      -I contrib/extraction -I contrib/correctness \
               -I contrib/interface -I contrib/fourier
 
-MLINCLUDES=$(LOCALINCLUDES) -I $(CAMLP4LIB)
+MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
 BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG)
 OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF)

@@ -34,16 +34,12 @@ EMACS=EMACSCOMMAND
 COQTOP=COQTOPDIRECTORY
 VERSION=COQVERSION
 
-# Path to the directory containing the objective-caml commands
-# Used in src/launch
-CAMLBIN=CAMLBINDIRECTORY
-
 # Directory containing Camlp4 binaries. Can be empty if camlp4 is in the PATH
 CAMLP4BIN=CAMLP4BINDIRECTORY
 
-# Camlp4 library directory
+# Camlp4 library directory (avoid CAMLP4LIB used on Windows)
 CAMLP4O=CAMLP4TOOL
-CAMLP4LIB=CAMLP4LIBDIRECTORY
+MYCAMLP4LIB=CAMLP4LIBDIRECTORY
 
 # Objective-Caml compile command 
 OCAMLC=BYTECAMLC
@@ -74,24 +70,9 @@ ARCH=ARCHITECTURE
 # Supplementary libs for some systems, currently:
 #  . Sun Solaris: -cclib -lunix -cclib -lnsl -cclib -lsocket
 #  . others     : -cclib -lunix
-#  . windows	: -cclib \\ocaml\lib\libunix.lib -cclib wsock32.lib
+#  . windows	: -cclib -lunix
 
-OSDEPLIBS=OSDEPENDANTLIBS
-
-# Supplementary camlp4 flags for some systems, currently:
-#  . ppp        : -split_gext
-
-OSDEPP4OPTFLAGS=OSDEPENDANTP4OPTFLAGS
-
-# the caml str lib
-# Unix : -cclib -lstr
-# Windows : -cclib \\ocaml/lib/libstr.lib
-WITH_STR=STRLIBRARY
-
-# OStype is one of :
-# Unix
-# Win32
-OSTYPE=OSKIND
+OSDEPLIBS=OSDEPENDENTLIBS
 
 # executable files extension, currently:
 #  Unix systems:
