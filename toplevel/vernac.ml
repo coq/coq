@@ -106,10 +106,10 @@ let set_formatter_translator() =
   let out s b e =
     let n = e-b in
     if n > 0 then begin
-      (match !last with
+      (match !last_char with
           '.' -> if s.[b] = '(' then output ch " " 0 1 
         | _ -> ());
-      last := s.[e-1]
+      last_char := s.[e-1]
     end;
     output ch s b e
   in
