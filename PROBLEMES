@@ -6,7 +6,7 @@ sous emacs et qu'un lien (lock ?) .#fichier a ete cree *)
 Anomaly: Uncaught exception Unix.Unix_error(20, "stat", "/home/cpaulin/coq/V7/theories/Num/.#Axioms.v").
 Please report.
 make: *** [Axioms.vo] Error 1
-
+--> CORRIGÉ (message explicatif et n'échoue plus)
 
 Declaration de Local a l'interieur d'un but ...
 Certains Clear deviennent impossible car la variable apparait dans 
