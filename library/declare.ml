@@ -354,8 +354,12 @@ let constr_of_reference sigma env ref =
   in
   find_common_hyps_then_abstract body env0 hyps0 hyps
 
-let construct_qualified_reference env sp =
-  let ref = Nametab.locate sp in
+let construct_absolute_reference env sp =
+  let ref = Nametab.locate (qualid_of_sp sp) in
+  constr_of_reference Evd.empty env ref
+
+let construct_qualified_reference env qid =
+  let ref = Nametab.locate qid in
   constr_of_reference Evd.empty env ref
 
 let construct_reference env kind id =
@@ -365,8 +369,11 @@ let construct_reference env kind id =
   with Not_found ->
     mkVar (let _ = Environ.lookup_named id env in id)
 
-let global_qualified_reference sp = 
-  construct_qualified_reference (Global.env()) sp
+let global_qualified_reference qid = 
+  construct_qualified_reference (Global.env()) qid
+
+let global_absolute_reference sp = 
+  construct_absolute_reference (Global.env()) sp
 
 let global_reference kind id = 
   construct_reference (Global.env()) kind id
@@ -385,7 +392,7 @@ let dirpath_of_global = function
 
 let is_global id =
   try 
-    let osp = Nametab.sp_of_id CCI id in
+    let osp = Nametab.locate (make_qualid [] id) in
     list_prefix_of (dirpath_of_global osp) (Lib.cwd())
   with Not_found -> 
     false

@@ -19,6 +19,7 @@ val push : section_path -> global_reference -> unit
 val push_object : section_path -> Libobject.obj -> unit
 val push_module : section_path -> module_contents -> unit
 
+(* This should eventually disappear *)
 val sp_of_id : path_kind -> identifier -> global_reference
 
 (* This returns the section path of a constant or fails with [Not_found] *)

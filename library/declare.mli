@@ -75,9 +75,13 @@ val constr_of_reference :
   'a Evd.evar_map -> Environ.env -> global_reference -> constr
 
 val global_qualified_reference : qualid -> constr
-val global_reference : path_kind -> identifier -> constr
+val global_absolute_reference : section_path -> constr
 
 val construct_qualified_reference : Environ.env -> qualid -> constr
+val construct_absolute_reference : Environ.env -> section_path -> constr
+
+(* This should eventually disappear *)
+val global_reference : path_kind -> identifier -> constr
 val construct_reference : Environ.env -> path_kind -> identifier -> constr
 
 val is_global : identifier -> bool
