@@ -37,6 +37,68 @@ let casted_generalize id var c =
   let c'ty = sort_of_product_without_univ var.typ s in 
   mkCast c' (DOP0 (Sort c'ty))
 
+type modification_action = ABSTRACT | ERASE
+
+let interp_modif absfun oper (oper',modif) cl = 
+  let rec interprec = function
+    | ([], cl) -> DOPN(oper',Array.of_list cl)
+    | (ERASE::tlm, c::cl) -> interprec (tlm,cl)
+    | (ABSTRACT::tlm, c::cl) -> absfun (interprec (tlm,cl)) c
+    | _ -> assert false
+  in 
+  interprec (modif,cl)
+
+type 'a modification =
+  | NOT_OCCUR
+  | DO_ABSTRACT of 'a * modification_action list
+  | DO_REPLACE
+
+let modify_opers replfun absfun oper_alist =
+  let failure () =
+    anomalylabstrm "generic__modify_opers"
+      [< 'sTR"An oper which was never supposed to appear has just appeared" ;
+         'sPC ; 'sTR"Either this is in system code, and you need to" ; 'sPC;
+         'sTR"report this error," ; 'sPC ;
+         'sTR"Or you are using a user-written tactic which calls" ; 'sPC ;
+         'sTR"generic__modify_opers, in which case the user-written code" ;
+         'sPC ; 'sTR"is broken - this function is an internal system" ;
+         'sPC ; 'sTR"for internal system use only" >]
+  in
+  let rec substrec = function
+    (* Hack pour ls sp dans l'annotation du Cases *)
+    | DOPN(MutCase(n,(spi,a,b,c,d)) as oper,cl) ->
+	let cl' = Array.map substrec cl in
+	(try
+	   match List.assoc (MutInd spi) oper_alist with
+	     | DO_ABSTRACT (MutInd spi',_) ->
+		 DOPN(MutCase(n,(spi',a,b,c,d)),cl')
+	     | _ -> raise Not_found
+	 with
+	   | Not_found -> DOPN(oper,cl'))
+    | DOPN(oper,cl) as c ->
+	let cl' = Array.map substrec cl in
+	(try
+	   (match List.assoc oper oper_alist with
+	      | NOT_OCCUR -> failure ()
+	      | DO_ABSTRACT (oper',modif) ->
+		  if List.length modif > Array.length cl then
+		    anomaly "found a reference with too few args"
+		  else 
+		    interp_modif absfun oper (oper',modif) (Array.to_list cl')
+	      | DO_REPLACE -> substrec (replfun (DOPN(oper,cl'))))
+	 with 
+	   | Not_found -> DOPN(oper,cl'))
+    | DOP1(i,c) -> DOP1(i,substrec c)
+    | DOPL(oper,cl) -> DOPL(oper,List.map substrec cl)
+    | DOP2(oper,c1,c2) -> DOP2(oper,substrec c1,substrec c2)
+    | DLAM(na,c) -> DLAM(na,substrec c)
+    | DLAMV(na,v) -> DLAMV(na,Array.map substrec v)
+    | x -> x
+  in 
+  if oper_alist = [] then fun x -> x else substrec
+
+(**)
+
 let abstract_inductive ids_to_abs hyps inds =
   let abstract_one_var id ty inds =
     let ntyp = List.length inds in 
@@ -151,7 +213,6 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
   let lmodif_one_mind i = 
     let nbc = Array.length (mind_nth_type_packet mib i).mind_consnames in 
     (MutInd(osecsp,i),DO_ABSTRACT(MutInd(nsecsp,i),modl))::
-    (MutCase(osecsp,i),DO_ABSTRACT(MutCase(nsecsp,i),[]))::
     (list_tabulate
        (function j -> 
 	  let j' = j + 1 in
