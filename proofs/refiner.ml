@@ -212,19 +212,6 @@ let refiner = function
 let context ctxt = refiner (Context ctxt)
 let vernac_tactic texp = refiner (Tactic texp)
 
-(* hide_tactic s tac pr registers a tactic s under the name s *)
-
-let hide_tactic s tac =
-  add_tactic s tac;
-  (fun args -> vernac_tactic(s,args))
-
-(* overwriting_register_tactic s tac pr registers a tactic s under the
-   name s even if a tactic of the same name is already registered *)
-
-let overwrite_hidden_tactic s tac =
-  overwriting_add_tactic s tac;
-  (fun args -> vernac_tactic(s,args))
-
 (* rc_of_pfsigma : proof sigma -> readable_constraints *)
 let rc_of_pfsigma sigma = rc_of_gc sigma.sigma sigma.it.goal
 
