@@ -153,8 +153,7 @@ Proof.
 Intros a b; Case a; Case b; Try (Simpl; Intros; Omega).
 Unfold Zdiv_eucl; Intros; Apply Z_div_mod_POS; Trivial.
 
-Intros.
-Absurd `(NEG p) > 0`; [ Generalize (NEG_lt_ZERO p); Omega | Trivial ].
+Intros; Discriminate.
 
 Intros.
 Generalize (Z_div_mod_POS (POS p) H p0).
@@ -177,22 +176,10 @@ Split; Trivial.
 Replace (NEG p0) with `-(POS p0)`; [ Rewrite H1; Ring | Trivial ].
 Generalize (NEG_lt_ZERO p1); Omega.
 
-Intros.
-Absurd `(NEG p)>0`; [ Generalize (NEG_lt_ZERO p); Omega | Omega ].
+Intros; Discriminate.
 Qed.
 
-Theorem Z_div_mod_eq : (a,b:Z)`b > 0` -> `a = b * (Zdiv a b) + (Zmod a b)`.
-Proof.
-Unfold Zdiv Zmod.
-Intros a b Hb.
-Generalize (Z_div_mod a b Hb).
-Pattern (Zdiv_eucl a b).
-Case (Zdiv_eucl); Tauto.
-Save.
-
 (** Existence theorems *)
-
-Set Implicit Arguments.
 
 Theorem Zdiv_eucl_exist : (b:Z)`b > 0` -> (a:Z)
   { qr:Z*Z | let (q,r)=qr in `a=b*q+r` /\ `0 <= r < b` }.
@@ -201,6 +188,8 @@ Intros b Hb a.
 Exists (Zdiv_eucl a b).
 Exact (Z_div_mod a b Hb).
 Qed.
+
+Implicits Zdiv_eucl_exist.
 
 Theorem Zdiv_eucl_extended : (b:Z)`b <> 0` -> (a:Z)
   { qr:Z*Z | let (q,r)=qr in `a=b*q+r` /\ `0 <= r < |b|` }.
@@ -219,6 +208,61 @@ Rewrite <- Zmult_Zopp_left;Assumption.
 Rewrite Zabs_non_eq;[Assumption|Omega].
 Qed.
 
+Implicits Zdiv_eucl_extended.
+
+(** Auxiliary lemmas about [Zdiv] and [Zmod] *)
+
+Lemma Z_div_mod_eq : (a,b:Z)`b > 0` -> `a = b * (Zdiv a b) + (Zmod a b)`.
+Proof.
+Unfold Zdiv Zmod.
+Intros a b Hb.
+Generalize (Z_div_mod a b Hb).
+Case (Zdiv_eucl); Tauto.
+Save.
+
+Lemma Z_mod_lt : (a,b:Z)`b > 0` -> `0 <= (Zmod a b) < b`.
+Proof.
+Unfold Zmod.
+Intros a b Hb.
+Generalize (Z_div_mod a b Hb).
+Case (Zdiv_eucl a b); Tauto.
+Save.
+
+Lemma Z_div_POS_ge0 : (b:Z)(a:positive)
+  let (q,_) = (Zdiv_eucl_POS a b) in `q >= 0`.
+Proof.
+Induction a; Intros; Simpl.
+Generalize H; Case (Zdiv_eucl_POS p b); Simpl.
+Intros; Case (Zgt_bool b `z0+z0+1`); Simpl; Omega.
+Generalize H; Case (Zdiv_eucl_POS p b); Simpl.
+Intros; Case (Zgt_bool b `z0+z0`); Simpl; Omega.
+Case (Zge_bool b `2`); Simpl; Omega.
+Save.
+
+Lemma Z_div_ge0 : (a,b:Z)`b > 0` -> `a >= 0` -> `(Zdiv a b) >= 0`.
+Proof.
+Intros a b Hb; Unfold Zdiv Zdiv_eucl; Case a; Simpl; Intros.
+Case b; Simpl; Trivial.
+Generalize Hb; Case b; Try Trivial.
+Auto with zarith.
+Intros p0 Hp0; Generalize (Z_div_POS_ge0 (POS p0) p).
+Case (Zdiv_eucl_POS p (POS p0)); Simpl; Tauto.
+Intros; Discriminate.
+Elim H; Trivial.
+Save.
+
+Lemma Z_div_lt : (a,b:Z)`b >= 2` -> `a > 0` -> `(Zdiv a b) < a`.
+Proof.
+Intros. Cut `b > 0`; [Intro Hb | Omega].
+Generalize (Z_div_mod a b Hb).
+Cut `a >= 0`; [Intro Ha | Omega].
+Generalize (Z_div_ge0 a b Hb Ha).
+Unfold Zdiv; Case (Zdiv_eucl a b); Intros q r H1 [H2 H3].
+Cut `a >= 2*q` -> `q < a`; [ Intro h; Apply h; Clear h | Intros; Omega ].
+Apply Zge_trans with `b*q`.
+Omega.
+Auto with zarith.
+Save.
 
 (** Syntax *)
 
