@@ -10,7 +10,6 @@
 
 open Pp
 open Util
-open Stamps
 open Term
 open Termops
 open Sign
@@ -161,7 +160,7 @@ let refiner = function
   | Prim pr as r ->
       let prim_fun = prim_refiner pr in
       (fun goal_sigma ->
-         let sgl = prim_fun (ts_it goal_sigma.sigma) goal_sigma.it in 
+         let sgl = prim_fun goal_sigma.sigma goal_sigma.it in 
 	 ({it=sgl; sigma = goal_sigma.sigma},
           (fun spfl ->
 	     assert (check_subproof_connection sgl spfl);
@@ -189,7 +188,7 @@ let refiner = function
   | Change_evars as r ->
       (fun goal_sigma ->
          let gl = goal_sigma.it in
-	 let sgl = [norm_goal (ts_it goal_sigma.sigma) gl] in
+	 let sgl = [norm_goal goal_sigma.sigma gl] in
 	 ({it=sgl;sigma=goal_sigma.sigma},
           (fun spfl -> 
 	    assert (check_subproof_connection sgl spfl);
@@ -379,10 +378,10 @@ let weak_progress gls ptree =
   (List.length gls.it <> 1) or 
   (not (same_goal (List.hd gls.it) ptree.it))
 
-
+(* Il y avait ici un ts_eq ........ *)
 let progress gls ptree =
   (weak_progress gls ptree) or
-  (not (ts_eq ptree.sigma gls.sigma))
+  (not (ptree.sigma == gls.sigma))
 
 
 (* PROGRESS tac ptree applies tac to the goal ptree and fails if tac leaves
@@ -520,8 +519,8 @@ let tactic_list_tactic tac gls =
 
 
 (* solve_subgoal :
-     (global_constraints ref * goal list * validation -> 
-         global_constraints ref * goal list * validation) -> 
+     (evar_map ref * goal list * validation -> 
+         evar_map ref * goal list * validation) -> 
       (proof_tree sigma -> proof_tree sigma)
    solve_subgoal tac pf_sigma applies the tactic tac at the nth subgoal of
    pf_sigma *)
@@ -530,7 +529,7 @@ let solve_subgoal tacl pf_sigma =
   let gl,p = frontier pf in
   let r = tacl (sigr,gl,p) in
   let (sigr,gll,pl) =
-    if (ts_it !sigr) == (ts_it pf_sigma.sigma) then r
+    if !sigr == pf_sigma.sigma then r
     else then_tac norm_evar_tac r in
   repackage sigr (pl (List.map leaf gll))
 
@@ -549,13 +548,13 @@ let solve_subgoal tacl pf_sigma =
 
 type pftreestate = {
   tpf      : proof_tree ;
-  tpfsigma : global_constraints;
+  tpfsigma : evar_map;
   tstack   : (int * validation) list }
 
 let proof_of_pftreestate pts = pts.tpf
 let is_top_pftreestate pts = pts.tstack = [] 
 let cursor_of_pftreestate pts = List.map fst pts.tstack
-let evc_of_pftreestate pts = ts_it pts.tpfsigma
+let evc_of_pftreestate pts = pts.tpfsigma
 
 let top_goal_of_pftreestate pts = 
   { it = goal_of_proof pts.tpf; sigma = pts.tpfsigma }
@@ -640,14 +639,14 @@ let weak_undo_pftreestate pts =
 let mk_pftreestate g =
   { tpf      = leaf g;
     tstack   = [];
-    tpfsigma = ts_mk Evd.empty }
+    tpfsigma = Evd.empty }
 
 (* Extracts a constr from a proof-tree state ; raises an error if the
    proof is not complete or the state does not correspond to the head
    of the proof-tree *)
 
 let extract_open_pftreestate pts =
-  extract_open_proof (ts_it pts.tpfsigma) pts.tpf
+  extract_open_proof pts.tpfsigma pts.tpf
 
 let extract_pftreestate pts =
   if pts.tstack <> [] then
@@ -659,7 +658,7 @@ let extract_pftreestate pts =
    errorlabstrm "extract_proof"
    [< 'sTR "Attempt to save an incomplete proof" >];
   let env = Global.env_of_context pts.tpf.goal.evar_hyps in
-  strong whd_betaiotaevar env (ts_it pts.tpfsigma) pfterm
+  strong whd_betaiotaevar env pts.tpfsigma pfterm
   (***
   local_strong (Evarutil.whd_ise (ts_it pts.tpfsigma)) pfterm
   ***)
@@ -882,7 +881,7 @@ let tclINFO (tac : tactic) gls =
     let sign = (sig_it gls).evar_hyps in
     mSGNL(hOV 0 [< 'sTR" == "; 
                    print_subscript 
-                     ((compose ts_it sig_sig) gls) sign pf >])
+                     (sig_sig gls) sign pf >])
   with e when catchable_exception e -> 
     mSGNL(hOV 0 [< 'sTR "Info failed to apply validation" >])
   end;

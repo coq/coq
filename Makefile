@@ -70,7 +70,7 @@ CONFIG=config/coq_config.cmo
 
 LIBREP=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
-    lib/bstack.cmo lib/edit.cmo lib/stamps.cmo lib/gset.cmo lib/gmap.cmo \
+    lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
     lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
     lib/predicate.cmo          # Rem: Cygwin already uses variable LIB 
 
@@ -183,7 +183,7 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	parsing/termast.cmo \
  parsing/astterm.cmo \
 	parsing/egrammar.cmo parsing/esyntax.cmo toplevel/metasyntax.cmo \
-	parsing/printer.cmo lib/stamps.cmo pretyping/typing.cmo \
+	parsing/printer.cmo pretyping/typing.cmo \
 	proofs/proof_trees.cmo proofs/logic.cmo proofs/refiner.cmo \
 	proofs/evar_refiner.cmo proofs/tacmach.cmo toplevel/himsg.cmo \
 	parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \

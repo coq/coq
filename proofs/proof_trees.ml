@@ -15,7 +15,6 @@ open Term
 open Termops
 open Sign
 open Evd
-open Stamps
 open Environ
 open Evarutil
 open Proof_type
@@ -69,38 +68,21 @@ let is_tactic_proof pf = (pf.subproof <> None)
 (* A readable constraint is a global constraint plus a focus set
    of existential variables and a signature. *)
 
-type evar_recordty = {
-  hyps  : named_context;
-  decls : evar_map }
-
-and readable_constraints = evar_recordty timestamped
-
 (* Functions on readable constraints *)
 			     
 let mt_evcty gc = 
-  ts_mk { hyps = empty_named_context; decls = gc }
+  { it = empty_named_context; sigma = gc }
 
-let evc_of_evds evds gl = 
-  ts_mk { hyps = gl.evar_hyps; decls = evds }
+let rc_of_gc evds gl = 
+  { it = gl.evar_hyps; sigma = evds }
 
-let rc_of_gc gc gl = evc_of_evds (ts_it gc) gl
-		       
 let rc_add evc (k,v) = 
-  ts_mod
-    (fun evc -> { hyps  = evc.hyps;
-                  decls = Evd.add evc.decls k v })
-    evc
+  { it  = evc.it;
+    sigma = Evd.add evc.sigma k v }
 
-let get_hyps  evc = (ts_it evc).hyps
-let get_env   evc = Global.env_of_context (ts_it evc).hyps
-let get_decls evc = (ts_it evc).decls
-let get_gc    evc = (ts_mk (ts_it evc).decls)
-
-let remap evc (k,v) = 
-  ts_mod
-    (fun evc -> { hyps  = evc.hyps;
-                  decls = Evd.add evc.decls k v })
-    evc
+let get_hyps  evc = evc.it
+let get_env   evc = Global.env_of_context evc.it
+let get_gc    evc = evc.sigma
 
 let pf_lookup_name_as_renamed hyps ccl s =
   Detyping.lookup_name_as_renamed hyps ccl s
@@ -215,13 +197,11 @@ let pr_evd evd =
        h 0 [< pr_id (id_of_existential ev) ; 'sTR"==" ; pe >])
     (Evd.to_list evd)
     
-let pr_decls decls = pr_evd (ts_it decls)
+let pr_decls decls = pr_evd decls
 		       
 let pr_evc evc =
-  let stamp = ts_stamp evc in
-  let evc   = ts_it evc in
-  let pe = pr_evd evc.decls in
-  [< 'sTR"#" ; 'iNT stamp ; 'sTR"]=" ; pe >]
+  let pe = pr_evd evc.sigma in
+  [< pe >]
 
 let pr_evars = 
   prlist_with_sep pr_fnl

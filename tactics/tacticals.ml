@@ -129,7 +129,7 @@ let pf_is_matching gls pat n =
   is_matching_conv (w_env wc) (w_Underlying wc) pat n
 
 let pf_matches gls pat n =
-  matches_conv (pf_env gls) (Stamps.ts_it (sig_sig gls)) pat n
+  matches_conv (pf_env gls) (project gls) pat n
 
 (* [OnCL clausefinder clausetac]
  * executes the clausefinder to find the clauses, and then executes the

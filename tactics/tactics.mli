@@ -12,6 +12,7 @@
 open Names
 open Term
 open Environ
+open Sign
 open Tacmach
 open Proof_type
 open Reduction
@@ -27,7 +28,7 @@ open Nametab
 
 (*s General functions. *)
 
-val type_clenv_binding : walking_constraints ->
+val type_clenv_binding : named_context sigma ->
   constr * constr -> constr substitution  -> constr
 
 val string_of_inductive : constr -> string

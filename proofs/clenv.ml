@@ -59,7 +59,7 @@ type 'a clausenv = {
   env : clbinding Intmap.t;
   hook : 'a }
 
-type wc = walking_constraints
+type wc = named_context sigma
 
 let applyHead n c wc = 
   let rec apprec n c cty wc =

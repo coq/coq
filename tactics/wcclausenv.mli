@@ -32,7 +32,7 @@ type arg_binder =
 
 type arg_bindings = (arg_binder * constr) list
 
-type wc = walking_constraints
+type wc = named_context sigma
 
 val clenv_constrain_with_bindings : arg_bindings -> wc clausenv -> wc clausenv
 

@@ -10,7 +10,6 @@
 
 (*i*)
 open Util
-open Stamps
 open Names
 open Term
 open Sign
@@ -37,19 +36,11 @@ val is_tactic_proof   : proof_tree -> bool
 (*s A readable constraint is a global constraint plus a focus set
     of existential variables and a signature. *)
 
-type evar_recordty = {
-  hyps  : named_context;
-  decls : evar_map }
-
-and readable_constraints = evar_recordty timestamped
-
-val rc_of_gc  : global_constraints -> goal -> readable_constraints
-val rc_add    : readable_constraints -> int * goal -> readable_constraints
-val get_hyps  : readable_constraints -> named_context
-val get_env   : readable_constraints -> env
-val get_decls : readable_constraints -> evar_map
-val get_gc    : readable_constraints -> global_constraints
-val remap     : readable_constraints -> int * goal -> readable_constraints
+val rc_of_gc  : evar_map -> goal -> named_context sigma
+val rc_add    : named_context sigma -> int * goal -> named_context sigma
+val get_hyps  : named_context sigma -> named_context
+val get_env   : named_context sigma -> env
+val get_gc    : named_context sigma -> evar_map
 
 val pf_lookup_name_as_renamed : 
   named_context -> constr -> identifier -> int option
@@ -67,8 +58,8 @@ val pr_subgoals  : goal list -> std_ppcmds
 val pr_subgoal   : int -> goal list -> std_ppcmds
 
 val pr_decl      : goal -> std_ppcmds
-val pr_decls     : global_constraints -> std_ppcmds
-val pr_evc       : readable_constraints -> std_ppcmds
+val pr_decls     : evar_map -> std_ppcmds
+val pr_evc       : named_context sigma -> std_ppcmds
 
 val prgl         : goal -> std_ppcmds
 val pr_seq       : goal -> std_ppcmds

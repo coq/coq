@@ -1,7 +1,6 @@
 open Environ
 open Evd
 open Names
-open Stamps
 open Term
 open Util
 open Proof_type

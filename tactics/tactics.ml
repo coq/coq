@@ -10,7 +10,6 @@
 
 open Pp
 open Util
-open Stamps
 open Names
 open Nameops
 open Sign

@@ -13,6 +13,7 @@ open Names
 open Term
 open Sign
 open Environ
+open Evd
 open Reduction
 open Proof_trees
 open Proof_type
@@ -27,15 +28,14 @@ type validation = Proof_type.validation;;
 type tactic     = Proof_type.tactic;;
 
 val sig_it  : 'a sigma   -> 'a
-val sig_sig : goal sigma -> global_constraints
-val project : goal sigma -> Evd.evar_map
+val project : goal sigma -> evar_map
 
-val re_sig : 'a -> global_constraints -> 'a sigma
+val re_sig : 'a -> evar_map -> 'a sigma
 
-val unpackage : 'a sigma -> global_constraints ref * 'a
-val repackage : global_constraints ref -> 'a -> 'a sigma
+val unpackage : 'a sigma -> evar_map ref * 'a
+val repackage : evar_map ref -> 'a -> 'a sigma
 val apply_sig_tac :
-  global_constraints ref -> ('a sigma -> 'b sigma * 'c) -> 'a -> 'b * 'c
+  evar_map ref -> ('a sigma -> 'b sigma * 'c) -> 'a -> 'b * 'c
 
 val pf_concl              : goal sigma -> constr
 val pf_env                : goal sigma -> env
@@ -63,7 +63,7 @@ val pf_reduction_of_redexp : goal sigma -> red_expr -> constr -> constr
 
 
 val pf_reduce : 
-  (env -> Evd.evar_map -> constr -> constr) ->
+  (env -> evar_map -> constr -> constr) ->
     goal sigma -> constr -> constr
 
 val pf_whd_betadeltaiota       : goal sigma -> constr -> constr
@@ -94,7 +94,7 @@ type pftreestate
 val proof_of_pftreestate    : pftreestate -> proof_tree
 val cursor_of_pftreestate   : pftreestate -> int list
 val is_top_pftreestate      : pftreestate -> bool
-val evc_of_pftreestate      : pftreestate -> Evd.evar_map
+val evc_of_pftreestate      : pftreestate -> evar_map
 val top_goal_of_pftreestate : pftreestate -> goal sigma
 val nth_goal_of_pftreestate : int -> pftreestate -> goal sigma
 val traverse                : int -> pftreestate -> pftreestate
@@ -113,7 +113,7 @@ val next_unproven           : pftreestate -> pftreestate
 val prev_unproven           : pftreestate -> pftreestate
 val top_of_tree             : pftreestate -> pftreestate
 val change_constraints_pftreestate :
-  global_constraints -> pftreestate -> pftreestate
+  evar_map -> pftreestate -> pftreestate
 val instantiate_pf     : int -> constr -> pftreestate -> pftreestate
 val instantiate_pf_com : int -> Coqast.t -> pftreestate -> pftreestate
 
@@ -243,7 +243,7 @@ val hide_cbindll_tactic :
 open Pp
 (*i*)
 
-val pr_com    : Evd.evar_map -> goal -> Coqast.t -> std_ppcmds
+val pr_com    : evar_map -> goal -> Coqast.t -> std_ppcmds
 val pr_gls    : goal sigma -> std_ppcmds
 val pr_glls   : goal list sigma -> std_ppcmds
 val pr_tactic : tactic_expression -> std_ppcmds

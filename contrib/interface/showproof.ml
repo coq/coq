@@ -6,7 +6,6 @@ open Environ
 open Evd
 open Names
 open Nameops
-open Stamps
 open Term
 open Termops
 open Util

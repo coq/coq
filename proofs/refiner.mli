@@ -11,6 +11,7 @@
 (*i*)
 open Term
 open Sign
+open Evd
 open Proof_trees
 open Proof_type
 (*i*)
@@ -18,14 +19,14 @@ open Proof_type
 (* The refiner (handles primitive rules and high-level tactics). *)
 
 val sig_it  : 'a sigma -> 'a
-val sig_sig : 'a sigma -> global_constraints
+val sig_sig : 'a sigma -> evar_map
 
-val project_with_focus : goal sigma -> readable_constraints
+val project_with_focus : goal sigma -> named_context sigma
 
-val unpackage : 'a sigma -> global_constraints ref * 'a
-val repackage : global_constraints ref -> 'a -> 'a sigma
+val unpackage : 'a sigma -> evar_map ref * 'a
+val repackage : evar_map ref -> 'a -> 'a sigma
 val apply_sig_tac :
-  global_constraints ref -> ('a sigma -> 'b sigma * 'c) -> 'a -> 'b * 'c
+  evar_map ref -> ('a sigma -> 'b sigma * 'c) -> 'a -> 'b * 'c
 
 type transformation_tactic = proof_tree -> (goal list * validation)
 
@@ -117,7 +118,7 @@ type pftreestate
 val proof_of_pftreestate : pftreestate -> proof_tree
 val cursor_of_pftreestate : pftreestate -> int list
 val is_top_pftreestate : pftreestate -> bool
-val evc_of_pftreestate : pftreestate -> Evd.evar_map
+val evc_of_pftreestate : pftreestate -> evar_map
 val top_goal_of_pftreestate : pftreestate -> goal sigma
 val nth_goal_of_pftreestate : int -> pftreestate -> goal sigma
 
@@ -141,7 +142,7 @@ val next_unproven : pftreestate -> pftreestate
 val prev_unproven : pftreestate -> pftreestate
 val top_of_tree : pftreestate -> pftreestate
 val change_constraints_pftreestate 
-  : global_constraints -> pftreestate -> pftreestate
+  : evar_map -> pftreestate -> pftreestate
 
 
 (*s Pretty-printers. *)
@@ -150,10 +151,10 @@ val change_constraints_pftreestate
 open Pp
 (*i*)
 
-val print_proof : Evd.evar_map -> named_context -> proof_tree -> std_ppcmds
+val print_proof : evar_map -> named_context -> proof_tree -> std_ppcmds
 val pr_rule      : rule -> std_ppcmds
 val pr_tactic    : tactic_expression -> std_ppcmds
 val print_script :
-  bool -> Evd.evar_map -> named_context -> proof_tree -> std_ppcmds
+  bool -> evar_map -> named_context -> proof_tree -> std_ppcmds
 val print_treescript :
-  Evd.evar_map -> named_context -> proof_tree -> std_ppcmds
+  evar_map -> named_context -> proof_tree -> std_ppcmds

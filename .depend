@@ -135,8 +135,8 @@ pretyping/termops.cmi: kernel/environ.cmi kernel/names.cmi \
 pretyping/typing.cmi: kernel/environ.cmi pretyping/evd.cmi kernel/term.cmi 
 proofs/clenv.cmi: kernel/environ.cmi proofs/evar_refiner.cmi \
     pretyping/evd.cmi kernel/names.cmi lib/pp.cmi proofs/proof_type.cmi \
-    pretyping/reductionops.cmi proofs/tacmach.cmi kernel/term.cmi \
-    lib/util.cmi 
+    pretyping/reductionops.cmi kernel/sign.cmi proofs/tacmach.cmi \
+    kernel/term.cmi lib/util.cmi 
 proofs/evar_refiner.cmi: parsing/coqast.cmi kernel/environ.cmi \
     pretyping/evd.cmi kernel/names.cmi proofs/proof_trees.cmi \
     proofs/proof_type.cmi proofs/refiner.cmi kernel/sign.cmi kernel/term.cmi 
@@ -147,11 +147,10 @@ proofs/pfedit.cmi: parsing/coqast.cmi library/declare.cmi kernel/environ.cmi \
     kernel/safe_typing.cmi kernel/sign.cmi proofs/tacmach.cmi kernel/term.cmi 
 proofs/proof_trees.cmi: parsing/coqast.cmi kernel/environ.cmi \
     pretyping/evd.cmi kernel/names.cmi lib/pp.cmi proofs/proof_type.cmi \
-    kernel/sign.cmi lib/stamps.cmi kernel/term.cmi lib/util.cmi 
+    kernel/sign.cmi kernel/term.cmi lib/util.cmi 
 proofs/proof_type.cmi: parsing/coqast.cmi kernel/environ.cmi \
     pretyping/evd.cmi kernel/names.cmi library/nametab.cmi \
-    pretyping/pretyping.cmi lib/stamps.cmi pretyping/tacred.cmi \
-    kernel/term.cmi lib/util.cmi 
+    pretyping/pretyping.cmi pretyping/tacred.cmi kernel/term.cmi lib/util.cmi 
 proofs/refiner.cmi: pretyping/evd.cmi lib/pp.cmi proofs/proof_trees.cmi \
     proofs/proof_type.cmi kernel/sign.cmi kernel/term.cmi 
 proofs/tacinterp.cmi: parsing/coqast.cmi lib/dyn.cmi kernel/environ.cmi \
@@ -197,8 +196,8 @@ tactics/tacticals.cmi: proofs/clenv.cmi parsing/coqast.cmi kernel/names.cmi \
 tactics/tactics.cmi: proofs/clenv.cmi kernel/closure.cmi kernel/environ.cmi \
     proofs/evar_refiner.cmi pretyping/evd.cmi kernel/names.cmi \
     library/nametab.cmi proofs/proof_type.cmi kernel/reduction.cmi \
-    proofs/tacmach.cmi pretyping/tacred.cmi tactics/tacticals.cmi \
-    kernel/term.cmi 
+    kernel/sign.cmi proofs/tacmach.cmi pretyping/tacred.cmi \
+    tactics/tacticals.cmi kernel/term.cmi 
 tactics/termdn.cmi: pretyping/pattern.cmi kernel/term.cmi 
 tactics/wcclausenv.cmi: proofs/clenv.cmi kernel/environ.cmi \
     proofs/evar_refiner.cmi pretyping/evd.cmi kernel/names.cmi \
@@ -303,8 +302,8 @@ contrib/interface/showproof.cmi: contrib/interface/ascent.cmi \
     kernel/inductive.cmi kernel/names.cmi proofs/pfedit.cmi lib/pp.cmi \
     parsing/printer.cmi proofs/proof_trees.cmi proofs/proof_type.cmi \
     kernel/reduction.cmi contrib/interface/showproof_ct.cmo kernel/sign.cmi \
-    lib/stamps.cmi kernel/term.cmi contrib/interface/translate.cmi \
-    pretyping/typing.cmi lib/util.cmi toplevel/vernacinterp.cmi 
+    kernel/term.cmi contrib/interface/translate.cmi pretyping/typing.cmi \
+    lib/util.cmi toplevel/vernacinterp.cmi 
 contrib/interface/translate.cmi: contrib/interface/ascent.cmi \
     kernel/environ.cmi pretyping/evd.cmi proofs/proof_type.cmi \
     kernel/term.cmi 
@@ -929,15 +928,15 @@ proofs/evar_refiner.cmo: parsing/astterm.cmi kernel/environ.cmi \
     pretyping/instantiate.cmi proofs/logic.cmi kernel/names.cmi \
     lib/options.cmi lib/pp.cmi proofs/proof_trees.cmi proofs/proof_type.cmi \
     pretyping/reductionops.cmi proofs/refiner.cmi kernel/sign.cmi \
-    lib/stamps.cmi pretyping/tacred.cmi kernel/term.cmi pretyping/typing.cmi \
-    lib/util.cmi proofs/evar_refiner.cmi 
+    pretyping/tacred.cmi kernel/term.cmi pretyping/typing.cmi lib/util.cmi \
+    proofs/evar_refiner.cmi 
 proofs/evar_refiner.cmx: parsing/astterm.cmx kernel/environ.cmx \
     pretyping/evarutil.cmx pretyping/evd.cmx library/global.cmx \
     pretyping/instantiate.cmx proofs/logic.cmx kernel/names.cmx \
     lib/options.cmx lib/pp.cmx proofs/proof_trees.cmx proofs/proof_type.cmx \
     pretyping/reductionops.cmx proofs/refiner.cmx kernel/sign.cmx \
-    lib/stamps.cmx pretyping/tacred.cmx kernel/term.cmx pretyping/typing.cmx \
-    lib/util.cmx proofs/evar_refiner.cmi 
+    pretyping/tacred.cmx kernel/term.cmx pretyping/typing.cmx lib/util.cmx \
+    proofs/evar_refiner.cmi 
 proofs/logic.cmo: parsing/coqast.cmi library/declare.cmi kernel/environ.cmi \
     pretyping/evarutil.cmi pretyping/evd.cmi library/global.cmi \
     kernel/inductive.cmi pretyping/inductiveops.cmi kernel/names.cmi \
@@ -970,36 +969,36 @@ proofs/proof_trees.cmo: parsing/ast.cmi kernel/closure.cmi \
     pretyping/detyping.cmi kernel/environ.cmi pretyping/evarutil.cmi \
     pretyping/evd.cmi library/global.cmi kernel/names.cmi library/nametab.cmi \
     lib/pp.cmi parsing/printer.cmi proofs/proof_type.cmi kernel/sign.cmi \
-    lib/stamps.cmi pretyping/tacred.cmi kernel/term.cmi parsing/termast.cmi \
+    pretyping/tacred.cmi kernel/term.cmi parsing/termast.cmi \
     pretyping/termops.cmi pretyping/typing.cmi lib/util.cmi \
     proofs/proof_trees.cmi 
 proofs/proof_trees.cmx: parsing/ast.cmx kernel/closure.cmx \
     pretyping/detyping.cmx kernel/environ.cmx pretyping/evarutil.cmx \
     pretyping/evd.cmx library/global.cmx kernel/names.cmx library/nametab.cmx \
     lib/pp.cmx parsing/printer.cmx proofs/proof_type.cmx kernel/sign.cmx \
-    lib/stamps.cmx pretyping/tacred.cmx kernel/term.cmx parsing/termast.cmx \
+    pretyping/tacred.cmx kernel/term.cmx parsing/termast.cmx \
     pretyping/termops.cmx pretyping/typing.cmx lib/util.cmx \
     proofs/proof_trees.cmi 
 proofs/proof_type.cmo: parsing/coqast.cmi kernel/environ.cmi \
     pretyping/evd.cmi kernel/names.cmi library/nametab.cmi \
-    pretyping/pretyping.cmi lib/stamps.cmi pretyping/tacred.cmi \
-    kernel/term.cmi lib/util.cmi proofs/proof_type.cmi 
+    pretyping/pretyping.cmi pretyping/tacred.cmi kernel/term.cmi lib/util.cmi \
+    proofs/proof_type.cmi 
 proofs/proof_type.cmx: parsing/coqast.cmx kernel/environ.cmx \
     pretyping/evd.cmx kernel/names.cmx library/nametab.cmx \
-    pretyping/pretyping.cmx lib/stamps.cmx pretyping/tacred.cmx \
-    kernel/term.cmx lib/util.cmx proofs/proof_type.cmi 
+    pretyping/pretyping.cmx pretyping/tacred.cmx kernel/term.cmx lib/util.cmx \
+    proofs/proof_type.cmi 
 proofs/refiner.cmo: parsing/ast.cmi kernel/environ.cmi pretyping/evarutil.cmi \
     pretyping/evd.cmi library/global.cmi pretyping/instantiate.cmi \
     proofs/logic.cmi lib/pp.cmi parsing/printer.cmi proofs/proof_trees.cmi \
     proofs/proof_type.cmi pretyping/reductionops.cmi kernel/sign.cmi \
-    lib/stamps.cmi kernel/term.cmi pretyping/termops.cmi \
-    kernel/type_errors.cmi lib/util.cmi proofs/refiner.cmi 
+    kernel/term.cmi pretyping/termops.cmi kernel/type_errors.cmi lib/util.cmi \
+    proofs/refiner.cmi 
 proofs/refiner.cmx: parsing/ast.cmx kernel/environ.cmx pretyping/evarutil.cmx \
     pretyping/evd.cmx library/global.cmx pretyping/instantiate.cmx \
     proofs/logic.cmx lib/pp.cmx parsing/printer.cmx proofs/proof_trees.cmx \
     proofs/proof_type.cmx pretyping/reductionops.cmx kernel/sign.cmx \
-    lib/stamps.cmx kernel/term.cmx pretyping/termops.cmx \
-    kernel/type_errors.cmx lib/util.cmx proofs/refiner.cmi 
+    kernel/term.cmx pretyping/termops.cmx kernel/type_errors.cmx lib/util.cmx \
+    proofs/refiner.cmi 
 proofs/tacinterp.cmo: parsing/ast.cmi parsing/astterm.cmi kernel/closure.cmi \
     parsing/coqast.cmi kernel/declarations.cmi library/declare.cmi \
     lib/dyn.cmi kernel/environ.cmi pretyping/evd.cmi library/global.cmi \
@@ -1027,16 +1026,16 @@ proofs/tacmach.cmo: parsing/ast.cmi parsing/astterm.cmi library/declare.cmi \
     pretyping/evd.cmi library/global.cmi pretyping/instantiate.cmi \
     proofs/logic.cmi kernel/names.cmi lib/pp.cmi parsing/printer.cmi \
     proofs/proof_trees.cmi proofs/proof_type.cmi pretyping/reductionops.cmi \
-    proofs/refiner.cmi kernel/sign.cmi lib/stamps.cmi pretyping/tacred.cmi \
-    kernel/term.cmi pretyping/termops.cmi pretyping/typing.cmi lib/util.cmi \
+    proofs/refiner.cmi kernel/sign.cmi pretyping/tacred.cmi kernel/term.cmi \
+    pretyping/termops.cmi pretyping/typing.cmi lib/util.cmi \
     proofs/tacmach.cmi 
 proofs/tacmach.cmx: parsing/ast.cmx parsing/astterm.cmx library/declare.cmx \
     kernel/environ.cmx proofs/evar_refiner.cmx pretyping/evarutil.cmx \
     pretyping/evd.cmx library/global.cmx pretyping/instantiate.cmx \
     proofs/logic.cmx kernel/names.cmx lib/pp.cmx parsing/printer.cmx \
     proofs/proof_trees.cmx proofs/proof_type.cmx pretyping/reductionops.cmx \
-    proofs/refiner.cmx kernel/sign.cmx lib/stamps.cmx pretyping/tacred.cmx \
-    kernel/term.cmx pretyping/termops.cmx pretyping/typing.cmx lib/util.cmx \
+    proofs/refiner.cmx kernel/sign.cmx pretyping/tacred.cmx kernel/term.cmx \
+    pretyping/termops.cmx pretyping/typing.cmx lib/util.cmx \
     proofs/tacmach.cmi 
 proofs/tactic_debug.cmo: parsing/ast.cmi lib/pp.cmi parsing/printer.cmi \
     proofs/proof_trees.cmi proofs/tacmach.cmi proofs/tactic_debug.cmi 
@@ -1272,7 +1271,7 @@ tactics/tacticals.cmo: proofs/clenv.cmi parsing/coqast.cmi \
     kernel/declarations.cmi library/declare.cmi kernel/environ.cmi \
     proofs/evar_refiner.cmi library/global.cmi pretyping/indrec.cmi \
     kernel/inductive.cmi kernel/names.cmi pretyping/pattern.cmi lib/pp.cmi \
-    kernel/reduction.cmi kernel/sign.cmi lib/stamps.cmi proofs/tacinterp.cmi \
+    kernel/reduction.cmi kernel/sign.cmi proofs/tacinterp.cmi \
     proofs/tacmach.cmi kernel/term.cmi parsing/termast.cmi \
     pretyping/termops.cmi lib/util.cmi tactics/wcclausenv.cmi \
     tactics/tacticals.cmi 
@@ -1280,7 +1279,7 @@ tactics/tacticals.cmx: proofs/clenv.cmx parsing/coqast.cmx \
     kernel/declarations.cmx library/declare.cmx kernel/environ.cmx \
     proofs/evar_refiner.cmx library/global.cmx pretyping/indrec.cmx \
     kernel/inductive.cmx kernel/names.cmx pretyping/pattern.cmx lib/pp.cmx \
-    kernel/reduction.cmx kernel/sign.cmx lib/stamps.cmx proofs/tacinterp.cmx \
+    kernel/reduction.cmx kernel/sign.cmx proofs/tacinterp.cmx \
     proofs/tacmach.cmx kernel/term.cmx parsing/termast.cmx \
     pretyping/termops.cmx lib/util.cmx tactics/wcclausenv.cmx \
     tactics/tacticals.cmi 
@@ -1291,10 +1290,9 @@ tactics/tactics.cmo: parsing/astterm.cmi proofs/clenv.cmi kernel/closure.cmi \
     kernel/inductive.cmi pretyping/inductiveops.cmi proofs/logic.cmi \
     library/nameops.cmi kernel/names.cmi library/nametab.cmi \
     proofs/pfedit.cmi lib/pp.cmi proofs/proof_trees.cmi proofs/proof_type.cmi \
-    pretyping/reductionops.cmi kernel/sign.cmi lib/stamps.cmi \
-    proofs/tacinterp.cmi proofs/tacmach.cmi pretyping/tacred.cmi \
-    tactics/tacticals.cmi kernel/term.cmi pretyping/termops.cmi lib/util.cmi \
-    tactics/tactics.cmi 
+    pretyping/reductionops.cmi kernel/sign.cmi proofs/tacinterp.cmi \
+    proofs/tacmach.cmi pretyping/tacred.cmi tactics/tacticals.cmi \
+    kernel/term.cmi pretyping/termops.cmi lib/util.cmi tactics/tactics.cmi 
 tactics/tactics.cmx: parsing/astterm.cmx proofs/clenv.cmx kernel/closure.cmx \
     parsing/coqlib.cmx kernel/declarations.cmx library/declare.cmx \
     kernel/environ.cmx proofs/evar_refiner.cmx pretyping/evd.cmx \
@@ -1302,10 +1300,9 @@ tactics/tactics.cmx: parsing/astterm.cmx proofs/clenv.cmx kernel/closure.cmx \
     kernel/inductive.cmx pretyping/inductiveops.cmx proofs/logic.cmx \
     library/nameops.cmx kernel/names.cmx library/nametab.cmx \
     proofs/pfedit.cmx lib/pp.cmx proofs/proof_trees.cmx proofs/proof_type.cmx \
-    pretyping/reductionops.cmx kernel/sign.cmx lib/stamps.cmx \
-    proofs/tacinterp.cmx proofs/tacmach.cmx pretyping/tacred.cmx \
-    tactics/tacticals.cmx kernel/term.cmx pretyping/termops.cmx lib/util.cmx \
-    tactics/tactics.cmi 
+    pretyping/reductionops.cmx kernel/sign.cmx proofs/tacinterp.cmx \
+    proofs/tacmach.cmx pretyping/tacred.cmx tactics/tacticals.cmx \
+    kernel/term.cmx pretyping/termops.cmx lib/util.cmx tactics/tactics.cmi 
 tactics/tauto.cmo: parsing/ast.cmi parsing/coqast.cmi tactics/hipattern.cmi \
     kernel/names.cmi lib/pp.cmi proofs/proof_type.cmi proofs/tacinterp.cmi \
     proofs/tacmach.cmi tactics/tacticals.cmi tactics/tactics.cmi lib/util.cmi 
@@ -2044,22 +2041,20 @@ contrib/interface/showproof.cmo: parsing/ast.cmi parsing/astterm.cmi \
     kernel/inductive.cmi pretyping/inductiveops.cmi library/nameops.cmi \
     kernel/names.cmi proofs/pfedit.cmi lib/pp.cmi parsing/printer.cmi \
     proofs/proof_trees.cmi proofs/proof_type.cmi pretyping/reductionops.cmi \
-    contrib/interface/showproof_ct.cmo kernel/sign.cmi lib/stamps.cmi \
-    proofs/tacmach.cmi kernel/term.cmi parsing/termast.cmi \
-    pretyping/termops.cmi contrib/interface/translate.cmi \
-    pretyping/typing.cmi lib/util.cmi toplevel/vernacinterp.cmi \
-    contrib/interface/showproof.cmi 
+    contrib/interface/showproof_ct.cmo kernel/sign.cmi proofs/tacmach.cmi \
+    kernel/term.cmi parsing/termast.cmi pretyping/termops.cmi \
+    contrib/interface/translate.cmi pretyping/typing.cmi lib/util.cmi \
+    toplevel/vernacinterp.cmi contrib/interface/showproof.cmi 
 contrib/interface/showproof.cmx: parsing/ast.cmx parsing/astterm.cmx \
     proofs/clenv.cmx parsing/coqast.cmx kernel/declarations.cmx \
     kernel/environ.cmx pretyping/evd.cmx library/global.cmx \
     kernel/inductive.cmx pretyping/inductiveops.cmx library/nameops.cmx \
     kernel/names.cmx proofs/pfedit.cmx lib/pp.cmx parsing/printer.cmx \
     proofs/proof_trees.cmx proofs/proof_type.cmx pretyping/reductionops.cmx \
-    contrib/interface/showproof_ct.cmx kernel/sign.cmx lib/stamps.cmx \
-    proofs/tacmach.cmx kernel/term.cmx parsing/termast.cmx \
-    pretyping/termops.cmx contrib/interface/translate.cmx \
-    pretyping/typing.cmx lib/util.cmx toplevel/vernacinterp.cmx \
-    contrib/interface/showproof.cmi 
+    contrib/interface/showproof_ct.cmx kernel/sign.cmx proofs/tacmach.cmx \
+    kernel/term.cmx parsing/termast.cmx pretyping/termops.cmx \
+    contrib/interface/translate.cmx pretyping/typing.cmx lib/util.cmx \
+    toplevel/vernacinterp.cmx contrib/interface/showproof.cmi 
 contrib/interface/translate.cmo: contrib/interface/ascent.cmi parsing/ast.cmi \
     contrib/interface/ctast.cmo kernel/environ.cmi pretyping/evarutil.cmi \
     pretyping/evd.cmi library/libobject.cmi library/library.cmi \

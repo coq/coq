@@ -12,6 +12,7 @@
 open Util
 open Names
 open Term
+open Sign
 open Tacmach
 open Proof_type
 open Evar_refiner
@@ -52,7 +53,7 @@ type 'a clausenv = {
  * [hook] is the pointer to the current walking context, for
  *        integrating existential vars and metavars. *)
 
-type wc = walking_constraints (* for a better reading of the following *)
+type wc = named_context sigma (* for a better reading of the following *)
 
 val unify : constr -> tactic
 val unify_0 : 
@@ -99,16 +100,16 @@ val clenv_type_of : wc clausenv -> constr -> constr
 val clenv_unique_resolver : bool -> wc clausenv -> goal sigma -> wc clausenv
 
 val make_clenv_binding_apply :
-  walking_constraints ->
+  named_context sigma ->
   int ->
   constr * constr ->
   (bindOcc * types) list ->
-  walking_constraints clausenv
+  named_context sigma clausenv
 val make_clenv_binding :
-  walking_constraints ->
+  named_context sigma ->
   constr * constr ->
   (bindOcc * types) list ->
-  walking_constraints clausenv
+  named_context sigma clausenv
 
 (* Exported for program.ml only *)
 val clenv_add_sign : 
