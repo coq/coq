@@ -32,4 +32,6 @@ val add_relation :
 
 val add_setoid : constr_expr -> constr_expr -> constr_expr -> unit
 
-val new_named_morphism : Names.identifier -> constr_expr -> unit
+val new_named_morphism :
+ Names.identifier -> constr_expr -> (constr_expr list * constr_expr) option ->
+  unit
