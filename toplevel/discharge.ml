@@ -25,38 +25,49 @@ let recalc_sp dir sp =
 
 let build_abstract_list hyps ids_to_discard =
   map_succeed 
-    (fun id -> 
-       if not (mem_named_context id hyps) then failwith "caugth"; ABSTRACT)
+    (fun id ->
+       try
+	 match lookup_id_value id hyps with
+	   | None -> ABSTRACT
+	   | Some c -> failwith "caugth"
+       with Not_found -> failwith "caugth")
     ids_to_discard
 
 (* Discharge of inductives is done here (while discharge of constants 
    is done by the kernel for efficiency). *)
 
 let abstract_inductive ids_to_abs hyps inds =
-  let abstract_one_var d inds =
+  let abstract_one_assum id t inds =
     let ntyp = List.length inds in 
     let new_refs =
       list_tabulate (fun k -> applist(mkRel (k+2),[mkRel 1])) ntyp in
     let inds' =
       List.map
       	(function (tname,arity,cnames,lc) -> 
-	   let arity' = mkNamedProd_or_LetIn d arity in
+	   let arity' = mkNamedProd id t arity in
 	   let lc' =
-	     List.map (fun b -> mkNamedProd_or_LetIn d (substl new_refs b)) lc
+	     List.map (fun b -> mkNamedProd id t (substl new_refs b)) lc
 	   in
            (tname,arity',cnames,lc'))
       	inds
     in 
-    (inds',ABSTRACT)
-  in
+    (inds',ABSTRACT) in
+  let abstract_one_def id c inds =
+    List.map
+      (function (tname,arity,cnames,lc) -> 
+	 let arity' = replace_vars [id, c] arity in
+	 let lc' = List.map (replace_vars [id, c]) lc in
+         (tname,arity',cnames,lc'))
+      inds in
   let abstract_once ((hyps,inds,modl) as sofar) id =
     match hyps with
-      | [] -> sofar
-      | (hyp,c,t as d)::rest ->
-	  if id <> hyp then sofar
-	  else
-	    let (inds',modif) = abstract_one_var d inds in 
-	    (rest, inds', modif::modl)
+      | (hyp,None,t as d)::rest when id = hyp ->
+	  let (inds',modif) = abstract_one_assum hyp t inds in 
+	  (rest, inds', modif::modl)
+      | (hyp,Some b,t as d)::rest when id = hyp ->
+	  let inds' = abstract_one_def hyp b inds in 
+	  (rest, inds', modl)
+      | _ -> sofar
   in
   let (_,inds',revmodl) =
     List.fold_left abstract_once (hyps,inds,[]) ids_to_abs in
