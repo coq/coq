@@ -386,10 +386,10 @@ COQIDE=bin/coqide$(EXE)
 COQIDECMO=ide/utils/okey.cmo ide/utils/uoptions.cmo \
 	  ide/utils/configwin_keys.cmo ide/utils/configwin_types.cmo \
 	  ide/utils/configwin_messages.cmo ide/utils/configwin_ihm.cmo \
-	  ide/utils/configwin.cmo ide/blaster_window.cmo \
+	  ide/utils/configwin.cmo \
 	  ide/utils/editable_cells.cmo ide/config_parser.cmo \
 	  ide/config_lexer.cmo ide/utf8_convert.cmo ide/preferences.cmo \
-	  ide/ideutils.cmo ide/undo.cmo \
+	  ide/ideutils.cmo ide/blaster_window.cmo ide/undo.cmo \
 	  ide/find_phrase.cmo \
           ide/highlight.cmo ide/coq.cmo ide/coq_commands.cmo \
 	  ide/coq_tactics.cmo  ide/command_windows.cmo ide/coqide.cmo

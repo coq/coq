@@ -476,8 +476,8 @@ dev/top_printers.cmx: parsing/ast.cmx toplevel/cerrors.cmx proofs/clenv.cmx \
     kernel/term.cmx pretyping/termops.cmx kernel/univ.cmx 
 doc/parse.cmo: parsing/ast.cmi 
 doc/parse.cmx: parsing/ast.cmx 
-ide/blaster_window.cmo: ide/coq.cmi 
-ide/blaster_window.cmx: ide/coq.cmx 
+ide/blaster_window.cmo: ide/coq.cmi ide/ideutils.cmi 
+ide/blaster_window.cmx: ide/coq.cmx ide/ideutils.cmx 
 ide/command_windows.cmo: ide/coq.cmi ide/coq_commands.cmo ide/ideutils.cmi \
     ide/command_windows.cmi 
 ide/command_windows.cmx: ide/coq.cmx ide/coq_commands.cmx ide/ideutils.cmx \

@@ -1229,21 +1229,23 @@ Please restart and report NOW.";
   method blaster () = 
     prerr_endline "Blaster called";
     let c = Blaster_window.blaster_window () in
+    c#clear ();
     let set i s = 
-      c#set i
+      c#set
+	i
 	s 
 	(fun () -> try_interptac (s ^ ". "))
 	(fun () -> self#insert_command (s^".\n") (s^".\n"))
     in
-    set 0 "Assumption" ;
-    set 1 "Reflexivity" ;
-    set 2 "Trivial";
-    set 3 "Auto" ;
-    set 4 "EAuto";
-    set 5 "Auto with *" ;
-    set 6 "EAuto with *" ;
-    set 7 "Intuition";
-    set 8 "Ground";
+    set "Goal" "Assumption" ;
+    set "Goal" "Reflexivity" ;
+    set "Goal" "Trivial";
+    set "Goal" "Auto" ;
+    set "Goal" "EAuto";
+    set "Goal" "Auto with *" ;
+    set "Goal" "EAuto with *" ;
+    set "Goal" "Intuition";
+    set "Goal" "Ground";
     let _ = Thread.create c#blaster () in
     ()
     
@@ -2209,8 +2211,9 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   
   (* Command/Compile Menu *)
   let compile_f () =
-    let v = get_active_view () in
+    let v = get_current_view () in
     let av = out_some v.analyzed_view in
+    save_f ();
     match av#filename with
     | None -> 
 	!flash_info "Active buffer has no name"
