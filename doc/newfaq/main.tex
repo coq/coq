@@ -61,6 +61,10 @@
 \def\symmetry{{\tt symmetry }}
 \def\Focus{{\tt Focus }}
 \def\discriminate{{\tt discriminate }}
+\def\contradiction{{\tt contradiction }}
+\def\intuition{{\tt intuition }}
+
+
 
 \begin{document}
 \bibliographystyle{plain}
@@ -431,6 +435,11 @@ Goal 3+0 = 3.
 apply mylemma.
 Qed.
 \end{coq_example}
+
+\Question[falseimpliesall]{My goal contains False as an hypotheses, how can I prove it ?}
+
+You can use the \contradiction or \intuition tactics.
+
 
 \Question[reflexivity]{My goal is an equality of two convertible terms, how can I prove it ?}
 
@@ -851,6 +860,16 @@ while Assert is.
 
 \Question[vector]{How can I define vectors of size n ?}
 
+\Question[autospeed]{How can I speed up \auto ?}
+
+You can use info \auto to replace \auto by the tactics it generates.
+You can split your hint bases into smaller ones.
+
+\Question[evaluable]{Can you explain me what an evaluable constant is ?}
+
+\Question[Tauto]{What is the equivalent of Tauto for classical logic ?}
+
+Currently there are no equivalent tactic for classical logic.
 
 
 %%%%%%%
