@@ -12,9 +12,14 @@ open Term
 open Proof_type
 open Topconstr
 
+
+val register_replace : (constr -> constr -> tactic) -> unit
+
+val print_setoids : unit -> unit
+
 val equiv_list : unit -> constr list
 
-val setoid_replace : constr -> constr -> constr option -> tactic
+val setoid_replace : constr -> constr -> tactic
 
 val setoid_rewriteLR : constr -> tactic
 
