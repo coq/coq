@@ -17,6 +17,7 @@ let f_atom_int = print_int;;
 let rec fAST = function
 | CT_coerce_ID_OR_INT_to_AST x -> fID_OR_INT x
 | CT_coerce_ID_OR_STRING_to_AST x -> fID_OR_STRING x
+| CT_coerce_SINGLE_OPTION_VALUE_to_AST x -> fSINGLE_OPTION_VALUE x
 | CT_astnode(x1, x2) ->
    fID x1;
    fAST_LIST x2;
@@ -485,6 +486,17 @@ and fCOMMAND = function
    fID x1;
    fNODE "set_natural" 1
 | CT_set_natural_default -> fNODE "set_natural_default" 0
+| CT_set_option(x1) ->
+   fTABLE x1;
+   fNODE "set_option" 1
+| CT_set_option_value(x1, x2) ->
+   fTABLE x1;
+   fSINGLE_OPTION_VALUE x2;
+   fNODE "set_option_value" 2
+| CT_set_option_value2(x1, x2) ->
+   fTABLE x1;
+   fID_OR_STRING_NE_LIST x2;
+   fNODE "set_option_value2" 2
 | CT_sethyp(x1) ->
    fINT x1;
    fNODE "sethyp" 1
@@ -538,6 +550,9 @@ and fCOMMAND = function
    fINT_OPT x1;
    fNODE "undo" 1
 | CT_unfocus -> fNODE "unfocus" 0
+| CT_unset_option(x1) ->
+   fTABLE x1;
+   fNODE "unset_option" 1
 | CT_unsethyp -> fNODE "unsethyp" 0
 | CT_unsetundo -> fNODE "unsetundo" 0
 | CT_user_vernac(x1, x2) ->
@@ -1222,6 +1237,9 @@ and fSIGNED_INT_LIST = function
 | CT_signed_int_list l ->
    (List.iter fSIGNED_INT l);
    fNODE "signed_int_list" (List.length l)
+and fSINGLE_OPTION_VALUE = function
+| CT_coerce_INT_to_SINGLE_OPTION_VALUE x -> fINT x
+| CT_coerce_STRING_to_SINGLE_OPTION_VALUE x -> fSTRING x
 and fSORT_TYPE = function
 | CT_sortc x -> fATOM "sortc";
    (f_atom_string x);
@@ -1247,6 +1265,12 @@ and fSTRING = function
 and fSTRING_OPT = function
 | CT_coerce_NONE_to_STRING_OPT x -> fNONE x
 | CT_coerce_STRING_to_STRING_OPT x -> fSTRING x
+and fTABLE = function
+| CT_coerce_ID_to_TABLE x -> fID x
+| CT_table(x1, x2) ->
+   fID x1;
+   fID x2;
+   fNODE "table" 2
 and fTACTIC_ARG = function
 | CT_coerce_EVAL_CMD_to_TACTIC_ARG x -> fEVAL_CMD x
 | CT_coerce_FORMULA_OR_INT_to_TACTIC_ARG x -> fFORMULA_OR_INT x
@@ -1338,6 +1362,10 @@ and fTACTIC_COM = function
    fSPEC_LIST x2;
    fNODE "constructor" 2
 | CT_contradiction -> fNODE "contradiction" 0
+| CT_contradiction_thm(x1, x2) ->
+   fFORMULA x1;
+   fSPEC_LIST x2;
+   fNODE "contradiction_thm" 2
 | CT_cut(x1) ->
    fFORMULA x1;
    fNODE "cut" 1
@@ -1645,8 +1673,10 @@ and fTARG = function
 | CT_coerce_PATTERN_to_TARG x -> fPATTERN x
 | CT_coerce_SCOMMENT_CONTENT_to_TARG x -> fSCOMMENT_CONTENT x
 | CT_coerce_SIGNED_INT_LIST_to_TARG x -> fSIGNED_INT_LIST x
+| CT_coerce_SINGLE_OPTION_VALUE_to_TARG x -> fSINGLE_OPTION_VALUE x
 | CT_coerce_SPEC_LIST_to_TARG x -> fSPEC_LIST x
 | CT_coerce_TACTIC_COM_to_TARG x -> fTACTIC_COM x
+| CT_coerce_TARG_LIST_to_TARG x -> fTARG_LIST x
 | CT_coerce_UNFOLD_to_TARG x -> fUNFOLD x
 | CT_coerce_UNFOLD_NE_LIST_to_TARG x -> fUNFOLD_NE_LIST x
 and fTARG_LIST = function

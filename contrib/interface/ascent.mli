@@ -1,6 +1,7 @@
 type ct_AST =
     CT_coerce_ID_OR_INT_to_AST of ct_ID_OR_INT
   | CT_coerce_ID_OR_STRING_to_AST of ct_ID_OR_STRING
+  | CT_coerce_SINGLE_OPTION_VALUE_to_AST of ct_SINGLE_OPTION_VALUE
   | CT_astnode of ct_ID * ct_AST_LIST
   | CT_astpath of ct_ID_LIST
   | CT_astslam of ct_ID_OPT * ct_AST
@@ -155,6 +156,9 @@ and ct_COMMAND =
   | CT_section_struct of ct_SECTION_BEGIN * ct_SECTION_BODY * ct_COMMAND
   | CT_set_natural of ct_ID
   | CT_set_natural_default
+  | CT_set_option of ct_TABLE
+  | CT_set_option_value of ct_TABLE * ct_SINGLE_OPTION_VALUE
+  | CT_set_option_value2 of ct_TABLE * ct_ID_OR_STRING_NE_LIST
   | CT_sethyp of ct_INT
   | CT_setundo of ct_INT
   | CT_show_existentials
@@ -177,6 +181,7 @@ and ct_COMMAND =
   | CT_transparent of ct_ID_NE_LIST
   | CT_undo of ct_INT_OPT
   | CT_unfocus
+  | CT_unset_option of ct_TABLE
   | CT_unsethyp
   | CT_unsetundo
   | CT_user_vernac of ct_ID * ct_VARG_LIST
@@ -518,6 +523,9 @@ and ct_SIGNED_INT =
   | CT_minus of ct_INT
 and ct_SIGNED_INT_LIST =
     CT_signed_int_list of ct_SIGNED_INT list
+and ct_SINGLE_OPTION_VALUE =
+    CT_coerce_INT_to_SINGLE_OPTION_VALUE of ct_INT
+  | CT_coerce_STRING_to_SINGLE_OPTION_VALUE of ct_STRING
 and ct_SORT_TYPE =
     CT_sortc of string
 and ct_SPEC_LIST =
@@ -538,6 +546,9 @@ and ct_STRING_NE_LIST =
 and ct_STRING_OPT =
     CT_coerce_NONE_to_STRING_OPT of ct_NONE
   | CT_coerce_STRING_to_STRING_OPT of ct_STRING
+and ct_TABLE =
+    CT_coerce_ID_to_TABLE of ct_ID
+  | CT_table of ct_ID * ct_ID
 and ct_TACTIC_ARG =
     CT_coerce_EVAL_CMD_to_TACTIC_ARG of ct_EVAL_CMD
   | CT_coerce_FORMULA_OR_INT_to_TACTIC_ARG of ct_FORMULA_OR_INT
@@ -569,6 +580,7 @@ and ct_TACTIC_COM =
   | CT_condrewrite_rl of ct_TACTIC_COM * ct_FORMULA * ct_SPEC_LIST * ct_ID_OPT
   | CT_constructor of ct_INT * ct_SPEC_LIST
   | CT_contradiction
+  | CT_contradiction_thm of ct_FORMULA * ct_SPEC_LIST
   | CT_cut of ct_FORMULA
   | CT_cutrewrite_lr of ct_FORMULA * ct_ID_OPT
   | CT_cutrewrite_rl of ct_FORMULA * ct_ID_OPT
@@ -661,8 +673,10 @@ and ct_TARG =
   | CT_coerce_PATTERN_to_TARG of ct_PATTERN
   | CT_coerce_SCOMMENT_CONTENT_to_TARG of ct_SCOMMENT_CONTENT
   | CT_coerce_SIGNED_INT_LIST_to_TARG of ct_SIGNED_INT_LIST
+  | CT_coerce_SINGLE_OPTION_VALUE_to_TARG of ct_SINGLE_OPTION_VALUE
   | CT_coerce_SPEC_LIST_to_TARG of ct_SPEC_LIST
   | CT_coerce_TACTIC_COM_to_TARG of ct_TACTIC_COM
+  | CT_coerce_TARG_LIST_to_TARG of ct_TARG_LIST
   | CT_coerce_UNFOLD_to_TARG of ct_UNFOLD
   | CT_coerce_UNFOLD_NE_LIST_to_TARG of ct_UNFOLD_NE_LIST
 and ct_TARG_LIST =

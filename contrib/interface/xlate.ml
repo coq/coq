@@ -13,6 +13,7 @@ open Vernacexpr;;
 open Decl_kinds;;
 open Topconstr;;
 open Libnames;;
+open Goptions;;
 
 
 let in_coq_ref = ref false;;
@@ -286,6 +287,11 @@ let xlate_id_opt_ne_list = function
     [] -> assert false
   | a::l -> CT_id_opt_ne_list(xlate_id_opt a, List.map xlate_id_opt l);;
 
+
+let rec last = function
+    [] -> assert false
+  | [a] -> a
+  | a::tl -> last tl;;
 
 let rec decompose_last = function
     [] -> assert false
@@ -878,8 +884,15 @@ and xlate_tac =
     | TacExtend (_, "refine", [c]) ->
        CT_refine
 	 (xlate_formula (out_gen rawwit_casted_open_constr c))
-    | TacExtend (_,"Absurd",[c]) ->
+    | TacExtend (_,"absurd",[c]) ->
        CT_absurd (xlate_formula (out_gen rawwit_constr c))
+    | TacExtend (_,"contradiction",[opt_c]) ->
+	(match out_gen (wit_opt rawwit_constr_with_bindings) opt_c with
+	     None -> CT_contradiction
+	   | Some(c, b) ->
+	       let c1 = xlate_formula c in
+	       let bindings = xlate_bindings b in
+		 CT_contradiction_thm(c1, bindings))
     | TacChange (None, f, b) -> CT_change (xlate_formula f, xlate_clause b)
     | TacChange (Some(l,c), f, b) -> 
 	(* TODO LATER: combine with other constructions of pattern_occ *)
@@ -1009,6 +1022,19 @@ and xlate_tac =
 	CT_auto_with(xlate_int_opt nopt,
              CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STAR(
              CT_id_ne_list(CT_ident id1, List.map (fun x -> CT_ident x) idl)))
+    |TacExtend(_, ("autorewritev7"|"autorewritev8"), l::t) ->
+       let (id_list:ct_ID list) =
+	 List.map (fun x -> CT_ident x) (out_gen (wit_list1 rawwit_pre_ident) l) in
+       let fst, (id_list1: ct_ID list) =
+	 match id_list with [] -> assert false | a::tl -> a,tl in
+       let t1 =
+	 match t with
+	     [t0] -> 
+	       CT_coerce_TACTIC_COM_to_TACTIC_OPT
+		 (xlate_tactic(out_gen rawwit_tactic t0))
+	   | [] -> CT_coerce_NONE_to_TACTIC_OPT CT_none
+	   | _ -> assert false in
+	 CT_autorewrite (CT_id_ne_list(fst, id_list1), t1)
     | TacExtend (_,"eauto", [nopt; popt; idl]) ->
 	let first_n =
 	  match out_gen (wit_opt rawwit_int_or_var) nopt with
@@ -1507,14 +1533,18 @@ let rec xlate_vernac =
     | VernacSolve (n, tac, b) -> CT_solve (CT_int n, xlate_tactic tac)
     | VernacFocus nopt -> CT_focus (xlate_int_opt nopt)
     | VernacUnfocus -> CT_unfocus
-  | VernacExtend ("HintRewrite", orient :: formula_list :: base :: t) ->
-      let orient = out_gen Extraargs.rawwit_orient orient in
-      let formula_list = out_gen (wit_list1 (rawwit_constr)) formula_list in
-      let base = out_gen rawwit_pre_ident base in
-      let t = match t with
-	| [] -> TacId ""
-	| [t] -> out_gen rawwit_tactic t
-	| _ -> failwith "" in
+  | VernacExtend (("HintRewriteV7"|"HintRewriteV8") as key, largs) ->
+      let in_v8 = (key = "HintRewriteV8") in
+      let orient = out_gen Extraargs.rawwit_orient (List.nth largs 0) in
+      let formula_list = out_gen (wit_list1 rawwit_constr) (List.nth largs 1) in
+      let t =
+	if List.length largs = 4 then
+	   out_gen rawwit_tactic (List.nth largs (if in_v8 then 2 else 3))
+	 else
+	   TacId "" in
+      let base = 
+	out_gen rawwit_pre_ident
+	  (if in_v8 then last largs else List.nth largs 2) in
       let ct_orient = match orient with
 	| true  -> CT_lr
 	| false -> CT_rl in
@@ -1893,12 +1923,53 @@ let rec xlate_vernac =
   | VernacLocate(LocateNotation s) -> CT_locate_notation(CT_string s)
   | VernacTime(v) -> CT_time(xlate_vernac v)
   | VernacSetOption (Goptions.SecondaryTable ("Implicit", "Arguments"), BoolValue true)->CT_user_vernac (CT_ident "IMPLICIT_ARGS_ON", CT_varg_list[])
+  |VernacExactProof f -> CT_proof(xlate_formula f)
+  | VernacSetOption (table, BoolValue true) -> 
+      let table1 = 
+	match table with
+	    PrimaryTable(s) -> CT_coerce_ID_to_TABLE(CT_ident s)
+	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2) in
+	CT_set_option(table1)
+  | VernacSetOption (table, v) -> 
+      let table1 = 
+	match table with
+	    PrimaryTable(s) -> CT_coerce_ID_to_TABLE(CT_ident s)
+	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2) in
+      let value =
+	match v with
+	  | BoolValue _ -> assert false
+	  | StringValue s ->
+	      CT_coerce_STRING_to_SINGLE_OPTION_VALUE(CT_string s)
+	  | IntValue n ->
+	      CT_coerce_INT_to_SINGLE_OPTION_VALUE(CT_int n) in
+	CT_set_option_value(table1, value)
+  | VernacUnsetOption(table) ->
+      let table1 = 
+	match table with
+	    PrimaryTable(s) -> CT_coerce_ID_to_TABLE(CT_ident s)
+	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2) in
+	CT_unset_option(table1)
+  | VernacAddOption (table, l) ->
+      let values =
+	List.map
+	  (function
+	     | QualidRefValue x -> 
+		 CT_coerce_ID_to_ID_OR_STRING(loc_qualid_to_ct_ID x)
+	     | StringRefValue x -> 
+		 CT_coerce_STRING_to_ID_OR_STRING(CT_string x)) l in
+      let fst, values1 = 
+	match values with [] -> assert false | a::b -> (a,b) in
+      let table1 = 
+	match table with
+	    PrimaryTable(s) -> CT_coerce_ID_to_TABLE(CT_ident s)
+	  | SecondaryTable(s1,s2) -> CT_table(CT_ident s1, CT_ident s2) in
+	CT_set_option_value2(table1, CT_id_or_string_ne_list(fst, values1))
   | (VernacGlobalCheck _|VernacPrintOption _|
-     VernacMemOption (_, _)|VernacRemoveOption (_, _)|VernacAddOption (_, _)|
-     VernacSetOption (_, _)|VernacUnsetOption _|
+     VernacMemOption (_, _)|VernacRemoveOption (_, _)
+  |
      VernacBack _|VernacRestoreState _|
      VernacWriteState _|VernacSolveExistential (_, _)|VernacCanonical _|
-     VernacImport (_, _)|VernacExactProof _|VernacDistfix _|
+     VernacImport (_, _)|VernacDistfix _|
      VernacTacticGrammar _|VernacVar _|VernacProof _)
     -> xlate_error "TODO: vernac"
 
