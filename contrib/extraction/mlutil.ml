@@ -18,7 +18,7 @@ open Nametab
 open Table
 open Options
 
-(*s Exceptions *)
+(*s Exceptions. *)
 
 exception Found
 exception Impossible
@@ -98,7 +98,7 @@ let rec named_lams a = function
   | [] -> a 
   | id :: ids -> named_lams (MLlam(id,a)) ids
 
-(* The same in anonymous version *)
+(* The same in anonymous version. *)
 
 let rec anonym_lams a = function 
   | 0 -> a 
@@ -115,7 +115,7 @@ let rec test_eta_args_lift k n = function
   | [] -> n=0
   | a :: q -> (a = (MLrel (k+n))) && (test_eta_args_lift k (pred n) q)
   
-(*s Generic functions overs [ml_ast] *)
+(*s Generic functions overs [ml_ast]. *)
 
 (* [ast_iter_rel f t] applies [f] on every [MLrel] in t. 
    It takes care of the number of bingings crossed before reaching the [MLrel]. *)
@@ -135,7 +135,7 @@ let ast_iter f =
     | MLglob _ | MLexn _ | MLprop | MLarity -> ()
   in iter 0 
 
-(* Map over asts *)
+(* Map over asts. *)
 
 let ast_map_case f (c,ids,a) = (c,ids,f a)
 
@@ -150,7 +150,7 @@ let ast_map f = function
   | MLmagic a -> MLmagic (f a)
   | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity as a -> a
 
-(* Map over asts, with binding depth as parameter *)
+(* Map over asts, with binding depth as parameter. *)
 
 let ast_map_lift_case f n (c,ids,a) = (c,ids, f (n+(List.length ids)) a)
 
@@ -251,7 +251,7 @@ let check_and_generalize (r0,l,c) =
     | a -> ast_map_lift genrec n a
   in genrec 0 c  
 
-(*s Auxialiary functions used during simplifications of [MLcase] *)
+(*s Auxialiary functions used during simplifications of [MLcase]. *)
 
 let check_generalizable_case br = 
   let f = check_and_generalize br.(0) in 
@@ -283,7 +283,7 @@ let rec permut_case_fun br acc =
     in br.(i) <- (r,l,t)
   done; ids
 
-(*s Some Beta-iota reductions + simplifications*)
+(*s Some beta-iota reductions + simplifications. *)
 
 let constructor_index = function
   | ConstructRef (_,j) -> pred j
@@ -374,7 +374,7 @@ and simplify_case o br = function
 
 let normalize a = simplify (optim()) (merge_app a)
 
-(*s Special treatment of non-mutual fixpoint for pretty-printing purpose *)
+(*s Special treatment of non-mutual fixpoint for pretty-printing purpose. *)
 
 let optimize_fix a = 
   if not (optim()) then a 
@@ -392,25 +392,28 @@ let optimize_fix a =
 	     (match a' with 
 		| MLfix(_,[|_|],[|_|]) when (test_eta_args_lift 0 n args)-> a'
 		| MLfix(_,[|f|],[|c|]) -> 
+		    let m = List.length args
+		    and v = Array.make n 0 in 
+		    for i=0 to (n-1) do v.(i)<-i done;
+		    let aux i = function 
+			MLrel j when v.(j-1)>=0 -> v.(j-1)<-(-i-1)
+		      | _ -> raise Impossible
+		    in
 		    (try 
-		      let m = List.length args in 
-		      let v = Array.make n 0 in 
-		      for i=0 to (n-1) do v.(i)<-i done;
-		      let aux i = function 
-			  MLrel j when v.(j-1)>=0 -> v.(j-1)<-(-i-1)
-			| _ -> raise Impossible
-		      in
 		      list_iter_i aux args; 
-		      let args_f = List.rev_map (fun i -> MLrel (i+m+1)) (Array.to_list v) in
-		      let new_f = anonym_lams (MLapp (MLrel (n+m+1),args_f)) m in  
-		      let new_c = named_lams (normalize (MLapp ((ml_subst new_f c),args))) ids
+		      let args_f = 
+			List.rev_map (fun i -> MLrel (i+m+1)) (Array.to_list v) in
+		      let new_f = 
+			anonym_lams (MLapp (MLrel (n+m+1),args_f)) m in  
+		      let new_c = 
+			named_lams (normalize (MLapp ((ml_subst new_f c),args))) ids
 		      in MLfix(0,[|f|],[|new_c|])
 		    with Impossible -> a) 
 		| _ -> a)
 	 | _ -> a)
 
 
-(*s Utility functions used for the decision of expansion *)
+(*s Utility functions used for the decision of expansion. *)
 
 let rec ml_size = function
   | MLapp(t,l) -> List.length l + ml_size t + ml_size_list l
