@@ -45,6 +45,7 @@ Definition I : U->Prop :=
   [x]((i:U->bool)(b2p (le i x))->(b2p (i [v](sb v U le x))))->B.
 
 Lemma Omega : (i:U->bool)(induct i)->(b2p (i WF)).
+Proof.
 Intros i y.
 Apply y.
 Unfold le WF induct.
@@ -54,7 +55,8 @@ Apply y.
 Exact H0.
 Qed.
 
-Lemma lemma : (induct [u](p2b (I u))).
+Lemma lemma1 : (induct [u](p2b (I u))).
+Proof.
 Unfold induct.
 Intros x p.
 Apply (p2p2 (I x)).
@@ -65,14 +67,16 @@ Apply q with i:=[y:?](i [v:V](sb v U le y)).
 Qed.
 
 Lemma lemma2 : ((i:U->bool)(induct i)->(b2p (i WF)))->B.
+Proof.
 Intro x.
-Apply (p2p1 (I WF) (x [u](p2b (I u)) lemma)).
+Apply (p2p1 (I WF) (x [u](p2b (I u)) lemma1)).
 Intros i H0.
 Apply (x [y](i [v](sb v U le y))).
 Apply (p2p1 ? H0).
 Qed.
 
-Lemma paradox : B.
+Theorem paradox : B.
+Proof.
 Exact (lemma2 Omega).
 Qed.
 
