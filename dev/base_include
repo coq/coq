@@ -12,6 +12,7 @@
 #directory "lib";;
 #directory "proofs";;
 #directory "tactics";;
+#directory "translate";;
 #use "top_printers.ml";;
 
 #install_printer  (* identifier *) prid;;
