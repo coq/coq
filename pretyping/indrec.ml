@@ -136,7 +136,8 @@ let type_rec_branch dep env sigma (vargs,depPvect,decP) tyi cs recargs =
 	      | Param _ :: rest -> (None,rest)
 	      | Norec :: rest   -> (None,rest)
 	      | Imbr _ :: rest  -> 
-		  warning "Ignoring recursive call"; (None,rest) 
+		  Options.if_verbose warning "Ignoring recursive call"; 
+		  (None,rest) 
 	      | Mrec j :: rest -> (depPvect.(j),rest)
 	  in 
           (match optionpos with 
