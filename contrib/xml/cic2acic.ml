@@ -137,7 +137,7 @@ let token_list_of_kernel_name ~keep_sections kn tag =
  let dir = match tag with
    | Variable -> 
        if keep_sections then Lib.cwd () else
-       LN.extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ()) in
+       LN.extract_dirpath_prefix (Lib.sections_depth ()) (Lib.cwd ())
    | Constant -> 
        let ref = LN.ConstRef kn in
        if keep_sections then LN.dirpath (Nametab.sp_of_global ref)
