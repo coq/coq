@@ -102,19 +102,20 @@ let chan_translate = ref stdout
 
 
 let pr_new_syntax loc ocom =
+  Format.set_formatter_out_channel !chan_translate;
+  Format.set_max_boxes max_int;
+  let fs = States.freeze () in
   let com = match ocom with
     | Some (VernacV7only _) ->
         Options.v7_only := true;
         mt()
     | Some VernacNop -> mt()
-    | Some com ->
-	let fs = States.freeze () in
-        let com = pr_vernac com in
-        States.unfreeze fs;
-        com
+    | Some (VernacImport (false,[Libnames.Ident (_,a)])) when
+	(* Pour ceux qui ont utilisé la couche "Import *_scope" de compat *)
+	let a = Names.string_of_id a in
+	a = "nat_scope" or a = "Z_scope" or a = "R_scope" -> mt()
+    | Some com -> pr_vernac com
     | None -> mt() in
-  Format.set_formatter_out_channel !chan_translate;
-  Format.set_max_boxes max_int;
   if !translate_file then
     msg (hov 0 (
 (*str"{"++int (fst loc)++str"}"++List.fold_right (fun ((b,e),s) strm -> str"("++int b++str","++int
@@ -123,6 +124,7 @@ let pr_new_syntax loc ocom =
 comment (fst loc) ++ com ++ comment (snd loc - 1)))
   else
     msgnl (hov 4 (str"New Syntax:" ++ fnl() ++ com));
+  States.unfreeze fs;
   Constrintern.set_temporary_implicits_in [];
   Constrextern.set_temporary_implicits_out [];
   Format.set_formatter_out_channel stdout
