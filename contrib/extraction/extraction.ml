@@ -123,7 +123,7 @@ let _ = declare_summary "Extraction tables"
 	    init_function = (fun () -> ());
 	    survive_section = true }
 
-(*S Warning & Error messages. *)
+(*S Warning and Error messages. *)
 
 let axiom_error_message sp =
   errorlabstrm "axiom_message"
