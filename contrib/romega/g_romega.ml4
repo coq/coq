@@ -8,10 +8,8 @@
 
 (*i camlp4deps: "parsing/grammar.cma" i*)
 
-(* $Id$ *)
-
 open Refl_omega
 
 TACTIC EXTEND ROmega
-  [ "ROmega" ] -> [ omega_solver ]
+  [ "ROmega" ] -> [ total_reflexive_omega_tactic ]
 END
