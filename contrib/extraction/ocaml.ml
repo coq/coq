@@ -211,17 +211,18 @@ let rec pp_expr par env args =
 	let st = (pp_abst (List.rev fl) ++ pp_expr false env' [] a') in
 	apply (pp_par par' st)
     | MLletin (id,a1,a2) ->
-	assert (args=[]); 
 	let i,env' = push_vars [id] env in
 	let pp_id = pr_id (List.hd i)
 	and pp_a1 = pp_expr false env [] a1
 	and pp_a2 = pp_expr (not par && expr_needs_par a2) env' [] a2 in 
 	hv 0 
-	  (pp_par par 
-	     (hv 0 
-		(hov 2 (str "let " ++ pp_id ++ str " =" ++ spc () ++ pp_a1) ++ 
-		 spc () ++ str "in") ++ 
-	      spc () ++ hov 0 pp_a2))
+	  (apply 
+	     (pp_par par' 
+		(hv 0 
+		   (hov 2 
+		      (str "let " ++ pp_id ++ str " =" ++ spc () ++ pp_a1) ++ 
+		    spc () ++ str "in") ++ 
+		 spc () ++ hov 0 pp_a2)))
     | MLglob r -> 
 	(try 
 	   let args = list_skipn (projection_arity r) args in 
