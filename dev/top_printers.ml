@@ -3,50 +3,16 @@
 
 open System
 open Pp
-open Coqast
 open Ast
-open Lexer
-open Egrammar
 open Names
 open Sign
 open Univ
-open Generic
-open Term
-open Sosub
 open Proof_trees
-open Summary
-open Libobject
-open Library
 open Environ
-open Termast
 open Printer
-open Closure
-open Reduction
-open Typing
-open Astterm
-open States
-open Constant
-open Inductive
-open Discharge
-open Command
-open Pretty
 open Refiner
 open Tacmach
-open Pfedit
 open Clenv
-open Tactics
-open Tacticals
-open Elim
-open Tacinterp
-open Tacentries
-open Vernacinterp
-open Vernacentries
-open Vernac
-open Toplevel
-open Mltop
-open Esyntax
-open Metasyntax
-
 
 let pP s = pP (hOV 0 s)
 
@@ -55,11 +21,11 @@ let prast c = pP(print_ast c)
 let prastpat c = pP(print_astpat c)
 let prastpatl c = pP(print_astlpat c)
 let ppterm0 = (fun x -> pP(term0 (gLOB nil_sign) x))
-let pprawterm = (fun x -> pP(prrawterm x));;
-let pppattern = (fun x -> pP(prpattern x));;
+let pprawterm = (fun x -> pP(prrawterm x))
+let pppattern = (fun x -> pP(prpattern x))
 let pptype = (fun x -> pP(prtype x))
 
-let prid id = pP [< 'sTR"#" ; 'sTR(string_of_id id) >]
+let prid id = pP [< 'sTR(string_of_id id) >]
 
 let prconst (sp,j) =
     pP [< 'sTR"#"; 'sTR(string_of_path sp); 

@@ -1,4 +1,26 @@
-load_printer "db_printers.cmo"
-install_printer Db_printers.prid
-install_printer Db_printers.prsp
+load_printer "top_printers.cmo"
+install_printer Top_printers.prid
+install_printer Top_printers.prsp
+install_printer Top_printers.prast
+install_printer Top_printers.prastpat
+install_printer Top_printers.prastpatl
+
+install_printer Top_printers.pppattern
+install_printer Top_printers.pprawterm
+
+install_printer Top_printers.ppterm0
+install_printer Top_printers.print_uni
+install_printer Top_printers.pp_universes
+install_printer Top_printers.pptype
+install_printer Top_printers.prj
+
+install_printer Top_printers.prgoal
+install_printer Top_printers.prsigmagoal
+install_printer Top_printers.prctxt
+install_printer Top_printers.pproof
+install_printer Top_printers.prevd
+install_printer Top_printers.prevc
+install_printer Top_printers.prwc
+install_printer Top_printers.prclenv
+
 

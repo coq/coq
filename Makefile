@@ -200,7 +200,7 @@ theories: $(INIT)
 ###########################################################################
 
 tools: tools/coqdep tools/coq_makefile tools/gallina tools/coq-tex \
-       tools/coq.elc dev/db_printers.cmo
+       tools/coq.elc dev/top_printers.cmo
 
 COQDEPCMX= config/coq_config.cmx tools/coqdep_lexer.cmx tools/coqdep.cmx
 
