@@ -259,7 +259,15 @@ let rec detype tenv avoid env t =
 	  RCases (dummy_loc,pred,[tomatch],eqnl)
 	else
 	  let bl = Array.map (detype tenv avoid env) bl in
-	  ROrderedCase (dummy_loc,LetStyle,pred,tomatch,bl)
+	  let rec remove_type n c = if n = 0 then c else
+	    match c with
+	      | RLambda (loc,na,t,c) ->
+		  let h = RHole (loc,AbstractionType na) in
+		  RLambda (loc,na,h,remove_type (n-1) c)
+	      | RLetIn (loc,na,b,c) -> RLetIn (loc,na,b,remove_type (n-1) c)
+	      | _ -> anomaly "Not a context" in
+	  let bl = array_map2 remove_type consnargsl bl in
+	  ROrderedCase (dummy_loc,tag,pred,tomatch,bl)
 	
     | Fix (nvn,recdef) -> detype_fix tenv avoid env (RFix nvn) recdef
     | CoFix (n,recdef) -> detype_fix tenv avoid env (RCoFix n) recdef

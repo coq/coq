@@ -276,11 +276,11 @@ let add_break l = function
   | _ -> l
 
 let precedence_of_entry_type = function
-  | ETConstr (n,BorderProd (left,None)) -> (n,Prec n)
+  | ETConstr (n,BorderProd (_,None)) -> n, Prec n
   | ETConstr (n,BorderProd (left,Some a)) ->
-      (n, let (lp,rp) = prec_assoc a in if left then lp else rp)
-  | ETConstr (n,InternalProd) -> (n,E)
-  | _ -> 0,E
+      n, let (lp,rp) = prec_assoc a in if left then lp else rp
+  | ETConstr (n,InternalProd) -> n, Prec n
+  | _ -> 0, E (* ?? *)
 
 (* x = y |-> x brk = y (breaks before any symbol) *)
 (* x =S y |-> x spc =S spc y (protect from confusion; each side for symmetry)*)
@@ -293,7 +293,7 @@ let make_hunks_ast symbols etyps from =
   List.fold_right
     (fun it (ws,l) -> match it with
       | NonTerminal m ->
-	  let (n,lp) = precedence_of_entry_type (List.assoc m etyps) in
+	  let _,lp = precedence_of_entry_type (List.assoc m etyps) in
 	  let u = PH (meta_pattern (string_of_id m), None, lp) in
 	  let l' = u :: (add_break l ws) in
 	  (Separate 1, l')
@@ -308,12 +308,16 @@ let make_hunks_ast symbols etyps from =
 		Separate 1,
 		if ws = Separate 0 then s^" ",l else s,add_break l ws
 	      else
-		Juxtapose, (s,l) in
+		Juxtapose, (s,add_break l ws) in
 	    (n, RO s :: l)
       | Break n ->
 	    (Juxtapose, UNP_BRK (n,1) :: l))
     symbols (Juxtapose,[])
   in l
+
+let add_break l = function
+  | Separate n -> UnpCut (PpBrk(n,1)) :: l
+  | _ -> l
 
 let make_hunks etyps symbols =
   let vars,typs = List.split etyps in
@@ -322,21 +326,23 @@ let make_hunks etyps symbols =
     (fun it (ws,l) -> match it with
       | NonTerminal m ->
 	  let i = list_index m vars in
-	  let prec = precedence_of_entry_type (List.nth typs (i-1)) in
+	  let _,prec = precedence_of_entry_type (List.nth typs (i-1)) in
 	  let u = UnpMetaVar (i ,prec) in
-	  let l' = match ws with
-	    | Separate n -> UnpCut (PpBrk(n,1)) :: u :: l
-	    | _ -> u :: l in
+	  let l' = u :: (add_break l ws) in
 	  (Separate 1, l')
       | Terminal s ->
-	  let n = if is_letter (s.[0]) then 1 else 0 in
-	  let s = 
-	    if (ws = Separate 1)
-	      & is_letter (s.[String.length s -1])
-	    then s^" "
-	    else s
-	  in
-	  (Separate n, UnpTerminal s :: l)
+	    let n,(s,l) =
+	      if
+		is_letter (s.[0]) or 
+		is_letter (s.[String.length s -1]) or
+		is_digit (s.[String.length s -1])
+	      then
+		(* We want spaces around both sides *)
+		1, if ws = Separate 0 then s^" ",l else s,add_break l ws
+	      else
+		(* We want a break before symbols, hence [Separate 0] *)
+		0, (s,l) in
+	    (Separate n, UnpTerminal s :: l)
       | Break n ->
 	    (Juxtapose, UnpCut (PpBrk (n,1)) :: l))
     symbols (Juxtapose,[])

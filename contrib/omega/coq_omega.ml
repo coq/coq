@@ -484,7 +484,7 @@ let abstract_path typ path t =
 
 let focused_simpl path gl =
   let newc = context (fun i t -> pf_nf gl t) (List.rev path) (pf_concl gl) in
-  convert_concl newc gl
+  convert_concl_no_check newc gl
 
 let focused_simpl path = simpl_time (focused_simpl path)
 
@@ -1723,13 +1723,13 @@ let destructure_hyps gl =
 		      match destructurate (pf_nf gl typ) with
 			| Kapp("nat",_) -> 
                                (tclTHEN 
-			       (convert_hyp
+			       (convert_hyp_no_check
                                   (i,body,
 				  (mkApp (Lazy.force coq_neq, [| t1;t2|]))))
 			       (loop evbd lit))
 			| Kapp("Z",_) ->
                                (tclTHEN 
-			       (convert_hyp
+			       (convert_hyp_no_check
                                   (i,body,
 				  (mkApp (Lazy.force coq_Zne, [| t1;t2|]))))
 			       (loop evbd lit))

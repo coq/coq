@@ -57,6 +57,8 @@ let print_universes = ref false
 (* This suppresses printing of numeral and symbols *)
 let print_no_symbol = ref false
 
+let print_meta_as_hole = ref false
+
 let with_option o f x =
   let old = !o in o:=true;
   try let r = f x in o := old; r
@@ -67,6 +69,7 @@ let with_implicits f = with_option print_implicits f
 let with_coercions f = with_option print_coercions f
 let with_universes f = with_option print_universes f
 let without_symbols f = with_option print_no_symbol f
+let with_meta_as_hole f = with_option print_meta_as_hole f
 
 (**********************************************************************)
 (* Various externalisation functions *)
@@ -100,7 +103,22 @@ let idopt_of_name = function
 
 let extern_evar loc n = warning "No notation for Meta"; CMeta (loc,n)
 
-let extern_reference loc r = Qualid (loc,shortest_qualid_of_global None r)
+let raw_string_of_ref = function
+  | ConstRef kn -> 
+      "CONST("^(string_of_kn kn)^")"
+  | IndRef (kn,i) ->
+      "IND("^(string_of_kn kn)^","^(string_of_int i)^")"
+  | ConstructRef ((kn,i),j) -> 
+      "CONSTRUCT("^
+      (string_of_kn kn)^","^(string_of_int i)^","^(string_of_int j)^")"
+  | VarRef id -> 
+      "SECVAR("^(string_of_id id)^")"
+
+let extern_reference loc r =
+  try Qualid (loc,shortest_qualid_of_global None r)
+  with Not_found ->
+    (* happens in debugger *)
+    Ident (loc,id_of_string (raw_string_of_ref r))
 
 (**********************************************************************)
 (* conversion of terms and cases patterns                             *)
@@ -192,7 +210,7 @@ let rec extern scopes r =
 
   | REvar (_,n) -> extern_evar loc n
 
-  | RMeta (_,n) -> CMeta (loc,n)
+  | RMeta (_,n) -> if !print_meta_as_hole then CHole loc else CMeta (loc,n)
 
   | RApp (_,f,args) ->
       let (f,args) =

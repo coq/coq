@@ -574,7 +574,7 @@ let prepare_and_play env tac_hyps trace_solution =
     Pp.ppnl (Printer.prterm reified_trace_solution);
   end;
   Tactics.generalize l_generalized >>
-  Tactics.change_in_concl reified >>
+  Tactics.change_in_concl None reified >>
   Tacticals.tclTRY 
     (Tactics.apply (mkApp (Lazy.force coq_normalize_sequent, 
 			   [|l_reified_tac_norms |]))) >>
@@ -797,13 +797,13 @@ let destructure_hyps gl =
 		      match destructurate (pf_nf gl typ) with
 			| Kapp("nat",_) -> 
                             (tclTHEN 
-			       (convert_hyp
+			       (convert_hyp_no_check
                                   (i,body,
 				  (mkApp (Lazy.force coq_neq, [| t1;t2|]))))
 			       (loop evbd lit))
 			| Kapp("Z",_) ->
                             (tclTHEN 
-			       (convert_hyp
+			       (convert_hyp_no_check
                                   (i,body,
 				  (mkApp (Lazy.force coq_Zne, [| t1;t2|]))))
 			       (loop evbd lit))
