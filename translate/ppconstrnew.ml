@@ -341,10 +341,18 @@ let is_var id = function
   | CRef (Ident (_,id')) when id=id' -> true
   | _ -> false
 
+let tm_clash = function
+  | (CRef (Ident (_,id)), Some (_,_,nal)) when List.exists ((=) (Name id)) nal
+      -> Some id
+  | _ -> None
+
 let pr_case_item pr (tm,(na,indnalopt)) =
   hov 0 (pr (lcast,E) tm ++
   (match na with
     | Name id when not (is_var id tm) -> spc () ++ str "as " ++  pr_id id
+    | Anonymous when tm_clash (tm,indnalopt) <> None ->
+	(* hide [tm] name to avoid conflicts *)
+	spc () ++ str "as _" ++ pr_id (out_some (tm_clash (tm,indnalopt)))
     | _ -> mt ()) ++
   (match indnalopt with
     | None -> mt ()
@@ -446,8 +454,16 @@ let rec pr inherited a =
                spc() ++ pr ltop c ++ str " in") ++
         spc() ++ pr ltop b),
       lletin
-      
-
+  | CIf (_,c,(na,po),b1,b2) ->
+      (* On force les parenthèses autour d'un "if" sous-terme (même si le
+	 parsing est lui plus tolérant) *)
+      hv 0 (
+	hov 1 (str "if " ++ pr ltop c ++ pr_simple_return_type pr na po) ++
+	spc () ++
+	hov 0 (str "then" ++ brk (1,1) ++ pr ltop b1) ++ spc () ++
+	hov 0 (str "else" ++ brk (1,1) ++ pr ltop b2)),
+      lif
+     
   | COrderedCase (_,st,po,c,[b1;b2]) when st = IfStyle ->
       (* On force les parenthèses autour d'un "if" sous-terme (même si le
 	 parsing est lui plus tolérant) *)
