@@ -35,15 +35,15 @@ let hrule = ref false
 let small = ref false
 
 let coq_prompt = Str.regexp "Coq < "
-let any_prompt = Str.regexp "^[A-Z0-9a-z_\$']* < "
+let any_prompt = Str.regexp "^[A-Z0-9a-z_\\$']* < "
 
 let remove_prompt s = Str.replace_first any_prompt "" s
 
 (* First pass: extract the Coq phrases to evaluate from [texfile]
  * and put them into the file [inputv] *)
 
-let begin_coq = Str.regexp "\\\\begin{coq_\(example\|example\*\|example\#\|eval\)}[ \t]*$"
-let end_coq   = Str.regexp "\\\\end{coq_\(example\|example\*\|example\#\|eval\)}[ \t]*$"
+let begin_coq = Str.regexp "\\\\begin{coq_\\(example\\|example\\*\\|example\\#\\|eval\\)}[ \t]*$"
+let end_coq   = Str.regexp "\\\\end{coq_\\(example\\|example\\*\\|example\\#\\|eval\\)}[ \t]*$"
 
 let extract texfile inputv =
   let chan_in = open_in texfile in
@@ -72,11 +72,11 @@ let extract texfile inputv =
  * TeX file [texfile]. The result goes in file [result]. *)
 
 let begin_coq_example =
-  Str.regexp "\\\\begin{coq_\(example\|example\*\|example\#\)}[ \t]*$"
+  Str.regexp "\\\\begin{coq_\\(example\\|example\\*\\|example\\#\\)}[ \t]*$"
 let begin_coq_eval = Str.regexp "\\\\begin{coq_eval}[ \t]*$"
-let end_coq_example = Str.regexp "\\\\end{coq_\(example\|example\*\|example\#\)}[ \t]*$"
+let end_coq_example = Str.regexp "\\\\end{coq_\\(example\\|example\\*\\|example\\#\\)}[ \t]*$"
 let end_coq_eval = Str.regexp "\\\\end{coq_eval}[ \t]*$"
-let dot_end_line = Str.regexp "\\.[ \t]*\((\*.*\*)\)?[ \t]*$"
+let dot_end_line = Str.regexp "\\.[ \t]*\\((\\*.*\\*)\\)?[ \t]*$"
 
 let has_match r s =
   try let _ = Str.search_forward r s 0 in true with Not_found -> false
