@@ -102,7 +102,7 @@ let signature_of_arity =
   in
   sign_of []
 
-(* [list_of_ml_arrows] applied to the ML type [a->b->]\dots[z->t]
+(* [list_of_ml_arrows] applied to the ML type [a->b->]\cdots[z->t]
    returns the list [[a;b;...;z]]. *)
 let rec list_of_ml_arrows = function
   | Tarr (a, b) -> a :: list_of_ml_arrows b
@@ -214,22 +214,24 @@ let rec extract_type env sign c =
 	| _ -> 
 	    assert false
 
-and extract_type_app env sign fl (r,sc,flc) args =
-  let nargs = List.length args in
-  assert (List.length sc >= nargs);
-  let (mlargs,fl') = 
-    List.fold_right 
-      (fun (v,a) ((args,fl) as acc) -> match v with
-	 | (Vdefault | Vprop), _ -> acc
-	 | Varity,_ -> match extract_rec env sign fl a [] with
-	     | Tarity -> assert false
-	     | Tprop -> (Miniml.Tprop :: args, fl)
-	     | Tmltype (mla,_,fl') -> (mla :: args, fl'))
-      (List.combine (list_firstn nargs (List.rev sc)) args)
-      ([],fl)
-  in
-  let flc = List.map (fun i -> Tvar i) flc in
-  Tmltype (Tapp ((Tglob r) :: mlargs @ flc), sign, fl')
+  and extract_type_app env sign fl (r,sc,flc) args =
+    let nargs = List.length args in
+    assert (List.length sc >= nargs);
+    let (mlargs,fl') = 
+      List.fold_right 
+	(fun (v,a) ((args,fl) as acc) -> match v with
+	   | (Vdefault | Vprop), _ -> acc
+	   | Varity,_ -> match extract_rec env sign fl a [] with
+	       | Tarity -> assert false
+	       | Tprop -> (Miniml.Tprop :: args, fl)
+	       | Tmltype (mla,_,fl') -> (mla :: args, fl'))
+	(List.combine (list_firstn nargs (List.rev sc)) args) 
+	  (* FIXME: List.rev before list_firstn? *)
+	([],fl)
+    in
+    let flc = List.map (fun i -> Tvar i) flc in
+    Tmltype (Tapp ((Tglob r) :: mlargs @ flc), sign, fl')
+
   in
   extract_rec env sign [] c []
 
@@ -255,20 +257,58 @@ and extract_term c =
 		    | Eprop -> Eprop
 		    | Emltype _ -> assert false)
 	     | Tarity | Tprop as et -> 
-			  extract_rec env' ((v_of_t et, id) :: sign) d)
+		 extract_rec env' ((v_of_t et, id) :: sign) d)
       | IsRel n ->
 	  (match List.nth sign (pred n) with
 	     | Varity,_ -> assert false
 	     | Vprop,_ -> Eprop
 	     | Vdefault,_ -> Emlterm (MLrel (renum_db sign n)))
-      | IsMutConstruct (ind,j) ->
+      | IsApp (f,a) ->
+	  let tyf = Typing.type_of env Evd.empty f in
+	  let tyf = 
+	    if nb_prod tyf >= Array.length a then 
+	      tyf 
+	    else 
+	      whd_betadeltaiota env Evd.empty tyf 
+	  in
+	  (match extract_type env sign tyf with
+	     | Tmltype (_,s,_) -> extract_app env sign (f,s) (Array.to_list a) 
+	     | Tarity -> assert false
+	     | Tprop -> Eprop)
+      | IsConst (sp,_) ->
+	  Emlterm (MLglob (ConstRef sp))
+      | IsMutConstruct (cp,_) ->
+	  Emlterm (MLglob (ConstructRef cp))
+      | IsMutCase _ ->
+	  failwith "todo"
+      | IsFix _ ->
+	  failwith "todo"
+      | IsLetIn _ ->
 	  failwith "todo"
       | IsCast (c, _) ->
 	  extract_rec env sign c
-      | IsMutInd _ | IsProd _ | IsSort _ | IsXtra _ | IsVar _ | IsMeta _ ->
+      | IsMutInd _ | IsProd _ | IsSort _ | IsVar _ 
+      | IsMeta _ | IsEvar _ | IsCoFix _ ->
 	  assert false 
-      | _ -> 
-	  failwith "todo"
+
+  and extract_app env sign (f,sf) args =
+    let nargs = List.length args in
+    assert (List.length sf >= nargs);
+    let mlargs = 
+      List.fold_right 
+	(fun (v,a) args -> match v with
+	   | (Varity | Vprop), _ -> args
+	   | Vdefault,_ -> match extract_rec env sign a with
+	       | Emltype _ -> assert false
+	       | Eprop -> MLprop :: args
+	       | Emlterm mla -> mla :: args)
+	(List.combine (List.rev (list_firstn nargs sf)) args)
+	[]
+    in
+    match extract_rec env sign f with
+      | Emlterm f' -> Emlterm (MLapp (f', mlargs))
+      | Emltype _ | Eprop -> assert false (* FIXME: to check *)
+
   in
   extract_rec (Global.env()) [] c
 
@@ -330,6 +370,7 @@ and extract_mib sp =
 		  | Tarity | Tprop -> assert false
 		  | Tmltype (mlt, s, f) -> 
 		      let l = list_of_ml_arrows mlt in
+		      (*let (l,s) = extract_params mib.mind_nparams (l,s) in*)
 		      add_constructor_extraction ((sp,i),succ j) (l,s);
 		      f @ fl)
 	     ib.mind_nf_lc fl)
