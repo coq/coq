@@ -169,7 +169,6 @@ let parse_args is_ide =
     | "-ftranslate" :: rem ->
         make_translate true;
         translate_file := true;
-        Constrextern.print_coercions := true;
         parse rem
 
     | "-unsafe" :: f :: rem -> add_unsafe f; parse rem
