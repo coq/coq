@@ -403,7 +403,7 @@ let new_morphism m id hook =
 	let poss = (List.map setoid_table_mem args_t) in
 	let lem = (gen_compat_lemma env m body args_t poss) in
 	new_edited id m poss;
-	Pfedit.start_proof id (IsGlobal DefinitionBody) 
+	Pfedit.start_proof id (IsGlobal (Proof Lemma)) 
 	  (Declare.clear_proofs (Global.named_context ()))
 	  lem hook;
 	(Options.if_verbose msg (Pfedit.pr_open_subgoals ())))
