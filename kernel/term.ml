@@ -503,6 +503,39 @@ let destCoFix c = match kind_of_term c with
   | IsCoFix (i,(types,funnames,bodies) as cofix) -> cofix
   | _ -> invalid_arg "destCoFix"
 
+(******************************************************************)
+(* Flattening and unflattening of embedded applications and casts *)
+(******************************************************************)
+
+(* flattens application lists *)
+let rec collapse_appl c = match kind_of_term c with
+  | IsApp (f,cl) -> 
+      let rec collapse_rec f cl2 = match kind_of_term f with
+	| IsApp (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
+	| IsCast (c,_) when isApp c -> collapse_rec c cl2
+	| _ -> if cl2 = [||] then f else mkApp (f,cl2)
+      in 
+      collapse_rec f cl
+  | _ -> c
+
+let rec decomp_app c =
+  match kind_of_term (collapse_appl c) with
+    | IsApp (f,cl) -> (f, Array.to_list cl)
+    | IsCast (c,t) -> decomp_app c
+    | _ -> (c,[])
+
+(* strips head casts and flattens head applications *)
+let rec strip_head_cast c = match kind_of_term c with
+  | IsApp (f,cl) -> 
+      let rec collapse_rec f cl2 = match kind_of_term f with
+	| IsApp (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
+	| IsCast (c,_) -> collapse_rec c cl2
+	| _ -> if cl2 = [||] then f else mkApp (f,cl2)
+      in 
+      collapse_rec f cl
+  | IsCast (c,t) -> strip_head_cast c
+  | _ -> c
+
 (****************************************************************************)
 (*              Functions to recur through subterms                         *)
 (****************************************************************************)
@@ -745,21 +778,30 @@ let map_constr_with_full_binders g f l c = match kind_of_term c with
       mkCoFix (ln,(Array.map (f l) tl,lna,Array.map (f l') bl))
 
 (* [compare_constr f c1 c2] compare [c1] and [c2] using [f] to compare
-   the immediate subterms of [c1] of [c2] if needed; Cast's, binders
-   name and Cases annotations are not taken into account *)
+   the immediate subterms of [c1] of [c2] if needed; Cast's,
+   application associativity, binders name and Cases annotations are
+   not taken into account *)
 
-let compare_constr f c1 c2 =
-  match kind_of_term c1, kind_of_term c2 with
+let compare_constr f t1 t2 =
+  match kind_of_term t1, kind_of_term t2 with
   | IsRel n1, IsRel n2 -> n1 = n2
   | IsMeta m1, IsMeta m2 -> m1 = m2
   | IsVar id1, IsVar id2 -> id1 = id2
   | IsSort s1, IsSort s2 -> s1 = s2
-  | IsCast (c1,_), _ -> f c1 c2
-  | _, IsCast (c2,_) -> f c1 c2
+  | IsCast (c1,_), _ -> f c1 t2
+  | _, IsCast (c2,_) -> f t1 c2
   | IsProd (_,t1,c1), IsProd (_,t2,c2) -> f t1 t2 & f c1 c2
   | IsLambda (_,t1,c1), IsLambda (_,t2,c2) -> f t1 t2 & f c1 c2
   | IsLetIn (_,b1,t1,c1), IsLetIn (_,b2,t2,c2) -> f b1 b2 & f t1 t2 & f c1 c2
-  | IsApp (c1,l1), IsApp (c2,l2) -> f c1 c2 & array_for_all2 f l1 l2
+  | IsApp (c1,l1), IsApp (c2,l2) ->
+      if Array.length l1 = Array.length l2 then
+        f c1 c2 & array_for_all2 f l1 l2
+      else
+        let (h1,l1) = decomp_app t1 in        
+        let (h2,l2) = decomp_app t2 in
+        if List.length l1 = List.length l2 then
+          f h1 h2 & List.for_all2 f l1 l2
+        else false
   | IsEvar (e1,l1), IsEvar (e2,l2) -> e1 = e2 & array_for_all2 f l1 l2
   | IsConst (c1,l1), IsConst (c2,l2) -> c1 = c2 & array_for_all2 f l1 l2
   | IsMutInd (c1,l1), IsMutInd (c2,l2) -> c1 = c2 & array_for_all2 f l1 l2
@@ -1344,38 +1386,6 @@ let le_kind l m = (isprop l) or (is_Type m)
 let le_kind_implicit k1 k2 = 
   (k1=mkImplicit) or (isprop k1) or (k2=mkImplicit) or (is_Type k2)
 
-(******************************************************************)
-(* Flattening and unflattening of embedded applications and casts *)
-(******************************************************************)
-
-(* flattens application lists *)
-let rec collapse_appl c = match kind_of_term c with
-  | IsApp (f,cl) -> 
-      let rec collapse_rec f cl2 = match kind_of_term f with
-	| IsApp (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
-	| IsCast (c,_) when isApp c -> collapse_rec c cl2
-	| _ -> if cl2 = [||] then f else mkApp (f,cl2)
-      in 
-      collapse_rec f cl
-  | _ -> c
-
-let rec decomp_app c =
-  match kind_of_term (collapse_appl c) with
-    | IsApp (f,cl) -> (f, Array.to_list cl)
-    | IsCast (c,t) -> decomp_app c
-    | _ -> (c,[])
-
-(* strips head casts and flattens head applications *)
-let rec strip_head_cast c = match kind_of_term c with
-  | IsApp (f,cl) -> 
-      let rec collapse_rec f cl2 = match kind_of_term f with
-	| IsApp (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
-	| IsCast (c,_) -> collapse_rec c cl2
-	| _ -> if cl2 = [||] then f else mkApp (f,cl2)
-      in 
-      collapse_rec f cl
-  | IsCast (c,t) -> strip_head_cast c
-  | _ -> c
 
 (* Returns the list of global variables in a term *)
 
@@ -1433,9 +1443,11 @@ let occur_var_in_decl hyp (_,c,typ) =
 (***************************************)
 
 (* alpha conversion : ignore print names and casts *)
+
 let rec eq_constr m n = 
   (m = n) or   (* Rem: ocaml '=' includes '==' *)
   compare_constr eq_constr m n
+let eq_constr m n = eq_constr m n (* to avoid tracing a recursive fun *)
 
 (* (dependent M N) is true iff M is eq_term with a subterm of N 
    M is appropriately lifted through abstractions of N *)
