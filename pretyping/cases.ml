@@ -68,7 +68,7 @@ let mkExistential isevars env loc = new_isevar isevars env loc (new_Type ())
 let norec_branch_scheme env isevars cstr =
   let rec crec env = function
     | d::rea -> mkProd_or_LetIn d (crec (push_rel d env) rea)
-    | [] -> mkExistential isevars env (dummy_loc, QuestionMark) in 
+    | [] -> mkExistential isevars env (dummy_loc, InternalHole) in 
   crec env (List.rev cstr.cs_args)
 
 let rec_branch_scheme env isevars (sp,j) recargs cstr =
@@ -78,7 +78,7 @@ let rec_branch_scheme env isevars (sp,j) recargs cstr =
 	  let d =
  	    match dest_recarg ra with 
 	      | Mrec k when k=j ->
-		  let t = mkExistential isevars env (dummy_loc, QuestionMark)
+		  let t = mkExistential isevars env (dummy_loc, InternalHole)
 		  in
 		  mkArrow t
 		    (crec (push_rel (Anonymous,None,t) env)
@@ -88,7 +88,7 @@ let rec_branch_scheme env isevars (sp,j) recargs cstr =
 
       | (name,Some b,c as d)::rea, reca -> 
 	  mkLetIn (name,b,body_of_type c,crec (push_rel d env) (rea,reca))
-      | [],[] -> mkExistential isevars env (dummy_loc, QuestionMark)
+      | [],[] -> mkExistential isevars env (dummy_loc, InternalHole)
       | _ -> anomaly "rec_branch_scheme"
   in 
   crec env (List.rev cstr.cs_args,recargs) 
@@ -428,7 +428,7 @@ let inh_coerce_to_ind isevars env ty tyi =
     List.fold_right
       (fun (na,ty) (env,evl) ->
 	 (push_rel (na,None,ty) env,
-	    (new_isevar isevars env (dummy_loc, QuestionMark) ty)::evl))
+	    (new_isevar isevars env (dummy_loc, InternalHole) ty)::evl))
       ntys (env,[]) in
   let expected_typ = applist (mkInd tyi,evarl) in
      (* devrait être indifférent d'exiger leq ou pas puisque pour 

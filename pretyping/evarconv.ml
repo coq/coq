@@ -326,7 +326,7 @@ and conv_record env isevars (c,bs,(params,params1),(us,us2),(ts,ts1),c1) =
   let ks =
     List.fold_left
       (fun ks b ->
-	 let dloc = (Rawterm.dummy_loc,Rawterm.QuestionMark) in
+	 let dloc = (Rawterm.dummy_loc,Rawterm.InternalHole) in
 	 (new_isevar isevars env dloc (substl ks b)) :: ks)
       [] bs
   in

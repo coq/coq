@@ -65,8 +65,8 @@ val solve_simple_eqn :
   (env ->  evar_defs -> conv_pb -> constr -> constr -> bool)
   -> env ->  evar_defs -> conv_pb * existential * constr -> bool
 
-val define_evar_as_arrow :  evar_map -> existential ->  evar_map * types
-val define_evar_as_sort :  evar_map -> existential ->  evar_map * sorts
+val define_evar_as_arrow : evar_defs -> existential -> types
+val define_evar_as_sort : evar_defs -> existential -> sorts
 
 (* Value/Type constraints *)
 

@@ -144,6 +144,8 @@ let error_unsolvable_implicit (loc,kind) =
     | ImplicitArg (c,n) ->
 	str "Cannot infer the " ++ pr_ord n ++
 	str " implicit argument of " ++ Nametab.pr_global_env (Global.env()) c
+    | InternalHole ->
+        str "Cannot infer a term for an internal placeholder"
   in
     user_err_loc (loc,"pretype",message)
 

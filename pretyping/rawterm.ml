@@ -37,6 +37,7 @@ type hole_kind =
   | AbstractionType of name
   | QuestionMark
   | CasesType
+  | InternalHole
 
 type 'ctxt reference =
   | RConst of constant * 'ctxt
