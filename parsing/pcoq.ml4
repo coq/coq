@@ -322,6 +322,8 @@ module Prim =
     let qualid = Gram.Entry.create "Prim.qualid"
     let dirpath = Gram.Entry.create "Prim.dirpath"
 
+    let ne_string = Gram.Entry.create "Prim.ne_string"
+
     (* For old ast printer *)
     let astpat = Gram.Entry.create "Prim.astpat"
     let ast = Gram.Entry.create "Prim.ast"

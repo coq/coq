@@ -119,6 +119,7 @@ module Prim :
     val qualid : qualid located Gram.Entry.e
     val reference : reference Gram.Entry.e
     val dirpath : dir_path Gram.Entry.e
+    val ne_string : string Gram.Entry.e
     val astpat: typed_ast Gram.Entry.e
     val ast : Coqast.t Gram.Entry.e
     val astlist : Coqast.t list Gram.Entry.e

@@ -84,10 +84,12 @@ open Q
 
 if not !Options.v7 then
 GEXTEND Gram
-  GLOBAL: ast bigint qualid reference;
+  GLOBAL: (*ast*) bigint qualid reference ne_string;
+(*
   metaident:
     [ [ s = METAIDENT -> Nmeta (loc,s) ] ]
   ;
+*)
   field:
     [ [ s = FIELD -> local_id_of_string s ] ]
   ;
@@ -96,12 +98,14 @@ GEXTEND Gram
       | id = field -> ([],id)
       ] ]
   ;
+(*
   astpath:
     [ [ id = base_ident; (l,a) = fields ->
           Path(loc, local_make_path (local_append l id) a)
       | id = base_ident -> Nvar(loc, id)
       ] ]
   ;
+*)
   basequalid:
     [ [ id = base_ident; (l,id')=fields ->
           local_make_qualid (local_append l id) id'
@@ -117,6 +121,12 @@ GEXTEND Gram
   qualid:
     [ [ qid = basequalid -> loc, qid ] ]
   ;
+  ne_string:
+    [ [ s = STRING -> 
+        if s="" then Util.user_err_loc(loc,"",Pp.str"Empty string"); s
+    ] ]
+  ;
+(*
   ast:
     [ [ id = metaident -> id
       | p = astpath -> p
@@ -135,6 +145,7 @@ GEXTEND Gram
       | "["; a = ast; "]"; b = ast -> local_make_binding loc a b
       | "'"; a = ast -> Node(loc,"$QUOTE",[a]) ] ]
   ;
+*)
   bigint: (* Negative numbers are dealt with specially *)
     [ [ i = INT -> Bignat.POS (Bignat.of_string i) ] ]
   ;
