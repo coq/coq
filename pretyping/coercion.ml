@@ -103,7 +103,7 @@ let inh_coerce_to_fail env isevars c1 hj =
   else
     raise NoCoercion
 
-let rec inh_conv_coerce_to_fail env isevars c1 hj =
+let rec inh_conv_coerce_to_fail env isevars hj c1 =
   let {uj_val = v; uj_type = t} = hj in
   if the_conv_x_leq env isevars t c1 then hj
   else 
@@ -121,29 +121,34 @@ let rec inh_conv_coerce_to_fail env isevars c1 hj =
              then 
 	       let (x,v1,v2) = destLambda v' in
                let env1 = push_rel_assum (x,v1) env in
-               let h2 = inh_conv_coerce_to_fail env1 isevars u2
-			  {uj_val = v2; uj_type = t2 } in
+               let h2 = inh_conv_coerce_to_fail env1 isevars 
+			  {uj_val = v2; uj_type = t2 } u2 in
                fst (abs_rel env (evars_of isevars) x v1 h2)
              else 
+               (* Mismatch on t1 and u1 or not a lambda: we eta-expand *)
+               (* we look for a coercion c:u1->t1 s.t. [name:u1](v' (c x)) *)
+               (* has type (name:u1)u2 (with v' recursively obtained) *)
                let name = (match name with 
 			     | Anonymous -> Name (id_of_string "x")
                              | _ -> name) in
                let env1 = push_rel_assum (name,u1) env in
-               let h1 = 
-		 inh_conv_coerce_to_fail env isevars t1
-		   {uj_val = mkRel 1; 
-		    uj_type = u1 } in
-               let h2 = inh_conv_coerce_to_fail env1 isevars u2  
+               let h1 =
+		 inh_conv_coerce_to_fail env1 isevars
+		   {uj_val = mkRel 1; uj_type = (lift 1 u1) }
+                   (lift 1 t1) in
+               let h2 = inh_conv_coerce_to_fail env1 isevars
 			 { uj_val = mkApp (lift 1 v, [|h1.uj_val|]);
                            uj_type = subst1 h1.uj_val t2 }
+                          u2
 	       in
 	       fst (abs_rel env (evars_of isevars) name u1 h2)
 	 | _ -> raise NoCoercion)
 
+(* Look for cj' obtained from cj by inserting coercions, s.t. cj'.typ = t *)
 let inh_conv_coerce_to loc env isevars cj t =
   let cj' = 
     try 
-      inh_conv_coerce_to_fail env isevars t cj 
+      inh_conv_coerce_to_fail env isevars cj t
     with NoCoercion ->
       let sigma = evars_of isevars in
       error_actual_type_loc loc env sigma cj t
@@ -165,7 +170,7 @@ let inh_apply_rel_list apploc env isevars argjl (funloc,funj) tycon =
           | IsProd (na,c1,c2) ->
               let hj' =
 		try 
-		  inh_conv_coerce_to_fail env isevars c1 hj 
+		  inh_conv_coerce_to_fail env isevars hj c1
 		with NoCoercion ->
                   error_cant_apply_bad_type_loc apploc env sigma
 		    (1,c1,hj.uj_type) resj (List.map snd restjl) in
