@@ -1268,18 +1268,29 @@ let induction_tac varname typ (elimc,elimt) gl =
   let elimclause = make_clenv_binding wc (mkCast (elimc,elimt),elimt) [] in
   elimination_clause_scheme kONT wc elimclause indclause gl
 
+let is_indhyp p n t =
+  let c,_ = decomp_app t in 
+  match kind_of_term c with
+    | IsRel k when p < k & k <= p + n -> true
+    | _ -> false
+
+(* We check that the eliminator has been build by Coq (usual *)
+(* eliminator _ind, _rec or _rect, or eliminator built by Scheme) *)
 let compute_elim_signature_and_roughly_check elimt mind =
   let mis = Global.lookup_mind_specif mind in
   let lra = mis_recarg mis in
   let nconstr = mis_nconstr mis in
-  let rec check_branch c ra = match kind_of_term c, ra with
-    | IsProd (_,_,c), Declarations.Mrec _ :: ra' ->
+  let _,elimt2 = decompose_prod_n (mis_nparams mis) elimt in
+  let n = nb_prod elimt2 in
+  let npred = n - nconstr - (mis_nrealargs mis) - 1 in
+  let rec check_branch p c ra = match kind_of_term c, ra with
+    | IsProd (_,_,c), Declarations.Mrec i :: ra' ->
 	(match kind_of_term c with
-	   | IsProd (_,_,c) -> true::(check_branch c ra')
-	   | _ ->
-	       error "Not a recursive eliminator: some induction hypothesis is lacking")
-    | IsLetIn (_,_,_,c), ra' -> false::(check_branch c ra)
-    | IsProd (_,_,c), _ :: ra -> false::(check_branch c ra)
+	   | IsProd (_,t,c) when is_indhyp (p+1) npred t ->
+	       true::(check_branch (p+2) c ra')
+	   | _ -> false::(check_branch (p+1) c ra'))
+    | IsLetIn (_,_,_,c), ra' -> false::(check_branch (p+1) c ra)
+    | IsProd (_,_,c), _ :: ra -> false::(check_branch (p+1) c ra)
     | _, [] -> []
     | _ ->
 	error"Not a recursive eliminator: some constructor argument is lacking"
@@ -1287,10 +1298,10 @@ let compute_elim_signature_and_roughly_check elimt mind =
   let rec check_elim c n =
     if n = nconstr then []
     else match kind_of_term c with
-    | IsProd (_,t,c) -> (check_branch t lra.(n)) :: (check_elim c (n+1))
+    | IsProd (_,t,c) -> (check_branch n t lra.(n)) :: (check_elim c (n+1))
     | _ -> error "Not an eliminator: some constructor case is lacking" in
-  let _,elimt2 = decompose_prod_n (mis_nparams mis + 1) elimt in
-  check_elim elimt2 0
+  let _,elimt3 = decompose_prod_n npred elimt2 in
+  check_elim elimt3 0
 
 let induction_from_context style hyp0 gl =
    (*test suivant sans doute inutile car protégé par le letin_tac avant appel*)
