@@ -740,26 +740,26 @@ $$
        ~\OPT{\TERMbar}~\OPT{\NT{constructor-list}}
 \SEPDEF
 \DEFNT{constructor-list}
-       \NT{sbinder-coe}~\TERMbar~\NT{constructor-list}
-\nlsep \NT{sbinder-coe}
+       \NT{constructor}~\TERMbar~\NT{constructor-list}
+\nlsep \NT{constructor}
 \SEPDEF
 \DEFNT{constructor}
        \NT{ident}~\STAR{\NT{binder-let}}\OPTGR{\NT{coerce-kwd}~\NT{constr}}
 \SEPDEF
-\DEFNT{sbinder-coe}
-       \PLUS{\NT{ident}}~\OPTGR{\NT{coerce-kwd}~\NT{constr}}
-\SEPDEF
 \DEFNT{field-list}
        \NT{field}~\KWD{;}~\NT{field-list}
 \nlsep \NT{field}
+\SEPDEF
 \DEFNT{field}
        \NT{ident}~\OPTGR{\NT{coerce-kwd}~\NT{constr}}
 \nlsep \NT{ident}~\NT{type-cstr-coe}~\KWD{:=}~\NT{constr}
 \SEPDEF
-\SEPDEF
 \DEFNT{assum-list}
-       \NT{sbinder-coe}~\KWD{;}~\NT{assum-list}
-\nlsep \NT{sbinder-coe}
+       \PLUS{\GR{\KWD{(}~\NT{simple-assum-coe}~\KWD{)}}}
+\nlsep \NT{simple-assum-coe}
+\SEPDEF
+\DEFNT{simple-assum-coe}
+       \PLUS{\NT{ident}}~\NT{coerce-kwd}~\NT{constr}
 \SEPDEF
 \DEFNT{coerce-kwd} \TERM{:$>$} ~\mid~ \KWD{:}
 \SEPDEF
