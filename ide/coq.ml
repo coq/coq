@@ -297,6 +297,8 @@ let concl_menu (_,_,concl,_) =
    "Decide Equality", "Decide Equality.";
 
    "Simpl", "Simpl.";
+   "Subst", "Subst.";
+
    "Red", "Red.";
    "Split", "Split.";
    "Left", "Left.";

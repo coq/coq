@@ -174,6 +174,7 @@ object('self)
       bool -> bool -> bool -> (Util.loc * Vernacexpr.vernac_expr) option
     method set_message : string -> unit
     method show_goals : unit
+    method show_goals_full : unit
     method undo_last_step : unit
     method help_for_keyword : unit -> unit
   end
@@ -203,12 +204,30 @@ let crash_save i =
   exit i
 
 let _ = 
-  let signals_to_catch = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup; 
-			  Sys.sigill; Sys.sigint; Sys.sigpipe; Sys.sigquit; 
+  let signals_to_crash = [Sys.sigabrt; Sys.sigalrm; Sys.sigfpe; Sys.sighup; 
+			  Sys.sigill; Sys.sigpipe; Sys.sigquit; 
 			  (*Sys.sigsegv;*) Sys.sigterm; Sys.sigusr2] 
   in List.iter 
        (fun i -> Sys.set_signal i (Sys.Signal_handle crash_save)) 
-       signals_to_catch
+       signals_to_crash
+
+
+let set_break () = 
+  Sys.set_signal Sys.sigusr1 (Sys.Signal_handle (fun _ -> raise Sys.Break))
+let unset_break () = 
+  Sys.set_signal Sys.sigusr1 Sys.Signal_ignore
+
+(* Signal sigusr1 is used to stop coq computation *)
+let pid = Unix.getpid ()
+let break () = Unix.kill pid Sys.sigusr1 
+
+(* let () = Sys.set_signal Sys.sigint (Sys.Signal_handle (fun _ -> Pervasives.prerr_endline "HELLO";
+	
+					      Pervasives.flush stderr))
+*)
+let can_break () = set_break () 
+let cant_break () = unset_break () 
+
 
 let add_input_view tv = 
   Vector.append input_views tv
@@ -361,17 +380,6 @@ exception Found
 (* For find_phrase_starting_at *)
 exception Stop of int
 
-let set_break () = 
-  Sys.set_signal Sys.sigusr1 (Sys.Signal_handle (fun _ -> raise Sys.Break))
-let unset_break () = 
-  Sys.set_signal Sys.sigusr1 Sys.Signal_ignore
-
-(* Signal sigusr1 is used to stop coq computation *)
-let pid = Unix.getpid ()
-let break () = Unix.kill pid Sys.sigusr1
-let can_break () = set_break () 
-let cant_break () = unset_break () 
-
 let activate_input i = 
   (match !active_view with
      | None -> () 
@@ -467,7 +475,7 @@ object(self)
       true
     end
     else false
-    
+      
 
   method save_as f =
     if Sys.file_exists f then 
@@ -510,7 +518,50 @@ object(self)
     try
       proof_view#buffer#set_text "";
       let s = Coq.get_current_goals () in
-      let last_shown_area = proof_buffer#create_tag [`BACKGROUND "light blue"]
+      match s with 
+	| [] -> proof_buffer#insert (Coq.print_no_goal ())
+	| (hyps,concl)::r -> 
+	    let goal_nb = List.length s in
+	    proof_buffer#insert (Printf.sprintf "%d subgoal%s\n" 
+				   goal_nb
+				   (if goal_nb<=1 then "" else "s"));
+	    List.iter
+	      (fun ((_,_,_,(s,_)) as hyp) -> 
+		 proof_buffer#insert (s^"\n"))
+	      hyps;
+	    proof_buffer#insert ("---------------------------------------(1/"^
+				 (string_of_int goal_nb)^
+				 ")\n") 
+	    ;
+	    let _,_,_,sconcl = concl in
+	    proof_buffer#insert sconcl;
+	    proof_buffer#insert "\n";
+	    let my_mark = `NAME "end_of_conclusion" in
+	    proof_buffer#move_mark
+	      ~where:((proof_buffer#get_iter_at_mark `INSERT)) my_mark;
+	    proof_buffer#insert "\n\n";
+	    let i = ref 1 in
+	    List.iter 
+	      (function (_,(_,_,_,concl)) -> 
+		 incr i;
+		 proof_buffer#insert ("--------------------------------------("^
+				      (string_of_int !i)^
+				      "/"^
+				      (string_of_int goal_nb)^
+				      ")\n");
+		 proof_buffer#insert concl;
+		 proof_buffer#insert "\n\n";
+	      )
+	      r;
+	    ignore (proof_view#scroll_to_mark my_mark) 
+      with e -> prerr_endline (Printexc.to_string e)
+	
+
+  method show_goals_full = 
+    try
+      proof_view#buffer#set_text "";
+      let s = Coq.get_current_goals () in
+      let last_shown_area = proof_buffer#create_tag [`BACKGROUND "light green"]
       in
       match s with 
 	| [] -> proof_buffer#insert (Coq.print_no_goal ())
@@ -525,7 +576,6 @@ object(self)
 	      ignore
 		(tag#connect#event ~callback:
 		   (fun ~origin ev it ->
-		      
 		      match GdkEvent.get_type ev with 
 			| `BUTTON_PRESS -> 
 			    let ev = (GdkEvent.Button.cast ev) in
@@ -557,14 +607,16 @@ object(self)
 			    ~stop:proof_buffer#end_iter
 			    last_shown_area;
 			    prerr_endline "Before find_tag_limits";
+			    
 			    let s,e = find_tag_limits tag 
 					(new GText.iter it) 
 			    in
-			    prerr_endline "Apres find_tag_limits";
+			    prerr_endline "After find_tag_limits";
 			    proof_buffer#apply_tag 
 			      ~start:s 
 			      ~stop:e 
 			      last_shown_area;
+			    
 			    prerr_endline "Applied tag";
 			    ()
 			| _ -> ())
@@ -742,26 +794,26 @@ object(self)
 	    push_phrase start_of_phrase_mark end_of_phrase_mark ast;
 	    self#show_goals;
 	    (*try (match Coq.get_current_goals () with 
-		    | [] ->  
-			(match self#send_to_coq "Save.\n" true true true with
-			   | Some ast -> 
-			       begin
-				 let stop = self#get_start_of_input in
-				 if stop#starts_line then
-				   input_buffer#insert ~iter:stop "Save.\n"
-				 else input_buffer#insert ~iter:stop "\nSave.\n"; 
-				 let start = self#get_start_of_input in
-				 input_buffer#move_mark ~where:stop (`NAME "start_of_input");
-				 input_buffer#apply_tag_by_name "processed" ~start ~stop;
-				 if (self#get_insert#compare) stop <= 0 then 
-				   input_buffer#place_cursor stop;
-				 let start_of_phrase_mark = `MARK (input_buffer#create_mark start) in
-				 let end_of_phrase_mark = `MARK (input_buffer#create_mark stop) in
-				 push_phrase start_of_phrase_mark end_of_phrase_mark ast
-		      	       end
-			   | None -> ())
-		    | _ -> ())
-	     with _ -> ()*)
+	      | [] ->  
+	      (match self#send_to_coq "Save.\n" true true true with
+	      | Some ast -> 
+	      begin
+	      let stop = self#get_start_of_input in
+	      if stop#starts_line then
+	      input_buffer#insert ~iter:stop "Save.\n"
+	      else input_buffer#insert ~iter:stop "\nSave.\n"; 
+	      let start = self#get_start_of_input in
+	      input_buffer#move_mark ~where:stop (`NAME "start_of_input");
+	      input_buffer#apply_tag_by_name "processed" ~start ~stop;
+	      if (self#get_insert#compare) stop <= 0 then 
+	      input_buffer#place_cursor stop;
+	      let start_of_phrase_mark = `MARK (input_buffer#create_mark start) in
+	      let end_of_phrase_mark = `MARK (input_buffer#create_mark stop) in
+	      push_phrase start_of_phrase_mark end_of_phrase_mark ast
+	      end
+	      | None -> ())
+	      | _ -> ())
+	      with _ -> ()*)
 	    true
 	  end
       | None -> self#insert_message ("Unsuccesfully tried: "^coqphrase);
@@ -892,11 +944,11 @@ object(self)
 	| {ast=_,t;reset_info=Reset (id, {contents=true})} ->
 	    ignore (pop ());
 	    (match t with 
-	      | VernacBeginSection _ | VernacDefineModule _ 
-	      | VernacDeclareModule _ | VernacDeclareModuleType _
-	      | VernacEndSegment _ 
-		  -> reset_to_mod id
-	      | _ ->  reset_to id);
+	       | VernacBeginSection _ | VernacDefineModule _ 
+	       | VernacDeclareModule _ | VernacDeclareModuleType _
+	       | VernacEndSegment _ 
+		 -> reset_to_mod id
+	       | _ ->  reset_to id);
 	    update_input ()
 	| { ast = _, ( VernacStartTheoremProof _ 
 		     | VernacDefinition (_,_,ProveBody _,_,_));
@@ -1016,7 +1068,39 @@ object(self)
 	   end;
 	 end;
 	 last_index <- not last_index;)
-  
+
+  method private electric_paren tag =
+    let oparen_code = Glib.Utf8.to_unichar "("  (ref 0) in
+    let cparen_code = Glib.Utf8.to_unichar ")"  (ref 0) in
+    ignore (input_buffer#connect#insert_text ~callback:
+	      (fun it x ->
+		 input_buffer#remove_tag
+		 ~start:input_buffer#start_iter
+		 ~stop:input_buffer#end_iter
+		 tag;
+		 if x = "" then () else
+		   match x.[String.length x - 1] with 
+		     | ')' -> 
+			 let hit = self#get_insert in
+			 let count = ref 0 in
+			 if hit#nocopy#backward_find_char 
+			   (fun c -> 
+			      if c = oparen_code && !count = 0 then true 
+			      else if c = cparen_code then 
+				(incr count;false)
+			      else if c = oparen_code then 
+				(decr count;false)
+			      else false
+			   )
+			 then
+			   begin
+			     prerr_endline "Found matching parenthesis";
+			     input_buffer#apply_tag tag ~start:hit ~stop:hit#forward_char
+			   end
+			 else ()
+		     | _ -> ())
+	   )
+
   method help_for_keyword () = browse_keyword (get_current_word ())
 
   initializer 
@@ -1073,6 +1157,18 @@ object(self)
 			)
 	   );
     ignore (input_buffer#add_selection_clipboard (cb()));
+    let paren_highlight_tag = input_buffer#create_tag ~name:"paren" [`BACKGROUND "red"]  in
+    self#electric_paren paren_highlight_tag;
+    ignore (input_buffer#connect#after#mark_set 
+	      ~callback:(fun it (m:Gtk.textmark) -> 
+			   match GtkText.Mark.get_name m  with
+			     | Some "insert" -> 		 
+				 input_buffer#remove_tag
+				 ~start:input_buffer#start_iter
+				 ~stop:input_buffer#end_iter
+				 paren_highlight_tag;
+			     | _ -> () )
+	   )
 end
 
 let create_input_tab filename =
@@ -1817,7 +1913,7 @@ let main files =
   let _ = tv2#set_wrap_mode `CHAR in
   let _ = tv3#set_wrap_mode `WORD in
   let _ = tv3#set_editable false in
-  let _ = GtkBase.Widget.add_events tv2#as_widget [`POINTER_MOTION] in
+  let _ = GtkBase.Widget.add_events tv2#as_widget [`ENTER_NOTIFY;`POINTER_MOTION] in
   let _ = tv2#event#connect#motion_notify
 	    ~callback:(fun e -> 
 			 let win = match tv2#get_window `WIDGET with
@@ -1917,12 +2013,21 @@ let main files =
 	   ~callback:
 	   (fun i -> List.iter (function f -> f i) !to_do_on_page_switch)
 	);
+  ignore(tv2#event#connect#enter_notify
+	   (fun _ -> 
+	      !push_info "Computing advanced goal's menus";
+	      prerr_endline "Entering Goal Window. Computing Menus....";
+	      (out_some (get_active_view ()).analyzed_view)#show_goals_full;
+	      prerr_endline "....Done with Goal menu";
+	      !pop_info();
+	      false));
   List.iter load files
 
 
 let start () = 
-  cant_break ();
   let files = Coq.init () in
+  Sys.catch_break true;
+  cant_break ();
   GtkMain.Rc.add_default_file (Filename.concat lib_ide ".coqiderc");
   (try 
      GtkMain.Rc.add_default_file (Filename.concat (Sys.getenv "HOME") ".coqiderc");
@@ -1938,7 +2043,6 @@ let start () =
     );
   Command_windows.main ();
   main files;
-  Sys.catch_break true;
   while true do 
     try 
       GMain.Main.main ()
