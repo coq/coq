@@ -22,6 +22,7 @@ val get_ctxt   : goal -> ctxtty
 val get_pgm    : goal -> constr option
 val set_pgm    : constr option -> ctxtty -> ctxtty
 val get_lc     : goal -> local_constraints
+val set_lc     : local_constraints -> ctxtty -> ctxtty
 
 val rule_of_proof     : proof_tree -> rule
 val ref_of_proof      : proof_tree -> (rule * proof_tree list)

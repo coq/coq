@@ -38,6 +38,8 @@ let set_pgm pgm ctxt = { ctxt with pgm = pgm }
 
 let get_lc gl = (out_some gl.evar_info).lc
 
+let set_lc lc ctxt = { ctxt with lc = lc }
+
 (* Functions on proof trees *)
 
 let ref_of_proof pf =
