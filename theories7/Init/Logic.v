@@ -121,7 +121,7 @@ Inductive ex2 [A:Type;P,Q:A->Prop] : Prop
 
 Definition all := [A:Type][P:A->Prop](x:A)(P x). 
 
-(*Rule order is important to give printing priority to fully typed ALL and EX*)
+(* Rule order is important to give printing priority to fully typed exists *)
 
 V7only [ Notation Ex  := (ex ?). ].
 Notation "'EX' x | p"      := (ex ? [x]p)

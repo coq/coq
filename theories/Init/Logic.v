@@ -115,7 +115,7 @@ Inductive ex2 (A:Type) (P Q:A -> Prop) : Prop :=
 
 Definition all (A:Type) (P:A -> Prop) := forall x:A, P x. 
 
-(*Rule order is important to give printing priority to fully typed ALL and EX*)
+(* Rule order is important to give printing priority to fully typed exists *)
 
 Notation "'exists' x , p" := (ex (fun x => p))
   (at level 200, x ident) : type_scope.
