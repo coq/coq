@@ -90,7 +90,7 @@ let next_ident_away id avoid =
     let id0 = if id.index = -1 then id else 
     (* Ce serait sans doute mieux avec quelque chose inspiré de 
        *** make_ident id (Some 0) *** mais ça brise la compatibilité... *)
-    { id with index = -1 } in
+    { id with index = 0 } in
     let rec name_rec id =
       if List.mem id avoid then name_rec (lift_ident id) else id in 
     name_rec id0
