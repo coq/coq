@@ -97,6 +97,9 @@ let is_in_coq_path f =
 let is_in_proof_mode () = 
   try ignore (get_pftreestate ()); true with _ -> false
 
+let user_error_loc l s =
+  raise (Stdpp.Exc_located (l, Util.UserError ("CoqIde", s)))
+
 let interp s = 
   prerr_endline "Starting interp...";
   prerr_endline s;
@@ -104,15 +107,13 @@ let interp s =
 	     Pcoq.main_entry 
 	     (Pcoq.Gram.parsable (Stream.of_string s)) 
   in match pe with 
-    | Some (loc,(VernacDefinition _  | VernacStartTheoremProof _ | VernacBeginSection _ 
+    | Some (loc,( VernacDefinition _  | VernacStartTheoremProof _ 
+		| VernacBeginSection _ | VernacGoal _
 		| VernacDefineModule _ | VernacDeclareModuleType _))
-      when is_in_proof_mode () 
-	-> 
-	raise (Stdpp.Exc_located (loc, 
-			   Util.UserError
-			     ("CoqIde",
-			      (str "cannot do that while in proof mode."))
-				 ))
+      when is_in_proof_mode () -> 
+	user_error_loc loc (str "cannot do that while in proof mode.")
+    | Some (loc, VernacDebug _ ) ->
+	user_error_loc loc (str "cannot do that within CoqIDE")
     | _ -> 
 	Vernac.raw_do_vernac (Pcoq.Gram.parsable (Stream.of_string s));
 	match pe with
