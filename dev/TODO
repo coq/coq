@@ -12,7 +12,7 @@
 
  o Lib
      - écrire une fonction d'export qui supprimme les FrozenState,
-       vérifie qu'il n'y a pas de section ouvert, et présente les
+       vérifie qu'il n'y a pas de section ouverte, et présente les
        déclarations dans l'ordre chronologique (y compris dans les
        sections fermées ?). A utiliser dans Library pour sauver un module.
 

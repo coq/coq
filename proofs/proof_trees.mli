@@ -2,8 +2,11 @@
 (* $Id$ *)
 
 (*i*)
+open Util
+open Stamps
 open Names
 open Term
+open Sign
 open Evd
 (*i*)
 
@@ -63,7 +66,7 @@ type prim_rule = {
   params : Coqast.t list;
   terms : constr list }
 
-type local_constraints = Spset.t
+type local_constraints = Intset.t
 
 (* [ref] = [None] if the goal has still to be proved, 
    and [Some (r,l)] if the rule [r] was applied to the goal
@@ -79,7 +82,9 @@ type proof_tree = {
   ref : (rule * proof_tree list) option; 
   subproof : proof_tree option }
 
-and goal = ctxtty evar_info
+and goal = {
+  goal_ev : evar_info;
+  goal_ctxtty : ctxtty }
 
 and rule =
   | Prim of prim_rule
@@ -92,4 +97,50 @@ and ctxtty = {
   mimick : proof_tree option;
   lc     : local_constraints } 
 
-and evar_declarations = ctxtty evar_map
+type evar_declarations = goal Intmap.t
+
+
+val mk_goal : ctxtty -> typed_type signature -> constr -> goal
+
+val mt_ctxt    : local_constraints -> ctxtty
+val get_ctxt   : goal  -> ctxtty
+val get_pgm    : goal -> constr option
+val set_pgm    : constr option -> ctxtty -> ctxtty
+val get_mimick : goal ->  proof_tree option
+val set_mimick : proof_tree option ->  ctxtty -> ctxtty
+val get_lc     : goal -> local_constraints
+
+val rule_of_proof     : proof_tree -> rule
+val ref_of_proof      : proof_tree -> (rule * proof_tree list)
+val children_of_proof : proof_tree -> proof_tree list
+val goal_of_proof     : proof_tree -> goal
+val subproof_of_proof : proof_tree -> proof_tree
+val status_of_proof   : proof_tree -> pf_status
+val is_complete_proof : proof_tree -> bool
+val is_leaf_proof     : proof_tree -> bool
+val is_tactic_proof   : proof_tree -> bool
+
+
+(* A global constraint is a mappings of existential variables
+   with some extra information for the program and mimick tactics. *)
+
+type global_constraints = evar_declarations timestamped
+
+(* A readable constraint is a global constraint plus a focus set
+   of existential variables and a signature. *)
+
+type evar_recordty = {
+  focus : local_constraints;
+  sign  : typed_type signature;
+  decls : evar_declarations }
+
+and readable_constraints = evar_recordty timestamped
+
+val rc_of_gc  : global_constraints -> goal -> readable_constraints
+val rc_add    : readable_constraints -> int * goal -> readable_constraints
+val get_hyps  : readable_constraints -> typed_type signature
+val get_focus : readable_constraints -> local_constraints
+val get_decls : readable_constraints -> evar_declarations
+val get_gc    : readable_constraints -> global_constraints
+val remap     : readable_constraints -> int * goal -> readable_constraints
+val ctxt_access : readable_constraints -> int -> bool

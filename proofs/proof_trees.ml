@@ -1,6 +1,7 @@
 
 (* $Id$ *)
 
+open Util
 open Names
 open Term
 open Sign
@@ -60,7 +61,7 @@ type prim_rule = {
   params : Coqast.t list;
   terms : constr list }
 
-type local_constraints = Spset.t
+type local_constraints = Intset.t
 
 type proof_tree = {
   status : pf_status;
@@ -68,7 +69,9 @@ type proof_tree = {
   ref : (rule * proof_tree list) option; 
   subproof : proof_tree option }
 
-and goal = ctxtty evar_info
+and goal = {
+  goal_ev : evar_info;
+  goal_ctxtty : ctxtty }
 
 and rule =
   | Prim of prim_rule
@@ -81,49 +84,36 @@ and ctxtty = {
   mimick : proof_tree option;
   lc     : local_constraints } 
 
-and evar_declarations = ctxtty evar_map
+type evar_declarations = goal Intmap.t
+
 
 let is_bind = function
   | Bindings _ -> true
   | _ -> false
 
-let lc_toList lc = Spset.elements lc
+let lc_toList lc = Intset.elements lc
 
 (* Functions on goals *)
 
-let mkGOAL ctxt sign cl = 
-  { evar_hyps = sign; 
-    evar_concl = cl; 
-    evar_body = Evar_empty; 
-    evar_info = Some ctxt }
+let mk_goal ctxt sign cl = 
+  { goal_ev = { evar_hyps = sign; evar_concl = cl; evar_body = Evar_empty };
+    goal_ctxtty = ctxt }
 
 (* Functions on the information associated with existential variables  *)
 
 let mt_ctxt lc = { pgm = None; mimick = None; lc = lc }
 
-let get_ctxt ctxt = 
-  match ctxt.evar_info with
-    | Some x -> x
-    | None -> assert false
+let get_ctxt gl = gl.goal_ctxtty
 
-let get_pgm evd = 
-  match evd.evar_info with
-    | Some x -> x.pgm
-    | None -> assert false
+let get_pgm gl = gl.goal_ctxtty.pgm
 
 let set_pgm pgm ctxt = { ctxt with pgm = pgm }
 
-let get_mimick evd   = 
-  match evd.evar_info with
-    | Some x -> x.mimick
-    | None -> assert false
+let get_mimick gl = gl.goal_ctxtty.mimick
 
-let set_mimick mimick ctxt = {mimick = mimick; pgm = ctxt.pgm;lc=ctxt.lc}
+let set_mimick mimick ctxt = { mimick = mimick; pgm = ctxt.pgm; lc = ctxt.lc }
 
-let get_lc evd = 
-  match evd.evar_info with
-    | Some x -> x.lc
-    | None -> assert false
+let get_lc gl = gl.goal_ctxtty.lc
 
 (* Functions on proof trees *)
 
@@ -166,7 +156,7 @@ let is_tactic_proof pf =
 
 (* A local constraint is just a set of section_paths *)
 
-(* recall : type local_constraints    = Spset.t *)
+(* recall : type local_constraints = Intset.t *)
 
 (* A global constraint is a mappings of existential variables
    with some extra information for the program and mimick
@@ -190,37 +180,38 @@ let mt_evcty lc gc =
   ts_mk { focus = lc; sign = nil_sign; decls = gc }
 
 let evc_of_evds evds gl = 
-  ts_mk { focus = (get_lc gl); sign = gl.evar_hyps ; decls = evds }
+  ts_mk { focus = (get_lc gl); sign = gl.goal_ev.evar_hyps ; decls = evds }
 
 let rc_of_gc gc gl = evc_of_evds (ts_it gc) gl
 		       
 let rc_add evc (k,v) = 
   ts_mod
-    (fun evc -> { focus =(Spset.add k evc.focus);
+    (fun evc -> { focus = (Intset.add k evc.focus);
                   sign  = evc.sign;
-                  decls = Evd.add_with_info evc.decls k v })
+                  decls = Intmap.add k v evc.decls })
     evc
 
 let get_hyps  evc = (ts_it evc).sign
 let get_focus evc = (ts_it evc).focus
 let get_decls evc = (ts_it evc).decls
 let get_gc    evc = (ts_mk (ts_it evc).decls)
+
 let remap evc (k,v) = 
   ts_mod
     (fun evc -> { focus = evc.focus;
                   sign  = evc.sign;
-                  decls = Evd.remap evc.decls k v })
+                  decls = Intmap.add k v evc.decls })
     evc
 
-let lc_exists f lc = Spset.fold (fun e b -> (f e) or b) lc false
+let lc_exists f lc = Intset.fold (fun e b -> (f e) or b) lc false
 
-(* MENTIONS SIGMA SP LOC is true exactly when LOC is defined, and SP is
- * on LOC's access list, or an evar on LOC's access list mentions SP. *)
+(* [mentions sigma sp loc] is true exactly when [loc] is defined, and [sp] is
+ * on [loc]'s access list, or an evar on [loc]'s access list mentions [sp]. *)
 
 let rec mentions sigma sp loc =
-  let loc_evd = map (ts_it sigma).decls loc in 
-  match loc_evd.evar_body with 
-    | Evar_defined _ -> (Spset.mem sp (get_lc loc_evd) 
+  let loc_evd = Intmap.find loc (ts_it sigma).decls in 
+  match loc_evd.goal_ev.evar_body with 
+    | Evar_defined _ -> (Intset.mem sp (get_lc loc_evd) 
 			 or lc_exists (mentions sigma sp) (get_lc loc_evd))
     | _ -> false
 
@@ -229,7 +220,7 @@ let rec mentions sigma sp loc =
  * MENTIONS SIGMA SP LOC' is true. *)
 
 let rec accessible sigma sp loc =
-  let loc_evd = map (ts_it sigma).decls loc in 
+  let loc_evd = Intmap.find loc (ts_it sigma).decls in 
   lc_exists (fun loc' -> sp = loc' or mentions sigma sp loc') (get_lc loc_evd)
 
 

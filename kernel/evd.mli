@@ -10,7 +10,8 @@ open Sign
 (* The type of mappings for existential variables.
    The keys are integers and the associated information is a record
    containing the type of the evar ([concl]), the signature under which 
-   it was introduced ([hyps]) and its definition ([body]). *)
+   it was introduced ([hyps]) and its definition ([body]). 
+   [evar_info] is used to add any other kind of information. *)
 
 type evar = int
 
@@ -21,11 +22,13 @@ type evar_body =
   | Evar_defined of constr
 
 type evar_info = {
-  evar_concl : typed_type;
-  evar_hyps  : typed_type signature;
-  evar_body  : evar_body }
+  evar_concl : constr;
+  evar_hyps : typed_type signature;
+  evar_body : evar_body }
 
 type evar_map
+
+val add : evar_map -> evar -> evar_info -> evar_map
 
 val dom : evar_map -> evar list
 val map : evar_map -> evar -> evar_info
@@ -35,9 +38,6 @@ val in_dom : evar_map -> evar -> bool
 val to_list : evar_map -> (evar * evar_info) list
 
 val mt_evd : evar_map
-val add_with_info : evar_map -> evar -> evar_info -> evar_map
-val add_noinfo : 
-  evar_map -> evar -> typed_type signature -> typed_type -> evar_map
 
 val define : evar_map -> evar -> constr -> evar_map
 
