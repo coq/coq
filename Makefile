@@ -329,22 +329,19 @@ COQBINARIES= $(COQMKTOP) $(COQC) $(COQTOPBYTE) $(BESTCOQTOP) $(COQTOP) \
 
 coqbinaries:: ${COQBINARIES}
 
-# Aliases for various worlds
-newworld: world8
-world: world8
-translation: coqbinaries coqlib8-source
-oldworld: world7
+world: coqlib tools coqbinaries coqide
 
-world8: coqbinaries coqlib8-source coqlib8 tools coqide
+world7: coqlib7 tools coqbinaries coqide
 
-world7: coqbinaries coqlib7 tools coqide
+coqlib:: newtheories newcontrib
 
-coqlib7: states theories contrib
-   # TODO: compile in an other directory since for world8
-   # theories and contrib contains the .vo for the translator
+coqlib7: theories contrib
 
-coqlight: coqbinaries states theories-light tools
+coqlight: theories-light tools coqbinaries
 
+states7:: states/initial.coq
+
+states:: states/initial.coq states/initialnew.coq
 
 $(COQTOPOPT): $(COQMKTOP) $(CMX) $(USERTACCMX)
 	$(COQMKTOP) -opt $(OPTFLAGS) -o $@
@@ -410,7 +407,7 @@ FULLIDELIB=$(FULLCOQLIB)/ide
 COQIDEVO=ide/utf8.vo
 
 $(COQIDEVO): states/initial.coq
-	$(BOOTCOQTOP) -v7 -compile $*
+	$(BOOTCOQTOP) -translate -no-strict -compile $*
 
 IDEFILES=$(COQIDEVO) ide/coq.png ide/.coqide-gtk2rc ide/FAQ
 
@@ -514,88 +511,112 @@ check:: world $(COQINTERFACE)
 # theories and states
 ###########################################################################
 
-states:: states/barestate.coq states/initial.coq
-
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v
 
 states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
-	$(BESTCOQTOP) -v7 -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
-
-#       theories/Init/DatatypesHints.vo   theories/Init/PeanoHints.vo \
-#       theories/Init/LogicHints.vo       theories/Init/SpecifHints.vo \
-#       theories/Init/Logic_TypeHints.vo \
-
-INITVO=theories/Init/Notations.vo \
-       theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
-       theories/Init/Logic.vo             theories/Init/Specif.vo        \
-       theories/Init/Logic_Type.vo        theories/Init/Wf.vo            \
-       theories/Init/Prelude.vo
-
-
-theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
-	$(BOOTCOQTOP) -v7 -is states/barestate.coq -compile $*
-
-init: $(INITVO)
-
-contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
-	$(BOOTCOQTOP) -v7 -is states/barestate.coq -compile $*
+	$(BESTCOQTOP) -translate -no-strict -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate $@
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(BESTCOQTOP)
 	$(BOOTCOQTOP) -v7 -batch -silent -is states/barestate.coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
-contrib/%.vo: contrib/%.v states/initial.coq
-	$(BOOTCOQTOP) -v7 -compile contrib/$*
+states/initialnew.coq: states/MakeInitialNew.v $(NEWINITVO)
+	$(BOOTCOQTOP) -v8 -batch -silent -nois -load-vernac-source states/MakeInitialNew.v -outputstate states/initialnew.coq
+
+newtheories/Init/%.v: $(BESTCOQTOP) theories/Init/%.v
+	@$(MKDIR) newtheories/Init
+	cp -f theories/Init/$*.v8  newtheories/Init/$*.v
+
+theories/Init/%.vo: $(BESTCOQTOP) theories/Init/%.v
+	$(BOOTCOQTOP) -translate -no-strict -nois -compile theories/Init/$*
+
+newtheories/%.v: theories/%.vo states/initialnew.coq
+	@$(MKDIR) newtheories/`dirname $*`
+	cp -f theories/$*.v8  newtheories/$*.v
 
 theories/%.vo: theories/%.v states/initial.coq
-	$(BOOTCOQTOP) -v7 -compile theories/$*
+	$(BOOTCOQTOP) -translate -no-strict -compile theories/$*
+
+newcontrib/%.v: contrib/%.vo states/initial.coq
+	@$(MKDIR) newcontrib/`dirname $*`
+	cp -f contrib/$*.v8  newcontrib/$*.v
+
+contrib/%.vo: contrib/%.v states/initial.coq
+	$(BOOTCOQTOP) -translate -no-strict -compile contrib/$*
+
+newtheories/Init/%.vo: $(BESTCOQTOP) newtheories/Init/%.v
+	$(BOOTCOQTOP) -v8 -nois -compile $*
+
+newtheories/%.vo: newtheories/%.v states/initialnew.coq
+	$(BOOTCOQTOP) -v8 -compile newtheories/$*
+
+newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
+	$(BOOTCOQTOP) -v8 -compile newcontrib/$*
+
+INITVO=\
+ theories/Init/Notations.vo \
+ theories/Init/Datatypes.vo         theories/Init/Peano.vo     \
+ theories/Init/Logic.vo             theories/Init/Specif.vo    \
+ theories/Init/Logic_Type.vo        theories/Init/Wf.vo      \
+ theories/Init/Prelude.vo
+
+init: $(INITVO)
+
+contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
+	$(BOOTCOQTOP) -translate -no-strict -is states/barestate.coq -compile $*
 
 clean::
 	rm -f states/*.coq
 
-LOGICVO=theories/Logic/Hurkens.vo          theories/Logic/ProofIrrelevance.vo\
-      theories/Logic/Classical.vo          theories/Logic/Classical_Type.vo \
-      theories/Logic/Classical_Pred_Set.vo   theories/Logic/Eqdep.vo          \
-      theories/Logic/Classical_Pred_Type.vo  theories/Logic/Classical_Prop.vo \
-      theories/Logic/ClassicalFacts.vo       theories/Logic/ChoiceFacts.vo \
-      theories/Logic/Berardi.vo       	     theories/Logic/Eqdep_dec.vo \
-      theories/Logic/Decidable.vo            theories/Logic/JMeq.vo
+LOGICVO=\
+ theories/Logic/Hurkens.vo          	theories/Logic/ProofIrrelevance.vo\
+ theories/Logic/Classical.vo          	theories/Logic/Classical_Type.vo \
+ theories/Logic/Classical_Pred_Set.vo   theories/Logic/Eqdep.vo          \
+ theories/Logic/Classical_Pred_Type.vo  theories/Logic/Classical_Prop.vo \
+ theories/Logic/ClassicalFacts.vo       theories/Logic/ChoiceFacts.vo \
+ theories/Logic/Berardi.vo       	theories/Logic/Eqdep_dec.vo \
+ theories/Logic/Decidable.vo            theories/Logic/JMeq.vo
 
-ARITHVO=theories/Arith/Arith.vo         theories/Arith/Gt.vo          \
-	theories/Arith/Between.vo       theories/Arith/Le.vo          \
-	theories/Arith/Compare.vo       theories/Arith/Lt.vo          \
-	theories/Arith/Compare_dec.vo   theories/Arith/Min.vo         \
-	theories/Arith/Div2.vo          theories/Arith/Minus.vo       \
-	theories/Arith/Mult.vo          theories/Arith/Even.vo        \
-	theories/Arith/EqNat.vo         theories/Arith/Peano_dec.vo   \
-	theories/Arith/Euclid.vo        theories/Arith/Plus.vo        \
-	theories/Arith/Wf_nat.vo  	theories/Arith/Max.vo	      \
-	theories/Arith/Bool_nat.vo	theories/Arith/Factorial.vo   \
-#	theories/Arith/Div.vo 
+ARITHVO=\
+ theories/Arith/Arith.vo        theories/Arith/Gt.vo          \
+ theories/Arith/Between.vo      theories/Arith/Le.vo          \
+ theories/Arith/Compare.vo      theories/Arith/Lt.vo          \
+ theories/Arith/Compare_dec.vo  theories/Arith/Min.vo         \
+ theories/Arith/Div2.vo         theories/Arith/Minus.vo       \
+ theories/Arith/Mult.vo         theories/Arith/Even.vo        \
+ theories/Arith/EqNat.vo        theories/Arith/Peano_dec.vo   \
+ theories/Arith/Euclid.vo       theories/Arith/Plus.vo        \
+ theories/Arith/Wf_nat.vo  	theories/Arith/Max.vo	      \
+ theories/Arith/Bool_nat.vo	theories/Arith/Factorial.vo   \
+# theories/Arith/Div.vo 
 
-SORTINGVO=theories/Sorting/Heap.vo \
-	theories/Sorting/Permutation.vo \
-	theories/Sorting/Sorting.vo
+SORTINGVO=\
+ theories/Sorting/Heap.vo	theories/Sorting/Permutation.vo \
+ theories/Sorting/Sorting.vo
  
-BOOLVO=theories/Bool/Bool.vo  		theories/Bool/IfProp.vo \
-       theories/Bool/Zerob.vo 		theories/Bool/DecBool.vo \
-	theories/Bool/Sumbool.vo 	theories/Bool/BoolEq.vo \
-	theories/Bool/Bvector.vo
+BOOLVO=\
+ theories/Bool/Bool.vo  	theories/Bool/IfProp.vo \
+ theories/Bool/Zerob.vo 	theories/Bool/DecBool.vo \
+ theories/Bool/Sumbool.vo 	theories/Bool/BoolEq.vo \
+ theories/Bool/Bvector.vo
 
-ZARITHVO=theories/ZArith/Wf_Z.vo        theories/ZArith/Zsyntax.vo \
-	 theories/ZArith/ZArith.vo      theories/ZArith/auxiliary.vo \
-	 theories/ZArith/ZArith_dec.vo  theories/ZArith/fast_integer.vo \
-	 theories/ZArith/Zmisc.vo       theories/ZArith/zarith_aux.vo \
-	 theories/ZArith/Zhints.vo	theories/ZArith/Zlogarithm.vo \
-	 theories/ZArith/Zpower.vo 	theories/ZArith/Zcomplements.vo \
-	 theories/ZArith/Zdiv.vo	theories/ZArith/Zsqrt.vo \
-	 theories/ZArith/Zwf.vo		theories/ZArith/ZArith_base.vo \
-	 theories/ZArith/Zbool.vo	theories/ZArith/Zbinary.vo
+ZARITHVO=\
+ theories/ZArith/Wf_Z.vo	theories/ZArith/Zsyntax.vo \
+ theories/ZArith/ZArith.vo	theories/ZArith/auxiliary.vo \
+ theories/ZArith/ZArith_dec.vo	theories/ZArith/fast_integer.vo \
+ theories/ZArith/Zmisc.vo	theories/ZArith/zarith_aux.vo \
+ theories/ZArith/Zhints.vo	theories/ZArith/Zlogarithm.vo \
+ theories/ZArith/Zpower.vo 	theories/ZArith/Zcomplements.vo \
+ theories/ZArith/Zdiv.vo	theories/ZArith/Zsqrt.vo \
+ theories/ZArith/Zwf.vo		theories/ZArith/ZArith_base.vo \
+ theories/ZArith/Zbool.vo	theories/ZArith/Zbinary.vo
 
-LISTSVO=theories/Lists/List.vo      theories/Lists/PolyListSyntax.vo \
-        theories/Lists/ListSet.vo   theories/Lists/Streams.vo \
-        theories/Lists/PolyList.vo  theories/Lists/TheoryList.vo
+LISTSVO=\
+ theories/Lists/List.vo		theories/Lists/PolyListSyntax.vo \
+ theories/Lists/ListSet.vo   	theories/Lists/Streams.vo \
+ theories/Lists/PolyList.vo  	theories/Lists/TheoryList.vo
 
-SETSVO=theories/Sets/Classical_sets.vo     theories/Sets/Permut.vo \
+SETSVO=\
+ theories/Sets/Classical_sets.vo    theories/Sets/Permut.vo \
  theories/Sets/Constructive_sets.vo theories/Sets/Powerset.vo \
  theories/Sets/Cpo.vo               theories/Sets/Powerset_Classical_facts.vo \
  theories/Sets/Ensembles.vo         theories/Sets/Powerset_facts.vo \
@@ -607,65 +628,68 @@ SETSVO=theories/Sets/Classical_sets.vo     theories/Sets/Permut.vo \
  theories/Sets/Multiset.vo          theories/Sets/Relations_3_facts.vo \
  theories/Sets/Partial_Order.vo     theories/Sets/Uniset.vo
 
-INTMAPVO=theories/IntMap/Adalloc.vo    theories/IntMap/Mapcanon.vo \
-theories/IntMap/Addec.vo      theories/IntMap/Mapcard.vo \
-theories/IntMap/Addr.vo       theories/IntMap/Mapc.vo \
-theories/IntMap/Adist.vo      theories/IntMap/Mapfold.vo \
-theories/IntMap/Allmaps.vo    theories/IntMap/Mapiter.vo \
-theories/IntMap/Fset.vo       theories/IntMap/Maplists.vo \
-theories/IntMap/Lsort.vo      theories/IntMap/Mapsubset.vo \
-theories/IntMap/Mapaxioms.vo  theories/IntMap/Map.vo \
+INTMAPVO=\
+ theories/IntMap/Adalloc.vo    theories/IntMap/Mapcanon.vo \
+ theories/IntMap/Addec.vo      theories/IntMap/Mapcard.vo \
+ theories/IntMap/Addr.vo       theories/IntMap/Mapc.vo \
+ theories/IntMap/Adist.vo      theories/IntMap/Mapfold.vo \
+ theories/IntMap/Allmaps.vo    theories/IntMap/Mapiter.vo \
+ theories/IntMap/Fset.vo       theories/IntMap/Maplists.vo \
+ theories/IntMap/Lsort.vo      theories/IntMap/Mapsubset.vo \
+ theories/IntMap/Mapaxioms.vo  theories/IntMap/Map.vo \
 
+RELATIONSVO=\
+ theories/Relations/Newman.vo \
+ theories/Relations/Operators_Properties.vo \
+ theories/Relations/Relation_Definitions.vo \
+ theories/Relations/Relation_Operators.vo \
+ theories/Relations/Relations.vo \
+ theories/Relations/Rstar.vo
 
-RELATIONSVO=theories/Relations/Newman.vo \
-            theories/Relations/Operators_Properties.vo \
-            theories/Relations/Relation_Definitions.vo \
-            theories/Relations/Relation_Operators.vo \
-            theories/Relations/Relations.vo \
-            theories/Relations/Rstar.vo
-
-WELLFOUNDEDVO=theories/Wellfounded/Disjoint_Union.vo \
-	      theories/Wellfounded/Inclusion.vo \
-              theories/Wellfounded/Inverse_Image.vo \
-	      theories/Wellfounded/Lexicographic_Exponentiation.vo \
-	      theories/Wellfounded/Transitive_Closure.vo \
-	      theories/Wellfounded/Union.vo \
-	      theories/Wellfounded/Wellfounded.vo \
-	      theories/Wellfounded/Well_Ordering.vo \
-	      theories/Wellfounded/Lexicographic_Product.vo 
+WELLFOUNDEDVO=\
+ theories/Wellfounded/Disjoint_Union.vo \
+ theories/Wellfounded/Inclusion.vo \
+ theories/Wellfounded/Inverse_Image.vo \
+ theories/Wellfounded/Lexicographic_Exponentiation.vo \
+ theories/Wellfounded/Transitive_Closure.vo \
+ theories/Wellfounded/Union.vo \
+ theories/Wellfounded/Wellfounded.vo \
+ theories/Wellfounded/Well_Ordering.vo \
+ theories/Wellfounded/Lexicographic_Product.vo 
 
 REALSBASEVO=\
-	theories/Reals/Rdefinitions.vo theories/Reals/Rsyntax.vo \
-	theories/Reals/Raxioms.vo      theories/Reals/RIneq.vo \
-	theories/Reals/DiscrR.vo       theories/Reals/Rbase.vo \
+ theories/Reals/Rdefinitions.vo theories/Reals/Rsyntax.vo \
+ theories/Reals/Raxioms.vo      theories/Reals/RIneq.vo \
+ theories/Reals/DiscrR.vo       theories/Reals/Rbase.vo \
 
 REALS_basic= 
 
-REALS_all=theories/Reals/R_Ifp.vo \
-	theories/Reals/Rbasic_fun.vo   theories/Reals/R_sqr.vo \
-	theories/Reals/SplitAbsolu.vo  theories/Reals/SplitRmult.vo \
-	theories/Reals/ArithProp.vo    theories/Reals/Rfunctions.vo \
-	theories/Reals/Rseries.vo      theories/Reals/SeqProp.vo \
-	theories/Reals/Rcomplete.vo     theories/Reals/PartSum.vo \
-	theories/Reals/AltSeries.vo    theories/Reals/Binomial.vo \
-	theories/Reals/Rsigma.vo       theories/Reals/Rprod.vo \
-	theories/Reals/Cauchy_prod.vo  theories/Reals/Alembert.vo \
-	theories/Reals/SeqSeries.vo    theories/Reals/Rtrigo_fun.vo \
-	theories/Reals/Rtrigo_def.vo   theories/Reals/Rtrigo_alt.vo \
-	theories/Reals/Cos_rel.vo      theories/Reals/Cos_plus.vo \
-	theories/Reals/Rtrigo.vo       theories/Reals/Rlimit.vo \
-	theories/Reals/Rderiv.vo       theories/Reals/RList.vo \
-	theories/Reals/Ranalysis1.vo   theories/Reals/Ranalysis2.vo \
-	theories/Reals/Ranalysis3.vo   theories/Reals/Rtopology.vo \
-	theories/Reals/MVT.vo          theories/Reals/PSeries_reg.vo \
-	theories/Reals/Exp_prop.vo     theories/Reals/Rtrigo_reg.vo \
-	theories/Reals/Rsqrt_def.vo    theories/Reals/R_sqrt.vo \
-	theories/Reals/Rtrigo_calc.vo  theories/Reals/Rgeom.vo \
-	theories/Reals/Sqrt_reg.vo     theories/Reals/Ranalysis4.vo \
-	theories/Reals/Rpower.vo       theories/Reals/Ranalysis.vo \
-	theories/Reals/NewtonInt.vo    theories/Reals/RiemannInt_SF.vo \
-	theories/Reals/RiemannInt.vo   theories/Reals/Integration.vo \
-	theories/Reals/Reals.vo
+REALS_all=\
+ theories/Reals/R_Ifp.vo \
+ theories/Reals/Rbasic_fun.vo   theories/Reals/R_sqr.vo \
+ theories/Reals/SplitAbsolu.vo  theories/Reals/SplitRmult.vo \
+ theories/Reals/ArithProp.vo    theories/Reals/Rfunctions.vo \
+ theories/Reals/Rseries.vo      theories/Reals/SeqProp.vo \
+ theories/Reals/Rcomplete.vo    theories/Reals/PartSum.vo \
+ theories/Reals/AltSeries.vo    theories/Reals/Binomial.vo \
+ theories/Reals/Rsigma.vo       theories/Reals/Rprod.vo \
+ theories/Reals/Cauchy_prod.vo  theories/Reals/Alembert.vo \
+ theories/Reals/SeqSeries.vo    theories/Reals/Rtrigo_fun.vo \
+ theories/Reals/Rtrigo_def.vo   theories/Reals/Rtrigo_alt.vo \
+ theories/Reals/Cos_rel.vo      theories/Reals/Cos_plus.vo \
+ theories/Reals/Rtrigo.vo       theories/Reals/Rlimit.vo \
+ theories/Reals/Rderiv.vo       theories/Reals/RList.vo \
+ theories/Reals/Ranalysis1.vo   theories/Reals/Ranalysis2.vo \
+ theories/Reals/Ranalysis3.vo   theories/Reals/Rtopology.vo \
+ theories/Reals/MVT.vo          theories/Reals/PSeries_reg.vo \
+ theories/Reals/Exp_prop.vo     theories/Reals/Rtrigo_reg.vo \
+ theories/Reals/Rsqrt_def.vo    theories/Reals/R_sqrt.vo \
+ theories/Reals/Rtrigo_calc.vo  theories/Reals/Rgeom.vo \
+ theories/Reals/Sqrt_reg.vo     theories/Reals/Ranalysis4.vo \
+ theories/Reals/Rpower.vo       theories/Reals/Ranalysis.vo \
+ theories/Reals/NewtonInt.vo    theories/Reals/RiemannInt_SF.vo \
+ theories/Reals/RiemannInt.vo   theories/Reals/Integration.vo \
+ theories/Reals/Reals.vo
 
 REALSVO=$(REALSBASEVO) $(REALS_$(REALS))
 
@@ -673,14 +697,11 @@ ALLREALS=$(REALSBASEVO) $(REALS_all)
 
 SETOIDSVO=theories/Setoids/Setoid.vo
 
-THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
+THEORIESVO = $(INITVO) $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
              $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) \
 	     $(REALSVO) $(SETOIDSVO) $(SORTINGVO)
 
-THEORIESLIGHTVO = $(LOGICVO) $(ARITHVO)
-
-$(THEORIESVO): states/initial.coq
-$(THEORIESLIGHTVO): states/initial.coq
+THEORIESLIGHTVO = $(INITVO) $(LOGICVO) $(ARITHVO)
 
 theories: $(THEORIESVO)
 theories-light: $(THEORIESLIGHTVO)
@@ -708,6 +729,20 @@ sorting: $(SORTINGVO)
 noreal: logic arith bool zarith lists sets intmap relations wellfounded \
 	setoids sorting
 
+NEWINITV=$(INITVO:%.vo=new%.v)
+NEWTHEORIESV=$(THEORIESVO:%.vo=new%.v)
+NEWCONTRIBV=$(CONTRIBVO:%.vo=new%.v)
+
+translation:: $(NEWTHEORIESV) $(NEWCONTRIBV)
+
+NEWINITVO=$(INITVO:%.vo=new%.vo)
+NEWTHEORIESVO=$(THEORIESVO:%.vo=new%.vo)
+NEWCONTRIBVO=$(CONTRIBVO:%.vo=new%.vo)
+
+newinit:: $(NEWINITVO)
+newtheories:: $(NEWTHEORIESVO)
+newcontrib:: $(NEWCONTRIBVO) $(CONTRIBCMO)
+
 # globalizations (for coqdoc)
 
 glob.dump::
@@ -723,50 +758,57 @@ clean::
 # contribs
 ###########################################################################
 
-CORRECTNESSVO=contrib/correctness/Arrays.vo				\
-	contrib/correctness/Correctness.vo				\
-	contrib/correctness/Exchange.vo					\
-	contrib/correctness/ArrayPermut.vo				\
-	contrib/correctness/ProgBool.vo contrib/correctness/ProgInt.vo	\
-	contrib/correctness/Sorted.vo	contrib/correctness/Tuples.vo   
-#	contrib/correctness/ProgramsExtraction.vo			
+CORRECTNESSVO=\
+ contrib/correctness/Arrays.vo					\
+ contrib/correctness/Correctness.vo				\
+ contrib/correctness/Exchange.vo				\
+ contrib/correctness/ArrayPermut.vo				\
+ contrib/correctness/ProgBool.vo contrib/correctness/ProgInt.vo	\
+ contrib/correctness/Sorted.vo	contrib/correctness/Tuples.vo   
+# contrib/correctness/ProgramsExtraction.vo			
 
-OMEGAVO = contrib/omega/Omega.vo
+OMEGAVO=\
+ contrib/omega/Omega.vo
 
-ROMEGAVO = contrib/romega/ReflOmegaCore.vo contrib/romega/ROmega.vo 
+ROMEGAVO=\
+ contrib/romega/ReflOmegaCore.vo contrib/romega/ROmega.vo 
 
-RINGVO = contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
-         contrib/ring/Ring_theory.vo    contrib/ring/Ring.vo \
-         contrib/ring/ZArithRing.vo     contrib/ring/Ring_abstract.vo \
-         contrib/ring/Quote.vo		contrib/ring/Setoid_ring_normalize.vo \
-	 contrib/ring/Setoid_ring.vo	contrib/ring/Setoid_ring_theory.vo
+RINGVO=\
+ contrib/ring/ArithRing.vo      contrib/ring/Ring_normalize.vo \
+ contrib/ring/Ring_theory.vo    contrib/ring/Ring.vo \
+ contrib/ring/ZArithRing.vo     contrib/ring/Ring_abstract.vo \
+ contrib/ring/Quote.vo		contrib/ring/Setoid_ring_normalize.vo \
+ contrib/ring/Setoid_ring.vo	contrib/ring/Setoid_ring_theory.vo
 
-FIELDVO = contrib/field/Field_Compl.vo     contrib/field/Field_Theory.vo \
-          contrib/field/Field_Tactic.vo    contrib/field/Field.vo
+FIELDVO=\
+ contrib/field/Field_Compl.vo     contrib/field/Field_Theory.vo \
+ contrib/field/Field_Tactic.vo    contrib/field/Field.vo
 
-XMLVO = 
+XMLVO= 
 
-INTERFACEV0 = contrib/interface/Centaur.vo
+INTERFACEVO= # contrib/interface/Centaur.vo
 
-INTERFACERC = contrib/interface/vernacrc
+INTERFACERC= contrib/interface/vernacrc
 
-FOURIERVO = contrib/fourier/Fourier_util.vo    contrib/fourier/Fourier.vo
+FOURIERVO=\
+ contrib/fourier/Fourier_util.vo    contrib/fourier/Fourier.vo
 
-FUNINDVO = 
+FUNINDVO= 
 
-JPROVERVO = 
+JPROVERVO= 
 
-CCVO = contrib/cc/CC.vo
+CCVO=\
+ contrib/cc/CC.vo
 
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
-	$(BESTCOQTOP) -v7 -boot -byte  $(COQOPTS) -compile $*
+	$(BESTCOQTOP) -translate -no-strict -boot -byte $(COQOPTS) -compile $*
 
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
-	$(BESTCOQTOP) -v7 -boot -byte  $(COQOPTS) -compile $*
+	$(BESTCOQTOP) -translate -no-strict -boot -byte  $(COQOPTS) -compile $*
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(CORRECTNESSVO) $(FOURIERVO) \
-	    $(JPROVERVO) $(INTERFACEV0) $(CCVO) $(FUNINDVO)
+	    $(JPROVERVO) $(INTERFACEVO) $(CCVO) $(FUNINDVO)
 
 $(CONTRIBVO): states/initial.coq
 
@@ -883,9 +925,7 @@ FULLCOQLIB=$(COQINSTALLPREFIX)$(COQLIB)
 FULLMANDIR=$(COQINSTALLPREFIX)$(MANDIR)
 FULLEMACSLIB=$(COQINSTALLPREFIX)$(EMACSLIB)
 
-install: install8
-
-install8: install-$(BEST) install-binaries install-library8 install-manpages
+install: install-$(BEST) install-binaries install-library install-manpages
 
 install7: install-$(BEST) install-binaries install-library7 install-manpages
 
@@ -915,15 +955,13 @@ install-ide-opt:
 	cp $(COQIDEBYTE) $(COQIDEOPT) $(FULLBINDIR)
 	cd $(FULLBINDIR); ln -sf coqide.opt$(EXE) coqide$(EXE)
 
-LIBFILES=$(INITVO) $(THEORIESVO) $(CONTRIBVO)
-LIBFILESLIGHT=$(INITVO) $(THEORIESLIGHTVO)
+LIBFILES=$(THEORIESVO) $(CONTRIBVO)
+LIBFILESLIGHT=$(THEORIESLIGHTVO)
 
-NEWLIBFILES=$(NEWINITVO) $(NEWTHEORIESVO) $(NEWCONTRIBVO)
-NEWLIBFILESLIGHT=$(NEWINITVO) $(NEWTHEORIESLIGHTVO)
+NEWLIBFILES=$(NEWTHEORIESVO) $(NEWCONTRIBVO)
+NEWLIBFILESLIGHT=$(NEWTHEORIESLIGHTVO)
 
-install-library: install-library7
-
-install-library8:
+install-library:
 	$(MKDIR) $(FULLCOQLIB)
 	for f in $(LIBFILES) $(NEWLIBFILES); do \
 	  $(MKDIR) $(FULLCOQLIB)/`dirname $$f`; \
@@ -937,7 +975,7 @@ install-library8:
 	cp $(IDEFILES) $(FULLIDELIB)
 
 install-library7:
-	$(MAKE) NEWLIBFILES= install-library8
+	$(MAKE) NEWLIBFILES= install-library
 
 install-library-light:
 	$(MKDIR) $(FULLCOQLIB)
@@ -1236,6 +1274,9 @@ dependcoq:: beforedepend
 	$(COQDEP) -coqlib . -R theories Coq -R contrib Coq $(COQINCLUDES) \
 	 $(ALLREALS:.vo=.v) $(ALLVO:.vo=.v) > .depend.coq
 
+.depend.newcoq: .depend.coq Makefile
+	sed -e "s|theories/\([^ ]*\.v\)|newtheories/\1|g" -e "s|contrib/\([^ ]*\.v\)|newcontrib/\1|g" .depend.coq > .depend.newcoq
+
 # Build dependencies ignoring failures in building ml files from ml4 files
 # This is useful to rebuild dependencies when they are strongly corrupted:
 # by making scratchdepend, one gets dependencies OK for .ml files and
@@ -1288,65 +1329,15 @@ ml4clean::
 clean::
 	rm -f $(ML4FILESML)
 
-include .depend
-include .depend.coq
-
-
 # this sets up developper supporting stuff
 devel:	
 	touch .depend.devel
 	$(MAKE) -f dev/Makefile.devel setup-devel
 	$(MAKE) dev/top_printers.cmo
 
-
-############################################################################
-# Entries for new syntax
-############################################################################
-
-# 1. Translate the old syntax files and build new syntax theories hierarchy
-coqlib8-source:: $(BESTCOQTOP)
-	@$(MAKE) SYNTAX="-translate -no-strict" coqlib7
-	@$(MAKE) movenew
-
-movenew::
-	-mv *.v8 theories/Init/
-	for i in theories/*/*.v8 contrib/*/*.v8; do \
-	  if expr $$i : '.*/\*\.v8' > /dev/null ; then continue ; fi ; \
-	  j=new`dirname $$i`/`basename $$i .v8`.v ; \
-	  mkdir -p `dirname $$j` ; \
-	  mv -u -f $$i $$j ; \
-	done
-
-# 2. Compile theories
-coqlib8::
-	$(MAKE) newinit newtheories newcontrib
-
-NEWINITVO=$(INITVO:%.vo=new%.vo)
-NEWTHEORIESVO=$(THEORIESVO:%.vo=new%.vo)
-NEWCONTRIBVO=$(CONTRIBVO:%.vo=new%.vo)
-
-newinit:: $(NEWINITVO)
-newtheories:: $(NEWTHEORIESVO)
-newcontrib:: $(NEWCONTRIBVO) $(CONTRIBCMO)
-
-newtheories/Init/%.vo: $(BESTCOQTOP) newtheories/Init/%.v
-	$(BOOTCOQTOP) -v8 -nois -compile $*
-
-states/initialnew.coq: states/MakeInitialNew.v $(INITVO:%.vo=new%.vo)
-	$(BOOTCOQTOP) -v8 -batch -silent -nois -load-vernac-source states/MakeInitialNew.v -outputstate states/initialnew.coq
-
-
-newcontrib/%.vo: newcontrib/%.v states/initialnew.coq
-	$(BOOTCOQTOP) -v8 -compile newcontrib/$*
-newtheories/%.vo: newtheories/%.v states/initialnew.coq
-	$(BOOTCOQTOP) -v8 -compile newtheories/$*
-
-# Dependencies
-.depend.newcoq: .depend.coq Makefile
-	sed -e "s|theories/\([^ ]*\.v\)|newtheories/\1|g" -e "s|contrib/\([^ ]*\.v\)|newcontrib/\1|g" .depend.coq > .depend.newcoq
-
+include .depend
+include .depend.coq
 include .depend.newcoq
 
 clean::
-	rm -f bin/coqtopnew.byte$(EXE) bin/coqtopnew.opt$(EXE)
 	rm -fr *.v8 newtheories newcontrib
