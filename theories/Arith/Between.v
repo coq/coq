@@ -154,12 +154,12 @@ Absurd (exists k l); Auto with arith.
 Apply in_int_exists with l'; Auto with arith.
 Qed.
 
-Inductive nth [init:nat] : nat->nat->Prop
-  := nth_O : (nth init init O)
-  | nth_S : (k,l:nat)(n:nat)(nth init k n)->(between (S k) l)
-                        ->(Q l)->(nth init l (S n)).
+Inductive P_nth [init:nat] : nat->nat->Prop
+  := nth_O : (P_nth init init O)
+  | nth_S : (k,l:nat)(n:nat)(P_nth init k n)->(between (S k) l)
+                        ->(Q l)->(P_nth init l (S n)).
 
-Lemma nth_le : (init,l,n:nat)(nth init l n)->(le init l).
+Lemma nth_le : (init,l,n:nat)(P_nth init l n)->(le init l).
 Proof.
 NewInduction 1; Intros; Auto with arith.
 Apply le_trans with (S k); Auto with arith.
