@@ -27,27 +27,13 @@ let current_module = ref (id_of_string "")
 
 let is_construct = function ConstructRef _ -> true | _ -> false 
 
-let qualid_of_dirpath d = 
-  let dir,id = split_dirpath d in 
-  make_qualid dir id 
+let long_module r = 
+  match modpath (kn_of_r r) with 
+    | MPfile d -> d
+    | _ -> anomaly "TODO: extraction not ready for true modules"
 
-(* From a valid module dirpath [d], we check if [r] belongs to this module. *)
-      
-let is_long_module d r = 
-  let dir = repr_dirpath d 
-  and dir' = repr_dirpath (fst (decode_kn (kn_of_r r))) in 
-  let l = List.length dir 
-  and l' = List.length dir' in 
-  if l' < l then false 
-  else dir = snd (list_chop (l'-l) dir')
-
-(* NB: [library_part r] computes the dirpath of the module of the global 
-   reference [r]. The difficulty comes from the possible section names 
-   at the beginning of the dirpath (due to Remark). *)
-
-let short_module r = 
-  snd (split_dirpath (library_part r))
-
+let short_module r = List.hd (repr_dirpath (long_module r))
+			    
 let check_ml r d = 
   if to_inline r then 
     try 
@@ -143,11 +129,8 @@ module ModularParams = struct
   let globals () = !global_ids 
 
   let clash r id = 
-    try 
-      let _ = locate (make_qualid (fst (decode_kn (kn_of_r r))) id)
-      in true
-    with _ -> false
-
+    exists_cci (make_path (dirpath (sp_of_global None r)) id)
+      
   let rename_global_id r id id' prefix =
     let id' = 
       if (Idset.mem id' !keywords) || (id <> id' && clash r id') then 

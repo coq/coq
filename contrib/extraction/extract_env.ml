@@ -46,10 +46,11 @@ let clash_error sn n1 n2 =
      fnl () ++ str "This is not allowed in ML. Please do some renaming first.")
     
 let check_r m sm r = 
-  let rm = String.capitalize (string_of_id (short_module r)) in 
-  if rm = sm && not (is_long_module m r) 
-  then clash_error sm m (library_part r)
-
+  let rlm = long_module r in 
+  let rsm = List.hd (repr_dirpath rlm) in 
+  if (String.capitalize (string_of_id rsm)) = sm && m <> rlm
+  then clash_error sm m rlm
+    
 let check_decl m sm = function 
   | Dterm (r,_) -> check_r m sm r 
   | Dtype (r,_,_) -> check_r m sm r
@@ -274,14 +275,14 @@ let extraction_file f vl =
   \verb!Extraction Module! [M]. *) 
 
 let decl_in_m m = function 
-  | Dterm (r,_) -> is_long_module m r
-  | Dtype (r,_,_) -> is_long_module m r
-  | Dind ((_,r,_)::_, _) -> is_long_module m r 
+  | Dterm (r,_) -> m = long_module r
+  | Dtype (r,_,_) -> m = long_module r
+  | Dind ((_,r,_)::_, _) -> m = long_module r 
   | Dind ([],_) -> false
-  | DdummyType r -> is_long_module m r
-  | DcustomTerm (r,_) ->  is_long_module m r
-  | DcustomType (r,_) ->  is_long_module m r
-  | Dfix (rv,_) -> is_long_module m rv.(0)
+  | DdummyType r -> m = long_module r
+  | DcustomTerm (r,_) ->  m = long_module r
+  | DcustomType (r,_) ->  m = long_module r
+  | Dfix (rv,_) -> m = long_module rv.(0)
 
 let module_file_name m = match lang () with 
   | Ocaml -> (String.uncapitalize (string_of_id m)) ^ ".ml"

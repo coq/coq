@@ -752,10 +752,10 @@ let inline_test t =
   not (is_fix t) && (is_constr t || (ml_size t < 12 && is_not_strict t))
 
 let manual_inline_list = 
-  let dir =  dirpath_of_string "Coq.Init.Wf" 
-  in List.map (fun s -> encode_kn dir (id_of_string s))
-       [ "Acc_rec" ; "Acc_rect" ; 
-	 "well_founded_induction" ; "well_founded_induction_type" ]
+  let dir = dirpath_of_string "Coq.Init.Wf" in 
+  List.map (fun s -> (encode_kn dir (id_of_string s)))
+    [ "well_founded_induction"; 
+      "well_founded_induction_type" ]
 
 let manual_inline = function 
   | ConstRef c -> List.mem c manual_inline_list
@@ -839,7 +839,7 @@ and optimize_Dfix prm r t b l =
 	  else optimize prm l
 	else 
 	  let v = try 
-	    let d,_ = decode_kn (kn_of_r r) in 
+	    let d = dirpath (sp_of_global None r) in 
 	    Array.map (fun id -> locate (make_qualid d id)) f 
 	  with Not_found -> raise Impossible 
 	  in 
