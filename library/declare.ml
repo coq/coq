@@ -226,7 +226,6 @@ let open_inductive (sp,mie) =
   List.iter (fun (sp, ref) -> Nametab.push 0 (restrict_path 0 sp) ref) names
 
 let dummy_one_inductive_entry mie = {
-  mind_entry_nparams = 0;
   mind_entry_params = [];
   mind_entry_typename = mie.mind_entry_typename;
   mind_entry_arity = mkProp;

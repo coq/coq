@@ -46,7 +46,7 @@ val type_rec_branches : bool -> env -> evar_map -> inductive_type
 val make_rec_branch_arg : 
   env -> evar_map ->
     int * ('b * constr) option array * int ->
-    constr -> constructor_summary -> recarg list -> constr
+    constr -> constructor_summary -> wf_paths list -> constr
 
 (* *)
 val declare_eliminations : mutual_inductive -> unit

@@ -18,6 +18,7 @@ open Declarations
 open Environ
 open Reductionops
 open Inductive
+open Inductiveops
 open Instantiate
 open Miniml
 open Table
@@ -620,8 +621,7 @@ and abstract_constructor cp  =
 (* Extraction of a case *)
 
 and extract_case env ctx ip c br = 
-  let (mib,mip) = Global.lookup_inductive ip in
-  let ni = Array.map List.length (mip.mind_listrec) in
+  let ni = mis_constr_nargs ip in
   (* [ni]: number of arguments without parameters in each branch *)
   (* [br]: bodies of each branch (in functional form) *)
   let extract_branch j b = 	  

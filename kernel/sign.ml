@@ -20,12 +20,18 @@ type named_context = named_declaration list
 
 let empty_named_context = []
 
-let add_named_decl d sign = d::sign
 
 let rec lookup_named id = function
   | (id',_,_ as decl) :: _ when id=id' -> decl
   | _ :: sign -> lookup_named id sign
   | [] -> raise Not_found
+
+  
+let add_named_decl (id,_,_ as d) sign =
+  try
+    let _ = lookup_named id sign in 
+    failwith ("identifier "^string_of_id id^" already defined")
+  with _ -> d::sign
 
 let named_context_length = List.length
 
@@ -65,6 +71,13 @@ let lookup_rel n sign =
   lookrec (n,sign)
 
 let rel_context_length = List.length
+
+let rel_context_nhyps hyps =
+  let rec nhyps acc = function
+    | [] -> acc
+    | (_,None,_)::hyps -> nhyps (1+acc) hyps
+    | (_,Some _,_)::hyps -> nhyps acc hyps in
+  nhyps 0 hyps
 
 let fold_rel_context f l ~init:x = List.fold_right f l x
 let fold_rel_context_reverse f ~init:x l = List.fold_left f x l

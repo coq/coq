@@ -15,6 +15,7 @@ open Names
 open Term
 open Declarations
 open Inductive
+open Inductiveops
 open Environ
 open Sign
 open Declare
@@ -34,16 +35,8 @@ let encode_inductive ref =
         errorlabstrm "indsp_of_id"
           (pr_global_env (Global.env()) ref ++
 	     str" is not an inductive type") in
-  let (mib,mip) = Global.lookup_inductive indsp in
-  let constr_lengths = Array.map List.length mip.mind_listrec in
+  let constr_lengths = mis_constr_nargs indsp in
   (indsp,constr_lengths)
-
-let constr_nargs indsp =
-  let (mib,mip) = Global.lookup_inductive indsp in
-  let nparams = mip.mind_nparams in
-  Array.map
-    (fun t -> List.length (fst (decompose_prod_assum t)) - nparams)
-    mip.mind_nf_lc
 
 (* Parameterization of the translation from constr to ast      *)
 
@@ -110,10 +103,10 @@ module PrintingLet = Goptions.MakeIdentTable(PrintingCasesLet)
 
 let force_let ci =
   let indsp = ci.ci_ind in
-  let lc = constr_nargs indsp in PrintingLet.active (indsp,lc)
+  let lc = mis_constr_nargs indsp in PrintingLet.active (indsp,lc)
 let force_if ci =
   let indsp = ci.ci_ind in
-  let lc = constr_nargs indsp in PrintingIf.active (indsp,lc)
+  let lc = mis_constr_nargs indsp in PrintingIf.active (indsp,lc)
 
 (* Options for printing or not wildcard and synthetisable types *)
 
@@ -235,7 +228,7 @@ let rec detype tenv avoid env t =
 	let indsp = annot.ci_ind in
         let considl = annot.ci_pp_info.cnames in
         let k = annot.ci_pp_info.ind_nargs in
-	let consnargsl = constr_nargs indsp in
+	let consnargsl = mis_constr_nargs indsp in
 	let pred = 
 	  if synth_type & computable p k & considl <> [||] then
 	    None

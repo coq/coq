@@ -88,8 +88,7 @@ let sig_n n =
   Declare.declare_mind 
     { mind_entry_finite = true;
       mind_entry_inds = 
-	[ { mind_entry_nparams = succ n;
-	    mind_entry_params = params;
+	[ { mind_entry_params = params;
 	    mind_entry_typename = id;
 	    mind_entry_arity = mkSet;
 	    mind_entry_consnames = [ cname ];

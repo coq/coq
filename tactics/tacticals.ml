@@ -259,8 +259,7 @@ let compute_construtor_signatures isrec (_,k as ity) =
   let rec analrec c recargs =
     match kind_of_term c, recargs with 
     | Prod (_,_,c), recarg::rest ->
-	  (match recarg with
-	    | Param _ -> false :: (analrec c rest)
+	  (match dest_recarg recarg with
 	    | Norec   -> false :: (analrec c rest)
 	    | Imbr _  -> false :: (analrec c rest)
 	    | Mrec j  -> (isrec & j=k) :: (analrec c rest))
@@ -272,7 +271,7 @@ let compute_construtor_signatures isrec (_,k as ity) =
   let n = mip.mind_nparams in
   let lc =
     Array.map (fun c -> snd (decompose_prod_n_assum n c)) mip.mind_nf_lc in
-  let lrecargs = mip.mind_listrec in
+  let lrecargs = dest_subterms mip.mind_recargs in
   array_map2 analrec lc lrecargs
 
 let case_sign = compute_construtor_signatures false

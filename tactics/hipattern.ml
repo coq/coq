@@ -64,7 +64,7 @@ let match_with_conjunction t =
     | Ind ind -> 
 	let (mib,mip) = Global.lookup_inductive ind in
 	if (Array.length mip.mind_consnames = 1)
-	  && (not (mis_is_recursive (mib,mip)))
+	  && (not (mis_is_recursive (ind,mib,mip)))
           && (mip.mind_nrealargs = 0)
         then 
 	  Some (hdapp,args)
@@ -81,12 +81,10 @@ let match_with_disjunction t =
   let (hdapp,args) = decompose_app t in 
   match kind_of_term hdapp with
     | Ind ind  ->
-	let (mib,mip) = Global.lookup_inductive ind in
-        let constr_types = mip.mind_nf_lc in
-        let only_one_arg c =
-	  ((nb_prod c) - mip.mind_nparams) = 1 in 
-	if (array_for_all only_one_arg constr_types) &&
-          (not (mis_is_recursive (mib,mip)))
+        let car = mis_constr_nargs ind in
+	if array_for_all (fun ar -> ar = 1) car &&
+	   (let (mib,mip) = Global.lookup_inductive ind in
+            not (mis_is_recursive (ind,mib,mip)))
         then 
 	  Some (hdapp,args)
         else 

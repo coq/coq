@@ -71,13 +71,19 @@ val add_mind :
 (* raises [Not_found] if the index points out of the context *)
 val lookup_rel : int -> env -> rel_declaration
 
+val evaluable_rel_decl : env -> int -> bool
+
 (* Looks up in the context of local vars referred by names ([named_context]) *)
 (* raises [Not_found] if the identifier is not found *)
 val lookup_named : variable -> env -> named_declaration
 
+val evaluable_named_decl : env -> variable -> bool
+
 (* Looks up in the context of global constant names *)
 (* raises [Not_found] if the required path is not found *)
 val lookup_constant : constant -> env -> constant_body
+
+val evaluable_constant : env -> constant -> bool
 
 (*s [constant_value env c] raises [NotEvaluableConst Opaque] if
    [c] is opaque and [NotEvaluableConst NoBody] if it has no
@@ -101,14 +107,6 @@ val global_vars_set : env -> constr -> Idset.t
 val vars_of_global : env -> constr -> identifier list
 
 val keep_hyps : env -> Idset.t -> section_context
-
-(* A constant is defined when it has a body (theorems do) *)
-val defined_constant : env -> constant -> bool
-(* A constant is evaluable when delta reduction applies (theorems don't) *)
-val evaluable_constant : env -> constant -> bool
-
-val evaluable_named_decl : env -> variable -> bool
-val evaluable_rel_decl : env -> int -> bool
 
 (*s Modules. *)
 

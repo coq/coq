@@ -204,8 +204,7 @@ let interp_mutual lparams lnamearconstrs finite =
 	   List.map 
 	     (interp_type_with_implicits sigma ind_env_params ind_impls) bodies
 	 in
-	 { mind_entry_nparams = nparams;
-	   mind_entry_params = params';
+	 { mind_entry_params = params';
 	   mind_entry_typename = name;
 	   mind_entry_arity = ar;
 	   mind_entry_consnames = constrnames;

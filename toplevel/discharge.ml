@@ -96,8 +96,7 @@ let abstract_inductive ids_to_abs hyps inds =
 		| (Name id,Some p,_) -> id, LocalDef p
 		| (Anonymous,_,_) -> anomaly"Unnamed inductive local variable")
 	     params in
-	 { mind_entry_nparams = nparams';
-	   mind_entry_params = params';
+	 { mind_entry_params = params';
 	   mind_entry_typename = a;
 	   mind_entry_arity = short_arity;
 	   mind_entry_consnames = c;

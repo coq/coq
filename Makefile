@@ -57,8 +57,9 @@ CAMLP4EXTENDFLAGS=-I . pa_extend.cmo q_MLast.cmo
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
 COQINCLUDES=          # coqtop includes itself the needed paths
-
 GLOB=   # is "-dump-glob file" when making the doc
+
+BOOTCOQTOP=$(COQTOP) -boot -$(BEST) $(COQINCLUDES) $(GLOB)
 
 ###########################################################################
 # Objects files 
@@ -74,7 +75,7 @@ LIBREP=lib/pp_control.cmo lib/pp.cmo lib/util.cmo \
     lib/hashcons.cmo lib/dyn.cmo lib/system.cmo lib/options.cmo \
     lib/bstack.cmo lib/edit.cmo lib/gset.cmo lib/gmap.cmo \
     lib/tlm.cmo lib/bij.cmo lib/gmapl.cmo lib/profile.cmo lib/explore.cmo \
-    lib/predicate.cmo          # Rem: Cygwin already uses variable LIB 
+    lib/predicate.cmo lib/rtree.cmo  # Rem: Cygwin already uses variable LIB 
 
 KERNEL=kernel/names.cmo kernel/univ.cmo \
        kernel/esubst.cmo kernel/term.cmo kernel/sign.cmo \
@@ -155,8 +156,10 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	lib/util.cmo lib/dyn.cmo lib/gmap.cmo lib/gmapl.cmo \
         lib/predicate.cmo lib/hashcons.cmo lib/profile.cmo \
         lib/system.cmo lib/bstack.cmo lib/edit.cmo lib/options.cmo \
+	lib/rtree.cmo \
         kernel/names.cmo kernel/univ.cmo kernel/esubst.cmo \
-        kernel/term.cmo kernel/sign.cmo kernel/environ.cmo \
+        kernel/term.cmo kernel/sign.cmo kernel/declarations.cmo \
+	kernel/environ.cmo \
 	kernel/closure.cmo kernel/conv_oracle.cmo kernel/reduction.cmo \
 	kernel/type_errors.cmo kernel/inductive.cmo kernel/typeops.cmo \
 	kernel/indtypes.cmo kernel/cooking.cmo kernel/safe_typing.cmo \
@@ -345,7 +348,7 @@ INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/Logic_TypeSyntax.vo
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
-	$(COQTOP) -boot -$(BEST) -R theories Coq -is states/barestate.coq $(GLOB) -compile $*
+	$(BOOTCOQTOP) -is states/barestate.coq -compile $*
 
 init: $(INITVO)
 
@@ -357,13 +360,13 @@ TACTICSVO=tactics/Equality.vo \
 	  tactics/EqDecide.vo tactics/Setoid_replace.vo $(EXTRACTIONVO)
 
 tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
-	$(COQTOP) -boot -$(BEST) $(COQINCLUDES) -is states/barestate.coq -compile $*
+	$(BOOTCOQTOP) -is states/barestate.coq -compile $*
 
 contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
-	$(COQTOP) -boot -$(BEST) $(COQINCLUDES) -is states/barestate.coq -compile $*
+	$(BOOTCOQTOP) -is states/barestate.coq -compile $*
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO) $(BESTCOQTOP)
-	$(BESTCOQTOP) -boot -batch -silent -is states/barestate.coq $(COQINCLUDES) -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+	$(BOOTCOQTOP) -batch -silent -is states/barestate.coq -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 clean::
 	rm -f states/*.coq
@@ -523,10 +526,10 @@ INTERFACEV0 = contrib/interface/Centaur.vo contrib/interface/vernacrc
 FOURIERVO = contrib/fourier/Fourier_util.vo    contrib/fourier/Fourier.vo
 
 contrib/interface/Centaur.vo: contrib/interface/Centaur.v $(INTERFACE)
-	$(COQTOP) -boot -byte  $(COQINCLUDES) -compile $*
+	$(COQTOP) -boot -byte $(COQINCLUDES) -compile $*
 
 contrib/interface/AddDad.vo: contrib/interface/AddDad.v $(INTERFACE) states/initial.coq
-	$(COQTOP) -boot -byte  $(COQINCLUDES) -compile $*
+	$(COQTOP) -boot -byte $(COQINCLUDES) -compile $*
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(CORRECTNESSVO)\
@@ -819,7 +822,7 @@ ML4FILES += lib/pp.ml4 			\
 	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 .v.vo:
-	$(COQTOP) -boot -$(BEST) $(COQINCLUDES) $(GLOB) -compile $*
+	$(BOOTCOQTOP) -compile $*
 
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile

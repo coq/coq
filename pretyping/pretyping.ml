@@ -46,15 +46,15 @@ let transform_rec loc env sigma (pj,c,lf) indt =
   let (indf,realargs) = dest_ind_type indt in
   let (ind,params) = dest_ind_family indf in
   let (mib,mip) = lookup_mind_specif env ind in
+  let recargs = mip.mind_recargs in
   let mI = mkInd ind in
-  let recargs = mip.mind_listrec in
-  let tyi = snd ind in
   let ci = make_default_case_info env ind in
   let nconstr = Array.length mip.mind_consnames in
   if Array.length lf <> nconstr then 
     (let cj = {uj_val=c; uj_type=mkAppliedInd indt} in
      error_number_branches_loc loc env sigma cj nconstr);
-  if mis_is_recursive_subset [tyi] mip then
+  let tyi = snd ind in
+  if mis_is_recursive_subset [tyi] recargs then
     let dep =
       is_dependent_elimination env (nf_evar sigma pj.uj_type) indf in 
     let init_depFvec i = if i = tyi then Some(dep,mkRel 1) else None in
@@ -71,7 +71,7 @@ let transform_rec loc env sigma (pj,c,lf) indt =
              (Indrec.make_rec_branch_arg env sigma
                 (nparams,depFvec,nar+1)
                 f t reca))
-        (Array.map (lift (nar+2)) lf) constrs recargs 
+        (Array.map (lift (nar+2)) lf) constrs (dest_subterms recargs) 
     in 
     let deffix = 
       it_mkLambda_or_LetIn_name env

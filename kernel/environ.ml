@@ -49,16 +49,23 @@ let universes env = env.env_universes
 let named_context env = env.env_named_context
 let rel_context env = env.env_rel_context
 
+(* Access functions. *)
+
+let lookup_rel n env =
+  Sign.lookup_rel n env.env_rel_context
+
+let lookup_named id env =
+  Sign.lookup_named id env.env_named_context
+
+let lookup_constant sp env =
+  Spmap.find sp env.env_globals.env_constants
+
+let lookup_mind sp env =
+  Spmap.find sp env.env_globals.env_inductives
+
 (* Construction functions. *)
 
-let named_context_app f env =
-  { env with
-      env_named_context = f env.env_named_context }
-
-let push_named_decl d   = named_context_app (add_named_decl d)
-let push_named_assum (id,ty) = push_named_decl (id,None,ty)
-let pop_named_decl id         = named_context_app (pop_named_decl id)
-
+(* Rel context *)
 let rel_context_app f env =
   { env with
       env_rel_context = f env.env_rel_context }
@@ -77,16 +84,6 @@ let reset_rel_context env =
   { env with
       env_rel_context = empty_rel_context }
 
-
-
-let fold_named_context f env ~init =
-  snd (Sign.fold_named_context
-	 (fun d (env,e) -> (push_named_decl d env, f env d e))
-         (named_context env) ~init:(reset_context env,init))
-
-let fold_named_context_reverse f ~init env =
-  Sign.fold_named_context_reverse f ~init:init (named_context env) 
-
 let push_rel d   = rel_context_app (add_rel_decl d)
 let push_rel_context ctxt x = fold_rel_context push_rel ctxt ~init:x
 let push_rel_assum (id,ty) = push_rel (id,None,ty)
@@ -102,6 +99,24 @@ let fold_rel_context f env ~init =
 	 (fun d (env,e) -> (push_rel d env, f env d e))
          (rel_context env) ~init:(reset_rel_context env,init))
 
+(* Named context *)
+let named_context_app f env =
+  { env with
+      env_named_context = f env.env_named_context }
+
+let push_named_decl d   = named_context_app (add_named_decl d)
+let push_named_assum (id,ty) = push_named_decl (id,None,ty)
+let pop_named_decl id         = named_context_app (pop_named_decl id)
+
+let fold_named_context f env ~init =
+  snd (Sign.fold_named_context
+	 (fun d (env,e) -> (push_named_decl d env, f env d e))
+         (named_context env) ~init:(reset_context env,init))
+
+let fold_named_context_reverse f ~init env =
+  Sign.fold_named_context_reverse f ~init:init (named_context env) 
+
+(* Universe constraints *)
 let set_universes g env =
   if env.env_universes == g then env else { env with env_universes = g }
 
@@ -111,7 +126,12 @@ let add_constraints c env =
   else 
     { env with env_universes = merge_constraints c env.env_universes }
 
+(* Global constants *)
 let add_constant sp cb env =
+  let _ =
+    try
+      let _ = lookup_constant sp env in failwith "already declared constant"
+    with Not_found -> () in
   let new_constants = Spmap.add sp cb env.env_globals.env_constants in
   let new_locals = (Constant,sp)::env.env_globals.env_locals in
   let new_globals = 
@@ -120,7 +140,12 @@ let add_constant sp cb env =
 	env_locals = new_locals } in
   { env with env_globals = new_globals }
 
+(* Mutual Inductives *)
 let add_mind sp mib env =
+  let _ =
+    try 
+      let _ = lookup_mind sp env in failwith "already defined inductive"
+    with Not_found -> () in
   let new_inds = Spmap.add sp mib env.env_globals.env_inductives in
   let new_locals = (Inductive,sp)::env.env_globals.env_locals in
   let new_globals = 
@@ -128,20 +153,6 @@ let add_mind sp mib env =
 	env_inductives = new_inds;
 	env_locals = new_locals } in
   { env with env_globals = new_globals }
-
-(* Access functions. *)
-
-let lookup_rel n env =
-  Sign.lookup_rel n env.env_rel_context
-
-let lookup_named id env =
-  Sign.lookup_named id env.env_named_context
-
-let lookup_constant sp env =
-  Spmap.find sp env.env_globals.env_constants
-
-let lookup_mind sp env =
-  Spmap.find sp env.env_globals.env_inductives
 
 (* Lookup of section variables *)
 let lookup_constant_variables c env =
@@ -208,13 +219,13 @@ let keep_hyps env needed =
 
 (* Constants *)
 
-(* Not taking opacity into account *)
-let defined_constant env sp =
-  match (lookup_constant sp env).const_body with
-      Some _ -> true
-    | None -> false
+let opaque_constant env sp = (lookup_constant sp env).const_opaque
 
-(* Taking opacity into account *)
+(* constant_type gives the type of a constant *)
+let constant_type env sp =
+  let cb = lookup_constant sp env in
+  cb.const_type  
+
 type const_evaluation_result = NoBody | Opaque
 
 exception NotEvaluableConst of const_evaluation_result
@@ -233,7 +244,7 @@ let constant_opt_value env cst =
 (* A global const is evaluable if it is defined and not opaque *)
 let evaluable_constant env cst =
   try let _  = constant_value env cst in true
-  with NotEvaluableConst _ -> false
+  with Not_found | NotEvaluableConst _ -> false
 
 (* A local const is evaluable if it is defined and not opaque *)
 let evaluable_named_decl env id =
@@ -251,11 +262,6 @@ let evaluable_rel_decl env n =
       | _ -> false
   with Not_found -> 
     false
-
-(* constant_type gives the type of a constant *)
-let constant_type env sp =
-  let cb = lookup_constant sp env in
-  cb.const_type  
 
 (*s Modules (i.e. compiled environments). *)
 

@@ -87,7 +87,6 @@ let w_type_of wc c  =
   type_of (Global.env_of_context wc.it) wc.sigma c
 let w_env     wc    = get_env wc
 let w_hyps    wc    = named_context (get_env wc)
-let w_defined_const wc sp = defined_constant (w_env wc) sp
 let w_defined_evar wc k      = Evd.is_defined (w_Underlying wc) k
 let w_const_value wc         = constant_value (w_env wc)
 let w_conv_x wc m n          = is_conv (w_env wc) (w_Underlying wc) m n

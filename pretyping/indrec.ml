@@ -42,7 +42,6 @@ let mkLambda_string s t c = mkLambda (Name (id_of_string s), t, c)
 
 let mis_make_case_com depopt env sigma (ind,mib,mip) kind =
   let lnamespar = mip.mind_params_ctxt in
-  let nparams = mip.mind_nparams in
   let dep = match depopt with 
     | None -> mip.mind_sort <> (Prop Null)
     | Some d -> d
@@ -133,12 +132,14 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
       | Prod (n,t,c_0) ->
           let (optionpos,rest) = 
 	    match recargs with 
-	      | [] -> None,[] 
-	      | Mrec j :: rest when is_rec -> (depPvect.(j),rest)
-	      | Imbr _ :: rest  -> 
-		  Options.if_verbose warning "Ignoring recursive call"; 
-		  (None,rest) 
-              | _ :: rest -> (None, rest)
+	      | [] -> None,[]
+              | ra::rest ->
+                  (match dest_recarg ra with 
+	            | Mrec j when is_rec -> (depPvect.(j),rest)
+	            | Imbr _  -> 
+		        Options.if_verbose warning "Ignoring recursive call"; 
+		        (None,rest) 
+                    | _ -> (None, rest))
 	  in 
           (match optionpos with 
 	     | None -> 
@@ -201,8 +202,7 @@ let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs =
   let rec process_constr env i f = function
     | (n,None,t as d)::cprest, recarg::rest -> 
         let optionpos = 
-	  match recarg with 
-            | Param i -> None
+	  match dest_recarg recarg with 
             | Norec   -> None
             | Imbr _  -> None
             | Mrec i  -> fvect.(i)
@@ -246,10 +246,9 @@ let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
             (Array.set depPvec (snd indi) (Some(dep,mkRel k));
              assign (k-1) rest)
     in 
-    assign nrec listdepkind  
-  in 
+    assign nrec listdepkind in 
   let recargsvec =
-    Array.map (fun mip -> mip.mind_listrec) mib.mind_packets in
+    Array.map (fun mip -> mip.mind_recargs) mib.mind_packets in
   let make_one_rec p =
     let makefix nbconstruct =
       let rec mrec i ln ltyp ldef = function
@@ -277,7 +276,8 @@ let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
 	    let branches = 
 	      array_map3
 		(make_rec_branch_arg env sigma (nparams,depPvec,nar+1))
-                vecfi constrs recargsvec.(tyi) in
+                vecfi constrs
+                (dest_subterms recargsvec.(tyi)) in
 	    let j = (match depPvec.(tyi) with 
 		       | Some (_,c) when isRel c -> destRel c 
 		       | _ -> assert false) in
@@ -322,7 +322,7 @@ let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
 	    if j = nconstr then 
 	      make_branch env (i+j) rest 
 	    else 
-	      let recarg = recargsvec.(tyi).(j) in
+	      let recarg = (dest_subterms recargsvec.(tyi)).(j) in
 	      let vargs = extended_rel_list (nrec+i+j) lnamespar in
 	      let indf = (indi, vargs) in
 	      let cs = get_constructor (indi,mibi,mipi,vargs) (j+1) in
@@ -348,7 +348,8 @@ let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
     let (indi,mibi,mipi,dep,kind) = List.nth listdepkind p in
     let env' = push_rel_context lnamespar env in
     if mis_is_recursive_subset
-      (List.map (fun (indi,_,_,_,_) -> snd indi) listdepkind) mipi
+      (List.map (fun (indi,_,_,_,_) -> snd indi) listdepkind)
+      mipi.mind_recargs
     then 
       it_mkLambda_or_LetIn_name env (put_arity env' 0 listdepkind) lnamespar
     else 
@@ -461,19 +462,19 @@ let type_rec_branches recursive env sigma indt pj c =
   let IndType (indf,realargs) = indt in
   let p = pj.uj_val in
   let (ind,params) = dest_ind_family indf in
-  let tyi = snd ind in
   let (mib,mip) = lookup_mind_specif env ind in
-  let is_rec = recursive && mis_is_recursive_subset [tyi] mip in
+  let recargs = mip.mind_recargs in
+  let tyi = snd ind in
+  let is_rec = recursive && mis_is_recursive_subset [tyi] recargs in
   let dep = is_dependent_elimination env pj.uj_type indf in 
   let init_depPvec i = if i = tyi then Some(dep,p) else None in
   let depPvec = Array.init mib.mind_ntypes init_depPvec in
   let vargs = Array.of_list params in
   let constructors = get_constructors env indf in
-  let recargs = mip.mind_listrec in
   let lft =
     array_map2
       (type_rec_branch recursive dep env sigma (params,depPvec,0) tyi)
-      constructors recargs in
+      constructors (dest_subterms recargs) in
   (lft,
    if dep then Reduction.beta_appvect p (Array.of_list (realargs@[c])) 
    else Reduction.beta_appvect p (Array.of_list realargs))
@@ -516,7 +517,8 @@ let declare_one_elimination ind =
 (* in case the inductive has a type elimination, generates only one induction scheme, 
    the other ones share the same code with the apropriate type *)
    if List.mem InType kelim then
-    let cte = declare (mindstr^type_suff) (make_elim (new_sort_in_family InType)) None
+    let cte =
+      declare (mindstr^type_suff) (make_elim (new_sort_in_family InType)) None
     in let c = mkConst cte and t = constant_type (Global.env ()) cte
     in List.iter  
 	 (fun (sort,suff) -> 

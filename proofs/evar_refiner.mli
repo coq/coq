@@ -66,7 +66,6 @@ val w_whd_betadeltaiota : named_context sigma -> constr -> constr
 val w_hnf_constr        : named_context sigma -> constr -> constr
 val w_conv_x            : named_context sigma -> constr -> constr -> bool
 val w_const_value       : named_context sigma -> constant -> constr
-val w_defined_const     : named_context sigma -> constant -> bool
 val w_defined_evar      : named_context sigma -> existential_key -> bool
 
 val instantiate : evar -> constr -> tactic

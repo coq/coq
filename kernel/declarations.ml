@@ -31,10 +31,23 @@ type constant_body = {
     information). *)
 
 type recarg = 
-  | Param of int 
   | Norec 
   | Mrec of int 
-  | Imbr of inductive * (recarg list)
+  | Imbr of inductive
+
+type wf_paths = recarg Rtree.t
+
+let mk_norec = Rtree.mk_node Norec [||]
+
+let mk_paths r recargs =
+  Rtree.mk_node r
+    (Array.map (fun l -> Rtree.mk_node Norec (Array.of_list l)) recargs)
+
+let dest_recarg p = fst (Rtree.dest_node p)
+
+let dest_subterms p =
+  let (_,cstrs) = Rtree.dest_node p in
+  Array.map (fun t -> Array.to_list (snd (Rtree.dest_node t))) cstrs
 
 (* [mind_typename] is the name of the inductive; [mind_arity] is
    the arity generalized over global parameters; [mind_lc] is the list
@@ -54,7 +67,7 @@ type one_inductive_body = {
   mind_consnames : identifier array;
   mind_nf_lc : types array; (* constrs and arity with pre-expanded ccl *)
   mind_user_lc : types array;
-  mind_listrec : (recarg list) array;
+  mind_recargs : wf_paths;
  }
 
 type mutual_inductive_body = {

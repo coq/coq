@@ -48,19 +48,20 @@ let mkAppliedInd (IndType ((ind,params), realargs)) =
   applist (mkInd ind,params@realargs)
 
 
-let mis_is_recursive_subset listind mip = 
+let mis_is_recursive_subset listind rarg = 
   let rec one_is_rec rvec = 
     List.exists
-      (function
-	 | Mrec i       -> List.mem i listind 
-         | Imbr(_,lvec) -> one_is_rec lvec
-         | Norec        -> false
-         | Param _      -> false) rvec
+      (fun ra ->
+        match dest_recarg ra with
+	  | Mrec i -> List.mem i listind 
+          | Imbr _ -> array_exists one_is_rec (dest_subterms ra)
+          | Norec  -> false) rvec
   in 
-  array_exists one_is_rec mip.mind_listrec
+  array_exists one_is_rec (dest_subterms rarg)
 
-let mis_is_recursive (mib,mip) =
-  mis_is_recursive_subset (interval 0 (mib.mind_ntypes-1)) mip
+let mis_is_recursive (ind,mib,mip) =
+  mis_is_recursive_subset (interval 0 (mib.mind_ntypes-1))
+    mip.mind_recargs
 
 let mis_nf_constructor_type (ind,mib,mip) j =
   let specif = mip.mind_nf_lc
@@ -69,6 +70,13 @@ let mis_nf_constructor_type (ind,mib,mip) j =
   let make_Ik k = mkInd ((fst ind),ntypes-k-1) in 
   if j > nconstr then error "Not enough constructors in the type";
   substl (list_tabulate make_Ik ntypes) specif.(j-1)
+
+(* Arity of constructors excluding parameters and local defs *)
+let mis_constr_nargs indsp =
+  let (mib,mip) = Global.lookup_inductive indsp in
+  let recargs = dest_subterms mip.mind_recargs in
+  Array.map List.length recargs
+
 
 (* Annotation for cases *)
 let make_case_info env ind style pats_source =

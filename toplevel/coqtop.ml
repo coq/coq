@@ -81,12 +81,17 @@ let add_compile verbose s =
 let compile_files () =
   List.iter (fun (v,f) -> Vernac.compile v f) (List.rev !compile_list)
 
+let re_exec_version = ref ""
+let set_byte () = re_exec_version := "byte"
+let set_opt () = re_exec_version := "opt"
+
 (* Re-exec Coq in bytecode or native code if necessary. [s] is either
    ["byte"] or ["opt"]. Notice that this is possible since the nature of
    the toplevel has already been set in [Mltop] by the main file created
    by coqmktop (see scripts/coqmktop.ml). *)
 
-let re_exec s =
+let re_exec () =
+  let s = !re_exec_version in
   let is_native = (Mltop.get()) = Mltop.Native in
   if (is_native && s = "byte") || ((not is_native) && s = "opt") then begin
     let prog = Sys.argv.(0) in
@@ -125,8 +130,8 @@ let parse_args () =
 
     | "-q" :: rem -> no_load_rc (); parse rem
 
-    | "-opt" :: rem -> re_exec "opt"; parse rem
-    | "-byte" :: rem -> re_exec "byte"; parse rem
+    | "-opt" :: rem -> set_opt(); parse rem
+    | "-byte" :: rem -> set_byte(); parse rem
     | "-full" :: rem -> warning "option -full deprecated\n"; parse rem
 
     | "-batch" :: rem -> set_batch_mode (); parse rem
@@ -217,6 +222,7 @@ let start () =
     Lib.init();
     try
       parse_args ();
+      re_exec ();
       if_verbose print_header ();
       init_load_path ();
       inputstate ();

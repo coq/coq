@@ -46,6 +46,7 @@ val add_rel_decl : rel_declaration -> rel_context -> rel_context
 
 val lookup_rel : int -> rel_context -> rel_declaration
 val rel_context_length : rel_context -> int
+val rel_context_nhyps : rel_context -> int
 
 val push_named_to_rel_context : named_context -> rel_context -> rel_context
 

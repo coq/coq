@@ -1438,19 +1438,18 @@ let is_indhyp p n t =
 (* eliminator _ind, _rec or _rect, or eliminator built by Scheme) *)
 let compute_elim_signature_and_roughly_check elimt mind =
   let (mib,mip) = Global.lookup_inductive mind in
-  let lra = mip.mind_listrec in
+  let lra = dest_subterms mip.mind_recargs in
   let nconstr = Array.length mip.mind_consnames in
   let _,elimt2 = decompose_prod_n mip.mind_nparams elimt in
   let n = nb_prod elimt2 in
   let npred = n - nconstr - mip.mind_nrealargs - 1 in
   let rec check_branch p c ra = match kind_of_term c, ra with
-    | Prod (_,_,c), Declarations.Mrec i :: ra' ->
-	(match kind_of_term c with
-	   | Prod (_,t,c) when is_indhyp (p+1) npred t ->
+    | Prod (_,_,c), r :: ra' ->
+	(match dest_recarg r, kind_of_term c with
+	   | Mrec i, Prod (_,t,c) when is_indhyp (p+1) npred t ->
 	       true::(check_branch (p+2) c ra')
 	   | _ -> false::(check_branch (p+1) c ra'))
     | LetIn (_,_,_,c), ra' -> false::(check_branch (p+1) c ra)
-    | Prod (_,_,c), _ :: ra -> false::(check_branch (p+1) c ra)
     | _, [] -> []
     | _ ->
 	error"Not a recursive eliminator: some constructor argument is lacking"

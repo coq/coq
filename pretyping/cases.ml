@@ -76,7 +76,7 @@ let rec_branch_scheme env isevars (sp,j) recargs cstr =
     match args, recargs with 
       | (name,None,c as d)::rea,(ra::reca) -> 
 	  let d =
- 	    match ra with 
+ 	    match dest_recarg ra with 
 	      | Mrec k when k=j ->
 		  let t = mkExistential isevars env in
 		  mkArrow t
@@ -99,7 +99,7 @@ let branch_scheme env isevars isrec indf =
   if isrec then
     array_map2
       (rec_branch_scheme env isevars ind)
-      mip.mind_listrec cstrs
+      (dest_subterms mip.mind_recargs) cstrs
   else 
     Array.map (norec_branch_scheme env isevars) cstrs
 
@@ -117,8 +117,10 @@ let concl_n env sigma =
 let count_rec_arg j = 
   let rec crec i = function 
     | [] -> i 
-    | (Mrec k::l) -> crec (if k=j then (i+1) else i) l
-    | (_::l) -> crec i l
+    | ra::l ->
+        (match dest_recarg ra with
+            Mrec k -> crec (if k=j then (i+1) else i) l
+          | _ -> crec i l)
   in 
   crec 0
 
@@ -142,7 +144,7 @@ let pred_case_ml env sigma isrec (IndType (indf,realargs)) (i,ft) =
   let pred =
     let (ind,params) = dest_ind_family indf in
     let (mib,mip) = Inductive.lookup_mind_specif env ind in
-    let recargs = mip.mind_listrec in
+    let recargs = dest_subterms mip.mind_recargs in
     if Array.length recargs = 0 then raise (NotInferable MlCaseAbsurd);
     let recargi = recargs.(i) in
     let j = snd ind in (* index of inductive *)

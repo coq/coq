@@ -31,10 +31,16 @@ type constant_body = {
     information). *)
 
 type recarg = 
-  | Param of int 
   | Norec 
   | Mrec of int 
-  | Imbr of inductive * (recarg list)
+  | Imbr of inductive
+
+type wf_paths = recarg Rtree.t
+
+val mk_norec : wf_paths
+val mk_paths : recarg -> wf_paths list array -> wf_paths
+val dest_recarg : wf_paths -> recarg
+val dest_subterms : wf_paths -> wf_paths list array
 
 (* [mind_typename] is the name of the inductive; [mind_arity] is
    the arity generalized over global parameters; [mind_lc] is the list
@@ -54,7 +60,7 @@ type one_inductive_body = {
   mind_consnames : identifier array;
   mind_nf_lc : types array; (* constrs and arity with pre-expanded ccl *)
   mind_user_lc : types array;
-  mind_listrec : (recarg list) array;
+  mind_recargs : wf_paths;
  }
 
 type mutual_inductive_body = {

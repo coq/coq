@@ -33,10 +33,12 @@ val substnl_ind_type :
   constr list -> int -> inductive_type -> inductive_type
 
 val mkAppliedInd : inductive_type -> constr
-val mis_is_recursive_subset : int list -> one_inductive_body -> bool
-val mis_is_recursive : mutual_inductive_body * one_inductive_body -> bool
+val mis_is_recursive_subset : int list -> wf_paths -> bool
+val mis_is_recursive :
+  inductive * mutual_inductive_body * one_inductive_body -> bool
 val mis_nf_constructor_type :
   inductive * mutual_inductive_body * one_inductive_body -> int -> constr
+val mis_constr_nargs : inductive -> int array
 
 type constructor_summary = {
   cs_cstr : constructor;
