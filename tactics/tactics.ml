@@ -1440,8 +1440,10 @@ let induction_from_context isrec style hyp0 gl =
   let (statlists,lhyp0,indhyps,deps) = cook_sign hyp0 indvars env in
   let tmpcl = it_mkNamedProd_or_LetIn (pf_concl gl) deps in
   let lr = compute_elim_signature_and_roughly_check elimt mind in
-  let dephyps = List.rev (List.map (fun (id,_,_) -> id) deps) in
-  let args = List.map mkVar dephyps in
+  let dephyps = List.map (fun (id,_,_) -> id) deps in
+  let args =
+    List.fold_left
+      (fun a (id,b,_) -> if b = None then (mkVar id)::a else a) [] deps in
 
   (* Magistral effet de bord: si hyp0 a des arguments, ceux d'entre
      eux qui ouvrent de nouveaux buts arrivent en premier dans la
@@ -1462,7 +1464,8 @@ let induction_from_context isrec style hyp0 gl =
 	   (induction_tac hyp0 typ0 (elimc,elimt))
 	   (thin (hyp0::indhyps)))
        	(List.map
-	   (induct_discharge style mind statlists hyp0 lhyp0 dephyps) lr)
+	   (induct_discharge style mind statlists hyp0 lhyp0
+              (List.rev dephyps)) lr)
 	tclIDTAC ]
     gl
 
