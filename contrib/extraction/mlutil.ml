@@ -287,20 +287,41 @@ let rec permut_case_fun br acc =
     in br.(i) <- (r,l,t)
   done; ids
 
-(*s Some beta-iota reductions + simplifications. *)
+(*s Generalized iota-reduction. *)
+
+(* Definition of a generalized iota-redex: it's a [MLcase(e,_)] 
+   with [(is_iota_gen e)=true]. *)
+
+let rec is_iota_gen = function 
+  | MLcons _ -> true
+  | MLcase(_,br)-> array_for_all (fun (_,_,t)->is_iota_gen t) br
+  | _ -> false
 
 let constructor_index = function
   | ConstructRef (_,j) -> pred j
   | _ -> assert false
 
+(* Any generalized iota-redex is transformed into beta-redexes. *)
+
+let iota_gen br = 
+  let rec iota k = function 
+    | MLcons (r,a) ->
+	let (_,ids,c) = br.(constructor_index r) in
+	let c = List.fold_right (fun id t -> MLlam (id,t)) ids c in
+	let c = ml_lift k c in 
+	MLapp (c,a)
+    | MLcase(e,br') -> 
+	let new_br = 
+	  Array.map (fun (n,i,c)->(n,i,iota (k+(List.length i)) c)) br'
+	in MLcase(e, new_br)
+    | _ -> assert false
+  in iota 0 
+
+(*s Some beta-iota reductions + simplifications. *)
+
 let is_atomic = function 
   | MLrel _ | MLglob _ | MLexn _ | MLprop | MLarity -> true
   | _ -> false
-
-let all_constr br = 
-  try 
-    Array.iter (function (_,_,MLcons _)-> () | _ -> raise Impossible) br; true
-  with Impossible -> false
 
 let rec simplify o = function
   | MLapp (f, []) ->
@@ -314,6 +335,7 @@ let rec simplify o = function
   | MLcase (e,[|r,[i],c|]) when is_singleton r -> (* Informative singleton *)
       simplify o (MLletin (i,e,c))
   | MLcase (e,br) ->
+      let br = Array.map (fun (n,l,t) -> (n,l,simplify o t)) br in 
       simplify_case o br (simplify o e) 
   | MLletin(_,c,e) when (is_atomic c) || (nb_occur e <= 1) -> 
       (* Expansion of a letin in special cases *)
@@ -347,40 +369,25 @@ and simplify_app o a = function
       in simplify o (MLcase (e,br'))
   | f -> MLapp (f,a)
 
-and simplify_case o br = function 
-  | MLcons (r,a) ->  (* Iota redex *)
-      let (_,ids,c) = br.(constructor_index r) in
-      let c = List.fold_right (fun id t -> MLlam (id,t)) ids c in
-      simplify o (MLapp (c,a))
-  | MLcase(e,br') when o && (all_constr br') -> (* Stupid double case *)
-      let new_br = 
-	Array.map 
-	  (function 
-	     | (n, i, MLcons (r,a))-> 
-		 let (_,ids,c) = br.(constructor_index r) in
-		 let c = List.fold_right 
-			   (fun id t -> MLlam (id,t)) ids c in
-		 let c = ml_lift (List.length i) c in 
-		 (n,i,simplify o (MLapp (c,a)))
-	     | _ -> assert false) br'
-      in MLcase(e, new_br)
-  | e -> 
-      let br = Array.map (fun (n,l,t) -> (n,l,simplify o t)) br in 
-      if not o then MLcase (e,br)
-      else
-	try (* Does a term [f] exist such as each branch is [(f e)] ? *)
-	  let f = check_generalizable_case br in 
-	  simplify o (MLapp (MLlam (anonymous,f),[e]))
-	with Impossible -> 
-	  try (* Is each branch independant of [e] ? *) 
-	    check_constant_case br 
-          with Impossible ->
-	    if (is_atomic e) then (* Swap the case and the lam if possible *)
-	      let ids = no_prop_name (permut_case_fun br []) in 
-	      let n = List.length ids in 
-	      if n = 0 then MLcase (e, br) 
-	      else named_lams (MLcase (ml_lift n e, br)) ids
-	    else MLcase (e, br)
+and simplify_case o br e = 
+  if (not o) then MLcase (e,br)
+  else 
+    if (is_iota_gen e) then (* Generalized iota-redex *)
+      simplify o (iota_gen br e)
+    else 
+      try (* Does a term [f] exist such as each branch is [(f e)] ? *)
+	let f = check_generalizable_case br in 
+	simplify o (MLapp (MLlam (anonymous,f),[e]))
+      with Impossible -> 
+	try (* Is each branch independant of [e] ? *) 
+	  check_constant_case br 
+	with Impossible ->
+	  if (is_atomic e) then (* Swap the case and the lam if possible *)
+	    let ids = no_prop_name (permut_case_fun br []) in 
+	    let n = List.length ids in 
+	    if n = 0 then MLcase (e, br) 
+	    else named_lams (MLcase (ml_lift n e, br)) ids
+	  else MLcase (e, br)
 
 let normalize a = simplify (optim()) (merge_app a)
 
