@@ -1237,3 +1237,13 @@ let rec subst = function
   | [] -> tclIDTAC
   | x :: r -> tclTHEN (subst_one x) (subst r)
 
+let subst_all gl =
+  let eqpat = build_coq_eq_pattern () in
+  let test (_,c) =
+    if not (is_matching eqpat c) then failwith "caught";
+    let (_,x,_) = match_eq eqpat c in
+    match kind_of_term x with Var x -> x | _ -> failwith "caught"
+  in
+  let ids = map_succeed test (pf_hyps_types gl) in
+  let ids = list_uniquize ids in
+  subst ids gl

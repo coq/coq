@@ -219,5 +219,6 @@ END
 
 TACTIC EXTEND Subst
 | [ "Subst" ne_ident_list(l) ] -> [ subst l ]
+| [ "Subst" ] -> [ subst_all ]
 END
 
