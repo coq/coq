@@ -24,15 +24,15 @@ with constr3 :=
 
 Syntax constr
   level 4:
-    sum [<<(sum $t1 $t2)>>] -> [ [<hov 0> $t1:E [0 1] "+" $t2:L ] ]
+    sum [ (sum $t1 $t2) ] -> [ [<hov 0> $t1:E [0 1] "+" $t2:L ] ]
   ;
 
   level 3:
-    product [<<(prod $t1 $t2)>>] -> [ [<hov 0>  $t1:L [0 1] "*" $t2:E ] ]
+    product [ (prod $t1 $t2) ] -> [ [<hov 0>  $t1:L [0 1] "*" $t2:E ] ]
   ;
 
   level 1:
     pair
-      [<<(pair $_ $_ $t3 $t4)>>] -> [ [<hov 0> "(" $t3:E ","[0 1] $t4:E ")" ] ]
-  | fst_imp [<<(fst $_ $_ $t2)>>] -> [ [<hov 0> "(Fst " $t2:E ")"] ]
-  | snd_imp [<<(snd $_ $_ $t2)>>] -> [ [<hov 0> "(Snd " $t2:E ")"] ].
+      [ (pair $_ $_ $t3 $t4) ] -> [ [<hov 0> "(" $t3:E ","[0 1] $t4:E ")" ] ]
+  | fst_imp [ (fst $_ $_ $t2) ] -> [ [<hov 0> "(Fst " $t2:E ")"] ]
+  | snd_imp [ (snd $_ $_ $t2) ] -> [ [<hov 0> "(Snd " $t2:E ")"] ].
