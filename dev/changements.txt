@@ -107,11 +107,19 @@ Changements dans les fonctions :
           initial_sign -> var_context
 
         Pfedit
-	  list_proofs -> get_all_proof_names
-          get_proof -> get_current_proof_name
-          abort_cur_goal -> abort_current_goal
-          get_evmap_sign -> get_goal_context/get_current_goal_context
-          unset_undo -> reset_undo
+	  list_proofs      -> get_all_proof_names
+          get_proof        -> get_current_proof_name
+          abort_goal       -> abort_proof
+          abort_goals      -> abort_all_proofs
+          abort_cur_goal   -> abort_current_proof
+          get_evmap_sign   -> get_goal_context/get_current_goal_context
+          unset_undo       -> reset_undo
+
+        Proof_trees
+          mkGOAL           -> mk_goal
+
+        Declare
+  	  machine_constant ->   declare_constant (+ modifs)
 
 Changements dans les inductifs
 ------------------------------
@@ -133,7 +141,10 @@ Changements dans les grammaires
  termes; aussi les changements suivants "COMMAND"/"CONSTR" dans
  g_vernac.ml4, VARG_COMMAND/VARG_CONSTR dans vernac*.ml*
 
+ . Les constructeurs d'arguments de tactiques IDENTIFIER, CONSTR, ...n
+   passent en minuscule Identifier, Constr, ...
  
+ . Plusieurs parsers ont changé de format (ex: sortarg)
 
 Changements dans le pretty-printing
 -----------------------------------
