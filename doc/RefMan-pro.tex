@@ -81,17 +81,22 @@ memory overflow.
 \end{ErrMsgs}
 
 \begin{Variants}
-\item {\tt Save.}\comindex{Save}\
-  Is equivalent to {\tt Qed}.
-\item {\tt Save {\ident}.}\\
-  Forces the name of the original goal to be {\ident}.
-\item {\tt Save Theorem {\ident}.} \\
-  Is equivalent to {\tt Save {\ident}.}
-\item {\tt Save Remark {\ident}.}\\
-  Defines the proved term as a local constant that will not exist
-  anymore after the end of the current section.
 \item {\tt Defined.}\comindex{Defined} \label{Defined} \\
   Defines the proved term as a transparent constant.
+\item {\tt Save.}\comindex{Save}\\
+  Is equivalent to {\tt Qed}.
+\item {\tt Save {\ident}.}\\ Forces the name of the original goal to
+be {\ident}.  This command (and the following ones) can only be used
+if the original goal has been opened using the {\tt Goal} command.
+\item {\tt Save Theorem {\ident}.} \\
+ {\tt Save Lemma {\ident}.} \\
+  Are equivalent to {\tt Save {\ident}.}
+\item {\tt Save Remark {\ident}.}\\
+  Defines the proved term as a constant that will not be visible
+  without qualification after the end of the current section.
+\item {\tt Save Fact {\ident}.}\\
+  Defines the proved term as a constant that will not be visible
+  without qualification after the closing two levels of sectioning.
 \end{Variants}
 
 \subsection{\tt Theorem {\ident} : {\form}.}\comindex{Theorem}\label{Theorem}
@@ -119,6 +124,11 @@ as a {\tt Theorem}, the name {\ident} is known at all section levels:
   Analogous to {\tt Theorem}, intended to be used in conjunction with
   {\tt Defined} (see \ref{Defined}) in order to define a
   transparent constant.
+\item {\tt Local {\ident} : {\form}.}
+\comindex{Local}\\
+  Analogous to {\tt Definition} except that the definition is turned
+  into a local definition on objects depending on it after closing the
+  current section.
 \end{Variants}
 
 \subsection{\tt Proof {\term}.}\comindex{Proof}
