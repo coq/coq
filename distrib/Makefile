@@ -150,7 +150,7 @@ arch-image: $(TARGZ)
 	(cd $(ARCHBUILDROOT);\
 	 gunzip -c $(DISTRIBDIR)/$(TARGZ) | tar xf -;\
 	 cd $(COQPACKAGE);\
-	 ./configure -prefix /usr -emacslib /usr/local/lib/emacs/site-lisp -opt -reals all;\
+	 ./configure -prefix /usr/local -emacslib /usr/local/lib/emacs/site-lisp -opt -reals all;\
 	 $(MAKECOQ) coq check;\
 	 $(MAKECOQ) -e COQINSTALLPREFIX=$(ARCHINSTALL) BASETEXDIR=$(ARCHINSTALL) install-coq) > arch-image.log 2>&1
 	@echo " .... done"
