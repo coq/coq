@@ -54,14 +54,11 @@ Reserved Notation "x ^ y" (at level 30, right associativity).
 Reserved Notation "( x , y , .. , z )" (at level 0).
 
 (** Notation "{ x }" is reserved and has a special status as component
-    of other notations; it is at level 0 to factor with {x:A|P} etc *)
+    of other notations such as "{ A } + { B }" and "A + { B }" (which
+    are at the same level than "x + y");
+    "{ x }" is at level 0 to factor with "{ x : A | P }" *)
 
 Reserved Notation "{ x }" (at level 0, x at level 99).
-
-(** Notations for sum-types *)
-
-Reserved Notation "{ A } + { B }" (at level 50, left associativity).
-Reserved Notation "A + { B }" (at level 50, left associativity).
 
 (** Notations for sigma-types or subsets *)
 
