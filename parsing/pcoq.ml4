@@ -79,7 +79,7 @@ sig
   val inTacticAtomAstType : raw_atomic_tactic_expr G.Entry.e -> typed_entry
   val inThmTokenAstType : theorem_kind G.Entry.e -> typed_entry
   val inDynamicAstType : typed_ast G.Entry.e -> typed_entry
-  val inReferenceAstType : reference_expr G.Entry.e -> typed_entry
+  val inReferenceAstType : Coqast.reference_expr G.Entry.e -> typed_entry
   val inPureAstType : constr_ast G.Entry.e -> typed_entry
   val inGenAstType : 'a raw_abstract_argument_type ->
       'a G.Entry.e -> typed_entry
@@ -362,7 +362,6 @@ module Prim =
     let ast_eoi = eoi_entry ast
     let astact = gec "astact"
     let metaident = gec "metaident"
-    let numarg = gec "numarg"
     let var = gec "var"
   end
 
@@ -397,6 +396,7 @@ module Constr =
     let pattern = gec "pattern"
     let constr_pattern = gec "constr_pattern"
     let ne_binders_list = gec_list "ne_binders_list"
+    let numarg = gec "numarg"
   end
 
 

@@ -123,151 +123,83 @@ let rec subst_ast subst ast = match ast with
   | Id _
   | Dynamic _ -> ast
 
-   
+open Util
+open Rawterm
+open Term
 
-(*
-type 'vernac_ast raw_typed_ast =
-  | PureAstNode of t
-  | AstListNode of t list
-  | PureAstNode of t
-  | TacticAstNode of tactic_expr
-  | VernacAstNode of 'vernac_ast
+type scope_name = string
 
-type entry_type =
-  | PureAstType
-  | AstListType
-  | VernacAstType
-  | TacticAstType
-  | VernacAtomAstType
-  | DynamicAstType
-  | QualidAstType
-  | ConstrAstType
-  | BinderAstType
-  | ThmTokAstType
-  | BindingListAstType
+type reference_expr = 
+  | RQualid of qualid located
+  | RIdent of identifier located
 
-type astpat =
-  | Pquote of t
-  | Pmeta of string * tok_kind
-  | Pnode of string * patlist
-  | Pslam of identifier option * astpat
-  | Pmeta_slam of string * astpat
+type explicitation = int
 
-and patlist =
-  | Pcons of astpat * patlist
-  | Plmeta of string
-  | Pnil
+type cases_pattern =
+  | CPatAlias of loc * cases_pattern * identifier
+  | CPatCstr of loc * reference_expr * cases_pattern list
+  | CPatAtom of loc * reference_expr option
+  | CPatNumeral of loc * Bignat.bigint
 
-type 'a syntax_rule = string * 'a raw_typed_ast * t unparsing_hunk list
-type 'a raw_syntax_entry_ast = precedence * 'a syntax_rule list
+type ordered_case_style = CIf | CLet | CMatch | CCase
 
-type grammar_associativity = Gramext.g_assoc option
-type 'a raw_grammar_action =
-  | SimpleAction of loc * 'a raw_typed_ast
-  | CaseAction of loc *
-     'a raw_grammar_action * entry_type option
-      * (t list * 'a raw_grammar_action) list
-type grammar_production =
-    VTerm of string | VNonTerm of loc * nonterm * string option
-type 'a grammar_rule = string * grammar_production list * 'a raw_grammar_action
-type 'a raw_grammar_entry_ast = 
-    (loc * string) * entry_type option * grammar_associativity * 'a grammar_rule list
+type constr_ast =
+  | CRef of reference_expr
+  | CFix of loc * identifier located * fixpoint_expr list
+  | CCoFix of loc * identifier located * cofixpoint_expr list
+  | CArrow of loc * constr_ast * constr_ast
+  | CProdN of loc * (name located list * constr_ast) list * constr_ast
+  | CLambdaN of loc * (name located list * constr_ast) list * constr_ast
+  | CLetIn of loc * identifier located * constr_ast * constr_ast
+  | CAppExpl of loc * reference_expr * constr_ast list
+  | CApp of loc * constr_ast * (constr_ast * explicitation option) list
+  | CCases of loc * case_style * constr_ast option * constr_ast list *
+      (loc * cases_pattern list * constr_ast) list
+  | COrderedCase of loc * ordered_case_style * constr_ast option * constr_ast * constr_ast list
+  | CHole of loc
+  | CMeta of loc * int
+  | CSort of loc * rawsort
+  | CCast of loc * constr_ast * constr_ast
+  | CNotation of loc * string * constr_ast list
+  | CNumeral of loc * Bignat.bigint
+  | CDelimiters of loc * scope_name * constr_ast
+  | CDynamic of loc * Dyn.t
 
-type evaluable_global_reference_ast =
-  | AEvalVarRef of identifier
-  | AEvalConstRef of section_path
+and local_binder = name located list * constr_ast 
 
-type flags_ast = int
+and fixpoint_expr = identifier * local_binder list * constr_ast * constr_ast
 
-type red_expr_ast = (t,t,t) Rawterm.red_expr_gen
+and cofixpoint_expr = identifier * constr_ast * constr_ast
 
-type vernac_arg = 
-  | VARG_VARGLIST of vernac_arg list
-  | VARG_STRING of string
-  | VARG_NUMBER of int
-  | VARG_NUMBERLIST of int list
-  | VARG_IDENTIFIER of identifier
-  | VARG_QUALID of Nametab.qualid
-  | VCALL of string * vernac_arg list
-  | VARG_CONSTR of t
-  | VARG_CONSTRLIST of t list
-  | VARG_TACTIC of tactic_expr
-  | VARG_REDEXP of red_expr_ast
-  | VARG_BINDER of identifier list * t
-  | VARG_BINDERLIST of (identifier list * t) list
-  | VARG_AST of t
-  | VARG_ASTLIST of t list
-  | VARG_UNIT
-  | VARG_DYN of Dyn.t
+let constr_loc = function
+  | CRef (RIdent (loc,_)) -> loc
+  | CRef (RQualid (loc,_)) -> loc
+  | CFix (loc,_,_) -> loc
+  | CCoFix (loc,_,_) -> loc
+  | CArrow (loc,_,_) -> loc
+  | CProdN (loc,_,_) -> loc
+  | CLambdaN (loc,_,_) -> loc
+  | CLetIn (loc,_,_,_) -> loc
+  | CAppExpl (loc,_,_) -> loc
+  | CApp (loc,_,_) -> loc
+  | CCases (loc,_,_,_,_) -> loc
+  | COrderedCase (loc,_,_,_,_) -> loc
+  | CHole loc -> loc
+  | CMeta (loc,_) -> loc
+  | CSort (loc,_) -> loc
+  | CCast (loc,_,_) -> loc
+  | CNotation (loc,_,_) -> loc
+  | CNumeral (loc,_) -> loc
+  | CDelimiters (loc,_,_) -> loc
+  | CDynamic _ -> dummy_loc
 
-type def_kind = DEFINITION | LET | LOCAL | THEOREM | LETTOP | DECL | REMARK
-  | FACT | LEMMA
-  | COERCION | LCOERCION | OBJECT | LOBJECT | OBJCOERCION | LOBJCOERCION
-  | SUBCLASS | LSUBCLASS
+let cases_pattern_loc = function
+  | CPatAlias (loc,_,_) -> loc
+  | CPatCstr (loc,_,_) -> loc
+  | CPatAtom (loc,_) -> loc
+  | CPatNumeral (loc,_) -> loc
 
-open Nametab
+let replace_vars_constr_ast l t =
+  if l = [] then t else failwith "replace_constr_ast: TODO"
 
-type declaration_hook = strength -> global_reference -> unit
-let add_coercion = ref (fun _ _ -> ())
-let add_subclass = ref (fun _ _ -> ())
-let add_object = ref (fun _ _ -> ())
-
-type constr_ast = t
-type sort_expr = t
-
-type simple_binders = identifier * constr_ast
-type constructor_ast = identifier * constr_ast
-type inductive_ast =
-    identifier *  simple_binders list * constr_ast * constructor_ast list
-type fixpoint_ast =
-    identifier * simple_binders list * constr_ast * constr_ast
-type cofixpoint_ast =
-    identifier * constr_ast * constr_ast
-
-type local_decl_expr =
-  | AssumExpr of identifier * constr_ast
-  | DefExpr of identifier * constr_ast * constr_ast option
-
-type vernac_atom_ast =
-  (* Syntax *) 
-  | VernacGrammar of string * vernac_ast raw_grammar_entry_ast list
-  | VernacSyntax of string * vernac_ast raw_syntax_entry_ast list
-  | VernacInfix of grammar_associativity * int * string * t
-  | VernacDistfix of grammar_associativity * int * string * t
-  (* Gallina *)
-  | VernacDefinition of (bool * strength) * identifier * t option * constr_ast * constr_ast option * declaration_hook
-  | VernacStartProof of (bool * strength) * identifier * constr_ast * bool * declaration_hook
-  | VernacEndProof of bool * strength option * identifier option
-  | VernacAssumption of strength * (identifier list * constr_ast) list
-  | VernacInductive of bool * inductive_ast list
-  | VernacFixpoint of fixpoint_ast list
-  | VernacCoFixpoint of cofixpoint_ast list
-  (* Gallina extensions *)
-  | VernacRecord of bool * identifier * simple_binders list * sort_expr * identifier option * (bool * local_decl_expr) list
-
-  (* Commands *)
-  | TacticDefinition of loc * (identifier * tactic_expr) list
-  | VernacSetOpacity of bool * (loc * identifier list) list
-  | VernacSolve of int * tactic_expr
-  (* For temporary compatibility *)
-  | ExtraVernac of t
-  (* For extension *)
-  | VernacExtend of string * vernac_arg list
-  (* For actions in Grammar and patterns in Syntax rules *)
-  | VernacMeta of loc * string
-
-and located_vernac_atom_ast = loc * vernac_atom_ast
-
-and vernac_ast =
-  | VTime of located_vernac_atom_ast
-  | VLoad of bool * string
-  | VernacList of located_vernac_atom_ast list
-  | VernacVar of identifier
-
-type pat = vernac_ast raw_pat
-type typed_ast = vernac_ast raw_typed_ast
-type grammar_action = vernac_ast raw_grammar_action
-type grammar_entry_ast = vernac_ast raw_grammar_entry_ast
-type syntax_entry_ast = vernac_ast raw_syntax_entry_ast
-
-*)
+let occur_var_constr_ast id t = Pp.warning "occur_var_constr_ast:TODO"; true

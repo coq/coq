@@ -127,8 +127,8 @@ let mlexpr_of_qualid qid =
   <:expr< make_qualid $mlexpr_of_dirpath dir$ $mlexpr_of_ident id$ >>
 
 let mlexpr_of_reference = function
-  | Tacexpr.RQualid (loc,qid) -> <:expr< Tacexpr.RQualid loc $mlexpr_of_qualid qid$ >>
-  | Tacexpr.RIdent (loc,id) -> <:expr< Tacexpr.RIdent loc $mlexpr_of_ident id$ >>
+  | Coqast.RQualid (loc,qid) -> <:expr< Coqast.RQualid loc $mlexpr_of_qualid qid$ >>
+  | Coqast.RIdent (loc,id) -> <:expr< Coqast.RIdent loc $mlexpr_of_ident id$ >>
 
 let mlexpr_of_bool = function
   | true -> <:expr< True >>

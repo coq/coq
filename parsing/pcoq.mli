@@ -110,7 +110,7 @@ module Prim :
     val integer : int Gram.Entry.e
     val string : string Gram.Entry.e
     val qualid : qualid located Gram.Entry.e
-    val reference : reference_expr Gram.Entry.e
+    val reference : Coqast.reference_expr Gram.Entry.e
     val dirpath : dir_path Gram.Entry.e
     val astpat: typed_ast Gram.Entry.e
     val ast : Coqast.t Gram.Entry.e
@@ -118,7 +118,6 @@ module Prim :
     val ast_eoi : Coqast.t Gram.Entry.e
     val astact : Coqast.t Gram.Entry.e
     val metaident : Coqast.t Gram.Entry.e
-    val numarg : Coqast.t Gram.Entry.e
     val var : Coqast.t Gram.Entry.e
   end
 
@@ -148,6 +147,7 @@ module Constr :
     val pattern : Coqast.t Gram.Entry.e
     val constr_pattern : Coqast.t Gram.Entry.e
     val ne_binders_list : Coqast.t list Gram.Entry.e
+    val numarg : Coqast.t Gram.Entry.e
   end
 
 module Module : 

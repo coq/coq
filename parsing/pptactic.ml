@@ -19,6 +19,7 @@ open Extend
 open Ppconstr
 open Tacexpr
 open Rawterm
+open Coqast
 open Genarg
 
   (* Extensions *)

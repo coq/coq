@@ -18,10 +18,6 @@ open Genarg
 
 type 'a or_metaid = AI of 'a | MetaId of loc * string
 
-type reference_expr = 
-  | RQualid of qualid located
-  | RIdent of identifier located
-
 type direction_flag = bool (* true = Left-to-right    false = right-to-right *)
 
 type raw_red_flag =
