@@ -491,10 +491,10 @@ dev/top_printers.cmx: lib/util.cmx kernel/univ.cmx pretyping/termops.cmx \
     kernel/environ.cmx kernel/declarations.cmx interp/constrextern.cmx \
     kernel/closure.cmx pretyping/clenv.cmx toplevel/cerrors.cmx \
     lib/bigint.cmx parsing/ast.cmx 
-dev/vm_printers.cmo: kernel/vm.cmi kernel/names.cmi kernel/cemitcodes.cmi \
-    kernel/cbytecodes.cmi 
-dev/vm_printers.cmx: kernel/vm.cmx kernel/names.cmx kernel/cemitcodes.cmx \
-    kernel/cbytecodes.cmx 
+dev/vm_printers.cmo: kernel/vm.cmi kernel/term.cmi kernel/names.cmi \
+    kernel/cemitcodes.cmi kernel/cbytecodes.cmi 
+dev/vm_printers.cmx: kernel/vm.cmx kernel/term.cmx kernel/names.cmx \
+    kernel/cemitcodes.cmx kernel/cbytecodes.cmx 
 doc/parse.cmo: parsing/ast.cmi 
 doc/parse.cmx: parsing/ast.cmx 
 ide/blaster_window.cmo: ide/ideutils.cmi ide/coq.cmi 
@@ -1547,18 +1547,16 @@ pretyping/tacred.cmo: lib/util.cmi pretyping/typing.cmi pretyping/termops.cmi \
     kernel/term.cmi library/summary.cmi pretyping/retyping.cmi \
     pretyping/reductionops.cmi pretyping/rawterm.cmi lib/pp.cmi \
     library/nametab.cmi kernel/names.cmi library/nameops.cmi \
-    library/libnames.cmi kernel/inductive.cmi library/global.cmi \
-    pretyping/evd.cmi kernel/environ.cmi kernel/declarations.cmi \
-    kernel/csymtable.cmi kernel/conv_oracle.cmi kernel/closure.cmi \
-    pretyping/cbv.cmi pretyping/tacred.cmi 
+    library/libnames.cmi kernel/inductive.cmi pretyping/evd.cmi \
+    kernel/environ.cmi kernel/declarations.cmi kernel/conv_oracle.cmi \
+    kernel/closure.cmi pretyping/cbv.cmi pretyping/tacred.cmi 
 pretyping/tacred.cmx: lib/util.cmx pretyping/typing.cmx pretyping/termops.cmx \
     kernel/term.cmx library/summary.cmx pretyping/retyping.cmx \
     pretyping/reductionops.cmx pretyping/rawterm.cmx lib/pp.cmx \
     library/nametab.cmx kernel/names.cmx library/nameops.cmx \
-    library/libnames.cmx kernel/inductive.cmx library/global.cmx \
-    pretyping/evd.cmx kernel/environ.cmx kernel/declarations.cmx \
-    kernel/csymtable.cmx kernel/conv_oracle.cmx kernel/closure.cmx \
-    pretyping/cbv.cmx pretyping/tacred.cmi 
+    library/libnames.cmx kernel/inductive.cmx pretyping/evd.cmx \
+    kernel/environ.cmx kernel/declarations.cmx kernel/conv_oracle.cmx \
+    kernel/closure.cmx pretyping/cbv.cmx pretyping/tacred.cmi 
 pretyping/termops.cmo: lib/util.cmi kernel/univ.cmi kernel/term.cmi \
     kernel/sign.cmi lib/pp.cmi library/nametab.cmi kernel/names.cmi \
     library/nameops.cmi library/libnames.cmi library/lib.cmi \
@@ -1666,14 +1664,18 @@ proofs/proof_type.cmx: lib/util.cmx kernel/term.cmx proofs/tacexpr.cmx \
     kernel/names.cmx library/libnames.cmx interp/genarg.cmx pretyping/evd.cmx \
     kernel/environ.cmx proofs/proof_type.cmi 
 proofs/redexpr.cmo: kernel/vconv.cmi lib/util.cmi kernel/typeops.cmi \
-    kernel/term.cmi pretyping/tacred.cmi pretyping/reductionops.cmi \
-    pretyping/rawterm.cmi kernel/names.cmi library/libnames.cmi \
-    kernel/environ.cmi kernel/conv_oracle.cmi kernel/closure.cmi \
+    kernel/term.cmi pretyping/tacred.cmi library/summary.cmi \
+    pretyping/reductionops.cmi pretyping/rawterm.cmi lib/pp.cmi \
+    library/nametab.cmi kernel/names.cmi library/libnames.cmi \
+    library/global.cmi kernel/environ.cmi kernel/declarations.cmi \
+    kernel/csymtable.cmi kernel/conv_oracle.cmi kernel/closure.cmi \
     proofs/redexpr.cmi 
 proofs/redexpr.cmx: kernel/vconv.cmx lib/util.cmx kernel/typeops.cmx \
-    kernel/term.cmx pretyping/tacred.cmx pretyping/reductionops.cmx \
-    pretyping/rawterm.cmx kernel/names.cmx library/libnames.cmx \
-    kernel/environ.cmx kernel/conv_oracle.cmx kernel/closure.cmx \
+    kernel/term.cmx pretyping/tacred.cmx library/summary.cmx \
+    pretyping/reductionops.cmx pretyping/rawterm.cmx lib/pp.cmx \
+    library/nametab.cmx kernel/names.cmx library/libnames.cmx \
+    library/global.cmx kernel/environ.cmx kernel/declarations.cmx \
+    kernel/csymtable.cmx kernel/conv_oracle.cmx kernel/closure.cmx \
     proofs/redexpr.cmi 
 proofs/refiner.cmo: lib/util.cmi kernel/type_errors.cmi pretyping/termops.cmi \
     kernel/term.cmi proofs/tacexpr.cmo kernel/sign.cmi \
@@ -2363,15 +2365,15 @@ toplevel/vernacentries.cmo: kernel/vm.cmi toplevel/vernacinterp.cmi \
     toplevel/vernacexpr.cmo kernel/vconv.cmi lib/util.cmi kernel/univ.cmi \
     kernel/typeops.cmi interp/topconstr.cmi kernel/term.cmi \
     tactics/tactics.cmi parsing/tactic_printer.cmi proofs/tactic_debug.cmi \
-    pretyping/tacred.cmi proofs/tacmach.cmi tactics/tacinterp.cmi \
-    proofs/tacexpr.cmo lib/system.cmi interp/syntax_def.cmi \
-    library/states.cmi tactics/setoid_replace.cmi parsing/search.cmi \
-    kernel/safe_typing.cmi interp/reserve.cmi pretyping/reductionops.cmi \
-    proofs/redexpr.cmi toplevel/recordobj.cmi toplevel/record.cmi \
-    pretyping/rawterm.cmi proofs/proof_type.cmi proofs/proof_trees.cmi \
-    parsing/printmod.cmi parsing/printer.cmi pretyping/pretyping.cmi \
-    parsing/prettyp.cmi lib/pp_control.cmi lib/pp.cmi proofs/pfedit.cmi \
-    lib/options.cmi interp/notation.cmi library/nametab.cmi kernel/names.cmi \
+    proofs/tacmach.cmi tactics/tacinterp.cmi proofs/tacexpr.cmo \
+    lib/system.cmi interp/syntax_def.cmi library/states.cmi \
+    tactics/setoid_replace.cmi parsing/search.cmi kernel/safe_typing.cmi \
+    interp/reserve.cmi pretyping/reductionops.cmi proofs/redexpr.cmi \
+    toplevel/recordobj.cmi toplevel/record.cmi pretyping/rawterm.cmi \
+    proofs/proof_type.cmi proofs/proof_trees.cmi parsing/printmod.cmi \
+    parsing/printer.cmi pretyping/pretyping.cmi parsing/prettyp.cmi \
+    lib/pp_control.cmi lib/pp.cmi proofs/pfedit.cmi lib/options.cmi \
+    interp/notation.cmi library/nametab.cmi kernel/names.cmi \
     library/nameops.cmi interp/modintern.cmi toplevel/mltop.cmi \
     toplevel/metasyntax.cmi library/library.cmi library/libnames.cmi \
     library/lib.cmi pretyping/inductiveops.cmi library/impargs.cmi \
@@ -2385,15 +2387,15 @@ toplevel/vernacentries.cmx: kernel/vm.cmx toplevel/vernacinterp.cmx \
     toplevel/vernacexpr.cmx kernel/vconv.cmx lib/util.cmx kernel/univ.cmx \
     kernel/typeops.cmx interp/topconstr.cmx kernel/term.cmx \
     tactics/tactics.cmx parsing/tactic_printer.cmx proofs/tactic_debug.cmx \
-    pretyping/tacred.cmx proofs/tacmach.cmx tactics/tacinterp.cmx \
-    proofs/tacexpr.cmx lib/system.cmx interp/syntax_def.cmx \
-    library/states.cmx tactics/setoid_replace.cmx parsing/search.cmx \
-    kernel/safe_typing.cmx interp/reserve.cmx pretyping/reductionops.cmx \
-    proofs/redexpr.cmx toplevel/recordobj.cmx toplevel/record.cmx \
-    pretyping/rawterm.cmx proofs/proof_type.cmx proofs/proof_trees.cmx \
-    parsing/printmod.cmx parsing/printer.cmx pretyping/pretyping.cmx \
-    parsing/prettyp.cmx lib/pp_control.cmx lib/pp.cmx proofs/pfedit.cmx \
-    lib/options.cmx interp/notation.cmx library/nametab.cmx kernel/names.cmx \
+    proofs/tacmach.cmx tactics/tacinterp.cmx proofs/tacexpr.cmx \
+    lib/system.cmx interp/syntax_def.cmx library/states.cmx \
+    tactics/setoid_replace.cmx parsing/search.cmx kernel/safe_typing.cmx \
+    interp/reserve.cmx pretyping/reductionops.cmx proofs/redexpr.cmx \
+    toplevel/recordobj.cmx toplevel/record.cmx pretyping/rawterm.cmx \
+    proofs/proof_type.cmx proofs/proof_trees.cmx parsing/printmod.cmx \
+    parsing/printer.cmx pretyping/pretyping.cmx parsing/prettyp.cmx \
+    lib/pp_control.cmx lib/pp.cmx proofs/pfedit.cmx lib/options.cmx \
+    interp/notation.cmx library/nametab.cmx kernel/names.cmx \
     library/nameops.cmx interp/modintern.cmx toplevel/mltop.cmx \
     toplevel/metasyntax.cmx library/library.cmx library/libnames.cmx \
     library/lib.cmx pretyping/inductiveops.cmx library/impargs.cmx \
@@ -3568,66 +3570,72 @@ tools/coq_makefile.cmx:
 tools/coq-tex.cmo: 
 tools/coq-tex.cmx: 
 coq_fix_code.o: kernel/byterun/coq_fix_code.c \
-  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/compatibility.h \
-  /usr/lib/ocaml/caml/misc.h /usr/lib/ocaml/caml/config.h \
-  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/misc.h \
-  /usr/lib/ocaml/caml/fail.h /usr/lib/ocaml/caml/mlvalues.h \
-  /usr/lib/ocaml/caml/memory.h kernel/byterun/coq_instruct.h \
-  kernel/byterun/coq_fix_code.h
+  /home/logical/local/lib/ocaml/caml/config.h \
+  /home/logical/local/lib/ocaml/caml/compatibility.h \
+  /home/logical/local/lib/ocaml/caml/misc.h \
+  /home/logical/local/lib/ocaml/caml/mlvalues.h \
+  /home/logical/local/lib/ocaml/caml/fail.h \
+  /home/logical/local/lib/ocaml/caml/memory.h \
+  kernel/byterun/coq_instruct.h kernel/byterun/coq_fix_code.h
 coq_interp.o: kernel/byterun/coq_interp.c kernel/byterun/coq_gc.h \
-  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/compatibility.h \
-  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/misc.h \
-  /usr/lib/ocaml/caml/alloc.h /usr/lib/ocaml/caml/mlvalues.h \
+  /home/logical/local/lib/ocaml/caml/mlvalues.h \
+  /home/logical/local/lib/ocaml/caml/compatibility.h \
+  /home/logical/local/lib/ocaml/caml/config.h \
+  /home/logical/local/lib/ocaml/caml/misc.h \
+  /home/logical/local/lib/ocaml/caml/alloc.h \
   kernel/byterun/coq_instruct.h kernel/byterun/coq_fix_code.h \
-  kernel/byterun/coq_memory.h /usr/lib/ocaml/caml/config.h \
-  /usr/lib/ocaml/caml/fail.h /usr/lib/ocaml/caml/misc.h \
-  /usr/lib/ocaml/caml/memory.h kernel/byterun/coq_values.h \
+  kernel/byterun/coq_memory.h /home/logical/local/lib/ocaml/caml/fail.h \
+  /home/logical/local/lib/ocaml/caml/memory.h kernel/byterun/coq_values.h \
   kernel/byterun/coq_jumptbl.h
 coq_memory.o: kernel/byterun/coq_memory.c kernel/byterun/coq_gc.h \
-  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/compatibility.h \
-  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/misc.h \
-  /usr/lib/ocaml/caml/alloc.h /usr/lib/ocaml/caml/mlvalues.h \
+  /home/logical/local/lib/ocaml/caml/mlvalues.h \
+  /home/logical/local/lib/ocaml/caml/compatibility.h \
+  /home/logical/local/lib/ocaml/caml/config.h \
+  /home/logical/local/lib/ocaml/caml/misc.h \
+  /home/logical/local/lib/ocaml/caml/alloc.h \
   kernel/byterun/coq_instruct.h kernel/byterun/coq_fix_code.h \
-  kernel/byterun/coq_memory.h /usr/lib/ocaml/caml/config.h \
-  /usr/lib/ocaml/caml/fail.h /usr/lib/ocaml/caml/misc.h \
-  /usr/lib/ocaml/caml/memory.h
+  kernel/byterun/coq_memory.h /home/logical/local/lib/ocaml/caml/fail.h \
+  /home/logical/local/lib/ocaml/caml/memory.h
 coq_values.o: kernel/byterun/coq_values.c kernel/byterun/coq_fix_code.h \
-  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/compatibility.h \
-  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/misc.h \
-  kernel/byterun/coq_instruct.h kernel/byterun/coq_memory.h \
-  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/fail.h \
-  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/misc.h \
-  /usr/lib/ocaml/caml/memory.h kernel/byterun/coq_values.h \
-  /usr/lib/ocaml/caml/alloc.h
+  /home/logical/local/lib/ocaml/caml/mlvalues.h \
+  /home/logical/local/lib/ocaml/caml/compatibility.h \
+  /home/logical/local/lib/ocaml/caml/config.h \
+  /home/logical/local/lib/ocaml/caml/misc.h kernel/byterun/coq_instruct.h \
+  kernel/byterun/coq_memory.h /home/logical/local/lib/ocaml/caml/fail.h \
+  /home/logical/local/lib/ocaml/caml/memory.h kernel/byterun/coq_values.h \
+  /home/logical/local/lib/ocaml/caml/alloc.h
 coq_fix_code.d.o: kernel/byterun/coq_fix_code.c \
-  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/compatibility.h \
-  /usr/lib/ocaml/caml/misc.h /usr/lib/ocaml/caml/config.h \
-  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/misc.h \
-  /usr/lib/ocaml/caml/fail.h /usr/lib/ocaml/caml/mlvalues.h \
-  /usr/lib/ocaml/caml/memory.h kernel/byterun/coq_instruct.h \
-  kernel/byterun/coq_fix_code.h
+  /home/logical/local/lib/ocaml/caml/config.h \
+  /home/logical/local/lib/ocaml/caml/compatibility.h \
+  /home/logical/local/lib/ocaml/caml/misc.h \
+  /home/logical/local/lib/ocaml/caml/mlvalues.h \
+  /home/logical/local/lib/ocaml/caml/fail.h \
+  /home/logical/local/lib/ocaml/caml/memory.h \
+  kernel/byterun/coq_instruct.h kernel/byterun/coq_fix_code.h
 coq_interp.d.o: kernel/byterun/coq_interp.c kernel/byterun/coq_gc.h \
-  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/compatibility.h \
-  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/misc.h \
-  /usr/lib/ocaml/caml/alloc.h /usr/lib/ocaml/caml/mlvalues.h \
+  /home/logical/local/lib/ocaml/caml/mlvalues.h \
+  /home/logical/local/lib/ocaml/caml/compatibility.h \
+  /home/logical/local/lib/ocaml/caml/config.h \
+  /home/logical/local/lib/ocaml/caml/misc.h \
+  /home/logical/local/lib/ocaml/caml/alloc.h \
   kernel/byterun/coq_instruct.h kernel/byterun/coq_fix_code.h \
-  kernel/byterun/coq_memory.h /usr/lib/ocaml/caml/config.h \
-  /usr/lib/ocaml/caml/fail.h /usr/lib/ocaml/caml/misc.h \
-  /usr/lib/ocaml/caml/memory.h kernel/byterun/coq_values.h \
+  kernel/byterun/coq_memory.h /home/logical/local/lib/ocaml/caml/fail.h \
+  /home/logical/local/lib/ocaml/caml/memory.h kernel/byterun/coq_values.h \
   kernel/byterun/coq_jumptbl.h
 coq_memory.d.o: kernel/byterun/coq_memory.c kernel/byterun/coq_gc.h \
-  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/compatibility.h \
-  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/misc.h \
-  /usr/lib/ocaml/caml/alloc.h /usr/lib/ocaml/caml/mlvalues.h \
+  /home/logical/local/lib/ocaml/caml/mlvalues.h \
+  /home/logical/local/lib/ocaml/caml/compatibility.h \
+  /home/logical/local/lib/ocaml/caml/config.h \
+  /home/logical/local/lib/ocaml/caml/misc.h \
+  /home/logical/local/lib/ocaml/caml/alloc.h \
   kernel/byterun/coq_instruct.h kernel/byterun/coq_fix_code.h \
-  kernel/byterun/coq_memory.h /usr/lib/ocaml/caml/config.h \
-  /usr/lib/ocaml/caml/fail.h /usr/lib/ocaml/caml/misc.h \
-  /usr/lib/ocaml/caml/memory.h
+  kernel/byterun/coq_memory.h /home/logical/local/lib/ocaml/caml/fail.h \
+  /home/logical/local/lib/ocaml/caml/memory.h
 coq_values.d.o: kernel/byterun/coq_values.c kernel/byterun/coq_fix_code.h \
-  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/compatibility.h \
-  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/misc.h \
-  kernel/byterun/coq_instruct.h kernel/byterun/coq_memory.h \
-  /usr/lib/ocaml/caml/config.h /usr/lib/ocaml/caml/fail.h \
-  /usr/lib/ocaml/caml/mlvalues.h /usr/lib/ocaml/caml/misc.h \
-  /usr/lib/ocaml/caml/memory.h kernel/byterun/coq_values.h \
-  /usr/lib/ocaml/caml/alloc.h
+  /home/logical/local/lib/ocaml/caml/mlvalues.h \
+  /home/logical/local/lib/ocaml/caml/compatibility.h \
+  /home/logical/local/lib/ocaml/caml/config.h \
+  /home/logical/local/lib/ocaml/caml/misc.h kernel/byterun/coq_instruct.h \
+  kernel/byterun/coq_memory.h /home/logical/local/lib/ocaml/caml/fail.h \
+  /home/logical/local/lib/ocaml/caml/memory.h kernel/byterun/coq_values.h \
+  /home/logical/local/lib/ocaml/caml/alloc.h
