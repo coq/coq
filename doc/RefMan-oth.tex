@@ -20,7 +20,6 @@ global constant.
 
 \item {\tt About {\qualid}.}
 \comindex{About}\\ 
-
 This displays various informations about the object denoted by {\qualid}:
 its kind (module, constant, assumption, inductive,
 constructor, abbreviation, ...), long name, type, implicit
@@ -184,9 +183,7 @@ environment}\\
 
 \begin{Variants}
 \item {\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{}
-].} where {\textrm{\textsl{qualid-or-string}}} is a list of
-{\qualid} or {\str}.\\
-
+].} where {\textrm{\textsl{qualid-or-string}}} is a {\qualid} or a {\str}.\\
 This extension of {\tt SearchAbout} searches for all objects whose
 statement mentions all of {\qualid} of the list and whose name
 contains all {\str} of the list.
@@ -199,8 +196,9 @@ SearchAbout [ Zmult Zplus "distr" ].
 \end{coq_example}
 
 \item
-{\tt SearchAbout {\term} inside {\module$_1$}...{\module$_n$}.}\\
-{\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{} ] inside {\module$_1$}...{\module$_n$}.}
+{\tt SearchAbout {\term} inside {\module$_1$} \ldots{} {\module$_n$}.}\\
+{\tt SearchAbout [ \nelist{\textrm{\textsl{qualid-or-string}}}{} ]
+  inside {\module$_1$} \ldots{} {\module$_n$}.}
 
 This restricts the search to constructions defined in modules
 {\module$_1$}...{\module$_n$}.
@@ -476,12 +474,17 @@ open it (See the {\tt Require Export} variant below).
 These different variants can be combined.
 
 \begin{ErrMsgs}
-\item \errindex{Cannot load {\ident}: no physical path bound to {\dirpath}}\\
-\item \errindex{Can't find module toto on loadpath}\\
+
+\item \errindex{Cannot load {\ident}: no physical path bound to {\dirpath}}
+
+\item \errindex{Can't find module toto on loadpath}
+
   The command did not find the file {\tt toto.vo}. Either {\tt
     toto.v} exists but is not compiled or {\tt toto.vo} is in a directory
   which is not in your {\tt LoadPath} (see section \ref{loadpath}).
-\item \errindex{Bad magic number}\\
+
+\item \errindex{Bad magic number}
+
   \index{Bad-magic-number@{\tt Bad Magic Number}}
   The file {\tt{\ident}.vo} was found but either it is not a \Coq\
   compiled module, or it was compiled with an older and incompatible
@@ -507,6 +510,7 @@ Add ML Path} in the section \ref{loadpath}).  Loading of Objective Caml
 files is only possible under the bytecode version of {\tt coqtop}
 (i.e. {\tt coqtop} called with options {\tt -byte}, see chapter 
 \ref{Addoc-coqc}).
+
 \begin{ErrMsgs}
 \item \errindex{File not found on loadpath : \str}
 \item \errindex{Loading of ML object file forbidden in a native Coq}

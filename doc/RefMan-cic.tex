@@ -275,7 +275,7 @@ be derived from the following rules.
                       {\WF{E;\Def{\Gamma}{c}{t}{T}}{\Gamma}}}
 \item [Ax] \index{Typing rules!Ax}
 \inference{\frac{\WFE{\Gamma}}{\WTEG{\Prop}{\Type(p)}}~~~~~
-\frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(q)}}}\\[3mm]
+\frac{\WFE{\Gamma}}{\WTEG{\Set}{\Type(q)}}}
 \inference{\frac{\WFE{\Gamma}~~~~i<j}{\WTEG{\Type(i)}{\Type(j)}}}
 \item[Var]\index{Typing rules!Var}
  \inference{\frac{ \WFE{\Gamma}~~~~~(x:T)\in\Gamma~~\mbox{or}~~(x:=t:T)\in\Gamma~\mbox{for some $t$}}{\WTEG{x}{T}}}
@@ -285,7 +285,7 @@ be derived from the following rules.
 \inference{\frac{\WTEG{T}{s_1}~~~~
     \WTE{\Gamma::(x:T)}{U}{s_2}~~~s_1\in\{\Prop, \Set\}~\mbox{or}~
     s_2\in\{\Prop, \Set\}}
-      { \WTEG{(x:T)U}{s_2}}} \\[3mm]
+      { \WTEG{(x:T)U}{s_2}}} 
 \inference{\frac{\WTEG{T}{\Type(i)}~~~~
     \WTE{\Gamma::(x:T)}{U}{\Type(j)}~~~i\leq
     k~~~j \leq k}{ \WTEG{(x:T)U}{\Type(k)}}}
@@ -738,7 +738,7 @@ X)$ but not in $X \ra A$ or $(X \ra A)\ra A$ assuming the notion of
 product and lists were already defined. Assuming $X$ has arity ${\tt
 nat \ra Prop}$ and {\tt ex} is inductively defined existential
 quantifier, the occurrence of $X$ in ${\tt (ex~ nat~ [n:nat](X~ n))}$ is
-also strictly positive.\\
+also strictly positive.
 
 \paragraph{Correctness rules.}
 We shall now describe the rules allowing the introduction of a new
@@ -748,13 +748,13 @@ inductive definition.
 \item[W-Ind] Let $E$ be an environment and
   $\Gamma,\Gamma_P,\Gamma_I,\Gamma_C$ are contexts such that
   $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$ and $\Gamma_C$ is
-  $[c_1:C_1;\ldots;c_n:C_n]$. \\[3mm]
+  $[c_1:C_1;\ldots;c_n:C_n]$. 
 \inference{
   \frac{
   (\WTE{\Gamma;\Gamma_P}{A_j}{s'_j})_{j=1\ldots  k}
   ~~ (\WTE{\Gamma;\Gamma_P;\Gamma_I}{C_i}{s_{p_i}})_{i=1\ldots  n}
 }
-  {\WF{E;\Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C}}{\Gamma}}}\\
+  {\WF{E;\Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C}}{\Gamma}}}
 providing the following side conditions hold:
 \begin{itemize}
 \item $k>0$, $I_j$, $c_i$ are different names for $j=1\ldots  k$ and $i=1\ldots  n$,
@@ -855,12 +855,11 @@ property for $m = (c_i~u_1\ldots  u_{p_i})$ for each constructor of $I$.
 
 This proof will be denoted by a generic term:
 \[\Case{P}{m}{(c_1~x_{11}~...~x_{1p_1}) \mbox{\tt =>} f_1 ~|~\ldots~|~
-(c_n~x_{n1}...x_{np_n}) \mbox{\tt =>} f_n }\]
-In this expression, if $m$ is a term built from a constructor
-$(c_i~u_1\ldots  u_{p_i})$ then the expression will behave as it is specified
-with $i$-th branch and will reduce to $f_i$ where the $x_{i1}$\ldots $x_{ip_i}$ are
-replaced by the $u_1\ldots  u_p$ according to 
-the $\iota$-reduction.\\ 
+  (c_n~x_{n1}...x_{np_n}) \mbox{\tt =>} f_n }\] In this expression, if
+$m$ is a term built from a constructor $(c_i~u_1\ldots u_{p_i})$ then
+the expression will behave as it is specified with $i$-th branch and
+will reduce to $f_i$ where the $x_{i1}$\ldots $x_{ip_i}$ are replaced
+by the $u_1\ldots u_p$ according to the $\iota$-reduction.
 
 This is the basic idea which is generalized to the case where $I$ is
 an inductively defined $n$-ary relation (in which case the property
@@ -1016,8 +1015,16 @@ $(a:A)(l:\ListA)(n:\nat)(\LengthA~l~n)\ra(P~(\cons~A~a~l)~(\nS~n))$.
 \paragraph{Typing rule.}
 
 Our very general destructor for inductive definition enjoys the
-following typing rule (we write {\Case{P}{c}{[x_{11}:T_{11}]\ldots[x_{1p_1}:T_{1p_1}]g_1\ldots  [x_{n1}:T_{n1}]\ldots[x_{np_n}:T_{np_n}]g_n} for \Case{P}{c}{(c_1~x_{11}~...~x_{1p_1}) \mbox{\tt =>} g_1 ~|~\ldots~|~
-(c_n~x_{n1}...x_{np_n}) \mbox{\tt =>} g_n }}):
+following typing rule, where we write 
+\[
+\Case{P}{c}{[x_{11}:T_{11}]\ldots[x_{1p_1}:T_{1p_1}]g_1\ldots
+  [x_{n1}:T_{n1}]\ldots[x_{np_n}:T_{np_n}]g_n}
+\]
+for 
+\[
+\Case{P}{c}{(c_1~x_{11}~...~x_{1p_1}) \mbox{\tt =>} g_1 ~|~\ldots~|~
+(c_n~x_{n1}...x_{np_n}) \mbox{\tt =>} g_n }
+\]
 
 \begin{description}
 \item[Cases] \label{elimdep} \index{Typing rules!Cases}
