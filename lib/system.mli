@@ -46,6 +46,10 @@ val raw_extern_intern : int -> string ->
 val extern_intern : 
   int -> string -> (string -> 'a -> unit) * (load_path -> string -> 'a)
 
+(*s Sending/receiving once with external executable *)
+
+val connect : (out_channel -> unit) -> (in_channel -> 'a) -> string -> 'a 
+
 (*s Time stamps. *)
 
 type time
@@ -54,5 +58,3 @@ val process_time : unit -> float * float
 val get_time : unit -> time
 val time_difference : time -> time -> float (* in seconds *)
 val fmt_time_difference : time -> time -> Pp.std_ppcmds
-
-

@@ -182,6 +182,43 @@ let extern_intern magic suffix =
   in 
   (extern_state,intern_state)
 
+(* Communication through files with another executable *)
+
+let connect writefun readfun com =
+  let name = Filename.basename com in
+  let tmp_to = Filename.temp_file ("coq-"^name^"-in") ".xml" in
+  let tmp_from = Filename.temp_file ("coq-"^name^"-out") ".xml" in
+  let ch_to_in,ch_to_out =
+    try open_in tmp_to, open_out tmp_to
+    with Sys_error s -> error ("Cannot set connection to "^com^"("^s^")") in
+  let ch_from_in,ch_from_out = 
+    try open_in tmp_from, open_out tmp_from
+    with Sys_error s ->
+      close_out ch_to_out; close_in ch_to_in; 
+      error ("Cannot set connection from "^com^"("^s^")") in
+  let pid = 
+    let ch_to' = Unix.descr_of_in_channel ch_to_in in
+    let ch_from' = Unix.descr_of_out_channel ch_from_out in
+    try Unix.create_process com [||] ch_to' ch_from' Unix.stdout
+    with Unix.Unix_error (err,_,_) ->
+      close_in ch_to_in;
+      close_out ch_to_out;
+      close_in ch_from_in;
+      close_out ch_from_out;
+      error ("Cannot execute "^com^"("^(Unix.error_message err)^")") in
+  writefun ch_to_out;
+  close_out ch_to_out;
+  close_in ch_to_in;
+  close_out ch_from_out;
+  (match snd (Unix.waitpid [] pid) with
+    | Unix.WEXITED 127 -> error (com^": cannot execute")
+    | Unix.WEXITED 0 -> ()
+    | _ -> error (com^" exited abnormally"));
+  let a = readfun ch_from_in in
+  close_in ch_from_in;
+  unlink tmp_from;
+  unlink tmp_to;
+  a
 
 (* Time stamps. *)
 
