@@ -267,7 +267,7 @@ let need_restriction isevars args = not (array_for_all closed0 args)
  * false. The problem is that we won't get the right error message.
  *)
 
-let real_clean isevars ev args rhs =
+let real_clean env isevars ev args rhs =
   let subst = List.map (fun (x,y) -> (y,mkVar x)) (filter_unique args) in
   let rec subs k t =
     match kind_of_term t with
@@ -293,7 +293,7 @@ let real_clean isevars ev args rhs =
   in
   let body = subs 0 rhs in
   if not (closed0 body)
-  then error_not_clean empty_env isevars.evars ev body;
+  then error_not_clean env isevars.evars ev body (evar_source ev isevars);
   body
 
 let make_evar_instance_with_rel env =
@@ -361,14 +361,14 @@ let new_isevar isevars env src typ =
  * ?1 would be instantiated by (le y y) but y is not in the scope of ?1
  *)
 
-let evar_define isevars (ev,argsv) rhs =
+let evar_define env isevars (ev,argsv) rhs =
   if occur_evar ev rhs
-  then error_occur_check empty_env (evars_of isevars) ev rhs;
+  then error_occur_check env (evars_of isevars) ev rhs;
   let args = Array.to_list argsv in 
   let evd = ise_map isevars ev in
   (* the bindings to invert *)
   let worklist = make_subst (evar_env evd) args in
-  let body = real_clean isevars ev worklist rhs in
+  let body = real_clean env isevars ev worklist rhs in
   ise_define isevars ev body;
   [ev]
 
@@ -499,11 +499,11 @@ let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
 	  solve_refl conv_algo env isevars n1 args1 args2
 	else
 	  if Array.length args1 < Array.length args2 then 
-	    evar_define isevars ev2 (mkEvar ev1)
+	    evar_define env isevars ev2 (mkEvar ev1)
 	  else 
-	    evar_define isevars ev1 t2
+	    evar_define env isevars ev1 t2
     | _ ->
-	evar_define isevars ev1 t2 in
+	evar_define env isevars ev1 t2 in
   let pbs = get_changed_pb isevars lsp in
   List.for_all (fun (pbty,t1,t2) -> conv_algo env isevars pbty t1 t2) pbs
 

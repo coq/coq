@@ -314,39 +314,44 @@ let explain_occur_check ctx ev rhs =
   str"Occur check failed: tried to define " ++ str id ++
   str" with term" ++ brk(1,1) ++ pt
 
-let explain_not_clean ctx ev t =
-  let ctx = make_all_name_different ctx in
-  let c = mkRel (Intset.choose (free_rels t)) in
-  let id = Evd.string_of_existential ev in
-  let var = prterm_env ctx c in
-  str"Tried to define " ++ str id ++
-  str" with a term using variable " ++ var ++ spc () ++
-  str"which is not in its scope."
-
-let explain_unsolvable_implicit env = function
-  | QuestionMark -> str "Cannot infer a term for this placeholder"
+let explain_hole_kind env = function
+  | QuestionMark -> str "a term for this placeholder"
   | CasesType ->
-      str "Cannot infer the type of this pattern-matching problem"
+      str "the type of this pattern-matching problem"
   | BinderType (Name id) ->
-      str "Cannot infer a type for " ++ Nameops.pr_id id
+      str "a type for " ++ Nameops.pr_id id
   | BinderType Anonymous ->
-      str "Cannot infer a type for this anonymous binder"
+      str "a type for this anonymous binder"
   | ImplicitArg (c,n) ->
       if !Options.v7 then
-	str "Cannot infer the " ++ pr_ord n ++
+	str "the " ++ pr_ord n ++
 	str " implicit argument of " ++ Nametab.pr_global_env Idset.empty c
       else
 	let imps = Impargs.implicits_of_global c in
 	let id = Impargs.name_of_implicit (List.nth imps (n-1)) in
-	str "Unable to infer an instance for the implicit parameter " ++
+	str "an instance for the implicit parameter " ++
 	pr_id id ++ spc () ++ str "of" ++
 	spc () ++ Nametab.pr_global_env Idset.empty c
   | InternalHole ->
-      str "Cannot infer a term for an internal placeholder"
+      str "a term for an internal placeholder"
   | TomatchTypeParameter (tyi,n) ->
-      str "Cannot infer the " ++ pr_ord n ++
+      str "the " ++ pr_ord n ++
       str " argument of the inductive type (" ++ pr_inductive env tyi ++
       str ") of this term"
+
+let explain_not_clean ctx ev t k =
+  let ctx = make_all_name_different ctx in
+  let c = mkRel (Intset.choose (free_rels t)) in
+  let id = Evd.string_of_existential ev in
+  let var = prterm_env ctx c in
+  str"Tried to define " ++ explain_hole_kind ctx k ++
+  str" (" ++ str id ++ str ")" ++ spc() ++
+  str"with a term using variable " ++ var ++ spc () ++
+  str"which is not in its scope."
+
+let explain_unsolvable_implicit env k =
+  str "Cannot infer " ++ explain_hole_kind env k
+
 
 let explain_var_not_found ctx id = 
   str "The variable" ++ spc () ++ str (string_of_id id) ++
@@ -412,8 +417,8 @@ let explain_pretype_error ctx err =
       explain_cant_find_case_type ctx c
   | OccurCheck (n,c) ->
       explain_occur_check ctx n c
-  | NotClean (n,c) ->
-      explain_not_clean ctx n c
+  | NotClean (n,c,k) ->
+      explain_not_clean ctx n c k
   | UnsolvableImplicit k ->
       explain_unsolvable_implicit ctx k
   | VarNotFound id ->
