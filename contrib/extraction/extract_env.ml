@@ -84,7 +84,7 @@ and visit_type m eenv t =
     | Tglob r -> visit_reference m eenv r
     | Tapp l -> List.iter visit l
     | Tarr (t1,t2) -> visit t1; visit t2
-    | Tvar _ | Tprop | Tarity -> ()
+    | Tvar _ | Texn _ | Tprop | Tarity -> ()
   in
   visit t
     
@@ -154,11 +154,18 @@ let local_optimize refs =
 let print_user_extract r = 
   mSGNL [< 'sTR "User defined extraction:"; 'sPC; 'sTR (find_ml_extraction r) ; 'fNL>]
 
+let decl_in_r r0 = function 
+  | Dglob (r,_) -> r = r0
+  | Dabbrev (r,_,_) -> r = r0
+  | Dtype ((_,r,_)::_, _) -> r = r0
+  | Dtype ([],_) -> false
+  | Dcustom (r,_) ->  r = r0 
+
 let extract_reference r =
   if is_ml_extraction r then
     print_user_extract r 
   else
-    mSGNL (ToplevelPp.pp_decl (list_last (local_optimize [r])))
+    mSGNL (ToplevelPp.pp_decl (List.find (decl_in_r r) (local_optimize [r])))
 
 let _ = 
   vinterp_add "Extraction"
@@ -173,7 +180,7 @@ let _ =
 		| Construct cs -> extract_reference (ConstructRef cs)
 		(* Otherwise, output the ML type or expression *)
 		| _ ->
-		    match extract_constr (Global.env()) [] c with
+		    match extract_constr (Global.env()) c with
 		      | Emltype (t,_,_) -> mSGNL (ToplevelPp.pp_type t)
 		      | Emlterm a -> mSGNL (ToplevelPp.pp_ast (normalize a)))
        | _ -> assert false)

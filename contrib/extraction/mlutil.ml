@@ -586,6 +586,13 @@ let strict_language = function
   | "haskell" -> false
   | _ -> assert false
 
+let rec empty_ind = function 
+  | [] -> [],[]
+  | t :: q -> let l,l' = empty_ind q in 
+    (match t with 
+       | ids,r,[] -> Dabbrev (r,ids,Texn "empty inductive") :: l,l'
+       | _ -> l,t::l')
+
 let rec optimize prm = function
   | [] -> 
       []
@@ -614,6 +621,11 @@ let rec optimize prm = function
       (* Detection of informative singleton. *)
       add_singleton r0; 
       Dabbrev (r, ids, t0) :: (optimize prm l)
-  | (Dtype _ | Dabbrev _ | Dcustom _) as d :: l -> 
+  | Dtype(il,b) :: l -> 
+      (* Detection of empty inductives. *)
+      let l1,l2 = empty_ind il in 
+      if l2 = [] then l1 @ (optimize prm l) 
+      else l1 @ (Dtype(l2,b) :: (optimize prm l))
+  | (Dabbrev _ | Dcustom _) as d :: l -> 
       d :: (optimize prm l)
 

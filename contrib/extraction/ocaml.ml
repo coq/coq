@@ -142,6 +142,8 @@ let rec pp_type par t =
 	   pp_rec false t2; close_par par >]
     | Tglob r -> 
 	pp_type_global r
+    | Texn s -> 
+	string ("unit (* " ^ s ^ " *)")
     | Tprop ->
 	string "prop"
     | Tarity ->
@@ -305,14 +307,11 @@ let pp_one_inductive (pl,name,cl) =
 		      (fun () -> [< 'sPC ; 'sTR "* " >]) (pp_type true) l >] >]
   in
   [< pp_parameters pl; pp_type_global name; 'sTR " ="; 
-     if cl = [] then
-       [< 'sTR " unit (* empty inductive *)" >]
-     else
-       [< 'fNL;
-	  v 0 [< 'sTR "    ";
-		 prlist_with_sep (fun () -> [< 'fNL; 'sTR "  | " >])
-                   (fun c -> hOV 2 (pp_constructor c)) cl >] >] >]
-
+     [< 'fNL;
+	v 0 [< 'sTR "    ";
+	       prlist_with_sep (fun () -> [< 'fNL; 'sTR "  | " >])
+                 (fun c -> hOV 2 (pp_constructor c)) cl >] >] >]
+  
 let pp_inductive il =
   [< 'sTR "type ";
      prlist_with_sep (fun () -> [< 'fNL; 'sTR "and " >]) pp_one_inductive il;

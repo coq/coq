@@ -26,18 +26,16 @@ type type_var = info * arity
 
 type signature = type_var list
 
-type extraction_context = bool list
-
 type extraction_result =
   | Emltype of ml_type * signature * identifier list
   | Emlterm of ml_ast
 
-(*s Extraction functions. *)
+(*s Extraction function. *)
 
-val extract_constr : env -> extraction_context -> constr -> extraction_result
+val extract_constr : env -> constr -> extraction_result
 
 (*s ML declaration corresponding to a Coq reference. *)
 
 val extract_declaration : global_reference -> ml_decl
 
-
+val signature : env -> constr -> signature

@@ -22,6 +22,7 @@ type ml_type =
   | Tapp  of ml_type list
   | Tarr  of ml_type * ml_type
   | Tglob of global_reference
+  | Texn  of string  
   | Tprop
   | Tarity
       

@@ -74,6 +74,8 @@ let rec pp_type par t =
 	   pp_rec false t2; close_par par >]
     | Tglob r -> 
 	pp_type_global r
+    | Texn s -> 
+	[< string ("() -- " ^ s) ; 'fNL >]
     | Tprop ->
 	string "Prop"
     | Tarity ->
@@ -219,12 +221,9 @@ let pp_one_inductive (pl,name,cl) =
      pp_type_global name; 'sTR " ";
      prlist_with_sep (fun () -> [< 'sTR " " >]) pr_lower_id pl;
      if pl = [] then [< >] else [< 'sTR " " >];
-     if cl = [] then
-       [< 'sTR "= () -- empty inductive" >]
-     else
-       [< v 0 [< 'sTR "= ";
-		 prlist_with_sep (fun () -> [< 'fNL; 'sTR "  | " >])
-                   pp_constructor cl >] >] >]
+     [< v 0 [< 'sTR "= ";
+	       prlist_with_sep (fun () -> [< 'fNL; 'sTR "  | " >])
+                 pp_constructor cl >] >] >]
 
 let pp_inductive il =
   [< prlist_with_sep (fun () -> [< 'fNL >]) pp_one_inductive il; 'fNL >]
