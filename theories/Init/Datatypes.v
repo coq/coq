@@ -92,9 +92,16 @@ Notation Snd := (snd ? ?).
 ].
 Hints Resolve pair inl inr : core v62.
 
-Lemma surjective_pairing : (A,B:Set;H:A*B)H=(pair A B (Fst H) (Snd H)).
+Lemma surjective_pairing : (A,B:Set;p:A*B)p=(pair A B (Fst p) (Snd p)).
 Proof.
-NewDestruct H; Reflexivity.
+NewDestruct p; Reflexivity.
+Qed.
+
+Lemma injective_projections : 
+ (A,B:Set;p1,p2:A*B)(Fst p1)=(Fst p2)->(Snd p1)=(Snd p2)->p1=p2.
+Proof.
+NewDestruct p1; NewDestruct p2; Simpl; Intros Hfst Hsnd.
+Rewrite Hfst; Rewrite Hsnd; Reflexivity. 
 Qed.
 
 V7only[
