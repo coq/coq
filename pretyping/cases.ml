@@ -959,24 +959,6 @@ let infer_predicate loc env isevars typs cstrs indf =
       (true,pred)
 *)
 
-let rec dependent_predicate c = function
-  | PrCcl ccl ->
-      dependent c ccl
-  | PrNotInd (Some t,pred) ->
-      dependent c t or dependent_predicate (lift 1 c) pred
-  | PrNotInd (None,pred) ->
-      dependent_predicate c pred
-  | PrProd ((na,None,t),pred) ->
-      dependent c t or dependent_predicate (lift 1 c) pred
-  | PrProd ((na,Some b,t),pred) ->
-      dependent c b or dependent c t or dependent_predicate (lift 1 c) pred
-  | PrLetIn ((args,None),pred) -> 
-      List.exists (dependent c) args or
-      dependent_predicate (lift (List.length args) c) pred
-  | PrLetIn ((args,Some t),pred) ->
-      List.exists (dependent c) args or dependent c t or
-      dependent_predicate (lift (List.length args + 1) c) pred
-
 (* Propagation of user-provided predicate through compilation steps *)
 
 let rec map_predicate f k = function
@@ -1073,10 +1055,10 @@ let rec known_dependent = function
    by gamma, x1...xn, x1...xk-1 |- [X=realargs,xk=xk]pred (if dep) or
    by gamma, x1...xn, x1...xk-1 |- [X=realargs]pred (if not dep) *)
 
-let expand_arg n (na,t) deps (k,pred) =
+let expand_arg n alreadydep (na,t) deps (k,pred) =
   (* copt can occur in pred even if the original problem *)
   (* is not dependent *)
-  let dep = deps <> [] || dependent_predicate (mkRel 1) pred in
+  let dep = deps <> [] || alreadydep in
   let copt, p = if dep then Some (mkRel n), 1 else None, 0 in
   let pred = if dep then pred else lift_predicate (-1) pred in
   match t with
@@ -1112,7 +1094,8 @@ let specialize_predicate tomatchs deps cs = function
       anomaly "specialize_predicate: a matched pattern must be pushed"
   | PrLetIn ((args,copt),pred) ->
       (* Assume some gamma st: gamma, (X,x:=realargs,copt) |- pred *)
-      let k = List.length args + (if copt = None then 0 else 1) in
+      let isdep = copt <> None in
+      let k = List.length args + (if isdep then 1 else 0) in
       (* We adjust pred st: gamma, x1..xn, (X,x:=realargs,copt) |- pred' *)
       let n = cs.cs_nargs in
       let pred' = liftn_predicate n (k+1) pred in
@@ -1123,8 +1106,8 @@ let specialize_predicate tomatchs deps cs = function
       let pred'' = subst_predicate (argsi, copti) pred' in
       (* We adjust pred st: gamma, x1..xn, x1..xn |- pred'' *)
       let pred''' = liftn_predicate n (n+1) pred'' in
-      (* We finally get gamma,x1..xn |- [X1,x1:=R1,x1]..[Xn,xn:=Rn,xn]pred''' *)
-      snd (List.fold_right2 (expand_arg n) tomatchs deps (n,pred'''))
+      (* We finally get gamma,x1..xn |- [X1,x1:=R1,x1]..[Xn,xn:=Rn,xn]pred'''*)
+      snd (List.fold_right2 (expand_arg n isdep) tomatchs deps (n,pred'''))
 
 
 let find_predicate loc env isevars p typs cstrs current
@@ -1513,13 +1496,28 @@ let build_expected_arity env isevars isdep tomatchl =
 	      in follow n env (List.rev aritysign)
   in buildrec 0 env tomatchl
 
-(* [nargs] is the length of the arity of [pred] *)
-let extract_predicate_conclusion nargs pred =
+let extract_predicate_conclusion isdep tomatchl pred =
+  let cook = function
+    | _,IsInd (_,IndType(_,args)) -> Some (List.length args)
+    | _,NotInd _ -> None in
   let decomp_lam_force p =
     match kind_of_term p with
       | Lambda (_,_,c) -> c
       | _ -> (* eta-expansion *) applist (lift 1 p, [mkRel 1]) in
-  iterate decomp_lam_force nargs pred
+  let rec buildrec p = function
+    | [] -> p
+    | tm::ltm ->
+	match cook tm with
+	  | None -> 
+              let p = 
+                (* adjust to a sign containing the NotInd's *)
+                if isdep then lift 1 p else p in
+              buildrec p ltm 
+	  | Some n ->
+              let n = if isdep then n+1 else n in
+              let p = iterate decomp_lam_force n p in
+              buildrec p ltm
+  in buildrec pred tomatchl
 
 let set_arity_signature dep n arsign tomatchl pred x =
   (* avoid is not exhaustive ! *)
@@ -1587,34 +1585,41 @@ let prepare_predicate_from_tycon loc dep env isevars tomatchs c =
   
 (* Here, [pred] is assumed to be in the context built from all *)
 (* realargs and terms to match *)
-let build_initial_predicate env sigma isdep pred tomatchl =
+let build_initial_predicate isdep pred tomatchl =
+  let nar = List.fold_left (fun n (_,t) ->
+    let p = match t with IsInd (_,IndType(_,a)) -> List.length a | _ -> 0 in
+    if isdep then n+p+1 else n+p) 0 tomatchl in
   let cook n = function
     | c,IsInd (_,IndType(ind_data,realargs)) ->
 	Some (List.map (lift n) realargs), Some (lift n c)
     | c,NotInd _ -> None, Some (lift n c) in
-  let rec buildrec n q = function
-    | [] -> PrCcl (lift q pred)
+  let rec buildrec n pred = function
+    | [] -> PrCcl pred
     | tm::ltm ->
 	match cook n tm with
 	  | None, cur ->
-	      if isdep then
-		PrNotInd (cur, buildrec (n+1) (q+1) ltm)
-	      else
-		PrNotInd (None, buildrec n q ltm)
+              let cur, pred, p =
+                if isdep then 
+                  if dependent (mkRel (nar-n)) pred then cur, pred, 1
+                  else None, liftn (-1) (nar-n) pred, 0
+                else None, pred, 0 in
+	      PrNotInd (cur, buildrec (n+p) pred ltm)
 	  | Some realargs, cur ->
 	      let nrealargs = List.length realargs in
-	      if isdep then
-		PrLetIn ((realargs,cur), buildrec (n+nrealargs+1) q ltm)
-	      else
-		PrLetIn ((realargs,None), buildrec (n+nrealargs) q ltm)
-  in buildrec 0 0 tomatchl
+              let cur, pred, p =
+                if isdep then 
+                  if dependent (mkRel (nar-n)) pred then cur, pred, 1
+                  else None, liftn (-1) (nar-n) pred, 0
+                else None, pred, 0 in
+	      PrLetIn ((realargs,cur), buildrec (n+nrealargs+p) pred ltm)
+  in buildrec 0 pred tomatchl
 
 let extract_arity_signature env0 tomatchl tmsign =
   let get_one_sign n tm {contents = (na,t)} =
     match tm with
-      | NotInd _ -> 
+      | NotInd (bo,typ) -> 
 	  (match t with
-	    | None -> []
+	    | None -> [na,option_app (lift n) bo,lift n typ]
 	    | Some (loc,_,_) -> 
  	    user_err_loc (loc,"",
 	    str "Unexpected type annotation for a term of non inductive type"))
@@ -1648,15 +1653,25 @@ let extract_arity_signature env0 tomatchl tmsign =
     | _ -> assert false
   in buildrec 0 (tomatchl,tmsign)
 
-(* determines wether the multiple case is dependent or not. For that
- * the predicate given by the user is eta-expanded. If the result
- * of expansion is pred, then :
- * if pred=[x1:T1]...[xn:Tn]P and tomatchj=[|[e1:S1]...[ej:Sj]] then
- * if n= SUM {i=1 to j} nb_prod (arity Sj)
- *  then case_dependent= false
- *  else if n= j+(SUM (i=1 to j) nb_prod(arity Sj))
- *        then case_dependent=true
- *        else error! (can not treat mixed dependent and non dependent case
+(* Builds the predicate. If the predicate is dependent, its context is
+ * made of 1+nrealargs assumptions for each matched term in an inductive
+ * type and 1 assumption for each term not _syntactically_ in an
+ * inductive type.
+
+ * V7 case: determines whether the multiple case is dependent or not
+ * - if its arity is made of nrealargs assumptions for each matched
+ * term in an inductive type and nothing for terms not _syntactically_
+ * in an inductive type, then it is non dependent
+ * - if its arity is made of 1+nrealargs assumptions for each matched
+ * term in an inductive type and nothing for terms not _syntactically_
+ * in an inductive type, then it is dependent and needs an adjustement
+ * to fulfill the criterion above that terms not in an inductive type
+ * counts for 1 in the dependent case
+
+ * V8 case: each matched terms are independently considered dependent
+ * or not
+
+ * A type constraint but no annotation case: it is assumed non dependent
  *)
 
 let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
@@ -1666,8 +1681,7 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
        | None -> None
        | Some t ->
 	 let pred = prepare_predicate_from_tycon loc false env isevars tomatchs t in
-	 Some
-	  (build_initial_predicate env (evars_of isevars) false pred tomatchs))
+	 Some (build_initial_predicate false pred tomatchs))
 
   (* v8 style type annotation *)
   | (None,{contents = Some rtntyp}) ->
@@ -1676,8 +1690,7 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
       let arsign = extract_arity_signature env tomatchs sign in
       let env = push_rels arsign env in
       let predccl = (typing_fun (mk_tycon (new_Type ())) env rtntyp).uj_val in
-      Some
-        (build_initial_predicate env (evars_of isevars) true predccl tomatchs)
+      Some (build_initial_predicate true predccl tomatchs)
 
   (* v7 style type annotation; set the v8 annotation by side effect *)
   | (Some pred,x) ->
@@ -1705,12 +1718,12 @@ let prepare_predicate loc typing_fun isevars env tomatchs sign tycon = function
 	error_wrong_predicate_arity_loc
 	  loc env predj.uj_val ndep_arity dep_arity
       in
-      let predccl = extract_predicate_conclusion n predj.uj_val in
+      let predccl = extract_predicate_conclusion dep tomatchs predj.uj_val in
 (*
       let etapred,cdep = case_dependent env (evars_of isevars) loc predj tomatchs in
 *)
       set_arity_signature dep n sign tomatchs pred x;
-      Some(build_initial_predicate env (evars_of isevars) dep predccl tomatchs)
+      Some (build_initial_predicate dep predccl tomatchs)
 
 
 (**************************************************************************)
