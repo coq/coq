@@ -1609,12 +1609,12 @@ let build_initial_predicate isdep pred tomatchl =
     | [] -> PrCcl pred
     | tm::ltm ->
         let nrealargs = cook tm in
-        let pred, p =
+        let pred, p, user_p =
           if isdep then 
-            if dependent (mkRel (nar-n)) pred then pred, 1
-            else liftn (-1) (nar-n) pred, 0
-          else pred, 0 in
-	PrLetIn ((nrealargs,p=1), buildrec (n+nrealargs+p) pred ltm)
+            if dependent (mkRel (nar-n)) pred then pred, 1, 1
+            else liftn (-1) (nar-n) pred, 0, 1
+          else pred, 0, 0 in
+	PrLetIn ((nrealargs,p=1), buildrec (n+nrealargs+user_p) pred ltm)
   in buildrec 0 pred tomatchl
 
 let extract_arity_signature env0 tomatchl tmsign =
