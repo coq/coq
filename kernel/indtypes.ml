@@ -2,6 +2,7 @@
 (* $Id$ *)
 
 open Util
+open Names
 open Generic
 open Term
 open Inductive
@@ -9,6 +10,7 @@ open Sign
 open Environ
 open Instantiate
 open Reduction
+open Typeops
 
 (* In the following, each time an [evar_map] is required, then [Evd.empty]
    is given, since inductive types are typed in an environment without 
@@ -49,7 +51,7 @@ type ill_formed_ind =
 exception IllFormedInd of ill_formed_ind
 
 let explain_ind_err ntyp lna nbpar c err = 
-  let (lpar,c') = decompose_prod_n nbpar c in
+  let (lpar,c') = mind_extract_params nbpar c in
   let env = (List.map fst lpar)@lna in
   match err with
     | NonPos kt -> 
@@ -94,7 +96,7 @@ let abstract_mind_lc env ntyps npars lc =
     in 
     Array.map (compose (nf_beta env Evd.empty) (substl make_abs)) lC
 
-let decomp_par n c = snd (decompose_prod_n n c)
+let decomp_par n c = snd (mind_extract_params n c)
       
 let listrec_mconstr env ntypes nparams i indlc =
   (* check the inductive types occur positively in C *)
@@ -267,10 +269,17 @@ let cci_inductive env env_ar kind nparams finite inds cst =
       mind_listrec = recargs;
       mind_finite = finite }
   in
+  let ids = 
+    List.fold_left 
+      (fun acc (_,ar,_,_,_,lc) -> 
+	 Idset.union (global_vars_set ar.body) 
+	   (Idset.union (global_vars_set lc) acc))
+      Idset.empty inds
+  in
   let packets = Array.of_list (list_map_i one_packet 1 inds) in
   { mind_kind = kind;
     mind_ntypes = ntypes;
-    mind_hyps = var_context env;
+    mind_hyps = keep_hyps (var_context env) ids;
     mind_packets = packets;
     mind_constraints = cst;
     mind_singl = None;

@@ -90,3 +90,5 @@ val find_case_dep_nparams :
 val type_inst_construct : env -> 'a evar_map -> int -> constr -> constr 
 
 val hyps_inclusion : env -> 'a evar_map -> var_context -> var_context -> bool
+
+val keep_hyps : var_context -> Idset.t -> var_context

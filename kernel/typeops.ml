@@ -954,3 +954,19 @@ let control_only_guard env sigma =
     | DLAMV(_,v)    -> Array.iter control_rec v
   in 
   control_rec 
+
+(* [keep_hyps sign ids] keeps the part of the signature [sign] which 
+   contains the variables of the set [ids], and recursively the variables 
+   contained in the types of the needed variables. *)
+
+let keep_hyps sign needed =
+  rev_sign
+    (fst (it_sign 
+	    (fun ((hyps,globs) as sofar) id a ->
+               if Idset.mem id globs then
+                 (add_sign (id,a) hyps, 
+		  Idset.union (global_vars_set a.body) globs)
+               else 
+		 sofar) 
+	    (nil_sign,needed) sign))
+    

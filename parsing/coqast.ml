@@ -15,6 +15,22 @@ type t =
 
 type the_coq_ast = t
 
+let subst_meta bl ast =
+  let rec aux = function
+    | Node (_,"META", [Num(_, n)]) -> List.assoc n bl
+    | Node(loc, node_name, args) -> 
+	Node(loc, node_name, List.map aux args)
+    | Slam(loc, var, arg) -> Slam(loc, var, aux arg)
+    | other -> other
+  in 
+  aux ast
+
+let rec collect_metas = function
+  | Node (_,"META", [Num(_, n)]) -> [n]
+  | Node(_, _, args) -> List.concat (List.map collect_metas args)
+  | Slam(loc, var, arg) -> collect_metas arg
+  | _ -> []
+
 (* Hash-consing *)
 module Hloc = Hashcons.Make(
   struct

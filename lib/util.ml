@@ -231,6 +231,8 @@ let list_except_assoc e =
   in 
   except_e 
 
+let list_join_map f l = List.flatten (List.map f l)
+
 
 (* Arrays *)
 

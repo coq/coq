@@ -337,7 +337,17 @@ let global_varsl l constr =
 let global_vars constr = global_varsl [] constr
 
 let global_vars_set constr = 
-  List.fold_left (fun s x -> Idset.add x s) Idset.empty (global_vars constr)
+  let rec filtrec acc = function
+    | VAR id             -> Idset.add id acc
+    | DOP1(oper,c)       -> filtrec acc c
+    | DOP2(oper,c1,c2)   -> filtrec (filtrec acc c1) c2
+    | DOPN(oper,cl)      -> Array.fold_left filtrec acc cl
+    | DOPL(oper,cl)      -> List.fold_left filtrec acc cl
+    | DLAM(_,c)          -> filtrec acc c
+    | DLAMV(_,v)         -> Array.fold_left filtrec acc v
+    | _                  -> acc
+  in 
+  filtrec Idset.empty constr
 
 (* alpha equality for generic terms : checks first if M and M' are equal,
    otherwise checks equality forgetting the name annotation of DLAM and DLAMV*)

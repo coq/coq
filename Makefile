@@ -96,6 +96,7 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/nbtermdn.cmo tactics/stock.cmo tactics/pattern.cmo \
 	tactics/wcclausenv.cmo tactics/tacticals.cmo tactics/tactics.cmo \
         tactics/tacentries.cmo tactics/hiddentac.cmo tactics/elim.cmo
+#	tactics/dhyp.cmo tactics/auto.cmo
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
          toplevel/metasyntax.cmo toplevel/command.cmo toplevel/class.cmo \

@@ -77,9 +77,8 @@ val ifOnClause     :
    if the term concl matches the pattern pat, (in sense of 
    Pattern.somatches, then replace ?1 ?2 metavars in tacast by the
    right values to build a tactic *)
-(***
-val conclPattern : constr -> constr -> CoqAst.t -> tactic
-**i*)
+
+val conclPattern : constr -> constr -> Coqast.t -> tactic
 
 (*s Elimination tacticals. *)
 

@@ -24,3 +24,5 @@ val vernac_interp_atomic : identifier -> tactic_arg list -> tactic
 val overwriting_tacinterp_add : string * (tactic_arg list -> tactic) -> unit
 val is_just_undef_macro     : Coqast.t -> string option
 
+val bad_tactic_args : string -> 'a
+

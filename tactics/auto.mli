@@ -44,7 +44,7 @@ module Hint_db :
 
 type frozen_hint_db_table = Hint_db.t Stringmap.t
 
-type hint_db_table = Hint_db.t Stringmap.t
+type hint_db_table = Hint_db.t Stringmap.t ref
 
 val searchtable : hint_db_table
 

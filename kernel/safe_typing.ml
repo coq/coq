@@ -280,11 +280,14 @@ let add_constant sp ce env =
 	  with NotConvertible -> 
 	    error_actual_type CCI env jb.uj_val jb.uj_type jt.uj_val
   in
+  let ids = 
+    Idset.union (global_vars_set ce.const_entry_body) (global_vars_set ty.body)
+  in
   let cb = { 
     const_kind = kind_of_path sp;
     const_body = Some ce.const_entry_body;
     const_type = ty;
-    const_hyps = var_context env;
+    const_hyps = keep_hyps (var_context env) ids;
     const_constraints = Constraint.union cst cst';
     const_opaque = false } 
   in
@@ -293,11 +296,12 @@ let add_constant sp ce env =
 let add_parameter sp t env =
   let (jt,cst) = safe_machine env t in
   let env' = add_constraints cst env in
+  let ids = global_vars_set jt.uj_val in
   let cb = {
     const_kind = kind_of_path sp;
     const_body = None;
     const_type = assumption_of_judgment env' Evd.empty jt;
-    const_hyps = var_context env;
+    const_hyps = keep_hyps (var_context env) ids;
     const_constraints = cst;
     const_opaque = false } 
   in
@@ -333,7 +337,7 @@ let enforce_type_constructor env univ j cst =
     | _ -> error "Type of Constructor not well-formed"
 
 let type_one_constructor env_ar nparams ar c =
-  let (params,dc) = decompose_prod_n nparams c in
+  let (params,dc) = mind_extract_params nparams c in
   let env_par = push_rels params env_ar in
   let (jc,cst) = safe_machine env_par dc in
   let cst' = match sort_of_arity env_ar ar with
@@ -356,8 +360,10 @@ let logic_arity env c =
 let is_unit env_par nparams ar spec =
   match decomp_all_DLAMV_name spec with
     | (_,[|c|]) ->
-	(let (_,a) = decompose_prod_n nparams ar in logic_arity env_par ar) &&
-	(let (_,c') = decompose_prod_n nparams c in logic_constr env_par c')
+	(let (_,a) = mind_extract_params nparams ar in 
+	 logic_arity env_par ar) &&
+	(let (_,c') = mind_extract_params nparams c in 
+	 logic_constr env_par c')
     | _ -> false
 
 let type_one_inductive i env_ar env_par nparams ninds (id,ar,cnames,spec) =

@@ -1,6 +1,8 @@
 
 (* $Id$ *)
 
+(* Abstract syntax trees. *)
+
 type loc = int * int
 
 type t =
@@ -13,5 +15,13 @@ type t =
   | Path of loc * string list* string
   | Dynamic of loc * Dyn.t
 
+(* returns the list of metas occuring in the ast *)
+val collect_metas : t -> int list
+
+(* [subst_meta bl ast]: for each binding [(i,c_i)] in [bl], 
+   replace the metavar [?i] by [c_i] in [ast] *)
+val subst_meta : (int * t) list -> t -> t
+
+(* hash-consing function *)
 val hcons_ast: (string -> string) -> (t -> t) * (loc -> loc)
 

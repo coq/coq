@@ -109,6 +109,7 @@ open Util
 open Names
 open Generic
 open Term
+open Environ
 open Reduction
 open Proof_trees
 open Tacmach
@@ -120,6 +121,9 @@ open Libobject
 open Library
 open Vernacinterp
 open Pattern
+open Coqast
+open Ast
+open Pcoq
 
 (* two patterns - one for the type, and one for the type of the type *)
 type destructor_pattern = {
@@ -200,28 +204,29 @@ let add_destructor_hint na pat pri code =
     (inDD (na,{ d_pat = pat; d_pri=pri; d_code=code }))
 
 let _ = 
-  vinterp_add
-    ("HintDestruct",
-     fun [VARG_IDENTIFIER na; VARG_AST location; VARG_COMMAND patcom;
+  vinterp_add "HintDestruct"
+    (function
+       | [VARG_IDENTIFIER na; VARG_AST location; VARG_COMMAND patcom;
           VARG_NUMBER pri; VARG_AST tacexp] ->
-       let loc =
-	 match location with
-           | Node(_,"CONCL",[]) -> CONCL()
-	   | Node(_,"DiscardableHYP",[]) -> HYP true
-	   | Node(_,"PreciousHYP",[]) -> HYP false 
-       in
-       fun () ->
-	 let pat = raw_sopattern_of_compattern (initial_sign()) patcom in
-	 let code = Ast.to_act_check_vars ["$0",ETast] ETast tacexp in
-	 add_destructor_hint na
-           (match loc with
-              | HYP b ->
-		  HYP(b,{d_typ=pat;d_sort=DOP0(Meta(newMETA()))},
-                      { d_typ=DOP0(Meta(newMETA()));
-		       	d_sort=DOP0(Meta(newMETA())) })
-              | CONCL () ->
-		  CONCL({d_typ=pat;d_sort=DOP0(Meta(newMETA()))}))
-           pri code)
+	   let loc = match location with
+             | Node(_,"CONCL",[]) -> Concl()
+	     | Node(_,"DiscardableHYP",[]) -> Hyp true
+	     | Node(_,"PreciousHYP",[]) -> Hyp false 
+	     | _ -> assert false
+	   in
+	   fun () ->
+	     let pat = raw_sopattern_of_compattern (Global.env()) patcom in
+	     let code = Ast.to_act_check_vars ["$0",ETast] ETast tacexp in
+	     add_destructor_hint na
+               (match loc with
+		  | Hyp b ->
+		      Hyp(b,{d_typ=pat;d_sort=DOP0(Meta(new_meta()))},
+			  { d_typ=DOP0(Meta(new_meta()));
+		       	    d_sort=DOP0(Meta(new_meta())) })
+		  | Concl () ->
+		      Concl({d_typ=pat;d_sort=DOP0(Meta(new_meta()))}))
+               pri code
+       | _ -> bad_vernac_args "HintDestruct")
 
 let match_dpat dp cls gls =
   let cltyp = clause_type cls gls in
@@ -242,12 +247,15 @@ let applyDestructor cls discard dd gls =
     | Some id -> ["$0", Vast (nvar (string_of_id id))]
     | None -> ["$0", Vast (nvar "$0")] in
   (* TODO: find the real location *)
-  let (Vast tcom) = Ast.eval_act dummy_loc astb dd.d_code in
+  let tcom = match Ast.eval_act dummy_loc astb dd.d_code with
+    | Vast tcom -> tcom
+    | _ -> assert false 
+  in
   let discard_0 =
     match (cls,dd.d_pat) with
-      | (Some id,HYP(discardable,_,_)) ->
+      | (Some id,Hyp(discardable,_,_)) ->
           if discard & discardable then thin [id] else tclIDTAC
-      | (None,CONCL _) -> tclIDTAC
+      | (None,Concl _) -> tclIDTAC
       | _ -> error "ApplyDestructor" 
   in
   (tclTHEN (Tacinterp.interp tcom) discard_0) gls
@@ -269,8 +277,17 @@ let dHyp id gls = destructHyp false id gls
 
 open Tacinterp
 
-let _ = tacinterp_add("DHyp",(fun [Identifier id] -> dHyp id))
-let _ = tacinterp_add("CDHyp",(fun [Identifier id] -> cDHyp id))
+let _ = 
+  tacinterp_add
+    ("DHyp",(function
+	       | [Identifier id] -> dHyp id
+	       | _ -> bad_tactic_args "DHyp"))
+
+let _ = 
+  tacinterp_add
+    ("CDHyp",(function
+		| [Identifier id] -> cDHyp id
+		| _ -> bad_tactic_args "CDHyp"))
 
 (* [DConcl gls]
 
@@ -283,9 +300,13 @@ let dConcl gls =
   let sorted_ddl = Sort.list (fun dd1 dd2 -> dd1.d_pri > dd2.d_pri) ddl in
   tclFIRST (List.map (applyDestructor None false) sorted_ddl) gls
 
-let _ = tacinterp_add("DConcl",(fun [] -> dConcl))
+let _ = 
+  tacinterp_add
+    ("DConcl",(function
+		 | [] -> dConcl
+		 | _ -> bad_tactic_args "DConcl"))
 
-let to2Lists (table:t) = Nbtermdn.to2Lists table
+let to2Lists (table:t) = Nbtermdn.to2lists table
 
 let rec search n =
   if n=0 then error "Search has reached zero.";
@@ -306,5 +327,6 @@ let sarch_depth_tdb = ref(5)
 let dyn_auto_tdb = function 
   | [Integer n] -> auto_tdb n 
   | []          -> auto_tdb !sarch_depth_tdb
+  | _           -> bad_tactic_args "AutoTDB"
 
 let h_auto_tdb = hide_tactic "AutoTDB" dyn_auto_tdb

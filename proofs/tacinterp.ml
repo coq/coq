@@ -154,3 +154,7 @@ let vernac_interp_atomic =
 	 | _ -> assert false)
   in 
   fun opn args -> gentac ((Identifier opn)::args)
+
+let bad_tactic_args s =
+  anomalylabstrm s
+    [< 'sTR"Tactic "; 'sTR s; 'sTR" called with bad arguments" >]

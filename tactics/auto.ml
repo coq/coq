@@ -22,6 +22,7 @@ open Hiddentac
 open Libobject
 open Library
 open Vernacinterp
+open Printer
 
 (****************************************************************************)
 (*            The Type of Constructions Autotactic Hints                    *)
@@ -33,7 +34,7 @@ type auto_tactic =
   | Give_exact of constr                  
   | Res_pf_THEN_trivial_fail of constr * unit clausenv (* Hint Immediate *)
   | Unfold_nth of constr                 (* Hint Unfold *)
-  | Extern of CoqAst.t                   (* Hint Extern *) 
+  | Extern of Coqast.t                   (* Hint Extern *) 
 
 type pri_auto_tactic = { 
   hname : identifier;    (* name of the hint *)
@@ -120,9 +121,9 @@ end
 
 type frozen_hint_db_table = Hint_db.t Stringmap.t 
 
-type hint_db_table = Hint_db.t Stringmap.t
+type hint_db_table = Hint_db.t Stringmap.t ref
 
-let searchtable  = ref (Stringmap.empty : hint_db_table)
+let searchtable = (ref Stringmap.empty : hint_db_table)
 
 let searchtable_map name = 
   Stringmap.find name !searchtable
@@ -190,7 +191,7 @@ let make_exact_entry name (c,cty) =
 	 { hname=name; pri=0; pat=None; code=Give_exact c })
 
 let make_apply_entry (eapply,verbose) name (c,cty) =
-  match hnf_constr (Global.unsafe_env()) Evd.empty cty with
+  match hnf_constr (Global.env()) Evd.empty cty with
     | DOP2(Prod,_,_) as cty ->
         let hdconstr = (try  List.hd (head_constr_bound cty [])  
                         with Bound -> failwith "make_apply_entry") in
@@ -227,7 +228,7 @@ let make_resolves name eap (c,cty) =
       [make_exact_entry; make_apply_entry eap]
   in 
   if ents = [] then 
-    errorlabstrm "Hint" [< pTERM c; 'sPC; 'sTR "cannot be used as a hint" >];
+    errorlabstrm "Hint" [< prterm c; 'sPC; 'sTR "cannot be used as a hint" >];
   ents
 
 (* used to add an hypothesis to the local hint database *)
@@ -246,7 +247,7 @@ let add_resolves clist dbnames =
 	    (dbname,
      	     (List.flatten
 		(List.map (fun (name,c) -> 
-			     let env = Global.unsafe_env() in
+			     let env = Global.env() in
 			     let ty = type_of env Evd.empty c in
 			     make_resolves name (true,true) (c,ty)) clist))
 	    )))
@@ -284,21 +285,21 @@ let make_extern name pri pat tacast =
 let add_extern name pri pat tacast dbname =
   (* We check that all metas that appear in tacast have at least
      one occurence in the left pattern pat *)
-  let tacmetas = CoqAst.collect_metas tacast in 
+  let tacmetas = Coqast.collect_metas tacast in 
   let patmetas = Clenv.collect_metas pat in
-  match (subtract tacmetas patmetas) with
+  match (list_subtract tacmetas patmetas) with
     | i::_ ->
 	errorlabstrm "add_extern" 
 	  [< 'sTR "The meta-variable ?"; 'iNT i; 'sTR" is not bound" >]
     | []  ->
-	add_anonymous_object 
+	Lib.add_anonymous_leaf
 	  (inAutoHint(dbname, [make_extern name pri pat tacast]))
 
 let add_externs name pri pat tacast dbnames = 
   List.iter (add_extern name pri pat tacast) dbnames
 
 let make_trivial (name,c) =
-  let sigma = Evd.empty and env = Global.unsafe_env() in
+  let sigma = Evd.empty and env = Global.env() in
   let t = type_of env sigma c in
   let hdconstr = List.hd (head_constr t) in
   let ce = mk_clenv_from () (c,hnf_constr env sigma t) in
@@ -329,7 +330,7 @@ let _ =
     "HintResolve"
     (function 
        | [VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_COMMAND c] ->
-	   let c1 = Trad.constr_of_com (Evd.mt_evd()) (initial_sign()) c in
+	   let c1 = Astterm.constr_of_com Evd.empty (Global.env()) c in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
 		      	 | _ -> bad_vernac_args "HintResolve") l in
@@ -341,7 +342,7 @@ let _ =
     "HintImmediate"
     (function 
        | [VARG_IDENTIFIER hintname; VARG_VARGLIST l; VARG_COMMAND c] ->
-	   let c1 = Trad.constr_of_com (Evd.mt_evd()) (initial_sign()) c in
+	   let c1 = Astterm.constr_of_com Evd.empty (Global.env()) c in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
 			 | _ -> bad_vernac_args "HintImmediate") l in
@@ -377,7 +378,7 @@ let _ =
        | [VARG_IDENTIFIER hintname; VARG_VARGLIST l;
 	  VARG_NUMBER pri; VARG_COMMAND patcom; VARG_TACTIC tacexp] ->
            let pat = Pattern.raw_sopattern_of_compattern 
-		       (initial_sign()) patcom in
+		       (Global.env()) patcom in
 	   let dbnames = if l = [] then ["core"] else 
 	     List.map (function VARG_IDENTIFIER i -> string_of_id i
 		      	 | _ -> bad_vernac_args "HintConstructors") l in
@@ -507,7 +508,7 @@ let fmt_hint_term cl =
 		      'sTR " :"; 'fNL;
 		      fmt_hint_list hintlist >])
 	   valid_dbs >]
-  with BOUND | Match_failure _ | Failure _ -> 
+  with Bound | Match_failure _ | Failure _ -> 
     [<'sTR "No hint applicable for current goal" >]
 	  
 let print_hint_term cl = pPNL (fmt_hint_term cl)
@@ -542,29 +543,29 @@ let print_searchtable () =
     !searchtable
 
 let _ = 
-  vinterp_add("PrintHint",
-	      function 
-		| [] -> fun () -> print_searchtable()
-	        | _ -> assert false)
+  vinterp_add "PrintHint"
+    (function 
+       | [] -> fun () -> print_searchtable()
+       | _ -> bad_vernac_args "PrintHint")
 
 let _ = 
-  vinterp_add("PrintHintDb",
-	      function 
-	      	| [(VARG_IDENTIFIER id)] -> 
-		    fun () -> print_hint_db_by_name (string_of_id id)
-	      	| _ -> assert false)
+  vinterp_add "PrintHintDb"
+    (function 
+       | [(VARG_IDENTIFIER id)] -> 
+	   fun () -> print_hint_db_by_name (string_of_id id)
+       | _ -> bad_vernac_args "PrintHintDb")
 
 let _ = 
-  vinterp_add("PrintHintGoal",
-	      function 
-		| [] -> fun () -> print_applicable_hint()
-	        | _ -> assert false)
+  vinterp_add "PrintHintGoal"
+    (function 
+       | [] -> fun () -> print_applicable_hint()
+       | _ -> bad_vernac_args "PrintHintGoal")
     
 let _ = 
-  vinterp_add("PrintHintId",
-	      function 
-		| [(VARG_IDENTIFIER id)] -> fun () -> print_hint_id id
-	        | _ -> assert false)
+  vinterp_add "PrintHintId"
+    (function 
+       | [(VARG_IDENTIFIER id)] -> fun () -> print_hint_id id
+       | _ -> bad_vernac_args "PrintHintId")
 
 (**************************************************************************)
 (*                           Automatic tactics                            *)
@@ -635,7 +636,7 @@ and my_find_search db_list local_db hdc concl =
 		(trivial_fail_db db_list local_db)
 	  | Unfold_nth c -> unfold_constr c
 	  | Extern tacast -> 
-	      conclPattern concl (outSOME p) tacast))
+	      conclPattern concl (out_some p) tacast))
     tacl
 
 and trivial_resolve db_list local_db cl = 
@@ -888,7 +889,7 @@ let search_superauto n ids argl g =
     ids,
     (List.map (fun id -> pf_type_of g (pf_global g id)) ids) in   
   let hyps = (concat_sign (pf_untyped_hyps g) sigma) in
-  super_search n [Fmavm.map searchtable "core"] (make_local_hint_db hyps)
+  super_search n [Stringmap.find "core" !searchtable] (make_local_hint_db hyps)
     argl g
 
 let superauto n ids_add argl  = 
@@ -907,13 +908,13 @@ let dyn_superauto l g =
   match l with
     | (Integer n)::(Clause ids_add)::l -> 
         superauto n ids_add 
-          (join_map_list 
+          (list_join_map
              (function 
 		| Quoted_string s -> (cvt_autoArgs s)
                 | _ -> assert false) l) g
     | _::(Clause ids_add)::l  -> 
         superauto !default_search_depth ids_add 
-          (join_map_list 
+          (list_join_map
              (function 
 		| Quoted_string s -> (cvt_autoArgs s)
                 | _ -> assert false) l) g

@@ -191,7 +191,7 @@ fois pour toutes : en particulier si Pattern.somatch produit une UserError
 Ce qui fait que si la conclusion ne matche pas le pattern, Auto échoue, même
 si après Intros la conclusion matche le pattern.
 *)
-(***TODO
+
 let conclPattern concl pat tacast gl = 
   let constr_bindings = Pattern.somatch None pat concl in
   let ast_bindings = 
@@ -199,8 +199,7 @@ let conclPattern concl pat tacast gl =
       (fun (i,c) -> (i, Termast.bdize false (assumptions_for_print []) c))
       constr_bindings in 
   let tacast' = Coqast.subst_meta ast_bindings tacast in
-    Tacinterp.interp tacast' gl
-***)
+  Tacinterp.interp tacast' gl
 
 let clauseTacThen tac continuation =
   (fun cls -> (tclTHEN (tac cls) continuation))
