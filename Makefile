@@ -56,7 +56,7 @@ OCAMLOPT_P4O=$(OCAMLOPT) -pp $(CAMLP4O) $(OPTFLAGS)
 CAMLP4EXTENDFLAGS=-I . pa_extend.cmo q_MLast.cmo
 CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 
-COQINCLUDES=-R theories Coq -R contrib Coq
+COQINCLUDES=          # coqtop includes itself the needed paths
 
 ###########################################################################
 # Objects files 
