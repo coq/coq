@@ -50,6 +50,7 @@ val pr_constr : constr_expr -> std_ppcmds
 val pr_lconstr : constr_expr -> std_ppcmds
 val pr_constr_env : env -> constr_expr -> std_ppcmds
 val pr_lconstr_env : env -> constr_expr -> std_ppcmds
+val pr_lconstr_vars : identifier list -> constr_expr -> std_ppcmds
 val pr_cases_pattern : cases_pattern_expr -> std_ppcmds
 val pr_binders : (name located  list * constr_expr) list -> std_ppcmds
 val pr_may_eval :
@@ -59,3 +60,7 @@ val pr_metaid : identifier -> std_ppcmds
 
 val pr_rawconstr_env : env -> rawconstr -> std_ppcmds
 val pr_lrawconstr_env : env -> rawconstr -> std_ppcmds
+
+val pr_rawconstr_env_no_translate : env -> rawconstr -> std_ppcmds
+val pr_lrawconstr_env_no_translate : env -> rawconstr -> std_ppcmds
+val pr_pattern_env_no_translate : env -> Pattern.constr_pattern -> std_ppcmds

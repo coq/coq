@@ -201,7 +201,10 @@ let pr_prod_binders pr bl =
 let pr_arg_binders pr bl =
   if bl = [] then mt() else (spc() ++ pr_binders pr bl)
 
-let pr_global vars ref = pr_global_env vars ref
+let pr_global vars ref =
+  (* pr_global_env vars ref *)
+  let s = string_of_qualid (Constrextern.shortest_qualid_of_v7_global vars ref) in
+  (str s)
 
 let split_lambda = function
   | CLambdaN (loc,[[na],t],c) -> (na,t,c)
@@ -277,7 +280,7 @@ let rec check_same_type ty1 ty2 =
       check_same_type b1 b2
   | CAppExpl(_,r1,al1), CAppExpl(_,r2,al2) when r1=r2 ->
       List.iter2 check_same_type al1 al2
-  | CApp(_,e1,al1), CApp(_,e2,al2) ->
+  | CApp(_,(_,e1),al1), CApp(_,(_,e2),al2) ->
       check_same_type e1 e2;
       List.iter2 (fun (a1,e1) (a2,e2) ->
                     if e1<>e2 then failwith "not same expl";
@@ -421,6 +424,19 @@ let pr_annotation2 pr po =
       None -> mt()
     | Some p -> spc() ++ str "of type " ++ hov 0 (pr ltop p)
 
+let pr_proj pr pr_app a f l =
+  hov 0 (pr lsimple a ++ cut() ++ str ".(" ++ pr_app pr f l ++ str ")")
+
+let pr_appexpl pr f l =
+      hov 2 (
+	str "@" ++ pr_reference f ++
+	prlist (fun a -> spc () ++ pr (lapp,L) a) l)
+
+let pr_app pr a l =
+  hov 2 (
+    pr (lapp,L) a  ++ 
+    prlist (fun a -> spc () ++ pr_expl_args pr a) l)
+
 let rec pr inherited a =
   let (strm,prec) = match a with
   | CRef r -> pr_reference r, latom
@@ -452,16 +468,15 @@ let rec pr inherited a =
                pr ltop a ++ str " in") ++
         spc () ++ pr ltop b),
       lletin
-  | CAppExpl (_,f,l) ->
-      hov 2 (
-	str "@" ++ pr_reference f ++
-	prlist (fun a -> spc () ++ pr (lapp,L) a) l),
-      lapp
-  | CApp (_,a,l) ->
-      hov 2 (
-	pr (lapp,L) a  ++ 
-	prlist (fun a -> spc () ++ pr_expl_args pr a) l),
-      lapp
+  | CAppExpl (_,(true,f),l) ->
+      let a,l = list_sep_last l in
+      pr_proj pr pr_appexpl a f l, lapp
+  | CAppExpl (_,(false,f),l) -> pr_appexpl pr f l, lapp
+  | CApp (_,(true,a),l) ->
+      let c,l = list_sep_last l in
+      assert (snd c = None);
+      pr_proj pr pr_app (fst c) a l, lapp
+  | CApp (_,(false,a),l) -> pr_app pr a l, lapp
   | CCases (_,po,c,eqns) ->
       v 0
         (hov 4 (str "match " ++ prlist_with_sep sep_v (pr ltop) c ++
@@ -515,17 +530,21 @@ let rec pr inherited a =
   if prec_less prec inherited then strm
   else str"(" ++ strm ++ str")"
 
-let transf env c =
+let transf env vars c =
   if Options.do_translate() then
     Constrextern.extern_rawconstr (Termops.vars_of_env env)
       (Constrintern.for_grammar
-        (Constrintern.interp_rawconstr Evd.empty env) c)
+        (Constrintern.interp_rawconstr_gen false Evd.empty env [] false 
+	  (vars,[]))
+	c)
   else c
 
-let pr_constr_env env c = pr lsimple (transf env c)
-let pr_lconstr_env env c = pr ltop (transf env c)
+let pr_constr_env env c = pr lsimple (transf env [] c)
+let pr_lconstr_env env c = pr ltop (transf env [] c)
 let pr_constr c = pr_constr_env (Global.env()) c
 let pr_lconstr c = pr_lconstr_env (Global.env()) c
+
+let pr_lconstr_vars vars c = pr ltop (transf (Global.env()) vars c)
 
 let transf_pattern env c =
   if Options.do_translate() then
@@ -617,3 +636,12 @@ let rec pr_may_eval prc prlc pr2 = function
 	 str "[" ++ prlc c ++ str "]")
   | ConstrTypeOf c -> hov 1 (str "check" ++ spc() ++ prlc c)
   | ConstrTerm c -> prlc c
+
+let pr_rawconstr_env_no_translate env c =
+  pr lsimple (Constrextern.extern_rawconstr (Termops.vars_of_env env) c)
+let pr_lrawconstr_env_no_translate env c =
+  pr ltop (Constrextern.extern_rawconstr (Termops.vars_of_env env) c)
+
+
+let pr_pattern_env_no_translate env c =
+  pr lsimple (Constrextern.extern_pattern env Termops.empty_names_context c)
