@@ -120,8 +120,7 @@ let parse_args () =
     | "-full" :: rem -> warning "option -full deprecated\n"; parse rem
 
     | "-batch" :: rem -> set_batch_mode (); parse rem
-    | "-boot" :: rem -> boot := true; no_load_rc (); set_batch_mode ();
-	parse rem	     
+    | "-boot" :: rem -> boot := true; no_load_rc (); parse rem	     
     | "-outputstate" :: s :: rem -> set_outputstate s; parse rem
     | "-outputstate" :: []       -> usage ()
 

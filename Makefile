@@ -302,7 +302,7 @@ states: states/barestate.coq states/initial.coq
 SYNTAXPP=syntax/PPConstr.v syntax/PPCases.v syntax/PPTactic.v
 
 states/barestate.coq: $(SYNTAXPP) $(BESTCOQTOP)
-	$(BESTCOQTOP) -boot -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
+	$(BESTCOQTOP) -boot -batch -silent -nois -I syntax -load-vernac-source syntax/MakeBare.v -outputstate states/barestate.coq
 
 INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/DatatypesSyntax.vo   theories/Init/Prelude.vo       \
@@ -312,7 +312,7 @@ INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/Logic_TypeSyntax.vo
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
-	$(COQC) -boot -$(BEST) $(INCLUDES) -R theories Coq -is states/barestate.coq $<
+	$(COQC) -boot -$(BEST) -R theories Coq -is states/barestate.coq $<
 
 init: $(INITVO)
 
@@ -323,13 +323,13 @@ TACTICSVO=tactics/Equality.vo tactics/Tauto.vo tactics/Inv.vo \
 	  tactics/EqDecide.vo $(EXTRACTIONVO)
 
 tactics/%.vo: tactics/%.v states/barestate.coq $(COQC)
-	$(COQC) -boot -$(BEST) $(INCLUDES) -I tactics -is states/barestate.coq $<
+	$(COQC) -boot -$(BEST) $(INCLUDES) -is states/barestate.coq $<
 
 contrib/extraction/%.vo: contrib/extraction/%.v states/barestate.coq $(COQC)
 	$(COQC) -boot -$(BEST) $(COQINCLUDES) -is states/barestate.coq $<
 
 states/initial.coq: states/barestate.coq states/MakeInitial.v $(INITVO) $(TACTICSVO) $(BESTCOQTOP)
-	$(BESTCOQTOP) -boot -silent -is states/barestate.coq $(COQINCLUDES) $(INCLUDES) -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
+	$(BESTCOQTOP) -boot -batch -silent -is states/barestate.coq $(COQINCLUDES) $(INCLUDES) -load-vernac-source states/MakeInitial.v -outputstate states/initial.coq
 
 clean::
 	rm -f states/*.coq
@@ -701,7 +701,7 @@ clean::
 	$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
 
 .v.vo:
-	$(COQC) -boot -$(BEST)  $(COQINCLUDES) $<
+	$(COQC) -boot -$(BEST) $(COQINCLUDES) $<
 
 .el.elc:
 	echo "(setq load-path (cons \".\" load-path))" > $*.compile
