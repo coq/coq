@@ -116,11 +116,6 @@ val build_dependent_constructor : constructor_summary -> constr
    the constructor argument of a dependent predicate in a cases branch *)
 val build_dependent_inductive : inductive_family -> constr
 
-(*s [extended_rel_vect n hyps] and [extended_rel_list n hyps]
-    generalizes [rel_vect] when local definitions may occur in parameters *)
-val extended_rel_vect : int -> rel_context -> constr array
-val extended_rel_list : int -> rel_context -> constr list
-
 (* if the arity for some inductive family [indf] associated to [(I
    params)] is [(x1:A1)...(xn:An)sort'] then [make_arity env sigma dep
    indf k] builds [(x1:A1)...(xn:An)sort] which is the arity of an

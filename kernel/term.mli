@@ -489,6 +489,11 @@ val substn_vars : int -> identifier list -> constr -> constr
 val rel_vect : int -> int -> constr array
 val rel_list : int -> int -> constr list
 
+(*s [extended_rel_vect n hyps] and [extended_rel_list n hyps]
+    generalizes [rel_vect] when local definitions may occur in parameters *)
+val extended_rel_vect : int -> rel_declaration list -> constr array
+val extended_rel_list : int -> rel_declaration list -> constr list
+
 (*s Occur check functions. *)                         
 
 val occur_meta : constr -> bool

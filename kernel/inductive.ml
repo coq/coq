@@ -343,14 +343,3 @@ let build_branch_type env dep p cs =
   else
     it_mkProd_or_LetIn base cs.cs_args
 
-(* [Rel (n+m);...;Rel(n+1)] *)
-
-let extended_rel_list n hyps =
-  let rec reln l p = function
-    | (_,None,_) :: hyps -> reln (mkRel (n+p) :: l) (p+1) hyps
-    | (_,Some _,_) :: hyps -> reln l (p+1) hyps
-    | [] -> l
-  in 
-  reln [] 1 hyps
-
-let extended_rel_vect n hyps = Array.of_list (extended_rel_list n hyps)
