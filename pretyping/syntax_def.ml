@@ -74,6 +74,7 @@ let rec set_loc loc = function
   | RLambda (_,na,ty,c) -> RLambda (loc,na,set_loc loc ty,set_loc loc c)
   | RProd (_,na,ty,c) -> RProd (loc,na,set_loc loc ty,set_loc loc c)
   | RLetIn (_,na,b,c) -> RLetIn (loc,na,set_loc loc b,set_loc loc c)
+  | RCast (_,a,b) -> RCast (loc,set_loc loc a,set_loc loc b)
   | a -> warning "Unrelocatated syntactic definition"; a
 
 let search_syntactic_definition loc kn =
