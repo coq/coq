@@ -24,6 +24,8 @@ A1) VÉRIFICATIONS
   - Changement des variables en tête du fichier "configure" et
     vérification du numéro de versions de OCaml et Camlp4 demandées
   - Mise à jour des champs Version, Source et Require dans RH/coq.spec.tpl
+  - Mise à jour des dépendances dans debian/control. Ajouter une référence
+    à la version et un "* New upstream version" dans debian/changelog.
   - Relecture des fichiers "README", "README.win", en particulier,
     vérification du numéro de version, des adresses internet et des
     coordonnées de Coq
@@ -128,6 +130,17 @@ A5c) Création d'un second package rpm à partir des sources rpm
   sous une autre architecture pour créer un deuxième package rpm binaire.
 
   Pour l'installation sous ftp voir A7.
+
+A5d) Création du package debian
+
+  Faire un
+
+     make deb
+
+  pour faire paquets source et binaire sur une machine debian
+  (pc8-118.lri.fr par exemple). Pas la peine d'essayer de créer le
+  binaire sur toutes les architectures : ce sera fait par les machines
+  de Debian dès que le paquet source leur sera fourni.
 
 A6) CREATION DU FICHIER DE PATCH (attention ne marche pas sur DEC je crois)
 
