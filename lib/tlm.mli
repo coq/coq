@@ -5,14 +5,14 @@ type ('a,'b) t
 
 val create : unit -> ('a,'b) t
 
-(* Work on labels, not on paths *)
+(* Work on labels, not on paths. *)
 
 val map : ('a,'b) t -> 'a -> ('a,'b) t
 val xtract : ('a,'b) t -> 'b list
 val dom : ('a,'b) t -> 'a list
 val in_dom : ('a,'b) t -> 'a -> bool
 
-(* Work on paths, not labels *)
+(* Work on paths, not on labels. *)
 
 val add : ('a,'b) t -> 'a list * 'b -> ('a,'b) t
 val rmv : ('a,'b) t -> ('a list * 'b) -> ('a,'b) t
