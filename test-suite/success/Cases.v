@@ -1591,7 +1591,7 @@ Type
 
 (* Test de la syntaxe avec nombres *)
 Require Arith.
-Type [n]Cases n of 2 => true | _ => false end.
+Type [n]Cases n of (2) => true | _ => false end.
 
 Require ZArith.
 Type [n]Cases n of `0` => true | _ => false end.
