@@ -101,6 +101,26 @@ Inductive predicate : Type :=
 Extraction predicate.
 
 (* eta-expansions *)
-Inductive t : Set := c : nat->nat->nat->nat->t.
-Extraction (c O).
-Extraction (c O (S O)).
+Inductive titi : Set := tata : nat->nat->nat->nat->titi.
+Extraction (tata O).
+Extraction (tata O (S O)).
+
+
+Inductive bidon [A:Prop;B:Type] : Set := tb : (x:A)(y:B)(bidon A B). 
+Definition fbidon := [A,B:Type][f:A->B->(bidon True nat)][x:A][y:B](f x y).
+
+Extraction bidon.
+Extraction fbidon.
+Extraction (fbidon True nat (tb True nat)).
+
+(* mutual inductive on many sorts *)
+Inductive 
+  test0 : Prop := ctest0 : test0 
+with 
+  test1 : Set := ctest1 : test0-> test1.  
+Extraction test0.
+
+Extraction eq.
+Extraction eq_rec.
+
+(* mutual fixpoints on many sorts ? *)
