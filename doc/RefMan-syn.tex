@@ -146,7 +146,7 @@ Set Printing Depth 50.
 (**** an incompatibility with the reserved notation ********)
 \end{coq_eval}
 \begin{coq_example*}
-Notation "{ A } + { B }" := (sumbool A B) (at level 0).
+Notation "( x , y )" := (@pair _ _ x y) (at level 0).
 \end{coq_example*}
 
 One can also define notations for binders.
@@ -161,8 +161,8 @@ Notation "{ x : A  |  P }" := (sig A (fun x => P)) (at level 0).
 \end{coq_example*}
 
 In the last case though, there is a conflict with the notation for
-type casts. This notation, as shown by the command {\tt Print Grammar
-constr} is at level 100. To avoid $x:A$ being parsed at a type cast,
+type casts. This last notation, as shown by the command {\tt Print Grammar
+constr} is at level 100. To avoid \verb=x : A= being parsed as a type cast,
 it is necessary to put {\tt x} at a level below 100, typically 99. Hence, a
 correct definition is 
 
@@ -170,13 +170,13 @@ correct definition is
 Notation "{ x : A  |  P }" := (sig A (fun x => P)) (at level 0, x at level 99).
 \end{coq_example*}
 
-This change has retrospectively an effect on the notation for notation
-{\tt "{ A } + { B }"}. For the sake of factorisation, {\tt A} must be
-put at level 99 too, which gives
-
-\begin{coq_example*}
-Notation "{ A } + { B }" := (sumbool A B) (at level 0, A at level 99).
-\end{coq_example*}
+%This change has retrospectively an effect on the notation for notation
+%{\tt "{ A } + { B }"}. For the sake of factorisation, {\tt A} must be
+%put at level 99 too, which gives
+%
+%\begin{coq_example*}
+%Notation "{ A } + { B }" := (sumbool A B) (at level 0, A at level 99).
+%\end{coq_example*}
 
 See the next section for more about factorisation.
 
@@ -490,6 +490,21 @@ time. Type-checking is done only at the time of use of the notation.
 \Rem Many examples of {\tt Notation} may be found in the files
 composing the initial state of {\Coq} (see directory {\tt
 \$COQLIB/theories/Init}).
+
+\Rem The notation \verb="{ x }"= has a special status in such a way
+that complex notations of the form \verb="x + { y }"= or
+\verb="x * { y }"= can be nested with correct precedences. Especially,
+every notation involving a pattern of the form \verb="{ x }"= is
+parsed as a notation where the pattern \verb="{ x }"= has been simply
+replaced by \verb="x"= and the curly brackets are parsed separately.
+E.g. \verb="y + { z }"= is not parsed as a term of the given form but
+as a term of the form \verb="y + z"= where \verb=z= has been parsed
+using the rule parsing \verb="{ x }"=. Especially, level and
+precedences for a rule including patterns of the form \verb="{ x }"=
+are relative not to the textual notation but to the notation where the
+curly brackets have been removed (e.g. the level and the associativity
+given to some notation, say \verb="{ y } & { z }"= in fact applies to
+the underlying \verb="{ x }"=-free rule which is \verb="y & z"=).
 
 \paragraph{Persistence of notations}
 
