@@ -25,10 +25,10 @@ let libobjs = ocamlobjs @ camlp4objs
 let spaces = Str.regexp "[ \t\n]+"
 let split_list l = Str.split spaces l
 
-let ide = split_list Tolink.ide 
-
+let copts     = split_list Tolink.copts
 let core_objs = split_list Tolink.core_objs
 let core_libs = split_list Tolink.core_libs
+let ide       = split_list Tolink.ide 
 
 (* 3. Toplevel objects *)
 let camlp4topobjs =
@@ -50,7 +50,7 @@ let coqide     = ref false
 let echo       = ref false
 
 let src_dirs () = 
-  [ []; [ "config" ]; [ "toplevel" ] ] @
+  [ []; ["kernel";"byterun"]; [ "config" ]; [ "toplevel" ] ] @
   if !coqide then [[ "ide" ]] else []
 
 let includes () = 
@@ -299,11 +299,12 @@ let main () =
   (* the list of the loaded modules *)
   let main_file = create_tmp_main_file modules in
   try
-    let args = options @ (includes ()) @ tolink @ dynlink @ [ main_file ] in
+    let args =
+      options @ (includes ()) @ copts @ tolink @ dynlink @ [ main_file ] in
     (* add topstart.cmo explicitly because we shunted ocamlmktop wrapper *)
     let args = if !top then args @ [ "topstart.cmo" ] else args in
     (* Now, with the .cma, we MUST use the -linkall option *)
-    let command = String.concat " " ((prog^" -linkall")::args) in
+    let command = String.concat " " (prog::args) in
     if !echo then 
       begin 
 	print_endline command; 

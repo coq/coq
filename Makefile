@@ -405,7 +405,8 @@ $(COQMKTOP): $(COQMKTOPCMO)
 
 scripts/tolink.ml: Makefile
 	$(SHOW)"ECHO... >" $@
-	$(HIDE)echo "let core_libs = \""$(LIBCOQRUN) $(LINKCMO)"\"" > $@
+	$(HIDE)echo "let copts = \"-cclib -lcoqrun\"" > $@
+	$(HIDE)echo "let core_libs = \""$(LINKCMO)"\"" >> $@
 	$(HIDE)echo "let core_objs = \""$(OBJSCMO)"\"" >> $@
 	$(HIDE)echo "let ide = \""$(COQIDECMO)"\"" >> $@
 
