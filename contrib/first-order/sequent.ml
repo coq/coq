@@ -26,29 +26,29 @@ let priority = (* pure heuristics, <=0 for non reversible *)
       Right rf->
 	begin
 	  match rf with
-	      Rarrow ->          100
-	    | Rand ->             40 
-	    | Ror ->             -15
-	    | Rfalse ->          -50 (* dead end for sure *)
-	    | Rforall ->         100
-	    | Rexists (_,_,_) -> -30
+	      Rarrow               -> 100
+	    | Rand                 ->  40 
+	    | Ror                  -> -15
+	    | Rfalse               -> -50
+	    | Rforall              -> 100
+	    | Rexists (_,_,_)      -> -29
 	end
     | Left lf ->
 	match lf with
-	    Lfalse             ->  1000 (* yipee ! *)
-	  | Land _             ->    90
-	  | Lor _              ->    40
-	  | Lforall (_,_,_)      -> -30 (* must stay at lowest priority *)
-	  | Lexists _           ->   60
+	    Lfalse                 -> 999
+	  | Land _                 ->  90
+	  | Lor _                  ->  40
+	  | Lforall (_,_,_)        -> -30 
+	  | Lexists _              ->  60
 	  | LA(_,lap) ->
 	      match lap with
-		  LLatom             ->   0
-		| LLfalse (_,_)      -> 100
-		| LLand (_,_)        ->  80
-		| LLor (_,_)         ->  70
-		| LLforall _         -> -20
-		| LLexists (_,_)     ->  50
-		| LLarrow  (_,_,_)   -> -10 
+		  LLatom           ->   0
+		| LLfalse (_,_)    -> 100
+		| LLand (_,_)      ->  80
+		| LLor (_,_)       ->  70
+		| LLforall _       -> -20
+		| LLexists (_,_)   ->  50
+		| LLarrow  (_,_,_) -> -10 
 
 let left_reversible lpat=(priority lpat)>0
 
@@ -186,7 +186,7 @@ let lookup item seq=
 	    | Some ((m2,t2) as c2)->id=id2 && m2>m && more_general c2 c in
 	  History.exists p seq.history
 
-let add_formula side nam t seq gl=
+let rec add_formula side nam t seq gl=
   match build_formula side nam t gl seq.cnt with
       Left f->
 	if side then

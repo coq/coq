@@ -31,7 +31,7 @@ let compare_instance inst1 inst2=
 	    Phantom(d1),Phantom(d2)->
 	      (OrderedConstr.compare d1 d2)
 	  | Real((m1,c1),n1),Real((m2,c2),n2)->
-	      ((-) =? (-) ==? OrderedConstr.compare) m1 m2 n1 n2 c1 c2
+	      ((-) =? (-) ==? OrderedConstr.compare) m2 m1 n1 n2 c1 c2
 	  | Phantom(_),Real((m,_),_)-> if m=0 then -1 else 1
 	  | Real((m,_),_),Phantom(_)-> if m=0 then 1 else -1
 
@@ -132,7 +132,7 @@ let mk_open_instance id gl m t=
 
 (* tactics   *)
 
-let left_instance_tac (inst,id) tacrec seq=
+let left_instance_tac (inst,id) continue seq=
   match inst with
       Phantom dom->
 	if lookup (id,None) seq then 
@@ -145,7 +145,7 @@ let left_instance_tac (inst,id) tacrec seq=
 		   [mkApp(constr_of_reference id,
 			  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])] gls);
 		introf;
-		tclSOLVE [wrap 1 false tacrec 
+		tclSOLVE [wrap 1 false continue 
 			    (deepen (record (id,None) seq))]];
 	    tclTRY assumption]
     | Real((m,t) as c,_)->
@@ -167,9 +167,9 @@ let left_instance_tac (inst,id) tacrec seq=
 	      [special_generalize;
 	       introf; 
 	       tclSOLVE 
-		 [wrap 1 false tacrec (deepen (record (id,Some c) seq))]]
+		 [wrap 1 false continue (deepen (record (id,Some c) seq))]]
 	      
-let right_instance_tac inst tacrec seq=
+let right_instance_tac inst continue seq=
   match inst with
       Phantom dom ->
 	tclTHENS (cut dom) 
@@ -178,11 +178,11 @@ let right_instance_tac inst tacrec seq=
 	    (fun gls->
 	       split (Rawterm.ImplicitBindings 
 			[mkVar (Tacmach.pf_nth_hyp_id gls 1)]) gls);
-	    tclSOLVE [wrap 0 false tacrec (deepen seq)]];
+	    tclSOLVE [wrap 0 false continue (deepen seq)]];
 	 tclTRY assumption] 
     | Real ((0,t),_) ->
 	(tclTHEN (split (Rawterm.ImplicitBindings [t]))
-	   (tclSOLVE [wrap 0 true tacrec (deepen seq)]))
+	   (tclSOLVE [wrap 0 true continue (deepen seq)]))
     | Real ((m,t),_) ->
 	tclFAIL 0 "not implemented ... yet"
 
@@ -192,8 +192,10 @@ let instance_tac inst=
   else
     left_instance_tac inst
 
-let quantified_tac lf tacrec seq gl=
+let quantified_tac lf backtrack continue seq gl=
   let insts=give_instances lf seq in
-    tclFIRST (List.map (fun inst->instance_tac inst tacrec seq) insts) gl
+    tclORELSE
+      (tclFIRST (List.map (fun inst->instance_tac inst continue seq) insts))
+      backtrack gl
 
  

@@ -79,13 +79,14 @@ let match_with_evaluable gl t=
 type kind_of_formula=
     Arrow of constr*constr
   | False of inductive*constr list
-  | And of inductive*constr list
-  | Or of inductive*constr list
+  | And of inductive*constr list*bool
+  | Or of inductive*constr list*bool
   | Exists of inductive*constr list
   | Forall of constr*constr
   | Atom of constr
       
 let rec kind_of_formula gl term =
+  let normalize t=nf_betadeltaiota (pf_env gl) (Refiner.sig_sig gl) t in 
   let cciterm=whd_betaiotazeta term in
     match match_with_imp_term cciterm with
 	Some (a,b)-> Arrow(a,(pop b))
@@ -94,16 +95,23 @@ let rec kind_of_formula gl term =
 	     Some (_,a,b)-> Forall(a,b)
 	   |_-> 
 	      match match_with_nodep_ind cciterm with
-		  Some (i,l)->
+		  Some (i,l,n)->
 		    let ind=destInd i in
+		    let has_realargs=(n>0) in
 		    let (mib,mip) = Global.lookup_inductive ind in
-		      if Inductiveops.mis_is_recursive (ind,mib,mip) then
+		    let is_trivial=
+		      let is_constant c =
+			nb_prod c = mip.mind_nparams in  
+			array_exists is_constant mip.mind_nf_lc in 
+		      if Inductiveops.mis_is_recursive (ind,mib,mip) ||
+			(has_realargs && not is_trivial)
+		      then
 			Atom cciterm 
 		      else
 			(match Array.length mip.mind_consnames with
 			     0->False(ind,l)
-			   | 1->And(ind,l)
-			   | _->Or(ind,l)) 
+			   | 1->And(ind,l,is_trivial)
+			   | _->Or(ind,l,is_trivial)) 
 		| _ ->  
 		    match match_with_sigma_type cciterm with
 			Some (i,l)-> Exists((destInd i),l)
@@ -114,9 +122,7 @@ let rec kind_of_formula gl term =
 					(pf_env gl)
 					(Refiner.sig_sig gl) t in
 				 kind_of_formula gl nt
-			   | None ->Atom (nf_betadeltaiota 
-					    (pf_env gl) 
-					    (Refiner.sig_sig gl) cciterm)
+			   | None ->Atom (normalize cciterm)
   
 type atoms = {positive:constr list;negative:constr list}
 
@@ -128,14 +134,22 @@ let build_atoms gl metagen polarity cciterm =
   let trivial =ref false
   and positive=ref []
   and negative=ref [] in
-  let pfenv=lazy (pf_env gl) in
-  let rec build_rec env polarity cciterm =
+  let normalize t=nf_betadeltaiota (pf_env gl) (Refiner.sig_sig gl) t in 
+  let rec build_rec env polarity cciterm=
     match kind_of_formula gl cciterm with
 	False(_,_)->if not polarity then trivial:=true
       | Arrow (a,b)->
 	  build_rec env (not polarity) a;
 	  build_rec env polarity b
-      | And(i,l) | Or(i,l)->
+      | And(i,l,b) | Or(i,l,b)->
+	  if b then 
+	    begin
+	      let unsigned=normalize (substnl env 0 cciterm) in
+		if polarity then 
+		  positive:= unsigned :: !positive 
+		else 
+		  negative:= unsigned :: !negative
+	    end;
 	  let v = ind_hyps 0 i l in
 	  let g i _ (_,_,t) =
 	    build_rec env polarity (lift i t) in
@@ -165,8 +179,7 @@ let build_atoms gl metagen polarity cciterm =
     (!trivial,
      {positive= !positive;
       negative= !negative})
-
-       
+    
 type right_pattern =
     Rarrow
   | Rand
@@ -198,52 +211,59 @@ type t={id:global_reference;
 	atoms:atoms}
     
 let build_formula side nam typ gl metagen=
-  try 
-    let m=meta_succ(metagen false) in
-    let trivial,atoms=
-      if !qflag then 
-	build_atoms gl metagen side typ 
-      else no_atoms in
-    let pattern=
-      if side then
-	let pat=
-	  match kind_of_formula gl typ with
-	      False(_,_)        -> Rfalse
-	    | Atom a       -> raise (Is_atom a)
-	    | And(_,_)        -> Rand
-	    | Or(_,_)         -> Ror
-	    | Exists (i,l) -> 
-		let (_,_,d)=list_last (ind_hyps 0 i l).(0) in
-		  Rexists(m,d,trivial)
-	    | Forall (_,a) -> Rforall 
-	    | Arrow (a,b) -> Rarrow in
-	  Right pat
-      else
-	let pat=
-	  match kind_of_formula gl typ with
-	      False(i,_)        ->  Lfalse
-	    | Atom a       ->  raise (Is_atom a)
-	    | And(i,_)         ->  Land i
-	    | Or(i,_)          ->  Lor i
-	    | Exists (ind,_) ->  Lexists ind 
-	    | Forall (d,_) -> 
-		Lforall(m,d,trivial)
-	    | Arrow (a,b) ->
-		let nfa=nf_betadeltaiota (pf_env gl) (Refiner.sig_sig gl) a in
-		  LA (nfa, 
+  let normalize t=nf_betadeltaiota (pf_env gl) (Refiner.sig_sig gl) t in
+    try 
+      let m=meta_succ(metagen false) in
+      let trivial,atoms=
+	if !qflag then 
+	  build_atoms gl metagen side typ 
+	else no_atoms in
+      let pattern=
+	if side then
+	  let pat=
+	    match kind_of_formula gl typ with
+		False(_,_)        -> Rfalse
+	      | Atom a       -> raise (Is_atom a)
+	      | And(_,_,_)        -> Rand
+	      | Or(_,_,_)         -> Ror
+	      | Exists (i,l) -> 
+		  let (_,_,d)=list_last (ind_hyps 0 i l).(0) in
+		    Rexists(m,d,trivial)
+	      | Forall (_,a) -> Rforall 
+	      | Arrow (a,b) -> Rarrow in
+	    Right pat
+	else
+	  let pat=
+	    match kind_of_formula gl typ with
+		False(i,_)        ->  Lfalse
+	      | Atom a       ->  raise (Is_atom a)
+	      | And(i,_,b)         ->  
+		  if b then
+		    let nftyp=normalize typ in raise (Is_atom nftyp)
+		  else Land i
+	      | Or(i,_,b)          ->
+		  if b then
+		    let nftyp=normalize typ in raise (Is_atom nftyp)
+		  else Lor i
+	      | Exists (ind,_) ->  Lexists ind 
+	      | Forall (d,_) -> 
+		  Lforall(m,d,trivial)
+	      | Arrow (a,b) ->
+		  let nfa=normalize a in
+		    LA (nfa, 
 		      match kind_of_formula gl a with
 			  False(i,l)-> LLfalse(i,l)
 			| Atom t->     LLatom
-			| And(i,l)->      LLand(i,l)
-			| Or(i,l)->       LLor(i,l)
+			| And(i,l,_)-> LLand(i,l)
+			| Or(i,l,_)->  LLor(i,l)
 			| Arrow(a,c)-> LLarrow(a,c,b)
 			| Exists(i,l)->LLexists(i,l)
 			| Forall(_,_)->LLforall a) in
-	  Left pat
-    in
-      Left {id=nam;
-	    constr=nf_betadeltaiota (pf_env gl) (Refiner.sig_sig gl) typ;
-	    pat=pattern;
-	    atoms=atoms}
-  with Is_atom a-> Right a (* already in nf *)
+	    Left pat
+      in
+	Left {id=nam;
+	      constr=normalize typ;
+	      pat=pattern;
+	      atoms=atoms}
+    with Is_atom a-> Right a (* already in nf *)
     

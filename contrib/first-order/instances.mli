@@ -16,7 +16,10 @@ open Rules
   
 val collect_quantified : Sequent.t -> Formula.t list * Sequent.t
 
-val quantified_tac : Formula.t list -> seqtac
+val give_instances : Formula.t list -> Sequent.t -> 
+  (Unify.instance * global_reference) list
+
+val quantified_tac : Formula.t list -> seqtac with_backtracking
 
 
 

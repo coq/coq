@@ -30,7 +30,7 @@ val ind_hyps : int -> inductive -> constr list -> Sign.rel_context array
 
 val match_with_evaluable : Proof_type.goal Tacmach.sigma ->
   constr -> (evaluable_global_reference * constr) option
-
+(*
 type kind_of_formula =
     Arrow of constr*constr
   | False of inductive*constr list
@@ -42,7 +42,7 @@ type kind_of_formula =
 
 val kind_of_formula : Proof_type.goal Tacmach.sigma -> 
   constr -> kind_of_formula
-
+*)
 type atoms = {positive:constr list;negative:constr list}
 
 val dummy_id: global_reference

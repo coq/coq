@@ -88,7 +88,7 @@ val is_imp_term            : testing_function
 val has_nodep_prod_after   : int -> testing_function
 val has_nodep_prod         : testing_function
 
-val match_with_nodep_ind   : (constr * constr list) matching_function	  
+val match_with_nodep_ind   : (constr * constr list * int) matching_function  
 val is_nodep_ind           : testing_function 
 
 val match_with_sigma_type   : (constr * constr list) matching_function	  

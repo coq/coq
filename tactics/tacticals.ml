@@ -63,6 +63,9 @@ let tclPROGRESS      = Refiner.tclPROGRESS
 let tclWEAK_PROGRESS = Refiner.tclWEAK_PROGRESS
 let tclNOTSAMEGOAL   = Refiner.tclNOTSAMEGOAL
 let tclTHENTRY       = tclTHENTRY
+let tclIFTHENELSE    = tclIFTHENELSE
+let tclIFTHENSELSE   = tclIFTHENSELSE
+let tclIFTHENSVELSE   = tclIFTHENSVELSE
 
 let unTAC            = unTAC
 

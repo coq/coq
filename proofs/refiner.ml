@@ -530,6 +530,28 @@ let rec tclFIRST = function
   | [] -> tclFAIL_s "No applicable tactic."
   |  t::rest -> tclORELSE0 t (tclFIRST rest)
 
+let ite_gen tcal tac_if continue tac_else=
+  let success=ref false in
+  let tac_if0 gl=
+    let result=tac_if gl in
+      success:=true;result in
+  let tac_else0 gl=
+    if !success then 
+      tclFAIL_s "failure in THEN branch" gl 
+    else 
+      tac_else gl in
+    tclORELSE0 (tcal tac_if0 continue)  (tac_else0)  
+    
+(* Try the first tactic and, if it succeeds, continue with 
+   the second one, and if it fails, use the third one *)
+
+let tclIFTHENELSE=ite_gen tclTHEN
+
+(* Idem with tclTHENS and tclTHENSV *)
+
+let tclIFTHENSELSE=ite_gen tclTHENS
+
+let tclIFTHENSVELSE=ite_gen tclTHENSV
 
 
 (* Fails if a tactic did not solve the goal *)

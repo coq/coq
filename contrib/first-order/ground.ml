@@ -27,30 +27,32 @@ let ground_tac solver startseq gl=
 	  let (hd,seq1)=take_formula seq  
 	  and re_add s=re_add_formula_list skipped s in
 	  let continue=toptac [] 
-	  and backtrack=toptac (hd::skipped) seq1  in
+	  and backtrack gl=toptac (hd::skipped) seq1 gl in
 	    match hd.pat with
 		Right rpat->
 		  begin
 		    match rpat with
 			Rand->
-			  and_tac continue (re_add seq1)
+			  and_tac backtrack continue (re_add seq1)
 		      | Rforall->
-			  forall_tac continue (re_add seq1)
+			  let backtrack1=
+			    if !qflag then 
+			      tclFAIL 0 "reversible in 1st order mode"
+			    else
+			      backtrack in
+			    forall_tac backtrack continue (re_add seq1)
 		      | Rarrow->
 			  arrow_tac continue (re_add seq1)
 		      | Ror->
-			  tclORELSE
-			  (or_tac continue (re_add seq1))
-			  backtrack
+			  or_tac  backtrack continue (re_add seq1)
 		      | Rfalse->backtrack 
 		      | Rexists(i,dom,triv)->
 			  let (lfp,seq2)=collect_quantified seq in
 			  let backtrack2=toptac (lfp@skipped) seq2 in
-			    tclORELSE
-			      (if seq.depth<=0 || not !qflag then 
-				 tclFAIL 0 "max depth" 
-			       else 
-				 quantified_tac lfp continue (re_add seq1))
+			    if  !qflag && seq.depth>0 then 
+			      quantified_tac lfp backtrack2 
+				continue (re_add seq)
+			    else
 			      backtrack2 (* need special backtracking *)
 		  end
 	      | Left lpat->
@@ -59,53 +61,50 @@ let ground_tac solver startseq gl=
 			Lfalse->
 			  left_false_tac hd.id
 		      | Land ind->
-			  left_and_tac ind hd.id continue (re_add seq1)
+			  left_and_tac ind backtrack 
+			  hd.id continue (re_add seq1)
 		      | Lor ind->
-			  left_or_tac ind hd.id continue (re_add seq1)
+			  left_or_tac ind backtrack 
+			  hd.id continue (re_add seq1)
 		      | Lforall (_,_,_)->
 			  let (lfp,seq2)=collect_quantified seq in
 			  let backtrack2=toptac (lfp@skipped) seq2 in
-			    tclORELSE
-			      (if seq.depth<=0 || not !qflag then 
-				 tclFAIL 0 "max depth" 
-			       else 
-				 quantified_tac lfp continue (re_add seq))
+			    if  !qflag && seq.depth>0 then 
+			      quantified_tac lfp backtrack2 
+				continue (re_add seq)
+			    else
 			      backtrack2 (* need special backtracking *)
-		      | Lexists ind ->
-			  if !qflag then
+  		      | Lexists ind ->
+			  if !qflag then 
 			    left_exists_tac ind hd.id continue (re_add seq1)
 			  else backtrack
 		      | LA (typ,lap)->
-			  tclORELSE
-			  (ll_atom_tac typ hd.id continue (re_add seq1))
-			  begin
-			    match lap with
-				LLatom -> backtrack 
-			      | LLand (ind,largs) | LLor(ind,largs) 
-			      | LLfalse (ind,largs)->
-				  (ll_ind_tac ind largs hd.id continue 
-				     (re_add seq1)) 
-			      | LLforall p ->	      
-				  if seq.depth<=0 || not !qflag then 
-				    backtrack 
-				  else
-				    tclORELSE
-				      (ll_forall_tac p hd.id continue 
-					 (re_add seq1))
+			  let la_tac=
+			    begin
+			      match lap with
+				  LLatom -> backtrack 
+				| LLand (ind,largs) | LLor(ind,largs) 
+				| LLfalse (ind,largs)->
+				    (ll_ind_tac ind largs backtrack 
+				       hd.id continue (re_add seq1)) 
+				| LLforall p ->	      
+				    if seq.depth>0 && !qflag then 
+				      (ll_forall_tac p backtrack 
+					 hd.id continue (re_add seq1))
+				    else backtrack
+				| LLexists (ind,l) ->
+				    if !qflag then
+				      ll_ind_tac ind l backtrack
+					hd.id continue (re_add seq1)
+				    else
 				      backtrack
-			      | LLexists (ind,l) ->
-				  if !qflag then
-				    ll_ind_tac ind l hd.id continue 
-				      (re_add seq1)
-				  else
-				    backtrack
-			      | LLarrow (a,b,c) ->	      
-				  tclORELSE
-				  (ll_arrow_tac a b c hd.id continue 
-				     (re_add seq1))
-				  backtrack
-			  end
+				| LLarrow (a,b,c) ->	      
+				    (ll_arrow_tac a b c backtrack
+				       hd.id continue (re_add seq1))
+			    end in			 
+			    ll_atom_tac typ la_tac hd.id continue (re_add seq1)
 		  end
 	    with Heap.EmptyHeap->solver
       end gl in
     wrap (List.length (pf_hyps gl)) true (toptac []) (startseq gl) gl
+      

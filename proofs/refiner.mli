@@ -137,6 +137,13 @@ val tclWEAK_PROGRESS : tactic -> tactic
 val tclNOTSAMEGOAL   : tactic -> tactic
 val tclINFO          : tactic -> tactic
 
+(* [tclIFTHENELSE tac1 tac2 tac3 gls] first applies [tac1] to [gls] then,
+   if it succeeds, applies [tac2] to the resulting subgoals, 
+   and if not applies [tac3] to the initial goal [gls] *)
+val tclIFTHENELSE    : tactic -> tactic -> tactic -> tactic
+val tclIFTHENSELSE   : tactic -> tactic list -> tactic ->tactic
+val tclIFTHENSVELSE   : tactic -> tactic array -> tactic ->tactic
+
 (*s Tactics handling a list of goals. *)
 
 type validation_list = proof_tree list -> proof_tree list

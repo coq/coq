@@ -209,17 +209,19 @@ let has_nodep_prod = has_nodep_prod_after 0
 	
 let match_with_nodep_ind t =
   let (hdapp,args) = decompose_app t in
-  match (kind_of_term hdapp) with
-    | Ind ind  -> 
-        let (mib,mip) = Global.lookup_inductive ind in
-          if mip.mind_nrealargs>0 then None else
-	    let constr_types = mip.mind_nf_lc in 
-	    let nodep_constr = has_nodep_prod_after mip.mind_nparams in	
-	      if array_for_all nodep_constr constr_types then 
-		Some (hdapp,args)
-              else 
-		None
-    | _ -> None
+    match (kind_of_term hdapp) with
+      | Ind ind  -> 
+          let (mib,mip) = Global.lookup_inductive ind in
+	    if Array.length (mib.mind_packets)>1 then None else
+	      let nodep_constr = has_nodep_prod_after mip.mind_nparams in
+		if array_for_all nodep_constr mip.mind_nf_lc then
+		  let params=
+		    if mip.mind_nrealargs=0 then args else
+		      fst (list_chop mip.mind_nparams args) in
+		    Some (hdapp,params,mip.mind_nrealargs)
+		else 
+		  None
+      | _ -> None
 	  
 let is_nodep_ind t=op2bool (match_with_nodep_ind t)
 
@@ -228,7 +230,8 @@ let match_with_sigma_type t=
   match (kind_of_term hdapp) with
     | Ind ind  -> 
         let (mib,mip) = Global.lookup_inductive ind in
-          if (mip.mind_nrealargs=0) &&
+          if (Array.length (mib.mind_packets)=1) &&
+	    (mip.mind_nrealargs=0) &&
 	    (Array.length mip.mind_consnames=1) &&
 	    has_nodep_prod_after (mip.mind_nparams+1) mip.mind_nf_lc.(0) then
 	      (*allowing only 1 existential*) 
