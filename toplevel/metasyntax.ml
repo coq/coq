@@ -681,11 +681,13 @@ let add_notation_in_scope df c (assoc,n,etyps,onlyparse) omodv8 sc toks =
 let add_notation df a modifiers mv8 sc =
   let toks = split df in
   match toks with 
-    | [String x] when quote(strip x) = x & modifiers = [] ->
+    | [String x] when quote(strip x) = x
+	& (modifiers = [] or modifiers = [SetOnlyParsing]) ->
         (* Means a Syntactic Definition *)
         let ident = id_of_string (strip x) in
 	let c = snd (interp_aconstr [] a) in
-        Syntax_def.declare_syntactic_definition ident c
+	let onlyparse = !Options.v7_only or modifiers = [SetOnlyParsing] in
+        Syntax_def.declare_syntactic_definition ident onlyparse c
     | _ ->
         add_notation_in_scope
           df a (interp_notation_modifiers modifiers)

@@ -31,13 +31,14 @@ let _ = Summary.declare_summary
 let add_syntax_constant kn c =
   syntax_table := KNmap.add kn c !syntax_table
 
-let load_syntax_constant i ((sp,kn),c) =
+let load_syntax_constant i ((sp,kn),(c,onlyparse)) =
   if Nametab.exists_cci sp then
     errorlabstrm "cache_syntax_constant"
       (pr_id (basename sp) ++ str " already exists");
   add_syntax_constant kn c;
   Nametab.push_syntactic_definition (Nametab.Until i) sp kn;
-  Symbols.declare_uninterpretation (Symbols.SynDefRule kn) ([],c)
+  if not onlyparse then
+    Symbols.declare_uninterpretation (Symbols.SynDefRule kn) ([],c)
 
 let open_syntax_constant i ((sp,kn),c) =
   Nametab.push_syntactic_definition (Nametab.Exactly i) sp kn
@@ -45,8 +46,8 @@ let open_syntax_constant i ((sp,kn),c) =
 let cache_syntax_constant d =
   load_syntax_constant 1 d
 
-let subst_syntax_constant ((sp,kn),subst,c) =
-  subst_aconstr subst c
+let subst_syntax_constant ((sp,kn),subst,(c,onlyparse)) =
+  (subst_aconstr subst c,onlyparse)
 
 let classify_syntax_constant (_,c) = Substitute c
 
@@ -59,8 +60,8 @@ let (in_syntax_constant, out_syntax_constant) =
     classify_function = classify_syntax_constant;
     export_function = (fun x -> Some x) } 
 
-let declare_syntactic_definition id c =
-  let _ = add_leaf id (in_syntax_constant c) in ()
+let declare_syntactic_definition id onlyparse c =
+  let _ = add_leaf id (in_syntax_constant (c,onlyparse)) in ()
 
 let rec set_loc loc _ a =
   map_aconstr_with_binders_loc loc (fun id e -> (id,e)) (set_loc loc) () a

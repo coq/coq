@@ -121,7 +121,8 @@ let declare_definition ident local bl red_option c typopt =
 
 let syntax_definition ident c =
   let c = snd (interp_aconstr [] c) in 
-  Syntax_def.declare_syntactic_definition ident c;
+  let onlyparse = !Options.v7_only in
+  Syntax_def.declare_syntactic_definition ident onlyparse c;
   if_verbose message ((string_of_id ident) ^ " is now a syntax macro")
 
 
