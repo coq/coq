@@ -641,13 +641,18 @@ let rec join_dirs cwd =
       join_dirs newcwd tail
 ;;
 
-let filename_of_path xml_library_root sp tag =
+let filename_of_path ?(keep_sections=false) xml_library_root sp tag =
  let module N = Names in
  let module No = Nameops in
-  let ext_of_sp sp = ext_of_tag tag in
   let dir0 = No.extend_dirpath (No.dirpath sp) (No.basename sp) in
-  let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir0)) in
-   (join_dirs xml_library_root dir) ^ "." ^ (ext_of_sp sp)
+  let dir1 =
+   if not keep_sections then
+    Cic2acic.remove_sections_from_dirpath dir0
+   else
+    dir0
+  in
+  let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir1)) in
+   (join_dirs xml_library_root dir) ^ "." ^ (ext_of_tag tag)
 ;;
 
 (* Let's register the callbacks *)
@@ -662,7 +667,9 @@ let _ =
    (function pftreestate -> proof_to_export := Some pftreestate) ;
   Declare.set_xml_declare_variable
    (function sp ->
-     let filename = filename_of_path xml_library_root sp Variable in
+     let filename =
+      filename_of_path ~keep_sections:true xml_library_root sp Variable
+     in
      let dummy_location = -1,-1 in
       print (dummy_location,Nametab.qualid_of_sp sp) (Some filename)) ;
   Declare.set_xml_declare_constant

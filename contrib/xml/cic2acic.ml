@@ -38,13 +38,24 @@ let ext_of_tag =
   | Variable  -> "var"
 ;;
 
+(*CSC: Problem: here we are using the wrong (???) hypothesis that there do *)
+(*CSC: not exist two modules whose dir_paths are one a prefix of the other *)
+let remove_sections_from_dirpath dir =
+ let module No = Nameops in
+  let current_module_dir = Lib.module_sp () in
+   if No.is_dirpath_prefix_of current_module_dir dir then
+    let (_,id) = No.split_dirpath dir in
+     No.extend_dirpath current_module_dir id
+   else dir
+;;
+
 let uri_of_path sp tag =
  let module N = Names in
  let module No = Nameops in
-  let ext_of_sp sp = ext_of_tag tag in
   let dir0 = No.extend_dirpath (No.dirpath sp) (No.basename sp) in
-  let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir0)) in
-   "cic:/" ^ (String.concat "/" dir) ^ "." ^ (ext_of_sp sp)
+  let dir1 = remove_sections_from_dirpath dir0 in
+  let dir = List.map N.string_of_id (List.rev (N.repr_dirpath dir1)) in
+   "cic:/" ^ (String.concat "/" dir) ^ "." ^ (ext_of_tag tag)
 ;;
 
 (* Main Functions *)
