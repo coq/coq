@@ -42,6 +42,7 @@ parsing/g_tacticnew.ml:
 parsing/g_ltacnew.ml: 
 toplevel/mltop.ml: 
 lib/pp.ml: 
+lib/compat.ml: 
 contrib/xml/xml.ml: 
 contrib/xml/acic2Xml.ml: 
 contrib/xml/proofTree2Xml.ml: 
