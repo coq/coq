@@ -112,8 +112,6 @@ let transform_rec loc env sigma (pj,c,lf) indt =
 let ((constr_in : constr -> Dyn.t),
      (constr_out : Dyn.t -> constr)) = create "constr"
 
-let ctxt_of_ids cl = cl
-
 let mt_evd = Evd.empty
 
 let vect_lift_type = Array.mapi (fun i t -> type_app (lift i) t)
@@ -342,10 +340,11 @@ let rec pretype tycon env isevars lvar lmeta = function
 	
   | RLetIn(loc,name,c1,c2)      ->
       let j = pretype empty_tycon env isevars lvar lmeta c1 in
-      let var = (name,Some j.uj_val,j.uj_type) in
+      let t = Evarutil.refresh_universes j.uj_type in
+      let var = (name,Some j.uj_val,t) in
         let tycon = option_app (lift 1) tycon in
       let j' = pretype tycon (push_rel var env) isevars lvar lmeta c2 in
-      { uj_val = mkLetIn (name, j.uj_val, j.uj_type, j'.uj_val) ;
+      { uj_val = mkLetIn (name, j.uj_val, t, j'.uj_val) ;
 	uj_type = type_app (subst1 j.uj_val) j'.uj_type }
       
   | ROldCase (loc,isrec,po,c,lf) ->

@@ -71,6 +71,7 @@ val define_evar_as_sort :  evar_map -> existential ->  evar_map * sorts
 val new_Type_sort : unit -> sorts
 val new_Type : unit -> constr
 val judge_of_new_Type : unit -> unsafe_judgment
+val refresh_universes : types -> types
 
 type type_constraint = constr option
 type val_constraint = constr option

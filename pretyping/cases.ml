@@ -132,11 +132,6 @@ let build_notdep_pred env sigma indf pred =
 
 exception NotInferable of ml_case_error
 
-let rec refresh_types t = match kind_of_term t with
-  | Sort (Type _) -> new_Type ()
-  | Prod (na,u,v) -> mkProd (na,u,refresh_types v)
-  | _ -> t
-
 let pred_case_ml_fail env sigma isrec (IndType (indf,realargs)) (i,ft) =
   let pred =
     let (ind,params) = indf in
@@ -147,7 +142,7 @@ let pred_case_ml_fail env sigma isrec (IndType (indf,realargs)) (i,ft) =
     let j = snd ind in (* index of inductive *)
     let nbrec = if isrec then count_rec_arg j recargi else 0 in
     let nb_arg = List.length (recargs.(i)) + nbrec in
-    let pred = refresh_types (concl_n env sigma nb_arg ft) in
+    let pred = Evarutil.refresh_universes (concl_n env sigma nb_arg ft) in
     if noccur_between 1 nb_arg pred then 
       lift (-nb_arg) pred
     else 

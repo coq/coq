@@ -135,6 +135,18 @@ let judge_of_new_Type () =
     uj_type = mkSort (Type dummy_univ) }
 *)
 
+(* This refreshes universes in types; works only for inferred types (i.e. for
+   types of the form (x1:A1)...(xn:An)B with B a sort or an atom in
+   head normal form) *)
+let refresh_universes t =
+  let modified = ref false in
+  let rec refresh t = match kind_of_term t with
+    | Sort (Type _) -> modified := true; new_Type ()
+    | Prod (na,u,v) -> mkProd (na,u,refresh v)
+    | _ -> t in
+  let t' = refresh t in
+  if !modified then t' else t
+
 (* Declaring any type to be in the sort Type shouldn't be harmful since
    cumulativity now includes Prop and Set in Type. *)
 let new_type_var env sigma =
@@ -193,6 +205,7 @@ let do_restrict_hyps sigma ev args =
   let env' = reset_with_named_context sign' env in
   let instance = make_evar_instance env' in
   let (sigma',nc) = new_isevar_sign env' sigma evd.evar_concl instance in
+  let nc = refresh_universes nc in (* needed only if nc is an inferred type *)
   let sigma'' = Evd.define sigma' ev nc in
   (sigma'', nc)
 
@@ -237,6 +250,7 @@ let ise_map isevars sp = Evd.map isevars.evars sp
 
 (* define the existential of section path sp as the constr body *)
 let ise_define isevars sp body =
+  let body = refresh_universes body in (* needed only if an inferred type *)
   isevars.evars <- Evd.define isevars.evars sp body
 
 let is_defined_evar isevars (n,_) = Evd.is_defined isevars.evars n
@@ -408,7 +422,7 @@ let head_evar =
  * hyps of the existential, to do a "pop" for each Rel which is
  * not an argument of the existential, and a subst1 for each which
  * is, again, with the corresponding variable. This is done by
- * Tradevar.evar_define
+ * evar_define
  *
  * Thus, we take the arguments of the existential which we are about
  * to assign, and zip them with the identifiers in the hypotheses.
