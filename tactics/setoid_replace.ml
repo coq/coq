@@ -200,30 +200,8 @@ let coq_directed_relation_of_relation_class =
 let coq_interp = lazy(eval_reference ["Setoid"] "interp")
 let coq_Morphism_Context_rect2 =
  lazy(eval_reference ["Setoid"] "Morphism_Context_rect2")
-let coq_iff = lazy(eval_init_reference ["Logic"] "iff")
-
+let coq_iff = lazy(gen_constant ["Init";"Logic"] "iff")
 let coq_impl = lazy(constant ["Setoid"] "impl")
-let coq_iff_relation =
- lazy (
-  Relation {
-     rel_a = mkProp ;
-     rel_aeq = gen_constant ["Init"; "Logic"] "iff";
-     rel_refl = Some (gen_constant ["Init"; "Logic"] "iff_refl");
-     rel_sym = Some (gen_constant ["Init"; "Logic"] "iff_sym");
-     rel_trans = Some (gen_constant ["Init"; "Logic"] "iff_trans");
-     rel_quantifiers_no = 0
-   })
-
-let coq_impl_relation =
- lazy (
-  Relation {
-     rel_a = mkProp;
-     rel_aeq = Lazy.force coq_impl;
-     rel_refl = Some (constant ["Setoid"] "impl_refl");
-     rel_sym = None;
-     rel_trans = Some (constant ["Setoid"] "impl_trans");
-     rel_quantifiers_no = 0
-   })
 
 
 (************************* Table of declared relations **********************)
@@ -294,6 +272,9 @@ let find_relation_class rel =
     | App (eq,[|ty|]) when eq_constr eq (Lazy.force coq_eq) -> Leibniz (Some ty)
     | _ when eq_constr rel (Lazy.force coq_eq) -> Leibniz None
     | _ -> raise Not_found
+
+let coq_iff_relation = lazy (find_relation_class (Lazy.force coq_iff))
+let coq_impl_relation = lazy (find_relation_class (Lazy.force coq_impl))
 
 let relation_morphism_of_constr_morphism =
  let relation_relation_class_of_constr_relation_class =
