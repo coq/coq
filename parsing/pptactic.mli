@@ -11,6 +11,7 @@
 open Pp
 open Genarg
 open Tacexpr
+open Pretyping
 open Proof_type
 
 val declare_extra_genarg_pprule : 
@@ -24,6 +25,8 @@ val declare_extra_tactic_pprule :
     -> (closed_generic_argument list ->
       string * Egrammar.grammar_tactic_production list)
       -> unit 
+
+val pr_match_pattern : Tacexpr.pattern_expr match_pattern -> std_ppcmds
 
 val pr_match_rule : bool -> (raw_tactic_expr -> std_ppcmds) ->
   (pattern_expr,raw_tactic_expr) match_rule -> std_ppcmds

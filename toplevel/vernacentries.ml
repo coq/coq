@@ -1036,7 +1036,7 @@ let vernac_check_guard () =
   msgnl message
 
 let vernac_debug b =
-  set_debug (if b then Tactic_debug.DebugOn 0 else Tactic_debug.DebugOff)
+  set_debug (if b then Tactic_debug.DebugOn else Tactic_debug.DebugOff)
 
 
 (**************************)

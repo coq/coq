@@ -115,6 +115,8 @@ let rec explain_exn_default = function
 let raise_if_debug e =
   if !Options.debug then raise e
 
+let _ = Tactic_debug.explain_logic_error := explain_exn_default
+
 let explain_exn_function = ref explain_exn_default
 
 let explain_exn e = !explain_exn_function e

@@ -232,11 +232,11 @@ PARSERREQUIRES=\
   parsing/ppconstr.cmo parsing/printer.cmo parsing/pptactic.cmo $(TRANSLATE) \
   pretyping/typing.cmo proofs/proof_trees.cmo \
   proofs/logic.cmo proofs/refiner.cmo proofs/evar_refiner.cmo \
-  proofs/tacmach.cmo toplevel/himsg.cmo parsing/g_natsyntax.cmo \
-  parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo toplevel/class.cmo \
-  toplevel/recordobj.cmo toplevel/cerrors.cmo parsing/g_vernac.cmo \
-  parsing/g_proofs.cmo parsing/g_tactic.cmo parsing/g_ltac.cmo \
-  parsing/g_constr.cmo parsing/g_cases.cmo proofs/tactic_debug.cmo \
+  proofs/tacmach.cmo proofs/tactic_debug.cmo toplevel/himsg.cmo \
+  parsing/g_natsyntax.cmo parsing/g_zsyntax.cmo parsing/g_rsyntax.cmo \
+  toplevel/class.cmo toplevel/recordobj.cmo toplevel/cerrors.cmo \
+  parsing/g_vernac.cmo parsing/g_proofs.cmo parsing/g_tactic.cmo \
+  parsing/g_ltac.cmo parsing/g_constr.cmo parsing/g_cases.cmo \
   proofs/pfedit.cmo proofs/clenv.cmo tactics/wcclausenv.cmo \
   tactics/tacticals.cmo tactics/hipattern.cmo tactics/tactics.cmo \
   tactics/hiddentac.cmo tactics/dn.cmo tactics/termdn.cmo \

@@ -122,7 +122,7 @@ parsing/ppconstr.cmi: parsing/coqast.cmi kernel/environ.cmi \
     lib/pp.cmi pretyping/rawterm.cmi proofs/tacexpr.cmo kernel/term.cmi \
     interp/topconstr.cmi lib/util.cmi 
 parsing/pptactic.cmi: parsing/egrammar.cmi interp/genarg.cmi lib/pp.cmi \
-    proofs/proof_type.cmi proofs/tacexpr.cmo 
+    pretyping/pretyping.cmi proofs/proof_type.cmi proofs/tacexpr.cmo 
 parsing/prettyp.cmi: pretyping/classops.cmi kernel/environ.cmi \
     library/impargs.cmi library/lib.cmi library/libnames.cmi kernel/names.cmi \
     library/nametab.cmi lib/pp.cmi pretyping/reductionops.cmi \
@@ -220,7 +220,8 @@ proofs/tacmach.cmi: kernel/environ.cmi pretyping/evd.cmi kernel/names.cmi \
     kernel/sign.cmi proofs/tacexpr.cmo pretyping/tacred.cmi kernel/term.cmi \
     interp/topconstr.cmi 
 proofs/tactic_debug.cmi: kernel/environ.cmi kernel/names.cmi \
-    proofs/proof_type.cmi proofs/tacexpr.cmo kernel/term.cmi 
+    pretyping/pattern.cmi lib/pp.cmi proofs/proof_type.cmi proofs/tacexpr.cmo \
+    kernel/term.cmi 
 tactics/auto.cmi: tactics/btermdn.cmi proofs/clenv.cmi kernel/environ.cmi \
     pretyping/evd.cmi library/libnames.cmi kernel/names.cmi \
     pretyping/pattern.cmi lib/pp.cmi proofs/proof_type.cmi \
@@ -1422,16 +1423,14 @@ proofs/tacmach.cmx: interp/constrintern.cmx library/declare.cmx \
     proofs/refiner.cmx kernel/sign.cmx proofs/tacexpr.cmx \
     pretyping/tacred.cmx kernel/term.cmx pretyping/termops.cmx \
     pretyping/typing.cmx lib/util.cmx proofs/tacmach.cmi 
-proofs/tactic_debug.cmo: parsing/ast.cmi library/libnames.cmi \
-    proofs/logic.cmi kernel/names.cmi library/nametab.cmi lib/pp.cmi \
-    parsing/pptactic.cmi pretyping/pretype_errors.cmi parsing/printer.cmi \
-    proofs/proof_trees.cmi proofs/tacmach.cmi kernel/type_errors.cmi \
-    lib/util.cmi proofs/tactic_debug.cmi 
-proofs/tactic_debug.cmx: parsing/ast.cmx library/libnames.cmx \
-    proofs/logic.cmx kernel/names.cmx library/nametab.cmx lib/pp.cmx \
-    parsing/pptactic.cmx pretyping/pretype_errors.cmx parsing/printer.cmx \
-    proofs/proof_trees.cmx proofs/tacmach.cmx kernel/type_errors.cmx \
-    lib/util.cmx proofs/tactic_debug.cmi 
+proofs/tactic_debug.cmo: parsing/ast.cmi interp/constrextern.cmi \
+    kernel/names.cmi lib/pp.cmi parsing/pptactic.cmi parsing/printer.cmi \
+    proofs/proof_trees.cmi proofs/tacexpr.cmo proofs/tacmach.cmi \
+    pretyping/termops.cmi proofs/tactic_debug.cmi 
+proofs/tactic_debug.cmx: parsing/ast.cmx interp/constrextern.cmx \
+    kernel/names.cmx lib/pp.cmx parsing/pptactic.cmx parsing/printer.cmx \
+    proofs/proof_trees.cmx proofs/tacexpr.cmx proofs/tacmach.cmx \
+    pretyping/termops.cmx proofs/tactic_debug.cmi 
 scripts/coqc.cmo: config/coq_config.cmi toplevel/usage.cmi 
 scripts/coqc.cmx: config/coq_config.cmx toplevel/usage.cmx 
 scripts/coqmktop.cmo: config/coq_config.cmi scripts/tolink.cmo 
@@ -1833,13 +1832,13 @@ tools/gallina.cmx: tools/gallina_lexer.cmx
 toplevel/cerrors.cmo: parsing/ast.cmi pretyping/cases.cmi toplevel/himsg.cmi \
     kernel/indtypes.cmi parsing/lexer.cmi library/libnames.cmi \
     proofs/logic.cmi library/nametab.cmi lib/options.cmi lib/pp.cmi \
-    pretyping/pretype_errors.cmi proofs/refiner.cmi kernel/type_errors.cmi \
-    kernel/univ.cmi lib/util.cmi toplevel/cerrors.cmi 
+    pretyping/pretype_errors.cmi proofs/refiner.cmi proofs/tactic_debug.cmi \
+    kernel/type_errors.cmi kernel/univ.cmi lib/util.cmi toplevel/cerrors.cmi 
 toplevel/cerrors.cmx: parsing/ast.cmx pretyping/cases.cmx toplevel/himsg.cmx \
     kernel/indtypes.cmx parsing/lexer.cmx library/libnames.cmx \
     proofs/logic.cmx library/nametab.cmx lib/options.cmx lib/pp.cmx \
-    pretyping/pretype_errors.cmx proofs/refiner.cmx kernel/type_errors.cmx \
-    kernel/univ.cmx lib/util.cmx toplevel/cerrors.cmi 
+    pretyping/pretype_errors.cmx proofs/refiner.cmx proofs/tactic_debug.cmx \
+    kernel/type_errors.cmx kernel/univ.cmx lib/util.cmx toplevel/cerrors.cmi 
 toplevel/class.cmo: pretyping/classops.cmi library/decl_kinds.cmo \
     kernel/declarations.cmi library/declare.cmi kernel/entries.cmi \
     kernel/environ.cmi pretyping/evd.cmi library/global.cmi \

@@ -253,13 +253,14 @@ let lookup_genarg_interp id =
   try Gmap.find id !extragenargtab
   with Not_found -> failwith ("No interpretation function found for entry "^id)
 
-
 (* Unboxes VRec *)
 let unrec = function
   | VRec v -> !v
   | a -> a
 
-(************* GLOBALIZE ************)
+(*****************)
+(* Globalization *)
+(*****************)
 
 (* We have identifier <| global_reference <| constr *)
 
@@ -369,7 +370,7 @@ let glob_induction_arg ist = function
   | ElimOnAnonHyp n as x -> x
   | ElimOnIdent (_loc,id) as x -> ElimOnIdent (loc,id)
 
-(* Globalize a reduction expression *)
+(* Globalizes a reduction expression *)
 let glob_evaluable_or_metanum ist = function
   | AN qid -> AN (glob_reference ist qid)
   | MetaNum (_loc,n) -> MetaNum (loc,glob_metanum ist loc n)
@@ -457,7 +458,8 @@ let extract_let_names lrc =
 (* Globalizes tactics *)
 let rec glob_atomic lf (_,_,_,_ as ist) = function
   (* Basic tactics *)
-  | TacIntroPattern l -> TacIntroPattern (List.map (glob_intro_pattern lf ist) l)
+  | TacIntroPattern l ->
+      TacIntroPattern (List.map (glob_intro_pattern lf ist) l)
   | TacIntrosUntil hyp -> TacIntrosUntil (glob_quantified_hypothesis ist hyp)
   | TacIntroMove (ido,ido') ->
       TacIntroMove (option_app (glob_ident lf ist) ido,
@@ -493,7 +495,8 @@ let rec glob_atomic lf (_,_,_,_ as ist) = function
   | TacTrivial l -> TacTrivial l
   | TacAuto (n,l) -> TacAuto (n,l)
   | TacAutoTDB n -> TacAutoTDB n
-  | TacDestructHyp (b,(_loc,_ as id)) -> TacDestructHyp(b,(loc,glob_hyp ist id))
+  | TacDestructHyp (b,(_loc,_ as id)) ->
+      TacDestructHyp(b,(loc,glob_hyp ist id))
   | TacDestructConcl -> TacDestructConcl
   | TacSuperAuto (n,l,b1,b2) -> TacSuperAuto (n,l,b1,b2)
   | TacDAuto (n,p) -> TacDAuto (n,p)
@@ -524,7 +527,8 @@ let rec glob_atomic lf (_,_,_,_ as ist) = function
   (* Context management *)
   | TacClear l -> TacClear (List.map (glob_hyp_or_metanum ist) l)
   | TacClearBody l -> TacClearBody (List.map (glob_hyp_or_metanum ist) l)
-  | TacMove (dep,id1,id2) -> TacMove (dep,glob_lochyp ist id1,glob_lochyp ist id2)
+  | TacMove (dep,id1,id2) ->
+    TacMove (dep,glob_lochyp ist id1,glob_lochyp ist id2)
   | TacRename (id1,id2) -> TacRename (glob_lochyp ist id1, glob_lochyp ist id2)
 
   (* Constructors *)
@@ -568,11 +572,13 @@ and glob_tactic_seq (lfun,lmeta,sigma,env as ist) = function
       let lrc = List.map (fun (n,b) -> (n,glob_tactic_fun ist b)) lrc in
       lfun, TacLetRecIn (lrc,glob_tactic ist u)
   | TacLetIn (l,u) ->
-      let l = List.map (fun (n,c,b) -> (n,option_app (glob_constr_may_eval ist) c,glob_tacarg !strict_check ist b)) l in
+      let l = List.map (fun (n,c,b) -> (n,option_app (glob_constr_may_eval ist)
+              c,glob_tacarg !strict_check ist b)) l in
       let ist' = ((extract_let_names l)@lfun,lmeta,sigma,env) in
       lfun, TacLetIn (l,glob_tactic ist' u)
   | TacLetCut l ->
-      let f (n,c,t) = (n,glob_constr_may_eval ist c,glob_tacarg !strict_check ist t) in
+      let f (n,c,t) = (n,glob_constr_may_eval ist c,glob_tacarg !strict_check
+                      ist t) in
       lfun, TacLetCut (List.map f l)
   | TacMatchContext (lr,lmr) ->
       lfun, TacMatchContext(lr, glob_match_rule ist lmr)
@@ -657,7 +663,8 @@ and glob_genarg ist x =
   | ConstrArgType ->
       in_gen rawwit_constr (glob_constr ist (out_gen rawwit_constr x))
   | ConstrMayEvalArgType ->
-      in_gen rawwit_constr_may_eval (glob_constr_may_eval ist (out_gen rawwit_constr_may_eval x))
+      in_gen rawwit_constr_may_eval (glob_constr_may_eval ist
+      (out_gen rawwit_constr_may_eval x))
   | QuantHypArgType ->
       in_gen rawwit_quant_hyp
         (glob_quantified_hypothesis ist (out_gen rawwit_quant_hyp x))
@@ -677,8 +684,7 @@ and glob_genarg ist x =
   | PairArgType _ -> app_pair (glob_genarg ist) (glob_genarg ist) x
   | ExtraArgType s -> x
 
-
-(************* END GLOBALIZE ************)
+(**** End Globalization ****)
 
 (* Associates variables with values and gives the remaining variables and
    values *)
@@ -733,9 +739,10 @@ let rec read_match_rule evc env lfun = function
 (* For Match Context and Match *)
 exception No_match
 exception Not_coherent_metas
+exception Eval_fail
 
 let is_match_catchable = function
-  | No_match | FailError _ -> true
+  | No_match | Eval_fail | FailError _ -> true
   | e -> Logic.catchable_exception e
 
 (* Verifies if the matched list is coherent with respect to lcm *)
@@ -755,14 +762,23 @@ let apply_matching pat csr =
      PatternMatchingFailure -> raise No_match
 
 (* Tries to match one hypothesis pattern with a list of hypotheses *)
-let apply_one_mhyp_context gl lmatch mhyp lhyps noccopt =
+let apply_one_mhyp_context ist env gl lmatch mhyp lhyps noccopt =
   let get_pattern = function
     | Hyp (_,pat) -> pat
     | NoHypId pat -> pat
   and get_id_couple id = function
+    | Hyp((_,idpat),_) -> [idpat,VIdentifier id]
+    | NoHypId _ -> [] 
+  and get_info_pattern = function
+    | Hyp((_,idpat),pat) -> (Some idpat,pat)
+    | NoHypId pat -> (None,pat) in
+
+(*=======
     | Hyp((_,idpat),_) -> [idpat,VConstr (mkVar id)]
     | NoHypId _ -> [] in
-  let rec apply_one_mhyp_context_rec mhyp lhyps_acc nocc = function
+>>>>>>> 1.28*)
+
+  let rec apply_one_mhyp_context_rec ist env mhyp lhyps_acc nocc = function
     | (id,hyp)::tl ->
       (match (get_pattern mhyp) with
       | Term t ->
@@ -771,7 +787,7 @@ let apply_one_mhyp_context gl lmatch mhyp lhyps noccopt =
             verify_metas_coherence gl lmatch (Pattern.matches t hyp) in
           (get_id_couple id mhyp,[],lmeta,tl,(id,hyp),None)
          with | PatternMatchingFailure | Not_coherent_metas ->
-          apply_one_mhyp_context_rec mhyp (lhyps_acc@[id,hyp]) 0 tl)
+          apply_one_mhyp_context_rec ist env mhyp (lhyps_acc@[id,hyp]) 0 tl)
       | Subterm (ic,t) ->
         (try
           let (lm,ctxt) = sub_match nocc t hyp in
@@ -780,15 +796,37 @@ let apply_one_mhyp_context gl lmatch mhyp lhyps noccopt =
             ic,lmeta,tl,(id,hyp),Some nocc)
          with
         | NextOccurrence _ ->
-          apply_one_mhyp_context_rec mhyp (lhyps_acc@[id,hyp]) 0 tl
+          apply_one_mhyp_context_rec ist env mhyp (lhyps_acc@[id,hyp]) 0 tl
         | Not_coherent_metas ->
-          apply_one_mhyp_context_rec mhyp lhyps_acc (nocc + 1) ((id,hyp)::tl)))
-    | [] -> raise No_match in
+          apply_one_mhyp_context_rec ist env mhyp lhyps_acc (nocc + 1)
+                                     ((id,hyp)::tl)))
+    | [] ->
+      begin
+        db_hyp_pattern_failure ist.debug env (get_info_pattern mhyp);
+        raise No_match
+      end in
   let nocc =
     match noccopt with
     | None -> 0
     | Some n -> n in
-  apply_one_mhyp_context_rec mhyp [] nocc lhyps
+  apply_one_mhyp_context_rec ist env mhyp [] nocc lhyps
+
+(* Gets the identifier of the pattern if it exists *)
+let get_id_pattern = function
+  | [] -> None
+  | [(id,_)] -> Some id
+  | _ -> assert false
+
+(*
+let coerce_to_qualid loc = function
+  | Constr c when isVar c -> make_short_qualid (destVar c)
+  | Constr c -> 
+      (try qualid_of_sp (sp_of_global (Global.env()) (reference_of_constr c))
+      with Not_found -> invalid_arg_loc (loc, "Not a reference"))
+  | Identifier id -> make_short_qualid id
+  | Qualid qid -> qid
+  | _ -> invalid_arg_loc (loc, "Not a reference")
+*)
 
 let constr_to_id loc c =
   if isVar c then destVar c
@@ -883,6 +921,9 @@ let eval_name ist = function
 let hyp_or_metanum_interp ist gl = function
   | AN id -> eval_variable ist gl (dummy_loc,id)
   | MetaNum (loc,n) -> constr_to_id loc (List.assoc n ist.lmatch)
+
+(* To avoid to move to much simple functions in the big recursive block *)
+let forward_vcontext_interp = ref (fun ist v -> failwith "not implemented")
 
 let interp_pure_qualid is_applied env (loc,qid) =
   try VConstr (constr_of_reference (find_reference env qid))
@@ -1072,12 +1113,12 @@ let rec val_interp ist gl tac =
     | TacArg a -> tacarg_interp ist gl a
     (* Delayed evaluation *)
     | t -> VTactic (eval_tactic ist t)
-
- in
+  in 
   match ist.debug with
-    | DebugOn n ->
-	debug_prompt n (Some gl) tac (fun v -> value_interp {ist with debug=v})
-    | _ -> value_interp ist
+  | DebugOn | Run _ ->
+    let debug = debug_prompt gl ist.debug tac in
+    value_interp {ist with debug=debug}
+  | _ -> value_interp ist
 
 and eval_tactic ist = function
   | TacAtom (loc,t) -> fun gl ->
@@ -1176,7 +1217,7 @@ and eval_with_fail interp tac goal =
     | a -> a)
   with | FailError lvl ->
     if lvl = 0 then
-      raise No_match
+      raise Eval_fail
     else
       raise (FailError (lvl - 1))
 
@@ -1200,7 +1241,6 @@ and letin_interp ist gl = function
       let v = tacarg_interp ist gl t in
       check_is_value v;
       (id,v):: (letin_interp ist gl tl)
-
   | ((loc,id),Some com,tce)::tl ->
     let typ = interp_may_eval pf_interp_constr ist gl com
     and v = tacarg_interp ist gl tce in
@@ -1248,14 +1288,9 @@ and letcut_interp ist = function
     and exat = h_exact csr in
     tclTHENSV cutt [|tclTHEN (introduction id) (letcut_interp ist tl);exat|] gl
 
-(*      let lic = mkLetIn (Name id,csr,typ,ccl) in
-      let ntac = refine (mkCast (mkMeta (Logic.new_meta ()),lic)) in
-      tclTHEN ntac (tclTHEN (introduction id)
-      (letcut_interp ist tl))*)
-
 (* Interprets the Match Context expressions *)
-and match_context_interp ist goal lr lmr =
-  let rec apply_goal_sub ist nocc (id,c) csr mt mhyps hyps =
+and match_context_interp ist g lr lmr =
+  let rec apply_goal_sub ist env goal nocc (id,c) csr mt mhyps hyps =
     try
       let (lgoal,ctxt) = sub_match nocc c csr in
       let lctxt = give_context ctxt id in
@@ -1264,18 +1299,23 @@ and match_context_interp ist goal lr lmr =
           (val_interp {ist with lfun=lctxt@ist.lfun; lmatch=lgoal@ist.lmatch})
           mt goal
       else
-        apply_hyps_context ist goal mt lgoal mhyps hyps
+        apply_hyps_context ist env goal mt lgoal mhyps hyps
     with
     | (FailError _) as e -> raise e
     | NextOccurrence _ -> raise No_match
     | e when e = No_match or Logic.catchable_exception e ->
-      apply_goal_sub ist (nocc + 1) (id,c) csr mt mhyps hyps in
-  let rec apply_match_context ist = function
+      apply_goal_sub ist env goal (nocc + 1) (id,c) csr mt mhyps hyps in
+  let rec apply_match_context ist env goal nrs lex lpt = 
+    begin
+    if lex<>[] then db_pattern_rule ist.debug nrs (List.hd lex);
+    match lpt with
     | (All t)::tl ->
-      (try
-         eval_with_fail (val_interp ist) t goal
-       with No_match | FailError _ -> apply_match_context ist tl
-	 | e when Logic.catchable_exception e -> apply_match_context ist tl)
+      begin
+        db_mc_pattern_success ist.debug;
+        try eval_with_fail (val_interp ist) t goal
+         with e when is_match_catchable e ->
+           apply_match_context ist env goal (nrs+1) (List.tl lex) tl
+      end
     | (Pat (mhyps,mgoal,mt))::tl ->
       let hyps = make_hyps (pf_hyps goal) in
       let hyps = if lr then List.rev hyps else hyps in
@@ -1288,63 +1328,77 @@ and match_context_interp ist goal lr lmr =
             begin
             db_matched_concl ist.debug (pf_env goal) concl;
             if mhyps = [] then
-              eval_with_fail
-		(val_interp {ist with lmatch=lgoal@ist.lmatch}) mt goal
+            begin
+              db_mc_pattern_success ist.debug;
+              eval_with_fail (val_interp
+                {ist with lmatch=lgoal@ist.lmatch}) mt goal
+            end
             else
-              apply_hyps_context ist goal mt lgoal mhyps hyps
+              apply_hyps_context ist env goal mt lgoal mhyps hyps
             end)
-        with e when is_match_catchable e -> apply_match_context ist tl)
+        with 
+        | e when is_match_catchable e ->
+          begin 
+            (match e with
+            | No_match -> db_matching_failure ist.debug
+            | Eval_fail -> db_eval_failure ist.debug
+            | _ -> db_logic_failure ist.debug e);
+            apply_match_context ist env goal (nrs+1) (List.tl lex) tl
+          end)
       |	Subterm (id,mg) ->
-        (try
-          apply_goal_sub ist 0 (id,mg) concl mt mhyps hyps
-        with e when is_match_catchable e ->
-	  apply_match_context ist tl))
+        (try apply_goal_sub ist env goal 0 (id,mg) concl mt mhyps hyps
+         with e when is_match_catchable e ->
+           apply_match_context ist env goal (nrs+1) (List.tl lex) tl))
     | _ ->
-      errorlabstrm "Tacinterp.apply_match_context" (str
-        "No matching clauses for Match Context")
-
-  in
-  let env = pf_env goal in
-  apply_match_context ist 
-    (read_match_rule (project goal) env (constr_list ist env) lmr)
+      errorlabstrm "Tacinterp.apply_match_context"
+        (v 0 (str "No matching clauses for Match Context" ++
+        (if ist.debug=DebugOff then
+           fnl() ++ str "(use \"Debug On\" for more info)"
+         else mt())))
+    end in
+  let env = pf_env g in
+  apply_match_context ist env g 0 lmr
+    (read_match_rule (project g) env (constr_list ist env) lmr)
 
 (* Tries to match the hypotheses in a Match Context *)
-and apply_hyps_context ist goal mt lgmatch mhyps hyps =
-  let rec apply_hyps_context_rec mt lfun lmatch mhyps lhyps_mhyp
+and apply_hyps_context ist env goal mt lgmatch mhyps hyps =
+  let rec apply_hyps_context_rec ist mt lfun lmatch mhyps lhyps_mhyp
     lhyps_rest noccopt =
     match mhyps with
       | hd::tl ->
         let (lid,lc,lm,newlhyps,hyp_match,noccopt) =
-          apply_one_mhyp_context goal lmatch hd lhyps_mhyp noccopt in
+          apply_one_mhyp_context ist env goal lmatch hd lhyps_mhyp noccopt in
         begin
-        db_matched_hyp ist.debug (pf_env goal) hyp_match;
-        (try
-        if tl = [] then
-            eval_with_fail
-              (val_interp {ist with lfun=lfun@lid@lc@ist.lfun;
-                                    lmatch=lmatch@lm@ist.lmatch})
-              mt goal
-        else
-          let nextlhyps =
-            List.fold_left (fun l e -> if e = hyp_match then l else l@[e]) []
-              lhyps_rest in
-          apply_hyps_context_rec mt
-            (lfun@lid@lc) (lmatch@lm) tl nextlhyps nextlhyps None
-         with
-        | (FailError _) as e -> raise e
-	|  e when is_match_catchable e -> 
-          (match noccopt with
-          | None ->
-            apply_hyps_context_rec mt lfun
-              lmatch mhyps newlhyps lhyps_rest None
-          | Some nocc ->
-            apply_hyps_context_rec mt ist.lfun ist.lmatch mhyps
-              (hyp_match::newlhyps) lhyps_rest (Some (nocc + 1))))
+          db_matched_hyp ist.debug (pf_env goal) hyp_match
+                         (get_id_pattern lid);
+          (try
+          if tl = [] then
+          begin
+            db_mc_pattern_success ist.debug;
+            eval_with_fail (val_interp {ist with lfun=lfun@lid@lc@ist.lfun;
+                                        lmatch=lmatch@lm@ist.lmatch}) mt goal
+          end
+          else
+            let nextlhyps =
+              List.fold_left (fun l e -> if e = hyp_match then l else l@[e]) []
+                lhyps_rest in
+            apply_hyps_context_rec ist mt
+              (lfun@lid@lc) (lmatch@lm) tl nextlhyps nextlhyps None
+           with
+           | (FailError _) as e -> raise e
+	   | e when is_match_catchable e -> 
+             (match noccopt with
+             | None ->
+               apply_hyps_context_rec ist mt lfun
+                 lmatch mhyps newlhyps lhyps_rest None
+             | Some nocc ->
+               apply_hyps_context_rec ist mt ist.lfun ist.lmatch mhyps
+                 (hyp_match::newlhyps) lhyps_rest (Some (nocc + 1))))
         end
       |	[] ->
         anomalylabstrm "apply_hyps_context_rec" (str
           "Empty list should not occur") in
-  apply_hyps_context_rec mt [] lgmatch mhyps hyps hyps None
+  apply_hyps_context_rec ist mt [] lgmatch mhyps hyps hyps None
 
   (* Interprets extended tactic generic arguments *)
 and genarg_interp ist goal x =
@@ -1517,7 +1571,8 @@ and interp_atomic ist gl = function
 
   (* Conversion *)
   | TacReduce (r,cl) ->
-      h_reduce (pf_redexp_interp ist gl r) (List.map (interp_hyp_location ist gl) cl)
+      h_reduce (pf_redexp_interp ist gl r) (List.map
+               (interp_hyp_location ist gl) cl)
   | TacChange (occl,c,cl) ->
       h_change (option_app (pf_pattern_interp ist gl) occl)
         (pf_constr_interp ist gl c) (List.map (interp_hyp_location ist gl) cl)
