@@ -106,9 +106,9 @@ type constant_declaration = constant_entry * strength
 let csttab = ref (Spmap.empty : constant_declaration Spmap.t)
 
 let _ = Summary.declare_summary "CONSTANT"
-	  { Summary.freeze_function = (fun () -> !vartab);
-	    Summary.unfreeze_function = (fun ft -> vartab := ft);
-	    Summary.init_function = (fun () -> vartab := Spmap.empty) }
+	  { Summary.freeze_function = (fun () -> !csttab);
+	    Summary.unfreeze_function = (fun ft -> csttab := ft);
+	    Summary.init_function = (fun () -> csttab := Spmap.empty) }
 
 let cache_constant (sp,((ce,_) as cd)) =
   Global.add_constant sp ce;

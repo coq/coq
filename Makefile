@@ -113,15 +113,15 @@ CMO=$(CONFIG) $(LIB) $(KERNEL) $(LIBRARY) $(PRETYPING) $(PARSING) \
 CMX=$(CMO:.cmo=.cmx) $(ARITHSYNTAX:.cmo=.cmx)
 
 ###########################################################################
-# Main targets (coqmktop, coqtop, coqtop.byte)
+# Main targets (coqmktop, coqtop.opt, coqtop.byte)
 ###########################################################################
 
 COQMKTOP=scripts/coqmktop
 
-world: $(COQMKTOP) coqtop.byte coqtop states tools
+world: $(COQMKTOP) coqtop.byte coqtop.opt states tools
 
-coqtop: $(COQMKTOP) $(CMX)
-	$(COQMKTOP) -opt -notactics $(OPTFLAGS) -o coqtop
+coqtop.opt: $(COQMKTOP) $(CMX)
+	$(COQMKTOP) -opt -notactics $(OPTFLAGS) -o coqtop.opt
 
 coqtop.byte: $(COQMKTOP) $(CMO) Makefile
 	$(COQMKTOP) -top $(BYTEFLAGS) -o coqtop.byte
@@ -329,7 +329,7 @@ archclean::
 	rm -f parsing/*.cmx parsing/*.[so]
 	rm -f pretyping/*.cmx pretyping/*.[so]
 	rm -f toplevel/*.cmx toplevel/*.[so]
-	rm -f coqtop coqtop.byte minicoq
+	rm -f coqtop.opt coqtop.byte minicoq
 
 cleanall:: archclean
 	rm -f *~
