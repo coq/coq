@@ -659,6 +659,14 @@ intros n1 H'; rewrite Rinv_mult_distr; try rewrite Rinv_1; try rewrite H';
 Qed.
 
 (*******************************)
+(* For easy interface          *)
+(*******************************)
+(* decimal_exp r z is defined as r 10^z *)
+ 
+Definition decimal_exp (r:R) (z:Z) : R := (r * 10 ^Z z).
+
+
+(*******************************)
 (** Sum of n first naturals    *)
 (*******************************)
 (*********)
