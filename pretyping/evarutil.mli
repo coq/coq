@@ -64,7 +64,9 @@ val solve_simple_eqn :
 
 (* Value/Type constraints *)
 
-val dummy_sort : constr
+val new_Type_sort : unit -> sorts
+val new_Type : unit -> constr
+val judge_of_new_Type : unit -> unsafe_judgment
 
 type type_constraint = constr option
 type val_constraint = constr option

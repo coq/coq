@@ -194,9 +194,7 @@ let pretype_ref _ isevars env lvar ref =
 *)
 let pretype_sort = function
   | RProp c -> judge_of_prop_contents c
-  | RType _ ->
-      { uj_val = dummy_sort;
-	uj_type = dummy_sort }
+  | RType _ -> judge_of_new_Type ()
 
 (* [pretype tycon env isevars lvar lmeta cstr] attempts to type [cstr] *)
 (* in environment [env], with existential variables [(evars_of isevars)] and *)
@@ -443,8 +441,8 @@ and pretype_type valcon env isevars lvar lmeta = function
 	     { utj_val = v;
 	       utj_type = Retyping.get_sort_of env (evars_of isevars) v }
 	 | None ->
-	     { utj_val = new_isevar isevars env dummy_sort CCI;
-	       utj_type = Type Univ.dummy_univ })
+	     let s = new_Type_sort () in
+	     { utj_val = new_isevar isevars env (mkSort s) CCI; utj_type = s})
   | c ->
       let j = pretype empty_tycon env isevars lvar lmeta c in
       let tj = inh_coerce_to_sort env isevars j in

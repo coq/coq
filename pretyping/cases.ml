@@ -60,7 +60,7 @@ let error_needs_inversion k env x t =
 (* A) Typing old cases                                               *)
 (* This was previously in Indrec but creates existential holes       *)
 
-let mkExistential isevars env = new_isevar isevars env dummy_sort CCI
+let mkExistential isevars env = new_isevar isevars env (new_Type ()) CCI
 
 let norec_branch_scheme env isevars cstr =
   let rec crec env = function
@@ -958,9 +958,9 @@ let find_predicate env isevars p typs cstrs current (IndType (indf,realargs)) =
       | None -> infer_predicate env isevars typs cstrs indf in
   let typ = whd_beta (applist (pred, realargs)) in
   if dep then
-    (pred, whd_beta (applist (typ, [current])), Type Univ.dummy_univ)
+    (pred, whd_beta (applist (typ, [current])), new_Type ())
   else
-    (pred, typ, Type Univ.dummy_univ)
+    (pred, typ, new_Type ())
 
 (************************************************************************)
 (* Sorting equation by constructor *)
@@ -1328,7 +1328,7 @@ let build_expected_arity env isevars isdep tomatchl =
     | _,NotInd _ -> None
   in
   let rec buildrec n env = function
-    | [] -> dummy_sort
+    | [] -> new_Type ()
     | tm::ltm ->
 	match cook n tm with
 	  | None -> buildrec n env ltm
