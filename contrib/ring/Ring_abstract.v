@@ -100,7 +100,7 @@ Fixpoint interp_asp [p:aspolynomial] : A :=
   | (ASPmult l r) => (Amult (interp_asp l) (interp_asp r))
   end.
 
-Local iacs_aux := Fix iacs_aux{iacs_aux [a:A; s:abstract_sum] : A :=  
+(* Local *) Definition iacs_aux := Fix iacs_aux{iacs_aux [a:A; s:abstract_sum] : A :=  
   Cases s of
   | Nil_acs => a
   | (Cons_acs l t) => (Aplus a (iacs_aux (interp_vl Amult Aone Azero vm l) t))
@@ -384,7 +384,7 @@ Variable Aeq : A -> A -> bool.
 Variable vm : (varmap A).
 Variable T : (Ring_Theory Aplus Amult Aone Azero Aopp Aeq).
 
-Local isacs_aux := Fix isacs_aux{isacs_aux [a:A; s:signed_sum] : A :=  
+(* Local *) Definition isacs_aux := Fix isacs_aux{isacs_aux [a:A; s:signed_sum] : A :=  
   Cases s of
   | Nil_varlist => a
   | (Plus_varlist l t) => 

@@ -536,7 +536,14 @@ let constants_to_unfold =
       path_of_string "Coq.ring.Ring_normalize.interp_vl";
       path_of_string "Coq.ring.Ring_abstract.interp_acs";
       path_of_string "Coq.ring.Ring_abstract.interp_sacs";
-      path_of_string "Coq.ring.Quote.varmap_find" ]
+      path_of_string "Coq.ring.Quote.varmap_find";
+      (* anciennement des Local devenus Definition *)
+      path_of_string "Coq.ring.Ring_normalize.ics_aux";
+      path_of_string "Coq.ring.Ring_normalize.ivl_aux";
+      path_of_string "Coq.ring.Ring_normalize.interp_m";
+      path_of_string "Coq.ring.Ring_abstract.iacs_aux";
+      path_of_string "Coq.ring.Ring_abstract.isacs_aux";
+    ]
 (*    SectionPathSet.empty *)
 
 (* Unfolds the functions interp and find_btree in the term c of goal gl *)
@@ -575,10 +582,10 @@ let raw_polynom th op lc gl =
              (tclORELSE
                (h_exact c'i_eq_c''i)
                (h_exact (mkAppA
-                 [| build_coq_sym_eqT (); th.th_a; c'''i; ci; c'i_eq_c''i |]))
+                 [| build_coq_sym_eqT (); th.th_a; c''i; ci; c'i_eq_c''i |]))
              ) 
 	     (tclTHENS 
-	       (elim_type (mkAppA [| build_coq_eqT (); th.th_a; c'''i; ci |]))
+	       (elim_type (mkAppA [| build_coq_eqT (); th.th_a; c''i; ci |]))
                [ tac ;
                  h_exact c'i_eq_c''i
                ]
