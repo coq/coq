@@ -80,6 +80,76 @@ Intro; Unfold div_fct fct_cte inv_fct.
 Unfold Rdiv; Ring.
 Qed.
 
+(* Rabsolu *)
+Lemma Rabsolu_derive_1 : (x:R) ``0<x`` -> (derivable_pt_lim Rabsolu x ``1``).
+Intros.
+Unfold derivable_pt_lim; Intros.
+Exists (mkposreal x H); Intros.
+Rewrite (Rabsolu_right x).
+Rewrite (Rabsolu_right ``x+h``).
+Rewrite Rplus_sym.
+Unfold Rminus; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_r.
+Rewrite Rplus_Or; Unfold Rdiv; Rewrite <- Rinv_r_sym.
+Rewrite Rplus_Ropp_r; Rewrite Rabsolu_R0; Apply H0.
+Apply H1.
+Apply Rle_sym1.
+Case (case_Rabsolu h); Intro.
+Rewrite (Rabsolu_left h r) in H2.
+Left; Rewrite Rplus_sym; Apply Rlt_anti_compatibility with ``-h``; Rewrite Rplus_Or; Rewrite <- Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Ol; Apply H2.
+Apply ge0_plus_ge0_is_ge0.
+Left; Apply H.
+Apply Rle_sym2; Apply r.
+Left; Apply H.
+Qed.
+
+Lemma Rabsolu_derive_2 : (x:R) ``x<0`` -> (derivable_pt_lim Rabsolu x ``-1``).
+Intros.
+Unfold derivable_pt_lim; Intros.
+Cut ``0< -x``.
+Intro; Exists (mkposreal ``-x`` H1); Intros.
+Rewrite (Rabsolu_left x).
+Rewrite (Rabsolu_left ``x+h``).
+Rewrite Rplus_sym.
+Rewrite Ropp_distr1.
+Unfold Rminus; Rewrite Ropp_Ropp; Rewrite Rplus_assoc; Rewrite Rplus_Ropp_l.
+Rewrite Rplus_Or; Unfold Rdiv.
+Rewrite Ropp_mul1.
+Rewrite <- Rinv_r_sym.
+Rewrite Ropp_Ropp; Rewrite Rplus_Ropp_l; Rewrite Rabsolu_R0; Apply H0.
+Apply H2.
+Case (case_Rabsolu h); Intro.
+Apply Ropp_Rlt.
+Rewrite Ropp_O; Rewrite Ropp_distr1; Apply gt0_plus_gt0_is_gt0.
+Apply H1.
+Apply Rgt_RO_Ropp; Apply r.
+Rewrite (Rabsolu_right h r) in H3.
+Apply Rlt_anti_compatibility with ``-x``; Rewrite Rplus_Or; Rewrite <- Rplus_assoc; Rewrite Rplus_Ropp_l; Rewrite Rplus_Ol; Apply H3.
+Apply H.
+Apply Rgt_RO_Ropp; Apply H.
+Qed.
+
+(* Rabsolu is derivable for all x <> 0 *)
+Lemma derivable_pt_Rabsolu : (x:R) ``x<>0`` -> (derivable_pt Rabsolu x).
+Intros.
+Case (total_order_T x R0); Intro.
+Elim s; Intro.
+Unfold derivable_pt; Apply Specif.existT with ``-1``.
+Apply (Rabsolu_derive_2 x a).
+Elim H; Exact b.
+Unfold derivable_pt; Apply Specif.existT with ``1``.
+Apply (Rabsolu_derive_1 x r).
+Qed.
+
+(* Rabsolu is continuous for all x *)
+Lemma continuity_Rabsolu : (continuity Rabsolu).
+Unfold continuity; Intro.
+Case (Req_EM x R0); Intro.
+Unfold continuity_pt; Unfold continue_in; Unfold limit1_in; Unfold limit_in; Simpl; Unfold R_dist; Intros; Exists eps; Split.
+Apply H0.
+Intros; Rewrite H; Rewrite Rabsolu_R0; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Rewrite Rabsolu_Rabsolu; Elim H1; Intros; Rewrite H in H3; Unfold Rminus in H3; Rewrite Ropp_O in H3; Rewrite Rplus_Or in H3; Apply H3.
+Apply derivable_continuous_pt; Apply (derivable_pt_Rabsolu x H).
+Qed.
+
 (* Regularity of hyperbolic functions *)
 Axiom derivable_pt_lim_exp : (x:R) (derivable_pt_lim exp x (exp x)).   
 
@@ -295,6 +365,10 @@ Match trm With
  |[|-(continuity_pt ? ?)] -> Cut ``0<=pt``; [Intro | Try Assumption]
  |[|-(eqT ? (derive_pt ? ? ?) ?)] -> Cut ``0<pt``; [Intro | Try Assumption]
  | _ -> Idtac)
+|[Rabsolu] ->
+ (Match Context With
+ |[|-(derivable_pt ? ?)] -> Cut ``pt<>0``; [Intro | Try Assumption]
+ | _ -> Idtac)
 |[?1] -> Let p = ?1 In
  (Match Context With
  |[_:(derivable_pt p pt)|- ?] -> Idtac
@@ -352,6 +426,7 @@ Match Context With
 |[|-(derivable_pt cosh ?)] -> Apply derivable_pt_cosh
 |[|-(derivable_pt exp ?)] -> Apply derivable_pt_exp
 |[|-(derivable_pt sqrt ?1)] -> Apply (derivable_pt_sqrt ?1); Assumption Orelse Unfold plus_fct minus_fct opp_fct mult_fct div_fct inv_fct comp id fct_cte
+|[|-(derivable_pt Rabsolu ?1)] -> Apply (derivable_pt_Rabsolu ?1); Assumption Orelse Unfold plus_fct minus_fct opp_fct mult_fct div_fct inv_fct comp id fct_cte
  (* regles de differentiabilite *)
  (* PLUS *)
 |[|-(derivable_pt (plus_fct ?1 ?2) ?3)] -> Apply (derivable_pt_plus ?1 ?2 ?3); IsDiff_pt
@@ -386,6 +461,7 @@ Match Context With
  |[|-(continuity exp)] -> Apply derivable_continuous; Apply derivable_exp
  |[|-(continuity sinh)] -> Apply derivable_continuous; Apply derivable_sinh
  |[|-(continuity cosh)] -> Apply derivable_continuous; Apply derivable_cosh
+ |[|-(continuity Rabsolu)] -> Apply continuity_Rabsolu
  (* regles de continuite *)
  (* PLUS *)
 |[|-(continuity (plus_fct ?1 ?2))] -> Apply (continuity_plus ?1 ?2); Try IsCont_glob Orelse Assumption
@@ -421,6 +497,7 @@ Match Context With
 |[|-(continuity_pt cosh ?)] -> Apply derivable_continuous_pt; Apply derivable_pt_cosh
 |[|-(continuity_pt exp ?)] -> Apply derivable_continuous_pt; Apply derivable_pt_exp
 |[|-(continuity_pt sqrt ?1)] -> Apply continuity_pt_sqrt; Assumption Orelse Unfold plus_fct minus_fct opp_fct mult_fct div_fct inv_fct comp id fct_cte
+|[|-(continuity_pt Rabsolu ?1)] -> Apply (continuity_Rabsolu ?1)
  (* regles de differentiabilite *)
  (* PLUS *)
 |[|-(continuity_pt (plus_fct ?1 ?2) ?3)] -> Apply (continuity_pt_plus ?1 ?2 ?3); IsCont_pt
