@@ -207,11 +207,13 @@ let generalizeRewriteIntros tac depids id gls =
 let var_occurs_in_pf gl id =
   let env = pf_env gl in
   occur_var env id (pf_concl gl) or
-  List.exists (fun (_,t) -> occur_var env id t) (pf_hyps_types gl)
+  List.exists (occur_var_in_decl env id) (pf_hyps gl)
 
 let split_dep_and_nodep idl gl =
-  (List.filter (var_occurs_in_pf gl) idl,
-   List.filter (fun x -> not(var_occurs_in_pf gl x)) idl)
+  List.fold_right 
+    (fun id (l1,l2) ->
+       if var_occurs_in_pf gl id then (id::l1,l2) else (l1,id::l2))
+    idl ([],[])
 
 (* invariant: ProjectAndApply is responsible for erasing the clause
    which it is given as input
