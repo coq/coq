@@ -420,10 +420,14 @@ beforedepend:: scripts/tolink.ml
 
 COQIDEBYTE=bin/coqide.byte$(EXE)
 COQIDEOPT=bin/coqide.opt$(EXE)
+COQIDE=bin/coqide.$(BEST)$(EXE)
+
 COQIDECMO=ide/ideutils.cmo ide/find_phrase.cmo ide/highlight.cmo ide/coq.cmo ide/coqide.cmo
 COQIDECMX=$(COQIDECMO:.cmo=.cmx)
 COQIDEFLAGS=-I +lablgtk2
 beforedepend:: ide/find_phrase.ml ide/highlight.ml
+
+ide: $(COQIDE)
 
 $(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) $(COQIDECMX)
 	$(COQMKTOP) -ide -opt $(COQIDEFLAGS) lablgtk.cmxa $(OPTFLAGS) -o $@ $(COQIDECMX)
@@ -880,7 +884,7 @@ install-opt:
 
 install-binaries:
 	$(MKDIR) $(FULLBINDIR)
-	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(COQINTERFACE) $(COQVO2XML) $(FULLBINDIR)
+	cp $(COQDEP) $(GALLINA) $(COQMAKEFILE) $(COQTEX) $(COQINTERFACE) $(COQVO2XML) $(COQIDE) $(FULLBINDIR)
 
 LIBFILES=$(INITVO) $(TACTICSVO) $(THEORIESVO) $(CONTRIBVO)
 LIBFILESLIGHT=$(INITVO) $(THEORIESLIGHTVO)

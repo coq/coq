@@ -208,7 +208,7 @@ let input_channel b ic =
   done
 
 let with_file name ~f =
-  let ic = open_in name in
+  let ic = open_in_gen [Open_rdonly;Open_creat] 0o644 name in
   try f ic; close_in ic with exn -> close_in ic; raise exn
 
 type info =  {start:GText.mark;
@@ -666,7 +666,6 @@ object(self)
 	  ~stop:self#get_start_of_input
 	  "processed";
 	input_buffer#move_mark ~where:start (`NAME "start_of_input");
-	input_buffer#place_cursor start;
 	(try self#show_goals with e -> ());
 	clear_stdout ();
 	self#clear_message
@@ -1035,7 +1034,7 @@ let main () =
     if has_something_to_save () then 
       match (GToolbox.question_box ~title:"Quit"
 	       ~buttons:["Save Named Buffers and Quit";
-			 "Don't Save and Quit";
+			 "Quit without Saving";
 			 "Don't Quit"] 
 	       ~default:0
 	       ~icon:
@@ -1151,7 +1150,10 @@ let main () =
   
   (* Templates Menu *)
   let templates_menu =  factory#add_submenu "Templates" in
-  let templates_factory = new GMenu.factory templates_menu ~accel_group ~accel_modi:[`MOD1] in
+  let templates_factory = new GMenu.factory templates_menu 
+			    ~accel_group 
+			    ~accel_modi:[`MOD1] 
+  in
   let templates_tactics = templates_factory#add_submenu "Tactics" in
   let templates_tactics_factory = new GMenu.factory templates_tactics ~accel_group in
   ignore (templates_tactics_factory#add_item "Auto");
