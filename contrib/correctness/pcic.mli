@@ -13,6 +13,10 @@
 open Past
 open Rawterm
 
+(* On-the-fly generation of needed (possibly dependent) tuples. *)
+
+val check_product_n : int -> unit
+val check_dep_product_n : int -> unit
 
 (* transforms intermediate functional programs into (raw) CIC terms *)
 

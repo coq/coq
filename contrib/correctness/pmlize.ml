@@ -56,8 +56,7 @@ and trad_desc ren env ct d =
 	CC_expr c'
       else
       	let ty = trad_ml_type_v ren env tt in
-      	let t = make_tuple [ CC_expr c',ty ] qt ren env (current_date ren) in
-      	t
+      	make_tuple [ CC_expr c',ty ] qt ren env (current_date ren)
       
   | Var id ->
       if is_mutable_in_env env id then
@@ -191,7 +190,7 @@ and trad_desc ren env ct d =
 
   | App (f, args) ->
       let trad_arg (ren,args) = function
-	  Term a ->
+	| Term a ->
 	    let ((_,tya),efa,_,_) as ca = a.info.kappa in
 	    let ta = trad ren a in
 	    let w = get_writes efa in
@@ -279,7 +278,8 @@ and trad_desc ren env ct d =
 
 
 and trad_binders ren env = function
-    [] -> []
+  | [] -> 
+      []
   | (_,BindType (Ref _ | Array _))::bl ->
       trad_binders ren env bl
   | (id,BindType v)::bl ->
@@ -291,7 +291,8 @@ and trad_binders ren env = function
 
 	
 and trad_block ren env = function
-    [] -> []
+  | [] -> 
+      []
   | (Assert c)::block ->
       (Assert c)::(trad_block ren env block)
   | (Label s)::block ->

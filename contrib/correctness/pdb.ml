@@ -33,32 +33,51 @@ let lookup_var ids locop id =
 
 let check_ref idl loc id =
   if (not (List.mem id idl)) & (not (Penv.is_global id)) then
-    Perror.unbound_reference id (Some loc)
+    Perror.unbound_reference id loc
 
-(* db types  : just do nothing for the moment ! *)
+(* db types : only check the references for the moment *)
 
-let rec db_type_v ids = function
-  | Ref v -> Ref (db_type_v ids v)
-  | Array (c,v) -> Array (c,db_type_v ids v)
-  | Arrow (bl,c) -> Arrow (List.map (db_binder ids) bl, db_type_c ids c)
-  | TypePure _ as v -> v
-and db_type_c ids ((id,v),e,p,q) =
-  (id,db_type_v ids v), e, p, q
-  (* TODO: db_condition ? *)
-and db_binder ids = function
-    (n, BindType v) -> (n, BindType (db_type_v ids v))
-  | b -> b
+let rec check_type_v refs = function
+  | Ref v -> 
+      check_type_v refs v
+  | Array (c,v) -> 
+      check_type_v refs v
+  | Arrow (bl,c) -> 
+      check_binder refs c bl
+  | TypePure _ -> 
+      ()
+
+and check_type_c refs ((_,v),e,_,_) =
+  check_type_v refs v;
+  List.iter (check_ref refs None) (Peffect.get_reads e);
+  List.iter (check_ref refs None) (Peffect.get_writes e)
+  (* TODO: check_condition on p and q *)
+
+and check_binder refs c = function
+  | [] -> 
+      check_type_c refs c
+  | (id, BindType (Ref _ | Array _ as v)) :: bl -> 
+      check_type_v refs v;
+      check_binder (id :: refs) c bl
+  | (_, BindType v) :: bl ->
+      check_type_v refs v;
+      check_binder refs c bl
+  | _ :: bl -> 
+      check_binder refs c bl
 
 (* db binders *)
 
 let rec db_binders ((tids,pids,refs) as idl) = function
-    [] -> idl, []
-  | (id, BindType (Ref _ | Array _ as v)) :: rem ->
+  | [] -> 
+      idl, []
+  | (id, BindType (Ref _ | Array _ as v)) as b :: rem ->
+      check_type_v refs v;
       let idl',rem' = db_binders (tids,pids,id::refs) rem in
-      idl', (id, BindType (db_type_v tids v)) :: rem'
-  | (id, BindType v) :: rem ->
+      idl', b :: rem'
+  | (id, BindType v) as b :: rem ->
+      check_type_v refs v;
       let idl',rem' = db_binders (tids,id::pids,refs) rem in
-      idl', (id, BindType (db_type_v tids v)) :: rem'
+      idl', b :: rem'
   | ((id, BindSet) as t) :: rem ->
       let idl',rem' = db_binders (id::tids,pids,refs) rem in
       idl', t :: rem'
@@ -88,7 +107,7 @@ let rec db_pattern = function
 	     let ids',p' = db_pattern p in ids'@ids,p'::pl) pl ([],[]) in
   	ids,PatApp pl'
   | PatConstruct _ ->
-      failwith "constructor in a pattern after parsing !"
+      assert false (* constructor in a pattern after parsing ! *)
 
 
 (* db programs *)
@@ -96,21 +115,21 @@ let rec db_pattern = function
 let db_prog e =
   (* tids = type identifiers, ids = variables, refs = references and arrays *)
   let rec db_desc ((tids,ids,refs) as idl) = function
-      (Var x) as t ->
+    | (Var x) as t ->
 	(match lookup_var ids (Some e.loc) x with
 	     None -> t
 	   | Some c -> Expression c)
     | (Acc x) as t ->
-	check_ref refs e.loc x;
+	check_ref refs (Some e.loc) x;
 	t
     | Aff (x,e1) ->
-	check_ref refs e.loc x;
+	check_ref refs (Some e.loc) x;
 	Aff (x, db idl e1)
     | TabAcc (b,x,e1) ->
-	check_ref refs e.loc x;
+	check_ref refs (Some e.loc) x;
 	TabAcc(b,x,db idl e1)
     | TabAff (b,x,e1,e2) ->
-	check_ref refs e.loc x;
+	check_ref refs (Some e.loc) x;
 	TabAff (b,x, db idl e1, db idl e2)
     | Seq bl ->
 	Seq (List.map (function
@@ -137,7 +156,8 @@ let db_prog e =
 	  
     | LetRec (f,bl,v,var,e) ->
 	let (tids',ids',refs'),bl' = db_binders idl bl in
-	LetRec (f, bl, db_type_v tids' v, var, db (tids',f::ids',refs') e)
+	check_type_v refs' v;
+	LetRec (f, bl, v, var, db (tids',f::ids',refs') e)
 	  
     | Debug (s,e1) ->
 	Debug (s, db idl e1)
@@ -146,10 +166,10 @@ let db_prog e =
     | PPoint (s,d) -> PPoint (s, db_desc idl d)
 	  
   and db_arg ((tids,_,refs) as idl) = function
-      Term ({ desc = Var id } as t) -> 
+    | Term ({ desc = Var id } as t) -> 
 	if List.mem id refs then Refarg id else Term (db idl t)
     | Term t -> Term (db idl t)
-    | Type v -> Type (db_type_v tids v)
+    | Type v as ty -> check_type_v refs v; ty
     | Refarg _ -> assert false
 
   and db idl e =

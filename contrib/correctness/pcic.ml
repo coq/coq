@@ -32,7 +32,7 @@ let make_hole c = mkCast (isevar, c)
 let tuple_exists id =
   try let _ = Nametab.sp_of_id CCI id in true with Not_found -> false
 
-let ast_set = Ast.ope ("PROP", [ Ast.ide "Pos" ])
+let ast_set = Ast.ope ("SET", [])
 
 let tuple_n n =
   let name = "tuple_" ^ string_of_int n in
@@ -88,6 +88,20 @@ let sig_n n =
 	    mind_entry_arity = mkSet;
 	    mind_entry_consnames = [ cname ];
 	    mind_entry_lc = [ lc ] } ] }
+
+(*s On the fly generation of needed (possibly dependent) tuples. *)
+
+let check_product_n n =
+  if n > 2 then
+    let s = Printf.sprintf "tuple_%d" n in
+    if not (tuple_exists (id_of_string s)) then tuple_n n
+
+let check_dep_product_n n =
+  if n > 1 then
+    let s = Printf.sprintf "sig_%d" n in
+    if not (tuple_exists (id_of_string s)) then ignore (sig_n n)
+
+(*s Constructors for the tuples. *)
 	
 let pair = ConstructRef ((coq_constant ["Init"; "Datatypes"] "prod",0),1)
 let exist = ConstructRef ((coq_constant ["Init"; "Specif"] "sig",0),1)

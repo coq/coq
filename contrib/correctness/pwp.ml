@@ -67,18 +67,18 @@ let force_post up env top q e =
 
 (* put a post-condition if none is present *)
 let post_if_none_up env top q = function
-    { post = None } as p -> force_post true env top q p 
+  | { post = None } as p -> force_post true env top q p 
   | p -> p
 
 let post_if_none env q = function
-    { post = None } as p -> force_post false env "" q p 
+  | { post = None } as p -> force_post false env "" q p 
   | p -> p
 
 (* [annotation_candidate p] determines if p is a candidate for a 
  * post-condition *)
 
 let annotation_candidate = function
-    { desc = If _ | LetIn _ | LetRef _ ; post = None } -> true
+  | { desc = If _ | LetIn _ | LetRef _ ; post = None } -> true
   | _ -> false
 
 (* [extract_pre p] erase the pre-condition of p and returns it *)
@@ -119,7 +119,7 @@ let normalize_boolean ren env b =
   Perror.check_no_effect b.loc ef;
   if is_bool v then
     match q with
-	Some _ ->
+      | Some _ ->
 	  (* il y a une annotation : on se contente de lui forcer un nom *)
 	  let q = force_bool_name q in
 	  { desc = b.desc; pre = b.pre; post = q; loc = b.loc;
@@ -143,7 +143,7 @@ let normalize_boolean ren env b =
 (* [decomp_boolean c] returns the specs R and S of a boolean expression *)
 
 let decomp_boolean = function
-    Some { a_value = q } ->
+  | Some { a_value = q } ->
       Reduction.whd_betaiota (Term.applist (q, [constant "true"])),
       Reduction.whd_betaiota (Term.applist (q, [constant "false"]))
   | _ -> invalid_arg "Ptyping.decomp_boolean"
@@ -151,11 +151,11 @@ let decomp_boolean = function
 (* top point of a program *)
 
 let top_point = function
-    PPoint (s,_) as p -> s,p
+  | PPoint (s,_) as p -> s,p
   | p -> let s = label_name() in s,PPoint(s,p)
 
 let top_point_block = function
-    (Label s :: _) as b -> s,b
+  | (Label s :: _) as b -> s,b
   | b -> let s = label_name() in s,(Label s)::b
 
 let abstract_unit q = abstract [result_id,constant "unit"] q
@@ -181,7 +181,7 @@ let add_decreasing env inv (var,r) lab bl =
 
 let post_last_statement env top q bl =
   match List.rev bl with
-      Statement e :: rem when annotation_candidate e -> 
+    | Statement e :: rem when annotation_candidate e -> 
 	List.rev ((Statement (post_if_none_up env top q e)) :: rem)
     | _ -> bl
 
@@ -191,7 +191,7 @@ let rec propagate_desc ren info d =
   let env = info.env in
   let (_,_,p,q) = info.kappa in
   match d with
-      If (e1,e2,e3) ->
+    | If (e1,e2,e3) ->
       (* propagation number 2 *)
 	let e1' = normalize_boolean ren env (propagate ren e1) in
 	if e2.post = None or e3.post = None then
@@ -252,7 +252,7 @@ let rec propagate_desc ren info d =
 and propagate ren p =
   let env = p.info.env in
   let p = match p.desc with
-      App (f,l) ->
+    | App (f,l) ->
 	let _,(_,so,ok),(_,_,_,qapp) = effect_app ren env f l in
 	if ok then
 	  let q = option_app (named_app (real_subst_in_constr so)) qapp in
@@ -315,13 +315,15 @@ and propagate ren p =
     | _ -> p
 
 and propagate_arg ren = function
-    Type _ | Refarg _ as a -> a
+  | Type _ | Refarg _ as a -> a
   | Term e -> Term (propagate ren e)
 
 
 and propagate_block ren env = function 
-    [] -> []
+  | [] -> 
+      []
   | (Statement p) :: (Assert q) :: rem when annotation_candidate p ->
+      (* TODO: plutot p.post = None ? *)
       let q' =
 	let ((id,v),_,_,_) = p.info.kappa in
 	let tv = Pmonad.trad_ml_type_v ren env v in

@@ -539,7 +539,8 @@ let _ =
 		   Util.errorlabstrm "PROGVARIABLE"
 		     [< 'sTR"Clash with previous constant "; pr_id id >])
 		ids;
-	      let v = Pdb.db_type_v [] (out_typev d) in
+	      let v = out_typev d in
+	      Pdb.check_type_v (all_refs ()) v;
 	      let env = empty in
 	      let ren = update empty_ren "" [] in
 	      let v = Ptyping.cic_type_v env ren v in

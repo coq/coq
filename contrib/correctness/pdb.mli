@@ -19,7 +19,7 @@ open Past
  * These functions directly raise UserError exceptions on bad programs.
  *)
 
-val db_type_v : Names.identifier list -> 'a ml_type_v -> 'a ml_type_v
+val check_type_v : Names.identifier list -> 'a ml_type_v -> unit
 
 val db_prog : program -> program
 

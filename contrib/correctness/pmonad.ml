@@ -36,11 +36,11 @@ open Peffect
 
 let product_name = function
   | 2 -> "prod"
-  | n -> Printf.sprintf "tuple_%d" n
+  | n -> check_product_n n; Printf.sprintf "tuple_%d" n
 
 let dep_product_name = function
   | 1 -> "sig"
-  | n -> Printf.sprintf "sig_%d" n
+  | n -> check_dep_product_n n; Printf.sprintf "sig_%d" n
 
 let product ren env before lo = function
   | None -> (* non dependent case *)
