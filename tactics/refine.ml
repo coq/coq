@@ -133,15 +133,13 @@ let rec compute_metamap env c = match kind_of_term c with
   | (Const _ | Evar _ | Ind _ | Construct _ |
     Sort _ | Var _ | Rel _) -> 
       TH (c,[],[])
+
   (* le terme est une mv => un but *)
   | Meta n ->
-      (* 
-      Pp.warning (Printf.sprintf ("compute_metamap: MV(%d) sans type !\n") n);
-      let ty = Retyping.get_type_of_with_meta env Evd.empty lmeta c in 
-      *)
       TH (c,[],[None])
+
   | Cast (m,ty) when isMeta m -> 
-      TH (m,[destMeta m,ty],[None])
+      TH (c,[destMeta m,ty],[None])
 
   (* abstraction => il faut décomposer si le terme dessous n'est pas pur
    *    attention : dans ce cas il faut remplacer (Rel 1) par (Var x)
@@ -351,11 +349,9 @@ let coerce_to_goal (sigma,c) gl =
 
 let refine oc gl =
   let sigma = project gl in
-  let env = pf_env gl in
   let oc = coerce_to_goal oc gl in
   let (_gmm,c) = Evarutil.exist_to_meta sigma oc in
   (* Relies on Cast's put on Meta's by exist_to_meta, because it is otherwise 
      complicated to update gmm when passing through a binder *)
-  let th = compute_metamap env c in
+  let th = compute_metamap (pf_env gl) c in
   tcc_aux [] th gl
-
