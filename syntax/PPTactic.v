@@ -35,13 +35,14 @@ Syntax tactic
       -> [ [<hov 0> $t] [1 0] "| " (TACTICSEQBODY ($LIST $l)) ]
   | tacticseqbody_one  [<<(TACTICSEQBODY $t)>>] -> [ [<hov 0> $t] ]
 
+(* Match Context *)
+
   | term [<<(TERM $t)>>] -> [ $t ]
   | subterm [<<(SUBTERM ($VAR $id) $t)>>] -> [ $id "[" $t "]" ]
   | match_context_hyps_id [<<(MATCHCONTEXTHYPS ($VAR $id) $t)>>] ->
     [ $id [1 0] ":" [1 0] $t]
   | match_context_hyps_ano [<<(MATCHCONTEXTHYPS $t)>>] ->
     [ "_" [1 0] ":" [1 0] $t]
-  
   | hyps_cons [<<(HYPS $hyp0 $hyp1 ($LIST $hyps))>>] ->
     [ $hyp0 ";" [1 0] (HYPS $hyp1 ($LIST $hyps)) ]
   | hyps_three [<<(HYPS $hyp $concl $tac)>>] ->
@@ -50,11 +51,35 @@ Syntax tactic
     [ "|-" [1 0] $concl [1 0] "]" [1 0] "->" [1 2] $tac ]
   | match_context_rule [<<(MATCHCONTEXTRULE ($LIST $hyps))>>] ->
     [ "[" [1 0] (HYPS ($LIST $hyps)) ]
-
   | match_context_rule_cons [<<(MATCHCONTEXTLIST $rul ($LIST $lrul))>>] ->
-    [FNL "|" [1 0] $rul (MATCHCONTEXTLIST ($LIST $lrul))]
+    [ FNL "|" [1 0] $rul (MATCHCONTEXTLIST ($LIST $lrul)) ]
   | match_context_rule_one [<<(MATCHCONTEXTLIST $rul)>>] ->
-    [FNL "|" [1 0] $rul]
+    [ FNL "|" [1 0] $rul ]
+
+(* Match *)
+
+  | match_list_cons [<<(MATCHLIST $rul ($LIST $lrul))>>] ->
+    [ $rul (MATCHLIST ($LIST $lrul)) ]
+  | match_list_one [<<(MATCHLIST $rul)>>] -> [ $rul ]
+  | match_rul_pat [<<(MATCHRULE $pat $tac)>>] ->
+    [ FNL "|" [1 0] "[" [1 0] $pat [1 0] "]" [1 0] "->" [1 2] $tac ]
+  | match_rul_all [<<(MATCHRULE $tac)>>] ->
+    [ FNL "|" [1 0] "_" [1 0] "->" [1 2] $tac ]
+
+(* Let *)
+
+  | let_decl_cons [<<(LETDECL (LETCLAUSE ($LIST $rul)) ($LIST $lrul))>>] ->
+    [ (LET ($LIST $rul)) (LETLIST ($LIST $lrul)) ]
+  | let_decl_one [<<(LETDECL (LETCLAUSE ($LIST $rul)))>>] ->
+    [ (LET ($LIST $rul)) ]
+  | let_list_cons [<<(LETLIST (LETCLAUSE ($LIST $rul)) ($LIST $lrul))>>] ->
+    [ (AND ($LIST $rul)) (LETLIST ($LIST $lrul)) ]
+  | let_list_one [<<(LETLIST (LETCLAUSE ($LIST $rul)))>>] ->
+    [ (AND ($LIST $rul)) ]
+  | let_rule [<<(LET ($VAR $id) $tac)>>] ->
+    [ $id [1 0] "=" [1 0] $tac ]
+  | and_rule [<<(AND ($VAR $id) $tac)>>] ->
+    [ FNL "And" [1 0] $id [1 0] "=" [1 0] $tac]
   ;
 
   level 1:
@@ -83,6 +108,10 @@ Syntax tactic
          -> ["Abstract " $t:E " using "  $id]
   | match_context [<<(MATCHCONTEXT ($LIST $lrul))>>] ->
     [ [0 0] "Match Context With" (MATCHCONTEXTLIST ($LIST $lrul))]
+  | match [<<(MATCH $t ($LIST $lrul))>>] ->
+    [ [0 0] "Match" [1 0] $t [1 0] "With" (MATCHLIST ($LIST $lrul)) ]
+  | let [<<(LET (LETDECL ($LIST $llc)) $u)>>] ->
+    [ [0 0] "Let" [1 0] (LETDECL ($LIST $llc)) [1 0] "In" FNL $u ]
 
 (* ========================================== *)
 (*       PP rules for simple tactics          *)
