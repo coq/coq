@@ -56,3 +56,5 @@ Hint not_Zle_Omega : zarith := Extern 10 ~(Zle ? ?) Abstract Omega.
 Hint not_Zlt_Omega : zarith := Extern 10 ~(Zlt ? ?) Abstract Omega.
 Hint not_Zge_Omega : zarith := Extern 10 ~(Zge ? ?) Abstract Omega.
 Hint not_Zgt_Omega : zarith := Extern 10 ~(Zgt ? ?) Abstract Omega.
+
+Hint false_Omega : zarith := Extern 10 False Abstract Omega.
