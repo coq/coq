@@ -97,3 +97,38 @@ Proof.
   Apply le_lt_trans with m:=(mult (S m) p). Assumption.
   Apply mult_lt. Assumption.
 Qed.
+
+(**************************************************************************)
+(*                         Tail-recursive mult                            *)
+(**************************************************************************)
+
+(* [tail_mult] is an alternative definition for [mult] which is 
+  tail-recursive, whereas [mult] is not. When extracting programs 
+  from proofs, this can be useful. *)
+
+Fixpoint mult_acc [s,m,n:nat] : nat := 
+   Cases n of 
+      O => s
+      | (S p) => (mult_acc (tail_plus m s) m p)
+    end.
+
+Lemma mult_acc_aux : (n,s,m:nat)(plus s (mult n m))= (mult_acc s m n).
+Induction n; Simpl;Auto.
+Intros p H s m; Rewrite <- plus_tail_plus; Rewrite <- H.
+Rewrite <- plus_assoc_r; Apply (f_equal2 nat nat);Auto.
+Rewrite plus_sym;Auto.
+Qed.
+
+Definition tail_mult := [n,m:nat](mult_acc O m n).
+
+Lemma mult_tail_mult : (n,m:nat)(mult n m)=(tail_mult n m).
+Intros; Unfold tail_mult; Rewrite <- mult_acc_aux;Auto.
+Qed.
+
+(* [TailSimpl] transforms any [tail_plus] and [tail_mult] into [plus] 
+   and [mult] and simplify *)
+
+Tactic Definition TailSimpl := 
+   Repeat Rewrite <- plus_tail_plus; 
+   Repeat Rewrite <- mult_tail_mult; 
+   Simpl. 

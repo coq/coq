@@ -160,3 +160,23 @@ Proof.
 Qed.
 
 
+(**************************************************************************)
+(*                         Tail-recursive plus                            *)
+(**************************************************************************)
+
+(* [tail_plus] is an alternative definition for [plus] which is 
+  tail-recursive, whereas [plus] is not. When extracting programs 
+  from proofs, this can be useful. *)
+
+Fixpoint plus_acc [s,n:nat] : nat := 
+   Cases n of 
+      O => s
+      | (S p) => (plus_acc (S s) p)
+    end.
+
+Definition tail_plus := [n,m:nat](plus_acc m n).
+
+Lemma plus_tail_plus : (n,m:nat)(plus n m)=(tail_plus n m).
+Induction n; Unfold tail_plus; Simpl; Auto.
+Intros p H m; Rewrite <- H; Simpl; Auto.
+Qed.
