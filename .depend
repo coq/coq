@@ -1462,17 +1462,17 @@ pretyping/typing.cmx: kernel/environ.cmx pretyping/evarutil.cmx \
     kernel/type_errors.cmx kernel/typeops.cmx lib/util.cmx \
     pretyping/typing.cmi 
 pretyping/unification.cmo: kernel/environ.cmi pretyping/evarutil.cmi \
-    pretyping/evd.cmi library/nameops.cmi kernel/names.cmi \
+    pretyping/evd.cmi library/global.cmi library/nameops.cmi kernel/names.cmi \
     pretyping/pattern.cmi lib/pp.cmi pretyping/pretype_errors.cmi \
-    pretyping/rawterm.cmi pretyping/reductionops.cmi kernel/sign.cmi \
-    kernel/term.cmi pretyping/termops.cmi pretyping/typing.cmi lib/util.cmi \
-    pretyping/unification.cmi 
+    pretyping/rawterm.cmi pretyping/reductionops.cmi pretyping/retyping.cmi \
+    kernel/sign.cmi kernel/term.cmi pretyping/termops.cmi \
+    pretyping/typing.cmi lib/util.cmi pretyping/unification.cmi 
 pretyping/unification.cmx: kernel/environ.cmx pretyping/evarutil.cmx \
-    pretyping/evd.cmx library/nameops.cmx kernel/names.cmx \
+    pretyping/evd.cmx library/global.cmx library/nameops.cmx kernel/names.cmx \
     pretyping/pattern.cmx lib/pp.cmx pretyping/pretype_errors.cmx \
-    pretyping/rawterm.cmx pretyping/reductionops.cmx kernel/sign.cmx \
-    kernel/term.cmx pretyping/termops.cmx pretyping/typing.cmx lib/util.cmx \
-    pretyping/unification.cmi 
+    pretyping/rawterm.cmx pretyping/reductionops.cmx pretyping/retyping.cmx \
+    kernel/sign.cmx kernel/term.cmx pretyping/termops.cmx \
+    pretyping/typing.cmx lib/util.cmx pretyping/unification.cmi 
 proofs/clenvtac.cmo: pretyping/clenv.cmi kernel/environ.cmi \
     proofs/evar_refiner.cmi pretyping/evarutil.cmi pretyping/evd.cmi \
     proofs/logic.cmi library/nameops.cmi kernel/names.cmi \
