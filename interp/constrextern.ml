@@ -125,7 +125,7 @@ let raw_string_of_ref = function
 
 let translate_keyword = function
   | ("forall" | "fun" | "match" | "fix" | "cofix" | "for" | "let"
-    | "if"  | "then" | "else" | "return" as s) ->
+    | "if"  | "then" | "else" | "return" | "mod" as s) ->
       let s' = s^"_" in
       msgerrnl
       (str ("Warning: '"^
