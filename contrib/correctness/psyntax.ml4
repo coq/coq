@@ -1025,7 +1025,7 @@ let rec pr_desc = function
       (* Numeral or "tt": use a printer which doesn't globalize *)
       Ppconstr.pr_constr
         (Constrextern.extern_constr_in_scope false "Z_scope" (Global.env()) c)
-  | Debug (s,p) -> str "@" ++ pr_prog p
+  | Debug (s,p) -> str "@" ++ Pptacticnew.qsnew s ++ pr_prog p
 
 and pr_block_st = function
   | Label s -> hov 0 (str "label" ++ spc() ++ str s)

@@ -49,20 +49,23 @@ let reraise_with_loc loc f x =
 
 (* functions on names *)
 
-let at_id id d = id_of_string ((string_of_id id) ^ "@" ^ d)
+let at = if !Options.v7 then "@" else "'at'"
+
+let at_id id d = id_of_string ((string_of_id id) ^ at ^ d)
 
 let is_at id =
   try
-    let _ = String.index (string_of_id id) '@' in true
+    let _ = string_index_from (string_of_id id) 0 at in true
   with Not_found ->
     false
 
 let un_at id =
   let s = string_of_id id in
     try
-      let n = String.index s '@' in
+      let n = string_index_from s 0 at in
     	id_of_string (String.sub s 0 n),
-	String.sub s (succ n) (pred (String.length s - n))
+	String.sub s (n + String.length at)
+          (String.length s - n - String.length at)
     with Not_found ->
       invalid_arg "un_at"
 
