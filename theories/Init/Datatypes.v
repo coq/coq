@@ -1,0 +1,53 @@
+
+(* $Id$ *)
+
+(* [unit] is a singleton datatype with sole inhabitant [tt] *)
+
+Inductive unit : Set := tt : unit.
+
+(* [bool] is the datatype of the booleans values [true] and [false] *)
+
+Inductive bool : Set := true : bool 
+                      | false : bool.
+
+Add Printing If bool.
+
+(* [nat] is the datatype of natural numbers built from [O] and successor [S] *)
+(* note that zero is the letter O, not the numeral 0 *)
+
+Inductive nat : Set := O : nat 
+                     | S : nat->nat.
+
+(* [Empty_set] has no inhabitants *)
+
+Inductive Empty_set:Set :=.
+
+(* [identity A a] is a singleton datatype containing only [a] of type [A] *)
+(* the sole inhabitant is denoted [refl_identity A a] *)
+
+Inductive identity [A:Set; a:A] : A->Set :=
+     refl_identity: (identity A a a).
+Hints Resolve refl_identity : core v62.
+
+(* [sum A B], equivalently [A + B], is the disjoint sum of [A] and [B] *)
+(* Syntax defined in Specif.v *)
+Inductive sum [A,B:Set] : Set
+    := inl : A -> (sum A B)
+     | inr : B -> (sum A B).
+
+(* [prod A B], written [A * B], is the product of [A] and [B] *)
+(* the pair [pair A B a b] of [a] and [b] is abbreviated [(a,b)] *)
+
+Inductive prod [A,B:Set] : Set := pair : A -> B -> (prod A B).
+Add Printing Let prod.
+
+Section projections.
+   Variables A,B:Set.
+   Definition fst := [p:(prod A B)]Cases p of (pair x y) => x end.
+   Definition snd := [p:(prod A B)]Cases p of (pair x y) => y end.
+End projections. 
+
+Syntactic Definition Fst := (fst ? ?).
+Syntactic Definition Snd := (snd ? ?).
+
+Hints Resolve pair inl inr : core v62.
