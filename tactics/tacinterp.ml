@@ -99,19 +99,7 @@ let constr_of_VConstr_context = function
     anomalylabstrm "constr_of_VConstr_context" (str
       "Not a Constr_context tactic_arg")
 
-(*
-(* Gives identifiers and makes the possible injection constr -> ident *)
-let make_ids ast = function
-  | Identifier id -> id
-  | Constr c ->
-    (try destVar c with
-    | Invalid_argument "destVar" ->
-      anomalylabstrm "make_ids"
-      (str "This term cannot be reduced to an identifier" ++ fnl () ++
-        print_ast ast))
-  | _ -> anomalylabstrm "make_ids" (str "Not an identifier")
-*)
-
+(* Displays a value *)
 let pr_value env = function
   | VVoid -> str "()"
   | VInteger n -> int n
@@ -1079,7 +1067,7 @@ let rec val_interp ist gl tac =
     | TacLetIn (l,u) ->
         let addlfun = letin_interp ist gl l in
         val_interp { ist with lfun=addlfun@ist.lfun } gl u
-    | TacMatchContext (lr,lmr) -> match_context_interp ist gl lr lmr
+    | TacMatchContext (lr,lmr) -> match_context_interp ist gl lr lmr 
     | TacMatch (c,lmr) -> match_interp ist gl c lmr
     | TacArg a -> tacarg_interp ist gl a
     (* Delayed evaluation *)
@@ -1088,14 +1076,12 @@ let rec val_interp ist gl tac =
  in
   match ist.debug with
     | DebugOn n ->
-	debug_prompt n (Some gl) tac
-	(fun v -> value_interp {ist with debug=v})
-	(fun () -> VTactic tclIDTAC)
+	debug_prompt n (Some gl) tac (fun v -> value_interp {ist with debug=v})
     | _ -> value_interp ist
 
 and eval_tactic ist = function
   | TacAtom (loc,t) -> fun gl ->
-      (try (interp_atomic ist gl t) gl
+      (try interp_atomic ist gl t gl
        with e -> Stdpp.raise_with_loc loc e)
   | TacFun (it,body) -> assert false
   | TacLetRecIn (lrc,u) -> assert false
@@ -1407,32 +1393,21 @@ and genarg_interp ist goal x =
 (* Interprets the Match expressions *)
 and match_interp ist g constr lmr =
   let rec apply_sub_match ist nocc (id,c) csr mt =
-    try
+    try 
       let (lm,ctxt) = sub_match nocc c csr in
       let lctxt = give_context ctxt id in
-      eval_with_fail 
-	(val_interp { ist with lfun=lctxt@ist.lfun; lmatch=lm@ist.lmatch})
-        mt g
-    with
-      | NextOccurrence n -> raise No_match
-      | (FailError _) as e -> raise e
-      | e when is_match_catchable e ->
-	  apply_sub_match ist (nocc + 1) (id,c) csr mt
+      val_interp {ist with lfun=lctxt@ist.lfun; lmatch=lm@ist.lmatch} g mt
+    with | NextOccurrence _ -> raise No_match
   in
   let rec apply_match ist csr = function
     | (All t)::_ ->
-        (try
-          eval_with_fail (val_interp ist) t g
-        with
-          | (FailError _) as e -> raise e
-	  | e when is_match_catchable e -> apply_match ist csr [])
+        (try val_interp ist g t
+         with e when is_match_catchable e -> apply_match ist csr [])
     | (Pat ([],Term c,mt))::tl ->
         (try
-	  eval_with_fail (val_interp
-	    { ist with lmatch=(apply_matching c csr)@ist.lmatch }) mt g
-         with
-	   | (FailError _) as e -> raise e
-	   | e when is_match_catchable e -> apply_match ist csr tl)
+          val_interp
+            { ist with lmatch=(apply_matching c csr)@ist.lmatch } g mt
+         with e when is_match_catchable e -> apply_match ist csr tl)
     | (Pat ([],Subterm (id,c),mt))::tl ->
         (try
           apply_sub_match ist 0 (id,c) csr mt
@@ -1447,8 +1422,8 @@ and match_interp ist g constr lmr =
   apply_match ist csr ilr
 
 (* Interprets tactic expressions : returns a "tactic" *)
-and tactic_interp ist tac g =
-  try tactic_of_value (val_interp ist g tac) g
+and tactic_interp ist tac gl =
+  try tactic_of_value (val_interp ist gl tac) gl
   with | NotTactic ->
     errorlabstrm "Tacinterp.tac_interp" (str
       "Must be a command or must give a tactic value")
@@ -1571,7 +1546,7 @@ and interp_atomic ist gl = function
     tactic_of_value (val_interp { ist with lfun=lfun } gl body) gl
 
 (* Interprets tactic arguments *)
-let interp_tacarg sign ast = (*unvarg*) (val_interp sign ast)
+let interp_tacarg sign ast = val_interp sign ast
 
 (* Initial call for interpretation *)
 let tac_interp lfun lmatch debug t = 

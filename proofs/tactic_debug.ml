@@ -18,7 +18,6 @@ open Printer
 type debug_info =
   | DebugOn of int
   | DebugOff
-  | Exit
 
 (* Prints the goal if it exists *)
 let db_pr_goal = function
@@ -49,7 +48,7 @@ let rec db_print_error = function
       hov 0 (str "Uncaught exception ")
 
 (* Prints the state and waits for an instruction *)
-let debug_prompt level goalopt tac_ast f exit =
+let debug_prompt level goalopt tac_ast f =
   db_pr_goal goalopt;
   msg (str "Going to execute:" ++ fnl () ++ (pr_raw_tactic tac_ast) ++ fnl ());
 (*         str "Commands: <Enter>=Continue, s=Skip, x=Exit" >];*)
@@ -63,34 +62,32 @@ let debug_prompt level goalopt tac_ast f exit =
     match inst with
     | ""  -> DebugOn (level+1)
     | "s" -> DebugOff
-    | "x" -> Exit
+    | "x" -> raise Sys.Break
     | "h" ->
       begin
         help ();
         prompt ()
       end
     | _   -> prompt () in
-  match prompt () with
-    | Exit -> exit ()
-    | d ->
-	try f d
-	with e when Logic.catchable_exception e ->
-	  ppnl (str "Level " ++ int level ++ str ": " ++ db_print_error e); 
-	  raise e
+  let d = prompt () in
+  try f d
+  with e when e <> Sys.Break ->
+    ppnl (str "Level " ++ int level ++ str ": " ++ db_print_error e); 
+    raise e
 
 (* Prints a constr *)
 let db_constr debug env c =
-  if debug <> DebugOff & debug <> Exit then
+  if debug <> DebugOff then
     msgnl (str "Evaluated term --> " ++ prterm_env env c)
 
 (* Prints a matched hypothesis *)
 let db_matched_hyp debug env (id,c) =
-  if debug <> DebugOff & debug <> Exit then
+  if debug <> DebugOff then
     msgnl (str "Matched hypothesis --> " ++ str (Names.string_of_id id^": ") ++
            prterm_env env c)
 
 (* Prints the matched conclusion *)
 let db_matched_concl debug env c =
-  if debug <> DebugOff & debug <> Exit then
+  if debug <> DebugOff then
     msgnl (str "Matched goal --> " ++ prterm_env env c)
 
