@@ -487,8 +487,11 @@ and mlexpr_of_tactic = function
       <:expr< Tacexpr.TacLetIn $mlexpr_of_list f l$ $mlexpr_of_tactic t$ >>
 (*
   | Tacexpr.TacLetCut of (identifier * t * tactic_expr) list
-  | Tacexpr.TacMatch of t * (t * tactic_expr) list
 *)
+  | Tacexpr.TacMatch (t,l) ->
+      <:expr< Tacexpr.TacMatch
+        $mlexpr_of_may_eval mlexpr_of_constr t$
+        $mlexpr_of_list (mlexpr_of_match_rule mlexpr_of_tactic) l$>>
   | Tacexpr.TacMatchContext (lr,l) ->
       <:expr< Tacexpr.TacMatchContext 
         $mlexpr_of_bool lr$
