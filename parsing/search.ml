@@ -205,13 +205,13 @@ let gen_filtered_search filter_function display_function =
 
 let name_of_reference ref = string_of_id (id_of_global ref)
 
-type 'a search_about_item =
-  | SearchRef of 'a
-  | SearchString of string
+type glob_search_about_item =
+  | GlobSearchRef of global_reference
+  | GlobSearchString of string
 
 let search_about_item (itemref,typ) = function
-  | SearchRef ref -> Termops.occur_term (constr_of_reference ref) typ
-  | SearchString s -> string_string_contains (name_of_reference itemref) s
+  | GlobSearchRef ref -> Termops.occur_term (constr_of_reference ref) typ
+  | GlobSearchString s -> string_string_contains (name_of_reference itemref) s
 
 let raw_search_about filter_modules display_function l =
   let filter ref' env typ =
