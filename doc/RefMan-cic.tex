@@ -815,6 +815,10 @@ Inductive exProp (P:Prop->Prop) : Prop
   := exP_intro : forall X:Prop, P X -> exProp P.
 \end{coq_example*}
 The same definition on \Set{} is not allowed and fails~:
+\begin{coq_eval}
+(********** The following is not correct and should produce **********)
+(*** Error: Large non-propositional inductive types must be in Type***)
+\end{coq_eval}
 \begin{coq_example}
 Inductive exSet (P:Set->Prop) : Set 
   := exS_intro : forall X:Set, P X -> exSet P.
@@ -1076,23 +1080,23 @@ eliminations are allowed.
 \item[\Prop-extended] 
 \inference{
    \frac{I \mbox{~is an empty or singleton
-       definition}}{\compat{I:\Prop}{I\ra \Set}}~~~~~
-   \frac{I \mbox{~is an empty or small singleton
-       definition}}{\compat{I:\Prop}{I\ra \Type(i)}}
+       definition}~~~s\in\Sort}{\compat{I:\Prop}{I\ra s}}
 }
 \end{description}
 
-A {\em singleton definition} has always an informative content,
-even if it is a proposition.
+% A {\em singleton definition} has always an informative content,
+% even if it is a proposition.
 
 A {\em singleton
-definition} has only one constructor and all the argument of this
-constructor are non informative. In that case, there is a canonical
+definition} has only one constructor and all the arguments of this
+constructor have type \Prop. In that case, there is a canonical
 way to interpret the informative extraction on an object in that type,
 such that the elimination on any sort $s$ is legal.  Typical examples are
-the conjunction of non-informative propositions and the equality. In
-that case, the term \verb!eq_rec! which was defined as an axiom, is
-now a term of the calculus.
+the conjunction of non-informative propositions and the equality. 
+If there is an hypothesis $h:a=b$ in the context, it can be used for
+rewriting not only in logical propositions but also in any type.
+% In that case, the term \verb!eq_rec! which was defined as an axiom, is
+% now a term of the calculus.
 \begin{coq_example}
 Print eq_rec.
 Extraction eq_rec.
@@ -1117,32 +1121,34 @@ branch corresponding to the $c:C$ constructor.
 We write \CI{c}{P} for \CI{c:C}{P} with $C$ the type of $c$.
 
 \paragraph{Examples.}
-For $\ListA$ the type of $P$ will be $\ListA\ra s$ for $s \in
-\{\Prop,\Set,\Type(i)\}$. \\ 
+For $\ListA$ the type of $P$ will be $\ListA\ra s$ for $s \in \Sort$. \\ 
 $ \CI{(\cons~A)}{P} \equiv
-(a:A)(l:\ListA)(P~(\cons~A~a~l))$.
+\forall a:A, \forall l:\ListA,(P~(\cons~A~a~l))$.
 
 For $\LengthA$, the type of $P$ will be
-$(l:\ListA)(n:\nat)(\LengthA~l~n)\ra \Prop$ and the expression
+$\forall l:\ListA,\forall n:\nat, (\LengthA~l~n)\ra \Prop$ and the expression
 \CI{(\LCons~A)}{P} is defined as:\\ 
-$(a:A)(l:\ListA)(n:\nat)(h:(\LengthA~l~n))(P~(\cons~A~a~l)~(\nS~n)~(\LCons~A~a~l~n~l))$.\\ 
+$\forall a:A, \forall l:\ListA, \forall n:\nat, \forall
+h:(\LengthA~l~n), (P~(\cons~A~a~l)~(\nS~n)~(\LCons~A~a~l~n~l))$.\\ 
 If $P$ does not depend on its third argument, we find the more natural
 expression:\\ 
-$(a:A)(l:\ListA)(n:\nat)(\LengthA~l~n)\ra(P~(\cons~A~a~l)~(\nS~n))$.
+$\forall a:A, \forall l:\ListA, \forall n:\nat,
+(\LengthA~l~n)\ra(P~(\cons~A~a~l)~(\nS~n))$.
 
 \paragraph{Typing rule.}
 
 Our very general destructor for inductive definition enjoys the
-following typing rule, where we write 
-\[
-\Case{P}{c}{[x_{11}:T_{11}]\ldots[x_{1p_1}:T_{1p_1}]g_1\ldots
-  [x_{n1}:T_{n1}]\ldots[x_{np_n}:T_{np_n}]g_n}
-\]
-for 
-\[
-\Case{P}{c}{(c_1~x_{11}~...~x_{1p_1}) \Ra g_1 ~|~\ldots~|~
-(c_n~x_{n1}...x_{np_n}) \Ra g_n }
-\]
+following typing rule
+% , where we write 
+% \[
+% \Case{P}{c}{[x_{11}:T_{11}]\ldots[x_{1p_1}:T_{1p_1}]g_1\ldots
+%   [x_{n1}:T_{n1}]\ldots[x_{np_n}:T_{np_n}]g_n}
+% \]
+% for 
+% \[
+% \Case{P}{c}{(c_1~x_{11}~...~x_{1p_1}) \Ra g_1 ~|~\ldots~|~
+% (c_n~x_{n1}...x_{np_n}) \Ra g_n }
+% \]
 
 \begin{description}
 \item[match] \label{elimdep} \index{Typing rules!match}
@@ -1165,7 +1171,7 @@ are (writing just $t:M$ instead of \WTEG{t}{M}, the environment and
 context being the same in all the judgments).
 
 \[\frac{l:\ListA~~P:\ListA\ra s~~~f_1:(P~(\Nil~A))~~
-      f_2:(a:A)(l:\ListA)(P~(\cons~A~a~l))}
+      f_2:\forall a:A, \forall l:\ListA, (P~(\cons~A~a~l))}
     {\Case{P}{l}{f_1~f_2}:(P~l)}\]
 
 \[\frac{
@@ -1173,7 +1179,8 @@ context being the same in all the judgments).
 H:(\LengthA~L~N) \\ P:(l:\ListA)(n:\nat)(\LengthA~l~n)\ra
   \Prop\\
  f_1:(P~(\Nil~A)~\nO~\LNil) \\
-   f_2:(a:A)(l:\ListA)(n:\nat)(h:(\LengthA~l~n))(P~(\cons~A~a~n)~(\nS~n)~(\LCons~A~a~l~n~h)) 
+   f_2:\forall a:A, \forall l:\ListA, \forall n:\nat, \forall
+  h:(\LengthA~l~n), (P~(\cons~A~a~n)~(\nS~n)~(\LCons~A~a~l~n~h)) 
       \end{array}}
     {\Case{P}{H}{f_1~f_2}:(P~L~N~H)}\]
 
@@ -1226,8 +1233,8 @@ principle of type
 \[(P:\nat\ra\Prop)(P~\nO)\ra((n:\nat)(P~n)\ra(P~(\nS~n)))\ra(n:\nat)(P~n)\]
 can be represented by the term:
 \[\begin{array}{l}
-[P:\nat\ra\Prop][f:(P~\nO)][g:(n:\nat)(P~n)\ra(P~(\nS~n))]\\
-\Fix{h}{h:(n:\nat)(P~n):=[n:\nat]\Case{P}{n}{f~[p:\nat](g~p~(h~p))}}
+[P:\nat\ra\Prop][f:(P~\nO)][g:\forall n:\nat, (P~n)\ra(P~(\nS~n))]\\
+\Fix{h}{h:\forall n:\nat, (P~n):=\lb n:\nat\mto \Case{P}{n}{f~[p:\nat](g~p~(h~p))}}
 \end{array}
 \]
 
@@ -1243,7 +1250,8 @@ For doing this the syntax of fixpoints is extended and becomes
  \[\Fix{f_i}{f_1/k_1:A_1:=t_1 \ldots f_n/k_n:A_n:=t_n}\]
 where $k_i$ are positive integers.
 Each $A_i$ should be a type (reducible to a term) starting with at least
-$k_i$ products $(y_1:B_1)\ldots (y_{k_i}:B_{k_i}) A'_i$ and $B_{k_i}$
+$k_i$ products $\forall y_1:B_1,\ldots \forall y_{k_i}:B_{k_i}, A'_i$ 
+and $B_{k_i}$
 being an instance of an inductive definition.
 
 Now in the definition $t_i$, if $f_j$ occurs then it should be applied
@@ -1256,7 +1264,8 @@ One needs first to  define the notion of
 {\em recursive arguments of a constructor}\index{Recursive arguments}.
 For an inductive definition \Ind{\Gamma}{\Gamma_P}{\Gamma_I}{\Gamma_C},
 the type of a constructor $c$ have the form
-$(p_1:P_1)\ldots(p_r:P_r)(x_1:T_1)\ldots (x_r:T_r)(I_j~p_1\ldots 
+$\forall p_1:P_1,\ldots \forall p_r:P_r, 
+\forall x_1:T_1, \ldots \forall x_r:T_r, (I_j~p_1\ldots 
 p_r~t_1\ldots  t_s)$ the recursive arguments will correspond to $T_i$ in
 which one of the $I_l$ occurs.
 
@@ -1269,15 +1278,16 @@ where $\Gamma_I$ is $[I_1:A_1;\ldots;I_k:A_k]$, and $\Gamma_C$ is
   $[c_1:C_1;\ldots;c_n:C_n]$.
 The terms structurally smaller than $y$ are:
 \begin{itemize}
-\item $(t~u), [x:u]t$ when $t$ is structurally smaller than $y$ .
+\item $(t~u), \lb x:u \mto t$ when $t$ is structurally smaller than $y$ .
 \item \Case{P}{c}{f_1\ldots f_n} when each $f_i$ is structurally
   smaller than $y$. \\
   If $c$ is $y$ or is structurally smaller than $y$, its type is an inductive
   definition $I_p$ part of the inductive
   declaration corresponding to $y$. 
   Each $f_i$ corresponds to a type of constructor $C_q \equiv
-  (y_1:B_1)\ldots (y_k:B_k)(I~a_1\ldots a_k)$ and can consequently be
-  written $[y_1:B'_1]\ldots [y_k:B'_k]g_i$.
+  \forall y_1:B_1, \ldots \forall y_k:B_k, (I~a_1\ldots a_k)$ 
+  and can consequently be
+  written $\lb y_1:B'_1\mto \ldots \lb y_k:B'_k\mto g_i$.
   ($B'_i$ is obtained from $B_i$ by substituting parameters variables)
   the variables $y_j$ occurring
   in $g_i$ corresponding to recursive arguments $B_i$ (the ones in
@@ -1397,6 +1407,12 @@ by using the compiler option \texttt{-impredicative-set}.
 
 For example, using the ordinary \texttt{coqtop} command, the following
 is rejected.
+\begin{coq_eval}
+(** This example should fail *******************************
+    Error: The term forall X:Set, X -> X has type Type
+    while it is expected to have type Set
+***)
+\end{coq_eval}
 \begin{coq_example}
 Definition id: Set := forall (X:Set),X->X.
 \end{coq_example}
@@ -1404,7 +1420,7 @@ while it will type-check, if one use instead the \texttt{coqtop
   -impredicative-set} command.
 
 The major change in the theory concerns the rule for product formation
-in the sort \Set, which is extendet to a domain in any sort~:
+in the sort \Set, which is extended to a domain in any sort~:
 \begin{description}
 \item [Prod]  \index{Typing rules!Prod (impredicative Set)}
 \inference{\frac{\WTEG{T}{s}~~~~s\in\Sort~~~~~~

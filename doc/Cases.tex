@@ -8,7 +8,7 @@
 This section describes the full form of pattern-matching in {\Coq} terms.
 
 \asection{Patterns}\label{implementation} The full syntax of {\tt
-Cases} is presented in figure \ref{cases-grammar}.  Identifiers in
+match} is presented in figure \ref{cases-grammar}.  Identifiers in
 patterns are either constructor names or variables. Any identifier
 that is not the constructor of an inductive or coinductive type is
 considered to be a variable. A variable name cannot occur more than
@@ -18,7 +18,7 @@ a lowercase letter.
 If a pattern has the form $(c~\vec{x})$ where $c$ is a constructor
 symbol and $\vec{x}$ is a linear vector of variables, it is called
 {\em simple}: it is the kind of pattern recognized by the basic
-version of {\tt Cases}. If a pattern is
+version of {\tt match}. If a pattern is
 not simple we call it {\em nested}.
 
 A variable pattern matches any value, and the identifier is bound to
@@ -58,24 +58,24 @@ empty.
 \end{tabular}
 \end{minipage}}
 \end{center}
-\caption{Extended Cases syntax}
+\caption{Extended match syntax}
 \label{cases-grammar}
 \end{figure}
 
-Since extended {\tt Cases} expressions are compiled into the primitive
+Since extended {\tt match} expressions are compiled into the primitive
 ones, the expressiveness of the theory remains the same. Once the
 stage of parsing has finished only simple patterns remain. An easy way
 to see the result of the expansion is by printing the term with
 \texttt{Print} if the term is a constant, or using the command
 \texttt{Check}.
 
-The extended \texttt{Cases} still accepts an optional {\em elimination
-predicate} enclosed between brackets \texttt{<>}.  Given a pattern
+The extended \texttt{match} still accepts an optional {\em elimination
+predicate} given after the keyword \texttt{return}.  Given a pattern
 matching expression, if all the right hand sides of \texttt{=>} ({\em
 rhs} in short) have the same type, then this type can be sometimes
 synthesized, and so we can omit the \texttt{<>}. Otherwise 
-the predicate between \texttt{<>} has to be provided, like for the basic
-\texttt{Cases}.
+the predicate after \texttt{return} has to be provided, like for the basic
+\texttt{match}.
 
 Let us illustrate through examples the different aspects of extended
 pattern matching. Consider for example the function that computes the
@@ -108,9 +108,9 @@ Fixpoint max (n m:nat) {struct m} : nat :=
 which will be compiled into the previous form.
 
 The pattern-matching compilation strategy examines patterns from left
-to right. A \texttt{Cases} expression is generated {\bf only} when
+to right. A \texttt{match} expression is generated {\bf only} when
 there is at least one constructor in the column of patterns. E.g. the
-following example does not build a \texttt{Cases} expression.
+following example does not build a \texttt{match} expression.
 
 \begin{coq_example}
 Check (fun x:nat => match x return nat with
@@ -432,7 +432,7 @@ Fixpoint concat
 In all the previous examples the elimination predicate does not depend
 on the object(s) matched. But it may depend and the typical case 
 is when we write a proof by induction or a function that yields an
-object of dependent type. An example of proof using \texttt{Cases} in
+object of dependent type. An example of proof using \texttt{match} in
 given in section \ref{refine-example}
 
 For example, we can write 
@@ -476,20 +476,20 @@ Fixpoint dec (n m:nat) {struct n} : LE n m \/ LE m n :=
 \end{coq_example}
 In the example of \texttt{dec} the elimination predicate is binary
 because we destructure two arguments of \texttt{nat} which is a
-non-dependent type. Notice that the first \texttt{Cases} is dependent while 
+non-dependent type. Notice that the first \texttt{match} is dependent while 
 the second is not.
 
 In general, consider the terms $e_1\ldots e_n$,
 where  the type of $e_i$ is an instance of a family type
 $[\vec{d_i}:\vec{D_i}]T_i$  ($1\leq i
-\leq n$). Then, in expression \texttt{<}${\cal P}$\texttt{>Cases}  $e_1\ldots
+\leq n$). Then, in expression \texttt{<}${\cal P}$\texttt{>match}  $e_1\ldots
 e_n$ \texttt{of} \ldots \texttt{end}, the 
 elimination predicate ${\cal P}$ should be of the form:
 $[\vec{d_1}:\vec{D_1}][x_1:T_1]\ldots [\vec{d_n}:\vec{D_n}][x_n:T_n]Q.$
 
-The user can also use \texttt{Cases} in combination with the tactic
+The user can also use \texttt{match} in combination with the tactic
 \texttt{refine} (see section \ref{refine}) to build incomplete proofs
-beginning with a \texttt{Cases} construction.
+beginning with a \texttt{match} construction.
 
 \asection{Pattern-matching on inductive objects involving local
 definitions}
@@ -603,7 +603,7 @@ the pattern matching is not exhaustive
     of arity } {\sl num} \sverb{(for non dependent case) or } {\sl
     num} \sverb{(for dependent case)}
 
-The elimination predicate provided to \texttt{Cases} has not the
+The elimination predicate provided to \texttt{match} has not the
   expected arity
 
 
@@ -620,9 +620,9 @@ The elimination predicate provided to \texttt{Cases} has not the
 %   $T$.  Then, the strategy may fail to find out a correct elimination
 %   predicate during some step of compilation.  In this situation we
 %   recommend the user to rewrite the nested dependent patterns into
-%   several \texttt{Cases} with {\em simple patterns}.
+%   several \texttt{match} with {\em simple patterns}.
   
-\item {\tt Unable to infer a Cases predicate\\
+\item {\tt Unable to infer a match predicate\\
     Either there is a type incompatiblity or the problem involves\\
     dependencies}
  
@@ -657,14 +657,14 @@ The elimination predicate provided to \texttt{Cases} has not the
 % This is because the strategy generates a term that is correct w.r.t.
 % the initial term but which does not pass the guard condition.  In
 % this situation we recommend the user to transform the nested dependent
-% patterns into {\em several \texttt{Cases} of simple patterns}.  Let us
+% patterns into {\em several \texttt{match} of simple patterns}.  Let us
 % explain this with an example.  Consider the following definition of a
 % function that yields the last element of a list and \texttt{O} if it is
 % empty:
 
 % \begin{coq_example}
 %   Fixpoint last [n:nat; l:(listn n)] : nat :=
-%    Cases l of 
+%    match l of 
 %      (consn _ a niln) => a
 %    | (consn m _ x) => (last m x) | niln => O
 %    end.
@@ -676,7 +676,7 @@ The elimination predicate provided to \texttt{Cases} has not the
 
 % \begin{coq_example*}
 %   Fixpoint last [n:nat; l:(listn n)] : nat :=
-%    Cases l of
+%    match l of
 %      (consn _ a niln) => a
 %    | (consn n _ (consn m b x)) => (last n (consn m b x))
 %    | niln => O
@@ -700,7 +700,7 @@ The elimination predicate provided to \texttt{Cases} has not the
 
 % \begin{coq_example}
 %   Fixpoint last [n:nat; l:(listn n)] : nat :=
-%   <[_:nat]nat>Cases l of
+%   <[_:nat]nat>match l of
 %     (consn m a x) => Cases x of niln => a | _ => (last m x) end
 %   | niln => O
 %   end.

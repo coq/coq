@@ -3,8 +3,8 @@ TUTORIAL				N. Oury
 GUIDE PASSAGE V7-V8			BB
 
 MANUEL DE REFERENCE
-\include{RefMan-int}% Introduction	HH
-\include{RefMan-pre}% Credits		HH
+\include{RefMan-int}% Introduction	HH - relu CP 
+\include{RefMan-pre}% Credits		HH - relu CP
 
 \tableofcontents			
 
