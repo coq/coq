@@ -178,6 +178,11 @@ GEXTEND Gram
     [ [ ">" -> "COERCION"
       |  -> "" ] ]
   ;
+  of_type_with_opt_coercion:
+    [ [ ":>" -> "COERCION"
+      | ":"; ">" -> "COERCION"
+      | ":" -> "" ] ]
+  ;
   onescheme:
     [ [ id = identarg; ":="; dep = dep; indid = identarg; IDENT "Sort";
         s = sortarg ->
@@ -209,7 +214,7 @@ GEXTEND Gram
       | corec = onecorec -> [corec] ] ]
   ;
   field:
-    [ [ id = identarg; ":"; oc = opt_coercion; c = constrarg ->
+    [ [ id = identarg; oc = of_type_with_opt_coercion; c = constrarg ->
           <:ast< (VERNACARGLIST ($STR $oc) $id $c) >>
 (*      | id = identarg; ":>"; c = constrarg ->
           <:ast< (VERNACARGLIST "COERCION" $id $c) >> *)] ]
