@@ -1,3 +1,61 @@
+7.4 -> 8.0
+
+No revolution this time. Mostly "behind-the-scene" clean-up and bug-fixes, 
+but also a few steps toward a more user-friendly extraction:
+
+* syntax of extraction: 
+- The old   (Recursive) Extraction Module M.
+  is now    (Recursive) Extraction Library M.
+  The old name was misleading since this command only works with M being a 
+  library M.v, and not a module produced by interactive command Module M. 
+- The other commands 
+    Extraction foo.
+    Recursive Extraction foo bar.
+    Extraction "myfile.ml" foo bar. 
+  now accept that foo can be a module name instead of just a constant name. 
+
+* Support of type scheme axioms (i.e. axiom whose type is an arity 
+  (x1:X1)...(xn:Xn)s with s a sort). For example: 
+
+   Axiom myprod : Set -> Set -> Set.
+   Extract Constant myprod "'a" "'b" => "'a * 'b". 
+   Recursive Extraction myprod. 
+   -------> type ('a,'b) myprod = 'a * 'b		
+
+* More flexible support of axioms. When an axiom isn't realized via Extract 
+  Constant before extraction, a warning is produced (instead of an error), 
+  and the extracted code must be completed later by hand. To find what
+  needs to be completed, search for the following string: AXIOM TO BE REALIZED
+
+* Cosmetics: When extraction produces a file, it tells it. 
+
+* (Experimental) It is allowed to extract under a opened interactive module
+  (but still outside sections). Feature to be used with caution. 
+
+* A problem has been identified concerning .v files used as normal interactive 
+  modules, like in 
+    
+    <file A.v>
+    Definition foo :=O.
+    <End file A.v>
+
+    <at toplevel>
+    Require A.
+    Module M:=A
+    Extraction M.
+
+  I might try to support that in the future. In the meanwhile, the
+  current behaviour of extraction is to forbid this.
+
+* bug fixes: 
+- many concerning Records. 
+- a Stack Overflow with mutual inductive (PR#320)
+- some optimizations have been removed since they were not type-safe:
+  For example if e has type:  type 'x a = A
+  Then:       match e with A -> A     -----X---->    e
+  To be investigated further.
+
+
 7.3 -> 7.4
 
 * The two main new features: 
