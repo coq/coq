@@ -524,6 +524,11 @@ let interp_constr_gen is_ass sigma env com =
 
 let interp_constr sigma env c = interp_constr_gen false sigma env c
 let interp_type sigma env   c = interp_constr_gen true sigma env c
+let interp_sort = function
+  | Node(loc,"PROP", []) -> Prop Null
+  | Node(loc,"SET", [])  -> Prop Pos
+  | Node(loc,"TYPE", []) -> Type Univ.dummy_univ
+  | a -> user_err_loc (Ast.loc a,"interp_sort", [< 'sTR "Not a sort" >])
 
 let judgment_of_com sigma env com = 
   let c = interp_rawconstr sigma env com in
