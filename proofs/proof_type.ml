@@ -100,4 +100,4 @@ type closed_generic_argument =
 type 'a closed_abstract_argument_type =
     ('a,constr,raw_tactic_expr) abstract_argument_type
 
-type declaration_hook = Libnames.strength -> global_reference -> unit
+type declaration_hook = Decl_kinds.strength -> global_reference -> unit

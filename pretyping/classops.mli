@@ -10,8 +10,7 @@
 
 (*i*)
 open Names
-open Libnames
-open Nametab
+open Decl_kinds
 open Term
 open Evd
 open Environ

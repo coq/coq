@@ -19,6 +19,7 @@ open Pp;;
 open Declare;;
 open Nametab
 open Vernacexpr;;
+open Decl_kinds;;
 
 (* This function converts the parameter binders of an inductive definition,
    in particular you have to be careful to handle each element in the
@@ -150,7 +151,7 @@ let make_variable_ast name typ implicits =
 *)
 let make_variable_ast name typ implicits =
   (VernacAssumption
-    (AssumptionVariable, [false,(name, constr_to_ast (body_of_type typ))]))
+    ((Local,Definitional), [false,(name, constr_to_ast (body_of_type typ))]))
   ::(implicits_to_ast_list implicits);;
     
 (*
@@ -165,7 +166,7 @@ let make_definition_ast name c typ implicits =
   (implicits_to_ast_list implicits);;
 *)
 let make_definition_ast name c typ implicits =
-  VernacDefinition (Definition, name, DefineBody ([], None,
+  VernacDefinition (Global, name, DefineBody ([], None,
     (constr_to_ast c), Some (constr_to_ast (body_of_type typ))),
     (fun _ _ -> ()))
   ::(implicits_to_ast_list implicits);;
@@ -183,7 +184,7 @@ let constant_to_ast_list kn =
 	make_definition_ast (id_of_label (label kn)) (Declarations.force c1) typ l)
 
 let variable_to_ast_list sp =
-  let ((id, c, v), _) = get_variable sp in
+  let (id, c, v) = get_variable sp in
   let l = implicits_of_var sp in
     (match c with
 	 None -> 

@@ -205,8 +205,3 @@ type global_dir_reference =
       let kn' = subst_kernel_name subst kn in if kn==kn' then ref else
           ModTypeRef kn'
 *)
-
-type strength = 
-  | NotDeclare
-  | DischargeAt of dir_path * int
-  | NeverDischarge

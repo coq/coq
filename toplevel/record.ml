@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $:Id$ *)
+(* $Id$ *)
 
 open Pp
 open Util
@@ -25,7 +25,7 @@ open Astterm
 open Command
 open Inductive
 open Safe_typing
-open Nametab
+open Decl_kinds
 open Indtypes
 open Type_errors
 
@@ -178,14 +178,14 @@ let declare_projections indsp coers fields =
 		    const_entry_body = proj;
                     const_entry_type = Some projtyp;
                     const_entry_opaque = false } in
-		  declare_constant fid (DefinitionEntry cie,NeverDischarge)
+		  declare_constant fid (DefinitionEntry cie,IsDefinition)
                 with Type_errors.TypeError (ctx,te) ->
                   raise (NotDefinable (BadTypedProj (fid,ctx,te))) in
 	      let refi = ConstRef kn in
 	      let constr_fi = mkConst kn in
 	      if coe then begin
 	        let cl = Class.class_of_ref (IndRef indsp) in
-	        Class.try_add_new_coercion_with_source refi NeverDischarge cl
+	        Class.try_add_new_coercion_with_source refi Global cl
 	      end;
 	      let proj_args = (*Rel 1 refers to "x"*) paramargs@[mkRel 1] in
 	      let constr_fip = applist (constr_fi,proj_args) in
@@ -228,5 +228,5 @@ let definition_structure ((is_coe,idstruc),ps,cfs,idbuild,s) =
   let rsp = (sp,0) in (* This is ind path of idstruc *)
   let sp_projs = declare_projections rsp coers fields in
   let build = ConstructRef (rsp,1) in (* This is construct path of idbuild *)
-  if is_coe then Class.try_add_new_coercion build NeverDischarge;
+  if is_coe then Class.try_add_new_coercion build Global;
   Recordops.add_new_struc (rsp,idbuild,nparams,List.rev sp_projs)

@@ -13,7 +13,6 @@ open Util
 open Ast
 open Genarg
 open Tacexpr
-open Vernacexpr
 
 (* The lexer of Coq *)
 
@@ -75,6 +74,7 @@ type typed_entry = entry_type Gramobj.entry
 
 module type Gramtypes =
 sig
+  open Decl_kinds
   val inAstListType : Coqast.t list G.Entry.e -> typed_entry
   val inTacticAtomAstType : raw_atomic_tactic_expr G.Entry.e -> typed_entry
   val inThmTokenAstType : theorem_kind G.Entry.e -> typed_entry

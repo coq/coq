@@ -65,7 +65,6 @@ let compile command args file =
       Unix.stdin
   in 
   let oc = open_out tmpfile in
-  Printf.fprintf oc "Require Xml.\n" ;
   Printf.fprintf oc "Require %s.\n" modulename;
   Printf.fprintf oc "Print XML Module Disk \"%s\" %s.\n" !xml_library_root
    modulename;

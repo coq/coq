@@ -36,7 +36,8 @@ parsing/vernacextend.ml:
 toplevel/mltop.ml: 
 lib/pp.ml: 
 contrib/xml/xml.ml: 
-contrib/xml/xmlcommand.ml: 
+contrib/xml/acic2Xml.ml: 
+contrib/xml/proofTree2Xml.ml: 
 contrib/interface/line_parser.ml: 
 tools/coq_makefile.ml: 
 tools/coq-tex.ml: 

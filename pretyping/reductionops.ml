@@ -540,6 +540,22 @@ let whd_meta metamap c = match kind_of_term c with
 let plain_instance s c = 
   let rec irec u = match kind_of_term u with
     | Meta p -> (try List.assoc p s with Not_found -> u)
+    | App (f,l) when isCast f ->
+        let (f,t) = destCast f in
+        let l' = Array.map irec l in 
+        (match kind_of_term f with
+          | Meta p ->
+              (* Don't flatten application nodes: this is used to extract a
+                 proof-term from a proof-tree and we want to keep the structure
+                 of the proof-tree *)
+              (try let g = List.assoc p s in
+              match kind_of_term g with
+                | App _ -> 
+                    let h = id_of_string "H" in
+                    mkLetIn (Name h,g,t,mkApp(mkRel 1,Array.map (lift 1) l'))
+                | _ -> mkApp (g,l')
+              with Not_found -> mkApp (f,l'))
+          | _ -> mkApp (irec f,l'))
     | Cast (m,_) when isMeta m ->
 	(try List.assoc (destMeta m) s with Not_found -> u)
     | _ -> map_constr irec u

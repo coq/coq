@@ -12,6 +12,7 @@ open Genarg;;
 open Rawterm;;
 open Tacexpr;;
 open Vernacexpr;;
+open Decl_kinds;;
 
 let in_coq_ref = ref false;;
 
@@ -1467,27 +1468,18 @@ let xlate_thm x = CT_thm (match x with
   | Theorem -> "Theorem"
   | Remark -> "Remark"
   | Lemma -> "Lemma"
-  | Fact -> "Fact"
-  | Decl -> "Decl")
+  | Fact -> "Fact")
 
 
 let xlate_defn x = CT_defn (match x with
- | LocalDefinition -> "Local"
- | Definition -> "Definition")
-
-
-let xlate_defn_or_thm =
-  function
- (* Unable to decide if a fact in one section or at toplevel, a remark
-    at toplevel or a theorem or a Definition *)
- | StartTheoremProof k -> CT_coerce_THM_to_DEFN_OR_THM (xlate_thm k)
- | StartDefinitionBody k -> CT_coerce_DEFN_to_DEFN_OR_THM (xlate_defn k);;
+ | Local -> "Local"
+ | Global -> "Definition")
 
 let xlate_var x = CT_var (match x with
- | AssumptionParameter -> "Parameter"
- | AssumptionAxiom -> "Axiom"
- | AssumptionVariable -> "Variable"
- | AssumptionHypothesis -> "Hypothesis");;
+ | (Global,Definitional) -> "Parameter"
+ | (Global,Logical) -> "Axiom"
+ | (Local,Definitional) -> "Variable"
+ | (Local,Logical) -> "Hypothesis");;
 
 
 let xlate_dep =
@@ -1915,8 +1907,7 @@ let xlate_vernac =
 
    | VernacNotation _ -> xlate_error "TODO: Notation"
 
-   | VernacInfix (str_assoc, n, str, id, sc) ->
-      (* TODO: handle scopes *)
+   | VernacInfix (str_assoc, n, str, id, None) ->
       CT_infix (
        (match str_assoc with
         | Some Gramext.LeftA -> CT_lefta
@@ -1924,15 +1915,15 @@ let xlate_vernac =
         | Some Gramext.NonA -> CT_nona
         | None -> CT_coerce_NONE_to_ASSOC CT_none),
        CT_int n, CT_string str, loc_qualid_to_ct_ID id)
+   | VernacInfix _ -> xlate_error "TODO: handle scopes"
    | VernacGrammar _ -> xlate_error "GRAMMAR not implemented"
    | VernacCoercion (s, id1, id2, id3) ->
       let id_opt = CT_coerce_NONE_to_IDENTITY_OPT CT_none in
       let local_opt =
        match s with
        (* Cannot decide whether it is a global or a Local but at toplevel *)
-       | Libnames.NeverDischarge -> CT_coerce_NONE_to_LOCAL_OPT CT_none
-       | Libnames.DischargeAt _ -> CT_local
-       | Libnames.NotDeclare -> assert false in
+       | Global -> CT_coerce_NONE_to_LOCAL_OPT CT_none
+       | Local -> CT_local in
       CT_coercion (local_opt, id_opt, loc_qualid_to_ct_ID id1,
         xlate_class id2, xlate_class id3)
 
@@ -1941,9 +1932,8 @@ let xlate_vernac =
       let local_opt =
        match s with
        (* Cannot decide whether it is a global or a Local but at toplevel *)
-       | Libnames.NeverDischarge -> CT_coerce_NONE_to_LOCAL_OPT CT_none
-       | Libnames.DischargeAt _ -> CT_local 
-       | Libnames.NotDeclare -> assert false in
+       | Global -> CT_coerce_NONE_to_LOCAL_OPT CT_none
+       | Local -> CT_local in
       CT_coercion (local_opt, id_opt, xlate_ident id1,
         xlate_class id2, xlate_class id3)
   | VernacResetName id -> CT_reset (xlate_ident id)

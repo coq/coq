@@ -60,7 +60,7 @@ CAMLP4DEPS=sed -n -e 's|^(\*.*camlp4deps: "\(.*\)".*\*)$$|\1|p'
 COQINCLUDES=          # coqtop includes itself the needed paths
 GLOB=   # is "-dump-glob file" when making the doc
 
-BOOTCOQTOP=$(BESTCOQTOP) -boot -$(BEST) $(COQINCLUDES) $(GLOB)
+BOOTCOQTOP=$(BESTCOQTOP) -boot -$(BEST) $(COQINCLUDES) $(GLOB) $(COQ_XML)
 
 ###########################################################################
 # Objects files 
@@ -91,7 +91,9 @@ LIBRARY=library/libnames.cmo library/nameops.cmo library/libobject.cmo \
 	library/summary.cmo \
         library/nametab.cmo library/global.cmo library/lib.cmo \
 	library/declaremods.cmo library/library.cmo library/states.cmo \
-	library/impargs.cmo library/declare.cmo library/goptions.cmo 
+	library/impargs.cmo library/decl_kinds.cmo \
+	library/dischargedhypsmap.cmo library/declare.cmo \
+        library/goptions.cmo 
 
 PRETYPING=pretyping/termops.cmo \
           pretyping/evd.cmo pretyping/instantiate.cmo \
@@ -195,15 +197,15 @@ PARSERREQUIRES=config/coq_config.cmo lib/pp_control.cmo lib/pp.cmo \
 	library/nametab.cmo library/lib.cmo library/global.cmo \
 	library/declaremods.cmo \
 	library/library.cmo lib/options.cmo library/impargs.cmo \
-        library/goptions.cmo \
+	library/dischargedhypsmap.cmo library/goptions.cmo \
 	pretyping/evd.cmo pretyping/instantiate.cmo \
-        pretyping/termops.cmo \
-        pretyping/reductionops.cmo pretyping/retyping.cmo library/declare.cmo \
+        pretyping/termops.cmo pretyping/reductionops.cmo \
+        pretyping/inductiveops.cmo pretyping/retyping.cmo library/declare.cmo \
         pretyping/cbv.cmo pretyping/tacred.cmo pretyping/classops.cmo \
         pretyping/rawterm.cmo \
         pretyping/pattern.cmo pretyping/pretype_errors.cmo \
 	pretyping/evarutil.cmo pretyping/recordops.cmo pretyping/evarconv.cmo \
-	pretyping/coercion.cmo pretyping/inductiveops.cmo pretyping/cases.cmo \
+	pretyping/coercion.cmo pretyping/cases.cmo \
         pretyping/indrec.cmo \
 	pretyping/pretyping.cmo pretyping/syntax_def.cmo \
 	parsing/lexer.cmo parsing/coqast.cmo parsing/genarg.cmo \
@@ -248,7 +250,10 @@ RINGCMO=contrib/ring/quote.cmo contrib/ring/g_quote.cmo \
 
 FIELDCMO=contrib/field/field.cmo 
 
-XMLCMO=contrib/xml/xml.cmo \
+XMLCMO=contrib/xml/unshare.cmo contrib/xml/xml.cmo contrib/xml/acic.cmo \
+       contrib/xml/doubleTypeInference.cmo \
+       contrib/xml/cic2acic.cmo contrib/xml/acic2Xml.cmo \
+       contrib/xml/proof2aproof.cmo contrib/xml/proofTree2Xml.cmo \
        contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo 	
 
 FOURIERCMO=contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo \
@@ -291,7 +296,8 @@ CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
 
 CMO=$(CONFIG) $(LIBREP) $(KERNEL) $(LIBRARY) $(PRETYPING)  \
-    $(PROOFS) $(TACTICS) $(PARSING) $(TOPLEVEL) $(HIGHPARSING) $(HIGHTACTICS) $(CONTRIB)
+    $(PROOFS) $(TACTICS) $(PARSING) $(TOPLEVEL) \
+    $(HIGHPARSING) $(HIGHTACTICS) $(CONTRIB)
 CMX=$(CMO:.cmo=.cmx)
 
 ###########################################################################
@@ -848,11 +854,10 @@ GRAMMARCMO=lib/pp_control.cmo lib/pp.cmo lib/util.cmo lib/bignat.cmo \
 	   lib/dyn.cmo lib/options.cmo \
 	   lib/hashcons.cmo lib/predicate.cmo lib/rtree.cmo \
 	   $(KERNEL) \
-	   library/libnames.cmo \
-	   library/summary.cmo library/nameops.cmo \
-	   library/nametab.cmo \
-	   library/libobject.cmo library/lib.cmo library/goptions.cmo \
-	   pretyping/rawterm.cmo pretyping/evd.cmo \
+	   library/libnames.cmo library/summary.cmo library/nameops.cmo \
+	   library/nametab.cmo library/libobject.cmo library/lib.cmo \
+           library/goptions.cmo library/decl_kinds.cmo \
+           pretyping/rawterm.cmo pretyping/evd.cmo \
 	   parsing/coqast.cmo parsing/genarg.cmo \
 	   proofs/tacexpr.cmo proofs/proof_type.cmo parsing/ast.cmo \
            parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
@@ -918,7 +923,8 @@ library/nametab.cmx: library/nametab.ml
 
 ML4FILES += lib/pp.ml4 			\
 	 contrib/xml/xml.ml4		\
-	 contrib/xml/xmlcommand.ml4	\
+	 contrib/xml/acic2Xml.ml4	\
+	 contrib/xml/proofTree2Xml.ml4	\
 	 contrib/interface/line_parser.ml4	\
 	 tools/coq_makefile.ml4		\
 	 tools/coq-tex.ml4

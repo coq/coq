@@ -119,6 +119,7 @@ val is_section_p : dir_path -> bool
 val start_compilation : dir_path -> module_path -> unit
 val end_compilation : dir_path -> object_prefix * library_segment
 
+(* The function [module_dp] returns the [dir_path] of the current module *)
 val module_dp : unit -> dir_path
 
 (*s Modules and module types *)

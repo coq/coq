@@ -52,6 +52,9 @@ let print_usage_channel co command =
   -boot                  boot mode (implies -q and -batch)
   -emacs                 tells Coq it is executed under Emacs
   -dump-glob f           dump globalizations in file f (to be used by coqdoc)
+  -xml                   exports XML files either to the hierarchy rooted in
+                         the directory $COQ_XML_LIBRARY_ROOT (if set) or to
+                         stdout (if unset)
 "
 
 (* print the usage on standard error *)

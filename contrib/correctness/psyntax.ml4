@@ -548,7 +548,7 @@ let _ =
 	      if not (is_mutable v) then begin
 		let c = 
 		  Entries.ParameterEntry (trad_ml_type_v ren env v),
-		  Libnames.NeverDischarge in
+		  Decl_kinds.IsAssumption Decl_kinds.Definitional in
 		List.iter 
 		  (fun id -> ignore (Declare.declare_constant id c)) ids;
 		if_verbose (is_assumed false) ids

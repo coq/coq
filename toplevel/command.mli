@@ -12,12 +12,13 @@
 open Util
 open Names
 open Term
+open Nametab
 open Declare
 open Library
 open Libnames
 open Nametab
 open Vernacexpr
-
+open Decl_kinds
 (*i*)
 
 (*s Declaration functions. The following functions take ASTs,
@@ -25,16 +26,16 @@ open Vernacexpr
    functions of [Declare]; they return an absolute reference to the
    defined object *)
 
-val declare_definition : identifier -> bool * strength ->
+val declare_definition : identifier -> definition_kind ->
   local_binder list -> Tacred.red_expr option -> Coqast.t -> Coqast.t option
     -> global_reference
 
 val syntax_definition : identifier -> Coqast.t -> unit
 
-val declare_assumption : identifier -> strength -> 
+val declare_assumption : identifier -> assumption_kind -> 
   local_binder list -> Coqast.t -> global_reference
 
-val build_mutual : Vernacexpr.inductive_expr list -> bool -> unit
+val build_mutual : inductive_expr list -> bool -> unit
 
 val declare_mutual_with_eliminations :
   Entries.mutual_inductive_entry -> mutual_inductive
@@ -49,7 +50,7 @@ val build_scheme : (identifier * bool * qualid located * Coqast.t) list -> unit
 
 val generalize_rawconstr : Coqast.t -> local_binder list -> Coqast.t
 
-val start_proof_com : identifier option -> bool * strength -> 
+val start_proof_com : identifier option -> goal_kind -> 
   (local_binder list * Coqast.t) -> Proof_type.declaration_hook -> unit
 
 (*s [save_named b] saves the current completed proof under the name it
@@ -67,7 +68,7 @@ val save_anonymous : bool -> identifier -> unit
    declares the theorem under the name [name] and gives it the
    strength [strength] *)
 
-val save_anonymous_with_strength : strength -> bool -> identifier -> unit
+val save_anonymous_with_strength : theorem_kind -> bool -> identifier -> unit
 
 (* [get_current_context ()] returns the evar context and env of the
    current open proof if any, otherwise returns the empty evar context

@@ -30,6 +30,7 @@ open Goptions
 open Libnames
 open Nametab
 open Vernacexpr
+open Decl_kinds
 
 (* Pcoq hooks *)
 
@@ -312,70 +313,51 @@ let vernac_notation = Metasyntax.add_notation
 (***********)
 (* Gallina *)
 
-let interp_assumption = function
-  | (AssumptionHypothesis | AssumptionVariable) -> Declare.make_strength_0 ()
-  | (AssumptionAxiom | AssumptionParameter) -> Libnames.NeverDischarge
-
-let interp_definition = function
-  | Definition -> (false, Libnames.NeverDischarge)
-  | LocalDefinition -> (true, Declare.make_strength_0 ())
-
-let interp_theorem = function
-  | (Theorem | Lemma | Decl) -> Libnames.NeverDischarge
-  | Fact -> Declare.make_strength_1 ()
-  | Remark -> Declare.make_strength_0 ()
-
-let interp_goal = function
-  | StartTheoremProof x -> (false, interp_theorem x)
-  | StartDefinitionBody x -> interp_definition x
-
 let start_proof_and_print idopt k t hook =
   start_proof_com idopt k t hook;
   print_subgoals ();
   if !pcoq <> None then (out_some !pcoq).start_proof ()
 
-let vernac_definition kind id def hook =
-  let (local,stre as k) = interp_definition kind in
+let vernac_definition local id def hook =
   match def with
   | ProveBody (bl,t) ->   (* local binders, typ *)
       if Lib.is_specification () then
-	let ref = declare_assumption id stre bl t in
-	hook stre ref
+	let ref = declare_assumption id (local,Definitional) bl t in
+	hook local ref
       else
 	let hook _ _ = () in
-	start_proof_and_print (Some id) k (bl,t) hook
+        let kind = if local=Local then IsLocal else IsGlobal DefinitionBody in
+	start_proof_and_print (Some id) kind (bl,t) hook
   | DefineBody (bl,red_option,c,typ_opt) ->
       let red_option = match red_option with
         | None -> None
         | Some r -> 
 	    let (evc,env)= Command.get_current_context () in
 	    Some (interp_redexp env evc r) in
-      let ref = declare_definition id k bl red_option c typ_opt in
-      hook stre ref
+      let ref = declare_definition id local bl red_option c typ_opt in
+      hook local ref
 
 let vernac_start_proof kind sopt (bl,t) lettop hook =
   if not(refining ()) then
     if lettop then
       errorlabstrm "Vernacentries.StartProof"
 	(str "Let declarations can only be used in proof editing mode");
-  let stre = interp_theorem kind in
   match Lib.is_specification (), sopt with
     | true, Some id ->
         let t = generalize_rawconstr t bl in
-	let ref = declare_assumption id stre [] t in
-	hook stre ref
+	let ref = declare_assumption id (Global,Logical) [] t in
+	hook Global ref
     | _ -> 
 	(* an explicit Goal command starts the refining mode 
 	   even in a specification *)
-	start_proof_and_print sopt (false, stre) (bl,t) hook
+	start_proof_and_print sopt (IsGlobal (Proof kind)) (bl,t) hook
 
 let vernac_end_proof is_opaque idopt =
   if_verbose show_script ();
   match idopt with
     | None -> save_named is_opaque
     | Some (id,None) -> save_anonymous is_opaque id
-    | Some (id,Some kind) ->
-	save_anonymous_with_strength (interp_theorem kind) is_opaque id
+    | Some (id,Some kind) -> save_anonymous_with_strength kind is_opaque id
 
   (* A stupid macro that should be replaced by ``Exact c. Save.'' all along
      the theories [??] *)
@@ -384,12 +366,11 @@ let vernac_exact_proof c =
   by (Tactics.exact_proof c); 
   save_named true
 
-let vernac_assumption kind l =
-  let stre = interp_assumption kind in
+let vernac_assumption (islocal,_ as kind) l =
   List.iter
     (fun (is_coe,(id,c)) ->
-      let r = declare_assumption id stre [] c in
-      if is_coe then Class.try_add_new_coercion r stre) l
+      let r = declare_assumption id kind [] c in
+      if is_coe then Class.try_add_new_coercion r islocal) l
 
 let vernac_inductive f indl = build_mutual indl f
 
@@ -840,7 +821,8 @@ let vernac_goal = function
   | None -> ()
   | Some c ->
       if not (refining()) then begin
-        start_proof_com None (false,Libnames.NeverDischarge) c (fun _ _ ->());
+        let unnamed_kind = Lemma (* Arbitrary *) in
+        start_proof_com None (IsGlobal (Proof unnamed_kind)) c (fun _ _ ->());
 	print_subgoals ()
       end else 
 	error "repeated Goal not permitted in refining mode"

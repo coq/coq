@@ -19,6 +19,7 @@ open Indtypes
 open Safe_typing
 open Library
 open Nametab
+open Decl_kinds
 (*i*)
 
 (* This module provides the official functions to declare new variables, 
@@ -30,50 +31,59 @@ open Nametab
 
 open Nametab
 
+(* Declaration of local constructions (Variable/Hypothesis/Local) *)
+
 type section_variable_entry =
   | SectionLocalDef of constr * types option * bool (* opacity *)
   | SectionLocalAssum of types
 
-type variable_declaration = dir_path * section_variable_entry * strength
+type variable_declaration = dir_path * section_variable_entry * local_kind
 
 val declare_variable : variable -> variable_declaration -> object_name
 
-type constant_declaration = constant_entry * strength
+(* Declaration from Discharge *)
+val redeclare_variable :
+ variable -> Dischargedhypsmap.discharged_hyps -> variable_declaration -> unit
+
+(* Declaration of global constructions *)
+(* i.e. Definition/Theorem/Axiom/Parameter/... *)
+
+type constant_declaration = constant_entry * global_kind
 
 (* [declare_constant id cd] declares a global declaration
    (constant/parameter) with name [id] in the current section; it returns
    the full path of the declaration *)
 val declare_constant : identifier -> constant_declaration -> object_name
 
-val redeclare_constant : identifier -> Cooking.recipe * strength -> unit
-
-(*
-val declare_parameter : identifier -> constr -> constant
-*)
+val redeclare_constant :
+ identifier -> Dischargedhypsmap.discharged_hyps -> 
+      Cooking.recipe * global_kind -> unit
 
 (* [declare_mind me] declares a block of inductive types with
    their constructors in the current section; it returns the path of
    the whole block *)
 val declare_mind : mutual_inductive_entry -> object_name
 
+(* Declaration from Discharge *)
+val redeclare_inductive :
+ Dischargedhypsmap.discharged_hyps -> mutual_inductive_entry -> object_name
+
 val out_inductive : Libobject.obj -> mutual_inductive_entry 
 
-val make_strength_0 : unit -> strength
-val make_strength_1 : unit -> strength
-val make_strength_2 : unit -> strength
-val is_less_persistent_strength : strength * strength -> bool
 val strength_min : strength * strength -> strength
+val string_of_strength : strength -> string
 
 (*s Corresponding test and access functions. *)
 
 val is_constant : section_path -> bool
 val constant_strength : section_path -> strength
+val constant_kind : section_path -> global_kind
 
 val out_variable : Libobject.obj -> identifier * variable_declaration
-val get_variable : variable -> named_declaration * strength
+val get_variable : variable -> named_declaration
 val get_variable_with_constraints : 
-  variable -> named_declaration * Univ.constraints * strength
-val variable_strength : variable -> strength
+  variable -> named_declaration * Univ.constraints
+val variable_strength : variable -> strength 
 val find_section_variable : variable -> section_path
 val last_section_hyps : dir_path -> identifier list
 val clear_proofs : named_context -> named_context
@@ -108,3 +118,8 @@ val is_global : identifier -> bool
 val strength_of_global : global_reference -> strength
 
 val library_part : global_reference -> dir_path
+
+(* hooks for XML output *)
+val set_xml_declare_variable : (kernel_name -> unit) -> unit
+val set_xml_declare_constant : (kernel_name -> unit) -> unit
+val set_xml_declare_inductive : (kernel_name -> unit) -> unit

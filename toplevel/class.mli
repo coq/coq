@@ -14,6 +14,7 @@ open Term
 open Classops
 open Declare
 open Libnames
+open Decl_kinds
 open Nametab
 (*i*)
 

@@ -181,7 +181,7 @@ let variables l =
     print "override OPT=-byte\n"
   else
     print "OPT=\n";
-  print "COQFLAGS=-q $(OPT) $(COQLIBS)\n";
+  print "COQFLAGS=-q $(OPT) $(COQLIBS) $(COQ_XML)\n";
   print "COQC=$(COQBIN)coqc\n";
   print "GALLINA=gallina\n";
   print "COQDOC=coqdoc\n";

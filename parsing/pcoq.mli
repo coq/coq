@@ -175,8 +175,7 @@ module Tactic :
 
 module Vernac_ :
   sig
-    open Util
-    open Libnames
+    open Decl_kinds
     val thm_token : theorem_kind Gram.Entry.e
     val class_rawexpr : class_rawexpr Gram.Entry.e
     val gallina : vernac_expr Gram.Entry.e
@@ -185,7 +184,4 @@ module Vernac_ :
     val syntax : vernac_expr Gram.Entry.e
     val vernac : vernac_expr Gram.Entry.e
     val vernac_eoi : vernac_expr Gram.Entry.e
-(*
-    val reduce : Coqast.t list Gram.Entry.e
-*)
   end

@@ -111,8 +111,3 @@ type global_dir_reference =
   | DirModule of object_prefix
   | DirClosedSection of dir_path
       (* this won't last long I hope! *)
-
-type strength = 
-  | NotDeclare
-  | DischargeAt of dir_path * int
-  | NeverDischarge

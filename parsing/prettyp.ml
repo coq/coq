@@ -263,7 +263,7 @@ let print_mutual sp =
              implicit_args_msg sp mipv))
 *)
 let print_section_variable sp =
-  let (d,_) = get_variable sp in
+  let d = get_variable sp in
   let l = implicits_of_var sp in
   (print_named_decl d ++ print_impl_args l)
 
@@ -489,7 +489,7 @@ let print_local_context () =
     | [] -> (mt ())
     | (oname,Lib.Leaf lobj)::rest ->
 	if "VARIABLE" = object_tag lobj then
-          let (d,_) = get_variable (basename (fst oname)) in 
+          let d = get_variable (basename (fst oname)) in 
 	  (print_var_rec rest ++
              print_named_decl d)
 	else 
@@ -546,11 +546,6 @@ let inspect depth =
 (* Pretty-printing functions coming from classops.ml                     *)
 
 open Classops
-
-let string_of_strength = function
-  | NotDeclare -> "(temp)"
-  | NeverDischarge -> "(global)"
-  | DischargeAt (sp,_) -> "(disch@"^(string_of_dirpath sp)
 
 let print_coercion_value v = prterm (get_coercion_value v)
 

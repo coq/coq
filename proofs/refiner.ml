@@ -232,7 +232,12 @@ let rc_of_glsigma sigma = rc_of_gc sigma.sigma sigma.it
   Their proof should be completed in order to complete the initial proof *)
 
 let extract_open_proof sigma pf =
-  let meta_cnt = ref 0 in
+  let next_meta = 
+    let meta_cnt = ref 0 in
+    let rec f () =
+      incr meta_cnt; if in_dom sigma !meta_cnt then f () else !meta_cnt
+    in f
+  in
   let open_obligations = ref [] in
   let rec proof_extractor vl = function
     | {ref=Some(Prim _,_)} as pf -> prim_extractor proof_extractor vl pf
@@ -259,10 +264,9 @@ let extract_open_proof sigma pf =
 	       let (_,c,ty) = Sign.lookup_named id goal.evar_hyps in
 	       mkNamedProd_or_LetIn (id,c,ty) concl)
             sorted_rels goal.evar_concl	in
-        incr meta_cnt;
-	open_obligations := (!meta_cnt,abs_concl):: !open_obligations;
-	applist
-          (mkMeta !meta_cnt, List.map (fun (n,_) -> mkRel n) sorted_rels) 
+        let meta = next_meta () in
+	open_obligations := (meta,abs_concl):: !open_obligations;
+	applist (mkMeta meta, List.map (fun (n,_) -> mkRel n) sorted_rels) 
 	  
     | _ -> anomaly "Bug : a case has been forgotten in proof_extractor"
   in

@@ -40,6 +40,7 @@ open Safe_typing
 open Typing
 open Hiddentac
 open Genarg
+open Decl_kinds
 
 let err_msg_tactic_not_found macro_loc macro =
   user_err_loc
@@ -1277,7 +1278,7 @@ and letin_interp ist = function
            (match ist.goalopt with
            | None -> Global.named_context ()
            | Some g -> pf_hyps g) in
-         start_proof id (true,NeverDischarge) ndc typ (fun _ _ -> ());
+         start_proof id IsLocal ndc typ (fun _ _ -> ());
          by t;
          let (_,({const_entry_body = pft; const_entry_type = _},_,_)) =
            cook_proof () in
@@ -1324,7 +1325,7 @@ and letcut_interp ist = function
     | _ ->
       (try
          let t = tactic_of_value tac in
-         start_proof id (false,NeverDischarge) ndc typ (fun _ _ -> ());
+         start_proof id IsLocal ndc typ (fun _ _ -> ());
          by t;
          let (_,({const_entry_body = pft; const_entry_type = _},_,_)) =
            cook_proof () in

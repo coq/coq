@@ -57,6 +57,10 @@ val ise_try :  evar_defs -> (unit -> bool) list -> bool
 val ise_undefined :  evar_defs -> constr -> bool
 val has_undefined_isevars :  evar_defs -> constr -> bool
 
+val new_isevar_sign :
+ Environ.env -> Evd.evar_map -> Term.constr -> Term.constr list ->
+  Evd.evar_map * Term.constr
+
 val new_isevar :  evar_defs -> env -> loc * hole_kind -> constr -> constr
 
 val is_eliminator : constr -> bool

@@ -33,6 +33,7 @@ open Recordops
 open Library
 open Indtypes
 open Nametab
+open Decl_kinds
 
 let recalc_sp dir sp =
   let (_,spid) = repr_path sp in Libnames.make_path dir spid
@@ -45,17 +46,20 @@ let rec find_var id = function
   | [] -> false
   | (x,b,_)::l -> if x = id then b=None else find_var id l
 
-let build_abstract_list hyps ids_to_discard =
-  let l =
-    List.fold_left
-      (fun vars id -> if find_var id hyps then mkVar id::vars else vars)
-      [] ids_to_discard in
-  Array.of_list l
+let build_abstract_list sec_sp hyps ids_to_discard =
+  let l1,l2 =
+   List.split
+    (List.fold_left
+      (fun vars id ->
+        if find_var id hyps then (mkVar id, Libnames.make_path sec_sp id)::vars
+        else vars)
+      [] ids_to_discard) in
+  Array.of_list l1, l2
 
 (* Discharge of inductives is done here (while discharge of constants 
    is done by the kernel for efficiency). *)
 
-let abstract_inductive ids_to_abs hyps inds =
+let abstract_inductive sec_sp ids_to_abs hyps inds =
   let abstract_one_assum id t inds =
     let ntyp = List.length inds in 
     let new_refs =
@@ -82,7 +86,7 @@ let abstract_inductive ids_to_abs hyps inds =
     match hyps with
       | (hyp,None,t as d)::rest when id = hyp ->
 	  let inds' = abstract_one_assum hyp t inds in 
-	  (rest, inds', mkVar id::vars)
+	  (rest, inds', (mkVar id, Libnames.make_path sec_sp id)::vars)
       | (hyp,Some b,t as d)::rest when id = hyp ->
 	  let inds' = abstract_one_def hyp b inds in 
 	  (rest, inds', vars)
@@ -109,9 +113,10 @@ let abstract_inductive ids_to_abs hyps inds =
 	   mind_entry_consnames = c;
 	   mind_entry_lc = shortlc })
       inds' in
-  (inds'', Array.of_list vars)
+  let l1,l2 = List.split vars in
+   (inds'', Array.of_list l1, l2)
 
-let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
+let process_inductive sec_sp osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
   assert (Array.length mib.mind_packets > 0);
   let finite = mib.mind_finite in
   let inds = 
@@ -135,7 +140,8 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
           (x, option_app (expmod_constr modlist) b,expmod_constr modlist t)
           sgn)
       mib.mind_hyps ~init:empty_named_context in
-  let (inds',abs_vars) = abstract_inductive ids_to_discard hyps' inds in
+  let (inds',abs_vars,discharged_hyps ) =
+   abstract_inductive sec_sp ids_to_discard hyps' inds in
   let lmodif_one_mind i = 
     let nbc = Array.length mib.mind_packets.(i).mind_consnames in 
     (((osecsp,i), DO_ABSTRACT ((nsecsp,i),abs_vars)),
@@ -150,7 +156,8 @@ let process_inductive osecsp nsecsp oldenv (ids_to_discard,modlist) mib =
   ({ mind_entry_finite = finite;
      mind_entry_inds = inds' },
    indmodifs,
-   List.flatten cstrmodifs)
+   List.flatten cstrmodifs,
+   discharged_hyps)
 
 (* Discharge messages. *)
 
@@ -175,9 +182,12 @@ let inductive_message inds =
 type opacity = bool
 
 type discharge_operation = 
-  | Variable of identifier * section_variable_entry * strength * bool
-  | Constant of identifier * recipe * strength * constant * bool
-  | Inductive of mutual_inductive_entry * bool
+  | Variable of identifier * section_variable_entry * local_kind * bool *
+      Dischargedhypsmap.discharged_hyps
+  | Constant of identifier * recipe * global_kind * constant * bool * 
+      Dischargedhypsmap.discharged_hyps
+  | Inductive of mutual_inductive_entry * bool *
+      Dischargedhypsmap.discharged_hyps
   | Class of cl_typ * cl_info_typ
   | Struc of inductive * (unit -> struc_typ)
   | Objdef of constant
@@ -194,56 +204,31 @@ let process_object oldenv olddir full_olddir newdir
   let tag = object_tag lobj in 
   match tag with
     | "VARIABLE" ->
-	let ((id,c,t),cst,stre) =
-          get_variable_with_constraints (basename sp) in
+	let ((id,c,t),cst) = get_variable_with_constraints (basename sp) in
 	(* VARIABLE means local (entry Variable/Hypothesis/Local and are *)
 	(* always discharged *)
-(*
- 	if stre = (DischargeAt sec_sp) or ids_to_discard <> [] then
-*)
-	  (Constraints cst :: ops, id :: ids_to_discard, work_alist)
-(*
-	else
-	  let imp = is_implicit_var sp in
-	  let newdecl =
-	    match c with
-	      | None ->
-		  SectionLocalAssum
-		    (expmod_constr oldenv work_alist t)
-	      | Some body ->
-		  SectionLocalDef
-		    (expmod_constr oldenv work_alist body)
-	  in
-	  (Variable (id,newdecl,stre,sticky,imp) :: ops,
-	   ids_to_discard,work_alist)
-*)
+	(Constraints cst :: ops, id :: ids_to_discard, work_alist)
 
     | ("CONSTANT" | "PARAMETER") ->
 	(* CONSTANT/PARAMETER means never discharge (though visibility *)
 	(* may vary) *)
- 	let stre = constant_strength sp in
-(*
-	if stre = (DischargeAt sec_sp) then
-	  let cb = Environ.lookup_constant sp oldenv in
-	  let constl = (sp, DO_REPLACE cb)::constl in
-	  (ops, ids_to_discard, (constl,indl,cstrl))
-	else
-*)
+ 	let kind = constant_kind sp in
 	let kn = Nametab.locate_constant (qualid_of_sp sp) in
 	let lab = label kn in
 	let cb = Environ.lookup_constant kn oldenv in
 	let imp = is_implicit_constant kn in
-	let newkn = (*match stre with (* this did not work anyway...*)
-	  | DischargeAt (d,_) when not (is_dirpath_prefix_of d dir) -> kn
-	  | _ -> *)recalc_kn newdir kn in
-        let mods = 
-	  let abs_vars = build_abstract_list cb.const_hyps ids_to_discard in
-	  [ (kn, DO_ABSTRACT(newkn,abs_vars)) ]
+	let newkn = recalc_kn newdir kn in
+	let abs_vars,discharged_hyps0 =
+         build_abstract_list full_olddir cb.const_hyps ids_to_discard in
+        (* let's add the new discharged hypothesis to those already discharged*)
+        let discharged_hyps =
+         discharged_hyps0 @ Dischargedhypsmap.get_discharged_hyps sp in
+        let mods = [ (kn, DO_ABSTRACT(newkn,abs_vars)) ]
 	in
 	let r = { d_from = cb;
 	          d_modlist = work_alist;
 	          d_abstract = ids_to_discard } in
-	let op = Constant (id_of_label lab, r,stre,newkn,imp) in
+	let op = Constant (id_of_label lab,r,kind,newkn,imp,discharged_hyps) in
         (op :: ops, ids_to_discard, (mods@constl, indl, cstrl))
   
     | "INDUCTIVE" ->
@@ -251,14 +236,17 @@ let process_object oldenv olddir full_olddir newdir
 	let mib = Environ.lookup_mind kn oldenv in
 	let newkn = recalc_kn newdir kn in
 	let imp = is_implicit_args() (* CHANGE *) in
-	let (mie,indmods,cstrmods) = 
-	  process_inductive kn newkn oldenv (ids_to_discard,work_alist) mib in
-	((Inductive(mie,imp)) :: ops, ids_to_discard,
+	let (mie,indmods,cstrmods,discharged_hyps0) = 
+	  process_inductive full_olddir kn newkn oldenv (ids_to_discard,work_alist) mib in
+        (* let's add the new discharged hypothesis to those already discharged*)
+        let discharged_hyps =
+         discharged_hyps0 @ Dischargedhypsmap.get_discharged_hyps sp in
+	((Inductive(mie,imp,discharged_hyps)) :: ops, ids_to_discard,
 	 (constl,indmods@indl,cstrmods@cstrl))
 
     | "CLASS" -> 
 	let ((cl,clinfo) as x) = outClass lobj in
-	if (match clinfo.cl_strength with DischargeAt (dp,_) -> dp = full_olddir | _ -> false) then 
+	if clinfo.cl_strength = Local then 
 	  (ops,ids_to_discard,work_alist)
 	else
 	  let (y1,y2) = process_class olddir ids_to_discard x in
@@ -266,7 +254,7 @@ let process_object oldenv olddir full_olddir newdir
 	  
     | "COERCION" -> 
 	let (((_,coeinfo),_,_)as x) = outCoercion lobj in
-	if (match coercion_strength coeinfo with DischargeAt (dp,_) -> dp = full_olddir | _ -> false) then 
+	if coercion_strength coeinfo = Local then
 	  (ops,ids_to_discard,work_alist)
         else
 	  let y = process_coercion olddir ids_to_discard x in
@@ -299,16 +287,15 @@ let process_item oldenv olddir full_olddir newdir acc = function
   | (_,_) -> acc
 
 let process_operation = function
-  | Variable (id,expmod_a,stre,imp) ->
+  | Variable (id,expmod_a,stre,imp,discharged_hyps) ->
       (* Warning:parentheses needed to get a side-effect from with_implicits *)
-      let _ =
-        with_implicits imp (declare_variable id) (Lib.cwd(),expmod_a,stre) in
-      ()
-  | Constant (id,r,stre,kn,imp) ->
-      with_implicits imp (redeclare_constant id) (r,stre);
+      with_implicits imp (redeclare_variable id discharged_hyps)
+        (Lib.cwd(),expmod_a,stre)
+  | Constant (id,r,stre,kn,imp,discharged_hyps) ->
+      with_implicits imp (redeclare_constant id discharged_hyps) (r,stre);
       constant_message id
-  | Inductive (mie,imp) ->
-      let _ = with_implicits imp declare_mind mie in
+  | Inductive (mie,imp,discharged_hyps) ->
+      let _ = with_implicits imp (redeclare_inductive discharged_hyps) mie in
       inductive_message mie.mind_entry_inds
   | Class (y1,y2) ->
       Lib.add_anonymous_leaf (inClass (y1,y2))

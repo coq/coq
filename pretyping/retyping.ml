@@ -67,13 +67,13 @@ let typeur sigma metamap =
     | Ind ind -> body_of_type (type_of_inductive env ind)
     | Construct cstr -> body_of_type (type_of_constructor env cstr)
     | Case (_,p,c,lf) ->
-        (* TODO: could avoid computing the type of branches *)
-        let i =
-          try find_rectype env (type_of env c)
+        let Inductiveops.IndType(_,realargs) =
+          try Inductiveops.find_rectype env sigma (type_of env c)
           with Not_found -> anomaly "type_of: Bad recursive type" in
-        let pj = { uj_val = p; uj_type = type_of env p } in
-        let (_,ty,_) = type_case_branches env i pj c in
-        ty
+        let t = whd_beta (applist (p, realargs)) in
+        (match kind_of_term (whd_betadeltaiota env sigma (type_of env t)) with
+          | Prod _ -> whd_beta (applist (t, [c]))
+          | _ -> t)
     | Lambda (name,c1,c2) ->
           mkProd (name, c1, type_of (push_rel (name,None,c1) env) c2)
     | LetIn (name,b,c1,c2) ->
@@ -101,7 +101,7 @@ let typeur sigma metamap =
     | _ -> outsort env sigma (type_of env t)
 
   and sort_family_of env t =
-    match kind_of_term (whd_betadeltaiota env sigma t) with
+    match kind_of_term t with
     | Cast (c,s) when isSort s -> family_of_sort (destSort s)
     | Sort (Prop c) -> InType
     | Sort (Type u) -> InType

@@ -19,6 +19,7 @@ open Util
 open Constr
 open Vernac_
 open Prim
+open Decl_kinds
 
 (* Dans join_binders, s'il y a un "?", on perd l'info qu'il est partagé *)
 let join_binders (idl,c) = List.map (fun id -> (id,c)) idl
@@ -97,26 +98,24 @@ GEXTEND Gram
     [ [ "Theorem" -> Theorem
       | IDENT "Lemma" -> Lemma
       | IDENT "Fact" -> Fact
-      | IDENT "Remark" -> Remark
-      | IDENT "Decl" -> Decl ] ]
+      | IDENT "Remark" -> Remark ] ]
   ;
   def_token:
-    [ [ "Definition" -> (fun _ _ -> ()), Definition
-      | IDENT "Local" -> (fun _ _ -> ()), LocalDefinition
-      | IDENT "SubClass"  -> Class.add_subclass_hook, Definition
-      | IDENT "Local"; IDENT "SubClass"  ->
-	  Class.add_subclass_hook, LocalDefinition ] ]  
+    [ [ "Definition" -> (fun _ _ -> ()), Global
+      | IDENT "Local" -> (fun _ _ -> ()), Local
+      | IDENT "SubClass"  -> Class.add_subclass_hook, Global
+      | IDENT "Local"; IDENT "SubClass"  -> Class.add_subclass_hook, Local ] ] 
   ;
   assumption_token:
-    [ [ "Hypothesis" -> AssumptionHypothesis
-      | "Variable" -> AssumptionVariable
-      | "Axiom" -> AssumptionAxiom
-      | "Parameter" -> AssumptionParameter ] ]
+    [ [ "Hypothesis" -> (Local, Logical)
+      | "Variable" -> (Local, Definitional)
+      | "Axiom" -> (Global, Logical)
+      | "Parameter" -> (Global, Definitional) ] ]
   ;
   assumptions_token:
-    [ [ IDENT "Hypotheses" -> AssumptionHypothesis
-      | IDENT "Variables" -> AssumptionVariable
-      | IDENT "Parameters" -> AssumptionParameter ] ]
+    [ [ IDENT "Hypotheses" -> (Local, Logical)
+      | IDENT "Variables" -> (Local, Definitional)
+      | IDENT "Parameters" -> (Global, Definitional) ] ]
   ;
   of_type_with_opt_coercion:
     [ [ ":>" -> true
@@ -357,35 +356,29 @@ ident_comma_list_tail:
 	  VernacCanonical qid
       | IDENT "Canonical"; IDENT "Structure"; qid = qualid; d = def_body ->
           let s = Ast.coerce_qualid_to_id qid in
-	  VernacDefinition (Definition,s,d,Recordobj.add_object_hook)
-(*
-	  VernacDefinition (Definition,s,None,c,t,Recordobj.add_object_hook)
-*)
+	  VernacDefinition (Global,s,d,Recordobj.add_object_hook)
       (* Rem: LOBJECT, OBJCOERCION, LOBJCOERCION have been removed
          (they were unused and undocumented) *)
 
 (* Coercions *)
       | IDENT "Coercion"; qid = qualid; d = def_body ->
           let s = Ast.coerce_qualid_to_id qid in
-(*
-	  VernacDefinition (Definition,s,None,c,t,Class.add_coercion_hook)
-*)
-	  VernacDefinition (Definition,s,d,Class.add_coercion_hook)
+	  VernacDefinition (Global,s,d,Class.add_coercion_hook)
       | IDENT "Coercion"; IDENT "Local"; qid = qualid; d = def_body ->
            let s = Ast.coerce_qualid_to_id qid in
-	  VernacDefinition (LocalDefinition,s,d,Class.add_coercion_hook)
+	  VernacDefinition (Local,s,d,Class.add_coercion_hook)
       | IDENT "Identity"; IDENT "Coercion"; IDENT "Local"; f = Prim.ident;
          ":"; s = class_rawexpr; ">->"; t = class_rawexpr -> 
-	   VernacIdentityCoercion (Declare.make_strength_0 (), f, s, t)
+	   VernacIdentityCoercion (Local, f, s, t)
       | IDENT "Identity"; IDENT "Coercion"; f = Prim.ident; ":";
          s = class_rawexpr; ">->"; t = class_rawexpr -> 
-	   VernacIdentityCoercion (Libnames.NeverDischarge, f, s, t)
+	   VernacIdentityCoercion (Global, f, s, t)
       | IDENT "Coercion"; IDENT "Local"; qid = qualid; ":";
 	 s = class_rawexpr; ">->"; t = class_rawexpr -> 
-	  VernacCoercion (Declare.make_strength_0 (), qid, s, t)
+	  VernacCoercion (Local, qid, s, t)
       | IDENT "Coercion"; qid = qualid; ":"; s = class_rawexpr; ">->";
          t = class_rawexpr ->
-	  VernacCoercion (Libnames.NeverDischarge, qid, s, t)
+	  VernacCoercion (Global, qid, s, t)
       | IDENT "Class"; IDENT "Local"; c = qualid ->
 	  Pp.warning "Class is obsolete"; VernacNop
       | IDENT "Class"; c = qualid ->

@@ -17,6 +17,7 @@ open Libnames
 open Term
 open Pretyping
 open Pfedit
+open Decl_kinds
 open Vernacentries
 
 open Pmisc
@@ -26,7 +27,6 @@ open Penv
 open Prename
 open Peffect
 open Pmonad
-
 
 (* [coqast_of_prog: program -> constr * constr]
  * Traduction d'un programme impératif en un but (second constr)
@@ -239,7 +239,7 @@ let correctness s p opttac =
   let sigma = Evd.empty in
   let cty = Reduction.nf_betaiota cty in
   let id = id_of_string s in 
-  start_proof id (false, NeverDischarge) sign cty correctness_hook;
+  start_proof id (IsGlobal (Proof Lemma)) sign cty correctness_hook;
   Penv.new_edited id (v,p);
   if !debug then show_open_subgoals();
   deb_mess (str"Pred.red_cci: Reduction..." ++ fnl ());

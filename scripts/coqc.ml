@@ -136,7 +136,7 @@ let parse_args () =
     | "-R" as o :: s :: t :: rem -> parse (cfiles,t::s::o::args) rem
     | ("-notactics"|"-debug"|"-db"|"-debugger"|"-nolib"|"-batch"|"-nois"
       |"-q"|"-full"|"-profile"|"-just-parsing"|"-echo" |"-unsafe"|"-quiet"
-      |"-silent"|"-m" as o) :: rem ->
+      |"-silent"|"-m"|"-xml" as o) :: rem ->
 	parse (cfiles,o::args) rem
     | ("-v"|"--version") :: _ ->
         Usage.version ()
