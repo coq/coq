@@ -40,7 +40,7 @@ let lfix = 200
 let larrow = 90
 let lcast = 100
 let lapp = 10
-let lposint = 11   (* above the argument of notations "- x" and "/ x" *)
+let lposint = 1    (* above the argument of notation "- x" *)
 let lnegint = lapp (* above application *)
 let ltop = (200,E)
 let lproj = 1
@@ -131,9 +131,9 @@ let rec pr_patt inh p =
       prlist_with_sep sep (pr_patt (lapp,L)) args, lapp
   | CPatAtom (_,None) -> str "_", latom
   | CPatAtom (_,Some r) -> pr_reference r, latom
+  | CPatNotation (_,s,env) -> pr_notation pr_patt s env
   | CPatNumeral (_,i) -> Bignat.pr_bigint i, latom
-  | CPatDelimiters (_,k,p) ->
-      pr_delimiters k (pr_patt (latom,E) p), latom
+  | CPatDelimiters (_,k,p) -> pr_delimiters k (pr_patt lsimple p), 1
   in
   let loc = cases_pattern_loc p in
   pr_with_comments loc (if prec_less prec inh then strm else surround strm)
@@ -515,7 +515,7 @@ let rec pr inherited a =
   | CNotation (_,s,env) -> pr_notation pr s env
   | CNumeral (_,(Bignat.POS _ as p)) -> Bignat.pr_bigint p, lposint
   | CNumeral (_,(Bignat.NEG _ as p)) -> Bignat.pr_bigint p, lnegint
-  | CDelimiters (_,sc,a) -> pr_delimiters sc (pr (latom,E) a), latom
+  | CDelimiters (_,sc,a) -> pr_delimiters sc (pr lsimple a), 1
   | CDynamic _ -> str "<dynamic>", latom
   in
   let loc = constr_loc a in
