@@ -74,7 +74,7 @@ let p_uni u =
 let print_uni u = (pP (p_uni u))
 
 let pp_universes u = pP [< 'sTR"[" ; pr_universes u ; 'sTR"]" >]
-
+(*
 let constr_display csr =
   let rec term_display = function
     | DOP0 a -> "DOP0("^(oper_display a)^")"
@@ -130,3 +130,4 @@ let _ =
               let (evmap,sign) = Command.get_current_context () in
   	      constr_display (Astterm.interp_constr evmap sign c))
        | _ -> bad_vernac_args "PrintConstr")
+*)
