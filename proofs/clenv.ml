@@ -579,7 +579,7 @@ let clenv_merge with_types =
     	  else
 	    let mc,ec =
 	      let mvty = clenv_instance_type clenv mv in
-	      if with_types or occur_meta mvty then
+	      if with_types (* or occur_meta mvty *) then
 		let nty = clenv_type_of clenv 
 			    (clenv_instance clenv (mk_freelisted n)) in
 		unify_0 [] clenv.hook mvty nty
