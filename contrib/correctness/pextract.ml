@@ -439,7 +439,8 @@ let pp_ocaml file prm =
 let initialize id com =
   let loc = Ast.loc com in
   let c = constr_of_com (Evd.mt_evd()) (initial_sign()) com in
-  let ty = type_of (Evd.mt_evd()) (initial_sign()) c in
+  let ty = 
+    Reductionops.nf_betaiota (type_of (Evd.mt_evd()) (initial_sign()) c) in
   try
     let v = lookup_global id in
     let ety = match v with 

@@ -29,7 +29,7 @@ open Pmonad
 let has_proof_part ren env c =
   let sign = Pcicenv.trad_sign_of ren env in
   let ty = Typing.type_of (Global.env_of_context sign) Evd.empty c in
-  is_matching (Coqlib.build_coq_sig_pattern ()) ty
+  is_matching (Coqlib.build_coq_sig_pattern ()) (Reductionops.nf_betaiota ty)
 
 (* main part: translation of imperative programs into functional ones.
  * 
