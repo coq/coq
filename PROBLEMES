@@ -33,3 +33,12 @@ Induction a.
 
 Rocq/MUTUAL-EXCLUSION/
 	Incompatibilite interpretation des arguments de Tactic Definition
+
+Rocq/COC
+File "./Conv_Dec.v", line 68, characters 2-459
+Error: Inference of annotation not yet implemented in this case
+
+Rocq/ARITH/Chinese
+File "./Zdiv.v", line 34, characters 0-944
+Anomaly: Search error. Please report.
+Refine 
