@@ -532,6 +532,8 @@ correctness: $(CORRECTNESSCMO) $(CORRECTNESSVO)
 field: $(FIELDVO) $(FIELDCMO)
 fourier: $(FOURIERVO) $(FOURIERCMO)
 
+ALLVO = $(INITVO) $(THEORIESVO) $(CONTRIBVO) $(EXTRACTIONVO)
+
 clean::
 	rm -f contrib/*/*.cm[io] contrib/*/*.vo
 
@@ -833,7 +835,7 @@ cleanconfig::
 alldepend: depend dependcoq 
 
 dependcoq: beforedepend
-	$(COQDEP) $(COQINCLUDES) */*.v */*/*.v > .depend.coq
+	$(COQDEP) $(COQINCLUDES) $(ALLVO:.vo=.v) > .depend.coq
 
 # Computing the dependencies in camlp4 files is tricky.
 # We proceed in several steps:
