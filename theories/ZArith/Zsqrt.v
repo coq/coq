@@ -25,16 +25,15 @@ Tactic Definition compute_POS :=
  | [|- [(POS (xI ?1))]] -> Let v = ?1 In 
                           (Match v With
                             | [ [xH] ] ->
-                              (Fail 1)
+                              Fail
                             |_->
                               Rewrite (POS_xI v))
  | [ |- [(POS (xO ?1))]] -> Let v = ?1 In
                            Match v With
                             |[ [xH] ]->
-                              (Fail 1)
+                              Fail
                             |[?]->
                               Rewrite (POS_xO v)).
-
 
 Inductive sqrt_data [n : Z] : Set :=
   c_sqrt: (s, r :Z)`n=s*s+r`->`0<=r<=2*s`->(sqrt_data n) .
