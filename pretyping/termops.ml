@@ -386,7 +386,13 @@ let dependent m t =
     if eq_constr m t then
       raise Occur
     else
-      iter_constr_with_binders (lift 1) deprec m t
+      match kind_of_term m, kind_of_term t with
+	| App (fm,lm), App (ft,lt) when Array.length lm < Array.length lt ->
+	    deprec m (mkApp (ft,Array.sub lt 0 (Array.length lm)));
+	    Array.iter (deprec m)
+	      (Array.sub lt 
+		(Array.length lm) ((Array.length lt) - (Array.length lm)))
+	| _ -> iter_constr_with_binders (lift 1) deprec m t
   in 
   try deprec m t; false with Occur -> true
 
