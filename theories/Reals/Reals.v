@@ -18,6 +18,7 @@ Require Export R_sqr.
 Require Export Rsigma.
 Require Export Rlimit.
 Require Export Rfunctions.
+Require Export Rtrigo.
 Require Export Rderiv.
 Require Export Rseries.
 Require Export Rtrigo_fun.
