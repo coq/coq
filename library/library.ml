@@ -122,7 +122,9 @@ type module_t = {
 module CompUnitOrdered = 
   struct
     type t = dir_path
-    let compare = Pervasives.compare
+    let compare d1 d2 =
+      Pervasives.compare
+        (List.rev (repr_dirpath d1)) (List.rev (repr_dirpath d2))
   end
 
 module CompUnitmap = Map.Make(CompUnitOrdered)
