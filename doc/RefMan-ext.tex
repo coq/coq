@@ -7,9 +7,12 @@ the Gallina's syntax.
 \section{Record types}\comindex{Record}
 \label{Record}
 
-The \verb+Record+ function is a macro allowing
-the definition of records as is done in many programming languages.
-Its syntax is described on figure \ref{record-syntax}.
+The \verb+Record+ construction is a macro allowing the definition of
+records as is done in many programming languages.  Its syntax is
+described on figure \ref{record-syntax}.  In fact, the \verb+Record+
+macro is more general than the usual record types, since it allows
+also for ``manifest'' expressions. In this sense, the \verb+Record+
+construction allows to define ``signatures''.
 
 \begin{figure}
 \begin{tabular}{|lcl|}
@@ -21,14 +24,16 @@ Its syntax is described on figure \ref{record-syntax}.
     \zeroone{\nelist{\field}{;}}
     \verb!}! \verb:.:\\
   & & \\
-{\field} & ::= & {\ident} \verb.:. {\term} \\
+{\field} & ::= & {\ident} \verb.:. {\type} \\
+ & $|$ & {\ident} \verb.:=. {\term} \\
+ & $|$ & {\ident} \verb.:. {\type} \verb.:=. {\term} \\
 \hline
 \end{tabular}
 \caption{Syntax for the definition of {\tt Record}}
 \label{record-syntax}
 \end{figure}
 
-\noindent In the command
+\noindent In the simple case, the command
 ``{\tt Record} {\ident} {\tt [} {\params} {\tt ]} \texttt{:} 
    {\sort} := {\ident$_0$} \verb+{+
  {\ident$_1$} \texttt{:} {\term$_1$}; 
@@ -36,9 +41,17 @@ Its syntax is described on figure \ref{record-syntax}.
   {\ident$_n$} \texttt{:} {\term$_n$} \verb+}+.'', 
 the identifier {\ident} is the name of the defined record and {\sort}
 is its type. The identifier {\ident$_0$} is the name of its
-constructor. The identifiers {\ident$_1$}, .., {\ident$_n$} are the
+constructor. If {\ident$_0$} is omitted, the default name {\tt Build\_{\ident}} is used. The identifiers {\ident$_1$}, .., {\ident$_n$} are the
 names of its fields and {\term$_1$}, .., {\term$_n$} their respective
 types.  Records can have parameters.
+
+In the more general case, a record may have explicitly defined (aka
+manifest) fields. For instance, {\tt Record} {\ident} {\tt [}
+{\params} {\tt ]} \texttt{:} {\sort} := \verb+{+ {\ident$_1$}
+\texttt{:} {\type$_1$} \verb+;+ {\ident$_2$} \texttt{:=} {\term$_2$} \verb+;+.
+{\ident$_3$} \texttt{:} {\type$_3$} \verb+}+. But this is not yet
+documented.
+
 
 \Example
 The set of rational numbers may be defined as:
@@ -47,9 +60,11 @@ Restore State Initial.
 \end{coq_eval}
 \begin{coq_example}
 Record Rat : Set := mkRat {
-    top      : nat;
-    bottom   : nat;
-    Rat_cond : (gt bottom O) }.
+ sign     : bool;
+ top      : nat;
+ bottom   : nat;
+ Rat_bottom_cond : ~O=bottom;
+ Rat_irred_cond:(x,y,z:nat)(mult x y)=top/\(mult x z)=bottom->x=(S O)}.
 \end{coq_example}
 
 A field may depend on other fields appearing before it. 
@@ -75,10 +90,37 @@ the record.
 Let us define the rational $1/2$.
 
 \begin{coq_example*}
-Theorem two_is_positive : (gt (S (S O)) O).
-Repeat Constructor.
-Save.
-Definition half := (mkRat (S O) (S (S O)) two_is_positive).
+Require Arith.
+Theorem one_two_irred: (x,y,z:nat)(mult x y)=(1)/\(mult x z)=(2)->x=(1).
+\end{coq_example*}
+\begin{coq_eval}
+Lemma plus_m_n_eq_n_O : (m,n:nat)(plus m n)=O -> n=O.
+Destruct m; Trivial.
+Intros; Discriminate.
+Qed.
+
+Lemma mult_m_n_eq_m_1: (m,n:nat)(mult m n)=((S O))->m=(S O).
+Destruct m;Trivial.
+Intros; Apply f_equal with f:=S.
+Generalize H.
+Case n; Trivial.
+Simpl.
+Case n0;Simpl.
+Intro; Rewrite <- mult_n_O; Intro; Discriminate.
+Intros n1 n2 H0; Injection H0.
+Intro H1.
+LetTac H2:=(plus_m_n_eq_n_O n1 (S (plus n1 (mult n2 (S n1)))) H1).
+Discriminate.
+Qed.
+
+Intros x y z (H1,H2). Apply mult_m_n_eq_m_1 with n:=y; Trivial.
+\end{coq_eval}
+\ldots
+\begin{coq_example*}
+Qed.
+\end{coq_example*}
+\begin{coq_example}
+Definition half := (mkRat true (1) (2) (O_S (1)) one_two_irred).
 \end{coq_example*}
 \begin{coq_example}
 Check half.
@@ -92,7 +134,7 @@ field. In our example:
 \begin{coq_example}
 Eval Compute in (top half).
 Eval Compute in (bottom half).
-Eval Compute in (Rat_cond half).
+Eval Compute in (Rat_bottom_cond half).
 \end{coq_example}
 \begin{coq_eval}
 Restore State Initial.
@@ -117,23 +159,15 @@ Restore State Initial.
 \begin{ErrMsgs}
 \item \errindex{A record cannot be recursive}\\
   The record name {\ident} appears in the type of its fields.
-      
+
+\item
   During the definition of the one-constructor inductive definition,
   all the errors of inductive definitions, as described in section
-  \ref{gal_Inductive_Definitions}, may occur.
+  \ref{gal_Inductive_Definitions}, may also occur.
 \end{ErrMsgs}
 
-\begin{Variants}
-\item 
-\noindent
-{\tt Record {\ident} [ {\rm\sl params} ] : {\sort} := \verb+{+ \\
-\mbox{}\hspace{0.4cm}  {\ident$_1$} : {\term$_1$}; \\
-\mbox{}\hspace{0.4cm}  ... \\
-\mbox{}\hspace{0.4cm}  {\ident$_n$} : {\term$_n$} \verb+}+.}\\
- 
-One can omit the constructor name in which case the system will use
-the name {\tt Build\_{\ident}}.
-\end{Variants}
+\SeeAlso Coercions and records in section \ref{Coercions-and-records}
+of the chapter devoted to coercions.
 
 \section{Variants and extensions of {\tt Cases}}
 \label{ExtensionsOfCases}
@@ -727,6 +761,8 @@ Idem but locally to the current section.
 
 \end{Variants}
 
+\SeeAlso the technical chapter \ref{Coercions-full} on coercions.
+
 \subsection{Displaying available coercions}
 
 \subsubsection{\tt Print Classes.}\comindex{Print Classes}
@@ -737,8 +773,6 @@ Print the list of declared coercions in the current context.
 
 \subsubsection{\tt Print Graph.}\comindex{Print Graph}
 Print the list of valid path coercions in the current context.
-
-\SeeAlso the technical chapter \ref{Coercions-full} on coercions.
 
 %%% Local Variables: 
 %%% mode: latex
