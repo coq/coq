@@ -388,7 +388,18 @@ let clenv_assign mv rhs clenv =
     error "clenv__assign: circularity in unification";
   try
     (match Intmap.find mv clenv.env with
-       | Clval _ -> anomaly "clenv_assign: metavar already assigned"
+       | Clval (fls,ty) ->
+	   if not (eq_constr fls.rebus rhs) then
+	     try 
+	       (* Streams are lazy, force evaluation of id to catch Not_found*)
+	       let id = Intmap.find mv clenv.namenv in
+	       errorlabstrm "clenv_assign"
+		 [< 'sTR "An incompatible instantiation has already been found for "; 
+		    pr_id id >]
+	     with Not_found ->
+	       anomaly "clenv_assign: non dependent metavar already assigned"
+	   else
+	     clenv
        | Cltyp bty -> 
 	   { templval = clenv.templval;
 	     templtyp = clenv.templtyp;
@@ -873,7 +884,7 @@ let clenv_match_args s clause =
 		   errorlabstrm "clenv_match_args" 
 		     [< 'sTR "The variable "; pr_id s; 
 			'sTR " occurs more than once in binding" >]
-		 else 
+		 else
 		   clenv_lookup_name clause s
 	     | NoDep n ->
 		 if List.mem_assoc b t then errorlabstrm "clenv_match_args"
