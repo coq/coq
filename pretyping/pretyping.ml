@@ -185,7 +185,7 @@ let make_dep_of_undep env (IndType (indf,realargs)) pj =
 (*************************************************************************)
 (* Main pretyping function                                               *)
 
-let pretype_ref isevars env lvar ref = 
+let pretype_ref isevars env ref = 
   let c = constr_of_reference ref in
   make_judge c (Retyping.get_type_of env Evd.empty c)
 
@@ -200,7 +200,7 @@ let rec pretype tycon env isevars lvar lmeta = function
 
   | RRef (loc,ref) ->
       inh_conv_coerce_to_tycon loc env isevars
-	(pretype_ref isevars env lvar ref)
+	(pretype_ref isevars env ref)
 	tycon
 
   | RVar (loc, id) ->
