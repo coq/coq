@@ -681,7 +681,11 @@ let mark_occur gl hyp =
           | [_;_] -> []
           | he::tl -> he::(get_all_but_last_two tl) in
         let aeq = mkApp (heq,(Array.of_list (get_all_but_last_two hargs))) in
-         try setoid_table_find aeq with Not_found -> assert false
+         try
+          setoid_table_find aeq
+         with Not_found ->
+          errorlabstrm "Setoid_rewrite"
+           (prterm aeq ++ str " is not a setoid equality.")
    in
     Toreplace sa
   else
