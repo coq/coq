@@ -286,8 +286,8 @@ Syntax constr
 ].
 
 
-Infix 3 "/" Zdiv (no associativity) : Z_scope V8only (left associativity).
-Infix 3 "mod" Zmod (no associativity) : Z_scope V8only (left associativity).
+Infix 3 "/" Zdiv (no associativity) : Z_scope V8only.
+Infix 3 "mod" Zmod (no associativity) : Z_scope.
 
 (** Other lemmas (now using the syntax for [Zdiv] and [Zmod]). *)
 

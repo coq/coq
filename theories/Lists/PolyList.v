@@ -47,7 +47,7 @@ Fixpoint app [l:list] : list -> list
                  end.
 
 Infix RIGHTA 7 "^" app : list_scope
-  V8only 45.
+  V8only RIGHTA 45.
 
 Lemma app_nil_end : (l:list)l=(l^nil).
 Proof. 

@@ -18,8 +18,7 @@ Section Setoid_rings.
 Variable A : Type.
 Variable Aequiv : A -> A -> Prop.
 
-Infix "==" Aequiv (at level 5)
-  V8only (at level 50).
+Infix Local "==" Aequiv (at level 5, no associativity).
 
 Variable S : (Setoid_Theory A Aequiv).
 

@@ -282,24 +282,27 @@ GEXTEND Gram
          p = global;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc];
-         (op8,nv8,mv8) =
+         mv8 =
               [IDENT "V8only";
-               op8=OPT STRING;
+               a8=entry_prec;
                n8=OPT natural;
                mv8=OPT["("; l = LIST1 syntax_modifier SEP ","; ")" -> l] ->
-                    (op8,n8,mv8)
-              | -> (None,None,None)] ->
+		 (match (a8,n8,mv8) with
+		   | None,None,None -> None
+		   | _,_,Some mv8 ->
+		   let (a8,n8,_) = Metasyntax.interp_infix_modifiers a8 n8 mv8
+		   in Some(a8,n8)
+		   | _,_,None -> Some (a8,n8))
+              | -> (* Means: rules are based on V7 rules *)
+		  Some (None,None) ] ->
+		let v8 = Util.option_app (function
+		  | None, None ->
+		      let nv8 = Util.option_app adapt_level n in
+		      let mv8 = List.map map_modl modl in
+		      let (a8,n8,_) = Metasyntax.interp_infix_modifiers a nv8
+			mv8 in (a8,n8,op)
+		  | a8,n8 -> (a8,n8,op)) mv8 in
            let (ai,ni,b) = Metasyntax.interp_infix_modifiers a n modl in
-           let op8 = match op8 with Some s -> s | _ -> op in
-           let nv8 = match nv8 with
-               Some n -> Some n
-             | _ -> Util.option_app adapt_level n in
-           let mv8 = match mv8 with
-               Some m -> m
-             | _ -> List.map map_modl modl in
-           let (a8,n8,_) =
-             Metasyntax.interp_infix_modifiers a nv8 mv8 in
-           let v8 = Some(a8,n8,op8) in
            VernacInfix (local,ai,ni,op,p,b,v8,sc)
      | IDENT "Distfix"; local = locality; a = entry_prec; n = natural; 
 	   s = STRING; p = global; sc = OPT [ ":"; sc = IDENT -> sc ] ->
@@ -319,13 +322,22 @@ GEXTEND Gram
              [IDENT "V8only";
               s8=OPT STRING;
               mv8=OPT["(";mv8=LIST1 syntax_modifier SEP ","; ")" -> mv8] ->
-                (s8,mv8)
-             | -> (None,None)] ->
+		(s8,mv8)
+             | -> (* Means: rules are based on V7 rules *)
+		 None, Some [] ] ->
+(*
                let s8 = match s8 with Some s -> s | _ -> s in
                let mv8 = match mv8 with
                    Some mv8 -> mv8
                  | _ -> List.map map_modl modl in
-               VernacNotation (local,c,Some(s,modl),Some(s8,mv8),sc)
+*)
+	       let smv8 = match s8,mv8 with
+		 | None, None -> None   (* = only interpretation *)
+		 | Some s8, None -> Some (s8,[]) (* = only interp, new s *)
+		 | None, Some [] -> Some (s,List.map map_modl modl) (*like v7*)
+		 | None, Some mv8 -> Some (s,mv8) (* s like v7 *)
+		 | Some s8, Some mv8 -> Some (s8,mv8) in
+               VernacNotation (local,c,Some(s,modl),smv8,sc)
      | IDENT "V8Notation"; local = locality; s = STRING; ":="; c = constr;
          modl = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ];
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
