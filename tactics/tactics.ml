@@ -1873,12 +1873,21 @@ let intros_transitivity  n  = tclTHEN intros (transitivity n)
 
 let abstract_subproof name tac gls = 
   let env = Global.env() in
-  let sign = pf_hyps gls in
-  let na = next_global_ident_away false name (ids_of_named_context sign) in
+  let current_sign = Global.named_context()
+  and global_sign = pf_hyps gls in
+  let sign,secsign = 
+    List.fold_right
+      (fun (id,_,_ as d) (s1,s2) -> 
+	 if mem_named_context id current_sign then (s1,add_named_decl d s2)
+	 else (add_named_decl d s1,s2)) 
+      global_sign (empty_named_context,empty_named_context) in
+  let na = next_global_ident_away false name (pf_ids_of_hyps gls) in
   let concl = it_mkNamedProd_or_LetIn (pf_concl gls) sign in
-  if occur_existential concl then error "Abstract cannot handle existentials";
+  if occur_existential concl then
+    if !Options.v7 then error "Abstract cannot handle existentials"
+    else error "\"abstract\" cannot handle existentials";
   let lemme =
-    start_proof na (IsGlobal (Proof Lemma)) [] concl (fun _ _ -> ());
+    start_proof na (IsGlobal (Proof Lemma)) secsign concl (fun _ _ -> ());
     let _,(const,kind,_) =
       try
 	by (tclCOMPLETE (tclTHEN (tclDO (List.length sign) intro) tac)); 
