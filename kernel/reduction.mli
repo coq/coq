@@ -110,8 +110,7 @@ val is_info_cast_type : 'c unsafe_env -> constr -> bool
 val contents_of_cast_type : 'c unsafe_env -> constr -> contents
 val poly_args : 'a unsafe_env -> constr -> int list
 val reduce_to_mind : 'c unsafe_env -> constr -> constr * constr * constr
-val reduce_to_ind  : 'c unsafe_env -> constr -> 
-                                section_path*constr*constr
+
 
 val whd_programs : 'a reduction_function
 

@@ -42,3 +42,6 @@ val define : 'a evar_map -> section_path -> constr -> 'a evar_map
 
 val non_instantiated : 'a evar_map -> (section_path * 'a evar_info) list
 val is_evar : 'a evar_map -> section_path -> bool
+
+val is_defined : 'a evar_map -> section_path -> bool
+

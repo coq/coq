@@ -13,6 +13,7 @@ open Inductive
 open Sign
 open Environ
 open Reduction
+open Instantiate
 open Himsg
 
 type information = Logic | Inf of unsafe_judgment
@@ -90,32 +91,9 @@ let check_hyps id env hyps =
 
 (* Instantiation of terms on real arguments. *)
 
-let is_id_inst ids args =
-  let is_id id = function
-    | VAR id' -> id = id'
-    | _ -> false
-  in
-  List.for_all2 is_id ids args
-
-let instantiate_constr ids c args =
-  if is_id_inst ids args then
-    c
-  else
-    replace_vars (List.combine ids (List.map make_substituend args)) c
-
-let instantiate_type ids tty args =
-  { body = instantiate_constr ids tty.body args;
-    typ = tty.typ }
-
-(* Constants. *)
-
-let constant_reference env sp =
-  let (_,cb) = lookup_constant sp env in
-  (Const sp, construct_reference (basename sp) env cb.const_hyps)
-
 let type_of_constant env c =
   let (sp,args) = destConst c in
-  let (_,cb) = lookup_constant sp env in
+  let cb = lookup_constant sp env in
   let hyps = cb.const_hyps in
   check_hyps (basename sp) env hyps;
   instantiate_type (ids_of_sign hyps) cb.const_type (Array.to_list args)
@@ -204,7 +182,7 @@ let make_arity_dep env k =
   let rec mrec c m = match whd_betadeltaiota env c with 
     | DOP0(Sort _) -> mkArrow m k
     | DOP2(Prod,b,DLAM(n,c_0)) ->
-        prod_name (n,b,mrec c_0 (applist(lift 1 m,[Rel 1])))
+        prod_name env (n,b,mrec c_0 (applist(lift 1 m,[Rel 1])))
     | _ -> invalid_arg "make_arity_dep"
   in 
   mrec
@@ -274,7 +252,7 @@ let find_case_dep_nparams env (c,p) (mind,largs) typP =
 let type_one_branch_dep (env,nparams,globargs,p) co t = 
   let rec typrec n c =
     match whd_betadeltaiota env c with
-      | DOP2(Prod,a1,DLAM(x,a2)) -> prod_name (x,a1,typrec (n+1) a2)
+      | DOP2(Prod,a1,DLAM(x,a2)) -> prod_name env (x,a1,typrec (n+1) a2)
       | x -> let lAV = destAppL (ensure_appl x) in
              let (_,vargs) = array_chop (nparams+1) lAV in
              applist 

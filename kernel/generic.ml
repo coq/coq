@@ -570,6 +570,9 @@ let rel_list n m =
   in 
   reln [] 1
 
+let rec count_dlam = function
+  | DLAM (_,c) -> 1 + (count_dlam c)
+  | _ -> 0
 
 (* Hash-consing *)
 let comp_term t1 t2 =

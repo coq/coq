@@ -2,10 +2,15 @@
 (* $Id$ *)
 
 open Names
+open Generic
 open Term
 open Sign
 
-type discharge_recipe
+type discharge_recipe = {
+  d_expand : section_path list;
+  d_modify : (sorts oper * sorts oper modification) list;
+  d_abstract : identifier list;
+  d_from : section_path }
 
 type recipe =
   | Cooked of constr
@@ -22,7 +27,7 @@ type constant_body = {
 
 type constant_entry = section_path * constant_body
 
-val is_defined : constant_body -> bool
+let is_defined cb = 
+  match cb.const_body with Some _ -> true | _ -> false
 
-val is_opaque : constant_body -> bool
-
+let is_opaque cb = cb.const_opaque

@@ -33,7 +33,7 @@ type mutual_inductive_body = {
 
 type mutual_inductive_entry = section_path * mutual_inductive_body
 
-val mind_type_finite : mutual_inductive_body -> int -> bool
+let mind_type_finite mib i = mib.mind_packets.(i).mind_finite
 
 type mind_specif = {
   mis_sp : section_path;
@@ -42,12 +42,12 @@ type mind_specif = {
   mis_args : constr array;
   mis_mip : mutual_inductive_packet }
 
-val mis_ntypes : mind_specif -> int
-val mis_nconstr : mind_specif -> int
-val mis_nparams : mind_specif -> int
-val mis_kd : mind_specif -> sorts list
-val mis_kn : mind_specif -> sorts list
-val mis_recargs : mind_specif -> (recarg list) array array
+let mis_ntypes mis = mis.mis_mib.mind_ntypes
+let mis_nconstr mis = Array.length (mis.mis_mip.mind_consnames)
+let mis_nparams mis = mis.mis_mib.mind_nparams
+let mis_kd mis = mis.mis_mip.mind_kd
+let mis_kn mis = mis.mis_mip.mind_kn
+let mis_recargs mis =
+  Array.map (fun mip -> mip.mind_listrec) mis.mis_mib.mind_packets
 
-val mind_nth_type_packet : 
-  mutual_inductive_body -> int -> mutual_inductive_packet
+let mind_nth_type_packet mib n = mib.mind_packets.(n)

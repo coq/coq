@@ -6,7 +6,9 @@ open Pp
 open Term
 open Generic
 open Names
+open Inductive
 open Environ
+open Instantiate
 open Univ
 open Evd
 
@@ -130,11 +132,12 @@ let red_under (md,r) rk =
  * after a Reset.  * This type is not exported. Only its two
  * instantiations (cbv or lazy) are.
  *)
+
 type ('a, 'b) infos = {
   i_flags : flags;
   i_repr : ('a, 'b) infos -> constr -> 'a;
-  i_env   : 'b unsafe_env;
-  i_tab   : (constr, 'a) Hashtbl.t }
+  i_env : 'b unsafe_env;
+  i_tab : (constr, 'a) Hashtbl.t }
 
 let const_value_cache info c =
   try  
@@ -302,6 +305,9 @@ let fixp_reducible redfun flgs op stk =
   else 
     false
 
+let mindsp_nparams env sp =
+  let mib = lookup_mind sp env in mib.mind_nparams
+
 (* The main recursive functions
  *
  * Go under applications and cases (pushed in the stack), expand head
@@ -311,8 +317,8 @@ let fixp_reducible redfun flgs op stk =
  * the function returns the pair of a cbv_value and its stack.  *
  * Invariant: if the result of norm_head is CONSTR or FIXP, it last
  * argument is [].  Because we must put all the applied terms in the
- * stack.
- *)
+ * stack. *)
+
 let rec norm_head info env t stack =
   (* no reduction under binders *)
   match t with
@@ -488,8 +494,10 @@ let cbv_norm infos constr =
  * between 2 lifted copies of a given term FFROZEN is a delayed
  * substitution applied to a constr
  *)
-type 'oper freeze =
-    { mutable norm: bool; mutable term: 'oper frterm }
+
+type 'oper freeze = { 
+  mutable norm: bool; 
+  mutable term: 'oper frterm }
 
 and 'oper frterm =
   | FRel of int
@@ -513,8 +521,8 @@ let is_val v = v.norm
  * interpretation of v1.
  *
  * The implementation without side effect, but losing sharing,
- * simply returns v2.
- *)
+ * simply returns v2. *)
+
 let freeze_assign v1 v2 =
   if !share then begin
       v1.norm <- v2.norm;
@@ -527,8 +535,8 @@ let freeze_assign v1 v2 =
  * resulting term takes advantage of any reduction performed in v.
  * i.e.: if (lift_frterm n v) yields w, reductions in w are reported
  * in w.term (yes: w.term, not only in w) The lifts are collapsed,
- * because we often insert lifts of 0. 
- *)
+ * because we often insert lifts of 0. *)
+
 let rec lift_frterm n v =
   match v.term with
     | FLIFT (k,f) -> lift_frterm (k+n) f
@@ -540,8 +548,7 @@ let rec lift_frterm n v =
 (* lift a freeze, keep sharing, but spare records when possible (case
  * n=0 ... ) The difference with lift_frterm is that reductions in v
  * are reported only in w, and not necessarily in w.term (with
- * notations above). 
- *)
+ * notations above). *)
 let lift_freeze n v =
   match (n, v.term) with
     | (0, _) | (_, (FOP0 _ | FVAR _)) -> v   (* identity lift or closed term *)
@@ -553,8 +560,8 @@ let freeze_vect env v = Array.map (freeze env) v
 let freeze_list env l = List.map (freeze env) l
 
 (* pourrait peut-etre remplacer freeze ?! (et alors FFROZEN
- * deviendrait inutile)
- *)
+ * deviendrait inutile) *)
+
 let rec traverse_term env t =
   match t with
     | Rel i -> (match expand_rel i env with

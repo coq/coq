@@ -9,7 +9,8 @@ open Sign
 (* The type of mappings for existential variables *)
 
 type evar_body =
-    EVAR_EMPTY | EVAR_DEFINED of constr
+  | EVAR_EMPTY 
+  | EVAR_DEFINED of constr
 
 type 'a evar_info = {
   evar_concl : typed_type;        (* the type of the evar ...          *)
@@ -62,3 +63,6 @@ let non_instantiated sigma =
     [] listsp
     
 let is_evar sigma sp = in_dom sigma sp
+
+let is_defined sigma sp =
+  let info = map sigma sp in not (info.evar_body = EVAR_EMPTY)

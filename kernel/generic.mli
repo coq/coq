@@ -113,6 +113,8 @@ val put_DLAMSV_subst : identifier list -> 'a term array -> 'a term
 val rel_vect : int -> int -> 'a term array
 val rel_list : int -> int -> 'a term list
 
+val count_dlam : 'a term -> int
+
 (* For hash-consing use *)
 val hash_term :
   ('a term -> 'a term)
