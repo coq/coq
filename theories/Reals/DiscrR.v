@@ -59,7 +59,7 @@ Recursive Tactic Definition Sup0 :=
   | [ |- ``0<?1`` ] -> Repeat (Apply Rmult_lt_pos Orelse Apply Rplus_lt_pos; Try Apply Rlt_R0_R1 Orelse Apply Rlt_R0_R2)
   | [ |- ``?1>0`` ] -> Change ``0<?1``; Sup0.
 
-Tactic Definition SupOmega := Replace R1 with (IZR `1`); [Repeat Rewrite <- plus_IZR Orelse Rewrite <- mult_IZR; Apply IZR_lt; Omega | Reflexivity].
+Tactic Definition SupOmega := Replace ``2`` with (IZR `2`); [Replace R1 with (IZR `1`); [Replace R0 with (IZR `0`); [Repeat Rewrite <- plus_IZR Orelse Rewrite <- mult_IZR Orelse Rewrite <- Ropp_Ropp_IZR Orelse Rewrite Z_R_minus; Apply IZR_lt; Omega | Reflexivity] | Reflexivity] | Reflexivity].
   
 Recursive Tactic Definition Sup :=
   Match Context With
@@ -75,4 +75,4 @@ Lemma IZR_eq : (z1,z2:Z) z1=z2 -> (IZR z1)==(IZR z2).
 Intros; Rewrite H; Reflexivity.
 Qed.
 
-Tactic Definition RCompute := Replace R1 with (IZR `1`); [Replace R0 with (IZR `0`); [Repeat Rewrite <- plus_IZR Orelse Rewrite <- mult_IZR Orelse Rewrite <- Ropp_Ropp_IZR Orelse Rewrite Z_R_minus; Apply IZR_eq; Ring | Reflexivity] | Reflexivity].
+Tactic Definition RCompute := Replace ``2`` with (IZR `2`); [Replace R1 with (IZR `1`); [Replace R0 with (IZR `0`); [Repeat Rewrite <- plus_IZR Orelse Rewrite <- mult_IZR Orelse Rewrite <- Ropp_Ropp_IZR Orelse Rewrite Z_R_minus; Apply IZR_eq; Try Reflexivity | Reflexivity] | Reflexivity] | Reflexivity].
