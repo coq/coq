@@ -507,8 +507,7 @@ and pr_atom1 env = function
       pr_with_names (List.map (fun x -> !x) ids))) !l
       else
       hov 1 (str "simple induction" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewInduction (h,e,(ids,l))
-  | TacNewDestruct (h,(Some _ as e),(ids,l)) ->
+  | TacNewInduction (h,e,(ids,l)) ->
       duplicate false (fun (pp,ids') ->
       hov 1 (str "induction" ++ spc () ++
              pr_induction_arg (pr_constr env) h ++ 
@@ -516,12 +515,12 @@ and pr_atom1 env = function
              pr_opt (pr_eliminator env) e)) !l
   | TacSimpleDestruct h ->
       hov 1 (str "simple destruct" ++ pr_arg pr_quantified_hypothesis h)
-  | TacNewDestruct (h,None,(ids,l)) ->
+  | TacNewDestruct (h,e,(ids,l)) ->
       duplicate false (fun (pp,ids') ->
       hov 1 (str "destruct" ++ spc () ++
              pr_induction_arg (pr_constr env) h ++ 
       pr_with_names (if !pp then List.map (fun x -> !x) ids' else ids)
-(*      ++ pr_opt (pr_eliminator env) e*) )) !l
+      ++ pr_opt (pr_eliminator env) e)) !l
   | TacDoubleInduction (h1,h2) ->
       hov 1
         (str "double induction" ++ 
