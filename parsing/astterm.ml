@@ -75,8 +75,11 @@ let is_uppercase_var v =
  | _  -> false
 
 let check_uppercase loc ids =
+(* A quoi ça sert ? Pour l'extraction vers ML ? Maintenant elle est externe
   let uplid = List.filter is_uppercase_var ids in
   if uplid <> [] then warning_uppercase loc uplid
+*)
+  ()
 
 (* check that the number of pattern matches the number of matched args *)
 let mssg_number_of_patterns n pl =
