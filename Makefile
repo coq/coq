@@ -534,7 +534,7 @@ LOGICVO=\
  theories/Logic/Berardi.vo       	theories/Logic/Eqdep_dec.vo \
  theories/Logic/Decidable.vo            theories/Logic/JMeq.vo \
  theories/Logic/ClassicalDescription.vo theories/Logic/ClassicalChoice.vo \
- theories/Logic/RelationalChoice.vo
+ theories/Logic/RelationalChoice.vo     theories/Logic/Diaconescu.vo
 
 ARITHVO=\
  theories/Arith/Arith.vo        theories/Arith/Gt.vo          \
