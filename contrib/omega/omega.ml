@@ -618,7 +618,7 @@ let negation (eqs,ineqs) =
                let {body=ne;constant=c} ,kind = normal e in
                Hashtbl.add table (ne,c) (kind,e)) diseq;
   List.iter (fun e ->
-               assert (e.kind <> EQUA);
+               assert (e.kind = EQUA);
                let {body=ne;constant=c},kind = normal e in
                try 
 		 let (kind',e') = Hashtbl.find table (ne,c) in
