@@ -289,7 +289,19 @@ pour faire des rapports INRIA.
   Si un fichier Anomaly.dvi doit être distribué, s'en occuper à la main
 (ou modifier le Makefile en conséquence).
 
-C2) COMPILATION
+  Si un fichier Changes.dvi doit être distribué, s'en occuper à la main
+(ou modifier le Makefile en conséquence).
+
+C2) ESTAMPILLAGE
+
+  Faire 
+
+  cvs rtag -F V7-1 doc
+
+  pour tagger l'archive avec le numéro de la version de Coq auquel
+  elle correspond
+
+C3) COMPILATION
 
   Pour compiler l'ensemble des fichiers de documentation à installer
 sous ftp et/ou sur le serveur web, faire dans le répertoire doc
@@ -305,7 +317,7 @@ la doc séparemment depuis le répertoire doc avec
 
   cvs tag -F V6-2-5 * library/*
 
-C3) INSTALLATION SOUS FTP
+C4) INSTALLATION SOUS FTP
 
     Après avoir positionner la variable VERSION à V6.2.5, installer
 la doc sous ftp depuis le répertoire doc avec
