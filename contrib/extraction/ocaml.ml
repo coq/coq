@@ -23,6 +23,8 @@ open Nametab
 
 let current_module = ref None
 
+let cons_cofix = ref Refset.empty
+
 (*s Some utility functions. *)
 
 let rec collapse_type_app = function
@@ -199,27 +201,46 @@ let rec pp_expr par env args =
     | MLglob r -> 
 	apply (pp_global r)
     | MLcons (r,[]) ->
-	pp_global r
+	if Refset.mem r !cons_cofix then 
+	  (open_par par ++ str "lazy " ++ pp_global r ++ close_par par)
+	else pp_global r
     | MLcons (r,[a]) ->
-	(open_par par ++ pp_global r ++ spc () ++
+	if Refset.mem r !cons_cofix then 
+	  (open_par par ++ str "lazy (" ++
+	   pp_global r ++ spc () ++
+	   pp_expr true env [] a ++ str ")" ++ close_par par)
+	else
+	  (open_par par ++ pp_global r ++ spc () ++
 	   pp_expr true env [] a ++ close_par par)
     | MLcons (r,args') ->
-	(open_par par ++ pp_global r ++ spc () ++
+	if Refset.mem r !cons_cofix then 
+	  (open_par par ++ str "lazy (" ++ pp_global r ++ spc () ++
+	   pp_tuple (pp_expr true env []) args' ++ str ")" ++ close_par par)
+	else
+	  (open_par par ++ pp_global r ++ spc () ++
 	   pp_tuple (pp_expr true env []) args' ++ close_par par)
-    | MLcase (t,[|x|])->
-	apply 
-	  (hov 0 (open_par par' ++ str "let " ++  
-		    pp_one_pat 
-		      (str " =" ++ spc () ++
-			 pp_expr false env [] t ++ spc () ++ str "in") 
+    | MLcase (t,[|(r,_,_) as x|])->
+	let expr = if Refset.mem r !cons_cofix then 
+	  (str "Lazy.force" ++ spc () ++ pp_expr true env [] t)
+	else 
+	  (pp_expr false env [] t) 
+	in apply 
+	     (hov 0 (open_par par' ++ str "let " ++  
+		     pp_one_pat 
+		       (str " =" ++ spc () ++ expr ++ spc () ++ str "in") 
 		      env x ++
 		    close_par par'))
     | MLcase (t, pv) ->
-      	apply
-      	  (open_par par' ++
-      	     v 0 (str "match " ++ pp_expr false env [] t ++ str " with" ++
-		    fnl () ++ str "  " ++ pp_pat env pv) ++
-	     close_par par')
+	let r,_,_ = pv.(0) in 
+	let expr = if Refset.mem r !cons_cofix then 
+	  (str "Lazy.force" ++ spc () ++ pp_expr true env [] t)
+	else 
+	  (pp_expr false env [] t) 	
+	in apply
+      	     (open_par par' ++
+      	      v 0 (str "match " ++ expr ++ str " with" ++
+		   fnl () ++ str "  " ++ pp_pat env pv) ++
+	      close_par par')
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' (Some i) (Array.of_list (List.rev ids'),defs) args
@@ -280,8 +301,10 @@ and pp_function env f t =
     let ktl = array_map_to_list (fun (_,l,t0) -> (List.length l,t0)) pv in
     not (List.exists (fun (k,t0) -> Mlutil.occurs (k+1) t0) ktl)
   in
+  let is_not_cofix pv = let (r,_,_) = pv.(0) in not (Refset.mem r !cons_cofix) 
+  in					  
   match t' with 
-    | MLcase(MLrel 1,pv) ->
+    | MLcase(MLrel 1,pv) when is_not_cofix pv ->
 	if is_function pv then
 	  (f ++ pr_binding (List.rev (List.tl bl)) ++
        	     str " = function" ++ fnl () ++
@@ -303,7 +326,7 @@ let pp_ast a = hov 0 (pp_expr false (empty_env ()) [] a)
 let pp_parameters l = 
   (pp_tuple pp_tvar l ++ space_if (l<>[]))
 
-let pp_one_inductive (pl,name,cl) =
+let pp_one_inductive prefix (pl,name,cl) =
   let pp_constructor (id,l) =
     (pp_global id ++
        match l with
@@ -312,7 +335,7 @@ let pp_one_inductive (pl,name,cl) =
       	       	    prlist_with_sep 
 		      (fun () -> (spc () ++ str "* ")) (pp_type true) l))
   in
-  (pp_parameters pl ++ pp_type_global name ++ str " =" ++ 
+  (pp_parameters pl ++ str prefix ++ pp_type_global name ++ str " =" ++ 
      (fnl () ++
 	v 0 (str "    " ++
 	       prlist_with_sep (fun () -> (fnl () ++ str "  | "))
@@ -320,26 +343,36 @@ let pp_one_inductive (pl,name,cl) =
   
 let pp_inductive il =
   (str "type " ++
-     prlist_with_sep (fun () -> (fnl () ++ str "and ")) pp_one_inductive il ++
-     fnl ())
+   prlist_with_sep (fun () -> (fnl () ++ str "and ")) (pp_one_inductive "") il ++
+   fnl ())
+
+let pp_coinductive_preamble (pl,name,_) = 
+  (pp_parameters pl ++ pp_type_global name ++ str " = " ++ 
+    pp_parameters pl ++ str "__" ++ pp_type_global name ++ str " Lazy.t")
+
+let pp_coinductive il = 
+  (str "type " ++ 
+   prlist_with_sep (fun () -> (fnl () ++ str "and ")) pp_coinductive_preamble il ++
+   fnl () ++ str "and " ++ 
+   prlist_with_sep (fun () -> (fnl () ++ str "and ")) (pp_one_inductive "__") il ++
+   fnl ())
+ 
 
 (*s Pretty-printing of a declaration. *)
-
-let warning_coinductive r = 
-  warn (hov 0 
-	  (str "You are trying to extract the CoInductive definition" ++ spc () ++
-	     Printer.pr_global r ++ spc () ++ str "in Ocaml." ++ spc () ++ 
-	     str "This is in general NOT a good idea," ++ spc () ++ 
-	     str "since Ocaml is not lazy." ++ spc () ++
-	     str "You should consider using Haskell instead."))
 
 let pp_decl = function
   | Dtype ([], _) -> 
       if P.toplevel then hov 0 (str " prop (* Logic inductive *)" ++ fnl ())
       else (mt ()) 
-  | Dtype ((_,r,_)::_ as i, cofix) -> 
-      if cofix && (not P.toplevel) then if_verbose warning_coinductive r; 
-      hov 0 (pp_inductive i)
+  | Dtype (i, cofix) -> 
+      if cofix && (not P.toplevel) then begin
+	List.iter   
+	  (fun (_,_,l) -> 
+	     List.iter (fun (r,_) -> 
+			  cons_cofix := Refset.add r !cons_cofix)  l) i; 
+	hov 0 (pp_coinductive i)
+      end else 
+	hov 0 (pp_inductive i)
   | Dabbrev (r, l, t) ->
       hov 0 (str "type" ++ spc () ++ pp_parameters l ++ 
 	       pp_type_global r ++ spc () ++ str "=" ++ spc () ++ 

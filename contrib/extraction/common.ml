@@ -199,6 +199,7 @@ let init_global_ids lang =
   global_ids := !keywords
 
 let extract_to_file f prm decls =
+  cons_cofix := Refset.empty;
   current_module := prm.mod_name;
   init_global_ids prm.lang;
   let preamble,pp_decl = match prm.lang,prm.mod_name with 
