@@ -1,0 +1,99 @@
+(******************************************************************************)
+(*                                                                            *)
+(*                               PROJECT HELM                                 *)
+(*                                                                            *)
+(*                     A tactic to print Coq objects in XML                   *)
+(*                                                                            *)
+(*                Claudio Sacerdoti Coen <sacerdot@cs.unibo.it>               *)
+(*                                 22/11/1999                                 *)
+(******************************************************************************)
+
+This tactic is aimed to exporting a piece of Coq library in XML format.
+It adds a few new commands to the vernacular:
+
+ Print XML id.                     It prints in XML the object whose name is id
+                                   Only the most cooked available form of the
+                                   term is printed
+ Print XML File "filename" id.     It prints in XML the object whose name is id
+                                   on the file whose name is filename
+                                   Only the most cooked available form of the
+                                   term is printed
+ Show XML Proof.                   It prints in XML the current proof in
+                                   progress
+ Show XML File "filename" Proof.   It prints in XML the current proof in
+                                   progress on the file whose name is filename
+ Print XML Dir id.                 It prints recursively in XML the closed
+                                   section whose name is id. The terms are
+                                   printed in their uncooked form plus the
+                                   informations on the parameters of their
+                                   most cooked form
+ Print XML Dir Disk "dirname" id.  It prints recursively in XML the closed
+                                   section whose name is id rooting the dir
+                                   corresponding to the section to the dir
+                                   whose name is dirname.  The terms are
+                                   printed in their uncooked form plus the
+                                   informations on the parameters of their
+                                   most cooked form
+ Print XML All.                    It prints what is the structure of the
+                                   current environment of Coq. No terms are
+                                   printed. Useful only for debugging
+
+ If xmlcommand.ml is compiled with the configuration parameter verbose
+ set to true, then the verbosity of all the previous commands will be
+ increased, except the one of Print XML All (that is always very verbose :-)
+
+Important note (fixing the uris):
+ 
+ The previous new commands are all damaged because they produce xml files
+ in which all the uris to other xml files are broken (they are only suffixes
+ of the right uris). So, to fix the uris, you must use the script fix_uri.pl
+ giving to it on stdin all the filenames of the uris to repair. The script
+ will modify all the files fixing all the uris in them. An uri will be fixed
+ iff it is a reference to one of the files whose name has been given on stdin.
+
+How to compile:
+
+ Edit the configuration parameters at the very beginning of file xmlcommand.ml:
+  dtdname is the complete path-name of the dtd file
+  verbose if set to true, increases the verbosity of all the "Print something"
+           commands (useful only for debugging)
+ Then do "make clean ; make all ; make opt ; make install-library"
+
+The files forming the tactic are:
+
+ Xml.v                  It adds new grammar rules to Coq environment.
+ xmlentries.ml          Links the functions implementing the new commands to
+                        the grammar rules declared in Xml.v
+ xmlcommand.ml          Defines the functions that implements the new commands
+                        Uses ntrefiner.ml, cooking.ml and xml.ml
+                        Contains also some configuration parameters
+ ntrefiner.ml           This file is copied verbatim from the natural tactic
+                        and used to get informations on the proof in progress
+ cooking.ml             Contains a function that returns the list of the
+                        ingredients for cooking an uncooked term
+ xml.ml                 The definition of a pretty-printer for XML and the one
+                        of the stream of commands to the pp
+
+The files to export the standard library of Coq are:
+
+ provacoq.v             Loads one at a time all the provacoqXXX files
+ provacoqXxx.v	        If Loaded it exports the theory XXX of the standard
+                        library of Coq
+
+Other files useful to test the new commands:
+
+ prova.v                Declares and exports some objects; exports also the
+                        theories provastruct, provastruct2 e provastruct3
+ provastruct.v          An example theory
+ provastruct2.v         Another example theory
+ provastruct3.v         Yet another example theory
+
+Other files:
+
+ README	               This file
+ fix_uri.pl            The script that fixes the broken uris in the xml files
+ Makefile              Targets are "all", "opt", "clean" and "install-library"
+ .depend               The dependecies file used by make
+ mkdirs.sh             Make all the dirs needed to export the standard library
+                        of Coq via provacoq.v
+ examples              A simbolic link to the root of the exported library

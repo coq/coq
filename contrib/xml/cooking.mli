@@ -1,0 +1,20 @@
+(******************************************************************************)
+(*                                                                            *)
+(*                               PROJECT HELM                                 *)
+(*                                                                            *)
+(*                     A tactic to print Coq objects in XML                   *)
+(*                                                                            *)
+(*                Claudio Sacerdoti Coen <sacerdot@cs.unibo.it>               *)
+(*                                 17/11/1999                                 *)
+(*                                                                            *)
+(* This module compute the list of variables occurring in a term from the     *)
+(* term and the list of variables possibly occuring in it                     *)
+(*                                                                            *)
+(******************************************************************************)
+
+(* add_cooking_information csp vl                               *)
+(*  when  csp is the section path of the most cooked object co  *)
+(*  and   vl  is the list of variables possibly occuring in co  *)
+(* returns the list of variables actually occurring in co       *)
+val add_cooking_information :
+  Names.section_path -> string list list -> string
