@@ -53,23 +53,15 @@ clean:
 #	Extraction of Reals
 #
 
-REALSML:= \
-theories/Reals/typeSyntax.ml \
-theories/Reals/addReals.ml \
-theories/Reals/rdefinitions.ml \
-theories/Reals/raxioms.ml \
-theories/Reals/r_Ifp.ml \
-theories/Reals/rbase.ml \
-theories/Reals/rbasic_fun.ml \
-theories/Reals/rlimit.ml \
-theories/Reals/rderiv.ml
-
+REALSALLVO:=$(shell cd ../../..; ls -tr theories/Reals/*.vo)
+REALSVO:=$(filter-out theories/Reals/Rsyntax.vo,$(REALSALLVO))
+REALSML:=$(shell test -x v2ml && ./v2ml $(REALSVO))
 REALSCMO:= $(patsubst %.ml,%.cmo,$(REALSML))
 
 reals: all $(REALSML) $(REALSCMO)
 
 realsml: 
-	./extract_reals
+	./extract_reals $(REALSVO)
 	cp -f addReals.ml theories/Reals
 
 $(REALSML): realsml

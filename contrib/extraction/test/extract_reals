@@ -13,19 +13,15 @@ Extract Constant Rinv => "(fun x -> 1.0 /. x)".
 Extract Constant Rlt => "(<)".
 Extract Constant up => "AddReals.my_ceil".
 Extract Constant total_order_T => "AddReals.total_order_T".
-Extraction Module Rdefinitions.
-Extraction Module TypeSyntax.
-Extraction Module Raxioms.
-Extraction Module Rbase.   
-Extraction Module R_Ifp.
-Extraction Module Rbasic_fun.
-Extraction Module Rlimit.
-Extraction Module Rfunctions.
-Extraction Module Rderiv.
 EOF
+for f in $*; do
+    ff=`basename $f .vo`
+    echo "Require $ff." >> /tmp/extr$$.v
+    echo "Extraction Module $ff." >> /tmp/extr$$.v
+done
 ../../../bin/coqtop.opt -silent -batch -load-vernac-source /tmp/extr$$.v
 out=$?
-rm -f /tmp/extr$$.v
+#rm -f /tmp/extr$$.v
 exit $out
 
 
