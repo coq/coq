@@ -1,0 +1,386 @@
+(***********************************************************************)
+(*  v      *   The Coq Proof Assistant  /  The Coq Development Team    *)
+(* <O___,, *        INRIA-Rocquencourt  &  LRI-CNRS-Orsay              *)
+(*   \VV/  *************************************************************)
+(*    //   *      This file is distributed under the terms of the      *)
+(*         *       GNU Lesser General Public License Version 2.1       *)
+(***********************************************************************)
+
+(*i $Id$ i*)
+
+open Filename
+open Printf
+open Output
+open Pretty
+
+(*s \textbf{Usage.} Printed on error output. *)
+
+let usage () =
+  prerr_endline "";
+  prerr_endline "Usage: coqdoc <options and files>";
+  prerr_endline "  --html          produce a HTML document (default)";
+  prerr_endline "  --latex         produce a LaTeX document";
+  prerr_endline "  --texmacs       produce a TeXmacs document";
+  prerr_endline "  --dvi           output the DVI";
+  prerr_endline "  --ps            output the PostScript";
+  prerr_endline "  -o <file>       write output in file <file>";
+  prerr_endline "                  (only with -latex, -dvi or -ps)";
+  prerr_endline "  -d <dir>        output files into directory <dir>";
+  prerr_endline "  -g              (gallina) skip proofs";
+  prerr_endline "  -s              (short) no titles for files";
+  prerr_endline "  -l              light mode (only defs and statements)";
+  prerr_endline "  -t <string>     give a title to the document";
+  prerr_endline "  --body-only     suppress LaTeX/HTML header and trailer";
+  prerr_endline "  --no-index      do not output the index";
+  prerr_endline "  --mutli-index   index split in multiple files";
+  prerr_endline "  --toc           output a table of contents";
+  prerr_endline "  --vernac <file> consider <file> as a .v file";
+  prerr_endline "  --tex <file>    consider <file> as a .tex file";
+  prerr_endline "  -p <string>     insert <string> in LaTeX preamble";
+  prerr_endline "  --files-from <file>";
+  prerr_endline "                  read file names to process in <file>";
+  prerr_endline "  --quiet         quiet mode";
+  prerr_endline "  --glob-from <f> read Coq globalizations from file <f>";
+  prerr_endline "  --no-externals  no links to Coq standard library";
+  prerr_endline "  --coqlib <url>  set URL for Coq standard library";
+  prerr_endline "                  (default is http://coq.inria.fr/library/)";
+  prerr_endline "  --R dir coqdir  map physical dir to Coq dir";
+  prerr_endline "  --latin1        set ISO-8859-1 input language";
+  prerr_endline "  --utf8          set UTF-8 input language";
+  prerr_endline "  --charset       set HTML charset";
+  prerr_endline "  --inputenc      set LaTeX input encoding";
+  prerr_endline "";
+  prerr_endline 
+    "On-line documentation at http://www.lri.fr/~filliatr/coqdoc/\n";
+  exit 1
+
+(*s \textbf{Banner.} Always printed. Notice that it is printed on error
+    output, so that when the output of [coqdoc] is redirected this header
+    is not (unless both standard and error outputs are redirected, of 
+    course). *)
+
+let banner () =
+  eprintf "This is coqdoc version %s, compiled on %s\n"
+    Coq_config.version Coq_config.compile_date;
+  flush stderr
+    
+
+(*s \textbf{Separation of files.} Files given on the command line are
+    separated according to their type, which is determined by their
+    suffix.  Coq files have suffixe \verb!.v! or \verb!.g! and \LaTeX\
+    files have suffix \verb!.tex!. *)
+
+let check_if_file_exists f =
+  if not (Sys.file_exists f) then begin
+    eprintf "\ncoqdoc: %s: no such file\n" f;
+    exit 1
+  end
+
+let paths = ref []
+
+let add_path m l = paths := (m,l) :: !paths
+
+let exists_dir dir =
+  try let _ = Unix.opendir dir in true with Unix.Unix_error _ -> false
+
+let add_rec_path f l =
+  let rec traverse abs rel =
+    add_path abs rel;
+    let dirh = Unix.opendir abs in
+    try
+      while true do
+	let f = Unix.readdir dirh in
+	if f <> "" && f.[0] <> '.' && f <> "CVS" then
+	  let abs' = Filename.concat abs f in
+	  try 
+	    if exists_dir abs' then  traverse abs' (rel ^ "." ^ f)
+	  with Unix.Unix_error _ -> 
+	    ()
+      done
+    with End_of_file ->
+      Unix.closedir dirh
+  in
+  if exists_dir f then traverse f l
+
+(* turn A/B/C into A.B.C *)
+let make_path s =
+  let s = String.copy s in
+  for i = 0 to String.length s - 1 do
+    if s.[i] = '/' then s.[i] <- '.'
+  done;
+  s
+
+let chop_prefix p s =
+  let np = String.length p in
+  let ns = String.length s in
+  if ns >= np && String.sub s 0 np = p then String.sub s np (ns - np) else s
+
+let coq_module file = 
+  let f = chop_extension file in
+  let f = chop_prefix "./" f in (* remove leading ./ *)
+  let rec trypath = function
+    | [] -> 
+	make_path f
+    | (p,lg) :: r ->
+	let p_file = Filename.concat p file in
+	if Sys.file_exists p_file then
+	  make_path (Filename.concat lg f)
+	else
+	  trypath r
+  in
+  trypath !paths
+
+let what_file f =
+  check_if_file_exists f;
+  if check_suffix f ".v" || check_suffix f ".g" then
+    Vernac_file (f, coq_module f)
+  else if check_suffix f ".tex" then
+    Latex_file f
+  else begin
+    eprintf "\ncoqdoc: don't know what to do with %s\n" f;
+    exit 1
+  end
+
+(*s \textbf{Reading file names from a file.} 
+    File names may be given
+    in a file instead of being given on the command
+    line. [(files_from_file f)] returns the list of file names contained
+    in the file named [f]. These file names must be separated by spaces,
+    tabulations or newlines.
+ *)
+
+let files_from_file f =
+  let files_from_channel ch =
+    let buf = Buffer.create 80 in
+    let l = ref [] in
+    try
+      while true do
+	match input_char ch with
+	  | ' ' | '\t' | '\n' ->
+	      if Buffer.length buf > 0 then l := (Buffer.contents buf) :: !l;
+	      Buffer.clear buf
+	  | c -> 
+	      Buffer.add_char buf c
+      done; []
+    with End_of_file ->
+      List.rev !l
+  in
+  try
+    check_if_file_exists f;
+    let ch = open_in f in
+    let l = files_from_channel ch in
+    close_in ch;l
+  with Sys_error s -> begin
+    eprintf "\ncoqdoc: cannot read from file %s (%s)\n" f s;
+    exit 1
+  end
+
+(*s \textbf{Parsing of the command line.} *)
+
+let output_file = ref ""
+let dvi = ref false
+let ps = ref false
+
+let parse () =
+  let files = ref [] in
+  let add_file f = files := f :: !files in
+  let rec parse_rec = function
+    | [] -> ()
+
+    | ("-nopreamble" | "--nopreamble" | "--no-preamble"
+    |  "-bodyonly"   | "--bodyonly"   | "--body-only") :: rem ->
+	header_trailer := false; parse_rec rem
+    | ("-p" | "--preamble") :: s :: rem ->
+	push_in_preamble s; parse_rec rem
+    | ("-p" | "--preamble") :: [] ->
+	usage ()
+    | ("-noindex" | "--noindex" | "--no-index") :: rem ->
+	index := false; parse_rec rem
+    | ("-multi-index" | "--multi-index") :: rem ->
+	multi_index := true; parse_rec rem
+    | ("-toc" | "--toc" | "--table-of-contents") :: rem ->
+	toc := true; parse_rec rem
+    | ("-o" | "--output") :: f :: rem ->
+	output_file := f; parse_rec rem
+    | ("-o" | "--output") :: [] -> 
+	usage ()
+    | ("-d" | "--directory") :: dir :: rem ->
+	output_dir := dir; parse_rec rem
+    | ("-d" | "--directory") :: [] -> 
+	usage ()
+    | ("-s" | "--short") :: rem ->
+	short := true; parse_rec rem
+    | ("-l" | "-light" | "--light") :: rem ->
+	gallina := true; light := true; parse_rec rem
+    | ("-g" | "-gallina" | "--gallina") :: rem ->
+	gallina := true; parse_rec rem
+    | ("-t" | "-title" | "--title") :: s :: rem ->
+	title := s; parse_rec rem
+    | ("-t" | "-title" | "--title") :: [] ->
+	usage ()
+    | ("-latex" | "--latex") :: rem ->
+	Output.target_language := LaTeX; parse_rec rem
+    | ("-dvi" | "--dvi") :: rem ->
+	Output.target_language := LaTeX; dvi := true; parse_rec rem
+    | ("-ps" | "--ps") :: rem ->
+	Output.target_language := LaTeX; ps := true; parse_rec rem
+    | ("-html" | "--html") :: rem ->
+	Output.target_language := HTML; parse_rec rem
+    | ("-texmacs" | "--texmacs") :: rem ->
+	Output.target_language := TeXmacs; parse_rec rem
+
+    | ("-charset" | "--charset") :: s :: rem ->
+	Output.charset := s; parse_rec rem
+    | ("-charset" | "--charset") :: [] ->
+	usage ()
+    | ("-inputenc" | "--inputenc") :: s :: rem ->
+	Output.inputenc := s; parse_rec rem
+    | ("-inputenc" | "--inputenc") :: [] ->
+	usage ()
+   | ("-latin1" | "--latin1") :: rem ->
+	Output.set_latin1 (); parse_rec rem
+    | ("-utf8" | "--utf8") :: rem ->
+	Output.set_utf8 (); parse_rec rem
+
+    | ("-q" | "-quiet" | "--quiet") :: rem ->
+	quiet := true; parse_rec rem
+
+    | ("-h" | "-help" | "-?" | "--help") :: rem ->
+	banner (); usage ()
+    | ("-v" | "-version" | "--version") :: _ ->
+	banner (); exit 0
+
+    | ("-vernac-file" | "--vernac-file") :: f :: rem -> 
+	check_if_file_exists f;
+	add_file (Vernac_file (f, coq_module f)); parse_rec rem
+    | ("-vernac-file" | "--vernac-file") :: [] ->
+	usage ()
+    | ("-tex-file" | "--tex-file") :: f :: rem -> 
+	add_file (Latex_file f); parse_rec rem
+    | ("-tex-file" | "--tex-file") :: [] ->
+	usage ()
+    | ("-files" | "--files" | "--files-from") :: f :: rem ->
+	List.iter (fun f -> add_file (what_file f)) (files_from_file f); 
+	parse_rec rem
+    | ("-files" | "--files") :: [] ->
+	usage ()
+
+    | "-R" :: path :: log :: rem -> 
+	add_path path log; parse_rec rem
+    | "-R" :: ([] | [_]) ->
+	usage ()
+    | ("-glob-from" | "--glob-from") :: f :: rem ->
+	Index.read_glob f; parse_rec rem
+    | ("-glob-from" | "--glob-from") :: [] ->
+	usage ()
+    | ("--no-externals" | "-no-externals" | "-noexternals") :: rem ->
+	Output.externals := false; parse_rec rem
+    | ("--coqlib" | "-coqlib") :: u :: rem ->
+	Output.coqlib := u; parse_rec rem
+    | ("--coqlib" | "-coqlib") :: [] ->
+	usage ()
+
+    | f :: rem -> 
+	add_file (what_file f); parse_rec rem
+  in 
+  parse_rec (List.tl (Array.to_list Sys.argv));
+  List.rev !files
+
+
+(*s The following function produces the output. The default output is
+    the \LaTeX\ document: in that case, we just call [Web.produce_document]. 
+    If option \verb!-dvi!, \verb!-ps! or \verb!-html! is invoked, then
+    we make calls to \verb!latex! or \verb!dvips!  accordingly. *)
+
+let locally dir f x =
+  let cwd = Sys.getcwd () in
+  try
+    Sys.chdir dir; let y = f x in Sys.chdir cwd; y
+  with e ->
+    Sys.chdir cwd; raise e
+
+let clean_temp_files basefile =
+  let remove f = try Sys.remove f with _ -> () in
+  remove (basefile ^ ".tex");
+  remove (basefile ^ ".log");
+  remove (basefile ^ ".aux");
+  remove (basefile ^ ".dvi");
+  remove (basefile ^ ".ps");
+  remove (basefile ^ ".haux");
+  remove (basefile ^ ".html")
+
+let clean_and_exit file res = clean_temp_files file; exit res
+
+let cat file =
+  let c = open_in file in
+  try
+    while true do print_char (input_char c) done
+  with End_of_file ->
+    close_in c
+
+let copy src dst =
+  let cin = open_in src 
+  and cout = open_out dst in
+  try
+    while true do Pervasives.output_char cout (input_char cin) done
+  with End_of_file ->
+    close_in cin; close_out cout
+
+let produce_output fl =
+  if not (!dvi || !ps) then begin
+    if !output_file <> "" then set_out_file !output_file;
+    produce_document fl
+  end else begin
+    let texfile = temp_file "coqdoc" ".tex" in
+    let basefile = chop_suffix texfile ".tex" in
+    set_out_file texfile;
+    produce_document fl;
+    let command = 
+      let file = basename texfile in
+      let file = 
+	if !quiet then sprintf "'\\nonstopmode\\input{%s}'" file else file 
+      in
+      sprintf "(latex %s && latex %s) 1>&2 %s" file file
+	(if !quiet then "> /dev/null" else "")
+    in
+    let res = locally (dirname texfile) Sys.command command in
+    if res <> 0 then begin
+      eprintf "Couldn't run LaTeX successfully\n"; 
+      clean_and_exit basefile res
+    end;
+    let dvifile = basefile ^ ".dvi" in
+    if !dvi then begin
+      if !output_file <> "" then 
+	(* we cannot use Sys.rename accross file systems *)
+	copy dvifile !output_file 
+      else 
+	cat dvifile
+    end;
+    if !ps then begin
+      let psfile = 
+	if !output_file <> "" then !output_file else basefile ^ ".ps" 
+      in
+      let command = 
+	sprintf "dvips %s -o %s %s" dvifile psfile 
+	  (if !quiet then "> /dev/null 2>&1" else "")
+      in
+      let res = Sys.command command in
+      if res <> 0 then begin
+	eprintf "Couldn't run dvips successfully\n"; 
+	clean_and_exit basefile res
+      end;
+      if !output_file = "" then cat psfile
+    end;
+    clean_temp_files basefile
+  end
+
+
+(*s \textbf{Main program.} Print the banner, parse the command line,
+    read the files and then call [produce_document] from module [Web]. *)
+
+let main () =
+  let files = parse () in
+  if not !quiet then banner ();
+  if List.length files > 0 then produce_output files
+
+let _ = Printexc.catch main ()
