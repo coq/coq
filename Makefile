@@ -207,6 +207,13 @@ parsing: $(PARSING)
 pretyping: $(PRETYPING)
 toplevel: $(TOPLEVEL)
 
+# special binaries for debugging
+
+EXTRACTIONCMO=contrib/extraction/ocaml.cmo contrib/extraction/extraction.cmo 
+
+bin/coq-extraction: $(COQMKTOP) $(CMO) $(USERTACCMO)
+	$(COQMKTOP) -top $(INCLUDES) $(CAMLDEBUG) -o $@ $(EXTRACTIONCMO)
+
 ###########################################################################
 # tests
 ###########################################################################

@@ -219,7 +219,7 @@ let tmp_dynlink()=
   let _ = Sys.command ("echo \"Dynlink.init();;\" > "^tmp) in
   let _ = Sys.command (Coq_config.camllib^"/extract_crc"^(crc_cmd
       Coq_config.camllib)^(crc_cmd Coq_config.camlp4lib)^(rec_crc_cmd
-      (Coq_config.coqtop^"/src"))^" >> "^tmp) in
+      Coq_config.coqtop)^" >> "^tmp) in
   let _ = Sys.command ("echo \";;\" >> "^tmp) in
   let _ = 
     Sys.command ("echo \"Dynlink.add_available_units crc_unit_list;;\" >> "^

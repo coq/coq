@@ -7,3 +7,4 @@ coqdep
 coq_makefile
 gallina
 coq-tex
+coq-extraction
