@@ -1791,35 +1791,59 @@ incompatibilities.
 
 \SeeAlso file \texttt{contrib/Rocq/DEMOS/Demo\_tauto.v}
 
+\subsection{{\tt Firstorder}}\tacindex{Firstorder}}
+\label{Firstorder}
+
+The tactic Firstorder is an {\it experimental} extension of Tauto to 
+first-order reasoning, written by Pierre Corbineau. 
+It is not restricted to usual logical connectives but
+instead may reason about any first-order class inductive definition.
+
+\begin{Variants}
+ \item {\tt Firstorder {\tac}}\\
+   \tacindex{\tt Firstorder {\tac}}
+   Tries to solve the goal with {\tac} when no logical rule may apply.
+ \item {\tt Firstorder with \ident$_1$ \dots\ \ident$_n$ }\\
+   \tacindex{\tt Firstorder with}
+   Adds lemmata \ident$_1$ \dots\ \ident$_n$ to the proof-search
+   environment.
+ \item {\tt Firstorder using \ident$_1$ \dots\ \ident$_n$ }\\
+   \tacindex{\tt Firstorder using}
+   Adds lemmata in {\tt Auto} Hints bases \ident$_1$ \dots\ \ident$_n$
+   to the proof-search environment.
+\end{Variants}
+
+Proof-search is bounded by a depth parameter which can be set by typing the
+{\nobreak \tt Set Firstorder Depth $n$} \comindex{Set Firstorder Depth} 
+vernacular command.
+
 \subsection{{\tt Jp} {\em (Jprover)}}\tacindex{Jp {\em (Jprover)}}
 \label{Jprover}
 
-The tactic \texttt{Jp}, due to Huang Guan-Shieng, is a direct port of
-the {\em Jprover}\cite{SLKN01} semi-decision procedure for first-order
-intuitionistic logic implemented in {\em Nuprl}\cite{Kre02}. It is a
-connection-based procedure restricted to the intuitionnistic case by a
-constraint solver. 
+The tactic \texttt{Jp}, due to Huang Guan-Shieng, is an {\it
+  experimental} port of the {\em Jprover}\cite{SLKN01} semi-decision 
+procedure for first-order intuitionistic logic implemented in {\em
+  NuPRL}\cite{Kre02}. 
 
-Search is bounded by a multiplicity parameter indicating how many
-copies of a formula may be used in the proof process. 
-For instance, a multiplicity of 1 restricts Jp to the
-intuitionistic first-order logic without contraction (but with weakening).
+Search may optionnaly be bounded by a multiplicity parameter
+indicating how many (at most) copies of a formula may be used in 
+the proof process, its absence may lead to non-termination of the tactic.
 
-\begin{coq_eval}
-Variable S:Set.
-Variables P Q:S->Prop.
-Variable f:S->S.
-\end{coq_eval}
+%\begin{coq_eval}
+%Variable S:Set.
+%Variables P Q:S->Prop.
+%Variable f:S->S.
+%\end{coq_eval}
 
-\begin{coq_example*}
-Lemma example: (exists x |P x\/Q x)->(exists x |P x)\/(exists x |Q x).
-jp.
-Qed.
+%\begin{coq_example*}
+%Lemma example: (exists x |P x\/Q x)->(exists x |P x)\/(exists x |Q x).
+%jp.
+%Qed.
 
-Lemma example2: (forall x ,P x->P (f x))->forall x,P x->P (f(f x)).
-jp.
-Qed.
-\end{coq_example*}
+%Lemma example2: (forall x ,P x->P (f x))->forall x,P x->P (f(f x)).
+%jp.
+%Qed.
+%\end{coq_example*}
 
 \begin{Variants}
  \item {\tt Jp $n$}\\
@@ -1897,7 +1921,59 @@ Qed.
 %   intuitionistic ones.
 % \end{ErrMsgs}
 
+\subsection{\tt Congruence}
+\tacindex{Congruence}
+\label{Congruence}
 
+The tactic {\tt Congruence}, by Pierre Corbineau, implements the standard Nelson and Oppen
+Congruence closure algorithm, which is a decision procedure for ground
+equalities with uninterpreted symbols. It also include the constructor theory
+(see \ref{Injection} and \ref{Discriminate}).
+If the goal is a non-quantified equality, {\tt Congruence} tries to
+prove it with non-quantified equalities in the constext. Otherwise it
+tries to infer a discriminable equality from those in the context.
+
+
+\begin{coq_eval}
+Variable A:Set.
+Variables a b:A.
+Variable f:A->A.
+Variable g:A->A->A.
+\end{coq_eval}
+
+\begin{coq_example*}
+Theorem T: a=(f a) -> (g b (f a))=(f (f a)) -> (g a b)=(f (g b a)) -> (g a b)=a.
+intros.
+congruence.
+Save.
+\end{coq_example*}
+
+\begin{coq_eval}
+Variable A:Set.
+Variables a c d:A.
+Variable f:A->A*A.
+\end{coq_eval}
+
+\begin{coq_example*}
+Theorem inj : f=(pair a) -> (Some _ (f c)) = (Some _ (f d)) -> c=d.                             
+Intros.
+Congruence.
+Save.
+\end{coq_example*}
+
+
+
+
+
+\begin{ErrMsgs}
+  \item \errindex{I don't know how to handle dependent equality}
+    The decision procedure managed to find a proof of the goal or of
+    a discriminable equality but this proof couldn't be built in Coq
+    because of dependently-typed functions.
+  \item \errindex{I couldn't solve goal}
+    The decision procedure didn't managed to find a proof of the goal or of
+    a discriminable equality.
+\end{ErrMsgs}
 
 \subsection{\tt Omega}
 \tacindex{Omega}
