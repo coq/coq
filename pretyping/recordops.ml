@@ -5,14 +5,15 @@ open Util
 open Pp
 open Names
 open Typeops
-open Vartab
 open Libobject
 open Library
+(*
 open Term
 open Pp_control
 open Generic
 open Initial
 open Classops
+*)
 
 let nbimpl = ref 0
 let nbpathc = ref 0
@@ -39,6 +40,7 @@ let (inStruc,outStruc) =
     declare_object ("STRUCTURE",
                     {load_function = (fun _ -> ());
                      cache_function = (function  (_,x) -> add_new_struc1 x);
+		     open_function = (fun _ -> ());
                      specification_function = (function x -> x)})
 
 let add_new_struc (s,c,n,l) = 
