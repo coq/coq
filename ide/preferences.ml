@@ -67,6 +67,10 @@ type pref =
       mutable auto_save_delay : int;
       mutable auto_save_name : string * string;
 
+      mutable encoding_use_locale : bool;
+      mutable encoding_use_utf8 : bool;
+      mutable encoding_manual : string;
+
       mutable automatic_tactics : (string * string) list;
       mutable cmd_print : string;
 
@@ -85,6 +89,7 @@ type pref =
       mutable show_toolbar : bool;
       mutable window_width : int;
       mutable window_height :int;
+      mutable use_utf8_notation : bool;
 
     }
 
@@ -102,6 +107,10 @@ let (current:pref ref) =
     auto_save = false;
     auto_save_delay = 10000;
     auto_save_name = "#","#";
+    
+    encoding_use_locale = true;
+    encoding_use_utf8 = true;
+    encoding_manual = "ISO_8859-1";
 
     automatic_tactics = ["Progress Trivial.","Trivial.";
 			 "Progress Auto.","Auto.";
@@ -127,6 +136,7 @@ let (current:pref ref) =
     show_toolbar = true;
     window_width = 800;
     window_height = 600; 
+    use_utf8_notation = true;
   }
 
 
@@ -154,6 +164,11 @@ let save_pref () =
     add "auto_save" [string_of_bool p.auto_save] ++
     add "auto_save_delay" [string_of_int p.auto_save_delay] ++
     add "auto_save_name" [fst p.auto_save_name; snd p.auto_save_name] ++
+
+    add "encoding_use_locale" [string_of_bool p.encoding_use_locale] ++
+    add "encoding_use_utf8" [string_of_bool p.encoding_use_utf8] ++
+    add "encoding_manual" [p.encoding_manual] ++
+
     add "automatic_tactics" 
       (List.fold_left (fun l (v1,v2) -> v1::v2::l) [] p.automatic_tactics) ++
     add "cmd_print" [p.cmd_print] ++
@@ -199,6 +214,10 @@ let load_pref () =
     set_bool "auto_save" (fun v -> np.auto_save <- v);
     set_int "auto_save_delay" (fun v -> np.auto_save_delay <- v);
     set_pair "auto_save_name" (fun v1 v2 -> np.auto_save_name <- (v1,v2));
+    set_bool "encoding_use_locale" (fun v -> np.encoding_use_locale <- v);
+    set_bool "encoding_use_utf8" (fun v -> np.encoding_use_utf8 <- v);
+    set_hd "encoding_manual" (fun v -> np.encoding_manual <- v);
+
     set "automatic_tactics"
       (fun v -> 
 	 let rec from_list = function
@@ -231,7 +250,8 @@ let load_pref () =
 
 let configure () = 
   let cmd_coqc = 
-    string ~f:(fun s -> !current.cmd_coqc <- s) "coqc"  !current.cmd_coqc in
+    string
+      ~f:(fun s -> !current.cmd_coqc <- s) "coqc"  !current.cmd_coqc in
   let cmd_make = string ~f:(fun s -> !current.cmd_make <- s)
 		   "make" !current.cmd_make in
   let cmd_coqmakefile = string ~f:(fun s -> !current.cmd_coqmakefile <- s)
@@ -281,6 +301,14 @@ let configure () =
       (string_of_int !current.window_width)
   in  
 
+(*  let use_utf8_notation = 
+    bool 
+      ~f:(fun b -> 
+	    !current.use_utf8_notation <- b;
+	 ) 
+      "Use Unicode Notation: " !current.use_utf8_notation
+  in
+*)  
   let config_appearance = [show_toolbar; window_width; window_height] in
 
   let global_auto_revert = 
@@ -309,6 +337,27 @@ let configure () =
       (string_of_int !current.auto_save_delay)
   in  
 
+  let encodings = 
+    combo 
+      "File charset encoding "
+      ~f:(fun s -> 
+	    match s with
+	    | "UTF-8" -> 
+		!current.encoding_use_utf8 <- true;
+		!current.encoding_use_locale <- false
+	    | "LOCALE" ->
+		!current.encoding_use_utf8 <- false;
+		!current.encoding_use_locale <- true
+	    | _ -> 		
+		!current.encoding_use_utf8 <- false;
+		!current.encoding_use_locale <- false;
+		!current.encoding_manual <- s;
+	 )
+      ~new_allowed: true
+      ["UTF-8";"LOCALE";!current.encoding_manual]
+      (if !current.encoding_use_utf8 then "UTF-8" 
+       else if !current.encoding_use_locale then "LOCALE" else !current.encoding_manual)
+  in
   let modifier_for_tactics = 
     modifiers
       ~allow:!current.modifiers_valid
@@ -388,6 +437,7 @@ let configure () =
      Section("Files",
 	     [global_auto_revert;global_auto_revert_delay;
 	     auto_save; auto_save_delay; (* auto_save_name*)
+	     encodings
 	     ]);
      Section("Browser",
 	     [cmd_browse;doc_url;library_url]);

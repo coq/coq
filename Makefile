@@ -387,7 +387,7 @@ COQIDECMO=ide/utils/okey.cmo ide/utils/uoptions.cmo \
 	  ide/utils/configwin_messages.cmo ide/utils/configwin_ihm.cmo \
 	  ide/utils/configwin.cmo \
 	  ide/utils/editable_cells.cmo ide/config_parser.cmo \
-	  ide/config_lexer.cmo ide/preferences.cmo \
+	  ide/config_lexer.cmo ide/utf8_convert.cmo ide/preferences.cmo \
 	  ide/ideutils.cmo ide/undo.cmo \
 	  ide/find_phrase.cmo \
           ide/highlight.cmo ide/coq.cmo ide/coq_commands.cmo \
@@ -397,6 +397,7 @@ COQIDECMX=$(COQIDECMO:.cmo=.cmx)
 COQIDEFLAGS=-thread -I +lablgtk2
 beforedepend:: ide/config_lexer.ml ide/find_phrase.ml ide/highlight.ml
 beforedepend:: ide/config_parser.mli ide/config_parser.ml
+beforedepend:: ide/utf8_convert.ml
 
 FULLIDELIB=$(FULLCOQLIB)/ide
 IDEFILES=ide/coq.png ide/.coqide-gtk2rc

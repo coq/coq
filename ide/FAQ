@@ -55,8 +55,16 @@ R6) Use
 	coqmktop -ide -opt m1.cmx...mi.cmx
 
 Q7) How to customize the shortcuts for menus?
-R6) Two solutions are offered:
+R7) Two solutions are offered:
   - Edit $HOME/.coqide.keys by hand
   - Add "gtk-can-change-accels = 1" in your .coqiderc.gtk2 file. Then
     from CoqIde, you may select a menu entry and press the desired 
     shortcut. Do not forget to save your preferences.
+
+Q8) What encoding should I use? What is this \x{iiii} in my file?
+R8) The encoding option is related to the way files are saved. Keep it as UTF-8 until
+    it becomes important for you to exchange files with non UTF-8 aware applications.
+    
+    If you choose something else than UTF-8, then missing characters will be encoded by
+	\x{....} or \x{........} where the dot is a digit. The number between braces is 
+    the hexadecimal UNICODE index for the missing character.

@@ -57,7 +57,7 @@ let is_in_coq_lib dir =
 			Coq_config.coqlib 
 			(Filename.concat "theories" s) 
 	   in
-	   prerr_endline (" Comparing to : "^fdir);
+	   prerr_endline (" Comparing to: "^fdir);
 	   let fstat = Unix.stat fdir in 
 	   (fstat.Unix.st_dev = stat.Unix.st_dev) &&
 	   (fstat.Unix.st_ino = stat.Unix.st_ino) && 
@@ -140,7 +140,6 @@ let interp_last last =
     raise e
 
 
-(* type hyp = (identifier * constr option * constr) * string*)
 type hyp = env * evar_map *
            ((identifier * string) * constr option * constr) * 
            (string * string)

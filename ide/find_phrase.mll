@@ -14,6 +14,8 @@
   let buff = Buffer.create 513
 }
 
+let phrase_sep = '.'
+
 rule next_phrase = parse
   | "(*" { incr length; incr length; 
 	   skip_comment lexbuf;
@@ -24,7 +26,7 @@ rule next_phrase = parse
 		 Buffer.add_string buff lexeme;
 		 next_phrase lexbuf
 	       }
-  | '.'[' ''\n''\t''\r'] {	
+  | phrase_sep[' ''\n''\t''\r'] {
       length := !length + 2; 
       Buffer.add_string buff (Lexing.lexeme lexbuf);
       Buffer.contents buff}

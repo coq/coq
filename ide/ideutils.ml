@@ -58,45 +58,61 @@ let process_pending () =
 let print_id id =
   prerr_endline ("GOT sig id :"^(string_of_int (Obj.magic id)))
 
-let try_convert s = 
-  try
-    if Glib.Utf8.validate s then s else
-      (prerr_endline 
-	 "Coqide warning: input is not UTF-8 encoded. Trying to convert from locale.";
-       Glib.Convert.locale_to_utf8 s)
-  with _ -> 
-    "(* Fatal error: wrong encoding in input.
-Please set your locale according to your file encoding.*)"
 
 let do_convert s = 
-  if Glib.Utf8.validate s then (prerr_endline "Input is UTF-8";s) else
-    try 
-      (prerr_endline 
-	 "Coqide warning: input is not UTF-8 encoded. Trying to convert from locale.";
-       Glib.Convert.locale_to_utf8 s)
-    with _ -> 
-      (prerr_endline 
-	 "Coqide warning: input is not even LOCALE encoded. Trying to convert from fr_FR.";
-       Glib.Convert.convert s ~to_codeset:"UTF-8" ~from_codeset:"ISO-8859-1")
+  Utf8_convert.f
+    (if Glib.Utf8.validate s then begin
+       prerr_endline "Input is UTF-8";s
+     end else
+       let from_loc () = 
+	 let _,char_set = Glib.Convert.get_charset () in
+	 prerr_endline 
+	   ("Coqide warning: trying to convert from locale ("^char_set^")");
+	 Glib.Convert.convert_with_fallback ~to_codeset:"UTF-8" ~from_codeset:char_set s
+       in
+       let from_manual () = 
+	 prerr_endline 
+	   ("Coqide warning: trying to convert from "^ !current.encoding_manual);
+	 Glib.Convert.convert s ~to_codeset:"UTF-8" ~from_codeset:!current.encoding_manual
+       in
+       if !current.encoding_use_utf8 || !current.encoding_use_locale then begin
+	 try
+	   from_loc ()
+	 with _ -> from_manual ()
+       end else begin
+	 try
+	   from_manual () 
+	 with _ -> from_loc ()
+       end)
+
+let try_convert s = 
+  try
+    do_convert s
+  with _ -> 
+    "(* Fatal error: wrong encoding in input.
+Please choose a correct encoding in the preference panel.*)";;
+
 
 let try_export file_name s = 
-  try 
-    let s = 
-      if (fst (Glib.Convert.get_charset ())) then
-	(prerr_endline "Charset is UTF-8" ;s) 
+  try let s = 
+    try if !current.encoding_use_utf8 then begin
+      (prerr_endline "UTF-8 is enforced" ;s)
+    end else if !current.encoding_use_locale then begin
+      let is_unicode,char_set = Glib.Convert.get_charset () in
+      if is_unicode then 
+	(prerr_endline "Locale is UTF-8" ;s)	
       else
-	(try Glib.Convert.locale_from_utf8 s 
-	 with _ -> 
-(*	   try 
-	     prerr_endline "Warning: exporting to ISO8859-1";
-	     Glib.Convert.convert s ~to_codeset:"UTF-8" ~from_codeset:"ISO-8859-1"
-	   with _ -> *)
-	     prerr_endline "Warning: exporting to utf8";s)
-    in
-    let oc = open_out file_name in
-    output_string oc s;
-    close_out oc;
-    true
+	(prerr_endline ("Locale is "^char_set);
+	 Glib.Convert.convert_with_fallback ~from_codeset:"UTF-8" ~to_codeset:char_set s)
+    end else 	
+      (prerr_endline ("Manual charset is "^ !current.encoding_manual);
+       Glib.Convert.convert_with_fallback ~from_codeset:"UTF-8" ~to_codeset:!current.encoding_manual s)
+    with e -> (prerr_endline ("Error ("^(Printexc.to_string e)^") in transcoding: falling back to UTF-8") ;s)
+  in
+  let oc = open_out file_name in
+  output_string oc s;
+  close_out oc;
+  true
   with e -> prerr_endline (Printexc.to_string e);false
 
 let browse url =
@@ -171,12 +187,12 @@ let select_file ~title ?(dir = last_dir) ?(filename="") () =
     if Filename.is_relative filename then begin
       if !dir <> "" then
         let filename = Filename.concat !dir filename in 
-        GWindow.file_selection ~modal:true ~title ~filename ()
+        GWindow.file_selection ~fileop_buttons:true ~modal:true ~title ~filename ()
       else
-        GWindow.file_selection ~modal:true ~title ()
+        GWindow.file_selection ~fileop_buttons:true ~modal:true ~title ()
     end else begin
       dir := Filename.dirname filename;
-      GWindow.file_selection ~modal:true ~title ~filename ()
+      GWindow.file_selection ~fileop_buttons:true ~modal:true ~title ~filename ()
     end
   in
   fs#complete ~filter:"";

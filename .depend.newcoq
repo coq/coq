@@ -53,19 +53,18 @@ newtheories/Reals/RiemannInt_SF.vo: newtheories/Reals/RiemannInt_SF.v newtheorie
 newtheories/Reals/RiemannInt.vo: newtheories/Reals/RiemannInt.v newtheories/Reals/Rfunctions.vo newtheories/Reals/SeqSeries.vo newtheories/Reals/Ranalysis.vo newtheories/Reals/Rbase.vo newtheories/Reals/RiemannInt_SF.vo newtheories/Logic/Classical_Prop.vo newtheories/Logic/Classical_Pred_Type.vo newtheories/Arith/Max.vo
 newtheories/Reals/Integration.vo: newtheories/Reals/Integration.v newtheories/Reals/NewtonInt.vo newtheories/Reals/RiemannInt_SF.vo newtheories/Reals/RiemannInt.vo
 newtheories/Reals/Reals.vo: newtheories/Reals/Reals.v newtheories/Reals/Rbase.vo newtheories/Reals/Rfunctions.vo newtheories/Reals/SeqSeries.vo newtheories/Reals/Rtrigo.vo newtheories/Reals/Ranalysis.vo newtheories/Reals/Integration.vo
-newtheories/Init/Notations.vo: newtheories/Init/Notations.v
 newtheories/Init/Datatypes.vo: newtheories/Init/Datatypes.v
 newtheories/Init/DatatypesSyntax.vo: newtheories/Init/DatatypesSyntax.v
 newtheories/Init/Peano.vo: newtheories/Init/Peano.v newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo newtheories/Init/Datatypes.vo
 newtheories/Init/PeanoSyntax.vo: newtheories/Init/PeanoSyntax.v newtheories/Init/Datatypes.vo newtheories/Init/Peano.vo
-newtheories/Init/Logic.vo: newtheories/Init/Logic.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo
+newtheories/Init/Logic.vo: newtheories/Init/Logic.v newtheories/Init/Datatypes.vo
 newtheories/Init/Specif.vo: newtheories/Init/Specif.v newtheories/Init/Datatypes.vo newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo
 newtheories/Init/LogicSyntax.vo: newtheories/Init/LogicSyntax.v newtheories/Init/Logic.vo
 newtheories/Init/SpecifSyntax.vo: newtheories/Init/SpecifSyntax.v newtheories/Init/Datatypes.vo newtheories/Init/Specif.vo
 newtheories/Init/Logic_Type.vo: newtheories/Init/Logic_Type.v newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo
 newtheories/Init/Wf.vo: newtheories/Init/Wf.v newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo
 newtheories/Init/Logic_TypeSyntax.vo: newtheories/Init/Logic_TypeSyntax.v newtheories/Init/Logic_Type.vo
-newtheories/Init/Prelude.vo: newtheories/Init/Prelude.v newtheories/Init/Notations.vo newtheories/Init/Datatypes.vo newtheories/Init/DatatypesSyntax.vo newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo newtheories/Init/Specif.vo newtheories/Init/SpecifSyntax.vo newtheories/Init/Peano.vo newtheories/Init/PeanoSyntax.vo newtheories/Init/Wf.vo
+newtheories/Init/Prelude.vo: newtheories/Init/Prelude.v newtheories/Init/Datatypes.vo newtheories/Init/DatatypesSyntax.vo newtheories/Init/Logic.vo newtheories/Init/LogicSyntax.vo newtheories/Init/Specif.vo newtheories/Init/SpecifSyntax.vo newtheories/Init/Peano.vo newtheories/Init/PeanoSyntax.vo newtheories/Init/Wf.vo
 newtheories/Logic/Hurkens.vo: newtheories/Logic/Hurkens.v
 newtheories/Logic/ProofIrrelevance.vo: newtheories/Logic/ProofIrrelevance.v newtheories/Logic/Hurkens.vo
 newtheories/Logic/Classical.vo: newtheories/Logic/Classical.v newtheories/Logic/Classical_Prop.vo newtheories/Logic/Classical_Pred_Set.vo
@@ -90,7 +89,7 @@ newtheories/Arith/Compare_dec.vo: newtheories/Arith/Compare_dec.v newtheories/Ar
 newtheories/Arith/Min.vo: newtheories/Arith/Min.v newtheories/Arith/Arith.vo
 newtheories/Arith/Div2.vo: newtheories/Arith/Div2.v newtheories/Arith/Lt.vo newtheories/Arith/Plus.vo newtheories/Arith/Compare_dec.vo newtheories/Arith/Even.vo
 newtheories/Arith/Minus.vo: newtheories/Arith/Minus.v newtheories/Arith/Lt.vo newtheories/Arith/Le.vo
-newtheories/Arith/Mult.vo: newtheories/Arith/Mult.v newtheories/Arith/Plus.vo newtheories/Arith/Minus.vo newtheories/Arith/Lt.vo
+newtheories/Arith/Mult.vo: newtheories/Arith/Mult.v newtheories/Arith/Plus.vo newtheories/Arith/Minus.vo newtheories/Arith/Lt.vo newtheories/Arith/Le.vo
 newtheories/Arith/Even.vo: newtheories/Arith/Even.v
 newtheories/Arith/EqNat.vo: newtheories/Arith/EqNat.v
 newtheories/Arith/Peano_dec.vo: newtheories/Arith/Peano_dec.v newtheories/Logic/Decidable.vo
@@ -99,7 +98,7 @@ newtheories/Arith/Plus.vo: newtheories/Arith/Plus.v newtheories/Arith/Le.vo newt
 newtheories/Arith/Wf_nat.vo: newtheories/Arith/Wf_nat.v newtheories/Arith/Lt.vo
 newtheories/Arith/Max.vo: newtheories/Arith/Max.v newtheories/Arith/Arith.vo
 newtheories/Arith/Bool_nat.vo: newtheories/Arith/Bool_nat.v newtheories/Arith/Compare_dec.vo newtheories/Arith/Peano_dec.vo newtheories/Bool/Sumbool.vo
-newtheories/Arith/Factorial.vo: newtheories/Arith/Factorial.v newtheories/Arith/Plus.vo newtheories/Arith/Lt.vo
+newtheories/Arith/Factorial.vo: newtheories/Arith/Factorial.v newtheories/Arith/Plus.vo newtheories/Arith/Mult.vo newtheories/Arith/Lt.vo
 newtheories/Bool/Bool.vo: newtheories/Bool/Bool.v
 newtheories/Bool/IfProp.vo: newtheories/Bool/IfProp.v newtheories/Bool/Bool.vo
 newtheories/Bool/Zerob.vo: newtheories/Bool/Zerob.v newtheories/Arith/Arith.vo newtheories/Bool/Bool.vo

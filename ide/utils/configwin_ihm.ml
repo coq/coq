@@ -380,7 +380,7 @@ class combo_param_box param =
       None -> ()
     | Some help ->
 	let tooltips = GData.tooltips () in
-	ignore (hbox#connect#destroy ~callback: tooltips#destroy);
+	ignore (hbox#connect#destroy ~callback:tooltips#destroy);
 	tooltips#set_tip wev#coerce ~text: help ~privat: help 
   in
   let _ = wc#entry#set_editable param.combo_editable in

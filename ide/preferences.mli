@@ -22,6 +22,10 @@ type pref =
       mutable auto_save_delay : int;
       mutable auto_save_name : string * string;
 
+      mutable encoding_use_locale : bool;
+      mutable encoding_use_utf8 : bool;
+      mutable encoding_manual : string;
+
       mutable automatic_tactics : (string * string) list;
       mutable cmd_print : string;
 
@@ -40,7 +44,7 @@ type pref =
       mutable show_toolbar : bool;
       mutable window_width : int;
       mutable window_height : int;
-
+      mutable use_utf8_notation : bool;
     }
 
 val save_pref : unit -> unit

@@ -505,12 +505,12 @@ ide/coq_tactics.cmo: ide/coq_tactics.cmi
 ide/coq_tactics.cmx: ide/coq_tactics.cmi 
 ide/coqide.cmo: ide/command_windows.cmi ide/coq.cmi ide/coq_commands.cmo \
     ide/find_phrase.cmo ide/highlight.cmo ide/ideutils.cmi proofs/pfedit.cmi \
-    ide/preferences.cmi ide/undo.cmi lib/util.cmi toplevel/vernacexpr.cmo \
-    ide/coqide.cmi 
+    ide/preferences.cmi ide/undo.cmi ide/utf8_convert.cmo lib/util.cmi \
+    toplevel/vernacexpr.cmo ide/coqide.cmi 
 ide/coqide.cmx: ide/command_windows.cmx ide/coq.cmx ide/coq_commands.cmx \
     ide/find_phrase.cmx ide/highlight.cmx ide/ideutils.cmx proofs/pfedit.cmx \
-    ide/preferences.cmx ide/undo.cmx lib/util.cmx toplevel/vernacexpr.cmx \
-    ide/coqide.cmi 
+    ide/preferences.cmx ide/undo.cmx ide/utf8_convert.cmx lib/util.cmx \
+    toplevel/vernacexpr.cmx ide/coqide.cmi 
 ide/find_phrase.cmo: ide/ideutils.cmi 
 ide/find_phrase.cmx: ide/ideutils.cmx 
 ide/highlight.cmo: ide/ideutils.cmi 
