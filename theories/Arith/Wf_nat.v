@@ -6,7 +6,7 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (* Well-founded relations and natural numbers *)
 

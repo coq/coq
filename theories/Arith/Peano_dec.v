@@ -6,9 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-Require Decidable.
-(* $Id$ *)
+(*i $Id$ i*)
 
+Require Decidable.
 
 Theorem O_or_S : (n:nat)({m:nat|(S m)=n})+{O=n}.
 Proof.

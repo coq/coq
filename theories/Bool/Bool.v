@@ -6,14 +6,14 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
 (*************)
-(*s Booleans *)
+(* Booleans  *)
 (* The type [bool] is defined in the prelude as \\
-    [Inductive bool : Set := true : bool | false : bool (from Prelude)] *)
+    [Inductive bool : Set := true : bool | false : bool] *)
 
-(*s Interpretation of booleans as Propopsition *)
+(* Interpretation of booleans as Proposition *)
 Definition Is_true := [b:bool](Cases b of
                                  true  => True
                                | false => False

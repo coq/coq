@@ -6,9 +6,9 @@
 (*         *       GNU Lesser General Public License Version 2.1       *)
 (***********************************************************************)
 
-(* $Id$ *)
+(*i $Id$ i*)
 
-Implicit Arguments On.
+Set Implicit Arguments.
 
 Definition ifdec : (A,B:Prop)(C:Set)({A}+{B})->C->C->C
    := [A,B,C,H,x,y]if H then [_]x else [_]y.
@@ -24,4 +24,4 @@ Intros; Case H; Auto.
 Intro; Absurd A; Trivial.
 Save.
 
-Implicit Arguments Off.
+Unset Implicit Arguments.
