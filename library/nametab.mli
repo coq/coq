@@ -40,6 +40,10 @@ val exists_module : section_path -> bool
 val open_module_contents : qualid -> unit
 val rec_open_module_contents : qualid -> unit
 
+(*s Entry points for sections *)
+val open_section_contents : qualid -> unit
+val push_section : section_path -> module_contents -> unit
+
 (*s Roots of the space of absolute names *)
 
 (* This is the root of the standard library of Coq *)
@@ -51,3 +55,7 @@ val default_root : string
 (* This is to declare a new root *)
 val push_library_root : string -> unit
 
+(* This turns a "user" absolute name into a global reference;
+   especially, constructor/inductive names are turned into internal
+   references inside a block of mutual inductive *)
+val absolute_reference : section_path -> global_reference

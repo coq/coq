@@ -367,8 +367,7 @@ let constr_of_reference sigma env ref =
   find_common_hyps_then_abstract body env0 hyps0 hyps
 
 let construct_absolute_reference env sp =
-  let ref = Nametab.locate (qualid_of_sp sp) in
-  constr_of_reference Evd.empty env ref
+  constr_of_reference Evd.empty env (Nametab.absolute_reference sp)
 
 let construct_qualified_reference env qid =
   let ref = Nametab.locate qid in

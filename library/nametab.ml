@@ -83,6 +83,11 @@ let push_module sp mc =
     warning ("Cannot allow access to "^s^" by relative paths: it is already registered as a root of the Coq library")
   else push_mod_current s (sp,mc)
 
+(* Sections are not accessible by basename *)
+let push_section sp mc =
+  let dir, s = repr_qualid (qualid_of_sp sp) in
+  push_mod_absolute dir s (sp,mc)
+
 (* This is an entry point for local declarations at toplevel *)
 (* Do not use with "open" since it pushes an absolute name too *)
 
@@ -143,6 +148,14 @@ let constant_sp_of_id id =
     | ConstRef sp -> sp
     | _ -> raise Not_found
 
+let check_absoluteness = function
+  | a::_ when List.mem a !roots -> ()
+  | _ -> anomaly "Not an absolute path"
+
+let absolute_reference sp =
+  check_absoluteness (dirpath sp);
+  locate (qualid_of_sp sp)
+
 (* These are entry points to make the contents of a module/section visible *)
 (* in the current env (does not affect the absolute name space `coq_root') *)
 let open_module_contents qid =
@@ -150,6 +163,8 @@ let open_module_contents qid =
   Stringmap.iter push_cci_current ccitab;
 (*  Stringmap.iter (fun _ -> Libobject.open_object) objtab;*)
   Stringmap.iter push_mod_current modtab
+
+let open_section_contents = open_module_contents
 
 let rec rec_open_module_contents qid =
   let _, (Closed (ccitab,objtab,modtab)) = locate_module qid in
