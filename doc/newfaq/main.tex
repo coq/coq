@@ -631,7 +631,6 @@ You can use the \rewrite {\tt in} tactic.
 
 You can use the \unfold tactic.
 
-
 \Question{How can I reduce some term ?}
 
 You can use the \simpl tactic.
@@ -699,21 +698,6 @@ intros...
 Qed.
 \end{coq_example}
 
-
-
-\Question{How can I change the order of the subgoals ?}
-
-You can use the \Focus command to concentrate on some goal. When the goal is proved you will see the remaining goals.
-
-
-\Question{How can I change the order of the hypothesis ?}
-
-You can use the {\tt move ... after} command.
-
-\Question{How can I change the name of an hypothesis ?}
-
-You can use the {\tt rename ... into} command.
-
 \Question{How can I do the opposite of the \intro tactic ?}
 
 You can use the \generalize tactic.
@@ -746,6 +730,23 @@ You should use the \eapply tactic, this will generate some goals containing meta
 Sometime you can use the \abstractt tactic, which makes as if you had
 stated some local lemma, this speeds up the typing process.
 
+
+\section{Proof management}
+
+
+
+\Question{How can I change the order of the subgoals ?}
+
+You can use the \Focus command to concentrate on some goal. When the goal is proved you will see the remaining goals.
+
+\Question{How can I change the order of the hypothesis ?}
+
+You can use the {\tt move ... after} command.
+
+\Question{How can I change the name of an hypothesis ?}
+
+You can use the {\tt rename ... into} command.
+
 \Question{How can use a proof which is not finished ?}
 
 You can use the {\tt Admitted} command to state your current proof as an axiom.
@@ -753,6 +754,12 @@ You can use the {\tt Admitted} command to state your current proof as an axiom.
 \Question{How can I state a conjecture ?}
 
 You can use the {\tt Admitted} command to state your current proof as an axiom.
+
+
+
+\section{Inductives}
+
+
 
 \Question{How can I prove that two constructors are different ?}
 
@@ -765,7 +772,11 @@ discriminate.
 Qed.
 \end{coq_example}
 
+
+
 \Question{Do you know a coq-error-to-english translator ?}
+
+
 
 
 \subsection{Notations}
