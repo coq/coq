@@ -11,6 +11,8 @@
 Require Rbase.
 Require Rfunctions.
 Require SeqSeries.
+V7only [ Import nat_scope. Import Z_scope. Import R_scope. ].
+Open Local Scope R_scope.
 
 (*****************************************************************)
 (*           To define transcendental functions                  *)

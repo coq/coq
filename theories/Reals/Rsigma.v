@@ -12,7 +12,8 @@ Require Rbase.
 Require Rfunctions.
 Require Rseries.
 Require PartSum.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+V7only [ Import nat_scope. Import Z_scope. Import R_scope. ].
+Open Local Scope R_scope.
 
 Set Implicit Arguments.
 

@@ -12,7 +12,8 @@ Require Rbase.
 Require Rfunctions.
 Require SeqSeries.
 Require Rtrigo_def.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+V7only [ Import nat_scope. Import Z_scope. Import R_scope. ].
+Open Local Scope R_scope.
 
 (*****************************************************************)
 (* Using series definitions of cos and sin                       *)

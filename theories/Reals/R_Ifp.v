@@ -15,7 +15,7 @@
 
 Require Rbase.
 Require Omega.
-
+V7only [ Import nat_scope. Import Z_scope. Import R_scope. ].
 Open Local Scope R_scope.
 
 (*********************************************************)

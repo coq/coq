@@ -12,6 +12,8 @@ Require Rbase.
 Require Rfunctions.
 Require Classical.
 Require Compare.
+V7only [ Import nat_scope. Import Z_scope. Import R_scope. ].
+Open Local Scope R_scope.
 
 Implicit Variable Type r:R.
 

@@ -14,7 +14,8 @@ Require Rfunctions.
 Require Rseries.
 Require PartSum.
 Require Binomial.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+V7only [ Import nat_scope. Import Z_scope. Import R_scope. ].
+Open Local Scope R_scope.
 
 (* TT Ak; 1<=k<=N *)
 Fixpoint prod_f_SO [An:nat->R;N:nat] : R := Cases N of

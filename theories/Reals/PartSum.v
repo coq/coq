@@ -13,7 +13,8 @@ Require Rfunctions.
 Require Rseries.
 Require Rcomplete.
 Require Max.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+V7only [ Import nat_scope. Import Z_scope. Import R_scope. ].
+Open Local Scope R_scope.
 
 Lemma tech1 : (An:nat->R;N:nat) ((n:nat)``(le n N)``->``0<(An n)``) -> ``0 < (sum_f_R0 An N)``.
 Intros; Induction N.

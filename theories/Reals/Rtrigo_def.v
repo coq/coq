@@ -13,7 +13,8 @@ Require Rfunctions.
 Require SeqSeries.
 Require Rtrigo_fun.
 Require Max.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+V7only [ Import nat_scope. Import Z_scope. Import R_scope. ].
+Open Local Scope R_scope.
 
 (*****************************)
 (* Definition of exponential *)

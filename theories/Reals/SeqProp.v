@@ -13,7 +13,8 @@ Require Rfunctions.
 Require Rseries.
 Require Classical.
 Require Max.
-V7only [Import R_scope.]. Open Local Scope R_scope.
+V7only [ Import nat_scope. Import Z_scope. Import R_scope. ].
+Open Local Scope R_scope.
 
 Definition Un_decreasing [Un:nat->R] : Prop := (n:nat) (Rle (Un (S n)) (Un n)).
 Definition opp_seq [Un:nat->R] : nat->R := [n:nat]``-(Un n)``.
