@@ -195,8 +195,10 @@ let maybe_constructor env = function
        | _ -> 
 	   (match maybe_variable l with
 	    | Some s -> 
+(* Why a warning since there is no warning when writing [globname:T]... 
 		warning ("Defined reference "^(string_of_qualid qid)
 			 ^" is here considered as a matching variable");
+*)
 		VarPat (loc,s)
 	    | _ -> error ("This reference does not denote a constructor: "
 			  ^(string_of_qualid qid)))
