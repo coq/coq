@@ -93,7 +93,6 @@ let acic_of_cic_context' seed ids_to_terms constr_to_ids ids_to_father_ids
         let {D.synthesized = synthesized; D.expected = expected} =
          if computeinnertypes then
 try
-print_endline "COMPUTE INNER TYPES" ; flush stdout ;
           Acic.CicHash.find terms_to_types tt
 with _ -> assert false (* buco nella double-type-inference *)
          else
@@ -107,6 +106,7 @@ with _ -> assert false (* buco nella double-type-inference *)
               (Evarutil.refresh_universes tt)) ;
            D.expected = None}
         in
+(* Debugging only:
 print_endline "TERMINE:" ; flush stdout ;
 Pp.ppnl (Printer.prterm tt) ; flush stdout ;
 print_endline "TIPO:" ; flush stdout ;
@@ -114,8 +114,11 @@ Pp.ppnl (Printer.prterm synthesized) ; flush stdout ;
 print_endline "ENVIRONMENT:" ; flush stdout ;
 Pp.ppnl (Printer.pr_context_of env) ; flush stdout ;
 print_endline "FINE_ENVIRONMENT" ; flush stdout ;
+*)
          let innersort = Retyping.get_sort_family_of env evar_map synthesized in
+(* Debugging only:
 print_endline "PASSATO" ; flush stdout ;
+*)
           let ainnertypes,expected_available =
            if computeinnertypes then
             let annexpected,expected_available =

@@ -1,10 +1,12 @@
+(* Note: we can not use the Set module here because we _need_ physical *)
+(* equality and there exists no comparison function compatible with    *)
+(* physical equality.                                                  *)
 module S =
- Set.Make
-  (struct
-    type t = Term.constr
-    let compare = compare
-   end
-  )
+ struct
+  let empty = []
+  let mem = List.memq
+  let add x l = x::l
+ end
 ;;
 
 let extract_open_proof sigma pf =

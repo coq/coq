@@ -5,15 +5,8 @@ let print_proof_tree curi pf proof_tree_to_constr constr_to_ids =
  let module L = Logic in
  let module X = Xml in
   let ids_of_node node =
-(*
    Acic.CicHash.find constr_to_ids (Hashtbl.find proof_tree_to_constr node)
-*)
-Acic.CicHash.find constr_to_ids (
-try
-   Hashtbl.find proof_tree_to_constr node
-with e -> Pp.ppnl (Pp.(++) (Pp.str "NON TROVATO: ") (Refiner.print_proof Evd.empty Sign.empty_named_context node)) ; assert false)
   in
-Pp.ppnl (Pp.str "BUG QUI: qualcuno ha fatto unsharing?") ;
   let rec aux node =
    let id = ids_of_node node in
     match node with

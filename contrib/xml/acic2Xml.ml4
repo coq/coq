@@ -183,34 +183,42 @@ let print_object curi ids_to_inner_sorts =
   let module X = Xml in
     function
        A.ACurrentProof (id,n,conjectures,bo,ty) ->
-        X.xml_nempty "CurrentProof" ["name",n ; "id", id]
-         [< List.fold_left
-             (fun i (cid,n,canonical_context,t) ->
-               [< i ;
-                  X.xml_nempty "Conjecture"
-                   ["id", cid ; "no",(string_of_int n)]
-                   [< List.fold_left
-                       (fun i (hid,t) ->
-                         [< (match t with
-                               n,A.Decl t ->
-                                X.xml_nempty "Decl"
-                                 ["id",hid;"name",Names.string_of_id n]
-                                 (print_term curi ids_to_inner_sorts t)
-                             | n,A.Def t ->
-                                X.xml_nempty "Def"
-                                 ["id",hid;"name",Names.string_of_id n]
-                                 (print_term curi ids_to_inner_sorts t)
-                            ) ;
-                            i
-                         >]
-                       ) [< >] canonical_context ;
-                      X.xml_nempty "Goal" []
-                       (print_term curi ids_to_inner_sorts t)
-                   >]
-               >])
-             [<>] conjectures ;
-            X.xml_nempty "body" [] (print_term curi ids_to_inner_sorts bo) ;
-            X.xml_nempty "type" [] (print_term curi ids_to_inner_sorts ty)  >]
+        let xml_for_current_proof =
+         X.xml_nempty "CurrentProof" ["name",n ; "id", id]
+          [< List.fold_left
+              (fun i (cid,n,canonical_context,t) ->
+                [< i ;
+                   X.xml_nempty "Conjecture"
+                    ["id", cid ; "no",(string_of_int n)]
+                    [< List.fold_left
+                        (fun i (hid,t) ->
+                          [< (match t with
+                                n,A.Decl t ->
+                                 X.xml_nempty "Decl"
+                                  ["id",hid;"name",Names.string_of_id n]
+                                  (print_term curi ids_to_inner_sorts t)
+                              | n,A.Def t ->
+                                 X.xml_nempty "Def"
+                                  ["id",hid;"name",Names.string_of_id n]
+                                  (print_term curi ids_to_inner_sorts t)
+                             ) ;
+                             i
+                          >]
+                        ) [< >] canonical_context ;
+                       X.xml_nempty "Goal" []
+                        (print_term curi ids_to_inner_sorts t)
+                    >]
+                >])
+              [<>] conjectures ;
+             X.xml_nempty "body" [] (print_term curi ids_to_inner_sorts bo) ;
+             X.xml_nempty "type" [] (print_term curi ids_to_inner_sorts ty)  >]
+        in
+         [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;
+            X.xml_cdata ("<!DOCTYPE CurrentProof SYSTEM \""^dtdname ^"\">\n\n");
+(*CSC: Should the CurrentProof also have the list of variables it depends on? *)
+            X.xml_nempty "CurrentProof" ["name",n ; "id", id]
+             xml_for_current_proof
+         >]
      | A.ADefinition (id,n,bo,ty,params) ->
         let params' = param_attribute_of_params params in
          [< X.xml_cdata "<?xml version=\"1.0\" encoding=\"ISO-8859-1\"?>\n" ;

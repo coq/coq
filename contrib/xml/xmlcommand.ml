@@ -203,8 +203,8 @@ let mk_variable_obj id body typ =
     (Term.unshare (Term.body_of_type typ)))
 ;;
 
-(* Unsharing is not performed. So all the given terms must be already *)
-(* unshared                                                           *)
+(* Unsharing is not performed on the body, that must be already unshared. *)
+(* The evar map and the type, instead, are unshared by this function.     *)
 let mk_current_proof_obj id bo ty evar_map =
  let ty = Term.body_of_type ty in
  let metasenv' =
@@ -224,7 +224,7 @@ let mk_current_proof_obj id bo ty evar_map =
    ) (Evd.non_instantiated evar_map)
  in
   Acic.CurrentProof
-   (Names.string_of_id id,metasenv',Term.unshare bo,Term.unshare ty)
+   (Names.string_of_id id,metasenv',bo,Term.unshare ty)
 ;;
 
 let mk_constant_obj id bo ty variables hyps =

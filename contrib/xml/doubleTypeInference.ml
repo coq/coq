@@ -56,13 +56,7 @@ let double_type_of env sigma cstr expectedty =
          E.make_judge cstr jty
 	
      | T.Rel n -> 
-Pp.ppnl (Pp.(++) (Pp.str "DTI term: ") (Printer.prterm cstr)) ; flush stdout ;
-Pp.ppnl (Pp.(++) (Pp.str "DTI env: ") (Printer.pr_context_of env)) ; flush stdout ;
-let res =
         Typeops.judge_of_relative env n
-in
-Pp.ppnl (Pp.(++) (Pp.str "DTI type: ") (Printer.prterm res.E.uj_type)) ; flush stdout ;
-res
 
      | T.Var id -> 
         Typeops.judge_of_variable env id
