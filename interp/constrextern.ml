@@ -712,7 +712,7 @@ let shortest_qualid_of_v7_global ctx ref =
       then 
         (* An unqualified name that is not renamed but which coincides *)
         (* with a new name: force qualification unless it is a variable *)
-        if fulldir <> empty_dirpath           
+        if fulldir <> empty_dirpath & not (is_coq_root fulldir)
         then make_dirpath [List.hd (repr_dirpath fulldir)] 
         else empty_dirpath
       else dir
