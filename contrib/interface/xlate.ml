@@ -527,11 +527,10 @@ let xlate_newind_names =
     | IntroIdentifier id -> xlate_ident id
     | _ -> xlate_error "TODO: intro_patterns for NewDestruct/NewInduction"
 
-let compute_INV_TYPE_from_string = function
-   "InversionClear" -> CT_inv_clear
- | "SimpleInversion" -> CT_inv_simple
- | "Inversion" -> CT_inv_regular
- | _ -> failwith "unexpected Inversion type";;
+let compute_INV_TYPE = function
+   FullInversionClear -> CT_inv_clear
+ | SimpleInversion -> CT_inv_simple
+ | FullInversion -> CT_inv_regular
 
 let is_tactic_special_case = function
     "AutoRewrite" -> true
@@ -982,35 +981,20 @@ and xlate_tac =
        let idl' = List.map xlate_hyp idl in
        CT_clear (CT_id_ne_list (xlate_hyp id, idl'))
     | (*For translating tactics/Inv.v *)
-      TacExtend (_,("SimpleInversion"|"Inversion"|"InversionClear" as s), [id])
-      ->
-	let quant_hyp =  out_gen rawwit_quant_hyp id in
-	  CT_inversion(compute_INV_TYPE_from_string s,
-		       xlate_quantified_hypothesis quant_hyp, CT_id_list [])
-    | TacExtend (_,("SimpleInversion"|"Inversion"|"InversionClear" as s),
-        [id;copt_or_idl]) ->
-	let quant_hyp = (out_gen rawwit_quant_hyp id) in
+      TacInversion (NonDepInversion (k,idl,[]),quant_hyp) ->
+	CT_inversion(compute_INV_TYPE k, xlate_quantified_hypothesis quant_hyp,
+	             CT_id_list (List.map xlate_hyp idl))
+    | TacInversion (DepInversion (k,copt,[]),quant_hyp) ->
 	let id = xlate_quantified_hypothesis quant_hyp in
-	(match genarg_tag copt_or_idl with
-	  | List1ArgType IdentArgType -> (* InvIn *)
-	      let idl = out_gen (wit_list1 rawwit_ident) copt_or_idl in
-	      CT_inversion (compute_INV_TYPE_from_string s, id,
-	        CT_id_list (List.map xlate_ident idl))
-	  | OptArgType ConstrArgType -> (* DInv *)
-	      let copt = out_gen (wit_opt rawwit_constr) copt_or_idl in
-	      CT_depinversion
-		(compute_INV_TYPE_from_string s, id, xlate_formula_opt copt)
-	  | _ -> xlate_error "")
-    | TacExtend (_,"InversionUsing", [id; c]) ->
-     let id = xlate_quantified_hypothesis (out_gen rawwit_quant_hyp id) in
-     let c = out_gen rawwit_constr c in
-     CT_use_inversion (id, xlate_formula c, CT_id_list [])
-    | TacExtend (_,"InversionUsing", [id; c; idlist]) ->
-     let id = xlate_quantified_hypothesis (out_gen rawwit_quant_hyp id) in
-     let c = out_gen rawwit_constr c in
-     let idlist = out_gen (wit_list1 rawwit_ident) idlist in
-     CT_use_inversion (id, xlate_formula c,
-       CT_id_list (List.map xlate_ident idlist))
+	CT_depinversion (compute_INV_TYPE k, id, xlate_formula_opt copt)
+    | TacInversion (InversionUsing (c,idlist), id) ->
+	let id = xlate_quantified_hypothesis id in
+	  CT_use_inversion (id, xlate_formula c,
+	    CT_id_list (List.map xlate_hyp idlist))
+    | TacInversion (NonDepInversion (k,idl,names),quant_hyp) ->
+	xlate_error "TODO: Inversion with names"
+    | TacInversion (DepInversion (k,copt,names),quant_hyp) ->
+	xlate_error "TODO: Inversion with names"
     | TacExtend (_,"Omega", []) -> CT_omega
     | TacRename (id1, id2) -> CT_rename(xlate_hyp id1, xlate_hyp id2)
     | TacClearBody([]) -> assert false
