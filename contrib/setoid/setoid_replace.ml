@@ -89,6 +89,8 @@ let setoid_table_add (s,th) = setoid_table := Gmap.add s th !setoid_table
 let setoid_table_find s = Gmap.find s !setoid_table
 let setoid_table_mem s = Gmap.mem s !setoid_table
 
+let equiv_list () = List.map (fun x -> x.set_aeq) (Gmap.rng !setoid_table)
+
 let _ = 
   Summary.declare_summary "setoid-table"
     { Summary.freeze_function = (fun () -> !setoid_table);
