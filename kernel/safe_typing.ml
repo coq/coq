@@ -328,7 +328,7 @@ let add_discharged_constant sp r env =
 	let env' = add_constraints cst env in
 	let ids = 
 	  Idset.union (global_vars_set c) 
-	    (global_vars_set (body_of_type jtyp.uj_type))
+	    (global_vars_set (body_of_type jtyp.uj_val))
 	in
 	let cb = { const_kind = kind_of_path sp;
 		   const_body = body;
