@@ -631,6 +631,10 @@ let abs_implicit c = mkLambda Anonymous mkImplicit c
 let lambda_implicit a = mkLambda (Name(id_of_string"y")) mkImplicit a
 let lambda_implicit_lift n a = iterate lambda_implicit n (lift n a)
 
+let mkLambda_string s t c = mkLambda (Name (id_of_string s)) t c
+let mkProd_string   s t c = mkProd (Name (id_of_string s)) t c
+
+
 (* prod_it b [xn:Tn;..;x1:T1] = (x1:T1)..(xn:Tn)b *)
 let prod_it = List.fold_left (fun c (n,t)  -> mkProd n t c)
 
@@ -1177,9 +1181,9 @@ let sort_increasing_snd =
 	 (_,Rel m),(_,Rel n) -> m < n
        | _ -> assert false)
 
-(* Recognizing occurrences of a given subterm in a term for Pattern :
-   (subst_term c t) substitutes (Rel 1) for all occurrences of term c 
-   in a (closed) term t *)
+(* Recognizing occurrences of a given (closed) subterm in a term for Pattern :
+   [subst_term c t] substitutes [(Rel 1)] for all occurrences of (closed)
+   term [c] in a term [t] *)
 
 let subst_term c t = 
   let rec substrec k c t =

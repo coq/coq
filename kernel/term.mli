@@ -164,6 +164,9 @@ val mkCast : constr -> constr -> constr
 (* Constructs the product $(x:t_1)t_2$. $x$ may be anonymous. *)
 val mkProd : name -> constr -> constr -> constr
 
+(* [mkProd_string s t c] constructs the product $(s:t)c$ *)
+val mkProd_string : string -> constr -> constr -> constr
+
 (* non-dependant product $t_1 \rightarrow t_2$ *)
 val mkArrow : constr -> constr -> constr
 
@@ -173,6 +176,9 @@ val mkNamedProd : identifier -> constr -> constr -> constr
 (* Constructs the abstraction $[x:t_1]t_2$ *)
 val mkLambda : name -> constr -> constr -> constr
 val mkNamedLambda : identifier -> constr -> constr -> constr
+
+(* [mkLambda_string s t c] constructs $[s:t]c$ *)
+val mkLambda_string : string -> constr -> constr -> constr
 
 (* If $a = [| t_1; \dots; t_n |]$, constructs the application 
    $(t_1~\dots~t_n)$. *)
