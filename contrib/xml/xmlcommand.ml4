@@ -871,7 +871,7 @@ let print_object lobj id (sp,kn) dn fv env =
           let (_,(_,varentry,_)) = Declare.out_variable lobj in
            begin
             match varentry with
-               Declare.SectionLocalDef (body,optt) ->
+               Declare.SectionLocalDef (body,optt,_) ->
                  let typ = match optt with
 		   | None -> Retyping.get_type_of env Evd.empty body 
 		   | Some t -> t in

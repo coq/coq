@@ -31,7 +31,7 @@ open Nametab
 open Nametab
 
 type section_variable_entry =
-  | SectionLocalDef of constr * types option
+  | SectionLocalDef of constr * types option * bool (* opacity *)
   | SectionLocalAssum of types
 
 type variable_declaration = dir_path * section_variable_entry * strength
@@ -76,6 +76,7 @@ val get_variable_with_constraints :
 val variable_strength : variable -> strength
 val find_section_variable : variable -> section_path
 val last_section_hyps : dir_path -> identifier list
+val clear_proofs : named_context -> named_context
 
 (*s Global references *)
 

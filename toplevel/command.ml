@@ -107,7 +107,8 @@ let declare_definition ident (local,n) bl red_option c typopt =
     | NeverDischarge -> declare_global_definition ident ce' n local
     | DischargeAt (disch_sp,_) ->
         if Lib.is_section_p disch_sp then begin
-	  let c = SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type) in
+	  let c =
+            SectionLocalDef(ce'.const_entry_body,ce'.const_entry_type,false) in
           let _ = declare_variable ident (Lib.cwd(), c, n) in
 	  if_verbose message ((string_of_id ident) ^ " is defined");
           if Pfedit.refining () then 
@@ -472,6 +473,7 @@ let build_scheme lnamedepindsort =
 let start_proof_com sopt (local,stre) com hook =
   let env = Global.env () in
   let sign = Global.named_context () in
+  let sign = clear_proofs sign in
   let id = match sopt with
     | Some id ->
         (* We check existence here: it's a bit late at Qed time *)
@@ -500,7 +502,7 @@ let save id const (local,strength) hook =
        const_entry_opaque = opacity } = const in
   begin match strength with
     | DischargeAt (disch_sp,_) when Lib.is_section_p disch_sp && local ->
-	let c = SectionLocalDef (pft, tpo) in
+	let c = SectionLocalDef (pft, tpo, opacity) in
 	let _ = declare_variable id (Lib.cwd(), c, strength) in
 	hook strength (VarRef id)
     | NeverDischarge | DischargeAt _ ->
