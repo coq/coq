@@ -458,11 +458,13 @@ let (half_dinv_with, dinv_with, dinv_clear_with) =
              fun gls -> 
 	       inv false (com_of_id ic)
 		 (Dep (Some (pf_interp_constr gls com))) id gls
+	 | [ic; Identifier id; Constr c] ->
+             fun gls -> inv false (com_of_id ic) (Dep (Some c)) id gls
 	 | _ -> anomaly "DInvWith called with bad args")
   in
-  ((fun id com -> gentac [hinv_kind; Identifier id; Command com]),
-   (fun id com -> gentac [inv_kind; Identifier id; Command com]),
-   (fun id com -> gentac [invclr_kind; Identifier id; Command com]))
+  ((fun id c -> gentac [hinv_kind; Identifier id; Constr c]),
+   (fun id c -> gentac [inv_kind; Identifier id; Constr c]),
+   (fun id c -> gentac [invclr_kind; Identifier id; Constr c]))
 
 (* InvIn will bring the specified clauses into the conclusion, and then
  * perform inversion on the named hypothesis.  After, it will intro them
