@@ -58,10 +58,6 @@ Syntax constr
     soap [(SOAPP $lc1 ($LIST $cl))]
       -> [ [<hov 0> "(" $lc1 ")@[" (NECOMMANDLIST ($LIST $cl)) "]"] ]
 
-(* These are synonymous *)
-  | let [<<[$x = $M]$N>>] -> [ [<hov 0> "[" $x "=" $M:E "]" [0 1] $N:E ] ]
-  | letin [<<[$x := $A]$B>>] -> [ [ <hov 0> "[" $x ":=" $A:E "]" [0 1] $B:E ] ]
-
   (* For debug *)
   | abstpatnamed [[$id1]$c] -> [ [<hov 0> "<<" $id1 ">>" [0 1] $c:E ] ]
   | abstpatanon  [[ <> ]$c] -> [ [<hov 0> "<<_>>" [0 1] $c:E ] ]
@@ -132,6 +128,10 @@ Syntax constr
   | arrow [<< $A -> $B >>] -> [ [<hv 0> $A:L [0 0] "->" (ARROWBOX $B) ] ]
   | arrow_stop [(ARROWBOX $c)] -> [ $c:E ]
   | arrow_again [(ARROWBOX << $A -> $B >>)] -> [ $A:L [0 0] "->" (ARROWBOX $B) ]
+
+(* These are synonymous *)
+  | let [<<[$x = $M]$N>>] -> [ [<hov 0> "[" $x "=" $M:E "]" [0 1] $N:E ] ]
+  | letin [<<[$x := $A]$B>>] -> [ [ <hov 0> "[" $x ":=" $A:E "]" [0 1] $B:E ] ]
   ;
 
 (* Things parsed in command9 *)
