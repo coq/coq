@@ -212,6 +212,6 @@ val knr: 'a clos_infos -> fconstr -> fconstr stack ->
 val kl: 'a clos_infos -> fconstr -> fconstr
 
 val to_constr :
-  (lift -> fconstr -> 'a) -> lift -> fconstr -> ('a,'a) kind_of_term
+  (lift -> fconstr -> constr) -> lift -> fconstr -> constr
 
 (* End of cbn debug section i*)

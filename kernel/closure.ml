@@ -567,48 +567,48 @@ let mk_clos_deep clos_fun env t =
 (* The inverse of mk_clos_deep: move back to constr *)
 let rec to_constr constr_fun lfts v =
   match v.term with
-    | FRel i -> IsRel (reloc_rel i lfts)
-    | FFlex (FFarRel p) -> IsRel (reloc_rel p lfts)
-    | FFlex (FVar x) -> IsVar x
+    | FRel i -> mkRel (reloc_rel i lfts)
+    | FFlex (FFarRel p) -> mkRel (reloc_rel p lfts)
+    | FFlex (FVar x) -> mkVar x
     | FAtom c ->
         (match kind_of_term c with
-          | IsSort s -> IsSort s
-          | IsMeta m -> IsMeta m
+          | IsSort s -> mkSort s
+          | IsMeta m -> mkMeta m
           | _ -> assert false)
     | FCast (a,b) ->
-        IsCast (constr_fun lfts a, constr_fun lfts b)
+        mkCast (constr_fun lfts a, constr_fun lfts b)
     | FFlex (FConst (op,ve)) ->
-	IsConst (op, Array.map (constr_fun lfts) ve)
+	mkConst (op, Array.map (constr_fun lfts) ve)
     | FFlex (FEvar ((n,args),env)) ->
 	let f a = constr_fun lfts (mk_clos env a) in
-	IsEvar (n, Array.map f args)
+	mkEvar (n, Array.map f args)
     | FInd (op,ve) ->
-	IsMutInd (op, Array.map (constr_fun lfts) ve)
+	mkMutInd (op, Array.map (constr_fun lfts) ve)
     | FConstruct (op,ve) -> 
-	IsMutConstruct (op, Array.map (constr_fun lfts) ve)
+	mkMutConstruct (op, Array.map (constr_fun lfts) ve)
     | FCases (ci,p,c,ve) ->
-	IsMutCase (ci, constr_fun lfts p,
+	mkMutCase (ci, constr_fun lfts p,
 		   constr_fun lfts c,
 		   Array.map (constr_fun lfts) ve)
     | FFix (op,(tys,lna,bds),_,_) ->
 	let lfts' = el_liftn (Array.length bds) lfts in
-	IsFix (op, (Array.map (constr_fun lfts) tys, lna,
+	mkFix (op, (Array.map (constr_fun lfts) tys, lna,
 		    Array.map (constr_fun lfts') bds))
     | FCoFix (op,(tys,lna,bds),_,_) ->
 	let lfts' = el_liftn (Array.length bds) lfts in
-	IsCoFix (op, (Array.map (constr_fun lfts) tys, lna,
+	mkCoFix (op, (Array.map (constr_fun lfts) tys, lna,
 		      Array.map (constr_fun lfts') bds))
     | FApp (f,ve) ->
-	IsApp (constr_fun lfts f,
+	mkApp (constr_fun lfts f,
 	       Array.map (constr_fun lfts) ve)
     | FLambda (n,t,c,_,_)   ->
-	IsLambda (n, constr_fun lfts t,
+	mkLambda (n, constr_fun lfts t,
 	             constr_fun (el_lift lfts) c)
     | FProd (n,t,c,_,_)   ->
-	IsProd (n, constr_fun lfts t,
+	mkProd (n, constr_fun lfts t,
 	           constr_fun (el_lift lfts) c)
     | FLetIn (n,b,t,c,_,_) ->
-	IsLetIn (n, constr_fun lfts b,
+	mkLetIn (n, constr_fun lfts b,
 	      constr_fun lfts t,
 	      constr_fun (el_lift lfts) c)
     | FLIFT (k,a) -> to_constr constr_fun (el_shft k lfts) a
@@ -625,7 +625,7 @@ let term_of_fconstr =
   let rec term_of_fconstr_lift lfts v =
     match v.term with
       | FCLOS(t,env) when is_subs_id env & is_lift_id lfts -> t
-      | _ -> mk_constr (to_constr term_of_fconstr_lift lfts v) in
+      | _ -> to_constr term_of_fconstr_lift lfts v in
   term_of_fconstr_lift ELID
 
 
