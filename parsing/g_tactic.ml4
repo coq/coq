@@ -294,6 +294,10 @@ GEXTEND Gram
     [ [ "()" -> <:ast< (VOID) >>
       | n = pure_numarg -> n
       |	id = identarg -> id
+      |	"?" -> <:ast< (COMMAND (ISEVAR)) >>
+      | "?"; n = Prim.number -> <:ast< (COMMAND (META $n)) >>
+      |	IDENT "Eval"; rtc = Tactic.red_tactic; "in"; c = Constr.constr ->
+        <:ast< (COMMAND (EVAL $c (REDEXP $rtc))) >>
       |	"'"; c = constrarg ->
           (match c with
            | Coqast.Node(_,"COMMAND",[Coqast.Nvar(_,s)]) -> <:ast<($VAR $s)>>
