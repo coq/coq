@@ -127,7 +127,7 @@ val full_name_modtype : qualid -> section_path
 val full_name_cci : qualid -> section_path
 
 (* As above but checks that the path found is indeed a module *)
-val locate_loaded_library : qualid -> dir_path
+val full_name_module : qualid -> dir_path
 
 
 (*s Reverse lookup -- finding user names corresponding to the given
@@ -144,6 +144,9 @@ val shortest_qualid_of_syndef :
   kernel_name -> qualid
 val id_of_global : 
   Sign.named_context option -> global_reference -> identifier
+
+val dir_of_mp :
+  module_path -> dir_path
 
 (* Printing of global references using names as short as possible *)
 val pr_global_env : Sign.named_context option -> global_reference -> std_ppcmds

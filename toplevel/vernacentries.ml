@@ -819,16 +819,16 @@ let vernac_print = function
   | PrintHintDb -> Auto.print_searchtable ()
   | PrintScope s -> pp (Symbols.pr_scope (Constrextern.without_symbols pr_rawterm) s)
 
-let global_loaded_library r =
+let global_module r =
   let (loc,qid) = qualid_of_reference r in
-  try Nametab.locate_loaded_library qid
+  try Nametab.full_name_module qid
   with Not_found -> 
-    user_err_loc (loc, "global_loaded_library",
+    user_err_loc (loc, "global_module",
       str "Module/section " ++ pr_qualid qid ++ str " not found")
 
 let interp_search_restriction = function
-  | SearchOutside l -> (List.map global_loaded_library l, true)
-  | SearchInside l -> (List.map global_loaded_library l, false)
+  | SearchOutside l -> (List.map global_module l, true)
+  | SearchInside l -> (List.map global_module l, false)
 
 let vernac_search s r =
   let r = interp_search_restriction r in

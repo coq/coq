@@ -259,7 +259,7 @@ let mono_environment kn_set =
 
 let dir_module_of_id m = 
   try 
-    Nametab.locate_loaded_library (make_short_qualid m) 
+    Nametab.full_name_module (make_short_qualid m) 
   with Not_found ->  
     errorlabstrm "module_message"
       (str "Module" ++ spc () ++ pr_id m ++ spc () ++ str "not found.") 

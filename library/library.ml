@@ -389,7 +389,7 @@ let rec_intern_by_filename_only id f =
 let locate_qualified_library qid =
   (* Look if loaded in current environment *)
   try 
-    let dir = Nametab.locate_loaded_library qid in
+    let dir = Nametab.full_name_module qid in
     (LibLoaded, dir, library_full_filename dir)
   with Not_found ->
   (* Look if in loadpath *)
@@ -511,8 +511,8 @@ let export_library (loc,qid) =
     match Nametab.locate_module qid with
 	MPfile dir -> 
 	  add_anonymous_leaf (in_require ([dir],Some true))
-      | _ ->
-	  raise Not_found
+      | mp ->
+	  export_module mp
   with
       Not_found ->
 	user_err_loc

@@ -355,7 +355,7 @@ let locate_module qid =
     | DirModule (_,(mp,_)) -> mp
     | _ -> raise Not_found
 
-let locate_loaded_library qid = 
+let full_name_module qid = 
   match locate_dir qid with
     | DirModule (dir,_) -> dir
     | _ -> raise Not_found
@@ -427,6 +427,9 @@ let id_of_global ctx_opt ref =
 
 let sp_of_syntactic_definition kn = 
   Globrevtab.find (SyntacticDef kn) !the_globrevtab
+
+let dir_of_mp mp =
+  MPmap.find mp !the_modrevtab
 
 
 (* Shortest qualid functions **********************************************)

@@ -343,7 +343,8 @@ GEXTEND Gram
     [ [ bls = LIST0 module_binders -> List.flatten bls ] ]
   ;
   of_module_type:
-    [ [ ":"; mty = Module.module_type -> mty ] ]
+    [ [ ":"; mty = Module.module_type -> (mty, true) 
+      | "<:"; mty = Module.module_type -> (mty, false) ] ]
   ;
   is_module_type:
     [ [ ":="; mty = Module.module_type -> mty ] ]

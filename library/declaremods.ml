@@ -77,7 +77,8 @@ let modtab_objects =
 (* currently started interactive module (if any) - its arguments (if it
    is a functor) and declared output type *)
 let openmod_info = 
-  ref (([],None) : mod_bound_id list * module_type_entry option) 
+  ref (([],None,None) : mod_bound_id list * module_type_entry option 
+                                          * module_type_body option) 
 
 let _ = Summary.declare_summary "MODULE-INFO"
 	  { Summary.freeze_function = (fun () -> 
@@ -91,7 +92,7 @@ let _ = Summary.declare_summary "MODULE-INFO"
 	    Summary.init_function = (fun () -> 
 				       modtab_substobjs := MPmap.empty;
 				       modtab_objects := MPmap.empty;
-				       openmod_info := ([],None));
+				       openmod_info := ([],None,None));
 	    Summary.survive_section = false }
 
 (* auxiliary functions to transform section_path and kernel_name given
@@ -118,6 +119,18 @@ let msid_of_prefix (_,(mp,sec)) =
   else
     anomaly ("Non-empty section in module name!" ^ 
 	     string_of_mp mp ^ "." ^ string_of_dirpath sec)
+
+
+(* This function checks if the type calculated for the module [mp] is
+   a subtype of [sub_mtb]. Uses only the global environment. *)
+let check_subtypes mp sub_mtb =
+  let env = Global.env () in
+  let mtb = (Environ.lookup_module mp env).mod_type in
+  let _ = Environ.add_constraints 
+	    (Subtyping.check_subtypes env mtb sub_mtb) 
+  in
+    ()  (* The constraints are checked and forgot immediately! *) 
+
 
 (* This function registers the visibility of the module and iterates
    through its components. It is called by plenty module functions *)
@@ -164,10 +177,20 @@ let cache_module ((sp,kn as oname),(entry,substobjs,substituted)) =
   let _ = match entry with
     | None ->
 	anomaly "You must not recache interactive modules!"
-    | Some me ->
+    | Some (me,sub_mte_o) ->
+	let sub_mtb_o = match sub_mte_o with 
+	    None -> None
+	  | Some mte -> Some (Mod_typing.translate_modtype (Global.env()) mte)
+	in
+
 	let mp = Global.add_module (basename sp) me in
 	if mp <> mp_of_kn kn then
-	  anomaly "Kernel and Library names do not match"
+	  anomaly "Kernel and Library names do not match";
+	  
+	match sub_mtb_o with
+	    None -> ()
+	  | Some sub_mtb -> check_subtypes mp sub_mtb
+
   in
   conv_names_do_module false "cache" load_objects 1 oname substobjs substituted
 
@@ -431,12 +454,31 @@ let start_module interp_modtype id args res_o =
     List.fold_left (intern_args interp_modtype) (env,[]) args 
   in
   let arg_entries = List.concat (List.rev arg_entries_revlist) in
-  let res_entry_o = option_app (interp_modtype env) res_o in
+
+  let res_entry_o, sub_body_o = match res_o with
+      None -> None, None
+    | Some (res, true) ->
+	Some (interp_modtype env res), None
+    | Some (res, false) ->
+	(* If the module type is non-restricting, we must translate it
+	   here to catch errors as early as possible. If it is
+	   estricting, the kernel takes care of it.  *)
+	let sub_mte = 
+	  List.fold_right 
+	    (fun (arg_id,arg_t) mte -> MTEfunsig(arg_id,arg_t,mte))
+	    arg_entries 
+	    (interp_modtype env res)
+	in
+	let sub_mtb = 
+	  Mod_typing.translate_modtype (Global.env()) sub_mte
+	in
+	  None, Some sub_mtb
+  in
 
   let mp = Global.start_module id arg_entries res_entry_o in
 
   let mbids = List.map fst arg_entries in
-  openmod_info:=(mbids,res_entry_o);
+  openmod_info:=(mbids,res_entry_o,sub_body_o);
   let prefix = Lib.start_module id mp fs in
   Nametab.push_dir (Nametab.Until 1) (fst prefix) (DirOpenModule prefix);
   Lib.add_frozen_state ()
@@ -446,11 +488,17 @@ let end_module id =
 
   let oldoname,oldprefix,fs,lib_stack = Lib.end_module id in
   let mp = Global.end_module id in
+  let mbids, res_o, sub_o = !openmod_info in
+    
+  begin match sub_o with
+      None -> ()
+    | Some sub_mtb -> check_subtypes mp sub_mtb
+  end;
+    
   let substitute, keep, special = Lib.classify_segment lib_stack in
 
   let dir = fst oldprefix in
   let msid = msid_of_prefix oldprefix in
-  let mbids, res_o = !openmod_info in
 
   Summary.unfreeze_other_summaries fs;
 
@@ -528,7 +576,7 @@ let register_library dir cenv objs digest =
 
 let start_library dir = 
   let mp = Global.start_library dir in
-  openmod_info:=[],None;
+  openmod_info:=[],None,None;
   Lib.start_compilation dir mp;
   Lib.add_frozen_state ()
 
@@ -540,6 +588,33 @@ let export_library dir =
   let substitute, keep, _ = Lib.classify_segment lib_stack in
     cenv,(msid,substitute,keep)
 
+
+
+let do_open_export (_,(_,mp)) = 
+(* for non-substitutive exports: 
+  let mp = Nametab.locate_module (qualid_of_dirpath dir) in  *)
+  let prefix,objects = MPmap.find mp !modtab_objects in
+    open_objects 1 prefix objects
+
+let classify_export (_,(export,_ as obj)) = 
+  if export then Substitute obj else Dispose
+
+let subst_export (_,subst,(export,mp as obj)) =
+  let mp' = subst_mp subst mp in
+    if mp'==mp then obj else
+      (export,mp')
+
+let (in_export,out_export) = 
+  declare_object {(default_object "EXPORT MODULE") with
+    cache_function = do_open_export;
+    open_function = (fun i o -> if i=1 then do_open_export o);
+    subst_function = subst_export;
+    classify_function = classify_export }
+
+let export_module mp = 
+(* for non-substitutive exports: 
+  let dir = Nametab.dir_of_mp mp in *)
+  Lib.add_anonymous_leaf (in_export (true,mp))
 
 
 let import_module mp =
@@ -638,21 +713,32 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
     List.fold_left (intern_args interp_modtype) (env,[]) args 
   in
   let arg_entries = List.concat (List.rev arg_entries_revlist) in
-  let mty_entry_o = option_app (interp_modtype env) mty_o in
-  let mexpr_entry_o = option_app (interp_modexpr env) mexpr_o in
+  let mty_entry_o, mty_sub_o = match mty_o with
+      None -> None, None
+    | (Some (mty, true)) -> 
+	Some (List.fold_right 
+		(fun (arg_id,arg_t) mte -> MTEfunsig(arg_id,arg_t,mte))
+		arg_entries 
+		(interp_modtype env mty)), 
+	None
+    | (Some (mty, false)) -> 
+	None, 
+	Some (List.fold_right 
+		(fun (arg_id,arg_t) mte -> MTEfunsig(arg_id,arg_t,mte))
+		arg_entries 
+		(interp_modtype env mty))
+  in
+  let mexpr_entry_o = match mexpr_o with
+      None -> None
+    | Some mexpr -> 
+	Some (List.fold_right 
+		(fun (mbid,mte) me -> MEfunctor(mbid,mte,me))
+		arg_entries
+		(interp_modexpr env mexpr))
+  in
   let entry = 
-    {mod_entry_type = 	    
-       option_app
-	 (List.fold_right 
-	    (fun (arg_id,arg_t) mte -> MTEfunsig(arg_id,arg_t,mte))
-	    arg_entries)
-	 mty_entry_o;
-     mod_entry_expr = 
-       option_app
-	 (List.fold_right 
-	    (fun (mbid,mte) me -> MEfunctor(mbid,mte,me))
-	    arg_entries)
-	 mexpr_entry_o }
+    {mod_entry_type = mty_entry_o;	    
+     mod_entry_expr = mexpr_entry_o }
   in
   let substobjs =
     match entry with
@@ -660,14 +746,14 @@ let declare_module interp_modtype interp_modexpr id args mty_o mexpr_o =
       | {mod_entry_expr = Some mexpr} -> get_module_substobjs mexpr
       | _ -> anomaly "declare_module: No type, no body ..."
   in
-  Summary.unfreeze_summaries fs;
+    Summary.unfreeze_summaries fs;
 
-  let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
-  let substituted = subst_substobjs dir mp substobjs in
+    let dir,mp = dir_of_sp (Lib.make_path id), mp_of_kn (Lib.make_kn id) in
+    let substituted = subst_substobjs dir mp substobjs in
 
-  ignore (add_leaf
-	    id
-	    (in_module (Some entry, substobjs, substituted)))
+      ignore (add_leaf
+		id
+		(in_module (Some (entry, mty_sub_o), substobjs, substituted)))
 
 
 (*s Iterators. *)

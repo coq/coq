@@ -15,21 +15,36 @@ open Environ
 open Libnames
 open Libobject
 open Lib
-(*i*)
+   (*i*)
 
-(*s This modules provides official fucntions to declare modules and
-   module types *)
+(*s This modules provides official functions to declare modules and
+  module types *)
 
 
 (*s Modules *)
 
+(* [declare_module interp_modtype interp_modexpr id fargs typ expr]
+   declares module [id], with type constructed by [interp_modtype]
+   from functor arguments [fargs] and [typ] and with module body
+   constructed by [interp_modtype] from functor arguments [fargs] and
+   by [interp_modexpr] from [expr]. At least one of [typ], [expr] must
+   be non-empty.
+   
+   The [bool] in [typ] tells if the module must be abstracted [true]
+   with respect to the module type or merely matched without any
+   restriction [false].
+*)
+
 val declare_module : 
   (env -> 'modtype -> module_type_entry) -> (env -> 'modexpr -> module_expr) ->
   identifier -> 
-  (identifier list * 'modtype) list -> 'modtype option -> 'modexpr option -> unit
-
-val start_module : (env -> 'modtype -> module_type_entry) ->
-  identifier -> (identifier list * 'modtype) list -> 'modtype option -> unit
+  (identifier list * 'modtype) list -> ('modtype * bool) option -> 
+  'modexpr option -> unit
+ 
+val start_module : (env -> 'modtype -> module_type_entry) -> 
+  identifier -> 
+  (identifier list * 'modtype) list -> ('modtype * bool) option -> 
+  unit
 
 val end_module : identifier -> unit
 
@@ -74,6 +89,10 @@ val export_library :
 
 val import_module : module_path -> unit
 
+(* [export_module mp] is similar, but is run when the module
+   containing it is imported *)
+
+val export_module : module_path -> unit
 
 (*s [fold_all_segments] and [iter_all_segments] iterate over all
     segments, the modules' segments first and then the current
