@@ -110,7 +110,7 @@ let filter_by_module module_list accept _ _ c =
   with No_section_path -> 
     false
 
-let gref_eq = IndRef (make_path ["Logic"] (id_of_string "eq") CCI, 0)
+let gref_eq = IndRef (make_path ["Coq";"Init";"Logic"] (id_of_string "eq") CCI, 0)
 
 let mk_rewrite_pattern1 pattern =
   PApp (PRef gref_eq, [| PMeta None; pattern; PMeta None |])
