@@ -39,7 +39,7 @@ type morphism =
 let constr_of c = Astterm.interp_constr Evd.empty (Global.env()) c
 
 let constant dir s =
-  let dir = make_dirpath (List.map id_of_string ("Coq"::"Init"::dir)) in
+  let dir = make_dirpath (List.map id_of_string ("Coq"::"Setoids"::dir)) in
   let id = id_of_string s in
     try 
       Declare.global_reference_in_absolute_module dir id

@@ -8,9 +8,7 @@
 
 (* $Id$: *)
 
-Require Logic.
 Require Export Setoid_replace.
-Require Inv.
 
 Section Setoid.
 

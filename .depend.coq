@@ -38,6 +38,7 @@ theories/Sets/Ensembles.vo: theories/Sets/Ensembles.v
 theories/Sets/Cpo.vo: theories/Sets/Cpo.v theories/Sets/Ensembles.vo theories/Sets/Relations_1.vo theories/Sets/Partial_Order.vo
 theories/Sets/Constructive_sets.vo: theories/Sets/Constructive_sets.v theories/Sets/Ensembles.vo
 theories/Sets/Classical_sets.vo: theories/Sets/Classical_sets.v theories/Sets/Ensembles.vo theories/Sets/Constructive_sets.vo theories/Logic/Classical_Type.vo
+theories/Setoids/Setoid.vo: theories/Setoids/Setoid.v tactics/Setoid_replace.vo
 theories/Relations/Rstar.vo: theories/Relations/Rstar.v
 theories/Relations/Relations.vo: theories/Relations/Relations.v theories/Relations/Relation_Definitions.vo theories/Relations/Relation_Operators.vo theories/Relations/Operators_Properties.vo
 theories/Relations/Relation_Operators.vo: theories/Relations/Relation_Operators.v theories/Relations/Relation_Definitions.vo theories/Lists/PolyList.vo theories/Lists/PolyListSyntax.vo
@@ -119,7 +120,6 @@ theories/IntMap/Adalloc.vo: theories/IntMap/Adalloc.v theories/Bool/Bool.vo theo
 theories/Init/Wf.vo: theories/Init/Wf.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo
 theories/Init/Specif.vo: theories/Init/Specif.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo theories/Init/Datatypes.vo
 theories/Init/SpecifSyntax.vo: theories/Init/SpecifSyntax.v theories/Init/LogicSyntax.vo theories/Init/Specif.vo
-theories/Init/Setoid.vo: theories/Init/Setoid.v theories/Init/Logic.vo tactics/Setoid_replace.vo tactics/Inv.vo
 theories/Init/Prelude.vo: theories/Init/Prelude.v theories/Init/Datatypes.vo theories/Init/DatatypesSyntax.vo theories/Init/Logic.vo theories/Init/LogicSyntax.vo theories/Init/Specif.vo theories/Init/SpecifSyntax.vo theories/Init/Peano.vo theories/Init/Wf.vo
 theories/Init/Peano.vo: theories/Init/Peano.v theories/Init/Logic.vo theories/Init/LogicSyntax.vo theories/Init/Datatypes.vo
 theories/Init/Logic.vo: theories/Init/Logic.v theories/Init/Datatypes.vo
@@ -212,9 +212,11 @@ test-suite/failure/Case10.vo: test-suite/failure/Case10.v
 test-suite/bench/lists-100.vo: test-suite/bench/lists-100.v
 test-suite/bench/lists_100.vo: test-suite/bench/lists_100.v
 contrib/xml/Xml.vo: contrib/xml/Xml.v contrib/xml/xml.cmo contrib/xml/xmlcommand.cmo contrib/xml/xmlentries.cmo
+contrib/romega/ROmega.vo: contrib/romega/ROmega.v contrib/omega/Omega.vo contrib/romega/ReflOmegaCore.vo
+contrib/romega/ReflOmegaCore.vo: contrib/romega/ReflOmegaCore.v theories/Arith/Arith.vo theories/Lists/PolyList.vo theories/Bool/Bool.vo theories/ZArith/ZArith.vo
 contrib/ring/ZArithRing.vo: contrib/ring/ZArithRing.v contrib/ring/ArithRing.vo theories/ZArith/ZArith.vo theories/Logic/Eqdep_dec.vo
 contrib/ring/Setoid_ring.vo: contrib/ring/Setoid_ring.v contrib/ring/Setoid_ring_theory.vo contrib/ring/Quote.vo contrib/ring/Setoid_ring_normalize.vo contrib/ring/ring.cmo
-contrib/ring/Setoid_ring_theory.vo: contrib/ring/Setoid_ring_theory.v theories/Bool/Bool.vo theories/Init/Setoid.vo
+contrib/ring/Setoid_ring_theory.vo: contrib/ring/Setoid_ring_theory.v theories/Bool/Bool.vo theories/Setoids/Setoid.vo
 contrib/ring/Setoid_ring_normalize.vo: contrib/ring/Setoid_ring_normalize.v contrib/ring/Setoid_ring_theory.vo contrib/ring/Quote.vo
 contrib/ring/Ring.vo: contrib/ring/Ring.v theories/Bool/Bool.vo contrib/ring/Ring_theory.vo contrib/ring/Quote.vo contrib/ring/Ring_normalize.vo contrib/ring/Ring_abstract.vo contrib/ring/ring.cmo
 contrib/ring/Ring_theory.vo: contrib/ring/Ring_theory.v theories/Bool/Bool.vo

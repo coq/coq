@@ -331,7 +331,7 @@ INITVO=theories/Init/Datatypes.vo         theories/Init/Peano.vo         \
        theories/Init/Logic.vo             theories/Init/Specif.vo        \
        theories/Init/LogicSyntax.vo       theories/Init/SpecifSyntax.vo  \
        theories/Init/Logic_Type.vo        theories/Init/Wf.vo            \
-       theories/Init/Logic_TypeSyntax.vo  theories/Init/Setoid.vo
+       theories/Init/Logic_TypeSyntax.vo
 
 theories/Init/%.vo: theories/Init/%.v states/barestate.coq $(COQC)
 	$(COQC) -boot -$(BEST) -R theories Coq -is states/barestate.coq $<
@@ -438,9 +438,11 @@ REALSVO=theories/Reals/TypeSyntax.vo \
 	theories/Reals/Rseries.vo      theories/Reals/Rtrigo_fun.vo \
 	theories/Reals/Reals.vo 
 
+SETOIDSVO=theories/Setoids/Setoid.v
+
 THEORIESVO = $(LOGICVO) $(ARITHVO) $(BOOLVO) $(ZARITHVO) $(LISTSVO) \
              $(SETSVO) $(INTMAPVO) $(RELATIONSVO) $(WELLFOUNDEDVO) \
-	     $(REALSVO) $(SETOIDVO)
+	     $(REALSVO) $(SETOIDSVO)
 
 $(THEORIESVO): states/initial.coq
 

@@ -258,12 +258,12 @@ contrib/correctness/pwp.cmi: contrib/correctness/peffect.cmi \
 contrib/extraction/extraction.cmi: kernel/environ.cmi \
     contrib/extraction/miniml.cmi kernel/names.cmi kernel/term.cmi 
 contrib/extraction/haskell.cmi: contrib/extraction/miniml.cmi \
-    contrib/extraction/mlutil.cmi 
+    contrib/extraction/mlutil.cmi kernel/term.cmi 
 contrib/extraction/miniml.cmi: kernel/names.cmi lib/pp.cmi kernel/term.cmi 
 contrib/extraction/mlutil.cmi: contrib/extraction/miniml.cmi kernel/names.cmi \
     kernel/term.cmi 
 contrib/extraction/ocaml.cmi: contrib/extraction/miniml.cmi \
-    contrib/extraction/mlutil.cmi kernel/names.cmi lib/pp.cmi 
+    contrib/extraction/mlutil.cmi kernel/names.cmi lib/pp.cmi kernel/term.cmi 
 contrib/interface/dad.cmi: contrib/interface/ctast.cmo proofs/proof_type.cmi \
     proofs/tacmach.cmi 
 contrib/interface/debug_tac.cmi: parsing/coqast.cmi proofs/proof_type.cmi \
@@ -1391,12 +1391,14 @@ toplevel/vernacinterp.cmx: parsing/ast.cmx parsing/astterm.cmx \
     kernel/names.cmx library/nametab.cmx lib/options.cmx lib/pp.cmx \
     proofs/proof_type.cmx proofs/tacinterp.cmx lib/util.cmx \
     toplevel/vernacinterp.cmi 
-toplevel/vernac.cmo: parsing/ast.cmi parsing/coqast.cmi library/library.cmi \
-    lib/options.cmi parsing/pcoq.cmi lib/pp.cmi library/states.cmi \
-    lib/system.cmi lib/util.cmi toplevel/vernacinterp.cmi toplevel/vernac.cmi 
-toplevel/vernac.cmx: parsing/ast.cmx parsing/coqast.cmx library/library.cmx \
-    lib/options.cmx parsing/pcoq.cmx lib/pp.cmx library/states.cmx \
-    lib/system.cmx lib/util.cmx toplevel/vernacinterp.cmx toplevel/vernac.cmi 
+toplevel/vernac.cmo: parsing/ast.cmi parsing/coqast.cmi library/lib.cmi \
+    library/library.cmi kernel/names.cmi lib/options.cmi parsing/pcoq.cmi \
+    lib/pp.cmi library/states.cmi lib/system.cmi lib/util.cmi \
+    toplevel/vernacinterp.cmi toplevel/vernac.cmi 
+toplevel/vernac.cmx: parsing/ast.cmx parsing/coqast.cmx library/lib.cmx \
+    library/library.cmx kernel/names.cmx lib/options.cmx parsing/pcoq.cmx \
+    lib/pp.cmx library/states.cmx lib/system.cmx lib/util.cmx \
+    toplevel/vernacinterp.cmx toplevel/vernac.cmi 
 contrib/correctness/pcicenv.cmo: library/global.cmi kernel/names.cmi \
     contrib/correctness/past.cmi contrib/correctness/penv.cmi \
     contrib/correctness/pmisc.cmi contrib/correctness/pmonad.cmi \
