@@ -32,17 +32,17 @@ let pr_qualified_path sp id =
 
 let global_const_name sp =
   try pr_qualified_path sp (basename sp)
-  with _ -> (* May happen in debug *)
+  with Not_found -> (* May happen in debug *)
     [< 'sTR ("CONST("^(string_of_path sp)^")") >]
 
 let global_ind_name (sp,tyi) =
   try pr_qualified_path sp (Global.id_of_global (IndRef (sp,tyi)))
-  with _ -> (* May happen in debug *)
+  with Not_found -> (* May happen in debug *)
     [< 'sTR ("IND("^(string_of_path sp)^","^(string_of_int tyi)^")") >]
 
 let global_constr_name ((sp,tyi),i) =
   try pr_qualified_path sp (Global.id_of_global (ConstructRef ((sp,tyi),i)))
-  with _ -> (* May happen in debug *)
+  with Not_found -> (* May happen in debug *)
     [< 'sTR ("CONSTRUCT("^(string_of_path sp)^","^(string_of_int tyi)
 		  ^","^(string_of_int i)^")") >]
 
