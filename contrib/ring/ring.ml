@@ -297,7 +297,7 @@ let unbox = function
 (* Protects the convertibility test against undue exceptions when using it 
    with untyped terms *)
 
-let safe_pf_conv_x c1 c2 = try pf_conv_x c1 c2 with _ -> false
+let safe_pf_conv_x gl c1 c2 = try pf_conv_x gl c1 c2 with _ -> false
 
 
 (* Add a Ring or a Semi-Ring to the database after a type verification *)
