@@ -27,6 +27,8 @@ open Util
 
 let ground_tac solver startseq gl=
   let rec toptac seq gl=
+    if Tacinterp.get_debug()=Tactic_debug.DebugOn 
+    then Pp.msgnl (Proof_trees.pr_goal (sig_it gl));
     match seq.gl with 
 	Atomic t->
 	  tclORELSE (axiom_tac t seq) (left_tac seq []) gl

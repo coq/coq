@@ -180,7 +180,7 @@ let ll_atom_tac a id tacrec seq=
        wrap 1 false tacrec seq] 
   with Not_found->tclFAIL 0 "No link" 
 
-let ll_false_tac id tacrec seq=
+let ll_false_tac id tacrec seq =
   tclTHEN (clear_global id) (wrap 0 false tacrec seq)
 
 let left_false_tac id=
@@ -213,11 +213,12 @@ let ll_ind_tac ind largs id tacrec seq gl=
 let ll_forall_tac prod id tacrec seq=
   tclTHENS (cut prod)
     [tclTHENLIST
-       [(fun gls->generalize 
-	   [mkApp(constr_of_reference id,
-		  [|mkVar (Tacmach.pf_nth_hyp_id gls 1)|])] gls);
+       [intro;
+	(fun gls->
+	   let id0=pf_nth_hyp_id gls 1 in
+	   let term=mkApp((constr_of_reference id),[|mkVar(id0)|]) in
+	     tclTHEN (generalize [term]) (clear [id0]) gls);  
 	clear_global id;
 	intro;
 	tclSOLVE [wrap 1 false tacrec (deepen seq)]];
-       tclSOLVE [wrap 0 true tacrec (deepen seq)]]
-
+     tclSOLVE [wrap 0 true tacrec (deepen seq)]]

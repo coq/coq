@@ -24,7 +24,7 @@ let priority = function (* pure heuristics, <=0 for non reversible *)
       Lfalse             ->1000
     | Land _             ->  90
     | Lor _              ->  40
-    | Lforall (_,_)      -> -30
+    | Lforall (_,_)      -> -30 (* must stay at lowest priority *)
     | Lexists            ->  60
     | Levaluable _       -> 100
     | LA(_,lap) ->
