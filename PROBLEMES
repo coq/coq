@@ -42,6 +42,7 @@ Dyade/BDD : Require Rocq/GRAPHS
 Lyon/AUTOMATA : OK
 Lyon/IEEE754 : OK
 Lyon/COINDUCTIVES : OK
+Lyon/CIRCUITS : OK
 
 Rocq/GRAPHS
 /home/cpaulin/TYPES/V7/bin/coqc  -q  -I . lsort
