@@ -1428,7 +1428,9 @@ and fTACTIC_COM = function
    fDESTRUCTING x3;
    fUSINGTDB x4;
    fNODE "superauto" 4
-| CT_symmetry -> fNODE "symmetry" 0
+| CT_symmetry(x1) ->
+   fCLAUSE x1;
+   fNODE "symmetry" 1
 | CT_tac_double(x1, x2) ->
    fID_OR_INT x1;
    fID_OR_INT x2;

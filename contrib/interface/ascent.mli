@@ -581,7 +581,7 @@ and ct_TACTIC_COM =
   | CT_specialize of ct_INT_OPT * ct_FORMULA * ct_SPEC_LIST
   | CT_split of ct_SPEC_LIST
   | CT_superauto of ct_INT_OPT * ct_ID_LIST * ct_DESTRUCTING * ct_USINGTDB
-  | CT_symmetry
+  | CT_symmetry of ct_CLAUSE
   | CT_tac_double of ct_ID_OR_INT * ct_ID_OR_INT
   | CT_tacsolve of ct_TACTIC_COM * ct_TACTIC_COM list
   | CT_tactic_fun of ct_ID_UNIT_LIST * ct_TACTIC_COM
