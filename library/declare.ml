@@ -243,7 +243,9 @@ let global_reference_imps kind id =
 	c, list_of_implicits (constructor_implicits ((sp,i),j))
     | _ -> assert false
 
-let global env id = global_reference CCI id
+let global env id =
+  try let _ = lookup_glob id (Environ.context env) in VAR id
+  with Not_found -> global_reference CCI id
 
 let is_global id =
   try 

@@ -75,7 +75,7 @@ TACTICS=tactics/dn.cmo tactics/termdn.cmo tactics/btermdn.cmo \
         tactics/tacentries.cmo tactics/hiddentac.cmo tactics/elim.cmo
 
 TOPLEVEL=toplevel/himsg.cmo toplevel/errors.cmo toplevel/vernacinterp.cmo \
-         toplevel/metasyntax.cmo toplevel/command.cmo \
+         toplevel/metasyntax.cmo toplevel/command.cmo pretyping/class.cmo \
          toplevel/vernacentries.cmo toplevel/vernac.cmo toplevel/mltop.cmo \
 	 toplevel/protectedtoplevel.cmo toplevel/toplevel.cmo
 

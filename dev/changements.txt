@@ -51,6 +51,9 @@ Changements dans les fonctions :
 	  mis_arity      ->  instantiate_arity
 	  mis_lc	 ->  instantiate_lc	
 
+	Ex-Environ	 
+	  mind_path      -> Global.lookup_mind
+
 	Printer
 	  gentermpr	->   gen_pr_term
 

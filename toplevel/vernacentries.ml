@@ -735,11 +735,11 @@ let _ =
 	     definition_body_red id stre c red_option;
 	     message ((string_of_id id) ^ " is defined");
              if coe then begin
-	       Class.try_add_new_coercion (Some id) stre None None false;
+	       Class.try_add_new_coercion id stre;
                message ((string_of_id id) ^ " is now a coercion")
 	     end;
 	     if idcoe then 
-	       Class.try_add_new_coercion None stre (Some (Left id)) None true;
+	       Class.try_add_new_coercion_subclass stre id;
              if objdef then Recordobj.objdef_declare id
        | _ -> bad_vernac_args "DEFINITION")
 
@@ -767,8 +767,7 @@ let _ =
                        hypothesis_def_var (refining()) (string_of_id s) 
 			 stre c;
                        if coe then
-			 Class.try_add_new_coercion (Some s) 
-			   stre None None false;
+			 Class.try_add_new_coercion s stre;
 		       message ((string_of_id s) ^ " is assumed"))
                     sl)
 	       slcl
@@ -1142,8 +1141,7 @@ let _ =
 	   in
 	   let isid = identity = "IDENTITY" in
 	   fun () -> 
-	     Class.try_add_new_coercion (Some id) stre (Some (Left ids)) 
-               (Some idt) isid;
+	     Class.try_add_new_coercion id stre ids idt isid;
              message ((string_of_id id) ^ " is now a coercion")
        | _ -> bad_vernac_args "COERCION")
      ***)

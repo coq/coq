@@ -26,7 +26,7 @@ type cl_info_typ = {
 type cte_typ = 
   | NAM_Var of identifier 
   | NAM_SP of section_path 
-  | NAM_Construct of section_path * int * int
+  | NAM_Construct of constructor_path
 
 type coe_typ = cte_typ
 
@@ -45,7 +45,9 @@ val coercions : unit -> (int * (coe_typ * coe_info_typ)) list
 
 val cte_of_constr : constr -> cte_typ
 val class_info : cl_typ -> (int * cl_info_typ)
+val class_exists : cl_typ -> bool
 val class_info_from_index : int -> cl_typ * cl_info_typ
+val coercion_exists : coe_typ -> bool
 val coercion_info : coe_typ -> (int * coe_info_typ)
 val coercion_info_from_index : int -> coe_typ * coe_info_typ
 val constructor_at_head : constr -> cl_typ * int

@@ -16,13 +16,13 @@ open Generic
 type cte_typ = 
   | NAM_Var of identifier 
   | NAM_SP of section_path 
-  | NAM_Construct of section_path*int*int
+  | NAM_Construct of constructor_path
 
 let cte_of_constr = function  
   | DOPN(Const sp,_) -> NAM_SP sp
   | DOPN(MutInd (sp,_),_) -> NAM_SP sp
   | VAR id -> NAM_Var id
-  | DOPN(MutConstruct ((sp,i),j) ,_) -> NAM_Construct (sp,i,j)
+  | DOPN(MutConstruct cstr_cp,_) -> NAM_Construct cstr_cp
   |  _ -> raise Not_found
 
 type cl_typ = 
@@ -119,6 +119,10 @@ let search_info x l =
 
 let class_info cl = search_info cl (!cLASSES)
 
+let class_exists cl =
+  try let _ = class_info cl in true
+  with Not_found -> false
+
 (* class_info_from_index : int -> cl_typ * cl_info_typ *)
 
 let class_info_from_index i = List.assoc i (!cLASSES)
@@ -126,6 +130,10 @@ let class_info_from_index i = List.assoc i (!cLASSES)
 (* coercion_info : coe_typ -> int * coe_info_typ *)
 
 let coercion_info coe = search_info coe (!cOERCIONS)
+
+let coercion_exists coe =
+  try let _ = coercion_info coe in true
+  with Not_found -> false
 
 (* coercion_info_from_index : int -> coe_typ * coe_info_typ *)
 
