@@ -749,7 +749,7 @@ let check_hypotheses_occurrences_list env occl =
 	if List.mem hyp acc then
 	  error ("Hypothesis "^(string_of_id hyp)^" occurs twice");
 	if not (mem_named_context hyp (named_context env)) then
-	  error ("No such hypothesis : " ^ (string_of_id hyp));
+	  error ("No such hypothesis: " ^ (string_of_id hyp));
 	check (hyp::acc) rest
     | [] -> ()
   in check [] occl
@@ -1017,16 +1017,17 @@ let default_elim (c,lbindc)  gl =
   let env = pf_env gl in
   let (path,_,t) = reduce_to_ind env (project gl) (pf_type_of gl c) in
   let s = sort_of_goal gl in
-  let elimc = try lookup_eliminator  env path s 
-  with Not_found -> 
-    let dir, base,k = repr_path path
-    in let id = id_of_string ((string_of_id base)^(elimination_suffix s)) in
-    errorlabstrm "default_elim"
-       [< 'sTR "Cannot find the elimination combinator :";
-        pr_id id; 'sPC;
-	'sTR "The elimination of the inductive definition :";
-         pr_id base; 'sPC; 'sTR "on sort "; 
-         'sPC; print_sort s ; 'sTR " is probably not allowed" >]
+  let elimc =
+    try lookup_eliminator env path s 
+    with Not_found -> 
+      let dir, base,k = repr_path path in
+      let id = make_elimination_ident base s in
+      errorlabstrm "default_elim"
+	[< 'sTR "Cannot find the elimination combinator :";
+           pr_id id; 'sPC;
+	   'sTR "The elimination of the inductive definition :";
+           pr_id base; 'sPC; 'sTR "on sort "; 
+           'sPC; print_sort s ; 'sTR " is probably not allowed" >]
   in  general_elim (c,lbindc) (elimc,[]) gl
 
 
@@ -1094,7 +1095,7 @@ let induct_discharge old_style indpath statuslists cname destopt avoid ra gl =
       make_ident (string_of_id cname) (Some 1)
   in
   let indhyp = if old_style then "Hrec" else "IH" in
-  let hyprecname = id_of_string (indhyp^(string_of_id recvarname)) in
+  let hyprecname = add_prefix indhyp recvarname in
   let avoid =
     if old_style then avoid
     else (* Forbid to use cname0 and hyprecname0 *)
@@ -1129,10 +1130,12 @@ let induct_discharge old_style indpath statuslists cname destopt avoid ra gl =
      s'embêter à regarder si un letin_tac ne fait pas des
      substitutions aussi sur l'argument voisin *)
 
-(* Marche pas... faut prendre en compte l'occurence précise... *)
+(* Marche pas... faut prendre en compte l'occurrence précise... *)
 
-let atomize_param_of_ind hyp0 gl =
-  let tmptyp0 = pf_get_hyp_typ gl hyp0 in
+let atomize_param_of_ind hyp0opt gl =
+  let hyp0,tmptyp0 = match hyp0opt with
+    | None -> let (hyp0,_,typ0) = pf_last_hyp gl in (hyp0, typ0)
+    | Some hyp0 -> hyp0, pf_get_hyp_typ gl hyp0 in
   let (mind,indtyp,typ0) = pf_reduce_to_mind gl tmptyp0 in
   let mis = Global.lookup_mind_specif mind in
   let nparams = mis_nparams mis in
@@ -1140,8 +1143,8 @@ let atomize_param_of_ind hyp0 gl =
   let params = list_firstn nparams argl in
   (* le gl est important pour ne pas préévaluer *)
   let rec atomize_one i avoid gl =
-    if i<>nparams then 
-      let tmptyp0 = pf_get_hyp_typ gl hyp0 in
+    if i<>nparams then
+      let tmphyp0 = pf_get_hyp_typ gl hyp0 in
       let (_,indtyp,_) = pf_reduce_to_mind gl tmptyp0 in
       let argl = snd (decomp_app indtyp) in
       let c = List.nth argl (i-1) in
@@ -1357,16 +1360,23 @@ let compute_elim_signature_and_roughly_check elimt mind =
   let _,elimt3 = decompose_prod_n npred elimt2 in
   check_elim elimt3 0
 
-let induction_from_context style hyp0 gl =
-   (*test suivant sans doute inutile car protégé par le letin_tac avant appel*)
-  if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
-    errorlabstrm "induction" [< 'sTR "Cannot generalize a global variable" >];
+let induction_from_context isrec style hyp0opt gl =
+  let hyp0,tmptyp0 = match hyp0opt with
+    | None -> let (hyp0,_,typ0) = pf_last_hyp gl in (hyp0, typ0)
+    | Some hyp0 ->
+	(*test suivant sans doute inutile car refait par le letin_tac*)
+	if List.mem hyp0 (ids_of_named_context (Global.named_context())) then
+	  errorlabstrm "induction" 
+	    [< 'sTR "Cannot generalize a global variable" >];
+	hyp0, pf_get_hyp_typ gl hyp0 in
   let env = pf_env gl in
-  let tmptyp0 = pf_get_hyp_typ gl hyp0 in
   let ((ind_sp,_) as mind,indtyp,typ0) = pf_reduce_to_mind gl tmptyp0 in
   let indvars = find_atomic_param_of_ind mind indtyp in
   let mindpath = Declare.path_of_inductive_path ind_sp in
-  let elimc = lookup_eliminator env mindpath (sort_of_goal gl) in
+  let elimc =
+    if isrec then lookup_eliminator env mindpath (sort_of_goal gl)
+    else Indrec.make_case_gen env (project gl) mind (sort_of_goal gl)
+  in
   let elimt = pf_type_of gl elimc in
   let (statlists,lhyp0,indhyps,deps) = cook_sign hyp0 indvars env in
   let tmpcl = it_mkNamedProd_or_LetIn (pf_concl gl) deps in
@@ -1384,30 +1394,31 @@ let induction_from_context style hyp0 gl =
 	   (induct_discharge style mindpath statlists hyp0 lhyp0 dephyps) lr)]
     gl
 
-let induction_with_atomization_of_ind_arg hyp0 =
+let induction_with_atomization_of_ind_arg isrec hyp0 =
   tclTHEN
     (atomize_param_of_ind hyp0)
-    (induction_from_context false hyp0)
+    (induction_from_context isrec false hyp0)
 
-let new_induct c gl =
+let new_induct isrec c gl =
   match kind_of_term c with
     | IsVar id when not (mem_named_context id (Global.named_context())) ->
-(*
 	tclORELSE
-	  (tclTHEN (intros_until id) (tclLAST_HYP simplest_elim))
-	  (induction_with_atomization_of_ind_arg id) gl
-*)
-	tclTHEN (tclTRY (intros_until id))
-	  (induction_with_atomization_of_ind_arg id) gl
+	  (* Either the hypothesis is quantified and we first introduce it *)
+	  (tclTHEN
+	     (intros_until id)
+	     (induction_with_atomization_of_ind_arg isrec None))
+	  (* Or it is already in context *)
+	  (induction_with_atomization_of_ind_arg isrec (Some id)) gl
     | _        ->
 	let x = id_of_name_using_hdchar (Global.env()) (pf_type_of gl c) 
 		  Anonymous in
 	let id = fresh_id [] x gl in
 	tclTHEN
 	  (letin_tac true (Name id) c (None,[]))
-	  (induction_with_atomization_of_ind_arg id) gl
+	  (induction_with_atomization_of_ind_arg isrec (Some id)) gl
 
-(***)
+let new_induct_nodep isrec n =
+  tclTHEN (intros_until_n n) (induction_with_atomization_of_ind_arg isrec None)
 
 (* The registered tactic, which calls the default elimination
  * if no elimination constant is provided. *)
@@ -1433,17 +1444,18 @@ let raw_induct s = tclTHEN (intros_until s) (tclLAST_HYP simplest_elim)
 let raw_induct_nodep n = tclTHEN (intros_until_n n) (tclLAST_HYP simplest_elim)
 
 (* This was Induction in 6.3 (hybrid form) *)
-let old_induct s = tclORELSE (raw_induct s) (induction_from_context true s)
+let old_induct s =
+  tclORELSE (raw_induct s) (induction_from_context true true (Some s))
 let old_induct_nodep = raw_induct_nodep
 
 (* This is Induction since V7 ("natural" induction both in quantified
    premisses and introduced ones) *)
 let dyn_new_induct = function
-  | [(Command c)] -> tactic_com new_induct c
-  | [(Constr x)]  -> new_induct x
-  | [(Integer n)] -> error "Not implemented"
+  | [(Command c)] -> tactic_com (new_induct true) c
+  | [(Constr x)]  -> new_induct true x
+  | [(Integer n)] -> new_induct_nodep true n
   (* Identifier apart because id can be quantified in goal and not typable *)
-  | [(Identifier id)] -> new_induct (mkVar id)
+  | [(Identifier id)] -> new_induct true (mkVar id)
   | l             -> bad_tactic_args "induct" l
 
 (* This was Induction before 6.3 (induction only in quantified premisses)
@@ -1484,10 +1496,20 @@ let dyn_case =function
 let destruct s       = (tclTHEN (intros_until s) (tclLAST_HYP simplest_case))
 let destruct_nodep n = (tclTHEN (intros_until_n n)    (tclLAST_HYP simplest_case))
 
-let dyn_destruct = function  
+let dyn_new_destruct = function
+  | [(Command c)] -> tactic_com (new_induct false) c
+  | [(Constr x)]  -> new_induct false x
+  | [(Integer n)] -> new_induct_nodep false n
+  (* Identifier apart because id can be quantified in goal and not typable *)
+  | [(Identifier id)] -> new_induct false (mkVar id)
+  | l             -> bad_tactic_args "induct" l
+
+let dyn_old_destruct = function  
   | [Identifier x] -> destruct x
   | [Integer    n] -> destruct_nodep n 
   | l                -> bad_tactic_args "destruct" l
+
+let dyn_destruct = dyn_old_destruct
 
 (*
  *  Eliminations giving the type instead of the proof.
@@ -1765,8 +1787,7 @@ let abstract_subproof name tac gls =
 let tclABSTRACT name_op tac gls = 
   let s = match name_op with 
     | Some s -> s 
-    | None   -> id_of_string
-	((string_of_id (get_current_proof_name ()))^"_subproof") 
+    | None   -> add_suffix (get_current_proof_name ()) "_subproof" 
   in  
   abstract_subproof s tac gls
 
