@@ -154,8 +154,8 @@ doc-html.tar.gz: all-html
 	rm -rf coq-docs-html/*
 	cp Tutorial.v.html coq-docs-html/tutorial.html
 	cp Reference-Manual.html coqide-queries.png coqide.png coq-docs-html 
-	(cd coq-docs-html; hacha ./Reference-Manual.html; rm ./Reference-Manual.html)
-	cp cover.html coq-docs-html
+	(cd coq-docs-html; hacha -o toc.html ./Reference-Manual.html; rm ./Reference-Manual.html)
+	cp cover.html main.html main-0.html coq-docs-html
 	tar cf doc-html.tar coq-docs-html
 	gzip -f doc-html.tar
 
@@ -164,9 +164,9 @@ html-www: all-html
 	- $(MKDIR) www
 	rm -rf www/*
 	cp Tutorial.v.html www/tutorial.html
-	cp Reference-Manual.html  coqide-queries.png coqide.png www
-	(cd www; hacha ./Reference-Manual.html; rm ./Reference-Manual.html)
-	cp cover.html www
+	cp coqide-queries.png coqide.png www
+	(cd www; hacha -o toc.html ../Reference-Manual.html)
+	cp cover.html main.html main-0.html www
 
 
 clean-refman:

@@ -10,6 +10,7 @@
 \usepackage{verbatim}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{hevea}
 
 % for coqide
 \ifx\pdfoutput\undefined   % si on est pas en pdflatex
@@ -32,13 +33,17 @@
 %END LATEX
 
 \tophtml{}
+%BEGIN LATEX
 \coverpage{Reference Manual}{The Coq Development Team}
+%END LATEX
 
 %\defaultheaders
 \include{RefMan-int}% Introduction
 \include{RefMan-pre}% Credits
 
+%BEGIN LATEX
 \tableofcontents
+%END LATEX
 
 \part{The language}
 \defaultheaders
@@ -85,14 +90,19 @@
 \nocite{*}
 \bibliographystyle{plain}
 \bibliography{biblio}
+\cutname{biblio.html}
 
 \printindex
+\cutname{general-index.html}
 
 \printindex[tactic]
+\cutname{tactic-index.html}
 
 \printindex[command]
+\cutname{command-index.html}
 
 \printindex[error]
+\cutname{error-index.html}
 
 %BEGIN LATEX
 \listoffigures
