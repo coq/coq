@@ -1620,8 +1620,8 @@ let rec extern inctx scopes vars r =
                  let (ids,bl) = extern_local_binder scopes vars bl in
                  let vars0 = List.fold_right (name_fold Idset.add) ids vars in
                  let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
-		 (fi,nv.(i), bl, extern_type scopes vars1 ty,
-                  extern false scopes vars0 def)) idv
+		 (fi,nv.(i), bl, extern_type scopes vars0 ty,
+                  extern false scopes vars1 def)) idv
 	     in 
 	     CFix (loc,(loc,idv.(n)),Array.to_list listdecl)
 	 | RCoFix n -> 
@@ -1630,8 +1630,8 @@ let rec extern inctx scopes vars r =
                  let (ids,bl) = extern_local_binder scopes vars blv.(i) in
                  let vars0 = List.fold_right (name_fold Idset.add) ids vars in
                  let vars1 = List.fold_right (name_fold Idset.add) ids vars' in
-		 (fi,bl,extern_type scopes vars1 tyv.(i),
-                  sub_extern false scopes vars0 bv.(i))) idv
+		 (fi,bl,extern_type scopes vars0 tyv.(i),
+                  sub_extern false scopes vars1 bv.(i))) idv
 	     in
 	     CCoFix (loc,(loc,idv.(n)),Array.to_list listdecl))
 
