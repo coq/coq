@@ -2,7 +2,11 @@
 
 # Automatic test of Coq
 
-command="../bin/coqtop.opt -q -batch -load-vernac-source"
+if [ "$1" = -byte ]; then
+  command="../bin/coqtop.byte -q -batch -load-vernac-source"
+else
+  command="../bin/coqtop -q -batch -load-vernac-source"
+fi
 
 # on compte le nombre de tests et de succès
 nbtests=0
