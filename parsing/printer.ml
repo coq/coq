@@ -136,6 +136,11 @@ let pr_existential env ev = prterm_env env (mkEvar ev)
 let pr_inductive env ind = prterm_env env (mkInd ind)
 let pr_constructor env cstr = prterm_env env (mkConstruct cstr)
 let pr_global = pr_global Idset.empty
+let pr_evaluable_reference ref =
+ let ref' = match ref with
+  | EvalConstRef const -> ConstRef const
+  | EvalVarRef sp -> VarRef sp in
+ pr_global ref'
 
 let pr_rawterm t =
   if !Options.v7 then gentermpr (Termast.ast_of_rawconstr t)

@@ -55,6 +55,9 @@ val occur_mbid : mod_bound_id -> substitution -> bool
 
 val subst_kn : substitution -> kernel_name -> kernel_name
 val subst_con : substitution -> constant -> constant
+val subst_evaluable_reference :
+  substitution -> evaluable_global_reference -> evaluable_global_reference
+
 
 (* [subst_mps sub c] performs the substitution [sub] on all kernel
    names appearing in [c] *)

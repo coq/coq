@@ -50,7 +50,7 @@ type auto_tactic =
   | ERes_pf    of constr * clausenv (* Hint EApply *)
   | Give_exact of constr                  
   | Res_pf_THEN_trivial_fail of constr * clausenv (* Hint Immediate *)
-  | Unfold_nth of global_reference       (* Hint Unfold *)
+  | Unfold_nth of evaluable_global_reference       (* Hint Unfold *)
   | Extern     of glob_tactic_expr       (* Hint Extern *) 
 
 type pri_auto_tactic = { 
@@ -248,12 +248,12 @@ let make_resolve_hyp env sigma (hname,_,htyp) =
     | e when Logic.catchable_exception e -> anomaly "make_resolve_hyp"
 
 (* REM : in most cases hintname = id *)
-let make_unfold (hintname, ref) =
+let make_unfold (hintname, ref, eref) =
   (ref,
    { hname = hintname;
      pri = 4;
      pat = None;
-     code = Unfold_nth ref })
+     code = Unfold_nth eref })
 
 let make_extern name pri pat tacast = 
   let hdconstr = try_head_pattern pat in 
@@ -325,9 +325,9 @@ let subst_autohint (_,subst,(local,name,hintlist as obj)) =
 	      let code' = Res_pf_THEN_trivial_fail (c', trans_clenv clenv) in
 		trans_data data code'
       | Unfold_nth ref -> 
-	  let ref' = subst_global subst ref in
-	    if ref==ref' then data else
-	      trans_data data (Unfold_nth ref')
+          let ref' = subst_evaluable_reference subst ref in
+           if ref==ref' then data else
+	    trans_data data (Unfold_nth ref')
       | Extern tac ->
 	  let tac' = !forward_subst_tactic subst tac in
 	    if tac==tac' then data else
@@ -441,7 +441,15 @@ let add_hints local dbnames0 h =
 	let n = match n with
 	  | None -> id_of_global r
 	  | Some n -> n in
-	(n,r) in
+        let r' = match r with
+         | ConstRef c -> EvalConstRef c
+         | VarRef c -> EvalVarRef c
+         | _ -> 
+           errorlabstrm "evalref_of_ref"
+            (str "Cannot coerce" ++ spc () ++ pr_global r ++ spc () ++
+             str "to an evaluable reference")
+        in
+	 (n,r,r') in
       add_unfolds (List.map f lhints) local dbnames
   | HintsConstructors (hintname, lqid) ->
       let add_one qid =
@@ -478,7 +486,7 @@ let fmt_autotactic =
   | Give_exact c -> (str"Exact " ++ prterm c)
   | Res_pf_THEN_trivial_fail (c,clenv) -> 
       (str"Apply " ++ prterm c ++ str" ; Trivial")
-  | Unfold_nth c -> (str"Unfold " ++  pr_global c)
+  | Unfold_nth c -> (str"Unfold " ++  pr_evaluable_reference c)
   | Extern tac -> (str "Extern " ++ Pptactic.pr_glob_tactic tac)
   else
   function
@@ -487,7 +495,7 @@ let fmt_autotactic =
   | Give_exact c -> (str"exact " ++ prterm c)
   | Res_pf_THEN_trivial_fail (c,clenv) -> 
       (str"apply " ++ prterm c ++ str" ; trivial")
-  | Unfold_nth c -> (str"unfold " ++  pr_global c)
+  | Unfold_nth c -> (str"unfold " ++  pr_evaluable_reference c)
   | Extern tac -> 
       (str "(external) " ++ Pptacticnew.pr_glob_tactic (Global.env()) tac)
 
@@ -669,7 +677,7 @@ and my_find_search db_list local_db hdc concl =
 	      tclTHEN 
 		(unify_resolve (term,cl)) 
 		(trivial_fail_db db_list local_db)
-	  | Unfold_nth c -> unfold_constr c
+	  | Unfold_nth c -> unfold_in_concl [[],c]
 	  | Extern tacast -> 
 	      conclPattern concl (out_some p) tacast))
     tacl

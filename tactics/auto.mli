@@ -29,7 +29,7 @@ type auto_tactic =
   | ERes_pf    of constr * clausenv    (* Hint EApply *)
   | Give_exact of constr                  
   | Res_pf_THEN_trivial_fail of constr * clausenv (* Hint Immediate *)
-  | Unfold_nth of global_reference          (* Hint Unfold *)
+  | Unfold_nth of evaluable_global_reference          (* Hint Unfold *)
   | Extern     of Tacexpr.glob_tactic_expr   (* Hint Extern *)
 
 open Rawterm

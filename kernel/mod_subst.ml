@@ -123,6 +123,10 @@ let subst_con sub con =
   let mp' = subst_mp sub mp in
     if mp==mp' then con else make_con mp' dir l
 
+let subst_evaluable_reference subst = function
+  | EvalVarRef id -> EvalVarRef id
+  | EvalConstRef kn -> EvalConstRef (subst_con subst kn)
+
 (* 
 map_kn : (kernel_name -> kernel_name) -> constr -> constr
 

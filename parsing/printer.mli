@@ -45,6 +45,7 @@ val pr_existential  : env -> existential -> std_ppcmds
 val pr_constructor  : env -> constructor -> std_ppcmds
 val pr_inductive    : env -> inductive -> std_ppcmds
 val pr_global       : global_reference -> std_ppcmds
+val pr_evaluable_reference : evaluable_global_reference -> std_ppcmds
 val pr_pattern      : constr_pattern -> std_ppcmds
 val pr_pattern_env  : env -> names_context -> constr_pattern -> std_ppcmds
 

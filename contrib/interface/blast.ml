@@ -187,7 +187,7 @@ and e_my_find_search db_list local_db hdc concl =
 	   | Res_pf_THEN_trivial_fail (term,cl) ->
                tclTHEN (unify_e_resolve (term,cl)) 
 		 (e_trivial_fail_db db_list local_db)
-	   | Unfold_nth c -> unfold_constr c
+	   | Unfold_nth c -> unfold_in_concl [[],c]
 	   | Extern tacast -> Auto.conclPattern concl 
 	       (out_some p) tacast
        in 
@@ -405,7 +405,7 @@ and my_find_search db_list local_db hdc concl =
 	      tclTHEN 
 		(unify_resolve (term,cl)) 
 		(trivial_fail_db db_list local_db)
-	  | Unfold_nth c -> unfold_constr c
+	  | Unfold_nth c -> unfold_in_concl [[],c]
 	  | Extern tacast -> 
 	      conclPattern concl (out_some p) tacast))
     tacl

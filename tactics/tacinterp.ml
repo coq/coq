@@ -1858,10 +1858,6 @@ let subst_induction_arg subst = function
   | ElimOnAnonHyp n as x -> x
   | ElimOnIdent id as x -> x
 
-let subst_evaluable_reference subst = function
-  | EvalVarRef id -> EvalVarRef id
-  | EvalConstRef kn -> EvalConstRef (subst_con subst kn)
-
 let subst_and_short_name f (c,n) =
   assert (n=None); (* since tacdef are strictly globalized *)
   (f c,None)
