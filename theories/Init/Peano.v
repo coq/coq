@@ -27,7 +27,7 @@ Require Notations.
 Require Datatypes.
 Require Logic.
 
-Open Local Scope nat_scope.
+Open Scope nat_scope.
 
 Definition eq_S := (f_equal nat nat S).
 
