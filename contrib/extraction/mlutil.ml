@@ -330,25 +330,27 @@ let collect_lambda =
   in 
   collect []
 
-
-
-let test_eta l =
+let test_eta n l =
   let rec test n = function 
     | [] -> true
-    | a :: q -> a = (MLrel n) || (test (succ n) q)
-  in test 1 l 
+    | a :: q -> a = (MLrel n) && (test (succ n) q)
+  in (List.length l = n) && (test 1 l) 
 
 let optimize_fix a = 
-  if not (optim()) then a else
+  if not (optim()) then a 
+  else
     let lams,b = collect_lambda a in 
-    (match a with 
-      | MLfix(_,[|_|],[|c|]) -> a (* TODO *)
-      | MLapp(b,ids) -> 
-	  (match b with 
-	     | MLfix(_,[|_|],[|_|]) when (test_eta ids)-> b
-	     | MLfix(_,[|_|],[|_|]) -> a (* TODO *)
-	     | _ -> a)
-      | _ -> a)
+    let nlams = List.length lams in 
+    if nlams = 0 then a 
+    else  
+      (match b with 
+	 | MLfix(_,[|_|],[|c|]) -> a (* TODO *)
+	 | MLapp(b,ids) -> 
+	     (match b with 
+		| MLfix(_,[|_|],[|_|]) when (test_eta nlams ids)-> b
+		| MLfix(_,[|_|],[|_|]) -> a (* TODO *)
+		| _ -> a)
+	 | _ -> a)
 
 let normalize_decl = function
  | Dglob (id, a) -> Dglob (id, normalize a)
