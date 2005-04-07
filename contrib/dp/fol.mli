@@ -8,13 +8,12 @@ type typ = string
 
 type term =   
   | Cst of int
-  | Db of int
   | Tvar of string
   | Plus of term * term
   | Moins of term * term
   | Mult of term * term
   | Div of term * term
-  | App of string * (term list)
+  | App of string * term list
 
 and atom =   
   | Eq of term * term
@@ -22,17 +21,16 @@ and atom =
   | Lt of term * term
   | Ge of term * term
   | Gt of term * term
-  | Pred of string * (term list)
+  | Pred of string * term list
 
 and form = 
   | Fatom of atom
-  | Fvar of string
   | Imp of form * form
   | And of form * form
   | Or of form * form
   | Not of form
-  | Forall of string * (typ list * typ) * form
-  | Exists of string * (typ list * typ) * form
+  | Forall of string * typ * form
+  | Exists of string * typ * form
   | True
   | False
 
