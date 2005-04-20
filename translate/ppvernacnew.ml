@@ -475,6 +475,8 @@ let rec pr_vernac = function
   | VernacAbort id -> str"Abort" ++ pr_opt pr_lident id
   | VernacResume id -> str"Resume" ++ pr_opt pr_lident id
   | VernacUndo i -> if i=1 then str"Undo" else str"Undo" ++ pr_intarg i
+  | VernacBacktrack (i,j,k) -> 
+      str "Backtrack" ++  spc() ++ prlist_with_sep sep int [i;j;k]
   | VernacFocus i -> str"Focus" ++ pr_opt int i
   | VernacGo g -> 
       let pr_goable = function

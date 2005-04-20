@@ -647,6 +647,8 @@ GEXTEND Gram
       | IDENT "Back" -> VernacBack 1
       | IDENT "Back"; n = natural -> VernacBack n
       | IDENT "BackTo"; n = natural -> VernacBackTo n
+      | IDENT "Backtrack"; n = natural ; m = natural ; p = natural -> 
+	  VernacBacktrack (n,m,p)
 
 (* Tactic Debugger *)
       |	IDENT "Debug"; IDENT "On" -> VernacDebug true

@@ -278,6 +278,7 @@ type vernac_expr =
   | VernacSuspend
   | VernacResume of lident option
   | VernacUndo of int
+  | VernacBacktrack of int*int*int
   | VernacFocus of int option
   | VernacUnfocus
   | VernacGo of goable

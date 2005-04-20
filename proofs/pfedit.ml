@@ -174,6 +174,21 @@ let undo n =
   with (Invalid_argument "Edit.undo") ->
     errorlabstrm "Pfedit.undo" (str"No focused proof" ++ msg_proofs true)
 
+(* Undo current focused proof to reach depth [n]. This is used in
+   [vernac_backtrack]. *)
+let undo_todepth n =
+  try 
+    Edit.undo_todepth proof_edits n
+  with (Invalid_argument "Edit.undo") ->
+    errorlabstrm "Pfedit.undo" (str"No focused proof" ++ msg_proofs true)
+
+(* Return the depth of the current focused proof stack, this is used
+   to put informations in coq prompt (in emacs mode). *)
+let current_proof_depth() = 
+  try
+    Edit.depth proof_edits
+  with (Invalid_argument "Edit.depth") -> -1
+
 (*********************************************************************)
 (*                  Proof cooking                                    *)
 (*********************************************************************)

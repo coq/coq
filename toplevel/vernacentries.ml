@@ -620,6 +620,7 @@ let vernac_back n = Lib.back n
 
 let vernac_backto n = Lib.reset_label n
 
+(* see also [vernac_backtrack] which combines undoing and resetting *)
 (************)
 (* Commands *)
 
@@ -983,6 +984,17 @@ let vernac_undo n =
   undo n;
   print_subgoals ()
 
+(* backtrack with [naborts] abort, then undo_todepth to [pnum], then
+   back-to state number [snum]. This allows to backtrack proofs and
+   state with one command (easier for proofgeneral). *)
+let vernac_backtrack snum pnum naborts =
+  for i = 1 to naborts do vernac_abort None done;
+  undo_todepth pnum;
+  vernac_backto snum;
+  (* there may be no proof in progress, even if no abort *)
+  (try print_subgoals () with UserError _ -> ())
+  
+
   (* Est-ce normal que "Focus" ne semble pas se comporter comme "Focus 1" ? *)
 let vernac_focus = function
   | None -> traverse_nth_goal 1; print_subgoals ()
@@ -1156,6 +1168,7 @@ let interp c = match c with
   | VernacSuspend -> vernac_suspend ()
   | VernacResume id -> vernac_resume id
   | VernacUndo n -> vernac_undo n
+  | VernacBacktrack (snum,pnum,naborts) -> vernac_backtrack snum pnum naborts
   | VernacFocus n -> vernac_focus n
   | VernacUnfocus -> vernac_unfocus ()
   | VernacGo g -> vernac_go g

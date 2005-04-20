@@ -84,6 +84,28 @@ let undo e n =
 	  errorlabstrm "Edit.undo" (str"Undo stack exhausted");
         repeat n Bstack.pop bs
 
+(* Return the depth of the focused proof of [e] stack, this is used to
+   put informations in coq prompt (in emacs mode). *)
+let depth e =
+  match e.focus with
+    | None -> invalid_arg "Edit.depth"
+    | Some d ->
+	let (bs,_) = Hashtbl.find e.buf d in
+	Bstack.depth bs
+
+(* Undo focused proof of [e] to reach depth [n] *)
+let undo_todepth e n =
+  match e.focus with
+    | None -> 
+	if n <> 0 
+	then errorlabstrm "Edit.undo_todepth" (str"No proof in progress")
+	else () (* if there is no proof in progress, then n must be zero *)
+    | Some d ->
+	let (bs,_) = Hashtbl.find e.buf d in
+	if Bstack.depth bs < n then
+	  errorlabstrm "Edit.undo_todepth" (str"Undo stack would be exhausted");
+        repeat (Bstack.depth bs - n) Bstack.pop bs
+
 let create e (d,b,c,udepth) =
   if Hashtbl.mem e.buf d then
     errorlabstrm "Edit.create" 

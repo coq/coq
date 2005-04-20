@@ -57,6 +57,14 @@ val delete_all_proofs : unit -> unit
 
 val undo : int -> unit
 
+(* Same as undo, but undoes the current proof stack to reach depth
+   [n]. This is used in [vernac_backtrack]. *)
+val undo_todepth : int -> unit
+
+(* Returns the depth of the current focused proof stack, this is used
+   to put informations in coq prompt (in emacs mode). *)
+val current_proof_depth: unit -> int
+
 (* [set_undo (Some n)] sets the size of the ``undo'' stack; [set_undo None]
    sets the size to the default value (12) *)
 
