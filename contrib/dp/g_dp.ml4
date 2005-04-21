@@ -16,7 +16,6 @@ TACTIC EXTEND Simplify
   [ "simplify" ] -> [ simplify ]
 END
 
-(*
 TACTIC EXTEND CVCLite
   [ "cvcl" ] -> [ cvc_lite ]
 END
@@ -24,9 +23,12 @@ END
 TACTIC EXTEND Harvey
   [ "harvey" ] -> [ harvey ]
 END
-*)
 
 (* should be part of basic tactics syntax *)
 TACTIC EXTEND admit
   [ "admit"    ] -> [ Tactics.admit_as_an_axiom ]
+END
+
+VERNAC COMMAND EXTEND Dp_hint 
+  [ "Dp" ne_global_list(l) ] -> [ dp_hint l ]
 END

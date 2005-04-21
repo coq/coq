@@ -8,7 +8,6 @@ type typ = string
 
 type term =   
   | Cst of int
-  | Tvar of string
   | Plus of term * term
   | Moins of term * term
   | Mult of term * term

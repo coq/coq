@@ -10,8 +10,6 @@ let rec print_list sep print fmt = function
 let space fmt () = fprintf fmt "@ "
 
 let rec print_term fmt = function
-  | Tvar id -> 
-      fprintf fmt "%s" id
   | Cst n -> 
       fprintf fmt "%d" n
   | Plus (a, b) ->
@@ -70,8 +68,12 @@ let rec print_predicate fmt p =
 
 let print_query fmt (decls,concl) =
   let print_decl = function
-    | DeclVar _ | DeclPred _ | DeclType _ -> 
-	()
+    | DeclVar (id, _, _) ->
+	fprintf fmt "@[;; %s: <var>@]@\n" id
+    | DeclPred (id, _) -> 
+	fprintf fmt "@[;; %s: <predicate>@]@\n" id
+    | DeclType id ->
+	fprintf fmt "@[;; %s: TYPE@]@\n" id
     | Assert (id, f)  -> 
 	fprintf fmt "@[(BG_PUSH ;; %s@\n %a)@]@\n" id print_predicate f
   in
