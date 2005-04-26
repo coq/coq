@@ -50,7 +50,7 @@ Library
 - Few improvements in ZArith potentially exceptionally breaking the
   compatibility (useless hypothesys of Zgt_square_simpl and
   Zlt_square_simpl removed; fixed names mentioning letter O instead of
-  digit 0)
+  digit 0; weaken premises in Z_lt_induction)
 
 Changes from V8.0beta to V8.0
 =============================

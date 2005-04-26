@@ -180,7 +180,7 @@ Qed.
 
 Lemma Z_lt_rec :
  forall P:Z -> Type,
-   (forall x:Z, (forall y:Z, 0 <= y < x -> P y) -> P x) ->
+   (forall x:Z, (forall y:Z, 0 <= y < x -> P y) -> 0 <= x -> P x) ->
    forall x:Z, 0 <= x -> P x.
 Proof.
 intros P Hrec z; pattern z in |- *; apply (well_founded_induction_type R_wf).
@@ -189,13 +189,14 @@ apply Hrec; intros.
 assert (H2 : 0 < 0).
   apply Zle_lt_trans with y; intuition.
 inversion H2.
+assumption.
 firstorder.
 unfold Zle, Zcompare in H; elim H; auto.
 Defined.
 
 Lemma Z_lt_induction :
  forall P:Z -> Prop,
-   (forall x:Z, (forall y:Z, 0 <= y < x -> P y) -> P x) ->
+   (forall x:Z, (forall y:Z, 0 <= y < x -> P y) -> 0 <= x -> P x) ->
    forall x:Z, 0 <= x -> P x.
 Proof.
 exact Z_lt_rec.
