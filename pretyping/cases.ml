@@ -171,10 +171,7 @@ let pred_case_ml env sigma isrec (IndType (indf,realargs)) (i,ft) =
 open Pp
 
 let mssg_may_need_inversion () =
-  str "This pattern-matching is not exhaustive."
-
-let mssg_this_case_cannot_occur () =
-  "This pattern-matching is not exhaustive."
+  str "Found a matching with no clauses on a term unknown to have an empty inductive type"
 
 (* Utils *)
 let make_anonymous_patvars =
@@ -1339,7 +1336,7 @@ and match_current pb ((current,typ as ct),deps) =
 	let mind,_ = dest_ind_family indf in
 	let cstrs = get_constructors pb.env indf in
 	let eqns,onlydflt = group_equations pb mind current cstrs pb.mat in
-	if (cstrs <> [||] or not (initial_history pb.history)) & onlydflt then
+	if (cstrs <> [||] or pb.mat <> []) & onlydflt  then
 	  compile (shift_problem ct pb)
 	else
           let constraints = Array.map (solve_constraints indt) cstrs in
@@ -1603,7 +1600,7 @@ let prepare_predicate_from_tycon loc dep env isevars tomatchs c =
 	else
 	  (n + p, (List.rev realargs)@l, push_rels sign env,sign::signs)
     | c,NotInd _ ->
-	(n, l, env, signs) in
+	(n, l, env, []::signs) in
   let n, allargs, env, signs = List.fold_left cook (0, [], env, []) tomatchs in
   let names = List.rev (List.map (List.map pi1) signs) in
   let allargs =
