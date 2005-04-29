@@ -440,20 +440,18 @@ let intern_constr_reference strict ist = function
       let loc,qid = qualid_of_reference r in
       RRef (loc,locate_reference qid), if strict then None else Some (CRef r)
 
-let intern_reference strict ist = function
-  | Ident (loc,id) when is_atomic id -> Tacexp (lookup_atomic id)
-  | r ->
-      (try Reference (intern_tac_ref ist r)
+let intern_reference strict ist r =
+  (try Reference (intern_tac_ref ist r)
+   with Not_found ->
+     (try
+       ConstrMayEval (ConstrTerm (intern_constr_reference strict ist r))
       with Not_found ->
-        (try
-          ConstrMayEval (ConstrTerm (intern_constr_reference strict ist r))
-        with Not_found ->
-          (match r with
-            | Ident (loc,id) when not strict -> 
-		IntroPattern (IntroIdentifier id)
-            | _ ->
-                let (loc,qid) = qualid_of_reference r in
-                error_global_not_found_loc loc qid)))
+        (match r with
+          | Ident (loc,id) when is_atomic id -> Tacexp (lookup_atomic id)
+          | Ident (loc,id) when not strict -> IntroPattern (IntroIdentifier id)
+          | _ ->
+              let (loc,qid) = qualid_of_reference r in
+              error_global_not_found_loc loc qid)))
 
 let rec intern_intro_pattern lf ist = function
   | IntroOrAndPattern l ->
