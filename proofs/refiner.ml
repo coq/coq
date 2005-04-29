@@ -772,12 +772,13 @@ let extract_pftreestate pts =
       (str"Cannot extract from a proof-tree in which we have descended;" ++
          spc () ++ str"Please ascend to the root");
   let pfterm,subgoals = extract_open_pftreestate pts in
-  let exl = Evd.non_instantiated pts.tpfsigma in
+  let exl = Evarutil.non_instantiated pts.tpfsigma in
   if subgoals <> [] or exl <> [] then
-   (if subgoals <> [] then
-     str "Attempt to save an incomplete proof"
-    else
-      str "Attempt to save a proof with existential variables still non-instantiated");
+    errorlabstrm "extract_proof"
+      (if subgoals <> [] then
+        str "Attempt to save an incomplete proof"
+      else
+        str "Attempt to save a proof with existential variables still non-instantiated");
   let env = Global.env_of_context pts.tpf.goal.evar_hyps in
   strong whd_betaiotaevar env pts.tpfsigma pfterm
   (***
