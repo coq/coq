@@ -278,7 +278,7 @@ Lemma euclid_rec :
      (forall d:Z, Zis_gcd u3 v3 d -> Zis_gcd a b d) -> Euclid.
 Proof.
 intros v3 Hv3; generalize Hv3; pattern v3 in |- *.
-apply Z_lt_rec.
+apply Zlt_0_rec.
 clear v3 Hv3; intros.
 elim (Z_zerop x); intro.
 apply Euclid_intro with (u := u1) (v := u2) (d := u3).
@@ -377,7 +377,7 @@ Definition Zgcd_pos :
 Proof.
 intros a Ha.
 apply
- (Z_lt_rec
+ (Zlt_0_rec
     (fun a:Z => forall b:Z, {g : Z | 0 <= a -> Zis_gcd a b g /\ g >= 0}));
  try assumption.
 intro x; case x.
