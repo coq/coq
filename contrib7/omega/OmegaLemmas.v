@@ -10,6 +10,8 @@
 
 Require ZArith_base.
 
+Open Scope Z_scope.
+
 (** These are specific variants of theorems dedicated for the Omega tactic *)
 
 Lemma new_var: (x:Z) (EX y:Z |(x=y)).
