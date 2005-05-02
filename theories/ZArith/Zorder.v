@@ -967,5 +967,17 @@ intros n m H; apply Zplus_lt_reg_l with (p := - m); rewrite Zplus_opp_l;
  rewrite Zplus_comm; exact H.
 Qed.
 
+Lemma Zle_0_minus_le : forall n m:Z, 0 <= n - m -> m <= n.
+Proof.
+intros n m H; apply Zplus_le_reg_l with (p := - m); rewrite Zplus_opp_l;
+ rewrite Zplus_comm; exact H.
+Qed.
+
+Lemma Zle_minus_le_0 : forall n m:Z, m <= n -> 0 <= n - m.
+Proof.
+intros n m H; unfold Zminus; apply Zplus_le_reg_r with (p := m); 
+rewrite <- Zplus_assoc; rewrite Zplus_opp_l; rewrite Zplus_0_r; exact H. 
+Qed.
+
 (* For compatibility *)
 Notation Zlt_O_minus_lt := Zlt_0_minus_lt (only parsing).
