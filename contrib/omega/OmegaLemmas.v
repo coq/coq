@@ -10,7 +10,7 @@
 
 Require Import ZArith_base.
 
-Open Scope Z_scope.
+Open Local Scope Z_scope.
 
 (** These are specific variants of theorems dedicated for the Omega tactic *)
 
