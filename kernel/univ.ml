@@ -63,7 +63,7 @@ let pr_uni = function
   | Max (gel,gtl) ->
       str "max(" ++ 
       prlist_with_sep pr_coma pr_uni_level gel ++
-      if gel <> [] & gtl <> [] then pr_coma () else mt () ++
+      (if gel <> [] & gtl <> [] then pr_coma () else mt ()) ++
       prlist_with_sep pr_coma
 	(fun x -> str "(" ++ pr_uni_level x ++ str ")+1") gtl ++
       str ")"
@@ -414,6 +414,7 @@ let pr_arc = function
       pr_uni_level u ++ str " " ++
       v 0
         (prlist_with_sep pr_spc (fun v -> str "< " ++ pr_uni_level v) lt ++
+	 (if lt <> [] & le <> [] then spc () else mt()) ++
          prlist_with_sep pr_spc (fun v -> str "<= " ++ pr_uni_level v) le) ++
       fnl ()
   | Equiv (u,v) -> 
