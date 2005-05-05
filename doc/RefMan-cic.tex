@@ -150,7 +150,7 @@ Terms are built from variables, global names, constructors,
 abstraction, application, local declarations bindings (``let-in''
 expressions) and product.
 
-From a syntactic point of view, types cannot be distingued from terms,
+From a syntactic point of view, types cannot be distinguished from terms,
 except that they cannot start by an abstraction, and that if a term is
 a sort or a product, it should be a type.
 
@@ -749,13 +749,13 @@ following cases:
   (in particular, it is not mutually defined and it has $m$
   parameters) and $X$ does not occur in any of the $t_i$, and the
   types of constructor $C_i\{p_j/a_j\}_{j=1\ldots m}$ of $I$ satisfy
-  the imbricated positivity condition for $X$
+  the nested positivity condition for $X$
 %\item more generally, when $T$ is not a type, $X$ occurs strictly
 %positively in $T[x:U]u$ if $X$ does not occur in $U$ but occurs
 %strictly positively in $u$
 \end{itemize}
 
-The type of constructor $T$ of $I$ {\em satisfies the imbricated
+The type of constructor $T$ of $I$ {\em satisfies the nested
 positivity condition} for a constant $X$ in the following
 cases:
 
@@ -763,7 +763,7 @@ cases:
 \item $T=(I~t_1\ldots ~t_n)$ and $X$ does not occur in
 any $t_i$
 \item $T=\forall~x:U,V$ and $X$ occurs only strictly positively in $U$ and
-the type $V$ satisfies the imbricated positivity condition for $X$
+the type $V$ satisfies the nested positivity condition for $X$
 \end{itemize}
 
 \paragraph{Example}
@@ -830,7 +830,7 @@ Inductive exSet (P:Set->Prop) : Set
 It is possible to declare the same inductive definition in the
 universe \Type. 
 The \texttt{exType} inductive definition has type  $(\Type_i \ra\Prop)\ra
-\Type_j$ with the constraint $i<j$.
+\Type_j$ with the constraint that the argument $X$ of \texttt{exT\_intro} has type $\Type_k$ with $k<j$ and $k\leq i$.
 \begin{coq_example*}
 Inductive exType (P:Type->Prop) : Type
   := exT_intro : forall X:Type, P X -> exType P.
@@ -856,7 +856,7 @@ combination of case analysis over the possible constructors of the
 object and recursion.
 
 Because we need to keep a consistent theory and also we prefer to keep
-a strongly normalising reduction, we cannot accept any sort of
+a strongly normalizing reduction, we cannot accept any sort of
 recursion (even terminating). So the basic idea is to restrict
 ourselves to primitive recursive functions and functionals.
 
@@ -931,7 +931,7 @@ expression we also need to know the predicate $P$ to be proved by case
 analysis.  \Coq{} can sometimes infer this predicate but sometimes
 not. The concrete syntax for describing this predicate uses the
 \kw{as\ldots return} construction. 
-The predicate will be explicited using the syntax~:
+The predicate is made explicit using the syntax~:
 \[\kw{match}~m~\kw{as}~ x~ \kw{return}~ (P~ x) ~\kw{with}~ (c_1~x_{11}~...~x_{1p_1}) \Ra f_1 ~|~\ldots~|~
   (c_n~x_{n1}...x_{np_n}) \Ra f_n \kw{end}\]
 For the purpose of presenting the inference rules, we use a more
@@ -1003,7 +1003,7 @@ sort \Prop.
 \item[\Prop] \inference{\compat{I:\Prop}{I\ra\Prop}}
 \end{description}
 \Prop{} is the type of logical propositions, the proofs of properties
-$P$ in \Prop{} could not be used for computation and are consequentely
+$P$ in \Prop{} could not be used for computation and are consequently
 ignored by the extraction mechanism.
 Assume $A$ and $B$ are two propositions, and the logical disjunction
 $A\vee B$ is defined inductively by~:
@@ -1219,7 +1219,7 @@ In the inference rules, we represent such a
 term by 
 \[\Fix{f_i}{f_1:A_1':=t_1' \ldots f_n:A_n':=t_n'}\]
 with $t_i'$ (resp. $A_i'$) representing the term $t_i$ abstracted
-(resp. generalised) with
+(resp. generalized) with
 respect to the bindings in the context $\Gamma_i$, namely
 $t_i'=\lb \Gamma_i \mto t_i$ and $A_i'=\forall \Gamma_i, A_i$.
 
