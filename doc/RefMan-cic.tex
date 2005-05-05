@@ -830,7 +830,7 @@ Inductive exSet (P:Set->Prop) : Set
 It is possible to declare the same inductive definition in the
 universe \Type. 
 The \texttt{exType} inductive definition has type  $(\Type_i \ra\Prop)\ra
-\Type_j$ with the constraint that the argument $X$ of \texttt{exT\_intro} has type $\Type_k$ with $k<j$ and $k\leq i$.
+\Type_j$ with the constraint that the parameter \texttt{X} of \texttt{exT\_intro} has type $\Type_k$ with $k<j$ and $k\leq i$.
 \begin{coq_example*}
 Inductive exType (P:Type->Prop) : Type
   := exT_intro : forall X:Type, P X -> exType P.
