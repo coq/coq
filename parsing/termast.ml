@@ -342,7 +342,6 @@ let rec ast_of_raw = function
       (match s with
 	 | RProp Null -> ope("PROP",[])
 	 | RProp Pos -> ope("SET",[])
-	 | RType (Some u) when !print_universes -> ope("TYPE",[ide(Univ.string_of_univ u)])
 	 | RType _ -> ope("TYPE",[]))
   | RHole _ -> ope("ISEVAR",[])
   | RCast (_,c,t) -> ope("CAST",[ast_of_raw c;ast_of_raw t])
