@@ -28,6 +28,9 @@ Tactics
 - The argument of Declare Left Step and Declare Right Step is now a term
   (it used to be a reference) (doc TODO)
 - Omega now handles arbitrary precision integers
+- Idtac can now be left implicit in a [...|...] construct: for instance, 
+  [ foo | | bar ] stands for [ foo | idtac | bar ]. (doc TODO). 
+
 
 Modules
 
