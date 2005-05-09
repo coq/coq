@@ -48,8 +48,10 @@ GEXTEND Gram
   tactic_expr:
     [ "5" LEFTA
       [ ta0 = tactic_expr; ";"; ta1 = tactic_expr -> TacThen (ta0, ta1)
-      | ta = tactic_expr; ";"; "["; lta = LIST0 tactic_expr SEP "|"; "]" ->
-          TacThens (ta, lta) ]
+      | ta = tactic_expr; ";"; 
+	"["; lta = LIST0 OPT tactic_expr SEP "|"; "]" ->
+	  let lta = List.map (function None -> TacId "" | Some t -> t) lta in 
+	  TacThens (ta, lta) ]
     | "4"
       [ ]
     | "3" RIGHTA
