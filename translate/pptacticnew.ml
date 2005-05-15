@@ -587,7 +587,8 @@ and pr_atom1 env = function
   | TacTrivial (Some []) as x -> pr_atom0 env x
   | TacTrivial db -> hov 0 (str "trivial" ++ pr_hintbases db)
   | TacAuto (None,Some []) as x -> pr_atom0 env x
-  | TacAuto (n,db) -> hov 0 (str "auto" ++ pr_opt int n ++ pr_hintbases db)
+  | TacAuto (n,db) ->
+      hov 0 (str "auto" ++ pr_opt (pr_or_var int) n ++ pr_hintbases db)
 (*  | TacAutoTDB None as x -> pr_atom0 env x
   | TacAutoTDB (Some n) -> hov 0 (str "autotdb" ++ spc () ++ int n)
   | TacDestructHyp (true,id) ->
@@ -599,7 +600,8 @@ and pr_atom1 env = function
       hov 1 (str "superauto" ++ pr_opt int n ++ pr_autoarg_adding l ++ 
              pr_autoarg_destructing b1 ++ pr_autoarg_usingTDB b2)*)
   | TacDAuto (n,p) ->
-      hov 1 (str "auto" ++ pr_opt int n ++ str "decomp" ++ pr_opt int p)
+      hov 1 (str "auto" ++ pr_opt (pr_or_var int) n ++ str "decomp" ++ 
+      pr_opt int p)
 
   (* Context management *)
   | TacClear l ->

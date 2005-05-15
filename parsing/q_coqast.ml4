@@ -454,7 +454,7 @@ let rec mlexpr_of_atomic_tactic = function
 
   (* Automation tactics *)
   | Tacexpr.TacAuto (n,l) ->
-      let n = mlexpr_of_option mlexpr_of_int n in
+      let n = mlexpr_of_option (mlexpr_of_or_var mlexpr_of_int) n in
       let l = mlexpr_of_option (mlexpr_of_list mlexpr_of_string) l in
       <:expr< Tacexpr.TacAuto $n$ $l$ >>
 (*
