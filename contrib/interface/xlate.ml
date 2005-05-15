@@ -195,6 +195,11 @@ let xlate_int_opt = function
   | Some n -> CT_coerce_INT_to_INT_OPT (CT_int n)
   | None ->  CT_coerce_NONE_to_INT_OPT CT_none
 
+let xlate_int_or_var_opt_to_int_opt = function
+  | Some (ArgArg n) -> CT_coerce_INT_to_INT_OPT (CT_int n)
+  | Some (ArgVar _) -> xlate_error "int_or_var: TODO"
+  | None ->  CT_coerce_NONE_to_INT_OPT CT_none
+
 let tac_qualid_to_ct_ID ref = 
   CT_ident (Libnames.string_of_qualid (snd (qualid_of_reference ref)))
 
@@ -1026,12 +1031,12 @@ and xlate_tac =
         (if a3 then CT_destructing else CT_coerce_NONE_to_DESTRUCTING CT_none),
         (if a4 then CT_usingtdb else CT_coerce_NONE_to_USINGTDB CT_none))
     | TacAutoTDB nopt -> CT_autotdb (xlate_int_opt nopt)
-    | TacAuto (nopt, Some []) -> CT_auto (xlate_int_opt nopt)
+    | TacAuto (nopt, Some []) -> CT_auto (xlate_int_or_var_opt_to_int_opt nopt)
     | TacAuto (nopt, None) ->
- 	CT_auto_with (xlate_int_opt nopt,
+ 	CT_auto_with (xlate_int_or_var_opt_to_int_opt nopt,
 		      CT_coerce_STAR_to_ID_NE_LIST_OR_STAR CT_star)
     | TacAuto (nopt, Some (id1::idl)) ->
-	CT_auto_with(xlate_int_opt nopt,
+	CT_auto_with(xlate_int_or_var_opt_to_int_opt nopt,
              CT_coerce_ID_NE_LIST_to_ID_NE_LIST_OR_STAR(
              CT_id_ne_list(CT_ident id1, List.map (fun x -> CT_ident x) idl)))
     |TacExtend(_, ("autorewritev7"|"autorewritev8"), l::t) ->
@@ -1141,7 +1146,8 @@ and xlate_tac =
     | TacClearBody([]) -> assert false
     | TacClearBody(a::l) -> 
 	CT_clear_body (CT_id_ne_list (xlate_hyp a, List.map xlate_hyp l))
-    | TacDAuto (a, b) -> CT_dauto(xlate_int_opt a, xlate_int_opt b)
+    | TacDAuto (a, b) ->
+	CT_dauto(xlate_int_or_var_opt_to_int_opt a, xlate_int_opt b)
     | TacNewDestruct(a,b,(c,_)) ->
 	CT_new_destruct
 	  (xlate_int_or_constr a, xlate_using b, 
