@@ -340,7 +340,7 @@ GEXTEND Gram
 
       (* Automation tactic *)
       | IDENT "trivial"; db = hintbases -> TacTrivial db
-      | IDENT "auto"; n = OPT natural; db = hintbases -> TacAuto (n, db)
+      | IDENT "auto"; n = OPT int_or_var; db = hintbases -> TacAuto (n, db)
 
 (* Obsolete since V8.0
       | IDENT "autotdb"; n = OPT natural -> TacAutoTDB n
@@ -349,7 +349,7 @@ GEXTEND Gram
       | IDENT "dconcl"  -> TacDestructConcl
       | IDENT "superauto"; l = autoargs -> TacSuperAuto l
 *)
-      | IDENT "auto"; n = OPT natural; IDENT "decomp"; p = OPT natural ->
+      | IDENT "auto"; n = OPT int_or_var; IDENT "decomp"; p = OPT natural ->
 	  TacDAuto (n, p)
 
       (* Context management *)

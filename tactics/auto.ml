@@ -812,7 +812,10 @@ let gen_auto n dbnames =
   | None -> full_auto n
   | Some l -> auto n l
 
-let h_auto n l = Refiner.abstract_tactic (TacAuto (n,l)) (gen_auto n l)
+let inj_or_var = option_app (fun n -> Genarg.ArgArg n)
+
+let h_auto n l =
+  Refiner.abstract_tactic (TacAuto (inj_or_var n,l)) (gen_auto n l)
 
 (**************************************************************************)
 (*                  The "destructing Auto" from Eduardo                   *)
@@ -839,7 +842,8 @@ let dauto = function
   | Some n, Some p -> dautomatic p n
   | None, Some p   -> dautomatic p !default_search_depth
 
-let h_dauto (n,p) = Refiner.abstract_tactic (TacDAuto (n,p)) (dauto (n,p))
+let h_dauto (n,p) = 
+  Refiner.abstract_tactic (TacDAuto (inj_or_var n,p)) (dauto (n,p))
 
 (***************************************)
 (*** A new formulation of Auto *********)

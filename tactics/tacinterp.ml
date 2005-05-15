@@ -666,12 +666,12 @@ let rec intern_atomic lf ist x =
 
   (* Automation tactics *)
   | TacTrivial l -> TacTrivial l
-  | TacAuto (n,l) -> TacAuto (n,l)
+  | TacAuto (n,l) -> TacAuto (option_app (intern_int_or_var ist) n,l)
   | TacAutoTDB n -> TacAutoTDB n
   | TacDestructHyp (b,id) -> TacDestructHyp(b,intern_hyp ist id)
   | TacDestructConcl -> TacDestructConcl
   | TacSuperAuto (n,l,b1,b2) -> TacSuperAuto (n,l,b1,b2)
-  | TacDAuto (n,p) -> TacDAuto (n,p)
+  | TacDAuto (n,p) -> TacDAuto (option_app (intern_int_or_var ist) n,p)
 
   (* Derived basic tactics *)
   | TacSimpleInduction (h,ids) ->
@@ -1742,12 +1742,12 @@ and interp_atomic ist gl = function
 
   (* Automation tactics *)
   | TacTrivial l -> Auto.h_trivial l
-  | TacAuto (n, l) -> Auto.h_auto n l
+  | TacAuto (n, l) -> Auto.h_auto (option_app (interp_int_or_var ist) n) l
   | TacAutoTDB n -> Dhyp.h_auto_tdb n
   | TacDestructHyp (b,id) -> Dhyp.h_destructHyp b (interp_hyp ist gl id)
   | TacDestructConcl -> Dhyp.h_destructConcl
   | TacSuperAuto (n,l,b1,b2) -> Auto.h_superauto n l b1 b2
-  | TacDAuto (n,p) -> Auto.h_dauto (n,p)
+  | TacDAuto (n,p) -> Auto.h_dauto (option_app (interp_int_or_var ist) n,p)
 
   (* Derived basic tactics *)
   | TacSimpleInduction (h,ids) ->
