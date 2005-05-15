@@ -1597,9 +1597,10 @@ tactics/auto.cmo: toplevel/vernacexpr.cmo lib/util.cmi pretyping/typing.cmi \
     pretyping/matching.cmi proofs/logic.cmi library/library.cmi \
     library/libobject.cmi library/libnames.cmi library/lib.cmi \
     kernel/inductive.cmi tactics/hipattern.cmi tactics/hiddentac.cmi \
-    library/global.cmi pretyping/evd.cmi proofs/evar_refiner.cmi \
-    tactics/dhyp.cmi kernel/declarations.cmi interp/constrintern.cmi \
-    proofs/clenv.cmi tactics/btermdn.cmi tactics/auto.cmi 
+    library/global.cmi interp/genarg.cmi pretyping/evd.cmi \
+    proofs/evar_refiner.cmi tactics/dhyp.cmi kernel/declarations.cmi \
+    interp/constrintern.cmi proofs/clenv.cmi tactics/btermdn.cmi \
+    tactics/auto.cmi 
 tactics/auto.cmx: toplevel/vernacexpr.cmx lib/util.cmx pretyping/typing.cmx \
     pretyping/termops.cmx kernel/term.cmx tactics/tactics.cmx \
     tactics/tacticals.cmx pretyping/tacred.cmx proofs/tacmach.cmx \
@@ -1611,9 +1612,10 @@ tactics/auto.cmx: toplevel/vernacexpr.cmx lib/util.cmx pretyping/typing.cmx \
     pretyping/matching.cmx proofs/logic.cmx library/library.cmx \
     library/libobject.cmx library/libnames.cmx library/lib.cmx \
     kernel/inductive.cmx tactics/hipattern.cmx tactics/hiddentac.cmx \
-    library/global.cmx pretyping/evd.cmx proofs/evar_refiner.cmx \
-    tactics/dhyp.cmx kernel/declarations.cmx interp/constrintern.cmx \
-    proofs/clenv.cmx tactics/btermdn.cmx tactics/auto.cmi 
+    library/global.cmx interp/genarg.cmx pretyping/evd.cmx \
+    proofs/evar_refiner.cmx tactics/dhyp.cmx kernel/declarations.cmx \
+    interp/constrintern.cmx proofs/clenv.cmx tactics/btermdn.cmx \
+    tactics/auto.cmi 
 tactics/autorewrite.cmo: toplevel/vernacinterp.cmi lib/util.cmi \
     kernel/term.cmi tactics/tactics.cmi tactics/tacticals.cmi \
     tactics/tacinterp.cmi proofs/tacexpr.cmo library/summary.cmi \
