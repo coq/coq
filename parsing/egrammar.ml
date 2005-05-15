@@ -28,7 +28,7 @@ type all_grammar_command =
   | Grammar of grammar_command
   | TacticGrammar of
       (string * (string * grammar_production list) * 
-      (Names.dir_path * Tacexpr.raw_tactic_expr))
+      (Names.dir_path * Tacexpr.glob_tactic_expr))
       list
 
 let subst_all_grammar_command subst = function

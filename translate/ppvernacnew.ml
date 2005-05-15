@@ -94,7 +94,7 @@ let pr_gen env t =
     (Pptacticnew.pr_raw_tactic env) pr_reference t
 
 let pr_raw_tactic tac =
-  pr_raw_tactic_env [] (Global.env()) tac
+  Pptacticnew.pr_glob_tactic (Global.env()) (Tacinterp.glob_tactic tac)
 
 let rec extract_signature = function
   | [] -> []

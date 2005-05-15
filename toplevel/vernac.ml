@@ -123,7 +123,7 @@ let pre_printing = function
       (try
         let (_,env) = Pfedit.get_goal_context i in
         let t = Options.with_option Options.translate_syntax
-	  (Tacinterp.glob_tactic_env [] env) tac in
+	  (Tacinterp.glob_tactic_env_v7 [] env) tac in
         let pfts = Pfedit.get_pftreestate () in
         let gls = fst (Refiner.frontier (Tacmach.proof_of_pftreestate pfts)) in
         Some (env,t,Pfedit.focus(),List.length gls)

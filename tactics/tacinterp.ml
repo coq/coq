@@ -2215,6 +2215,12 @@ let add_tacdef isrec tacl =
 let glob_tactic x = intern_tactic (make_empty_glob_sign ()) x
 
 let glob_tactic_env l env x = 
+  Options.with_option strict_check
+  (intern_tactic
+    { ltacvars = (l,[]); ltacrecvars = []; gsigma = Evd.empty; genv = env })
+    x
+
+let glob_tactic_env_v7 l env x = 
   intern_tactic
     { ltacvars = (l,[]); ltacrecvars = []; gsigma = Evd.empty; genv = env }
     x

@@ -199,7 +199,14 @@ let add_grammar_obj univ entryl =
 
 (* Tactic notations *)
 
-let locate_tactic_body dir (s,p,e) = (s,p,(dir,e))
+let cons_production_parameter l = function
+  | VTerm _ -> l
+  | VNonTerm (_,_,ido) -> option_cons ido l
+
+let locate_tactic_body dir (s,(_,prods as p),e) = 
+  let ids = List.fold_left cons_production_parameter [] prods in
+  let tac = Tacinterp.glob_tactic_env ids (Global.env()) e in
+  (s,p,(dir,tac))
 
 let add_tactic_grammar g =
   let dir = Lib.cwd () in
