@@ -26,15 +26,11 @@ type notation_grammar =
 type all_grammar_command =
   | Notation of Notation.level * notation_grammar
   | Grammar of grammar_command
-  | TacticGrammar of
-      (string * (string * grammar_production list) * 
-      (Names.dir_path * Tacexpr.glob_tactic_expr))
+  | TacticGrammar of 
+      int *
+      (string * grammar_production list *
+       (Names.dir_path * Tacexpr.glob_tactic_expr))
       list
-
-let subst_all_grammar_command subst = function
-  | Notation _ -> anomaly "Notation not in GRAMMAR summary"
-  | Grammar gc -> Grammar (subst_grammar_command subst gc)
-  | TacticGrammar g -> TacticGrammar g (* TODO ... *)
 
 let (grammar_state : all_grammar_command list ref) = ref []
 
@@ -257,7 +253,7 @@ let subst_constr_expr a loc subs =
   in subst a
 
 (* For V7 Grammar only *)
-let make_rule univ assoc etyp rule =
+let make_rule_v7 univ assoc etyp rule =
   if not !Options.v7 then anomaly "No Grammar in new syntax";
   let pil = List.map (symbol_of_prod_item univ assoc etyp false) rule.gr_production in
   let (symbs,ntl) = List.split pil in
@@ -279,7 +275,7 @@ let make_rule univ assoc etyp rule =
    are applied before the last ones *)
 (* For V7 Grammar only *)
 let extend_entry univ (te, etyp, pos, name, ass, p4ass, rls) =
-  let rules = List.rev (List.map (make_rule univ ass etyp) rls) in
+  let rules = List.rev (List.map (make_rule_v7 univ ass etyp) rls) in
   grammar_extend te pos [(name, p4ass, rules)]
 
 (* Defines new entries. If the entry already exists, check its type *)
@@ -338,12 +334,10 @@ let extend_constr_notation (n,assoc,ntn,rule,permut) =
   let pos,p4assoc,name = find_position true keepassoc assoc level in
   extend_constr e (ETConstr (n,()),assoc,pos,p4assoc,name)
     (make_act_in_cases_pattern mkact) (true,rule)
-    
+
 (* These grammars are not a removable *)
-let make_rule univ f g (s,pt) =
-  let hd = Gramext.Stoken ("IDENT", s) in
-  let pil = (hd,None) :: List.map g pt in
-  let (symbs,ntl) = List.split pil in
+let make_rule univ f g pt =
+  let (symbs,ntl) = List.split (List.map g pt) in
   let act = make_gen_act f ntl in
   (symbs, act)
 
@@ -367,18 +361,39 @@ let extend_vernac_command_grammar s gl =
   let rules = List.map (make_rule univ make_act make_prod_item) gl in
   Gram.extend Vernac_.command None [(None, None, List.rev rules)]
 
-let rec interp_entry_name u s =
+let find_index s t =
+  let t,n = repr_ident (id_of_string t) in
+  if s <> t or n = None then raise Not_found;
+  out_some n
+
+let rec interp_entry_name up_level u s =
   let l = String.length s in
   if l > 8 & String.sub s 0 3 = "ne_" & String.sub s (l-5) 5 = "_list" then
-    let t, g = interp_entry_name u (String.sub s 3 (l-8)) in
+    let t, g = interp_entry_name up_level u (String.sub s 3 (l-8)) in
     List1ArgType t, Gramext.Slist1 g
   else if l > 5 & String.sub s (l-5) 5 = "_list" then
-    let t, g = interp_entry_name u (String.sub s 0 (l-5)) in
+    let t, g = interp_entry_name up_level u (String.sub s 0 (l-5)) in
     List0ArgType t, Gramext.Slist0 g
   else if l > 4 & String.sub s (l-4) 4 = "_opt" then
-    let t, g = interp_entry_name u (String.sub s 0 (l-4)) in
+    let t, g = interp_entry_name up_level u (String.sub s 0 (l-4)) in
     OptArgType t, Gramext.Sopt g
   else
+    try 
+      let i = find_index "tactic" s in
+      if !Options.v7 then 
+	let e = match i with
+	| 2 -> Tactic.tactic_expr2
+	| 3 -> Tactic.tactic_expr3
+	| 4 -> Tactic.tactic_expr4
+	| 5 -> Tactic.tactic_expr5
+	| _ -> error ("Unknown entry "^s)
+	in TacticArgType i, Gramext.Snterm (Pcoq.Gram.Entry.obj e)
+      else 
+	TacticArgType i, 
+	if i=up_level then Gramext.Sself else
+        if i=up_level-1 then Gramext.Snext else
+	Gramext.Snterml(Pcoq.Gram.Entry.obj Tactic.tactic_expr,string_of_int i)
+    with Not_found ->
     let e = 
     if !Options.v7 then get_entry (get_univ u) s
     else
@@ -398,27 +413,55 @@ let qualified_nterm current_univ = function
   | NtQual (univ, en) -> if !Options.v7 then (univ, en) else assert false
   | NtShort en -> (current_univ, en)
 
-let make_vprod_item univ = function
+let make_vprod_item n univ = function
   | VTerm s -> (Gramext.Stoken (Extend.terminal s), None)
   | VNonTerm (loc, nt, po) ->
       let (u,nt) = qualified_nterm univ nt in
-      let (etyp, e) = interp_entry_name u nt in
+      let (etyp, e) = interp_entry_name n u nt in
       e, option_app (fun p -> (p,etyp)) po
 
-let add_tactic_entries gl =
+let get_tactic_entry n =
+  if n = 0 then weaken_entry Tactic.simple_tactic, None
+  else if !Options.v7 then
+    let e = match n with
+      | 2 -> Tactic.tactic_expr2
+      | 3 -> Tactic.tactic_expr3
+      | 4 -> Tactic.tactic_expr4
+      | 5 -> Tactic.tactic_expr5
+      | _ -> error ("Invalid v7 Tactic Notation level: "^(string_of_int n)) in
+    weaken_entry e, None
+  else
+    if 1<=n && n<=5 then
+      weaken_entry Tactic.tactic_expr, Some (Gramext.Level (string_of_int n))
+    else 
+      error ("Invalid Tactic Notation level: "^(string_of_int n))
+
+open Tacexpr
+
+let add_tactic_entries (lev,gl) =
   let univ = get_univ "tactic" in
-  let make_act s tac loc l = Tacexpr.TacAlias (loc,s,l,tac) in
-  let f (s,l,tac) =
-    make_rule univ (make_act s tac) (make_vprod_item "tactic") l in
-  let rules = List.map f gl in
+  let entry, pos = get_tactic_entry lev in
+  let rules = 
+    if lev = 0 then
+      let make_act s tac loc l = 
+	(TacAlias(loc,s,l,tac):raw_atomic_tactic_expr) in
+      let f (s,l,tac) =
+	make_rule univ (make_act s tac) (make_vprod_item lev "tactic") l in
+      List.map f gl
+    else
+      let make_act s tac loc l = 
+	(TacAtom(loc,TacAlias(loc,s,l,tac)):raw_tactic_expr) in
+      let f (s,l,tac) =
+	make_rule univ (make_act s tac) (make_vprod_item lev "tactic") l in
+      List.map f gl in
   let _ = find_position true true None None (* to synchronise with remove *) in
-  grammar_extend Tactic.simple_tactic None [(None, None, List.rev rules)]
+  grammar_extend entry pos [(None, None, List.rev rules)]
 
 let extend_grammar gram =
   (match gram with
   | Notation (_,a) -> extend_constr_notation a
   | Grammar g -> extend_grammar_rules g
-  | TacticGrammar l -> add_tactic_entries l);
+  | TacticGrammar (n,l) -> add_tactic_entries (n,l));
   grammar_state := gram :: !grammar_state
 
 let reset_extend_grammars_v8 () =
