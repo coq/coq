@@ -1072,7 +1072,7 @@ let interp c = match c with
 
   (* Syntax *)
   | VernacSyntax (whatfor,sel) -> vernac_syntax whatfor sel
-  | VernacTacticGrammar al -> Metasyntax.add_tactic_grammar al
+  | VernacTacticGrammar (n,al) -> Metasyntax.add_tactic_grammar (n,al)
   | VernacGrammar (univ,al) -> vernac_grammar univ al
   | VernacSyntaxExtension (lcl,sl,l8) -> vernac_syntax_extension lcl sl l8
   | VernacDelimiters (sc,lr) -> vernac_delimiters sc lr

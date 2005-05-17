@@ -25,7 +25,10 @@ val lexer : Token.lexer
 
 module Gram : Grammar.S with type te = Token.t
 
+(* The superclass of all grammar entries *)
 type grammar_object
+
+(* The type of typed grammar objects *)
 type typed_entry
 
 val type_of_typed_entry : typed_entry -> Extend.entry_type
@@ -39,7 +42,7 @@ val symbol_of_production : Gramext.g_assoc option -> constr_entry ->
   bool -> constr_production_entry -> Token.t Gramext.g_symbol
 
 val grammar_extend :
-  'a Gram.Entry.e -> Gramext.position option ->
+  grammar_object Gram.Entry.e -> Gramext.position option ->
     (string option * Gramext.g_assoc option *
      (Token.t Gramext.g_symbol list * Gramext.g_action) list) list
     -> unit
@@ -168,8 +171,16 @@ module Tactic :
     val simple_tactic : raw_atomic_tactic_expr Gram.Entry.e
     val simple_intropattern : Genarg.intro_pattern_expr Gram.Entry.e
     val tactic_arg : raw_tactic_arg Gram.Entry.e
+    val tactic_expr : raw_tactic_expr Gram.Entry.e
+    val tactic_main_level : int
     val tactic : raw_tactic_expr Gram.Entry.e
     val tactic_eoi : raw_tactic_expr Gram.Entry.e
+
+    (* For v7 *)
+    val tactic_expr2 : raw_tactic_expr Gram.Entry.e
+    val tactic_expr3 : raw_tactic_expr Gram.Entry.e
+    val tactic_expr4 : raw_tactic_expr Gram.Entry.e
+    val tactic_expr5 : raw_tactic_expr Gram.Entry.e
   end
 
 module Vernac_ :

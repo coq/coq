@@ -171,8 +171,8 @@ type vernac_expr =
 
   (* Syntax *) 
   | VernacGrammar of lstring * raw_grammar_entry list
-  | VernacTacticGrammar of
-      (lstring * (lstring * grammar_production list) * raw_tactic_expr) list
+  | VernacTacticGrammar of int *
+      (lstring * grammar_production list * raw_tactic_expr) list
   | VernacSyntax of lstring * raw_syntax_entry list
   | VernacSyntaxExtension of locality_flag *
       (lstring * syntax_modifier list) option 

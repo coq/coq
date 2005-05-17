@@ -161,9 +161,9 @@ val globwit_red_expr : ((rawconstr_and_expr,evaluable_global_reference and_short
 val wit_red_expr : ((constr,evaluable_global_reference) red_expr_gen,constr,'ta) abstract_argument_type
 
 (* TODO: transformer tactic en extra arg *)
-val rawwit_tactic : ('ta,constr_expr,'ta) abstract_argument_type
-val globwit_tactic : ('ta,rawconstr_and_expr,'ta) abstract_argument_type
-val wit_tactic : ('ta,constr,'ta) abstract_argument_type
+val rawwit_tactic : int -> ('ta,constr_expr,'ta) abstract_argument_type
+val globwit_tactic : int -> ('ta,rawconstr_and_expr,'ta) abstract_argument_type
+val wit_tactic : int -> ('ta,constr,'ta) abstract_argument_type
 
 val wit_list0 :
   ('a,'co,'ta) abstract_argument_type -> ('a list,'co,'ta) abstract_argument_type
@@ -238,7 +238,7 @@ type argument_type =
   | ConstrArgType
   | ConstrMayEvalArgType
   | QuantHypArgType
-  | TacticArgType
+  | TacticArgType of int
   | OpenConstrArgType of bool
   | ConstrWithBindingsArgType
   | BindingsArgType

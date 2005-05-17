@@ -763,7 +763,7 @@ let rec intern_atomic lf ist x =
       let (l1,l2) = ist.ltacvars in
       let ist' = { ist with ltacvars = ((List.map fst l)@l1,l2) } in
       let l = List.map (fun (id,a) -> (strip_meta id,intern_genarg ist a)) l in
-      try TacAlias (loc,s,l,(dir,intern_tactic ist' body))
+      try TacAlias (loc,s,l,(dir,body))
       with e -> raise (locate_error_in_file (string_of_dirpath dir) e)
 
 and intern_tactic ist tac = (snd (intern_tactic_seq ist tac) : glob_tactic_expr)
@@ -902,8 +902,9 @@ and intern_genarg ist x =
         (intern_quantified_hypothesis ist (out_gen rawwit_quant_hyp x))
   | RedExprArgType ->
       in_gen globwit_red_expr (intern_redexp ist (out_gen rawwit_red_expr x))
-  | TacticArgType ->
-      in_gen globwit_tactic (intern_tactic ist (out_gen rawwit_tactic x))
+  | TacticArgType n ->
+      in_gen (globwit_tactic n) (intern_tactic ist
+	(out_gen (rawwit_tactic n) x))
   | OpenConstrArgType b ->
       in_gen (globwit_open_constr_gen b)
         ((),intern_constr ist (snd (out_gen (rawwit_open_constr_gen b) x)))
@@ -1610,7 +1611,7 @@ and interp_genarg ist goal x =
           (out_gen globwit_quant_hyp x))
   | RedExprArgType ->
       in_gen wit_red_expr (pf_redexp_interp ist goal (out_gen globwit_red_expr x))
-  | TacticArgType -> in_gen wit_tactic (out_gen globwit_tactic x)
+  | TacticArgType n -> in_gen (wit_tactic n) (out_gen (globwit_tactic n) x)
   | OpenConstrArgType casted ->
       in_gen (wit_open_constr_gen casted) 
         (pf_interp_open_constr casted ist goal 
@@ -1823,8 +1824,8 @@ and interp_atomic ist gl = function
     | ConstrMayEvalArgType ->
 	VConstr
           (interp_constr_may_eval ist gl (out_gen globwit_constr_may_eval x))
-    | TacticArgType -> 
-	val_interp ist gl (out_gen globwit_tactic x)
+    | TacticArgType n -> 
+	val_interp ist gl (out_gen (globwit_tactic n) x)
     | StringArgType | BoolArgType
     | QuantHypArgType | RedExprArgType 
     | OpenConstrArgType _ | ConstrWithBindingsArgType | BindingsArgType 
@@ -1833,7 +1834,9 @@ and interp_atomic ist gl = function
     in
     let lfun = (List.map (fun (x,c) -> (x,f c)) l)@ist.lfun in
     let v = locate_tactic_call loc (val_interp { ist with lfun=lfun } gl body)
-    in tactic_of_value v gl
+    in 
+    try tactic_of_value v gl 
+    with NotTactic -> user_err_loc (loc,"",str "not a tactic")
 
 (* Initial call for interpretation *)
 let interp_tac_gen lfun debug t gl = 
@@ -2123,8 +2126,9 @@ and subst_genarg subst (x:glob_generic_argument) =
           (out_gen globwit_quant_hyp x))
   | RedExprArgType ->
       in_gen globwit_red_expr (subst_redexp subst (out_gen globwit_red_expr x))
-  | TacticArgType ->
-      in_gen globwit_tactic (subst_tactic subst (out_gen globwit_tactic x))
+  | TacticArgType n ->
+      in_gen (globwit_tactic n)
+        (subst_tactic subst (out_gen (globwit_tactic n) x))
   | OpenConstrArgType b ->
       in_gen (globwit_open_constr_gen b)
         ((),subst_rawconstr subst (snd (out_gen (globwit_open_constr_gen b) x)))

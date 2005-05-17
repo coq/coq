@@ -39,8 +39,6 @@ let arg_of_expr = function
     
 (* Tactics grammar rules *)
 
-let tactic_expr = Gram.Entry.create "tactic:tactic_expr"
-
 if not !Options.v7 then
 GEXTEND Gram
   GLOBAL: tactic Vernac_.command tactic_expr tactic_arg;

@@ -30,7 +30,7 @@ Tactics
 - Omega now handles arbitrary precision integers
 - Idtac can now be left implicit in a [...|...] construct: for instance, 
   [ foo | | bar ] stands for [ foo | idtac | bar ]. (doc TODO). 
-
+- "Tactic Notation" extended to allow notations of tacticals (doc TODO).
 
 Modules
 

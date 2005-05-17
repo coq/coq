@@ -187,7 +187,7 @@ type ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr =
   (* For syntax extensions *)
   | TacAlias of loc * string *
       (identifier * ('constr,'tac) generic_argument) list
-      * (dir_path * 'tac)
+      * (dir_path * glob_tactic_expr)
 
 and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_expr =
   | TacAtom of loc * ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_atomic_tactic_expr
@@ -230,6 +230,16 @@ and ('constr,'pat,'cst,'ind,'ref,'id,'tac) gen_tactic_arg =
   | TacFreshId     of string option
   | Tacexp of 'tac
 
+(* Globalized tactics *)
+and glob_tactic_expr =
+    (rawconstr_and_expr,
+     constr_pattern,
+     evaluable_global_reference and_short_name or_var,
+     inductive or_var,
+     ltac_constant located or_var,
+     identifier located,
+     glob_tactic_expr) gen_tactic_expr
+
 type raw_tactic_expr =
     (constr_expr,
      pattern_expr,
@@ -261,16 +271,6 @@ type raw_generic_argument =
     (constr_expr,raw_tactic_expr) generic_argument
 
 type raw_red_expr = (constr_expr, reference) red_expr_gen
-
-(* Globalized tactics *)
-type glob_tactic_expr =
-    (rawconstr_and_expr,
-     constr_pattern,
-     evaluable_global_reference and_short_name or_var,
-     inductive or_var,
-     ltac_constant located or_var,
-     identifier located,
-     glob_tactic_expr) gen_tactic_expr
 
 type glob_atomic_tactic_expr =
     (rawconstr_and_expr,

@@ -56,4 +56,3 @@ Ltac f_equal :=
       cut (e=e');[cut (d=d');[cut (c=c');[cut (b=b');[cut (a=a');[do 5 des; r|r]|r]|r]|r]|r]
    | _ => idtac
   end.
-

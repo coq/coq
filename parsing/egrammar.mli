@@ -27,8 +27,9 @@ type all_grammar_command =
   | Notation of (precedence * tolerability list) * notation_grammar
   | Grammar of grammar_command
   | TacticGrammar of
-      (string * (string * grammar_production list) * 
-      (Names.dir_path * Tacexpr.glob_tactic_expr))
+      int *
+      (string * grammar_production list * 
+       (Names.dir_path * Tacexpr.glob_tactic_expr))
       list
 
 val extend_grammar : all_grammar_command -> unit
@@ -39,21 +40,18 @@ type grammar_tactic_production =
   | TacNonTerm of loc * (Token.t Gramext.g_symbol * Genarg.argument_type) * string option
 
 val extend_tactic_grammar :
-  string -> (string * grammar_tactic_production list) list -> unit
+  string -> grammar_tactic_production list list -> unit
 
 val extend_vernac_command_grammar :
-  string -> (string * grammar_tactic_production list) list -> unit
+  string -> grammar_tactic_production list list -> unit
 
 val get_extend_tactic_grammars :
- unit -> (string * (string * grammar_tactic_production list) list) list
+ unit -> (string * grammar_tactic_production list list) list
 val get_extend_vernac_grammars :
- unit -> (string * (string * grammar_tactic_production list) list) list
+ unit -> (string * grammar_tactic_production list list) list
 val reset_extend_grammars_v8 : unit -> unit
 
-val subst_all_grammar_command :
-  substitution -> all_grammar_command -> all_grammar_command
-
-val interp_entry_name : string -> string -> 
+val interp_entry_name : int -> string -> string -> 
   entry_type * Token.t Gramext.g_symbol
 
 val recover_notation_grammar :

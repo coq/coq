@@ -263,9 +263,14 @@ and checked_then: report_holder -> glob_tactic_expr -> glob_tactic_expr -> tacti
    by the list of integers given as extra arguments.
  *)
 
+let rawwit_main_tactic = rawwit_tactic Pcoq.Tactic.tactic_main_level
+let globwit_main_tactic = globwit_tactic Pcoq.Tactic.tactic_main_level
+let wit_main_tactic = wit_tactic Pcoq.Tactic.tactic_main_level
+
+
 let on_then = function [t1;t2;l] ->
-  let t1 = out_gen wit_tactic t1 in
-  let t2 = out_gen wit_tactic t2 in
+  let t1 = out_gen wit_main_tactic t1 in
+  let t2 = out_gen wit_main_tactic t2 in
   let l = out_gen (wit_list0 wit_int) l in
   tclTHEN_i (Tacinterp.eval_tactic t1)
     (fun i ->
@@ -276,8 +281,8 @@ let on_then = function [t1;t2;l] ->
   | _ -> anomaly "bad arguments for on_then";;
 
 let mkOnThen t1 t2 selected_indices =
-  let a = in_gen rawwit_tactic t1 in
-  let b = in_gen rawwit_tactic t2 in
+  let a = in_gen rawwit_main_tactic t1 in
+  let b = in_gen rawwit_main_tactic t2 in
   let l = in_gen (wit_list0 rawwit_int) selected_indices in
   TacAtom (dummy_loc, TacExtend (dummy_loc, "OnThen", [a;b;l]));;
 
@@ -364,8 +369,8 @@ let rec reconstruct_success_tac (tac:glob_tactic_expr) =
 	| Report_node(false, n, rl) ->
 	    let selected_indices = select_success 1 rl in
 	    TacAtom (dummy_loc,TacExtend (dummy_loc,"OnThen",
-	      [in_gen globwit_tactic a;
-	       in_gen globwit_tactic b;
+	      [in_gen globwit_main_tactic a;
+	       in_gen globwit_main_tactic b;
 	       in_gen (wit_list0 globwit_int) selected_indices]))
 	| Failed n -> TacId ""
 	| Tree_fail r -> reconstruct_success_tac a r

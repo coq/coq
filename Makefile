@@ -1511,6 +1511,14 @@ proofs/tacexpr.cmx: proofs/tacexpr.ml
 	$(SHOW)'OCAMLOPT  -rectypes $<'
 	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
 
+translate/pptacticnew.cmo: translate/pptacticnew.ml
+	$(SHOW)'OCAMLC    -rectypes $<'
+	$(HIDE)$(OCAMLC) -rectypes $(BYTEFLAGS) -c $<
+
+translate/pptacticnew.cmx: translate/pptacticnew.ml
+	$(SHOW)'OCAMLOPT    -rectypes $<'
+	$(HIDE)$(OCAMLOPT) -rectypes $(OPTFLAGS) -c $<
+
 ML4FILES += lib/pp.ml4 lib/compat.ml4
 
 lib/compat.cmo: lib/compat.ml4

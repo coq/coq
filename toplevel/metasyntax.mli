@@ -25,8 +25,8 @@ val add_syntax_obj : string -> raw_syntax_entry list -> unit
 
 val add_grammar_obj : string -> raw_grammar_entry list -> unit
 val add_token_obj : string -> unit
-val add_tactic_grammar :
-  (string * (string * grammar_production list) * raw_tactic_expr) list -> unit
+val add_tactic_grammar : 
+  int * (string * grammar_production list * raw_tactic_expr) list -> unit
 
 val add_infix : locality_flag -> (string * syntax_modifier list) ->
   reference -> (string * syntax_modifier list) option ->

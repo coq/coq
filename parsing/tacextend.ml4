@@ -36,6 +36,8 @@ let rec make_when loc = function
       <:expr< Genarg.genarg_tag $lid:p$ = $t$ && $l$ >>
   | _::l -> make_when loc l
 
+let is_tactic_arg = function TacticArgType _ -> true | _ -> false
+
 let rec make_let e = function
   | [] -> e
   | TacNonTerm(loc,t,_,Some p)::l ->
@@ -45,13 +47,13 @@ let rec make_let e = function
       let v = 
         (* Special case for tactics which must be stored in algebraic
            form to avoid marshalling closures and to be reprinted *)
-        if t = TacticArgType then
+        if is_tactic_arg t then
           <:expr< ($v$, Tacinterp.eval_tactic $v$) >>
         else v in
       <:expr< let $lid:p$ = $v$ in $e$ >>
   | _::l -> make_let e l
 
-let add_clause s (_,pt,e) l =
+let add_clause s (pt,e) l =
   let p = make_patt pt in
   let w = Some (make_when (MLast.loc_of_expr e) pt) in
   (p, w, make_let e pt)::l
@@ -62,7 +64,7 @@ let rec extract_signature = function
   | _::l -> extract_signature l
 
 let check_unicity s l =
-  let l' = List.map (fun (_,l,_) -> extract_signature l) l in
+  let l' = List.map (fun (l,_) -> extract_signature l) l in
   if not (Util.list_distinct l') then
     Pp.warning_with Pp_control.err_ft
       ("Two distinct rules of tactic entry "^s^" have the same\n"^
@@ -82,7 +84,7 @@ let rec make_args = function
 
 let rec make_eval_tactic e = function
   | [] -> e
-  | TacNonTerm(loc,TacticArgType,_,Some p)::l ->
+  | TacNonTerm(loc,TacticArgType _,_,Some p)::l ->
       let loc = join_loc loc (MLast.loc_of_expr e) in
       let e = make_eval_tactic e l in
         (* Special case for tactics which must be stored in algebraic
@@ -106,11 +108,8 @@ let mlexpr_terminals_of_grammar_production = function
   | TacTerm s -> <:expr< Some $mlexpr_of_string s$ >>
   | TacNonTerm (loc,nt,g,sopt) -> <:expr< None >>
 
-let mlexpr_of_semi_clause =
-  mlexpr_of_pair mlexpr_of_string (mlexpr_of_list mlexpr_of_grammar_production)
-
 let mlexpr_of_clause =
-  mlexpr_of_list (fun (a,b,c) -> mlexpr_of_semi_clause (a,b))
+  mlexpr_of_list (fun (a,b) -> mlexpr_of_list mlexpr_of_grammar_production a)
 
 let rec make_tags loc = function
   | [] -> <:expr< [] >>
@@ -121,19 +120,20 @@ let rec make_tags loc = function
       <:expr< [ $t$ :: $l$ ] >>
   | _::l -> make_tags loc l
 
-let make_one_printing_rule (s,pt,e) =
+let make_one_printing_rule (pt,e) =
+  let level = mlexpr_of_int 0 in (* only level 0 supported here *)
   let loc = MLast.loc_of_expr e in
   let prods = mlexpr_of_list mlexpr_terminals_of_grammar_production pt in
-  <:expr< ($make_tags loc pt$, ($str:s$, $prods$)) >>
+  <:expr< ($make_tags loc pt$, ($level$, $prods$)) >>
 
 let make_printing_rule = mlexpr_of_list make_one_printing_rule
 
 let new_tac_ext (s,cl) =
   (String.lowercase s, List.map 
-    (fun (s,l,e) ->
-      (String.lowercase s, List.map
-        (function TacTerm s -> TacTerm (String.lowercase s)
-          | t -> t) l,
+    (fun (l,e) ->
+      (List.map (function 
+	| TacTerm s -> TacTerm (String.lowercase s)
+        | t -> t) l,
         e))
     cl)
 
@@ -167,11 +167,13 @@ let rec contains_epsilon = function
   | PairArgType(t1,t2) -> contains_epsilon t1 && contains_epsilon t2
   | ExtraArgType("hintbases") -> true
   | _ -> false
-let is_atomic =
-  List.for_all
-    (function
-        TacTerm _ -> false
-      | TacNonTerm(_,t,_,_) -> contains_epsilon t)
+let is_atomic = function
+  | TacTerm s :: l when 
+      List.for_all (function
+          TacTerm _ -> false
+	| TacNonTerm(_,t,_,_) -> contains_epsilon t) l
+	-> [s]
+  | _ -> []
 
 let declare_tactic loc s cl =
   let (s',cl') = new_tac_ext (s,cl) in
@@ -180,7 +182,7 @@ let declare_tactic loc s cl =
   let se' = mlexpr_of_string s' in
   let pp = make_printing_rule cl in
   let gl = mlexpr_of_clause cl in
-  let hide_tac (_,p,e) =
+  let hide_tac (p,e) =
     (* reste a definir les fonctions cachees avec des noms frais *)
     let stac = "h_"^s' in
     let e = 
@@ -194,8 +196,8 @@ let declare_tactic loc s cl =
   let hidden = if List.length cl = 1 then List.map hide_tac cl' else [] in
   let se = mlexpr_of_string s in
   let atomic_tactics =
-    mlexpr_of_list (fun (s,_,_) -> mlexpr_of_string s)
-      (List.filter (fun (_,al,_) -> is_atomic al) cl') in
+    mlexpr_of_list mlexpr_of_string
+      (List.flatten (List.map (fun (al,_) -> is_atomic al) cl')) in
   <:str_item<
     declare
       open Pcoq;
@@ -265,10 +267,8 @@ EXTEND
          declare_tactic_v7 loc s l ] ]
   ;
   tacrule:
-    [ [ "["; s = STRING; l = LIST0 tacargs; "]"; "->"; "["; e = Pcaml.expr; "]"
-        ->
-       if s = "" then Util.user_err_loc (loc,"",Pp.str "Tactic name is empty");
-       (s,l,e)
+    [ [ "["; l = LIST0 tacargs; "]"; "->"; "["; e = Pcaml.expr; "]"
+        -> (l,e)
     ] ]
   ;
   tacargs:
@@ -276,6 +276,7 @@ EXTEND
         let t, g = interp_entry_name loc e in
         TacNonTerm (loc, t, g, Some s)
       | s = STRING ->
+	if s = "" then Util.user_err_loc (loc,"",Pp.str "Empty terminal");
         TacTerm s
     ] ]
   ;

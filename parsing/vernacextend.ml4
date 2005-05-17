@@ -81,11 +81,8 @@ let mlexpr_of_grammar_production = function
 
 let mlexpr_of_clause =
   mlexpr_of_list
-    (fun (a,b,c) ->
-      (mlexpr_of_pair
-	mlexpr_of_string
-	(mlexpr_of_list mlexpr_of_grammar_production)
-	(a,b)))
+    (fun (a,b,c) -> 
+      mlexpr_of_list mlexpr_of_grammar_production (VernacTerm a::b))
 
 let declare_command loc s cl =
   let gl = mlexpr_of_clause cl in

@@ -19,6 +19,7 @@ open Topconstr
 open Genarg
 open Libnames
 open Pattern
+open Ppextend
 
 let pr_red_expr = Ppconstr.pr_red_expr
 let pr_may_eval = Ppconstr.pr_may_eval
@@ -42,13 +43,16 @@ let declare_extra_tactic_pprule for_v8 s (tags,prods) =
   if for_v8 then Hashtbl.add prtac_tab (s,tags) prods
 
 type 'a raw_extra_genarg_printer =
-    (constr_expr -> std_ppcmds) -> (raw_tactic_expr -> std_ppcmds) ->
+    (constr_expr -> std_ppcmds) -> 
+    (tolerability -> raw_tactic_expr -> std_ppcmds) ->
       'a -> std_ppcmds
 type 'a glob_extra_genarg_printer =
-    (rawconstr_and_expr -> std_ppcmds) -> (glob_tactic_expr -> std_ppcmds) ->
+    (rawconstr_and_expr -> std_ppcmds) ->
+    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
       'a -> std_ppcmds
 type 'a extra_genarg_printer =
-    (Term.constr -> std_ppcmds) -> (glob_tactic_expr -> std_ppcmds) ->
+    (Term.constr -> std_ppcmds) ->
+    (tolerability -> glob_tactic_expr -> std_ppcmds) ->
       'a -> std_ppcmds
 
 let genarg_pprule_v7 = ref Stringmap.empty
@@ -271,7 +275,7 @@ let rec pr_raw_generic prc prlc prtac prref x =
   | RedExprArgType ->
       pr_arg (pr_red_expr 
         (prc,prref)) (out_gen rawwit_red_expr x)
-  | TacticArgType -> pr_arg prtac (out_gen rawwit_tactic x)
+  | TacticArgType n -> pr_arg (prtac (n,E)) (out_gen (rawwit_tactic n) x)
   | OpenConstrArgType b -> pr_arg prc (snd (out_gen (rawwit_open_constr_gen b) x))
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen rawwit_constr_with_bindings x)
@@ -318,7 +322,7 @@ let rec pr_glob_generic prc prlc prtac x =
   | RedExprArgType ->
       pr_arg (pr_red_expr 
         (prc,pr_or_var (pr_and_short_name pr_evaluable_reference))) (out_gen globwit_red_expr x)
-  | TacticArgType -> pr_arg prtac (out_gen globwit_tactic x)
+  | TacticArgType n -> pr_arg (prtac (n,E)) (out_gen (globwit_tactic n) x)
   | OpenConstrArgType b -> pr_arg prc (snd (out_gen (globwit_open_constr_gen b) x))
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen globwit_constr_with_bindings x)
@@ -364,7 +368,7 @@ let rec pr_generic prc prlc prtac x =
       pr_arg pr_quantified_hypothesis (out_gen wit_quant_hyp x)
   | RedExprArgType ->
       pr_arg (pr_red_expr (prc,pr_evaluable_reference)) (out_gen wit_red_expr x)
-  | TacticArgType -> pr_arg prtac (out_gen wit_tactic x)
+  | TacticArgType n -> pr_arg (prtac (n,E)) (out_gen (wit_tactic n) x)
   | OpenConstrArgType b -> pr_arg prc (snd (out_gen (wit_open_constr_gen b) x))
   | ConstrWithBindingsArgType -> 
       pr_arg (pr_with_bindings prc prlc) (out_gen wit_constr_with_bindings x)
@@ -394,7 +398,9 @@ let rec pr_tacarg_using_rule pr_gen = function
   | [], [] -> mt ()
   | _ -> failwith "Inconsistent arguments of extended tactic"
 
-let pr_extend_gen prgen s l =
+let surround p = hov 1 (str"(" ++ p ++ str")")
+
+let pr_extend_gen prgen lev s l =
   let tab = 
     if Options.do_translate() or not !Options.v7 then prtac_tab
     else prtac_tab_v7
@@ -407,12 +413,13 @@ let pr_extend_gen prgen s l =
       if Options.do_translate() & n > 2 & String.sub s (n-2) 2 = "v7"
       then String.sub s 0 (n-2) ^ "v8"
       else s in
-    let (s,pl) = Hashtbl.find tab (s,tags) in
-    str s ++ pr_tacarg_using_rule prgen (pl,l)
+    let (lev',pl) = Hashtbl.find tab (s,tags) in
+    let p = pr_tacarg_using_rule prgen (pl,l) in
+    if lev' > lev then surround p else p
   with Not_found ->
     str s ++ prlist prgen l ++ str " (* Generic printer *)"
 
-let make_pr_tac (pr_tac,pr_tac0,pr_constr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend) =
+let make_pr_tac (pr_tac_level,pr_constr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend) =
 
 let pr_bindings = pr_bindings pr_constr pr_constr in
 let pr_bindings_no_with = pr_bindings_no_with pr_constr pr_constr in
@@ -436,9 +443,9 @@ let rec pr_atom0 = function
 
   (* Main tactic printer *)
 and pr_atom1 = function
-  | TacExtend (_,s,l) -> pr_extend pr_constr pr_constr pr_tac s l
+  | TacExtend (_,s,l) -> pr_extend pr_constr pr_constr pr_tac_level 1 s l
   | TacAlias (_,s,l,_) ->
-      pr_extend pr_constr pr_constr pr_tac s (List.map snd l)
+      pr_extend pr_constr pr_constr pr_tac_level 1 s (List.map snd l)
 
   (* Basic tactics *)
   | TacIntroPattern [] as t -> pr_atom0 t
@@ -569,7 +576,7 @@ and pr_atom1 = function
   | TacRight l -> hov 1 (str "Right" ++ pr_bindings l)
   | TacSplit (_,l) -> hov 1 (str "Split" ++ pr_bindings l)
   | TacAnyConstructor (Some t) ->
-      hov 1 (str "Constructor" ++ pr_arg pr_tac0 t)
+      hov 1 (str "Constructor" ++ pr_arg (pr_tac_level (0,E)) t)
   | TacAnyConstructor None as t -> pr_atom0 t
   | TacConstructor (n,l) ->
       hov 1 (str "Constructor" ++ pr_or_metaid pr_intarg n ++ pr_bindings l)
@@ -628,6 +635,8 @@ and pr1 = function
 and pr2 = function
   | TacOrelse (t1,t2) ->
       hov 1 (pr1 t1 ++ str " Orelse" ++ brk (1,1) ++ pr3 t2)
+  | TacAtom (_,TacAlias (_,s,l,_)) ->
+      pr_extend pr_constr pr_constr pr_tac_level 2 s (List.map snd l)
   | t -> pr1 t
 
   (* Non closed prefix tactic expressions *)
@@ -637,9 +646,13 @@ and pr3 = function
   | TacRepeat t -> hov 1 (str "Repeat" ++ spc () ++ pr3 t)
   | TacProgress t -> hov 1 (str "Progress" ++ spc () ++ pr3 t)
   | TacInfo t -> hov 1 (str "Info" ++ spc () ++ pr3 t)
+  | TacAtom (_,TacAlias (_,s,l,_)) ->
+      pr_extend pr_constr pr_constr pr_tac_level 3 s (List.map snd l)
   | t -> pr2 t
 
 and pr4 = function
+  | TacAtom (_,TacAlias (_,s,l,_)) ->
+      pr_extend pr_constr pr_constr pr_tac_level 4 s (List.map snd l)
   | t -> pr3 t
 
   (* THEN and THENS tactic expressions (printed as if parsed
@@ -649,6 +662,8 @@ and pr5 = function
       hov 1 (pr5 t ++ str ";" ++ spc () ++ pr_tactic_seq_body tl)
   | TacThen (t1,t2) ->
       hov 1 (pr5 t1 ++ str ";" ++ spc () ++ pr4 t2)
+  | TacAtom (_,TacAlias (_,s,l,_)) ->
+      pr_extend pr_constr pr_constr pr_tac_level 5 s (List.map snd l)
   | t -> pr4 t
 
   (* Ltac tactic expressions *)
@@ -714,14 +729,26 @@ and pr_tacarg0 = function
 and pr_tacarg1 = function
   | TacCall (_,f,l) ->
       hov 0 (pr_ref f ++ spc () ++ prlist_with_sep spc pr_tacarg0 l)
-  | Tacexp t -> pr_tac t
+  | Tacexp t -> pr_tac_level (6,E) t
   | t -> pr_tacarg0 t
 
 and pr_tacarg x = pr_tacarg1 x
 
 and prtac x = pr6 x
 
-in (prtac,pr0,pr_match_rule false pr_pat pr_tac)
+and prtac_level (n,p) =
+  let n = match p with E -> n | L -> n-1 | Prec n -> n | Any -> 6 in
+  match n with
+  | 0 -> pr0
+  | 1 -> pr1
+  | 2 -> pr2
+  | 3 -> pr3
+  | 4 -> pr4
+  | 5 -> pr5
+  | 6 -> pr6
+  | _ -> anomaly "Unknown tactic level"
+
+in (prtac_level,pr_match_rule false pr_pat (pr_tac_level (6,E)))
 
 let pr_raw_extend prc prlc prtac = 
   pr_extend_gen (pr_raw_generic prc prlc prtac Ppconstrnew.pr_reference)
@@ -733,8 +760,7 @@ let pr_extend prc prlc prtac =
 let pr_and_constr_expr pr (c,_) = pr c
 
 let rec glob_printers =
-    (pr_glob_tactic, 
-     pr_glob_tactic0,
+    (pr_glob_tactic_level, 
      pr_and_constr_expr Printer.pr_rawterm,
      Printer.pr_pattern,
      pr_or_var (pr_and_short_name pr_evaluable_reference),
@@ -743,16 +769,15 @@ let rec glob_printers =
      pr_located pr_id,
      pr_glob_extend)
 
-and pr_glob_tactic (t:glob_tactic_expr) = pi1 (make_pr_tac glob_printers) t
+and pr_glob_tactic_level n (t:glob_tactic_expr) =
+  fst (make_pr_tac glob_printers) n t
 
-and pr_glob_tactic0 t = pi2 (make_pr_tac glob_printers) t
+and pr_glob_match_context t =
+  snd (make_pr_tac glob_printers) t
 
-and pr_glob_match_context t = pi3 (make_pr_tac glob_printers) t
-
-let (pr_tactic,_,_) =
+let (pr_tactic_level,_) =
   make_pr_tac
-    (pr_glob_tactic,
-     pr_glob_tactic0,
+    (pr_glob_tactic_level,
      Printer.prterm,
      Printer.pr_pattern,
      pr_evaluable_reference,
@@ -760,3 +785,6 @@ let (pr_tactic,_,_) =
      pr_ltac_constant,
      pr_id,
      pr_extend)
+
+let pr_glob_tactic = pr_glob_tactic_level (6,E)
+let pr_tactic = pr_tactic_level (6,E)

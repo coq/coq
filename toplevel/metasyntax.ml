@@ -144,19 +144,19 @@ let qualified_nterm current_univ = function
   | NtQual (univ, en) -> (univ, en)
   | NtShort en -> (current_univ, en)
 
-let rec make_tags = function
-  | VTerm s :: l -> make_tags l
+let rec make_tags lev = function
+  | VTerm s :: l -> make_tags lev l
   | VNonTerm (loc, nt, po) :: l ->
       let (u,nt) = qualified_nterm "tactic" nt in
-      let (etyp, _) = Egrammar.interp_entry_name u nt in
-      etyp :: make_tags l
+      let (etyp, _) = Egrammar.interp_entry_name lev u nt in
+      etyp :: make_tags lev l
   | [] -> []
 
 let declare_pprule = function
   (* Pretty-printing rules only for Grammar (Tactic Notation) *)
-  | Egrammar.TacticGrammar gl ->
-      let f (s,(s',l),tac) =
-        let pp = (make_tags l, (s',List.map make_terminal_status l)) in
+  | Egrammar.TacticGrammar (n,gl) ->
+      let f (s,l,tac) =
+        let pp = (make_tags n l, (n,List.map make_terminal_status l)) in
         Pptactic.declare_extra_tactic_pprule true s pp;
         Pptactic.declare_extra_tactic_pprule false s pp in
       List.iter f gl
@@ -166,8 +166,19 @@ let cache_grammar (_,a) =
   Egrammar.extend_grammar a;
   declare_pprule a
 
+let subst_tactic_grammar subst (s,p,(d,tac)) =
+  (s,p,(d,Tacinterp.subst_tactic subst tac))
+
+open Egrammar
+
 let subst_grammar (_,subst,a) =
-  Egrammar.subst_all_grammar_command subst a
+  match a with
+  | Notation _ ->
+      anomaly "Notation not in GRAMMAR summary"
+  | Grammar gc ->
+      Grammar (subst_grammar_command subst gc)
+  | TacticGrammar (n,g) -> 
+      TacticGrammar (n,List.map (subst_tactic_grammar subst) g)
 
 let (inGrammar, outGrammar) =
   declare_object {(default_object "GRAMMAR") with
@@ -203,15 +214,15 @@ let cons_production_parameter l = function
   | VTerm _ -> l
   | VNonTerm (_,_,ido) -> option_cons ido l
 
-let locate_tactic_body dir (s,(_,prods as p),e) = 
+let locate_tactic_body dir (s,prods,e) = 
   let ids = List.fold_left cons_production_parameter [] prods in
   let tac = Tacinterp.glob_tactic_env ids (Global.env()) e in
-  (s,p,(dir,tac))
+  (s,prods,(dir,tac))
 
-let add_tactic_grammar g =
+let add_tactic_grammar (n,g) =
   let dir = Lib.cwd () in
   let g = List.map (locate_tactic_body dir) g in
-  Lib.add_anonymous_leaf (inGrammar (Egrammar.TacticGrammar g))
+  Lib.add_anonymous_leaf (inGrammar (Egrammar.TacticGrammar (n,g)))
 
 (* Printing grammar entries *)
 
@@ -235,7 +246,10 @@ let print_grammar univ entry =
       | "pattern" ->
 	  Gram.Entry.print Pcoq.Constr.pattern
       | "tactic" -> 
-	  Gram.Entry.print Pcoq.Tactic.simple_tactic
+	  msgnl (str "Entry tactic_expr is");
+	  Gram.Entry.print Pcoq.Tactic.tactic_expr;
+	  msgnl (str "Entry simple_tactic is");
+	  Gram.Entry.print Pcoq.Tactic.simple_tactic;
       | _ -> error "Unknown or unprintable grammar entry"
 
 (* Parse a format (every terminal starting with a letter or a single

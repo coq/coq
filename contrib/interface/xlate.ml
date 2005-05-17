@@ -683,6 +683,8 @@ let xlate_intro_patt_opt = function
     None -> CT_coerce_ID_OPT_to_INTRO_PATT_OPT ctv_ID_OPT_NONE
   | Some fp -> CT_coerce_INTRO_PATT_to_INTRO_PATT_OPT (xlate_intro_pattern fp)
 
+let rawwit_main_tactic = rawwit_tactic Pcoq.Tactic.tactic_main_level
+
 let rec (xlate_tacarg:raw_tactic_arg -> ct_TACTIC_ARG) =
   function
     | TacVoid ->
@@ -869,7 +871,10 @@ and xlate_tactic =
 and xlate_tac =
   function
     | TacExtend (_, "firstorder", tac_opt::l) ->
-       let t1 = match out_gen (wit_opt rawwit_tactic) tac_opt with
+       let t1 =
+	 match
+	   out_gen (wit_opt rawwit_main_tactic) tac_opt
+	 with
 	 | None -> CT_coerce_NONE_to_TACTIC_OPT CT_none
 	 | Some t2 -> CT_coerce_TACTIC_COM_to_TACTIC_OPT (xlate_tactic t2) in
 	 (match l with
@@ -983,14 +988,14 @@ and xlate_tac =
      if b then CT_rewrite_lr (c, bindl, id)
      else CT_rewrite_rl (c, bindl, id)
     | TacExtend (_,"conditionalrewrite", [t; b; cbindl]) ->
-     let t = out_gen rawwit_tactic t in
+     let t = out_gen rawwit_main_tactic t in
      let b = out_gen Extraargs.rawwit_orient b in
      let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
      let c = xlate_formula c and bindl = xlate_bindings bindl in
      if b then CT_condrewrite_lr (xlate_tactic t, c, bindl, ctv_ID_OPT_NONE)
      else CT_condrewrite_rl (xlate_tactic t, c, bindl, ctv_ID_OPT_NONE)
     | TacExtend (_,"conditionalrewrite", [t; b; cbindl; id]) ->
-     let t = out_gen rawwit_tactic t in
+     let t = out_gen rawwit_main_tactic t in
      let b = out_gen Extraargs.rawwit_orient b in
      let (c,bindl) = out_gen rawwit_constr_with_bindings cbindl in
      let c = xlate_formula c and bindl = xlate_bindings bindl in
@@ -1055,7 +1060,7 @@ and xlate_tac =
 	 match t with
 	     [t0] -> 
 	       CT_coerce_TACTIC_COM_to_TACTIC_OPT
-		 (xlate_tactic(out_gen rawwit_tactic t0))
+	       (xlate_tactic(out_gen rawwit_main_tactic t0))
 	   | [] -> CT_coerce_NONE_to_TACTIC_OPT CT_none
 	   | _ -> assert false in
 	 CT_autorewrite (CT_id_ne_list(fst, id_list1), t1)
@@ -1241,8 +1246,8 @@ and coerce_genarg_to_TARG x =
       (CT_coerce_FORMULA_to_SCOMMENT_CONTENT (xlate_formula (out_gen rawwit_constr x)))
   | ConstrMayEvalArgType -> xlate_error"TODO: generic constr-may-eval argument"
   | QuantHypArgType ->xlate_error"TODO: generic quantified hypothesis argument"
-  | TacticArgType ->
-      let t = xlate_tactic (out_gen rawwit_tactic x) in
+  | TacticArgType n ->
+      let t = xlate_tactic (out_gen (rawwit_tactic n) x) in
       CT_coerce_TACTIC_COM_to_TARG t
   | OpenConstrArgType b -> 
       CT_coerce_SCOMMENT_CONTENT_to_TARG
@@ -1335,8 +1340,8 @@ let coerce_genarg_to_VARG x =
       (CT_coerce_FORMULA_to_FORMULA_OPT (xlate_formula (out_gen rawwit_constr x)))
   | ConstrMayEvalArgType -> xlate_error"TODO: generic constr-may-eval argument"
   | QuantHypArgType ->xlate_error"TODO: generic quantified hypothesis argument"
-  | TacticArgType ->
-      let t = xlate_tactic (out_gen rawwit_tactic x) in
+  | TacticArgType n ->
+      let t = xlate_tactic (out_gen (rawwit_tactic n) x) in
       CT_coerce_TACTIC_OPT_to_VARG (CT_coerce_TACTIC_COM_to_TACTIC_OPT t)
   | OpenConstrArgType _ -> xlate_error "TODO: generic open constr"
   | ConstrWithBindingsArgType -> xlate_error "TODO: generic constr with bindings"
@@ -1653,7 +1658,7 @@ let rec xlate_vernac =
       let formula_list = out_gen (wit_list1 rawwit_constr) (List.nth largs 1) in
       let t =
 	if List.length largs = 4 then
-	   out_gen rawwit_tactic (List.nth largs (if in_v8 then 2 else 3))
+	   out_gen rawwit_main_tactic (List.nth largs (if in_v8 then 2 else 3))
 	 else
 	   TacId "" in
       let base = 

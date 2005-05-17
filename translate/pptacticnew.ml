@@ -386,10 +386,24 @@ let rec pr_tacarg_using_rule pr_gen = function
 
 let pr_then () = str ";"
 
+let ltop = (5,E)
+let lseq = 5
+let ltactical = 3
+let lorelse = 2
+let llet = 1
+let lfun = 1
+let labstract = 3
+let lmatch = 1
+let latom = 0
+let lcall = 1
+let leval = 1
+let ltatom = 1
+
+let level_of (n,p) = match p with E -> n | L -> n-1 | Prec n -> n | Any -> lseq
 
 open Closure
 
-let make_pr_tac (pr_tac,pr_tac0,pr_constr,pr_lconstr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,strip_prod_binders) =
+let make_pr_tac (pr_tac_level,pr_constr,pr_lconstr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend,strip_prod_binders) =
 
 let pr_bindings env = pr_bindings (pr_lconstr env) (pr_constr env) in
 let pr_ex_bindings env = pr_bindings_gen true (pr_lconstr env) (pr_constr env) in
@@ -467,10 +481,10 @@ and pr_atom1 env = function
       errorlabstrm "Obsolete V8" (str "Tactic is not ported to V8.0")
   | TacExtend (loc,s,l) ->
       pr_with_comments loc
-        (pr_extend (pr_constr env) (pr_lconstr env) (pr_tac env) s l)
+        (pr_extend (pr_constr env) (pr_lconstr env) (pr_tac_level env) 1 s l)
   | TacAlias (loc,s,l,_) ->
       pr_with_comments loc
-        (pr_extend (pr_constr env) (pr_lconstr env) (pr_tac env) s
+        (pr_extend (pr_constr env) (pr_lconstr env) (pr_tac_level env) 1 s
           (List.map snd l))
 
   (* Basic tactics *)
@@ -633,7 +647,7 @@ and pr_atom1 env = function
   | TacSplit (false,l) -> hov 1 (str "split" ++ pr_bindings env l)
   | TacSplit (true,l) -> hov 1 (str "exists" ++ pr_ex_bindings env l)
   | TacAnyConstructor (Some t) ->
-      hov 1 (str "constructor" ++ pr_arg (pr_tac0 env) t)
+      hov 1 (str "constructor" ++ pr_arg (pr_tac_level env (latom,E)) t)
   | TacAnyConstructor None as t -> pr_atom0 env t
   | TacConstructor (n,l) ->
       hov 1 (str "constructor" ++ pr_or_metaid pr_intarg n ++
@@ -675,19 +689,6 @@ and pr_atom1 env = function
       pr_simple_clause pr_ident cl)
 
 in
-
-let ltop = (5,E) in
-let lseq = 5 in
-let ltactical = 3 in
-let lorelse = 2 in
-let llet = 1 in
-let lfun = 1 in
-let labstract = 3 in
-let lmatch = 1 in
-let latom = 0 in
-let lcall = 1 in
-let leval = 1 in
-let ltatom = 1 in
 
 let rec pr_tac env inherited tac =
   let (strm,prec) = match tac with
@@ -791,9 +792,14 @@ let rec pr_tac env inherited tac =
       str "solve" ++ spc () ++ pr_seq_body (pr_tac env ltop) tl, llet
   | TacId "" -> str "idtac", latom
   | TacId s -> str "idtac" ++ (qsnew s), latom
+  | TacAtom (loc,TacAlias (_,s,l,_)) ->
+      pr_with_comments loc
+        (pr_extend (pr_constr env) (pr_lconstr env) (pr_tac_level env)
+	  (level_of inherited) s
+          (List.map snd l)), latom
   | TacAtom (loc,t) ->
       pr_with_comments loc (hov 1 (pr_atom1 env t)), ltatom
-  | TacArg(Tacexp e) -> pr_tac0 env e, latom
+  | TacArg(Tacexp e) -> pr_tac_level env (latom,E) e, latom
   | TacArg(ConstrMayEval (ConstrTerm c)) ->
       str "constr:" ++ pr_constr env c, latom
   | TacArg(ConstrMayEval c) ->
@@ -826,13 +832,7 @@ and pr_tacarg env = function
   | (TacCall _|Tacexp _|Integer _) as a ->
       str "ltac:" ++ pr_tac env (latom,E) (TacArg a)
 
-in ((fun env -> pr_tac env ltop),
-    (fun env -> pr_tac env (latom,E)),
-    pr_match_rule)
-
-let pi1 (a,_,_) = a
-let pi2 (_,a,_) = a
-let pi3 (_,_,a) = a
+in (pr_tac, pr_match_rule)
 
 let strip_prod_binders_rawterm n (ty,_) =
   let rec strip_ty acc n ty =
@@ -852,10 +852,8 @@ let strip_prod_binders_constr n ty =
         | _ -> error "Cannot translate fix tactic: not enough products" in
   strip_ty [] n ty
 
-
 let rec raw_printers =
-    (pr_raw_tactic, 
-     pr_raw_tactic0,
+    (pr_raw_tactic_level, 
      Ppconstrnew.pr_constr_env,
      Ppconstrnew.pr_lconstr_env,
      Ppconstrnew.pr_pattern,
@@ -866,21 +864,17 @@ let rec raw_printers =
      Pptactic.pr_raw_extend,
      strip_prod_binders_expr)
 
-and pr_raw_tactic env (t:raw_tactic_expr) =
-  pi1 (make_pr_tac raw_printers) env t
-
-and pr_raw_tactic0 env t =
-  pi2 (make_pr_tac raw_printers) env t
+and pr_raw_tactic_level env n (t:raw_tactic_expr) =
+  fst (make_pr_tac raw_printers) env n t
 
 and pr_raw_match_rule env t =
-  pi3 (make_pr_tac raw_printers) env t
+  snd (make_pr_tac raw_printers) env t
 
 let pr_and_constr_expr pr (c,_) = pr c
 
 
 let rec glob_printers =
-    (pr_glob_tactic, 
-     pr_glob_tactic0,
+    (pr_glob_tactic_level, 
      (fun env -> pr_and_constr_expr (Ppconstrnew.pr_rawconstr_env_no_translate env)),
      (fun env -> pr_and_constr_expr (Ppconstrnew.pr_lrawconstr_env_no_translate env)),
      (fun c -> Ppconstrnew.pr_constr_pattern_env (Global.env()) c),
@@ -891,19 +885,15 @@ let rec glob_printers =
      Pptactic.pr_glob_extend,
      strip_prod_binders_rawterm)
 
-and pr_glob_tactic env (t:glob_tactic_expr) =
-  pi1 (make_pr_tac glob_printers) env t
-
-and pr_glob_tactic0 env t =
-  pi2 (make_pr_tac glob_printers) env t
+and pr_glob_tactic_level env n (t:glob_tactic_expr) =
+  fst (make_pr_tac glob_printers) env n t
 
 and pr_glob_match_rule env t =
-  pi3 (make_pr_tac glob_printers) env t
+  snd (make_pr_tac glob_printers) env t
 
-let (pr_tactic,_,_) =
+let ((pr_tactic_level:env -> tolerability -> Proof_type.tactic_expr -> std_ppcmds),_) =
   make_pr_tac
-    (pr_glob_tactic,
-     pr_glob_tactic0,
+    (pr_glob_tactic_level,
      pr_term_env,
      pr_lterm_env,
      Ppconstrnew.pr_constr_pattern,
@@ -913,6 +903,10 @@ let (pr_tactic,_,_) =
      pr_id,
      Pptactic.pr_extend,
      strip_prod_binders_constr)
+
+let pr_raw_tactic env = pr_raw_tactic_level env ltop
+let pr_glob_tactic env = pr_glob_tactic_level env ltop
+let pr_tactic env = pr_tactic_level env ltop
 
 let _ = Tactic_debug.set_tactic_printer
   (fun x -> 

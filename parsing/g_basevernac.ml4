@@ -246,17 +246,25 @@ GEXTEND Gram
   GLOBAL: syntax;
 
   univ:
-  [ [ univ = IDENT ->
+    [ [ univ = IDENT ->
         set_default_action_parser (parser_type_from_name univ); univ ] ]
+  ;
+  grammar_tactic_level:
+    [ [ IDENT "simple_tactic" -> 0 
+      | IDENT "tactic1" -> 1
+      | IDENT "tactic2" -> 2
+      | IDENT "tactic3" -> 3
+      | IDENT "tactic4" -> 4
+      | IDENT "tactic5" -> 5 ] ]
   ;
   syntax:
    [ [ IDENT "Token"; s = lstring ->
        Pp.warning "Token declarations are now useless"; VernacNop
 
-     | IDENT "Grammar"; IDENT "tactic"; IDENT "simple_tactic";
+     | IDENT "Grammar"; IDENT "tactic"; lev = grammar_tactic_level;
         OPT [ ":"; IDENT "tactic" ]; ":=";
         OPT "|"; tl = LIST0 grammar_tactic_rule SEP "|" -> 
-	  VernacTacticGrammar tl
+	  VernacTacticGrammar (lev,tl)
 
      | IDENT "Grammar"; u = univ;
          tl = LIST1 grammar_entry SEP "with" -> 
@@ -416,8 +424,8 @@ GEXTEND Gram
      | -> None ]]
   ;
   grammar_tactic_rule:
-    [[ name = rule_name; "["; s = lstring; pil = LIST0 production_item; "]";
-       "->"; "["; t = Tactic.tactic; "]"  -> (name, (s,pil), t) ]]
+    [[ name = rule_name; "["; pil = LIST0 production_item; "]";
+       "->"; "["; t = Tactic.tactic; "]"  -> (name, pil, t) ]]
   ;
   grammar_rule:
     [[ name = rule_name; "["; pil = LIST0 production_item; "]"; "->";

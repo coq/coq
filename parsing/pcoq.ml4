@@ -52,7 +52,7 @@ let grammar_delete e rls =
        List.iter (fun (pil,_) -> G.delete_rule e pil) (List.rev lev))
     (List.rev rls)
 
-(* grammar_object is the superclass of all grammar entry *)
+(* grammar_object is the superclass of all grammar entries *)
 module type Gramobj =
 sig
   type grammar_object
@@ -390,10 +390,20 @@ module Tactic =
 
     (* Main entries for ltac *)
     let tactic_arg = Gram.Entry.create "tactic:tactic_arg"
-    let tactic = make_gen_entry utactic rawwit_tactic "tactic"
+    (* For v8: *)
+    let tactic_expr = Gram.Entry.create "tactic:tactic_expr"
+    (* For v7: *)
+    let tactic_expr2 = Gram.Entry.create "tactic:tactic_expr2"
+    let tactic_expr3 = Gram.Entry.create "tactic:tactic_expr3"
+    let tactic_expr4 = Gram.Entry.create "tactic:tactic_expr4"
+    let tactic_expr5 = Gram.Entry.create "tactic:tactic_expr5"
+
+    let tactic_main_level = 5
+    let tactic = make_gen_entry utactic (rawwit_tactic tactic_main_level) "tactic"
 
     (* Main entry for quotations *)
     let tactic_eoi = eoi_entry tactic
+
   end
 
 

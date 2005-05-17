@@ -91,7 +91,7 @@ let pr_raw_tactic_env l env t =
 let pr_gen env t =
   Pptactic.pr_raw_generic (Ppconstrnew.pr_constr_env env)
     (Ppconstrnew.pr_lconstr_env env)
-    (Pptacticnew.pr_raw_tactic env) pr_reference t
+    (Pptacticnew.pr_raw_tactic_level env) pr_reference t
 
 let pr_raw_tactic tac =
   Pptacticnew.pr_glob_tactic (Global.env()) (Tacinterp.glob_tactic tac)
@@ -103,8 +103,8 @@ let rec extract_signature = function
 
 let rec match_vernac_rule tys = function
     [] -> raise Not_found
-  | (s,pargs)::rls ->
-      if extract_signature pargs = tys then (s,pargs)
+  | pargs::rls ->
+      if extract_signature pargs = tys then pargs
       else match_vernac_rule tys rls
 
 let sep = fun _ -> spc()
@@ -400,16 +400,12 @@ let pr_syntax_modifiers = function
   | l -> spc() ++ 
       hov 1 (str"(" ++ prlist_with_sep sep_v2 pr_syntax_modifier l ++ str")")
 
-let pr_grammar_tactic_rule (name,(s,pil),t) =
-(*
-  hov 0 (
-  (* str name ++ spc() ++ *)
-  hov 0 (str"[" ++ qsnew s ++ spc() ++
-  prlist_with_sep sep pr_production_item pil ++ str"]") ++
-  spc() ++ hov 0 (str"->" ++ spc() ++ str"[" ++ pr_raw_tactic t ++ str"]"))
-*)
-  hov 2 (str "Tactic Notation" ++ spc() ++ 
-    hov 0 (qsnew s ++ spc() ++ prlist_with_sep sep pr_production_item pil ++
+let print_level n =
+  if n <> 0 then str " (at level " ++ int n ++ str ")" else mt ()
+
+let pr_grammar_tactic_rule n (name,pil,t) =
+  hov 2 (str "Tactic Notation" ++ print_level n ++ spc() ++ 
+    hov 0 (prlist_with_sep sep pr_production_item pil ++
     spc() ++ str":=" ++ spc() ++ pr_raw_tactic t))
 
 let pr_box b = let pr_boxkind = function
@@ -526,11 +522,9 @@ let rec pr_vernac = function
   | VernacGrammar _ -> 
       msgerrnl (str"Warning : constr Grammar is discontinued; use Notation");
       str"(* <Warning> : Grammar is replaced by Notation *)"
-  | VernacTacticGrammar l ->
-      prlist_with_sep (fun () -> sep_end() ++ fnl()) pr_grammar_tactic_rule l
-(*
-      hov 1 (str"Grammar tactic simple_tactic :=" ++ spc() ++ prlist_with_sep (fun _ -> brk(1,1) ++ str"|") pr_grammar_tactic_rule l) (***)
-*)      
+  | VernacTacticGrammar (n,l) ->
+      prlist_with_sep (fun () -> sep_end() ++ fnl())
+        (pr_grammar_tactic_rule n) l
   | VernacSyntax (u,el) ->
       msgerrnl (str"Warning : Syntax is discontinued; use Notation");
       str"(* <Warning> : Syntax is discontinued" ++ 
@@ -1095,7 +1089,7 @@ and pr_extend s cl =
       | "HintRewriteV8", [a;b;c;d] -> [a;b;d;c]
       | _ -> cl in
     let rls = List.assoc s (Egrammar.get_extend_vernac_grammars()) in
-    let (hd,rl) = match_vernac_rule (List.map Genarg.genarg_tag cl) rls in
+    let rl = match_vernac_rule (List.map Genarg.genarg_tag cl) rls in
     let (pp,_) =
       List.fold_left
         (fun (strm,args) pi ->
@@ -1104,7 +1098,7 @@ and pr_extend s cl =
                 (strm ++ pr_gen (Global.env()) (List.hd args),
                 List.tl args)
             | Egrammar.TacTerm s -> (strm ++ spc() ++ str s, args))
-        (str hd,cl) rl in
+        (mt(),cl) rl in
     hov 1 pp
     ++ (if s = "Correctness" then sep_end () ++ fnl() ++ str "Proof" else mt())
   with Not_found ->

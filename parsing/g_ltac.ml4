@@ -41,10 +41,11 @@ let arg_of_expr = function
 
 if !Options.v7 then
 GEXTEND Gram
-  GLOBAL: tactic Vernac_.command tactic_arg;
+  GLOBAL: tactic Vernac_.command tactic_arg 
+  tactic_expr5 tactic_expr4 tactic_expr3 tactic_expr2;
 
 (*
-  GLOBAL: tactic_atom tactic_atom0 tactic_expr input_fun;
+  GLOBAL: tactic_atom tactic_atom0  input_fun;
 *)
   input_fun:
     [ [ l = base_ident -> Some l

@@ -693,9 +693,9 @@ GEXTEND Gram
 	 sc = OPT [ ":"; sc = IDENT -> sc ] ->
            VernacNotation (local,c,Some(s,modl),None,sc)
 
-     | IDENT "Tactic"; IDENT "Notation"; s = ne_string; 
-	 pil = LIST0 production_item; ":="; t = Tactic.tactic -> 
-	   VernacTacticGrammar ["",(s,pil),t]
+     | IDENT "Tactic"; IDENT "Notation"; n = tactic_level; 
+	 pil = LIST0 production_item; ":="; t = Tactic.tactic
+         -> VernacTacticGrammar (n,["",pil,t])
 
      | IDENT "Reserved"; IDENT "Notation"; local = locality; s = ne_string; 
 	 l = [ "("; l = LIST1 syntax_modifier SEP ","; ")" -> l | -> [] ]
@@ -704,6 +704,9 @@ GEXTEND Gram
      (* "Print" "Grammar" should be here but is in "command" entry in order 
         to factorize with other "Print"-based vernac entries *)
   ] ]
+  ;
+  tactic_level:
+    [ [ "("; "at"; IDENT "level"; n = natural; ")" -> n | -> 0 ] ]
   ;
   locality:
     [ [ IDENT "Local" -> true | -> false ] ]
