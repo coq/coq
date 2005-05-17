@@ -267,8 +267,12 @@ EXTEND
          declare_tactic_v7 loc s l ] ]
   ;
   tacrule:
-    [ [ "["; l = LIST0 tacargs; "]"; "->"; "["; e = Pcaml.expr; "]"
-        -> (l,e)
+    [ [ "["; l = LIST1 tacargs; "]"; "->"; "["; e = Pcaml.expr; "]"
+        -> 
+	  if match List.hd l with TacNonTerm _ -> true | _ -> false then
+	    (* En attendant la syntaxe de tacticielles *)
+	    failwith "Tactic syntax must start with an identifier";
+	  (l,e)
     ] ]
   ;
   tacargs:

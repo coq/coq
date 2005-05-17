@@ -694,7 +694,7 @@ GEXTEND Gram
            VernacNotation (local,c,Some(s,modl),None,sc)
 
      | IDENT "Tactic"; IDENT "Notation"; n = tactic_level; 
-	 pil = LIST0 production_item; ":="; t = Tactic.tactic
+	 pil = LIST1 production_item; ":="; t = Tactic.tactic
          -> VernacTacticGrammar (n,["",pil,t])
 
      | IDENT "Reserved"; IDENT "Notation"; local = locality; s = ne_string; 

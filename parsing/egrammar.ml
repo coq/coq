@@ -438,16 +438,20 @@ let get_tactic_entry n =
 
 open Tacexpr
 
+let head_is_ident = function (_,VTerm _::_,_) -> true | _ -> false
+
 let add_tactic_entries (lev,gl) =
   let univ = get_univ "tactic" in
   let entry, pos = get_tactic_entry lev in
   let rules = 
-    if lev = 0 then
+    if lev = 0 then begin
+      if not (List.for_all head_is_ident gl) then
+	error "Notations for simple tactics must start with an identifier";
       let make_act s tac loc l = 
 	(TacAlias(loc,s,l,tac):raw_atomic_tactic_expr) in
       let f (s,l,tac) =
 	make_rule univ (make_act s tac) (make_vprod_item lev "tactic") l in
-      List.map f gl
+      List.map f gl end
     else
       let make_act s tac loc l = 
 	(TacAtom(loc,TacAlias(loc,s,l,tac)):raw_tactic_expr) in

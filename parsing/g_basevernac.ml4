@@ -424,7 +424,7 @@ GEXTEND Gram
      | -> None ]]
   ;
   grammar_tactic_rule:
-    [[ name = rule_name; "["; pil = LIST0 production_item; "]";
+    [[ name = rule_name; "["; pil = LIST1 production_item; "]";
        "->"; "["; t = Tactic.tactic; "]"  -> (name, pil, t) ]]
   ;
   grammar_rule:
