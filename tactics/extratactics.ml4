@@ -123,12 +123,20 @@ TACTIC EXTEND AutorewriteV7
     [ autorewrite Refiner.tclIDTAC l ]
 | [ "AutoRewrite" "[" ne_preident_list(l) "]" "using" tactic(t) ] ->
     [ autorewrite (snd t) l ]
+| [ "AutoRewrite" "[" ne_preident_list(l) "]" "in" ident(id) ] ->
+    [ autorewrite_in id Refiner.tclIDTAC l ]
+| [ "AutoRewrite" "[" ne_preident_list(l) "]" "in" ident(id) "using" tactic(t) ] ->
+    [ autorewrite_in id (snd t) l ]
 END
 TACTIC EXTEND AutorewriteV8
   [ "AutoRewrite" "with" ne_preident_list(l) ] ->
     [ autorewrite Refiner.tclIDTAC l ]
 | [ "AutoRewrite" "with" ne_preident_list(l) "using" tactic(t) ] ->
     [ autorewrite (snd t) l ]
+| [ "AutoRewrite" "with" ne_preident_list(l) "in" ident(id) ] ->
+    [ autorewrite_in id Refiner.tclIDTAC l ]
+| [ "AutoRewrite" "with" ne_preident_list(l) "in" ident(id) "using" tactic(t) ] ->
+    [ autorewrite_in id (snd t) l ]
 END
 
 let add_rewrite_hint name ort t lcsr =

@@ -60,7 +60,7 @@ let print_rewrite_hintdb bas =
 type raw_rew_rule = constr * bool * raw_tactic_expr
 
 (* Applies all the rules of one base *)
-let one_base tac_main bas =
+let one_base general_rewrite_maybe_in tac_main bas =
   let lrul = 
     try 
       Stringmap.find bas !rewtab
@@ -72,14 +72,56 @@ let one_base tac_main bas =
     tclREPEAT_MAIN (tclPROGRESS (List.fold_left (fun tac (csr,dir,tc) ->
       tclTHEN tac
         (tclREPEAT_MAIN 
-	  (tclTHENSFIRSTn (general_rewrite dir csr) [|tac_main|] tc)))
+	  (tclTHENSFIRSTn (general_rewrite_maybe_in dir csr) [|tac_main|] tc)))
       tclIDTAC lrul))
 
 (* The AutoRewrite tactic *)
 let autorewrite tac_main lbas =
   tclREPEAT_MAIN (tclPROGRESS
     (List.fold_left (fun tac bas -> 
-       tclTHEN tac (one_base tac_main bas)) tclIDTAC lbas))
+       tclTHEN tac (one_base general_rewrite tac_main bas)) tclIDTAC lbas))
+
+let autorewrite_in id tac_main lbas gl =
+ (* let's check at once if id exists (to raise the appropriate error) *)
+ let _ = Tacmach.pf_get_hyp gl id in
+ let general_rewrite_in =
+  let id = ref id in
+  let to_be_cleared = ref false in
+   fun dir cstr gl ->
+    let last_hyp_id =
+     match gl.Evd.it.Evd.evar_hyps with
+        (last_hyp_id,_,_)::_ -> last_hyp_id
+      | _ -> (* even the hypothesis id is missing *)
+             error ("No such hypothesis : " ^ (string_of_id !id))
+    in
+    let gl' = general_rewrite_in dir !id cstr gl in
+    let gls = (fst gl').Evd.it in
+    match gls with
+       g::_ ->
+        (match g.Evd.evar_hyps with
+            (lastid,_,_)::_ ->
+              if last_hyp_id <> lastid then
+               begin
+                let gl'' =
+                  if !to_be_cleared then
+                   tclTHEN (fun _ -> gl') (tclTRY (clear [!id])) gl
+                  else gl' in
+                id := lastid ;
+                to_be_cleared := true ;
+                gl''
+               end
+              else
+               begin
+                to_be_cleared := false ;
+                gl'
+               end
+          | _ -> assert false) (* there must be at least an hypothesis *)
+     | _ -> assert false (* rewriting cannot complete a proof *)
+ in
+  tclREPEAT_MAIN (tclPROGRESS
+    (List.fold_left (fun tac bas -> 
+       tclTHEN tac (one_base general_rewrite_in tac_main bas)) tclIDTAC lbas))
+   gl
 
 (* Functions necessary to the library object declaration *)
 let cache_hintrewrite (_,(rbase,lrl)) =

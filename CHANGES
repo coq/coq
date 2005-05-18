@@ -23,6 +23,10 @@ Ltac
 
 Tactics
 
+- New implementation and generalization of [setoid_]* (setoid_rewrite,
+  setoid_symmetry, setoid_transitivity, setoid_reflexivity and autorewite).
+  New syntax for declaring relations and morphisms (old syntax still working
+  with minor modifications, but deprecated) (doc TODO)
 - Added "clear - id" to clear all hypotheses except the ones depending in id.
 - Added "dependent rewrite term" and "dependent rewrite term in hyp" (doc TODO)
 - The argument of Declare Left Step and Declare Right Step is now a term
@@ -31,6 +35,8 @@ Tactics
 - Idtac can now be left implicit in a [...|...] construct: for instance, 
   [ foo | | bar ] stands for [ foo | idtac | bar ]. (doc TODO). 
 - "Tactic Notation" extended to allow notations of tacticals (doc TODO).
+- Added "autorewrite with ... in hyp [using ...]" (doc TODO).
+- 
 
 Modules
 
