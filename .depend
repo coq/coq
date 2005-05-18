@@ -263,7 +263,7 @@ tactics/auto.cmi: toplevel/vernacexpr.cmo lib/util.cmi kernel/term.cmi \
     library/libnames.cmi pretyping/evd.cmi kernel/environ.cmi \
     pretyping/clenv.cmi tactics/btermdn.cmi 
 tactics/autorewrite.cmi: kernel/term.cmi proofs/tacmach.cmi \
-    proofs/tacexpr.cmo 
+    proofs/tacexpr.cmo kernel/names.cmi 
 tactics/btermdn.cmi: kernel/term.cmi pretyping/pattern.cmi 
 tactics/contradiction.cmi: kernel/term.cmi pretyping/rawterm.cmi \
     proofs/proof_type.cmi kernel/names.cmi 
@@ -1761,20 +1761,22 @@ tactics/auto.cmx: toplevel/vernacexpr.cmx lib/util.cmx pretyping/typing.cmx \
     pretyping/clenv.cmx tactics/btermdn.cmx tactics/auto.cmi 
 tactics/autorewrite.cmo: toplevel/vernacinterp.cmi lib/util.cmi \
     pretyping/typing.cmi kernel/term.cmi tactics/tactics.cmi \
-    tactics/tacticals.cmi tactics/tacinterp.cmi proofs/tacexpr.cmo \
-    library/summary.cmi proofs/proof_type.cmi parsing/printer.cmi \
-    parsing/pptactic.cmi lib/pp.cmi kernel/names.cmi kernel/mod_subst.cmi \
-    library/libobject.cmi library/lib.cmi tactics/hipattern.cmi \
-    library/global.cmi pretyping/evd.cmi tactics/equality.cmi \
-    parsing/coqast.cmi parsing/ast.cmi tactics/autorewrite.cmi 
+    tactics/tacticals.cmi proofs/tacmach.cmi tactics/tacinterp.cmi \
+    proofs/tacexpr.cmo library/summary.cmi proofs/proof_type.cmi \
+    parsing/printer.cmi parsing/pptactic.cmi lib/pp.cmi kernel/names.cmi \
+    kernel/mod_subst.cmi library/libobject.cmi library/lib.cmi \
+    tactics/hipattern.cmi library/global.cmi pretyping/evd.cmi \
+    tactics/equality.cmi parsing/coqast.cmi parsing/ast.cmi \
+    tactics/autorewrite.cmi 
 tactics/autorewrite.cmx: toplevel/vernacinterp.cmx lib/util.cmx \
     pretyping/typing.cmx kernel/term.cmx tactics/tactics.cmx \
-    tactics/tacticals.cmx tactics/tacinterp.cmx proofs/tacexpr.cmx \
-    library/summary.cmx proofs/proof_type.cmx parsing/printer.cmx \
-    parsing/pptactic.cmx lib/pp.cmx kernel/names.cmx kernel/mod_subst.cmx \
-    library/libobject.cmx library/lib.cmx tactics/hipattern.cmx \
-    library/global.cmx pretyping/evd.cmx tactics/equality.cmx \
-    parsing/coqast.cmx parsing/ast.cmx tactics/autorewrite.cmi 
+    tactics/tacticals.cmx proofs/tacmach.cmx tactics/tacinterp.cmx \
+    proofs/tacexpr.cmx library/summary.cmx proofs/proof_type.cmx \
+    parsing/printer.cmx parsing/pptactic.cmx lib/pp.cmx kernel/names.cmx \
+    kernel/mod_subst.cmx library/libobject.cmx library/lib.cmx \
+    tactics/hipattern.cmx library/global.cmx pretyping/evd.cmx \
+    tactics/equality.cmx parsing/coqast.cmx parsing/ast.cmx \
+    tactics/autorewrite.cmi 
 tactics/btermdn.cmo: tactics/termdn.cmi kernel/term.cmi pretyping/pattern.cmi \
     library/libnames.cmi tactics/dn.cmi tactics/btermdn.cmi 
 tactics/btermdn.cmx: tactics/termdn.cmx kernel/term.cmx pretyping/pattern.cmx \
