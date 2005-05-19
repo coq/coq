@@ -8,15 +8,45 @@
 
 (*i $Id$ i*)
 
-Set Implicit Arguments.
+(** This module defines type constructors for types in [Type]
+    ([Datatypes.v] and [Logic.v] defined them for types in [Set]) *)
 
-(** This module defines quantification on the world [Type]
-    ([Logic.v] was defining it on the world [Set]) *)
+Set Implicit Arguments.
 
 Require Import Datatypes.
 Require Export Logic.
 
+(** Negation of a type in [Type] *)
+
 Definition notT (A:Type) := A -> False.
+
+(** Conjunction of types in [Type] *)
+
+Inductive prodT (A B:Type) : Type :=
+    pairT : A -> B -> prodT A B.
+
+Section prodT_proj.
+
+  Variables A B : Type.
+
+  Definition fstT (H:prodT A B) := match H with
+                                   | pairT x _ => x
+                                   end.
+  Definition sndT (H:prodT A B) := match H with
+                                   | pairT _ y => y
+                                   end.
+
+End prodT_proj.
+
+Definition prodT_uncurry (A B C:Type) (f:prodT A B -> C) 
+  (x:A) (y:B) : C := f (pairT x y).
+
+Definition prodT_curry (A B C:Type) (f:A -> B -> C) 
+  (p:prodT A B) : C := match p with
+                       | pairT x y => f x y
+                       end.
+
+(** Properties of [identity] *)
 
 Section identity_is_a_congruence.
 
@@ -61,29 +91,5 @@ Definition identity_rect_r :
   forall (A:Type) (a:A) (P:A -> Type), P a -> forall y:A, identity y a -> P y.
  intros A x P H y H0; case sym_id with (1 := H0); trivial.
 Defined.
-
-Inductive prodT (A B:Type) : Type :=
-    pairT : A -> B -> prodT A B.
-
-Section prodT_proj.
-
-  Variables A B : Type.
-
-  Definition fstT (H:prodT A B) := match H with
-                                   | pairT x _ => x
-                                   end.
-  Definition sndT (H:prodT A B) := match H with
-                                   | pairT _ y => y
-                                   end.
-
-End prodT_proj.
-
-Definition prodT_uncurry (A B C:Type) (f:prodT A B -> C) 
-  (x:A) (y:B) : C := f (pairT x y).
-
-Definition prodT_curry (A B C:Type) (f:A -> B -> C) 
-  (p:prodT A B) : C := match p with
-                       | pairT x y => f x y
-                       end.
 
 Hint Immediate sym_id sym_not_id: core v62.

@@ -28,19 +28,19 @@ Notation "~ x" := (not x) : type_scope.
 
 Hint Unfold not: core.
 
-Inductive and (A B:Prop) : Prop :=
-    conj : A -> B -> A /\ B 
- where "A /\ B" := (and A B) : type_scope.
-
-
-Section Conjunction.
-
   (** [and A B], written [A /\ B], is the conjunction of [A] and [B]
 
       [conj p q] is a proof of [A /\ B] as soon as 
       [p] is a proof of [A] and [q] a proof of [B]
 
       [proj1] and [proj2] are first and second projections of a conjunction *)
+
+Inductive and (A B:Prop) : Prop :=
+    conj : A -> B -> A /\ B 
+
+where "A /\ B" := (and A B) : type_scope.
+
+Section Conjunction.
 
   Variables A B : Prop.
 
@@ -61,7 +61,8 @@ End Conjunction.
 Inductive or (A B:Prop) : Prop :=
   | or_introl : A -> A \/ B
   | or_intror : B -> A \/ B 
- where "A \/ B" := (or A B) : type_scope.
+
+where "A \/ B" := (or A B) : type_scope.
 
 (** [iff A B], written [A <-> B], expresses the equivalence of [A] and [B] *)
 
@@ -96,17 +97,25 @@ Definition IF_then_else (P Q R:Prop) := P /\ Q \/ ~ P /\ R.
 Notation "'IF' c1 'then' c2 'else' c3" := (IF_then_else c1 c2 c3)
   (at level 200) : type_scope.
 
-(** * First-order quantifiers
-  - [ex A P], or simply [exists x, P x], expresses the existence of an 
-      [x] of type [A] which satisfies the predicate [P] ([A] is of type 
-      [Set]). This is existential quantification.
-  - [ex2 A P Q], or simply [exists2 x, P x & Q x], expresses the
-      existence of an [x] of type [A] which satisfies both the predicates
-      [P] and [Q].
-  - Universal quantification (especially first-order one) is normally 
-    written [forall x:A, P x]. For duality with existential quantification, 
-    the construction [all P] is provided too.
+(** * First-order quantifiers *)
+
+(** [ex P], or simply [exists x, P x], or also [exists x:A, P x],
+    expresses the existence of an [x] of some type [A] in [Set] which
+    satisfies the predicate [P].  This is existential quantification.
+
+    [ex2 P Q], or simply [exists2 x, P x & Q x], or also 
+    [exists2 x:A, P x & Q x], expresses the existence of an [x] of
+    type [A] which satisfies both predicates [P] and [Q].
+
+    Universal quantification is primitively written [forall x:A, Q]. By
+    symmetry with existential quantification, the construction [all P]
+    is provided too.
 *)
+
+(* Remark: [exists x, Q] denotes [ex (fun x => Q)] so that [exists x,
+   P x] is in fact equivalent to [ex (fun x => P x)] which may be not
+   convertible to [ex P] if [P] is not itself an abstraction *)
+
 
 Inductive ex (A:Type) (P:A -> Prop) : Prop :=
     ex_intro : forall x:A, P x -> ex (A:=A) P.
@@ -153,16 +162,19 @@ End universal_quantification.
 
 (** * Equality *)
 
-(** [eq x y], or simply [x=y], expresses the (Leibniz') equality
-    of [x] and [y]. Both [x] and [y] must belong to the same type [A].
+(** [eq x y], or simply [x=y] expresses the equality of [x] and
+    [y]. Both [x] and [y] must belong to the same type [A].
     The definition is inductive and states the reflexivity of the equality.
     The others properties (symmetry, transitivity, replacement of 
-    equals) are proved below. The type of [x] and [y] can be made explicit
-    using the notation [x = y :> A] *)
+    equals by equals) are proved below. The type of [x] and [y] can be
+    made explicit using the notation [x = y :> A]. This is Leibniz equality
+    as it expresses that [x] and [y] are equal iff every property on
+    [A] which is true of [x] is also true of [y] *)
 
 Inductive eq (A:Type) (x:A) : A -> Prop :=
     refl_equal : x = x :>A 
- where "x = y :> A" := (@eq A x y) : type_scope.
+
+where "x = y :> A" := (@eq A x y) : type_scope.
 
 Notation "x = y" := (x = y :>_) : type_scope.
 Notation "x <> y  :> T" := (~ x = y :>T) : type_scope.

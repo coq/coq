@@ -8,17 +8,17 @@
 
 (*i $Id$ i*)
 
+Set Implicit Arguments.
+
 Require Import Notations.
 Require Import Logic.
-
-Set Implicit Arguments.
 
 (** [unit] is a singleton datatype with sole inhabitant [tt] *)
 
 Inductive unit : Set :=
     tt : unit.
 
-(** [bool] is the datatype of the booleans values [true] and [false] *)
+(** [bool] is the datatype of the boolean values [true] and [false] *)
 
 Inductive bool : Set :=
   | true : bool
@@ -27,7 +27,9 @@ Inductive bool : Set :=
 Add Printing If bool.
 
 (** [nat] is the datatype of natural numbers built from [O] and successor [S];
-    note that zero is the letter O, not the numeral 0 *)
+    note that the constructor name is the letter O.
+    Numbers in [nat] can be denoted using a decimal notation; 
+    e.g. [3%nat] abbreviates [S (S (S O))] *)
 
 Inductive nat : Set :=
   | O : nat
@@ -53,7 +55,7 @@ Implicit Arguments identity_ind [A].
 Implicit Arguments identity_rec [A].
 Implicit Arguments identity_rect [A].
 
-(** [option A] is the extension of A with a dummy element None *)
+(** [option A] is the extension of [A] with an extra element [None] *)
 
 Inductive option (A:Set) : Set :=
   | Some : A -> option A
@@ -67,7 +69,7 @@ Definition option_map (A B:Set) (f:A->B) o :=
   | None => None
   end.
 
-(** [sum A B], equivalently [A + B], is the disjoint sum of [A] and [B] *)
+(** [sum A B], written [A + B], is the disjoint sum of [A] and [B] *)
 (* Syntax defined in Specif.v *)
 Inductive sum (A B:Set) : Set :=
   | inl : A -> sum A B

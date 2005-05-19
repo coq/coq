@@ -8,19 +8,19 @@
 
 (*i $Id$ i*)
 
-Set Implicit Arguments.
+(** Basic specifications : sets that may contain logical information *)
 
-(** Basic specifications : Sets containing logical information *)
+Set Implicit Arguments.
 
 Require Import Notations.
 Require Import Datatypes.
 Require Import Logic.
 
-(** Subsets *)
+(** Subsets and Sigma-types *)
 
-(** [(sig A P)], or more suggestively [{x:A | (P x)}], denotes the subset 
+(** [(sig A P)], or more suggestively [{x:A | P x}], denotes the subset 
     of elements of the Set [A] which satisfy the predicate [P].
-    Similarly [(sig2 A P Q)], or [{x:A | (P x) & (Q x)}], denotes the subset 
+    Similarly [(sig2 A P Q)], or [{x:A | P x & Q x}], denotes the subset 
     of elements of the Set [A] which satisfy both [P] and [Q]. *)
 
 Inductive sig (A:Set) (P:A -> Prop) : Set :=
@@ -29,8 +29,8 @@ Inductive sig (A:Set) (P:A -> Prop) : Set :=
 Inductive sig2 (A:Set) (P Q:A -> Prop) : Set :=
     exist2 : forall x:A, P x -> Q x -> sig2 (A:=A) P Q.
 
-(** [(sigS A P)], or more suggestively [{x:A & (P x)}], is a subtle variant
-    of subset where [P] is now of type [Set].
+(** [(sigS A P)], or more suggestively [{x:A & (P x)}] is a Sigma-type. 
+    It is a variant of subset where [P] is now of type [Set].
     Similarly for [(sigS2 A P Q)], also written [{x:A & (P x) & (Q x)}]. *)
      
 Inductive sigS (A:Set) (P:A -> Set) : Set :=
@@ -57,7 +57,13 @@ Add Printing Let sigS.
 Add Printing Let sigS2.
 
 
-(** Projections of sig *)
+(** Projections of [sig]
+
+    An element [y] of a subset [{x:A & (P x)}] is the pair of an [a]
+    of type [A] and of a proof [h] that [a] satisfies [P].  Then
+    [(proj1_sig y)] is the witness [a] and [(proj2_sig y)] is the
+    proof of [(P a)] *)
+
 
 Section Subset_projections.
 
@@ -76,17 +82,17 @@ Section Subset_projections.
 End Subset_projections.
 
 
-(** Projections of sigS *)
+(** Projections of [sigS]
+
+    An element [x] of a sigma-type [{y:A & P y}] is a dependent pair
+    made of an [a] of type [A] and an [h] of type [P a].  Then,
+    [(projS1 x)] is the first projection and [(projS2 x)] is the
+    second projection, the type of which depends on the [projS1]. *)
 
 Section Projections.
 
   Variable A : Set.
   Variable P : A -> Set.
-
- (** An element [y] of a subset [{x:A & (P x)}] is the pair of an [a] of 
-     type [A] and of a proof [h] that [a] satisfies [P].
-     Then [(projS1 y)] is the witness [a]
-     and [(projS2 y)] is the proof of [(P a)] *)
 
   Definition projS1 (x:sigS P) : A := match x with
                                       | existS a _ => a
@@ -99,7 +105,8 @@ Section Projections.
 End Projections.
 
 
-(** Extended_booleans *)
+(** [sumbool] is a boolean type equipped with the justification of
+    their value *)
 
 Inductive sumbool (A B:Prop) : Set :=
   | left : A -> {A} + {B}
@@ -108,6 +115,9 @@ Inductive sumbool (A B:Prop) : Set :=
 
 Add Printing If sumbool.
 
+(** [sumor] is an option type equipped with the justification of why
+    it may not be a regular value *)
+
 Inductive sumor (A:Set) (B:Prop) : Set :=
   | inleft : A -> A + {B}
   | inright : B -> A + {B} 
@@ -115,11 +125,9 @@ Inductive sumor (A:Set) (B:Prop) : Set :=
 
 Add Printing If sumor.
 
-(** Choice *)
+(** Various forms of the axiom of choice for specifications *)
 
 Section Choice_lemmas.
-
-  (** The following lemmas state various forms of the axiom of choice *)
 
   Variables S S' : Set.
   Variable R : S -> S' -> Prop.
@@ -167,8 +175,10 @@ End Choice_lemmas.
 
  (** A result of type [(Exc A)] is either a normal value of type [A] or 
      an [error] :
-     [Inductive Exc [A:Set] : Set := value : A->(Exc A) | error : (Exc A)]
-     it is implemented using the option type. *) 
+
+     [Inductive Exc [A:Set] : Set := value : A->(Exc A) | error : (Exc A)].
+
+     It is implemented using the option type. *) 
 
 Definition Exc := option.
 Definition value := Some.
@@ -189,7 +199,7 @@ Qed.
 
 Hint Resolve left right inleft inright: core v62.
 
-(** Sigma Type at Type level [sigT] *)
+(** Sigma-type for types in [Type] *)
 
 Inductive sigT (A:Type) (P:A -> Type) : Type :=
     existT : forall x:A, P x -> sigT (A:=A) P.

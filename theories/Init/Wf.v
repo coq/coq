@@ -6,21 +6,21 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
-Set Implicit Arguments.
-
 (*i $Id$ i*)
 
 (** This module proves the validity of
     - well-founded recursion (also called course of values)
     - well-founded induction
 
-   from a well-founded ordering on a given set *)
+    from a well-founded ordering on a given set *)
+
+Set Implicit Arguments.
 
 Require Import Notations.
 Require Import Logic.
 Require Import Datatypes.
 
-(** Well-founded induction principle on Prop *)
+(** Well-founded induction principle on [Prop] *)
 
 Section Well_founded.
 
@@ -36,7 +36,7 @@ Section Well_founded.
   destruct 1; trivial.
  Defined.
 
-  (** the informative elimination :
+  (** Informative elimination :
      [let Acc_rec F = let rec wf x = F x wf in wf] *)
 
  Section AccRecType.
@@ -53,7 +53,7 @@ Section Well_founded.
 
  Definition Acc_rec (P:A -> Set) := Acc_rect P.
 
- (** A simplified version of Acc_rec(t) *)
+ (** A simplified version of [Acc_rect] *)
 
  Section AccIter.
   Variable P : A -> Type. 
@@ -68,7 +68,7 @@ Section Well_founded.
 
  Definition well_founded := forall a:A, Acc a.
 
- (** well-founded induction on Set and Prop *)
+ (** Well-founded induction on [Set] and [Prop] *)
 
  Hypothesis Rwf : well_founded.
 
