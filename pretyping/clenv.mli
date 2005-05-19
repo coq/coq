@@ -105,6 +105,10 @@ val make_clenv_binding_apply :
 val make_clenv_binding :
   evar_info sigma -> constr * constr -> constr Rawterm.bindings -> clausenv
 
+(* other stuff *)
+val clenv_environments :
+ evar_defs -> int option -> types -> evar_defs * constr list * types
+
 (***************************************************************)
 (* Pretty-print *)
 val pr_clenv : clausenv -> Pp.std_ppcmds

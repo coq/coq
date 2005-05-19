@@ -728,7 +728,26 @@ let unify_relation_carrier_with_type env rel t =
      if rel.rel_quantifiers_no = 0 && is_conv env Evd.empty rel.rel_a t then
       [||] 
      else
+(*
       raise_error rel.rel_quantifiers_no
+*)
+      begin
+        let evars,args,instantiated_rel_a =
+         let ty = Typing.type_of env Evd.empty rel.rel_a in
+         let evd = Evd.create_evar_defs Evd.empty in
+         let env,args,concl =
+          Clenv.clenv_environments evd (Some rel.rel_quantifiers_no) ty
+         in
+          env, args,
+          nf_betaiota
+           (match args with [] -> rel.rel_a | _ -> applist (rel.rel_a,args))
+        in
+         let evars' =
+          w_unify true (*??? or false? *) env Reduction.CONV (*??? or cumul? *)
+           ~mod_delta:true (*??? or true? *) t instantiated_rel_a evars in
+         let args' = List.map (Reductionops.nf_meta evars') args in
+          Array.of_list args'
+      end
  in
   apply_to_relation args rel
 
