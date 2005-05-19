@@ -2126,7 +2126,7 @@ let rec xlate_vernac =
   | VernacVar _ -> xlate_error "Grammar vernac obsolete"
   | (VernacGlobalCheck _|VernacPrintOption _|
      VernacMemOption (_, _)|VernacRemoveOption (_, _)
-  | VernacBack _|VernacBackTo _|VernacRestoreState _| VernacWriteState _|
+  | VernacBack _ | VernacBacktrack _ |VernacBackTo _|VernacRestoreState _| VernacWriteState _|
     VernacSolveExistential (_, _)|VernacCanonical _ | VernacDistfix _|
      VernacTacticGrammar _)
     -> xlate_error "TODO: vernac";;
