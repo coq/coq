@@ -226,29 +226,9 @@ let rec print_list print fmt = function
   | x :: r -> print fmt x; print_list print fmt r
 
 
-let run_command f c =
-  let result = Buffer.create 127 in
-  let cin,cout,cerr = Unix.open_process_full c (Unix.environment ()) in
-  let buff = String.make 127 ' ' in
-  let buffe = String.make 127 ' ' in
-  let n = ref 0 in
-  let ne = ref 0 in
-
-  while n:= input cin buff 0 127 ; ne := input cerr buffe 0 127 ; 
-    !n+ !ne <> 0
-  do 
-    let r = try_convert (String.sub buff 0 !n) in 
-    f r;
-    Buffer.add_string result r;
-    let r = try_convert (String.sub buffe 0 !ne) in 
-    f r;
-    Buffer.add_string result r 
-  done;
-  (Unix.close_process_full (cin,cout,cerr),  Buffer.contents result)
-
 let browse f url =
   let l,r = !current.cmd_browse in
-  let (s,res) = run_command f (l ^ url ^ r) in
+  let (s,res) = System.run_command try_convert f (l ^ url ^ r) in
   ()
 
 let url_for_keyword =

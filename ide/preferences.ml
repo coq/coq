@@ -123,10 +123,7 @@ let (current:pref ref) =
     modifiers_valid = [`SHIFT; `CONTROL; `MOD1; `MOD4];
 
     
-    cmd_browse = 
-	 if Sys.os_type = "Win32"
-	 then "C:\\PROGRA~1\\INTERN~1\\IEXPLORE ", ""
-	 else "netscape -remote \"OpenURL(", ")\"";
+    cmd_browse = Options.browser_cmd_fmt
     cmd_editor = 
 	 if Sys.os_type = "Win32"
 	 then "NOTEPAD ", ""
@@ -269,6 +266,13 @@ let load_pref () =
     prerr_endline ("Could not load preferences ("^
 		   (Printexc.to_string e)^").")
     
+let split_string_format s =
+  try 
+    let i = Util.string_index_from s 0 "%s" in
+    let pre = (String.sub s 0 i) in
+    let post = String.sub s (i+2) (String.length s - i - 2) in
+    pre,post
+  with Not_found -> s,""
 
 let configure () = 
   let cmd_coqc = 
@@ -439,40 +443,14 @@ let configure () =
 
   let cmd_editor = 
     string
-      ~f:(fun s -> 
-	    !current.cmd_editor <- 
-	    try 
-	      let i = String.index s '%' in
-	      let pre = (String.sub s 0 i) in
-	      if String.length s - 1 = i then 
-		pre,""
-	      else
-		let post = String.sub s (i+2) (String.length s - i - 2) in
-		prerr_endline pre;
-		prerr_endline post;
-		pre,post
-	    with Not_found -> s,""
-	    )
+      ~f:(fun s -> !current.cmd_editor <- split_string_format s)
       ~help:"(%s for file name)" 
       "External editor"
       ((fst !current.cmd_editor)^"%s"^(snd !current.cmd_editor))
   in    
   let cmd_browse = 
     string
-      ~f:(fun s -> 
-	    !current.cmd_browse <- 
-	    try 
-	      let i = String.index s '%' in
-	      let pre = (String.sub s 0 i) in
-	      if String.length s - 1 = i then 
-		pre,""
-	      else
-		let post = String.sub s (i+2) (String.length s - i - 2) in
-		prerr_endline pre;
-		prerr_endline post;
-		pre,post
-	    with Not_found -> s,""
-	    )
+      ~f:(fun s -> !current.cmd_browse <- split_string_format s)
       ~help:"(%s for url)" 
       "    Browser"
       ((fst !current.cmd_browse)^"%s"^(snd !current.cmd_browse))

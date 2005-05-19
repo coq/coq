@@ -218,6 +218,26 @@ let connect writefun readfun com =
   unlink tmp_to;
   a
 
+let run_command converter f c =
+  let result = Buffer.create 127 in
+  let cin,cout,cerr = Unix.open_process_full c (Unix.environment ()) in
+  let buff = String.make 127 ' ' in
+  let buffe = String.make 127 ' ' in
+  let n = ref 0 in
+  let ne = ref 0 in
+
+  while n:= input cin buff 0 127 ; ne := input cerr buffe 0 127 ; 
+    !n+ !ne <> 0
+  do 
+    let r = converter (String.sub buff 0 !n) in 
+    f r;
+    Buffer.add_string result r;
+    let r = converter (String.sub buffe 0 !ne) in 
+    f r;
+    Buffer.add_string result r 
+  done;
+  (Unix.close_process_full (cin,cout,cerr),  Buffer.contents result)
+
 (* Time stamps. *)
 
 type time = float * float * float

@@ -50,6 +50,14 @@ val extern_intern :
 
 val connect : (out_channel -> unit) -> (in_channel -> 'a) -> string -> 'a 
 
+(*s [run_command converter f com] launches command [com], and returns
+    the contents of stdout and stderr that have been processed with
+    [converter]; the processed contents of stdout and stderr is also
+    passed to [f] *)
+
+val run_command : (string -> string) -> (string -> unit) -> string -> 
+  Unix.process_status * string
+
 (*s Time stamps. *)
 
 type time

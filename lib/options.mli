@@ -70,4 +70,9 @@ val print_bytecodes : unit -> bool
 val set_boxed_definitions : bool -> unit
 val boxed_definitions : unit -> bool
 
+(* Options for external tools *)
+
+(* Returns head and tail of printf string format *)
+(* ocaml doesn't allow not applied formats *)
+val browser_cmd_fmt : string * string
  

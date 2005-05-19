@@ -117,3 +117,10 @@ let boxed_definitions = ref true
 let set_boxed_definitions b = boxed_definitions := b
 let boxed_definitions _ = !boxed_definitions 
  
+(* Options for external tools *)
+
+let browser_cmd_fmt =
+  if Sys.os_type = "Win32"
+  then "C:\\PROGRA~1\\INTERN~1\\IEXPLORE ", ""
+  else "netscape -remote \"OpenURL(", ")\""
+  
