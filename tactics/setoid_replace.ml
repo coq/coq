@@ -1503,7 +1503,13 @@ let mark_occur gl ~new_goals t in_c input_relation input_direction =
              aux output_relation output_direction
               (mkApp ((Lazy.force coq_impl),
                 [| c1 ; subst1 (mkRel 1 (*dummy*)) c2 |]))
-      | _ -> [ToKeep (in_c,output_relation,output_direction)]
+      | _ ->
+        if occur_term t in_c then
+         errorlabstrm "Setoid_replace"
+          (str "Trying to replace " ++ prterm t ++ str " in " ++ prterm in_c ++
+           str " that is not an applicative context.")
+        else
+         [ToKeep (in_c,output_relation,output_direction)]
  in
   let aux2 output_relation output_direction =
    List.map
