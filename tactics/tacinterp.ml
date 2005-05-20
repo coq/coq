@@ -44,6 +44,7 @@ open Decl_kinds
 open Mod_subst
 open Printer
 open Inductiveops
+open Syntax_def
 
 let strip_meta id = (* For Grammar v7 compatibility *)
   let s = string_of_id id in
@@ -206,7 +207,7 @@ let find_reference env qid =
 
 let coerce_to_reference env = function
   | VConstr c ->
-      (try reference_of_constr c
+      (try global_of_constr c
       with Not_found -> invalid_arg_loc (loc, "Not a reference"))
   | v -> errorlabstrm "coerce_to_reference"
       (str "The value" ++ spc () ++ pr_value env v ++ 
@@ -235,7 +236,7 @@ let coerce_to_inductive = function
   | x ->
       try
 	let r = match x with
-	  | VConstr c -> reference_of_constr c
+	  | VConstr c -> global_of_constr c
 	  | _ -> failwith "" in
 	errorlabstrm "coerce_to_inductive"
           (pr_global r ++ str " is not an inductive type")
@@ -402,21 +403,11 @@ let intern_inductive ist = function
   | Ident (loc,id) when find_var id ist -> ArgVar (loc,id)
   | r -> ArgArg (Nametab.global_inductive r)
 
-exception NotSyntacticRef
-
-let locate_reference qid =
-  match Nametab.extended_locate qid with
-    | TrueGlobal ref -> ref
-    | SyntacticDef kn -> 
-	match Syntax_def.search_syntactic_definition loc kn with
-	  | Rawterm.RRef (_,ref) -> ref
-	  | _ -> raise NotSyntacticRef
-
 let intern_global_reference ist = function
   | Ident (loc,id) as r when find_var id ist -> ArgVar (loc,id)
   | r -> 
       let loc,qid = qualid_of_reference r in
-      try ArgArg (loc,locate_reference qid)
+      try ArgArg (loc,locate_global qid)
       with _ -> 
 	error_global_not_found_loc loc qid
 
@@ -441,13 +432,12 @@ let intern_constr_reference strict ist = function
       RVar (loc,id), None
   | r ->
       let loc,qid = qualid_of_reference r in
-      RRef (loc,locate_reference qid), if strict then None else Some (CRef r)
+      RRef (loc,locate_global qid), if strict then None else Some (CRef r)
 
 let intern_reference strict ist r =
   (try Reference (intern_tac_ref ist r)
    with Not_found ->
-     (try
-       ConstrMayEval (ConstrTerm (intern_constr_reference strict ist r))
+     (try ConstrMayEval (ConstrTerm (intern_constr_reference strict ist r))
       with Not_found ->
         (match r with
           | Ident (loc,id) when is_atomic id -> Tacexp (lookup_atomic id)
@@ -523,7 +513,7 @@ let intern_evaluable ist = function
   | r ->
       let loc,qid = qualid_of_reference r in
       try
-	let e = match locate_reference qid with
+	let e = match locate_global qid with
 	  | ConstRef c -> EvalConstRef c
 	  | VarRef c -> EvalVarRef c
 	  | _ -> error_not_evaluable (pr_reference r) in
@@ -532,7 +522,6 @@ let intern_evaluable ist = function
 	  | _ -> None in
         ArgArg (e,short_name)
       with
-	| NotSyntacticRef -> error_not_evaluable (pr_reference r)
 	| Not_found ->
 	match r with 
 	  | Ident (loc,id) when not !strict_check ->
@@ -1031,7 +1020,7 @@ let constr_to_id loc = function
   | _ -> invalid_arg_loc (loc, "Not an identifier")
 
 let constr_to_qid loc c =
-  try shortest_qualid_of_global Idset.empty (reference_of_constr c)
+  try shortest_qualid_of_global Idset.empty (global_of_constr c)
   with _ -> invalid_arg_loc (loc, "Not a global reference")
 
 (* Debug reference *)
