@@ -73,3 +73,15 @@ let rec set_loc loc _ a =
 
 let search_syntactic_definition loc kn =
   set_loc loc () (KNmap.find kn !syntax_table)
+
+exception BoundToASyntacticDefThatIsNotARef
+
+let locate_global qid =
+  match Nametab.extended_locate qid with
+  | TrueGlobal ref -> ref
+  | SyntacticDef kn -> 
+  match search_syntactic_definition dummy_loc kn with
+  | Rawterm.RRef (_,ref) -> ref
+  | _ -> 
+      errorlabstrm "" (pr_qualid qid ++ 
+        str " is bound to a notation that does not denote a reference")
