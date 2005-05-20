@@ -26,6 +26,7 @@ let (proof_view:GText.view option ref) = ref None
 let (_notebook:GPack.notebook option ref) = ref None
 let notebook () = out_some !_notebook
 
+let run_command = System.run_command try_convert
 
 (* Tabs contain the name of the edited file and 2 status informations: 
    Saved state + Focused proof buffer *)
