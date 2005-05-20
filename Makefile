@@ -176,7 +176,7 @@ PARSING=\
   parsing/pcoq.cmo parsing/egrammar.cmo parsing/g_xml.cmo \
   parsing/ppconstr.cmo translate/ppconstrnew.cmo parsing/printer.cmo \
   parsing/pptactic.cmo translate/pptacticnew.cmo parsing/tactic_printer.cmo \
-  parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo
+  parsing/printmod.cmo parsing/prettyp.cmo parsing/search.cmo 
 
 HIGHPARSING=\
   parsing/g_prim.cmo parsing/g_proofs.cmo parsing/g_basevernac.cmo \
@@ -209,7 +209,7 @@ TOPLEVEL=\
   toplevel/command.cmo toplevel/record.cmo \
   translate/ppvernacnew.cmo \
   toplevel/vernacinterp.cmo toplevel/mltop.cmo \
-  toplevel/vernacentries.cmo toplevel/vernac.cmo \
+  toplevel/vernacentries.cmo toplevel/whelp.cmo toplevel/vernac.cmo \
   toplevel/line_oriented_parser.cmo toplevel/protectedtoplevel.cmo \
   toplevel/toplevel.cmo toplevel/usage.cmo \
   toplevel/coqinit.cmo toplevel/coqtop.cmo
@@ -221,7 +221,7 @@ HIGHTACTICS=\
 SPECTAC= tactics/tauto.ml4 tactics/eqdecide.ml4
 USERTAC = $(SPECTAC)
 ML4FILES += $(USERTAC) tactics/extraargs.ml4 tactics/extratactics.ml4 \
-	tactics/eauto.ml4 
+	tactics/eauto.ml4 toplevel/whelp.ml4
 
 USERTACCMO=$(USERTAC:.ml4=.cmo)
 USERTACCMX=$(USERTAC:.ml4=.cmx)
