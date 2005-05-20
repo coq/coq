@@ -407,6 +407,9 @@ and fCOMMAND = function
    fNODE "print_about" 1
 | CT_print_all -> fNODE "print_all" 0
 | CT_print_classes -> fNODE "print_classes" 0
+| CT_print_ltac id ->
+   fID id;
+   fNODE "print_ltac" 1
 | CT_print_coercions -> fNODE "print_coercions" 0
 | CT_print_grammar(x1) ->
    fGRAMMAR x1;

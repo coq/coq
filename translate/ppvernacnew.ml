@@ -1025,6 +1025,7 @@ let rec pr_vernac = function
 	| PrintMLModules -> str"Print ML Modules"
 	| PrintGraph -> str"Print Graph"
 	| PrintClasses -> str"Print Classes"
+	| PrintLtac qid -> str"Print Ltac" ++ spc() ++ pr_reference qid
 	| PrintCoercions -> str"Print Coercions"
 	| PrintCoercionPaths (s,t) -> str"Print Coercion Paths" ++ spc() ++ pr_class_rawexpr s ++ spc() ++ pr_class_rawexpr t
 	| PrintCanonicalConversions -> str"Print Canonical Structures"

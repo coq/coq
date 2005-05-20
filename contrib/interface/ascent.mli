@@ -119,6 +119,7 @@ and ct_COMMAND =
   | CT_print_about of ct_ID
   | CT_print_all
   | CT_print_classes
+  | CT_print_ltac of ct_ID
   | CT_print_coercions
   | CT_print_grammar of ct_GRAMMAR
   | CT_print_graph

@@ -3,6 +3,7 @@ Changes from V8.0
 
 Vernacular commands
 
+- Added "Print Ltac qualid" to print a user defined tactic (doc TODO)
 - Added "Print Rewrite HintDb" to print the content of a DB used by
   autorewrite (doc TODO)
 - Added "Print Canonical Projections" (doc TODO)

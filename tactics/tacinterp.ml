@@ -2175,6 +2175,17 @@ let (inMD,outMD) =
      classify_function = (fun (_,o) -> Substitute o);       
      export_function = (fun x -> Some x)}
 
+let print_ltac id =
+ try
+  let kn = Nametab.locate_tactic id in
+  let t = lookup kn in
+   str "Ltac" ++ spc() ++ pr_qualid id ++ str ":=" ++ spc() ++
+    Pptacticnew.pr_glob_tactic (Global.env ()) t
+ with
+  Not_found ->
+   errorlabstrm "print_ltac"
+    (pr_qualid id ++ spc() ++ str "is not a user defined tactic")
+
 (* Adds a definition for tactics in the table *)
 let make_absolute_name (loc,id) =
   let kn = Lib.make_kn id in

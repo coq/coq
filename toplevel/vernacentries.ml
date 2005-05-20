@@ -877,6 +877,7 @@ let vernac_print = function
   | PrintOpaqueName qid -> msg (print_opaque_name qid)
   | PrintGraph -> ppnl (Prettyp.print_graph())
   | PrintClasses -> ppnl (Prettyp.print_classes())
+  | PrintLtac qid -> ppnl (Tacinterp.print_ltac (snd (qualid_of_reference qid)))
   | PrintCoercions -> ppnl (Prettyp.print_coercions())
   | PrintCoercionPaths (cls,clt) ->
       ppnl (Prettyp.print_path_between (cl_of_qualid cls) (cl_of_qualid clt))

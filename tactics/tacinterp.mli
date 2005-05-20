@@ -140,3 +140,6 @@ val overwriting_interp_add : string * (interp_sign -> Coqast.t -> value) ->
 
 
 val declare_xml_printer : (out_channel -> Environ.env -> Evd.evar_map -> constr -> unit) -> unit
+
+(* printing *)
+val print_ltac : Libnames.qualid -> std_ppcmds

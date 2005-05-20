@@ -577,6 +577,7 @@ GEXTEND Gram
       | IDENT "ML"; IDENT "Modules" -> PrintMLModules
       | IDENT "Graph" -> PrintGraph
       | IDENT "Classes" ->  PrintClasses
+      | IDENT "Ltac"; qid = global -> PrintLtac qid
       | IDENT "Coercions" -> PrintCoercions
       | IDENT "Coercion"; IDENT "Paths"; s = class_rawexpr; t = class_rawexpr
          -> PrintCoercionPaths (s,t)

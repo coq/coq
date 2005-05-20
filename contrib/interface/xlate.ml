@@ -1794,6 +1794,7 @@ let rec xlate_vernac =
 	| PrintMLModules -> CT_ml_print_modules
 	| PrintGraph -> CT_print_graph
 	| PrintClasses -> CT_print_classes
+	| PrintLtac qid -> CT_print_ltac (loc_qualid_to_ct_ID qid)
 	| PrintCoercions -> CT_print_coercions
 	| PrintCoercionPaths (id1, id2) -> 
 	    CT_print_path (xlate_class id1, xlate_class id2)

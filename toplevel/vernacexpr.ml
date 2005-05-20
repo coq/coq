@@ -49,6 +49,7 @@ type printable =
   | PrintOpaqueName of reference
   | PrintGraph
   | PrintClasses
+  | PrintLtac of reference
   | PrintCoercions
   | PrintCoercionPaths of class_rawexpr * class_rawexpr
   | PrintCanonicalConversions
