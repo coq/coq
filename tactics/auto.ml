@@ -423,7 +423,7 @@ let add_hints local dbnames0 h =
       let f (n,c) =
 	let c = Constrintern.interp_constr sigma env c in
 	let n = match n with
-	  | None -> (*id_of_global (reference_of_constr c)*)
+	  | None -> (*id_of_global (global_of_constr c)*)
               id_of_string "<anonymous hint>"
 	  | Some n -> n in
 	(n,c) in
@@ -433,7 +433,7 @@ let add_hints local dbnames0 h =
       let f (n,c) = 
 	let c = Constrintern.interp_constr sigma env c in
 	let n = match n with
-	  | None -> (*id_of_global (reference_of_constr c)*)
+	  | None -> (*id_of_global (global_of_constr c)*)
               id_of_string "<anonymous hint>"
 	  | Some n -> n in
 	(n,c) in

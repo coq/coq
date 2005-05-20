@@ -159,7 +159,7 @@ let rec tr_type env ty =
 	end
       | _ -> assert false
     end
-  else let r = reference_of_constr ty in
+  else let r = global_of_constr ty in
   try
     begin match lookup_global r with
       | DeclType id -> [], id
@@ -295,7 +295,7 @@ and tr_term bv env t =
     | _ ->
 	let f, cl = decompose_app t in
 	begin try
-	  let r = reference_of_constr f in
+	  let r = global_of_constr f in
 	  match tr_global env r with
 	    | DeclVar (s, _, _) -> 
 		Fol.App (s, List.map (tr_term bv env) cl)
@@ -351,7 +351,7 @@ and tr_formula bv env f =
 	assert false (* TODO Exists (tr_formula bv env a) *)
     | _ ->
 	begin try
-	  let r = reference_of_constr c in
+	  let r = global_of_constr c in
 	  match tr_global env r with
 	    | DeclPred (s, _) -> 
 		Fatom (Pred (s, List.map (tr_term bv env) args))

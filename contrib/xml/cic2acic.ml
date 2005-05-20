@@ -468,7 +468,7 @@ print_endline "PASSATO" ; flush stdout ;
           let subst,residual_args,uninst_vars =
            let variables,basedir =
              try
-               let g = Libnames.reference_of_constr h in
+               let g = Libnames.global_of_constr h in
                let sp =
                 match g with
                    Libnames.ConstructRef ((induri,_),_)

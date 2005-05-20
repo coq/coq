@@ -1465,7 +1465,7 @@ let compute_elim_signature elimt names_info =
     error_ind_scheme "the conclusion of";
   let indhd,indargs = decompose_app ind in
   let indt = 
-    try reference_of_constr indhd
+    try global_of_constr indhd
     with _ -> error "Cannot find the inductive type of the inductive schema" in
   let nparams = List.length indargs - nrealargs in
   let revparams, revhyps2 = chop_context nparams (List.rev hyps1) in

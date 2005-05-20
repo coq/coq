@@ -34,7 +34,7 @@ let subst_global subst ref = match ref with
       if kn==kn' then ref, mkConstruct ((kn,i),j)
       else ConstructRef ((kn',i),j), mkConstruct ((kn',i),j)
 
-let reference_of_constr c = match kind_of_term c with
+let global_of_constr c = match kind_of_term c with
   | Const sp -> ConstRef sp
   | Ind ind_sp -> IndRef ind_sp
   | Construct cstr_cp -> ConstructRef cstr_cp
@@ -48,6 +48,7 @@ let constr_of_global = function
   | IndRef sp -> mkInd sp
 
 let constr_of_reference = constr_of_global
+let reference_of_constr = global_of_constr
 
 module RefOrdered =
   struct

@@ -530,7 +530,7 @@ let find_constructor ref =
         let rec unf = function
           | ConstRef cst ->
 	      let v = Environ.constant_value (Global.env()) cst in
-              unf (reference_of_constr v)
+              unf (global_of_constr v)
           | ConstructRef c -> 
 	      if !dump then add_glob loc r; 
 	      c, []

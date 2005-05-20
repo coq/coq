@@ -269,7 +269,7 @@ let create_with_auto_hints l depth gl=
 	Res_pf (c,_) | Give_exact c
       | Res_pf_THEN_trivial_fail (c,_) ->
 	  (try 
-	     let gr=reference_of_constr c in 
+	     let gr=global_of_constr c in 
 	     let typ=(pf_type_of gl c) in
 	       seqref:=add_formula Hint gr typ !seqref gl
 	   with Not_found->())

@@ -86,7 +86,7 @@ exception Non_closed_number
 let get_z_sign_ast loc =
   let ast_of_id id = 
     Termast.ast_of_ref
-      (reference_of_constr
+      (global_of_constr
 	(gen_constant_in_modules "Z-printer" zarith_base_modules id))
   in
   ((ast_of_id "xI",
