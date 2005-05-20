@@ -113,8 +113,8 @@ let apprec_nohdbeta env isevars c =
 
 let check_conv_record (t1,l1) (t2,l2) =
   try
-    let proji = reference_of_constr t1 in
-    let cstr = reference_of_constr t2 in
+    let proji = global_of_constr t1 in
+    let cstr = global_of_constr t2 in
     let { o_DEF = c; o_TABS = bs; o_TPARAMS = params; o_TCOMPS = us } = 
       lookup_canonical_conversion (proji, cstr) in
     let params1, c1, extra_args1 =

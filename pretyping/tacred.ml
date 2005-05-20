@@ -870,7 +870,7 @@ let reduce_to_ref_gen allow_product env sigma ref t =
 	       (str"Not an induction object of atomic type")
       | _ ->
 	  try 
-	    if reference_of_constr c = ref 
+	    if global_of_constr c = ref 
 	    then it_mkProd_or_LetIn t l
 	    else raise Not_found
 	  with Not_found ->

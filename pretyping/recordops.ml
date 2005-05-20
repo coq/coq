@@ -144,7 +144,7 @@ let compute_canonical_projections (con,ind) =
 	 match spopt with
            | Some proji_sp ->
 	       let c, args = decompose_app t in
-	       (try (ConstRef proji_sp, reference_of_constr c, args) :: l
+	       (try (ConstRef proji_sp, global_of_constr c, args) :: l
                 with Not_found -> l)
 	   | _ -> l)
       [] lps in
