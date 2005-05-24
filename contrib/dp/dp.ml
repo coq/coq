@@ -70,7 +70,8 @@ let rename_global r =
     loop (Nametab.id_of_global r)
 
 let foralls =
-  List.fold_right (fun (x,t) p -> Forall (rename_global (VarRef x), t, p))
+  List.fold_right 
+    (fun (x,t) p -> Forall (rename_global (VarRef x), t, p))
 
 let fresh_var = function
   | Anonymous -> rename_global (VarRef (id_of_string "x"))
@@ -146,7 +147,35 @@ let lookup_local r =  match Hashtbl.find locals r with
   | Gnot_fo -> raise NotFO
   | Gfo d -> d
 
-(* assumption: t:Set *)
+let iter_all_constructors i f =  
+  let _, oib = Global.lookup_inductive i in
+  Array.iteri
+    (fun j tj -> f (mkConstruct (i, j+1)))
+    oib.mind_nf_lc
+
+(* injection c [t1,...,tn] adds the injection axiom
+     forall x1:t1,...,xn:tn,y1:t1,...,yn:tn. 
+       c(x1,...,xn)=c(y1,...,yn) -> x1=y1 /\ ... /\ xn=yn *)
+
+let injection c l =
+  let i = ref 0 in
+  let var s = incr i; id_of_string (s ^ string_of_int !i) in
+  let xl = List.map (fun t -> rename_global (VarRef (var "x")), t) l in
+  i := 0;
+  let yl = List.map (fun t -> rename_global (VarRef (var "y")), t) l in
+  let f = 
+    List.fold_right2 
+      (fun (x,_) (y,_) p -> And (Fatom (Eq (App (x,[]),App (y,[]))), p))
+      xl yl True
+  in
+  let vars = List.map (fun (x,_) -> App(x,[])) in
+  let f = Imp (Fatom (Eq (App (c, vars xl), App (c, vars yl))), f) in
+  let foralls = List.fold_right (fun (x,t) p -> Forall (x, t, p)) in
+  let f = foralls xl (foralls yl f) in
+  let ax = Assert ("injection_" ^ c, f) in
+  globals_stack := ax :: !globals_stack
+
+(* assumption: t:Set or Type *)
 let rec tr_type env ty =
   if ty = Lazy.force coq_Z then [], "INT"
   else if is_Prop ty then [], "BOOLEAN"
@@ -159,34 +188,35 @@ let rec tr_type env ty =
 	end
       | _ -> assert false
     end
-  else let r = global_of_constr ty in
-  try
-    begin match lookup_global r with
-      | DeclType id -> [], id
-      | _ -> assert false (* ty is a type for sure ? *)
-    end
-  with Not_found ->
-    let id = rename_global r in
-    let d = DeclType id in
-    add_global r (Gfo d);
-    globals_stack := d :: !globals_stack;
-    [], id
-    (*begin match r with
-      | IndRef i ->
-	  let _, oib = Global.lookup_inductive i in
-	  let construct_types = oib.mind_nf_lc in
-	  let rec axiomatize_all_constr l = 
-	    begin match l with
-	      | [] -> ()
-	      | r::l' -> 
-		  axiomatize_body env r (rename_global r)
-		    (tr_global_type r);
-		  axiomatize_all_constr l'
-	    end in
-	  axiomatize_all_constr (list_of_array construct_types);
-	  [], id
-      | _ -> assert false (* TODO constant type definition ? *)
-    end*)
+  else
+    try let r = global_of_constr ty in
+    (try
+       begin match lookup_global r with
+	 | DeclType id -> [], id
+	 | _ -> assert false (* assumption: t:Set *)
+       end
+     with Not_found ->
+       begin match r with
+	 | IndRef i ->
+	     let id = rename_global r in
+	     let d = DeclType id in
+	     add_global r (Gfo d);
+	     globals_stack := d :: !globals_stack;
+	     iter_all_constructors i
+	       (fun c ->
+		  let rc = global_of_constr c in
+		  try
+		    begin match tr_global env rc with
+		      | DeclVar (idc, [], _) -> ()
+		      | DeclVar (idc, al, _) -> injection idc al
+		      | _ -> assert false
+		    end
+		  with NotFO ->
+		    ());
+	     [], id
+	 | _ -> raise NotFO (* constant type definition *)
+       end)
+    with Not_found -> raise NotFO
 
 and tr_global_type env id ty =
   if is_Prop ty then
@@ -198,8 +228,8 @@ and tr_global_type env id ty =
     if is_Prop s then
       Assert (id, tr_formula [] env ty)
     else
-      let l,t = tr_type env ty in 
-      if is_Set s then DeclVar (id, l, t)
+      let l,t = tr_type env ty in
+      if is_Set s then DeclVar(id, l, t)
       else if t = "BOOLEAN" then
 	DeclPred(id, l)
       else raise NotFO
@@ -215,8 +245,11 @@ and tr_global env r = match r with
 	  let ty = Global.type_of_global r in
 	  let id = rename_global r in
 	  let d = tr_global_type env id ty in
-	  add_global r (Gfo d);
-	  globals_stack := d :: !globals_stack;
+	  (* r can be already declared if it is a constructor *)
+	  if not (mem_global r) then begin 
+	    add_global r (Gfo d);
+	    globals_stack := d :: !globals_stack
+	  end;
 	  begin try axiomatize_body env r id d with NotFO -> () end;
 	  d
 	with NotFO ->
@@ -224,7 +257,7 @@ and tr_global env r = match r with
 	  raise NotFO
 
 and axiomatize_body env r id d = match r with
-  | VarRef ident -> 
+  | VarRef _ -> 
       assert false
   | ConstRef c ->
       begin match (Global.lookup_constant c).const_body with
@@ -247,7 +280,8 @@ and axiomatize_body env r id d = match r with
 		  let t = substl (List.map mkVar vars) t in
 		  let t,vars,env = eta_expanse t vars env (n-k) in
 		  let vars = List.rev vars in
-		  let fol_var x = Fol.App (rename_global (VarRef x), []) in
+		  let fol_var x =
+		    Fol.App (rename_global (VarRef x), []) in
 		  let fol_vars = List.map fol_var vars in
 		  let vars = List.combine vars l in
 		  let bv = List.map fst vars in
@@ -269,6 +303,22 @@ and axiomatize_body env r id d = match r with
 	    globals_stack := ax :: !globals_stack
 	| None -> 
 	    () (* Coq axiom *)
+      end
+  | IndRef i ->
+      begin match d with
+	| DeclPred _ ->
+	    iter_all_constructors i
+	      (fun c ->
+		 let rc = reference_of_constr c in
+		 try
+		   begin match tr_global env rc with
+		     | Assert _ -> ()
+		     | _ -> assert false
+		   end
+		 with NotFO ->
+		   ())
+	| DeclType _ -> raise NotFO
+	| _ -> assert false
       end
   | _ -> ()
 
@@ -384,12 +434,13 @@ let tr_goal gl =
   hyps, c
 
 
-type prover = Simplify | CVCLite | Harvey
+type prover = Simplify | CVCLite | Harvey | Zenon
 
 let call_prover prover q = match prover with
   | Simplify -> Dp_simplify.call q
   | CVCLite -> error "CVC Lite not yet interfaced"
   | Harvey -> error "haRVey not yet interfaced"
+  | Zenon -> Dp_zenon.call q
   
 let dp prover gl =
   let concl_type = pf_type_of gl (pf_concl gl) in
@@ -409,6 +460,7 @@ let dp prover gl =
 let simplify = tclTHEN intros (dp Simplify)
 let cvc_lite = dp CVCLite
 let harvey = dp Harvey
+let zenon = tclTHEN intros (dp Zenon)
 
 let dp_hint l =
   let env = Global.env () in

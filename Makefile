@@ -246,7 +246,8 @@ RINGCMO=\
   contrib/ring/ring.cmo contrib/ring/g_ring.cmo 
 
 DPCMO=\
-  contrib/dp/dp_simplify.cmo contrib/dp/dp.cmo contrib/dp/g_dp.cmo
+  contrib/dp/dp_simplify.cmo contrib/dp/dp_zenon.cmo \
+  contrib/dp/dp.cmo contrib/dp/g_dp.cmo
 
 FIELDCMO=\
   contrib/field/field.cmo 
