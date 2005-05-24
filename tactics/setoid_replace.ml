@@ -525,13 +525,14 @@ let what_edited id =
 (* also returns the triple (args_ty_quantifiers_rev,real_args_ty,real_output)
    where the args_ty and the output are delifted *)
 let check_is_dependent n args_ty output =
+ let m = List.length args_ty - n in
  let args_ty_quantifiers, args_ty = Util.list_chop n args_ty in
  let delift n = substl (Array.to_list (Array.make n (mkRel 1) (* dummy *))) in
-  let rec aux t =
+  let rec aux m t =
    match kind_of_term t with
-      Prod (n,s,t) ->
+      Prod (n,s,t) when m > 0 ->
        if not (dependent (mkRel 1) t) then
-        let args,out = aux (subst1 (mkRel 1) (* dummy *) t) in
+        let args,out = aux (m - 1) (subst1 (mkRel 1) (* dummy *) t) in
          s::args,out
        else
         errorlabstrm "New Morphism"
@@ -539,7 +540,7 @@ let check_is_dependent n args_ty output =
     | _ -> [],t
   in
    let ty = compose_prod (List.rev args_ty) output in
-   let args_ty, output = aux ty in
+   let args_ty, output = aux m ty in
    List.rev args_ty_quantifiers, args_ty, output
 
 let cic_relation_class_of_X_relation typ value =
@@ -728,24 +729,24 @@ let unify_relation_carrier_with_type env rel t =
      if rel.rel_quantifiers_no = 0 && is_conv env Evd.empty rel.rel_a t then
       [||] 
      else
-(*
-      raise_error rel.rel_quantifiers_no
-*)
       begin
         let evars,args,instantiated_rel_a =
          let ty = Typing.type_of env Evd.empty rel.rel_a in
          let evd = Evd.create_evar_defs Evd.empty in
-         let env,args,concl =
-          Clenv.clenv_environments evd (Some rel.rel_quantifiers_no) ty
+         let evars,args,concl =
+          Clenv.clenv_environments_evars env evd
+           (Some rel.rel_quantifiers_no) ty
          in
-          env, args,
+          evars, args,
           nf_betaiota
            (match args with [] -> rel.rel_a | _ -> applist (rel.rel_a,args))
         in
          let evars' =
           w_unify true (*??? or false? *) env Reduction.CONV (*??? or cumul? *)
            ~mod_delta:true (*??? or true? *) t instantiated_rel_a evars in
-         let args' = List.map (Reductionops.nf_meta evars') args in
+         let args' =
+          List.map (Reductionops.nf_evar (Evd.evars_of evars')) args
+         in
           Array.of_list args'
       end
  in
@@ -802,7 +803,35 @@ let new_morphism m signature id hook =
   let env = Global.env() in
   let typeofm = Typing.type_of env Evd.empty m in
   let typ = clos_norm_flags Closure.betaiotazeta empty_env Evd.empty typeofm in
-  let argsrev, output = decompose_prod typ in
+  let argsrev, output =
+   match signature with
+      None -> decompose_prod typ
+    | Some (_,output') ->
+       (* the carrier of the relation output' can be a Prod ==>
+          we must uncurry on the fly output.
+          E.g: A -> B -> C vs        A -> (B -> C)
+                args   output     args     output
+       *)
+       let rel = find_relation_class output' in
+       let rel_a,rel_quantifiers_no =
+        match rel with
+           Relation rel -> rel.rel_a, rel.rel_quantifiers_no
+         | Leibniz (Some t) -> t, 0
+         | Leibniz None -> assert false in
+       let rel_a_n =
+        clos_norm_flags Closure.betaiotazeta empty_env Evd.empty rel_a in
+       try
+        let _,output_rel_a_n = decompose_lam_n rel_quantifiers_no rel_a_n in
+        let argsrev,_ = decompose_prod output_rel_a_n in
+        let n = List.length argsrev in
+        let argsrev',_ = decompose_prod typ in
+        let m = List.length argsrev' in
+         decompose_prod_n (m - n) typ
+       with UserError(_,_) ->
+        (* decompose_lam_n failed. This may happen when rel_a is an axiom,
+           a constructor, an inductive type, etc. *)
+        decompose_prod typ
+  in
   let args_ty = List.rev argsrev in
   let args_ty_len = List.length (args_ty) in
   let args_ty_quantifiers_rev,args,args_instance,output,output_instance =
@@ -833,6 +862,9 @@ let new_morphism m signature id hook =
          (* the real_args_ty returned are already delifted *)
          let args_ty_quantifiers_rev, real_args_ty, real_output =
           check_is_dependent number_of_quantifiers args_ty output in
+         let quantifiers_rel_context =
+          List.map (fun (n,t) -> n,None,t) args_ty_quantifiers_rev in
+         let env = push_rel_context quantifiers_rel_context env in
          let find_relation_class t real_t =
           try
            let rel = find_relation_class t in
