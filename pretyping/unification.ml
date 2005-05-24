@@ -224,14 +224,14 @@ let w_merge env with_types mod_delta metas evars evd =
                 match krhs with
 		  | App (f,cl) when is_mimick_head f ->
 		      (try 
-		        w_merge_rec (w_Define evn rhs' evd) metas t
+		        w_merge_rec (fst (evar_define env ev rhs' evd)) metas t
 		      with ex when precatchable_exception ex ->
                         let evd' =
                           mimick_evar evd mod_delta f (Array.length cl) evn in
 			w_merge_rec evd' metas evars)
                   | _ ->
                       (* ensure tail recursion in non-mimickable case! *)
-		      w_merge_rec (w_Define evn rhs' evd) metas t
+		      w_merge_rec (fst (evar_define env ev rhs' evd)) metas t
 	      end
 
 	  | _ -> anomaly "w_merge_rec"))

@@ -336,8 +336,10 @@ let evar_define env (ev,argsv) rhs isevars =
   (* the bindings to invert *)
   let worklist = make_subst (evar_env evi) args in
   let (isevars',body) = real_clean env isevars ev worklist rhs in
-  let isevars'' = Evd.evar_define ev body isevars' in
-  isevars'',[ev]
+  if occur_meta body then error "Meta cannot occur in evar body"
+  else
+   let isevars'' = Evd.evar_define ev body isevars' in
+   isevars'',[ev]
 
 (* [w_Define evd sp c] (tactic style)
  *
