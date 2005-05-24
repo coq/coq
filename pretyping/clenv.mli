@@ -108,6 +108,8 @@ val make_clenv_binding :
 (* other stuff *)
 val clenv_environments :
  evar_defs -> int option -> types -> evar_defs * constr list * types
+val clenv_environments_evars :
+ env -> evar_defs -> int option -> types -> evar_defs * constr list * types
 
 (***************************************************************)
 (* Pretty-print *)

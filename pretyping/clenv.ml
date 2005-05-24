@@ -92,6 +92,23 @@ let clenv_environments evd bound c =
   in 
   clrec (evd,[]) bound c
 
+let clenv_environments_evars env evd bound c =
+  let rec clrec (e,ts) n c =
+    match n, kind_of_term c with
+      | (Some 0, _) -> (e, List.rev ts, c)
+      | (n, Cast (c,_)) -> clrec (e,ts) n c
+      | (n, Prod (na,c1,c2)) ->
+          let e',constr = Evarutil.new_evar e env c1 in
+	  let dep = dependent (mkRel 1) c2 in
+	  let na' = if dep then na else Anonymous in
+	  clrec (e', constr::ts) (option_app ((+) (-1)) n)
+	    (if dep then (subst1 constr c2) else c2)
+      | (n, LetIn (na,b,_,c)) ->
+	  clrec (e,ts) (option_app ((+) (-1)) n) (subst1 b c)
+      | (n, _) -> (e, List.rev ts, c)
+  in 
+  clrec (evd,[]) bound c
+
 let mk_clenv_from_n gls n (c,cty) =
   let evd = create_evar_defs gls.sigma in
   let (env,args,concl) = clenv_environments evd n cty in
