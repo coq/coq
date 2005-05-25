@@ -298,7 +298,6 @@ SUBTACCMO=\
 	contrib/subtac/scoq.cmo \
 	contrib/subtac/sast.cmo \
 	contrib/subtac/infer.cmo \
-	contrib/subtac/top_printer.cmo \
 	contrib/subtac/rewrite.cmo \
 	contrib/subtac/sparser.cmo
 
