@@ -73,7 +73,7 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
               -I contrib/interface -I contrib/fourier \
 	      -I contrib/jprover -I contrib/cc \
 	      -I contrib/funind -I contrib/first-order \
-              -I contrib/field 
+              -I contrib/field -I contrib/subtac
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
@@ -293,12 +293,22 @@ FOCMO=\
 
 CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo  
 
+SUBTACCMO=\
+	contrib/subtac/natural.cmo \
+	contrib/subtac/scoq.cmo \
+	contrib/subtac/sast.cmo \
+	contrib/subtac/infer.cmo \
+	contrib/subtac/top_printer.cmo \
+	contrib/subtac/rewrite.cmo \
+	contrib/subtac/sparser.cmo
+
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4 \
-  contrib/funind/tacinv.ml4 contrib/first-order/g_ground.ml4
+  contrib/funind/tacinv.ml4 contrib/first-order/g_ground.ml4 \
+  contrib/subtac/sparser.ml4
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(DPCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
-	$(CCCMO) $(FUNINDCMO) $(FOCMO)
+	$(CCCMO) $(FUNINDCMO) $(FOCMO) $(SUBTACCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -992,8 +1002,10 @@ JPROVERVO=
 CCVO=\
  contrib/cc/CCSolve.vo
 
+SUBTACVO=
+
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
-	    $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO)
+	    $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) $(SUBTACVO)
 
 $(CONTRIBVO): states/initial.coq
 
@@ -1008,6 +1020,7 @@ fourier: $(FOURIERVO) $(FOURIERCMO)
 jprover: $(JPROVERVO) $(JPROVERCMO)
 funind: $(FUNINDCMO) $(FUNINDVO)
 cc: $(CCVO) $(CCCMO)
+subtac: $(SUBTACVO) $(SUBTACCMO)
 
 NEWINITVO=$(INITVO)
 NEWTHEORIESVO=$(THEORIESVO)

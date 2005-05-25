@@ -30,6 +30,8 @@ val set_print_constr : (env -> constr -> std_ppcmds) -> unit
 val print_constr     : constr -> std_ppcmds
 val print_constr_env : env -> constr -> std_ppcmds
 val print_named_context : env -> std_ppcmds
+val print_rel_context : env -> std_ppcmds
+val print_env : env -> std_ppcmds
 
 (* iterators on terms *)
 val prod_it : init:types -> (name * types) list -> types

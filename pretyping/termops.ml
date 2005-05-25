@@ -101,29 +101,34 @@ let pr_var_decl env (id,c,typ) =
     | Some c ->
 	(* Force evaluation *) 
 	let pb = print_constr_env env c in
-	(str" := " ++ pb ++ cut () ) in
+	  (str" := " ++ pb ++ cut () ) in
   let pt = print_constr_env env typ in
   let ptyp = (str" : " ++ pt) in
-  (pr_id id ++ hov 0 (pbody ++ ptyp))
-(*
+    (pr_id id ++ hov 0 (pbody ++ ptyp))
+
 let pr_rel_decl env (na,c,typ) =
   let pbody = match c with
     | None -> mt ()
     | Some c ->
 	(* Force evaluation *) 
-	let pb = prterm_env env c in
-	(str":=" ++ spc () ++ pb ++ spc ()) in
-  let ptyp = prtype_env env typ in
-  match na with
-  | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
-  | Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
-*)
+	let pb = print_constr_env env c in
+	  (str":=" ++ spc () ++ pb ++ spc ()) in
+  let ptyp = print_constr_env env typ in
+    match na with
+      | Anonymous -> hov 0 (str"<>" ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+      | Name id -> hov 0 (pr_id id ++ spc () ++ pbody ++ str":" ++ spc () ++ ptyp)
+
 let print_named_context env =
   hv 0 (fold_named_context
 	  (fun env d pps -> pps ++ ws 2 ++ pr_var_decl env d)
           env ~init:(mt ()))
-(*
-let pr_env env =
+
+let print_rel_context env = 
+  hv 0 (fold_rel_context
+	  (fun env d pps -> pps ++ ws 2 ++ pr_rel_decl env d)
+          env ~init:(mt ()))
+    
+let print_env env =
   let sign_env =
     fold_named_context
       (fun env d pps ->
@@ -136,8 +141,8 @@ let pr_env env =
          let pnat = pr_rel_decl env d in (pps ++ fnl () ++ pnat))
       env ~init:(mt ())
   in 
-  (sign_env ++ db_env)
-*)
+    (sign_env ++ db_env)
+    
 (*let current_module = ref empty_dirpath
 
 let set_module m = current_module := m*)

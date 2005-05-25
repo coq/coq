@@ -36,6 +36,7 @@ case $coqdebug in
         -I $COQTOP/contrib/interface  -I $COQTOP/contrib/jprover \
         -I $COQTOP/contrib/omega      -I $COQTOP/contrib/romega \
         -I $COQTOP/contrib/ring       -I $COQTOP/contrib/xml \
+	-I $COQTOP/contrib/subtac \
 	$* $args;;
     *) exec $OCAMLDEBUG $*;;
 esac
