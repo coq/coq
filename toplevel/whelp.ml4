@@ -114,9 +114,12 @@ let merge vl al =
   in aux [] (vl,al)
 
 let rec uri_of_constr c =
-  url_paren (fun () -> match c with
+  match c with
   | RVar (_,id) -> url_id id
   | RRef (_,ref) ->  uri_of_global ref
+  | RHole _ | REvar _ -> url_string "?"
+  | RSort (_,s) -> url_string (whelp_of_rawsort s)
+  | _ -> url_paren (fun () -> match c with
   | RApp (_,f,args) ->
       let inst,rest = merge (section_parameters f) args in
       uri_of_constr f; url_char ' '; uri_params uri_of_constr inst; 
@@ -134,10 +137,10 @@ let rec uri_of_constr c =
       uri_of_constr b; url_string " in "; uri_of_constr c
   | RCast (_,c,t) ->
       uri_of_constr c; url_string ":"; uri_of_constr t
-  | RHole _ | REvar _ -> url_string "?"
-  | RSort (_,s) -> url_string (whelp_of_rawsort s)
   | RRec _ | RIf _ | RLetTuple _ | ROrderedCase _ | RCases _ ->
       error "Whelp does not support pattern-matching and (co-)fixpoint"
+  | RVar _ | RRef _ | RHole _ | REvar _ | RSort _ ->
+      anomaly "Written w/o parenthesis"
   | RPatVar _ | RDynamic _ -> 
       anomaly "Found constructors not supported in constr") ()
 
