@@ -120,7 +120,20 @@ let boxed_definitions _ = !boxed_definitions
 (* Options for external tools *)
 
 let browser_cmd_fmt =
-  if Sys.os_type = "Win32"
-  then "C:\\PROGRA~1\\INTERN~1\\IEXPLORE ", ""
-  else "netscape -remote \"OpenURL(", ")\""
-  
+ try
+  let coq_netscape_remote_var = "COQREMOTEBROWSER" in
+  let coq_netscape_remote = Sys.getenv coq_netscape_remote_var in
+  let i = Util.string_index_from coq_netscape_remote 0 "%s" in
+  let pre = String.sub coq_netscape_remote 0 i in
+  let post = String.sub coq_netscape_remote (i + 2)
+              (String.length coq_netscape_remote - (i + 2)) in
+   if Util.string_string_contains ~where:post ~what:"%s" then
+    error ("The environment variable \"" ^
+           coq_netscape_remote_var ^
+           "\" must contain exactly one placeholder \"%s\".")
+   else pre,post
+ with
+  Not_found ->
+   if Sys.os_type = "Win32"
+   then "C:\\PROGRA~1\\INTERN~1\\IEXPLORE ", ""
+   else "netscape -remote \"OpenURL(", ")\""

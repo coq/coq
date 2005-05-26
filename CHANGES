@@ -1,6 +1,12 @@
 Changes from V8.0
 =================
 
+Environment variables
+
+- COQREMOTEBROWSER to set the command invoked to start the remote browser
+  both in Coq and coqide. Standard syntax: "%s" is the placeholder for the
+  URL (doc TODO)
+
 Vernacular commands
 
 - Added "Print Ltac qualid" to print a user defined tactic (doc TODO)
