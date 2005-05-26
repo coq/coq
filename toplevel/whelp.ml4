@@ -156,10 +156,7 @@ let whelp_constr_expr req c =
 let whelp_locate s =
   send_whelp "locate" s
 
-let whelp_elim ind =
-  send_whelp "elim" 
-(*    (uri_of_global (IndRef ind))*)
-    (string_of_qualid (shortest_qualid_of_global Idset.empty (IndRef ind)))
+let whelp_elim ind = send_whelp "elim" (uri_of_global (IndRef ind))
 
 let locate_inductive r =
   let (loc,qid) = qualid_of_reference r in
