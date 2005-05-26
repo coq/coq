@@ -21,7 +21,7 @@ open Reductionops
 (*s printing of constr -- debugging *)
 
 (* comment this line to see debug msgs *)
-let msg x = () ;; let prterm c = str "" 
+let msg x = () ;; let prterm c = str ""
   (* uncomment this to see debugging *)
 let prconstr c =  msg (str"  " ++ prterm c ++ str"\n")
 let prlistconstr lc = List.iter prconstr lc
@@ -194,52 +194,53 @@ let rec buildrefl_from_eqs eqs =
 
 
 
-(* list of occurrences of a term inside another, no imbricated
-   occurrence are considered (ie we stop looking inside a termthat is
-   an occurrence). *)
+(* list of occurrences of a term inside another *)
+(* Cofix will be wrong, not sure Fix is correct too *)
 let rec hdMatchSub u t=
-  if constr_head_match u t then 
-	 u::(fold_constr (fun l cstr -> l@(hdMatchSub cstr t))
-      [] 
-      u)
-  else
-    fold_constr (fun l cstr -> l@(hdMatchSub cstr t))
-      [] 
-      u
+  let subres = 
+    match kind_of_term u with
+      | Lambda (nm,tp,cstr) | Prod (nm,tp,cstr) -> hdMatchSub (lift 1 cstr) t
+      | Fix (_,(lna,tl,bl))  -> 
+	  Array.fold_left 
+	    (fun acc cstr -> acc @ hdMatchSub (lift (Array.length tl) cstr) t) 
+	    [] bl
+      | LetIn _  -> assert false
+	  (* Correct? *)
+      | _ -> fold_constr (fun l cstr -> l @ hdMatchSub cstr t) [] u
+  in 
+  if constr_head_match u t then u :: subres else subres
+
 
 (* let hdMatchSub_list u lt = List.flatten (List.map (hdMatchSub u) lt) *)
 let hdMatchSub_cpl u (d,f) = 
-	 let res = ref [] in
-	 begin
-	 	for i = d to f do res := (hdMatchSub u (mkRel i)) @ !res done;
-		  !res
-	 end
+  let res = ref [] in
+  begin
+    for i = d to f do res := hdMatchSub u (mkRel i) @ !res done;
+    !res
+  end
 
 
 (* destApplication raises an exception if [t] is not an application *)      
 let exchange_hd_prod subst_hd t =
-    let (hd,args)= destApplication t in mkApp (subst_hd,args)
+  let hd,args= destApplication t in mkApp (subst_hd,args)
 
 (* substitute t by by_t in head of products inside in_u, reduces each
 	product found  *)
 let rec substit_red prof t by_t in_u =
   if constr_head_match in_u (lift prof t) 
   then
-	 let _ = prNamedConstr "in_u" in_u in
-	 let x = whd_beta (exchange_hd_prod (lift prof by_t) in_u) in
-	 let _ = prNamedConstr "xx " x in
-	 let _ = prstr "\n\n" in
-	 x
+    let x = whd_beta (exchange_hd_prod (lift prof by_t) in_u) in
+    x
   else
-    map_constr_with_binders succ (fun i u -> substit_red i t by_t u)
-    	prof in_u
+    map_constr_with_binders succ (fun i u -> substit_red i t by_t u) prof in_u
 
 (* [exchange_reli_arrayi t=(reli x y ...) tarr (d,f)] exchange each
 	reli by tarr.(f-i). *) 
 let exchange_reli_arrayi tarr (d,f) t =
   let hd,args= destApplication t in 
   let i = destRel hd in
-  whd_beta (mkApp (tarr.(f-i) ,args))
+  let res = whd_beta (mkApp (tarr.(f-i) ,args)) in
+  res
 
 let exchange_reli_arrayi_L tarr (d,f) = 
   List.map (exchange_reli_arrayi tarr (d,f))
