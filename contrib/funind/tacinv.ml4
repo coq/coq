@@ -157,11 +157,9 @@ let rec npatternify ltypes c =
   | [] -> c
   | (mv,nme,t)::ltypes' -> 
      let c'= substitterm 0 mv (mkRel 1) c in
-(*      let _ = prconstr c' in *)
      let tlift = lift (List.length ltypes') t in
      let res = 
       npatternify ltypes' (mkLambda (newname_append nme "", tlift, c')) in
-(*      let _ = prconstr res in *)
      res
 
 (* fait une application (c m1 m2...mn, où mi est une evar, on rend également
@@ -510,15 +508,15 @@ let rec proofPrinc mi lst_vars lst_eqs lst_recs:
   | u -> 
      let varrels = List.rev (List.map fst lst_vars) in
      let varnames = List.map snd lst_vars in
-     let nb_vars = (List.length varnames) in
-     let nb_eqs = (List.length lst_eqs) in
+     let nb_vars = List.length varnames in
+     let nb_eqs = List.length lst_eqs in
      let eqrels = List.map fst lst_eqs in
      (* [terms_recs]: appel rec du fixpoint, On concatène les appels recs
         trouvés dans les let in et les Cases avec ceux trouves dans u (ie
         mi.mimick). *)
      (* TODO: il faudra gérer plusieurs pt fixes imbriqués ? *)
-     let terms_recs = lst_recs @ (hdMatchSub_cpl mi.mimick mi.fonc)  in
-     
+     let terms_recs = lst_recs @ hdMatchSub_cpl mi.mimick mi.fonc in
+
      (*c construction du terme: application successive des variables, des
        egalites et des appels rec, a la variable existentielle correspondant a
        l'hypothese de recurrence en cours. *)
@@ -573,7 +571,6 @@ let invfun_proof fonc def_fonc gl_abstr pis env sigma =
  sigma=sigma; nmefonc=fonc; fonc=(0,0); doeqs=true; fix=false} in
  let princ_proof,levar,lposeq,evararr,absc,parms = proofPrinc mi [] [] [] in
  princ_proof,levar,lposeq,evararr,absc,parms
-
 (* Do intros [i] times, then do rewrite on all introduced hyps which are called
    like [heq_prefix], FIX: have another filter than the name. *)
 let rec iterintro i = 
@@ -596,12 +593,12 @@ let rec iterintro i =
 
 (* 
        (fun hyp gl -> 
-        let _ = print_string ("nthhyp= "^ string_of_int i) in
+        let _ = prstr ("nthhyp= "^ string_of_int i) in
         if isConst hyp && ((name_of_const hyp)==heq_prefix) then
-          let _ = print_string "YES\n" in
+          let _ = prstr "YES\n" in
           rewriteLR hyp gl 
         else 
-          let _ = print_string "NO\n" in
+          let _ = prstr "NO\n" in
           tclIDTAC gl)
  *)
     
@@ -818,9 +815,9 @@ let buildFunscheme fonc mutflist =
     
 (* Declaration of the functional scheme. *)
 let declareFunScheme f fname mutflist =
- let scheme = 
-   buildFunscheme (constr_of f) 
-    (Array.of_list (List.map constr_of (f::mutflist))) in
+ let flist = if mutflist=[] then [f] else mutflist in
+ let fcstrlist = Array.of_list (List.map constr_of flist) in
+ let scheme = buildFunscheme (constr_of f) fcstrlist in
   let _ = prstr "Principe:" in
   let _ = prconstr scheme in
  let ce = { 
