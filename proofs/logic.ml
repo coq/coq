@@ -50,9 +50,9 @@ let catchable_exception = function
   | Util.UserError _ | TypeError _ | RefinerError _
   (* unification errors *)
   | PretypeError(_,(CannotUnify _|CannotGeneralize _|NoOccurrenceFound _|
-      CannotUnifyBindingType _))
+      CannotUnifyBindingType _|NotClean _))
   | Stdpp.Exc_located(_,PretypeError(_,(CannotUnify _|CannotGeneralize _|
-          NoOccurrenceFound _ | CannotUnifyBindingType _)))
+          NoOccurrenceFound _ | CannotUnifyBindingType _|NotClean _)))
   | Stdpp.Exc_located(_,(Util.UserError _ | TypeError _ | RefinerError _ |
     Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _))) -> true
   | _ -> false

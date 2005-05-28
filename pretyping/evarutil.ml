@@ -285,7 +285,7 @@ let non_instantiated sigma =
  * false. The problem is that we won't get the right error message.
  *)
 
-let real_clean env isevars ev args rhs =
+let real_clean env isevars ev evi args rhs =
   let evd = ref isevars in
   let subst = List.map (fun (x,y) -> (y,mkVar x)) (filter_unique args) in
   let rec subs k t =
@@ -302,7 +302,14 @@ let real_clean env isevars ev args rhs =
 	    else do_restrict_hyps evd ev args'
 	  else
 	    mkEvar (ev,args')
-      | Var _ -> (try List.assoc t subst with Not_found -> t)
+      | Var id ->
+          (try List.assoc t subst
+           with Not_found ->
+             if List.exists (fun (id',_,_) -> id=id') evi.evar_hyps
+             then t
+             else
+               error_not_clean env (evars_of !evd) ev rhs
+                 (evar_source ev !evd))
       | _ -> map_constr_with_binders succ subs k t
   in
   let body = subs 0 rhs in
@@ -335,7 +342,7 @@ let evar_define env (ev,argsv) rhs isevars =
   let evi = Evd.map (evars_of isevars) ev in
   (* the bindings to invert *)
   let worklist = make_subst (evar_env evi) args in
-  let (isevars',body) = real_clean env isevars ev worklist rhs in
+  let (isevars',body) = real_clean env isevars ev evi worklist rhs in
   if occur_meta body then error "Meta cannot occur in evar body"
   else
    let isevars'' = Evd.evar_define ev body isevars' in
