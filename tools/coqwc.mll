@@ -99,7 +99,7 @@ let dot = '.' (' ' | '\t' | '\n' | '\r' | eof)
 let proof_start =   
   "Theorem" | "Lemma" | "Fact" | "Remark" | "Goal" | "Correctness"
 let proof_end =
-  ("Save" | "Qed" | "Defined" | "Abort") [^'.']* '.'
+  ("Save" | "Qed" | "Defined" | "Abort" | "Admitted") [^'.']* '.'
 
 (*s [spec] scans the specification. *)
 
