@@ -953,10 +953,7 @@ object(self)
       full_goal_done <- false;
       prerr_endline "Send_to_coq starting now";
       if replace then begin
-	let r,info = 
-(*	  full_do_if_not_computing "coq eval and replace" *)
-	    Coq.interp_and_replace ("Info " ^ phrase) 
-	in
+	let r,info = Coq.interp_and_replace ("Info " ^ phrase) in
 	let msg = read_stdout () in 
 	self#insert_message (if show_output then msg else "");
 
