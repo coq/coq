@@ -970,9 +970,11 @@ object(self)
       end
     with e ->
       (if show_error then
+	 let msg = read_stdout () in 
+	 self#insert_message (if show_output then msg else "");
 	 let (s,loc) = Coq.process_exn e in
 	 assert (Glib.Utf8.validate s);
-	 self#set_message s;
+	 self#insert_message s;
 	 message_view#misc#draw None;
 	 if localize then 
 	   (match Util.option_app Util.unloc loc with 
@@ -2767,6 +2769,14 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
       ~callback:(fun () -> let term = get_current_word () in
 		 (Command_windows.command_window ())#new_command
 		 ~command:"Print"
+		   ~term 
+		   ())
+  in
+  let _ = 
+    queries_factory#add_item "_Whelp Locate" 
+      ~callback:(fun () -> let term = get_current_word () in
+		 (Command_windows.command_window ())#new_command
+		 ~command:"Whelp Locate"
 		   ~term 
 		   ())
   in

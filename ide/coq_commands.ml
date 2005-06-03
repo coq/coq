@@ -211,6 +211,9 @@ let state_preserving = [
   "Test Printing Let";
   "Test Printing Synth";
   "Test Printing Wildcard";
+
+  "Whelp Hint";
+  "Whelp Locate";
 ]
 
 
