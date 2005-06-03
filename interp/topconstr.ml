@@ -139,7 +139,7 @@ let compare_rawconstr f t1 t2 = match t1,t2 with
 
 let rec eq_rawconstr t1 t2 = compare_rawconstr eq_rawconstr t1 t2
 
-let discriminate_patterns nl l1 l2 =
+let discriminate_patterns foundvars nl l1 l2 =
   let diff = ref None in
   let rec aux n c1 c2 = match c1,c2 with
   | RVar (_,v1), RVar (_,v2) when v1<>v2 ->
@@ -152,13 +152,25 @@ let discriminate_patterns nl l1 l2 =
   let l = list_map2_i aux 0 l1 l2 in
   if not (List.for_all ((=) true) l) then
     error "Both ends of the recursive pattern differ";
-  !diff
+  match !diff with
+    | None ->  error "Both ends of the recursive pattern are the same"
+    | Some (x,y,_ as discr) ->
+	List.iter (fun id ->
+          if List.mem id !foundvars
+          then error "Variables used in the recursive part of a pattern are not allowed to occur outside of the recursive part";
+          foundvars := id::!foundvars) [x;y];
+	discr
 
 let aconstr_and_vars_of_rawconstr a =
   let found = ref [] in
   let rec aux = function
   | RVar (_,id) -> found := id::!found; AVar id
   | RApp (_,f,args) when has_ldots args -> make_aconstr_list f args 
+  | RApp (_,RVar (_,f),[RApp (_,t,[c]);d]) when f = ldots_var ->
+      (* Special case for alternative (recursive) notation of application *)
+      let x,y,lassoc = discriminate_patterns found 0 [c] [d] in
+      found := ldots_var :: !found; assert lassoc;
+      AList (x,y,AApp (AVar ldots_var,[AVar x]),aux t,lassoc)
   | RApp (_,g,args) -> AApp (aux g, List.map aux args)
   | RLambda (_,na,ty,c) -> add_name found na; ALambda (na,aux ty,aux c)
   | RProd (_,na,ty,c) -> add_name found na; AProd (na,aux ty,aux c)
@@ -204,13 +216,7 @@ allowed in abbreviatable expressions"
 	error "Both ends of the recursive pattern have different lengths";
       let ll2,l2' = list_chop nl l2 in
       let t = List.hd l2' and lr2 = List.tl l2' in
-      let discr = discriminate_patterns nl (ll1@lr1) (ll2@lr2) in
-      let x,y,order = match discr with Some z -> z | None -> 
-	error "Both ends of the recursive pattern are the same" in
-      List.iter (fun id ->
-        if List.mem id !found
-        then error "Variables used in the recursive part of a pattern are not allowed to occur outside of the recursive part";
-        found := id::!found) [x;y];
+      let x,y,order = discriminate_patterns found nl (ll1@lr1) (ll2@lr2) in
       let iter =
         if order then RApp (loc,f2,ll2@RVar (loc,ldots_var)::lr2)
         else RApp (loc,f1,ll1@RVar (loc,ldots_var)::lr1) in
