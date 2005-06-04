@@ -20,7 +20,9 @@ let unloc (b,e) =
   let loc = (b.Lexing.pos_cnum,e.Lexing.pos_cnum) in
   (* Ensure that we unpack a char location that was encoded as a line-col
      location by make_loc *)
+(* Gram.Entry.parse may send bad loc in 3.08, see caml-bugs #2954
   assert (dummy_loc = (b,e) or make_loc loc = (b,e));
+*)
   loc
 end
 else
