@@ -318,6 +318,30 @@ let real_clean env isevars ev evi args rhs =
   then error_not_clean env (evars_of !evd) ev body (evar_source ev !evd);
   (!evd,body)
 
+(* [typed_evar_define evd sp c] (tactic style)
+ *
+ * Defines evar [sp] with term [c] in evar context [evd].
+ * [c] is typed in the context of [sp] and evar context [evd] with
+ * [sp] removed to avoid circular definitions.
+ * No unification is performed in order to assert that [c] has the
+ * correct type.
+ *
+let typed_evar_define sp c evd =
+  let sigma = evars_of evd in
+  let spdecl = Evd.map sigma sp in
+  let env = evar_env spdecl in
+  let _ =
+    (* Do not consider the metamap because evars may not depend on metas *)
+    try Typing.check env (Evd.rmv sigma sp) c spdecl.evar_concl
+    with
+	Not_found -> error "Instantiation contains unlegal variables"
+      | (Type_errors.TypeError (e, Type_errors.UnboundVar v))-> 
+      errorlabstrm "typed_evar_define"
+      (str "Cannot use variable " ++ pr_id v ++ str " to define " ++ 
+       str (string_of_existential sp)) in
+  Evd.evar_define sp c evd
+*)
+
 (* [evar_define] solves the problem lhs = rhs when lhs is an uninstantiated
  * evar, i.e. tries to find the body ?sp for lhs=mkEvar (sp,args)
  * ?sp [ sp.hyps \ args ]  unifies to rhs
@@ -349,33 +373,6 @@ let evar_define env (ev,argsv) rhs isevars =
    let isevars'' = Evd.evar_define ev body isevars' in
    isevars'',[ev]
 
-(* [w_Define evd sp c] (tactic style)
- *
- * Defines evar [sp] with term [c] in evar context [evd].
- * [c] is typed in the context of [sp] and evar context [evd] with
- * [sp] removed to avoid circular definitions.
- * No unification is performed in order to assert that [c] has the
- * correct type.
- *)
-let w_Define sp c evd =
-  let sigma = evars_of evd in
-  if not (Evd.in_dom sigma sp) then
-    error "w_Define: cannot define undeclared evar";
-  if Evd.is_defined sigma sp then
-    error "w_Define: cannot define evar twice";
-  let spdecl = Evd.map sigma sp in
-  let env = evar_env spdecl in
-  let _ =
-    (* Do not consider the metamap because evars may not depend on metas *)
-    try Typing.check env (Evd.rmv sigma sp) c spdecl.evar_concl
-    with
-	Not_found -> error "Instantiation contains unlegal variables"
-      | (Type_errors.TypeError (e, Type_errors.UnboundVar v))-> 
-      errorlabstrm "w_Define"
-      (str "Cannot use variable " ++ pr_id v ++ str " to define " ++ 
-       str (string_of_existential sp)) in
-  let spdecl' = { spdecl with evar_body = Evar_defined c } in
-  evars_reset_evd (Evd.add sigma sp spdecl') evd
 
 
 (*-------------------*)

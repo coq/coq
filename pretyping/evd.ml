@@ -49,15 +49,16 @@ let fold = Evarmap.fold
 let add evd ev newinfo =  Evarmap.add ev newinfo evd
 
 let define evd ev body = 
-  let oldinfo = map evd ev in
+  let oldinfo =
+    try map evd ev
+    with Not_found -> error "Evd.define: cannot define undeclared evar" in
   let newinfo =
     { evar_concl = oldinfo.evar_concl;
       evar_hyps = oldinfo.evar_hyps;
-      evar_body = Evar_defined body} 
-  in
+      evar_body = Evar_defined body} in
   match oldinfo.evar_body with
     | Evar_empty -> Evarmap.add ev newinfo evd
-    | _ -> anomaly "cannot define an isevar twice"
+    | _ -> anomaly "Evd.define: cannot define an isevar twice"
     
 let is_evar sigma ev = in_dom sigma ev
 

@@ -267,8 +267,8 @@ let w_merge env with_types mod_delta metas evars evd =
         (Retyping.get_type_of sp_env (evars_of evd') c) ev.evar_concl in
     let evd'' = w_merge_rec evd' mc ec in
     if (evars_of evd') == (evars_of evd'')
-    then w_Define sp c evd''
-    else w_Define sp (Evarutil.nf_evar (evars_of evd'') c) evd'' in
+    then Evd.evar_define sp c evd''
+    else Evd.evar_define sp (Evarutil.nf_evar (evars_of evd'') c) evd'' in
 
   (* merge constraints *)
   let evd' = w_merge_rec evd metas evars in

@@ -51,8 +51,6 @@ val w_Declare : env -> evar -> types -> evar_defs -> evar_defs
 (***********************************************************)
 (* Instanciate evars *)
 
-val w_Define : evar -> constr -> evar_defs -> evar_defs
-
 (* suspicious env ? *)
 val evar_define :
   env -> existential -> constr -> evar_defs -> evar_defs * evar list
