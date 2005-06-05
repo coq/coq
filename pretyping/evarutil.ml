@@ -288,31 +288,32 @@ let non_instantiated sigma =
 let real_clean env isevars ev evi args rhs =
   let evd = ref isevars in
   let subst = List.map (fun (x,y) -> (y,mkVar x)) (filter_unique args) in
-  let rec subs k t =
+  let rec subs rigid k t =
     match kind_of_term t with
       | Rel i ->
  	 if i<=k then t
  	 else (try List.assoc (mkRel (i-k)) subst with Not_found -> t)
       | Evar (ev,args) ->
-
-	  let args' = Array.map (subs k) args in
-	  if need_restriction !evd args' then
-            if Evd.is_defined_evar !evd (ev,args) then 
-	      subs k (existential_value (evars_of !evd) (ev,args'))
-	    else do_restrict_hyps evd ev args'
-	  else
-	    mkEvar (ev,args')
+          if Evd.is_defined_evar !evd (ev,args) then
+            subs rigid k (existential_value (evars_of !evd) (ev,args))
+          else
+	    let args' = Array.map (subs false k) args in
+	    if need_restriction !evd args' then
+              do_restrict_hyps evd ev args'
+	    else
+	      mkEvar (ev,args')
       | Var id ->
           (try List.assoc t subst
            with Not_found ->
-             if List.exists (fun (id',_,_) -> id=id') evi.evar_hyps
+             if
+               not rigid or List.exists (fun (id',_,_) -> id=id') evi.evar_hyps
              then t
              else
                error_not_clean env (evars_of !evd) ev rhs
                  (evar_source ev !evd))
-      | _ -> map_constr_with_binders succ subs k t
+      | _ -> map_constr_with_binders succ (subs rigid) k t
   in
-  let body = subs 0 rhs in
+  let body = subs true 0 (nf_evar (evars_of isevars) rhs) in
   if not (closed0 body)
   then error_not_clean env (evars_of !evd) ev body (evar_source ev !evd);
   (!evd,body)
