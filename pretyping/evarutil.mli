@@ -46,8 +46,6 @@ val new_evar_instance :
  named_context -> evar_defs -> types -> ?src:loc * hole_kind -> constr list ->
  evar_defs * constr
 
-val w_Declare : env -> evar -> types -> evar_defs -> evar_defs
-
 (***********************************************************)
 (* Instanciate evars *)
 

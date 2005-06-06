@@ -989,7 +989,19 @@ let check_evars fail_evar env initial_sigma isevars c =
 	       error_unsolvable_implicit loc env sigma k)
       | _ -> iter_constr proc_rec c      
   in
-  proc_rec c
+  proc_rec c(*;
+  let (_,pbs) = get_conv_pbs !isevars (fun _ -> true) in
+  if pbs <> [] then begin
+    pperrnl
+      (str"TYPING OF "++Termops.print_constr_env env c++fnl()++
+      prlist_with_sep fnl
+        (fun  (pb,c1,c2) ->
+          Termops.print_constr c1 ++
+          (if pb=Reduction.CUMUL then str " <="++ spc()
+           else str" =="++spc()) ++
+          Termops.print_constr c2)
+        pbs ++ fnl())
+  end*)
 
 (* TODO: comment faire remonter l'information si le typage a resolu des
        variables du sigma original. il faudrait que la fonction de typage

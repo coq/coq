@@ -28,25 +28,6 @@ let rec filter_unique = function
       if List.mem x l then filter_unique (List.filter (fun y -> x<>y) l)
       else x::filter_unique l
 
-(*
-let distinct_id_list = 
-  let rec drec fresh = function
-      [] -> List.rev fresh 
-    | id::rest ->
- 	let id' = next_ident_away_from id fresh in drec (id'::fresh) rest
-  in drec []
-*)
-
-(*
-let filter_sign p sign x =
-  sign_it
-    (fun id ty (v,ids,sgn) ->
-      let (disc,v') = p v (id,ty) in
-      if disc then (v', id::ids, sgn) else (v', ids, add_sign (id,ty) sgn))
-    sign
-    (x,[],nil_sign)
-*)
-
 (* Expanding existential variables (pretyping.ml) *)
 (* 1- whd_ise fails if an existential is undefined *)
 
@@ -132,6 +113,16 @@ let evars_to_metas sigma (emap, c) =
         Evar (k,_ as ev) when Evd.in_dom emap' k -> change_exist ev
       | _ -> map_constr replace c in
   (sigma', replace c)
+
+(* The list of non-instantiated existential declarations *)
+
+let non_instantiated sigma = 
+  let listev = to_list sigma in
+  List.fold_left 
+    (fun l (ev,evd) -> 
+       if evd.evar_body = Evar_empty then 
+	 ((ev,nf_evar_info sigma evd)::l) else l)
+    [] listev
 
 (*************************************)
 (* Metas *)
@@ -229,13 +220,79 @@ let e_new_evar evd env ?(src=(dummy_loc,InternalHole)) ty =
   evd := evd';
   ev
 
-(* declare a new evar (tactic style) *)
-let w_Declare env sp ty evd =
-  let sigma = evars_of evd in
-  if Evd.in_dom sigma sp then
-    error "w_Declare: cannot redeclare evar";
-  let _ = Typing.type_of env sigma ty in (* Checks there is no meta *)
-  Evd.evar_declare (named_context env) sp ty evd
+(*------------------------------------*
+ * operations on the evar constraints *
+ *------------------------------------*)
+
+let is_pattern inst =
+  let rec is_hopat l = function
+      [] -> true
+    | t :: tl ->
+        (isRel t or isVar t) && not (List.mem t l) && is_hopat (t::l) tl in
+  is_hopat [] (Array.to_list inst)
+
+let evar_well_typed_body evd ev evi body =
+  try
+    let env = evar_env evi in
+    let ty = evi.evar_concl in
+    Typing.check env (evars_of evd) body ty;
+    true
+  with e ->
+    pperrnl
+      (str "Ill-typed evar instantiation: " ++ fnl() ++
+       pr_evar_defs evd ++ fnl() ++
+       str "----> " ++ int ev ++ str " := " ++
+       print_constr body);
+    false
+
+let strict_inverse = false
+
+let inverse_instance env isevars ev evi inst rhs =
+  let subst = make_subst (evar_env evi) (Array.to_list inst) in
+  let subst = List.map (fun (x,y) -> (y,mkVar x)) subst in
+  let evd = ref isevars in
+  let error () = 
+    error_not_clean env (evars_of !evd) ev rhs (evar_source ev !evd) in
+  let rec subs rigid k t =
+    match kind_of_term t with
+      | Rel i ->
+ 	  if i<=k then t
+ 	  else
+            (try List.assoc (mkRel (i-k)) subst
+             with Not_found ->
+               if rigid then error()
+               else if strict_inverse then
+                 failwith "cannot solve pb yet"
+               else t)
+      | Var id ->
+          (try List.assoc t subst
+           with Not_found ->
+             if rigid then error()
+             else if
+               not strict_inverse &&
+               List.exists (fun (id',_,_) -> id=id') evi.evar_hyps
+             then
+               failwith "cannot solve pb yet"
+             else t)
+      | Evar (ev,args) ->
+          if Evd.is_defined_evar !evd (ev,args) then
+            subs rigid k (existential_value (evars_of !evd) (ev,args))
+          else
+	    let args' = Array.map (subs false k) args in
+	    mkEvar (ev,args')
+      | _ -> map_constr_with_binders succ (subs rigid) k t in
+  let body = subs true 0 (nf_evar (evars_of isevars) rhs) in
+  (!evd,body)
+
+
+let is_defined_equation env evd (ev,inst) rhs =
+  is_pattern inst &&
+  not (occur_evar ev rhs) &&
+  try
+    let evi = Evd.map (evars_of evd) ev in
+    let (evd',body) = inverse_instance env evd ev evi inst rhs in
+    evar_well_typed_body evd' ev evi body
+  with Failure _ -> false
 
 
 (* Redefines an evar with a smaller context (i.e. it may depend on less
@@ -259,23 +316,7 @@ let do_restrict_hyps evd ev args =
   nc
 
 
-
-
-(*------------------------------------*
- * operations on the evar constraints *
- *------------------------------------*)
-
 let need_restriction isevars args = not (array_for_all closed0 args)
-    
-(* The list of non-instantiated existential declarations *)
-
-let non_instantiated sigma = 
-  let listev = to_list sigma in
-  List.fold_left 
-    (fun l (ev,evd) -> 
-       if evd.evar_body = Evar_empty then 
-	 ((ev,nf_evar_info sigma evd)::l) else l)
-    [] listev
 
 (* We try to instanciate the evar assuming the body won't depend
  * on arguments that are not Rels or Vars, or appearing several times.
@@ -318,30 +359,6 @@ let real_clean env isevars ev evi args rhs =
   then error_not_clean env (evars_of !evd) ev body (evar_source ev !evd);
   (!evd,body)
 
-(* [typed_evar_define evd sp c] (tactic style)
- *
- * Defines evar [sp] with term [c] in evar context [evd].
- * [c] is typed in the context of [sp] and evar context [evd] with
- * [sp] removed to avoid circular definitions.
- * No unification is performed in order to assert that [c] has the
- * correct type.
- *
-let typed_evar_define sp c evd =
-  let sigma = evars_of evd in
-  let spdecl = Evd.map sigma sp in
-  let env = evar_env spdecl in
-  let _ =
-    (* Do not consider the metamap because evars may not depend on metas *)
-    try Typing.check env (Evd.rmv sigma sp) c spdecl.evar_concl
-    with
-	Not_found -> error "Instantiation contains unlegal variables"
-      | (Type_errors.TypeError (e, Type_errors.UnboundVar v))-> 
-      errorlabstrm "typed_evar_define"
-      (str "Cannot use variable " ++ pr_id v ++ str " to define " ++ 
-       str (string_of_existential sp)) in
-  Evd.evar_define sp c evd
-*)
-
 (* [evar_define] solves the problem lhs = rhs when lhs is an uninstantiated
  * evar, i.e. tries to find the body ?sp for lhs=mkEvar (sp,args)
  * ?sp [ sp.hyps \ args ]  unifies to rhs
@@ -370,8 +387,20 @@ let evar_define env (ev,argsv) rhs isevars =
   let (isevars',body) = real_clean env isevars ev evi worklist rhs in
   if occur_meta body then error "Meta cannot occur in evar body"
   else
-   let isevars'' = Evd.evar_define ev body isevars' in
-   isevars'',[ev]
+    let _ =
+(*      try*)
+        let env = evar_env evi in
+        let ty = evi.evar_concl in
+        Typing.check env (evars_of isevars') body ty
+(*      with e ->
+        pperrnl
+          (str "Ill-typed evar instantiation: " ++ fnl() ++
+           pr_evar_defs isevars' ++ fnl() ++
+           str "----> " ++ int ev ++ str " := " ++
+           print_constr body);
+        raise e*) in
+    let isevars'' = Evd.evar_define ev body isevars' in
+    isevars'',[ev]
 
 
 
@@ -477,23 +506,26 @@ let solve_refl conv_algo env isevars ev argsv1 argsv2 =
 
 (* Rq: uncomplete algorithm if pbty = CONV_X_LEQ ! *)
 let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
-  let t2 = nf_evar (evars_of isevars) t2 in
-  let (isevars,lsp) = match kind_of_term t2 with
-    | Evar (n2,args2 as ev2) ->
-	if n1 = n2 then
-	  solve_refl conv_algo env isevars n1 args1 args2
-	else
-	  if Array.length args1 < Array.length args2 then 
-	    evar_define env ev2 (mkEvar ev1) isevars
-	  else 
-	    evar_define env ev1 t2 isevars
-    | _ ->
-	evar_define env ev1 t2 isevars in
-  let (isevars,pbs) = get_conv_pbs isevars (status_changed lsp) in
-  List.fold_left
-    (fun (isevars,b as p) (pbty,t1,t2) ->
-      if b then conv_algo env isevars pbty t1 t2 else p) (isevars,true)
-    pbs
+  try
+    let t2 = nf_evar (evars_of isevars) t2 in
+    let (isevars,lsp) = match kind_of_term t2 with
+      | Evar (n2,args2 as ev2) ->
+	  if n1 = n2 then
+	    solve_refl conv_algo env isevars n1 args1 args2
+	  else
+	    if Array.length args1 < Array.length args2 then 
+	      evar_define env ev2 (mkEvar ev1) isevars
+	    else 
+	      evar_define env ev1 t2 isevars
+      | _ ->
+	  evar_define env ev1 t2 isevars in
+    let (isevars,pbs) = get_conv_pbs isevars (status_changed lsp) in
+    List.fold_left
+      (fun (isevars,b as p) (pbty,t1,t2) ->
+        if b then conv_algo env isevars pbty t1 t2 else p) (isevars,true)
+      pbs
+  with e when precatchable_exception e ->
+    (isevars,false)
 
 (* Operations on value/type constraints *)
 

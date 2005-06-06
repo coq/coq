@@ -177,8 +177,9 @@ let rec evar_conv_x env isevars pbty term1 term2 =
     true
   else 
 *)
-  (* Maybe convertible but since reducing can erase evars which [evar_apprec]*)
-  (* could have found, we do it only if the terms are free of evar  *)
+  (* Maybe convertible but since reducing can erase evars which [evar_apprec]
+     could have found, we do it only if the terms are free of evar.
+     Note: incomplete heuristic... *)
   if
     (not (has_undefined_evars isevars term1) &
     not (has_undefined_evars isevars term2) &

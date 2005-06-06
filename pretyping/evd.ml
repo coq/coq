@@ -221,7 +221,14 @@ let create_evar_defs sigma =
 let evars_of d = d.evars
 let evars_reset_evd evd d = {d with evars = evd}
 let reset_evd (sigma,mmap) d = {d with evars = sigma; metas=mmap}
-let add_conv_pb pb d = {d with conv_pbs = pb::d.conv_pbs}
+let add_conv_pb pb d =
+(*  let (pbty,c1,c2) = pb in
+  pperrnl
+    (Termops.print_constr c1 ++
+    (if pbty=Reduction.CUMUL then str " <="++ spc()
+    else str" =="++spc()) ++
+    Termops.print_constr c2);*)
+  {d with conv_pbs = pb::d.conv_pbs}
 let evar_source ev d =
   try List.assoc ev d.history
   with Not_found -> (dummy_loc, InternalHole)
