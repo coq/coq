@@ -182,6 +182,10 @@ let rec set_predicative u s scstr =
         UniverseMap.add u (DefinedSort s)
           (List.fold_left (fun g u' -> set_impredicative u' s g) scstr ul)
 
+let var_of_sort = function
+    Type u -> u
+  | _ -> assert false
+
 let is_sort_var s scstr =
   match s with
       Type u ->
@@ -219,7 +223,9 @@ let set_leq_sort (u1,(leq1,geq1)) (u2,(leq2,geq2)) scstr =
     UniverseMap.add u1 (SortVar(u2::leq1,geq1))
       (UniverseMap.add u2 (SortVar(leq2, u1::geq2)) scstr)
 
-let set_leq (Type u1) (Type u2) scstr =
+let set_leq s1 s2 scstr =
+  let u1 = var_of_sort s1 in
+  let u2 = var_of_sort s2 in
   let (cu1,c1) = canonical_find u1 scstr in
   let (cu2,c2) = canonical_find u2 scstr in
   if cu1=cu2 then scstr
@@ -233,10 +239,11 @@ let set_leq (Type u1) (Type u2) scstr =
       | DefinedSort(Type _ as s), _ -> set_predicative u2 s scstr
       | DefinedSort(Prop _), _ -> scstr
 
-let set_sort_variable (Type u) s scstr =
-  match s with
-      Prop _ -> set_impredicative u s scstr
-    | Type _ -> set_predicative u s scstr
+let set_sort_variable s1 s2 scstr =
+  let u = var_of_sort s1 in
+  match s2 with
+      Prop _ -> set_impredicative u s2 scstr
+    | Type _ -> set_predicative u s2 scstr
 
 let pr_sort_cstrs g =
   let l = UniverseMap.fold (fun u c l -> (u,c)::l) g [] in
