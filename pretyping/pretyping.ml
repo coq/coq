@@ -532,10 +532,10 @@ let rec pretype tycon env isevars lvar = function
 		   Cases.pred_case_ml 
 		     env (evars_of !isevars) false indt (0,fj.uj_type) 
 		 in 
-		 if has_undefined_evars !isevars pred then
-		   use_constraint ()
-		 else
+		 if is_ground_term !isevars pred then
 		   true, pred
+		 else
+		   use_constraint ()
 	       with Cases.NotInferable _ ->
 		 use_constraint ()
 	     in 
@@ -754,7 +754,7 @@ let rec pretype tycon env isevars lvar = function
 		  let pred = 
 		    Cases.pred_case_ml (* eta-expanse *)
                       env (evars_of !isevars) isrec indt (i,fj.uj_type) in
-		  if has_undefined_evars !isevars pred then findtype (i+1)
+		  if not (is_ground_term !isevars pred) then findtype (i+1)
 		  else 
 		    let pty =
                       Retyping.get_type_of env (evars_of !isevars) pred in

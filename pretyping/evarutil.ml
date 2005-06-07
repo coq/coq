@@ -309,11 +309,14 @@ let do_restrict_hyps evd ev args =
   let env = evar_env evi in
   let hyps = evi.evar_hyps in
   let (sign,ncargs) = list_filter2 (fun _ a -> closed0 a) (hyps,args) in
-  let (evd',nc) =
-    new_evar_instance sign !evd evi.evar_concl
-      ~src:(evar_source ev !evd) ncargs in
-  evd := Evd.evar_define ev nc evd';
-  nc
+  (* No care is taken in case the evar type uses vars filtered out!
+     Is it important ? *)
+  let nc =
+    e_new_evar evd (reset_with_named_context sign env)
+      ~src:(evar_source ev !evd) evi.evar_concl in
+  evd := Evd.evar_define ev nc !evd;
+  let (evn,_) = destEvar nc in
+  mkEvar(evn,Array.of_list ncargs)
 
 
 let need_restriction isevars args = not (array_for_all closed0 args)
@@ -387,18 +390,20 @@ let evar_define env (ev,argsv) rhs isevars =
   let (isevars',body) = real_clean env isevars ev evi worklist rhs in
   if occur_meta body then error "Meta cannot occur in evar body"
   else
+    (* needed only if an inferred type *)
+    let body = refresh_universes body in
     let _ =
-(*      try*)
+      try
         let env = evar_env evi in
         let ty = evi.evar_concl in
         Typing.check env (evars_of isevars') body ty
-(*      with e ->
+      with e ->
         pperrnl
           (str "Ill-typed evar instantiation: " ++ fnl() ++
            pr_evar_defs isevars' ++ fnl() ++
            str "----> " ++ int ev ++ str " := " ++
            print_constr body);
-        raise e*) in
+        raise e in
     let isevars'' = Evd.evar_define ev body isevars' in
     isevars'',[ev]
 
@@ -411,6 +416,9 @@ let evar_define env (ev,argsv) rhs isevars =
 let has_undefined_evars isevars t = 
   try let _ = local_strong (whd_ise (evars_of isevars)) t in false
   with Uninstantiated_evar _ -> true
+
+let is_ground_term isevars t =
+  not (has_undefined_evars isevars t)
 
 let head_is_evar isevars = 
   let rec hrec k = match kind_of_term k with
@@ -513,10 +521,13 @@ let solve_simple_eqn conv_algo env isevars (pbty,(n1,args1 as ev1),t2) =
 	  if n1 = n2 then
 	    solve_refl conv_algo env isevars n1 args1 args2
 	  else
-	    if Array.length args1 < Array.length args2 then 
+            (try evar_define env ev1 t2 isevars
+            with e when precatchable_exception e ->
+              evar_define env ev2 (mkEvar ev1) isevars)
+(*	    if Array.length args1 < Array.length args2 then
 	      evar_define env ev2 (mkEvar ev1) isevars
 	    else 
-	      evar_define env ev1 t2 isevars
+	      evar_define env ev1 t2 isevars*)
       | _ ->
 	  evar_define env ev1 t2 isevars in
     let (isevars,pbs) = get_conv_pbs isevars (status_changed lsp) in

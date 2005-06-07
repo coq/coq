@@ -180,10 +180,8 @@ let rec evar_conv_x env isevars pbty term1 term2 =
   (* Maybe convertible but since reducing can erase evars which [evar_apprec]
      could have found, we do it only if the terms are free of evar.
      Note: incomplete heuristic... *)
-  if
-    (not (has_undefined_evars isevars term1) &
-    not (has_undefined_evars isevars term2) &
-    is_fconv pbty env (evars_of isevars) term1 term2) then
+  if is_ground_term isevars term1 && is_ground_term isevars term2 &
+     is_fconv pbty env (evars_of isevars) term1 term2 then
       (isevars,true)
   else if is_undefined_evar isevars term1 then
     solve_simple_eqn evar_conv_x env isevars (pbty,destEvar term1,term2)

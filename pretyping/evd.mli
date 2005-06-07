@@ -153,9 +153,19 @@ val meta_assign    : metavariable -> constr -> evar_defs -> evar_defs
 (* [meta_merge evd1 evd2] returns [evd2] extended with the metas of [evd1] *)
 val meta_merge : evar_defs -> evar_defs -> evar_defs
 
+(**********************************************************)
+(* Sort variables *)
+
+val new_sort_variable : evar_map -> sorts * evar_map
+val is_sort_variable : evar_map -> sorts -> bool
+val whd_sort_variable : evar_map -> constr -> constr
+val set_leq_sort_variable : evar_map -> sorts -> sorts -> evar_map
+val define_sort_variable : evar_map -> sorts -> sorts -> evar_map
+
 (*********************************************************************)
 (* debug pretty-printer: *)
 
 val pr_evar_info : evar_info -> Pp.std_ppcmds
 val pr_evar_map  : evar_map -> Pp.std_ppcmds
 val pr_evar_defs : evar_defs -> Pp.std_ppcmds
+val pr_sort_constraints : evar_map -> Pp.std_ppcmds
