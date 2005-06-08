@@ -1610,7 +1610,8 @@ let prepare_predicate_from_tycon loc dep env isevars tomatchs c =
  (* let c = whd_betadeltaiota env (evars_of isevars) c in *)
     (* We turn all subterms possibly dependent into an evar with maximum ctxt*)
     if isEvar c or List.exists (eq_constr c) allargs then
-      mkExistential env ~src:(loc, Evd.CasesType) isevars
+      e_new_evar isevars env  ~src:(loc, Evd.CasesType)
+        (Retyping.get_type_of env (Evd.evars_of !isevars) c)
     else
       map_constr_with_full_binders push_rel build_skeleton env c in
   names, build_skeleton env (lift n c)
