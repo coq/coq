@@ -17,7 +17,7 @@ let rec print_term fmt = function
   | Moins (a, b) ->
       fprintf fmt "@[(-@ %a@ %a)@]" print_term a print_term b
   | Mult (a, b) ->
-      fprintf fmt "@[(*@ %a@ %a)@]" (**) print_term a print_term b
+      fprintf fmt "@[(*@ %a@ %a)@]" print_term a print_term b
   | Div (a, b) ->
       fprintf fmt "@[(/@ %a@ %a)@]" print_term a print_term b
   | App (id, []) ->
@@ -86,7 +86,7 @@ let print_query fmt (decls,concl) =
 	fprintf fmt "@[(BG_PUSH ;; %s@\n %a)@]@\n" id print_predicate f
   in
   List.iter print_decl decls;
-  print_predicate fmt concl
+  fprintf fmt "%a@." print_predicate concl
 
 let call q = 
   let f = Filename.temp_file "coq_dp" ".sx" in

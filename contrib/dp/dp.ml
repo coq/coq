@@ -1,4 +1,4 @@
-(* Author : Nicolas Ayache and Jean-Christophe Filliatre *)
+(* Author : Nicolas Ayache and Jean-Christophe Filliâtre *)
 (* Goal : Tactics to call decision procedures *)
 
 
@@ -71,7 +71,7 @@ let rename_global r =
 
 let foralls =
   List.fold_right 
-    (fun (x,t) p -> Forall (rename_global (VarRef x), t, p))
+    (fun (x,t) p -> Forall (x, t, p))
 
 let fresh_var = function
   | Anonymous -> rename_global (VarRef (id_of_string "x"))
@@ -150,7 +150,7 @@ let lookup_local r =  match Hashtbl.find locals r with
 let iter_all_constructors i f =  
   let _, oib = Global.lookup_inductive i in
   Array.iteri
-    (fun j tj -> f (mkConstruct (i, j+1)))
+    (fun j tj -> f j (mkConstruct (i, j+1)))
     oib.mind_nf_lc
 
 (* injection c [t1,...,tn] adds the injection axiom
@@ -203,7 +203,7 @@ let rec tr_type env ty =
 	     add_global r (Gfo d);
 	     globals_stack := d :: !globals_stack;
 	     iter_all_constructors i
-	       (fun c ->
+	       (fun _ c ->
 		  let rc = global_of_constr c in
 		  try
 		    begin match tr_global env rc with
@@ -228,7 +228,7 @@ and tr_global_type env id ty =
     if is_Prop s then
       Assert (id, tr_formula [] env ty)
     else
-      let l,t = tr_type env ty in
+      let l, t = tr_type env ty in
       if is_Set s then DeclVar(id, l, t)
       else if t = "BOOLEAN" then
 	DeclPred(id, l)
@@ -261,46 +261,59 @@ and axiomatize_body env r id d = match r with
       assert false
   | ConstRef c ->
       begin match (Global.lookup_constant c).const_body with
-	| Some b -> 
+	| Some b ->
 	    let b = force b in
-	    let id, ax = match d with
-	      | DeclPred (id, []) ->
-		  let value = tr_formula [] env b in
-		  id, And (Imp (Fatom (Pred (id, [])), value),
-			   Imp (value, Fatom (Pred (id, []))))
-	      | DeclVar (id, [], _) ->
-		  let value = tr_term [] env b in
-		  id, Fatom (Eq (Fol.App (id, []), value)) 
-	      | DeclVar (id, l, _) | DeclPred (id, l) ->
-		  let vars,t = decompose_lam b in
-		  let n = List.length l in
-		  let k = List.length vars in
-		  assert (k <= n);
-		  let vars,env = coq_rename_vars env vars in
-		  let t = substl (List.map mkVar vars) t in
-		  let t,vars,env = eta_expanse t vars env (n-k) in
-		  let vars = List.rev vars in
-		  let fol_var x =
-		    Fol.App (rename_global (VarRef x), []) in
-		  let fol_vars = List.map fol_var vars in
-		  let vars = List.combine vars l in
-		  let bv = List.map fst vars in
-		  let p = match d with
-		    | DeclVar _ ->
-			Fatom (Eq (App (id, fol_vars), tr_term bv env t))
-		    | DeclPred _ ->
-			let value = tr_formula bv env t in
-			And (Imp (Fatom (Pred (id, fol_vars)), value),
-			     Imp (value, Fatom (Pred (id, fol_vars))))
-		    | _ ->
-			assert false
-		  in
-		  id, foralls vars p
-	      | _ ->
-		  raise NotFO (* TODO *)
+	    let axioms =
+	      (match d with
+		 | DeclPred (id, []) ->
+		     let value = tr_formula [] env b in
+		     [id, And (Imp (Fatom (Pred (id, [])), value),
+			       Imp (value, Fatom (Pred (id, []))))]
+		 | DeclVar (id, [], _) ->
+		     let value = tr_term [] env b in
+		     [id, Fatom (Eq (Fol.App (id, []), value))]
+		 | DeclVar (id, l, _) | DeclPred (id, l) ->
+		     let vars, t = decompose_lam b in
+		     let n = List.length l in
+		     let k = List.length vars in
+		     assert (k <= n);
+		     let vars, env = coq_rename_vars env vars in
+		     let t = substl (List.map mkVar vars) t in
+		     let t, vars, env = eta_expanse t vars env (n-k) in
+		     let vars = List.rev vars in
+		     let bv = vars in
+		     let vars = List.map (fun x -> string_of_id x) vars in
+		     let fol_var x =
+		       Fol.App (x, []) in
+		     let fol_vars = List.map fol_var vars in
+		     let vars = List.combine vars l in
+		     begin match d with
+		       | DeclVar _ -> begin match kind_of_term t with
+			   | Case (ci, _, e, br) ->
+			       equations_for_case env id vars bv ci e br
+			   | _ -> 
+			       let p = 
+				 Fatom (Eq (App (id, fol_vars), 
+					    tr_term bv env t)) 
+			       in
+			       [id, foralls vars p]
+			 end
+		       | DeclPred _ ->
+			   let value = tr_formula bv env t in
+			   let p = 
+			     And (Imp (Fatom (Pred (id, fol_vars)), value),
+				  Imp (value, Fatom (Pred (id, fol_vars))))
+			   in
+			   [id, foralls vars p]
+		       | _ ->
+			   assert false
+		     end
+		 | DeclType _ ->
+		     raise NotFO
+		 | Assert _ -> assert false)
 	    in
-	    let ax = Assert (id, ax) in
-	    globals_stack := ax :: !globals_stack
+	    let axioms = List.map (fun (id,ax) -> Assert (id, ax)) axioms in
+	    globals_stack := axioms @ !globals_stack
 	| None -> 
 	    () (* Coq axiom *)
       end
@@ -308,7 +321,7 @@ and axiomatize_body env r id d = match r with
       begin match d with
 	| DeclPred _ ->
 	    iter_all_constructors i
-	      (fun c ->
+	      (fun _ c ->
 		 let rc = reference_of_constr c in
 		 try
 		   begin match tr_global env rc with
@@ -321,6 +334,56 @@ and axiomatize_body env r id d = match r with
 	| _ -> assert false
       end
   | _ -> ()
+
+and equations_for_case env id vars bv ci e br = match kind_of_term e with
+  | Var x when List.exists (fun (y, _) -> string_of_id x = y) vars ->
+      let eqs = ref [] in
+      iter_all_constructors ci.ci_ind
+	(fun j cj ->
+	   try
+	     let cjr = reference_of_constr cj in
+	     begin match tr_global env cjr with
+	       | DeclVar (idc, l, _) ->
+		   let b = br.(j) in
+		   let rec_vars, b = decompose_lam b in
+		   let rec_vars, env = coq_rename_vars env rec_vars in
+		   let b = substl (List.map mkVar rec_vars) b in
+		   let rec_vars = List.rev rec_vars in
+		   let bv = bv @ rec_vars in
+		   let rec_vars = List.map (fun x -> string_of_id x)
+				    rec_vars in
+		   let fol_var x =
+		     Fol.App (x, []) in
+		   let fol_rec_vars = List.map fol_var rec_vars in
+		   let fol_rec_term = App (idc, fol_rec_vars) in
+		   let rec_vars = List.combine rec_vars l in
+		   let fol_vars = List.map fst vars in
+		   let fol_vars = List.map fol_var fol_vars in
+		   let fol_vars = List.map (fun y -> match y with
+					      | App (id, _) ->
+						  if id = string_of_id x
+						  then fol_rec_term
+						  else y
+					      | _ -> y)
+				    fol_vars in
+		   let vars = vars @ rec_vars in
+		   let rec remove l e = match l with
+		     | [] -> []
+		     | (y, t)::l' -> if y = string_of_id e then l'
+		       else (y, t)::(remove l' e) in
+		   let vars = remove vars x in
+		   let p = 
+		     Fatom (Eq (App (id, fol_vars), 
+				tr_term bv env b))
+		   in
+		   eqs := (id ^ "_" ^ idc, foralls vars p) :: !eqs
+	       | _ -> 
+		   assert false end
+	   with NotFO ->
+	     ());
+      !eqs
+  | _ ->
+      raise NotFO
 
 
 (* assumption: t:T:Set *)
@@ -355,17 +418,22 @@ and tr_term bv env t =
 	  raise NotFO
 	end
 
+
 (* assumption: f is of type Prop *)
 and tr_formula bv env f =
   let c, args = decompose_app f in
   match kind_of_term c, args with
     | Var id, [] -> 
 	Fatom (Pred (rename_global (VarRef id), []))
-    | _, [t;a;b] when c = build_coq_eq () -> 
-	(*let ty = pf_type_of gl t in
-	if is_Set ty then*)
-	  Fatom (Eq (tr_term bv env a, tr_term bv env b))
-	(*else raise NotFO*)
+    | _, [t;a;b] when c = build_coq_eq () ->
+	let ty = Typing.type_of env Evd.empty t in
+	if is_Set ty then
+	  begin match tr_type env t with
+	    | [], _ ->
+		Fatom (Eq (tr_term bv env a, tr_term bv env b))
+	    | _ -> raise NotFO
+	  end
+	else raise NotFO
     | _, [a;b] when c = Lazy.force coq_Zle ->
 	Fatom (Le (tr_term bv env a, tr_term bv env b))
     | _, [a;b] when c = Lazy.force coq_Zlt ->
@@ -388,7 +456,7 @@ and tr_formula bv env f =
 	if is_imp_term f then
 	  Imp (tr_formula bv env a, tr_formula bv env b)
 	else
-	  let vars,env = coq_rename_vars env [n,a] in
+	  let vars, env = coq_rename_vars env [n,a] in
 	  let id = match vars with [x] -> x | _ -> assert false in
 	  let b = subst1 (mkVar id) b in
 	  let t = match tr_type env a with
@@ -438,7 +506,7 @@ type prover = Simplify | CVCLite | Harvey | Zenon
 
 let call_prover prover q = match prover with
   | Simplify -> Dp_simplify.call q
-  | CVCLite -> error "CVC Lite not yet interfaced"
+  | CVCLite -> error "CVCLite not yet interfaced"
   | Harvey -> error "haRVey not yet interfaced"
   | Zenon -> Dp_zenon.call q
   

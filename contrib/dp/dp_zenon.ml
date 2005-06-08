@@ -17,7 +17,7 @@ let rec print_term fmt = function
   | Moins (a, b) ->
       fprintf fmt "@[(-@ %a@ %a)@]" print_term a print_term b
   | Mult (a, b) ->
-      fprintf fmt "@[(*@ %a@ %a)@]" (**) print_term a print_term b
+      fprintf fmt "@[(*@ %a@ %a)@]" print_term a print_term b
   | Div (a, b) ->
       fprintf fmt "@[(/@ %a@ %a)@]" print_term a print_term b
   | App (id, []) ->
@@ -83,7 +83,7 @@ let print_query fmt (decls,concl) =
   fprintf fmt "$goal %a@." print_predicate concl
 
 let call q = 
-  let f = Filename.temp_file "coq_dp" ".sx" in
+  let f = Filename.temp_file "coq_dp" ".znn" in
   let c = open_out f in
   let fmt = formatter_of_out_channel c in
   fprintf fmt "@[%a@]@." print_query q;
