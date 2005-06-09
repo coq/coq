@@ -165,7 +165,7 @@ let new_untyped_evar =
 let new_evar_instance sign evd typ ?(src=(dummy_loc,InternalHole)) instance =
   assert (List.length instance = named_context_length sign); 
   if not (list_distinct (ids_of_named_context sign)) then 
-    error "new_evar_instance: two vars have the same name";
+    anomaly "new_evar_instance: two vars have the same name";
   let newev = new_untyped_evar() in
   (evar_declare sign newev typ ~src:src evd,
    mkEvar (newev,Array.of_list instance))
@@ -224,6 +224,7 @@ let e_new_evar evd env ?(src=(dummy_loc,InternalHole)) ty =
  * operations on the evar constraints *
  *------------------------------------*)
 
+(* Pb: defined Rels and Vars should not be considered as a pattern... *)
 let is_pattern inst =
   let rec is_hopat l = function
       [] -> true
@@ -380,6 +381,7 @@ let real_clean env isevars ev evi args rhs =
  * ?1 would be instantiated by (le y y) but y is not in the scope of ?1
  *)
 
+(* env needed for error messages... *)
 let evar_define env (ev,argsv) rhs isevars =
   if occur_evar ev rhs
   then error_occur_check env (evars_of isevars) ev rhs;
@@ -392,7 +394,11 @@ let evar_define env (ev,argsv) rhs isevars =
   else
     (* needed only if an inferred type *)
     let body = refresh_universes body in
-    let _ =
+(* Cannot strictly type instantiations since the unification algorithm
+ * does not unifies applications from left to right.
+ * e.g problem f x == g y yields x==y and f==g (in that order) 
+ * Another problem is that type variables are evars of type Type
+   let _ =
       try
         let env = evar_env evi in
         let ty = evi.evar_concl in
@@ -403,7 +409,7 @@ let evar_define env (ev,argsv) rhs isevars =
            pr_evar_defs isevars' ++ fnl() ++
            str "----> " ++ int ev ++ str " := " ++
            print_constr body);
-        raise e in
+        raise e in*)
     let isevars'' = Evd.evar_define ev body isevars' in
     isevars'',[ev]
 
