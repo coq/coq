@@ -397,6 +397,7 @@ contrib/correctness/ptyping.cmi: interp/topconstr.cmi kernel/term.cmi \
 contrib/correctness/putil.cmi: kernel/term.cmi lib/pp.cmi kernel/names.cmi 
 contrib/correctness/pwp.cmi: kernel/term.cmi 
 contrib/dp/dp.cmi: proofs/proof_type.cmi library/libnames.cmi 
+contrib/dp/dp_cvcl.cmi: contrib/dp/fol.cmi 
 contrib/dp/dp_simplify.cmi: contrib/dp/fol.cmi 
 contrib/dp/dp_zenon.cmi: contrib/dp/fol.cmi 
 contrib/extraction/common.cmi: kernel/names.cmi contrib/extraction/mlutil.cmi \
@@ -2673,20 +2674,22 @@ contrib/correctness/pwp.cmx: lib/util.cmx pretyping/termops.cmx \
     contrib/correctness/pwp.cmi 
 contrib/dp/dp.cmo: lib/util.cmi pretyping/typing.cmi pretyping/termops.cmi \
     kernel/term.cmi tactics/tactics.cmi tactics/tacticals.cmi \
-    proofs/tacmach.cmi library/summary.cmi lib/pp.cmi library/nametab.cmi \
-    kernel/names.cmi library/nameops.cmi library/libnames.cmi \
-    tactics/hipattern.cmi library/global.cmi contrib/dp/fol.cmi \
-    pretyping/evd.cmi kernel/environ.cmi contrib/dp/dp_zenon.cmi \
-    contrib/dp/dp_simplify.cmi kernel/declarations.cmi interp/coqlib.cmi \
-    contrib/dp/dp.cmi 
+    proofs/tacmach.cmi library/summary.cmi translate/ppconstrnew.cmi \
+    lib/pp.cmi library/nametab.cmi kernel/names.cmi library/nameops.cmi \
+    library/libnames.cmi tactics/hipattern.cmi library/global.cmi \
+    contrib/dp/fol.cmi pretyping/evd.cmi kernel/environ.cmi \
+    contrib/dp/dp_zenon.cmi contrib/dp/dp_simplify.cmi \
+    kernel/declarations.cmi interp/coqlib.cmi contrib/dp/dp.cmi 
 contrib/dp/dp.cmx: lib/util.cmx pretyping/typing.cmx pretyping/termops.cmx \
     kernel/term.cmx tactics/tactics.cmx tactics/tacticals.cmx \
-    proofs/tacmach.cmx library/summary.cmx lib/pp.cmx library/nametab.cmx \
-    kernel/names.cmx library/nameops.cmx library/libnames.cmx \
-    tactics/hipattern.cmx library/global.cmx contrib/dp/fol.cmi \
-    pretyping/evd.cmx kernel/environ.cmx contrib/dp/dp_zenon.cmx \
-    contrib/dp/dp_simplify.cmx kernel/declarations.cmx interp/coqlib.cmx \
-    contrib/dp/dp.cmi 
+    proofs/tacmach.cmx library/summary.cmx translate/ppconstrnew.cmx \
+    lib/pp.cmx library/nametab.cmx kernel/names.cmx library/nameops.cmx \
+    library/libnames.cmx tactics/hipattern.cmx library/global.cmx \
+    contrib/dp/fol.cmi pretyping/evd.cmx kernel/environ.cmx \
+    contrib/dp/dp_zenon.cmx contrib/dp/dp_simplify.cmx \
+    kernel/declarations.cmx interp/coqlib.cmx contrib/dp/dp.cmi 
+contrib/dp/dp_cvcl.cmo: contrib/dp/fol.cmi contrib/dp/dp_cvcl.cmi 
+contrib/dp/dp_cvcl.cmx: contrib/dp/fol.cmi contrib/dp/dp_cvcl.cmi 
 contrib/dp/dp_simplify.cmo: contrib/dp/fol.cmi contrib/dp/dp_simplify.cmi 
 contrib/dp/dp_simplify.cmx: contrib/dp/fol.cmi contrib/dp/dp_simplify.cmi 
 contrib/dp/dp_zenon.cmo: lib/util.cmi contrib/dp/fol.cmi \
