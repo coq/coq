@@ -175,6 +175,21 @@ let injection c l =
   let ax = Assert ("injection_" ^ c, f) in
   globals_stack := ax :: !globals_stack
 
+(* rec_names_for c [|n1;...;nk|] builds the list of constant names for 
+   identifiers n1...nk with the same path as c, if they exist; otherwise
+   raises Not_found *)
+let rec_names_for c =
+  let mp,dp,_ = Names.repr_con c in
+  array_map_to_list
+    (function 
+       | Name id -> 
+	   let c' = Names.make_con mp dp (label_of_id id) in
+	   ignore (Global.lookup_constant c');
+	   msgnl (Ppconstrnew.pr_term (mkConst c'));
+	   c'
+       | Anonymous ->
+	   raise Not_found)
+
 (* assumption: t:Set or Type *)
 let rec tr_type env ty =
   if ty = Lazy.force coq_Z then [], "INT"
@@ -273,6 +288,22 @@ and axiomatize_body env r id d = match r with
 		     let value = tr_term [] env b in
 		     [id, Fatom (Eq (Fol.App (id, []), value))]
 		 | DeclVar (id, l, _) | DeclPred (id, l) ->
+		     let b = match kind_of_term b with
+		       (* a single recursive function *)
+		       | Fix (_, (_,_,[|b|])) -> 
+			   subst1 (mkConst c) b
+                       (* mutually recursive functions *)
+		       | Fix ((_,i), (names,_,bodies)) ->
+                           (* we only deal with named functions *)
+			   begin try
+			     let l = rec_names_for c names in
+			     substl (List.rev_map mkConst l) bodies.(i)
+			   with Not_found ->
+			     b
+			   end
+		       | _ -> 
+			   b
+		     in
 		     let vars, t = decompose_lam b in
 		     let n = List.length l in
 		     let k = List.length vars in
@@ -288,16 +319,17 @@ and axiomatize_body env r id d = match r with
 		     let fol_vars = List.map fol_var vars in
 		     let vars = List.combine vars l in
 		     begin match d with
-		       | DeclVar _ -> begin match kind_of_term t with
-			   | Case (ci, _, e, br) ->
-			       equations_for_case env id vars bv ci e br
-			   | _ -> 
-			       let p = 
-				 Fatom (Eq (App (id, fol_vars), 
-					    tr_term bv env t)) 
-			       in
-			       [id, foralls vars p]
-			 end
+		       | DeclVar _ ->
+			   begin match kind_of_term t with
+			     | Case (ci, _, e, br) ->
+				 equations_for_case env id vars bv ci e br
+			     | _ -> 
+				 let p = 
+				   Fatom (Eq (App (id, fol_vars), 
+					      tr_term bv env t)) 
+				 in
+				 [id, foralls vars p]
+			   end
 		       | DeclPred _ ->
 			   let value = tr_formula bv env t in
 			   let p = 

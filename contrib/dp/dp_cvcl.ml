@@ -2,44 +2,32 @@
 open Format
 open Fol
 
-let is_simplify_ident s =
-  let is_simplify_char = function
-    | 'a'..'z' | 'A'..'Z' | '0'..'9' -> true 
-    | _ -> false
-  in
-  try 
-    String.iter (fun c -> if not (is_simplify_char c) then raise Exit) s; true
-  with Exit ->
-    false
-
-let ident fmt s =
-  if is_simplify_ident s then fprintf fmt "%s" s else fprintf fmt "|%s|" s
-
 let rec print_list sep print fmt = function
   | [] -> ()
   | [x] -> print fmt x
   | x :: r -> print fmt x; sep fmt (); print_list sep print fmt r
 
 let space fmt () = fprintf fmt "@ "
+let comma fmt () = fprintf fmt ",@ "
 
 let rec print_term fmt = function
   | Cst n -> 
       fprintf fmt "%d" n
   | Plus (a, b) ->
-      fprintf fmt "@[(+@ %a@ %a)@]" print_term a print_term b
+      fprintf fmt "@[(%a@ +@ %a)@]" print_term a print_term b
   | Moins (a, b) ->
-      fprintf fmt "@[(-@ %a@ %a)@]" print_term a print_term b
+      fprintf fmt "@[(%a@ -@ %a)@]" print_term a print_term b
   | Mult (a, b) ->
-      fprintf fmt "@[(*@ %a@ %a)@]" print_term a print_term b
+      fprintf fmt "@[(%a@ *@ %a)@]" print_term a print_term b
   | Div (a, b) ->
-      fprintf fmt "@[(/@ %a@ %a)@]" print_term a print_term b
+      fprintf fmt "@[(%a@ /@ %a)@]" print_term a print_term b
   | App (id, []) ->
-      fprintf fmt "%a" ident id
+      fprintf fmt "%s" id
   | App (id, tl) ->
-      fprintf fmt "@[(%a@ %a)@]" ident id print_terms tl
+      fprintf fmt "@[(%s@(%a))@]" id print_terms tl
 
 and print_terms fmt tl = 
-  print_list space print_term fmt tl
+  print_list comma print_term fmt tl
 
 let rec print_predicate fmt p = 
   let pp = print_predicate in 
@@ -49,27 +37,27 @@ let rec print_predicate fmt p =
   | False ->
       fprintf fmt "FALSE"
   | Fatom (Eq (a, b)) ->
-      fprintf fmt "@[(EQ %a@ %a)@]" print_term a print_term b
+      fprintf fmt "@[(%a = %a)@]" print_term a print_term b
   | Fatom (Le (a, b)) ->
-      fprintf fmt "@[(<= %a@ %a)@]" print_term a print_term b
+      fprintf fmt "@[(%a@ <= %a)@]" print_term a print_term b
   | Fatom (Lt (a, b))->
-      fprintf fmt "@[(< %a@ %a)@]" print_term a print_term b
+      fprintf fmt "@[(%a@ < %a)@]" print_term a print_term b
   | Fatom (Ge (a, b)) ->
-      fprintf fmt "@[(>= %a@ %a)@]" print_term a print_term b
+      fprintf fmt "@[(%a@ >= %a)@]" print_term a print_term b
   | Fatom (Gt (a, b)) ->
-      fprintf fmt "@[(> %a@ %a)@]" print_term a print_term b
+      fprintf fmt "@[(%a@ > %a)@]" print_term a print_term b
   | Fatom (Pred (id, tl)) -> 
-      fprintf fmt "@[(EQ (%a@ %a) |@@true|)@]" ident id print_terms tl
+      fprintf fmt "@[(%s@(%a))@]" id print_terms tl
   | Imp (a, b) ->
-      fprintf fmt "@[(IMPLIES@ %a@ %a)@]" pp a pp b
+      fprintf fmt "@[(%a@ => %a)@]" pp a pp b
   | And (a, b) ->
-      fprintf fmt "@[(AND@ %a@ %a)@]" pp a pp b
+      fprintf fmt "@[(%a@ AND@ %a)@]" pp a pp b
   | Or (a, b) ->
-      fprintf fmt "@[(OR@ %a@ %a)@]" pp a pp b
+      fprintf fmt "@[(%a@ OR@ %a)@]" pp a pp b
   | Not a ->
       fprintf fmt "@[(NOT@ %a)@]" pp a
-  | Forall (id, _, p) -> 
-      fprintf fmt "@[(FORALL (%a)@ %a)@]" ident id pp p
+  | Forall (id, t, p) -> 
+      fprintf fmt "@[(FORALL (%s:%s)@ %a)@]" id t pp p
 (*
   | Exists (id,n,t,p) -> 
       let id' = next_away id (predicate_vars p) in
@@ -86,30 +74,30 @@ let rec string_of_type_list  = function
 let print_query fmt (decls,concl) =
   let print_decl = function
     | DeclVar (id, [], t) ->
-	fprintf fmt "@[;; %s: %s@]@\n" id t
+	fprintf fmt "@[%s: %s@]@\n" id t
     | DeclVar (id, l, t) ->
-	fprintf fmt "@[;; %s: %s%s@]@\n"
+	fprintf fmt "@[%s: %s%s@]@\n"
 	  id (string_of_type_list l) t
     | DeclPred (id, l) -> 
-	fprintf fmt "@[;; %s: %sBOOLEAN@]@\n"
+	fprintf fmt "@[%s: %sBOOLEAN@]@\n"
 	  id (string_of_type_list l)
     | DeclType id ->
-	fprintf fmt "@[;; %s: TYPE@]@\n" id
+	fprintf fmt "@[%s: TYPE@]@\n" id
     | Assert (id, f)  -> 
-	fprintf fmt "@[(BG_PUSH ;; %s@\n %a)@]@\n" id print_predicate f
+	fprintf fmt "@[ASSERT %s@\n %a@]@\n" id print_predicate f
   in
   List.iter print_decl decls;
-  fprintf fmt "%a@." print_predicate concl
+  fprintf fmt "PUSH; %a@; POP;" print_predicate concl
 
 let call q = 
-  let f = Filename.temp_file "coq_dp" ".sx" in
+  let f = Filename.temp_file "coq_dp" ".cvc" in
   let c = open_out f in
   let fmt = formatter_of_out_channel c in
   fprintf fmt "@[%a@]@." print_query q;
   close_out c;
   ignore (Sys.command (sprintf "cat %s" f));
   let cmd = 
-    sprintf "timeout 10 Simplify %s > out 2>&1 && grep -q -w Valid out" f
+    sprintf "timeout 10 cvcl-1.1.0 %s > out 2>&1 && grep -q -w Valid out" f
   in
   prerr_endline cmd; flush stderr;
   let out = Sys.command cmd in
