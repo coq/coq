@@ -2678,7 +2678,7 @@ contrib/dp/dp.cmo: lib/util.cmi pretyping/typing.cmi pretyping/termops.cmi \
     lib/pp.cmi library/nametab.cmi kernel/names.cmi library/nameops.cmi \
     library/libnames.cmi tactics/hipattern.cmi library/global.cmi \
     contrib/dp/fol.cmi pretyping/evd.cmi kernel/environ.cmi \
-    contrib/dp/dp_zenon.cmi contrib/dp/dp_simplify.cmi \
+    contrib/dp/dp_zenon.cmi contrib/dp/dp_simplify.cmi contrib/dp/dp_cvcl.cmi \
     kernel/declarations.cmi interp/coqlib.cmi contrib/dp/dp.cmi 
 contrib/dp/dp.cmx: lib/util.cmx pretyping/typing.cmx pretyping/termops.cmx \
     kernel/term.cmx tactics/tactics.cmx tactics/tacticals.cmx \
@@ -2686,7 +2686,7 @@ contrib/dp/dp.cmx: lib/util.cmx pretyping/typing.cmx pretyping/termops.cmx \
     lib/pp.cmx library/nametab.cmx kernel/names.cmx library/nameops.cmx \
     library/libnames.cmx tactics/hipattern.cmx library/global.cmx \
     contrib/dp/fol.cmi pretyping/evd.cmx kernel/environ.cmx \
-    contrib/dp/dp_zenon.cmx contrib/dp/dp_simplify.cmx \
+    contrib/dp/dp_zenon.cmx contrib/dp/dp_simplify.cmx contrib/dp/dp_cvcl.cmx \
     kernel/declarations.cmx interp/coqlib.cmx contrib/dp/dp.cmi 
 contrib/dp/dp_cvcl.cmo: contrib/dp/fol.cmi contrib/dp/dp_cvcl.cmi 
 contrib/dp/dp_cvcl.cmx: contrib/dp/fol.cmi contrib/dp/dp_cvcl.cmi 
