@@ -497,8 +497,17 @@ and tr_formula bv env f =
 	  in
 	  let bv = id :: bv in
 	  Forall (string_of_id id, t, tr_formula bv env b)
-    | _, [a] when c = build_coq_ex () ->
-	assert false (* TODO Exists (tr_formula bv env a) *)
+    | _, [_; a] when c = build_coq_ex () ->
+	begin match kind_of_term a with
+	  | Lambda(Name n, ty, t) ->
+	      let id = string_of_id n in
+	      (match tr_type env ty with
+		 | [], ty ->
+		     let t = subst1 (mkVar n) t in
+		     Exists (id, ty, tr_formula (n::bv) env t)
+		 | l, _ -> raise NotFO)
+	  | _ -> assert false
+		(* a must be a Lambda since we are in the ex case *) end
     | _ ->
 	begin try
 	  let r = global_of_constr c in
@@ -538,7 +547,7 @@ type prover = Simplify | CVCLite | Harvey | Zenon
 
 let call_prover prover q = match prover with
   | Simplify -> Dp_simplify.call q
-  | CVCLite -> error "CVCLite not yet interfaced"
+  | CVCLite -> Dp_cvcl.call q
   | Harvey -> error "haRVey not yet interfaced"
   | Zenon -> Dp_zenon.call q
   
@@ -558,7 +567,7 @@ let dp prover gl =
   
 
 let simplify = tclTHEN intros (dp Simplify)
-let cvc_lite = dp CVCLite
+let cvc_lite = tclTHEN intros (dp CVCLite)
 let harvey = dp Harvey
 let zenon = tclTHEN intros (dp Zenon)
 

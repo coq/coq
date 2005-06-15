@@ -70,14 +70,8 @@ let rec print_predicate fmt p =
       fprintf fmt "@[(NOT@ %a)@]" pp a
   | Forall (id, _, p) -> 
       fprintf fmt "@[(FORALL (%a)@ %a)@]" ident id pp p
-(*
-  | Exists (id,n,t,p) -> 
-      let id' = next_away id (predicate_vars p) in
-      let p' = subst_in_predicate (subst_onev n id') p in
-      fprintf fmt "@[(EXISTS (%a)@ %a)@]" Ident.print id' pp p'
-*)
-  | Exists _ ->
-      assert false (*TODO*)
+  | Exists (id, _, p) -> 
+      fprintf fmt "@[(EXISTS (%a)@ %a)@]" ident id pp p
 
 let rec string_of_type_list  = function
   | [] -> ""
