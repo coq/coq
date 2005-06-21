@@ -1,3 +1,10 @@
+Changes from V8.0pl2
+====================
+
+Tactics
+
+- Added entry constr_may_eval for tactic extensions (new syntax)
+
 Changes from V8.0pl1 to V8.0pl2
 ===============================
 
