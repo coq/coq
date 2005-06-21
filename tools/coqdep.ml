@@ -523,6 +523,7 @@ let coqdep () =
   List.iter 
     (fun (s,_) -> add_coqlib_directory s)
     (all_subdirs (!coqlib/"contrib") "Coq");
+  add_coqlib_directory (!coqlib/"user-contrib");
   mliKnown := !mliKnown @ (List.map (fun (f,_,d) -> (f,d)) !mliAccu);
   mlKnown  := !mlKnown @ (List.map (fun (f,_,d) -> (f,d)) !mlAccu);
   warning_mult ".mli" !mliKnown;
