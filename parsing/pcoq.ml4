@@ -379,7 +379,8 @@ module Tactic =
       make_gen_entry utactic rawwit_constr_with_bindings "constr_with_bindings"
     let bindings =
       make_gen_entry utactic rawwit_bindings "bindings"
-    let constrarg = make_gen_entry utactic rawwit_constr_may_eval "constrarg"
+(*v7*) let constrarg = make_gen_entry utactic rawwit_constr_may_eval "constrarg"
+(*v8*) let constr_may_eval = make_gen_entry utactic rawwit_constr_may_eval "constr_may_eval"
     let quantified_hypothesis =
       make_gen_entry utactic rawwit_quant_hyp "quantified_hypothesis"
     let int_or_var = make_gen_entry utactic rawwit_int_or_var "int_or_var"
