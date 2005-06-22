@@ -43,7 +43,7 @@ Tactics
   [ foo | | bar ] stands for [ foo | idtac | bar ]. (doc TODO). 
 - "Tactic Notation" extended to allow notations of tacticals (doc TODO).
 - Added "autorewrite with ... in hyp [using ...]" (doc TODO).
-- 
+- Added entry constr_may_eval for tactic extensions (new syntax)
 
 Modules
 
