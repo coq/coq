@@ -193,6 +193,16 @@ Qed.
 
 
 
+(* abstractions *)
+
+Parameter poly_f : forall A:Set, A->A.
+
+Goal forall x:nat, poly_f nat x = poly_f nat x.
+simplify.
+Qed.
+
+
+
 (* Anonymous mutually recursive functions : no equations are produced
 
 Definition mrf :=

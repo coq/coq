@@ -139,6 +139,7 @@ let iter_all_constructors i f =
     (fun j tj -> f j (mkConstruct (i, j+1)))
     oib.mind_nf_lc
 
+
 (* injection c [t1,...,tn] adds the injection axiom
      forall x1:t1,...,xn:tn,y1:t1,...,yn:tn. 
        c(x1,...,xn)=c(y1,...,yn) -> x1=y1 /\ ... /\ xn=yn *)
@@ -175,6 +176,13 @@ let rec_names_for c =
 	   c'
        | Anonymous ->
 	   raise Not_found)
+
+(* abstraction tables *)
+
+let term_abstractions = Hashtbl.create 97
+
+let new_abstraction = 
+  let r = ref 0 in fun () -> incr r; "abstraction_" ^ string_of_int !r
 
 (* assumption : p:Z *)
 let rec fol_term_of_positive env p =
@@ -238,6 +246,17 @@ and tr_type env ty =
 	     (* TODO: constant type definition *)
        end)
     with Not_found -> raise NotFO
+
+and make_term_abstraction env c =
+  let ty = Typing.type_of env Evd.empty c in
+  let tl,t = tr_type env ty in
+  try
+    Hashtbl.find term_abstractions c
+  with Not_found ->
+    let id = new_abstraction () in
+    Hashtbl.add term_abstractions c id;
+    globals_stack := (DeclVar (id, tl, t)) :: !globals_stack;
+    id
 
 and tr_global_type env id ty =
   if is_Prop ty then
@@ -456,8 +475,25 @@ and tr_term bv env t =
 		Fol.App (s, List.map (tr_term bv env) cl)
 	    | _ -> 
 		raise NotFO
-	with Not_found ->
-	  raise NotFO
+	with 
+	  | Not_found ->
+	      raise NotFO
+	  | NotFO -> (* we need to abstract some part of (f cl) *)
+	      let rec abstract app = function
+		| [] ->
+		    Fol.App (make_term_abstraction env app, [])
+		| x :: l as args ->
+		    begin try
+		      let s = make_term_abstraction env app in
+		      Fol.App (s, List.map (tr_term bv env) args)
+		    with NotFO ->
+		      abstract (applist (app, [x])) l
+		    end
+	      in
+	      let app,l = match cl with 
+		| x :: l -> applist (f, [x]), l | _ -> raise NotFO
+	      in
+	      abstract app l
 	end
 
 and quantifiers n a b bv env =
