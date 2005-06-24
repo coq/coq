@@ -34,5 +34,5 @@ TACTIC EXTEND admit
 END
 
 VERNAC COMMAND EXTEND Dp_hint 
-  [ "Dp" ne_global_list(l) ] -> [ dp_hint l ]
+  [ "Dp_hint" ne_global_list(l) ] -> [ dp_hint l ]
 END

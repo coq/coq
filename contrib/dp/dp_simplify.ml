@@ -21,6 +21,7 @@ let rec print_list sep print fmt = function
   | x :: r -> print fmt x; sep fmt (); print_list sep print fmt r
 
 let space fmt () = fprintf fmt "@ "
+let comma fmt () = fprintf fmt ",@ "
 
 let rec print_term fmt = function
   | Cst n -> 
@@ -73,22 +74,27 @@ let rec print_predicate fmt p =
   | Exists (id, _, p) -> 
       fprintf fmt "@[(EXISTS (%a)@ %a)@]" ident id pp p
 
-let rec string_of_type_list  = function
-  | [] -> ""
-  | e :: l' -> e ^ " -> " ^ (string_of_type_list l')
+(**
+let rec string_list l = match l with
+    [] -> ""
+  | [e] -> e
+  | e::l' -> e ^ " " ^ (string_list l')
+**)
 
 let print_query fmt (decls,concl) =
   let print_decl = function
     | DeclVar (id, [], t) ->
-	fprintf fmt "@[;; %s: %s@]@\n" id t
+	fprintf fmt "@[;; %s : %s@]@\n"	id t
     | DeclVar (id, l, t) ->
-	fprintf fmt "@[;; %s: %s%s@]@\n"
-	  id (string_of_type_list l) t
+	fprintf fmt "@[;; %s : %a -> %s@]@\n" 
+	  id (print_list comma pp_print_string) l t
+    | DeclPred (id, []) ->
+	fprintf fmt "@[;; %s : BOOLEAN @]@\n" id
     | DeclPred (id, l) -> 
-	fprintf fmt "@[;; %s: %sBOOLEAN@]@\n"
-	  id (string_of_type_list l)
+	fprintf fmt "@[;; %s : %a -> BOOLEAN@]@\n" 
+	  id (print_list comma pp_print_string) l
     | DeclType id ->
-	fprintf fmt "@[;; %s: TYPE@]@\n" id
+	fprintf fmt "@[;; %s : TYPE@]@\n" id
     | Assert (id, f)  -> 
 	fprintf fmt "@[(BG_PUSH ;; %s@\n %a)@]@\n" id print_predicate f
   in
@@ -109,5 +115,3 @@ let call q =
   let out = Sys.command cmd in
   if out = 0 then Valid else if out = 1 then Invalid else Timeout
   (* TODO: effacer le fichier f et le fichier out *)
-
-

@@ -104,20 +104,6 @@ let rec eta_expanse t vars env i =
       | _ -> 
 	  assert false
 
-(* assumption : p:Z *)
-let rec fol_term_of_positive p =
-  match kind_of_term p with
-    | Term.Construct _ when p = Lazy.force coq_xH ->
-	Cst 1
-    | Term.App (f, [|a|]) when f = Lazy.force coq_xI ->
-	Plus (Mult (Cst 2, (fol_term_of_positive a)), Cst 1)
-    | Term.App (f, [|a|]) when f = Lazy.force coq_xO ->
-	Mult (Cst 2, (fol_term_of_positive a))
-    | Var id ->
-	Fol.App (rename_global (VarRef id), [])
-    | _ -> 
-	assert false
-
 (* Coq global references *)
 
 type global = Gnot_fo | Gfo of Fol.hyp
@@ -190,8 +176,22 @@ let rec_names_for c =
        | Anonymous ->
 	   raise Not_found)
 
+(* assumption : p:Z *)
+let rec fol_term_of_positive env p =
+  match kind_of_term p with
+    | Term.Construct _ when p = Lazy.force coq_xH ->
+	Cst 1
+    | Term.App (f, [|a|]) when f = Lazy.force coq_xI ->
+	Plus (Mult (Cst 2, (fol_term_of_positive env a)), Cst 1)
+    | Term.App (f, [|a|]) when f = Lazy.force coq_xO ->
+	Mult (Cst 2, (fol_term_of_positive env a))
+    | Var id ->
+	Fol.App (string_of_id id, [])
+    | _ ->
+	tr_term [] env p
+
 (* assumption: t:Set or Type *)
-let rec tr_type env ty =
+and tr_type env ty =
   if ty = Lazy.force coq_Z then [], "INT"
   else if is_Prop ty then [], "BOOLEAN"
   else if is_Set ty then [], "TYPE"
@@ -229,7 +229,13 @@ let rec tr_type env ty =
 		  with NotFO ->
 		    ());
 	     [], id
-	 | _ -> raise NotFO (* constant type definition *)
+	 | _ -> 
+	     let id = rename_global r in
+	     let d = DeclType id in
+	     add_global r (Gfo d);
+	     globals_stack := d :: !globals_stack;
+	     [], id
+	     (* TODO: constant type definition *)
        end)
     with Not_found -> raise NotFO
 
@@ -350,6 +356,11 @@ and axiomatize_body env r id d = match r with
 	    () (* Coq axiom *)
       end
   | IndRef i ->
+      (*iter_all_constructors i
+        (let rc = reference_of_constr c in
+match tr_global c with
+  | DeclVar(idc, l, _) ->
+      (fun _ c -> List.map (fun co -> ) (liste des constructeurs à partir de c non compris));*)
       begin match d with
 	| DeclPred _ ->
 	    iter_all_constructors i
@@ -361,7 +372,7 @@ and axiomatize_body env r id d = match r with
 		     | _ -> assert false
 		   end
 		 with NotFO ->
-		   ())
+		   ());
 	| DeclType _ -> raise NotFO
 	| _ -> assert false
       end
@@ -382,8 +393,7 @@ and equations_for_case env id vars bv ci e br = match kind_of_term e with
 		   let b = substl (List.map mkVar rec_vars) b in
 		   let rec_vars = List.rev rec_vars in
 		   let bv = bv @ rec_vars in
-		   let rec_vars = List.map (fun x -> string_of_id x)
-				    rec_vars in
+		   let rec_vars = List.map string_of_id rec_vars in
 		   let fol_var x =
 		     Fol.App (x, []) in
 		   let fol_rec_vars = List.map fol_var rec_vars in
@@ -432,9 +442,9 @@ and tr_term bv env t =
     | Term.Construct _ when t = Lazy.force coq_Z0 ->
 	Cst 0
     | Term.App (f, [|a|]) when f = Lazy.force coq_Zpos ->
-	fol_term_of_positive a
+	fol_term_of_positive env a
     | Term.App (f, [|a|]) when f = Lazy.force coq_Zneg ->
-	Moins (Cst 0, (fol_term_of_positive a))
+	Moins (Cst 0, (fol_term_of_positive env a))
     | Term.Var id when List.mem id bv ->
 	App (string_of_id id, [])
     | _ ->
@@ -450,6 +460,16 @@ and tr_term bv env t =
 	  raise NotFO
 	end
 
+and quantifiers n a b bv env =
+  let vars, env = coq_rename_vars env [n,a] in
+  let id = match vars with [x] -> x | _ -> assert false in
+  let b = subst1 (mkVar id) b in
+  let t = match tr_type env a with
+    | [], t -> t
+    | _ -> raise NotFO
+  in
+  let bv = id :: bv in
+  id, t, bv, env, b
 
 (* assumption: f is of type Prop *)
 and tr_formula bv env f =
@@ -488,24 +508,13 @@ and tr_formula bv env f =
 	if is_imp_term f then
 	  Imp (tr_formula bv env a, tr_formula bv env b)
 	else
-	  let vars, env = coq_rename_vars env [n,a] in
-	  let id = match vars with [x] -> x | _ -> assert false in
-	  let b = subst1 (mkVar id) b in
-	  let t = match tr_type env a with
-	    | [], t -> t
-	    | _ -> raise NotFO
-	  in
-	  let bv = id :: bv in
+	  let id, t, bv, env, b = quantifiers n a b bv env in
 	  Forall (string_of_id id, t, tr_formula bv env b)
     | _, [_; a] when c = build_coq_ex () ->
 	begin match kind_of_term a with
-	  | Lambda(Name n, ty, t) ->
-	      let id = string_of_id n in
-	      (match tr_type env ty with
-		 | [], ty ->
-		     let t = subst1 (mkVar n) t in
-		     Exists (id, ty, tr_formula (n::bv) env t)
-		 | l, _ -> raise NotFO)
+	  | Lambda(n, a, b) ->
+	      let id, t, bv, env, b = quantifiers n a b bv env in
+	      Exists (string_of_id id, t, tr_formula bv env b)
 	  | _ -> assert false
 		(* a must be a Lambda since we are in the ex case *) end
     | _ ->
@@ -546,10 +555,10 @@ let tr_goal gl =
 type prover = Simplify | CVCLite | Harvey | Zenon
 
 let call_prover prover q = match prover with
-  | Simplify -> Dp_simplify.call q
+  | Simplify -> Dp_simplify.call (Dp_sorts.query q)
   | CVCLite -> Dp_cvcl.call q
   | Harvey -> error "haRVey not yet interfaced"
-  | Zenon -> Dp_zenon.call q
+  | Zenon -> Dp_zenon.call (Dp_sorts.query q)
   
 let dp prover gl =
   let concl_type = pf_type_of gl (pf_concl gl) in

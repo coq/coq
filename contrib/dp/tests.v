@@ -52,6 +52,7 @@ Qed.
 
 
 Goal 2*x + 10 = 18 -> x = 4.
+
 simplify.
 Qed.
 
@@ -72,8 +73,6 @@ Qed.
 
 (* No decision procedure can solve this problem 
   Goal forall (x a b : Z), a * x + b = 0 -> x = - b/a.
-  simplify.
-  Qed.
 *)
 
 
@@ -131,10 +130,10 @@ Parameter add : nat -> nat -> nat.
 Axiom add_0 : forall (n : nat), add 0%nat n = n.
 Axiom add_S : forall (n1 n2 : nat), add (S n1) n2 = S (add n1 n2).
 
-Dp add_0.
-Dp add_S.
+Dp_hint add_0.
+Dp_hint add_S.
 
-(* Simplify can't prove this goal before the tiemout 
+(* Simplify can't prove this goal before the timeout 
    unlike zenon *)
 
 Goal forall n : nat, add n 0 = n.
@@ -181,6 +180,17 @@ Goal even_b (S (S O)) = true.
 
 zenon.
 Qed.
+
+
+(* sorts issues *)
+
+Parameter foo : Set.         
+Parameter f : nat -> foo -> foo -> nat.
+Parameter g : foo -> foo.
+Goal (forall x:foo, f 0 x x = O) -> forall y, f 0 (g y) (g y) = O.
+simplify.      
+Qed.
+
 
 
 (* Anonymous mutually recursive functions : no equations are produced
