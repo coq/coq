@@ -337,6 +337,7 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps i indlc =
     match kind_of_term x with
       | Prod (na,b,d) ->
 	  assert (largs = []);
+          let b = whd_betadeltaiota env b in
           if not (noccur_between n ntypes b) then
 	    raise (IllFormedInd (LocalNonPos n));
 	  check_pos (ienv_push_var ienv (na, b, mk_norec)) d
