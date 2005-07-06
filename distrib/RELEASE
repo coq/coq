@@ -311,10 +311,9 @@ B5) INSTALLATION SOUS FTP
 (**************************************************************************)
 C) LA DOC
 
-  Dans l'état actuel des choses, la doc est compilée dans le
-répertoire doc d'une copie locale des sources de Coq. Il n'y a pas
-pour la doc d'export relatif au tag V6-2-5 comme c'est le cas pour la
-creation de l'exécutable.
+  La doc se prépare à partir du répertoire cvs "doc". Sa compilation
+nécessite la présence dans le path d'une archive Coq correspondant au
+tag de la release.
 
 C1) PRÉPARATION
 
@@ -323,7 +322,7 @@ C1) PRÉPARATION
     Dvi: latex (latex2e), bibtex, makeindex, dviselect (rpm dviutils)
     Ps: dvips, psselect (package psutils)
     Pdf: pdflatex (optionnel)
-    Html: hevea (par Luc Maranget), htmlsplit (par David Delahaye)
+    Html: hevea (par Luc Maranget), htmlsplit (plus utilisé depuis Coq 8.0)
 
   Mettre à jour les fichiers suivants :
 
@@ -334,6 +333,8 @@ C1) PRÉPARATION
   - Makefile     : numero de version
 
   Vérification que "CHANGES" est à jour par rapport à "Changes.tex"
+(obsolète, plus de Changes.ps mais un Changes.html engendré
+manuellement à partir de CHANGES).
 
   Faire un make clean; grep V6 *.{tex,sty,html} pour s'assurer
 qu'aucun autre V6.? ne traine.
@@ -372,7 +373,22 @@ la doc séparemment depuis le répertoire doc avec
 
   cvs tag -F V6-2-5 * library/*
 
-C4) INSTALLATION SOUS FTP
+C4) LA BIBLIO STANDARD AU FORMAT COQDOC
+
+  Le package library-X.Y.tar.gz sa fait dans l'archive cvs du site
+web, répertoire www/coq/library. Il faut au préalable mettre à jour le
+fichier www/coq/config avec le bon tag de version. La cible est alors
+
+    make pages
+
+  Elle exporte une archive fraiche correspondant au tag du fichier
+config, puis recompile la bibliothèque standard en exportant les
+références globales. Elle applique ensuite coqdoc à la bibliothèque
+standard puis crée un paquet des pages html obtenues.
+
+  Il faut ensuite installer ce paquet à la main sur le site ftp.
+
+C5) INSTALLATION SOUS FTP
 
     Après avoir positionner la variable VERSION à V6.2.5, installer
 la doc sous ftp depuis le répertoire doc avec
