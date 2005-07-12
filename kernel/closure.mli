@@ -198,5 +198,6 @@ val kl : clos_infos -> fconstr -> constr
 
 val to_constr : (lift -> fconstr -> constr) -> lift -> fconstr -> constr
 val optimise_closure : fconstr subs -> constr -> fconstr subs * constr
+val set_norm : fconstr -> unit
 
 (* End of cbn debug section i*)
