@@ -3,8 +3,6 @@ open Util
 
 type const = CNat of int | CInt of int | CBool of bool
   
-
-
 type term = 
     SIdent of identifier located
   | SLambda of (identifier located * type_ located) * term located

@@ -40,6 +40,7 @@ module Subtac =
     (* types *)
     let subtac_spec : type_loc Gram.Entry.e = gec "subtac_spec"
     let subtac_term : term_loc Gram.Entry.e = gec "subtac_term"
+    let subtac_wf_proof_type : Scoq.wf_proof_type Gram.Entry.e = gec "subtac_wf_proof_type"
 
     (* Hack to parse "(x:=t)" as an explicit argument without conflicts with the *)
     (* admissible notation "(x t)" 
@@ -86,7 +87,7 @@ open Coqast
 
 if not !Options.v7 then
 GEXTEND Gram
-  GLOBAL: subtac_spec subtac_term;
+  GLOBAL: subtac_spec subtac_term subtac_wf_proof_type;
 
   (* Types ******************************************************************)
   subtac_spec: 
@@ -221,11 +222,20 @@ GEXTEND Gram
       ] ]
   ;
 
+  subtac_wf_proof_type:
+    [ [ IDENT "proof"; t = Constr.constr -> 
+	  Scoq.ManualProof (Scoq.constr_of t)
+      | IDENT "auto" -> Scoq.AutoProof
+      | -> Scoq.ExistentialProof
+      ]
+    ]
+  ;
   END
 else (* Developped with Coq 8.0 *) ()
 
 type type_loc_argtype = (type_loc, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type
 type term_loc_argtype = (term_loc, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type
+type wf_proof_type_argtype = (Scoq.wf_proof_type, constr_expr, Tacexpr.raw_tactic_expr) Genarg.abstract_argument_type
 
 let (wit_subtac_spec : type_loc_argtype),
   (globwit_subtac_spec : type_loc_argtype),
@@ -237,13 +247,22 @@ let (wit_subtac_term : term_loc_argtype),
   (rawwit_subtac_term  : term_loc_argtype) =
   Genarg.create_arg "subtac_term"
 
+let (wit_subtac_wf_proof_type : wf_proof_type_argtype),
+  (globwit_subtac_wf_proof_type : wf_proof_type_argtype),
+  (rawwit_subtac_wf_proof_type : wf_proof_type_argtype) =
+  Genarg.create_arg "subtac_wf_proof_type"
 
 VERNAC COMMAND EXTEND SubtacRec
-    [ "Recursive" "program" ident(id) "(" ident(recid) ":" subtac_spec(rect) ")" ":" subtac_spec(s) ":=" subtac_term(t) ] -> 
-      [ Rewrite.subtac (Some (recid, rect)) id (s, t) ]
+[ "Recursive" "program" ident(id) 
+  "(" ident(recid) ":" subtac_spec(rect) ")" 
+  "using" constr(wf_relation)
+  subtac_wf_proof_type(wf)
+  ":" subtac_spec(s) ":=" subtac_term(t) ] -> 
+  [ Rewrite.subtac (Some (recid, rect, 
+			  Scoq.constr_of wf_relation, wf)) id (s, t) ]
 END
-
+  
 VERNAC COMMAND EXTEND Subtac
-  [ "Program" ident(id) ":" subtac_spec(s) ":=" subtac_term(t) ] -> 
-    [ Rewrite.subtac None id (s, t) ]
+[ "Program" ident(id) ":" subtac_spec(s) ":=" subtac_term(t) ] -> 
+[ Rewrite.subtac None id (s, t) ]
 END

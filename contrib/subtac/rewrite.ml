@@ -398,7 +398,7 @@ and rewrite_term prog_info ctx (t : dterm_loc) : Term.constr * Term.types =
 			   in
 			   let key = mknewexist () in
 			     prog_info.evm <- Evd.add prog_info.evm key evarinfo;
-			     mkApp (cf, [| x; mkEvar(key, evar_args ctx) |])
+			     mkApp (cf, [| x; mkEvar(key, evar_args ctx') |])
 		       | _ -> mkApp (cf, [| x |]))
 		| None -> mkApp (cf, [| x |])
 	  in
@@ -510,8 +510,7 @@ and rewrite_term prog_info ctx (t : dterm_loc) : Term.constr * Term.types =
 
 let global_kind :  Decl_kinds.global_kind = Decl_kinds.IsDefinition
 let goal_kind = Decl_kinds.IsGlobal Decl_kinds.DefinitionBody
-
-
+  
 let make_fixpoint t id term = 
   let typ =
     mkProd (Name t.arg_name, t.arg_type,
@@ -538,19 +537,38 @@ let subtac recursive id (s, t) =
     trace (str "Begin infer_type of given spec");
     let coqtype, coqtype', coqtype'', prog_info, ctx, coqctx =
       match recursive with
-	  Some (n, t) -> 
+	  Some (n, t, rel, proof) -> 
 	    let t' = infer_type [] t in
 	    let namen = Name n in
 	    let coqt = infer_type [namen, t'] s in
 	    let t'', _ = rewrite_type prog_info [] t' in
 	    let coqt', _ = rewrite_type prog_info [namen, None, t''] coqt in
 	    let ftype = mkLambda (namen, t'', coqt') in
+	    let proof = 
+	      match proof with
+		  ManualProof p -> p (* Check that t is a proof of well_founded rel *)
+		| AutoProof ->
+		    (try Lazy.force (Hashtbl.find wf_relations rel)
+		     with Not_found ->
+		       msg_warning
+			 (str "No proof found for relation " 
+			  ++ my_print_constr [] rel);
+		       raise Not_found)
+		| ExistentialProof ->
+		    let wf_rel = mkApp (Lazy.force well_founded, [| t''; rel |]) in
+		    let key = mknewexist () in
+		      prog_info.evm <- Evd.add prog_info.evm key 
+			{ Evd.evar_concl = wf_rel;
+			  Evd.evar_hyps = [];
+			  Evd.evar_body = Evd.Evar_empty };
+		      mkEvar (key, [| |])
+	    in
 	    let prog_info = 
 	      let rec_info = 
 		{ arg_name = n;
 		  arg_type = t'';
-		  wf_relation = Lazy.force lt;
-		  wf_proof = Lazy.force lt_wf;
+		  wf_relation = rel;
+		  wf_proof = proof;
 		  f_type = ftype;
 		}
 	      in { prog_info with rec_info = Some rec_info }

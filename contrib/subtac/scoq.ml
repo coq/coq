@@ -25,9 +25,7 @@ let existSind = lazy (gen_constant "subtac" ["Init"; "Specif"] "sigS")
 let existS = lazy (build_sigma_set ())
 
 (* orders *)
-let lt = lazy (gen_constant "subtac" ["Init"; "Peano"] "lt")
-let lt_wf = lazy (gen_constant "subtac" ["Arith"; "Wf_nat"] "lt_wf")
-
+let well_founded = lazy (gen_constant "subtac" ["Init"; "Wf"] "well_founded")
 let fix = lazy (gen_constant "subtac" ["Init"; "Wf"] "Fix")
 
 let extconstr = Constrextern.extern_constr true (Global.env ())
@@ -56,3 +54,19 @@ let debug_msg n s =
 let trace s = 
   if !debug_level < 2 then msgnl s
   else ()
+
+let wf_relations = Hashtbl.create 10
+
+let std_relations () = 
+  let add k v = Hashtbl.add wf_relations k v in
+    add (gen_constant "subtac" ["Init"; "Peano"] "lt")
+      (lazy (gen_constant "subtac" ["Arith"; "Wf_nat"] "lt_wf"))
+      
+let std_relations = Lazy.lazy_from_fun std_relations
+
+type wf_proof_type = 
+    AutoProof 
+  | ManualProof of Term.constr 
+  | ExistentialProof
+
+let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c
