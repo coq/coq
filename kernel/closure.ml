@@ -968,7 +968,6 @@ let contract_fix_vect fix =
    constructor, cofix, letin, constant), or a neutral term (product,
    inductive) *)
 let rec knh m stk =
-  if is_val m then (incr prune; (m,stk)) else
   match m.term with
     | FLIFT(k,a) -> knh a (zshift k stk)
     | FCLOS(t,e) -> knht e t (zupdate m stk)
