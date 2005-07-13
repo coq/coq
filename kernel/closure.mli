@@ -115,6 +115,7 @@ val stack_args_size : 'a stack -> int
 val app_stack : constr * constr stack -> constr
 val stack_tail : int -> 'a stack -> 'a stack
 val stack_nth : 'a stack -> int -> 'a
+val zip_term : ('a -> constr) -> constr -> 'a stack -> constr
 
 (************************************************************************)
 (*s Lazy reduction. *)
@@ -154,6 +155,8 @@ val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr
 val destFLambda :
   (fconstr subs -> constr -> fconstr) -> fconstr -> name * fconstr * fconstr
+(* prevents a term from being evaluated *)
+val set_norm : fconstr -> unit
 
 (* Global and local constant cache *)
 type clos_infos
@@ -198,6 +201,5 @@ val kl : clos_infos -> fconstr -> constr
 
 val to_constr : (lift -> fconstr -> constr) -> lift -> fconstr -> constr
 val optimise_closure : fconstr subs -> constr -> fconstr subs * constr
-val set_norm : fconstr -> unit
 
 (* End of cbn debug section i*)
