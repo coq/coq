@@ -220,8 +220,16 @@ let pattern_option l = reduct_option (pattern_occs l)
 (* A function which reduces accordingly to a reduction expression,
    as the command Eval does. *)
 
+let needs_check = function
+  (* Expansion is not necessarily well-typed: e.g. expansion of t into x is
+     not well-typed in [H:(P t); x:=t |- G] because x is defined after H *)
+  | Fold _ -> true
+  | _ -> false
+
 let reduce redexp cl goal =
-  redin_combinator (reduction_of_redexp redexp) cl goal
+  (if needs_check redexp then with_check else (fun x -> x))
+    (redin_combinator (reduction_of_red_expr redexp) cl)
+    goal
 
 (* Unfolding occurrences of a constant *)
 

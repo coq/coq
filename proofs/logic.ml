@@ -398,9 +398,10 @@ let convert_hyp sign sigma (id,b,bt as d) =
   apply_to_hyp sign id
     (fun sign (_,c,ct) _ ->
        let env = Global.env_of_context sign in
-       if !check && not (is_conv env sigma bt ct) &&
-         not (option_compare (is_conv env sigma) b c) then
-	   error "convert-hyp rule passed non-converting term";
+       if !check && not (is_conv env sigma bt ct) then
+	 error ("Incorrect change of the type of "^(string_of_id id));
+       if !check && not (option_compare (is_conv env sigma) b c) then
+	 error ("Incorrect change of the body of "^(string_of_id id));
        add_named_decl d sign)
 
 
