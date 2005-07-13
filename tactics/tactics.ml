@@ -228,7 +228,7 @@ let needs_check = function
 
 let reduce redexp cl goal =
   (if needs_check redexp then with_check else (fun x -> x))
-    (redin_combinator (reduction_of_red_expr redexp) cl)
+    (redin_combinator (reduction_of_redexp redexp) cl)
     goal
 
 (* Unfolding occurrences of a constant *)
