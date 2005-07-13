@@ -657,7 +657,7 @@ let optimise_closure env c =
     (env',c')
 
 let mk_lambda env t =
-(*  let (env,t) = optimise_closure env t in*)
+  let (env,t) = optimise_closure env t in
   let (rvars,t') = decompose_lam t in
   FLambda(List.length rvars, List.rev rvars, t', env)
 
