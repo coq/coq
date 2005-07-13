@@ -710,9 +710,9 @@ Apply r_Rmult_mult with ``2``; [Unfold Rdiv; Do 2 Rewrite -> (Rmult_sym ``2``); 
 Qed.
 
 Lemma RiemannInt_P17 : (f:R->R;a,b:R;pr1:(Riemann_integrable f a b);pr2:(Riemann_integrable [x:R](Rabsolu (f x)) a b)) ``a<=b`` -> ``(Rabsolu (RiemannInt pr1))<=(RiemannInt pr2)``.
-Intro f; Intros; Unfold RiemannInt; Case (RiemannInt_exists 1!f 2!a 3!b pr1 5!RinvN RinvN_cv); Case (RiemannInt_exists 1!([x0:R](Rabsolu (f x0))) 2!a 3!b pr2 5!RinvN RinvN_cv); Intros; Pose phi1 := (phi_sequence RinvN pr1); Pose phi2 := [N:nat](mkStepFun (StepFun_P32 (phi1 N))); Apply Rle_cv_lim with [N:nat](Rabsolu (RiemannInt_SF (phi1 N))) [N:nat](RiemannInt_SF (phi2 N)).
+Intro f; Intros; Unfold RiemannInt; Case (RiemannInt_exists 1!f 2!a 3!b pr1 5!RinvN RinvN_cv); Case (RiemannInt_exists 1!([x0:R](Rabsolu (f x0))) 2!a 3!b pr2 5!RinvN RinvN_cv); Intros; LetTac phi1 := (phi_sequence RinvN pr1) in u0; Pose phi2 := [N:nat](mkStepFun (StepFun_P32 (phi1 N))); Apply Rle_cv_lim with [N:nat](Rabsolu (RiemannInt_SF (phi1 N))) [N:nat](RiemannInt_SF (phi2 N)).
 Intro; Unfold phi2; Apply StepFun_P34; Assumption.
-Fold phi1 in u0; Apply (continuity_seq Rabsolu [N:nat](RiemannInt_SF (phi1 N)) x0); Try Assumption.
+Apply (continuity_seq Rabsolu [N:nat](RiemannInt_SF (phi1 N)) x0); Try Assumption.
 Apply continuity_Rabsolu.
 Pose phi3 := (phi_sequence RinvN pr2); Assert H0 : (EXT psi3:nat->(StepFun a b) | (n:nat) ((t:R)``(Rmin a b) <= t``/\``t <= (Rmax a b)``->``(Rabsolu ((Rabsolu (f t))-((phi3 n) t)))<= (psi3 n t)``)/\``(Rabsolu (RiemannInt_SF (psi3 n))) < (RinvN n)``).
 Split with [n:nat](projT1 ? ? (phi_sequence_prop RinvN pr2 n)); Intro; Apply (projT2 ? ? (phi_sequence_prop RinvN pr2 n)). 
@@ -1139,7 +1139,7 @@ Elim (H ? H4); Clear H; Intros N0 H; Assert H5 : (n:nat)(ge n N0)->``(RinvN n)<e
 Intros; Replace (pos (RinvN n)) with ``(R_dist (mkposreal (/((INR n)+1)) (RinvN_pos n)) 0)``.
 Apply H; Assumption.
 Unfold R_dist; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Apply Rabsolu_right; Apply Rle_sym1; Left; Apply (cond_pos (RinvN n)).
-Exists N0; Intros; Elim (H1 n); Elim (H2 n); Elim (H3 n); Clear H1 H2 H3; Intros; Unfold R_dist; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; Pose phi1 := (phi_sequence RinvN pr1 n); Fold phi1 in H8; Pose phi2 := (phi_sequence RinvN pr2 n); Fold phi2 in H3; Pose phi3 := (phi_sequence RinvN pr3 n); Fold phi2 in H1; Assert H10 : (IsStepFun phi3 a b).
+Exists N0; Intros; Elim (H1 n); Elim (H2 n); Elim (H3 n); Clear H1 H2 H3; Intros; Unfold R_dist; Unfold Rminus; Rewrite Ropp_O; Rewrite Rplus_Or; LetTac phi1 := (phi_sequence RinvN pr1 n) in H8 Goal; LetTac phi2 := (phi_sequence RinvN pr2 n) in H3 Goal; LetTac phi3 := (phi_sequence RinvN pr3 n) in H1 Goal; Assert H10 : (IsStepFun phi3 a b).
 Apply StepFun_P44 with c.
 Apply (pre phi3).
 Split; Assumption.
@@ -1171,7 +1171,7 @@ Apply Rle_compatibility; Apply StepFun_P37; Try Assumption.
 Intros; Simpl; Rewrite Rmult_1l; Apply Rle_trans with ``(Rabsolu ((f x)-(phi3 x)))+(Rabsolu ((f x)-(phi2 x)))``.
 Rewrite <- (Rabsolu_Ropp ``(f x)-(phi3 x)``); Rewrite Ropp_distr2; Replace ``(phi3 x)+ -1*(phi2 x)`` with ``((phi3 x)-(f x))+((f x)-(phi2 x))``; [Apply Rabsolu_triang | Ring].
 Apply Rplus_le.
-Fold phi3 in H1; Apply H1.
+Apply H1.
 Elim H14; Intros; Split.
 Replace (Rmin a c) with a.
 Apply Rle_trans with b; Try Assumption.

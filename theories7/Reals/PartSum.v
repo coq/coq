@@ -385,8 +385,7 @@ Elim s; Intro.
 Left; Apply a.
 Right; Apply b.
 Cut (Un_growing [n:nat](sum_f_R0 An n)).
-Intro; Pose l1 := (sum_f_R0 An N).
-Fold l1 in r.
+Intro; LetTac l1 := (sum_f_R0 An N) in r.
 Unfold Un_cv in H; Cut ``0<l1-l``.
 Intro; Elim (H ? H2); Intros.
 Pose N0 := (max x N); Cut (ge N0 x).

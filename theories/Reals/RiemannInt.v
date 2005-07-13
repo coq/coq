@@ -1593,13 +1593,12 @@ Lemma RiemannInt_P17 :
 intro f; intros; unfold RiemannInt in |- *;
  case (RiemannInt_exists pr1 RinvN RinvN_cv);
  case (RiemannInt_exists pr2 RinvN RinvN_cv); intros;
- set (phi1 := phi_sequence RinvN pr1);
+ set (phi1 := phi_sequence RinvN pr1) in u0;
  set (phi2 := fun N:nat => mkStepFun (StepFun_P32 (phi1 N)));
  apply Rle_cv_lim with
   (fun N:nat => Rabs (RiemannInt_SF (phi1 N)))
   (fun N:nat => RiemannInt_SF (phi2 N)).
 intro; unfold phi2 in |- *; apply StepFun_P34; assumption.
-fold phi1 in u0;
  apply (continuity_seq Rabs (fun N:nat => RiemannInt_SF (phi1 N)) x0);
  try assumption.
 apply Rcontinuity_abs.
@@ -2372,10 +2371,11 @@ unfold R_dist in |- *; unfold Rminus in |- *; rewrite Ropp_0;
  left; apply (cond_pos (RinvN n)).
 exists N0; intros; elim (H1 n); elim (H2 n); elim (H3 n); clear H1 H2 H3;
  intros; unfold R_dist in |- *; unfold Rminus in |- *; 
- rewrite Ropp_0; rewrite Rplus_0_r; set (phi1 := phi_sequence RinvN pr1 n);
- fold phi1 in H8; set (phi2 := phi_sequence RinvN pr2 n); 
- fold phi2 in H3; set (phi3 := phi_sequence RinvN pr3 n); 
- fold phi2 in H1; assert (H10 : IsStepFun phi3 a b).
+ rewrite Ropp_0; rewrite Rplus_0_r; 
+ set (phi1 := phi_sequence RinvN pr1 n) in H8 |- *;
+ set (phi2 := phi_sequence RinvN pr2 n) in H3 |- *; 
+ set (phi3 := phi_sequence RinvN pr3 n) in H1 |- *; 
+ assert (H10 : IsStepFun phi3 a b).
 apply StepFun_P44 with c.
 apply (pre phi3).
 split; assumption.
@@ -2442,7 +2442,7 @@ rewrite <- (Rabs_Ropp (f x - phi3 x)); rewrite Ropp_minus_distr;
  replace (phi3 x + -1 * phi2 x) with (phi3 x - f x + (f x - phi2 x));
  [ apply Rabs_triang | ring ].
 apply Rplus_le_compat.
-fold phi3 in H1; apply H1.
+apply H1.
 elim H14; intros; split.
 replace (Rmin a c) with a.
 apply Rle_trans with b; try assumption.
