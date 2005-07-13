@@ -489,8 +489,7 @@ elim s; intro.
 left; apply a.
 right; apply b.
 cut (Un_growing (fun n:nat => sum_f_R0 An n)).
-intro; set (l1 := sum_f_R0 An N).
-fold l1 in r.
+intro; set (l1 := sum_f_R0 An N) in r.
 unfold Un_cv in H; cut (0 < l1 - l).
 intro; elim (H _ H2); intros.
 set (N0 := max x N); cut (N0 >= x)%nat.
