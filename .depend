@@ -472,7 +472,8 @@ contrib/jprover/jterm.cmi: contrib/jprover/opname.cmi
 contrib/subtac/infer.cmi: lib/util.cmi kernel/term.cmi \
     contrib/subtac/sast.cmo lib/pp.cmi contrib/subtac/natural.cmo \
     kernel/names.cmi 
-contrib/subtac/rewrite.cmi: contrib/subtac/sast.cmo kernel/names.cmi 
+contrib/subtac/rewrite.cmi: kernel/term.cmi contrib/subtac/scoq.cmo \
+    contrib/subtac/sast.cmo kernel/names.cmi 
 contrib/xml/doubleTypeInference.cmi: kernel/term.cmi kernel/names.cmi \
     pretyping/evd.cmi kernel/environ.cmi contrib/xml/acic.cmo 
 contrib/xml/xmlcommand.cmi: contrib/xml/xml.cmi kernel/term.cmi \
@@ -3424,25 +3425,25 @@ contrib/subtac/sast.cmx: lib/util.cmx kernel/names.cmx
 contrib/subtac/scoq.cmo: kernel/term.cmi lib/pp.cmi \
     contrib/subtac/natural.cmo kernel/names.cmi library/libnames.cmi \
     library/global.cmi pretyping/evd.cmi interp/coqlib.cmi \
-    interp/constrextern.cmi 
+    interp/constrintern.cmi interp/constrextern.cmi 
 contrib/subtac/scoq.cmx: kernel/term.cmx lib/pp.cmx \
     contrib/subtac/natural.cmx kernel/names.cmx library/libnames.cmx \
     library/global.cmx pretyping/evd.cmx interp/coqlib.cmx \
-    interp/constrextern.cmx 
+    interp/constrintern.cmx interp/constrextern.cmx 
 contrib/subtac/sparser.cmo: toplevel/vernacinterp.cmi \
     toplevel/vernacentries.cmi lib/util.cmi interp/topconstr.cmi \
-    kernel/term.cmi proofs/tacexpr.cmo contrib/subtac/sast.cmo \
-    contrib/subtac/rewrite.cmi kernel/reduction.cmi lib/pp.cmi \
-    parsing/pcoq.cmi lib/options.cmi kernel/names.cmi library/nameops.cmi \
-    library/libnames.cmi interp/genarg.cmi parsing/egrammar.cmi \
-    parsing/coqast.cmi toplevel/cerrors.cmi 
+    kernel/term.cmi proofs/tacexpr.cmo contrib/subtac/scoq.cmo \
+    contrib/subtac/sast.cmo contrib/subtac/rewrite.cmi kernel/reduction.cmi \
+    lib/pp.cmi parsing/pcoq.cmi lib/options.cmi kernel/names.cmi \
+    library/nameops.cmi library/libnames.cmi interp/genarg.cmi \
+    parsing/egrammar.cmi parsing/coqast.cmi toplevel/cerrors.cmi 
 contrib/subtac/sparser.cmx: toplevel/vernacinterp.cmx \
     toplevel/vernacentries.cmx lib/util.cmx interp/topconstr.cmx \
-    kernel/term.cmx proofs/tacexpr.cmx contrib/subtac/sast.cmx \
-    contrib/subtac/rewrite.cmx kernel/reduction.cmx lib/pp.cmx \
-    parsing/pcoq.cmx lib/options.cmx kernel/names.cmx library/nameops.cmx \
-    library/libnames.cmx interp/genarg.cmx parsing/egrammar.cmx \
-    parsing/coqast.cmx toplevel/cerrors.cmx 
+    kernel/term.cmx proofs/tacexpr.cmx contrib/subtac/scoq.cmx \
+    contrib/subtac/sast.cmx contrib/subtac/rewrite.cmx kernel/reduction.cmx \
+    lib/pp.cmx parsing/pcoq.cmx lib/options.cmx kernel/names.cmx \
+    library/nameops.cmx library/libnames.cmx interp/genarg.cmx \
+    parsing/egrammar.cmx parsing/coqast.cmx toplevel/cerrors.cmx 
 contrib/xml/acic.cmo: kernel/term.cmi kernel/names.cmi 
 contrib/xml/acic.cmx: kernel/term.cmx kernel/names.cmx 
 contrib/xml/acic2Xml.cmo: contrib/xml/xml.cmi lib/util.cmi kernel/term.cmi \
