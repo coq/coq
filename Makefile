@@ -73,7 +73,7 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
               -I contrib/interface -I contrib/fourier \
 	      -I contrib/jprover -I contrib/cc \
 	      -I contrib/funind -I contrib/first-order \
-              -I contrib/field -I contrib/subtac
+              -I contrib/field -I contrib/subtac -I contrib/rtauto
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
@@ -301,13 +301,16 @@ SUBTACCMO=\
 	contrib/subtac/rewrite.cmo \
 	contrib/subtac/sparser.cmo
 
+RTAUTOCMO=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
+	contrib/rtauto/g_rtauto.cmo
+
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4 \
   contrib/funind/tacinv.ml4 contrib/first-order/g_ground.ml4 \
-  contrib/subtac/sparser.ml4
+  contrib/subtac/sparser.ml4 contrib/rtauto/g_rtauto.cmo
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(DPCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
-	$(CCCMO) $(FUNINDCMO) $(FOCMO) $(SUBTACCMO)
+	$(CCCMO) $(FUNINDCMO) $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -1003,8 +1006,13 @@ CCVO=\
 
 SUBTACVO=
 
+RTAUTOVO = \
+	contrib/rtauto/Bintree.vo contrib/rtauto/Rtauto.vo
+
+
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
-	    $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) $(SUBTACVO)
+	    $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) $(SUBTACVO) \
+	    $(RTAUTOVO)
 
 $(CONTRIBVO): states/initial.coq
 
@@ -1020,6 +1028,7 @@ jprover: $(JPROVERVO) $(JPROVERCMO)
 funind: $(FUNINDCMO) $(FUNINDVO)
 cc: $(CCVO) $(CCCMO)
 subtac: $(SUBTACVO) $(SUBTACCMO)
+rtauto: $(RTAUTOVO) $(RTAUTOCMO)
 
 NEWINITVO=$(INITVO)
 NEWTHEORIESVO=$(THEORIESVO)
