@@ -399,9 +399,12 @@ let convert_hyp sign sigma (id,b,bt as d) =
     (fun sign (_,c,ct) _ ->
        let env = Global.env_of_context sign in
        if !check && not (is_conv env sigma bt ct) then
-	 error ("Incorrect change of the type of "^(string_of_id id));
+	 (* Just a warning in V8.0bugfix for compatibility *)
+	 msgnl (str "Compatibility warning: Hazardeous change of the type of " ++ pr_id id ++ 
+	       str " (not well-typed in current signature)");
        if !check && not (option_compare (is_conv env sigma) b c) then
-	 error ("Incorrect change of the body of "^(string_of_id id));
+	 msgnl (str "Compatibility warning: Hazardeous change of the body of " ++ pr_id id ++
+	       str " (not well-typed in current signature)");
        add_named_decl d sign)
 
 
