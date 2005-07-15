@@ -63,8 +63,8 @@ Defined.
 
 End connectives.
 
-Hint Resolve sumbool_and sumbool_or sumbool_not: core.
-
+Hint Resolve sumbool_and sumbool_or: core.
+Hint Immediate sumbool_not : core.
 
 (** Any decidability function in type [sumbool] can be turned into a function
     returning a boolean with the corresponding specification: *)
