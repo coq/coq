@@ -189,6 +189,11 @@ let pr_named_context_of env =
 	  (fun env d pps -> pps ++ ws 2 ++ pr_var_decl env d)
           env ~init:(mt ()))
 
+let pr_named_context env ne_context = 
+  hv 0 (Sign.fold_named_context
+	  (fun d pps -> pps ++ ws 2 ++ pr_var_decl env d)
+          ne_context ~init:(mt ()))
+
 let pr_rel_context env rel_context =
   let rec prec env = function
     | [] -> (mt ()) 
@@ -204,6 +209,9 @@ let pr_rel_context env rel_context =
           (str "(" ++ pb ++ str")" ++ spc () ++ penvtl)
   in 
   hov 0 (prec env (List.rev rel_context))
+
+let pr_rel_context_of env =
+  pr_rel_context env (rel_context env)
 
 (* Prints an env (variables and de Bruijn). Separator: newline *)
 let pr_context_unlimited env =

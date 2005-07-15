@@ -51,8 +51,10 @@ val pr_ne_context_of : std_ppcmds -> env -> std_ppcmds
 val pr_var_decl     : env -> named_declaration -> std_ppcmds
 val pr_rel_decl     : env -> rel_declaration -> std_ppcmds
 
+val pr_named_context : env -> named_context -> std_ppcmds
 val pr_named_context_of : env -> std_ppcmds
 val pr_rel_context  : env -> rel_context -> std_ppcmds
+val pr_rel_context_of  : env -> std_ppcmds
 val pr_context_of   : env -> std_ppcmds
 
 val emacs_str       : string -> string
