@@ -45,6 +45,8 @@ Tactics
 - Added "autorewrite with ... in hyp [using ...]" (doc TODO).
 - Added entry constr_may_eval for tactic extensions (new syntax).
 - Fixed a "fold" bug (non critical and possible source of incompatibilities).
+- Added classical_left and classical_right which transforms |- A \/ B into 
+  ~B |- A and ~A |- B respectively.
 
 Modules
 
