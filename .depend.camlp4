@@ -18,7 +18,8 @@ contrib/cc/cctac.ml: parsing/grammar.cma
 contrib/funind/tacinv.ml: parsing/grammar.cma
 contrib/first-order/g_ground.ml: parsing/grammar.cma
 contrib/subtac/sparser.ml: parsing/grammar.cma
-contrib/rtauto/g_rtauto.cmo.ml: 
+contrib/subtac/g_eterm.ml: parsing/grammar.cma
+contrib/rtauto/g_rtauto.ml: parsing/grammar.cma
 contrib/interface/debug_tac.ml: parsing/grammar.cma
 contrib/interface/centaur.ml: parsing/grammar.cma
 parsing/lexer.ml: 

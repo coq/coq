@@ -16,6 +16,7 @@ type recursion_info = {
   wf_relation: constr; (* R : A -> A -> Prop *)
   wf_proof: constr; (* : well_founded R *)
   f_type: types; (* f: A -> Set *)
+  f_fulltype: types; (* Type with argument and wf proof product first *)
 }
 
 let id_of_name = function
@@ -86,9 +87,36 @@ let unlift n c =
     else aux (pred n) (Termops.pop acc)
   in aux n c
 
+let filter_defs l = List.filter (fun (_, c, _) -> c = None) l
+
 let evar_args ctx = 
-  let len = List.length ctx in
-    Array.init len (fun i -> mkRel (succ i))
+  let n = List.length ctx in
+  let rec aux acc i = function
+      (_, c, _) :: tl ->
+	(match c with
+	   | None -> aux (mkRel i :: acc) (succ i) tl
+	   | Some _ -> aux acc (succ i) tl)
+    | [] -> acc
+  in Array.of_list (aux [] 1 ctx)
+      
+let evar_ctx prog_info ctx = 
+  let ctx' = 
+    match prog_info.rec_info with
+      Some ri ->
+	let len = List.length ctx in
+	assert(len >= 2);
+	let rec aux l acc = function
+	    0 ->
+	      (match l with
+		   (id, _, recf) :: arg :: [] -> arg :: (id, None, ri.f_fulltype) :: acc
+		 | _ -> assert(false))
+	  | n -> (match l with
+		      hd :: tl -> aux tl (hd :: acc) (pred n)
+		    | _ -> assert(false))
+	in
+	  List.rev (aux ctx [] (len - 2))	    
+    | None -> ctx
+  in filter_defs ctx'
 
 let if_branches c = 
   match kind_of_term c with
@@ -321,7 +349,7 @@ and subset_coerce prog_info ctx x y =
 		let ctx', pcx' = subst_ctx ctx pcx in
 		  cx, {
 		    Evd.evar_concl = pcx';
-		    Evd.evar_hyps = ctx';
+		    Evd.evar_hyps = evar_ctx prog_info ctx';
 		    Evd.evar_body = Evd.Evar_empty;
 		  }
 	      in
@@ -392,13 +420,13 @@ and rewrite_term prog_info ctx (t : dterm_loc) : Term.constr * Term.types =
 			   let evarinfo = 
 			     { 
 			       Evd.evar_concl = proof;
-			       Evd.evar_hyps = ctx';
+			       Evd.evar_hyps = evar_ctx prog_info ctx';
 			       Evd.evar_body = Evd.Evar_empty;
 			     }
 			   in
 			   let key = mknewexist () in
 			     prog_info.evm <- Evd.add prog_info.evm key evarinfo;
-			     mkApp (cf, [| x; mkEvar(key, evar_args ctx') |])
+			     mkApp (cf, [| x; mkEvar(key, evar_args ctx) |])
 		       | _ -> mkApp (cf, [| x |]))
 		| None -> mkApp (cf, [| x |])
 	  in
@@ -410,9 +438,9 @@ and rewrite_term prog_info ctx (t : dterm_loc) : Term.constr * Term.types =
 	    t, t'
 	      
       | DSum ((x, t), (t', u), stype) ->
-	  let ct, ctt = rewrite_term prog_info ctx t in
+	  let ct, ctt = rewrite_term prog_info ctx t in	    
 	  let ctxterm = (snd x, Some ct, ctt) :: ctx in
-	  let ctxtype = (snd x, None, ctt) :: ctx in
+	  let ctxtype = (snd x, Some ct, ctt) :: ctx in
 	  let ct', tt' = rewrite_term prog_info ctxterm t' in
 	  let cu, _ = rewrite_type prog_info ctxtype u in
 	  let coercet' = coerce prog_info ctxtype tt' cu in
@@ -450,10 +478,10 @@ and rewrite_term prog_info ctx (t : dterm_loc) : Term.constr * Term.types =
 	      in aux [] ctx (List.rev l)
 	    in
 	      let ce', et' = aux ctx' e' in
-	      let et' = unlift (pred (List.length l)) 
-		(mkLambda (Anonymous, et, et')) in
+	      let et' = mkLambda (Anonymous, et, 
+				  unlift (pred (List.length l)) et') in
 		debug 1 (str "Let tuple, type of e': " ++
-		       my_print_constr ctx' et');
+			   my_print_constr ctx' et');
 
 	  let ind = destInd (Lazy.force existSind) in
 	  let ci = Inductiveops.make_default_case_info 
@@ -480,7 +508,7 @@ and rewrite_term prog_info ctx (t : dterm_loc) : Term.constr * Term.types =
 	    debug 1 (str "Let tuple term: " ++ my_print_constr ctx lambda);
 	    lambda, et'
 	      
-      | DIfThenElse (b, e, e', t) ->
+      | DIfThenElse (b, e, e', tif) ->
 	  let name = Name (id_of_string "H") in
 	  let (cb, tb) = aux ctx b in
 	    (match if_branches tb with
@@ -498,8 +526,8 @@ and rewrite_term prog_info ctx (t : dterm_loc) : Term.constr * Term.types =
 		   and false_case = 
 		     mkLambda (name, f, ce')
 		   in
-		     (mkCase (ci, lam, cb, [| true_case; false_case |])), 
-		   (Termops.pop te)
+		     (mkCase (ci, lam, cb, [| true_case; false_case |])),
+		       (Termops.pop te)
 	       | None -> failwith ("Ill-typed if"))
 	       
 
@@ -512,22 +540,10 @@ let global_kind :  Decl_kinds.global_kind = Decl_kinds.IsDefinition
 let goal_kind = Decl_kinds.IsGlobal Decl_kinds.DefinitionBody
   
 let make_fixpoint t id term = 
-  let typ =
-    mkProd (Name t.arg_name, t.arg_type,
-	    mkProd(Anonymous,
-		   mkApp (t.wf_relation, [| mkRel 1; mkRel 2 |]),
-		   mkApp (t.f_type, [| mkRel 2 |])))
-  in
-  let term' = 
-    mkLambda (Name id, typ, term)
-  in
-  let fix = mkApp (Lazy.force fix, 
-		   [| t.arg_type; t.wf_relation; t.wf_proof;
-		      t.f_type; 
-		      mkLambda (Name t.arg_name, t.arg_type,
-				term')
-		   |]) 
-  in fix
+  let term' = mkLambda (Name id, t.f_fulltype, term) in
+    mkApp (Lazy.force fix, 
+	   [| t.arg_type; t.wf_relation; t.wf_proof; t.f_type; 
+	      mkLambda (Name t.arg_name, t.arg_type, term') |])       
 
 let subtac recursive id (s, t) =
   check_required_library ["Coq";"Init";"Datatypes"];
@@ -544,6 +560,12 @@ let subtac recursive id (s, t) =
 	    let t'', _ = rewrite_type prog_info [] t' in
 	    let coqt', _ = rewrite_type prog_info [namen, None, t''] coqt in
 	    let ftype = mkLambda (namen, t'', coqt') in
+	    let fulltype =
+	      mkProd (namen, t'',
+		      mkProd(Anonymous,
+			     mkApp (rel, [| mkRel 1; mkRel 2 |]),
+			     Term.subst1 (mkRel 2) coqt'))
+	    in
 	    let proof = 
 	      match proof with
 		  ManualProof p -> p (* Check that t is a proof of well_founded rel *)
@@ -570,6 +592,7 @@ let subtac recursive id (s, t) =
 		  wf_relation = rel;
 		  wf_proof = proof;
 		  f_type = ftype;
+		  f_fulltype = fulltype;
 		}
 	      in { prog_info with rec_info = Some rec_info }
 	    in
@@ -611,11 +634,12 @@ let subtac recursive id (s, t) =
 	  Some t -> make_fixpoint t id realt
 	| None -> realt
     in
-    trace (str "Term after reduction" ++ my_print_constr coqctx realt);
+    trace (str "Coq term" ++ my_print_constr [] realt);
+    trace (str "Coq type" ++ my_print_constr [] coqtype'');
     let evm = prog_info.evm in
     (try trace (str "Original evar map: " ++ Evd.pr_evar_map evm);
      with Not_found -> trace (str "Not found in pr_evar_map"));
-    let tac = Refine.refine (evm, realt) in 
+    let tac = Eterm.etermtac (evm, realt) in 
     msgnl (str "Starting proof");
     Command.start_proof id goal_kind coqtype'' (fun _ _ -> ());
     msgnl (str "Started proof");

@@ -298,6 +298,8 @@ SUBTACCMO=\
 	contrib/subtac/scoq.cmo \
 	contrib/subtac/sast.cmo \
 	contrib/subtac/infer.cmo \
+	contrib/subtac/sutils.cmo \
+	contrib/subtac/eterm.cmo \
 	contrib/subtac/rewrite.cmo \
 	contrib/subtac/sparser.cmo
 
@@ -306,7 +308,8 @@ RTAUTOCMO=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
 
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4 \
   contrib/funind/tacinv.ml4 contrib/first-order/g_ground.ml4 \
-  contrib/subtac/sparser.ml4 contrib/rtauto/g_rtauto.cmo
+  contrib/subtac/sparser.ml4 contrib/subtac/g_eterm.ml4 \
+  contrib/rtauto/g_rtauto.ml4
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(DPCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
