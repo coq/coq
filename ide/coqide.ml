@@ -2986,21 +2986,23 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   (* End of menu *)
 
   (* The vertical Separator between Scripts and Goals *)
-  let hb = GPack.paned `HORIZONTAL  ~border_width:3 ~packing:vbox#add () in
-  _notebook := Some (GPack.notebook ~scrollable:true 
-		       ~packing:hb#add1
+  let hb = GPack.paned `HORIZONTAL  ~border_width:5 ~packing:vbox#add () in
+  let fr_notebook = GBin.frame ~shadow_type:`IN ~packing:hb#add1 () in
+  _notebook := Some (GPack.notebook ~border_width:2 ~show_border:false ~scrollable:true 
+		       ~packing:fr_notebook#add
 		       ());
   let nb = notebook () in
-  let fr2 = GBin.frame ~shadow_type:`ETCHED_OUT ~packing:hb#add2 () in 
-  let hb2 = GPack.paned `VERTICAL  ~border_width:3 ~packing:fr2#add () in
+  let hb2 = GPack.paned `VERTICAL ~packing:hb#add2 () in
+  let fr_a = GBin.frame ~shadow_type:`IN ~packing:hb2#add () in
+  let fr_b = GBin.frame ~shadow_type:`IN ~packing:hb2#add () in
   let sw2 = GBin.scrolled_window 
 	      ~vpolicy:`AUTOMATIC 
 	      ~hpolicy:`AUTOMATIC
-	      ~packing:(hb2#add) () in
+	      ~packing:(fr_a#add) () in
   let sw3 = GBin.scrolled_window 
 	      ~vpolicy:`AUTOMATIC 
 	      ~hpolicy:`AUTOMATIC
-	      ~packing:(hb2#add) () in
+	      ~packing:(fr_b#add) () in
   let lower_hbox = GPack.hbox ~homogeneous:false ~packing:vbox#pack () in
   let status_bar = GMisc.statusbar ~packing:(lower_hbox#pack ~expand:true) () 
   in
