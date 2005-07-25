@@ -277,7 +277,7 @@ $(COQWINZIP): $(TARGZ)
 	 ./configure -bindir /coq/bin -libdir /coq/lib -mandir /coq/man -emacslib /coq/emacs -reals all -coqide no;\
 	 $(MAKECOQ) coq;\
 	 $(MAKECOQ) -e COQINSTALLPREFIX=$(WININSTALL) BASETEXDIR=$(WININSTALL) install-coq) > win.log
-	mv $(WINBUILDROOT)/$(COQPACKAGE)/INSTALL.win $(WININSTALL)
+	mv $(WINBUILDROOT)/$(COQPACKAGE)/INSTALL.win $(WININSTALL)/INSTALL.txt
 	cd $(WININSTALL); zip -A -r $(DISTRIBDIR)/$(COQWINZIP) *
 
 clean::
