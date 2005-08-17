@@ -8,13 +8,9 @@
 
 (* $Id$ *)
 
-Tactic Definition CCsolve :=
- Repeat (Match Context With
- [ H: ?1 |- ?2] -> 
-  Let Heq = FreshId "Heq" In
- (Assert Heq:(?2==?1);[Congruence|(Rewrite Heq;Exact H)])
- |[ H: ?1; G: ?2 -> ?3 |- ?] ->                        
-  Let Heq = FreshId "Heq" In
- (Assert Heq:(?2==?1) ;[Congruence|                              
-     (Rewrite Heq in G;Generalize (G H);Clear G;Intro G)])).  
+open Term 
+open Proof_type
 
+val cc_tactic : constr list -> tactic
+
+val cc_fail : tactic

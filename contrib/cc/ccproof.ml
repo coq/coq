@@ -51,8 +51,8 @@ let pcongr=function
 let build_proof uf=
   
   let rec equal_proof i j=
-    if i=j then Refl (UF.term uf i) else 
-      let (li,lj)=UF.join_path uf i j in
+    if i=j then Refl (term uf i) else 
+      let (li,lj)=join_path uf i j in
 	ptrans (path_proof i li,psym (path_proof j lj))
   
   and edge_proof ((i,j),eq)=
@@ -60,45 +60,44 @@ let build_proof uf=
     let pj=psym (equal_proof j eq.rhs) in
     let pij=
       match eq.rule with 
-	  Axiom s->Ax s
+	  Axiom (s,reversed)->if reversed then SymAx s else Ax s
 	| Congruence ->congr_proof eq.lhs eq.rhs
-	| Injection (ti,tj,c,a) ->
-	    let p=equal_proof ti tj in
-	    let p1=constr_proof ti ti c 0
-	    and p2=constr_proof tj tj c 0 in
-	      match UF.term uf c with
-		  Constructor (cstr,nargs,nhyps) -> 
-		    Inject(ptrans(psym p1,ptrans(p,p2)),cstr,nhyps,a)
-		| _ -> anomaly "injection on non-constructor terms" 
+	| Injection (ti,ipac,tj,jpac,k) ->
+	    let p=ind_proof ti ipac tj jpac in
+	    let cinfo= get_constructor_info uf ipac.cnode in
+	      Inject(p,cinfo.ci_constr,cinfo.ci_nhyps,k)	
     in  ptrans(ptrans (pi,pij),pj)
 
-  and constr_proof i j c n=
-    try
-      let nj=UF.mem_node_pac uf j (c,n) in
-      let (ni,arg)=UF.subterms uf j in 
-      let p=constr_proof ni nj c (n+1) in
-      let targ=UF.term uf arg in 
-	ptrans (equal_proof i j, pcongr (p,Refl targ))
-    with Not_found->equal_proof i j
+  and constr_proof i t ipac=
+    if ipac.args=[] then
+      equal_proof i t
+    else
+      let npac=tail_pac ipac in
+      let (j,arg)=subterms uf t in
+      let targ=term uf arg in
+      let rj=find uf j in
+      let u=find_pac uf rj npac in
+      let p=constr_proof j u npac in
+	ptrans (equal_proof i t, pcongr (p,Refl targ))
 
   and path_proof i=function
-      [] -> Refl (UF.term uf i)
+      [] -> Refl (term uf i)
     | x::q->ptrans (path_proof (snd (fst x)) q,edge_proof x)
   
   and congr_proof i j=
-    let (i1,i2) = UF.subterms uf i
-    and (j1,j2) = UF.subterms uf j in   
+    let (i1,i2) = subterms uf i
+    and (j1,j2) = subterms uf j in   
       pcongr (equal_proof i1 j1, equal_proof i2 j2)
 	
-  and discr_proof i ci j cj=
+  and ind_proof i ipac j jpac=
     let p=equal_proof i j 
-    and p1=constr_proof i i ci 0 
-    and p2=constr_proof j j cj 0 in
+    and p1=constr_proof i i ipac 
+    and p2=constr_proof j j jpac in
       ptrans(psym p1,ptrans(p,p2))
   in
     function
-	`Prove_goal (i,j) | `Refute_hyp (i,j) -> equal_proof i j
-      | `Discriminate (i,ci,j,cj)-> discr_proof i ci j cj
+	`Prove (i,j) -> equal_proof i j
+      | `Discr (i,ci,j,cj)-> ind_proof i ci j cj
 
 let rec nth_arg t n=
   match t with 
@@ -110,8 +109,8 @@ let rec nth_arg t n=
 
 let rec type_proof axioms p=
   match p with
-      Ax s->List.assoc s axioms
-    | SymAx s-> let (t1,t2)=List.assoc s axioms in (t2,t1)
+      Ax s->Hashtbl.find axioms s
+    | SymAx s-> let (t1,t2)=Hashtbl.find axioms s in (t2,t1)
     | Refl t-> t,t
     | Trans (p1,p2)->
 	let (s1,t1)=type_proof axioms p1 
@@ -124,34 +123,4 @@ let rec type_proof axioms p=
     | Inject (p,c,n,a)->
 	let (ti,tj)=type_proof axioms p in
 	  nth_arg ti (n-a),nth_arg tj (n-a)
-
-let by_contradiction uf diseq axioms disaxioms= 
-  try 
-    let id,cpl=find_contradiction uf diseq in
-    let prf=build_proof uf (`Refute_hyp cpl) in
-      if List.assoc id disaxioms=type_proof axioms prf then
-	`Refute_hyp (id,prf)
-      else 
-	anomaly "wrong proof generated"
-  with Not_found ->
-    errorlabstrm  "Congruence" (Pp.str "I couldn't solve goal")  
-
-let cc_proof axioms disaxioms glo=
-  try
-    let uf=make_uf axioms in
-    let diseq=add_disaxioms uf disaxioms in
-      match glo with 
-	  Some cpl ->
-	    let goal=add_one_diseq uf cpl in cc uf;
-	      if check_equal uf goal then 
-		let prf=build_proof uf (`Prove_goal goal) in
-		  if cpl=type_proof axioms prf then
-		    `Prove_goal prf
-		  else anomaly "wrong proof generated"
-	      else by_contradiction uf diseq axioms disaxioms  
-	| None -> cc uf; by_contradiction uf diseq axioms disaxioms
-    with UF.Discriminable (i,ci,j,cj,uf) ->
-      let prf=build_proof uf (`Discriminate (i,ci,j,cj)) in 
-	`Discriminate (UF.get_constructor uf ci,prf) 
-
 

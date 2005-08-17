@@ -10,7 +10,6 @@
 
 
 Require Export List.
-Require Export CCSolve.
 Require Export Bintree.
 Require Import Bool.
 Unset Boxed Definitions.

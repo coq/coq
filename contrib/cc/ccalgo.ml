@@ -12,39 +12,27 @@
 (* Downey,Sethi and Tarjan. *)
 
 open Util
+open Pp
+open Goptions
 open Names
 open Term
 
-let init_size=251
+let init_size=5
 
-type pa_constructor=
-    {head_constr: int;
-     arity:int;
-     nhyps:int;
-     args:int list;
-     term_head:int}
+let cc_verbose=ref false 
 
+let debug msg (stdpp:std_ppcmds) = 
+  if !cc_verbose then msg stdpp
 
-module PacMap=Map.Make(struct type t=int*int let compare=compare end) 
-
-type term=
-    Symb of constr
-  | Appli of term*term
-  | Constructor of constructor*int*int (* constructor arity+ nhyps *)
-
-type rule=
-    Congruence
-  | Axiom of identifier
-  | Injection of int*int*int*int (* terms+head+arg position *)
-
-type equality = {lhs:int;rhs:int;rule:rule}
-
-let swap eq=
-  let swap_rule=match eq.rule with
-      Congruence -> Congruence
-    | Injection (i,j,c,a) -> Injection (j,i,c,a)
-    | Axiom id -> anomaly "no symmetry for axioms"    
-  in {lhs=eq.rhs;rhs=eq.lhs;rule=swap_rule}
+let _=
+  let gdopt=
+    { optsync=true;
+      optname="Congruence Verbose";
+      optkey=SecondaryTable("Congruence","Verbose"); 
+      optread=(fun ()-> !cc_verbose); 
+      optwrite=(fun b -> cc_verbose := b)}  
+  in
+    declare_bool_option gdopt
 
 (* Signature table *)
 
@@ -68,290 +56,452 @@ module ST=struct
 	  
   let query sign st=Hashtbl.find st.toterm sign
 	  
-  let delete t st=
+  let delete st t=
     try let sign=Hashtbl.find st.tosign t in
 	Hashtbl.remove st.toterm sign;
 	Hashtbl.remove st.tosign t
     with
 	Not_found -> ()
 
-  let rec delete_list l st=
-    match l with
-      []->()
-    | t::q -> delete t st;delete_list q st
+  let rec delete_set st s = Intset.iter (delete st) s
 	  
 end
+
+type pa_constructor=
+    { cnode : int;
+      arity : int;
+      args  : int list}
+
+module PacMap=Map.Make(struct 
+			 type t=pa_constructor 
+			 let compare=Pervasives.compare end) 
+
+type cinfo=
+    {ci_constr: constructor; (* inductive type *)
+     ci_arity: int;     (* # args *)
+     ci_nhyps: int}     (* # projectable args *)
+
+type term=
+    Symb of constr
+  | Eps
+  | Appli of term*term
+  | Constructor of cinfo (* constructor arity + nhyps *)
+
+type rule=
+    Congruence
+  | Axiom of identifier * bool 
+  | Injection of int * pa_constructor * int * pa_constructor * int
+
+type from=
+    Goal
+  | Hyp of identifier
+  | HeqG of identifier
+  | HeqnH of identifier * identifier
+
+type 'a eq = {lhs:int;rhs:int;rule:'a}
+
+type equality = rule eq
+
+type disequality = from eq
+
+let swap eq : equality =
+  let swap_rule=match eq.rule with
+      Congruence -> Congruence
+    | Injection (i,pi,j,pj,k) -> Injection (j,pj,i,pi,k)
+    | Axiom (id,reversed) -> Axiom (id,not reversed)
+  in {lhs=eq.rhs;rhs=eq.lhs;rule=swap_rule}
     
-(* Basic Union-Find algo w/o path compression *)
+type inductive_status =
+    Unknown
+  | Partial of pa_constructor
+  | Partial_applied
+  | Total of (int * pa_constructor)
+
+type representative=
+    {mutable nfathers:int;
+     mutable lfathers:Intset.t;
+     mutable fathers:Intset.t;
+     mutable inductive_status: inductive_status;
+     mutable constructors: int PacMap.t} (*pac -> term = app(constr,t) *)
+
+type cl = Rep of representative| Eqto of int*equality
+  
+type vertex = Leaf| Node of (int*int) 
+
+type node = 
+    {mutable clas:cl;
+     mutable cpath: int; 
+     vertex:vertex;
+     term:term}
     
-module UF = struct
+type forest=
+    {mutable max_size:int;
+     mutable size:int;
+     mutable map: node array;
+     axioms: (identifier,term*term) Hashtbl.t;
+     mutable epsilons: pa_constructor list;
+     syms:(term,int) Hashtbl.t}
 
-module IndMap=Map.Make(struct type t=inductive let compare=compare end) 
+type state = 
+    {uf: forest;
+     sigtable:ST.t;
+     mutable terms: Intset.t; 
+     combine: equality Queue.t; 
+     marks: (int * pa_constructor) Queue.t;
+     mutable diseq: disequality list;
+     mutable pa_classes: Intset.t}
 
-  type representative=
-      {mutable nfathers:int;
-       mutable fathers:int list;
-       mutable constructors:pa_constructor PacMap.t;
-       mutable inductives:(int * int) IndMap.t}
+let dummy_node =
+  {clas=Eqto(min_int,{lhs=min_int;rhs=min_int;rule=Congruence});
+   cpath=min_int;
+   vertex=Leaf;
+   term=Symb (mkRel min_int)}
 
-  type cl = Rep of representative| Eqto of int*equality
+let empty ():state =
+  {uf=
+     {max_size=init_size;
+      size=0;
+      map=Array.create init_size dummy_node;
+      epsilons=[];
+      axioms=Hashtbl.create init_size;
+      syms=Hashtbl.create init_size};
+  terms=Intset.empty;
+  combine=Queue.create ();
+  marks=Queue.create ();
+  sigtable=ST.empty ();
+  diseq=[];
+  pa_classes=Intset.empty}
 
-  type vertex = Leaf| Node of (int*int) 
-
-  type node = 
-      {clas:cl;
-       vertex:vertex;
-       term:term;
-       mutable node_constr: int PacMap.t}    
-
-  type t={mutable size:int;
-          map:(int,node) Hashtbl.t;
-          syms:(term,int) Hashtbl.t;
-	  sigtable:ST.t}
-
-  let empty ():t={size=0;
-		  map=Hashtbl.create init_size;
-		  syms=Hashtbl.create init_size;
-		  sigtable=ST.empty ()}
-
-  let rec find uf i=
-    match (Hashtbl.find uf.map i).clas with
-	Rep _ -> i
-      | Eqto (j,_) ->find uf j
-	  
-  let get_representative uf i=
-    let node=Hashtbl.find uf.map i in
-      match node.clas with
-	  Rep r ->r
-	| _ -> anomaly "get_representative: not a representative"
-
-  let get_constructor uf i=
-    match (Hashtbl.find uf.map i).term with
-	Constructor (cstr,_,_)->cstr
-      | _ -> anomaly "get_constructor: not a constructor"
-
-
-  let fathers uf i=
-    (get_representative uf i).fathers
-	  
-  let size uf i=
-    (get_representative uf i).nfathers
-
-  let add_father uf i t=
-    let r=get_representative uf i in
-      r.nfathers<-r.nfathers+1;
-      r.fathers<-t::r.fathers 
-
-  let pac_map uf i=
-    (get_representative uf i).constructors  
-
-  let pac_arity uf i sg=
-    (PacMap.find sg (get_representative uf i).constructors).arity
-
-  let add_node_pac uf i sg j=
-    let node=Hashtbl.find uf.map i in
-      if not (PacMap.mem sg node.node_constr) then
-	node.node_constr<-PacMap.add sg j node.node_constr 
-  
-  let mem_node_pac uf i sg= 
-    PacMap.find sg (Hashtbl.find uf.map i).node_constr
-  
-  exception Discriminable of int * int * int * int * t 
-
-  let add_pacs uf i pacs =
-    let rep=get_representative uf i in
-    let pending=ref [] and combine=ref [] in 
-    let add_pac sg pac=
-      try  
-	let opac=PacMap.find sg rep.constructors in
-	  if (snd sg)>0 then () else
-	    let tk=pac.term_head 
-	    and tl=opac.term_head in
-	    let rec f n lk ll q=
-	      if n > 0 then match (lk,ll) with
-		  k::qk,l::ql->
-		    let eq=
-		      {lhs=k;rhs=l;rule=Injection(tk,tl,pac.head_constr,n)} 
-		    in f (n-1) qk ql (eq::q) 
-		| _-> anomaly 
-		    "add_pacs : weird error in injection subterms merge"
-	      else q in
- 	      combine:=f pac.nhyps pac.args opac.args !combine
-      with Not_found -> (* Still Unknown Constructor *)
-	rep.constructors <- PacMap.add sg pac rep.constructors;
-	pending:=
-	    (fathers uf (find uf pac.term_head)) @rep.fathers@ !pending;
-	let (c,a)=sg in
-	  if a=0 then
-	    let (ind,_)=get_constructor uf c in  
-	      try
-		let th2,hc2=IndMap.find ind rep.inductives in
-		  raise (Discriminable (pac.term_head,c,th2,hc2,uf)) 
-	      with Not_found ->
-		rep.inductives<-
-		IndMap.add ind (pac.term_head,c) rep.inductives in
-      PacMap.iter add_pac pacs;
-      !pending,!combine
+let forest state = state.uf 
+       
+let compress_path uf i j = uf.map.(j).cpath<-i
+			     
+let rec find_aux uf visited i=  
+  let j = uf.map.(i).cpath in 
+    if j<0 then let _ = List.iter (compress_path uf i) visited in i else
+      find_aux uf (i::visited) j
 	
-  let term uf i=(Hashtbl.find uf.map i).term
-		  
-  let subterms uf i=
-    match (Hashtbl.find uf.map i).vertex with
-	Node(j,k) -> (j,k)
-      | _ -> anomaly "subterms: not a node"
+let find uf i= find_aux uf [] i
+		 
+let get_representative uf i=
+  match uf.map.(i).clas with
+      Rep r -> r
+    | _ -> anomaly "get_representative: not a representative"
 
-  let signature uf i=
-    let j,k=subterms uf i in (find uf j,find uf k)
+let find_pac uf i pac =
+  PacMap.find pac (get_representative uf i).constructors
 
-  let nodes uf=  (* cherche les noeuds binaires *)
-    Hashtbl.fold 
-      (fun i node l->
-	 match node.vertex with 
-	     Node (_,_)->i::l
-	   | _ ->l) uf.map [] 
-
-  let next uf=
-    let n=uf.size in uf.size<-n+1; n
+let get_constructor_info uf i=
+  match uf.map.(i).term with
+      Constructor cinfo->cinfo
+    | _ -> anomaly "get_constructor: not a constructor"
 	
-  let new_representative pm im=
-    {nfathers=0;
-     fathers=[];
-     constructors=pm;
-     inductives=im}
+let size uf i=
+  (get_representative uf i).nfathers
 
-  let rec add uf t= 
+let axioms uf = uf.axioms
+
+let epsilons uf = uf.epsilons
+
+let add_lfather uf i t=
+  let r=get_representative uf i in
+    r.nfathers<-r.nfathers+1;
+    r.lfathers<-Intset.add t r.lfathers;
+    r.fathers <-Intset.add t r.fathers
+
+let add_rfather uf i t=
+  let r=get_representative uf i in
+    r.nfathers<-r.nfathers+1;
+    r.fathers <-Intset.add t r.fathers
+
+exception Discriminable of int * pa_constructor * int * pa_constructor 
+
+let append_pac t p =
+  {p with arity=pred p.arity;args=t::p.args} 
+
+let tail_pac p=
+  {p with arity=succ p.arity;args=List.tl p.args}
+    
+let add_pac rep pac t =
+  if not (PacMap.mem pac rep.constructors) then
+    rep.constructors<-PacMap.add pac t rep.constructors
+
+let term uf i=uf.map.(i).term
+		
+let subterms uf i=
+  match uf.map.(i).vertex with
+      Node(j,k) -> (j,k)
+    | _ -> anomaly "subterms: not a node"
+	
+let signature uf i=
+  let j,k=subterms uf i in (find uf j,find uf k)
+			     
+let next uf=
+  let size=uf.size in
+  let nsize= succ size in
+    if nsize=uf.max_size then
+      let newmax=uf.max_size * 3 / 2 + 1 in
+      let newmap=Array.create newmax dummy_node in
+	begin
+	  uf.max_size<-newmax;
+	  Array.blit uf.map 0 newmap 0 size;
+	  uf.map<-newmap
+	end 
+    else ();
+    uf.size<-nsize; 
+    size
+	
+let new_representative ()=
+  {nfathers=0;
+   lfathers=Intset.empty;
+   fathers=Intset.empty;
+   inductive_status=Unknown;
+   constructors=PacMap.empty}
+    
+let rec add_term state t= 
+  let uf=state.uf in
     try Hashtbl.find uf.syms t with 
 	Not_found ->
 	  let b=next uf in
 	  let new_node=
 	    match t with
-		Symb s -> 
-		  {clas=Rep (new_representative PacMap.empty IndMap.empty);
-		   vertex=Leaf;term=t;node_constr=PacMap.empty}
+		Symb _ | Eps -> 
+		  {clas= Rep (new_representative ());
+		   cpath= -1;
+		   vertex= Leaf;
+		   term= t}
 	      | Appli (t1,t2) -> 
-		  let i1=add uf t1 and i2=add uf t2 in
-		    add_father uf (find uf i1) b;
-		    add_father uf (find uf i2) b;
-		    {clas=Rep (new_representative PacMap.empty IndMap.empty);
-		     vertex=Node(i1,i2);term=t;node_constr=PacMap.empty}
-	      | Constructor (c,a,n) ->
-		  let pacs=
-		    PacMap.add (b,a) 
-		      {head_constr=b;arity=a;nhyps=n;args=[];term_head=b} 
-		      PacMap.empty in
-		  let inds=
-		    if a=0 then
-		      let (ind,_)=c in
-			IndMap.add ind (b,b) IndMap.empty 
-		    else IndMap.empty in
-		    {clas=Rep (new_representative pacs inds);
-		     vertex=Leaf;term=t;node_constr=PacMap.empty}
+		  let i1=add_term state t1 and i2=add_term state t2 in
+		    add_lfather uf (find uf i1) b;
+		    add_rfather uf (find uf i2) b;
+		    state.terms<-Intset.add b state.terms;
+		    {clas= Rep (new_representative ());
+		     cpath= -1;
+		     vertex= Node(i1,i2);
+		     term= t}
+	      | Constructor cinfo ->
+		  let pac =
+		    {cnode= b;
+		     arity= cinfo.ci_arity;
+		     args=[]} in
+		    Queue.add (b,pac) state.marks;
+		    {clas=Rep (new_representative ());
+		     cpath= -1;
+		     vertex=Leaf;
+		     term=t}
 	  in
-	    Hashtbl.add uf.map b new_node;
+	    uf.map.(b)<-new_node;
 	    Hashtbl.add uf.syms t b;
 	    b
 
-  let link uf i j eq= (* links i -> j *)
-    let node=Hashtbl.find uf.map i in 
-      Hashtbl.replace uf.map i {node with clas=Eqto (j,eq)}
-	      
-  let union uf i1 i2 eq=
-    let r1= get_representative uf i1 
-    and r2= get_representative uf i2 in
-      link uf i1 i2 eq;
-      r2.nfathers<-r1.nfathers+r2.nfathers;
-      r2.fathers<-r1.fathers@r2.fathers;
-      add_pacs uf i2 r1.constructors 
-	
-  let rec down_path uf i l=
-    match (Hashtbl.find uf.map i).clas with
-	Eqto(j,t)->down_path uf j (((i,j),t)::l)
-      | Rep _ ->l
+let add_equality state id s t=
+  let i = add_term state s in
+  let j = add_term state t in
+    Queue.add {lhs=i;rhs=j;rule=Axiom(id,false)} state.combine;
+    Hashtbl.add state.uf.axioms id (s,t)
 
-  let rec min_path=function
-      ([],l2)->([],l2)
-    | (l1,[])->(l1,[])
-    | (((c1,t1)::q1),((c2,t2)::q2)) when c1=c2 -> min_path (q1,q2) 
-    | cpl -> cpl
+let add_disequality state from s t =
+  let i = add_term state s in
+  let j = add_term state t in
+    state.diseq<-{lhs=i;rhs=j;rule=from}::state.diseq
+
+let link uf i j eq = (* links i -> j *)
+  let node=uf.map.(i) in 
+    node.clas<-Eqto (j,eq);
+    node.cpath<-j
 	
-  let join_path uf i j=
-    assert (find uf i=find uf j);
-    min_path (down_path uf i [],down_path uf j [])
+let rec down_path uf i l=
+  match uf.map.(i).clas with
+      Eqto(j,t)->down_path uf j (((i,j),t)::l)
+    | Rep _ ->l
+	
+let rec min_path=function
+    ([],l2)->([],l2)
+  | (l1,[])->(l1,[])
+  | (((c1,t1)::q1),((c2,t2)::q2)) when c1=c2 -> min_path (q1,q2) 
+  | cpl -> cpl
       
-end    
-    
-let rec combine_rec uf=function 
-    []->[]
-  | t::pending->
-      let combine=combine_rec uf pending in
-      let s=UF.signature uf t in
-      let u=snd (UF.subterms uf t) in
-      let f (c,a) pac pacs=
-	if a=0 then pacs else 
-	  let sg=(c,a-1) in
-	    UF.add_node_pac uf t sg pac.term_head;
-	    PacMap.add sg {pac with args=u::pac.args;term_head=t} pacs
-      in
-      let pacs=PacMap.fold f (UF.pac_map uf (fst s)) PacMap.empty in
-      let i=UF.find uf t in
-      let (p,c)=UF.add_pacs uf i pacs in
-      let combine2=(combine_rec uf p)@c@combine in
-      try {lhs=t;rhs=ST.query s uf.UF.sigtable;rule=Congruence}::combine2 with
-	Not_found->
-	  ST.enter t s uf.UF.sigtable;combine2
-	    
-let rec process_rec uf=function
-    []->[] 
-  | eq::combine->
-      let pending=process_rec uf combine in
-      let i=UF.find uf eq.lhs 
-      and j=UF.find uf eq.rhs in
-      if i=j then
-	pending
+let join_path uf i j=
+  assert (find uf i=find uf j);
+  min_path (down_path uf i [],down_path uf j [])
+
+let union state i1 i2 eq=
+  debug msgnl (str "Linking " ++ int i1 ++ str " and " ++ int i2 ++ str ".");
+  let r1= get_representative state.uf i1 
+  and r2= get_representative state.uf i2 in
+    link state.uf i1 i2 eq;
+    let f= Intset.union r1.fathers r2.fathers in
+      r2.nfathers<-Intset.cardinal f;
+      r2.fathers<-f;
+      r2.lfathers<-Intset.union r1.lfathers r2.lfathers;
+      ST.delete_set state.sigtable r1.fathers;
+      state.terms<-Intset.union state.terms r1.fathers;       
+      PacMap.iter (fun pac b -> Queue.add (b,pac) state.marks) r1.constructors;
+      match r1.inductive_status,r2.inductive_status with 
+	  Unknown,_ -> ()
+	| Partial pac,Unknown -> 
+	    r2.inductive_status<-Partial pac;
+	    state.pa_classes<-Intset.remove i1 state.pa_classes;
+	    state.pa_classes<-Intset.add i2 state.pa_classes
+	| Partial _ ,(Partial _ |Partial_applied) -> 
+	    state.pa_classes<-Intset.remove i1 state.pa_classes
+	| Partial_applied,Unknown -> 
+	    r2.inductive_status<-Partial_applied	      
+	| Partial_applied,Partial _ -> 
+	    state.pa_classes<-Intset.remove i2 state.pa_classes;
+	    r2.inductive_status<-Partial_applied
+	| Total cpl,Unknown -> r2.inductive_status<-Total cpl;
+	| Total cpl,Total _ -> Queue.add cpl state.marks    
+	| _,_ -> () 
+            
+let merge eq state = (* merge and no-merge *)
+  debug msgnl 
+    (str "Merging " ++ int eq.lhs ++ str " and " ++ int eq.rhs ++ str ".");
+  let uf=state.uf in
+  let i=find uf eq.lhs 
+  and j=find uf eq.rhs in
+    if i<>j then 
+      if (size uf i)<(size uf j) then
+	union state i j eq
       else
-	if (UF.size uf i)<(UF.size uf j) then
-	  let l=UF.fathers uf i in
-	  let (p,c)=UF.union uf i j eq in
-	  let _ =ST.delete_list l uf.UF.sigtable in
-	  let inj_pending=process_rec uf c in
-	    inj_pending@p@l@pending
+	union state j i (swap eq)
+
+let update t state = (* update 1 and 2 *)
+  debug msgnl 
+    (str "Updating term " ++ int t ++ str ".");
+  let (i,j) as sign = signature state.uf t in
+  let (u,v) = subterms state.uf t in
+  let rep = get_representative state.uf i in
+    begin
+      match rep.inductive_status with 
+	  Partial _ ->
+	    rep.inductive_status <- Partial_applied;
+	    state.pa_classes <- Intset.remove i state.pa_classes
+	| _ -> ()
+    end;
+    PacMap.iter 
+      (fun pac _ -> Queue.add (t,append_pac v pac) state.marks) 
+      rep.constructors; 
+    try 
+      let s = ST.query sign state.sigtable in 
+	Queue.add {lhs=t;rhs=s;rule=Congruence} state.combine
+    with 
+	Not_found -> ST.enter t sign state.sigtable
+
+let process_mark t pac state =
+  debug msgnl 
+    (str "Processing mark for term " ++ int t ++ str ".");
+  let i=find state.uf t in
+  let rep=get_representative state.uf i in
+    match rep.inductive_status with
+	Total (s,opac) ->
+	  if pac.cnode <> opac.cnode then (* Conflict *) 
+	    raise (Discriminable (s,opac,t,pac)) 
+	  else (* Match *)
+	    let cinfo = get_constructor_info state.uf pac.cnode in
+	    let rec f n oargs args=
+	      if n > 0 then 
+		match (oargs,args) with
+		    s1::q1,s2::q2->
+		      Queue.add 
+			{lhs=s1;rhs=s2;rule=Injection(s,opac,t,pac,n)}
+			state.combine;
+		      f (n-1) q1 q2 
+		  | _-> anomaly 
+		      "add_pacs : weird error in injection subterms merge" 
+	    in f cinfo.ci_nhyps opac.args pac.args
+      | Partial_applied | Partial _ ->
+	  add_pac rep pac t;
+	  state.terms<-Intset.union rep.lfathers state.terms
+      | Unknown ->
+	  if pac.arity = 0 then
+	    rep.inductive_status <- Total (t,pac)
+	  else
+	    begin
+	      add_pac rep pac t;
+	      state.terms<-Intset.union rep.lfathers state.terms;
+	      rep.inductive_status <- Partial pac;
+	      state.pa_classes<- Intset.add i state.pa_classes
+	    end
+
+type explanation =
+    Discrimination of (int*pa_constructor*int*pa_constructor)
+  | Contradiction of disequality
+  | Incomplete
+
+let check_disequalities state =
+  let uf=state.uf in
+  let rec check_aux = function
+      dis::q -> 
+	debug msg 
+	(str "Checking if " ++ int dis.lhs ++ str " = " ++ 
+	 int dis.rhs ++ str " ... ");  
+	if find uf dis.lhs=find uf dis.rhs then 
+	  begin debug msgnl (str "Yes");Some dis end 
 	else
-	  let l=UF.fathers uf j in
-	  let (p,c)=UF.union uf j i (swap eq) in
-	  let _ =ST.delete_list l uf.UF.sigtable in
-	  let inj_pending=process_rec uf c in
-	    inj_pending@p@l@pending
-	  
-let rec cc_rec uf=function
-    []->()
-  | pending->
-      let combine=combine_rec uf pending in
-      let pending0=process_rec uf combine in
-	cc_rec uf pending0
-	
-let cc uf=cc_rec uf (UF.nodes uf)
+	  begin debug msgnl (str "No");check_aux q end
+    | [] -> None 
+  in
+    check_aux state.diseq
 
-let rec make_uf=function
-    []->UF.empty ()
-  | (ax,(t1,t2))::q->
-      let uf=make_uf q in
-      let i1=UF.add uf t1 in
-      let i2=UF.add uf t2 in
-      let j1=UF.find uf i1 and j2=UF.find uf i2 in
-	if j1=j2 then uf else  
-	    let (_,inj_combine)=
-		UF.union uf j1 j2 {lhs=i1;rhs=i2;rule=Axiom ax} in
-	    let _ = process_rec uf inj_combine in uf
-      
-let add_one_diseq uf (t1,t2)=(UF.add uf t1,UF.add uf t2)
+let one_step state =
+    try
+      let eq = Queue.take state.combine in
+	merge eq state
+    with Queue.Empty -> 
+      try 
+	let (t,m) = Queue.take state.marks in
+	  process_mark t m state
+      with Queue.Empty ->
+	  let t = Intset.choose state.terms in
+	    state.terms<-Intset.remove t state.terms;
+	    update t state
 
-let add_disaxioms uf disaxioms=
-  let f (id,cpl)=(id,add_one_diseq uf cpl) in
-    List.map f disaxioms
+let complete_one_class state i=
+  match (get_representative state.uf i).inductive_status with
+      Partial pac ->
+	let rec app t n = 
+	  if n<=0 then t else
+	    app (Appli(t,Eps)) (n-1) in
+	  state.uf.epsilons <- pac :: state.uf.epsilons; 
+	  ignore (add_term state (app (term state.uf i) pac.arity))
+    | _ -> anomaly "wrong incomplete class" 
 
-let check_equal uf (i1,i2) = UF.find uf i1 = UF.find uf i2
+let complete state =
+  Intset.iter (complete_one_class state) state.pa_classes
 
-let find_contradiction uf diseq =
-  List.find (fun (id,cpl) -> check_equal uf cpl) diseq
- 
+let rec execute first_run state =
+  debug msgnl (str "Executing ... ");
+  try
+    while true do 
+      one_step state
+    done;
+    anomaly "keep out of here" 
+  with 
+      Discriminable(s,spac,t,tpac) -> 
+	Some
+	begin
+	  if first_run then 
+	    Discrimination (s,spac,t,tpac)
+	  else
+	    Incomplete
+	end
+    | Not_found ->
+	match check_disequalities state with
+	    None -> 
+	      if not(Intset.is_empty state.pa_classes) then
+		begin 
+		  debug msgnl 
+		    (str "First run was incomplete, completing ... ");
+		  complete state;
+		  execute false state
+		end
+	      else None
+	  | Some dis -> Some
+	      begin
+		if first_run then 
+		  Contradiction dis
+		else
+		  Incomplete
+	      end
 

@@ -230,4 +230,3 @@ contrib7/field/Field_Tactic.vo: contrib7/field/Field_Tactic.v contrib7/ring/Ring
 contrib7/field/Field.vo: contrib7/field/Field.v contrib7/field/Field_Compl.vo contrib7/field/Field_Theory.vo contrib7/field/Field_Tactic.vo
 contrib7/fourier/Fourier_util.vo: contrib7/fourier/Fourier_util.v theories7/Reals/Rbase.vo
 contrib7/fourier/Fourier.vo: contrib7/fourier/Fourier.v contrib7/fourier/Fourier_util.vo contrib7/field/Field.vo theories7/Reals/DiscrR.vo
-contrib7/cc/CCSolve.vo: contrib7/cc/CCSolve.v

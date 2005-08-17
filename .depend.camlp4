@@ -14,7 +14,7 @@ contrib/fourier/g_fourier.ml: parsing/grammar.cma
 contrib/extraction/g_extraction.ml: parsing/grammar.cma
 contrib/xml/xmlentries.ml: parsing/grammar.cma
 contrib/jprover/jprover.ml: parsing/grammar.cma
-contrib/cc/cctac.ml: parsing/grammar.cma
+contrib/cc/g_congruence.ml: parsing/grammar.cma
 contrib/funind/tacinv.ml: parsing/grammar.cma
 contrib/first-order/g_ground.ml: parsing/grammar.cma
 contrib/subtac/sparser.ml: parsing/grammar.cma

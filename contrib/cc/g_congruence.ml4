@@ -6,17 +6,24 @@
 (*         *       GNU Lesser General Public License Version 2.1        *)
 (************************************************************************)
 
+(*i camlp4deps: "parsing/grammar.cma" i*)
+
 (* $Id$ *)
 
-Ltac CCsolve :=
-  repeat
-   match goal with
-   | H:?X1 |- ?X2 =>
-       let Heq := fresh "Heq" in
-       (assert (Heq : X2 = X1); [ congruence | rewrite Heq; exact H ])
-   | H:?X1,G:(?X2 -> ?X3) |- _ =>
-       let Heq := fresh "Heq" in
-       (assert (Heq : X2 = X1);
-         [ congruence
-         | rewrite Heq in G; generalize (G H); clear G; intro G ])
-   end.  
+open Cctac
+open Tactics
+open Tacticals
+
+(* Tactic registration *)
+      
+TACTIC EXTEND CC
+ [ "Congruence" ] -> [ tclORELSE 
+			 (tclTHEN (tclREPEAT introf) (cc_tactic [])) 
+			 cc_fail ]
+END
+      
+TACTIC EXTEND CCwith
+ [ "Congruence" "with" ne_constr_list(l) ] -> [ tclORELSE 
+			 (tclTHEN (tclREPEAT introf) (cc_tactic l)) 
+			 cc_fail]
+END

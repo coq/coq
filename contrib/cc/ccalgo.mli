@@ -8,13 +8,107 @@
 
 (* $Id$ *)
 
-type pa_constructor
-    (*{head: int; arity: int; args: (int * int) list}*)
+open Util
+open Term
+open Names
 
-module PacMap:Map.S with type key=int * int 
+type cinfo =
+    {ci_constr: constructor; (* inductive type *)
+     ci_arity: int;     (* # args *)
+     ci_nhyps: int}     (* # projectable args *)
+
+type term =
+    Symb of constr
+  | Eps
+  | Appli of term*term
+  | Constructor of cinfo (* constructor arity + nhyps *)
+
+type pa_constructor =
+    { cnode : int;
+      arity : int;
+      args  : int list}
+
+module PacMap : Map.S with type key = pa_constructor  
+
+type forest
+
+type state 
+
+type rule=
+    Congruence
+  | Axiom of identifier * bool 
+  | Injection of int * pa_constructor * int * pa_constructor * int
+
+type from=
+    Goal
+  | Hyp of identifier
+  | HeqG of identifier
+  | HeqnH of identifier * identifier
+
+type 'a eq = {lhs:int;rhs:int;rule:'a}
+
+type equality = rule eq
+
+type disequality = from eq
+
+type explanation =
+    Discrimination of (int*pa_constructor*int*pa_constructor)
+  | Contradiction of disequality
+  | Incomplete
+
+val debug : (Pp.std_ppcmds -> unit) -> Pp.std_ppcmds -> unit
+
+val forest : state -> forest
+
+val axioms : forest -> (identifier, term * term) Hashtbl.t
+
+val epsilons : forest -> pa_constructor list
+
+val empty : unit -> state
+
+val add_term : state -> term -> int
+
+val add_equality : state -> identifier -> term -> term -> unit
+
+val add_disequality : state -> from -> term -> term -> unit
+
+val tail_pac : pa_constructor -> pa_constructor
+
+val find : forest -> int -> int
+
+val find_pac : forest -> int -> pa_constructor -> int
+
+val term : forest -> int -> term
+
+val get_constructor_info : forest -> int -> cinfo
+
+val subterms : forest -> int -> int * int
+
+val join_path : forest -> int -> int -> 
+  ((int * int) * equality) list * ((int * int) * equality) list
+
+val execute : bool -> state -> explanation option
+
+
+
+
+
+
+
+
+
+
+
+
+
+(*type pa_constructor
+
+
+module PacMap:Map.S with type key=pa_constructor
 
 type term = 
     Symb of Term.constr 
+  | Eps
   | Appli of term * term 
   | Constructor of Names.constructor*int*int
 
@@ -79,6 +173,6 @@ val check_equal : UF.t -> int * int -> bool
 val find_contradiction : UF.t -> 
   (Names.identifier * (int * int)) list -> 
   (Names.identifier * (int * int))
-
+*)
 
 

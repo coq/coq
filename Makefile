@@ -291,7 +291,8 @@ FOCMO=\
   contrib/first-order/instances.cmo contrib/first-order/ground.cmo \
   contrib/first-order/g_ground.cmo
 
-CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo  
+CCCMO=contrib/cc/ccalgo.cmo contrib/cc/ccproof.cmo contrib/cc/cctac.cmo \
+  contrib/cc/g_congruence.cmo 
 
 SUBTACCMO=\
 	contrib/subtac/natural.cmo \
@@ -306,7 +307,7 @@ SUBTACCMO=\
 RTAUTOCMO=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
 	contrib/rtauto/g_rtauto.cmo
 
-ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/cctac.ml4 \
+ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/g_congruence.ml4 \
   contrib/funind/tacinv.ml4 contrib/first-order/g_ground.ml4 \
   contrib/subtac/sparser.ml4 contrib/subtac/g_eterm.ml4 \
   contrib/rtauto/g_rtauto.ml4
@@ -1004,8 +1005,7 @@ FUNINDVO=
 
 JPROVERVO= 
 
-CCVO=\
- contrib/cc/CCSolve.vo
+CCVO=
 
 SUBTACVO=
 
