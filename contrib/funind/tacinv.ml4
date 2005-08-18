@@ -46,6 +46,8 @@ let smap_to_list m = Smap.fold (fun c cb l -> (c,cb)::l) m []
 let merge_smap m1 m2 = Smap.fold (fun c cb m -> Smap.add c cb m) m1 m2
 let rec listsuf i l = if i<=0 then l else listsuf (i-1) (List.tl l)
 let rec listpref i l = if i<=0 then [] else List.hd l :: listpref (i-1) (List.tl l)
+let rec split3 l = 
+  List.fold_right (fun (e1,e2,e3) (a,b,c) -> (e1::a),(e2::b),(e3::c)) l ([],[],[])
 
 let mkthesort = mkProp (* would like to put Type here, but with which index? *)
 
@@ -56,9 +58,7 @@ let equality_hyp_string = "_eg_"
 (* bug de refine: on doit ssavoir sur quelle hypothese on se trouve. valeur
    initiale au debut de l'appel a la fonction proofPrinc: 1. *)
 let nthhyp = ref 1
- (*debugging*)
- (* let rewrules = ref [] *)
- (*debugging*)
+
 let debug i = prstr ("DEBUG "^ string_of_int i ^"\n")
 let pr2constr = (fun c1 c2 -> prconstr c1; prstr " <---> "; prconstr c2)
 (* Operations on names *)
@@ -70,21 +70,6 @@ let string_of_name nme = string_of_id (id_of_name nme)
 
 (* Interpretation of constr's *)
 let constr_of c = Constrintern.interp_constr Evd.empty (Global.env()) c
-
-let rec collect_cases l =
- match l with
-  | [||] -> [||],[],[],[||],[||],[]
-  | arr -> 
-     let (a,c,d,f,e,g)= arr.(0) in
-     let aa,lc,ld,_,_,_ = 
-      collect_cases (Array.sub arr 1 ((Array.length arr)-1)) in
-     Array.append [|a|] aa , (c@lc) , (d@ld) , f , e, g
-
-let rec collect_pred l =
- match l with
-  | [] -> [],[],[]
-  | (e1,e2,e3)::l' -> let a,b,c = collect_pred l' in (e1::a),(e2::b),(e3::c)
-
 
 (*s specific manipulations on constr *)
 let lift1_leqs leq=
@@ -194,29 +179,25 @@ let applFull c typofc =
  let res = mkAppRel c ltyp (List.length ltyp) in
  res
 
-
+(* Take two terms with same structure and return a map of deBruijn from the
+   first to the second. Only DeBruijn should be different between the two
+   terms. *)
 let rec build_rel_map typ type_of_b = 
  match (kind_of_term typ), (kind_of_term type_of_b) with
     Evar _ , Evar _  -> Smap.empty
-  | Rel i, Rel j -> if i=j then Smap.empty 
-    else Smap.add typ type_of_b Smap.empty
+  | Const c1, Const c2  when c1=c2 -> Smap.empty
+  | Ind c1, Ind c2 when c1=c2 -> Smap.empty
+  | Rel i, Rel j when i=j -> Smap.empty
+  | Rel i, Rel j -> Smap.add typ type_of_b Smap.empty
   | Prod (name,c1,c2), Prod (nameb,c1b,c2b) -> 
      let map1 = build_rel_map c1 c1b in
      let map2 = build_rel_map (pop c2) (pop c2b) in
      merge_smap map1 map2
-  | App (f,args), App (fb,argsb) ->
-     (try build_rel_map_list (Array.to_list args) (Array.to_list argsb)
-     with Invalid_argument _ -> 
-      failwith ("Could not generate case annotation. "^ 
-      "Two application with different length"))
-  | Const c1, Const c2 -> if c1=c2 then Smap.empty
-    else failwith ("Could not generate case annotation. "^ 
-    "Two different constants in a case annotation.")
-  | Ind c1, Ind c2 -> if c1=c2 then Smap.empty
-    else failwith ("Could not generate case annotation. "^ 
-    "Two different constants in a case annotation.")
+  | App (f,args), App (fb,argsb) when Array.length args = Array.length argsb ->
+     build_rel_map_list (Array.to_list args) (Array.to_list argsb)
   | _,_ -> failwith ("Could not generate case annotation. "^
     "Incompatibility between annotation and actual type")
+
 and build_rel_map_list ltyp ltype_of_b =
  List.fold_left2 (fun a b c -> merge_smap a (build_rel_map b c))
   Smap.empty ltyp ltype_of_b
@@ -224,299 +205,235 @@ and build_rel_map_list ltyp ltype_of_b =
 
 (*s Use (and proof) of the principle *)
 
-(*
-  \begin {itemize}
-  \item [concl] ([constr]): conclusions, cad (xi:ti)gl, ou gl est le but a
-  prouver, et xi:ti correspondent aux arguments donnés à la tactique.  On
-  enlève un produit à chaque fois qu'on rencontre un binder, sans lift ou pop.
-  Initialement: une seule conclusion, puis specifique a chaque branche.
-  \item[absconcl] ([constr array]): les conclusions (un predicat pour chaque
-  fixp. mutuel) patternisées pour  pouvoir être appliquées.
-  \item [mimick] ([constr]): le terme qu'on imite. On plonge  dedans au fur et
-  à mesure, sans lift ni pop.
-  \item [nmefonc] ([constr array]): la constante correspondant à la fonction
-  appelée, permet de remplacer les appels recursifs par des appels à la
-  constante correspondante (non pertinent (et inutile) si on permet l'appel de
-  la tactique sur une terme donné directement (au lieu d'une constante comme
-  pour l'instant)).
-  \item [fonc] ([int*int]) : bornes des indices des variable correspondant aux
-  appels récursifs (plusieurs car fixp.  mutuels), utile pour reconnaître les
-  appels récursifs (ATTENTION: initialement vide, reste vide tant qu'on n'est
-  pas dans un fix).  
-  \end{itemize}
-*)
+(* This is the type of the argument of [proofPrinc] *)
 
 type mimickinfo =
     {
-     concl: constr;
-     absconcl: constr array;
-     mimick: constr;
-     env: env;
-     sigma: Evd.evar_map;
-     nmefonc: constr array;
-     fonc: int * int;
+     concl: constr; (* conclusion voulue, cad (xi:ti)gl, ou gl est le but a
+                       prouver, et xi:ti correspondent aux arguments donnés à
+                       la tactique.  On enlèvera un produit à chaque fois
+                       qu'on rencontrera un binder, sans lift ou pop.
+                       Initialement: une seule conclusion, puis specifique à
+                       chaque branche. *)
+     absconcl: constr array; (* conclusions patternisées pour pouvoir être
+                                appliquées = un predicat pour chaque fixpt
+                                mutuel. *)
+     mimick: constr; (* le terme qu'on imite. On plongera  dedans au fur et
+                        à mesure, sans lift ni pop. *)
+     env: env; (* The global typing environment, we will add thing in it when
+                  going inside the term (push_rel, push_rec_types) *)
+     sigma: Evd.evar_map; 
+     nmefonc: constr array; (* la constante correspondant à la fonction
+                               appelée, permet de remplacer les appels
+                               recursifs par des appels à la constante
+                               correspondante (non pertinent (et inutile) si
+                               on permet l'appel de la tactique sur une terme
+                               donné directement (au lieu d'une constante
+                               comme pour l'instant)). *)
+     fonc: int * int; (* bornes des indices des variable correspondant aux
+                         appels récursifs (plusieurs car fixp.  mutuels),
+                         utile pour reconnaître les appels récursifs
+                         (ATTENTION: initialement vide, reste vide tant qu'on
+                         n'est pas dans un fix).  *)
      doeqs: bool; (* this reference is to toggle building of equalities during
                     the building of the principle (default is true) *)
-     fix: bool (* did I already went through a fix or case constr? lambdas
+     fix: bool; (* did I already went through a fix or case constr? lambdas
                   found before a case or a fix are treated as parameters of
                   the induction principle *)
+     lst_vars: (constr*(name*constr)) list ; (* Variables rencontrées jusque là *)
+     lst_eqs: (Term.constr * (Term.constr * Term.constr * Term.constr)) list ; 
+                                   (* liste d'équations engendrées au cours du
+                                      parcours, cette liste grandit à chaque
+                                      case, et il faut lifter le tout à chaque
+                                      binder *)
+     lst_recs: constr list ; (* appels récursifs rencontrés jusque là *)
     }
 
-(*
-  \begin{itemize}
-  \item [lst_vars] ([(constr*(name*constr)) list]): liste des variables
-  rencontrées jusqu'à maintenant.
-  \item [lst_eqs] ([constr list]): liste d'équations engendrées au cours du
-  parcours, cette liste grandit à chaque case, et il faut lifter le tout à
-  chaque binder.
-  \item [lst_recs] ([constr list]): listes des appels récursifs rencontrés
-  jusque là.
-  \end{itemize}
-
-  Cette fonction rends un nuplet de la forme:
-
-  [t,
-  [(ev1,tev1);(ev2,tev2)..],
-  [(i1,j1,k1);(i2,j2,k2)..],
-  [|c1;c2..|],
-  [|typ1;typ2..|],
-  [(param,tparam)..]]
-
- *)
-
-(* This could be the return type of [proofPrinc], but not yet *)
-type funind =
+(* This is the return type of [proofPrinc] *)
+type 'a funind = (* 'A = CONTR  OU  CONSTR ARRAY *)
     {
-     princ:constr;
-     evarlist: (constr*Term.types) list;
-     hypnum: (int*int*int) list;
-     mutfixmetas: constr array ;
-     conclarray: types array;
-     params:(constr*name*constr) list
+
+     princ:'a; (* le (ou les) principe(s) demandé(s), il contient des meta
+                  variables représentant soit des trous à prouver plus tard,
+                  soit les conclusions à compléter avant de rendre le terme
+                  (suivant qu'on utilise le principe pour faire refine ou
+                  functional scheme). Il y plusieurs conclusions si plusieurs
+                  fonction mutuellement récursives) voir la suite. *)
+     evarlist: (constr*Term.types) list; (* [(ev1,tev1);(ev2,tev2)...]]
+                                            l'ensemble des meta variables
+                                            correspondant à des trous. [evi]
+                                            est la meta variable, [tevi] est
+                                            son type. *)
+     hypnum: (int*int*int) list; (* [[(in,jn,kn)...]] sont les nombres
+                                    respectivement de variables, d'équations,
+                                    et d'hypothèses de récurrence pour le but
+                                    n. Permet de faire le bon nombre d'intros
+                                    et des rewrite au bons endroits dans la
+                                    suite. *)
+     mutfixmetas: constr array ; (* un tableau de meta variables correspondant
+                                    à chacun des prédicats mutuellement
+                                    récursifs construits. *)
+     conclarray: types array; (* un tableau contenant les conclusions
+                                 respectives de chacun des prédicats
+                                 mutuellement récursifs. Permet de finir la
+                                 construction du principe. *)
+     params:(constr*name*constr) list; (* [[(metavar,param,tparam)..]] la
+                                          liste des paramètres (les lambdas
+                                          au-dessus du fix) du fixpoint si
+                                          fixpoint il y a, le paramètre est
+                                          une meta var, dont on stocke le nom
+                                          et le type. TODO: utiliser la
+                                          structure adequat? *)
     }
 
-(* 
-  où:
 
-  \begin{itemize} 
 
-  \item[t] est le principe demandé, il contient des meta variables
-  représentant soit des trous à prouver plus tard, soit les conclusions à
-  compléter avant de rendre le terme (suivant qu'on utilise le principe pour
-  faire refine ou functional scheme). Il y plusieurs conclusions si plusieurs
-  fonction mutuellement récursives) voir la suite.
+let empty_funind_constr =
+    {
+     princ = mkProp;
+     evarlist = [];
+     hypnum = [];
+     mutfixmetas = [||];
+     conclarray = [||];
+     params = []
+    }
 
-  \item[[(ev1,tev1);(ev2,tev2)...]] est l'ensemble des méta variables
-  correspondant à des trous. [evi] est la meta variable, [tevi] est son type.
+let empty_funind_array =
+    { empty_funind_constr with
+     princ = [||];
+    }
 
-  \item[(in,jn,kn)] sont les nombres respectivement de variables, d'équations,
-  et d'hypothèses de récurrence pour le but n. Permet de faire le bon nombre
-  d'intros et des rewrite au bons endroits dans la suite.
+(* Replace the calls to the function (recursive calls) by calls to the
+   corresponding constant  *)
+let replace_reccalls mi b =
+ let d,f = mi.fonc in 
+ let res = ref b in
+ let _ = for i = d to f do 
+   res := substitterm 0 (mkRel i) mi.nmefonc.(f-i) !res done in
+ !res
+ 
 
-  \item[[|c1;c2...|]] est un tableau de meta variables correspondant à chacun
-  des prédicats mutuellement récursifs construits.
 
-  \item[[|typ1;typ2...|]] est un tableau contenant les conclusions respectives
-  de chacun des prédicats mutuellement récursifs. Permet de finir la
-  construction du principe.
+(* collects all information of match branches stored in [l] *)
+let rec collect_cases l =
+ match l with
+  | [||] -> empty_funind_array
+  | arr -> 
+     let x = arr.(0) in
+     let resrec = collect_cases (Array.sub arr 1 (Array.length arr - 1)) in
+     { x with
+      princ= Array.append [|x.princ|] resrec.princ;
+      evarlist = x.evarlist@resrec.evarlist;
+      hypnum = x.hypnum@resrec.hypnum;
+     }
 
-  \item[[(param,tparam)..]] est la liste des paramètres (les lambda au-dessus
-  du fix) du fixpoint si fixpoint il y a.
+let collect_pred l = 
+ let l1,l2,l3 = split3 l in
+ Array.of_list l1 , Array.of_list l2 , Array.of_list l3
 
-  \end{itemize}
-*)
+
+(* [build_pred n tarr] builds the right predicates for each element of [tarr]
+   (of type: [type array] of size [n]). Return the list of triples: 
+   (?i , 
+   fun (x1:t1) ... (xn:tn) => (?i x1...xn) ,
+   forall (x1:t1) ... (xn:tn), (?i x1...xn)),
+   where ti's are deduced from elements of tarr, which are of the form:
+   t1 -> t2 -> ... -> tn -> <nevermind>. *)
+let rec build_pred n tarr =
+ if n >= Array.length tarr (* iarr *) then []
+ else
+   let ftyp = Array.get tarr n in
+   let gl = mknewmeta() in
+   let gl_app = applFull gl ftyp in
+   let pis = prod_change_concl ftyp gl_app in
+   let gl_abstr = lam_change_concl ftyp gl_app in
+   (gl,gl_abstr,pis):: build_pred (n+1) tarr
+
+
 let heq_prefix = "H_eq_"
 
 type kind_of_hyp = Var | Eq  (*| Rec*)
 
-let rec proofPrinc mi lst_vars lst_eqs lst_recs:
- constr * (constr*Term.types) list * (int*int*int) list 
- * constr array * types array * (constr*name*constr) list =
+(* the main function, build the principle by exploring the term and reproduce
+   the same structure. *)
+let rec proofPrinc mi: constr funind =
  match kind_of_term mi.mimick with
     (* Fixpoint: we reproduce the Fix, fonc becomes (1,nbofmutf) to point on
        the name of recursive calls *) 
   | Fix((iarr,i),(narr,tarr,carr)) -> 
-
-     (* We construct the right predicates for each mutual fixpt *)     
-     let rec build_pred n =
-      if n >= Array.length iarr then []
-      else
-        let ftyp = Array.get tarr n in
-        let gl = mknewmeta() in
-        let gl_app = applFull gl ftyp in
-        let pis = prod_change_concl ftyp gl_app in
-        let gl_abstr = lam_change_concl ftyp gl_app in
-        (gl,gl_abstr,pis):: build_pred (n+1) in
-
-     let evarl,predl,pisl = collect_pred (build_pred 0) in
-     let newabsconcl = Array.of_list predl in
-     let evararr = Array.of_list evarl in
-     let pisarr = Array.of_list pisl in
+     (* We construct the right predicates for each mutual fixpt *)
+     let evararr,newabsconcl,pisarr = collect_pred (build_pred 0 tarr) in
      let newenv = push_rec_types (narr,tarr,carr) mi.env in
-
-     let rec collect_fix n =
-      if n >= Array.length iarr then [],[],[],[]
-      else
-        let nme = Array.get narr n in
-        let c = Array.get carr n in
-        (* rappelle sur le sous-terme, on ajoute un niveau de
-           profondeur (lift) parce que Fix est un binder. *)
-        let newmi = {mi with concl=(pisarr.(n)); absconcl=newabsconcl;
-        mimick=c; fonc=(1,((Array.length iarr)));env=newenv;fix=true} in
-        let appel_rec,levar,lposeq,_,evarrarr,parms = 
-         proofPrinc newmi (lift1_lvars lst_vars) 
-          (lift1_leqs lst_eqs) (lift1L lst_recs) in
-        let lnme,lappel_rec,llevar,llposeq = collect_fix (n+1) in
-        (nme::lnme),(appel_rec::lappel_rec),(levar@llevar), (lposeq@llposeq) in
-
-     let lnme,lappel_rec,llevar,llposeq =collect_fix  0 in
-     let lnme' = List.map (fun nme -> newname_append nme "_ind") lnme in
-     let anme = Array.of_list lnme' in
-     let aappel_rec = Array.of_list lappel_rec in
-     (* llevar are put outside the fix, so one level of rel must be removed *)
-     mkFix((iarr,i),(anme, pisarr,aappel_rec))
-      , (pop1_levar llevar) , llposeq,evararr,pisarr,[]
-
+     let anme',aappel_rec,llevar,llposeq = 
+      collect_fix mi 0 iarr narr carr pisarr newabsconcl newenv in
+     let anme = Array.map (fun nme -> newname_append nme "_ind") anme' in
+     { 
+      princ = mkFix((iarr,i),(anme, pisarr,aappel_rec));
+      evarlist= pop1_levar llevar; (* llevar are put outside the fix, so we pop 1 *)
+      hypnum = llposeq;
+      mutfixmetas = evararr;
+      conclarray = pisarr;
+      params = []
+     }
   (* <pcase> Cases b of arrPt end.*)
-  | Case(cinfo, pcase, b, arrPt) -> 
-
+  | Case (cinfo, pcase, b, arrPt) -> 
      let prod_pcase,_ = decompose_lam pcase in
-     let nmeb,lastprod_pcase = List.hd prod_pcase in
-     let b'= apply_leqtrpl_t b lst_eqs in
+     let nmeb,_ = List.hd prod_pcase in
+     let newb'= apply_leqtrpl_t b mi.lst_eqs in
      let type_of_b = Typing.type_of mi.env mi.sigma b in
-     let new_lst_recs = lst_recs @ hdMatchSub_cpl b mi.fonc in
-     (* Replace the calls to the function (recursive calls) by calls to the
-        corresponding constant:  *)
-     let d,f = mi.fonc in 
-     let res = ref b' in
-     let _ = for i = d to f do 
-       res := substitterm 0 (mkRel i) mi.nmefonc.(f-i) !res done in
-     let newb = !res in
+     (* Replace the recursive calls to the function by calls to the constant *)
+     let newb = replace_reccalls mi newb' in     
+     let cases = collect_cases (Array.mapi (fold_proof mi b type_of_b newb) arrPt) in
+     (* the match (case) annotation must be transformed, see [build_pcase] below *)
+     let newpcase = build_pcase mi pcase b type_of_b newb in
+     let trm' = mkCase (cinfo,newpcase,newb, cases.princ) in
+    { cases with
+     princ = if mi.doeqs then mkApp (trm',[|(mkRefl type_of_b newb)|]) else trm';
+     params = [] (* FIX: fix parms here (fixpt inside a match)*)
+    }
 
-     (* [fold_proof t l n] rend le resultat de l'appel recursif sur les
-        elements de la liste l (correpsondant a arrPt), appele avec les bons
-        arguments: [concl] devient [(DUMMY1:t1;...;DUMMY:tn)concl'], ou [n]
-        est le nombre d'arguments du constructeur considéré (FIX: Hormis les
-        parametres!!), et [concl'] est concl ou l'on a réécrit [b] en ($c_n$
-        [rel1]...).*)
 
-     let rec fold_proof nth_construct eltPt' =  
-      (* mise a jour de concl pour l'interieur du case, concl'= concl[b <- C x3
-         x2 x1... ], sans quoi les annotations ne sont plus coherentes *)
-      let cstr_appl,nargs = nth_dep_constructor type_of_b nth_construct in
-      let concl'' = 
-       substitterm 0 (lift nargs b) cstr_appl (lift nargs mi.concl) in
-      let neweq = mkEq type_of_b newb (popn nargs cstr_appl) in
-      let concl_dummy = add_n_dummy_prod concl'' nargs in
-      let lsteqs_rew = apply_eq_leqtrpl lst_eqs neweq in
-      let new_lsteqs = 
-       (mkRel (0-nargs),(type_of_b,newb, popn nargs cstr_appl))::lsteqs_rew in
-      let a',a'' = decompose_lam_n nargs eltPt' in
-      let newa'' = 
-       if mi.doeqs 
-       then mkLambda (name_of_string heq_prefix,lift nargs neweq,lift 1 a'') 
-       else a'' in
-      let newmimick = lamn nargs a' newa'' in
-      let b',b'' = decompose_prod_n nargs concl_dummy in
-      let newb'' = 
-       if mi.doeqs 
-       then mkProd (name_of_string heq_prefix,lift nargs neweq,lift 1 b'')
-       else b'' in
-      let newconcl = prodn nargs b' newb'' in
-      let newmi = {mi with mimick=newmimick; concl=newconcl; fix=true} in
-      let a,b,c,d,e,p = proofPrinc newmi lst_vars new_lsteqs new_lst_recs in
-      a,b,c,d,e,p
-      in
-     
-     let arrPt_proof,levar,lposeq,evararr,absc,_ = 
-      collect_cases (Array.mapi fold_proof arrPt) in
-     let prod_pcase,concl_pcase = decompose_lam pcase in
-     let nme,typ = List.hd prod_pcase in
-     let suppllam_pcase = List.tl prod_pcase in
-     (* je remplace b par rel1 (apres avoir lifte un coup) dans la
-        future annotation du futur case: ensuite je mettrai un lambda devant *)
-     let typesofeqs' = eqs_of_beqs_named equality_hyp_string lst_eqs in
-     (*      let typesofeqs = prod_it_lift typesofeqs' mi.concl in *)
-     let typesofeqs = mi.concl in
-     let typeof_case'' = 
-      substitterm 0 (lift 1 b) (mkRel 1) (lift 1 typesofeqs) in
-     
-     (* C'est un peu compliqué ici: en cas de type inductif vraiment dépendant
-        le piquant du case [pcase] contient des lambdas supplémentaires en tête
-        je les ai dans la variable [suppllam_pcase]. Le problème est que la
-        conclusion du piquant doit faire référence à ces variables plutôt qu'à
-        celle de l'exterieur. Ce qui suit permet de changer les reference de
-        newpacse' pour pointer vers les lambda du piquant. On procède comme
-        suit: on repère les rels qui pointent à l'interieur du piquant dans la
-        fonction imitée, pour ça on parcourt le dernier lambda du piquant (qui
-        contient le type de l'argument du case), et on remplace les rels
-        correspondant dans la preuve construite. *)
-     
-     (* typ vient du piquant, type_of_b vient du typage de b.*)
-     
-     let rel_smap = 
-      if List.length suppllam_pcase=0 then Smap.empty else
-        build_rel_map (lift (List.length suppllam_pcase) type_of_b) typ in
-     let rel_map = smap_to_list rel_smap in
-     let rec substL l c =
-      match l with
-         [] -> c
-       | ((e,e') ::l') -> substL l' (substitterm 0 e (lift 1 e') c) in
-     let newpcase' = substL rel_map typeof_case'' in
-     let neweq = mkEq (lift (List.length suppllam_pcase + 1) type_of_b) 
-      (lift (List.length suppllam_pcase + 1) newb) (mkRel 1) in
-     let newpcase = 
-      if mi.doeqs then
-        mkProd (name_of_string "eg", neweq, lift 1 newpcase') else newpcase'
-     in
-     (* construction du dernier lambda du piquant. *)
-     let typeof_case' = mkLambda (newname_append nme "_ind" ,typ, newpcase) in
-     (* ajout des lambdas supplémentaires (type dépendant) du piquant. *)
-     let typeof_case = 
-      lamn (List.length suppllam_pcase) suppllam_pcase typeof_case' in 
-     let trm' = mkCase (cinfo,typeof_case,newb, arrPt_proof) in
-     let trm = 
-      if mi.doeqs then mkApp (trm',[|(mkRefl type_of_b newb)|]) 
-      else trm' in
-     trm,levar,lposeq,evararr,absc,[] (* fix parms here (fix inside case)*)
-      
   | Lambda(nme, typ, cstr) ->
      let _, _, cconcl = destProd mi.concl in
      let d,f=mi.fonc in
      let newenv = push_rel (nme,None,typ) mi.env in
-     let newmi = {mi with concl=cconcl; mimick=cstr; env=newenv;
-      fonc=((if d > 0 then d+1 else 0),(if f > 0 then f+1 else 0))} in
      let newlst_var = (* if this lambda is a param, then don't add it here *)
-      if mi.fix then (mkRel 1,(nme,typ)) :: lift1_lvars lst_vars
-      else (*(mkRel 1,(nme,typ)) :: *) lift1_lvars lst_vars in
-     let rec_call,levar,lposeq,evararr,absc,parms =
-      proofPrinc newmi newlst_var (lift1_leqs lst_eqs) (lift1L lst_recs) in
+      if mi.fix then (mkRel 1,(nme,typ)) :: lift1_lvars mi.lst_vars
+      else (*(mkRel 1,(nme,typ)) :: *) lift1_lvars mi.lst_vars in
+     let newmi = {mi with concl=cconcl; mimick=cstr; env=newenv;
+      fonc = (if d > 0 then d+1 else 0) , (if f > 0 then f+1 else 0);
+      lst_vars = newlst_var ; lst_eqs = lift1_leqs mi.lst_eqs;
+      lst_recs = lift1L mi.lst_recs} in
+     let resrec = proofPrinc newmi in
      (* are we inside a fixpoint or a case? then this is a normal lambda *)
-     if mi.fix then mkLambda (nme,typ,rec_call) , levar, lposeq,evararr,absc,[]
+     if mi.fix 
+     then { resrec with princ = mkLambda (nme,typ,resrec.princ) ; params = [] }
      else (* otherwise this is a parameter *)
        let metav = mknewmeta() in
        let substmeta t = popn 1 (substitterm 0 (mkRel 1) metav t) in
-       let newrec_call = substmeta rec_call in
-       let newlevar = List.map (fun (ev,tev) -> ev, substmeta tev) levar in
-       let newabsc = Array.map substmeta absc in
-       newrec_call,newlevar,lposeq,evararr,newabsc,((metav,nme, typ)::parms)
+       { resrec with
+        princ = substmeta resrec.princ;
+        evarlist = List.map (fun (ev,tev) -> ev, substmeta tev) resrec.evarlist;
+        conclarray = Array.map substmeta resrec.conclarray;
+        params = (metav,nme,typ) :: resrec.params
+       }
+
 
   | LetIn(nme,cstr1, typ, cstr) ->
      failwith ("I don't deal with let ins yet. "^
 				 "Please expand them before applying this function.")
 
   | u -> 
-     let varrels = List.rev (List.map fst lst_vars) in
-     let varnames = List.map snd lst_vars in
+     let varrels = List.rev (List.map fst mi.lst_vars) in
+     let varnames = List.map snd mi.lst_vars in
      let nb_vars = List.length varnames in
-     let nb_eqs = List.length lst_eqs in
-     let eqrels = List.map fst lst_eqs in
+     let nb_eqs = List.length mi.lst_eqs in
+     let eqrels = List.map fst mi.lst_eqs in
      (* [terms_recs]: appel rec du fixpoint, On concatène les appels recs
         trouvés dans les let in et les Cases avec ceux trouves dans u (ie
         mi.mimick). *)
      (* TODO: il faudra gérer plusieurs pt fixes imbriqués ? *)
-     let terms_recs = lst_recs @ hdMatchSub_cpl mi.mimick mi.fonc in
-
+     let terms_recs = mi.lst_recs @ hdMatchSub_cpl mi.mimick mi.fonc in
      (*c construction du terme: application successive des variables, des
        egalites et des appels rec, a la variable existentielle correspondant a
        l'hypothese de recurrence en cours. *)
@@ -527,18 +444,110 @@ let rec proofPrinc mi lst_vars lst_eqs lst_recs:
      let appsrecpred = exchange_reli_arrayi_L mi.absconcl mi.fonc terms_recs in
      let typeofhole''  = prod_it_anonym_lift mi.concl appsrecpred in
      let typeofhole    = prodn nb_vars varnames typeofhole'' in
-		   
      (* Un bug de refine m'oblige à mettre ici un H (meta variable à ce point,
         mais remplacé par H avant le refine) au lieu d'un '?', je mettrai les
         '?'  à la fin comme ça [(([H1,H2,H3...] ...) ? ? ?)] *)
-
      let newmeta = mknewmeta() in
      let concl_with_var = applistc newmeta varrels in
      let conclrecs = applistc concl_with_var terms_recs in
-     conclrecs,[newmeta,typeofhole], [nb_vars,(List.length terms_recs)
-      ,nb_eqs],[||],mi.absconcl,[]
+     { empty_funind_constr with
+      princ = conclrecs;
+      evarlist = [ newmeta , typeofhole ];
+      hypnum = [ nb_vars , List.length terms_recs , nb_eqs ];
+      conclarray = mi.absconcl;
+     }
+
+     
+(* C'est un peu compliqué ici: en cas de type inductif vraiment dépendant
+   l'annotation de type du case [pcase] contient des lambdas supplémentaires
+   en tête. Je les récupère dans la variable [suppllam_pcase]. Le problème est
+   que la conclusion de l'annotation du nouveauacse doit faire référence à ces
+   variables plutôt qu'à celle de l'exterieur. Ce qui suit permet de changer
+   les reference de newpcase' pour pointer vers les lambda du piquant. On
+   procède comme suit: on repère les rels qui pointent à l'interieur de
+   l'annotation dans la fonction initiale et on les relie à celle du type
+   voulu pour le case, pour ça ([build_rel_map]) on parcourt en même temps le
+   dernier lambda du piquant ([typ]) (qui contient le type de l'argument du
+   case) et le type attendu pour le case ([type_of_b]) et on construit un
+   map. Ensuite on remplace les rels correspondant dans la preuve construite
+   en suivant le map. *)
+     
+and build_pcase mi pcase b type_of_b newb =
+     let prod_pcase,_ = decompose_lam pcase in
+     let nme,typ = List.hd prod_pcase in
+     (* je remplace b par rel1 (apres avoir lifte un coup) dans la future
+        annotation du futur case: ensuite je mettrai un lambda devant *)
+     let typeof_case'' = substitterm 0 (lift 1 b) (mkRel 1) (lift 1 mi.concl) in
+     let suppllam_pcase = List.tl prod_pcase in
+     let suppllam_pcasel = List.length suppllam_pcase  in
+     let rel_smap = 
+      if suppllam_pcasel=0 then Smap.empty else (* FIX: is this test necessary ? *)
+        build_rel_map (lift suppllam_pcasel type_of_b) typ in
+     let newpcase''' =  
+      Smap.fold (fun e e' acc -> substitterm 0 e (lift 1 e') acc)
+       rel_smap typeof_case'' in
+     let neweq = mkEq (lift (suppllam_pcasel + 1) type_of_b) 
+      (lift (suppllam_pcasel + 1) newb) (mkRel 1) in
+     let newpcase'' = 
+      if mi.doeqs 
+      then mkProd (name_of_string "eg", neweq, lift 1 newpcase''') 
+      else newpcase''' in
+     (* construction du dernier lambda du piquant. *)
+     let newpcase' = mkLambda (newname_append nme "_ind" ,typ, newpcase'') in
+     (* ajout des lambdas supplémentaires (type dépendant) du piquant. *)
+     lamn suppllam_pcasel suppllam_pcase newpcase'
 
 
+(* [fold_proof mi b typeofb newb l n] rend le resultat de l'appel recursif sur
+   cstr (correpsondant au ième elt de [arrPt] ci-dessus et donc au ième
+   constructeur de [typeofb]), appele avec les bons arguments: [mi.concl]
+   devient [(DUMMY1:t1;...;DUMMY:tn)concl'], ou [n] est le nombre d'arguments
+   du constructeur considéré, et [concl'] est [mi.concl] ou l'on a réécrit [b]
+   en ($c_n$ [rel1]...). *)
+and fold_proof mi b type_of_b newb i cstr = 
+ let new_lst_recs = mi.lst_recs @ hdMatchSub_cpl b mi.fonc in
+ (* mise a jour de concl pour l'interieur du case, concl'= concl[b <- C x3
+    x2 x1... ], sans quoi les annotations ne sont plus coherentes *)
+ let cstr_appl,nargs = nth_dep_constructor type_of_b i in
+ let concl'' = 
+  substitterm 0 (lift nargs b) cstr_appl (lift nargs mi.concl) in
+ let neweq = mkEq type_of_b newb (popn nargs cstr_appl) in
+ let concl_dummy = add_n_dummy_prod concl'' nargs in
+ let lsteqs_rew = apply_eq_leqtrpl mi.lst_eqs neweq in
+ let new_lsteqs = (mkRel (-nargs),(type_of_b,newb, popn nargs cstr_appl))::lsteqs_rew in
+ let a',a'' = decompose_lam_n nargs cstr in
+ let newa'' = 
+  if mi.doeqs 
+  then mkLambda (name_of_string heq_prefix,lift nargs neweq,lift 1 a'') 
+  else a'' in
+ let newmimick = lamn nargs a' newa'' in
+ let b',b'' = decompose_prod_n nargs concl_dummy in
+ let newb'' = 
+  if mi.doeqs 
+  then mkProd (name_of_string heq_prefix,lift nargs neweq,lift 1 b'')
+  else b'' in
+ let newconcl = prodn nargs b' newb'' in
+ let newmi = {mi with mimick=newmimick; concl=newconcl; fix=true; 
+  lst_eqs= new_lsteqs; lst_recs = new_lst_recs} in
+ proofPrinc newmi 
+
+
+and collect_fix mi n iarr narr carr pisarr newabsconcl newenv =
+ if n >= Array.length iarr then [||],[||],[],[]
+ else
+   let nme = Array.get narr n in
+   let c = Array.get carr n in
+   (* rappelle sur le sous-terme, on ajoute un niveau de
+      profondeur (lift) parce que Fix est un binder. *)
+   let newmi = {mi with concl=(pisarr.(n)); absconcl=newabsconcl;
+    mimick=c; fonc=(1,((Array.length iarr)));env=newenv;fix=true;
+    lst_vars=lift1_lvars mi.lst_vars; lst_eqs=lift1_leqs mi.lst_eqs; 
+    lst_recs= lift1L mi.lst_recs;} in
+   let resrec = proofPrinc newmi  in
+   let lnme,lappel_rec,llevar,llposeq = 
+    collect_fix mi (n+1) iarr narr carr pisarr newabsconcl newenv in
+   Array.append [|nme|] lnme , Array.append [|resrec.princ|] lappel_rec
+    , (resrec.evarlist@llevar) , (resrec.hypnum@llposeq)
 
 let mkevarmap_aux ex = let x,y = ex in	(mkevarmap_from_listex x),y
 
@@ -568,9 +577,10 @@ let interp_fonc_tacarg fonctac gl =
 
 let invfun_proof fonc def_fonc gl_abstr pis env sigma =
  let mi = {concl=pis; absconcl=gl_abstr; mimick=def_fonc; env=env;
- sigma=sigma; nmefonc=fonc; fonc=(0,0); doeqs=true; fix=false} in
- let princ_proof,levar,lposeq,evararr,absc,parms = proofPrinc mi [] [] [] in
- princ_proof,levar,lposeq,evararr,absc,parms
+ sigma=sigma; nmefonc=fonc; fonc=(0,0); doeqs=true; fix=false ; 
+ lst_vars = []; lst_eqs = []; lst_recs = []} in
+ proofPrinc mi
+
 (* Do intros [i] times, then do rewrite on all introduced hyps which are called
    like [heq_prefix], FIX: have another filter than the name. *)
 let rec iterintro i = 
@@ -686,39 +696,38 @@ let invfun c l dorew gl =
  let pis = add_pis (pf_concl gl) gl listargs' in
  (* princ_proof builds the principle *)
  let _ = resetmeta() in
- let princ_proof,levar, lposeq,evararr,_,parms = 
-  invfun_proof [|fonc|] def_fonc [||] pis (pf_env gl) (project gl) in
+ let pr = invfun_proof [|fonc|] def_fonc [||] pis (pf_env gl) (project gl) in
  (* Generalize the goal. [[x1:T1][x2:T2]... g[arg1 <- x1 ...]]. *)
  let gl_abstr' = add_lambdas (pf_concl gl) gl listargs' in
  (* apply parameters immediately *)
  let gl_abstr = 
-  applistc gl_abstr' (List.map (fun (x,y,z) -> x) (List.rev parms)) in
+  applistc gl_abstr' (List.map (fun (x,y,z) -> x) (List.rev pr.params)) in
  (* we apply args of the fix now, the parameters will be applied later *)
  let princ_proof_applied_args = 
-  applistc princ_proof (listsuf (List.length parms) listargs') in
+  applistc pr.princ (listsuf (List.length pr.params) listargs') in
  (* parameters are still there so patternify must not take them -> lift *)
  let princ_proof_applied_lift = 
-  lift (List.length levar) princ_proof_applied_args in
- let princ_applied_hyps'' = patternify (List.rev levar)
+  lift (List.length pr.evarlist) princ_proof_applied_args in
+ let princ_applied_hyps'' = patternify (List.rev pr.evarlist)
   princ_proof_applied_lift (Name (id_of_string "Hyp"))  in
  (* if there was a fix, we will not add "Q" as in funscheme, so we make a pop,
     TODO: find were we made the lift in proofPrinc instead and supress it here,
     and add lift in funscheme. *)
  let princ_applied_hyps' = 
-  if Array.length evararr > 0 then popn 1 princ_applied_hyps''
+  if Array.length pr.mutfixmetas > 0 then popn 1 princ_applied_hyps''
   else princ_applied_hyps'' in 
  (* if there is was fix, we have to replace the meta representing the
     predicate of the goal by the abstracted goal itself. *)
  let princ_applied_hyps = 
-  if Array.length evararr > 0 then (* mutual Fixpoint not treated in the tactic *) 
-    (substit_red 0 (evararr.(0)) gl_abstr princ_applied_hyps')
+  if Array.length pr.mutfixmetas > 0 then(* mutual Fixpoint not treated in the tactic*) 
+    (substit_red 0 (pr.mutfixmetas.(0)) gl_abstr princ_applied_hyps')
   else princ_applied_hyps' (* No Fixpoint *) in
  let _ = prNamedConstr "princ_applied_hyps" princ_applied_hyps in
  (* Same thing inside levar *)
  let newlevar' = 
-  if Array.length evararr > 0 then (* mutual Fixpoint not treated in the tactic *) 
-    List.map (fun (x,y) -> x,substit_red 0 (evararr.(0)) gl_abstr y) levar 
-  else levar
+  if Array.length pr.mutfixmetas > 0 then(* mutual Fixpoint not treated in the tactic*) 
+    List.map (fun (x,y) -> x,substit_red 0 (pr.mutfixmetas.(0)) gl_abstr y) pr.evarlist 
+  else pr.evarlist
  in
  (* replace params metavar by real args *)
  let rec replace_parms lparms largs t = 
@@ -726,19 +735,19 @@ let invfun c l dorew gl =
      [], _ -> t
    | ((p,_,_)::lp), (a::la) -> let t'= substitterm 0 p a t in replace_parms lp la t'
    | _, _ -> error "problem with number of args." in
- let princ_proof_applied = replace_parms parms listargs' princ_applied_hyps in
+ let princ_proof_applied = replace_parms pr.params listargs' princ_applied_hyps in
  let _ = prNamedLConstr "levar:" (List.map fst newlevar') in
  let _ = prNamedLConstr "levar types:" (List.map snd newlevar') in
  let _ = prNamedConstr "princ_proof_applied" princ_proof_applied in
  (* replace also in levar *)
  let newlevar = 
-  List.rev (List.map (fun (x,y) -> x, replace_parms parms listargs' y) newlevar') in
+  List.rev (List.map (fun (x,y) -> x, replace_parms pr.params listargs' y) newlevar') in
 (*
  (* replace params metavar by abstracted variables *)
-  let princ_proof_params = npatternify (List.rev parms) princ_applied_hyps in
+  let princ_proof_params = npatternify (List.rev pr.params) princ_applied_hyps in
  (* we apply now the real parameters *)
  let princ_proof_applied = 
-  applistc princ_proof_params (listpref (List.length parms) listargs') in
+  applistc princ_proof_params (listpref (List.length pr.params) listargs') in
 *)
  let princ_applied_evars = apply_levars princ_proof_applied newlevar in
  let open_princ_proof_applied = princ_applied_evars in
@@ -750,7 +759,7 @@ let invfun c l dorew gl =
  let _ = prNamedLConstr "\ngl= " (List.map (fun x -> (snd x).evar_concl) lgl) in
  let _ = prstr "fin gl \n\n" in
  invfun_basic (mkevarmap_aux open_princ_proof_applied) listargs_ids 
-  gl dorew lposeq
+  gl dorew pr.hypnum
 
 (* function must be a constant, all arguments must be given. *)
 let invfun_verif c l dorew gl =
@@ -780,13 +789,13 @@ let buildFunscheme fonc mutflist =
  let pis = prod_change_concl ftyp gl_app in
  (* Here we call the function invfun_proof, that effectively 
     builds the scheme *)
- let princ_proof,levar,_,evararr,absc,parms = 
-  invfun_proof mutflist def_fonc [||] pis (Global.env()) Evd.empty in
+(*  let princ_proof,levar,_,evararr,absc,parms =  *)
+ let pr = invfun_proof mutflist def_fonc [||] pis (Global.env()) Evd.empty in
  (* parameters are still there (unboud rel), and patternify must not take them
   -> lift*)
- let princ_proof_lift = lift (List.length levar) princ_proof in
+ let princ_proof_lift = lift (List.length pr.evarlist) pr.princ in
  let princ_proof_hyps = 
-  patternify (List.rev levar) princ_proof_lift (Name (id_of_string "Hyp"))  in
+  patternify (List.rev pr.evarlist) princ_proof_lift (Name (id_of_string "Hyp"))  in
  let rec princ_replace_metas ev abs i t = 
   if i>= Array.length ev then t
   else (* fix? *)
@@ -802,14 +811,15 @@ let buildFunscheme fonc mutflist =
     mkLambda (Name (id_of_name nam) , typ, 
     substitterm 0 ev (mkRel 1) (lift 0 acc)))
    t (List.rev params) in
- if Array.length evararr = 0 (* Is there a Fixpoint? *)
+ if Array.length pr.mutfixmetas = 0 (* Is there a Fixpoint? *)
 	then (* No Fixpoint *)
-   princ_replace_params parms (mkLambda ((Name (id_of_string "Q")), 
+   princ_replace_params pr.params (mkLambda ((Name (id_of_string "Q")), 
 		 prod_change_concl ftyp mkthesort,
    (substitterm 0 gl (mkRel 1) princ_proof_hyps)))
 	else (* there is a fix -> add parameters + replace metas *)
-   let princ_rpl = princ_replace_metas evararr absc 0 princ_proof_hyps in
-   princ_replace_params parms princ_rpl
+   let princ_rpl = 
+    princ_replace_metas pr.mutfixmetas pr.conclarray 0 princ_proof_hyps in
+   princ_replace_params pr.params princ_rpl
 
 
     
