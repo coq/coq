@@ -328,7 +328,7 @@ let close_profile print =
 	outside.owntime <- outside.owntime + t;
 	ajoute_ownalloc outside dw;
 	ajoute_totalloc outside dw;
-	if List.length !prof_table <> 0 then begin
+	if !prof_table <> [] then begin
 	  let ov_bc = time_overhead_B_C () (* B+C overhead *) in
 	  let ov_ad = time_overhead_A_D () (* A+D overhead *) in
 	  let adjust (n,e) = (n, adjust_time ov_bc ov_ad e) in

@@ -415,6 +415,6 @@ let produce_output fl =
 let main () =
   let files = parse () in
   if not !quiet then banner ();
-  if List.length files > 0 then produce_output files
+  if files <> [] then produce_output files
 
 let _ = Printexc.catch main ()

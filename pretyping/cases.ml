@@ -1436,7 +1436,7 @@ let rename_env subst env =
 
 let is_dependent_indtype = function
   | NotInd _ -> false
-  | IsInd (_, IndType(_,realargs)) -> List.length realargs <> 0
+  | IsInd (_, IndType(_,realargs)) -> realargs <> []
 
 let prepare_initial_alias_eqn isdep tomatchl eqn =
   let (subst, pats) = 

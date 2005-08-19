@@ -697,7 +697,7 @@ print_endline "PASSATO" ; flush stdout ;
               let
                compute_result_if_eta_expansion_not_required subst residual_args
               =
-               let residual_args_not_empty = List.length residual_args > 0 in
+               let residual_args_not_empty = residual_args <> [] in
                let h' =
                 if residual_args_not_empty then
                  aux' env idrefs ~subst:(None,subst) h

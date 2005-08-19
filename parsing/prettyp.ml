@@ -267,7 +267,7 @@ let assumptions_for_print lna =
 (* *)
 
 let print_params env params =
-  if List.length params = 0 then 
+  if params = [] then 
     (mt ()) 
   else
     if !Options.v7 then
