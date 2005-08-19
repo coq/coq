@@ -453,7 +453,7 @@ and compile_str_cst reloc sc sz cont =
       let nargs = Array.length args in
       comp_args compile_str_cst reloc args sz (Kmakeblock(nargs,tag) :: cont)
   | Bconstruct_app(tag,nparams,arity,args) ->
-      if args = [||] then code_construct tag nparams arity cont
+      if Array.length args = 0 then code_construct tag nparams arity cont
       else
 	comp_app 
 	  (fun _ _ _ cont -> code_construct tag nparams arity cont) 

@@ -226,7 +226,7 @@ let mkLetIn (x,c1,t,c2) = LetIn (x,c1,t,c2)
 (* We ensure applicative terms have at least one argument and the
    function is not itself an applicative term *)
 let mkApp (f, a) = 
-  if a=[||] then f else
+  if Array.length a = 0 then f else
     match f with
       | App (g, cl) -> App (g, Array.append cl a)
       | _ -> App (f, a)
@@ -435,7 +435,7 @@ let rec collapse_appl c = match kind_of_term c with
       let rec collapse_rec f cl2 = match kind_of_term f with
 	| App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
 	| Cast (c,_) when isApp c -> collapse_rec c cl2
-	| _ -> if cl2 = [||] then f else mkApp (f,cl2)
+	| _ -> if Array.length cl2 = 0 then f else mkApp (f,cl2)
       in 
       collapse_rec f cl
   | _ -> c
@@ -451,7 +451,7 @@ let rec strip_head_cast c = match kind_of_term c with
       let rec collapse_rec f cl2 = match kind_of_term f with
 	| App (g,cl1) -> collapse_rec g (Array.append cl1 cl2)
 	| Cast (c,_) -> collapse_rec c cl2
-	| _ -> if cl2 = [||] then f else mkApp (f,cl2)
+	| _ -> if Array.length cl2 = 0 then f else mkApp (f,cl2)
       in 
       collapse_rec f cl
   | Cast (c,t) -> strip_head_cast c

@@ -409,7 +409,7 @@ let pp_one_ind prefix ip pl cv =
 			(fun () -> spc () ++ str "* ") (pp_type true pl) l))
   in
   pp_parameters pl ++ str prefix ++ pp_global (IndRef ip) ++ str " =" ++ 
-  if cv = [||] then str " unit (* empty inductive *)" 
+  if Array.length cv = 0 then str " unit (* empty inductive *)" 
   else fnl () ++ v 0 (prvect_with_sep fnl pp_constructor
 			(Array.mapi (fun i c -> ConstructRef (ip,i+1), c) cv))
 

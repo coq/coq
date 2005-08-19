@@ -633,7 +633,7 @@ let apply_to_rels c l =
    applistc c (Util.list_map_i (fun i _ -> mkRel (len - i)) 0 l)
 
 let apply_to_relation subst rel =
- if subst = [||] then rel
+ if Array.length subst = 0 then rel
  else
   let new_quantifiers_no = rel.rel_quantifiers_no - Array.length subst in
    assert (new_quantifiers_no >= 0) ;

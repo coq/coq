@@ -655,7 +655,7 @@ let check_generalizable_case unsafe br =
 (*s Do all branches correspond to the same thing? *)
 
 let check_constant_case br = 
-  if br = [||] then raise Impossible; 
+  if Array.length br = 0 then raise Impossible; 
   let (r,l,t) = br.(0) in
   let n = List.length l in 
   if ast_occurs_itvl 1 n t then raise Impossible; 

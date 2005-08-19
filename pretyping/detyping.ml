@@ -224,7 +224,8 @@ let detype_case computable detype detype_eqn testdep
   let consnargs = Array.init (Array.length mip.mind_consnames) get_consnarg in
   let consnargsl = Array.map List.length consnargs in
   let alias, aliastyp, newpred, pred = 
-    if (not !Options.raw_print) & synth_type & computable & bl <> [||] then
+    if (not !Options.raw_print) & synth_type & computable & Array.length bl<>0 
+    then 
       Anonymous, None, None, None
     else
       let p = option_app detype p in

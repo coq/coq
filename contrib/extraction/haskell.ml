@@ -217,11 +217,11 @@ let pp_one_ind ip pl cv =
       	       	prlist_with_sep 
 		  (fun () -> (str " ")) (pp_type true pl) l))
   in
-  str (if cv = [||] then "type " else "data ") ++ 
+  str (if Array.length cv = 0 then "type " else "data ") ++ 
   pp_global (IndRef ip) ++ str " " ++
   prlist_with_sep (fun () -> str " ") pr_lower_id pl ++
   (if pl = [] then mt () else str " ") ++
-  if cv = [||] then str "= () -- empty inductive"
+  if Array.length cv = 0 then str "= () -- empty inductive"
   else 
     (v 0 (str "= " ++
 	  prvect_with_sep (fun () -> fnl () ++ str "  | ") pp_constructor 

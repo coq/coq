@@ -75,10 +75,11 @@ let normalize_neg n =
   let k = ref 1 in
   while !k < Array.length n & n.(!k) = base - 1 do incr k done;
   let n' = Array.sub n !k (Array.length n - !k) in
-  if n' = [||] then [|-1|] else (n'.(0) <- n'.(0) - base; n')
+  if Array.length n' = 0 then [|-1|] else (n'.(0) <- n'.(0) - base; n')
 
 let rec normalize n =
-  if n=[||] then n else if n.(0) = -1 then normalize_neg n else normalize_pos n
+  if Array.length n = 0 then n else 
+    if n.(0) = -1 then normalize_neg n else normalize_pos n
 
 let neg m =
   if m = zero then zero else
@@ -254,7 +255,7 @@ let of_string s =
   a
 
 let to_string_pos sgn n =
-   if n = [||] then "0" else
+   if Array.length n = 0 then "0" else
      sgn ^
      String.concat ""
       (string_of_int n.(0) :: List.map format_size (List.tl (Array.to_list n)))

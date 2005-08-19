@@ -1336,7 +1336,7 @@ and match_current pb ((current,typ as ct),deps) =
 	let mind,_ = dest_ind_family indf in
 	let cstrs = get_constructors pb.env indf in
 	let eqns,onlydflt = group_equations pb mind current cstrs pb.mat in
-	if (cstrs <> [||] or pb.mat <> []) & onlydflt  then
+	if (Array.length cstrs <> 0 or pb.mat <> []) & onlydflt  then
 	  compile (shift_problem ct pb)
 	else
           let constraints = Array.map (solve_constraints indt) cstrs in
