@@ -801,23 +801,23 @@ let rec fstrong unfreeze_fun lfts v =
   to_constr (fstrong unfreeze_fun) lfts (unfreeze_fun v)
 *)
 
-let rec zip zfun m stk =
+let rec zip m stk =
   match stk with
     | [] -> m
     | Zapp args :: s ->
         let args = Array.of_list args in
-        zip zfun {norm=neutr m.norm; term=FApp(m, Array.map zfun args)} s
+        zip {norm=neutr m.norm; term=FApp(m, args)} s
     | Zcase(ci,p,br)::s ->
-        let t = FCases(ci, zfun p, m, Array.map zfun br) in
-        zip zfun {norm=neutr m.norm; term=t} s
+        let t = FCases(ci, p, m, br) in
+        zip {norm=neutr m.norm; term=t} s
     | Zfix(fx,par)::s ->
-        zip zfun fx (par @ append_stack_list ([m], s))
+        zip fx (par @ append_stack_list ([m], s))
     | Zshift(n)::s ->
-        zip zfun (lift_fconstr n m) s
+        zip (lift_fconstr n m) s
     | Zupdate(rf)::s ->
-        zip zfun (update rf (m.norm,m.term)) s
+        zip (update rf (m.norm,m.term)) s
 
-let fapp_stack (m,stk) = zip (fun x -> x) m stk
+let fapp_stack (m,stk) = zip m stk
 
 (*********************************************************************)
 
