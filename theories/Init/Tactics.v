@@ -45,7 +45,7 @@ Ltac f_equal :=
   let des := destruct 1 || intro in
   let r := try reflexivity in 
   match goal with 
-   | |- ?f ?a = ?f' ?a' => cut (a=a'); des; r
+   | |- ?f ?a = ?f' ?a' => cut (a=a'); [des; r|r]
    | |- ?f ?a ?b = ?f' ?a' ?b' => 
       cut (b=b');[cut (a=a');[do 2 des; r|r]|r]
    | |- ?f ?a ?b ?c = ?f' ?a' ?b' ?c'=> 
