@@ -446,7 +446,7 @@ and detype_eqn tenv avoid env constr construct_nargs branch =
   let make_pat x avoid env b ids =
     if force_wildcard () & noccurn 1 b then
       PatVar (dummy_loc,Anonymous),avoid,(add_name Anonymous env),ids
-    else 
+    else
       let id = next_name_away_with_default "x" x avoid in
       PatVar (dummy_loc,Name id),id::avoid,(add_name (Name id) env),id::ids
   in
@@ -487,6 +487,6 @@ and detype_binder tenv bk avoid env na ty c =
       concrete_name (fst tenv) avoid env na c in
   let r =  detype tenv avoid' (add_name na' env) c in
   match bk with
-    | BProd -> RProd (dummy_loc, na',detype tenv [] env ty, r)
-    | BLambda -> RLambda (dummy_loc, na',detype tenv [] env ty, r)
-    | BLetIn -> RLetIn (dummy_loc, na',detype tenv [] env ty, r)
+    | BProd -> RProd (dummy_loc, na',detype tenv avoid env ty, r)
+    | BLambda -> RLambda (dummy_loc, na',detype tenv avoid env ty, r)
+    | BLetIn -> RLetIn (dummy_loc, na',detype tenv avoid env ty, r)
