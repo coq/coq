@@ -490,9 +490,9 @@ and detype_binder tenv bk avoid env na ty c =
       concrete_name (fst tenv) avoid env na c in
   let r =  detype tenv avoid' (add_name na' env) c in
   match bk with
-    | BProd -> RProd (dummy_loc, na',detype tenv [] env ty, r)
-    | BLambda -> RLambda (dummy_loc, na',detype tenv [] env ty, r)
-    | BLetIn -> RLetIn (dummy_loc, na',detype tenv [] env ty, r)
+    | BProd -> RProd (dummy_loc, na',detype tenv avoid env ty, r)
+    | BLambda -> RLambda (dummy_loc, na',detype tenv avoid env ty, r)
+    | BLetIn -> RLetIn (dummy_loc, na',detype tenv avoid env ty, r)
 
 let rec subst_pat subst pat = 
   match pat with
