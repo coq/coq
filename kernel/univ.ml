@@ -75,8 +75,7 @@ let super = function
       Max ([],[u])
   | Max _ ->
       anomaly ("Cannot take the successor of a non variable universes:\n"^
-       "you are probably typing a type already known to be the type\n"^
-       "of a user-provided term; if you really need this, please report")
+               "(maybe a bugged tactic)")
 
 (* Returns the formal universe that is greater than the universes u and v.
    Used to type the products. *)
