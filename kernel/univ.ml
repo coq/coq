@@ -69,9 +69,8 @@ let super = function
   | Variable u -> 
       Max ([],[u])
   | Max _ ->
-      anomaly ("Cannot take the successor of a non variable universes:\n"^
-       "you are probably typing a type already known to be the type\n"^
-       "of a user-provided term; if you really need this, please report")
+      anomaly ("Cannot take the successor of a non variable universes\n"^
+               "(maybe a bugged tactic)")
 
 (* returns the least upper bound of universes u and v. If they are not
    constrained, then a new universe is created.
