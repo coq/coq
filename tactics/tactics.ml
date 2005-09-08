@@ -1031,18 +1031,37 @@ let simplest_case c = general_case_analysis (c,NoBindings)
 let clear_last = tclLAST_HYP (fun c -> (clear [destVar c]))
 let case_last  = tclLAST_HYP simplest_case
 
-let rec intro_pattern destopt = function
-  | IntroWildcard ->
-      tclTHEN intro clear_last
-  | IntroIdentifier id ->
-      intro_gen (IntroMustBe id) destopt true
-  | IntroOrAndPattern l ->
-      tclTHEN introf
+let rec explicit_intro_names = function
+| IntroWildcard :: l -> explicit_intro_names l
+| IntroIdentifier id :: l -> id :: explicit_intro_names l
+| IntroOrAndPattern ll :: l' -> 
+    List.flatten (List.map (fun l -> explicit_intro_names (l@l')) ll)
+| [] -> []
+
+  (* We delay thinning until the completion of the whole intros tactic
+     to ensure that dependent hypotheses are cleared in the right
+     dependency order (see bug #1000); we use fresh names, not used in
+     the tactic, for the hyps to clear *)
+let rec intros_patterns thin destopt = function
+  | IntroWildcard :: l ->
+      tclTHEN 
+        (intro_gen (IntroAvoid (explicit_intro_names l)) None true)
+        (onLastHyp (fun id -> intros_patterns (id::thin) destopt l))
+  | IntroIdentifier id :: l ->
+      tclTHEN
+        (intro_gen (IntroMustBe id) destopt true)
+        (intros_patterns thin destopt l)
+  | IntroOrAndPattern ll :: l' ->
+      tclTHEN
+        introf
         (tclTHENS
 	  (tclTHEN case_last clear_last)
-	  (List.map (intros_pattern destopt) l))
+	  (List.map (fun l -> intros_patterns thin destopt (l@l')) ll))
+  | [] -> clear thin
 
-and intros_pattern destopt l = tclMAP (intro_pattern destopt) l
+let intros_pattern = intros_patterns []
+
+let intro_pattern destopt pat = intros_patterns [] destopt [pat]
 
 let intro_patterns = function 
   | [] -> tclREPEAT intro
