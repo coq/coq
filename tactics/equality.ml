@@ -172,10 +172,6 @@ let build_rect eq =
 	  
 (*********** List of constructions depending of the initial state *)
 
-let find_eq_pattern aritysort sort = 
-  (* "eq" now accept arguments in Type and elimination to Type *)
-  Coqlib.build_coq_eq ()
-
 (* [find_positions t1 t2]
 
    will find the positions in the two terms which are suitable for

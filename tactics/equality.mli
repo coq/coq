@@ -24,8 +24,6 @@ open Tacexpr
 open Rawterm
 (*i*)
 
-val find_eq_pattern : sorts -> sorts -> constr
-
 val general_rewrite_bindings : bool -> constr with_bindings -> tactic
 val general_rewrite          : bool -> constr -> tactic
 
