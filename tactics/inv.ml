@@ -135,9 +135,8 @@ let make_inv_predicate env sigma indf realargs id status concl =
           else 
 	    make_iterated_tuple env' sigma (ai,ati) (xi,ti)
 	in
-        let type_type_rhs = get_sort_of env sigma (type_of env sigma rhs) in
         let sort = get_sort_of env sigma concl in 
-        let eq_term = find_eq_pattern type_type_rhs sort in
+        let eq_term = Coqlib.build_coq_eq () in
         let eqn = applist (eq_term ,[eqnty;lhs;rhs]) in 
 	build_concl ((Anonymous,lift n eqn)::eqns) (n+1) restlist
   in
