@@ -968,26 +968,20 @@ let unsafe_infer_type valcon isevars env lvar constr =
   let tj = pretype_type valcon env isevars lvar constr in
   tj_nf_evar (evars_of !isevars) tj
 
-(* If fail_evar is false, [process_evars] builds a meta_map with the
-   unresolved Evar that were not in initial sigma; otherwise it fail
-   on the first unresolved Evar not already in the initial sigma. *)
-(* [fail_evar] says how to process unresolved evars:
- *   true -> raise an error message
- *   false -> convert them into new Metas (casted with their type)
- *)
-(* assumes the defined existentials have been replaced in c (should be
-   done in unsafe_infer and unsafe_infer_type) *)
-let check_evars fail_evar env initial_sigma isevars c =
+(* [check_evars] fails if some unresolved evar remains *)
+(* it assumes that the defined existentials have already been substituted
+   (should be done in unsafe_infer and unsafe_infer_type) *)
+
+let check_evars env initial_sigma isevars c =
   let sigma = evars_of !isevars in
   let rec proc_rec c =
     match kind_of_term c with
       | Evar (ev,args as k) ->
           assert (Evd.in_dom sigma ev);
 	  if not (Evd.in_dom initial_sigma ev) then
-	    (if fail_evar then
-              let (loc,k) = evar_source ev !isevars in
-	       error_unsolvable_implicit loc env sigma k)
-      | _ -> iter_constr proc_rec c      
+            let (loc,k) = evar_source ev !isevars in
+	    error_unsolvable_implicit loc env sigma k
+      | _ -> iter_constr proc_rec c
   in
   proc_rec c(*;
   let (_,pbs) = get_conv_pbs !isevars (fun _ -> true) in
@@ -1008,35 +1002,27 @@ let check_evars fail_evar env initial_sigma isevars c =
        retourne aussi le nouveau sigma...
 *)
 
-(* constr with holes *)
-type open_constr = evar_map * constr
+(* Raw calls to the unsafe inference machine: boolean says if we must
+   fail on unresolved evars; the unsafe_judgment list allows us to
+   extend env with some bindings *)
 
-let ise_resolve_casted_gen fail_evar sigma env lvar typ c =
-  let isevars = ref (create_evar_defs sigma) in
-  let j = unsafe_infer (mk_tycon typ) isevars env lvar c in
-  check_evars fail_evar env sigma isevars (mkCast(j.uj_val,j.uj_type));
-  (evars_of !isevars, j)
-
-let ise_resolve_casted sigma env typ c =
-  ise_resolve_casted_gen true sigma env ([],[]) typ c
-
-(* Raw calls to the unsafe inference machine: boolean says if we must fail
-   on unresolved evars, or replace them by Metas; the unsafe_judgment list
-   allows us to extend env with some bindings *)
 let ise_infer_gen fail_evar sigma env lvar exptyp c =
   let tycon = match exptyp with None -> empty_tycon | Some t -> mk_tycon t in
   let isevars = ref (create_evar_defs sigma) in
   let j = unsafe_infer tycon isevars env lvar c in
-  check_evars fail_evar env sigma isevars (mkCast(j.uj_val,j.uj_type));
-  (evars_of !isevars, j)
+  if fail_evar then check_evars env sigma isevars (mkCast(j.uj_val,j.uj_type));
+  (!isevars, j)
 
 let ise_infer_type_gen fail_evar sigma env lvar c =
   let isevars = ref (create_evar_defs sigma) in
   let tj = unsafe_infer_type empty_valcon isevars env lvar c in
-  check_evars fail_evar env sigma isevars tj.utj_val;
-  (evars_of !isevars, tj)
+  if fail_evar then check_evars env sigma isevars tj.utj_val;
+  (!isevars, tj)
+
+(** Entry points of the high-level type synthesis algorithm *)
 
 type var_map = (identifier * unsafe_judgment) list
+type unbound_ltac_var_map = (identifier * identifier option) list
 
 let understand_judgment sigma env c =
   snd (ise_infer_gen true sigma env ([],[]) None c)
@@ -1045,24 +1031,24 @@ let understand_type_judgment sigma env c =
   snd (ise_infer_type_gen true sigma env ([],[]) c)
 
 let understand sigma env c =
-  let _, c = ise_infer_gen true sigma env ([],[]) None c in
-  c.uj_val
+  (understand_judgment sigma env c).uj_val
 
 let understand_type sigma env c =
-  let _,c = ise_infer_type_gen true sigma env ([],[]) c in
-  c.utj_val
+  (understand_type_judgment sigma env c).utj_val
 
 let understand_gen_ltac sigma env lvar ~expected_type:exptyp c =
-  let _, c = ise_infer_gen true sigma env lvar exptyp c in
-  c.uj_val
+  let evars,j = ise_infer_gen false sigma env lvar exptyp c in
+  (evars, j.uj_val)
 
 let understand_gen sigma env lvar ~expected_type:exptyp c =
   let _, c = ise_infer_gen true sigma env (lvar,[]) exptyp c in
   c.uj_val
 
-let understand_gen_tcc sigma env lvar exptyp c =
-  let metamap, c = ise_infer_gen false sigma env (lvar,[]) exptyp c in
-  metamap, c.uj_val
+let understand_gen_tcc sigma env lvar ~expected_type:exptyp c =
+  let evars,j = ise_infer_gen false sigma env (lvar,[]) exptyp c in
+  evars_of evars, j.uj_val
+
+(** Miscellaneous interpretation functions *)
 
 let interp_sort = function
   | RProp c -> Prop c
