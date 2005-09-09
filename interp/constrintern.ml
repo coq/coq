@@ -1102,8 +1102,10 @@ let interp_constr sigma env c =
 let interp_openconstr sigma env c =
   understand_gen_tcc sigma env [] None (interp_rawconstr sigma env c)
 
+(*
 let interp_casted_openconstr sigma env c typ =
   understand_gen_tcc sigma env [] (Some typ) (interp_rawconstr sigma env c)
+*)
 
 let interp_type sigma env c =
   understand_type sigma env (interp_rawtype sigma env c)
@@ -1129,11 +1131,8 @@ let retype_list sigma env lst =
 
 (*  List.map (fun (x,csr) -> (x,Retyping.get_judgment_of env sigma csr)) lst*)
 
-type ltac_sign = 
-  identifier list * (identifier * identifier option) list
-
-type ltac_env = 
-  (identifier * Term.constr) list * (identifier * identifier option) list
+type ltac_sign = identifier list * unbound_ltac_var_map
+type ltac_env = (identifier * Term.constr) list * unbound_ltac_var_map
 
 (* Interprets a constr according to two lists *)
 (* of instantiations (variables and metas)    *)
@@ -1142,7 +1141,7 @@ let interp_constr_gen sigma env (ltacvars,unbndltacvars) c exptyp =
   let c = interp_rawconstr_gen false sigma env false
     (List.map fst ltacvars,unbndltacvars) c in
   let typs = retype_list sigma env ltacvars in
-  understand_gen sigma env typs exptyp c
+  understand_gen_ltac sigma env (typs,[]) exptyp c
 
 (*Interprets a casted constr according to two lists of instantiations
   (variables and metas)*)

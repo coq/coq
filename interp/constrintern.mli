@@ -20,6 +20,7 @@ open Pattern
 open Coqast
 open Topconstr
 open Termops
+open Pretyping
 (*i*)
 
 (*s Translation from front abstract syntax of term to untyped terms (rawconstr)
@@ -41,11 +42,8 @@ type var_internalisation_data =
 type implicits_env = (identifier * var_internalisation_data) list
 type full_implicits_env = identifier list * implicits_env
 
-type ltac_sign = 
-  identifier list * (identifier * identifier option) list
-
-type ltac_env = 
-  (identifier * constr) list * (identifier * identifier option) list
+type ltac_sign = identifier list * unbound_ltac_var_map
+type ltac_env = (identifier * constr) list * unbound_ltac_var_map
 
 (* Interprets global names, including syntactic defs and section variables *)
 val interp_rawconstr     : evar_map -> env -> constr_expr -> rawconstr
@@ -58,8 +56,6 @@ val interp_casted_constr : evar_map -> env -> constr_expr -> types -> constr
 val interp_type          : evar_map -> env -> constr_expr -> types
 val interp_binder        : evar_map -> env -> name -> constr_expr -> types
 val interp_openconstr    : evar_map -> env -> constr_expr -> evar_map * constr
-val interp_casted_openconstr    :
-  evar_map -> env -> constr_expr -> constr -> evar_map * constr
 
 (* [interp_type_with_implicits] extends [interp_type] by allowing
    implicits arguments in the ``rel'' part of [env]; the extra
@@ -83,7 +79,8 @@ val type_judgment_of_rawconstr :
 (* Interprets a constr according to two lists of instantiations (variables and
   metas), possibly casting it*)
 val interp_constr_gen     :
-  evar_map -> env -> ltac_env -> constr_expr -> constr option -> constr
+  evar_map -> env -> ltac_env -> constr_expr -> constr option ->
+    evar_defs * constr
 
 (* Interprets a constr according to two lists of instantiations (variables and
   metas), possibly casting it, and turning unresolved evar into metas*)
