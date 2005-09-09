@@ -47,6 +47,8 @@ Tactics
 - Fixed a "fold" bug (non critical and possible source of incompatibilities).
 - Added classical_left and classical_right which transforms |- A \/ B into 
   ~B |- A and ~A |- B respectively.
+- Added command "Declare Implicit Tactic" to set up a default tactic to be
+  used to solve unresolved subterms of term arguments of tactics.
 
 Modules
 
