@@ -472,15 +472,8 @@ let allowed_sorts env issmall isunit = function
       if issmall then all_sorts
       else impredicative_sorts
   | Prop Null -> 
-(* Added InType which is derivable :when the type is unit and small *)
-(* unit+small types have all elimination 
-   In predicative system, the 
-   other inductive definitions have only Prop elimination.
-   In impredicative system, large unit type have also Set elimination
-*)   if isunit then 
-	if issmall then all_sorts
-	else if Environ.engagement env = None 
-        then logical_sorts else impredicative_sorts
+(* 29/1/02: added InType which is derivable when the type is unit and small *)
+      if isunit then all_sorts
       else logical_sorts
 
 let build_inductive env env_ar record finite inds recargs cst =
