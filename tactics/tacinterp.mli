@@ -138,8 +138,12 @@ val interp_add : string * (interp_sign -> Coqast.t -> value) -> unit
 val overwriting_interp_add : string * (interp_sign -> Coqast.t -> value) ->
                              unit
 
+(* Declare the default tactic to fill implicit arguments *)
+val declare_implicit_tactic : tactic -> unit
 
-val declare_xml_printer : (out_channel -> Environ.env -> Evd.evar_map -> constr -> unit) -> unit
+(* Declare the xml printer *)
+val declare_xml_printer : 
+  (out_channel -> Environ.env -> Evd.evar_map -> constr -> unit) -> unit
 
 (* printing *)
 val print_ltac : Libnames.qualid -> std_ppcmds

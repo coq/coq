@@ -1185,18 +1185,59 @@ let retype_list sigma env lst =
     try (x,Retyping.get_judgment_of env sigma csr)::a with
     | Anomaly _ -> a) lst []
 
+let implicit_tactic = ref None
+
+let declare_implicit_tactic tac = implicit_tactic := Some tac
+
+open Evd
+
+let solvable_by_tactic env evi (ev,args) src = 
+  match (!implicit_tactic, src) with
+  | Some tac, (ImplicitArg _ | QuestionMark)
+      when evi.evar_hyps = Environ.named_context env ->
+      let id = id_of_string "H" in
+      start_proof id IsLocal evi.evar_hyps evi.evar_concl (fun _ _ -> ());
+      begin
+	try
+	  by (tclCOMPLETE tac);
+	  let _,(const,_,_) = cook_proof () in 
+	  delete_current_proof (); const.const_entry_body
+	with e when Logic.catchable_exception e -> 
+	  delete_current_proof();
+	  raise Exit
+      end
+  | _ -> raise Exit
+
+let solve_remaining_evars env initial_sigma evars c =
+  let isevars = ref evars in
+  let rec proc_rec c =
+    match kind_of_term (Reductionops.whd_evar (evars_of !isevars) c) with
+      | Evar (ev,args as k) when not (Evd.in_dom initial_sigma ev) ->
+            let (loc,src) = evar_source ev !isevars in
+	    let sigma = evars_of !isevars in
+	    (try 
+	      let evi = Evd.map sigma ev in
+	      let c = solvable_by_tactic env evi k src in
+	      isevars := Evd.evar_define ev c !isevars;
+	      c
+	    with Exit ->
+	      Pretype_errors.error_unsolvable_implicit loc env sigma src)
+      | _ -> map_constr proc_rec c      
+  in
+  map_constr proc_rec c
+
 let interp_casted_constr ocl ist sigma env (c,ce) =
   let (l1,l2) = constr_list ist env in
   let tl1 = retype_list sigma env l1 in
-  let csr = 
+  let evars,csr = 
     match ce with
-    | None ->
-        Pretyping.understand_gen_ltac sigma env (tl1,l2) ocl c
+    | None -> Pretyping.understand_gen_ltac sigma env (tl1,l2) ocl c
       (* If at toplevel (ce<>None), the error can be due to an incorrect
          context at globalization time: we retype with the now known
          intros/lettac/inversion hypothesis names *)
     | Some c -> interp_constr_gen sigma env (l1,l2) c ocl
   in
+  let csr = solve_remaining_evars env sigma evars csr in
   db_constr ist.debug env csr;
   csr
 
