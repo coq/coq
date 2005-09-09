@@ -71,13 +71,3 @@ Theorem discr2 : (Some ? true)=(Some ? false)->False.
 Intros.
 Congruence.
 Save.
-
-(* example with Congruence.Solve (requires CCSolve.v)*)
-
-Require CCSolve.
-
-Theorem t4 :  (A:Set; P:(A->Prop); a,b,c,d:A)a=b->c=d->
-                 (P a)->((P b)->(P c))->(P d).
-Intros.
-CCsolve.
-Save.
