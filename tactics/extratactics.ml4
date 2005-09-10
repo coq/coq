@@ -429,7 +429,7 @@ VERNAC COMMAND EXTEND AddStepr
     [ add_transitivity_lemma false t ]
 END
 
-VERNAC COMMAND EXTEND AddStepr
+VERNAC COMMAND EXTEND ImplicitTactic
 | [ "Declare" "Implicit" "Tactic" tactic(tac) ] ->
     [ Tacinterp.declare_implicit_tactic (Tacinterp.interp tac) ]
 END
