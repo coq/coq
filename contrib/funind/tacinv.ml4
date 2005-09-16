@@ -825,9 +825,10 @@ let buildFunscheme fonc mutflist =
     
 (* Declaration of the functional scheme. *)
 let declareFunScheme f fname mutflist =
+ let id_to_cstr = constr_of_id (Global.env()) in (* careful: env() is evaluated now *)
  let flist = if mutflist=[] then [f] else mutflist in
- let fcstrlist = Array.of_list (List.map constr_of flist) in
- let scheme = buildFunscheme (constr_of f) fcstrlist in
+ let fcstrlist = Array.of_list (List.map id_to_cstr flist) in
+ let scheme = buildFunscheme (id_to_cstr f) fcstrlist in
   let _ = prstr "Principe:" in
   let _ = prconstr scheme in
  let ce = { 
@@ -842,9 +843,9 @@ let declareFunScheme f fname mutflist =
 
 VERNAC COMMAND EXTEND FunctionalScheme
  [ "Functional" "Scheme" ident(na) ":=" "Induction" "for" 
-    constr(c) "with" ne_constr_list(l) ]
+    ident(c) "with" ne_ident_list(l) ] 
   -> [ declareFunScheme c na l ]
-| [ "Functional" "Scheme" ident(na) ":=" "Induction" "for" constr(c) ]
+| [ "Functional" "Scheme" ident(na) ":=" "Induction" "for" ident (c) ]
   -> [ declareFunScheme c na [] ]
 END
 
