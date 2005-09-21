@@ -286,6 +286,7 @@ GEXTEND Gram
   ;
   pattern:
     [ "200" RIGHTA [ ]
+    | "99" RIGHTA [ ]
     | "10" LEFTA
       [ p = pattern ; lp = LIST1 (pattern LEVEL "0") ->
         (match p with
