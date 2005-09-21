@@ -289,6 +289,7 @@ GEXTEND Gram
     [ "200" RIGHTA [ ]
     | "100" LEFTA
       [ p = pattern; "|"; pl = LIST1 pattern SEP "|" -> CPatOr (loc,p::pl) ]
+    | "99" RIGHTA [ ]
     | "10" LEFTA
       [ p = pattern; lp = LIST1 (pattern LEVEL "0") ->
         (match p with
