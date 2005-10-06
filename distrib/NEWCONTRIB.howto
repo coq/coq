@@ -44,7 +44,7 @@ A) Dans l'archive des contributions nouvelle syntaxe ("constr/contrib8",
 
 10) Si la contribution compile bien, on peut déplacer le tag associé à
    la version actuellement distribuée vers les nouveaux fichiers et
-   répertoires.
+   répertoires (utiliser "cvs tag -F nom-du-tag noms-des-fichiers")
 
 
 B) Sur la section contributions du site web de Coq (module www sur
@@ -66,7 +66,7 @@ B) Sur la section contributions du site web de Coq (module www sur
 4) Faire une mise à jour partielle du site web de coq:
 
    export MACHINE=pauillac.inria.fr
-   export WEB=/net/pauillac/infosystems/www/coq/contribs
+   export WEB=/net/yquem/infosystems/www/logical/coq/contribs
    export FTP=/net/pauillac/infosystems/ftp/coq/coq/current
    scp all-contribs/CONTRIBNAME.{tar.gz,html,description}\
      all-contribs/search.db all-contribs/summary.html *.html $MACHINE:$WEB
