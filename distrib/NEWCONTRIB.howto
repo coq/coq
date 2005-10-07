@@ -1,8 +1,10 @@
        Procédure d'ajout d'une nouvelle contribution Coq
        -------------------------------------------------
 
-A) Dans l'archive des contributions nouvelle syntaxe ("constr/contrib8",
-   aliasé à "contrib" dans l'archive pauillac:/net/pauillac/constr/ARCHIVE).
+A) INTÉGRATION DE LA CONTRIBUTION À L'ARCHIVE CVS
+
+   Dans l'archive des contributions nouvelle syntaxe ("constr/contrib8",
+   aliasée à "contrib" dans l'archive pauillac:/net/pauillac/constr/ARCHIVE).
 
 1) Si la contribution provient d'une institution qui n'a pas encore
    contribué, créer un répertoire du nom de l'institution.
@@ -44,10 +46,11 @@ A) Dans l'archive des contributions nouvelle syntaxe ("constr/contrib8",
 
 10) Si la contribution compile bien, on peut déplacer le tag associé à
    la version actuellement distribuée vers les nouveaux fichiers et
-   répertoires (utiliser "cvs tag -F nom-du-tag noms-des-fichiers")
+   répertoires (utiliser "cvs tag -F nom-du-tag noms-des-fichiers").
 
+B) INTÉGRATION À LA SECTION CONTRIBUTIONS UTILISATEURS DU SITE WEB 
 
-B) Sur la section contributions du site web de Coq (module www sur
+   Sur la section contributions du site web de Coq (module www sur
    pauillac.inria.fr:/net/pauillac/constr/ARCHIVE, sous-répertoire
    coq/contribs)
 
@@ -68,11 +71,23 @@ B) Sur la section contributions du site web de Coq (module www sur
    export MACHINE=pauillac.inria.fr
    export WEB=/net/yquem/infosystems/www/logical/coq/contribs
    export FTP=/net/pauillac/infosystems/ftp/coq/coq/current
+   #
+   # installer les infos des contributions dans le répertoire web coq/contribs
+   #
    scp all-contribs/CONTRIBNAME.{tar.gz,html,description}\
      all-contribs/search.db all-contribs/summary.html *.html $MACHINE:$WEB
    ssh $MACHINE chmod -f g+w $WEB/*
+   #
+   # installer la nouvelle archive de toutes les contribs
+   #
    scp contrib-X.XX.tar.gz $MACHINE:$FTP
    ssh $MACHINE chmod -f g+w $FTP/contrib-X.XX.tar.gz
+   #
+   # installer la nouvelle contribution dans le répertoire d'archivage
+   # des contribution par numéro de version de Coq
+   #
+   scp all-contribs/CONTRIBNAME.tar.gz \
+     $MACHINE:/net/yquem/infosystems/www/coq/contributions/VX.XX
 
 5) S'assurer que le site web de coq a été mis à jour correctement, que
    la nouvelle contribution apparaît dans les versions anglaise et
