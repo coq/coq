@@ -1876,13 +1876,29 @@ end.
 \end{center}
 Underscore matches all terms.
 
-\Question{What is the semantics for match goal?}
+\Question{What is the semantics for ``match goal''?}
 
-{\tt match goal} matches the current goal against a series of
-patterns: {$hyp_1 {\ldots} hyp_n$ \textbar- $ccl$}. It uses a
-first-order unification algorithm, and tries all the possible
-combinations of $hyp_i$ before dropping the branch and moving to the
-next one. Underscore matches all terms.
+The semantics of {\tt match goal} depends on whether it returns
+tactics or not.  The {\tt match goal} expression matches the current
+goal against a series of patterns: {$hyp_1 {\ldots} hyp_n$ \textbar-
+$ccl$}. It uses a first-order unification algorithm and in case of
+success, if the right-hand-side is an expression, it tries to type it
+while if the right-hand-side is a tactic, it tries to apply it.  If the
+typing or the tactic application fails, the {\tt match goal} tries all
+the possible combinations of $hyp_i$ before dropping the branch and
+moving to the next one. Underscore matches all terms.
+
+\Question{Why can't I use a ``match goal'' returning a tactic in a non
+tail-recursive position?}
+
+This is precisely because the semantics of {\tt match goal} is to
+apply the tactic on the right as soon as a pattern unifies what is
+meaningful only in tail-recursive uses.
+
+The semantics in non tail-recursive call could have been the one used
+for terms (i.e. fail if the tactic expression is not typable, but
+don't try to apply it). For uniformity of semantics though, this has
+been rejected.
 
 \Question{How can I generate a new name?}
 
