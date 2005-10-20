@@ -9,15 +9,15 @@
 \ProvidesPackage{coqdoc}[2002/02/11]
 
 % Headings
-
 \usepackage{fancyhdr}
 \newcommand{\coqdocleftpageheader}{\thepage\ -- \today}
 \newcommand{\coqdocrightpageheader}{\today\ -- \thepage}
 \pagestyle{fancyplain}
 
 %BEGIN LATEX
-\plainheadrulewidth 0.4pt
-\plainfootrulewidth 0pt
+\headsep 8mm
+\renewcommand{\plainheadrulewidth}{0.4pt}
+\renewcommand{\plainfootrulewidth}{0pt}
 \lhead[\coqdocleftpageheader]{\leftmark}
 \rhead[\leftmark]{\coqdocrightpageheader}
 \cfoot{}
@@ -50,7 +50,8 @@
 %HEVEA\newcommand{\coqdocindent}[1]{\hspace{#1}\hspace{#1}}
 
 % macro for typesetting the title of a module implementation
-\newcommand{\coqdocmodule}[1]{\section*{Module #1}\markboth{Module #1}{}}
+\newcommand{\coqdocmodule}[1]{\section*{Module #1}\markboth{Module #1}{}
+}
 
 %HEVEA\newcommand{\lnot}{\coqwkw{not}}
 %HEVEA\newcommand{\lor}{\coqwkw{or}}
