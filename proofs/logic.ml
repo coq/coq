@@ -54,8 +54,10 @@ let catchable_exception = function
   | Stdpp.Exc_located(_,PretypeError(_,(CannotUnify _|CannotGeneralize _|
           NoOccurrenceFound _ | CannotUnifyBindingType _|NotClean _)))
   | Stdpp.Exc_located(_,(Util.UserError _ | TypeError _ | RefinerError _ |
-    Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _))) -> true
+    Nametab.GlobalizationError _ | PretypeError (_,VarNotFound _)
+    | Indtypes.InductiveError (Indtypes.NotAllowedCaseAnalysis _ )))-> true
   | _ -> false
+
 
 (* Tells if the refiner should check that the submitted rules do not
    produce invalid subgoals *)
