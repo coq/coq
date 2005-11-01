@@ -543,9 +543,13 @@ let rec load_library dir =
 
 let cache_require (_,(modl,export)) =
   let ml = list_map_left load_library modl in
-  match export with
+  begin 
+    match export with
     | None -> ()
     | Some export -> open_libraries export ml
+  end;
+  (* To ensure that reset won't pop beyond what the compunit cache knows *)
+  add_frozen_state ()
 
 let load_require  _ (_,(modl,_)) =
   ignore(list_map_left load_library modl)
@@ -582,8 +586,7 @@ let require_library qidl export =
     end
     else
       add_anonymous_leaf (in_require (modrefl,export));
-  if !Options.xml_export then List.iter !xml_require modrefl;
-  add_frozen_state ()
+  if !Options.xml_export then List.iter !xml_require modrefl
 
 let require_library_from_file idopt file export =
   let modref = rec_intern_library_from_file idopt file in
@@ -594,16 +597,7 @@ let require_library_from_file idopt file export =
     end
     else
       add_anonymous_leaf (in_require ([modref],export));
-    if !Options.xml_export then !xml_require modref;
-    add_frozen_state ()
-
-(* called at end of section *)
-
-let reload_library modrefl =
-  add_anonymous_leaf (in_require modrefl);
-  add_frozen_state ()
-
-
+    if !Options.xml_export then !xml_require modref
 
 (* the function called by Vernacentries.vernac_import *)
 
