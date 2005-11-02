@@ -3577,7 +3577,7 @@ contrib/xml/xml.cmo: contrib/xml/xml.cmi
 contrib/xml/xml.cmx: contrib/xml/xml.cmi 
 contrib/xml/xmlcommand.cmo: contrib/xml/xml.cmi toplevel/vernac.cmi \
     lib/util.cmi contrib/xml/unshare.cmi kernel/term.cmi proofs/tacmach.cmi \
-    kernel/sign.cmi pretyping/recordops.cmi proofs/proof_trees.cmi \
+    pretyping/recordops.cmi proofs/proof_trees.cmi \
     contrib/xml/proof2aproof.cmo proofs/pfedit.cmi library/nametab.cmi \
     kernel/names.cmi library/library.cmi library/libobject.cmi \
     library/libnames.cmi library/lib.cmi parsing/lexer.cmi \
@@ -3588,7 +3588,7 @@ contrib/xml/xmlcommand.cmo: contrib/xml/xml.cmi toplevel/vernac.cmi \
     contrib/xml/xmlcommand.cmi 
 contrib/xml/xmlcommand.cmx: contrib/xml/xml.cmx toplevel/vernac.cmx \
     lib/util.cmx contrib/xml/unshare.cmx kernel/term.cmx proofs/tacmach.cmx \
-    kernel/sign.cmx pretyping/recordops.cmx proofs/proof_trees.cmx \
+    pretyping/recordops.cmx proofs/proof_trees.cmx \
     contrib/xml/proof2aproof.cmx proofs/pfedit.cmx library/nametab.cmx \
     kernel/names.cmx library/library.cmx library/libobject.cmx \
     library/libnames.cmx library/lib.cmx parsing/lexer.cmx \
