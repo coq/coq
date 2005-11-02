@@ -196,8 +196,9 @@ let rec str_const c =
       begin
 	match kind_of_term f with
 	| Construct((kn,j),i) -> 
-	    let oib = (lookup_mind kn !global_env).mind_packets.(j) in
-	    let num,arity = oib.mind_reloc_tbl.(i-1) in
+	    let oib = lookup_mind kn !global_env in
+	    let oip = oib.mind_packets.(j) in
+	    let num,arity = oip.mind_reloc_tbl.(i-1) in
 	    let nparams = oib.mind_nparams in
 	    if nparams + arity = Array.length args then
 	    if arity = 0 then Bstrconst(Const_b0 num)
@@ -216,8 +217,9 @@ let rec str_const c =
       end
   | Ind ind -> Bstrconst (Const_ind ind)
   | Construct ((kn,j),i) ->  
-      let oib = (lookup_mind kn !global_env).mind_packets.(j) in
-      let num,arity = oib.mind_reloc_tbl.(i-1) in
+      let oib = lookup_mind kn !global_env in 
+      let oip = oib.mind_packets.(j) in
+      let num,arity = oip.mind_reloc_tbl.(i-1) in
       let nparams = oib.mind_nparams in
       if nparams + arity = 0 then Bstrconst(Const_b0 num)
       else Bconstruct_app(num,nparams,arity,[||])

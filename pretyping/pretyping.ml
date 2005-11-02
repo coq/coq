@@ -101,7 +101,7 @@ let transform_rec loc env sigma (pj,c,lf) indt =
     (* build now the fixpoint *)
     let lnames,_ = get_arity env indf in
     let nar = List.length lnames in
-    let nparams = mip.mind_nparams in
+    let nparams = mib.mind_nparams in
     let constrs = get_constructors env (lift_inductive_family (nar+2) indf) in
     let branches = 
       array_map3
@@ -893,7 +893,7 @@ let rec pretype tycon env isevars lvar = function
             let (mib,mip) = Inductive.lookup_mind_specif (Global.env()) ind in
             let get_consnarg j = 
               let typi = mis_nf_constructor_type (ind,mib,mip) (j+1) in
-              let _,t = decompose_prod_n_assum mip.mind_nparams typi in
+              let _,t = decompose_prod_n_assum mib.mind_nparams typi in
               List.rev (fst (decompose_prod_assum t)) in
             let consnargs = Array.init (Array.length mip.mind_consnames) get_consnarg in
             let consnargsl = Array.map List.length consnargs in

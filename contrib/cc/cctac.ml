@@ -58,7 +58,7 @@ let rec decompose_term env t=
 	let targs=Array.map (decompose_term env) args in
 	  Array.fold_left (fun s t->Appli (s,t)) tf targs
     | Construct c->
-	let (_,oib)=Global.lookup_inductive (fst c) in
+	let (oib,_)=Global.lookup_inductive (fst c) in
 	let nargs=mis_constructor_nargs_env env c in
 	  Constructor {ci_constr=c;
 		       ci_arity=nargs;

@@ -432,10 +432,8 @@ let make_cases s =
   let glob_ref = Nametab.locate qualified_name in
   match glob_ref with
     | Libnames.IndRef i -> 
-	let _,
-	{
-	  Declarations.mind_nparams = np ;
-	  Declarations.mind_consnames = carr ;
+	let {Declarations.mind_nparams = np},
+	{Declarations.mind_consnames = carr ;
 	 Declarations.mind_nf_lc = tarr } 
 	= Global.lookup_inductive i 
 	in

@@ -41,7 +41,7 @@ let mkLambda_string s t c = mkLambda (Name (id_of_string s), t, c)
    lifter les paramètres globaux *)
 
 let mis_make_case_com depopt env sigma (ind,mib,mip) kind =
-  let lnamespar = mip.mind_params_ctxt in
+  let lnamespar = mib.mind_params_ctxt in
   let dep = match depopt with 
     | None -> mip.mind_sort <> (Prop Null)
     | Some d -> d
@@ -191,7 +191,7 @@ let type_rec_branch is_rec dep env sigma (vargs,depPvect,decP) tyi cs recargs =
   let c = it_mkProd_or_LetIn base cs.cs_args in
   process_constr env 0 c recargs nhyps []
 
-let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs = 
+let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs = 
   let process_pos env fk  =
     let rec prec env i hyps p =
       let p',largs = whd_betadeltaiota_nolet_stack env sigma p in
@@ -203,7 +203,7 @@ let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs =
 	    let d = (n,Some b,t) in
 	    mkLetIn (n,b,t,prec (push_rel d env) (i+1) (d::hyps) c)
      	| Ind _ -> 
-            let realargs = list_skipn nparams largs
+            let realargs = list_skipn nparrec largs
             and arg = appvect (mkRel (i+1),extended_rel_vect 0 hyps) in 
             applist(lift i fk,realargs@[arg])
      	| _ -> assert false
@@ -245,9 +245,12 @@ let make_rec_branch_arg env sigma (nparams,fvect,decF) f cstr recargs =
   process_constr env 0 f (List.rev cstr.cs_args, recargs)
 
 (* Main function *)
-let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
-  let nparams = mip.mind_nparams in
-  let lnamespar = mip.mind_params_ctxt in
+let mis_make_indrec env sigma listdepkind mib =
+  let nparams = mib.mind_nparams in
+  let nparrec = mib. mind_nparams_rec in
+  let lnamespar = mib.mind_params_ctxt in
+  let lnonparrec,lnamesparrec = 
+    list_chop (nparams-nparrec) mib.mind_params_ctxt in
   let nrec = List.length listdepkind in
   let depPvec =
     Array.create mib.mind_ntypes (None : (bool * constr) option) in 
@@ -262,6 +265,11 @@ let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
     assign nrec listdepkind in 
   let recargsvec =
     Array.map (fun mip -> mip.mind_recargs) mib.mind_packets in
+ (* recarg information for non recursive parameters *)
+  let rec recargparn l n = 
+    if n = 0 then l else recargparn (mk_norec::l) (n-1) 
+  in
+  let recargpar = recargparn [] (nparams-nparrec) in
   let make_one_rec p =
     let makefix nbconstruct =
       let rec mrec i ln ltyp ldef = function
@@ -272,59 +280,86 @@ let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
 
             (* arity in the context of the fixpoint, i.e.
                 P1..P_nrec f1..f_nbconstruct *)
-	    let args = extended_rel_list (nrec+nbconstruct) lnamespar in
+	    let args = extended_rel_list (nrec+nbconstruct) lnamesparrec in
 	    let indf = make_ind_family(indi,args) in
 
 	    let arsign,_ = get_arity env indf in
 	    let depind = build_dependent_inductive env indf in
 	    let deparsign = (Anonymous,None,depind)::arsign in
-
+	    
+	    let nonrecpar = nparams-nparrec in
 	    let nar = mipi.mind_nrealargs in
 	    let ndepar = nar + 1 in
-	    let dect = ndepar+nrec+nbconstruct in
+	    let dect = nonrecpar+ndepar+nrec+nbconstruct in
+
+              (* constructors in context of the Cases expr, i.e.
+         P1..P_nrec f1..f_nbconstruct F_1..F_nrec a_1..a_nar x:I *)
+	    let args' = extended_rel_list (dect+nrec) lnamesparrec in
+	    let args'' = extended_rel_list ndepar lnonparrec in
+            let indf' = make_ind_family(indi,args'@args'') in
 
 	    let branches = 
-              (* constructors in context of the Cases expr, i.e.
-                 P1..P_nrec f1..f_nbconstruct F_1..F_nrec a_1..a_nar x:I *)
-	      let args' = extended_rel_list (dect+nrec) lnamespar in
-              let indf' = make_ind_family(indi,args') in
 	      let constrs = get_constructors env indf' in
-	      let vecfi = rel_vect (dect-i-nctyi) nctyi in
+	      let fi = rel_vect (dect-i-nctyi) nctyi in
+	      let vecfi = Array.map 
+			    (fun f -> appvect (f,rel_vect ndepar nonrecpar))
+			    fi 
+	      in
 	      array_map3
-		(make_rec_branch_arg env sigma (nparams,depPvec,ndepar))
-                vecfi constrs (dest_subterms recargsvec.(tyi)) in
+		(make_rec_branch_arg env sigma 
+		   (nparrec,depPvec,ndepar+nonrecpar))
+                vecfi constrs (dest_subterms recargsvec.(tyi)) 
+	    in
 
 	    let j = (match depPvec.(tyi) with 
 		       | Some (_,c) when isRel c -> destRel c 
-		       | _ -> assert false) in
+		       | _ -> assert false) 
+	    in
+
+	      (* Predicate in the context of the case *)
+
+	    let depind' = build_dependent_inductive env indf' in
+	    let arsign',_ = get_arity env indf' in
+	    let deparsign' = (Anonymous,None,depind')::arsign' in
+
 	    let pargs =
-	      if dep then extended_rel_vect 0 deparsign
-	      else extended_rel_vect 1 arsign in
-	    let concl = appvect (mkRel (nbconstruct+ndepar+j),pargs) in
+	      let nrpar = extended_rel_list (2*ndepar) lnonparrec 
+	      and nrar = if dep then extended_rel_list 0 deparsign'
+	      else extended_rel_list 1 arsign'
+	      in nrpar@nrar
+
+	    in
 
 	    (* body of i-th component of the mutual fixpoint *)
 	    let deftyi = 
 	      let ci = make_default_case_info env RegularStyle indi in
-	      let p =
+	      let concl = applist (mkRel (dect+j+ndepar),pargs) in 
+	      let pred =
 		it_mkLambda_or_LetIn_name env 
 		  ((if dep then mkLambda_name env else mkLambda)
-		   (Anonymous,depind,concl))
-		  arsign
+		   (Anonymous,depind',concl))
+		  arsign'
 	      in
 	      it_mkLambda_or_LetIn_name env
-		(mkCase (ci, lift (nrec+ndepar) p, 
+		(mkCase (ci, pred, 
 		             mkRel 1,
 			     branches))
 		(lift_rel_context nrec deparsign)
 	    in
 
 	    (* type of i-th component of the mutual fixpoint *)
+
 	    let typtyi =
-	      it_mkProd_or_LetIn_name env
+	    let concl = 
+	      let pargs = if dep then extended_rel_vect 0 deparsign
+	      else extended_rel_vect 1 arsign
+	      in appvect (mkRel (nbconstruct+ndepar+nonrecpar+j),pargs)
+	    in it_mkProd_or_LetIn_name env
 		concl
 		deparsign
 	    in
-	    mrec (i+nctyi) (nar::ln) (typtyi::ltyp) (deftyi::ldef) rest
+	    mrec (i+nctyi) (nar+nonrecpar::ln) (typtyi::ltyp) 
+                 (deftyi::ldef) rest
         | [] -> 
 	    let fixn = Array.of_list (List.rev ln) in
             let fixtyi = Array.of_list (List.rev ltyp) in
@@ -343,7 +378,8 @@ let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
 	      make_branch env (i+j) rest 
 	    else 
 	      let recarg = (dest_subterms recargsvec.(tyi)).(j) in
-	      let vargs = extended_rel_list (nrec+i+j) lnamespar in
+	      let recarg = recargpar@recarg in
+	      let vargs = extended_rel_list (nrec+i+j) lnamesparrec in
 	      let indf = (indi, vargs) in
 	      let cs = get_constructor (indi,mibi,mipi,vargs) (j+1) in
 	      let p_0 =
@@ -358,7 +394,7 @@ let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
     in 
     let rec put_arity env i = function 
       | (indi,_,_,dep,kinds)::rest -> 
-	  let indf = make_ind_family (indi,extended_rel_list i lnamespar) in
+	  let indf = make_ind_family (indi,extended_rel_list i lnamesparrec) in
 	  let typP = make_arity env dep indf (new_sort_in_family kinds) in
 	  mkLambda_string "P" typP
 	    (put_arity (push_rel (Anonymous,None,typP) env) (i+1) rest)
@@ -366,12 +402,14 @@ let mis_make_indrec env sigma listdepkind (ind,mib,mip) =
 	  make_branch env 0 listdepkind 
     in 
     let (indi,mibi,mipi,dep,kind) = List.nth listdepkind p in
-    let env' = push_rel_context lnamespar env in
+
     if mis_is_recursive_subset
       (List.map (fun (indi,_,_,_,_) -> snd indi) listdepkind)
       mipi.mind_recargs
     then 
-      it_mkLambda_or_LetIn_name env (put_arity env' 0 listdepkind) lnamespar
+    let env' = push_rel_context lnamesparrec env in
+      it_mkLambda_or_LetIn_name env (put_arity env' 0 listdepkind) 
+	lnamesparrec
     else 
       mis_make_case_com (Some dep) env sigma (indi,mibi,mipi) kind 
   in 
@@ -437,16 +475,22 @@ let instanciate_type_indrec_scheme sort npars term =
 
 (**********************************************************************)
 (* Interface to build complex Scheme *)
+(* Check inductive types only occurs once 
+(otherwise we obtain a meaning less scheme) *)
 
 let check_arities listdepkind = 
-  List.iter 
-    (function (indi,mibi,mipi,dep,kind) -> 
+  let _ = List.fold_left
+    (fun ln ((_,ni),mibi,mipi,dep,kind) -> 
        let id = mipi.mind_typename  in
        let kelim = mipi.mind_kelim in
        if not (List.exists ((=) kind) kelim) then
 	 raise
-	   (InductiveError (BadInduction (dep, id, new_sort_in_family kind))))
-    listdepkind
+	   (InductiveError (BadInduction (dep, id, new_sort_in_family kind)))
+       else if List.mem ni ln then raise
+	   (InductiveError NotMutualInScheme)
+       else ni::ln)
+	    [] listdepkind
+  in true
 
 let build_mutual_indrec env sigma = function 
   | (mind,mib,mip,dep,s)::lrecspec ->
@@ -464,14 +508,14 @@ let build_mutual_indrec env sigma = function
 	   lrecspec)
       in
       let _ = check_arities listdepkind in 
-      mis_make_indrec env sigma listdepkind (mind,mib,mip)
+      mis_make_indrec env sigma listdepkind mib
   | _ -> anomaly "build_indrec expects a non empty list of inductive types"
 
 let build_indrec env sigma ind =
   let (mib,mip) = lookup_mind_specif env ind in
   let kind = family_of_sort mip.mind_sort in
   let dep = kind <> InProp in
-  List.hd (mis_make_indrec env sigma [(ind,mib,mip,dep,kind)] (ind,mib,mip))
+  List.hd (mis_make_indrec env sigma [(ind,mib,mip,dep,kind)] mib)
 
 (**********************************************************************)
 (* To handle old Case/Match syntax in Pretyping                       *)

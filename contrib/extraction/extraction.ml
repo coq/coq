@@ -295,8 +295,8 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
     (* Everything concerning parameters. *)
     (* We do that first, since they are common to all the [mib]. *)
     let mip0 = mib.mind_packets.(0) in 
-    let npar = mip0.mind_nparams in
-    let epar = push_rel_context mip0.mind_params_ctxt env in
+    let npar = mib.mind_nparams in
+    let epar = push_rel_context mib.mind_params_ctxt env in
     (* First pass: we store inductive signatures together with *)
     (* their type var list. *)
     let packets = 
@@ -358,7 +358,7 @@ and extract_ind env kn = (* kn is supposed to be in long form *)
 	  | _ -> []
 	in 
 	let field_names = 
-	  list_skipn mip0.mind_nparams (names_prod mip0.mind_user_lc.(0)) in 
+	  list_skipn mib.mind_nparams (names_prod mip0.mind_user_lc.(0)) in 
 	assert (List.length field_names = List.length typ);
 	let projs = ref Cset.empty in 
 	let mp,d,_ = repr_kn kn in 

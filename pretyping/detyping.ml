@@ -219,7 +219,7 @@ let detype_case computable detype detype_eqn testdep
   let (mib,mip) = Inductive.lookup_mind_specif tenv indsp in
   let get_consnarg j = 
     let typi = mis_nf_constructor_type (indsp,mib,mip) (j+1) in
-    let _,t = decompose_prod_n_assum (List.length mip.mind_params_ctxt) typi in
+    let _,t = decompose_prod_n_assum (List.length mib.mind_params_ctxt) typi in
     List.rev (fst (decompose_prod_assum t)) in
   let consnargs = Array.init (Array.length mip.mind_consnames) get_consnarg in
   let consnargsl = Array.map List.length consnargs in
@@ -253,7 +253,7 @@ let detype_case computable detype detype_eqn testdep
 	    let aliastyp =
 	      if List.for_all ((=) Anonymous) nl then None
 	      else 
-		let pars = list_tabulate (fun _ -> Anonymous) mip.mind_nparams
+		let pars = list_tabulate (fun _ -> Anonymous) mib.mind_nparams
 		in Some (dummy_loc,indsp,pars@nl) in
             n, aliastyp, Some typ, Some p
   in

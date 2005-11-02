@@ -288,7 +288,7 @@ let compute_construtor_signatures isrec (_,k as ity) =
     | _ -> anomaly "compute_construtor_signatures"
   in 
   let (mib,mip) = Global.lookup_inductive ity in
-  let n = mip.mind_nparams in
+  let n = mib.mind_nparams in
   let lc =
     Array.map (fun c -> snd (decompose_prod_n_assum n c)) mip.mind_nf_lc in
   let lrecargs = dest_subterms mip.mind_recargs in

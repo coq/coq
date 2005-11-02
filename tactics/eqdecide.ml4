@@ -127,7 +127,7 @@ let solveLeftBranch rectype g =
   try
     let (lhs,rhs) = match_eqdec_partial (pf_concl g) in
     let (mib,mip) = Global.lookup_inductive rectype in
-    let nparams   = mip.mind_nparams in
+    let nparams   = mib.mind_nparams in
     let getargs l = list_skipn nparams (snd (decompose_app l)) in
     let rargs   = getargs rhs
     and largs   = getargs lhs in 

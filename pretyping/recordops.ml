@@ -42,7 +42,7 @@ let projection_table = ref Cmap.empty
 let option_fold_right f p e = match p with Some a -> f a e | None -> e
 
 let load_structure i (_,(ind,id,kl,projs)) =
-  let n = (snd (Global.lookup_inductive ind)).Declarations.mind_nparams in
+  let n = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
   let struc =
     { s_CONST = id; s_PARAM = n; s_PROJ = projs; s_PROJKIND = kl } in
   structure_table := Indmap.add ind struc !structure_table;

@@ -47,7 +47,7 @@ let rec nb_prod_after n c=
 
 let construct_nhyps ind gls =
   let env=pf_env gls in
-  let nparams = (snd (Global.lookup_inductive ind)).mind_nparams in
+  let nparams = (fst (Global.lookup_inductive ind)).mind_nparams in
   let constr_types = Inductiveops.arities_of_constructors (pf_env gls) ind in 
   let hyp = nb_prod_after nparams in	
     Array.map hyp constr_types
@@ -99,7 +99,7 @@ let rec kind_of_formula gl term =
 			let has_realargs=(n>0) in
 			let is_trivial=
 			  let is_constant c =
-			    nb_prod c = mip.mind_nparams in  
+			    nb_prod c = mib.mind_nparams in  
 			    array_exists is_constant mip.mind_nf_lc in 
 			  if Inductiveops.mis_is_recursive (ind,mib,mip) ||
 			    (has_realargs && not is_trivial)

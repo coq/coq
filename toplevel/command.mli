@@ -84,3 +84,5 @@ val admit : unit -> unit
    and the current global env *)
 
 val get_current_context : unit -> Evd.evar_map * Environ.env
+
+

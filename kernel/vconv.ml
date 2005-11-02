@@ -318,7 +318,7 @@ let find_rectype typ =
 let construct_of_constr_block env tag typ =
   let (mind,_ as ind),allargs = find_rectype (whd_betadeltaiota env typ) in
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let nparams = mip.mind_nparams in
+  let nparams = mib.mind_nparams in
   let rtbl = mip.mind_reloc_tbl in
   let i = invert_tag false tag rtbl in
   let params = Array.sub allargs 0 nparams in
@@ -429,7 +429,7 @@ and nf_stk env c t stk  =
   | Zswitch sw :: stk -> 
       let (mind,_ as ind),allargs = find_rectype (whd_betadeltaiota env t) in
       let (mib,mip) = Inductive.lookup_mind_specif env ind in
-      let nparams = mip.mind_nparams in
+      let nparams = mib.mind_nparams in
       let params,realargs = Util.array_chop nparams allargs in
       (* calcul du predicat du case, 
         [dep] indique si c'est un case dependant *)

@@ -220,7 +220,7 @@ let declare_one_elimination ind =
   let env = Global.env () in
   let sigma = Evd.empty in
   let elim_scheme = Indrec.build_indrec env sigma ind in
-  let npars = mip.mind_nparams in
+  let npars = mib.mind_nparams_rec in
   let make_elim s = Indrec.instanciate_indrec_scheme s npars elim_scheme in
   let kelim = mip.mind_kelim in
   (* in case the inductive has a type elimination, generates only one
@@ -373,15 +373,15 @@ let interp_mutual lparams lnamearconstrs finite =
 	 in
 
          (* Build the inductive entry *)
-	 { mind_entry_params = params';
-	   mind_entry_typename = name;
+	 { mind_entry_typename = name;
 	   mind_entry_arity = ar;
 	   mind_entry_consnames = constrnames;
 	   mind_entry_lc = constrs })
       (List.rev arityl) lnamearconstrs
   in
   States.unfreeze fs;
-  notations, { mind_entry_record = false; 
+  notations, { mind_entry_params = params';
+	       mind_entry_record = false; 
 	       mind_entry_finite = finite; 
 	       mind_entry_inds = mispecvec }
   with e -> States.unfreeze fs; raise e
@@ -397,6 +397,7 @@ let declare_mutual_with_eliminations isrecord mie =
 (* Very syntactical equality *)
 let eq_la d1 d2 = match d1,d2 with
   | LocalRawAssum (nal,ast), LocalRawAssum (nal',ast') ->
+      (List.length nal = List.length nal') &&
       List.for_all2 (fun (_,na) (_,na') -> na = na') nal nal'
       & (try let _ = Constrextern.check_same_type ast ast' in true with _ -> false)
   | LocalRawDef ((_,id),ast), LocalRawDef ((_,id'),ast') ->

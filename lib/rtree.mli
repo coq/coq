@@ -9,7 +9,8 @@
 (*i $Id$ i*)
 
 (* Type of regular tree with nodes labelled by values of type 'a *)
-type 'a t
+
+type 'a t 
 
 (* Building trees *)
 (* build a recursive call *) 

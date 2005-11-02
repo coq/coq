@@ -54,3 +54,6 @@ val make_rec_branch_arg :
 val lookup_eliminator : inductive -> sorts_family -> constr
 val elimination_suffix : sorts_family -> string
 val make_elimination_ident : identifier -> sorts_family -> identifier
+
+
+

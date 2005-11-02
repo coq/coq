@@ -114,8 +114,8 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
 	    && Array.length mib2.mind_packets >= 1);
 
        (* TODO: we should allow renaming of parameters at least ! *)
-  check (fun mib -> mib.mind_packets.(0).mind_nparams);
-  check (fun mib -> mib.mind_packets.(0).mind_params_ctxt); 
+  check (fun mib -> mib.mind_nparams);
+  check (fun mib -> mib.mind_params_ctxt); 
 
   begin 
     match mib2.mind_equiv with

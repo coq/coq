@@ -80,8 +80,6 @@ let subst_wf_paths sub p = Rtree.smartmap (subst_recarg sub) p
 
 type one_inductive_body = {
     mind_typename : identifier;
-    mind_nparams : int;
-    mind_params_ctxt : rel_context;
     mind_nrealargs : int;
     mind_nf_arity : types;
     mind_user_arity : types;
@@ -101,6 +99,9 @@ type mutual_inductive_body = {
     mind_finite : bool;
     mind_ntypes : int;
     mind_hyps : section_context;
+    mind_nparams : int;
+    mind_nparams_rec : int;
+    mind_params_ctxt : rel_context;
     mind_packets : one_inductive_body array;
     mind_constraints : constraints;
     mind_equiv : kernel_name option
@@ -128,9 +129,6 @@ let subst_mind_packet sub mbp =
     mind_sort = mbp.mind_sort;
     mind_nrealargs = mbp.mind_nrealargs;
     mind_kelim = mbp.mind_kelim;
-    mind_nparams = mbp.mind_nparams;
-    mind_params_ctxt = 
-      map_rel_context (subst_mps sub) mbp.mind_params_ctxt;
     mind_recargs = subst_wf_paths sub mbp.mind_recargs (*wf_paths*); 
     mind_nb_constant = mbp.mind_nb_constant;
     mind_nb_args = mbp.mind_nb_args;
@@ -142,6 +140,10 @@ let subst_mind sub mib =
     mind_finite = mib.mind_finite ;
     mind_ntypes = mib.mind_ntypes ;
     mind_hyps = (assert (mib.mind_hyps=[]); []) ;
+    mind_nparams = mib.mind_nparams;
+    mind_nparams_rec = mib.mind_nparams_rec;
+    mind_params_ctxt = 
+      map_rel_context (subst_mps sub) mib.mind_params_ctxt;
     mind_packets = array_smartmap (subst_mind_packet sub) mib.mind_packets ;
     mind_constraints = mib.mind_constraints ;
     mind_equiv = option_app (subst_kn sub) mib.mind_equiv }

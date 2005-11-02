@@ -43,9 +43,9 @@ let string_of_strength = function
   | Global -> "(global)"
 
 (* XML output hooks *)
-let xml_declare_variable = ref (fun sp -> ())
-let xml_declare_constant = ref (fun sp -> ())
-let xml_declare_inductive = ref (fun sp -> ())
+let xml_declare_variable = ref (fun (sp:object_name) -> ())
+let xml_declare_constant = ref (fun (sp:bool * constant)-> ())
+let xml_declare_inductive = ref (fun (sp:bool * object_name) -> ())
 
 let if_xml f x = if !Options.xml_export then f x else ()
 
@@ -291,7 +291,6 @@ let discharge_inductive ((sp,kn),(dhyps,imps,mie)) =
         Discharge.process_inductive sechyps repl mie)
 
 let dummy_one_inductive_entry mie = {
-  mind_entry_params = [];
   mind_entry_typename = mie.mind_entry_typename;
   mind_entry_arity = mkProp;
   mind_entry_consnames = mie.mind_entry_consnames;
@@ -300,6 +299,7 @@ let dummy_one_inductive_entry mie = {
 
 (* Hack to reduce the size of .vo: we keep only what load/open needs *)
 let dummy_inductive_entry (_,imps,m) = ([],imps,{
+  mind_entry_params = [];
   mind_entry_record = false;
   mind_entry_finite = true;
   mind_entry_inds = List.map dummy_one_inductive_entry m.mind_entry_inds })

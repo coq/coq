@@ -80,13 +80,13 @@ let instantiate_params t args sign =
   if rem_args <> [] then fail();
   type_app (substl subs) ty
 
-let full_inductive_instantiate mip params t =
-  instantiate_params t params mip.mind_params_ctxt
+let full_inductive_instantiate mib params t =
+  instantiate_params t params mib.mind_params_ctxt
 
-let full_constructor_instantiate (((mind,_),mib,mip),params) =
+let full_constructor_instantiate (((mind,_),mib,_),params) =
   let inst_ind = constructor_instantiate mind mib in
   (fun t ->
-    instantiate_params (inst_ind t) params mip.mind_params_ctxt)
+    instantiate_params (inst_ind t) params mib.mind_params_ctxt)
 
 (************************************************************************)
 (************************************************************************)
@@ -148,12 +148,12 @@ let local_rels ctxt =
   rels
 
 (* Get type of inductive, with parameters instantiated *)
-let get_arity mip params =
+let get_arity mib mip params =
   let arity = mip.mind_nf_arity in
-  destArity (full_inductive_instantiate mip params arity)
+  destArity (full_inductive_instantiate mib params arity)
 
-let build_dependent_inductive ind mip params =
-  let arsign,_ = get_arity mip params in
+let build_dependent_inductive ind mib mip params =
+  let arsign,_ = get_arity mib mip params in
   let nrealargs = mip.mind_nrealargs in
   applist 
     (mkInd ind, (List.map (lift nrealargs) params)@(local_rels arsign))
@@ -162,9 +162,9 @@ let build_dependent_inductive ind mip params =
 (* This exception is local *)
 exception LocalArity of (constr * constr * arity_error) option
 
-let is_correct_arity env c pj ind mip params = 
+let is_correct_arity env c pj ind mib mip params = 
   let kelim = mip.mind_kelim in
-  let arsign,s = get_arity mip params in
+  let arsign,s = get_arity mib mip params in
   let nodep_ar = it_mkProd_or_LetIn (mkSort s) arsign in
   let rec srec env pt t u =
     let pt' = whd_betadeltaiota env pt in
@@ -180,7 +180,7 @@ let is_correct_arity env c pj ind mip params =
           let ksort = match kind_of_term k with
             | Sort s -> family_of_sort s 
 	    | _ -> raise (LocalArity None) in
-	  let dep_ind = build_dependent_inductive ind mip params in
+	  let dep_ind = build_dependent_inductive ind mib mip params in
           let univ =
             try conv env a1 dep_ind
             with NotConvertible -> raise (LocalArity None) in
@@ -224,7 +224,7 @@ let build_branches_type ind mib mip params dep p =
     let (args,ccl) = decompose_prod_assum typi in
     let nargs = rel_context_length args in
     let (_,allargs) = decompose_app ccl in
-    let (lparams,vargs) = list_chop mip.mind_nparams allargs in
+    let (lparams,vargs) = list_chop mib.mind_nparams allargs in
     let cargs =
       if dep then
         let cstr = ith_constructor_of_inductive ind (i+1) in
@@ -244,10 +244,10 @@ let build_case_type dep p c realargs =
 
 let type_case_branches env (ind,largs) pj c =
   let (mib,mip) = lookup_mind_specif env ind in 
-  let nparams = mip.mind_nparams in
+  let nparams = mib.mind_nparams in
   let (params,realargs) = list_chop nparams largs in
   let p = pj.uj_val in
-  let (dep,univ) = is_correct_arity env c pj ind mip params in
+  let (dep,univ) = is_correct_arity env c pj ind mib mip params in
   let lc = build_branches_type ind mib mip params dep p in
   let ty = build_case_type dep p c realargs in
   (lc, ty, univ)
@@ -270,7 +270,7 @@ let check_case_info env indsp ci =
   let (mib,mip) = lookup_mind_specif env indsp in
   if
     (indsp <> ci.ci_ind) or
-    (mip.mind_nparams <> ci.ci_npar)
+    (mib.mind_nparams <> ci.ci_npar)
   then raise (TypeError(env,WrongCaseInfo(indsp,ci)))
 
 (************************************************************************)
@@ -770,7 +770,7 @@ let check_one_cofix env nbfix def deftype =
             let lra =vlra.(i-1) in 
             let mI = inductive_of_constructor cstr_kn in
 	    let (mib,mip) = lookup_mind_specif env mI in
-            let realargs = list_skipn mip.mind_nparams args in
+            let realargs = list_skipn mib.mind_nparams args in
             let rec process_args_of_constr = function
               | (t::lr), (rar::lrar) -> 
                   if rar = mk_norec then

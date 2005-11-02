@@ -67,8 +67,6 @@ val subst_wf_paths : substitution -> wf_paths -> wf_paths
 
 type one_inductive_body = {
     mind_typename : identifier;
-    mind_nparams : int;
-    mind_params_ctxt : rel_context;
     mind_nrealargs : int;
     mind_nf_arity : types;
     mind_user_arity : types;
@@ -90,6 +88,9 @@ type mutual_inductive_body = {
     mind_finite : bool;
     mind_ntypes : int;
     mind_hyps : section_context;
+    mind_nparams : int;
+    mind_nparams_rec : int;
+    mind_params_ctxt : rel_context;
     mind_packets : one_inductive_body array;
     mind_constraints : constraints;
     mind_equiv : kernel_name option;

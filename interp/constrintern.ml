@@ -462,7 +462,7 @@ let subst_cases_pattern loc (ids,asubst as aliases) intern subst scopes a =
   | ARef (ConstructRef c) ->
       (ids,[asubst, PatCstr (loc,c, [], alias_of aliases)])
   | AApp (ARef (ConstructRef (ind,_ as c)),args) ->
-      let nparams = (snd (Global.lookup_inductive ind)).Declarations.mind_nparams in
+      let nparams = (fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
       let _,args = list_chop nparams args in
       let idslpll = List.map (aux ([],[]) subst) args in
       let ids',pll = product_of_cases_patterns ids idslpll in
@@ -500,7 +500,7 @@ let rec patt_of_rawterm loc cstr =
     | RApp (_,RApp(_,h,l1),l2) -> patt_of_rawterm loc (RApp(loc,h,l1@l2))
     | RApp (_,RRef(_,(ConstructRef c as x)),pl) ->
         if !dump then add_glob loc x;
-        let (_,mib) = Inductive.lookup_mind_specif (Global.env()) (fst c) in
+        let (mib,_) = Inductive.lookup_mind_specif (Global.env()) (fst c) in
         let npar = mib.Declarations.mind_nparams in
         let (params,args) =
           if List.length pl <= npar then (pl,[]) else

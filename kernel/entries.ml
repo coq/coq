@@ -42,7 +42,6 @@ then, in $i^{th}$ block, [mind_entry_params] is [[xn:Xn;...;x1:X1]];
 *)
 
 type one_inductive_entry = {
-  mind_entry_params : (identifier * local_entry) list;
   mind_entry_typename : identifier;
   mind_entry_arity : constr;
   mind_entry_consnames : identifier list;
@@ -51,6 +50,7 @@ type one_inductive_entry = {
 type mutual_inductive_entry = {
   mind_entry_record : bool;
   mind_entry_finite : bool;
+  mind_entry_params : (identifier * local_entry) list;
   mind_entry_inds : one_inductive_entry list }
 
 

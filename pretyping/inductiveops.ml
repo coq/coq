@@ -105,7 +105,7 @@ let mis_constr_nargs_env env (kn,i) =
 let mis_constructor_nargs_env env ((kn,i),j) =
   let mib = Environ.lookup_mind kn env in
   let mip = mib.mind_packets.(i) in 
-  recarg_length mip.mind_recargs j + mip.mind_nparams
+  recarg_length mip.mind_recargs j + mib.mind_nparams
 
 (* Annotation for cases *)
 let make_case_info env ind style pats_source =
@@ -115,7 +115,7 @@ let make_case_info env ind style pats_source =
       style     = style;
       source    = pats_source } in
   { ci_ind     = ind;
-    ci_npar    = mip.mind_nparams;
+    ci_npar    = mib.mind_nparams;
     ci_pp_info = print_info }
 
 let make_default_case_info env style ind =
@@ -140,6 +140,7 @@ let lift_constructor n cs = {
   cs_args = lift_rel_context n cs.cs_args;
   cs_concl_realargs = Array.map (liftn n (cs.cs_nargs+1)) cs.cs_concl_realargs
 }
+(* Accept less parameters than in the signature *)
 
 let instantiate_params t args sign =
   let rec inst s t = function
@@ -151,17 +152,17 @@ let instantiate_params t args sign =
 	(match kind_of_term t with
 	   | LetIn(_,_,_,t) -> inst ((substl s b)::s) t (ctxt,args)
 	   | _ -> anomaly"instantiate_params: type, ctxt and args mismatch")
-    | [], [] -> substl s t
+    | _, [] -> substl s t
     | _ -> anomaly"instantiate_params: type, ctxt and args mismatch"
   in inst [] t (List.rev sign,args)
 
 let get_constructor (ind,mib,mip,params) j =
   assert (j <= Array.length mip.mind_consnames);
   let typi = mis_nf_constructor_type (ind,mib,mip) j in
-  let typi = instantiate_params typi params mip.mind_params_ctxt in
+  let typi = instantiate_params typi params mib.mind_params_ctxt in
   let (args,ccl) = decompose_prod_assum typi in
   let (_,allargs) = decompose_app ccl in
-  let vargs = list_skipn mip.mind_nparams allargs in
+  let vargs = list_skipn (List.length params) allargs in
   { cs_cstr = ith_constructor_of_inductive ind j;
     cs_params = params;
     cs_nargs = rel_context_length args;
@@ -194,7 +195,7 @@ let build_dependent_constructor cs =
 let build_dependent_inductive env ((ind, params) as indf) =
   let arsign,_ = get_arity env indf in
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let nrealargs = mip.mind_nrealargs in
+  let nrealargs = List.length arsign in
   applist 
     (mkInd ind,
      (List.map (lift nrealargs) params)@(extended_rel_list 0 arsign))
@@ -243,7 +244,7 @@ let find_rectype env sigma c =
   match kind_of_term t with
     | Ind ind ->
         let (mib,mip) = Inductive.lookup_mind_specif env ind in
-        let (par,rargs) = list_chop mip.mind_nparams l in
+        let (par,rargs) = list_chop mib.mind_nparams l in
         IndType((ind, par),rargs)
     | _ -> raise Not_found
 
@@ -313,12 +314,12 @@ let set_names env n brty =
   it_mkProd_or_LetIn_name env cl ctxt
 
 let set_pattern_names env ind brv =
-  let (_,mip) = Inductive.lookup_mind_specif env ind in
+  let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let arities =
     Array.map
       (fun c ->
         rel_context_length (fst (decompose_prod_assum c)) -
-        mip.mind_nparams)
+        mib.mind_nparams)
       mip.mind_nf_lc in
   array_map2 (set_names env) arities brv
 
@@ -327,7 +328,7 @@ let type_case_branches_with_names env indspec pj c =
   let (ind,args) = indspec in
   let (lbrty,conclty,_) = Inductive.type_case_branches env indspec pj c in
   let (mib,mip) = Inductive.lookup_mind_specif env ind in
-  let params = list_firstn mip.mind_nparams args in
+  let params = list_firstn mib.mind_nparams args in
   if is_elim_predicate_explicitly_dependent env pj.uj_val (ind,params) then
     (set_pattern_names env ind lbrty, conclty)
   else (lbrty, conclty)

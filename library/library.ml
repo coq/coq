@@ -308,7 +308,8 @@ let (in_import, out_import) =
 (*s Loading from disk to cache (preparation phase) *)
 
 let vo_magic_number7 = 07992 (* V8.0 final old syntax *)
-let vo_magic_number8 = 08002 (* V8.0 final new syntax *)
+(* let vo_magic_number8 = 08002 (* V8.0 final new syntax *) *)
+let vo_magic_number8 = 08003 (* V8.0 final new syntax + new params in ind *)
 
 let (raw_extern_library7, raw_intern_library7) =
   System.raw_extern_intern vo_magic_number7 ".vo"

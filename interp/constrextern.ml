@@ -1254,7 +1254,7 @@ let rec match_cases_pattern metas sigma a1 a2 = match (a1,a2) with
   | a, AHole _ when not(Options.do_translate()) -> sigma
   | PatCstr (loc,(ind,_ as r1),args1,Anonymous), _ ->
       let nparams =
-	(snd (Global.lookup_inductive ind)).Declarations.mind_nparams in
+	(fst (Global.lookup_inductive ind)).Declarations.mind_nparams in
       let l2 =
         match a2 with
 	  | ARef (ConstructRef r2) when r1 = r2 -> []

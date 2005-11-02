@@ -38,6 +38,8 @@ let print_if_verbose s = if !verbose then print_string s;;
 (* Next exception is used only inside print_coq_object and tag_of_string_tag *)
 exception Uninteresting;;
 
+(* NOT USED anymore, we back to the V6 point of view with global parameters 
+
 (* Internally, for Coq V7, params of inductive types are associated     *)
 (* not to the whole block of mutual inductive (as it was in V6) but to  *)
 (* each member of the block; but externally, all params are required    *)
@@ -59,6 +61,8 @@ let extract_nparams pack =
     if params0 <> paramsi then U.error "Cannot convert a block of inductive definitions with parameters specific to each inductive to a block of mutual inductive definitions with parameters global to the whole block"
   done;
   nparams0
+
+*)
 
 (* could_have_namesakes sp = true iff o is an object that could be cooked and *)
 (* than that could exists in cooked form with the same name in a super        *)
@@ -392,11 +396,11 @@ let mk_constant_obj id bo ty variables hyps =
          ty,params)
 ;;
 
-let mk_inductive_obj sp packs variables hyps finite =
+let mk_inductive_obj sp packs variables nparams hyps finite =
  let module D = Declarations in
   let hyps = string_list_of_named_context_list hyps in
   let params = filter_params variables hyps in
-  let nparams = extract_nparams packs in
+(*  let nparams = extract_nparams packs in *)
    let tys =
     let tyno = ref (Array.length packs) in
     Array.fold_right
@@ -524,10 +528,11 @@ let print internal glob_ref kind xml_library_root =
         G.lookup_constant kn in
         Cic2acic.Constant kn,mk_constant_obj id val0 typ variables hyps
     | Ln.IndRef (kn,_) ->
-       let {D.mind_packets=packs ;
+       let {D.mind_nparams=nparams;
+	    D.mind_packets=packs ;
             D.mind_hyps=hyps;
             D.mind_finite=finite} = G.lookup_mind kn in
-          Cic2acic.Inductive kn,mk_inductive_obj kn packs variables hyps finite
+          Cic2acic.Inductive kn,mk_inductive_obj kn packs variables nparams hyps finite
     | Ln.ConstructRef _ ->
        Util.anomaly ("print: this should not happen")
   in

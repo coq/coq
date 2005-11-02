@@ -586,7 +586,7 @@ let error_bad_induction dep indid kind =
   str "is not allowed"
 
 let error_not_mutual_in_scheme () =
- str "Induction schemes is concerned only with mutually inductive types"
+ str "Induction schemes are concerned only with distinct mutually inductive types"
 
 let explain_inductive_error = function
   (* These are errors related to inductive constructions *)

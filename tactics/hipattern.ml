@@ -120,7 +120,7 @@ let match_with_unit_type t =
         let constr_types = mip.mind_nf_lc in 
         let nconstr = Array.length mip.mind_consnames in
         let zero_args c =
-          nb_prod c = mip.mind_nparams in  
+          nb_prod c = mib.mind_nparams in  
 	if nconstr = 1 && array_for_all zero_args constr_types then 
 	  Some hdapp
         else 
@@ -213,11 +213,11 @@ let match_with_nodep_ind t =
       | Ind ind  -> 
           let (mib,mip) = Global.lookup_inductive ind in
 	    if Array.length (mib.mind_packets)>1 then None else
-	      let nodep_constr = has_nodep_prod_after mip.mind_nparams in
+	      let nodep_constr = has_nodep_prod_after mib.mind_nparams in
 		if array_for_all nodep_constr mip.mind_nf_lc then
 		  let params=
 		    if mip.mind_nrealargs=0 then args else
-		      fst (list_chop mip.mind_nparams args) in
+		      fst (list_chop mib.mind_nparams args) in
 		    Some (hdapp,params,mip.mind_nrealargs)
 		else 
 		  None
@@ -233,7 +233,7 @@ let match_with_sigma_type t=
           if (Array.length (mib.mind_packets)=1) &&
 	    (mip.mind_nrealargs=0) &&
 	    (Array.length mip.mind_consnames=1) &&
-	    has_nodep_prod_after (mip.mind_nparams+1) mip.mind_nf_lc.(0) then
+	    has_nodep_prod_after (mib.mind_nparams+1) mip.mind_nf_lc.(0) then
 	      (*allowing only 1 existential*) 
 	      Some (hdapp,args)
 	  else 
