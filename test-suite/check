@@ -11,7 +11,13 @@ fi
 if [ "$1" = -byte ]; then
   command="../bin/coqtop.byte -no-vm -q -batch -load-vernac-source"
 else
-  command="../bin/coqtop -q -batch -load-vernac-source"
+  command="../bin/coqtop -no-vm -q -batch -load-vernac-source"
+fi
+
+if [ "$1" = -byte ]; then
+  coqtop="../bin/coqtop.byte -no-vm -q -batch"
+else
+  coqtop="../bin/coqtop -no-vm -q -batch"
 fi
 
 # on compte le nombre de tests et de succès
@@ -128,6 +134,21 @@ test_parser() {
     fi
 }
 
+# La fonction suivante teste en interactif 
+test_interactive() {
+    for f in $1/*.v; do 
+	nbtests=`expr $nbtests + 1`
+	printf "    "$f"..."
+	$coqtop < $f > /dev/null 2>&1
+	if [ $? = 0 ]; then 
+	    echo "Ok"
+	    nbtestsok=`expr $nbtestsok + 1`
+        else 
+	    echo "Error! (should be accepted)"
+        fi 
+    done
+}
+
 # Programme principal
 
 echo "Output tests"
@@ -138,6 +159,8 @@ echo "Failure tests"
 test_failure failure
 echo "Parser tests"
 test_parser parser
+echo "Interactive tests"
+test_interactive interactive
 pourcentage=`expr 100 \* $nbtestsok / $nbtests`
 echo
 echo "$nbtestsok tests passed over $nbtests, i.e. $pourcentage %"
