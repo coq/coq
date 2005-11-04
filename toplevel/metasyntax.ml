@@ -890,28 +890,27 @@ let interp_modifiers =
     | SetEntryType (s,typ) :: l ->
 	let id = id_of_string s in
 	if List.mem_assoc id etyps then
-	  error (s^" is already assigned to an entry or constr level")
-	else interp assoc level ((id,typ)::etyps) format l
+	  error (s^" is already assigned to an entry or constr level");
+	interp assoc level ((id,typ)::etyps) format l
     | SetItemLevel ([],n) :: l ->
 	interp assoc level etyps format l
     | SetItemLevel (s::idl,n) :: l ->
 	let id = id_of_string s in
 	if List.mem_assoc id etyps then
-	  error (s^" is already assigned to an entry or constr level")
-	else
-	  let typ = ETConstr (n,()) in
-	  interp assoc level ((id,typ)::etyps) format (SetItemLevel (idl,n)::l)
+	  error (s^" is already assigned to an entry or constr level");
+	let typ = ETConstr (n,()) in
+	interp assoc level ((id,typ)::etyps) format (SetItemLevel (idl,n)::l)
     | SetLevel n :: l ->
-	if level <> None then error "A level is given more than once"
-	else interp assoc (Some n) etyps format l
+	if level <> None then error "A level is given more than once";
+	interp assoc (Some n) etyps format l
     | SetAssoc a :: l ->
-	if assoc <> None then error "An associativity is given more than once"
-	else interp (Some a) level etyps format l
+	if assoc <> None then error "An associativity is given more than once";
+	interp (Some a) level etyps format l
     | SetOnlyParsing :: l ->
 	onlyparsing := true;
 	interp assoc level etyps format l
     | SetFormat s :: l ->
-	if format <> None then error "A format is given more than once"
+	if format <> None then error "A format is given more than once";
 	onlyparsing := true;
 	interp assoc level etyps (Some s) l
   in interp None None [] None
