@@ -77,8 +77,8 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
-BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG)
-OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF) -noassert
+BYTEFLAGS=$(MLINCLUDES) $(CAMLDEBUG) -w y
+OPTFLAGS=$(MLINCLUDES) $(CAMLTIMEPROF) -w y -noassert
 OCAMLDEP=ocamldep
 DEPFLAGS=$(LOCALINCLUDES)
 
@@ -1485,7 +1485,7 @@ ML4FILES +=parsing/g_basevernac.ml4 parsing/g_minicoq.ml4 \
 
 parsing/q_coqast.cmo: parsing/q_coqast.ml4
 	$(SHOW)'OCAMLC4  $<' 
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo -impl" -c -impl $<
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) pa_ifdef.cmo $(CAMLP4COMPAT) -impl" -c -impl $<
 
 # toplevel/mltop.ml4 (ifdef Byte)
 
@@ -1611,11 +1611,11 @@ parsing/lexer.cmo: parsing/lexer.ml4
 
 .ml4.cmx:
 	$(SHOW)'OCAMLOPT4 $<'
-	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
+	$(HIDE)$(OCAMLOPT) $(OPTFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
 
 .ml4.cmo:
 	$(SHOW)'OCAMLC4   $<'
-	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` -impl" -c -impl $<
+	$(HIDE)$(OCAMLC) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) `$(CAMLP4DEPS) $<` $(CAMLP4COMPAT) -impl" -c -impl $<
 
 #.v.vo:
 #	$(BOOTCOQTOP) -compile $*
