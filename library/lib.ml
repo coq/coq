@@ -555,8 +555,7 @@ let library_part ref =
   let dir,_ = repr_path sp in
   match ref with
   | VarRef id -> 
-      anomaly "TODO";
-      extract_dirpath_prefix (sections_depth ()) (cwd ())
+      anomaly "library_part not supported on local variables"
   | _ ->
       if is_dirpath_prefix_of dir (cwd ()) then
         (* Not yet (fully) discharged *)
