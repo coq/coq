@@ -1567,8 +1567,7 @@ and interp_match_context ist g lz lr lmr =
         | PatternMatchingFailure ->
            apply_match_context ist env goal (nrs+1) (List.tl lex) tl))
     | _ ->
-      errorlabstrm "Tacinterp.apply_match_context" (str
-        "No matching clauses for match goal")
+      errorlabstrm "Tacinterp.apply_match_context"
         (v 0 (str "No matching clauses for match goal" ++
         (if ist.debug=DebugOff then
            fnl() ++ str "(use \"Debug On\" for more info)"
