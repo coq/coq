@@ -188,12 +188,8 @@ let lookup_tactic s =
 
 (* refiner r is a tactic applying the rule r *)
 
-let bad_subproof () =
-  anomalylabstrm "Refiner.refiner" (str"Bad subproof in validation.")
-
 let check_subproof_connection gl spfl =
-  if not (list_for_all2eq (fun g pf -> g=pf.goal) gl spfl)
-  then (bad_subproof (); false) else true
+  list_for_all2eq (fun g pf -> g=pf.goal) gl spfl
 
 let abstract_tactic_expr te tacfun gls =
   let (sgl_sigma,v) = tacfun gls in
