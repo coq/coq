@@ -898,7 +898,7 @@ let interp_modifiers =
 	onlyparsing := true;
 	interp assoc level etyps format l
     | SetFormat s :: l ->
-	if format <> None then error "A format is given more than once"
+	if format <> None then error "A format is given more than once";
 	onlyparsing := true;
 	interp assoc level etyps (Some s) l
   in interp None None [] None
