@@ -1,11 +1,17 @@
-: This script is used to build the Windows install program for Coq.
+; This script is used to build the Windows install program for Coq.
 
 ;NSIS Modern User Interface
 ;Written by Joost Verburg
 ;Modified by Julien Narboux
 
+; This file is preprocessed by ./configure to subtitute @VERSION@ by the current version.
+
 !define MY_PRODUCT "Coq" ;Define your own software name here
 !define MY_VERSION "@VERSION@" ;Define your own software version here
+!define COQ_EXE_NAME "coq.exe"
+!define COQ_EXE_PATH "..\..\bin\coq.exe"
+!define COQIDE_EXE_NAME "coqide.exe"
+!define COQIDE_EXE_PATH "..\..\bin\coqide.exe"
 
 !include "MUI.nsh"
 
@@ -54,10 +60,8 @@
 ;Language Strings
 
   ;Description
-  LangString DESC_1 ${LANG_ENGLISH} "This is the windows version of
-  Coq"
-  LangString DESC_2 ${LANG_ENGLISH} "This is CoqIde, an interactive
-  development environment for Coq"
+  LangString DESC_1 ${LANG_ENGLISH} "This is the windows version of Coq."
+  LangString DESC_2 ${LANG_ENGLISH} "This is CoqIde, an interactive development environment for Coq."
   LangString DESC_3 ${LANG_ENGLISH} "This will copy the GTK dlls in the installation directory (These files are needed by CoqIde)."
 
 ;--------------------------------
@@ -85,7 +89,7 @@ Section "Coq" Sec1
   ;ADD YOUR OWN STUFF HERE!
 
   SetOutPath "$INSTDIR"
-  File "..\..\bin\coq.exe"
+  File "${COQ_EXE_PATH}"
   File "coq.ico"
 
   ;Store install folder
@@ -94,12 +98,12 @@ Section "Coq" Sec1
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
-	  "DisplayName" "Coq Version @VERSION@"
+	  "DisplayName" "Coq Version ${MY_VERSION}"
   WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
 	  "UninstallString" '"$INSTDIR\Uninstall.exe"'
 
   WriteRegStr HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
-          "DisplayVersion" "@VERSION@"
+          "DisplayVersion" "${MY_VERSION}"
 
   WriteRegDWORD HKEY_LOCAL_MACHINE "Software\Microsoft\Windows\CurrentVersion\Uninstall\Coq" \
           "NoModify" "1"
@@ -120,10 +124,10 @@ SectionEnd
 Section "CoqIde" Sec2
 
   SetOutPath "$INSTDIR"
-  File "..\..\bin\coqide.exe"
+  File "${COQIDE_EXE_PATH}"
 
   ; Start Menu Entries
-  CreateShortCut "$SMPROGRAMS\Coq\CoqIde.lnk" "$INSTDIR\coqide.exe" "" "$INSTDIR\coq.ico" 0 
+  CreateShortCut "$SMPROGRAMS\Coq\CoqIde.lnk" "$INSTDIR\${COQIDE_EXE_NAME}" "" "$INSTDIR\coq.ico" 0 
 
 SectionEnd
 
@@ -140,6 +144,7 @@ SectionEnd
 !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
   !insertmacro MUI_DESCRIPTION_TEXT ${Sec1} $(DESC_1)
   !insertmacro MUI_DESCRIPTION_TEXT ${Sec2} $(DESC_2)
+  !insertmacro MUI_DESCRIPTION_TEXT ${Sec3} $(DESC_3)
 !insertmacro MUI_FUNCTION_DESCRIPTION_END
  
 ;--------------------------------
@@ -148,7 +153,8 @@ SectionEnd
 Section "Uninstall"
 
 ;; Binaries
-  Delete "$INSTDIR\coq.exe"
+  Delete "$INSTDIR\${COQ_EXE_NAME}"
+  Delete "$INSTDIR\${COQIDE_EXE_NAME}"
 
 ;; Icon
   Delete "$INSTDIR\coq.ico"
@@ -183,6 +189,7 @@ Section "Uninstall"
     
 ;; Start Menu
   Delete "$SMPROGRAMS\Coq\Coq.lnk"
+  Delete "$SMPROGRAMS\Coq\CoqIde.lnk"
   Delete "$SMPROGRAMS\Coq\Uninstall.lnk"
   Delete "$SMPROGRAMS\Coq\Coq-HomePage.url"
   Delete "$INSTDIR\Uninstall.exe"
