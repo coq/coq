@@ -3327,6 +3327,32 @@ contrib/omega/g_omega.cmx: lib/util.cmx tactics/tacinterp.cmx \
     contrib/omega/coq_omega.cmx toplevel/cerrors.cmx 
 contrib/omega/omega.cmo: lib/util.cmi kernel/names.cmi 
 contrib/omega/omega.cmx: lib/util.cmx kernel/names.cmx 
+contrib/recdef/recdef.cmo: toplevel/vernacinterp.cmi lib/util.cmi \
+    pretyping/typing.cmi interp/topconstr.cmi pretyping/termops.cmi \
+    kernel/term.cmi tactics/tactics.cmi tactics/tacticals.cmi \
+    pretyping/tacred.cmi proofs/tacmach.cmi kernel/safe_typing.cmi \
+    pretyping/rawterm.cmi proofs/proof_type.cmi parsing/printer.cmi \
+    pretyping/pretyping.cmi lib/pp.cmi proofs/pfedit.cmi parsing/pcoq.cmi \
+    lib/options.cmi library/nametab.cmi kernel/names.cmi library/nameops.cmi \
+    library/libnames.cmi library/global.cmi interp/genarg.cmi \
+    pretyping/evd.cmi tactics/equality.cmi kernel/environ.cmi \
+    kernel/entries.cmi parsing/egrammar.cmi tactics/eauto.cmi \
+    library/declare.cmi kernel/declarations.cmi library/decl_kinds.cmo \
+    interp/coqlib.cmi interp/constrintern.cmi toplevel/command.cmi \
+    kernel/closure.cmi toplevel/cerrors.cmi tactics/auto.cmi 
+contrib/recdef/recdef.cmx: toplevel/vernacinterp.cmx lib/util.cmx \
+    pretyping/typing.cmx interp/topconstr.cmx pretyping/termops.cmx \
+    kernel/term.cmx tactics/tactics.cmx tactics/tacticals.cmx \
+    pretyping/tacred.cmx proofs/tacmach.cmx kernel/safe_typing.cmx \
+    pretyping/rawterm.cmx proofs/proof_type.cmx parsing/printer.cmx \
+    pretyping/pretyping.cmx lib/pp.cmx proofs/pfedit.cmx parsing/pcoq.cmx \
+    lib/options.cmx library/nametab.cmx kernel/names.cmx library/nameops.cmx \
+    library/libnames.cmx library/global.cmx interp/genarg.cmx \
+    pretyping/evd.cmx tactics/equality.cmx kernel/environ.cmx \
+    kernel/entries.cmx parsing/egrammar.cmx tactics/eauto.cmx \
+    library/declare.cmx kernel/declarations.cmx library/decl_kinds.cmx \
+    interp/coqlib.cmx interp/constrintern.cmx toplevel/command.cmx \
+    kernel/closure.cmx toplevel/cerrors.cmx tactics/auto.cmx 
 contrib/ring/g_quote.cmo: lib/util.cmi tactics/tacinterp.cmi \
     proofs/tacexpr.cmo proofs/refiner.cmi contrib/ring/quote.cmo \
     parsing/pptactic.cmi lib/pp.cmi parsing/pcoq.cmi lib/options.cmi \
@@ -3685,6 +3711,8 @@ contrib/subtac/g_eterm.cmo: parsing/grammar.cma
 contrib/subtac/g_eterm.cmx: parsing/grammar.cma
 contrib/rtauto/g_rtauto.cmo: parsing/grammar.cma
 contrib/rtauto/g_rtauto.cmx: parsing/grammar.cma
+contrib/recdef/recdef.cmo: parsing/grammar.cma
+contrib/recdef/recdef.cmx: parsing/grammar.cma
 contrib/interface/debug_tac.cmo: parsing/grammar.cma
 contrib/interface/debug_tac.cmx: parsing/grammar.cma
 contrib/interface/centaur.cmo: parsing/grammar.cma
