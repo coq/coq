@@ -279,3 +279,4 @@ contrib/fourier/Fourier_util.vo: contrib/fourier/Fourier_util.v theories/Reals/R
 contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/ring/quote.cmo contrib/ring/ring.cmo contrib/fourier/fourier.cmo contrib/fourier/fourierR.cmo contrib/field/field.cmo contrib/fourier/Fourier_util.vo contrib/field/Field.vo theories/Reals/DiscrR.vo
 contrib/rtauto/Bintree.vo: contrib/rtauto/Bintree.v theories/Lists/List.vo theories/NArith/BinPos.vo
 contrib/rtauto/Rtauto.vo: contrib/rtauto/Rtauto.v theories/Lists/List.vo contrib/rtauto/Bintree.vo theories/Bool/Bool.vo theories/NArith/BinPos.vo
+contrib/recdef/Recdef.vo: contrib/recdef/Recdef.v theories/Arith/Arith.vo theories/Arith/Compare_dec.vo theories/Arith/Wf_nat.vo contrib/recdef/recdef.cmo
