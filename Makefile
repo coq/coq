@@ -73,7 +73,8 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
               -I contrib/interface -I contrib/fourier \
 	      -I contrib/jprover -I contrib/cc \
 	      -I contrib/funind -I contrib/first-order \
-              -I contrib/field -I contrib/subtac -I contrib/rtauto
+              -I contrib/field -I contrib/subtac -I contrib/rtauto \
+              -I contrib/recdef
 
 MLINCLUDES=$(LOCALINCLUDES) -I $(MYCAMLP4LIB)
 
@@ -285,6 +286,9 @@ JPROVERCMO=\
 FUNINDCMO=\
   contrib/funind/tacinvutils.cmo contrib/funind/tacinv.cmo 
 
+RECDEFCMO=\
+  contrib/recdef/recdef.cmo
+
 FOCMO=\
   contrib/first-order/formula.cmo contrib/first-order/unify.cmo \
   contrib/first-order/sequent.cmo contrib/first-order/rules.cmo \
@@ -310,11 +314,12 @@ RTAUTOCMO=contrib/rtauto/proof_search.cmo contrib/rtauto/refl_tauto.cmo \
 ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/g_congruence.ml4 \
   contrib/funind/tacinv.ml4 contrib/first-order/g_ground.ml4 \
   contrib/subtac/sparser.ml4 contrib/subtac/g_eterm.ml4 \
-  contrib/rtauto/g_rtauto.ml4
+  contrib/rtauto/g_rtauto.ml4 contrib/recdef/recdef.ml4
 
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(DPCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
-	$(CCCMO) $(FUNINDCMO) $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO)
+	$(CCCMO) $(FUNINDCMO) $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
+        $(RECDEFCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -1003,6 +1008,8 @@ FOURIERVO=\
 
 FUNINDVO= 
 
+RECDEFVO=contrib/recdef/Recdef.vo
+
 JPROVERVO= 
 
 CCVO=
@@ -1015,7 +1022,7 @@ RTAUTOVO = \
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) $(SUBTACVO) \
-	    $(RTAUTOVO)
+	    $(RTAUTOVO) $(RECDEFVO)
 
 $(CONTRIBVO): states/initial.coq
 
