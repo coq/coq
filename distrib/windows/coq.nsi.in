@@ -88,7 +88,14 @@ Section "Coq" Sec1
   ;ADD YOUR OWN STUFF HERE!
 
   SetOutPath "$INSTDIR\"
-  File "..\..\Coq.bat"
+
+  FileOpen $0 $INSTDIR\Coq.bat w
+  FileWrite $0 "@echo off$\n"
+  FileWrite $0 "set COQLIB=$INSTDIR\lib$\r$\n"
+  FileWrite $0 "set COQBIN=$INSTDIR\bin$\r$\n"
+;  FileWrite $0 "set HOME=\n"
+  FileWrite $0 "bin\coqtop.opt.exe" 
+  FileClose $0
 
   SetOutPath "$INSTDIR\bin"
   File /x coqide.* ${EXE_PATH}\*.exe
@@ -137,8 +144,12 @@ Section "Coq" Sec1
           "URLInfoAbout" "http://coq.inria.fr"
 
 ; Start Menu Entries
+
+; for the path in the .lnk
+  SetOutPath "$INSTDIR" 
+
   CreateDirectory "$SMPROGRAMS\Coq"
-  CreateShortCut "$SMPROGRAMS\Coq\Coq.lnk" "$INSTDIR\Coq.bat" "" "$INSTDIR\bin\coq.ico" 0 
+  CreateShortCut "$SMPROGRAMS\Coq\Coq.lnk" "$INSTDIR\Coq.bat" "" "$INSTDIR\bin\coq.ico" 0
   WriteINIStr "$SMPROGRAMS\Coq\Coq-HomePage.url" "InternetShortcut" "URL" "http://coq.inria.fr"
   CreateShortCut "$SMPROGRAMS\Coq\Uninstall.lnk" "$INSTDIR\Uninstall.exe" "" "$INSTDIR\Uninstall.exe" 0
 
@@ -147,7 +158,13 @@ SectionEnd
 Section "CoqIde" Sec2
 
   SetOutPath "$INSTDIR"
-  File ..\..\Coqide.bat
+ 
+  FileOpen $0 $INSTDIR\Coqide.bat w
+  FileWrite $0 "@echo off$$\r\n"
+  FileWrite $0 "set COQLIB=$INSTDIR\lib$\r$\n"
+  FileWrite $0 "set COQBIN=$INSTDIR\bin$\r$\n"
+  FileWrite $0 "bin\coqide.opt.exe" 
+  FileClose $0
 
   File /oname=.coqiderc ..\..\ide\.coqide-gtk2rc
 
