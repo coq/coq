@@ -90,7 +90,7 @@ Section "Coq" Sec1
   SetOutPath "$INSTDIR\"
 
   FileOpen $0 $INSTDIR\Coq.bat w
-  FileWrite $0 "@echo off$\n"
+  FileWrite $0 "@echo off$\r$\n"
   FileWrite $0 "set COQLIB=$INSTDIR\lib$\r$\n"
   FileWrite $0 "set COQBIN=$INSTDIR\bin$\r$\n"
 ;  FileWrite $0 "set HOME=\n"
@@ -160,7 +160,7 @@ Section "CoqIde" Sec2
   SetOutPath "$INSTDIR"
  
   FileOpen $0 $INSTDIR\Coqide.bat w
-  FileWrite $0 "@echo off$$\r\n"
+  FileWrite $0 "@echo off$\r$\n"
   FileWrite $0 "set COQLIB=$INSTDIR\lib$\r$\n"
   FileWrite $0 "set COQBIN=$INSTDIR\bin$\r$\n"
   FileWrite $0 "bin\coqide.opt.exe" 
