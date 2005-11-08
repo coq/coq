@@ -99,6 +99,7 @@ type showable =
   | ShowTree
   | ShowProofNames
   | ShowIntros of bool
+  | ShowMatch of lident
   | ExplainProof of int list
   | ExplainTree of int list
 

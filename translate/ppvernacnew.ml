@@ -492,6 +492,7 @@ let rec pr_vernac = function
 	| ShowTree -> str"Show Tree"
 	| ShowProofNames -> str"Show Conjectures"
 	| ShowIntros b -> str"Show " ++ (if b then str"Intros" else str"Intro")
+	| ShowMatch id -> str"Show Match " ++ pr_lident id
 	| ExplainProof l -> str"Explain Proof" ++ spc() ++ prlist_with_sep sep int l
 	| ExplainTree l -> str"Explain Proof Tree" ++ spc() ++ prlist_with_sep sep int l 
       in pr_showable s

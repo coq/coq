@@ -114,7 +114,7 @@ let print_subgoals () = if_verbose (fun () -> msg (pr_open_subgoals ())) ()
 
 let fresh_id_of_name avoid gl = function
     Anonymous -> Tactics.fresh_id avoid (id_of_string "H") gl
-  | Name id   -> id
+  | Name id   -> Tactics.fresh_id avoid id gl
 
 let rec do_renum avoid gl = function
     [] -> mt ()
@@ -128,15 +128,60 @@ let show_intro all =
   let gl = nth_goal_of_pftreestate 1 pf in
   let l,_= decompose_prod (strip_outer_cast (pf_concl gl)) in
   let nl = List.rev_map fst l in
-  if all then
-    msgnl (do_renum [] gl nl)
-  else
-    try 
-      let n = List.hd nl in
-      msgnl (pr_id (fresh_id_of_name [] gl n))
-    with Failure "hd" -> message "" 
+  if all then msgnl (hov 0 (do_renum [] gl nl))
+  else try 
+    let n = List.hd nl in
+    msgnl (pr_id (fresh_id_of_name [] gl n))
+  with Failure "hd" -> message "" 
 
-(********************)
+
+let id_of_name = function 
+  | Names.Anonymous -> id_of_string "x" 
+  | Names.Name x -> x
+
+
+(* Building of match expression *)
+(* From ide/coq.ml *)
+let make_cases s = 
+  let qualified_name = Libnames.qualid_of_string s in
+  let glob_ref = Nametab.locate qualified_name in
+  match glob_ref with
+    | Libnames.IndRef i -> 
+	let {Declarations.mind_nparams = np}
+	    , {Declarations.mind_consnames = carr ; Declarations.mind_nf_lc = tarr } 
+	      = Global.lookup_inductive i in
+	Util.array_fold_right2 
+	  (fun n t l ->  
+	     let (al,_) = Term.decompose_prod t in
+	     let al,_ = Util.list_chop (List.length al - np) al in
+	     let rec rename avoid = function 
+	       | [] -> []
+	       | (n,_)::l -> 
+		   let n' = Termops.next_global_ident_away true (id_of_name n) avoid in
+		   string_of_id n' :: rename (n'::avoid) l in
+	     let al' = rename [] (List.rev al) in
+	     (string_of_id n :: al') :: l)
+	  carr tarr []
+    | _ -> raise Not_found
+
+
+let show_match id = 
+  try
+    let s = string_of_id (snd id) in
+    let patterns = make_cases s in
+    let cases = 
+      List.fold_left 
+	(fun acc x -> 
+	  match x with
+	    | [] -> assert false
+	    | [x] -> "| "^ x  ^ " => \n" ^ acc
+	    | x::l -> 
+		"| (" ^ List.fold_left (fun acc s ->  acc ^ " " ^ s) x l ^ ")" 
+		^ " => \n" ^ acc)
+	"end" patterns in
+    msg (str ("match # with\n" ^ cases))
+  with Not_found -> error "Unknown inductive type"
+
 (* "Print" commands *)
 
 let print_path_entry (s,l) =
@@ -1045,6 +1090,7 @@ let vernac_show = function
   | ShowProofNames ->
       msgnl (prlist_with_sep pr_spc pr_id (Pfedit.get_all_proof_names()))
   | ShowIntros all -> show_intro all
+  | ShowMatch id -> show_match id
   | ExplainProof occ -> explain_proof occ
   | ExplainTree occ -> explain_tree occ
 
