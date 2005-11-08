@@ -111,7 +111,6 @@ let rec check_hyps_inclusion env sign =
 
 
 let check_args env c hyps =
-  let hyps' = named_context env in
   try check_hyps_inclusion env hyps
   with UserError _ | Not_found ->
     error_reference_variables env c
@@ -295,7 +294,6 @@ let judge_of_case env ci pj cj lfj =
   let _ = check_case_info env (fst indspec) ci in
   let (bty,rslty,univ) =
     type_case_branches env indspec pj cj.uj_val in
-  let (_,kind) = dest_arity env pj.uj_type in
   let lft = Array.map j_type lfj in
   let univ' = check_branch_types env cj (lft,bty) in
   ({ uj_val  = mkCase (ci, (*nf_betaiota*) pj.uj_val, cj.uj_val,
@@ -452,10 +450,8 @@ and execute_list env l cu =
 let infer env constr =
   let (j,(cst,_)) =
     execute env constr (Constraint.empty, universes env) in
-  let j = if j.uj_val = constr then { j with uj_val = constr } else
-    (error "Kernel built a body different from its input\n";
-     flush stdout; j) in
-  (j, cst)
+  assert (j.uj_val = constr);
+  ({ j with uj_val = constr }, cst)
 
 let infer_type env constr =
   let (j,(cst,_)) =
