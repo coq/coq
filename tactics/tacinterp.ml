@@ -385,7 +385,6 @@ let adjust_loc loc = if !strict_check then dummy_loc else loc
 
 (* Globalize a name which must be bound -- actually just check it is bound *)
 let intern_hyp ist (loc,id as locid) =
-  let (_,env) = get_current_context () in
   if not !strict_check then
     locid
   else if find_ident id ist then
@@ -396,7 +395,7 @@ let intern_hyp ist (loc,id as locid) =
 let intern_hyp_or_metaid ist id = intern_hyp ist (skip_metaid id)
 
 let intern_int_or_var ist = function
-  | ArgVar locid as x -> ArgVar (intern_hyp ist locid)
+  | ArgVar locid -> ArgVar (intern_hyp ist locid)
   | ArgArg n as x -> x
 
 let intern_inductive ist = function
@@ -404,7 +403,7 @@ let intern_inductive ist = function
   | r -> ArgArg (Nametab.global_inductive r)
 
 let intern_global_reference ist = function
-  | Ident (loc,id) as r when find_var id ist -> ArgVar (loc,id)
+  | Ident (loc,id) when find_var id ist -> ArgVar (loc,id)
   | r -> 
       let loc,qid = qualid_of_reference r in
       try ArgArg (loc,locate_global qid)
@@ -497,7 +496,7 @@ let intern_clause_pattern ist (l,occl) =
 let intern_induction_arg ist = function
   | ElimOnConstr c -> ElimOnConstr (intern_constr ist c)
   | ElimOnAnonHyp n as x -> x
-  | ElimOnIdent (loc,id) as x ->
+  | ElimOnIdent (loc,id) ->
       if !strict_check then
 	(* If in a defined tactic, no intros-until *)
 	ElimOnConstr (intern_constr ist (CRef (Ident (dummy_loc,id))))
@@ -506,7 +505,7 @@ let intern_induction_arg ist = function
 
 (* Globalizes a reduction expression *)
 let intern_evaluable ist = function
-  | Ident (loc,id) as r when find_ltacvar id ist -> ArgVar (loc,id)
+  | Ident (loc,id) when find_ltacvar id ist -> ArgVar (loc,id)
   | Ident (_,id) when
       (not !strict_check & find_hyp id ist) or find_ctxvar id ist ->
       ArgArg (EvalVarRef id, None)
@@ -749,8 +748,6 @@ let rec intern_atomic lf ist x =
       let _ = lookup_tactic opn in
       TacExtend (adjust_loc loc,opn,List.map (intern_genarg ist) l)
   | TacAlias (loc,s,l,(dir,body)) ->
-      let (l1,l2) = ist.ltacvars in
-      let ist' = { ist with ltacvars = ((List.map fst l)@l1,l2) } in
       let l = List.map (fun (id,a) -> (strip_meta id,intern_genarg ist a)) l in
       try TacAlias (loc,s,l,(dir,body))
       with e -> raise (locate_error_in_file (string_of_dirpath dir) e)
@@ -1036,7 +1033,7 @@ let get_debug () = !debug
 let interp_ident ist id =
   try match List.assoc id ist.lfun with
   | VIntroPattern (IntroIdentifier id) -> id
-  | VConstr c as v when isVar c ->
+  | VConstr c when isVar c ->
       (* This happends e.g. in definitions like "Tac H = Clear H; Intro H" *)
       (* c is then expected not to belong to the proof context *)
       (* would be checkable if env were known from interp_ident *)
@@ -1048,7 +1045,7 @@ let interp_ident ist id =
 let interp_intro_pattern_var ist id =
   try match List.assoc id ist.lfun with
   | VIntroPattern ipat -> ipat
-  | VConstr c as v when isVar c ->
+  | VConstr c when isVar c ->
       (* This happends e.g. in definitions like "Tac H = Clear H; Intro H" *)
       (* c is then expected not to belong to the proof context *)
       (* would be checkable if env were known from interp_ident *)
@@ -1076,7 +1073,7 @@ let is_variable env id =
   List.mem id (ids_of_named_context (Environ.named_context env))
 
 let variable_of_value env = function
-  | VConstr c as v when isVar c -> destVar c
+  | VConstr c when isVar c -> destVar c
   | VIntroPattern (IntroIdentifier id) when is_variable env id -> id
   | _ -> raise Not_found
 

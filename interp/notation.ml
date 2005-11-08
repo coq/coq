@@ -214,8 +214,6 @@ let declare_numeral_interpreter sc dir interp (patl,uninterp,uninterpc) =
     patl
 
 let check_required_module loc sc (ref,d) =
-  let d' = List.map id_of_string d in
-  let dir = make_dirpath (List.rev d') in
   try let _ = sp_of_global ref in ()
   with Not_found ->
     user_err_loc (loc,"numeral_interpreter",

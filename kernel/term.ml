@@ -748,7 +748,7 @@ let substl laml =
   substn_many (Array.map make_substituend (Array.of_list laml)) 0
 let subst1 lam = substl [lam]
 
-let substl_decl laml (id,bodyopt,typ as d) =
+let substl_decl laml (id,bodyopt,typ) =
   match bodyopt with
     | None -> (id,None,substl laml typ)
     | Some body -> (id, Some (substl laml body), type_app (substl laml) typ)

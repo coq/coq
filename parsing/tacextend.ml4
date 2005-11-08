@@ -140,17 +140,6 @@ let new_tac_ext (s,cl) =
 let declare_tactic_v7 loc s cl =
   let pp = make_printing_rule cl in
   let gl = mlexpr_of_clause cl in
-  let hide_tac (_,p,e) =
-    (* reste a definir les fonctions cachees avec des noms frais *)
-    let stac = let s = "h_"^s in s.[2] <- Char.lowercase s.[2]; s in
-    let e = 
-      make_fun
-        <:expr<
-          Refiner.abstract_extended_tactic $mlexpr_of_string s$ $make_args p$ $make_eval_tactic e p$
-        >>
-      p in
-    <:str_item< value $lid:stac$ = $e$ >>
-  in
   let se = mlexpr_of_string s in
   <:str_item<
     declare
@@ -194,7 +183,6 @@ let declare_tactic loc s cl =
     <:str_item< value $lid:stac$ = $e$ >>
   in
   let hidden = if List.length cl = 1 then List.map hide_tac cl' else [] in
-  let se = mlexpr_of_string s in
   let atomic_tactics =
     mlexpr_of_list mlexpr_of_string
       (List.flatten (List.map (fun (al,_) -> is_atomic al) cl')) in

@@ -183,7 +183,6 @@ let rec pr_com ft s =
 
 (* pretty printing functions *)
 let pp_dirs ft = 
-  let maxbox = (get_gp ft).max_depth in
   let pp_open_box = function
     | Pp_hbox n   -> Format.pp_open_hbox ft ()
     | Pp_vbox n   -> Format.pp_open_vbox ft n

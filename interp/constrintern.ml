@@ -337,7 +337,7 @@ let interp_reference vars r =
   let (r,_,_,_) = intern_reference (Idset.empty,None,[]) (vars,[],[],[],[]) r 
   in r
 
-let apply_scope_env (ids,_,scopes as env) = function
+let apply_scope_env (ids,_,scopes) = function
   | [] -> (ids,None,scopes), []
   | sc::scl -> (ids,sc,scopes), scl
 
@@ -415,7 +415,7 @@ let check_or_pat_variables loc ids idsl =
 
   (* [merge_aliases] returns the sets of all aliases encountered at this
      point and a substitution mapping extra aliases to the first one *)
-let merge_aliases (ids,subst as aliases) id =
+let merge_aliases (ids,subst as _aliases) id =
   ids@[id], if ids=[] then subst else (id, List.hd ids)::subst
 
 let alias_of = function
@@ -651,12 +651,12 @@ let merge_impargs l args =
       | _ -> a::l)
     l args 
 
-let check_projection isproj nargs r = 
+let check_projection isproj r = 
   match (r,isproj) with
   | RRef (loc, ref), Some nth ->
       (try
-	let n = Recordops.find_projection_nparams ref in
-	if nargs < nth then 
+	let n = Recordops.find_projection_nparams ref + 1 in
+	if nth < n then 
 	  user_err_loc (loc,"",str "Projection has not enough parameters");
       with Not_found -> 
 	user_err_loc
@@ -735,7 +735,7 @@ let rec subst_iterator y t = function
   | RVar (_,id) as x -> if id = y then t else x
   | x -> map_rawconstr (subst_iterator y t) x
 
-let rec subst_aconstr_in_rawconstr loc interp subst (ids,_,scopes as env) =
+let rec subst_aconstr_in_rawconstr loc interp subst (ids,_,scopes as _env) =
   function
   | AVar id ->
       begin
@@ -801,15 +801,14 @@ let internalise sigma env allow_soapp lvar c =
           with Not_found ->
 	    raise (InternalisationError (locid,UnboundFixName (false,iddef)))
 	in
-	let ids' = List.fold_right Idset.add lf ids in
         let idl = Array.map
           (fun (id,n,bl,ty,bd) ->
-            let ((ids'',_,_),rbl) =
+            let ((ids',_,_),rbl) =
               List.fold_left intern_local_binder (env,[]) bl in
-	    let ids''' = List.fold_right Idset.add lf ids'' in
+	    let ids'' = List.fold_right Idset.add lf ids' in
             (List.rev rbl,
-             intern_type (ids'',tmp_scope,scopes) ty,
-             intern (ids''',None,scopes) bd)) dl in
+             intern_type (ids',tmp_scope,scopes) ty,
+             intern (ids'',None,scopes) bd)) dl in
 	RRec (loc,RFix (Array.map (fun (_,n,_,_,_) -> n) dl,n),
               Array.of_list lf,
               Array.map (fun (bl,_,_) -> bl) idl,
@@ -824,15 +823,14 @@ let internalise sigma env allow_soapp lvar c =
           with Not_found ->
 	    raise (InternalisationError (locid,UnboundFixName (true,iddef)))
 	in
-	let ids' = List.fold_right Idset.add lf ids in
         let idl = Array.map
           (fun (id,bl,ty,bd) ->
-            let ((ids'',_,_),rbl) =
+            let ((ids',_,_),rbl) =
               List.fold_left intern_local_binder (env,[]) bl in
-	    let ids''' = List.fold_right Idset.add lf ids'' in
+	    let ids'' = List.fold_right Idset.add lf ids' in
             (List.rev rbl,
-             intern_type (ids'',tmp_scope,scopes) ty,
-             intern (ids''',None,scopes) bd)) dl in
+             intern_type (ids',tmp_scope,scopes) ty,
+             intern (ids'',None,scopes) bd)) dl in
 	RRec (loc,RCoFix n,
               Array.of_list lf,
               Array.map (fun (bl,_,_) -> bl) idl,
@@ -864,7 +862,7 @@ let internalise sigma env allow_soapp lvar c =
 	intern (ids,None,find_delimiters_scope loc key::scopes) e
     | CAppExpl (loc, (isproj,ref), args) ->
         let (f,_,args_scopes,_) = intern_reference env lvar ref in
-	check_projection isproj (List.length args) f;
+	check_projection isproj f;
 	RApp (loc, f, intern_args env args_scopes args)
     | CApp (loc, (isproj,f), args) ->
         let isproj,f,args = match f with
@@ -879,8 +877,9 @@ let internalise sigma env allow_soapp lvar c =
                 let c = intern_notation intern env loc ntn [] in
                 find_appl_head_data lvar c
             | x -> (intern env f,[],[],[]) in
-	let args = intern_impargs c env impargs args_scopes (merge_impargs l args) in
-	check_projection isproj (List.length args) c;
+	let args = 
+	  intern_impargs c env impargs args_scopes (merge_impargs l args) in
+	check_projection isproj c;
 	(match c with 
           (* Now compact "(f args') args" *)
 	  | RApp (loc', f', args') -> RApp (join_loc loc' loc, f',args'@args)
@@ -919,7 +918,7 @@ let internalise sigma env allow_soapp lvar c =
 	RPatVar (loc, n)
     | CPatVar (loc, (false,n)) when Options.do_translate () ->
 	RVar (loc, n)
-    | CPatVar (loc, (false,n as x)) ->
+    | CPatVar (loc, (false,n)) ->
         if List.mem n (fst (let (a,_,_,_,_) = lvar in a)) & !Options.v7 then
 	  RVar (loc, n)
 	else
@@ -951,7 +950,7 @@ let internalise sigma env allow_soapp lvar c =
         ((name_fold Idset.add na ids,ts,sc),
          (na,Some(intern env def),RHole(loc,Evd.BinderType na))::bl)
 
-  and intern_eqn n (ids,tmp_scope,scopes as env) (loc,lhs,rhs) =
+  and intern_eqn n (ids,tmp_scope,scopes as _env) (loc,lhs,rhs) =
     let idsl_pll = List.map (intern_cases_pattern scopes ([],[]) None) lhs in
 
     let eqn_ids,pll = product_of_cases_patterns [] idsl_pll in

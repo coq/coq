@@ -629,7 +629,7 @@ let find_position forpat other assoc lev =
 	    (* Maybe this was (p,Left) and p occurs a second time *)
 	    if a = Gramext.LeftA then
 	      match l with
-		| (p,a)::_ as l' when p = n -> raise (Found a)
+		| (p,a)::_ when p = n -> raise (Found a)
 		| _ -> after := Some pa; pa::(n,create_assoc assoc)::l
 	    else
 	      (* This was not (p,LeftA) hence assoc is RightA *)

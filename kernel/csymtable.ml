@@ -146,7 +146,6 @@ and slot_for_fv env fv=
 	    set_relval rv v; v
 	| VKdef(c,e) ->
 	    let v = val_of_constr e c in
-	    let k = nb_rel e in
 	    set_relval rv v; v
       end
  
@@ -158,7 +157,6 @@ and eval_to_patch env (buff,pl,fv) =
 	patch_int buff pos (slot_for_getglobal env kn)
   in 
   List.iter patch pl;
-  let nfv = Array.length fv in
   let vm_env = Array.map (slot_for_fv env) fv in 
   let tc = tcode_of_code buff (length buff) in
   eval_tcode tc vm_env

@@ -201,7 +201,6 @@ let check_entry_type (u,n) =
     | _ -> error "Cannot arbitrarily extend non constr/ident/ref entries"
 
 let add_grammar_obj univ entryl =
-  let u = create_univ_if_new univ in
   let g = interp_grammar_command univ check_entry_type entryl in
   Lib.add_anonymous_leaf (inGrammar (Egrammar.Grammar g))
 
@@ -662,12 +661,12 @@ let read_recursive_format sl fmt =
   let slfmt, fmt = get_head fmt in
   slfmt, get_tail (slfmt, fmt)
 
-let hunks_of_format (from,(vars,typs) as vt) symfmt = 
+let hunks_of_format (from,(vars,typs)) symfmt = 
   let rec aux = function
   | symbs, (UnpTerminal s' as u) :: fmt
       when s' = String.make (String.length s') ' ' ->
       let symbs, l = aux (symbs,fmt) in symbs, u :: l
-  | Terminal s :: symbs, (UnpTerminal s' as u) :: fmt
+  | Terminal s :: symbs, (UnpTerminal s') :: fmt
       when s = unquote_notation_token s' ->
       let symbs, l = aux (symbs,fmt) in symbs, UnpTerminal s :: l
   | NonTerminal s :: symbs, UnpTerminal s' :: fmt when s = id_of_string s' ->
@@ -811,7 +810,6 @@ let pr_arg_level from = function
   | (n,_) -> str "Unknown level"
 
 let pr_level ntn (from,args) =
-  let lopen = ntn.[0] = '_' and ropen = ntn.[String.length ntn - 1] = '_' in
 (*
   let ppassoc, args = match args with
     | [] -> mt (), []
@@ -1350,7 +1348,6 @@ let add_notation local c dfmod mv8 sc =
                   add_notation_in_scope local df c modifiers mv8 sc toks
 	  | Some n ->
 	    (* Declare both syntax and interpretation *)
-	    let assoc = match assoc with None -> Some Gramext.NonA | a -> a in
             add_notation_in_scope local df c modifiers mv8 sc toks
 
 (* TODO add boxes information in the expression *)
@@ -1410,7 +1407,6 @@ let add_infix local (inf,modl) pr mv8 sc =
       let (recs,vars,symbs) = analyse_notation_tokens toks in
       let (acvars,ac) = interp_aconstr [] vars a in
       let a' = (remove_vars recs acvars,ac) in
-      let a_for_old = interp_global_rawconstr_with_vars vars a in
       add_notation_interpretation_core local symbs None df a' sc 
 	onlyparse true None
     else

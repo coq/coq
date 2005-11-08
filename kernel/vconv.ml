@@ -80,9 +80,9 @@ and conv_whd pb k whd1 whd2 cu =
       else raise NotConvertible
   | Vatom_stk(a1,stk1), Vatom_stk(a2,stk2) -> 
       conv_atom pb k a1 stk1 a2 stk2 cu
-  | _, Vatom_stk(Aiddef(_,v) as a2,stk) -> 
+  | _, Vatom_stk(Aiddef(_,v),stk) -> 
       conv_whd pb k whd1 (force_whd v stk) cu
-  | Vatom_stk(Aiddef(_,v) as a1,stk), _ -> 
+  | Vatom_stk(Aiddef(_,v),stk), _ -> 
       conv_whd pb k (force_whd v stk) whd2 cu
   | _, _ -> raise NotConvertible
 
@@ -343,7 +343,7 @@ let type_of_ind env ind =
   let (_,mip) = Inductive.lookup_mind_specif env ind in
   mip.mind_nf_arity
 
-let build_branches_type (mind,_ as ind) mib mip params dep p rtbl =
+let build_branches_type (mind,_ as _ind) mib mip params dep p rtbl =
   (* [build_one_branch i cty] construit le type de la ieme branche (commence
      a 0) et les lambda correspondant aux realargs *)
   let build_one_branch i cty =

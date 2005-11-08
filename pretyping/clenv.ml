@@ -100,7 +100,6 @@ let clenv_environments_evars env evd bound c =
       | (n, Prod (na,c1,c2)) ->
           let e',constr = Evarutil.new_evar e env c1 in
 	  let dep = dependent (mkRel 1) c2 in
-	  let na' = if dep then na else Anonymous in
 	  clrec (e', constr::ts) (option_app ((+) (-1)) n)
 	    (if dep then (subst1 constr c2) else c2)
       | (n, LetIn (na,b,_,c)) ->

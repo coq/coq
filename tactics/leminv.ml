@@ -263,8 +263,8 @@ let inversion_lemma_from_goal n na id sort dep_option inv_op =
   let gl = nth_goal_of_pftreestate n pts in
   let t = pf_get_hyp_typ gl id in
   let env = pf_env gl and sigma = project gl in
-  let fv = global_vars env t in
 (* Pourquoi ??? 
+  let fv = global_vars env t in
   let thin_ids = thin_ids (hyps,fv) in
   if not(list_subset thin_ids fv) then
     errorlabstrm "lemma_inversion"

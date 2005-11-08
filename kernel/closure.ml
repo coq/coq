@@ -842,7 +842,7 @@ let strip_update_shift_app head stk =
   let rec strip_rec rstk h depth = function
     | Zshift(k) as e :: s ->
         strip_rec (e::rstk) (lift_fconstr k h) (depth+k) s
-    | (Zapp args :: s) as stk ->
+    | (Zapp args :: s) ->
         strip_rec (Zapp args :: rstk)
           {norm=h.norm;term=FApp(h,Array.of_list args)} depth s
     | Zupdate(m)::s ->
@@ -885,7 +885,7 @@ let get_arg h stk =
 let rec get_args n tys f e stk =
   match stk with
       Zupdate r :: s ->
-        let hd = update r (Cstr,FLambda(n,tys,f,e)) in
+        let _hd = update r (Cstr,FLambda(n,tys,f,e)) in
         get_args n tys f e s
     | Zshift k :: s ->
         get_args n tys f (subs_shft (k,e)) s

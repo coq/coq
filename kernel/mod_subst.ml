@@ -45,7 +45,6 @@ let empty_subst = Umap.empty
 let add_msid msid mp =
   Umap.add (MSI msid) (mp,None)
 let add_mbid mbid mp resolve =
- let mp' = MBI mbid in
   Umap.add (MBI mbid) (mp,resolve)
 
 let map_msid msid mp = add_msid msid mp empty_subst

@@ -217,7 +217,7 @@ let mutual_cofix f others gl =
   with_check (refiner (Prim (Cofix (f,others)))) gl
     
 let rename_bound_var_goal gls =
-  let { evar_hyps = sign; evar_concl = cl } as gl = sig_it gls in 
+  let { evar_hyps = sign; evar_concl = cl } = sig_it gls in 
   let ids = ids_of_named_context sign in
   convert_concl_no_check (rename_bound_var (Global.env()) ids cl) gls
 

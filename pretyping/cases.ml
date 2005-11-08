@@ -427,7 +427,7 @@ let unify_tomatch_with_patterns isevars env tmloc typ = function
   | Some (cloc,(cstr,_ as c)) ->
       (let tyi = inductive_of_constructor c in
        try 
-	 let indtyp = inh_coerce_to_ind isevars env tmloc typ tyi in
+	 let _indtyp = inh_coerce_to_ind isevars env tmloc typ tyi in
 	 IsInd (typ,find_rectype env (Evd.evars_of !isevars) typ)
        with NotCoercible ->
 	 (* 2 cases : Not the right inductive or not an inductive at all *)
@@ -782,7 +782,6 @@ let build_aliases_context env sigma names allpats pats =
 	let newallpats =
 	  List.map2 (fun l1 l2 -> List.hd l2::l1) newallpats oldallpats in
 	let oldallpats = List.map List.tl oldallpats in
-	let u = Retyping.get_type_of env sigma deppat in
 	let decl = (na,Some deppat,t) in
 	let a = (deppat,nondeppat,d,t) in
 	insert (push_rel decl env) (decl::sign1) ((na,a)::sign2) (n+1) 
@@ -918,7 +917,6 @@ let abstract_conclusion typ cs =
   lam_it p sign
 
 let infer_predicate loc env isevars typs cstrs indf =
-  let (mis,_) = dest_ind_family indf in
   (* Il faudra substituer les isevars a un certain moment *)
   if Array.length cstrs = 0 then (* "TODO4-3" *)
     error "Inference of annotation for empty inductive types not implemented"
@@ -930,7 +928,10 @@ let infer_predicate loc env isevars typs cstrs indf =
     in
     let eqns = array_map2 prepare_unif_pb typs cstrs in
     (* First strategy: no dependencies at all *)
-(*    let (cclargs,_,typn) = eqns.(mis_nconstr mis -1) in*)
+(*
+    let (mis,_) = dest_ind_family indf in
+    let (cclargs,_,typn) = eqns.(mis_nconstr mis -1) in
+*)
     let (sign,_) = get_arity env indf in
     let mtyp =
       if array_exists is_Type typs then
@@ -980,7 +981,7 @@ let rec map_predicate f k = function
 let rec noccurn_predicate k = function
   | PrCcl ccl -> noccurn k ccl
   | PrProd pred -> noccurn_predicate (k+1) pred
-  | PrLetIn ((names,dep as tm),pred) ->
+  | PrLetIn ((names,dep),pred) ->
       let k' = List.length names + (if dep<>Anonymous then 1 else 0) in
       noccurn_predicate (k+k') pred
 
@@ -1191,7 +1192,7 @@ let group_equations pb mind current cstrs mat =
 		 let rest = {rest with tag = lower_pattern_status rest.tag} in
 		 brs.(i-1) <- (args, rest) :: brs.(i-1)
 	       done
-	   | PatCstr (loc,((_,i) as cstr),args,_) as pat ->
+	   | PatCstr (loc,((_,i)),args,_) ->
 	       (* This is a regular clause *)
 	       only_default := false;
 	       brs.(i-1) <- (args,rest) :: brs.(i-1)) mat () in
@@ -1240,8 +1241,6 @@ let build_branch current deps pb eqns const_info =
     else 
       DepAlias
   in
-  let partialci =
-    applist (mkConstruct const_info.cs_cstr, const_info.cs_params) in
   let history = 
     push_history_pattern const_info.cs_nargs
       (AliasConstructor const_info.cs_cstr)
@@ -1339,7 +1338,7 @@ and match_current pb ((current,typ as ct),deps) =
 	if (Array.length cstrs <> 0 or pb.mat <> []) & onlydflt  then
 	  compile (shift_problem ct pb)
 	else
-          let constraints = Array.map (solve_constraints indt) cstrs in
+          let _constraints = Array.map (solve_constraints indt) cstrs in
 
 	  (* We generalize over terms depending on current term to match *)
 	  let pb = generalize_problem pb current deps in
@@ -1444,7 +1443,7 @@ let prepare_initial_alias_eqn isdep tomatchl eqn =
     (fun pat (tm,tmtyp) (subst, stripped_pats) ->
        match alias_of_pat pat with
 	 | Anonymous -> (subst, pat::stripped_pats)
-	 | Name idpat as na ->
+	 | Name idpat ->
 	     match kind_of_term tm with
 	       | Rel n when not (is_dependent_indtype tmtyp) & not isdep
 		   -> (n, idpat)::subst, (unalias_pat pat::stripped_pats)

@@ -604,7 +604,7 @@ let rec condense env = function
 	let tac',t' = condense env t in 
 	[do_both (do_list tac) (do_list tac')], Oplus(f,t') 
       end
-  | (Oplus(f1,Oint n) as t) -> 
+  | Oplus(f1,Oint n) -> 
       let tac,f1' = reduce_factor f1 in 
       [do_left (do_list tac)],Oplus(f1',Oint n)
   | Oplus(f1,f2) -> 

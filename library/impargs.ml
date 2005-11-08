@@ -143,7 +143,7 @@ let update pos rig (na,st) =
       | Some (DepFlexAndRigid (fpos,rpos) as x) ->
           if argument_less (pos,fpos) or pos=fpos then DepRigid pos else
           if argument_less (pos,rpos) then DepFlexAndRigid (fpos,pos) else x
-      | Some (DepFlex fpos as x) ->
+      | Some (DepFlex fpos) ->
           if argument_less (pos,fpos) or pos=fpos then DepRigid pos
           else DepFlexAndRigid (fpos,pos)
       | Some Manual -> assert false

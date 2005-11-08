@@ -181,7 +181,6 @@ let double_ind h1 h2 gls =
     if abs_i < abs_j then (abs_i,abs_j) else
     if abs_i > abs_j then (abs_j,abs_i) else
       error "Both hypotheses are the same" in
-  let cl = pf_concl gls in 
   (tclTHEN (tclDO abs_i intro)
      (onLastHyp
        	(fun id ->

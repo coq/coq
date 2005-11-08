@@ -425,7 +425,7 @@ let redundancy_elimination new_eq_id system =
            end else begin
              match optinvert with 
                 Some v ->
-                  let kept =
+                  let _kept =
                     if v.constant >? nx.constant 
                     then begin add_event (FORGET_I (v.id,nx.id));v end
                     else begin add_event (FORGET_I (nx.id,v.id));nx end in

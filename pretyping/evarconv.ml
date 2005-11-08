@@ -78,7 +78,7 @@ let evar_apprec_nobeta env isevars stack c =
 let evar_apprec env isevars stack c =
   let sigma = evars_of isevars in
   let rec aux s =
-    let (t,stack as s') = Reductionops.apprec env sigma s in
+    let (t,stack) = Reductionops.apprec env sigma s in
     match kind_of_term t with
       | Evar (n,_ as ev) when Evd.is_defined sigma n ->
 	  aux (Evd.existential_value sigma ev, stack)

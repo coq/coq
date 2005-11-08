@@ -560,8 +560,8 @@ class font_param_box param =
     let _ = dialog#connect#destroy GMain.Main.quit in
     let _ = wb_ok#connect#clicked
 	(fun () -> 
-	  let font_opt = dialog#selection#font_name in
-(*	  we#set_text (match font_opt with None -> "" | Some s -> s) ;
+(*	  let font_opt = dialog#selection#font_name in
+	  we#set_text (match font_opt with None -> "" | Some s -> s) ;
 	  set_entry_font font_opt;*)
 	  dialog#destroy ()
 	)

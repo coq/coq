@@ -94,7 +94,6 @@ let rec print_script nochange sigma osign pf =
 (* printed by Show Script command *)
 let print_treescript nochange sigma _osign pf =
   let rec aux top pf =
-    let {evar_hyps=sign; evar_concl=cl} = pf.goal in
     match pf.ref with
     | None ->
         if nochange then 

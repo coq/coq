@@ -318,7 +318,6 @@ let val_of_constant_def n c v =
 
 
 let rec whd_accu a stk =
-  let n = nargs_of_accu a in
   let stk = 
     if nargs_of_accu a = 0 then stk
     else Zapp (args_of_accu a) :: stk in

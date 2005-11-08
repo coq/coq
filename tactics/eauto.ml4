@@ -74,8 +74,7 @@ let e_constructor_tac boundopt i lbind gl =
     let cl = pf_concl gl in 
   let (mind,redcl) = pf_reduce_to_quantified_ind gl cl in 
   let nconstr =
-    Array.length (snd (Global.lookup_inductive mind)).mind_consnames
-  and sigma   = project gl in
+    Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
   if i=0 then error "The constructors are numbered starting from 1";
   if i > nconstr then error "Not enough constructors";
   begin match boundopt with 
@@ -217,7 +216,7 @@ and e_my_find_search db_list local_db hdc concl =
       list_map_append (Hint_db.map_auto (hdc,concl)) (local_db::db_list)
   in 
   let tac_of_hint = 
-    fun ({pri=b; pat = p; code=t} as patac) -> 
+    fun {pri=b; pat = p; code=t} -> 
       (b, 
        let tac =
 	 match t with

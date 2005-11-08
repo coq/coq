@@ -228,7 +228,7 @@ let rec print_list print fmt = function
 
 let browse f url =
   let l,r = !current.cmd_browse in
-  let (s,res) = System.run_command try_convert f (l ^ url ^ r) in
+  let _ = System.run_command try_convert f (l ^ url ^ r) in
   ()
 
 let url_for_keyword =

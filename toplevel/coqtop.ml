@@ -129,7 +129,6 @@ let re_exec is_ide =
   let s = !re_exec_version in
   let is_native = (Mltop.get()) = Mltop.Native in
   let prog = Sys.argv.(0) in
-  let coq = Filename.basename prog in
   if (is_native && s = "byte") || ((not is_native) && s = "opt")
   then begin
     let s = if s = "" then if is_native then "opt" else "byte" else s in

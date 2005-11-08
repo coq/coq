@@ -293,14 +293,14 @@ let rec comment bp = parser bp2
        s >] -> comment bp s
   | [< ''*';
        _ = parser
-         | [< '')' >] ep -> push_string "*)";
+         | [< '')' >] -> push_string "*)";
          | [< s >] -> real_push_char '*'; comment bp s >] -> ()
   | [< ''"'; s >] ->
       if Options.do_translate() then (push_string"\"";comm_string bp2 s)
       else ignore (string bp2 0 s);
       comment bp s
   | [< _ = Stream.empty >] ep -> err (bp, ep) Unterminated_comment
-  | [< '_ as z; s >] ep -> real_push_char z; comment bp s
+  | [< '_ as z; s >] -> real_push_char z; comment bp s
 
 (* Parse a special token, using the [token_tree] *)
 
@@ -370,7 +370,7 @@ let parse_after_dot bp c strm =
 	   len = ident_tail (store (store 0 c1) c2) >] ->
 	     ("FIELD", get_buff len)
          (* utf-8 mathematical symbols have format E2 xx xx [E2=226] *)
-	 | [< ''\226' as c1; t = parse_226_tail 
+	 | [< ''\226'; t = parse_226_tail 
 	     (progress_special '.' (Some !token_tree)) >] ep ->
 	     (match t with
 	       | TokSymbol (Some t) -> ("", t)
@@ -391,7 +391,7 @@ let parse_after_dot bp c strm =
 	   len = ident_tail (store (store 0 c1) c2) >] ->
 	     ("FIELD", get_buff len)
          (* utf-8 mathematical symbols have format E2 xx xx [E2=226] *)
-	 | [< ''\226' as c1; t = parse_226_tail 
+	 | [< ''\226'; t = parse_226_tail 
 	     (progress_special '.' (Some !token_tree)) >] ep ->
 	     (match t with
 	       | TokSymbol (Some t) -> ("", t)
@@ -403,7 +403,7 @@ let parse_after_dot bp c strm =
 (* Parse a token in a char stream *)
 
 let rec next_token = parser bp
-  | [< '' ' | '\t' | '\n' |'\r' as c; s >] ep ->
+  | [< '' ' | '\t' | '\n' |'\r' as c; s >] ->
       comm_loc bp; push_char c; next_token s
   | [< ''$'; len = ident_tail (store 0 '$') >] ep -> 
       comment_stop bp;
@@ -424,7 +424,7 @@ let rec next_token = parser bp
       comment_stop bp;
       (try ("", find_keyword id) with Not_found -> ("IDENT", id)), (bp, ep)
   (* utf-8 mathematical symbols have format E2 xx xx [E2=226] *)
-  | [< ''\226' as c1; t = parse_226_tail (Some !token_tree) >] ep ->
+  | [< ''\226'; t = parse_226_tail (Some !token_tree) >] ep ->
       comment_stop bp;
       (match t with
 	| TokSymbol (Some t) -> ("", t), (bp, ep)

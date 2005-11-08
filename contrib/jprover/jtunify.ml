@@ -177,7 +177,7 @@ let rec combine subst ((ov,oslist) as one_subst)  =
          else
             (f::rest_combine)
 
-let compose ((n,subst) as sigma) ((ov,oslist) as one_subst) =
+let compose ((n,subst) as _sigma) ((ov,oslist) as one_subst) =
    let com = combine subst one_subst in
 (* begin
    print_endline "!!!!!!!!!test print!!!!!!!!!!";

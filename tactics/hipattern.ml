@@ -300,7 +300,7 @@ let coq_existT_pattern = coq_ex_pattern_gen coq_existT_ref
 
 let match_sigma ex ex_pat =
   match matches (Lazy.force ex_pat) ex with
-    | [(m1,a);(m2,p);(m3,car);(m4,cdr)] as l ->
+    | [(m1,a);(m2,p);(m3,car);(m4,cdr)] ->
 	assert (m1=meta1 & m2=meta2 & m3=meta3 & m4=meta4);
 	(a,p,car,cdr)
     | _ ->

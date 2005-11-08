@@ -251,7 +251,7 @@ let rec compute_metamap env c = match kind_of_term c with
  *  Réalise le 3. ci-dessus
  *)
 
-let rec tcc_aux subst (TH (c,mm,sgp) as th) gl =
+let rec tcc_aux subst (TH (c,mm,sgp) as _th) gl =
   let c = substl subst c in
   match (kind_of_term c,sgp) with
     (* mv => sous-but : on ne fait rien *)

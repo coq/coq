@@ -129,7 +129,7 @@ let rec inst lvar = function
   (* Non recursive *)
   | (PEvar _ | PRel _ | PRef _  | PSort _  | PMeta _ as x) -> x 
   (* Bound to terms *)
-  | (PFix _ | PCoFix _ as r) ->
+  | (PFix _ | PCoFix _) ->
       error ("Not instantiable pattern")
 
 let rec subst_pattern subst pat = match pat with

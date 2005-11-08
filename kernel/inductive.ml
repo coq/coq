@@ -593,7 +593,6 @@ let check_one_fix renv recpos def =
       | Fix ((recindxs,i),(_,typarray,bodies as recdef)) ->
           List.for_all (check_rec_call renv) l &&
           array_for_all (check_rec_call renv) typarray && 
-	  let nbfix = Array.length typarray in
           let decrArg = recindxs.(i) in
           let renv' = push_fix_renv renv recdef in 
           if (List.length l < (decrArg+1)) then
@@ -613,7 +612,7 @@ let check_one_fix renv recpos def =
                 bodies in
             array_for_all (fun b -> b) ok_vect
 
-      | Const kn as c -> 
+      | Const kn -> 
           (try List.for_all (check_rec_call renv) l
            with (FixGuardError _ ) as e ->
              if evaluable_constant kn renv.env then 
@@ -705,7 +704,7 @@ let inductive_of_mutfix env ((nvect,bodynum),(names,types,bodies as recdef)) =
   (Array.map fst rv, Array.map snd rv)
 
 
-let check_fix env ((nvect,_),(names,_,bodies as recdef) as fix) =
+let check_fix env ((nvect,_),(names,_,bodies as _recdef) as fix) =
   let (minds, rdef) = inductive_of_mutfix env fix in
   for i = 0 to Array.length bodies - 1 do
     let (fenv,body) = rdef.(i) in

@@ -30,7 +30,6 @@ let w_refine env ev rawc evd =
   let sigma,typed_c = 
     Pretyping.understand_gen_tcc (evars_of evd) env [] 
       (Some e_info.evar_concl) rawc in
-  let inst_info = {e_info with evar_body = Evar_defined typed_c } in
   evar_define ev typed_c (evars_reset_evd sigma evd)
 
 (* vernac command Existential *)

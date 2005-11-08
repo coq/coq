@@ -224,7 +224,7 @@ let compute_consteval_mutual_fix sigma env ref =
     match kind_of_term c' with
       | Lambda (na,t,g) when l=[] ->
 	  srec (push_rel (na,None,t) env) (minarg+1) (t::labs) ref g
-      | Fix ((lv,i),(names,_,_) as fix) ->
+      | Fix ((lv,i),(names,_,_)) ->
 	  (* Last known constant wrapping Fix is ref = [labs](Fix l) *)
 	  (match compute_consteval_direct sigma env ref with
 	     | NotAnElimination -> (*Above const was eliminable but this not!*)
@@ -360,7 +360,7 @@ let contract_cofix_use_function f (bodynum,(_,names,bodies as typedbodies)) =
 
 let reduce_mind_case_use_function func env mia =
   match kind_of_term mia.mconstr with 
-    | Construct(ind_sp,i as cstr_sp) ->
+    | Construct(ind_sp,i) ->
 	let real_cargs = list_skipn mia.mci.ci_npar mia.mcargs in
 	applist (mia.mlf.(i-1), real_cargs)
     | CoFix (_,(names,_,_) as cofix) ->
@@ -592,7 +592,6 @@ let is_head c t =
 let contextually byhead (locs,c) f env sigma t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref 1 in
-  let check = ref true in
   let except = List.exists (fun n -> n<0) locs in
   if except & (List.exists (fun n -> n>=0) locs) 
   then error "mixing of positive and negative occurences"
@@ -799,7 +798,7 @@ let pattern_occs loccs_trm env sigma c =
 exception NotStepReducible
 
 let one_step_reduce env sigma c = 
-  let rec redrec (x, largs as s) =
+  let rec redrec (x, largs) =
     match kind_of_term x with
       | Lambda (n,t,c)  ->
           (match decomp_stack largs with

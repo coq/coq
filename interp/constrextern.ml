@@ -1306,7 +1306,7 @@ let rec extern_cases_pattern_in_scope scopes vars pat =
 	
 and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
-  | (keyrule,pat,n as rule)::rules ->
+  | (keyrule,pat,n as _rule)::rules ->
       try
 	(* Check the number of arguments expected by the notation *)
 	let loc = match t,n with
@@ -1718,7 +1718,7 @@ and extern_numeral loc scopes (sc,n) =
 
 and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
   | [] -> raise No_match
-  | (keyrule,pat,n as rule)::rules ->
+  | (keyrule,pat,n as _rule)::rules ->
       let loc = Rawterm.loc_of_rawconstr t in
       try
 	(* Adjusts to the number of arguments expected by the notation *)

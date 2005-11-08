@@ -84,7 +84,6 @@ let explain_elim_arity ctx ind aritylst c pj okinds =
   let ctx = make_all_name_different ctx in
   let pi = pr_inductive ctx ind in
   let pc = prterm_env ctx c in
-  let ppt = prterm_env ctx pj.uj_type in
   let msg = match okinds with
   | Some(kp,ki,explanation) ->
       let pki = prterm_env ctx ki in
@@ -380,7 +379,6 @@ let explain_var_not_found ctx id =
   spc ()  ++ str "in the current" ++ spc ()  ++ str "environment"
 
 let explain_wrong_case_info ctx ind ci =
-  let ctx = make_all_name_different ctx in
   let pi = prterm (mkInd ind) in
   if ci.ci_ind = ind then
     str"Pattern-matching expression on an object of inductive" ++ spc () ++ pi ++
@@ -646,8 +644,8 @@ let explain_needs_inversion ctx x t =
   px  ++ str " of type: " ++ pt
 
 let explain_unused_clause env pats =
-  let s = if List.length pats > 1 then "s" else "" in
 (* Without localisation
+  let s = if List.length pats > 1 then "s" else "" in
   (str ("Unused clause with pattern"^s) ++ spc () ++
     hov 0 (prlist_with_sep pr_spc pr_cases_pattern pats) ++ str ")")
 *)

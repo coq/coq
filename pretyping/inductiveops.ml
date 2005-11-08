@@ -194,7 +194,6 @@ let build_dependent_constructor cs =
 
 let build_dependent_inductive env ((ind, params) as indf) =
   let arsign,_ = get_arity env indf in
-  let (mib,mip) = Inductive.lookup_mind_specif env ind in
   let nrealargs = List.length arsign in
   applist 
     (mkInd ind,

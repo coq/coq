@@ -183,7 +183,7 @@ let make_evar_instance_with_rel env =
 
 let make_subst env args =
   snd (fold_named_context
-    (fun env (id,b,c) (args,l as g) ->
+    (fun env (id,b,c) (args,l) ->
        match b, args with
 	 | (* None *) _ , a::rest -> (rest, (id,a)::l)
 (*	 | Some _, _ -> g*)

@@ -211,9 +211,6 @@ let pr_opt_hintbases l = match l with
 
 let pr_hints local db h pr_c pr_pat = 
   let opth = pr_opt_hintbases db  in
-  let pr_aux = function
-    | CAppExpl (_,(_,qid),[]) -> pr_reference qid
-    | _ -> mt () in
   let pph =
     match h with
     | HintsResolve l ->
@@ -604,8 +601,6 @@ let rec pr_vernac = function
             str"Eval" ++ spc() ++
             pr_red_expr (pr_constr, pr_lconstr, pr_reference) r ++
             str" in" ++ spc() in
-      let mkLambdaCit = List.fold_right (fun (x,a) b -> mkLambdaC(x,a,b)) in
-      let mkProdCit = List.fold_right (fun (x,a) b -> mkProdC(x,a,b)) in
       let pr_def_body = function
         | DefineBody (bl,red,c,d) ->
             let (bl2,body,ty) = match d with
@@ -654,8 +649,7 @@ let rec pr_vernac = function
       (* Copie simplifiée de command.ml pour recalculer les implicites, *)
       (* les notations, et le contexte d'evaluation *)
       let lparams = match l with [] -> assert false | (_,_,la,_,_)::_ -> la in
-      let nparams = local_binders_length lparams
-      and sigma = Evd.empty 
+      let sigma = Evd.empty 
       and env0 = Global.env() in
       let (env_params,params) =
 	List.fold_left
@@ -684,12 +678,10 @@ let rec pr_vernac = function
 	    (env', (recname,impls)::ind_impls, (arity::arl)))
           (env0, [], []) l
       in
-      let lparnames = List.map (fun (na,_,_) -> na) params in
       let notations = 
 	List.fold_right (fun (_,ntnopt,_,_,_) l ->option_cons ntnopt l) l [] in
       let ind_env_params = Environ.push_rel_context params ind_env in
 
-      let lparnames = List.map (fun (na,_,_) -> na) params in
       let impl = List.map
 	(fun ((_,recname),_,_,arityc,_) ->
 	  let arity = Constrintern.interp_type sigma env_params arityc in

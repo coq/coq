@@ -403,7 +403,7 @@ let rec pretype tycon env isevars lvar = function
 
   | RLetTuple (loc,nal,(na,po),c,d) ->
       let cj = pretype empty_tycon env isevars lvar c in
-      let (IndType (indf,realargs) as indt) = 
+      let (IndType (indf,realargs)) = 
 	try find_rectype env (evars_of !isevars) cj.uj_type
 	with Not_found ->
 	  let cloc = loc_of_rawconstr c in
@@ -441,7 +441,6 @@ let rec pretype tycon env isevars lvar = function
 	       let mis,_ = dest_ind_family indf in
 	       let ci = make_default_case_info env LetStyle mis in
 	       mkCase (ci, p, cj.uj_val,[|f|]) in 
-             let cs = build_dependent_constructor cs in
 	     { uj_val = v; uj_type = substl (realargs@[cj.uj_val]) ccl }
 
 	 | None -> 
@@ -550,7 +549,6 @@ let rec pretype tycon env isevars lvar = function
 	       else pretype (mk_tycon bty.(0)) env isevars lvar f 
 	     in
 	     let fv = fj.uj_val in
-	     let ft = fj.uj_type in
 	     let v =
 	       let mis,_ = dest_ind_family indf in
 	       let ci = make_default_case_info env st mis in
@@ -661,7 +659,7 @@ let rec pretype tycon env isevars lvar = function
 
   | RIf (loc,c,(na,po),b1,b2) ->
       let cj = pretype empty_tycon env isevars lvar c in
-      let (IndType (indf,realargs) as indt) = 
+      let (IndType (indf,realargs)) = 
 	try find_rectype env (evars_of !isevars) cj.uj_type
 	with Not_found ->
 	  let cloc = loc_of_rawconstr c in
@@ -799,8 +797,6 @@ let rec pretype tycon env isevars lvar = function
           let (ind,params) = dest_ind_family indf in
           let (mib,mip) = lookup_mind_specif env ind in
           let recargs = mip.mind_recargs in
-          let mI = mkInd ind in
-          let nconstr = Array.length mip.mind_consnames in
           let tyi = snd ind in
           if isrec && mis_is_recursive_subset [tyi] recargs then
             Some (Detyping.detype (false,env)
@@ -976,7 +972,7 @@ let check_evars env initial_sigma isevars c =
   let sigma = evars_of !isevars in
   let rec proc_rec c =
     match kind_of_term c with
-      | Evar (ev,args as k) ->
+      | Evar (ev,args) ->
           assert (Evd.in_dom sigma ev);
 	  if not (Evd.in_dom initial_sigma ev) then
             let (loc,k) = evar_source ev !isevars in

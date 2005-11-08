@@ -171,7 +171,7 @@ let assumption_message id =
 let declare_one_assumption is_coe (local,kind) c (_,ident) =
   let r = match local with
     | Local when Lib.sections_are_opened () ->
-        let r = 
+        let _ = 
           declare_variable ident 
             (Lib.cwd(), SectionLocalAssum c, IsAssumption kind) in
         assumption_message ident;
@@ -279,8 +279,7 @@ let interp_mutual lparams lnamearconstrs finite =
       [] lnamearconstrs in
   if not (list_distinct allnames) then
     error "Two inductive objects have the same name";
-  let nparams = local_binders_length lparams
-  and sigma = Evd.empty 
+  let sigma = Evd.empty 
   and env0 = Global.env() in
   let env_params, params =
     List.fold_left
@@ -313,8 +312,6 @@ let interp_mutual lparams lnamearconstrs finite =
   let paramassums = 
     List.fold_right (fun d l -> match d with
 	(id,LocalAssum _) -> id::l | (_,LocalDef _) -> l) params' [] in
-  let indnames =
-    List.map (fun (id,_,_,_)-> id) lnamearconstrs @ paramassums in
   let nparamassums = List.length paramassums in
   let (ind_env,ind_impls,arityl) =
     List.fold_left
@@ -432,7 +429,7 @@ let extract_coe_la_lc = function
 let build_mutual lind finite =
   let ((coes:identifier list),lparams,lnamearconstructs) = extract_coe_la_lc lind in
   let notations,mie = interp_mutual lparams lnamearconstructs finite in
-  let kn = declare_mutual_with_eliminations false mie in
+  let _ = declare_mutual_with_eliminations false mie in
   (* Declare the notations now bound to the inductive types *)
   List.iter (fun (df,c,scope) ->
     Metasyntax.add_notation_interpretation df [] c scope) notations;

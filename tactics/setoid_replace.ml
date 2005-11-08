@@ -527,7 +527,6 @@ let what_edited id =
 let check_is_dependent n args_ty output =
  let m = List.length args_ty - n in
  let args_ty_quantifiers, args_ty = Util.list_chop n args_ty in
- let delift n = substl (Array.to_list (Array.make n (mkRel 1) (* dummy *))) in
   let rec aux m t =
    match kind_of_term t with
       Prod (n,s,t) when m > 0 ->
@@ -648,7 +647,6 @@ let apply_to_relation subst rel =
       mkApp (rel.rel_Xreflexive_relation_class, subst) }
 
 let add_morphism lemma_infos mor_name (m,quantifiers_rev,args,output) =
- let env = Global.env() in
  let lem =
   match lemma_infos with
      None ->

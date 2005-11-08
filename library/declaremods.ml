@@ -572,7 +572,6 @@ let library_cache = Hashtbl.create 17
 
 let register_library dir cenv objs digest =
   let mp = MPfile dir in
-  let prefix = dir, (mp, empty_dirpath) in
   let substobjs, objects =
     try 
       ignore(Global.lookup_module mp);

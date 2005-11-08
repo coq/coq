@@ -1788,11 +1788,13 @@ struct
       else  if o = ("",Orr,dummyt,dummyt) then  (* Orr is a dummy for no d-gen. rule *)
          ptree
       else
+(*
          let (x1,x2,x3,x4) = r
          and (y1,y2,y3,y4) = o in
-(*   print_endline ("top or_l: "^x1);
+   print_endline ("top or_l: "^x1);
    print_endline ("or_l address: "^addr);
-   print_endline ("top dgen-rule: "^y1); *)
+   print_endline ("top dgen-rule: "^y1);
+*)
          trans_add_branch r o addr "" ptree dglist (subrel,tsubrel)
 
 (* Isolate layer and outer recursion structure *)
@@ -1989,8 +1991,7 @@ struct
                         let (srel,sren) = build_formula_rel dtreelist slist predname in
                         (srel @ rest_rel),(sren @ rest_renlist)
                    | Gamma ->
-                        let n = Array.length suctrees
-                        and succlist = (Array.to_list suctrees) in
+                        let succlist = (Array.to_list suctrees) in
                         let dtreelist = (List.map (fun x -> (1,x)) succlist) in
 (*                if (nonemptys suctrees 0 n) = 1  then
    let (srel,sren) = build_formula_rel dtreelist slist pos.name in
@@ -3039,8 +3040,7 @@ struct
                if (p.pt = Delta) then                 (* keep the tree ordering for the successor position only *)
                   let psucc = List.hd succs in
                   let ppsuccs = tpredsucc psucc ftree in
-                  let pre = List.hd ppsuccs
-                  and sucs = List.tl ppsuccs in
+                  let sucs = List.tl ppsuccs in
                   replace_ordering (psucc.name) sucs redpo (* union the succsets of psucc *)
                else
                   redpo
@@ -4582,7 +4582,6 @@ let gen_prover mult_limit logic calculus hyps concls =
    let (input_map,renamed_termlist) = renam_free_vars (hyps @ concls) in
    let (ftree,red_ordering,eqlist,(sigmaQ,sigmaJ),ext_proof) = prove mult_limit renamed_termlist logic in
    let sequent_proof = reconstruct ftree red_ordering sigmaQ ext_proof logic calculus in
-      let (ptree,count_ax) = bproof sequent_proof in
       let idl = build_formula_id ftree in
 (*      print_ftree ftree;   apple *)
          (* transform types and rename constants *)

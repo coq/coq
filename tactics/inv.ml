@@ -134,7 +134,6 @@ let make_inv_predicate env sigma indf realargs id status concl =
           else 
 	    make_iterated_tuple env' sigma ai (xi,ti)
 	in
-        let sort = get_sort_of env sigma concl in 
         let eq_term = Coqlib.build_coq_eq () in
         let eqn = applist (eq_term ,[eqnty;lhs;rhs]) in 
 	build_concl ((Anonymous,lift n eqn)::eqns) (n+1) restlist
@@ -305,7 +304,6 @@ let remember_first_eq id x = if !x = None then x := Some id
    a rewrite rule. It erases the clause which is given as input *)
 
 let projectAndApply thin id eqname names depids gls =
-  let env = pf_env gls in
   let subst_hyp l2r id =
     tclTHEN (tclTRY(rewriteInConcl l2r (mkVar id)))
       (if thin then clear [id] else (remember_first_eq id eqname; tclIDTAC))
@@ -400,7 +398,6 @@ let rewrite_equations othin neqns names ba gl =
   let (depids,nodepids) = split_dep_and_nodep ba.assums gl in
   let rewrite_eqns =
     let first_eq = ref None in
-    let update id = if !first_eq = None then first_eq := Some id in
     match othin with
       | Some thin ->
           tclTHENSEQ

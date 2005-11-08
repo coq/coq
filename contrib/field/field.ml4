@@ -151,7 +151,6 @@ END
 (* Guesses the type and calls field_gen with the right theory *)
 let field g =
   Coqlib.check_required_library ["Coq";"field";"Field"];
-  let ist = { lfun=[]; debug=get_debug () } in
   let typ = 
     match Hipattern.match_with_equation (pf_concl g) with
       | Some (eq,t::args) when eq = (Coqlib.build_coq_eq_data()).Coqlib.eq -> t

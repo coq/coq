@@ -454,7 +454,6 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps i indlc =
       (fun c ->
         let c = body_of_type c in
         let sign, rawc = mind_extract_params nparams c in
-        let env' = push_rel_context sign env in
         try
 	  check_constructors ienv true nparams rawc
         with IllFormedInd err -> 

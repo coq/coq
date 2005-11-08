@@ -127,8 +127,6 @@ let inside_printer posneg std_pr p =
 	let pr = if posneg then pr_pos else pr_neg in
 	str "(" ++ pr (std_pr (ope("ZEXPR",[p]))) ++ str ")"
 in
-let outside_zero_printer std_pr p = str "`0`"
-in
 let outside_printer posneg std_pr p =
   let ((xI,xO,xH),_) = get_z_sign_ast dummy_loc in
   match (bignat_option_of_pos xI xO xH p) with

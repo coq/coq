@@ -174,7 +174,7 @@ let check_constant cst env msid1 l info1 cb2 spec2 =
 	       check_conv cst conv env c1 c2
       in
        cst
-   | IndType ((kn,i) as ind,mind1) ->
+   | IndType ((kn,i),mind1) ->
       Util.error ("The kernel does not recognize yet that a parameter can be " ^
        "instantiated by an inductive type. Hint: you can rename the " ^
        "inductive type and give a definition to map the old name to the new " ^

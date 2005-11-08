@@ -50,7 +50,7 @@ let subst_objects prefix subst seg =
 let classify_segment seg =
   let rec clean ((substl,keepl,anticipl) as acc) = function
     | (_,CompilingLibrary _) :: _ | [] -> acc
-    | ((sp,kn as oname),Leaf o) as node :: stk -> 
+    | ((sp,kn as oname),Leaf o) :: stk -> 
 	let id = id_of_label (label kn) in
 	  (match classify_object (oname,o) with 
 	     | Dispose -> clean acc stk

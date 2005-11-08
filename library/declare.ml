@@ -147,7 +147,7 @@ let load_constant i ((sp,kn),(_,_,_,kind)) =
 let open_constant i ((sp,kn),_) =
   Nametab.push (Nametab.Exactly i) sp (ConstRef (constant_of_kn kn))
 
-let cache_constant ((sp,kn),(cdt,dhyps,imps,kind) as o) =
+let cache_constant ((sp,kn),(cdt,dhyps,imps,kind)) =
   let id = basename sp in
   let _,dir,_ = repr_kn kn in
   if Idmap.mem id !vartab then
@@ -211,7 +211,7 @@ let hcons_constant_declaration = function
 
 let declare_constant_common id dhyps (cd,kind) =
   let imps = implicits_flags () in
-  let (sp,kn as oname) = add_leaf id (in_constant (cd,dhyps,imps,kind)) in
+  let (sp,kn) = add_leaf id (in_constant (cd,dhyps,imps,kind)) in
   let kn = constant_of_kn kn in
   kn
 

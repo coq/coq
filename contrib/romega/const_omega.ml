@@ -17,7 +17,6 @@ type result =
 
 let destructurate t =
   let c, args = Term.decompose_app t in
-  let env = Global.env() in
   match Term.kind_of_term c, args with
     | Term.Const sp, args ->
 	Kapp (Names.string_of_id

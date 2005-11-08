@@ -871,8 +871,7 @@ let constructor_tac boundopt i lbind gl =
   let cl = pf_concl gl in 
   let (mind,redcl) = pf_reduce_to_quantified_ind gl cl in 
   let nconstr =
-    Array.length (snd (Global.lookup_inductive mind)).mind_consnames
-  and sigma   = project gl in
+    Array.length (snd (Global.lookup_inductive mind)).mind_consnames in
   if i=0 then error "The constructors are numbered starting from 1";
   if i > nconstr then error "Not enough constructors";
   begin match boundopt with 
@@ -1373,7 +1372,7 @@ let cook_sign hyp0 indvars env =
   in
   let _ = fold_named_context seek_deps env ~init:None in
   (* 2nd phase from R to L: get left hyp of [hyp0] and [lhyps] *)
-  let compute_lstatus lhyp (hyp,_,_ as d) =
+  let compute_lstatus lhyp (hyp,_,_) =
     if hyp = hyp0 then raise (Shunt lhyp);
     if List.mem hyp !ldeps then begin
       lstatus := (hyp,lhyp)::!lstatus;
@@ -1476,7 +1475,6 @@ let error_ind_scheme s =
 (* Check that the elimination scheme has a form similar to the 
    elimination schemes built by Coq *)
 let compute_elim_signature elimt names_info =
-  let nparams = ref 0 in
   let hyps,ccl = decompose_prod_assum elimt in
   let n = List.length hyps in
   if n = 0 then error_ind_scheme "";
@@ -1895,7 +1893,6 @@ let interpretable_as_section_decl d1 d2 = match d1,d2 with
   | (_,None,t1), (_,_,t2) -> eq_constr t1 t2
 
 let abstract_subproof name tac gls = 
-  let env = Global.env() in
   let current_sign = Global.named_context()
   and global_sign = pf_hyps gls in
   let sign,secsign = 
@@ -1923,7 +1920,6 @@ let abstract_subproof name tac gls =
     in   (* Faudrait un peu fonctionnaliser cela *)
     let cd = Entries.DefinitionEntry const in
     let con = Declare.declare_internal_constant na (cd,IsProof Lemma) in
-    let newenv = Global.env() in
     constr_of_global (ConstRef con)
   in
   exact_no_check 
@@ -1940,7 +1936,6 @@ let tclABSTRACT name_op tac gls =
 
 
 let admit_as_an_axiom gls =
-  let env = Global.env() in
   let current_sign = Global.named_context()
   and global_sign = pf_hyps gls in
   let sign,secsign = 

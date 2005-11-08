@@ -165,7 +165,6 @@ let declare_tactic_argument for_v8 loc s typ pr f g h rawtyppr globtyppr cl =
 
 let declare_vernac_argument for_v8 loc s cl =
   let se = mlexpr_of_string s in
-  let typ = ExtraArgType s in
   let rawwit = <:expr< $lid:"rawwit_"^s$ >> in
   let rules = mlexpr_of_list (make_rule loc) (List.rev cl) in
   <:str_item<

@@ -198,7 +198,6 @@ let clean file =
 let all_modules_in_dir dir =
   try
     let lst = ref []
-    and stg = ref ""
     and dh = Unix.opendir dir in
     try
       while true do

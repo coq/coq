@@ -248,7 +248,6 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
 let mis_make_indrec env sigma listdepkind mib =
   let nparams = mib.mind_nparams in
   let nparrec = mib. mind_nparams_rec in
-  let lnamespar = mib.mind_params_ctxt in
   let lnonparrec,lnamesparrec = 
     list_chop (nparams-nparrec) mib.mind_params_ctxt in
   let nrec = List.length listdepkind in
@@ -380,7 +379,6 @@ let mis_make_indrec env sigma listdepkind mib =
 	      let recarg = (dest_subterms recargsvec.(tyi)).(j) in
 	      let recarg = recargpar@recarg in
 	      let vargs = extended_rel_list (nrec+i+j) lnamesparrec in
-	      let indf = (indi, vargs) in
 	      let cs = get_constructor (indi,mibi,mipi,vargs) (j+1) in
 	      let p_0 =
 		type_rec_branch
@@ -532,7 +530,6 @@ let type_rec_branches recursive env sigma indt p c =
   let tyi = snd ind in
   let init_depPvec i = if i = tyi then Some(true,p) else None in
   let depPvec = Array.init mib.mind_ntypes init_depPvec in
-  let vargs = Array.of_list params in
   let constructors = get_constructors env indf in
   let lft =
     array_map2

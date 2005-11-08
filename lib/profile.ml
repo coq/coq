@@ -259,9 +259,9 @@ let time_overhead_B_C () =
   for i=1 to loops do
     try
       dummy_last_alloc := get_alloc ();
-      let r = dummy_f dummy_x in
-      let dw = dummy_spent_alloc () in
-      let dt = get_time () in
+      let _r = dummy_f dummy_x in
+      let _dw = dummy_spent_alloc () in
+      let _dt = get_time () in
       ()
     with _ -> assert false
   done;

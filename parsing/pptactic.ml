@@ -422,10 +422,8 @@ let pr_extend_gen prgen lev s l =
 let make_pr_tac (pr_tac_level,pr_constr,pr_pat,pr_cst,pr_ind,pr_ref,pr_ident,pr_extend) =
 
 let pr_bindings = pr_bindings pr_constr pr_constr in
-let pr_bindings_no_with = pr_bindings_no_with pr_constr pr_constr in
 let pr_with_bindings = pr_with_bindings pr_constr pr_constr in
 let pr_eliminator cb = str "using" ++ pr_arg (pr_with_bindings) cb in
-let pr_constrarg c = spc () ++ pr_constr c in
 let pr_intarg n = spc () ++ int n in
 
   (* Printing tactics as arguments *)

@@ -107,8 +107,8 @@ object(self)
 		   Queue.iter (fun e -> Stack.push e history) redo;
 		   Queue.clear redo;
 		 end;
-		 let pos = it#offset in
-(*		 if Stack.is_empty history or 
+(*		 let pos = it#offset in
+		 if Stack.is_empty history or 
 		   s=" " or s="\t" or s="\n" or
 					(match Stack.top history with 
 					   | Insert(old,opos,olen) -> 

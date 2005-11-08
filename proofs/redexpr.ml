@@ -79,7 +79,7 @@ let make_flag f =
   in red
 
 let is_reference c = 
-  try let r = global_of_constr c in true with _ -> false
+  try let _ref = global_of_constr c in true with _ -> false
 
 let red_expr_tab = ref Stringmap.empty
 

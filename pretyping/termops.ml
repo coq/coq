@@ -614,7 +614,6 @@ let replace_term = replace_term_gen eq_constr
 let subst_term_occ_gen locs occ c t =
   let maxocc = List.fold_right max locs 0 in
   let pos = ref occ in
-  let check = ref true in
   let except = List.exists (fun n -> n<0) locs in
   if except & (List.exists (fun n -> n>=0) locs) 
   then error "mixing of positive and negative occurences"

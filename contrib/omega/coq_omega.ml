@@ -965,7 +965,7 @@ let rec condense p = function
 	let tac',t' = condense (P_APP 2 :: p) t in 
 	(tac @ tac'), Oplus(f,t') 
       end
-  | Oplus(f1,Oz n) as t -> 
+  | Oplus(f1,Oz n) -> 
       let tac,f1' = reduce_factor (P_APP 1 :: p) f1 in tac,Oplus(f1',Oz n)
   | Oplus(f1,f2) -> 
       if weight f1 = weight f2 then begin
@@ -1035,7 +1035,6 @@ let replay_history tactic_normalisation =
 	  let p_initial = [P_APP 2;P_TYPE] in
 	  let tac = shuffle_cancel p_initial e1.body in
 	  let solve_le =
-            let superieur = Lazy.force coq_SUPERIEUR in
             let not_sup_sup = mkApp (build_coq_eq (), [| 
 					Lazy.force coq_relation; 
 					Lazy.force coq_SUPERIEUR;
@@ -1095,17 +1094,13 @@ let replay_history tactic_normalisation =
 	      tclTHEN (mk_then tac) reflexivity ]
 	    
       | NOT_EXACT_DIVIDE (e1,k) :: l ->
-	  let id = hyp_of_tag e1.id in
 	  let c = floor_div e1.constant k in
 	  let d = Bigint.sub e1.constant (Bigint.mult c k) in
 	  let e2 =  {id=e1.id; kind=EQUA;constant = c; 
                      body = map_eq_linear (fun c -> c / k) e1.body } in
-	  let eq1 = val_of(decompile e1) 
-	  and eq2 = val_of(decompile e2) in
+	  let eq2 = val_of(decompile e2) in
 	  let kk = mk_integer k 
 	  and dd = mk_integer d in
-	  let rhs = mk_plus (mk_times eq2 kk) dd in
-	  let state_eq = mk_eq eq1 rhs in
 	  let tac = scalar_norm_add [P_APP 2] e2.body in
 	  tclTHENS 
 	    (cut (mk_gt dd izero)) 
@@ -1419,8 +1414,6 @@ let coq_omega gl =
 let coq_omega = solver_time coq_omega
 
 let nat_inject gl =
-  let aux = id_of_string "auxiliary" in
-  let table = Hashtbl.create 7 in
   let rec explore p t = 
     try match destructurate_term t with
       | Kapp(Plus,[t1;t2]) ->

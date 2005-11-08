@@ -314,7 +314,7 @@ let discriminable env sigma t1 t2 =
    the continuation then constructs the case-split.
  *)
 let descend_then sigma env head dirn =
-  let IndType (indf,_) as indt =
+  let IndType (indf,_) =
     try find_rectype env sigma (get_type_of env sigma head)
     with Not_found -> assert false in
   let ind,_ = dest_ind_family indf in
@@ -357,7 +357,7 @@ let descend_then sigma env head dirn =
    giving [True], and all the rest giving False. *)
 
 let construct_discriminator sigma env dirn c sort =
-  let (IndType(indf,_) as indt) =
+  let IndType(indf,_) =
     try find_rectype env sigma (type_of env sigma c)
     with Not_found ->
        (* one can find Rel(k) in case of dependent constructors 
@@ -392,7 +392,6 @@ let rec build_discriminator sigma env dirn c sort = function
 	try find_rectype env sigma cty with Not_found -> assert false in
       let (ind,_) = dest_ind_family indf in
       let (mib,mip) = lookup_mind_specif env ind in
-      let _,arsort = get_arity env indf in
       let nparams = mib.mind_nparams  in
       let (cnum_nlams,cnum_env,kont) = descend_then sigma env c cnum in
       let newc = mkRel(cnum_nlams-(argnum-nparams)) in
@@ -434,7 +433,6 @@ let discrEq (lbeq,(t,t1,t2)) id gls =
 	 let e_env = push_named (e,None,t) env in
 	 let discriminator =
 	   build_discriminator sigma e_env dirn (mkVar e) sort cpath in
-	 let (indt,_) = find_mrectype env sigma t in 
 	 let (pf, absurd_term) =
 	   discrimination_pf e (t,t1,t2) discriminator lbeq gls 
 	 in

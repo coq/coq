@@ -495,9 +495,7 @@ let print_name ref =
       "print_name" (pr_qualid qid ++ spc () ++ str "not a defined object")
 
 let print_opaque_name qid = 
-  let sigma = Evd.empty in
   let env = Global.env () in
-  let sign = Global.named_context () in
   match global qid with
     | ConstRef cst ->
 	let cb = Global.lookup_constant cst in
@@ -515,7 +513,6 @@ let print_opaque_name qid =
 	print_named_decl (id,c,ty)
 
 let print_about ref = 
-  let sigma = Evd.empty in
   let k = locate_any_name ref in
   begin match k with
   | Term ref -> 

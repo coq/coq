@@ -48,7 +48,6 @@ let rec head_const c = match kind_of_term c with
 
 let gen_crible refopt (fn : global_reference -> env -> constr -> unit) =
   let env = Global.env () in
-  let imported = Library.opened_libraries() in
   let crible_rec (sp,_) lobj = match object_tag lobj with
     | "VARIABLE" ->
 	(try 

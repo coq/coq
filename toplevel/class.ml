@@ -268,8 +268,6 @@ lorque source est None alors target est None aussi.
 
 let add_new_coercion_core coef stre source target isid =
   check_source source;
-  let env = Global.env () in
-  let v = constr_of_global coef in
   let t = Global.type_of_global coef in
   if coercion_exists coef then raise (CoercionError AlreadyExists);
   let tg,lp = prods_of t in

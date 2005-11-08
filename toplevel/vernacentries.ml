@@ -64,7 +64,6 @@ let cl_of_qualid = function
 
 let show_proof () =
   let pts = get_pftreestate () in
-  let pf = proof_of_pftreestate pts in
   let cursor = cursor_of_pftreestate pts in
   let evc = evc_of_pftreestate pts in
   let (pfterm,meta_types) = extract_open_pftreestate pts in
@@ -1096,8 +1095,7 @@ let vernac_show = function
 
 let vernac_check_guard () =
   let pts = get_pftreestate () in
-  let pf = proof_of_pftreestate pts 
-  and cursor = cursor_of_pftreestate pts in
+  let pf = proof_of_pftreestate pts in
   let (pfterm,_) = extract_open_pftreestate pts in
   let message = 
     try 

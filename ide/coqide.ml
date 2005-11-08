@@ -807,7 +807,7 @@ object(self)
 				 goal_nb
 				 (if goal_nb<=1 then "" else "s"));
 	  List.iter
-	    (fun ((_,_,_,(s,_)) as hyp) -> 
+	    (fun ((_,_,_,(s,_)) as _hyp) -> 
 	       proof_buffer#insert (s^"\n"))
 	    hyps;
 	  proof_buffer#insert (String.make 38 '_' ^ "(1/"^
@@ -1364,7 +1364,6 @@ Please restart and report NOW.";
 		 if Mutex.try_lock c#lock then begin
 		   c#clear ();
 		   let current_gls = try get_current_goals () with _ -> [] in
-		   let gls_nb = List.length current_gls in
 		   
 		   let set_goal i (s,t) = 
 		     let gnb = string_of_int i in
@@ -1481,19 +1480,17 @@ Please restart and report NOW.";
       (input_view#event#connect#key_press self#active_keypress_handler);
     prerr_endline "CONNECTED active : ";
     print_id (out_some act_id);
-    let dir = (match 
-		 (out_some ((Vector.get input_views index).analyzed_view))
-		 #filename 
-	       with
-	       | None -> ()
-	       | Some f ->     
-		   if not (is_in_coq_path f) then 
-		     begin
-		       let dir = Filename.dirname f in
-		       ignore (Coq.interp false
-				 (Printf.sprintf "Add LoadPath \"%s\". "  dir))
-		     end)
-    in ()
+    match 
+      (out_some ((Vector.get input_views index).analyzed_view)) #filename 
+    with
+      | None -> ()
+      | Some f ->     
+	  if not (is_in_coq_path f) then 
+	    begin
+	      let dir = Filename.dirname f in
+	      ignore (Coq.interp false
+		(Printf.sprintf "Add LoadPath \"%s\". "  dir))
+	    end
 
       
       
@@ -1832,7 +1829,7 @@ let main files =
   let load_f () = 	  
     match select_file ~title:"Load file" () with 
     | None -> ()
-    | (Some f) as fn -> load f
+    | Some f -> load f
   in
   ignore (load_m#connect#activate (load_f));
 
@@ -1906,7 +1903,7 @@ let main files =
   let saveall_f () = 
     Vector.iter
       (function 
-	 | {view = view ; analyzed_view = Some av} as full -> 
+	 | {view = view ; analyzed_view = Some av} -> 
 	     begin match av#filename with 
 	     | None -> ()
 	     | Some f ->
@@ -1929,7 +1926,7 @@ let main files =
   let revert_f () = 
     Vector.iter 
       (function 
-	   {view = view ; analyzed_view = Some av} as full -> 
+	   {view = view ; analyzed_view = Some av} -> 
 	     (try 
 		match av#filename,av#stats with 
 		| Some f,Some stats -> 
@@ -2359,7 +2356,7 @@ let main files =
   let auto_save_f () = 
     Vector.iter 
       (function 
-	   {view = view ; analyzed_view = Some av} as full -> 
+	   {view = view ; analyzed_view = Some av} -> 
 	     (try 
 		av#auto_save
 	      with _ -> ())

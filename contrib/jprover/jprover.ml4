@@ -390,7 +390,7 @@ let dyn_truer =
 (* Do the proof by the guidance of JProver. *)
 
 let do_one_step inf =
-  let (rule, (s1, t1), ((s2, t2) as k)) = inf in
+  let (rule, (s1, t1), (s2, t2)) = inf in
    begin
 (*i   if not (Jterm.is_xnil_term t2) then
    begin

@@ -670,7 +670,7 @@ and my_find_search db_list local_db hdc concl =
       	(local_db::db_list)
   in
   List.map 
-    (fun ({pri=b; pat=p; code=t} as patac) -> 
+    (fun {pri=b; pat=p; code=t} -> 
        (b,
 	match t with
 	  | Res_pf (term,cl)  -> unify_resolve (term,cl)

@@ -181,24 +181,24 @@ let out_gen t (t',o) = if t = t' then Obj.magic o else failwith "out_gen"
 let genarg_tag (s,_) = s
 
 let fold_list0 f = function
-  | (List0ArgType t as u, l) ->
+  | (List0ArgType t, l) ->
       List.fold_right (fun x -> f (in_gen t x)) (Obj.magic l)
   | _ -> failwith "Genarg: not a list0"
 
 let fold_list1 f = function
-  | (List1ArgType t as u, l) ->
+  | (List1ArgType t, l) ->
       List.fold_right (fun x -> f (in_gen t x)) (Obj.magic l)
   | _ -> failwith "Genarg: not a list1"
 
 let fold_opt f a = function
-  | (OptArgType t as u, l) ->
+  | (OptArgType t, l) ->
       (match Obj.magic l with
 	| None -> a
 	| Some x -> f (in_gen t x))
   | _ -> failwith "Genarg: not a opt"
 
 let fold_pair f = function
-  | (PairArgType (t1,t2) as u, l) ->
+  | (PairArgType (t1,t2), l) ->
       let (x1,x2) = Obj.magic l in
       f (in_gen t1 x1) (in_gen t2 x2)
   | _ -> failwith "Genarg: not a pair"
