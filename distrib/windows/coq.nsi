@@ -82,6 +82,7 @@
 ;Installer Sections
 
 SetCompress off
+; Comment out after debuging.
 
 Section "Coq" Sec1
 
@@ -93,7 +94,7 @@ Section "Coq" Sec1
   FileWrite $0 "@echo off$\r$\n"
   FileWrite $0 "set COQLIB=$INSTDIR\lib$\r$\n"
   FileWrite $0 "set COQBIN=$INSTDIR\bin$\r$\n"
-;  FileWrite $0 "set HOME=\n"
+  FileWrite $0 "set HOME=%HOMEPATH%$\r$\n"
   FileWrite $0 "bin\coqtop.opt.exe" 
   FileClose $0
 
@@ -163,6 +164,7 @@ Section "CoqIde" Sec2
   FileWrite $0 "@echo off$\r$\n"
   FileWrite $0 "set COQLIB=$INSTDIR\lib$\r$\n"
   FileWrite $0 "set COQBIN=$INSTDIR\bin$\r$\n"
+  FileWrite $0 "set HOME=%HOMEPATH%$\r$\n"
   FileWrite $0 "bin\coqide.opt.exe" 
   FileClose $0
 
