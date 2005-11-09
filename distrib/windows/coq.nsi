@@ -64,18 +64,18 @@
 ;--------------------------------
 ;Data
   
-;Function .onInit
-;  SetOutPath $TEMP
-;  File /oname=coq_splash.bmp "coq_splash.bmp"
-;	InitPluginsDir;
+Function .onInit
+  SetOutPath $TEMP
+  File /oname=coq_splash.bmp "coq_splash.bmp"
+	InitPluginsDir
 
-;  advsplash::show 1000 600 400 -1 $TEMP\coq_splash
+  advsplash::show 1000 600 400 -1 $TEMP\coq_splash
 
-;  Pop $0 ; $0 has '1' if the user closed the splash screen early,
-;         ; '0' if everything closed normal, and '-1' if some error occured.
+  Pop $0 ; $0 has '1' if the user closed the splash screen early,
+         ; '0' if everything closed normal, and '-1' if some error occured.
 
-;  Delete $TEMP\coq_splash.bmp
-;FunctionEnd
+  Delete $TEMP\coq_splash.bmp
+FunctionEnd
 
 
 ;--------------------------------
@@ -157,6 +157,7 @@ Section "Coq" Sec1
 SectionEnd
 
 Section "CoqIde" Sec2
+
 
   SetOutPath "$INSTDIR"
  
