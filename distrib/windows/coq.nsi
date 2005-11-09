@@ -4,10 +4,10 @@
 ;Written by Joost Verburg
 ;Modified by Julien Narboux
 
-; This file is preprocessed by ./configure to subtitute @VERSION@ by the current version.
+; The VERSION should be passed as an argument at compile time using :
+;
 
 !define MY_PRODUCT "Coq" ;Define your own software name here
-!define MY_VERSION "@VERSION@" ;Define your own software version here
 !define EXE_PATH "..\..\bin\"
 
 !include "MUI.nsh"
@@ -18,7 +18,7 @@
   Name "Coq"
 
   ;General
-  OutFile "Coq_@VERSION@_win32_installer.exe"
+  OutFile "${OUTFILE}"
 
   ;Folder selection page
   InstallDir "$PROGRAMFILES\${MY_PRODUCT}"
@@ -82,6 +82,7 @@ FunctionEnd
 ;Installer Sections
 
 SetCompress off
+;SetCompressor bzip2
 ; Comment out after debuging.
 
 Section "Coq" Sec1
@@ -151,7 +152,8 @@ Section "Coq" Sec1
 
   CreateDirectory "$SMPROGRAMS\Coq"
   CreateShortCut "$SMPROGRAMS\Coq\Coq.lnk" "$INSTDIR\Coq.bat" "" "$INSTDIR\bin\coq.ico" 0
-  WriteINIStr "$SMPROGRAMS\Coq\Coq-HomePage.url" "InternetShortcut" "URL" "http://coq.inria.fr"
+  WriteINIStr "$SMPROGRAMS\Coq\The Coq HomePage.url" "InternetShortcut" "URL" "http://coq.inria.fr"
+  WriteINIStr "$SMPROGRAMS\Coq\The Coq Standard Library.url" "InternetShortcut" "URL" "http://coq.inria.fr/library-eng.html"
   CreateShortCut "$SMPROGRAMS\Coq\Uninstall.lnk" "$INSTDIR\Uninstall.exe" "" "$INSTDIR\Uninstall.exe" 0
 
 SectionEnd
@@ -243,7 +245,8 @@ Section "Uninstall"
   Delete "$SMPROGRAMS\Coq\Coq.lnk"
   Delete "$SMPROGRAMS\Coq\CoqIde.lnk"
   Delete "$SMPROGRAMS\Coq\Uninstall.lnk"
-  Delete "$SMPROGRAMS\Coq\Coq-HomePage.url"
+  Delete "$SMPROGRAMS\Coq\The Coq HomePage.url"
+  Delete "$SMPROGRAMS\Coq\The Coq Standard Library.url"
   Delete "$INSTDIR\Uninstall.exe"
   
   DeleteRegKey /ifempty HKCU "Software\${MY_PRODUCT}"

@@ -36,6 +36,7 @@ noarguments:
 	@echo "make pcoq-rpm     to build a src.rpm and a rpm for pcoq on this arch"
 	@echo "make deb          to build a debian package"
 	@echo "make win          to build a windows package"
+	@echo "make win-installer to build a windows install program"
 	@echo "make macosx       to build a MacOS-X package on a disk image"
 	@echo "make contrib-tag     to tag the current contrib state with the release number"
 	@echo "make contrib-tar-gz  to build a tar.gz of contrib sources"
@@ -279,6 +280,17 @@ $(COQWINZIP): $(TARGZ)
 	 $(MAKECOQ) -e COQINSTALLPREFIX=$(WININSTALL) BASETEXDIR=$(WININSTALL) install-coq) > win.log
 	mv $(WINBUILDROOT)/$(COQPACKAGE)/INSTALL.win $(WININSTALL)/INSTALL.txt
 	cd $(WININSTALL); zip -A -r $(DISTRIBDIR)/$(COQWINZIP) *
+
+#################################
+# Windows installer
+# Needs Nsis http://nsis.sourceforge.net/Main_Page
+#################################
+
+MAKENSIS = "/cygdrive/c/Program Files/NSIS/makensis.exe"
+WIN_INSTALLER:= $(COQPACKAGE)-installer.exe
+
+windows-installer::
+	$(MAKENSIS) /DMY_VERSION=$(VERSION) /DOUTFILE=$(WIN_INSTALLER) windows/coq.nsi
 
 clean::
 	rm -fr $(WINBUILDROOT) $(WININSTALL)
