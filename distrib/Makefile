@@ -36,7 +36,7 @@ noarguments:
 	@echo "make pcoq-rpm     to build a src.rpm and a rpm for pcoq on this arch"
 	@echo "make deb          to build a debian package"
 	@echo "make win          to build a windows package"
-	@echo "make win-installer to build a windows install program"
+	@echo "make windows-installer to build a windows install program"
 	@echo "make macosx       to build a MacOS-X package on a disk image"
 	@echo "make contrib-tag     to tag the current contrib state with the release number"
 	@echo "make contrib-tar-gz  to build a tar.gz of contrib sources"
