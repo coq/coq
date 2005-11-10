@@ -289,7 +289,12 @@ $(COQWINZIP): $(TARGZ)
 MAKENSIS = "/cygdrive/c/Program Files/NSIS/makensis.exe"
 WIN_INSTALLER:= $(COQPACKAGE)-installer.exe
 
-windows-installer::
+windows-installer: $(WIN_INSTALLER)
+
+$(WIN_INSTALLER): 
+	@echo "Building Coq."
+	cd ..;./configure -prefix /coq -emacslib /coq/emacs -reals all;make world #Prefix is not used in fact.
+	@echo "Building the windows installer."
 	$(MAKENSIS) /DMY_VERSION=$(VERSION) /DOUTFILE=$(WIN_INSTALLER) windows/coq.nsi
 
 clean::
