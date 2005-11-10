@@ -34,9 +34,23 @@ make clean
 rm -rf %{buildroot}
 make -e COQINSTALLPREFIX=%{buildroot} install-coqide
 
+# menu entry
+mkdir -p %{buildroot}%{_menudir}
+cat > %{buildroot}%{_menudir}/CoqIDE << _EOF_
+?package(CoqIDE): \
+ command="%{_bindir}/coqide" \
+# icon="coqide.png" \ TODO add an icon
+ longtitle="The Coq Integrated Development Interface" \
+ needs="x11" \
+ section="Applications/Sciences/Mathematics" \
+ title="CoqIDE" \
+ startup_notify="yes"
+_EOF_
+
 %define __spec_install_post /usr/lib/rpm/brp-compress
 
 %files
 %defattr(-,root,root)
+%{_menudir}/CoqIDE
 %{_bindir}/*
 %{_libdir}/coq/ide
