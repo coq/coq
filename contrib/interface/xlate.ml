@@ -399,9 +399,6 @@ and (xlate_formula:Topconstr.constr_expr -> Ascent.ct_FORMULA) = function
 	       xlate_id_opt_ne_list l,
 	       xlate_formula c, xlate_formula b) 
    | COrderedCase (_,c,v,e,l) -> 
-       let case_string = match c with
-	   Term.MatchStyle -> "Match"
-	 | _ -> "Case" in
 	 CT_elimc(CT_case "Case", xlate_formula_opt v, xlate_formula e,
 		  CT_formula_list(List.map xlate_formula l))
    | CSort(_, s) -> CT_coerce_SORT_TYPE_to_FORMULA(xlate_sort s)
@@ -1520,11 +1517,11 @@ let rec xlate_module_type = function
       let mty1 = xlate_module_type mty in
 	(match decl with
 	     CWith_Definition((_, idl), c) ->
-	       CT_module_type_with_def(xlate_module_type mty, 
+	       CT_module_type_with_def(mty1, 
 				       CT_id_list (List.map xlate_ident idl),
                                        xlate_formula c)
 	   | CWith_Module((_, idl), (_, qid)) ->
-	       CT_module_type_with_mod(xlate_module_type mty,
+	       CT_module_type_with_mod(mty1,
 				       CT_id_list (List.map xlate_ident idl), 
 				       CT_ident (xlate_qualid qid)));;
 
@@ -1768,6 +1765,7 @@ let rec xlate_vernac =
   | VernacShow (ShowGoalImplicitly (Some n)) -> CT_show_implicit (CT_int n)
   | VernacShow ShowExistentials -> CT_show_existentials
   | VernacShow ShowScript -> CT_show_script
+  | VernacShow(ShowMatch _) -> xlate_error "TODO: VernacShow(ShowMatch _)"
   | VernacGo arg -> CT_go (xlate_locn arg)
   | VernacShow ExplainProof l -> CT_explain_proof (nums_to_int_list l)
   | VernacShow ExplainTree l ->
