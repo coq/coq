@@ -249,7 +249,6 @@ let base_leaf (func:global_reference) eqs expr =
      let ids = ids_of_named_context (pf_hyps g) in
      let k = next_ident_away k_id ids in
      let h = next_ident_away h_id (k::ids) in
-     let def = next_ident_away def_id (h::k::ids) in
        tclTHENLIST [split (ImplicitBindings [expr]);
 		    split (ImplicitBindings [Lazy.force coq_O]);
 		    intro_using k;
@@ -371,11 +370,6 @@ let rec introduce_all_values func context_fn
 	let rec_res = next_ident_away rec_res_id ids in
         let ids = rec_res::ids in
 	let hspec = next_ident_away hspec_id ids in
-        let ids = hspec::ids in
-	let p = next_ident_away p_id ids in
-        let ids = p::ids in
-	let heq = next_ident_away heq_id ids in
-	let ids = heq::ids in
 	let tac = introduce_all_values func context_fn eqs proofs
 	    hrec args
 	    (rec_res::values)(hspec::specs) in
@@ -439,7 +433,6 @@ try
   with e -> msgerrnl(str "failure in proveterminate"); raise e;;
 
 let hyp_terminates func = 
-  let f = (get_f (constr_of_reference func)) in
   let a_arrow_b = (arg_type (constr_of_reference func)) in
   let (_,a,b) = destProd a_arrow_b in
   let left=
