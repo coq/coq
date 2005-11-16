@@ -367,6 +367,9 @@ if test -x "${CAMLLIB}/lablgtk2" ; then
         else
             echo "LablGtk2 found, no native threads: bytecode CoqIde will be available"
 	    COQIDE=byte
+	fi
+	if grep "class view " "${CAMLLIB}/lablgtk2/gText.mli" | grep -q "\[>" ; then
+	    LABLGTKCAMLP4FLAG=-DLABLGTKGE26
 	fi;
     else
         echo "LablGtk2 found but too old: CoqIde will not be available"
@@ -520,7 +523,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
     -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
     -e "s|CAMLP4TOOL|$camlp4o|" \
-    -e "s|CAMLP4COMPATFLAGS|$CAMLP4COMPAT|" \
+    -e "s|CAMLP4COMPATFLAGS|$CAMLP4COMPAT $LABLGTKCAMLP4FLAG|" \
     -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
     -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
     -e "s|BESTCOMPILER|$best_compiler|" \
