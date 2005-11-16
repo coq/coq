@@ -555,34 +555,39 @@ $(COQIDEOPT): $(COQMKTOP) $(CMX) $(USERTACCMX) ide/ide.cmxa
 
 $(COQIDEBYTE): $(COQMKTOP) $(CMO) $(USERTACCMO) ide/ide.cma
 	$(SHOW)'COQMKTOP -o $@'	
-	$(HIDE)$(COQMKTOP) -g -ide -top $(BYTEFLAGS) -o $@
+	$(HIDE)$(COQMKTOP) -ide -top $(BYTEFLAGS) -o $@
 
 $(COQIDE):
 	cd bin; ln -sf coqide.$(HASCOQIDE)$(EXE) coqide$(EXE)
 
 ide/%.cmo: ide/%.ml
 	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
 ide/%.cmi: ide/%.mli
 	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
 ide/%.cmx: ide/%.ml
 	$(SHOW)'OCAMLOPT  $<'	
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
 
-ide/utils/%.cmo: ide/%.ml
+ide/utils/%.cmo: ide/utils/%.ml
 	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
-ide/utils/%.cmi: ide/%.mli
+ide/utils/%.cmi: ide/utils/%.mli
 	$(SHOW)'OCAMLC    $<'	
-	$(HIDE)$(OCAMLC) -g $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
+	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -c $<
 
-ide/utils/%.cmx: ide/%.ml
+ide/utils/%.cmx: ide/utils/%.ml
 	$(SHOW)'OCAMLOPT  $<'	
 	$(HIDE)$(OCAMLOPT) $(COQIDEFLAGS) $(OPTFLAGS) -c $<
+
+# Special target to select between whether lablgtk >= 2.6.0 or not
+ide/undo.cmi: ide/undo.mli
+	$(SHOW)'OCAMLC    $<'	
+	$(HIDE)$(OCAMLC) $(COQIDEFLAGS) $(BYTEFLAGS) -pp "$(CAMLP4O) $(CAMLP4EXTENDFLAGS) $(CAMLP4COMPAT) -intf" -c -intf $<
 
 clean::
 	rm -f ide/extract_index.ml ide/find_phrase.ml ide/highlight.ml
