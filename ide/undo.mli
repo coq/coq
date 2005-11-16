@@ -10,6 +10,15 @@
 
 (* An undoable view class *)
 
+ifndef LABLGTKGE26 then
+class undoable_view : Gtk.text_view Gtk.obj ->
+object
+  inherit GText.view
+  method undo : bool
+  method redo : bool
+  method clear_undo : unit
+end
+else
 class undoable_view : [>Gtk.text_view] Gtk.obj ->
 object
   inherit GText.view
