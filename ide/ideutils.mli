@@ -9,6 +9,7 @@
 (*i $Id$ i*)
 
 val async : ('a -> unit) -> 'a -> unit
+val sync  : ('a -> 'b) -> 'a -> 'b
 val browse : (string -> unit) -> string -> unit
 val browse_keyword : (string -> unit) -> string -> unit
 val byte_offset_to_char_offset : string -> int -> int

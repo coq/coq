@@ -247,50 +247,43 @@ let break () =
     prerr_endline " ignored (not computing)"
   end
 
-let full_do_if_not_computing text f x = 
-  ignore 
-    (Thread.create 
-       (async 
-	  (fun () ->
-	     if Mutex.try_lock coq_computing 
-	     then 
-	       begin
-		 prerr_endline ("Launching thread " ^ text);
-		 let w = Blaster_window.blaster_window () in
-		 if not (Mutex.try_lock w#lock) then begin 
-		   break ();
-		   let lck = Mutex.create () in
-		   Mutex.lock lck;
-		   prerr_endline "Waiting on blaster...";
-		   Condition.wait w#blaster_killed lck;
-		   prerr_endline "Waiting on blaster ok";
-		   Mutex.unlock lck
-		 end else Mutex.unlock w#lock;
-		 let idle = 
-		   Glib.Timeout.add ~ms:300
-		     ~callback:(fun () -> !pulse ();true) in
-		 begin
-		   prerr_endline "Getting lock";
-		   try
-		     f x;
-		     Glib.Timeout.remove idle;
-		     prerr_endline "Releasing lock";
-		     Mutex.unlock coq_computing;
-		   with e -> 
-		     Glib.Timeout.remove idle;
-		     prerr_endline "Releasing lock (on error)";
-		     Mutex.unlock coq_computing;
-		     raise e
-	       end
-	     end 
-	     else 
-	       prerr_endline 
-		 "Discarded order (computations are ongoing)"))
-       ())
-
 let do_if_not_computing text f x = 
-  ignore (full_do_if_not_computing text f x)
-
+  let threaded_task () =
+    if Mutex.try_lock coq_computing 
+    then 
+      begin
+	prerr_endline ("Launching thread " ^ text);
+	let w = Blaster_window.blaster_window () in
+	if not (Mutex.try_lock w#lock) then begin 
+	  break ();
+	  let lck = Mutex.create () in
+	  Mutex.lock lck;
+	  prerr_endline "Waiting on blaster...";
+	  Condition.wait w#blaster_killed lck;
+	  prerr_endline "Waiting on blaster ok";
+	  Mutex.unlock lck
+	end else Mutex.unlock w#lock;
+	let idle = 
+	  Glib.Timeout.add ~ms:300
+	    ~callback:(fun () -> async !pulse ();true) in
+	begin
+	  prerr_endline "Getting lock";
+	  try
+	    f x;
+	    Glib.Timeout.remove idle;
+	    prerr_endline "Releasing lock";
+	    Mutex.unlock coq_computing;
+	  with e -> 
+	    Glib.Timeout.remove idle;
+	    prerr_endline "Releasing lock (on error)";
+	    Mutex.unlock coq_computing;
+	    raise e
+	end
+      end 
+    else 
+      prerr_endline 
+	"Discarded order (computations are ongoing)" in
+  ignore (Thread.create threaded_task ())
 
 let add_input_view tv = 
   Vector.append input_views tv
@@ -948,27 +941,9 @@ object(self)
       end
       
   method send_to_coq verbosely replace phrase show_output show_error localize =
-    try 
-      full_goal_done <- false;
-      prerr_endline "Send_to_coq starting now";
-      if replace then begin
-	let r,info = 
-(*	  full_do_if_not_computing "coq eval and replace" *)
-	    Coq.interp_and_replace ("Info " ^ phrase) 
-	in
-	let msg = read_stdout () in 
-	self#insert_message (if show_output then msg else "");
-
-	Some r
-	
-      end else begin
-	let r = Some (Coq.interp verbosely phrase) in
-	let msg = read_stdout () in 
-	self#insert_message (if show_output then msg else "");
-	r
-      end
-    with e ->
-      (if show_error then
+    let display_output msg =
+      self#insert_message (if show_output then msg else "") in
+    let display_error e =
 	 let (s,loc) = Coq.process_exn e in
 	 assert (Glib.Utf8.validate s);
 	 self#set_message s;
@@ -986,8 +961,23 @@ object(self)
 		input_buffer#apply_tag_by_name "error"
    		  ~start:starti
 		  ~stop:stopi;
-		input_buffer#place_cursor starti;
-	   ));
+		input_buffer#place_cursor starti) in
+    try 
+      full_goal_done <- false;
+      prerr_endline "Send_to_coq starting now";
+      if replace then begin
+	let r,info = Coq.interp_and_replace ("info " ^ phrase) in
+	let msg = read_stdout () in 
+	sync display_output msg;
+	Some r
+      end else begin
+	let r = Coq.interp verbosely phrase in
+	let msg = read_stdout () in 
+	sync display_output msg;
+	Some r
+      end
+    with e ->
+      if show_error then sync display_error e;
       None
 
   method find_phrase_starting_at (start:GText.iter) = 
@@ -1068,149 +1058,148 @@ object(self)
 
 	  
   method process_next_phrase verbosely display_goals do_highlight = 
-    begin
-      try 
-	self#clear_message;
-	prerr_endline "process_next_phrase starting now";
-	if do_highlight then begin
-	  !push_info "Coq is computing";
-	  input_view#set_editable false;
-	end;
-	begin match (self#find_phrase_starting_at self#get_start_of_input) 
-	with 
-	| None ->
+    let get_next_phrase () =
+      self#clear_message;
+      prerr_endline "process_next_phrase starting now";
+      if do_highlight then begin
+	!push_info "Coq is computing";
+	input_view#set_editable false;
+      end;
+      match self#find_phrase_starting_at self#get_start_of_input with
+        | None ->
 	    if do_highlight then begin
 	      input_view#set_editable true;
 	      !pop_info ();
-	    end; false
+	    end;
+            None
 	| Some(start,stop) ->
 	    prerr_endline "process_next_phrase : to_process highlight";
-	    let b = input_buffer in
 	    if do_highlight then begin
 	      input_buffer#apply_tag_by_name ~start ~stop "to_process";
 	      prerr_endline "process_next_phrase : to_process applied";
 	    end;
 	    prerr_endline "process_next_phrase : getting phrase";
-	    let phrase = start#get_slice ~stop in
-	    let r = 
-	      match self#send_to_coq verbosely false phrase true true true with
-	      | Some ast ->
-		  begin
-		    b#move_mark ~where:stop (`NAME "start_of_input");
-		    b#apply_tag_by_name "processed" ~start ~stop;
-		    if (self#get_insert#compare) stop <= 0 then 
-		      begin
-			b#place_cursor stop;
-			self#recenter_insert
-		      end;
-		    let start_of_phrase_mark = `MARK (b#create_mark start) in
-		    let end_of_phrase_mark = `MARK (b#create_mark stop) in
-		    push_phrase 
-		      start_of_phrase_mark 
-		      end_of_phrase_mark ast;
-		    if display_goals then self#show_goals;
-		    true
-		  end
-	      | None -> false
-	    in
-	    if do_highlight then begin
-	      b#remove_tag_by_name ~start ~stop "to_process" ;
-	      input_view#set_editable true;
-	      !pop_info ();
-	    end;
-	    r;
-	end
-      with e -> raise e
+	    Some((start,stop),start#get_slice ~stop) in
+    let remove_tag (start,stop) =
+      if do_highlight then begin
+	input_buffer#remove_tag_by_name ~start ~stop "to_process" ;
+	input_view#set_editable true;
+	!pop_info ();
+      end in
+    let mark_processed (start,stop) ast =
+      let b = input_buffer in
+      b#move_mark ~where:stop (`NAME "start_of_input");
+      b#apply_tag_by_name "processed" ~start ~stop;
+      if (self#get_insert#compare) stop <= 0 then 
+	begin
+	  b#place_cursor stop;
+	  self#recenter_insert
+	end;
+      let start_of_phrase_mark = `MARK (b#create_mark start) in
+      let end_of_phrase_mark = `MARK (b#create_mark stop) in
+      push_phrase 
+	start_of_phrase_mark 
+	end_of_phrase_mark ast;
+      if display_goals then self#show_goals;
+      remove_tag (start,stop) in
+    begin
+      match sync get_next_phrase () with
+        | None -> false
+        | Some (loc,phrase) ->
+	    (match self#send_to_coq verbosely false phrase true true true with
+	      | Some ast -> sync (mark_processed loc) ast; true
+	      | None -> sync remove_tag loc; false)
     end
     
   method insert_this_phrase_on_success 
     show_output show_msg localize coqphrase insertphrase = 
-    match self#send_to_coq false false coqphrase show_output show_msg localize with
-    | Some ast ->
-	begin
-	  let stop = self#get_start_of_input in
-	  if stop#starts_line then
-	    input_buffer#insert ~iter:stop insertphrase
-	  else input_buffer#insert ~iter:stop ("\n"^insertphrase); 
-	  let start = self#get_start_of_input in
-	  input_buffer#move_mark ~where:stop (`NAME "start_of_input");
-	  input_buffer#apply_tag_by_name "processed" ~start ~stop;
-	  if (self#get_insert#compare) stop <= 0 then 
-	    input_buffer#place_cursor stop;
-	  let start_of_phrase_mark = `MARK (input_buffer#create_mark start) 
-	  in
-	  let end_of_phrase_mark = `MARK (input_buffer#create_mark stop) in
-	  push_phrase start_of_phrase_mark end_of_phrase_mark ast;
-	  self#show_goals;
-	  (*Auto insert save on success...
-	    try (match Coq.get_current_goals () with 
-	    | [] ->  
+    let mark_processed ast =
+      let stop = self#get_start_of_input in
+      if stop#starts_line then
+	input_buffer#insert ~iter:stop insertphrase
+      else input_buffer#insert ~iter:stop ("\n"^insertphrase); 
+      let start = self#get_start_of_input in
+      input_buffer#move_mark ~where:stop (`NAME "start_of_input");
+      input_buffer#apply_tag_by_name "processed" ~start ~stop;
+      if (self#get_insert#compare) stop <= 0 then 
+	input_buffer#place_cursor stop;
+      let start_of_phrase_mark = `MARK (input_buffer#create_mark start) in
+      let end_of_phrase_mark = `MARK (input_buffer#create_mark stop) in
+      push_phrase start_of_phrase_mark end_of_phrase_mark ast;
+      self#show_goals;
+      (*Auto insert save on success...
+      try (match Coq.get_current_goals () with 
+	  | [] ->  
 	    (match self#send_to_coq "Save.\n" true true true with
 	    | Some ast -> 
-	    begin
-	    let stop = self#get_start_of_input in
-	    if stop#starts_line then
-	    input_buffer#insert ~iter:stop "Save.\n"
-	    else input_buffer#insert ~iter:stop "\nSave.\n"; 
-	    let start = self#get_start_of_input in
-	    input_buffer#move_mark ~where:stop (`NAME "start_of_input");
-	    input_buffer#apply_tag_by_name "processed" ~start ~stop;
-	    if (self#get_insert#compare) stop <= 0 then 
-	    input_buffer#place_cursor stop;
-	    let start_of_phrase_mark = `MARK (input_buffer#create_mark start) 
-	    in
-	    let end_of_phrase_mark = `MARK (input_buffer#create_mark stop) in
-	    push_phrase start_of_phrase_mark end_of_phrase_mark ast
-	    end
+	      begin
+	        let stop = self#get_start_of_input in
+	        if stop#starts_line then
+	          input_buffer#insert ~iter:stop "Save.\n"
+	        else input_buffer#insert ~iter:stop "\nSave.\n"; 
+	        let start = self#get_start_of_input in
+	        input_buffer#move_mark ~where:stop (`NAME "start_of_input");
+	        input_buffer#apply_tag_by_name "processed" ~start ~stop;
+	        if (self#get_insert#compare) stop <= 0 then 
+	          input_buffer#place_cursor stop;
+	        let start_of_phrase_mark =
+                  `MARK (input_buffer#create_mark start) in
+	        let end_of_phrase_mark =
+                  `MARK (input_buffer#create_mark stop) in
+	        push_phrase start_of_phrase_mark end_of_phrase_mark ast
+	      end
 	    | None -> ())
-	    | _ -> ())
-	    with _ -> ()*)
-	  true
-	end
-    | None -> self#insert_message ("Unsuccessfully tried: "^coqphrase);
+	  | _ -> ())
+	with _ -> ()*) in
+    match self#send_to_coq false false coqphrase show_output show_msg localize with
+    | Some ast -> sync mark_processed ast; true
+    | None ->
+        sync 
+          (fun _ -> self#insert_message ("Unsuccessfully tried: "^coqphrase))
+          ();
 	false
 
   method process_until_iter_or_error stop =
     let stop' = `OFFSET stop#offset in
     let start = self#get_start_of_input#copy in
     let start' = `OFFSET start#offset in
-    input_buffer#apply_tag_by_name 
-      ~start
-      ~stop
-      "to_process";
-    input_view#set_editable false;
+    sync (fun _ ->
+      input_buffer#apply_tag_by_name ~start ~stop "to_process";
+      input_view#set_editable false) ();
     !push_info "Coq is computing";
-    process_pending ();
+(*    process_pending ();*)
     (try 
        while ((stop#compare self#get_start_of_input>=0) 
 	      && (self#process_next_phrase false false false))
        do Util.check_for_interrupt () done
      with Sys.Break -> 
        prerr_endline "Interrupted during process_until_iter_or_error");
-    self#show_goals;
-    (* Start and stop might be invalid if an eol was added at eof *)
-    let start = input_buffer#get_iter start' in
-    let stop =  input_buffer#get_iter stop' in
-    input_buffer#remove_tag_by_name ~start ~stop "to_process" ;
-    input_view#set_editable true;
+    sync (fun _ ->
+      self#show_goals;
+      (* Start and stop might be invalid if an eol was added at eof *)
+      let start = input_buffer#get_iter start' in
+      let stop =  input_buffer#get_iter stop' in
+      input_buffer#remove_tag_by_name ~start ~stop "to_process" ;
+      input_view#set_editable true) ();
     !pop_info()
 
   method process_until_end_or_error = 
     self#process_until_iter_or_error input_buffer#end_iter
 
   method reset_initial =
-    Stack.iter 
-      (function inf -> 
-	 let start = input_buffer#get_iter_at_mark inf.start in
-	 let stop = input_buffer#get_iter_at_mark inf.stop in
-	 input_buffer#move_mark ~where:start (`NAME "start_of_input");
-	 input_buffer#remove_tag_by_name "processed" ~start ~stop;
-	 input_buffer#delete_mark inf.start;
-	 input_buffer#delete_mark inf.stop;
-      ) 
-      processed_stack;
-    Stack.clear processed_stack;
-    self#clear_message;
+    sync (fun _ ->
+      Stack.iter 
+        (function inf -> 
+	  let start = input_buffer#get_iter_at_mark inf.start in
+	  let stop = input_buffer#get_iter_at_mark inf.stop in
+	  input_buffer#move_mark ~where:start (`NAME "start_of_input");
+	  input_buffer#remove_tag_by_name "processed" ~start ~stop;
+	  input_buffer#delete_mark inf.start;
+	  input_buffer#delete_mark inf.stop;
+        ) 
+        processed_stack;
+      Stack.clear processed_stack;
+      self#clear_message) ();
     Coq.reset_initial ()
 
 
@@ -1260,19 +1249,21 @@ object(self)
 	  (match undos with 
 	   | None -> synchro () 
 	   | Some n -> try Pfedit.undo n with _ -> synchro ());
-	  let start = if is_empty () then input_buffer#start_iter 
-	  else input_buffer#get_iter_at_mark (top ()).stop 
-	  in
-	  prerr_endline "Removing (long) processed tag...";
-	  input_buffer#remove_tag_by_name 
-	    ~start 
-	    ~stop:self#get_start_of_input
-	    "processed";
-	  prerr_endline "Moving (long) start_of_input...";
-	  input_buffer#move_mark ~where:start (`NAME "start_of_input");
-	  self#show_goals;
-	  clear_stdout ();
-	  self#clear_message;
+          sync (fun _ ->
+	    let start = if is_empty () then input_buffer#start_iter 
+	    else input_buffer#get_iter_at_mark (top ()).stop 
+	    in
+	    prerr_endline "Removing (long) processed tag...";
+	    input_buffer#remove_tag_by_name 
+	      ~start 
+	      ~stop:self#get_start_of_input
+	      "processed";
+	    prerr_endline "Moving (long) start_of_input...";
+	    input_buffer#move_mark ~where:start (`NAME "start_of_input");
+	    self#show_goals;
+	    clear_stdout ();
+	    self#clear_message)
+            ();
 	with _ -> 
 	  !push_info "WARNING: undo failed badly -> Coq might be in an inconsistent state.
 Please restart and report NOW.";
@@ -1315,7 +1306,7 @@ Please restart and report NOW.";
 	  begin match last_command with 
 	  | {ast=_, (VernacSolve _ | VernacTime (VernacSolve _))} -> 
 	      begin 
-		try Pfedit.undo 1; ignore (pop ()); update_input () 
+		try Pfedit.undo 1; ignore (pop ()); sync update_input () 
 		with _ -> self#backtrack_to_no_lock start
 	      end
 	  | {ast=_,t;reset_info=Reset (id, {contents=true})} ->
@@ -1326,7 +1317,7 @@ Please restart and report NOW.";
 	       | VernacEndSegment _
 		 -> reset_to_mod id
 	       | _ ->  reset_to id);
-	      update_input ()
+	      sync update_input ()
 	  | { ast = _, ( VernacStartTheoremProof _ 
 		       | VernacGoal _
 		       | VernacDeclareTacticDefinition _
@@ -1340,10 +1331,10 @@ Please restart and report NOW.";
 		   prerr_endline "WARNING : found a closed environment";
 		   raise e
 		 end);
-	      update_input ()
+	      sync update_input ()
 	  | { ast = (_, a) } when is_state_preserving a ->
 	      ignore (pop ());
-	      update_input ()
+	      sync update_input ()
 	  | _ -> 
 	      self#backtrack_to_no_lock start
 	  end;
@@ -1356,7 +1347,6 @@ Please restart and report NOW.";
 
       
   method blaster () = 
-    
     ignore (Thread.create 
 	      (fun () ->  
 		 prerr_endline "Blaster called";
@@ -1375,14 +1365,14 @@ Please restart and report NOW.";
 		       ("Goal "^gnb)
 		       s 
 		       (fun () -> try_interptac t')
-		       (fun () -> self#insert_command t'' t'')
+		       (sync(fun () -> self#insert_command t'' t''))
 		   in
 		   let set_current_goal (s,t) = 
 		     c#set
 		       "Goal 1"
 		       s 
 		       (fun () -> try_interptac ("progress "^t))
-		       (fun () -> self#insert_command t t)
+		       (sync(fun () -> self#insert_command t t))
 		   in
 		   begin match current_gls with 
 		   | [] -> ()
@@ -1405,11 +1395,11 @@ Please restart and report NOW.";
 	      ())
       
   method insert_command cp ip = 
-    self#clear_message;
+    async(fun _ -> self#clear_message)();
     ignore (self#insert_this_phrase_on_success true false false cp ip)
 
   method tactic_wizard l =
-    self#clear_message;
+    async(fun _ -> self#clear_message)();
     ignore 
       (List.exists 
 	 (fun p -> 
@@ -2064,21 +2054,21 @@ let main files =
 	      ignore (get_current_view()).view#clear_undo));
   ignore(edit_f#add_separator ());
   ignore(edit_f#add_item "Cut" ~key:GdkKeysyms._X ~callback:
-	   (do_if_not_computing "cut"
+	   (do_if_not_computing "cut" (sync
 	      (fun () -> GtkSignal.emit_unit
 		 (get_current_view()).view#as_view 
-		 GtkText.View.S.cut_clipboard)));
+		 GtkText.View.S.cut_clipboard))));
   ignore(edit_f#add_item "Copy" ~key:GdkKeysyms._C ~callback:
 	   (fun () -> GtkSignal.emit_unit
 	      (get_current_view()).view#as_view 
 	      GtkText.View.S.copy_clipboard));
   ignore(edit_f#add_item "Paste" ~key:GdkKeysyms._V ~callback:
-	   (do_if_not_computing "paste"
+	   (do_if_not_computing "paste" (sync 
 	      (fun () -> 
 		 try GtkSignal.emit_unit
 		   (get_current_view()).view#as_view 
 		   GtkText.View.S.paste_clipboard
-		 with _ -> prerr_endline "EMIT PASTE FAILED")));
+		 with _ -> prerr_endline "EMIT PASTE FAILED"))));
   ignore (edit_f#add_separator ());
 
 
@@ -2322,12 +2312,12 @@ let main files =
 *)
   
   ignore(edit_f#add_item "Complete Word" ~key:GdkKeysyms._slash ~callback:
-	 (do_if_not_computing "complete word"
+	 (do_if_not_computing "complete word" (sync 
 	    (fun () -> 
 	       ignore (
 		 let av = out_some ((get_current_view()).analyzed_view) in 
 		 av#complete_at_offset (av#get_insert)#offset
-	    ))));
+	    )))));
 
   ignore(edit_f#add_separator ());
   (* external editor *)
@@ -2352,7 +2342,7 @@ let main files =
 	(GMain.Timeout.add ~ms:!current.global_auto_revert_delay 
 	   ~callback:
 	   (fun () -> 
-	      do_if_not_computing "revert" (fun () -> revert_f ()) ();
+	      do_if_not_computing "revert" (sync revert_f) ();
 	      true))
   in reset_revert_timer (); (* to enable statup preferences timer *)
 
@@ -2375,7 +2365,7 @@ let main files =
 	(GMain.Timeout.add ~ms:!current.auto_save_delay 
 	   ~callback:
 	   (fun () -> 
-	      do_if_not_computing "autosave" (fun () -> auto_save_f ()) ();
+	      do_if_not_computing "autosave" (sync auto_save_f) ();
 	      true))
   in reset_auto_save_timer (); (* to enable statup preferences timer *)
 
@@ -2444,20 +2434,6 @@ let main files =
     ~key:GdkKeysyms._Up
     ~callback:(do_or_activate (fun a -> a#undo_last_step))
     `GO_UP;
-(*
-  add_to_menu_toolbar 
-    "_Forward to" 
-    ~tooltip:"Forward to" 
-    ~key:GdkKeysyms._Right
-    ~callback:(do_or_activate (fun a -> a#process_until_insert_or_error))
-    `GOTO_LAST;
-  add_to_menu_toolbar 
-    "_Backward to" 
-    ~tooltip:"Backward to" 
-    ~key:GdkKeysyms._Left
-    ~callback:(do_or_activate (fun a-> a#backtrack_to_insert))
-    `GOTO_FIRST;
-*)
   add_to_menu_toolbar 
     "_Go to" 
     ~tooltip:"Go to cursor" 
@@ -2581,9 +2557,9 @@ let main files =
     in
     ignore (factory#add_item menu_text
 	      ~callback:
-	      (do_if_not_computing "simple template"
+	      (do_if_not_computing "simple template" (sync
 		 (fun () -> let {view = view } = get_current_view () in
-		  ignore (view#buffer#insert_interactive text))))
+		  ignore (view#buffer#insert_interactive text)))))
   in
   List.iter 
     (fun l -> 
@@ -2616,7 +2592,7 @@ let main files =
   in
   let add_complex_template (menu_text, text, offset, len, key) =
     (* Templates/Lemma *)
-    let callback = do_if_not_computing "complex template"
+    let callback = do_if_not_computing "complex template" (sync
 		     (fun () ->
 			let {view = view } = get_current_view () in
 			if view#buffer#insert_interactive text then begin
@@ -2625,7 +2601,7 @@ let main files =
 			  view#buffer#move_mark `INSERT iter;
 			  ignore (iter#nocopy#backward_chars len);
 			  view#buffer#move_mark `SEL_BOUND iter;
-			end)
+			end))
     in
     ignore (templates_factory#add_item menu_text ~callback ?key)
   in
@@ -2695,9 +2671,9 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
     in
     ignore (factory#add_item menu_text
 	      ~callback:
-	      (do_if_not_computing "simple template"
+	      (do_if_not_computing "simple template" (sync
 		 (fun () -> let {view = view } = get_current_view () in
-		  ignore (view#buffer#insert_interactive text))))
+		  ignore (view#buffer#insert_interactive text)))))
   in
 *)
   ignore (templates_factory#add_separator ());
@@ -2897,7 +2873,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   let detach_menu = configuration_factory#add_item 
 		      "Detach _Script Window"
 		      ~callback:
-		      (do_if_not_computing "detach script window"
+		      (do_if_not_computing "detach script window" (sync
 			 (fun () -> 
 			    let nb = notebook () in
 			    if nb#misc#toplevel#get_oid=w#coerce#get_oid then
@@ -2910,7 +2886,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 				nw#add_accel_group accel_group;
 				nb#misc#reparent nw#coerce
 			      end	      
-			 ))
+			 )))
   in
   let detach_current_view = 
     configuration_factory#add_item 
@@ -3208,7 +3184,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   let _ = tv2#event#connect#motion_notify
 	    ~callback:
 	    (fun e -> 
-	       (do_if_not_computing "motion notify"
+	       (do_if_not_computing "motion notify" (sync
 		  (fun e -> 
 		     let win = match tv2#get_window `WIDGET with
 		       | None -> assert false
@@ -3231,7 +3207,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 				     it#as_iter))
 		       tags;
 		     false)) e;
-	       false)
+	       false))
   in
   change_font := 
   (fun fd -> 

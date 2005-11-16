@@ -43,7 +43,6 @@ coqide_spec=no
 
 COQTOP=`pwd`
 
-
 # Parse command-line arguments
 
 while : ; do
@@ -153,7 +152,8 @@ case $ARCH in
 	 bindir_def=C:\\coq\\bin
 	 libdir_def=C:\\coq\\lib
 	 mandir_def=C:\\coq\\man
-	 emacslib_def=C:\\coq\\emacs;;
+	 emacslib_def=C:\\coq\\emacs
+         coqdocdir_def=C:\\coq\\latex;;
   *)
 	 bindir_def=/usr/local/bin
 	 libdir_def=/usr/local/lib/coq
@@ -330,6 +330,15 @@ if [ "$best_compiler" = "opt" ] ; then
   esac
 fi
 
+
+# A quoted version of pwd.
+# On windows, it produces a Windows path, which avoids some bugs
+# when compiling the standard library
+MLCOQTOP=`ocaml 2>&1 1>/dev/null <<EOF
+  prerr_endline(String.escaped(Sys.getcwd()));;
+EOF
+`
+
 # For coqmktop
 
 #CAMLLIB=`"$CAMLC" -v | sed -n -e 's|.*directory:* *\(.*\)$|\1|p' `
@@ -396,7 +405,7 @@ esac
 # Summary of the configuration
 
 echo ""
-echo "  Coq top directory                 : $COQTOP"
+echo "  Coq top directory                 : $MLCOQTOP"
 echo "  Architecture                      : $ARCH"
 if test ! -z "$OS" ; then
   echo "  Operating system                  : $OS"
@@ -444,7 +453,7 @@ cat << END_OF_COQ_CONFIG > $mlconfig_file
 let local = $local
 let bindir = "$BINDIR" 
 let coqlib = "$LIBDIR"
-let coqtop = "$COQTOP"
+let coqtop = "$MLCOQTOP"
 let camllib = "$CAMLLIB"
 let camlp4lib = "$CAMLP4LIB"
 let best = "$best_compiler"
