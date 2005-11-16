@@ -1128,9 +1128,9 @@ archclean::
 # Installation
 ###########################################################################
 
-COQINSTALLPREFIX=
-  # Can be changed for a local installation (to make packages).
-  # You must NOT put a "/" at the end (Cygnus for win32 does not like "//").
+#COQINSTALLPREFIX=
+# Can be changed for a local installation (to make packages).
+# You must NOT put a "/" at the end (Cygnus for win32 does not like "//").
 
 FULLBINDIR=$(COQINSTALLPREFIX)$(BINDIR)
 FULLCOQLIB=$(COQINSTALLPREFIX)$(COQLIB)

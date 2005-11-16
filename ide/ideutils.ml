@@ -210,10 +210,15 @@ let find_tag_stop (tag :GText.tag) (it:GText.iter) =
 let find_tag_limits (tag :GText.tag) (it:GText.iter) = 
  (find_tag_start tag it , find_tag_stop tag it)
 
-(* explanations ?? *)
+(* explanations: Win32 threads won't work if events are produced
+   in a thread different from the thread of the Gtk loop. In this
+   case we must use GtkThread.async to push a callback in the
+   main thread. Beware that the synchronus version may produce
+   deadlocks. *)
 let async = 
-  if Sys.os_type <> "Unix" then GtkThread.async else 
-    (fun x -> x)
+  if Sys.os_type = "Win32" then GtkThread.async else (fun x -> x)
+let sync = 
+  if Sys.os_type = "Win32" then GtkThread.sync else (fun x -> x)
 
 let stock_to_widget ?(size=`DIALOG) s = 
   let img = GMisc.image () 
