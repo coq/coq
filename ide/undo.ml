@@ -18,7 +18,7 @@ let neg act = match act with
   | Insert (s,i,l) -> Delete (s,i,l)
   | Delete (s,i,l) -> Insert (s,i,l)
 
-class undoable_view (tv:Gtk.text_view Gtk.obj) =
+class undoable_view (tv:([> Gtk.text_view ] as 'a) Gtk.obj) =
   let undo_lock = ref true in 
 object(self)
   inherit GText.view tv as super

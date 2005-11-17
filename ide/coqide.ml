@@ -3364,6 +3364,24 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 
 ;;
 
+(* This function check every half of second if DrGeoCaml has send 
+   something on his private clipboard *)
+
+let rec check_for_drgeocaml_input () = 
+  let cb_Dr = GData.clipboard (Gdk.Atom.intern "_DrGeoCaml") in
+    while true do
+      Thread.delay 0.5;
+      let s = cb_Dr#text in
+	(match s with 
+	     Some s -> 
+	       (get_current_view()).view#buffer#insert (s^"\n")
+	   | None -> ()
+	);
+	(* cb_Dr#clear does not work so i use : *)
+	cb_Dr#set_text "" 
+    done
+
+
 let start () = 
   let files = Coq.init () in
   ignore_break ();
@@ -3382,9 +3400,10 @@ let start () =
   Command_windows.main ();
   Blaster_window.main 9;
   main files;
+  ignore (Thread.create check_for_drgeocaml_input ()); 
   while true do 
     try 
-      GtkThread.main ()
+      GtkThread.main ()	
     with
       | Sys.Break -> prerr_endline "Interrupted." ; flush stderr
       | e -> 
