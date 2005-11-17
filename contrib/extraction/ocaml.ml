@@ -264,7 +264,6 @@ let rec pp_expr par env args =
 	let tuple = pp_tuple (pp_expr true env []) args' in 
 	pp_par par (pp_global r ++ spc () ++ tuple)
     | MLcase (i, t, pv) ->
-	let r,_,_ = pv.(0) in 
 	let expr = if i = Coinductive then 
 	  (str "Lazy.force" ++ spc () ++ pp_expr true env [] t)
 	else 
@@ -480,7 +479,7 @@ let pp_mind kn i =
 let pp_decl mpl = 
   local_mpl := mpl; 
   function
-    | Dind (kn,i) as d -> pp_mind kn i
+    | Dind (kn,i) -> pp_mind kn i
     | Dtype (r, l, t) ->
 	if is_inline_custom r then failwith "empty phrase"
 	else 

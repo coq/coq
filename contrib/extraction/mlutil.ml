@@ -256,7 +256,7 @@ type abbrev_map = global_reference -> ml_type option
 let type_expand env t = 
   let rec expand = function
     | Tmeta {contents = Some t} -> expand t
-    | Tglob (r,l) as t ->    
+    | Tglob (r,l) ->    
 	(match env r with 
 	   | Some mlt -> expand (type_subst_list l mlt) 
 	   | None -> Tglob (r, List.map expand l))
@@ -378,7 +378,7 @@ let ast_iter f = function
   | MLapp (a,l) -> f a; List.iter f l
   | MLcons (_,c,l) -> List.iter f l
   | MLmagic a -> f a
-  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLaxiom as a -> ()
+  | MLrel _ | MLglob _ | MLexn _ | MLdummy | MLaxiom  -> ()
 
 (*S Operations concerning De Bruijn indices. *)
 

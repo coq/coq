@@ -310,7 +310,6 @@ module StdParams = struct
 	(*i TODO: clash possible i*)
 	list_firstn ((mp_length mp)-(mp_length pref)) ls
       with Not_found -> (* [mp] is othogonal with every element of [mp]. *)
-	let base = base_mp mp in 
 	if !modular && (at_toplevel mp) 
 	then snd (list_sep_last ls)
 	else ls

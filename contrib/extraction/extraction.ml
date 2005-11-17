@@ -230,7 +230,7 @@ let rec extract_type env db j c args =
 		      (* We try to reduce. *)
 		      let newc = applist (Declarations.force lbody, args) in 
 		      extract_type env db j newc []))
-    | Ind ((kn,i) as ip) ->
+    | Ind (kn,i) ->
 	let s = (extract_ind env kn).ind_packets.(i).ip_sign in  
 	extract_type_app env db (IndRef (kn,i),s) args
     | Case _ | Fix _ | CoFix _ -> Tunknown
@@ -676,7 +676,6 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
       end 
     else 
       let mi = extract_ind env kn in 
-      let params_nb = mi.ind_nparams in 
       let oi = mi.ind_packets.(i) in 
       let metas = Array.init (List.length oi.ip_vars) new_meta in 
       (* The extraction of the head. *)
