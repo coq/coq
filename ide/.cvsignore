@@ -12,3 +12,4 @@ config_parser.mli
 config_parser.ml
 utf8_convert.ml
 *.v8
+undo.mli
