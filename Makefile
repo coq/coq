@@ -68,8 +68,8 @@ LOCALINCLUDES=-I config -I tools -I tools/coqdoc \
               -I interp -I toplevel -I parsing -I ide/utils \
 	      -I ide -I translate \
               -I contrib/omega -I contrib/romega \
-	      -I contrib/ring -I contrib/dp -I contrib/xml \
-	      -I contrib/extraction \
+	      -I contrib/ring -I contrib/dp -I contrib/setoid_ring \
+              -I contrib/xml -I contrib/extraction \
               -I contrib/interface -I contrib/fourier \
 	      -I contrib/jprover -I contrib/cc \
 	      -I contrib/funind -I contrib/first-order \
@@ -231,6 +231,7 @@ ML4FILES +=\
   contrib/omega/g_omega.ml4 \
   contrib/romega/g_romega.ml4 contrib/ring/g_quote.ml4 \
   contrib/ring/g_ring.ml4 contrib/dp/g_dp.ml4 \
+  contrib/setoid_ring/newring.ml4 \
   contrib/field/field.ml4 contrib/fourier/g_fourier.ml4 \
   contrib/extraction/g_extraction.ml4 contrib/xml/xmlentries.ml4
 
@@ -245,6 +246,9 @@ ROMEGACMO=\
 RINGCMO=\
   contrib/ring/quote.cmo contrib/ring/g_quote.cmo \
   contrib/ring/ring.cmo contrib/ring/g_ring.cmo 
+
+NEWRINGCMO=\
+  contrib/setoid_ring/newring.cmo
 
 DPCMO=\
   contrib/dp/dp_simplify.cmo contrib/dp/dp_zenon.cmo contrib/dp/dp_cvcl.cmo \
@@ -319,7 +323,7 @@ ML4FILES += contrib/jprover/jprover.ml4 contrib/cc/g_congruence.ml4 \
 CONTRIB=$(OMEGACMO) $(ROMEGACMO) $(RINGCMO) $(DPCMO) $(FIELDCMO) \
 	$(FOURIERCMO) $(EXTRACTIONCMO) $(JPROVERCMO) $(XMLCMO) \
 	$(CCCMO) $(FUNINDCMO) $(FOCMO) $(SUBTACCMO) $(RTAUTOCMO) \
-        $(RECDEFCMO)
+        $(RECDEFCMO) $(NEWRINGCMO)
 
 CMA=$(CLIBS) $(CAMLP4OBJS)
 CMXA=$(CMA:.cma=.cmxa)
@@ -997,6 +1001,11 @@ RINGVO=\
  contrib/ring/Quote.vo		contrib/ring/Setoid_ring_normalize.vo \
  contrib/ring/Setoid_ring.vo	contrib/ring/Setoid_ring_theory.vo
 
+NEWRINGVO=\
+ contrib/setoid_ring/BinList.vo   contrib/setoid_ring/Ring_th.vo \
+ contrib/setoid_ring/Pol.vo       contrib/setoid_ring/Ring_tac.vo \
+ contrib/setoid_ring/ZRing_th.vo
+
 FIELDVO=\
  contrib/field/Field_Compl.vo     contrib/field/Field_Theory.vo \
  contrib/field/Field_Tactic.vo    contrib/field/Field.vo
@@ -1022,13 +1031,14 @@ RTAUTOVO = \
 
 CONTRIBVO = $(OMEGAVO) $(ROMEGAVO) $(RINGVO) $(FIELDVO) $(XMLVO) \
 	    $(FOURIERVO) $(JPROVERVO) $(CCVO) $(FUNINDVO) $(SUBTACVO) \
-	    $(RTAUTOVO) $(RECDEFVO)
+	    $(RTAUTOVO) $(RECDEFVO) $(NEWRINGVO)
 
 $(CONTRIBVO): states/initial.coq
 
 contrib: $(CONTRIBVO) $(CONTRIBCMO)
 omega: $(OMEGAVO) $(OMEGACMO) $(ROMEGAVO) $(ROMEGACMO)
 ring: $(RINGVO) $(RINGCMO)
+setoid_ring: $(NEWRINGVO) $(NEWRINGCMO)
 dp: $(DPCMO)
 xml: $(XMLVO) $(XMLCMO)
 extraction: $(EXTRACTIONCMO)
@@ -1406,8 +1416,7 @@ GRAMMARNEEDEDCMO=\
   proofs/tacexpr.cmo \
   parsing/coqast.cmo parsing/ast.cmo \
   parsing/ast.cmo parsing/lexer.cmo parsing/q_util.cmo parsing/extend.cmo \
-  toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_coqast.cmo \
-  parsing/egrammar.cmo
+  toplevel/vernacexpr.cmo parsing/pcoq.cmo parsing/q_coqast.cmo
 
 CAMLP4EXTENSIONSCMO=\
   parsing/argextend.cmo parsing/tacextend.cmo parsing/vernacextend.cmo 
@@ -1758,9 +1767,9 @@ devel:
 	$(MAKE) -f dev/Makefile.devel setup-devel
 	$(MAKE) $(DEBUGPRINTERS)
 
-include .depend
-include .depend.coq
-include .depend.coq7
+-include .depend
+-include .depend.coq
+-include .depend.coq7
 
 clean::
 	rm -fr *.v8 syntax/*.v8 ide/*.v8 theories7/*/*.v8 contrib7/*/*.v8
