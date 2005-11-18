@@ -102,7 +102,8 @@ let make_act loc act pil =
     | Some (p, t) :: tl ->
 	<:expr<
           Gramext.action 
-            (fun $lid:p$ -> let _ = in_gen $make_rawwit loc t$ $lid:p$ in $make tl$)
+            (fun $lid:p$ ->
+               let _ = Genarg.in_gen $make_rawwit loc t$ $lid:p$ in $make tl$)
         >> in
   make (List.rev pil)
 
@@ -122,19 +123,21 @@ let declare_tactic_argument for_v8 loc s typ pr f g h rawtyppr globtyppr cl =
 	<:expr< fun e x ->
           out_gen $make_globwit loc typ$
             (Tacinterp.intern_genarg e
-               (in_gen $make_rawwit loc rawtyp$ x)) >>
+               (Genarg.in_gen $make_rawwit loc rawtyp$ x)) >>
     | Some f -> <:expr< $lid:f$>> in
   let interp = match f with
     | None -> 
 	<:expr< fun ist gl x ->
           out_gen $make_wit loc typ$
-            (Tacinterp.interp_genarg ist gl (in_gen $make_globwit loc globtyp$ x)) >>
+            (Tacinterp.interp_genarg ist gl
+               (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
     | Some f -> <:expr< $lid:f$>> in
   let substitute = match h with
     | None -> 
 	<:expr< fun s x ->
           out_gen $make_globwit loc globtyp$
-	    (Tacinterp.subst_genarg s (in_gen $make_globwit loc globtyp$ x)) >>
+	    (Tacinterp.subst_genarg s
+               (Genarg.in_gen $make_globwit loc globtyp$ x)) >>
     | Some f -> <:expr< $lid:f$>> in
   let se = mlexpr_of_string s in
   let wit = <:expr< $lid:"wit_"^s$ >> in
@@ -148,11 +151,11 @@ let declare_tactic_argument for_v8 loc s typ pr f g h rawtyppr globtyppr cl =
       value $lid:s$ = Pcoq.create_generic_entry $se$ $rawwit$;
       Tacinterp.add_interp_genarg $se$
         ((fun e x ->
-          (in_gen $globwit$ ($glob$ e (out_gen $rawwit$ x)))),
+          (Genarg.in_gen $globwit$ ($glob$ e (out_gen $rawwit$ x)))),
         (fun ist gl x ->
-          (in_gen $wit$ ($interp$ ist gl (out_gen $globwit$ x)))),
+          (Genarg.in_gen $wit$ ($interp$ ist gl (out_gen $globwit$ x)))),
         (fun subst x ->
-          (in_gen $globwit$ ($substitute$ subst (out_gen $globwit$ x)))));
+          (Genarg.in_gen $globwit$ ($substitute$ subst (out_gen $globwit$ x)))));
       Pcoq.Gram.extend ($lid:s$ : Pcoq.Gram.Entry.e 'a) None 
         [(None, None, $rules$)];
       Pptactic.declare_extra_genarg_pprule
