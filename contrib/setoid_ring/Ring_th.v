@@ -162,8 +162,8 @@ Section ALMOST_RING.
  
  Section SEMI_RING.
  Variable SReqe : sring_eq_ext radd rmul req.
-   Add Morphism radd : radd_ext1.  exact SReqe.(SRadd_ext). Qed.
-   Add Morphism rmul : rmul_ext1.  exact SReqe.(SRmul_ext). Qed.
+   Add Morphism radd : radd_ext1.  exact (SRadd_ext SReqe). Qed.
+   Add Morphism rmul : rmul_ext1.  exact (SRmul_ext SReqe). Qed.
  Variable SRth : semi_ring_theory 0 1 radd rmul req.
 
  (** Every semi ring can be seen as an almost ring, by taking :
@@ -177,7 +177,7 @@ Section ALMOST_RING.
 
  Lemma SReqe_Reqe : ring_eq_ext radd rmul SRopp req.
  Proof.
-  constructor.  exact SReqe.(SRadd_ext). exact SReqe.(SRmul_ext).
+  constructor.  exact (SRadd_ext SReqe). exact (SRmul_ext SReqe).
   exact SRopp_ext.
  Qed.
 
@@ -230,9 +230,9 @@ Section ALMOST_RING.
  End  SEMI_RING.
  
  Variable Reqe : ring_eq_ext radd rmul ropp req.
-   Add Morphism radd : radd_ext2.  exact Reqe.(Radd_ext). Qed.
-   Add Morphism rmul : rmul_ext2.  exact Reqe.(Rmul_ext). Qed.
-   Add Morphism ropp : ropp_ext2.  exact Reqe.(Ropp_ext). Qed.
+   Add Morphism radd : radd_ext2.  exact (Radd_ext Reqe). Qed.
+   Add Morphism rmul : rmul_ext2.  exact (Rmul_ext Reqe). Qed.
+   Add Morphism ropp : ropp_ext2.  exact (Ropp_ext Reqe). Qed.
  
  Section RING.
  Variable Rth : ring_theory 0 1 radd rmul rsub ropp req.
@@ -241,50 +241,50 @@ Section ALMOST_RING.
  Lemma Rmul_0_l : forall x, 0 * x == 0.
  Proof.
   intro x; setoid_replace (0*x) with ((0+1)*x + -x).
-  rewrite Rth.(Radd_0_l); rewrite Rth.(Rmul_1_l).
-  rewrite Rth.(Ropp_def);sreflexivity.
+  rewrite (Radd_0_l Rth); rewrite (Rmul_1_l Rth).
+  rewrite (Ropp_def Rth);sreflexivity.
 
-  rewrite Rth.(Rdistr_l);rewrite Rth.(Rmul_1_l).
-  rewrite <- Rth.(Radd_assoc); rewrite Rth.(Ropp_def).
-  rewrite Rth.(Radd_sym); rewrite Rth.(Radd_0_l);sreflexivity.
+  rewrite (Rdistr_l Rth);rewrite (Rmul_1_l Rth).
+  rewrite <- (Radd_assoc Rth); rewrite (Ropp_def Rth).
+  rewrite (Radd_sym Rth); rewrite (Radd_0_l Rth);sreflexivity.
  Qed.
 
  Lemma Ropp_mul_l : forall x y, -(x * y) == -x * y.
  Proof.
-  intros x y;rewrite <-(Rth.(Radd_0_l) (- x * y)).
-  rewrite Rth.(Radd_sym).
-  rewrite <-(Rth.(Ropp_def) (x*y)).
-  rewrite Rth.(Radd_assoc).
-  rewrite <- Rth.(Rdistr_l).
-  rewrite (Rth.(Radd_sym) (-x));rewrite Rth.(Ropp_def).
-  rewrite Rmul_0_l;rewrite Rth.(Radd_0_l);sreflexivity.
+  intros x y;rewrite <-(Radd_0_l Rth (- x * y)).
+  rewrite (Radd_sym Rth).
+  rewrite <-(Ropp_def Rth (x*y)).
+  rewrite (Radd_assoc Rth).
+  rewrite <- (Rdistr_l Rth).
+  rewrite (Rth.(Radd_sym) (-x));rewrite (Ropp_def Rth).
+  rewrite Rmul_0_l;rewrite (Radd_0_l Rth);sreflexivity.
  Qed.
  
  Lemma Ropp_add : forall x y, -(x + y) == -x + -y.
  Proof.
-  intros x y;rewrite <- (Rth.(Radd_0_l) (-(x+y))).
-  rewrite <- (Rth.(Ropp_def) x).
-  rewrite <- (Rth.(Radd_0_l) (x + - x + - (x + y))).
-  rewrite <- (Rth.(Ropp_def) y).
-  rewrite (Rth.(Radd_sym) x).
-  rewrite (Rth.(Radd_sym) y).
-  rewrite <- (Rth.(Radd_assoc) (-y)).
-  rewrite <- (Rth.(Radd_assoc) (- x)).
-  rewrite (Rth.(Radd_assoc)  y).
-  rewrite (Rth.(Radd_sym) y).
-  rewrite <- (Rth.(Radd_assoc)  (- x)).
-  rewrite (Rth.(Radd_assoc) y).
-  rewrite (Rth.(Radd_sym) y);rewrite Rth.(Ropp_def).
-  rewrite (Rth.(Radd_sym) (-x) 0);rewrite Rth.(Radd_0_l).
-  apply Rth.(Radd_sym).
+  intros x y;rewrite <- ((Radd_0_l Rth) (-(x+y))).
+  rewrite <- ((Ropp_def Rth) x).
+  rewrite <- ((Radd_0_l Rth) (x + - x + - (x + y))).
+  rewrite <- ((Ropp_def Rth) y).
+  rewrite ((Radd_sym Rth) x).
+  rewrite ((Radd_sym Rth) y).
+  rewrite <- ((Radd_assoc Rth) (-y)).
+  rewrite <- ((Radd_assoc Rth) (- x)).
+  rewrite ((Radd_assoc Rth)  y).
+  rewrite ((Radd_sym Rth) y).
+  rewrite <- ((Radd_assoc Rth)  (- x)).
+  rewrite ((Radd_assoc Rth) y).
+  rewrite ((Radd_sym Rth) y);rewrite (Ropp_def Rth).
+  rewrite ((Radd_sym Rth) (-x) 0);rewrite (Radd_0_l Rth).
+  apply (Radd_sym Rth).
  Qed.
  
  Lemma Ropp_opp : forall x, - -x == x.
  Proof.
   intros x; rewrite <- (Radd_0_l Rth (- -x)).
   rewrite <- (Ropp_def Rth x).
-  rewrite <- Rth.(Radd_assoc); rewrite Rth.(Ropp_def).
-  rewrite (Rth.(Radd_sym) x);apply Rth.(Radd_0_l).
+  rewrite <- (Radd_assoc Rth); rewrite (Ropp_def Rth).
+  rewrite ((Radd_sym Rth) x);apply (Radd_0_l Rth).
  Qed.
 
  Lemma  Rth_ARth : almost_ring_theory 0 1 radd rmul rsub ropp req.
@@ -304,9 +304,9 @@ Section ALMOST_RING.
  Variable Csth : Setoid_Theory C ceq.
  Variable Ceqe : ring_eq_ext cadd cmul copp ceq.
    Add Setoid C ceq Csth as C_setoid.
-   Add Morphism cadd : cadd_ext.  exact Ceqe.(Radd_ext). Qed.
-   Add Morphism cmul : cmul_ext.  exact Ceqe.(Rmul_ext). Qed.
-   Add Morphism copp : copp_ext.  exact Ceqe.(Ropp_ext). Qed.
+   Add Morphism cadd : cadd_ext.  exact (Radd_ext Ceqe). Qed.
+   Add Morphism cmul : cmul_ext.  exact (Rmul_ext Ceqe). Qed.
+   Add Morphism copp : copp_ext.  exact (Ropp_ext Ceqe). Qed.
  Variable Cth : ring_theory cO cI cadd cmul csub copp ceq.
  Variable Smorph : semi_morph 0 1 radd rmul req cO cI cadd cmul ceqb phi.
  Variable phi_ext : forall x y, ceq x y -> [x] == [y].
@@ -314,20 +314,20 @@ Section ALMOST_RING.
  Lemma Smorph_opp : forall x, [-!x] == -[x].
  Proof.
   intros x;rewrite <-  (Rth.(Radd_0_l) [-!x]).
-  rewrite <- (Rth.(Ropp_def) [x]).
-  rewrite (Rth.(Radd_sym) [x]).
-  rewrite <- Rth.(Radd_assoc).
-  rewrite <- Smorph.(Smorph_add).
-  rewrite (Cth.(Ropp_def)).
-  rewrite Smorph.(Smorph0).
+  rewrite <- ((Ropp_def Rth) [x]).
+  rewrite ((Radd_sym Rth) [x]).
+  rewrite <- (Radd_assoc Rth).
+  rewrite <- (Smorph_add Smorph).
+  rewrite (Ropp_def Cth).
+  rewrite (Smorph0 Smorph).
   rewrite (Radd_sym Rth (-[x])).
-  apply Rth.(Radd_0_l);sreflexivity.
+  apply (Radd_0_l Rth);sreflexivity.
  Qed. 
 
  Lemma Smorph_sub : forall x y, [x -! y] == [x] - [y].
  Proof.
-  intros x y; rewrite Cth.(Rsub_def);rewrite Rth.(Rsub_def).
-  rewrite Smorph.(Smorph_add);rewrite Smorph_opp;sreflexivity.
+  intros x y; rewrite (Rsub_def Cth);rewrite (Rsub_def Rth).
+  rewrite (Smorph_add Smorph);rewrite Smorph_opp;sreflexivity.
  Qed.
 
  Lemma Smorph_morph : ring_morph 0 1 radd rmul rsub ropp req 
@@ -350,23 +350,23 @@ Section ALMOST_RING.
   setoid_replace (x1 - y1) with (x1 + -y1). 
   setoid_replace (x2 - y2) with (x2 + -y2).
   rewrite H;rewrite H0;sreflexivity.
-  apply ARth.(ARsub_def).
-  apply ARth.(ARsub_def).
+  apply (ARsub_def ARth).
+  apply (ARsub_def ARth).
  Qed.
    Add Morphism rsub : rsub_ext.  exact ARsub_ext. Qed.
 
  Ltac mrewrite :=
    repeat first
-     [ rewrite ARth.(ARadd_0_l)
-     | rewrite <- (ARth.(ARadd_sym) 0)
-     | rewrite ARth.(ARmul_1_l)
-     | rewrite <- (ARth.(ARmul_sym) 1)
-     | rewrite ARth.(ARmul_0_l)
-     | rewrite <- (ARth.(ARmul_sym) 0)
-     | rewrite ARth.(ARdistr_l)
+     [ rewrite (ARadd_0_l ARth)
+     | rewrite <- ((ARadd_sym ARth) 0)
+     | rewrite (ARmul_1_l ARth)
+     | rewrite <- ((ARmul_sym ARth) 1)
+     | rewrite (ARmul_0_l ARth)
+     | rewrite <- ((ARmul_sym ARth) 0)
+     | rewrite (ARdistr_l ARth)
      | sreflexivity
      | match goal with
-       | |- context [?z * (?x + ?y)] => rewrite (ARth.(ARmul_sym) z (x+y))
+       | |- context [?z * (?x + ?y)] => rewrite ((ARmul_sym ARth) z (x+y))
        end].
  
  Lemma ARadd_0_r : forall x, (x + 0) == x.
@@ -392,31 +392,31 @@ Section ALMOST_RING.
 
  Lemma ARadd_assoc2 : forall x y z, (y + x) + z == (y + z) + x.
  Proof.
-  intros; repeat rewrite <- ARth.(ARadd_assoc);
-   rewrite (ARth.(ARadd_sym) x); sreflexivity.
+  intros; repeat rewrite <- (ARadd_assoc ARth);
+   rewrite ((ARadd_sym ARth) x); sreflexivity.
  Qed.
 
  Lemma ARmul_assoc1 : forall x y z, (x * y) * z == (y * z) * x.
  Proof.
-  intros;rewrite <-(ARth.(ARmul_assoc) x).
-  rewrite (ARth.(ARmul_sym) x);sreflexivity.
+  intros;rewrite <-((ARmul_assoc ARth) x).
+  rewrite ((ARmul_sym ARth) x);sreflexivity.
  Qed.
  
  Lemma ARmul_assoc2 : forall x y z, (y * x) * z == (y * z) * x.
  Proof.
-  intros; repeat rewrite <- ARth.(ARmul_assoc);
-   rewrite (ARth.(ARmul_sym) x); sreflexivity.
+  intros; repeat rewrite <- (ARmul_assoc ARth);
+   rewrite ((ARmul_sym ARth) x); sreflexivity.
  Qed.
 
  Lemma ARopp_mul_r : forall x y,  - (x * y) == x * -y.
  Proof.
-  intros;rewrite (ARth.(ARmul_sym) x y);
-   rewrite ARth.(ARopp_mul_l); apply ARth.(ARmul_sym).
+  intros;rewrite ((ARmul_sym ARth) x y);
+   rewrite (ARopp_mul_l ARth); apply (ARmul_sym ARth).
  Qed.
 
  Lemma ARopp_zero : -0 == 0.
  Proof.
-  rewrite <- (ARmul_0_r 0); rewrite ARth.(ARopp_mul_l).
+  rewrite <- (ARmul_0_r 0); rewrite (ARopp_mul_l ARth).
   repeat rewrite ARmul_0_r; sreflexivity.
  Qed.
 
@@ -429,19 +429,19 @@ Ltac gen_srewrite O I add mul sub opp eq Rsth Reqe ARth :=
   repeat first
      [ gen_reflexivity Rsth
      | progress rewrite (ARopp_zero Rsth Reqe ARth)
-     | rewrite ARth.(ARadd_0_l)
+     | rewrite (ARadd_0_l ARth)
      | rewrite (ARadd_0_r Rsth ARth)
-     | rewrite ARth.(ARmul_1_l)
+     | rewrite (ARmul_1_l ARth)
      | rewrite (ARmul_1_r Rsth ARth)
-     | rewrite ARth.(ARmul_0_l)
+     | rewrite (ARmul_0_l ARth)
      | rewrite (ARmul_0_r Rsth ARth)
-     | rewrite ARth.(ARdistr_l)
+     | rewrite (ARdistr_l ARth)
      | rewrite (ARdistr_r Rsth Reqe ARth)
-     | rewrite ARth.(ARadd_assoc)
-     | rewrite ARth.(ARmul_assoc)
-     | progress rewrite ARth.(ARopp_add)
-     | progress rewrite ARth.(ARsub_def)
-     | progress rewrite <- ARth.(ARopp_mul_l)
+     | rewrite (ARadd_assoc ARth)
+     | rewrite (ARmul_assoc ARth)
+     | progress rewrite (ARopp_add ARth)
+     | progress rewrite (ARsub_def ARth)
+     | progress rewrite <- (ARopp_mul_l ARth)
      | progress rewrite <- (ARopp_mul_r Rsth Reqe ARth) ].
 
 Ltac gen_add_push add Rsth Reqe ARth x :=

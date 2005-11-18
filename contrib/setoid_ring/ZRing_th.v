@@ -44,9 +44,9 @@ Section ZMORPHISM.
      Add Setoid R req Rsth as R_setoid3.
      Ltac rrefl := gen_reflexivity Rsth.
  Variable Reqe : ring_eq_ext radd rmul ropp req.
-   Add Morphism radd : radd_ext3.  exact Reqe.(Radd_ext). Qed.
-   Add Morphism rmul : rmul_ext3.  exact Reqe.(Rmul_ext). Qed.
-   Add Morphism ropp : ropp_ext3.  exact Reqe.(Ropp_ext). Qed.
+   Add Morphism radd : radd_ext3.  exact (Radd_ext Reqe). Qed.
+   Add Morphism rmul : rmul_ext3.  exact (Rmul_ext Reqe). Qed.
+   Add Morphism ropp : ropp_ext3.  exact (Ropp_ext Reqe). Qed.
 
  Fixpoint gen_phiPOS1 (p:positive) : R :=
   match p with
@@ -162,15 +162,15 @@ Section ZMORPHISM.
   replace Eq with (CompOpp Eq);[intro H1;simpl|trivial].
   rewrite <- Pcompare_antisym in H1.
   destruct ((x ?= y)%positive Eq).
-  rewrite H;trivial. rewrite Rth.(Ropp_def);rrefl.
+  rewrite H;trivial. rewrite (Ropp_def Rth);rrefl.
   destruct H1 as [h [Heq1 [Heq2 Hor]]];trivial.
   unfold Pminus; rewrite Heq1;rewrite <- Heq2.
   rewrite (ARgen_phiPOS_add ARth);simpl;norm.
-  rewrite Rth.(Ropp_def);norm.
+  rewrite (Ropp_def Rth);norm.
   destruct H0 as [h [Heq1 [Heq2 Hor]]];trivial.
   unfold Pminus; rewrite Heq1;rewrite <- Heq2.
   rewrite (ARgen_phiPOS_add ARth);simpl;norm.
-  add_push (gen_phiPOS1 h);rewrite Rth.(Ropp_def); norm.
+  add_push (gen_phiPOS1 h);rewrite (Ropp_def Rth); norm.
  Qed.
 
  Lemma match_compOpp : forall x (B:Type) (be bl bg:B),
@@ -187,7 +187,7 @@ Section ZMORPHISM.
   replace Eq with (CompOpp Eq);trivial.
   rewrite <- Pcompare_antisym;simpl.
   rewrite match_compOpp.    
-  rewrite Rth.(Radd_sym).
+  rewrite (Radd_sym Rth).
   apply gen_phiZ1_add_pos_neg.
   rewrite (ARgen_phiPOS_add ARth); norm.
  Qed.
@@ -274,9 +274,9 @@ Section NMORPHISM.
  Let rsub := (@SRsub R radd).
   Notation "x - y " := (rsub x y).  Notation "- x" := (ropp x).
   Notation "x == y" := (req x y).
-   Add Morphism radd : radd_ext4.  exact Reqe.(Radd_ext). Qed.
-   Add Morphism rmul : rmul_ext4.  exact Reqe.(Rmul_ext). Qed.
-   Add Morphism ropp : ropp_ext4.  exact Reqe.(Ropp_ext). Qed.
+   Add Morphism radd : radd_ext4.  exact (Radd_ext Reqe). Qed.
+   Add Morphism rmul : rmul_ext4.  exact (Rmul_ext Reqe). Qed.
+   Add Morphism ropp : ropp_ext4.  exact (Ropp_ext Reqe). Qed.
    Add Morphism rsub : rsub_ext5.  exact (ARsub_ext Rsth Reqe ARth). Qed.
    Ltac norm := gen_srewrite 0 1 radd rmul rsub ropp req Rsth Reqe ARth.
   

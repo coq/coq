@@ -155,8 +155,8 @@ val fterm_of : fconstr -> fterm
 val term_of_fconstr : fconstr -> constr
 val destFLambda :
   (fconstr subs -> constr -> fconstr) -> fconstr -> name * fconstr * fconstr
-(* prevents a term from being evaluated *)
-val set_norm : fconstr -> unit
+(* mk_atom: prevents a term from being evaluated *)
+val mk_atom : constr -> fconstr
 
 (* Global and local constant cache *)
 type clos_infos

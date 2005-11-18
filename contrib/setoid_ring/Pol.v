@@ -40,9 +40,9 @@ Section MakeRingPol.
  (* Usefull tactics *)		  
   Add Setoid R req Rsth as R_set1.
  Ltac rrefl := gen_reflexivity Rsth.
-  Add Morphism radd : radd_ext.  exact Reqe.(Radd_ext). Qed.
-  Add Morphism rmul : rmul_ext.  exact Reqe.(Rmul_ext). Qed.
-  Add Morphism ropp : ropp_ext.  exact Reqe.(Ropp_ext). Qed.
+  Add Morphism radd : radd_ext.  exact (Radd_ext Reqe). Qed.
+  Add Morphism rmul : rmul_ext.  exact (Rmul_ext Reqe). Qed.
+  Add Morphism ropp : ropp_ext.  exact (Ropp_ext Reqe). Qed.
   Add Morphism rsub : rsub_ext. exact (ARsub_ext Rsth Reqe ARth). Qed.
  Ltac rsimpl := gen_srewrite 0 1 radd rmul rsub ropp req Rsth Reqe ARth.
  Ltac add_push := gen_add_push radd Rsth Reqe ARth.
@@ -388,7 +388,7 @@ Section MakeRingPol.
     (P ?== P') = true -> forall l, P@l == P'@ l.
  Proof.
   induction P;destruct P';simpl;intros;try discriminate;trivial.
-  apply CRmorph.(morph_eq);trivial.
+  apply (morph_eq CRmorph);trivial.
   assert (H1 := Pcompare_Eq_eq p p0); destruct ((p ?= p0)%positive Eq);
    try discriminate H.
   rewrite (IHP P' H); rewrite H1;trivial;rrefl.
@@ -403,12 +403,12 @@ Section MakeRingPol.
 
  Lemma Pphi0 : forall l, P0@l == 0.
  Proof.
-  intros;simpl;apply CRmorph.(morph0).
+  intros;simpl;apply (morph0 CRmorph).
  Qed.
 
  Lemma Pphi1 : forall l,  P1@l == 1.
  Proof.
-  intros;simpl;apply CRmorph.(morph1).
+  intros;simpl;apply (morph1 CRmorph).
  Qed.
 
  Lemma mkPinj_ok : forall j l P, (mkPinj j P)@l == P@(jump j l).
@@ -422,8 +422,8 @@ Section MakeRingPol.
  Proof.
   intros l P i Q;unfold mkPX.
   destruct P;try (simpl;rrefl).
-  assert (H := @CRmorph.(morph_eq) c cO);destruct (c ?=! cO);simpl;try rrefl.
-  rewrite (H (refl_equal true));rewrite CRmorph.(morph0).
+  assert (H := morph_eq CRmorph c cO);destruct (c ?=! cO);simpl;try rrefl.
+  rewrite (H (refl_equal true));rewrite (morph0 CRmorph).
   rewrite mkPinj_ok;rsimpl;simpl;rrefl.
   assert (H := @Peq_ok P3 P0);destruct (P3 ?== P0);simpl;try rrefl.
   rewrite (H (refl_equal true));trivial.
@@ -437,12 +437,12 @@ Section MakeRingPol.
    | |- context [P1@?l] => rewrite (Pphi1 l)
    | |- context [(mkPinj ?j ?P)@?l] => rewrite (mkPinj_ok j l P)
    | |- context [(mkPX ?P ?i ?Q)@?l] => rewrite (mkPX_ok l P i Q)
-   | |- context [[cO]] => rewrite CRmorph.(morph0)
-   | |- context [[cI]] => rewrite CRmorph.(morph1)
-   | |- context [[?x +! ?y]] => rewrite (CRmorph.(morph_add) x y)
-   | |- context [[?x *! ?y]] => rewrite (CRmorph.(morph_mul) x y)
-   | |- context [[?x -! ?y]] => rewrite (CRmorph.(morph_sub) x y)
-   | |- context [[-! ?x]] => rewrite (CRmorph.(morph_opp) x)
+   | |- context [[cO]] => rewrite (morph0 CRmorph)
+   | |- context [[cI]] => rewrite (morph1 CRmorph)
+   | |- context [[?x +! ?y]] => rewrite ((morph_add CRmorph) x y)
+   | |- context [[?x *! ?y]] => rewrite ((morph_mul CRmorph) x y)
+   | |- context [[?x -! ?y]] => rewrite ((morph_sub CRmorph) x y)
+   | |- context [[-! ?x]] => rewrite ((morph_opp CRmorph) x)
    end));
   rsimpl; simpl. 
  
@@ -470,9 +470,9 @@ Section MakeRingPol.
  Lemma PmulC_ok : forall c P l, (PmulC P c)@l == P@l * [c].
  Proof.
   intros c P l; unfold PmulC.
-  assert (H:= @CRmorph.(morph_eq) c cO);destruct (c ?=! cO).
+  assert (H:= morph_eq CRmorph c cO);destruct (c ?=! cO).
   rewrite (H (refl_equal true));Esimpl.
-  assert (H1:= @CRmorph.(morph_eq) c cI);destruct (c ?=! cI).
+  assert (H1:= morph_eq CRmorph c cI);destruct (c ?=! cI).
   rewrite (H1 (refl_equal true));Esimpl.
   apply PmulC_aux_ok.
  Qed.
@@ -500,7 +500,7 @@ Section MakeRingPol.
   induction P';simpl;intros;Esimpl2.
   generalize P p l;clear P p l.
   induction P;simpl;intros.
-  Esimpl2;apply ARth.(ARadd_sym).
+  Esimpl2;apply (ARadd_sym ARth).
   assert (H := ZPminus_spec p p0);destruct (ZPminus p p0).
   rewrite H;Esimpl. rewrite IHP';rrefl.
   rewrite H;Esimpl. rewrite IHP';Esimpl.
@@ -529,9 +529,9 @@ Section MakeRingPol.
   add_push (P3 @ (tl l));rrefl.
   assert (forall P k l, 
            (PaddX Padd P'1 k P) @ l == P@l + P'1@l * pow (hd 0 l) k).
-   induction P;simpl;intros;try apply ARth.(ARadd_sym).
-   destruct p2;simpl;try apply ARth.(ARadd_sym).
-   rewrite jump_Pdouble_minus_one;apply ARth.(ARadd_sym).
+   induction P;simpl;intros;try apply (ARadd_sym ARth).
+   destruct p2;simpl;try apply (ARadd_sym ARth).
+   rewrite jump_Pdouble_minus_one;apply (ARadd_sym ARth).
     assert (H1 := ZPminus_spec p2 k);destruct (ZPminus p2 k);Esimpl2.
     rewrite IHP'1;rsimpl; rewrite H1;add_push (P5 @ (tl l0));rrefl.
     rewrite IHP'1;simpl;Esimpl.
@@ -553,7 +553,7 @@ Section MakeRingPol.
   induction P';simpl;intros;Esimpl2;trivial.
   generalize P p l;clear P p l.
   induction P;simpl;intros.
-  Esimpl2;apply ARth.(ARadd_sym).
+  Esimpl2;apply (ARadd_sym ARth).
   assert (H := ZPminus_spec p p0);destruct (ZPminus p p0).
   rewrite H;Esimpl. rewrite IHP';rsimpl. 
   rewrite H;Esimpl. rewrite IHP';Esimpl.
@@ -583,11 +583,11 @@ Section MakeRingPol.
   assert (forall P k l, 
            (PsubX Psub P'1 k P) @ l == P@l + - P'1@l * pow (hd 0 l) k).
    induction P;simpl;intros.
-   rewrite Popp_ok;rsimpl;apply ARth.(ARadd_sym);trivial.
+   rewrite Popp_ok;rsimpl;apply (ARadd_sym ARth);trivial.
    destruct p2;simpl;rewrite Popp_ok;rsimpl.
-   apply ARth.(ARadd_sym);trivial.
-   rewrite jump_Pdouble_minus_one;apply ARth.(ARadd_sym);trivial.
-   apply ARth.(ARadd_sym);trivial.
+   apply (ARadd_sym ARth);trivial.
+   rewrite jump_Pdouble_minus_one;apply (ARadd_sym ARth);trivial.
+   apply (ARadd_sym ARth);trivial.
     assert (H1 := ZPminus_spec p2 k);destruct (ZPminus p2 k);Esimpl2;rsimpl.
     rewrite IHP'1;rsimpl;add_push (P5 @ (tl l0));rewrite H1;rrefl.
     rewrite IHP'1;rewrite H1;rewrite Pplus_comm.
@@ -609,7 +609,7 @@ Section MakeRingPol.
     (PmulI Pmul_aux P' p P) @ l == P @ l * P' @ (jump p l).
  Proof.
   induction P;simpl;intros.
-  Esimpl2;apply ARth.(ARmul_sym).
+  Esimpl2;apply (ARmul_sym ARth).
   assert (H1 := ZPminus_spec p p0);destruct (ZPminus p p0);Esimpl2.
   rewrite H1; rewrite H;rrefl.
   rewrite H1; rewrite H.
@@ -639,9 +639,9 @@ Section MakeRingPol.
  Lemma Pmul_ok : forall P P' l, (P**P')@l == P@l * P'@l.
  Proof.
   destruct P;simpl;intros.
-  Esimpl2;apply ARth.(ARmul_sym).
+  Esimpl2;apply (ARmul_sym ARth).
   rewrite (PmulI_ok P (Pmul_aux_ok P)).
-  apply ARth.(ARmul_sym).
+  apply (ARmul_sym ARth).
   rewrite Padd_ok; Esimpl2.
   rewrite (PmulI_ok P3 (Pmul_aux_ok P3));trivial.
   rewrite Pmul_aux_ok;mul_push (P' @ l).
@@ -714,7 +714,7 @@ Section MakeRingPol.
   | |- context [(?P1 ++ ?P2)@?l] => rewrite (Padd_ok P2 P1 l)
   | |- context [(?P1 -- ?P2)@?l] => rewrite (Psub_ok P2 P1 l)
   | |- context [(norm (PEopp ?pe))@?l] => rewrite (norm_PEopp l pe)
-  end;Esimpl2;try rrefl;try apply ARth.(ARadd_sym).
+  end;Esimpl2;try rrefl;try apply (ARadd_sym ARth).
 
  Lemma norm_ok : forall l pe,  PEeval l pe == (norm pe)@l.
  Proof.
@@ -832,16 +832,16 @@ Section MakeRingPol.
   setoid_replace (pow x p * (pow x p * r) ) 
     with (pow x p * pow x p * r);Esimpl.
   unfold rev;simpl. repeat rewrite mkmult_rev_append;simpl.
-  rewrite ARth.(ARmul_sym);rrefl.
+  rewrite (ARmul_sym ARth);rrefl.
  Qed.
 
  Lemma Pphi_add_mult_dev : forall P rP fv lm, 
     rP + P@fv * mkmult1 (rev lm) == add_mult_dev rP P fv lm.
  Proof.
   induction P;simpl;intros.
-  assert (H := CRmorph.(morph_eq) c cI).
+  assert (H := (morph_eq CRmorph) c cI).
    destruct (c ?=! cI).
-    rewrite (H (refl_equal true));rewrite CRmorph.(morph1);Esimpl.
+    rewrite (H (refl_equal true));rewrite (morph1 CRmorph);Esimpl.
     destruct (rev lm);Esimpl;rrefl.
     rewrite mkmult1_mkmult;rrefl.
    apply IHP.
@@ -868,9 +868,9 @@ Section MakeRingPol.
 	 P@fv * mkmult1 (rev lm) == mult_dev P fv lm.
  Proof.
   induction P;simpl;intros.
-   assert (H := CRmorph.(morph_eq) c cI).
+   assert (H := (morph_eq CRmorph) c cI).
    destruct (c ?=! cI).
-    rewrite (H (refl_equal true));rewrite CRmorph.(morph1);Esimpl.
+    rewrite (H (refl_equal true));rewrite (morph1 CRmorph);Esimpl.
     apply  mkmult1_mkmult.
    apply IHP.
    replace (match P3 with

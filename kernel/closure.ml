@@ -532,6 +532,8 @@ let fterm_of v = v.term
 let set_norm v = v.norm <- Norm
 let is_val v = v.norm = Norm
 
+let mk_atom c = {norm=Norm;term=FAtom c}
+
 (* Could issue a warning if no is still Red, pointing out that we loose
    sharing. *)
 let update v1 (no,t) =
@@ -546,7 +548,7 @@ let update v1 (no,t) =
    when the lift is 0. *)
 let rec lft_fconstr n ft =
   match ft.term with
-    | (FInd _|FConstruct _|FFlex(ConstKey _|VarKey _)|FAtom _) -> ft
+    | (FInd _|FConstruct _|FFlex(ConstKey _|VarKey _)) -> ft
     | FRel i -> {norm=Norm;term=FRel(i+n)}
     | FLambda(k,tys,f,e) -> {norm=Cstr; term=FLambda(k,tys,f,subs_shft(n,e))}
     | FFix(fx,e) -> {norm=Cstr; term=FFix(fx,subs_shft(n,e))}
@@ -725,11 +727,7 @@ let rec to_constr constr_fun lfts v =
     | FRel i -> mkRel (reloc_rel i lfts)
     | FFlex (RelKey p) -> mkRel (reloc_rel p lfts)
     | FFlex (VarKey x) -> mkVar x
-    | FAtom c ->
-        (match kind_of_term c with
-          | Sort s -> mkSort s
-          | Meta m -> mkMeta m
-          | _ -> assert false)
+    | FAtom c -> exliftn lfts c
     | FCast (a,b) ->
         mkCast (constr_fun lfts a, constr_fun lfts b)
     | FFlex (ConstKey op) -> mkConst op
