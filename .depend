@@ -3452,6 +3452,30 @@ contrib/rtauto/refl_tauto.cmx: lib/util.cmx pretyping/termops.cmx \
     pretyping/retyping.cmx contrib/rtauto/proof_search.cmx lib/pp.cmx \
     kernel/names.cmx library/goptions.cmx lib/explore.cmx pretyping/evd.cmx \
     interp/coqlib.cmx kernel/closure.cmx contrib/rtauto/refl_tauto.cmi 
+contrib/setoid_ring/newring.cmo: toplevel/vernacinterp.cmi lib/util.cmi \
+    pretyping/typing.cmi kernel/term.cmi tactics/tactics.cmi \
+    tactics/tacticals.cmi proofs/tacmach.cmi tactics/tacinterp.cmi \
+    proofs/tacexpr.cmo library/summary.cmi tactics/setoid_replace.cmi \
+    pretyping/retyping.cmi proofs/refiner.cmi pretyping/rawterm.cmi \
+    proofs/proof_type.cmi pretyping/pretyping.cmi parsing/pptactic.cmi \
+    translate/ppconstrnew.cmi lib/pp.cmi parsing/pcoq.cmi lib/options.cmi \
+    kernel/names.cmi kernel/mod_subst.cmi library/libobject.cmi \
+    library/lib.cmi library/global.cmi interp/genarg.cmi parsing/extend.cmi \
+    pretyping/evd.cmi kernel/esubst.cmi kernel/environ.cmi \
+    parsing/egrammar.cmi interp/coqlib.cmi interp/constrintern.cmi \
+    kernel/closure.cmi toplevel/cerrors.cmi 
+contrib/setoid_ring/newring.cmx: toplevel/vernacinterp.cmx lib/util.cmx \
+    pretyping/typing.cmx kernel/term.cmx tactics/tactics.cmx \
+    tactics/tacticals.cmx proofs/tacmach.cmx tactics/tacinterp.cmx \
+    proofs/tacexpr.cmx library/summary.cmx tactics/setoid_replace.cmx \
+    pretyping/retyping.cmx proofs/refiner.cmx pretyping/rawterm.cmx \
+    proofs/proof_type.cmx pretyping/pretyping.cmx parsing/pptactic.cmx \
+    translate/ppconstrnew.cmx lib/pp.cmx parsing/pcoq.cmx lib/options.cmx \
+    kernel/names.cmx kernel/mod_subst.cmx library/libobject.cmx \
+    library/lib.cmx library/global.cmx interp/genarg.cmx parsing/extend.cmx \
+    pretyping/evd.cmx kernel/esubst.cmx kernel/environ.cmx \
+    parsing/egrammar.cmx interp/coqlib.cmx interp/constrintern.cmx \
+    kernel/closure.cmx toplevel/cerrors.cmx 
 contrib/subtac/eterm.cmo: pretyping/termops.cmi kernel/term.cmi \
     tactics/tactics.cmi tactics/tacticals.cmi proofs/tacmach.cmi \
     contrib/subtac/sutils.cmi kernel/reduction.cmi lib/pp.cmi \
@@ -3690,6 +3714,8 @@ contrib/ring/g_ring.cmo: parsing/grammar.cma
 contrib/ring/g_ring.cmx: parsing/grammar.cma
 contrib/dp/g_dp.cmo: parsing/grammar.cma
 contrib/dp/g_dp.cmx: parsing/grammar.cma
+contrib/setoid_ring/newring.cmo: parsing/grammar.cma
+contrib/setoid_ring/newring.cmx: parsing/grammar.cma
 contrib/field/field.cmo: parsing/grammar.cma
 contrib/field/field.cmx: parsing/grammar.cma
 contrib/fourier/g_fourier.cmo: parsing/grammar.cma

@@ -280,3 +280,8 @@ contrib/fourier/Fourier.vo: contrib/fourier/Fourier.v contrib/ring/quote.cmo con
 contrib/rtauto/Bintree.vo: contrib/rtauto/Bintree.v theories/Lists/List.vo theories/NArith/BinPos.vo
 contrib/rtauto/Rtauto.vo: contrib/rtauto/Rtauto.v theories/Lists/List.vo contrib/rtauto/Bintree.vo theories/Bool/Bool.vo theories/NArith/BinPos.vo
 contrib/recdef/Recdef.vo: contrib/recdef/Recdef.v theories/Arith/Arith.vo theories/Arith/Compare_dec.vo theories/Arith/Wf_nat.vo contrib/recdef/recdef.cmo
+contrib/setoid_ring/BinList.vo: contrib/setoid_ring/BinList.v theories/NArith/BinPos.vo
+contrib/setoid_ring/Ring_th.vo: contrib/setoid_ring/Ring_th.v theories/Setoids/Setoid.vo
+contrib/setoid_ring/Pol.vo: contrib/setoid_ring/Pol.v theories/Setoids/Setoid.vo contrib/setoid_ring/BinList.vo theories/NArith/BinPos.vo theories/ZArith/BinInt.vo contrib/setoid_ring/Ring_th.vo
+contrib/setoid_ring/Ring_tac.vo: contrib/setoid_ring/Ring_tac.v theories/Setoids/Setoid.vo contrib/setoid_ring/BinList.vo theories/NArith/BinPos.vo contrib/setoid_ring/Pol.vo contrib/setoid_ring/newring.cmo
+contrib/setoid_ring/ZRing_th.vo: contrib/setoid_ring/ZRing_th.v contrib/setoid_ring/Ring_th.vo contrib/setoid_ring/Pol.vo contrib/setoid_ring/Ring_tac.vo theories/ZArith/ZArith_base.vo theories/ZArith/BinInt.vo theories/NArith/BinNat.vo theories/Setoids/Setoid.vo
