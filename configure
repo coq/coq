@@ -369,7 +369,9 @@ if test -x "${CAMLLIB}/lablgtk2" ; then
 	    COQIDE=byte
 	fi
 	if grep "class view " "${CAMLLIB}/lablgtk2/gText.mli" | grep -q "\[>" ; then
-	    LABLGTKCAMLP4FLAG=-DLABLGTKGE26
+	    LABLGTKGE26=yes;
+        else
+	    LABLGTKGE26=no
 	fi;
     else
         echo "LablGtk2 found but too old: CoqIde will not be available"
@@ -523,7 +525,7 @@ sed -e "s|LOCALINSTALLATION|$local|" \
     -e "s|CAMLP4BINDIRECTORY|$CAMLP4BIN|" \
     -e "s|CAMLP4LIBDIRECTORY|$CAMLP4LIB|" \
     -e "s|CAMLP4TOOL|$camlp4o|" \
-    -e "s|CAMLP4COMPATFLAGS|$CAMLP4COMPAT $LABLGTKCAMLP4FLAG|" \
+    -e "s|CAMLP4COMPATFLAGS|$CAMLP4COMPAT|" \
     -e "s|COQDEBUGFLAG|$coq_debug_flag|" \
     -e "s|COQPROFILEFLAG|$coq_profile_flag|" \
     -e "s|BESTCOMPILER|$best_compiler|" \
@@ -555,6 +557,20 @@ if test "$coq_debug_flag" = "-g" ; then
       $COQTOP/dev/ocamldebug-v7.template > $COQTOP/dev/ocamldebug-v7
   chmod a-w,a+x $COQTOP/dev/ocamldebug-v7
 fi
+
+##################################################
+# Fixing lablgtk types
+####################################################
+
+if [ "$LABLGTKGE26" = "yes" ] ; then
+  cp -f ide/undo_lablgtk_ge26.mli ide/undo.mli;
+else
+  cp -f ide/undo_lablgtk_lt26.mli ide/undo.mli
+fi
+
+##################################################
+# The end
+####################################################
 
 echo "If anything in the above is wrong, please restart './configure'"
 echo
