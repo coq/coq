@@ -357,6 +357,11 @@ if test -x "${CAMLLIB}/lablgtk2" ; then
         else
             echo "LablGtk2 found, no native threads: bytecode CoqIde will be available"
 	    COQIDE=byte
+	fi
+	if grep "class view " "${CAMLLIB}/lablgtk2/gText.mli" | grep -q "\[>" ; then
+	    LABLGTKGE26=yes;
+        else
+	    LABLGTKGE26=no
 	fi;
     else
         echo "LablGtk2 found but too old: CoqIde will not be available"
@@ -549,6 +554,20 @@ fi
 if [ ! -f $COQTOP/dev/ocamldebug-v7 ] ; then
   ln -s `basename $OCAMLDEBUGCOQ` $COQTOP/dev/ocamldebug-v7
 fi
+
+##################################################
+# Fixing lablgtk types
+####################################################
+
+if [ "$LABLGTKGE26" = "yes" ] ; then
+  cp -f ide/undo_lablgtk_ge26.mli ide/undo.mli;
+else
+  cp -f ide/undo_lablgtk_lt26.mli ide/undo.mli
+fi
+
+##################################################
+# The end
+####################################################
 
 echo "If anything in the above is wrong, please restart './configure'"
 echo

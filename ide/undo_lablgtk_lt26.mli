@@ -10,7 +10,7 @@
 
 (* An undoable view class *)
 
-class undoable_view : [>Gtk.text_view] Gtk.obj ->
+class undoable_view : Gtk.text_view Gtk.obj ->
 object
   inherit GText.view
   method undo : bool
