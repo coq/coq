@@ -651,13 +651,13 @@ let merge_impargs l args =
       | _ -> a::l)
     l args 
 
-let check_projection isproj r = 
+let check_projection isproj nargs r = 
   match (r,isproj) with
-  | RRef (loc, ref), Some nth ->
+  | RRef (loc, ref), Some _ ->
       (try
 	let n = Recordops.find_projection_nparams ref + 1 in
-	if nth < n then 
-	  user_err_loc (loc,"",str "Projection has not enough parameters");
+	if nargs <> n then
+	  user_err_loc (loc,"",str "Projection has not the right number of explicit parameters");
       with Not_found -> 
 	user_err_loc
 	(loc,"",pr_global_env Idset.empty ref ++ str " is not a registered projection"))
@@ -862,7 +862,7 @@ let internalise sigma env allow_soapp lvar c =
 	intern (ids,None,find_delimiters_scope loc key::scopes) e
     | CAppExpl (loc, (isproj,ref), args) ->
         let (f,_,args_scopes,_) = intern_reference env lvar ref in
-	check_projection isproj f;
+	check_projection isproj (List.length args) f;
 	RApp (loc, f, intern_args env args_scopes args)
     | CApp (loc, (isproj,f), args) ->
         let isproj,f,args = match f with
@@ -879,7 +879,7 @@ let internalise sigma env allow_soapp lvar c =
             | x -> (intern env f,[],[],[]) in
 	let args = 
 	  intern_impargs c env impargs args_scopes (merge_impargs l args) in
-	check_projection isproj c;
+	check_projection isproj (List.length args) c;
 	(match c with 
           (* Now compact "(f args') args" *)
 	  | RApp (loc', f', args') -> RApp (join_loc loc' loc, f',args'@args)
