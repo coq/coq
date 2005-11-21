@@ -1333,7 +1333,8 @@ and extern_symbol_pattern (tmp_scope,scopes as allscopes) vars t = function
                       subst in
 		  insert_pat_delimiters (make_pat_notation loc ntn l) key)
           | SynDefRule kn ->
- 	      CPatAtom (loc,Some (Qualid (loc, shortest_qualid_of_syndef kn)))
+	      let qid = shortest_qualid_of_syndef vars kn in
+ 	      CPatAtom (loc,Some (Qualid (loc, qid)))
       with
 	  No_match -> extern_symbol_pattern allscopes vars t rules
 
@@ -1747,7 +1748,7 @@ and extern_symbol (tmp_scope,scopes as allscopes) vars t = function
                       subst in
 	          insert_delimiters (make_notation loc ntn l) key)
           | SynDefRule kn ->
-              CRef (Qualid (loc, shortest_qualid_of_syndef kn)) in
+              CRef (Qualid (loc, shortest_qualid_of_syndef vars kn)) in
  	if args = [] then e 
 	else
 	  (* TODO: compute scopt for the extra args, in case, head is a ref *)

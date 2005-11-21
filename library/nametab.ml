@@ -472,9 +472,9 @@ let shortest_qualid_of_global ctx ref =
         let sp = Globrevtab.find (TrueGlobal ref) !the_globrevtab in
         SpTab.shortest_qualid ctx sp !the_ccitab
 
-let shortest_qualid_of_syndef kn = 
+let shortest_qualid_of_syndef ctx kn = 
   let sp = sp_of_syntactic_definition kn in
-    SpTab.shortest_qualid Idset.empty sp !the_ccitab
+    SpTab.shortest_qualid ctx sp !the_ccitab
 
 let shortest_qualid_of_module mp = 
   let dir = MPmap.find mp !the_modrevtab in
