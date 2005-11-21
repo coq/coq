@@ -144,7 +144,7 @@ val full_name_module : qualid -> dir_path
 
 val sp_of_syntactic_definition : kernel_name -> section_path
 val shortest_qualid_of_global : Idset.t -> global_reference -> qualid
-val shortest_qualid_of_syndef : kernel_name -> qualid
+val shortest_qualid_of_syndef : Idset.t -> kernel_name -> qualid
 val shortest_qualid_of_tactic : ltac_constant -> qualid
 
 val dir_of_mp : module_path -> dir_path
