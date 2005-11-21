@@ -180,8 +180,10 @@ let print_located_qualid ref =
   let (loc,qid) = qualid_of_reference ref in
   let module N = Nametab in
   let expand = function
-    | TrueGlobal ref -> Term ref, N.shortest_qualid_of_global Idset.empty ref
-    | SyntacticDef kn -> Syntactic kn, N.shortest_qualid_of_syndef kn in
+    | TrueGlobal ref -> 
+	Term ref, N.shortest_qualid_of_global Idset.empty ref
+    | SyntacticDef kn -> 
+	Syntactic kn, N.shortest_qualid_of_syndef Idset.empty kn in
   match List.map expand (N.extended_locate_all qid) with
     | [] -> 
 	let (dir,id) = repr_qualid qid in
@@ -329,7 +331,7 @@ let print_constant_with_infos sp =
 let print_inductive sp = (print_mutual sp)
 
 let print_syntactic_def sep kn =
-  let qid = Nametab.shortest_qualid_of_syndef kn in
+  let qid = Nametab.shortest_qualid_of_syndef Idset.empty kn in
   let c = Syntax_def.search_syntactic_definition dummy_loc kn in 
   (str (if !Options.v7 then "Syntactic Definition " else "Notation ")
    ++ pr_qualid qid ++ str sep ++ 
