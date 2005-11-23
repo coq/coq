@@ -29,6 +29,8 @@ open Safe_typing
 val safe_env : unit -> safe_environment
 val env : unit -> Environ.env
 
+val env_is_empty : unit -> bool
+
 val universes : unit -> universes
 val named_context : unit -> Sign.named_context
 

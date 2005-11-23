@@ -28,6 +28,7 @@ type safe_environment
 val env_of_safe_env : safe_environment -> Environ.env
 
 val empty_environment : safe_environment
+val is_empty : safe_environment -> bool
 
 (* Adding and removing local declarations (Local or Variables) *)
 val push_named_assum :
