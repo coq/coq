@@ -295,7 +295,8 @@ let init is_ide =
       init_load_path ();
       inputstate ();
       engage ();
-      if not !batch_mode then Declaremods.start_library !toplevel_name;
+      if not !batch_mode && Global.env_is_empty() then
+        Declaremods.start_library !toplevel_name;
       init_library_roots ();
       load_vernac_obj ();
       require ();
