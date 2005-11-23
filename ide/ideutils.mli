@@ -9,6 +9,11 @@
 (*i $Id$ i*)
 
 val async : ('a -> unit) -> 'a -> unit
+val sync  : ('a -> 'b) -> 'a -> 'b
+
+(* avoid running two instances of a function concurrently *)
+val mutex : string -> ('a -> unit) -> 'a -> unit
+
 val browse : (string -> unit) -> string -> unit
 val browse_keyword : (string -> unit) -> string -> unit
 val byte_offset_to_char_offset : string -> int -> int
@@ -31,7 +36,6 @@ val prerr_endline : string -> unit
 val prerr_string : string -> unit
 val print_id : 'a -> unit
 
-val process_pending : unit -> unit
 val read_stdout : unit -> string
 val revert_timer : GMain.Timeout.id option ref
 val auto_save_timer : GMain.Timeout.id option ref
@@ -45,6 +49,8 @@ val stock_to_widget :  ?size:Gtk.Tags.icon_size -> GtkStock.id -> GObj.widget
 
 open Format
 val print_list : (formatter -> 'a -> unit) -> formatter -> 'a list -> unit
+
+val run_command : (string -> unit) -> string -> Unix.process_status*string
 
 
 val prime : Glib.unichar

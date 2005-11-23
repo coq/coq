@@ -32,7 +32,12 @@ let prerr_endline s =
 let prerr_string s =
   if !debug then (prerr_string s;flush stderr)
 
-let lib_ide = Filename.concat Coq_config.coqlib "ide"
+let lib_ide =
+  let coqlib =
+    System.getenv_else "COQLIB"
+      (if Coq_config.local || !Options.boot then Coq_config.coqtop
+       else Coq_config.coqlib) in
+  Filename.concat coqlib "ide"
   
 let get_insert input_buffer = input_buffer#get_iter_at_mark `INSERT
 
@@ -55,17 +60,6 @@ let byte_offset_to_char_offset s byte_offset =
     done;
     byte_offset - !count_delta
   end
-
-let process_pending () =
-  prerr_endline "Pending process";()
-(*  try 
-    while Glib.Main.pending () do 
-      ignore (Glib.Main.iteration false)
-    done
-  with e -> 
-    prerr_endline "Pending problems : expect a crash very soon";
-    raise e
-*)
 
 let print_id id =
   prerr_endline ("GOT sig id :"^(string_of_int (Obj.magic id)))
@@ -210,10 +204,34 @@ let find_tag_stop (tag :GText.tag) (it:GText.iter) =
 let find_tag_limits (tag :GText.tag) (it:GText.iter) = 
  (find_tag_start tag it , find_tag_stop tag it)
 
-(* explanations ?? *)
+(* explanations: Win32 threads won't work if events are produced
+   in a thread different from the thread of the Gtk loop. In this
+   case we must use GtkThread.async to push a callback in the
+   main thread. Beware that the synchronus version may produce
+   deadlocks. *)
 let async = 
-  if Sys.os_type <> "Unix" then GtkThread.async else 
-    (fun x -> x)
+  if Sys.os_type = "Win32" then GtkThread.async else (fun x -> x)
+let sync = 
+  if Sys.os_type = "Win32" then GtkThread.sync else (fun x -> x)
+
+let mutex text f =
+  let m = Mutex.create() in
+  fun x ->
+    if Mutex.try_lock m
+    then 
+      (try
+        prerr_endline ("Got lock on "^text);
+        f x;
+        Mutex.unlock m;
+        prerr_endline ("Released lock on "^text)
+      with e ->
+        Mutex.unlock m;
+        prerr_endline ("Released lock on "^text^" (on error)");
+        raise e)
+    else
+      prerr_endline
+        ("Discarded call for "^text^": computations ongoing")
+
 
 let stock_to_widget ?(size=`DIALOG) s = 
   let img = GMisc.image () 
@@ -225,10 +243,31 @@ let rec print_list print fmt = function
   | [x] -> print fmt x
   | x :: r -> print fmt x; print_list print fmt r
 
+(* TODO: allow to report output as soon as it comes (user-fiendlier
+   for long commands like make...) *)
+let run_command f c =
+  let result = Buffer.create 127 in
+  let cin,cout,cerr = Unix.open_process_full c (Unix.environment ()) in
+  let buff = String.make 127 ' ' in
+  let buffe = String.make 127 ' ' in
+  let n = ref 0 in
+  let ne = ref 0 in
+
+  while n:= input cin buff 0 127 ; ne := input cerr buffe 0 127 ; 
+    !n+ !ne <> 0
+  do 
+    let r = try_convert (String.sub buff 0 !n) in 
+    f r;
+    Buffer.add_string result r;
+    let r = try_convert (String.sub buffe 0 !ne) in 
+    f r;
+    Buffer.add_string result r 
+  done;
+  (Unix.close_process_full (cin,cout,cerr),  Buffer.contents result)
 
 let browse f url =
   let l,r = !current.cmd_browse in
-  let _ = System.run_command try_convert f (l ^ url ^ r) in
+  let (s,res) = run_command f (l ^ url ^ r) in
   ()
 
 let url_for_keyword =

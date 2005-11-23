@@ -68,16 +68,15 @@ let hm2 s =
   let n = String.length s in
   if n > 1 && s.[0] = '.' && s.[1] = '/' then String.sub s 2 (n-2) else s
 
-let getenv_else s dft = try Sys.getenv s with Not_found -> dft
-
 (* Initializes the LoadPath according to COQLIB and Coq_config *)
 let init_load_path () =
   (* developper specific directories to open *)
   let dev = if Coq_config.local then [ "dev" ] else [] in
   let coqlib =
-    if Coq_config.local || !Options.boot then Coq_config.coqtop
-      (* variable COQLIB overrides the default library *)
-    else getenv_else "COQLIB" Coq_config.coqlib in
+    (* variable COQLIB overrides the default library *)
+    getenv_else "COQLIB"
+      (if Coq_config.local || !Options.boot then Coq_config.coqtop
+       else Coq_config.coqlib) in
   (* first user-contrib *)
   let user_contrib = coqlib/"user-contrib" in
   if Sys.file_exists user_contrib then 

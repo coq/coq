@@ -18,7 +18,7 @@ let neg act = match act with
   | Insert (s,i,l) -> Delete (s,i,l)
   | Delete (s,i,l) -> Insert (s,i,l)
 
-class undoable_view (tv:([> Gtk.text_view ] as 'a) Gtk.obj) =
+class undoable_view (tv:[>Gtk.text_view] Gtk.obj) =
   let undo_lock = ref true in 
 object(self)
   inherit GText.view tv as super
@@ -71,7 +71,6 @@ object(self)
 	      (self#buffer#insert_interactive ~iter s) or
 	      (Stack.push act history; false)
       in if r then begin
-	process_pending ();
 	let act = Stack.pop history in
 	Queue.push act redo;
 	Stack.push act nredo
