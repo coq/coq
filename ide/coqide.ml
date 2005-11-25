@@ -1733,7 +1733,7 @@ let main files =
 	    ~title:"CoqIde" ()
   in
 (*
-  let icon_image = Filename.concat lib_ide "coq.ico" in
+  let icon_image = lib_ide_file "coq.ico" in
   let icon = GdkPixbuf.from_file icon_image in
   w#set_icon (Some icon);
 *)
@@ -3219,7 +3219,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
   );
   let about (b:GText.buffer) =
     (try 
-       let image = Filename.concat lib_ide "coq.png" in
+       let image = lib_ide_file "coq.png" in
        let startup_image = GdkPixbuf.from_file image in
        b#insert_pixbuf ~iter:b#start_iter 
 	 ~pixbuf:startup_image;
@@ -3267,7 +3267,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 (*
   ignore (faq_m#connect#activate 
 	    ~callback:(fun () -> 
-			 load (Filename.concat lib_ide "FAQ")));
+			 load (lib_ide_file "FAQ")));
   
 *)
   resize_window := (fun () -> 
@@ -3336,7 +3336,7 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 let start () = 
   let files = Coq.init () in
   ignore_break ();
-  GtkMain.Rc.add_default_file (Filename.concat lib_ide ".coqide-gtk2rc");
+  GtkMain.Rc.add_default_file (lib_ide_file ".coqide-gtk2rc");
   (try 
      GtkMain.Rc.add_default_file (Filename.concat System.home ".coqide-gtk2rc");
   with Not_found -> ());

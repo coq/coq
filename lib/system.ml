@@ -22,6 +22,8 @@ let safe_getenv_def var def =
     flush Pervasives.stdout;
     def
 
+let getenv_else s dft = try Sys.getenv s with Not_found -> dft
+
 let home = (safe_getenv_def "HOME" ".")
 
 let safe_getenv n = safe_getenv_def n ("$"^n)
