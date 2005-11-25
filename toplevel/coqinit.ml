@@ -68,8 +68,6 @@ let hm2 s =
   let n = String.length s in
   if n > 1 && s.[0] = '.' && s.[1] = '/' then String.sub s 2 (n-2) else s
 
-let getenv_else s dft = try Sys.getenv s with Not_found -> dft
-
 (* Initializes the LoadPath according to COQLIB and Coq_config *)
 let init_load_path () =
   (* developper specific directories to open *)

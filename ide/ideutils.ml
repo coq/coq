@@ -32,7 +32,12 @@ let prerr_endline s =
 let prerr_string s =
   if !debug then (prerr_string s;flush stderr)
 
-let lib_ide = Filename.concat Coq_config.coqlib "ide"
+let lib_ide_file f =
+  let coqlib =
+    System.getenv_else "COQLIB"
+      (if Coq_config.local || !Options.boot then Coq_config.coqtop
+       else Coq_config.coqlib) in
+  Filename.concat (Filename.concat coqlib "ide") f
   
 let get_insert input_buffer = input_buffer#get_iter_at_mark `INSERT
 
@@ -259,7 +264,7 @@ let browse f url =
 let url_for_keyword =
   let ht = Hashtbl.create 97 in
   begin try
-    let cin = open_in (Filename.concat lib_ide "index_urls.txt") in
+    let cin = open_in (lib_ide_file "index_urls.txt") in
     try while true do
       let s = input_line cin in
       try 
