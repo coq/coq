@@ -32,12 +32,12 @@ let prerr_endline s =
 let prerr_string s =
   if !debug then (prerr_string s;flush stderr)
 
-let lib_ide =
+let lib_ide_file f =
   let coqlib =
     System.getenv_else "COQLIB"
       (if Coq_config.local || !Options.boot then Coq_config.coqtop
        else Coq_config.coqlib) in
-  Filename.concat coqlib "ide"
+  Filename.concat (Filename.concat coqlib "ide") f
   
 let get_insert input_buffer = input_buffer#get_iter_at_mark `INSERT
 

@@ -29,7 +29,7 @@ val get_insert : < get_iter_at_mark : [> `INSERT] -> 'a; .. > -> 'a
 
 val is_char_start : char -> bool
 
-val lib_ide : string
+val lib_ide_file : string -> string
 val my_stat : string -> Unix.stats option
 
 val prerr_endline : string -> unit
