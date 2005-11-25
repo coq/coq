@@ -3345,7 +3345,7 @@ let rec check_for_drgeocaml_input () =
 let start () = 
   let files = Coq.init () in
   ignore_break ();
-  GtkMain.Rc.add_default_file (Filename.concat lib_ide ".coqide-gtk2rc");
+  GtkMain.Rc.add_default_file (lib_ide_file ".coqide-gtk2rc");
   (try 
      GtkMain.Rc.add_default_file (Filename.concat System.home ".coqide-gtk2rc");
   with Not_found -> ());

@@ -273,7 +273,7 @@ let browse f url =
 let url_for_keyword =
   let ht = Hashtbl.create 97 in
   begin try
-    let cin = open_in (Filename.concat lib_ide "index_urls.txt") in
+    let cin = open_in (lib_ide_file "index_urls.txt") in
     try while true do
       let s = input_line cin in
       try 
