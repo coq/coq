@@ -3330,15 +3330,17 @@ with _ := Induction for _ Sort _.\n",61,10, Some GdkKeysyms._S);
 let rec check_for_drgeocaml_input () = 
   let cb_Dr = GData.clipboard (Gdk.Atom.intern "_DrGeoCaml") in
     while true do
-      Thread.delay 0.5;
+      Thread.delay 0.1;
       let s = cb_Dr#text in
 	(match s with 
 	     Some s -> 
-	       (get_current_view()).view#buffer#insert (s^"\n")
+	       if s <> "Ack" then
+		 (get_current_view()).view#buffer#insert (s^"\n");
+	       cb_Dr#set_text "Ack"
 	   | None -> ()
 	);
 	(* cb_Dr#clear does not work so i use : *)
-	cb_Dr#set_text "" 
+	(* cb_Dr#set_text "Ack" *) 
     done
 
 
