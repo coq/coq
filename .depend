@@ -508,10 +508,10 @@ ide/find_phrase.cmo: ide/ideutils.cmi
 ide/find_phrase.cmx: ide/ideutils.cmx 
 ide/highlight.cmo: ide/ideutils.cmi 
 ide/highlight.cmx: ide/ideutils.cmx 
-ide/ideutils.cmo: ide/utf8_convert.cmo ide/preferences.cmi lib/pp_control.cmi \
-    lib/options.cmi config/coq_config.cmi ide/ideutils.cmi 
-ide/ideutils.cmx: ide/utf8_convert.cmx ide/preferences.cmx lib/pp_control.cmx \
-    lib/options.cmx config/coq_config.cmx ide/ideutils.cmi 
+ide/ideutils.cmo: ide/utf8_convert.cmo lib/system.cmi ide/preferences.cmi \
+    lib/pp_control.cmi lib/options.cmi config/coq_config.cmi ide/ideutils.cmi 
+ide/ideutils.cmx: ide/utf8_convert.cmx lib/system.cmx ide/preferences.cmx \
+    lib/pp_control.cmx lib/options.cmx config/coq_config.cmx ide/ideutils.cmi 
 ide/preferences.cmo: lib/util.cmi lib/system.cmi ide/utils/configwin.cmi \
     ide/config_lexer.cmo ide/preferences.cmi 
 ide/preferences.cmx: lib/util.cmx lib/system.cmx ide/utils/configwin.cmx \
