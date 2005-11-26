@@ -168,18 +168,6 @@ let _ =
       Summary.survive_module = false;
       Summary.survive_section = false }
 
-(* cache for libraries loaded in memory but not necessarily in environment *)
-let compunit_cache = ref LibraryMap.empty
-
-let _ = 
-  Summary.declare_summary "MODULES-CACHE"
-    { Summary.freeze_function = (fun () -> !compunit_cache);
-      Summary.unfreeze_function = (fun cu -> compunit_cache := cu);
-      Summary.init_function = 
-	(fun () -> compunit_cache := LibraryMap.empty);
-      Summary.survive_module = true;
-      Summary.survive_section = true }
-
 (* various requests to the tables *)
 
 let find_library dir =
@@ -193,7 +181,7 @@ let try_find_library dir =
 let library_full_filename dir = (find_library dir).library_filename
 
 let library_is_loaded dir =
-  try let _ = LibraryMap.find dir !libraries_table in true
+  try let _ = find_library dir in true
   with Not_found -> false
 
 let library_is_opened dir = 
@@ -261,7 +249,7 @@ let open_library export explicit_libs m =
 (* open_libraries recursively open a list of libraries but opens only once 
    a library that is re-exported many times *)
 
-let open_libraries export modl = 
+let open_libraries export modl =
   let to_open_list = 
     List.fold_left
       (fun l m ->
@@ -384,6 +372,31 @@ let locate_qualified_library qid =
       (LibInPath, dir, file)
   with Not_found -> raise LibNotFound
 
+let explain_locate_library_error qid = function
+  | LibUnmappedDir ->
+      let prefix, _ = repr_qualid qid in
+      errorlabstrm "load_absolute_library_from"
+      (str "Cannot load " ++ pr_qualid qid ++ str ":" ++ spc () ++ 
+      str "no physical path bound to" ++ spc () ++ pr_dirpath prefix ++ fnl ())
+  | LibNotFound ->
+      errorlabstrm "load_absolute_library_from"
+      (str"Cannot find library " ++ pr_qualid qid ++ str" in loadpath")
+  | e -> raise e
+
+let try_locate_absolute_library dir =
+  try
+    locate_absolute_library dir
+  with e ->
+    explain_locate_library_error (qualid_of_dirpath dir) e
+
+let try_locate_qualified_library (loc,qid) =
+  try
+    let (_,dir,f) = locate_qualified_library qid in
+    dir,f
+  with e -> 
+    explain_locate_library_error qid e
+
+
 (************************************************************************)
 (* Internalise libraries *)
 
@@ -406,55 +419,35 @@ let intern_from_file f =
   close_in ch;
   mk_library md f digest
 
-let rec intern_library (dir, f) =
-  try
-    (* Look if in the current logical environment *)
-    LibraryMap.find dir !libraries_table
+let rec intern_library needed (dir, f) =
+  (* Look if in the current logical environment *)
+  try find_library dir, needed
   with Not_found ->
-  try
-    (* Look if already loaded in cache and consequently its dependencies *)
-    LibraryMap.find dir !compunit_cache
+  (* Look if already listed and consequently its dependencies too *)
+  try List.assoc dir needed, needed
   with Not_found ->
-    (* [dir] is an absolute name which matches [f] which must be in loadpath *)
-    let m = intern_from_file f in
-    if dir <> m.library_name then
-      errorlabstrm "load_physical_library"
-	(str ("The file " ^ f ^ " contains library") ++ spc () ++
-	 pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
-         spc() ++ pr_dirpath dir);
-    intern_and_cache_library dir m
+  (* [dir] is an absolute name which matches [f] which must be in loadpath *)
+  let m = intern_from_file f in
+  if dir <> m.library_name then
+    errorlabstrm "load_physical_library"
+      (str ("The file " ^ f ^ " contains library") ++ spc () ++
+       pr_dirpath m.library_name ++ spc () ++ str "and not library" ++
+       spc() ++ pr_dirpath dir);
+  m, intern_library_deps needed dir m
 
-and intern_and_cache_library dir m =
-  compunit_cache := LibraryMap.add dir m !compunit_cache;
-  try
-    List.iter (intern_mandatory_library dir) m.library_deps;
-    m
-  with e ->
-    compunit_cache := LibraryMap.remove dir !compunit_cache; 
-    raise e
+and intern_library_deps needed dir m =
+  (dir,m)::List.fold_left (intern_mandatory_library dir) needed m.library_deps
 
-and intern_mandatory_library caller (dir,d) =
-  let m = intern_absolute_library_from dir in
+and intern_mandatory_library caller needed (dir,d) =
+  let m,needed = intern_library needed (try_locate_absolute_library dir) in
   if d <> m.library_digest then
     error ("compiled library "^(string_of_dirpath caller)^
 	   " makes inconsistent assumptions over library "
-	   ^(string_of_dirpath dir))
+	   ^(string_of_dirpath dir));
+  needed
 
-and intern_absolute_library_from dir =
-  try
-    intern_library (locate_absolute_library dir)
-  with
-  | LibUnmappedDir ->
-      let prefix, dir = fst (split_dirpath dir), string_of_dirpath dir in
-      errorlabstrm "load_absolute_library_from"
-      (str ("Cannot load "^dir^":") ++ spc () ++ 
-      str "no physical path bound to" ++ spc () ++ pr_dirpath prefix ++ fnl ())
-  | LibNotFound ->
-      errorlabstrm "load_absolute_library_from"
-      (str"Cannot find library " ++ pr_dirpath dir ++ str" in loadpath")
-  | e -> raise e
-
-let rec_intern_library mref = let _ = intern_library mref in ()
+let rec_intern_library needed mref =
+  let _,needed = intern_library needed mref in needed
 
 let check_library_short_name f dir = function
   | Some id when id <> snd (split_dirpath dir) ->
@@ -470,30 +463,14 @@ let rec_intern_by_filename_only id f =
   check_library_short_name f m.library_name id;
   (* We check no other file containing same library is loaded *)
   try
-    let m' = LibraryMap.find m.library_name !libraries_table in
+    let m' = find_library m.library_name in
     Options.if_verbose warning 
       ((string_of_dirpath m.library_name)^" is already loaded from file "^
        m'.library_filename);
-    m.library_name
+    m.library_name, []
   with Not_found ->
-    let m = intern_and_cache_library m.library_name m in
-    m.library_name
-
-let rec_intern_qualified_library (loc,qid) =
-  try
-    let (_,dir,f) = locate_qualified_library qid in
-    rec_intern_library (dir,f);
-    dir
-  with
-  | LibUnmappedDir ->
-      let prefix, id = repr_qualid qid in
-      user_err_loc (loc, "rec_intern_qualified_library",
-        str ("Cannot load "^(string_of_id id)^":") ++ spc () ++ 
-        str "no physical path bound to" ++ spc () ++ pr_dirpath prefix ++
-        fnl ())
-  | LibNotFound ->
-      user_err_loc (loc, "rec_intern_qualified_library",
-        str"Cannot find library " ++ pr_qualid qid ++ str" in loadpath")
+    let needed = intern_library_deps [] m.library_name m in
+    m.library_name, needed
 
 let rec_intern_library_from_file idopt f =
   (* A name is specified, we have to check it contains library id *)
@@ -505,8 +482,11 @@ let rec_intern_library_from_file idopt f =
     operation. It is performed as follows:
 
   preparation phase: (functions require_library* ) the library and its 
-    dependencies are read from to disk to the compunit_cache 
-    (using intern_* )
+    dependencies are read from to disk (using intern_* )
+    [they are read from disk to ensure that at section/module
+     discharging time, the physical library referred to outside the
+     section/module is the one that was used at type-checking time in
+     the section/module]
 
   execution phase: (through add_leaf and cache_require)
     the library is loaded in the environment and Nametab, the objects are 
@@ -520,44 +500,26 @@ let rec_intern_library_from_file idopt f =
 
 type library_reference = dir_path list * bool option
 
-let string_of_library (_,dir,_) = string_of_id (List.hd (repr_dirpath dir))
+let register_library (dir,m) =
+  Declaremods.register_library
+    m.library_name 
+    m.library_compiled 
+    m.library_objects 
+    m.library_digest;
+  register_loaded_library m
 
-let rec load_library dir =
-  try
-    (* Look if loaded in current env (and consequently its dependencies) *)
-    LibraryMap.find dir !libraries_table
-  with Not_found ->
-    (* [dir] is an absolute name matching [f] which must be in loadpath *)
-    let m =
-      try LibraryMap.find dir !compunit_cache
-      with Not_found ->
-        anomaly ((string_of_dirpath dir)^" should be in cache")
-    in
-    List.iter (fun (dir,_) -> ignore (load_library dir)) m.library_deps;
-    Declaremods.register_library
-      m.library_name 
-      m.library_compiled 
-      m.library_objects 
-      m.library_digest;
-    register_loaded_library m;
-    m
+  (* [needed] is the ordered list of libraries not already loaded *)
+let cache_require (_,(needed,modl,export)) =
+  List.iter register_library needed;
+  option_iter (fun exp -> open_libraries exp (List.map find_library modl))
+    export
 
-let cache_require (_,(modl,export)) =
-  let ml = list_map_left load_library modl in
-  begin 
-    match export with
-    | None -> ()
-    | Some export -> open_libraries export ml
-  end;
-  (* To ensure that reset won't pop beyond what the compunit cache knows *)
-  add_frozen_state ()
-
-let load_require  _ (_,(modl,_)) =
-  ignore(list_map_left load_library modl)
+let load_require  _ (_,(needed,modl,_)) =
+  List.iter register_library needed
 
   (* keeps the require marker for closed section replay but removes
      OS dependent fields from .vo files for cross-platform compatibility *)
-let export_require (l,e) = Some (l,e)
+let export_require (_,l,e) = Some ([],l,e)
 
 let discharge_require (_,o) = Some o
 
@@ -578,27 +540,32 @@ let xml_require = ref (fun d -> ())
 let set_xml_require f = xml_require := f
 
 let require_library qidl export =
-  let modrefl = List.map rec_intern_qualified_library qidl in
+  let modrefl = List.map try_locate_qualified_library qidl in
+  let needed = List.rev (List.fold_left rec_intern_library [] modrefl) in
+  let modrefl = List.map fst modrefl in
     if Lib.is_modtype () || Lib.is_module () then begin
-      add_anonymous_leaf (in_require (modrefl,None));
+      add_anonymous_leaf (in_require (needed,modrefl,None));
       option_iter (fun exp ->
 	List.iter (fun dir -> add_anonymous_leaf (in_import(dir,exp))) modrefl)
 	export
     end
     else
-      add_anonymous_leaf (in_require (modrefl,export));
-  if !Options.xml_export then List.iter !xml_require modrefl
+      add_anonymous_leaf (in_require (needed,modrefl,export));
+  if !Options.xml_export then List.iter !xml_require modrefl;
+  add_frozen_state ()
 
 let require_library_from_file idopt file export =
-  let modref = rec_intern_library_from_file idopt file in
-    if Lib.is_modtype () || Lib.is_module () then begin
-      add_anonymous_leaf (in_require ([modref],None));
-      option_iter (fun exp -> add_anonymous_leaf (in_import (modref,exp)))
-	export
-    end
-    else
-      add_anonymous_leaf (in_require ([modref],export));
-    if !Options.xml_export then !xml_require modref
+  let modref,needed = rec_intern_library_from_file idopt file in
+  let needed = List.rev needed in
+  if Lib.is_modtype () || Lib.is_module () then begin
+    add_anonymous_leaf (in_require (needed,[modref],None));
+    option_iter (fun exp -> add_anonymous_leaf (in_import (modref,exp)))
+      export
+  end
+  else
+    add_anonymous_leaf (in_require (needed,[modref],export));
+  if !Options.xml_export then !xml_require modref;
+  add_frozen_state ()
 
 (* the function called by Vernacentries.vernac_import *)
 
@@ -609,7 +576,7 @@ let import_module export (loc,qid) =
 	  if Lib.is_modtype () || Lib.is_module () || not export then
 	    add_anonymous_leaf (in_import (dir, export))
 	  else
-	    add_anonymous_leaf (in_require ([dir], Some export))
+	    add_anonymous_leaf (in_require ([],[dir], Some export))
       | mp ->
 	  import_module export mp
   with
