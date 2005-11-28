@@ -1461,19 +1461,21 @@ pretyping/evd.cmx: lib/util.cmx kernel/univ.cmx pretyping/termops.cmx \
     library/libnames.cmx library/global.cmx kernel/environ.cmx \
     pretyping/evd.cmi 
 pretyping/indrec.cmo: lib/util.cmi kernel/typeops.cmi kernel/type_errors.cmi \
-    pretyping/termops.cmi kernel/term.cmi kernel/safe_typing.cmi \
-    pretyping/reductionops.cmi kernel/reduction.cmi lib/pp.cmi \
-    lib/options.cmi library/nametab.cmi kernel/names.cmi library/nameops.cmi \
-    library/libnames.cmi pretyping/inductiveops.cmi kernel/inductive.cmi \
-    kernel/indtypes.cmi library/global.cmi kernel/environ.cmi \
-    kernel/entries.cmi kernel/declarations.cmi pretyping/indrec.cmi 
+    pretyping/termops.cmi kernel/term.cmi kernel/sign.cmi \
+    kernel/safe_typing.cmi pretyping/reductionops.cmi kernel/reduction.cmi \
+    lib/pp.cmi lib/options.cmi library/nametab.cmi kernel/names.cmi \
+    library/nameops.cmi library/libnames.cmi pretyping/inductiveops.cmi \
+    kernel/inductive.cmi kernel/indtypes.cmi library/global.cmi \
+    kernel/environ.cmi kernel/entries.cmi kernel/declarations.cmi \
+    pretyping/indrec.cmi 
 pretyping/indrec.cmx: lib/util.cmx kernel/typeops.cmx kernel/type_errors.cmx \
-    pretyping/termops.cmx kernel/term.cmx kernel/safe_typing.cmx \
-    pretyping/reductionops.cmx kernel/reduction.cmx lib/pp.cmx \
-    lib/options.cmx library/nametab.cmx kernel/names.cmx library/nameops.cmx \
-    library/libnames.cmx pretyping/inductiveops.cmx kernel/inductive.cmx \
-    kernel/indtypes.cmx library/global.cmx kernel/environ.cmx \
-    kernel/entries.cmx kernel/declarations.cmx pretyping/indrec.cmi 
+    pretyping/termops.cmx kernel/term.cmx kernel/sign.cmx \
+    kernel/safe_typing.cmx pretyping/reductionops.cmx kernel/reduction.cmx \
+    lib/pp.cmx lib/options.cmx library/nametab.cmx kernel/names.cmx \
+    library/nameops.cmx library/libnames.cmx pretyping/inductiveops.cmx \
+    kernel/inductive.cmx kernel/indtypes.cmx library/global.cmx \
+    kernel/environ.cmx kernel/entries.cmx kernel/declarations.cmx \
+    pretyping/indrec.cmi 
 pretyping/inductiveops.cmo: lib/util.cmi kernel/univ.cmi \
     pretyping/termops.cmi kernel/term.cmi kernel/sign.cmi \
     pretyping/reductionops.cmi kernel/names.cmi kernel/mod_subst.cmi \
