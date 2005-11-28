@@ -26,6 +26,7 @@ open Type_errors
 open Indtypes (* pour les erreurs *)
 open Safe_typing
 open Nametab
+open Sign
 
 let make_prod_dep dep env = if dep then prod_name env else mkProd
 let mkLambda_string s t c = mkLambda (Name (id_of_string s), t, c)
@@ -244,12 +245,24 @@ let make_rec_branch_arg env sigma (nparrec,fvect,decF) f cstr recargs =
   in
   process_constr env 0 f (List.rev cstr.cs_args, recargs)
 
+
+(* Cut a context ctx in 2 parts (ctx1,ctx2) with ctx1 containing k 
+   variables *)
+let context_chop k ctx = 
+  let rec chop_aux acc = function
+    | (0, l2) -> (List.rev acc, l2)
+    | (n, ((_,Some _,_ as h)::t)) -> chop_aux (h::acc) (n, t)
+    | (n, (h::t)) -> chop_aux (h::acc) (pred n, t)
+    | (_, []) -> failwith "context_chop"
+  in chop_aux [] (k,ctx)
+
+
 (* Main function *)
 let mis_make_indrec env sigma listdepkind mib =
   let nparams = mib.mind_nparams in
   let nparrec = mib. mind_nparams_rec in
   let lnonparrec,lnamesparrec = 
-    list_chop (nparams-nparrec) mib.mind_params_ctxt in
+    context_chop (nparams-nparrec) mib.mind_params_ctxt in
   let nrec = List.length listdepkind in
   let depPvec =
     Array.create mib.mind_ntypes (None : (bool * constr) option) in 
@@ -286,10 +299,10 @@ let mis_make_indrec env sigma listdepkind mib =
 	    let depind = build_dependent_inductive env indf in
 	    let deparsign = (Anonymous,None,depind)::arsign in
 	    
-	    let nonrecpar = nparams-nparrec in
-	    let nar = mipi.mind_nrealargs in
-	    let ndepar = nar + 1 in
-	    let dect = nonrecpar+ndepar+nrec+nbconstruct in
+	    let nonrecpar = rel_context_length lnonparrec in
+	    let larsign = rel_context_length deparsign in
+	    let ndepar = larsign - nonrecpar in
+	    let dect = larsign+nrec+nbconstruct in
 
               (* constructors in context of the Cases expr, i.e.
          P1..P_nrec f1..f_nbconstruct F_1..F_nrec a_1..a_nar x:I *)
@@ -301,12 +314,12 @@ let mis_make_indrec env sigma listdepkind mib =
 	      let constrs = get_constructors env indf' in
 	      let fi = rel_vect (dect-i-nctyi) nctyi in
 	      let vecfi = Array.map 
-			    (fun f -> appvect (f,rel_vect ndepar nonrecpar))
+			    (fun f -> appvect (f,extended_rel_vect ndepar lnonparrec))
 			    fi 
 	      in
 	      array_map3
 		(make_rec_branch_arg env sigma 
-		   (nparrec,depPvec,ndepar+nonrecpar))
+		   (nparrec,depPvec,larsign))
                 vecfi constrs (dest_subterms recargsvec.(tyi)) 
 	    in
 
@@ -329,7 +342,7 @@ let mis_make_indrec env sigma listdepkind mib =
 
 	    in
 
-	    (* body of i-th component of the mutual fixpoint *)
+		(* body of i-th component of the mutual fixpoint *)
 	    let deftyi = 
 	      let ci = make_default_case_info env RegularStyle indi in
 	      let concl = applist (mkRel (dect+j+ndepar),pargs) in 
@@ -357,7 +370,7 @@ let mis_make_indrec env sigma listdepkind mib =
 		concl
 		deparsign
 	    in
-	    mrec (i+nctyi) (nar+nonrecpar::ln) (typtyi::ltyp) 
+	    mrec (i+nctyi) (rel_context_nhyps arsign ::ln) (typtyi::ltyp) 
                  (deftyi::ldef) rest
         | [] -> 
 	    let fixn = Array.of_list (List.rev ln) in
@@ -366,7 +379,7 @@ let mis_make_indrec env sigma listdepkind mib =
             let names = Array.create nrec (Name(id_of_string "F")) in
 	    mkFix ((fixn,p),(names,fixtyi,fixdef))
       in 
-      mrec 0 [] [] [] 
+	      mrec 0 [] [] [] 
     in 
     let rec make_branch env i = function 
       | (indi,mibi,mipi,dep,_)::rest ->
@@ -399,6 +412,8 @@ let mis_make_indrec env sigma listdepkind mib =
       | [] -> 
 	  make_branch env 0 listdepkind 
     in 
+
+      (* Body on make_one_rec *)
     let (indi,mibi,mipi,dep,kind) = List.nth listdepkind p in
 
     if mis_is_recursive_subset
@@ -411,6 +426,7 @@ let mis_make_indrec env sigma listdepkind mib =
     else 
       mis_make_case_com (Some dep) env sigma (indi,mibi,mipi) kind 
   in 
+      (* Body of mis_make_indrec *)
   list_tabulate make_one_rec nrec
 
 (**********************************************************************)
@@ -433,6 +449,7 @@ let change_sort_arity sort =
   let rec drec a = match kind_of_term a with
     | Cast (c,t) -> drec c 
     | Prod (n,t,c) -> mkProd (n, t, drec c)
+    | LetIn (n,b,t,c) -> mkLetIn (n,b, t, drec c)
     | Sort _ -> mkSort sort
     | _ -> assert false
   in 

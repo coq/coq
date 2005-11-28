@@ -353,7 +353,8 @@ let array_min nmr a = if nmr = 0 then 0 else
 (* The recursive function that checks positivity and builds the list
    of recursive arguments *)
 let check_positivity_one (env, _,ntypes,_ as ienv) hyps i indlc =
-  let nparams = rel_context_length hyps in
+  let lparams = rel_context_length hyps in
+  let nmr = rel_context_nhyps hyps in
   (* check the inductive types occur positively in [c] *)
   let rec check_pos (env, n, ntypes, ra_env as ienv) nmr c = 
     let x,largs = decompose_app (whd_betadeltaiota env c) in
@@ -453,31 +454,32 @@ let check_positivity_one (env, _,ntypes,_ as ienv) hyps i indlc =
      Array.map
       (fun c ->
         let c = body_of_type c in
-        let sign, rawc = mind_extract_params nparams c in
+        let sign, rawc = mind_extract_params lparams c in
         try
-	  check_constructors ienv true nparams rawc
+	  check_constructors ienv true nmr rawc
         with IllFormedInd err -> 
-	  explain_ind_err (ntypes-i) env nparams c err)
+	  explain_ind_err (ntypes-i) env lparams c err)
       indlc
   in
   let irecargs = Array.map snd irecargs_nmr
-  and nmr' = array_min nparams irecargs_nmr
+  and nmr' = array_min nmr irecargs_nmr
   in (nmr', mk_paths (Mrec i) irecargs)
 
 let check_positivity env_ar params inds =
   let ntypes = Array.length inds in
   let lra_ind =
     List.rev (list_tabulate (fun j -> (Mrec j, Rtree.mk_param j)) ntypes) in
-  let nparams = rel_context_length params in
+  let lparams = rel_context_length params in
+  let nmr = rel_context_nhyps params in
   let check_one i (_,_,_,_,_,lc) =
     let ra_env =
-      list_tabulate (fun _ -> (Norec,mk_norec)) nparams @ lra_ind in
-    let ienv = (env_ar, 1+nparams, ntypes, ra_env) in
+      list_tabulate (fun _ -> (Norec,mk_norec)) lparams @ lra_ind in
+    let ienv = (env_ar, 1+lparams, ntypes, ra_env) in
     check_positivity_one ienv params i lc 
   in
   let irecargs_nmr = Array.mapi check_one inds in 
   let irecargs = Array.map snd irecargs_nmr
-  and nmr' = array_min nparams irecargs_nmr
+  and nmr' = array_min nmr irecargs_nmr
   in (nmr',Rtree.mk_rec irecargs)
 
 

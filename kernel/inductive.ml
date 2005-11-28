@@ -152,11 +152,16 @@ let get_arity mib mip params =
   let arity = mip.mind_nf_arity in
   destArity (full_inductive_instantiate mib params arity)
 
+let rel_list n m = 
+  let rec reln l p = 
+    if p>m then l else reln (mkRel(n+p)::l) (p+1)
+  in 
+  reln [] 1
+
 let build_dependent_inductive ind mib mip params =
-  let arsign,_ = get_arity mib mip params in
   let nrealargs = mip.mind_nrealargs in
   applist 
-    (mkInd ind, (List.map (lift nrealargs) params)@(local_rels arsign))
+    (mkInd ind, (List.map (lift nrealargs) params)@(rel_list 0 nrealargs))
 
 
 (* This exception is local *)
@@ -166,6 +171,7 @@ let is_correct_arity env c pj ind mib mip params =
   let kelim = mip.mind_kelim in
   let arsign,s = get_arity mib mip params in
   let nodep_ar = it_mkProd_or_LetIn (mkSort s) arsign in
+  let nrealargs = mip.mind_nrealargs in
   let rec srec env pt t u =
     let pt' = whd_betadeltaiota env pt in
     let t' = whd_betadeltaiota env t in
@@ -180,7 +186,9 @@ let is_correct_arity env c pj ind mib mip params =
           let ksort = match kind_of_term k with
             | Sort s -> family_of_sort s 
 	    | _ -> raise (LocalArity None) in
-	  let dep_ind = build_dependent_inductive ind mib mip params in
+
+	  let dep_ind = build_dependent_inductive ind mib mip params
+	  in 
           let univ =
             try conv env a1 dep_ind
             with NotConvertible -> raise (LocalArity None) in
