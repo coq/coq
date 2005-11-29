@@ -483,8 +483,9 @@ let pp_decl mpl =
     | Dtype (r, l, t) ->
 	if is_inline_custom r then failwith "empty phrase"
 	else 
+          let pp_r = pp_global r in 
 	  let l = rename_tvars keywords l in 
-	  let ids, def = try 
+          let ids, def = try 
 	    let ids,s = find_type_custom r in 
 	    pp_string_parameters ids, str "=" ++ spc () ++ str s 
 	  with not_found -> 
@@ -492,7 +493,7 @@ let pp_decl mpl =
 	    if t = Taxiom then str "(* AXIOM TO BE REALIZED *)"
 	    else str "=" ++ spc () ++ pp_type false l t
 	  in 
-	  hov 2 (str "type" ++ spc () ++ ids ++ pp_global r ++ 
+	  hov 2 (str "type" ++ spc () ++ ids ++ pp_r ++ 
 		 spc () ++ def)
     | Dterm (r, a, t) -> 
 	if is_inline_custom r then failwith "empty phrase"
