@@ -703,11 +703,11 @@ kernel/sign.cmo: lib/util.cmi kernel/term.cmi kernel/names.cmi \
 kernel/sign.cmx: lib/util.cmx kernel/term.cmx kernel/names.cmx \
     kernel/sign.cmi 
 kernel/subtyping.cmo: lib/util.cmi kernel/univ.cmi kernel/term.cmi \
-    kernel/reduction.cmi kernel/names.cmi kernel/modops.cmi \
+    kernel/reduction.cmi lib/pp.cmi kernel/names.cmi kernel/modops.cmi \
     kernel/inductive.cmi kernel/environ.cmi kernel/declarations.cmi \
     kernel/subtyping.cmi 
 kernel/subtyping.cmx: lib/util.cmx kernel/univ.cmx kernel/term.cmx \
-    kernel/reduction.cmx kernel/names.cmx kernel/modops.cmx \
+    kernel/reduction.cmx lib/pp.cmx kernel/names.cmx kernel/modops.cmx \
     kernel/inductive.cmx kernel/environ.cmx kernel/declarations.cmx \
     kernel/subtyping.cmi 
 kernel/term.cmo: lib/util.cmi kernel/univ.cmi lib/pp.cmi kernel/names.cmi \
@@ -2516,18 +2516,18 @@ contrib/extraction/extract_env.cmx: lib/util.cmx kernel/term.cmx \
     contrib/extraction/extract_env.cmi 
 contrib/extraction/extraction.cmo: lib/util.cmi pretyping/termops.cmi \
     kernel/term.cmi contrib/extraction/table.cmi library/summary.cmi \
-    kernel/sign.cmi pretyping/retyping.cmi pretyping/reductionops.cmi \
-    kernel/reduction.cmi pretyping/recordops.cmi library/nametab.cmi \
-    kernel/names.cmi library/nameops.cmi contrib/extraction/mlutil.cmi \
+    pretyping/retyping.cmi pretyping/reductionops.cmi kernel/reduction.cmi \
+    pretyping/recordops.cmi library/nametab.cmi kernel/names.cmi \
+    library/nameops.cmi contrib/extraction/mlutil.cmi \
     contrib/extraction/miniml.cmi library/libnames.cmi \
     pretyping/inductiveops.cmi kernel/inductive.cmi pretyping/evd.cmi \
     kernel/environ.cmi kernel/declarations.cmi \
     contrib/extraction/extraction.cmi 
 contrib/extraction/extraction.cmx: lib/util.cmx pretyping/termops.cmx \
     kernel/term.cmx contrib/extraction/table.cmx library/summary.cmx \
-    kernel/sign.cmx pretyping/retyping.cmx pretyping/reductionops.cmx \
-    kernel/reduction.cmx pretyping/recordops.cmx library/nametab.cmx \
-    kernel/names.cmx library/nameops.cmx contrib/extraction/mlutil.cmx \
+    pretyping/retyping.cmx pretyping/reductionops.cmx kernel/reduction.cmx \
+    pretyping/recordops.cmx library/nametab.cmx kernel/names.cmx \
+    library/nameops.cmx contrib/extraction/mlutil.cmx \
     contrib/extraction/miniml.cmi library/libnames.cmx \
     pretyping/inductiveops.cmx kernel/inductive.cmx pretyping/evd.cmx \
     kernel/environ.cmx kernel/declarations.cmx \
