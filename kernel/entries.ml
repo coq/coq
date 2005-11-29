@@ -49,6 +49,7 @@ type one_inductive_entry = {
   mind_entry_lc : constr list }
 
 type mutual_inductive_entry = {
+  mind_entry_record : bool;
   mind_entry_finite : bool;
   mind_entry_inds : one_inductive_entry list }
 

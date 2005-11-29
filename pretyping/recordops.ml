@@ -20,14 +20,6 @@ open Libobject
 open Library
 open Classops
 
-let nbimpl = ref 0
-let nbpathc = ref 0
-let nbcoer = ref 0
-let nbstruc = ref 0
-let nbimplstruc = ref 0
-
-let compter = ref false
-
 (*s Une structure S est un type inductif non récursif à un seul
    constructeur (de nom par défaut Build_S) *)
 

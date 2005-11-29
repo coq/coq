@@ -482,7 +482,7 @@ let allowed_sorts env issmall isunit = function
         then logical_sorts else impredicative_sorts
       else logical_sorts
 
-let build_inductive env env_ar finite inds recargs cst =
+let build_inductive env env_ar record finite inds recargs cst =
   let ntypes = Array.length inds in
   (* Compute the set of used section variables *)
   let ids = 
@@ -528,7 +528,8 @@ let build_inductive env env_ar finite inds recargs cst =
     } in
   let packets = array_map2 build_one_packet inds recargs in
   (* Build the mutual inductive *)
-  { mind_ntypes = ntypes;
+  { mind_record = record;
+    mind_ntypes = ntypes;
     mind_finite = finite;
     mind_hyps = hyps;
     mind_packets = packets;
@@ -545,5 +546,6 @@ let check_inductive env mie =
   (* Then check positivity conditions *)
   let recargs = check_positivity env_arities inds in
   (* Build the inductive packets *)
-  build_inductive env env_arities mie.mind_entry_finite inds recargs cst
+  build_inductive env env_arities mie.mind_entry_record mie.mind_entry_finite 
+    inds recargs cst
 

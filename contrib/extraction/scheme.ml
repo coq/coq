@@ -77,7 +77,7 @@ let rec pp_expr env args =
 		    ++ spc () ++ hov 0 (pp_expr env' [] a2)))))
     | MLglob r -> 
 	apply (pp_global r)
-    | MLcons (r,args') ->
+    | MLcons (i,r,args') ->
 	assert (args=[]);
 	let st = 
 	  str "`" ++ 
@@ -87,17 +87,13 @@ let rec pp_expr env args =
 		   (fun () -> spc () ++ str ",") 
 		   (pp_expr env []) args')
 	in 
-	if Refset.mem r !cons_cofix then 
-	  paren (str "delay " ++ st)
-        else st 
-    | MLcase (t, pv) ->
-	let r,_,_ = pv.(0) in 
-	let e = if Refset.mem r !cons_cofix then 
-	  paren (str "force" ++ spc () ++ pp_expr env [] t)
-	else 
-	  pp_expr env [] t 	
-	in apply (v 3 (paren 
-			 (str "match-case " ++ e ++ fnl () ++ pp_pat env pv)))
+	if i = Coinductive then paren (str "delay " ++ st) else st 
+    | MLcase (i,t, pv) ->
+	let e = 
+	  if i <> Coinductive then pp_expr env [] t 	
+	  else paren (str "force" ++ spc () ++ pp_expr env [] t)
+	in 
+	apply (v 3 (paren (str "match-case " ++ e ++ fnl () ++ pp_pat env pv)))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix env' i (Array.of_list (List.rev ids'),defs) args

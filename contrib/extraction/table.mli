@@ -29,7 +29,7 @@ val error_scheme : unit -> 'a
 val error_not_visible : global_reference -> 'a
 val error_unqualified_name : string -> string -> 'a 
 val error_MPfile_as_mod : dir_path -> 'a
-
+val error_record : global_reference -> 'a 
 val check_inside_module : unit -> unit
 val check_inside_section : unit -> unit
 
@@ -58,9 +58,7 @@ val lookup_ind : kernel_name -> ml_ind
 val add_recursors : Environ.env -> kernel_name -> unit
 val is_recursor : global_reference -> bool 
 
-val add_record : 
-  kernel_name -> int -> global_reference list * global_reference list -> unit
-val find_projections : kernel_name -> global_reference list
+val add_projection : int -> kernel_name -> unit
 val is_projection : global_reference -> bool 
 val projection_arity : global_reference -> int
 

@@ -60,10 +60,6 @@ let inh_pattern_coerce_to loc pat ind1 ind2 =
 (* appliquer le chemin de coercions p à hj *)
 
 let apply_coercion env p hj typ_cl =
-  if !compter then begin
-    nbpathc := !nbpathc +1; 
-    nbcoer := !nbcoer + (List.length p)
-  end;
   try 
     fst (List.fold_left
            (fun (ja,typ_cl) i -> 

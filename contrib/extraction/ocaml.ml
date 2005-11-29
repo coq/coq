@@ -20,8 +20,6 @@ open Miniml
 open Mlutil
 open Modutil
 
-let cons_cofix = ref Refset.empty
-
 (*s Some utility functions. *)
 
 let pp_par par st = if par then str "(" ++ st ++ str ")" else st
@@ -167,6 +165,10 @@ let pp_global r =
 
 let empty_env () = [], P.globals ()
 
+exception NoRecord
+
+let find_projections = function Record l -> l | _ -> raise NoRecord
+
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
 
@@ -193,7 +195,7 @@ let rec pp_type par vl t =
 
 let expr_needs_par = function
   | MLlam _  -> true
-  | MLcase (_,[|_|]) -> false 
+  | MLcase (_,_,[|_|]) -> false 
   | MLcase _ -> true
   | _        -> false 
 
@@ -231,30 +233,32 @@ let rec pp_expr par env args =
 	   let record = List.hd args in 
 	   pp_apply (record ++ str "." ++ pp_global r) par (List.tl args)
 	 with _ -> apply (pp_global r))
-    | MLcons (r,[]) ->
+    | MLcons (Coinductive,r,[]) ->
 	assert (args=[]);
-	if Refset.mem r !cons_cofix then 
-	  pp_par par (str "lazy " ++ pp_global r)
-	else pp_global r
-    | MLcons (r,args') -> 
-	(try 
-	   let projs = find_projections (kn_of_r r) in 
-	   pp_record_pat (projs, List.map (pp_expr true env []) args')
-	 with Not_found ->
-	   assert (args=[]);
-	   let tuple = pp_tuple (pp_expr true env []) args' in 
-	   if Refset.mem r !cons_cofix then 
-	     pp_par par (str "lazy (" ++ pp_global r ++ spc() ++ tuple ++str ")")
-	   else pp_par par (pp_global r ++ spc () ++ tuple))
-    | MLcase (t, pv) ->
+	pp_par par (str "lazy " ++ pp_global r)
+    | MLcons (Coinductive,r,args') -> 
+	assert (args=[]);
+	let tuple = pp_tuple (pp_expr true env []) args' in 
+	pp_par par (str "lazy (" ++ pp_global r ++ spc() ++ tuple ++str ")")
+    | MLcons (_,r,[]) -> 
+	assert (args=[]);
+	pp_global r
+    | MLcons (Record projs, r, args') -> 
+	assert (args=[]); 
+	pp_record_pat (projs, List.map (pp_expr true env []) args')
+    | MLcons (_,r,args') -> 
+	assert (args=[]);
+	let tuple = pp_tuple (pp_expr true env []) args' in 
+	pp_par par (pp_global r ++ spc () ++ tuple)
+    | MLcase (i, t, pv) ->
 	let r,_,_ = pv.(0) in 
-	let expr = if Refset.mem r !cons_cofix then 
+	let expr = if i = Coinductive then 
 	  (str "Lazy.force" ++ spc () ++ pp_expr true env [] t)
 	else 
 	  (pp_expr false env [] t) 
 	in 
 	(try 
-	   let projs = find_projections (kn_of_r r) in 
+	   let projs = find_projections i in 
 	   let (_, ids, c) = pv.(0) in 
 	   let n = List.length ids in 
 	   match c with 
@@ -263,17 +267,17 @@ let rec pp_expr par env args =
 				     pp_global (List.nth projs (n-i)))) 
 	     | MLapp (MLrel i, a) when i <= n -> 
 		 if List.exists (ast_occurs_itvl 1 n) a 
-		 then raise Not_found
+		 then raise NoRecord
 		 else
 		   let ids,env' = push_vars (List.rev ids) env in
 		   (pp_apply 
 		      (pp_expr true env [] t ++ str "." ++ 
 		       pp_global (List.nth projs (n-i)))
 		      par ((List.map (pp_expr true env' []) a) @ args))
-	     | _ -> raise Not_found
-	 with Not_found -> 
+	     | _ -> raise NoRecord
+	 with NoRecord -> 
 	   if Array.length pv = 1 then 
-	     let s1,s2 = pp_one_pat env pv.(0) in 
+	     let s1,s2 = pp_one_pat env i pv.(0) in 
 	     apply 
 	       (hv 0 
 		  (pp_par par' 
@@ -285,7 +289,7 @@ let rec pp_expr par env args =
 	     apply
       	       (pp_par par' 
       		  (v 0 (str "match " ++ expr ++ str " with" ++
-			fnl () ++ str "  | " ++ pp_pat env pv))))
+			fnl () ++ str "  | " ++ pp_pat env i pv))))
     | MLfix (i,ids,defs) ->
 	let ids',env' = push_vars (List.rev (Array.to_list ids)) env in
       	pp_fix par env' i (Array.of_list (List.rev ids'),defs) args
@@ -307,21 +311,21 @@ and pp_record_pat (projs, args) =
      (List.combine projs args) ++
    str " }"
 
-and pp_one_pat env (r,ids,t) = 
+and pp_one_pat env i (r,ids,t) = 
   let ids,env' = push_vars (List.rev ids) env in
   let expr = pp_expr (expr_needs_par t) env' [] t in 
   try 
-    let projs = find_projections (kn_of_r r) in 
+    let projs = find_projections i in 
     pp_record_pat (projs, List.rev_map pr_id ids), expr
-  with Not_found -> 
+  with NoRecord -> 
     let args = 
       if ids = [] then (mt ()) 
       else str " " ++ pp_boxed_tuple pr_id (List.rev ids) in 
     pp_global r ++ args, expr
   
-and pp_pat env pv = 
+and pp_pat env i pv = 
   prvect_with_sep (fun () -> (fnl () ++ str "  | ")) 
-    (fun x -> let s1,s2 = pp_one_pat env x in 
+    (fun x -> let s1,s2 = pp_one_pat env i x in 
      hov 2 (s1 ++ str " ->" ++ spc () ++ s2)) pv
 
 and pp_function env f t =
@@ -331,20 +335,17 @@ and pp_function env f t =
     let ktl = array_map_to_list (fun (_,l,t0) -> (List.length l,t0)) pv in
     not (List.exists (fun (k,t0) -> ast_occurs (k+1) t0) ktl)
   in
-  let is_not_cofix pv = 
-    let (r,_,_) = pv.(0) in not (Refset.mem r !cons_cofix) 
-  in					  
   match t' with 
-    | MLcase(MLrel 1,pv) when is_not_cofix pv ->
+    | MLcase(i,MLrel 1,pv) when i=Standard ->
 	if is_function pv then
 	  (f ++ pr_binding (List.rev (List.tl bl)) ++
        	     str " = function" ++ fnl () ++
-	     v 0 (str "  | " ++ pp_pat env' pv))
+	     v 0 (str "  | " ++ pp_pat env' i pv))
 	else
           (f ++ pr_binding (List.rev bl) ++ 
              str " = match " ++
 	     pr_id (List.hd bl) ++ str " with" ++ fnl () ++
-	     v 0 (str "  | " ++ pp_pat env' pv))
+	     v 0 (str "  | " ++ pp_pat env' i pv))
 	  
     | _ -> (f ++ pr_binding (List.rev bl) ++
 	      str " =" ++ fnl () ++ str "  " ++
@@ -420,9 +421,8 @@ let pp_singleton kn packet =
 	 pp_comment (str "singleton inductive, whose constructor was " ++ 
 		     pr_id packet.ip_consnames.(0)))
 
-let pp_record kn packet = 
-  let l = List.combine (find_projections kn) packet.ip_types.(0) in 
-  let projs = find_projections kn in
+let pp_record kn projs packet = 
+  let l = List.combine projs packet.ip_types.(0) in 
   let pl = rename_tvars keywords packet.ip_vars in 
   str "type " ++ pp_parameters pl ++ pp_global (IndRef (kn,0)) ++ str " = { "++
   hov 0 (prlist_with_sep (fun () -> str ";" ++ spc ()) 
@@ -466,13 +466,9 @@ let pp_ind co kn ind =
 let pp_mind kn i = 
   match i.ind_info with 
     | Singleton -> pp_singleton kn i.ind_packets.(0)
-    | Coinductive -> 
-	let nop _ = () 
-	and add r = cons_cofix := Refset.add r !cons_cofix in 
-	decl_iter_references nop add nop (Dind (kn,i)); 
-	pp_ind true kn i
-    | Record -> pp_record kn i.ind_packets.(0)
-    | _ -> pp_ind false kn i
+    | Coinductive -> pp_ind true kn i
+    | Record projs -> pp_record kn projs i.ind_packets.(0)
+    | Standard -> pp_ind false kn i
 
 let pp_decl mpl = 
   local_mpl := mpl; 

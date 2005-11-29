@@ -15,8 +15,6 @@ open Names
 open Libnames
 open Miniml
 
-val cons_cofix : Refset.t ref
-
 val pp_par : bool -> std_ppcmds -> std_ppcmds
 val pp_abst : identifier list -> std_ppcmds
 val pp_apply : std_ppcmds -> bool -> std_ppcmds list -> std_ppcmds 

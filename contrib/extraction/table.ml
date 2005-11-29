@@ -90,17 +90,9 @@ let is_recursor = function
 
 (*s Record tables. *)
 
-let records = ref (KNmap.empty : global_reference list KNmap.t)
-let init_records () = records := KNmap.empty
-
 let projs = ref (Refmap.empty : int Refmap.t)
 let init_projs () = projs := Refmap.empty
-
-let add_record kn n (l1,l2) = 
-  records := KNmap.add kn l1 !records; 
-  projs := List.fold_right (fun r -> Refmap.add r n) l2 !projs
-
-let find_projections kn = KNmap.find kn !records
+let add_projection n kn = projs := Refmap.add (ConstRef kn) n !projs
 let is_projection r = Refmap.mem r !projs
 let projection_arity r = Refmap.find r !projs
 
@@ -108,7 +100,7 @@ let projection_arity r = Refmap.find r !projs
 
 let reset_tables () = 
   init_terms (); init_types (); init_inductives (); init_recursors (); 
-  init_records (); init_projs ()
+  init_projs ()
 
 (*s Printing. *)
 
@@ -195,6 +187,10 @@ let error_unqualified_name s1 s2 =
 let error_MPfile_as_mod d = 
   err (str ("The whole file "^(string_of_dirpath d)^".v is used somewhere as a module.\n"^
 	    "Extraction cannot currently deal with this situation.\n"))
+
+let error_record r = 
+  err (str "Record " ++ Printer.pr_global r ++ str " has an anonymous field." ++ fnl () ++
+       str "To help extraction, please use an explicit name.") 
 
 (*S The Extraction auxiliary commands *)
 

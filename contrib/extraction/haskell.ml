@@ -125,16 +125,16 @@ let rec pp_expr par env args =
 		 spc () ++ hov 0 pp_a2)))
     | MLglob r -> 
 	apply (pp_global r)
-    | MLcons (r,[]) ->
+    | MLcons (_,r,[]) ->
 	assert (args=[]); pp_global r
-    | MLcons (r,[a]) ->
+    | MLcons (_,r,[a]) ->
 	assert (args=[]);
 	pp_par par (pp_global r ++ spc () ++ pp_expr true env [] a)
-    | MLcons (r,args') ->
+    | MLcons (_,r,args') ->
 	assert (args=[]);
 	pp_par par (pp_global r ++ spc () ++ 
 		    prlist_with_sep spc (pp_expr true env []) args')
-    | MLcase (t, pv) ->
+    | MLcase (_,t, pv) ->
       	apply (pp_par par' 
 		 (v 0 (str "case " ++ pp_expr false env [] t ++ str " of" ++
 		       fnl () ++ str "  " ++ pp_pat env pv)))
