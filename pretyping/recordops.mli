@@ -18,13 +18,6 @@ open Libobject
 open Library
 (*i*)
 
-val nbimpl : int ref
-val nbpathc : int ref
-val nbcoer : int ref
-val nbstruc : int ref
-val nbimplstruc : int ref
-val compter : bool ref
-
 type struc_typ = {
   s_CONST : identifier; 
   s_PARAM : int;

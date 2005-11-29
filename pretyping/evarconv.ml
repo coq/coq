@@ -380,21 +380,16 @@ and conv_record env isevars (c,bs,(params,params1),(us,us2),(ts,ts1),c1) =
 	 (new_isevar isevars env dloc (substl ks b)) :: ks)
       [] bs
   in
-  if (list_for_all2eq 
-	(fun u1 u -> evar_conv_x env isevars CONV u1 (substl ks u))
-	us2 us)
-    &
-    (list_for_all2eq 
-       (fun x1 x -> evar_conv_x env isevars CONV x1 (substl ks x))
-       params1 params)
-    & (list_for_all2eq (evar_conv_x env isevars CONV) ts ts1)
-    & (evar_conv_x env isevars CONV c1 (applist (c,(List.rev ks))))
-  then
-    (*TR*) (if !compter then (nbstruc:=!nbstruc+1;
-                              nbimplstruc:=!nbimplstruc+(List.length ks);true)
-            else true)
-  else false
-
+  (list_for_all2eq 
+     (fun u1 u -> evar_conv_x env isevars CONV u1 (substl ks u))
+     us2 us)
+  &
+  (list_for_all2eq 
+     (fun x1 x -> evar_conv_x env isevars CONV x1 (substl ks x))
+     params1 params)
+  & (list_for_all2eq (evar_conv_x env isevars CONV) ts ts1)
+  & (evar_conv_x env isevars CONV c1 (applist (c,(List.rev ks))))
+    
 let the_conv_x     env isevars t1 t2 = evar_conv_x env isevars CONV  t1 t2
 let the_conv_x_leq env isevars t1 t2 = evar_conv_x env isevars CUMUL t1 t2
  

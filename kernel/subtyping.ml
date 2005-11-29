@@ -132,6 +132,34 @@ let check_inductive cst env msid1 l info1 mib2 spec2 =
 	  in
 	    if kn1 <> kn2 then error ()
   end;
+  (* we check that records and their field names are preserved. *)
+  (* To stay compatible, we don't fail but only issue a warning. *)
+  if mib1.mind_record <> mib2.mind_record then begin
+    let sid = string_of_id mib1.mind_packets.(0).mind_typename in 
+    Pp.warning 
+      (sid^": record is implemented as an inductive type or conversely.\n"^
+	 "Beware that extraction cannot handle this situation.\n")
+  end; 
+  if mib1.mind_record then begin 
+    let rec names_prod_letin t = match kind_of_term t with 
+      | Prod(n,_,t) -> n::(names_prod_letin t)
+      | LetIn(n,_,_,t) -> n::(names_prod_letin t)
+      | Cast(t,_) -> names_prod_letin t
+      | _ -> []
+    in 
+    assert (Array.length mib1.mind_packets = 1);
+    assert (Array.length mib2.mind_packets = 1);
+    assert (Array.length mib1.mind_packets.(0).mind_user_lc = 1); 
+    assert (Array.length mib2.mind_packets.(0).mind_user_lc = 1); 
+    let fields1 = names_prod_letin mib1.mind_packets.(0).mind_user_lc.(0)
+    and fields2 = names_prod_letin mib2.mind_packets.(0).mind_user_lc.(0) in  
+    if fields1 <> fields2 then 
+      let sid = string_of_id mib1.mind_packets.(0).mind_typename in 
+      Pp.warning 
+	(sid^": record has different field names in its signature and "^
+	   "implemantation.\n"^
+	   "Beware that extraction cannot handle this situation.\n");
+  end;
   (* we first check simple things *)
   let cst = 
     array_fold_left2 check_packet cst mib1.mind_packets mib2.mind_packets

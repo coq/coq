@@ -46,7 +46,11 @@ type ml_schema = int * ml_type
 
 (*s ML inductive types. *)
 
-type inductive_info = Record | Singleton | Coinductive | Standard
+type inductive_info = 
+  | Singleton 
+  | Coinductive 
+  | Standard 
+  | Record of global_reference list 
 
 (* A [ml_ind_packet] is the miniml counterpart of a [one_inductive_body]. 
    If the inductive is logical ([ip_logical = false]), then all other fields
@@ -79,8 +83,9 @@ type ml_ast =
   | MLlam    of identifier * ml_ast
   | MLletin  of identifier * ml_ast * ml_ast
   | MLglob   of global_reference
-  | MLcons   of global_reference * ml_ast list
-  | MLcase   of ml_ast * (global_reference * identifier list * ml_ast) array
+  | MLcons   of inductive_info * global_reference * ml_ast list
+  | MLcase   of inductive_info * ml_ast * 
+      (global_reference * identifier list * ml_ast) array
   | MLfix    of int * identifier array * ml_ast array
   | MLexn    of string
   | MLdummy
