@@ -579,7 +579,9 @@ and extract_cst_app env mle mlt kn args =
   (* Different situations depending of the number of arguments: *)
   if ls = 0 then put_magic_if magic2 head
   else if List.mem true s then 
-    if la >= ls then put_magic_if (magic2 && not magic1) (MLapp (head, mla))
+    if la >= ls || not (List.mem false s) 
+    then 
+      put_magic_if (magic2 && not magic1) (MLapp (head, mla))
     else 
       (* Not enough arguments. We complete via eta-expansion. *)
       let ls' = ls-la in
