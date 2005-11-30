@@ -46,9 +46,9 @@ Section Relations_3.
    
    Definition Confluent : Prop := forall x:U, confluent x.
    
-   Inductive noetherian : U -> Prop :=
+   Inductive noetherian (x: U) : Prop :=
        definition_of_noetherian :
-         forall x:U, (forall y:U, R x y -> noetherian y) -> noetherian x.
+         (forall y:U, R x y -> noetherian y) -> noetherian x.
    
    Definition Noetherian : Prop := forall x:U, noetherian x.
    

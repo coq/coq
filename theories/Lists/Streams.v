@@ -71,9 +71,8 @@ Qed.
 
 (** Extensional Equality between two streams  *)
 
-CoInductive EqSt : Stream -> Stream -> Prop :=
+CoInductive EqSt (s1 s2: Stream) : Prop :=
     eqst :
-      forall s1 s2:Stream,
         hd s1 = hd s2 -> EqSt (tl s1) (tl s2) -> EqSt s1 s2.
 
 (** A coinduction principle *)
@@ -140,12 +139,12 @@ Inductive Exists : Stream -> Prop :=
   | Further : forall x:Stream, ~ P x -> Exists (tl x) -> Exists x.
 i*)
 
-Inductive Exists : Stream -> Prop :=
-  | Here : forall x:Stream, P x -> Exists x
-  | Further : forall x:Stream, Exists (tl x) -> Exists x.
+Inductive Exists ( x: Stream ) : Prop :=
+  | Here : P x -> Exists x
+  | Further : Exists (tl x) -> Exists x.
 
-CoInductive ForAll : Stream -> Prop :=
-    HereAndFurther : forall x:Stream, P x -> ForAll (tl x) -> ForAll x.
+CoInductive ForAll (x: Stream) : Prop :=
+    HereAndFurther : P x -> ForAll (tl x) -> ForAll x.
 
 
 Section Co_Induction_ForAll.

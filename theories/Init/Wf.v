@@ -29,8 +29,8 @@ Section Well_founded.
 
  (** The accessibility predicate is defined to be non-informative *)
 
- Inductive Acc : A -> Prop :=
-     Acc_intro : forall x:A, (forall y:A, R y x -> Acc y) -> Acc x.
+ Inductive Acc (x: A) : Prop :=
+     Acc_intro : (forall y:A, R y x -> Acc y) -> Acc x.
 
  Lemma Acc_inv : forall x:A, Acc x -> forall y:A, R y x -> Acc y.
   destruct 1; trivial.

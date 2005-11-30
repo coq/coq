@@ -25,10 +25,10 @@ Section Transitive_Closure.
   Variable A : Type.
   Variable R : relation A.
 
-  Inductive clos_trans : A -> A -> Prop :=
-    | t_step : forall x y:A, R x y -> clos_trans x y
+  Inductive clos_trans (x: A) : A -> Prop :=
+    | t_step : forall y:A, R x y -> clos_trans x y
     | t_trans :
-        forall x y z:A, clos_trans x y -> clos_trans y z -> clos_trans x z.
+        forall y z:A, clos_trans x y -> clos_trans y z -> clos_trans x z.
 End Transitive_Closure.
 
 
@@ -36,11 +36,11 @@ Section Reflexive_Transitive_Closure.
   Variable A : Type.
   Variable R : relation A.
 
-  Inductive clos_refl_trans : relation A :=
-    | rt_step : forall x y:A, R x y -> clos_refl_trans x y
-    | rt_refl : forall x:A, clos_refl_trans x x
+  Inductive clos_refl_trans (x:A) : A -> Prop:=
+    | rt_step : forall y:A, R x y -> clos_refl_trans x y
+    | rt_refl : clos_refl_trans x x
     | rt_trans :
-        forall x y z:A,
+        forall y z:A,
           clos_refl_trans x y -> clos_refl_trans y z -> clos_refl_trans x z.
 End Reflexive_Transitive_Closure.
 
