@@ -183,15 +183,17 @@ let rec extract_type env db j c args =
 	   | (Info, Default) -> 
 	       (* Standard case: two [extract_type] ... *)
 	       let mld = extract_type env' (0::db) j d [] in 
-	       if mld = Tdummy then Tdummy 
+	       if type_eq (mlt_env env) mld Tdummy then Tdummy 
 	       else Tarr (extract_type env db 0 t [], mld) 
 	   | (Info, TypeScheme) when j > 0 -> 
 	       (* A new type var. *)
 	       let mld = extract_type env' (j::db) (j+1) d [] in 
-	       if mld = Tdummy then Tdummy else Tarr (Tdummy, mld)
+	       if type_eq (mlt_env env) mld Tdummy then Tdummy 
+	       else Tarr (Tdummy, mld)
 	   | _ -> 
 	       let mld = extract_type env' (0::db) j d [] in 
-	       if mld = Tdummy then Tdummy else Tarr (Tdummy, mld))
+	       if type_eq (mlt_env env) mld Tdummy then Tdummy 
+	       else Tarr (Tdummy, mld))
     | Sort _ -> Tdummy (* The two logical cases. *)
     | _ when sort_of env (applist (c, args)) = InProp -> Tdummy 
     | Rel n -> 
@@ -616,7 +618,7 @@ and extract_cons_app env mle mlt (((kn,i) as ip,j) as cp) args =
   let type_cons = type_recomp (types, Tglob (IndRef ip, list_tvar)) in
   let type_cons = instantiation (nb_tvars, type_cons) in 
   (* Then, the usual variables [s], [ls], [la], ... *)
-  let s = List.map ((<>) Tdummy) types in
+  let s = List.map (type_neq env Tdummy) types in
   let ls = List.length s in 
   let la = List.length args in 
   assert (la <= ls + params_nb);
@@ -687,10 +689,12 @@ and extract_case env mle ((kn,i) as ip,c,br) mlt =
 	(* The types of the arguments of the corresponding constructor. *)
 	let f t = type_subst_vect metas (type_expand env t) in 
 	let l = List.map f oi.ip_types.(i) in
+	(* the corresponding signature *)
+	let s = List.map (type_neq env Tdummy) oi.ip_types.(i) in
 	(* Extraction of the branch (in functional form). *)
 	let e = extract_maybe_term env mle (type_recomp (l,mlt)) br.(i) in 
 	(* We suppress dummy arguments according to signature. *)
-	let ids,e = case_expunge (List.map ((<>) Tdummy) l) e in
+	let ids,e = case_expunge s e in
 	(ConstructRef (ip,i+1), List.rev ids, e)
       in
       if mi.ind_info = Singleton then 
@@ -743,7 +747,7 @@ let extract_std_constant env kn body typ =
   (* The real type [t']: without head lambdas, expanded, *)
   (* and with [Tvar] translated to [Tvar'] (not instantiable). *)
   let l,t' = type_decomp (type_expand env (var2var' t)) in 
-  let s = List.map ((<>) Tdummy) l in 
+  let s = List.map (type_neq env Tdummy) l in 
   (* The initial ML environment. *)
   let mle = List.fold_left Mlenv.push_std_type Mlenv.empty l in 
   (* Decomposing the top level lambdas of [body]. *)
@@ -853,7 +857,8 @@ let logical_decl = function
   | Dterm (_,MLdummy,Tdummy) -> true
   | Dtype (_,[],Tdummy) -> true 
   | Dfix (_,av,tv) -> 
-      (array_for_all ((=) MLdummy) av) && (array_for_all ((=) Tdummy) tv)
+      (array_for_all ((=) MLdummy) av) && 
+      (array_for_all ((=) Tdummy) tv)
   | Dind (_,i) -> array_for_all (fun ip -> ip.ip_logical) i.ind_packets
   | _ -> false
 
