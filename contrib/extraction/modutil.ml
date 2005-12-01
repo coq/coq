@@ -173,9 +173,11 @@ let ast_iter_references do_term do_cons do_type a =
     ast_iter iter a;
     match a with 
       | MLglob r -> do_term r
-      | MLcons (i,r,_) -> record_iter_references do_term i; do_cons r 
+      | MLcons (i,r,_) -> 
+	  if lang () = Ocaml then record_iter_references do_term i; 
+	  do_cons r 
       | MLcase (i,_,v) as a -> 
-	  record_iter_references do_term i; 
+	  if lang () = Ocaml then record_iter_references do_term i; 
 	  Array.iter (fun (r,_,_) -> do_cons r) v
       | _ -> ()
   in iter a
@@ -186,7 +188,7 @@ let ind_iter_references do_term do_cons do_type kn ind =
   let packet_iter ip p = 
     do_type (IndRef ip); Array.iteri (fun j -> cons_iter (ip,j+1)) p.ip_types 
   in
-  record_iter_references do_term ind.ind_info; 
+  if lang () = Ocaml then record_iter_references do_term ind.ind_info; 
   Array.iteri (fun i -> packet_iter (kn,i)) ind.ind_packets
   
 let decl_iter_references do_term do_cons do_type = 
