@@ -66,6 +66,12 @@ let sec_space_if = function true -> spc () | false -> mt ()
 
 let fnl2 () = fnl () ++ fnl () 
 
+let pp_parameters l = 
+  (pp_boxed_tuple pp_tvar l ++ space_if (l<>[]))
+
+let pp_string_parameters l = 
+  (pp_boxed_tuple str l ++ space_if (l<>[])) 
+
 (*s Generic renaming issues. *)
 
 let rec rename_id id avoid = 
@@ -184,7 +190,6 @@ let rec pp_type par vl t =
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
     | Tdummy -> str "__"
     | Tunknown -> str "__"
-    | Tcustom s -> str s
   in 
   hov 0 (pp_rec par t)
 
@@ -384,12 +389,6 @@ let rec pp_Dfix init i ((rv,c,t) as fix) =
       pp_Dfix false (i+1) fix 
 	
 (*s Pretty-printing of inductive types declaration. *)
-
-let pp_parameters l = 
-  (pp_boxed_tuple pp_tvar l ++ space_if (l<>[]))
-
-let pp_string_parameters l = 
-  (pp_boxed_tuple str l ++ space_if (l<>[])) 
 
 let pp_one_ind prefix ip pl cv =
   let pl = rename_tvars keywords pl in

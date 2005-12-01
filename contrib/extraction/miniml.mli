@@ -35,7 +35,6 @@ type ml_type =
   | Tdummy
   | Tunknown
   | Taxiom
-  | Tcustom of string
 
 and ml_meta = { id : int; mutable contents : ml_type option }
 
