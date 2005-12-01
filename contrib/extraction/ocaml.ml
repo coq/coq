@@ -178,13 +178,21 @@ let find_projections = function Record l -> l | _ -> raise NoRecord
 (*s Pretty-printing of types. [par] is a boolean indicating whether parentheses
     are needed or not. *)
 
+let kn_sig = 
+  let specif = MPfile (dirpath_of_string "Coq.Init.Specif") in 
+  make_kn specif empty_dirpath (mk_label "sig")
+
 let rec pp_type par vl t =
   let rec pp_rec par = function
     | Tmeta _ | Tvar' _ | Taxiom -> assert false
     | Tvar i -> (try pp_tvar (List.nth vl (pred i)) 
 		 with _ -> (str "'a" ++ int i))
     | Tglob (r,[]) -> pp_global r
-    | Tglob (r,l) -> pp_tuple_light pp_rec l ++ spc () ++ pp_global r
+    | Tglob (r,l) -> 
+	if r = IndRef (kn_sig,0) then 
+	  pp_tuple_light pp_rec l
+	else 
+	  pp_tuple_light pp_rec l ++ spc () ++ pp_global r
     | Tarr (t1,t2) ->
 	pp_par par 
 	  (pp_rec true t1 ++ spc () ++ str "->" ++ spc () ++ pp_rec false t2)
