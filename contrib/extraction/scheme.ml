@@ -43,6 +43,12 @@ let pp_abst st = function
   | l -> paren 
 	(str "lambdas " ++ paren (prlist_with_sep spc pr_id l) ++ spc () ++ st)
 
+let pp_apply st _ = function 
+  | [] -> st 
+  | [a] -> hov 2 (paren (st ++ spc () ++ a))
+  | args -> hov 2 (paren (str "@ " ++ st ++ 
+			  (prlist (fun x -> spc () ++ x) args))) 
+
 (*s The pretty-printing functor. *)
 
 module Make = functor(P : Mlpp_param) -> struct
@@ -63,7 +69,7 @@ let rec pp_expr env args =
     | MLlam _ as a -> 
       	let fl,a' = collect_lams a in
 	let fl,env' = push_vars fl env in
-	pp_abst (pp_expr env' [] a') (List.rev fl)
+	apply (pp_abst (pp_expr env' [] a') (List.rev fl))
     | MLletin (id,a1,a2) ->
 	let i,env' = push_vars [id] env in
 	apply 
@@ -82,10 +88,8 @@ let rec pp_expr env args =
 	let st = 
 	  str "`" ++ 
 	  paren (pp_global r ++ 
-		 (if args' = [] then mt () else (spc () ++ str ",")) ++
-		 prlist_with_sep 
-		   (fun () -> spc () ++ str ",") 
-		   (pp_expr env []) args')
+		 (if args' = [] then mt () else spc ()) ++
+		 prlist_with_sep spc (pp_cons_args env) args')
 	in 
 	if i = Coinductive then paren (str "delay " ++ st) else st 
     | MLcase (i,t, pv) ->
@@ -105,6 +109,13 @@ let rec pp_expr env args =
     | MLmagic a ->
 	pp_expr env args a
     | MLaxiom -> paren (str "absurd ;;AXIOM TO BE REALIZED\n")
+
+and pp_cons_args env = function 
+  | MLcons (i,r,args) when i<>Coinductive -> 
+      paren (pp_global r ++ 
+	     (if args = [] then mt () else spc ()) ++
+	     prlist_with_sep spc (pp_cons_args env) args)
+  | e -> str "," ++ pp_expr env [] e
 	
 
 and pp_one_pat env (r,ids,t) = 
@@ -129,7 +140,8 @@ and pp_fix env j (ids,bl) args =
       (str "letrec " ++
        (v 0 (paren 
 	       (prvect_with_sep fnl
-		  (fun (fi,ti) -> paren ((pr_id fi) ++ (pp_expr env [] ti)))
+		  (fun (fi,ti) -> 
+		     paren ((pr_id fi) ++ spc () ++ (pp_expr env [] ti)))
 		  (array_map2 (fun id b -> (id,b)) ids bl)) ++
 	     fnl () ++
       	     hov 2 (pp_apply (pr_id (ids.(j))) true args))))
