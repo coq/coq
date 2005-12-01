@@ -42,7 +42,7 @@ val add_labels_mp : module_path -> label list -> module_path
 
 (*s Functions upon ML modules. *)
 
-val struct_ast_search : ml_ast -> ml_structure -> bool
+val struct_ast_search : (ml_ast -> bool) -> ml_structure -> bool
 val struct_type_search : ml_type -> ml_structure -> bool
 
 type do_ref = global_reference -> unit 

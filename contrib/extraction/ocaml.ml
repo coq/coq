@@ -130,7 +130,7 @@ let keywords =
     "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr" ; "unit" ; "_" ; "__" ] 
   Idset.empty
 
-let preamble _ used_modules (mldummy,tdummy,tunknown) = 
+let preamble _ used_modules (mldummy,tdummy,tunknown) _ = 
   let pp_mp = function 
     | MPfile d -> pr_upper_id (List.hd (repr_dirpath d))
     | _ -> assert false 

@@ -29,7 +29,7 @@ let keywords =
       "error"; "delay"; "force"; "_"; "__"] 
     Idset.empty
 
-let preamble _ _ (mldummy,_,_) = 
+let preamble _ _ (mldummy,_,_) _ = 
   (if mldummy then 
      str "(define __ (lambda (_) __))" 
      ++ fnl () ++ fnl()

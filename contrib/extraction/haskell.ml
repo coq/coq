@@ -30,22 +30,38 @@ let keywords =
     "as"; "qualified"; "hiding" ; "unit" ; "unsafeCoerce" ]
   Idset.empty
 
-let preamble prm used_modules (mldummy,tdummy,tunknown) =
+let preamble prm used_modules (mldummy,tdummy,tunknown) magic =
   let pp_mp = function 
     | MPfile d -> pr_upper_id (List.hd (repr_dirpath d))
     | _ -> assert false 
   in  
+  (if not magic then mt () 
+   else
+     str "{-# OPTIONS_GHC -cpp -fglasgow-exts #-}\n" ++
+     str "{- For Hugs, use the option -F\"cpp -P -traditional\" -}\n\n")
+  ++
   str "module " ++ pr_upper_id prm.mod_name ++ str " where" ++ fnl () 
   ++ fnl() ++ 
   str "import qualified Prelude" ++ fnl() ++
-  str "import qualified GHC.Base" ++ fnl() ++
   prlist (fun mp -> str "import qualified " ++ pp_mp mp ++ fnl ()) used_modules
   ++ fnl () ++
-  str "unsafeCoerce = GHC.Base.unsafeCoerce#" ++ fnl() ++ fnl() ++
-  (if mldummy then 
+  (if not magic then mt () 
+   else str "\
+#ifdef __GLASGOW_HASKELL__
+import qualified GHC.Base
+unsafeCoerce = GHC.Base.unsafeCoerce#
+#else
+-- HUGS
+import qualified IOExts
+unsafeCoerce = IOExts.unsafeCoerce
+#endif")
+  ++
+  fnl() ++ fnl() 
+  ++
+  (if not mldummy then mt () 
+   else
      str "__ = Prelude.error \"Logical or arity value used\"" 
-     ++ fnl () ++ fnl()
-   else mt())
+     ++ fnl () ++ fnl())
 
 let preamble_sig prm used_modules (mldummy,tdummy,tunknown) = failwith "TODO" 
 

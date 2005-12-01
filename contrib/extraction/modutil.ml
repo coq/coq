@@ -244,7 +244,7 @@ let struct_get_references_list struc =
 exception Found
 
 let rec ast_search t a = 
-  if t = a then raise Found else ast_iter (ast_search t) a
+  if t a then raise Found else ast_iter (ast_search t) a
 
 let decl_ast_search t = function 
   | Dterm (_,a,_) -> ast_search t a

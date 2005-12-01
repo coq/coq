@@ -353,7 +353,7 @@ let preamble prm = match lang () with
   | Ocaml -> Ocaml.preamble prm   
   | Haskell -> Haskell.preamble prm
   | Scheme -> Scheme.preamble prm
-  | Toplevel -> (fun _ _ -> mt ())
+  | Toplevel -> (fun _ _ _ -> mt ())
 
 let preamble_sig prm = match lang () with 
   | Ocaml -> Ocaml.preamble_sig prm   
@@ -386,9 +386,13 @@ let print_structure_to_file f prm struc =
     else (create_mono_renamings struc; [])
   in 
   let print_dummys =
-    (struct_ast_search MLdummy struc, 
+    (struct_ast_search ((=) MLdummy) struc, 
      struct_type_search Tdummy struc, 
      struct_type_search Tunknown struc)
+  in 
+  let print_magic = 
+    if lang () <> Haskell then false 
+    else struct_ast_search (function MLmagic _ -> true | _ -> false) struc
   in
   (* print the implementation *)
   let cout = option_app (fun (f,_) -> open_out f) f in 
@@ -396,7 +400,7 @@ let print_structure_to_file f prm struc =
     | None -> !Pp_control.std_ft
     | Some cout -> Pp_control.with_output_to cout in 
   begin try 
-    msg_with ft (preamble prm used_modules print_dummys);
+    msg_with ft (preamble prm used_modules print_dummys print_magic);
     msg_with ft (pp_struct struc);
     option_iter close_out cout; 
   with e -> 
